@@ -700,7 +700,7 @@ contains
 !<subroutine>
 
   subroutine smva_getDef_primal (rdest,ispacelevel,itimelevel,idofTime,&
-      roperatorAsmHier,rprimalSol,rcontrol,roptcBDCSpace,rtempData)
+      roperatorAsmHier,rprimalSol,rcontrol,roptcBDCSpace,rtempData,csolgeneration)
   
 !<description>
   ! Calculates the defect in timestep idofTime of the nonlinear primaö equation
@@ -730,6 +730,13 @@ contains
   
   ! Structure defining the boundary conditions.
   type(t_optcBDCSpace), intent(in) :: roptcBDCSpace
+  
+  ! Defines a policy how to generate the solution to take the defect from.
+  ! =0: Always take zero
+  ! =1: Propagate the solution of the previous/next timestep to the
+  !     current one.
+  ! =2: Take the solution of the last space-time iteration
+  integer, intent(in) :: csolgeneration
 !</input>
 
 !<inputoutput>
@@ -743,7 +750,7 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_vectorBlock), pointer :: p_rvector
+    type(t_vectorBlock), pointer :: p_rvector,p_rvectorNew
     real(DP) :: dtheta, dtstep, dtimeend, dtimestart
     type(t_spacetimeOperatorAsm) :: roperatorAsm
     type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
@@ -842,6 +849,21 @@ contains
             call sptivec_getVectorFromPool (rprimalSol%p_rvectorAccess,idofTime-1,p_rvector)
             call lsysbl_blockMatVec (p_rmatrix, p_rvector, rdest, -1.0_DP, 1.0_DP)
           
+            ! In a forward loop, take the solution of the previous timestep as
+            ! initial condition for the new timestep.
+            select case (csolgeneration)
+            case (SPINITCOND_ZERO)
+              call sptivec_getVectorFromPool (rprimalSol%p_rvectorAccess,idofTime,p_rvectorNew)
+              call lsysbl_clearVector (p_rvectorNew)
+              call sptivec_commitVecInPool(rprimalSol%p_rvectorAccess,idofTime)
+            case (SPINITCOND_PREVTIMESTEP)
+              call sptivec_getVectorFromPool (rprimalSol%p_rvectorAccess,idofTime,p_rvectorNew)
+              call lsysbl_copyVector (p_rvector,p_rvectorNew)
+              call sptivec_commitVecInPool(rprimalSol%p_rvectorAccess,idofTime)
+            case (SPINITCOND_PREVITERATE)
+              ! Nothing to do
+            end select
+            
           else
           
             ! Get the timestep length from the 1st timestep
@@ -955,7 +977,7 @@ contains
 !<subroutine>
 
   subroutine smva_getDef_dual (rdest,ispacelevel,itimelevel,idofTime,&
-      roperatorAsmHier,rprimalSol,rdualSol,roptcBDCSpace,rtempData)
+      roperatorAsmHier,rprimalSol,rdualSol,roptcBDCSpace,rtempData,csolgeneration)
   
 !<description>
   ! Calculates the defect in timestep idofTime of the nonlinear dual equation
@@ -985,6 +1007,13 @@ contains
 
   ! Structure defining the boundary conditions.
   type(t_optcBDCSpace), intent(in) :: roptcBDCSpace
+
+  ! Defines a policy how to generate the solution to take the defect from.
+  ! =0: Always take zero
+  ! =1: Propagate the solution of the previous/next timestep to the
+  !     current one.
+  ! =2: Take the solution of the last space-time iteration
+  integer, intent(in) :: csolgeneration
 !</input>
 
 !<inputoutput>
@@ -998,7 +1027,7 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_vectorBlock), pointer :: p_rvector
+    type(t_vectorBlock), pointer :: p_rvector,p_rvectorNew
     real(DP) :: dtheta, dtstep, dtimeend, dtimestart
     type(t_spacetimeOperatorAsm) :: roperatorAsm
     type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
@@ -1097,11 +1126,40 @@ contains
             call sptivec_getVectorFromPool (rdualSol%p_rvectorAccess,idofTime+1,p_rvector)
             call lsysbl_blockMatVec (p_rmatrix, p_rvector, rdest, -1.0_DP, 1.0_DP)
             
+            ! In a backward loop, take the solution of the next timestep as
+            ! initial condition for the new timestep.
+            select case (csolgeneration)
+            case (SPINITCOND_ZERO)
+              call sptivec_getVectorFromPool (rdualSol%p_rvectorAccess,idofTime,p_rvectorNew)
+              call lsysbl_clearVector (p_rvectorNew)
+              call sptivec_commitVecInPool(rdualSol%p_rvectorAccess,idofTime)
+            case (SPINITCOND_PREVTIMESTEP)
+              call sptivec_getVectorFromPool (rdualSol%p_rvectorAccess,idofTime,p_rvectorNew)
+              call lsysbl_copyVector (p_rvector,p_rvectorNew)
+              call sptivec_commitVecInPool(rdualSol%p_rvectorAccess,idofTime)
+            case (SPINITCOND_PREVITERATE)
+              ! Nothing to do
+            end select
+
           else
           
             ! Get the timestep length from the last timestep
             call tdiscr_getTimestep(roperatorAsm%p_rtimeDiscrDual,&
                 rprimalSol%p_rvector%NEQtime-1,dtstep=dtstep)
+            
+            ! Initial condition at the end of the timeloop is zero
+            select case (csolgeneration)
+            case (SPINITCOND_ZERO)
+              call sptivec_getVectorFromPool (rdualSol%p_rvectorAccess,idofTime,p_rvectorNew)
+              call lsysbl_clearVector (p_rvectorNew)
+              call sptivec_commitVecInPool(rdualSol%p_rvectorAccess,idofTime)
+            case (SPINITCOND_PREVTIMESTEP)
+              call sptivec_getVectorFromPool (rdualSol%p_rvectorAccess,idofTime,p_rvectorNew)
+              call lsysbl_clearVector (p_rvectorNew)
+              call sptivec_commitVecInPool(rdualSol%p_rvectorAccess,idofTime)
+            case (SPINITCOND_PREVITERATE)
+              ! Nothing to do
+            end select
             
           end if
             
@@ -1207,7 +1265,7 @@ contains
 
   subroutine smva_getDef_primalLin (rdest,ispacelevel,itimelevel,idofTime,&
       roperatorAsmHier,rprimalSol,rcontrol,rprimalSolLin,rcontrolLin,bfull,&
-      roptcBDCSpace,rtempData)
+      roptcBDCSpace,rtempData,csolgeneration)
   
 !<description>
   ! Calculates the defect in timestep idofTime of the linearised primaö equation
@@ -1247,6 +1305,13 @@ contains
 
   ! Structure defining the boundary conditions.
   type(t_optcBDCSpace), intent(in) :: roptcBDCSpace
+
+  ! Defines a policy how to generate the solution to take the defect from.
+  ! =0: Always take zero
+  ! =1: Propagate the solution of the previous/next timestep to the
+  !     current one.
+  ! =2: Take the solution of the last space-time iteration
+  integer, intent(in) :: csolgeneration
 !</input>
 
 !<inputoutput>
@@ -1260,7 +1325,7 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_vectorBlock), pointer :: p_rvector
+    type(t_vectorBlock), pointer :: p_rvector,p_rvectorNew
     real(DP) :: dtheta, dtstep, dtimeend, dtimestart
     type(t_spacetimeOperatorAsm) :: roperatorAsm
     type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
@@ -1355,12 +1420,41 @@ contains
             call sptivec_getVectorFromPool (rprimalSolLin%p_rvectorAccess,idofTime-1,p_rvector)
             call lsysbl_blockMatVec (p_rmatrix, p_rvector, rdest, -1.0_DP, 1.0_DP)
             
+            ! In a forward loop, take the solution of the previous timestep as
+            ! initial condition for the new timestep.
+            select case (csolgeneration)
+            case (SPINITCOND_ZERO)
+              call sptivec_getVectorFromPool (rprimalSolLin%p_rvectorAccess,idofTime,p_rvectorNew)
+              call lsysbl_clearVector (p_rvectorNew)
+              call sptivec_commitVecInPool(rprimalSolLin%p_rvectorAccess,idofTime)
+            case (SPINITCOND_PREVTIMESTEP)
+              call sptivec_getVectorFromPool (rprimalSolLin%p_rvectorAccess,idofTime,p_rvectorNew)
+              call lsysbl_copyVector (p_rvector,p_rvectorNew)
+              call sptivec_commitVecInPool(rprimalSolLin%p_rvectorAccess,idofTime)
+            case (SPINITCOND_PREVITERATE)
+              ! Nothing to do
+            end select
+
           else
           
             ! Get the timestep length from the 1st timestep
             call tdiscr_getTimestep(roperatorAsm%p_rtimeDiscrPrimal,1,&
                 dtstep=dtstep)
             
+            ! Initial condition at the beginning of the timeloop is zero
+            select case (csolgeneration)
+            case (SPINITCOND_ZERO)
+              call sptivec_getVectorFromPool (rprimalSolLin%p_rvectorAccess,idofTime,p_rvectorNew)
+              call lsysbl_clearVector (p_rvectorNew)
+              call sptivec_commitVecInPool(rprimalSolLin%p_rvectorAccess,idofTime)
+            case (SPINITCOND_PREVTIMESTEP)
+              call sptivec_getVectorFromPool (rprimalSolLin%p_rvectorAccess,idofTime,p_rvectorNew)
+              call lsysbl_clearVector (p_rvectorNew)
+              call sptivec_commitVecInPool(rprimalSolLin%p_rvectorAccess,idofTime)
+            case (SPINITCOND_PREVITERATE)
+              ! Nothing to do
+            end select
+
           end if
 
           ! ***********************************************
@@ -1462,7 +1556,7 @@ contains
 
   subroutine smva_getDef_dualLin (rdest,ispacelevel,itimelevel,idofTime,&
       roperatorAsmHier,rprimalSol,rdualSol,rprimalSolLin,rdualSolLin,bfull,&
-      roptcBDCSpace,rtempData)
+      roptcBDCSpace,rtempData,csolgeneration)
   
 !<description>
   ! Calculates the defect in timestep idofTime of the linearised dual equation
@@ -1502,6 +1596,13 @@ contains
 
   ! Structure defining the boundary conditions.
   type(t_optcBDCSpace), intent(in) :: roptcBDCSpace
+
+  ! Defines a policy how to generate the solution to take the defect from.
+  ! =0: Always take zero
+  ! =1: Propagate the solution of the previous/next timestep to the
+  !     current one.
+  ! =2: Take the solution of the last space-time iteration
+  integer, intent(in) :: csolgeneration
 !</input>
 
 !<inputoutput>
@@ -1515,7 +1616,7 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_vectorBlock), pointer :: p_rvector
+    type(t_vectorBlock), pointer :: p_rvector,p_rvectorNew
     real(DP) :: dtheta, dtstep, dtimeend, dtimestart
     type(t_spacetimeOperatorAsm) :: roperatorAsm
     type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
@@ -1610,12 +1711,41 @@ contains
             call sptivec_getVectorFromPool (rdualSolLin%p_rvectorAccess,idofTime+1,p_rvector)
             call lsysbl_blockMatVec (p_rmatrix, p_rvector, rdest, -1.0_DP, 1.0_DP)
           
+            ! In a backward loop, take the solution of the next timestep as
+            ! initial condition for the new timestep.
+            select case (csolgeneration)
+            case (SPINITCOND_ZERO)
+              call sptivec_getVectorFromPool (rdualSolLin%p_rvectorAccess,idofTime,p_rvectorNew)
+              call lsysbl_clearVector (p_rvectorNew)
+              call sptivec_commitVecInPool(rdualSolLin%p_rvectorAccess,idofTime)
+            case (SPINITCOND_PREVTIMESTEP)
+              call sptivec_getVectorFromPool (rdualSolLin%p_rvectorAccess,idofTime,p_rvectorNew)
+              call lsysbl_copyVector (p_rvector,p_rvectorNew)
+              call sptivec_commitVecInPool(rdualSolLin%p_rvectorAccess,idofTime)
+            case (SPINITCOND_PREVITERATE)
+              ! Nothing to do
+            end select
+            
           else
           
             ! Get the timestep length from the last timestep
             call tdiscr_getTimestep(roperatorAsm%p_rtimeDiscrDual,&
                 rprimalSol%p_rvector%NEQtime-1,dtstep=dtstep)
             
+            ! Initial condition at the end of the timeloop is zero
+            select case (csolgeneration)
+            case (SPINITCOND_ZERO)
+              call sptivec_getVectorFromPool (rdualSolLin%p_rvectorAccess,idofTime,p_rvectorNew)
+              call lsysbl_clearVector (p_rvectorNew)
+              call sptivec_commitVecInPool(rdualSolLin%p_rvectorAccess,idofTime)
+            case (SPINITCOND_PREVTIMESTEP)
+              call sptivec_getVectorFromPool (rdualSolLin%p_rvectorAccess,idofTime,p_rvectorNew)
+              call lsysbl_clearVector (p_rvectorNew)
+              call sptivec_commitVecInPool(rdualSolLin%p_rvectorAccess,idofTime)
+            case (SPINITCOND_PREVITERATE)
+              ! Nothing to do
+            end select
+
           end if
             
           ! ***********************************************
@@ -3434,7 +3564,7 @@ contains
           
           ! Build the vector
           call bma_buildVector (rrhs,BMA_CALC_STANDARD,&
-              smva_fcalc_semilinRhs, rcollection, revalVectors=rvectorEval,&
+              smva_fcalc_rhs, rcollection, revalVectors=rvectorEval,&
               rcubatureInfo=rspaceTimeOperatorAsm%p_rasmTemplates%rcubatureInfoRHScontinuity)
           
           ! Cleanup
@@ -3466,7 +3596,7 @@ contains
           
           ! Build the vector
           call bma_buildVector (rrhs,BMA_CALC_STANDARD,&
-              smva_fcalc_semilinRhs, rcollection, revalVectors=rvectorEval,&
+              smva_fcalc_rhs, rcollection, revalVectors=rvectorEval,&
               rcubatureInfo=rspaceTimeOperatorAsm%p_rasmTemplates%rcubatureInfoRHScontinuity)
           
           ! Cleanup

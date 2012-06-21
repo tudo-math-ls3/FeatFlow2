@@ -280,7 +280,11 @@ contains
                 ! Neumann boundary conditions
                 ! --------------------------------------------------
                 case (0)
-                  ! Nothing to do
+                if (iand(casmFlags,SBC_NEUMANN) .ne. 0) then
+                  ! Add the bondary region to the Neumann boundary regions.
+                  call sbc_addBoundaryRegion(&
+                      rboundaryRegion,roptcBDCSpace%rneumannBoundary)
+                end if
                   
                 ! --------------------------------------------------
                 ! Dirichlet boundary conditions

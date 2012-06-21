@@ -3345,7 +3345,6 @@ contains
       call lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
       call lsyssc_getbase_double (rprjVector%RvectorBlock(2),p_Ddata2)
       
-      ! Write the velocity field
       call ucd_addVarVertBasedVec (rexport,'velocity_p',&
           p_Ddata(1:p_rtriangulation%NVT),p_Ddata2(1:p_rtriangulation%NVT))
       

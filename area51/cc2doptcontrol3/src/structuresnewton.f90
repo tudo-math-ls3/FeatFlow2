@@ -15,7 +15,7 @@ module structuresnewton
   use genoutput
   use paramlist
   use linearalgebra
-
+  
   implicit none
   
   private
@@ -316,7 +316,7 @@ module structuresnewton
     ! =0: Check in Euclidian norm (like in old CC).
     ! =2: L2-norm
     integer :: iresNorm = LINALG_NORML2
-  
+
     ! <!-- ---------- -->
     ! <!-- STATISTICS -->
     ! <!-- ---------- -->

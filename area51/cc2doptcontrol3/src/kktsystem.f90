@@ -323,12 +323,21 @@ contains
 
 !<subroutine>
 
-  subroutine kkt_solvePrimal (rkktsystem,rspaceSolver)
+  subroutine kkt_solvePrimal (rkktsystem,rspaceSolver,cspatialInitCondPolicy)
   
 !<description>
   ! Solves the primal equation in the KKT system based on the control in the
   ! rkktsystem structure.
 !</description>
+  
+!<input>
+  ! Defines a policy how to generate the initial condition of a timestep.
+  ! =0: Always take zero
+  ! =1: Propagate the solution of the previous/next timestep to the
+  !     current one. (Default)
+  ! =2: Take the solution of the last space-time iteration
+  integer, intent(in) :: cspatialInitCondPolicy
+!</input>
   
 !<inputoutput>
   ! Structure defining the KKT system.
@@ -391,8 +400,8 @@ contains
     do idofTime = 1,rkktsystem%p_rprimalSol%p_rvector%NEQtime
     
       ! Apply the solver to update the solution in timestep idofTime.
-      call spaceslh_solve (rspaceSolver,idofTime,rkktsystem%ispacelevel,&
-          rkktsystem%p_rprimalSol,rcontrol=rkktsystem%p_rcontrol)
+      call spaceslh_solve (rspaceSolver,idofTime,cspatialInitCondPolicy,&
+          rkktsystem%ispacelevel,rkktsystem%p_rprimalSol,rcontrol=rkktsystem%p_rcontrol)
       
     end do ! step
    
@@ -404,12 +413,21 @@ contains
 
 !<subroutine>
 
-  subroutine kkt_solveDual (rkktsystem,rspaceSolver)
+  subroutine kkt_solveDual (rkktsystem,rspaceSolver,cspatialInitCondPolicy)
   
 !<description>
   ! Solves the dual equation in the KKT system based on the control and the
   ! primal solution in the rkktsystem structure.
 !</description>
+  
+!<input>
+  ! Defines a policy how to generate the initial condition of a timestep.
+  ! =0: Always take zero
+  ! =1: Propagate the solution of the previous/next timestep to the
+  !     current one. (Default)
+  ! =2: Take the solution of the last space-time iteration
+  integer, intent(in) :: cspatialInitCondPolicy
+!</input>
   
 !<inputoutput>
   ! Structure defining the KKT system.
@@ -449,8 +467,8 @@ contains
     do idofTime = rkktsystem%p_rprimalSol%p_rvector%NEQtime,1,-1
     
       ! Apply the solver to update the solution in timestep idofTime.
-      call spaceslh_solve (rspaceSolver,idofTime,rkktsystem%ispacelevel,&
-          rkktsystem%p_rprimalSol,rdualSol=rkktsystem%p_rdualSol)
+      call spaceslh_solve (rspaceSolver,idofTime,cspatialInitCondPolicy,&
+          rkktsystem%ispacelevel,rkktsystem%p_rprimalSol,rdualSol=rkktsystem%p_rdualSol)
       
     end do ! step
    
@@ -708,12 +726,22 @@ contains
   
 !<subroutine>
 
-  subroutine kkt_solvePrimalDirDeriv (rkktsystemDirDeriv,rspaceSolver)
+  subroutine kkt_solvePrimalDirDeriv (rkktsystemDirDeriv,rspaceSolver,&
+      cspatialInitCondPolicy)
   
 !<description>
   ! Solves the linearised primal equation in the KKT system.
 !</description>
   
+!<input>
+  ! Defines a policy how to generate the initial condition of a timestep.
+  ! =0: Always take zero
+  ! =1: Propagate the solution of the previous/next timestep to the
+  !     current one. (Default)
+  ! =2: Take the solution of the last space-time iteration
+  integer, intent(in) :: cspatialInitCondPolicy
+!</input>
+
 !<inputoutput>
   ! Structure defining a directional derivative of the KKT system.
   ! The solutions in this structure are taken as initial
@@ -750,7 +778,7 @@ contains
     do idofTime = 1,rkktsystemDirDeriv%p_rprimalSolLin%p_rvector%NEQtime
     
       ! Apply the solver to update the solution in timestep idofTime.
-      call spaceslh_solve (rspaceSolver,idofTime,&
+      call spaceslh_solve (rspaceSolver,idofTime,cspatialInitCondPolicy,&
           p_rkktsystem%ispacelevel,&
           p_rkktsystem%p_rprimalSol,&
           rcontrol=p_rkktsystem%p_rcontrol,&
@@ -767,12 +795,22 @@ contains
 
 !<subroutine>
 
-  subroutine kkt_solveDualDirDeriv (rkktsystemDirDeriv,rspaceSolver)
+  subroutine kkt_solveDualDirDeriv (rkktsystemDirDeriv,rspaceSolver,&
+      cspatialInitCondPolicy)
   
 !<description>
   ! Solves the linearised dual equation in the KKT system.
 !</description>
   
+!<input>
+  ! Defines a policy how to generate the initial condition of a timestep.
+  ! =0: Always take zero
+  ! =1: Propagate the solution of the previous/next timestep to the
+  !     current one. (Default)
+  ! =2: Take the solution of the last space-time iteration
+  integer, intent(in) :: cspatialInitCondPolicy
+!</input>
+
 !<inputoutput>
   ! Structure defining a directional derivative of the KKT system.
   ! The solutions in this structure are taken as initial
@@ -809,7 +847,7 @@ contains
     do idofTime = rkktsystemDirDeriv%p_rprimalSolLin%p_rvector%NEQtime,1,-1
     
       ! Apply the solver to update the solution in timestep idofTime.
-      call spaceslh_solve (rspaceSolver,idofTime,&
+      call spaceslh_solve (rspaceSolver,idofTime,cspatialInitCondPolicy,&
           p_rkktsystem%ispacelevel,&
           p_rkktsystem%p_rprimalSol,&
           rdualSol=p_rkktsystem%p_rdualSol,&

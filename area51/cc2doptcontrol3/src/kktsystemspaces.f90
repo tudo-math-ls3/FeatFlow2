@@ -570,10 +570,18 @@ contains
 
     ! Currently, we can do this by space-time vector linear combinations.
     if (associated(rx%p_rvector)) then
-      call sptivec_vectorLinearComb (rx%p_rvector,ry%p_rvector,cx,cy,rdest%p_rvector)
+      if (present(rdest)) then
+        call sptivec_vectorLinearComb (rx%p_rvector,ry%p_rvector,cx,cy,rdest%p_rvector)
 
-      ! Invalidate the buffer
-      call sptivec_invalidateVecInPool (rdest%p_rvectorAccess)
+        ! Invalidate the buffer
+        call sptivec_invalidateVecInPool (rdest%p_rvectorAccess)
+      else
+        call sptivec_vectorLinearComb (rx%p_rvector,ry%p_rvector,cx,cy)
+
+        ! Invalidate the buffer
+        call sptivec_invalidateVecInPool (ry%p_rvectorAccess)
+      end if
+
     end if
 
   end subroutine

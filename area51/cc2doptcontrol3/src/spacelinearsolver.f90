@@ -1003,7 +1003,7 @@ contains
         call linsol_getMultigrid2Level (&
             rlssHierarchy%p_RlinearSolvers(ilevel)%p_rsolverNode,1,p_rlevelInfo)
         p_rlevelInfo%p_rcoarseGridSolver%p_rsubnodeUmfpack4%smatrixName = &
-            "matrix"//trim(rlssHierarchy%p_rdebugFlags%sstringTag)
+            "mat"//trim(rlssHierarchy%p_rdebugFlags%sstringTag)
         
       end select
     
@@ -1093,7 +1093,7 @@ contains
         call linsol_getMultigrid2Level (&
             rlssHierarchy%p_RlinearSolvers(ilevel)%p_rsolverNode,1,p_rlevelInfo)
         p_rlevelInfo%p_rcoarseGridSolver%p_rsubnodeUmfpack4%smatrixName = &
-            "matrix"//trim(rlssHierarchy%p_rdebugFlags%sstringTag)
+            "mat"//trim(rlssHierarchy%p_rdebugFlags%sstringTag)
         
       end select
     

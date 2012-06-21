@@ -35,6 +35,7 @@ module newtoniterationlinear
   use structuresoptcontrol
   use structuresgeneral
   use structuresoptflow
+  use structuresoperatorasm
   use assemblytemplates
   
   use spacematvecassembly
@@ -81,6 +82,13 @@ module newtoniterationlinear
     ! Hierarchy of solvers in space for all levels.
     ! Linearised dual equation.
     type(t_spaceSolverHierarchy), pointer :: p_rsolverHierDualLin => null()
+
+    ! Defines a policy how to generate the initial condition of a timestep.
+    ! =0: Always take zero
+    ! =1: Propagate the solution of the previous/next timestep to the
+    !     current one. (Default)
+    ! =2: Take the solution of the last space-time iteration
+    integer :: cspatialInitCondPolicy = SPINITCOND_PREVTIMESTEP
     
     ! <!-- -------------- -->
     ! <!-- TEMPORARY DATA -->
@@ -170,7 +178,7 @@ contains
 
     ! Solve the primal equation, update the primal solution.
     call kkt_solvePrimalDirDeriv (rkktsystemDirDeriv,&
-        rlinsolParam%p_rsolverHierPrimalLin)
+        rlinsolParam%p_rsolverHierPrimalLin,rlinsolParam%cspatialInitCondPolicy)
     
     if (rlinsolParam%rprecParameters%ioutputLevel .ge. 2) then
       call output_line ("  Linear space-time Residual: Solving the dual equation")
@@ -178,7 +186,7 @@ contains
 
     ! Solve the dual equation, update the dual solution.
     call kkt_solveDualDirDeriv (rkktsystemDirDeriv,&
-        rlinsolParam%p_rsolverHierDualLin)
+        rlinsolParam%p_rsolverHierDualLin,rlinsolParam%cspatialInitCondPolicy)
 
     ! -------------------------------------------------------------
     ! Step 2: Calculate the residual
@@ -403,6 +411,9 @@ contains
    
     ! Get the corresponding parameters from the parameter list.
     call newtonlin_initBasicParams (rlinsolParam%rprecParameters,ssection,rparlist)
+
+    call parlst_getvalue_int (rparlist, ssection, "cspatialInitCondPolicy", &
+        rlinsolParam%cspatialInitCondPolicy, rlinsolParam%cspatialInitCondPolicy)
 
   end subroutine
 

@@ -75,6 +75,13 @@ module newtoniteration
     ! <!-- SUBSOLVERS AND OTHER SETTINGS -->
     ! <!-- ----------------------------- -->
 
+    ! Defines a policy how to generate the initial condition of a timestep.
+    ! =0: Always take zero
+    ! =1: Propagate the solution of the previous/next timestep to the
+    !     current one. (Default)
+    ! =2: Take the solution of the last space-time iteration
+    integer :: cspatialInitCondPolicy = SPINITCOND_PREVTIMESTEP
+
     ! Parameters for the linear space-time subsolver.
     type(t_linsolParameters) :: rlinsolParam
     
@@ -192,6 +199,9 @@ contains
 
     ! Get the sections with the parameters for the nonlinear / linear
     ! solver in space
+    call parlst_getvalue_int (rparamList, ssection, "cspatialInitCondPolicy", &
+        rsolver%cspatialInitCondPolicy, rsolver%cspatialInitCondPolicy)
+
     call parlst_getvalue_string (rparamList, ssection, &
         "ssectionNonlinSolverSpace", ssolverNonlin, "CC-NONLINEARSOLVER",bdequote=.true.)
 
@@ -338,6 +348,11 @@ contains
 !</output>
 
 !</subroutine>
+    type(t_vectorBlock), pointer :: p_rvector
+    real(DP), dimension(:), pointer :: p_Ddata
+    
+    call sptivec_getVectorFromPool(rkktsystem%p_rdualSol%p_rvectorAccess,2,p_rvector)
+    call lsysbl_getbase_double (p_rvector,p_Ddata)
 
     ! -------------------------------------------------------------
     ! Step 1: Solve the primal and dual system.
@@ -348,14 +363,16 @@ contains
     end if
 
     ! Solve the primal equation, update the primal solution.
-    call kkt_solvePrimal (rkktsystem,rsolver%p_rsolverHierPrimal)
+    call kkt_solvePrimal (rkktsystem,rsolver%p_rsolverHierPrimal,&
+        rsolver%cspatialInitCondPolicy)
 
     if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
       call output_line ("  Nonlin. space-time Residual: Solving the dual equation")
     end if
 
     ! Solve the dual equation, update the dual solution.
-    call kkt_solveDual (rkktsystem,rsolver%p_rsolverHierDual)
+    call kkt_solveDual (rkktsystem,rsolver%p_rsolverHierDual,&
+        rsolver%cspatialInitCondPolicy)
 
     ! -------------------------------------------------------------
     ! Step 2: Calculate the search direction   
@@ -526,7 +543,14 @@ contains
       ! or to any configured step-length control rule.
       call newtonit_updateControl (&
           rsolver,p_rsolution,p_rsolutionDirDeriv%p_rcontrolLin)
-      
+
+!    ! DEBUG!!!      
+!    call kktsp_dualLinearComb (&
+!        p_rsolutionDirDeriv%p_rdualSolLin,p_rsolution%p_rdualSol,1.0_DP,1.0_DP)
+!    call kkt_calcControlRes (p_rsolution,p_rdescentDir,&
+!        rsolver%rnewtonParams%dresFinal,rsolver%rnewtonParams%iresnorm)
+!    !-> dres = u+du + 1/alpha (lambda+dlambda) =0 -> is ok!
+
       ! -------------------------------------------------------------
       ! Proceed with the next iteration
       ! -------------------------------------------------------------

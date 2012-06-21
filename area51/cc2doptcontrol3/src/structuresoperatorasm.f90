@@ -66,6 +66,20 @@ module structuresoperatorasm
 
 !</constantblock>
 
+!<constantblock description = "Policy how to get the initial condition in a timestep">
+
+  ! Always take zero
+  integer, parameter, public :: SPINITCOND_ZERO = 0
+  
+  ! Propagate the solution of the previous/next timestep to the
+  ! current one. (Default)
+  integer, parameter, public :: SPINITCOND_PREVTIMESTEP = 1
+  
+  ! Take the solution of the last space-time iteration
+  integer, parameter, public :: SPINITCOND_PREVITERATE = 2
+
+!</constantblock>
+
 !</constants>
 
 !<types>

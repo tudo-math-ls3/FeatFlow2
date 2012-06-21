@@ -936,7 +936,7 @@ contains
 
 !<subroutine>
 
-  subroutine spaceslh_solve (rsolver,idofTime,isollevelSpace,&
+  subroutine spaceslh_solve (rsolver,idofTime,csolgeneration,isollevelSpace,&
       rprimalSol,rdualSol,rcontrol,rprimalSolLin,rdualSolLin,rcontrolLin)
   
 !<description>
@@ -950,6 +950,13 @@ contains
 
   ! Number of the DOF in time which should be calculated into rdest.
   integer, intent(in) :: idofTime
+
+  ! Defines a policy how to generate the solution to take the defect from.
+  ! =0: Always take zero
+  ! =1: Propagate the solution of the previous/next timestep to the
+  !     current one.
+  ! =2: Take the solution of the last space-time iteration
+  integer, intent(in) :: csolgeneration
 
   ! Space level corresponding to the solution structures.
   integer, intent(in) :: isollevelSpace
@@ -1029,11 +1036,21 @@ contains
         ! Get the nonlinear defect
         ! -------------------------------------------------------------
         ! Compute the basic (unpreconditioned) search direction in rd.
-        call smva_getDef_primal (p_rd,&
-            rsolver%ispacelevel,rsolver%itimelevel,idofTime,&
-            rsolver%p_roperatorAsmHier,rprimalSol,rcontrol,&
-            rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(rsolver%ispacelevel),&
-            rsolver%rtempData)
+        if (rsolver%rnewtonParams%nnonlinearIterations .eq. 0) then
+          call smva_getDef_primal (p_rd,&
+              rsolver%ispacelevel,rsolver%itimelevel,idofTime,&
+              rsolver%p_roperatorAsmHier,rprimalSol,rcontrol,&
+              rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(rsolver%ispacelevel),&
+              rsolver%rtempData,csolgeneration)
+        else
+          ! Start from the currently available iterate and continue the nonlinear
+          ! iteration
+          call smva_getDef_primal (p_rd,&
+              rsolver%ispacelevel,rsolver%itimelevel,idofTime,&
+              rsolver%p_roperatorAsmHier,rprimalSol,rcontrol,&
+              rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(rsolver%ispacelevel),&
+              rsolver%rtempData,SPINITCOND_PREVITERATE)
+        end if        
         
         rsolver%rnewtonParams%dresFinal = &
             lsysbl_vectorNorm(p_rd,rsolver%rnewtonParams%iresNorm)
@@ -1136,7 +1153,7 @@ contains
           rsolver%ispacelevel,rsolver%itimelevel,idofTime,&
           rsolver%p_roperatorAsmHier,rprimalSol,rdualSol,&
           rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(rsolver%ispacelevel),&
-          rsolver%rtempData)
+          rsolver%rtempData,csolgeneration)
       
       rsolver%rnewtonParams%dresFinal = &
           lsysbl_vectorNorm(p_rd,rsolver%rnewtonParams%iresNorm)
@@ -1223,7 +1240,7 @@ contains
           rsolver%p_roperatorAsmHier,rprimalSol,rcontrol,rprimalSolLin,&
           rcontrolLin,rsolver%coptype .eq. OPTP_PRIMALLIN,&
           rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(rsolver%ispacelevel),&
-          rsolver%rtempData)
+          rsolver%rtempData,csolgeneration)
           
       rsolver%rnewtonParams%dresFinal = &
           lsysbl_vectorNorm(p_rd,rsolver%rnewtonParams%iresNorm)
@@ -1311,7 +1328,7 @@ contains
           rsolver%p_roperatorAsmHier,rprimalSol,rdualSol,rprimalSolLin,&
           rdualSolLin,rsolver%coptype .eq. OPTP_DUALLIN,&
           rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(rsolver%ispacelevel),&
-          rsolver%rtempData)
+          rsolver%rtempData,csolgeneration)
           
       ! Cleanup
       call spaceslh_doneData (rsolver)
