@@ -12049,7 +12049,7 @@ contains
   type(t_interlevelProjectionHier), intent(inout) :: rprjHierarchy
 
   ! Fine grid vector
-  type(t_vectorBlock), intent(inout) :: rfineVector
+  type(t_vectorBlock), intent(in) :: rfineVector
 
   ! Level of the fine grid vector.
   integer, intent(in) :: ifineLevel
