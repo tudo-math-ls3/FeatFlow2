@@ -371,8 +371,8 @@ contains
 !<subroutine>
 
   subroutine smva_interpolateToLevel (&
-      p_rvector,ileveldest,rsolution,ilevelsource,rtempData,idestindex,ilevelpresent,&
-      rprjHierSpacePrimal,rprjHierSpaceDual)
+      p_rvector,ileveldest,rsolution,ilevelsource,cspace,rtempData,idestindex,&
+      ilevelpresent,rprjHierSpacePrimal,rprjHierSpaceDual)
 
 !<description>
   ! Interpolates a solution rsolution down from level ilevelsource to level
@@ -403,12 +403,16 @@ contains
   ! or =0 if no data in rtempData is present.
   integer, intent(in) :: ilevelpresent
   
+  ! Type of vector which should be interpolated. One of the CCSPACE_xxxx
+  ! constants.
+  integer, intent(in) :: cspace
+  
   ! Interlevel projection hierarchy defining the interpolation
   ! of the solution vector. Primal space.
   type(t_interlevelProjectionHier), intent(inout) :: rprjHierSpacePrimal
 
   ! Interlevel projection hierarchy defining the interpolation
-  ! of the solution vector. Primal space.
+  ! of the solution vector. Dual space.
   type(t_interlevelProjectionHier), intent(inout) :: rprjHierSpaceDual
 !</input>
 
@@ -425,6 +429,10 @@ contains
 !</subroutine>
 
     integer :: i,iprev
+    
+    ! DEBUG!!!
+    real(DP), dimension(:), pointer :: p_Dsource, p_Ddest
+    call lsysbl_getbase_double (rsolution,p_Dsource)
 
     ! Some preparation    
     iprev = ilevelsource
@@ -441,16 +449,24 @@ contains
     do i=iprev-1,ileveldest,-1
     
       ! Project down p_rvector to level isollevelSpace-1
-      select case (ilevelpresent)
-      case (1)
+      select case (cspace)
+      case (CCSPACE_PRIMAL)
       
         if (i .eq. ilevelsource-1) then
           
+          ! DEBUG!!!
+          call lsysbl_getbase_double (rsolution,p_Dsource)
+          call lsysbl_getbase_double (rtempdata%p_Rvectors(i,1),p_Ddest)
+
           call mlprj_performInterpolationHier (rprjHierSpacePrimal,&
-              i+1,rtempdata%p_Rvectors(i,1),p_rvector)
+              i+1,rtempdata%p_Rvectors(i,1),rsolution)
               
         else if (i .lt. ilevelsource-1) then
         
+          ! DEBUG!!!
+          call lsysbl_getbase_double (rtempdata%p_Rvectors(i+1,1),p_Dsource)
+          call lsysbl_getbase_double (rtempdata%p_Rvectors(i,1),p_Ddest)
+
           call mlprj_performInterpolationHier (rprjHierSpacePrimal,&
               i+1,rtempdata%p_Rvectors(i,1),rtempdata%p_Rvectors(i+1,1))
               
@@ -459,12 +475,12 @@ contains
         ! New solution vector at level ispacelevel
         p_rvector => rtempdata%p_Rvectors(i,1)
         
-      case (2)
+      case (CCSPACE_DUAL)
 
         if (i .eq. ilevelsource-1) then
           
           call mlprj_performInterpolationHier (rprjHierSpaceDual,&
-              i+1,rtempdata%p_Rvectors(i,2),p_rvector)
+              i+1,rtempdata%p_Rvectors(i,2),rsolution)
               
         else if (i .lt. ilevelsource-1) then
         
@@ -476,6 +492,12 @@ contains
         ! New solution vector at level ispacelevel
         p_rvector => rtempdata%p_Rvectors(i,1)
 
+      case (CCSPACE_CONTROL)
+      
+        call output_line("Interpolation in the control space not defined.",&
+            OU_CLASS_ERROR,OU_MODE_STD,"smva_interpolateToLevel")
+        call sys_halt()
+      
       end select
       
     end do
@@ -2206,17 +2228,15 @@ contains
       ! Prepare the evaluation of the nonlinearity
       ! ------------------------------------------
 
-      if (ipreviousSpaceLv .eq. 0) then
-        ! Get the nonlinearity
-        call sptivec_getVectorFromPool (rprimalSol%p_rvectorAccess,idofTime,p_rvector)
-      else
-        ! Dummy setting
-        p_rvector => rtempdata%p_Rvectors(ipreviousSpaceLv,1)
-      end if
-      
+      ! Get the nonlinearity
+      call sptivec_getVectorFromPool (rprimalSol%p_rvectorAccess,idofTime,p_rvector)
+
       ! Project the solution of level iprev down to the current space level.
+      ! The pointer p_rvector will be changed to the memory location where the
+      ! interpolated vector is written to.
       call smva_interpolateToLevel (&
-          p_rvector,ispacelevel,p_rvector,isollevelSpace,rtempData,1,ipreviousSpaceLv,&
+          p_rvector,ispacelevel,p_rvector,isollevelSpace,CCSPACE_PRIMAL,&
+          rtempData,1,ipreviousSpaceLv,&
           roperatorAsmHier%p_rprjHierSpacePrimal,roperatorAsmHier%p_rprjHierSpaceDual)
             
       ! ------------------------------------------
@@ -2338,17 +2358,15 @@ contains
       ! Prepare the evaluation of the nonlinearity
       ! ------------------------------------------
       
-      if (ipreviousSpaceLv .eq. 0) then
-        ! Get the nonlinearity
-        call sptivec_getVectorFromPool (rprimalSol%p_rvectorAccess,idofTime,p_rvector)
-      else
-        ! Dummy setting
-        p_rvector => rtempdata%p_Rvectors(ipreviousSpaceLv,1)
-      end if
-      
+      ! Get the nonlinearity
+      call sptivec_getVectorFromPool (rprimalSol%p_rvectorAccess,idofTime,p_rvector)
+
       ! Project the solution of level iprev down to the current space level.
+      ! The pointer p_rvector will be changed to the memory location where the
+      ! interpolated vector is written to.
       call smva_interpolateToLevel (&
-          p_rvector,ispacelevel,p_rvector,isollevelSpace,rtempData,1,ipreviousSpaceLv,&
+          p_rvector,ispacelevel,p_rvector,isollevelSpace,CCSPACE_PRIMAL,&
+          rtempData,1,ipreviousSpaceLv,&
           roperatorAsmHier%p_rprjHierSpacePrimal,roperatorAsmHier%p_rprjHierSpaceDual)
 
       ! ------------------------------------------
@@ -2470,23 +2488,23 @@ contains
       ! Prepare the evaluation of the nonlinearity
       ! ------------------------------------------
       
-      if (ipreviousSpaceLv .eq. 0) then
-        ! Get the nonlinearity
-        call sptivec_getVectorFromPool (rprimalSol%p_rvectorAccess,idofTime,p_rvector)
-      else
-        ! Dummy setting
-        p_rvector => rtempdata%p_Rvectors(ipreviousSpaceLv,2)
-      end if
+      ! Get the nonlinearity
+      call sptivec_getVectorFromPool (rprimalSol%p_rvectorAccess,idofTime,p_rvector)
       
       ! Project the solution of level iprev down to the current space level.
+      ! The pointer p_rvector will be changed to the memory location where the
+      ! interpolated vector is written to.
       call smva_interpolateToLevel (&
-          p_rvector,ispacelevel,p_rvector,isollevelSpace,rtempData,1,ipreviousSpaceLv,&
+          p_rvector,ispacelevel,p_rvector,isollevelSpace,CCSPACE_PRIMAL,&
+          rtempData,1,ipreviousSpaceLv,&
           roperatorAsmHier%p_rprjHierSpacePrimal,roperatorAsmHier%p_rprjHierSpaceDual)
 
       ! ------------------------------------------
       ! Assemble the matrix
       ! ------------------------------------------
-      !
+      
+      rcollection%IquickAccess(1) = OPTP_DUAL
+      
       ! Vector 1+2 = primal velocity, including 1st derivative.
       call fev2_addVectorToEvalList(rvectorEval,p_rvector%RvectorBlock(1),1)
       call fev2_addVectorToEvalList(rvectorEval,p_rvector%RvectorBlock(2),1)
@@ -2635,12 +2653,12 @@ contains
             
               ! Get the X-velocity and the Y-velocity in that point
               ! du1 = y_1, du2 = y_2
-              du1 = p_DnonlinearityY1(icubp,iel,DER_FUNC)
-              du2 = p_DnonlinearityY2(icubp,iel,DER_FUNC)
+              du1 = p_DnonlinearityY1(icubp,iel,DER_FUNC2D)
+              du2 = p_DnonlinearityY2(icubp,iel,DER_FUNC2D)
             
               do idofe=1,p_rmatrixData11%ndofTest
 
-                dbasI = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+                dbasI = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
 
                 do jdofe=1,p_rmatrixData11%ndofTrial
 
@@ -2664,12 +2682,12 @@ contains
 
               ! Get the X-velocity and the Y-velocity in that point:
               ! du1 = y_1, du2 = y_2
-              du1 = p_DnonlinearityY1(icubp,iel,DER_FUNC)
-              du2 = p_DnonlinearityY2(icubp,iel,DER_FUNC)
+              du1 = p_DnonlinearityY1(icubp,iel,DER_FUNC2D)
+              du2 = p_DnonlinearityY2(icubp,iel,DER_FUNC2D)
 
               do idofe=1,p_rmatrixData11%ndofTest
 
-                dbasI = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+                dbasI = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
 
                 do jdofe=1,p_rmatrixData11%ndofTrial
 
@@ -2703,8 +2721,8 @@ contains
 
             ! Get the X-velocity and the Y-velocity in that point:
             ! du1 = y_1, du2 = y_2
-            du1 = p_DnonlinearityY1(icubp,iel,DER_FUNC)
-            du2 = p_DnonlinearityY2(icubp,iel,DER_FUNC)
+            du1 = p_DnonlinearityY1(icubp,iel,DER_FUNC2D)
+            du2 = p_DnonlinearityY2(icubp,iel,DER_FUNC2D)
 
             ! as well as their derivatives
             du1x = p_DnonlinearityY1(icubp,iel,DER_DERIV2D_X)
@@ -2714,11 +2732,11 @@ contains
 
             do idofe=1,p_rmatrixData11%ndofTest
 
-              dbasI = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+              dbasI = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
 
               do jdofe=1,p_rmatrixData11%ndofTrial
 
-                dbasJ  = p_DbasTrial(jdofe,DER_FUNC,icubp,iel)
+                dbasJ  = p_DbasTrial(jdofe,DER_FUNC2D,icubp,iel)
                 dbasJx = p_DbasTrial(jdofe,DER_DERIV2D_X,icubp,iel)
                 dbasJy = p_DbasTrial(jdofe,DER_DERIV2D_Y,icubp,iel)
 
@@ -2727,11 +2745,11 @@ contains
                     ( (dbasJx*du1+dbasJy*du2)*dbasI + &    ! "((y grad) (phi_j) , phi_i)"
                       du1x * dbasJ * dbasI )               !  "( grad(y) phi_j , phi_i)"
 
-                p_DlocalMatrix12(jdofe,idofe,iel) = p_DlocalMatrix11(jdofe,idofe,iel) + &
+                p_DlocalMatrix12(jdofe,idofe,iel) = p_DlocalMatrix12(jdofe,idofe,iel) + &
                     dweight * p_DcubWeight(icubp,iel) * &
                     ( du1y * dbasJ * dbasI )               !  "( grad(y) phi_j , phi_i)"
 
-                p_DlocalMatrix21(jdofe,idofe,iel) = p_DlocalMatrix11(jdofe,idofe,iel) + &
+                p_DlocalMatrix21(jdofe,idofe,iel) = p_DlocalMatrix21(jdofe,idofe,iel) + &
                     dweight * p_DcubWeight(icubp,iel) * &
                     ( du2x * dbasJ * dbasI )               !  "( grad(y) phi_j , phi_i)"
 
@@ -2769,8 +2787,8 @@ contains
 
             ! Get the X-velocity and the Y-velocity in that point:
             ! du1 = y_1, du2 = y_2
-            du1 = p_DnonlinearityY1(icubp,iel,DER_FUNC)
-            du2 = p_DnonlinearityY2(icubp,iel,DER_FUNC)
+            du1 = p_DnonlinearityY1(icubp,iel,DER_FUNC2D)
+            du2 = p_DnonlinearityY2(icubp,iel,DER_FUNC2D)
 
             ! as well as their derivatives
             du1x = p_DnonlinearityY1(icubp,iel,DER_DERIV2D_X)
@@ -2780,25 +2798,26 @@ contains
 
             do idofe=1,p_rmatrixData11%ndofTest
 
+              dbasI  = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
               dbasIx = p_DbasTest(idofe,DER_DERIV2D_X,icubp,iel)
               dbasIy = p_DbasTest(idofe,DER_DERIV2D_Y,icubp,iel)
 
               do jdofe=1,p_rmatrixData11%ndofTrial
 
-                dbasJ = p_DbasTrial(jdofe,DER_FUNC,icubp,iel)
+                dbasJ = p_DbasTrial(jdofe,DER_FUNC2D,icubp,iel)
 
                 p_DlocalMatrix11(jdofe,idofe,iel) = p_DlocalMatrix11(jdofe,idofe,iel) + &
                     dweight * p_DcubWeight(icubp,iel) * &
                       ( dbasJ * (du1*dbasIx+du2*dbasIy) + &  !  "( phi_j , (y grad) phi_i)"
                         dbasJ * du1x * dbasI )               !  "( phi_j ,  grad(y) phi_i)"
 
-                p_DlocalMatrix12(jdofe,idofe,iel) = p_DlocalMatrix11(jdofe,idofe,iel) + &
-                    dweight * p_DcubWeight(icubp,iel) * &
-                      ( dbasJ * du1y * dbasI )               !  "( phi_j ,  grad(y) phi_i)"
-
-                p_DlocalMatrix12(jdofe,idofe,iel) = p_DlocalMatrix11(jdofe,idofe,iel) + &
+                p_DlocalMatrix12(jdofe,idofe,iel) = p_DlocalMatrix12(jdofe,idofe,iel) + &
                     dweight * p_DcubWeight(icubp,iel) * &
                       ( dbasJ * du2x * dbasI )               !  "( phi_j ,  grad(y) phi_i)"
+
+                p_DlocalMatrix21(jdofe,idofe,iel) = p_DlocalMatrix21(jdofe,idofe,iel) + &
+                    dweight * p_DcubWeight(icubp,iel) * &
+                      ( dbasJ * du1y * dbasI )               !  "( phi_j ,  grad(y) phi_i)"
 
                 p_DlocalMatrix22(jdofe,idofe,iel) = p_DlocalMatrix22(jdofe,idofe,iel) + &
                     dweight * p_DcubWeight(icubp,iel) * &
@@ -3889,19 +3908,19 @@ contains
             
               ! Fetch the contributions of the (test) basis functions Phi_i
               ! into dbasI
-              dbasI  = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+              dbasI  = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
               dbasIx = p_DbasTest(idofe,DER_DERIV2D_X,icubp,iel)
               dbasIy = p_DbasTest(idofe,DER_DERIV2D_Y,icubp,iel)
               
               ! Get the values of lambda and ylin.
-              dlambda1 = p_Dlambda1(icubp,iel,DER_FUNC)
-              dlambda2 = p_Dlambda2(icubp,iel,DER_FUNC)
+              dlambda1 = p_Dlambda1(icubp,iel,DER_FUNC2D)
+              dlambda2 = p_Dlambda2(icubp,iel,DER_FUNC2D)
               
-              dylin1  = p_Dylin1(icubp,iel,DER_FUNC)
+              dylin1  = p_Dylin1(icubp,iel,DER_FUNC2D)
               dylin1x = p_Dylin1(icubp,iel,DER_DERIV_X)
               dylin1y = p_Dylin1(icubp,iel,DER_DERIV_Y)
               
-              dylin2  = p_Dylin2(icubp,iel,DER_FUNC)
+              dylin2  = p_Dylin2(icubp,iel,DER_FUNC2D)
               dylin2x = p_Dylin2(icubp,iel,DER_DERIV_X)
               dylin2y = p_Dylin2(icubp,iel,DER_DERIV_Y)
               
@@ -4053,7 +4072,7 @@ contains
         ! points, but have to do it right here.
         !
         ! Evaluate the analytic function in the cubature points. 1st component
-        call ansol_evaluate (rcollection,"RHS",1,p_Drhs1(:,:,DER_FUNC),&
+        call ansol_evaluate (rcollection,"RHS",1,p_Drhs1(:,:,DER_FUNC2D),&
             npointsPerElement,nelements,rassemblyData%revalElementSet%p_DpointsReal,&
             rassemblyData%p_IelementList,ierror,iid)
 
@@ -4077,7 +4096,7 @@ contains
         end if
 
         ! Evaluate the analytic function in the cubature points. 2nd component.
-        call ansol_evaluate (rcollection,"RHS",2,p_Drhs2(:,:,DER_FUNC),&
+        call ansol_evaluate (rcollection,"RHS",2,p_Drhs2(:,:,DER_FUNC2D),&
             npointsPerElement,nelements,rassemblyData%revalElementSet%p_DpointsReal,&
             rassemblyData%p_IelementList,ierror,iid)
 
@@ -4117,11 +4136,11 @@ contains
             
               ! Fetch the contributions of the (test) basis functions Phi_i
               ! into dbasI
-              dbasI  = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+              dbasI  = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
               
               ! Get the RHS
-              drhs1 = p_Drhs1(icubp,iel,DER_FUNC)
-              drhs2 = p_Drhs2(icubp,iel,DER_FUNC)
+              drhs1 = p_Drhs1(icubp,iel,DER_FUNC2D)
+              drhs2 = p_Drhs2(icubp,iel,DER_FUNC2D)
 
               ! Calculate the entries in the RHS.
               p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
@@ -4174,11 +4193,11 @@ contains
               
                 ! Fetch the contributions of the (test) basis functions Phi_i
                 ! into dbasI
-                dbasI  = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+                dbasI  = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
                 
                 ! Get the values of the control.
-                du1 = p_Du1(icubp,iel,DER_FUNC)
-                du2 = p_Du2(icubp,iel,DER_FUNC)
+                du1 = p_Du1(icubp,iel,DER_FUNC2D)
+                du2 = p_Du2(icubp,iel,DER_FUNC2D)
                 
                 ! Calculate the entries in the RHS.
                 p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
@@ -4262,11 +4281,11 @@ contains
                 
                   ! Fetch the contributions of the (test) basis functions Phi_i
                   ! into dbasI
-                  dbasI  = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+                  dbasI  = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
                   
                   ! Get the values of lambda'
-                  duLin1 = p_DuLin1(icubp,iel,DER_FUNC)
-                  duLin2 = p_DuLin2(icubp,iel,DER_FUNC)
+                  duLin1 = p_DuLin1(icubp,iel,DER_FUNC2D)
+                  duLin2 = p_DuLin2(icubp,iel,DER_FUNC2D)
 
                   ! Calculate the entries in the RHS.
                   p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
@@ -4304,8 +4323,8 @@ contains
               do icubp = 1,npointsPerElement
 
                 ! Get the control
-                du1 = p_Du1(icubp,iel,DER_FUNC)
-                du2 = p_Du2(icubp,iel,DER_FUNC)
+                du1 = p_Du1(icubp,iel,DER_FUNC2D)
+                du2 = p_Du2(icubp,iel,DER_FUNC2D)
                 
                 ! If the control violates the bounds, the Newton derivative
                 ! is zero, so only calculate something if the bounds
@@ -4319,10 +4338,10 @@ contains
                   
                     ! Fetch the contributions of the (test) basis functions Phi_i
                     ! into dbasI
-                    dbasI  = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+                    dbasI  = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
                   
                     ! Calculate the linearised control
-                    duLin1 = p_DuLin1(icubp,iel,DER_FUNC)
+                    duLin1 = p_DuLin1(icubp,iel,DER_FUNC2D)
 
                     ! Calculate the entries in the RHS.
                     p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
@@ -4340,7 +4359,7 @@ contains
                   do idofe=1,p_rvectorData1%ndofTest
 
                     ! Calculate the linearised control
-                    duLin2 = p_DuLin2(icubp,iel,DER_FUNC)
+                    duLin2 = p_DuLin2(icubp,iel,DER_FUNC2D)
       
                     ! Calculate the entries in the RHS.
                     p_DlocalVector2(idofe,iel) = p_DlocalVector2(idofe,iel) + &
@@ -4389,7 +4408,7 @@ contains
         ! points, but have to do it right here.
         !
         ! Evaluate the analytic function in the cubature points. 1st component
-        call ansol_evaluate (rcollection,"RHS",1,p_Drhs1(:,:,DER_FUNC),&
+        call ansol_evaluate (rcollection,"RHS",1,p_Drhs1(:,:,DER_FUNC2D),&
             npointsPerElement,nelements,rassemblyData%revalElementSet%p_DpointsReal,&
             rassemblyData%p_IelementList,ierror,iid)
 
@@ -4413,7 +4432,7 @@ contains
         end if
 
         ! Evaluate the analytic function in the cubature points. 2nd component.
-        call ansol_evaluate (rcollection,"RHS",2,p_Drhs2(:,:,DER_FUNC),&
+        call ansol_evaluate (rcollection,"RHS",2,p_Drhs2(:,:,DER_FUNC2D),&
             npointsPerElement,nelements,rassemblyData%revalElementSet%p_DpointsReal,&
             rassemblyData%p_IelementList,ierror,iid)
 
@@ -4454,11 +4473,11 @@ contains
             
               ! Fetch the contributions of the (test) basis functions Phi_i
               ! into dbasI
-              dbasI  = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+              dbasI  = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
               
               ! Get the RHS
-              drhs1 = p_Drhs1(icubp,iel,DER_FUNC)
-              drhs2 = p_Drhs2(icubp,iel,DER_FUNC)
+              drhs1 = p_Drhs1(icubp,iel,DER_FUNC2D)
+              drhs2 = p_Drhs2(icubp,iel,DER_FUNC2D)
 
               ! Calculate the entries in the RHS.
               p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
@@ -4506,7 +4525,7 @@ contains
         ! points, but have to do it right here.
         !
         ! Evaluate the analytic function in the cubature points. 1st component.
-        call ansol_evaluate (rcollection,"TARGET",1,p_Dz1(:,:,DER_FUNC),&
+        call ansol_evaluate (rcollection,"TARGET",1,p_Dz1(:,:,DER_FUNC2D),&
             npointsPerElement,nelements,rassemblyData%revalElementSet%p_DpointsReal,&
             rassemblyData%p_IelementList,ierror,iid)
 
@@ -4530,7 +4549,7 @@ contains
         end if
 
         ! Evaluate the analytic function in the cubature points. 2nd component.
-        call ansol_evaluate (rcollection,"TARGET",2,p_Dz2(:,:,DER_FUNC),&
+        call ansol_evaluate (rcollection,"TARGET",2,p_Dz2(:,:,DER_FUNC2D),&
             npointsPerElement,nelements,rassemblyData%revalElementSet%p_DpointsReal,&
             rassemblyData%p_IelementList,ierror,iid)
 
@@ -4584,19 +4603,19 @@ contains
               
                 ! Fetch the contributions of the (test) basis functions Phi_i
                 ! into dbasI
-                dbasI  = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+                dbasI  = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
                 
                 ! Get the values of the RHS.
-                drhs1 = p_Drhs1(icubp,iel,DER_FUNC)
-                drhs2 = p_Drhs2(icubp,iel,DER_FUNC)
+                drhs1 = p_Drhs1(icubp,iel,DER_FUNC2D)
+                drhs2 = p_Drhs2(icubp,iel,DER_FUNC2D)
                 
                 ! Get the values of lambda and ylin.
-                dy1 = p_Dy1(icubp,iel,DER_FUNC)
-                dy2 = p_Dy2(icubp,iel,DER_FUNC)
+                dy1 = p_Dy1(icubp,iel,DER_FUNC2D)
+                dy2 = p_Dy2(icubp,iel,DER_FUNC2D)
 
                 ! Get the target flow
-                dz1 = p_Dz1(icubp,iel,DER_FUNC)
-                dz2 = p_Dz2(icubp,iel,DER_FUNC)
+                dz1 = p_Dz1(icubp,iel,DER_FUNC2D)
+                dz2 = p_Dz2(icubp,iel,DER_FUNC2D)
                 
                 ! Calculate the entries in the RHS.
                 p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
@@ -4640,15 +4659,15 @@ contains
                 
                   ! Fetch the contributions of the (test) basis functions Phi_i
                   ! into dbasI
-                  dbasI  = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+                  dbasI  = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
                   
                   ! Get the values of lambda and ylin.
-                  dy1 = p_Dy1(icubp,iel,DER_FUNC)
-                  dy2 = p_Dy2(icubp,iel,DER_FUNC)
+                  dy1 = p_Dy1(icubp,iel,DER_FUNC2D)
+                  dy2 = p_Dy2(icubp,iel,DER_FUNC2D)
 
                   ! Get the target flow
-                  dz1 = p_Dz1(icubp,iel,DER_FUNC)
-                  dz2 = p_Dz2(icubp,iel,DER_FUNC)
+                  dz1 = p_Dz1(icubp,iel,DER_FUNC2D)
+                  dz2 = p_Dz2(icubp,iel,DER_FUNC2D)
                   
                   p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
                       dweight2 * p_DcubWeight(icubp,iel) * &
@@ -4725,10 +4744,10 @@ contains
               
                 ! Fetch the contributions of the (test) basis functions Phi_i
                 ! into dbasI
-                dbasI  = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+                dbasI  = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
                 
-                dylin1  = p_Dylin1(icubp,iel,DER_FUNC)
-                dylin2  = p_Dylin2(icubp,iel,DER_FUNC)
+                dylin1  = p_Dylin1(icubp,iel,DER_FUNC2D)
+                dylin2  = p_Dylin2(icubp,iel,DER_FUNC2D)
                 
                 ! Multiply the values of the basis functions
                 ! (1st derivatives) by the cubature weight and sum up
@@ -4774,10 +4793,10 @@ contains
                 
                   ! Fetch the contributions of the (test) basis functions Phi_i
                   ! into dbasI
-                  dbasI  = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+                  dbasI  = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
                   
-                  dylin1  = p_Dylin1(icubp,iel,DER_FUNC)
-                  dylin2  = p_Dylin2(icubp,iel,DER_FUNC)
+                  dylin1  = p_Dylin1(icubp,iel,DER_FUNC2D)
+                  dylin2  = p_Dylin2(icubp,iel,DER_FUNC2D)
                   
                   ! Multiply the values of the basis functions
                   ! (1st derivatives) by the cubature weight and sum up
@@ -4831,7 +4850,7 @@ contains
         ! points, but have to do it right here.
         !
         ! Evaluate the analytic function in the cubature points. 1st component
-        call ansol_evaluate (rcollection,"RHS",1,p_Drhs1(:,:,DER_FUNC),&
+        call ansol_evaluate (rcollection,"RHS",1,p_Drhs1(:,:,DER_FUNC2D),&
             npointsPerElement,nelements,rassemblyData%revalElementSet%p_DpointsReal,&
             rassemblyData%p_IelementList,ierror,iid)
 
@@ -4855,7 +4874,7 @@ contains
         end if
 
         ! Evaluate the analytic function in the cubature points. 2nd component.
-        call ansol_evaluate (rcollection,"RHS",2,p_Drhs2(:,:,DER_FUNC),&
+        call ansol_evaluate (rcollection,"RHS",2,p_Drhs2(:,:,DER_FUNC2D),&
             npointsPerElement,nelements,rassemblyData%revalElementSet%p_DpointsReal,&
             rassemblyData%p_IelementList,ierror,iid)
 
@@ -4896,11 +4915,11 @@ contains
             
               ! Fetch the contributions of the (test) basis functions Phi_i
               ! into dbasI
-              dbasI  = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+              dbasI  = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
               
               ! Get the RHS
-              drhs1 = p_Drhs1(icubp,iel,DER_FUNC)
-              drhs2 = p_Drhs2(icubp,iel,DER_FUNC)
+              drhs1 = p_Drhs1(icubp,iel,DER_FUNC2D)
+              drhs2 = p_Drhs2(icubp,iel,DER_FUNC2D)
 
               ! Calculate the entries in the RHS.
               p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
@@ -4954,7 +4973,7 @@ contains
         ! points, but have to do it right here.
         !
         ! Evaluate the analytic function in the cubature points. 1st component
-        call ansol_evaluate (rcollection,"RHS",1,p_Drhs1(:,:,DER_FUNC),&
+        call ansol_evaluate (rcollection,"RHS",1,p_Drhs1(:,:,DER_FUNC2D),&
             npointsPerElement,nelements,rassemblyData%revalElementSet%p_DpointsReal,&
             rassemblyData%p_IelementList,ierror,iid)
 
@@ -4995,10 +5014,10 @@ contains
             
               ! Fetch the contributions of the (test) basis functions Phi_i
               ! into dbasI
-              dbasI  = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+              dbasI  = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
               
               ! Get the RHS
-              drhs1 = p_Drhs1(icubp,iel,DER_FUNC)
+              drhs1 = p_Drhs1(icubp,iel,DER_FUNC2D)
 
               ! Calculate the entries in the RHS.
               p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
@@ -5046,10 +5065,10 @@ contains
               
                 ! Fetch the contributions of the (test) basis functions Phi_i
                 ! into dbasI
-                dbasI  = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+                dbasI  = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
                 
                 ! Get the values of the control.
-                du1 = p_Du1(icubp,iel,DER_FUNC)
+                du1 = p_Du1(icubp,iel,DER_FUNC2D)
                 
                 ! Calculate the entries in the RHS.
                 p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
@@ -5125,10 +5144,10 @@ contains
                 
                   ! Fetch the contributions of the (test) basis functions Phi_i
                   ! into dbasI
-                  dbasI  = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+                  dbasI  = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
                   
                   ! Get the values of lambda'
-                  duLin1 = p_DuLin1(icubp,iel,DER_FUNC)
+                  duLin1 = p_DuLin1(icubp,iel,DER_FUNC2D)
 
                   ! Calculate the entries in the RHS.
                   p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
@@ -5160,7 +5179,7 @@ contains
               do icubp = 1,npointsPerElement
 
                 ! Get the control
-                du1 = p_Du1(icubp,iel,DER_FUNC)
+                du1 = p_Du1(icubp,iel,DER_FUNC2D)
                 
                 ! If the control violates the bounds, the Newton derivative
                 ! is zero, so only calculate something if the bounds
@@ -5174,10 +5193,10 @@ contains
                   
                     ! Fetch the contributions of the (test) basis functions Phi_i
                     ! into dbasI
-                    dbasI  = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+                    dbasI  = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
                   
                     ! Calculate the linearised control
-                    duLin1 = p_DuLin1(icubp,iel,DER_FUNC)
+                    duLin1 = p_DuLin1(icubp,iel,DER_FUNC2D)
 
                     ! Calculate the entries in the RHS.
                     p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
@@ -5223,7 +5242,7 @@ contains
         ! points, but have to do it right here.
         !
         ! Evaluate the analytic function in the cubature points. 1st component
-        call ansol_evaluate (rcollection,"RHS",1,p_Drhs1(:,:,DER_FUNC),&
+        call ansol_evaluate (rcollection,"RHS",1,p_Drhs1(:,:,DER_FUNC2D),&
             npointsPerElement,nelements,rassemblyData%revalElementSet%p_DpointsReal,&
             rassemblyData%p_IelementList,ierror,iid)
 
@@ -5264,10 +5283,10 @@ contains
             
               ! Fetch the contributions of the (test) basis functions Phi_i
               ! into dbasI
-              dbasI  = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+              dbasI  = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
               
               ! Get the RHS
-              drhs1 = p_Drhs1(icubp,iel,DER_FUNC)
+              drhs1 = p_Drhs1(icubp,iel,DER_FUNC2D)
 
               ! Calculate the entries in the RHS.
               p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
@@ -5310,7 +5329,7 @@ contains
         ! points, but have to do it right here.
         !
         ! Evaluate the analytic function in the cubature points. 1st component.
-        call ansol_evaluate (rcollection,"TARGET",1,p_Dz1(:,:,DER_FUNC),&
+        call ansol_evaluate (rcollection,"TARGET",1,p_Dz1(:,:,DER_FUNC2D),&
             npointsPerElement,nelements,rassemblyData%revalElementSet%p_DpointsReal,&
             rassemblyData%p_IelementList,ierror,iid)
 
@@ -5363,16 +5382,16 @@ contains
               
                 ! Fetch the contributions of the (test) basis functions Phi_i
                 ! into dbasI
-                dbasI  = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+                dbasI  = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
                 
                 ! Get the values of the RHS.
-                drhs1 = p_Drhs1(icubp,iel,DER_FUNC)
+                drhs1 = p_Drhs1(icubp,iel,DER_FUNC2D)
                 
                 ! Get the values of lambda and ylin.
-                dy1 = p_Dy1(icubp,iel,DER_FUNC)
+                dy1 = p_Dy1(icubp,iel,DER_FUNC2D)
 
                 ! Get the target flow
-                dz1 = p_Dz1(icubp,iel,DER_FUNC)
+                dz1 = p_Dz1(icubp,iel,DER_FUNC2D)
                 
                 ! Calculate the entries in the RHS.
                 p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
@@ -5412,13 +5431,13 @@ contains
                 
                   ! Fetch the contributions of the (test) basis functions Phi_i
                   ! into dbasI
-                  dbasI  = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+                  dbasI  = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
                   
                   ! Get the values of lambda and ylin.
-                  dy1 = p_Dy1(icubp,iel,DER_FUNC)
+                  dy1 = p_Dy1(icubp,iel,DER_FUNC2D)
 
                   ! Get the target flow
-                  dz1 = p_Dz1(icubp,iel,DER_FUNC)
+                  dz1 = p_Dz1(icubp,iel,DER_FUNC2D)
                   
                   p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
                       dweight2 * p_DcubWeight(icubp,iel) * &
@@ -5488,9 +5507,9 @@ contains
               
                 ! Fetch the contributions of the (test) basis functions Phi_i
                 ! into dbasI
-                dbasI  = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+                dbasI  = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
                 
-                dylin1  = p_Dylin1(icubp,iel,DER_FUNC)
+                dylin1  = p_Dylin1(icubp,iel,DER_FUNC2D)
                 
                 ! Multiply the values of the basis functions
                 ! (1st derivatives) by the cubature weight and sum up
@@ -5532,9 +5551,9 @@ contains
                 
                   ! Fetch the contributions of the (test) basis functions Phi_i
                   ! into dbasI
-                  dbasI  = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+                  dbasI  = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
                   
-                  dylin1  = p_Dylin1(icubp,iel,DER_FUNC)
+                  dylin1  = p_Dylin1(icubp,iel,DER_FUNC2D)
                   
                   ! Multiply the values of the basis functions
                   ! (1st derivatives) by the cubature weight and sum up
@@ -5581,7 +5600,7 @@ contains
         ! points, but have to do it right here.
         !
         ! Evaluate the analytic function in the cubature points. 1st component
-        call ansol_evaluate (rcollection,"RHS",1,p_Drhs1(:,:,DER_FUNC),&
+        call ansol_evaluate (rcollection,"RHS",1,p_Drhs1(:,:,DER_FUNC2D),&
             npointsPerElement,nelements,rassemblyData%revalElementSet%p_DpointsReal,&
             rassemblyData%p_IelementList,ierror,iid)
 
@@ -5622,10 +5641,10 @@ contains
             
               ! Fetch the contributions of the (test) basis functions Phi_i
               ! into dbasI
-              dbasI  = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+              dbasI  = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
               
               ! Get the RHS
-              drhs1 = p_Drhs1(icubp,iel,DER_FUNC)
+              drhs1 = p_Drhs1(icubp,iel,DER_FUNC2D)
 
               ! Calculate the entries in the RHS.
               p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &

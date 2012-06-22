@@ -40,7 +40,7 @@ ctypeIteration = 2
 #     current one. (Default)
 # =2: Take the solution of the last space-time iteration
 
-cspatialInitCondPolicy = 0
+cspatialInitCondPolicy = 1
 
 # Minimum number of steps
 
@@ -90,10 +90,10 @@ ssectionLinSolverSpaceForward = CC-LINEARSOLVER
 ssectionLinSolverSpaceBackward = CC-LINEARSOLVER2
 
 # Section defining the linear solver in space for the linearised forward iteration
-ssectionLinSolverSpaceForwardLin = CC-LINEARSOLVER2
+ssectionLinSolverSpaceForwardLin = CC-LINEARSOLVER3
 
 # Section defining the linear solver in space for the linearised forward iteration
-ssectionLinSolverSpaceBackwardLin = CC-LINEARSOLVER2
+ssectionLinSolverSpaceBackwardLin = CC-LINEARSOLVER3
 
 # Name of the section defining the step length control
 # ssectionStepLengthControl = TIME-STEPLENGTHCONTROL
@@ -186,10 +186,21 @@ ioutputLevel       = 2
 # Defines a policy how to generate the initial condition of a timestep.
 # =0: Always take zero
 # =1: Propagate the solution of the previous/next timestep to the
-#     current one. (Default)
-# =2: Take the solution of the last space-time iteration
+#     current one. 
+# =2: Take the solution of the last space-time iteration. (Default)
+# Warning: Avoid the setting cspatialInitCondPolicy = 0/1 if the linear
+# solver in space does not solve up to a high accuracy.
+# Otherwise, the solution of the linearised primal equation in the first
+# timestep is not better than the stopping criterion of the space solver
+# and thus, the complete space-time solution will not be better!
+# Remember, there is no nonlinear loop around each timestep!
+# That means, the stopping criterion of the linear space-time solver is
+# overwritten by the stopping criterion of the space-solver, which
+# is usually an undesired behaviour: Although the linear space-time solver
+# solves up to, e.g., 1E-15, the total solution of the space-time solver
+# is not better than depsrel(linear space-solver)!!!
 
-cspatialInitCondPolicy = 0
+cspatialInitCondPolicy = 2
 
 
 # ========================================================================

@@ -265,8 +265,11 @@ contains
         OPTP_PRIMAL,rsolver%p_rlinsolHierPrimal,ssolverNonlin,rparamList)
 
     ! Backward equation, only linear. Created on all levels but only used on the highest one.
+    ! Also fetch parameters of the nonlinear solver from the data file.
+    ! The parameter are not used except for the output level, which determins
+    ! the amoount of output of the solver.
     caLL spaceslh_init (rsolver%p_rsolverHierDual,&
-        OPTP_DUAL,rsolver%p_rlinsolHierDual)
+        OPTP_DUAL,rsolver%p_rlinsolHierDual,ssolverNonlin,rparamList)
 
     ! The definition of the lineraised forward/backward equation depends upon
     ! whether we use the full Newton approach or not.
@@ -279,12 +282,12 @@ contains
       ! Linearised forward equation, only linear. Used on all levels.
       ! Uses the same linear solver as the forward solver.
       caLL spaceslh_init (rsolver%p_rsolverHierPrimalLin,&
-          OPTP_PRIMALLIN_SIMPLE,rsolver%p_rlinsolHierPrimalLin)
+          OPTP_PRIMALLIN_SIMPLE,rsolver%p_rlinsolHierPrimalLin,ssolverNonlin,rparamList)
 
       ! Linearised forward equation, only linear. Used on all levels.
       ! Uses the same linear solver as the backward solver.#
       caLL spaceslh_init (rsolver%p_rsolverHierDualLin,&
-          OPTP_DUALLIN_SIMPLE,rsolver%p_rlinsolHierDualLin)
+          OPTP_DUALLIN_SIMPLE,rsolver%p_rlinsolHierDualLin,ssolverNonlin,rparamList)
     
     ! ----------------------------
     ! Full Newton, adaptive Newton
@@ -293,12 +296,12 @@ contains
       ! Linearised forward equation, only linear. Used on all levels.
       ! Uses the same linear solver as the forward solver.
       caLL spaceslh_init (rsolver%p_rsolverHierPrimalLin,&
-          OPTP_PRIMALLIN,rsolver%p_rlinsolHierPrimalLin)
+          OPTP_PRIMALLIN,rsolver%p_rlinsolHierPrimalLin,ssolverNonlin,rparamList)
 
       ! Linearised forward equation, only linear. Used on all levels.
       ! Uses the same linear solver as the backward solver.
       caLL spaceslh_init (rsolver%p_rsolverHierDualLin,&
-          OPTP_DUALLIN,rsolver%p_rlinsolHierDualLin)
+          OPTP_DUALLIN,rsolver%p_rlinsolHierDualLin,ssolverNonlin,rparamList)
           
     case default
       call output_line ("Invalid nonlinear iteration",&

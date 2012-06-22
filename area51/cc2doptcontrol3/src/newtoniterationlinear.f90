@@ -88,7 +88,18 @@ module newtoniterationlinear
     ! =1: Propagate the solution of the previous/next timestep to the
     !     current one. (Default)
     ! =2: Take the solution of the last space-time iteration
-    integer :: cspatialInitCondPolicy = SPINITCOND_PREVTIMESTEP
+    ! Warning: Avoid the setting cspatialInitCondPolicy = 0/1 if the linear
+    ! solver in space does not solve up to a high accuracy.
+    ! Otherwise, the solution of the linearised primal equation in the first
+    ! timestep is not better than the stopping criterion of the space solver
+    ! and thus, the complete space-time solution will not be better!
+    ! Remember, there is no nonlinear loop around each timestep!
+    ! That means, the stopping criterion of the linear space-time solver is
+    ! overwritten by the stopping criterion of the space-solver, which
+    ! is usually an undesired behaviour: Although the linear space-time solver
+    ! solves up to, e.g., 1E-15, the total solution of the space-time solver
+    ! is not better than depsrel(linear space-solver)!!!
+    integer :: cspatialInitCondPolicy = SPINITCOND_PREVITERATE
     
     ! <!-- -------------- -->
     ! <!-- TEMPORARY DATA -->
