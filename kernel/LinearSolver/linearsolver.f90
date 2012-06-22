@@ -667,7 +667,7 @@ module linearsolver
   use spsor
   use mprimitives
   use triangulation
-  
+  use statistics
   use matrixio
   
   implicit none
@@ -1183,8 +1183,8 @@ module linearsolver
     real(DP)                        :: dtimeTotal = 0.0_DP
 
     ! OUTPUT PARAMETER FOR SOLVERS THAT SUPPORT FILTERING:
-    ! Total time for filtering
-    real(DP)                        :: dtimeFiltering = 0.0_DP
+    ! Total time for filtering (not yet implemented)
+    !real(DP)                        :: dtimeFiltering = 0.0_DP
     
     ! INPUT PARAMETER:
     ! Damping parameter for preconditioner. The t_linsolNode structure
@@ -3471,8 +3471,15 @@ contains
   
 !</subroutine>
 
+  ! a timer
+  type(t_timer) :: rtimer
+
     ! The only condition to this routine is that matrix and vector are compatible!
     call lsysbl_isMatrixCompatible(rd,rsolverNode%rsystemMatrix,.false.)
+
+    ! clear and start timer
+    call stat_clearTimer(rtimer)
+    call stat_startTimer(rtimer)
 
     ! Select the solver as configured in rsolverNode and let it perform
     ! the actual preconditioning task.
@@ -3519,6 +3526,10 @@ contains
       call linsol_precDefBlockUpwGS (rsolverNode,rd)
     end select
 
+    ! stop timer and update solver time
+    call stat_stopTimer(rtimer)
+    rsolverNode%dtimeTotal = rsolverNode%dtimeTotal + rtimer%delapsedReal
+
   end subroutine
   
   ! ***************************************************************************
@@ -3560,7 +3571,20 @@ contains
 !</inputoutput>
   
 !</subroutine>
-    
+
+  ! a local timer
+  type(t_timer) :: rtimer
+
+  ! current solver time
+  real(DP) ::dcurTime
+
+    ! Fetch current solver time; this might be > 0 if the solver is called more than once.
+    dcurTime = rsolverNode%dtimeTotal
+
+    ! clear and start timer
+    call stat_clearTimer(rtimer)
+    call stat_startTimer(rtimer)
+
     ! Method-specific remarks:
     ! The linear system <tex>$ Ax=b $</tex> is reformulated into a one-step defect-correction
     ! approach
@@ -3586,6 +3610,10 @@ contains
     
     ! Correct the solution vector: x = x + y
     call lsysbl_vectorLinearComb (rtemp, rx, 1.0_DP, 1.0_DP)
+
+    ! stop timer and update solver time
+    call stat_stopTimer(rtimer)
+    rsolverNode%dtimeTotal = dcurTime + rtimer%delapsedReal
 
   end subroutine
   
