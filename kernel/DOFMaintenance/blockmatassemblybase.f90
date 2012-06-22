@@ -191,7 +191,7 @@ module blockmatassemblybase
     real(DP), dimension(:,:), pointer :: p_DcubWeight => null()
 
     ! Data of all involved FEM spaces.
-    type(t_fev2FemData), dimension(:), pointer :: p_RfemData => null()
+    type(t_fev2FemDataBlocks) :: rfemDataBlocks
 
     ! Array of the blocks for all submatrices.
     ! Saves the data of all submatrices and contains temporary memory
@@ -367,7 +367,7 @@ module blockmatassemblybase
     real(DP), dimension(:,:), pointer :: p_DcubWeight => null()
 
     ! Data of all involved FEM spaces.
-    type(t_fev2FemData), dimension(:), pointer :: p_RfemData => null()
+    type(t_fev2FemDataBlocks) :: rfemDataBlocks
 
     ! Array of the blocks for all subvectors.
     ! Saves the data of all subvectors and contains temporary memory
@@ -471,9 +471,8 @@ module blockmatassemblybase
     !    p_DcubWeight(npoints,nelements)
     real(DP), dimension(:,:), pointer :: p_DcubWeight => null()
 
-    ! Data of all involved FEM spaces of subvectory which are
-    ! automatically evaluated.
-    type(t_fev2FemData), dimension(:), pointer :: p_RfemData => null()
+    ! Data of all involved FEM spaces.
+    type(t_fev2FemDataBlocks) :: rfemDataBlocks
 
   end type
 

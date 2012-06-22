@@ -25,47 +25,53 @@
 !# 5.) fev2_prepareFemDataSVec
 !#     -> Basic initialisation of a FEM data structure based on a scalar vector
 !#
-!# 6.) fev2_createFemData
+!# 6.) fev2_cleanupFemData
+!#     -> Cleans up a FEM data structure initialised by fev2_prepareFemDataXXXX.
+!#
+!# 7.) fev2_createFemData
 !#     -> Full initialisation of a FEM data structure; allocate memory
 !#
-!# 7.) fev2_releaseFemData
+!# 8.) fev2_releaseFemData
 !#     -> Cleanup of a FEM data structure
 !#
-!# 8.) fev2_evaluateFemData
+!# 9.) fev2_evaluateFemData
 !#     -> Save the values of FEM basis functions in a FEM data structure
 !#
-!# 9.) fev2_addVectorToEvalList
-!#     -> Add a vector to a list of vectors to be evaluated simultaneously
-!#        in a set of points on a set of elements
+!# 10.) fev2_addVectorToEvalList
+!#      -> Add a vector to a list of vectors to be evaluated simultaneously
+!#         in a set of points on a set of elements
 !#
-!# 10.) fev2_addDummyVectorToEvalList
+!# 11.) fev2_addDummyVectorToEvalList
 !#      -> Adds a scalar dummy entry to the list of vectors to be evaluated.
 !#         Can be used as temporary memory during the evaluation.
 !#
-!# 11.) fev2_releaseVectorList
+!# 12.) fev2_releaseVectorList
 !#      -> Release a vector evaluation list
 !#
-!# 12.) fev2_initVectorEval
+!# 13.) fev2_initVectorEval
 !#      -> Initialise a vector evaluation list for the evaluation
 !#         of vectors
 !#
-!# 13.) fev2_prepareVectorEval
+!# 14.) fev2_prepareVectorEval
 !#      -> (Re-)allocates temporary memory for the evaluation.
 !#         Must be called after fev2_initVectorEval.
 !#
-!# 14.) fev2_doneVectorEval
+!# 15.) fev2_doneVectorEval
 !#      -> Release a vector evaluation list
 !#
-!# 15.) fev2_evaluateVectors
+!# 16.) fev2_evaluateVectors
 !#      -> Evaluate all vectors in a vector evaluation list in a set of points
 !#         on a set of elements
 !#
-!# 16.) fev2_prepareFemDataVecEval
+!# 17.) fev2_prepareFemDataVecEval
 !#      -> Basic initialisation of a FEM data structure based on a
 !#         vector evaluation structure
 !#
-!# 17.) fev2_calcDofMapping
+!# 18.) fev2_calcDofMapping
 !#      -> Calculates the DOF mapping 
+!#
+!# 19.) fev2_copyFemData
+!#      -> Creates a copy of a FEM data structure.
 !# </purpose>
 !##############################################################################
 
@@ -138,6 +144,24 @@ module feevaluation2
 !</typeblock>
 
   public :: t_fev2FemData
+
+!<typeblock>
+
+  ! Data of all involved FEM spaces.
+  type t_fev2FemDataBlocks
+  
+    ! Numer of FEM spaces.
+    integer :: ncount = 0
+    
+    ! List of FEM space data arrays. May point to NULL
+    ! if ncount=0.
+    type(t_fev2FemData), dimension(:), pointer :: p_RfemData => null()
+
+  end type
+
+!</typeblock>
+
+  public :: t_fev2FemDataBlocks
 
 !<typeblock>
 
@@ -243,10 +267,12 @@ module feevaluation2
   public :: fev2_prepareFemDataBVec
   public :: fev2_prepareFemDataSMat
   public :: fev2_prepareFemDataSVec
+  public :: fev2_cleanupFemData
   public :: fev2_createFemData
   public :: fev2_calcDofMapping
   public :: fev2_releaseFemData
   public :: fev2_evaluateFemData
+  public :: fev2_copyFemData
   
   public :: fev2_addVectorToEvalList
   public :: fev2_addDummyVectorToEvalList
@@ -365,27 +391,43 @@ contains
 
   !****************************************************************************
 
-  subroutine addDiscr (Rlist,nentries,rentry)
+  subroutine addDiscr (rfemDataBlocks,rentry)
   ! Adds rentry to a list represented by an array
-  type(t_fev2FemData), dimension(:), intent(inout) :: Rlist
+  type(t_fev2FemDataBlocks), intent(inout) :: rfemDataBlocks
   type(t_spatialDiscretisation), intent(in), target :: rentry
-  integer, intent(inout) :: nentries
-    nentries = nentries + 1
-    Rlist(nentries)%p_rdiscr => rentry
+  
+    type(t_fev2FemData), dimension(:), pointer :: p_RfemData
+  
+    ! Is data available?
+    if (.not. associated(rfemDataBlocks%p_RfemData)) then
+      allocate(rfemDataBlocks%p_RfemData(16))
+    end if
+    
+    ! Array large enough?
+    if (rfemDataBlocks%ncount .ge. ubound(rfemDataBlocks%p_RfemData,1)) then
+      ! Reallocate
+      allocate(p_RfemData(rfemDataBlocks%ncount+16))
+      p_RfemData(1:rfemDataBlocks%ncount) = rfemDataBlocks%p_RfemData(:)
+      deallocate (rfemDataBlocks%p_RfemData)
+      rfemDataBlocks%p_RfemData => p_RfemData
+    end if
+  
+    ! Append
+    rfemDataBlocks%ncount = rfemDataBlocks%ncount + 1
+    rfemDataBlocks%p_RfemData(rfemDataBlocks%ncount)%p_rdiscr => rentry
   end subroutine
 
   !****************************************************************************
   
-  integer function containsDiscr (Rlist,nentries,rentry)
+  integer function containsDiscr (rfemDataBlocks,rentry)
   ! returns <> 0 (the index) if the list Rlist contains rentry
-  type(t_fev2FemData), dimension(:), intent(in) :: Rlist
+  type(t_fev2FemDataBlocks), intent(in) :: rfemDataBlocks
   type(t_spatialDiscretisation), intent(in), target :: rentry
-  integer, intent(in) :: nentries
   
     integer :: i
     
-    do i=1,nentries
-      if (associated(Rlist(i)%p_rdiscr,rentry)) then
+    do i=1,rfemDataBlocks%ncount
+      if (associated(rfemDataBlocks%p_RfemData(i)%p_rdiscr,rentry)) then
         containsDiscr = i
         return
       end if
@@ -397,9 +439,23 @@ contains
     
   !****************************************************************************
 
+  subroutine releaseDiscr(rfemDataBlocks)
+  
+  ! Cleans up a FEM evaluation structure which was prepared with
+  ! fev2_prepareFemDataXXXX.
+  type(t_fev2FemDataBlocks), intent(inout) :: rfemDataBlocks
+
+    ! Deallocate, finish.
+    if (associated(rfemDataBlocks%p_RfemData)) deallocate(rfemDataBlocks%p_RfemData)
+    rfemDataBlocks%ncount = 0
+
+  end subroutine
+
+  !****************************************************************************
+
 !<subroutine>
 
-  subroutine fev2_prepareFemDataBMat(rmatrix,p_RfemData,ielementDistr, &
+  subroutine fev2_prepareFemDataBMat(rmatrix,rfemDataBlocks,ielementDistr, &
       RmaxDerivativeTest,RmaxDerivativeTrial)
 
 !<description>
@@ -424,51 +480,18 @@ contains
 !</input>
 
 !<output>
-  ! Pointer to data of all involved FEM spaces.
-  ! If this points to NULL, a new array is allocated.
-  ! If this does not point to NULL, new FEM structures are appended.
-  ! Memory is reallocated if necessary.
-  type(t_fev2FemData), dimension(:), pointer :: p_RfemData
+  ! Structure for all involved FEM spaces.
+  ! If the structure is empty, new memory is allocated.
+  ! Otherwise, new FEM structures are appended.
+  type(t_fev2FemDataBlocks), intent(inout) :: rfemDataBlocks
 !</output>
 
 !</subroutine>
   
     ! local variables
     type(t_spatialDiscretisation), pointer :: p_rdiscrTrial,p_rdiscrTest
-    integer :: i,j,k,ifirstNode
+    integer :: i,j,imaxTest,imaxTrial
     
-    integer, dimension(:,:), allocatable :: p_ImatDiscrTrial,p_ImatDiscrTest
-    
-    ! List of used discretisation structures
-    type(t_fev2FemData), dimension(:), pointer :: p_RdiscrNodes
-    integer :: ndiscrNodes
-    
-    ! Allocate memory for existence checks
-    if (associated(p_RfemData)) then
-    
-      ifirstNode = size(p_RfemData)+1
-      i = size(p_RfemData) + size(rmatrix%RmatrixBlock)
-      allocate (p_RdiscrNodes(i))
-      
-      ! Copy the old content
-      p_RdiscrNodes(1:size(p_RfemData)) = p_RfemData(:)
-
-      ndiscrNodes = size(p_RfemData)
-    
-    else
-    
-      ! Only new content
-      ifirstNode = 1
-      i = size(rmatrix%RmatrixBlock)
-      allocate (p_RdiscrNodes(i))
-      ndiscrNodes = 0
-      
-    end if
-    
-    ! Arrays for remembering the discretisation structure index
-    allocate(p_ImatDiscrTrial(rmatrix%nblocksPerCol,rmatrix%nblocksPerRow))
-    allocate(p_ImatDiscrTest(rmatrix%nblocksPerCol,rmatrix%nblocksPerRow))
-
     ! Basic initialisation of the structure.
     ! Loop over all blocks. Figure out which blocks have data.
     ! Get the data arrays for these blocks.
@@ -489,26 +512,17 @@ contains
                 OU_CLASS_ERROR,OU_MODE_STD,"fev2_prepareFemDataBMat")
             call sys_halt()
           end if
+          
+          ! Maximum derivative
+          imaxTest = -1
+          if (present(RmaxDerivativeTest)) imaxTest = RmaxDerivativeTest(i,j)
 
-          ! Do we have the trial space already?
-          p_ImatDiscrTrial(i,j) = containsDiscr (p_RdiscrNodes,ndiscrNodes,p_rdiscrTrial)
-          if (p_ImatDiscrTrial(i,j) .eq. 0) then
-            ! Remember the data for later checks
-            call addDiscr (p_RdiscrNodes,ndiscrNodes,p_rdiscrTrial)
-            p_ImatDiscrTrial(i,j) = ndiscrNodes
-          end if
+          imaxTrial = imaxTest
+          if (present(RmaxDerivativeTrial)) imaxTrial = RmaxDerivativeTrial(i,j)
 
-          ! What is with the test space? Shared? If not, do we have it?
-          if (.not. associated(p_rdiscrTrial,p_rdiscrTest)) then
-            p_ImatDiscrTest(i,j) = containsDiscr (p_RdiscrNodes,ndiscrNodes,p_rdiscrTest)
-            if (p_ImatDiscrTest(i,j) .eq. 0) then
-              ! Remember the data for later checks
-              call addDiscr (p_RdiscrNodes,ndiscrNodes,p_rdiscrTest)
-              p_ImatDiscrTest(i,j) = ndiscrNodes
-            end if
-          else
-            p_ImatDiscrTest(i,j) = p_ImatDiscrTrial(i,j)
-          end if
+          ! Append the space and initialise if we do not have it.
+          call fev2_prepareFemDataSMat(rmatrix%RmatrixBlock(i,j),rfemDataBlocks,&
+              ielementDistr,imaxTest,imaxTrial)
 
         end if
       
@@ -516,75 +530,13 @@ contains
     
     end do
     
-    if (ndiscrNodes .ne. 0) then
-
-      ! Reallocate the FEM data structures and copy.
-      if (associated(p_RfemData)) then
-        deallocate(p_RfemData)
-      end if
-      
-      allocate(p_RfemData(ndiscrNodes))
-      p_RfemData(1:ndiscrNodes) = p_RdiscrNodes(1:ndiscrNodes)
-      
-      ! Initialise the actual data of the node
-      do i = ifirstNode,ndiscrNodes
-      
-        p_RfemData(i)%celement = p_RfemData(i)%p_rdiscr%RelementDistr(ielementDistr)%celement
-        p_RfemData(i)%ctrafoType = p_RfemData(i)%p_rdiscr%RelementDistr(ielementDistr)%ctrafoType
-        p_RfemData(i)%ndof = elem_igetNDofLoc(p_RfemData(i)%celement)
-        
-      end do
-      
-      ! Initialise the maximum derivative to be used.
-      do j=1,rmatrix%nblocksPerRow
-      
-        do i=1,rmatrix%nblocksPerCol
-          if (lsysbl_isSubmatrixPresent (rmatrix,i,j)) then
-          
-            ! Maximum derivative for the test space
-            if (present(RmaxDerivativeTest)) then
-              k = p_ImatDiscrTrial(i,j)
-              p_RfemData(k)%nmaxDerivative = &
-                  max(p_RfemData(k)%nmaxDerivative,RmaxDerivativeTest(i,j))
-            end if
-            
-            ! Maximum derivative for the trial space
-            if (present(RmaxDerivativeTest)) then
-              k = p_ImatDiscrTest(i,j)
-              p_RfemData(k)%nmaxDerivative = &
-                  max(p_RfemData(k)%nmaxDerivative,RmaxDerivativeTrial(i,j))
-            end if
-          
-          end if
-        end do
-        
-      end do
-      
-      ! Initialise the BDER array which is needed for the evaluation
-      ! of the FEM functions.
-      
-      do i=ifirstNode,ndiscrNodes
-      
-        call fev2_initBder(&
-            p_RfemData(i)%celement,p_RfemData(i)%nmaxDerivative,&
-            p_RfemData(i)%nmaxDerivativeIdx,p_RfemData(i)%Bder)
-        
-      end do
-      
-    end if
-    
-    ! Release the temporary lists
-    deallocate (p_RdiscrNodes)
-    deallocate(p_ImatDiscrTrial)
-    deallocate(p_ImatDiscrTest)
-    
   end subroutine
 
   !****************************************************************************
 
 !<subroutine>
 
-  subroutine fev2_prepareFemDataBVec(rvector,p_RfemData,ielementDistr, &
+  subroutine fev2_prepareFemDataBVec(rvector,rfemDataBlocks,ielementDistr, &
       RmaxDerivative)
 
 !<description>
@@ -608,50 +560,17 @@ contains
 !</input>
 
 !<output>
-  ! Pointer to data of all involved FEM spaces.
-  ! If this points to NULL, a new array is allocated.
-  ! If this does not point to NULL, new FEM structures are appended.
-  ! Memory is reallocated if necessary.
-  type(t_fev2FemData), dimension(:), pointer :: p_RfemData
+  ! Structure for all involved FEM spaces.
+  ! If the structure is empty, new memory is allocated.
+  ! Otherwise, new FEM structures are appended.
+  type(t_fev2FemDataBlocks), intent(inout) :: rfemDataBlocks
 !</output>
 
 !</subroutine>
   
     ! local variables
     type(t_spatialDiscretisation), pointer :: p_rdiscrTest1,p_rdiscrTest
-    integer :: i,k,ifirstnode
-    
-    integer, dimension(:), allocatable :: p_IvecDiscrTest
-
-    ! List of used discretisation structures
-    type(t_fev2FemData), dimension(:), pointer :: p_RdiscrNodes
-    integer :: ndiscrNodes
-
-    ! Allocate memory for existence checks
-    if (associated(p_RfemData)) then
-    
-      ifirstNode = size(p_RfemData)+1
-      i = size(p_RfemData) + rvector%nblocks
-      allocate (p_RdiscrNodes(i))
-      
-      ! Copy the old content
-      p_RdiscrNodes(1:size(p_RfemData)) = p_RfemData(:)
-
-      ndiscrNodes = size(p_RfemData)
-    
-    else
-    
-      ! Only new content
-      ifirstNode = 1
-      i = rvector%nblocks
-      allocate (p_RdiscrNodes(i))
-
-      ndiscrNodes = 0
-      
-    end if
-
-    ! Arrays for remembering the discretisation structure index
-    allocate(p_IvecDiscrTest(rvector%nblocks))
+    integer :: i,imaxTest
 
     ! Basic initialisation of the structure.
     ! Loop over all blocks. Figure out which blocks have data.
@@ -672,64 +591,16 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,"fev2_prepareFemDataBVec")
         call sys_halt()
       end if
+      
+      ! Maximum derivative
+      imaxTest = -1
+      if (present(RmaxDerivative)) imaxTest = RmaxDerivative(i)
 
-      ! Do we have the trial space already?
-      p_IvecDiscrTest(i) = containsDiscr (p_RdiscrNodes,ndiscrNodes,p_rdiscrTest)
-      if (p_IvecDiscrTest(i) .eq. 0) then
-        ! Remember the data for later checks
-        call addDiscr (p_RdiscrNodes,ndiscrNodes,p_rdiscrTest)
-        p_IvecDiscrTest(i) = ndiscrNodes
-      end if
-    
+      ! Append the FEM space and initialise if we do not have it.
+      call fev2_prepareFemDataSVec(rvector%RvectorBlock(i),rfemDataBlocks, &
+          ielementDistr,imaxTest)
+      
     end do
-    
-    if (ndiscrNodes .ne. 0) then
-
-      ! Reallocate the FEM data structures and copy.
-      if (associated(p_RfemData)) then
-        deallocate(p_RfemData)
-      end if
-      
-      ! Prepare the FEM data structures. Copy the FEM data structures.
-      allocate(p_RfemData(ndiscrNodes))
-      p_RfemData(1:ndiscrNodes) = p_RdiscrNodes(1:ndiscrNodes)
-      
-      ! Initialise the actual data of the node
-      do i = ifirstnode,ndiscrNodes
-      
-        p_RfemData(i)%celement = p_RfemData(i)%p_rdiscr%RelementDistr(ielementDistr)%celement
-        p_RfemData(i)%ctrafoType = p_RfemData(i)%p_rdiscr%RelementDistr(ielementDistr)%ctrafoType
-        p_RfemData(i)%ndof = elem_igetNDofLoc(p_RfemData(i)%celement)
-        
-      end do
-      
-      ! Initialise the maximum derivative to be used.
-      do i=1,rvector%nblocks
-        
-        ! Maximum derivative for the test space
-        if (present(RmaxDerivative)) then
-          k = p_IvecDiscrTest(i)
-          p_RfemData(k)%nmaxDerivative = &
-              max(p_RfemData(k)%nmaxDerivative,RmaxDerivative(i))
-        end if
-        
-      end do
-        
-      ! Initialise the BDER array which is needed for the evaluation
-      ! of the FEM functions.
-      
-      do i=ifirstnode,ndiscrNodes
-      
-        call fev2_initBder(&
-            p_RfemData(i)%celement,p_RfemData(i)%nmaxDerivative,&
-            p_RfemData(i)%nmaxDerivativeIdx,p_RfemData(i)%Bder)
-        
-      end do
-      
-    end if
-    
-    ! Release the temporary lists
-    deallocate (p_RdiscrNodes)
     
   end subroutine
 
@@ -737,7 +608,7 @@ contains
 
 !<subroutine>
 
-  recursive subroutine fev2_prepareFemDataSVec(rvector,p_RfemData,ielementDistr, &
+  recursive subroutine fev2_prepareFemDataSVec(rvector,rfemDataBlocks,ielementDistr, &
       imaxDerivative)
 
 !<description>
@@ -760,11 +631,10 @@ contains
 !</input>
 
 !<output>
-  ! Pointer to data of all involved FEM spaces.
-  ! If this points to NULL, a new array is allocated.
-  ! If this does not point to NULL, new FEM structures are appended.
-  ! Memory is reallocated if necessary.
-  type(t_fev2FemData), dimension(:), pointer :: p_RfemData
+  ! Structure for all involved FEM spaces.
+  ! If the structure is empty, new memory is allocated.
+  ! Otherwise, new FEM structures are appended.
+  type(t_fev2FemDataBlocks), intent(inout) :: rfemDataBlocks
 !</output>
 
 !</subroutine>
@@ -772,11 +642,8 @@ contains
     ! local variables
     type(t_spatialDiscretisation), pointer :: p_rdiscrTest
     integer :: ivecDiscrTest
+    type(t_fev2FemData), dimension(:), pointer :: p_RfemData
     
-    ! List of used discretisation structures
-    type(t_fev2FemData), dimension(:), pointer :: p_RdiscrNodes
-    integer :: ndiscrNodes
-
     ! Get the information about the trial and test spaces
     ! of this block.
     p_rdiscrTest  => rvector%p_rspatialDiscr
@@ -784,38 +651,28 @@ contains
     if (.not. associated(p_rdiscrTest)) return
     
     ! Do we have the test space already?
-    ivecDiscrTest = 0
-    if (associated(p_RfemData)) then
-      ivecDiscrTest = containsDiscr (p_RfemData,size(p_RfemData),p_rdiscrTest)
-    end if
+    ivecDiscrTest = containsDiscr (rfemDataBlocks,p_rdiscrTest)
     
     if (ivecDiscrTest .eq. 0) then
       
-      ! Structure is new. Reallocate, add and initialise.
-      if (associated(p_RfemData)) then
-        ndiscrNodes = size(p_RfemData)+1
-        allocate (p_RdiscrNodes(ndiscrNodes))
-        p_RdiscrNodes(1:ndiscrNodes-1) = p_RfemData(:)
-        deallocate(p_RfemData)
-      else
-        ndiscrNodes = 1
-        allocate (p_RdiscrNodes(ndiscrNodes))
-      end if
-      
-      p_RfemData => p_RdiscrNodes
-      
       ! Add the test space
-      ndiscrNodes = ndiscrNodes-1
-      call addDiscr (p_RfemData,ndiscrNodes,p_rdiscrTest)
+      call addDiscr (rfemDataBlocks,p_rdiscrTest)
+
+      ! Pointer to the data blocks
+      p_RfemData => rfemDataBlocks%p_RfemData
     
       ! Initialise the content
-      p_RfemData(ndiscrNodes)%celement = &
-          p_RfemData(ndiscrNodes)%p_rdiscr%RelementDistr(ielementDistr)%celement
-      p_RfemData(ndiscrNodes)%ctrafoType = &
-          p_RfemData(ndiscrNodes)%p_rdiscr%RelementDistr(ielementDistr)%ctrafoType
-      p_RfemData(ndiscrNodes)%ndof = elem_igetNDofLoc(p_RfemData(ndiscrNodes)%celement)
+      p_RfemData(rfemDataBlocks%ncount)%celement = &
+          p_RfemData(rfemDataBlocks%ncount)%p_rdiscr%RelementDistr(ielementDistr)%celement
+      p_RfemData(rfemDataBlocks%ncount)%ctrafoType = &
+          p_RfemData(rfemDataBlocks%ncount)%p_rdiscr%RelementDistr(ielementDistr)%ctrafoType
+      p_RfemData(rfemDataBlocks%ncount)%ndof = &
+          elem_igetNDofLoc(p_RfemData(rfemDataBlocks%ncount)%celement)
 
-      ivecDiscrTest = ndiscrNodes
+      ivecDiscrTest = rfemDataBlocks%ncount
+    else
+      ! Pointer to the data blocks
+      p_RfemData => rfemDataBlocks%p_RfemData
     end if
 
     ! Maximum derivative for the test space
@@ -832,8 +689,8 @@ contains
 
 !<subroutine>
 
-  subroutine fev2_prepareFemDataSMat(rmatrix,p_RfemData,ielementDistr, &
-      imaxDerivative)
+  subroutine fev2_prepareFemDataSMat(rmatrix,rfemDataBlocks,ielementDistr, &
+      imaxDerivativeTest,imaxDerivativeTrial)
 
 !<description>
   ! Initialise a FEM structure based on the FEM spaces
@@ -850,16 +707,20 @@ contains
   
   ! OPTIONAL: Maximum derivative of the basis functions to be computed. If not
   ! specified or an entry is =-1, the maximum available derivative for 
-  ! each FEM space is the default.
-  integer, optional :: imaxDerivative
+  ! each FEM space is the default. Test space
+  integer, optional :: imaxDerivativeTest
+
+  ! OPTIONAL: Maximum derivative of the basis functions to be computed. If not
+  ! specified or an entry is =-1, the maximum available derivative for 
+  ! each FEM space is the default. Trial space
+  integer, optional :: imaxDerivativeTrial
 !</input>
 
 !<output>
-  ! Pointer to data of all involved FEM spaces.
-  ! If this points to NULL, a new array is allocated.
-  ! If this does not point to NULL, new FEM structures are appended.
-  ! Memory is reallocated if necessary.
-  type(t_fev2FemData), dimension(:), pointer :: p_RfemData
+  ! Structure for all involved FEM spaces.
+  ! If the structure is empty, new memory is allocated.
+  ! Otherwise, new FEM structures are appended.
+  type(t_fev2FemDataBlocks), intent(inout) :: rfemDataBlocks
 !</output>
 
 !</subroutine>
@@ -867,10 +728,15 @@ contains
     ! local variables
     type(t_spatialDiscretisation), pointer :: p_rdiscrTest,p_rdiscrTrial
     integer :: ivecDiscrTest,ivecDiscrTrial
+    integer :: imaxTest, imaxTrial
+    type(t_fev2FemData), dimension(:), pointer :: p_RfemData
+
+    ! Maximum derivative
+    imaxTest = -1
+    if (present(imaxDerivativeTest)) imaxTest = imaxDerivativeTest
     
-    ! List of used discretisation structures
-    type(t_fev2FemData), dimension(:), pointer :: p_RdiscrNodes
-    integer :: ndiscrNodes
+    imaxTrial = imaxTest
+    if (present(imaxDerivativeTrial)) imaxTrial = imaxDerivativeTrial
 
     ! Get the information about the trial and test spaces
     ! of this block.
@@ -879,43 +745,34 @@ contains
     
     ! Do we have the test space already?
     if (associated(p_rdiscrTest)) then
-      ivecDiscrTest = 0
-      if (associated(p_RfemData)) then
-        ivecDiscrTest = containsDiscr (p_RfemData,size(p_RfemData),p_rdiscrTest)
-      end if
+
+      ivecDiscrTest = containsDiscr (rfemDataBlocks,p_rdiscrTest)
       
       if (ivecDiscrTest .eq. 0) then
         
-        ! Structure is new. Reallocate, add and initialise.
-        if (associated(p_RfemData)) then
-          ndiscrNodes = size(p_RfemData)+1
-          allocate (p_RdiscrNodes(ndiscrNodes))
-          p_RdiscrNodes(1:ndiscrNodes-1) = p_RfemData(:)
-          deallocate(p_RfemData)
-        else
-          ndiscrNodes = 1
-          allocate (p_RdiscrNodes(ndiscrNodes))
-        end if
-        
-        p_RfemData => p_RdiscrNodes
-        
         ! Add the test space
-        ndiscrNodes = ndiscrNodes-1
-        call addDiscr (p_RfemData,ndiscrNodes,p_rdiscrTest)
+        call addDiscr (rfemDataBlocks,p_rdiscrTest)
+        
+        ! Pointer to the data blocks
+        p_RfemData => rfemDataBlocks%p_RfemData
       
         ! Initialise the content
-        p_RfemData(ndiscrNodes)%celement = &
-            p_RfemData(ndiscrNodes)%p_rdiscr%RelementDistr(ielementDistr)%celement
-        p_RfemData(ndiscrNodes)%ctrafoType = &
-            p_RfemData(ndiscrNodes)%p_rdiscr%RelementDistr(ielementDistr)%ctrafoType
-        p_RfemData(ndiscrNodes)%ndof = elem_igetNDofLoc(p_RfemData(ndiscrNodes)%celement)
+        p_RfemData(rfemDataBlocks%ncount)%celement = &
+            p_RfemData(rfemDataBlocks%ncount)%p_rdiscr%RelementDistr(ielementDistr)%celement
+        p_RfemData(rfemDataBlocks%ncount)%ctrafoType = &
+            p_RfemData(rfemDataBlocks%ncount)%p_rdiscr%RelementDistr(ielementDistr)%ctrafoType
+        p_RfemData(rfemDataBlocks%ncount)%ndof = &
+            elem_igetNDofLoc(p_RfemData(rfemDataBlocks%ncount)%celement)
 
-        ivecDiscrTest = ndiscrNodes
+        ivecDiscrTest = rfemDataBlocks%ncount
+      else
+        ! Pointer to the data blocks
+        p_RfemData => rfemDataBlocks%p_RfemData
       end if
 
       ! Maximum derivative for the test space
       p_RfemData(ivecDiscrTest)%nmaxDerivative = &
-          max(p_RfemData(ivecDiscrTest)%nmaxDerivative,imaxDerivative)
+          max(p_RfemData(ivecDiscrTest)%nmaxDerivative,imaxTest)
 
       call fev2_initBder(&
           p_RfemData(ivecDiscrTest)%celement,p_RfemData(ivecDiscrTest)%nmaxDerivative,&
@@ -926,43 +783,33 @@ contains
     ! Do we have the trial space already?
     if (associated(p_rdiscrTrial)) then
     
-      ivecDiscrTrial = 0
-      if (associated(p_RfemData)) then
-        ivecDiscrTrial = containsDiscr (p_RfemData,size(p_RfemData),p_rdiscrTrial)
-      end if
+      ivecDiscrTrial = containsDiscr (rfemDataBlocks,p_rdiscrTrial)
 
       if (ivecDiscrTrial .eq. 0) then
         
-        ! Structure is new. Reallocate, add and initialise.
-        if (associated(p_RfemData)) then
-          ndiscrNodes = size(p_RfemData)+1
-          allocate (p_RdiscrNodes(ndiscrNodes))
-          p_RdiscrNodes(1:ndiscrNodes-1) = p_RfemData(:)
-          deallocate(p_RfemData)
-        else
-          ndiscrNodes = 1
-          allocate (p_RdiscrNodes(ndiscrNodes))
-        end if
-        
-        p_RfemData => p_RdiscrNodes
-        
         ! Add the trial space
-        ndiscrNodes = ndiscrNodes-1
-        call addDiscr (p_RfemData,ndiscrNodes,p_rdiscrTrial)
+        call addDiscr (rfemDataBlocks,p_rdiscrTrial)
       
-        ! Initialise the content
-        p_RfemData(ndiscrNodes)%celement = &
-            p_RfemData(ndiscrNodes)%p_rdiscr%RelementDistr(ielementDistr)%celement
-        p_RfemData(ndiscrNodes)%ctrafoType = &
-            p_RfemData(ndiscrNodes)%p_rdiscr%RelementDistr(ielementDistr)%ctrafoType
-        p_RfemData(ndiscrNodes)%ndof = elem_igetNDofLoc(p_RfemData(ndiscrNodes)%celement)
+        ! Pointer to the data blocks
+        p_RfemData => rfemDataBlocks%p_RfemData
 
-        ivecDiscrTrial = ndiscrNodes
+        ! Initialise the content
+        p_RfemData(rfemDataBlocks%ncount)%celement = &
+            p_RfemData(rfemDataBlocks%ncount)%p_rdiscr%RelementDistr(ielementDistr)%celement
+        p_RfemData(rfemDataBlocks%ncount)%ctrafoType = &
+            p_RfemData(rfemDataBlocks%ncount)%p_rdiscr%RelementDistr(ielementDistr)%ctrafoType
+        p_RfemData(rfemDataBlocks%ncount)%ndof = &
+            elem_igetNDofLoc(p_RfemData(rfemDataBlocks%ncount)%celement)
+
+        ivecDiscrTrial = rfemDataBlocks%ncount
+      else
+        ! Pointer to the data blocks
+        p_RfemData => rfemDataBlocks%p_RfemData
       end if
 
       ! Maximum derivative for the trial space
       p_RfemData(ivecDiscrTrial)%nmaxDerivative = &
-          max(p_RfemData(ivecDiscrTrial)%nmaxDerivative,imaxDerivative)
+          max(p_RfemData(ivecDiscrTrial)%nmaxDerivative,imaxTrial)
           
       call fev2_initBder(&
           p_RfemData(ivecDiscrTrial)%celement,p_RfemData(ivecDiscrTrial)%nmaxDerivative,&
@@ -976,7 +823,7 @@ contains
 
 !<subroutine>
 
-  subroutine fev2_createFemData(RfemData,npointsperelement,nelements)
+  subroutine fev2_createFemData(rfemDataBlocks,npointsperelement,nelements)
 
 !<description>
   ! Initialises a set of FEM data structurse which was prepared with
@@ -993,8 +840,8 @@ contains
 !</input>
 
 !<inputoutput>
-  ! List all involved FEM spaces.
-  type(t_fev2FemData), dimension(:), intent(inout), target :: RfemData
+  ! Structure for all involved FEM spaces.
+  type(t_fev2FemDataBlocks), intent(inout) :: rfemDataBlocks
 !</inputoutput>
 
 !</subroutine>
@@ -1004,9 +851,9 @@ contains
     integer :: i
 
     ! Loop through all FEM data blocks.
-    do i=1,size(RfemData)
+    do i=1,rfemDataBlocks%ncount
     
-      p_rfemData => RfemData(i)
+      p_rfemData => rfemDataBlocks%p_RfemData(i)
 
       ! Allocate memory for the values of the basis functions    
       allocate(p_rfemData%p_Dbas(p_rfemData%ndof,&
@@ -1024,15 +871,15 @@ contains
 
 !<subroutine>
 
-  subroutine fev2_releaseFemData(RfemData)
+  subroutine fev2_releaseFemData(rfemDataBlocks)
 
 !<description>
   ! Cleans up a set of FEM evaluation structures.
 !</description>
 
 !<inputoutput>
-  ! Pointer to data of all involved FEM spaces.
-  type(t_fev2FemData), dimension(:), intent(inout), target :: RfemData
+  ! Structure for all involved FEM spaces.
+  type(t_fev2FemDataBlocks), intent(inout) :: rfemDataBlocks
 !</inputoutput>
 
 !</subroutine>
@@ -1042,13 +889,16 @@ contains
     integer :: i
 
     ! Release all allocated memory.
-    do i=1,size(RfemData)
+    do i=1,rfemDataBlocks%ncount
     
-      p_rfemData => RfemData(i)
+      p_rfemData => rfemDataBlocks%p_RfemData(i)
       deallocate(p_rfemData%p_Idofs)
       deallocate(p_rfemData%p_Dbas)
     
     end do
+    
+    deallocate(rfemDataBlocks%p_RfemData)
+    rfemDataBlocks%ncount = 0
 
   end subroutine
 
@@ -1056,7 +906,61 @@ contains
 
 !<subroutine>
 
-  subroutine fev2_calcDofMapping(RfemData,IelementList)
+  subroutine fev2_cleanupFemData(rfemDataBlocks)
+
+!<description>
+  ! Cleans up a FEM evaluation structure which was prepared with
+  ! fev2_prepareFemDataXXXX.
+!</description>
+
+!<inputoutput>
+  ! Structure for all involved FEM spaces.
+  type(t_fev2FemDataBlocks), intent(inout) :: rfemDataBlocks
+!</inputoutput>
+
+!</subroutine>
+
+    call releaseDiscr(rfemDataBlocks)
+
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine fev2_copyFemData(rfemDataBlocksDest,rfemDataBlocksSource)
+
+!<description>
+  ! Creaates a copy of a FEM data block structure.
+!</description>
+
+!<input>
+  ! Source structure
+  type(t_fev2FemDataBlocks), intent(in) :: rfemDataBlocksSource
+!</input>
+
+!<output>
+  ! Destination structure
+  type(t_fev2FemDataBlocks), intent(inout) :: rfemDataBlocksDest
+!</output>
+
+!</subroutine>
+    
+    integer :: icount
+
+    rfemDataBlocksDest%ncount = rfemDataBlocksSource%ncount
+    
+    icount = size(rfemDataBlocksSource%p_RfemData)
+    allocate(rfemDataBlocksDest%p_RfemData(icount))
+    rfemDataBlocksDest%p_RfemData(:) = rfemDataBlocksSource%p_RfemData(:)
+
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine fev2_calcDofMapping(rfemDataBlocks,IelementList)
 
 !<description>
   ! Calculates the DOF mapping, i.e., the global degrees of freedom
@@ -1069,8 +973,8 @@ contains
 !</input>
 
 !<inputoutput>
-  ! List all involved FEM spaces.
-  type(t_fev2FemData), dimension(:), intent(inout), target :: RfemData
+  ! All involved FEM spaces.
+  type(t_fev2FemDataBlocks), intent(inout) :: rfemDataBlocks
 !</inputoutput>
 
 !</subroutine>
@@ -1080,9 +984,9 @@ contains
     integer :: i
 
     ! Loop through all FEM data blocks.
-    do i=1,size(RfemData)
+    do i=1,rfemDataBlocks%ncount
     
-      p_rfemData => RfemData(i)
+      p_rfemData => rfemDataBlocks%p_RfemData(i)
 
       ! Calculates the degrees of freedom on the elements
       if (associated(p_rfemData%p_rdiscr)) then
@@ -1098,12 +1002,12 @@ contains
 
 !<subroutine>
 
-  subroutine fev2_evaluateFemData(RfemData,revalElementSet)
+  subroutine fev2_evaluateFemData(rfemDataBlocks,revalElementSet)
 
 !<description>
   ! Evaluates the FEM basis functions according to the evaluation
   ! set revalElementSet. The values of the basis functions are saved
-  ! in the p_Dbas arrays of the FEM data structures in RfemData.
+  ! in the p_Dbas arrays of the FEM data structures in rfemDataBlocks.
 !</description>
 
 !<input>
@@ -1113,11 +1017,11 @@ contains
 !</input>
 
 !<inputoutput>
-  ! Pointer to data of all involved FEM spaces.
+  ! All involved FEM spaces.
   ! The p_Dbas arrays in all the structures are filled with the
   ! values of the FEM basis functions.
   ! The structure must have been initialised by fev2_createFemData.
-  type(t_fev2FemData), dimension(:), intent(inout), target :: RfemData
+  type(t_fev2FemDataBlocks), intent(inout) :: rfemDataBlocks
 !</inputoutput>
 
 !</subroutine>
@@ -1127,9 +1031,9 @@ contains
     type(t_fev2FemData), pointer :: p_rfemData
 
     ! Loop through all FEM spaces to calculate the FEM basis functions
-    do i=1,size(RfemData)
+    do i=1,rfemDataBlocks%ncount
     
-      p_rfemData => RfemData(i)
+      p_rfemData => rfemDataBlocks%p_RfemData(i)
 
       ! Evaluate the basis functions.
       call elem_generic_sim2 (p_rfemData%celement, &
@@ -1305,7 +1209,7 @@ contains
 
 !<subroutine>
 
-  subroutine fev2_initVectorEval(revalVectors,RfemData)
+  subroutine fev2_initVectorEval(revalVectors,rfemDataBlocks)
 
 !<description>
   ! Auxiliary subroutine. 
@@ -1313,9 +1217,8 @@ contains
 !</description>
 
 !<input>
-  ! List all involved FEM spaces that appear in the vectors
-  ! collected in revalVectors
-  type(t_fev2FemData), dimension(:), intent(in) :: RfemData
+  ! Structure for all involved FEM spaces.
+  type(t_fev2FemDataBlocks), intent(in) :: rfemDataBlocks
 !</input>
 
 !<inputoutput>
@@ -1326,13 +1229,11 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: i, nentries, nmaxDerivativeIdx
+    integer :: i, nmaxDerivativeIdx
     type(t_fev2VectorData), pointer :: p_rvectorData
     
     ! For every vector to evaluate, allocate memory for the
     ! values in the points.
-    
-    nentries = size(RfemData)
     
     do i=1,revalVectors%ncount
     
@@ -1349,7 +1250,7 @@ contains
       
         ! Remember the index of the discretisation in the list
         p_rvectorData%iidxFemData = &
-            containsDiscr (RfemData,nentries,&
+            containsDiscr (rfemDataBlocks,&
                            p_rvectorData%p_rvector%p_rspatialDiscr)
       else
         ! Dummy vector, just allocate memory in advance.
@@ -1471,7 +1372,7 @@ contains
 
 !<subroutine>
 
-  subroutine fev2_evaluateVectors(revalVectors,RfemData)
+  subroutine fev2_evaluateVectors(revalVectors,rfemDataBlocks)
 
 !<description>
   ! Evaluates the vectors in revalVectors in all points
@@ -1481,9 +1382,8 @@ contains
 !</description>
 
 !<input>
-  ! List all involved FEM spaces that appear in the vectors
-  ! collected in revalVectors
-  type(t_fev2FemData), dimension(:), intent(in), target :: RfemData
+  ! Structure for all involved FEM spaces.
+  type(t_fev2FemDataBlocks), intent(in) :: rfemDataBlocks
 !</input>
 
 !<inputoutput>
@@ -1494,7 +1394,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: ibas, ivector, npoints, nelements, nentries, iel, ipt
+    integer :: ibas, ivector, npoints, nelements, iel, ipt
     integer :: ndof, ideriv, nderiv, nvar, ivar
     real(DP), dimension(:,:,:,:), pointer :: p_Dbas
     real(DP) :: dval
@@ -1507,7 +1407,6 @@ contains
     
     npoints = revalVectors%npointsPerElement
     nelements = revalVectors%nelements
-    nentries = size(RfemData)
 
     ! Loop through all vectors    
     do ivector=1,revalVectors%ncount
@@ -1520,7 +1419,7 @@ contains
       if (associated(p_rvectorData%p_rvector)) then
     
         ! Corresponding FEM data
-        p_rfemData => RfemData(p_rvectorData%iidxFemData)
+        p_rfemData => rfemDataBlocks%p_RfemData(p_rvectorData%iidxFemData)
         
         ! Get data arrays and array size
         ndof = p_rfemData%ndof
@@ -1593,7 +1492,7 @@ contains
 
 !<subroutine>
 
-  subroutine fev2_prepareFemDataVecEval(revalVectors,p_RfemData,ielementDistr)
+  subroutine fev2_prepareFemDataVecEval(revalVectors,rfemDataBlocks,ielementDistr)
 
 !<description>
   ! Initialise a FEM structure based on the FEM spaces
@@ -1610,11 +1509,10 @@ contains
 !</input>
 
 !<output>
-  ! Pointer to data of all involved FEM spaces.
-  ! If this points to NULL, a new array is allocated.
-  ! If this does not point to NULL, new FEM structures are appended.
-  ! Memory is reallocated if necessary.
-  type(t_fev2FemData), dimension(:), pointer :: p_RfemData
+  ! Structure for all involved FEM spaces.
+  ! If the structure is empty, new memory is allocated.
+  ! Otherwise, new FEM structures are appended.
+  type(t_fev2FemDataBlocks), intent(inout) :: rfemDataBlocks
 !</output>
 
 !</subroutine>
@@ -1627,7 +1525,7 @@ contains
       if (associated(revalVectors%p_RvectorData(i)%p_rvector)) then
         ! Add the FEM space if not done already.
         call fev2_prepareFemDataSVec(&
-            revalVectors%p_RvectorData(i)%p_rvector,p_RfemData,ielementDistr, &
+            revalVectors%p_RvectorData(i)%p_rvector,rfemDataBlocks,ielementDistr, &
             revalVectors%p_RvectorData(i)%nmaxDerivative)
       end if
     end do

@@ -2562,31 +2562,33 @@ contains
 
   end function
 
-  integer function containsDiscr (Rlist,nentries,rentry)
+  !****************************************************************************
+  
+  integer function containsDiscr (rfemDataBlocks,rentry)
   ! returns <> 0 (the index) if the list Rlist contains rentry
-  type(t_fev2FemData), dimension(:), intent(in) :: Rlist
+  type(t_fev2FemDataBlocks), intent(in) :: rfemDataBlocks
   type(t_spatialDiscretisation), intent(in), target :: rentry
-  integer, intent(in) :: nentries
-
+  
     integer :: i
-
-    do i=1,nentries
-      if (associated(Rlist(i)%p_rdiscr,rentry)) then
+    
+    do i=1,rfemDataBlocks%ncount
+      if (associated(rfemDataBlocks%p_RfemData(i)%p_rdiscr,rentry)) then
         containsDiscr = i
         return
       end if
     end do
-
+    
     containsDiscr = 0
-
+    
   end function
+    
 
   !****************************************************************************
 
 !<subroutine>
 
   subroutine bma_prepareMatrixData(&
-      rmatrix,RmatrixData,RfemData,ielementDistr)
+      rmatrix,RmatrixData,rfemDataBlocks,ielementDistr)
 
 !<description>
   ! Initialise a matrix assembly structure for assembling the submatrices
@@ -2602,8 +2604,8 @@ contains
   ! in the matrix which is to be assembled.
   integer, intent(in) :: ielementDistr
 
-  ! List of all FEM spaces used during the assembly
-  type(t_fev2FemData), dimension(:), intent(in) :: RfemData
+  ! Data of all involved FEM spaces.
+  type(t_fev2FemDataBlocks) , intent(in) :: rfemDataBlocks
 !</input>
 
 !<output>
@@ -2717,8 +2719,8 @@ contains
           end if
 
           ! Get the indices of the trial and the test space.
-          RmatrixData(i,j)%iidxFemDataTrial = containsDiscr(RfemData,size(RfemData),p_rdiscrTrial)
-          RmatrixData(i,j)%iidxFemDataTest = containsDiscr (RfemData,size(RfemData),p_rdiscrTest)
+          RmatrixData(i,j)%iidxFemDataTrial = containsDiscr(rfemDataBlocks,p_rdiscrTrial)
+          RmatrixData(i,j)%iidxFemDataTest = containsDiscr (rfemDataBlocks,p_rdiscrTest)
           RmatrixData(i,j)%bIdenticalTrialAndTest = associated(p_rdiscrTrial,p_rdiscrTest)
 
           ! Element type          
@@ -2790,12 +2792,12 @@ contains
     rassemblyData%ninitialisedElements = 0
 
     ! Prepare FEM data
-    call fev2_prepareFemDataBMat(rmatrix,rassemblyData%p_RfemData,&
+    call fev2_prepareFemDataBMat(rmatrix,rassemblyData%rfemDataBlocks,&
         ielementDistr,RmaxDerivativeTest,RmaxDerivativeTrial)
 
     ! Prepare FEM data for the vectors to be evaluated.
     if (present(revalVectors)) then
-      call fev2_prepareFemDataVecEval(revalVectors,rassemblyData%p_RfemData,&
+      call fev2_prepareFemDataVecEval(revalVectors,rassemblyData%rfemDataBlocks,&
           ielementDistr)
     end if
 
@@ -2805,7 +2807,7 @@ contains
         ubound(rmatrix%RmatrixBlock,1),ubound(rmatrix%RmatrixBlock,2)))
 
     call bma_prepareMatrixData(&
-        rmatrix,rassemblyData%p_RmatrixData,rassemblyData%p_RfemData,ielementDistr)
+        rmatrix,rassemblyData%p_RmatrixData,rassemblyData%rfemDataBlocks,ielementDistr)
 
   end subroutine
 
@@ -2827,7 +2829,7 @@ contains
 !</subroutine>
 
     ! Release the matrix and FEM data array
-    deallocate(rassemblyData%p_RfemData)
+    call fev2_cleanupFemData(rassemblyData%rfemDataBlocks)
     deallocate(rassemblyData%p_RmatrixData)
 
     ! Element sets are not yet initialised.  
@@ -2882,16 +2884,15 @@ contains
     ! Now initialise the dynamic content.
     !
     ! Copy the FEM data and the matrix data
-    allocate (rassemblyData%p_RfemData(size(rassemblyDataTemplate%p_RfemData)))
     allocate (rassemblyData%p_RmatrixData(&
         ubound(rassemblyDataTemplate%p_RmatrixData,1),&
         ubound(rassemblyDataTemplate%p_RmatrixData,2)))
-
-    rassemblyData%p_RfemData(:) = rassemblyDataTemplate%p_RfemData(:)
     rassemblyData%p_RmatrixData(:,:) = rassemblyDataTemplate%p_RmatrixData(:,:)
 
+    call fev2_copyFemData(rassemblyData%rfemDataBlocks,rassemblyDataTemplate%rfemDataBlocks)
+
     ! Initialise the FEM evaluation structures.
-    call fev2_createFemData(rassemblyData%p_RfemData,&
+    call fev2_createFemData(rassemblyData%rfemDataBlocks,&
         rmatrixAssembly%ncubp,rmatrixAssembly%nelementsPerBlock)
 
     ! Loop through the matrices. Whereever there is unshared data,
@@ -2936,14 +2937,14 @@ contains
           ! Map the pointers to the DOFs and the values of the
           ! basis functions into that block
           p_rmatrixData%p_DbasTrial => &
-              rassemblyData%p_RfemData(p_rmatrixData%iidxFemDataTrial)%p_Dbas
+              rassemblyData%rfemDataBlocks%p_RfemData(p_rmatrixData%iidxFemDataTrial)%p_Dbas
           p_rmatrixData%p_DbasTest => &
-              rassemblyData%p_RfemData(p_rmatrixData%iidxFemDataTest)%p_Dbas
+              rassemblyData%rfemDataBlocks%p_RfemData(p_rmatrixData%iidxFemDataTest)%p_Dbas
 
           p_rmatrixData%p_IdofsTrial => &
-              rassemblyData%p_RfemData(p_rmatrixData%iidxFemDataTrial)%p_Idofs
+              rassemblyData%rfemDataBlocks%p_RfemData(p_rmatrixData%iidxFemDataTrial)%p_Idofs
           p_rmatrixData%p_IdofsTest => &
-              rassemblyData%p_RfemData(p_rmatrixData%iidxFemDataTest)%p_Idofs
+              rassemblyData%rfemDataBlocks%p_RfemData(p_rmatrixData%iidxFemDataTest)%p_Idofs
 
         end if
 
@@ -2964,7 +2965,7 @@ contains
           revalVectorsTemplate%p_RvectorData(1:revalVectorsTemplate%ncount)
 
       ! Prepare the evaluation of the FEM functions
-      call fev2_initVectorEval(revalVectors,rassemblyData%p_RfemData)
+      call fev2_initVectorEval(revalVectors,rassemblyData%rfemDataBlocks)
     end if
 
   end subroutine
@@ -3000,7 +3001,7 @@ contains
     end if
 
     ! Release FEM evaluation data
-    call fev2_releaseFemData(rassemblyData%p_RfemData)
+    call fev2_releaseFemData(rassemblyData%rfemDataBlocks)
 
     ! Release the element set and the cubature weights
     call elprep_releaseElementSet(rassemblyData%revalElementSet)
@@ -3044,7 +3045,7 @@ contains
     end do
 
     ! Release memory
-    deallocate (rassemblyData%p_RfemData)
+    call fev2_cleanupFemData(rassemblyData%rfemDataBlocks)
     deallocate (rassemblyData%p_RmatrixData)
 
   end subroutine
@@ -3102,8 +3103,9 @@ contains
 
 !</subroutine>
 
-    integer :: i
+    integer :: i,ncount
     integer(I32) :: cshape
+    type(t_fev2FemData), dimension(:), pointer :: p_RfemData
 
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
@@ -3163,26 +3165,28 @@ contains
           ior(rmatrixAssembly%cevaluationTag,EL_EVLTAG_REALPOINTS)
     end if
 
-    if (.not. associated(rmatrixAssembly%rassemblyDataTemplate%p_RfemData)) then
+    if (rmatrixAssembly%rassemblyDataTemplate%rfemDataBlocks%ncount .eq. 0) then
       call output_line ("Matrix is empty, nothing to assemble.",&
           OU_CLASS_ERROR,OU_MODE_STD,"bma_initMatAssembly")
       call sys_halt()
     end if
+    
+    ! Get a pointer to the FEM data
+    p_RfemData => rmatrixAssembly%rassemblyDataTemplate%rfemDataBlocks%p_RfemData
+    ncount = rmatrixAssembly%rassemblyDataTemplate%rfemDataBlocks%ncount
 
     ! Add the evaluation tags of all FEM spaces to a common evaluation tag.
-    do i=1,size(rmatrixAssembly%rassemblyDataTemplate%p_RfemData)
+    do i=1,ncount
       rmatrixAssembly%cevaluationTag = ior(rmatrixAssembly%cevaluationTag,&
-          elem_getEvaluationTag(rmatrixAssembly%rassemblyDataTemplate%p_RfemData(i)%celement))
+          elem_getEvaluationTag(p_RfemData(i)%celement))
     end do
 
     ! Check that all elements have the same NVE. Otherwise,
     ! something is wrong.
-    cshape = &
-        elem_igetShape(rmatrixAssembly%rassemblyDataTemplate%p_RfemData(1)%celement)
+    cshape = elem_igetShape(p_RfemData(1)%celement)
 
-    do i=2,size(rmatrixAssembly%rassemblyDataTemplate%p_RfemData)
-      if (cshape .ne. &
-          elem_igetShape(rmatrixAssembly%rassemblyDataTemplate%p_RfemData(i)%celement)) then
+    do i=2,ncount
+      if (cshape .ne. elem_igetShape(p_RfemData(i)%celement)) then
         call output_line ("Element spaces incompatible!",&
             OU_CLASS_ERROR,OU_MODE_STD,"bma_initMatAssembly")
         call sys_halt()
@@ -3250,7 +3254,7 @@ contains
     rassemblyData%nelements = size(IelementList)
 
     ! Calculate the DOF mapping for the FEM spaces.
-    call fev2_calcDofMapping(rassemblyData%p_RfemData,IelementList)
+    call fev2_calcDofMapping(rassemblyData%rfemDataBlocks,IelementList)
 
     ! Loop through the matrices. Whereever there is unshared data,
     ! compute the local matrix indices.
@@ -3405,7 +3409,8 @@ contains
     end do
 
     ! Now, calculate the FEM basis functions in the cubature points
-    call fev2_evaluateFemData(rassemblyData%p_RfemData,rassemblyData%revalElementSet)
+    call fev2_evaluateFemData(rassemblyData%rfemDataBlocks,&
+        rassemblyData%revalElementSet)
 
   end subroutine
 
@@ -3601,7 +3606,7 @@ contains
       call fev2_prepareVectorEval(revalVectors,rassemblyData%revalElementSet)
 
       ! Evaluate the attached vectors in the cubature points.
-      call fev2_evaluateVectors(revalVectors,rassemblyData%p_RfemData)
+      call fev2_evaluateVectors(revalVectors,rassemblyData%rfemDataBlocks)
 
       ! Use the callback routine to calculate the local matrix entries.
       call fcalcLocalMatrices(rassemblyData%p_RmatrixData,rassemblyData,rmatrixAssembly,&
@@ -3810,7 +3815,7 @@ contains
 !<subroutine>
 
   subroutine bma_prepareVectorData(&
-      rvector,RvectorData,RfemData,ielementDistr)
+      rvector,RvectorData,rfemDataBlocks,ielementDistr)
 
 !<description>
   ! Initialise a vector assembly structure for assembling the subvectors
@@ -3826,8 +3831,8 @@ contains
   ! in the vector which is to be assembled.
   integer, intent(in) :: ielementDistr
 
-  ! List of all FEM spaces used during the assembly
-  type(t_fev2FemData), dimension(:), intent(in) :: RfemData
+  ! Structure for all involved FEM spaces.
+  type(t_fev2FemDataBlocks), intent(in) :: rfemDataBlocks
 !</input>
 
 !<output>
@@ -3865,7 +3870,7 @@ contains
       p_rdiscrTest => rvector%RvectorBlock(i)%p_rspatialDiscr
 
       ! Get the indices of the trial and the test space.
-      RvectorData(i)%iidxFemDataTest = containsDiscr (RfemData,size(RfemData),p_rdiscrTest)
+      RvectorData(i)%iidxFemDataTest = containsDiscr (rfemDataBlocks,p_rdiscrTest)
 
       ! Element type          
       RvectorData(i)%celementTest = &
@@ -3927,12 +3932,12 @@ contains
     rassemblyData%ninitialisedElements = 0
 
     ! Prepare FEM data
-    call fev2_prepareFemDataBVec(rvector,rassemblyData%p_RfemData,&
+    call fev2_prepareFemDataBVec(rvector,rassemblyData%rfemDataBlocks,&
         ielementDistr,RmaxDerivativeTest)
         
     ! Prepare FEM data for the vectors to be evaluated.
     if (present(revalVectors)) then
-      call fev2_prepareFemDataVecEval(revalVectors,rassemblyData%p_RfemData,&
+      call fev2_prepareFemDataVecEval(revalVectors,rassemblyData%rfemDataBlocks,&
           ielementDistr)
     end if
 
@@ -3941,7 +3946,7 @@ contains
     allocate(rassemblyData%p_RvectorData(ubound(rvector%RvectorBlock,1)))
 
     call bma_prepareVectorData(&
-        rvector,rassemblyData%p_RvectorData,rassemblyData%p_RfemData,ielementDistr)
+        rvector,rassemblyData%p_RvectorData,rassemblyData%rfemDataBlocks,ielementDistr)
 
   end subroutine
 
@@ -3963,7 +3968,7 @@ contains
 !</subroutine>
 
     ! Release the vector and FEM data array
-    deallocate(rassemblyData%p_RfemData)
+    call fev2_cleanupFemData (rassemblyData%rfemDataBlocks)
     deallocate(rassemblyData%p_RvectorData)
 
     ! Element sets are not yet initialised.  
@@ -4018,15 +4023,14 @@ contains
     ! Now initialise the dynamic content.
     !
     ! Copy the FEM data and the vector data
-    allocate (rassemblyData%p_RfemData(size(rassemblyDataTemplate%p_RfemData)))
     allocate (rassemblyData%p_RvectorData(&
         ubound(rassemblyDataTemplate%p_RvectorData,1)))
-
-    rassemblyData%p_RfemData(:) = rassemblyDataTemplate%p_RfemData(:)
     rassemblyData%p_RvectorData(:) = rassemblyDataTemplate%p_RvectorData(:)
 
+    call fev2_copyFemData(rassemblyData%rfemDataBlocks,rassemblyDataTemplate%rfemDataBlocks)
+    
     ! Initialise the FEM evaluation structures.
-    call fev2_createFemData(rassemblyData%p_RfemData,&
+    call fev2_createFemData(rassemblyData%rfemDataBlocks,&
         rvectorAssembly%ncubp,rvectorAssembly%nelementsPerBlock)
 
     ! Loop through the subvectors. Aallocate memory for the vector
@@ -4049,10 +4053,10 @@ contains
       ! Map the pointers to the DOFs and the values of the
       ! basis functions into that block
       p_rvectorData%p_DbasTest => &
-          rassemblyData%p_RfemData(p_rvectorData%iidxFemDataTest)%p_Dbas
+          rassemblyData%rfemDataBlocks%p_RfemData(p_rvectorData%iidxFemDataTest)%p_Dbas
 
       p_rvectorData%p_IdofsTest => &
-          rassemblyData%p_RfemData(p_rvectorData%iidxFemDataTest)%p_Idofs
+          rassemblyData%rfemDataBlocks%p_RfemData(p_rvectorData%iidxFemDataTest)%p_Idofs
 
     end do
 
@@ -4070,7 +4074,7 @@ contains
           revalVectorsTemplate%p_RvectorData(1:revalVectorsTemplate%ncount)
 
       ! Prepare the evaluation of the FEM functions
-      call fev2_initVectorEval(revalVectors,rassemblyData%p_RfemData)
+      call fev2_initVectorEval(revalVectors,rassemblyData%rfemDataBlocks)
     end if
 
   end subroutine
@@ -4106,7 +4110,7 @@ contains
     end if
 
     ! Release FEM evaluation data
-    call fev2_releaseFemData(rassemblyData%p_RfemData)
+    call fev2_releaseFemData(rassemblyData%rfemDataBlocks)
 
     ! Release the element set and the cubature weights
     call elprep_releaseElementSet(rassemblyData%revalElementSet)
@@ -4135,7 +4139,7 @@ contains
     end do
 
     ! Release memory
-    deallocate (rassemblyData%p_RfemData)
+    call fev2_cleanupFemData (rassemblyData%rfemDataBlocks)
     deallocate (rassemblyData%p_rvectorData)
 
   end subroutine
@@ -4192,8 +4196,9 @@ contains
 
 !</subroutine>
 
-    integer :: i
+    integer :: i,ncount
     integer(I32) :: cshape
+    type(t_fev2FemData), dimension(:), pointer :: p_RfemData
 
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
@@ -4253,26 +4258,28 @@ contains
           ior(rvectorAssembly%cevaluationTag,EL_EVLTAG_REALPOINTS)
     end if
 
-    if (.not. associated(rvectorAssembly%rassemblyDataTemplate%p_RfemData)) then
+    if (rvectorAssembly%rassemblyDataTemplate%rfemDataBlocks%ncount .eq. 0) then
       call output_line ("Vector is empty, nothing to assemble.",&
           OU_CLASS_ERROR,OU_MODE_STD,"bma_initVecAssembly")
       call sys_halt()
     end if
 
+    ! Get a pointer to the FEM data
+    p_RfemData => rvectorAssembly%rassemblyDataTemplate%rfemDataBlocks%p_RfemData
+    ncount = rvectorAssembly%rassemblyDataTemplate%rfemDataBlocks%ncount
+
     ! Add the evaluation tags of all FEM spaces to a common evaluation tag.
-    do i=1,size(rvectorAssembly%rassemblyDataTemplate%p_RfemData)
+    do i=1,ncount
       rvectorAssembly%cevaluationTag = ior(rvectorAssembly%cevaluationTag,&
-          elem_getEvaluationTag(rvectorAssembly%rassemblyDataTemplate%p_RfemData(i)%celement))
+          elem_getEvaluationTag(p_RfemData(i)%celement))
     end do
 
     ! Check that all elements have the same NVE. Otherwise,
     ! something is wrong.
-    cshape = &
-        elem_igetShape(rvectorAssembly%rassemblyDataTemplate%p_RfemData(1)%celement)
+    cshape = elem_igetShape(p_RfemData(1)%celement)
 
-    do i=2,size(rvectorAssembly%rassemblyDataTemplate%p_RfemData)
-      if (cshape .ne. &
-          elem_igetShape(rvectorAssembly%rassemblyDataTemplate%p_RfemData(i)%celement)) then
+    do i=2,ncount
+      if (cshape .ne. elem_igetShape(p_RfemData(i)%celement)) then
         call output_line ("Element spaces incompatible!",&
             OU_CLASS_ERROR,OU_MODE_STD,"bma_initVecAssembly")
         call sys_halt()
@@ -4339,7 +4346,7 @@ contains
     rassemblyData%nelements = size(IelementList)
 
     ! Calculate the DOF mapping for the FEM spaces.
-    call fev2_calcDofMapping(rassemblyData%p_RfemData,IelementList)
+    call fev2_calcDofMapping(rassemblyData%rfemDataBlocks,IelementList)
 
     ! Loop through the subvectors. Whereever there is unshared data,
     ! Clear the destination arrays.
@@ -4455,7 +4462,8 @@ contains
     end do
 
     ! Now, calculate the FEM basis functions in the cubature points
-    call fev2_evaluateFemData(rassemblyData%p_RfemData,rassemblyData%revalElementSet)
+    call fev2_evaluateFemData(rassemblyData%rfemDataBlocks,&
+        rassemblyData%revalElementSet)
 
   end subroutine
 
@@ -4639,7 +4647,7 @@ contains
       call fev2_prepareVectorEval(revalVectors,rassemblyData%revalElementSet)
 
       ! Evaluate the attached vectors in the cubature points.
-      call fev2_evaluateVectors(revalVectors,rassemblyData%p_RfemData)
+      call fev2_evaluateVectors(revalVectors,rassemblyData%rfemDataBlocks)
 
       ! Use the callback routine to calculate the local vector entries.
       call fcalcLocalVectors(rassemblyData%p_rvectorData,rassemblyData,rvectorAssembly,&
@@ -4880,7 +4888,7 @@ contains
 
     ! Prepare FEM data for the vectors to be evaluated.
     if (present(revalVectors)) then
-      call fev2_prepareFemDataVecEval(revalVectors,rassemblyData%p_RfemData,&
+      call fev2_prepareFemDataVecEval(revalVectors,rassemblyData%rfemDataBlocks,&
           ielementDistr)
     end if
 
@@ -4904,7 +4912,7 @@ contains
 !</subroutine>
 
     ! Release the vector and FEM data array
-    deallocate(rassemblyData%p_RfemData)
+    call fev2_cleanupFemData(rassemblyData%rfemDataBlocks)
 
     ! Element sets are not yet initialised.  
     rassemblyData%ninitialisedElements = 0
@@ -4953,13 +4961,11 @@ contains
 
     ! Now initialise the dynamic content.
     !
-    ! Copy the FEM data and the vector data
-    allocate (rassemblyData%p_RfemData(size(rassemblyDataTemplate%p_RfemData)))
-
-    rassemblyData%p_RfemData(:) = rassemblyDataTemplate%p_RfemData(:)
+    ! Copy the FEM data
+    call fev2_copyFemData(rassemblyData%rfemDataBlocks,rassemblyDataTemplate%rfemDataBlocks)
 
     ! Initialise the FEM evaluation structures.
-    call fev2_createFemData(rassemblyData%p_RfemData,&
+    call fev2_createFemData(rassemblyData%rfemDataBlocks,&
         rvectorAssembly%ncubp,rvectorAssembly%nelementsPerBlock)
 
     ! Initialise the vector evaluation structure.
@@ -4976,7 +4982,7 @@ contains
           revalVectorsTemplate%p_RvectorData(1:revalVectorsTemplate%ncount)
 
       ! Prepare the evaluation of the FEM functions
-      call fev2_initVectorEval(revalVectors,rassemblyData%p_RfemData)
+      call fev2_initVectorEval(revalVectors,rassemblyData%rfemDataBlocks)
     end if
 
   end subroutine
@@ -5008,7 +5014,7 @@ contains
     end if
 
     ! Release FEM evaluation data
-    call fev2_releaseFemData(rassemblyData%p_RfemData)
+    call fev2_releaseFemData(rassemblyData%rfemDataBlocks)
 
     ! Release the element set and the cubature weights
     call elprep_releaseElementSet(rassemblyData%revalElementSet)
@@ -5021,9 +5027,7 @@ contains
     rassemblyData%ninitialisedElements = 0
 
     ! Release memory
-    if (associated(rassemblyData%p_RfemData)) then
-      deallocate (rassemblyData%p_RfemData)
-    end if
+    call fev2_cleanupFemData (rassemblyData%rfemDataBlocks)
 
   end subroutine
 
@@ -5075,8 +5079,9 @@ contains
 
 !</subroutine>
 
-    integer :: i
+    integer :: i,ncount
     integer(I32) :: cshape
+    type(t_fev2FemData), dimension(:), pointer :: p_RfemData
 
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
@@ -5140,23 +5145,24 @@ contains
           ior(rintegralAssembly%cevaluationTag,EL_EVLTAG_REALPOINTS)
     end if
 
-    if (associated(rintegralAssembly%rassemblyDataTemplate%p_RfemData)) then
+    if (rintegralAssembly%rassemblyDataTemplate%rfemDataBlocks%ncount .ne. 0) then
+
+      ! Get a pointer to the FEM data
+      p_RfemData => rintegralAssembly%rassemblyDataTemplate%rfemDataBlocks%p_RfemData
+      ncount = rintegralAssembly%rassemblyDataTemplate%rfemDataBlocks%ncount
 
       ! Add the evaluation tags of all FEM spaces to a common evaluation tag.
-      do i=1,size(rintegralAssembly%rassemblyDataTemplate%p_RfemData)
+      do i=1,ncount
         rintegralAssembly%cevaluationTag = ior(rintegralAssembly%cevaluationTag,&
-            elem_getEvaluationTag(&
-            rintegralAssembly%rassemblyDataTemplate%p_RfemData(i)%celement))
+            elem_getEvaluationTag(p_RfemData(i)%celement))
       end do
 
       ! Check that all elements have the same NVE. Otherwise,
       ! something is wrong.
-      cshape = &
-          elem_igetShape(rintegralAssembly%rassemblyDataTemplate%p_RfemData(1)%celement)
+      cshape = elem_igetShape(p_RfemData(1)%celement)
 
-      do i=2,size(rintegralAssembly%rassemblyDataTemplate%p_RfemData)
-        if (cshape .ne. &
-            elem_igetShape(rintegralAssembly%rassemblyDataTemplate%p_RfemData(i)%celement)) then
+      do i=2,ncount
+        if (cshape .ne. elem_igetShape(p_RfemData(i)%celement)) then
           call output_line ("Element spaces incompatible!",&
               OU_CLASS_ERROR,OU_MODE_STD,"bma_initVecAssembly")
           call sys_halt()
@@ -5220,9 +5226,7 @@ contains
     rassemblyData%nelements = size(IelementList)
 
     ! Calculate the DOF mapping for the FEM spaces.
-    if (associated(rassemblyData%p_RfemData)) then
-      call fev2_calcDofMapping(rassemblyData%p_RfemData,IelementList)
-    end if
+    call fev2_calcDofMapping(rassemblyData%rfemDataBlocks,IelementList)
 
   end subroutine
 
@@ -5257,7 +5261,7 @@ contains
     real(DP), dimension(:,:), pointer :: p_Ddetj,p_DcubWeight
     real(DP), dimension(:), pointer :: p_Domega
 
-    if (associated(rassemblyData%p_RfemData)) then
+    if (rassemblyData%rfemDataBlocks%ncount .ne. 0) then
     
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
@@ -5323,7 +5327,7 @@ contains
       end do
 
       ! Now, calculate the FEM basis functions in the cubature points
-      call fev2_evaluateFemData(rassemblyData%p_RfemData,rassemblyData%revalElementSet)
+      call fev2_evaluateFemData(rassemblyData%rfemDataBlocks,rassemblyData%revalElementSet)
       
     end if
 
@@ -5436,9 +5440,7 @@ contains
       call fev2_prepareVectorEval(revalVectors,rassemblyData%revalElementSet)
 
       ! Evaluate the attached vectors in the cubature points.
-      if (associated(rassemblyData%p_RfemData)) then
-        call fev2_evaluateVectors(revalVectors,rassemblyData%p_RfemData)
-      end if
+      call fev2_evaluateVectors(revalVectors,rassemblyData%rfemDataBlocks)
 
       ! Use the callback routine to calculate the local vector entries.
       dinttemp = 0.0_DP
