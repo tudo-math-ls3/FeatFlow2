@@ -37,9 +37,9 @@ switch(celement)
             p(idx)=nan;
             
             trisurf(tri,X,Y,p);
-            title('(P1): FE-solution')
-            xaxis('x-axis')
-            yaxis('y-axis')
+            %title('(P1): FE-solution')
+            %xlabel('x-axis')
+            %ylabel('y-axis')
         else
             p1(idx)=nan;
             p2(idx)=nan;
@@ -48,20 +48,20 @@ switch(celement)
             subplot(1,3,1)
             trisurf(tri,X,Y,p1);
             title('(P1): p_1(x,y)=1-x-y')
-            xaxis('x-axis')
-            yaxis('y-axis')
+            xlabel('x-axis')
+            ylabel('y-axis')
             
             subplot(1,3,2)
             trisurf(tri,X,Y,p2)
             title('(P1): p_2(x,y)=x')
-            xaxis('x-axis')
-            yaxis('y-axis')
+            xlabel('x-axis')
+            ylabel('y-axis')
             
             subplot(1,3,3)
             trisurf(tri,X,Y,p3)
             title('(P1): p_3(x,y)=y')
-            xaxis('x-axis')
-            yaxis('y-axis')
+            xlabel('x-axis')
+            ylabel('y-axis')
         end
         
     case{'P1T'}
@@ -80,11 +80,10 @@ switch(celement)
         if exist('u'),
             p = u(1).*p1 + u(2).*p2 + u(3).*p3;
             p(idx)=nan;
-            
             trisurf(tri,X,Y,p);
-            title('(P1T): FE-solution')
-            xaxis('x-axis')
-            yaxis('y-axis')
+            %title('(P1T): FE-solution')
+            %xlabel('x-axis')
+            %ylabel('y-axis')
         else
             p1(idx)=nan;
             p2(idx)=nan;
@@ -93,20 +92,20 @@ switch(celement)
             subplot(1,3,1)
             trisurf(tri,X,Y,p1);
             title('(P1T): p_1(x,y)=1-2y')
-            xaxis('x-axis')
-            yaxis('y-axis')
+            xlabel('x-axis')
+            ylabel('y-axis')
             
             subplot(1,3,2)
             trisurf(tri,X,Y,p2)
             title('(P1T): p_2(x,y)=-1+2x+2y')
-            xaxis('x-axis')
-            yaxis('y-axis')
+            xlabel('x-axis')
+            ylabel('y-axis')
             
             subplot(1,3,3)
             trisurf(tri,X,Y,p3)
             title('(P1T): p_3(x,y)=1-2x')
-            xaxis('x-axis')
-            yaxis('y-axis')
+            xlabel('x-axis')
+            ylabel('y-axis')
         end
         
     case{'Q1','E011'}
@@ -125,33 +124,44 @@ switch(celement)
             p = u(1).*p1 + u(2).*p2 +...
                 u(3).*p3 + u(4).*p4;
             surf(X,Y,p);
-            title('(Q1): FE-solution')
-            xaxis('x-axis')
-            yaxis('y-axis')
+            alpha(.5)
+            %title('(Q1): FE-solution')
+            %xlabel('x-axis')
+            %ylabel('y-axis')
+            hold on
+            plot3(-1,-1,u(1),'.','MarkerSize',50,...
+                'MarkerEdgeColor','k','MarkerFaceColor','k')
+            plot3( 1,-1,u(2),'.','MarkerSize',50,...
+                'MarkerEdgeColor','k','MarkerFaceColor','k')
+            plot3( 1, 1,u(3),'.','MarkerSize',50,...
+                'MarkerEdgeColor','k','MarkerFaceColor','k')
+            plot3(-1, 1,u(4),'.','MarkerSize',50,...
+                'MarkerEdgeColor','k','MarkerFaceColor','k')
+            hold off
         else
             subplot(2,2,1)
             surf(X,Y,p1)
             title('(Q1): p_1(x,y)=1/4(1-x)(1-y)')
-            xaxis('x-axis')
-            yaxis('y-axis')
+            xlabel('x-axis')
+            ylabel('y-axis')
             
             subplot(2,2,2)
             surf(X,Y,p2)
             title('(Q1): p_2(x,y)=1/4(1+x)(1-y)')
-            xaxis('x-axis')
-            yaxis('y-axis')
+            xlabel('x-axis')
+            ylabel('y-axis')
             
             subplot(2,2,3)
             surf(X,Y,p3)
             title('(Q1): p_3(x,y)=1/4(1+x)(1+y)')
-            xaxis('x-axis')
-            yaxis('y-axis')
+            xlabel('x-axis')
+            ylabel('y-axis')
             
             subplot(2,2,4)
             surf(X,Y,p4)
             title('(Q1): p_4(x,y)=1/4(1-x)(1+y)')
-            xaxis('x-axis')
-            yaxis('y-axis')
+            xlabel('x-axis')
+            ylabel('y-axis')
         end
         
     case{'E030'}
@@ -170,33 +180,40 @@ switch(celement)
             p = u(1).*p1 + u(2).*p2 +...
                 u(3).*p3 + u(4).*p4;
             surf(X,Y,p);
-            title('(E030): FE-solution')
-            xaxis('x-axis')
-            yaxis('y-axis')
+            alpha(0.5)
+            %title('(E030): FE-solution')
+            %xlabel('x-axis')
+            %ylabel('y-axis')
+            hold on
+            plot3( [-1  1],[-1 -1],[u(1) u(1)],'k--','LineWidth',3)
+            plot3( [ 1  1],[-1  1],[u(2) u(2)],'k--','LineWidth',3)
+            plot3( [-1  1],[ 1  1],[u(3) u(3)],'k--','LineWidth',3)
+            plot3( [-1 -1],[-1  1],[u(4) u(4)],'k--','LineWidth',3)
+            hold off
         else
             subplot(2,2,1)
             surf(X,Y,p1)
             title('(E030): p_1(x,y)=-3/8(x^2-y^2)-1/2y+1/4')
-            xaxis('x-axis')
-            yaxis('y-axis')
+            xlabel('x-axis')
+            ylabel('y-axis')
             
             subplot(2,2,2)
             surf(X,Y,p2)
             title('(E030): p_2(x,y)=3/8(x^2-y^2)+1/2x+1/4')
-            xaxis('x-axis')
-            yaxis('y-axis')
+            xlabel('x-axis')
+            ylabel('y-axis')
             
             subplot(2,2,3)
             surf(X,Y,p3)
             title('(E030): p_3(x,y)=-3/8(x^2-y^2)+1/2y+1/4')
-            xaxis('x-axis')
-            yaxis('y-axis')
+            xlabel('x-axis')
+            ylabel('y-axis')
             
             subplot(2,2,4)
             surf(X,Y,p4)
             title('(E030): p_4(x,y)=3/8(x^2-y^2)-1/2x+1/4')
-            xaxis('x-axis')
-            yaxis('y-axis')
+            xlabel('x-axis')
+            ylabel('y-axis')
         end
         
     case{'E031'}
@@ -215,33 +232,44 @@ switch(celement)
             p = u(1).*p1 + u(2).*p2 +...
                 u(3).*p3 + u(4).*p4;
             surf(X,Y,p);
-            title('(E031): FE-solution')
-            xaxis('x-axis')
-            yaxis('y-axis')
+            alpha(0.5)
+            %title('(E031): FE-solution')
+            %xlabel('x-axis')
+            %ylabel('y-axis')
+            hold on
+            plot3( 0,-1,u(1),'.','MarkerSize',50,...
+                'MarkerEdgeColor','k','MarkerFaceColor','k')
+            plot3( 1, 0,u(2),'.','MarkerSize',50,...
+                'MarkerEdgeColor','k','MarkerFaceColor','k')
+            plot3( 0, 1,u(3),'.','MarkerSize',50,...
+                'MarkerEdgeColor','k','MarkerFaceColor','k')
+            plot3(-1, 0,u(4),'.','MarkerSize',50,...
+                'MarkerEdgeColor','k','MarkerFaceColor','k')
+            hold off
         else
             subplot(2,2,1)
             surf(X,Y,p1)
             title('(E031): p_1(x,y)=-1/4(x^2-y^2)-1/2y+1/4')
-            xaxis('x-axis')
-            yaxis('y-axis')
+            xlabel('x-axis')
+            ylabel('y-axis')
             
             subplot(2,2,2)
             surf(X,Y,p2)
             title('(E031): p_2(x,y)=1/4(x^2-y^2)+1/2x+1/4')
-            xaxis('x-axis')
-            yaxis('y-axis')
+            xlabel('x-axis')
+            ylabel('y-axis')
             
             subplot(2,2,3)
             surf(X,Y,p3)
             title('(E031): p_3(x,y)=-1/4(x^2-y^2)+1/2y+1/4')
-            xaxis('x-axis')
-            yaxis('y-axis')
+            xlabel('x-axis')
+            ylabel('y-axis')
             
             subplot(2,2,4)
             surf(X,Y,p4)
             title('(E031): p_4(x,y)=1/4(x^2-y^2)-1/2x+1/4')
-            xaxis('x-axis')
-            yaxis('y-axis')
+            xlabel('x-axis')
+            ylabel('y-axis')
         end
         
     otherwise
