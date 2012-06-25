@@ -302,6 +302,10 @@ Iterations              : 56
 
 Rate of convergence     : 8.041217584520861E-01
 
+|u - u_h|_L2 = 7.5295684419E-04 6.7450248469E-05
+|u - u_h|_H1 = 3.5960746712E-02 9.1283655464E-04
+|p - p_h|_L2 = 3.6532249168E-02
+
 Calculating 3D Stokes-Problem 0 - simple
 ----------------------------------------
 BiCGStab: Iteration 0,  !!RES!! = 6.461722231140288E-02
