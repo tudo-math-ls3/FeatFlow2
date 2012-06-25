@@ -1682,7 +1682,7 @@ void gmvwrite_xface_data(long totverts, void *nverts, void *nodeids,
 {
   int  *tempface, *tempnodeids, *tempptr;
   long  *tempface64, *tempnodeids64, *tempptr64, nc, tempnverts;
-  int *nodesptr, count;
+  int count;
 
    /*  Allocate output arrays.  */
    tempnverts = totverts;
