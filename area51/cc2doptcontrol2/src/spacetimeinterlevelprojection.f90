@@ -1692,7 +1692,7 @@ contains
       ispaceLevel=ispacelevelfine,itimeLevel=itimelevelfine)
     
     ! We need a scalar representation of the temp vector
-    call lsysbl_createScalarFromVec (rtempVecFine,rtempVecFineScalar)
+    call lsysbl_createScalarFromVec (rtempVecFine,rtempVecFineScalar,.false.)
     
     ! Allocate temp memory
     select case (rprojHier%ctimeProjection)
@@ -2474,7 +2474,7 @@ contains
       ispaceLevel=ispacelevelfine,itimeLevel=itimelevelfine)
     
     ! We need a scalar representation of the temp vector
-    call lsysbl_createScalarFromVec (rtempVecFine,rtempVecFineScalar)
+    call lsysbl_createScalarFromVec (rtempVecFine,rtempVecFineScalar,.false.)
     
     ! Allocate temp memory
     select case (rprojHier%ctimeProjection)
@@ -2750,7 +2750,7 @@ contains
       ispaceLevel=ispacelevelfine,itimeLevel=itimelevelfine)
     
     ! We need a scalar representation of the temp vector
-    call lsysbl_createScalarFromVec (rtempVecFine,rtempVecFineScalar)
+    call lsysbl_createScalarFromVec (rtempVecFine,rtempVecFineScalar,.false.)
     
     ! Allocate temp memory
     select case (rprojHier%ctimeProjection)
