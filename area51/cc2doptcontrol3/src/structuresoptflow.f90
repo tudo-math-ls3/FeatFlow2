@@ -146,13 +146,13 @@ module structuresoptflow
     type(t_spaceTimeHierarchy) :: rspaceTimeHierControl
 
     ! Projection hierarchy for the interlevel projection in space/time, primal space.
-    type(t_sptiProjHierarchy) :: rprjHierSpaceTimePrimal
+    type(t_sptiProjHierarchyBlock) :: rprjHierSpaceTimePrimal
 
     ! Projection hierarchy for the interlevel projection in space/time, dual space.
-    type(t_sptiProjHierarchy) :: rprjHierSpaceTimeDual
+    type(t_sptiProjHierarchyBlock) :: rprjHierSpaceTimeDual
 
     ! Projection hierarchy for the interlevel projection in space/time, control space.
-    type(t_sptiProjHierarchy) :: rprjHierSpaceTimeControl
+    type(t_sptiProjHierarchyBlock) :: rprjHierSpaceTimeControl
     
     ! A hierarchy of operator assembly structures for all levels.
     ! This is a central discretisation structure passed to all assembly routines.

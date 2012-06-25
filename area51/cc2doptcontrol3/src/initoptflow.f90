@@ -230,17 +230,17 @@ contains
     
     call init_initSpaceTimePrjHierarchy (rsettingsSolver%rprjHierSpaceTimePrimal,&
         rsettingsSolver%rspaceTimeHierPrimal,&
-        rsettingsSolver%rprjHierSpacePrimal,rsettingsSolver%rphysics,&
+        rsettingsSolver%rprjHierSpacePrimal,rsettingsSolver%rphysics,CCSPACE_PRIMAL,&
         rparlist,rsettings%ssectionTimeDiscretisation)
         
     call init_initSpaceTimePrjHierarchy (rsettingsSolver%rprjHierSpaceTimeDual,&
         rsettingsSolver%rspaceTimeHierDual,&
-        rsettingsSolver%rprjHierSpaceDual,rsettingsSolver%rphysics,&
+        rsettingsSolver%rprjHierSpaceDual,rsettingsSolver%rphysics,CCSPACE_DUAL,&
         rparlist,rsettings%ssectionTimeDiscretisation)
 
     call init_initSpaceTimePrjHierarchy (rsettingsSolver%rprjHierSpaceTimeControl,&
         rsettingsSolver%rspaceTimeHierControl,&
-        rsettingsSolver%rprjHierSpaceControl,rsettingsSolver%rphysics,&
+        rsettingsSolver%rprjHierSpaceControl,rsettingsSolver%rphysics,CCSPACE_CONTROL,&
         rparlist,rsettings%ssectionTimeDiscretisation)
         
     ! Init+Allocate memory for the matrices on all levels and create all
@@ -486,9 +486,9 @@ contains
     call user_doneGlobalData (rsettings%rglobalData)
 
     ! Release projection and FE hierarchies in space and space/time
-    call sptipr_doneProjection(rsettings%rprjHierSpaceTimeControl)
-    call sptipr_doneProjection(rsettings%rprjHierSpaceTimeDual)
-    call sptipr_doneProjection(rsettings%rprjHierSpaceTimePrimal)
+    call init_doneSpaceTimePrjHierarchy (rsettings%rprjHierSpaceTimeControl)
+    call init_doneSpaceTimePrjHierarchy (rsettings%rprjHierSpaceTimeDual)
+    call init_doneSpaceTimePrjHierarchy (rsettings%rprjHierSpaceTimePrimal)
         
     call mlprj_releasePrjHierarchy(rsettings%rprjHierSpaceControl)
     call mlprj_releasePrjHierarchy(rsettings%rprjHierSpaceDual)

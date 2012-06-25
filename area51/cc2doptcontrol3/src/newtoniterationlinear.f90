@@ -47,6 +47,7 @@ module newtoniterationlinear
   use kktsystemhierarchy
   
   use spacetimehierarchy
+  use spacetimeinterlevelprojection
   
   use structuresnewton
   
@@ -54,8 +55,92 @@ module newtoniterationlinear
   
   private
 
+!<constants>
+
+!<constantblock description = "Solver identifier">
+
+  ! Richardson iteration
+  integer, parameter, public :: NLIN_SOLVER_RICHARDSON = 0
+  
+  ! Multigrid iteration
+  integer, parameter, public :: NLIN_SOLVER_MULTIGRID = 1
+
+!</constantblock>
+
+!</constants>
+
+  public :: t_linsolMultigrid
+  public :: t_linsolParameters
+
 !<type>
 
+  !<typeblock>
+  
+  ! Multigrid parameters and structures
+  type t_linsolMultigrid
+
+    ! Identifies the cycle.
+    ! =0: F-cycle,
+    ! =1: V-cycle,
+    ! =2: W-cycle
+    integer :: ccycle = 0
+
+    ! Specifies the smoother.
+    ! =0: Damped Richardson iteration
+    integer :: csmoother = 0
+
+    ! Specifies the coarse grid solver.
+    ! =0: Damped Richardson iteration
+    integer :: ccoarseGridSolver = 0
+
+    ! Number of presmoothing steps
+    integer :: nsmPre = 0
+
+    ! Number of postsmoothing steps
+    integer :: nsmPost = 4
+    
+    ! Coarse grid correction damping parameter
+    real(DP) :: dcoarseGridCorrectionWeight = 1.0_DP
+    
+    ! Section in the parameter list with parameters for the smoother
+    character(LEN=PARLST_MLSECTION) :: ssectionSmoother
+    
+    ! Section in the parameter list with parameters for the coarse grid solver
+    character(LEN=PARLST_MLSECTION) :: ssectionCoarseGridSolver
+    
+    ! Link to the parameter list
+    type(t_parlist), pointer :: p_rparList => null()
+    
+    ! For every level in the hierarchy, a linear solver structure
+    ! that configures the smoother. The solver structure at level 1
+    ! defines the coarse grid solver
+    type(t_linsolParameters), dimension(:), pointer :: p_rsubSolvers => null()
+  
+    ! KKT system hierarchy for solutions on the different levels
+    type(t_kktsystemDirDerivHierarchy) :: rsolutionHier
+
+    ! KKT system hierarchy for defect vectors on the different levels
+    type(t_kktsystemDirDerivHierarchy) :: rdefectHier
+
+    ! KKT system hierarchy for RHS vectors on the different levels
+    type(t_kktsystemDirDerivHierarchy) :: rrhsHier
+  
+    ! Projection hierarchy for the interlevel projection in space/time, primal space.
+    type(t_sptiProjHierarchyBlock), pointer :: p_rprjHierSpaceTimePrimal => null()
+
+    ! Projection hierarchy for the interlevel projection in space/time, dual space.
+    type(t_sptiProjHierarchyBlock), pointer :: p_rprjHierSpaceTimeDual => null()
+
+    ! Projection hierarchy for the interlevel projection in space/time, control space.
+    type(t_sptiProjHierarchyBlock), pointer :: p_rprjHierSpaceTimeControl => null()
+    
+    ! Cycle counter
+    integer, dimension(:), pointer :: p_IcycleCount => null()
+
+  end type
+  
+  !</typeblock>
+  
   !<typeblock>
   
   ! Contains the parameters of the Newton iteration.
@@ -64,6 +149,12 @@ module newtoniterationlinear
     ! <!-- --------------------------------------- -->
     ! <!-- GENRERAL PARAMETERS AND SOLVER SETTINGS -->
     ! <!-- --------------------------------------- -->
+
+    ! Specifies the type of the solver.
+    ! =0: Damped Richardson iteration with damping parameter omega.
+    ! =1: Space-time multigrid method applied to the underlying 
+    !     space-time hierarchy
+    integer :: csolverType = 0
 
     ! General newton parameters
     type(t_newtonPrecParameters) :: rprecParameters
@@ -101,6 +192,9 @@ module newtoniterationlinear
     ! is not better than depsrel(linear space-solver)!!!
     integer :: cspatialInitCondPolicy = SPINITCOND_PREVITERATE
     
+    ! Parameters for the multigrid solver
+    type(t_linsolMultigrid), pointer :: p_rlinsolMultigrid => null()
+    
     ! <!-- -------------- -->
     ! <!-- TEMPORARY DATA -->
     ! <!-- -------------- -->
@@ -115,8 +209,6 @@ module newtoniterationlinear
   
   !</typeblock>
   
-  public :: t_linsolParameters
-
 !</types>
 
   ! Apply preconditioning of a defect with the Newton preconditioner
@@ -206,6 +298,63 @@ contains
     ! Take the solution of the linearised primal/dual system and
     ! calculate the residual in the control space.
     call kkt_calcControlResDirDeriv (rkktsystemDirDeriv,rrhs,rresidual,dres,iresnorm)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine newtonlin_smoothCorrection (rsmootherParams,nsm,&
+      rkktsystemDirDeriv,rrhs,rtempVector)
+  
+!<description>
+  ! Applies the space-time smoother.
+!</description>
+
+!<input>
+  ! Number of smoothing steps
+  integer, intent(in) :: nsm
+!</input>
+
+!<inputoutput>
+  ! Parameters of the smoother
+  type(t_linsolParameters), intent(inout) :: rsmootherParams
+  
+  ! Structure defining the linearised KKT system.
+  ! The linearised control in this structure is used as
+  ! initial and target vector.
+  ! The control on the maximum level receives the result.
+  type(t_kktsystemDirDeriv), intent(inout), target :: rkktsystemDirDeriv
+  
+  ! Right-hand side of the linearised control equation
+  type(t_controlSpace), intent(inout), target :: rrhs
+
+  ! Temporary control vector
+  type(t_controlSpace), intent(inout) :: rtempVector
+!</inputoutput>
+
+!</subroutine>
+
+    ! Configure the solver to apply exactly nsm steps
+    if (nsm .le. 0) return
+    rsmootherParams%rprecParameters%nminiterations = nsm
+    rsmootherParams%rprecParameters%nmaxiterations = nsm
+    
+    ! Call the smoother.
+    select case (rsmootherParams%csolverType)
+    
+    ! --------------------------------------
+    ! Richardson iteration
+    ! --------------------------------------
+    case (NLIN_SOLVER_RICHARDSON)
+      ! Call the Richardson iteration to calculate an update
+      ! for the control.
+      call newtonlin_richardson (rsmootherParams,rkktsystemDirDeriv,&
+          rrhs,rtempVector)
+          
+    end select
+    
 
   end subroutine
 
@@ -306,6 +455,285 @@ contains
 
 !<subroutine>
 
+  subroutine newtonlin_multigrid (rlinsolParam,rkktsysDirDerivHierarchy,rrhs)
+  
+!<description>
+  ! Applies a Multigrid iteration in the control space
+  ! for the linearised KKT system.
+!</description>
+
+!<inputoutput>
+  ! Parameters for the iteration.
+  ! The output parameters are changed according to the iteration.
+  type(t_linsolParameters), intent(inout) :: rlinsolParam
+
+  ! Hierarchy of directional derivatives of the KKT system.
+  ! The control on the maximum level receives the result.
+  type(t_kktsystemDirDerivHierarchy), intent(inout) :: rkktsysDirDerivHierarchy
+
+  ! Right-hand side of the linearised control equation
+  type(t_controlSpace), intent(inout), target :: rrhs
+!</inputoutput>
+
+!</subroutine>
+
+    integer :: nlevels
+
+    ! Dall the MG driver on the maximum level.
+    nlevels = rlinsolParam%p_rkktsystemHierarchy%nlevels
+    call newtonlin_multigridDriver (rlinsolParam,nlevels,nlevels,&
+        rkktsysDirDerivHierarchy,rrhs)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  recursive subroutine MG_initCycles (ccycle,ilevel,nlevels,IcycleCount)
+  
+!<description>
+  ! Initialises the cycle counter on level 1..ilevel.
+!</description>
+
+!<input>
+  ! Cycle type.
+  ! =0: F-cycle, =1: V-cycle, =2: W-cycle
+  integer, intent(in) :: ccycle
+
+  ! Current level
+  integer, intent(in) :: ilevel
+  
+  ! Maximum level
+  integer, intent(in) :: nlevels
+!</input>
+
+!<inputoutput>
+  ! Cycle counter.
+  integer, dimension(:), intent(inout) :: IcycleCount
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    integer :: i
+
+    if (ccycle .eq. 0) then
+      ! F-cycle. Cycle counter is =2 on all levels
+      ! if ilevel=nlevels and =1 otherwise.
+      if (ilevel .eq. nlevels) then
+        do i=1,ilevel
+          IcycleCount(i) = 2
+        end do
+      else
+        do i=1,ilevel
+          IcycleCount(i) = 1
+        end do
+      end if
+      
+    else
+      ! V-cyclke, W-cycle,...
+      do i=1,ilevel
+        IcycleCount(i) = ccycle
+      end do
+    end if    
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  recursive subroutine newtonlin_multigridDriver (rlinsolParam,ilevel,nlevels,&
+      rkktsysDirDerivHierarchy,rrhs)
+  
+!<description>
+  ! This is the actual multigrid driver which applies the
+  ! multilevel iteration.
+!</description>
+
+!<input>
+  ! Current level
+  integer, intent(in) :: ilevel
+  
+  ! Maximum level in the hierarchy
+  integer, intent(in) :: nlevels
+!</input>
+
+!<inputoutput>
+  ! Parameters for the iteration.
+  ! The output parameters are changed according to the iteration.
+  type(t_linsolParameters), intent(inout), target :: rlinsolParam
+
+  ! Hierarchy of directional derivatives of the KKT system.
+  ! The control on level ilevel receives the result.
+  type(t_kktsystemDirDerivHierarchy), intent(inout) :: rkktsysDirDerivHierarchy
+  
+  ! Right-hand side of the linearised control equation
+  type(t_controlSpace), intent(inout), target :: rrhs
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    type(t_linsolMultigrid), pointer :: p_rlinsolMultigrid
+    integer :: nminIterations,nmaxIterations,ite
+    real(DP) :: dresInit,dresFinal
+    
+    ! Get multigrid parameters.
+    p_rlinsolMultigrid => rlinsolParam%p_rlinsolMultigrid
+
+    ! On level 1 apply the coarse grid solver
+    if (ilevel .eq. 1) then
+      
+      ! Call the coarse grid solver.
+      call newtonlin_precond (p_rlinsolMultigrid%p_rsubSolvers(1),&
+          rkktsysDirDerivHierarchy,rrhs)
+    
+        rlinsolParam%rprecParameters%dresInit = &
+            p_rlinsolMultigrid%p_rsubSolvers(1)%rprecParameters%dresInit
+        rlinsolParam%rprecParameters%dresFinal = &
+            p_rlinsolMultigrid%p_rsubSolvers(1)%rprecParameters%dresFinal
+        rlinsolParam%rprecParameters%niterations = &
+            p_rlinsolMultigrid%p_rsubSolvers(1)%rprecParameters%niterations
+    
+      ! Finish
+      return
+    end if
+    
+    ! On level 2..nlevels, apply the smoothing and coarse grid correction process.
+
+    if (ilevel .eq. nlevels) then
+      ! Initialise the cycle counter for all levels.
+      call MG_initCycles (&
+          p_rlinsolMultigrid%ccycle,nlevels,nlevels,p_rlinsolMultigrid%p_IcycleCount)
+
+      ! On level nlevels, apply as many iterations as configured.
+      nminIterations = rlinsolParam%rprecParameters%nminIterations
+      nmaxIterations = rlinsolParam%rprecParameters%nmaxIterations
+      
+      ! On all the other levels, apply as many iterations as configured in the cycle.
+      nminIterations = p_rlinsolMultigrid%p_IcycleCount(ilevel)
+      nmaxIterations = p_rlinsolMultigrid%p_IcycleCount(ilevel)
+    end if
+    
+    ! Apply the multigrid iteration
+    ite = 0
+    call kkt_clearDirDeriv (rkktsysDirDerivHierarchy%p_RkktSysDirDeriv(ilevel))
+    
+    do
+    
+      if (ilevel .lt. nlevels) then
+        ! On level < nlevels, do not calculate the next residual but
+        ! exit immediately if the maximum number of iterations
+        ! (= cycle count) is reached.
+        if (ite .ge. nmaxIterations) exit
+      end if
+    
+      ! Get the residual
+      call newtonlin_getResidual (rlinsolParam,&
+          rkktsysDirDerivHierarchy%p_RkktSysDirDeriv(ilevel),rrhs,&
+          p_rlinsolMultigrid%rdefectHier%p_RkktSysDirDeriv(ilevel)%p_rcontrolLin,&
+          dresFinal,rlinsolParam%rprecParameters%iresnorm)
+          
+      if (ite .eq. 0) dresInit = dresFinal
+
+      ! Some checks and output on the maximum level
+      if (ilevel .eq. nlevels) then
+      
+        if (rlinsolParam%rprecParameters%ioutputLevel .ge. 2) then
+          call output_line ("  Space-time MG: Iteration "// &
+              trim(sys_siL(ite,10))// &
+              ", ||res(u)|| = "// &
+              trim(sys_sdEL(dresFinal,10)))
+        end if
+        
+        ! -------------------------------------------------------------
+        ! Check for convergence
+        ! -------------------------------------------------------------
+        if (newtonlin_checkConvergence(rlinsolParam%rprecParameters)) exit
+        
+        ! -------------------------------------------------------------
+        ! Check for divergence
+        ! -------------------------------------------------------------
+        if (newtonlin_checkDivergence(rlinsolParam%rprecParameters)) exit
+        
+        ! -------------------------------------------------------------
+        ! Check other stopping criteria
+        ! -------------------------------------------------------------
+        if (newtonlin_checkIterationStop(rlinsolParam%rprecParameters)) exit
+      
+      end if
+      
+      ! Apply presmoothing
+      if (p_rlinsolMultigrid%nsmpre .ne. 0) then
+        call newtonlin_smoothCorrection (p_rlinsolMultigrid%p_rsubSolvers(ilevel),&
+              p_rlinsolMultigrid%nsmpre,&
+              rkktsysDirDerivHierarchy%p_RkktSysDirDeriv(ilevel),rrhs,&
+              rlinsolParam%p_rtempVectors(ilevel))
+
+        ! Get the new residual -- it has changed due to the smoothing.
+        call newtonlin_getResidual (rlinsolParam,&
+            rkktsysDirDerivHierarchy%p_RkktSysDirDeriv(ilevel),rrhs,&
+            p_rlinsolMultigrid%rdefectHier%p_RkktSysDirDeriv(ilevel)%p_rcontrolLin,&
+            dresFinal,rlinsolParam%rprecParameters%iresnorm)
+      end if
+      
+      ! Restriction of the defect
+      call sptipr_performRestriction (p_rlinsolMultigrid%p_RprjHierSpaceTimeControl,ilevel,&
+          p_rlinsolMultigrid%rrhsHier%p_RkktSysDirDeriv(ilevel-1)%p_rcontrolLin%p_rvectorAccess, &
+          p_rlinsolMultigrid%rdefectHier%p_RkktSysDirDeriv(ilevel)%p_rcontrolLin%p_rvectorAccess)
+      
+      ! Coarse grid correction
+      call newtonlin_multigridDriver (rlinsolParam,ilevel-1,nlevels,&
+          p_rlinsolMultigrid%rsolutionHier,&
+          p_rlinsolMultigrid%rrhsHier%p_RkktSysDirDeriv(ilevel-1)%p_rcontrolLin)
+      
+      
+      ! Prolongation of the correction
+      call sptipr_performProlongation (p_rlinsolMultigrid%p_RprjHierSpaceTimeControl,ilevel,&
+          p_rlinsolMultigrid%rsolutionHier%p_RkktSysDirDeriv(ilevel-1)%p_rcontrolLin%p_rvectorAccess,&
+          p_rlinsolMultigrid%rsolutionHier%p_RkktSysDirDeriv(ilevel)%p_rcontrolLin%p_rvectorAccess)
+
+      ! And the actual correction...
+      call kktsp_controlLinearComb (&
+          p_rlinsolMultigrid%rsolutionHier%p_RkktSysDirDeriv(ilevel)%p_rcontrolLin,&
+          p_rlinsolMultigrid%dcoarseGridCorrectionWeight,&
+          rkktsysDirDerivHierarchy%p_RkktSysDirDeriv(ilevel)%p_rcontrolLin,&
+          1.0_DP)
+
+      ! Apply postsmoothing
+      if (p_rlinsolMultigrid%nsmpost .ne. 0) then
+        call newtonlin_smoothCorrection (p_rlinsolMultigrid%p_rsubSolvers(ilevel),&
+              p_rlinsolMultigrid%nsmpost,&
+              rkktsysDirDerivHierarchy%p_RkktSysDirDeriv(ilevel),rrhs,&
+              rlinsolParam%p_rtempVectors(ilevel))
+              
+        ! Calculation of the new residual is done in the beginning of the loop.
+      end if
+
+      ! Next iteration
+      ite = ite + 1
+
+    end do
+    
+    ! Initialise the cycle counter for the next run.
+    call MG_initCycles (&
+        p_rlinsolMultigrid%ccycle,ilevel,nlevels,p_rlinsolMultigrid%p_IcycleCount)
+        
+    ! Save statistics on the maximum level
+    if (ilevel .eq. nlevels) then
+      rlinsolParam%rprecParameters%dresInit = dresInit
+      rlinsolParam%rprecParameters%dresFinal = dresFinal
+      rlinsolParam%rprecParameters%niterations = ite
+    end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
   subroutine newtonlin_precond (rlinsolParam,rkktsysDirDerivHierarchy,rnewtonDir)
   
 !<description>
@@ -323,7 +751,7 @@ contains
 
   ! Hierarchy of directional derivatives of the KKT system.
   ! Used for temporary calculations.
-  type(t_kktsystemDirDerivHierarchy), intent(inout) :: rkktsysDirDerivHierarchy 
+  type(t_kktsystemDirDerivHierarchy), intent(inout) :: rkktsysDirDerivHierarchy
 
   ! This structure contains the search direction to be
   ! preconditioned. Will be replaced by the precoditioned search direction.
@@ -362,14 +790,27 @@ contains
     !     rkktsystemDirDeriv%p_rcontrolLin
     ! which starts with zero.
     
-    call kktsp_clearPrimal (p_rkktsysDirDeriv%p_rprimalSolLin)
-    call kktsp_clearDual (p_rkktsysDirDeriv%p_rdualSolLin)
-    call kktsp_clearControl (p_rkktsysDirDeriv%p_rcontrolLin)
+    call kkt_clearDirDeriv (p_rkktsysDirDeriv)
+
+    select case (rlinsolParam%csolverType)
     
-    ! Call the Richardson iteration to calculate an update
-    ! for the control.
-    call newtonlin_richardson (rlinsolParam,p_rkktsysDirDeriv,&
-        rnewtonDir,rlinsolParam%p_rtempVectors(nlevels))
+    ! --------------------------------------
+    ! Richardson iteration
+    ! --------------------------------------
+    case (NLIN_SOLVER_RICHARDSON)
+      ! Call the Richardson iteration to calculate an update
+      ! for the control.
+      call newtonlin_richardson (rlinsolParam,p_rkktsysDirDeriv,&
+          rnewtonDir,rlinsolParam%p_rtempVectors(nlevels))
+          
+    ! --------------------------------------
+    ! Multigrid iteration
+    ! --------------------------------------
+    case (NLIN_SOLVER_MULTIGRID)
+      ! Invoke multigrid.
+      call newtonlin_multigrid (rlinsolParam,rkktsysDirDerivHierarchy,rnewtonDir)
+      
+    end select
     
     ! Overwrite the rnewtonDir with the update.
     call kktsp_controlLinearComb (&
@@ -414,6 +855,8 @@ contains
 !</inputoutput>
 
 !</subroutine>
+
+    character(len=SYS_STRLEN) :: ssectionSpaceTimeMG
    
     ! Remember the settings for later use
     rlinsolParam%p_rsettingsSolver => rsettingsSolver
@@ -423,8 +866,30 @@ contains
     ! Get the corresponding parameters from the parameter list.
     call newtonlin_initBasicParams (rlinsolParam%rprecParameters,ssection,rparlist)
 
+    ! Solver type
+    call parlst_getvalue_int (rparlist, ssection, "csolverType", &
+        rlinsolParam%csolverType, rlinsolParam%csolverType)
+
+    ! Generation of the initial condition
     call parlst_getvalue_int (rparlist, ssection, "cspatialInitCondPolicy", &
         rlinsolParam%cspatialInitCondPolicy, rlinsolParam%cspatialInitCondPolicy)
+        
+    select case (rlinsolParam%csolverType)
+    
+    ! -----------------------------------------------------
+    ! Multigrid inítialisation
+    ! -----------------------------------------------------
+    case (NLIN_SOLVER_MULTIGRID)
+    
+      ! Get the section configuring the space-time MG
+      call parlst_getvalue_string (rparlist, ssection, &
+          "ssectionSpaceTimeMG", ssectionSpaceTimeMG, "SPACETIME-LINSOLVER",bdequote=.true.)
+          
+      ! Initialise the MG parameters
+      allocate(rlinsolParam%p_rlinsolMultigrid)
+      call newtonlin_initMG (rlinsolParam%p_rlinsolMultigrid,rparlist,ssectionSpaceTimeMG)
+    
+    end select
 
   end subroutine
 
@@ -432,7 +897,64 @@ contains
 
 !<subroutine>
 
-  subroutine newtonlin_initStructure (rlinsolParam,rkktsystemHierarchy)
+  subroutine newtonlin_initMG (rlinsolMultigrid,rparlist,ssection)
+  
+!<description>
+  ! Basic initialisation of the multigrid preconditioner.
+!</description>
+
+!<input>
+  ! Parameter list that contains the data for the preconditioning.
+  type(t_parlist), intent(in), target :: rparlist
+  
+  ! Entry Section in the parameter list containing the data of the 
+  ! preconditioner.
+  character(len=*), intent(in) :: ssection
+!</input>
+
+!<inputoutput>
+  ! Structure to be initialised.
+  type(t_linsolMultigrid), intent(out) :: rlinsolMultigrid
+!</inputoutput>
+
+!</subroutine>
+
+    ! Read parameters from the DAT file.
+    call parlst_getvalue_int (rparlist, ssection, "ccycle", &
+        rlinsolMultigrid%ccycle, rlinsolMultigrid%ccycle)
+    
+    call parlst_getvalue_int (rparlist, ssection, "csmoother", &
+        rlinsolMultigrid%csmoother, rlinsolMultigrid%csmoother)
+
+    call parlst_getvalue_int (rparlist, ssection, "ccoarseGridSolver", &
+        rlinsolMultigrid%ccoarseGridSolver, rlinsolMultigrid%ccoarseGridSolver)
+
+    call parlst_getvalue_int (rparlist, ssection, "nsmPre", &
+        rlinsolMultigrid%nsmPre, rlinsolMultigrid%nsmPre)
+        
+    call parlst_getvalue_int (rparlist, ssection, "nsmPost", &
+        rlinsolMultigrid%nsmPost, rlinsolMultigrid%nsmPost)
+
+    call parlst_getvalue_string (rparlist, ssection, "ssectionSmoother", &
+        rlinsolMultigrid%ssectionSmoother,"SPACETIME-SMOOTHER",&
+        bdequote=.true.)
+
+    call parlst_getvalue_string (rparlist, ssection, "ssectionCoarseGridSolver", &
+        rlinsolMultigrid%ssectionCoarseGridSolver,"SPACETIME-COARSEGRIDSOLVER",&
+        bdequote=.true.)
+        
+    ! Remember the parameter list for later initialisations
+    ! of the subsolvers.
+    rlinsolMultigrid%p_rparList => rparList
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine newtonlin_initStructure (rlinsolParam,rkktsystemHierarchy,&
+      rprjHierSpaceTimePrimal,rprjHierSpaceTimeDual,rprjHierSpaceTimeControl)
   
 !<description>
   ! Structural initialisation of the preconditioner
@@ -443,6 +965,15 @@ contains
   ! This can be a 'template' structure, i.e., memory for the solutions
   ! in rkktsystemHierarchy does not have to be allocated.
   type(t_kktsystemHierarchy), intent(in), target :: rkktsystemHierarchy
+
+  ! Projection hierarchy for the interlevel projection in space/time, primal space.
+  type(t_sptiProjHierarchyBlock), intent(in), target :: rprjHierSpaceTimePrimal
+
+  ! Projection hierarchy for the interlevel projection in space/time, dual space.
+  type(t_sptiProjHierarchyBlock), intent(in), target :: rprjHierSpaceTimeDual
+
+  ! Projection hierarchy for the interlevel projection in space/time, control space.
+  type(t_sptiProjHierarchyBlock), intent(in), target :: rprjHierSpaceTimeControl
 !</input>
 
 !<inputoutput>
@@ -465,9 +996,115 @@ contains
       call kkth_initControl (&
           rlinsolParam%p_RtempVectors(i),rkktsystemHierarchy,i)
     end do
-   
+    
+    ! Initialise subsolvers
+    select case (rlinsolParam%csolverType)
+    
+    ! -----------------------------------------------------
+    ! Multigrid inítialisation
+    ! -----------------------------------------------------
+    case (NLIN_SOLVER_MULTIGRID)
+
+      call newtonlin_initStrucMultigrid (&
+          rlinsolParam%p_rlinsolMultigrid,rkktsystemHierarchy,&
+          RprjHierSpaceTimePrimal,RprjHierSpaceTimeDual,RprjHierSpaceTimeControl)
+      
+    end select
+
   end subroutine
 
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine newtonlin_initStrucMultigrid (rlinsolMultigrid,rkktsystemHierarchy,&
+      rprjHierSpaceTimePrimal,rprjHierSpaceTimeDual,rprjHierSpaceTimeControl)
+  
+!<description>
+  ! Initialises a multigrid substructure.
+!</description>
+
+!<input>
+  ! Defines the basic hierarchy of the solutions of the KKT system.
+  ! This can be a 'template' structure, i.e., memory for the solutions
+  ! in rkktsystemHierarchy does not have to be allocated.
+  type(t_kktsystemHierarchy), intent(in), target :: rkktsystemHierarchy
+
+  ! Projection hierarchy for the interlevel projection in space/time, primal space.
+  type(t_sptiProjHierarchyBlock), intent(in), target :: RprjHierSpaceTimePrimal
+
+  ! Projection hierarchy for the interlevel projection in space/time, dual space.
+  type(t_sptiProjHierarchyBlock), intent(in), target :: RprjHierSpaceTimeDual
+
+  ! Projection hierarchy for the interlevel projection in space/time, control space.
+  type(t_sptiProjHierarchyBlock), intent(in), target :: RprjHierSpaceTimeControl
+!</input>
+
+!<inputoutput>
+  ! Structure to be initialised.
+  type(t_linsolMultigrid), intent(inout) :: rlinsolMultigrid
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    integer :: ilevel
+
+    ! Allocate the smoothers / coarse grid solvers
+    allocate (rlinsolMultigrid%p_rsubSolvers(rkktsystemHierarchy%nlevels))
+    
+    ! Level 1 is the coarse grid solver
+    select case (rlinsolMultigrid%ccoarseGridSolver)
+    
+    ! -------------------------------
+    ! Richardson solver
+    ! -------------------------------
+    case (NLIN_SOLVER_RICHARDSON)
+    
+      ! Partial initialisation of the corresponding linear solver structure
+      rlinsolMultigrid%p_rsubSolvers(1)%csolverType = NLIN_SOLVER_RICHARDSON
+      call newtonlin_initBasicParams (&
+          rlinsolMultigrid%p_rsubSolvers(1)%rprecParameters,&
+          rlinsolMultigrid%ssectionCoarseGridSolver,rlinsolMultigrid%p_rparList)
+
+    end select
+    
+    ! Level 2..nlevels are smoothers
+    do ilevel = 2,rkktsystemHierarchy%nlevels
+
+      ! Level 1 is the coarse grid solver
+      select case (rlinsolMultigrid%ccoarseGridSolver)
+      
+      ! -------------------------------
+      ! Richardson smoother
+      ! -------------------------------
+      case (NLIN_SOLVER_RICHARDSON)
+
+      ! Partial initialisation of the corresponding linear solver structure
+      rlinsolMultigrid%p_rsubSolvers(ilevel)%csolverType = NLIN_SOLVER_RICHARDSON
+        call newtonlin_initBasicParams (&
+            rlinsolMultigrid%p_rsubSolvers(ilevel)%rprecParameters,&
+            rlinsolMultigrid%ssectionSmoother,rlinsolMultigrid%p_rparList)
+            
+      end select
+    
+    end do
+    
+    ! Save the projection hierarchies which allows us to apply
+    ! prolongation/restriction.
+    rlinsolMultigrid%p_RprjHierSpaceTimePrimal => RprjHierSpaceTimePrimal
+    rlinsolMultigrid%p_RprjHierSpaceTimeDual => RprjHierSpaceTimeDual
+    rlinsolMultigrid%p_RprjHierSpaceTimeControl => RprjHierSpaceTimeControl
+
+    ! Allocate the cycle counter.
+    allocate(rlinsolMultigrid%p_IcycleCount(rkktsystemHierarchy%nlevels))
+    
+    ! Create temp vectors for the iteration based on the given KKT system hierarchy
+    call kkth_initHierarchyDirDeriv (rlinsolMultigrid%rsolutionHier,rkktsystemHierarchy)
+    call kkth_initHierarchyDirDeriv (rlinsolMultigrid%rdefectHier,rkktsystemHierarchy)
+    call kkth_initHierarchyDirDeriv (rlinsolMultigrid%rrhsHier,rkktsystemHierarchy)
+   
+  end subroutine
 
   ! ***************************************************************************
 
@@ -526,12 +1163,53 @@ contains
 
     integer :: i
 
+    ! Clean up subsolvers
+    select case (rlinsolParam%csolverType)
+    
+    ! -----------------------------------------------------
+    ! Multigrid
+    ! -----------------------------------------------------
+    case (NLIN_SOLVER_MULTIGRID)
+
+      call newtonlin_doneStrucMultigrid (rlinsolParam%p_rlinsolMultigrid)
+      
+    end select
+
+
     ! Release temp vectors
     do i=rlinsolParam%p_rkktsystemHierarchy%nlevels,1,-1
       call kktsp_doneControlVector (rlinsolParam%p_RtempVectors(i))
     end do
     deallocate(rlinsolParam%p_RtempVectors)
    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine newtonlin_doneStrucMultigrid (rlinsolMultigrid)
+  
+!<description>
+  ! Cleanup of the data initalised in newtonlin_initStructure.
+!</description>
+
+!<inputoutput>
+  ! Structure to be cleaned up.
+  type(t_linsolMultigrid), intent(inout) :: rlinsolMultigrid
+!</inputoutput>
+
+!</subroutine>
+
+    ! Release temp data
+    call kkth_doneHierarchyDirDeriv (rlinsolMultigrid%rsolutionHier)
+    call kkth_doneHierarchyDirDeriv (rlinsolMultigrid%rdefectHier)
+    call kkth_doneHierarchyDirDeriv (rlinsolMultigrid%rrhsHier)
+
+    ! Release memory
+    deallocate(rlinsolMultigrid%p_IcycleCount)
+    deallocate(rlinsolMultigrid%p_rsubSolvers)
+
   end subroutine
 
   ! ***************************************************************************
@@ -550,6 +1228,11 @@ contains
 !</inputoutput>
 
 !</subroutine>
+
+    ! Release memory
+    if (associated(rlinsolParam%p_rlinsolMultigrid)) then
+      deallocate(rlinsolParam%p_rlinsolMultigrid)
+    end if
    
   end subroutine
 

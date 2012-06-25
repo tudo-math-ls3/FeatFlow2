@@ -153,6 +153,12 @@ module kktsystem
   ! Calculate the residual of the control equation(s) in the linearised KKT system
   public :: kkt_calcControlResDirDeriv
 
+  ! Clear a KKT structure
+  public :: kkt_clear
+
+  ! Clear a KKT derivative structure
+  public :: kkt_clearDirDeriv
+
 contains
 
   ! ***************************************************************************
@@ -1115,6 +1121,50 @@ contains
         rrhs,1.0_DP,&
         rkktsystemDirDeriv%p_rcontrolLin,-1.0_DP,&
         rresidual,1.0_DP,dres,iresnorm)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine kkt_clear (rkktSystem)  
+!<description>
+  ! Clears a KKT structure.
+!</description>
+
+!<inputoutput>
+  ! Structure to be cleared.
+  type(t_kktsystem), intent(inout), target :: rkktsystem
+!</inputoutput>
+
+!</subroutine>
+
+    call kktsp_clearPrimal (rkktsystem%p_rprimalSol)
+    call kktsp_clearDual (rkktsystem%p_rdualSol)
+    call kktsp_clearControl (rkktsystem%p_rcontrol)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine kkt_clearDirDeriv (rkktSystemDirDeriv)
+!<description>
+  ! Clears a KKT structure.
+!</description>
+
+!<inputoutput>
+  ! Structure to be cleared.
+  type(t_kktsystemDirDeriv), intent(inout), target :: rkktSystemDirDeriv
+!</inputoutput>
+
+!</subroutine>
+
+    call kktsp_clearPrimal (rkktSystemDirDeriv%p_rprimalSolLin)
+    call kktsp_clearDual (rkktSystemDirDeriv%p_rdualSolLin)
+    call kktsp_clearControl (rkktSystemDirDeriv%p_rcontrolLin)
 
   end subroutine
 

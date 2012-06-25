@@ -26,6 +26,12 @@
 !#     -> Interpolation of a space-time coupled solution vector to a lower
 !#        level
 !#
+!# 6.) sptipr_initProjectionBlock
+!#     -> Initialises a space-time projection block structure
+!#
+!# 7.) sptipr_doneProjectionBlock
+!#     -> Releases a space-time projection block structure
+!#
 !# </purpose>
 !##############################################################################
 
@@ -56,11 +62,14 @@ module spacetimeinterlevelprojection
   private
   
   public :: t_sptiProjHierarchy
+  public :: t_sptiProjHierarchyBlock
   public :: sptipr_initProjection
   public :: sptipr_doneProjection
   public :: sptipr_performProlongation
   public :: sptipr_performRestriction
   public :: sptipr_performInterpolation
+  public :: sptipr_initProjectionBlock
+  public :: sptipr_doneProjectionBlock
   
 !<types>
 
@@ -96,7 +105,7 @@ module spacetimeinterlevelprojection
     type(t_spaceTimeHierarchy), pointer :: p_rspaceTimeHierarchy => null()
 
     ! Pointer to a hierarchy of interlevel projection structures in space.
-    type(t_interlevelProjectionHier), pointer :: p_rprojHierarchySpace
+    type(t_interlevelProjectionHier), pointer :: p_rprojHierarchySpace => null()
     
     ! An array of prolongation matrices.
     ! rprojectionMat(i) defines the weights for the projection
@@ -117,10 +126,118 @@ module spacetimeinterlevelprojection
 
 !</typeblock>
 
+!<typeblock>
+
+  ! A set of space-time projection hierarchy that allows to specify a
+  ! separate prolongation/restriction in space and time for every component
+  ! of a solution
+  type t_sptiProjHierarchyBlock
+  
+    ! A set of projection hierarchies. Every structure defines a projection
+    ! for s set of solution components.
+    type(t_sptiProjHierarchy), dimension(:), pointer :: p_RprojHier => null()
+  
+    ! Number of entries in the list.
+    integer :: ncount = 0
+  
+  end type
+  
+!</typeblock>
+
 !</types>
 
 
 contains
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sptipr_initProjectionBlock (rprojHierBlock,rspaceTimeHierarchy,&
+      rprojHierarchySpace,rphysics,cspace,ctimeProjection)
+  
+!<description>
+  !
+!</description>
+
+!<input>
+  ! A space-time hierarchy that describes the discretisation in space and time
+  ! for all levels.
+  type(t_spaceTimeHierarchy), intent(in), target :: rspaceTimeHierarchy
+  
+  ! Interlevel projection structure for space levels.
+  type(t_interlevelProjectionHier), intent(in), target :: rprojHierarchySpace
+
+  ! Underlying physics
+  type(t_settings_physics), intent(in), target :: rphysics
+
+  ! Type of space, this projection is set up for.
+  ! =CCSPACE_PRIMAL  : Primal space, forward in time
+  ! =CCSPACE_DUAL    : Dual space, backward in time
+  ! =CCSPACE_CONTROL : Control space
+  integer, intent(in) :: cspace
+
+  ! Type of projection in time.
+  ! =-1: automatic.
+  ! =0: constant prolongation/restriction
+  ! =1: linear prolongation/restriction. Central differences. 
+  !     Solutions located at the endpoints in time.
+  ! =1: linear prolongation/restriction. Central differences. 
+  !     Dual Solutions located in time according to the theta scheme.
+  integer, intent(in), optional :: ctimeProjection
+!</input>
+
+!<output>
+  ! Space-time projection block structure.
+  type(t_sptiProjHierarchyBlock), intent(out) :: rprojHierBlock
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer :: i
+    
+    rprojHierBlock%ncount = ncount
+    allocate(rprojHierBlock%p_RprojHier(ncount))
+
+    ! Initialise all substructures
+    do i=1,rprojHierBlock%ncount
+      call sptipr_initProjection (rprojHierBlock%p_RprojHier(i),rspaceTimeHierarchy,&
+          rprojHierarchySpace,rphysics,cspace,ctimeProjection)
+    end do
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sptipr_doneProjectionBlock (rprojHierBlock)
+  
+!<description>
+  ! Cleans up a block of projection structures.
+!</description>
+
+!<output>
+  ! Space-time projection block structure to be cleaned up
+  type(t_sptiProjHierarchyBlock), intent(inout) :: rprojHierBlock
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer :: i
+    
+    ! Deallocate all substructures
+    do i=rprojHierBlock%ncount,1,-1
+      call sptipr_doneProjection (rprojHierBlock%p_RprojHier(i))
+    end do
+
+    ! Deallocate the structure itself
+    deallocate(rprojHierBlock%p_RprojHier)
+    rprojHierBlock%ncount = 0
+
+  end subroutine
 
   ! ***************************************************************************
 
@@ -157,16 +274,17 @@ contains
   !     Solutions located at the endpoints in time.
   ! =1: linear prolongation/restriction. Central differences. 
   !     Dual Solutions located in time according to the theta scheme.
-  integer, intent(in), optional :: ctimeProjection
+  integer, intent(in) :: ctimeProjection
   
-  ! List of components in the vector to which this type
-  ! of projection is to be applied.
-  integer, dimension(:), intent(in), optional :: Icomponents
+  ! Part of the solution which should be projected with
+  ! the above projection. This is usually =1 except for some controls, e.g.,
+  ! where one part has to be projected in a different way than another.
+  integer, intent(in) :: isubspace
 !</input>
 
 !<output>
   ! Space-time projection structure.
-  type(t_sptiProjHierarchy), intent(OUT) :: rprojHier
+  type(t_sptiProjHierarchy), intent(out) :: rprojHier
 !</output>
 
 !</subroutine>
@@ -183,14 +301,9 @@ contains
     
     cthetaschemetype = rprojHier%p_rtimeCoarseDiscr%itag
     
-    ! Get the components for which this projection holds
-    if (present(Icomponents)) then
-      allocate(rprojHier%p_Icomponents(size(Icomponents)))
-      rprojHier%p_Icomponents(:) = Icomponents(:)
-    else
-      nullify(rprojHier%p_Icomponents)
-    end if
-        
+    ! The component part is =0 usually
+    nullify(rprojHier%p_Icomponents)
+
     ! Set ctimeProjection
     rprojHier%ctimeProjection = -1
     if (present(ctimeProjection)) rprojHier%ctimeProjection = ctimeProjection
@@ -242,6 +355,9 @@ contains
           ! Create the transposed restriction matrix in rprolmat2 and transpose.
           ! Create the interpolation matrix in p_RinterpolationMat.
           
+          ! ===============================================
+          ! Primal space
+          ! ===============================================
           case (CCSPACE_PRIMAL)
             call sptipr_getProlMatrixPrimal(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
                 rprojHier%p_RprolongationMat(i))
@@ -258,6 +374,9 @@ contains
             !call matio_writeMatrixHR (rprojHier%p_RinterpolationMat(i), "pmat",&
             !    .true., 0, "imatrixp."//trim(sys_siL(i,10)), "(E20.10)")
             
+          ! ===============================================
+          ! Dual space
+          ! ===============================================
           case (CCSPACE_DUAL,CCSPACE_CONTROL)
             call sptipr_getProlMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
                 rprojHier%p_RprolongationMat(i))
@@ -273,6 +392,53 @@ contains
 
             !call matio_writeMatrixHR (rprojHier%p_RinterpolationMat(i), "pmat",&
             !    .true., 0, "imatrixp."//trim(sys_siL(i,10)), "(E20.10)")
+
+          ! ===============================================
+          ! Control space
+          ! ===============================================
+          case (CCSPACE_CONTROL)
+
+            ! If there are multiple controls, we have to allocate rprojHier%p_Icomponents
+            ! and put there which components have to be projected like what.
+            ! isubspace defines the number of the control currently being defined,
+            ! so,. e.g., 1=distriibuted control, 2=boundary control,...
+
+            select case (rphysics%cequation)
+            
+            ! -------------------------------------------------------------
+            ! Stokes/Navier Stokes.
+            ! -------------------------------------------------------------
+            case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+              call sptipr_getProlMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
+                  rprojHier%p_RprolongationMat(i))
+
+              call sptipr_getProlMatrixPrimal(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
+                  rprolmat2)
+
+              call sptipr_getInterpMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
+                  rprojHier%p_RinterpolationMat(i))
+
+            ! -------------------------------------------------------------
+            ! Heat equation
+            ! -------------------------------------------------------------
+            case (CCEQ_HEAT2D)
+              call sptipr_getProlMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
+                  rprojHier%p_RprolongationMat(i))
+
+              call sptipr_getProlMatrixPrimal(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
+                  rprolmat2)
+
+              call sptipr_getInterpMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
+                  rprojHier%p_RinterpolationMat(i))
+                  
+            end select
+            
+            !call matio_writeMatrixHR (rprojHier%p_RprolongationMatDual(i), "dmat",&
+            !    .true., 0, "matrixc."//trim(sys_siL(i,10)), "(E20.10)")
+
+            !call matio_writeMatrixHR (rprojHier%p_RinterpolationMat(i), "pmat",&
+            !    .true., 0, "imatrixp."//trim(sys_siL(i,10)), "(E20.10)")
+            
           end select
           
           ! Restriction matrices are obtained by transposing the prolongation
@@ -1124,8 +1290,7 @@ contains
   ! ***************************************************************************
 
     subroutine getSpatialVector (rprojHier,rcoarseVector,iindex,rx,&
-        rtempVecCoarse,rtempVecFineScalar,&
-        ispacelevelcoarse,ispacelevelfine)
+        rtempVecFineScalar,ispacelevelcoarse,ispacelevelfine)
     
     ! Extracts the spatial subvector iindex from rcoarseVector and puts it
     ! into rx. If necessary, the vector is prolongated in space.
@@ -1135,7 +1300,7 @@ contains
     type(t_sptiProjHierarchy), intent(IN) :: rprojHier
 
     ! Space-time source vector
-    type(t_spaceTimeVector), intent(in) :: rcoarseVector
+    type(t_spaceTimeVectorAccess), intent(inout) :: rcoarseVector
     
     ! Index of the subvector
     integer, intent(in) :: iindex
@@ -1144,24 +1309,27 @@ contains
     type(t_vectorBlock), intent(inout) :: rx
     
     ! Temp vectors
-    type(t_vectorBlock), intent(inout) :: rtempVecCoarse
     type(t_vectorScalar), intent(inout) :: rtempVecFineScalar
     
     ! Level of the coarse and (destination) fine vector.
     integer, intent(in) :: ispacelevelcoarse
     integer, intent(in) :: ispacelevelfine
-  
-      ! Load timestep iindex into the temp vector and interpolate to the current level.
-      ! Put the result to rx3.
+
+      ! local variables
+      type(t_vectorBlock), pointer :: p_rtempVecCoarse
+      
+      ! Get the coarse grid vector  
+      call sptivec_getVectorFromPool (rcoarseVector, iindex, p_rtempVecCoarse)
+
+      ! Interpolate to the current level. Put the result to rx.
       if (ispacelevelcoarse .ne. ispacelevelfine) then
         ! Space + time
-        call sptivec_getTimestepData (rcoarseVector, iindex, rtempVecCoarse)
         call mlprj_performProlongation (&
             rprojHier%p_rprojHierarchySpace%p_Rprojection(ispacelevelfine),&
-            rtempVecCoarse,rx,rtempVecFineScalar)
+            p_rtempVecCoarse,rx,rtempVecFineScalar)
       else
         ! Only time
-        call sptivec_getTimestepData (rcoarseVector, iindex, rx)
+        call lsysbl_copyVector (p_rtempVecCoarse,rx)
       end if
       
     end subroutine
@@ -1170,44 +1338,34 @@ contains
 
 !<subroutine>
 
-  subroutine sptipr_performProlongation (RprojHier,ilevelfine,rcoarseVector, &
-      rfineVector,rtempVecCoarse,rtempVecFine)
+  subroutine sptipr_performProlongation (rprojHierBlock,ilevelfine,rcoarseVector, &
+      rfineVector)
   
 !<description>
   ! Performs a prolongation for a given space/time vector (i.e. a projection
   ! in the primal space where the solution lives). The vector
   ! rcoarseVector on a coarser space/time mesh is projected to the vector
   ! rfineVector on a finer space/time mesh.
-  ! rprojHier configures how the transfer is performed.
-  ! This projection structure rprojHier must correspond to the space/time
+  ! rprojHierBlock%p_RprojHier configures how the transfer is performed.
+  ! This projection structure rprojHierBlock%p_RprojHier must correspond to the space/time
   ! discretisation of rcoarseVector and rfineVector.
 !</description>
 
 !<input>
   ! Array of space/time interlevel projection structures that configure the
   ! prolongation/restriction in space/time.
-  type(t_sptiProjHierarchy), dimension(:), intent(in) :: RprojHier
+  type(t_sptiProjHierarchyBlock), intent(in) :: rprojHierBlock
   
   ! Index of the fine mesh.
   integer, intent(in) :: ilevelfine
 
   ! Coarse grid vector
-  type(t_spacetimeVector), intent(inout) :: rcoarseVector
+  type(t_spacetimeVectorAccess), intent(inout) :: rcoarseVector
 !</input>
-
-!<inputoutput>
-  ! Temporary space-vector, specifying the discretisation and vector shape
-  ! on the coarse grid.
-  type(t_vectorBlock), intent(inout) :: rtempVecCoarse
-
-  ! Temporary space-vector, specifying the discretisation and vector shape
-  ! on the fine grid.
-  type(t_vectorBlock), intent(inout) :: rtempVecFine
-!</inputoutput>
 
 !<output>
   ! Fine grid vector
-  type(t_spacetimeVector), intent(INOUT) :: rfineVector
+  type(t_spacetimeVectorAccess), intent(inout) :: rfineVector
 !</output>
 
 !</subroutine>
@@ -1216,8 +1374,8 @@ contains
     type(t_spaceTimeVectorAccess) :: raccessPool
     integer :: ispacelevelfine,ispacelevelcoarse,itimelevelfine,itimelevelcoarse
     type(t_vectorScalar) :: rtempVecFineScalar
-    type(t_vectorBlock), pointer :: p_rx
-    integer :: irow, icol, neq, icomp, imat, icompidx, i
+    type(t_vectorBlock), pointer :: p_rx,p_rdestVector,p_rtempVecFine
+    integer :: irow, icol, neq, icomp, imat, icompidx, i, neqfine
     type(t_matrixScalar), pointer :: p_rtimeMatrix
     real(DP), dimension(:), pointer :: p_Da,p_DdataCoarse,p_DdataFine
     integer, dimension(:), pointer :: p_Kcol, p_Kld
@@ -1229,18 +1387,15 @@ contains
     !end do
 
     ! Get the space-time coarse and fine discretisations.
-    call sth_getLevel (RprojHier(1)%p_rspaceTimeHierarchy,ilevelfine-1,&
+    call sth_getLevel (rprojHierBlock%p_RprojHier(1)%p_rspaceTimeHierarchy,ilevelfine-1,&
       ispaceLevel=ispacelevelcoarse,itimeLevel=itimelevelcoarse)
-    call sth_getLevel (RprojHier(1)%p_rspaceTimeHierarchy,ilevelfine,&
+    call sth_getLevel (rprojHierBlock%p_RprojHier(1)%p_rspaceTimeHierarchy,ilevelfine,&
       ispaceLevel=ispacelevelfine,itimeLevel=itimelevelfine)
-    
-    ! We need a scalar representation of the temp vector
-    call lsysbl_createScalarFromVec (rtempVecFine,rtempVecFineScalar)
     
     ! Allocate temp memory
     i = 0
-    do icompidx = 1,ubound(RprojHier,1)
-      select case (RprojHier(icompidx)%ctimeProjection)
+    do icompidx = 1,rprojHierBlock%ncount
+      select case (rprojHierBlock%p_RprojHier(icompidx)%ctimeProjection)
       case (0,1,2)
         i = max(i,3)
       case default
@@ -1248,7 +1403,19 @@ contains
       end select
     end do
     
-    call sptivec_createAccessPool (rfineVector%p_rspaceDiscr,raccessPool,i)
+    ! The access pool receives the prolongated solution and is
+    ! not bounded to and space-time vector!
+    call sptivec_createAccessPool (rfineVector%p_rspaceDiscr,raccessPool,i+1)
+    
+    ! We need one temp vector. Take it from the pool and and associate
+    ! the index neqfine -- this will for sure not appear in the loop.
+    ! Lock the vector so it is not overwritten.
+    neqfine = rfineVector%p_rspaceTimeVector%NEQtime
+    call sptivec_getFreeBufferFromPool (raccessPool,neqfine+1,p_rtempVecFine)
+    call sptivec_lockVecInPool (raccessPool,neqfine+1)
+    
+    ! We need a scalar representation of the temp vector
+    call lsysbl_createScalarFromVec (p_rtempVecFine,rtempVecFineScalar)
     
     ! Prolongation means, we multiply with the prolongation matrix.
     ! y and xi have to be multiplied with the primal prol. matrix,
@@ -1258,7 +1425,7 @@ contains
     ! lambda and p: p is between y and thus at the same points
     ! in time as lambda, not as y!
     
-    neq = RprojHier(1)%p_RprolongationMat(ilevelfine-1)%neq
+    neq = rprojHierBlock%p_RprojHier(1)%p_RprolongationMat(ilevelfine-1)%neq
     
     ! Apply the multiplication.
     ! The rows in the matrix correspond to the time fine mesh, the columns
@@ -1266,17 +1433,18 @@ contains
     do irow = 1,neq
     
       ! Clear the destination
-      call lsysbl_clearVector (rtempVecFine)
+      call sptivec_getFreeBufferFromPool (rfineVector,irow,p_rdestVector)
+      call lsysbl_clearVector (p_rdestVector)
       
       ! DEBUG!!!
-      call lsysbl_getbase_double (rtempVecFine,p_DdataFine)
+      call lsysbl_getbase_double (p_rdestVector,p_DdataFine)
       
       ! Loop over the matrices configuring the prolongation for
       ! all the components
-      do imat = 1,ubound(RprojHier,1)
+      do imat = 1,rprojHierBlock%ncount
       
         ! Get the matrix
-        p_rtimeMatrix => RprojHier(imat)%p_RprolongationMat(ilevelfine-1)
+        p_rtimeMatrix => rprojHierBlock%p_RprojHier(imat)%p_RprolongationMat(ilevelfine-1)
         call lsyssc_getbase_double (p_rtimeMatrix,p_Da)
         call lsyssc_getbase_Kcol (p_rtimeMatrix,p_Kcol)
         dscale = p_rtimeMatrix%dscaleFactor
@@ -1293,8 +1461,9 @@ contains
             
             ! Read the source vector. The column of the matrix specifies
             ! the timestep.
-            call getSpatialVector (RprojHier(imat),rcoarseVector,p_Kcol(icol),p_rx,&
-                rtempVecCoarse,rtempVecFineScalar,ispacelevelcoarse,ispacelevelfine)
+            call getSpatialVector (rprojHierBlock%p_RprojHier(imat),&
+                rcoarseVector,p_Kcol(icol),p_rx,&
+                rtempVecFineScalar,ispacelevelcoarse,ispacelevelfine)
           end if
           
           ! DEBUG!!!
@@ -1303,16 +1472,16 @@ contains
           ! Now, rx is the time vector at timestep icol. Weighted multiplication
           ! into rtempVecFine for y and xi.
           ! Multiply either all components or the specified subcomponents.
-          if (.not. associated(RprojHier(imat)%p_Icomponents)) then
+          if (.not. associated(rprojHierBlock%p_RprojHier(imat)%p_Icomponents)) then
 
-            call lsysbl_vectorLinearComb(p_rx,rtempVecFine,dscale*p_Da(icol),1.0_DP)
+            call lsysbl_vectorLinearComb(p_rx,p_rdestVector,dscale*p_Da(icol),1.0_DP)
 
           else
 
-            do icompidx = 1,ubound(RprojHier(imat)%p_Icomponents,1)
-              icomp = RprojHier(imat)%p_Icomponents(icompidx)
+            do icompidx = 1,ubound(rprojHierBlock%p_RprojHier(imat)%p_Icomponents,1)
+              icomp = rprojHierBlock%p_RprojHier(imat)%p_Icomponents(icompidx)
               call lsyssc_vectorLinearComb(&
-                  p_rx%Rvectorblock(icomp),rtempVecFine%RvectorBlock(icomp),&
+                  p_rx%Rvectorblock(icomp),p_rdestVector%RvectorBlock(icomp),&
                   dscale*p_Da(icol),1.0_DP)
             end do
             
@@ -1323,7 +1492,7 @@ contains
       end do
       
       ! Vector finished.
-      call sptivec_setTimestepData (rfineVector, irow, rtempVecFine)
+      call sptivec_commitVecInPool (rfineVector,irow)
 
     end do
     
@@ -1331,51 +1500,41 @@ contains
     call sptivec_releaseAccessPool(raccessPool)
     
     call lsyssc_releaseVector (rtempVecFineScalar)
-
+    
   end subroutine
      
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine sptipr_performRestriction (RprojHier,ilevelfine,rcoarseVector, &
-      rfineVector,rtempVecCoarse,rtempVecFine)
+  subroutine sptipr_performRestriction (rprojHierBlock,ilevelfine,rcoarseVector, &
+      rfineVector)
   
 !<description>
   ! Performs a restriction for a given space/time vector (i.e. a projection
   ! in the dual space where the RHS vector lives). The vector
   ! rfineVector on a finer grid is projected to the vector
   ! rcoarseVector on a coarser space/time mesh.
-  ! rprojHier configures how the transfer is performed.
-  ! This projection structure rprojHier must correspond to the space/time
+  ! rprojHierBlock%p_RprojHier configures how the transfer is performed.
+  ! This projection structure rprojHierBlock%p_RprojHier must correspond to the space/time
   ! discretisation of rcoarseVector and rfineVector.
 !</description>
 
 !<input>
   ! Array of space/time interlevel projection structures that configure the
   ! prolongation/restriction in space/time.
-  type(t_sptiProjHierarchy), dimension(:), intent(in) :: RprojHier
+  type(t_sptiProjHierarchyBlock), intent(in) :: rprojHierBlock
 
   ! Index of the fine mesh.
   integer, intent(in) :: ilevelfine
 
   ! Fine grid vector
-  type(t_spacetimeVector), intent(INOUT) :: rfineVector
+  type(t_spacetimeVectorAccess), intent(inout) :: rfineVector
 !</input>
-
-!<inputoutput>
-  ! Temporary space-vector, specifying the discretisation and vector shape
-  ! on the coarse grid.
-  type(t_vectorBlock), intent(INOUT) :: rtempVecCoarse
-
-  ! Temporary space-vector, specifying the discretisation and vector shape
-  ! on the fine grid.
-  type(t_vectorBlock), intent(INOUT) :: rtempVecFine
-!</inputoutput>
 
 !<output>
   ! Coarse grid vector
-  type(t_spacetimeVector), intent(INOUT) :: rcoarseVector
+  type(t_spacetimeVectorAccess), intent(INOUT) :: rcoarseVector
 !</output>
 
 !</subroutine>
@@ -1384,8 +1543,8 @@ contains
     type(t_spaceTimeVectorAccess) :: raccessPool
     integer :: ispacelevelfine,ispacelevelcoarse,itimelevelfine,itimelevelcoarse
     type(t_vectorScalar) :: rtempVecFineScalar
-    type(t_vectorBlock), pointer :: p_rx
-    integer :: irow, icol, neq, icomp, imat, icompidx, i
+    type(t_vectorBlock), pointer :: p_rx,p_rdestVector, p_rtempVecFine
+    integer :: irow, icol, neq, icomp, imat, icompidx, i, neqfine
     type(t_matrixScalar), pointer :: p_rtimeMatrix
     real(DP), dimension(:), pointer :: p_Da,p_DdataCoarse,p_DdataFine
     integer, dimension(:), pointer :: p_Kcol, p_Kld
@@ -1395,18 +1554,15 @@ contains
     !call sptivec_setConstant(rfineVector,1.0_DP)
 
     ! Get the space-time coarse and fine discretisations.
-    call sth_getLevel (RprojHier(1)%p_rspaceTimeHierarchy,ilevelfine-1,&
+    call sth_getLevel (rprojHierBlock%p_RprojHier(1)%p_rspaceTimeHierarchy,ilevelfine-1,&
       ispaceLevel=ispacelevelcoarse,itimeLevel=itimelevelcoarse)
-    call sth_getLevel (RprojHier(1)%p_rspaceTimeHierarchy,ilevelfine,&
+    call sth_getLevel (rprojHierBlock%p_RprojHier(1)%p_rspaceTimeHierarchy,ilevelfine,&
       ispaceLevel=ispacelevelfine,itimeLevel=itimelevelfine)
-    
-    ! We need a scalar representation of the temp vector
-    call lsysbl_createScalarFromVec (rtempVecFine,rtempVecFineScalar)
     
     ! Allocate temp memory
     i = 0
-    do icompidx = 1,ubound(RprojHier,1)
-      select case (RprojHier(icompidx)%ctimeProjection)
+    do icompidx = 1,rprojHierBlock%ncount
+      select case (rprojHierBlock%p_RprojHier(icompidx)%ctimeProjection)
       case (0,1,2)
         i = max(i,3)
       case default
@@ -1414,7 +1570,17 @@ contains
       end select
     end do
     
-    call sptivec_createAccessPool (rfineVector%p_rspaceDiscr,raccessPool,i)
+    call sptivec_createAccessPool (rfineVector%p_rspaceDiscr,raccessPool,i+1)
+    
+    ! We need one temp vector. Take it from the pool and and associate
+    ! the index neqfine -- this will for sure not appear in the loop.
+    ! Lock the vector so it is not overwritten.
+    neqfine = rfineVector%p_rspaceTimeVector%NEQtime
+    call sptivec_getFreeBufferFromPool (raccessPool,neqfine+1,p_rtempVecFine)
+    call sptivec_lockVecInPool (raccessPool,neqfine+1)
+    
+    ! We need a scalar representation of the temp vector
+    call lsysbl_createScalarFromVec (p_rtempVecFine,rtempVecFineScalar)
     
     ! Prolongation means, we multiply with the prolongation matrix.
     ! y and xi have to be multiplied with the primal prol. matrix,
@@ -1424,7 +1590,7 @@ contains
     ! lambda and p: p is between y and thus at the same points
     ! in time as lambda, not as y!
 
-    neq = RprojHier(1)%p_RrestrictionMat(ilevelfine-1)%neq
+    neq = rprojHierBlock%p_RprojHier(1)%p_RrestrictionMat(ilevelfine-1)%neq
     
     ! Apply the multiplication.
     ! The rows in the matrix correspond to the time fine mesh, the columns
@@ -1432,17 +1598,18 @@ contains
     do irow = 1,neq
 
       ! Clear the destination
-      call lsysbl_clearVector (rtempVecFine)
+      call sptivec_getFreeBufferFromPool (rfineVector,irow,p_rdestVector)
+      call lsysbl_clearVector (p_rdestVector)
       
       ! DEBUG!!!
-      call lsysbl_getbase_double (rtempVecFine,p_DdataFine)
+      call lsysbl_getbase_double (p_rdestVector,p_DdataFine)
       
       ! Loop over the matrices configuring the prolongation for
       ! all the components
-      do imat = 1,ubound(RprojHier,1)
+      do imat = 1,rprojHierBlock%ncount
       
         ! Get the matrix
-        p_rtimeMatrix => RprojHier(imat)%p_RrestrictionMat(ilevelfine-1)
+        p_rtimeMatrix => rprojHierBlock%p_RprojHier(imat)%p_RrestrictionMat(ilevelfine-1)
         call lsyssc_getbase_double (p_rtimeMatrix,p_Da)
         call lsyssc_getbase_Kcol (p_rtimeMatrix,p_Kcol)
         call lsyssc_getbase_Kld (p_rtimeMatrix,p_Kld)
@@ -1452,7 +1619,7 @@ contains
         do icol = p_Kld(irow),p_Kld(irow+1)-1
         
           ! Get the fine grid vector using the vector pool as buffer. Saves time.
-          call sptivec_getVectorFromPool(raccessPool,p_Kcol(icol),p_rx)
+          call sptivec_getVectorFromPool(rfineVector,p_Kcol(icol),p_rx)
           
           call lsysbl_getbase_double (p_rx,p_DdataCoarse)
           
@@ -1460,16 +1627,16 @@ contains
           ! into rtempVecFine for y and xi.
 
           ! Multiply either all components or the specified subcomponents.
-          if (.not. associated(RprojHier(imat)%p_Icomponents)) then
+          if (.not. associated(rprojHierBlock%p_RprojHier(imat)%p_Icomponents)) then
 
-            call lsysbl_vectorLinearComb(p_rx,rtempVecFine,dscale*p_Da(icol),1.0_DP)
+            call lsysbl_vectorLinearComb(p_rx,p_rdestVector,dscale*p_Da(icol),1.0_DP)
 
           else
 
-            do icompidx = 1,ubound(RprojHier(imat)%p_Icomponents,1)
-              icomp = RprojHier(imat)%p_Icomponents(icompidx)
+            do icompidx = 1,ubound(rprojHierBlock%p_RprojHier(imat)%p_Icomponents,1)
+              icomp = rprojHierBlock%p_RprojHier(imat)%p_Icomponents(icompidx)
               call lsyssc_vectorLinearComb(&
-                  p_rx%Rvectorblock(icomp),rtempVecFine%RvectorBlock(icomp),&
+                  p_rx%Rvectorblock(icomp),p_rdestVector%RvectorBlock(icomp),&
                   dscale*p_Da(icol),1.0_DP)
             end do
             
@@ -1480,9 +1647,9 @@ contains
       end do
         
       ! Vector finished.
-      ! Pass RprojHier(1); it defines the spatial projection.
-      call setSpatialVector (RprojHier(1),rtempVecFine,rcoarseVector,irow,&
-          rtempVecCoarse,rtempVecFineScalar,ispacelevelcoarse,ispacelevelfine)
+      ! Pass rprojHierBlock%p_RprojHier(1); it defines the spatial projection.
+      call setSpatialVector (rprojHierBlock%p_RprojHier(1),p_rdestVector,rcoarseVector,irow,&
+          rtempVecFineScalar,ispacelevelcoarse,ispacelevelfine)
 
     end do
 
@@ -1499,7 +1666,7 @@ contains
   contains
 
     subroutine setSpatialVector (rprojHier,rx,rcoarseVector,iindex,&
-        rtempVecCoarse,rtempVecFineScalar,ispacelevelcoarse,ispacelevelfine)
+        rtempVecFineScalar,ispacelevelcoarse,ispacelevelfine)
     
     ! Saves the spatial subvector iindex from rx to rfineVector.
     ! If necessary, the vector is restricted in space.
@@ -1509,7 +1676,7 @@ contains
     type(t_sptiProjHierarchy), intent(in) :: rprojHier
 
     ! Space-time destination vector
-    type(t_spaceTimeVector), intent(inout) :: rcoarseVector
+    type(t_spaceTimeVectorAccess), intent(inout) :: rcoarseVector
     
     ! Index of the subvector
     integer, intent(in) :: iindex
@@ -1518,23 +1685,30 @@ contains
     type(t_vectorBlock), intent(inout) :: rx
     
     ! Temp vectors
-    type(t_vectorBlock), intent(inout) :: rtempVecCoarse
     type(t_vectorScalar), intent(inout) :: rtempVecFineScalar
     
     ! Level of the coarse and (destination) fine vector.
     integer, intent(in) :: ispacelevelcoarse
     integer, intent(in) :: ispacelevelfine
+
+      ! local variables
+      type(t_vectorBlock), pointer :: p_rtempVecCoarse
+  
+      ! Get the coarse grid vector
+      call sptivec_getVectorFromPool (rcoarseVector, iindex, p_rtempVecCoarse)
   
       if (ispacelevelcoarse .ne. ispacelevelfine) then
         ! Space + time
         call mlprj_performRestriction (&
             rprojHier%p_rprojHierarchySpace%p_Rprojection(ispacelevelfine),&
-            rtempVecCoarse,rx,rtempVecFineScalar)
-        call sptivec_setTimestepData (rcoarseVector, iindex, rtempVecCoarse)
+            p_rtempVecCoarse,rx,rtempVecFineScalar)
       else
         ! Only time
-        call sptivec_setTimestepData (rcoarseVector, iindex, rx)
+        call lsysbl_copyVector (rx,p_rtempVecCoarse)
       end if
+      
+      ! Save the vector
+      call sptivec_commitVecInPool (rcoarseVector, iindex)
 
     end subroutine
     
@@ -1544,43 +1718,33 @@ contains
 
 !<subroutine>
 
-  subroutine sptipr_performInterpolation (RprojHier,ilevelfine,rcoarseVector, &
-      rfineVector,rtempVecCoarse,rtempVecFine)
+  subroutine sptipr_performInterpolation (rprojHierBlock,ilevelfine,rcoarseVector, &
+      rfineVector)
   
 !<description>
   ! Performs an interpolation for a given space/time vector to a lower level.
   ! The solution vector rfineVector on a finer grid is projected to the vector
   ! rcoarseVector on a coarser space/time mesh.
-  ! rprojHier configures how the transfer is performed.
-  ! This projection structure rprojHier must correspond to the space/time
+  ! rprojHierBlock%p_RprojHier configures how the transfer is performed.
+  ! This projection structure rprojHierBlock%p_RprojHier must correspond to the space/time
   ! discretisation of rcoarseVector and rfineVector.
 !</description>
 
 !<input>
   ! Array of space/time interlevel projection structures that configure the
   ! prolongation/restriction in space/time.
-  type(t_sptiProjHierarchy), dimension(:), intent(in) :: RprojHier
+  type(t_sptiProjHierarchyBlock), intent(in) :: rprojHierBlock
 
   ! Index of the fine mesh.
   integer, intent(in) :: ilevelfine
 
   ! Fine grid vector
-  type(t_spacetimeVector), intent(INOUT) :: rfineVector
+  type(t_spacetimeVectorAccess), intent(inout) :: rfineVector
 !</input>
-
-!<inputoutput>
-  ! Temporary space-vector, specifying the discretisation and vector shape
-  ! on the coarse grid.
-  type(t_vectorBlock), intent(INOUT) :: rtempVecCoarse
-
-  ! Temporary space-vector, specifying the discretisation and vector shape
-  ! on the fine grid.
-  type(t_vectorBlock), intent(INOUT) :: rtempVecFine
-!</inputoutput>
 
 !<output>
   ! Coarse grid vector
-  type(t_spacetimeVector), intent(INOUT) :: rcoarseVector
+  type(t_spacetimeVectorAccess), intent(inout) :: rcoarseVector
 !</output>
 
 !</subroutine>
@@ -1589,8 +1753,8 @@ contains
     type(t_spaceTimeVectorAccess) :: raccessPool
     integer :: ispacelevelfine,ispacelevelcoarse,itimelevelfine,itimelevelcoarse
     type(t_vectorScalar) :: rtempVecFineScalar
-    type(t_vectorBlock), pointer :: p_rx
-    integer :: irow, icol, neq, icomp, imat, icompidx, i
+    type(t_vectorBlock), pointer :: p_rx,p_rdestVector,p_rtempVecFine
+    integer :: irow, icol, neq, icomp, imat, icompidx, i, neqfine
     type(t_matrixScalar), pointer :: p_rtimeMatrix
     real(DP), dimension(:), pointer :: p_Da,p_DdataCoarse,p_DdataFine
     integer, dimension(:), pointer :: p_Kcol, p_Kld
@@ -1600,18 +1764,15 @@ contains
     !call sptivec_setConstant(rfineVector,1.0_DP)
 
     ! Get the space-time coarse and fine discretisations.
-    call sth_getLevel (RprojHier(1)%p_rspaceTimeHierarchy,ilevelfine-1,&
+    call sth_getLevel (rprojHierBlock%p_RprojHier(1)%p_rspaceTimeHierarchy,ilevelfine-1,&
       ispaceLevel=ispacelevelcoarse,itimeLevel=itimelevelcoarse)
-    call sth_getLevel (RprojHier(1)%p_rspaceTimeHierarchy,ilevelfine,&
+    call sth_getLevel (rprojHierBlock%p_RprojHier(1)%p_rspaceTimeHierarchy,ilevelfine,&
       ispaceLevel=ispacelevelfine,itimeLevel=itimelevelfine)
-    
-    ! We need a scalar representation of the temp vector
-    call lsysbl_createScalarFromVec (rtempVecFine,rtempVecFineScalar)
     
     ! Allocate temp memory
     i = 0
-    do icompidx = 1,ubound(RprojHier,1)
-      select case (RprojHier(icompidx)%ctimeProjection)
+    do icompidx = 1,rprojHierBlock%ncount
+      select case (rprojHierBlock%p_RprojHier(icompidx)%ctimeProjection)
       case (0,1,2)
         i = max(i,3)
       case default
@@ -1619,8 +1780,18 @@ contains
       end select
     end do
     
-    call sptivec_createAccessPool (rfineVector%p_rspaceDiscr,raccessPool,i)
+    call sptivec_createAccessPool (rfineVector%p_rspaceDiscr,raccessPool,i+1)
     
+    ! We need one temp vector. Take it from the pool and and associate
+    ! the index neqfine -- this will for sure not appear in the loop.
+    ! Lock the vector so it is not overwritten.
+    neqfine = rfineVector%p_rspaceTimeVector%NEQtime
+    call sptivec_getFreeBufferFromPool (raccessPool,neqfine+1,p_rtempVecFine)
+    call sptivec_lockVecInPool (raccessPool,neqfine+1)
+    
+    ! We need a scalar representation of the temp vector
+    call lsysbl_createScalarFromVec (p_rtempVecFine,rtempVecFineScalar)
+
     ! Prolongation means, we multiply with the prolongation matrix.
     ! y and xi have to be multiplied with the primal prol. matrix,
     ! lambda and p with the dual. Note that for implicit Euler,
@@ -1629,7 +1800,7 @@ contains
     ! lambda and p: p is between y and thus at the same points
     ! in time as lambda, not as y!
 
-    neq = RprojHier(1)%p_RinterpolationMat(ilevelfine-1)%neq
+    neq = rprojHierBlock%p_RprojHier(1)%p_RinterpolationMat(ilevelfine-1)%neq
     
     ! Apply the multiplication.
     ! The rows in the matrix correspond to the time fine mesh, the columns
@@ -1637,17 +1808,18 @@ contains
     do irow = 1,neq
 
       ! Clear the destination
-      call lsysbl_clearVector (rtempVecFine)
+      call sptivec_getFreeBufferFromPool (rfineVector,irow,p_rdestVector)
+      call lsysbl_clearVector (p_rdestVector)
       
       ! DEBUG!!!
-      call lsysbl_getbase_double (rtempVecFine,p_DdataFine)
+      call lsysbl_getbase_double (p_rdestVector,p_DdataFine)
       
       ! Loop over the matrices configuring the prolongation for
       ! all the components
-      do imat = 1,ubound(RprojHier,1)
+      do imat = 1,rprojHierBlock%ncount
       
         ! Get the matrix
-        p_rtimeMatrix => RprojHier(imat)%p_RinterpolationMat(ilevelfine-1)
+        p_rtimeMatrix => rprojHierBlock%p_RprojHier(imat)%p_RinterpolationMat(ilevelfine-1)
         call lsyssc_getbase_double (p_rtimeMatrix,p_Da)
         call lsyssc_getbase_Kcol (p_rtimeMatrix,p_Kcol)
         call lsyssc_getbase_Kld (p_rtimeMatrix,p_Kld)
@@ -1657,7 +1829,7 @@ contains
         do icol = p_Kld(irow),p_Kld(irow+1)-1
         
           ! Get the fine grid vector using the vector pool as buffer. Saves time.
-          call sptivec_getVectorFromPool(raccessPool,p_Kcol(icol),p_rx)
+          call sptivec_getVectorFromPool(rfineVector,p_Kcol(icol),p_rx)
           
           call lsysbl_getbase_double (p_rx,p_DdataCoarse)
           
@@ -1665,16 +1837,16 @@ contains
           ! into rtempVecFine for y and xi.
 
           ! Multiply either all components or the specified subcomponents.
-          if (.not. associated(RprojHier(imat)%p_Icomponents)) then
+          if (.not. associated(rprojHierBlock%p_RprojHier(imat)%p_Icomponents)) then
 
-            call lsysbl_vectorLinearComb(p_rx,rtempVecFine,dscale*p_Da(icol),1.0_DP)
+            call lsysbl_vectorLinearComb(p_rx,p_rdestVector,dscale*p_Da(icol),1.0_DP)
 
           else
 
-            do icompidx = 1,ubound(RprojHier(imat)%p_Icomponents,1)
-              icomp = RprojHier(imat)%p_Icomponents(icompidx)
+            do icompidx = 1,ubound(rprojHierBlock%p_RprojHier(imat)%p_Icomponents,1)
+              icomp = rprojHierBlock%p_RprojHier(imat)%p_Icomponents(icompidx)
               call lsyssc_vectorLinearComb(&
-                  p_rx%Rvectorblock(icomp),rtempVecFine%RvectorBlock(icomp),&
+                  p_rx%Rvectorblock(icomp),p_rdestVector%RvectorBlock(icomp),&
                   dscale*p_Da(icol),1.0_DP)
             end do
             
@@ -1685,9 +1857,9 @@ contains
       end do
       
       ! Vector finished.
-      ! Pass RprojHier(1); it defines the spatial projection.
-      call setSpatialVector (RprojHier(1),rtempVecFine,rcoarseVector,irow,&
-          rtempVecCoarse,rtempVecFineScalar,ispacelevelcoarse,ispacelevelfine)
+      ! Pass rprojHierBlock%p_RprojHier(1); it defines the spatial projection.
+      call setSpatialVector (rprojHierBlock%p_RprojHier(1),p_rdestVector,rcoarseVector,irow,&
+          rtempVecFineScalar,ispacelevelcoarse,ispacelevelfine)
 
     end do
     
@@ -1703,7 +1875,7 @@ contains
   contains
 
     subroutine setSpatialVector (rprojHier,rx,rcoarseVector,iindex,&
-        rtempVecCoarse,rtempVecFineScalar,ispacelevelcoarse,ispacelevelfine)
+        rtempVecFineScalar,ispacelevelcoarse,ispacelevelfine)
     
     ! Saves the spatial subvector iindex from rx to rfineVector.
     ! If necessary, the vector is restricted in space.
@@ -1713,7 +1885,7 @@ contains
     type(t_sptiProjHierarchy), intent(in) :: rprojHier
 
     ! Space-time destination vector
-    type(t_spaceTimeVector), intent(inout) :: rcoarseVector
+    type(t_spaceTimeVectorAccess), intent(inout) :: rcoarseVector
     
     ! Index of the subvector
     integer, intent(in) :: iindex
@@ -1722,23 +1894,30 @@ contains
     type(t_vectorBlock), intent(inout) :: rx
     
     ! Temp vectors
-    type(t_vectorBlock), intent(inout) :: rtempVecCoarse
     type(t_vectorScalar), intent(inout) :: rtempVecFineScalar
     
     ! Level of the coarse and (destination) fine vector.
     integer, intent(in) :: ispacelevelcoarse
     integer, intent(in) :: ispacelevelfine
   
+      ! local variables
+      type(t_vectorBlock), pointer :: p_rtempVecCoarse
+
+      ! Get the coarse grid vector
+      call sptivec_getVectorFromPool (rcoarseVector, iindex, p_rtempVecCoarse)
+
       if (ispacelevelcoarse .ne. ispacelevelfine) then
         ! Space + time
         call mlprj_performInterpolation (&
             rprojHier%p_rprojHierarchySpace%p_Rprojection(ispacelevelfine),&
-            rtempVecCoarse,rx,rtempVecFineScalar)
-        call sptivec_setTimestepData (rcoarseVector, iindex, rtempVecCoarse)
+            p_rtempVecCoarse,rx,rtempVecFineScalar)
       else
         ! Only time
-        call sptivec_setTimestepData (rcoarseVector, iindex, rx)
+        call lsysbl_copyVector (rx,p_rtempVecCoarse)
       end if
+
+      ! Save the vector
+      call sptivec_commitVecInPool (rcoarseVector, iindex)
 
     end subroutine
 

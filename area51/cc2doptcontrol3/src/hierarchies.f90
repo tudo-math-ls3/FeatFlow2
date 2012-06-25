@@ -128,6 +128,9 @@ module hierarchies
   ! in space-time
   public :: init_initSpaceTimePrjHierarchy
   
+  ! Releases a projection hierarchy.
+  public :: init_doneSpaceTimePrjHierarchy
+  
   ! Initialises a space hierarchy based on a coarse mesh and a refinement
   ! strategy specified in rrefinement.
   public :: init_initSpaceHierarchy
@@ -1026,8 +1029,8 @@ contains
 
 !<subroutine>
 
-  subroutine init_initSpaceTimePrjHierarchy (rprjHierarchy,rhierarchy,&
-      rprojHierarchySpace,rphysics,rparlist,ssection)
+  subroutine init_initSpaceTimePrjHierarchy (rprjHierarchyBlock,rhierarchy,&
+      rprojHierarchySpace,rphysics,cspace,rparlist,ssection)
   
 !<description>
   ! Creates projection hierarchies for the interlevel projection in space.
@@ -1043,6 +1046,12 @@ contains
   ! Underlying physics
   type(t_settings_physics), intent(in) :: rphysics
   
+  ! Type of space, this projection is set up for.
+  ! =CCSPACE_PRIMAL  : Primal space, forward in time
+  ! =CCSPACE_DUAL    : Dual space, backward in time
+  ! =CCSPACE_CONTROL : Control space
+  integer, intent(in) :: cspace
+
   ! Parameter list with parameters about the projection.
   type(t_parlist), intent(in) :: rparlist
   
@@ -1052,7 +1061,7 @@ contains
   
 !<output>
   ! The projection hierarchy to create.
-  type(t_sptiProjHierarchy), intent(out) :: rprjHierarchy
+  type(t_sptiProjHierarchyBlock), intent(out) :: rprjHierarchyBlock
 !</output>
 
 !</subroutine>
@@ -1063,9 +1072,30 @@ contains
     ! Type of prolongation/restriction in time
     call parlst_getvalue_int (rparlist, ssection, &
         'ctypeProjection', ctypeProjection, -1)
-        
-    call sptipr_initProjection (rprjHierarchy,rhierarchy,&
-        rprojHierarchySpace,rphysics,ctypeProjection)
+     
+    call sptipr_initProjectionBlock (rprjHierarchyBlock%p_RprojHier(1),rhierarchy,&
+        rprojHierarchySpace,rphysics,cspace,ctypeProjection)
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine init_doneSpaceTimePrjHierarchy (rprjHierarchyBlock)
+  
+!<description>
+  ! Cleans up projection hierarchies for the interlevel projection in space.
+!</description>
+  
+!<inputoutput>
+  ! The projection hierarchy to create.
+  type(t_sptiProjHierarchyBlock), intent(inout) :: rprjHierarchyBlock
+!</inputoutput>
+
+!</subroutine>
+
+    call sptipr_doneProjectionBlock (rprjHierarchyBlock)
     
   end subroutine
 

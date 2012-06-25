@@ -44,6 +44,7 @@ module newtoniteration
   use spacesolver
   
   use spacetimehierarchy
+  use spacetimeinterlevelprojection
   use kktsystemspaces
   use kktsystem
   use kktsystemhierarchy
@@ -572,7 +573,8 @@ contains
 
 !<subroutine>
 
-  subroutine newtonit_initStructure (rsolver,rkktsystemHierarchy)
+  subroutine newtonit_initStructure (rsolver,rkktsystemHierarchy,&
+      rprjHierSpaceTimePrimal,rprjHierSpaceTimeDual,rprjHierSpaceTimeControl)
   
 !<description>
   ! Structural initialisation of the Newton solver.
@@ -583,6 +585,15 @@ contains
   ! This can be a 'template' structure, i.e., memory for the solutions
   ! in rkktsystemHierarchy does not have to be allocated.
   type(t_kktsystemHierarchy), intent(in), target :: rkktsystemHierarchy
+
+  ! Projection hierarchy for the interlevel projection in space/time, primal space.
+  type(t_sptiProjHierarchyBlock), intent(in), target :: rprjHierSpaceTimePrimal
+
+  ! Projection hierarchy for the interlevel projection in space/time, dual space.
+  type(t_sptiProjHierarchyBlock), intent(in), target :: rprjHierSpaceTimeDual
+
+  ! Projection hierarchy for the interlevel projection in space/time, control space.
+  type(t_sptiProjHierarchyBlock), intent(in), target :: rprjHierSpaceTimeControl
 !</input>
 
 !<inputoutput>
@@ -596,7 +607,8 @@ contains
     rsolver%p_rkktsystemHierarchy => rkktsystemHierarchy
     
     ! Initialise the structures of the linear subsolver.
-    call newtonlin_initStructure (rsolver%rlinsolParam,rkktsystemHierarchy)
+    call newtonlin_initStructure (rsolver%rlinsolParam,rkktsystemHierarchy,&
+        RprjHierSpaceTimePrimal,RprjHierSpaceTimeDual,RprjHierSpaceTimeControl)
    
   end subroutine
 

@@ -108,6 +108,9 @@
 !#
 !# 29.) sptivec_assurePoolSize
 !#      -> Assures that a vector pool has a minimum size
+!#
+!# 30.) sptivec_isVecInPool
+!#      -> Checks if a vector is in the pool and directly available
 !# </purpose>
 !##############################################################################
 
@@ -170,6 +173,7 @@ module spacetimevectors
   public :: sptivec_unlockVecInPool
   public :: sptivec_bindPoolToVec
   public :: sptivec_bindDiscreteBCtoBuffer
+  public :: sptivec_isVecinPool
 
 !<types>
 
@@ -2334,6 +2338,8 @@ contains
   
   ! Index (timestep) that should be associated to the vector.
   ! A sptivec_getVectorFromPool with this index will return this pointer again.
+  ! if there is already a vector with index iindex in the pool,
+  ! it will be returned without being changed.
   integer, intent(in) :: iindex
   
   ! Pointer which is set to a spatial vector that can be used to store data.
@@ -2341,6 +2347,9 @@ contains
 !</inputoutput>
 
 !</subroutine>
+
+    ! local variables
+    integer :: i
    
     if (iindex .le. 0) then
       call output_line ("Invalid index!",&
@@ -2355,6 +2364,14 @@ contains
       call sys_halt()
     end if
   
+    ! Take a look if we already have that vector
+    do i=1,size(raccessPool%p_IvectorIndex)
+      if (abs(raccessPool%p_IvectorIndex(i)) .eq. iindex) then
+        p_rx => raccessPool%p_RvectorPool(i)
+        return
+      end if
+    end do
+
     ! Here is our read vector
     p_rx => raccessPool%p_RvectorPool(raccessPool%inextFreeVector)
 
@@ -2586,5 +2603,58 @@ contains
     call sys_halt()
   
   end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  logical function sptivec_isVecinPool (raccessPool,iindex)
+
+!<description>
+  ! Returns TRUE if vector iindex is in the pool and directly available.
+!</desctiprion>
+
+!<input>
+  ! Access-pool structure to be accessed.
+  type(t_spaceTimeVectorAccess), intent(in), target :: raccessPool
+  
+  ! Index of the vector to be checked.
+  integer, intent(in) :: iindex
+!</input>
+
+!<result>
+  ! true, if the vector is available in the pool.
+  ! false, if the vector is not available and has to be fetched
+  ! if it is to be accessed.
+!</result>
+
+!</subroutine>
+
+    integer :: i
+    
+    if (iindex .le. 0) then
+      call output_line ("Invalid index!",&
+          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_getVectorFromPool')
+      call sys_halt()
+    end if
+    
+    if (.not. associated(raccessPool%p_rspaceTimeVector)) then
+      call output_line('No space-time vector associated!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_commitVecInPool')
+      call sys_halt()
+    end if
+    
+    sptivec_isVecinPool = .false.
+  
+    do i=1,size(raccessPool%p_IvectorIndex)
+      if (abs(raccessPool%p_IvectorIndex(i)) .eq. iindex) then
+        ! Found. 
+        sptivec_isVecinPool = .true.
+        return
+        
+      end if
+    end do
+  
+  end function
 
 end module
