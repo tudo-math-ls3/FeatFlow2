@@ -1188,6 +1188,15 @@ contains
 
       call kkth_getKKTsystem (rsolutionHierarchy,ilevel-1,p_rkktSystemCoarse)
       call kkth_getKKTsystem (rsolutionHierarchy,ilevel,p_rkktSystem)
+      
+      call sptipr_performInterpolation (rlinsolParam%p_RprjHierSpaceTimePrimal,ilevel,&
+          p_rkktSystemCoarse%p_rprimalSol%p_rvectorAccess, &
+          p_rkktSystem%p_rprimalSol%p_rvectorAccess)
+
+      call sptipr_performInterpolation (rlinsolParam%p_RprjHierSpaceTimeDual,ilevel,&
+          p_rkktSystemCoarse%p_rdualSol%p_rvectorAccess, &
+          p_rkktSystem%p_rdualSol%p_rvectorAccess)
+
       call sptipr_performInterpolation (rlinsolParam%p_RprjHierSpaceTimeControl,ilevel,&
           p_rkktSystemCoarse%p_rcontrol%p_rvectorAccess, &
           p_rkktSystem%p_rcontrol%p_rvectorAccess)
