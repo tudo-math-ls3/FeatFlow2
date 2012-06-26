@@ -705,7 +705,7 @@ contains
       end if
 
       ! Restriction of the defect
-      call sptipr_performRestriction (rlinsolParam%p_RprjHierSpaceTimeControl,ilevel,&
+      call sptipr_performRestriction (rlinsolParam%p_rprjHierSpaceTimeControl,ilevel,&
           p_rlinsolMultigrid%rrhsHier%p_RkktSysDirDeriv(ilevel-1)%p_rcontrolLin%p_rvectorAccess, &
           p_rlinsolMultigrid%rdefectHier%p_RkktSysDirDeriv(ilevel)%p_rcontrolLin%p_rvectorAccess)
       
@@ -728,7 +728,7 @@ contains
       end if
 
       ! Prolongation of the correction
-      call sptipr_performProlongation (rlinsolParam%p_RprjHierSpaceTimeControl,ilevel,&
+      call sptipr_performProlongation (rlinsolParam%p_rprjHierSpaceTimeControl,ilevel,&
           p_rlinsolMultigrid%rsolutionHier%p_RkktSysDirDeriv(ilevel-1)%p_rcontrolLin%p_rvectorAccess,&
           p_rlinsolMultigrid%rsolutionHier%p_RkktSysDirDeriv(ilevel)%p_rcontrolLin%p_rvectorAccess)
 
@@ -1146,17 +1146,20 @@ contains
   ! Final preparation of the preconditioner for preconditioning.
 !</description>
 
-!<input>
-  ! Defines a hierarchy of the solutions of the KKT system.
-  type(t_kktsystemHierarchy), intent(in), target :: rsolutionHierarchy
-!</input>
-
 !<inputoutput>
+  ! Defines a hierarchy of the solutions of the KKT system.
+  ! On the highest level, the solution is expected.
+  ! The solution is propagated to all lower levels.
+  type(t_kktsystemHierarchy), intent(inout), target :: rsolutionHierarchy
+
   ! Structure to be initialised.
   type(t_linsolParameters), intent(inout) :: rlinsolParam
 !</inputoutput>
 
 !</subroutine>
+
+    integer :: ilevel
+    type(t_kktsystem), pointer :: p_rkktSystem,p_rkktSystemCoarse
 
     ! Initialise subsolvers
     select case (rlinsolParam%csolverType)
@@ -1170,7 +1173,17 @@ contains
           rlinsolParam,rlinsolParam%p_rlinsolMultigrid,rsolutionHierarchy)
       
     end select
+    
+    ! Propagate the solution to the lower levels.
+    do ilevel = rsolutionHierarchy%nlevels,2,-1
 
+      call kkth_getKKTsystem (rsolutionHierarchy,ilevel-1,p_rkktSystemCoarse)
+      call kkth_getKKTsystem (rsolutionHierarchy,ilevel,p_rkktSystem)
+      call sptipr_performInterpolation (rlinsolParam%p_RprjHierSpaceTimeControl,ilevel,&
+          p_rkktSystemCoarse%p_rcontrol%p_rvectorAccess, &
+          p_rkktSystem%p_rcontrol%p_rvectorAccess)
+    
+    end do
    
   end subroutine
 
