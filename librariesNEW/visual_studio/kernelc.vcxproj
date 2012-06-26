@@ -107,7 +107,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <FloatingPointExceptions>true</FloatingPointExceptions>
       <CompileAs>CompileAsC</CompileAs>
-      <DisableSpecificWarnings>4996;4244</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4996;4244;4101</DisableSpecificWarnings>
       <AdditionalIncludeDirectories>$(ProjectDir)..\AMD\Include;$(ProjectDir)..\SuiteSparse_config</AdditionalIncludeDirectories>
       <MinimalRebuild>false</MinimalRebuild>
       <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
@@ -130,7 +130,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <FloatingPointExceptions>true</FloatingPointExceptions>
       <CompileAs>CompileAsC</CompileAs>
-      <DisableSpecificWarnings>4996;4244</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4996;4244;4101</DisableSpecificWarnings>
       <AdditionalIncludeDirectories>$(ProjectDir)..\AMD\Include;$(ProjectDir)..\SuiteSparse_config</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <MinimalRebuild>false</MinimalRebuild>
@@ -158,10 +158,11 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <CompileAs>CompileAsC</CompileAs>
-      <DisableSpecificWarnings>4996;4244</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4996;4244;4101</DisableSpecificWarnings>
       <AdditionalIncludeDirectories>$(ProjectDir)..\AMD\Include;$(ProjectDir)..\SuiteSparse_config</AdditionalIncludeDirectories>
       <MinimalRebuild>false</MinimalRebuild>
       <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -187,10 +188,11 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <CompileAs>CompileAsC</CompileAs>
-      <DisableSpecificWarnings>4996;4244</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4996;4244;4101</DisableSpecificWarnings>
       <AdditionalIncludeDirectories>$(ProjectDir)..\AMD\Include;$(ProjectDir)..\SuiteSparse_config</AdditionalIncludeDirectories>
       <MinimalRebuild>false</MinimalRebuild>
       <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

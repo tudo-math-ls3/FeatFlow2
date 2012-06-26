@@ -14,7 +14,7 @@
 				<Tool Name="VFPreBuildEventTool"/>
 				<Tool Name="VFPostBuildEventTool"/></Configuration>
 		<Configuration Name="Release|Win32" OutputDirectory="$(ProjectDir).." IntermediateDirectory="$(ProjectDir)obj\$(ProjectName)_$(ConfigurationName)_$(PlatformName)" ConfigurationType="typeStaticLibrary">
-				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Parallelization="true" BufferedIO="true" FloatingPointExceptionHandling="fpe1" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb" RuntimeLibrary="rtMultiThreadedDLL"/>
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Parallelization="true" BufferedIO="true" FloatingPointExceptionHandling="fpe1" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb"/>
 				<Tool Name="VFLibrarianTool" OutputFile="$(OutDir)/$(ProjectName)_32.lib"/>
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true"/>
@@ -32,7 +32,7 @@
 				<Tool Name="VFPreBuildEventTool"/>
 				<Tool Name="VFPostBuildEventTool"/></Configuration>
 		<Configuration Name="Release|x64" OutputDirectory="$(ProjectDir).." IntermediateDirectory="$(ProjectDir)obj\$(ProjectName)_$(ConfigurationName)_$(PlatformName)" ConfigurationType="typeStaticLibrary">
-				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Parallelization="true" BufferedIO="true" FloatingPointExceptionHandling="fpe1" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb" RuntimeLibrary="rtMultiThreadedDLL"/>
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Parallelization="true" BufferedIO="true" FloatingPointExceptionHandling="fpe1" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb"/>
 				<Tool Name="VFLibrarianTool" OutputFile="$(OutDir)/$(ProjectName)_64.lib"/>
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64"/>

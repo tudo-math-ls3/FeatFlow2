@@ -176,6 +176,7 @@
       <AdditionalIncludeDirectories>$(ProjectDir)..\AMD\Include;$(ProjectDir)..\SuiteSparse_config</AdditionalIncludeDirectories>
       <MinimalRebuild>false</MinimalRebuild>
       <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -205,6 +206,7 @@
       <AdditionalIncludeDirectories>$(ProjectDir)..\AMD\Include;$(ProjectDir)..\SuiteSparse_config</AdditionalIncludeDirectories>
       <MinimalRebuild>false</MinimalRebuild>
       <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
