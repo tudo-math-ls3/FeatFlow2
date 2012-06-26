@@ -56,6 +56,7 @@ module spacetimeinterlevelprojection
   
   use constantsdiscretisation
   use structuresdiscretisation
+  use structuresoptcontrol
 
   implicit none
   
@@ -154,7 +155,7 @@ contains
 !<subroutine>
 
   subroutine sptipr_initProjectionBlock (rprojHierBlock,rspaceTimeHierarchy,&
-      rprojHierarchySpace,rphysics,cspace,ctimeProjection)
+      rprojHierarchySpace,rphysics,roptcontrol,cspace,ctimeProjection)
   
 !<description>
   !
@@ -171,6 +172,9 @@ contains
   ! Underlying physics
   type(t_settings_physics), intent(in), target :: rphysics
 
+  ! Optimal control parameters
+  type(t_settings_optcontrol), intent(in) :: roptcontrol
+
   ! Type of space, this projection is set up for.
   ! =CCSPACE_PRIMAL  : Primal space, forward in time
   ! =CCSPACE_DUAL    : Dual space, backward in time
@@ -182,7 +186,7 @@ contains
   ! =0: constant prolongation/restriction
   ! =1: linear prolongation/restriction. Central differences. 
   !     Solutions located at the endpoints in time.
-  ! =1: linear prolongation/restriction. Central differences. 
+  ! =2: linear prolongation/restriction. Central differences. 
   !     Dual Solutions located in time according to the theta scheme.
   integer, intent(in), optional :: ctimeProjection
 !</input>
@@ -195,7 +199,30 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: i
+    integer :: i,ncount
+    
+    ! Number of components depends on the type of control,...
+    ncount = 0
+
+    select case (cspace)
+    ! ===============================================
+    ! Primal space
+    ! ===============================================
+    case (CCSPACE_PRIMAL)
+      ncount = 1
+    
+    ! ===============================================
+    ! Dual space
+    ! ===============================================
+    case (CCSPACE_DUAL)
+      ncount = 1
+
+    ! ===============================================
+    ! Control space
+    ! ===============================================
+    case (CCSPACE_CONTROL)
+      if (roptcontrol%dalphaC .ge. 0.0_DP) ncount = ncount + 1
+    end select
     
     rprojHierBlock%ncount = ncount
     allocate(rprojHierBlock%p_RprojHier(ncount))
@@ -203,7 +230,7 @@ contains
     ! Initialise all substructures
     do i=1,rprojHierBlock%ncount
       call sptipr_initProjection (rprojHierBlock%p_RprojHier(i),rspaceTimeHierarchy,&
-          rprojHierarchySpace,rphysics,cspace,ctimeProjection)
+          rprojHierarchySpace,rphysics,roptcontrol,cspace,ctimeProjection,i)
     end do
 
   end subroutine
@@ -244,7 +271,7 @@ contains
 !<subroutine>
 
   subroutine sptipr_initProjection (rprojHier,rspaceTimeHierarchy,&
-      rprojHierarchySpace,rphysics,cspace,ctimeProjection,Icomponents)
+      rprojHierarchySpace,rphysics,roptcontrol,cspace,ctimeProjection,isubspace)
   
 !<description>
   !
@@ -260,6 +287,9 @@ contains
 
   ! Underlying physics
   type(t_settings_physics), intent(in), target :: rphysics
+  
+  ! Optimal control parameters
+  type(t_settings_optcontrol), intent(in) :: roptcontrol
 
   ! Type of space, this projection is set up for.
   ! =CCSPACE_PRIMAL  : Primal space, forward in time
@@ -305,8 +335,7 @@ contains
     nullify(rprojHier%p_Icomponents)
 
     ! Set ctimeProjection
-    rprojHier%ctimeProjection = -1
-    if (present(ctimeProjection)) rprojHier%ctimeProjection = ctimeProjection
+    rprojHier%ctimeProjection = ctimeProjection
 
     if (rprojHier%ctimeProjection .eq. -1) then
       ! Automatic mode. Select the order based on the time stepping scheme.
@@ -317,7 +346,7 @@ contains
       case (1)
         rprojHier%ctimeProjection = 1
       case (2)
-        rprojHier%ctimeProjection = 3
+        rprojHier%ctimeProjection = 2
       case default
         rprojHier%ctimeProjection = 1
       end select
@@ -345,7 +374,7 @@ contains
       ! This is because the primal RHS is located at the timesteps of the dual
       ! solution (between the primal timesteps) and vice versa!!!
       select case (rprojHier%ctimeProjection)
-      case (0,1)
+      case (0,1,2)
       
         if (i .lt. rspaceTimeHierarchy%nlevels) then
         
@@ -377,7 +406,7 @@ contains
           ! ===============================================
           ! Dual space
           ! ===============================================
-          case (CCSPACE_DUAL,CCSPACE_CONTROL)
+          case (CCSPACE_DUAL)
             call sptipr_getProlMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
                 rprojHier%p_RprolongationMat(i))
 
@@ -401,7 +430,7 @@ contains
             ! If there are multiple controls, we have to allocate rprojHier%p_Icomponents
             ! and put there which components have to be projected like what.
             ! isubspace defines the number of the control currently being defined,
-            ! so,. e.g., 1=distriibuted control, 2=boundary control,...
+            ! so,. e.g., 1=distributed control, 2=boundary control,...
 
             select case (rphysics%cequation)
             
@@ -409,27 +438,31 @@ contains
             ! Stokes/Navier Stokes.
             ! -------------------------------------------------------------
             case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
-              call sptipr_getProlMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
-                  rprojHier%p_RprolongationMat(i))
+              if ((roptcontrol%dalphaC .ge. 0.0_DP) .and. (isubspace .eq. 1)) then
+                call sptipr_getProlMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
+                    rprojHier%p_RprolongationMat(i))
 
-              call sptipr_getProlMatrixPrimal(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
-                  rprolmat2)
+                call sptipr_getProlMatrixPrimal(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
+                    rprolmat2)
 
-              call sptipr_getInterpMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
-                  rprojHier%p_RinterpolationMat(i))
+                call sptipr_getInterpMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
+                    rprojHier%p_RinterpolationMat(i))
+              end if
 
             ! -------------------------------------------------------------
             ! Heat equation
             ! -------------------------------------------------------------
             case (CCEQ_HEAT2D)
-              call sptipr_getProlMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
-                  rprojHier%p_RprolongationMat(i))
+              if ((roptcontrol%dalphaC .ge. 0.0_DP) .and. (isubspace .eq. 1)) then
+                call sptipr_getProlMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
+                    rprojHier%p_RprolongationMat(i))
 
-              call sptipr_getProlMatrixPrimal(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
-                  rprolmat2)
+                call sptipr_getProlMatrixPrimal(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
+                    rprolmat2)
 
-              call sptipr_getInterpMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
-                  rprojHier%p_RinterpolationMat(i))
+                call sptipr_getInterpMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
+                    rprojHier%p_RinterpolationMat(i))
+              end if
                   
             end select
             
@@ -457,6 +490,11 @@ contains
           end if
           
         end if
+        
+      case default
+        call output_line("Undefined projection.",&
+            OU_CLASS_ERROR,OU_MODE_STD,"sptipr_initProjection")
+        call sys_halt()
 
       end select
           
@@ -805,13 +843,6 @@ contains
     ndofCoarse = tdiscr_igetNDofGlob(p_rtimeDiscrCoarse)
     ndofFine = tdiscr_igetNDofGlob(p_rtimeDiscrFine)
 
-    if (ndofCoarse .lt. 3) then
-      call output_line('For this projection, there must be at least 3 timesteps available' &
-          //' on the time coarse mesh!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'sptipr_getProlMatrixDual')
-      call sys_halt()
-    end if
-
     call lsyssc_createEmptyMatrixStub (rprolMatrix,LSYSSC_MATRIX9,ndofFine,ndofCoarse)
 
     if (ndofCoarse .eq. ndofFine) then
@@ -914,6 +945,13 @@ contains
       !               1/4 3/4
       !              -1/4 5/4
       
+      if (ndofCoarse .lt. 3) then
+        call output_line("For this projection, there must be at least 3 timesteps available" &
+            //" on the time coarse mesh!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"sptipr_getProlMatrixDual")
+        call sys_halt()
+      end if
+
       dtheta = rspaceTimeHierarchy%p_rtimeHierarchy%p_RtimeLevels(1)%dtheta
       
       rprolMatrix%NA = 4+(ndofFine-2)*2
@@ -1447,6 +1485,7 @@ contains
         p_rtimeMatrix => rprojHierBlock%p_RprojHier(imat)%p_RprolongationMat(ilevelfine-1)
         call lsyssc_getbase_double (p_rtimeMatrix,p_Da)
         call lsyssc_getbase_Kcol (p_rtimeMatrix,p_Kcol)
+        call lsyssc_getbase_Kld (p_rtimeMatrix,p_Kld)
         dscale = p_rtimeMatrix%dscaleFactor
 
         do icol = p_Kld(irow),p_Kld(irow+1)-1

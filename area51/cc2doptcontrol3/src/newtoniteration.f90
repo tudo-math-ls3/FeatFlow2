@@ -526,6 +526,9 @@ contains
         call output_line ("Space-time Newton: Preconditioning")
       end if
 
+      ! Initialise data arrays in the linear subsolver.
+      call newtonlin_initData (rsolver%rlinsolParam,rsolver%p_rsolutionHierarchy)
+
       ! Actual Newton iteration. Apply the Newton preconditioner
       ! to get the Newton search direction:
       !
@@ -536,6 +539,9 @@ contains
       call newtonlin_precond (rsolver%rlinsolParam,&
           rsolver%p_rdirDerivHierarchy,p_rdescentDir)
       
+      ! Clean up data in the linear subsolver
+      call newtonlin_doneData (rsolver%rlinsolParam)
+
       ! -------------------------------------------------------------
       ! Update of the solution
       ! -------------------------------------------------------------
@@ -608,7 +614,7 @@ contains
     
     ! Initialise the structures of the linear subsolver.
     call newtonlin_initStructure (rsolver%rlinsolParam,rkktsystemHierarchy,&
-        RprjHierSpaceTimePrimal,RprjHierSpaceTimeDual,RprjHierSpaceTimeControl)
+        rprjHierSpaceTimePrimal,rprjHierSpaceTimeDual,rprjHierSpaceTimeControl)
    
   end subroutine
 

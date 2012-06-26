@@ -2499,12 +2499,6 @@ contains
       call sys_halt()
     end if
     
-    if (.not. associated(raccessPool%p_rspaceTimeVector)) then
-      call output_line('No space-time vector associated!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_commitVecInPool')
-      call sys_halt()
-    end if
-  
     do i=1,size(raccessPool%p_IvectorIndex)
       if (abs(raccessPool%p_IvectorIndex(i)) .eq. iindex) then
         ! Found. Lock it.

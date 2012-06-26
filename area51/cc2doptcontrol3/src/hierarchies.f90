@@ -1030,7 +1030,7 @@ contains
 !<subroutine>
 
   subroutine init_initSpaceTimePrjHierarchy (rprjHierarchyBlock,rhierarchy,&
-      rprojHierarchySpace,rphysics,cspace,rparlist,ssection)
+      rprojHierarchySpace,rphysics,roptcontrol,cspace,rparlist,ssection)
   
 !<description>
   ! Creates projection hierarchies for the interlevel projection in space.
@@ -1046,6 +1046,9 @@ contains
   ! Underlying physics
   type(t_settings_physics), intent(in) :: rphysics
   
+  ! Optimal control parameters
+  type(t_settings_optcontrol), intent(in) :: roptcontrol
+
   ! Type of space, this projection is set up for.
   ! =CCSPACE_PRIMAL  : Primal space, forward in time
   ! =CCSPACE_DUAL    : Dual space, backward in time
@@ -1073,8 +1076,8 @@ contains
     call parlst_getvalue_int (rparlist, ssection, &
         'ctypeProjection', ctypeProjection, -1)
      
-    call sptipr_initProjectionBlock (rprjHierarchyBlock%p_RprojHier(1),rhierarchy,&
-        rprojHierarchySpace,rphysics,cspace,ctypeProjection)
+    call sptipr_initProjectionBlock (rprjHierarchyBlock,rhierarchy,&
+        rprojHierarchySpace,rphysics,roptcontrol,cspace,ctypeProjection)
     
   end subroutine
 

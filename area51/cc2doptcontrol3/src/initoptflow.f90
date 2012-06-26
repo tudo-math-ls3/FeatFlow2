@@ -230,17 +230,20 @@ contains
     
     call init_initSpaceTimePrjHierarchy (rsettingsSolver%rprjHierSpaceTimePrimal,&
         rsettingsSolver%rspaceTimeHierPrimal,&
-        rsettingsSolver%rprjHierSpacePrimal,rsettingsSolver%rphysics,CCSPACE_PRIMAL,&
+        rsettingsSolver%rprjHierSpacePrimal,rsettingsSolver%rphysics,&
+        rsettingsSolver%rsettingsOptControl,CCSPACE_PRIMAL,&
         rparlist,rsettings%ssectionTimeDiscretisation)
         
     call init_initSpaceTimePrjHierarchy (rsettingsSolver%rprjHierSpaceTimeDual,&
         rsettingsSolver%rspaceTimeHierDual,&
-        rsettingsSolver%rprjHierSpaceDual,rsettingsSolver%rphysics,CCSPACE_DUAL,&
+        rsettingsSolver%rprjHierSpaceDual,rsettingsSolver%rphysics,&
+        rsettingsSolver%rsettingsOptControl,CCSPACE_DUAL,&
         rparlist,rsettings%ssectionTimeDiscretisation)
 
     call init_initSpaceTimePrjHierarchy (rsettingsSolver%rprjHierSpaceTimeControl,&
         rsettingsSolver%rspaceTimeHierControl,&
-        rsettingsSolver%rprjHierSpaceControl,rsettingsSolver%rphysics,CCSPACE_CONTROL,&
+        rsettingsSolver%rprjHierSpaceControl,rsettingsSolver%rphysics,&
+        rsettingsSolver%rsettingsOptControl,CCSPACE_CONTROL,&
         rparlist,rsettings%ssectionTimeDiscretisation)
         
     ! Init+Allocate memory for the matrices on all levels and create all
