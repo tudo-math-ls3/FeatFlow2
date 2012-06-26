@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<VisualStudioProject ProjectType="typeStaticLibrary" ProjectCreator="Intel Fortran" Keyword="Static Library" Version="11.0" ProjectIdGuid="{2BFF814F-A3F2-42F1-99DC-76AB98B9B81D}">
+	<Platforms>
+		<Platform Name="Win32"/>
+		<Platform Name="x64"/></Platforms>
+	<Configurations>
+		<Configuration Name="Debug|Win32" OutputDirectory="$(ProjectDir).." IntermediateDirectory="$(ProjectDir)obj\$(ProjectName)_$(ConfigurationName)_$(PlatformName)" ConfigurationType="typeStaticLibrary">
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" Interfaces="true" WarnInterfaces="true" FloatingPointExceptionHandling="fpe0" FloatingPointModel="source" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb" Traceback="true" NullPointerCheck="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtMultiThreadedDebugDLL"/>
+				<Tool Name="VFLibrarianTool" OutputFile="$(OutDir)/$(ProjectName)_32d.lib"/>
+				<Tool Name="VFResourceCompilerTool"/>
+				<Tool Name="VFMidlTool" SuppressStartupBanner="true"/>
+				<Tool Name="VFCustomBuildTool"/>
+				<Tool Name="VFPreLinkEventTool"/>
+				<Tool Name="VFPreBuildEventTool"/>
+				<Tool Name="VFPostBuildEventTool"/></Configuration>
+		<Configuration Name="Release|Win32" OutputDirectory="$(ProjectDir).." IntermediateDirectory="$(ProjectDir)obj\$(ProjectName)_$(ConfigurationName)_$(PlatformName)" ConfigurationType="typeStaticLibrary">
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Parallelization="true" BufferedIO="true" FloatingPointExceptionHandling="fpe1" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb" RuntimeLibrary="rtMultiThreadedDLL"/>
+				<Tool Name="VFLibrarianTool" OutputFile="$(OutDir)/$(ProjectName)_32.lib"/>
+				<Tool Name="VFResourceCompilerTool"/>
+				<Tool Name="VFMidlTool" SuppressStartupBanner="true"/>
+				<Tool Name="VFCustomBuildTool"/>
+				<Tool Name="VFPreLinkEventTool"/>
+				<Tool Name="VFPreBuildEventTool"/>
+				<Tool Name="VFPostBuildEventTool"/></Configuration>
+		<Configuration Name="Debug|x64" OutputDirectory="$(ProjectDir).." IntermediateDirectory="$(ProjectDir)obj\$(ProjectName)_$(ConfigurationName)_$(PlatformName)" ConfigurationType="typeStaticLibrary">
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" Interfaces="true" WarnInterfaces="true" FloatingPointExceptionHandling="fpe0" FloatingPointModel="source" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb" Traceback="true" NullPointerCheck="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtMultiThreadedDebug"/>
+				<Tool Name="VFLibrarianTool" OutputFile="$(OutDir)/$(ProjectName)_64d.lib"/>
+				<Tool Name="VFResourceCompilerTool"/>
+				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64"/>
+				<Tool Name="VFCustomBuildTool"/>
+				<Tool Name="VFPreLinkEventTool"/>
+				<Tool Name="VFPreBuildEventTool"/>
+				<Tool Name="VFPostBuildEventTool"/></Configuration>
+		<Configuration Name="Release|x64" OutputDirectory="$(ProjectDir).." IntermediateDirectory="$(ProjectDir)obj\$(ProjectName)_$(ConfigurationName)_$(PlatformName)" ConfigurationType="typeStaticLibrary">
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Parallelization="true" BufferedIO="true" FloatingPointExceptionHandling="fpe1" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb" RuntimeLibrary="rtMultiThreadedDLL"/>
+				<Tool Name="VFLibrarianTool" OutputFile="$(OutDir)/$(ProjectName)_64.lib"/>
+				<Tool Name="VFResourceCompilerTool"/>
+				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64"/>
+				<Tool Name="VFCustomBuildTool"/>
+				<Tool Name="VFPreLinkEventTool"/>
+				<Tool Name="VFPreBuildEventTool"/>
+				<Tool Name="VFPostBuildEventTool"/></Configuration></Configurations>
+	<Files>
+		<Filter Name="Source Files (Install)">
+		<File RelativePath="..\lapack-3.4.1\INSTALL\dlamch.f"/>
+		<File RelativePath="..\lapack-3.4.1\INSTALL\slamch.f"/></Filter>
+		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
+		<File RelativePath="..\lapack-3.4.1\SRC\dgesv.f"/>
+		<File RelativePath="..\lapack-3.4.1\SRC\dgetf2.f"/>
+		<File RelativePath="..\lapack-3.4.1\SRC\dgetrf.f"/>
+		<File RelativePath="..\lapack-3.4.1\SRC\dgetrs.f"/>
+		<File RelativePath="..\lapack-3.4.1\SRC\dlaswp.f"/>
+		<File RelativePath="..\lapack-3.4.1\SRC\ieeeck.f"/>
+		<File RelativePath="..\lapack-3.4.1\SRC\ilaenv.f"/>
+		<File RelativePath="..\lapack-3.4.1\SRC\iparmq.f"/>
+		<File RelativePath="..\lapack-3.4.1\SRC\lsamen.f"/>
+		<File RelativePath="..\lapack-3.4.1\SRC\sgesv.f"/>
+		<File RelativePath="..\lapack-3.4.1\SRC\sgetf2.f"/>
+		<File RelativePath="..\lapack-3.4.1\SRC\sgetrf.f"/>
+		<File RelativePath="..\lapack-3.4.1\SRC\sgetrs.f"/>
+		<File RelativePath="..\lapack-3.4.1\SRC\slaswp.f"/></Filter></Files>
+	<Globals/></VisualStudioProject>

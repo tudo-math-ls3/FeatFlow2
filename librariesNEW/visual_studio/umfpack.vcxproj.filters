@@ -1,0 +1,516 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files %28internal%29">
+      <UniqueIdentifier>{9e9df3ee-bab2-4363-8195-125cb9e4e61f}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\UMFPACK\Include\umfpack.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Include\umfpack_col_to_triplet.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Include\umfpack_defaults.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Include\umfpack_free_numeric.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Include\umfpack_free_symbolic.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Include\umfpack_get_determinant.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Include\umfpack_get_lunz.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Include\umfpack_get_numeric.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Include\umfpack_get_symbolic.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Include\umfpack_global.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Include\umfpack_load_numeric.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Include\umfpack_load_symbolic.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Include\umfpack_numeric.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Include\umfpack_qsymbolic.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Include\umfpack_report_control.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Include\umfpack_report_info.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Include\umfpack_report_matrix.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Include\umfpack_report_numeric.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Include\umfpack_report_perm.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Include\umfpack_report_status.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Include\umfpack_report_symbolic.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Include\umfpack_report_triplet.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Include\umfpack_report_vector.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Include\umfpack_save_numeric.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Include\umfpack_save_symbolic.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Include\umfpack_scale.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Include\umfpack_solve.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Include\umfpack_symbolic.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Include\umfpack_tictoc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Include\umfpack_timer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Include\umfpack_transpose.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Include\umfpack_triplet_to_col.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Include\umfpack_wsolve.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_mem_alloc_element.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_mem_alloc_head_block.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_mem_alloc_tail_block.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_mem_free_tail_block.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_mem_init_memoryspace.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_realloc.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_report_perm.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_report_vector.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_row_search.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_scale.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_scale_column.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_set_stats.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_singletons.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_solve.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_start_front.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_store_lu.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_symbolic_usage.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_transpose.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_triplet.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_tuple_lengths.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_usolve.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_utsolve.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_valid_numeric.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_valid_symbolic.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_version.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\cholmod_blas.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_analyze.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_apply_order.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_assemble.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_blas3_update.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_build_tuples.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_cholmod.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_colamd.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_config.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_create_element.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_dump.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_extend_front.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_free.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_fsize.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_garbage_collection.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_get_memory.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_grow_front.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_init_front.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_internal.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_is_permutation.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_kernel.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_kernel_init.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_kernel_wrapup.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_local_search.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_lsolve.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_ltsolve.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+    <ClInclude Include="..\UMFPACK\Source\umf_malloc.h">
+      <Filter>Header Files %28internal%29</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\UMFPACK\Source\umfpack_report_status.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umfpack_report_symbolic.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umfpack_report_triplet.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umfpack_report_vector.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umfpack_save_numeric.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umfpack_save_symbolic.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umfpack_scale.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umfpack_solve.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umfpack_symbolic.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umfpack_tictoc.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umfpack_timer.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umfpack_transpose.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umfpack_triplet_to_col.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_analyze.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_apply_order.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_assemble.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_blas3_update.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_build_tuples.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_colamd.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_create_element.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_dump.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_extend_front.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_free.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_fsize.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_garbage_collection.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_get_memory.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_grow_front.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_init_front.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_is_permutation.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_kernel.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_kernel_init.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_kernel_wrapup.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_local_search.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_lsolve.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_ltsolve.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_malloc.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_mem_alloc_element.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_mem_alloc_head_block.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_mem_alloc_tail_block.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_mem_free_tail_block.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_mem_init_memoryspace.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_multicompile.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_realloc.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_report_perm.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_report_vector.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_row_search.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_scale.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_scale_column.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_set_stats.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_singletons.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_solve.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_start_front.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_store_lu.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_symbolic_usage.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_transpose.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_triplet.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_tuple_lengths.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_usolve.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_utsolve.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_valid_numeric.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umf_valid_symbolic.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umfpack_col_to_triplet.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umfpack_defaults.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umfpack_free_numeric.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umfpack_free_symbolic.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umfpack_get_determinant.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umfpack_get_lunz.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umfpack_get_numeric.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umfpack_get_symbolic.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umfpack_global.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umfpack_load_numeric.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umfpack_load_symbolic.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umfpack_numeric.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umfpack_qsymbolic.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umfpack_report_control.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umfpack_report_info.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umfpack_report_matrix.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umfpack_report_numeric.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\Source\umfpack_report_perm.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\UMFPACK\umf4_f77wrapper_feast.c" />
+    <ClCompile Include="..\UMFPACK\Source\umf_cholmod.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
