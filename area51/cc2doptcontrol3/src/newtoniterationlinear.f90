@@ -582,6 +582,8 @@ contains
     type(t_linsolMultigrid), pointer :: p_rlinsolMultigrid
     integer :: nminIterations,nmaxIterations,ite
     real(DP) :: dresInit,dresFinal
+    type(t_kktsystemDirDeriv), pointer :: p_rkktSysRhsCoarse, p_rkktSysSolCoarse, p_rkktSysSolFine
+    type(t_kktsystemDirDeriv), pointer :: p_rkktSysSolution, p_rkktSysDefect
     
     ! Get multigrid parameters.
     p_rlinsolMultigrid => rlinsolParam%p_rlinsolMultigrid
@@ -628,9 +630,16 @@ contains
     end if
     
     ! Apply the multigrid iteration
-    ite = 0
-    call kkt_clearDirDeriv (rkktsysDirDerivHierarchy%p_RkktSysDirDeriv(ilevel))
+
+    call kkth_getKKTsystemDirDeriv (rkktsysDirDerivHierarchy,ilevel,p_rkktSysSolution)
+    call kkth_getKKTsystemDirDeriv (p_rlinsolMultigrid%rrhsHier,ilevel-1,p_rkktSysRhsCoarse)
+    call kkth_getKKTsystemDirDeriv (p_rlinsolMultigrid%rsolutionHier,ilevel-1,p_rkktSysSolCoarse)
+    call kkth_getKKTsystemDirDeriv (p_rlinsolMultigrid%rsolutionHier,ilevel,p_rkktSysSolFine)
+    call kkth_getKKTsystemDirDeriv (p_rlinsolMultigrid%rdefectHier,ilevel,p_rkktSysDefect)
     
+    ite = 0
+    call kkt_clearDirDeriv (p_rkktSysSolution)
+
     do
     
       if (ilevel .lt. nlevels) then
@@ -642,8 +651,8 @@ contains
     
       ! Get the residual
       call newtonlin_getResidual (rlinsolParam,&
-          rkktsysDirDerivHierarchy%p_RkktSysDirDeriv(ilevel),rrhs,&
-          p_rlinsolMultigrid%rdefectHier%p_RkktSysDirDeriv(ilevel)%p_rcontrolLin,&
+          p_rkktSysSolution,rrhs,&
+          p_rkktSysDefect%p_rcontrolLin,&
           dresFinal,rlinsolParam%rprecParameters%iresnorm)
           
       if (ite .eq. 0) dresInit = dresFinal
@@ -689,13 +698,13 @@ contains
 
         call newtonlin_smoothCorrection (p_rlinsolMultigrid%p_rsubSolvers(ilevel),&
               p_rlinsolMultigrid%nsmpre,&
-              rkktsysDirDerivHierarchy%p_RkktSysDirDeriv(ilevel),rrhs,&
+              p_rkktSysSolution,rrhs,&
               rlinsolParam%p_rtempVectors(ilevel))
 
         ! Get the new residual -- it has changed due to the smoothing.
         call newtonlin_getResidual (rlinsolParam,&
-            rkktsysDirDerivHierarchy%p_RkktSysDirDeriv(ilevel),rrhs,&
-            p_rlinsolMultigrid%rdefectHier%p_RkktSysDirDeriv(ilevel)%p_rcontrolLin,&
+            p_rkktSysSolution,rrhs,&
+            p_rkktSysDefect%p_rcontrolLin,&
             dresFinal,rlinsolParam%rprecParameters%iresnorm)
       end if
       
@@ -706,8 +715,8 @@ contains
 
       ! Restriction of the defect
       call sptipr_performRestriction (rlinsolParam%p_rprjHierSpaceTimeControl,ilevel,&
-          p_rlinsolMultigrid%rrhsHier%p_RkktSysDirDeriv(ilevel-1)%p_rcontrolLin%p_rvectorAccess, &
-          p_rlinsolMultigrid%rdefectHier%p_RkktSysDirDeriv(ilevel)%p_rcontrolLin%p_rvectorAccess)
+          p_rkktSysRhsCoarse%p_rcontrolLin%p_rvectorAccess, &
+          p_rkktSysDefect%p_rcontrolLin%p_rvectorAccess)
       
       if (ilevel-1 .eq. 1) then
         if (rlinsolParam%rprecParameters%ioutputLevel .ge. 3) then
@@ -719,7 +728,7 @@ contains
       ! Coarse grid correction
       call newtonlin_multigridDriver (rlinsolParam,ilevel-1,nlevels,&
           p_rlinsolMultigrid%rsolutionHier,&
-          p_rlinsolMultigrid%rrhsHier%p_RkktSysDirDeriv(ilevel-1)%p_rcontrolLin)
+          p_rkktSysRhsCoarse%p_rcontrolLin)
       
       
       if (rlinsolParam%rprecParameters%ioutputLevel .ge. 3) then
@@ -729,14 +738,14 @@ contains
 
       ! Prolongation of the correction
       call sptipr_performProlongation (rlinsolParam%p_rprjHierSpaceTimeControl,ilevel,&
-          p_rlinsolMultigrid%rsolutionHier%p_RkktSysDirDeriv(ilevel-1)%p_rcontrolLin%p_rvectorAccess,&
-          p_rlinsolMultigrid%rsolutionHier%p_RkktSysDirDeriv(ilevel)%p_rcontrolLin%p_rvectorAccess)
+          p_rkktSysSolCoarse%p_rcontrolLin%p_rvectorAccess,&
+          p_rkktSysSolFine%p_rcontrolLin%p_rvectorAccess)
 
       ! And the actual correction...
       call kktsp_controlLinearComb (&
-          p_rlinsolMultigrid%rsolutionHier%p_RkktSysDirDeriv(ilevel)%p_rcontrolLin,&
+          p_rkktSysSolFine%p_rcontrolLin,&
           p_rlinsolMultigrid%dcoarseGridCorrectionWeight,&
-          rkktsysDirDerivHierarchy%p_RkktSysDirDeriv(ilevel)%p_rcontrolLin,&
+          p_rkktSysSolution%p_rcontrolLin,&
           1.0_DP)
 
       ! Apply postsmoothing
@@ -748,7 +757,7 @@ contains
 
         call newtonlin_smoothCorrection (p_rlinsolMultigrid%p_rsubSolvers(ilevel),&
               p_rlinsolMultigrid%nsmpost,&
-              rkktsysDirDerivHierarchy%p_RkktSysDirDeriv(ilevel),rrhs,&
+              p_rkktSysSolution,rrhs,&
               rlinsolParam%p_rtempVectors(ilevel))
               
         ! Calculation of the new residual is done in the beginning of the loop.
