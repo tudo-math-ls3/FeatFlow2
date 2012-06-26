@@ -201,7 +201,7 @@ csmoother = 0
 ccoarseGridSolver = 0
 
 # Section configuring the smoother
-ssectionCoarseGridSolver = SPACETIME-SMOOTHER
+ssectionSmoother = SPACETIME-SMOOTHER
 
 # Section configuring the coarse grid solver
 ssectionCoarseGridSolver = SPACETIME-COARSEGRIDSOLVER

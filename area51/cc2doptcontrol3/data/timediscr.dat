@@ -60,22 +60,8 @@ dtimeStepTheta = 1.0
 #     according to the 1-step theta scheme. No time negotiation, so
 #     the restriction uses a constant interpolation of the primal
 #     space to synchronise in time with the dual space.
-# =3: linear prolongation/restriction, primal+dual solutions located
-#     according to the 1-step theta scheme. Full linear restriction
-#     with interpolation in time.
-# =4: Piecewise cubic interpolation in the inner. Piecewise quadratic
-#     extrapolation at the time endpoints. Solutions located at the
-#     time endpoints. (not completely implemented)
-# =5: Piecewise linear with larger stencil. Solutions located at the
-#     time endpoints. (not completely implemented)
-# =6: linear prolongation/restriction, primal+dual solutions located
-#     according to the 1-step theta scheme. No time negotiation, so
-#     the restriction uses a constant interpolation of the primal
-#     space to synchronise in time with the dual space. Simple
-#     restriction approach, i.e. R_p=P_p^T and R_d=P_d^T without
-#     respecting that the matrices must be exchanged.
 
-ctypeProjection = -1
+ctypeProjection = 1
 
 # ========================================================================
 # This section defines a combined space-time refinement.
