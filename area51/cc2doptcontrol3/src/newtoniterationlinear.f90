@@ -654,7 +654,7 @@ contains
           p_rkktSysSolution,rrhs,&
           p_rkktSysDefect%p_rcontrolLin,&
           dresFinal,rlinsolParam%rprecParameters%iresnorm)
-          
+
       if (ite .eq. 0) dresInit = dresFinal
 
       ! Some checks and output on the maximum level
@@ -731,20 +731,23 @@ contains
           p_rlinsolMultigrid%rsolutionHier,&
           p_rkktSysRhsCoarse%p_rcontrolLin)
       
-      
       if (rlinsolParam%rprecParameters%ioutputLevel .ge. 3) then
         call output_line (&
             "  Space-time Multigrid: Switching to level "//trim(sys_siL(ilevel,10))//".")
       end if
 
-      ! Prolongation of the correction
+      ! Prolongation of the correction.
+      ! Prolongate to the "defect" vector on the current level and use
+      ! this for the coarse grid correction. 
+      ! Do not use the "solution" vector as target of the prolongation since
+      ! that may be in use due to the multigrid iteration.
       call sptipr_performProlongation (rlinsolParam%p_rprjHierSpaceTimeControl,ilevel,&
           p_rkktSysSolCoarse%p_rcontrolLin%p_rvectorAccess,&
-          p_rkktSysSolFine%p_rcontrolLin%p_rvectorAccess)
+          p_rkktSysDefect%p_rcontrolLin%p_rvectorAccess)
 
       ! And the actual correction...
       call kktsp_controlLinearComb (&
-          p_rkktSysSolFine%p_rcontrolLin,&
+          p_rkktSysDefect%p_rcontrolLin,&
           p_rlinsolMultigrid%dcoarseGridCorrectionWeight,&
           p_rkktSysSolution%p_rcontrolLin,&
           1.0_DP)

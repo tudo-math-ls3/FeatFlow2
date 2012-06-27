@@ -1640,11 +1640,11 @@ contains
     do irow = 1,neq
 
       ! Clear the destination
-      call sptivec_getFreeBufferFromPool (rfineVector,irow,p_rdestVector)
+      call sptivec_getFreeBufferFromPool (raccessPool,irow,p_rdestVector)
       call lsysbl_clearVector (p_rdestVector)
       
       ! DEBUG!!!
-      call lsysbl_getbase_double (p_rdestVector,p_DdataFine)
+      call lsysbl_getbase_double (p_rdestVector,p_DdataCoarse)
       
       ! Loop over the matrices configuring the prolongation for
       ! all the components
@@ -1663,7 +1663,7 @@ contains
           ! Get the fine grid vector using the vector pool as buffer. Saves time.
           call sptivec_getVectorFromPool(rfineVector,p_Kcol(icol),p_rx)
           
-          call lsysbl_getbase_double (p_rx,p_DdataCoarse)
+          call lsysbl_getbase_double (p_rx,p_DdataFine)
           
           ! Now, rx is the time vector at timestep icol. Weighted multiplication
           ! into rtempVecFine for y and xi.
@@ -1740,7 +1740,7 @@ contains
       type(t_vectorBlock), pointer :: p_rtempVecCoarse
   
       ! Get the coarse grid vector
-      call sptivec_getVectorFromPool (rcoarseVector, iindex, p_rtempVecCoarse)
+      call sptivec_getFreeBufferFromPool (rcoarseVector, iindex, p_rtempVecCoarse)
   
       if (ispacelevelcoarse .ne. ispacelevelfine) then
         ! Space + time
@@ -1870,7 +1870,7 @@ contains
     do irow = 1,neq
 
       ! Clear the destination
-      call sptivec_getFreeBufferFromPool (rfineVector,irow,p_rdestVector)
+      call sptivec_getFreeBufferFromPool (raccessPool,irow,p_rdestVector)
       call lsysbl_clearVector (p_rdestVector)
       
       ! DEBUG!!!
@@ -1966,7 +1966,7 @@ contains
       type(t_vectorBlock), pointer :: p_rtempVecCoarse
 
       ! Get the coarse grid vector
-      call sptivec_getVectorFromPool (rcoarseVector, iindex, p_rtempVecCoarse)
+      call sptivec_getFreeBufferFromPool (rcoarseVector, iindex, p_rtempVecCoarse)
 
       if (ispacelevelcoarse .ne. ispacelevelfine) then
         ! Space + time

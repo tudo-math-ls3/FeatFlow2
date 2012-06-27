@@ -28,6 +28,7 @@ module optcanalysis
   use fsystem
   use genoutput
   
+  use mprimitives
   use spatialdiscretisation
   use timediscretisation
   use linearalgebra
@@ -309,15 +310,21 @@ contains
     type(t_collection), target :: rcollection,rusercollection
     integer :: i,nblocks
     type(p_t_spacetimeOpAsmAnalyticData), target :: rp_ranalyticData
+    real(DP) :: dtimerel
     
     dintvalue = 0.0_DP
     
+    ! Rescale the time.
+    call mprim_linearRescale(dtime,&
+        rprimalSol%p_rvector%p_rtimeDiscr%dtimeInit,rprimalSol%p_rvector%p_rtimeDiscr%dtimeMax,&
+        0.0_DP,1.0_DP,dtimerel)
+
     ! Reserve memory in the pool for the solution
     nblocks = rprimalSol%p_rvector%NEQtime
     call sptivec_getFreeBufferFromPool (rprimalSol%p_rvectorAccess,nblocks+1,p_rvector)
     
     ! Calculate y(t)
-    call sptivec_getTimestepDataByTime (rprimalSol%p_rvector, dtime, p_rvector)
+    call sptivec_getTimestepDataByTime (rprimalSol%p_rvector, dtimerel, p_rvector)
 
     ! Append y to the set of functions to be evaluated.
     do i=1,p_rvector%nblocks
@@ -403,16 +410,22 @@ contains
     type(t_fev2Vectors) :: revalVectors
     type(t_vectorBlock), pointer :: p_rvector
     integer :: i,nblocks
+    real(DP) :: dtimerel
     
     dintvalue = 0.0_DP
     if (dweight .eq. 0.0_DP) return
     
+    ! Rescale the time.
+    call mprim_linearRescale(dtime,&
+        rcontrol%p_rvector%p_rtimeDiscr%dtimeInit,rcontrol%p_rvector%p_rtimeDiscr%dtimeMax,&
+        0.0_DP,1.0_DP,dtimerel)
+
     ! Reserve memory in the pool for the solution
     nblocks = rcontrol%p_rvector%NEQtime
     call sptivec_getFreeBufferFromPool (rcontrol%p_rvectorAccess,nblocks+1,p_rvector)
     
-    ! Calculate y(t)
-    call sptivec_getTimestepDataByTime (rcontrol%p_rvector, dtime, p_rvector)
+    ! Calculate y(t).
+    call sptivec_getTimestepDataByTime (rcontrol%p_rvector, dtimerel, p_rvector)
 
     ! Append u to the set of functions to be evaluated.
     do i=icompstart,icompstart+ncomponents-1

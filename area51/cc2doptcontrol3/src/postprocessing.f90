@@ -35,6 +35,7 @@ module postprocessing
   use genoutput
   use io
   use paramlist
+  use mprimitives
   
   use basicgeometry
   use spatialdiscretisation
@@ -1344,7 +1345,7 @@ contains
 
     ! local variables
     integer :: i,nblocks
-    real(DP) :: dtime
+    real(DP) :: dtime, dtimerel
     type(t_vectorBlock), pointer :: p_rvector
     
     ! Some initialisations
@@ -1361,9 +1362,15 @@ contains
         ! Current time
         call tdiscr_getTimestep(rsolution%p_rspaceTimeVector%p_rtimediscr,i-1,dtimeEnd=dtime)
         
+        ! Rescale the time.
+        call mprim_linearRescale(dtime,&
+            rsolution%p_rspaceTimeVector%p_rtimediscr%dtimeInit,&
+            rsolution%p_rspaceTimeVector%p_rtimediscr%dtimeMax,&
+            0.0_DP,1.0_DP,dtimerel)
+
         ! Get the solution
         call sptivec_getFreeBufferFromPool (rsolution,nblocks+1,p_rvector)
-        call sptivec_getTimestepDataByTime (rsolution%p_rspaceTimeVector, dtime, p_rvector)
+        call sptivec_getTimestepDataByTime (rsolution%p_rspaceTimeVector, dtimerel, p_rvector)
         
         call optcpp_singleVisualisation (rpostproc,p_rvector,cspace,&
             rsolution%p_rspaceTimeVector%p_rspaceDiscr%p_rtriangulation,&
@@ -1374,9 +1381,15 @@ contains
         ! Current time
         call tdiscr_getTimestep(rsolution%p_rspaceTimeVector%p_rtimediscr,i,dtimeStart=dtime)
         
+        ! Rescale the time.
+        call mprim_linearRescale(dtime,&
+            rsolution%p_rspaceTimeVector%p_rtimediscr%dtimeInit,&
+            rsolution%p_rspaceTimeVector%p_rtimediscr%dtimeMax,&
+            0.0_DP,1.0_DP,dtimerel)
+
         ! Get the solution
         call sptivec_getFreeBufferFromPool (rsolution,nblocks+1,p_rvector)
-        call sptivec_getTimestepDataByTime (rsolution%p_rspaceTimeVector, dtime, p_rvector)
+        call sptivec_getTimestepDataByTime (rsolution%p_rspaceTimeVector, dtimerel, p_rvector)
         
         call optcpp_singleVisualisation (rpostproc,p_rvector,cspace,&
             rsolution%p_rspaceTimeVector%p_rspaceDiscr%p_rtriangulation,&
