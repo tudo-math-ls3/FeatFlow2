@@ -84,7 +84,7 @@ nminIterations     = 2
 
 # Maximum number of steps
 
-nmaxIterations     = 15
+nmaxIterations     = 10
 
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
@@ -160,11 +160,11 @@ dalphaMax          = 10.0
 
 # Number of pre- and postsmoothing steps
 
-nsmoothingSteps    = 400
+nsmoothingSteps    = 4
 
 # Relaxation parameter
 
-domega             = 0.8
+domega             = 1.0
 
 # Output level of the solver
 # = 2:extended output

@@ -9,13 +9,14 @@
 dPenalty = 1.0
 
 # Penalty method
-#   - 1 - full-Lambda (standard)
+#   - 1 - full Lambda (standard)
 #   - 2 - fractional Lambda
+#   - 3 - exponential Lambda (1/(1+exp(d(x)/eps))
 
-ipenalty = 1
+ipenalty = 3
 
 # Penalty parameter (standard 1000)
-dlambda = 1e9
+dlambda = 1e3
 
 # itypePenaltyAssem indicates how to assemble Penalty matrix
 #   - 1 means only one bilinear form with a cub. formula and non constant coeff cc_Lambda
@@ -45,11 +46,11 @@ scubPenalty = G3x3
 # adaptive cubature formula for Penalty matrix. Only for itypePenaltyAssem = 2 
 # ="": use default cubature formula.
 
-scubPenalty_sum = TRZ
+scubPenaltySum = TRZ
 
 # ilocalrefinement - indicates the local refinement we want (level n -> pow(2,2*n))
 
-ilocalrefinement     = 5
+irefinement     = 5
 
 # Calculate the mass of the penalty matrix (default 0 / 1 for activation)
 
@@ -59,4 +60,4 @@ sfilenamePenaltyMatrix_Vol = '%{ssolutiondirectory}/PenaltyMatrix_Vol'
 # Output the penalty matrix to txt file (default 0 / 1 for activation)
 
 ipenmat = 0
-sfilenamePenaltyMatrix = '%{ssolutiondirectory}/PenaltyMatrix'
+sfilenamePenaltyMatrix = PenaltyMatrix

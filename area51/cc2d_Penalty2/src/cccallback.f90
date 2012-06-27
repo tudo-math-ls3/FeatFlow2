@@ -1918,7 +1918,8 @@ contains
 !<local variables>
   integer :: iel,ielreal,icup,ive,nve,iin,ipart,ivert,in,icount,i,ipenalty, &
              itypePenaltyAssem
-  real(dp) :: dxcenter, dycenter, dradius, ddist,dlambda,dx,dy,dLocAreea,dElAreea
+  real(dp) :: dxcenter,dycenter,dxnode,dynode,dradius,ddist,dlambda,dx,dy,dLocAreea,dElAreea,DlocalH,&
+              deps
   real(dp), dimension(:,:), pointer :: p_dvertexcoordinates
   integer, dimension(:,:), pointer :: p_iverticesatelement
   type(t_particlecollection), pointer :: p_rparticlecollection
@@ -2006,9 +2007,59 @@ contains
         end do
       end if    
     end do !(loop over elements)
+
+    case (3) ! "Exponential Lambda" method
+
+    dxcenter = p_rgeometryobject%rcoord2D%dorigin(1)
+    dycenter = p_rgeometryobject%rcoord2D%dorigin(1)
+    dradius = p_rgeometryobject%rcircle%dradius
+
+    do iel=1,nelements
+      call getLocalDeltaTriSim(rdiscretisationtrial%p_rtriangulation,iel,DlocalH)
+      deps = 1000 !dlocalh/10
+      do icup=1,npointsperelement 
+        ! get the distance to the center
+        dxnode = dpoints(1,icup,iel)
+        dynode = dpoints(2,icup,iel)
+        ddist = sqrt((dxcenter-dxnode)**2+(dycenter-dynode)**2) - dradius
+
+        dcoefficients(1,icup,iel) = dlambda*1/(1+exp(ddist*deps))
+      end do
+    end do !(loop over elements)
+
     end select 
 
   end do !(loop over particles)
   end subroutine
+
+  !****************************************************************************************
+  subroutine getLocalDeltaTriSim (rtriangulation,Ielement,DlocalH)
+
+  ! This routine calculates a local h for a set of finite elements.
+  ! Triangular version
+  !
+  ! Method how to compute the local h.
+  ! =0: Use the root of the 2*area of the element as local H
+  !  integer, intent(in) :: clocalH
+
+  ! Triangulation that defines the mesh.
+  type(t_triangulation), intent(in) :: rtriangulation
+
+  ! List of elements where to calculate the local delta.
+  integer :: Ielement
+
+  ! Out: local Ddelta on selected element
+  real(DP), intent(out) :: DlocalH
+
+  ! local variables
+  real(DP), dimension(:), pointer :: p_DelementVolume
+
+ ! Currently, we only support clocalh=0!
+ call storage_getbase_double (rtriangulation%h_DelementVolume,p_DelementVolume)
+
+ ! Calculate the local h from the area of the element.
+ ! As the element is a tri, multiply the volume by 2.
+ dlocalH = sqrt(2.0_DP*p_DelementVolume(Ielement))
+ end subroutine
 
 end module

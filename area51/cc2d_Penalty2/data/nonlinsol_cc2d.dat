@@ -14,7 +14,7 @@
 # 1=standard
 # Former NLMIN.
 
-nminIterations     = 2
+nminIterations     = 1
 
 # max number of nonlinear iterations; 
 # in nonstationary simulations: per time step.
