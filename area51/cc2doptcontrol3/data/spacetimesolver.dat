@@ -212,6 +212,9 @@ nsmPre = 0
 # Number of postsmoothing steps
 nsmPost = 4
 
+# Coarse grid correction weight
+dcoarseGridCorrectionWeight = 1.0
+
 
 ####################
 [SPACETIME-SMOOTHER]

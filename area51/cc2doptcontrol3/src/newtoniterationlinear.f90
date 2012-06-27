@@ -100,7 +100,7 @@ module newtoniterationlinear
     integer :: nsmPost = 4
     
     ! Coarse grid correction damping parameter
-    real(DP) :: dcoarseGridCorrectionWeight = 0.0_DP
+    real(DP) :: dcoarseGridCorrectionWeight = 1.0_DP
     
     ! Section in the parameter list with parameters for the smoother
     character(LEN=PARLST_MLSECTION) :: ssectionSmoother
@@ -986,6 +986,10 @@ contains
         
     call parlst_getvalue_int (rparlist, ssection, "nsmPost", &
         rlinsolMultigrid%nsmPost, rlinsolMultigrid%nsmPost)
+
+    call parlst_getvalue_double (rparlist, ssection, "dcoarseGridCorrectionWeight", &
+        rlinsolMultigrid%dcoarseGridCorrectionWeight, &
+        rlinsolMultigrid%dcoarseGridCorrectionWeight)
 
     call parlst_getvalue_string (rparlist, ssection, "ssectionSmoother", &
         rlinsolMultigrid%ssectionSmoother,"SPACETIME-SMOOTHER",&
