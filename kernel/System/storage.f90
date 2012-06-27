@@ -121,6 +121,9 @@
 !#
 !# 25.) storage_getMemPtrOnDevice
 !#      -> Get the memory address in the device memory
+!#
+!# 26.) storage_newDummy
+!#      -> Adds a dummy node to the storage.
 !# </purpose>
 !##############################################################################
 
@@ -226,6 +229,9 @@ module storage
 
   ! storage block contains characters
   integer, parameter, public :: ST_CHAR = 10
+
+  ! storage block is a dummy node
+  integer, parameter, public :: ST_DUMMY = 11
 
 !</constantblock>
 
@@ -917,6 +923,7 @@ module storage
   public :: storage_getMemPtrOnDevice
   public :: storage_isAssociated
   public :: storage_nullify
+  public :: storage_newDummy
 
   !************************************************************************
 
@@ -1862,6 +1869,96 @@ contains
     end select
 
   end subroutine storage_newDefaultFixed
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine storage_newDummy (scall, sname, isize, ihandle, rheap)
+
+!<description>
+  ! This routine reserves a dummy block of desired size.
+  ! This routine can be used to update the memory usage statistics of the
+  ! storage module even if the memory itself is not stored or maintained
+  ! by the storage itself.
+!</description>
+
+!<input>
+
+  ! name of the calling routine
+  character(LEN=*), intent(in) :: scall
+
+  ! clear name of data field
+  character(LEN=*), intent(in) :: sname
+
+  ! number of bytes to be registered
+  integer(I64), intent(in) :: isize
+
+!</input>
+
+!<inputoutput>
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  type(t_storageBlock), intent(inout), target, optional :: rheap
+
+!</inputoutput>
+
+!<output>
+
+  ! Handle of the memory block.
+  integer, intent(out) :: ihandle
+
+!</output>
+
+!</subroutine>
+
+  ! Pointer to the heap
+  type(t_storageBlock), pointer :: p_rheap
+  type(t_storageNode), pointer :: p_rnode
+  character(LEN=SYS_NAMELEN) :: snameBackup
+
+    if (isize .eq. 0) then
+      call output_line ('isize=0!', &
+                        OU_CLASS_WARNING,OU_MODE_STD,'storage_newDummy')
+      ihandle = ST_NOHANDLE
+      return
+    end if
+
+    ! Get the heap to use - local or global one.
+
+    if(present(rheap)) then
+      p_rheap => rheap
+    else
+      p_rheap => rbase
+    end if
+
+    ! Back up the array name. This is important for a very crual situation:
+    ! The storage_newhandle below may reallocate the p_Rdescriptors array.
+    ! If sname points to one of the old arrays, the pointer gets invalid
+    ! and the name cannot be accessed anymore. So make a backup of that
+    ! before creating a new handle!
+    snameBackup = sname
+
+    ! Get a new handle.
+    ihandle = storage_newhandle (p_rheap)
+
+    ! Where is the descriptor of the handle?
+    p_rnode => p_rheap%p_Rdescriptors(ihandle)
+
+    ! Initialise the content
+    p_rnode%idataType = ST_DUMMY
+    p_rnode%idimension = 1
+    p_rnode%sname = snameBackup
+    p_rnode%imemBytes = isize
+
+    !$omp critical(storage_global_heap_modify)
+    p_rheap%itotalMem = p_rheap%itotalMem + p_rnode%imemBytes
+    if (p_rheap%itotalMem .gt. p_rheap%itotalMemMax) &
+        p_rheap%itotalMemMax = p_rheap%itotalMem
+    !$omp end critical(storage_global_heap_modify)
+
+  end subroutine storage_newDummy
 
 !************************************************************************
 

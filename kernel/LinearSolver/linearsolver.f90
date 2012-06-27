@@ -1607,13 +1607,17 @@ module linearsolver
     ! Handle for symbolic factorisation.
     ! This is not a FEAT-Handle!
     integer :: isymbolic = 0
-!    integer(I32) :: isymbolic = 0
 
     ! Handle for numeric factorisation
     ! This is not a FEAT-Handle!
     integer :: inumeric = 0
-!    integer(I32) :: inumeric = 0
-    
+
+    ! Storage handle to dummy node for symbolic factorisation.
+    integer :: h_symbolicDummy = ST_NOHANDLE
+
+    ! Storage handle to dummy node for numeric factorisation
+    integer :: h_numericDummy = ST_NOHANDLE
+
     ! Handle to a temporary vector for storing the solution
     type(t_vectorBlock) :: rtempVector
 
@@ -6960,6 +6964,12 @@ contains
       ierror = LINSOL_ERR_INITERROR
     end select
 
+    ! compute memory usage of symbolic factorisation, that is
+    !   Dinfo(UMFPACK_SIZE_OF_UNIT) * Dinfo(UMFPACK_SYMBOLIC_SIZE)
+    ! and store it as a dummy node in the storage
+    call storage_newDummy('linsol_initStructureUMFPACK4', 'h_symbolicDummy', &
+      int(Dinfo(4),I64) * int(Dinfo(15),I64), rsolverNode%p_rsubnodeUMFPACK4%h_symbolicDummy)
+
     ! Throw away the temporary matrix/matrices
     call lsyssc_releaseMatrix (rtempMatrix)
     if ((rsolverNode%rsystemMatrix%nblocksPerCol .ne. 1) .or. &
@@ -7182,6 +7192,12 @@ contains
       ierror = LINSOL_ERR_INITERROR
     end select
 
+    ! compute memory usage of numeric factorisation, that is
+    !   Dinfo(UMFPACK_SIZE_OF_UNIT) * Dinfo(UMFPACK_NUMERIC_SIZE)
+    ! and store it as a dummy node in the storage
+    call storage_newDummy('linsol_initDataUMFPACK4', 'h_numericDummy', &
+      int(Dinfo(4),I64) * int(Dinfo(41),I64), rsolverNode%p_rsubnodeUMFPACK4%h_numericDummy)
+
     ! Throw away the temporary matrix/matrices
     call lsyssc_releaseMatrix (rtempMatrix)
     if ((rsolverNode%rsystemMatrix%nblocksPerCol .ne. 1) .or. &
@@ -7228,6 +7244,10 @@ contains
     ! If isubgroup does not coincide with isolverSubgroup from the solver
     ! structure, skip the rest here.
     if (isubgroup .ne. rsolverNode%isolverSubgroup) return
+
+    ! Release numeric dummy node from storage
+    if(rsolverNode%p_rsubnodeUMFPACK4%h_numericDummy .ne. ST_NOHANDLE) &
+      call storage_free(rsolverNode%p_rsubnodeUMFPACK4%h_numericDummy)
     
     ! Release the numerical factorisation if associated
     if (rsolverNode%p_rsubnodeUMFPACK4%inumeric .ne. 0) then
@@ -7274,6 +7294,10 @@ contains
     ! If isubgroup does not coincide with isolverSubgroup from the solver
     ! structure, skip the rest here.
     if (isubgroup .ne. rsolverNode%isolverSubgroup) return
+
+    ! Release symbolic dummy node from storage
+    if(rsolverNode%p_rsubnodeUMFPACK4%h_symbolicDummy .ne. ST_NOHANDLE) &
+      call storage_free(rsolverNode%p_rsubnodeUMFPACK4%h_symbolicDummy)
     
     ! Release the symbolical factorisation if associated
     if (rsolverNode%p_rsubnodeUMFPACK4%isymbolic .ne. 0) then
