@@ -623,7 +623,7 @@ contains
       ! On level nlevels, apply as many iterations as configured.
       nminIterations = rlinsolParam%rprecParameters%nminIterations
       nmaxIterations = rlinsolParam%rprecParameters%nmaxIterations
-      
+    else
       ! On all the other levels, apply as many iterations as configured in the cycle.
       nminIterations = p_rlinsolMultigrid%p_IcycleCount(ilevel)
       nmaxIterations = p_rlinsolMultigrid%p_IcycleCount(ilevel)
