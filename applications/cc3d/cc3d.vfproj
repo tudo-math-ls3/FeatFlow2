@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<VisualStudioProject ProjectCreator="Intel Fortran" Keyword="Console Application" Version="11.0" ProjectIdGuid="{6CB95B8D-1FFF-4D88-8BD2-96BCB5E33BF7}">
+	<Platforms>
+		<Platform Name="Win32"/>
+		<Platform Name="x64"/></Platforms>
+	<Configurations>
+		<Configuration Name="Debug|Win32" OutputDirectory="$(ProjectDir)" IntermediateDirectory="$(ProjectDir)\obj\$(ProjectName)_$(ConfigurationName)_$(PlatformName)">
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" Interfaces="true" WarnInterfaces="true" FloatingPointExceptionHandling="fpe0" FloatingPointModel="source" FlushDenormalResultsToZero="true" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb" Traceback="true" NullPointerCheck="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtMultiThreadedDebug"/>
+				<Tool Name="VFLinkerTool" OutputFile="$(OutDir)\$(ProjectName)_32d.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" AdditionalLibraryDirectories="$(ProjectDir)..\..\..\libraries" GenerateManifest="false" GenerateDebugInformation="true" SubSystem="subSystemConsole" InterproceduralOptimizations="false"/>
+				<Tool Name="VFResourceCompilerTool"/>
+				<Tool Name="VFMidlTool" SuppressStartupBanner="true"/>
+				<Tool Name="VFCustomBuildTool"/>
+				<Tool Name="VFPreLinkEventTool"/>
+				<Tool Name="VFPreBuildEventTool"/>
+				<Tool Name="VFPostBuildEventTool"/>
+				<Tool Name="VFManifestTool" SuppressStartupBanner="true"/></Configuration>
+		<Configuration Name="Release|Win32" OutputDirectory="$(ProjectDir)" IntermediateDirectory="$(ProjectDir)\obj\$(ProjectName)_$(ConfigurationName)_$(PlatformName)">
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Parallelization="true" BufferedIO="true" FloatingPointExceptionHandling="fpe1" FlushDenormalResultsToZero="true" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb"/>
+				<Tool Name="VFLinkerTool" OutputFile="$(OutDir)\$(ProjectName)_32.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" AdditionalLibraryDirectories="$(ProjectDir)..\..\..\libraries" GenerateManifest="false" SubSystem="subSystemConsole" InterproceduralOptimizations="false"/>
+				<Tool Name="VFResourceCompilerTool"/>
+				<Tool Name="VFMidlTool" SuppressStartupBanner="true"/>
+				<Tool Name="VFCustomBuildTool"/>
+				<Tool Name="VFPreLinkEventTool"/>
+				<Tool Name="VFPreBuildEventTool"/>
+				<Tool Name="VFPostBuildEventTool"/>
+				<Tool Name="VFManifestTool" SuppressStartupBanner="true"/></Configuration>
+		<Configuration Name="Debug|x64" OutputDirectory="$(ProjectDir)" IntermediateDirectory="$(ProjectDir)\obj\$(ProjectName)_$(ConfigurationName)_$(PlatformName)">
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" Preprocess="preprocessYes" Interfaces="true" WarnInterfaces="true" FloatingPointExceptionHandling="fpe0" FloatingPointModel="source" FlushDenormalResultsToZero="true" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb" Traceback="true" NullPointerCheck="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtMultiThreadedDebug"/>
+				<Tool Name="VFLinkerTool" OutputFile="$(OutDir)\$(ProjectName)_64d.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" AdditionalLibraryDirectories="$(ProjectDir)..\..\..\libraries" GenerateManifest="false" GenerateDebugInformation="true" SubSystem="subSystemConsole" InterproceduralOptimizations="false"/>
+				<Tool Name="VFResourceCompilerTool"/>
+				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64"/>
+				<Tool Name="VFCustomBuildTool"/>
+				<Tool Name="VFPreLinkEventTool"/>
+				<Tool Name="VFPreBuildEventTool"/>
+				<Tool Name="VFPostBuildEventTool"/>
+				<Tool Name="VFManifestTool" SuppressStartupBanner="true"/></Configuration>
+		<Configuration Name="Release|x64" OutputDirectory="$(ProjectDir)" IntermediateDirectory="$(ProjectDir)\obj\$(ProjectName)_$(ConfigurationName)_$(PlatformName)">
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Parallelization="true" BufferedIO="true" Preprocess="preprocessYes" FloatingPointExceptionHandling="fpe1" FlushDenormalResultsToZero="true" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb"/>
+				<Tool Name="VFLinkerTool" OutputFile="$(OutDir)\$(ProjectName)_64.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" AdditionalLibraryDirectories="$(ProjectDir)..\..\..\libraries" GenerateManifest="false" SubSystem="subSystemConsole" InterproceduralOptimizations="false"/>
+				<Tool Name="VFResourceCompilerTool"/>
+				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64"/>
+				<Tool Name="VFCustomBuildTool"/>
+				<Tool Name="VFPreLinkEventTool"/>
+				<Tool Name="VFPreBuildEventTool"/>
+				<Tool Name="VFPostBuildEventTool"/>
+				<Tool Name="VFManifestTool" SuppressStartupBanner="true"/></Configuration></Configurations>
+	<Files>
+		<Filter Name="Data Files" Filter="dat">
+		<File RelativePath=".\data\bdconditions.dat"/>
+		<File RelativePath=".\data\discretisation.dat"/>
+		<File RelativePath=".\data\domain.dat"/>
+		<File RelativePath=".\data\linsol_cc3d.dat"/>
+		<File RelativePath=".\data\nonlinsol_cc3d.dat"/>
+		<File RelativePath=".\data\output.dat"/>
+		<File RelativePath=".\data\postprocessing.dat"/>
+		<File RelativePath=".\data\timediscr.dat"/></Filter>
+		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
+		<File RelativePath=".\src\adaptivetimestep.f90"/>
+		<File RelativePath=".\src\cc3d.f90"/>
+		<File RelativePath=".\src\ccbasic.f90"/>
+		<File RelativePath=".\src\ccboundarycondition.f90"/>
+		<File RelativePath=".\src\ccboundaryconditionparser.f90"/>
+		<File RelativePath=".\src\cccallback.f90"/>
+		<File RelativePath=".\src\ccdomaincontrol.f90"/>
+		<File RelativePath=".\src\ccgeneraldiscretisation.f90"/>
+		<File RelativePath=".\src\ccinitdomain.f90"/>
+		<File RelativePath=".\src\ccinitgeneralparameters.f90"/>
+		<File RelativePath=".\src\ccmainproblem.f90"/>
+		<File RelativePath=".\src\ccmatvecassembly.f90"/>
+		<File RelativePath=".\src\ccnonlinearcore.f90"/>
+		<File RelativePath=".\src\ccnonlinearcoreinit.f90"/>
+		<File RelativePath=".\src\ccnonstationary.f90"/>
+		<File RelativePath=".\src\ccpostprocessing.f90"/>
+		<File RelativePath=".\src\ccstationary.f90"/>
+		<File RelativePath=".\src\cctimeanalysis.f90"/>
+		<File RelativePath=".\src\dom3d_c3d0.f90"/>
+		<File RelativePath=".\src\dom3d_c3d1.f90"/>
+		<File RelativePath=".\src\dom3d_cube.f90"/></Filter></Files>
+	<Globals/></VisualStudioProject>
