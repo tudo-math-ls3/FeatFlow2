@@ -100,7 +100,7 @@ module newtoniterationlinear
     integer :: nsmPost = 4
     
     ! Coarse grid correction damping parameter
-    real(DP) :: dcoarseGridCorrectionWeight = 1.0_DP
+    real(DP) :: dcoarseGridCorrectionWeight = 0.0_DP
     
     ! Section in the parameter list with parameters for the smoother
     character(LEN=PARLST_MLSECTION) :: ssectionSmoother
@@ -714,7 +714,8 @@ contains
       end if
 
       ! Restriction of the defect
-      call sptipr_performRestriction (rlinsolParam%p_rprjHierSpaceTimeControl,ilevel,&
+      call sptipr_performRestriction (&
+          rlinsolParam%p_rprjHierSpaceTimeControl,ilevel,CCSPACE_CONTROL,&
           p_rkktSysRhsCoarse%p_rcontrolLin%p_rvectorAccess, &
           p_rkktSysDefect%p_rcontrolLin%p_rvectorAccess)
       

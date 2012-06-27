@@ -1546,8 +1546,8 @@ contains
 
 !<subroutine>
 
-  subroutine sptipr_performRestriction (rprojHierBlock,ilevelfine,rcoarseVector, &
-      rfineVector)
+  subroutine sptipr_performRestriction (rprojHierBlock,ilevelfine,&
+      cspace,rcoarseVector,rfineVector)
   
 !<description>
   ! Performs a restriction for a given space/time vector (i.e. a projection
@@ -1563,6 +1563,9 @@ contains
   ! Array of space/time interlevel projection structures that configure the
   ! prolongation/restriction in space/time.
   type(t_sptiProjHierarchyBlock), intent(in) :: rprojHierBlock
+
+  ! Underlying space. One of the CCSPACE_xxxx constants
+  integer, intent(in) :: cspace
 
   ! Index of the fine mesh.
   integer, intent(in) :: ilevelfine
@@ -1688,7 +1691,7 @@ contains
       ! Vector finished.
       ! Pass rprojHierBlock%p_RprojHier(1); it defines the spatial projection.
       call setSpatialVector (rprojHierBlock%p_RprojHier(1),p_rdestVector,rcoarseVector,irow,&
-          rtempVecFineScalar,ispacelevelcoarse,ispacelevelfine)
+          rtempVecFineScalar,ispacelevelcoarse,ispacelevelfine,cspace)
 
     end do
 
@@ -1705,7 +1708,7 @@ contains
   contains
 
     subroutine setSpatialVector (rprojHier,rx,rcoarseVector,iindex,&
-        rtempVecFineScalar,ispacelevelcoarse,ispacelevelfine)
+        rtempVecFineScalar,ispacelevelcoarse,ispacelevelfine,cspace)
     
     ! Saves the spatial subvector iindex from rx to rfineVector.
     ! If necessary, the vector is restricted in space.
@@ -1730,6 +1733,9 @@ contains
     integer, intent(in) :: ispacelevelcoarse
     integer, intent(in) :: ispacelevelfine
 
+    ! Underlying space. One of the CCSPACE_xxxx constants
+    integer, intent(in) :: cspace
+
       ! local variables
       type(t_vectorBlock), pointer :: p_rtempVecCoarse
   
@@ -1738,9 +1744,26 @@ contains
   
       if (ispacelevelcoarse .ne. ispacelevelfine) then
         ! Space + time
-        call mlprj_performRestriction (&
-            rprojHier%p_rprojHierarchySpace%p_Rprojection(ispacelevelfine),&
-            p_rtempVecCoarse,rx,rtempVecFineScalar)
+        
+        select case (cspace)
+        
+        ! ------------------------------------------------------
+        ! Primal/Dual space. Standard FEM restriction in space
+        ! ------------------------------------------------------
+        case (CCSPACE_PRIMAL,CCSPACE_DUAL)
+          call mlprj_performRestriction (&
+              rprojHier%p_rprojHierarchySpace%p_Rprojection(ispacelevelfine),&
+              p_rtempVecCoarse,rx,rtempVecFineScalar)
+
+        ! ------------------------------------------------------
+        ! Control space. The restriction is the interpolaton
+        ! as there is not integral set up for the RHS.
+        ! ------------------------------------------------------
+        case (CCSPACE_CONTROL)
+          call mlprj_performInterpolation (&
+              rprojHier%p_rprojHierarchySpace%p_Rprojection(ispacelevelfine),&
+              p_rtempVecCoarse,rx,rtempVecFineScalar)
+        end select
       else
         ! Only time
         call lsysbl_copyVector (rx,p_rtempVecCoarse)
