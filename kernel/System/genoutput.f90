@@ -385,8 +385,17 @@ module genoutput
   ! =0: english: MM-DD-YYYY HH:MM:SS
   ! =1: german: DD.MM.YYYY HH:MM:SS
   integer, public, save :: cdatetimeLogFormat = 0
+  
+  ! Defines an automatic indention by spaces which is put in front of
+  ! all messages (After a possible date).
+  ! Must be in the range 0..255.
+  integer, public, save :: output_iautoOutputIndent = 0
 
 !</publicvars>
+
+  ! Empty string used for indented output.
+  ! By Fortran convention, this automatically expands to spaces.
+  character(len=256), save :: semptystring = ""
 
   interface output_line
     module procedure output_line_std
@@ -813,6 +822,7 @@ contains
   ! local variables
   integer(I32) :: coMode
   integer :: coClass, iofChannel, iotChannel
+  integer :: iindent
   logical :: bntrim, bnnewline
   character(LEN=len(smessage)+20+SYS_NAMELEN+10+8+3) :: smsg
 
@@ -822,6 +832,7 @@ contains
     coClass = OU_CLASS_MSG
     bntrim = .false.
     bnnewline = .false.
+    iindent = min(255,output_iautoOutputIndent)
 
     if (present(coutputMode))  coMode = coutputMode
     if (present(coutputClass)) coClass = coutputClass
@@ -845,18 +856,18 @@ contains
       ! Where to write the message to?
       if ((iand(coMode,OU_MODE_TERM) .ne. 0) .and. (iotChannel .gt. 0)) then
         if (bnnewline) then
-          write (iotChannel,'(A)',ADVANCE='NO') smessage
+          write (iotChannel,'(A)',ADVANCE='NO') semptystring(1:iindent)//smessage
         else
-          write (iotChannel,'(A)') smessage
+          write (iotChannel,'(A)') semptystring(1:iindent)//smessage
         end if
       end if
 
       ! Output to log file?
       if ((iand(coMode,OU_MODE_LOG) .ne. 0) .and. (iofChannel .gt. 0)) then
         if (bnnewline) then
-          write (iofChannel,'(A)',ADVANCE='NO') smessage
+          write (iofChannel,'(A)',ADVANCE='NO') semptystring(1:iindent)//smessage
         else
-          write (iofChannel,'(A)') smessage
+          write (iofChannel,'(A)') semptystring(1:iindent)//smessage
         end if
       end if
 
@@ -865,9 +876,9 @@ contains
         if ((cbenchLogPolicy .eq. 2) .or. &
             (cbenchLogPolicy .eq. 1) .and. (iand(coMode,OU_MODE_BENCHLOG) .ne. 0)) then
           if (bnnewline) then
-            write (OU_BENCHLOG,'(A)',ADVANCE='NO') smessage
+            write (OU_BENCHLOG,'(A)',ADVANCE='NO') semptystring(1:iindent)//smessage
           else
-            write (OU_BENCHLOG,'(A)') smessage
+            write (OU_BENCHLOG,'(A)') semptystring(1:iindent)//smessage
           end if
         end if
       end if
@@ -875,7 +886,8 @@ contains
     else
 
       ! Build the actual error message
-      smsg = output_reformatMsg (smessage, coutputClass, ssubroutine, cdateTimeLogPolicy)
+      smsg = output_reformatMsg (semptystring(1:iindent)//smessage, &
+          coutputClass, ssubroutine, cdateTimeLogPolicy)
 
       ! Where to write the message to?
       if ((iand(coMode,OU_MODE_TERM) .ne. 0) .and. (iotChannel .gt. 0)) then
