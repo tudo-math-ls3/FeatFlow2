@@ -65,16 +65,16 @@ ssectionLinSolverSpace = SPACETIME-LINSOLVER
 ssectionNonlinSolverSpace = CC-NONLINEARSOLVER
 
 # Section defining the linear solver in space for the forward iteration
-ssectionLinSolverSpaceForward = CC-LINEARSOLVER
+ssectionLinSolverSpaceForward = CC-LINEARSOLVERFORW
 
 # Section defining the linear solver in space for the backward iteration
-ssectionLinSolverSpaceBackward = CC-LINEARSOLVER2
+ssectionLinSolverSpaceBackward = CC-LINEARSOLVERBACKW
 
 # Section defining the linear solver in space for the linearised forward iteration
-ssectionLinSolverSpaceForwardLin = CC-LINEARSOLVER3
+ssectionLinSolverSpaceForwardLin = CC-LINEARSOLVERLIN
 
 # Section defining the linear solver in space for the linearised forward iteration
-ssectionLinSolverSpaceBackwardLin = CC-LINEARSOLVER3
+ssectionLinSolverSpaceBackwardLin = CC-LINEARSOLVERLIN
 
 # Name of the section defining the step length control
 # ssectionStepLengthControl = TIME-STEPLENGTHCONTROL

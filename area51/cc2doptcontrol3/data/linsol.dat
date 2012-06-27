@@ -6,9 +6,9 @@
 # Linear solver for the forward iteration
 # ------------------------------------------------------------------------
 
-#################
-[CC-LINEARSOLVER]
-#################
+#####################
+[CC-LINEARSOLVERFORW]
+#####################
 
 # Type of the solver that is used for preconditioning.
 # =0: Gauss elimination (UMFPACK)
@@ -18,7 +18,7 @@ isolverType = 1
 
 # Name of the section in this file which configures the solver.
 
-ssolverSection = 'CC-MULTIGRIDSOLVER'
+ssolverSection = 'CC-MULTIGRIDSOLVERFORW'
 
 # Type of smoother to use in multigrid.
 # Standard value = 2.
@@ -55,9 +55,9 @@ scoarseGridSolverSection = 'CC-COARSEGRIDSOLVER'
 # ========================================================================
 # The following section specifies the parameters for the solver.
 
-####################
-[CC-MULTIGRIDSOLVER]
-####################
+########################
+[CC-MULTIGRIDSOLVERFORW]
+########################
 
 # Minimum number of steps
 
@@ -138,9 +138,9 @@ dalphaMax          = 10.0
 # ------------------------------------------------------------------------
 # Linear solver for the backward iteration
 # ------------------------------------------------------------------------
-##################
-[CC-LINEARSOLVER2]
-##################
+######################
+[CC-LINEARSOLVERBACKW]
+######################
 
 # Type of the solver that is used for preconditioning.
 # =0: Gauss elimination (UMFPACK)
@@ -150,7 +150,7 @@ isolverType = 1
 
 # Name of the section in this file which configures the solver.
 
-ssolverSection = 'CC-MULTIGRIDSOLVER2'
+ssolverSection = 'CC-MULTIGRIDSOLVERBACKW'
 
 # Type of smoother to use in multigrid.
 # Standard value = 2.
@@ -187,9 +187,9 @@ scoarseGridSolverSection = 'CC-COARSEGRIDSOLVER'
 # ========================================================================
 # The following section specifies the parameters for the solver.
 
-#####################
-[CC-MULTIGRIDSOLVER2]
-#####################
+#########################
+[CC-MULTIGRIDSOLVERBACKW]
+#########################
 
 # Minimum number of steps
 
@@ -268,38 +268,11 @@ dalphaMax          = 10.0
 
 
 # ------------------------------------------------------------------------
-# The other solver components
-# ------------------------------------------------------------------------
-
-# ========================================================================
-# The following section specifies the parameters for the smoother.
-
-#############
-[CC-SMOOTHER]
-#############
-
-# Number of pre- and postsmoothing steps
-
-nsmoothingSteps    = 4
-
-# Relaxation parameter
-
-domega             = 1.0
-
-# Output level of the solver
-# = 2:extended output
-# = 1:minimal output
-# = 0:no output except for warning messages (standard)
-# =-1:no output
-
-ioutputLevel       = 0
-
-# ------------------------------------------------------------------------
 # Linear solver for the linearised forward/backward iterations
 # ------------------------------------------------------------------------
-##################
-[CC-LINEARSOLVER3]
-##################
+####################
+[CC-LINEARSOLVERLIN]
+####################
 
 # Type of the solver that is used for preconditioning.
 # =0: Gauss elimination (UMFPACK)
@@ -346,9 +319,9 @@ scoarseGridSolverSection = 'CC-COARSEGRIDSOLVER'
 # ========================================================================
 # The following section specifies the parameters for the solver.
 
-#####################
-[CC-MULTIGRIDSOLVER3]
-#####################
+#######################
+[CC-MULTIGRIDSOLVERLIN]
+#######################
 
 # Minimum number of steps
 
