@@ -536,8 +536,10 @@ contains
       !
       ! The control on the maximum level of p_rdirDerivHierarchy
       ! (identified by p_rsolutionDirDeriv%p_rcontrolLin) receives the result.
+      output_iautoOutputIndent = output_iautoOutputIndent + 2
       call newtonlin_precond (rsolver%rlinsolParam,&
           rsolver%p_rdirDerivHierarchy,p_rdescentDir)
+      output_iautoOutputIndent = output_iautoOutputIndent - 2
       
       ! Clean up data in the linear subsolver
       call newtonlin_doneData (rsolver%rlinsolParam)

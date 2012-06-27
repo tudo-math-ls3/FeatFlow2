@@ -276,7 +276,7 @@ contains
     ! -------------------------------------------------------------
 
     if (rlinsolParam%rprecParameters%ioutputLevel .ge. 2) then
-      call output_line ("  Linear space-time Residual: Solving the primal equation")
+      call output_line ("Linear space-time Residual: Solving the primal equation")
     end if
 
     ! Solve the primal equation, update the primal solution.
@@ -284,7 +284,7 @@ contains
         rlinsolParam%p_rsolverHierPrimalLin,rlinsolParam%cspatialInitCondPolicy)
     
     if (rlinsolParam%rprecParameters%ioutputLevel .ge. 2) then
-      call output_line ("  Linear space-time Residual: Solving the dual equation")
+      call output_line ("Linear space-time Residual: Solving the dual equation")
     end if
 
     ! Solve the dual equation, update the dual solution.
@@ -409,7 +409,7 @@ contains
       end if
 
       if (rlinsolParam%rprecParameters%ioutputLevel .ge. 2) then
-        call output_line ("  Space-time Richardson: Iteration "// &
+        call output_line ("Space-time Richardson: Iteration "// &
             trim(sys_siL(rlinsolParam%rprecParameters%niterations,10))// &
             ", ||res(u)|| = "// &
             trim(sys_sdEL(rlinsolParam%rprecParameters%dresFinal,10)))
@@ -594,13 +594,15 @@ contains
       if (nlevels .eq. 1) then
         if (rlinsolParam%rprecParameters%ioutputLevel .ge. 1) then
           call output_line (&
-              "  Space-time Multigrid: Only one level. Switching back to 1-level solver.")
+              "Space-time Multigrid: Only one level. Switching back to 1-level solver.")
         end if
       end if
 
       ! Call the coarse grid solver.
+      output_iautoOutputIndent = output_iautoOutputIndent + 2
       call newtonlin_precond (p_rlinsolMultigrid%p_rsubSolvers(ilevel),&
           rkktsysDirDerivHierarchy,rrhs,ilevel)
+      output_iautoOutputIndent = output_iautoOutputIndent - 2
     
       rlinsolParam%rprecParameters%dresInit = &
           p_rlinsolMultigrid%p_rsubSolvers(ilevel)%rprecParameters%dresInit
@@ -661,7 +663,7 @@ contains
       if (ilevel .eq. nlevels) then
       
         if (rlinsolParam%rprecParameters%ioutputLevel .ge. 2) then
-          call output_line ("  Space-time MG: Iteration "// &
+          call output_line ("Space-time MG: Iteration "// &
               trim(sys_siL(ite,10))// &
               ", ||res(u)|| = "// &
               trim(sys_sdEL(dresFinal,10)))
@@ -693,13 +695,15 @@ contains
       if (p_rlinsolMultigrid%nsmpre .ne. 0) then
         if (rlinsolParam%rprecParameters%ioutputLevel .ge. 3) then
           call output_line (&
-              "  Space-time Multigrid: Invoking pre-smoother.")
+              "Space-time Multigrid: Invoking pre-smoother.")
         end if
 
+        output_iautoOutputIndent = output_iautoOutputIndent + 2
         call newtonlin_smoothCorrection (p_rlinsolMultigrid%p_rsubSolvers(ilevel),&
               p_rlinsolMultigrid%nsmpre,&
               p_rkktSysSolution,rrhs,&
               rlinsolParam%p_rtempVectors(ilevel))
+        output_iautoOutputIndent = output_iautoOutputIndent - 2
 
         ! Get the new residual -- it has changed due to the smoothing.
         call newtonlin_getResidual (rlinsolParam,&
@@ -710,7 +714,7 @@ contains
       
       if (rlinsolParam%rprecParameters%ioutputLevel .ge. 3) then
         call output_line (&
-            "  Space-time Multigrid: Switching to level "//trim(sys_siL(ilevel-1,10))//".")
+            "Space-time Multigrid: Switching to level "//trim(sys_siL(ilevel-1,10))//".")
       end if
 
       ! Restriction of the defect
@@ -722,18 +726,20 @@ contains
       if (ilevel-1 .eq. 1) then
         if (rlinsolParam%rprecParameters%ioutputLevel .ge. 3) then
           call output_line (&
-              "  Space-time Multigrid: Invoking coarse-grid solver.")
+              "Space-time Multigrid: Invoking coarse-grid solver.")
         end if
       end if
 
       ! Coarse grid correction
+      output_iautoOutputIndent = output_iautoOutputIndent + 2
       call newtonlin_multigridDriver (rlinsolParam,ilevel-1,nlevels,&
           p_rlinsolMultigrid%rsolutionHier,&
           p_rkktSysRhsCoarse%p_rcontrolLin)
+      output_iautoOutputIndent = output_iautoOutputIndent - 2
       
       if (rlinsolParam%rprecParameters%ioutputLevel .ge. 3) then
         call output_line (&
-            "  Space-time Multigrid: Switching to level "//trim(sys_siL(ilevel,10))//".")
+            "Space-time Multigrid: Switching to level "//trim(sys_siL(ilevel,10))//".")
       end if
 
       ! Prolongation of the correction.
@@ -756,13 +762,15 @@ contains
       if (p_rlinsolMultigrid%nsmpost .ne. 0) then
         if (rlinsolParam%rprecParameters%ioutputLevel .ge. 3) then
           call output_line (&
-              "  Space-time Multigrid: Level 1. Invoking post-smoother.")
+              "Space-time Multigrid: Invoking post-smoother.")
         end if
 
+        output_iautoOutputIndent = output_iautoOutputIndent + 2
         call newtonlin_smoothCorrection (p_rlinsolMultigrid%p_rsubSolvers(ilevel),&
               p_rlinsolMultigrid%nsmpost,&
               p_rkktSysSolution,rrhs,&
               rlinsolParam%p_rtempVectors(ilevel))
+        output_iautoOutputIndent = output_iautoOutputIndent - 2
               
         ! Calculation of the new residual is done in the beginning of the loop.
       end if
