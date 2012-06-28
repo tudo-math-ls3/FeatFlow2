@@ -1,0 +1,92 @@
+BiCGStab: Iteration 0,  !!RES!! = 2.366286057692308E-04
+BiCGStab: Iteration 1,  !!RES!! = 4.065112452710691E-04
+BiCGStab: Iteration 2,  !!RES!! = 3.746775992592903E-04
+BiCGStab: Iteration 3,  !!RES!! = 3.220451866938600E-04
+BiCGStab: Iteration 4,  !!RES!! = 2.801738377332552E-04
+BiCGStab: Iteration 5,  !!RES!! = 2.489975326545749E-04
+BiCGStab: Iteration 6,  !!RES!! = 2.242440600028442E-04
+BiCGStab: Iteration 7,  !!RES!! = 2.035706533429958E-04
+BiCGStab: Iteration 8,  !!RES!! = 1.857550530315440E-04
+BiCGStab: Iteration 9,  !!RES!! = 1.698167721369047E-04
+BiCGStab: Iteration 10,  !!RES!! = 1.556920997018191E-04
+BiCGStab: Iteration 11,  !!RES!! = 1.433298569152740E-04
+BiCGStab: Iteration 12,  !!RES!! = 1.317073248262904E-04
+BiCGStab: Iteration 13,  !!RES!! = 1.298993662399982E-04
+BiCGStab: Iteration 14,  !!RES!! = 1.120366798780118E-04
+BiCGStab: Iteration 15,  !!RES!! = 1.012027409536985E-04
+BiCGStab: Iteration 16,  !!RES!! = 9.321283491145067E-05
+BiCGStab: Iteration 17,  !!RES!! = 8.608784151516569E-05
+BiCGStab: Iteration 18,  !!RES!! = 7.993559538457586E-05
+BiCGStab: Iteration 19,  !!RES!! = 7.445082545273276E-05
+BiCGStab: Iteration 20,  !!RES!! = 6.919828816139356E-05
+BiCGStab: Iteration 21,  !!RES!! = 6.434820631120048E-05
+BiCGStab: Iteration 22,  !!RES!! = 5.994382929327007E-05
+BiCGStab: Iteration 23,  !!RES!! = 5.592691480680686E-05
+BiCGStab: Iteration 24,  !!RES!! = 5.227584560795858E-05
+BiCGStab: Iteration 25,  !!RES!! = 4.883152972418656E-05
+BiCGStab: Iteration 26,  !!RES!! = 4.566004633366370E-05
+BiCGStab: Iteration 27,  !!RES!! = 4.211919859971296E-05
+BiCGStab: Iteration 28,  !!RES!! = 4.062828843939898E-05
+BiCGStab: Iteration 29,  !!RES!! = 3.644683114826271E-05
+BiCGStab: Iteration 30,  !!RES!! = 3.393205072910746E-05
+BiCGStab: Iteration 31,  !!RES!! = 3.160401789719462E-05
+BiCGStab: Iteration 32,  !!RES!! = 2.932408574764512E-05
+BiCGStab: Iteration 33,  !!RES!! = 2.696403962246475E-05
+BiCGStab: Iteration 34,  !!RES!! = 2.446230746810109E-05
+BiCGStab: Iteration 35,  !!RES!! = 2.176792526490618E-05
+BiCGStab: Iteration 36,  !!RES!! = 1.922025188049891E-05
+BiCGStab: Iteration 37,  !!RES!! = 1.723000991088858E-05
+BiCGStab: Iteration 38,  !!RES!! = 1.597670706896910E-05
+BiCGStab: Iteration 39,  !!RES!! = 1.512716245567832E-05
+BiCGStab: Iteration 40,  !!RES!! = 1.452995029715113E-05
+BiCGStab: Iteration 41,  !!RES!! = 1.411838583196402E-05
+BiCGStab: Iteration 42,  !!RES!! = 1.223498750812194E-05
+BiCGStab: Iteration 43,  !!RES!! = 1.066273015408482E-05
+BiCGStab: Iteration 44,  !!RES!! = 1.051576044604419E-05
+BiCGStab: Iteration 45,  !!RES!! = 1.046303297440497E-05
+BiCGStab: Iteration 46,  !!RES!! = 7.181533856543059E-06
+BiCGStab: Iteration 47,  !!RES!! = 5.644561435127624E-06
+BiCGStab: Iteration 48,  !!RES!! = 5.480192971156873E-06
+BiCGStab: Iteration 49,  !!RES!! = 5.378918464778978E-06
+BiCGStab: Iteration 50,  !!RES!! = 5.452702136640445E-06
+BiCGStab: Accuracy warning: Solver did not reach the convergence criterion
+
+BiCGStab statistics:
+
+Iterations              : 50
+!!INITIAL RES!!         : 2.366286057692308E-04
+!!RES!!                 : 5.452702136640445E-06
+!!RES!!/!!INITIAL RES!! : 2.304329233109765E-02
+
+Rate of convergence     : 9.273654048079243E-01
+[]
+Multigrid: Iteration 0,  !!RES!! = 2.366286057692308E-04
+Multigrid: Iteration 1,  !!RES!! = 9.234732606243218E-06
+Multigrid: Iteration 2,  !!RES!! = 1.624979059511846E-06
+Multigrid: Iteration 3,  !!RES!! = 5.628617993784693E-07
+Multigrid: Iteration 4,  !!RES!! = 2.361257910176173E-07
+Multigrid: Iteration 5,  !!RES!! = 1.090696109958872E-07
+Multigrid: Iteration 6,  !!RES!! = 5.283097041704644E-08
+Multigrid: Iteration 7,  !!RES!! = 2.617352328095554E-08
+Multigrid: Iteration 8,  !!RES!! = 1.310081125833767E-08
+Multigrid: Iteration 9,  !!RES!! = 6.585554138076013E-09
+Multigrid: Iteration 10,  !!RES!! = 3.315084666632281E-09
+Multigrid: Iteration 11,  !!RES!! = 1.668917504996237E-09
+
+Multigrid statistics:
+
+Iterations              : 11
+!!INITIAL RES!!         : 2.366286057692308E-04
+!!RES!!                 : 1.668917504996237E-09
+!!RES!!/!!INITIAL RES!! : 7.052898357622194E-06
+
+Rate of convergence     : 3.401494586372818E-01
+[]
+
+Heap statistics:
+----------------
+Number of handles in use:        0
+Memory in use:                   0 Bytes
+Current total number of handles: 999
+Maximum number of handles used:  314
+Maximum used memory:             2.45 MB
