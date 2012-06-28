@@ -14,6 +14,7 @@ module newtoniteration
   use fsystem
   use genoutput
   use paramlist
+  use statistics
   
   use spatialdiscretisation
   use timediscretisation
@@ -71,6 +72,31 @@ module newtoniteration
 
     ! Parameters of the OptFlow solver
     type(t_settings_optflow), pointer :: p_rsettingsSolver => null()
+
+    ! <!-- ----------------------------- -->
+    ! <!-- STATISTICS                    -->
+    ! <!-- ----------------------------- -->
+    
+    ! Total computation time
+    type(t_timer) :: rtotalTime
+
+    ! Total time for nonlinear defects
+    type(t_timer) :: rtimeNonlinearDefects
+    
+    ! Total time for solviong linear subproblems
+    type(t_timer) :: rtimePreconditioning
+    
+    ! Total time for smoothing
+    type(t_timer) :: rtimeSmooth
+
+    ! Total time for smoothing on the finest mesh
+    type(t_timer) :: rtimeSmoothFinest
+
+    ! Total time for coarse grid solving
+    type(t_timer) :: rtimeCoarseGrid
+
+    ! Total time for prolongation/restriction
+    type(t_timer) :: rtimeProlRest
 
     ! <!-- ----------------------------- -->
     ! <!-- SUBSOLVERS AND OTHER SETTINGS -->
@@ -363,21 +389,25 @@ contains
     ! -------------------------------------------------------------
 
     if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
-      call output_line ("  Nonlin. space-time Residual: Solving the primal equation")
+      call output_line ("Nonlin. space-time Residual: Solving the primal equation")
     end if
 
     ! Solve the primal equation, update the primal solution.
+    output_iautoOutputIndent = output_iautoOutputIndent + 2
     call kkt_solvePrimal (rkktsystem,rsolver%p_rsolverHierPrimal,&
         rsolver%cspatialInitCondPolicy)
+    output_iautoOutputIndent = output_iautoOutputIndent - 2
 
     if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
-      call output_line ("  Nonlin. space-time Residual: Solving the dual equation")
+      call output_line ("Nonlin. space-time Residual: Solving the dual equation")
     end if
 
     ! Solve the dual equation, update the dual solution.
+    output_iautoOutputIndent = output_iautoOutputIndent + 2
     call kkt_solveDual (rkktsystem,rsolver%p_rsolverHierDual,&
         rsolver%cspatialInitCondPolicy)
-
+    output_iautoOutputIndent = output_iautoOutputIndent - 2
+    
     ! -------------------------------------------------------------
     ! Step 2: Calculate the search direction   
     ! -------------------------------------------------------------
@@ -452,6 +482,18 @@ contains
     type(t_kktsystem), pointer :: p_rsolution
     type(t_kktsystemDirDeriv), pointer :: p_rsolutionDirDeriv
     
+    ! Clear statistics
+    call stat_clearTimer(rsolver%rtotalTime)
+    call stat_clearTimer(rsolver%rtimeNonlinearDefects)
+    call stat_clearTimer(rsolver%rtimePreconditioning)
+    call stat_clearTimer(rsolver%rtimeSmooth)
+    call stat_clearTimer(rsolver%rtimeSmoothFinest)
+    call stat_clearTimer(rsolver%rtimeCoarseGrid)
+    call stat_clearTimer(rsolver%rtimeProlRest)
+    
+    ! Measure the total computational time
+    call stat_startTimer(rsolver%rtotalTime)
+    
     ! Initialise data for the nonlinear iteration
     call newtonit_initData (rsolver,rsolution)
 
@@ -487,9 +529,16 @@ contains
         call output_line ("Space-time Newton: Calculating the residual")
       end if
 
+      ! Measure the time for the computation of the residual
+      call stat_startTimer(rsolver%rtimeNonlinearDefects)
+
       ! Compute the basic (unpreconditioned) search direction d_n.
+      output_iautoOutputIndent = output_iautoOutputIndent + 2
       call newtonit_getResidual (rsolver,p_rsolution,p_rdescentDir,&
           rsolver%rnewtonParams%dresFinal,rsolver%rnewtonParams%iresnorm)
+      output_iautoOutputIndent = output_iautoOutputIndent - 2
+      
+      call stat_stopTimer(rsolver%rtimeNonlinearDefects)
 
       if (rsolver%rnewtonParams%nnonlinearIterations .eq. 0) then
         ! Remember the initial residual
@@ -527,7 +576,10 @@ contains
       end if
 
       ! Initialise data arrays in the linear subsolver.
+      call stat_startTimer(rsolver%rtimeProlRest)
       call newtonlin_initNonlinearData (rsolver%rlinsolParam,rsolver%p_rsolutionHierarchy)
+      call stat_stopTimer(rsolver%rtimeProlRest)
+      
       call newtonlin_initData (rsolver%rlinsolParam,rsolver%p_rsolutionHierarchy)
 
       ! Actual Newton iteration. Apply the Newton preconditioner
@@ -541,6 +593,15 @@ contains
       call newtonlin_precond (rsolver%rlinsolParam,&
           rsolver%p_rdirDerivHierarchy,p_rdescentDir)
       output_iautoOutputIndent = output_iautoOutputIndent - 2
+      
+      ! Statistics
+      call stat_addTimers (rsolver%rlinsolParam%rtotalTime,rsolver%rtimePreconditioning)
+      call stat_addTimers (rsolver%rlinsolParam%rtimeSmooth,rsolver%rtimeSmooth)
+      call stat_addTimers (rsolver%rlinsolParam%rtimeSmoothFinest,rsolver%rtimeSmoothFinest)
+      call stat_addTimers (rsolver%rlinsolParam%rtimeCoarseGrid,rsolver%rtimeCoarseGrid)
+      call stat_addTimers (rsolver%rlinsolParam%rtimeProlRest,rsolver%rtimeProlRest)
+      rsolver%rnewtonParams%nlinearIterations = rsolver%rnewtonParams%nlinearIterations + &
+          rsolver%rlinsolParam%rprecParameters%niterations
       
       ! Clean up data in the linear subsolver
       call newtonlin_doneData (rsolver%rlinsolParam)
@@ -576,6 +637,32 @@ contains
     ! Release data
     call newtonit_doneData (rsolver)
     
+    call stat_stopTimer(rsolver%rtotalTime)
+    
+    ! Statistics
+    if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
+      call output_lbrk()
+      call output_line ("Space-time Newton: Statistics.")
+      call output_lbrk()
+      call output_line ("#Nonlinear Iterations   : "//&
+            trim(sys_siL(rsolver%rnewtonParams%nnonlinearIterations,10)) )
+      call output_line ("#Iterations Precond.    : "//&
+            trim(sys_siL(rsolver%rnewtonParams%nlinearIterations,10)) )
+      call output_line ("!!INITIAL RES!!         : "//&
+            trim(sys_sdEL(rsolver%rnewtonParams%dresInit,15)) )
+      call output_line ("!!RES!!                 : "//&
+            trim(sys_sdEL(rsolver%rnewtonParams%dresFinal,15)) )
+      if (rsolver%rnewtonParams%dresInit .gt. &
+          rsolver%rnewtonParams%drhsZero) then
+        call output_line ("!!RES!!/!!INITIAL RES!! : "//&
+          trim(sys_sdEL(rsolver%rnewtonParams%dresFinal / &
+                        rsolver%rnewtonParams%dresInit,15)) )
+      else
+        call output_line ("!!RES!!/!!INITIAL RES!! : "//&
+              trim(sys_sdEL(0.0_DP,15)) )
+      end if
+
+    end if
   end subroutine
 
   ! ***************************************************************************

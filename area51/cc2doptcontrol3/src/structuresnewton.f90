@@ -140,6 +140,9 @@ module structuresnewton
     ! =0: euclidian norm, =1: l1-norm, =2: l2-norm, =3: MAX-norm
     ! integer :: iresNormTotal = 2
 
+    ! RHS-vector is treated as zero if max(defect) < drhsZero
+    real(DP) :: drhsZero = 1E-90_DP
+
     ! Relative stopping criterion. Stop iteration if
     ! !!defect!! < EPSREL * !!initial defect!!.
     ! =0: ignore, use absolute stopping criterion; standard = 1E-5
@@ -317,6 +320,9 @@ module structuresnewton
     ! =2: L2-norm
     integer :: iresNorm = LINALG_NORML2
 
+    ! RHS-vector is treated as zero if max(defect) < drhsZero
+    real(DP) :: drhsZero = 1E-90_DP
+
     ! <!-- ---------- -->
     ! <!-- STATISTICS -->
     ! <!-- ---------- -->
@@ -326,6 +332,9 @@ module structuresnewton
 
     ! Final residual in the control space.
     real(DP) :: dresFinal = 0.0_DP
+
+    ! Convergence rate
+    real(DP) :: dconvergenceRate = 0.0_DP
 
     ! Total number of nonlinear iterations
     integer :: niterations = 0
