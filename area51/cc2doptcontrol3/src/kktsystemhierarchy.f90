@@ -436,7 +436,7 @@ contains
 
 !<input>
   ! Hierarchy of KKT system solutions.
-  type(t_kktsystemHierarchy), intent(inout) :: rkktsystemHierarchy
+  type(t_kktsystemHierarchy), intent(in) :: rkktsystemHierarchy
   
   ! Level to which a pointer should be set up.
   ! If the value is <= 0, the KKT system at level NLMAX+ilevel is returned.

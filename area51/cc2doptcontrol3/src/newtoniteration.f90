@@ -527,6 +527,7 @@ contains
       end if
 
       ! Initialise data arrays in the linear subsolver.
+      call newtonlin_initNonlinearData (rsolver%rlinsolParam,rsolver%p_rsolutionHierarchy)
       call newtonlin_initData (rsolver%rlinsolParam,rsolver%p_rsolutionHierarchy)
 
       ! Actual Newton iteration. Apply the Newton preconditioner

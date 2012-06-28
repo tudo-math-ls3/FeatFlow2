@@ -135,6 +135,15 @@ module kktsystemspaces
   ! Linear combination in the control spacce
   public :: kktsp_controlLinearComb
   
+  ! Copy a vector in the primal spacce
+  public :: kktsp_primalCopy
+
+  ! Copy a vector in the dual spacce
+  public :: kktsp_dualCopy
+
+  ! Copy a vector in the control spacce
+  public :: kktsp_controlCopy
+
   ! Clear a primal vector
   public :: kktsp_clearPrimal
 
@@ -143,6 +152,12 @@ module kktsystemspaces
 
   ! Clear a control vector
   public :: kktsp_clearControl
+
+  ! Scalar product in the control space
+  public :: kktsp_scalarProductControl
+  
+  ! Calculates the norm of a control vector
+  public :: kktsp_getNormControl
 
 contains
 
@@ -668,6 +683,35 @@ contains
 
 !<subroutine>
 
+  real(DP) function kktsp_getNormControl (rx,iresnorm)
+  
+!<description>
+  ! Calculates the norm of a control vector
+!</description>
+
+!<input>
+  ! Source vector in the control space.
+  type(t_controlSpace), intent(inout) :: rx
+
+  ! type of norm. A LINALG_NORMxxxx constant.
+  ! Must be specified if dres is specified.
+  integer, intent(in) :: iresnorm
+!</input>
+
+!<result>
+  ! Norm of the vector.
+!</result>
+
+!</subroutine>
+
+    kktsp_getNormControl = sptivec_vectorNorm (rx%p_rvector,iresnorm)
+
+  end function
+
+  ! ***************************************************************************
+
+!<subroutine>
+
   subroutine kktsp_clearPrimal (rx)
   
 !<description>
@@ -736,5 +780,118 @@ contains
     end if
 
   end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine kktsp_primalCopy (rx,ry)
+  
+!<description>
+  ! Copies a vector, ry = rx,
+  ! in the primal space.
+!</description>
+
+!<input>
+  ! Source vector in the control space.
+  type(t_primalSpace), intent(inout) :: rx
+!</input>
+
+!<inputoutput>
+  ! Destination vector.
+  type(t_primalSpace), intent(inout) :: ry
+!</inputoutput>
+
+!</subroutine>
+
+    call kktsp_primalLinearComb (rx,ry,1.0_DP,0.0_DP)
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine kktsp_dualCopy (rx,ry)
+  
+!<description>
+  ! Copies a vector, ry = rx,
+  ! in the dual space.
+!</description>
+
+!<input>
+  ! Source vector.
+  type(t_dualSpace), intent(inout) :: rx
+!</input>
+
+!<inputoutput>
+  ! Destination vector.
+  type(t_dualSpace), intent(inout) :: ry
+!</inputoutput>
+
+!</subroutine>
+
+    call kktsp_dualLinearComb (rx,ry,1.0_DP,0.0_DP)
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine kktsp_controlCopy (rx,ry)
+  
+!<description>
+  ! Copies a vector, ry = rx,
+  ! in the dual space.
+!</description>
+
+!<input>
+  ! Source vector.
+  type(t_controlSpace), intent(inout) :: rx
+!</input>
+
+!<inputoutput>
+  ! Destination vector.
+  type(t_controlSpace), intent(inout) :: ry
+!</inputoutput>
+
+!</subroutine>
+
+    call kktsp_controlLinearComb (rx,1.0_DP,ry,0.0_DP)
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  real(DP) function kktsp_scalarProductControl (rx,ry)
+  
+!<description>
+  ! Calculates the scalar product in the control space: dres = rx^T rx.
+!</description>
+
+!<input>
+  ! Source vector.
+  type(t_controlSpace), intent(inout) :: rx
+
+  ! 2nd source vector.
+  type(t_controlSpace), intent(inout) :: ry
+!</input>
+
+!<result>
+  ! Scalar product.
+!</result>
+
+!</subroutine>
+
+    kktsp_scalarProductControl = 0.0_DP
+    if (associated (rx%p_rvector)) then
+      ! Calculate the scalar product.
+      kktsp_scalarProductControl = sptivec_scalarProduct (rx%p_rvector, ry%p_rvector)
+    end if
+    
+  end function
 
 end module

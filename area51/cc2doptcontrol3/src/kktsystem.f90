@@ -152,6 +152,9 @@ module kktsystem
 
   ! Calculate the residual of the control equation(s) in the linearised KKT system
   public :: kkt_calcControlResDirDeriv
+  
+  ! Applies the operator of the control equation in the linearised KKT system
+  public :: kkt_applyControlDirDeriv
 
   ! Clear a KKT structure
   public :: kkt_clear
@@ -406,8 +409,10 @@ contains
     do idofTime = 1,rkktsystem%p_rprimalSol%p_rvector%NEQtime
     
       ! Apply the solver to update the solution in timestep idofTime.
+      output_iautoOutputIndent = output_iautoOutputIndent + 2
       call spaceslh_solve (rspaceSolver,idofTime,cspatialInitCondPolicy,&
           rkktsystem%ispacelevel,rkktsystem%p_rprimalSol,rcontrol=rkktsystem%p_rcontrol)
+      output_iautoOutputIndent = output_iautoOutputIndent - 2
       
     end do ! step
    
@@ -473,8 +478,10 @@ contains
     do idofTime = rkktsystem%p_rprimalSol%p_rvector%NEQtime,1,-1
     
       ! Apply the solver to update the solution in timestep idofTime.
+      output_iautoOutputIndent = output_iautoOutputIndent + 2
       call spaceslh_solve (rspaceSolver,idofTime,cspatialInitCondPolicy,&
           rkktsystem%ispacelevel,rkktsystem%p_rprimalSol,rdualSol=rkktsystem%p_rdualSol)
+      output_iautoOutputIndent = output_iautoOutputIndent - 2
       
     end do ! step
    
@@ -784,12 +791,14 @@ contains
     do idofTime = 1,rkktsystemDirDeriv%p_rprimalSolLin%p_rvector%NEQtime
     
       ! Apply the solver to update the solution in timestep idofTime.
+      output_iautoOutputIndent = output_iautoOutputIndent + 2
       call spaceslh_solve (rspaceSolver,idofTime,cspatialInitCondPolicy,&
           p_rkktsystem%ispacelevel,&
           p_rkktsystem%p_rprimalSol,&
           rcontrol=p_rkktsystem%p_rcontrol,&
           rprimalSolLin=rkktsystemDirDeriv%p_rprimalSolLin,&
           rcontrolLin=rkktsystemDirDeriv%p_rcontrolLin)
+      output_iautoOutputIndent = output_iautoOutputIndent - 2
       
     end do ! step
    
@@ -853,12 +862,14 @@ contains
     do idofTime = rkktsystemDirDeriv%p_rprimalSolLin%p_rvector%NEQtime,1,-1
     
       ! Apply the solver to update the solution in timestep idofTime.
+      output_iautoOutputIndent = output_iautoOutputIndent + 2
       call spaceslh_solve (rspaceSolver,idofTime,cspatialInitCondPolicy,&
           p_rkktsystem%ispacelevel,&
           p_rkktsystem%p_rprimalSol,&
           rdualSol=p_rkktsystem%p_rdualSol,&
           rprimalSolLin=rkktsystemDirDeriv%p_rprimalSolLin,&
           rdualSolLin=rkktsystemDirDeriv%p_rdualSolLin)
+      output_iautoOutputIndent = output_iautoOutputIndent - 2
       
     end do ! step
    
@@ -1079,7 +1090,7 @@ contains
   type(t_controlSpace), intent(inout) :: rrhs
 
   ! type of norm. A LINALG_NORMxxxx constant.
-  integer, intent(in) :: iresnorm
+  integer, intent(in), optional :: iresnorm
 !</input>
 
 !<inputoutput>
@@ -1089,7 +1100,7 @@ contains
 
 !<output>
   ! L2-Norm of the residual
-  real(DP), intent(out) :: dres
+  real(DP), intent(out), optional :: dres
 !</output>
 
 !</subroutine>
@@ -1121,6 +1132,51 @@ contains
         rrhs,1.0_DP,&
         rkktsystemDirDeriv%p_rcontrolLin,-1.0_DP,&
         rresidual,1.0_DP,dres,iresnorm)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine kkt_applyControlDirDeriv (rkktsystemDirDeriv,rrhs)
+  
+!<description>
+  ! Applies the control equation of the linearised
+  ! KKT system:  "d := J''(u) g"  for a given g
+!</description>
+  
+!<input>
+  ! Structure defining the KKT system.
+  ! The control / primal / dual variables in this structure
+  ! shall define the value of the functional "J''(u) g".
+  type(t_kktsystemDirDeriv), intent(inout), target :: rkktsystemDirDeriv
+!</input>
+
+!<inputoutput>
+  ! Receives the result "d" in the control space.
+  type(t_controlSpace), intent(inout) :: rrhs
+!</inputoutput>
+
+!</subroutine>
+
+    ! The (linearised) control equation reads:
+    !
+    !    J''(u) g  =  g - (-1/alpha) P'(u) ( -1/alpha [B'(u)]* lambda_g )
+    !
+    ! The result is written to rrhs, thus, rrhs receives a
+    ! fully qualified description of matrix-vector-product in the control space.
+    !
+    ! a) rrhs = (-1/alpha) P'(u) ( -1/alpha [B'(u)]* lambda_g )
+    ! We expect rkktsystemDirDeriv to represent the value "J''(u) g".
+    ! To calculate the residual, we need a representation of this value
+    ! in the control space.
+    call kkt_dualToControlDirDeriv (rkktsystemDirDeriv,rrhs)
+
+    ! b) rrhs = -rrhs + g
+    call kktsp_controlLinearComb (&
+        rkktsystemDirDeriv%p_rcontrolLin,1.0_DP,&
+        rrhs,-1.0_DP)
 
   end subroutine
 

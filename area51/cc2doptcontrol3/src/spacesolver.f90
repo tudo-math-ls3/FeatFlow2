@@ -1091,7 +1091,9 @@ contains
             rprimalSol,rsolver%ispacelevel)
         
         ! Solve the system
+        output_iautoOutputIndent = output_iautoOutputIndent + 2
         call lssh_precondDefect (rsolver%p_rlsshierarchy,rsolver%ispacelevel,p_rd)
+        output_iautoOutputIndent = output_iautoOutputIndent - 2
         
         ! -------------------------------------------------------------
         ! Solver-Cleanup
