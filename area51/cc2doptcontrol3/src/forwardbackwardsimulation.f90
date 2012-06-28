@@ -1560,126 +1560,79 @@ contains
             select case (ismootherType)
             case (0)
               call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_GENERAL)
+              
             case (1)
               call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_GENERALDIRECT)
               
             case (2)
-              select case (cspace)
-              case (CCSPACE_PRIMAL, CCSPACE_DUAL)
-                call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DNAVST)
-                rpreconditioner%bneedVirtTransposedD = .true.
-              case (CCSPACE_PRIMALDUAL)
-                call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAG2)
-                rpreconditioner%bneedVirtTransposedD = .false.
-              end select
+              call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_NAVST2D_DIAG)
+              !rpreconditioner%bneedVirtTransposedD = .true.
 
               ! We need virtually transposed B-matrices as D-matrices for this preconditioner.
               !rpreconditioner%bneedVirtTransposedD = .true.
 
             case (3)
-              select case (cspace)
-              case (CCSPACE_PRIMAL, CCSPACE_DUAL)
-                call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DNAVSTDIRECT)
-              case (CCSPACE_PRIMALDUAL)
-                call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAGDIR)
-              end select
+              call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_NAVST2D_FULL)
 
               ! We need virtually transposed B-matrices as D-matrices for this preconditioner.
               rpreconditioner%bneedVirtTransposedD = .true.
+
+!            case (4)
+!              call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_NAVST2D_DIAG)
+!
+!              ! We need virtually transposed B-matrices as D-matrices for this preconditioner.
+!              rpreconditioner%bneedVirtTransposedD = .true.
+!
+!            case (5)
+!              call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_NAVST2D_DIAG)
+!
+!              ! We need virtually transposed B-matrices as D-matrices for this preconditioner.
+!              rpreconditioner%bneedVirtTransposedD = .true.
 
             case (4)
-              select case (cspace)
-              case (CCSPACE_PRIMAL, CCSPACE_DUAL)
-                call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DFNAVST)
-              case (CCSPACE_PRIMALDUAL)
-                call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DFNAVSTOC)
-              end select
+              call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_NAVST2D_DIAG)
+              call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner,&
+                  rpreconditioner%RfilterChain)
 
               ! We need virtually transposed B-matrices as D-matrices for this preconditioner.
-              rpreconditioner%bneedVirtTransposedD = .true.
+              !rpreconditioner%bneedVirtTransposedD = .true.
 
             case (5)
-              select case (cspace)
-              case (CCSPACE_PRIMAL, CCSPACE_DUAL)
-                call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DFNAVSTDIRECT)
-              case (CCSPACE_PRIMALDUAL)
-                call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIRECT)
-              end select
+              call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_NAVST2D_DIAG)
+              !rpreconditioner%bneedVirtTransposedD = .true.
 
-              ! We need virtually transposed B-matrices as D-matrices for this preconditioner.
-              rpreconditioner%bneedVirtTransposedD = .true.
-
-            case (6)
-              select case (cspace)
-              case (CCSPACE_PRIMAL, CCSPACE_DUAL)
-                call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVST)
-              case (CCSPACE_PRIMALDUAL)
-                call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVSTOC)
-              end select
-              call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner,&
-                  rpreconditioner%RfilterChain)
-
-              ! We need virtually transposed B-matrices as D-matrices for this preconditioner.
-              rpreconditioner%bneedVirtTransposedD = .true.
-
-            case (7)
-              select case (cspace)
-              case (CCSPACE_PRIMAL, CCSPACE_DUAL)
-                call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DNAVST)
-                rpreconditioner%bneedVirtTransposedD = .true.
-              case (CCSPACE_PRIMALDUAL)
-                call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAG2)
-                rpreconditioner%bneedVirtTransposedD = .false.
-              end select
               call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner,&
                   rpreconditioner%RfilterChain)
 
               ! We need virtually transposed B-matrices as D-matrices for this preconditioner.
               !rpreconditioner%bneedVirtTransposedD = .true.
 
-            case (8)
-              select case (cspace)
-              case (CCSPACE_PRIMAL, CCSPACE_DUAL)
-                call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DNAVST)
-                rpreconditioner%bneedVirtTransposedD = .true.
-              case (CCSPACE_PRIMALDUAL)
-                call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAG2)
-                rpreconditioner%bneedVirtTransposedD = .false.
-              end select
-              call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner,&
-                  rpreconditioner%RfilterChain)
-
-              ! We need virtually transposed B-matrices as D-matrices for this preconditioner.
-              !rpreconditioner%bneedVirtTransposedD = .true.
-
-            case (9)
-              select case (cspace)
-              case (CCSPACE_PRIMAL, CCSPACE_DUAL)
-                call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DNAVST)
-                rpreconditioner%bneedVirtTransposedD = .true.
-              case (CCSPACE_PRIMALDUAL)
-                call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAG2)
-                rpreconditioner%bneedVirtTransposedD = .false.
-              end select
-
-              ! We need virtually transposed B-matrices as D-matrices for this preconditioner.
-              !rpreconditioner%bneedVirtTransposedD = .true.
-
-            case (10)
-              select case (cspace)
-              case (CCSPACE_PRIMAL, CCSPACE_DUAL)
-                call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_GENERAL)
-                rpreconditioner%bneedVirtTransposedD = .false.
-              case (CCSPACE_PRIMALDUAL)
-                call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_GENERAL)
-                rpreconditioner%bneedVirtTransposedD = .false.
-              end select
-
-              call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner,&
-                  rpreconditioner%RfilterChain)
-
-              ! We need virtually transposed B-matrices as D-matrices for this preconditioner.
-              !rpreconditioner%bneedVirtTransposedD = .true.
+!            case (8)
+!              call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DNAVST)
+!              rpreconditioner%bneedVirtTransposedD = .true.
+!
+!              call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner,&
+!                  rpreconditioner%RfilterChain)
+!
+!              ! We need virtually transposed B-matrices as D-matrices for this preconditioner.
+!              !rpreconditioner%bneedVirtTransposedD = .true.
+!
+!            case (9)
+!              call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DNAVST)
+!              rpreconditioner%bneedVirtTransposedD = .true.
+!
+!              ! We need virtually transposed B-matrices as D-matrices for this preconditioner.
+!              !rpreconditioner%bneedVirtTransposedD = .true.
+!
+!            case (10)
+!              call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_GENERAL)
+!              rpreconditioner%bneedVirtTransposedD = .false.
+!
+!              call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner,&
+!                  rpreconditioner%RfilterChain)
+!
+!              ! We need virtually transposed B-matrices as D-matrices for this preconditioner.
+!              !rpreconditioner%bneedVirtTransposedD = .true.
 
             end select
             

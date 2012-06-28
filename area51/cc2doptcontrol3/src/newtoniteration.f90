@@ -273,13 +273,13 @@ contains
     call lssh_createLinsolHierarchy (rsolver%p_rlinsolHierPrimalLin,&
         rsettingsSolver%rfeHierarchyPrimal,rsettingsSolver%rprjHierSpacePrimal,&
         1,0,rsettingsSolver%rphysics%cequation,rsettingsSolver%p_rparlist,&
-        ssolverSpaceForward,rsettingsSolver%rdebugFlags)
+        ssolverSpaceForwardLin,rsettingsSolver%rdebugFlags)
 
     ! Linearised backward equation on all levels
     call lssh_createLinsolHierarchy (rsolver%p_rlinsolHierDualLin,&
         rsettingsSolver%rfeHierarchyDual,rsettingsSolver%rprjHierSpaceDual,&
         1,0,rsettingsSolver%rphysics%cequation,rsettingsSolver%p_rparlist,&
-        ssolverSpaceBackward,rsettingsSolver%rdebugFlags)
+        ssolverSpaceBackwardLin,rsettingsSolver%rdebugFlags)
     
     ! Create the corresponding solver hierarchies.
     allocate(rsolver%p_rsolverHierPrimal)

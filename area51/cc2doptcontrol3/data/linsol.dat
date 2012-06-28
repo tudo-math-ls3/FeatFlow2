@@ -282,7 +282,7 @@ isolverType = 1
 
 # Name of the section in this file which configures the solver.
 
-ssolverSection = 'CC-MULTIGRIDSOLVER3'
+ssolverSection = 'CC-MULTIGRIDSOLVERLIN'
 
 # Type of smoother to use in multigrid.
 # Standard value = 2.
