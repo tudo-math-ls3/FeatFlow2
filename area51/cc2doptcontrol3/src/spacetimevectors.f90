@@ -729,11 +729,16 @@ contains
     end if
     
     ! Get the time step which is closest to the time stamp.
-    ! Rescale dtimestamp to the interval [1..NEQtime].
+    ! Rescale dtimestamp to the interval [0..NEQtime-1=#intervals].
     dabstime = dtimestamp*real(rx%NEQtime-1,DP)+1.0_DP
     itimestep2 = int(dabstime + 0.5_DP)
     
-    if (dabstime .eq. real(itimestep2,DP)) then
+    ! Calculate the 'relative' time in the interval [-1,1], where -1 corresponds
+    ! to timestep itimestep1, 0 to itimestep2 and +1 to itimestep3.
+    ! This will be used to evaluate the quadratic polynomial.
+    dreltime = dabstime-real(itimestep2,DP)
+    
+    if (abs(dreltime) .lt. 100.0_DP*SYS_EPSREAL_DP) then
       ! Nice coincidence, we have exactly timestep itimestep2. Ok, then we
       ! can call the routine to get that timestep; this saves us some
       ! time as the interpolation can be omitted.
@@ -767,11 +772,6 @@ contains
       end if
     end if
 
-    ! Calculate the 'relative' time in the interval [-1,1], where -1 corresponds
-    ! to timestep itimestep1, 0 to itimestep2 and +1 to itimestep3.
-    ! This will be used to evaluate the quadratic polynomial.
-    dreltime = dabstime-1.0_DP-real(itimestep2,DP)
-    
     ! Get the vector data of the three timesteps
     allocate(p_Dsource(rx%NEQ,3))
     

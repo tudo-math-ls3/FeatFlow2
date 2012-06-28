@@ -819,6 +819,11 @@ contains
           rlinsolMultigrid%ssectionCoarseGridSolver,rlinsolMultigrid%p_rparList)
       allocate(rlinsolMultigrid%p_rsubSolvers(1)%p_rsubnodeCG)
 
+    case default
+      call output_line ("Invalid coarse grid solver.", &
+          OU_CLASS_ERROR,OU_MODE_STD,"newtonlin_initStrucMultigrid")
+      call sys_halt()
+
     end select
     
     ! Level 2..nlevels are smoothers
@@ -852,6 +857,11 @@ contains
             rlinsolMultigrid%ssectionSmoother,rlinsolMultigrid%p_rparList)
         
         allocate(rlinsolMultigrid%p_rsubSolvers(ilevel)%p_rsubnodeCG)
+
+      case default
+        call output_line ("Invalid smoother.", &
+            OU_CLASS_ERROR,OU_MODE_STD,"newtonlin_initStrucMultigrid")
+        call sys_halt()
 
       end select
     
@@ -1322,6 +1332,12 @@ contains
 
       ! Next iteration
       ite = ite + 1
+
+      if (ilevel .eq. nlevels) then
+        ! Re-initialise the cycles
+        call MG_initCycles (&
+            p_rsubnodeMultigrid%ccycle,ilevel,nlevels,p_rsubnodeMultigrid%p_IcycleCount)
+      end if
 
     end do
     
