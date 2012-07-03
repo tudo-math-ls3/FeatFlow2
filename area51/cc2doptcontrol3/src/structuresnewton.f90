@@ -78,7 +78,11 @@ module structuresnewton
     ! =1.5 in superlinear convergence. 
     
     real(dp) :: dinexactNewtonExponent = 2.0_DP
-  
+
+    ! Lower bound for the absolute residual. Subproblems are not solved
+    ! more exact than this.
+    real(DP) :: dinexactNewtonEpsAbs = 1E-15_DP
+
   end type
   
 !</typeblock>
@@ -201,31 +205,31 @@ module structuresnewton
     real(DP) :: dresFinal = 0.0_DP
 
     ! Total number of nonlinear iterations
-    integer :: nnonlinearIterations = 0
+    integer :: niterations = 0
     
     ! Total number of linear iterations
     integer :: nlinearIterations = 0
     
-    ! Total time for the solver
-    real(DP) :: dtimeTotal = 0.0_DP
-    
-    ! Total time for nonlinear iteration
-    real(DP) :: dtimeNonlinearSolver = 0.0_DP
-    
-    ! Total time for linear space-time solver
-    real(DP) :: dtimeLinearSolver = 0.0_DP
-
-    ! Total time for linear solver in space
-    real(DP) :: dtimeLinearSolverTimestep = 0.0_DP
-    
-    ! Total time for matrix assembly
-    real(DP) :: dtimeMatrixAssembly = 0.0_DP
-
-    ! Total time for defect calculation
-    real(DP) :: dtimeDefectCalculation = 0.0_DP
-
-    ! Total time for matrix assembly
-    real(DP) :: dtimePostprocessing = 0.0_DP
+!    ! Total time for the solver
+!    real(DP) :: dtimeTotal = 0.0_DP
+!    
+!    ! Total time for nonlinear iteration
+!    real(DP) :: dtimeNonlinearSolver = 0.0_DP
+!    
+!    ! Total time for linear space-time solver
+!    real(DP) :: dtimeLinearSolver = 0.0_DP
+!
+!    ! Total time for linear solver in space
+!    real(DP) :: dtimeLinearSolverTimestep = 0.0_DP
+!    
+!    ! Total time for matrix assembly
+!    real(DP) :: dtimeMatrixAssembly = 0.0_DP
+!
+!    ! Total time for defect calculation
+!    real(DP) :: dtimeDefectCalculation = 0.0_DP
+!
+!    ! Total time for matrix assembly
+!    real(DP) :: dtimePostprocessing = 0.0_DP
 
   end type
   
@@ -336,29 +340,29 @@ module structuresnewton
     ! Convergence rate
     real(DP) :: dconvergenceRate = 0.0_DP
 
-    ! Total number of nonlinear iterations
+    ! Total number of iterations
     integer :: niterations = 0
     
-    ! Total time for the solver
-    real(DP) :: dtimeTotal = 0.0_DP
-    
-    ! Total time for nonlinear iteration
-    real(DP) :: dtimeNonlinearSolver = 0.0_DP
-    
-    ! Total time for linear space-time solver
-    real(DP) :: dtimeLinearSolver = 0.0_DP
-
-    ! Total time for linear solver in space
-    real(DP) :: dtimeLinearSolverTimestep = 0.0_DP
-    
-    ! Total time for matrix assembly
-    real(DP) :: dtimeMatrixAssembly = 0.0_DP
-
-    ! Total time for defect calculation
-    real(DP) :: dtimeDefectCalculation = 0.0_DP
-
-    ! Total time for matrix assembly
-    real(DP) :: dtimePostprocessing = 0.0_DP
+!    ! Total time for the solver
+!    real(DP) :: dtimeTotal = 0.0_DP
+!    
+!    ! Total time for nonlinear iteration
+!    real(DP) :: dtimeNonlinearSolver = 0.0_DP
+!    
+!    ! Total time for linear space-time solver
+!    real(DP) :: dtimeLinearSolver = 0.0_DP
+!
+!    ! Total time for linear solver in space
+!    real(DP) :: dtimeLinearSolverTimestep = 0.0_DP
+!    
+!    ! Total time for matrix assembly
+!    real(DP) :: dtimeMatrixAssembly = 0.0_DP
+!
+!    ! Total time for defect calculation
+!    real(DP) :: dtimeDefectCalculation = 0.0_DP
+!
+!    ! Total time for matrix assembly
+!    real(DP) :: dtimePostprocessing = 0.0_DP
 
   end type
   
@@ -514,6 +518,11 @@ contains
           rsolver%radaptiveNewton%dinexactNewtonExponent, &
           rsolver%radaptiveNewton%dinexactNewtonExponent)
 
+      call parlst_getvalue_double (rparamList, snewton, &
+          "dinexactNewtonEpsAbs", &
+          rsolver%radaptiveNewton%dinexactNewtonEpsAbs, &
+          rsolver%radaptiveNewton%dinexactNewtonEpsAbs)
+
     end if
 
   end subroutine
@@ -543,7 +552,7 @@ contains
     newtonit_checkConvergence = .false.
     
     ! Check the residual.
-    if (rsolver%nnonlinearIterations .ge. rsolver%nminIterations) then
+    if (rsolver%niterations .ge. rsolver%nminIterations) then
       ! Absolute residual
       if (rsolver%dresFinal .le. rsolver%depsAbs) then
         rsolver%iresult = 0
@@ -552,10 +561,20 @@ contains
       end if
 
       ! Relative residual
-      if (rsolver%dresFinal .le. rsolver%depsRel * rsolver%dresInit) then
-        rsolver%iresult = 0
-        newtonit_checkConvergence = .true.
-        return
+      if (rsolver%depsRel .gt. 0.0_DP) then
+        if (rsolver%dresFinal .le. rsolver%depsRel * rsolver%dresInit) then
+          rsolver%iresult = 0
+          newtonit_checkConvergence = .true.
+          return
+        end if
+      end if
+
+      if (rsolver%depsAbs .gt. 0.0_DP) then
+        if (rsolver%dresFinal .le. rsolver%depsAbs) then
+          rsolver%iresult = 0
+          newtonit_checkConvergence = .true.
+          return
+        end if
       end if
       
     end if
@@ -566,7 +585,7 @@ contains
 
 !<subroutine>
 
-  logical function newtonit_checkIterationStop (rsolver)
+  logical function newtonit_checkIterationStop (rsolver,iite)
   
 !<description>
   ! Checks whether or not to stop the iteration.
@@ -576,6 +595,11 @@ contains
   ! Returns TRUE if the iteration should be stopped.
 !</result>
   
+!<input>
+  ! Current iteration counter
+  integer, intent(in) :: iite
+!</input>
+
 !<inputoutput>
   ! Solver structure receiving the parameters.
   ! If convergence is reached, iresult is set.
@@ -586,7 +610,7 @@ contains
 
     newtonit_checkIterationStop = .false.
     
-    if (rsolver%nnonlinearIterations .ge. rsolver%nmaxIterations) then
+    if (rsolver%niterations .ge. rsolver%nmaxIterations) then
       ! Maximum number of iterations reached.
       rsolver%iresult = -1
       newtonit_checkIterationStop = .true.

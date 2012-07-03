@@ -798,6 +798,10 @@ contains
           'dinexactNewtonExponent', rnonlinearIteration% &
           radaptiveNewton%dinexactNewtonExponent, 2.0_DP)
 
+      call parlst_getvalue_double (rparamList, snewton, &
+          'dinexactNewtonEpsAbs', rnonlinearIteration% &
+          radaptiveNewton%dinexactNewtonEpsAbs, 2.0_DP)
+
     end if
 
   end subroutine

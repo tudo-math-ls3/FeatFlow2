@@ -231,6 +231,122 @@ contains
 
 !<subroutine>
 
+  subroutine main_printSolverStatistics (rnewtonStatistics,&
+      dtimeInit,dtimeStartVec,dtimePostproc,dtimeTotal)
+  
+!<description>
+  ! Prints out statistics about the solution process.
+!</description>
+
+!<input>
+  ! Statistics of the Newton solver
+  type(t_newtonitSolverStat), intent(in) :: rnewtonStatistics
+  
+  ! Time for initialisation
+  real(DP), intent(in) :: dtimeInit
+  
+  ! Time for creation of the start vector
+  real(DP), intent(in) :: dtimeStartVec
+
+  ! Time for final postprocessing
+  real(DP), intent(in) :: dtimePostproc
+
+  ! Total computation time
+  real(DP), intent(in) :: dtimeTotal
+!</input>
+
+!</subroutine>
+
+    ! Global time
+    call output_line ("Total time                                   = "//&
+        sys_sdL(dtimeTotal,10))
+    call output_lbrk()
+
+    call output_line ("Time for initialisation                      = "//&
+        sys_sdL(dtimeInit,10))
+    call output_line ("Time for creation of the start vector        = "//&
+        sys_sdL(dtimeStartVec,10))
+    call output_line ("Time for postprocessing                      = "//&
+        sys_sdL(dtimePostproc+rnewtonStatistics%rtimePostprocessing%delapsedReal,10))
+    call output_line ("Time for solving                             = "//&
+        sys_sdL(rnewtonStatistics%rtotalTime%delapsedReal &
+               -rnewtonStatistics%rtimePostprocessing%delapsedReal,10))
+    call output_lbrk()
+
+    ! More detailed statistics of the nonlinear solver
+    call output_line ("  Nonlinear iterations                       = "//&
+        sys_siL(rnewtonStatistics%niterations,1))
+    call output_line ("  Time for defect calculations               = "//&
+        sys_sdL(rnewtonStatistics%rtimeDefect%delapsedReal,10))
+    call output_line ("    Time for forward simulations             = "//&
+        sys_sdL(rnewtonStatistics%rtimeForward%delapsedReal,10))
+    call output_line ("    Time for backward simulations            = "//&
+        sys_sdL(rnewtonStatistics%rtimeBackward%delapsedReal,10))
+    call output_line ("    #Iterations linear solver                = "//&
+        sys_siL(rnewtonStatistics%rspaceslSolverStat%niterations,10))
+    call output_line ("  Time for interpolation to lower levels     = "//&
+        sys_sdL(rnewtonStatistics%rtimeProlRest%delapsedReal,10))
+    call output_line ("  Time linear solver in space                = "//&
+        sys_sdL(rnewtonStatistics%rspaceslSolverStat%rtotalTime%delapsedReal,10))
+    call output_line ("  #Iterations linear solver in space         = "//&
+        sys_siL(rnewtonStatistics%rspaceslSolverStat%niterations,10))
+    call output_lbrk()
+
+    ! More detailed statistics about the linear space-time solver    
+    call output_line ("  Time for linear space-time solver          = "//&
+        sys_sdL(rnewtonStatistics%rnewtonlinSolverStat%rtotalTime%delapsedReal,10))
+
+    call output_line ("    Time for smoothing                       = "//&
+        sys_sdL(rnewtonStatistics%rnewtonlinSolverStat%rtimeSmoothing%delapsedReal,10))
+    call output_line ("      Time for smoothing (fine)              = "//&
+        sys_sdL(rnewtonStatistics%rnewtonlinSolverStat%rtimeSmoothingFine%delapsedReal,10))
+    call output_line ("    Time for prolongation/restriction        = "//&
+        sys_sdL(rnewtonStatistics%rnewtonlinSolverStat%rtimeProlRest%delapsedReal,10))
+    call output_line ("    Time for coarse grid solving             = "//&
+        sys_sdL(rnewtonStatistics%rnewtonlinSolverStat%rtimeSolverCoarse%delapsedReal,10))
+    call output_lbrk()
+
+    call output_line ("    Time for defect calculations             = "//&
+        sys_sdL(rnewtonStatistics%rnewtonlinSolverStat%rtimeDefect%delapsedReal,10))
+    call output_line ("      Time for forward simulations           = "//&
+        sys_sdL(rnewtonStatistics%rnewtonlinSolverStat%rtimeForwardLin%delapsedReal,10))
+    call output_line ("      Time for backward simulations          = "//&
+        sys_sdL(rnewtonStatistics%rnewtonlinSolverStat%rtimeBackwardLin%delapsedReal,10))
+    call output_line ("      Time linear solver in space            = "//&
+        sys_sdL(rnewtonStatistics%rnewtonlinSolverStat%rspaceslSolverStat%rtotalTime%delapsedReal,10))
+    call output_line ("      #Iterations linear solver in space     = "//&
+        sys_siL(rnewtonStatistics%rnewtonlinSolverStat%rspaceslSolverStat%niterations,10))
+    call output_lbrk()
+
+    call output_line ("    Time for defect calculations (fine)      = "//&
+        sys_sdL(rnewtonStatistics%rnewtonlinSolverStat%rtimeDefectFine%delapsedReal,10))
+    call output_line ("      Time for forward simulations (fine)    = "//&
+        sys_sdL(rnewtonStatistics%rnewtonlinSolverStat%rtimeForwardLinFine%delapsedReal,10))
+    call output_line ("      Time for backward simulations (fine)   = "//&
+        sys_sdL(rnewtonStatistics%rnewtonlinSolverStat%rtimeBackwardLinFine%delapsedReal,10))
+    call output_line ("      Time linear solver in space (fine)     = "//&
+        sys_sdL(rnewtonStatistics%rnewtonlinSolverStat%rspaceslSolverStatFine%rtotalTime%delapsedReal,10))
+    call output_line ("      #Iterations linear solver (sp., fine)  = "//&
+        sys_siL(rnewtonStatistics%rnewtonlinSolverStat%rspaceslSolverStatFine%niterations,10))
+    call output_lbrk()
+
+    call output_line ("    Time for defect calculations (coarse)    = "//&
+        sys_sdL(rnewtonStatistics%rnewtonlinSolverStat%rtimeDefectCoarse%delapsedReal,10))
+    call output_line ("      Time for forward simulations (coarse)  = "//&
+        sys_sdL(rnewtonStatistics%rnewtonlinSolverStat%rtimeForwardLinCoarse%delapsedReal,10))
+    call output_line ("      Time for backward simulations (coarse) = "//&
+        sys_sdL(rnewtonStatistics%rnewtonlinSolverStat%rtimeBackwardLinCoarse%delapsedReal,10))
+    call output_line ("      Time linear solver in space (coarse)   = "//&
+        sys_sdL(rnewtonStatistics%rnewtonlinSolverStat%rspaceslSolverStatCoarse%rtotalTime%delapsedReal,10))
+    call output_line ("      #Iterations linear solver (sp, coarse) = "//&
+        sys_siL(rnewtonStatistics%rnewtonlinSolverStat%rspaceslSolverStatCoarse%niterations,10))
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
   subroutine cc2doptccalculate (rsettings,rparlist)
   
 !<description>
@@ -283,6 +399,7 @@ contains
     
     ! Some timers
     type(t_timer) :: rtotalTime,rinitTime,rsolverTime,rtimePostProc,rstartvectime
+    type(t_newtonitSolverStat) :: rnewtonStatistics
 
     ! Ok, let us start.
     !
@@ -352,15 +469,16 @@ contains
     ! Solve the system
     call stat_clearTimer (rsolverTime)
     call stat_startTimer (rsolverTime)
-    call newtonit_solve (rsolver,rsolution)
+    call newtonit_solve (rsolver,rsolution,rnewtonStatistics)
     call stat_stopTimer (rsolverTime)
     
     call output_separator (OU_SEP_EQUAL)
 
     ! Pipe the solution through our postprocessing routines
     call output_line ("Postprocessing of the final solution...")
-!    call stat_clearTimer (rtimePostProc)
-!    call stat_startTimer (rtimePostProc)
+
+    call stat_clearTimer (rtimePostProc)
+    call stat_startTimer (rtimePostProc)
     call optcpp_postprocessing (p_rsettingsSolver%rpostproc,&
         p_rsettingsSolver%rspaceTimeHierPrimal%p_rfeHierarchy%nlevels,&
         p_rsettingsSolver%rspaceTimeHierPrimal%p_rtimeHierarchy%nlevels,&
@@ -368,16 +486,10 @@ contains
         p_rsettingsSolver)
 !    call optcpp_postprocessSpaceTimeVec (rpostproc,rsolution,rrhsDiscrete,&
 !        p_rsettingsSolver%rsettingsOptControl,p_rsettingsSolver)
-!    call stat_stopTimer (rtimePostProc)
-!    
-!    ! Sum up the time for the postprocesing during the simulation
-!    call stat_addTimers (p_rnlstsolver%rtimePostprocessing,rtimePostProc)
-!
+    call stat_stopTimer (rtimePostProc)
+    
     call output_separator (OU_SEP_EQUAL)
-!    
-!    ! Print out statistics about our solver.
-!    call stnlsinit_printSolverStatistics (p_rnlstsolver)
-!    
+
 !    ! Release all data
     call newtonit_doneStructure (rsolver)
     call newtonit_done (rsolver)
@@ -392,16 +504,10 @@ contains
     call stat_stopTimer (rtotalTime)
 
     call output_separator (OU_SEP_EQUAL)
-    call output_line ("Time for initialisation            = "//&
-        sys_sdL(rinitTime%delapsedReal,10))
-    call output_line ("Time for creation of the start vec = "//&
-        sys_sdL(rstartvectime%delapsedReal,10))
-    call output_line ("Time for postprocessing            = "//&
-        sys_sdL(rtimePostProc%delapsedReal,10))
-    call output_line ("Time for solving                   = "//&
-        sys_sdL(rsolverTime%delapsedReal,10))
-    call output_line ("Total time                         = "//&
-        sys_sdL(rtotalTime%delapsedReal,10))
+    call main_printSolverStatistics (&
+        rnewtonStatistics,rinitTime%delapsedReal,rstartvectime%delapsedReal,&
+        rtimePostProc%delapsedReal,rtotalTime%delapsedReal)
+    
     call output_separator (OU_SEP_EQUAL)
     
     ! Information about external storage usage

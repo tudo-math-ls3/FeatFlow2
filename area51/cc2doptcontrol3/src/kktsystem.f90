@@ -332,7 +332,7 @@ contains
 
 !<subroutine>
 
-  subroutine kkt_solvePrimal (rkktsystem,rspaceSolver,cspatialInitCondPolicy)
+  subroutine kkt_solvePrimal (rkktsystem,rspaceSolver,cspatialInitCondPolicy,rstatistics)
   
 !<description>
   ! Solves the primal equation in the KKT system based on the control in the
@@ -356,6 +356,9 @@ contains
   
   ! Space solver structure used for solving subequations in space
   type(t_spaceSolverHierarchy), intent(inout) :: rspaceSolver
+
+  ! Statistics structure
+  type(t_spaceslSolverStat), intent(inout) :: rstatistics
 !</inputoutput>
 
 !</subroutine>
@@ -387,7 +390,7 @@ contains
     ! Initialise basic solver structures
     call spaceslh_initStructure (rspaceSolver, &
         rkktsystem%ispacelevel, rkktsystem%itimelevel, &
-        rkktsystem%p_roperatorAsmHier,ierror)
+        rkktsystem%p_roperatorAsmHier,rstatistics,ierror)
 
     if (ierror .ne. 0) then
       call output_line("Error initialising the solver structures.",&
@@ -410,7 +413,7 @@ contains
     
       ! Apply the solver to update the solution in timestep idofTime.
       output_iautoOutputIndent = output_iautoOutputIndent + 2
-      call spaceslh_solve (rspaceSolver,idofTime,cspatialInitCondPolicy,&
+      call spaceslh_solve (rspaceSolver,idofTime,cspatialInitCondPolicy,rstatistics,&
           rkktsystem%ispacelevel,rkktsystem%p_rprimalSol,rcontrol=rkktsystem%p_rcontrol)
       output_iautoOutputIndent = output_iautoOutputIndent - 2
       
@@ -424,7 +427,7 @@ contains
 
 !<subroutine>
 
-  subroutine kkt_solveDual (rkktsystem,rspaceSolver,cspatialInitCondPolicy)
+  subroutine kkt_solveDual (rkktsystem,rspaceSolver,cspatialInitCondPolicy,rstatistics)
   
 !<description>
   ! Solves the dual equation in the KKT system based on the control and the
@@ -448,6 +451,9 @@ contains
 
   ! Space solver structure used for solving subequations in space
   type(t_spaceSolverHierarchy), intent(inout) :: rspaceSolver
+
+  ! Statistics structure
+  type(t_spaceslSolverStat), intent(inout) :: rstatistics
 !</inputoutput>
 
 !</subroutine>
@@ -464,7 +470,7 @@ contains
     ! Initialise basic solver structures
     call spaceslh_initStructure (rspaceSolver, &
         rkktsystem%ispacelevel, rkktsystem%itimelevel, &
-        rkktsystem%p_roperatorAsmHier,ierror)
+        rkktsystem%p_roperatorAsmHier,rstatistics,ierror)
 
     if (ierror .ne. 0) then
       call output_line("Error initialising the solver structures.",&
@@ -479,7 +485,7 @@ contains
     
       ! Apply the solver to update the solution in timestep idofTime.
       output_iautoOutputIndent = output_iautoOutputIndent + 2
-      call spaceslh_solve (rspaceSolver,idofTime,cspatialInitCondPolicy,&
+      call spaceslh_solve (rspaceSolver,idofTime,cspatialInitCondPolicy,rstatistics,&
           rkktsystem%ispacelevel,rkktsystem%p_rprimalSol,rdualSol=rkktsystem%p_rdualSol)
       output_iautoOutputIndent = output_iautoOutputIndent - 2
       
@@ -740,7 +746,7 @@ contains
 !<subroutine>
 
   subroutine kkt_solvePrimalDirDeriv (rkktsystemDirDeriv,rspaceSolver,&
-      cspatialInitCondPolicy)
+      cspatialInitCondPolicy,rstatistics)
   
 !<description>
   ! Solves the linearised primal equation in the KKT system.
@@ -763,6 +769,9 @@ contains
 
   ! Space solver structure used for solving subequations in space
   type(t_spaceSolverHierarchy), intent(inout) :: rspaceSolver
+
+  ! Statistics structure
+  type(t_spaceslSolverStat), intent(inout) :: rstatistics
 !</inputoutput>
 
 !</subroutine>
@@ -777,7 +786,7 @@ contains
     call spaceslh_initStructure (rspaceSolver, &
         p_rkktsystem%ispacelevel, &
         p_rkktsystem%itimelevel, &
-        p_rkktsystem%p_roperatorAsmHier,ierror)
+        p_rkktsystem%p_roperatorAsmHier,rstatistics,ierror)
 
     if (ierror .ne. 0) then
       call output_line("Error initialising the solver structures.",&
@@ -793,7 +802,7 @@ contains
       ! Apply the solver to update the solution in timestep idofTime.
       output_iautoOutputIndent = output_iautoOutputIndent + 2
       call spaceslh_solve (rspaceSolver,idofTime,cspatialInitCondPolicy,&
-          p_rkktsystem%ispacelevel,&
+          rstatistics,p_rkktsystem%ispacelevel,&
           p_rkktsystem%p_rprimalSol,&
           rcontrol=p_rkktsystem%p_rcontrol,&
           rprimalSolLin=rkktsystemDirDeriv%p_rprimalSolLin,&
@@ -811,7 +820,7 @@ contains
 !<subroutine>
 
   subroutine kkt_solveDualDirDeriv (rkktsystemDirDeriv,rspaceSolver,&
-      cspatialInitCondPolicy)
+      cspatialInitCondPolicy,rstatistics)
   
 !<description>
   ! Solves the linearised dual equation in the KKT system.
@@ -834,6 +843,9 @@ contains
 
   ! Space solver structure used for solving subequations in space
   type(t_spaceSolverHierarchy), intent(inout) :: rspaceSolver
+
+  ! Statistics structure
+  type(t_spaceslSolverStat), intent(inout) :: rstatistics
 !</inputoutput>
 
 !</subroutine>
@@ -848,7 +860,7 @@ contains
     call spaceslh_initStructure (rspaceSolver, &
         p_rkktsystem%ispacelevel, &
         p_rkktsystem%itimelevel, &
-        p_rkktsystem%p_roperatorAsmHier,ierror)
+        p_rkktsystem%p_roperatorAsmHier,rstatistics,ierror)
 
     if (ierror .ne. 0) then
       call output_line("Error initialising the solver structures.",&
@@ -864,7 +876,7 @@ contains
       ! Apply the solver to update the solution in timestep idofTime.
       output_iautoOutputIndent = output_iautoOutputIndent + 2
       call spaceslh_solve (rspaceSolver,idofTime,cspatialInitCondPolicy,&
-          p_rkktsystem%ispacelevel,&
+          rstatistics,p_rkktsystem%ispacelevel,&
           p_rkktsystem%p_rprimalSol,&
           rdualSol=p_rkktsystem%p_rdualSol,&
           rprimalSolLin=rkktsystemDirDeriv%p_rprimalSolLin,&

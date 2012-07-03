@@ -25,6 +25,7 @@ module spacelinearsolver
   use linearsystemblock
   use coarsegridcorrection
   use linearsolverautoinitialise
+  use statistics
 
   use meshhierarchy
   use fespacehierarchybase
@@ -48,9 +49,42 @@ module spacelinearsolver
 
 !</constantblock>
 
+!<constantblock description = "Solver types">
+
+  ! General linear equation
+  integer, parameter :: LSS_LINSOL_UMFPACK = 0
+
+  ! 2D Stokes / Navier-Stokes equations
+  integer, parameter :: LSS_LINSOL_MG = 1
+
+!</constantblock>
+
 !<constants>
 
 !<types>
+
+!<typeblock>
+
+  ! Linear solver statistics
+  type t_lssSolverStat
+  
+    ! Number of iterations necessary for the linear solver
+    integer :: niterations = 0
+    
+    ! Total time necessary for the linear solver
+    type(t_timer) :: rtotalTime
+    
+    ! Time necessary for symbolic factorisation
+    type(t_timer) :: rtimeSymbolicFactorisation
+
+    ! Time necessary for numeric factorisation
+    type(t_timer) :: rtimeNumericFactorisation
+  
+  end type
+
+!</typeblock>
+
+  public :: t_lssSolverStat
 
 !<typeblock>
 
@@ -60,7 +94,7 @@ module spacelinearsolver
     ! Type of solver.
     ! =0: Gauss elimination (UMFPACK)
     ! =1: Multigrid solver
-    integer :: isolverType = 0
+    integer :: isolverType = LSS_LINSOL_UMFPACK
     
     ! If the preconditioner is the linear multigrid solver:
     ! Type of smoother.
@@ -173,6 +207,12 @@ module spacelinearsolver
   
   ! Applies preconditioning of rd with the solver on level ilevel.
   public :: lssh_precondDefect
+
+  ! Clears a statistics block
+  public :: lss_clearStatistics
+  
+  ! Sums up two statistic blocks
+  public :: lss_sumStatistics
   
 contains
 
@@ -238,7 +278,7 @@ contains
 
     ! Get the parameters that configure the solver type
     
-    call parlst_getvalue_int (p_rsection, "isolverType", isolverType, 1)
+    call parlst_getvalue_int (p_rsection, "isolverType", isolverType, LSS_LINSOL_MG)
     call parlst_getvalue_int (p_rsection, "ismootherType", ismootherType, 3)
     call parlst_getvalue_int (p_rsection, "icoarseGridSolverType", &
         icoarseGridSolverType, 1)
@@ -813,7 +853,7 @@ contains
 
 !<subroutine>
 
-  subroutine lssh_initStructure (rlsshierarchy,ilevel,ierror)
+  subroutine lssh_initStructure (rlsshierarchy,ilevel,rstatistics,ierror)
 
 !<description>
   ! Initialises structural data for the solver at level ilevel.
@@ -827,6 +867,9 @@ contains
 !<inputoutput>
   ! The underlying hierarchy.
   type(t_linsolHierarchySpace), intent(inout), target :: rlssHierarchy
+  
+  ! Statistics hierarchy which receives timing results for factorisations.
+  type(t_lssSolverStat), intent(inout) :: rstatistics
 !</inputoutput>
   
 !<output>
@@ -857,7 +900,11 @@ contains
     deallocate(Rmatrices)
 
     ! Initialise the solver node
+    call stat_startTimer (rstatistics%rtimeSymbolicFactorisation)
+
     call linsol_initStructure (rlsshierarchy%p_RlinearSolvers(ilevel)%p_rsolverNode,ierror)
+
+    call stat_stopTimer (rstatistics%rtimeSymbolicFactorisation)
     
   end subroutine
 
@@ -865,7 +912,7 @@ contains
 
 !<subroutine>
 
-  subroutine lssh_initData (rlsshierarchy,roptcBDCSpaceHierarchy,ilevel,ierror)
+  subroutine lssh_initData (rlsshierarchy,roptcBDCSpaceHierarchy,ilevel,rstatistics,ierror)
 
 !<description>
   ! Initialises calculation data for the solver at level ilevel.
@@ -882,6 +929,9 @@ contains
 !<inputoutput>
   ! The underlying hierarchy.
   type(t_linsolHierarchySpace), intent(inout) :: rlssHierarchy
+
+  ! Statistics hierarchy which receives timing results for factorisations.
+  type(t_lssSolverStat), intent(inout) :: rstatistics
 !</inputoutput>
   
 !<output>
@@ -928,7 +978,7 @@ contains
       ! ---------------------------------------------------
       ! Multigrid
       ! ---------------------------------------------------
-      case (1)
+      case (LSS_LINSOL_MG)
         
         ! Smoother or coarse grid solver?
         select case (ilevel)
@@ -1018,7 +1068,7 @@ contains
       ! ---------------------------------------------------
       ! Multigrid
       ! ---------------------------------------------------
-      case (1)
+      case (LSS_LINSOL_MG)
         
         ! Smoother or coarse grid solver?
         select case (ilevel)
@@ -1100,8 +1150,12 @@ contains
     end select ! equation
 
     ! Initialise the solver node
+    call stat_startTimer (rstatistics%rtimeNumericFactorisation)
+    
     call linsol_initData (&
         rlssHierarchy%p_RlinearSolvers(ilevel)%p_rsolverNode,ierror)
+        
+    call stat_stopTimer (rstatistics%rtimeNumericFactorisation)
     
   end subroutine
 
@@ -1165,7 +1219,7 @@ contains
 
 !<subroutine>
 
-  subroutine lssh_precondDefect (rlsshierarchy,ilevel,rd,p_rsolverNode)
+  subroutine lssh_precondDefect (rlsshierarchy,ilevel,rd,rstatistics,p_rsolverNode)
 
 !<description>
   ! Applies preconditioning of rd with the solver on level ilevel.
@@ -1178,11 +1232,14 @@ contains
   
 !<inputoutput>
   ! The underlying hierarchy.
-  type(t_linsolHierarchySpace), intent(inout) :: rlssHierarchy
+  type(t_linsolHierarchySpace), intent(inout), target :: rlssHierarchy
   
   ! The defect to apply preconditioning to.
   type(t_vectorBlock), intent(inout) :: rd
   
+  ! Statistics hierarchy which receives timing results for factorisations.
+  type(t_lssSolverStat), intent(inout) :: rstatistics
+
   ! OPTIONAL; If present, this is set to the solver node of the linear
   ! solver used to solve the system
   type(t_linsolNode), pointer, optional :: p_rsolverNode
@@ -1190,13 +1247,80 @@ contains
   
 !</subroutine>
 
-    ! Initialise the solver node
-    call linsol_precondDefect (&
-        rlssHierarchy%p_RlinearSolvers(ilevel)%p_rsolverNode,rd)
+    type(t_linsolNode), pointer :: p_rsolverNodeLocal
+    
+    p_rsolverNodeLocal => rlssHierarchy%p_RlinearSolvers(ilevel)%p_rsolverNode
+
+    ! Call the linear solver, solver the problem
+    call stat_startTimer (rstatistics%rtotalTime)
+    
+    call linsol_precondDefect (p_rsolverNodeLocal,rd)
+    
+    call stat_stopTimer (rstatistics%rtotalTime)
         
+    ! Sum up statistics
+    rstatistics%niterations = rstatistics%niterations + p_rsolverNodeLocal%iiterations
+
+    ! Probably return the solver node.
     if (present(p_rsolverNode)) then
-      p_rsolverNode => rlssHierarchy%p_RlinearSolvers(ilevel)%p_rsolverNode
+      p_rsolverNode => p_rsolverNodeLocal
     end if
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lss_clearStatistics (rstatistics)
+
+!<description>
+  ! Resets a statistic structure.
+!</description>
+
+!<inputoutput>
+  ! Structure to be reset.
+  type(t_lssSolverStat), intent(inout) :: rstatistics
+!</inputoutput>
+  
+!</subroutine>
+
+    rstatistics%niterations = 0
+    call stat_clearTimer(rstatistics%rtotalTime)
+    call stat_clearTimer(rstatistics%rtimeSymbolicFactorisation)
+    call stat_clearTimer(rstatistics%rtimeNumericFactorisation)
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lss_sumStatistics (rstatistics1,rstatistics2)
+
+!<description>
+  ! SUms up twi statistic blocks.
+!</description>
+  
+!<input>
+  ! Source structure
+  type(t_lssSolverStat), intent(in) :: rstatistics1
+!</input>
+  
+!<inputoutput>
+  ! Destination structure.
+  type(t_lssSolverStat), intent(inout) :: rstatistics2
+!</inputoutput>
+  
+!</subroutine>
+
+    rstatistics2%niterations = rstatistics1%niterations + rstatistics2%niterations
+    
+    call stat_addTimers(rstatistics1%rtotalTime,rstatistics2%rtotalTime)
+    call stat_addTimers(rstatistics1%rtimeSymbolicFactorisation,&
+        rstatistics2%rtimeSymbolicFactorisation)
+    call stat_addTimers(rstatistics1%rtimeNumericFactorisation,&
+        rstatistics2%rtimeNumericFactorisation)
     
   end subroutine
 

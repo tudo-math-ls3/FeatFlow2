@@ -62,6 +62,32 @@ module spacesolver
 
 !<typeblock>
 
+  ! Linear solver statistics
+  type t_spaceslSolverStat
+  
+    ! Number of iterations necessary for the solver
+    integer :: niterations = 0
+    
+    ! Total time necessary for the linear solver
+    type(t_timer) :: rtotalTime
+
+    ! Time necessary for the creation of nonlinear defects
+    type(t_timer) :: rtimeDefect
+
+    ! Time necessary for the creation of matrices
+    type(t_timer) :: rtimeMatrixAssembly
+
+    ! Statistics of the linear subsolver
+    type(t_lssSolverStat) :: rlssSolverStat
+    
+  end type
+
+!</typeblock>
+
+  public :: t_spaceslSolverStat
+
+!<typeblock>
+
   ! The space solver hierarchy structure is a solver which is able
   ! to solve in every timestep of a space-time hierarchy the corresponding
   ! nonlinear forward system or the corresponding linear forward/backward
@@ -167,7 +193,16 @@ module spacesolver
 
   ! Final cleanup
   public :: spaceslh_done
+  
+  ! Set the stopping criterion for the adaptive Newton algorithm
+  public :: spaceslh_setEps
 
+  ! Clears a statistics block
+  public :: spacesl_clearStatistics
+  
+  ! Sums up two statistic blocks
+  public :: spacesl_sumStatistics
+  
 contains
 
   ! ***************************************************************************
@@ -227,7 +262,7 @@ contains
 !<subroutine>
 
   subroutine spaceslh_initStructure (rsolver, ispacelevel, itimelevel,&
-      roperatorAsmHier,ierror)
+      roperatorAsmHier,rstatistics,ierror)
   
 !<description>
   ! Structural initialisation of the Newton solver.
@@ -243,12 +278,14 @@ contains
   ! A hierarchy of operator assembly structures for all levels.
   ! This is a central discretisation structure passed to all assembly routines.
   type(t_spacetimeOpAsmHierarchy), intent(in), target :: roperatorAsmHier
-  
 !</input>
 
 !<inputoutput>
   ! Structure to be initialised.
   type(t_spaceSolverHierarchy), intent(inout) :: rsolver
+
+  ! Statistics structure
+  type(t_spaceslSolverStat), intent(inout) :: rstatistics
 !</inputoutput>
 
 !<output>
@@ -348,7 +385,7 @@ contains
         end select
 
         ! Initialise the structures of the associated linear subsolver
-        call lssh_initStructure (rsolver%p_rlsshierarchy,ilev,ierror)
+        call lssh_initStructure (rsolver%p_rlsshierarchy,ilev,rstatistics%rlssSolverStat,ierror)
 
       end if
     end do
@@ -566,7 +603,7 @@ contains
 !<subroutine>
 
   subroutine spaceslh_initData_primal (rsolver, ierror, idofTime, &
-      rprimalSol, isollevelSpace)
+      rprimalSol, isollevelSpace, rstatistics)
   
 !<description>
   ! Final preparation of the Newton solver. Primal space.
@@ -588,6 +625,9 @@ contains
 !<inputoutput>
   ! Structure to be initialised.
   type(t_spaceSolverHierarchy), intent(inout) :: rsolver
+
+  ! Statistics structure
+  type(t_spaceslSolverStat), intent(inout) :: rstatistics
 !</inputoutput>
 
 !<output>
@@ -604,13 +644,16 @@ contains
     logical :: bfull
     
     ! Full Newton?
-    bfull = rsolver%rnewtonParams%ctypeIteration .eq. 2
+    bfull = (rsolver%rnewtonParams%ctypeIteration .eq. 2) .or. &
+            (rsolver%rnewtonParams%ctypeIteration .eq. 3)
     
     ! iprevlv contains the last assembled level.
     iprevlv = 0
 
     ! Loop over all levels, from the highest to the lowest,
     ! and set up the system matrices.
+    call stat_startTimer (rstatistics%rtimeMatrixAssembly)
+    
     do ilev = rsolver%ispacelevel,rsolver%p_rlssHierarchy%nlmin,-1
     
       ! Assemble the matrix
@@ -623,13 +666,15 @@ contains
       iprevlv = ilev
     
     end do
+    
+    call stat_stopTimer (rstatistics%rtimeMatrixAssembly)
 
     ! Initialise the structures of the associated linear subsolver
     rsolver%p_rlsshierarchy%p_rdebugFlags%sstringTag = &
         "primal_"//trim(sys_siL(idofTime,10))//"_"//trim(sys_siL(isollevelSpace,10))
     call lssh_initData (&
         rsolver%p_rlsshierarchy,rsolver%p_roptcBDCSpaceHierarchy,&
-        rsolver%ispacelevel,ierror)
+        rsolver%ispacelevel,rstatistics%rlssSolverStat,ierror)
 
   end subroutine
 
@@ -638,7 +683,7 @@ contains
 !<subroutine>
 
   subroutine spaceslh_initData_primallin (rsolver, ierror, idofTime, &
-      rprimalSol, isollevelSpace, bfull)
+      rprimalSol, isollevelSpace, bfull, rstatistics)
   
 !<description>
   ! Final preparation of the Newton solver. Linearised primal space.
@@ -663,6 +708,9 @@ contains
 !<inputoutput>
   ! Structure to be initialised.
   type(t_spaceSolverHierarchy), intent(inout) :: rsolver
+
+  ! Statistics structure
+  type(t_spaceslSolverStat), intent(inout) :: rstatistics
 !</inputoutput>
 
 !<output>
@@ -682,6 +730,8 @@ contains
 
     ! Loop over all levels, from the highest to the lowest,
     ! and set up the system matrices.
+    call stat_startTimer (rstatistics%rtimeMatrixAssembly)
+    
     do ilev = rsolver%ispacelevel,rsolver%p_rlssHierarchy%nlmin,-1
     
       ! Assemble the matrix
@@ -694,13 +744,15 @@ contains
       iprevlv = ilev
     
     end do
+    
+    call stat_stopTimer (rstatistics%rtimeMatrixAssembly)
 
     ! Initialise the structures of the associated linear subsolver
     rsolver%p_rlsshierarchy%p_rdebugFlags%sstringTag = &
         "primallin_"//trim(sys_siL(idofTime,10))//"_"//trim(sys_siL(isollevelSpace,10))
     call lssh_initData (&
         rsolver%p_rlsshierarchy,rsolver%p_roptcBDCSpaceHierarchy,&
-        rsolver%ispacelevel,ierror)
+        rsolver%ispacelevel,rstatistics%rlssSolverStat,ierror)
 
   end subroutine
 
@@ -709,7 +761,7 @@ contains
 !<subroutine>
 
   subroutine spaceslh_initData_dual (rsolver, ierror, idofTime, &
-      rprimalSol, isollevelSpace)
+      rprimalSol, isollevelSpace, rstatistics)
   
 !<description>
   ! Final preparation of the Newton solver. Dual space.
@@ -731,6 +783,9 @@ contains
 !<inputoutput>
   ! Structure to be initialised.
   type(t_spaceSolverHierarchy), intent(inout) :: rsolver
+
+  ! Statistics structure
+  type(t_spaceslSolverStat), intent(inout) :: rstatistics
 !</inputoutput>
 
 !<output>
@@ -750,6 +805,8 @@ contains
 
     ! Loop over all levels, from the highest to the lowest,
     ! and set up the system matrices.
+    call stat_startTimer (rstatistics%rtimeMatrixAssembly)
+    
     do ilev = rsolver%ispacelevel,rsolver%p_rlssHierarchy%nlmin,-1
     
       ! Assemble the matrix
@@ -761,13 +818,15 @@ contains
       iprevlv = ilev
     
     end do
+    
+    call stat_stopTimer (rstatistics%rtimeMatrixAssembly)
 
     ! Initialise the structures of the associated linear subsolver
     rsolver%p_rlsshierarchy%p_rdebugFlags%sstringTag = &
         "dual_"//trim(sys_siL(idofTime,10))//"_"//trim(sys_siL(isollevelSpace,10))
     call lssh_initData (&
         rsolver%p_rlsshierarchy,rsolver%p_roptcBDCSpaceHierarchy,&
-        rsolver%ispacelevel,ierror)
+        rsolver%ispacelevel,rstatistics%rlssSolverStat,ierror)
 
   end subroutine
 
@@ -776,7 +835,7 @@ contains
 !<subroutine>
 
   subroutine spaceslh_initData_dualLin (rsolver, ierror, idofTime, &
-      rprimalSol, isollevelSpace, bfull)
+      rprimalSol, isollevelSpace, bfull, rstatistics)
   
 !<description>
   ! Final preparation of the Newton solver. Linearised dual space.
@@ -801,6 +860,9 @@ contains
 !<inputoutput>
   ! Structure to be initialised.
   type(t_spaceSolverHierarchy), intent(inout) :: rsolver
+
+  ! Statistics structure
+  type(t_spaceslSolverStat), intent(inout) :: rstatistics
 !</inputoutput>
 
 !<output>
@@ -823,6 +885,8 @@ contains
 
     ! Loop over all levels, from the highest to the lowest,
     ! and set up the system matrices.
+    call stat_startTimer (rstatistics%rtimeMatrixAssembly)
+    
     do ilev = rsolver%ispacelevel,rsolver%p_rlssHierarchy%nlmin,-1
     
       ! Assemble the matrix
@@ -834,13 +898,15 @@ contains
       iprevlv = ilev
     
     end do
+    
+    call stat_stopTimer (rstatistics%rtimeMatrixAssembly)
 
     ! Initialise the structures of the associated linear subsolver
     rsolver%p_rlsshierarchy%p_rdebugFlags%sstringTag = &
         "duallin_"//trim(sys_siL(idofTime,10))//"_"//trim(sys_siL(isollevelSpace,10))
     call lssh_initData (&
         rsolver%p_rlsshierarchy,rsolver%p_roptcBDCSpaceHierarchy,&
-        rsolver%ispacelevel,ierror)
+        rsolver%ispacelevel,rstatistics%rlssSolverStat,ierror)
 
   end subroutine
 
@@ -936,7 +1002,7 @@ contains
 
 !<subroutine>
 
-  subroutine spaceslh_solve (rsolver,idofTime,csolgeneration,isollevelSpace,&
+  subroutine spaceslh_solve (rsolver,idofTime,csolgeneration,rstatistics,isollevelSpace,&
       rprimalSol,rdualSol,rcontrol,rprimalSolLin,rdualSolLin,rcontrolLin)
   
 !<description>
@@ -984,6 +1050,9 @@ contains
   ! The space level of the solution is specified by isollevelSpace.
   ! The time level must match rsolver%itimelevel.
   type(t_controlSpace), intent(inout), optional, target :: rcontrolLin
+
+  ! Statistics structure
+  type(t_spaceslSolverStat), intent(inout) :: rstatistics
 !</inputoutput>
 
 !</subroutine>
@@ -994,6 +1063,11 @@ contains
     type(t_linsolNode), pointer :: p_rsolverNode
     real(DP), dimension(:), pointer :: p_Dd, p_Dx
     type(t_discreteBC), pointer :: p_rdiscreteBC
+    type(t_lssSolverStat) :: rlocalStat
+   
+    ! Clear statistics
+    call spacesl_clearStatistics (rstatistics)
+    call stat_startTimer (rstatistics%rtotalTime)
    
     ! At first, get a temp vector we can use for creating defects,
     p_rd => rsolver%p_rd
@@ -1021,7 +1095,10 @@ contains
       ! to apply a nonlinear loop.
       
       ! Apply the Newton iteration
-      rsolver%rnewtonParams%nnonlinearIterations = 0
+      rsolver%rnewtonParams%niterations = 0
+      rsolver%rnewtonParams%dresInit = 0.0_DP
+      rsolver%rnewtonParams%dresFinal = 0.0_DP
+
       do while (.true.)
       
         ! -------------------------------------------------------------
@@ -1035,8 +1112,10 @@ contains
         ! -------------------------------------------------------------
         ! Get the nonlinear defect
         ! -------------------------------------------------------------
+        call stat_startTimer (rstatistics%rtimeDefect)
+        
         ! Compute the basic (unpreconditioned) search direction in rd.
-        if (rsolver%rnewtonParams%nnonlinearIterations .eq. 0) then
+        if (rsolver%rnewtonParams%niterations .eq. 0) then
           call smva_getDef_primal (p_rd,&
               rsolver%ispacelevel,rsolver%itimelevel,idofTime,&
               rsolver%p_roperatorAsmHier,rprimalSol,rcontrol,&
@@ -1050,12 +1129,14 @@ contains
               rsolver%p_roperatorAsmHier,rprimalSol,rcontrol,&
               rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(rsolver%ispacelevel),&
               rsolver%rtempData,SPINITCOND_PREVITERATE)
-        end if        
+        end if    
+        
+        call stat_stopTimer (rstatistics%rtimeDefect)    
         
         rsolver%rnewtonParams%dresFinal = &
             lsysbl_vectorNorm(p_rd,rsolver%rnewtonParams%iresNorm)
             
-        if (rsolver%rnewtonParams%nnonlinearIterations .eq. 0) then
+        if (rsolver%rnewtonParams%niterations .eq. 0) then
           ! Remember the initial residual
           rsolver%rnewtonParams%dresInit = rsolver%rnewtonParams%dresFinal
         end if
@@ -1063,7 +1144,7 @@ contains
         if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
           call output_line (&
               trim(sys_si(idofTime-1,8)) // &
-              " " // trim(sys_si(rsolver%rnewtonParams%nnonlinearIterations,4)) // &
+              " " // trim(sys_si(rsolver%rnewtonParams%niterations,4)) // &
               " " // trim(sys_sdEL(rsolver%rnewtonParams%dresFinal,1)) )
         end if
 
@@ -1080,20 +1161,34 @@ contains
         ! -------------------------------------------------------------
         ! Check other stopping criteria
         ! -------------------------------------------------------------
-        if (newtonit_checkIterationStop (rsolver%rnewtonParams)) exit
+        if (newtonit_checkIterationStop (rsolver%rnewtonParams,rsolver%rnewtonParams%niterations)) exit
         
+        ! -------------------------------------------------------------
+        ! Adaptive Newton for the next iteration?
+        ! -------------------------------------------------------------
+        if (rsolver%rnewtonParams%ctypeIteration .eq. 3) then
+          call spaceslh_adNewton_setEps (&
+              rsolver,rsolver%rnewtonParams%radaptiveNewton,&
+              rsolver%rnewtonParams%dresInit,rsolver%rnewtonParams%dresFinal)
+        end if
+      
         ! -------------------------------------------------------------
         ! Preconditioning with the Newton matrix
         ! -------------------------------------------------------------
 
         ! Assemble the matrices/boundary conditions on all levels.
         call spaceslh_initData_primal (rsolver, ierror, idofTime, &
-            rprimalSol,rsolver%ispacelevel)
+            rprimalSol,rsolver%ispacelevel,rstatistics)
         
         ! Solve the system
+        call lss_clearStatistics (rlocalStat)
+        
         output_iautoOutputIndent = output_iautoOutputIndent + 2
-        call lssh_precondDefect (rsolver%p_rlsshierarchy,rsolver%ispacelevel,p_rd)
+        call lssh_precondDefect (&
+            rsolver%p_rlsshierarchy,rsolver%ispacelevel,p_rd,rlocalStat)
         output_iautoOutputIndent = output_iautoOutputIndent - 2
+        
+        call lss_sumStatistics (rlocalStat,rstatistics%rlssSolverStat)
         
         ! -------------------------------------------------------------
         ! Solver-Cleanup
@@ -1131,8 +1226,7 @@ contains
         ! Proceed with the next iteration
         ! -------------------------------------------------------------
         ! Next iteration
-        rsolver%rnewtonParams%nnonlinearIterations = &
-            rsolver%rnewtonParams%nnonlinearIterations + 1
+        rsolver%rnewtonParams%niterations = rsolver%rnewtonParams%niterations + 1
       
       end do
       
@@ -1151,11 +1245,15 @@ contains
       ! -------------------------------------------------------------
       ! Create a defect
       ! -------------------------------------------------------------
+      call stat_startTimer (rstatistics%rtimeDefect)
+      
       call smva_getDef_dual (p_rd,&
           rsolver%ispacelevel,rsolver%itimelevel,idofTime,&
           rsolver%p_roperatorAsmHier,rprimalSol,rdualSol,&
           rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(rsolver%ispacelevel),&
           rsolver%rtempData,csolgeneration)
+      
+      call stat_stopTimer (rstatistics%rtimeDefect)
       
       rsolver%rnewtonParams%dresFinal = &
           lsysbl_vectorNorm(p_rd,rsolver%rnewtonParams%iresNorm)
@@ -1175,13 +1273,18 @@ contains
       ! Assemble the matrices/boundary conditions on all levels.
       ! -------------------------------------------------------------
       call spaceslh_initData_dual (rsolver, ierror, idofTime, &
-          rprimalSol,rsolver%ispacelevel)
+          rprimalSol,rsolver%ispacelevel,rstatistics)
 
       ! -------------------------------------------------------------
       ! Call the linear solver, it does the job for us.
       ! -------------------------------------------------------------
-      call lssh_precondDefect (rsolver%p_rlsshierarchy,rsolver%ispacelevel,p_rd,p_rsolverNode)
+      call lss_clearStatistics (rlocalStat)
+        
+      call lssh_precondDefect (&
+          rsolver%p_rlsshierarchy,rsolver%ispacelevel,p_rd,rlocalStat,p_rsolverNode)
       
+      call lss_sumStatistics (rlocalStat,rstatistics%rlssSolverStat)
+
       ! -------------------------------------------------------------
       ! Solver-Cleanup
       ! -------------------------------------------------------------
@@ -1237,12 +1340,16 @@ contains
       ! -------------------------------------------------------------
       ! Create a defect
       ! -------------------------------------------------------------
+      call stat_startTimer (rstatistics%rtimeDefect)
+      
       call smva_getDef_primalLin (p_rd,&
           rsolver%ispacelevel,rsolver%itimelevel,idofTime,&
           rsolver%p_roperatorAsmHier,rprimalSol,rcontrol,rprimalSolLin,&
           rcontrolLin,rsolver%coptype .eq. OPTP_PRIMALLIN,&
           rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(rsolver%ispacelevel),&
           rsolver%rtempData,csolgeneration)
+          
+      call stat_stopTimer (rstatistics%rtimeDefect)
           
       rsolver%rnewtonParams%dresFinal = &
           lsysbl_vectorNorm(p_rd,rsolver%rnewtonParams%iresNorm)
@@ -1258,52 +1365,61 @@ contains
             " " // trim(sys_sdEL(rsolver%rnewtonParams%dresFinal,1)) )
       end if
 
-      ! -------------------------------------------------------------
-      ! Assemble the matrices/boundary conditions on all levels.
-      ! -------------------------------------------------------------
-      call spaceslh_initData_primalLin (rsolver, ierror, idofTime, &
-          rprimalSol,rsolver%ispacelevel,rsolver%coptype .eq. OPTP_PRIMALLIN)
+      if (rsolver%rnewtonParams%dresFinal .gt. 10.0_DP*SYS_EPSREAL_DP) then
 
-      ! -------------------------------------------------------------
-      ! Call the linear solver, it does the job for us.
-      ! -------------------------------------------------------------
-      call lssh_precondDefect (rsolver%p_rlsshierarchy,rsolver%ispacelevel,p_rd,p_rsolverNode)
+        ! -------------------------------------------------------------
+        ! Assemble the matrices/boundary conditions on all levels.
+        ! -------------------------------------------------------------
+        call spaceslh_initData_primalLin (rsolver, ierror, idofTime, &
+            rprimalSol,rsolver%ispacelevel,rsolver%coptype .eq. OPTP_PRIMALLIN,rstatistics)
+
+        ! -------------------------------------------------------------
+        ! Call the linear solver, it does the job for us.
+        ! -------------------------------------------------------------
+        call lss_clearStatistics (rlocalStat)
+        
+        call lssh_precondDefect (&
+            rsolver%p_rlsshierarchy,rsolver%ispacelevel,p_rd,rlocalStat,p_rsolverNode)
+        
+        call lss_sumStatistics (rlocalStat,rstatistics%rlssSolverStat)
+
+        ! -------------------------------------------------------------
+        ! Solver-Cleanup
+        ! -------------------------------------------------------------
+        call spaceslh_doneData (rsolver)
+
+        ! Get the final residual
+        rsolver%rnewtonParams%dresFinal = p_rsolverNode%dfinalDefect
       
-      ! -------------------------------------------------------------
-      ! Solver-Cleanup
-      ! -------------------------------------------------------------
-      call spaceslh_doneData (rsolver)
+        ! Print the final residual
+        if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
+          call output_line (&
+              trim(sys_si(idofTime-1,8)) // &
+              " " // trim(sys_si(1,4)) // &
+              " " // trim(sys_sdEL(rsolver%rnewtonParams%dresFinal,1)) )
+        end if
 
-      ! Get the final residual
-      rsolver%rnewtonParams%dresFinal = p_rsolverNode%dfinalDefect
-    
-      ! Print the final residual
-      if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
-        call output_line (&
-            trim(sys_si(idofTime-1,8)) // &
-            " " // trim(sys_si(1,4)) // &
-            " " // trim(sys_sdEL(rsolver%rnewtonParams%dresFinal,1)) )
+        ! -------------------------------------------------------------
+        ! Update the control according to the defect
+        !
+        !    u_new  =  u_old  +  g_n
+        ! -------------------------------------------------------------
+
+        call sptivec_getVectorFromPool(rprimalSolLin%p_rvectorAccess,idofTime,p_rx)
+        
+        ! DEBUG!!!
+        call lsysbl_getbase_double (p_rx,p_Dx)
+        
+        call lsysbl_vectorLinearComb (p_rd,p_rx,1.0_DP,1.0_DP)
+
+        ! Implement boundary conditions.
+        ! Use the defect filter since we are in the defect space.
+        call spaceslh_implementBDC (p_rx, SPACESLH_VEC_DEFECT, &
+              rsolver%ispacelevel, rsolver)
+
+        call sptivec_commitVecInPool(rprimalSolLin%p_rvectorAccess,idofTime)
+
       end if
-
-      ! -------------------------------------------------------------
-      ! Update the control according to the defect
-      !
-      !    u_new  =  u_old  +  g_n
-      ! -------------------------------------------------------------
-
-      call sptivec_getVectorFromPool(rprimalSolLin%p_rvectorAccess,idofTime,p_rx)
-      
-      ! DEBUG!!!
-      call lsysbl_getbase_double (p_rx,p_Dx)
-      
-      call lsysbl_vectorLinearComb (p_rd,p_rx,1.0_DP,1.0_DP)
-
-      ! Implement boundary conditions.
-      ! Use the defect filter since we are in the defect space.
-      call spaceslh_implementBDC (p_rx, SPACESLH_VEC_DEFECT, &
-            rsolver%ispacelevel, rsolver)
-
-      call sptivec_commitVecInPool(rprimalSolLin%p_rvectorAccess,idofTime)
 
       ! -------------------------------------------------------------
       ! Clean up boundary conditions
@@ -1325,12 +1441,16 @@ contains
       ! -------------------------------------------------------------
       ! Create a defect
       ! -------------------------------------------------------------
+      call stat_startTimer (rstatistics%rtimeDefect)
+      
       call smva_getDef_dualLin (p_rd,&
           rsolver%ispacelevel,rsolver%itimelevel,idofTime,&
           rsolver%p_roperatorAsmHier,rprimalSol,rdualSol,rprimalSolLin,&
           rdualSolLin,rsolver%coptype .eq. OPTP_DUALLIN,&
           rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(rsolver%ispacelevel),&
           rsolver%rtempData,csolgeneration)
+          
+      call stat_stopTimer (rstatistics%rtimeDefect)
           
       ! Cleanup
       call spaceslh_doneData (rsolver)
@@ -1349,52 +1469,61 @@ contains
             " " // trim(sys_sdEL(rsolver%rnewtonParams%dresFinal,1)) )
       end if
 
-      ! -------------------------------------------------------------
-      ! Assemble the matrices/boundary conditions on all levels.
-      ! -------------------------------------------------------------
-      call spaceslh_initData_dualLin (rsolver, ierror, idofTime, &
-          rprimalSol,rsolver%ispacelevel,rsolver%coptype .eq. OPTP_DUALLIN)
+      if (rsolver%rnewtonParams%dresFinal .gt. 10.0_DP*SYS_EPSREAL_DP) then
 
-      ! -------------------------------------------------------------
-      ! Call the linear solver, it does the job for us.
-      ! -------------------------------------------------------------
-      call lssh_precondDefect (rsolver%p_rlsshierarchy,rsolver%ispacelevel,p_rd,p_rsolverNode)
+        ! -------------------------------------------------------------
+        ! Assemble the matrices/boundary conditions on all levels.
+        ! -------------------------------------------------------------
+        call spaceslh_initData_dualLin (rsolver, ierror, idofTime, &
+            rprimalSol,rsolver%ispacelevel,rsolver%coptype .eq. OPTP_DUALLIN,rstatistics)
+
+        ! -------------------------------------------------------------
+        ! Call the linear solver, it does the job for us.
+        ! -------------------------------------------------------------
+        call lss_clearStatistics (rlocalStat)
+        
+        call lssh_precondDefect (&
+            rsolver%p_rlsshierarchy,rsolver%ispacelevel,p_rd,rlocalStat,p_rsolverNode)
+        
+        call lss_sumStatistics (rlocalStat,rstatistics%rlssSolverStat)
+
+        ! -------------------------------------------------------------
+        ! Solver-Cleanup
+        ! -------------------------------------------------------------
+        call spaceslh_doneData (rsolver)
+
+        ! Get the final residual
+        rsolver%rnewtonParams%dresFinal = p_rsolverNode%dfinalDefect
       
-      ! -------------------------------------------------------------
-      ! Solver-Cleanup
-      ! -------------------------------------------------------------
-      call spaceslh_doneData (rsolver)
+        ! Print the final residual
+        if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
+          call output_line (&
+              trim(sys_si(idofTime-1,8)) // &
+              " " // trim(sys_si(1,4)) // &
+              " " // trim(sys_sdEL(rsolver%rnewtonParams%dresFinal,1)) )
+        end if
 
-      ! Get the final residual
-      rsolver%rnewtonParams%dresFinal = p_rsolverNode%dfinalDefect
-    
-      ! Print the final residual
-      if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
-        call output_line (&
-            trim(sys_si(idofTime-1,8)) // &
-            " " // trim(sys_si(1,4)) // &
-            " " // trim(sys_sdEL(rsolver%rnewtonParams%dresFinal,1)) )
+        ! -------------------------------------------------------------
+        ! Update the control according to the defect
+        !
+        !    u_new  =  u_old  +  g_n
+        ! -------------------------------------------------------------
+
+        call sptivec_getVectorFromPool(rdualSolLin%p_rvectorAccess,idofTime,p_rx)
+
+        ! DEBUG!!!
+        call lsysbl_getbase_double (p_rx,p_Dx)
+        
+        call lsysbl_vectorLinearComb (p_rd,p_rx,1.0_DP,1.0_DP)
+
+        ! Implement boundary conditions.
+        ! Use the defect filter since we are in the defect space.
+        call spaceslh_implementBDC (p_rx, SPACESLH_VEC_DEFECT, &
+              rsolver%ispacelevel, rsolver)
+        
+        call sptivec_commitVecInPool(rdualSolLin%p_rvectorAccess,idofTime)
+
       end if
-
-      ! -------------------------------------------------------------
-      ! Update the control according to the defect
-      !
-      !    u_new  =  u_old  +  g_n
-      ! -------------------------------------------------------------
-
-      call sptivec_getVectorFromPool(rdualSolLin%p_rvectorAccess,idofTime,p_rx)
-
-      ! DEBUG!!!
-      call lsysbl_getbase_double (p_rx,p_Dx)
-      
-      call lsysbl_vectorLinearComb (p_rd,p_rx,1.0_DP,1.0_DP)
-
-      ! Implement boundary conditions.
-      ! Use the defect filter since we are in the defect space.
-      call spaceslh_implementBDC (p_rx, SPACESLH_VEC_DEFECT, &
-            rsolver%ispacelevel, rsolver)
-      
-      call sptivec_commitVecInPool(rdualSolLin%p_rvectorAccess,idofTime)
 
       ! -------------------------------------------------------------
       ! Clean up boundary conditions
@@ -1403,7 +1532,265 @@ contains
 
     end select
 
+    ! Measure the total time
+    call stat_stopTimer (rstatistics%rtotalTime)
+    
   end subroutine
 
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine spaceslh_setEps (rsolver,depsAbs,depsRel)
+  
+!<description>
+  ! Sets the stopping criterion for the use application of the adaptive
+  ! Newton algorithm.
+  !
+  ! WARNING!!! THIS ROUTINE HAS A SIDE EFFECT!
+  ! IT SETS THE STOPPING CRITERION OF ALL SOLVERS IN SPACE TO AN APPROPRIATE
+  ! VALUE! IF THE SPACE SOVLERS AE USED SOMEWHERE ELSE, THE STOPPING CRITERION
+  ! IS LOST AND THUS, THEY MAY BEHAVE NOT AS EXPECTED!!!
+!</description>
+
+!<inputoutput>
+  ! Parameters for the iteration.
+  ! The output parameters are changed according to the iteration.
+  type(t_spaceSolverHierarchy), intent(inout) :: rsolver
+  
+  ! New absolute stopping criterion. Absolute residual.
+  ! =0.0: Switch off the check.
+  real(DP), intent(in) :: depsAbs
+
+  ! New absolute stopping criterion. Relative residual.
+  ! =0.0: Switch off the check.
+  real(DP), intent(in) :: depsRel
+!</inputoutput>
+
+!</subroutine>
+
+    if (rsolver%copType .eq. OPTP_PRIMAL) then
+      
+      ! Forward solver is nonlinear. 
+      ! Modify the stopping criteria of the nonlinear solver.
+      rsolver%rnewtonParams%depsRel = depsRel
+      rsolver%rnewtonParams%depsAbs = depsAbs
+    
+    else
+
+      ! Set the eps of the preconditioner.
+      call spaceslh_setEps_prec (rsolver,depsAbs,depsRel)
+
+    end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine spaceslh_setEps_prec (rsolver,depsAbs,depsRel)
+  
+!<description>
+  ! Sets the stopping criterion of the preconditioner for the use 
+  ! application of the adaptive Newton algorithm.
+  !
+  ! WARNING!!! THIS ROUTINE HAS A SIDE EFFECT!
+  ! IT SETS THE STOPPING CRITERION OF ALL SOLVERS IN SPACE TO AN APPROPRIATE
+  ! VALUE! IF THE SPACE SOVLERS AE USED SOMEWHERE ELSE, THE STOPPING CRITERION
+  ! IS LOST AND THUS, THEY MAY BEHAVE NOT AS EXPECTED!!!
+!</description>
+
+!<inputoutput>
+  ! Parameters for the iteration.
+  ! The output parameters are changed according to the iteration.
+  type(t_spaceSolverHierarchy), intent(inout) :: rsolver
+  
+  ! New absolute stopping criterion. Absolute residual.
+  ! =0.0: Switch off the check.
+  real(DP), intent(in) :: depsAbs
+
+  ! New absolute stopping criterion. Relative residual.
+  ! =0.0: Switch off the check.
+  real(DP), intent(in) :: depsRel
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    integer :: ilev
+    type(t_linsolSpace), pointer :: p_rlinsol
+
+    ! Loop through all levels
+    do ilev = rsolver%p_rlssHierarchy%nlmin,rsolver%p_rlssHierarchy%nlmax
+    
+      ! Get the space solver
+      p_rlinsol => rsolver%p_rlssHierarchy%p_RlinearSolvers(ilev)
+      
+      ! Solver type?
+      select case (p_rlinsol%isolverType)
+      
+      ! ------------------------------
+      ! UMFPACK. Nothing to do.
+      ! ------------------------------
+      case (LSS_LINSOL_UMFPACK)
+
+      ! -------------------------------
+      ! Multigrid
+      ! -------------------------------
+      case (LSS_LINSOL_MG)
+      
+        ! Modify the stopping criterion of the solver.
+        p_rlinsol%p_rsolverNode%depsRel = depsRel
+        p_rlinsol%p_rsolverNode%depsAbs = depsAbs
+        
+      case default
+        call output_line ("Unknown solver in space.", &
+            OU_CLASS_ERROR,OU_MODE_STD,"spaceslh_adNewton_setEps")
+        call sys_halt()
+        
+      end select
+    
+    end do
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine spaceslh_adNewton_setEps (rsolver,radNewtonParams,dresInit,dresLastIte)
+  
+!<description>
+  ! Realises the adaptive Newton algorithm. Sets the stopping criterions of
+  ! all solvers to appropriate values.
+  !
+  ! WARNING!!! THIS ROUTINE HAS A SIDE EFFECT!
+  ! IT SETS THE STOPPING CRITERION OF ALL SOLVERS IN SPACE TO AN APPROPRIATE
+  ! VALUE! IF THE SPACE SOVLERS AE USED SOMEWHERE ELSE, THE STOPPING CRITERION
+  ! IS LOST AND THUS, THEY MAY BEHAVE NOT AS EXPECTED!!!
+!</description>
+
+!<input>
+  ! Parameters of the adaptive Newton algotithm.
+  type(t_ccDynamicNewtonControl), intent(in) :: radNewtonParams
+  
+  ! Initial residual.
+  ! May be set to 0.0 if there is no initial residual.
+  real(DP), intent(in) :: dresInit
+  
+  ! Residual obtained in the last nonlinear iteration.
+  ! In the first call, this should be set to dresInit.
+  real(DP), intent(in) :: dresLastIte
+!</input>
+
+!<inputoutput>
+  ! Parameters for the Newton iteration.
+  ! The output parameters are changed according to the iteration.
+  type(t_spaceSolverHierarchy), intent(inout) :: rsolver
+!</inputoutput>
+
+!</subroutine>
+
+    real(DP) :: depsAbs,depsRel,ddigitsGained, ddigitsToGain
+    
+    if ((dresInit .eq. 0.0_DP) .and. (dresLastIte .eq. 0.0_DP)) then
+      
+      ! Gain two digits for the initial residual, that is enough
+      depsAbs = 0.0_DP
+      depsRel = 1.0E-2_DP
+      
+      if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
+        call output_line ("Adaptive Newton: New stopping criterion. ||res_rel|| < "//&
+            trim(sys_sdEL(depsRel,10)))
+      end if
+
+    else
+    
+      ! We have to determine a new dresAbs for all solver components:
+      ! - At least, gain as many digits as configured in the adaptive-Newton 
+      !   structure has to be gained
+      ! - The number of digits to gain in the next iteration has to be an
+      !   appropriate multiple of the digits already gained.
+      ! So...
+      
+      ddigitsGained = dresLastIte/dresInit
+      
+      ddigitsToGain = min(radNewtonParams%dinexactNewtonEpsRel*ddigitsGained,&
+          ddigitsGained ** radNewtonParams%dinexactNewtonExponent)
+          
+      depsRel = 0.0_DP
+      depsAbs = max(dresInit * ddigitsToGain,radNewtonParams%dinexactNewtonEpsAbs)
+      
+      if (rsolver%rnewtonParams%ioutputLevel .ge. 3) then
+        call output_line ("Adaptive Newton: New stopping criterion. ||res|| < "//&
+            trim(sys_sdEL(depsAbs,10)))
+      end if
+    end if
+    
+    ! Initialise the nonlinear and linear solver in space which are used
+    ! for the calvulation of the current residual.
+    call spaceslh_setEps_prec (rsolver,depsAbs,depsRel)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine spacesl_clearStatistics(rstatistics)
+  
+!<description>
+  ! Resets a statistic structure.
+!</description>
+
+!<inputoutput>
+  ! Structure to be reset.
+  type(t_spaceslSolverStat), intent(inout) :: rstatistics
+!</inputoutput>
+
+!</subroutine>
+
+    rstatistics%niterations = 0
+    
+    call stat_clearTimer(rstatistics%rtotalTime)
+    call stat_clearTimer(rstatistics%rtimeDefect)
+    call stat_clearTimer(rstatistics%rtimeMatrixAssembly)
+    
+    call lss_clearStatistics (rstatistics%rlssSolverStat)
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine spacesl_sumStatistics(rstatistics1,rstatistics2)
+  
+!<description>
+  ! Sums up the data of rstatistics1 to the data in rstatistics2.
+!</description>
+
+!<input>
+  ! Source structure
+  type(t_spaceslSolverStat), intent(in) :: rstatistics1
+!</input>
+
+!<inputoutput>
+  ! Destination structure.
+  type(t_spaceslSolverStat), intent(inout) :: rstatistics2
+!</inputoutput>
+
+!</subroutine>
+
+    rstatistics2%niterations = rstatistics2%niterations + rstatistics1%niterations
+    
+    call stat_addTimers(rstatistics1%rtotalTime,rstatistics2%rtotalTime)
+    call stat_addTimers(rstatistics1%rtimeDefect,rstatistics2%rtimeDefect)
+    call stat_addTimers(rstatistics1%rtimeMatrixAssembly,rstatistics2%rtimeMatrixAssembly)
+    
+    call lss_sumStatistics (rstatistics1%rlssSolverStat,rstatistics2%rlssSolverStat)
+
+  end subroutine
 
 end module
