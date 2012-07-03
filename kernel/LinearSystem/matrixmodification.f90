@@ -1332,13 +1332,13 @@ contains
       if (icoldiff .gt. 0) then
 
         ! Check, if matrix is not a copy of another matrix or if resize is to be enforced
-        if (iand(rmatrix%imatrixSpec, LSYSSC_MSPEC_STRUCTUREISCOPY)) then
+        if (iand(rmatrix%imatrixSpec, LSYSSC_MSPEC_STRUCTUREISCOPY) .ne. 0) then
           call output_line("A copied matrix cannot be modified!",&
               OU_CLASS_ERROR,OU_MODE_STD,"mmod_expandToFullRow")
             call sys_halt()
         end if
 
-        if (iand(rmatrix%imatrixSpec, LSYSSC_MSPEC_CONTENTISCOPY)) then
+        if (iand(rmatrix%imatrixSpec, LSYSSC_MSPEC_CONTENTISCOPY) .ne. 0) then
           call output_line("A copied matrix cannot be modified!",&
               OU_CLASS_ERROR,OU_MODE_STD,"mmod_expandToFullRow")
             call sys_halt()
