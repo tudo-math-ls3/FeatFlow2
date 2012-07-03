@@ -109,6 +109,10 @@
 !#      -> Linear filter
 !#      -> Normalise a subvector to have an l1 vector sum = 0.
 !#
+!# 12.) vecfil_OneEntryZero (rx,iblock,irow)
+!#      -> Linear filter
+!#      -> Replace one entry(row) of a subvector with zero.
+!#
 !# Auxiliary routines, usually not called by the main program:
 !#
 !#  1.) vecfil_imposeDirichletBC
@@ -133,7 +137,6 @@
 !#
 !#  7.) vecfil_normaliseSmallL1To0Sca (rx)
 !#      -> Normalise a scalar vector to have an l1 vector sum = 0.
-!#
 !# </purpose>
 !##############################################################################
 
@@ -179,6 +182,7 @@ module vectorfilters
   public :: vecfil_imposePressureDropBC
   public :: vecfil_imposeNLSlipDefectBC
   public :: vecfil_normaliseSmallL1To0Sca
+  public :: vecfil_OneEntryZero
 
 contains
 
@@ -1059,6 +1063,47 @@ contains
     do ieq = 1,rx%NEQ
       p_Ddata(ieq) = p_Ddata(ieq) - dsum
     end do
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine vecfil_OneEntryZero (rx,iblock,irow)
+
+!<description>
+  ! This routine puts a zero on the entry 'irow' of
+  ! the given block 'iblock' of the vector 'rx'
+!</description>
+
+!<inputoutput>
+  ! The vector which is to be filtered.
+  type(t_vectorBlock), intent(inout),target :: rx
+!</inputoutput>
+
+
+!<input>
+  ! The entry of the vector 'rx' which is set to zero
+  integer, intent(in) :: irow
+  
+  ! The block of the vector 'rx' which will be modified
+  integer, intent(in) :: iblock
+!</input>
+
+!</subroutine>
+
+    real(DP), dimension(:), pointer :: p_Ddata
+
+    if ((iblock .le. 0) .or. (iblock .gt. size(rx%RvectorBlock))) then
+      call output_line('isubvector out of allowed range!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_OneEntryZero')
+      call sys_halt()
+    end if
+
+    ! Get the data and replace the entry 'irow' with ZERO
+    call lsyssc_getbase_double (rx%RvectorBlock(iblock),p_Ddata)
+    p_Ddata(irow) = 0.0_DP
 
   end subroutine
 

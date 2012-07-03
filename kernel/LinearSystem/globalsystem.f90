@@ -22,6 +22,7 @@ module globalsystem
   use storage
   use linearsystemscalar
   use linearsystemblock
+  use linearalgebra
 
   implicit none
 
@@ -886,15 +887,15 @@ contains
             ioffsetLocal  = p_Kld(irow)
 
             ! Copy matrix data and the column numbers
-            p_DaDest(ioffsetGlobal:ioffsetGlobal+ncols-1) = &
-              dscale * p_Da(ioffsetLocal:ioffsetLocal+ncols-1)
-            p_KcolDest(ioffsetGlobal:ioffsetGlobal+ncols-1) = &
-              p_Kcol(ioffsetLocal:ioffsetLocal+ncols-1)
+            call lalg_vectorLinearComb(p_Da(ioffsetLocal:ioffsetLocal+ncols-1),&
+                p_DaDest(ioffsetGlobal:ioffsetGlobal+ncols-1),dscale,0.0_DP)
+            call lalg_copyVector(p_Kcol(ioffsetLocal:ioffsetLocal+ncols-1),&
+                p_KcolDest(ioffsetGlobal:ioffsetGlobal+ncols-1))
 
             ! Increase the column numbers by the global column number
             ! of that matrix-block-column
-            p_KcolDest(ioffsetGlobal:ioffsetGlobal+ncols-1) = &
-              p_KcolDest(ioffsetGlobal:ioffsetGlobal+ncols-1) + Icolumns(j)-1
+            call lalg_vectorAddScalar (&
+                p_KcolDest(ioffsetGlobal:ioffsetGlobal+ncols-1),Icolumns(j)-1)
 
             ! Increase the counter/index position array for how
             ! many elements are added to that row.

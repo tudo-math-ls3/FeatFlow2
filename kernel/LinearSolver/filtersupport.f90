@@ -176,6 +176,9 @@ module filtersupport
   ! Vector filter for bringing the vector sum (small l1-norm) to mean value 0.
   integer, parameter, public :: FILTER_SMALLL1TO0        =  10
 
+  ! Vector filter for replacing one entry of a subvector with zero.
+  integer, parameter, public :: FILTER_ONEENTRY0         =  11
+
 !</constantblock>
 
 !</constants>
@@ -201,6 +204,14 @@ module filtersupport
     ! Information tag for the SMALLL1TOL0 filter if ifilterType=FILTER_SMALLL1TO0:
     ! Number of the subvector that should be filtered.
     integer                            :: ismallL1to0component = 0
+    
+    ! Information tag for the ONEENTRY0 filter if ifilterType=FILTER_ONEENTRY0:
+    ! Number of the subvector that should be filtered.
+    integer                            :: iblock = 0
+    
+    ! Information tag for the ONEENTRY0 filter if ifilterType=FILTER_ONEENTRY0:
+    ! Number of the entry (row) of the subvector that should be filtered.    
+    integer                            :: irow = 0
 
   end type
 
@@ -288,6 +299,11 @@ contains
       case (FILTER_SMALLL1TO0)
         ! Bring the subvector itoL20component of rx to the space <tex>$L^2_0$</tex>:
         call vecfil_subvectorSmallL1To0 (rx,RfilterChain(i)%ismallL1to0component)
+
+      case (FILTER_ONEENTRY0)
+        ! Replace the entry 'irow' of the subvector 'iblock' of rx with zero
+        call vecfil_OneEntryZero (rx,RfilterChain(i)%iblock,&
+                                           RfilterChain(i)%irow)
 
       case default
         call output_line ('Unknown filter.', OU_CLASS_WARNING, OU_MODE_STD, &

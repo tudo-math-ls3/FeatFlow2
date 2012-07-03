@@ -28,6 +28,10 @@
 !#
 !# 6.) mmod_expandToFullRow
 !#     -> Expands one row of a matrix to a full row
+!#
+!# 7.) mmod_replaceLineByLumpedMass
+!#     -> Replaces one row of a matrix by the entries of the lumped mass
+!#        matrix.
 !# </purpose>
 !##############################################################################
 
@@ -51,7 +55,8 @@ module matrixmodification
   public :: mmod_mergeLines
   public :: mmod_replaceLinesByUnitBlk
   public :: mmod_expandToFullRow
-
+  public :: mmod_replaceLineByLumpedMass
+  
 contains
 
   ! ***************************************************************************
@@ -1300,16 +1305,11 @@ contains
     ! local variables
     integer, dimension(:), pointer :: p_Kld,p_Kcol,p_Kdiagonal
     real(DP), dimension(:), pointer :: p_Da
-    integer :: ncol,icoldiff
-
-    ! Check, if matrix is not a copy of another matrix or if resize is to be enforced
-    if (iand(rmatrix%imatrixSpec, LSYSSC_MSPEC_STRUCTUREISCOPY) .ne. 0 .or.&
-        iand(rmatrix%imatrixSpec, LSYSSC_MSPEC_CONTENTISCOPY)   .ne. 0) then
-      call output_line("A copied matrix cannot be modified!",&
-          OU_CLASS_ERROR,OU_MODE_STD,"mmod_expandToFullRow")
-        call sys_halt()
-    end if
-
+    integer :: ncol,icoldiff,i,j,k
+    
+    real(DP), dimension(:), allocatable :: Da
+    integer, dimension(:), allocatable :: col
+    
     if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) then
       call output_line("Virtually transposed matrices not supported!",&
           OU_CLASS_ERROR,OU_MODE_STD,"mmod_expandToFullRow")
@@ -1328,18 +1328,39 @@ contains
       call lsyssc_getbase_Kld (rmatrix,p_Kld)
       ncol = p_Kld(irow+1)-p_Kld(irow)
       icoldiff = rmatrix%NCOLS - ncol
-
+      
       if (icoldiff .gt. 0) then
 
-        ! We have to expand; reallocate memory.
+        ! Check, if matrix is not a copy of another matrix or if resize is to be enforced
+        if (iand(rmatrix%imatrixSpec, LSYSSC_MSPEC_STRUCTUREISCOPY)) then
+          call output_line("A copied matrix cannot be modified!",&
+              OU_CLASS_ERROR,OU_MODE_STD,"mmod_expandToFullRow")
+            call sys_halt()
+        end if
 
+        if (iand(rmatrix%imatrixSpec, LSYSSC_MSPEC_CONTENTISCOPY)) then
+          call output_line("A copied matrix cannot be modified!",&
+              OU_CLASS_ERROR,OU_MODE_STD,"mmod_expandToFullRow")
+            call sys_halt()
+        end if
+
+        ! We have to expand; reallocate memory.
+        
+        allocate(Da(ncol))
+        allocate(Col(ncol))
+      
+        call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
+        call lsyssc_getbase_double (rmatrix,p_Da)
+        Col = p_Kcol(p_Kld(irow):p_Kld(irow+1)-1)
+        Da = p_Da(p_Kld(irow):p_Kld(irow+1)-1)
+        
         call storage_realloc ("mmod_expandToFullRow",&
             rmatrix%NA+icoldiff,rmatrix%h_Kcol,ST_NEWBLOCK_NOINIT)
 
         ! Restructure the Kcol array, move the data.
         call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
-        call copyVectorInt (p_Kcol(p_Kld(irow+1):p_Kld(rmatrix%NEQ+1)),&
-            p_Kcol(p_Kld(irow+1)+icoldiff:p_Kld(rmatrix%NEQ+1)+icoldiff))
+        call copyVectorInt (p_Kcol(p_Kld(irow+1):p_Kld(rmatrix%NEQ+1)-1),&
+            p_Kcol(p_Kld(irow+1)+icoldiff:p_Kld(rmatrix%NEQ+1)+icoldiff-1))
 
         ! Restructure the data if there is any
         if (lsyssc_hasMatrixContent(rmatrix)) then
@@ -1355,14 +1376,14 @@ contains
 
           ! Move the data
           call lsyssc_getbase_double (rmatrix,p_Da)
-          call copyVectorDble (p_Da(p_Kld(irow+1):p_Kld(rmatrix%NEQ+1)),&
-              p_Da(p_Kld(irow+1)+icoldiff:p_Kld(rmatrix%NEQ+1)+icoldiff))
+          call copyVectorDble (p_Da(p_Kld(irow+1):p_Kld(rmatrix%NEQ+1)-1),&
+              p_Da(p_Kld(irow+1)+icoldiff:p_Kld(rmatrix%NEQ+1)+icoldiff-1))
 
         end if
 
         ! Restructure the Kld array.
         call lalg_vectorAddScalar(p_Kld(irow+1:rmatrix%NEQ+1),icoldiff)
-
+        
         ! Restructure the Kdiagonal array.
         ! icoldiff must be added to the entry of row irow+1,... end,
         ! and the entry of row irow has to be calculated appropriately.
@@ -1370,6 +1391,41 @@ contains
         call lalg_vectorAddScalar(p_Kdiagonal(irow+1:rmatrix%NEQ+1),icoldiff)
         p_Kdiagonal(irow) = p_Kld(irow) + irow - 1
 
+        ! Take care of the column structure (p_Kcol) of the row number 'irow'
+        ! Since we have a full row in 'irow' then, the p_Kcol array
+        ! for this row, simply starts from 1 to rmatrix%NCOLS
+        i = p_Kld(irow)-1
+        do j=1,p_Kld(irow+1)-p_Kld(irow)
+          p_Kcol(j+i) = j
+        end do
+        
+        ! Initialise the new line with zero,
+        ! Copy the entries from the old line into the new line.
+        if (lsyssc_hasMatrixContent(rmatrix)) then
+        
+          ! Initialise with zero
+          do j=p_Kld(irow), p_Kld(irow+1)-1
+            p_Da(j) = 0.0_DP
+          end do
+
+          ! Take care of the matrix data (p_Da) of the row number 'irow'
+          ! Keep the original values      
+          k = p_Kld(irow)-1
+          do i=1,ncol
+            do j=k+1,p_Kld(irow+1)-1
+              if (Col(i) .eq. p_Kcol(j)) then
+                p_Da(j) = Da(i)
+                k = j
+                exit
+              end if
+            end do
+          end do
+          
+        end if
+                
+        deallocate(Col)
+        deallocate(Da)
+        
         ! Fix the matrix size
         rmatrix%NA = rmatrix%NA+icoldiff
 
@@ -1454,6 +1510,102 @@ contains
 
     end subroutine
 
+  end subroutine
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine mmod_replaceLineByLumpedMass (rmatrix,irow,rmassMatrix)
+
+!<description>
+  ! Replace all the elements of the row number 'irow' of 'rmatrix' 
+  ! by the values of the lumped mass matrix.
+  ! The routine could be used to implement the
+  ! zero mean value constraint.
+  !
+  ! REMARK: If necessary, the structure of the matrix is automatically
+  ! extended to be able to hold the complete irow-th row!
+!</description>
+
+!<input>
+  ! Row number of a row to be expanded to a full row and
+  ! replaced by the diagonal values of rMassMatrix
+  integer, intent(in) :: irow
+
+  ! The lumped mass matrix.
+  type(t_matrixScalar), intent(in) :: rmassMatrix
+!</input>
+
+!<inputoutput>
+  ! The matrix which is to be modified.
+  type(t_matrixScalar), intent(inout) :: rmatrix
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    integer, dimension(:), pointer :: p_KdiagMass,p_Kld
+    real(DP), dimension(:), pointer :: p_Da,p_DaMass
+    integer :: i,j
+    
+    ! Matrices must have the same size
+    if (rmatrix%NEQ .ne. rmassMatrix%NEQ) then
+      call output_line('Matrices not compatible, different size!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'mmod_replaceLineByLumpedMass')
+      call sys_halt()
+    end if    
+    
+    ! First expand row number 'irow' of the 'rmatrix' to a full row
+    call mmod_expandToFullRow (rmatrix,irow)
+    
+    select case (rmatrix%cmatrixFormat)
+    
+    case (LSYSSC_MATRIX9)
+      ! Check the format of our lumped mass matrix 'rMassMatrix'
+      select case (rmassMatrix%cmatrixFormat)
+
+      case (LSYSSC_MATRIX9)
+        ! CSR format.
+
+        ! Get the diagonal structure and values of the lumped mass matrix
+        call lsyssc_getbase_double (rmassMatrix,p_DaMass)
+        call lsyssc_getbase_Kdiagonal (rmassMatrix,p_KdiagMass)
+        
+        ! Get the row structure and data of the rmatrix
+        call lsyssc_getbase_Kld (rmatrix,p_Kld)      
+        call lsyssc_getbase_double (rmatrix,p_Da)      
+        
+        j = p_Kld(irow)-1
+        do i = p_Kld(irow), p_Kld(irow+1)-1
+          p_Da(i) = p_DaMass(p_KdiagMass(i-j))
+        end do
+
+      case (LSYSSC_MATRIXD)
+        ! Diagonal format
+        
+        ! Get the diagonal values of the lumped mass matrix
+        call lsyssc_getbase_double (rmassMatrix,p_DaMass)
+        
+        ! Get the row structure and data of the rmatrix
+        call lsyssc_getbase_Kld (rmatrix,p_Kld)      
+        call lsyssc_getbase_double (rmatrix,p_Da)
+        call lalg_copyVector (p_DaMass(:),p_Da(p_Kld(irow):p_Kld(irow+1)-1))
+        
+      case default
+        call output_line("Unsupported mass matrix format!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"mmod_replaceLineByLumpedMass")
+        call sys_halt()
+        
+      end select
+      
+    case default
+      call output_line("Unsupported destination matrix format!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"mmod_replaceLineByLumpedMass")
+      call sys_halt()
+
+    end select
+    
   end subroutine
 
 end module matrixmodification

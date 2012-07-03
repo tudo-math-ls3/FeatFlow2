@@ -409,6 +409,7 @@ contains
 
       ! Check whether we support the discretisation.
       if((celemV .eq. EL_Q1T) .and. (celemP .eq. EL_Q0)) cycle
+      if((celemV .eq. EL_Q2) .and. (celemP .eq. EL_QP1)) cycle
 
       ! $TODO$: Check whether the element combination matches your new Vanka
       !         implementation and, if so, cycle the loop to avoid that the
@@ -495,7 +496,7 @@ contains
 
         ! Q1~/Q0 discretisation
 
-        ! Which VANKA subtype do we have? The diagonal VANKA of the full VANKA?
+        ! Which VANKA subtype do we have? The diagonal VANKA or the full VANKA?
         select case (rvanka%csubtype)
         case (VANKATP_NAVST2D_DIAG)
           ! Call the jacobi-style vanka
@@ -514,8 +515,26 @@ contains
           end if
 
         case default
-          call output_line ('Unknown Vanka subtype!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'vanka_NavierStokes2D')
+          call output_line ("Unknown Vanka subtype!",&
+              OU_CLASS_ERROR,OU_MODE_STD,"vanka_NavierStokes2D")
+          call sys_halt()
+
+        end select
+
+      else if ((celemV .eq. EL_Q2) .and. (celemP .eq. EL_QP1)) then
+
+        ! Q2/QP1 discretisation
+
+        ! Which VANKA subtype do we have? The diagonal VANKA or the full VANKA?
+        select case (rvanka%csubtype)
+        case (VANKATP_NAVST2D_DIAG)
+          ! Call the jacobi-style vanka
+          call vanka_NS2D_Q2QP1_js(rvanka, rsol, rrhs, niterations, &
+                                   domega, p_IelementList)
+
+        case default
+          call output_line ("Unknown Vanka subtype!",&
+              OU_CLASS_ERROR,OU_MODE_STD,"vanka_NavierStokes2D")
           call sys_halt()
 
         end select
@@ -826,6 +845,496 @@ contains
           ! Get all DOFs for this element
           IdofV(:) = p_IedgesAtElement(:,iel)
           IdofP(1) = iel
+
+          ! First of all, fetch the local RHS
+          do i = 1, ndofV
+            Df1(i) = p_DrhsU(IdofV(i))   ! f_u
+            Df2(i) = p_DrhsV(IdofV(i))   ! f_v
+          end do
+          do i = 1, ndofP
+            Dfp(i) = p_DrhsP(IdofP(i))    ! f_p
+          end do
+
+          ! Let us update the local RHS vector by subtracting A*u from it:
+          ! f_u := f_u - A11*u
+          ! f_v := f_v - A22*v
+          do k = 1, ndofV
+            i1 = p_KldA(IdofV(k))
+            i2 = p_KldA(IdofV(k)+1)-1
+            daux1 = 0.0_DP
+            daux2 = 0.0_DP
+            do i = i1, i2
+              j = p_KcolA(i)
+              daux1 = daux1 + p_DA11(i)*p_DvecU(j)
+              daux2 = daux2 + p_DA22(i)*p_DvecV(j)
+            end do
+            Df1(k) = Df1(k) - Dmult(1,1)*daux1
+            Df2(k) = Df2(k) - Dmult(2,2)*daux2
+            ! Get the main diagonal entries
+            j = p_KdiagA(IdofV(k))
+            Da1(k) = Dmult(1,1)*p_DA11(j)
+            Da2(k) = Dmult(2,2)*p_DA22(j)
+          end do
+
+          ! What about A12/A21?
+          if(bHaveA12) then
+            ! f_u := f_u - A12*v
+            ! f_v := f_v - A21*u
+            do k = 1, ndofV
+              i1 = p_KldA12(IdofV(k))
+              i2 = p_KldA12(IdofV(k)+1)-1
+              daux1 = 0.0_DP
+              daux2 = 0.0_DP
+              do i = i1, i2
+                j = p_KcolA12(i)
+                daux1 = daux1 + p_DA12(i)*p_DvecV(j)
+                daux2 = daux2 + p_DA21(i)*p_DvecU(j)
+              end do
+              Df1(k) = Df1(k) - Dmult(1,2)*daux1
+              Df2(k) = Df2(k) - Dmult(2,1)*daux2
+            end do
+          end if
+
+          ! Now we also need to subtract B*p from our RHS, and by the same time,
+          ! we will build the local B matrices.
+          ! f_u := f_u - B1*p
+          ! f_v := f_v - B2*p
+          do k = 1, ndofV
+            i1 = p_KldB(IdofV(k))
+            i2 = p_KldB(IdofV(k)+1)-1
+            daux1 = 0.0_DP
+            daux2 = 0.0_DP
+            do i = i1, i2
+              j = p_KcolB(i)
+              daux = p_DvecP(j)
+              daux1 = daux1 + p_DB1(i)*daux
+              daux2 = daux2 + p_DB2(i)*daux
+              do l = 1, ndofP
+                if(j .eq. IdofP(l)) then
+                  Db1(k,l) = Dmult(1,3)*p_DB1(i)
+                  Db2(k,l) = Dmult(2,3)*p_DB2(i)
+                  exit
+                end if
+              end do
+            end do
+            Df1(k) = Df1(k) - Dmult(1,3)*daux1
+            Df2(k) = Df2(k) - Dmult(2,3)*daux2
+          end do
+
+          ! Now we also need to subtract D*u from our RHS, and by the same time,
+          ! we will build the local D matrices.
+          ! f_p := f_p - D1*u - D2*v
+          do k = 1, ndofP
+            i1 = p_KldD(IdofP(k))
+            i2 = p_KldD(IdofP(k)+1)-1
+            daux1 = 0.0_DP
+            daux2 = 0.0_DP
+            do i = i1, i2
+              j = p_KcolD(i)
+              daux1 = daux1 + p_DD1(i)*p_DvecU(j)
+              daux2 = daux2 + p_DD2(i)*p_DvecV(j)
+              do l = 1, ndofV
+                if(j .eq. IdofV(l)) then
+                  Dd1(k,l) = Dmult(3,1)*p_DD1(i)
+                  Dd2(k,l) = Dmult(3,2)*p_DD2(i)
+                  exit
+                end if
+              end do
+            end do
+            Dfp(k) = Dfp(k) - Dmult(3,1)*daux1 - Dmult(3,2)*daux2
+          end do
+
+          ! Do we have a C-matrix?
+          if(bHaveC) then
+            ! Yes, so update the local RHS
+            ! f_p := f_p - C*p
+            do k = 1, ndofP
+              i1 = p_KldC(IdofP(k))
+              i2 = p_KldC(IdofP(k)+1)-1
+              daux1 = 0.0_DP
+              do i = i1, i2
+                daux1 = daux1 + p_DC(i)*p_DvecP(p_KcolC(i))
+              end do
+              Dfp(k) = Dfp(k) - Dmult(3,3)*daux1
+              ! Get the main diagonal entry of C
+              Dc(k) = Dmult(3,3)*p_DC(p_KdiagC(IdofP(k)))
+            end do
+          end if
+
+          ! Invert A1 and A2
+          do i = 1, ndofV
+            Da1(i) = 1.0_DP / Da1(i)
+            Da2(i) = 1.0_DP / Da2(i)
+          end do
+
+          ! Precalculate D * A^-1
+          do i = 1, ndofV
+            do j = 1, ndofP
+              Dd1(j,i) = Dd1(j,i)*Da1(i)
+              Dd2(j,i) = Dd2(j,i)*Da2(i)
+            end do
+          end do
+
+          ! Calculate Schur-Complement of A
+          ! S := -C + D * A^-1 * B
+          do j = 1, ndofP
+            Ds(j) = -Dc(j)
+            do i = 1, ndofV
+              Ds(j) = Ds(j) + Dd1(j,i)*Db1(i,j) &
+                            + Dd2(j,i)*Db2(i,j)
+            end do
+          end do
+
+          ! Calculate pressure
+          ! p := S^-1 * (D * A^-1 * f_u - f_p)
+          do j = 1, ndofP
+            daux = -Dfp(j)
+            do i = 1, ndofV
+              daux = daux + Dd1(j,i)*Df1(i) &
+                          + Dd2(j,i)*Df2(i)
+            end do
+            Dup(j) = daux / Ds(j)
+          end do
+
+          ! Calculate X- and Y-velocity
+          do i = 1, ndofV
+            do j = 1, ndofP
+              Df1(i) = Df1(i) - Db1(i,j)*Dup(j)
+              Df2(i) = Df2(i) - Db2(i,j)*Dup(j)
+            end do
+            Du1(i) = Da1(i)*Df1(i)
+            Du2(i) = Da2(i)*Df2(i)
+          end do
+
+          ! Incorporate our local solution into the global one.
+          do i = 1, ndofV
+            j = IdofV(i)
+            p_DvecU(j) = p_DvecU(j) + domega * Du1(i)
+            p_DvecV(j) = p_DvecV(j) + domega * Du2(i)
+          end do
+          do i = 1, ndofP
+            j = IdofP(i)
+            p_DvecP(j) = p_DvecP(j) + domega * Dup(i)
+          end do
+
+        end do ! ielidx
+
+      end do ! iter
+
+    end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine vanka_NS2D_Q2QP1_js(rvanka, rsol, rrhs, niterations, domega, &
+                                 IelementList)
+
+!<description>
+  ! Performs a desired number of iterations of the Vanka solver for
+  ! 2D Navier-Stokes problem, 'diagonal' variant for Q2/QP1 discretisations.
+!</description>
+
+!<input>
+  ! t_vanka_NavSt2D structure that saves algorithm-specific parameters.
+  type(t_vanka_NavSt2D), intent(in) :: rvanka
+
+  ! The right-hand-side vector of the system
+  type(t_vectorBlock), intent(in) :: rrhs
+
+  ! The number of iterations that are to be performed
+  integer, intent(in) :: niterations
+
+  ! Relaxation parameter.
+  real(DP), intent(in) :: domega
+
+  ! A list of element numbers where Vanka should be applied to.
+  integer, dimension(:), intent(in) :: IelementList
+!</input>
+
+!<inputoutput>
+  ! The iteration vector that is to be updated.
+  type(t_vectorBlock), intent(inout) :: rsol
+!</inputoutput>
+
+!</subroutine>
+
+  ! How many local DOFs do we have?
+  integer, parameter :: ndofV = 9   ! Dofs per velocity
+  integer, parameter :: ndofP = 3   ! Dofs per pressure
+  integer, parameter :: ndof = 2*ndofV+ndofP
+
+  ! Triangulation information
+  type(t_triangulation), pointer :: p_rtria
+  integer, dimension(:,:), pointer :: p_IedgesAtElement
+  integer, dimension(:,:), pointer :: p_IverticesAtElement
+
+  ! DOF-mapping arrays
+  integer, dimension(ndofV) :: IdofV
+  integer, dimension(ndofP) :: IdofP
+
+  ! Variables for the local system
+  real(DP), dimension(ndofV) :: Da1, Da2, Du1, Du2, Df1, Df2
+  real(DP), dimension(ndofV,ndofP) :: Db1, Db2
+  real(DP), dimension(ndofP,ndofV) :: Dd1, Dd2
+  real(DP), dimension(ndofP) :: Ds, Dc, Dup, Dfp
+
+  ! Multiplication factors
+  real(DP), dimension(3,3) :: Dmult
+
+  ! Quick access for the matrix arrays
+  integer, dimension(:), pointer :: p_KldA,p_KldA12,p_KldB,p_KldC,p_KldD,&
+      p_KcolA,p_KcolA12,p_KcolB,p_KcolC,p_KcolD,p_KdiagA,p_KdiagC
+  real(DP), dimension(:), pointer :: p_DA11,p_DA12,p_DA21,p_DA22,p_DB1,p_DB2,&
+      p_DD1,p_DD2,p_DC
+
+  ! Data arrays of vectors
+  real(DP), dimension(:), pointer :: p_DrhsU,p_DrhsV,p_DrhsP,&
+                                     p_DvecU,p_DvecV,p_DvecP
+
+  ! local variables
+  integer :: i,j,iel,ielidx,i1,i2,k,l,iter,nvt,nmt,nel
+  real(DP) :: daux,daux1,daux2
+  logical :: bHaveA12, bHaveC
+
+    ! Get the arrays from the triangulation
+    p_rtria => rvanka%p_rspatialDiscrV%p_rtriangulation
+    call storage_getbase_int2d (p_rtria%h_IedgesAtElement, p_IedgesAtElement)
+    call storage_getbase_int2d (p_rtria%h_IverticesAtElement, p_IverticesAtElement)
+    nvt = p_rtria%nvt
+    nmt = p_rtria%nmt
+    nel = p_rtria%nel
+
+    ! Get the pointers to the vector data
+    call lsyssc_getbase_double(rsol%RvectorBlock(1), p_DvecU)
+    call lsyssc_getbase_double(rsol%RvectorBlock(2), p_DvecV)
+    call lsyssc_getbase_double(rsol%RvectorBlock(3), p_DvecP)
+    call lsyssc_getbase_double(rrhs%RvectorBlock(1), p_DrhsU)
+    call lsyssc_getbase_double(rrhs%RvectorBlock(2), p_DrhsV)
+    call lsyssc_getbase_double(rrhs%RvectorBlock(3), p_DrhsP)
+
+    ! Let us assume we do not have the optional matrices
+    bHaveA12 = .false.
+    bHaveC = .false.
+
+    ! Get the pointers from the vanka structure
+    p_KldA => rvanka%p_KldA
+    p_KcolA => rvanka%p_KcolA
+    p_KdiagA => rvanka%p_KdiagonalA
+    p_DA11 => rvanka%p_DA11
+    p_DA22 => rvanka%p_DA22
+    p_KldB => rvanka%p_KldB
+    p_KcolB => rvanka%p_KcolB
+    p_DB1 => rvanka%p_DB1
+    p_DB2 => rvanka%p_DB2
+    p_KldD => rvanka%p_KldD
+    p_KcolD => rvanka%p_KcolD
+    p_DD1 => rvanka%p_DD1
+    p_DD2 => rvanka%p_DD2
+
+    if(associated(rvanka%p_DA12)) then
+      bHaveA12 = .true.
+      p_KldA12 => rvanka%p_KldA12
+      p_KcolA12 => rvanka%p_KcolA12
+      p_DA12 => rvanka%p_DA12
+      p_DA21 => rvanka%p_DA21
+    end if
+
+    if(associated(rvanka%p_DC)) then
+      bHaveC = .true.
+      p_KldC => rvanka%p_KldC
+      p_KcolC => rvanka%p_KcolC
+      p_KdiagC => rvanka%p_KdiagonalC
+      p_DC => rvanka%p_DC
+    end if
+
+    ! Get the multiplication factors
+    Dmult = rvanka%Dmultipliers
+
+    ! Take care of the 'soft-deactivation' of the sub-matrices
+    bHaveA12 = bHaveA12 .and. ((Dmult(1,2) .ne. 0.0_DP) .or. &
+                               (Dmult(2,1) .ne. 0.0_DP))
+    bHaveC = bHaveC .and. (Dmult(3,3) .ne. 0.0_DP)
+
+    ! Clear the optional matrices
+    Dc = 0.0_DP
+
+    ! Now which of the optional matrices are present?
+    if((.not. bHaveA12) .and. (.not. bHaveC)) then
+
+      do iter = 1, niterations
+        ! No optional matrices
+        do ielidx = 1, size(IelementList)
+
+          ! Get the element number which is to be processed.
+          iel = IelementList(ielidx)
+
+          ! Get all DOFs for this element
+          IdofV(1:4) = p_IverticesAtElement(1:4,iel)
+          IdofV(5:8) = p_IedgesAtElement(1:4,iel)+nvt
+          IdofV(9) = iel+nvt+nmt
+          IdofP(1) = iel
+          IdofP(2) = iel+nel
+          IdofP(3) = iel+2*nel
+
+          ! First of all, fetch the local RHS
+          do i = 1, ndofV
+            Df1(i) = p_DrhsU(IdofV(i))   ! f_u
+            Df2(i) = p_DrhsV(IdofV(i))   ! f_v
+          end do
+          do i = 1, ndofP
+            Dfp(i) = p_DrhsP(IdofP(i))    ! f_p
+          end do
+
+          ! Let us update the local RHS vector by subtracting A*u from it:
+          ! f_u := f_u - A11*u
+          ! f_v := f_v - A22*v
+          do k = 1, ndofV
+            i1 = p_KldA(IdofV(k))
+            i2 = p_KldA(IdofV(k)+1)-1
+            daux1 = 0.0_DP
+            daux2 = 0.0_DP
+            do i = i1, i2
+              j = p_KcolA(i)
+              daux1 = daux1 + p_DA11(i)*p_DvecU(j)
+              daux2 = daux2 + p_DA22(i)*p_DvecV(j)
+            end do
+            Df1(k) = Df1(k) - Dmult(1,1)*daux1
+            Df2(k) = Df2(k) - Dmult(2,2)*daux2
+            ! Get the main diagonal entries
+            j = p_KdiagA(IdofV(k))
+            Da1(k) = Dmult(1,1)*p_DA11(j)
+            Da2(k) = Dmult(2,2)*p_DA22(j)
+          end do
+
+          ! Now we also need to subtract B*p from our RHS, and by the same time,
+          ! we will build the local B matrices.
+          ! f_u := f_u - B1*p
+          ! f_v := f_v - B2*p
+          do k = 1, ndofV
+            i1 = p_KldB(IdofV(k))
+            i2 = p_KldB(IdofV(k)+1)-1
+            daux1 = 0.0_DP
+            daux2 = 0.0_DP
+            do i = i1, i2
+              j = p_KcolB(i)
+              daux = p_DvecP(j)
+              daux1 = daux1 + p_DB1(i)*daux
+              daux2 = daux2 + p_DB2(i)*daux
+              do l = 1, ndofP
+                if(j .eq. IdofP(l)) then
+                  Db1(k,l) = Dmult(1,3)*p_DB1(i)
+                  Db2(k,l) = Dmult(2,3)*p_DB2(i)
+                  exit
+                end if
+              end do
+            end do
+            Df1(k) = Df1(k) - Dmult(1,3)*daux1
+            Df2(k) = Df2(k) - Dmult(2,3)*daux2
+          end do
+
+          ! Now we also need to subtract D*u from our RHS, and by the same time,
+          ! we will build the local D matrices.
+          ! f_p := f_p - D1*u - D2*v
+          do k = 1, ndofP
+            i1 = p_KldD(IdofP(k))
+            i2 = p_KldD(IdofP(k)+1)-1
+            daux1 = 0.0_DP
+            daux2 = 0.0_DP
+            do i = i1, i2
+              j = p_KcolD(i)
+              daux1 = daux1 + p_DD1(i)*p_DvecU(j)
+              daux2 = daux2 + p_DD2(i)*p_DvecV(j)
+              do l = 1, ndofV
+                if(j .eq. IdofV(l)) then
+                  Dd1(k,l) = Dmult(3,1)*p_DD1(i)
+                  Dd2(k,l) = Dmult(3,2)*p_DD2(i)
+                  exit
+                end if
+              end do
+            end do
+            Dfp(k) = Dfp(k) - Dmult(3,1)*daux1 - Dmult(3,2)*daux2
+          end do
+
+          ! Invert A1 and A2
+          do i = 1, ndofV
+            Da1(i) = 1.0_DP / Da1(i)
+            Da2(i) = 1.0_DP / Da2(i)
+          end do
+
+          ! Precalculate D * A^-1
+          do i = 1, ndofV
+            do j = 1, ndofP
+              Dd1(j,i) = Dd1(j,i)*Da1(i)
+              Dd2(j,i) = Dd2(j,i)*Da2(i)
+            end do
+          end do
+
+          ! Calculate Schur-Complement of A
+          ! S := -C + D * A^-1 * B
+          do j = 1, ndofP
+            Ds(j) = -Dc(j)
+            do i = 1, ndofV
+              Ds(j) = Ds(j) + Dd1(j,i)*Db1(i,j) &
+                            + Dd2(j,i)*Db2(i,j)
+            end do
+          end do
+
+          ! Calculate pressure
+          ! p := S^-1 * (D * A^-1 * f_u - f_p)
+          do j = 1, ndofP
+            daux = -Dfp(j)
+            do i = 1, ndofV
+              daux = daux + Dd1(j,i)*Df1(i) &
+                          + Dd2(j,i)*Df2(i)
+            end do
+            Dup(j) = daux / Ds(j)
+          end do
+
+          ! Calculate X- and Y-velocity
+          do i = 1, ndofV
+            do j = 1, ndofP
+              Df1(i) = Df1(i) - Db1(i,j)*Dup(j)
+              Df2(i) = Df2(i) - Db2(i,j)*Dup(j)
+            end do
+            Du1(i) = Da1(i)*Df1(i)
+            Du2(i) = Da2(i)*Df2(i)
+          end do
+
+          ! Incorporate our local solution into the global one.
+          do i = 1, ndofV
+            j = IdofV(i)
+            p_DvecU(j) = p_DvecU(j) + domega * Du1(i)
+            p_DvecV(j) = p_DvecV(j) + domega * Du2(i)
+          end do
+          do i = 1, ndofP
+            j = IdofP(i)
+            p_DvecP(j) = p_DvecP(j) + domega * Dup(i)
+          end do
+
+        end do ! ielidx
+
+      end do ! iter
+
+    else
+
+      do iter = 1, niterations
+
+        ! General case
+        do ielidx=1, size(IelementList)
+
+          ! Get the element number which is to be processed.
+          iel = IelementList(ielidx)
+
+          ! Get all DOFs for this element
+          IdofV(1:4) = p_IverticesAtElement(1:4,iel)
+          IdofV(5:8) = p_IedgesAtElement(1:4,iel)+nvt
+          IdofV(9) = iel+nvt+nmt
+          IdofP(1) = iel
+          IdofP(2) = iel+nel
+          IdofP(3) = iel+2*nel
 
           ! First of all, fetch the local RHS
           do i = 1, ndofV
