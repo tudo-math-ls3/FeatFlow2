@@ -132,8 +132,8 @@ dinexactNewtonEpsAbs = 1E-14
 #####################
 
 # Specifies the type of the solver.
-# =0: Damped Richardson iteration with damping parameter omega.
-# =1: Space-time multigrid method applied to the underlying 
+# =1: Damped Richardson iteration with damping parameter omega.
+# =2: Space-time multigrid method applied to the underlying 
 #     space-time hierarchy
 csolverType = 0
 
@@ -198,12 +198,14 @@ cspatialInitCondPolicy = 2
 ccycle = 0
 
 # Specifies the smoother.
-# =0: Damped Richardson iteration
-csmoother = 0
+# =1: Damped Richardson iteration
+# =2: CG
+csmoother = 1
 
 # Specifies the coarse grid solver.
-# =0: Damped Richardson iteration
-ccoarseGridSolver = 0
+# =1: Damped Richardson iteration
+# =2: CG
+ccoarseGridSolver = 1
 
 # Section configuring the smoother
 ssectionSmoother = SPACETIME-SMOOTHER

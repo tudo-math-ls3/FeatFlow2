@@ -60,14 +60,17 @@ module newtoniterationlinear
 
 !<constantblock description = "Solver identifier">
 
+  ! Undefined solver
+  integer, parameter, public :: NLIN_SOLVER_UNDEFINED = 0
+
   ! Richardson iteration
-  integer, parameter, public :: NLIN_SOLVER_RICHARDSON = 0
+  integer, parameter, public :: NLIN_SOLVER_RICHARDSON = 1
   
   ! Multigrid iteration
-  integer, parameter, public :: NLIN_SOLVER_MULTIGRID = 1
+  integer, parameter, public :: NLIN_SOLVER_MULTIGRID = 2
 
   ! CG iteration
-  integer, parameter, public :: NLIN_SOLVER_CG = 2
+  integer, parameter, public :: NLIN_SOLVER_CG = 3
 
 !</constantblock>
 
@@ -265,10 +268,8 @@ module newtoniterationlinear
     ! <!-- --------------------------------------- -->
 
     ! Specifies the type of the solver.
-    ! =0: Damped Richardson iteration with damping parameter omega.
-    ! =1: Space-time multigrid method applied to the underlying 
-    !     space-time hierarchy
-    integer :: csolverType = 0
+    ! One of the NLIN_SOLVER_xxxx constants.
+    integer :: csolverType = NLIN_SOLVER_UNDEFINED
 
     ! General newton parameters
     type(t_newtonPrecParameters) :: rprecParameters
@@ -2304,6 +2305,25 @@ contains
     ! Set the stopping criteria
     rlinsolParam%rprecParameters%depsRel = depsRel
     rlinsolParam%rprecParameters%depsAbs = depsAbs
+    
+    ! Special settings
+    select case (rlinsolParam%csolverType)
+    
+    ! -------------------------------------------
+    ! Multigrid
+    ! -------------------------------------------
+    case (NLIN_SOLVER_MULTIGRID)
+    
+      ! Is this a one-level solver?
+      if (rlinsolParam%p_rkktsystemHierarchy%nlevels .eq. 1) then
+        ! The coarse grid solver is used instead of the solver
+        ! identified by rlinsolParam. Therefore, impose the stopping
+        ! criteria in the coarse grid solver.
+        rlinsolParam%p_rsubnodeMultigrid%p_RsubSolvers(1)%rprecParameters%depsRel = depsRel
+        rlinsolParam%p_rsubnodeMultigrid%p_RsubSolvers(1)%rprecParameters%depsAbs = depsAbs
+      end if
+    
+    end select
 
     ! Configure the subsolver in space
     call spaceslh_setEps (&
