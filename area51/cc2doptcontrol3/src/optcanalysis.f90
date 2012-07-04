@@ -111,7 +111,8 @@ contains
 
     ! Local variables
     real(DP) :: dx,dy, dtime
-    integer :: iel, icubp, icomp
+    real(DP) :: dminx,dmaxx,dminy,dmaxy
+    integer :: iel, icubp
     real(DP), dimension(:,:), pointer :: p_DcubWeight
     real(DP), dimension(:,:), pointer :: p_Dy1,p_Dy2,p_Dz1,p_Dz2
     real(DP), dimension(:,:,:), pointer :: p_Dpoints
@@ -131,15 +132,29 @@ contains
     ! Get the coordinates of the cubature points
     p_Dpoints => rassemblyData%revalElementSet%p_DpointsReal
     
-    ! Get the observation area; it is given in the collection
-    p_DobservationArea => rcollection%DquickAccess(1:4)
-    
     ! Current time
     dtime = rcollection%DquickAccess(5)
 
     ! Get the analytic data from the integer array
     rp_ranalyticData = transfer(rcollection%IquickAccess(:),rp_ranalyticData)
     p_ranalyticData => rp_ranalyticData%p_rdata
+
+    ! Domain of interest
+    dminx = -SYS_MAXREAL_DP
+    dminy = -SYS_MAXREAL_DP
+    dmaxx = SYS_MAXREAL_DP
+    dmaxy = SYS_MAXREAL_DP
+    
+    p_DobservationArea => &
+        p_ranalyticData%p_rsettingsOptControl%p_DobservationArea
+    
+    if (associated(p_DobservationArea)) then
+      ! Put the observation area into the collection
+      dminx = p_DobservationArea(1)
+      dminy = p_DobservationArea(2)
+      dmaxx = p_DobservationArea(3)
+      dmaxy = p_DobservationArea(4)
+    end if
 
     ! Which equation do we have?    
     select case (p_ranalyticData%p_rphysics%cequation)
@@ -173,10 +188,10 @@ contains
           dy = p_Dpoints(1,icubp,iel)
           
           ! Calculate the error only in the observation area
-          if ( (dx .ge. p_DobservationArea(1)) .and. &
-               (dy .ge. p_DobservationArea(2)) .and. &
-               (dx .le. p_DobservationArea(3)) .and. &
-               (dy .le. p_DobservationArea(4)) ) then
+          if ( (dx .ge. dminx) .and. &
+               (dy .ge. dminy) .and. &
+               (dx .le. dmaxx) .and. &
+               (dy .le. dmaxy) ) then
                
             ! Multiply the values by the cubature weight and sum up
             ! into the (squared) L2 error:
@@ -216,10 +231,10 @@ contains
           dy = p_Dpoints(1,icubp,iel)
 
           ! Calculate the error only in the observation area
-          if ( (dx .ge. p_DobservationArea(1)) .and. &
-               (dy .ge. p_DobservationArea(2)) .and. &
-               (dx .le. p_DobservationArea(3)) .and. &
-               (dy .le. p_DobservationArea(4)) ) then
+          if ( (dx .ge. dminx) .and. &
+               (dy .ge. dminy) .and. &
+               (dx .le. dmaxx) .and. &
+               (dy .le. dmaxy) ) then
 
             ! Multiply the values by the cubature weight and sum up
             ! into the (squared) L2 error:
@@ -278,7 +293,7 @@ contains
   subroutine optcana_diffToTarget(dintvalue,dtime,rprimalSol,ranalyticData,rcubatureInfo)
 
 !<description>  
-    ! Calculates the term 1/2||y(t)-z(t)||^2_L2 at a point t in time.
+    ! Calculates the term ||y(t)-z(t)||^2_L2 at a point t in time.
 !</description>
 
 !<input>
@@ -357,9 +372,6 @@ contains
 
     call fev2_releaseVectorList(revalVectors)
     
-    ! Integral correction
-    dintvalue = 0.5_DP*dintvalue
-
   end subroutine
 
   !****************************************************************************
@@ -367,10 +379,10 @@ contains
 !<subroutine>
 
   subroutine optcana_controlNorm(dintvalue,dtime,rphysics,rcontrol,&
-      icompstart,ncomponents,dweight,rcubatureInfo)
+      icompstart,ncomponents,rcubatureInfo)
 
 !<description>  
-    ! Calculates the term dweight/2||u(t)||^2_L2 at a point t in time.
+    ! Calculates the term ||u(t)||^2_L2 at a point t in time.
     ! u(.) is a distributed control variable.
 !</description>
 
@@ -386,9 +398,6 @@ contains
 
   ! Number of components in u
   integer, intent(in) :: ncomponents
-  
-  ! Weight
-  real(DP), intent(in) :: dweight
   
   ! Cubature information structure
   type(t_scalarCubatureInfo), intent(in) :: rcubatureInfo
@@ -413,7 +422,6 @@ contains
     real(DP) :: dtimerel
     
     dintvalue = 0.0_DP
-    if (dweight .eq. 0.0_DP) return
     
     ! Rescale the time.
     call mprim_linearRescale(dtime,&
@@ -439,9 +447,6 @@ contains
     ! Cleanup
     call fev2_releaseVectorList(revalVectors)
     
-    ! Integral correction
-    dintvalue = dweight*0.5_DP*dintvalue
-
   end subroutine
 
 !!******************************************************************************
@@ -581,8 +586,8 @@ contains
   ! Returns information about the error.
   ! Derror(1) = J(y,u).
   ! Derror(2) = ||y-z||_{L^2}.
-  ! Derror(3) = ||u||_{L^2}.
-  ! Derror(4) = ||y(T)-z(T)||_{L^2}.
+  ! Derror(3) = ||y(T)-z(T)||_{L^2}.
+  ! Derror(4) = ||u||_{L^2}.
   ! Derror(5) = ||u||_{L^2(Gamma_C)}.
   real(DP), dimension(:), intent(out) :: Derror
 !</output>
@@ -591,11 +596,10 @@ contains
     
     ! local variables
     type(t_spacetimeOperatorAsm) :: roperatorAsm
-    type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
     
-    real(DP) :: dtimestart,dtimeend,dtstep,dval,dtheta
+    real(DP) :: dtime,dtimestart,dtimeend,dtstep,dval,dtheta
     
-    integer :: istep,i,idoftime
+    integer :: istep,i,idoftime,icomp,ncomp
     real(DP),dimension(2) :: Derr
     type(t_collection), target :: rcollection,rlocalcoll
     type(t_vectorBlock), target :: rtempVector, rzeroVector
@@ -608,8 +612,6 @@ contains
     call stoh_getOpAsm_slvtlv (&
         roperatorAsm,roperatorAsmHier,ispacelevel,itimelevel)
         
-    p_ranalyticData => roperatorAsm%p_ranalyticData
-    
     ! Initialise the collection for the assembly process with callback routines.
     ! This stores the simulation time in the collection and sets the
     ! current subvector z for the callback routines.
@@ -656,25 +658,8 @@ contains
       case (1)
 
         ! ---------------------------------------------------------
-        ! Calculate 1/2||y-z||^2
+        ! Calculate ||y-z||^2
         ! ---------------------------------------------------------
-        
-        ! Domain of interest
-        rcollection%DquickAccess(1) = -SYS_MAXREAL_DP
-        rcollection%DquickAccess(2) = -SYS_MAXREAL_DP
-        rcollection%DquickAccess(3) = SYS_MAXREAL_DP
-        rcollection%DquickAccess(4) = SYS_MAXREAL_DP
-        
-        p_DobservationArea => &
-            roperatorAsmHier%ranalyticData%p_rsettingsOptControl%p_DobservationArea
-        
-        if (associated(p_DobservationArea)) then
-          ! Put the observation area into the collection
-          rcollection%DquickAccess(1) = p_DobservationArea(1)
-          rcollection%DquickAccess(2) = p_DobservationArea(2)
-          rcollection%DquickAccess(3) = p_DobservationArea(3)
-          rcollection%DquickAccess(4) = p_DobservationArea(4)
-        end if
         
         do idoftime = 1,rprimalSol%p_rvector%NEQtime
         
@@ -682,17 +667,15 @@ contains
           call tdiscr_getTimestep(roperatorAsm%p_rtimeDiscrPrimal,idofTime-1,&
               dtimeend,dtstep,dtimestart)
               
-          rcollection%DquickAccess(5) = dtimeend
-
-          ! Calculate 1/2||y-z||^2 in the endpoint of the time interval.
+          ! Calculate ||y-z||^2 in the endpoint of the time interval.
           call optcana_diffToTarget(dval,dtimeend,rprimalSol,&
               roperatorAsm%p_ranalyticData,roperatorAsm%p_rasmTemplates%rcubatureInfoRHS)
               
           ! Sum up according to the summed trapezoidal rule
           if ((idoftime .eq. 1) .or. (idoftime .eq. rprimalSol%p_rvector%NEQtime)) then
-            Derror(2) = Derror(2) + 0.5_DP * dval
+            Derror(2) = Derror(2) + 0.5_DP * dval * dtstep
           else
-            Derror(2) = Derror(2) + dval
+            Derror(2) = Derror(2) + dval * dtstep
           end if
         
           ! ---------------------------------------------------------
@@ -705,21 +688,56 @@ contains
           
         end do
 
+        ! ---------------------------------------------------------
+        ! Calculate ||u||^2
+        ! ---------------------------------------------------------
+        icomp = 1
 
-        ! Which equation do we have?    
-        select case (p_ranalyticData%p_rphysics%cequation)
+        if (roperatorAsmHier%ranalyticData%p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
 
-        ! *************************************************************
-        ! Stokes/Navier Stokes.
-        ! *************************************************************
-        case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+          ! Type of equation?
+          select case (roperatorAsmHier%ranalyticData%p_rphysics%cequation)
 
-        ! *************************************************************
-        ! Heat equation
-        ! *************************************************************
-        case (CCEQ_HEAT2D)
+          ! *************************************************************
+          ! Stokes/Navier Stokes.
+          ! *************************************************************
+          case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+            ncomp = 2
 
-        end select
+          ! *************************************************************
+          ! Heat equation
+          ! *************************************************************
+          case (CCEQ_HEAT2D)
+            ncomp = 1
+
+          end select
+
+          do idoftime = 1,rprimalSol%p_rvector%NEQtime
+          
+            ! Characteristics of the current timestep.
+            call tdiscr_getTimestep(roperatorAsm%p_rtimeDiscrPrimal,idofTime-1,&
+                dtimeend,dtstep,dtimestart)
+                
+            ! The control lives at the point dtime in time.
+            dtime = (1.0_DP-dtheta)*dtimestart + dtheta*dtimeend
+
+            ! Calculate ||u||^2 at the point in time where u lives.
+            ! Note that we pass dtimeend here as time. This is correct!
+            ! dtimeend on the time scale of rcontrol corresponds to the time dtime
+            ! as rcontrol is shifted by a half timestep!
+            call optcana_controlNorm(dval,dtimeend,&
+                roperatorAsmHier%ranalyticData%p_rphysics,&
+                rcontrol,icomp,ncomp,&
+                roperatorAsm%p_rasmTemplates%rcubatureInfoRHS)
+
+            ! Sum up according to the rectangular rule
+            Derror(4) = Derror(4) + dval * dtstep
+          
+          end do
+          
+          icomp = icomp + ncomp
+          
+        end if
       
       end select ! Tag
       
@@ -862,13 +880,16 @@ contains
 !    ! Release the boundary conditions again
 !    call stdbcc_releaseDirichletBCCBd(rdirichletBCC)
 !
-!    ! Clean up the collection
-!    call collct_done(rcollection)
+    ! Clean up the collection
+    call collct_done(rcollection)
       
     ! Calculate J(.)
-    Derror(4) = Derror(2)  &
-              + roperatorAsmHier%ranalyticData%p_rsettingsOptControl%dgammaC * Derror(3)  &
-              + roperatorAsmHier%ranalyticData%p_rsettingsOptControl%ddeltaC * Derror(4)
+    Derror(1) = 0.5_DP*Derror(2)  &
+              + 0.5_DP*roperatorAsmHier%ranalyticData%p_rsettingsOptControl%dgammaC * Derror(3)  &
+              + 0.5_DP*roperatorAsmHier%ranalyticData%p_rsettingsOptControl%dalphaC * Derror(4)
+              
+    ! Take some square roots to calculate the actual values.
+    Derror(2:) = sqrt(Derror(2:))
     
 !    if (dalphaC .gt. 0.0_DP) then
 !      ! Calculate:

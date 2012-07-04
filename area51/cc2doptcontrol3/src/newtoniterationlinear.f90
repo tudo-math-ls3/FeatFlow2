@@ -276,25 +276,6 @@ module newtoniterationlinear
     ! Parameters of the OptFlow solver
     type(t_settings_optflow), pointer :: p_rsettingsSolver => null()
   
-!    ! <!-- ----------------------------- -->
-!    ! <!-- STATISTICS                    -->
-!    ! <!-- ----------------------------- -->
-!    
-!    ! Total computation time
-!    type(t_timer) :: rtotalTime
-!    
-!    ! Total time for smoothing
-!    type(t_timer) :: rtimeSmooth
-!
-!    ! Total time for smoothing on the finest mesh
-!    type(t_timer) :: rtimeSmoothFinest
-!
-!    ! Total time for coarse grid solving
-!    type(t_timer) :: rtimeCoarseGrid
-!
-!    ! Total time for prolongation/restriction
-!    type(t_timer) :: rtimeProlRest
-
     ! <!-- ----------------------------- -->
     ! <!-- SUBSOLVERS AND OTHER SETTINGS -->
     ! <!-- ----------------------------- -->

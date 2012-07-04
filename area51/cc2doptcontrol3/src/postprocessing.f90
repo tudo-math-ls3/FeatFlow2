@@ -105,6 +105,7 @@ module postprocessing
   public :: optcpp_initpostprocessing
   public :: optcpp_donepostprocessing
   public :: optcpp_postprocessing
+  public :: optcpp_postprocessSubstep
   
 contains
 
@@ -1503,16 +1504,14 @@ contains
 
     ! Should we calculate the functional?
     if (rpostproc%icalcFunctionalValues .ne. 0) then
-      call output_lbrk()
-
       ! Subdomain is the observation area
       call optcana_nonstatFunctional (Derror,&
           ispacelevel, itimelevel, roperatorAsmHier, &
           rprimalSol,rdualSol,rcontrol)
 
       call output_line ('||y-z||       = '//trim(sys_sdEL(Derror(2),10)))
-      call output_line ('||y(T)-z(T)|| = '//trim(sys_sdEL(Derror(4),10)))
-      call output_line ('||u||         = '//trim(sys_sdEL(Derror(3),10)))
+      call output_line ('||y(T)-z(T)|| = '//trim(sys_sdEL(Derror(3),10)))
+      call output_line ('||u||         = '//trim(sys_sdEL(Derror(4),10)))
       call output_line ('||u_Gamma||   = '//trim(sys_sdEL(Derror(5),10)))
       call output_line ('J(y,u)        = '//trim(sys_sdEL(Derror(1),10)))
     end if
@@ -1566,7 +1565,6 @@ contains
     ! local variables
     
     ! Global postprocessing: Function values.
-    
     call optcpp_spaceTimeFunctionals (rpostproc,&
         ispacelevel, itimelevel, rsettings%roperatorAsmHier, &
         rprimalSol,rdualSol,rcontrol)
@@ -1605,6 +1603,133 @@ contains
 
     ! Data dump
     call optcpp_spaceTimeDump (rpostproc,rcontrol%p_rvectorAccess,CCSPACE_CONTROL,itag)
+  
+
+!      ! -------------------------------------------------------------------------
+!      ! Error analysis
+!      ! -------------------------------------------------------------------------
+!
+!      ! If error analysis has to be performed, we can calculate
+!      ! the real error.
+!      if (rpostproc%icalcError .eq. 1) then
+!        call output_lbrk()
+!        call optcana_analyticalError (rsettings%rglobalData,&
+!            rsettings%rsettingsOptControl%rconstraints,&
+!            rvector,rpostproc%ranalyticRefFunction,&
+!            DerrorU,DerrorP,DerrorLambda,DerrorXi,.true.)
+!        call output_lbrk()
+!        call output_line ('||y-y0||_[0,T]           = '//trim(sys_sdEL(DerrorU(1),10)))
+!        call output_line ('||y-y0||_[0,T)           = '//trim(sys_sdEL(DerrorU(2),10)))
+!        call output_line ('||y-y0||_(0,T]           = '//trim(sys_sdEL(DerrorU(3),10)))
+!        call output_line ('||y-y0||_(0,T)           = '//trim(sys_sdEL(DerrorU(4),10)))
+!        
+!        call output_line ('||p-p0||_[0,T]           = '//trim(sys_sdEL(DerrorP(1),10)))
+!        call output_line ('||p-p0||_[0,T)           = '//trim(sys_sdEL(DerrorP(2),10)))
+!        call output_line ('||p-p0||_(0,T]           = '//trim(sys_sdEL(DerrorP(3),10)))
+!        call output_line ('||p-p0||_(0,T)           = '//trim(sys_sdEL(DerrorP(4),10)))
+!        
+!        call output_line ('||lambda-lambda0||_[0,T] = '//trim(sys_sdEL(DerrorLambda(1),10)))
+!        call output_line ('||lambda-lambda0||_[0,T) = '//trim(sys_sdEL(DerrorLambda(2),10)))
+!        call output_line ('||lambda-lambda0||_(0,T] = '//trim(sys_sdEL(DerrorLambda(3),10)))
+!        call output_line ('||lambda-lambda0||_(0,T) = '//trim(sys_sdEL(DerrorLambda(4),10)))
+!
+!        call output_line ('||xi-xi0||_[0,T]         = '//trim(sys_sdEL(DerrorXi(1),10)))
+!        call output_line ('||xi-xi0||_[0,T)         = '//trim(sys_sdEL(DerrorXi(2),10)))
+!        call output_line ('||xi-xi0||_(0,T]         = '//trim(sys_sdEL(DerrorXi(3),10)))
+!        call output_line ('||xi-xi0||_(0,T)         = '//trim(sys_sdEL(DerrorXi(4),10)))
+!      end if
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine optcpp_postprocessSubstep (rpostproc,&
+      ispacelevel,itimelevel,rprimalSol,rdualSol,rcontrol,&
+      rsettings,itag)
+  
+!<description>
+  ! Postprocessing of a space-time solution after a nonlinear
+  ! iteration.
+  ! Writes the solution into a visualisation file, calculates forces,...
+  ! This routine is assumed to be called in a nonlinear iteration for
+  ! the postprocessing of intermediate solutions and uses therefore
+  ! slightly different settings.
+!</description>
+
+!<inputoutput>
+  ! Postprocessing structure
+  type(t_optcPostprocessing), intent(inout) :: rpostproc
+!</inputoutput>
+
+!<input>
+  ! The global settings structure, passed to callback routines.
+  type(t_settings_optflow), intent(inout), target :: rsettings
+
+  ! Space-level corresponding to the solutions
+  integer, intent(in) :: ispacelevel
+
+  ! Time-level corresponding to the solutions
+  integer, intent(in) :: itimelevel
+
+  ! Primal solution.
+  type(t_primalSpace), intent(inout) :: rprimalSol
+
+  ! Dual solution.
+  type(t_dualSpace), intent(inout) :: rdualSol
+
+  ! Control
+  type(t_controlSpace), intent(inout) :: rcontrol
+
+  ! OPTIONAL: An integer tag which is included into filenames of
+  ! output files. If not specified, the tag is not included.
+  integer, intent(in), optional :: itag
+!</input>
+
+!</subroutine>
+
+    ! local variables
+    
+    ! Global postprocessing: Function values.
+    call optcpp_spaceTimeFunctionals (rpostproc,&
+        ispacelevel, itimelevel, rsettings%roperatorAsmHier, &
+        rprimalSol,rdualSol,rcontrol)
+        
+!    call output_lbrk()
+!    
+!    ! ***************************************************************************
+!    ! Primal solution
+!    ! ***************************************************************************
+!    
+!    ! Visualisation
+!    call optcpp_spaceTimeVisualisation (rpostproc,rprimalSol%p_rvectorAccess,CCSPACE_PRIMAL,&
+!        rsettings%rphysics,rsettings%rsettingsOptControl,itag)
+!
+!    ! Data dump
+!    call optcpp_spaceTimeDump (rpostproc,rprimalSol%p_rvectorAccess,CCSPACE_PRIMAL,itag)
+!
+!    ! ***************************************************************************
+!    ! Dual solution
+!    ! ***************************************************************************
+!    
+!    ! Visualisation
+!    call optcpp_spaceTimeVisualisation (rpostproc,rdualSol%p_rvectorAccess,CCSPACE_DUAL,&
+!        rsettings%rphysics,rsettings%rsettingsOptControl,itag)
+!
+!    ! Data dump
+!    call optcpp_spaceTimeDump (rpostproc,rdualSol%p_rvectorAccess,CCSPACE_DUAL,itag)
+!
+!    ! ***************************************************************************
+!    ! Control
+!    ! ***************************************************************************
+!    
+!    ! Visualisation
+!    call optcpp_spaceTimeVisualisation (rpostproc,rcontrol%p_rvectorAccess,CCSPACE_CONTROL,&
+!        rsettings%rphysics,rsettings%rsettingsOptControl,itag)
+!
+!    ! Data dump
+!    call optcpp_spaceTimeDump (rpostproc,rcontrol%p_rvectorAccess,CCSPACE_CONTROL,itag)
   
 
 !      ! -------------------------------------------------------------------------

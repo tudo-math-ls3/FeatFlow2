@@ -490,6 +490,7 @@ contains
 
     ! Pipe the solution through our postprocessing routines
     call output_line ("Postprocessing of the final solution...")
+    call output_lbrk()
 
     call stat_clearTimer (rtimePostProc)
     call stat_startTimer (rtimePostProc)
@@ -502,8 +503,6 @@ contains
 !        p_rsettingsSolver%rsettingsOptControl,p_rsettingsSolver)
     call stat_stopTimer (rtimePostProc)
     
-    call output_separator (OU_SEP_EQUAL)
-
 !    ! Release all data
     call newtonit_doneStructure (rsolver)
     call newtonit_done (rsolver)

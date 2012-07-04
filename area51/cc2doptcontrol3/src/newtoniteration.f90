@@ -49,6 +49,7 @@ module newtoniteration
   use kktsystemspaces
   use kktsystem
   use kktsystemhierarchy
+  use postprocessing
   
   use newtoniterationlinear
 
@@ -110,31 +111,6 @@ module newtoniteration
 
     ! Parameters of the OptFlow solver
     type(t_settings_optflow), pointer :: p_rsettingsSolver => null()
-
-!    ! <!-- ----------------------------- -->
-!    ! <!-- STATISTICS                    -->
-!    ! <!-- ----------------------------- -->
-!    
-!    ! Total computation time
-!    type(t_timer) :: rtotalTime
-!
-!    ! Total time for nonlinear defects
-!    type(t_timer) :: rtimeNonlinearDefects
-!    
-!    ! Total time for solviong linear subproblems
-!    type(t_timer) :: rtimePreconditioning
-!    
-!    ! Total time for smoothing
-!    type(t_timer) :: rtimeSmooth
-!
-!    ! Total time for smoothing on the finest mesh
-!    type(t_timer) :: rtimeSmoothFinest
-!
-!    ! Total time for coarse grid solving
-!    type(t_timer) :: rtimeCoarseGrid
-!
-!    ! Total time for prolongation/restriction
-!    type(t_timer) :: rtimeProlRest
 
     ! <!-- ----------------------------- -->
     ! <!-- SUBSOLVERS AND OTHER SETTINGS -->
@@ -798,13 +774,31 @@ contains
       ! Next iteration
       rsolver%rnewtonParams%niterations = rsolver%rnewtonParams%niterations + 1
     
+      ! -------------------------------------------------------------
+      ! Postprocessing
+      ! -------------------------------------------------------------
+      call output_separator (OU_SEP_MINUS)
+
+      call stat_startTimer (rstatistics%rtimePostprocessing)
+      
+      call optcpp_postprocessSubstep (rsolver%p_rsettingsSolver%rpostproc,&
+          rsolver%p_rsettingsSolver%rspaceTimeHierPrimal%p_rfeHierarchy%nlevels,&
+          rsolver%p_rsettingsSolver%rspaceTimeHierPrimal%p_rtimeHierarchy%nlevels,&
+          p_rsolution%p_rprimalSol,p_rsolution%p_rdualSol,p_rsolution%p_rcontrol,&
+          rsolver%p_rsettingsSolver,rsolver%rnewtonParams%niterations)
+      
+      call stat_stopTimer (rstatistics%rtimePostprocessing)
+
       if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
+        call output_separator (OU_SEP_MINUS)
         call output_line ("Space-time Newton: Time for the linear solver = "//&
             sys_sdL(rstatisticsLinSol%rtotalTime%delapsedReal,10))
         call stat_sampleTimer(rtotalTime,delapsedReal)
         call output_line ("Space-time Newton: Computation time           = "//&
             sys_sdL(delapsedReal,10))
       end if
+
+      call output_separator (OU_SEP_MINUS)
 
     end do
     
