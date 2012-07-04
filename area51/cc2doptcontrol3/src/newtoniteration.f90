@@ -410,12 +410,13 @@ contains
   ! On output, this structure receives a representation of the search
   ! direction / residual in the Newton iteration.
   type(t_controlSpace), intent(inout) :: rresidual
-
-  ! Statistic structure which receives the statistics of the iteration.
-  type(t_newtonitSolverStat), intent(inout) :: rstatistics
 !</inputoutput>
 
+
 !<output>
+  ! Statistic structure. 
+  type(t_newtonitSolverStat), intent(out) :: rstatistics
+
   ! L2-Norm of the residual
   real(DP), intent(out) :: dres
 !</output>
@@ -425,7 +426,9 @@ contains
     ! local variables
     type(t_vectorBlock), pointer :: p_rvector
     real(DP), dimension(:), pointer :: p_Ddata
-    type(t_timer) :: rtimer
+    type(t_spaceslSolverStat) :: rlocalStat
+    
+    call stat_startTimer (rstatistics%rtotalTime)
     
     call sptivec_getVectorFromPool(rkktsystem%p_rdualSol%p_rvectorAccess,2,p_rvector)
     call lsysbl_getbase_double (p_rvector,p_Ddata)
@@ -439,45 +442,43 @@ contains
     end if
 
     ! Solve the primal equation, update the primal solution.
-    call stat_clearTimer (rtimer)
-    call stat_startTimer (rtimer)
     output_iautoOutputIndent = output_iautoOutputIndent + 2
 
     call kkt_solvePrimal (rkktsystem,rsolver%p_rsolverHierPrimal,&
-        rsolver%cspatialInitCondPolicy,rstatistics%rspaceslSolverStat)
+        rsolver%cspatialInitCondPolicy,rlocalStat)
 
     output_iautoOutputIndent = output_iautoOutputIndent - 2
-    call stat_stopTimer (rtimer)
+    
+    call spacesl_sumStatistics(rlocalStat,rstatistics%rspaceslSolverStat)
 
     if (rsolver%rnewtonParams%ioutputLevel .ge. 3) then
       call output_line ("Nonlin. space-time Residual: Time for solving: "//&
-          trim(sys_sdL(rtimer%delapsedReal,10)))
+          trim(sys_sdL(rlocalStat%rtotalTime%delapsedReal,10)))
     end if
     
     ! Add time to the time of the forward equation
-    call stat_addTimers (rtimer,rstatistics%rtimeForward)
+    call stat_addTimers (rlocalStat%rtotalTime,rstatistics%rtimeForward)
 
     if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
       call output_line ("Nonlin. space-time Residual: Solving the dual equation")
     end if
 
     ! Solve the dual equation, update the dual solution.
-    call stat_clearTimer (rtimer)
-    call stat_startTimer (rtimer)
     output_iautoOutputIndent = output_iautoOutputIndent + 2
 
     call kkt_solveDual (rkktsystem,rsolver%p_rsolverHierDual,&
-        rsolver%cspatialInitCondPolicy,rstatistics%rspaceslSolverStat)
+        rsolver%cspatialInitCondPolicy,rlocalStat)
 
     output_iautoOutputIndent = output_iautoOutputIndent - 2
-    call stat_stopTimer (rtimer)
+    
+    call spacesl_sumStatistics(rlocalStat,rstatistics%rspaceslSolverStat)
     
     ! Add time to the time of the backward equation
-    call stat_addTimers (rtimer,rstatistics%rtimeBackward)
+    call stat_addTimers (rlocalStat%rtotalTime,rstatistics%rtimeBackward)
 
     if (rsolver%rnewtonParams%ioutputLevel .ge. 3) then
       call output_line ("Nonlin. space-time Residual: Time for solving: "//&
-          trim(sys_sdL(rtimer%delapsedReal,10)))
+          trim(sys_sdL(rlocalStat%rtotalTime%delapsedReal,10)))
     end if
 
     ! -------------------------------------------------------------
@@ -486,6 +487,8 @@ contains
 
     ! The search direction is just the residual in the control equation.
     call kkt_calcControlRes (rkktsystem,rresidual,dres,iresnorm)
+
+    call stat_stopTimer (rstatistics%rtotalTime)
 
   end subroutine
 
@@ -630,10 +633,10 @@ contains
   type(t_kktsystem), intent(inout), target :: rsolution
 !</inputoutput>
 
-!<inputoutput>
+!<output>
   ! Statistic structure which receives the statistics of the iteration.
-  type(t_newtonitSolverStat), intent(inout) :: rstatistics
-!</inputoutput>
+  type(t_newtonitSolverStat), intent(out) :: rstatistics
+!</output>
 
 !</subroutine>
    
@@ -644,10 +647,8 @@ contains
     type(t_timer) :: rtotalTime
     type(t_newtonlinSolverStat) :: rstatisticsLinSol
     real(DP) :: delapsedReal
-    
-    ! Clear output statistics
-    call newtonit_clearStatistics(rstatistics)
-    
+    type(t_newtonitSolverStat) :: rlocalStat
+
     ! Measure the total computational time
     call stat_startTimer(rtotalTime)
     
@@ -688,18 +689,17 @@ contains
         call output_line ("Space-time Newton: Calculating the residual")
       end if
 
-      ! Measure the time for the computation of the residual
-      call stat_startTimer(rstatistics%rtimeDefect)
-
       ! Compute the basic (unpreconditioned) search direction d_n.
       output_iautoOutputIndent = output_iautoOutputIndent + 2
       
       call newtonit_getResidual (rsolver,p_rsolution,p_rdescentDir,&
-          rsolver%rnewtonParams%dresFinal,rsolver%rnewtonParams%iresnorm,rstatistics)
+          rsolver%rnewtonParams%dresFinal,rsolver%rnewtonParams%iresnorm,rlocalStat)
       
       output_iautoOutputIndent = output_iautoOutputIndent - 2
-      call stat_stopTimer(rstatistics%rtimeDefect)
-
+      
+      call newtonit_sumStatistics(rlocalStat,rstatistics,.false.)
+      call stat_addTimers (rlocalStat%rtotalTime,rstatistics%rtimeDefect)
+      
       if (rsolver%rnewtonParams%niterations .eq. 0) then
         ! Remember the initial residual
         rsolver%rnewtonParams%dresInit = rsolver%rnewtonParams%dresFinal
@@ -759,8 +759,6 @@ contains
       !
       ! The control on the maximum level of p_rdirDerivHierarchy
       ! (identified by p_rsolutionDirDeriv%p_rcontrolLin) receives the result.
-      call newtonlin_clearStatistics (rstatisticsLinSol)
-
       output_iautoOutputIndent = output_iautoOutputIndent + 2
       
       call newtonlin_precond (rsolver%rlinsolParam,&
@@ -1065,7 +1063,7 @@ contains
 
 !<subroutine>
 
-  subroutine newtonit_sumStatistics(rstatistics1,rstatistics2)
+  subroutine newtonit_sumStatistics(rstatistics1,rstatistics2,btotalTime)
   
 !<description>
   ! Sums up the data of rstatistics1 to the data in rstatistics2.
@@ -1074,6 +1072,10 @@ contains
 !<input>
   ! Source structure
   type(t_newtonitSolverStat), intent(in) :: rstatistics1
+
+  ! OPTIONAL: Whether or not to sum up the total time.
+  ! If not present, TRUE is assumed.
+  logical, intent(in), optional :: btotalTime
 !</input>
 
 !<inputoutput>
@@ -1085,7 +1087,11 @@ contains
 
     rstatistics2%niterations = rstatistics2%niterations + rstatistics1%niterations
     
-    call stat_addTimers(rstatistics1%rtotalTime,         rstatistics2%rtotalTime)
+    if (.not. present(btotalTime)) then
+      call stat_addTimers(rstatistics1%rtotalTime,         rstatistics2%rtotalTime)
+    else if (btotalTime) then
+      call stat_addTimers(rstatistics1%rtotalTime,         rstatistics2%rtotalTime)
+    end if
     call stat_addTimers(rstatistics1%rtimeForward,       rstatistics2%rtimeForward)
     call stat_addTimers(rstatistics1%rtimeBackward,      rstatistics2%rtimeBackward)
     call stat_addTimers(rstatistics1%rtimeDefect,        rstatistics2%rtimeDefect)

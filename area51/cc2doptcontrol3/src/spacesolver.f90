@@ -283,12 +283,12 @@ contains
 !<inputoutput>
   ! Structure to be initialised.
   type(t_spaceSolverHierarchy), intent(inout) :: rsolver
-
-  ! Statistics structure
-  type(t_spaceslSolverStat), intent(inout) :: rstatistics
 !</inputoutput>
 
 !<output>
+  ! Statistics structure
+  type(t_spaceslSolverStat), intent(out) :: rstatistics
+
   ! One of the LINSOL_ERR_XXXX constants. A value different to
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
@@ -301,7 +301,8 @@ contains
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
     type(t_spacetimeOperatorAsm) :: roperatorAsm
     type(t_discreteBC), pointer :: p_rdiscreteBC
-
+    type(t_lssSolverStat) :: rlocalStatLss
+    
     if (rsolver%p_rlssHierarchy%nlmin .gt. ispaceLevel) then
       call output_line ("Invalid space level.", &
           OU_CLASS_ERROR,OU_MODE_STD,"spaceslh_initStructure")
@@ -385,7 +386,9 @@ contains
         end select
 
         ! Initialise the structures of the associated linear subsolver
-        call lssh_initStructure (rsolver%p_rlsshierarchy,ilev,rstatistics%rlssSolverStat,ierror)
+        call lssh_initStructure (rsolver%p_rlsshierarchy,ilev,rlocalStatLss,ierror)
+        
+        call lss_sumStatistics(rlocalStatLss,rstatistics%rlssSolverStat)
 
       end if
     end do
@@ -625,12 +628,12 @@ contains
 !<inputoutput>
   ! Structure to be initialised.
   type(t_spaceSolverHierarchy), intent(inout) :: rsolver
-
-  ! Statistics structure
-  type(t_spaceslSolverStat), intent(inout) :: rstatistics
 !</inputoutput>
 
 !<output>
+  ! Statistics structure
+  type(t_spaceslSolverStat), intent(out) :: rstatistics
+
   ! One of the LINSOL_ERR_XXXX constants. A value different to
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
@@ -642,6 +645,7 @@ contains
     ! local variables
     integer :: ilev,iprevlv
     logical :: bfull
+    type(t_lssSolverStat) :: rlocalStatLss
     
     ! Full Newton?
     bfull = (rsolver%rnewtonParams%ctypeIteration .eq. 2) .or. &
@@ -674,7 +678,9 @@ contains
         "primal_"//trim(sys_siL(idofTime,10))//"_"//trim(sys_siL(isollevelSpace,10))
     call lssh_initData (&
         rsolver%p_rlsshierarchy,rsolver%p_roptcBDCSpaceHierarchy,&
-        rsolver%ispacelevel,rstatistics%rlssSolverStat,ierror)
+        rsolver%ispacelevel,rlocalStatLss,ierror)
+    
+    call lss_sumStatistics(rlocalStatLss,rstatistics%rlssSolverStat)
 
   end subroutine
 
@@ -708,12 +714,12 @@ contains
 !<inputoutput>
   ! Structure to be initialised.
   type(t_spaceSolverHierarchy), intent(inout) :: rsolver
-
-  ! Statistics structure
-  type(t_spaceslSolverStat), intent(inout) :: rstatistics
 !</inputoutput>
 
 !<output>
+  ! Statistics structure
+  type(t_spaceslSolverStat), intent(out) :: rstatistics
+
   ! One of the LINSOL_ERR_XXXX constants. A value different to
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
@@ -724,6 +730,7 @@ contains
 
     ! local variables
     integer :: ilev,iprevlv
+    type(t_lssSolverStat) :: rlocalStatLss
     
     ! iprevlv contains the last assembled level.
     iprevlv = 0
@@ -752,7 +759,9 @@ contains
         "primallin_"//trim(sys_siL(idofTime,10))//"_"//trim(sys_siL(isollevelSpace,10))
     call lssh_initData (&
         rsolver%p_rlsshierarchy,rsolver%p_roptcBDCSpaceHierarchy,&
-        rsolver%ispacelevel,rstatistics%rlssSolverStat,ierror)
+        rsolver%ispacelevel,rlocalStatLss,ierror)
+    
+    call lss_sumStatistics(rlocalStatLss,rstatistics%rlssSolverStat)
 
   end subroutine
 
@@ -783,12 +792,12 @@ contains
 !<inputoutput>
   ! Structure to be initialised.
   type(t_spaceSolverHierarchy), intent(inout) :: rsolver
-
-  ! Statistics structure
-  type(t_spaceslSolverStat), intent(inout) :: rstatistics
 !</inputoutput>
 
 !<output>
+  ! Statistics structure
+  type(t_spaceslSolverStat), intent(inout) :: rstatistics
+
   ! One of the LINSOL_ERR_XXXX constants. A value different to
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
@@ -799,6 +808,7 @@ contains
 
     ! local variables
     integer :: ilev,iprevlv
+    type(t_lssSolverStat) :: rlocalStatLss
     
     ! iprevlv contains the last assembled level.
     iprevlv = 0
@@ -826,7 +836,9 @@ contains
         "dual_"//trim(sys_siL(idofTime,10))//"_"//trim(sys_siL(isollevelSpace,10))
     call lssh_initData (&
         rsolver%p_rlsshierarchy,rsolver%p_roptcBDCSpaceHierarchy,&
-        rsolver%ispacelevel,rstatistics%rlssSolverStat,ierror)
+        rsolver%ispacelevel,rlocalStatLss,ierror)
+    
+    call lss_sumStatistics(rlocalStatLss,rstatistics%rlssSolverStat)
 
   end subroutine
 
@@ -860,12 +872,12 @@ contains
 !<inputoutput>
   ! Structure to be initialised.
   type(t_spaceSolverHierarchy), intent(inout) :: rsolver
-
-  ! Statistics structure
-  type(t_spaceslSolverStat), intent(inout) :: rstatistics
 !</inputoutput>
 
 !<output>
+  ! Statistics structure
+  type(t_spaceslSolverStat), intent(out) :: rstatistics
+
   ! One of the LINSOL_ERR_XXXX constants. A value different to
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
@@ -879,6 +891,7 @@ contains
 
     ! local variables
     integer :: ilev,iprevlv
+    type(t_lssSolverStat) :: rlocalStatLss
     
     ! iprevlv contains the last assembled level.
     iprevlv = 0
@@ -906,7 +919,9 @@ contains
         "duallin_"//trim(sys_siL(idofTime,10))//"_"//trim(sys_siL(isollevelSpace,10))
     call lssh_initData (&
         rsolver%p_rlsshierarchy,rsolver%p_roptcBDCSpaceHierarchy,&
-        rsolver%ispacelevel,rstatistics%rlssSolverStat,ierror)
+        rsolver%ispacelevel,rlocalStatLss,ierror)
+    
+    call lss_sumStatistics(rlocalStatLss,rstatistics%rlssSolverStat)
 
   end subroutine
 
@@ -1050,10 +1065,12 @@ contains
   ! The space level of the solution is specified by isollevelSpace.
   ! The time level must match rsolver%itimelevel.
   type(t_controlSpace), intent(inout), optional, target :: rcontrolLin
-
-  ! Statistics structure
-  type(t_spaceslSolverStat), intent(inout) :: rstatistics
 !</inputoutput>
+
+!<output>
+  ! Statistics structure
+  type(t_spaceslSolverStat), intent(out) :: rstatistics
+!</output>
 
 !</subroutine>
 
@@ -1063,10 +1080,10 @@ contains
     type(t_linsolNode), pointer :: p_rsolverNode
     real(DP), dimension(:), pointer :: p_Dd, p_Dx
     type(t_discreteBC), pointer :: p_rdiscreteBC
-    type(t_lssSolverStat) :: rlocalStat
+    type(t_lssSolverStat) :: rlocalStatLss
+    type(t_spaceslSolverStat) :: rlocalStat
    
     ! Clear statistics
-    call spacesl_clearStatistics (rstatistics)
     call stat_startTimer (rstatistics%rtotalTime)
    
     ! At first, get a temp vector we can use for creating defects,
@@ -1178,17 +1195,17 @@ contains
 
         ! Assemble the matrices/boundary conditions on all levels.
         call spaceslh_initData_primal (rsolver, ierror, idofTime, &
-            rprimalSol,rsolver%ispacelevel,rstatistics)
+            rprimalSol,rsolver%ispacelevel,rlocalStat)
+            
+        call spacesl_sumStatistics (rlocalStat,rstatistics,.false.)
         
         ! Solve the system
-        call lss_clearStatistics (rlocalStat)
-        
         output_iautoOutputIndent = output_iautoOutputIndent + 2
         call lssh_precondDefect (&
-            rsolver%p_rlsshierarchy,rsolver%ispacelevel,p_rd,rlocalStat)
+            rsolver%p_rlsshierarchy,rsolver%ispacelevel,p_rd,rlocalStatLss)
         output_iautoOutputIndent = output_iautoOutputIndent - 2
         
-        call lss_sumStatistics (rlocalStat,rstatistics%rlssSolverStat)
+        call lss_sumStatistics (rlocalStatLss,rstatistics%rlssSolverStat)
         
         ! -------------------------------------------------------------
         ! Solver-Cleanup
@@ -1229,6 +1246,8 @@ contains
         rsolver%rnewtonParams%niterations = rsolver%rnewtonParams%niterations + 1
       
       end do
+      
+      rstatistics%niterations = rsolver%rnewtonParams%niterations
       
     ! ---------------------------------------------------------------
     ! Dual equation. Linear loop.
@@ -1273,17 +1292,17 @@ contains
       ! Assemble the matrices/boundary conditions on all levels.
       ! -------------------------------------------------------------
       call spaceslh_initData_dual (rsolver, ierror, idofTime, &
-          rprimalSol,rsolver%ispacelevel,rstatistics)
+          rprimalSol,rsolver%ispacelevel,rlocalStat)
+          
+      call spacesl_sumStatistics (rlocalStat,rstatistics,.false.)
 
       ! -------------------------------------------------------------
       ! Call the linear solver, it does the job for us.
       ! -------------------------------------------------------------
-      call lss_clearStatistics (rlocalStat)
-        
       call lssh_precondDefect (&
-          rsolver%p_rlsshierarchy,rsolver%ispacelevel,p_rd,rlocalStat,p_rsolverNode)
+          rsolver%p_rlsshierarchy,rsolver%ispacelevel,p_rd,rlocalStatLss,p_rsolverNode)
       
-      call lss_sumStatistics (rlocalStat,rstatistics%rlssSolverStat)
+      call lss_sumStatistics (rlocalStatLss,rstatistics%rlssSolverStat)
 
       ! -------------------------------------------------------------
       ! Solver-Cleanup
@@ -1324,6 +1343,10 @@ contains
       ! Clean up boundary conditions
       ! -------------------------------------------------------------
       call sbch_resetBCstructure (rsolver%p_roptcBDCSpaceHierarchy)
+      
+      ! Only one iteration
+      rsolver%rnewtonParams%niterations = 1
+      rstatistics%niterations = 1
 
     ! ---------------------------------------------------------------
     ! Linearised primal equation. Linear loop.
@@ -1371,17 +1394,17 @@ contains
         ! Assemble the matrices/boundary conditions on all levels.
         ! -------------------------------------------------------------
         call spaceslh_initData_primalLin (rsolver, ierror, idofTime, &
-            rprimalSol,rsolver%ispacelevel,rsolver%coptype .eq. OPTP_PRIMALLIN,rstatistics)
+            rprimalSol,rsolver%ispacelevel,rsolver%coptype .eq. OPTP_PRIMALLIN,rlocalStat)
+            
+        call spacesl_sumStatistics (rlocalStat,rstatistics,.false.)
 
         ! -------------------------------------------------------------
         ! Call the linear solver, it does the job for us.
         ! -------------------------------------------------------------
-        call lss_clearStatistics (rlocalStat)
-        
         call lssh_precondDefect (&
-            rsolver%p_rlsshierarchy,rsolver%ispacelevel,p_rd,rlocalStat,p_rsolverNode)
+            rsolver%p_rlsshierarchy,rsolver%ispacelevel,p_rd,rlocalStatLss,p_rsolverNode)
         
-        call lss_sumStatistics (rlocalStat,rstatistics%rlssSolverStat)
+        call lss_sumStatistics (rlocalStatLss,rstatistics%rlssSolverStat)
 
         ! -------------------------------------------------------------
         ! Solver-Cleanup
@@ -1425,6 +1448,10 @@ contains
       ! Clean up boundary conditions
       ! -------------------------------------------------------------
       call sbch_resetBCstructure (rsolver%p_roptcBDCSpaceHierarchy)
+
+      ! Only one iteration
+      rsolver%rnewtonParams%niterations = 1
+      rstatistics%niterations = 1
 
     ! ---------------------------------------------------------------
     ! Linearised dual equation. Linear loop.
@@ -1475,17 +1502,17 @@ contains
         ! Assemble the matrices/boundary conditions on all levels.
         ! -------------------------------------------------------------
         call spaceslh_initData_dualLin (rsolver, ierror, idofTime, &
-            rprimalSol,rsolver%ispacelevel,rsolver%coptype .eq. OPTP_DUALLIN,rstatistics)
+            rprimalSol,rsolver%ispacelevel,rsolver%coptype .eq. OPTP_DUALLIN,rlocalStat)
+        
+        call spacesl_sumStatistics (rlocalStat,rstatistics,.false.)
 
         ! -------------------------------------------------------------
         ! Call the linear solver, it does the job for us.
         ! -------------------------------------------------------------
-        call lss_clearStatistics (rlocalStat)
-        
         call lssh_precondDefect (&
-            rsolver%p_rlsshierarchy,rsolver%ispacelevel,p_rd,rlocalStat,p_rsolverNode)
+            rsolver%p_rlsshierarchy,rsolver%ispacelevel,p_rd,rlocalStatLss,p_rsolverNode)
         
-        call lss_sumStatistics (rlocalStat,rstatistics%rlssSolverStat)
+        call lss_sumStatistics (rlocalStatLss,rstatistics%rlssSolverStat)
 
         ! -------------------------------------------------------------
         ! Solver-Cleanup
@@ -1529,6 +1556,10 @@ contains
       ! Clean up boundary conditions
       ! -------------------------------------------------------------
       call sbch_resetBCstructure (rsolver%p_roptcBDCSpaceHierarchy)
+
+      ! Only one iteration
+      rsolver%rnewtonParams%niterations = 1
+      rstatistics%niterations = 1
 
     end select
 
@@ -1765,7 +1796,7 @@ contains
 
 !<subroutine>
 
-  subroutine spacesl_sumStatistics(rstatistics1,rstatistics2)
+  subroutine spacesl_sumStatistics(rstatistics1,rstatistics2,btotalTime)
   
 !<description>
   ! Sums up the data of rstatistics1 to the data in rstatistics2.
@@ -1774,6 +1805,10 @@ contains
 !<input>
   ! Source structure
   type(t_spaceslSolverStat), intent(in) :: rstatistics1
+  
+  ! OPTIONAL: Whether or not to sum up the total time.
+  ! If not present, TRUE is assumed.
+  logical, intent(in), optional :: btotalTime
 !</input>
 
 !<inputoutput>
@@ -1785,7 +1820,12 @@ contains
 
     rstatistics2%niterations = rstatistics2%niterations + rstatistics1%niterations
     
-    call stat_addTimers(rstatistics1%rtotalTime,rstatistics2%rtotalTime)
+    if (.not. present(btotalTime)) then
+      call stat_addTimers(rstatistics1%rtotalTime,rstatistics2%rtotalTime)
+    else if (btotalTime) then
+      call stat_addTimers(rstatistics1%rtotalTime,rstatistics2%rtotalTime)
+    end if
+    
     call stat_addTimers(rstatistics1%rtimeDefect,rstatistics2%rtimeDefect)
     call stat_addTimers(rstatistics1%rtimeMatrixAssembly,rstatistics2%rtimeMatrixAssembly)
     

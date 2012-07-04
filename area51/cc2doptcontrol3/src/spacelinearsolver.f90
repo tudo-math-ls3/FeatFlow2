@@ -867,12 +867,12 @@ contains
 !<inputoutput>
   ! The underlying hierarchy.
   type(t_linsolHierarchySpace), intent(inout), target :: rlssHierarchy
-  
-  ! Statistics hierarchy which receives timing results for factorisations.
-  type(t_lssSolverStat), intent(inout) :: rstatistics
 !</inputoutput>
   
 !<output>
+  ! Statistics hierarchy which receives timing results for factorisations.
+  type(t_lssSolverStat), intent(out) :: rstatistics
+
   ! One of the LINSOL_ERR_XXXX constants. A value different to
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
@@ -929,12 +929,12 @@ contains
 !<inputoutput>
   ! The underlying hierarchy.
   type(t_linsolHierarchySpace), intent(inout) :: rlssHierarchy
-
-  ! Statistics hierarchy which receives timing results for factorisations.
-  type(t_lssSolverStat), intent(inout) :: rstatistics
 !</inputoutput>
   
 !<output>
+  ! Statistics hierarchy which receives timing results for factorisations.
+  type(t_lssSolverStat), intent(out) :: rstatistics
+
   ! One of the LINSOL_ERR_XXXX constants. A value different to
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
@@ -1237,13 +1237,15 @@ contains
   ! The defect to apply preconditioning to.
   type(t_vectorBlock), intent(inout) :: rd
   
-  ! Statistics hierarchy which receives timing results for factorisations.
-  type(t_lssSolverStat), intent(inout) :: rstatistics
-
   ! OPTIONAL; If present, this is set to the solver node of the linear
   ! solver used to solve the system
   type(t_linsolNode), pointer, optional :: p_rsolverNode
 !</inputoutput>
+
+!<output>
+  ! Statistics hierarchy which receives timing results.
+  type(t_lssSolverStat), intent(out) :: rstatistics
+!</output>
   
 !</subroutine>
 
@@ -1299,7 +1301,7 @@ contains
   subroutine lss_sumStatistics (rstatistics1,rstatistics2)
 
 !<description>
-  ! SUms up twi statistic blocks.
+  ! Sums up twi statistic blocks.
 !</description>
   
 !<input>

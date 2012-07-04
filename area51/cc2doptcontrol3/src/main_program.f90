@@ -282,8 +282,10 @@ contains
         sys_sdL(rnewtonStatistics%rtimeForward%delapsedReal,10))
     call output_line ("    Time for backward simulations            = "//&
         sys_sdL(rnewtonStatistics%rtimeBackward%delapsedReal,10))
-    call output_line ("    #Iterations linear solver                = "//&
+    call output_line ("    #Iterations nonlinear solver in space    = "//&
         sys_siL(rnewtonStatistics%rspaceslSolverStat%niterations,10))
+    call output_line ("    #Iterations linear solver in space       = "//&
+        sys_siL(rnewtonStatistics%rspaceslSolverStat%rlssSolverStat%niterations,10))
     call output_line ("  Time for interpolation to lower levels     = "//&
         sys_sdL(rnewtonStatistics%rtimeProlRest%delapsedReal,10))
     call output_line ("  Time linear solver in space                = "//&
@@ -293,6 +295,8 @@ contains
     call output_lbrk()
 
     ! More detailed statistics about the linear space-time solver    
+    call output_line ("  #Iterations linear solver in space         = "//&
+        sys_siL(rnewtonStatistics%rnewtonlinSolverStat%niterations,10))
     call output_line ("  Time for linear space-time solver          = "//&
         sys_sdL(rnewtonStatistics%rnewtonlinSolverStat%rtotalTime%delapsedReal,10))
 
@@ -312,10 +316,12 @@ contains
         sys_sdL(rnewtonStatistics%rnewtonlinSolverStat%rtimeForwardLin%delapsedReal,10))
     call output_line ("      Time for backward simulations          = "//&
         sys_sdL(rnewtonStatistics%rnewtonlinSolverStat%rtimeBackwardLin%delapsedReal,10))
-    call output_line ("      Time linear solver in space            = "//&
-        sys_sdL(rnewtonStatistics%rnewtonlinSolverStat%rspaceslSolverStat%rtotalTime%delapsedReal,10))
     call output_line ("      #Iterations linear solver in space     = "//&
-        sys_siL(rnewtonStatistics%rnewtonlinSolverStat%rspaceslSolverStat%niterations,10))
+        sys_siL(rnewtonStatistics%rnewtonlinSolverStat%rspaceslSolverStat%&
+                rlssSolverStat%niterations,10))
+    call output_line ("      Time linear solver in space            = "//&
+        sys_sdL(rnewtonStatistics%rnewtonlinSolverStat%rspaceslSolverStat%&
+                rtotalTime%delapsedReal,10))
     call output_lbrk()
 
     call output_line ("    Time for defect calculations (fine)      = "//&
@@ -324,10 +330,12 @@ contains
         sys_sdL(rnewtonStatistics%rnewtonlinSolverStat%rtimeForwardLinFine%delapsedReal,10))
     call output_line ("      Time for backward simulations (fine)   = "//&
         sys_sdL(rnewtonStatistics%rnewtonlinSolverStat%rtimeBackwardLinFine%delapsedReal,10))
-    call output_line ("      Time linear solver in space (fine)     = "//&
-        sys_sdL(rnewtonStatistics%rnewtonlinSolverStat%rspaceslSolverStatFine%rtotalTime%delapsedReal,10))
     call output_line ("      #Iterations linear solver (sp., fine)  = "//&
-        sys_siL(rnewtonStatistics%rnewtonlinSolverStat%rspaceslSolverStatFine%niterations,10))
+        sys_siL(rnewtonStatistics%rnewtonlinSolverStat%rspaceslSolverStatFine%&
+                rlssSolverStat%niterations,10))
+    call output_line ("      Time linear solver in space (fine)     = "//&
+        sys_sdL(rnewtonStatistics%rnewtonlinSolverStat%rspaceslSolverStatFine%&
+                rtotalTime%delapsedReal,10))
     call output_lbrk()
 
     call output_line ("    Time for defect calculations (coarse)    = "//&
@@ -336,10 +344,11 @@ contains
         sys_sdL(rnewtonStatistics%rnewtonlinSolverStat%rtimeForwardLinCoarse%delapsedReal,10))
     call output_line ("      Time for backward simulations (coarse) = "//&
         sys_sdL(rnewtonStatistics%rnewtonlinSolverStat%rtimeBackwardLinCoarse%delapsedReal,10))
+    call output_line ("      #Iterations linear solver (sp, coarse) = "//&
+        sys_siL(rnewtonStatistics%rnewtonlinSolverStat%rspaceslSolverStatCoarse%&
+                rlssSolverStat%niterations,10))
     call output_line ("      Time linear solver in space (coarse)   = "//&
         sys_sdL(rnewtonStatistics%rnewtonlinSolverStat%rspaceslSolverStatCoarse%rtotalTime%delapsedReal,10))
-    call output_line ("      #Iterations linear solver (sp, coarse) = "//&
-        sys_siL(rnewtonStatistics%rnewtonlinSolverStat%rspaceslSolverStatCoarse%niterations,10))
 
   end subroutine
 

@@ -27,6 +27,7 @@ module kktsystem
   use blockmatassemblybase
   use blockmatassembly
   use collection
+  use statistics
   
   use spacetimevectors
   use analyticsolution
@@ -356,16 +357,21 @@ contains
   
   ! Space solver structure used for solving subequations in space
   type(t_spaceSolverHierarchy), intent(inout) :: rspaceSolver
-
-  ! Statistics structure
-  type(t_spaceslSolverStat), intent(inout) :: rstatistics
 !</inputoutput>
+
+!<output>
+  ! Statistics structure
+  type(t_spaceslSolverStat), intent(out) :: rstatistics
+!<output>
 
 !</subroutine>
 
     ! local variables
     integer :: idofTime, ierror
+    type(t_spaceslSolverStat) :: rstatLocal
     
+    call stat_startTimer (rstatistics%rtotalTime)
+
     ! -------------------------------------------------------------------------
     ! Basic description
     !
@@ -390,7 +396,10 @@ contains
     ! Initialise basic solver structures
     call spaceslh_initStructure (rspaceSolver, &
         rkktsystem%ispacelevel, rkktsystem%itimelevel, &
-        rkktsystem%p_roperatorAsmHier,rstatistics,ierror)
+        rkktsystem%p_roperatorAsmHier,rstatLocal,ierror)
+
+    ! Sum up statistics
+    call spacesl_sumStatistics(rstatLocal,rstatistics,.false.)
 
     if (ierror .ne. 0) then
       call output_line("Error initialising the solver structures.",&
@@ -413,13 +422,18 @@ contains
     
       ! Apply the solver to update the solution in timestep idofTime.
       output_iautoOutputIndent = output_iautoOutputIndent + 2
-      call spaceslh_solve (rspaceSolver,idofTime,cspatialInitCondPolicy,rstatistics,&
+      call spaceslh_solve (rspaceSolver,idofTime,cspatialInitCondPolicy,rstatLocal,&
           rkktsystem%ispacelevel,rkktsystem%p_rprimalSol,rcontrol=rkktsystem%p_rcontrol)
       output_iautoOutputIndent = output_iautoOutputIndent - 2
+      
+      ! Sum up statistics
+      call spacesl_sumStatistics(rstatLocal,rstatistics,.false.)
       
     end do ! step
    
     call spaceslh_doneStructure (rspaceSolver)
+    
+    call stat_stopTimer (rstatistics%rtotalTime)
     
   end subroutine
 
@@ -451,15 +465,20 @@ contains
 
   ! Space solver structure used for solving subequations in space
   type(t_spaceSolverHierarchy), intent(inout) :: rspaceSolver
-
-  ! Statistics structure
-  type(t_spaceslSolverStat), intent(inout) :: rstatistics
 !</inputoutput>
+
+!<output>
+  ! Statistics structure
+  type(t_spaceslSolverStat), intent(out) :: rstatistics
+!<output>
 
 !</subroutine>
 
     ! local variables
     integer :: idofTime, ierror
+    type(t_spaceslSolverStat) :: rstatLocal
+
+    call stat_startTimer (rstatistics%rtotalTime)
 
     ! -------------------------------------------------------------------------
     ! The solution of the dual equation is rather similar to the primal
@@ -470,7 +489,10 @@ contains
     ! Initialise basic solver structures
     call spaceslh_initStructure (rspaceSolver, &
         rkktsystem%ispacelevel, rkktsystem%itimelevel, &
-        rkktsystem%p_roperatorAsmHier,rstatistics,ierror)
+        rkktsystem%p_roperatorAsmHier,rstatLocal,ierror)
+
+    ! Sum up statistics
+    call spacesl_sumStatistics(rstatLocal,rstatistics,.false.)
 
     if (ierror .ne. 0) then
       call output_line("Error initialising the solver structures.",&
@@ -485,14 +507,19 @@ contains
     
       ! Apply the solver to update the solution in timestep idofTime.
       output_iautoOutputIndent = output_iautoOutputIndent + 2
-      call spaceslh_solve (rspaceSolver,idofTime,cspatialInitCondPolicy,rstatistics,&
+      call spaceslh_solve (rspaceSolver,idofTime,cspatialInitCondPolicy,rstatLocal,&
           rkktsystem%ispacelevel,rkktsystem%p_rprimalSol,rdualSol=rkktsystem%p_rdualSol)
       output_iautoOutputIndent = output_iautoOutputIndent - 2
       
+      ! Sum up statistics
+      call spacesl_sumStatistics(rstatLocal,rstatistics,.false.)
+
     end do ! step
    
     call spaceslh_doneStructure (rspaceSolver)
     
+    call stat_stopTimer (rstatistics%rtotalTime)
+
   end subroutine
 
   ! ***************************************************************************
@@ -769,16 +796,21 @@ contains
 
   ! Space solver structure used for solving subequations in space
   type(t_spaceSolverHierarchy), intent(inout) :: rspaceSolver
-
-  ! Statistics structure
-  type(t_spaceslSolverStat), intent(inout) :: rstatistics
 !</inputoutput>
+
+!<output>
+  ! Statistics structure
+  type(t_spaceslSolverStat), intent(out) :: rstatistics
+!<output>
 
 !</subroutine>
 
     ! local variables
     type(t_kktSystem), pointer :: p_rkktSystem
     integer :: ierror, idoftime
+    type(t_spaceslSolverStat) :: rstatLocal
+    
+    call stat_startTimer (rstatistics%rtotalTime)
     
     p_rkktSystem => rkktsystemDirDeriv%p_rkktsystem
    
@@ -786,7 +818,10 @@ contains
     call spaceslh_initStructure (rspaceSolver, &
         p_rkktsystem%ispacelevel, &
         p_rkktsystem%itimelevel, &
-        p_rkktsystem%p_roperatorAsmHier,rstatistics,ierror)
+        p_rkktsystem%p_roperatorAsmHier,rstatLocal,ierror)
+
+    ! Sum up statistics
+    call spacesl_sumStatistics(rstatLocal,rstatistics,.false.)
 
     if (ierror .ne. 0) then
       call output_line("Error initialising the solver structures.",&
@@ -802,16 +837,21 @@ contains
       ! Apply the solver to update the solution in timestep idofTime.
       output_iautoOutputIndent = output_iautoOutputIndent + 2
       call spaceslh_solve (rspaceSolver,idofTime,cspatialInitCondPolicy,&
-          rstatistics,p_rkktsystem%ispacelevel,&
+          rstatLocal,p_rkktsystem%ispacelevel,&
           p_rkktsystem%p_rprimalSol,&
           rcontrol=p_rkktsystem%p_rcontrol,&
           rprimalSolLin=rkktsystemDirDeriv%p_rprimalSolLin,&
           rcontrolLin=rkktsystemDirDeriv%p_rcontrolLin)
       output_iautoOutputIndent = output_iautoOutputIndent - 2
       
+      ! Sum up statistics
+      call spacesl_sumStatistics(rstatLocal,rstatistics,.false.)
+      
     end do ! step
    
     call spaceslh_doneStructure (rspaceSolver)
+
+    call stat_stopTimer (rstatistics%rtotalTime)
 
   end subroutine
 
@@ -843,24 +883,32 @@ contains
 
   ! Space solver structure used for solving subequations in space
   type(t_spaceSolverHierarchy), intent(inout) :: rspaceSolver
-
-  ! Statistics structure
-  type(t_spaceslSolverStat), intent(inout) :: rstatistics
 !</inputoutput>
+
+!<output>
+  ! Statistics structure
+  type(t_spaceslSolverStat), intent(out) :: rstatistics
+!<output>
 
 !</subroutine>
    
     ! local variables
     type(t_kktSystem), pointer :: p_rkktSystem
     integer :: ierror, idoftime
+    type(t_spaceslSolverStat) :: rstatLocal
     
+    call stat_startTimer (rstatistics%rtotalTime)
+
     p_rkktSystem => rkktsystemDirDeriv%p_rkktsystem
    
     ! Initialise basic solver structures
     call spaceslh_initStructure (rspaceSolver, &
         p_rkktsystem%ispacelevel, &
         p_rkktsystem%itimelevel, &
-        p_rkktsystem%p_roperatorAsmHier,rstatistics,ierror)
+        p_rkktsystem%p_roperatorAsmHier,rstatLocal,ierror)
+
+    ! Sum up statistics
+    call spacesl_sumStatistics(rstatLocal,rstatistics,.false.)
 
     if (ierror .ne. 0) then
       call output_line("Error initialising the solver structures.",&
@@ -876,16 +924,21 @@ contains
       ! Apply the solver to update the solution in timestep idofTime.
       output_iautoOutputIndent = output_iautoOutputIndent + 2
       call spaceslh_solve (rspaceSolver,idofTime,cspatialInitCondPolicy,&
-          rstatistics,p_rkktsystem%ispacelevel,&
+          rstatLocal,p_rkktsystem%ispacelevel,&
           p_rkktsystem%p_rprimalSol,&
           rdualSol=p_rkktsystem%p_rdualSol,&
           rprimalSolLin=rkktsystemDirDeriv%p_rprimalSolLin,&
           rdualSolLin=rkktsystemDirDeriv%p_rdualSolLin)
       output_iautoOutputIndent = output_iautoOutputIndent - 2
       
+      ! Sum up statistics
+      call spacesl_sumStatistics(rstatLocal,rstatistics,.false.)
+      
     end do ! step
    
     call spaceslh_doneStructure (rspaceSolver)
+
+    call stat_stopTimer (rstatistics%rtotalTime)
 
   end subroutine
 

@@ -73,11 +73,14 @@ module newtoniterationlinear
 
 !<constantblock description = "Solver types; used for statistics.">
 
+  ! Just the calculation of the residual
+  integer, parameter, public :: NLIN_STYPE_RESCALC = 0
+
   ! A general linear solver
-  integer, parameter, public :: NLIN_STYPE_LINSOL = 0
-  
+  integer, parameter, public :: NLIN_STYPE_LINSOL = 1
+
   ! A subsolver in a multigrid iteration
-  integer, parameter, public :: NLIN_STYPE_MGSUBSOLVER = 1
+  integer, parameter, public :: NLIN_STYPE_MGSUBSOLVER = 2
 
 !</constantblock>
 
@@ -415,14 +418,14 @@ contains
   ! direction / residual in the Newton iteration
   type(t_controlSpace), intent(inout) :: rresidual
 
-  ! Solver statistics
-  type(t_newtonlinSolverStat), intent(inout) :: rstatistics
-
   ! type of norm. A LINALG_NORMxxxx constant.
   integer, intent(in), optional :: iresnorm
 !</inputoutput>
 
 !<output>
+  ! Solver statistics. Statistics of the residual calculation are added to this.
+  type(t_newtonlinSolverStat), intent(out) :: rstatistics
+
   ! L2-Norm of the residual
   real(DP), intent(out), optional :: dres
 !</output>
@@ -430,8 +433,10 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_timer) :: rtimer
+    type(t_spaceslSolverStat) :: rlocalStat
 
+    call stat_startTimer (rstatistics%rtotalTime)
+    
     ! -------------------------------------------------------------
     ! Step 1: Solve the primal and dual system.
     ! -------------------------------------------------------------
@@ -445,24 +450,23 @@ contains
     end if
 
     ! Solve the primal equation, update the primal solution.
-    call stat_clearTimer (rtimer)
-    call stat_startTimer (rtimer)
     output_iautoOutputIndent = output_iautoOutputIndent + 2
 
     call kkt_solvePrimalDirDeriv (rkktsystemDirDeriv,&
         rlinsolParam%p_rsolverHierPrimalLin,rlinsolParam%cspatialInitCondPolicy,&
-        rstatistics%rspaceslSolverStat)
+        rlocalStat)
 
     output_iautoOutputIndent = output_iautoOutputIndent - 2
-    call stat_stopTimer (rtimer)
+    
+    call spacesl_sumStatistics(rlocalStat,rstatistics%rspaceslSolverStat)
     
     if (rlinsolParam%rprecParameters%ioutputLevel .ge. 3) then
       call output_line ("Linear space-time Residual: Time for solving: "//&
-          trim(sys_sdL(rtimer%delapsedReal,10)))
+          trim(sys_sdL(rlocalStat%rtotalTime%delapsedReal,10)))
     end if
 
     ! Add time to the time of the forward equation
-    call stat_addTimers (rtimer,rstatistics%rtimeForwardLin)
+    call stat_addTimers (rlocalStat%rtotalTime,rstatistics%rtimeForwardLin)
 
     ! --------------------
     ! Backward equation
@@ -473,24 +477,23 @@ contains
     end if
 
     ! Solve the dual equation, update the dual solution.
-    call stat_clearTimer (rtimer)
-    call stat_startTimer (rtimer)
     output_iautoOutputIndent = output_iautoOutputIndent + 2
 
     call kkt_solveDualDirDeriv (rkktsystemDirDeriv,&
         rlinsolParam%p_rsolverHierDualLin,rlinsolParam%cspatialInitCondPolicy,&
-        rstatistics%rspaceslSolverStat)
+        rlocalStat)
 
     output_iautoOutputIndent = output_iautoOutputIndent - 2
-    call stat_stopTimer (rtimer)
+    
+    call spacesl_sumStatistics(rlocalStat,rstatistics%rspaceslSolverStat)
     
     if (rlinsolParam%rprecParameters%ioutputLevel .ge. 3) then
       call output_line ("Linear space-time Residual: Time for solving: "//&
-          trim(sys_sdL(rtimer%delapsedReal,10)))
+          trim(sys_sdL(rlocalStat%rtotalTime%delapsedReal,10)))
     end if
 
     ! Add time to the time of the backward equation
-    call stat_addTimers (rtimer,rstatistics%rtimeBackwardLin)
+    call stat_addTimers (rlocalStat%rtotalTime,rstatistics%rtimeBackwardLin)
 
     ! -------------------------------------------------------------
     ! Step 2: Calculate the residual
@@ -500,6 +503,8 @@ contains
     ! calculate the residual in the control space.
     call kkt_calcControlResDirDeriv (rkktsystemDirDeriv,rrhs,rresidual,dres,iresnorm)
 
+    call stat_stopTimer (rstatistics%rtotalTime)
+    
   end subroutine
 
   ! ***************************************************************************
@@ -518,12 +523,12 @@ contains
   
   ! Structure defining the linearised KKT system.
   type(t_kktsystemDirDeriv), intent(inout), target :: rkktsystemDirDeriv
-
-  ! Solver statistics
-  type(t_newtonlinSolverStat), intent(inout) :: rstatistics
 !</inputoutput>
 
 !<output>
+  ! Solver statistics
+  type(t_newtonlinSolverStat), intent(out) :: rstatistics
+
   ! Receives the result: d = J''(u)g
   type(t_controlSpace), intent(inout), target :: rrhs
 !</output>
@@ -531,7 +536,7 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_timer) :: rtimer
+    type(t_spaceslSolverStat) :: rlocalStat
 
     ! -------------------------------------------------------------
     ! Step 1: Solve the primal and dual system.
@@ -546,8 +551,6 @@ contains
     end if
 
     ! Solve the primal equation, update the primal solution.
-    call stat_clearTimer (rtimer)
-    call stat_startTimer (rtimer)
     output_iautoOutputIndent = output_iautoOutputIndent + 2
 
     call kkt_solvePrimalDirDeriv (rkktsystemDirDeriv,&
@@ -555,15 +558,14 @@ contains
         rstatistics%rspaceslSolverStat)
     
     output_iautoOutputIndent = output_iautoOutputIndent - 2
-    call stat_stopTimer (rtimer)
 
     if (rlinsolParam%rprecParameters%ioutputLevel .ge. 3) then
       call output_line ("Linear space-time Residual: Time for solving: "//&
-          trim(sys_sdL(rtimer%delapsedReal,10)))
+          trim(sys_sdL(rlocalStat%rtotalTime%delapsedReal,10)))
     end if
 
     ! Add time to the time of the forward equation
-    call stat_addTimers (rtimer,rstatistics%rtimeForwardLin)
+    call stat_addTimers (rlocalStat%rtotalTime,rstatistics%rtimeForwardLin)
 
     ! --------------------
     ! Backward equation
@@ -574,8 +576,6 @@ contains
     end if
 
     ! Solve the dual equation, update the dual solution.
-    call stat_clearTimer (rtimer)
-    call stat_startTimer (rtimer)
     output_iautoOutputIndent = output_iautoOutputIndent + 2
 
     call kkt_solveDualDirDeriv (rkktsystemDirDeriv,&
@@ -583,15 +583,14 @@ contains
         rstatistics%rspaceslSolverStat)
 
     output_iautoOutputIndent = output_iautoOutputIndent - 2
-    call stat_stopTimer (rtimer)
 
     if (rlinsolParam%rprecParameters%ioutputLevel .ge. 3) then
       call output_line ("Linear space-time Residual: Time for solving: "//&
-          trim(sys_sdL(rtimer%delapsedReal,10)))
+          trim(sys_sdL(rlocalStat%rtotalTime%delapsedReal,10)))
     end if
 
     ! Add time to the time of the backward equation
-    call stat_addTimers (rtimer,rstatistics%rtimeBackwardLin)
+    call stat_addTimers (rlocalStat%rtotalTime,rstatistics%rtimeBackwardLin)
 
     ! -------------------------------------------------------------
     ! Step 2: Calculate the residual
@@ -631,10 +630,12 @@ contains
   
   ! Right-hand side of the linearised control equation
   type(t_controlSpace), intent(inout), target :: rrhs
-
-  ! Solver statistics. Will completely be overwritten.
-  type(t_newtonlinSolverStat), intent(inout) :: rstatistics
 !</inputoutput>
+
+!<ouptut>
+  ! Solver statistics. 
+  type(t_newtonlinSolverStat), intent(out) :: rstatistics
+!</ouptut>
 
 !</subroutine>
 
@@ -643,9 +644,6 @@ contains
     rsmootherParams%rprecParameters%nminiterations = nsm
     rsmootherParams%rprecParameters%nmaxiterations = nsm
     
-    ! Clear the statistics.
-    call newtonlin_clearStatistics (rstatistics)
-  
     ! Call the smoother.
     select case (rsmootherParams%csolverType)
     
@@ -702,19 +700,19 @@ contains
   
   ! Right-hand side of the linearised control equation
   type(t_controlSpace), intent(inout), target :: rrhs
-
-  ! Solver statistics
-  type(t_newtonlinSolverStat), intent(inout) :: rstatistics
 !</inputoutput>
+
+!<ouptut>
+  ! Solver statistics. 
+  type(t_newtonlinSolverStat), intent(out) :: rstatistics
+!</ouptut>
 
 !</subroutine>
 
     ! Temporary control vector
     type(t_controlSpace), pointer :: p_rtempVector
+    type(t_newtonlinSolverStat) :: rlocalStat
 
-    ! Clear statistics
-    call newtonlin_clearStatistics (rstatistics)
-    
     ! Measure iteration time
     call stat_startTimer (rstatistics%rtotalTime)
 
@@ -733,10 +731,12 @@ contains
       ! Compute the residual and its norm.
       output_iautoOutputIndent = output_iautoOutputIndent + 2
       call newtonlin_getResidual (rlinsolParam,rkktsystemDirDeriv,rrhs,&
-          p_rtempVector,rstatistics,rlinsolParam%rprecParameters%dresFinal,&
+          p_rtempVector,rlocalStat,rlinsolParam%rprecParameters%dresFinal,&
           rlinsolParam%rprecParameters%iresnorm)
       output_iautoOutputIndent = output_iautoOutputIndent - 2
-
+      
+      call newtonlin_sumStatistics(rlocalStat,rstatistics,NLIN_STYPE_RESCALC)
+      
       if (rlinsolParam%rprecParameters%niterations .eq. 0) then
         ! Remember the initial residual
         rlinsolParam%rprecParameters%dresInit = rlinsolParam%rprecParameters%dresFinal
@@ -849,19 +849,19 @@ contains
   
   ! Right-hand side of the linearised control equation
   type(t_controlSpace), intent(inout), target :: rrhs
-
-  ! Solver statistics
-  type(t_newtonlinSolverStat), intent(inout) :: rstatistics
 !</inputoutput>
+
+!<ouptut>
+  ! Solver statistics. 
+  type(t_newtonlinSolverStat), intent(out) :: rstatistics
+!</ouptut>
 
 !</subroutine>
 
     real(DP) :: dalpha,dbeta,dgamma,dgammaOld
     type(t_controlSpace), pointer :: p_rr,p_rAp
     type(t_kktsystemDirDeriv), pointer :: p_rp
-
-    ! Clear statistics
-    call newtonlin_clearStatistics (rstatistics)
+    type(t_newtonlinSolverStat) :: rlocalStat
 
     ! Measure total time
     call stat_startTimer (rstatistics%rtotalTime)
@@ -884,8 +884,10 @@ contains
 
     ! Create the initial defect in rd
     output_iautoOutputIndent = output_iautoOutputIndent + 2
-    call newtonlin_getResidual (rlinsolParam,rkktsystemDirDeriv,rrhs,p_rr,rstatistics)
+    call newtonlin_getResidual (rlinsolParam,rkktsystemDirDeriv,rrhs,p_rr,rlocalStat)
     output_iautoOutputIndent = output_iautoOutputIndent - 2
+        
+    call newtonlin_sumStatistics(rlocalStat,rstatistics,NLIN_STYPE_RESCALC)
         
     call kktsp_controlCopy (p_rr,p_rp%p_rcontrolLin)
 
@@ -940,8 +942,10 @@ contains
 
       ! Calculate Ap.
       output_iautoOutputIndent = output_iautoOutputIndent + 2
-      call newtonlin_applyOperator (rlinsolParam,p_rp,p_rAp,rstatistics)
+      call newtonlin_applyOperator (rlinsolParam,p_rp,p_rAp,rlocalStat)
       output_iautoOutputIndent = output_iautoOutputIndent - 2
+      
+      call newtonlin_sumStatistics(rlocalStat,rstatistics,NLIN_STYPE_LINSOL)
 
       ! Calculate the parameter ALPHA
       dalpha = dgamma / kktsp_scalarProductControl(p_rp%p_rcontrolLin,p_rAp)
@@ -1359,26 +1363,20 @@ contains
 
   ! Right-hand side of the linearised control equation
   type(t_controlSpace), intent(inout), target :: rrhs
-
-  ! Solver statistics.
-  type(t_newtonlinSolverStat), intent(inout) :: rstatistics
 !</inputoutput>
 
-!</subroutine>
+!<ouptut>
+  ! Solver statistics. 
+  type(t_newtonlinSolverStat), intent(out) :: rstatistics
+!</ouptut>
 
-    ! Clear the statistics
-    call newtonlin_clearStatistics(rstatistics)
-    
-    ! Total time
-    call stat_startTimer(rstatistics%rtotalTime)
+!</subroutine>
 
     ! Call the MG driver on the maximum level.
     call newtonlin_multigridDriver (&
         rlinsolParam,ilevel,rlinsolParam%p_rkktsystemHierarchy%nlevels,&
         rkktsysDirDerivHierarchy,rrhs,rstatistics)
         
-    call stat_stopTimer(rstatistics%rtotalTime)
-
     ! Statistics
     if (rlinsolParam%rprecParameters%dresInit .gt. &
         rlinsolParam%rprecParameters%drhsZero) then
@@ -1502,10 +1500,12 @@ contains
   
   ! Right-hand side of the linearised control equation
   type(t_controlSpace), intent(inout), target :: rrhs
-
-  ! Solver statistics.
-  type(t_newtonlinSolverStat), intent(inout) :: rstatistics
 !</inputoutput>
+
+!<ouptut>
+  ! Solver statistics. 
+  type(t_newtonlinSolverStat), intent(out) :: rstatistics
+!</ouptut>
 
 !</subroutine>
 
@@ -1530,16 +1530,11 @@ contains
         end if
       end if
 
-      ! Call the coarse grid solver.
-      call newtonlin_clearStatistics(rlocalStat)
-      
       output_iautoOutputIndent = output_iautoOutputIndent + 2
       call newtonlin_precond (p_rsubnodeMultigrid%p_rsubSolvers(ilevel),&
-          rkktsysDirDerivHierarchy,rrhs,rlocalStat,ilevel)
+          rkktsysDirDerivHierarchy,rrhs,rstatistics,ilevel)
       output_iautoOutputIndent = output_iautoOutputIndent - 2
     
-      call newtonlin_sumStatistics (rlocalStat,rstatistics,NLIN_STYPE_MGSUBSOLVER,ilevel,nlevels)
-      
       rlinsolParam%rprecParameters%dresInit = &
           p_rsubnodeMultigrid%p_rsubSolvers(ilevel)%rprecParameters%dresInit
       rlinsolParam%rprecParameters%dresFinal = &
@@ -1551,6 +1546,9 @@ contains
       return
     end if
     
+    ! Total time
+    call stat_startTimer(rstatistics%rtotalTime)
+
     ! On level 2..nlevels, apply the smoothing and coarse grid correction process.
 
     if (ilevel .eq. nlevels) then
@@ -1587,9 +1585,6 @@ contains
         if (ite .ge. nmaxIterations) exit
       end if
       
-      ! Statistics
-      call newtonlin_clearStatistics(rlocalStat)
-    
       ! Get the residual
       output_iautoOutputIndent = output_iautoOutputIndent + 2
       
@@ -1599,9 +1594,8 @@ contains
           dresFinal,rlinsolParam%rprecParameters%iresnorm)
       
       output_iautoOutputIndent = output_iautoOutputIndent - 2
-
-      ! Statistics
-      call newtonlin_sumStatistics (rlocalStat,rstatistics,NLIN_STYPE_MGSUBSOLVER,ilevel,nlevels)
+      
+      call newtonlin_sumStatistics(rlocalStat,rstatistics,NLIN_STYPE_RESCALC)
 
       ! Remember the initial residual
       if (ite .eq. 0) dresInit = dresFinal
@@ -1645,14 +1639,14 @@ contains
               "Space-time Multigrid: Invoking pre-smoother.")
         end if
         
-        ! Statistics
-        call newtonlin_clearStatistics(rlocalStat)
-
         output_iautoOutputIndent = output_iautoOutputIndent + 2
         call newtonlin_smoothCorrection (p_rsubnodeMultigrid%p_rsubSolvers(ilevel),&
               p_rsubnodeMultigrid%nsmpre,&
               p_rkktSysSolution,rrhs,rlocalStat)
         output_iautoOutputIndent = output_iautoOutputIndent - 2
+
+        ! Statistics
+        call newtonlin_sumStatistics (rlocalStat,rstatistics,NLIN_STYPE_MGSUBSOLVER,ilevel,nlevels)
         
         ! Get the new residual -- it has changed due to the smoothing.
         output_iautoOutputIndent = output_iautoOutputIndent + 2
@@ -1662,9 +1656,8 @@ contains
             dresFinal,rlinsolParam%rprecParameters%iresnorm)
         output_iautoOutputIndent = output_iautoOutputIndent - 2
 
-        ! Statistics
-        call newtonlin_sumStatistics (rlocalStat,rstatistics,NLIN_STYPE_MGSUBSOLVER,ilevel,nlevels)
-
+        call newtonlin_sumStatistics(rlocalStat,rstatistics,NLIN_STYPE_RESCALC)
+        
       end if
       
       if (rlinsolParam%rprecParameters%ioutputLevel .ge. 3) then
@@ -1688,9 +1681,6 @@ contains
               "Space-time Multigrid: Invoking coarse-grid solver.")
         end if
       end if
-
-      ! Statistics
-      call newtonlin_clearStatistics(rlocalStat)
 
       ! Coarse grid correction
       output_iautoOutputIndent = output_iautoOutputIndent + 2
@@ -1734,9 +1724,6 @@ contains
               "Space-time Multigrid: Invoking post-smoother.")
         end if
 
-        ! Statistics
-        call newtonlin_clearStatistics(rlocalStat)
-
         output_iautoOutputIndent = output_iautoOutputIndent + 2
         call newtonlin_smoothCorrection (p_rsubnodeMultigrid%p_rsubSolvers(ilevel),&
               p_rsubnodeMultigrid%nsmpost,&
@@ -1766,6 +1753,8 @@ contains
     call MG_initCycles (&
         p_rsubnodeMultigrid%ccycle,ilevel,nlevels,p_rsubnodeMultigrid%p_IcycleCount)
         
+    call stat_stopTimer(rstatistics%rtotalTime)
+
   end subroutine
 
   ! ***************************************************************************
@@ -1800,10 +1789,12 @@ contains
   ! This structure contains the search direction to be
   ! preconditioned. Will be replaced by the precoditioned search direction.
   type(t_controlSpace), intent(inout) :: rnewtonDir
-
-  ! Solver statistics.
-  type(t_newtonlinSolverStat), intent(inout) :: rstatistics
 !</inputoutput>
+
+!<output>
+  ! Solver statistics.
+  type(t_newtonlinSolverStat), intent(out) :: rstatistics
+!</output>
 
 !</subroutine>
 
@@ -2427,7 +2418,8 @@ contains
 
 !<subroutine>
 
-  subroutine newtonlin_sumStatistics(rstatistics1,rstatistics2,csolverType,ilevel,nlevels)
+  subroutine newtonlin_sumStatistics(rstatistics1,rstatistics2,csolverType,&
+      ilevel,nlevels)
   
 !<description>
   ! Sums up the data of rstatistics1 to the data in rstatistics2.
@@ -2462,18 +2454,25 @@ contains
     ! ----------------------------------------------------------
     ! Full Linear solver. Sum up all parameters as they are.
     ! ----------------------------------------------------------
-    case (NLIN_STYPE_LINSOL)
+    case (NLIN_STYPE_LINSOL,NLIN_STYPE_RESCALC)
     
       rstatistics2%niterations = &
           rstatistics2%niterations + rstatistics1%niterations
       rstatistics2%niterationsCoarse = &
           rstatistics2%niterationsCoarse + rstatistics1%niterationsCoarse
 
-      call stat_addTimers(rstatistics1%rtotalTime,rstatistics2%rtotalTime)
+      if (csolverType .eq. NLIN_STYPE_RESCALC) then
+        ! Total time goes to the time for the residual calculation
+        call stat_addTimers(rstatistics1%rtotalTime,rstatistics2%rtimeDefect)
+      else 
+        ! Sum up the total time
+        call stat_addTimers(rstatistics1%rtotalTime,rstatistics2%rtotalTime)
+      end if
+      
       call stat_addTimers(rstatistics1%rtimeForwardLin,rstatistics2%rtimeForwardLin)
       call stat_addTimers(rstatistics1%rtimeBackwardLin,rstatistics2%rtimeBackwardLin)
-      call stat_addTimers(rstatistics1%rtimeDefect,rstatistics2%rtimeDefect)
       call stat_addTimers(rstatistics1%rtimeSmoothing,rstatistics2%rtimeSmoothing)
+      call stat_addTimers(rstatistics1%rtimeDefect,rstatistics2%rtimeDefect)
       call stat_addTimers(rstatistics1%rtimeProlRest,rstatistics2%rtimeProlRest)
       
       call spacesl_sumStatistics (&
@@ -2504,6 +2503,18 @@ contains
     
       if (ilevel .eq. 1) then
         ! ---------------------------------------
+        ! General solver statistics
+        ! ---------------------------------------
+        
+        call stat_addTimers(rstatistics1%rtimeForwardLin,rstatistics2%rtimeForwardLin)
+        call stat_addTimers(rstatistics1%rtimeBackwardLin,rstatistics2%rtimeBackwardLin)
+        call stat_addTimers(rstatistics1%rtimeDefect,rstatistics2%rtimeDefect)
+        call stat_addTimers(rstatistics1%rtimeSmoothing,rstatistics2%rtimeSmoothing)
+        
+        call spacesl_sumStatistics (&
+            rstatistics1%rspaceslSolverStat,rstatistics2%rspaceslSolverStat)      
+
+        ! ---------------------------------------
         ! Coarse grid solver statistics
         ! ---------------------------------------
         call stat_addTimers(rstatistics1%rtotalTime,rstatistics2%rtimeSolverCoarse)
@@ -2514,34 +2525,36 @@ contains
         call spacesl_sumStatistics (&
             rstatistics1%rspaceslSolverStat,rstatistics2%rspaceslSolverStatCoarse)      
         
-      else if ((ilevel .eq. nlevels) .and. (nlevels .gt. 1)) then
+      else 
         ! ---------------------------------------
-        ! Fine grid smoother statistics
+        ! General smoother statistics
         ! ---------------------------------------
-        call stat_addTimers(rstatistics1%rtotalTime,rstatistics2%rtimeSmoothingFine)
-        call stat_addTimers(rstatistics1%rtimeForwardLin,rstatistics2%rtimeForwardLinFine)
-        call stat_addTimers(rstatistics1%rtimeBackwardLin,rstatistics2%rtimeBackwardLinFine)
-        call stat_addTimers(rstatistics1%rtimeDefect,rstatistics2%rtimeDefectFine)
+        ! Note that the total time is not summed up here.
+        ! It is always calculated outside of the iteration.
+        
+        call stat_addTimers(rstatistics1%rtotalTime,rstatistics2%rtimeSmoothing)
+        call stat_addTimers(rstatistics1%rtimeForwardLin,rstatistics2%rtimeForwardLin)
+        call stat_addTimers(rstatistics1%rtimeBackwardLin,rstatistics2%rtimeBackwardLin)
+        call stat_addTimers(rstatistics1%rtimeDefect,rstatistics2%rtimeDefect)
         
         call spacesl_sumStatistics (&
-            rstatistics1%rspaceslSolverStat,rstatistics2%rspaceslSolverStatFine)      
+            rstatistics1%rspaceslSolverStat,rstatistics2%rspaceslSolverStat)      
+      
+        if ((ilevel .eq. nlevels)) then
+          ! ---------------------------------------
+          ! Fine grid smoother statistics
+          ! ---------------------------------------
+          call stat_addTimers(rstatistics1%rtotalTime,rstatistics2%rtimeSmoothingFine)
+          call stat_addTimers(rstatistics1%rtimeForwardLin,rstatistics2%rtimeForwardLinFine)
+          call stat_addTimers(rstatistics1%rtimeBackwardLin,rstatistics2%rtimeBackwardLinFine)
+          call stat_addTimers(rstatistics1%rtimeDefect,rstatistics2%rtimeDefectFine)
+          
+          call spacesl_sumStatistics (&
+              rstatistics1%rspaceslSolverStat,rstatistics2%rspaceslSolverStatFine)      
+        end if
         
       end if
       
-      ! ---------------------------------------
-      ! General statistics
-      ! ---------------------------------------
-      ! Note that the total time is not summed up here.
-      ! It is always calculated outside of the iteration.
-      
-      call stat_addTimers(rstatistics1%rtimeForwardLin,rstatistics2%rtimeForwardLin)
-      call stat_addTimers(rstatistics1%rtimeBackwardLin,rstatistics2%rtimeBackwardLin)
-      call stat_addTimers(rstatistics1%rtimeDefect,rstatistics2%rtimeDefect)
-      call stat_addTimers(rstatistics1%rtimeSmoothing,rstatistics2%rtimeSmoothing)
-      
-      call spacesl_sumStatistics (&
-          rstatistics1%rspaceslSolverStat,rstatistics2%rspaceslSolverStat)      
-
     end select
 
   end subroutine
