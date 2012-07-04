@@ -8838,7 +8838,7 @@ contains
 !</subroutine>
 
   ! local variables
-  real(DP) :: dalpha,dbeta,dgamma,dgammaOld,dres,dfr
+  real(DP) :: dalpha,dbeta,dgamma,dgammaOld,dres,dfr,dtemp
   integer :: ite,i,j,niteAsymptoticCVR
 
   ! The queue saves the current residual and the two previous residuals.
@@ -9009,7 +9009,12 @@ contains
         call lsysbl_blockMatVec (p_rmatrix,p_DD,p_DP, 1.0_DP,0.0_DP)
 
         ! Calculate alpha for the CG iteration
-        dalpha = dgamma / lsysbl_scalarProduct (p_DD, p_DP)
+        dtemp = lsysbl_scalarProduct (p_DD, p_DP)
+        if (abs(dtemp) .gt. SYS_MINREAL_DP) then
+          dalpha = dgamma / dtemp
+        else
+          dalpha = 0.0_DP
+        end if
 
         if (dalpha .eq. 0.0_DP) then
           ! We are below machine exactness - we can not do anything more...
