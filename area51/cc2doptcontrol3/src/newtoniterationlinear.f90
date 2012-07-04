@@ -536,7 +536,7 @@ contains
 
     call kkt_solvePrimalDirDeriv (rkktsystemDirDeriv,&
         rlinsolParam%p_rsolverHierPrimalLin,rlinsolParam%cspatialInitCondPolicy,&
-        rstatistics%rspaceslSolverStat)
+        rlocalStat)
     
     output_iautoOutputIndent = output_iautoOutputIndent - 2
 
@@ -561,7 +561,7 @@ contains
 
     call kkt_solveDualDirDeriv (rkktsystemDirDeriv,&
         rlinsolParam%p_rsolverHierDualLin,rlinsolParam%cspatialInitCondPolicy,&
-        rstatistics%rspaceslSolverStat)
+        rlocalStat)
 
     output_iautoOutputIndent = output_iautoOutputIndent - 2
 
