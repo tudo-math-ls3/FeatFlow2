@@ -123,6 +123,13 @@ module newtoniteration
     ! =2: Take the solution of the last space-time iteration
     integer :: cspatialInitCondPolicy = SPINITCOND_PREVTIMESTEP
 
+    ! Whether to postprocess intermediate solutions.
+    ! =1: Calculate functional values, errors,...
+    ! =2: Write postprocessing files with unique filename.
+    ! =3: Calculate functional values, errors,... and
+    !     write postprocessing files with unique filename.
+    integer :: cpostprocessIterates = 1
+
     ! Parameters for the linear space-time subsolver.
     type(t_linsolParameters) :: rlinsolParam
     
@@ -242,6 +249,9 @@ contains
     ! solver in space
     call parlst_getvalue_int (rparamList, ssection, "cspatialInitCondPolicy", &
         rsolver%cspatialInitCondPolicy, rsolver%cspatialInitCondPolicy)
+
+    call parlst_getvalue_int (rparamList, ssection, "cpostprocessIterates", &
+        rsolver%cpostprocessIterates, rsolver%cpostprocessIterates)
 
     call parlst_getvalue_string (rparamList, ssection, &
         "ssectionNonlinSolverSpace", ssolverNonlin, "CC-NONLINEARSOLVER",bdequote=.true.)
@@ -777,17 +787,20 @@ contains
       ! -------------------------------------------------------------
       ! Postprocessing
       ! -------------------------------------------------------------
-      call output_separator (OU_SEP_MINUS)
+      if (rsolver%cpostprocessIterates .ge. 0) then
+        call output_separator (OU_SEP_MINUS)
 
-      call stat_startTimer (rstatistics%rtimePostprocessing)
-      
-      call optcpp_postprocessSubstep (rsolver%p_rsettingsSolver%rpostproc,&
-          rsolver%p_rsettingsSolver%rspaceTimeHierPrimal%p_rfeHierarchy%nlevels,&
-          rsolver%p_rsettingsSolver%rspaceTimeHierPrimal%p_rtimeHierarchy%nlevels,&
-          p_rsolution%p_rprimalSol,p_rsolution%p_rdualSol,p_rsolution%p_rcontrol,&
-          rsolver%p_rsettingsSolver,rsolver%rnewtonParams%niterations)
-      
-      call stat_stopTimer (rstatistics%rtimePostprocessing)
+        call stat_startTimer (rstatistics%rtimePostprocessing)
+        
+        call optcpp_postprocessSubstep (rsolver%p_rsettingsSolver%rpostproc,&
+            rsolver%p_rsettingsSolver%rspaceTimeHierPrimal%p_rfeHierarchy%nlevels,&
+            rsolver%p_rsettingsSolver%rspaceTimeHierPrimal%p_rtimeHierarchy%nlevels,&
+            p_rsolution%p_rprimalSol,p_rsolution%p_rdualSol,p_rsolution%p_rcontrol,&
+            rsolver%p_rsettingsSolver,rsolver%cpostprocessIterates,&
+            rsolver%rnewtonParams%niterations)
+        
+        call stat_stopTimer (rstatistics%rtimePostprocessing)
+      end if
 
       if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
         call output_separator (OU_SEP_MINUS)
@@ -818,7 +831,7 @@ contains
       call output_line ("#Nonlinear Iterations   : "//&
             trim(sys_siL(rsolver%rnewtonParams%niterations,10)) )
       call output_line ("#Iterations Precond.    : "//&
-            trim(sys_siL(rsolver%rnewtonParams%nlinearIterations,10)) )
+            trim(sys_siL(rstatistics%rnewtonlinSolverStat%niterations,10)) )
       call output_line ("!!INITIAL RES!!         : "//&
             trim(sys_sdEL(rsolver%rnewtonParams%dresInit,15)) )
       call output_line ("!!RES!!                 : "//&

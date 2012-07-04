@@ -1647,7 +1647,7 @@ contains
 
   subroutine optcpp_postprocessSubstep (rpostproc,&
       ispacelevel,itimelevel,rprimalSol,rdualSol,rcontrol,&
-      rsettings,itag)
+      rsettings,cpostprocessFlags,itag)
   
 !<description>
   ! Postprocessing of a space-time solution after a nonlinear
@@ -1681,6 +1681,14 @@ contains
 
   ! Control
   type(t_controlSpace), intent(inout) :: rcontrol
+  
+  ! Defines how to apply the postprocessing.
+  ! Whether to postprocess intermediate solutions.
+  ! =1: Calculate functional values, errors,...
+  ! =2: Write postprocessing files with unique filename.
+  ! =3: Calculate functional values, errors,... and
+  !     write postprocessing files with unique filename.
+  integer, intent(in) :: cpostprocessFlags
 
   ! OPTIONAL: An integer tag which is included into filenames of
   ! output files. If not specified, the tag is not included.
@@ -1692,42 +1700,49 @@ contains
     ! local variables
     
     ! Global postprocessing: Function values.
-    call optcpp_spaceTimeFunctionals (rpostproc,&
-        ispacelevel, itimelevel, rsettings%roperatorAsmHier, &
-        rprimalSol,rdualSol,rcontrol)
-        
-!    call output_lbrk()
-!    
-!    ! ***************************************************************************
-!    ! Primal solution
-!    ! ***************************************************************************
-!    
-!    ! Visualisation
-!    call optcpp_spaceTimeVisualisation (rpostproc,rprimalSol%p_rvectorAccess,CCSPACE_PRIMAL,&
-!        rsettings%rphysics,rsettings%rsettingsOptControl,itag)
-!
-!    ! Data dump
-!    call optcpp_spaceTimeDump (rpostproc,rprimalSol%p_rvectorAccess,CCSPACE_PRIMAL,itag)
-!
-!    ! ***************************************************************************
-!    ! Dual solution
-!    ! ***************************************************************************
-!    
-!    ! Visualisation
-!    call optcpp_spaceTimeVisualisation (rpostproc,rdualSol%p_rvectorAccess,CCSPACE_DUAL,&
-!        rsettings%rphysics,rsettings%rsettingsOptControl,itag)
-!
-!    ! Data dump
-!    call optcpp_spaceTimeDump (rpostproc,rdualSol%p_rvectorAccess,CCSPACE_DUAL,itag)
-!
-!    ! ***************************************************************************
-!    ! Control
-!    ! ***************************************************************************
-!    
-!    ! Visualisation
-!    call optcpp_spaceTimeVisualisation (rpostproc,rcontrol%p_rvectorAccess,CCSPACE_CONTROL,&
-!        rsettings%rphysics,rsettings%rsettingsOptControl,itag)
-!
+    if (iand(cpostprocessFlags,1) .ne. 0) then
+      call optcpp_spaceTimeFunctionals (rpostproc,&
+          ispacelevel, itimelevel, rsettings%roperatorAsmHier, &
+          rprimalSol,rdualSol,rcontrol)
+    end if
+    
+    if (iand(cpostprocessFlags,2) .ne. 0) then
+    
+      if (iand(cpostprocessFlags,1) .ne. 0) &
+          call output_lbrk()
+    
+      ! ***************************************************************************
+      ! Primal solution
+      ! ***************************************************************************
+      
+      ! Visualisation
+      call optcpp_spaceTimeVisualisation (rpostproc,rprimalSol%p_rvectorAccess,CCSPACE_PRIMAL,&
+          rsettings%rphysics,rsettings%rsettingsOptControl,itag)
+
+      ! Data dump
+      call optcpp_spaceTimeDump (rpostproc,rprimalSol%p_rvectorAccess,CCSPACE_PRIMAL,itag)
+
+      ! ***************************************************************************
+      ! Dual solution
+      ! ***************************************************************************
+      
+      ! Visualisation
+      call optcpp_spaceTimeVisualisation (rpostproc,rdualSol%p_rvectorAccess,CCSPACE_DUAL,&
+          rsettings%rphysics,rsettings%rsettingsOptControl,itag)
+
+      ! Data dump
+      call optcpp_spaceTimeDump (rpostproc,rdualSol%p_rvectorAccess,CCSPACE_DUAL,itag)
+
+      ! ***************************************************************************
+      ! Control
+      ! ***************************************************************************
+      
+      ! Visualisation
+      call optcpp_spaceTimeVisualisation (rpostproc,rcontrol%p_rvectorAccess,CCSPACE_CONTROL,&
+          rsettings%rphysics,rsettings%rsettingsOptControl,itag)
+          
+    end if
+
 !    ! Data dump
 !    call optcpp_spaceTimeDump (rpostproc,rcontrol%p_rvectorAccess,CCSPACE_CONTROL,itag)
   

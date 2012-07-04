@@ -19,9 +19,10 @@ ctypeIteration = 2
 
 # Whether to postprocess intermediate solutions.
 # =1: After each nonlinear step, apply postprocessing to the solution.
-# =2: After each nonlinear step, apply postprocessing to the solution.
+# =2: Write postprocessing files with unique filename.
+# =3: After each nonlinear step, apply postprocessing to the solution.
 #     Write postprocessing files with unique filename.
-# cpostprocessIterates = 0
+cpostprocessIterates = 1
 
 # Defines a policy how to generate the initial condition of a timestep.
 # =0: Always take zero
@@ -117,6 +118,10 @@ dinexactNewtonEpsRel = 1.0E-2
 # an inexact Newton iteration. =2 result in quadratic convergence,
 # =1.5 in superlinear convergence. Only used if ctypePreconditioner = 3.
 dinexactNewtonExponent = 2.0
+
+# Lower bound for the absolute residual. Subproblems are not solved
+# more exact than this.
+dinexactNewtonEpsAbs = 1E-14
 
 
 # ========================================================================
@@ -350,3 +355,7 @@ dinexactNewtonEpsRel = 1.0E-2
 # an inexact Newton iteration. =2 result in quadratic convergence,
 # =1.5 in superlinear convergence. Only used if ctypePreconditioner = 3.
 dinexactNewtonExponent = 2.0
+
+# Lower bound for the absolute residual. Subproblems are not solved
+# more exact than this.
+dinexactNewtonEpsAbs = 1E-15
