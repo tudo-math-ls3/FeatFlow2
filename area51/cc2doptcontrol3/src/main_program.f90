@@ -268,14 +268,14 @@ contains
         sys_sdL(dtimeStartVec,10))
     call output_line ("Time for postprocessing                      = "//&
         sys_sdL(dtimePostproc+rnewtonStatistics%rtimePostprocessing%delapsedReal,10))
-    call output_line ("Time for solving                             = "//&
+    call output_line ("#Iterations nonlinear space-time solver      = "//&
+        sys_siL(rnewtonStatistics%niterations,10))
+    call output_line ("Time for nonlinear space-time solver         = "//&
         sys_sdL(rnewtonStatistics%rtotalTime%delapsedReal &
                -rnewtonStatistics%rtimePostprocessing%delapsedReal,10))
     call output_lbrk()
 
     ! More detailed statistics of the nonlinear solver
-    call output_line ("  Nonlinear iterations                       = "//&
-        sys_siL(rnewtonStatistics%niterations,1))
     call output_line ("  Time for defect calculations               = "//&
         sys_sdL(rnewtonStatistics%rtimeDefect%delapsedReal,10))
     call output_line ("    Time for forward simulations             = "//&
@@ -284,18 +284,23 @@ contains
         sys_sdL(rnewtonStatistics%rtimeBackward%delapsedReal,10))
     call output_line ("    #Iterations nonlinear solver in space    = "//&
         sys_siL(rnewtonStatistics%rspaceslSolverStat%niterations,10))
-    call output_line ("    #Iterations linear solver in space       = "//&
+    call output_line ("    Time nonlinear solver in space           = "//&
+        sys_sdL(rnewtonStatistics%rspaceslSolverStat%rtotalTime%delapsedReal,10))
+    call output_line ("      Time for nonlinear defects in space    = "//&
+        sys_sdL(rnewtonStatistics%rspaceslSolverStat%rtimeDefect%delapsedReal,10))
+    call output_line ("      Time for matrix assembly in space      = "//&
+        sys_sdL(rnewtonStatistics%rspaceslSolverStat%rtimeMatrixAssembly%delapsedReal,10))
+    call output_line ("      #Iterations linear solver in space     = "//&
         sys_siL(rnewtonStatistics%rspaceslSolverStat%rlssSolverStat%niterations,10))
+    call output_line ("      Time linear solver in space            = "//&
+        sys_sdL(rnewtonStatistics%rspaceslSolverStat%rlssSolverStat%&
+                rtotalTime%delapsedReal,10))
     call output_line ("  Time for interpolation to lower levels     = "//&
         sys_sdL(rnewtonStatistics%rtimeProlRest%delapsedReal,10))
-    call output_line ("  Time linear solver in space                = "//&
-        sys_sdL(rnewtonStatistics%rspaceslSolverStat%rtotalTime%delapsedReal,10))
-    call output_line ("  #Iterations linear solver in space         = "//&
-        sys_siL(rnewtonStatistics%rspaceslSolverStat%niterations,10))
     call output_lbrk()
 
     ! More detailed statistics about the linear space-time solver    
-    call output_line ("  #Iterations linear solver in space         = "//&
+    call output_line ("  #Iterations linear space-time solver       = "//&
         sys_siL(rnewtonStatistics%rnewtonlinSolverStat%niterations,10))
     call output_line ("  Time for linear space-time solver          = "//&
         sys_sdL(rnewtonStatistics%rnewtonlinSolverStat%rtotalTime%delapsedReal,10))
