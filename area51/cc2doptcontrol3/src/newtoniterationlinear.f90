@@ -926,7 +926,7 @@ contains
       call newtonlin_applyOperator (rlinsolParam,p_rp,p_rAp,rlocalStat)
       output_iautoOutputIndent = output_iautoOutputIndent - 2
       
-      call newtonlin_sumStatistics(rlocalStat,rstatistics,NLIN_STYPE_LINSOL)
+      call newtonlin_sumStatistics(rlocalStat,rstatistics,NLIN_STYPE_RESCALC)
 
       ! Calculate the parameter ALPHA
       dalpha = dgamma / kktsp_scalarProductControl(p_rp%p_rcontrolLin,p_rAp)
