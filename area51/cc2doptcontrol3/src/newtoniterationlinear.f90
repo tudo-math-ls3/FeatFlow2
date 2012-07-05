@@ -440,8 +440,6 @@ contains
 
     output_iautoOutputIndent = output_iautoOutputIndent - 2
     
-    call spacesl_sumStatistics(rlocalStat,rstatistics%rspaceslSolverStat)
-    
     if (rlinsolParam%rprecParameters%ioutputLevel .ge. 3) then
       call output_line ("Linear space-time Residual: Time for solving: "//&
           trim(sys_sdL(rlocalStat%rtotalTime%delapsedReal,10)))
@@ -449,7 +447,8 @@ contains
 
     ! Add time to the time of the forward equation
     call stat_addTimers (rlocalStat%rtotalTime,rstatistics%rtimeForwardLin)
-
+    call spacesl_sumStatistics(rlocalStat,rstatistics%rspaceslSolverStat)
+    
     ! --------------------
     ! Backward equation
     ! --------------------
@@ -467,8 +466,6 @@ contains
 
     output_iautoOutputIndent = output_iautoOutputIndent - 2
     
-    call spacesl_sumStatistics(rlocalStat,rstatistics%rspaceslSolverStat)
-    
     if (rlinsolParam%rprecParameters%ioutputLevel .ge. 3) then
       call output_line ("Linear space-time Residual: Time for solving: "//&
           trim(sys_sdL(rlocalStat%rtotalTime%delapsedReal,10)))
@@ -476,6 +473,7 @@ contains
 
     ! Add time to the time of the backward equation
     call stat_addTimers (rlocalStat%rtotalTime,rstatistics%rtimeBackwardLin)
+    call spacesl_sumStatistics(rlocalStat,rstatistics%rspaceslSolverStat)
 
     ! -------------------------------------------------------------
     ! Step 2: Calculate the residual
@@ -541,6 +539,7 @@ contains
     
     output_iautoOutputIndent = output_iautoOutputIndent - 2
 
+    call spacesl_sumStatistics(rlocalStat,rstatistics%rspaceslSolverStat)
     if (rlinsolParam%rprecParameters%ioutputLevel .ge. 3) then
       call output_line ("Linear space-time Residual: Time for solving: "//&
           trim(sys_sdL(rlocalStat%rtotalTime%delapsedReal,10)))
@@ -548,6 +547,7 @@ contains
 
     ! Add time to the time of the forward equation
     call stat_addTimers (rlocalStat%rtotalTime,rstatistics%rtimeForwardLin)
+    call spacesl_sumStatistics(rlocalStat,rstatistics%rspaceslSolverStat)
 
     ! --------------------
     ! Backward equation
@@ -573,6 +573,7 @@ contains
 
     ! Add time to the time of the backward equation
     call stat_addTimers (rlocalStat%rtotalTime,rstatistics%rtimeBackwardLin)
+    call spacesl_sumStatistics(rlocalStat,rstatistics%rspaceslSolverStat)
 
     ! -------------------------------------------------------------
     ! Step 2: Calculate the residual
