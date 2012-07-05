@@ -1235,6 +1235,7 @@ contains
   type(t_linsolHierarchySpace), intent(inout), target :: rlssHierarchy
   
   ! The defect to apply preconditioning to.
+  ! Is replaced by the preconditioned defect.
   type(t_vectorBlock), intent(inout) :: rd
   
   ! OPTIONAL; If present, this is set to the solver node of the linear

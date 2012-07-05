@@ -111,6 +111,12 @@ module spacesolver
     ! will be used to solve linear subproblems.
     type(t_linsolHierarchySpace), pointer :: p_rlssHierarchy => null()
 
+    ! Hierarchy of linear solvers in space used for solving
+    ! auxiliary linear subproblems. The solver on level ilevel
+    ! will be used to solve linear subproblems.
+    ! These sovlers are used as fallback if the standard solver above fails.
+    type(t_linsolHierarchySpace), pointer :: p_rlssHierarchy2 => null()
+
     ! <!-- ------------------------------ -->
     ! <!-- BOUNDARY CONDITIONS STRUCTURES -->
     ! <!-- ------------------------------ -->
@@ -147,6 +153,7 @@ module spacesolver
     
     ! Temporary vectors for nonlinear iterations
     type(t_vectorBlock), pointer :: p_rd => null()
+    type(t_vectorBlock), pointer :: p_rd2 => null()
 
     ! Hierarchy of system matrices
     type(t_matrixBlock), dimension(:), pointer :: p_Rmatrices => null()
@@ -209,7 +216,7 @@ contains
 
 !<subroutine>
 
-  subroutine spaceslh_init (rsolver,copType,rlssHierarchy,ssection,rparamList)
+  subroutine spaceslh_init (rsolver,copType,rlssHierarchy,rlssHierarchy2,ssection,rparamList)
   
 !<description>
   ! Initialises the solver parameters according to a parameter list.
@@ -225,7 +232,13 @@ contains
   ! Hierarchy of linear solvers in space used for solving
   ! auxiliary linear subproblems. The solver on level ispacelevel
   ! will be used to solve linear subproblems.
-  type(t_linsolHierarchySpace), target :: rlssHierarchy
+  type(t_linsolHierarchySpace), intent(in), target :: rlssHierarchy
+
+  ! Hierarchy of linear solvers in space used for solving
+  ! auxiliary linear subproblems. The solver on level ispacelevel
+  ! will be used to solve linear subproblems.
+  ! THese sovlers are used as fallback if the standard solver fails.
+  type(t_linsolHierarchySpace), intent(in), target :: rlssHierarchy2
 
   ! OPTIONAL: Name of the section in the parameter list containing the parameters
   ! of the nonlinear solver.
@@ -246,6 +259,7 @@ contains
 
     ! Remember the solver settings for later use
     rsolver%p_rlssHierarchy => rlssHierarchy
+    rsolver%p_rlssHierarchy2 => rlssHierarchy2
     rsolver%copType = copType
 
     if (present(ssection) .and. present(rparamList)) then
@@ -358,6 +372,7 @@ contains
           
       ! Provide the matrix to the linear solver
       call lssh_setMatrix(rsolver%p_rlsshierarchy,ilev,rsolver%p_Rmatrices(ilev))
+      call lssh_setMatrix(rsolver%p_rlsshierarchy2,ilev,rsolver%p_Rmatrices(ilev))
       
       if (ilev .eq. rsolver%ispaceLevel) then
       
@@ -365,6 +380,9 @@ contains
 
         allocate (rsolver%p_rd)
         call lsysbl_createVectorBlock (p_rdiscretisation,rsolver%p_rd)
+
+        allocate (rsolver%p_rd2)
+        call lsysbl_createVectorBlock (p_rdiscretisation,rsolver%p_rd2)
         
         ! Bind the boundary conditions to that vector
         call lsysbl_assignDiscreteBC (rsolver%p_Rmatrices(ilev),p_rdiscreteBC)
@@ -387,6 +405,7 @@ contains
 
         ! Initialise the structures of the associated linear subsolver
         call lssh_initStructure (rsolver%p_rlsshierarchy,ilev,rlocalStatLss,ierror)
+        call lssh_initStructure (rsolver%p_rlsshierarchy2,ilev,rlocalStatLss,ierror)
         
         call lss_sumStatistics(rlocalStatLss,rstatistics%rlssSolverStat)
 
@@ -606,7 +625,7 @@ contains
 !<subroutine>
 
   subroutine spaceslh_initData_primal (rsolver, ierror, idofTime, &
-      rprimalSol, isollevelSpace, rstatistics)
+      rprimalSol, isollevelSpace, rstatistics, bfallbackSolver)
   
 !<description>
   ! Final preparation of the Newton solver. Primal space.
@@ -623,6 +642,12 @@ contains
   
   ! Space level corresponding to rprimalSol.
   integer, intent(in) :: isollevelSpace
+  
+  ! Whether or not to initialise the fallback solver.
+  ! =FALSE: Create matrices and initialise the default solver.
+  ! =TRUE: Use the matrices calculated for FALSE and initialise the 
+  ! fallback solver. THe matrices must have been initialised using FALSE.
+  logical, intent(in) :: bfallbackSolver
 !</input>
 
 !<inputoutput>
@@ -647,40 +672,59 @@ contains
     logical :: bfull
     type(t_lssSolverStat) :: rlocalStatLss
     
-    ! Full Newton?
-    bfull = (rsolver%rnewtonParams%ctypeIteration .eq. 2) .or. &
-            (rsolver%rnewtonParams%ctypeIteration .eq. 3)
+    ! Calculate matrices and initialise the default solver?
+    if (.not. bfallbackSolver) then
     
-    ! iprevlv contains the last assembled level.
-    iprevlv = 0
+      ! Full Newton?
+      bfull = (rsolver%rnewtonParams%ctypeIteration .eq. 2) .or. &
+              (rsolver%rnewtonParams%ctypeIteration .eq. 3)
+      
+      ! iprevlv contains the last assembled level.
+      iprevlv = 0
 
-    ! Loop over all levels, from the highest to the lowest,
-    ! and set up the system matrices.
-    call stat_startTimer (rstatistics%rtimeMatrixAssembly)
-    
-    do ilev = rsolver%ispacelevel,rsolver%p_rlssHierarchy%nlmin,-1
-    
-      ! Assemble the matrix
-      call smva_assembleMatrix_primal (rsolver%p_Rmatrices(ilev),ilev,idofTime,&
-          rsolver%p_roperatorAsmHier,&
-          rprimalSol,isollevelSpace,rsolver%itimelevel,bfull,&
-          rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(ilev),&
-          rsolver%rtempData,iprevlv)
-          
-      iprevlv = ilev
-    
-    end do
-    
-    call stat_stopTimer (rstatistics%rtimeMatrixAssembly)
+      ! Loop over all levels, from the highest to the lowest,
+      ! and set up the system matrices.
+      call stat_startTimer (rstatistics%rtimeMatrixAssembly)
+      
+      do ilev = rsolver%ispacelevel,rsolver%p_rlssHierarchy%nlmin,-1
+      
+        ! Assemble the matrix
+        call smva_assembleMatrix_primal (rsolver%p_Rmatrices(ilev),ilev,idofTime,&
+            rsolver%p_roperatorAsmHier,&
+            rprimalSol,isollevelSpace,rsolver%itimelevel,bfull,&
+            rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(ilev),&
+            rsolver%rtempData,iprevlv)
+            
+        iprevlv = ilev
+      
+      end do
+      
+      call stat_stopTimer (rstatistics%rtimeMatrixAssembly)
 
-    ! Initialise the structures of the associated linear subsolver
-    rsolver%p_rlsshierarchy%p_rdebugFlags%sstringTag = &
-        "primal_"//trim(sys_siL(idofTime,10))//"_"//trim(sys_siL(isollevelSpace,10))
-    call lssh_initData (&
-        rsolver%p_rlsshierarchy,rsolver%p_roptcBDCSpaceHierarchy,&
-        rsolver%ispacelevel,rlocalStatLss,ierror)
+      ! Initialise the structures of the associated linear subsolver
+      rsolver%p_rlsshierarchy%p_rdebugFlags%sstringTag = &
+          "primal_"//trim(sys_siL(idofTime,10))//"_"//trim(sys_siL(isollevelSpace,10))
+
+      call lssh_initData (&
+          rsolver%p_rlsshierarchy,rsolver%p_roptcBDCSpaceHierarchy,&
+          rsolver%ispacelevel,rlocalStatLss,ierror)
+      
+      call lss_sumStatistics(rlocalStatLss,rstatistics%rlssSolverStat)
+
+    else
     
-    call lss_sumStatistics(rlocalStatLss,rstatistics%rlssSolverStat)
+      ! Matrices have already been initialised.
+      ! Initialise the fallback solver.
+      rsolver%p_rlsshierarchy%p_rdebugFlags%sstringTag = &
+          "primal2_"//trim(sys_siL(idofTime,10))//"_"//trim(sys_siL(isollevelSpace,10))
+
+      call lssh_initData (&
+          rsolver%p_rlsshierarchy2,rsolver%p_roptcBDCSpaceHierarchy,&
+          rsolver%ispacelevel,rlocalStatLss,ierror)
+      
+      call lss_sumStatistics(rlocalStatLss,rstatistics%rlssSolverStat)
+    
+    end if
 
   end subroutine
 
@@ -689,7 +733,7 @@ contains
 !<subroutine>
 
   subroutine spaceslh_initData_primallin (rsolver, ierror, idofTime, &
-      rprimalSol, isollevelSpace, bfull, rstatistics)
+      rprimalSol, isollevelSpace, bfull, rstatistics, bfallbackSolver)
   
 !<description>
   ! Final preparation of the Newton solver. Linearised primal space.
@@ -709,6 +753,12 @@ contains
   
   ! Whether or not to apply the full Newton operator.
   logical, intent(in) :: bfull
+
+  ! Whether or not to initialise the fallback solver.
+  ! =FALSE: Create matrices and initialise the default solver.
+  ! =TRUE: Use the matrices calculated for FALSE and initialise the 
+  ! fallback solver. THe matrices must have been initialised using FALSE.
+  logical, intent(in) :: bfallbackSolver
 !</input>
 
 !<inputoutput>
@@ -732,36 +782,56 @@ contains
     integer :: ilev,iprevlv
     type(t_lssSolverStat) :: rlocalStatLss
     
-    ! iprevlv contains the last assembled level.
-    iprevlv = 0
+    ! Calculate matrices and initialise the default solver?
+    if (.not. bfallbackSolver) then
+    
+      ! iprevlv contains the last assembled level.
+      iprevlv = 0
 
-    ! Loop over all levels, from the highest to the lowest,
-    ! and set up the system matrices.
-    call stat_startTimer (rstatistics%rtimeMatrixAssembly)
-    
-    do ilev = rsolver%ispacelevel,rsolver%p_rlssHierarchy%nlmin,-1
-    
-      ! Assemble the matrix
-      call smva_assembleMatrix_primal (rsolver%p_Rmatrices(ilev),ilev,idofTime,&
-          rsolver%p_roperatorAsmHier,&
-          rprimalSol,isollevelSpace,rsolver%itimelevel,bfull,&
-          rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(ilev),&
-          rsolver%rtempData,iprevlv)
-          
-      iprevlv = ilev
-    
-    end do
-    
-    call stat_stopTimer (rstatistics%rtimeMatrixAssembly)
+      ! Loop over all levels, from the highest to the lowest,
+      ! and set up the system matrices.
+      call stat_startTimer (rstatistics%rtimeMatrixAssembly)
+      
+      do ilev = rsolver%ispacelevel,rsolver%p_rlssHierarchy%nlmin,-1
+      
+        ! Assemble the matrix
+        call smva_assembleMatrix_primal (rsolver%p_Rmatrices(ilev),ilev,idofTime,&
+            rsolver%p_roperatorAsmHier,&
+            rprimalSol,isollevelSpace,rsolver%itimelevel,bfull,&
+            rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(ilev),&
+            rsolver%rtempData,iprevlv)
+            
+        iprevlv = ilev
+      
+      end do
+      
+      call stat_stopTimer (rstatistics%rtimeMatrixAssembly)
 
-    ! Initialise the structures of the associated linear subsolver
-    rsolver%p_rlsshierarchy%p_rdebugFlags%sstringTag = &
-        "primallin_"//trim(sys_siL(idofTime,10))//"_"//trim(sys_siL(isollevelSpace,10))
-    call lssh_initData (&
-        rsolver%p_rlsshierarchy,rsolver%p_roptcBDCSpaceHierarchy,&
-        rsolver%ispacelevel,rlocalStatLss,ierror)
+      ! Initialise the structures of the associated linear subsolver
+      rsolver%p_rlsshierarchy%p_rdebugFlags%sstringTag = &
+          "primallin_"//trim(sys_siL(idofTime,10))//"_"//trim(sys_siL(isollevelSpace,10))
+      
+      call lssh_initData (&
+          rsolver%p_rlsshierarchy,rsolver%p_roptcBDCSpaceHierarchy,&
+          rsolver%ispacelevel,rlocalStatLss,ierror)
+      
+      call lss_sumStatistics(rlocalStatLss,rstatistics%rlssSolverStat)
+
+    else
     
-    call lss_sumStatistics(rlocalStatLss,rstatistics%rlssSolverStat)
+      ! Matrices have already been initialised.
+      ! Initialise the fallback solver.
+
+      rsolver%p_rlsshierarchy%p_rdebugFlags%sstringTag = &
+          "primallin2_"//trim(sys_siL(idofTime,10))//"_"//trim(sys_siL(isollevelSpace,10))
+      
+      call lssh_initData (&
+          rsolver%p_rlsshierarchy2,rsolver%p_roptcBDCSpaceHierarchy,&
+          rsolver%ispacelevel,rlocalStatLss,ierror)
+      
+      call lss_sumStatistics(rlocalStatLss,rstatistics%rlssSolverStat)
+
+    end if
 
   end subroutine
 
@@ -770,7 +840,7 @@ contains
 !<subroutine>
 
   subroutine spaceslh_initData_dual (rsolver, ierror, idofTime, &
-      rprimalSol, isollevelSpace, rstatistics)
+      rprimalSol, isollevelSpace, rstatistics, bfallbackSolver)
   
 !<description>
   ! Final preparation of the Newton solver. Dual space.
@@ -787,6 +857,12 @@ contains
   
   ! Space level corresponding to rprimalSol.
   integer, intent(in) :: isollevelSpace
+
+  ! Whether or not to initialise the fallback solver.
+  ! =FALSE: Create matrices and initialise the default solver.
+  ! =TRUE: Use the matrices calculated for FALSE and initialise the 
+  ! fallback solver. THe matrices must have been initialised using FALSE.
+  logical, intent(in) :: bfallbackSolver
 !</input>
 
 !<inputoutput>
@@ -810,36 +886,55 @@ contains
     integer :: ilev,iprevlv
     type(t_lssSolverStat) :: rlocalStatLss
     
-    ! iprevlv contains the last assembled level.
-    iprevlv = 0
+    ! Calculate matrices and initialise the default solver?
+    if (.not. bfallbackSolver) then
 
-    ! Loop over all levels, from the highest to the lowest,
-    ! and set up the system matrices.
-    call stat_startTimer (rstatistics%rtimeMatrixAssembly)
-    
-    do ilev = rsolver%ispacelevel,rsolver%p_rlssHierarchy%nlmin,-1
-    
-      ! Assemble the matrix
-      call smva_assembleMatrix_dual (rsolver%p_Rmatrices(ilev),ilev,idofTime,&
-          rsolver%p_roperatorAsmHier,rprimalSol,isollevelSpace,rsolver%itimelevel,&
-          rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(ilev),&
-          rsolver%rtempData,iprevlv)
-          
-      iprevlv = ilev
-    
-    end do
-    
-    call stat_stopTimer (rstatistics%rtimeMatrixAssembly)
+      ! iprevlv contains the last assembled level.
+      iprevlv = 0
 
-    ! Initialise the structures of the associated linear subsolver
-    rsolver%p_rlsshierarchy%p_rdebugFlags%sstringTag = &
-        "dual_"//trim(sys_siL(idofTime,10))//"_"//trim(sys_siL(isollevelSpace,10))
-    call lssh_initData (&
-        rsolver%p_rlsshierarchy,rsolver%p_roptcBDCSpaceHierarchy,&
-        rsolver%ispacelevel,rlocalStatLss,ierror)
-    
-    call lss_sumStatistics(rlocalStatLss,rstatistics%rlssSolverStat)
+      ! Loop over all levels, from the highest to the lowest,
+      ! and set up the system matrices.
+      call stat_startTimer (rstatistics%rtimeMatrixAssembly)
+      
+      do ilev = rsolver%ispacelevel,rsolver%p_rlssHierarchy%nlmin,-1
+      
+        ! Assemble the matrix
+        call smva_assembleMatrix_dual (rsolver%p_Rmatrices(ilev),ilev,idofTime,&
+            rsolver%p_roperatorAsmHier,rprimalSol,isollevelSpace,rsolver%itimelevel,&
+            rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(ilev),&
+            rsolver%rtempData,iprevlv)
+            
+        iprevlv = ilev
+      
+      end do
+      
+      call stat_stopTimer (rstatistics%rtimeMatrixAssembly)
 
+      ! Initialise the structures of the associated linear subsolver
+      rsolver%p_rlsshierarchy%p_rdebugFlags%sstringTag = &
+          "dual_"//trim(sys_siL(idofTime,10))//"_"//trim(sys_siL(isollevelSpace,10))
+      
+      call lssh_initData (&
+          rsolver%p_rlsshierarchy,rsolver%p_roptcBDCSpaceHierarchy,&
+          rsolver%ispacelevel,rlocalStatLss,ierror)
+      
+      call lss_sumStatistics(rlocalStatLss,rstatistics%rlssSolverStat)
+
+    else
+    
+      ! Matrices have already been initialised.
+      ! Initialise the fallback solver.
+      rsolver%p_rlsshierarchy%p_rdebugFlags%sstringTag = &
+          "dual2_"//trim(sys_siL(idofTime,10))//"_"//trim(sys_siL(isollevelSpace,10))
+      
+      call lssh_initData (&
+          rsolver%p_rlsshierarchy2,rsolver%p_roptcBDCSpaceHierarchy,&
+          rsolver%ispacelevel,rlocalStatLss,ierror)
+      
+      call lss_sumStatistics(rlocalStatLss,rstatistics%rlssSolverStat)
+
+    end if
+    
   end subroutine
 
   ! ***************************************************************************
@@ -847,7 +942,7 @@ contains
 !<subroutine>
 
   subroutine spaceslh_initData_dualLin (rsolver, ierror, idofTime, &
-      rprimalSol, isollevelSpace, bfull, rstatistics)
+      rprimalSol, isollevelSpace, bfull, rstatistics, bfallbackSolver)
   
 !<description>
   ! Final preparation of the Newton solver. Linearised dual space.
@@ -867,6 +962,12 @@ contains
 
   ! Whether or not to apply the full Newton operator.
   logical, intent(in) :: bfull
+
+  ! Whether or not to initialise the fallback solver.
+  ! =FALSE: Create matrices and initialise the default solver.
+  ! =TRUE: Use the matrices calculated for FALSE and initialise the 
+  ! fallback solver. THe matrices must have been initialised using FALSE.
+  logical, intent(in) :: bfallbackSolver
 !</input>
 
 !<inputoutput>
@@ -893,35 +994,53 @@ contains
     integer :: ilev,iprevlv
     type(t_lssSolverStat) :: rlocalStatLss
     
-    ! iprevlv contains the last assembled level.
-    iprevlv = 0
+    ! Calculate matrices and initialise the default solver?
+    if (.not. bfallbackSolver) then
 
-    ! Loop over all levels, from the highest to the lowest,
-    ! and set up the system matrices.
-    call stat_startTimer (rstatistics%rtimeMatrixAssembly)
-    
-    do ilev = rsolver%ispacelevel,rsolver%p_rlssHierarchy%nlmin,-1
-    
-      ! Assemble the matrix
-      call smva_assembleMatrix_dual (rsolver%p_Rmatrices(ilev),ilev,idofTime,&
-          rsolver%p_roperatorAsmHier,rprimalSol,isollevelSpace,rsolver%itimelevel,&
-          rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(ilev),&
-          rsolver%rtempData,iprevlv)
-          
-      iprevlv = ilev
-    
-    end do
-    
-    call stat_stopTimer (rstatistics%rtimeMatrixAssembly)
+      ! iprevlv contains the last assembled level.
+      iprevlv = 0
 
-    ! Initialise the structures of the associated linear subsolver
-    rsolver%p_rlsshierarchy%p_rdebugFlags%sstringTag = &
-        "duallin_"//trim(sys_siL(idofTime,10))//"_"//trim(sys_siL(isollevelSpace,10))
-    call lssh_initData (&
-        rsolver%p_rlsshierarchy,rsolver%p_roptcBDCSpaceHierarchy,&
-        rsolver%ispacelevel,rlocalStatLss,ierror)
+      ! Loop over all levels, from the highest to the lowest,
+      ! and set up the system matrices.
+      call stat_startTimer (rstatistics%rtimeMatrixAssembly)
+      
+      do ilev = rsolver%ispacelevel,rsolver%p_rlssHierarchy%nlmin,-1
+      
+        ! Assemble the matrix
+        call smva_assembleMatrix_dual (rsolver%p_Rmatrices(ilev),ilev,idofTime,&
+            rsolver%p_roperatorAsmHier,rprimalSol,isollevelSpace,rsolver%itimelevel,&
+            rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(ilev),&
+            rsolver%rtempData,iprevlv)
+            
+        iprevlv = ilev
+      
+      end do
+      
+      call stat_stopTimer (rstatistics%rtimeMatrixAssembly)
+
+      ! Initialise the structures of the associated linear subsolver
+      rsolver%p_rlsshierarchy%p_rdebugFlags%sstringTag = &
+          "duallin_"//trim(sys_siL(idofTime,10))//"_"//trim(sys_siL(isollevelSpace,10))
+
+      call lssh_initData (&
+          rsolver%p_rlsshierarchy,rsolver%p_roptcBDCSpaceHierarchy,&
+          rsolver%ispacelevel,rlocalStatLss,ierror)
+      
+      call lss_sumStatistics(rlocalStatLss,rstatistics%rlssSolverStat)
+
+    else
     
-    call lss_sumStatistics(rlocalStatLss,rstatistics%rlssSolverStat)
+      ! Matrices have already been initialised.
+      ! Initialise the fallback solver.
+      rsolver%p_rlsshierarchy%p_rdebugFlags%sstringTag = &
+          "duallin2_"//trim(sys_siL(idofTime,10))//"_"//trim(sys_siL(isollevelSpace,10))
+
+      call lssh_initData (&
+          rsolver%p_rlsshierarchy2,rsolver%p_roptcBDCSpaceHierarchy,&
+          rsolver%ispacelevel,rlocalStatLss,ierror)
+      
+      call lss_sumStatistics(rlocalStatLss,rstatistics%rlssSolverStat)
+    end if
 
   end subroutine
 
@@ -929,11 +1048,16 @@ contains
 
 !<subroutine>
 
-  subroutine spaceslh_doneData (rsolver)
+  subroutine spaceslh_doneData (rsolver,bfallbackSolver)
   
 !<description>
   ! Cleanup of the data initalised in spaceslh_initData.
 !</description>
+
+!<input>
+  ! Whether or not to clean up the fallback solver.
+  logical, intent(in) :: bfallbackSolver
+!</input>
 
 !<inputoutput>
   ! Structure to be cleaned up.
@@ -943,7 +1067,11 @@ contains
 !</subroutine>
 
     ! Clean up the structures of the associated linear subsolver
-    call lssh_doneData (rsolver%p_rlsshierarchy,rsolver%ispacelevel)
+    if (.not. bfallbackSolver) then
+      call lssh_doneData (rsolver%p_rlsshierarchy,rsolver%ispacelevel)
+    else
+      call lssh_doneData (rsolver%p_rlsshierarchy2,rsolver%ispacelevel)
+    end if
 
   end subroutine
 
@@ -971,6 +1099,7 @@ contains
     deallocate(rsolver%p_roptcBDCSpaceHierarchy)
 
     ! Clean up the structures of the associated linear subsolver
+    call lssh_doneStructure (rsolver%p_rlsshierarchy2,rsolver%ispacelevel)
     call lssh_doneStructure (rsolver%p_rlsshierarchy,rsolver%ispacelevel)
    
    ! Release assembly data
@@ -984,6 +1113,9 @@ contains
     deallocate(rsolver%p_Rmatrices)
     
     ! Deallocate temporary data
+    call lsysbl_releaseVector (rsolver%p_rd2)
+    deallocate (rsolver%p_rd2)
+
     call lsysbl_releaseVector (rsolver%p_rd)
     deallocate (rsolver%p_rd)
 
@@ -1075,7 +1207,7 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_vectorBlock), pointer :: p_rd, p_rx
+    type(t_vectorBlock), pointer :: p_rd, p_rd2, p_rx
     integer :: ierror
     type(t_linsolNode), pointer :: p_rsolverNode
     real(DP), dimension(:), pointer :: p_Dd, p_Dx
@@ -1088,6 +1220,7 @@ contains
    
     ! At first, get a temp vector we can use for creating defects,
     p_rd => rsolver%p_rd
+    p_rd2 => rsolver%p_rd2
     
     ! Get the boundary conditions for the current timestep.
     call sbch_getDiscreteBC (&
@@ -1193,24 +1326,68 @@ contains
         ! Preconditioning with the Newton matrix
         ! -------------------------------------------------------------
 
+        ! -------------------------------------------------------------
+        ! Assemble the matrices/boundary conditions on all levels.
+        ! -------------------------------------------------------------
+        ! Copy the defect vector in case we have to use the backup solver.
+        call lsysbl_copyVector (p_rd,p_rd2)
+
         ! Assemble the matrices/boundary conditions on all levels.
         call spaceslh_initData_primal (rsolver, ierror, idofTime, &
-            rprimalSol,rsolver%ispacelevel,rlocalStat)
+            rprimalSol,rsolver%ispacelevel,rlocalStat,.false.)
             
         call spacesl_sumStatistics (rlocalStat,rstatistics,.false.)
         
-        ! Solve the system
+        ! -------------------------------------------------------------
+        ! Call the linear solver
+        ! -------------------------------------------------------------
         output_iautoOutputIndent = output_iautoOutputIndent + 2
         call lssh_precondDefect (&
-            rsolver%p_rlsshierarchy,rsolver%ispacelevel,p_rd,rlocalStatLss)
+            rsolver%p_rlsshierarchy,rsolver%ispacelevel,p_rd,rlocalStatLss,p_rsolverNode)
         output_iautoOutputIndent = output_iautoOutputIndent - 2
         
         call lss_sumStatistics (rlocalStatLss,rstatistics%rlssSolverStat)
+
+        ! Cleanup
+        call spaceslh_doneData (rsolver,.false.)
         
         ! -------------------------------------------------------------
-        ! Solver-Cleanup
+        ! Call the fallback solver if the previous solver failed
         ! -------------------------------------------------------------
-        call spaceslh_doneData (rsolver)
+        if (p_rsolverNode%iresult .ne. 0) then
+
+          if (rsolver%rnewtonParams%ioutputLevel .ge. 1) then
+            call output_line ("Linear solver in space failed in timestep "//&
+                trim(sys_siL(idofTime,10))//". Invoking fallback solver.", &
+                OU_CLASS_WARNING,OU_MODE_STD,"spaceslh_solve")
+          end if
+
+          ! Reconstruct the defect vector
+          call lsysbl_copyVector (p_rd2,p_rd)
+          
+          call spaceslh_initData_primal (rsolver, ierror, idofTime, &
+              rprimalSol,rsolver%ispacelevel,rlocalStat,.true.)
+              
+          call spacesl_sumStatistics (rlocalStat,rstatistics,.false.)
+          
+          ! Solve the system
+          output_iautoOutputIndent = output_iautoOutputIndent + 2
+          call lssh_precondDefect (&
+              rsolver%p_rlsshierarchy2,rsolver%ispacelevel,p_rd,rlocalStatLss,p_rsolverNode)
+          output_iautoOutputIndent = output_iautoOutputIndent - 2
+          
+          call lss_sumStatistics (rlocalStatLss,rstatistics%rlssSolverStat)
+
+          ! Cleanup
+          call spaceslh_doneData (rsolver,.true.)
+          
+          ! Ignore the solution if everything fails.
+          if (p_rsolverNode%iresult .ne. 0) then
+            call output_line ("Linear solver in space failed. Solution ignored.", &
+                OU_CLASS_WARNING,OU_MODE_STD,"spaceslh_solve")
+            call lsysbl_clearVector (p_rd)
+          end if
+        end if
         
         ! -------------------------------------------------------------
         ! Update of the solution
@@ -1288,56 +1465,102 @@ contains
             " " // trim(sys_sdEL(rsolver%rnewtonParams%dresFinal,1)) )
       end if
 
-      ! -------------------------------------------------------------
-      ! Assemble the matrices/boundary conditions on all levels.
-      ! -------------------------------------------------------------
-      call spaceslh_initData_dual (rsolver, ierror, idofTime, &
-          rprimalSol,rsolver%ispacelevel,rlocalStat)
+      ! Cancel if the defect is zero.
+      if (rsolver%rnewtonParams%dresFinal .gt. 10.0_DP*SYS_EPSREAL_DP) then
+
+        ! -------------------------------------------------------------
+        ! Assemble the matrices/boundary conditions on all levels.
+        ! -------------------------------------------------------------
+        ! Copy the defect vector in case we have to use the backup solver.
+        call lsysbl_copyVector (p_rd,p_rd2)
+
+        call spaceslh_initData_dual (rsolver, ierror, idofTime, &
+            rprimalSol,rsolver%ispacelevel,rlocalStat,.false.)
+            
+        call spacesl_sumStatistics (rlocalStat,rstatistics,.false.)
+
+        ! -------------------------------------------------------------
+        ! Call the linear solver, it does the job for us.
+        ! -------------------------------------------------------------
+        call lssh_precondDefect (&
+            rsolver%p_rlsshierarchy,rsolver%ispacelevel,p_rd,rlocalStatLss,p_rsolverNode)
+        
+        call lss_sumStatistics (rlocalStatLss,rstatistics%rlssSolverStat)
+
+        ! -------------------------------------------------------------
+        ! Solver-Cleanup
+        ! -------------------------------------------------------------
+        call spaceslh_doneData (rsolver,.false.)
+        
+        ! -------------------------------------------------------------
+        ! Call the fallback solver if the previous solver failed
+        ! -------------------------------------------------------------
+        if (p_rsolverNode%iresult .ne. 0) then
+
+          if (rsolver%rnewtonParams%ioutputLevel .ge. 1) then
+            call output_line ("Linear solver in space failed in timestep "//&
+                trim(sys_siL(idofTime,10))//". Invoking fallback solver.", &
+                OU_CLASS_WARNING,OU_MODE_STD,"spaceslh_solve")
+          end if
+
+          ! Reconstruct the defect vector
+          call lsysbl_copyVector (p_rd2,p_rd)
+
+          call spaceslh_initData_dual (rsolver, ierror, idofTime, &
+              rprimalSol,rsolver%ispacelevel,rlocalStat,.true.)
+              
+          call spacesl_sumStatistics (rlocalStat,rstatistics,.false.)
+
+          call lssh_precondDefect (&
+              rsolver%p_rlsshierarchy2,rsolver%ispacelevel,p_rd,rlocalStatLss,p_rsolverNode)
           
-      call spacesl_sumStatistics (rlocalStat,rstatistics,.false.)
+          call lss_sumStatistics (rlocalStatLss,rstatistics%rlssSolverStat)
 
-      ! -------------------------------------------------------------
-      ! Call the linear solver, it does the job for us.
-      ! -------------------------------------------------------------
-      call lssh_precondDefect (&
-          rsolver%p_rlsshierarchy,rsolver%ispacelevel,p_rd,rlocalStatLss,p_rsolverNode)
+          call spaceslh_doneData (rsolver,.true.)
+
+          ! Ignore the solution if everything fails.
+          if (p_rsolverNode%iresult .ne. 0) then
+            call output_line ("Linear solver in space failed. Solution ignored.", &
+                OU_CLASS_WARNING,OU_MODE_STD,"spaceslh_solve")
+            call lsysbl_clearVector (p_rd)
+          end if
+        end if      
+
+        ! -------------------------------------------------------------
+        ! Statistics
+        ! -------------------------------------------------------------
+
+        ! Get the final residual
+        rsolver%rnewtonParams%dresFinal = p_rsolverNode%dfinalDefect
       
-      call lss_sumStatistics (rlocalStatLss,rstatistics%rlssSolverStat)
+        ! Print the final residual
+        if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
+          call output_line (&
+              trim(sys_si(idofTime-1,8)) // &
+              " " // trim(sys_si(1,4)) // &
+              " " // trim(sys_sdEL(rsolver%rnewtonParams%dresFinal,1)) )
+        end if
 
-      ! -------------------------------------------------------------
-      ! Solver-Cleanup
-      ! -------------------------------------------------------------
-      call spaceslh_doneData (rsolver)
+        ! -------------------------------------------------------------
+        ! Update the control according to the defect:
+        !
+        !    u_new  =  u_old  +  g_n
+        ! -------------------------------------------------------------
 
-      ! Get the final residual
-      rsolver%rnewtonParams%dresFinal = p_rsolverNode%dfinalDefect
-    
-      ! Print the final residual
-      if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
-        call output_line (&
-            trim(sys_si(idofTime-1,8)) // &
-            " " // trim(sys_si(1,4)) // &
-            " " // trim(sys_sdEL(rsolver%rnewtonParams%dresFinal,1)) )
+        call sptivec_getVectorFromPool(rdualSol%p_rvectorAccess,idofTime,p_rx)
+        
+        ! DEBUG!!!
+        call lsysbl_getbase_double (p_rx,p_Dx)
+        
+        call lsysbl_vectorLinearComb (p_rd,p_rx,1.0_DP,1.0_DP)
+
+        ! Implement boundary conditions
+        call spaceslh_implementBDC (p_rx, SPACESLH_VEC_SOLUTION, &
+              rsolver%ispacelevel, rsolver)
+
+        call sptivec_commitVecInPool(rdualSol%p_rvectorAccess,idofTime)
+
       end if
-
-      ! -------------------------------------------------------------
-      ! Update the control according to the defect:
-      !
-      !    u_new  =  u_old  +  g_n
-      ! -------------------------------------------------------------
-
-      call sptivec_getVectorFromPool(rdualSol%p_rvectorAccess,idofTime,p_rx)
-      
-      ! DEBUG!!!
-      call lsysbl_getbase_double (p_rx,p_Dx)
-      
-      call lsysbl_vectorLinearComb (p_rd,p_rx,1.0_DP,1.0_DP)
-
-      ! Implement boundary conditions
-      call spaceslh_implementBDC (p_rx, SPACESLH_VEC_SOLUTION, &
-            rsolver%ispacelevel, rsolver)
-
-      call sptivec_commitVecInPool(rdualSol%p_rvectorAccess,idofTime)
     
       ! -------------------------------------------------------------
       ! Clean up boundary conditions
@@ -1388,13 +1611,18 @@ contains
             " " // trim(sys_sdEL(rsolver%rnewtonParams%dresFinal,1)) )
       end if
 
+      ! Cancel if the defect is zero.
       if (rsolver%rnewtonParams%dresFinal .gt. 10.0_DP*SYS_EPSREAL_DP) then
 
         ! -------------------------------------------------------------
         ! Assemble the matrices/boundary conditions on all levels.
         ! -------------------------------------------------------------
+        ! Copy the defect vector in case we have to use the backup solver.
+        call lsysbl_copyVector (p_rd,p_rd2)
+
         call spaceslh_initData_primalLin (rsolver, ierror, idofTime, &
-            rprimalSol,rsolver%ispacelevel,rsolver%coptype .eq. OPTP_PRIMALLIN,rlocalStat)
+            rprimalSol,rsolver%ispacelevel,rsolver%coptype .eq. OPTP_PRIMALLIN,&
+            rlocalStat,.false.)
             
         call spacesl_sumStatistics (rlocalStat,rstatistics,.false.)
 
@@ -1409,7 +1637,46 @@ contains
         ! -------------------------------------------------------------
         ! Solver-Cleanup
         ! -------------------------------------------------------------
-        call spaceslh_doneData (rsolver)
+        call spaceslh_doneData (rsolver,.false.)
+
+        ! -------------------------------------------------------------
+        ! Call the fallback solver if the previous solver failed
+        ! -------------------------------------------------------------
+        if (p_rsolverNode%iresult .ne. 0) then
+
+          if (rsolver%rnewtonParams%ioutputLevel .ge. 1) then
+            call output_line ("Linear solver in space failed in timestep "//&
+                trim(sys_siL(idofTime,10))//". Invoking fallback solver.", &
+                OU_CLASS_WARNING,OU_MODE_STD,"spaceslh_solve")
+          end if
+
+          ! Reconstruct the defect vector
+          call lsysbl_copyVector (p_rd2,p_rd)
+
+          call spaceslh_initData_primalLin (rsolver, ierror, idofTime, &
+              rprimalSol,rsolver%ispacelevel,rsolver%coptype .eq. OPTP_PRIMALLIN,&
+              rlocalStat,.true.)
+              
+          call spacesl_sumStatistics (rlocalStat,rstatistics,.false.)
+
+          call lssh_precondDefect (&
+              rsolver%p_rlsshierarchy2,rsolver%ispacelevel,p_rd,rlocalStatLss,p_rsolverNode)
+          
+          call lss_sumStatistics (rlocalStatLss,rstatistics%rlssSolverStat)
+          
+          call spaceslh_doneData (rsolver,.true.)
+
+          ! Ignore the solution if everything fails.
+          if (p_rsolverNode%iresult .ne. 0) then
+            call output_line ("Linear solver in space failed. Solution ignored.", &
+                OU_CLASS_WARNING,OU_MODE_STD,"spaceslh_solve")
+            call lsysbl_clearVector (p_rd)
+          end if
+        end if
+        
+        ! -------------------------------------------------------------
+        ! Statistics
+        ! -------------------------------------------------------------
 
         ! Get the final residual
         rsolver%rnewtonParams%dresFinal = p_rsolverNode%dfinalDefect
@@ -1479,9 +1746,6 @@ contains
           
       call stat_stopTimer (rstatistics%rtimeDefect)
           
-      ! Cleanup
-      call spaceslh_doneData (rsolver)
-
       rsolver%rnewtonParams%dresFinal = &
           lsysbl_vectorNorm(p_rd,rsolver%rnewtonParams%iresNorm)
       
@@ -1496,13 +1760,18 @@ contains
             " " // trim(sys_sdEL(rsolver%rnewtonParams%dresFinal,1)) )
       end if
 
+      ! Cancel if the defect is zero.
       if (rsolver%rnewtonParams%dresFinal .gt. 10.0_DP*SYS_EPSREAL_DP) then
 
         ! -------------------------------------------------------------
         ! Assemble the matrices/boundary conditions on all levels.
         ! -------------------------------------------------------------
+        ! Copy the defect vector in case we have to use the backup solver.
+        call lsysbl_copyVector (p_rd,p_rd2)
+
         call spaceslh_initData_dualLin (rsolver, ierror, idofTime, &
-            rprimalSol,rsolver%ispacelevel,rsolver%coptype .eq. OPTP_DUALLIN,rlocalStat)
+            rprimalSol,rsolver%ispacelevel,rsolver%coptype .eq. OPTP_DUALLIN,&
+            rlocalStat,.false.)
         
         call spacesl_sumStatistics (rlocalStat,rstatistics,.false.)
 
@@ -1517,7 +1786,47 @@ contains
         ! -------------------------------------------------------------
         ! Solver-Cleanup
         ! -------------------------------------------------------------
-        call spaceslh_doneData (rsolver)
+        call spaceslh_doneData (rsolver,.false.)
+
+        ! -------------------------------------------------------------
+        ! Call the fallback solver if the previous solver failed
+        ! -------------------------------------------------------------
+        if (p_rsolverNode%iresult .ne. 0) then
+
+          if (rsolver%rnewtonParams%ioutputLevel .ge. 1) then
+            call output_line ("Linear solver in space failed in timestep "//&
+                trim(sys_siL(idofTime,10))//". Invoking fallback solver.", &
+                OU_CLASS_ERROR,OU_MODE_STD,"spaceslh_solve")
+          end if
+
+          ! Reconstruct the defect vector
+          call lsysbl_copyVector (p_rd2,p_rd)
+
+          call spaceslh_initData_dualLin (rsolver, ierror, idofTime, &
+              rprimalSol,rsolver%ispacelevel,rsolver%coptype .eq. OPTP_DUALLIN,&
+              rlocalStat,.true.)
+          
+          call spacesl_sumStatistics (rlocalStat,rstatistics,.false.)
+
+          call lssh_precondDefect (&
+              rsolver%p_rlsshierarchy2,rsolver%ispacelevel,p_rd,rlocalStatLss,p_rsolverNode)
+          
+          call lss_sumStatistics (rlocalStatLss,rstatistics%rlssSolverStat)
+
+          call spaceslh_doneData (rsolver,.true.)
+
+          ! Ignore the solution if everything fails.
+          if (p_rsolverNode%iresult .ne. 0) then
+            call output_line ("Linear solver in space failed. Solution ignored.", &
+                OU_CLASS_ERROR,OU_MODE_STD,"spaceslh_solve")
+            call lsysbl_clearVector (p_rd)
+          end if
+
+        end if      
+
+        ! -------------------------------------------------------------
+        ! Statistics
+        ! -------------------------------------------------------------
 
         ! Get the final residual
         rsolver%rnewtonParams%dresFinal = p_rsolverNode%dfinalDefect

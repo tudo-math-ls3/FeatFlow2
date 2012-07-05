@@ -149,6 +149,29 @@ module newtoniteration
     ! Linearised dual equation.
     type(t_linsolHierarchySpace), pointer :: p_rlinsolHierDualLin => null()
 
+
+    ! Hierarchy of linear solvers in space for all levels.
+    ! Fallback solver if the standard solver fails.
+    ! Nonlinear primal equation.
+    type(t_linsolHierarchySpace), pointer :: p_rlinsolHierPrimal2 => null()
+
+    ! Hierarchy of linear solvers in space for all levels.
+    ! Fallback solver if the standard solver fails.
+    ! Dual equation.
+    type(t_linsolHierarchySpace), pointer :: p_rlinsolHierDual2 => null()
+
+    ! Hierarchy of linear solvers in space for all levels.
+    ! Fallback solver if the standard solver fails.
+    ! Linearised primal equation.
+    type(t_linsolHierarchySpace), pointer :: p_rlinsolHierPrimalLin2 => null()
+
+    ! Hierarchy of linear solvers in space for all levels.
+    ! Fallback solver if the standard solver fails.
+    ! Linearised dual equation.
+    type(t_linsolHierarchySpace), pointer :: p_rlinsolHierDualLin2 => null()
+
+
+
     ! Hierarchy of solvers in space for all levels.
     ! Nonlinear primal equation.
     type(t_spaceSolverHierarchy), pointer :: p_rsolverHierPrimal => null()
@@ -236,8 +259,12 @@ contains
 !</subroutine>
 
     character(LEN=SYS_STRLEN) :: ssolverNonlin,ssolverLin
+
     character(LEN=SYS_STRLEN) :: ssolverSpaceForward,ssolverSpaceBackward
     character(LEN=SYS_STRLEN) :: ssolverSpaceForwardLin,ssolverSpaceBackwardLin
+
+    character(LEN=SYS_STRLEN) :: ssolverSpaceForward2,ssolverSpaceBackward2
+    character(LEN=SYS_STRLEN) :: ssolverSpaceForwardLin2,ssolverSpaceBackwardLin2
 
     ! Remember the solver settings for later use
     rsolver%p_rsettingsSolver => rsettingsSolver
@@ -271,6 +298,19 @@ contains
     call parlst_getvalue_string (rparamList, ssection, &
         "ssectionLinSolverSpaceBackwardLin", ssolverSpaceBackwardLin, "CC-LINEARSOLVER",bdequote=.true.)
 
+    ! Fallback solvers if the standard solvers fail.
+    call parlst_getvalue_string (rparamList, ssection, &
+        "ssectionLinSolverSpaceForward2", ssolverSpaceForward2, "CC-LINEARSOLVER",bdequote=.true.)
+
+    call parlst_getvalue_string (rparamList, ssection, &
+        "ssectionLinSolverSpaceBackward2", ssolverSpaceBackward2, "CC-LINEARSOLVER",bdequote=.true.)
+
+    call parlst_getvalue_string (rparamList, ssection, &
+        "ssectionLinSolverSpaceForwardLin2", ssolverSpaceForwardlin2, "CC-LINEARSOLVER",bdequote=.true.)
+
+    call parlst_getvalue_string (rparamList, ssection, &
+        "ssectionLinSolverSpaceBackwardLin2", ssolverSpaceBackwardLin2, "CC-LINEARSOLVER",bdequote=.true.)
+
     ! Create linear solvers in space for linera subproblems in the
     ! primal/dual space.
 
@@ -278,6 +318,11 @@ contains
     allocate(rsolver%p_rlinsolHierDual)
     allocate(rsolver%p_rlinsolHierPrimalLin)
     allocate(rsolver%p_rlinsolHierDualLin)
+
+    allocate(rsolver%p_rlinsolHierPrimal2)
+    allocate(rsolver%p_rlinsolHierDual2)
+    allocate(rsolver%p_rlinsolHierPrimalLin2)
+    allocate(rsolver%p_rlinsolHierDualLin2)
 
     ! Create solver structures for the same levels.
 
@@ -304,6 +349,32 @@ contains
         rsettingsSolver%rfeHierarchyDual,rsettingsSolver%rprjHierSpaceDual,&
         1,0,rsettingsSolver%rphysics%cequation,rsettingsSolver%p_rparlist,&
         ssolverSpaceBackwardLin,rsettingsSolver%rdebugFlags)
+
+    ! Create fallback solvers
+    
+    ! Forward equation on all levels
+    call lssh_createLinsolHierarchy (rsolver%p_rlinsolHierPrimal2,&
+        rsettingsSolver%rfeHierarchyPrimal,rsettingsSolver%rprjHierSpacePrimal,&
+        1,0,rsettingsSolver%rphysics%cequation,rsettingsSolver%p_rparlist,&
+        ssolverSpaceForward2,rsettingsSolver%rdebugFlags)
+
+    ! Backward equation on all levels
+    call lssh_createLinsolHierarchy (rsolver%p_rlinsolHierDual2,&
+        rsettingsSolver%rfeHierarchyDual,rsettingsSolver%rprjHierSpaceDual,&
+        1,0,rsettingsSolver%rphysics%cequation,rsettingsSolver%p_rparlist,&
+        ssolverSpaceBackward2,rsettingsSolver%rdebugFlags)
+
+    ! Linearised forward equation on all levels
+    call lssh_createLinsolHierarchy (rsolver%p_rlinsolHierPrimalLin2,&
+        rsettingsSolver%rfeHierarchyPrimal,rsettingsSolver%rprjHierSpacePrimal,&
+        1,0,rsettingsSolver%rphysics%cequation,rsettingsSolver%p_rparlist,&
+        ssolverSpaceForwardLin2,rsettingsSolver%rdebugFlags)
+
+    ! Linearised backward equation on all levels
+    call lssh_createLinsolHierarchy (rsolver%p_rlinsolHierDualLin2,&
+        rsettingsSolver%rfeHierarchyDual,rsettingsSolver%rprjHierSpaceDual,&
+        1,0,rsettingsSolver%rphysics%cequation,rsettingsSolver%p_rparlist,&
+        ssolverSpaceBackwardLin2,rsettingsSolver%rdebugFlags)
     
     ! Create the corresponding solver hierarchies.
     allocate(rsolver%p_rsolverHierPrimal)
@@ -313,14 +384,15 @@ contains
 
     ! Forward equation. Created on all levels but only used on the highest one.
     caLL spaceslh_init (rsolver%p_rsolverHierPrimal,&
-        OPTP_PRIMAL,rsolver%p_rlinsolHierPrimal,ssolverNonlin,rparamList)
+        OPTP_PRIMAL,rsolver%p_rlinsolHierPrimal,rsolver%p_rlinsolHierPrimal2,&
+        ssolverNonlin,rparamList)
 
     ! Backward equation, only linear. Created on all levels but only used on the highest one.
     ! Also fetch parameters of the nonlinear solver from the data file.
     ! The parameter are not used except for the output level, which determins
     ! the amoount of output of the solver.
     caLL spaceslh_init (rsolver%p_rsolverHierDual,&
-        OPTP_DUAL,rsolver%p_rlinsolHierDual,ssolverNonlin,rparamList)
+        OPTP_DUAL,rsolver%p_rlinsolHierDual,rsolver%p_rlinsolHierDual2,ssolverNonlin,rparamList)
 
     ! The definition of the lineraised forward/backward equation depends upon
     ! whether we use the full Newton approach or not.
@@ -333,12 +405,14 @@ contains
       ! Linearised forward equation, only linear. Used on all levels.
       ! Uses the same linear solver as the forward solver.
       caLL spaceslh_init (rsolver%p_rsolverHierPrimalLin,&
-          OPTP_PRIMALLIN_SIMPLE,rsolver%p_rlinsolHierPrimalLin,ssolverNonlin,rparamList)
+          OPTP_PRIMALLIN_SIMPLE,rsolver%p_rlinsolHierPrimalLin,&
+          rsolver%p_rlinsolHierPrimalLin2,ssolverNonlin,rparamList)
 
       ! Linearised forward equation, only linear. Used on all levels.
       ! Uses the same linear solver as the backward solver.#
       caLL spaceslh_init (rsolver%p_rsolverHierDualLin,&
-          OPTP_DUALLIN_SIMPLE,rsolver%p_rlinsolHierDualLin,ssolverNonlin,rparamList)
+          OPTP_DUALLIN_SIMPLE,rsolver%p_rlinsolHierDualLin,&
+          rsolver%p_rlinsolHierDualLin2,ssolverNonlin,rparamList)
     
     ! ----------------------------
     ! Full Newton, adaptive Newton
@@ -347,12 +421,14 @@ contains
       ! Linearised forward equation, only linear. Used on all levels.
       ! Uses the same linear solver as the forward solver.
       caLL spaceslh_init (rsolver%p_rsolverHierPrimalLin,&
-          OPTP_PRIMALLIN,rsolver%p_rlinsolHierPrimalLin,ssolverNonlin,rparamList)
+          OPTP_PRIMALLIN,rsolver%p_rlinsolHierPrimalLin,&
+          rsolver%p_rlinsolHierPrimalLin2,ssolverNonlin,rparamList)
 
       ! Linearised forward equation, only linear. Used on all levels.
       ! Uses the same linear solver as the backward solver.
       caLL spaceslh_init (rsolver%p_rsolverHierDualLin,&
-          OPTP_DUALLIN,rsolver%p_rlinsolHierDualLin,ssolverNonlin,rparamList)
+          OPTP_DUALLIN,rsolver%p_rlinsolHierDualLin,&
+          rsolver%p_rlinsolHierDualLin2,ssolverNonlin,rparamList)
           
     case default
       call output_line ("Invalid nonlinear iteration",&
@@ -720,6 +796,30 @@ contains
           rsolver%rnewtonParams,rsolver%rnewtonParams%niterations)) exit
       
       ! -------------------------------------------------------------
+      ! Postprocessing.
+      ! It has to be after newtonit_getResidual as newtonit_getResidual
+      ! computes the corresponding y/lambda to the control u.
+      ! We do it after the residual checks, so the final solution
+      ! is not postprocessed.
+      ! -------------------------------------------------------------
+      if (rsolver%cpostprocessIterates .ge. 0) then
+        call output_separator (OU_SEP_MINUS)
+
+        call stat_startTimer (rstatistics%rtimePostprocessing)
+        
+        call optcpp_postprocessSubstep (rsolver%p_rsettingsSolver%rpostproc,&
+            rsolver%p_rsettingsSolver%rspaceTimeHierPrimal%p_rfeHierarchy%nlevels,&
+            rsolver%p_rsettingsSolver%rspaceTimeHierPrimal%p_rtimeHierarchy%nlevels,&
+            p_rsolution%p_rprimalSol,p_rsolution%p_rdualSol,p_rsolution%p_rcontrol,&
+            rsolver%p_rsettingsSolver,rsolver%cpostprocessIterates,&
+            rsolver%rnewtonParams%niterations)
+        
+        call stat_stopTimer (rstatistics%rtimePostprocessing)
+        
+        call output_separator (OU_SEP_MINUS)
+      end if
+
+      ! -------------------------------------------------------------
       ! Adaptive Newton for the next iteration?
       ! -------------------------------------------------------------
       if (rsolver%rnewtonParams%ctypeIteration .eq. 3) then
@@ -789,24 +889,6 @@ contains
       ! Next iteration
       rsolver%rnewtonParams%niterations = rsolver%rnewtonParams%niterations + 1
     
-      ! -------------------------------------------------------------
-      ! Postprocessing
-      ! -------------------------------------------------------------
-      if (rsolver%cpostprocessIterates .ge. 0) then
-        call output_separator (OU_SEP_MINUS)
-
-        call stat_startTimer (rstatistics%rtimePostprocessing)
-        
-        call optcpp_postprocessSubstep (rsolver%p_rsettingsSolver%rpostproc,&
-            rsolver%p_rsettingsSolver%rspaceTimeHierPrimal%p_rfeHierarchy%nlevels,&
-            rsolver%p_rsettingsSolver%rspaceTimeHierPrimal%p_rtimeHierarchy%nlevels,&
-            p_rsolution%p_rprimalSol,p_rsolution%p_rdualSol,p_rsolution%p_rcontrol,&
-            rsolver%p_rsettingsSolver,rsolver%cpostprocessIterates,&
-            rsolver%rnewtonParams%niterations)
-        
-        call stat_stopTimer (rstatistics%rtimePostprocessing)
-      end if
-
       if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
         call output_separator (OU_SEP_MINUS)
         call output_line ("Space-time Newton: Time for the linear solver = "//&
@@ -1029,16 +1111,26 @@ contains
     call lssh_releaseLinsolHierarchy (rsolver%p_rlinsolHierDual)
     call lssh_releaseLinsolHierarchy (rsolver%p_rlinsolHierPrimal)
 
+    call lssh_releaseLinsolHierarchy (rsolver%p_rlinsolHierDualLin2)
+    call lssh_releaseLinsolHierarchy (rsolver%p_rlinsolHierPrimalLin2)
+    call lssh_releaseLinsolHierarchy (rsolver%p_rlinsolHierDual2)
+    call lssh_releaseLinsolHierarchy (rsolver%p_rlinsolHierPrimal2)
+
     deallocate (rsolver%p_rsolverHierDualLin)
     deallocate (rsolver%p_rsolverHierPrimalLin)
     deallocate (rsolver%p_rsolverHierDual)
     deallocate (rsolver%p_rsolverHierPrimal)
 
+    deallocate (rsolver%p_rlinsolHierDualLin2)
+    deallocate (rsolver%p_rlinsolHierPrimalLin2)
+    deallocate (rsolver%p_rlinsolHierDual2)
+    deallocate (rsolver%p_rlinsolHierPrimal2)
+    
     deallocate (rsolver%p_rlinsolHierDualLin)
     deallocate (rsolver%p_rlinsolHierPrimalLin)
     deallocate (rsolver%p_rlinsolHierDual)
     deallocate (rsolver%p_rlinsolHierPrimal)
-    
+
   end subroutine
 
   ! ***************************************************************************

@@ -30,7 +30,7 @@ ssolverSection = 'CC-MULTIGRIDSOLVERFORW'
 # 4=BiCGStab with Diagonal VANKA preconditioning
 # 5=BiCGStab with Full VANKA preconditioning
 
-ismootherType = 0
+ismootherType = 4
 
 # Name of the section in this file which configures the smoother.
 
@@ -45,12 +45,60 @@ ssmootherSection = 'CC-SMOOTHER'
 # =5: Defect correction with general VANKA preconditioning
 # =6: BiCGStab with general VANKA preconditioning
 
-icoarseGridSolverType = 5
+icoarseGridSolverType = 3
 
 # Name of the section in this file which configures the coarse grid solver.
 
 scoarseGridSolverSection = 'CC-COARSEGRIDSOLVER'
 
+# ------------------------------------------------------------------------
+# Linear solver for the forward iteration, backup solver
+# ------------------------------------------------------------------------
+
+######################
+[CC-LINEARSOLVERFORW2]
+######################
+
+# Type of the solver that is used for preconditioning.
+# =0: Gauss elimination (UMFPACK)
+# =1: Multigrid solver
+
+isolverType = 1
+
+# Name of the section in this file which configures the solver.
+
+ssolverSection = 'CC-MULTIGRIDSOLVERFORW'
+
+# Type of smoother to use in multigrid.
+# Standard value = 2.
+# 0=General VANKA.
+# 1=General VANKA. 'Direct' method.
+#   Note: This doesn't seem to work!?!
+# 2=Diagonal VANKA for 2D Navier-Stokes optimal control problem.
+# 3=Full VANKA for 2D Navier-Stokes optimal control problem.
+# 4=BiCGStab with Diagonal VANKA preconditioning
+# 5=BiCGStab with Full VANKA preconditioning
+
+ismootherType = 5
+
+# Name of the section in this file which configures the smoother.
+
+ssmootherSection = 'CC-SMOOTHER'
+
+# Type of coarse grid solver. Standard = 1
+# =0: Gauss elimination (UMFPACK)
+# =1: Defect correction with diagonal VANKA preconditioning.
+# =2: Defect correction with full VANKA preconditioning.
+# =3: BiCGStab with diagonal VANKA preconditioning
+# =4: BiCGStab with full VANKA preconditioning
+# =5: Defect correction with general VANKA preconditioning
+# =6: BiCGStab with general VANKA preconditioning
+
+icoarseGridSolverType = 4
+
+# Name of the section in this file which configures the coarse grid solver.
+
+scoarseGridSolverSection = 'CC-COARSEGRIDSOLVER'
 
 # ========================================================================
 # The following section specifies the parameters for the solver.
@@ -162,7 +210,7 @@ ssolverSection = 'CC-MULTIGRIDSOLVERBACKW'
 # 4=BiCGStab with Diagonal VANKA preconditioning
 # 5=BiCGStab with Full VANKA preconditioning
 
-ismootherType = 0
+ismootherType = 4
 
 # Name of the section in this file which configures the smoother.
 
@@ -177,12 +225,60 @@ ssmootherSection = 'CC-SMOOTHER'
 # =5: Defect correction with general VANKA preconditioning
 # =6: BiCGStab with general VANKA preconditioning
 
-icoarseGridSolverType = 5
+icoarseGridSolverType = 3
 
 # Name of the section in this file which configures the coarse grid solver.
 
 scoarseGridSolverSection = 'CC-COARSEGRIDSOLVER'
 
+
+# ------------------------------------------------------------------------
+# Linear solver for the backward iteration, backup solver
+# ------------------------------------------------------------------------
+#######################
+[CC-LINEARSOLVERBACKW2]
+#######################
+
+# Type of the solver that is used for preconditioning.
+# =0: Gauss elimination (UMFPACK)
+# =1: Multigrid solver
+
+isolverType = 1
+
+# Name of the section in this file which configures the solver.
+
+ssolverSection = 'CC-MULTIGRIDSOLVERBACKW'
+
+# Type of smoother to use in multigrid.
+# Standard value = 2.
+# 0=General VANKA.
+# 1=General VANKA. 'Direct' method.
+#   Note: This doesn't seem to work!?!
+# 2=Diagonal VANKA for 2D Navier-Stokes optimal control problem.
+# 3=Full VANKA for 2D Navier-Stokes optimal control problem.
+# 4=BiCGStab with Diagonal VANKA preconditioning
+# 5=BiCGStab with Full VANKA preconditioning
+
+ismootherType = 5
+
+# Name of the section in this file which configures the smoother.
+
+ssmootherSection = 'CC-SMOOTHER'
+
+# Type of coarse grid solver. Standard = 1
+# =0: Gauss elimination (UMFPACK)
+# =1: Defect correction with diagonal VANKA preconditioning.
+# =2: Defect correction with full VANKA preconditioning.
+# =3: BiCGStab with diagonal VANKA preconditioning
+# =4: BiCGStab with full VANKA preconditioning
+# =5: Defect correction with general VANKA preconditioning
+# =6: BiCGStab with general VANKA preconditioning
+
+icoarseGridSolverType = 4
+
+# Name of the section in this file which configures the coarse grid solver.
+
+scoarseGridSolverSection = 'CC-COARSEGRIDSOLVER'
 
 # ========================================================================
 # The following section specifies the parameters for the solver.
@@ -294,7 +390,7 @@ ssolverSection = 'CC-MULTIGRIDSOLVERLIN'
 # 4=BiCGStab with Diagonal VANKA preconditioning
 # 5=BiCGStab with Full VANKA preconditioning
 
-ismootherType = 0
+ismootherType = 4
 
 # Name of the section in this file which configures the smoother.
 
@@ -309,7 +405,57 @@ ssmootherSection = 'CC-SMOOTHER'
 # =5: Defect correction with general VANKA preconditioning
 # =6: BiCGStab with general VANKA preconditioning
 
-icoarseGridSolverType = 5
+icoarseGridSolverType = 3
+
+# Name of the section in this file which configures the coarse grid solver.
+
+scoarseGridSolverSection = 'CC-COARSEGRIDSOLVER'
+
+
+# ------------------------------------------------------------------------
+# Linear solver for the linearised forward/backward iterations.
+# Backup solver
+# ------------------------------------------------------------------------
+#####################
+[CC-LINEARSOLVERLIN2]
+#####################
+
+# Type of the solver that is used for preconditioning.
+# =0: Gauss elimination (UMFPACK)
+# =1: Multigrid solver
+
+isolverType = 1
+
+# Name of the section in this file which configures the solver.
+
+ssolverSection = 'CC-MULTIGRIDSOLVERLIN'
+
+# Type of smoother to use in multigrid.
+# Standard value = 2.
+# 0=General VANKA.
+# 1=General VANKA. 'Direct' method.
+#   Note: This doesn't seem to work!?!
+# 2=Diagonal VANKA for 2D Navier-Stokes optimal control problem.
+# 3=Full VANKA for 2D Navier-Stokes optimal control problem.
+# 4=BiCGStab with Diagonal VANKA preconditioning
+# 5=BiCGStab with Full VANKA preconditioning
+
+ismootherType = 5
+
+# Name of the section in this file which configures the smoother.
+
+ssmootherSection = 'CC-SMOOTHER'
+
+# Type of coarse grid solver. Standard = 1
+# =0: Gauss elimination (UMFPACK)
+# =1: Defect correction with diagonal VANKA preconditioning.
+# =2: Defect correction with full VANKA preconditioning.
+# =3: BiCGStab with diagonal VANKA preconditioning
+# =4: BiCGStab with full VANKA preconditioning
+# =5: Defect correction with general VANKA preconditioning
+# =6: BiCGStab with general VANKA preconditioning
+
+icoarseGridSolverType = 4
 
 # Name of the section in this file which configures the coarse grid solver.
 
