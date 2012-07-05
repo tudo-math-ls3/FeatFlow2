@@ -2062,6 +2062,11 @@ contains
       depsRel = 0.0_DP
       depsAbs = max(dresInit * ddigitsToGain,radNewtonParams%dinexactNewtonEpsAbs)
       
+      ! Do not gain too much.
+      depsAbs = max(depsAbs,&
+          max(dresInit * rsolver%rnewtonParams%depsrel * radNewtonParams%dinexactNewtonEpsRel,&
+              rsolver%rnewtonParams%depsabs * radNewtonParams%dinexactNewtonEpsRel))
+
       if (rsolver%rnewtonParams%ioutputLevel .ge. 3) then
         call output_line ("Adaptive Newton: New stopping criterion. ||res|| < "//&
             trim(sys_sdEL(depsAbs,10)))

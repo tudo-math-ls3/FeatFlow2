@@ -554,10 +554,12 @@ contains
     ! Check the residual.
     if (rsolver%niterations .ge. rsolver%nminIterations) then
       ! Absolute residual
-      if (rsolver%dresFinal .le. rsolver%depsAbs) then
-        rsolver%iresult = 0
-        newtonit_checkConvergence = .true.
-        return
+      if (rsolver%depsAbs .gt. 0.0_DP) then
+        if (rsolver%dresFinal .le. rsolver%depsAbs) then
+          rsolver%iresult = 0
+          newtonit_checkConvergence = .true.
+          return
+        end if
       end if
 
       ! Relative residual
@@ -569,14 +571,6 @@ contains
         end if
       end if
 
-      if (rsolver%depsAbs .gt. 0.0_DP) then
-        if (rsolver%dresFinal .le. rsolver%depsAbs) then
-          rsolver%iresult = 0
-          newtonit_checkConvergence = .true.
-          return
-        end if
-      end if
-      
     end if
 
   end function
@@ -754,17 +748,21 @@ contains
     ! Check the residual.
     if (rsolver%niterations .ge. rsolver%nminIterations) then
       ! Absolute residual
-      if (rsolver%dresFinal .le. rsolver%depsAbs) then
-        rsolver%iresult = 0
-        newtonlin_checkConvergence = .true.
-        return
+      if (rsolver%depsAbs .gt. 0.0_DP) then
+        if (rsolver%dresFinal .le. rsolver%depsAbs) then
+          rsolver%iresult = 0
+          newtonlin_checkConvergence = .true.
+          return
+        end if
       end if
 
       ! Relative residual
-      if (rsolver%dresFinal .le. rsolver%depsRel * rsolver%dresInit) then
-        rsolver%iresult = 0
-        newtonlin_checkConvergence = .true.
-        return
+      if (rsolver%depsRel .gt. 0.0_DP) then
+        if (rsolver%dresFinal .le. rsolver%depsRel * rsolver%dresInit) then
+          rsolver%iresult = 0
+          newtonlin_checkConvergence = .true.
+          return
+        end if
       end if
       
     end if

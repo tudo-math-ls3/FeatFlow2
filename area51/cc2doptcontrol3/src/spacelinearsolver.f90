@@ -544,6 +544,8 @@ contains
               call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_NAVST2D_FULL)
               call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner,&
                   rsolver%RfilterChain)
+            case (6)
+              call linsol_initSPSOR (p_rsmoother,LINSOL_SPSOR_NAVST2D)
             end select
             
             ! Initialise the parameters -- if there are any.
