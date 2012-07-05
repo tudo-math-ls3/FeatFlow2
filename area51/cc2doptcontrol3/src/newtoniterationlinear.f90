@@ -441,8 +441,12 @@ contains
     output_iautoOutputIndent = output_iautoOutputIndent - 2
     
     if (rlinsolParam%rprecParameters%ioutputLevel .ge. 3) then
-      call output_line ("Linear space-time Residual: Time for solving: "//&
+      call output_line ("Linear space-time Residual: Time for solving      : "//&
           trim(sys_sdL(rlocalStat%rtotalTime%delapsedReal,10)))
+      call output_line ("Linear space-time Residual: Time for space-defects: "//&
+          trim(sys_sdL(rlocalStat%rtimeDefect%delapsedReal,10)))
+      call output_line ("Linear space-time Residual: Time for space-solver : "//&
+          trim(sys_sdL(rlocalStat%rlssSolverStat%rtotalTime%delapsedReal,10)))
     end if
 
     ! Add time to the time of the forward equation
@@ -467,8 +471,12 @@ contains
     output_iautoOutputIndent = output_iautoOutputIndent - 2
     
     if (rlinsolParam%rprecParameters%ioutputLevel .ge. 3) then
-      call output_line ("Linear space-time Residual: Time for solving: "//&
+      call output_line ("Linear space-time Residual: Time for solving      : "//&
           trim(sys_sdL(rlocalStat%rtotalTime%delapsedReal,10)))
+      call output_line ("Linear space-time Residual: Time for space-defects: "//&
+          trim(sys_sdL(rlocalStat%rtimeDefect%delapsedReal,10)))
+      call output_line ("Linear space-time Residual: Time for space-solver : "//&
+          trim(sys_sdL(rlocalStat%rlssSolverStat%rtotalTime%delapsedReal,10)))
     end if
 
     ! Add time to the time of the backward equation
@@ -541,8 +549,12 @@ contains
 
     call spacesl_sumStatistics(rlocalStat,rstatistics%rspaceslSolverStat)
     if (rlinsolParam%rprecParameters%ioutputLevel .ge. 3) then
-      call output_line ("Linear space-time Residual: Time for solving: "//&
+      call output_line ("Linear space-time Residual: Time for solving      : "//&
           trim(sys_sdL(rlocalStat%rtotalTime%delapsedReal,10)))
+      call output_line ("Linear space-time Residual: Time for space-defects: "//&
+          trim(sys_sdL(rlocalStat%rtimeDefect%delapsedReal,10)))
+      call output_line ("Linear space-time Residual: Time for space-solver : "//&
+          trim(sys_sdL(rlocalStat%rlssSolverStat%rtotalTime%delapsedReal,10)))
     end if
 
     ! Add time to the time of the forward equation
@@ -567,8 +579,12 @@ contains
     output_iautoOutputIndent = output_iautoOutputIndent - 2
 
     if (rlinsolParam%rprecParameters%ioutputLevel .ge. 3) then
-      call output_line ("Linear space-time Residual: Time for solving: "//&
+      call output_line ("Linear space-time Residual: Time for solving      : "//&
           trim(sys_sdL(rlocalStat%rtotalTime%delapsedReal,10)))
+      call output_line ("Linear space-time Residual: Time for space-defects: "//&
+          trim(sys_sdL(rlocalStat%rtimeDefect%delapsedReal,10)))
+      call output_line ("Linear space-time Residual: Time for space-solver : "//&
+          trim(sys_sdL(rlocalStat%rlssSolverStat%rtotalTime%delapsedReal,10)))
     end if
 
     ! Add time to the time of the backward equation
