@@ -47,7 +47,7 @@ module initoptflow
   
   use spacematvecassembly
   use initmatrices
-  use spacetimeinterlevelprojection
+  use spacetimeinterlevelprj
   use postprocessing
   
   use user_callback

@@ -48,7 +48,7 @@ module newtoniterationlinear
   use kktsystemhierarchy
   
   use spacetimehierarchy
-  use spacetimeinterlevelprojection
+  use spacetimeinterlevelprj
   
   use structuresnewton
   
@@ -445,6 +445,13 @@ contains
           trim(sys_sdL(rlocalStat%rtotalTime%delapsedReal,10)))
       call output_line ("Linear space-time Residual: Time for space-defects: "//&
           trim(sys_sdL(rlocalStat%rtimeDefect%delapsedReal,10)))
+      call output_line ("Linear space-time Residual:   Time for space-RHS  : "//&
+          trim(sys_sdL(rlocalStat%rtimeRHS%delapsedReal,10)))
+      call output_line ("Linear space-time Residual: Time for mat. assembly: "//&
+          trim(sys_sdL(rlocalStat%rtimeMatrixAssembly%delapsedReal,10)))
+      call output_line ("Linear space-time Residual: Time for factorisation: "//&
+          trim(sys_sdL(rlocalStat%rlssSolverStat%rtimeNumericFactorisation%delapsedReal+&
+                       rlocalStat%rlssSolverStat%rtimeNumericFactorisation%delapsedReal,10)))
       call output_line ("Linear space-time Residual: Time for space-solver : "//&
           trim(sys_sdL(rlocalStat%rlssSolverStat%rtotalTime%delapsedReal,10)))
     end if
@@ -475,6 +482,13 @@ contains
           trim(sys_sdL(rlocalStat%rtotalTime%delapsedReal,10)))
       call output_line ("Linear space-time Residual: Time for space-defects: "//&
           trim(sys_sdL(rlocalStat%rtimeDefect%delapsedReal,10)))
+      call output_line ("Linear space-time Residual:   Time for space-RHS  : "//&
+          trim(sys_sdL(rlocalStat%rtimeRHS%delapsedReal,10)))
+      call output_line ("Linear space-time Residual: Time for mat. assembly: "//&
+          trim(sys_sdL(rlocalStat%rtimeMatrixAssembly%delapsedReal,10)))
+      call output_line ("Linear space-time Residual: Time for factorisation: "//&
+          trim(sys_sdL(rlocalStat%rlssSolverStat%rtimeNumericFactorisation%delapsedReal+&
+                       rlocalStat%rlssSolverStat%rtimeNumericFactorisation%delapsedReal,10)))
       call output_line ("Linear space-time Residual: Time for space-solver : "//&
           trim(sys_sdL(rlocalStat%rlssSolverStat%rtotalTime%delapsedReal,10)))
     end if
@@ -553,6 +567,13 @@ contains
           trim(sys_sdL(rlocalStat%rtotalTime%delapsedReal,10)))
       call output_line ("Linear space-time Residual: Time for space-defects: "//&
           trim(sys_sdL(rlocalStat%rtimeDefect%delapsedReal,10)))
+      call output_line ("Linear space-time Residual:   Time for space-RHS  : "//&
+          trim(sys_sdL(rlocalStat%rtimeRHS%delapsedReal,10)))
+      call output_line ("Linear space-time Residual: Time for mat. assembly: "//&
+          trim(sys_sdL(rlocalStat%rtimeMatrixAssembly%delapsedReal,10)))
+      call output_line ("Linear space-time Residual: Time for factorisation: "//&
+          trim(sys_sdL(rlocalStat%rlssSolverStat%rtimeNumericFactorisation%delapsedReal+&
+                       rlocalStat%rlssSolverStat%rtimeNumericFactorisation%delapsedReal,10)))
       call output_line ("Linear space-time Residual: Time for space-solver : "//&
           trim(sys_sdL(rlocalStat%rlssSolverStat%rtotalTime%delapsedReal,10)))
     end if
@@ -583,6 +604,13 @@ contains
           trim(sys_sdL(rlocalStat%rtotalTime%delapsedReal,10)))
       call output_line ("Linear space-time Residual: Time for space-defects: "//&
           trim(sys_sdL(rlocalStat%rtimeDefect%delapsedReal,10)))
+      call output_line ("Linear space-time Residual:   Time for space-RHS  : "//&
+          trim(sys_sdL(rlocalStat%rtimeRHS%delapsedReal,10)))
+      call output_line ("Linear space-time Residual: Time for mat. assembly: "//&
+          trim(sys_sdL(rlocalStat%rtimeMatrixAssembly%delapsedReal,10)))
+      call output_line ("Linear space-time Residual: Time for factorisation: "//&
+          trim(sys_sdL(rlocalStat%rlssSolverStat%rtimeNumericFactorisation%delapsedReal+&
+                       rlocalStat%rlssSolverStat%rtimeNumericFactorisation%delapsedReal,10)))
       call output_line ("Linear space-time Residual: Time for space-solver : "//&
           trim(sys_sdL(rlocalStat%rlssSolverStat%rtotalTime%delapsedReal,10)))
     end if

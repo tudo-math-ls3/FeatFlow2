@@ -66,7 +66,7 @@ module hierarchies
   use kktsystemspaces
   
   use spacediscretisation
-  use spacetimeinterlevelprojection
+  use spacetimeinterlevelprj
   
   implicit none
   

@@ -74,6 +74,9 @@ module spacesolver
     ! Time necessary for the creation of nonlinear defects
     type(t_timer) :: rtimeDefect
 
+    ! Time necessary for the creation of RHS vectors in space
+    type(t_timer) :: rtimeRhs
+
     ! Time necessary for the creation of matrices
     type(t_timer) :: rtimeMatrixAssembly
 
@@ -1214,6 +1217,7 @@ contains
     type(t_discreteBC), pointer :: p_rdiscreteBC
     type(t_lssSolverStat) :: rlocalStatLss
     type(t_spaceslSolverStat) :: rlocalStat
+    type(t_timer) :: rtimer
    
     ! Clear statistics
     call stat_startTimer (rstatistics%rtotalTime)
@@ -1223,8 +1227,10 @@ contains
     p_rd2 => rsolver%p_rd2
     
     ! Get the boundary conditions for the current timestep.
+    call stat_startTimer (rtimer)
     call sbch_getDiscreteBC (&
         rsolver%p_roptcBDCSpaceHierarchy,rsolver%ispacelevel,p_rdiscreteBC)
+    call stat_stopTimer (rtimer)
         
     ! Assign the boundary conditions to the temp vector.
     ! Necessary for the linear solver.
@@ -1256,7 +1262,9 @@ contains
         ! -------------------------------------------------------------
         ! No filter for the initial condition.
         if (idoftime .gt. 1) then
+          call stat_startTimer (rtimer)
           call spaceslh_initData_bdc (rsolver, idofTime)      
+          call stat_stopTimer (rtimer)
         end if
       
         ! -------------------------------------------------------------
@@ -1270,7 +1278,7 @@ contains
               rsolver%ispacelevel,rsolver%itimelevel,idofTime,&
               rsolver%p_roperatorAsmHier,rprimalSol,rcontrol,&
               rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(rsolver%ispacelevel),&
-              rsolver%rtempData,csolgeneration)
+              rsolver%rtempData,csolgeneration,rtimer)
         else
           ! Start from the currently available iterate and continue the nonlinear
           ! iteration
@@ -1278,10 +1286,11 @@ contains
               rsolver%ispacelevel,rsolver%itimelevel,idofTime,&
               rsolver%p_roperatorAsmHier,rprimalSol,rcontrol,&
               rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(rsolver%ispacelevel),&
-              rsolver%rtempData,SPINITCOND_PREVITERATE)
+              rsolver%rtempData,SPINITCOND_PREVITERATE,rtimer)
         end if    
         
         call stat_stopTimer (rstatistics%rtimeDefect)    
+        call stat_addTimers (rtimer,rstatistics%rtimeRHS)
         
         rsolver%rnewtonParams%dresFinal = &
             lsysbl_vectorNorm(p_rd,rsolver%rnewtonParams%iresNorm)
@@ -1398,6 +1407,7 @@ contains
         !    u_n+1  =  u_n  +  g_n
         !
         ! or to any configured step-length control rule.
+        call stat_startTimer (rtimer)
         call sptivec_getVectorFromPool(rprimalSol%p_rvectorAccess,idofTime,p_rx)
         
         ! DEBUG!!!
@@ -1410,7 +1420,7 @@ contains
             rsolver%ispacelevel, rsolver)
         
         call sptivec_commitVecInPool(rprimalSol%p_rvectorAccess,idofTime)
-        
+        call stat_stopTimer (rtimer)        
         ! -------------------------------------------------------------
         ! Clean up boundary conditions
         ! -------------------------------------------------------------
@@ -1447,9 +1457,10 @@ contains
           rsolver%ispacelevel,rsolver%itimelevel,idofTime,&
           rsolver%p_roperatorAsmHier,rprimalSol,rdualSol,&
           rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(rsolver%ispacelevel),&
-          rsolver%rtempData,csolgeneration)
+          rsolver%rtempData,csolgeneration,rtimer)
       
       call stat_stopTimer (rstatistics%rtimeDefect)
+      call stat_addTimers (rtimer,rstatistics%rtimeRHS)
       
       rsolver%rnewtonParams%dresFinal = &
           lsysbl_vectorNorm(p_rd,rsolver%rnewtonParams%iresNorm)
@@ -1581,7 +1592,9 @@ contains
       ! -------------------------------------------------------------
       ! Initialise boundary conditions
       ! -------------------------------------------------------------
+      call stat_startTimer (rtimer)
       call spaceslh_initData_bdc (rsolver, idofTime)      
+      call stat_stopTimer (rtimer)
 
       ! -------------------------------------------------------------
       ! Create a defect
@@ -1593,9 +1606,10 @@ contains
           rsolver%p_roperatorAsmHier,rprimalSol,rcontrol,rprimalSolLin,&
           rcontrolLin,rsolver%coptype .eq. OPTP_PRIMALLIN,&
           rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(rsolver%ispacelevel),&
-          rsolver%rtempData,csolgeneration)
+          rsolver%rtempData,csolgeneration,rtimer)
           
       call stat_stopTimer (rstatistics%rtimeDefect)
+      call stat_addTimers (rtimer,rstatistics%rtimeRHS)
           
       rsolver%rnewtonParams%dresFinal = &
           lsysbl_vectorNorm(p_rd,rsolver%rnewtonParams%iresNorm)
@@ -1695,6 +1709,7 @@ contains
         !    u_new  =  u_old  +  g_n
         ! -------------------------------------------------------------
 
+        call stat_startTimer (rtimer)
         call sptivec_getVectorFromPool(rprimalSolLin%p_rvectorAccess,idofTime,p_rx)
         
         ! DEBUG!!!
@@ -1708,6 +1723,7 @@ contains
               rsolver%ispacelevel, rsolver)
 
         call sptivec_commitVecInPool(rprimalSolLin%p_rvectorAccess,idofTime)
+        call stat_startTimer (rtimer)
 
       end if
 
@@ -1742,9 +1758,10 @@ contains
           rsolver%p_roperatorAsmHier,rprimalSol,rdualSol,rprimalSolLin,&
           rdualSolLin,rsolver%coptype .eq. OPTP_DUALLIN,&
           rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(rsolver%ispacelevel),&
-          rsolver%rtempData,csolgeneration)
+          rsolver%rtempData,csolgeneration,rtimer)
           
       call stat_stopTimer (rstatistics%rtimeDefect)
+      call stat_addTimers (rtimer,rstatistics%rtimeRHS)
           
       rsolver%rnewtonParams%dresFinal = &
           lsysbl_vectorNorm(p_rd,rsolver%rnewtonParams%iresNorm)
@@ -2141,6 +2158,7 @@ contains
     end if
     
     call stat_addTimers(rstatistics1%rtimeDefect,rstatistics2%rtimeDefect)
+    call stat_addTimers(rstatistics1%rtimeRHS,rstatistics2%rtimeRHS)
     call stat_addTimers(rstatistics1%rtimeMatrixAssembly,rstatistics2%rtimeMatrixAssembly)
     
     call lss_sumStatistics (rstatistics1%rlssSolverStat,rstatistics2%rlssSolverStat)

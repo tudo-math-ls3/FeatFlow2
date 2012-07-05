@@ -36,7 +36,7 @@ module structurespostproc
 
   use spacetimevectors
   use analyticsolution
-  use spacetimeinterlevelprojection
+  use spacetimeinterlevelprj
   
   use assemblytemplates
 

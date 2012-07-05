@@ -35,7 +35,7 @@
 !# </purpose>
 !##############################################################################
 
-module spacetimeinterlevelprojection
+module spacetimeinterlevelprj
 
   use fsystem
   use genoutput

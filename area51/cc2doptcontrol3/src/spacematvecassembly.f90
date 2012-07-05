@@ -25,6 +25,7 @@ module spacematvecassembly
   use vectorfilters
   use matrixfilters
   use multilevelprojection
+  use statistics
   
   use scalarpde
   use linearformevaluation
@@ -722,7 +723,8 @@ contains
 !<subroutine>
 
   subroutine smva_getDef_primal (rdest,ispacelevel,itimelevel,idofTime,&
-      roperatorAsmHier,rprimalSol,rcontrol,roptcBDCSpace,rtempData,csolgeneration)
+      roperatorAsmHier,rprimalSol,rcontrol,roptcBDCSpace,rtempData,csolgeneration,&
+      rtimerhs)
   
 !<description>
   ! Calculates the defect in timestep idofTime of the nonlinear primaö equation
@@ -767,6 +769,9 @@ contains
     
   ! Destination vector
   type(t_vectorBlock), intent(inout) :: rdest
+  
+  ! Timer structure that receives the time for the RHS assembly.
+  type(t_timer), intent(out) :: rtimerhs
 !</inputoutput>
 
 !</subroutine>
@@ -850,7 +855,9 @@ contains
             ! RHS assembly
             ! ===============================================
             
+            call stat_startTimer(rtimerhs)
             ! nothing to do here
+            call stat_stopTimer(rtimerhs)
 
             ! ===============================================
             ! Prepare the linear parts of the matrix.
@@ -908,6 +915,8 @@ contains
           ! RHS assembly
           ! ===============================================
           
+          call stat_startTimer(rtimerhs)
+
           ! Get the RHS vector.
           if (associated(roperatorAsmHier%p_rdiscreteInitCond)) then
             call smva_getRhs_Primal (roperatorAsm,idofTime,rcontrol,1.0_DP,rdest,&
@@ -915,6 +924,8 @@ contains
           else
             call smva_getRhs_Primal (roperatorAsm,idofTime,rcontrol,1.0_DP,rdest)
           end if
+
+          call stat_stopTimer(rtimerhs)
           
           ! ===============================================
           ! Prepare the linear parts of the matrix.
@@ -999,7 +1010,8 @@ contains
 !<subroutine>
 
   subroutine smva_getDef_dual (rdest,ispacelevel,itimelevel,idofTime,&
-      roperatorAsmHier,rprimalSol,rdualSol,roptcBDCSpace,rtempData,csolgeneration)
+      roperatorAsmHier,rprimalSol,rdualSol,roptcBDCSpace,rtempData,csolgeneration,&
+      rtimerhs)
   
 !<description>
   ! Calculates the defect in timestep idofTime of the nonlinear dual equation
@@ -1044,6 +1056,9 @@ contains
     
   ! Destination vector
   type(t_vectorBlock), intent(inout) :: rdest
+
+  ! Timer structure that receives the time for the RHS assembly.
+  type(t_timer), intent(out) :: rtimerhs
 !</inputoutput>
 
 !</subroutine>
@@ -1127,7 +1142,9 @@ contains
             ! RHS assembly
             ! ===============================================
           
+            call stat_startTimer(rtimerhs)
             ! nothing to do here
+            call stat_stopTimer(rtimerhs)
 
             ! ===============================================
             ! Prepare the linear parts of the matrix.
@@ -1199,8 +1216,12 @@ contains
           ! RHS assembly
           ! ===============================================
           
+          call stat_startTimer(rtimerhs)
+
           ! Get the RHS vector
           call smva_getRhs_Dual (roperatorAsm,idofTime,rprimalSol,1.0_DP,rdest)
+
+          call stat_stopTimer(rtimerhs)
 
           ! ===============================================
           ! Prepare the linear parts of the matrix.
@@ -1287,7 +1308,7 @@ contains
 
   subroutine smva_getDef_primalLin (rdest,ispacelevel,itimelevel,idofTime,&
       roperatorAsmHier,rprimalSol,rcontrol,rprimalSolLin,rcontrolLin,bfull,&
-      roptcBDCSpace,rtempData,csolgeneration)
+      roptcBDCSpace,rtempData,csolgeneration,rtimerhs)
   
 !<description>
   ! Calculates the defect in timestep idofTime of the linearised primaö equation
@@ -1342,6 +1363,9 @@ contains
     
   ! Destination vector
   type(t_vectorBlock), intent(inout) :: rdest
+
+  ! Timer structure that receives the time for the RHS assembly.
+  type(t_timer), intent(out) :: rtimerhs
 !</inputoutput>
 
 !</subroutine>
@@ -1492,8 +1516,12 @@ contains
           ! ===============================================
           ! RHS assembly
           ! ===============================================
+          call stat_startTimer(rtimerhs)
+
           call smva_getRhs_primalLin (roperatorAsm,idofTime,&
               rcontrol,rcontrolLin,1.0_DP,rdest)
+
+          call stat_stopTimer(rtimerhs)
           
           ! ===============================================
           ! Prepare the linear parts of the matrix.
@@ -1578,7 +1606,7 @@ contains
 
   subroutine smva_getDef_dualLin (rdest,ispacelevel,itimelevel,idofTime,&
       roperatorAsmHier,rprimalSol,rdualSol,rprimalSolLin,rdualSolLin,bfull,&
-      roptcBDCSpace,rtempData,csolgeneration)
+      roptcBDCSpace,rtempData,csolgeneration,rtimerhs)
   
 !<description>
   ! Calculates the defect in timestep idofTime of the linearised dual equation
@@ -1633,6 +1661,9 @@ contains
     
   ! Destination vector
   type(t_vectorBlock), intent(inout) :: rdest
+
+  ! Timer structure that receives the time for the RHS assembly.
+  type(t_timer), intent(out) :: rtimerhs
 !</inputoutput>
 
 !</subroutine>
@@ -1784,8 +1815,12 @@ contains
           ! RHS assembly
           ! ===============================================
                
+          call stat_startTimer(rtimerhs)
+
           call smva_getRhs_dualLin (roperatorAsm,idofTime,rdualSol,rprimalSolLin,&
               bfull,1.0_DP,rdest)
+
+          call stat_stopTimer(rtimerhs)
             
           ! ===============================================
           ! Prepare the linear parts of the matrix.

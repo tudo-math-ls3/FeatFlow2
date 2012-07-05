@@ -45,7 +45,7 @@ module newtoniteration
   use spacesolver
   
   use spacetimehierarchy
-  use spacetimeinterlevelprojection
+  use spacetimeinterlevelprj
   use kktsystemspaces
   use kktsystem
   use kktsystemhierarchy
@@ -514,8 +514,20 @@ contains
     call spacesl_sumStatistics(rlocalStat,rstatistics%rspaceslSolverStat)
 
     if (rsolver%rnewtonParams%ioutputLevel .ge. 3) then
-      call output_line ("Nonlin. space-time Residual: Time for solving: "//&
+      call output_line ("Nonlin. space-time Residual: Time for solving      : "//&
           trim(sys_sdL(rlocalStat%rtotalTime%delapsedReal,10)))
+      
+      call output_line ("Nonlin. space-time Residual: Time for space-defects: "//&
+          trim(sys_sdL(rlocalStat%rtimeDefect%delapsedReal,10)))
+      call output_line ("Nonlin. space-time Residual:   Time for space-RHS  : "//&
+          trim(sys_sdL(rlocalStat%rtimeRHS%delapsedReal,10)))
+      call output_line ("Nonlin. space-time Residual: Time for mat. assembly: "//&
+          trim(sys_sdL(rlocalStat%rtimeMatrixAssembly%delapsedReal,10)))
+      call output_line ("Nonlin. space-time Residual: Time for factorisation: "//&
+          trim(sys_sdL(rlocalStat%rlssSolverStat%rtimeNumericFactorisation%delapsedReal+&
+                       rlocalStat%rlssSolverStat%rtimeNumericFactorisation%delapsedReal,10)))
+      call output_line ("Nonlin. space-time Residual: Time for space-solver : "//&
+          trim(sys_sdL(rlocalStat%rlssSolverStat%rtotalTime%delapsedReal,10)))
     end if
     
     ! Add time to the time of the forward equation
@@ -539,8 +551,20 @@ contains
     call stat_addTimers (rlocalStat%rtotalTime,rstatistics%rtimeBackward)
 
     if (rsolver%rnewtonParams%ioutputLevel .ge. 3) then
-      call output_line ("Nonlin. space-time Residual: Time for solving: "//&
+      call output_line ("Nonlin. space-time Residual: Time for solving      : "//&
           trim(sys_sdL(rlocalStat%rtotalTime%delapsedReal,10)))
+
+      call output_line ("Nonlin. space-time Residual: Time for space-defects: "//&
+          trim(sys_sdL(rlocalStat%rtimeDefect%delapsedReal,10)))
+      call output_line ("Nonlin. space-time Residual:   Time for space-RHS  : "//&
+          trim(sys_sdL(rlocalStat%rtimeRHS%delapsedReal,10)))
+      call output_line ("Nonlin. space-time Residual: Time for mat. assembly: "//&
+          trim(sys_sdL(rlocalStat%rtimeMatrixAssembly%delapsedReal,10)))
+      call output_line ("Nonlin. space-time Residual: Time for factorisation: "//&
+          trim(sys_sdL(rlocalStat%rlssSolverStat%rtimeNumericFactorisation%delapsedReal+&
+                       rlocalStat%rlssSolverStat%rtimeNumericFactorisation%delapsedReal,10)))
+      call output_line ("Nonlin. space-time Residual: Time for space-solver : "//&
+          trim(sys_sdL(rlocalStat%rlssSolverStat%rtotalTime%delapsedReal,10)))
     end if
 
     ! -------------------------------------------------------------

@@ -809,16 +809,19 @@ contains
     type(t_kktSystem), pointer :: p_rkktSystem
     integer :: ierror, idoftime
     type(t_spaceslSolverStat) :: rstatLocal
+    type(t_timer) :: rtimer
     
     call stat_startTimer (rstatistics%rtotalTime)
     
     p_rkktSystem => rkktsystemDirDeriv%p_rkktsystem
    
     ! Initialise basic solver structures
+    call stat_startTimer (rtimer)
     call spaceslh_initStructure (rspaceSolver, &
         p_rkktsystem%ispacelevel, &
         p_rkktsystem%itimelevel, &
         p_rkktsystem%p_roperatorAsmHier,rstatLocal,ierror)
+    call stat_stopTimer (rtimer)
 
     ! Sum up statistics
     call spacesl_sumStatistics(rstatLocal,rstatistics,.false.)
