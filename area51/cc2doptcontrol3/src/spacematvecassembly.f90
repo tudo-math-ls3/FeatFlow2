@@ -1446,6 +1446,13 @@ contains
             end if
 
             ! ===============================================
+            ! RHS assembly
+            ! ===============================================
+            call stat_startTimer(rtimerhs)
+            ! nothing to do
+            call stat_stopTimer(rtimerhs)
+
+            ! ===============================================
             ! Prepare the linear parts of the matrix.
             ! ===============================================
 
@@ -1742,6 +1749,13 @@ contains
                   OU_CLASS_ERROR,OU_MODE_STD,"smva_getDef_dualLin")
               call sys_halt()
             end if
+
+            ! ===============================================
+            ! RHS assembly
+            ! ===============================================
+            call stat_startTimer(rtimerhs)
+            ! nothing to do
+            call stat_stopTimer(rtimerhs)
 
             ! ===============================================
             ! Prepare the linear parts of the matrix.
