@@ -262,7 +262,7 @@ use constant SRCLIST_KERNEL =>
 
     "Preprocessing/pprocsolution.f90 " .
 
-    "ProblemSupport/collection.f90 " .
+    "ProblemSupport/collection.f90 ProblemSupport/iterationcontrol.f90 " .
 
     "Projection/analyticprojection.f90 Projection/spdiscprojection.f90 " .
     "Projection/schurapprox.f90 " .
