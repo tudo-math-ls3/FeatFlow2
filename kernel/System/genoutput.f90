@@ -670,10 +670,12 @@ contains
 !</function>
 
     logical :: bsub
-    integer :: ioc,cdateTime
+    integer :: ioc,cdateTime,iindent
     character(LEN=8) :: sdate
     character(LEN=10) :: stime
 
+    iindent = min(255,output_iautoOutputIndent)
+    
     bsub = .false.
     if (present (ssubroutine)) then
       bsub = (ssubroutine .ne. '')
@@ -689,17 +691,17 @@ contains
 
       select case (ioc)
       case (OU_CLASS_TRACE1)
-        s = '*** '//smessage
+        s = semptystring(1:iindent)//'*** '//adjustl(smessage)
       case (OU_CLASS_TRACE2)
-        s = '***** '//smessage
+        s = semptystring(1:iindent)//'***** '//adjustl(smessage)
       case (OU_CLASS_TRACE3)
-        s = '******* '//smessage
+        s = semptystring(1:iindent)//'******* '//adjustl(smessage)
       case (OU_CLASS_SYSTEM)
-        s = '* System: '//smessage
+        s = semptystring(1:iindent)//'* System: '//adjustl(smessage)
       case (OU_CLASS_ERROR)
-        s = '* Error: '//smessage
+        s = semptystring(1:iindent)//'* Error: '//adjustl(smessage)
       case (OU_CLASS_WARNING)
-        s = '* Warning: '//smessage
+        s = semptystring(1:iindent)//'* Warning: '//adjustl(smessage)
       case DEFAULT
         s = smessage
       end select
@@ -708,17 +710,17 @@ contains
 
       select case (ioc)
       case (OU_CLASS_TRACE1)
-        s = '*** '//trim(ssubroutine)//': '//smessage
+        s = semptystring(1:iindent)//'*** '//trim(ssubroutine)//': '//adjustl(smessage)
       case (OU_CLASS_TRACE2)
-        s = '***** '//trim(ssubroutine)//': '//smessage
+        s = semptystring(1:iindent)//'***** '//trim(ssubroutine)//': '//adjustl(smessage)
       case (OU_CLASS_TRACE3)
-        s = '******* '//trim(ssubroutine)//': '//smessage
+        s = semptystring(1:iindent)//'******* '//trim(ssubroutine)//': '//adjustl(smessage)
       case (OU_CLASS_SYSTEM)
-        s = '* System ('//trim(ssubroutine)//'): '//smessage
+        s = semptystring(1:iindent)//'* System ('//trim(ssubroutine)//'): '//adjustl(smessage)
       case (OU_CLASS_ERROR)
-        s = '* Error ('//trim(ssubroutine)//'): '//smessage
+        s = semptystring(1:iindent)//'* Error ('//trim(ssubroutine)//'): '//adjustl(smessage)
       case (OU_CLASS_WARNING)
-        s = '* Warning ('//trim(ssubroutine)//'): '//smessage
+        s = semptystring(1:iindent)//'* Warning ('//trim(ssubroutine)//'): '//adjustl(smessage)
       case DEFAULT
         s = smessage
       end select
