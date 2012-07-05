@@ -348,7 +348,7 @@ contains
     ! set current defect and increase iteration count
     riter%nIterations = riter%nIterations+1
     riter%dresFinal = dres
-    riter%Dresiduals(imod(riter%nIterations+ITC_RES_QUEUE_SIZE-1, ITC_RES_QUEUE_SIZE)+1) = dres
+    riter%Dresiduals(imod(riter%nIterations, ITC_RES_QUEUE_SIZE)+1) = dres
 
     ! Check against absolute criterions
     btolAbs = (riter%dtolAbs .gt. 0.0_DP) .and. (dres .le. riter%dtolAbs)
@@ -601,13 +601,13 @@ contains
     ! calculate indices
     n = 3
     if(present(niter)) n = min(max(1,niter), ITC_RES_QUEUE_SIZE-1)
-    n = min(n+1,riter%nIterations)
+    n = min(n, riter%nIterations-1) + 1
 
-    i = imod(riter%nIterations-1, ITC_RES_QUEUE_SIZE) + 1
+    i = imod(riter%nIterations  , ITC_RES_QUEUE_SIZE) + 1
     j = imod(riter%nIterations-n, ITC_RES_QUEUE_SIZE) + 1
 
     ! Calculate convergence rate
-    dcr = (riter%Dresiduals(i) / riter%Dresiduals(j)) ** (1.0_DP / real(n-1,DP))
+    dcr = (riter%Dresiduals(i) / riter%Dresiduals(j)) ** (1.0_DP / real(n,DP))
 
   end function
 
