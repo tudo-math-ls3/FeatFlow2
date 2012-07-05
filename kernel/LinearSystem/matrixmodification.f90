@@ -1350,9 +1350,7 @@ contains
         allocate(Col(ncol))
       
         call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
-        call lsyssc_getbase_double (rmatrix,p_Da)
         Col = p_Kcol(p_Kld(irow):p_Kld(irow+1)-1)
-        Da = p_Da(p_Kld(irow):p_Kld(irow+1)-1)
         
         call storage_realloc ("mmod_expandToFullRow",&
             rmatrix%NA+icoldiff,rmatrix%h_Kcol,ST_NEWBLOCK_NOINIT)
@@ -1370,6 +1368,9 @@ contains
                 OU_CLASS_ERROR,OU_MODE_STD,"mmod_expandToFullRow")
             call sys_halt()
           end if
+
+          call lsyssc_getbase_double (rmatrix,p_Da)
+          Da = p_Da(p_Kld(irow):p_Kld(irow+1)-1)
 
           call storage_realloc ("mmod_expandToFullRow",&
               rmatrix%NA+icoldiff,rmatrix%h_Da,ST_NEWBLOCK_NOINIT)
