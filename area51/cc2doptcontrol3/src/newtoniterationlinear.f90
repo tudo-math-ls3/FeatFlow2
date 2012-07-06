@@ -778,7 +778,7 @@ contains
         call output_line ("Space-time Richardson: Iteration "// &
             trim(sys_siL(rlinsolParam%riter%niterations,10))// &
             ", ||res(u)|| = "// &
-            trim(sys_sdEL(rlinsolParam%riter%dresFinal,10)))
+            trim(sys_sdEL(dres,10)))
       end if
 
       ! Push the residual, increase the iteration counter
@@ -938,7 +938,7 @@ contains
         call output_line ("Space-time CG: Iteration "// &
             trim(sys_siL(rlinsolParam%riter%niterations,10))// &
             ", ||res(u)|| = "// &
-            trim(sys_sdEL(rlinsolParam%riter%dresFinal,10)))
+            trim(sys_sdEL(dres,10)))
       end if
       
       ! Push the residual, increase the iteration counter
@@ -1587,7 +1587,7 @@ contains
           call output_line ("Space-time MG: Iteration "// &
               trim(sys_siL(rlinsolParam%riter%niterations,10))// &
               ", ||res(u)|| = "// &
-              trim(sys_sdEL(rlinsolParam%riter%dresFinal,10)))
+              trim(sys_sdEL(dres,10)))
         end if
         
         ! Save statistics on the maximum level.

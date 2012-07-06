@@ -1378,7 +1378,7 @@ contains
         if (rsolver%rnewtonParams%ctypeIteration .eq. 3) then
           call spaceslh_adNewton_setEps (&
               rsolver,rsolver%rnewtonParams%radaptiveNewton,&
-              rsolver%riter%dresInitial,rsolver%riter%dresFinal)
+              rsolver%riter%dresInitial,dres)
         end if
       
         ! -------------------------------------------------------------
@@ -1510,22 +1510,20 @@ contains
       call stat_stopTimer (rstatistics%rtimeDefect)
       call stat_addTimers (rtimer,rstatistics%rtimeRHS)
       
-      rsolver%riter%dresFinal = &
-          lsysbl_vectorNorm(p_rd,rsolver%rnewtonParams%iresNorm)
+      ! Get the residual
+      dres = lsysbl_vectorNorm(p_rd,rsolver%rnewtonParams%iresNorm)
+      call itc_initResidual (rsolver%riter,dres)
       
-      ! Remember the initial residual
-      rsolver%riter%dresInitial = rsolver%riter%dresFinal
-
       ! Print the initial residual
       if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
         call output_line (&
             trim(sys_si(idofTime-1,8)) // &
             " " // trim(sys_si(0,4)) // &
-            " " // trim(sys_sdEL(rsolver%riter%dresFinal,1)) )
+            " " // trim(sys_sdEL(dres,1)) )
       end if
 
       ! Cancel if the defect is zero.
-      if (rsolver%riter%dresFinal .gt. 10.0_DP*SYS_EPSREAL_DP) then
+      if (dres .gt. 10.0_DP*SYS_EPSREAL_DP) then
 
         ! -------------------------------------------------------------
         ! Assemble the matrices/boundary conditions on all levels.
@@ -1590,14 +1588,15 @@ contains
         ! -------------------------------------------------------------
 
         ! Get the final residual
-        rsolver%riter%dresFinal = p_rsolverNode%dfinalDefect
+        dres = p_rsolverNode%dfinalDefect
+        call itc_pushResidual (rsolver%riter,dres)
       
         ! Print the final residual
         if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
           call output_line (&
               trim(sys_si(idofTime-1,8)) // &
               " " // trim(sys_si(1,4)) // &
-              " " // trim(sys_sdEL(rsolver%riter%dresFinal,1)) )
+              " " // trim(sys_sdEL(dres,1)) )
         end if
 
         ! -------------------------------------------------------------
@@ -1659,22 +1658,20 @@ contains
       call stat_stopTimer (rstatistics%rtimeDefect)
       call stat_addTimers (rtimer,rstatistics%rtimeRHS)
           
-      rsolver%riter%dresFinal = &
-          lsysbl_vectorNorm(p_rd,rsolver%rnewtonParams%iresNorm)
-      
-      ! Remember the initial residual
-      rsolver%riter%dresInitial = rsolver%riter%dresFinal
+      ! Get the residual
+      dres = lsysbl_vectorNorm(p_rd,rsolver%rnewtonParams%iresNorm)
+      call itc_initResidual (rsolver%riter,dres)
 
       ! Print the initial residual
       if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
         call output_line (&
             trim(sys_si(idofTime-1,8)) // &
             " " // trim(sys_si(0,4)) // &
-            " " // trim(sys_sdEL(rsolver%riter%dresFinal,1)) )
+            " " // trim(sys_sdEL(dres,1)) )
       end if
 
       ! Cancel if the defect is zero.
-      if (rsolver%riter%dresFinal .gt. 10.0_DP*SYS_EPSREAL_DP) then
+      if (dres .gt. 10.0_DP*SYS_EPSREAL_DP) then
 
         ! -------------------------------------------------------------
         ! Assemble the matrices/boundary conditions on all levels.
@@ -1741,14 +1738,15 @@ contains
         ! -------------------------------------------------------------
 
         ! Get the final residual
-        rsolver%riter%dresFinal = p_rsolverNode%dfinalDefect
+        dres = p_rsolverNode%dfinalDefect
+        call itc_pushResidual (rsolver%riter,dres)
       
         ! Print the final residual
         if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
           call output_line (&
               trim(sys_si(idofTime-1,8)) // &
               " " // trim(sys_si(1,4)) // &
-              " " // trim(sys_sdEL(rsolver%riter%dresFinal,1)) )
+              " " // trim(sys_sdEL(dres,1)) )
         end if
 
         ! -------------------------------------------------------------
@@ -1811,22 +1809,20 @@ contains
       call stat_stopTimer (rstatistics%rtimeDefect)
       call stat_addTimers (rtimer,rstatistics%rtimeRHS)
           
-      rsolver%riter%dresFinal = &
-          lsysbl_vectorNorm(p_rd,rsolver%rnewtonParams%iresNorm)
-      
-      ! Remember the initial residual
-      rsolver%riter%dresInitial = rsolver%riter%dresFinal
+      ! Get the residual
+      dres = lsysbl_vectorNorm(p_rd,rsolver%rnewtonParams%iresNorm)
+      call itc_initResidual (rsolver%riter,dres)
 
       ! Print the initial residual
       if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
         call output_line (&
             trim(sys_si(idofTime-1,8)) // &
             " " // trim(sys_si(0,4)) // &
-            " " // trim(sys_sdEL(rsolver%riter%dresFinal,1)) )
+            " " // trim(sys_sdEL(dres,1)) )
       end if
 
       ! Cancel if the defect is zero.
-      if (rsolver%riter%dresFinal .gt. 10.0_DP*SYS_EPSREAL_DP) then
+      if (dres .gt. 10.0_DP*SYS_EPSREAL_DP) then
 
         ! -------------------------------------------------------------
         ! Assemble the matrices/boundary conditions on all levels.
@@ -1894,14 +1890,15 @@ contains
         ! -------------------------------------------------------------
 
         ! Get the final residual
-        rsolver%riter%dresFinal = p_rsolverNode%dfinalDefect
+        dres = p_rsolverNode%dfinalDefect
+        call itc_pushResidual (rsolver%riter,dres)
       
         ! Print the final residual
         if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
           call output_line (&
               trim(sys_si(idofTime-1,8)) // &
               " " // trim(sys_si(1,4)) // &
-              " " // trim(sys_sdEL(rsolver%riter%dresFinal,1)) )
+              " " // trim(sys_sdEL(dres,1)) )
         end if
 
         ! -------------------------------------------------------------
