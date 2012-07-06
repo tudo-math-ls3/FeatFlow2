@@ -26,6 +26,9 @@
 !#      -> Prints iteration statistics like e.g. number of iterations or
 !#         convergence rates.
 !#
+!#  6.) itc_getParamsFromParlist
+!#      -> Reads iteration parameters from a section in a parameter list.
+!#
 !# ****************************************************************************
 !# Information regarding stopping criterions
 !# -----------------------------------------
@@ -133,6 +136,7 @@ module iterationcontrol
 
 use fsystem
 use genoutput
+use paramlist
 
 implicit none
 
@@ -144,6 +148,7 @@ public :: itc_pushResidual
 public :: itc_calcConvRateReal
 public :: itc_calcConvRateAsymptotic
 public :: itc_printStatistics
+public :: itc_getParamsFromParlist
 
 !<constants>
 
@@ -234,6 +239,9 @@ public :: itc_printStatistics
     ! Input: Minimum number of consecutive stagnated iterations required.
     ! Set to 0 to disable stagnation check.
     integer :: nstagIter = 0
+    
+    ! Maximum number of residuals in the residual queue Dresiduals
+    integer :: nmaxResidualsInQueue = ITC_RES_QUEUE_SIZE
 
     ! <!-- OUTPUT PARAMETERS -->
 
@@ -241,7 +249,7 @@ public :: itc_printStatistics
     integer :: cstatus = ITC_STATUS_CONTINUE
 
     ! Output: Total number of iterations performed
-    integer :: nIterations = 0
+    integer :: niterations = 0
 
     ! Output: Initial residual
     real(DP) :: dresInitial = 0.0_DP
@@ -249,7 +257,8 @@ public :: itc_printStatistics
     ! Output: Final residual
     real(DP) :: dresFinal = 0.0_DP
 
-    ! Residual queue
+    ! Residual queue. nmaxResidualsInQueue defines the actual size
+    ! of the queue.
     real(DP), dimension(ITC_RES_QUEUE_SIZE) :: Dresiduals
 
   end type
@@ -283,7 +292,7 @@ contains
 !</subroutine>
 
     ! store initial residual and reset anything necessary
-    riter%nIterations = 0
+    riter%niterations = 0
     riter%dresInitial = dres
     riter%dresFinal = dres
     riter%Dresiduals(1) = dres
@@ -346,9 +355,9 @@ contains
   logical :: btolRel, btolAbs, bdivRel, bdivAbs, bstag, bconv, bdiv
 
     ! set current defect and increase iteration count
-    riter%nIterations = riter%nIterations+1
+    riter%niterations = riter%niterations+1
     riter%dresFinal = dres
-    riter%Dresiduals(imod(riter%nIterations, ITC_RES_QUEUE_SIZE)+1) = dres
+    riter%Dresiduals(mod(riter%nIterations, riter%nmaxResidualsInQueue)+1) = dres
 
     ! Check against absolute criterions
     btolAbs = (riter%dtolAbs .gt. 0.0_DP) .and. (dres .le. riter%dtolAbs)
@@ -362,7 +371,7 @@ contains
     bdivRel = (riter%ddivRel .gt. 0.0_DP) .and. (dx .ge. riter%ddivRel)
 
     ! If the number of minimal iterations was not reached, continue
-    if(riter%nIterations .lt. riter%nminIterations) then
+    if(riter%niterations .lt. riter%nminIterations) then
 
       riter%cstatus = ITC_STATUS_CONTINUE
       return
@@ -488,18 +497,20 @@ contains
     end if
 
     ! Check for stagnation?
-    if((riter%nstagIter .gt. 0) .and. (riter%nstagIter .lt. riter%nIterations)) then
+    if((riter%nstagIter .gt. 0) .and. (riter%nstagIter .lt. riter%niterations)) then
 
       ! assume stagnation
       bstag = .true.
 
       ! loop over the last n iterations and check for stagnation
-      n = min(riter%nstagIter, ITC_RES_QUEUE_SIZE-1)
+      n = min(riter%nstagIter, riter%nmaxResidualsInQueue-1)
       do i = 1, n
 
         ! calculate indices in residual queue
-        j = imod(riter%nIterations + ITC_RES_QUEUE_SIZE - i    , ITC_RES_QUEUE_SIZE) + 1
-        k = imod(riter%nIterations + ITC_RES_QUEUE_SIZE - i - 1, ITC_RES_QUEUE_SIZE) + 1
+        j = mod(riter%niterations + riter%nmaxResidualsInQueue - i    , &
+                riter%nmaxResidualsInQueue) + 1
+        k = mod(riter%niterations + riter%nmaxResidualsInQueue - i - 1, &
+                riter%nmaxResidualsInQueue) + 1
 
         ! check for stagnation
         bstag = bstag .and. (riter%Dresiduals(j) .ge. (riter%dstagRate * riter%Dresiduals(k)))
@@ -517,7 +528,7 @@ contains
     end if
 
     ! Check against maximum iterations
-    if(riter%nIterations .ge. riter%nmaxIterations) then
+    if(riter%niterations .ge. riter%nmaxIterations) then
 
       ! maximum number of iterations fulfilled
       riter%cstatus = ITC_STATUS_MAX_ITER
@@ -557,10 +568,10 @@ contains
     ! Test for anything that might blow up
     if(riter%dresInitial .le. SYS_EPSREAL_DP) return
     if(riter%dresFinal .le. 0.0_DP) return
-    if(riter%nIterations .le. 0) return
+    if(riter%niterations .le. 0) return
 
     ! Calculate convergence rate
-    dcr = (riter%dresFinal / riter%dresInitial) ** (1.0_DP / real(riter%nIterations,DP))
+    dcr = (riter%dresFinal / riter%dresInitial) ** (1.0_DP / real(riter%niterations,DP))
 
   end function
 
@@ -596,15 +607,15 @@ contains
     ! Test for anything that might blow up
     if(riter%dresInitial .le. SYS_EPSREAL_DP) return
     if(riter%dresFinal .le. 0.0_DP) return
-    if(riter%nIterations .le. 0) return
+    if(riter%niterations .le. 0) return
 
     ! calculate indices
     n = 3
-    if(present(niter)) n = min(max(1,niter), ITC_RES_QUEUE_SIZE-1)
+    if(present(niter)) n = min(max(1,niter), riter%nmaxResidualsInQueue-1)
     n = min(n, riter%nIterations-1) + 1
 
-    i = imod(riter%nIterations  , ITC_RES_QUEUE_SIZE) + 1
-    j = imod(riter%nIterations-n, ITC_RES_QUEUE_SIZE) + 1
+    i = mod(riter%nIterations  , riter%nmaxResidualsInQueue) + 1
+    j = mod(riter%nIterations-n, riter%nmaxResidualsInQueue) + 1
 
     ! Calculate convergence rate
     dcr = (riter%Dresiduals(i) / riter%Dresiduals(j)) ** (1.0_DP / real(n,DP))
@@ -668,7 +679,7 @@ contains
     end select
 
     ! Print other statistics
-    call output_line('Iterations ............: ' // trim(sys_siL(riter%nIterations,8)), &
+    call output_line('Iterations ............: ' // trim(sys_siL(riter%niterations,8)), &
         OU_CLASS_MSG, coutput, 'itc_printStatistics')
     call output_line('Final Residual ........: ' // trim(sys_sdEL(riter%dresFinal,12)), &
         OU_CLASS_MSG, coutput, 'itc_printStatistics')
@@ -680,6 +691,84 @@ contains
         OU_CLASS_MSG, coutput, 'itc_printStatistics')
     call output_line('Conv-Rate (Asympt) ....: ' // trim(sys_sdEL(dacr,12)), &
         OU_CLASS_MSG, coutput, 'itc_printStatistics')
+
+  end subroutine
+
+! *************************************************************************************************
+
+!<subroutine>
+
+  subroutine itc_getParamsFromParlist(riter,ssection,rparamList)
+  
+!<description>
+  ! Reads iteration control parameters from a section in the parameter list rparamList.
+!</description>
+  
+!<input>
+  ! Parameter list with the parameters configuring the iteration.
+  type(t_parlist), intent(in) :: rparamList
+
+  ! Name of the section in the parameter list containing the parameters.
+  character(LEN=*), intent(in) :: ssection
+!</input>
+
+!<output>
+  ! The iteration control data structure which receives the parameters.
+  type(t_iterationControl), intent(inout) :: riter
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    type(t_parlstSection), pointer :: p_rsection
+    type(t_iterationControl) :: riterDefault
+
+    ! Get the section, so we can access it faster.
+    call parlst_querysection(rparamList, ssection, p_rsection)
+
+    if (.not. associated(p_rsection)) then
+      call output_line ("Cannot read parameters; no section ''"//&
+          trim(ssection)//"''!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"itc_getParamsFromParlist")
+      call sys_halt()
+    end if
+
+    ! Read the parameters
+    call parlst_getvalue_int (p_rsection, "nminIterations", &
+        riter%nminIterations,riterDefault%nminIterations)
+
+    call parlst_getvalue_int (p_rsection, "nmaxIterations", &
+        riter%nmaxIterations,riterDefault%nmaxIterations)
+
+    call parlst_getvalue_double (p_rsection, "dtolAbs", &
+        riter%dtolAbs,riterDefault%dtolAbs)
+
+    call parlst_getvalue_double (p_rsection, "dtolRel", &
+        riter%dtolRel,riterDefault%dtolRel)
+
+    call parlst_getvalue_int (p_rsection, "ctolMode", &
+        riter%ctolMode,riterDefault%ctolMode)
+
+    call parlst_getvalue_double (p_rsection, "ddivAbs", &
+        riter%ddivAbs,riterDefault%ddivAbs)
+
+    call parlst_getvalue_double (p_rsection, "ddivRel", &
+        riter%ddivRel,riterDefault%ddivRel)
+
+    call parlst_getvalue_int (p_rsection, "cdivMode", &
+        riter%cdivMode,riterDefault%cdivMode)
+
+    call parlst_getvalue_double (p_rsection, "dstagRate", &
+        riter%dstagRate,riterDefault%dstagRate)
+
+    call parlst_getvalue_int (p_rsection, "nstagIter", &
+        riter%nstagIter,riterDefault%nstagIter)
+
+    call parlst_getvalue_int (p_rsection, "nmaxResidualsInQueue", &
+        riter%nmaxResidualsInQueue,riterDefault%nmaxResidualsInQueue)
+        
+    riter%nmaxResidualsInQueue = &
+        max(1,min(riter%nmaxResidualsInQueue,ITC_RES_QUEUE_SIZE))
 
   end subroutine
 
