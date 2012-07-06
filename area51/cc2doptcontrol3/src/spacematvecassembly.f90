@@ -4303,7 +4303,7 @@ contains
       ! ***********************************************************
       ! Linearised forward equation.
       ! ***********************************************************
-      case (OPTP_PRIMALLIN)
+      case (OPTP_PRIMALLIN,OPTP_PRIMALLIN_SIMPLE)
       
         ! For the linearised primal equation, the right-hand side reads
         !
@@ -4774,7 +4774,7 @@ contains
       ! ***********************************************************
       ! Linearised backward equation.
       ! ***********************************************************
-      case (OPTP_DUALLIN)
+      case (OPTP_DUALLIN,OPTP_DUALLIN_SIMPLE)
       
         ! From the right-hand side 
         !
@@ -5020,6 +5020,11 @@ contains
         
         end do ! iel
 
+      case default
+        call output_line ("Unknown space.", &
+            OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_rhs")
+        call sys_halt()
+
       end select ! Operator type
       
     ! -------------------------------------------------------------
@@ -5170,7 +5175,7 @@ contains
       ! ***********************************************************
       ! Linearised forward equation.
       ! ***********************************************************
-      case (OPTP_PRIMALLIN)
+      case (OPTP_PRIMALLIN,OPTP_PRIMALLIN_SIMPLE)
       
         ! For the linearised primal equation, the right-hand side reads
         !
@@ -5540,7 +5545,7 @@ contains
       ! ***********************************************************
       ! Linearised backward equation.
       ! ***********************************************************
-      case (OPTP_DUALLIN)
+      case (OPTP_DUALLIN,OPTP_DUALLIN_SIMPLE)
       
         ! From the right-hand side 
         !
@@ -5740,6 +5745,11 @@ contains
           end do ! icubp
         
         end do ! iel
+
+      case default
+        call output_line ("Unknown space.", &
+            OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_rhs")
+        call sys_halt()
 
       end select ! Operator type
 
