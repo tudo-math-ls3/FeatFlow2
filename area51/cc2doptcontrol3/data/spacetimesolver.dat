@@ -39,12 +39,15 @@ nmaxIterations     = 10
 
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
-depsRel            = 1E-12
+dtolRel            = 1E-12
 
 # Limit for residuals, i.e. absolute error on finest grid; 
-# The linear solver stops if either absolute error < depsAbs or
-# rel. error < depsRel
-depsAbs            = 1E-14
+# The linear solver stops if either absolute error < dtolAbs or
+# rel. error < dtolRel
+dtolAbs            = 1E-14
+
+# Type of stopping criterion
+ctolMode = 4
 
 # Maximum relative residual before the iteration is treated as 'divergent'
 ddivRel = 1E20
@@ -66,32 +69,32 @@ ssectionLinSolverSpace = SPACETIME-LINSOLVER
 ssectionNonlinSolverSpace = CC-NONLINEARSOLVER
 
 # Section defining the linear solver in space for the forward iteration
-ssectionLinSolverSpaceForward = CC-LINEARSOLVERFORW
+ssectionLinSlvSpaceForw = CC-LINEARSOLVERFORW
 
 # Section defining the linear solver in space for the forward iteration
 # This is used as a fallback if the previous linear solver fails.
-ssectionLinSolverSpaceForward2 = CC-LINEARSOLVERFORW2
+ssectionLinSlvSpaceForw2 = CC-LINEARSOLVERFORW2
 
 # Section defining the linear solver in space for the backward iteration
-ssectionLinSolverSpaceBackward = CC-LINEARSOLVERBACKW
+ssectionLinSlvSpaceBack = CC-LINEARSOLVERBACKW
 
 # Section defining the linear solver in space for the backward iteration
 # This is used as a fallback if the previous linear solver fails.
-ssectionLinSolverSpaceBackward2 = CC-LINEARSOLVERBACKW2
+ssectionLinSlvSpaceBack2 = CC-LINEARSOLVERBACKW2
 
 # Section defining the linear solver in space for the linearised forward iteration
-ssectionLinSolverSpaceForwardLin = CC-LINEARSOLVERLIN
-
-# Section defining the linear solver in space for the linearised forward iteration
-# This is used as a fallback if the previous linear solver fails.
-ssectionLinSolverSpaceForwardLin2 = CC-LINEARSOLVERLIN2
-
-# Section defining the linear solver in space for the linearised forward iteration
-ssectionLinSolverSpaceBackwardLin = CC-LINEARSOLVERLIN
+ssectionLinSlvSpaceForwLin = CC-LINEARSOLVERLIN
 
 # Section defining the linear solver in space for the linearised forward iteration
 # This is used as a fallback if the previous linear solver fails.
-ssectionLinSolverSpaceBackwardLin2 = CC-LINEARSOLVERLIN2
+ssectionLinSlvSpaceForwLin2 = CC-LINEARSOLVERLIN2
+
+# Section defining the linear solver in space for the linearised forward iteration
+ssectionLinSlvSpaceBackLin = CC-LINEARSOLVERLIN
+
+# Section defining the linear solver in space for the linearised forward iteration
+# This is used as a fallback if the previous linear solver fails.
+ssectionLinSlvSpaceBackLin2 = CC-LINEARSOLVERLIN2
 
 # Name of the section defining the step length control
 # ssectionStepLengthControl = TIME-STEPLENGTHCONTROL
@@ -111,19 +114,19 @@ nmaxFixedPointIterations = 0
 
 # Norm of absolute residuum before applying Newton. 
 # Newton is only applied
-# if   ||absolute residuum|| < depsAbsNewton
-# and  ||relative residuum|| < depsRelNewton.
+# if   ||absolute residuum|| < dtolAbsNewton
+# and  ||relative residuum|| < dtolRelNewton.
 # Otherwise, the usual fix point iteration is used.
 # Stamndard value = 1E-5.
-depsAbsNewton = 1.0E-5
+dtolAbsNewton = 1.0E-5
 
 # Norm of relative residuum before applying Newton. 
 # Newton is only applied
-# if   ||absolute residuum|| < depsAbsNewton
-# and  ||relative residuum|| < depsRelNewton.
+# if   ||absolute residuum|| < dtolAbsNewton
+# and  ||relative residuum|| < dtolRelNewton.
 # Otherwise, the usual fix point iteration is used.
 # Standard value = 1E99 -> The absolute residuum counts.
-depsRelNewton = 1.0E99
+dtolRelNewton = 1.0E99
 
 # Stopping criterion for the linear solver in the inexact Newton iteration.
 # Controls the minimum number of digits to gain in the linear solver
@@ -164,12 +167,15 @@ nmaxIterations     = 10
 
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
-depsRel            = 1E-14
+dtolRel            = 1E-14
 
 # Limit for residuals, i.e. absolute error on finest grid; 
-# The linear solver stops if either absolute error < depsAbs or
-# rel. error < depsRel
-depsAbs            = 1E-14
+# The linear solver stops if either absolute error < dtolAbs or
+# rel. error < dtolRel
+dtolAbs            = 1E-14
+
+# Type of stopping criterion
+ctolMode = 4
 
 # Maximum relative residual before the iteration is treated as 'divergent'
 ddivRel            = 1E20
@@ -196,7 +202,7 @@ ioutputLevel       = 2
 # overwritten by the stopping criterion of the space-solver, which
 # is usually an undesired behaviour: Although the linear space-time solver
 # solves up to, e.g., 1E-15, the total solution of the space-time solver
-# is not better than depsrel(linear space-solver)!!!
+# is not better than dtolrel(linear space-solver)!!!
 cspatialInitCondPolicy = 2
 
 
@@ -263,12 +269,12 @@ nmaxIterations     = 50
 
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
-depsRel            = 1E-14
+dtolRel            = 1E-14
 
 # Limit for residuals, i.e. absolute error on finest grid; 
-# The linear solver stops if either absolute error < depsAbs or
-# rel. error < depsRel
-depsAbs            = 1E-14
+# The linear solver stops if either absolute error < dtolAbs or
+# rel. error < dtolRel
+dtolAbs            = 1E-14
 
 # Maximum relative residual before the iteration is treated as 'divergent'
 ddivRel            = 1E20
@@ -318,12 +324,15 @@ nmaxIterations     = 10
 
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
-depsRel            = 1E-12
+dtolRel            = 1E-12
 
 # Limit for residuals, i.e. absolute error on finest grid; 
-# The linear solver stops if either absolute error < depsAbs or
-# rel. error < depsRel
-depsAbs            = 1E-14
+# The linear solver stops if either absolute error < dtolAbs or
+# rel. error < dtolRel
+dtolAbs            = 1E-14
+
+# Type of stopping criterion
+ctolMode = 4
 
 # General damping parameter when adding the preconditioned defect
 # to the solution in the nonlinear space-time iteration
@@ -350,19 +359,19 @@ nmaxFixedPointIterations = 0
 
 # Norm of absolute residuum before applying Newton. 
 # Newton is only applied
-# if   ||absolute residuum|| < depsAbsNewton
-# and  ||relative residuum|| < depsRelNewton.
+# if   ||absolute residuum|| < dtolAbsNewton
+# and  ||relative residuum|| < dtolRelNewton.
 # Otherwise, the usual fix point iteration is used.
 # Stamndard value = 1E-5.
-depsAbsNewton = 1.0E-5
+dtolAbsNewton = 1.0E-5
 
 # Norm of relative residuum before applying Newton. 
 # Newton is only applied
-# if   ||absolute residuum|| < depsAbsNewton
-# and  ||relative residuum|| < depsRelNewton.
+# if   ||absolute residuum|| < dtolAbsNewton
+# and  ||relative residuum|| < dtolRelNewton.
 # Otherwise, the usual fix point iteration is used.
 # Standard value = 1E99 -> The absolute residuum counts.
-depsRelNewton = 1.0E99
+dtolRelNewton = 1.0E99
 
 # Stopping criterion for the linear solver in the inexact Newton iteration.
 # Controls the minimum number of digits to gain in the linear solver

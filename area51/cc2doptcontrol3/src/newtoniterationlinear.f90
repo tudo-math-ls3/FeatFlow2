@@ -28,6 +28,7 @@ module newtoniterationlinear
   use blockmatassemblybase
   use blockmatassembly
   use collection
+  use iterationcontrol
   
   use spacetimevectors
   use analyticsolution
@@ -273,6 +274,9 @@ module newtoniterationlinear
 
     ! General newton parameters
     type(t_newtonPrecParameters) :: rprecParameters
+
+    ! Iteration control parameters
+    type(t_iterationControl) :: riter
 
     ! Parameters of the OptFlow solver
     type(t_settings_optflow), pointer :: p_rsettingsSolver => null()
@@ -668,8 +672,8 @@ contains
 
     ! Configure the solver to apply exactly nsm steps
     if (nsm .le. 0) return
-    rsmootherParams%rprecParameters%nminiterations = nsm
-    rsmootherParams%rprecParameters%nmaxiterations = nsm
+    rsmootherParams%riter%nminiterations = nsm
+    rsmootherParams%riter%nmaxiterations = nsm
     
     ! Call the smoother.
     select case (rsmootherParams%csolverType)
@@ -739,6 +743,7 @@ contains
     ! Temporary control vector
     type(t_controlSpace), pointer :: p_rtempVector
     type(t_newtonlinSolverStat) :: rlocalStat
+    real(DP) :: dres
 
     ! Measure iteration time
     call stat_startTimer (rstatistics%rtotalTime)
@@ -747,7 +752,7 @@ contains
     p_rtempVector => rlinsolParam%p_rsubnodeRichardson%rtempVector
 
     ! Richardson is a do loop...
-    rlinsolParam%rprecParameters%niterations = 0
+    call itc_initIteration(rlinsolParam%riter)
 
     do while (.true.)
     
@@ -758,38 +763,31 @@ contains
       ! Compute the residual and its norm.
       output_iautoOutputIndent = output_iautoOutputIndent + 2
       call newtonlin_getResidual (rlinsolParam,rkktsystemDirDeriv,rrhs,&
-          p_rtempVector,rlocalStat,rlinsolParam%rprecParameters%dresFinal,&
+          p_rtempVector,rlocalStat,dres,&
           rlinsolParam%rprecParameters%iresnorm)
       output_iautoOutputIndent = output_iautoOutputIndent - 2
       
       call newtonlin_sumStatistics(rlocalStat,rstatistics,NLIN_STYPE_RESCALC)
       
-      if (rlinsolParam%rprecParameters%niterations .eq. 0) then
+      if (rlinsolParam%riter%niterations .eq. 0) then
         ! Remember the initial residual
-        rlinsolParam%rprecParameters%dresInit = rlinsolParam%rprecParameters%dresFinal
+        call itc_initResidual(rlinsolParam%riter,dres)
       end if
-
+      
       if (rlinsolParam%rprecParameters%ioutputLevel .ge. 2) then
         call output_line ("Space-time Richardson: Iteration "// &
-            trim(sys_siL(rlinsolParam%rprecParameters%niterations,10))// &
+            trim(sys_siL(rlinsolParam%riter%niterations,10))// &
             ", ||res(u)|| = "// &
-            trim(sys_sdEL(rlinsolParam%rprecParameters%dresFinal,10)))
+            trim(sys_sdEL(rlinsolParam%riter%dresFinal,10)))
       end if
 
+      ! Push the residual, increase the iteration counter
+      call itc_pushResidual(rlinsolParam%riter,dres)
+
       ! -------------------------------------------------------------
-      ! Check for convergence
+      ! Check for convergence / divergence / ...
       ! -------------------------------------------------------------
-      if (newtonlin_checkConvergence(rlinsolParam%rprecParameters)) exit
-      
-      ! -------------------------------------------------------------
-      ! Check for divergence
-      ! -------------------------------------------------------------
-      if (newtonlin_checkDivergence(rlinsolParam%rprecParameters)) exit
-      
-      ! -------------------------------------------------------------
-      ! Check other stopping criteria
-      ! -------------------------------------------------------------
-      if (newtonlin_checkIterationStop(rlinsolParam%rprecParameters)) exit
+      if (rlinsolParam%riter%cstatus .ne. ITC_STATUS_CONTINUE) exit
       
       ! -------------------------------------------------------------
       ! Update of the solution
@@ -804,50 +802,19 @@ contains
       ! -------------------------------------------------------------
       ! Proceed with the iteration
       ! -------------------------------------------------------------
-      ! Next iteration
-      rlinsolParam%rprecParameters%niterations = &
-          rlinsolParam%rprecParameters%niterations + 1
     
     end do
 
     call stat_stopTimer (rstatistics%rtotalTime)
 
     ! Statistics
-    if (rlinsolParam%rprecParameters%dresInit .gt. &
-        rlinsolParam%rprecParameters%drhsZero) then
-      rlinsolParam%rprecParameters%dconvergenceRate = &
-                  (rlinsolParam%rprecParameters%dresFinal / &
-                   rlinsolParam%rprecParameters%dresInit) ** &
-                  (1.0_DP/real(rlinsolParam%rprecParameters%niterations,DP))
-    else
-      rlinsolParam%rprecParameters%dconvergenceRate = 0.0_DP
-    end if
-
-    rstatistics%niterations = rstatistics%niterations + rlinsolParam%rprecParameters%niterations
+    rstatistics%niterations = rstatistics%niterations + rlinsolParam%riter%niterations
 
     if (rlinsolParam%rprecParameters%ioutputLevel .ge. 2) then
       call output_lbrk()
       call output_line ("Space-time Richardson: Statistics.")
       call output_lbrk()
-      call output_line ("#Iterations             : "//&
-            trim(sys_siL(rlinsolParam%rprecParameters%niterations,10)) )
-      call output_line ("!!INITIAL RES!!         : "//&
-            trim(sys_sdEL(rlinsolParam%rprecParameters%dresInit,15)) )
-      call output_line ("!!RES!!                 : "//&
-            trim(sys_sdEL(rlinsolParam%rprecParameters%dresFinal,15)) )
-      if (rlinsolParam%rprecParameters%dresInit .gt. &
-          rlinsolParam%rprecParameters%drhsZero) then
-        call output_line ("!!RES!!/!!INITIAL RES!! : "//&
-          trim(sys_sdEL(rlinsolParam%rprecParameters%dresFinal / &
-                        rlinsolParam%rprecParameters%dresInit,15)) )
-      else
-        call output_line ("!!RES!!/!!INITIAL RES!! : "//&
-              trim(sys_sdEL(0.0_DP,15)) )
-      end if
-      call output_lbrk ()
-      call output_line ('Rate of convergence     : '//&
-            trim(sys_sdEL(rlinsolParam%rprecParameters%dconvergenceRate,15)) )
-
+      call itc_printStatistics(rlinsolParam%riter)
     end if
 
   end subroutine
@@ -885,7 +852,7 @@ contains
 
 !</subroutine>
 
-    real(DP) :: dalpha,dbeta,dgamma,dgammaOld
+    real(DP) :: dalpha,dbeta,dgamma,dgammaOld,dtemp,dres
     type(t_controlSpace), pointer :: p_rr,p_rAp
     type(t_kktsystemDirDeriv), pointer :: p_rp
     type(t_newtonlinSolverStat) :: rlocalStat
@@ -921,8 +888,8 @@ contains
     ! Scalar product of rp.
     dgamma = kktsp_scalarProductControl(p_rr,p_rr)
 
-    ! Richardson is a do loop...
-    rlinsolParam%rprecParameters%niterations = 0
+    ! Apply the loop is a do loop...
+    call itc_initIteration(rlinsolParam%riter)
 
     do while (.true.)
     
@@ -960,35 +927,27 @@ contains
       ! Norm of the residual
       ! -------------------------------------------------------------
 
-      rlinsolParam%rprecParameters%dresFinal = &
-          kktsp_getNormControl (p_rr,rlinsolParam%rprecParameters%iresnorm)
+      dres = kktsp_getNormControl (p_rr,rlinsolParam%rprecParameters%iresnorm)
 
-      if (rlinsolParam%rprecParameters%niterations .eq. 0) then
+      if (rlinsolParam%riter%niterations .eq. 0) then
         ! Remember the initial residual
-        rlinsolParam%rprecParameters%dresInit = rlinsolParam%rprecParameters%dresFinal
+        call itc_initResidual(rlinsolParam%riter,dres)
       end if
 
       if (rlinsolParam%rprecParameters%ioutputLevel .ge. 2) then
         call output_line ("Space-time CG: Iteration "// &
-            trim(sys_siL(rlinsolParam%rprecParameters%niterations,10))// &
+            trim(sys_siL(rlinsolParam%riter%niterations,10))// &
             ", ||res(u)|| = "// &
-            trim(sys_sdEL(rlinsolParam%rprecParameters%dresFinal,10)))
+            trim(sys_sdEL(rlinsolParam%riter%dresFinal,10)))
       end if
+      
+      ! Push the residual, increase the iteration counter
+      call itc_pushResidual(rlinsolParam%riter,dres)
 
       ! -------------------------------------------------------------
-      ! Check for convergence
+      ! Check for convergence / divergence / ...
       ! -------------------------------------------------------------
-      if (newtonlin_checkConvergence(rlinsolParam%rprecParameters)) exit
-      
-      ! -------------------------------------------------------------
-      ! Check for divergence
-      ! -------------------------------------------------------------
-      if (newtonlin_checkDivergence(rlinsolParam%rprecParameters)) exit
-      
-      ! -------------------------------------------------------------
-      ! Check other stopping criteria
-      ! -------------------------------------------------------------
-      if (newtonlin_checkIterationStop(rlinsolParam%rprecParameters)) exit
+      if (rlinsolParam%riter%cstatus .ne. ITC_STATUS_CONTINUE) exit
       
       ! -------------------------------------------------------------
       ! Update of the solution
@@ -1005,7 +964,21 @@ contains
       call newtonlin_sumStatistics(rlocalStat,rstatistics,NLIN_STYPE_RESCALC)
 
       ! Calculate the parameter ALPHA
-      dalpha = dgamma / kktsp_scalarProductControl(p_rp%p_rcontrolLin,p_rAp)
+      dtemp = kktsp_scalarProductControl(p_rp%p_rcontrolLin,p_rAp)
+      if (abs(dtemp) .gt. SYS_MINREAL_DP) then
+        dalpha = dgamma / dtemp
+      else
+        dalpha = 0.0_DP
+      end if
+      
+      if (rlinsolParam%rprecParameters%ioutputLevel .ge. 3) then
+        call output_line ("Space-time CG: <p,Ap>    = "// &
+            trim(sys_sdEL(dtemp,10)))
+        call output_line ("Space-time CG: GAMMA     = "// &
+            trim(sys_sdEL(dgamma,10)))
+        call output_line ("Space-time CG: ALPHA     = "// &
+            trim(sys_sdEL(dalpha,10)))
+      end if
 
       ! Add the residual (damped) to the current control.
       ! This updates the current control.
@@ -1020,56 +993,32 @@ contains
       dgamma = kktsp_scalarProductControl(p_rr,p_rr)
       dbeta = dgamma / dgammaOld
       
+      if (rlinsolParam%rprecParameters%ioutputLevel .ge. 3) then
+        call output_line ("Space-time CG: GAMMA_NEW = "// &
+            trim(sys_sdEL(dgamma,10)))
+        call output_line ("Space-time CG: BETA      = "// &
+            trim(sys_sdEL(dbeta,10)))
+      end if
+      
       ! Update rp.
       call kktsp_controlLinearComb (p_rr,1.0_DP,p_rp%p_rcontrolLin,dbeta)
     
       ! -------------------------------------------------------------
       ! Proceed with the iteration
       ! -------------------------------------------------------------
-      ! Next iteration
-      rlinsolParam%rprecParameters%niterations = &
-          rlinsolParam%rprecParameters%niterations + 1
     
     end do
     
     call stat_stopTimer (rstatistics%rtotalTime)
 
     ! Statistics
-    if (rlinsolParam%rprecParameters%dresInit .gt. &
-        rlinsolParam%rprecParameters%drhsZero) then
-      rlinsolParam%rprecParameters%dconvergenceRate = &
-                  (rlinsolParam%rprecParameters%dresFinal / &
-                   rlinsolParam%rprecParameters%dresInit) ** &
-                  (1.0_DP/real(rlinsolParam%rprecParameters%niterations,DP))
-    else
-      rlinsolParam%rprecParameters%dconvergenceRate = 0.0_DP
-    end if
-
-    rstatistics%niterations = rstatistics%niterations + rlinsolParam%rprecParameters%niterations
+    rstatistics%niterations = rstatistics%niterations + rlinsolParam%riter%niterations
     
     if (rlinsolParam%rprecParameters%ioutputLevel .ge. 2) then
       call output_lbrk()
       call output_line ("Space-time CG: Statistics.")
       call output_lbrk()
-      call output_line ("#Iterations             : "//&
-            trim(sys_siL(rlinsolParam%rprecParameters%niterations,10)) )
-      call output_line ("!!INITIAL RES!!         : "//&
-            trim(sys_sdEL(rlinsolParam%rprecParameters%dresInit,15)) )
-      call output_line ("!!RES!!                 : "//&
-            trim(sys_sdEL(rlinsolParam%rprecParameters%dresFinal,15)) )
-      if (rlinsolParam%rprecParameters%dresInit .gt. &
-          rlinsolParam%rprecParameters%drhsZero) then
-        call output_line ("!!RES!!/!!INITIAL RES!! : "//&
-          trim(sys_sdEL(rlinsolParam%rprecParameters%dresFinal / &
-                        rlinsolParam%rprecParameters%dresInit,15)) )
-      else
-        call output_line ("!!RES!!/!!INITIAL RES!! : "//&
-              trim(sys_sdEL(0.0_DP,15)) )
-      end if
-      call output_lbrk ()
-      call output_line ('Rate of convergence     : '//&
-            trim(sys_sdEL(rlinsolParam%rprecParameters%dconvergenceRate,15)) )
-
+      call itc_printStatistics(rlinsolParam%riter)
     end if
 
   end subroutine
@@ -1188,6 +1137,7 @@ contains
       rlinsolMultigrid%p_rsubSolvers(1)%csolverType = NLIN_SOLVER_RICHARDSON
       call newtonlin_initBasicParams (&
           rlinsolMultigrid%p_rsubSolvers(1)%rprecParameters,&
+          rlinsolMultigrid%p_rsubSolvers(1)%riter,&
           rlinsolMultigrid%ssectionCoarseGridSolver,rlinsolMultigrid%p_rparList)
 
       allocate(rlinsolMultigrid%p_rsubSolvers(1)%p_rsubnodeRichardson)
@@ -1201,6 +1151,7 @@ contains
       rlinsolMultigrid%p_rsubSolvers(1)%csolverType = NLIN_SOLVER_CG
       call newtonlin_initBasicParams (&
           rlinsolMultigrid%p_rsubSolvers(1)%rprecParameters,&
+          rlinsolMultigrid%p_rsubSolvers(1)%riter,&
           rlinsolMultigrid%ssectionCoarseGridSolver,rlinsolMultigrid%p_rparList)
       allocate(rlinsolMultigrid%p_rsubSolvers(1)%p_rsubnodeCG)
 
@@ -1226,6 +1177,7 @@ contains
         rlinsolMultigrid%p_rsubSolvers(ilevel)%csolverType = NLIN_SOLVER_RICHARDSON
         call newtonlin_initBasicParams (&
             rlinsolMultigrid%p_rsubSolvers(ilevel)%rprecParameters,&
+            rlinsolMultigrid%p_rsubSolvers(ilevel)%riter,&
             rlinsolMultigrid%ssectionSmoother,rlinsolMultigrid%p_rparList)
         
         allocate(rlinsolMultigrid%p_rsubSolvers(ilevel)%p_rsubnodeRichardson)
@@ -1239,6 +1191,7 @@ contains
         rlinsolMultigrid%p_rsubSolvers(ilevel)%csolverType = NLIN_SOLVER_CG
         call newtonlin_initBasicParams (&
             rlinsolMultigrid%p_rsubSolvers(ilevel)%rprecParameters,&
+            rlinsolMultigrid%p_rsubSolvers(ilevel)%riter,&
             rlinsolMultigrid%ssectionSmoother,rlinsolMultigrid%p_rparList)
         
         allocate(rlinsolMultigrid%p_rsubSolvers(ilevel)%p_rsubnodeCG)
@@ -1435,39 +1388,11 @@ contains
         rkktsysDirDerivHierarchy,rrhs,rstatistics)
         
     ! Statistics
-    if (rlinsolParam%rprecParameters%dresInit .gt. &
-        rlinsolParam%rprecParameters%drhsZero) then
-      rlinsolParam%rprecParameters%dconvergenceRate = &
-                  (rlinsolParam%rprecParameters%dresFinal / &
-                   rlinsolParam%rprecParameters%dresInit) ** &
-                  (1.0_DP/real(rlinsolParam%rprecParameters%niterations,DP))
-    else
-      rlinsolParam%rprecParameters%dconvergenceRate = 0.0_DP
-    end if
-
     if (rlinsolParam%rprecParameters%ioutputLevel .ge. 2) then
       call output_lbrk()
       call output_line ("Space-time Multigrid: Statistics.")
       call output_lbrk()
-      call output_line ("#Iterations             : "//&
-            trim(sys_siL(rlinsolParam%rprecParameters%niterations,10)) )
-      call output_line ("!!INITIAL RES!!         : "//&
-            trim(sys_sdEL(rlinsolParam%rprecParameters%dresInit,15)) )
-      call output_line ("!!RES!!                 : "//&
-            trim(sys_sdEL(rlinsolParam%rprecParameters%dresFinal,15)) )
-      if (rlinsolParam%rprecParameters%dresInit .gt. &
-          rlinsolParam%rprecParameters%drhsZero) then
-        call output_line ("!!RES!!/!!INITIAL RES!! : "//&
-          trim(sys_sdEL(rlinsolParam%rprecParameters%dresFinal / &
-                        rlinsolParam%rprecParameters%dresInit,15)) )
-      else
-        call output_line ("!!RES!!/!!INITIAL RES!! : "//&
-              trim(sys_sdEL(0.0_DP,15)) )
-      end if
-      call output_lbrk ()
-      call output_line ('Rate of convergence     : '//&
-            trim(sys_sdEL(rlinsolParam%rprecParameters%dconvergenceRate,15)) )
-
+      call itc_printStatistics(rlinsolParam%riter)
     end if
 
   end subroutine
@@ -1568,8 +1493,7 @@ contains
 
     ! local variables
     type(t_linsolMultigrid), pointer :: p_rsubnodeMultigrid
-    integer :: nminIterations,nmaxIterations,ite
-    real(DP) :: dresInit,dresFinal
+    real(DP) :: dres
     type(t_kktsystemDirDeriv), pointer :: p_rkktSysRhsCoarse, p_rkktSysSolCoarse, p_rkktSysSolFine
     type(t_kktsystemDirDeriv), pointer :: p_rkktSysSolution, p_rkktSysDefect
     type(t_newtonlinSolverStat) :: rlocalStat
@@ -1592,12 +1516,12 @@ contains
           rkktsysDirDerivHierarchy,rrhs,rstatistics,ilevel)
       output_iautoOutputIndent = output_iautoOutputIndent - 2
     
-      rlinsolParam%rprecParameters%dresInit = &
-          p_rsubnodeMultigrid%p_rsubSolvers(ilevel)%rprecParameters%dresInit
-      rlinsolParam%rprecParameters%dresFinal = &
-          p_rsubnodeMultigrid%p_rsubSolvers(ilevel)%rprecParameters%dresFinal
-      rlinsolParam%rprecParameters%niterations = &
-          p_rsubnodeMultigrid%p_rsubSolvers(ilevel)%rprecParameters%niterations
+      rlinsolParam%riter%dresInitial = &
+          p_rsubnodeMultigrid%p_rsubSolvers(ilevel)%riter%dresInitial
+      rlinsolParam%riter%dresFinal = &
+          p_rsubnodeMultigrid%p_rsubSolvers(ilevel)%riter%dresFinal
+      rlinsolParam%riter%niterations = &
+          p_rsubnodeMultigrid%p_rsubSolvers(ilevel)%riter%niterations
     
       ! Finish
       return
@@ -1614,12 +1538,10 @@ contains
           p_rsubnodeMultigrid%ccycle,nlevels,nlevels,p_rsubnodeMultigrid%p_IcycleCount)
 
       ! On level nlevels, apply as many iterations as configured.
-      nminIterations = rlinsolParam%rprecParameters%nminIterations
-      nmaxIterations = rlinsolParam%rprecParameters%nmaxIterations
     else
       ! On all the other levels, apply as many iterations as configured in the cycle.
-      nminIterations = p_rsubnodeMultigrid%p_IcycleCount(ilevel)
-      nmaxIterations = p_rsubnodeMultigrid%p_IcycleCount(ilevel)
+      rlinsolParam%riter%nminIterations = p_rsubnodeMultigrid%p_IcycleCount(ilevel)
+      rlinsolParam%riter%nmaxIterations = p_rsubnodeMultigrid%p_IcycleCount(ilevel)
     end if
     
     ! Apply the multigrid iteration
@@ -1630,8 +1552,11 @@ contains
     call kkth_getKKTsystemDirDeriv (p_rsubnodeMultigrid%rsolutionHier,ilevel,p_rkktSysSolFine)
     call kkth_getKKTsystemDirDeriv (p_rsubnodeMultigrid%rdefectHier,ilevel,p_rkktSysDefect)
     
-    ite = 0
+    ! Zero initial solution
     call kkt_clearDirDeriv (p_rkktSysSolution)
+
+    ! Start the iteration
+    call itc_initIteration(rlinsolParam%riter)
 
     do
     
@@ -1639,7 +1564,7 @@ contains
         ! On level < nlevels, do not calculate the next residual but
         ! exit immediately if the maximum number of iterations
         ! (= cycle count) is reached.
-        if (ite .ge. nmaxIterations) exit
+        if (rlinsolParam%riter%niterations .ge. rlinsolParam%riter%nmaxIterations) exit
       end if
       
       ! Get the residual
@@ -1648,52 +1573,42 @@ contains
       call newtonlin_getResidual (rlinsolParam,&
           p_rkktSysSolution,rrhs,&
           p_rkktSysDefect%p_rcontrolLin,rlocalStat,&
-          dresFinal,rlinsolParam%rprecParameters%iresnorm)
+          dres,rlinsolParam%rprecParameters%iresnorm)
       
       output_iautoOutputIndent = output_iautoOutputIndent - 2
       
       call newtonlin_sumStatistics(rlocalStat,rstatistics,NLIN_STYPE_RESCALC)
 
-      ! Remember the initial residual
-      if (ite .eq. 0) dresInit = dresFinal
+      if (rlinsolParam%riter%niterations .eq. 0) then
+        ! Remember the initial residual
+        call itc_initResidual(rlinsolParam%riter,dres)
+      end if
 
       ! Some checks and output on the maximum level
       if (ilevel .eq. nlevels) then
       
         if (rlinsolParam%rprecParameters%ioutputLevel .ge. 2) then
           call output_line ("Space-time MG: Iteration "// &
-              trim(sys_siL(ite,10))// &
+              trim(sys_siL(rlinsolParam%riter%niterations,10))// &
               ", ||res(u)|| = "// &
-              trim(sys_sdEL(dresFinal,10)))
+              trim(sys_sdEL(rlinsolParam%riter%dresFinal,10)))
         end if
         
-        ! Save statistics on the maximum level
-        rlinsolParam%rprecParameters%dresInit = dresInit
-        rlinsolParam%rprecParameters%dresFinal = dresFinal
-        rlinsolParam%rprecParameters%niterations = ite
+        ! Save statistics on the maximum level.
+        ! Push the residual, increase the iteration counter
+        call itc_pushResidual(rlinsolParam%riter,dres)
 
         ! -------------------------------------------------------------
-        ! Check for convergence
+        ! Check for convergence / divergence / ...
         ! -------------------------------------------------------------
-        if (newtonlin_checkConvergence(rlinsolParam%rprecParameters)) exit
+        if (rlinsolParam%riter%cstatus .ne. ITC_STATUS_CONTINUE) exit
         
-        ! -------------------------------------------------------------
-        ! Check for divergence
-        ! -------------------------------------------------------------
-        if (newtonlin_checkDivergence(rlinsolParam%rprecParameters)) exit
-        
-        ! -------------------------------------------------------------
-        ! Check other stopping criteria
-        ! -------------------------------------------------------------
-        if (newtonlin_checkIterationStop(rlinsolParam%rprecParameters)) exit
-      
       end if
       
       ! Apply presmoothing
       if (p_rsubnodeMultigrid%nsmpre .ne. 0) then
         if (rlinsolParam%rprecParameters%ioutputLevel .ge. 3) then
-          call output_line (&
-              "Space-time Multigrid: Invoking pre-smoother.")
+          call output_line ("Space-time Multigrid: Invoking pre-smoother.")
         end if
         
         output_iautoOutputIndent = output_iautoOutputIndent + 2
@@ -1710,7 +1625,7 @@ contains
         call newtonlin_getResidual (rlinsolParam,&
             p_rkktSysSolution,rrhs,&
             p_rkktSysDefect%p_rcontrolLin,rlocalStat,&
-            dresFinal,rlinsolParam%rprecParameters%iresnorm)
+            dres,rlinsolParam%rprecParameters%iresnorm)
         output_iautoOutputIndent = output_iautoOutputIndent - 2
 
         call newtonlin_sumStatistics(rlocalStat,rstatistics,NLIN_STYPE_RESCALC)
@@ -1794,8 +1709,6 @@ contains
       end if
 
       ! Next iteration
-      ite = ite + 1
-
       if (ilevel .eq. nlevels) then
         ! Re-initialise the cycles
         call MG_initCycles (&
@@ -1804,7 +1717,7 @@ contains
 
     end do
     
-    rstatistics%niterations = rstatistics%niterations + ite
+    rstatistics%niterations = rstatistics%niterations + rlinsolParam%riter%niterations
 
     ! Initialise the cycle counter for the next run.
     call MG_initCycles (&
@@ -1978,7 +1891,8 @@ contains
     rlinsolParam%p_rsolverHierDualLin => rsolverHierDualLin
    
     ! Get the corresponding parameters from the parameter list.
-    call newtonlin_initBasicParams (rlinsolParam%rprecParameters,ssection,rparlist)
+    call newtonlin_initBasicParams (&
+        rlinsolParam%rprecParameters,rlinsolParam%riter,ssection,rparlist)
 
     ! Solver type
     call parlst_getvalue_int (rparlist, ssection, "csolverType", &
@@ -2378,8 +2292,8 @@ contains
 !</subroutine>
 
     ! Set the stopping criteria
-    rlinsolParam%rprecParameters%depsRel = depsRel
-    rlinsolParam%rprecParameters%depsAbs = depsAbs
+    rlinsolParam%riter%dtolRel = depsRel
+    rlinsolParam%riter%dtolAbs = depsAbs
     
     ! Special settings
     select case (rlinsolParam%csolverType)
@@ -2394,8 +2308,8 @@ contains
         ! The coarse grid solver is used instead of the solver
         ! identified by rlinsolParam. Therefore, impose the stopping
         ! criteria in the coarse grid solver.
-        rlinsolParam%p_rsubnodeMultigrid%p_RsubSolvers(1)%rprecParameters%depsRel = depsRel
-        rlinsolParam%p_rsubnodeMultigrid%p_RsubSolvers(1)%rprecParameters%depsAbs = depsAbs
+        rlinsolParam%p_rsubnodeMultigrid%p_RsubSolvers(1)%riter%dtolRel = depsRel
+        rlinsolParam%p_rsubnodeMultigrid%p_RsubSolvers(1)%riter%dtolAbs = depsAbs
       end if
     
     end select

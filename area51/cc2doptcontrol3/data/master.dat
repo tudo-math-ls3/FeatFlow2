@@ -30,3 +30,188 @@ simportdatafiles(11) =
   "postprocessing.dat"
   "spacetimesolver.dat"
   "timediscr.dat"
+
+[BDEXPRESSIONS]
+bdExpressions(6) =
+  'Dirichlet0'    0    0.0
+  'Dirichlet1'    0    1.0
+  'DirichletXP'   -1    'X^2*Y'
+  'DirichletYP'   -1    '-X*Y^2'
+  'DirichletXD'   -1    '2*Y'
+  'DirichletYD'   -1    '-2*X'
+
+[BDCONDITIONS_PRIMAL]
+bdComponent1(3)=
+  2.0  1  1  'Dirichlet0'  'Dirichlet0'
+  3.0  3  1  'Dirichlet1'  'Dirichlet0'
+  4.0  0  1  'Dirichlet0'  'Dirichlet0'
+
+[BDCONDITIONS_DUAL]
+bdComponent1(3)=
+  2.0  1  -1
+  3.0  3  -1
+  4.0  0  -1
+
+#[BDCONDITIONS_PRIMAL]
+#bdComponent1(1)=
+#  4  1  1  'DirichletXP'  'DirichletYP'
+#  4      1  0
+
+#[BDCONDITIONS_DUAL]
+#bdComponent1(1)=
+#  4  1  1  'DirichletXD'  'DirichletYD'
+#  4      1  0
+
+[RIGHTHANDSIDE_PRIMAL]
+ctype = 0
+ncomponents = 3
+sexpression(3) =
+  "-2*Y"
+  "2*X" 
+  "0"
+
+[RIGHTHANDSIDE_DUAL]
+ctype = 0
+ncomponents = 3
+sexpression(3) =
+  "0"
+  "4*X" 
+  "0"
+
+[INITIALCONDITION]
+ctype = 1
+#sfunctionfile = './ns/dc_q2_lv8_re400/drivencav_lv8_q2_statstokes.sol'
+sfunctionfile = './ns/dc_q2_lv8_re400/drivencav_lv8_q2_statnavstokes.sol'
+ilevel = 8
+ielementType = 4
+
+[OPTCTARGETFUNCTION]
+ctype = 1
+sfunctionfile = './ns/dc_q2_lv8_re400/drivencav_lv8_q2_statstokes.sol'
+ilevel = 8
+ielementType = 4
+
+[INITIALCONDITION_old]
+ctype = 0
+
+[OPTCTARGETFUNCTION_old]
+ctype = 3
+ncomponents = 2
+sexpression(2) =
+  "X^2*Y"
+  "-X*Y^2" 
+
+[CC-PHYSICS]
+iequation = 0
+RE = 400
+
+[CC-DISCRETISATION]
+NLMIN              = 4
+NLMAX              = 6
+iElementType       = 3
+scubMass           = G4X4
+scubStokes         = G4X4
+scubB              = G4X4
+scubF              = G4X4
+
+
+[TIME-DISCRETISATION]
+dtimeInit = 0.0
+dtimeMax = 1.0
+niterations = 20
+TIMENLMIN = 4
+TIMENLMAX = 4
+dtimeStepTheta = 1.0
+
+[DEBUG]
+dprimalDualCoupling = 1.0
+ddualPrimalCoupling = 1.0
+dtimeCoupling = 1.0
+cwriteUmfpackMatrix = 0
+
+[OPTIMALCONTROL]
+dalphaC = 0.01
+
+[TIME-POSTPROCESSING]
+ioutputUCD = 3
+
+[SPACETIME-REFINEMENT]
+ispacelevelcoupledtotimelevel = 0
+
+[SPACETIME-SOLVER]
+ctypeIteration = 3
+dtolrel = 1E-5
+nmaxIterations = 3
+ioutputlevel = 3
+cpostprocessIterates = 3
+
+[SPACETIME-LINSOLVER]
+ioutputlevel = 3
+csolverType = 2
+nminIterations     = 1
+nmaxIterations     = 1 #0
+dtolRel            = 1E-2
+domega = 1.0
+
+[SPACETIME-MULTIGRID]
+nsmPre = 0
+nsmPost = 2
+ccycle = 1 # 0
+csmoother = 3
+ccoarseGridSolver = 3
+
+[SPACETIME-SMOOTHER]
+domega = 1.0
+ioutputlevel = 3
+
+[SPACETIME-COARSEGRIDSOLVER]
+dtolRel = 1E-3 
+dtolAbs = 1E-3
+nmaxiterations = 17
+domega = 1.0
+ioutputlevel = 3
+nstagIter = 3
+dstagRate = 1.05
+
+[CC-NONLINEARSOLVER]
+ctypeIteration = 3
+dtolrel = 1E-5
+#dtolabs = 1E-5
+ioutputLevel = 2
+
+[CC-LINEARSOLVERFORW]
+isolverType = 1
+ismootherType = 2
+icoarseGridSolverType = 0 # 5
+#ioutputlevel = 1
+
+[CC-LINEARSOLVERBACKW]
+isolverType = 1
+ismootherType = 2
+icoarseGridSolverType = 0 # 5
+ioutputlevel = 1
+
+[CC-LINEARSOLVERLIN]
+isolverType = 1
+ismootherType = 2
+icoarseGridSolverType = 0 # 5
+ioutputlevel = 1
+
+[CC-MULTIGRIDSOLVERFORW]
+depsRel            = 1E-2
+ioutputlevel=0
+
+[CC-MULTIGRIDSOLVERBACKW]
+depsRel            = 1E-5
+ioutputlevel=0
+
+[CC-MULTIGRIDSOLVERLIN]
+depsRel            = 1E-5
+ioutputlevel=0
+
+#[SPACETIME-ADAPTIVENEWTON]
+#dinexactNewtonEpsRel = 1.0E-2
+
+[CC-SMOOTHER]
+nsmoothingSteps    = 4
+domega             = 1.0

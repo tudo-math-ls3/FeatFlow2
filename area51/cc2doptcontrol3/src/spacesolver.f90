@@ -24,6 +24,7 @@ module spacesolver
   use linearsystemscalar
   use linearsystemblock
   use vectorfilters
+  use iterationcontrol
   
   use scalarpde
   use linearformevaluation
@@ -104,6 +105,9 @@ module spacesolver
     ! General Newton parameters for nonlinear iterations.
     ! This is level independent.
     type(t_newtonParameters) :: rnewtonParams
+    
+    ! Iteration control parameters
+    type(t_iterationControl) :: riter
     
     ! <!-- ------------------------ -->
     ! <!-- LINEAR SOLVER STRUCTURES -->
@@ -271,7 +275,7 @@ contains
     if (present(ssection) .and. present(rparamList)) then
     
       ! Initialise basic parameters of the nonlinear solver
-      call newtonit_initBasicParams (rsolver%rnewtonParams,ssection,rparamList)
+      call newtonit_initBasicParams (rsolver%rnewtonParams,rsolver%riter,ssection,rparamList)
     
     end if
 
@@ -1264,6 +1268,7 @@ contains
     ! local variables
     type(t_vectorBlock), pointer :: p_rd, p_rd2, p_rx
     integer :: ierror
+    real(DP) :: dres
     type(t_linsolNode), pointer :: p_rsolverNode
     real(DP), dimension(:), pointer :: p_Dd, p_Dx
     type(t_discreteBC), pointer :: p_rdiscreteBC
@@ -1303,9 +1308,7 @@ contains
       ! to apply a nonlinear loop.
       
       ! Apply the Newton iteration
-      rsolver%rnewtonParams%niterations = 0
-      rsolver%rnewtonParams%dresInit = 0.0_DP
-      rsolver%rnewtonParams%dresFinal = 0.0_DP
+      call itc_initIteration(rsolver%riter)
 
       do while (.true.)
       
@@ -1325,7 +1328,7 @@ contains
         call stat_startTimer (rstatistics%rtimeDefect)
         
         ! Compute the basic (unpreconditioned) search direction in rd.
-        if (rsolver%rnewtonParams%niterations .eq. 0) then
+        if (rsolver%riter%niterations .eq. 0) then
           call smva_getDef_primal (p_rd,&
               rsolver%ispacelevel,rsolver%itimelevel,idofTime,&
               rsolver%p_roperatorAsmHier,rprimalSol,rcontrol,&
@@ -1344,43 +1347,34 @@ contains
         call stat_stopTimer (rstatistics%rtimeDefect)    
         call stat_addTimers (rtimer,rstatistics%rtimeRHS)
         
-        rsolver%rnewtonParams%dresFinal = &
-            lsysbl_vectorNorm(p_rd,rsolver%rnewtonParams%iresNorm)
+        dres = lsysbl_vectorNorm(p_rd,rsolver%rnewtonParams%iresNorm)
             
-        if (rsolver%rnewtonParams%niterations .eq. 0) then
-          ! Remember the initial residual
-          rsolver%rnewtonParams%dresInit = rsolver%rnewtonParams%dresFinal
+        if (rsolver%riter%niterations .eq. 0) then
+          ! Initialise the iteration
+          call itc_initResidual(rsolver%riter,dres)
         end if
         
         if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
           call output_line (&
               trim(sys_si(idofTime-1,8)) // &
-              " " // trim(sys_si(rsolver%rnewtonParams%niterations,4)) // &
-              " " // trim(sys_sdEL(rsolver%rnewtonParams%dresFinal,1)) )
+              " " // trim(sys_si(rsolver%riter%niterations,4)) // &
+              " " // trim(sys_sdEL(dres,1)) )
         end if
 
-        ! -------------------------------------------------------------
-        ! Check for convergence
-        ! -------------------------------------------------------------
-        if (newtonit_checkConvergence (rsolver%rnewtonParams)) exit
+        call itc_pushResidual(rsolver%riter,dres)
         
         ! -------------------------------------------------------------
-        ! Check for divergence
+        ! Check for convergence / divergence / ...
         ! -------------------------------------------------------------
-        if (newtonit_checkDivergence (rsolver%rnewtonParams)) exit
-        
-        ! -------------------------------------------------------------
-        ! Check other stopping criteria
-        ! -------------------------------------------------------------
-        if (newtonit_checkIterationStop (rsolver%rnewtonParams,rsolver%rnewtonParams%niterations)) exit
-        
+        if (rsolver%riter%cstatus .ne. ITC_STATUS_CONTINUE) exit
+
         ! -------------------------------------------------------------
         ! Adaptive Newton for the next iteration?
         ! -------------------------------------------------------------
         if (rsolver%rnewtonParams%ctypeIteration .eq. 3) then
           call spaceslh_adNewton_setEps (&
               rsolver,rsolver%rnewtonParams%radaptiveNewton,&
-              rsolver%rnewtonParams%dresInit,rsolver%rnewtonParams%dresFinal)
+              rsolver%riter%dresInitial,rsolver%riter%dresFinal)
         end if
       
         ! -------------------------------------------------------------
@@ -1481,12 +1475,10 @@ contains
         ! -------------------------------------------------------------
         ! Proceed with the next iteration
         ! -------------------------------------------------------------
-        ! Next iteration
-        rsolver%rnewtonParams%niterations = rsolver%rnewtonParams%niterations + 1
       
       end do
       
-      rstatistics%niterations = rsolver%rnewtonParams%niterations
+      rstatistics%niterations = rsolver%riter%niterations
       
     ! ---------------------------------------------------------------
     ! Dual equation. Linear loop.
@@ -1514,22 +1506,22 @@ contains
       call stat_stopTimer (rstatistics%rtimeDefect)
       call stat_addTimers (rtimer,rstatistics%rtimeRHS)
       
-      rsolver%rnewtonParams%dresFinal = &
+      rsolver%riter%dresFinal = &
           lsysbl_vectorNorm(p_rd,rsolver%rnewtonParams%iresNorm)
       
       ! Remember the initial residual
-      rsolver%rnewtonParams%dresInit = rsolver%rnewtonParams%dresFinal
+      rsolver%riter%dresInitial = rsolver%riter%dresFinal
 
       ! Print the initial residual
       if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
         call output_line (&
             trim(sys_si(idofTime-1,8)) // &
             " " // trim(sys_si(0,4)) // &
-            " " // trim(sys_sdEL(rsolver%rnewtonParams%dresFinal,1)) )
+            " " // trim(sys_sdEL(rsolver%riter%dresFinal,1)) )
       end if
 
       ! Cancel if the defect is zero.
-      if (rsolver%rnewtonParams%dresFinal .gt. 10.0_DP*SYS_EPSREAL_DP) then
+      if (rsolver%riter%dresFinal .gt. 10.0_DP*SYS_EPSREAL_DP) then
 
         ! -------------------------------------------------------------
         ! Assemble the matrices/boundary conditions on all levels.
@@ -1594,14 +1586,14 @@ contains
         ! -------------------------------------------------------------
 
         ! Get the final residual
-        rsolver%rnewtonParams%dresFinal = p_rsolverNode%dfinalDefect
+        rsolver%riter%dresFinal = p_rsolverNode%dfinalDefect
       
         ! Print the final residual
         if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
           call output_line (&
               trim(sys_si(idofTime-1,8)) // &
               " " // trim(sys_si(1,4)) // &
-              " " // trim(sys_sdEL(rsolver%rnewtonParams%dresFinal,1)) )
+              " " // trim(sys_sdEL(rsolver%riter%dresFinal,1)) )
         end if
 
         ! -------------------------------------------------------------
@@ -1631,7 +1623,7 @@ contains
       call sbch_resetBCstructure (rsolver%p_roptcBDCSpaceHierarchy)
       
       ! Only one iteration
-      rsolver%rnewtonParams%niterations = 1
+      rsolver%riter%niterations = 1
       rstatistics%niterations = 1
 
     ! ---------------------------------------------------------------
@@ -1663,22 +1655,22 @@ contains
       call stat_stopTimer (rstatistics%rtimeDefect)
       call stat_addTimers (rtimer,rstatistics%rtimeRHS)
           
-      rsolver%rnewtonParams%dresFinal = &
+      rsolver%riter%dresFinal = &
           lsysbl_vectorNorm(p_rd,rsolver%rnewtonParams%iresNorm)
       
       ! Remember the initial residual
-      rsolver%rnewtonParams%dresInit = rsolver%rnewtonParams%dresFinal
+      rsolver%riter%dresInitial = rsolver%riter%dresFinal
 
       ! Print the initial residual
       if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
         call output_line (&
             trim(sys_si(idofTime-1,8)) // &
             " " // trim(sys_si(0,4)) // &
-            " " // trim(sys_sdEL(rsolver%rnewtonParams%dresFinal,1)) )
+            " " // trim(sys_sdEL(rsolver%riter%dresFinal,1)) )
       end if
 
       ! Cancel if the defect is zero.
-      if (rsolver%rnewtonParams%dresFinal .gt. 10.0_DP*SYS_EPSREAL_DP) then
+      if (rsolver%riter%dresFinal .gt. 10.0_DP*SYS_EPSREAL_DP) then
 
         ! -------------------------------------------------------------
         ! Assemble the matrices/boundary conditions on all levels.
@@ -1745,14 +1737,14 @@ contains
         ! -------------------------------------------------------------
 
         ! Get the final residual
-        rsolver%rnewtonParams%dresFinal = p_rsolverNode%dfinalDefect
+        rsolver%riter%dresFinal = p_rsolverNode%dfinalDefect
       
         ! Print the final residual
         if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
           call output_line (&
               trim(sys_si(idofTime-1,8)) // &
               " " // trim(sys_si(1,4)) // &
-              " " // trim(sys_sdEL(rsolver%rnewtonParams%dresFinal,1)) )
+              " " // trim(sys_sdEL(rsolver%riter%dresFinal,1)) )
         end if
 
         ! -------------------------------------------------------------
@@ -1785,7 +1777,7 @@ contains
       call sbch_resetBCstructure (rsolver%p_roptcBDCSpaceHierarchy)
 
       ! Only one iteration
-      rsolver%rnewtonParams%niterations = 1
+      rsolver%riter%niterations = 1
       rstatistics%niterations = 1
 
     ! ---------------------------------------------------------------
@@ -1815,22 +1807,22 @@ contains
       call stat_stopTimer (rstatistics%rtimeDefect)
       call stat_addTimers (rtimer,rstatistics%rtimeRHS)
           
-      rsolver%rnewtonParams%dresFinal = &
+      rsolver%riter%dresFinal = &
           lsysbl_vectorNorm(p_rd,rsolver%rnewtonParams%iresNorm)
       
       ! Remember the initial residual
-      rsolver%rnewtonParams%dresInit = rsolver%rnewtonParams%dresFinal
+      rsolver%riter%dresInitial = rsolver%riter%dresFinal
 
       ! Print the initial residual
       if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
         call output_line (&
             trim(sys_si(idofTime-1,8)) // &
             " " // trim(sys_si(0,4)) // &
-            " " // trim(sys_sdEL(rsolver%rnewtonParams%dresFinal,1)) )
+            " " // trim(sys_sdEL(rsolver%riter%dresFinal,1)) )
       end if
 
       ! Cancel if the defect is zero.
-      if (rsolver%rnewtonParams%dresFinal .gt. 10.0_DP*SYS_EPSREAL_DP) then
+      if (rsolver%riter%dresFinal .gt. 10.0_DP*SYS_EPSREAL_DP) then
 
         ! -------------------------------------------------------------
         ! Assemble the matrices/boundary conditions on all levels.
@@ -1898,14 +1890,14 @@ contains
         ! -------------------------------------------------------------
 
         ! Get the final residual
-        rsolver%rnewtonParams%dresFinal = p_rsolverNode%dfinalDefect
+        rsolver%riter%dresFinal = p_rsolverNode%dfinalDefect
       
         ! Print the final residual
         if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
           call output_line (&
               trim(sys_si(idofTime-1,8)) // &
               " " // trim(sys_si(1,4)) // &
-              " " // trim(sys_sdEL(rsolver%rnewtonParams%dresFinal,1)) )
+              " " // trim(sys_sdEL(rsolver%riter%dresFinal,1)) )
         end if
 
         ! -------------------------------------------------------------
@@ -1936,7 +1928,7 @@ contains
       call sbch_resetBCstructure (rsolver%p_roptcBDCSpaceHierarchy)
 
       ! Only one iteration
-      rsolver%rnewtonParams%niterations = 1
+      rsolver%riter%niterations = 1
       rstatistics%niterations = 1
 
     end select
@@ -1982,8 +1974,13 @@ contains
       
       ! Forward solver is nonlinear. 
       ! Modify the stopping criteria of the nonlinear solver.
-      rsolver%rnewtonParams%depsRel = depsRel
-      rsolver%rnewtonParams%depsAbs = depsAbs
+      rsolver%riter%dtolRel = depsRel
+      rsolver%riter%dtolAbs = depsAbs
+      if (depsAbs .eq. 0.0_DP) then
+        rsolver%riter%ctolMode = ITC_STOP_MODE_REL
+      else
+        rsolver%riter%ctolMode = ITC_STOP_MODE_ABS
+      end if
     
     else
 
@@ -2068,7 +2065,7 @@ contains
 
 !<subroutine>
 
-  subroutine spaceslh_adNewton_setEps (rsolver,radNewtonParams,dresInit,dresLastIte)
+  subroutine spaceslh_adNewton_setEps (rsolver,radNewtonParams,dresInitial,dresLastIte)
   
 !<description>
   ! Realises the adaptive Newton algorithm. Sets the stopping criterions of
@@ -2086,10 +2083,10 @@ contains
   
   ! Initial residual.
   ! May be set to 0.0 if there is no initial residual.
-  real(DP), intent(in) :: dresInit
+  real(DP), intent(in) :: dresInitial
   
   ! Residual obtained in the last nonlinear iteration.
-  ! In the first call, this should be set to dresInit.
+  ! In the first call, this should be set to dresInitial.
   real(DP), intent(in) :: dresLastIte
 !</input>
 
@@ -2103,7 +2100,7 @@ contains
 
     real(DP) :: depsAbs,depsRel,ddigitsGained, ddigitsToGain
     
-    if ((dresInit .eq. 0.0_DP) .and. (dresLastIte .eq. 0.0_DP)) then
+    if ((dresInitial .eq. 0.0_DP) .and. (dresLastIte .eq. 0.0_DP)) then
       
       ! Gain two digits for the initial residual, that is enough
       depsAbs = 0.0_DP
@@ -2123,18 +2120,18 @@ contains
       !   appropriate multiple of the digits already gained.
       ! So...
       
-      ddigitsGained = dresLastIte/dresInit
+      ddigitsGained = dresLastIte/dresInitial
       
       ddigitsToGain = min(radNewtonParams%dinexactNewtonEpsRel*ddigitsGained,&
           ddigitsGained ** radNewtonParams%dinexactNewtonExponent)
           
       depsRel = 0.0_DP
-      depsAbs = max(dresInit * ddigitsToGain,radNewtonParams%dinexactNewtonEpsAbs)
+      depsAbs = max(dresInitial * ddigitsToGain,radNewtonParams%dinexactNewtonEpsAbs)
       
       ! Do not gain too much.
       depsAbs = max(depsAbs,&
-          max(dresInit * rsolver%rnewtonParams%depsrel * radNewtonParams%dinexactNewtonEpsRel,&
-              rsolver%rnewtonParams%depsabs * radNewtonParams%dinexactNewtonEpsRel))
+          max(dresInitial * rsolver%riter%dtolrel * radNewtonParams%dinexactNewtonEpsRel,&
+              rsolver%riter%dtolabs * radNewtonParams%dinexactNewtonEpsRel))
 
       if (rsolver%rnewtonParams%ioutputLevel .ge. 3) then
         call output_line ("Adaptive Newton: New stopping criterion. ||res|| < "//&

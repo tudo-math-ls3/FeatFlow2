@@ -15,6 +15,7 @@ module structuresnewton
   use genoutput
   use paramlist
   use linearalgebra
+  use iterationcontrol
   
   implicit none
   
@@ -147,89 +148,20 @@ module structuresnewton
     ! RHS-vector is treated as zero if max(defect) < drhsZero
     real(DP) :: drhsZero = 1E-90_DP
 
-    ! Relative stopping criterion. Stop iteration if
-    ! !!defect!! < EPSREL * !!initial defect!!.
-    ! =0: ignore, use absolute stopping criterion; standard = 1E-5
-    ! Remark: do not set depsAbs=depsRel=0!
-    real(DP) :: depsRel = 1E-5_DP
-
-    ! Absolute stopping criterion. Stop iteration if
-    ! !!defect!! < EPSABS.
-    ! =0: ignore, use relative stopping criterion; standard = 1E-5
-    ! Remark: do not set depsAbs=depsRel=0!
-    real(DP) :: depsAbs = 1E-5_DP
-
-    ! Relative divergence criterion.  Treat iteration as
-    ! diverged if
-    !   !!defect!! >= DIVREL * !!initial defect!!
-    ! A value of SYS_INFINITY_DP disables the relative divergence check.
-    ! standard = 1E3
-    real(DP) :: ddivRel = 1E6_DP
-
-    ! Absolute divergence criterion. Treat iteration as
-    ! diverged if
-    !   !!defect!! >= DIVREL
-    ! A value of SYS_INFINITY_DP disables the absolute divergence check.
-    ! standard = SYS_INFINITY_DP
-    real(DP) :: ddivAbs = SYS_INFINITY_DP
-
-    ! Minimum number of iterations top perform
-    integer :: nminIterations = 1
-
-    ! Maximum number of iterations top perform
-    integer :: nmaxIterations = 50
-  
-    ! Damping parameter for the Newton iteration
-    real(DP) :: domega = 1.0_DP
-  
     ! How to check residuals.
     ! =0: Check in Euclidian norm (like in old CC).
     ! =2: L2-norm
     integer :: iresNorm = LINALG_NORML2
 
+    ! Damping parameter for the Newton iteration
+    real(DP) :: domega = 1.0_DP
+  
     ! <!-- ----------------------------- -->
     ! <!-- SUBSOLVERS AND OTHER SETTINGS -->
     ! <!-- ----------------------------- -->
 
     ! Parameters for the dynamic and inexact Newton algorithm
     type(t_ccDynamicNewtonControl) :: radaptiveNewton
-
-    ! <!-- ---------- -->
-    ! <!-- STATISTICS -->
-    ! <!-- ---------- -->
-    
-    ! Initial residual in the control space.
-    real(DP) :: dresInit = 0.0_DP
-
-    ! Final residual in the control space.
-    real(DP) :: dresFinal = 0.0_DP
-
-    ! Total number of nonlinear iterations
-    integer :: niterations = 0
-    
-    ! Total number of linear iterations
-    integer :: nlinearIterations = 0
-    
-!    ! Total time for the solver
-!    real(DP) :: dtimeTotal = 0.0_DP
-!    
-!    ! Total time for nonlinear iteration
-!    real(DP) :: dtimeNonlinearSolver = 0.0_DP
-!    
-!    ! Total time for linear space-time solver
-!    real(DP) :: dtimeLinearSolver = 0.0_DP
-!
-!    ! Total time for linear solver in space
-!    real(DP) :: dtimeLinearSolverTimestep = 0.0_DP
-!    
-!    ! Total time for matrix assembly
-!    real(DP) :: dtimeMatrixAssembly = 0.0_DP
-!
-!    ! Total time for defect calculation
-!    real(DP) :: dtimeDefectCalculation = 0.0_DP
-!
-!    ! Total time for matrix assembly
-!    real(DP) :: dtimePostprocessing = 0.0_DP
 
   end type
   
@@ -267,58 +199,6 @@ module structuresnewton
     ! file (if a log file is opened).
     integer(I32) :: coutputmode = OU_MODE_STD
   
-    ! <!-- ----------------------------------------- -->
-    ! <!-- STOPPING CRITERIA, DAMPING PARAMETERS,... --> 
-    ! <!-- ----------------------------------------- -->
-
-    ! Type of stopping criterion to use for standard convergence test. One of the
-    ! NLSOL_STOP_xxxx constants.
-    ! Note: This parameter is only evaluated in the stanard convergence test.
-    ! If the caller of the nonlinear solver specifies a callback routine fcb_resNormCheck
-    ! for checking the convergence, that callback routine must implement its own
-    ! logic to handle relative and absolute convrgence criteria!
-    ! integer :: cstoppingCriterion = NLSOL_STOP_STANDARD
-
-    ! Type of norm to use in the residual checking of the total vector
-    ! (cf. linearalgebra.f90).
-    ! =0: euclidian norm, =1: l1-norm, =2: l2-norm, =3: MAX-norm
-    ! integer :: iresNormTotal = 2
-
-    ! Relative stopping criterion. Stop iteration if
-    ! !!defect!! < EPSREL * !!initial defect!!.
-    ! =0: ignore, use absolute stopping criterion; standard = 1E-5
-    ! Remark: do not set depsAbs=depsRel=0!
-    real(DP) :: depsRel = 1E-5_DP
-
-    ! Absolute stopping criterion. Stop iteration if
-    ! !!defect!! < EPSABS.
-    ! =0: ignore, use relative stopping criterion; standard = 1E-5
-    ! Remark: do not set depsAbs=depsRel=0!
-    real(DP) :: depsAbs = 1E-5_DP
-
-    ! Relative divergence criterion.  Treat iteration as
-    ! diverged if
-    !   !!defect!! >= DIVREL * !!initial defect!!
-    ! A value of SYS_INFINITY_DP disables the relative divergence check.
-    ! standard = 1E3
-    real(DP) :: ddivRel = 1E6_DP
-
-    ! Absolute divergence criterion. Treat iteration as
-    ! diverged if
-    !   !!defect!! >= DIVREL
-    ! A value of SYS_INFINITY_DP disables the absolute divergence check.
-    ! standard = SYS_INFINITY_DP
-    real(DP) :: ddivAbs = SYS_INFINITY_DP
-
-    ! Minimum number of iterations top perform
-    integer :: nminIterations = 1
-
-    ! Maximum number of iterations top perform
-    integer :: nmaxIterations = 50
-  
-    ! Damping parameter for the Newton iteration
-    real(DP) :: domega = 1.0_DP
-  
     ! How to check residuals.
     ! =0: Check in Euclidian norm (like in old CC).
     ! =2: L2-norm
@@ -327,42 +207,8 @@ module structuresnewton
     ! RHS-vector is treated as zero if max(defect) < drhsZero
     real(DP) :: drhsZero = 1E-90_DP
 
-    ! <!-- ---------- -->
-    ! <!-- STATISTICS -->
-    ! <!-- ---------- -->
-    
-    ! Initial residual in the control space.
-    real(DP) :: dresInit = 0.0_DP
-
-    ! Final residual in the control space.
-    real(DP) :: dresFinal = 0.0_DP
-
-    ! Convergence rate
-    real(DP) :: dconvergenceRate = 0.0_DP
-
-    ! Total number of iterations
-    integer :: niterations = 0
-    
-!    ! Total time for the solver
-!    real(DP) :: dtimeTotal = 0.0_DP
-!    
-!    ! Total time for nonlinear iteration
-!    real(DP) :: dtimeNonlinearSolver = 0.0_DP
-!    
-!    ! Total time for linear space-time solver
-!    real(DP) :: dtimeLinearSolver = 0.0_DP
-!
-!    ! Total time for linear solver in space
-!    real(DP) :: dtimeLinearSolverTimestep = 0.0_DP
-!    
-!    ! Total time for matrix assembly
-!    real(DP) :: dtimeMatrixAssembly = 0.0_DP
-!
-!    ! Total time for defect calculation
-!    real(DP) :: dtimeDefectCalculation = 0.0_DP
-!
-!    ! Total time for matrix assembly
-!    real(DP) :: dtimePostprocessing = 0.0_DP
+    ! Damping parameter
+    real(DP) :: domega = 1.0_DP
 
   end type
   
@@ -375,26 +221,8 @@ module structuresnewton
   ! Basic initialisation of the Newton solver
   public :: newtonit_initBasicParams
   
-  ! Standard convergence check
-  public :: newtonit_checkConvergence
-  
-  ! Check for stopping the iteration
-  public :: newtonit_checkIterationStop
-  
-  ! Standard divergence check
-  public :: newtonit_checkDivergence
-  
   ! Basic initialisation of the Newton solver
   public :: newtonlin_initBasicParams
-  
-  ! Standard convergence check
-  public :: newtonlin_checkConvergence
-  
-  ! Check for stopping the iteration
-  public :: newtonlin_checkIterationStop
-  
-  ! Standard divergence check
-  public :: newtonlin_checkDivergence
   
 contains
 
@@ -402,7 +230,7 @@ contains
 
 !<subroutine>
 
-  subroutine newtonit_initBasicParams (rsolver,ssection,rparamList)
+  subroutine newtonit_initBasicParams (rsolver,riter,ssection,rparamList)
   
 !<description>
   ! Initialises basic solver parameters according to a parameter list.
@@ -420,6 +248,9 @@ contains
 !<output>
   ! Solver structure receiving the parameters
   type(t_newtonParameters), intent(inout) :: rsolver
+  
+  ! Structure receiving iteration control parameters
+  type(t_iterationControl), intent(inout) :: riter
 !</output>
 
 !</subroutine>
@@ -437,27 +268,12 @@ contains
       call sys_halt()
     end if
 
-    ! Get stopping criteria of the nonlinear iteration
-    call parlst_getvalue_double (p_rsection, "depsRel", &
-                                 rsolver%depsRel, rsolver%depsRel)
-
-    call parlst_getvalue_double (p_rsection, "depsAbs", &
-                                 rsolver%depsAbs, rsolver%depsAbs)
-
-    call parlst_getvalue_double (p_rsection, "ddivRel", &
-                                 rsolver%ddivRel, rsolver%ddivRel)
-
-    call parlst_getvalue_double (p_rsection, "ddivAbs", &
-                                 rsolver%ddivAbs, rsolver%ddivAbs)
-
+    ! Read iteration control parameters
+    call itc_getParamsFromParlist(riter,ssection,rparamList)
+    
+    ! Read additional parameters
     call parlst_getvalue_double (p_rsection, "domega", &
                                  rsolver%domega, rsolver%domega)
-
-    call parlst_getvalue_int (p_rsection, "nminIterations", &
-        rsolver%nminIterations, rsolver%nminIterations)
-
-    call parlst_getvalue_int (p_rsection, "nmaxIterations", &
-        rsolver%nmaxIterations, rsolver%nmaxIterations)
 
     call parlst_getvalue_int (p_rsection, "ioutputLevel", &
         rsolver%ioutputLevel, rsolver%ioutputLevel)
@@ -531,133 +347,7 @@ contains
 
 !<subroutine>
 
-  logical function newtonit_checkConvergence (rsolver)
-  
-!<description>
-  ! Standard convergence check.
-!</description>
-  
-!<result>
-  ! Returns TRUE if the iteration is converged.
-!</result>
-  
-!<inputoutput>
-  ! Solver structure receiving the parameters.
-  ! If convergence is reached, iresult is set.
-  type(t_newtonParameters), intent(inout) :: rsolver
-!</inputoutput>
-
-!</subroutine>
-
-    newtonit_checkConvergence = .false.
-    
-    ! Check the residual.
-    if (rsolver%niterations .ge. rsolver%nminIterations) then
-      ! Absolute residual
-      if (rsolver%depsAbs .gt. 0.0_DP) then
-        if (rsolver%dresFinal .le. rsolver%depsAbs) then
-          rsolver%iresult = 0
-          newtonit_checkConvergence = .true.
-          return
-        end if
-      end if
-
-      ! Relative residual
-      if (rsolver%depsRel .gt. 0.0_DP) then
-        if (rsolver%dresFinal .le. rsolver%depsRel * rsolver%dresInit) then
-          rsolver%iresult = 0
-          newtonit_checkConvergence = .true.
-          return
-        end if
-      end if
-
-    end if
-
-  end function
-
-  ! ***************************************************************************
-
-!<subroutine>
-
-  logical function newtonit_checkIterationStop (rsolver,iite)
-  
-!<description>
-  ! Checks whether or not to stop the iteration.
-!</description>
-  
-!<result>
-  ! Returns TRUE if the iteration should be stopped.
-!</result>
-  
-!<input>
-  ! Current iteration counter
-  integer, intent(in) :: iite
-!</input>
-
-!<inputoutput>
-  ! Solver structure receiving the parameters.
-  ! If convergence is reached, iresult is set.
-  type(t_newtonParameters), intent(inout) :: rsolver
-!</inputoutput>
-
-!</subroutine>
-
-    newtonit_checkIterationStop = .false.
-    
-    if (rsolver%niterations .ge. rsolver%nmaxIterations) then
-      ! Maximum number of iterations reached.
-      rsolver%iresult = -1
-      newtonit_checkIterationStop = .true.
-      return
-    end if
-
-  end function
-
-  ! ***************************************************************************
-
-!<subroutine>
-
-  logical function newtonit_checkDivergence (rsolver)
-  
-!<description>
-  ! Standard convergence check.
-!</description>
-  
-!<result>
-  ! Returns TRUE if the iteration is converged.
-!</result>
-  
-!<inputoutput>
-  ! Solver structure receiving the parameters.
-  ! If divergence is reached, iresult is set.
-  type(t_newtonParameters), intent(inout) :: rsolver
-!</inputoutput>
-
-!</subroutine>
-
-    newtonit_checkDivergence = .false.
-
-    ! Absolute residual
-    if (.not. (rsolver%dresFinal .lt. rsolver%ddivAbs)) then
-      rsolver%iresult = 1
-      newtonit_checkDivergence = .true.
-      return
-    end if
-    
-    ! Relative residual
-    if (.not. (rsolver%dresFinal .le. rsolver%ddivRel * rsolver%dresInit)) then
-      rsolver%iresult = 1
-      newtonit_checkDivergence = .true.
-      return
-    end if
-
-  end function
-
-  ! ***************************************************************************
-
-!<subroutine>
-
-  subroutine newtonlin_initBasicParams (rsolver,ssection,rparamList)
+  subroutine newtonlin_initBasicParams (rsolver,riter,ssection,rparamList)
   
 !<description>
   ! Initialises basic solver parameters according to a parameter list.
@@ -675,6 +365,9 @@ contains
 !<output>
   ! Solver structure receiving the parameters
   type(t_newtonPrecParameters), intent(inout) :: rsolver
+
+  ! Structure receiving iteration control parameters
+  type(t_iterationControl), intent(inout) :: riter
 !</output>
 
 !</subroutine>
@@ -691,27 +384,8 @@ contains
       call sys_halt()
     end if
 
-    ! Get stopping criteria of the nonlinear iteration
-    call parlst_getvalue_double (p_rsection, "depsRel", &
-                                 rsolver%depsRel, rsolver%depsRel)
-
-    call parlst_getvalue_double (p_rsection, "depsAbs", &
-                                 rsolver%depsAbs, rsolver%depsAbs)
-
-    call parlst_getvalue_double (p_rsection, "ddivRel", &
-                                 rsolver%ddivRel, rsolver%ddivRel)
-
-    call parlst_getvalue_double (p_rsection, "ddivAbs", &
-                                 rsolver%ddivAbs, rsolver%ddivAbs)
-
-    call parlst_getvalue_double (p_rsection, "domega", &
-                                 rsolver%domega, rsolver%domega)
-
-    call parlst_getvalue_int (p_rsection, "nminIterations", &
-        rsolver%nminIterations, rsolver%nminIterations)
-
-    call parlst_getvalue_int (p_rsection, "nmaxIterations", &
-        rsolver%nmaxIterations, rsolver%nmaxIterations)
+    ! Read iteration control parameters
+    call itc_getParamsFromParlist(riter,ssection,rparamList)
 
     call parlst_getvalue_int (p_rsection, "ioutputLevel", &
         rsolver%ioutputLevel, rsolver%ioutputLevel)
@@ -719,127 +393,9 @@ contains
     call parlst_getvalue_int (p_rsection, "iresnorm", &
         rsolver%iresnorm, rsolver%iresnorm)
 
+    call parlst_getvalue_double (p_rsection, "domega", &
+                                 rsolver%domega, rsolver%domega)
+
   end subroutine
-
-  ! ***************************************************************************
-
-!<subroutine>
-
-  logical function newtonlin_checkConvergence (rsolver)
-  
-!<description>
-  ! Standard convergence check.
-!</description>
-  
-!<result>
-  ! Returns TRUE if the iteration is converged.
-!</result>
-  
-!<inputoutput>
-  ! Solver structure receiving the parameters.
-  ! If convergence is reached, iresult is set.
-  type(t_newtonPrecParameters), intent(inout) :: rsolver
-!</inputoutput>
-
-!</subroutine>
-
-    newtonlin_checkConvergence = .false.
-    
-    ! Check the residual.
-    if (rsolver%niterations .ge. rsolver%nminIterations) then
-      ! Absolute residual
-      if (rsolver%depsAbs .gt. 0.0_DP) then
-        if (rsolver%dresFinal .le. rsolver%depsAbs) then
-          rsolver%iresult = 0
-          newtonlin_checkConvergence = .true.
-          return
-        end if
-      end if
-
-      ! Relative residual
-      if (rsolver%depsRel .gt. 0.0_DP) then
-        if (rsolver%dresFinal .le. rsolver%depsRel * rsolver%dresInit) then
-          rsolver%iresult = 0
-          newtonlin_checkConvergence = .true.
-          return
-        end if
-      end if
-      
-    end if
-
-  end function
-
-  ! ***************************************************************************
-
-!<subroutine>
-
-  logical function newtonlin_checkIterationStop (rsolver)
-  
-!<description>
-  ! Checks whether or not to stop the iteration.
-!</description>
-  
-!<result>
-  ! Returns TRUE if the iteration should be stopped.
-!</result>
-  
-!<inputoutput>
-  ! Solver structure receiving the parameters.
-  ! If convergence is reached, iresult is set.
-  type(t_newtonPrecParameters), intent(inout) :: rsolver
-!</inputoutput>
-
-!</subroutine>
-
-    newtonlin_checkIterationStop = .false.
-    
-    if (rsolver%niterations .ge. rsolver%nmaxIterations) then
-      ! Maximum number of iterations reached.
-      rsolver%iresult = -1
-      newtonlin_checkIterationStop = .true.
-      return
-    end if
-
-  end function
-
-  ! ***************************************************************************
-
-!<subroutine>
-
-  logical function newtonlin_checkDivergence (rsolver)
-  
-!<description>
-  ! Standard convergence check.
-!</description>
-  
-!<result>
-  ! Returns TRUE if the iteration is converged.
-!</result>
-  
-!<inputoutput>
-  ! Solver structure receiving the parameters.
-  ! If divergence is reached, iresult is set.
-  type(t_newtonPrecParameters), intent(inout) :: rsolver
-!</inputoutput>
-
-!</subroutine>
-
-    newtonlin_checkDivergence = .false.
-
-    ! Absolute residual
-    if (rsolver%dresFinal .ge. rsolver%ddivAbs) then
-      rsolver%iresult = 1
-      newtonlin_checkDivergence = .true.
-      return
-    end if
-    
-    ! Relative residual
-    if (rsolver%dresFinal .ge. rsolver%ddivRel * rsolver%dresInit) then
-      rsolver%iresult = 1
-      newtonlin_checkDivergence = .true.
-      return
-    end if
-
-  end function
 
 end module

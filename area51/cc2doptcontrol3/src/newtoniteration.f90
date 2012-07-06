@@ -15,6 +15,7 @@ module newtoniteration
   use genoutput
   use paramlist
   use statistics
+  use iterationcontrol
   
   use spatialdiscretisation
   use timediscretisation
@@ -108,6 +109,9 @@ module newtoniteration
 
     ! General newton parameters
     type(t_newtonParameters) :: rnewtonParams
+    
+    ! Iteration control parameters
+    type(t_iterationControl) :: riter
 
     ! Parameters of the OptFlow solver
     type(t_settings_optflow), pointer :: p_rsettingsSolver => null()
@@ -270,7 +274,7 @@ contains
     rsolver%p_rsettingsSolver => rsettingsSolver
 
     ! Initialise basic parameters
-    call newtonit_initBasicParams (rsolver%rnewtonParams,ssection,rparamList)
+    call newtonit_initBasicParams (rsolver%rnewtonParams,rsolver%riter,ssection,rparamList)
 
     ! Get the sections with the parameters for the nonlinear / linear
     ! solver in space
@@ -284,7 +288,7 @@ contains
         "ssectionNonlinSolverSpace", ssolverNonlin, "CC-NONLINEARSOLVER",bdequote=.true.)
 
     call parlst_getvalue_string (rparamList, ssection, &
-        "ssectionLinSolverSpace", ssolverLin, "SPACETIME-LINSOLVER",bdequote=.true.)
+        "ssectionLinSolverSpace", ssolverLin, "CC-LINEARSOLVER",bdequote=.true.)
         
     call parlst_getvalue_string (rparamList, ssection, &
         "ssectionLinSlvSpaceForw", ssolverSpaceForward, "CC-LINEARSOLVER",bdequote=.true.)
@@ -686,8 +690,8 @@ contains
       
       ! Do not gain too much.
       depsAbs = max(depsAbs,&
-          max(dresInit * rsolver%rnewtonParams%depsrel * radNewtonParams%dinexactNewtonEpsRel,&
-              rsolver%rnewtonParams%depsabs * radNewtonParams%dinexactNewtonEpsRel))
+          max(dresInit * rsolver%riter%dtolrel * radNewtonParams%dinexactNewtonEpsRel,&
+              rsolver%riter%dtolabs * radNewtonParams%dinexactNewtonEpsRel))
       
       if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
         call output_line ("Adaptive Newton: New stopping criterion. ||res|| < "//&
@@ -737,7 +741,7 @@ contains
     type(t_kktsystemDirDeriv), pointer :: p_rsolutionDirDeriv
     type(t_timer) :: rtotalTime
     type(t_newtonlinSolverStat) :: rstatisticsLinSol
-    real(DP) :: delapsedReal
+    real(DP) :: delapsedReal, dres
     type(t_newtonitSolverStat) :: rlocalStat
 
     ! Measure the total computational time
@@ -756,9 +760,7 @@ contains
     ! Prepare a structure that encapsules the directional derivative.
     
     ! Apply the Newton iteration
-    rsolver%rnewtonParams%niterations = 0
-    rsolver%rnewtonParams%dresInit = 0.0_DP
-    rsolver%rnewtonParams%dresFinal = 0.0_DP
+    call itc_initIteration(rsolver%riter)
     
     do while (.true.)
     
@@ -784,40 +786,32 @@ contains
       output_iautoOutputIndent = output_iautoOutputIndent + 2
       
       call newtonit_getResidual (rsolver,p_rsolution,p_rdescentDir,&
-          rsolver%rnewtonParams%dresFinal,rsolver%rnewtonParams%iresnorm,rlocalStat)
+          dres,rsolver%rnewtonParams%iresnorm,rlocalStat)
       
       output_iautoOutputIndent = output_iautoOutputIndent - 2
       
       call newtonit_sumStatistics(rlocalStat,rstatistics,.false.)
       call stat_addTimers (rlocalStat%rtotalTime,rstatistics%rtimeDefect)
       
-      if (rsolver%rnewtonParams%niterations .eq. 0) then
+      if (rsolver%riter%niterations .eq. 0) then
         ! Remember the initial residual
-        rsolver%rnewtonParams%dresInit = rsolver%rnewtonParams%dresFinal
+        call itc_initResidual(rsolver%riter,dres)
       end if
 
       if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
         call output_line ("Space-time Newton: Iteration "// &
-            trim(sys_siL(rsolver%rnewtonParams%niterations,10))// &
+            trim(sys_siL(rsolver%riter%niterations,10))// &
             ", ||res(u)|| = "// &
-            trim(sys_sdEL(rsolver%rnewtonParams%dresFinal,10)))
+            trim(sys_sdEL(rsolver%riter%dresFinal,10)))
       end if
+
+      ! Push the residual, increase the iteration counter
+      call itc_pushResidual(rsolver%riter,dres)
 
       ! -------------------------------------------------------------
       ! Check for convergence
       ! -------------------------------------------------------------
-      if (newtonit_checkConvergence (rsolver%rnewtonParams)) exit
-      
-      ! -------------------------------------------------------------
-      ! Check for divergence
-      ! -------------------------------------------------------------
-      if (newtonit_checkDivergence (rsolver%rnewtonParams)) exit
-      
-      ! -------------------------------------------------------------
-      ! Check other stopping criteria
-      ! -------------------------------------------------------------
-      if (newtonit_checkIterationStop (&
-          rsolver%rnewtonParams,rsolver%rnewtonParams%niterations)) exit
+      if (rsolver%riter%cstatus .ne. ITC_STATUS_CONTINUE) exit
       
       ! -------------------------------------------------------------
       ! Postprocessing.
@@ -836,7 +830,7 @@ contains
             rsolver%p_rsettingsSolver%rspaceTimeHierPrimal%p_rtimeHierarchy%nlevels,&
             p_rsolution%p_rprimalSol,p_rsolution%p_rdualSol,p_rsolution%p_rcontrol,&
             rsolver%p_rsettingsSolver,rsolver%cpostprocessIterates,&
-            rsolver%rnewtonParams%niterations)
+            rsolver%riter%niterations-1)
         
         call stat_stopTimer (rstatistics%rtimePostprocessing)
         
@@ -849,7 +843,7 @@ contains
       if (rsolver%rnewtonParams%ctypeIteration .eq. 3) then
         call newtonit_adNewton_setEps (&
             rsolver,rsolver%rnewtonParams%radaptiveNewton,&
-            rsolver%rnewtonParams%dresInit,rsolver%rnewtonParams%dresFinal)
+            rsolver%riter%dresInitial,rsolver%riter%dresFinal)
       end if
     
       ! -------------------------------------------------------------
@@ -910,9 +904,6 @@ contains
       ! -------------------------------------------------------------
       ! Proceed with the next iteration
       ! -------------------------------------------------------------
-      ! Next iteration
-      rsolver%rnewtonParams%niterations = rsolver%rnewtonParams%niterations + 1
-    
       if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
         call output_separator (OU_SEP_MINUS)
         call output_line ("Space-time Newton: Time for the linear solver = "//&
@@ -932,31 +923,14 @@ contains
     call stat_stopTimer(rtotalTime)
     call stat_addTimers(rtotalTime,rstatistics%rtotalTime)
     
-    rstatistics%niterations = rstatistics%niterations + rsolver%rnewtonParams%niterations
+    rstatistics%niterations = rstatistics%niterations + rsolver%riter%niterations
     
     ! Statistics
     if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
       call output_lbrk()
       call output_line ("Space-time Newton: Statistics.")
       call output_lbrk()
-      call output_line ("#Nonlinear Iterations   : "//&
-            trim(sys_siL(rsolver%rnewtonParams%niterations,10)) )
-      call output_line ("#Iterations Precond.    : "//&
-            trim(sys_siL(rstatistics%rnewtonlinSolverStat%niterations,10)) )
-      call output_line ("!!INITIAL RES!!         : "//&
-            trim(sys_sdEL(rsolver%rnewtonParams%dresInit,15)) )
-      call output_line ("!!RES!!                 : "//&
-            trim(sys_sdEL(rsolver%rnewtonParams%dresFinal,15)) )
-      if (rsolver%rnewtonParams%dresInit .gt. &
-          rsolver%rnewtonParams%drhsZero) then
-        call output_line ("!!RES!!/!!INITIAL RES!! : "//&
-          trim(sys_sdEL(rsolver%rnewtonParams%dresFinal / &
-                        rsolver%rnewtonParams%dresInit,15)) )
-      else
-        call output_line ("!!RES!!/!!INITIAL RES!! : "//&
-              trim(sys_sdEL(0.0_DP,15)) )
-      end if
-
+      call itc_printStatistics(rsolver%riter)
     end if
   end subroutine
 
