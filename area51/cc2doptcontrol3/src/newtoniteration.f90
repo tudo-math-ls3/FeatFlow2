@@ -802,7 +802,7 @@ contains
         call output_line ("Space-time Newton: Iteration "// &
             trim(sys_siL(rsolver%riter%niterations,10))// &
             ", ||res(u)|| = "// &
-            trim(sys_sdEL(rsolver%riter%dresFinal,10)))
+            trim(sys_sdEL(dres,10)))
       end if
 
       ! Push the residual, increase the iteration counter
