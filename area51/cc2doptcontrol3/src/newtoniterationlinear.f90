@@ -2292,9 +2292,9 @@ contains
     rlinsolParam%riter%dtolAbs = depsAbs
     
     if (depsAbs .eq. 0.0_DP) then
-      rlinsolParam%riter%riter%ctolMode = ITC_STOP_MODE_REL
+      rlinsolParam%riter%ctolMode = ITC_STOP_MODE_REL
     else
-      rlinsolParam%riter%riter%ctolMode = ITC_STOP_MODE_ABS
+      rlinsolParam%riter%ctolMode = ITC_STOP_MODE_ABS
     end if
     
     ! Special settings
