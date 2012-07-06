@@ -2306,6 +2306,12 @@ contains
         ! criteria in the coarse grid solver.
         rlinsolParam%p_rsubnodeMultigrid%p_RsubSolvers(1)%riter%dtolRel = depsRel
         rlinsolParam%p_rsubnodeMultigrid%p_RsubSolvers(1)%riter%dtolAbs = depsAbs
+
+        if (depsAbs .eq. 0.0_DP) then
+          rlinsolParam%p_rsubnodeMultigrid%p_RsubSolvers(1)%riter%%ctolMode = ITC_STOP_MODE_REL
+        else
+          rlinsolParam%p_rsubnodeMultigrid%p_RsubSolvers(1)%riter%%ctolMode = ITC_STOP_MODE_ABS
+        end if
       end if
     
     end select
