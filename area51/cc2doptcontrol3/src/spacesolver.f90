@@ -161,6 +161,9 @@ module spacesolver
     ! Hierarchy of system matrices
     type(t_matrixBlock), dimension(:), pointer :: p_Rmatrices => null()
     
+    ! Hierarchy of assembly flags.
+    type(t_assemblyFlags), dimension(:), pointer :: p_RassemblyFlags => null()
+    
     ! Temporary assembly data
     type(t_assemblyTempDataSpace) :: rtempData
     
@@ -339,8 +342,9 @@ contains
     
     ! Allocate temporary vectors / matrices for all space levels.
     allocate(rsolver%p_Rmatrices(rsolver%ispaceLevel))
+    allocate(rsolver%p_RassemblyFlags(rsolver%ispaceLevel))
     
-    do ilev = rsolver%p_rlssHierarchy%nlmin,rsolver%ispaceLevel
+    do ilev = 1,rsolver%ispaceLevel
     
       ! Initialise a temporary vector for the nonlinearity
       select case (rsolver%copType)
@@ -358,6 +362,52 @@ contains
         call sys_halt()
       end select
       
+      ! Take a look at the solver type to configure the assembly flags.
+      select case (rsolver%p_rlssHierarchy%p_RlinearSolvers(ilev)%isolverType)
+      
+      ! -------------------------------
+      ! UMFPACK
+      ! -------------------------------
+      case (LSS_LINSOL_UMFPACK)
+      
+        rsolver%p_RassemblyFlags(ilev)%bumfpackSolver = .true.
+
+      ! -------------------------------
+      ! MULTIGRID
+      ! -------------------------------
+      case (LSS_LINSOL_MG)
+      
+        ! Check if UMFPACK is the coarse grid solver.
+        if ((ilev .eq. 1) .and. &
+            (rsolver%p_rlssHierarchy%p_RlinearSolvers(ilev)%icoarseGridSolverType .eq. 0)) then
+          rsolver%p_RassemblyFlags(ilev)%bumfpackSolver = .true.
+        end if
+      
+      end select
+
+      ! Take a look at the solver type to configure the assembly flags.
+      select case (rsolver%p_rlssHierarchy2%p_RlinearSolvers(ilev)%isolverType)
+      
+      ! -------------------------------
+      ! UMFPACK
+      ! -------------------------------
+      case (LSS_LINSOL_UMFPACK)
+      
+        rsolver%p_RassemblyFlags(ilev)%bumfpackSolver = .true.
+
+      ! -------------------------------
+      ! MULTIGRID
+      ! -------------------------------
+      case (LSS_LINSOL_MG)
+      
+        ! Check if UMFPACK is the coarse grid solver.
+        if ((ilev .eq. 1) .and. &
+            (rsolver%p_rlssHierarchy2%p_RlinearSolvers(ilev)%icoarseGridSolverType .eq. 0)) then
+          rsolver%p_RassemblyFlags(ilev)%bumfpackSolver = .true.
+        end if
+      
+      end select
+      
       ! Get the corresponding operator assembly structure and
       ! initialise a system matrix
       call stoh_getOpAsm_slvtlv (&
@@ -367,7 +417,8 @@ contains
           roperatorAsmHier%ranalyticData%p_rphysics,&
           roperatorAsmHier%ranalyticData%p_rsettingsOptControl,&
           roperatorAsmHier%ranalyticData%p_rsettingsSpaceDiscr,&
-          p_rdiscretisation,roperatorAsm%p_rasmTemplates)
+          p_rdiscretisation,roperatorAsm%p_rasmTemplates,&
+          rsolver%p_RassemblyFlags(ilev))
           
       ! Bind discrete boundary conditions to the matrix
       call sbch_getDiscreteBC (rsolver%p_roptcBDCSpaceHierarchy,ilev,p_rdiscreteBC)
@@ -396,14 +447,14 @@ contains
               roperatorAsmHier%ranalyticData%p_rphysics,&
               roperatorAsmHier%ranalyticData%p_rsettingsOptControl,&
               roperatorAsmHier%ranalyticData%p_rsettingsSpaceDiscr,&
-              ilev,roperatorAsmHier)
+              ilev,roperatorAsmHier,rsolver%p_RassemblyFlags(ilev))
 
         case (OPTP_DUAL,OPTP_DUALLIN)
           call smva_allocTempData (rsolver%rtempData,&
               roperatorAsmHier%ranalyticData%p_rphysics,&
               roperatorAsmHier%ranalyticData%p_rsettingsOptControl,&
               roperatorAsmHier%ranalyticData%p_rsettingsSpaceDiscr,&
-              ilev,roperatorAsmHier)
+              ilev,roperatorAsmHier,rsolver%p_RassemblyFlags(ilev))
         end select
 
         ! Initialise the structures of the associated linear subsolver
@@ -696,7 +747,7 @@ contains
             rsolver%p_roperatorAsmHier,&
             rprimalSol,isollevelSpace,rsolver%itimelevel,bfull,&
             rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(ilev),&
-            rsolver%rtempData,iprevlv)
+            rsolver%p_RassemblyFlags(ilev),rsolver%rtempData,iprevlv)
             
         iprevlv = ilev
       
@@ -802,7 +853,7 @@ contains
             rsolver%p_roperatorAsmHier,&
             rprimalSol,isollevelSpace,rsolver%itimelevel,bfull,&
             rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(ilev),&
-            rsolver%rtempData,iprevlv)
+            rsolver%p_RassemblyFlags(ilev),rsolver%rtempData,iprevlv)
             
         iprevlv = ilev
       
@@ -905,7 +956,7 @@ contains
         call smva_assembleMatrix_dual (rsolver%p_Rmatrices(ilev),ilev,idofTime,&
             rsolver%p_roperatorAsmHier,rprimalSol,isollevelSpace,rsolver%itimelevel,&
             rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(ilev),&
-            rsolver%rtempData,iprevlv)
+            rsolver%p_RassemblyFlags(ilev),rsolver%rtempData,iprevlv)
             
         iprevlv = ilev
       
@@ -1013,7 +1064,7 @@ contains
         call smva_assembleMatrix_dual (rsolver%p_Rmatrices(ilev),ilev,idofTime,&
             rsolver%p_roperatorAsmHier,rprimalSol,isollevelSpace,rsolver%itimelevel,&
             rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(ilev),&
-            rsolver%rtempData,iprevlv)
+            rsolver%p_RassemblyFlags(ilev),rsolver%rtempData,iprevlv)
             
         iprevlv = ilev
       
@@ -1114,6 +1165,7 @@ contains
     end do
 
     deallocate(rsolver%p_Rmatrices)
+    deallocate(rsolver%p_RassemblyFlags)
     
     ! Deallocate temporary data
     call lsysbl_releaseVector (rsolver%p_rd2)

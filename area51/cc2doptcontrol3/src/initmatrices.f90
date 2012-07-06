@@ -49,6 +49,7 @@ module initmatrices
   use linearsystemscalar
   use linearsystemblock
   use convection
+  use matrixmodification
 
   use fespacehierarchybase
   use fespacehierarchy
@@ -350,7 +351,16 @@ contains
 
       call lsyssc_duplicateMatrix (rstaticAsmTemplates%rmatrixTemplateFEMPressure,&
           rstaticAsmTemplates%rmatrixMassPressure,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-      call lsyssc_allocEmptyMatrix (rstaticAsmTemplates%rmatrixMassPressure,LSYSSC_SETM_UNDEFINED)
+      call lsyssc_allocEmptyMatrix (rstaticAsmTemplates%rmatrixMassPressure,&
+          LSYSSC_SETM_UNDEFINED)
+
+      ! Mass matrix with extended structure for pure Dirichlet problems
+      ! and UMFPACK.
+      call lsyssc_duplicateMatrix (rstaticAsmTemplates%rmatrixTemplateFEMPressure,&
+          rstaticAsmTemplates%rmatrixMassPressureExtStruc,LSYSSC_DUP_COPY,LSYSSC_DUP_REMOVE)
+      call mmod_expandToFullRow (rstaticAsmTemplates%rmatrixMassPressureExtStruc,1)
+      call lsyssc_allocEmptyMatrix (rstaticAsmTemplates%rmatrixMassPressureExtStruc,&
+          LSYSSC_SETM_UNDEFINED)
 
     ! ---------------------------------------------------------------
     ! Heat equation
@@ -421,6 +431,10 @@ contains
       call lsyssc_releaseMatrix (rstaticAsmTemplates%rmatrixMass)
     if (rstaticAsmTemplates%rmatrixMassPressure%NEQ .ne. 0) &
       call lsyssc_releaseMatrix (rstaticAsmTemplates%rmatrixMassPressure)
+    if (rstaticAsmTemplates%rmatrixMassPressureExtStruc%NEQ .ne. 0) &
+      call lsyssc_releaseMatrix (rstaticAsmTemplates%rmatrixMassPressureExtStruc)
+    if (rstaticAsmTemplates%rmatrixMassPressureLumped%NEQ .ne. 0) &
+      call lsyssc_releaseMatrix (rstaticAsmTemplates%rmatrixMassPressureLumped)
 
     ! Release Stokes, B1, B2,... matrices
     if (rstaticAsmTemplates%rmatrixD2T%NEQ .ne. 0) &
@@ -530,6 +544,15 @@ contains
 
       call stdop_assembleSimpleMatrix (rstaticAsmTemplates%rmatrixMassPressure,&
           DER_FUNC,DER_FUNC,1.0_DP,.true.,rstaticAsmTemplates%rcubatureInfoMassPressure)
+
+      call stdop_assembleSimpleMatrix (rstaticAsmTemplates%rmatrixMassPressureExtStruc,&
+          DER_FUNC,DER_FUNC,1.0_DP,.true.,rstaticAsmTemplates%rcubatureInfoMassPressure)
+          
+      ! Create a lumped mass matrix.
+      call lsyssc_duplicateMatrix (rstaticAsmTemplates%rmatrixMassPressure,&
+          rstaticAsmTemplates%rmatrixMassPressureLumped,LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+      call lsyssc_lumpMatrixScalar (rstaticAsmTemplates%rmatrixMassPressureLumped,&
+          LSYSSC_LUMP_DIAG,.true.)
           
     ! ---------------------------------------------------------------
     ! Heat equation

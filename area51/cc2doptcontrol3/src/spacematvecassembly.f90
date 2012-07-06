@@ -26,6 +26,7 @@ module spacematvecassembly
   use matrixfilters
   use multilevelprojection
   use statistics
+  use matrixmodification
   
   use scalarpde
   use linearformevaluation
@@ -98,6 +99,21 @@ module spacematvecassembly
 
 public :: t_assemblyTempDataSpace
 
+!<typeblock>
+  
+  ! This type encapsules a couple of flags that influence the way,
+  ! matrices are assembled.
+  type t_assemblyFlags
+  
+    ! Set to TRUE if the matrix is passed to an UMFPACK solver.
+    logical :: bumfpackSolver = .false.
+  
+  end type
+
+!</typeblock>
+
+  public :: t_assemblyFlags
+
 !</types>
 
   ! Reserves space for the system matrix
@@ -152,7 +168,7 @@ contains
 !<subroutine>
 
   subroutine smva_allocSystemMatrix (rmatrix,rphysics,roptcontrol,rsettingsDiscr,&
-      rspatialDiscr,rasmTemplates)
+      rspatialDiscr,rasmTemplates,rasmFlags)
 
 !<description>
   ! Allocates temporary data for the assembly of an operator
@@ -173,6 +189,9 @@ contains
   
   ! Templates for the assembly
   type(t_staticSpaceAsmTemplates), intent(in) :: rasmTemplates
+  
+  ! Assembly flags
+  type(t_assemblyFlags), intent(in) :: rasmFlags
 !</input>
 
 !<output>
@@ -242,10 +261,20 @@ contains
       
       ! ---------------------------------------------------
       ! Pressure block
-      call lsyssc_duplicateMatrix (&
-          rasmTemplates%rmatrixTemplateFEMPressure,&
-          rmatrix%RmatrixBlock(3,3),&
-          LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+      if (.not. rasmFlags%bumfpackSolver) then
+        call lsyssc_duplicateMatrix (&
+            rasmTemplates%rmatrixTemplateFEMPressure,&
+            rmatrix%RmatrixBlock(3,3),&
+            LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+      else
+        ! Extended structure. Maybe we have pure Dirichlet boundary
+        ! conditions and have to impose a special integral-mean condition
+        ! into this matrix...
+        call lsyssc_duplicateMatrix (&
+            rasmTemplates%rmatrixMassPressureExtStruc,&
+            rmatrix%RmatrixBlock(3,3),&
+            LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+      end if
          
     ! *************************************************************
     ! Heat equation
@@ -277,7 +306,7 @@ contains
 !<subroutine>
 
   subroutine smva_allocTempData (rtempData,rphysics,roptcontrol,rsettingsDiscr,&
-      nlmax,roperatorAsmHier)
+      nlmax,roperatorAsmHier,rasmFlags)
 
 !<description>
   ! Allocates temporary data for the assembly of an operator in space
@@ -298,6 +327,9 @@ contains
   
   ! Hierarchy of space-time operators.
   type(t_spacetimeOpAsmHierarchy), intent(in) :: roperatorAsmHier
+
+  ! Assembly flags
+  type(t_assemblyFlags), intent(in) :: rasmFlags
 !</input>
 
 
@@ -328,7 +360,7 @@ contains
       call smva_allocSystemMatrix (rtempData%p_Rmatrices(i),&
           rphysics,roptcontrol,rsettingsDiscr,&
           roperatorAsmHier%p_rfeHierarchyPrimal%p_rfeSpaces(i)%p_rdiscretisation,&
-          roperatorAsmHier%p_rstaticSpaceAsmHier%p_RasmTemplList(i))
+          roperatorAsmHier%p_rstaticSpaceAsmHier%p_RasmTemplList(i),rasmFlags)
           
       ! Theoretically, we also need temp matrices for the dual
       ! space here, but we skip that for now...
@@ -510,7 +542,7 @@ contains
 !<subroutine>
 
   subroutine smva_apply_primal (rdest,ispacelevel,itimelevel,idofTime,&
-      roperatorAsmHier,rprimalSol,rtempData)
+      roperatorAsmHier,rprimalSol,rasmFlags,rtempData)
   
 !<description>
   ! Applies the operator of the primal equation at DOF idofTime in time
@@ -534,6 +566,9 @@ contains
 
   ! Number of the DOF in time which should be calculated into rdest.
   integer, intent(in) :: idofTime
+
+  ! Assembly flags
+  type(t_assemblyFlags), intent(in) :: rasmFlags
 !</input>
 
 !<inputoutput>
@@ -723,8 +758,8 @@ contains
 !<subroutine>
 
   subroutine smva_getDef_primal (rdest,ispacelevel,itimelevel,idofTime,&
-      roperatorAsmHier,rprimalSol,rcontrol,roptcBDCSpace,rtempData,csolgeneration,&
-      rtimerhs)
+      roperatorAsmHier,rprimalSol,rcontrol,roptcBDCSpace,&
+      rtempData,csolgeneration,rtimerhs)
   
 !<description>
   ! Calculates the defect in timestep idofTime of the nonlinear primaö equation
@@ -1010,8 +1045,8 @@ contains
 !<subroutine>
 
   subroutine smva_getDef_dual (rdest,ispacelevel,itimelevel,idofTime,&
-      roperatorAsmHier,rprimalSol,rdualSol,roptcBDCSpace,rtempData,csolgeneration,&
-      rtimerhs)
+      roperatorAsmHier,rprimalSol,rdualSol,roptcBDCSpace,&
+      rtempData,csolgeneration,rtimerhs)
   
 !<description>
   ! Calculates the defect in timestep idofTime of the nonlinear dual equation
@@ -2223,7 +2258,7 @@ contains
 
   ! Time-level corresponding to the solution
   integer, intent(in) :: isollevelTime
-  
+
   ! Defines the 'previously' calculated space level.
   ! Must be set =0 for the first call. For every subsequent call, 
   ! with ispacelevel monotoneously decreasing,
@@ -2349,7 +2384,7 @@ contains
 
   ! Time-level corresponding to the solution
   integer, intent(in) :: isollevelTime
-  
+
   ! TRUE activates the full linearised operator (Newton).
   ! FALSE activates a partially linearised operator without the Newton part.
   logical, intent(in) :: bfull
@@ -5718,7 +5753,7 @@ contains
 
   subroutine smva_assembleMatrix_primal (rmatrix,ispacelevel,idofTime,&
       roperatorAsmHier,rprimalSol,isollevelspace,isolleveltime,bfull,&
-      roptcBDCSpace,rtempdata,ipreviousSpaceLv)
+      roptcBDCSpace,rasmFlags,rtempdata,ipreviousSpaceLv)
 
 !<description>
   ! Assembles a linearised operator A'(.) which can be used for linear
@@ -5752,6 +5787,9 @@ contains
   ! FALSE activates a partially linearised operator without the Newton part.
   logical, intent(in) :: bfull
 
+  ! Assembly flags
+  type(t_assemblyFlags), intent(in) :: rasmFlags
+
   ! Defines the 'previously' calculated space level.
   ! Must be set =0 for the first call. For every subsequent call, 
   ! with ispacelevel monotoneously decreasing,
@@ -5778,6 +5816,7 @@ contains
     type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
     type(t_spacetimeOperatorAsm) :: roperatorAsm
     type(t_matrixBlock), pointer :: p_rmatrix
+    integer, dimension(1) :: Irows
     
     ! Get the corresponding operator assembly structure
     call stoh_getOpAsm_slvtlv (&
@@ -5884,6 +5923,22 @@ contains
               rprimalSol,isollevelSpace,isollevelTime,1.0_DP,bfull,&
               rtempdata,ipreviousSpaceLv)
 
+          ! -----------------------------------------------
+          ! Implement boundary conditions
+          ! -----------------------------------------------
+
+          ! If this is an UMFPACK solver, and if this is the Stokes/Navier--Stokes
+          ! equations and pure Dirichlet boundary conditions, implement
+          ! the lumped mass matrix in the first row.
+          if (rasmFlags%bumfpackSolver .and. &
+              (roptcBDCSpace%rneumannBoundary%nregions .eq. 0)) then
+            Irows = (/1/)
+            call mmod_replaceLinesByZero (rmatrix%RmatrixBlock(3,1),Irows)
+            call mmod_replaceLinesByZero (rmatrix%RmatrixBlock(3,2),Irows)
+            call mmod_replaceLineByLumpedMass (rmatrix%RmatrixBlock(3,3),1,&
+                roperatorAsm%p_rasmTemplates%rmatrixMassPressureLumped)
+          end if
+        
         end select ! Equation
 
         ! -----------------------------------------------
@@ -5891,7 +5946,7 @@ contains
         ! -----------------------------------------------
         
         call matfil_discreteBC (rmatrix,roptcBDCSpace%rdiscreteBC)
-      
+        
       end select ! Timestep sub-scheme
       
     end select ! Timestep scheme
@@ -5904,7 +5959,7 @@ contains
 
   subroutine smva_assembleMatrix_dual (rmatrix,ispacelevel,idofTime,&
       roperatorAsmHier,rprimalSol,isollevelspace,isolleveltime,&
-      roptcBDCSpace,rtempdata,ipreviousSpaceLv)
+      roptcBDCSpace,rasmFlags,rtempdata,ipreviousSpaceLv)
 
 !<description>
   ! Assembles a linearised operator A'(.) which can be used for linear
@@ -5934,6 +5989,9 @@ contains
   ! Number of the DOF in time which should be calculated into rmatrix.
   integer, intent(in) :: idofTime
 
+  ! Assembly flags
+  type(t_assemblyFlags), intent(in) :: rasmFlags
+
   ! Defines the 'previously' calculated space level.
   ! Must be set =0 for the first call. For every subsequent call, 
   ! with ispacelevel monotoneously decreasing,
@@ -5959,6 +6017,7 @@ contains
     real(DP) :: dtheta, dtstep, dtimeend, dtimestart
     type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
     type(t_spacetimeOperatorAsm) :: roperatorAsm
+    integer, dimension(1) :: Irows
     
     ! Get the corresponding operator assembly structure
     call stoh_getOpAsm_slvtlv (&
@@ -6065,6 +6124,22 @@ contains
               rprimalSol,isollevelSpace,isollevelTime,1.0_DP,&
               rtempdata,ipreviousSpaceLv)
 
+          ! -----------------------------------------------
+          ! Implement conditions
+          ! -----------------------------------------------
+
+          ! If this is an UMFPACK solver, and if this is the Stokes/Navier--Stokes
+          ! equations and pure Dirichlet boundary conditions, implement
+          ! the lumped mass matrix in the first row.
+          if (rasmFlags%bumfpackSolver .and. &
+              (roptcBDCSpace%rneumannBoundary%nregions .eq. 0)) then
+            Irows = (/1/)
+            call mmod_replaceLinesByZero (rmatrix%RmatrixBlock(3,1),Irows)
+            call mmod_replaceLinesByZero (rmatrix%RmatrixBlock(3,2),Irows)
+            call mmod_replaceLineByLumpedMass (rmatrix%RmatrixBlock(3,3),1,&
+                roperatorAsm%p_rasmTemplates%rmatrixMassPressureLumped)
+          end if
+        
         end select ! Equation
       
         ! -----------------------------------------------
@@ -6491,6 +6566,7 @@ contains
     type(t_assemblyTempDataSpace) :: rtempData
     type(t_primalSpace) :: rprimalSol
     type(t_vectorBlock), pointer :: p_rvector
+    type(t_assemblyFlags) :: rasmFlags
     
     ! Get discretisation information of teh current level
     call stoh_getOpAsm_slvtlv (&
@@ -6665,7 +6741,7 @@ contains
         rspaceTimeOperatorAsm%p_ranalyticData%p_rphysics,&
         rspaceTimeOperatorAsm%p_ranalyticData%p_rsettingsOptControl,&
         rspaceTimeOperatorAsm%p_ranalyticData%p_rsettingsSpaceDiscr,&
-        ispacelevel,roperatorAsmHier)
+        ispacelevel,roperatorAsmHier,rasmFlags)
     
     ! Initialise a space-time vector only for the initial condition
     call kktsp_initPrimalVector (rprimalSol,&
@@ -6679,7 +6755,7 @@ contains
      
     ! Apply the operator to get the RHS
     call smva_apply_primal (rdiscreteInitCond%rrhs,ispacelevel,itimelevel,1,&
-        roperatorAsmHier,rprimalSol,rtempData)
+        roperatorAsmHier,rprimalSol,rasmFlags,rtempData)
     
     ! Release temp data
     call kktsp_donePrimalVector (rprimalSol)

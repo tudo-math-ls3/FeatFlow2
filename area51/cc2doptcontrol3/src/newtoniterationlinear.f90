@@ -450,7 +450,7 @@ contains
       call output_line ("Linear space-time Residual: Time for mat. assembly: "//&
           trim(sys_sdL(rlocalStat%rtimeMatrixAssembly%delapsedReal,10)))
       call output_line ("Linear space-time Residual: Time for factorisation: "//&
-          trim(sys_sdL(rlocalStat%rlssSolverStat%rtimeNumericFactorisation%delapsedReal+&
+          trim(sys_sdL(rlocalStat%rlssSolverStat%rtimeSymbolicFactorisation%delapsedReal+&
                        rlocalStat%rlssSolverStat%rtimeNumericFactorisation%delapsedReal,10)))
       call output_line ("Linear space-time Residual: Time for space-solver : "//&
           trim(sys_sdL(rlocalStat%rlssSolverStat%rtotalTime%delapsedReal,10)))
@@ -487,7 +487,7 @@ contains
       call output_line ("Linear space-time Residual: Time for mat. assembly: "//&
           trim(sys_sdL(rlocalStat%rtimeMatrixAssembly%delapsedReal,10)))
       call output_line ("Linear space-time Residual: Time for factorisation: "//&
-          trim(sys_sdL(rlocalStat%rlssSolverStat%rtimeNumericFactorisation%delapsedReal+&
+          trim(sys_sdL(rlocalStat%rlssSolverStat%rtimeSymbolicFactorisation%delapsedReal+&
                        rlocalStat%rlssSolverStat%rtimeNumericFactorisation%delapsedReal,10)))
       call output_line ("Linear space-time Residual: Time for space-solver : "//&
           trim(sys_sdL(rlocalStat%rlssSolverStat%rtotalTime%delapsedReal,10)))
@@ -572,7 +572,7 @@ contains
       call output_line ("Linear space-time Residual: Time for mat. assembly: "//&
           trim(sys_sdL(rlocalStat%rtimeMatrixAssembly%delapsedReal,10)))
       call output_line ("Linear space-time Residual: Time for factorisation: "//&
-          trim(sys_sdL(rlocalStat%rlssSolverStat%rtimeNumericFactorisation%delapsedReal+&
+          trim(sys_sdL(rlocalStat%rlssSolverStat%rtimeSymbolicFactorisation%delapsedReal+&
                        rlocalStat%rlssSolverStat%rtimeNumericFactorisation%delapsedReal,10)))
       call output_line ("Linear space-time Residual: Time for space-solver : "//&
           trim(sys_sdL(rlocalStat%rlssSolverStat%rtotalTime%delapsedReal,10)))
@@ -609,7 +609,7 @@ contains
       call output_line ("Linear space-time Residual: Time for mat. assembly: "//&
           trim(sys_sdL(rlocalStat%rtimeMatrixAssembly%delapsedReal,10)))
       call output_line ("Linear space-time Residual: Time for factorisation: "//&
-          trim(sys_sdL(rlocalStat%rlssSolverStat%rtimeNumericFactorisation%delapsedReal+&
+          trim(sys_sdL(rlocalStat%rlssSolverStat%rtimeSymbolicFactorisation%delapsedReal+&
                        rlocalStat%rlssSolverStat%rtimeNumericFactorisation%delapsedReal,10)))
       call output_line ("Linear space-time Residual: Time for space-solver : "//&
           trim(sys_sdL(rlocalStat%rlssSolverStat%rtotalTime%delapsedReal,10)))
@@ -925,6 +925,36 @@ contains
     rlinsolParam%rprecParameters%niterations = 0
 
     do while (.true.)
+    
+!      if ((mod(rlinsolParam%rprecParameters%niterations,5) .eq. 0) .and.&
+!          (rlinsolParam%rprecParameters%niterations .ne. 0)) then
+!        ! Restart
+!
+!        ! Initialise used vectors with zero
+!        call kktsp_clearControl(p_rr)
+!        call kktsp_clearControl(p_rp%p_rcontrolLin)
+!        call kktsp_clearControl(p_rAp)
+!        
+!        ! Initialization
+!        dalpha = 1.0_DP
+!        dbeta  = 1.0_DP
+!        dgamma = 1.0_DP
+!        dgammaOld = 1.0_DP
+!
+!        ! Create the initial defect in rd
+!        call output_line ("Restart.")
+!        output_iautoOutputIndent = output_iautoOutputIndent + 2
+!        call newtonlin_getResidual (rlinsolParam,rkktsystemDirDeriv,rrhs,p_rr,rlocalStat)
+!        output_iautoOutputIndent = output_iautoOutputIndent - 2
+!            
+!        call newtonlin_sumStatistics(rlocalStat,rstatistics,NLIN_STYPE_RESCALC)
+!            
+!        call kktsp_controlCopy (p_rr,p_rp%p_rcontrolLin)
+!
+!        ! Scalar product of rp.
+!        dgamma = kktsp_scalarProductControl(p_rr,p_rr)
+!
+!      end if
     
       ! -------------------------------------------------------------
       ! Norm of the residual

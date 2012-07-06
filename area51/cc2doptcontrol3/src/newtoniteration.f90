@@ -287,29 +287,29 @@ contains
         "ssectionLinSolverSpace", ssolverLin, "SPACETIME-LINSOLVER",bdequote=.true.)
         
     call parlst_getvalue_string (rparamList, ssection, &
-        "ssectionLinSolverSpaceForward", ssolverSpaceForward, "CC-LINEARSOLVER",bdequote=.true.)
+        "ssectionLinSlvSpaceForw", ssolverSpaceForward, "CC-LINEARSOLVER",bdequote=.true.)
 
     call parlst_getvalue_string (rparamList, ssection, &
-        "ssectionLinSolverSpaceBackward", ssolverSpaceBackward, "CC-LINEARSOLVER",bdequote=.true.)
+        "ssectionLinSlvSpaceBack", ssolverSpaceBackward, "CC-LINEARSOLVER",bdequote=.true.)
 
     call parlst_getvalue_string (rparamList, ssection, &
-        "ssectionLinSolverSpaceForwardLin", ssolverSpaceForwardlin, "CC-LINEARSOLVER",bdequote=.true.)
+        "ssectionLinSlvSpaceForwLin", ssolverSpaceForwardlin, "CC-LINEARSOLVER",bdequote=.true.)
 
     call parlst_getvalue_string (rparamList, ssection, &
-        "ssectionLinSolverSpaceBackwardLin", ssolverSpaceBackwardLin, "CC-LINEARSOLVER",bdequote=.true.)
+        "ssectionLinSlvSpaceBackLin", ssolverSpaceBackwardLin, "CC-LINEARSOLVER",bdequote=.true.)
 
     ! Fallback solvers if the standard solvers fail.
     call parlst_getvalue_string (rparamList, ssection, &
-        "ssectionLinSolverSpaceForward2", ssolverSpaceForward2, "CC-LINEARSOLVER",bdequote=.true.)
+        "ssectionLinSlvSpaceForw2", ssolverSpaceForward2, "CC-LINEARSOLVER",bdequote=.true.)
 
     call parlst_getvalue_string (rparamList, ssection, &
-        "ssectionLinSolverSpaceBackward2", ssolverSpaceBackward2, "CC-LINEARSOLVER",bdequote=.true.)
+        "ssectionLinSlvSpaceBack2", ssolverSpaceBackward2, "CC-LINEARSOLVER",bdequote=.true.)
 
     call parlst_getvalue_string (rparamList, ssection, &
-        "ssectionLinSolverSpaceForwardLin2", ssolverSpaceForwardlin2, "CC-LINEARSOLVER",bdequote=.true.)
+        "ssectionLinSlvSpaceForwLin2", ssolverSpaceForwardlin2, "CC-LINEARSOLVER",bdequote=.true.)
 
     call parlst_getvalue_string (rparamList, ssection, &
-        "ssectionLinSolverSpaceBackwardLin2", ssolverSpaceBackwardLin2, "CC-LINEARSOLVER",bdequote=.true.)
+        "ssectionLinSlvSpaceBackLin2", ssolverSpaceBackwardLin2, "CC-LINEARSOLVER",bdequote=.true.)
 
     ! Create linear solvers in space for linera subproblems in the
     ! primal/dual space.
@@ -524,7 +524,7 @@ contains
       call output_line ("Nonlin. space-time Residual: Time for mat. assembly: "//&
           trim(sys_sdL(rlocalStat%rtimeMatrixAssembly%delapsedReal,10)))
       call output_line ("Nonlin. space-time Residual: Time for factorisation: "//&
-          trim(sys_sdL(rlocalStat%rlssSolverStat%rtimeNumericFactorisation%delapsedReal+&
+          trim(sys_sdL(rlocalStat%rlssSolverStat%rtimeSymbolicFactorisation%delapsedReal+&
                        rlocalStat%rlssSolverStat%rtimeNumericFactorisation%delapsedReal,10)))
       call output_line ("Nonlin. space-time Residual: Time for space-solver : "//&
           trim(sys_sdL(rlocalStat%rlssSolverStat%rtotalTime%delapsedReal,10)))
@@ -561,7 +561,7 @@ contains
       call output_line ("Nonlin. space-time Residual: Time for mat. assembly: "//&
           trim(sys_sdL(rlocalStat%rtimeMatrixAssembly%delapsedReal,10)))
       call output_line ("Nonlin. space-time Residual: Time for factorisation: "//&
-          trim(sys_sdL(rlocalStat%rlssSolverStat%rtimeNumericFactorisation%delapsedReal+&
+          trim(sys_sdL(rlocalStat%rlssSolverStat%rtimeSymbolicFactorisation%delapsedReal+&
                        rlocalStat%rlssSolverStat%rtimeNumericFactorisation%delapsedReal,10)))
       call output_line ("Nonlin. space-time Residual: Time for space-solver : "//&
           trim(sys_sdL(rlocalStat%rlssSolverStat%rtotalTime%delapsedReal,10)))

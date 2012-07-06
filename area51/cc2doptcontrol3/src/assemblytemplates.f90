@@ -132,7 +132,14 @@ module assemblytemplates
 
     ! Precalculated mass matrix for the pressure space.
     type(t_matrixScalar) :: rmatrixMassPressure
+
+    ! Precalculated mass matrix for the pressure space.
+    ! Extended structure applicable for UMFPACK on pure Dirichlet problems.
+    type(t_matrixScalar) :: rmatrixMassPressureExtStruc
     
+    ! Precalculated lumped mass matrix for the pressure space.
+    type(t_matrixScalar) :: rmatrixMassPressureLumped
+
     ! Precalculated EOJ matrix in the primal velocity space.
     ! Calculated with nu=1.
     type(t_matrixScalar) :: rmatrixEOJPrimal

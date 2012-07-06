@@ -1003,10 +1003,14 @@ contains
             ! UMFPACK
             ! -----------------------------------
             case (0)
-              call output_line (&
-                  "UMFPACK coarse grid solver does not support filtering!",&
-                  OU_CLASS_ERROR,OU_MODE_STD,"lssh_initData")
-              call sys_halt()
+              !call output_line (&
+              !    "UMFPACK coarse grid solver does not support filtering!",&
+              !    OU_CLASS_ERROR,OU_MODE_STD,"lssh_initData")
+              !call sys_halt()
+              ifilter = ifilter + 1
+              p_rlinsolSpace%RfilterChain(ifilter)%ifilterType = FILTER_ONEENTRY0
+              p_rlinsolSpace%RfilterChain(ifilter)%iblock = 3
+              p_rlinsolSpace%RfilterChain(ifilter)%irow = 1
 
             ! -----------------------------------
             ! Iterative solver
@@ -1052,9 +1056,7 @@ contains
       case (0)
       
         ! Matrix name for debug output: Matrix to text file.
-        call linsol_getMultigrid2Level (&
-            rlssHierarchy%p_RlinearSolvers(ilevel)%p_rsolverNode,1,p_rlevelInfo)
-        p_rlevelInfo%p_rcoarseGridSolver%p_rsubnodeUmfpack4%smatrixName = &
+        p_rlinsolSpace%p_rsolverNode%p_rsubnodeUmfpack4%smatrixName = &
             "mat"//trim(rlssHierarchy%p_rdebugFlags%sstringTag)
         
       end select
@@ -1142,9 +1144,7 @@ contains
       case (0)
       
         ! Matrix name for debug output: Matrix to text file.
-        call linsol_getMultigrid2Level (&
-            rlssHierarchy%p_RlinearSolvers(ilevel)%p_rsolverNode,1,p_rlevelInfo)
-        p_rlevelInfo%p_rcoarseGridSolver%p_rsubnodeUmfpack4%smatrixName = &
+        p_rlinsolSpace%p_rsolverNode%p_rsubnodeUmfpack4%smatrixName = &
             "mat"//trim(rlssHierarchy%p_rdebugFlags%sstringTag)
         
       end select
