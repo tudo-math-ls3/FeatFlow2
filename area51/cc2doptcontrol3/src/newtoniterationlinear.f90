@@ -2291,6 +2291,12 @@ contains
     rlinsolParam%riter%dtolRel = depsRel
     rlinsolParam%riter%dtolAbs = depsAbs
     
+    if (depsAbs .eq. 0.0_DP) then
+      rlinsolParam%riter%riter%ctolMode = ITC_STOP_MODE_REL
+    else
+      rlinsolParam%riter%riter%ctolMode = ITC_STOP_MODE_ABS
+    end if
+    
     ! Special settings
     select case (rlinsolParam%csolverType)
     
@@ -2308,9 +2314,9 @@ contains
         rlinsolParam%p_rsubnodeMultigrid%p_RsubSolvers(1)%riter%dtolAbs = depsAbs
 
         if (depsAbs .eq. 0.0_DP) then
-          rlinsolParam%p_rsubnodeMultigrid%p_RsubSolvers(1)%riter%%ctolMode = ITC_STOP_MODE_REL
+          rlinsolParam%p_rsubnodeMultigrid%p_RsubSolvers(1)%riter%ctolMode = ITC_STOP_MODE_REL
         else
-          rlinsolParam%p_rsubnodeMultigrid%p_RsubSolvers(1)%riter%%ctolMode = ITC_STOP_MODE_ABS
+          rlinsolParam%p_rsubnodeMultigrid%p_RsubSolvers(1)%riter%ctolMode = ITC_STOP_MODE_ABS
         end if
       end if
     
