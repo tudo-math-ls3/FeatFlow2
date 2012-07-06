@@ -1516,12 +1516,8 @@ contains
           rkktsysDirDerivHierarchy,rrhs,rstatistics,ilevel)
       output_iautoOutputIndent = output_iautoOutputIndent - 2
     
-      rlinsolParam%riter%dresInitial = &
-          p_rsubnodeMultigrid%p_rsubSolvers(ilevel)%riter%dresInitial
-      rlinsolParam%riter%dresFinal = &
-          p_rsubnodeMultigrid%p_rsubSolvers(ilevel)%riter%dresFinal
-      rlinsolParam%riter%niterations = &
-          p_rsubnodeMultigrid%p_rsubSolvers(ilevel)%riter%niterations
+      ! Return statistics data of the subsolver.
+      call itc_copyStatistics (p_rsubnodeMultigrid%p_rsubSolvers(ilevel)%riter,rlinsolParam%riter)
     
       ! Finish
       return
