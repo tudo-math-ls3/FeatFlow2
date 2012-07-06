@@ -352,11 +352,11 @@ contains
     
       ! Initialise a temporary vector for the nonlinearity
       select case (rsolver%copType)
-      case (OPTP_PRIMAL,OPTP_PRIMALLIN)
+      case (OPTP_PRIMAL,OPTP_PRIMALLIN,OPTP_PRIMALLIN_SIMPLE)
         p_rdiscretisation => &
             roperatorAsmHier%p_rfeHierarchyPrimal%p_rfeSpaces(ilev)%p_rdiscretisation
 
-      case (OPTP_DUAL,OPTP_DUALLIN)
+      case (OPTP_DUAL,OPTP_DUALLIN,OPTP_DUALLIN_SIMPLE)
         p_rdiscretisation => &
             roperatorAsmHier%p_rfeHierarchyDual%p_rfeSpaces(ilev)%p_rdiscretisation
       
@@ -446,19 +446,23 @@ contains
         call lsysbl_assignDiscreteBC (rsolver%p_Rmatrices(ilev),p_rdiscreteBC)
             
         select case (rsolver%copType)
-        case (OPTP_PRIMAL,OPTP_PRIMALLIN)
+        case (OPTP_PRIMAL,OPTP_PRIMALLIN,OPTP_PRIMALLIN_SIMPLE)
           call smva_allocTempData (rsolver%rtempData,&
               roperatorAsmHier%ranalyticData%p_rphysics,&
               roperatorAsmHier%ranalyticData%p_rsettingsOptControl,&
               roperatorAsmHier%ranalyticData%p_rsettingsSpaceDiscr,&
               ilev,roperatorAsmHier,rsolver%p_RassemblyFlags(ilev))
 
-        case (OPTP_DUAL,OPTP_DUALLIN)
+        case (OPTP_DUAL,OPTP_DUALLIN,OPTP_DUALLIN_SIMPLE)
           call smva_allocTempData (rsolver%rtempData,&
               roperatorAsmHier%ranalyticData%p_rphysics,&
               roperatorAsmHier%ranalyticData%p_rsettingsOptControl,&
               roperatorAsmHier%ranalyticData%p_rsettingsSpaceDiscr,&
               ilev,roperatorAsmHier,rsolver%p_RassemblyFlags(ilev))
+        case default
+          call output_line ("Unknown space.", &
+              OU_CLASS_ERROR,OU_MODE_STD,"spaceslh_initStructure")
+          call sys_halt()
         end select
 
         ! Initialise the structures of the associated linear subsolver
