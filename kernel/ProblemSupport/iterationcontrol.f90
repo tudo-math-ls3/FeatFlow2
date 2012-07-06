@@ -42,7 +42,8 @@
 !# for any kind of user-defined iterative method. In addition to the obvious
 !# option of stopping when a maximum number of allowed iterations has been
 !# performed, the iteration control module offers three additional stopping
-!# criterions: convergence-check, divergence-check and stagnation-check.
+!# criterions: convergence-check, divergence-check, stagnation-check and
+!# orbiting-check.
 !#
 !#
 !# Convergence-Check
@@ -95,7 +96,7 @@
 !#
 !# Stagnation-Check
 !# ----------------
-!# The stagnation checks whether the iteration has stagnated and therefore
+!# The stagnation check tests whether the iteration has stagnated and therefore
 !# the iteration can be cancelled since it is not making any progress anymore.
 !# The stagnation check is configured by the 'dstagRate' and 'nstagIter'
 !# parameters of the iteration control data structure. Let r_k denote the
@@ -106,6 +107,22 @@
 !# i.e. the iteration is treated as 'stagnated' if the residual did not
 !# decrease by at least a user-defined factor for a specified number of
 !# consecutive iterations.
+!#
+!#
+!# Orbiting-Check
+!# --------------
+!# The orbiting check tests whether the iteration is caught in an orbit, i.e.
+!# if the iterative method is alternating through a set of cluster points
+!# instead of converging to a unique limit. The orbiting check is controlled
+!# via three parameters, namely dorbitTol, nminPeriods and nmaxClusters.
+!# nmaxClusters specifies the maximum number of cluster points that the
+!# orbit may have - for nonlinear solvers, an orbit usually consists of two
+!# cluster points. nminPeriods specifies how often a residual has to repeat
+!# to identify the current residual as a cluster point. It is recommended to
+!# set the minimal period to at least 2 to avoid that only two equal residuals
+!# are accidently recognised as a period. The dorbitTol parameter specifies
+!# the maximal relative difference between two residuals, which is used to
+!# test whether two residuals are treated as equal.
 !#
 !#
 !# Status-Codes
@@ -134,6 +151,9 @@
 !#
 !# -> ITC_STATUS_STAGNATED
 !#    Indicates that the stagnation criterion has been fulfilled.
+!#
+!# -> ITC_STATUS_ORBITING
+!#    Indicates that the iteration is (probably) caught in an orbit.
 !#
 !# </purpose>
 !##############################################################################
@@ -176,6 +196,9 @@ private
 
   ! Stagnation criterion fulfilled
   integer, parameter, public :: ITC_STATUS_STAGNATED    = 4
+
+  ! Orbiting criterion fulfilled
+  integer, parameter, public :: ITC_STATUS_ORBITING     = 5
 
 !</constantblock>
 
@@ -247,6 +270,16 @@ private
     ! Input: Minimum number of consecutive stagnated iterations required.
     ! Set to 0 to disable stagnation check.
     integer :: nstagIter = 0
+
+    ! Input: Relative orbiting tolerance
+    real(DP) :: dorbitTol = 1E-2_DP
+
+    ! Input: Minimal orbit period
+    ! Set to 0 to disable orbit check.
+    integer :: nminPeriods = 0
+
+    ! Input: Maximal cluster points in orbit
+    integer :: nmaxClusters = 2
     
     ! Maximum number of residuals which are used fo the calculation
     ! of asymptotic convergence rates.
@@ -398,7 +431,7 @@ contains
 
   real(DP) :: dx
   integer :: i, j, k, n, cmode
-  logical :: btolRel, btolAbs, bdivRel, bdivAbs, bstag, bconv, bdiv
+  logical :: btolRel, btolAbs, bdivRel, bdivAbs, bstag, bconv, bdiv, borbit
 
     ! set current defect and increase iteration count
     riter%niterations = riter%niterations+1
@@ -573,6 +606,50 @@ contains
 
     end if
 
+    ! Check for orbiting?
+    if((riter%nminPeriods .gt. 0) .and. (riter%nminPeriods .lt. riter%niterations)) then
+
+      ! loop over all allowed cluster lengths
+      do i = 2, riter%nmaxClusters
+
+        ! assume no orbit
+        borbit = .false.
+
+        ! loop over the minimum period length
+        do j = 1, riter%nminPeriods
+
+          ! calculate offset from current iteration
+          k = j*i - 1
+          if(k .ge. min(riter%niterations,ITC_RES_QUEUE_SIZE)) then
+            borbit = .false.
+            exit
+          end if
+          k = mod(riter%niterations+ITC_RES_QUEUE_SIZE-k, ITC_RES_QUEUE_SIZE)
+
+          ! check difference
+          dx = (riter%Dresiduals(k) - riter%dresFinal)
+          if(abs(riter%Dresiduals(k) - riter%dresFinal) .gt. (riter%dorbitTol*riter%dresFinal)) then
+            borbit = .false.
+            exit
+          end if
+
+          ! If we come out here, we have a satellite candidate...
+          borbit = .true.
+
+        end do
+
+        ! Orbiting?
+        if(borbit) then
+
+          riter%cstatus = ITC_STATUS_ORBITING
+          return
+
+        end if
+
+      end do
+
+    end if
+
     ! Check against maximum iterations
     if(riter%niterations .ge. riter%nmaxIterations) then
 
@@ -722,6 +799,9 @@ contains
         OU_CLASS_MSG, coutput, 'itc_printStatistics')
     case (ITC_STATUS_STAGNATED)
       call output_line('Status ................: stagnated', &
+        OU_CLASS_MSG, coutput, 'itc_printStatistics')
+    case (ITC_STATUS_ORBITING)
+      call output_line('Status ................: orbiting', &
         OU_CLASS_MSG, coutput, 'itc_printStatistics')
     end select
 
