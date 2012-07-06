@@ -32,6 +32,9 @@
 !#  7.) itc_getParamsFromParlist
 !#      -> Reads iteration parameters from a section in a parameter list.
 !#
+!#  8.) itc_copyStatistics
+!#      -> Copies the statistics data to another iteration structure
+!#
 !# ****************************************************************************
 !# Information regarding stopping criterions
 !# -----------------------------------------
@@ -145,14 +148,15 @@ implicit none
 
 private
 
-public :: t_iterationControl
-public :: itc_initIteration
-public :: itc_initResidual
-public :: itc_pushResidual
-public :: itc_calcConvRateReal
-public :: itc_calcConvRateAsymptotic
-public :: itc_printStatistics
-public :: itc_getParamsFromParlist
+  public :: t_iterationControl
+  public :: itc_initIteration
+  public :: itc_initResidual
+  public :: itc_pushResidual
+  public :: itc_calcConvRateReal
+  public :: itc_calcConvRateAsymptotic
+  public :: itc_printStatistics
+  public :: itc_getParamsFromParlist
+  public :: itc_copyStatistics
 
 !<constants>
 
@@ -812,6 +816,39 @@ contains
         
     riter%nasympConvRateResiduals = &
         max(1,min(riter%nasympConvRateResiduals,ITC_RES_QUEUE_SIZE))
+
+  end subroutine
+
+! *************************************************************************************************
+
+!<subroutine>
+
+  subroutine itc_copyStatistics(riterSource,riterDest)
+  
+!<description>
+  ! Copies the statistics data from riterSource to riterDest.
+  ! Can be used, e.g., if the statistics from a subsolver should be
+  ! passed to the solver.
+!</description>
+  
+!<input>
+  ! The iteration control data structure to be copied.
+  type(t_iterationControl), intent(inout) :: riterSource
+!</input>
+
+!<output>
+  ! Destination structure.
+  type(t_iterationControl), intent(inout) :: riterDest
+!</output>
+
+!</subroutine>
+
+    ! Copy statistics data
+    riterDest%cstatus       = riterSource%cstatus      
+    riterDest%niterations   = riterSource%niterations  
+    riterDest%dresInitial   = riterSource%dresInitial  
+    riterDest%dresFinal     = riterSource%dresFinal    
+    riterDest%Dresiduals(:) = riterSource%Dresiduals(:)
 
   end subroutine
 
