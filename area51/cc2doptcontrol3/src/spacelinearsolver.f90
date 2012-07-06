@@ -978,6 +978,14 @@ contains
       select case (p_rlinsolSpace%isolverType)
       
       ! ---------------------------------------------------
+      ! UMFPACK
+      ! ---------------------------------------------------
+      case (LSS_LINSOL_UMFPACK)
+        ! Matrix name for debug output: Matrix to text file.
+        p_rlinsolSpace%p_rsolverNode%p_rsubnodeUmfpack4%smatrixName = &
+            "mat"//trim(rlssHierarchy%p_rdebugFlags%sstringTag)
+          
+      ! ---------------------------------------------------
       ! Multigrid
       ! ---------------------------------------------------
       case (LSS_LINSOL_MG)
@@ -1043,24 +1051,26 @@ contains
         
         end select ! ilevel
         
+        ! -----------------------------------
+        ! DEBUG Flags
+        ! -----------------------------------
+        select case (p_rlinsolSpace%icoarseGridSolverType)
+        
+        ! -----------------------------------
+        ! UMFPACK
+        ! -----------------------------------
+        case (0)
+        
+          ! Matrix name for debug output: Matrix to text file.
+          call linsol_getMultigrid2Level (&
+              rlssHierarchy%p_RlinearSolvers(ilevel)%p_rsolverNode,1,p_rlevelInfo)
+          p_rlevelInfo%p_rcoarseGridSolver%p_rsubnodeUmfpack4%smatrixName = &
+              "mat"//trim(rlssHierarchy%p_rdebugFlags%sstringTag)
+          
+        end select
+      
       end select ! Outer solver
       
-      ! -----------------------------------
-      ! DEBUG Flags
-      ! -----------------------------------
-      select case (p_rlinsolSpace%icoarseGridSolverType)
-      
-      ! -----------------------------------
-      ! UMFPACK
-      ! -----------------------------------
-      case (0)
-      
-        ! Matrix name for debug output: Matrix to text file.
-        p_rlinsolSpace%p_rsolverNode%p_rsubnodeUmfpack4%smatrixName = &
-            "mat"//trim(rlssHierarchy%p_rdebugFlags%sstringTag)
-        
-      end select
-    
     ! ---------------------------------------------------
     ! Heat equation
     ! ---------------------------------------------------
@@ -1069,6 +1079,14 @@ contains
       ! Pressure filter for iterative solvers
       select case (p_rlinsolSpace%isolverType)
       
+      ! ---------------------------------------------------
+      ! UMFPACK
+      ! ---------------------------------------------------
+      case (LSS_LINSOL_UMFPACK)
+        ! Matrix name for debug output: Matrix to text file.
+        p_rlinsolSpace%p_rsolverNode%p_rsubnodeUmfpack4%smatrixName = &
+            "mat"//trim(rlssHierarchy%p_rdebugFlags%sstringTag)
+
       ! ---------------------------------------------------
       ! Multigrid
       ! ---------------------------------------------------
@@ -1131,24 +1149,26 @@ contains
         
         end select ! ilevel
         
+        ! -----------------------------------
+        ! DEBUG Flags
+        ! -----------------------------------
+        select case (p_rlinsolSpace%icoarseGridSolverType)
+        
+        ! -----------------------------------
+        ! UMFPACK
+        ! -----------------------------------
+        case (0)
+        
+          ! Matrix name for debug output: Matrix to text file.
+          call linsol_getMultigrid2Level (&
+              rlssHierarchy%p_RlinearSolvers(ilevel)%p_rsolverNode,1,p_rlevelInfo)
+          p_rlevelInfo%p_rcoarseGridSolver%p_rsubnodeUmfpack4%smatrixName = &
+              "mat"//trim(rlssHierarchy%p_rdebugFlags%sstringTag)
+          
+        end select
+      
       end select ! Outer solver
                 
-      ! -----------------------------------
-      ! DEBUG Flags
-      ! -----------------------------------
-      select case (p_rlinsolSpace%icoarseGridSolverType)
-      
-      ! -----------------------------------
-      ! UMFPACK
-      ! -----------------------------------
-      case (0)
-      
-        ! Matrix name for debug output: Matrix to text file.
-        p_rlinsolSpace%p_rsolverNode%p_rsubnodeUmfpack4%smatrixName = &
-            "mat"//trim(rlssHierarchy%p_rdebugFlags%sstringTag)
-        
-      end select
-    
     end select ! equation
 
     ! Initialise the solver node
