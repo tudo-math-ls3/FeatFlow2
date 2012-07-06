@@ -10,23 +10,26 @@
 !#
 !# The following routines can be found here:
 !#
-!#  1.) itc_initResidual
+!#  1.) itc_initIteration
+!#      -> Basic initialisation of an iteration control structure.
+!#
+!#  2.) itc_initResidual
 !#      -> Initialises an iteration control structure.
 !#
-!#  2.) itc_pushResidual
+!#  3.) itc_pushResidual
 !#      -> Pushes a new residual and updates the iteration control structure.
 !#
-!#  3.) itc_calcConvRateReal
+!#  4.) itc_calcConvRateReal
 !#      -> Calculates and returns the real convergence rate.
 !#
-!#  4.) itc_calcConvRateAsymptotic
+!#  5.) itc_calcConvRateAsymptotic
 !#      -> Calculates and returns the asymptotic convergence rate.
 !#
-!#  5.) itc_printStatistics
+!#  6.) itc_printStatistics
 !#      -> Prints iteration statistics like e.g. number of iterations or
 !#         convergence rates.
 !#
-!#  6.) itc_getParamsFromParlist
+!#  7.) itc_getParamsFromParlist
 !#      -> Reads iteration parameters from a section in a parameter list.
 !#
 !# ****************************************************************************
@@ -143,6 +146,7 @@ implicit none
 private
 
 public :: t_iterationControl
+public :: itc_initIteration
 public :: itc_initResidual
 public :: itc_pushResidual
 public :: itc_calcConvRateReal
@@ -273,6 +277,39 @@ contains
 
 !<subroutine>
 
+  subroutine itc_initIteration(riter)
+
+!<description>
+  ! Basic initialisation of the structure. The number of iterations
+  ! is reset to zero. All residuals are set to zero.
+  ! The status is set to "continue".
+!</description>
+
+!<inputoutput>
+  ! The iteration structure to be initialised.
+  type(t_iterationControl), intent(inout) :: riter
+!</inputoutput>
+
+!<remark>
+  ! Alternatively, the structure can be initialised by itc_initResidual
+  ! which calls this routine automatically.
+!</remark>
+
+!</subroutine>
+
+    ! store initial residual and reset anything necessary
+    riter%niterations = 0
+    riter%dresInitial = 0.0_DP
+    riter%dresFinal = 0.0_DP
+    riter%Dresiduals(1) = 0.0_DP
+    riter%cstatus = ITC_STATUS_CONTINUE
+
+  end subroutine
+
+! *************************************************************************************************
+
+!<subroutine>
+
   subroutine itc_initResidual(riter, dres)
 
 !<description>
@@ -284,6 +321,12 @@ contains
   type(t_iterationControl), intent(inout) :: riter
 !</inputoutput>
 
+!<remark>
+  ! The routine internally calls itc_initIteration.
+  ! Therefore, the structure can be initialised either with itc_initIteration
+  ! or with itc_initResidual.
+!</remark>
+
 !<input>
   ! The initial residual
   real(DP), intent(in) :: dres
@@ -292,11 +335,10 @@ contains
 !</subroutine>
 
     ! store initial residual and reset anything necessary
-    riter%niterations = 0
+    call itc_initIteration(riter)
     riter%dresInitial = dres
     riter%dresFinal = dres
     riter%Dresiduals(1) = dres
-    riter%cstatus = ITC_STATUS_CONTINUE
 
     ! We're now going to check whether we have some absolute convergence or divergence criterions
     ! given. First of all, ensure that we do not have to perform a minimum number of iterations.
