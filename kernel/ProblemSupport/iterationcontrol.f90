@@ -244,8 +244,9 @@ public :: itc_getParamsFromParlist
     ! Set to 0 to disable stagnation check.
     integer :: nstagIter = 0
     
-    ! Maximum number of residuals in the residual queue Dresiduals
-    integer :: nmaxResidualsInQueue = ITC_RES_QUEUE_SIZE
+    ! Maximum number of residuals which are used fo the calculation
+    ! of asymptotic convergence rates.
+    integer :: nasympConvRateResiduals = 3
 
     ! <!-- OUTPUT PARAMETERS -->
 
@@ -261,8 +262,7 @@ public :: itc_getParamsFromParlist
     ! Output: Final residual
     real(DP) :: dresFinal = 0.0_DP
 
-    ! Residual queue. nmaxResidualsInQueue defines the actual size
-    ! of the queue.
+    ! Residual queue.
     real(DP), dimension(ITC_RES_QUEUE_SIZE) :: Dresiduals
 
   end type
@@ -399,7 +399,7 @@ contains
     ! set current defect and increase iteration count
     riter%niterations = riter%niterations+1
     riter%dresFinal = dres
-    riter%Dresiduals(mod(riter%nIterations, riter%nmaxResidualsInQueue)+1) = dres
+    riter%Dresiduals(mod(riter%nIterations, ITC_RES_QUEUE_SIZE)+1) = dres
 
     ! Check against absolute criterions
     btolAbs = (riter%dtolAbs .gt. 0.0_DP) .and. (dres .le. riter%dtolAbs)
@@ -545,14 +545,14 @@ contains
       bstag = .true.
 
       ! loop over the last n iterations and check for stagnation
-      n = min(riter%nstagIter, riter%nmaxResidualsInQueue-1)
+      n = min(riter%nstagIter, ITC_RES_QUEUE_SIZE-1)
       do i = 1, n
 
         ! calculate indices in residual queue
-        j = mod(riter%niterations + riter%nmaxResidualsInQueue - i    , &
-                riter%nmaxResidualsInQueue) + 1
-        k = mod(riter%niterations + riter%nmaxResidualsInQueue - i - 1, &
-                riter%nmaxResidualsInQueue) + 1
+        j = mod(riter%niterations + ITC_RES_QUEUE_SIZE - i    , &
+                ITC_RES_QUEUE_SIZE) + 1
+        k = mod(riter%niterations + ITC_RES_QUEUE_SIZE - i - 1, &
+                ITC_RES_QUEUE_SIZE) + 1
 
         ! check for stagnation
         bstag = bstag .and. (riter%Dresiduals(j) .ge. (riter%dstagRate * riter%Dresiduals(k)))
@@ -636,6 +636,7 @@ contains
   type(t_iterationControl), intent(in) :: riter
 
   ! Optional: The number of last iterations from which the convergence rate is to be computed.
+  ! If not specified, riter%nasympConvRateResiduals is used.
   integer, optional, intent(in) :: niter
 !</input>
 
@@ -652,12 +653,12 @@ contains
     if(riter%niterations .le. 0) return
 
     ! calculate indices
-    n = 3
-    if(present(niter)) n = min(max(1,niter), riter%nmaxResidualsInQueue-1)
+    n = riter%nasympConvRateResiduals
+    if(present(niter)) n = min(max(1,niter), ITC_RES_QUEUE_SIZE-1)
     n = min(n, riter%nIterations-1) + 1
 
-    i = mod(riter%nIterations  , riter%nmaxResidualsInQueue) + 1
-    j = mod(riter%nIterations-n, riter%nmaxResidualsInQueue) + 1
+    i = mod(riter%nIterations  , ITC_RES_QUEUE_SIZE) + 1
+    j = mod(riter%nIterations-n, ITC_RES_QUEUE_SIZE) + 1
 
     ! Calculate convergence rate
     dcr = (riter%Dresiduals(i) / riter%Dresiduals(j)) ** (1.0_DP / real(n,DP))
@@ -806,11 +807,11 @@ contains
     call parlst_getvalue_int (p_rsection, "nstagIter", &
         riter%nstagIter,riterDefault%nstagIter)
 
-    call parlst_getvalue_int (p_rsection, "nmaxResidualsInQueue", &
-        riter%nmaxResidualsInQueue,riterDefault%nmaxResidualsInQueue)
+    call parlst_getvalue_int (p_rsection, "nasympConvRateResiduals", &
+        riter%nasympConvRateResiduals,riterDefault%nasympConvRateResiduals)
         
-    riter%nmaxResidualsInQueue = &
-        max(1,min(riter%nmaxResidualsInQueue,ITC_RES_QUEUE_SIZE))
+    riter%nasympConvRateResiduals = &
+        max(1,min(riter%nasympConvRateResiduals,ITC_RES_QUEUE_SIZE))
 
   end subroutine
 
