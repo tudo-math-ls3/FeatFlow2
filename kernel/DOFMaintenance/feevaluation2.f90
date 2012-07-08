@@ -675,9 +675,13 @@ contains
       p_RfemData => rfemDataBlocks%p_RfemData
     end if
 
-    ! Maximum derivative for the test space
-    p_RfemData(ivecDiscrTest)%nmaxDerivative = &
-        max(p_RfemData(ivecDiscrTest)%nmaxDerivative,imaxDerivative)
+    ! Maximum derivative for the test space.
+    ! Exception: If nmaxDerivative = -1, the maximum derivative is taken
+    ! anyway, so we must not taje the maximum.
+    if (p_RfemData(ivecDiscrTest)%nmaxDerivative .ne. -1) then
+      p_RfemData(ivecDiscrTest)%nmaxDerivative = &
+          max(p_RfemData(ivecDiscrTest)%nmaxDerivative,imaxDerivative)
+    end if
         
     call fev2_initBder(&
         p_RfemData(ivecDiscrTest)%celement,p_RfemData(ivecDiscrTest)%nmaxDerivative,&
@@ -771,8 +775,12 @@ contains
       end if
 
       ! Maximum derivative for the test space
-      p_RfemData(ivecDiscrTest)%nmaxDerivative = &
-          max(p_RfemData(ivecDiscrTest)%nmaxDerivative,imaxTest)
+      ! Exception: If nmaxDerivative = -1, the maximum derivative is taken
+      ! anyway, so we must not taje the maximum.
+      if (p_RfemData(ivecDiscrTest)%nmaxDerivative .ne. -1) then
+        p_RfemData(ivecDiscrTest)%nmaxDerivative = &
+            max(p_RfemData(ivecDiscrTest)%nmaxDerivative,imaxTest)
+      end if
 
       call fev2_initBder(&
           p_RfemData(ivecDiscrTest)%celement,p_RfemData(ivecDiscrTest)%nmaxDerivative,&
@@ -808,8 +816,12 @@ contains
       end if
 
       ! Maximum derivative for the trial space
-      p_RfemData(ivecDiscrTrial)%nmaxDerivative = &
-          max(p_RfemData(ivecDiscrTrial)%nmaxDerivative,imaxTrial)
+      ! Exception: If nmaxDerivative = -1, the maximum derivative is taken
+      ! anyway, so we must not taje the maximum.
+      if (p_RfemData(ivecDiscrTrial)%nmaxDerivative .ne. -1) then
+        p_RfemData(ivecDiscrTrial)%nmaxDerivative = &
+            max(p_RfemData(ivecDiscrTrial)%nmaxDerivative,imaxTrial)
+      end if
           
       call fev2_initBder(&
           p_RfemData(ivecDiscrTrial)%celement,p_RfemData(ivecDiscrTrial)%nmaxDerivative,&
