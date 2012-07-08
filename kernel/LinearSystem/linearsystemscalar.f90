@@ -338,10 +338,13 @@
 module linearsystemscalar
 
 !$use omp_lib
+  use arraylistInt
+  use arraylistInt_Int
   use dofmapping
   use fpersistence
   use fsystem
   use genoutput
+  use graph
   use linearalgebra
   use perfconfig
   use spatialdiscretisation
@@ -580,6 +583,16 @@ module linearsystemscalar
 
   ! Store the node numbers and the matrix positions
   integer, parameter, public :: LSYSSC_EDGELIST_NODESANDPOS = 2
+
+!</constantblock>
+
+!<constantblock description="Constants for defining the algorithm for edge coloring">
+
+  ! Greedy edge-coloring algorithm
+  integer, parameter, public :: LSYSSC_EDGECOLORING_GREEDY  = 0
+
+  ! Edge-coloring algorithm due to Nishizeki, Terada, Leven
+  integer, parameter, public :: LSYSSC_EDGECOLORING_NTL     = 1
 
 !</constantblock>
 
@@ -26055,7 +26068,8 @@ contains
 
 !<subroutine>
 
-  subroutine lsyssc_regroupEdgeList(ndof, IedgeList, h_IedgeListIdx, ncolor)
+  subroutine lsyssc_regroupEdgeList(ndof, IedgeList, h_IedgeListIdx,&
+                                    ncolor, ccoloringType)
 
 !<description>
     ! This subroutine regroups the entries of a given list of edges
@@ -26070,6 +26084,10 @@ contains
     ! OPTIONAL: number of colours required to separate the given edge
     ! list into independent
     integer, intent(in), optional :: ncolor
+
+    ! OPTIONAL: constant defining the type of edge-coloring algorithm
+    ! Must be one of the LSYSSC_EDGECOLORING_xxx constants
+    integer, intent(in), optional :: ccoloringType
 !</input>
 
 !<inputoutput>
@@ -26084,16 +26102,26 @@ contains
 
     ! local variables
     integer, dimension(:), pointer :: p_IedgeListIdx
-    integer :: nmaxColor,isize
+    integer :: nmaxColor,isize,ccoloring
+
+    ccoloring = LSYSSC_EDGECOLORING_GREEDY
+    if (present(ccoloringType)) ccoloring = ccoloringType
 
     if (present(ncolor)) then
       nmaxColor = ncolor
     else
       ! Determine the maximum number of colours required to separate
       ! the given edge list into independent groups
-      nmaxColor = compMaxEdgeColors(ndof, IedgeList)
+      nmaxColor = compMaxEdgeColors(ndof, IedgeList, ccoloring)
     end if
-
+    
+    ! Concistency check
+    if (nmaxColor .le. 0) then
+      call output_line('Number of colors for edge cloring must be greater than zero!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_regroupEdgeList')
+      call sys_halt()
+    end if
+    
     ! (Re-)allocate memory
     if (h_IedgeListIdx .eq. ST_NOHANDLE) then
       call storage_new('lsyssc_regroupEdgeList','IedgeListIdx',&
@@ -26106,15 +26134,40 @@ contains
             nmaxColor+1, ST_INT, h_IedgeListIdx, ST_NEWBLOCK_NOINIT)
       end if
     end if
-
+    
     ! Set pointer
     call storage_getbase_int(h_IedgeListIdx, p_IedgeListIdx)
+    
+    ! What type of coloring algorithm are we?
+    select case(ccoloring)
+    case (LSYSSC_EDGECOLORING_GREEDY)
+      if (nmaxColor .le. 64) then
+        call genEdgeListIdx_greedy64(ndof, nmaxColor, p_IedgeListIdx, IedgeList)
+      else
+        call output_line('Greedy edge-coloring algorithm for more than '//&
+            '64 colors is not implemented yet!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_regroupEdgeList')
+        call sys_halt()
+      end if
 
-    ! Regroup list of edges
-    call genEdgeListIdx(ndof, nmaxColor, p_IedgeListIdx, IedgeList)
-
+    case (LSYSSC_EDGECOLORING_NTL)
+      if (nmaxColor .le. 64) then
+        call genEdgeListIdx_ntl64(ndof, nmaxColor, p_IedgeListIdx, IedgeList)
+      else
+        call output_line('NLT edge-coloring algorithm for more than '//&
+            '64 colors is not implemented yet!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_regroupEdgeList')
+        call sys_halt()
+      end if
+      
+    case default
+      call output_line('Unsupported type of coloring algorithm!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_regroupEdgeList')
+      call sys_halt()
+    end select
+    
   contains
-
+    
     ! Here, the working routines follow
 
     !**************************************************************
@@ -26122,9 +26175,9 @@ contains
     ! edges of the matrix such that no two edges with the same color
     ! share a common node (This is the classical edge-coloring)
 
-    function compMaxEdgeColors(ndof, IedgeList) result(ncolor)
+    function compMaxEdgeColors(ndof, IedgeList, ccoloringType) result(ncolor)
 
-      integer, intent(in) :: ndof
+      integer, intent(in) :: ndof, ccoloringType
       integer, dimension(:,:), intent(in) :: IedgeList
 
       integer :: ncolor
@@ -26158,33 +26211,49 @@ contains
       ! Deallocate temporal memory
       call storage_free(h_IedgesAtDof)
 
-      ! At the moment the greedy edge coloring algorithm is
-      ! used which may require 2x chromatic index of colors
-      ncolor = 2*ncolor
+      ! What type of coloring algorithm are we?
+      select case(ccoloringType)
+      case (LSYSSC_EDGECOLORING_GREEDY)
+        ncolor = 2*ncolor
+        
+      case (LSYSSC_EDGECOLORING_NTL)
+        ncolor = ncolor+1
+        
+      case default
+        ncolor = 0
+      end select
 
     end function compMaxEdgeColors
 
     !**************************************************************
-    ! Generate index for edge data structure
+    ! Generate index for edge data structure based on greedy
+    ! edge-coloring algorithm which may require 2*ncolor colors
+    ! Note that this implementation works for 64 colors at most
 
-    subroutine genEdgeListIdx(neq, nmaxColor, IedgeListIdx, IedgeList)
+    subroutine genEdgeListIdx_greedy64(neq, nmaxColor, IedgeListIdx, IedgeList)
 
       integer, intent(in) :: neq,nmaxColor
 
       integer, dimension(:), intent(inout) :: IedgeListIdx
       integer, dimension(:,:), intent(inout) :: IedgeList
 
+      integer(I64), dimension(:), pointer :: p_IdofColor
       integer, dimension(:,:), pointer :: p_IedgeListTemp
-      integer, dimension(:), pointer :: p_IdofColor
       integer, dimension(2) :: Isize
       integer :: h_IdofColor,h_IedgeListTemp
       integer :: i,j,iedge,jedge,icolor
 
+      if (nmaxColor .gt. 64) then
+        call output_line('Current implementation does not support more than 64 colors!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'genEdgeListIdx_greedy')
+      call sys_halt()
+      end if
+
       ! Allocate temporal memory
       h_IdofColor = ST_NOHANDLE
       call storage_new('genEdgeListIdx', 'IdofColor', neq,&
-          ST_INT, h_IdofColor, ST_NEWBLOCK_NOINIT)
-      call storage_getbase_int(h_IdofColor, p_IdofColor)
+          ST_INT64, h_IdofColor, ST_NEWBLOCK_ZERO)
+      call storage_getbase_int64(h_IdofColor, p_IdofColor)
 
       ! Make a temporal backup if the edge list
       Isize = shape(IedgeList)
@@ -26274,7 +26343,521 @@ contains
       call storage_free(h_IdofColor)
       call storage_free(h_IedgeListTemp)
 
-    end subroutine genEdgeListIdx
+    end subroutine genEdgeListIdx_greedy64
+
+
+    !**************************************************************
+    ! Generate index for edge data structure based on recoloring
+    ! algorithm due to Nishizeki, Leven and Terada which makes use
+    ! of the constructive proof by Vizing to edge-color any graph
+    ! with ncolor or ncolor+1 different colours
+    ! Note that this implementation works for 64 colors at most
+    !
+    ! Implementation details: T. Nishizeki, N. Chiba, Planar
+    !                         Graphs: Theory and Algorithms.
+    !                         Annals of Discrete Mathematic 32
+
+    subroutine genEdgeListIdx_ntl64(neq, nmaxColor, IedgeListIdx, IedgeList)
+
+      integer, intent(in) :: neq,nmaxColor
+
+      integer, dimension(:), intent(inout) :: IedgeListIdx
+      integer, dimension(:,:), intent(inout) :: IedgeList
+
+      ! local constants
+      integer, parameter, dimension(0:67) :: lookup67 = &
+      (/ 64,  0,  1, 39,  2, 15, 40, 23,&
+          3, 12, 16, 59, 41, 19, 24, 54,&
+          4, -1, 13, 10, 17, 62, 60, 28,&
+         42, 30, 20, 51, 25, 44, 55, 47,&
+          5, 32, -1, 38, 14, 22, 11, 58,&
+         18, 53, 63,  9, 61, 27, 29, 50,&
+         43, 46, 31, 37, 21, 57, 52,  8,&
+         26, 49, 45, 36, 56,  7, 48, 35,&
+          6, 34, 33, -1 /)
+
+      ! local variables
+      type(t_arraylistInt_Int) :: rgraph
+      type(it_arraylistInt_Int) :: rgraph_iter
+      integer(I64), dimension(:), pointer :: p_IdofColor
+      integer, dimension(:,:), allocatable :: Ifan
+      integer, dimension(:), allocatable :: Iwork
+      integer, dimension(:,:), pointer :: p_IApath,p_IedgeListTemp
+      integer, dimension(:), pointer :: p_IedgeColor,p_Iedge
+      integer, dimension(2) :: Isize
+      integer :: h_IedgeColor,h_IdofColor,h_IApath,h_IedgeListTemp
+      integer :: iapathLength,ifanLength,i,j,k,k_mis
+      integer :: icol1,icol2,icolor,icolor_center,icolor_fan,icolor_last
+      integer :: iedge,iedge1,iedge2,iedge_fan,iedge_last,iedge_mis
+      integer :: ivert1,ivert2,ivertex,ivertex_fan,ivertex_last,ivertex_mis
+      logical :: bendAtCenter
+
+
+      ! There is no need to store a unique missing colour for each
+      ! vertex. For each vertex, a 64-bit integer is used to mark if
+      ! colour 0..63 is missing or not. The unique missing colour is
+      ! simply the least significant bit the is not set.
+#define MISSINGCOLOUR(v) lookup67(mod((.not.p_IdofColor(v)).and.(-(.not.p_IdofColor(v))),67))
+
+      ! Create array list for storing adjacency information
+      call alst_create(rgraph, neq, 2*size(IedgeList,2), 1)
+      call alst_createTbl(rgraph, neq)
+
+      ! Allocate temporal array for storing edge colors
+      h_IedgeColor = ST_NOHANDLE
+      call storage_new('genEdgeListIdx', 'IedgeColor', size(IedgeList,2),&
+          ST_INT, h_IedgeColor, ST_NEWBLOCK_NOINIT)
+      call storage_getbase_int(h_IedgeColor, p_IedgeColor)
+      call lalg_setVector(p_IedgeColor, -1)
+
+      ! Allocate temporal array for storing alternating path
+      h_IApath = ST_NOHANDLE
+      call storage_new('genEdgeListIdx', 'IApath', (/2,neq/),&
+          ST_INT, h_IApath, ST_NEWBLOCK_NOINIT)
+      call storage_getbase_int2d(h_IApath, p_IApath)
+      
+      ! Allocate temporal array for used colors per vertex
+      h_IdofColor = ST_NOHANDLE
+      call storage_new('genEdgeListIdx', 'IdofColor', neq,&
+          ST_INT64, h_IdofColor, ST_NEWBLOCK_ZERO)
+      call storage_getbase_int64(h_IdofColor, p_IdofColor)
+
+      ! Allocate working array for constructing maximal fan sequences
+      allocate(Iwork(0:nmaxColor))
+
+      ! Allocate array to store vertex and edge numbers of the maximal
+      ! fan sequences to be created for each newly introduced edge
+      allocate(Ifan(3,0:nmaxColor))
+
+      ! COLOR: Insert each edge of the graph separately
+      ! =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+      do iedge = 1, size(IedgeList,2)
+        
+        ! Get vertex numbers
+        i = IedgeList(1,iedge)
+        j = IedgeList(2,iedge)
+
+        ! Perform RECOLORing of new graph G + (i,j)
+        ! =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+               
+        ! Loop over all edges adjacent to vertex j and generate a
+        ! colour-to-edgenumber lookup table in the working array Iwork
+        Iwork = 0; rgraph_iter = alst_begin(rgraph, j)
+        do while (rgraph_iter /= alst_end(rgraph, j))
+
+          ! Get edge number
+          call alst_getbase_data(rgraph, rgraph_iter, p_Iedge)
+          
+          ! Get edge color
+          icolor = p_IedgeColor(p_Iedge(1))
+
+          ! Mark edge/color combination in working array
+          Iwork(icolor) = p_Iedge(1)
+
+          ! Proceed to next edge
+          call alst_next(rgraph_iter)          
+        end do
+
+        ! Insert edge (i,j) into graph structure
+        call alst_push_back(rgraph, i, j, (/iedge/))
+        call alst_push_back(rgraph, j, i, (/iedge/))
+        
+        ! Create maximal fan sequence at vertex j starting with
+        ! uncoloured edge (j,i) in time O(nmaxColor), that is
+        !
+        ! (j,i_0), (j,i_1), ..., (j,i_S)
+        !
+        ! such that
+        !
+        ! edge (j,i_k) is coloured with `the' missing color of vertex  i_{k-1}
+
+        ivertex_fan = i
+        icolor_fan  = MISSINGCOLOUR(i)
+
+        Ifan(1,0) = ivertex_fan
+        Ifan(2,0) = iedge
+        Ifan(3,0) = icolor_fan
+
+        fan_loop: do ifanLength = 1, nmaxColor
+
+          ! Get the edge that is coloured with the missing colour of
+          ! the previous vertex; zero if no such edge exists. To
+          ! ensure that each colour is processed only once we flip the
+          ! sign of the working array after having processed
+          ! it. Otherwise, we may run into a cycle.
+          iedge_fan         = Iwork(icolor_fan)
+          Iwork(icolor_fan) = -Iwork(icolor_fan)
+          
+          ! Can we expand the maximal fan further?
+          if (iedge_fan .le. 0) then
+            ! Edge has been visited before or no edge with colour
+            ! icolor_fan exist; thus, we are done here
+            exit fan_loop
+          else
+            ! Get new vertex number and its missing colour
+            ivertex_fan = IedgeList(1,iedge_fan) + IedgeList(2,iedge_fan) - j
+            icolor_fan  = MISSINGCOLOUR(ivertex_fan)
+
+            ! Store data in fan sequence
+            Ifan(1,ifanLength) = ivertex_fan
+            Ifan(2,ifanLength) = iedge_fan
+            Ifan(3,ifanLength) = icolor_fan
+          end if
+        end do fan_loop
+        
+        ! Adjust length of maximal fan sequence
+        ifanLength = ifanLength-1
+
+        ! Now, the array Ifan(0:ifanLength) contains the vertex
+        ! numbers which represent the maximal fan sequence centered
+        ! about vertex j starting at vertex i.
+
+        ivertex_last = Ifan(1,ifanLength)
+        iedge_last   = Ifan(2,ifanLength)
+        icolor_last  = Ifan(3,ifanLength)
+
+        ! Variable ivertex_last represents the number of the last
+        ! vertex in the maximal fan sequence and icolor_last is `the'
+        ! missing colour of the last vertex in the fan sequence
+
+        if (.not.btest(p_IdofColor(j), icolor_last)) then
+          ! Case (1): `the' missing colour of the last vertex with
+          ! number ivertex_last in the fan is a missing colour of vertex j
+          ! =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+          
+          ! Simply shift all colours of fan sequence by one
+          do k = 0, ifanLength
+
+            ! Get vertex and edge number
+            ivert1 = Ifan(1,k)
+            iedge1 = Ifan(2,k)
+
+            ! Make backup of the previous edge colour
+            icol1 = p_IedgeColor(iedge1)
+
+            ! Color edge (j,i_k) with the missing colour of i_k
+            p_IedgeColor(iedge1) = Ifan(3,k)
+            
+            ! Update (=clear old,set new) missing colours of vertex i_k
+            if (k .ne. 0)  p_IdofColor(ivert1) = ibclr(p_IdofColor(ivert1), icol1)
+            p_IdofColor(ivert1) = ibset(p_IdofColor(ivert1), p_IedgeColor(iedge1))
+          end do
+
+          ! Update missing colour of fan centering vertex j only for
+          ! last edge (i,ivert1) since colour icolor_last has not been
+          ! used for colouring the edges within the maximal fan sequence
+          p_IdofColor(j) = ibset(p_IdofColor(j), icolor_last)
+          
+        else
+          ! Case (2): an edge of the maximal fan sequence is coloured
+          ! with `the' missing colour of the last vertex numbered ivertex
+          ! =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+          
+          do k = 0, ifanLength-2
+            if (Ifan(3,k) .eq. icolor_last) exit
+          end do
+          ivertex_mis = Ifan(1,k)
+          iedge_mis   = Ifan(2,k)
+          k_mis       = k
+
+          ! Now, ivertex_mis is the number of the vertex such that
+          ! `the' missing colours of vertices ivertex_mis and the last
+          ! vertex in the fan sequence ivertex_last coincide.
+          
+          ! Construct alternating path with colours icolor_last and
+          ! the missing colour icolor_center of the fan center
+          ! vertex j starting at the intermediate vertex ivertex_mis
+          icolor_center = MISSINGCOLOUR(j)
+          iapathLength  = 0
+          ivert1        = ivertex_mis
+          icol1         = icolor_center
+          iedge1        = 0
+          apath_loop1: do
+            
+            rgraph_iter = alst_begin(rgraph, ivert1)
+            do while (rgraph_iter /= alst_end(rgraph, ivert1))
+              
+              ! Get edge number
+              call alst_getbase_data(rgraph, rgraph_iter, p_Iedge)
+              iedge2 = p_Iedge(1)
+              
+              ! Check if this edge belongs to the alternating path and
+              ! has not been traversed by the alternating path before
+              if ((iedge1 .ne. iedge2) .and.&
+                  (icol1  .eq. p_IedgeColor(iedge2))) then
+                
+                ! Update new edge and starting vertex
+                iedge1 = iedge2
+                ivert1 = IedgeList(1,iedge1) + IedgeList(2,iedge1) - ivert1
+                
+                ! Update path length
+                iapathLength = iapathLength+1
+                
+                ! Store edge number and colour
+                p_IApath(1,iapathLength) = iedge1
+                p_IApath(2,iapathLength) = icol1
+                
+                ! Alternate colour
+                icol1 = icolor_center + icolor_last - icol1
+                
+                cycle apath_loop1
+              end if
+              
+              ! Proceed to next edge
+              call alst_next(rgraph_iter)
+            end do
+            
+            ! No further edges could be found
+            exit apath_loop1
+          end do apath_loop1
+
+          ! Check if path ends at fan centering vertex j
+          if (iapathLength .gt. 0) then
+            iedge1 = p_IApath(1,iapathLength)
+            bendAtCenter = (IedgeList(1,iedge1) .eq. j)&
+                      .or. (IedgeList(2,iedge1) .eq. j)
+          else
+            ! There is no path that could end at vertex j
+            bendAtCenter = .false.
+          end if
+
+          if (bendAtCenter) then
+            ! The alternating path starting at vertex ivertex_last
+            ! ends at the fan centering vertex j; thus we have to
+            ! construct another alternating path
+            
+            ! Construct alternating path with colours icolor_last and
+            ! `the' missing colour icolor_center of the fan center
+            ! vertex j starting at the last vertex ivertex_last
+            icolor_center = MISSINGCOLOUR(j)
+            iapathLength  = 0
+            ivert1        = ivertex_last
+            icol1         = icolor_center
+            iedge1        = 0
+            apath_loop2: do
+              
+              rgraph_iter = alst_begin(rgraph, ivert1)
+              do while (rgraph_iter /= alst_end(rgraph, ivert1))
+                
+                ! Get edge number of the next incident edge
+                call alst_getbase_data(rgraph, rgraph_iter, p_Iedge)
+                iedge2 = p_Iedge(1)
+                
+                ! Check if this edge belongs to the alternating path,
+                ! that is, it is coloured with colour icol1 and has not
+                ! been traversed by the alternating path before
+                if ((iedge1 .ne. iedge2) .and.&
+                    (icol1  .eq. p_IedgeColor(iedge2))) then
+                  
+                  ! Update new edge and  starting vertex
+                  iedge1 = iedge2
+                  ivert1 = IedgeList(1,iedge1) + IedgeList(2,iedge1) - ivert1
+                  
+                  ! Update path length
+                  iapathLength = iapathLength+1
+                  
+                  ! Store edge number and colour
+                  p_IApath(1,iapathLength) = iedge1
+                  p_IApath(2,iapathLength) = icol1
+                  
+                  ! Alternate colour
+                  icol1 = icolor_center + icolor_last - icol1
+                  
+                  cycle apath_loop2
+                end if
+                
+                ! Proceed to next edge
+                call alst_next(rgraph_iter)
+              end do
+              
+              ! No further edges could be found
+              exit apath_loop2
+            end do apath_loop2
+
+            ! The alternating path starting at vertex ivertex_last
+            ! does not end at the fan centering vertex j
+
+            ! Interchange the colors of the alternating path
+            do k = 1, iapathLength
+              ! Get edge number
+              iedge1 = p_IApath(1,k)
+              
+              ! Determine current and new color of the ede
+              icol1 = icolor_center + icolor_last - p_IApath(2,k)
+              
+              ! Update edge color
+              p_IedgeColor(iedge1) = icol1
+            end do
+          
+            if (iapathLength .gt. 0) then
+              ! The alternating path does not form one large circle so
+              ! that we need to update the list of missing colours at
+              ! the start and end vertices of the path accordingly
+              p_IdofColor(ivertex_last) = ibclr(p_IdofColor(ivertex_last), icolor_center)
+              p_IdofColor(ivertex_last) = ibset(p_IdofColor(ivertex_last), icolor_last)
+              
+              icol1 = p_IApath(2,iapathLength)
+              icol2 = icolor_center + icolor_last - icol1
+              
+              p_IdofColor(ivert1) = ibclr(p_IdofColor(ivert1), icol1)
+              p_IdofColor(ivert1) = ibset(p_IdofColor(ivert1), icol2)
+            end if
+
+            ! The missing colour of vertex j is now missing both at j
+            ! and ivertex_last; Shift all colours of the fan sequence
+            ! by one; note that the zeroth edge is treated separately
+            do k = 0, ifanLength-1
+              ! Get vertex and edge number
+              ivert1 = Ifan(1,k)
+              iedge1 = Ifan(2,k)
+              
+              ! Make backup of the previous edge colour
+              icol1 = p_IedgeColor(iedge1)
+              
+              ! Color edge (j,i_k) with the missing colour of i_k
+              p_IedgeColor(iedge1) = Ifan(3,k)
+              
+              ! Update (=clear old,set new) missing colours of vertex i_k
+              if (k .ne. 0) p_IdofColor(ivert1) = ibclr(p_IdofColor(ivert1), icol1)
+              p_IdofColor(ivert1) = ibset(p_IdofColor(ivert1), p_IedgeColor(iedge1))
+
+              if (k .eq. ifanLength-1) then
+                ! Update missing colour of fan centering vertex j only for
+                ! last edge (i,ivert1) since colour icolor_last has not been
+                ! used for colouring the edges within the maximal fan sequence
+                p_IdofColor(j) = ibset(p_IdofColor(j), p_IedgeColor(iedge1))
+              end if
+            end do
+
+            ! Color edge (j,ivertex_last) with the missing colour
+            ! icolour_center of the fan centering vertex j
+            p_IdofColor(ivertex_last) = ibclr(p_IdofColor(ivertex_last), p_IedgeColor(iedge_last))
+            p_IedgeColor(iedge_last)  = icolor_center
+            p_IdofColor(ivertex_last) = ibset(p_IdofColor(ivertex_last), icolor_center)
+            p_IdofColor(j)            = ibset(p_IdofColor(j),           icolor_center)
+
+          else
+            ! The alternating path starting at vertex ivertex_last
+            ! does not end at the fan centering vertex j
+
+            ! Interchange the colors of the alternating path
+            do k = 1, iapathLength
+              ! Get edge number
+              iedge1 = p_IApath(1,k)
+              
+              ! Determine current and new color of the ede
+              icol1 = icolor_center + icolor_last - p_IApath(2,k)
+              
+              ! Update edge color
+              p_IedgeColor(iedge1) = icol1
+            end do
+
+            if (iapathLength .gt. 0) then
+              ! The alternating path does not form one large circle so
+              ! that we need to update the list of missing colours at
+              ! the start and end vertices of the path accordingly
+              p_IdofColor(ivertex_mis) = ibclr(p_IdofColor(ivertex_mis), icolor_center)
+              p_IdofColor(ivertex_mis) = ibset(p_IdofColor(ivertex_mis), icolor_last)
+              
+              icol1 = p_IApath(2,iapathLength)
+              icol2 = icolor_center + icolor_last - icol1
+                            
+              p_IdofColor(ivert1) = ibclr(p_IdofColor(ivert1), icol1)
+              p_IdofColor(ivert1) = ibset(p_IdofColor(ivert1), icol2)
+            end if
+
+            ! The missing colour of vertex j is now missing both at j
+            ! and ivertex_mis; Shift all colours of the fan sequence
+            ! by one; note that the zeroth edge is treated separately
+            do k = 0, k_mis-1
+              ! Get vertex and edge number
+              ivert1 = Ifan(1,k)
+              iedge1 = Ifan(2,k)
+              
+              ! Make backup of the previous edge colour
+              icol1 = p_IedgeColor(iedge1)
+              
+              ! Color edge (j,i_k) with the missing colour of i_k
+              p_IedgeColor(iedge1) = Ifan(3,k)
+                           
+              ! Update (=clear old,set new) missing colours of vertex i_k
+              if (k .ne. 0) p_IdofColor(ivert1) = ibclr(p_IdofColor(ivert1), icol1)
+              p_IdofColor(ivert1) = ibset(p_IdofColor(ivert1), p_IedgeColor(iedge1))
+
+              if (k .eq. k_mis-1) then
+                ! Update missing colour of fan centering vertex j only for
+                ! last edge (i,ivert1) since colour icolor_last has not been
+                ! used for colouring the edges within the maximal fan sequence
+                p_IdofColor(j) = ibset(p_IdofColor(j), p_IedgeColor(iedge1))
+              end if
+            end do
+            
+            ! Color edge (j,ivertex_mis) with the missing colour
+            ! icolour_center of the fan centering vertex j
+            p_IdofColor(ivertex_mis) = ibclr(p_IdofColor(ivertex_mis), p_IedgeColor(iedge_mis))
+            p_IedgeColor(iedge_mis)  = icolor_center
+            p_IdofColor(ivertex_mis) = ibset(p_IdofColor(ivertex_mis), icolor_center)
+            p_IdofColor(j)           = ibset(p_IdofColor(j),           icolor_center)
+          end if
+
+        end if
+        
+      end do
+      
+      ! Release temporal array lists
+      call alst_release(rgraph)
+
+      ! Deallocate temporal arrays
+      deallocate(Iwork)
+      deallocate(Ifan)
+
+      ! First shuffle pass: Loop over all edges and count the number
+      ! of edges per colour group
+      call lalg_clearVector(IedgeListIdx)
+      edge1: do iedge = 1, size(IedgeList,2)
+        icol1 = p_IedgeColor(iedge)
+        IedgeListIdx(icol1+2) = IedgeListIdx(icol1+2)+1
+      end do edge1
+
+      ! Second shuffle pass: Compute starting position of each group
+      IedgeListIdx(1) = 1
+      do icol1 = 2, size(IedgeListIdx)
+        IedgeListIdx(icolor) = IedgeListIdx(icol1)&
+                             + IedgeListIdx(icol1-1)
+      end do
+
+      ! Make a temporal backup if the edge list
+      Isize = shape(IedgeList)
+      h_IedgeListTemp = ST_NOHANDLE
+      call storage_new('genEdgeListIdx','IedgeListTemp',&
+          Isize, ST_INT, h_IedgeListTemp, ST_NEWBLOCK_NOINIT)
+      call storage_getbase_int2d(h_IedgeListTemp, p_IedgeListTemp)
+      call lalg_copyVector(IedgeList, p_IedgeListTemp)
+
+      ! Third shuffle pass: Reorder the edges physically
+      edge2: do iedge = 1, size(IedgeList,2)
+        ! Get edge colour and first free position
+        icol1  = p_IedgeColor(iedge)+1
+        iedge1 = IedgeListIdx(icol1)
+
+        ! Copy edge data into its correct position
+        IedgeList(:,iedge1) = p_IedgeListTemp(:,iedge)
+        IedgeListIdx(icol1) = IedgeListIdx(icol1)+1
+      end do edge2
+
+      ! Fourth shuffle pass:
+      ! Adjust the starting index which was tainted in the third pass
+      do icolor = size(IedgeListIdx), 2, -1
+        IedgeListIdx(icolor) = IedgeListIdx(icolor-1)
+      end do
+      IedgeListIdx(1) = 1
+      
+      ! Release temporal memory
+      call storage_free(h_IdofColor)
+      call storage_free(h_IedgeColor)
+      call storage_free(h_IedgeListTemp)
+      
+    end subroutine genEdgeListIdx_ntl64
 
   end subroutine lsyssc_regroupEdgeList
 
@@ -26334,7 +26917,7 @@ contains
     integer :: i,ij,j
 
     if (rmatrix%NEQ .ne. rmatrix%NCOLS) then
-      call output_line('!',&
+      call output_line('Matrix must be square matrix!',&
           OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_calcDimsFromMatrix')
       call sys_halt()
     end if

@@ -4459,10 +4459,11 @@ contains
     call gfem_getbase_IedgeList(rgroupFEMSet, p_IedgeList)
     if (rmatrix%cmatrixFormat .eq. LSYSSC_MATRIX1) then
       call lsyssc_regroupEdgeList(rmatrix%NEQ, p_IedgeList,&
-          rgroupFEMSet%h_IedgeListIdx, 2*(rmatrix%NEQ-1))
+          rgroupFEMSet%h_IedgeListIdx, rmatrix%NEQ+1,&
+          LSYSSC_EDGECOLORING_NTL)
     else
       call lsyssc_regroupEdgeList(rmatrix%NEQ, p_IedgeList,&
-          rgroupFEMSet%h_IedgeListIdx)
+          rgroupFEMSet%h_IedgeListIdx, ccoloringType=LSYSSC_EDGECOLORING_NTL)
     end if
 #endif
 
