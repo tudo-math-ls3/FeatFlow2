@@ -1,3 +1,4 @@
+
 !##############################################################################
 !# ****************************************************************************
 !# <name> spacesolver </name>
@@ -191,6 +192,28 @@ module spacesolver
   
   ! Defect vector
   integer, parameter :: SPACESLH_VEC_DEFECT   = 2
+
+!</constantblock>
+
+!<constantblock description = "Specifies some flags that modify the underlying equation to solve.">
+
+  ! Assemble / solve the full system
+  integer, parameter, public :: SPACESLH_EQNF_DEFAULT = 0
+  
+  ! Simplify the system: No Newton term in the linearised dual equation
+  ! This gives the same result as solving the system with the "simple" solver
+  ! OPTP_PRIMALLIN_SIMPLE.
+  integer, parameter, public :: SPACESLH_EQNF_NONEWTONPRIMAL = 1
+
+  ! Simplify the system: No Newton term in the linearised dual equation
+  ! This gives the same result as solving the system with the "simple" solver
+  ! OPTP_DUALLIN_SIMPLE.
+  integer, parameter, public :: SPACESLH_EQNF_NONEWTONDUAL = 2
+  
+  ! Simplify the system: No Newton term in the linearised primal and dual equation.
+  ! This gives the same result as solving the system with the "simple" solver
+  ! OPTP_PRIMALLIN_SIMPLE / OPTP_DUALLIN_SIMPLE.
+  integer, parameter, public :: SPACESLH_EQNF_NONEWTON = 3
 
 !</constantblock>
 
@@ -1004,7 +1027,7 @@ contains
 !<subroutine>
 
   subroutine spaceslh_initData_dualLin (rsolver, ierror, idofTime, &
-      rprimalSol, isollevelSpace, bfull, rstatistics, bfallbackSolver)
+      rprimalSol, isollevelSpace, rstatistics, bfallbackSolver)
   
 !<description>
   ! Final preparation of the Newton solver. Linearised dual space.
@@ -1021,9 +1044,6 @@ contains
   
   ! Space level corresponding to rprimalSol.
   integer, intent(in) :: isollevelSpace
-
-  ! Whether or not to apply the full Newton operator.
-  logical, intent(in) :: bfull
 
   ! Whether or not to initialise the fallback solver.
   ! =FALSE: Create matrices and initialise the default solver.
@@ -1050,7 +1070,6 @@ contains
 !</subroutine>
 
     ! Implementation identical to spaceslh_initData_dual.
-    ! bfull does not have to be respected.
 
     ! local variables
     integer :: ilev,iprevlv
@@ -1212,8 +1231,8 @@ contains
 
 !<subroutine>
 
-  subroutine spaceslh_solve (rsolver,idofTime,csolgeneration,rstatistics,isollevelSpace,&
-      rprimalSol,rdualSol,rcontrol,rprimalSolLin,rdualSolLin,rcontrolLin)
+  subroutine spaceslh_solve (rsolver,idofTime,csolgeneration,ceqnflags,rstatistics,&
+      isollevelSpace,rprimalSol,rdualSol,rcontrol,rprimalSolLin,rdualSolLin,rcontrolLin)
   
 !<description>
   ! Solves the spatial linear/nonlinear system.
@@ -1233,6 +1252,10 @@ contains
   !     current one.
   ! =2: Take the solution of the last space-time iteration
   integer, intent(in) :: csolgeneration
+  
+  ! Equation flags that specify modifications to the equation to solve.
+  ! One of the SPACESLH_EQNF_xxxx constants.
+  integer, intent(in) :: ceqnflags
 
   ! Space level corresponding to the solution structures.
   integer, intent(in) :: isollevelSpace
@@ -1650,8 +1673,9 @@ contains
       
       call smva_getDef_primalLin (p_rd,&
           rsolver%ispacelevel,rsolver%itimelevel,idofTime,&
-          rsolver%p_roperatorAsmHier,rprimalSol,rcontrol,rprimalSolLin,&
-          rcontrolLin,rsolver%coptype .eq. OPTP_PRIMALLIN,&
+          rsolver%p_roperatorAsmHier,rprimalSol,rcontrol,rprimalSolLin,rcontrolLin,&
+          (rsolver%coptype .eq. OPTP_PRIMALLIN) .and. &
+          (iand(ceqnflags,SPACESLH_EQNF_NONEWTONPRIMAL) .eq. 0),&
           rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(rsolver%ispacelevel),&
           rsolver%rtempData,csolgeneration,rtimer)
           
@@ -1680,8 +1704,8 @@ contains
         call lsysbl_copyVector (p_rd,p_rd2)
 
         call spaceslh_initData_primalLin (rsolver, ierror, idofTime, &
-            rprimalSol,rsolver%ispacelevel,rsolver%coptype .eq. OPTP_PRIMALLIN,&
-            rlocalStat,.false.)
+            rprimalSol,rsolver%ispacelevel,(rsolver%coptype .eq. OPTP_PRIMALLIN) .or. &
+            (iand(ceqnflags,SPACESLH_EQNF_NONEWTONPRIMAL) .ne. 0),rlocalStat,.false.)
             
         call spacesl_sumStatistics (rlocalStat,rstatistics,.false.)
 
@@ -1713,8 +1737,8 @@ contains
           call lsysbl_copyVector (p_rd2,p_rd)
 
           call spaceslh_initData_primalLin (rsolver, ierror, idofTime, &
-              rprimalSol,rsolver%ispacelevel,rsolver%coptype .eq. OPTP_PRIMALLIN,&
-              rlocalStat,.true.)
+              rprimalSol,rsolver%ispacelevel,(rsolver%coptype .eq. OPTP_PRIMALLIN) .and. &
+              (iand(ceqnflags,SPACESLH_EQNF_NONEWTONPRIMAL) .eq. 0),rlocalStat,.true.)
               
           call spacesl_sumStatistics (rlocalStat,rstatistics,.false.)
 
@@ -1801,8 +1825,9 @@ contains
       
       call smva_getDef_dualLin (p_rd,&
           rsolver%ispacelevel,rsolver%itimelevel,idofTime,&
-          rsolver%p_roperatorAsmHier,rprimalSol,rdualSol,rprimalSolLin,&
-          rdualSolLin,rsolver%coptype .eq. OPTP_DUALLIN,&
+          rsolver%p_roperatorAsmHier,rprimalSol,rdualSol,rprimalSolLin,rdualSolLin,&
+          (rsolver%coptype .eq. OPTP_DUALLIN) .and. &
+          (iand(ceqnflags,SPACESLH_EQNF_NONEWTONDUAL) .eq. 0),&
           rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(rsolver%ispacelevel),&
           rsolver%rtempData,csolgeneration,rtimer)
           
@@ -1831,8 +1856,7 @@ contains
         call lsysbl_copyVector (p_rd,p_rd2)
 
         call spaceslh_initData_dualLin (rsolver, ierror, idofTime, &
-            rprimalSol,rsolver%ispacelevel,rsolver%coptype .eq. OPTP_DUALLIN,&
-            rlocalStat,.false.)
+            rprimalSol,rsolver%ispacelevel,rlocalStat,.false.)
         
         call spacesl_sumStatistics (rlocalStat,rstatistics,.false.)
 
@@ -1864,8 +1888,7 @@ contains
           call lsysbl_copyVector (p_rd2,p_rd)
 
           call spaceslh_initData_dualLin (rsolver, ierror, idofTime, &
-              rprimalSol,rsolver%ispacelevel,rsolver%coptype .eq. OPTP_DUALLIN,&
-              rlocalStat,.true.)
+              rprimalSol,rsolver%ispacelevel,rlocalStat,.true.)
           
           call spacesl_sumStatistics (rlocalStat,rstatistics,.false.)
 

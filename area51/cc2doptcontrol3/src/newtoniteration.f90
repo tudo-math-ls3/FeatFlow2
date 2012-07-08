@@ -845,6 +845,13 @@ contains
             rsolver,rsolver%rnewtonParams%radaptiveNewton,&
             rsolver%riter%dresInitial,rsolver%riter%dresFinal)
       end if
+      
+      ! In the first iteration, no Newton term in the dual equation
+      if (rsolver%riter%niterations .eq. 1) then
+        rsolver%rlinsolParam%ceqnflags = SPACESLH_EQNF_NONEWTONDUAL
+      else
+        rsolver%rlinsolParam%ceqnflags = SPACESLH_EQNF_DEFAULT
+      end if
     
       ! -------------------------------------------------------------
       ! Preconditioning with the Newton matrix

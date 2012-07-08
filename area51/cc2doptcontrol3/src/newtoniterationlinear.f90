@@ -311,6 +311,10 @@ module newtoniterationlinear
     ! is not better than depsrel(linear space-solver)!!!
     integer :: cspatialInitCondPolicy = SPINITCOND_PREVITERATE
     
+    ! Equation flags that specify modifications to the equation to solve.
+    ! One of the SPACESLH_EQNF_xxxx constants.
+    integer :: ceqnflags = SPACESLH_EQNF_DEFAULT
+
     ! Parameters for the multigrid solver
     type(t_linsolMultigrid), pointer :: p_rsubnodeMultigrid => null()
 
@@ -440,7 +444,7 @@ contains
 
     call kkt_solvePrimalDirDeriv (rkktsystemDirDeriv,&
         rlinsolParam%p_rsolverHierPrimalLin,rlinsolParam%cspatialInitCondPolicy,&
-        rlocalStat)
+        rlinsolParam%ceqnflags,rlocalStat)
 
     output_iautoOutputIndent = output_iautoOutputIndent - 2
     
@@ -477,7 +481,7 @@ contains
 
     call kkt_solveDualDirDeriv (rkktsystemDirDeriv,&
         rlinsolParam%p_rsolverHierDualLin,rlinsolParam%cspatialInitCondPolicy,&
-        rlocalStat)
+        rlinsolParam%ceqnflags,rlocalStat)
 
     output_iautoOutputIndent = output_iautoOutputIndent - 2
     
@@ -561,7 +565,7 @@ contains
 
     call kkt_solvePrimalDirDeriv (rkktsystemDirDeriv,&
         rlinsolParam%p_rsolverHierPrimalLin,rlinsolParam%cspatialInitCondPolicy,&
-        rlocalStat)
+        rlinsolParam%ceqnflags,rlocalStat)
     
     output_iautoOutputIndent = output_iautoOutputIndent - 2
 
@@ -599,7 +603,7 @@ contains
 
     call kkt_solveDualDirDeriv (rkktsystemDirDeriv,&
         rlinsolParam%p_rsolverHierDualLin,rlinsolParam%cspatialInitCondPolicy,&
-        rlocalStat)
+        rlinsolParam%ceqnflags,rlocalStat)
 
     output_iautoOutputIndent = output_iautoOutputIndent - 2
 
@@ -1250,6 +1254,9 @@ contains
 
       ! Initialise the data of the subsolvers
       call newtonlin_initData (rlinsolMultigrid%p_rsubSolvers(ilevel),rsolutionHierarchy,ilevel)
+      
+      ! Modification of the equation
+      rlinsolMultigrid%p_rsubSolvers(ilevel)%ceqnflags = rsolver%ceqnflags
 
     end do
 

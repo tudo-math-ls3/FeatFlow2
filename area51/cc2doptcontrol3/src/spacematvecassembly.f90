@@ -3802,7 +3802,7 @@ contains
       dtheta = rspaceTimeOperatorAsm%p_rtimeDiscrDual%dtheta
       
       ! Characteristics of the current timestep.
-      call tdiscr_getTimestep(rspaceTimeOperatorAsm%p_rtimeDiscrDual,idofTime-1,&
+      call tdiscr_getTimestep(rspaceTimeOperatorAsm%p_rtimeDiscrDual,idofTime,&
           dtimeend,dtstep,dtimestart)
 
       ! itag=0: old 1-step scheme.
@@ -3835,8 +3835,8 @@ contains
           !
           ! Vector 1+2 = dual velocity.
           call sptivec_getVectorFromPool (rdualSol%p_rvectorAccess,idofTime,p_rvector1)
-          call fev2_addVectorToEvalList(rvectorEval,p_rvector1%RvectorBlock(1),1)
-          call fev2_addVectorToEvalList(rvectorEval,p_rvector1%RvectorBlock(2),1)
+          call fev2_addVectorToEvalList(rvectorEval,p_rvector1%RvectorBlock(1),0)
+          call fev2_addVectorToEvalList(rvectorEval,p_rvector1%RvectorBlock(2),0)
 
           ! Vector 3+4 = linearised primal velocity.
           call sptivec_getVectorFromPool (rprimalSolLin%p_rvectorAccess,idofTime,p_rvector2)
@@ -3851,10 +3851,25 @@ contains
           ! Cleanup
           call fev2_releaseVectorList(rvectorEval)
           
+        case default
+          call output_line ("Unknown equation.", &
+              OU_CLASS_ERROR,OU_MODE_STD,"smva_getSemilinRhs_dualLin")
+          call sys_halt()
+
         end select ! Equation
+
+      case default
+        call output_line ("Unknown timestepping sub-scheme.", &
+            OU_CLASS_ERROR,OU_MODE_STD,"smva_getSemilinRhs_dualLin")
+        call sys_halt()
 
       end select ! Timestep sub-scheme
             
+    case default
+      call output_line ("Unknown timestepping scheme.", &
+          OU_CLASS_ERROR,OU_MODE_STD,"smva_getSemilinRhs_dualLin")
+      call sys_halt()
+      
     end select ! Timestep scheme
     
     ! Release the collections
@@ -4001,12 +4016,12 @@ contains
               dlambda2 = p_Dlambda2(icubp,iel,DER_FUNC2D)
               
               dylin1  = p_Dylin1(icubp,iel,DER_FUNC2D)
-              dylin1x = p_Dylin1(icubp,iel,DER_DERIV_X)
-              dylin1y = p_Dylin1(icubp,iel,DER_DERIV_Y)
+              dylin1x = p_Dylin1(icubp,iel,DER_DERIV2D_X)
+              dylin1y = p_Dylin1(icubp,iel,DER_DERIV2D_Y)
               
               dylin2  = p_Dylin2(icubp,iel,DER_FUNC2D)
-              dylin2x = p_Dylin2(icubp,iel,DER_DERIV_X)
-              dylin2y = p_Dylin2(icubp,iel,DER_DERIV_Y)
+              dylin2x = p_Dylin2(icubp,iel,DER_DERIV2D_X)
+              dylin2y = p_Dylin2(icubp,iel,DER_DERIV2D_Y)
               
               ! Multiply the values of the basis functions
               ! (1st derivatives) by the cubature weight and sum up
@@ -4021,14 +4036,38 @@ contains
                   ( dlambda1 * dylin1y * dbasI + &
                     dlambda2 * ( dylin1*dbasIx + dylin2*dbasIy + dylin2y*dbasI ) )
                   
+!              p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
+!                  dweight * p_DcubWeight(icubp,iel) * &
+!                  ( dlambda1 * ( dylin1*dbasIx + dylin2*dbasIy ) )
+!
+!              p_DlocalVector2(idofe,iel) = p_DlocalVector2(idofe,iel) + &
+!                  dweight * p_DcubWeight(icubp,iel) * &
+!                  ( dlambda2 * ( dylin1*dbasIx + dylin2*dbasIy ) )
             end do ! jdofe
 
           end do ! icubp
         
         end do ! iel
 
+      ! ***********************************************************
+      ! Navier-Stokes. Simplified linearised backward equation.
+      ! ***********************************************************
+      case (OPTP_DUALLIN_SIMPLE)
+        
+        ! Nothing to do, we ignore here any nonlinear term.
+
+      case default
+        call output_line ("Unknown operator.", &
+            OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_semilinRhs")
+        call sys_halt()
+
       end select
       
+    case default
+      call output_line ("Unknown equation.", &
+          OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_semilinRhs")
+      call sys_halt()
+
     end select    
     
   end subroutine
@@ -4164,7 +4203,7 @@ contains
         
           ! This is an error, something went wrong.
           call output_line("Cannot evaluate function",&
-              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_semilinRhs")
+              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_rhs")
           call sys_halt()
         
         else  if (ierror .eq. -1) then
@@ -4174,7 +4213,7 @@ contains
           ! as function id.
           
           call output_line("User defined function not implemented.",&
-              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_semilinRhs")
+              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_rhs")
           call sys_halt()
         
         end if
@@ -4188,7 +4227,7 @@ contains
         
           ! This is an error, something went wrong.
           call output_line("Cannot target function",&
-              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_semilinRhs")
+              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_rhs")
           call sys_halt()
         
         else  if (ierror .eq. -1) then
@@ -4197,7 +4236,7 @@ contains
           ! Call the user-defined evaluation routine, providing iid
           ! as function id.
           call output_line("User defined function not implemented.",&
-              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_semilinRhs")
+              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_rhs")
           call sys_halt()
         
         end if
@@ -4500,7 +4539,7 @@ contains
         
           ! This is an error, something went wrong.
           call output_line("Cannot evaluate function",&
-              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_semilinRhs")
+              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_rhs")
           call sys_halt()
         
         else  if (ierror .eq. -1) then
@@ -4510,7 +4549,7 @@ contains
           ! as function id.
           
           call output_line("User defined function not implemented.",&
-              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_semilinRhs")
+              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_rhs")
           call sys_halt()
         
         end if
@@ -4524,7 +4563,7 @@ contains
         
           ! This is an error, something went wrong.
           call output_line("Cannot target function",&
-              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_semilinRhs")
+              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_rhs")
           call sys_halt()
         
         else  if (ierror .eq. -1) then
@@ -4534,7 +4573,7 @@ contains
           ! as function id.
           
           call output_line("User defined function not implemented.",&
-              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_semilinRhs")
+              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_rhs")
           call sys_halt()
         
         end if
@@ -4617,7 +4656,7 @@ contains
         
           ! This is an error, something went wrong.
           call output_line("Cannot evaluate function",&
-              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_semilinRhs")
+              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_rhs")
           call sys_halt()
         
         else  if (ierror .eq. -1) then
@@ -4627,7 +4666,7 @@ contains
           ! as function id.
           
           call output_line("User defined function not implemented.",&
-              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_semilinRhs")
+              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_rhs")
           call sys_halt()
         
         end if
@@ -4641,7 +4680,7 @@ contains
         
           ! This is an error, something went wrong.
           call output_line("Cannot evaluate function",&
-              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_semilinRhs")
+              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_rhs")
           call sys_halt()
         
         else  if (ierror .eq. -1) then
@@ -4651,7 +4690,7 @@ contains
           ! as function id.
           
           call output_line("User defined function not implemented.",&
-              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_semilinRhs")
+              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_rhs")
           call sys_halt()
         
         end if
@@ -4942,7 +4981,7 @@ contains
         
           ! This is an error, something went wrong.
           call output_line("Cannot evaluate function",&
-              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_semilinRhs")
+              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_rhs")
           call sys_halt()
         
         else  if (ierror .eq. -1) then
@@ -4952,7 +4991,7 @@ contains
           ! as function id.
           
           call output_line("User defined function not implemented.",&
-              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_semilinRhs")
+              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_rhs")
           call sys_halt()
         
         end if
@@ -4966,7 +5005,7 @@ contains
         
           ! This is an error, something went wrong.
           call output_line("Cannot target function",&
-              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_semilinRhs")
+              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_rhs")
           call sys_halt()
         
         else  if (ierror .eq. -1) then
@@ -4976,7 +5015,7 @@ contains
           ! as function id.
           
           call output_line("User defined function not implemented.",&
-              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_semilinRhs")
+              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_rhs")
           call sys_halt()
         
         end if
@@ -5070,7 +5109,7 @@ contains
         
           ! This is an error, something went wrong.
           call output_line("Cannot evaluate function",&
-              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_semilinRhs")
+              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_rhs")
           call sys_halt()
         
         else  if (ierror .eq. -1) then
@@ -5080,7 +5119,7 @@ contains
           ! as function id.
           
           call output_line("User defined function not implemented.",&
-              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_semilinRhs")
+              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_rhs")
           call sys_halt()
         
         end if
@@ -5339,7 +5378,7 @@ contains
         
           ! This is an error, something went wrong.
           call output_line("Cannot evaluate function",&
-              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_semilinRhs")
+              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_rhs")
           call sys_halt()
         
         else  if (ierror .eq. -1) then
@@ -5349,7 +5388,7 @@ contains
           ! as function id.
           
           call output_line("User defined function not implemented.",&
-              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_semilinRhs")
+              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_rhs")
           call sys_halt()
         
         end if
@@ -5426,7 +5465,7 @@ contains
         
           ! This is an error, something went wrong.
           call output_line("Cannot evaluate function",&
-              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_semilinRhs")
+              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_rhs")
           call sys_halt()
         
         else  if (ierror .eq. -1) then
@@ -5436,7 +5475,7 @@ contains
           ! as function id.
           
           call output_line("User defined function not implemented.",&
-              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_semilinRhs")
+              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_rhs")
           call sys_halt()
         
         end if
@@ -5697,7 +5736,7 @@ contains
         
           ! This is an error, something went wrong.
           call output_line("Cannot evaluate function",&
-              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_semilinRhs")
+              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_rhs")
           call sys_halt()
         
         else  if (ierror .eq. -1) then
@@ -5707,7 +5746,7 @@ contains
           ! as function id.
           
           call output_line("User defined function not implemented.",&
-              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_semilinRhs")
+              OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_rhs")
           call sys_halt()
         
         end if

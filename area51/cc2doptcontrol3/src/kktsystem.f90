@@ -422,8 +422,8 @@ contains
     
       ! Apply the solver to update the solution in timestep idofTime.
       output_iautoOutputIndent = output_iautoOutputIndent + 2
-      call spaceslh_solve (rspaceSolver,idofTime,cspatialInitCondPolicy,rstatLocal,&
-          rkktsystem%ispacelevel,rkktsystem%p_rprimalSol,rcontrol=rkktsystem%p_rcontrol)
+      call spaceslh_solve (rspaceSolver,idofTime,cspatialInitCondPolicy,SPACESLH_EQNF_DEFAULT,&
+          rstatLocal,rkktsystem%ispacelevel,rkktsystem%p_rprimalSol,rcontrol=rkktsystem%p_rcontrol)
       output_iautoOutputIndent = output_iautoOutputIndent - 2
       
       ! Sum up statistics
@@ -507,8 +507,8 @@ contains
     
       ! Apply the solver to update the solution in timestep idofTime.
       output_iautoOutputIndent = output_iautoOutputIndent + 2
-      call spaceslh_solve (rspaceSolver,idofTime,cspatialInitCondPolicy,rstatLocal,&
-          rkktsystem%ispacelevel,rkktsystem%p_rprimalSol,rdualSol=rkktsystem%p_rdualSol)
+      call spaceslh_solve (rspaceSolver,idofTime,cspatialInitCondPolicy,SPACESLH_EQNF_DEFAULT,&
+          rstatLocal,rkktsystem%ispacelevel,rkktsystem%p_rprimalSol,rdualSol=rkktsystem%p_rdualSol)
       output_iautoOutputIndent = output_iautoOutputIndent - 2
       
       ! Sum up statistics
@@ -773,7 +773,7 @@ contains
 !<subroutine>
 
   subroutine kkt_solvePrimalDirDeriv (rkktsystemDirDeriv,rspaceSolver,&
-      cspatialInitCondPolicy,rstatistics)
+      cspatialInitCondPolicy,ceqnflags,rstatistics)
   
 !<description>
   ! Solves the linearised primal equation in the KKT system.
@@ -786,6 +786,10 @@ contains
   !     current one. (Default)
   ! =2: Take the solution of the last space-time iteration
   integer, intent(in) :: cspatialInitCondPolicy
+  
+  ! Equation flags that specify modifications to the equation to solve.
+  ! One of the SPACESLH_EQNF_xxxx constants.
+  integer, intent(in) :: ceqnflags
 !</input>
 
 !<inputoutput>
@@ -840,7 +844,7 @@ contains
       ! Apply the solver to update the solution in timestep idofTime.
       output_iautoOutputIndent = output_iautoOutputIndent + 2
       call spaceslh_solve (rspaceSolver,idofTime,cspatialInitCondPolicy,&
-          rstatLocal,p_rkktsystem%ispacelevel,&
+          ceqnflags,rstatLocal,p_rkktsystem%ispacelevel,&
           p_rkktsystem%p_rprimalSol,&
           rcontrol=p_rkktsystem%p_rcontrol,&
           rprimalSolLin=rkktsystemDirDeriv%p_rprimalSolLin,&
@@ -863,7 +867,7 @@ contains
 !<subroutine>
 
   subroutine kkt_solveDualDirDeriv (rkktsystemDirDeriv,rspaceSolver,&
-      cspatialInitCondPolicy,rstatistics)
+      cspatialInitCondPolicy,ceqnflags,rstatistics)
   
 !<description>
   ! Solves the linearised dual equation in the KKT system.
@@ -876,6 +880,10 @@ contains
   !     current one. (Default)
   ! =2: Take the solution of the last space-time iteration
   integer, intent(in) :: cspatialInitCondPolicy
+
+  ! Equation flags that specify modifications to the equation to solve.
+  ! One of the SPACESLH_EQNF_xxxx constants.
+  integer, intent(in) :: ceqnflags
 !</input>
 
 !<inputoutput>
@@ -927,7 +935,7 @@ contains
       ! Apply the solver to update the solution in timestep idofTime.
       output_iautoOutputIndent = output_iautoOutputIndent + 2
       call spaceslh_solve (rspaceSolver,idofTime,cspatialInitCondPolicy,&
-          rstatLocal,p_rkktsystem%ispacelevel,&
+          ceqnflags,rstatLocal,p_rkktsystem%ispacelevel,&
           p_rkktsystem%p_rprimalSol,&
           rdualSol=p_rkktsystem%p_rdualSol,&
           rprimalSolLin=rkktsystemDirDeriv%p_rprimalSolLin,&
