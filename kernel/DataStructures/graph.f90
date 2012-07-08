@@ -146,11 +146,11 @@ module graph
     integer :: NEDGE = 0
 
     ! Is set to true, if the graph is dense, that is, a graph with NVT
-    ! vertices contains the mainly the vertices labeled 1,...,NVT. In
-    ! this case the vertex number coincides with the table under which
-    ! its adjacency list is stored.  If the graph is note marked as
-    ! dense, then for each vertex IVT the table number is stored in
-    ! the vertex list and must be looked-up each time, the adjacency
+    ! vertices contains the vertices labeled 1,...,NVT. In this case
+    ! the vertex number coincides with the table under which its
+    ! adjacency list is stored.  If the graph is not marked as dense,
+    ! then for each vertex IVT the table number is stored in the
+    ! vertex list and must be looked-up each time, the adjacency
     ! information is required.  Note that dense graphs can only store
     ! positive vertex labels !!!
     logical :: bisDense = .true.
@@ -179,7 +179,7 @@ contains
     ! can be initially stored in the graph. If either more vertices or
     ! edges are inserted into the graph, then reallocation of memory
     ! will be performed.  The optional parameter bisDense defines, if
-    ! the graph should be treted as dense graph or not. In a dense
+    ! the graph should be treated as dense graph or not. In a dense
     ! graph, the adjacency list of vertex ivt is stored in table
     ! itable=ivt. It makes sense to use dense graphs, e.g., if NVT
     ! vertices numbered by 1..NVT are present in the graph so that the
@@ -690,7 +690,7 @@ contains
     ! This subroutine inserts the vertex with number iVertex into the
     ! graph.  In addition, the trivial edge (iVertex,iVertex) is
     ! inserted.  If the optional parameter iVertexPosition is present,
-    ! then the posiion of vertex iVertex is returned.  If the optional
+    ! then the position of vertex iVertex is returned.  If the optional
     ! parameter iEdgePosition is present, then the position of the
     ! trivial edge (iVertex,iVertex) is returned
 !</description>
