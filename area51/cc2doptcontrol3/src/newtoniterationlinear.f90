@@ -772,9 +772,12 @@ contains
       
       call newtonlin_sumStatistics(rlocalStat,rstatistics,NLIN_STYPE_RESCALC)
       
-      if (rlinsolParam%riter%niterations .eq. 0) then
+      if (rlinsolParam%riter%cstatus .eq. ITC_STATUS_UNDEFINED) then
         ! Remember the initial residual
-        call itc_initResidual(rlinsolParam%riter,dres)
+        call itc_initResidual(rsolver%riter,dres)
+      else
+        ! Push the residual, increase the iteration counter
+        call itc_pushResidual(rsolver%riter,dres)
       end if
       
       if (rlinsolParam%rprecParameters%ioutputLevel .ge. 2) then
@@ -783,9 +786,6 @@ contains
             ", ||res(u)|| = "// &
             trim(sys_sdEL(dres,10)))
       end if
-
-      ! Push the residual, increase the iteration counter
-      call itc_pushResidual(rlinsolParam%riter,dres)
 
       ! -------------------------------------------------------------
       ! Check for convergence / divergence / ...
@@ -1583,14 +1583,17 @@ contains
       
       call newtonlin_sumStatistics(rlocalStat,rstatistics,NLIN_STYPE_RESCALC)
 
-      if (rlinsolParam%riter%niterations .eq. 0) then
-        ! Remember the initial residual
-        call itc_initResidual(rlinsolParam%riter,dres)
-      end if
-
       ! Some checks and output on the maximum level
       if (ilevel .eq. nlevels) then
       
+        if (rlinsolParam%riter%cstatus .eq. ITC_STATUS_UNDEFINED) then
+          ! Remember the initial residual
+          call itc_initResidual(rsolver%riter,dres)
+        else
+          ! Push the residual, increase the iteration counter
+          call itc_pushResidual(rsolver%riter,dres)
+        end if
+
         if (rlinsolParam%rprecParameters%ioutputLevel .ge. 2) then
           call output_line ("Space-time MG: Iteration "// &
               trim(sys_siL(rlinsolParam%riter%niterations,10))// &
@@ -1598,15 +1601,16 @@ contains
               trim(sys_sdEL(dres,10)))
         end if
         
-        ! Save statistics on the maximum level.
-        ! Push the residual, increase the iteration counter
-        call itc_pushResidual(rlinsolParam%riter,dres)
-
         ! -------------------------------------------------------------
         ! Check for convergence / divergence / ...
         ! -------------------------------------------------------------
         if (rlinsolParam%riter%cstatus .ne. ITC_STATUS_CONTINUE) exit
-        
+
+      else        
+        if (rlinsolParam%riter%cstatus .eq. ITC_STATUS_UNDEFINED) then
+          ! Remember the initial residual
+          call itc_initResidual(rsolver%riter,dres)
+        end if
       end if
       
       ! Apply presmoothing

@@ -1391,9 +1391,12 @@ contains
         
         dres = lsysbl_vectorNorm(p_rd,rsolver%rnewtonParams%iresNorm)
             
-        if (rsolver%riter%niterations .eq. 0) then
-          ! Initialise the iteration
+        if (rsolver%riter%cstatus .eq. ITC_STATUS_UNDEFINED) then
+          ! Remember the initial residual
           call itc_initResidual(rsolver%riter,dres)
+        else
+          ! Push the residual, increase the iteration counter
+          call itc_pushResidual(rsolver%riter,dres)
         end if
         
         if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
@@ -1403,8 +1406,6 @@ contains
               " " // trim(sys_sdEL(dres,1)) )
         end if
 
-        call itc_pushResidual(rsolver%riter,dres)
-        
         ! -------------------------------------------------------------
         ! Check for convergence / divergence / ...
         ! -------------------------------------------------------------

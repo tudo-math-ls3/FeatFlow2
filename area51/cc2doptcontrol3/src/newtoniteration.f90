@@ -793,9 +793,12 @@ contains
       call newtonit_sumStatistics(rlocalStat,rstatistics,.false.)
       call stat_addTimers (rlocalStat%rtotalTime,rstatistics%rtimeDefect)
       
-      if (rsolver%riter%niterations .eq. 0) then
+      if (rsolver%riter%cstatus .eq. ITC_STATUS_UNDEFINED) then
         ! Remember the initial residual
         call itc_initResidual(rsolver%riter,dres)
+      else
+        ! Push the residual, increase the iteration counter
+        call itc_pushResidual(rsolver%riter,dres)
       end if
 
       if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
@@ -804,9 +807,6 @@ contains
             ", ||res(u)|| = "// &
             trim(sys_sdEL(dres,10)))
       end if
-
-      ! Push the residual, increase the iteration counter
-      call itc_pushResidual(rsolver%riter,dres)
 
       ! -------------------------------------------------------------
       ! Check for convergence
@@ -846,13 +846,55 @@ contains
             rsolver%riter%dresInitial,rsolver%riter%dresFinal)
       end if
       
-      ! In the first iteration, no Newton term in the dual equation
-      if (rsolver%riter%niterations .eq. 1) then
-        rsolver%rlinsolParam%ceqnflags = SPACESLH_EQNF_NONEWTONDUAL
-      else
+      ! -------------------------------------------------------------
+      ! Partial Newton for the next iteration?
+      ! -------------------------------------------------------------
+
+      ! By default use partial Newton.
+      select case (rsolver%rnewtonParams%cpartialNewton)
+      case (NEWTN_PN_FULLNEWTON)
         rsolver%rlinsolParam%ceqnflags = SPACESLH_EQNF_DEFAULT
-      end if
-    
+        call output_line (&
+            "Partial Newton not used. Better use partial Newton (dual) in the first step!",
+            OU_CLASS_WARNING,OU_MODE_STD,"newtonit_solve")
+
+      case (NEWTN_PN_PARTIALNEWTON)
+        rsolver%rlinsolParam%ceqnflags = NEWTN_PN_PARTIALNEWTON
+
+      case (NEWTN_PN_PARTIALNEWTONDUAL)
+        rsolver%rlinsolParam%ceqnflags = NEWTN_PN_PARTIALNEWTONDUAL
+      
+      end select
+      
+      ! Should we switch to full Newton?
+      if (rsolver%rnewtonParams%cpartialNewton .ne. NEWTN_PN_FULLNEWTON) then
+      
+        if (rsolver%riter%niterations .gt. &
+            rsolver%rnewtonParams%nmaxPartialNewtonIterations) then
+          ! Full Newton
+          rsolver%rlinsolParam%ceqnflags = SPACESLH_EQNF_DEFAULT
+          
+        else if (rsolver%riter%niterations .ge. &
+            rsolver%rnewtonParams%nminPartialNewtonIterations) then
+          ! We are allowed to switch to the full Newton if some conditions
+          ! are met.
+          if (rsolver%rnewtonParams%dtolAbsPartialNewton .ne. 1.0E99_DP) then
+            ! Check the absolute residual
+            if (dres .le. rsolver%rnewtonParams%dtolAbsPartialNewton) then
+              rsolver%rlinsolParam%ceqnflags = SPACESLH_EQNF_DEFAULT
+            end if
+          else
+            ! Check the relative residual
+            if (dres .le. &
+                rsolver%rnewtonParams%dtolRelPartialNewton*rsolver%riter%dresInitial) then
+              rsolver%rlinsolParam%ceqnflags = SPACESLH_EQNF_DEFAULT
+            end if
+          end if
+            
+        end if
+      
+      end if      
+
       ! -------------------------------------------------------------
       ! Preconditioning with the Newton matrix
       ! -------------------------------------------------------------

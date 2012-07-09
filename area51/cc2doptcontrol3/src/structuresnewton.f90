@@ -21,6 +21,23 @@ module structuresnewton
   
   private
   
+!<constants>
+
+!<constantblock description="Constants defining the partial Newton">
+
+  ! Full Newton
+  integer, public :: NEWTN_PN_FULLNEWTON = 0 
+
+  ! Partial Newton
+  integer, public :: NEWTN_PN_PARTIALNEWTON = 1
+
+  ! Partial Newton in the dual equation, full Newton in the primal equation
+  integer, public :: NEWTN_PN_PARTIALNEWTONDUAL = 2
+  
+!</constantblock>
+
+!</constants>
+  
 !<type>
 
   ! This structure controls the Newton iteration -- i.e. the preconditioning
@@ -34,45 +51,51 @@ module structuresnewton
   ! This block is used if CCPREC_NEWTONDYNAMIC is used as preconditioner.
   type t_ccDynamicNewtonControl
   
-    ! Minimum number of fix point iterations before switching to
-    ! preconditioning with the Newton matrix.
+    ! Type of partial Newton to apply.
+    ! =0: No partial Newton.
+    ! =1: Use partial Newton until nmaxFixedPointIterations is reached.
+    !     For primal/dual problems: Use partial Newton in the primal and 
+    !     dual equation.
+    ! =2: For primal/dual problems: Use full Newton in the primal and 
+    !     partial Newton in the dual equation until nmaxFixedPointIterations 
+    !     is reached.
+    integer :: cpartialNewton = NEWTN_PN_FULLNEWTON
 
-    integer :: nminFixedPointIterations = 0
+    ! Minimum number of partial Newton iterations before switching to
+    ! the full Newton
+    integer :: nminPartialNewtonIterations = 0
 
-    ! Maximum number of fix point iterations before switching to
-    ! preconditioning with the Newton matrix.
+    ! Maximum number of partial newton iterations before switching to
+    ! the full Newton
+    integer :: nmaxPartialNewtonIterations = 0
 
-    integer :: nmaxFixedPointIterations = 0
-
-    ! Norm of absolute residuum before applying Newton.
+    ! Norm of absolute residuum before applying the full Newton.
     ! Newton is only applied
-    ! if   ||absolute residuum|| < depsAbsNewton
-    ! and  ||relative residuum|| < depsRelNewton.
+    ! if   ||absolute residuum|| < dtolAbsNewton
+    ! and  ||relative residuum|| < dtolRelNewton.
     ! Otherwise, the usual fix point iteration is used.
-    ! Stamndard value = 1E-5.
-
-    real(DP) :: depsAbsNewton = 1.0E-5_DP
+    ! Standard value = 1E99 -> The relative residuum counts.
+    real(DP) :: dtolAbsPartialNewton = 1.0E99_DP
 
     ! Norm of relative residuum before applying Newton.
     ! Newton is only applied
-    ! if   ||absolute residuum|| < depsAbsNewton
-    ! and  ||relative residuum|| < depsRelNewton.
+    ! if   ||absolute residuum|| < dtolAbsNewton
+    ! and  ||relative residuum|| < dtolRelNewton.
     ! Otherwise, the usual fix point iteration is used.
-    ! Standard value = 1E99 -> The absolute residuum counts.
-
-    real(DP) :: depsRelNewton = 1.0E99_DP
+    ! Standard value = 1E-1.
+    ! Only used if dtolAbsPartialNewton <> 1.0E99_DP
+    real(DP) :: dtolRelPartialNewton = 1.0E-1_DP
   
     ! Whether to use the inexact Newton iteration or not.
     ! The inexact Newton controls the stopping criterion of the linear
     ! solver according to the nonlinear residual.
-    
     integer :: cinexactNewton = 1
 
     ! Stopping criterion for the linear solver in the inexact Newton iteration.
     ! Controls the minimum number of digits to gain in the linear solver
     ! per Newton iteration. 
     
-    real(dp) :: dinexactNewtonEpsRel = 1.0E-2_DP
+    real(dp) :: dinexactNewtonTolRel = 1.0E-2_DP
 
     ! Exponent to control the stopping criterion for the linear solver in
     ! an inexact Newton iteration. =2 result in quadratic convergence,
@@ -82,7 +105,7 @@ module structuresnewton
 
     ! Lower bound for the absolute residual. Subproblems are not solved
     ! more exact than this.
-    real(DP) :: dinexactNewtonEpsAbs = 1E-15_DP
+    real(DP) :: dinexactNewtonTolAbs = 1E-15_DP
 
   end type
   
@@ -300,24 +323,29 @@ contains
     if (snewton .ne. "") then
       ! Initialise the parameters of the adaptive Newton
       call parlst_getvalue_int (rparamList, snewton, &
-          "nminFixedPointIterations", &
-          rsolver%radaptiveNewton%nminFixedPointIterations, &
-          rsolver%radaptiveNewton%nminFixedPointIterations)
+          "cpartialNewton", &
+          rsolver%radaptiveNewton%cpartialNewton, &
+          rsolver%radaptiveNewton%cpartialNewton)
 
       call parlst_getvalue_int (rparamList, snewton, &
-          "nmaxFixedPointIterations", &
-          rsolver%radaptiveNewton%nmaxFixedPointIterations, &
-          rsolver%radaptiveNewton%nmaxFixedPointIterations)
+          "nminPartialNewtonIterations", &
+          rsolver%radaptiveNewton%nminPartialNewtonIterations, &
+          rsolver%radaptiveNewton%nminPartialNewtonIterations)
+
+      call parlst_getvalue_int (rparamList, snewton, &
+          "nmaxPartialNewtonIterations", &
+          rsolver%radaptiveNewton%nmaxPartialNewtonIterations, &
+          rsolver%radaptiveNewton%nmaxPartialNewtonIterations)
 
       call parlst_getvalue_double (rparamList, snewton, &
-          "depsAbsNewton", &
-          rsolver%radaptiveNewton%depsAbsNewton, &
-          rsolver%radaptiveNewton%depsAbsNewton)
+          "dtolAbsPartialNewton", &
+          rsolver%radaptiveNewton%dtolAbsPartialNewton, &
+          rsolver%radaptiveNewton%dtolAbsPartialNewton)
 
       call parlst_getvalue_double (rparamList, snewton, &
-          "depsRelNewton", &
-          rsolver%radaptiveNewton%depsRelNewton, &
-          rsolver%radaptiveNewton%depsRelNewton)
+          "dtolRelPartialNewton", &
+          rsolver%radaptiveNewton%dtolRelPartialNewton, &
+          rsolver%radaptiveNewton%dtolRelPartialNewton)
 
       call parlst_getvalue_int (rparamList, snewton, &
           "cinexactNewton", &
@@ -325,9 +353,9 @@ contains
           rsolver%radaptiveNewton%cinexactNewton)
 
       call parlst_getvalue_double (rparamList, snewton, &
-          "dinexactNewtonEpsRel", &
-          rsolver%radaptiveNewton%dinexactNewtonEpsRel, &
-          rsolver%radaptiveNewton%dinexactNewtonEpsRel)
+          "dinexactNewtonTolRel", &
+          rsolver%radaptiveNewton%dinexactNewtonTolRel, &
+          rsolver%radaptiveNewton%dinexactNewtonTolRel)
 
       call parlst_getvalue_double (rparamList, snewton, &
           "dinexactNewtonExponent", &
@@ -335,9 +363,9 @@ contains
           rsolver%radaptiveNewton%dinexactNewtonExponent)
 
       call parlst_getvalue_double (rparamList, snewton, &
-          "dinexactNewtonEpsAbs", &
-          rsolver%radaptiveNewton%dinexactNewtonEpsAbs, &
-          rsolver%radaptiveNewton%dinexactNewtonEpsAbs)
+          "dinexactNewtonTolAbs", &
+          rsolver%radaptiveNewton%dinexactNewtonTolAbs, &
+          rsolver%radaptiveNewton%dinexactNewtonTolAbs)
 
     end if
 

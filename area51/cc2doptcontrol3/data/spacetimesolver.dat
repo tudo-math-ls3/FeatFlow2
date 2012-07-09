@@ -104,34 +104,51 @@ ssectionLinSlvSpaceBackLin2 = CC-LINEARSOLVERLIN2
 [SPACETIME-ADAPTIVENEWTON]
 ##########################
 
-# Minimum number of defect correction iterations before starting Newton.
-# Standard=0=use Newton / inexact Newton immediately.
-nminFixedPointIterations = 0
+# --------------
+# Partial Newton
+# --------------
 
-# Maximum number of defect correction iterations before starting Newton.
-# Standard=0=use Newton / inexact Newton immediately.
-nmaxFixedPointIterations = 0
+# Type of partial Newton to apply.
+# =0: No partial Newton.
+# =1: Use partial Newton in the primal and dual equation
+#     until nmaxFixedPointIterations is reached.
+# =2: Use full Newton in the primal and partial Newton in the dual equation
+#     until nmaxFixedPointIterations is reached.
+cpartialNewton = 2
 
-# Norm of absolute residuum before applying Newton. 
+# Minimum number of partial Newton iterations before starting the full Newton.
+# Standard=0=use Newton / inexact Newton immediately.
+nminPartialNewtonIterations = 1
+
+# Maximum number of partial Newton iterations before starting the full Newton.
+# Standard=0=use Newton / inexact Newton immediately.
+nmaxPartialNewtonIterations = 1
+
+# Norm of absolute residuum before applying the full Newton. 
 # Newton is only applied
 # if   ||absolute residuum|| < dtolAbsNewton
 # and  ||relative residuum|| < dtolRelNewton.
 # Otherwise, the usual fix point iteration is used.
-# Stamndard value = 1E-5.
-dtolAbsNewton = 1.0E-5
+# Standard value = 1E99 -> The relative residuum counts.
+dtolAbsPartialNewton = 1E99
 
 # Norm of relative residuum before applying Newton. 
 # Newton is only applied
 # if   ||absolute residuum|| < dtolAbsNewton
 # and  ||relative residuum|| < dtolRelNewton.
 # Otherwise, the usual fix point iteration is used.
-# Standard value = 1E99 -> The absolute residuum counts.
-dtolRelNewton = 1.0E99
+# Standard value = 1E-1.
+# Only used if dtolAbsPartialNewton <> 1.0E99_DP
+dtolRelPartialNewton = 1.0E-1
+
+# --------------
+# inexact Newton
+# --------------
 
 # Stopping criterion for the linear solver in the inexact Newton iteration.
 # Controls the minimum number of digits to gain in the linear solver
 # per Newton iteration. Only used if ctypePreconditioner = 3.
-dinexactNewtonEpsRel = 1.0E-2
+dinexactNewtonTolRel = 1.0E-2
 
 # Exponent to control the stopping criterion for the linear solver in
 # an inexact Newton iteration. =2 result in quadratic convergence,
@@ -140,7 +157,7 @@ dinexactNewtonExponent = 2.0
 
 # Lower bound for the absolute residual. Subproblems are not solved
 # more exact than this.
-dinexactNewtonEpsAbs = 1E-14
+dinexactNewtonTolAbs = 1E-14
 
 
 # ========================================================================
