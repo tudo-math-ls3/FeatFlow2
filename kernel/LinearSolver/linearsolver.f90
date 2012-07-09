@@ -14211,6 +14211,8 @@ contains
                 if (.not.((dres .ge. 1E-99_DP) .and. &
                           (dres .le. 1E99_DP))) dres = 0.0_DP
                           
+                call output_line ('Multigrid: C.g.corr. step length ALPHA = '//&
+                    trim(sys_sdEL(dstep,15)) )
                 call output_line ('Multigrid: Level '//trim(sys_siL(ilev,5))//&
                     ' after c.g.corr.:  !!RES!! = '//trim(sys_sdEL(dres,15)) )
               end if
