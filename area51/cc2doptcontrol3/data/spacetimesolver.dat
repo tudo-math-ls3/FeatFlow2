@@ -129,7 +129,7 @@ nmaxPartialNewtonIterations = 1
 # if   ||absolute residuum|| < dtolAbsNewton
 # and  ||relative residuum|| < dtolRelNewton.
 # Otherwise, the usual fix point iteration is used.
-# Standard value = 1E99 -> The relative residuum counts.
+# Value = 0.0: Disable Check.
 dtolAbsPartialNewton = 1E99
 
 # Norm of relative residuum before applying Newton. 
@@ -138,7 +138,7 @@ dtolAbsPartialNewton = 1E99
 # and  ||relative residuum|| < dtolRelNewton.
 # Otherwise, the usual fix point iteration is used.
 # Standard value = 1E-1.
-# Only used if dtolAbsPartialNewton <> 1.0E99_DP
+# Value = 0.0: Disable check.
 dtolRelPartialNewton = 1.0E-1
 
 # --------------
@@ -393,7 +393,7 @@ dtolRelNewton = 1.0E99
 # Stopping criterion for the linear solver in the inexact Newton iteration.
 # Controls the minimum number of digits to gain in the linear solver
 # per Newton iteration. Only used if ctypePreconditioner = 3.
-dinexactNewtonEpsRel = 1.0E-2
+dinexactNewtonTolRel = 1.0E-2
 
 # Exponent to control the stopping criterion for the linear solver in
 # an inexact Newton iteration. =2 result in quadratic convergence,
@@ -402,4 +402,4 @@ dinexactNewtonExponent = 2.0
 
 # Lower bound for the absolute residual. Subproblems are not solved
 # more exact than this.
-dinexactNewtonEpsAbs = 1E-15
+dinexactNewtonTolAbs = 1E-15

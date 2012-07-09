@@ -26,13 +26,13 @@ module structuresnewton
 !<constantblock description="Constants defining the partial Newton">
 
   ! Full Newton
-  integer, public :: NEWTN_PN_FULLNEWTON = 0 
+  integer, parameter, public :: NEWTN_PN_FULLNEWTON = 0 
 
   ! Partial Newton
-  integer, public :: NEWTN_PN_PARTIALNEWTON = 1
+  integer, parameter, public :: NEWTN_PN_PARTIALNEWTON = 1
 
   ! Partial Newton in the dual equation, full Newton in the primal equation
-  integer, public :: NEWTN_PN_PARTIALNEWTONDUAL = 2
+  integer, parameter, public :: NEWTN_PN_PARTIALNEWTONDUAL = 2
   
 !</constantblock>
 
@@ -74,8 +74,8 @@ module structuresnewton
     ! if   ||absolute residuum|| < dtolAbsNewton
     ! and  ||relative residuum|| < dtolRelNewton.
     ! Otherwise, the usual fix point iteration is used.
-    ! Standard value = 1E99 -> The relative residuum counts.
-    real(DP) :: dtolAbsPartialNewton = 1.0E99_DP
+    ! Value = 0.0: Disable check.
+    real(DP) :: dtolAbsPartialNewton = 0.0_DP
 
     ! Norm of relative residuum before applying Newton.
     ! Newton is only applied
@@ -83,7 +83,7 @@ module structuresnewton
     ! and  ||relative residuum|| < dtolRelNewton.
     ! Otherwise, the usual fix point iteration is used.
     ! Standard value = 1E-1.
-    ! Only used if dtolAbsPartialNewton <> 1.0E99_DP
+    ! Value = 0.0: Disable check.
     real(DP) :: dtolRelPartialNewton = 1.0E-1_DP
   
     ! Whether to use the inexact Newton iteration or not.
@@ -94,13 +94,11 @@ module structuresnewton
     ! Stopping criterion for the linear solver in the inexact Newton iteration.
     ! Controls the minimum number of digits to gain in the linear solver
     ! per Newton iteration. 
-    
     real(dp) :: dinexactNewtonTolRel = 1.0E-2_DP
 
     ! Exponent to control the stopping criterion for the linear solver in
     ! an inexact Newton iteration. =2 result in quadratic convergence,
     ! =1.5 in superlinear convergence. 
-    
     real(dp) :: dinexactNewtonExponent = 2.0_DP
 
     ! Lower bound for the absolute residual. Subproblems are not solved

@@ -774,10 +774,10 @@ contains
       
       if (rlinsolParam%riter%cstatus .eq. ITC_STATUS_UNDEFINED) then
         ! Remember the initial residual
-        call itc_initResidual(rsolver%riter,dres)
+        call itc_initResidual(rlinsolParam%riter,dres)
       else
         ! Push the residual, increase the iteration counter
-        call itc_pushResidual(rsolver%riter,dres)
+        call itc_pushResidual(rlinsolParam%riter,dres)
       end if
       
       if (rlinsolParam%rprecParameters%ioutputLevel .ge. 2) then
@@ -934,9 +934,12 @@ contains
           rkktsystemDirDeriv%p_rkktsystem%p_roperatorAsmHier%ranalyticData,&
           p_rr,dres,rlinsolParam%rprecParameters%iresnorm)
 
-      if (rlinsolParam%riter%niterations .eq. 0) then
+      if (rlinsolParam%riter%cstatus .eq. ITC_STATUS_UNDEFINED) then
         ! Remember the initial residual
         call itc_initResidual(rlinsolParam%riter,dres)
+      else
+        ! Push the residual, increase the iteration counter
+        call itc_pushResidual(rlinsolParam%riter,dres)
       end if
 
       if (rlinsolParam%rprecParameters%ioutputLevel .ge. 2) then
@@ -946,9 +949,6 @@ contains
             trim(sys_sdEL(dres,10)))
       end if
       
-      ! Push the residual, increase the iteration counter
-      call itc_pushResidual(rlinsolParam%riter,dres)
-
       ! -------------------------------------------------------------
       ! Check for convergence / divergence / ...
       ! -------------------------------------------------------------
@@ -1524,8 +1524,10 @@ contains
           rkktsysDirDerivHierarchy,rrhs,rstatistics,ilevel)
       output_iautoOutputIndent = output_iautoOutputIndent - 2
     
-      ! Return statistics data of the subsolver.
-      call itc_copyStatistics (p_rsubnodeMultigrid%p_rsubSolvers(ilevel)%riter,rlinsolParam%riter)
+      if (nlevels .eq. 1) then
+        ! Return statistics data of the subsolver.
+        call itc_copyStatistics (p_rsubnodeMultigrid%p_rsubSolvers(ilevel)%riter,rlinsolParam%riter)
+      end if
     
       ! Finish
       return
@@ -1588,10 +1590,10 @@ contains
       
         if (rlinsolParam%riter%cstatus .eq. ITC_STATUS_UNDEFINED) then
           ! Remember the initial residual
-          call itc_initResidual(rsolver%riter,dres)
+          call itc_initResidual(rlinsolParam%riter,dres)
         else
           ! Push the residual, increase the iteration counter
-          call itc_pushResidual(rsolver%riter,dres)
+          call itc_pushResidual(rlinsolParam%riter,dres)
         end if
 
         if (rlinsolParam%rprecParameters%ioutputLevel .ge. 2) then
@@ -1609,7 +1611,7 @@ contains
       else        
         if (rlinsolParam%riter%cstatus .eq. ITC_STATUS_UNDEFINED) then
           ! Remember the initial residual
-          call itc_initResidual(rsolver%riter,dres)
+          call itc_initResidual(rlinsolParam%riter,dres)
         end if
       end if
       

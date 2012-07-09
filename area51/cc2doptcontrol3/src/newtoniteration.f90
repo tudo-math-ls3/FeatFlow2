@@ -682,16 +682,16 @@ contains
       
       ddigitsGained = dresLastIte/dresInit
       
-      ddigitsToGain = min(radNewtonParams%dinexactNewtonEpsRel*ddigitsGained,&
+      ddigitsToGain = min(radNewtonParams%dinexactNewtonTolRel*ddigitsGained,&
           ddigitsGained ** radNewtonParams%dinexactNewtonExponent)
           
       depsRel = 0.0_DP
-      depsAbs = max(dresInit * ddigitsToGain,radNewtonParams%dinexactNewtonEpsAbs)
+      depsAbs = max(dresInit * ddigitsToGain,radNewtonParams%dinexactNewtonTolAbs)
       
       ! Do not gain too much.
       depsAbs = max(depsAbs,&
-          max(dresInit * rsolver%riter%dtolrel * radNewtonParams%dinexactNewtonEpsRel,&
-              rsolver%riter%dtolabs * radNewtonParams%dinexactNewtonEpsRel))
+          max(dresInit * rsolver%riter%dtolrel * radNewtonParams%dinexactNewtonTolRel,&
+              rsolver%riter%dtolabs * radNewtonParams%dinexactNewtonTolRel))
       
       if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
         call output_line ("Adaptive Newton: New stopping criterion. ||res|| < "//&
@@ -830,7 +830,7 @@ contains
             rsolver%p_rsettingsSolver%rspaceTimeHierPrimal%p_rtimeHierarchy%nlevels,&
             p_rsolution%p_rprimalSol,p_rsolution%p_rdualSol,p_rsolution%p_rcontrol,&
             rsolver%p_rsettingsSolver,rsolver%cpostprocessIterates,&
-            rsolver%riter%niterations-1)
+            rsolver%riter%niterations)
         
         call stat_stopTimer (rstatistics%rtimePostprocessing)
         
@@ -851,11 +851,11 @@ contains
       ! -------------------------------------------------------------
 
       ! By default use partial Newton.
-      select case (rsolver%rnewtonParams%cpartialNewton)
+      select case (rsolver%rnewtonParams%radaptiveNewton%cpartialNewton)
       case (NEWTN_PN_FULLNEWTON)
         rsolver%rlinsolParam%ceqnflags = SPACESLH_EQNF_DEFAULT
         call output_line (&
-            "Partial Newton not used. Better use partial Newton (dual) in the first step!",
+            "Partial Newton not used. Better use partial Newton (dual) in the first step!",&
             OU_CLASS_WARNING,OU_MODE_STD,"newtonit_solve")
 
       case (NEWTN_PN_PARTIALNEWTON)
@@ -867,34 +867,47 @@ contains
       end select
       
       ! Should we switch to full Newton?
-      if (rsolver%rnewtonParams%cpartialNewton .ne. NEWTN_PN_FULLNEWTON) then
+      if (rsolver%rnewtonParams%radaptiveNewton%cpartialNewton .ne. NEWTN_PN_FULLNEWTON) then
       
         if (rsolver%riter%niterations .gt. &
-            rsolver%rnewtonParams%nmaxPartialNewtonIterations) then
+            rsolver%rnewtonParams%radaptiveNewton%nmaxPartialNewtonIterations) then
           ! Full Newton
           rsolver%rlinsolParam%ceqnflags = SPACESLH_EQNF_DEFAULT
           
         else if (rsolver%riter%niterations .ge. &
-            rsolver%rnewtonParams%nminPartialNewtonIterations) then
+            rsolver%rnewtonParams%radaptiveNewton%nminPartialNewtonIterations) then
           ! We are allowed to switch to the full Newton if some conditions
           ! are met.
-          if (rsolver%rnewtonParams%dtolAbsPartialNewton .ne. 1.0E99_DP) then
+          if (rsolver%rnewtonParams%radaptiveNewton%dtolAbsPartialNewton .gt. 0.0_DP) then
             ! Check the absolute residual
-            if (dres .le. rsolver%rnewtonParams%dtolAbsPartialNewton) then
+            if (dres .le. rsolver%rnewtonParams%radaptiveNewton%dtolAbsPartialNewton) then
               rsolver%rlinsolParam%ceqnflags = SPACESLH_EQNF_DEFAULT
             end if
-          else
+          end if
+          if (rsolver%rnewtonParams%radaptiveNewton%dtolRelPartialNewton .gt. 0.0_DP) then
             ! Check the relative residual
             if (dres .le. &
-                rsolver%rnewtonParams%dtolRelPartialNewton*rsolver%riter%dresInitial) then
+                rsolver%rnewtonParams%radaptiveNewton%dtolRelPartialNewton*rsolver%riter%dresInitial) then
               rsolver%rlinsolParam%ceqnflags = SPACESLH_EQNF_DEFAULT
             end if
           end if
             
         end if
       
-      end if      
+        ! Print out the choice
+        if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
+          select case (rsolver%rlinsolParam%ceqnflags)
+          case (SPACESLH_EQNF_DEFAULT)
+            call output_line ("Space-time Newton: Full Newton selected.")
+          case (NEWTN_PN_PARTIALNEWTON)
+            call output_line ("Space-time Newton: Partial Newton for primal and dual equation selected.")
+          case (NEWTN_PN_PARTIALNEWTONDUAL)
+            call output_line ("Space-time Newton: Partial Newton for dual equation selected.")
+          end select
+        end if
 
+      end if      
+      
       ! -------------------------------------------------------------
       ! Preconditioning with the Newton matrix
       ! -------------------------------------------------------------

@@ -710,7 +710,7 @@ contains
 !<subroutine>
 
   subroutine spaceslh_initData_primal (rsolver, ierror, idofTime, &
-      rprimalSol, isollevelSpace, rstatistics, bfallbackSolver)
+      rprimalSol, isollevelSpace, rstatistics, coptype, bfallbackSolver)
   
 !<description>
   ! Final preparation of the Newton solver. Primal space.
@@ -728,6 +728,9 @@ contains
   ! Space level corresponding to rprimalSol.
   integer, intent(in) :: isollevelSpace
   
+  ! Operator type. Either OPTP_PRIMALLIN or OPTP_PRIMALLIN_SIMPLE.
+  integer, intent(in) :: coptype
+
   ! Whether or not to initialise the fallback solver.
   ! =FALSE: Create matrices and initialise the default solver.
   ! =TRUE: Use the matrices calculated for FALSE and initialise the 
@@ -756,29 +759,10 @@ contains
     integer :: ilev,iprevlv
     logical :: bfull
     type(t_lssSolverStat) :: rlocalStatLss
-    integer :: coptype
     
     ! Calculate matrices and initialise the default solver?
     if (.not. bfallbackSolver) then
     
-      select case (rsolver%rnewtonParams%ctypeIteration)
-      
-      ! -----------------------------------------
-      ! Partial Newton
-      ! -----------------------------------------
-      case (1)
-        ! Calculate the partial Newton matrix
-        coptype = OPTP_PRIMALLIN_SIMPLE
-
-      ! -----------------------------------------
-      ! Full/adaptive Newton
-      ! -----------------------------------------
-      case (2,3)
-        ! Calculate the full Newton matrix
-        coptype = OPTP_PRIMALLIN
-        
-      end select
-      
       ! iprevlv contains the last assembled level.
       iprevlv = 0
 
@@ -1421,6 +1405,59 @@ contains
         end if
       
         ! -------------------------------------------------------------
+        ! Partial Newton for the next iteration?
+        ! -------------------------------------------------------------
+
+        ! By default use partial Newton.
+        select case (rsolver%rnewtonParams%radaptiveNewton%cpartialNewton)
+        case (NEWTN_PN_FULLNEWTON)
+          coptype = OPTP_PRIMALLIN
+
+        case (NEWTN_PN_PARTIALNEWTON)
+          coptype = OPTP_PRIMALLIN_SIMPLE
+        end select
+        
+        ! Should we switch to full Newton?
+        if (rsolver%rnewtonParams%radaptiveNewton%cpartialNewton .ne. NEWTN_PN_FULLNEWTON) then
+        
+          if (rsolver%riter%niterations .gt. &
+              rsolver%rnewtonParams%radaptiveNewton%nmaxPartialNewtonIterations) then
+            ! Full Newton
+            coptype = OPTP_PRIMALLIN
+            
+          else if (rsolver%riter%niterations .ge. &
+              rsolver%rnewtonParams%radaptiveNewton%nminPartialNewtonIterations) then
+            ! We are allowed to switch to the full Newton if some conditions
+            ! are met.
+            if (rsolver%rnewtonParams%radaptiveNewton%dtolAbsPartialNewton .gt. 0.0_DP) then
+              ! Check the absolute residual
+              if (dres .le. rsolver%rnewtonParams%radaptiveNewton%dtolAbsPartialNewton) then
+                coptype = OPTP_PRIMALLIN
+              end if
+            end if
+            if (rsolver%rnewtonParams%radaptiveNewton%dtolRelPartialNewton .gt. 0.0_DP) then
+              ! Check the relative residual
+              if (dres .le. &
+                  rsolver%rnewtonParams%radaptiveNewton%dtolRelPartialNewton*rsolver%riter%dresInitial) then
+                coptype = OPTP_PRIMALLIN
+              end if
+            end if
+              
+          end if
+        
+          ! Print out the choice
+          if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
+            select case (coptype)
+            case (OPTP_PRIMALLIN)
+              call output_line ("Space Newton: Full Newton selected.")
+            case (OPTP_PRIMALLIN_SIMPLE)
+              call output_line ("Space Newton: Partial Newton selected.")
+            end select
+          end if
+
+        end if      
+
+        ! -------------------------------------------------------------
         ! Preconditioning with the Newton matrix
         ! -------------------------------------------------------------
 
@@ -1432,7 +1469,7 @@ contains
 
         ! Assemble the matrices/boundary conditions on all levels.
         call spaceslh_initData_primal (rsolver, ierror, idofTime, &
-            rprimalSol,rsolver%ispacelevel,rlocalStat,.false.)
+            rprimalSol,rsolver%ispacelevel,rlocalStat,coptype,.false.)
             
         call spacesl_sumStatistics (rlocalStat,rstatistics,.false.)
         
@@ -1464,7 +1501,7 @@ contains
           call lsysbl_copyVector (p_rd2,p_rd)
           
           call spaceslh_initData_primal (rsolver, ierror, idofTime, &
-              rprimalSol,rsolver%ispacelevel,rlocalStat,.true.)
+              rprimalSol,rsolver%ispacelevel,rlocalStat,coptype,.true.)
               
           call spacesl_sumStatistics (rlocalStat,rstatistics,.false.)
           
@@ -2173,16 +2210,16 @@ contains
       
       ddigitsGained = dresLastIte/dresInitial
       
-      ddigitsToGain = min(radNewtonParams%dinexactNewtonEpsRel*ddigitsGained,&
+      ddigitsToGain = min(radNewtonParams%dinexactNewtonTolRel*ddigitsGained,&
           ddigitsGained ** radNewtonParams%dinexactNewtonExponent)
           
       depsRel = 0.0_DP
-      depsAbs = max(dresInitial * ddigitsToGain,radNewtonParams%dinexactNewtonEpsAbs)
+      depsAbs = max(dresInitial * ddigitsToGain,radNewtonParams%dinexactNewtonTolAbs)
       
       ! Do not gain too much.
       depsAbs = max(depsAbs,&
-          max(dresInitial * rsolver%riter%dtolrel * radNewtonParams%dinexactNewtonEpsRel,&
-              rsolver%riter%dtolabs * radNewtonParams%dinexactNewtonEpsRel))
+          max(dresInitial * rsolver%riter%dtolrel * radNewtonParams%dinexactNewtonTolRel,&
+              rsolver%riter%dtolabs * radNewtonParams%dinexactNewtonTolRel))
 
       if (rsolver%rnewtonParams%ioutputLevel .ge. 3) then
         call output_line ("Adaptive Newton: New stopping criterion. ||res|| < "//&
