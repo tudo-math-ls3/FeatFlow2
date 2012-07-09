@@ -931,7 +931,9 @@ contains
       ! Norm of the residual
       ! -------------------------------------------------------------
 
-      dres = kktsp_getNormControl (p_rr,rlinsolParam%rprecParameters%iresnorm)
+      call kkt_controlResidualNorm (&
+          rkktsystemDirDeriv%p_rkktsystem%p_roperatorAsmHier%ranalyticData,&
+          p_rr,dres,rlinsolParam%rprecParameters%iresnorm)
 
       if (rlinsolParam%riter%niterations .eq. 0) then
         ! Remember the initial residual
@@ -2329,49 +2331,20 @@ contains
     
     end select
 
-    ! Configure the subsolver in space
-    call spaceslh_setEps (&
-        rlinsolParam%p_rsolverHierPrimalLin,depsAbs,depsRel)
-    call spaceslh_setEps (&
-        rlinsolParam%p_rsolverHierDualLin,depsAbs,depsRel)
+!    Do not pass the stopping criterion to the subsolvers in space.
+!    This does not work in the current implementation.
+!    The residual of the subsolvers in space is measured with a different 
+!    measure than the space-time residual: The space-time residual conrtols
+!    the control u whereas the space-residual controls y and lambda. The size of
+!    the latter ones usually have a completely different value than the norm
+!    of the u residual. Thus, taking the norm of the u-residual to control
+!    the residual of y and lambda is simply completely wrong!
+!    ! Configure the subsolver in space
+!    call spaceslh_setEps (&
+!        rlinsolParam%p_rsolverHierPrimalLin,depsAbs,depsRel)
+!    call spaceslh_setEps (&
+!        rlinsolParam%p_rsolverHierDualLin,depsAbs,depsRel)
     
-  contains
-  
-    subroutine setEpsSpaceSolver (rlinsol,depsAbs)
-    
-    type(t_linsolSpace), intent(inout) :: rlinsol
-    real(DP) :: depsAbs
-    
-      ! Solver type?
-      select case (rlinsol%isolverType)
-      
-      ! ------------------------------
-      ! UMFPACK. Nothing to do.
-      ! ------------------------------
-      case (LSS_LINSOL_UMFPACK)
-      
-      ! ------------------------------
-      ! Multigrid
-      ! ------------------------------
-      case (LSS_LINSOL_MG)
-      
-        ! Stopping criterion of the MG solver in space
-        rlinsol%p_rsolverNode%depsRel = depsRel
-        rlinsol%p_rsolverNode%depsAbs = depsAbs
-        
-        ! Coarse grid solver does not have to be changed.
-        ! If it has the wrong stopping criterion, the iteration 
-        ! just takes longer...
-      
-      case default
-        call output_line ("Unknown solver in space.", &
-            OU_CLASS_ERROR,OU_MODE_STD,"newtonlin_adNewton_setEps")
-        call sys_halt()
-      
-      end select
-    
-    end subroutine
-
   end subroutine
 
   ! ***************************************************************************

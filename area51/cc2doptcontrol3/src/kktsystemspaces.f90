@@ -605,7 +605,7 @@ contains
 
 !<subroutine>
 
-  subroutine kktsp_controlLinearComb (rx,cx,ry,cy,rz,cz,dres,iresnorm)
+  subroutine kktsp_controlLinearComb (rx,cx,ry,cy,rz,cz)
   
 !<description>
   ! Performs a linear combination
@@ -625,10 +625,6 @@ contains
   
   ! OPTIONAL: Multiplication factor
   real(DP), intent(in), optional :: cz
-
-  ! type of norm. A LINALG_NORMxxxx constant.
-  ! Must be specified if dres is specified.
-  integer, intent(in), optional :: iresnorm
 !</input>
 
 !<inputoutput>
@@ -642,17 +638,10 @@ contains
   
 !</inputoutput>
 
-!<output>
-  ! OPTIONAL: If specified, the L2-norm of the vector is returned.
-  real(DP), intent(out), optional :: dres
-!</output>
-
 !</subroutine>
 
     ! local variables
     type(t_controlSpace), pointer :: p_rdest
-
-    if (present(dres)) dres = -1.0_DP
 
     if (associated (rx%p_rvector)) then
     
@@ -669,11 +658,6 @@ contains
 
       ! Invalidate the buffer
       call sptivec_invalidateVecInPool (p_rdest%p_rvectorAccess)
-
-      ! Calculate the L2-norm
-      if (present(dres)) then
-        dres = sptivec_vectorNorm (p_rdest%p_rvector,iresnorm)
-      end if
 
     end if
 

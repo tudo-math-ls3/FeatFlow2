@@ -756,13 +756,28 @@ contains
     integer :: ilev,iprevlv
     logical :: bfull
     type(t_lssSolverStat) :: rlocalStatLss
+    integer :: coptype
     
     ! Calculate matrices and initialise the default solver?
     if (.not. bfallbackSolver) then
     
-      ! Full Newton?
-      bfull = (rsolver%rnewtonParams%ctypeIteration .eq. 2) .or. &
-              (rsolver%rnewtonParams%ctypeIteration .eq. 3)
+      select case (rsolver%rnewtonParams%ctypeIteration)
+      
+      ! -----------------------------------------
+      ! Partial Newton
+      ! -----------------------------------------
+      case (1)
+        ! Calculate the partial Newton matrix
+        coptype = OPTP_PRIMALLIN_SIMPLE
+
+      ! -----------------------------------------
+      ! Full/adaptive Newton
+      ! -----------------------------------------
+      case (2,3)
+        ! Calculate the full Newton matrix
+        coptype = OPTP_PRIMALLIN
+        
+      end select
       
       ! iprevlv contains the last assembled level.
       iprevlv = 0
@@ -776,7 +791,7 @@ contains
         ! Assemble the matrix
         call smva_assembleMatrix_primal (rsolver%p_Rmatrices(ilev),ilev,idofTime,&
             rsolver%p_roperatorAsmHier,&
-            rprimalSol,isollevelSpace,rsolver%itimelevel,bfull,&
+            rprimalSol,isollevelSpace,rsolver%itimelevel,coptype,&
             rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(ilev),&
             rsolver%p_RassemblyFlags(ilev),rsolver%rtempData,iprevlv)
             
@@ -818,7 +833,7 @@ contains
 !<subroutine>
 
   subroutine spaceslh_initData_primallin (rsolver, ierror, idofTime, &
-      rprimalSol, isollevelSpace, bfull, rstatistics, bfallbackSolver)
+      rprimalSol, isollevelSpace, coptype, rstatistics, bfallbackSolver)
   
 !<description>
   ! Final preparation of the Newton solver. Linearised primal space.
@@ -836,8 +851,8 @@ contains
   ! Space level corresponding to rprimalSol.
   integer, intent(in) :: isollevelSpace
   
-  ! Whether or not to apply the full Newton operator.
-  logical, intent(in) :: bfull
+  ! Operator type. Either OPTP_PRIMALLIN or OPTP_PRIMALLIN_SIMPLE.
+  integer, intent(in) :: coptype
 
   ! Whether or not to initialise the fallback solver.
   ! =FALSE: Create matrices and initialise the default solver.
@@ -882,7 +897,7 @@ contains
         ! Assemble the matrix
         call smva_assembleMatrix_primal (rsolver%p_Rmatrices(ilev),ilev,idofTime,&
             rsolver%p_roperatorAsmHier,&
-            rprimalSol,isollevelSpace,rsolver%itimelevel,bfull,&
+            rprimalSol,isollevelSpace,rsolver%itimelevel,coptype,&
             rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(ilev),&
             rsolver%p_RassemblyFlags(ilev),rsolver%rtempData,iprevlv)
             
@@ -1294,7 +1309,7 @@ contains
 
     ! local variables
     type(t_vectorBlock), pointer :: p_rd, p_rd2, p_rx
-    integer :: ierror
+    integer :: ierror, coptype
     real(DP) :: dres
     type(t_linsolNode), pointer :: p_rsolverNode
     real(DP), dimension(:), pointer :: p_Dd, p_Dx
@@ -1671,11 +1686,17 @@ contains
       ! -------------------------------------------------------------
       call stat_startTimer (rstatistics%rtimeDefect)
       
+      ! Type of the operator.
+      ! If the flags disable the primal Newton, force PRIMALLIN_SIMPLE.
+      coptype = rsolver%coptype
+      if (iand(ceqnflags,SPACESLH_EQNF_NONEWTONPRIMAL) .ne. 0) then
+        coptype = OPTP_PRIMALLIN_SIMPLE
+      end if
+      
       call smva_getDef_primalLin (p_rd,&
           rsolver%ispacelevel,rsolver%itimelevel,idofTime,&
           rsolver%p_roperatorAsmHier,rprimalSol,rcontrol,rprimalSolLin,rcontrolLin,&
-          (rsolver%coptype .eq. OPTP_PRIMALLIN) .and. &
-          (iand(ceqnflags,SPACESLH_EQNF_NONEWTONPRIMAL) .eq. 0),&
+          coptype,&
           rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(rsolver%ispacelevel),&
           rsolver%rtempData,csolgeneration,rtimer)
           
@@ -1704,8 +1725,7 @@ contains
         call lsysbl_copyVector (p_rd,p_rd2)
 
         call spaceslh_initData_primalLin (rsolver, ierror, idofTime, &
-            rprimalSol,rsolver%ispacelevel,(rsolver%coptype .eq. OPTP_PRIMALLIN) .or. &
-            (iand(ceqnflags,SPACESLH_EQNF_NONEWTONPRIMAL) .ne. 0),rlocalStat,.false.)
+            rprimalSol,rsolver%ispacelevel,coptype,rlocalStat,.false.)
             
         call spacesl_sumStatistics (rlocalStat,rstatistics,.false.)
 
@@ -1737,8 +1757,7 @@ contains
           call lsysbl_copyVector (p_rd2,p_rd)
 
           call spaceslh_initData_primalLin (rsolver, ierror, idofTime, &
-              rprimalSol,rsolver%ispacelevel,(rsolver%coptype .eq. OPTP_PRIMALLIN) .and. &
-              (iand(ceqnflags,SPACESLH_EQNF_NONEWTONPRIMAL) .eq. 0),rlocalStat,.true.)
+              rprimalSol,rsolver%ispacelevel,coptype,rlocalStat,.true.)
               
           call spacesl_sumStatistics (rlocalStat,rstatistics,.false.)
 
@@ -1823,11 +1842,18 @@ contains
       ! -------------------------------------------------------------
       call stat_startTimer (rstatistics%rtimeDefect)
       
+      ! Type of the operator.
+      ! If the flags disable the primal Newton, force DUALLIN_SIMPLE.
+      coptype = rsolver%coptype
+      if ((iand(ceqnflags,SPACESLH_EQNF_NONEWTONPRIMAL) .ne. 0) .or. &
+          (iand(ceqnflags,SPACESLH_EQNF_NONEWTONDUAL) .ne. 0)) then
+        coptype = OPTP_DUALLIN_SIMPLE
+      end if
+
       call smva_getDef_dualLin (p_rd,&
           rsolver%ispacelevel,rsolver%itimelevel,idofTime,&
           rsolver%p_roperatorAsmHier,rprimalSol,rdualSol,rprimalSolLin,rdualSolLin,&
-          (rsolver%coptype .eq. OPTP_DUALLIN) .and. &
-          (iand(ceqnflags,SPACESLH_EQNF_NONEWTONDUAL) .eq. 0),&
+          coptype,&
           rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(rsolver%ispacelevel),&
           rsolver%rtempData,csolgeneration,rtimer)
           

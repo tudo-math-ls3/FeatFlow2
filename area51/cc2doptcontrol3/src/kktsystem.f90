@@ -163,6 +163,10 @@ module kktsystem
   ! Clear a KKT derivative structure
   public :: kkt_clearDirDeriv
 
+  ! Calculates the norm of a residual in the control space,
+  ! weighted by the corresponding weighting factors.
+  public :: kkt_controlResidualNorm
+
 contains
 
   ! ***************************************************************************
@@ -764,7 +768,11 @@ contains
     ! Add -u:   rresidual = rresidual - u
     ! Calculate the norm of the residual.
     call kktsp_controlLinearComb (&
-        rkktsystem%p_rcontrol,-1.0_DP,rresidual,1.0_DP,dres=dres,iresnorm=iresnorm)
+        rkktsystem%p_rcontrol,-1.0_DP,rresidual,1.0_DP)
+   
+    call kkt_controlResidualNorm (&
+        rkktsystem%p_roperatorAsmHier%ranalyticData,&
+        rresidual,dres,iresnorm)
    
   end subroutine
 
@@ -1207,8 +1215,179 @@ contains
     call kktsp_controlLinearComb (&
         rrhs,1.0_DP,&
         rkktsystemDirDeriv%p_rcontrolLin,-1.0_DP,&
-        rresidual,1.0_DP,dres,iresnorm)
+        rresidual,1.0_DP)
+        
+    if (present(dres)) then
+      call kkt_controlResidualNorm (&
+          rkktsystemDirDeriv%p_rkktsystem%p_roperatorAsmHier%ranalyticData,&
+          rresidual,dres,iresnorm)
+    end if
 
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine kkt_controlResidualNorm (ranalyticData,rcontrolRes,dres,iresnorm)
+  
+!<description>
+  ! Calculates the norm of a residual in the control space.
+!</description>
+  
+!<input>
+  ! Structure defining analytic data.
+  type(t_spacetimeOpAsmAnalyticData), intent(in), target :: ranalyticData
+
+  ! type of norm. A LINALG_NORMxxxx constant.
+  ! Specifies the norm to use for the subcomponents.
+  integer, intent(in), optional :: iresnorm
+!</input>
+
+!<inputoutput>
+  ! Residual in the control space.
+  type(t_controlSpace), intent(inout) :: rcontrolRes
+!</inputoutput>
+
+!<output>
+  ! l2-Norm of the residual. The subcomponents are calculated using the norm
+  ! iresnorm.
+  real(DP), intent(out), optional :: dres
+!</output>
+
+!</subroutine>
+   
+    ! local variables
+    integer :: icomp,istep,itotalcomp
+    real(DP) :: dtheta
+    type(t_vectorBlock), pointer :: p_rcontrolSpace
+
+    type(t_settings_physics), pointer :: p_rphysics
+    type(t_settings_optcontrol), pointer :: p_rsettingsOptControl
+
+    ! Fetch some structures
+    p_rphysics => ranalyticData%p_rphysics
+    p_rsettingsOptControl => ranalyticData%p_rsettingsOptControl
+
+    ! This is strongly equation and problem dependent
+    ! and may imply a projection to the admissible set.
+    !
+    ! We apply a loop over all steps and construct the
+    ! control depending on the timestep scheme.
+    
+    dres = 0.0_DP
+    itotalcomp = 0
+    
+    ! Loop over all timesteps.
+    do istep = 1,rcontrolRes%p_rvector%p_rtimeDiscr%nintervals+1
+    
+      ! Get the control vector.
+      call sptivec_getVectorFromPool (&
+          rcontrolRes%p_rvectorAccess,istep,p_rcontrolSpace)
+          
+      ! icomp counts the component in the control
+      icomp = 0
+      
+      ! Which equation do we have?
+      select case (p_rphysics%cequation)
+      
+      ! -------------------------------------------------------------
+      ! Stokes/Navier Stokes.
+      ! -------------------------------------------------------------
+      case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+        
+        ! Which type of control is applied?
+        
+        ! -----------------------------------------------------------
+        ! Distributed control
+        ! -----------------------------------------------------------
+        if (p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
+
+          ! Do we have constraints?
+          select case (p_rsettingsOptControl%rconstraints%cdistVelConstraints)
+
+          ! ----------------------------------------------------------
+          ! No constraints
+          ! ----------------------------------------------------------
+          case (0)
+
+            if (p_rsettingsOptControl%dalphaC .eq. 0.0_DP) then
+              call output_line("Alpha=0 not possible without contraints",&
+                  OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControlDirDeriv")
+              call sys_halt()
+            end if
+          
+            ! The first two components of the linearised control read
+            !
+            !    d = u + 1/alpha lambda
+            !
+            ! Multiuplying with alpha, we get the norm
+            !
+            !   || alpha d || = || alpha u + lambda ||
+            icomp = icomp + 1
+            dres = dres + (p_rsettingsOptControl%dalphaC * &
+                lsyssc_vectorNorm(p_rcontrolSpace%RvectorBlock(icomp),iresnorm))**2
+
+            icomp = icomp + 1
+            dres = dres + (p_rsettingsOptControl%dalphaC * &
+                lsyssc_vectorNorm(p_rcontrolSpace%RvectorBlock(icomp),iresnorm))**2
+                
+            itotalcomp = itotalcomp + 2
+                
+          end select ! constraints
+
+        end if ! alpha
+      
+      ! -------------------------------------------------------------
+      ! Heat equation
+      ! -------------------------------------------------------------
+      case (CCEQ_HEAT2D)
+        
+        ! Which type of control is applied?
+        
+        ! -----------------------------------------------------------
+        ! Distributed control
+        ! -----------------------------------------------------------
+        if (p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
+
+          ! Do we have constraints?
+          select case (p_rsettingsOptControl%rconstraints%cdistVelConstraints)
+
+          ! ----------------------------------------------------------
+          ! No constraints
+          ! ----------------------------------------------------------
+          case (0)
+
+            if (p_rsettingsOptControl%dalphaC .eq. 0.0_DP) then
+              call output_line("Alpha=0 not possible without contraints",&
+                  OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControlDirDeriv")
+              call sys_halt()
+            end if
+          
+            ! The first two components of the linearised control read
+            !
+            !    d = u + 1/alpha lambda
+            !
+            ! Multiuplying with alpha, we get the norm
+            !
+            !   || alpha d || = || alpha u + lambda ||
+            icomp = icomp + 1
+            dres = dres + (p_rsettingsOptControl%dalphaC * &
+                lsyssc_vectorNorm(p_rcontrolSpace%RvectorBlock(icomp),iresnorm))**2
+
+            itotalcomp = itotalcomp + 2
+
+          end select ! constraints
+
+        end if ! alpha
+
+      end select ! equation
+      
+    end do ! istep
+
+    ! Calculate the total l2-norm
+    dres = sqrt(dres/real(itotalcomp,DP))
+    
   end subroutine
 
   ! ***************************************************************************

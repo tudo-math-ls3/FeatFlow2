@@ -1342,7 +1342,7 @@ contains
 !<subroutine>
 
   subroutine smva_getDef_primalLin (rdest,ispacelevel,itimelevel,idofTime,&
-      roperatorAsmHier,rprimalSol,rcontrol,rprimalSolLin,rcontrolLin,bfull,&
+      roperatorAsmHier,rprimalSol,rcontrol,rprimalSolLin,rcontrolLin,coptype,&
       roptcBDCSpace,rtempData,csolgeneration,rtimerhs)
   
 !<description>
@@ -1377,9 +1377,8 @@ contains
   ! Number of the DOF in time which should be calculated into rdest.
   integer, intent(in) :: idofTime
 
-  ! TRUE activates the full linearised operator (Newton).
-  ! FALSE activates a partially linearised operator without the Newton part.
-  logical, intent(in) :: bfull
+  ! Operator type. Either OPTP_PRIMALLIN or OPTP_PRIMALLIN_SIMPLE.
+  integer, intent(in) :: coptype
 
   ! Structure defining the boundary conditions.
   type(t_optcBDCSpace), intent(in) :: roptcBDCSpace
@@ -1613,7 +1612,7 @@ contains
           ! a separate subroutine
           call smva_getSemilinMat_primalLin (&
               p_rmatrix,ispacelevel,roperatorAsmHier,idofTime,&
-              rprimalSol,ispacelevel,itimelevel,1.0_DP,bfull,&
+              rprimalSol,ispacelevel,itimelevel,1.0_DP,coptype,&
               rtempdata,0)
 
           ! -----------------------------------------
@@ -1647,7 +1646,7 @@ contains
 !<subroutine>
 
   subroutine smva_getDef_dualLin (rdest,ispacelevel,itimelevel,idofTime,&
-      roperatorAsmHier,rprimalSol,rdualSol,rprimalSolLin,rdualSolLin,bfull,&
+      roperatorAsmHier,rprimalSol,rdualSol,rprimalSolLin,rdualSolLin,coptype,&
       roptcBDCSpace,rtempData,csolgeneration,rtimerhs)
   
 !<description>
@@ -1682,9 +1681,8 @@ contains
   ! Number of the DOF in time which should be calculated into rdest.
   integer, intent(in) :: idofTime
 
-  ! TRUE activates the full linearised operator (Newton).
-  ! FALSE activates a partially linearised operator without the Newton part.
-  logical, intent(in) :: bfull
+  ! Operator type. Either OPTP_DUALLIN or OPTP_DUALLIN_SIMPLE.
+  integer, intent(in) :: coptype
 
   ! Structure defining the boundary conditions.
   type(t_optcBDCSpace), intent(in) :: roptcBDCSpace
@@ -1867,7 +1865,7 @@ contains
           call stat_startTimer(rtimerhs)
 
           call smva_getRhs_dualLin (roperatorAsm,idofTime,rdualSol,rprimalSolLin,&
-              bfull,1.0_DP,rdest)
+              1.0_DP,rdest)
 
           call stat_stopTimer(rtimerhs)
             
@@ -1947,7 +1945,7 @@ contains
           !
           ! For the assembly, the RHS assembly has to be invoked.
           call smva_getSemilinRhs_dualLin (roperatorAsm,idofTime,&
-              rdualSol,rprimalSolLin,bfull,-1.0_DP,rdest)
+              rdualSol,rprimalSolLin,coptype,-1.0_DP,rdest)
           
         end select ! Equation
       
@@ -2351,7 +2349,7 @@ contains
 !<subroutine>
   
   subroutine smva_getSemilinMat_primalLin (rmatrix,ispacelevel,roperatorAsmHier,&
-      idofTime,rprimalSol,isollevelSpace,isollevelTime,dweight,bfull,rtempdata,&
+      idofTime,rprimalSol,isollevelSpace,isollevelTime,dweight,coptype,rtempdata,&
       ipreviousSpaceLv)
 
 !<description>
@@ -2385,9 +2383,8 @@ contains
   ! Time-level corresponding to the solution
   integer, intent(in) :: isollevelTime
 
-  ! TRUE activates the full linearised operator (Newton).
-  ! FALSE activates a partially linearised operator without the Newton part.
-  logical, intent(in) :: bfull
+  ! Operator type. Either OPTP_PRIMALLIN or OPTP_PRIMALLIN_SIMPLE.
+  integer, intent(in) :: coptype
   
   ! Defines the 'previously' calculated space level.
   ! Must be set =0 for the first call. For every subsequent call, 
@@ -2458,11 +2455,7 @@ contains
       ! ------------------------------------------
 
       ! Notify the callback routine what to assemble.
-      if (bfull) then
-        rcollection%IquickAccess(1) = OPTP_PRIMALLIN
-      else
-        rcollection%IquickAccess(1) = OPTP_PRIMALLIN_SIMPLE
-      end if
+      rcollection%IquickAccess(1) = coptype
       
       ! Vector 1+2 = primal velocity.
       call fev2_addVectorToEvalList(rvectorEval,p_rvector%RvectorBlock(1),1)
@@ -3537,7 +3530,7 @@ contains
 !<subroutine>
 
   subroutine smva_getRhs_dualLin (rspaceTimeOperatorAsm,idofTime,rdualSol,rprimalSolLin,&
-      bfull,dweight,rrhs)
+      dweight,rrhs)
 
 !<description>
   ! Implements semilinear parts of the linearised dual operator
@@ -3550,10 +3543,6 @@ contains
   
   ! Number of the DOF in time which should be calculated into rrhs.
   integer, intent(in) :: idofTime
-
-  ! TRUE activates the full linearised operator (Newton).
-  ! FALSE activates a partially linearised operator without the Newton part.
-  logical, intent(in) :: bfull
 
   ! Weight for the operator
   real(DP), intent(in) :: dweight
@@ -3598,11 +3587,7 @@ contains
     rcollection%DquickAccess(1) = dweight
     
     ! Notify the callback routine what to assemble.
-    if (bfull) then
-      rcollection%IquickAccess(1) = OPTP_DUALLIN
-    else
-      rcollection%IquickAccess(1) = OPTP_DUALLIN_SIMPLE
-    end if
+    rcollection%IquickAccess(1) = OPTP_DUALLIN
     
     ! Timestepping technique?
     select case (rspaceTimeOperatorAsm%p_rtimeDiscrDual%ctype)
@@ -3723,7 +3708,7 @@ contains
 !<subroutine>
 
   subroutine smva_getSemilinRhs_dualLin (rspaceTimeOperatorAsm,idofTime,rdualSol,rprimalSolLin,&
-      bfull,dweight,rrhs)
+      coptype,dweight,rrhs)
 
 !<description>
   ! Implements semilinear parts of the linearised dual operator
@@ -3737,9 +3722,8 @@ contains
   ! Number of the DOF in time which should be calculated into rrhs.
   integer, intent(in) :: idofTime
 
-  ! TRUE activates the full linearised operator (Newton).
-  ! FALSE activates a partially linearised operator without the Newton part.
-  logical, intent(in) :: bfull
+  ! Operator type. Either OPTP_DUALLIN or OPTP_DUALLIN_SIMPLE.
+  integer, intent(in) :: coptype
 
   ! Weight for the operator
   real(DP), intent(in) :: dweight
@@ -3784,11 +3768,7 @@ contains
     rcollection%DquickAccess(1) = dweight
     
     ! Notify the callback routine what to assemble.
-    if (bfull) then
-      rcollection%IquickAccess(1) = OPTP_DUALLIN
-    else
-      rcollection%IquickAccess(1) = OPTP_DUALLIN_SIMPLE
-    end if
+    rcollection%IquickAccess(1) = coptype
     
     ! Timestepping technique?
     select case (rspaceTimeOperatorAsm%p_rtimeDiscrDual%ctype)
@@ -4036,13 +4016,6 @@ contains
                   ( dlambda1 * dylin1y * dbasI + &
                     dlambda2 * ( dylin1*dbasIx + dylin2*dbasIy + dylin2y*dbasI ) )
                   
-!              p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
-!                  dweight * p_DcubWeight(icubp,iel) * &
-!                  ( dlambda1 * ( dylin1*dbasIx + dylin2*dbasIy ) )
-!
-!              p_DlocalVector2(idofe,iel) = p_DlocalVector2(idofe,iel) + &
-!                  dweight * p_DcubWeight(icubp,iel) * &
-!                  ( dlambda2 * ( dylin1*dbasIx + dylin2*dbasIy ) )
             end do ! jdofe
 
           end do ! icubp
@@ -5801,7 +5774,7 @@ contains
 !<subroutine>
 
   subroutine smva_assembleMatrix_primal (rmatrix,ispacelevel,idofTime,&
-      roperatorAsmHier,rprimalSol,isollevelspace,isolleveltime,bfull,&
+      roperatorAsmHier,rprimalSol,isollevelspace,isolleveltime,coptype,&
       roptcBDCSpace,rasmFlags,rtempdata,ipreviousSpaceLv)
 
 !<description>
@@ -5832,9 +5805,8 @@ contains
   ! Number of the DOF in time which should be calculated into rmatrix.
   integer, intent(in) :: idofTime
 
-  ! TRUE activates the full linearised operator (Newton).
-  ! FALSE activates a partially linearised operator without the Newton part.
-  logical, intent(in) :: bfull
+  ! Operator type. Either OPTP_PRIMALLIN or OPTP_PRIMALLIN_SIMPLE.
+  integer, intent(in) :: coptype
 
   ! Assembly flags
   type(t_assemblyFlags), intent(in) :: rasmFlags
@@ -5969,7 +5941,7 @@ contains
           ! a separate subroutine
           call smva_getSemilinMat_primalLin (&
               rmatrix,ispacelevel,roperatorAsmHier,idofTime,&
-              rprimalSol,isollevelSpace,isollevelTime,1.0_DP,bfull,&
+              rprimalSol,isollevelSpace,isollevelTime,1.0_DP,coptype,&
               rtempdata,ipreviousSpaceLv)
 
           ! -----------------------------------------------
@@ -6118,11 +6090,18 @@ contains
 
         ! Which equation do we have?    
         select case (p_ranalyticData%p_rphysics%cequation)
+        
+        ! *************************************************************
+        ! Heat/Stokes.
+        ! *************************************************************
+        case (CCEQ_HEAT2D,CCEQ_STOKES2D)
+        
+          ! No semilinear parts, nothing to do.
 
         ! *************************************************************
         ! Heat/Stokes/Navier Stokes.
         ! *************************************************************
-        case (CCEQ_HEAT2D,CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+        case (CCEQ_NAVIERSTOKES2D)
         
           ! ===============================================
           ! Prepare the linear parts of the matrix.
