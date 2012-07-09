@@ -182,23 +182,26 @@ private
 
 !<constantblock description="Iteration control status codes">
 
+  ! Undefined status, iteration not started/running.
+  integer, parameter, public :: ITC_STATUS_UNDEFINED    = 0
+
   ! No stopping criterions fulfilled; continue iteration
-  integer, parameter, public :: ITC_STATUS_CONTINUE     = 0
+  integer, parameter, public :: ITC_STATUS_CONTINUE     = 1
 
   ! Maximum number of allowed iterations performed
-  integer, parameter, public :: ITC_STATUS_MAX_ITER     = 1
+  integer, parameter, public :: ITC_STATUS_MAX_ITER     = 2
 
   ! Convergence criterion(s) fulfilled
-  integer, parameter, public :: ITC_STATUS_CONVERGED    = 2
+  integer, parameter, public :: ITC_STATUS_CONVERGED    = 3
 
   ! Divergence criterion(s) fulfilled
-  integer, parameter, public :: ITC_STATUS_DIVERGED     = 3
+  integer, parameter, public :: ITC_STATUS_DIVERGED     = 4
 
   ! Stagnation criterion fulfilled
-  integer, parameter, public :: ITC_STATUS_STAGNATED    = 4
+  integer, parameter, public :: ITC_STATUS_STAGNATED    = 5
 
   ! Orbiting criterion fulfilled
-  integer, parameter, public :: ITC_STATUS_ORBITING     = 5
+  integer, parameter, public :: ITC_STATUS_ORBITING     = 6
 
 !</constantblock>
 
@@ -288,7 +291,7 @@ private
     ! <!-- OUTPUT PARAMETERS -->
 
     ! Output: current status code
-    integer :: cstatus = ITC_STATUS_CONTINUE
+    integer :: cstatus = ITC_STATUS_UNDEFINED
 
     ! Output: Total number of iterations performed
     integer :: niterations = 0
@@ -339,7 +342,7 @@ contains
     riter%dresInitial = 0.0_DP
     riter%dresFinal = 0.0_DP
     riter%Dresiduals(1) = 0.0_DP
-    riter%cstatus = ITC_STATUS_CONTINUE
+    riter%cstatus = ITC_STATUS_UNDEFINED
 
   end subroutine
 
