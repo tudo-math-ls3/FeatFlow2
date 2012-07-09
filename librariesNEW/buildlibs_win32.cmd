@@ -1,11 +1,11 @@
 @echo off
 
 rem ***************************************************************************
-rem Compile Win64 libraries
+rem Compile Win32 libraries
 rem ***************************************************************************
 
-call .\bin\buildlib_win.cmd Debug Win64
-call .\bin\buildlib_win.cmd Release Win64
+call .\bin\buildlib_win.cmd Debug Win32
+call .\bin\buildlib_win.cmd Release Win32
 
 
 rem ***************************************************************************

@@ -9,5 +9,22 @@ rem the original binaries provided by the following Web-Page:
 rem
 rem     http://gnuwin32.sourceforge.net/
 
+
+rem Check if the desired file already exists and, if so, skip the download
+
+if not exist %~nx1 goto download
+
+echo File '%~nx1' already exists - skipping download
+goto unpack
+
+
+:download
+
 .\bin\wget %1 -O %~nx1
+
+
+:unpack
+
+echo Unpacking '%~nx1'...
+
 .\bin\gzip -f --stdout -d %~nx1 | .\bin\tar -xf -
