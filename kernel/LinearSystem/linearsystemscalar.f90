@@ -26406,7 +26406,7 @@ contains
       ! vertex. For each vertex, a 64-bit integer is used to mark if
       ! colour 0..63 is missing or not. The unique missing colour is
       ! simply the least significant bit the is not set.
-#define MISSINGCOLOUR(v) lookup67(mod((not(p_IdofColor(v))).and.(-(not(p_IdofColor(v)))),67))
+#define MISSINGCOLOUR(v) lookup67(mod(iand( not(p_IdofColor(v)), -not(p_IdofColor(v))),67_I64))
 
       ! Create array list for storing adjacency information
       call alst_create(rgraph, neq, 2*size(IedgeList,2), 1)
