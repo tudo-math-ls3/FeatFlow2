@@ -772,7 +772,7 @@ contains
 	! adopted from the transport model.
         call parlst_getvalue_int(rparlist,&
             ssectionNameHydro, 'templateMatrix', templateMatrix)
-        call grph_createGraphFromMatrix(&
+        call lsyssc_createGraphFromMatrix(&
             p_rproblemLevel%Rmatrix(templateMatrix), rgraph)
         call collct_setvalue_graph(rcollection,&
             'sparsitypattern', rgraph, .true.)
@@ -807,7 +807,7 @@ contains
                 p_rproblemLevel%rtriangulation, rproblem%rboundary)
 
             ! Update the template matrix according to the sparsity pattern
-            call grph_generateMatrix(rgraph,&
+            call lsyssc_createMatrixFromGraph(rgraph,&
                 p_rproblemLevel%Rmatrix(templateMatrix))
 
             ! Re-initialise all constant coefficient matrices
@@ -1093,7 +1093,7 @@ contains
         call lsyssc_releaseVector(relementError)
 
         ! Update the template matrix according to the sparsity pattern
-        call grph_generateMatrix(rgraph,&
+        call lsyssc_createMatrixFromGraph(rgraph,&
             p_rproblemLevel%Rmatrix(templateMatrix))
 
         ! Stop time measurement for mesh adaptation

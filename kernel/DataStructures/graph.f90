@@ -35,43 +35,37 @@
 !#  1.) grph_createGraph
 !#      -> Create graph directly
 !#
-!#  2.) grph_createGraphFromMatrix
-!#      -> Create graph from scalar matrix
-!#
-!#  3.) grph_releaseGraph
+!#  2.) grph_releaseGraph
 !#      -> Release an existing graph
 !#
-!#  4.) grph_generateMatrix
-!#      -> Generate scalar matrix from sparsity graph
-!#
-!#  5.) grph_printGraph
+!#  3.) grph_printGraph
 !#      -> Print the graph to screen
 !#
-!#  6.) grph_hasVertex
+!#  4.) grph_hasVertex
 !#      -> Check if the graph has the given vertex
 !#
-!#  7.) grph_insertVertex
+!#  5.) grph_insertVertex
 !#      -> Insert vertex into the graph. Do nothing if vertex already exists.
 !#
-!#  8.) grph_removeVertex
+!#  6.) grph_removeVertex
 !#      -> Remove vertex from graph. Do nothing if vertex does not exist.
 !#
-!#  9.) grph_hasEdge
+!#  7.) grph_hasEdge
 !#      -> Check if the graph has the given edge
 !#
-!# 10.) grph_insertEdge
+!#  8.) grph_insertEdge
 !#      -> Insert edge into the graph. Do nothing if edge already exists.
 !#
-!# 11.) grph_removeEdge
+!#  9.) grph_removeEdge
 !#      -> Remove edge from graph. Do nothing if edge does not exist.
 !#
-!# 12.) grph_infoGraph
+!# 10.) grph_infoGraph
 !#      -> Print information about the graph.
 !#
-!# 13.) grph_duplicateGraph
+!# 11.) grph_duplicateGraph
 !#      -> Create a duplicate / backup of a graph.
 !#
-!# 14.) grph_restoreGraph
+!# 12.) grph_restoreGraph
 !#      -> Restores a graph previously backed up with grph_duplicateGraph
 !#
 !# </purpose>
@@ -83,7 +77,6 @@ module graph
   use arraylistInt
   use fsystem
   use genoutput
-  use linearsystemscalar
   use mapInt_Int
   use mapbase
   use storage
@@ -93,9 +86,7 @@ module graph
   private
   public :: t_graph
   public :: grph_createGraph
-  public :: grph_createGraphFromMatrix
   public :: grph_releaseGraph
-  public :: grph_generateMatrix
   public :: grph_printGraph
   public :: grph_hasVertex
   public :: grph_insertVertex
@@ -285,123 +276,6 @@ contains
 
 !<subroutine>
 
-  subroutine grph_createGraphFromMatrix(rscalarMatrix,rgraph,nvtMax,nedgeMax)
-
-!<description>
-    ! This routine creates a graph rgraph from a scalar matrix
-    ! rscalarMatrix.  The matrix must be stored in CSR format 7 or
-    ! 9. Note that a graph that is generated from a matrix is assumed
-    ! to be dense automatically.  If the optional parameters nvtMax or
-    ! nedgeMax are present then their values will be adopted for the
-    ! maximum number of vertices/edges than can be stored in the graph
-    ! initially without reallocation.
-!</description>
-
-!<input>
-    ! The scalar matrix which should be used to create the sparsity graph
-    type(t_matrixScalar), intent(in) :: rscalarMatrix
-
-    ! OPTIONAL: maximum number of vertices
-    integer, intent(in), optional :: nvtMax
-
-    ! OPTIONAL: maximum number of edges
-    integer, intent(in), optional :: nedgeMax
-!</input>
-
-!<output>
-    ! The sparsity graph
-    type(t_graph), intent(out) :: rgraph
-!</output>
-
-!</subroutine>
-
-    ! local variables
-    integer :: h_Key
-    integer :: nvt,nedge
-    integer, dimension(:), pointer :: p_Kld,p_Kcol,p_Key
-
-    ! Set dimensions
-    rgraph%NVT   = rscalarMatrix%NEQ
-    rgraph%NEDGE = rscalarMatrix%NA
-
-    ! Estimate maximum number of vertices
-    if (present(nvtMax)) then
-      nvt = max(nvtMax,rgraph%NVT)
-    else
-      nvt = int(1.5_DP*rgraph%NVT)
-    end if
-
-    ! Estimate maximum number of edges
-    if (present(nedgeMax)) then
-      nedge = max(nedgeMax,rgraph%NEDGE)
-    else
-      nedge = int(0.5_DP*(rgraph%NEDGE+rgraph%NVT))
-    end if
-
-    ! What matrix format are we?
-    select case(rscalarMatrix%cmatrixFormat)
-
-    case(LSYSSC_MATRIX7,&
-         LSYSSC_MATRIX7INTL)
-      rgraph%cgraphFormat = GRPH_GRAPH7
-
-      ! Create map for the list of vertices
-      call map_create(rgraph%rVertices,rgraph%NVT+1,0)
-
-      ! Create array of lists for edges
-      call alst_create(rgraph%rEdges,nvt,nedge)
-
-      ! Set pointers
-      call lsyssc_getbase_Kld(rscalarMatrix,p_Kld)
-      call lsyssc_getbase_Kcol(rscalarMatrix,p_Kcol)
-
-      ! Fill list of edges
-      call alst_copy(p_Kld,p_Kcol,rgraph%rEdges)
-
-      ! Generate p_Key = array [1,2,3,...,NVT]
-      call storage_new('grph_createGraphFromMatrix','p_Key',&
-          rgraph%NVT,ST_INT, h_Key,ST_NEWBLOCK_ORDERED)
-      call storage_getbase_int(h_Key,p_Key)
-      call map_copy(p_Key,rgraph%rVertices)
-      call storage_free(h_Key)
-
-
-    case(LSYSSC_MATRIX9,&
-         LSYSSC_MATRIX9INTL)
-      rgraph%cgraphFormat = GRPH_GRAPH9
-
-      ! Create map for the list of vertices
-      call map_create(rgraph%rVertices,rgraph%NVT+1,0)
-
-      ! Create array of lists for edges
-      call alst_create(rgraph%rEdges,nvt,nedge)
-
-      ! Set pointers
-      call lsyssc_getbase_Kld(rscalarMatrix,p_Kld)
-      call lsyssc_getbase_Kcol(rscalarMatrix,p_Kcol)
-
-      ! Fill list of edges
-      call alst_copy(p_Kld,p_Kcol,rgraph%rEdges)
-
-      ! Generate p_Key = array [1,2,3,...,NVT]
-      call storage_new('grph_createGraphFromMatrix','p_Key',&
-          rgraph%NVT,ST_INT, h_Key,ST_NEWBLOCK_ORDERED)
-      call storage_getbase_int(h_Key,p_Key)
-      call map_copy(p_Key,rgraph%rVertices)
-      call storage_free(h_Key)
-
-
-    case DEFAULT
-      call output_line('Invalid matrix format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'grph_createGraphFromMatrix')
-      call sys_halt()
-    end select
-  end subroutine grph_createGraphFromMatrix
-
-  ! ***************************************************************************
-
-!<subroutine>
-
   subroutine grph_releaseGraph(rgraph)
 
 !<description>
@@ -426,163 +300,6 @@ contains
     rgraph%NEDGE        = 0
     rgraph%bisDense     = .true.
   end subroutine grph_releaseGraph
-
-  ! ***************************************************************************
-
-!<subroutine>
-
-  subroutine grph_generateMatrix(rgraph,rscalarMatrix)
-
-!<description>
-    ! This subroutine generates a sparse matrix rscalarMatrix stored
-    ! in format CSR 7 or 9 whereby the sparsity pattern is adopted
-    ! from the graph rgraph.
-!</description>
-
-!<input>
-    ! The graph
-    type(t_graph), intent(inout) :: rgraph
-!</input>
-
-!<inputoutput>
-    ! The matrix
-    type(t_matrixScalar), intent(inout) :: rscalarMatrix
-!</inputoutput>
-!</subroutine>
-
-    ! local variables
-    type(it_mapInt_Int) :: rmapIter
-    integer, dimension(:), pointer :: p_Idata,p_Kcol,p_Kdiagonal,p_Kld
-    integer :: ia,ieq,isize,itable,ncols
-
-    ! Check that matrix and graph have the same format
-    select case(rscalarMatrix%cmatrixFormat)
-
-    case(LSYSSC_MATRIX7,&
-         LSYSSC_MATRIX7INTL)
-      if (rgraph%cgraphFormat .ne. GRPH_GRAPH7) then
-        call output_line('Matrix/graph have incompatible format!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'grph_generateMatrix')
-        call sys_halt()
-      end if
-
-    case(LSYSSC_MATRIX9,&
-         LSYSSC_MATRIX9INTL)
-      if (rgraph%cgraphFormat .ne. GRPH_GRAPH9) then
-        call output_line('Matrix/graph have incompatible format!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'grph_generateMatrix')
-        call sys_halt()
-      end if
-
-    case DEFAULT
-      call output_line('Unsupported matrix format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'grph_generateMatrix')
-      call sys_halt()
-    end select
-
-    ! Set number of edges = number of nonzero matrix entries
-    rscalarMatrix%NA = rgraph%NEDGE
-
-    ! Set number of columns/rows. This is a little bit ugly because
-    ! the number of vertices (NVT) may be different from the number of
-    ! tables.  If vertices are inserted as follows 1,2,3,...,NVT, then
-    ! the number of tables is equal to the number of vertices.
-    ! However, if only vertices 1,5,9,10 are present in the graph,
-    ! then NVT=4 but the largest number in the graph is 10. Hence, the
-    ! matrix has NEQ=NCOLS=10 and some rows, e.g.  2,3,4 have no
-    ! entries. For a finite element matrix, this does not make sense
-    ! but this graph module should be as general as possible.
-    rscalarMatrix%NEQ   = max(rgraph%NVT,alst_ntable(rgraph%rEdges))
-    rscalarMatrix%NCOLS = rscalarMatrix%NEQ
-
-    if (rgraph%bisDense) then
-
-      ! Convert array list to matrix
-      call alst_copy(rgraph%rEdges,rscalarMatrix%h_Kld,rscalarMatrix%h_Kcol)
-
-    else
-
-      ! Check if matrix is empty
-      if ((rscalarMatrix%NEQ .eq. 0) .or. rscalarMatrix%NA .eq. 0) return
-
-      ! Convert array list step-by-step
-      if (rscalarMatrix%h_Kld .eq. ST_NOHANDLE) then
-        call storage_new('grph_generateMatrix','p_Kld',&
-            rscalarMatrix%NEQ+1,ST_INT,rscalarMatrix%h_Kld,ST_NEWBLOCK_NOINIT)
-      else
-        call storage_getsize(rscalarMatrix%h_Kld,isize)
-        if (isize < rscalarMatrix%NEQ+1) then
-          call storage_realloc('grph_generateMatrix',&
-              rscalarMatrix%NEQ+1,rscalarMatrix%h_Kld,ST_NEWBLOCK_NOINIT,.false.)
-        end if
-      end if
-
-      if (rscalarMatrix%h_Kcol .eq. ST_NOHANDLE) then
-        call storage_new('grph_generateMatrix','p_Kcol',&
-            rscalarMatrix%NA,ST_INT,rscalarMatrix%h_Kcol,ST_NEWBLOCK_NOINIT)
-      else
-        call storage_getsize(rscalarMatrix%h_Kcol,isize)
-        if (isize < rscalarMatrix%NA) then
-          call storage_realloc('grph_generateMatrix',&
-              rscalarMatrix%NA,rscalarMatrix%h_Kcol,ST_NEWBLOCK_NOINIT,.false.)
-        end if
-      end if
-
-      ! Set pointers
-      call lsyssc_getbase_Kld(rscalarMatrix,p_Kld)
-      call lsyssc_getbase_Kcol(rscalarMatrix,p_Kcol)
-
-      ! Initialization
-      ia=1
-
-      ! Loop over all equations
-      do ieq=1,rscalarMatrix%NEQ
-
-        p_Kld(ieq) = ia
-
-        ! Check if vertex with number IEQ exists
-        rmapIter = map_find(rgraph%rVertices,ieq)
-        if (.not.map_isNull(rmapIter)) then
-
-          ! Get auxiliary data
-          call map_getbase_data(rgraph%rVertices,rmapIter,p_Idata)
-          itable = p_Idata(1)
-
-          ! Restore row from table
-          call alst_copyTbl(rgraph%rEdges,itable,p_Kcol(ia:),ncols)
-        end if
-
-        ia = ia+ncols
-      end do
-      p_Kld(rscalarMatrix%NEQ+1)=ia
-    end if
-
-    ! Do we have to rebuild the diagonal?
-    if (rscalarMatrix%cmatrixFormat .eq. LSYSSC_MATRIX9 .or.&
-        rscalarMatrix%cmatrixFormat .eq. LSYSSC_MATRIX9INTL) then
-
-      ! Create new memory or resize existing memory
-      if (rscalarMatrix%h_Kdiagonal .eq. ST_NOHANDLE) then
-        call storage_new('grph_generateMatrix','p_Kdiagonal',&
-            rscalarMatrix%NEQ, ST_INT, rscalarMatrix%h_Kdiagonal,ST_NEWBLOCK_NOINIT)
-      else
-        call storage_getsize(rscalarMatrix%h_Kdiagonal,isize)
-        if (isize < rscalarMatrix%NEQ) then
-          call storage_realloc('grph_generateMatrix',&
-              rscalarMatrix%NEQ, rscalarMatrix%h_Kdiagonal, ST_NEWBLOCK_NOINIT, .false.)
-        end if
-      end if
-
-      ! Set pointers
-      call lsyssc_getbase_Kld(rscalarMatrix, p_Kld)
-      call lsyssc_getbase_Kcol(rscalarMatrix, p_Kcol)
-      call lsyssc_getbase_Kdiagonal(rscalarMatrix, p_Kdiagonal)
-
-      ! Rebuild array
-      call lsyssc_rebuildKdiagonal(p_Kcol, p_Kld, p_Kdiagonal, rscalarMatrix%NEQ)
-    end if
-
-  end subroutine grph_generateMatrix
 
   ! ***************************************************************************
 

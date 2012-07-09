@@ -327,11 +327,17 @@
 !#      -> Generates a list of edges of a given matrix
 !#
 !# 12.) lsyssc_regroupEdgeList
-!#      -> Regroup a list of edges into independent groups which can be
+!#      -> Regroups a list of edges into independent groups which can be
 !#         processed individually, i.e. in parallel
 !#
 !# 13.) lsyssc_calcDimsFromMatrix
 !#      -> Calculates dimensions NA, NEQ, and NEDGE from matrix
+!#
+!# 14.) lsyssc_createGraphFromMatrix
+!#      -> Creates a graph data structure from a given matrix
+!#
+!# 15.) lsyssc_createMatrixFromGraph
+!#      -> Creates a matrix from a graph data structure
 !# </purpose>
 !##############################################################################
 
@@ -346,6 +352,7 @@ module linearsystemscalar
   use genoutput
   use graph
   use linearalgebra
+  use mapInt_Int
   use perfconfig
   use spatialdiscretisation
   use storage
@@ -1010,6 +1017,8 @@ module linearsystemscalar
   public :: lsyssc_genEdgeList
   public :: lsyssc_regroupEdgeList
   public :: lsyssc_calcDimsFromMatrix
+  public :: lsyssc_createGraphFromMatrix
+  public :: lsyssc_createMatrixFromGraph
 
 contains
 
@@ -27138,5 +27147,277 @@ contains
     end select
 
   end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lsyssc_createGraphFromMatrix(rmatrix, rgraph, nvtMax, nedgeMax)
+
+!<description>
+    ! This routine creates a an adjacency graph rgraph from the scalar
+    ! matrix rmatrix. If the optional parameters nvtMax or nedgeMax
+    ! are present then their values will be adopted for the maximum
+    ! number of vertices/edges that can be stored in the graph
+    ! initially without reallocation.
+!</description>
+
+!<input>
+    ! The scalar matrix which should be used to create the sparsity graph
+    type(t_matrixScalar), intent(in) :: rmatrix
+
+    ! OPTIONAL: maximum number of vertices
+    integer, intent(in), optional :: nvtMax
+
+    ! OPTIONAL: maximum number of edges
+    integer, intent(in), optional :: nedgeMax
+!</input>
+
+!<output>
+    ! The adjacency graph
+    type(t_graph), intent(out) :: rgraph
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer :: h_Key
+    integer :: nvt,nedge
+    integer, dimension(:), pointer :: p_Kld,p_Kcol,p_Key
+
+    ! Set dimensions
+    rgraph%NVT   = rmatrix%NEQ
+    rgraph%NEDGE = rmatrix%NA
+
+    ! Estimate maximum number of vertices
+    if (present(nvtMax)) then
+      nvt = max(nvtMax,rgraph%NVT)
+    else
+      nvt = int(1.5_DP*rgraph%NVT)
+    end if
+
+    ! Estimate maximum number of edges
+    if (present(nedgeMax)) then
+      nedge = max(nedgeMax,rgraph%NEDGE)
+    else
+      nedge = int(0.5_DP*(rgraph%NEDGE+rgraph%NVT))
+    end if
+
+    ! What matrix format are we?
+    select case(rmatrix%cmatrixFormat)
+
+    case(LSYSSC_MATRIX7,&
+         LSYSSC_MATRIX7INTL)
+      rgraph%cgraphFormat = GRPH_GRAPH7
+
+      ! Create map for the list of vertices
+      call map_create(rgraph%rVertices,rgraph%NVT+1,0)
+
+      ! Create array of lists for edges
+      call alst_create(rgraph%rEdges,nvt,nedge)
+
+      ! Set pointers
+      call lsyssc_getbase_Kld(rmatrix,p_Kld)
+      call lsyssc_getbase_Kcol(rmatrix,p_Kcol)
+
+      ! Fill list of edges
+      call alst_copy(p_Kld,p_Kcol,rgraph%rEdges)
+
+      ! Generate p_Key = array [1,2,3,...,NVT]
+      call storage_new('lsyssc_createGraphFromMatrix','p_Key',&
+          rgraph%NVT,ST_INT, h_Key,ST_NEWBLOCK_ORDERED)
+      call storage_getbase_int(h_Key,p_Key)
+      call map_copy(p_Key,rgraph%rVertices)
+      call storage_free(h_Key)
+
+
+    case(LSYSSC_MATRIX9,&
+         LSYSSC_MATRIX9INTL)
+      rgraph%cgraphFormat = GRPH_GRAPH9
+
+      ! Create map for the list of vertices
+      call map_create(rgraph%rVertices,rgraph%NVT+1,0)
+
+      ! Create array of lists for edges
+      call alst_create(rgraph%rEdges,nvt,nedge)
+
+      ! Set pointers
+      call lsyssc_getbase_Kld(rmatrix,p_Kld)
+      call lsyssc_getbase_Kcol(rmatrix,p_Kcol)
+
+      ! Fill list of edges
+      call alst_copy(p_Kld,p_Kcol,rgraph%rEdges)
+
+      ! Generate p_Key = array [1,2,3,...,NVT]
+      call storage_new('lsyssc_createGraphFromMatrix','p_Key',&
+          rgraph%NVT,ST_INT, h_Key,ST_NEWBLOCK_ORDERED)
+      call storage_getbase_int(h_Key,p_Key)
+      call map_copy(p_Key,rgraph%rVertices)
+      call storage_free(h_Key)
+
+
+    case DEFAULT
+      call output_line('Invalid matrix format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_createGraphFromMatrix')
+      call sys_halt()
+    end select
+
+  end subroutine lsyssc_createGraphFromMatrix
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lsyssc_createMatrixFromGraph(rgraph, rmatrix)
+
+!<description>
+    ! This subroutine generates a sparse matrix rmatrix from the
+    ! sparsity pattern given by the adjacency graph rgraph.
+!</description>
+
+!<input>
+    ! The adjacency graph
+    type(t_graph), intent(inout) :: rgraph
+!</input>
+
+!<inputoutput>
+    ! The matrix
+    type(t_matrixScalar), intent(inout) :: rmatrix
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(it_mapInt_Int) :: rmapIter
+    integer, dimension(:), pointer :: p_Idata,p_Kcol,p_Kdiagonal,p_Kld
+    integer :: ia,ieq,isize,itable,ncols
+
+    ! Check that matrix and graph have the same format
+    select case(rmatrix%cmatrixFormat)
+
+    case(LSYSSC_MATRIX7,&
+         LSYSSC_MATRIX7INTL)
+      if (rgraph%cgraphFormat .ne. GRPH_GRAPH7) then
+        call output_line('Matrix/graph have incompatible format!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_createMatrixFromGraph')
+        call sys_halt()
+      end if
+
+    case(LSYSSC_MATRIX9,&
+         LSYSSC_MATRIX9INTL)
+      if (rgraph%cgraphFormat .ne. GRPH_GRAPH9) then
+        call output_line('Matrix/graph have incompatible format!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_createMatrixFromGraph')
+        call sys_halt()
+      end if
+
+    case DEFAULT
+      call output_line('Unsupported matrix format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_createMatrixFromGraph')
+      call sys_halt()
+    end select
+
+    ! Set number of edges = number of nonzero matrix entries
+    rmatrix%NA = rgraph%NEDGE
+
+    ! Set number of columns/rows. This is a little bit ugly because
+    ! the number of vertices (NVT) may be different from the number of
+    ! tables.  If vertices are inserted as follows 1,2,3,...,NVT, then
+    ! the number of tables is equal to the number of vertices.
+    ! However, if only vertices 1,5,9,10 are present in the graph,
+    ! then NVT=4 but the largest number in the graph is 10. Hence, the
+    ! matrix has NEQ=NCOLS=10 and some rows, e.g.  2,3,4 have no
+    ! entries. For a finite element matrix, this does not make sense
+    ! but this graph module should be as general as possible.
+    rmatrix%NEQ   = max(rgraph%NVT,alst_ntable(rgraph%rEdges))
+    rmatrix%NCOLS = rmatrix%NEQ
+
+    if (rgraph%bisDense) then
+
+      ! Convert array list to matrix
+      call alst_copy(rgraph%rEdges,rmatrix%h_Kld,rmatrix%h_Kcol)
+
+    else
+
+      ! Check if matrix is empty
+      if ((rmatrix%NEQ .eq. 0) .or. rmatrix%NA .eq. 0) return
+
+      ! Convert array list step-by-step
+      if (rmatrix%h_Kld .eq. ST_NOHANDLE) then
+        call storage_new('lsyssc_createMatrixFromGraph','p_Kld',&
+            rmatrix%NEQ+1,ST_INT,rmatrix%h_Kld,ST_NEWBLOCK_NOINIT)
+      else
+        call storage_getsize(rmatrix%h_Kld,isize)
+        if (isize < rmatrix%NEQ+1) then
+          call storage_realloc('lsyssc_createMatrixFromGraph',&
+              rmatrix%NEQ+1,rmatrix%h_Kld,ST_NEWBLOCK_NOINIT,.false.)
+        end if
+      end if
+
+      if (rmatrix%h_Kcol .eq. ST_NOHANDLE) then
+        call storage_new('lsyssc_createMatrixFromGraph','p_Kcol',&
+            rmatrix%NA,ST_INT,rmatrix%h_Kcol,ST_NEWBLOCK_NOINIT)
+      else
+        call storage_getsize(rmatrix%h_Kcol,isize)
+        if (isize < rmatrix%NA) then
+          call storage_realloc('lsyssc_createMatrixFromGraph',&
+              rmatrix%NA,rmatrix%h_Kcol,ST_NEWBLOCK_NOINIT,.false.)
+        end if
+      end if
+
+      ! Set pointers
+      call lsyssc_getbase_Kld(rmatrix,p_Kld)
+      call lsyssc_getbase_Kcol(rmatrix,p_Kcol)
+
+      ! Initialization
+      ia=1
+
+      ! Loop over all equations
+      do ieq=1,rmatrix%NEQ
+
+        p_Kld(ieq) = ia
+
+        ! Check if vertex with number IEQ exists
+        rmapIter = map_find(rgraph%rVertices,ieq)
+        if (.not.map_isNull(rmapIter)) then
+
+          ! Get auxiliary data
+          call map_getbase_data(rgraph%rVertices,rmapIter,p_Idata)
+          itable = p_Idata(1)
+
+          ! Restore row from table
+          call alst_copyTbl(rgraph%rEdges,itable,p_Kcol(ia:),ncols)
+        end if
+
+        ia = ia+ncols
+      end do
+      p_Kld(rmatrix%NEQ+1)=ia
+    end if
+
+    ! Do we have to rebuild the diagonal?
+    if (rmatrix%cmatrixFormat .eq. LSYSSC_MATRIX9 .or.&
+        rmatrix%cmatrixFormat .eq. LSYSSC_MATRIX9INTL) then
+
+      ! Create new memory or resize existing memory
+      if (rmatrix%h_Kdiagonal .eq. ST_NOHANDLE) then
+        call storage_new('lsyssc_createMatrixFromGraph','p_Kdiagonal',&
+            rmatrix%NEQ, ST_INT, rmatrix%h_Kdiagonal,ST_NEWBLOCK_NOINIT)
+      else
+        call storage_getsize(rmatrix%h_Kdiagonal,isize)
+        if (isize < rmatrix%NEQ) then
+          call storage_realloc('lsyssc_createMatrixFromGraph',&
+              rmatrix%NEQ, rmatrix%h_Kdiagonal, ST_NEWBLOCK_NOINIT, .false.)
+        end if
+      end if
+
+      ! Set pointers
+      call lsyssc_getbase_Kld(rmatrix, p_Kld)
+      call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
+      call lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
+
+      ! Rebuild array
+      call lsyssc_rebuildKdiagonal(p_Kcol, p_Kld, p_Kdiagonal, rmatrix%NEQ)
+    end if
+
+  end subroutine lsyssc_createMatrixFromGraph
 
 end module
