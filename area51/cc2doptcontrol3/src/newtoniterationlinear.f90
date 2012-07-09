@@ -569,7 +569,6 @@ contains
     
     output_iautoOutputIndent = output_iautoOutputIndent - 2
 
-    call spacesl_sumStatistics(rlocalStat,rstatistics%rspaceslSolverStat)
     if (rlinsolParam%rprecParameters%ioutputLevel .ge. 3) then
       call output_line ("Linear space-time Residual: Time for solving      : "//&
           trim(sys_sdL(rlocalStat%rtotalTime%delapsedReal,10)))
