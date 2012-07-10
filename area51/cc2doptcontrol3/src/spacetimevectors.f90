@@ -111,6 +111,16 @@
 !#
 !# 30.) sptivec_isVecInPool
 !#      -> Checks if a vector is in the pool and directly available
+!#
+!# 31.) sptivec_lockVecInPool
+!#      -> Locks a vector in the pool
+!#
+!# 32.) sptivec_unlockVecInPool
+!#      -> unlocks a vector in the pool
+!#
+!# 33.) sptivec_getUnusedIndex
+!#      -> Calculates the index which is not used and which can be used
+!#         for obtaining a free buffer from the pool
 !# </purpose>
 !##############################################################################
 
@@ -277,6 +287,11 @@ module spacetimevectors
   interface sptivec_createAccessPool
     module procedure sptivec_createAccessPoolByVec
     module procedure sptivec_createAccessPoolByDisc
+  end interface
+  
+  interface sptivec_getTimestepDataByTime
+    module procedure sptivec_getTimestepDataByTime1
+    module procedure sptivec_getTimestepDataByTime2
   end interface
     
 contains
@@ -682,7 +697,7 @@ contains
 
 !<subroutine>
 
-  subroutine sptivec_getTimestepDataByTime (rx, dtimestamp, rvector)
+  subroutine sptivec_getTimestepDataByTime1 (rx, dtimestamp, rvector)
 
 !<description>
   ! Restores the data of a timestep into the vector rvector. dtimestamp is a time
@@ -2336,20 +2351,54 @@ contains
   ! Access-pool structure to be accessed.
   type(t_spaceTimeVectorAccess), intent(inout), target :: raccessPool
   
+  ! Pointer which is set to a spatial vector that can be used to store data.
+  type(t_vectorBlock), pointer :: p_rx
+!</inputoutput>
+
+!<inputoutput>
   ! Index (timestep) that should be associated to the vector.
   ! A sptivec_getVectorFromPool with this index will return this pointer again.
   ! if there is already a vector with index iindex in the pool,
   ! it will be returned without being changed.
-  integer, intent(in) :: iindex
-  
-  ! Pointer which is set to a spatial vector that can be used to store data.
-  type(t_vectorBlock), pointer :: p_rx
+  !
+  ! If the value is -1, a new, unused index is calculated and returned in
+  ! iindex.
+  integer, intent(inout) :: iindex
 !</inputoutput>
 
 !</subroutine>
 
     ! local variables
     integer :: i
+   
+    if (iindex .eq. -1) then
+    
+      ! Calculate a new index. Start counting from NEQtime+1 or 1,
+      ! depending on whether a vector is associated or not.
+      if (associated(raccessPool%p_rspaceTimeVector)) then
+        iindex = raccessPool%p_rspaceTimeVector%NEQtime+1
+      else
+        iindex = 1
+      end if
+      
+      ! Increase until a not-used index if found.
+      indexsearch: do
+      
+        do i=1,size(raccessPool%p_IvectorIndex)
+          if (abs(raccessPool%p_IvectorIndex(i)) .eq. iindex) then
+          
+            ! Already in use. Increase iindex and search again.
+            iindex = iindex + 1
+            cycle indexsearch
+            
+          end if
+        end do
+        
+        ! Unused index found.
+        exit
+      end do indexsearch
+      
+    end if
    
     if (iindex .le. 0) then
       call output_line ("Invalid index!",&
@@ -2650,5 +2699,137 @@ contains
     end do
   
   end function
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sptivec_getTimestepDataByTime2 (raccessPool, dtimestamp, p_rvector)
+
+!<description>
+  ! Restores the data of a timestep into the vector rvector. dtimestamp is a time
+  ! stamp in the range 0.0 .. 1.0, where 0.0 corresponds to the 1st subvector
+  ! and 1.0 to the last subvector in the space time vector. If dtimestamp
+  ! specifies a time stamp between two stored vectors, quadratic interpolation
+  ! is used to calculate rvector.
+!</desctiprion>
+
+!<input>
+  ! Time stamp of the vector whose data should be retrieved.
+  real(DP), intent(IN) :: dtimestamp
+  
+  ! Space-time vector pool with the data of teh space-time vector.
+  type(t_spaceTimeVectorAccess), intent(inout), target :: raccessPool
+!</input>
+
+!<inputoutput>
+  ! Pointer to a vector that contains the data. The memory is allocated
+  ! in the pool.
+  type(t_vectorBlock), pointer :: p_rvector
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    integer :: iindex
+    type(t_vectorBlock), pointer :: p_rx1, p_rx2, p_rx3
+    real(DP), dimension(:), pointer :: p_Ddest, p_Dx1,p_Dx2,p_Dx3
+    integer :: itimestep1,itimestep2,itimestep3
+    real(DP) :: dreltime,dabstime
+    integer :: i
+    real(DP) :: dscal1,dscal2,dscal3
+
+    ! Make sure we can store the timestep data.
+    if ((dtimestamp .lt. 0.0_DP) .or. (dtimestamp .gt. 1.0_DP)) then
+      call output_line("Invalid time stamp!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"sptivec_getTimestepDataByTime2")
+      call sys_halt()
+    end if
+    
+    if (.not. associated(raccessPool%p_rspaceTimeVector)) then
+      call output_line("No space-time vector associated.",&
+          OU_CLASS_ERROR,OU_MODE_STD,"sptivec_getTimestepDataByTime2")
+      call sys_halt()
+    end if
+    
+    ! We need a pool with at least four entries
+    call sptivec_assurePoolSize (raccessPool,4)
+    
+    ! Get the time step which is closest to the time stamp.
+    ! Rescale dtimestamp to the interval [0..NEQtime-1=#intervals].
+    dabstime = dtimestamp*real(raccessPool%p_rspaceTimeVector%NEQtime-1,DP)+1.0_DP
+    itimestep2 = int(dabstime + 0.5_DP)
+    
+    ! Calculate the 'relative' time in the interval [-1,1], where -1 corresponds
+    ! to timestep itimestep1, 0 to itimestep2 and +1 to itimestep3.
+    ! This will be used to evaluate the quadratic polynomial.
+    dreltime = dabstime-real(itimestep2,DP)
+    
+    if (abs(dreltime) .lt. 100.0_DP*SYS_EPSREAL_DP) then
+      ! Nice coincidence, we have exactly timestep itimestep2. Ok, then we
+      ! can call the routine to get that timestep; this saves us some
+      ! time as the interpolation can be omitted.
+      call sptivec_getVectorFromPool (raccessPool,itimestep2,p_rvector)
+      return
+    end if
+    
+    if (raccessPool%p_rspaceTimeVector%NEQtime .eq. 2) then
+      ! Special case: only one timestep!
+      itimestep1 = 0
+      itimestep2 = 0
+      itimestep3 = 1
+    else
+      ! Is this the first or the last timestep?
+      if (itimestep2 .eq. 1) then
+        ! First timestep. Interpolate between timesteps 0,1 and 2, evaluate
+        ! near timestep 0.
+        itimestep1 = 0
+        itimestep2 = 1
+        itimestep3 = 2
+      else if (itimestep2 .eq. raccessPool%p_rspaceTimeVector%NEQtime) then
+        ! Last timestep. Interpolate between timesteps n-2,n-1 and n, evaluate
+        ! near timestep n.
+        itimestep1 = raccessPool%p_rspaceTimeVector%NEQtime-2
+        itimestep2 = raccessPool%p_rspaceTimeVector%NEQtime-1
+        itimestep3 = raccessPool%p_rspaceTimeVector%NEQtime
+      else
+        ! Somewhere in the inner. Get the number of the previous and next timestep
+        itimestep1 = itimestep2-1
+        itimestep3 = itimestep2+1
+      end if
+    end if
+
+    ! Get the vectors.
+    call sptivec_getVectorFromPool (raccessPool,itimestep1,p_rx1)
+    call sptivec_getVectorFromPool (raccessPool,itimestep2,p_rx2)
+    call sptivec_getVectorFromPool (raccessPool,itimestep3,p_rx3)
+    call lsysbl_getbase_double (p_rx1,p_Dx1)
+    call lsysbl_getbase_double (p_rx2,p_Dx2)
+    call lsysbl_getbase_double (p_rx3,p_Dx3)
+    
+    ! Get a destination vector
+    iindex = -1
+    call sptivec_getFreeBufferFromPool (raccessPool,iindex,p_rvector)
+    call lsysbl_getbase_double (p_rvector,p_Ddest)
+
+    ! Calculate the quadratic interpolation of the three arrays.
+    dscal1 = raccessPool%p_rspaceTimeVector%p_Dscale(itimestep1)
+    dscal2 = raccessPool%p_rspaceTimeVector%p_Dscale(itimestep2)
+    dscal3 = raccessPool%p_rspaceTimeVector%p_Dscale(itimestep3)
+    if (raccessPool%p_rspaceTimeVector%NEQtime .eq. 2) then
+      ! Special case: only 1 timestep. Linear interpolation. dreltime is in [0..1]!
+      do i=1,size(p_Ddest)
+        p_Ddest(i) = (1.0_DP-dreltime) * dscal2*p_Dx2(i) + &
+                     dreltime*dscal3*p_Dx3(i)
+      end do
+    else
+      ! Quadratic interpolation
+      do i=1,size(p_Ddest)
+        call mprim_quadraticInterpolation (dreltime,&
+            dscal1*p_Dx1(i),dscal2*p_Dx2(i),dscal3*p_Dx3(i),p_Ddest(i))
+      end do
+    end if
+    
+  end subroutine
 
 end module

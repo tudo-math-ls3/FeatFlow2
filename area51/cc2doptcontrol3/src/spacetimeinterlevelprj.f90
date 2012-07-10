@@ -1413,7 +1413,7 @@ contains
     integer :: ispacelevelfine,ispacelevelcoarse,itimelevelfine,itimelevelcoarse
     type(t_vectorScalar) :: rtempVecFineScalar
     type(t_vectorBlock), pointer :: p_rx,p_rdestVector,p_rtempVecFine
-    integer :: irow, icol, neq, icomp, imat, icompidx, i, neqfine
+    integer :: irow, icol, neq, icomp, imat, icompidx, i, iindex
     type(t_matrixScalar), pointer :: p_rtimeMatrix
     real(DP), dimension(:), pointer :: p_Da,p_DdataCoarse,p_DdataFine
     integer, dimension(:), pointer :: p_Kcol, p_Kld
@@ -1445,12 +1445,11 @@ contains
     ! not bounded to and space-time vector!
     call sptivec_createAccessPool (rfineVector%p_rspaceDiscr,raccessPool,i+1)
     
-    ! We need one temp vector. Take it from the pool and and associate
-    ! the index neqfine -- this will for sure not appear in the loop.
+    ! We need one temp vector. 
     ! Lock the vector so it is not overwritten.
-    neqfine = rfineVector%p_rspaceTimeVector%NEQtime
-    call sptivec_getFreeBufferFromPool (raccessPool,neqfine+1,p_rtempVecFine)
-    call sptivec_lockVecInPool (raccessPool,neqfine+1)
+    iindex = -1
+    call sptivec_getFreeBufferFromPool (raccessPool,iindex,p_rtempVecFine)
+    call sptivec_lockVecInPool (raccessPool,iindex)
     
     ! We need a scalar representation of the temp vector
     call lsysbl_createScalarFromVec (p_rtempVecFine,rtempVecFineScalar)
@@ -1468,7 +1467,10 @@ contains
     ! Apply the multiplication.
     ! The rows in the matrix correspond to the time fine mesh, the columns
     ! to the time coarse mesh.
-    do irow = 1,neq
+    irow = 0
+    do
+      irow = irow + 1
+      if (irow .gt. neq) exit
     
       ! Clear the destination
       call sptivec_getFreeBufferFromPool (rfineVector,irow,p_rdestVector)
@@ -1586,7 +1588,7 @@ contains
     integer :: ispacelevelfine,ispacelevelcoarse,itimelevelfine,itimelevelcoarse
     type(t_vectorScalar) :: rtempVecFineScalar
     type(t_vectorBlock), pointer :: p_rx,p_rdestVector, p_rtempVecFine
-    integer :: irow, icol, neq, icomp, imat, icompidx, i, neqfine
+    integer :: irow, icol, neq, icomp, imat, icompidx, i, iindex
     type(t_matrixScalar), pointer :: p_rtimeMatrix
     real(DP), dimension(:), pointer :: p_Da,p_DdataCoarse,p_DdataFine
     integer, dimension(:), pointer :: p_Kcol, p_Kld
@@ -1614,12 +1616,11 @@ contains
     
     call sptivec_createAccessPool (rfineVector%p_rspaceDiscr,raccessPool,i+1)
     
-    ! We need one temp vector. Take it from the pool and and associate
-    ! the index neqfine -- this will for sure not appear in the loop.
+    ! We need one temp vector. 
     ! Lock the vector so it is not overwritten.
-    neqfine = rfineVector%p_rspaceTimeVector%NEQtime
-    call sptivec_getFreeBufferFromPool (raccessPool,neqfine+1,p_rtempVecFine)
-    call sptivec_lockVecInPool (raccessPool,neqfine+1)
+    iindex = -1
+    call sptivec_getFreeBufferFromPool (raccessPool,iindex,p_rtempVecFine)
+    call sptivec_lockVecInPool (raccessPool,iindex)
     
     ! We need a scalar representation of the temp vector
     call lsysbl_createScalarFromVec (p_rtempVecFine,rtempVecFineScalar)
@@ -1637,7 +1638,10 @@ contains
     ! Apply the multiplication.
     ! The rows in the matrix correspond to the time fine mesh, the columns
     ! to the time coarse mesh.
-    do irow = 1,neq
+    irow = 0
+    do
+      irow = irow + 1
+      if (irow .gt. neq) exit
 
       ! Clear the destination
       call sptivec_getFreeBufferFromPool (raccessPool,irow,p_rdestVector)
@@ -1721,7 +1725,7 @@ contains
     type(t_spaceTimeVectorAccess), intent(inout) :: rcoarseVector
     
     ! Index of the subvector
-    integer, intent(in) :: iindex
+    integer, intent(inout) :: iindex
     
     ! Space vector output.
     type(t_vectorBlock), intent(inout) :: rx
@@ -1816,7 +1820,7 @@ contains
     integer :: ispacelevelfine,ispacelevelcoarse,itimelevelfine,itimelevelcoarse
     type(t_vectorScalar) :: rtempVecFineScalar
     type(t_vectorBlock), pointer :: p_rx,p_rdestVector,p_rtempVecFine
-    integer :: irow, icol, neq, icomp, imat, icompidx, i, neqfine
+    integer :: irow, icol, neq, icomp, imat, icompidx, i, iindex
     type(t_matrixScalar), pointer :: p_rtimeMatrix
     real(DP), dimension(:), pointer :: p_Da,p_DdataCoarse,p_DdataFine
     integer, dimension(:), pointer :: p_Kcol, p_Kld
@@ -1844,12 +1848,11 @@ contains
     
     call sptivec_createAccessPool (rfineVector%p_rspaceDiscr,raccessPool,i+1)
     
-    ! We need one temp vector. Take it from the pool and and associate
-    ! the index neqfine -- this will for sure not appear in the loop.
+    ! We need one temp vector. 
     ! Lock the vector so it is not overwritten.
-    neqfine = rfineVector%p_rspaceTimeVector%NEQtime
-    call sptivec_getFreeBufferFromPool (raccessPool,neqfine+1,p_rtempVecFine)
-    call sptivec_lockVecInPool (raccessPool,neqfine+1)
+    iindex = -1
+    call sptivec_getFreeBufferFromPool (raccessPool,iindex,p_rtempVecFine)
+    call sptivec_lockVecInPool (raccessPool,iindex)
     
     ! We need a scalar representation of the temp vector
     call lsysbl_createScalarFromVec (p_rtempVecFine,rtempVecFineScalar)
@@ -1867,7 +1870,10 @@ contains
     ! Apply the multiplication.
     ! The rows in the matrix correspond to the time fine mesh, the columns
     ! to the time coarse mesh.
-    do irow = 1,neq
+    irow = 0
+    do
+      irow = irow + 1
+      if (irow .gt. neq) exit
 
       ! Clear the destination
       call sptivec_getFreeBufferFromPool (raccessPool,irow,p_rdestVector)
@@ -1950,7 +1956,7 @@ contains
     type(t_spaceTimeVectorAccess), intent(inout) :: rcoarseVector
     
     ! Index of the subvector
-    integer, intent(in) :: iindex
+    integer, intent(inout) :: iindex
     
     ! Space vector output.
     type(t_vectorBlock), intent(inout) :: rx

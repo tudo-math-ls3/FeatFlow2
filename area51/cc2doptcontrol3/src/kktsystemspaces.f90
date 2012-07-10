@@ -158,7 +158,7 @@ module kktsystemspaces
   
   ! Calculates the norm of a control vector
   public :: kktsp_getNormControl
-
+  
 contains
 
   ! ***************************************************************************

@@ -56,6 +56,7 @@ module optcanalysis
   use spacematvecassembly
   
   use kktsystemspaces
+  use kktsystem
   
   use user_callback
 
@@ -65,6 +66,7 @@ module optcanalysis
   
   !public :: optcana_stationaryFunctional
   public :: optcana_nonstatFunctional
+  public :: optcana_nonstatFunctionalAtTime
   !public :: optcana_analyticalError
   
 contains
@@ -323,7 +325,7 @@ contains
     type(t_fev2Vectors) :: revalVectors
     type(t_vectorBlock), pointer :: p_rvector
     type(t_collection), target :: rcollection,rusercollection
-    integer :: i,nblocks
+    integer :: i,iindex
     type(p_t_spacetimeOpAsmAnalyticData), target :: rp_ranalyticData
     real(DP) :: dtimerel
     
@@ -335,8 +337,8 @@ contains
         0.0_DP,1.0_DP,dtimerel)
 
     ! Reserve memory in the pool for the solution
-    nblocks = rprimalSol%p_rvector%NEQtime
-    call sptivec_getFreeBufferFromPool (rprimalSol%p_rvectorAccess,nblocks+1,p_rvector)
+    iindex = -1
+    call sptivec_getFreeBufferFromPool (rprimalSol%p_rvectorAccess,iindex,p_rvector)
     
     ! Calculate y(t)
     call sptivec_getTimestepDataByTime (rprimalSol%p_rvector, dtimerel, p_rvector)
@@ -378,7 +380,7 @@ contains
 
 !<subroutine>
 
-  subroutine optcana_controlNorm(dintvalue,dtime,rphysics,rcontrol,&
+  subroutine optcana_controlNorm(dintvalue,dtime,rkktsystem,&
       icompstart,ncomponents,rcubatureInfo)
 
 !<description>  
@@ -389,9 +391,6 @@ contains
 !<input>
   ! Point in time where to evaluate.
   real(DP), intent(in) :: dtime
-  
-  ! Parameter concerning the physics of the problem
-  type(t_settings_physics), intent(in) :: rphysics
   
   ! Number of the first component in the control defining u
   integer, intent(in) :: icompstart
@@ -404,8 +403,8 @@ contains
 !</input>
 
 !<inputoutput>
-  ! Control vector
-  type(t_controlSpace), intent(inout) :: rcontrol
+  ! Structure defining the KKT system.
+  type(t_kktsystem), intent(inout) :: rkktsystem
 !</inputoutput>
 
 !<output>
@@ -418,22 +417,12 @@ contains
     ! local variables
     type(t_fev2Vectors) :: revalVectors
     type(t_vectorBlock), pointer :: p_rvector
-    integer :: i,nblocks
-    real(DP) :: dtimerel
+    integer :: i
     
     dintvalue = 0.0_DP
     
-    ! Rescale the time.
-    call mprim_linearRescale(dtime,&
-        rcontrol%p_rvector%p_rtimeDiscr%dtimeInit,rcontrol%p_rvector%p_rtimeDiscr%dtimeMax,&
-        0.0_DP,1.0_DP,dtimerel)
-
-    ! Reserve memory in the pool for the solution
-    nblocks = rcontrol%p_rvector%NEQtime
-    call sptivec_getFreeBufferFromPool (rcontrol%p_rvectorAccess,nblocks+1,p_rvector)
-    
     ! Calculate y(t).
-    call sptivec_getTimestepDataByTime (rcontrol%p_rvector, dtimerel, p_rvector)
+    call kkt_getControlAtTime (rkktsystem, dtime, p_rvector)
 
     ! Append u to the set of functions to be evaluated.
     do i=icompstart,icompstart+ncomponents-1
@@ -546,7 +535,7 @@ contains
 
   subroutine optcana_nonstatFunctional (Derror, &
       ispacelevel, itimelevel, roperatorAsmHier, &
-      rprimalSol,rdualSol,rcontrol)
+      rkktsystem)
 
 !<description>
   ! This function calculates the value of the functional which is to be
@@ -572,14 +561,8 @@ contains
 !</input>
 
 !<inputoutput>
-  ! Primal solution
-  type(t_primalSpace), intent(inout) :: rprimalSol
-
-  ! Dual solution
-  type(t_dualSpace), intent(inout) :: rdualSol
-
-  ! Control
-  type(t_controlSpace), intent(inout) :: rcontrol
+  ! Structure defining the KKT system.
+  type(t_kktsystem), intent(inout) :: rkktsystem
 !</inputoutput>
 
 !<output>
@@ -661,18 +644,18 @@ contains
         ! Calculate ||y-z||^2
         ! ---------------------------------------------------------
         
-        do idoftime = 1,rprimalSol%p_rvector%NEQtime
+        do idoftime = 1,rkktsystem%p_rprimalSol%p_rvector%NEQtime
         
           ! Characteristics of the current timestep.
           call tdiscr_getTimestep(roperatorAsm%p_rtimeDiscrPrimal,idofTime-1,&
               dtimeend,dtstep,dtimestart)
               
           ! Calculate ||y-z||^2 in the endpoint of the time interval.
-          call optcana_diffToTarget(dval,dtimeend,rprimalSol,&
+          call optcana_diffToTarget(dval,dtimeend,rkktsystem%p_rprimalSol,&
               roperatorAsm%p_ranalyticData,roperatorAsm%p_rasmTemplates%rcubatureInfoRHS)
               
           ! Sum up according to the summed trapezoidal rule
-          if ((idoftime .eq. 1) .or. (idoftime .eq. rprimalSol%p_rvector%NEQtime)) then
+          if ((idoftime .eq. 1) .or. (idoftime .eq. rkktsystem%p_rprimalSol%p_rvector%NEQtime)) then
             Derror(2) = Derror(2) + 0.5_DP * dval * dtstep
           else
             Derror(2) = Derror(2) + dval * dtstep
@@ -681,7 +664,7 @@ contains
           ! ---------------------------------------------------------
           ! Calculate ||y(T)-z(T)||^2
           ! ---------------------------------------------------------
-          if ((idoftime .eq. rprimalSol%p_rvector%NEQtime) .and. &
+          if ((idoftime .eq. rkktsystem%p_rprimalSol%p_rvector%NEQtime) .and. &
               (roperatorAsmHier%ranalyticData%p_rsettingsOptControl%ddeltaC .gt. 0.0_DP)) then
             Derror(3) = dval
           end if
@@ -712,7 +695,7 @@ contains
 
           end select
 
-          do idoftime = 1,rprimalSol%p_rvector%NEQtime
+          do idoftime = 1,rkktsystem%p_rcontrol%p_rvector%NEQtime
           
             ! Characteristics of the current timestep.
             call tdiscr_getTimestep(roperatorAsm%p_rtimeDiscrPrimal,idofTime-1,&
@@ -726,8 +709,7 @@ contains
             ! dtimeend on the time scale of rcontrol corresponds to the time dtime
             ! as rcontrol is shifted by a half timestep!
             call optcana_controlNorm(dval,dtimeend,&
-                roperatorAsmHier%ranalyticData%p_rphysics,&
-                rcontrol,icomp,ncomp,&
+                rkktsystem,icomp,ncomp,&
                 roperatorAsm%p_rasmTemplates%rcubatureInfoRHS)
 
             ! Sum up according to the rectangular rule
@@ -739,8 +721,16 @@ contains
           
         end if
       
+      case default      
+        call output_line("Unknown timestep sub-scheme",&
+            OU_CLASS_ERROR,OU_MODE_STD,"optcana_nonstatFunctional")
+        call sys_halt()
       end select ! Tag
-      
+
+    case default      
+      call output_line("Unknown timestep scheme",&
+          OU_CLASS_ERROR,OU_MODE_STD,"optcana_nonstatFunctional")
+      call sys_halt()
     end select ! Timestep scheme
 
 !    
@@ -921,6 +911,154 @@ contains
 !    call lsysbl_releaseVector (rtempVector)
 !    call lsysbl_releaseVector (rzeroVector)
     
+  end subroutine
+
+!******************************************************************************
+
+!<subroutine>
+
+  subroutine optcana_nonstatFunctionalAtTime (Derror, dtime,&
+      ispacelevel, itimelevel, roperatorAsmHier, rkktsystem)
+
+!<description>
+  ! This function calculates the value of the functional which is to be
+  ! minimised in the stationary optimal control problem.
+  ! The functional is defined as
+  !   $$ J(y,u) = 1/2||y-z||^2_{L^2} + \alpha/2||u||^2_{L^2} + gamma/2||y(T)-z(T)||^2_{L^2}$$
+  ! over a spatial domain $\Omega$.
+  !
+  ! For this purpose, the routine evaluates the user-defined callback functions
+  ! user_ffunction_TargetX and user_ffunction_TargetY. The collection must be initialised
+  ! for postprocessing before calling his routine!
+  !
+  ! The subroutine returns the values of the space integrals at a special
+  ! point in time. THere is no time integratino applied.
+!</description>
+  
+!<input>
+  ! Point in time where to evaluate the values of the functional.
+  real(DP), intent(in) :: dtime
+
+  ! Space-level corresponding to the solutions
+  integer, intent(in) :: ispacelevel
+
+  ! Time-level corresponding to the solutions
+  integer, intent(in) :: itimelevel
+  
+  ! Hierarchy of space-time operators.
+  type(t_spacetimeOpAsmHierarchy), intent(in) :: roperatorAsmHier
+!</input>
+
+!<inputoutput>
+  ! Structure defining the KKT system.
+  type(t_kktsystem), intent(inout) :: rkktsystem
+!</inputoutput>
+
+!<output>
+  ! Returns information about the error.
+  ! Derror(1) = J(y,u).
+  ! Derror(2) = ||y-z||_{L^2}.
+  ! Derror(3) = ||y(T)-z(T)||_{L^2}.
+  ! Derror(4) = ||u||_{L^2}.
+  ! Derror(5) = ||u||_{L^2(Gamma_C)}.
+  real(DP), dimension(:), intent(out) :: Derror
+!</output>
+  
+!</subroutine>
+    
+    ! local variables
+    type(t_spacetimeOperatorAsm) :: roperatorAsm
+    
+    real(DP) :: dval
+    
+    integer :: istep,i,idoftime,icomp,ncomp
+    real(DP),dimension(2) :: Derr
+    type(t_collection), target :: rcollection,rlocalcoll
+    type(t_vectorBlock), target :: rtempVector, rzeroVector
+    real(dp), dimension(:), pointer :: p_DobservationArea
+    real(dp), dimension(:), pointer :: p_Dx
+    !type(t_sptiDirichletBCCBoundary) :: rdirichletBCC
+    !type(t_bdRegionEntry), pointer :: p_rbdRegionIterator
+    
+    ! Get the corresponding operator assembly structure
+    call stoh_getOpAsm_slvtlv (&
+        roperatorAsm,roperatorAsmHier,ispacelevel,itimelevel)
+        
+    ! Initialise the collection for the assembly process with callback routines.
+    ! This stores the simulation time in the collection and sets the
+    ! current subvector z for the callback routines.
+    call collct_init(rcollection)
+    
+    ! Clear the output
+    Derror(1:5) = 0.0_DP
+
+    ! ---------------------------------------------------------
+    ! Calculate ||y(t)-z(t)||^2
+    ! ---------------------------------------------------------
+    
+    ! Calculate ||y-z||^2 in the endpoint of the time interval.
+    call optcana_diffToTarget(dval,dtime,rkktsystem%p_rprimalSol,&
+        roperatorAsm%p_ranalyticData,roperatorAsm%p_rasmTemplates%rcubatureInfoRHS)
+    
+    Derror(2) = dval
+    
+    ! ---------------------------------------------------------
+    ! Calculate ||y(T)-z(T)||^2
+    ! ---------------------------------------------------------
+    if ((idoftime .eq. rkktsystem%p_rprimalSol%p_rvector%NEQtime) .and. &
+        (roperatorAsmHier%ranalyticData%p_rsettingsOptControl%ddeltaC .gt. 0.0_DP)) then
+      Derror(3) = dval
+    end if
+      
+    ! ---------------------------------------------------------
+    ! Calculate ||u||^2
+    ! ---------------------------------------------------------
+    icomp = 1
+
+    if (roperatorAsmHier%ranalyticData%p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
+
+      ! Type of equation?
+      select case (roperatorAsmHier%ranalyticData%p_rphysics%cequation)
+
+      ! *************************************************************
+      ! Stokes/Navier Stokes.
+      ! *************************************************************
+      case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+        ncomp = 2
+
+      ! *************************************************************
+      ! Heat equation
+      ! *************************************************************
+      case (CCEQ_HEAT2D)
+        ncomp = 1
+
+      end select
+
+      ! Calculate ||u||^2 at the point in time where u lives.
+      ! Note that we pass dtimeend here as time. This is correct!
+      ! dtimeend on the time scale of rcontrol corresponds to the time dtime
+      ! as rcontrol is shifted by a half timestep!
+      call optcana_controlNorm(dval,dtime,&
+          rkktsystem,icomp,ncomp,&
+          roperatorAsm%p_rasmTemplates%rcubatureInfoRHS)
+
+      Derror(4) = dval
+      
+      icomp = icomp + ncomp
+      
+    end if
+
+    ! Clean up the collection
+    call collct_done(rcollection)
+      
+    ! Calculate J(.)
+    Derror(1) = 0.5_DP*Derror(2)  &
+              + 0.5_DP*roperatorAsmHier%ranalyticData%p_rsettingsOptControl%dgammaC * Derror(3)  &
+              + 0.5_DP*roperatorAsmHier%ranalyticData%p_rsettingsOptControl%dalphaC * Derror(4)
+              
+    ! Take some square roots to calculate the actual values.
+    Derror(2:) = sqrt(Derror(2:))
+
   end subroutine
 
 !!******************************************************************************

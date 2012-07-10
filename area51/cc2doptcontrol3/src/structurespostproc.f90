@@ -111,6 +111,14 @@ module structurespostproc
     ! J(.) as well as ||y-y0|| etc. during the postprocessing of space-time vectors.
     integer :: icalcFunctionalValues = 0
 
+    ! Write a file with the statistics about the calculation of the functional J(.)
+    ! =0: Do not calculate / write
+    ! =1: Write values
+    integer :: cwriteFunctionalStatistics = 0
+
+    ! Filename which receives the statistics
+    character(len=SYS_STRLEN) :: sfunctionalStatisticsFilename = ""
+
     ! Whether to calculate the error to the analytic reference function
     ! ranalyticRefFunction during the postprocessing of space-time vectors.
     integer :: icalcError = 0
@@ -269,6 +277,13 @@ contains
 
     call parlst_getvalue_int (rparlist,ssection,&
         "icalcFunctionalValues",rpostproc%icalcFunctionalValues,0)
+
+    call parlst_getvalue_int (rparlist,ssection,&
+        "cwriteFunctionalStatistics",rpostproc%cwriteFunctionalStatistics,0)
+
+    call parlst_getvalue_string (rparlist,ssection,&
+        "sfunctionalStatisticsFilename",rpostproc%sfunctionalStatisticsFilename,&
+        "",bdequote=.true.)
 
     ! Body forces
 

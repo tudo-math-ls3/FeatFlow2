@@ -72,6 +72,7 @@ module postprocessing
   use spacematvecassembly
   
   use kktsystemspaces
+  use kktsystem
 
   use optcanalysis  
   
@@ -798,8 +799,10 @@ contains
     
     if (ifilehandle .eq. 0) then
       ! Open the file, probably write the headline, write the data
-      call io_openFileForWriting(sfilename, ifilehandle, &
+      call io_openFileForWriting(sfile, ifilehandle, &
           cflag, bfileExists,.true.)
+    else 
+      bfileExists = .true.
     end if
         
     if ((cflag .eq. SYS_REPLACE) .or. (.not. bfileexists)) then
@@ -1345,12 +1348,9 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: i,nblocks
+    integer :: i,iindex
     real(DP) :: dtime, dtimerel
     type(t_vectorBlock), pointer :: p_rvector
-    
-    ! Some initialisations
-    nblocks = rsolution%p_rspaceTimeVector%NEQtime
     
     ! Just write out the solutions. Corrections concerning the position
     ! of the solutions in time will be added later.
@@ -1370,7 +1370,8 @@ contains
             0.0_DP,1.0_DP,dtimerel)
 
         ! Get the solution
-        call sptivec_getFreeBufferFromPool (rsolution,nblocks+1,p_rvector)
+        iindex = -1
+        call sptivec_getFreeBufferFromPool (rsolution,iindex,p_rvector)
         call sptivec_getTimestepDataByTime (rsolution%p_rspaceTimeVector, dtimerel, p_rvector)
         
         call optcpp_singleVisualisation (rpostproc,p_rvector,cspace,&
@@ -1389,7 +1390,8 @@ contains
             0.0_DP,1.0_DP,dtimerel)
 
         ! Get the solution
-        call sptivec_getFreeBufferFromPool (rsolution,nblocks+1,p_rvector)
+        iindex = -1
+        call sptivec_getFreeBufferFromPool (rsolution,iindex,p_rvector)
         call sptivec_getTimestepDataByTime (rsolution%p_rspaceTimeVector, dtimerel, p_rvector)
         
         call optcpp_singleVisualisation (rpostproc,p_rvector,cspace,&
@@ -1465,7 +1467,7 @@ contains
 
   subroutine optcpp_spaceTimeFunctionals (rpostproc,&
       ispacelevel, itimelevel, roperatorAsmHier, &
-      rprimalSol,rdualSol,rcontrol)
+      rkktsystem)
   
 !<description>
   ! Calculates values of the space-time functionals.
@@ -1487,14 +1489,8 @@ contains
   ! This is a central discretisation structure passed to all assembly routines.
   type(t_spacetimeOpAsmHierarchy), intent(in) :: roperatorAsmHier
 
-  ! Primal solution.
-  type(t_primalSpace), intent(inout) :: rprimalSol
-
-  ! Dual solution.
-  type(t_dualSpace), intent(inout) :: rdualSol
-
-  ! Control
-  type(t_controlSpace), intent(inout) :: rcontrol
+  ! Structure defining the KKT system.
+  type(t_kktsystem), intent(inout) :: rkktsystem
 !</input>
 
 !</subroutine>
@@ -1507,7 +1503,7 @@ contains
       ! Subdomain is the observation area
       call optcana_nonstatFunctional (Derror,&
           ispacelevel, itimelevel, roperatorAsmHier, &
-          rprimalSol,rdualSol,rcontrol)
+          rkktsystem)
 
       call output_line ('||y-z||       = '//trim(sys_sdEL(Derror(2),10)))
       call output_line ('||y(T)-z(T)|| = '//trim(sys_sdEL(Derror(3),10)))
@@ -1522,8 +1518,128 @@ contains
 
 !<subroutine>
 
+  subroutine optcpp_writeSpaceTimeFct (rpostproc,&
+      ispacelevel, itimelevel, roperatorAsmHier, &
+      rkktsystem,itag)
+  
+!<description>
+  ! Calculates values of the space-time functionals
+  ! and writes them into a text file.
+!</description>
+
+!<inputoutput>
+  ! Postprocessing structure
+  type(t_optcPostprocessing), intent(inout) :: rpostproc
+!</inputoutput>
+
+!<input>
+  ! Space-level corresponding to the solutions
+  integer, intent(in) :: ispacelevel
+
+  ! Time-level corresponding to the solutions
+  integer, intent(in) :: itimelevel
+
+  ! A hierarchy of operator assembly structures for all levels.
+  ! This is a central discretisation structure passed to all assembly routines.
+  type(t_spacetimeOpAsmHierarchy), intent(in) :: roperatorAsmHier
+
+  ! Structure defining the KKT system.
+  type(t_kktsystem), intent(inout) :: rkktsystem
+
+  ! OPTIONAL: An integer tag which is included into filenames of
+  ! output files. If not specified, the tag is not included.
+  integer, intent(in), optional :: itag
+!</input>
+
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(5) :: Derror
+    character(len=SYS_STRLEN) :: sfile
+    real(DP) :: dtimeend,dtstep,dtimestart
+    integer :: iunit
+    integer :: idoftime
+    type(t_spacetimeOperatorAsm) :: roperatorAsm
+
+    ! Should we calculate the functional?
+    if (rpostproc%cwriteFunctionalStatistics .ne. 0) then
+    
+      ! Get the corresponding operator assembly structure
+      call stoh_getOpAsm_slvtlv (&
+          roperatorAsm,roperatorAsmHier,ispacelevel,itimelevel)
+
+      sfile = rpostproc%sfunctionalStatisticsFilename
+    
+      ! Prepare creation of a new file
+      iunit = 0
+    
+      ! Subdomain is the observation area.
+      ! Calculate the value in the endpoint of every time interval
+      ! as well as in the midpoint. Write them into the file.
+      !
+      ! Loop over all timesteps (+ 1 for the final solution)
+      do idoftime = 1,rkktsystem%p_rprimalSol%p_rvector%NEQtime+1
+      
+        ! Get the corresponding time interval
+        call tdiscr_getTimestep(roperatorAsm%p_rtimeDiscrPrimal,idofTime-1,&
+            dtimeend,dtstep,dtimestart)
+            
+        ! Calculate the values for the beginning and the timestep midpoint.
+        ! If we are at the end, only calculate the values for the time endpoint
+        ! (which is the beginning of an interval after the final time).
+        !
+        ! Get the values
+        call optcana_nonstatFunctionalAtTime (Derror,dtimestart,&
+            ispacelevel, itimelevel, roperatorAsmHier, rkktsystem)
+            
+        ! Write
+        call optcpp_appendLineToDatafile (&
+            trim(sys_sdEL(dtimestart,10))//"   "//&
+            trim(sys_sdEL(Derror(1),10))//"   "//&
+            trim(sys_sdEL(Derror(2),10))//"   "//&
+            trim(sys_sdEL(Derror(3),10))//"   "//&
+            trim(sys_sdEL(Derror(4),10))//"   "//&
+            trim(sys_sdEL(Derror(5),10)),&
+            "# time               "//&
+            "J(y,u)               "//&
+            "||y-z||_{L^2}        "//&
+            "||y(T)-z(T)||_{L^2}  "//&
+            "||u||_{L^2}          "//&
+            "||u||_{L^2(Gamma_C)} ",&
+            sfile,idoftime .eq. 1,&
+            itag,iunit)
+        ! Centre
+        if (idoftime .ne. rkktsystem%p_rprimalSol%p_rvector%NEQtime+1) then
+          ! Get the values
+          call optcana_nonstatFunctionalAtTime (Derror,0.5_DP*dtimestart + 0.5_DP*dtimeend,&
+              ispacelevel, itimelevel, roperatorAsmHier, rkktsystem)
+          call optcpp_appendLineToDatafile (&
+              trim(sys_sdEL(0.5_DP*dtimestart + 0.5_DP*dtimeend,10))//"   "//&
+              trim(sys_sdEL(Derror(1),10))//"   "//&
+              trim(sys_sdEL(Derror(2),10))//"   "//&
+              trim(sys_sdEL(Derror(3),10))//"   "//&
+              trim(sys_sdEL(Derror(4),10))//"   "//&
+              trim(sys_sdEL(Derror(5),10)),&
+              "",&
+              sfile,.false.,&
+              itag,iunit)
+        end if
+        
+      end do
+      
+      ! Close the file
+      close (iunit)
+      
+    end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
   subroutine optcpp_postprocessing (rpostproc,&
-      ispacelevel,itimelevel,rprimalSol,rdualSol,rcontrol,&
+      ispacelevel,itimelevel,rkktsystem,&
       rsettings,itag)
   
 !<description>
@@ -1546,14 +1662,8 @@ contains
   ! Time-level corresponding to the solutions
   integer, intent(in) :: itimelevel
 
-  ! Primal solution.
-  type(t_primalSpace), intent(inout) :: rprimalSol
-
-  ! Dual solution.
-  type(t_dualSpace), intent(inout) :: rdualSol
-
-  ! Control
-  type(t_controlSpace), intent(inout) :: rcontrol
+  ! Structure defining the KKT system.
+  type(t_kktsystem), intent(inout) :: rkktsystem
 
   ! OPTIONAL: An integer tag which is included into filenames of
   ! output files. If not specified, the tag is not included.
@@ -1567,7 +1677,11 @@ contains
     ! Global postprocessing: Function values.
     call optcpp_spaceTimeFunctionals (rpostproc,&
         ispacelevel, itimelevel, rsettings%roperatorAsmHier, &
-        rprimalSol,rdualSol,rcontrol)
+        rkktsystem)
+        
+    call optcpp_writeSpaceTimeFct (rpostproc,&
+        ispacelevel, itimelevel, rsettings%roperatorAsmHier, &
+        rkktsystem)
         
     call output_lbrk()
     
@@ -1576,33 +1690,39 @@ contains
     ! ***************************************************************************
     
     ! Visualisation
-    call optcpp_spaceTimeVisualisation (rpostproc,rprimalSol%p_rvectorAccess,CCSPACE_PRIMAL,&
+    call optcpp_spaceTimeVisualisation (rpostproc,&
+        rkktsystem%p_rprimalSol%p_rvectorAccess,CCSPACE_PRIMAL,&
         rsettings%rphysics,rsettings%rsettingsOptControl,itag)
 
     ! Data dump
-    call optcpp_spaceTimeDump (rpostproc,rprimalSol%p_rvectorAccess,CCSPACE_PRIMAL,itag)
+    call optcpp_spaceTimeDump (rpostproc,&
+        rkktsystem%p_rprimalSol%p_rvectorAccess,CCSPACE_PRIMAL,itag)
 
     ! ***************************************************************************
     ! Dual solution
     ! ***************************************************************************
     
     ! Visualisation
-    call optcpp_spaceTimeVisualisation (rpostproc,rdualSol%p_rvectorAccess,CCSPACE_DUAL,&
+    call optcpp_spaceTimeVisualisation (rpostproc,&
+        rkktsystem%p_rdualSol%p_rvectorAccess,CCSPACE_DUAL,&
         rsettings%rphysics,rsettings%rsettingsOptControl,itag)
 
     ! Data dump
-    call optcpp_spaceTimeDump (rpostproc,rdualSol%p_rvectorAccess,CCSPACE_DUAL,itag)
+    call optcpp_spaceTimeDump (rpostproc,&
+        rkktsystem%p_rdualSol%p_rvectorAccess,CCSPACE_DUAL,itag)
 
     ! ***************************************************************************
     ! Control
     ! ***************************************************************************
     
     ! Visualisation
-    call optcpp_spaceTimeVisualisation (rpostproc,rcontrol%p_rvectorAccess,CCSPACE_CONTROL,&
+    call optcpp_spaceTimeVisualisation (rpostproc,&
+        rkktsystem%p_rcontrol%p_rvectorAccess,CCSPACE_CONTROL,&
         rsettings%rphysics,rsettings%rsettingsOptControl,itag)
 
     ! Data dump
-    call optcpp_spaceTimeDump (rpostproc,rcontrol%p_rvectorAccess,CCSPACE_CONTROL,itag)
+    call optcpp_spaceTimeDump (rpostproc,&
+        rkktsystem%p_rcontrol%p_rvectorAccess,CCSPACE_CONTROL,itag)
   
 
 !      ! -------------------------------------------------------------------------
@@ -1646,7 +1766,7 @@ contains
 !<subroutine>
 
   subroutine optcpp_postprocessSubstep (rpostproc,&
-      ispacelevel,itimelevel,rprimalSol,rdualSol,rcontrol,&
+      ispacelevel,itimelevel,rkktsystem,&
       rsettings,cpostprocessFlags,itag)
   
 !<description>
@@ -1673,14 +1793,8 @@ contains
   ! Time-level corresponding to the solutions
   integer, intent(in) :: itimelevel
 
-  ! Primal solution.
-  type(t_primalSpace), intent(inout) :: rprimalSol
-
-  ! Dual solution.
-  type(t_dualSpace), intent(inout) :: rdualSol
-
-  ! Control
-  type(t_controlSpace), intent(inout) :: rcontrol
+  ! Structure defining the KKT system.
+  type(t_kktsystem), intent(inout) :: rkktsystem
   
   ! Defines how to apply the postprocessing.
   ! Whether to postprocess intermediate solutions.
@@ -1703,7 +1817,10 @@ contains
     if (iand(cpostprocessFlags,1) .ne. 0) then
       call optcpp_spaceTimeFunctionals (rpostproc,&
           ispacelevel, itimelevel, rsettings%roperatorAsmHier, &
-          rprimalSol,rdualSol,rcontrol)
+          rkktsystem)
+      call optcpp_writeSpaceTimeFct (rpostproc,&
+          ispacelevel, itimelevel, rsettings%roperatorAsmHier, &
+          rkktsystem,itag)
     end if
     
     if (iand(cpostprocessFlags,2) .ne. 0) then
@@ -1716,29 +1833,34 @@ contains
       ! ***************************************************************************
       
       ! Visualisation
-      call optcpp_spaceTimeVisualisation (rpostproc,rprimalSol%p_rvectorAccess,CCSPACE_PRIMAL,&
+      call optcpp_spaceTimeVisualisation (rpostproc,&
+          rkktsystem%p_rprimalSol%p_rvectorAccess,CCSPACE_PRIMAL,&
           rsettings%rphysics,rsettings%rsettingsOptControl,itag)
 
       ! Data dump
-      call optcpp_spaceTimeDump (rpostproc,rprimalSol%p_rvectorAccess,CCSPACE_PRIMAL,itag)
+      call optcpp_spaceTimeDump (rpostproc,&
+          rkktsystem%p_rprimalSol%p_rvectorAccess,CCSPACE_PRIMAL,itag)
 
       ! ***************************************************************************
       ! Dual solution
       ! ***************************************************************************
       
       ! Visualisation
-      call optcpp_spaceTimeVisualisation (rpostproc,rdualSol%p_rvectorAccess,CCSPACE_DUAL,&
+      call optcpp_spaceTimeVisualisation (rpostproc,&
+          rkktsystem%p_rdualSol%p_rvectorAccess,CCSPACE_DUAL,&
           rsettings%rphysics,rsettings%rsettingsOptControl,itag)
 
       ! Data dump
-      call optcpp_spaceTimeDump (rpostproc,rdualSol%p_rvectorAccess,CCSPACE_DUAL,itag)
+      call optcpp_spaceTimeDump (rpostproc,&
+          rkktsystem%p_rdualSol%p_rvectorAccess,CCSPACE_DUAL,itag)
 
       ! ***************************************************************************
       ! Control
       ! ***************************************************************************
       
       ! Visualisation
-      call optcpp_spaceTimeVisualisation (rpostproc,rcontrol%p_rvectorAccess,CCSPACE_CONTROL,&
+      call optcpp_spaceTimeVisualisation (rpostproc,&
+          rkktsystem%p_rcontrol%p_rvectorAccess,CCSPACE_CONTROL,&
           rsettings%rphysics,rsettings%rsettingsOptControl,itag)
           
     end if

@@ -14,6 +14,7 @@ module kktsystem
   use fsystem
   use genoutput
   
+  use mprimitives
   use spatialdiscretisation
   use timediscretisation
   use linearalgebra
@@ -166,6 +167,9 @@ module kktsystem
   ! Calculates the norm of a residual in the control space,
   ! weighted by the corresponding weighting factors.
   public :: kkt_controlResidualNorm
+
+  ! Calculates the control at a given point in time.
+  public :: kkt_getControlAtTime
 
 contains
 
@@ -659,6 +663,11 @@ contains
                     p_rdualSpace%RvectorBlock(icomp),p_rcontrolSpace%RvectorBlock(icomp),&
                     -1.0_DP/p_rsettingsOptControl%dalphaC,0.0_DP)
               
+              case default          
+                call output_line("Unknown constraints",&
+                    OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControl")
+                call sys_halt()
+
               end select ! constraints
 
             end if ! alpha
@@ -697,6 +706,11 @@ contains
                 call lsyssc_vectorLinearComb ( &
                     p_rdualSpace%RvectorBlock(icomp),p_rcontrolSpace%RvectorBlock(icomp),&
                     -1.0_DP/p_rsettingsOptControl%dalphaC,0.0_DP)
+
+              case default          
+                call output_line("Unknown constraints",&
+                    OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControl")
+                call sys_halt()
 
               end select ! constraints
 
@@ -1096,6 +1110,11 @@ contains
                     p_rdualSpace%RvectorBlock(icomp),p_rcontrolSpace%RvectorBlock(icomp),&
                     -1.0_DP/p_rsettingsOptControl%dalphaC,0.0_DP)
               
+              case default          
+                call output_line("Unknown constraints",&
+                    OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControlDirDeriv")
+                call sys_halt()
+
               end select ! constraints
 
             end if ! alpha
@@ -1134,6 +1153,11 @@ contains
                 call lsyssc_vectorLinearComb ( &
                     p_rdualSpace%RvectorBlock(icomp),p_rcontrolSpace%RvectorBlock(icomp),&
                     -1.0_DP/p_rsettingsOptControl%dalphaC,0.0_DP)
+
+              case default          
+                call output_line("Unknown constraints",&
+                    OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControlDirDeriv")
+                call sys_halt()
 
               end select ! constraints
 
@@ -1259,7 +1283,6 @@ contains
    
     ! local variables
     integer :: icomp,istep,itotalcomp
-    real(DP) :: dtheta
     type(t_vectorBlock), pointer :: p_rcontrolSpace
 
     type(t_settings_physics), pointer :: p_rphysics
@@ -1334,6 +1357,11 @@ contains
                 
             itotalcomp = itotalcomp + 2
                 
+          case default          
+            call output_line("Unknown constraints",&
+                OU_CLASS_ERROR,OU_MODE_STD,"kkt_controlResidualNorm")
+            call sys_halt()
+
           end select ! constraints
 
         end if ! alpha
@@ -1375,7 +1403,12 @@ contains
             dres = dres + (p_rsettingsOptControl%dalphaC * &
                 lsyssc_vectorNorm(p_rcontrolSpace%RvectorBlock(icomp),iresnorm))**2
 
-            itotalcomp = itotalcomp + 2
+            itotalcomp = itotalcomp + 1
+
+          case default          
+            call output_line("Unknown constraints",&
+                OU_CLASS_ERROR,OU_MODE_STD,"kkt_controlResidualNorm")
+            call sys_halt()
 
           end select ! constraints
 
@@ -1477,6 +1510,223 @@ contains
     call kktsp_clearDual (rkktSystemDirDeriv%p_rdualSolLin)
     call kktsp_clearControl (rkktSystemDirDeriv%p_rcontrolLin)
 
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine kkt_getControlAtTime (rkktsystem,dtime,p_rvector)
+  
+!<description>
+  ! Calculates the control at a given point in time.
+!</description>
+
+!<input>
+  ! Structure defining the KKT system.
+  type(t_kktsystem), intent(inout) :: rkktsystem
+  
+  ! Point in time where the control should be evaluated
+  real(DP), intent(in) :: dtime
+!</input>
+
+!<inputoutput>
+  ! Pointer to a buffer that controls the control at time dtime.
+  ! The buffer is taken from the vector buffer in rkktsystem.
+  type(t_vectorBlock), pointer :: p_rvector
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables.
+    integer :: iindex,icomp
+    type(t_vectorBlock), pointer :: p_rvecSource
+    real(DP) :: dacttime,dtheta
+    type(t_timeDiscretisation), pointer :: p_rtimeDiscr
+    type(t_settings_physics), pointer :: p_rphysics
+    type(t_settings_optcontrol), pointer :: p_rsettingsOptControl
+
+    ! Fetch some structures
+    p_rphysics => &
+        rkktsystem%p_roperatorAsmHier%ranalyticData%p_rphysics
+    p_rsettingsOptControl => &
+        rkktsystem%p_roperatorAsmHier%ranalyticData%p_rsettingsOptControl
+
+    ! Ok, this is a bit tedious. At first allocate and reserve
+    ! a vector in the buffer we can use for output.
+    iindex = -1
+    call sptivec_getFreeBufferFromPool (&
+        rkktsystem%p_rcontrol%p_rvectorAccess,iindex,p_rvector)
+        
+    call sptivec_lockVecInPool (&
+        rkktsystem%p_rcontrol%p_rvectorAccess,iindex)
+    
+    ! Get the time discretisation
+    p_rtimeDiscr => rkktsystem%p_rcontrol%p_rvector%p_rtimeDiscr
+    
+    ! Timestepping technique?
+    select case (p_rtimeDiscr%ctype)
+    
+    ! ***********************************************************
+    ! Standard Theta one-step scheme.
+    ! ***********************************************************
+    case (TDISCR_ONESTEPTHETA)
+    
+      ! Theta-scheme identifier
+      dtheta = p_rtimeDiscr%dtheta
+      
+      ! itag=0: old 1-step scheme.
+      ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
+      select case (p_rtimeDiscr%itag)
+      
+      ! ***********************************************************
+      ! itag=0: old/standard 1-step scheme.
+      ! ***********************************************************
+      case (0)
+
+        call output_line("Old 1-step-scheme not implemented",&
+            OU_CLASS_ERROR,OU_MODE_STD,"kkt_getControlAtTime")
+        call sys_halt()
+
+      ! ***********************************************************
+      ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
+      ! ***********************************************************
+      case (1)
+      
+        ! The time discretisation of the control space is shifted for the
+        ! distributed control. At first, depending on dtheta,
+        ! calculate the actual time that must be passed to the space-time
+        ! vector routines that calculate the control.
+        !
+        ! The time dtime must be shifted by 1-dtheta to the right.
+        call tdiscr_shiftTimestamp(p_rtimeDiscr,dtime,1.0_DP-dtheta,dacttime)
+        
+        ! Rescale the time into the range [0,1].
+        call mprim_linearRescale(dacttime,&
+            p_rtimeDiscr%dtimeInit,p_rtimeDiscr%dtimeMax,0.0_DP,1.0_DP,dacttime)
+        
+        ! Get the control at that time.
+        call sptivec_getTimestepDataByTime (&
+            rkktsystem%p_rcontrol%p_rvectorAccess, dacttime, p_rvecSource)
+
+
+        ! icomp counts the component in the control
+        icomp = 0
+        
+        ! Which equation do we have?
+        select case (p_rphysics%cequation)
+        
+        ! -------------------------------------------------------------
+        ! Stokes/Navier Stokes.
+        ! -------------------------------------------------------------
+        case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+          
+          ! Which type of control is applied?
+          
+          ! -----------------------------------------------------------
+          ! Distributed control
+          ! -----------------------------------------------------------
+          if (p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
+
+            ! Get the source vector with the discributed control.
+            
+
+            ! Do we have constraints?
+            select case (p_rsettingsOptControl%rconstraints%cdistVelConstraints)
+
+            ! ----------------------------------------------------------
+            ! No constraints
+            ! ----------------------------------------------------------
+            case (0)
+
+              if (p_rsettingsOptControl%dalphaC .eq. 0.0_DP) then
+                call output_line("Alpha=0 not possible without contraints",&
+                    OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControlDirDeriv")
+                call sys_halt()
+              end if
+            
+              ! Copy the distributed control        
+              icomp = icomp + 1
+              call lsyssc_copyVector (p_rvecSource%RvectorBlock(icomp),p_rvector%RvectorBlock(icomp))
+
+              icomp = icomp + 1
+              call lsyssc_copyVector (p_rvecSource%RvectorBlock(icomp),p_rvector%RvectorBlock(icomp))
+                  
+            case default          
+              call output_line("Unknown constraints",&
+                  OU_CLASS_ERROR,OU_MODE_STD,"kkt_getControlAtTime")
+              call sys_halt()
+                  
+            end select ! constraints
+
+          end if ! alpha
+
+        ! -------------------------------------------------------------
+        ! Heat Stokes.
+        ! -------------------------------------------------------------
+        case (CCEQ_HEAT2D)
+          
+          ! Which type of control is applied?
+          
+          ! -----------------------------------------------------------
+          ! Distributed control
+          ! -----------------------------------------------------------
+          if (p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
+
+            ! Get the source vector with the discributed control.
+            
+
+            ! Do we have constraints?
+            select case (p_rsettingsOptControl%rconstraints%cdistVelConstraints)
+
+            ! ----------------------------------------------------------
+            ! No constraints
+            ! ----------------------------------------------------------
+            case (0)
+
+              if (p_rsettingsOptControl%dalphaC .eq. 0.0_DP) then
+                call output_line("Alpha=0 not possible without contraints",&
+                    OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControlDirDeriv")
+                call sys_halt()
+              end if
+            
+              ! Copy the distributed control        
+              icomp = icomp + 1
+              call lsyssc_copyVector (p_rvecSource%RvectorBlock(icomp),p_rvector%RvectorBlock(icomp))
+
+            case default          
+              call output_line("Unknown constraints",&
+                  OU_CLASS_ERROR,OU_MODE_STD,"kkt_getControlAtTime")
+              call sys_halt()
+                  
+            end select ! constraints
+
+          end if ! alpha
+
+        case default          
+          call output_line("Unknown equation",&
+              OU_CLASS_ERROR,OU_MODE_STD,"kkt_getControlAtTime")
+          call sys_halt()
+
+        end select ! equation
+        
+      case default          
+        call output_line("Unknown timestep sub-scheme",&
+            OU_CLASS_ERROR,OU_MODE_STD,"kkt_getControlAtTime")
+        call sys_halt()
+
+      end select ! timestep sub-scheme
+      
+    case default          
+      call output_line("Unknown timestep scheme",&
+          OU_CLASS_ERROR,OU_MODE_STD,"kkt_getControlAtTime")
+      call sys_halt()
+
+    end select ! Timstep scheme    
+
+    ! Unlock the vector, finish
+    call sptivec_unlockVecInPool (rkktsystem%p_rcontrol%p_rvectorAccess,iindex)
+    
   end subroutine
 
 end module

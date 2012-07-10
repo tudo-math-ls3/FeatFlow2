@@ -56,11 +56,25 @@ sfilenameDualSol = ''
 sfilenameControl = './ns/control'
 
 # ------------------------------------------------------------------------
-# Error analysis
+# Statistical values concerning the functional J(.) to minimise
 
 # Whether to calculate functional values (J(.)) during and after the computation.
 
 icalcFunctionalValues = 1
+
+# Write a file with the statistics about the calculation of the functional J(.).
+# =0: Do not calculate / write
+# =1: Write values
+
+cwriteFunctionalStatistics = 1
+
+# Filename which receives the statistics
+
+sfunctionalStatisticsFilename = './ns/functional'
+
+
+# ------------------------------------------------------------------------
+# Error analysis
 
 # Whether or not calculate the error of the solution.
 # =0: No error analysis.

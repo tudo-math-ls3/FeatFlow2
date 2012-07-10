@@ -828,8 +828,7 @@ contains
         call optcpp_postprocessSubstep (rsolver%p_rsettingsSolver%rpostproc,&
             rsolver%p_rsettingsSolver%rspaceTimeHierPrimal%p_rfeHierarchy%nlevels,&
             rsolver%p_rsettingsSolver%rspaceTimeHierPrimal%p_rtimeHierarchy%nlevels,&
-            p_rsolution%p_rprimalSol,p_rsolution%p_rdualSol,p_rsolution%p_rcontrol,&
-            rsolver%p_rsettingsSolver,rsolver%cpostprocessIterates,&
+            p_rsolution,rsolver%p_rsettingsSolver,rsolver%cpostprocessIterates,&
             rsolver%riter%niterations)
         
         call stat_stopTimer (rstatistics%rtimePostprocessing)
