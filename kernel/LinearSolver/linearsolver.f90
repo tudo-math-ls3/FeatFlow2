@@ -1509,6 +1509,10 @@ module linearsolver
   
     ! Type of SP-SOR subsolver. One of the LINSOL_SPSOR_xxxx constants.
     integer             :: csubtype
+    
+    ! Relaxation parameters for A- and S-blocks
+    real(DP)            :: domegaA
+    real(DP)            :: domegaS
   
     ! The SP-SOR data structure
     type(t_spsor)       :: rdata
@@ -6297,7 +6301,7 @@ contains
 
 !<subroutine>
   
-  subroutine linsol_initSPSOR (p_rsolverNode, csubtype, domega)
+  subroutine linsol_initSPSOR (p_rsolverNode, csubtype, domegaA, domegaS)
   
 !<description>
   ! Creates a t_linsolNode solver structure for the SP-SOR solver. The node
@@ -6310,8 +6314,11 @@ contains
   ! SP-SOR subtype. One of the LINSOL_SPSOR_XXXX constants
   integer, intent(in) :: csubtype
 
-  ! OPTIONAL: Damping parameter. Is saved to rsolverNode\%domega if specified.
-  real(DP), optional :: domega
+  ! OPTIONAL: Relaxation parameter for the A-block. If not given, 1.0 is used.
+  real(DP), optional :: domegaA
+
+  ! OPTIONAL: Relaxation parameter for the S-block. If not given, 1.0 is used.
+  real(DP), optional :: domegaS
 !</input>
   
 !<output>
@@ -6339,7 +6346,11 @@ contains
     ! Store the subtype.
     p_rsolverNode%p_rsubnodeSPSOR%csubtype = csubtype
     
-    if (present(domega)) p_rsolverNode%domega = domega
+    ! Store relaxation parameters
+    p_rsolverNode%p_rsubnodeSPSOR%domegaA = 1.0_DP
+    p_rsolverNode%p_rsubnodeSPSOR%domegaS = 1.0_DP
+    if (present(domegaA)) p_rsolverNode%p_rsubnodeSPSOR%domegaA = domegaA
+    if (present(domegaS)) p_rsolverNode%p_rsubnodeSPSOR%domegaS = domegaS
   
   end subroutine
 
@@ -6711,7 +6722,8 @@ contains
 
     ! Call precond-routine of SP-SOR
     call spsor_precond(rsolverNode%p_rsubnodeSPSOR%rdata, rd, &
-                       rsolverNode%domega)
+                       rsolverNode%p_rsubnodeSPSOR%domegaA, &
+                       rsolverNode%p_rsubnodeSPSOR%domegaS)
   
   end subroutine
   
@@ -13572,7 +13584,9 @@ contains
               
            ! Okay, let the SP-SOR solver perform nmaxIterations
            call spsor_solve (rsolverNode%p_rsubnodeSPSOR%rdata, rx, rb, &
-                             rsolverNode%nmaxIterations, rsolverNode%domega)
+                             rsolverNode%nmaxIterations, &
+                             rsolverNode%p_rsubnodeSPSOR%domegaA, &
+                             rsolverNode%p_rsubnodeSPSOR%domegaS)
            
            ! And jump out of this routine
            return

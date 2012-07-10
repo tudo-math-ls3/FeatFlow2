@@ -308,7 +308,7 @@ contains
 
 !<subroutine>
 
-  subroutine spsor_solve(rdata, rsol, rrhs, niterations, domega)
+  subroutine spsor_solve(rdata, rsol, rrhs, niterations, domegaA, domegaS)
 
 !<description>
   ! This routine performs a specified number of SP-SOR iterations.
@@ -324,9 +324,13 @@ contains
   ! The number of iterations that are to be performed
   integer, intent(in) :: niterations
 
-  ! Optional: The relaxation parameter in range (0,2).
+  ! Optional: The relaxation parameter for the A-block in range (0,2).
   ! If not given, 1.0 is used.
-  real(DP), optional, intent(in) :: domega
+  real(DP), optional, intent(in) :: domegaA
+
+  ! Optional: The relaxation parameter for the S-block in range (0,2).
+  ! If not given, 1.0 is used.
+  real(DP), optional, intent(in) :: domegaS
 !</input>
 
 !<inputoutput>
@@ -336,10 +340,12 @@ contains
 
 !</subroutine>
 
-  real(DP) :: dom
+  real(DP) :: domA, domS
 
-    dom = 1.0_DP
-    if(present(domega)) dom = domega
+    domA = 1.0_DP
+    domS = 1.0_DP
+    if(present(domegaA)) domA = domegaA
+    if(present(domegaS)) domS = domegaS
 
     ! Make sure we do not apply the symmetric variant ('SP-SSOR')
     if(iand(rdata%cflags, SPSOR_FLAG_SYM) .ne. 0_I32) then
@@ -356,7 +362,7 @@ contains
     case (SPSOR_SYSTEM_NAVST2D)
 
       ! Call the routine for 2D Navier-Stokes systems
-      call spsor_solve_NavSt2D(rdata, rsol, rrhs, niterations, dom)
+      call spsor_solve_NavSt2D(rdata, rsol, rrhs, niterations, domA, domS)
 
     case default
       call output_line ('SP-SOR data structure not initialised',&
@@ -371,7 +377,7 @@ contains
 
 !<subroutine>
 
-  subroutine spsor_precond(rdata, rdef, domega)
+  subroutine spsor_precond(rdata, rdef, domegaA, domegaS)
 
 !<description>
   ! This routine performs applies the SP-SOR / SP-SSOR preconditioner onto
@@ -382,9 +388,13 @@ contains
   ! The SP-SOR data structure
   type(t_spsor), intent(in) :: rdata
 
-  ! Optional: The relaxation parameter in range (0,2).
+  ! Optional: The relaxation parameter for the A-block in range (0,2).
   ! If not given, 1.0 is used.
-  real(DP), optional, intent(in) :: domega
+  real(DP), optional, intent(in) :: domegaA
+
+  ! Optional: The relaxation parameter for the S-block in range (0,2).
+  ! If not given, 1.0 is used.
+  real(DP), optional, intent(in) :: domegaS
 !</input>
 
 !<inputoutput>
@@ -394,10 +404,12 @@ contains
 
 !</subroutine>
 
-  real(DP) :: dom
+  real(DP) :: domA, domS
 
-    dom = 1.0_DP
-    if(present(domega)) dom = domega
+    domA = 1.0_DP
+    domS = 1.0_DP
+    if(present(domegaA)) domA = domegaA
+    if(present(domegaS)) domS = domegaS
 
     ! Okay, which SP-SOR solver do we have here?
     select case(rdata%csystem)
@@ -406,10 +418,10 @@ contains
       ! Do we apply SP-SOR or SP-SSOR?
       if(iand(rdata%cflags, SPSOR_FLAG_SYM) .ne. 0_I32) then
         ! Apply SP-SSOR for 2D Navier-Stokes systems
-        call spsor_prec_sym_NavSt2D(rdata, rdef, dom)
+        call spsor_prec_sym_NavSt2D(rdata, rdef, domA, domS)
       else
         ! Apply SP-SOR for 2D Navier-Stokes systems
-        call spsor_prec_NavSt2D(rdata, rdef, dom)
+        call spsor_prec_NavSt2D(rdata, rdef, domA, domS)
       end if
 
     case default
@@ -1942,7 +1954,7 @@ contains
 
 !<subroutine>
 
-  subroutine spsor_solve_NavSt2D(rdata, rsol, rrhs, niterations, domega)
+  subroutine spsor_solve_NavSt2D(rdata, rsol, rrhs, niterations, domegaA, domegaS)
 
 !<description>
   ! INTERNAL ROUTINE:
@@ -1959,8 +1971,8 @@ contains
   ! The number of iterations that are to be performed
   integer, intent(in) :: niterations
 
-  ! The relaxation parameter in range (0,2)
-  real(DP), intent(in) :: domega
+  ! The relaxation parameters in range (0,2)
+  real(DP), intent(in) :: domegaA, domegaS
 !</input>
 
 !<inputoutput>
@@ -1985,7 +1997,6 @@ contains
 
   integer :: m,n, iter
   logical :: bHaveA12
-  real(DP) :: domegaA, domegaS
 
     ! Let us assume we do not have the optional matrices
     bHaveA12 = .false.
@@ -2047,13 +2058,6 @@ contains
     ! Fetch the number of velocity and pressure DOFs
     m = rdata%p_rA11%NEQ
     n = rdata%rS%NEQ
-
-    ! Set up relaxation parameters
-    ! TODO: Find out which combination is useful!!!
-    domegaA = domega
-    !domegaA = 1.0_DP
-    domegaS = domega
-    !domegaS = 1.0_DP
 
     ! perform the desired number of iterations
     do iter = 1, niterations
@@ -2123,7 +2127,7 @@ contains
 
 !<subroutine>
 
-  subroutine spsor_prec_NavSt2D(rdata, rdef, domega)
+  subroutine spsor_prec_NavSt2D(rdata, rdef, domegaA, domegaS)
 
 !<description>
   ! INTERNAL ROUTINE:
@@ -2135,7 +2139,7 @@ contains
   type(t_spsor), target, intent(in) :: rdata
 
   ! The relaxation parameter. Default = 1.0
-  real(DP), intent(in) :: domega
+  real(DP), intent(in) :: domegaA, domegaS
 !</input>
 
 !<inputoutput>
@@ -2159,7 +2163,6 @@ contains
 
   integer :: m, n
   logical :: bHaveA12
-  real(DP) :: domegaA, domegaS
 
     ! Let us assume we do not have the optional matrices
     bHaveA12 = .false.
@@ -2208,13 +2211,6 @@ contains
     ! Fetch the number of velocity and pressure DOFs
     m = rdata%p_rA11%NEQ
     n = rdata%rS%NEQ
-
-    ! Set up relaxation parameters
-    ! TODO: Find out which combination is useful!!!
-    domegaA = domega
-    !domegaA = 1.0_DP
-    domegaS = domega
-    !domegaS = 1.0_DP
 
     ! Step One
     ! --------
@@ -2278,7 +2274,7 @@ contains
 
 !<subroutine>
 
-  subroutine spsor_prec_sym_NavSt2D(rdata, rdef, domega)
+  subroutine spsor_prec_sym_NavSt2D(rdata, rdef, domegaA, domegaS)
 
 !<description>
   ! INTERNAL ROUTINE:
@@ -2290,7 +2286,7 @@ contains
   type(t_spsor), target, intent(in) :: rdata
 
   ! The relaxation parameter. Default = 1.0
-  real(DP), intent(in) :: domega
+  real(DP), intent(in) :: domegaA, domegaS
 !</input>
 
 !<inputoutput>
@@ -2314,7 +2310,6 @@ contains
 
   integer :: m, n
   logical :: bHaveA12
-  real(DP) :: domegaA, domegaS
 
     ! Let us assume we do not have the optional matrices
     bHaveA12 = .false.
@@ -2373,13 +2368,6 @@ contains
     ! Fetch the number of velocity and pressure DOFs
     m = rdata%p_rA11%NEQ
     n = rdata%rS%NEQ
-
-    ! Set up relaxation parameters
-    ! TODO: Find out which combination is useful!!!
-    domegaA = domega
-    !domegaA = 1.0_DP
-    domegaS = domega
-    !domegaS = 1.0_DP
 
     ! Step One
     ! --------
