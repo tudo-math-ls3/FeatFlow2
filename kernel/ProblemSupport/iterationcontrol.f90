@@ -155,6 +155,9 @@
 !# -> ITC_STATUS_ORBITING
 !#    Indicates that the iteration is (probably) caught in an orbit.
 !#
+!# -> ITC_STATUS_NAN_RES
+!#    Indicates that the last residual was "Not-a-Number".
+!#
 !# </purpose>
 !##############################################################################
 
@@ -202,6 +205,9 @@ private
 
   ! Orbiting criterion fulfilled
   integer, parameter, public :: ITC_STATUS_ORBITING     = 6
+
+  ! Not-a-Number residual found
+  integer, parameter, public :: ITC_STATUS_NAN_RES      = 7
 
 !</constantblock>
 
@@ -322,7 +328,6 @@ contains
 !<description>
   ! Basic initialisation of the structure. The number of iterations
   ! is reset to zero. All residuals are set to zero.
-  ! The status is set to "continue".
 !</description>
 
 !<inputoutput>
@@ -379,6 +384,15 @@ contains
     riter%dresInitial = dres
     riter%dresFinal = dres
     riter%Dresiduals(1) = dres
+    riter%cstatus = ITC_STATUS_CONTINUE
+
+    ! detect NaNs if possible
+#ifdef HAS_INTRINSIC_ISNAN
+    if(isnan(dres)) then
+      riter%cstatus = ITC_STATUS_NAN_RES
+      return
+    end if
+#endif
 
     ! We're now going to check whether we have some absolute convergence or divergence criterions
     ! given. First of all, ensure that we do not have to perform a minimum number of iterations.
@@ -440,6 +454,15 @@ contains
     riter%niterations = riter%niterations+1
     riter%dresFinal = dres
     riter%Dresiduals(mod(riter%nIterations, ITC_RES_QUEUE_SIZE)+1) = dres
+
+    ! detect NaNs if possible -- we'll do this before performing any fancy
+    ! calculations to avoid NaN arithmetic here...
+#ifdef HAS_INTRINSIC_ISNAN
+    if(isnan(dres)) then
+      riter%cstatus = ITC_STATUS_NAN_RES
+      return
+    end if
+#endif
 
     ! Check against absolute criterions
     btolAbs = (riter%dtolAbs .gt. 0.0_DP) .and. (dres .le. riter%dtolAbs)
@@ -805,6 +828,9 @@ contains
         OU_CLASS_MSG, coutput, 'itc_printStatistics')
     case (ITC_STATUS_ORBITING)
       call output_line('Status ................: orbiting', &
+        OU_CLASS_MSG, coutput, 'itc_printStatistics')
+    case (ITC_STATUS_NAN_RES)
+      call output_line('Status ................: NaN residual found', &
         OU_CLASS_MSG, coutput, 'itc_printStatistics')
     end select
 
