@@ -1279,6 +1279,11 @@ module linearsolver
     ! =-1: no output, =0: no output except for warning messages,
     ! =1: basic output, =2, extended output
     integer                    :: ioutputLevel = 0
+    
+    ! INPUT PARAMETER: Print statistics
+    ! Determines whether solver statistics are to be printed after the
+    ! solution process. Is only used for ioutputLevel = 2.
+    integer                    :: iprintStatistics = YES
 
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS WITH RESIDUAL CHECK:
     ! Number of iterations to perform before printing out the
@@ -4448,7 +4453,7 @@ contains
         rsolverNode%dconvergenceRate = 0.0_DP
       end if
       
-      if (rsolverNode%ioutputLevel .ge. 2) then
+      if ((rsolverNode%ioutputLevel .ge. 2) .and. (rsolverNode%iprintStatistics .eq. YES)) then
         call output_lbrk()
         call output_line ('DefCorr statistics:')
         call output_lbrk()
@@ -9193,7 +9198,7 @@ contains
         rsolverNode%dconvergenceRate = 0.0_DP
       end if
 
-      if (rsolverNode%ioutputLevel .ge. 2) then
+      if ((rsolverNode%ioutputLevel .ge. 2) .and. (rsolverNode%iprintStatistics .eq. YES)) then
         call output_lbrk()
         call output_line ('CG statistics:')
         call output_lbrk()
@@ -10073,7 +10078,7 @@ contains
         rsolverNode%dconvergenceRate = 0.0_DP
       end if
 
-      if (rsolverNode%ioutputLevel .ge. 2) then
+      if ((rsolverNode%ioutputLevel .ge. 2) .and. (rsolverNode%iprintStatistics .eq. YES)) then
         call output_lbrk()
         call output_line ('BiCGStab statistics:')
         call output_lbrk()
@@ -11230,7 +11235,7 @@ contains
         rsolverNode%dconvergenceRate = 0.0_DP
       end if
 
-      if (rsolverNode%ioutputLevel .ge. 2) then
+      if ((rsolverNode%ioutputLevel .ge. 2) .and. (rsolverNode%iprintStatistics .eq. YES)) then
         call output_lbrk()
         call output_line ('GMRES('// trim(sys_siL(idim,10))// ') statistics:')
         call output_lbrk()
@@ -14461,7 +14466,7 @@ contains
       ! Scale the defect by the damping parameter in the solver structure.
       call lsysbl_scaleVector (rd,rsolverNode%domega)
       
-      if (rsolverNode%ioutputLevel .ge. 2) then
+      if ((rsolverNode%ioutputLevel .ge. 2) .and. (rsolverNode%iprintStatistics .eq. YES)) then
         call output_lbrk()
         call output_line ('Multigrid statistics:')
         call output_lbrk()
@@ -16583,7 +16588,7 @@ contains
       ! Scale the defect by the damping parameter in the solver structure.
       call lsysbl_scaleVector (rd,rsolverNode%domega)
       
-      if (rsolverNode%ioutputLevel .ge. 2) then
+      if ((rsolverNode%ioutputLevel .ge. 2) .and. (rsolverNode%iprintStatistics .eq. YES)) then
         call output_lbrk()
         call output_line ('Multigrid statistics:')
         call output_lbrk()
@@ -19187,7 +19192,7 @@ contains
           rsolverNode%dconvergenceRate = 0.0_DP
         end if
   
-        if (rsolverNode%ioutputLevel .ge. 2) then
+        if ((rsolverNode%ioutputLevel .ge. 2) .and. (rsolverNode%iprintStatistics .eq. YES)) then
           call output_lbrk()
           call output_line ('GMRES('// trim(sys_siL(idim,10))// ') statistics:')
           call output_lbrk()
@@ -19866,7 +19871,7 @@ contains
           rsolverNode%dconvergenceRate = 0.0_DP
         end if
   
-        if (rsolverNode%ioutputLevel .ge. 2) then
+        if ((rsolverNode%ioutputLevel .ge. 2) .and. (rsolverNode%iprintStatistics .eq. YES)) then
           call output_lbrk()
           call output_line ('GMRES('// trim(sys_siL(idim,10))// ') statistics:')
           call output_lbrk()
