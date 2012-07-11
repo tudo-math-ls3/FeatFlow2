@@ -42,6 +42,11 @@
 !#
 !# 10.) tdiscr_copy
 !#      -> Copies a time discretisation structure.
+!#
+!# 11.) tdiscr_shiftTimestamp
+!#      -> Calculates a point in time after a time shift by a fraction of 
+!#         a timestep size.
+!#
 !# </purpose>
 !##############################################################################
 
@@ -67,6 +72,7 @@ module timediscretisation
   public :: tdiscr_getOrder
   public :: tdiscr_infoStatistics
   public :: tdiscr_copy
+  public :: tdiscr_shiftTimestamp
 
 !<constants>
 !<constantblock description="Time discretisation type identifiers">
@@ -650,6 +656,66 @@ contains
         //sys_adjustr(sys_sd(rtimediscr%dtimeMax,6),14) &
         //sys_adjustr(sys_sd(rtimediscr%dtstep,6),14) &
         //sys_adjustr(sys_sd(rtimediscr%dtheta,3),6),cdateTimeLogPolicy=OU_DTP_NONE )
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine tdiscr_shiftTimestamp(rtimeDiscr,dtimeIn,dshift,dtimeOut)
+  
+!<description>
+  ! Calculates a point in time after a time shift by a fraction of a time
+  ! step size.
+!</description>
+
+!<input>
+  ! Time discretisation structure that specifies the underlying 
+  ! time discretisation.
+  type(t_timeDiscretisation), intent(in) :: rtimeDiscr
+  
+  ! Timestamp in the time interval.
+  real(DP), intent(in) :: dtimeIn
+  
+  ! Timestep shift. This is a value in the range [-1,1].
+  ! A value of 0.0 represents no time shift. A value of -1.0 means that
+  ! dtimeIn should be shifted to the left by one timestep
+  ! A value -0.5 would shift dtimeIn by half a timestep to the left.
+  ! Positive values describe a shifting to the right.
+  real(DP), intent(in) :: dshift
+!</input>
+
+!<output>
+  ! The timestamp after the time shift.
+  real(DP), intent(out) :: dtimeOut
+!</output>
+
+!</subroutine>
+
+    ! Time discretisation scheme?
+    select case (rtimeDiscr%ctype)
+    
+    ! ---------------------------------
+    ! Theta-scheme
+    ! ---------------------------------
+    case (TDISCR_ONESTEPTHETA)
+    
+      ! Currently, the time discretisation is only uniform.
+      ! Therefore, a timestep has always length 1/dtstep.
+      ! This makes shifting simple and fast...
+      ! Only take care that we do not leave the bounds of the
+      ! time interval.
+      
+      dtimeOut = min(rtimeDiscr%dtimeMax,max(rtimeDiscr%dtimeInit,&
+          dtimeIn + dshift * rtimeDiscr%dtstep))
+
+    case default
+      call output_line ("Unsupported time discretisation.", &
+          OU_CLASS_ERROR,OU_MODE_STD,"tdiscr_shiftTimestamp")
+      call sys_halt()
+
+    end select    
 
   end subroutine
 
