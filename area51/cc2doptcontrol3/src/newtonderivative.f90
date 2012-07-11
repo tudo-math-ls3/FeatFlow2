@@ -537,7 +537,7 @@ contains
     ! local variables
     type(t_vectorScalar), pointer :: p_rvector, p_rvectorMin, p_rvectorMax
     type(t_vectorScalar), pointer :: p_rvectorShift
-    real(dp), dimension(:,:), allocatable :: Dfunc, DfuncMin, DfuncMax, Dshift
+    real(dp), dimension(:,:), allocatable :: Dfunc, DfuncMin, DfuncMax
     integer(I32) :: celement
     real(DP) :: dweight, dwMin, dwMax, dwFct, dwShift
     integer :: iel, ipt, nptsInactive
@@ -2127,7 +2127,6 @@ contains
 
     ! local variables
     type(t_collection) :: rcollection
-    type(t_vectorBlock), target :: rvecFct, rvecMin, rvecMax
     real(DP), dimension(:), pointer :: p_DdataIn,p_DdataOut,p_DdataMin,p_DdataMax
     real(DP), dimension(:), pointer :: p_DdataShift,p_DdataViol,p_DdataRhs
     integer :: i
@@ -2291,8 +2290,11 @@ contains
 
 !<subroutine>
 
-  subroutine nwder_applyMinMaxProjByDof (dweight,rvector,&
-      dwFctViolate,rfunctionViolate,dwFct,rfunction,dwMin,dwMax,rfunctionMin,rfunctionMax,&
+  subroutine nwder_applyMinMaxProjByDof (rvector,dweight,&
+      dwFctTest,rfunctionTest,dwMinTest,dwMaxTest,&
+      dwFct,rfunction,dwMin,dwMax,&
+      rfunctionMinTest,rfunctionMaxTest,&
+      rfunctionMin,rfunctionMax,&
       dwShift,rfunctionShift)
   
 !<description>
@@ -2301,9 +2303,9 @@ contains
   ! for the projection function
   !   rfunction -> 
   !      dwmax*rfunctionMax + dwShift*rfunctionShift
-  !            where dwFctViolate*rfunctionViolate + dwShift*rfunctionShift > dwmax*rfunctionMax
+  !            where dwFctTest*rfunctionTest + dwShift*rfunctionShift > dwmaxTest*rfunctionMaxTest
   !      dwmin*rfunctionMin + dwShift*rfunctionShift
-  !            where dwFctViolate*rfunctionViolate + dwShift*rfunctionShift < dwmin*rfunctionMin
+  !            where dwFctTest*rfunctionTest + dwShift*rfunctionShift < dwminTest*rfunctionMinTest
   !      dwFct*rfunction
   !            elsewhere
   ! If rfunctionMin/rfunctionMax are not specified, they are assumed
@@ -2322,12 +2324,20 @@ contains
   real(DP), intent(in) :: dweight
   
   ! Weight for the function rfunction.
-  real(DP), intent(in) :: dwFctViolate
+  real(DP), intent(in) :: dwFctTest
+  
+  ! Weight for the lower bound. If rfunctionMin is not specified,
+  ! this is the lower bound.
+  real(DP), intent(in) :: dwMinTest
+
+  ! Weight for the upper bound. If rfunctionMax is not specified,
+  ! this is the upper bound.
+  real(DP), intent(in) :: dwMaxTest
   
   ! An FE function specifying where the projection should be
-  ! applied. Whereever dwFctViolate*rfunctionViolate violates the bounds,
+  ! applied. Whereever dwFctTest*rfunctionTest Tests the bounds,
   ! the bounds are assumed.
-  type(t_vectorScalar), intent(in) :: rfunctionViolate
+  type(t_vectorScalar), intent(in) :: rfunctionTest
   
   ! Weight for the function rfunction.
   real(DP), intent(in) :: dwFct
@@ -2335,18 +2345,24 @@ contains
   ! An FE function
   type(t_vectorScalar), intent(in) :: rfunction
   
-  ! Weight for the lower bound. If rfunctionMin is not specified,
-  ! this is the lower bound.
+  ! Weight for the lower bound for the output. If rfunctionMin is not specified,
+  ! this is the lower bound in the output.
   real(DP), intent(in) :: dwMin
 
-  ! Weight for the upper bound. If rfunctionMax is not specified,
-  ! this is the upper bound.
+  ! Weight for the upper bound for the output. If rfunctionMax is not specified,
+  ! this is the upper bound in the output.
   real(DP), intent(in) :: dwMax
 
   ! OPTIONAL: Function specifying the lower bound.
-  type(t_vectorScalar), intent(in), optional :: rfunctionMin
+  type(t_vectorScalar), intent(in), optional :: rfunctionMinTest
 
   ! OPTIONAL: Function specifying the upper bound.
+  type(t_vectorScalar), intent(in), optional :: rfunctionMaxTest
+
+  ! OPTIONAL: Function specifying the lower bound for the output.
+  type(t_vectorScalar), intent(in), optional :: rfunctionMin
+
+  ! OPTIONAL: Function specifying the upper bound for the output.
   type(t_vectorScalar), intent(in), optional :: rfunctionMax
 
   ! OPTIONAL: Weight for the shift function.
@@ -2366,16 +2382,16 @@ contains
 
     ! local variables
     type(t_collection) :: rcollection
-    type(t_vectorBlock), target :: rvecFct, rvecMin, rvecMax,rvecShift
-    real(DP), dimension(:), pointer :: p_DdataIn,p_DdataOut,p_DdataMin,p_DdataMax
-    real(DP), dimension(:), pointer :: p_DdataShift,p_DdataViol
+    real(DP), dimension(:), pointer :: p_DdataIn,p_DdataOut,p_DdataMinTest,p_DdataMaxTest
+    real(DP), dimension(:), pointer :: p_DdataMin,p_DdataMax
+    real(DP), dimension(:), pointer :: p_DdataShift,p_DdataTest
     integer :: i
     real(DP) :: dushift
 
     ! Get the source and target arrays.
     call lsyssc_getbase_double (rfunction,p_DdataIn)
     call lsyssc_getbase_double (rvector,p_DdataOut)
-    call lsyssc_getbase_double (rfunctionViolate,p_DdataViol)
+    call lsyssc_getbase_double (rfunctionTest,p_DdataTest)
 
     duShift = 0.0_DP
     if (present(dwShift)) duShift = dwShift
@@ -2385,136 +2401,530 @@ contains
       call lsyssc_getbase_double (rfunctionShift,p_DdataShift)
     
       ! How to compute? Nonconstant min/max available?
-      if (present(rfunctionMin) .and. present(rfunctionMax)) then
+      if (present(rfunctionMinTest) .and. present(rfunctionMaxTest)) then
       
         ! Get the bounding functions
-        call lsyssc_getbase_double (rfunctionMin,p_DdataMin)
-        call lsyssc_getbase_double (rfunctionMax,p_DdataMax)
+        call lsyssc_getbase_double (rfunctionMinTest,p_DdataMinTest)
+        call lsyssc_getbase_double (rfunctionMaxTest,p_DdataMaxTest)
       
-        ! Restrict the vector, componentwise
-        do i=1,rvector%NEQ
-          call projection (dwFctViolate*p_DdataViol(i) + duShift*p_DdataShift(i),&
-              dwMin*p_DdataMin(i), dwMax*p_DdataMax(i),&
-              dwFct*p_DdataIn(i) + duShift*p_DdataShift(i),&
-              p_DdataOut(i))
-        end do
-        
-      else if (present(rfunctionMin)) then
-      
-        ! Get the bounding functions
-        call lsyssc_getbase_double (rfunctionMin,p_DdataMin)
-      
-        ! Restrict the vector
-        do i=1,rvector%NEQ
-          call projection (dwFctViolate*p_DdataViol(i) + duShift*p_DdataShift(i),&
-              dwMin*p_DdataMin(i), dwMax,&
-              dwFct*p_DdataIn(i) + duShift*p_DdataShift(i),&
-              p_DdataOut(i))
-        end do
+        ! Restrict the vector, componentwise.
+        ! Depending on which output functions are present, these are
+        ! again four cases...
+        if (present(rfunctionMin) .and. present(rfunctionMax)) then
 
-      else if (present(rfunctionMax)) then
+          ! Get the bounding functions
+          call lsyssc_getbase_double (rfunctionMin,p_DdataMin)
+          call lsyssc_getbase_double (rfunctionMax,p_DdataMax)
+
+          do i=1,rvector%NEQ
+            call projection (dweight,dwFctTest*p_DdataTest(i) + duShift*p_DdataShift(i),&
+                dwMinTest*p_DdataMinTest(i), dwMaxTest*p_DdataMaxTest(i),&
+                dwMin*p_DdataMin(i), dwMax*p_DdataMax(i),&
+                dwFct*p_DdataIn(i) + duShift*p_DdataShift(i),&
+                p_DdataOut(i))
+          end do
+
+        else if (present(rfunctionMin)) then
+
+          ! Get the bounding functions
+          call lsyssc_getbase_double (rfunctionMin,p_DdataMin)
+
+          do i=1,rvector%NEQ
+            call projection (dweight,dwFctTest*p_DdataTest(i) + duShift*p_DdataShift(i),&
+                dwMinTest*p_DdataMinTest(i), dwMaxTest*p_DdataMaxTest(i),&
+                dwMin*p_DdataMin(i), dwMax,&
+                dwFct*p_DdataIn(i) + duShift*p_DdataShift(i),&
+                p_DdataOut(i))
+          end do
+
+        else if (present(rfunctionMax)) then
+
+          ! Get the bounding functions
+          call lsyssc_getbase_double (rfunctionMax,p_DdataMax)
+
+          do i=1,rvector%NEQ
+            call projection (dweight,dwFctTest*p_DdataTest(i) + duShift*p_DdataShift(i),&
+                dwMinTest*p_DdataMinTest(i), dwMaxTest*p_DdataMaxTest(i),&
+                dwMin, dwMax*p_DdataMax(i),&
+                dwFct*p_DdataIn(i) + duShift*p_DdataShift(i),&
+                p_DdataOut(i))
+          end do
+
+        else
+
+          do i=1,rvector%NEQ
+            call projection (dweight,dwFctTest*p_DdataTest(i) + duShift*p_DdataShift(i),&
+                dwMinTest*p_DdataMinTest(i), dwMaxTest*p_DdataMaxTest(i),&
+                dwMin, dwMax,&
+                dwFct*p_DdataIn(i) + duShift*p_DdataShift(i),&
+                p_DdataOut(i))
+          end do
+
+        end if
+        
+      else if (present(rfunctionMinTest)) then
       
         ! Get the bounding functions
-        call lsyssc_getbase_double (rfunctionMax,p_DdataMax)
+        call lsyssc_getbase_double (rfunctionMinTest,p_DdataMinTest)
       
-        ! Restrict the vector
-        do i=1,rvector%NEQ
-          call projection (dwFctViolate*p_DdataViol(i) + duShift*p_DdataShift(i),&
-              dwMin, dwMax*p_DdataMax(i),&
-              dwFct*p_DdataIn(i) + duShift*p_DdataShift(i),&
-              p_DdataOut(i))
-        end do
+        ! Restrict the vector, componentwise.
+        ! Depending on which output functions are present, these are
+        ! again four cases...
+        if (present(rfunctionMin) .and. present(rfunctionMax)) then
+        
+          ! Get the bounding functions
+          call lsyssc_getbase_double (rfunctionMin,p_DdataMin)
+          call lsyssc_getbase_double (rfunctionMax,p_DdataMax)
+
+          ! Restrict the vector
+          do i=1,rvector%NEQ
+            call projection (dweight,dwFctTest*p_DdataTest(i) + duShift*p_DdataShift(i),&
+                dwMinTest*p_DdataMinTest(i), dwMaxTest,&
+                dwMin*p_DdataMin(i), dwMaxTest*p_DdataMax(i),&
+                dwFct*p_DdataIn(i) + duShift*p_DdataShift(i),&
+                p_DdataOut(i))
+          end do
+          
+        else if (present(rfunctionMin)) then
+        
+          ! Get the bounding functions
+          call lsyssc_getbase_double (rfunctionMin,p_DdataMin)
+
+          ! Restrict the vector
+          do i=1,rvector%NEQ
+            call projection (dweight,dwFctTest*p_DdataTest(i) + duShift*p_DdataShift(i),&
+                dwMinTest*p_DdataMinTest(i), dwMaxTest,&
+                dwMin*p_DdataMin(i), dwMaxTest,&
+                dwFct*p_DdataIn(i) + duShift*p_DdataShift(i),&
+                p_DdataOut(i))
+          end do
+
+        else if (present(rfunctionMax)) then
+        
+          ! Get the bounding functions
+          call lsyssc_getbase_double (rfunctionMax,p_DdataMax)
+
+          ! Restrict the vector
+          do i=1,rvector%NEQ
+            call projection (dweight,dwFctTest*p_DdataTest(i) + duShift*p_DdataShift(i),&
+                dwMinTest*p_DdataMinTest(i), dwMaxTest,&
+                dwMin, dwMaxTest*p_DdataMax(i),&
+                dwFct*p_DdataIn(i) + duShift*p_DdataShift(i),&
+                p_DdataOut(i))
+          end do
+
+        else 
+        
+          ! Restrict the vector
+          do i=1,rvector%NEQ
+            call projection (dweight,dwFctTest*p_DdataTest(i) + duShift*p_DdataShift(i),&
+                dwMinTest*p_DdataMinTest(i), dwMaxTest,&
+                dwMin, dwMaxTest,&
+                dwFct*p_DdataIn(i) + duShift*p_DdataShift(i),&
+                p_DdataOut(i))
+          end do
+
+        end if
+
+      else if (present(rfunctionMaxTest)) then
+      
+        ! Get the bounding functions
+        call lsyssc_getbase_double (rfunctionMaxTest,p_DdataMaxTest)
+      
+        ! Restrict the vector, componentwise.
+        ! Depending on which output functions are present, these are
+        ! again four cases...
+        if (present(rfunctionMin) .and. present(rfunctionMax)) then
+        
+          ! Get the bounding functions
+          call lsyssc_getbase_double (rfunctionMin,p_DdataMin)
+          call lsyssc_getbase_double (rfunctionMax,p_DdataMax)
+
+          ! Restrict the vector
+          do i=1,rvector%NEQ
+            call projection (dweight,dwFctTest*p_DdataTest(i) + duShift*p_DdataShift(i),&
+                dwMinTest, dwMaxTest*p_DdataMaxTest(i),&
+                dwMin*p_DdataMin(i), dwMax*p_DdataMax(i),&
+                dwFct*p_DdataIn(i) + duShift*p_DdataShift(i),&
+                p_DdataOut(i))
+          end do
+
+        else if (present(rfunctionMin)) then
+        
+          ! Get the bounding functions
+          call lsyssc_getbase_double (rfunctionMin,p_DdataMin)
+
+          ! Restrict the vector
+          do i=1,rvector%NEQ
+            call projection (dweight,dwFctTest*p_DdataTest(i) + duShift*p_DdataShift(i),&
+                dwMinTest, dwMaxTest*p_DdataMaxTest(i),&
+                dwMin*p_DdataMin(i), dwMax,&
+                dwFct*p_DdataIn(i) + duShift*p_DdataShift(i),&
+                p_DdataOut(i))
+          end do
+          
+        else if (present(rfunctionMax)) then
+        
+          ! Get the bounding functions
+          call lsyssc_getbase_double (rfunctionMax,p_DdataMax)
+
+          ! Restrict the vector
+          do i=1,rvector%NEQ
+            call projection (dweight,dwFctTest*p_DdataTest(i) + duShift*p_DdataShift(i),&
+                dwMinTest, dwMaxTest*p_DdataMaxTest(i),&
+                dwMin, dwMax*p_DdataMax(i),&
+                dwFct*p_DdataIn(i) + duShift*p_DdataShift(i),&
+                p_DdataOut(i))
+          end do
+
+        else if (present(rfunctionMin) .and. present(rfunctionMax)) then
+        
+          ! Restrict the vector
+          do i=1,rvector%NEQ
+            call projection (dweight,dwFctTest*p_DdataTest(i) + duShift*p_DdataShift(i),&
+                dwMinTest, dwMaxTest*p_DdataMaxTest(i),&
+                dwMin, dwMax,&
+                dwFct*p_DdataIn(i) + duShift*p_DdataShift(i),&
+                p_DdataOut(i))
+          end do
+
+        end if
 
       else
       
         ! Constant bounds
       
-        ! Restrict the vector
-        do i=1,rvector%NEQ
-          call projection (dwFctViolate*p_DdataViol(i) + duShift*p_DdataShift(i),&
-              dwMin, dwMax,&
-              dwFct*p_DdataIn(i) + duShift*p_DdataShift(i),&
-              p_DdataOut(i))
-        end do
+        if (present(rfunctionMin) .and. present(rfunctionMax)) then
+        
+          ! Get the bounding functions
+          call lsyssc_getbase_double (rfunctionMin,p_DdataMin)
+          call lsyssc_getbase_double (rfunctionMax,p_DdataMax)
+
+          ! Restrict the vector
+          do i=1,rvector%NEQ
+            call projection (dweight,dwFctTest*p_DdataTest(i) + duShift*p_DdataShift(i),&
+                dwMinTest, dwMaxTest,&
+                dwMin*p_DdataMin(i), dwMax*p_DdataMax(i),&
+                dwFct*p_DdataIn(i) + duShift*p_DdataShift(i),&
+                p_DdataOut(i))
+          end do
+          
+        else if (present(rfunctionMin)) then
+        
+          ! Get the bounding functions
+          call lsyssc_getbase_double (rfunctionMin,p_DdataMin)
+          
+          ! Restrict the vector
+          do i=1,rvector%NEQ
+            call projection (dweight,dwFctTest*p_DdataTest(i) + duShift*p_DdataShift(i),&
+                dwMinTest, dwMaxTest,&
+                dwMin*p_DdataMin(i), dwMax,&
+                dwFct*p_DdataIn(i) + duShift*p_DdataShift(i),&
+                p_DdataOut(i))
+          end do
+
+        else if (present(rfunctionMax)) then
+        
+          ! Get the bounding functions
+          call lsyssc_getbase_double (rfunctionMax,p_DdataMax)
+
+          ! Restrict the vector
+          do i=1,rvector%NEQ
+            call projection (dweight,dwFctTest*p_DdataTest(i) + duShift*p_DdataShift(i),&
+                dwMinTest, dwMaxTest,&
+                dwMin, dwMax*p_DdataMax(i),&
+                dwFct*p_DdataIn(i) + duShift*p_DdataShift(i),&
+                p_DdataOut(i))
+          end do
+
+        else
+        
+          ! Restrict the vector
+          do i=1,rvector%NEQ
+            call projection (dweight,dwFctTest*p_DdataTest(i) + duShift*p_DdataShift(i),&
+                dwMinTest, dwMaxTest,&
+                dwMin, dwMax,&
+                dwFct*p_DdataIn(i) + duShift*p_DdataShift(i),&
+                p_DdataOut(i))
+          end do
+
+        end if
 
       end if
 
     else
     
       ! How to compute? Nonconstant min/max available?
-      if (present(rfunctionMin) .and. present(rfunctionMax)) then
+      if (present(rfunctionMinTest) .and. present(rfunctionMaxTest)) then
       
         ! Get the bounding functions
-        call lsyssc_getbase_double (rfunctionMin,p_DdataMin)
-        call lsyssc_getbase_double (rfunctionMax,p_DdataMax)
+        call lsyssc_getbase_double (rfunctionMinTest,p_DdataMinTest)
+        call lsyssc_getbase_double (rfunctionMaxTest,p_DdataMaxTest)
       
-        ! Restrict the vector
-        do i=1,rvector%NEQ
-          call projection (dwFctViolate*p_DdataViol(i) + duShift,&
-              dwMin*p_DdataMin(i), dwMax*p_DdataMax(i),&
-              dwFct*p_DdataIn(i) + duShift,&
-              p_DdataOut(i))
-        end do
-        
-      else if (present(rfunctionMin)) then
-      
-        ! Get the bounding functions
-        call lsyssc_getbase_double (rfunctionMin,p_DdataMin)
-      
-        ! Restrict the vector
-        do i=1,rvector%NEQ
-          call projection (dwFctViolate*p_DdataViol(i) + duShift,&
-              dwMin*p_DdataMin(i), dwMax,&
-              dwFct*p_DdataIn(i) + duShift,&
-              p_DdataOut(i))
-        end do
+        ! Restrict the vector, componentwise.
+        ! Depending on which output functions are present, these are
+        ! again four cases...
+        if (present(rfunctionMin) .and. present(rfunctionMax)) then
 
-      else if (present(rfunctionMax)) then
+          ! Get the bounding functions
+          call lsyssc_getbase_double (rfunctionMin,p_DdataMin)
+          call lsyssc_getbase_double (rfunctionMax,p_DdataMax)
+
+          do i=1,rvector%NEQ
+            call projection (dweight,dwFctTest*p_DdataTest(i) + duShift,&
+                dwMinTest*p_DdataMinTest(i), dwMaxTest*p_DdataMaxTest(i),&
+                dwMin*p_DdataMin(i), dwMax*p_DdataMax(i),&
+                dwFct*p_DdataIn(i) + duShift,&
+                p_DdataOut(i))
+          end do
+
+        else if (present(rfunctionMin)) then
+
+          ! Get the bounding functions
+          call lsyssc_getbase_double (rfunctionMin,p_DdataMin)
+
+          do i=1,rvector%NEQ
+            call projection (dweight,dwFctTest*p_DdataTest(i) + duShift,&
+                dwMinTest*p_DdataMinTest(i), dwMaxTest*p_DdataMaxTest(i),&
+                dwMin*p_DdataMin(i), dwMax,&
+                dwFct*p_DdataIn(i) + duShift,&
+                p_DdataOut(i))
+          end do
+
+        else if (present(rfunctionMax)) then
+
+          ! Get the bounding functions
+          call lsyssc_getbase_double (rfunctionMax,p_DdataMax)
+
+          do i=1,rvector%NEQ
+            call projection (dweight,dwFctTest*p_DdataTest(i) + duShift,&
+                dwMinTest*p_DdataMinTest(i), dwMaxTest*p_DdataMaxTest(i),&
+                dwMin, dwMax*p_DdataMax(i),&
+                dwFct*p_DdataIn(i) + duShift,&
+                p_DdataOut(i))
+          end do
+
+        else
+
+          do i=1,rvector%NEQ
+            call projection (dweight,dwFctTest*p_DdataTest(i) + duShift,&
+                dwMinTest*p_DdataMinTest(i), dwMaxTest*p_DdataMaxTest(i),&
+                dwMin, dwMax,&
+                dwFct*p_DdataIn(i) + duShift,&
+                p_DdataOut(i))
+          end do
+
+        end if
+        
+      else if (present(rfunctionMinTest)) then
       
         ! Get the bounding functions
-        call lsyssc_getbase_double (rfunctionMax,p_DdataMax)
+        call lsyssc_getbase_double (rfunctionMinTest,p_DdataMinTest)
       
-        ! Restrict the vector
-        do i=1,rvector%NEQ
-          call projection (dwFctViolate*p_DdataViol(i) + duShift,&
-              dwMin, dwMax*p_DdataMax(i),&
-              dwFct*p_DdataIn(i) + duShift,&
-              p_DdataOut(i))
-        end do
+        ! Restrict the vector, componentwise.
+        ! Depending on which output functions are present, these are
+        ! again four cases...
+        if (present(rfunctionMin) .and. present(rfunctionMax)) then
+        
+          ! Get the bounding functions
+          call lsyssc_getbase_double (rfunctionMin,p_DdataMin)
+          call lsyssc_getbase_double (rfunctionMax,p_DdataMax)
+
+          ! Restrict the vector
+          do i=1,rvector%NEQ
+            call projection (dweight,dwFctTest*p_DdataTest(i) + duShift,&
+                dwMinTest*p_DdataMinTest(i), dwMaxTest,&
+                dwMin*p_DdataMin(i), dwMaxTest*p_DdataMax(i),&
+                dwFct*p_DdataIn(i) + duShift,&
+                p_DdataOut(i))
+          end do
+          
+        else if (present(rfunctionMin)) then
+        
+          ! Get the bounding functions
+          call lsyssc_getbase_double (rfunctionMin,p_DdataMin)
+
+          ! Restrict the vector
+          do i=1,rvector%NEQ
+            call projection (dweight,dwFctTest*p_DdataTest(i) + duShift,&
+                dwMinTest*p_DdataMinTest(i), dwMaxTest,&
+                dwMin*p_DdataMin(i), dwMaxTest,&
+                dwFct*p_DdataIn(i) + duShift,&
+                p_DdataOut(i))
+          end do
+
+        else if (present(rfunctionMax)) then
+        
+          ! Get the bounding functions
+          call lsyssc_getbase_double (rfunctionMax,p_DdataMax)
+
+          ! Restrict the vector
+          do i=1,rvector%NEQ
+            call projection (dweight,dwFctTest*p_DdataTest(i) + duShift,&
+                dwMinTest*p_DdataMinTest(i), dwMaxTest,&
+                dwMin, dwMaxTest*p_DdataMax(i),&
+                dwFct*p_DdataIn(i) + duShift,&
+                p_DdataOut(i))
+          end do
+
+        else 
+        
+          ! Restrict the vector
+          do i=1,rvector%NEQ
+            call projection (dweight,dwFctTest*p_DdataTest(i) + duShift,&
+                dwMinTest*p_DdataMinTest(i), dwMaxTest,&
+                dwMin, dwMaxTest,&
+                dwFct*p_DdataIn(i) + duShift,&
+                p_DdataOut(i))
+          end do
+
+        end if
+
+      else if (present(rfunctionMaxTest)) then
+      
+        ! Get the bounding functions
+        call lsyssc_getbase_double (rfunctionMaxTest,p_DdataMaxTest)
+      
+        ! Restrict the vector, componentwise.
+        ! Depending on which output functions are present, these are
+        ! again four cases...
+        if (present(rfunctionMin) .and. present(rfunctionMax)) then
+        
+          ! Get the bounding functions
+          call lsyssc_getbase_double (rfunctionMin,p_DdataMin)
+          call lsyssc_getbase_double (rfunctionMax,p_DdataMax)
+
+          ! Restrict the vector
+          do i=1,rvector%NEQ
+            call projection (dweight,dwFctTest*p_DdataTest(i) + duShift,&
+                dwMinTest, dwMaxTest*p_DdataMaxTest(i),&
+                dwMin*p_DdataMin(i), dwMax*p_DdataMax(i),&
+                dwFct*p_DdataIn(i) + duShift,&
+                p_DdataOut(i))
+          end do
+
+        else if (present(rfunctionMin)) then
+        
+          ! Get the bounding functions
+          call lsyssc_getbase_double (rfunctionMin,p_DdataMin)
+
+          ! Restrict the vector
+          do i=1,rvector%NEQ
+            call projection (dweight,dwFctTest*p_DdataTest(i) + duShift,&
+                dwMinTest, dwMaxTest*p_DdataMaxTest(i),&
+                dwMin*p_DdataMin(i), dwMax,&
+                dwFct*p_DdataIn(i) + duShift,&
+                p_DdataOut(i))
+          end do
+          
+        else if (present(rfunctionMax)) then
+        
+          ! Get the bounding functions
+          call lsyssc_getbase_double (rfunctionMax,p_DdataMax)
+
+          ! Restrict the vector
+          do i=1,rvector%NEQ
+            call projection (dweight,dwFctTest*p_DdataTest(i) + duShift,&
+                dwMinTest, dwMaxTest*p_DdataMaxTest(i),&
+                dwMin, dwMax*p_DdataMax(i),&
+                dwFct*p_DdataIn(i) + duShift,&
+                p_DdataOut(i))
+          end do
+
+        else if (present(rfunctionMin) .and. present(rfunctionMax)) then
+        
+          ! Restrict the vector
+          do i=1,rvector%NEQ
+            call projection (dweight,dwFctTest*p_DdataTest(i) + duShift,&
+                dwMinTest, dwMaxTest*p_DdataMaxTest(i),&
+                dwMin, dwMax,&
+                dwFct*p_DdataIn(i) + duShift,&
+                p_DdataOut(i))
+          end do
+
+        end if
 
       else
       
         ! Constant bounds
       
-        ! Restrict the vector
-        do i=1,rvector%NEQ
-          call projection (dwFctViolate*p_DdataViol(i) + duShift,&
-              dwMin, dwMax,&
-              dwFct*p_DdataIn(i) + duShift,&
-              p_DdataOut(i))
-        end do
+        if (present(rfunctionMin) .and. present(rfunctionMax)) then
+        
+          ! Get the bounding functions
+          call lsyssc_getbase_double (rfunctionMin,p_DdataMin)
+          call lsyssc_getbase_double (rfunctionMax,p_DdataMax)
+
+          ! Restrict the vector
+          do i=1,rvector%NEQ
+            call projection (dweight,dwFctTest*p_DdataTest(i) + duShift,&
+                dwMinTest, dwMaxTest,&
+                dwMin*p_DdataMin(i), dwMax*p_DdataMax(i),&
+                dwFct*p_DdataIn(i) + duShift,&
+                p_DdataOut(i))
+          end do
+          
+        else if (present(rfunctionMin)) then
+        
+          ! Get the bounding functions
+          call lsyssc_getbase_double (rfunctionMin,p_DdataMin)
+          
+          ! Restrict the vector
+          do i=1,rvector%NEQ
+            call projection (dweight,dwFctTest*p_DdataTest(i) + duShift,&
+                dwMinTest, dwMaxTest,&
+                dwMin*p_DdataMin(i), dwMax,&
+                dwFct*p_DdataIn(i) + duShift,&
+                p_DdataOut(i))
+          end do
+
+        else if (present(rfunctionMax)) then
+        
+          ! Get the bounding functions
+          call lsyssc_getbase_double (rfunctionMax,p_DdataMax)
+
+          ! Restrict the vector
+          do i=1,rvector%NEQ
+            call projection (dweight,dwFctTest*p_DdataTest(i) + duShift,&
+                dwMinTest, dwMaxTest,&
+                dwMin, dwMax*p_DdataMax(i),&
+                dwFct*p_DdataIn(i) + duShift,&
+                p_DdataOut(i))
+          end do
+
+        else
+        
+          ! Restrict the vector
+          do i=1,rvector%NEQ
+            call projection (dweight,dwFctTest*p_DdataTest(i) + duShift,&
+                dwMinTest, dwMaxTest,&
+                dwMin, dwMax,&
+                dwFct*p_DdataIn(i) + duShift,&
+                p_DdataOut(i))
+          end do
+
+        end if
 
       end if
-      
+
     end if
     
   contains
     
-    subroutine projection (dtest,dmin,dmax,din,dout)
+    subroutine projection (dweight,dtest,dminTest,dmaxTest,dmin,dmax,din,dout)
     
     ! The actual projection.
-    ! Returns dmin/dmax where dtest violates the bounds,
-    ! or din where it does not.
+    ! Returns dweight*dmin / dweight* dmax where dtest violates the bounds 
+    ! dminTest/dmaxTest, or dweight*din where it does not.
     
-    real(DP), intent(in) :: dtest,dmin,dmax,din
+    real(DP), intent(in) :: dweight,dtest,dmin,dmax,dminTest,dmaxTest,din
     real(DP), intent(out) :: dout
     
-      if (dtest .lt. dmin) then
-        dout = dmin
-      else if (dtest .gt. dmax) then
-        dout = dmax
+      if (dtest .lt. dminTest) then
+        dout = dweight*dmin
+      else if (dtest .gt. dmaxTest) then
+        dout = dweight*dmax
       else
-        dout = din
+        dout = dweight*din
       end if
     
     end subroutine

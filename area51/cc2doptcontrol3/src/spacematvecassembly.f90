@@ -4409,9 +4409,6 @@ contains
             dumax1 = p_ranalyticData%p_rsettingsOptControl%rconstraints%ddistVelUmax1
             dumax2 = p_ranalyticData%p_rsettingsOptControl%rconstraints%ddistVelUmax2
 
-            dweight2 = dweight * &
-                p_rspaceTimeOperatorAsm%p_ranalyticData%p_rdebugFlags%dprimalDualCoupling
-
             ! Loop over the elements in the current set.
             do iel = 1,nelements
 
@@ -4454,6 +4451,10 @@ contains
                   ! which corresponds to the (test) basis functions Phi_i:
                   do idofe=1,p_rvectorData1%ndofTest
 
+                    ! Fetch the contributions of the (test) basis functions Phi_i
+                    ! into dbasI
+                    dbasI  = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
+
                     ! Calculate the linearised control
                     duLin2 = p_DuLin2(icubp,iel,DER_FUNC2D)
       
@@ -4469,6 +4470,11 @@ contains
               end do ! icubp
             
             end do ! iel
+
+          case default
+            call output_line("Unknown constraints",&
+                OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_rhs")
+            call sys_halt()
 
           end select ! constraints
           
@@ -5311,6 +5317,11 @@ contains
               end do ! icubp
             
             end do ! iel
+
+          case default
+            call output_line("Unknown constraints",&
+                OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_rhs")
+            call sys_halt()
 
           end select ! constraints
           
