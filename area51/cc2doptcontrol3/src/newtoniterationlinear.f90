@@ -548,6 +548,8 @@ contains
     ! local variables
     type(t_spaceslSolverStat) :: rlocalStat
 
+    call stat_startTimer (rstatistics%rtotalTime)
+
     ! -------------------------------------------------------------
     ! Step 1: Solve the primal and dual system.
     ! -------------------------------------------------------------
@@ -633,6 +635,8 @@ contains
     ! Take the solution of the linearised primal/dual system and
     ! calculate the residual in the control space.
     call kkt_applyControlDirDeriv (rkktsystemDirDeriv,rrhs)
+
+    call stat_stopTimer (rstatistics%rtotalTime)
 
   end subroutine
 
