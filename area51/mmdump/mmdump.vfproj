@@ -85,10 +85,9 @@
 				<Tool Name="VFPostBuildEventTool"/>
 				<Tool Name="VFManifestTool" SuppressStartupBanner="true"/></Configuration></Configurations>
 	<Files>
-		<Filter Name="Data Files" Filter="dat"/>
+		<Filter Name="Data Files" Filter="dat">
+		<File RelativePath=".\data\mmdump.dat"/></Filter>
 		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
-		<File RelativePath=".\src\burgers1d.f90"/>
-		<File RelativePath=".\src\burgers1d_callback.f90"/>
-		<File RelativePath=".\src\burgers1d_method5.f90"/>
-		<File RelativePath=".\src\burgers1d_method6.f90"/></Filter></Files>
+		<File RelativePath=".\src\mmdump.f90"/>
+		<File RelativePath=".\src\mmdump2d.f90"/></Filter></Files>
 	<Globals/></VisualStudioProject>
