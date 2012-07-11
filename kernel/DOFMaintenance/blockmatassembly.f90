@@ -1941,7 +1941,8 @@ contains
       npointsPerElement,nelements,revalVectors,rcollection)
 
 !<description>  
-    ! Calculates the H1 (semi-)norm of an arbitrary finite element function v.
+    ! Calculates the squared H1 (semi-)norm of an arbitrary finite element 
+    ! function <tex> ||v||^2_{H^1} </tex>.
     ! If v has multiple components, the sum of the integrals of all
     ! components is returned.
     !
