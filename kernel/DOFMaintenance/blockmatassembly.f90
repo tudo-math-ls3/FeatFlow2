@@ -1853,7 +1853,8 @@ contains
       npointsPerElement,nelements,revalVectors,rcollection)
 
 !<description>  
-    ! Calculates the L2-norm of an arbitrary finite element function v.
+    ! Calculates the squared L2-norm of an arbitrary finite element 
+    ! function: <tex> ||v||^2 </tex>.
     ! If v has multiple components, the sum of the integrals of all
     ! components is returned.
     !
