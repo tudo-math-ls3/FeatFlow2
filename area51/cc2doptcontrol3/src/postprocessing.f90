@@ -1594,18 +1594,18 @@ contains
             
         ! Write
         call optcpp_appendLineToDatafile (&
-            trim(sys_sdEL(dtimestart,10))//"   "//&
-            trim(sys_sdEL(Derror(1),10))//"   "//&
-            trim(sys_sdEL(Derror(2),10))//"   "//&
-            trim(sys_sdEL(Derror(3),10))//"   "//&
-            trim(sys_sdEL(Derror(4),10))//"   "//&
-            trim(sys_sdEL(Derror(5),10)),&
-            "# time               "//&
-            "J(y,u)               "//&
-            "||y-z||_{L^2}        "//&
-            "||y(T)-z(T)||_{L^2}  "//&
-            "||u||_{L^2}          "//&
-            "||u||_{L^2(Gamma_C)} ",&
+            tolen(sys_sdE(dtimestart,10),22)//&
+            tolen(sys_sdE(Derror(1),10),22)//&
+            tolen(sys_sdE(Derror(2),10),22)//&
+            tolen(sys_sdE(Derror(3),10),22)//&
+            tolen(sys_sdE(Derror(4),10),22)//&
+            tolen(sys_sdE(Derror(5),10),22),&
+            "# time                "//&
+            "J(y,u)                "//&
+            "||y-z||_{L^2}         "//&
+            "||y(T)-z(T)||_{L^2}   "//&
+            "||u||_{L^2}           "//&
+            "||u||_{L^2(Gamma_C)}  ",&
             sfile,idoftime .eq. 1,&
             itag,iunit)
         ! Centre
@@ -1614,12 +1614,12 @@ contains
           call optcana_nonstatFunctionalAtTime (Derror,0.5_DP*dtimestart + 0.5_DP*dtimeend,&
               ispacelevel, itimelevel, roperatorAsmHier, rkktsystem)
           call optcpp_appendLineToDatafile (&
-              trim(sys_sdEL(0.5_DP*dtimestart + 0.5_DP*dtimeend,10))//"   "//&
-              trim(sys_sdEL(Derror(1),10))//"   "//&
-              trim(sys_sdEL(Derror(2),10))//"   "//&
-              trim(sys_sdEL(Derror(3),10))//"   "//&
-              trim(sys_sdEL(Derror(4),10))//"   "//&
-              trim(sys_sdEL(Derror(5),10)),&
+              tolen(sys_sdE(0.5_DP*dtimestart + 0.5_DP*dtimeend,10),22)//&
+              tolen(sys_sdE(Derror(1),10),22)//&
+              tolen(sys_sdE(Derror(2),10),22)//&
+              tolen(sys_sdE(Derror(3),10),22)//&
+              tolen(sys_sdE(Derror(4),10),22)//&
+              tolen(sys_sdE(Derror(5),10),22),&
               "",&
               sfile,.false.,&
               itag,iunit)
@@ -1631,6 +1631,16 @@ contains
       close (iunit)
       
     end if
+
+  contains
+  
+    character(len=nlen) function tolen (s,nlen)
+    character(len=*) s
+    integer, intent(in) :: nlen
+
+      tolen = adjustl(s)
+      
+    end function
 
   end subroutine
 
