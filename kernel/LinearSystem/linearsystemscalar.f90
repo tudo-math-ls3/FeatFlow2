@@ -26862,6 +26862,7 @@ contains
       IedgeListIdx(1) = 1
       
       ! Release temporal memory
+      call storage_free(h_IApath)
       call storage_free(h_IdofColor)
       call storage_free(h_IedgeColor)
       call storage_free(h_IedgeListTemp)
