@@ -594,7 +594,7 @@ contains
       ! Diverged?
       if(bdiv) then
 
-        riter%cstatus = ITC_STATUS_CONVERGED
+        riter%cstatus = ITC_STATUS_DIVERGED
         return
 
       end if
