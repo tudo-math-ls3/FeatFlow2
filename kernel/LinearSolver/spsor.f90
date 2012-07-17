@@ -2528,8 +2528,8 @@ contains
         daux1 = daux1 + DA1(j)*Du1(k)
         daux2 = daux2 + DA2(j)*Du2(k)
       end do
-      df = domega*(df - daux1)
-      dg = domega*(dg - daux2)
+      df = df - daux1
+      dg = dg - daux2
 
       ! Subtract B*p from rhs
       daux1 = 0.0_DP
@@ -2544,8 +2544,8 @@ contains
 
       ! Solve
       k = KdiagA(i)
-      Du1(i) = Du1(i) + df / DA1(k)
-      Du2(i) = Du2(i) + dg / DA2(k)
+      Du1(i) = Du1(i) + (domega*df) / DA1(k)
+      Du2(i) = Du2(i) + (domega*dg) / DA2(k)
 
     end do ! i
 
@@ -2624,9 +2624,9 @@ contains
         daux2 = daux2 + DA2(j)*Du2(k)
         daux3 = daux3 + DA3(j)*Du3(k)
       end do
-      dfu1 = domega*(dfu1 - daux1)
-      dfu2 = domega*(dfu2 - daux2)
-      dfu3 = domega*(dfu3 - daux3)
+      dfu1 = dfu1 - daux1
+      dfu2 = dfu2 - daux2
+      dfu3 = dfu3 - daux3
 
       ! Subtract B*p from rhs
       daux1 = 0.0_DP
@@ -2644,9 +2644,9 @@ contains
 
       ! Solve
       k = KdiagA(i)
-      Du1(i) = Du1(i) + dfu1 / DA1(k)
-      Du2(i) = Du2(i) + dfu2 / DA2(k)
-      Du3(i) = Du3(i) + dfu3 / DA3(k)
+      Du1(i) = Du1(i) + (domega*dfu1) / DA1(k)
+      Du2(i) = Du2(i) + (domega*dfu2) / DA2(k)
+      Du3(i) = Du3(i) + (domega*dfu3) / DA3(k)
 
     end do ! i
 
@@ -2716,7 +2716,7 @@ contains
       do j = KldA(i), KldA(i+1)-1
         daux = daux + DA(j)*Du1(KcolA(j))
       end do
-      df1 = domega*(df1 - daux)
+      df1 = df1 - daux
 
       ! Subtract B*p from rhs
       daux = 0.0_DP
@@ -2733,7 +2733,7 @@ contains
       df1 = df1 - dsa2*daux
 
       ! Solve
-      Du1(i) = Du1(i) + df1 / DA(KdiagA(i))
+      Du1(i) = Du1(i) + (domega*df1) / DA(KdiagA(i))
 
     end do ! i
 
@@ -2805,7 +2805,7 @@ contains
       do j = KldA(i), KldA(i+1)-1
         daux = daux + DA(j)*Du1(KcolA(j))
       end do
-      df1 = domega*(df1 - daux)
+      df1 = df1 - daux
 
       ! Subtract B*p from rhs
       daux = 0.0_DP
@@ -2825,7 +2825,7 @@ contains
       df1 = df1 - dsa2*daux - dsa3*daux2
 
       ! Solve
-      Du1(i) = Du1(i) + df1 / DA(KdiagA(i))
+      Du1(i) = Du1(i) + (domega*df1) / DA(KdiagA(i))
 
     end do ! i
 
