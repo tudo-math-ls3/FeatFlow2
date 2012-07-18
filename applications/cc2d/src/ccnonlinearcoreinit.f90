@@ -446,6 +446,7 @@ contains
     type(t_linsolDeflGMRESLevelInfo), pointer :: p_rlevelInfoMK
     type(t_linsolNode), pointer :: p_rpreconditioner, p_rsmoother
     type(t_linsolNode), pointer :: p_rsolverNode
+    real(DP) :: domegaA, domegaS
 
     ! Check that there is a section called ssolverName - otherwise we
     ! cannot create anything!
@@ -729,9 +730,12 @@ contains
           
           ! --- SP-SOR ---
           case (201)
-            call linsol_initSPSOR (p_rsmoother,LINSOL_SPSOR_NAVST2D)
-          case (202)
-            call linsol_initSPSOR (p_rsmoother,LINSOL_SPSOR_NAVST2D_DIAG)
+            call parlst_getvalue_double (p_rparamList, ssmootherSection, &
+                      'domegaA', domegaA, 1.0_DP)
+            call parlst_getvalue_double (p_rparamList, ssmootherSection, &
+                      'domegaS', domegaS, 1.0_DP)
+
+            call linsol_initSPSOR (p_rsmoother,LINSOL_SPSOR_NAVST2D,domegaA,domegaS)
 
           case default
           

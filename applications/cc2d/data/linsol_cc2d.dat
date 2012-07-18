@@ -54,8 +54,7 @@ ssolverSection = 'CC-MULTIGRIDSOLVER'
 # = 102: full Vanka (a new implementation of 5)
 #
 # The following smoothers are experimental. Use them at your own risk.
-# = 201: SP-SOR, full version
-# = 202: SP-SOR, diagonal version
+# = 201: SP-SOR
 
 ismootherType = 3
 
@@ -69,6 +68,8 @@ ssmootherSection = 'CC-SMOOTHER'
 # =2: BiCGStab with diagonal VANKA preconditioning
 # =3: BiCGStab with full VANKA preconditioning
 # =4: BiCGStab with general VANKA preconditioning
+# =5: unpreconditioned CG
+# =6: unpreconditioned BiCGStab
 
 icoarseGridSolverType = 2
 
@@ -208,6 +209,10 @@ nsmoothingSteps    = 4
 # Relaxation parameter
 
 domega             = 1.0
+
+# Relaxation parameters for SP-SOR smoother
+domegaA            = 0.5
+domegaS            = 0.5
 
 # Output level of the solver
 # = 2:extended output

@@ -1050,8 +1050,8 @@ module linearsolver
   ! SP-SOR solver for 2D Navier-Stokes systems
   integer, parameter, public :: LINSOL_SPSOR_NAVST2D        = 1
 
-  ! 'diagonal' SP-SOR solver for 2D Navier-Stokes systems
-  integer, parameter, public :: LINSOL_SPSOR_NAVST2D_DIAG   = 2
+  ! SP-SOR solver for 3D Navier-Stokes systems
+  integer, parameter, public :: LINSOL_SPSOR_NAVST3D        = 2
 
 !</constantblock>
 
@@ -6534,11 +6534,11 @@ contains
       call spsor_initNavSt2D(rsolverNode%p_rsubnodeSPSOR%rdata, &
                              rsolverNode%rsystemMatrix, 0_I32)
 
-    case (LINSOL_SPSOR_NAVST2D_DIAG)
-      ! diagonal SP-SOR for 2D Navier-Stokes systems
-      call spsor_initNavSt2D(rsolverNode%p_rsubnodeSPSOR%rdata, &
-                             rsolverNode%rsystemMatrix, SPSOR_FLAG_DIAG)
-    
+    case (LINSOL_SPSOR_NAVST3D)
+      ! SP-SOR for 3D Navier-Stokes systems
+      call spsor_initNavSt3D(rsolverNode%p_rsubnodeSPSOR%rdata, &
+                             rsolverNode%rsystemMatrix, 0_I32)
+
     case default
       call output_line ('Invalid SP-SOR subtype!', &
                         OU_CLASS_ERROR, OU_MODE_STD, 'linsol_initStructureSPSOR')
@@ -13580,7 +13580,7 @@ contains
         ! variant, as this would result in a fatal error...
         select case(rsolverNode%p_rsubNodeSPSOR%csubtype)
         case (LINSOL_SPSOR_NAVST2D, &
-              LINSOL_SPSOR_NAVST2D_DIAG)
+              LINSOL_SPSOR_NAVST3D)
               
            ! Okay, let the SP-SOR solver perform nmaxIterations
            call spsor_solve (rsolverNode%p_rsubnodeSPSOR%rdata, rx, rb, &
