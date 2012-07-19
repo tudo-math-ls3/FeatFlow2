@@ -143,6 +143,9 @@ module statistics
 
   private
 
+  ! Check for high-resolution clock
+#define HAS_HIGH_RES_CLOCK defined(_WIN32) || defined(__unix__)
+
 !<constants>
 
   !<constantblock description="Timer types">
@@ -187,7 +190,7 @@ module statistics
     ! parallel code
     real(DP) :: dstartCPU = 0.0_DP
 
-#ifdef _WIN32
+#ifdef HAS_HIGH_RES_CLOCK
 
     ! Start time of windows high-resolution clock
     integer(I64) :: istartHRC = 0_I64
@@ -314,7 +317,7 @@ contains
 
     rtimer%delapsedCPU    = 0.0_DP
     rtimer%delapsedReal   = 0.0_DP
-#ifdef _WIN32
+#ifdef HAS_HIGH_RES_CLOCK
     rtimer%istartHRC      = 0_I64
 #else
     rtimer%istartCount    = 0
@@ -367,7 +370,7 @@ contains
     ! Start the short-term time measurement?
     if (iand(rtimer%ctype,STAT_TIMERSHORT) .ne. 0) then
 
-#ifdef _WIN32
+#ifdef HAS_HIGH_RES_CLOCK
       call hrc_stamp(rtimer%istartHRC)
 #else
       call system_clock(icount, irate, icmax)
@@ -437,7 +440,7 @@ contains
     ! Is that a short-term timer?
     if (iand(rtimer%ctype,STAT_TIMERSHORT) .ne. 0) then
 
-#ifdef _WIN32
+#ifdef HAS_HIGH_RES_CLOCK
       ! stamp the HRC
       call hrc_stamp(itimeHRC)
 
@@ -508,7 +511,7 @@ contains
 
     ! Switch off the timer.
     rtimer%dstartCPU = 0.0_DP
-#ifdef _WIN32
+#ifdef HAS_HIGH_RES_CLOCK
     rtimer%istartHRC = 0_I64
 #else
     rtimer%dstartReal = 0.0_DP
@@ -560,7 +563,7 @@ contains
     ! Is that a short-term timer?
     if (iand(rtimer%ctype,STAT_TIMERSHORT) .ne. 0) then
 
-#ifdef _WIN32
+#ifdef HAS_HIGH_RES_CLOCK
       ! stamp the HRC
       call hrc_stamp(itimeHRC)
 
@@ -678,7 +681,7 @@ contains
     rtimer2%delapsedCPU  = rtimer1%delapsedCPU  + rtimer2%delapsedCPU
     rtimer2%delapsedReal = rtimer1%delapsedReal + rtimer2%delapsedReal
     rtimer2%dstartCPU    = 0.0_DP
-#ifdef _WIN32
+#ifdef HAS_HIGH_RES_CLOCK
     rtimer2%istartHRC    = 0_I64
 #else
     rtimer2%dstartReal   = 0.0_DP
@@ -713,7 +716,7 @@ contains
     rtimer2%delapsedCPU  = rtimer2%delapsedCPU  - rtimer1%delapsedCPU
     rtimer2%delapsedReal = rtimer2%delapsedReal - rtimer1%delapsedReal
     rtimer2%dstartCPU    = 0.0_DP
-#ifdef _WIN32
+#ifdef HAS_HIGH_RES_CLOCK
     rtimer2%istartHRC    = 0_I64
 #else
     rtimer2%dstartReal   = 0.0_DP
@@ -748,7 +751,7 @@ contains
     rtimerResult%delapsedCPU  = rtimer%delapsedCPU
     rtimerResult%delapsedReal = rtimer%delapsedReal
     rtimerResult%dstartCPU    = rtimer%dstartCPU
-#ifdef _WIN32
+#ifdef HAS_HIGH_RES_CLOCK
     rtimerResult%istartHRC    = rtimer%istartHRC
 #else
     rtimerResult%dstartReal   = rtimer%dstartReal
