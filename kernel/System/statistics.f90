@@ -143,8 +143,10 @@ module statistics
 
   private
 
-  ! Check for high-resolution clock
-#define HAS_HIGH_RES_CLOCK defined(_WIN32) || defined(__unix__)
+  ! Check for high-resolution clock; supported on Windows and Unix
+#if defined(_WIN32) || defined(__unix__)
+#define HAS_HIGH_RES_CLOCK 1
+#endif
 
 !<constants>
 
@@ -269,6 +271,7 @@ contains
 ! ***************************************************************************
 
 !<function>
+
   elemental function stat_calender_to_julian(year, month, day) result(ivalue)
 
 !<description>
@@ -306,13 +309,17 @@ contains
 ! ***************************************************************************
 
 !<subroutine>
+
   subroutine stat_clearTimer(rtimer)
+  
 !<description>
   ! Clears the given timer object and sets its status to "not running".
 !</description>
+
 !<input>
     type (t_timer), intent(inout) :: rtimer
 !</input>
+
 !</subroutine>
 
     rtimer%delapsedCPU    = 0.0_DP
@@ -381,7 +388,6 @@ contains
       call cpu_time(dtime)
       rtimer%dstartCPU = real(dtime, DP)
 
-
     end if
 
     ! Start the long-term time-measurement?
@@ -427,7 +433,8 @@ contains
     integer :: icount, irate, icmax, icpudate,icputime
     real(DP) :: dcurrentCpu, dcurrentReal, dtmp, delapsed
     real(SP) :: dtime
-    integer, dimension(8) :: itimeLong, itimeHRC
+    integer, dimension(8) :: itimeLong
+    integer(I64) :: itimeHRC
 
     if (rtimer%ctype .eq. STAT_TIMERNOTRUNNING) then
       call output_line ('Timer not running!', &
@@ -550,7 +557,8 @@ contains
 
     integer :: icount, irate, icmax, icpudate,icputime
     real(DP) :: dcurrentReal, dtmp
-    integer, dimension(8) :: itimeLong, itimeHRC
+    integer, dimension(8) :: itimeLong
+    integer(I64) :: itimeHRC
 
     if (rtimer%ctype .eq. STAT_TIMERNOTRUNNING) then
       call output_line ('Timer not running!', &
