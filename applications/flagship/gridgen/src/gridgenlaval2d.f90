@@ -58,7 +58,6 @@ program gridgenlaval2d
   real(DP) :: dwidth3  = 14.0_DP
   real(DP) :: dx1      =  0.0_DP
   real(DP) :: dy1      = 13.0_DP
-  integer :: nsegments = 10
 
   ! Total number of fixed points
   integer, parameter :: ncoords = 22
@@ -97,6 +96,22 @@ program gridgenlaval2d
     case('-h','-H','--help')
       write(*,'(A)') 'Usage: gridgenlaval2d [OPTION]'
       write(*,'(A)') 'Generate grid for laval nozzle in TRI/PRM format.'
+      write(*,*)
+      write(*,'(A)') "      w1"
+      write(*,'(A)') "    +----+"
+      write(*,'(A)') "    |    |h1"
+      write(*,'(A)') "    |    | w2"
+      write(*,'(A)') "    |    +----+                                           w3"
+      write(*,'(A)') "    |         |h2                                   +------------+"
+      write(*,'(A)') "    |         |                                     |            |"
+      write(*,'(A)') "    +         + - - -+ (x1,y1)                      |            |"
+      write(*,'(A)') "    :         +  ang1                               |            |"
+      write(*,'(A)') "    * h0       +     | r1            ---------------+            |h3"
+      write(*,'(A)') "    : r0        +          ----------                            |"
+      write(*,'(A)') "    +            + - +----- ang2 - - - - - - - - - -+            |"
+      write(*,'(A)') "    |                                                            |"
+      write(*,'(A)') "    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - +"
+      write(*,'(A)') "    |<------------------- length ------------------>|"
       write(*,*)
       write(*,'(A,T30,A)') '-h,  -H,  --help','this help screen'
       write(*,'(A,T30,A)') '-a1, --angle1' ,'angle of the circle segment'
@@ -161,10 +176,6 @@ program gridgenlaval2d
     case('-r1','--radius1')
       call get_command_argument(i+1, cbuffer)
       read(cbuffer,*) dradius1
-
-    case('-s','--segment')
-      call get_command_argument(i+1, cbuffer)
-      read(cbuffer,*) nsegments
 
     case('-x1')
       call get_command_argument(i+1, cbuffer)
