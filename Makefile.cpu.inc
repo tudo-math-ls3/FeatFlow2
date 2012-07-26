@@ -2645,6 +2645,11 @@ ifeq ($(call match,$(ID),.*-.*-.*-.*-mkl.*),yes)
 include $(TEMPLATESDIR)/mkl-generic.mk
 endif
 
+ifeq ($(call match,$(ID),.*-.*-.*-.*-openblas.*),yes)
+# Use Open BLAS
+include $(TEMPLATESDIR)/openblas-generic.mk
+endif
+
 ifeq ($(call match,$(ID),.*-.*-.*-.*-perf.*),yes)
 # Use Perflib BLAS
 include $(TEMPLATESDIR)/sunperf-generic.mk
