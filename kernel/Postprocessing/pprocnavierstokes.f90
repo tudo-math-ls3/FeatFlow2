@@ -3467,16 +3467,17 @@ contains
     ! Initialise the collection for the calculation
     rcollection%p_rvectorQuickAccess1 => rvector
 
+    ! Normal vector
+    dnorm = sqrt((Dend(1)-Dstart(1))**2 + (Dend(2)-Dstart(2))**2)
+    if (dnorm .eq. 0.0_DP) then
+      ! No line, no flux...
+      dflux = 0
+      return
+    end if
+    rcollection%DquickAccess(1) = -(Dend(2)-Dstart(2)) / dnorm
+    rcollection%DquickAccess(2) = (Dend(1)-Dstart(1)) / dnorm
+
     if (.not. present(nlevels)) then
-      ! Normal vector
-      dnorm = sqrt((Dend(1)-Dstart(1))**2 + (Dend(2)-Dstart(2))**2)
-      if (dnorm .eq. 0.0_DP) then
-        ! No line, no flux...
-        dflux = 0
-        return
-      end if
-      rcollection%DquickAccess(1) = -(Dend(2)-Dstart(2)) / dnorm
-      rcollection%DquickAccess(2) = (Dend(1)-Dstart(1)) / dnorm
 
       ! To compute the level of refinement of the cubature rule, we make a guess.
       Dbox(1:2) = rvector%p_rblockDiscr%p_rtriangulation%DboundingBoxMax(1:2) &
