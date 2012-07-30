@@ -1179,8 +1179,16 @@ module linearsolver
     real(DP)                        :: dasymptoticConvergenceRate = 0.0_DP
 
     ! OUTPUT PARAMETER:
-    ! Total time for solver
+    ! Total time for solution/preconditioning process
     real(DP)                        :: dtimeTotal = 0.0_DP
+    
+    ! OUTPUT PARAMETER:
+    ! Total time for structure initialisation
+    real(DP)                        :: dtimeInitStruct = 0.0_DP
+    
+    ! OUTPUT PARAMETER:
+    ! Total time for data initialisation
+    real(DP)                        :: dtimeInitData = 0.0_DP
 
     ! OUTPUT PARAMETER FOR SOLVERS THAT SUPPORT FILTERING:
     ! Total time for filtering (not yet implemented)
@@ -2027,6 +2035,45 @@ module linearsolver
     type(t_interlevelProjectionBlock), pointer   :: p_rprojection => null()
     
     ! <!-- ----------------------------------------------------------------------
+    ! OUTPUT VARIABLES.
+    ! These variables are updated by the multigrid solver to collect statistics
+    ! about the solution process.
+    ! ---------------------------------------------------------------------- -->
+    
+    ! OUTPUT PARAMETER: Total time for defect calculation on this level.
+    real(DP) :: dtimeDefect = 0.0_DP
+    
+    ! OUTPUT PARAMETER: Total time for pre-smoothing on this level.
+    ! Only used if this level is not the coarse grid level.
+    real(DP) :: dtimePreSmooth = 0.0_DP
+    
+    ! OUTPUT PARAMETER: Total time for post-smoothing on this level.
+    ! Only used if this level is not the coarse grid level.
+    real(DP) :: dtimePostSmooth = 0.0_DP
+    
+    ! OUTPUT PARAMETER: Total time for coarse grid solver on this level.
+    ! Only used if this level is the coarse grid level.
+    real(DP) :: dtimeCoarseSolve = 0.0_DP
+    
+    ! OUTPUT PARAMETER: Total time for prolongation onto this level.
+    ! Only used if this level is not the coarse grid level.
+    real(DP) :: dtimeProlongation = 0.0_DP
+    
+    ! OUTPUT PARAMETER: Total time for restriction from this level.
+    ! Only used if this level is not the coarse grid level.
+    real(DP) :: dtimeRestriction = 0.0_DP
+    
+    ! OUTPUT PARAMETER: Total time for optimal step length control on this level.
+    ! Only used if this level is not the coarse grid level.
+    real(DP) :: dtimeStepCtrl = 0.0_DP
+    
+    ! OUTPUT PARAMETER: Total time for resorting on this level.
+    real(DP) :: dtimeResorting = 0.0_DP
+    
+    ! OUTPUT PARAMETER: Total time for filtering on this level.
+    real(DP) :: dtimeFiltering = 0.0_DP
+    
+    ! <!-- ----------------------------------------------------------------------
     ! INTERNAL VARIABLES.
     ! These variables are internally maintained by the MG solver and do not have
     ! to be modified in any sense.
@@ -2131,6 +2178,33 @@ module linearsolver
     ! minimum and maximum step length ALPHAMIN/ALPHAMAX.
     ! The standard setting/initialisation is suitable for conforming elements.
     type(t_coarseGridCorrection)  :: rcoarseGridCorrection
+    
+    ! OUTPUT PARAMETER: Total time for defect calculation
+    real(DP) :: dtimeDefect = 0.0_DP
+    
+    ! OUTPUT PARAMETER: Total time for pre-smoothing
+    real(DP) :: dtimePreSmooth = 0.0_DP
+    
+    ! OUTPUT PARAMETER: Total time for post-smoothing
+    real(DP) :: dtimePostSmooth = 0.0_DP
+    
+    ! OUTPUT PARAMETER: Total time for coarse grid solver
+    real(DP) :: dtimeCoarseSolve = 0.0_DP
+    
+    ! OUTPUT PARAMETER: Total time for prolongation
+    real(DP) :: dtimeProlongation = 0.0_DP
+    
+    ! OUTPUT PARAMETER: Total time for restriction
+    real(DP) :: dtimeRestriction = 0.0_DP
+    
+    ! OUTPUT PARAMETER: Total time for optimal stepping length control.
+    real(DP) :: dtimeStepCtrl = 0.0_DP
+    
+    ! OUTPUT PARAMETER: Total time for resorting
+    real(DP) :: dtimeResorting = 0.0_DP
+    
+    ! OUTPUT PARAMETER: Total time for filtering
+    real(DP) :: dtimeFiltering = 0.0_DP
     
     ! Number of levels level in MG.
     integer :: nlevels = 1
@@ -2729,6 +2803,9 @@ contains
 
   ! local variables
   integer :: isubgroup
+
+  ! a timer
+  type(t_timer) :: rtimer
     
     ! A-priori we have no error...
     ierror = LINSOL_ERR_NOERROR
@@ -2736,6 +2813,10 @@ contains
     ! by default, initialise solver subroup 0
     isubgroup = 0
     if (present(isolversubgroup)) isubgroup = isolverSubgroup
+
+    ! clear and start timer
+    call stat_clearTimer(rtimer)
+    call stat_startTimer(rtimer)
 
     ! Call the structure-init routine of the specific solver
     select case(rsolverNode%calgorithm)
@@ -2770,7 +2851,11 @@ contains
     case (LINSOL_ALG_BLOCKUPWGS)
       call linsol_initStructureBlockUpwGS (rsolverNode,ierror,isubgroup)
     end select
-  
+
+    ! stop timer and update solver time
+    call stat_stopTimer(rtimer)
+    rsolverNode%dtimeInitStruct = rsolverNode%dtimeInitStruct + rtimer%delapsedReal
+
   end subroutine
   
   ! ***************************************************************************
@@ -2816,13 +2901,19 @@ contains
 
   ! local variables
   integer :: isubgroup
-    
+  ! a timer
+  type(t_timer) :: rtimer
+
     ! A-priori we have no error...
     ierror = LINSOL_ERR_NOERROR
 
     ! by default, initialise solver subroup 0
     isubgroup = 0
     if (present(isolversubgroup)) isubgroup = isolverSubgroup
+
+    ! clear and start timer
+    call stat_clearTimer(rtimer)
+    call stat_startTimer(rtimer)
 
     ! Call the data-init routine of the specific solver
     select case(rsolverNode%calgorithm)
@@ -2857,7 +2948,11 @@ contains
     case (LINSOL_ALG_BLOCKUPWGS)
       call linsol_initDataBlockUpwGS (rsolverNode,ierror,isubgroup)
     end select
-  
+
+    ! stop timer and update solver time
+    call stat_stopTimer(rtimer)
+    rsolverNode%dtimeInitData = rsolverNode%dtimeInitData + rtimer%delapsedReal
+
   end subroutine
   
   ! ***************************************************************************
@@ -14527,7 +14622,7 @@ contains
 !<function>
   
   integer function linsol_getMultigrid2LevelCount (rsolverNode)
-                    
+
 !<description>
   ! Returns the number of levels currently attached to the multigrid solver.
 !</description>
@@ -14552,7 +14647,7 @@ contains
 !<subroutine>
   
   subroutine linsol_getMultigrid2Level (rsolverNode,ilevel,p_rlevelInfo)
-                    
+
 !<description>
   ! Searches inside of the multigrid structure for level ilevel and returns
   ! a pointer to the corresponding p_rlevelInfo structure-
@@ -14596,7 +14691,7 @@ contains
 !<subroutine>
   
   subroutine linsol_doneMultigrid2Level (rlevelInfo)
-                    
+
 !<description>
   ! Cleans up the multigrid level structure rlevelInfo. All memory allocated
   ! in this structure is released.
@@ -14649,7 +14744,7 @@ contains
 !<subroutine>
   
   subroutine linsol_cleanMultigrid2Levels (rsolverNode)
-                    
+
 !<description>
   ! This routine removes all level information from the MG solver and releases
   ! all attached solver nodes on all levels (smoothers, coarse grid solvers,
@@ -15830,6 +15925,7 @@ contains
   real(DP) :: dres,dstep
   logical :: bfilter,bsort
   type(t_filterChain), dimension(:), pointer :: p_RfilterChain
+  type(t_timer) :: rtimer
   
   ! The queue saves the current residual and the two previous residuals.
   real(DP), dimension(LINSOL_NRESQUEUELENGTH) :: Dresqueue
@@ -15878,7 +15974,7 @@ contains
     end if
 
     ! Maximum level
-    nlmax = rsolverNode%p_rsubnodeMultigrid2%nlevels
+    nlmax = p_rsubnode%nlevels
 
     ! Length of the queue of last residuals for the computation of
     ! the asymptotic convergence rate
@@ -15904,7 +16000,7 @@ contains
     nblocks = rd%nblocks
     
     ! We start on the maximum level.
-    p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(nlmax)
+    p_rcurrentLevel => p_rsubnode%p_RlevelInfo(nlmax)
     
     ! Is there only one level? Can be seen if the current level
     ! already contains a coarse grid solver.
@@ -15914,7 +16010,20 @@ contains
         call output_line ('Multigrid: Only one level. '//&
              'Switching back to standard solver.')
       end if
+
+      ! clear and start timer
+      call stat_clearTimer(rtimer)
+      call stat_startTimer(rtimer)
+      
+      ! call the coarse grid solver
       call linsol_precondDefect(p_rcurrentLevel%p_rcoarseGridSolver,rd)
+      
+      ! stop timer and update coarse grid solver time
+      call stat_stopTimer(rtimer)
+      p_rsubnode%dtimeCoarseSolve = &
+        p_rsubnode%dtimeCoarseSolve + rtimer%delapsedReal
+      p_rcurrentLevel%dtimeCoarseSolve = &
+        p_rcurrentLevel%dtimeCoarseSolve + rtimer%delapsedReal
       
       ! Take the statistics from the coarse grid solver.
       rsolverNode%dinitialDefect = p_rcurrentLevel%p_rcoarseGridSolver%dinitialDefect
@@ -15983,7 +16092,7 @@ contains
         
         ! At first, reset the cycle counters of all levels
         do i=1,nlmax-1
-          p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(i)
+          p_rcurrentLevel => p_rsubnode%p_RlevelInfo(i)
           if (p_rsubnode%icycle .eq. 0) then
             p_rcurrentLevel%ncycles = 2
           else
@@ -15995,9 +16104,9 @@ contains
         ilev = nlmax
 
         ! Get current and next lower level.
-        p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilev)
-        p_rlowerLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilev-1)
-               
+        p_rcurrentLevel => p_rsubnode%p_RlevelInfo(ilev)
+        p_rlowerLevel => p_rsubnode%p_RlevelInfo(ilev-1)
+
         ! On the current (max.) level we set ncycles to 1.
         p_rcurrentLevel%ncycles = 1
         
@@ -16029,12 +16138,16 @@ contains
           
           ! Initialise cycle counters for all levels.
           do i=1,nlmax
-            p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(i)
+            p_rcurrentLevel => p_rsubnode%p_RlevelInfo(i)
             p_rcurrentLevel%ncyclesRemaining = p_rcurrentLevel%ncycles
           end do
         
           ! p_rcurrentLevel now points to the maximum level again!
-          !
+
+          ! clear and start timer
+          call stat_clearTimer(rtimer)
+          call stat_startTimer(rtimer)
+          
           ! Build the defect...
           call lsysbl_copyVector (p_rcurrentLevel%rrhsVector,p_rcurrentLevel%rtempVector)
           if (ite .ne. 1) then   ! initial solution vector is zero!
@@ -16043,12 +16156,33 @@ contains
                  p_rcurrentLevel%rsolutionVector,&
                  p_rcurrentLevel%rtempVector, -1.0_DP,1.0_DP)
           end if
+          
+          ! stop timer and update defect time
+          call stat_stopTimer(rtimer)
+          p_rsubnode%dtimeDefect = &
+            p_rsubnode%dtimeDefect + rtimer%delapsedReal
+          p_rcurrentLevel%dtimeDefect = &
+            p_rcurrentLevel%dtimeDefect + rtimer%delapsedReal
+
           if (bfilter) then
+            ! clear and start timer
+            call stat_clearTimer(rtimer)
+            call stat_startTimer(rtimer)
+          
             ! Apply the filter chain to the vector
             call filter_applyFilterChainVec (p_rcurrentLevel%rtempVector, &
                                              p_RfilterChain)
+            
+            ! stop timer and update filtering time
+            call stat_stopTimer(rtimer)
+            p_rsubnode%dtimeFiltering = &
+              p_rsubnode%dtimeFiltering + rtimer%delapsedReal
+            p_rcurrentLevel%dtimeFiltering = &
+              p_rcurrentLevel%dtimeFiltering + rtimer%delapsedReal
+
           end if
-          
+
+
           cycleloop: do  ! Loop for the cycles
           
             ! On the maximum level we already built out defect vector. If we are
@@ -16060,13 +16194,30 @@ contains
             
               ! Perform the pre-smoothing with the current solution vector
               if (associated(p_rcurrentLevel%p_rpreSmoother)) then
+              
+                ! clear and start timer
+                call stat_clearTimer(rtimer)
+                call stat_startTimer(rtimer)
+
                 call linsol_smoothCorrection (p_rcurrentLevel%p_rpreSmoother,&
                           p_rcurrentLevel%rsystemMatrix,&
                           p_rcurrentLevel%rsolutionVector,&
                           p_rcurrentLevel%rrhsVector,&
                           p_rcurrentLevel%rtempVector,p_RfilterChain)
+                
+                ! stop timer and update pre-smoother time
+                call stat_stopTimer(rtimer)
+                p_rsubnode%dtimePreSmooth = &
+                  p_rsubnode%dtimePreSmooth + rtimer%delapsedReal
+                p_rcurrentLevel%dtimePreSmooth = &
+                  p_rcurrentLevel%dtimePreSmooth + rtimer%delapsedReal
+
               end if
-            
+
+              ! clear and start timer
+              call stat_clearTimer(rtimer)
+              call stat_startTimer(rtimer)
+
               ! Build the defect vector
               call lsysbl_copyVector (p_rcurrentLevel%rrhsVector,&
                                       p_rcurrentLevel%rtempVector)
@@ -16074,11 +16225,31 @@ contains
                   p_rcurrentLevel%rsystemMatrix, &
                   p_rcurrentLevel%rsolutionVector,&
                   p_rcurrentLevel%rtempVector, -1.0_DP,1.0_DP)
+              
+              ! stop timer and update defect time
+              call stat_stopTimer(rtimer)
+              p_rsubnode%dtimeDefect = &
+                p_rsubnode%dtimeDefect + rtimer%delapsedReal
+              p_rcurrentLevel%dtimeDefect = &
+                p_rcurrentLevel%dtimeDefect + rtimer%delapsedReal
+
               if (bfilter) then
+                ! clear and start timer
+                call stat_clearTimer(rtimer)
+                call stat_startTimer(rtimer)
+              
                 ! Apply the filter chain to the vector
                 call filter_applyFilterChainVec (p_rcurrentLevel%rtempVector, &
                                                 p_RfilterChain)
+                
+                ! stop timer and update filtering time
+                call stat_stopTimer(rtimer)
+                p_rsubnode%dtimeFiltering = &
+                  p_rsubnode%dtimeFiltering + rtimer%delapsedReal
+                p_rcurrentLevel%dtimeFiltering = &
+                  p_rcurrentLevel%dtimeFiltering + rtimer%delapsedReal
               end if
+              
               
               ! Extended output
               if (associated(p_rcurrentLevel%p_rpreSmoother) .and. &
@@ -16104,8 +16275,19 @@ contains
               ! We can use the 'global' temporary array p_rprjTempVector
               ! as temporary memory during the resorting process.
               if (bsort) then
+                ! clear and start timer
+                call stat_clearTimer(rtimer)
+                call stat_startTimer(rtimer)
+
                 call lsysbl_sortVectorInSitu (p_rcurrentLevel%rtempVector,&
                       p_rsubnode%rprjTempVector,.false.)
+                
+                ! stop timer and update sorting time
+                call stat_stopTimer(rtimer)
+                p_rsubnode%dtimeResorting = &
+                  p_rsubnode%dtimeResorting + rtimer%delapsedReal
+                p_rcurrentLevel%dtimeResorting = &
+                  p_rcurrentLevel%dtimeResorting + rtimer%delapsedReal
               end if
               
               ! When restricting to the coarse grid, we directy restrict into
@@ -16117,24 +16299,51 @@ contains
               ! the smoothing process there.
               if (ilev .gt. 2) then
               
+                ! clear and start timer
+                call stat_clearTimer(rtimer)
+                call stat_startTimer(rtimer)
+
                 ! We do not project to the coarse grid
                 call mlprj_performRestriction (p_rcurrentLevel%p_rprojection,&
                       p_rlowerLevel%rrhsVector, &
                       p_rcurrentLevel%rtempVector, &
                       p_rsubnode%rprjTempVector)
+                
+                ! stop timer and update restriction time
+                call stat_stopTimer(rtimer)
+                p_rsubnode%dtimeRestriction = &
+                  p_rsubnode%dtimeRestriction + rtimer%delapsedReal
+                p_rcurrentLevel%dtimeRestriction = &
+                  p_rcurrentLevel%dtimeRestriction + rtimer%delapsedReal
 
                 ! Apply the filter chain (e.g. to implement boundary conditions)
                 ! on just calculated right hand side
                 ! (which is a defect vector against the 0-vector).
                 if (bfilter) then
+                  ! clear and start timer
+                  call stat_clearTimer(rtimer)
+                  call stat_startTimer(rtimer)
+                
                   ! Apply the filter chain to the vector.
                   ! We are in 'unsorted' state; applying the filter here is
                   ! supposed to be a bit faster...
                   call filter_applyFilterChainVec (p_rlowerLevel%rrhsVector, &
                                                    p_RfilterChain)
+                  
+                  ! stop timer and update filtering time
+                  call stat_stopTimer(rtimer)
+                  p_rsubnode%dtimeFiltering = &
+                    p_rsubnode%dtimeFiltering + rtimer%delapsedReal
+                  p_rlowerLevel%dtimeFiltering = &
+                    p_rlowerLevel%dtimeFiltering + rtimer%delapsedReal
                 end if
 
+
                 if (bsort) then
+                  ! clear and start timer
+                  call stat_clearTimer(rtimer)
+                  call stat_startTimer(rtimer)
+                  
                   ! Resort the RHS on the lower level.
                   call lsysbl_sortVectorInSitu (p_rlowerLevel%rrhsVector,&
                         p_rsubnode%rprjTempVector,.true.)
@@ -16148,13 +16357,20 @@ contains
                   p_rlowerLevel%rsolutionVector%RvectorBlock(1:nblocks)% &
                     isortStrategy = abs(p_rlowerLevel%rsolutionVector% &
                     RvectorBlock(1:nblocks)%isortStrategy)
+                  
+                  ! stop timer and update sorting time
+                  call stat_stopTimer(rtimer)
+                  p_rsubnode%dtimeResorting = &
+                    p_rsubnode%dtimeResorting + rtimer%delapsedReal
+                  p_rlowerLevel%dtimeResorting = &
+                    p_rlowerLevel%dtimeResorting + rtimer%delapsedReal
                 end if
 
                 ! Choose zero as initial vector on lower level.
                 call lsysbl_clearVector (p_rlowerLevel%rsolutionVector)
                 
                 ! Extended output and/or adaptive cycles
-                if ((rsolverNode%p_rsubnodeMultigrid2%depsRelCycle .ne. 1E99_DP) .or.&
+                if ((p_rsubnode%depsRelCycle .ne. 1E99_DP) .or.&
                     (rsolverNode%ioutputLevel .ge. 3)) then
                 
                   dres = lsysbl_vectorNorm (p_rlowerLevel%rrhsVector,&
@@ -16165,7 +16381,7 @@ contains
                   ! In case adaptive cycles are activated, save the 'initial' residual
                   ! of that level into the level structure. Then we can later check
                   ! if we have to repeat the cycle on the coarse mesh.
-                  if (rsolverNode%p_rsubnodeMultigrid2%depsRelCycle .ne. 1E99_DP) then
+                  if (p_rsubnode%depsRelCycle .ne. 1E99_DP) then
                     p_rlowerLevel%dinitResCycle = dres
                     p_rlowerLevel%icycleCount = 1
                   end if
@@ -16180,30 +16396,64 @@ contains
                 end if
 
               else
-              
+                ! clear and start timer
+                call stat_clearTimer(rtimer)
+                call stat_startTimer(rtimer)
+
                 ! The vector is to be restricted to the coarse grid.
                 call mlprj_performRestriction (p_rcurrentLevel%p_rprojection,&
                       p_rlowerLevel%rsolutionVector, &
                       p_rcurrentLevel%rtempVector, &
                       p_rsubnode%rprjTempVector)
+                
+                ! stop timer and update restriction time
+                call stat_stopTimer(rtimer)
+                p_rsubnode%dtimeRestriction = &
+                  p_rsubnode%dtimeRestriction + rtimer%delapsedReal
+                p_rcurrentLevel%dtimeRestriction = &
+                  p_rcurrentLevel%dtimeRestriction + rtimer%delapsedReal
 
                 ! Apply the filter chain (e.g. to implement boundary conditions)
                 ! on just calculated right hand side
                 ! (which is a defect vector against the 0-vector).
                 if (bfilter) then
+                  ! clear and start timer
+                  call stat_clearTimer(rtimer)
+                  call stat_startTimer(rtimer)
+                
                   ! Apply the filter chain to the vector.
                   ! We are in 'unsorted' state; applying the filter here is
                   ! supposed to be a bit faster...
                   call filter_applyFilterChainVec (p_rlowerLevel%rsolutionVector, &
                                                    p_RfilterChain)
+                  
+                  ! stop timer and update filtering time
+                  call stat_stopTimer(rtimer)
+                  p_rsubnode%dtimeFiltering = &
+                    p_rsubnode%dtimeFiltering + rtimer%delapsedReal
+                  p_rlowerLevel%dtimeFiltering = &
+                    p_rlowerLevel%dtimeFiltering + rtimer%delapsedReal
                 end if
+                
 
                 if (bsort) then
+                  ! clear and start timer
+                  call stat_clearTimer(rtimer)
+                  call stat_startTimer(rtimer)
+
                   ! Resort the RHS on the lower level.
                   call lsysbl_sortVectorInSitu (p_rlowerLevel%rsolutionVector,&
                         p_rsubnode%rprjTempVector,.true.)
 
                   ! Temp-vector and RHS can be ignored on the coarse grid.
+                  
+                  ! stop timer and update sorting time
+                  call stat_stopTimer(rtimer)
+                  p_rsubnode%dtimeResorting = &
+                    p_rsubnode%dtimeResorting + rtimer%delapsedReal
+                  p_rlowerLevel%dtimeResorting = &
+                    p_rlowerLevel%dtimeResorting + rtimer%delapsedReal
+
                 end if
 
                 ! Extended output
@@ -16223,10 +16473,10 @@ contains
             
               ! Go down one level
               ilev = ilev - 1
-              p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilev)
+              p_rcurrentLevel => p_rsubnode%p_RlevelInfo(ilev)
               
               if (ilev .ne. 1) &
-                p_rlowerLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilev-1)
+                p_rlowerLevel => p_rsubnode%p_RlevelInfo(ilev-1)
               
               ! If we are not on the lowest level, repeat the smoothing of
               ! the solution/restriction of the new defect in the next loop
@@ -16238,24 +16488,46 @@ contains
             ! on the just calculated right hand side,
             ! which is currently located in rsolutionVector.
             if (bfilter) then
+              ! clear and start timer
+              call stat_clearTimer(rtimer)
+              call stat_startTimer(rtimer)
+            
               ! Apply the filter chain to the vector
               call filter_applyFilterChainVec (p_rcurrentLevel%rsolutionVector, &
                                                p_RfilterChain)
+              
+              ! stop timer and update filtering time
+              call stat_stopTimer(rtimer)
+              p_rsubnode%dtimeFiltering = &
+                p_rsubnode%dtimeFiltering + rtimer%delapsedReal
+              p_rcurrentLevel%dtimeFiltering = &
+                p_rcurrentLevel%dtimeFiltering + rtimer%delapsedReal
             end if
             
+            ! clear and start timer
+            call stat_clearTimer(rtimer)
+            call stat_startTimer(rtimer)
+
             ! Solve the system on lowest level by preconditioning
             ! of the RHS=defect vector.
             call linsol_precondDefect(p_rcurrentLevel%p_rcoarseGridSolver,&
                                       p_rcurrentLevel%rsolutionVector)
-            
+
+            ! stop timer and update coarse grid solver time
+            call stat_stopTimer(rtimer)
+            p_rsubnode%dtimeCoarseSolve = &
+              p_rsubnode%dtimeCoarseSolve + rtimer%delapsedReal
+            p_rcurrentLevel%dtimeCoarseSolve = &
+              p_rcurrentLevel%dtimeCoarseSolve + rtimer%delapsedReal
+
             ! Now we have the solution vector on the lowest level - we have to go
             ! upwards now... but probably not to NLMAX! That depends on the cycle.
             !
             do while(ilev .lt. nlmax)
             
               ilev = ilev + 1
-              p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilev)
-              p_rlowerLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilev-1)
+              p_rcurrentLevel => p_rsubnode%p_RlevelInfo(ilev)
+              p_rlowerLevel => p_rsubnode%p_RlevelInfo(ilev-1)
               
               ! Prolongate the solution vector from the coarser level
               ! to the temp vector on the finer level.
@@ -16264,6 +16536,10 @@ contains
               ! We can use the 'global' temporary array p_rprjTempVector
               ! as temporary memory during the resorting process.
               if (bsort) then
+                ! clear and start timer
+                call stat_clearTimer(rtimer)
+                call stat_startTimer(rtimer)
+              
                 call lsysbl_sortVectorInSitu (p_rlowerLevel%rsolutionVector,&
                       p_rsubnode%rprjTempVector,.false.)
                 
@@ -16283,25 +16559,71 @@ contains
                     isortStrategy = -abs(p_rlowerLevel%rrhsVector% &
                     RvectorBlock(1:nblocks)%isortStrategy)
                 end if
+                
+                ! stop timer and update sorting time
+                call stat_stopTimer(rtimer)
+                p_rsubnode%dtimeResorting = &
+                  p_rsubnode%dtimeResorting + rtimer%delapsedReal
+                p_rlowerLevel%dtimeResorting = &
+                  p_rlowerLevel%dtimeResorting + rtimer%delapsedReal
               end if
+              
+              ! clear and start timer
+              call stat_clearTimer(rtimer)
+              call stat_startTimer(rtimer)
+              
               call mlprj_performProlongation (p_rcurrentLevel%p_rprojection,&
                     p_rlowerLevel%rsolutionVector, &
                     p_rcurrentLevel%rtempVector, &
                     p_rsubnode%rprjTempVector)
+              
+              ! stop timer and update prolongation time
+              call stat_stopTimer(rtimer)
+              p_rsubnode%dtimeProlongation = &
+                p_rsubnode%dtimeProlongation + rtimer%delapsedReal
+              p_rcurrentLevel%dtimeProlongation = &
+                p_rcurrentLevel%dtimeProlongation + rtimer%delapsedReal
 
               if (bfilter) then
+                ! clear and start timer
+                call stat_clearTimer(rtimer)
+                call stat_startTimer(rtimer)
+                
                 ! Apply the filter chain to the vector.
                 call filter_applyFilterChainVec (p_rcurrentLevel%rtempVector, &
                                                  p_RfilterChain)
+                
+                ! stop timer and update solver time
+                call stat_stopTimer(rtimer)
+                p_rsubnode%dtimeFiltering = &
+                  p_rsubnode%dtimeFiltering + rtimer%delapsedReal
+                p_rcurrentLevel%dtimeFiltering = &
+                  p_rcurrentLevel%dtimeFiltering + rtimer%delapsedReal
               end if
+              
 
               if (bsort) then
+                ! clear and start timer
+                call stat_clearTimer(rtimer)
+                call stat_startTimer(rtimer)
+              
                 ! Resort the temp vector on the current level so that it fits
                 ! to the RHS, solution vector and matrix again
                 call lsysbl_sortVectorInSitu (p_rcurrentLevel%rtempVector,&
                       p_rsubnode%rprjTempVector,.true.)
+                
+                ! stop timer and update sorting time
+                call stat_stopTimer(rtimer)
+                p_rsubnode%dtimeResorting = &
+                  p_rsubnode%dtimeResorting + rtimer%delapsedReal
+                p_rcurrentLevel%dtimeResorting = &
+                  p_rcurrentLevel%dtimeResorting + rtimer%delapsedReal
               end if
               
+              ! clear and start timer
+              call stat_clearTimer(rtimer)
+              call stat_startTimer(rtimer)
+
               ! Step length control. Get the optimal damping parameter for the
               ! defect correction.
               ! Use either the standard system matrix for this purpose or
@@ -16326,7 +16648,14 @@ contains
                                           p_RfilterChain,&
                                           dstep)
               end if
-              
+
+              ! stop timer and update step control time
+              call stat_stopTimer(rtimer)
+              p_rsubnode%dtimeStepCtrl = &
+                p_rsubnode%dtimeStepCtrl + rtimer%delapsedReal
+              p_rcurrentLevel%dtimeStepCtrl = &
+                p_rcurrentLevel%dtimeStepCtrl + rtimer%delapsedReal
+
               ! Perform the coarse grid correction by adding the coarse grid
               ! solution (with the calculated step-length parameter) to
               ! the current solution.
@@ -16356,14 +16685,25 @@ contains
                 call output_line ('Multigrid: Level '//trim(sys_siL(ilev,5))//&
                     ' after c.g.corr.:  !!RES!! = '//trim(sys_sdEL(dres,15)) )
               end if
-                                            
+
               ! Perform the post-smoothing with the current solution vector
               if (associated(p_rcurrentLevel%p_rpostSmoother)) then
+                ! clear and start timer
+                call stat_clearTimer(rtimer)
+                call stat_startTimer(rtimer)
+
                 call linsol_smoothCorrection (p_rcurrentLevel%p_rpostSmoother,&
                           p_rcurrentLevel%rsystemMatrix,&
                           p_rcurrentLevel%rsolutionVector,&
                           p_rcurrentLevel%rrhsVector,&
                           p_rcurrentLevel%rtempVector,p_RfilterChain)
+                
+                ! stop timer and update post-smoother time
+                call stat_stopTimer(rtimer)
+                p_rsubnode%dtimePostSmooth = &
+                  p_rsubnode%dtimePostSmooth + rtimer%delapsedReal
+                p_rcurrentLevel%dtimePostSmooth = &
+                  p_rcurrentLevel%dtimePostSmooth + rtimer%delapsedReal
 
                 ! Extended output
                 if ((rsolverNode%ioutputLevel .ge. 3) .and. &
@@ -16405,7 +16745,7 @@ contains
                   ! Cycle finished. Reset counter for next cycle.
                   p_rcurrentLevel%ncyclesRemaining = p_rcurrentLevel%ncycles
 
-                  if ((rsolverNode%p_rsubnodeMultigrid2%depsRelCycle .ne. 1E99_DP) .and. &
+                  if ((p_rsubnode%depsRelCycle .ne. 1E99_DP) .and. &
                       (ilev .lt. NLMAX)) then
                       
                     ! Adaptive cycles activated.
@@ -16427,12 +16767,12 @@ contains
                     ! Compare it with the initial residuum. If it is not small enough
                     ! and if we have not reached the maximum number of cycles,
                     ! repeat the complete cycle.
-                    if ( ((rsolverNode%p_rsubnodeMultigrid2%nmaxAdaptiveCycles .le. -1) &
+                    if ( ((p_rsubnode%nmaxAdaptiveCycles .le. -1) &
                           .or. &
                           (p_rcurrentLevel%icycleCount .lt. &
-                           rsolverNode%p_rsubnodeMultigrid2%nmaxAdaptiveCycles)) &
+                           p_rsubnode%nmaxAdaptiveCycles)) &
                         .and. &
-                        (dres .gt. rsolverNode%p_rsubnodeMultigrid2%depsRelCycle * &
+                        (dres .gt. p_rsubnode%depsRelCycle * &
                                     p_rcurrentLevel%dinitResCycle) ) then
 
                       if (rsolverNode%ioutputLevel .ge. 3) then
@@ -16473,17 +16813,41 @@ contains
           ! again, we can update our defect vector to test the current
           ! residuum...
           !
+          ! clear and start timer
+          call stat_clearTimer(rtimer)
+          call stat_startTimer(rtimer)
+
           ! Calculate the residuum and its norm.
           call lsysbl_copyVector (p_rcurrentLevel%rrhsVector,p_rcurrentLevel%rtempVector)
           call lsysbl_blockMatVec (&
                 p_rcurrentLevel%rsystemMatrix, &
                 p_rcurrentLevel%rsolutionVector,&
                 p_rcurrentLevel%rtempVector, -1.0_DP,1.0_DP)
+          
+          ! stop timer and update defect calculation time
+          call stat_stopTimer(rtimer)
+          p_rsubnode%dtimeDefect = &
+            p_rsubnode%dtimeDefect + rtimer%delapsedReal
+          p_rcurrentLevel%dtimeDefect = &
+            p_rcurrentLevel%dtimeDefect + rtimer%delapsedReal
+
           if (bfilter) then
+            ! clear and start timer
+            call stat_clearTimer(rtimer)
+            call stat_startTimer(rtimer)
+
             ! Apply the filter chain to the vector
             call filter_applyFilterChainVec (p_rcurrentLevel%rtempVector, &
                                              p_RfilterChain)
+            
+            ! stop timer and update filtering time
+            call stat_stopTimer(rtimer)
+            p_rsubnode%dtimeFiltering = &
+              p_rsubnode%dtimeFiltering + rtimer%delapsedReal
+            p_rcurrentLevel%dtimeFiltering = &
+              p_rcurrentLevel%dtimeFiltering + rtimer%delapsedReal
           end if
+          
           dres = lsysbl_vectorNorm (p_rcurrentLevel%rtempVector,rsolverNode%iresNorm)
           if (.not.((dres .ge. 1E-99_DP) .and. &
                     (dres .le. 1E99_DP))) dres = 0.0_DP
