@@ -155,7 +155,7 @@ EOF
 	fi
     done
 
-    rm -f ${qmgr} ${sedFileSuppressOfflineNodes}
+    rm -f ${qmgr} ${sedFileSuppressOfflineNodes} `echo ${sedFileSuppressOfflineNodes} | sed 's/\.sed$//'`
 }
 
 
