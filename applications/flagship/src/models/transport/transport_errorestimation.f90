@@ -65,6 +65,7 @@ module transport_errorestimation
   public :: transp_errestRecovery
   public :: transp_errestTargetFunc
   public :: transp_errestExact
+  public :: transp_errestDispersion
 
 contains
 
@@ -1026,7 +1027,7 @@ contains
 
 !<description>
     ! This subroutine estimates the error of the discrete solution by
-    ! comparing it to theanalytically given exact solution.
+    ! comparing it to the analytically given exact solution.
 !</description>
 
 !<input>
@@ -1188,6 +1189,73 @@ contains
     end select
    
   end subroutine transp_errestExact
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine transp_errestDispersion(rparlist, ssectionName,&
+      rproblemLevel, rsolution, dtime, derror, rcollection)
+
+!<description>
+    ! This subroutine estimates the dispersion error of the discrete solution.
+!</description>
+
+!<input>
+    ! parameter list
+    type(t_parlist), intent(in) :: rparlist
+
+    ! section name in parameter list and collection structure
+    character(LEN=*), intent(in) :: ssectionName
+
+    ! solution vector
+    type(t_vectorBlock), intent(in) :: rsolution
+
+    ! problem level structure
+    type(t_problemLevel), intent(in) :: rproblemLevel
+
+    ! simulation time
+    real(DP), intent(in) :: dtime
+!</input>
+
+!<inputoutput>
+    ! collection structure
+    type(t_collection), intent(inout), target :: rcollection
+!</inputoutput>
+
+!<output>
+    ! dispersion error
+    real(DP), intent(out) :: derror
+!</output>
+
+    ! Local variables
+    type(t_collection) :: rcollectionTmp
+    real(DP) :: dxhat, dyhat
+
+    ! Initialise temporal collection structure
+    call collct_init(rcollectionTmp)
+        
+    ! Compute integral quantities
+    rcollectionTmp%IquickAccess(1) = 1
+    call pperr_scalar(PPERR_MEANERROR, dxhat, rsolution%RvectorBlock(1),&
+        rcollection=rcollectionTmp, ffunctionWeight=transp_weightFuncGaussian)
+    
+    rcollectionTmp%IquickAccess(1) = 2
+    call pperr_scalar(PPERR_MEANERROR, dyhat, rsolution%RvectorBlock(1),&
+        rcollection=rcollectionTmp, ffunctionWeight=transp_weightFuncGaussian)
+
+    rcollectionTmp%IquickAccess(1) = 3
+    rcollectionTmp%DquickAccess(1) = dxhat
+    rcollectionTmp%DquickAccess(2) = dyhat
+    call pperr_scalar(PPERR_MEANERROR, derror, rsolution%RvectorBlock(1),&
+        rcollection=rcollectionTmp, ffunctionWeight=transp_weightFuncGaussian)
+
+    ! Comput dispersion error
+    derror = derror / (4*dtime*(1e-3)) - 1.0_DP
+    
+    call output_line('Dispersion-error: '//trim(sys_sdEP(derror,15,6)))
+
+  end subroutine transp_errestDispersion
 
   !*****************************************************************************
 

@@ -194,6 +194,7 @@ module transport_callback
   public :: transp_coeffVectorAnalytic
   public :: transp_refFuncAnalytic
   public :: transp_weightFuncAnalytic
+  public :: transp_weightFuncGaussian
   public :: transp_parseBoundaryCondition
   public :: transp_calcOperatorBdrCondition
   public :: transp_calcVectorBdrCondition
@@ -5360,7 +5361,7 @@ contains
     !$omp parallel do
     do iel = 1, nelements
       call fparser_evalFunction(p_rfparser, icomp, 2,&
-          Dpoints(:,:,iel), Dvalues(:,iel))
+          Dpoints(:,:,iel), Dvalues(:,iel), dtime)
     end do
     !$omp end parallel do
     
@@ -5456,11 +5457,115 @@ contains
     !$omp parallel do
     do iel = 1, nelements
       call fparser_evalFunction(p_rfparser, icomp, 2,&
-          Dpoints(:,:,iel), Dvalues(:,iel))
+          Dpoints(:,:,iel), Dvalues(:,iel), dtime)
     end do
     !$omp end parallel do
 
   end subroutine transp_weightFuncAnalytic
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine transp_weightFuncGaussian(rdiscretisation, nelements,&
+      npointsPerElement, Dpoints, IdofsTest, rdomainIntSubset,&
+      Dvalues, rcollection)
+
+!<description>
+    ! This subroutine is called during the calculation of errors. It
+    ! has to compute the values of a weighting function in a couple of
+    ! points on a couple of elements. These values are multiplied by
+    ! the calculated error.  This routine can be used universally for
+    ! arbitrary weighting functions evaluated analytically using a
+    ! function parser which is passed using the collection.
+    !
+    ! The routine accepts a set of elements and a set of points on
+    ! these elements (cubature points) in in real coordinates.
+    ! According to the terms in the linear form, the routine has to
+    ! compute simultaneously for all these points.
+!</description>
+
+!<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in) :: nelements
+
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in) :: npointsPerElement
+
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! DIMENSION(NDIM2D,npointsPerElement,nelements)
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
+
+    ! An array accepting the DOF`s on all elements in the test space.
+    ! DIMENSION(\#local DOF`s in trial space,Number of elements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
+    ! This subroutine assumes the following data:
+    !   DquickAccess(1): simulation time
+    !   SquickAccess(1): section name in the collection
+    !   SquickAccess(2): string identifying the function parser
+    type(t_collection), intent(inout), optional :: rcollection
+!</input>
+
+!<output>
+    ! This array has to receive the values of the (analytical) function
+    ! in all the points specified in Dpoints, or the appropriate derivative
+    ! of the function, respectively, according to cderivative.
+    !   DIMENSION(npointsPerElement,nelements)
+    real(DP), dimension(:,:), intent(out) :: Dvalues
+!</output>
+!</subroutine>
+
+    ! local variables
+    real(DP) :: dtime,depsilon,dxhat,dyhat
+    integer :: iel,ipoint
+
+    select case(rcollection%IquickAccess(1))
+    case(1)
+      ! weight for x_hat
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
+          Dvalues(ipoint,iel) = -Dpoints(1,ipoint,iel)
+        end do
+      end do
+
+    case(2) ! weight for y_hat
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
+          Dvalues(ipoint,iel) = -Dpoints(2,ipoint,iel)
+        end do
+      end do
+
+    case(3) ! sigma
+      dxhat = rcollection%DquickAccess(1)
+      dyhat = rcollection%DquickAccess(2)
+      
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
+          Dvalues(ipoint,iel) = -(Dpoints(1,ipoint,iel)-dxhat)**2 -&
+                                 (Dpoints(2,ipoint,iel)-dyhat)**2
+        end do
+      end do
+      
+    case default
+      Dvalues = 0
+    end select
+    
+  end subroutine transp_weightFuncGaussian
 
   ! *****************************************************************************
 

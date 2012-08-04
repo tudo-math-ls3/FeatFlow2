@@ -269,7 +269,7 @@ contains
     character(LEN=SYS_STRLEN) :: algorithm
 
     ! local variables
-    real(DP) :: derrorL2,derrorH1
+    real(DP) :: derrorL2,derrorH1,derrorDispersion
     integer :: systemMatrix, ndimension
 
 
@@ -419,6 +419,10 @@ contains
             rproblem%p_rproblemLevelMax, rsolutionPrimal,&
             rtimestep%dTime, derrorL2=derrorL2,&
             derrorH1=derrorH1, rcollection=rcollection)
+
+        call transp_errestDispersion(rparlist, ssectionName,&
+            rproblem%p_rproblemLevelMax, rsolutionPrimal,&
+            rtimestep%dTime, derrorDispersion, rcollection)
 
         call transp_outputSolution(rparlist, ssectionName,&
             rproblem%p_rproblemLevelMax,&
@@ -584,22 +588,22 @@ contains
 
 !<subroutine>
 
-    subroutine transp_solveTransientPrimal(rparlist, ssectionName,&
-        rbdrCond, rproblem, rtimestep, rsolver, rsolution,&
-        rcollection)
+  subroutine transp_solveTransientPrimal(rparlist, ssectionName,&
+      rbdrCond, rproblem, rtimestep, rsolver, rsolution,&
+      rcollection)
 
 !<description>
-      ! This subroutine solves the transient primal flow problem
-      !
-      !  $$ \frac{\partial u}{\partial t}+\nabla\cdot{\bf f}(u)+r(u)=b $$
-      !
-      ! for the scalar quantity $u$ in the domain $\Omega$. Here,
-      ! ${\bf f}(u)$ denotes the flux term and r(u) and b are the
-      ! reacitve term and the right-hand side vector, respectively.
+    ! This subroutine solves the transient primal flow problem
+    !
+    !  $$ \frac{\partial u}{\partial t}+\nabla\cdot{\bf f}(u)+r(u)=b $$
+    !
+    ! for the scalar quantity $u$ in the domain $\Omega$. Here,
+    ! ${\bf f}(u)$ denotes the flux term and r(u) and b are the
+    ! reacitve term and the right-hand side vector, respectively.
 !</description>
 
 !<input>
-      ! section name in parameter list and collection structure
+    ! section name in parameter list and collection structure
     character(LEN=*), intent(in) :: ssectionName
 
     ! boundary condition structure
