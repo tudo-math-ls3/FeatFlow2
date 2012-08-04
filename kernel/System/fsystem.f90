@@ -428,6 +428,11 @@ module fsystem
   ! respect this setting but do not explicitely use this variable.
   real(DP), public, save :: sys_dtimeMax = 0.0_DP
 
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+  ! Number of coprocessor devices
+  integer, public, save :: sys_NumberOfCoprocDevices = 1
+#endif
+
 !</publicvars>
 
 !************************************************************************

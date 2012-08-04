@@ -15,97 +15,44 @@
 
 extern "C"
 {
-  int coproc_malloc(void **ptr, size_t size);
+  void coproc_malloc(void**, size_t);
+  void coproc_newMemoryOnHost(void**, size_t);
+  void coproc_newMemoryOnDevice(void**, size_t); 
 
-  int coproc_free(void **ptr);  
+  void coproc_free(void**);
+  void coproc_freeMemoryOnHost(void*);
+  void coproc_freeMemoryOnDevice(void*);
 
-  int coproc_newMemoryOnHost(void **h_ptr,
-			     size_t size);
+  void coproc_clearMemoryOnHost(void*, size_t);
+  void coproc_clearMemoryOnDevice(void*, size_t);
 
-  int coproc_freeMemoryOnHost(void *h_ptr);
+  void coproc_memcpyHostToHost(const void*, void*, size_t);
+  void coproc_memcpyHostToHostAsync(const void*, void*, size_t, cudaStream_t=0);
+  void coproc_memcpyHostToDevice(const void*, void*, size_t);
+  void coproc_memcpyHostToDeviceAsync(const void*, void*, size_t, cudaStream_t=0);
+  void coproc_memcpyDeviceToHost(const void*, void*, size_t);
+  void coproc_memcpyDeviceToHostAsync(const void*, void*, size_t, cudaStream_t=0);
+  void coproc_memcpyDeviceToDevice(const void*, void*, size_t);
+  void coproc_memcpyDeviceToDeviceAsync(const void*, void*, size_t, cudaStream_t=0);
 
-  int coproc_clearMemoryOnHost(void *h_ptr,
-			       size_t size);
+  void coproc_tmemcpyHostToHost2d(const void*, void*, size_t, int, int, int);
+  void coproc_tmemcpyHostToDevice2d(const void*, void*, size_t, int, int, int);
+  void coproc_tmemcpyDeviceToHost2d(const void*, void*, size_t, int, int, int);
+  void coproc_tmemcpyDeviceToDevice2d(const void*, void*, size_t, int, int, int);
+  void coproc_tmemcpyHostToHost3d(const void*, void*, size_t, int, int, int, int);
+  void coproc_tmemcpyHostToDevice3d(const void*, void*, size_t, int, int, int, int);
+  void coproc_tmemcpyDeviceToHost3d(const void*, void*, size_t, int, int, int, int);
+  void coproc_tmemcpyDeviceToDevice3d(const void*, void*, size_t, int, int, int, int);
   
-  int coproc_newMemoryOnDevice(void **d_ptr,
-			       size_t size);
-  
-  int coproc_freeMemoryOnDevice(void *d_ptr);
-  
-  int coproc_clearMemoryOnDevice(void *d_ptr,
-				 size_t size);
-
-  int coproc_memcpyHostToDevice(void *h_ptrSrc, 
-				void *d_ptrDest,
-				size_t size);
-
-  int coproc_memcpyHostToDeviceAsync(void *h_ptrSrc, 
-				     void *d_ptrDest,
-				     size_t size,
-				     cudaStream_t stream);
-  
-  int coproc_memcpyDeviceToHost(void *d_ptrSrc,
-				void *h_ptrDest,
-				size_t size);
-  
-  int coproc_memcpyDeviceToHostAsync(void *d_ptrSrc,
-				     void *h_ptrDest,
-				     size_t size,
-				     cudaStream_t stream);
-  
-  int coproc_memcpyDeviceToDevice(void *d_ptrSrc,
-				  void *d_ptrDest,
-				  size_t size);
-
-  int coproc_memcpyDeviceToDeviceAsync(void *d_ptrSrc,
-				       void *d_ptrDest,
-				       size_t size,
-				       cudaStream_t stream);
-  
-  int coproc_combinesingleOnDevice(void *d_ptrSrc1,
-				   void *d_ptrSrc2,
-				   void *d_ptrDest,
-				   size_t size);
-  
-  int coproc_combineDoubleOnDevice(void *d_ptrSrc1,
-				   void *d_ptrSrc2,
-				   void *d_ptrDest,
-				   size_t size);
-  
-  int coproc_combineQuadOnDevice(void *d_ptrSrc1,
-				 void *d_ptrSrc2,
-				 void *d_ptrDest,
-				 size_t size);
-
-  int coproc_combineIntegerOnDevice(void *d_ptrSrc1,
-				    void *d_ptrSrc2,
-				    void *d_ptrDest,
-				    size_t size);
-  
-  int coproc_combineInt8OnDevice(void *d_ptrSrc1,
-				 void *d_ptrSrc2,
-				 void *d_ptrDest,
-				 size_t size);
-
-  int coproc_combineInt16OnDevice(void *d_ptrSrc1,
-				  void *d_ptrSrc2,
-				  void *d_ptrDest,
-				  size_t size);
-  
-  int coproc_combineInt32OnDevice(void *d_ptrSrc1,
-				  void *d_ptrSrc2,
-				  void *d_ptrDest,
-				  size_t size);
-  
-  int coproc_combineInt64OnDevice(void *d_ptrSrc1,
-				  void *d_ptrSrc2,
-				  void *d_ptrDest,
-				  size_t size);
-  
-  int coproc_combineLogicalOnDevice(void *d_ptrSrc1,
-				    void *d_ptrSrc2,
-				    void *d_ptrDest,
-				    size_t size);
+  void coproc_combinesingleOnDevice(const void*, const void*, void*, size_t);
+  void coproc_combineDoubleOnDevice(const void*, const void*, void*, size_t);
+  void coproc_combineQuadOnDevice(const void*, const void*, void*, size_t);
+  void coproc_combineIntegerOnDevice(const void*, const void*, void*, size_t);
+  void coproc_combineInt8OnDevice(const void*, const void*, void*, size_t);
+  void coproc_combineInt16OnDevice(const void*, const void*, void*, size_t);
+  void coproc_combineInt32OnDevice(const void*, const void*, void*, size_t);
+  void coproc_combineInt64OnDevice(const void*, const void*, void*, size_t);
+  void coproc_combineLogicalOnDevice(const void*, const void*, void*, size_t);
 }
 
 #endif

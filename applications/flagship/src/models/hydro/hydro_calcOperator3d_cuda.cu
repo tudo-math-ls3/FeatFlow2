@@ -1941,7 +1941,7 @@ namespace hydro3d_cuda
 							 neq_cudaDMA);
     }
     
-    coproc_checkErrors("hydro_calcMatDiagMatD3d_cuda");
+    coproc_checkError("hydro_calcMatDiagMatD3d_cuda");
     return 0;
   };
 
@@ -2062,7 +2062,7 @@ namespace hydro3d_cuda
 							 neq_cudaDMA);
     }
     
-    coproc_checkErrors("hydro_calcMatDiag2d_cuda");
+    coproc_checkError("hydro_calcMatDiag2d_cuda");
     return 0;
   };
 
@@ -2196,7 +2196,7 @@ namespace hydro3d_cuda
 							 nedge_cudaDMA+iedgeset-1);
     }
     
-    coproc_checkErrors("hydro_calcMatrixMatD3d_cuda");
+    coproc_checkError("hydro_calcMatrixMatD3d_cuda");
     return 0;
   };
 
@@ -2326,7 +2326,7 @@ namespace hydro3d_cuda
 							 nedge_cudaDMA+iedgeset-1);
     }
         
-    coproc_checkErrors("hydro_calcMatrix3d_cuda");
+    coproc_checkError("hydro_calcMatrix3d_cuda");
     return 0;
   };
   

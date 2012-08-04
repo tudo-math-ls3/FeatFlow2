@@ -4202,7 +4202,7 @@ if (btransposeDest) {
 #endif
     }
 
-    coproc_checkErrors("hydro_calcFlux3d_cuda");
+    coproc_checkError("hydro_calcFlux3d_cuda");
     return 0;
   }; 
   

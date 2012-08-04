@@ -5696,7 +5696,7 @@ if (btransposeDest) {
 #endif
     }   
 
-    coproc_checkErrors("hydro_calcFlux2d_cuda");
+    coproc_checkError("hydro_calcFlux2d_cuda");
     return 0;
   };
   

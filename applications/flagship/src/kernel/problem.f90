@@ -181,6 +181,11 @@ module problem
     ! Number of block vectors
     integer :: nvectorBlock
 
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+    ! Number of CUDA streams
+    integer :: nstream
+#endif
+
     ! Name of the triangulation file
     character(LEN=SYS_STRLEN) :: trifile
 
@@ -235,6 +240,11 @@ module problem
 
     ! Number of the problem level
     integer :: ilev
+
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+    ! Array of CUDA streams
+    integer(I64), dimension(:), pointer :: Istream
+#endif
 
     ! Triangulation structure
     type(t_triangulation) :: rtriangulation
@@ -300,7 +310,7 @@ contains
 
     ! local variables
     type(t_problemLevel), pointer :: rproblemLevel, p_rproblemLevel
-    integer :: ilev
+    integer :: ilev,istream
     logical :: bnoExtendedRaw
 
     ! Initialise global problem structure
@@ -391,6 +401,16 @@ contains
         allocate(rproblemLevel%RgroupFEMBlock(&
         rproblemDescriptor%ngroupfemBlock))
     
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+    ! Initialise CUDA streams
+    if (rproblemDescriptor%nstream .gt. 0) then
+      allocate(rproblemLevel%Istream(&
+          rproblemDescriptor%nstream))
+      do istream = 1, rproblemDescriptor%nstream
+        call coproc_createStream(rproblemLevel%Istream(istream))
+      end do
+    end if
+#endif
 
     ! Append level to global problem
     call problem_appendLevel(rproblem, rproblemLevel)
@@ -933,6 +953,18 @@ contains
       end do
       deallocate(rproblemLevel%RgroupFEMBlock)
     end if
+
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+    ! Release CUDA streams
+    if (associated(rproblemLevel%Istream)) then
+      do i = lbound(rproblemLevel%Istream,1),&
+             ubound(rproblemLevel%Istream,1)
+        call coproc_synchronizeStream(rproblemLevel%Istream(i))
+        call coproc_destroyStream(rproblemLevel%Istream(i))
+      end do
+      deallocate(rproblemLevel%Istream)
+    end if
+#endif
 
   end subroutine problem_releaseLevel
 

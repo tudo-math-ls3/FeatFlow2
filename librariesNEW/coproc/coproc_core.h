@@ -80,19 +80,25 @@ using namespace std;
 
 /*******************************************************************************/
 
-#define __coproc__error__(label)							\
-  cerr << "CUDA Error: " << label << "(at " << __LINE__ << " of " __FILE__ << ")" << endl;
+inline void coproc_throwError(const char* msg)
+{
+  cerr << "CoprocError: " 
+       << msg << "(at " << __LINE__ << " of " __FILE__ << ")" << endl;
+  exit(-1);
+}
 
 /*******************************************************************************/
 
 extern "C"
 {
-  void coproc_checkErrors(__CHAR *label);
-  int coproc_init(int deviceNumber);
-  int coproc_done();
-  int coproc_getSizeOf(int cdatatype, size_t isize);
-  int coproc_createStream(cudaStream_t *pStream);
-  const cudaDeviceProp* coproc_getDeviceProp(int deviceNumber);
+  void coproc_checkError(const char*);
+  void coproc_init(int);
+  void coproc_done();
+  void coproc_createStream(cudaStream_t*);
+  void coproc_destroyStream(cudaStream_t);
+  void coproc_synchronizeStream(cudaStream_t);
+  size_t coproc_getSizeOf(int);
+  const cudaDeviceProp* coproc_getDeviceProp(int);
   const cudaDeviceProp* coproc_getCurrentDeviceProp();
 }
 

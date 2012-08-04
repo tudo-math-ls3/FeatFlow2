@@ -20,11 +20,11 @@ using namespace std;
 static cudaDeviceProp *DeviceProp;
 
 /*******************************************************************************
- * Check for CUDA errors
+ * Check for CUDA error
  ******************************************************************************/
-void coproc_checkErrors(__CHAR *label)
+void coproc_checkError(const char *label)
 {
-  #ifdef ENABLE_PARAMETER_CHECK
+#ifdef ENABLE_PARAMETER_CHECK
   cudaError_t err;
   
   err = cudaThreadSynchronize();
@@ -40,28 +40,27 @@ void coproc_checkErrors(__CHAR *label)
       char *e = (__CHAR*) cudaGetErrorString(err);
       cout << "CUDA Error: " << e << "(at " << label << ")" << endl;
     }
-  #endif
+#endif
 }
 
 /******************************************************************************/
 extern "C" {
-  void FNAME(coproc_checkerrors)(__CHAR *label)
+  void FNAME(coproc_checkerror)(__CHAR *label)
   {
-    coproc_checkErrors(label);
+    coproc_checkError(label);
   }
 }
 
 /*******************************************************************************
  * Initialisation of the CUDA subsystem
  ******************************************************************************/
-int coproc_init(int deviceNumber=0)
+void coproc_init(int deviceNumber=0)
 {
   int deviceCount;
   cudaGetDeviceCount(&deviceCount);
   if (deviceCount == 0)
     {
-      __coproc__error__("No CUDA device found");
-      return 1;
+      coproc_throwError("No CUDA device found");
     }
   
   // Initialise device property array
@@ -78,8 +77,7 @@ int coproc_init(int deviceNumber=0)
       cout << "   Shared memory per block: " << DeviceProp[i].sharedMemPerBlock << " bytes" << endl;
       cout << "   Multiprocessors:         " << DeviceProp[i].multiProcessorCount << endl;
       cout << "   Blocks per grid:         "
-	   << DeviceProp[i].maxGridSize[0]*DeviceProp[i].maxGridSize[1]*DeviceProp[i].maxGridSize[2]
-	   << " (" << DeviceProp[i].maxGridSize[0]
+	   << "(" << DeviceProp[i].maxGridSize[0]
 	   << "," << DeviceProp[i].maxGridSize[1]
 	   << "," << DeviceProp[i].maxGridSize[2] << ")" << endl;
       cout << "   Registers per block:     " << DeviceProp[i].regsPerBlock << endl;
@@ -141,39 +139,37 @@ int coproc_init(int deviceNumber=0)
   } 
   else if (deviceNumber >= deviceCount) {
     cerr << "Choose device ID between 0 and " << deviceCount-1 << "!" << endl;
-    return 1;
+    exit(-1);
   }
   else {
     cudaSetDevice(deviceNumber);
     cout << "Selected device: " << deviceNumber << endl;
   }
   
-  coproc_checkErrors("coproc_init");
-  return 0;
+  coproc_checkError("coproc_init");
 }
 
 /******************************************************************************/
 extern "C" {
-  __INT FNAME(coproc_init)(__INT *deviceNumber)
+  void FNAME(coproc_init)(__INT *deviceNumber)
   {
-    return (__INT) coproc_init((__INT)*deviceNumber);
+    coproc_init((__INT)*deviceNumber);
   }
 }
 
 /*******************************************************************************
  * Finalisation of the CUDA subsystem
  ******************************************************************************/
-int coproc_done()
+void coproc_done()
 {
   delete[] DeviceProp;
-  return 0;
 }
 
 /******************************************************************************/
 extern "C" {
-  __INT FNAME(coproc_done)()
+  void FNAME(coproc_done)()
   {
-    return (__INT) coproc_done();
+    coproc_done();
   }
 }
 
@@ -206,8 +202,7 @@ size_t coproc_getSizeOf(int cdatatype)
 {
   // Check if __SIZET and size_t coincide
   if (sizeof(size_t) != sizeof(__SIZET)) {
-    __coproc__error__("coproc_getSizeOf");
-    return (size_t) 0;
+    coproc_throwError("coproc_getSizeOf");
   }
   
   switch (cdatatype)
@@ -233,79 +228,66 @@ size_t coproc_getSizeOf(int cdatatype)
     case 10: // ST_CHAR
       return sizeof(__CHAR);
     default:
-      __coproc__error__("coproc_getSizeOf");
-      return (size_t) 0;
+      coproc_throwError("coproc_getSizeOf");
+      exit(-1);
     }
 }
 
 /******************************************************************************/
 extern "C" {
-  __INT FNAME(coproc_getsizeof)(__INT *cdatatype, __SIZET *isize)
+  void FNAME(coproc_getsizeof)(__INT *cdatatype, __SIZET *isize)
   {
     *isize = (__SIZET) coproc_getSizeOf((int)*cdatatype);
-    return (__INT) 0;
   }
 }
 
 /*******************************************************************************
  * Create asynchroneous stream
  ******************************************************************************/
-int coproc_createStream(cudaStream_t *stream)
+void coproc_createStream(cudaStream_t *stream)
 {
-  if (cudaStreamCreate(stream) != cudaSuccess) {
-    __coproc__error__("coproc_createStream");
-    return 1;
-  } else {
-    return 0;
-  }
+  cudaStreamCreate(stream);
+  coproc_checkError("coproc_createStream");
 }
 
 /******************************************************************************/
 extern "C" {
-  __INT FNAME(coproc_createstream)(__I64 *stream)
+  void FNAME(coproc_createstream)(__I64 *stream)
   {
-    return coproc_createStream((cudaStream_t*)stream);
+    coproc_createStream((cudaStream_t*)stream);
   }
 }
 
 /*******************************************************************************
  * Destroy asynchroneous stream
  ******************************************************************************/
-int coproc_destroyStream(cudaStream_t stream)
+void coproc_destroyStream(cudaStream_t stream)
 {
-  if (cudaStreamDestroy(stream) != cudaSuccess) {
-    __coproc__error__("coproc_destroyStream");
-    return 1;
-  } else {
-    return 0;
-  }
+  cudaStreamDestroy(stream);
+  coproc_checkError("coproc_destroyStream");
 }
 
 /******************************************************************************/
 extern "C" {
-  __INT FNAME(coproc_destroystream)(__I64 *stream)
+  void FNAME(coproc_destroystream)(__I64 *stream)
   {
-    return coproc_destroyStream((cudaStream_t)*stream);
+    coproc_destroyStream((cudaStream_t)*stream);
   }
 }
 
 /*******************************************************************************
  * Synchronize asynchroneous stream
  ******************************************************************************/
-int coproc_synchronizeStream(cudaStream_t stream)
+void coproc_synchronizeStream(cudaStream_t stream)
 {
-  if (cudaStreamSynchronize(stream) != cudaSuccess) {
-    __coproc__error__("coproc_synchronizeStream");
-    return 1;
-  } else {
-    return 0;
-  }
+  cudaStreamSynchronize(stream);
+  coproc_checkError("coproc_synchronizeStream");
 }
 
 /******************************************************************************/
 extern "C" {
-  __INT FNAME(coproc_synchronizestream)(__I64 *stream)
+  void FNAME(coproc_synchronizestream)(__I64 *stream)
   {
-    return coproc_synchronizeStream((cudaStream_t)*stream);
+    coproc_synchronizeStream((cudaStream_t)*stream);
   }
 }

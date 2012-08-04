@@ -304,6 +304,13 @@ module storage
 
 !</constantblock>
 
+!<constantblock description="Constants for addressing multiple devices">
+
+  ! Address all devices
+  integer, parameter, dimension(1), public :: ST_DEVICE_ALL = (/ 0 /) 
+
+!</constantblock>
+
 !</constants>
 
 !<types>
@@ -432,7 +439,7 @@ module storage
 
 #ifdef ENABLE_COPROCESSOR_SUPPORT
     ! Starting memory address on coprocessor device (=0 if not assigned)
-    type(C_PTR) :: cdeviceMemPtr = C_NULL_PTR
+    type(C_PTR), dimension(:), pointer :: CdeviceMemPtr
 #endif
 
   end type t_storageNode
@@ -898,6 +905,11 @@ module storage
     module procedure storage_copyDefault
     module procedure storage_copy_explicit
     module procedure storage_copy_explicit1D
+  end interface
+
+  interface storage_syncMemoryHostDevice
+    module procedure storage_syncMemoryHostDevice1
+    module procedure storage_syncMemoryHostDevice2
   end interface
 
   public :: storage_copy
@@ -2011,7 +2023,7 @@ contains
   type(t_storageBlock), pointer :: p_rheap
   type(t_storageNode), pointer :: p_rnode
   character(LEN=SYS_NAMELEN) :: snameBackup
-  integer :: ier
+  integer :: i,ier
 
     if (isize .eq. 0) then
       call output_line ('isize=0!', &
@@ -2140,8 +2152,11 @@ contains
 #endif
 
 #ifdef ENABLE_COPROCESSOR_SUPPORT
-    ! Unassign pointer in device memory
-    call storage_nullify(p_rnode%cdeviceMemPtr)
+    ! Unassign pointer(s) in device memory
+    allocate(p_rnode%CdeviceMemPtr(sys_NumberOfCoprocDevices))
+    do i=1, sys_NumberOfCoprocDevices
+      call storage_nullify(p_rnode%CdeviceMemPtr(i))
+    end do
 #endif
 
     !$omp critical(storage_global_heap_modify)
@@ -2208,7 +2223,7 @@ contains
   ! Pointer to the heap
   type(t_storageBlock), pointer :: p_rheap
   type(t_storageNode), pointer :: p_rnode
-  integer :: isize
+  integer :: i,isize
   character(LEN=SYS_NAMELEN) :: snameBackup
 
     ! Can we use the standard routine?
@@ -2297,8 +2312,11 @@ contains
     end select
 
 #ifdef ENABLE_COPROCESSOR_SUPPORT
-    ! Unassign pointer in device memory
-    call storage_nullify(p_rnode%cdeviceMemPtr)
+    ! Unassign pointer(s) in device memory
+    allocate(p_rnode%CdeviceMemPtr(sys_NumberOfCoprocDevices))
+    do i=1, sys_NumberOfCoprocDevices
+      call storage_nullify(p_rnode%CdeviceMemPtr(i))
+    end do
 #endif
 
     !$omp critical(storage_global_heap_modify)
@@ -2363,7 +2381,7 @@ contains
   type(t_storageBlock), pointer :: p_rheap
   type(t_storageNode), pointer :: p_rnode
   character(LEN=SYS_NAMELEN) :: snameBackup
-  integer :: ier
+  integer :: i,ier
 
     if ((Isize(1) .eq. 0) .or. (Isize(2) .eq. 0)) then
       call output_line ('Isize=0!', &
@@ -2492,8 +2510,11 @@ contains
 #endif
 
 #ifdef ENABLE_COPROCESSOR_SUPPORT
-    ! Unassign pointer in device memory
-    call storage_nullify(p_rnode%cdeviceMemPtr)
+    ! Unassign pointer(s) in device memory
+    allocate(p_rnode%CdeviceMemPtr(sys_NumberOfCoprocDevices))
+    do i=1, sys_NumberOfCoprocDevices
+      call storage_nullify(p_rnode%CdeviceMemPtr(i))
+    end do
 #endif
 
     !$omp critical(storage_global_heap_modify)
@@ -2561,6 +2582,7 @@ contains
     type(t_storageBlock), pointer :: p_rheap
     type(t_storageNode), pointer :: p_rnode
     integer, dimension(2) :: Isize
+    integer :: i
     character(LEN=SYS_NAMELEN) :: snameBackup
 
     ! Can we use the standard routine?
@@ -2650,8 +2672,11 @@ contains
     end select
 
 #ifdef ENABLE_COPROCESSOR_SUPPORT
-    ! Unassign pointer in device memory
-    call storage_nullify(p_rnode%cdeviceMemPtr)
+    ! Unassign pointer(s) in device memory
+    allocate(p_rnode%CdeviceMemPtr(sys_NumberOfCoprocDevices))
+    do i=1, sys_NumberOfCoprocDevices
+      call storage_nullify(p_rnode%CdeviceMemPtr(i))
+    end do
 #endif
 
     !$omp critical(storage_global_heap_modify)
@@ -2716,7 +2741,7 @@ contains
   type(t_storageBlock), pointer :: p_rheap
   type(t_storageNode), pointer :: p_rnode
   character(LEN=SYS_NAMELEN) :: snameBackup
-  integer :: ier
+  integer :: i,ier
 
     if ((Isize(1) .eq. 0) .or. (Isize(2) .eq. 0) .or. (Isize(3) .eq. 0)) then
       call output_line ('Isize=0!', &
@@ -2865,8 +2890,11 @@ contains
 #endif
 
 #ifdef ENABLE_COPROCESSOR_SUPPORT
-    ! Unassign pointer in device memory
-    call storage_nullify(p_rnode%cdeviceMemPtr)
+    ! Unassign pointer(s) in device memory
+    allocate(p_rnode%CdeviceMemPtr(sys_NumberOfCoprocDevices))
+    do i=1, sys_NumberOfCoprocDevices
+      call storage_nullify(p_rnode%CdeviceMemPtr(i))
+    end do
 #endif
 
     !$omp critical(storage_global_heap_modify)
@@ -2934,6 +2962,7 @@ contains
     type(t_storageBlock), pointer :: p_rheap
     type(t_storageNode), pointer :: p_rnode
     integer, dimension(3) :: Isize
+    integer :: i
     character(LEN=SYS_NAMELEN) :: snameBackup
 
     ! Can we use the standard routine?
@@ -3043,8 +3072,11 @@ contains
     end select
 
 #ifdef ENABLE_COPROCESSOR_SUPPORT
-    ! Unassign pointer in device memory
-    call storage_nullify(p_rnode%cdeviceMemPtr)
+    ! Unassign pointer(s) in device memory
+    allocate(p_rnode%CdeviceMemPtr(sys_NumberOfCoprocDevices))
+    do i=1, sys_NumberOfCoprocDevices
+      call storage_nullify(p_rnode%CdeviceMemPtr(i))
+    end do
 #endif
 
     !$omp critical(storage_global_heap_modify)
@@ -3326,6 +3358,7 @@ contains
   ! Pointer to the heap
   type(t_storageBlock), pointer :: p_rheap
   type(t_storageNode), pointer :: p_rnode
+  integer :: i
 
     ! Get the heap to use - local or global one.
     if(present(rheap)) then
@@ -3398,8 +3431,10 @@ contains
 #endif
 
 #ifdef ENABLE_COPROCESSOR_SUPPORT
-    if (storage_isAssociated(p_rnode%cdeviceMemPtr))&
-        call coproc_freeMemoryOnDevice(p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+    do i = 1, size(p_rnode%CdeviceMemPtr)
+      if (storage_isAssociated(p_rnode%CdeviceMemPtr(i)))&
+          call coproc_freeMemoryOnDevice(p_rnode%CdeviceMemPtr(i), p_rnode%imemBytes)
+    end do
 #endif
 
     ! Release the memory assigned to that
@@ -14970,7 +15005,7 @@ contains
   ! size of the old 3-dimensional array
   integer, dimension(3) :: Isize3Dold,Ilbound3D,Iubound3D
 
-  integer :: ier
+  integer :: i,ier
   logical :: bcopyData
 
     if (ihandle .le. ST_NOHANDLE) then
@@ -15747,8 +15782,10 @@ contains
 #endif
 
 #ifdef ENABLE_COPROCESSOR_SUPPORT
-    if (storage_isAssociated(p_rnode%cdeviceMemPtr))&
-        call coproc_freeMemoryOnDevice(p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+    do i = 1, size(p_rnode%CdeviceMemPtr)
+      if (storage_isAssociated(p_rnode%CdeviceMemPtr(i)))&
+          call coproc_freeMemoryOnDevice(p_rnode%CdeviceMemPtr(i), p_rnode%imemBytes)
+    end do
 #endif
 
     ! Release old data
@@ -17130,7 +17167,7 @@ contains
 
 !<subroutine>
 
-  subroutine storage_allocMemoryOnDevice (ihandle, rheap)
+  subroutine storage_allocMemoryOnDevice (ihandle, Idevice, rheap)
 
 !<description>
   ! This routine allocates a memory block in the device memory
@@ -17141,6 +17178,12 @@ contains
 !<input>
   ! Handle of the memory block
   integer, intent(in) :: ihandle
+
+  ! OPTIONAL: array of device numbers
+  ! If not present, then the first device is used by default.
+  ! Multiple devices can be addressed by giving the device numbers
+  ! or by using one of the constants ST_DEVICE_xxx.
+  integer, intent(in), dimension(:), optional :: Idevice
 !</input>
 
 !<inputoutput>
@@ -17156,7 +17199,7 @@ contains
   ! Pointer to the heap
   type(t_storageBlock), pointer :: p_rheap
   type(t_storageNode), pointer :: p_rnode
-
+  integer :: idev,i
 
     ! Get the heap to use - local or global one.
     if(present(rheap)) then
@@ -17173,16 +17216,39 @@ contains
 
     ! Where is the descriptor of the handle?
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
-
-    ! Check if memory pointer is already in use
-    if (storage_isAssociated(p_rnode%cdeviceMemPtr))&
-        call coproc_freeMemoryOnDevice(p_rnode%cdeviceMemPtr)
-
-    ! Allocate memory on device with correct size
-    call coproc_newMemoryOnDevice(p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+    
+    if (present(Idevice)) then
+      if (Idevice(1) .eq. 0) then
+        do idev = 1, size(p_rnode%CdeviceMemPtr)
+          ! Check if memory pointer is already in use
+          if (storage_isAssociated(p_rnode%CdeviceMemPtr(idev)))&
+              call coproc_freeMemoryOnDevice(p_rnode%CdeviceMemPtr(idev))
+          
+          ! Allocate memory on device with correct size
+          call coproc_newMemoryOnDevice(p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes)
+        end do
+      else
+        do i = 1, size(Idevice)
+          idev = Idevice(i)
+          ! Check if memory pointer is already in use
+          if (storage_isAssociated(p_rnode%CdeviceMemPtr(idev)))&
+              call coproc_freeMemoryOnDevice(p_rnode%CdeviceMemPtr(idev))
+          
+          ! Allocate memory on device with correct size
+          call coproc_newMemoryOnDevice(p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes)
+        end do
+      end if
+    else
+      ! Check if memory pointer is already in use
+      if (storage_isAssociated(p_rnode%CdeviceMemPtr(1)))&
+          call coproc_freeMemoryOnDevice(p_rnode%CdeviceMemPtr(1))
+      
+      ! Allocate memory on device with correct size
+      call coproc_newMemoryOnDevice(p_rnode%CdeviceMemPtr(1), p_rnode%imemBytes)
+    end if
 
 #else
-
+      
     call output_line ('Application must be compiled with coprocessor support enabled!', &
                       OU_CLASS_ERROR,OU_MODE_STD,'storage_allocMemoryOnDevice')
     call sys_halt()
@@ -17195,7 +17261,7 @@ contains
 
 !<subroutine>
 
-  subroutine storage_deallocMemoryOnDevice (ihandle, rheap)
+  subroutine storage_deallocMemoryOnDevice (ihandle, Idevice, rheap)
 
 !<description>
   ! This routine deallocates a memory block in the device memory
@@ -17206,6 +17272,12 @@ contains
 !<input>
   ! Handle of the memory block
   integer, intent(in) :: ihandle
+
+  ! OPTIONAL: array of device numbers
+  ! If not present, then the first device is used by default.
+  ! Multiple devices can be addressed by giving the device numbers
+  ! or by using one of the constants ST_DEVICE_xxx.
+  integer, intent(in), dimension(:), optional :: Idevice
 !</input>
 
 !<inputoutput>
@@ -17221,7 +17293,7 @@ contains
   ! Pointer to the heap
   type(t_storageBlock), pointer :: p_rheap
   type(t_storageNode), pointer :: p_rnode
-
+  integer :: idev,i
 
     ! Get the heap to use - local or global one.
     if(present(rheap)) then
@@ -17239,9 +17311,26 @@ contains
     ! Where is the descriptor of the handle?
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
 
-    ! Check if memory pointer is already in use
-    if (storage_isAssociated(p_rnode%cdeviceMemPtr))&
-        call coproc_freeMemoryOnDevice(p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+    if (present(Idevice)) then
+      if (Idevice(1) .eq. 0) then
+        do idev = 1, size(p_rnode%CdeviceMemPtr)
+          ! Check if memory pointer is already in use
+          if (storage_isAssociated(p_rnode%CdeviceMemPtr(idev)))&
+              call coproc_freeMemoryOnDevice(p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes)
+        end do
+      else
+        do i = 1, size(Idevice)
+          idev = Idevice(i)
+          ! Check if memory pointer is already in use
+          if (storage_isAssociated(p_rnode%CdeviceMemPtr(idev)))&
+              call coproc_freeMemoryOnDevice(p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes)
+        end do
+      end if
+    else
+      ! Check if memory pointer is already in use
+      if (storage_isAssociated(p_rnode%CdeviceMemPtr(1)))&
+          call coproc_freeMemoryOnDevice(p_rnode%CdeviceMemPtr(1), p_rnode%imemBytes)
+    end if
 
 #else
 
@@ -17257,9 +17346,8 @@ contains
 
 !<subroutine>
 
-
-  recursive subroutine storage_syncMemoryHostDevice (ihandle, csyncBlock,&
-      btransposeMemoryOrder, istream, nelemPack, rheap)
+  recursive subroutine storage_syncMemoryHostDevice1 (ihandle, csyncBlock,&
+      btransposeMemoryOrder, istream, nelemPack, idevice, rheap)
 
 !<description>
   ! This routine synchronises the handle of the heap between host
@@ -17288,6 +17376,10 @@ contains
   ! OPTIONAL: if btransposeMemoryOrder=.TRUE. the number elements that
   ! should be packed into a single item to be treated as atomic unit.
   integer, intent(in), optional :: nelemPack
+
+  ! OPTIONAL: device number
+  ! If not present, then the first device is used by default.
+  integer, intent(in), optional :: idevice
 !</input>
 
 !<inputoutput>
@@ -17304,7 +17396,7 @@ contains
   type(t_storageBlock), pointer :: p_rheap
   type(t_storageNode), pointer :: p_rnode, p_rnodeTmp
   type(C_PTR) :: cdeviceMemPtr
-  integer :: ihandleTmp,npack
+  integer :: i,idev,ihandleTmp,npack
   logical :: btranspose
   integer(I64) :: istreamTmp
 
@@ -17315,6 +17407,10 @@ contains
     ! Do we have to pack multiple items
     npack = 1
     if (present(nelemPack)) npack = max(1,nelemPack)
+
+    ! Get the device number
+    idev = 1
+    if (present(idevice)) idev = idevice
 
     ! Get the heap to use - local or global one.
     if(present(rheap)) then
@@ -17340,14 +17436,14 @@ contains
       ! then a new memory block is first allocated on the device
 
       ! Check if memory on device is allocated
-      if (.not.storage_isAssociated(p_rnode%cdeviceMemPtr))&
-          call coproc_newMemoryOnDevice(p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+      if (.not.storage_isAssociated(p_rnode%CdeviceMemPtr(idev)))&
+          call coproc_newMemoryOnDevice(p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes)
 
 #ifdef USE_C_PTR_STORAGE
       ! Check if asynchroneous transfer is applicable
       if (present(istream) .and. .not.(btranspose)) then
         call coproc_memcpyHostToDeviceAsync(p_rnode%chostMemPtr,&
-            p_rnode%cdeviceMemPtr, p_rnode%imemBytes, istream)
+            p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes, istream)
 
         ! That`s it
         return
@@ -17362,34 +17458,34 @@ contains
         select case(p_rnode%idataType)
         case (ST_SINGLE)
           call  coproc_memcpyHostToDevice(p_rnode%p_Fsingle1D,&
-              p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+              p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes)
         case (ST_DOUBLE)
           call coproc_memcpyHostToDevice(p_rnode%p_Ddouble1D,&
-              p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+              p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes)
         case (ST_QUAD)
           call coproc_memcpyHostToDevice(p_rnode%p_Qquad1D,&
-              p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+              p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes)
         case (ST_INT)
           call coproc_memcpyHostToDevice(p_rnode%p_Iinteger1D,&
-              p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+              p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes)
         case (ST_INT8)
           call coproc_memcpyHostToDevice(p_rnode%p_Iint8_1D,&
-              p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+              p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes)
         case (ST_INT16)
           call coproc_memcpyHostToDevice(p_rnode%p_Iint16_1D,&
-              p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+              p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes)
         case (ST_INT32)
           call coproc_memcpyHostToDevice(p_rnode%p_Iint32_1D,&
-              p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+              p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes)
         case (ST_INT64)
           call coproc_memcpyHostToDevice(p_rnode%p_Iint64_1D,&
-              p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+              p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes)
         case (ST_LOGICAL)
           call coproc_memcpyHostToDevice(p_rnode%p_Blogical1D,&
-              p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+              p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes)
         case (ST_CHAR)
           call coproc_memcpyHostToDevice(p_rnode%p_Schar1D,&
-              p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+              p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes)
         case default
           call output_line ('Unsupported data type!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_syncMemoryHostDevice')
@@ -17397,163 +17493,118 @@ contains
         end select
 
       case (2)
-        ! Do we have to transpose the memory order?
-        if (btranspose) then
-          ! TODO: Once an in-place transpose has been implemented on
-          ! the coprocessor device, we do not need this temporal
-          ! storage but can copy the original data to the device and
-          ! perform the transpose operation directly on the device. So
-          ! far, we have to work with a temporal array since the data
-          ! may be needed untransposed in host memory.
-
-          ! Create a temporal working array ...
-          ihandleTmp = ST_NOHANDLE
-          call storage_new('storage_syncMemoryHostDevice', 'ihandleTmp',&
-                           ihandle, ihandleTmp, p_rheap)
-          ! ... and get the associated storage node
-          p_rnodeTmp => p_rheap%p_Rdescriptors(ihandleTmp)
-        end if
-
         ! What data type are we?
         select case(p_rnode%idataType)
         case (ST_SINGLE)
           if (btranspose) then
-            call transposeOutOfPlace_Single2D(p_rnode%p_Fsingle2D,&
-                p_rnodeTmp%p_Fsingle2D,&
-                size(p_rnodeTmp%p_Fsingle2D,1),&
-                size(p_rnodeTmp%p_Fsingle2D,2),&
-                p_rnode%imemBytes, npack)
-            call coproc_memcpyHostToDevice(p_rnodeTmp%p_Fsingle2D,&
-                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+            call coproc_tmemcpyHostToDevice2d(p_rnode%p_Fsingle2D,&
+                p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes,&
+                size(p_rnode%p_Fsingle2D,1),&
+                size(p_rnode%p_Fsingle2D,2), npack)
           else
             call coproc_memcpyHostToDevice(p_rnode%p_Fsingle2D,&
-                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+                p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes)
           end if
           
         case (ST_DOUBLE)
           if (btranspose) then
-            call transposeOutOfPlace_Double2D(p_rnode%p_Ddouble2D,&
-                p_rnodeTmp%p_Ddouble2D,&
-                size(p_rnodeTmp%p_Ddouble2D,1),&
-                size(p_rnodeTmp%p_Ddouble2D,2),&
-                p_rnode%imemBytes, npack)
-            call coproc_memcpyHostToDevice(p_rnodeTmp%p_Ddouble2D,&
-                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+            call coproc_tmemcpyHostToDevice2d(p_rnode%p_Ddouble2D,&
+                p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes,&  
+                size(p_rnode%p_Ddouble2D,1),&
+                size(p_rnode%p_Ddouble2D,2), npack)
           else
             call coproc_memcpyHostToDevice(p_rnode%p_Ddouble2D,&
-                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+                p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes)
           end if
 
         case (ST_QUAD)
           if (btranspose) then
-            call transposeOutOfPlace_Quad2D(p_rnode%p_Qquad2D,&
-                p_rnodeTmp%p_Qquad2D,&
-                size(p_rnodeTmp%p_Qquad2D,1),&
-                size(p_rnodeTmp%p_Qquad2D,2),&
-                p_rnode%imemBytes, npack)
-            call coproc_memcpyHostToDevice(p_rnodeTmp%p_Qquad2D,&
-                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+            call coproc_tmemcpyHostToDevice2d(p_rnode%p_Qquad2D,&
+                p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes,&
+                size(p_rnode%p_Qquad2D,1),&
+                size(p_rnode%p_Qquad2D,2), npack)
           else
             call coproc_memcpyHostToDevice(p_rnode%p_Qquad2D,&
-                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+                p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes)
           end if
 
         case (ST_INT)
           if (btranspose) then
-            call transposeOutOfPlace_Integer2D(p_rnode%p_Iinteger2D,&
-                p_rnodeTmp%p_Iinteger2D,&
-                size(p_rnodeTmp%p_Iinteger2D,1),&
-                size(p_rnodeTmp%p_Iinteger2D,2),&
-                p_rnode%imemBytes, npack)
-            call coproc_memcpyHostToDevice(p_rnodeTmp%p_Iinteger2D,&
-                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)           
+            call coproc_tmemcpyHostToDevice2d(p_rnode%p_Iinteger2D,&
+                p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes,&
+                size(p_rnode%p_Iinteger2D,1),&
+                size(p_rnode%p_Iinteger2D,2), npack)
           else
             call coproc_memcpyHostToDevice(p_rnode%p_Iinteger2D,&
-                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+                p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes)
           end if
 
         case (ST_INT8)
           if (btranspose) then
-            call transposeOutOfPlace_Int8_2D(p_rnode%p_Iint8_2D,&
-                p_rnodeTmp%p_Iint8_2D,&
-                size(p_rnodeTmp%p_Iint8_2D,1),&
-                size(p_rnodeTmp%p_Iint8_2D,2),&
-                p_rnode%imemBytes, npack)
-            call coproc_memcpyHostToDevice(p_rnodeTmp%p_Iint8_2D,&
-                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+            call coproc_tmemcpyHostToDevice2d(p_rnode%p_Iint8_2D,&
+                p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes,&
+                size(p_rnode%p_Iint8_2D,1),&
+                size(p_rnode%p_Iint8_2D,2), npack)
           else
             call coproc_memcpyHostToDevice(p_rnode%p_Iint8_2D,&
-                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+                p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes)
           end if
 
         case (ST_INT16)
           if (btranspose) then
-            call transposeOutOfPlace_Int16_2D(p_rnode%p_Iint16_2D,&
-                p_rnodeTmp%p_Iint16_2D,&
-                size(p_rnodeTmp%p_Iint16_2D,1),&
-                size(p_rnodeTmp%p_Iint16_2D,2),&
-                p_rnode%imemBytes, npack)
-            call coproc_memcpyHostToDevice(p_rnodeTmp%p_Iint16_2D,&
-                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+            call coproc_tmemcpyHostToDevice2d(p_rnode%p_Iint16_2D,&
+                p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes,&
+                size(p_rnode%p_Iint16_2D,1),&
+                size(p_rnode%p_Iint16_2D,2), npack)
           else
             call coproc_memcpyHostToDevice(p_rnode%p_Iint16_2D,&
-                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+                p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes)
           end if
 
         case (ST_INT32)
           if (btranspose) then
-            call transposeOutOfPlace_Int32_2D(p_rnode%p_Iint32_2D,&
-                p_rnodeTmp%p_Iint32_2D,&
-                size(p_rnodeTmp%p_Iint32_2D,1),&
-                size(p_rnodeTmp%p_Iint32_2D,2),&
-                p_rnode%imemBytes, npack)
-            call coproc_memcpyHostToDevice(p_rnodeTmp%p_Iint32_2D,&
-                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+            call coproc_tmemcpyHostToDevice2d(p_rnode%p_Iint32_2D,&
+                p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes,&
+                size(p_rnode%p_Iint32_2D,1),&
+                size(p_rnode%p_Iint32_2D,2), npack)
           else
             call coproc_memcpyHostToDevice(p_rnode%p_Iint32_2D,&
-                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+                p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes)
           end if
 
         case (ST_INT64)
           if (btranspose) then
-            call transposeOutOfPlace_Int64_2D(p_rnode%p_Iint64_2D,&
-                p_rnodeTmp%p_Iint64_2D,&
-                size(p_rnodeTmp%p_Iint64_2D,1),&
-                size(p_rnodeTmp%p_Iint64_2D,2),&
-                p_rnode%imemBytes, npack)
-            call coproc_memcpyHostToDevice(p_rnodeTmp%p_Iint64_2D,&
-                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+            call coproc_tmemcpyHostToDevice2d(p_rnode%p_Iint64_2D,&
+                p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes,&
+                size(p_rnode%p_Iint64_2D,1),&
+                size(p_rnode%p_Iint64_2D,2), npack)
+            call coproc_memcpyHostToDevice(p_rnode%p_Iint64_2D,&
+                p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes)
           else
             call coproc_memcpyHostToDevice(p_rnode%p_Iint64_2D,&
-                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+                p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes)
           end if
 
         case (ST_LOGICAL)
           if (btranspose) then
-            call transposeOutOfPlace_Logical2D(p_rnode%p_Blogical2D,&
-                p_rnodeTmp%p_Blogical2D,&
-                size(p_rnodeTmp%p_Blogical2D,1),&
-                size(p_rnodeTmp%p_Blogical2D,2),&
-                p_rnode%imemBytes, npack)
-            call coproc_memcpyHostToDevice(p_rnodeTmp%p_Blogical2D,&
-                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+            call coproc_tmemcpyHostToDevice2d(p_rnode%p_Blogical2D,&
+                p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes,&
+                size(p_rnode%p_Blogical2D,1),&
+                size(p_rnode%p_Blogical2D,2), npack)
           else
             call coproc_memcpyHostToDevice(p_rnode%p_Blogical2D,&
-                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+                p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes)
           end if
 
         case (ST_CHAR)
           if (btranspose) then
-            call transposeOutOfPlace_Char2D(p_rnode%p_SChar2D,&
-                p_rnodeTmp%p_SChar2D,&
-                size(p_rnodeTmp%p_SChar2D,1),&
-                size(p_rnodeTmp%p_SChar2D,2),&
-                p_rnode%imemBytes, npack)
-            call coproc_memcpyHostToDevice(p_rnodeTmp%p_SChar2D,&
-                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+            call coproc_tmemcpyHostToDevice2d(p_rnode%p_SChar2D,&
+                p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes,&
+                size(p_rnode%p_SChar2D,1),&
+                size(p_rnode%p_SChar2D,2), npack)
           else
             call coproc_memcpyHostToDevice(p_rnode%p_Schar2D,&
-                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+                p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes)
           end if
 
         case default
@@ -17562,177 +17613,127 @@ contains
           call sys_halt()
         end select
 
-        ! Free temporal working array (if created)
-        if (btranspose) call storage_free(ihandleTmp)
-
       case (3)
-        ! Do we have to transpose the memory order?
-        if (btranspose) then
-          ! TODO: Once an in-place transpose has been implemented on
-          ! the coprocessor device, we do not need this temporal
-          ! storage but can copy the original data to the device and
-          ! perform the transpose operation directly on the device. So
-          ! far, we habe to work with a temporal array since the data
-          ! may be needed untransposed in host memory.
-
-          ! Create a temporal working array ...
-          ihandleTmp = ST_NOHANDLE
-          call storage_new('storage_syncMemoryHostDevice', 'ihandleTmp',&
-                           ihandle, ihandleTmp, p_rheap)
-          ! ... and get the associated storage node
-          p_rnodeTmp => p_rheap%p_Rdescriptors(ihandleTmp)
-        end if
-
         ! What data type are we?
         select case(p_rnode%idataType)
         case (ST_SINGLE)
           if (btranspose) then
-            call transposeOutOfPlace_Single3D(p_rnode%p_Fsingle3D,&
-                p_rnodeTmp%p_Fsingle3D,&
-                size(p_rnodeTmp%p_Fsingle3D,1),&
-                size(p_rnodeTmp%p_Fsingle3D,2),&
-                size(p_rnodeTmp%p_Fsingle3D,3),&
-                p_rnode%imemBytes, npack)
-            call coproc_memcpyHostToDevice(p_rnodeTmp%p_Fsingle3D,&
-                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+            call coproc_tmemcpyHostToDevice3d(p_rnode%p_Fsingle3D,&
+                p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes,&
+                size(p_rnode%p_Fsingle3D,1),&
+                size(p_rnode%p_Fsingle3D,2),&
+                size(p_rnode%p_Fsingle3D,3), npack)
           else
             call coproc_memcpyHostToDevice(p_rnode%p_Fsingle3D,&
-                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+                p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes)
           end if
 
         case (ST_DOUBLE)
           if (btranspose) then
-            call transposeOutOfPlace_Double3D(p_rnode%p_Ddouble3D,&
-                p_rnodeTmp%p_Ddouble3D,&
-                size(p_rnodeTmp%p_Ddouble3D,1),&
-                size(p_rnodeTmp%p_Ddouble3D,2),&
-                size(p_rnodeTmp%p_Ddouble3D,3),&
-                p_rnode%imemBytes, npack)
-            call coproc_memcpyHostToDevice(p_rnodeTmp%p_Ddouble3D,&
-                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+            call coproc_tmemcpyHostToDevice3d(p_rnode%p_Ddouble3D,&
+                p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes,&
+                size(p_rnode%p_Ddouble3D,1),&
+                size(p_rnode%p_Ddouble3D,2),&
+                size(p_rnode%p_Ddouble3D,3), npack)
           else
             call coproc_memcpyHostToDevice(p_rnode%p_Ddouble3D,&
-                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+                p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes)
           end if
 
         case (ST_QUAD)
           if (btranspose) then
-            call transposeOutOfPlace_Quad3D(p_rnode%p_Qquad3D,&
-                p_rnodeTmp%p_Qquad3D,&
-                size(p_rnodeTmp%p_Qquad3D,1),&
-                size(p_rnodeTmp%p_Qquad3D,2),&
-                size(p_rnodeTmp%p_Qquad3D,3),&
-                p_rnode%imemBytes, npack)
-            call coproc_memcpyHostToDevice(p_rnodeTmp%p_Qquad3D,&
-                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+            call coproc_tmemcpyHostToDevice3d(p_rnode%p_Qquad3D,&
+                p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes,&
+                size(p_rnode%p_Qquad3D,1),&
+                size(p_rnode%p_Qquad3D,2),&
+                size(p_rnode%p_Qquad3D,3), npack)
           else
             call coproc_memcpyHostToDevice(p_rnode%p_Qquad3D,&
-                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+                p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes)
           end if
 
         case (ST_INT)
           if (btranspose) then
-            call transposeOutOfPlace_Integer3D(p_rnode%p_Iinteger3D,&
-                p_rnodeTmp%p_Iinteger3D,&
-                size(p_rnodeTmp%p_Iinteger3D,1),&
-                size(p_rnodeTmp%p_Iinteger3D,2),&
-                size(p_rnodeTmp%p_Iinteger3D,3),&
-                p_rnode%imemBytes, npack)
-            call coproc_memcpyHostToDevice(p_rnodeTmp%p_Iinteger3D,&
-                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+            call coproc_tmemcpyHostToDevice3d(p_rnode%p_Iinteger3D,&
+                p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes,&
+                size(p_rnode%p_Iinteger3D,1),&
+                size(p_rnode%p_Iinteger3D,2),&
+                size(p_rnode%p_Iinteger3D,3), npack)
           else
             call coproc_memcpyHostToDevice(p_rnode%p_Iinteger3D,&
-                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+                p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes)
           end if
 
         case (ST_INT8)
           if (btranspose) then
-            call transposeOutOfPlace_Int8_3D(p_rnode%p_Iint8_3D,&
-                p_rnodeTmp%p_Iint8_3D,&
-                size(p_rnodeTmp%p_Iint8_3D,1),&
-                size(p_rnodeTmp%p_Iint8_3D,2),&
-                size(p_rnodeTmp%p_Iint8_3D,3),&
-                p_rnode%imemBytes, npack)
-            call coproc_memcpyHostToDevice(p_rnodeTmp%p_Iint8_3D,&
-                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+            call coproc_tmemcpyHostToDevice3d(p_rnode%p_Iint8_3D,&
+                p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes,&
+                size(p_rnode%p_Iint8_3D,1),&
+                size(p_rnode%p_Iint8_3D,2),&
+                size(p_rnode%p_Iint8_3D,3), npack)
           else
             call coproc_memcpyHostToDevice(p_rnode%p_Iint8_3D,&
-                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+                p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes)
           end if
 
         case (ST_INT16)
           if (btranspose) then
-            call transposeOutOfPlace_Int16_3D(p_rnode%p_Iint16_3D,&
-                p_rnodeTmp%p_Iint16_3D,&
-                size(p_rnodeTmp%p_Iint16_3D,1),&
-                size(p_rnodeTmp%p_Iint16_3D,2),&
-                size(p_rnodeTmp%p_Iint16_3D,3),&
-                p_rnode%imemBytes, npack)
-            call coproc_memcpyHostToDevice(p_rnodeTmp%p_Iint16_3D,&
-                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+            call coproc_tmemcpyHostToDevice3d(p_rnode%p_Iint16_3D,&
+                p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes,&
+                size(p_rnode%p_Iint16_3D,1),&
+                size(p_rnode%p_Iint16_3D,2),&
+                size(p_rnode%p_Iint16_3D,3), npack)
           else
             call coproc_memcpyHostToDevice(p_rnode%p_Iint16_3D,&
-                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+                p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes)
           end if
 
         case (ST_INT32)
           if (btranspose) then
-            call transposeOutOfPlace_Int32_3D(p_rnode%p_Iint32_3D,&
-                p_rnodeTmp%p_Iint32_3D,&
-                size(p_rnodeTmp%p_Iint32_3D,1),&
-                size(p_rnodeTmp%p_Iint32_3D,2),&
-                size(p_rnodeTmp%p_Iint32_3D,3),&
-                p_rnode%imemBytes, npack)
-            call coproc_memcpyHostToDevice(p_rnodeTmp%p_Iint32_3D,&
-                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+            call coproc_tmemcpyHostToDevice3d(p_rnode%p_Iint32_3D,&
+                p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes,&
+                size(p_rnode%p_Iint32_3D,1),&
+                size(p_rnode%p_Iint32_3D,2),&
+                size(p_rnode%p_Iint32_3D,3), npack)
           else
             call coproc_memcpyHostToDevice(p_rnode%p_Iint32_3D,&
-                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+                p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes)
           end if
 
         case (ST_INT64)
           if (btranspose) then
-            call transposeOutOfPlace_Int64_3D(p_rnode%p_Iint64_3D,&
-                p_rnodeTmp%p_Iint64_3D,&
-                size(p_rnodeTmp%p_Iint64_3D,1),&
-                size(p_rnodeTmp%p_Iint64_3D,2),&
-                size(p_rnodeTmp%p_Iint64_3D,3),&
-                p_rnode%imemBytes, npack)
-            call coproc_memcpyHostToDevice(p_rnodeTmp%p_Iint64_3D,&
-                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+            call coproc_tmemcpyHostToDevice3d(p_rnode%p_Iint64_3D,&
+                p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes,&
+                size(p_rnode%p_Iint64_3D,1),&
+                size(p_rnode%p_Iint64_3D,2),&
+                size(p_rnode%p_Iint64_3D,3), npack)
           else
             call coproc_memcpyHostToDevice(p_rnode%p_Iint64_3D,&
-                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+                p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes)
           end if
 
         case (ST_LOGICAL)
           if (btranspose) then
-            call transposeOutOfPlace_Logical3D(p_rnode%p_Blogical3D,&
-                p_rnodeTmp%p_Blogical3D,&
-                size(p_rnodeTmp%p_Blogical3D,1),&
-                size(p_rnodeTmp%p_Blogical3D,2),&
-                size(p_rnodeTmp%p_Blogical3D,3),&
-                p_rnode%imemBytes, npack)
-            call coproc_memcpyHostToDevice(p_rnodeTmp%p_Blogical3D,&
-                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+            call coproc_tmemcpyHostToDevice3d(p_rnode%p_Blogical3D,&
+                p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes,&
+                size(p_rnode%p_Blogical3D,1),&
+                size(p_rnode%p_Blogical3D,2),&
+                size(p_rnode%p_Blogical3D,3), npack)
           else
             call coproc_memcpyHostToDevice(p_rnode%p_Blogical3D,&
-                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+                p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes)
           end if
 
         case (ST_CHAR)
           if (btranspose) then
-            call transposeOutOfPlace_Char3D(p_rnode%p_SChar3D,&
-                p_rnodeTmp%p_SChar3D,&
-                size(p_rnodeTmp%p_SChar3D,1),&
-                size(p_rnodeTmp%p_SChar3D,2),&
-                size(p_rnodeTmp%p_SChar3D,3),&
-                p_rnode%imemBytes, npack)
-            call coproc_memcpyHostToDevice(p_rnodeTmp%p_SChar3D,&
-                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+            call coproc_tmemcpyHostToDevice3d(p_rnode%p_Schar3D,&
+                p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes,&
+                size(p_rnode%p_SChar3D,1),&
+                size(p_rnode%p_SChar3D,2),&
+                size(p_rnode%p_SChar3D,3), npack)
           else
             call coproc_memcpyHostToDevice(p_rnode%p_Schar3D,&
-                p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+                p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes)
           end if
 
         case default
@@ -17740,9 +17741,6 @@ contains
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_syncMemoryHostDevice')
           call sys_halt()
         end select
-
-        ! Free temporal working array (if created)
-        if (btranspose) call storage_free(ihandleTmp)
 
       case default
         call output_line ('Unsupported dimension!', &
@@ -17757,7 +17755,7 @@ contains
       ! then an error is thrown and the program terminates.
 
       ! Check if memory on device is allocated
-      if (.not.storage_isAssociated(p_rnode%cdeviceMemPtr)) then
+      if (.not.storage_isAssociated(p_rnode%CdeviceMemPtr(idev))) then
         call output_line ('Invalid memory address!', &
                           OU_CLASS_ERROR,OU_MODE_STD,'storage_syncMemoryHostDevice')
         call sys_halt()
@@ -17766,7 +17764,7 @@ contains
 #ifdef USE_C_PTR_STORAGE
         ! Check if asynchroneous transfer is applicable
         if (present(istream) .and. .not.(btranspose)) then
-          call coproc_memcpyDeviceToHostAsync(p_rnode%cdeviceMemPtr,&
+          call coproc_memcpyDeviceToHostAsync(p_rnode%CdeviceMemPtr(idev),&
               p_rnode%chostMemPtr, p_rnode%imemBytes, istream)
 
           ! That`s it
@@ -17781,34 +17779,34 @@ contains
         ! What data type are we?
         select case(p_rnode%idataType)
         case (ST_SINGLE)
-          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
+          call coproc_memcpyDeviceToHost(p_rnode%CdeviceMemPtr(idev),&
               p_rnode%p_Fsingle1D, p_rnode%imemBytes)
         case (ST_DOUBLE)
-          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
+          call coproc_memcpyDeviceToHost(p_rnode%CdeviceMemPtr(idev),&
               p_rnode%p_Ddouble1D, p_rnode%imemBytes)
         case (ST_QUAD)
-          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
+          call coproc_memcpyDeviceToHost(p_rnode%CdeviceMemPtr(idev),&
               p_rnode%p_Qquad1D, p_rnode%imemBytes)
         case (ST_INT)
-          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
+          call coproc_memcpyDeviceToHost(p_rnode%CdeviceMemPtr(idev),&
               p_rnode%p_Iinteger1D, p_rnode%imemBytes)
         case (ST_INT8)
-          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
+          call coproc_memcpyDeviceToHost(p_rnode%CdeviceMemPtr(idev),&
               p_rnode%p_Iint8_1D, p_rnode%imemBytes)
         case (ST_INT16)
-          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
+          call coproc_memcpyDeviceToHost(p_rnode%CdeviceMemPtr(idev),&
               p_rnode%p_Iint16_1D, p_rnode%imemBytes)
         case (ST_INT32)
-          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
+          call coproc_memcpyDeviceToHost(p_rnode%CdeviceMemPtr(idev),&
               p_rnode%p_Iint32_1D, p_rnode%imemBytes)
         case (ST_INT64)
-          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
+          call coproc_memcpyDeviceToHost(p_rnode%CdeviceMemPtr(idev),&
               p_rnode%p_Iint64_1D, p_rnode%imemBytes)
         case (ST_LOGICAL)
-          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
+          call coproc_memcpyDeviceToHost(p_rnode%CdeviceMemPtr(idev),&
               p_rnode%p_Blogical1D, p_rnode%imemBytes)
         case (ST_CHAR)
-          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
+          call coproc_memcpyDeviceToHost(p_rnode%CdeviceMemPtr(idev),&
               p_rnode%p_Schar1D, p_rnode%imemBytes)
         case default
           call output_line ('Unsupported data typee!', &
@@ -17820,85 +17818,116 @@ contains
         ! What data type are we?
         select case(p_rnode%idataType)
         case (ST_SINGLE)
-          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
-              p_rnode%p_Fsingle2D, p_rnode%imemBytes)
-          if (btranspose) call transposeInPlace_Single2D(p_rnode%p_Fsingle2D,&
-              size(p_rnode%p_Fsingle2D,2),&
-              size(p_rnode%p_Fsingle2D,1),&
-              p_rnode%imemBytes, npack)
+          if (btranspose) then
+            call coproc_tmemcpyDeviceToHost2d(p_rnode%CdeviceMemPtr(idev),&
+                p_rnode%p_Fsingle2D, p_rnode%imemBytes,&
+                size(p_rnode%p_Fsingle2D,2),&
+                size(p_rnode%p_Fsingle2D,1), npack)
+          else
+            call coproc_memcpyDeviceToHost(p_rnode%CdeviceMemPtr(idev),&
+                p_rnode%p_Fsingle2D, p_rnode%imemBytes)
+          end if
           
         case (ST_DOUBLE)
-          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
-              p_rnode%p_Ddouble2D, p_rnode%imemBytes)
-          if (btranspose) call transposeInPlace_Double2D(p_rnode%p_Ddouble2D,&
-              size(p_rnode%p_Ddouble2D,2),&
-              size(p_rnode%p_Ddouble2D,1),&
-              p_rnode%imemBytes, npack)
-
+          if (btranspose) then
+            call coproc_tmemcpyDeviceToHost2d(p_rnode%CdeviceMemPtr(idev),&
+                p_rnode%p_Ddouble2D, p_rnode%imemBytes,&
+                size(p_rnode%p_Ddouble2D,2),&
+                size(p_rnode%p_Ddouble2D,1), npack)
+          else
+            call coproc_memcpyDeviceToHost(p_rnode%CdeviceMemPtr(idev),&
+                p_rnode%p_Ddouble2D, p_rnode%imemBytes)
+          end if
+          
         case (ST_QUAD)
-          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
-              p_rnode%p_Qquad2D, p_rnode%imemBytes)
-          if (btranspose) call transposeInPlace_Quad2D(p_rnode%p_Qquad2D,&
-              size(p_rnode%p_Qquad2D,2),&
-              size(p_rnode%p_Qquad2D,1),&
-              p_rnode%imemBytes, npack)
-
+          if (btranspose) then
+            call coproc_tmemcpyDeviceToHost2d(p_rnode%CdeviceMemPtr(idev),&
+                p_rnode%p_Qquad2D, p_rnode%imemBytes,&
+                size(p_rnode%p_Qquad2D,2),&
+                size(p_rnode%p_Qquad2D,1), npack)
+          else
+            call coproc_memcpyDeviceToHost(p_rnode%CdeviceMemPtr(idev),&
+                p_rnode%p_Qquad2D, p_rnode%imemBytes)
+          end if
+          
         case (ST_INT)
-          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
-              p_rnode%p_Iinteger2D, p_rnode%imemBytes)
-          if (btranspose) call transposeInPlace_Integer2D(p_rnode%p_Iinteger2D,&
-              size(p_rnode%p_Iinteger2D,2),&
-              size(p_rnode%p_Iinteger2D,1),&
-              p_rnode%imemBytes, npack)
-
+          if (btranspose) then
+            call coproc_tmemcpyDeviceToHost2d(p_rnode%CdeviceMemPtr(idev),&
+                p_rnode%p_Iinteger2D, p_rnode%imemBytes,&
+                size(p_rnode%p_Iinteger2D,2),&
+                size(p_rnode%p_Iinteger2D,1), npack)
+          else
+            call coproc_memcpyDeviceToHost(p_rnode%CdeviceMemPtr(idev),&
+                p_rnode%p_Iinteger2D, p_rnode%imemBytes)
+          end if
+          
         case (ST_INT8)
-          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
-              p_rnode%p_Iint8_2D, p_rnode%imemBytes)
-          if (btranspose) call transposeInPlace_Int8_2D(p_rnode%p_Iint8_2D,&
-              size(p_rnode%p_Iint8_2D,2),&
-              size(p_rnode%p_Iint8_2D,1),&
-              p_rnode%imemBytes, npack)
+          if (btranspose) then
+            call coproc_tmemcpyDeviceToHost2d(p_rnode%CdeviceMemPtr(idev),&
+                p_rnode%p_Iint8_2D, p_rnode%imemBytes,&
+                size(p_rnode%p_Iint8_2D,2),&
+                size(p_rnode%p_Iint8_2D,1), npack)
+          else
+            call coproc_memcpyDeviceToHost(p_rnode%CdeviceMemPtr(idev),&
+                p_rnode%p_Iint8_2D, p_rnode%imemBytes)
+          end if
 
         case (ST_INT16)
-          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
-              p_rnode%p_Iint16_2D, p_rnode%imemBytes)
-          if (btranspose) call transposeInPlace_Int16_2D(p_rnode%p_Iint16_2D,&
-              size(p_rnode%p_Iint16_2D,2),&
-              size(p_rnode%p_Iint16_2D,1),&
-              p_rnode%imemBytes, npack)
-
+          if (btranspose) then
+            call coproc_tmemcpyDeviceToHost2d(p_rnode%CdeviceMemPtr(idev),&
+                p_rnode%p_Iint16_2D, p_rnode%imemBytes,&
+                size(p_rnode%p_Iint16_2D,2),&
+                size(p_rnode%p_Iint16_2D,1), npack)
+          else
+            call coproc_memcpyDeviceToHost(p_rnode%CdeviceMemPtr(idev),&
+                p_rnode%p_Iint16_2D, p_rnode%imemBytes)
+          end if
+          
         case (ST_INT32)
-          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
-              p_rnode%p_Iint32_2D, p_rnode%imemBytes)
-          if (btranspose) call transposeInPlace_Int32_2D(p_rnode%p_Iint32_2D,&
-              size(p_rnode%p_Iint32_2D,2),&
-              size(p_rnode%p_Iint32_2D,1),&
-              p_rnode%imemBytes, npack)
-
+          if (btranspose) then
+            call coproc_tmemcpyDeviceToHost2d(p_rnode%CdeviceMemPtr(idev),&
+                p_rnode%p_Iint32_2D, p_rnode%imemBytes,&
+                size(p_rnode%p_Iint32_2D,2),&
+                size(p_rnode%p_Iint32_2D,1), npack)
+          else
+            call coproc_memcpyDeviceToHost(p_rnode%CdeviceMemPtr(idev),&
+                p_rnode%p_Iint32_2D, p_rnode%imemBytes)
+          end if
+          
         case (ST_INT64)
-          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
-              p_rnode%p_Iint64_2D, p_rnode%imemBytes)
-          if (btranspose) call transposeInPlace_Int64_2D(p_rnode%p_Iint64_2D,&
-              size(p_rnode%p_Iint64_2D,2),&
-              size(p_rnode%p_Iint64_2D,1),&
-              p_rnode%imemBytes, npack)
-
+           if (btranspose) then
+            call coproc_tmemcpyDeviceToHost2d(p_rnode%CdeviceMemPtr(idev),&
+                p_rnode%p_Iint64_2D, p_rnode%imemBytes,&
+                size(p_rnode%p_Iint64_2D,2),&
+                size(p_rnode%p_Iint64_2D,1), npack)
+          else
+            call coproc_memcpyDeviceToHost(p_rnode%CdeviceMemPtr(idev),&
+                p_rnode%p_Iint64_2D, p_rnode%imemBytes)
+          end if
+            
         case (ST_LOGICAL)
-          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
-              p_rnode%p_Blogical2D, p_rnode%imemBytes)
-          if (btranspose) call transposeInPlace_Logical2D(p_rnode%p_Blogical2D,&
-              size(p_rnode%p_Blogical2D,2),&
-              size(p_rnode%p_Blogical2D,1),&
-              p_rnode%imemBytes, npack)
+          if (btranspose) then
+            call coproc_tmemcpyDeviceToHost2d(p_rnode%CdeviceMemPtr(idev),&
+                p_rnode%p_Blogical2D, p_rnode%imemBytes,&
+                size(p_rnode%p_Blogical2D,2),&
+                size(p_rnode%p_Blogical2D,1), npack)
+          else
+            call coproc_memcpyDeviceToHost(p_rnode%CdeviceMemPtr(idev),&
+                p_rnode%p_Blogical2D, p_rnode%imemBytes)
+          end if
 
         case (ST_CHAR)
-          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
-              p_rnode%p_Schar2D, p_rnode%imemBytes)
-          if (btranspose) call transposeInPlace_Char2D(p_rnode%p_Schar2D,&
-              size(p_rnode%p_Schar2D,2),&
-              size(p_rnode%p_Schar2D,1),&
-              p_rnode%imemBytes, npack)
-
+          if (btranspose) then
+            call coproc_tmemcpyDeviceToHost2d(p_rnode%CdeviceMemPtr(idev),&
+                p_rnode%p_Schar2D, p_rnode%imemBytes,&
+                size(p_rnode%p_Schar2D,2),&
+                size(p_rnode%p_Schar2D,1),&
+                p_rnode%imemBytes, npack)
+          else
+            call coproc_memcpyDeviceToHost(p_rnode%CdeviceMemPtr(idev),&
+                p_rnode%p_Schar2D, p_rnode%imemBytes)
+          end if
+          
         case default
           call output_line ('Unsupported data typee!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_syncMemoryHostDevice')
@@ -17909,101 +17938,131 @@ contains
         ! What data type are we?
         select case(p_rnode%idataType)
         case (ST_SINGLE)
-          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
-              p_rnode%p_Fsingle3D, p_rnode%imemBytes)
-          if (btranspose) call transposeInPlace_Single3D(p_rnode%p_Fsingle3D,&
-              size(p_rnode%p_Fsingle3D,3),&
-              size(p_rnode%p_Fsingle3D,2),&
-              size(p_rnode%p_Fsingle3D,1),&
-              p_rnode%imemBytes, npack)
+          if (btranspose) then
+            call coproc_tmemcpyDeviceToHost3d(p_rnode%CdeviceMemPtr(idev),&
+                p_rnode%p_Fsingle3D, p_rnode%imemBytes,&
+                size(p_rnode%p_Fsingle3D,3),&
+                size(p_rnode%p_Fsingle3D,2),&
+                size(p_rnode%p_Fsingle3D,1), npack)
+          else
+            call coproc_memcpyDeviceToHost(p_rnode%CdeviceMemPtr(idev),&
+                p_rnode%p_Fsingle3D, p_rnode%imemBytes)
+          end if
 
         case (ST_DOUBLE)
-          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
-              p_rnode%p_Ddouble3D, p_rnode%imemBytes)
-          if (btranspose) call transposeInPlace_Double3D(p_rnode%p_Ddouble3D,&
-              size(p_rnode%p_Ddouble3D,3),&
-              size(p_rnode%p_Ddouble3D,2),&
-              size(p_rnode%p_Ddouble3D,1),&
-                p_rnode%imemBytes, npack)
+          if (btranspose) then
+            call coproc_tmemcpyDeviceToHost3d(p_rnode%CdeviceMemPtr(idev),&
+                p_rnode%p_Ddouble3D, p_rnode%imemBytes,&
+                size(p_rnode%p_Ddouble3D,3),&
+                size(p_rnode%p_Ddouble3D,2),&
+                size(p_rnode%p_Ddouble3D,1), npack)
+          else
+            call coproc_memcpyDeviceToHost(p_rnode%CdeviceMemPtr(idev),&
+                p_rnode%p_Ddouble3D, p_rnode%imemBytes)
+          end if
 
         case (ST_QUAD)
-          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
-              p_rnode%p_Qquad3D, p_rnode%imemBytes)
-          if (btranspose) call transposeInPlace_Quad3D(p_rnode%p_Qquad3D,&
-              size(p_rnode%p_Qquad3D,3),&
-              size(p_rnode%p_Qquad3D,2),&
-              size(p_rnode%p_Qquad3D,1),&
-              p_rnode%imemBytes, npack)
+          if (btranspose) then
+            call coproc_tmemcpyDeviceToHost3d(p_rnode%CdeviceMemPtr(idev),&
+                p_rnode%p_Qquad3D, p_rnode%imemBytes,&
+                size(p_rnode%p_Qquad3D,3),&
+                size(p_rnode%p_Qquad3D,2),&
+                size(p_rnode%p_Qquad3D,1), npack)
+          else
+            call coproc_memcpyDeviceToHost(p_rnode%CdeviceMemPtr(idev),&
+                p_rnode%p_Qquad3D, p_rnode%imemBytes)
+          end if
 
         case (ST_INT)
-          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
-              p_rnode%p_Iinteger3D, p_rnode%imemBytes)
-          if (btranspose) call transposeInPlace_Integer3D(p_rnode%p_Iinteger3D,&
-              size(p_rnode%p_Iinteger3D,3),&
-              size(p_rnode%p_Iinteger3D,2),&
-              size(p_rnode%p_Iinteger3D,1),&
-              p_rnode%imemBytes, npack)
+          if (btranspose) then
+            call coproc_tmemcpyDeviceToHost3d(p_rnode%CdeviceMemPtr(idev),&
+                p_rnode%p_Iinteger3D, p_rnode%imemBytes,&
+                size(p_rnode%p_Iinteger3D,3),&
+                size(p_rnode%p_Iinteger3D,2),&
+                size(p_rnode%p_Iinteger3D,1), npack)
+          else
+            call coproc_memcpyDeviceToHost(p_rnode%CdeviceMemPtr(idev),&
+                p_rnode%p_Iinteger3D, p_rnode%imemBytes)
+          end if
 
         case (ST_INT8)
-          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
-              p_rnode%p_Iint8_3D, p_rnode%imemBytes)
-          if (btranspose) call transposeInPlace_Int8_3D(p_rnode%p_Iint8_3D,&
-              size(p_rnode%p_Iint8_3D,3),&
-              size(p_rnode%p_Iint8_3D,2),&
-              size(p_rnode%p_Iint8_3D,1),&
-              p_rnode%imemBytes, npack)
+          if (btranspose) then
+            call coproc_tmemcpyDeviceToHost3d(p_rnode%CdeviceMemPtr(idev),&
+                p_rnode%p_Iint8_3D, p_rnode%imemBytes,&
+                size(p_rnode%p_Iint8_3D,3),&
+                size(p_rnode%p_Iint8_3D,2),&
+                size(p_rnode%p_Iint8_3D,1), npack)
+          else
+            call coproc_memcpyDeviceToHost(p_rnode%CdeviceMemPtr(idev),&
+                p_rnode%p_Iint8_3D, p_rnode%imemBytes)
+          end if
 
         case (ST_INT16)
-          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
-              p_rnode%p_Iint16_3D, p_rnode%imemBytes)
-          if (btranspose) call transposeInPlace_Int16_3D(p_rnode%p_Iint16_3D,&
-              size(p_rnode%p_Iint16_3D,3),&
-              size(p_rnode%p_Iint16_3D,2),&
-              size(p_rnode%p_Iint16_3D,1),&
-              p_rnode%imemBytes, npack)
+          if (btranspose) then
+            call coproc_tmemcpyDeviceToHost3d(p_rnode%CdeviceMemPtr(idev),&
+                p_rnode%p_Iint16_3D, p_rnode%imemBytes,&
+                size(p_rnode%p_Iint16_3D,3),&
+                size(p_rnode%p_Iint16_3D,2),&
+                size(p_rnode%p_Iint16_3D,1), npack)
+          else
+            call coproc_memcpyDeviceToHost(p_rnode%CdeviceMemPtr(idev),&
+                p_rnode%p_Iint16_3D, p_rnode%imemBytes)
+          end if
 
         case (ST_INT32)
-          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
-              p_rnode%p_Iint32_3D, p_rnode%imemBytes)
-          if (btranspose) call transposeInPlace_Int32_3D(p_rnode%p_Iint32_3D,&
-              size(p_rnode%p_Iint32_3D,3),&
-              size(p_rnode%p_Iint32_3D,2),&
-              size(p_rnode%p_Iint32_3D,1),&
-              p_rnode%imemBytes, npack)
+          if (btranspose) then
+            call coproc_tmemcpyDeviceToHost3d(p_rnode%CdeviceMemPtr(idev),&
+                p_rnode%p_Iint32_3D, p_rnode%imemBytes,&
+                size(p_rnode%p_Iint32_3D,3),&
+                size(p_rnode%p_Iint32_3D,2),&
+                size(p_rnode%p_Iint32_3D,1), npack)
+          else
+            call coproc_memcpyDeviceToHost(p_rnode%CdeviceMemPtr(idev),&
+                p_rnode%p_Iint32_3D, p_rnode%imemBytes)
+          end if
 
         case (ST_INT64)
-          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
-              p_rnode%p_Iint64_3D, p_rnode%imemBytes)
-          if (btranspose) call transposeInPlace_Int64_3D(p_rnode%p_Iint64_3D,&
-              size(p_rnode%p_Iint64_3D,3),&
-              size(p_rnode%p_Iint64_3D,2),&
-              size(p_rnode%p_Iint64_3D,1),&
-              p_rnode%imemBytes, npack)
+          if (btranspose) then
+            call coproc_tmemcpyDeviceToHost3d(p_rnode%CdeviceMemPtr(idev),&
+                p_rnode%p_Iint64_3D, p_rnode%imemBytes,&
+                size(p_rnode%p_Iint64_3D,3),&
+                size(p_rnode%p_Iint64_3D,2),&
+                size(p_rnode%p_Iint64_3D,1), npack)
+          else
+            call coproc_memcpyDeviceToHost(p_rnode%CdeviceMemPtr(idev),&
+                p_rnode%p_Iint64_3D, p_rnode%imemBytes)
+          end if
 
         case (ST_LOGICAL)
-          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
-              p_rnode%p_Blogical3D, p_rnode%imemBytes)
-          if (btranspose) call transposeInPlace_Logical3D(p_rnode%p_Blogical3D,&
-              size(p_rnode%p_Blogical3D,3),&
-              size(p_rnode%p_Blogical3D,2),&
-              size(p_rnode%p_Blogical3D,1),&
-              p_rnode%imemBytes, npack)
+          if (btranspose) then
+            call coproc_tmemcpyDeviceToHost3d(p_rnode%CdeviceMemPtr(idev),&
+                p_rnode%p_Blogical3D, p_rnode%imemBytes,&
+                size(p_rnode%p_Blogical3D,3),&
+                size(p_rnode%p_Blogical3D,2),&
+                size(p_rnode%p_Blogical3D,1), npack)
+          else
+            call coproc_memcpyDeviceToHost(p_rnode%CdeviceMemPtr(idev),&
+                p_rnode%p_Blogical3D, p_rnode%imemBytes)
+          end if
 
         case (ST_CHAR)
-          call coproc_memcpyDeviceToHost(p_rnode%cdeviceMemPtr,&
-              p_rnode%p_Schar3D, p_rnode%imemBytes)
-          if (btranspose) call transposeInPlace_Char3D(p_rnode%p_Schar3D,&
-              size(p_rnode%p_Schar3D,3),&
-              size(p_rnode%p_Schar3D,2),&
-              size(p_rnode%p_Schar3D,1),&
-              p_rnode%imemBytes, npack)
-
+          if (btranspose) then
+            call coproc_tmemcpyDeviceToHost3d(p_rnode%CdeviceMemPtr(idev),&
+                p_rnode%p_Schar3D, p_rnode%imemBytes,&
+                size(p_rnode%p_Schar3D,3),&
+                size(p_rnode%p_Schar3D,2),&
+                size(p_rnode%p_Schar3D,1), npack)
+          else
+            call coproc_memcpyDeviceToHost(p_rnode%CdeviceMemPtr(idev),&
+                p_rnode%p_Schar3D, p_rnode%imemBytes)
+          end if
+          
         case default
           call output_line ('Unsupported data typee!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'storage_syncMemoryHostDevice')
+              OU_CLASS_ERROR,OU_MODE_STD,'storage_syncMemoryHostDevice')
           call sys_halt()
         end select
-
+        
       case default
         call output_line ('Unsupported dimension!', &
                           OU_CLASS_ERROR,OU_MODE_STD,'storage_syncMemoryHostDevice')
@@ -18017,26 +18076,26 @@ contains
       ! then a new memory block is first allocated on the device
 
       ! Check if memory on device is allocated
-      if (.not.storage_isAssociated(p_rnode%cdeviceMemPtr)) then
+      if (.not.storage_isAssociated(p_rnode%CdeviceMemPtr(idev))) then
         ! Device memory has not been allocated so this is a simple copy
         call storage_syncMemoryHostDevice(ihandle, ST_SYNCBLOCK_COPY_H2D,&
-            btranspose, istream, nelemPack, p_rheap)
+            btranspose, istream, nelemPack, Idevice, p_rheap)
       else
         ! This is tricky. We need to transfer the data from host memory
         ! into device memory and accumulate it into device memory. This
         ! cannot be done directly but some temporal storage is required.
 
         ! Make a backup of the memory pointer
-        cdeviceMemPtr = p_rnode%cdeviceMemPtr
+        cdeviceMemPtr = p_rnode%CdeviceMemPtr(idev)
 
         ! Allocate memory on the device by hand
-        call coproc_newMemoryOnDevice(p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
+        call coproc_newMemoryOnDevice(p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes)
 
         ! Copy content of host memory associated with handle ihandle
         ! into temporal memory block on device. Note that the memory
         ! address has been modified by hand, so that data is preserved.
         call storage_syncMemoryHostDevice(ihandle, ST_SYNCBLOCK_COPY_H2D,&
-            btranspose, istream, nelemPack, p_rheap)
+            btranspose, istream, nelemPack, Idevice, p_rheap)
 
         ! We are back from recursion and both memory blocks are
         ! available in device memory. So we can add both memory blocks
@@ -18048,31 +18107,31 @@ contains
         ! What data type are we?
         select case(p_rnode%idataType)
         case (ST_SINGLE)
-          call coproc_combineSingleOnDevice(p_rnode%cdeviceMemPtr, cdeviceMemPtr,&
+          call coproc_combineSingleOnDevice(p_rnode%CdeviceMemPtr(idev), cdeviceMemPtr,&
               cdeviceMemPtr, p_rnode%imemBytes/ST_SINGLE_BYTES, istreamTmp)
         case (ST_DOUBLE)
-          call coproc_combineDoubleOnDevice(p_rnode%cdeviceMemPtr, cdeviceMemPtr,&
+          call coproc_combineDoubleOnDevice(p_rnode%CdeviceMemPtr(idev), cdeviceMemPtr,&
               cdeviceMemPtr, p_rnode%imemBytes/ST_DOUBLE_BYTES, istreamTmp)
         case (ST_QUAD)
-          call coproc_combineQuadOnDevice(p_rnode%cdeviceMemPtr, cdeviceMemPtr,&
+          call coproc_combineQuadOnDevice(p_rnode%CdeviceMemPtr(idev), cdeviceMemPtr,&
               cdeviceMemPtr, p_rnode%imemBytes/ST_QUAD_BYTES, istreamTmp)
         case (ST_INT)
-          call coproc_combineIntegerOnDevice(p_rnode%cdeviceMemPtr, cdeviceMemPtr,&
+          call coproc_combineIntegerOnDevice(p_rnode%CdeviceMemPtr(idev), cdeviceMemPtr,&
               cdeviceMemPtr, p_rnode%imemBytes/ST_INT_BYTES, istreamTmp)
         case (ST_INT8)
-          call coproc_combineInt8OnDevice(p_rnode%cdeviceMemPtr, cdeviceMemPtr,&
+          call coproc_combineInt8OnDevice(p_rnode%CdeviceMemPtr(idev), cdeviceMemPtr,&
               cdeviceMemPtr, p_rnode%imemBytes/ST_INT8_BYTES, istreamTmp)
         case (ST_INT16)
-          call coproc_combineInt16OnDevice(p_rnode%cdeviceMemPtr, cdeviceMemPtr,&
+          call coproc_combineInt16OnDevice(p_rnode%CdeviceMemPtr(idev), cdeviceMemPtr,&
               cdeviceMemPtr, p_rnode%imemBytes/ST_INT16_BYTES, istreamTmp)
         case (ST_INT32)
-          call coproc_combineInt32OnDevice(p_rnode%cdeviceMemPtr, cdeviceMemPtr,&
+          call coproc_combineInt32OnDevice(p_rnode%CdeviceMemPtr(idev), cdeviceMemPtr,&
               cdeviceMemPtr, p_rnode%imemBytes/ST_INT32_BYTES, istreamTmp)
         case (ST_INT64)
-          call coproc_combineInt64OnDevice(p_rnode%cdeviceMemPtr, cdeviceMemPtr,&
+          call coproc_combineInt64OnDevice(p_rnode%CdeviceMemPtr(idev), cdeviceMemPtr,&
               cdeviceMemPtr, p_rnode%imemBytes/ST_INT64_BYTES, istreamTmp)
         case (ST_LOGICAL)
-          call coproc_combineLogicalOnDevice(p_rnode%cdeviceMemPtr, cdeviceMemPtr,&
+          call coproc_combineLogicalOnDevice(p_rnode%CdeviceMemPtr(idev), cdeviceMemPtr,&
               cdeviceMemPtr, p_rnode%imemBytes/ST_LOGICAL_BYTES, istreamTmp)
         case default
           call output_line ('Unsupported data type!', &
@@ -18083,10 +18142,10 @@ contains
         call coproc_synchronizeStream(istreamTmp)
 
         ! Release temporal memory block ...
-        call coproc_freeMemoryOnDevice(p_rnode%cdeviceMemPtr)
+        call coproc_freeMemoryOnDevice(p_rnode%CdeviceMemPtr(idev))
 
         ! ... and restore backup of original memory address
-        p_rnode%cdeviceMemPtr = cdeviceMemPtr
+        p_rnode%CdeviceMemPtr(idev) = cdeviceMemPtr
       end if
 
     case (ST_SYNCBLOCK_ACCUMULATE_D2H)
@@ -18096,7 +18155,7 @@ contains
       ! then a new memory block is first allocated on the device
 
       ! Check if memory on device is allocated
-      if (.not.storage_isAssociated(p_rnode%cdeviceMemPtr)) then
+      if (.not.storage_isAssociated(p_rnode%CdeviceMemPtr(idev))) then
         call output_line ('Invalid memory address!', &
                           OU_CLASS_ERROR,OU_MODE_STD,'storage_syncMemoryHostDevice')
         call sys_halt()
@@ -18113,7 +18172,7 @@ contains
       ! Transfer the memory address associated with handle ihandle
       ! to the temporal memory block associated with ihandleTmp
       p_rnodeTmp => p_rheap%p_Rdescriptors(ihandleTmp)
-      p_rnodeTmp%cdeviceMemPtr = p_rnode%cdeviceMemPtr
+      p_rnodeTmp%CdeviceMemPtr(idev) = p_rnode%CdeviceMemPtr(idev)
 
       ! Copy content from device memory to host memory block
       ! associated with temporal handle ihandleTmp. Note that it does
@@ -18230,7 +18289,7 @@ contains
       end select
 
       ! Manually remove memory address from handle ihandleTmp
-      call storage_nullify(p_rnodeTmp%cdeviceMemPtr)
+      call storage_nullify(p_rnodeTmp%CdeviceMemPtr(idev))
 
       ! Release temporal handle ihandleTmp
       call storage_free(ihandleTmp)
@@ -18552,7 +18611,7 @@ contains
 
       integer :: i,j,isize,nbyte
 
-      if (npack > 1) then
+      if (npack >= 1) then
         isize = n1/npack
         nbyte = membytes/n2/isize
         call coproc_transposeOnHost2d(Iinteger2D, Iinteger2D_t, nbyte, isize, n2)
@@ -19097,13 +19156,72 @@ contains
 
 #endif
 
-  end subroutine storage_syncMemoryHostDevice
+  end subroutine storage_syncMemoryHostDevice1
 
 !************************************************************************
 
 !<subroutine>
 
-  subroutine storage_clearMemoryOnDevice (ihandle, rheap)
+  subroutine storage_syncMemoryHostDevice2 (ihandle, csyncBlock,&
+      btransposeMemoryOrder, Idevice, istream, nelemPack, rheap)
+
+!<description>
+  ! This routine synchronises the handle of the heap between host
+  ! memory and multiple device memory.
+!</description>
+
+!<input>
+  ! Handle of the memory block
+  integer, intent(in) :: ihandle
+
+  ! Synchronisation identifier (ST_SYNCBLOCK_COPY_H2D,
+  ! ST_SYNCBLOCK_COPY_D2H, ST_SYNCBLOCK_ACCUMULATE_D2H,
+  ! ST_SYNCBLOCK_ACCUMULATE_H2D). Specifies how to
+  ! synchronise the data in host and device memory.
+  integer, intent(in) :: csyncBlock
+
+  ! OPTIONAL: if .TRUE. then the memory order is transposed before
+  ! transfering it from host to device memory and vice versa
+  logical, intent(in), optional :: btransposeMemoryOrder
+
+  ! Array of device numbers
+  integer, intent(in), dimension(:) :: Idevice
+
+  ! OPTIONAL: stream for asynchronious transfer.
+  ! If istream is present and if asynchroneous transfer is supported
+  ! then all memory transfers are carried out asynchroneously
+  integer(I64), intent(in), optional :: istream
+
+  ! OPTIONAL: if btransposeMemoryOrder=.TRUE. the number elements that
+  ! should be packed into a single item to be treated as atomic unit.
+  integer, intent(in), optional :: nelemPack
+!</input>
+
+!<inputoutput>
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  type(t_storageBlock), intent(inout), target, optional :: rheap
+!</inputoutput>
+
+!</subroutine>
+
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+
+#else
+
+    call output_line ('Application must be compiled with coprocessor support enabled!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'storage_syncMemoryHostDevice')
+    call sys_halt()
+
+#endif
+
+  end subroutine storage_syncMemoryHostDevice2
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine storage_clearMemoryOnDevice (ihandle, Idevice, rheap)
 
 !<description>
   ! This routine clears a memory block in the device memory
@@ -19114,6 +19232,12 @@ contains
 !<input>
   ! Handle of the memory block
   integer, intent(in) :: ihandle
+
+  ! OPTIONAL: array of device numbers
+  ! If not present, then the first device is used by default.
+  ! Multiple devices can be addressed by giving the device numbers
+  ! or by using one of the constants ST_DEVICE_xxx.
+  integer, intent(in), dimension(:), optional :: Idevice
 !</input>
 
 !<inputoutput>
@@ -19129,7 +19253,7 @@ contains
   ! Pointer to the heap
   type(t_storageBlock), pointer :: p_rheap
   type(t_storageNode), pointer :: p_rnode
-
+  integer :: i,idev
 
     ! Get the heap to use - local or global one.
     if(present(rheap)) then
@@ -19137,7 +19261,7 @@ contains
     else
       p_rheap => rbase
     end if
-
+    
     if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'storage_clearMemoryOnDevice')
@@ -19147,13 +19271,36 @@ contains
     ! Where is the descriptor of the handle?
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
 
-    ! Check if memory address is already in use
-    if (.not.storage_isAssociated(p_rnode%cdeviceMemPtr))&
-        call coproc_newMemoryOnDevice(p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
-
-    ! Fill memory with zeros
-    call coproc_clearMemoryOnDevice(p_rnode%cdeviceMemPtr, p_rnode%imemBytes)
-
+    if (present(Idevice)) then
+      if (Idevice(1) .eq. 0) then
+        do idev = 1, size(p_rnode%CdeviceMemPtr)
+          ! Check if memory address is already in use
+          if (.not.storage_isAssociated(p_rnode%CdeviceMemPtr(idev)))&
+              call coproc_newMemoryOnDevice(p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes)
+          
+          ! Fill memory with zeros
+          call coproc_clearMemoryOnDevice(p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes)
+        end do
+      else
+        do i = 1, size(Idevice)
+          idev = Idevice(i)
+          ! Check if memory address is already in use
+          if (.not.storage_isAssociated(p_rnode%CdeviceMemPtr(idev)))&
+              call coproc_newMemoryOnDevice(p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes)
+          
+          ! Fill memory with zeros
+          call coproc_clearMemoryOnDevice(p_rnode%CdeviceMemPtr(idev), p_rnode%imemBytes)
+        end do
+      end if
+    else
+      ! Check if memory address is already in use
+      if (.not.storage_isAssociated(p_rnode%CdeviceMemPtr(1)))&
+          call coproc_newMemoryOnDevice(p_rnode%CdeviceMemPtr(1), p_rnode%imemBytes)
+      
+      ! Fill memory with zeros
+      call coproc_clearMemoryOnDevice(p_rnode%CdeviceMemPtr(1), p_rnode%imemBytes)
+    end if
+    
 #else
 
     call output_line ('Application must be compiled with coprocessor support enabled!', &
@@ -19168,7 +19315,7 @@ contains
 
 !<subroutine>
 
-  subroutine storage_getMemPtrOnDevice (ihandle, cdeviceMemPtr, rheap)
+  subroutine storage_getMemPtrOnDevice (ihandle, cdeviceMemPtr, idevice, rheap)
 
 !<description>
   ! Returns the memory address of the memory block associated with
@@ -19178,6 +19325,10 @@ contains
 !<input>
   ! Handle of the memory block
   integer, intent(in) :: ihandle
+
+  ! OPTIONAL: device number
+  ! If not present, then the first device is used by default.
+  integer, intent(in), optional :: idevice
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
@@ -19196,7 +19347,7 @@ contains
   ! Pointer to the heap
   type(t_storageBlock), pointer :: p_rheap
   type(t_storageNode), pointer :: p_rnode
-
+  integer :: idev
 
     ! Get the heap to use - local or global one.
     if(present(rheap)) then
@@ -19204,6 +19355,10 @@ contains
     else
       p_rheap => rbase
     end if
+
+    ! Get the device number
+    idev = 1
+    if (present(idevice)) idev = idevice
 
     if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Handle invalid!', &
@@ -19215,7 +19370,7 @@ contains
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
 
     ! Return memory address
-    cdeviceMemPtr = p_rnode%cdeviceMemPtr
+    cdeviceMemPtr = p_rnode%CdeviceMemPtr(idev)
 
 #else
 

@@ -14,8 +14,11 @@
  */
 
 extern "C" {
-  int coproc_transposeOnHost2d(void *, void *, int, int, int);
-  int coproc_transposeOnHost3d(void *, void *, int, int, int, int);
+  void coproc_transposeOnHost2d(const void *, void *, int, int, int);
+  void coproc_transposeOnHost3d(const void *, void *, int, int, int, int);
+
+  void coproc_transposeOnDevice2d(const void *, void *, int, int, int, cudaStream_t=0);
+  void coproc_transposeOnDevice3d(const void *, void *, int, int, int, int, cudaStream_t=0);
 }
 
 #endif
