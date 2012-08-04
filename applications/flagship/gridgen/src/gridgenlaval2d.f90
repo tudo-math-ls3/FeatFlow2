@@ -258,14 +258,21 @@ program gridgenlaval2d
                       0.5_DP*(Dpoints(2,18)+Dpoints(2,1))+dheight0+dradius0)
 
   Dpoints(1,20) = Dpoints(1,18)
-  Dpoints(2,20) = 0.5_DP*(Dpoints(2,18)+Dpoints(2,1))+dheight0-dradius0
+  Dpoints(2,20) = min(Dpoints(2,18),&
+                      0.5_DP*(Dpoints(2,18)+Dpoints(2,1))+dheight0-dradius0)
 
-  Dpoints(1,21) = Dpoints(1,18)
-  Dpoints(2,21) = 0.5_DP*(Dpoints(2,18)+Dpoints(2,1))-dheight0+dradius0
+  if (dradius0 >= dheight0) then
+    Dpoints(:,21) = Dpoints(:,20)
+    Dpoints(:,22) = Dpoints(:,20)
+  else
+    Dpoints(1,21) = Dpoints(1,18)
+    Dpoints(2,21) = max(Dpoints(2,1),&
+                        0.5_DP*(Dpoints(2,18)+Dpoints(2,1))-dheight0+dradius0)
 
-  Dpoints(1,22) = Dpoints(1,18)
-  Dpoints(2,22) = max(Dpoints(2,1),&
-                      0.5_DP*(Dpoints(2,18)+Dpoints(2,1))-dheight0-dradius0)
+    Dpoints(1,22) = Dpoints(1,18)
+    Dpoints(2,22) = max(Dpoints(2,1),&
+                        0.5_DP*(Dpoints(2,18)+Dpoints(2,1))-dheight0-dradius0)
+  end if
 
   !-----------------------------------------------------------------------------
   ! Generate PRM-file
@@ -278,26 +285,25 @@ program gridgenlaval2d
   write(100,'(A)') 'IBCT'
   write(100,'(A)') '1 '
   write(100,'(A)') 'NCOMP'
-  write(cbuffer1, fmt='(I4)') 6 + merge(2,0,dheight1 > 0.0_DP)&
-                                + merge(2,0,dheight2 > 0.0_DP)&
-                                + merge(2,0,dheight3 > 0.0_DP)&
-                                + merge(2,0,dwidth1  > 0.0_DP)&
-                                + merge(2,0,dwidth2  > 0.0_DP)&
-                                + merge(2,0,dwidth3  > 0.0_DP)&
-                                + merge(2,1,dheight0 > 0.0_DP)*&
-                                  merge(2,1,dradius0 > 0.0_DP)&
-                                - merge(2,0,Dpoints(2,18) <&
-                                    0.5_DP*(Dpoints(2,18)+Dpoints(2,1))+dheight0+dradius0)
+  write(cbuffer1, fmt='(I4)') 4 + merge(2,0,dheight1 /= 0.0_DP)&
+                                + merge(2,0,dheight2 /= 0.0_DP)&
+                                + merge(2,0,dwidth1  /= 0.0_DP)&
+                                + merge(2,0,dwidth2  /= 0.0_DP)&
+                                + merge(5,1,dwidth3  > 0.0_DP)&
+                                + merge(5,merge(1,3,dradius0 >= dheight0),&
+                                          dheight0 > 0.0_DP .and. dradius0 < dheight0)
   write(100,'(A)') trim(adjustl(cbuffer1))
   write(100,'(A)') 'ITYP NSPLINE NPAR'
-  if (dwidth1  > 0) write(100,'(A)') '1 1 2 '
-  if (dheight1 > 0) write(100,'(A)') '1 1 2 '
-  if (dwidth2  > 0) write(100,'(A)') '1 1 2 '
-  if (dheight2 > 0) write(100,'(A)') '1 1 2 '
+  if (dwidth1  /= 0.0_DP) write(100,'(A)') '1 1 2 '
+  if (dheight1 /= 0.0_DP) write(100,'(A)') '1 1 2 '
+  if (dwidth2  /= 0.0_DP) write(100,'(A)') '1 1 2 '
+  if (dheight2 /= 0.0_DP) write(100,'(A)') '1 1 2 '
   write(100,'(A)') '2 1 3 '   ! lower circle segment
 
   write(100,'(A)') '1 1 2 '   ! lower converging chamber
-  if (dwidth3  > 0) then
+  if (dwidth3  > 0.0_DP) then
+    ! Note that we do not check the special case that
+    ! dwidth3 equals the height of the exist throat
     write(100,'(A)') '1 1 2 '
     write(100,'(A)') '1 1 2 ' ! lower boundary outlet chamber
     write(100,'(A)') '1 1 2 ' ! right boundary outlet chamber
@@ -308,21 +314,29 @@ program gridgenlaval2d
   end if
   write(100,'(A)') '1 1 2 '   ! upper converging chamber
   write(100,'(A)') '2 1 3 '   ! upper circle segment
-  if (dheight2 > 0) write(100,'(A)') '1 1 2 '
-  if (dwidth2  > 0) write(100,'(A)') '1 1 2 '
-  if (dheight1 > 0) write(100,'(A)') '1 1 2 '
-  if (dwidth1  > 0) write(100,'(A)') '1 1 2 '
+  if (dheight2 /= 0.0_DP) write(100,'(A)') '1 1 2 '
+  if (dwidth2  /= 0.0_DP) write(100,'(A)') '1 1 2 '
+  if (dheight1 /= 0.0_DP) write(100,'(A)') '1 1 2 '
+  if (dwidth1  /= 0.0_DP) write(100,'(A)') '1 1 2 '
 
   ! left boundary inlet chamber
-  do ipoint = 1, merge(2,1,dheight0 > 0.0_DP)*merge(2,1,dradius0 > 0.0_DP)&
-                -merge(2,0,Dpoints(2,18) <&
-                       0.5_DP*(Dpoints(2,18)+Dpoints(2,1))+dheight0+dradius0)+1
+  if (dheight0 > 0.0_DP .and. dradius0 < dheight0) then
     write(100,'(A)') '1 1 2 '
-  end do
+    write(100,'(A)') '1 1 2 '
+    write(100,'(A)') '1 1 2 '
+    write(100,'(A)') '1 1 2 '
+    write(100,'(A)') '1 1 2 '
+  else if (dradius0 >= dheight0) then
+    write(100,'(A)') '1 1 2 '
+  else
+    write(100,'(A)') '1 1 2 '
+    write(100,'(A)') '1 1 2 '
+    write(100,'(A)') '1 1 2 '
+  end if
   
   write(100,'(A)') 'PARAMETERS'
   ! Line segment
-  if (dwidth1 > 0.0_DP) then
+  if (dwidth1 /= 0.0_DP) then
     write(cbuffer1, cFormat) Dpoints(1,1)
     write(cbuffer2, cFormat) Dpoints(2,1)
     write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! coordinate
@@ -331,7 +345,7 @@ program gridgenlaval2d
     write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! direction
   end if
   ! Line segment
-  if (dheight1 > 0.0_DP) then
+  if (dheight1 /= 0.0_DP) then
     write(cbuffer1, cFormat) Dpoints(1,2)
     write(cbuffer2, cFormat) Dpoints(2,2)
     write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! coordinate
@@ -340,7 +354,7 @@ program gridgenlaval2d
     write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! direction
   end if
   ! Line segment
-  if (dwidth2 > 0.0_DP) then
+  if (dwidth2 /= 0.0_DP) then
     write(cbuffer1, cFormat) Dpoints(1,3)
     write(cbuffer2, cFormat) Dpoints(2,3)
     write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! coordinate
@@ -349,7 +363,7 @@ program gridgenlaval2d
     write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! direction
   end if
   ! Line segment
-  if (dheight2 > 0.0_DP) then
+  if (dheight2 /= 0.0_DP) then
     write(cbuffer1, cFormat) Dpoints(1,4)
     write(cbuffer2, cFormat) Dpoints(2,4)
     write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! coordinate
@@ -377,7 +391,7 @@ program gridgenlaval2d
   write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! direction
 
   ! Outlet chamber?
-  if (dheight3 > 0.0_DP) then
+  if (dwidth3 > 0.0_DP) then
     ! Line segments
     write(cbuffer1, cFormat) Dpoints(1,7)
     write(cbuffer2, cFormat) Dpoints(2,7)
@@ -440,7 +454,7 @@ program gridgenlaval2d
   write(cbuffer2, cFormat) pi
   write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! angle1
   ! Line segment
-  if (dheight2 > 0.0_DP) then
+  if (dheight2 /= 0.0_DP) then
     write(cbuffer1, cFormat) Dpoints(1,14)
     write(cbuffer2, cFormat) Dpoints(2,14)
     write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! coordinate
@@ -449,7 +463,7 @@ program gridgenlaval2d
     write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! direction
   end if
   ! Line segment
-  if (dwidth2 > 0.0_DP) then
+  if (dwidth2 /= 0.0_DP) then
     write(cbuffer1, cFormat) Dpoints(1,15)
     write(cbuffer2, cFormat) Dpoints(2,15)
     write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! coordinate
@@ -458,7 +472,7 @@ program gridgenlaval2d
     write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! direction
   end if
   ! Line segment
-  if (dheight1 > 0.0_DP) then
+  if (dheight1 /= 0.0_DP) then
     write(cbuffer1, cFormat) Dpoints(1,16)
     write(cbuffer2, cFormat) Dpoints(2,16)
     write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! coordinate
@@ -467,7 +481,7 @@ program gridgenlaval2d
     write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! direction
   end if
   ! Line segment
-  if (dwidth1 > 0.0_DP) then
+  if (dwidth1 /= 0.0_DP) then
     write(cbuffer1, cFormat) Dpoints(1,17)
     write(cbuffer2, cFormat) Dpoints(2,17)
     write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! coordinate
@@ -476,28 +490,74 @@ program gridgenlaval2d
     write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! direction
   end if
   
-  ! Line segment(s)
-  write(cbuffer1, cFormat) Dpoints(1,18)
-  write(cbuffer2, cFormat) Dpoints(2,18)
-  write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! coordinate
-  
-  do ipoint = 19, ncoords
-    ! Check if points coincide
-    if (sqrt((Dpoints(1,ipoint)-Dpoints(1,ipoint-1)**2) +&
-             (Dpoints(2,ipoint)-Dpoints(2,ipoint-1)**2)) .le. 1e-12) cycle
-    
-    write(cbuffer1, cFormat) Dpoints(1,ipoint)-Dpoints(1,ipoint-1)
-    write(cbuffer2, cFormat) Dpoints(2,ipoint)-Dpoints(2,ipoint-1)
-    write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! direction
-
-    write(cbuffer1, cFormat) Dpoints(1,ipoint)
-    write(cbuffer2, cFormat) Dpoints(2,ipoint)
+  ! left boundary inlet chamber
+  if (dheight0 > 0.0_DP .and. dradius0 < dheight0) then
+    ! Line segment
+    write(cbuffer1, cFormat) Dpoints(1,18)
+    write(cbuffer2, cFormat) Dpoints(2,18)
     write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! coordinate
-  end do
-  
-  write(cbuffer1, cFormat) Dpoints(1,1)-Dpoints(1,ncoords)
-  write(cbuffer2, cFormat) Dpoints(2,1)-Dpoints(2,ncoords)
-  write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! direction
+    write(cbuffer1, cFormat) Dpoints(1,19)-Dpoints(1,18)
+    write(cbuffer2, cFormat) Dpoints(2,19)-Dpoints(2,18)
+    write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! direction
+    ! Line segment
+    write(cbuffer1, cFormat) Dpoints(1,19)
+    write(cbuffer2, cFormat) Dpoints(2,19)
+    write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! coordinate
+    write(cbuffer1, cFormat) Dpoints(1,20)-Dpoints(1,19)
+    write(cbuffer2, cFormat) Dpoints(2,20)-Dpoints(2,19)
+    write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! direction
+    ! Line segment
+    write(cbuffer1, cFormat) Dpoints(1,20)
+    write(cbuffer2, cFormat) Dpoints(2,20)
+    write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! coordinate
+    write(cbuffer1, cFormat) Dpoints(1,21)-Dpoints(1,20)
+    write(cbuffer2, cFormat) Dpoints(2,21)-Dpoints(2,20)
+    write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! direction
+    ! Line segment
+    write(cbuffer1, cFormat) Dpoints(1,21)
+    write(cbuffer2, cFormat) Dpoints(2,21)
+    write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! coordinate
+    write(cbuffer1, cFormat) Dpoints(1,22)-Dpoints(1,21)
+    write(cbuffer2, cFormat) Dpoints(2,22)-Dpoints(2,21)
+    write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! direction
+    ! Line segment
+    write(cbuffer1, cFormat) Dpoints(1,22)
+    write(cbuffer2, cFormat) Dpoints(2,22)
+    write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! coordinate
+    write(cbuffer1, cFormat) Dpoints(1,1)-Dpoints(1,22)
+    write(cbuffer2, cFormat) Dpoints(2,1)-Dpoints(2,22)
+    write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! direction
+  elseif (dradius0 >= dheight0) then
+    ! Line segment
+    write(cbuffer1, cFormat) Dpoints(1,18)
+    write(cbuffer2, cFormat) Dpoints(2,18)
+    write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! coordinate
+    write(cbuffer1, cFormat) Dpoints(1,1)-Dpoints(1,18)
+    write(cbuffer2, cFormat) Dpoints(2,1)-Dpoints(2,18)
+    write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! direction
+  else
+    ! Line segment
+    write(cbuffer1, cFormat) Dpoints(1,18)
+    write(cbuffer2, cFormat) Dpoints(2,18)
+    write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! coordinate
+    write(cbuffer1, cFormat) Dpoints(1,19)-Dpoints(1,18)
+    write(cbuffer2, cFormat) Dpoints(2,19)-Dpoints(2,18)
+    write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! direction
+    ! Line segment
+    write(cbuffer1, cFormat) Dpoints(1,19)
+    write(cbuffer2, cFormat) Dpoints(2,19)
+    write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! coordinate
+    write(cbuffer1, cFormat) Dpoints(1,20)-Dpoints(1,19)
+    write(cbuffer2, cFormat) Dpoints(2,20)-Dpoints(2,19)
+    write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! direction
+    ! Line segment
+    write(cbuffer1, cFormat) Dpoints(1,20)
+    write(cbuffer2, cFormat) Dpoints(2,20)
+    write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! coordinate
+    write(cbuffer1, cFormat) Dpoints(1,1)-Dpoints(1,20)
+    write(cbuffer2, cFormat) Dpoints(2,1)-Dpoints(2,20)
+    write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2)) ! direction
+  end if
   
   close(100)
 
@@ -532,7 +592,7 @@ program gridgenlaval2d
 
     ! Check if points coincide
     if (sqrt((Dpoints(1,ipoint)-Dpoints(1,mod(ipoint,ncoords)+1))**2 +&
-             (Dpoints(2,ipoint)-Dpoints(2,mod(ipoint,ncoords)+1))**2) .le. 1e-12) cycle
+             (Dpoints(2,ipoint)-Dpoints(2,mod(ipoint,ncoords)+1))**2) <= 1e-12) cycle
    
     ! Increase number of points by one
     npoints = npoints+1
@@ -637,7 +697,7 @@ program gridgenlaval2d
         write(cbuffer1, '(I10)')  npoints
         write(cbuffer2, cFormat)  dx1+dradius1*cos(pi-dangle1*domega)
         write(cbuffer3, cFormat)  dy1-dradius1*sin(pi-dangle1*domega)
-        write(cbuffer4, cFormat)  real(ipoint,DP)-domega
+        write(cbuffer4, cFormat)  real(npar-1,DP)+(1.0_DP-domega)
     
         ! Write line to file
         write(100, '(A)') trim(adjustl(cbuffer1))//' '//&
@@ -673,7 +733,7 @@ program gridgenlaval2d
   close(100)
 
   ! Now, the number of total points is known and needs to be updated
-  if ((npoints .ne. ncoords) .and. .not.brewrite) then
+  if ((npoints /= ncoords) .and. .not.brewrite) then
     brewrite = .true.
     goto 1
   end if
@@ -711,7 +771,7 @@ program gridgenlaval2d
   write(cbuffer2, '(I10)') nvt
 
   write(100,'(A)') trim(adjustl(cbuffer1))//' '//&
-                   trim(adjustl(cbuffer2))//' 0 4 1  NEL NVT NMT NVE NBCT'
+                   trim(adjustl(cbuffer2))//' 0 3 1  NEL NVT NMT NVE NBCT'
 
   !-----------------------------------------------------------------------------
   write(100,'(A)') 'DCORVG'
@@ -728,7 +788,7 @@ program gridgenlaval2d
   do ivt = 1, nvt
     read(200, fmt=*) i, dx, dy, dpar, ibdc
     
-    if (ibdc .eq. 0) then
+    if (ibdc == 0) then
       ! Write inner vertex
       write(cbuffer1, cFormat) dx
       write(cbuffer2, cFormat) dy
@@ -762,10 +822,10 @@ program gridgenlaval2d
     write(cbuffer1, '(I10)') i1
     write(cbuffer2, '(I10)') i2
     write(cbuffer3, '(I10)') i3
-    write(cbuffer4, '(I10)') 0
     
-    write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2))//' '//&
-                     trim(adjustl(cbuffer3))//' '//trim(adjustl(cbuffer4))
+    write(100,'(A)') trim(adjustl(cbuffer1))//' '//&
+                     trim(adjustl(cbuffer2))//' '//&
+                     trim(adjustl(cbuffer3))
   end do
   
   close(200)

@@ -301,7 +301,7 @@ multisteps = 0
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 1-3
+dfinalTime = 0.1
 
 # initial time step size
 dinitialStep = 1e-3
@@ -681,10 +681,10 @@ nmaxIterations = 100
 #  7 = BiCGSTAB
 #  8 = FGMRES
 # 11 = UMFPACK4
-isolver = 11
+isolver = 2
 
 # dimension of the Krylov subspace for FGMRES method
-nkrylov = 20
+nkrylov = 25
 
 # linear relaxation parameter
 domega = 1.0
