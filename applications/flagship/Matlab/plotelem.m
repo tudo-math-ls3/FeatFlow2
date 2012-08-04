@@ -37,9 +37,9 @@ switch(celement)
             p(idx)=nan;
             
             trisurf(tri,X,Y,p);
-            %title('(P1): FE-solution')
-            %xlabel('x-axis')
-            %ylabel('y-axis')
+            title('(P1): FE-solution')
+            xlabel('x-axis')
+            ylabel('y-axis')
         else
             p1(idx)=nan;
             p2(idx)=nan;
@@ -80,10 +80,11 @@ switch(celement)
         if exist('u'),
             p = u(1).*p1 + u(2).*p2 + u(3).*p3;
             p(idx)=nan;
+            
             trisurf(tri,X,Y,p);
-            %title('(P1T): FE-solution')
-            %xlabel('x-axis')
-            %ylabel('y-axis')
+            title('(P1T): FE-solution')
+            xlabel('x-axis')
+            ylabel('y-axis')
         else
             p1(idx)=nan;
             p2(idx)=nan;
@@ -124,20 +125,9 @@ switch(celement)
             p = u(1).*p1 + u(2).*p2 +...
                 u(3).*p3 + u(4).*p4;
             surf(X,Y,p);
-            alpha(.5)
-            %title('(Q1): FE-solution')
-            %xlabel('x-axis')
-            %ylabel('y-axis')
-            hold on
-            plot3(-1,-1,u(1),'.','MarkerSize',50,...
-                'MarkerEdgeColor','k','MarkerFaceColor','k')
-            plot3( 1,-1,u(2),'.','MarkerSize',50,...
-                'MarkerEdgeColor','k','MarkerFaceColor','k')
-            plot3( 1, 1,u(3),'.','MarkerSize',50,...
-                'MarkerEdgeColor','k','MarkerFaceColor','k')
-            plot3(-1, 1,u(4),'.','MarkerSize',50,...
-                'MarkerEdgeColor','k','MarkerFaceColor','k')
-            hold off
+            title('(Q1): FE-solution')
+            xlabel('x-axis')
+            ylabel('y-axis')
         else
             subplot(2,2,1)
             surf(X,Y,p1)
@@ -180,16 +170,9 @@ switch(celement)
             p = u(1).*p1 + u(2).*p2 +...
                 u(3).*p3 + u(4).*p4;
             surf(X,Y,p);
-            alpha(0.5)
-            %title('(E030): FE-solution')
-            %xlabel('x-axis')
-            %ylabel('y-axis')
-            hold on
-            plot3( [-1  1],[-1 -1],[u(1) u(1)],'k--','LineWidth',3)
-            plot3( [ 1  1],[-1  1],[u(2) u(2)],'k--','LineWidth',3)
-            plot3( [-1  1],[ 1  1],[u(3) u(3)],'k--','LineWidth',3)
-            plot3( [-1 -1],[-1  1],[u(4) u(4)],'k--','LineWidth',3)
-            hold off
+            title('(E030): FE-solution')
+            xlabel('x-axis')
+            ylabel('y-axis')
         else
             subplot(2,2,1)
             surf(X,Y,p1)
@@ -232,20 +215,9 @@ switch(celement)
             p = u(1).*p1 + u(2).*p2 +...
                 u(3).*p3 + u(4).*p4;
             surf(X,Y,p);
-            alpha(0.5)
-            %title('(E031): FE-solution')
-            %xlabel('x-axis')
-            %ylabel('y-axis')
-            hold on
-            plot3( 0,-1,u(1),'.','MarkerSize',50,...
-                'MarkerEdgeColor','k','MarkerFaceColor','k')
-            plot3( 1, 0,u(2),'.','MarkerSize',50,...
-                'MarkerEdgeColor','k','MarkerFaceColor','k')
-            plot3( 0, 1,u(3),'.','MarkerSize',50,...
-                'MarkerEdgeColor','k','MarkerFaceColor','k')
-            plot3(-1, 0,u(4),'.','MarkerSize',50,...
-                'MarkerEdgeColor','k','MarkerFaceColor','k')
-            hold off
+            title('(E031): FE-solution')
+            xlabel('x-axis')
+            ylabel('y-axis')
         else
             subplot(2,2,1)
             surf(X,Y,p1)
