@@ -5682,9 +5682,13 @@ contains
                        ! multiplication factor $\alpha$
 
     case (BDRC_DIRICHLET)
-      nexpressions = 3 ! prescribed boundary value $g$
-                       ! penalty parameter $\epsilon$
-                       ! switching parameter $\gamma$
+      if (iand(ibdrCondType, BDRC_STRONG) .eq. BDRC_STRONG) then
+        nexpressions = 1 ! prescribed boundary value $g$
+      else
+        nexpressions = 3 ! prescribed boundary value $g$
+                         ! penalty parameter $\epsilon$
+                         ! switching parameter $\gamma$
+      end if
 
     case (BDRC_PERIODIC, BDRC_ANTIPERIODIC)
       nexpressions = 2 ! penalty parameter $\epsilon$
