@@ -109,10 +109,10 @@ case ${id} in
 			23|29) cpu="penryn" core=cpu;;           # Intel Core 2 Duo (Wolfdale / Penryn / Yorkfield) 
                                                                  #       and Xeon (Wolfdale / Yorkfield / Hapertown / Dunnington)
                                                                  #       as well as mobile versions
-			26|30|37|44|46) cpu="nehalem" core=cpu;; # Intel Core (Bloomfield / Lynnfield / Clarkdale / Arrandale / Gulftown) 
+			26|30|37|44|45|46) cpu="nehalem" core=cpu;; # Intel Core (Bloomfield / Lynnfield / Clarkdale / Arrandale / Gulftown) 
 			                                         #       and Xeon (Bloomfield / Gainestown / Westmere-EP / Beckton /
                                                                  #       Jasper Forest / Clarkdale) as well as mobile versions
-			28) cpu="atom" core=cpu;;                # Intel Atom
+			28,38) cpu="atom" core=cpu;;             # Intel Atom
 		    esac
 		    ;;
 		7) cpu="itanium" core=cpu;;                      # Intel Itanium (Merced)
