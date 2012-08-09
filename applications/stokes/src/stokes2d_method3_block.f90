@@ -60,7 +60,7 @@ contains
       npointsPerElement,nelements,revalVectors,rcollection)
 
 !<description>  
-    ! Calculates the Mass operator in all diagonal matrices.
+    ! Calculates the Stokes operator.
 !</description>
 
 !<inputoutput>
