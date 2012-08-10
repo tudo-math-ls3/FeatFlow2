@@ -92,6 +92,7 @@
 		<File RelativePath=".\src\poisson1d_method0_simple.f90"/>
 		<File RelativePath=".\src\poisson1d_method1_mg.f90"/>
 		<File RelativePath=".\src\poisson2d_callback.f90"/>
+		<File RelativePath=".\src\poisson2d_method0_block.f90"/>
 		<File RelativePath=".\src\poisson2d_method0_simple.f90"/>
 		<File RelativePath=".\src\poisson2d_method0_smart.f90"/>
 		<File RelativePath=".\src\poisson2d_method1_em30.f90"/>
