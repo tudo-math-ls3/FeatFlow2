@@ -93,7 +93,7 @@ contains
     integer, intent(in)                                         :: nelements
     
     ! Number of points per element, where the coefficients must be computed
-    integer, intent(in)                                         :: npointsPerElement
+    integer, intent(in) :: npointsPerElement
     
     ! This is an array of all points on all the elements where coefficients
     ! are needed.
@@ -112,11 +112,11 @@ contains
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
-    type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
 
     ! Optional: A collection structure to provide additional
     ! information to the coefficient routine.
-    type(t_collection), intent(inout), optional      :: rcollection
+    type(t_collection), intent(inout), optional :: rcollection
     
   !</input>
   
@@ -132,7 +132,7 @@ contains
   
     ! local variables
     type(t_vectorBlock), pointer :: p_rvector
-    real(dp), dimension(:,:), allocatable :: Dfunc
+    real(dp), dimension(:,:), pointer :: p_Dfunc
     integer(I32) :: celement
   
     ! Get a pointer to the FE solution from the collection.
@@ -140,8 +140,9 @@ contains
     ! first quick-access vector pointer in the collection.
     p_rvector => rcollection%p_rvectorQuickAccess1
 
-    ! Allocate memory for the function values in the cubature points:
-    allocate(Dfunc(ubound(Dcoefficients,2),ubound(Dcoefficients,3)))
+    ! Get the temp memory we reserved in the call to the
+    ! assembly method.
+    p_Dfunc => rdomainIntSubset%p_DtempArrays(:,:,1)
     
     ! Calculate the function value of the solution vector in all
     ! our cubature points:
@@ -163,7 +164,7 @@ contains
     
     call fevl_evaluate_sim (p_rvector%RvectorBlock(1), &
         rdomainIntSubset%p_revalElementSet, &
-        celement, rdomainIntSubset%p_IdofsTrial, DER_FUNC, Dfunc)
+        celement, rdomainIntSubset%p_IdofsTrial, DER_FUNC, p_Dfunc)
     
     ! Evaluate the power law from CFD. The coefficient is given by
     !
@@ -171,12 +172,9 @@ contains
     !
     ! We choose c:=nu_0 from the bilinear form
     ! and n:=2. T is the function we just calculated.
-    Dcoefficients(1,:,:) = rform%Dcoefficients(1) * Dfunc(:,:) ** 2.0_DP
-    Dcoefficients(2,:,:) = rform%Dcoefficients(2) * Dfunc(:,:) ** 2.0_DP
+    Dcoefficients(1,:,:) = rform%Dcoefficients(1) * p_Dfunc(:,:) ** 2.0_DP
+    Dcoefficients(2,:,:) = rform%Dcoefficients(2) * p_Dfunc(:,:) ** 2.0_DP
     
-    ! Release memory
-    deallocate(Dfunc)
-
   end subroutine
 
   ! ***************************************************************************
@@ -383,8 +381,12 @@ contains
     ! data.
     ! The collection is passed as additional parameter. That is the way
     ! how we get the vector to the callback routine.
+    !
+    ! We reserve ntempArrays=1 temporary array for intermediate calculations
+    ! in the callback routine. The memory is available in the domain
+    ! integration substructure.
     call bilf_buildMatrixScalar (rform,.true.,rmatSystem%RmatrixBlock(1,1),&
-        rcubatureInfo,coeff_Laplace_2D_ncc,rcollection)
+        rcubatureInfo,coeff_Laplace_2D_ncc,rcollection,ntempArrays=1)
     
     ! Now we can forget about the collection again.
     call collct_done (rcollection)
