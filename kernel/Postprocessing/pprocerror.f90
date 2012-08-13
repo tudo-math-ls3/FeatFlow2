@@ -253,7 +253,7 @@ contains
 !<subroutine>
 
   subroutine pperr_scalarVec(rerror, frefFunction, rcollection, rcubatureInfo, &
-      rperfconfig)
+      ntempArrays, rperfconfig)
 
 !<description>
   ! This routine calculates the errors of a set of given FE functions given
@@ -276,6 +276,16 @@ contains
   ! OPTIONAL: A scalar cubature information structure that specifies the cubature
   ! formula(s) to use. If not specified, default settings are used.
   type(t_scalarCubatureInfo), intent(in), optional, target :: rcubatureInfo
+
+  ! OPTIONAL: Number of temp arrays.
+  ! If this is specified (and larger than zero), a number of temporary
+  ! arrays is allocated and provided to the callback routine.
+  ! This temporary memory is user defined and can be used during the
+  ! assembly, e.g., for the temporary evaluation of FEM functions.
+  !
+  ! The temporary memory is available in the callback function as
+  !    rdomainIntSubset%p_DtempArrays !
+  integer, intent(in), optional :: ntempArrays
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -353,6 +363,9 @@ contains
   type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
   type(t_stdCubatureData) :: rcubatureData
   type(t_stdFEBasisEvalData) :: rfeBasisEvalData
+
+  ! Pointer to temporary memory for callback functions.
+  real(DP), dimension(:,:,:), pointer :: p_DtempArrays
 
   ! Pointer to the performance configuration
   type(t_perfconfig), pointer :: p_rperfconfig
@@ -625,11 +638,17 @@ contains
       !$omp parallel default(shared)&
       !$omp private(DvalDer,DvalFunc,IELmax,daux,daux2,dom,&
       !$omp         i,ider,iel,j,k,ndofs,p_Dbas,p_Ddetj,p_Idofs,revalElementSet,&
-      !$omp         rfeBasisEvalData,rintSubset,&
+      !$omp         rfeBasisEvalData,rintSubset,p_DtempArrays,&
       !$omp         icomp,p_Dcoeff,p_DerrL2,p_DerrH1,p_DerrL1,p_DerrMean)&
       !$omp         firstprivate(cevalTag)&
       !$omp         reduction(+:derrL1,derrL2,derrH1,derrMean)&
       !$omp if (NEL > p_rperfconfig%NELEMMIN_OMP)
+
+      ! Allocate memory for user defined data.
+      nullify(p_DtempArrays)
+      if (present(ntempArrays)) then
+        allocate(p_DtempArrays(ncubp,nelementsPerBlock,ntempArrays))
+      end if
 
       ! Initialise the evaluation structure for the FE basis
       call easminfo_initStdFEBasisEval(celement,&
@@ -675,6 +694,12 @@ contains
 
         ! Prepare the domain integration structure
         call domint_initIntegrationByEvalSet(revalElementSet, rintSubset)
+
+        ! Associate temp memory for the callback.
+        if (associated(p_DtempArrays)) then
+          call domint_setTempMemory (rintSubset,p_DtempArrays)
+        end if
+
         !rintSubset%ielementDistribution = icurrentElementDistr
         rintSubset%ielementStartIdx = IELset
         rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
@@ -899,6 +924,11 @@ contains
       ! Release FE evaluation
       call easminfo_doneStdFEBasisEval(rfeBasisEvalData)
 
+      ! Release the temp memory
+      if (associated(p_DtempArrays)) then
+        deallocate(p_DtempArrays)
+      end if
+
       ! Deallocate all arrays
       if(allocated(DvalDer)) deallocate(DvalDer)
       if(allocated(DvalFunc)) deallocate(DvalFunc)
@@ -1051,7 +1081,7 @@ contains
 !<subroutine>
 
   subroutine pperr_scalar_conf (cerrortype, derror, rvectorScalar, ffunctionReference,&
-      rcollection, ffunctionWeight, DelementError, rcubatureInfo, rperfconfig)
+      rcollection, ffunctionWeight, DelementError, rcubatureInfo, ntempArrays, rperfconfig)
 
 !<description>
   ! This routine calculates the error of a given finite element function
@@ -1082,6 +1112,16 @@ contains
   ! OPTIONAL: A scalar cubature information structure that specifies the cubature
   ! formula(s) to use. If not specified, default settings are used.
   type(t_scalarCubatureInfo), intent(in), optional, target :: rcubatureInfo
+
+  ! OPTIONAL: Number of temp arrays.
+  ! If this is specified (and larger than zero), a number of temporary
+  ! arrays is allocated and provided to the callback routine.
+  ! This temporary memory is user defined and can be used during the
+  ! assembly, e.g., for the temporary evaluation of FEM functions.
+  !
+  ! The temporary memory is available in the callback function as
+  !    rdomainIntSubset%p_DtempArrays !
+  integer, intent(in), optional :: ntempArrays
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -1152,6 +1192,9 @@ contains
   type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
   type(t_stdCubatureData) :: rcubatureData
   type(t_stdFEBasisEvalData) :: rfeBasisEvalData
+
+  ! Pointer to temporary memory for callback functions.
+  real(DP), dimension(:,:,:), pointer :: p_DtempArrays
 
   ! Some other local variables
   integer :: i,j,k,ndofs,ncubp,iel,ider
@@ -1316,10 +1359,16 @@ contains
       !$omp parallel default(shared)&
       !$omp private(DvalDer,DvalFunc,DvalWeight,IELmax,daux,daux2,dom,&
       !$omp         i,ider,iel,j,k,ndofs,p_Dbas,p_Ddetj,p_Idofs,revalElementSet,&
-      !$omp         rfeBasisEvalData,rintSubset)&
+      !$omp         rfeBasisEvalData,rintSubset,p_DtempArrays)&
       !$omp         firstprivate(cevalTag)&
       !$omp         reduction(+:derror)&
       !$omp if (NEL > p_rperfconfig%NELEMMIN_OMP)
+
+      ! Allocate memory for user defined data.
+      nullify(p_DtempArrays)
+      if (present(ntempArrays)) then
+        allocate(p_DtempArrays(ncubp,nelementsPerBlock,ntempArrays))
+      end if
 
       ! Initialise the evaluation structure for the FE basis
       call easminfo_initStdFEBasisEval(celement,&
@@ -1375,6 +1424,12 @@ contains
 
         ! Prepare the domain integration structure
         call domint_initIntegrationByEvalSet(revalElementSet, rintSubset)
+
+        ! Associate temp memory for the callback.
+        if (associated(p_DtempArrays)) then
+          call domint_setTempMemory (rintSubset,p_DtempArrays)
+        end if
+
         !rintSubset%ielementDistribution = ielementDistr
         rintSubset%ielementStartIdx = IELset
         rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
@@ -1601,6 +1656,11 @@ contains
 
       ! Release FE evaluation
       call easminfo_doneStdFEBasisEval(rfeBasisEvalData)
+
+      ! Release the temp memory
+      if (associated(p_DtempArrays)) then
+        deallocate(p_DtempArrays)
+      end if
 
       ! Deallocate all arrays
       if(allocated(DvalDer)) deallocate(DvalDer)
