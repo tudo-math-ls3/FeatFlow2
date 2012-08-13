@@ -895,7 +895,8 @@ contains
               dbdForcesCoeff1,dbdForcesCoeff2,cformulation)
         else
           call ppns2D_bdforces_line (rsolution,rregion,Dforces,CUB_G1_1D,&
-              dbdForcesCoeff1,dbdForcesCoeff2,cformulation,ffunctionBDForcesVisco,rcollection)
+              dbdForcesCoeff1,dbdForcesCoeff2,cformulation,ffunctionBDForcesVisco,&
+              rcollection,ntempArrays=5)
         end if
         
       case (3)
@@ -943,7 +944,8 @@ contains
               dbdForcesCoeff1,dbdForcesCoeff2,cformulation)
         else
           call ppns2D_bdforces_vol(rsolution,rcharfct,Dforces,&
-              dbdForcesCoeff1,dbdForcesCoeff2,cformulation,ffunctionBDForcesVisco ,rcollection)
+              dbdForcesCoeff1,dbdForcesCoeff2,cformulation,ffunctionBDForcesVisco,&
+              rcollection,ntempArrays=5)
         end if
         
         call lsyssc_releaseVector(rcharfct)
@@ -1573,7 +1575,8 @@ contains
       rcollection%p_rnextCollection => rproblem%rcollection
 
       ! Project the viscosity to the Q1 space.
-      call anprj_discrDirect(rprjVector%RvectorBlock(1), ffunctionViscoModel,rcollection)
+      call anprj_discrDirect(rprjVector%RvectorBlock(1), ffunctionViscoModel,&
+          rcollection,ntempArrays=5)
 
       ! Write the viscosity
       call lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)

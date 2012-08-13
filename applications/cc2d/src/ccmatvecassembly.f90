@@ -339,6 +339,8 @@ contains
   ! p_rvectorQuickAccess1 => evaluation velocity vector
   ! p_rnextCollection => user defined collection structure
   !
+  ! NOTE: The routine currently needs ntempArrays=5 temporary arrays to
+  ! work in general.
 !</description>
   
 !<input>
@@ -392,8 +394,7 @@ contains
     integer :: cviscoModel,i,j,isubEquation
     real(DP) :: dnu,dviscoexponent,dviscoEps,dviscoYield
     type(t_vectorBlock), pointer :: p_rvector
-    integer, dimension(2) :: Ibounds
-    real(DP), dimension(:,:,:), allocatable :: Ddata
+    real(DP), dimension(:,:,:), pointer :: p_Ddata
     
     if (.not. present(rcollection)) then
       Dcoefficients(:,:) = 0.0_DP
@@ -425,44 +426,55 @@ contains
       
     case (1,2,3)
     
-      ! Allocate memory do calculate D(u) in all points
-      Ibounds = ubound(Dcoefficients)
-      allocate(Ddata(Ibounds(1),Ibounds(2),5))
+      ! Get the temp memory from the integration structure.
+      p_Ddata => rdomainIntSubset%p_DtempArrays
+      
+      if (.not. associated(p_Ddata)) then
+        call output_line ("No temp memory available!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"ffunctionViscoModel")
+        call sys_halt()
+      end if
+
+      if (ubound(p_Ddata,3) .lt. 5) then
+        call output_line ("Not enough temp memory available!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"ffunctionViscoModel")
+        call sys_halt()
+      end if
       
       ! Evaluate D(u).
       call fevl_evaluate_sim (p_rvector%RvectorBlock(1), &
-                                rdomainIntSubset, DER_DERIV_X, Ddata(:,:,2))
+                                rdomainIntSubset, DER_DERIV_X, p_Ddata(:,:,2))
       call fevl_evaluate_sim (p_rvector%RvectorBlock(1), &
-                                rdomainIntSubset, DER_DERIV_Y, Ddata(:,:,3))
+                                rdomainIntSubset, DER_DERIV_Y, p_Ddata(:,:,3))
       call fevl_evaluate_sim (p_rvector%RvectorBlock(2), &
-                                rdomainIntSubset, DER_DERIV_X, Ddata(:,:,4))
+                                rdomainIntSubset, DER_DERIV_X, p_Ddata(:,:,4))
       call fevl_evaluate_sim (p_rvector%RvectorBlock(2), &
-                                rdomainIntSubset, DER_DERIV_Y, Ddata(:,:,5))
+                                rdomainIntSubset, DER_DERIV_Y, p_Ddata(:,:,5))
                          
-      ! Calculate ||D(u)||^2 to Ddata(:,:,1):
+      ! Calculate ||D(u)||^2 to p_Ddata(:,:,1):
       select case (isubequation)
       case (0)
         ! D(u) = grad(u)
-        do i=1,Ibounds(2)
-          do j=1,Ibounds(1)
-            Ddata(j,i,1) = Ddata(j,i,2)**2 + Ddata(j,i,3)**2 + &
-                           Ddata(j,i,4)**2 + Ddata(j,i,5)**2
+        do i=1,nelements
+          do j=1,npointsPerElement
+            p_Ddata(j,i,1) = p_Ddata(j,i,2)**2 + p_Ddata(j,i,3)**2 + &
+                           p_Ddata(j,i,4)**2 + p_Ddata(j,i,5)**2
           end do
         end do
         
       case (1)
         ! D(u) = 1/2 ( grad(u) + grad(u)^T )
-        do i=1,Ibounds(2)
-          do j=1,Ibounds(1)
-            Ddata(j,i,1) = (Ddata(j,i,2)**2 + &
-                            0.5_DP * (Ddata(j,i,3) + Ddata(j,i,4))**2 + &
-                            Ddata(j,i,5)**2)
+        do i=1,nelements
+          do j=1,npointsPerElement
+            p_Ddata(j,i,1) = (p_Ddata(j,i,2)**2 + &
+                            0.5_DP * (p_Ddata(j,i,3) + p_Ddata(j,i,4))**2 + &
+                            p_Ddata(j,i,5)**2)
           end do
         end do
         
       case default
       
-        Ddata(:,:,:) = 0.0_DP
+        p_Ddata(:,:,:) = 0.0_DP
         
       end select
       
@@ -475,14 +487,14 @@ contains
         !   nu = nu_0 * z^(dviscoexponent/2 - 1),
         !   nu_0 = 1/RE,
         !   z = ||D(u)||^2+dviscoEps
-        Dcoefficients(:,:) = dnu * (Ddata(:,:,1)+dviscoEps)**(0.5_DP*dviscoexponent-1.0_DP)
+        Dcoefficients(:,:) = dnu * (p_Ddata(:,:,1)+dviscoEps)**(0.5_DP*dviscoexponent-1.0_DP)
 
       case (2)
         ! Bingham fluid:
         !   nu = nu_0 + sqrt(2)/2 * dviscoyield / sqrt(|D(u)||^2+dviscoEps^2),
         !   nu_0 = 1/RE
         Dcoefficients(:,:) = dnu + 0.5_DP * sqrt(2.0_DP) * &
-            dviscoyield / sqrt(Ddata(:,:,1) + dviscoEps**2)
+            dviscoyield / sqrt(p_Ddata(:,:,1) + dviscoEps**2)
         
       case (3)
         ! General viscoplastic fluid:
@@ -490,12 +502,12 @@ contains
         !   nu_0 = 1/RE,
         !   z = ||D(u)||^2 + dviscoEps^2
         Dcoefficients(:,:) = dnu + 0.5_DP * sqrt(2.0_DP) * &
-            dviscoyield * ( Ddata(:,:,1) + dviscoEps**2 )**( 0.5_DP * dviscoexponent - 1.0_DP)
+            dviscoyield * ( p_Ddata(:,:,1) + dviscoEps**2 )**( 0.5_DP * dviscoexponent - 1.0_DP)
 
       end select
       
       ! Deallocate needed memory.
-      deallocate(Ddata)
+      deallocate(p_Ddata)
 
     case default
     
@@ -1163,7 +1175,7 @@ contains
               rcubatureInfo,rproblem%rmatrixAssembly%icubA)
 
           call conv_streamDiff2Blk2dMat (rstreamlineDiffusion2,rmatrix,rvelocityvector,&
-              ffunctionViscoModel,rcollection,rcubatureInfo)
+              ffunctionViscoModel,rcollection,rcubatureInfo,ntempArrays=5)
            
           call spdiscr_releaseCubStructure (rcubatureInfo)
               
@@ -1426,7 +1438,7 @@ contains
               rcubatureInfo,rproblem%rmatrixAssembly%icubA)
 
           call conv_streamDiff2Blk2dMat (rstreamlineDiffusion2,rmatrix,rvelocityvector,&
-              ffunctionViscoModel,rcollection,rcubatureInfo)
+              ffunctionViscoModel,rcollection,rcubatureInfo,ntempArrays=5)
 
           call spdiscr_releaseCubStructure (rcubatureInfo)
 
@@ -2106,7 +2118,8 @@ contains
               rcubatureInfo,rproblem%rmatrixAssembly%icubA)
 
           call conv_streamDiff2Blk2dDef (rstreamlineDiffusion2,rmatrix,&
-              rvector,rdefect,rvelocityVector,ffunctionViscoModel,rcollection,rcubatureInfo)
+              rvector,rdefect,rvelocityVector,ffunctionViscoModel,rcollection,rcubatureInfo,&
+              ntempArrays=5)
 
           call spdiscr_releaseCubStructure (rcubatureInfo)
                               
@@ -2326,7 +2339,8 @@ contains
               rcubatureInfo,rproblem%rmatrixAssembly%icubA)
 
           call conv_streamDiff2Blk2dDef (rstreamlineDiffusion2,rmatrix,&
-              rvector,rdefect,rvelocityVector,ffunctionViscoModel,rcollection,rcubatureInfo)
+              rvector,rdefect,rvelocityVector,ffunctionViscoModel,rcollection,rcubatureInfo,&
+              ntempArrays=5)
 
           call spdiscr_releaseCubStructure (rcubatureInfo)
                               
