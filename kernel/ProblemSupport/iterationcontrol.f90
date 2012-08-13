@@ -243,7 +243,7 @@ private
 
 !<types>
 
-!<typeblock description="Iteration control data structure"
+!<typeblock description="Iteration control data structure">
 
   type t_iterationControl
 

@@ -18,6 +18,15 @@
 !#
 !# 3.) domint_doneIntegration
 !#     -> Releases a domain integration structure.
+!#
+!# 4.) domint_allocTempMemory
+!#     -> Allocates temporary memory for user calculations.
+!#
+!# 5.) domint_setTempMemory
+!#     -> Defines an external memory block as temp memory.
+!#
+!# 6.) domint_releaseTempMemory
+!#     -> Releases temporary memory for user calculations.
 !# </purpose>
 !##############################################################################
 
@@ -52,7 +61,7 @@ module domainintegration
     ! Number of (cubature) points per element.
     integer :: npointsPerElement = 0
 
-    !<!-- DEPRECCATED, REMOVED!
+    !<!-- DEPRECATED, REMOVED!
     ! The currently active element distribution in the discretisation.
     ! Allows the routine to get the currently active element type for
     ! trial and test functions.
@@ -88,6 +97,25 @@ module domainintegration
     ! An element evaluation set structure that contains all information
     ! needed to evaluate the finite element on all elements in p_Ielements.
     type(t_evalElementSet), pointer :: p_revalElementSet => null()
+
+    !<!--
+    ! Temporary memory arrays, user defined, may be allocated with
+    ! domint_allocTempMemory.
+    ! -->
+
+    ! Number of temp arrays allocated for user data
+    integer :: ntempArrays = 0
+    
+    ! Temporary user memory for assembly. May be allocated with
+    ! domint_allocTempMemory. The array has dimension
+    !    p_DtempMemory (1:npointsPerElement,1:nelements,1:ntempArrays)
+    ! If ntempArrays=0, no memorya is allocated, the pointer points
+    ! to null().
+    real(DP), dimension(:,:,:), pointer :: p_DtempArrays => null()
+    
+    ! Set to TRUE if the temp memory should not automatically be released
+    ! upon destruction of this structure.
+    logical :: bexternalMemory = .false.
 
     !<!--
     ! Information which may be shared with the element evaluation set
@@ -146,6 +174,9 @@ module domainintegration
   public :: domint_initIntegration
   public :: domint_initIntegrationByEvalSet
   public :: domint_doneIntegration
+  public :: domint_allocTempMemory
+  public :: domint_setTempMemory
+  public :: domint_releaseTempMemory
 
 contains
 
@@ -334,7 +365,112 @@ contains
       nullify(rintSubset%p_DcubPtsRef)
       nullify(rintSubset%p_DCoords)
     end if
+    
+    ! Release temp arrays if there are any.
+    call domint_releaseTempMemory (rintSubset)
 
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine domint_allocTempMemory (rintSubset,ntempArrays)
+
+!<description>
+  ! Allocates ntempArrays temporary arrays in the domain integration
+  ! subset. The memory can be used by callback-routines, e.g.,
+  ! for the calculation of intermediate data in cubature points.
+!</description>
+
+!<input>
+  ! Number of temporary memory blocks to allocate.
+  integer, intent(in) :: ntempArrays
+!</input>
+
+!<inputoutput>
+  ! Integation structure.
+  type(t_domainIntSubset), intent(inout) :: rintSubset
+!</inputoutput>
+
+!</subroutine>
+
+    if ((rintSubset%ntempArrays .ne. 0) .and. &
+        (rintSubset%ntempArrays .ne. ntempArrays)) then
+      ! Release for reallocation
+      call domint_releaseTempMemory (rintSubset)
+    end if
+    
+    ! Nothing to do
+    if (ntempArrays .eq. 0) return
+    
+    ! Allocate
+    rintSubset%ntempArrays = ntempArrays
+    allocate(rintSubset%p_DtempArrays(rintSubset%npointsPerElement,&
+        rintSubset%nelements,ntempArrays))
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine domint_setTempMemory (rintSubset,DtempArrays)
+
+!<description>
+  ! Defines the temporary memory in the integration subset.
+  ! This is not automatically released upon destruction of rintSubset.
+!</description>
+
+!<input>
+  ! Temporary memory. A pointer to this array is saved to rintSubset.
+  real(DP), dimension(:,:,:), intent(in), target :: DtempArrays
+!</input>
+
+!<inputoutput>
+  ! Integation structure.
+  type(t_domainIntSubset), intent(inout) :: rintSubset
+!</inputoutput>
+
+!</subroutine>
+
+    rintSubset%p_DtempArrays => DtempArrays
+    rintSubset%ntempArrays = ubound(DtempArrays,3)
+    rintSubset%bexternalMemory = .true.
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine domint_releaseTempMemory (rintSubset)
+
+!<description>
+  ! Releases all temp arrays in rintSubset.
+!</description>
+
+!<input>
+
+!<inputoutput>
+  ! Integation structure.
+  type(t_domainIntSubset), intent(inout) :: rintSubset
+!</inputoutput>
+
+!</subroutine>
+
+    if (rintSubset%ntempArrays .ne. 0) then
+      if (.not. rintSubset%bexternalMemory) then
+        ! Release
+        rintSubset%ntempArrays = 0
+        deallocate(rintSubset%p_DtempArrays)
+      else
+        ! Disassociated
+        rintSubset%ntempArrays = 0
+        nullify(rintSubset%p_DtempArrays)
+      end if
+    end if
+    
   end subroutine
 
 end module

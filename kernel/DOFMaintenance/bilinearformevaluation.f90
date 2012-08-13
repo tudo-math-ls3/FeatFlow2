@@ -236,6 +236,35 @@
 !#  release the info structure with spdiscr_releaseCubStructure at the
 !#  end. That's it.
 !#
+!# 4.) What about "temporary arrays"?
+!#
+!#  The assembly routines provide the ability to automatically allocate
+!#  temporary memory for values in the cubature points, which can be
+!#  used in callback routines for arbitrary purposes. The parameter
+!#  "ntempArrays" specifies the amount of temporary arrays, e.g.,
+!#
+!#    ! Assemble a matrix with 3 temp arrays
+!#
+!#    call bilf_buildMatrixScalar (rform,.true.,rmatrix,rcubatureInfo,&
+!#        fcoeff_buildMatrixSc_sim=myCallback, ntempArrays=3)
+!#  
+!#  Then, the callback routine has temporary memory available:
+!#
+!#    subroutine myCallback (...,rdomainIntSubset,...)
+!#    real(dp), dimension(:,:), pointer :: p_DtempX,p_DtempY
+!#      ...
+!#      p_DtempX => rdomainIntSubset%p_DtempArrays(:,:,1)
+!#      p_DtempY => rdomainIntSubset%p_DtempArrays(:,:,2)
+!#
+!#      call fevl_evaluate_sim (...,DER_DERIV2D_X,p_DtempX)
+!#      call fevl_evaluate_sim (...,DER_DERIV2D_Y,p_DtempY)
+!#      Dcoefficients(1,:,:) = sqrt ( p_DtempX(:,:)**2 + p_DtempY(:,:)**2 )
+!#      ...
+!#
+!#  This temporary memory is designed to interact smoothly with
+!#  Dcoefficients and fevl_evaluate_sim. It is automatically released after
+!#  the assembly is finished.
+!#
 !# </purpose>
 !##############################################################################
 
@@ -351,6 +380,9 @@ module bilinearformevaluation
 
     ! Pointer to the coefficients that are computed by the callback routine.
     real(DP), dimension(:,:,:), pointer :: p_Dcoefficients
+    
+    ! Pointer to temporary memory for callback functions.
+    real(DP), dimension(:,:,:), pointer :: p_DtempArrays
 
   end type
 
@@ -604,7 +636,7 @@ contains
 !<subroutine>
 
   subroutine bilf_buildMatrixScalar1 (rform,bclear,rmatrix,&
-      fcoeff_buildMatrixSc_sim,rcollection,rperfconfig)
+      fcoeff_buildMatrixSc_sim,rcollection,ntempArrays,rperfconfig)
 
 !<description>
   ! This routine calculates the entries of a finite element matrix.
@@ -639,6 +671,16 @@ contains
   include 'intf_coefficientMatrixSc.inc'
   optional :: fcoeff_buildMatrixSc_sim
 
+  ! OPTIONAL: Number of temp arrays.
+  ! If this is specified (and larger than zero), a number of temporary
+  ! arrays is allocated and provided to the callback routine.
+  ! This temporary memory is user defined and can be used during the
+  ! assembly, e.g., for the temporary evaluation of FEM functions.
+  !
+  ! The temporary memory is available in the callback function as
+  !    rdomainIntSubset%p_DtempArrays !
+  integer, intent(in), optional :: ntempArrays
+
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
   type(t_perfconfig), intent(in), optional :: rperfconfig
@@ -668,7 +710,8 @@ contains
         rcubatureInfo,CUB_GEN_DEPR_BILFORM)
 
     call bilf_buildMatrixScalar2 (rform, bclear, rmatrix,&
-        rcubatureInfo, fcoeff_buildMatrixSc_sim, rcollection, rperfconfig)
+        rcubatureInfo, fcoeff_buildMatrixSc_sim, rcollection, ntempArrays,&
+        rperfconfig)
 
     ! Release the assembly structure if necessary.
     call spdiscr_releaseCubStructure(rcubatureInfo)
@@ -5585,11 +5628,20 @@ contains
 
 !<subroutine>
 
-  subroutine bilf_allocAssemblyData(rmatrixAssembly)
+  subroutine bilf_allocAssemblyData(rmatrixAssembly,ntempArrays)
 
 !<description>
   ! Auxiliary subroutine. Allocate 'local' memory, needed for assembling matrix entries.
 !</description>
+
+!<input>
+  ! OPTIONAL: Number of temp arrays.
+  ! If this is specified (and larger than zero), a number of temporary
+  ! arrays is allocated and provided to the callback routine.
+  ! This temporary memory is user defined and can be used during the
+  ! assembly, e.g., for the temporary evaluation of FEM functions.
+  integer, intent(in), optional :: ntempArrays
+!</input>
 
 !<inputoutput>
   ! A matrix assembly structure.
@@ -5654,6 +5706,13 @@ contains
     ! No cubature points initalised up to now.
     rmatrixAssembly%iinitialisedElements = 0
 
+    ! Allocate memory for user defined data.
+    nullify(rmatrixAssembly%p_DtempArrays)
+    if (present(ntempArrays)) then
+      allocate(rmatrixAssembly%p_DtempArrays(&
+          rmatrixAssembly%ncubp,rmatrixAssembly%nelementsPerBlock,ntempArrays))
+    end if
+
   end subroutine
 
   !****************************************************************************
@@ -5689,6 +5748,10 @@ contains
     deallocate(rmatrixAssembly%p_DbasTest)
     deallocate(rmatrixAssembly%p_Kentry)
     deallocate(rmatrixAssembly%p_Dentry)
+    
+    if (associated(rmatrixAssembly%p_DtempArrays)) then
+      deallocate(rmatrixAssembly%p_DtempArrays)
+    end if
 
   end subroutine
 
@@ -5697,7 +5760,7 @@ contains
 !<subroutine>
 
   subroutine bilf_assembleSubmeshMatrix9 (rmatrixAssembly, rmatrix, IelementList,&
-      fcoeff_buildMatrixSc_sim, rcollection, rperfconfig)
+      fcoeff_buildMatrixSc_sim, rcollection, ntempArrays, rperfconfig)
 
 !<description>
 
@@ -5714,6 +5777,16 @@ contains
   ! Must be present if the matrix has nonconstant coefficients!
   include 'intf_coefficientMatrixSc.inc'
   optional :: fcoeff_buildMatrixSc_sim
+
+  ! OPTIONAL: Number of temp arrays.
+  ! If this is specified (and larger than zero), a number of temporary
+  ! arrays is allocated and provided to the callback routine.
+  ! This temporary memory is user defined and can be used during the
+  ! assembly, e.g., for the temporary evaluation of FEM functions.
+  !
+  ! The temporary memory is available in the callback function as
+  !    rdomainIntSubset%p_DtempArrays !
+  integer, intent(in), optional :: ntempArrays
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -5794,7 +5867,7 @@ contains
     !$omp         rintSubset,rlocalMatrixAssembly)&
     !$omp if (size(IelementList) > p_rperfconfig%NELEMMIN_OMP)
     rlocalMatrixAssembly = rmatrixAssembly
-    call bilf_allocAssemblyData(rlocalMatrixAssembly)
+    call bilf_allocAssemblyData(rlocalMatrixAssembly,ntempArrays)
 
     ! Get some more pointers to local data.
     p_Kentry            => rlocalMatrixAssembly%p_Kentry
@@ -5808,7 +5881,7 @@ contains
     p_IdofsTrial        => rlocalMatrixAssembly%p_IdofsTrial
     p_revalElementSet   => rlocalMatrixAssembly%revalElementSet
     p_DcoefficientsBilf => rlocalMatrixAssembly%rform%Dcoefficients
-
+    
     ! Loop over the elements - blockwise.
     !
     ! OpenMP-Extension: Each loop cycle is executed in a different thread,
@@ -5934,6 +6007,12 @@ contains
       if (.not. rlocalMatrixAssembly%rform%ballCoeffConstant) then
         if (present(fcoeff_buildMatrixSc_sim)) then
           call domint_initIntegrationByEvalSet (p_revalElementSet,rintSubset)
+
+          ! Associate temp memory for the callback.
+          if (associated(rlocalMatrixAssembly%p_DtempArrays)) then
+            call domint_setTempMemory (rintSubset,rlocalMatrixAssembly%p_DtempArrays)
+          end if
+
           !rintSubset%ielementDistribution =  0
           rintSubset%ielementStartIdx     =  IELset
           rintSubset%p_Ielements          => IelementList(IELset:IELmax)
@@ -5945,6 +6024,7 @@ contains
               p_revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
               p_IdofsTrial, p_IdofsTest, rintSubset, &
               p_Dcoefficients(:,:,1:IELmax-IELset+1), rcollection)
+
           call domint_doneIntegration (rintSubset)
         else
           p_Dcoefficients(:,:,1:IELmax-IELset+1) = 1.0_DP
@@ -6378,6 +6458,12 @@ contains
     if (.not. rmatrixAssembly%rform%ballCoeffConstant) then
       if (present(fcoeff_buildMatrixScBdr1D_sim)) then
         call domint_initIntegrationByEvalSet (p_revalElementSet, rintSubset)
+
+        ! Associate temp memory for the callback.
+        if (associated(rmatrixAssembly%p_DtempArrays)) then
+          call domint_setTempMemory (rintSubset,rmatrixAssembly%p_DtempArrays)
+        end if
+
         !rintSubset%ielementDistribution =  0
         rintSubset%ielementStartIdx     =  1
         rintSubset%p_Ielements          => IelementList
@@ -6608,7 +6694,8 @@ contains
 
   subroutine bilf_assembleSubmeshMat9Bdr2D (rmatrixAssembly, rmatrix,&
       rboundaryRegion, IelementList, IelementOrientation, DedgePosition,&
-      cconstrType, fcoeff_buildMatrixScBdr2D_sim, rcollection, rperfconfig)
+      cconstrType, fcoeff_buildMatrixScBdr2D_sim, rcollection, &
+      ntempArrays, rperfconfig)
 
 !<description>
 
@@ -6639,6 +6726,16 @@ contains
   ! Must be present if the matrix has nonconstant coefficients!
   include 'intf_coefficientMatrixScBdr2D.inc'
   optional :: fcoeff_buildMatrixScBdr2D_sim
+
+  ! OPTIONAL: Number of temp arrays.
+  ! If this is specified (and larger than zero), a number of temporary
+  ! arrays is allocated and provided to the callback routine.
+  ! This temporary memory is user defined and can be used during the
+  ! assembly, e.g., for the temporary evaluation of FEM functions.
+  !
+  ! The temporary memory is available in the callback function as
+  !    rdomainIntSubset%p_DtempArrays !
+  integer, intent(in), optional :: ntempArrays
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -6738,7 +6835,7 @@ contains
     !$omp         p_revalElementSet,rintSubset,rlocalMatrixAssembly)&
     !$omp if (size(IelementList) > p_rperfconfig%NELEMMIN_OMP)
     rlocalMatrixAssembly = rmatrixAssembly
-    call bilf_allocAssemblyData(rlocalMatrixAssembly)
+    call bilf_allocAssemblyData(rlocalMatrixAssembly,ntempArrays)
 
     ! Get some more pointers to local data.
     p_Kentry            => rlocalMatrixAssembly%p_Kentry
@@ -6941,6 +7038,12 @@ contains
       if (.not. rlocalMatrixAssembly%rform%ballCoeffConstant) then
         if (present(fcoeff_buildMatrixScBdr2D_sim)) then
           call domint_initIntegrationByEvalSet (p_revalElementSet,rintSubset)
+
+          ! Associate temp memory for the callback.
+          if (associated(rlocalMatrixAssembly%p_DtempArrays)) then
+            call domint_setTempMemory (rintSubset,rlocalMatrixAssembly%p_DtempArrays)
+          end if
+
           !rintSubset%ielementDistribution  =  0
           rintSubset%ielementStartIdx      =  IELset
           rintSubset%p_Ielements           => IelementList(IELset:IELmax)
@@ -7219,7 +7322,8 @@ contains
 !<subroutine>
 
   recursive subroutine bilf_buildMatrixScalar2 (rform, bclear, rmatrix,&
-      rcubatureInfo, fcoeff_buildMatrixSc_sim, rcollection, rperfconfig)
+      rcubatureInfo, fcoeff_buildMatrixSc_sim, rcollection, ntempArrays,&
+      rperfconfig)
 
 !<description>
   ! This routine calculates the entries of a finite element matrix.
@@ -7273,6 +7377,16 @@ contains
   ! Must be present if the matrix has nonconstant coefficients!
   include 'intf_coefficientMatrixSc.inc'
   optional :: fcoeff_buildMatrixSc_sim
+  
+  ! OPTIONAL: Number of temp arrays.
+  ! If this is specified (and larger than zero), a number of temporary
+  ! arrays is allocated and provided to the callback routine.
+  ! This temporary memory is user defined and can be used during the
+  ! assembly, e.g., for the temporary evaluation of FEM functions.
+  !
+  ! The temporary memory is available in the callback function as
+  !    rdomainIntSubset%p_DtempArrays !
+  integer, intent(in), optional :: ntempArrays
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -7375,7 +7489,8 @@ contains
 
           ! Assemble the data for all elements in this element distribution
           call bilf_assembleSubmeshMatrix9 (rmatrixAssembly,rmatrix,&
-              p_IelementList,fcoeff_buildMatrixSc_sim,rcollection,rperfconfig)
+              p_IelementList,fcoeff_buildMatrixSc_sim,rcollection,&
+              ntempArrays,rperfconfig)
 
           ! Release the assembly structure.
           call bilf_doneAssembly(rmatrixAssembly)
@@ -7392,7 +7507,8 @@ contains
 
         ! Create the matrix in structure 9
         call bilf_buildMatrixScalar2 (rform, bclear, rmatrixBackup,&
-            rcubatureInfo,fcoeff_buildMatrixSc_sim,rcollection,rperfconfig)
+            rcubatureInfo,fcoeff_buildMatrixSc_sim,rcollection,&
+            ntempArrays, rperfconfig)
 
         ! Convert back to structure 7
         call lsyssc_convertMatrix (rmatrixBackup,LSYSSC_MATRIX7)
@@ -7435,7 +7551,7 @@ contains
 
   recursive subroutine bilf_buildMatrixScalarBdr1D (rform, bclear, rmatrix,&
       fcoeff_buildMatrixScBdr1D_sim, iboundaryComp, rcollection, cconstrType,&
-      rperfconfig)
+      ntempArrays,rperfconfig)
 
 !<description>
   ! This routine calculates the entries of a finite element matrix in 1D.
@@ -7474,6 +7590,16 @@ contains
   ! the matrix construction method. If not specified,
   ! BILF_MATC_ELEMENTBASED is used.
   integer, intent(in), optional :: cconstrType
+
+  ! OPTIONAL: Number of temp arrays.
+  ! If this is specified (and larger than zero), a number of temporary
+  ! arrays is allocated and provided to the callback routine.
+  ! This temporary memory is user defined and can be used during the
+  ! assembly, e.g., for the temporary evaluation of FEM functions.
+  !
+  ! The temporary memory is available in the callback function as
+  !    rdomainIntSubset%p_DtempArrays !
+  integer, intent(in), optional :: ntempArrays
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -7587,7 +7713,7 @@ contains
                 rmatrix%p_rspatialDiscrTest%RelementDistr(ielementDistr)%celement,&
                 rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%celement,&
                 CUB_G1_1D, NELbdc, rperfconfig)
-            call bilf_allocAssemblyData(rmatrixAssembly)
+            call bilf_allocAssemblyData(rmatrixAssembly,ntempArrays)
 
             ! Assemble the data for all elements
             call bilf_assembleSubmeshMat9Bdr1D (rmatrixAssembly, rmatrix,&
@@ -7634,7 +7760,7 @@ contains
                   rmatrix%p_rspatialDiscrTest%RelementDistr(ielementDistr)%celement,&
                   rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%celement,&
                   CUB_G1_1D, NELbdc, rperfconfig)
-              call bilf_allocAssemblyData(rmatrixAssembly)
+              call bilf_allocAssemblyData(rmatrixAssembly,ntempArrays)
 
               ! Assemble the data for all elements
               call bilf_assembleSubmeshMat9Bdr1D (rmatrixAssembly, rmatrix,&
@@ -7665,7 +7791,7 @@ contains
         ! Create the matrix in structure 9
         call bilf_buildMatrixScalarBdr1D (rform, bclear, rmatrixBackup,&
             fcoeff_buildMatrixScBdr1D_sim, iboundaryComp, rcollection,&
-            cconstrType, rperfconfig)
+            cconstrType, ntempArrays, rperfconfig)
 
         ! Convert back to structure 7
         call lsyssc_convertMatrix (rmatrixBackup,LSYSSC_MATRIX7)
@@ -7703,7 +7829,7 @@ contains
 
   recursive subroutine bilf_buildMatrixScalarBdr2D (rform, ccubType, bclear,&
       rmatrix, fcoeff_buildMatrixScBdr2D_sim, rboundaryRegion, rcollection,&
-      cconstrType, rperfconfig)
+      cconstrType, ntempArrays, rperfconfig)
 
 !<description>
   ! This routine calculates the entries of a finite element matrix in 2D.
@@ -7745,6 +7871,16 @@ contains
   ! the matrix construction method. If not specified,
   ! BILF_MATC_ELEMENTBASED is used.
   integer, intent(in), optional :: cconstrType
+
+  ! OPTIONAL: Number of temp arrays.
+  ! If this is specified (and larger than zero), a number of temporary
+  ! arrays is allocated and provided to the callback routine.
+  ! This temporary memory is user defined and can be used during the
+  ! assembly, e.g., for the temporary evaluation of FEM functions.
+  !
+  ! The temporary memory is available in the callback function as
+  !    rdomainIntSubset%p_DtempArrays !
+  integer, intent(in), optional :: ntempArrays
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -7884,7 +8020,7 @@ contains
             call bilf_assembleSubmeshMat9Bdr2D (rmatrixAssembly, rmatrix,&
                 rboundaryRegion, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
                 DedgePosition(:,1:NELbdc), ccType, fcoeff_buildMatrixScBdr2D_sim,&
-                rcollection, rperfconfig)
+                rcollection, ntempArrays, rperfconfig)
 
             ! Release the assembly structure.
             call bilf_doneAssembly(rmatrixAssembly)
@@ -7934,7 +8070,7 @@ contains
                 call bilf_assembleSubmeshMat9Bdr2D (rmatrixAssembly, rmatrix,&
                     rboundaryReg, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
                     DedgePosition(:,1:NELbdc), ccType, fcoeff_buildMatrixScBdr2D_sim,&
-                    rcollection, rperfconfig)
+                    rcollection, ntempArrays, rperfconfig)
 
               end if
 
@@ -7962,7 +8098,7 @@ contains
         ! Create the matrix in structure 9
         call bilf_buildMatrixScalarBdr2D (rform, ccubType, bclear, rmatrixBackup,&
             fcoeff_buildMatrixScBdr2D_sim, rboundaryRegion, rcollection,&
-            cconstrType, rperfconfig)
+            cconstrType, ntempArrays, rperfconfig)
 
         ! Convert back to structure 7
         call lsyssc_convertMatrix (rmatrixBackup,LSYSSC_MATRIX7)

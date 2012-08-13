@@ -10716,7 +10716,7 @@ contains
 !<subroutine>
 
   subroutine conv_streamDiff2Blk2dMat (rconfig,rmatrix,rvelocity,&
-      ffunctionCoefficient,rcollection,rcubatureInfo,rperfconfig)
+      ffunctionCoefficient,rcollection,rcubatureInfo,ntempArrays,rperfconfig)
 
 !<description>
   ! Standard streamline diffusion method to set up the operator
@@ -10758,6 +10758,16 @@ contains
   ! formula(s) to use. If not specified, default settings are used.
   type(t_scalarCubatureInfo), intent(in), optional, target :: rcubatureInfo
 
+  ! OPTIONAL: Number of temp arrays.
+  ! If this is specified (and larger than zero), a number of temporary
+  ! arrays is allocated and provided to the callback routine.
+  ! This temporary memory is user defined and can be used during the
+  ! assembly, e.g., for the temporary evaluation of FEM functions.
+  !
+  ! The temporary memory is available in the callback function as
+  !    rdomainIntSubset%p_DtempArrays !
+  integer, intent(in), optional :: ntempArrays
+
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
   type(t_perfconfig), intent(in), target, optional :: rperfconfig
@@ -10796,7 +10806,7 @@ contains
         bsimpleAij,&
         rvelocity,&
         conv_sdIncorpToMatrix2D,rincorporateCollection,&
-        ffunctionCoefficient,rcollection,rcubatureInfo,rperfconfig)
+        ffunctionCoefficient,rcollection,rcubatureInfo,ntempArrays,rperfconfig)
 
   end subroutine
 
@@ -10805,7 +10815,7 @@ contains
 !<subroutine>
 
   subroutine conv_streamDiff2Blk2dDef (rconfig,rmatrix,rx,rd,rvelocity,&
-      ffunctionCoefficient,rcollection,rcubatureInfo,rperfconfig)
+      ffunctionCoefficient,rcollection,rcubatureInfo,ntempArrays,rperfconfig)
 
 !<description>
   ! Standard streamline diffusion method to set up the operator
@@ -10854,6 +10864,16 @@ contains
   ! formula(s) to use. If not specified, default settings are used.
   type(t_scalarCubatureInfo), intent(in), optional, target :: rcubatureInfo
 
+  ! OPTIONAL: Number of temp arrays.
+  ! If this is specified (and larger than zero), a number of temporary
+  ! arrays is allocated and provided to the callback routine.
+  ! This temporary memory is user defined and can be used during the
+  ! assembly, e.g., for the temporary evaluation of FEM functions.
+  !
+  ! The temporary memory is available in the callback function as
+  !    rdomainIntSubset%p_DtempArrays !
+  integer, intent(in), optional :: ntempArrays
+
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
   type(t_perfconfig), intent(in), target, optional :: rperfconfig
@@ -10892,7 +10912,7 @@ contains
         bsimpleAij,&
         rvelocity,&
         conv_sdIncorpToDefect2D,rincorporateCollection,&
-        ffunctionCoefficient,rcollection,rcubatureInfo,rperfconfig)
+        ffunctionCoefficient,rcollection,rcubatureInfo,ntempArrays,rperfconfig)
 
     ! Note: When calculating the defect, it does not matter if
     ! one uses a call to lsyssc_isMatrixContentShared or .TRUE. in the above
@@ -10906,7 +10926,7 @@ contains
 
   subroutine conv_streamDiff2Blk2dCalc (rconfig,rvelocityDiscr,bsimpleAij,rvelocity,&
       fincorporate,rincorporateCollection,ffunctionCoefficient,rcollection,&
-      rcubatureInfo,rperfconfig)
+      rcubatureInfo,ntempArrays,rperfconfig)
 
 !<description>
   ! Standard streamline diffusion method to set up the operator
@@ -10994,6 +11014,16 @@ contains
   ! OPTIONAL: A scalar cubature information structure that specifies the cubature
   ! formula(s) to use. If not specified, default settings are used.
   type(t_scalarCubatureInfo), intent(in), optional, target :: rcubatureInfo
+
+  ! OPTIONAL: Number of temp arrays.
+  ! If this is specified (and larger than zero), a number of temporary
+  ! arrays is allocated and provided to the callback routine.
+  ! This temporary memory is user defined and can be used during the
+  ! assembly, e.g., for the temporary evaluation of FEM functions.
+  !
+  ! The temporary memory is available in the callback function as
+  !    rdomainIntSubset%p_DtempArrays !
+  integer, intent(in), optional :: ntempArrays
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -11119,6 +11149,9 @@ contains
     type(t_stdCubatureData) :: rcubatureData
     type(t_stdFEBasisEvalData) :: rfeBasisEvalData
 
+    ! Pointer to temporary memory for callback functions.
+    real(DP), dimension(:,:,:), pointer :: p_DtempArrays
+
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
 
@@ -11225,6 +11258,12 @@ contains
       ncubp = cub_igetNumPts(ccubature)
       p_DcubPtsRef => rcubatureData%p_DcubPtsRef
       p_Domega => rcubatureData%p_Domega
+
+      ! Allocate memory for user defined data.
+      nullify(p_DtempArrays)
+      if (present(ntempArrays)) then
+        allocate(p_DtempArrays(ncubp,nelementsPerBlock,ntempArrays))
+      end if
 
       ! Initialise the evaluation structure for the FE basis
       call easminfo_initStdFEBasisEval(celement,&
@@ -11439,6 +11478,12 @@ contains
         if (.not. (rconfig%bconstNu .and. rconfig%bconstAlpha)) then
           ! Prepare the call to the evaluation routine of the analytic function.
           call domint_initIntegrationByEvalSet (revalElementSet,rintSubset)
+
+          ! Associate temp memory for the callback.
+          if (associated(p_DtempArrays)) then
+            call domint_setTempMemory (rintSubset,p_DtempArrays)
+          end if
+
           !rintSubset%ielementDistribution = ielementDistr
           rintSubset%ielementStartIdx = IELset
           rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
@@ -12654,6 +12699,11 @@ contains
       ! Release FE evaluation and cubature information
       call easminfo_doneStdFEBasisEval(rfeBasisEvalData)
       call easminfo_doneStdCubature(rcubatureData)
+      
+      ! Release the temp memory
+      if (associated(p_DtempArrays)) then
+        deallocate(p_DtempArrays)
+      end if
 
     end do ! icubatureBlock
 

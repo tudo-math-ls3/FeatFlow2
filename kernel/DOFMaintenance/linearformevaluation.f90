@@ -204,6 +204,36 @@
 !#  behaviour of the integral for nonsmooth, nonconstant coefficients, while
 !#  other parts of the domain may be assembled with the standard cubature
 !#  formula.
+!#
+!# 3.) What about "temporary arrays"?
+!#
+!#  The assembly routines provide the ability to automatically allocate
+!#  temporary memory for values in the cubature points, which can be
+!#  used in callback routines for arbitrary purposes. The parameter
+!#  "ntempArrays" specifies the amount of temporary arrays, e.g.,
+!#
+!#    ! Assemble a matrix with 3 temp arrays
+!#
+!#    call linf_buildVectorScalar (rform,.true.,rmatrix,rcubatureInfo,&
+!#        coeff_RHS=myCallback, ntempArrays=3)
+!#  
+!#  Then, the callback routine has temporary memory available:
+!#
+!#    subroutine myCallback (...,rdomainIntSubset,...)
+!#    real(dp), dimension(:,:), pointer :: p_DtempX,p_DtempY
+!#      ...
+!#      p_DtempX => rdomainIntSubset%p_DtempArrays(:,:,1)
+!#      p_DtempY => rdomainIntSubset%p_DtempArrays(:,:,2)
+!#
+!#      call fevl_evaluate_sim (...,DER_DERIV2D_X,p_DtempX)
+!#      call fevl_evaluate_sim (...,DER_DERIV2D_Y,p_DtempY)
+!#      Dvalues(1,:,:) = sqrt ( p_DtempX(:,:)**2 + p_DtempY(:,:)**2 )
+!#      ...
+!#
+!#  This temporary memory is designed to interact smoothly with
+!#  Dvalues and fevl_evaluate_sim. It is automatically released after
+!#  the assembly is finished.
+!#
 !# </purpose>
 !##############################################################################
 
@@ -295,6 +325,9 @@ module linearformevaluation
 
     ! Pointer to the coefficients that are computed by the callback routine.
     real(DP), dimension(:,:,:,:), pointer :: p_Dcoefficients
+
+    ! Pointer to temporary memory for callback functions.
+    real(DP), dimension(:,:,:), pointer :: p_DtempArrays
 
   end type
 
@@ -392,7 +425,7 @@ contains
 
   subroutine linf_buildVectorScalar1 (rdiscretisation, rform, bclear, rvector,&
                                       fcoeff_buildVectorSc_sim, rcollection,&
-                                      rperfconfig)
+                                      ntempArrays,rperfconfig)
 
 !<description>
   ! DEPRECATED: This routine assembles the entries of a vector according to a linear form
@@ -420,6 +453,16 @@ contains
   ! A callback routine for the function to be discretised.
   include 'intf_coefficientVectorSc.inc'
   optional :: fcoeff_buildVectorSc_sim
+
+  ! OPTIONAL: Number of temp arrays.
+  ! If this is specified (and larger than zero), a number of temporary
+  ! arrays is allocated and provided to the callback routine.
+  ! This temporary memory is user defined and can be used during the
+  ! assembly, e.g., for the temporary evaluation of FEM functions.
+  !
+  ! The temporary memory is available in the callback function as
+  !    rdomainIntSubset%p_DtempArrays !
+  integer, intent(in), optional :: ntempArrays
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -470,7 +513,7 @@ contains
 
     ! Calculate the entries
     call linf_buildVectorScalar (rform, bclear, rvector, rcubatureInfo,&
-        fcoeff_buildVectorSc_sim, rcollection,rperfconfig)
+        fcoeff_buildVectorSc_sim, rcollection, ntempArrays, rperfconfig)
 
     ! Release the assembly structure if necessary.
     call spdiscr_releaseCubStructure(rcubatureInfo)
@@ -1038,7 +1081,7 @@ contains
 
   subroutine linf_buildVectorScalarBdr1D (rform, bclear, rvector,&
                                           fcoeff_buildVectorScBdr1D_sim,&
-                                          iboundaryComp, rcollection, rperfconfig)
+                                          iboundaryComp, rcollection, ntempArrays, rperfconfig)
 
 !<description>
   ! This routine assembles the entries of a vector according to a linear form
@@ -1067,6 +1110,16 @@ contains
   ! A callback routine for the function to be discretised.
   include 'intf_coefficientVectorScBdr1D.inc'
   optional :: fcoeff_buildVectorScBdr1D_sim
+
+  ! OPTIONAL: Number of temp arrays.
+  ! If this is specified (and larger than zero), a number of temporary
+  ! arrays is allocated and provided to the callback routine.
+  ! This temporary memory is user defined and can be used during the
+  ! assembly, e.g., for the temporary evaluation of FEM functions.
+  !
+  ! The temporary memory is available in the callback function as
+  !    rdomainIntSubset%p_DtempArrays !
+  integer, intent(in), optional :: ntempArrays
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -1156,7 +1209,7 @@ contains
             call linf_initAssembly(rvectorAssembly, rform,&
                 rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
                 CUB_G1_1D, NELbdc, rperfconfig)
-            call linf_allocAssemblyData(rvectorAssembly)
+            call linf_allocAssemblyData(rvectorAssembly,ntempArrays=ntempArrays)
 
             ! Assemble the data all elements
             call linf_assembleSubmeshVectorBdr1D (rvectorAssembly, rvector,&
@@ -1202,7 +1255,7 @@ contains
               call linf_initAssembly(rvectorAssembly, rform,&
                   rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
                   CUB_G1_1D, NELbdc, rperfconfig)
-              call linf_allocAssemblyData(rvectorAssembly)
+              call linf_allocAssemblyData(rvectorAssembly,ntempArrays=ntempArrays)
 
               ! Assemble the data for one element
               call linf_assembleSubmeshVectorBdr1D (rvectorAssembly, rvector,&
@@ -1241,7 +1294,7 @@ contains
   subroutine linf_buildVectorScalarBdr2D (rform, ccubType, bclear, rvector,&
                                           fcoeff_buildVectorScBdr2D_sim,&
                                           rboundaryRegion, rcollection,&
-                                          rperfconfig)
+                                          ntempArrays, rperfconfig)
 
 !<description>
   ! This routine assembles the entries of a vector according to a linear form
@@ -1273,6 +1326,16 @@ contains
   ! A callback routine for the function to be discretised.
   include 'intf_coefficientVectorScBdr2D.inc'
   optional :: fcoeff_buildVectorScBdr2D_sim
+
+  ! OPTIONAL: Number of temp arrays.
+  ! If this is specified (and larger than zero), a number of temporary
+  ! arrays is allocated and provided to the callback routine.
+  ! This temporary memory is user defined and can be used during the
+  ! assembly, e.g., for the temporary evaluation of FEM functions.
+  !
+  ! The temporary memory is available in the callback function as
+  !    rdomainIntSubset%p_DtempArrays !
+  integer, intent(in), optional :: ntempArrays
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -1396,7 +1459,7 @@ contains
             call linf_assembleSubmeshVectorBdr2D (rvectorAssembly, rvector,&
                 rboundaryRegion, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
                 DedgePosition(:,1:NELbdc), fcoeff_buildVectorScBdr2D_sim,&
-                rcollection, rperfconfig)
+                rcollection, ntempArrays, rperfconfig)
 
             ! Release the assembly structure.
             call linf_doneAssembly(rvectorAssembly)
@@ -1448,7 +1511,7 @@ contains
                 call linf_assembleSubmeshVectorBdr2D (rvectorAssembly, rvector,&
                     rboundaryReg, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
                     DedgePosition(:,1:NELbdc), fcoeff_buildVectorScBdr2D_sim,&
-                    rcollection, rperfconfig)
+                    rcollection, ntempArrays, rperfconfig)
 
               end if
 
@@ -1483,7 +1546,7 @@ contains
 
   subroutine linf_buildVecIntlScalarBdr1D (rform, bclear, rvector,&
                                            fcoeff_buildVectorBlBdr1D_sim,&
-                                           iboundaryComp, rcollection, rperfconfig)
+                                           iboundaryComp, rcollection, ntempArrays, rperfconfig)
 
 !<description>
   ! This routine assembles the entries of a vector according to a linear form
@@ -1512,6 +1575,16 @@ contains
   ! A callback routine for the function to be discretised.
   include 'intf_coefficientVectorBlBdr1D.inc'
   optional :: fcoeff_buildVectorBlBdr1D_sim
+
+  ! OPTIONAL: Number of temp arrays.
+  ! If this is specified (and larger than zero), a number of temporary
+  ! arrays is allocated and provided to the callback routine.
+  ! This temporary memory is user defined and can be used during the
+  ! assembly, e.g., for the temporary evaluation of FEM functions.
+  !
+  ! The temporary memory is available in the callback function as
+  !    rdomainIntSubset%p_DtempArrays !
+  integer, intent(in), optional :: ntempArrays
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -1601,7 +1674,7 @@ contains
             call linf_initAssembly(rvectorAssembly, rform,&
                 rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
                 CUB_G1_1D, NELbdc, rperfconfig)
-            call linf_allocAssemblyData(rvectorAssembly, rvector%NVAR)
+            call linf_allocAssemblyData(rvectorAssembly, rvector%NVAR, ntempArrays)
 
             ! Assemble the data all elements
             call linf_assembleSubmeshVecScBdr1D (rvectorAssembly, rvector,&
@@ -1647,7 +1720,7 @@ contains
               call linf_initAssembly(rvectorAssembly, rform,&
                   rvector%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
                   CUB_G1_1D, NELbdc, rperfconfig)
-              call linf_allocAssemblyData(rvectorAssembly, rvector%NVAR)
+              call linf_allocAssemblyData(rvectorAssembly, rvector%NVAR, ntempArrays)
 
               ! Assemble the data for one element
               call linf_assembleSubmeshVecScBdr1D (rvectorAssembly, rvector,&
@@ -1689,7 +1762,7 @@ contains
   subroutine linf_buildVecIntlScalarBdr2D (rform, ccubType, bclear, rvector,&
                                            fcoeff_buildVectorBlBdr2D_sim,&
                                            rboundaryRegion, rcollection,&
-                                           rperfconfig)
+                                           ntempArrays, rperfconfig)
 
 !<description>
   ! This routine assembles the entries of a vector according to a linear form
@@ -1721,6 +1794,16 @@ contains
   ! A callback routine for the function to be discretised.
   include 'intf_coefficientVectorBlBdr2D.inc'
   optional :: fcoeff_buildVectorBlBdr2D_sim
+
+  ! OPTIONAL: Number of temp arrays.
+  ! If this is specified (and larger than zero), a number of temporary
+  ! arrays is allocated and provided to the callback routine.
+  ! This temporary memory is user defined and can be used during the
+  ! assembly, e.g., for the temporary evaluation of FEM functions.
+  !
+  ! The temporary memory is available in the callback function as
+  !    rdomainIntSubset%p_DtempArrays !
+  integer, intent(in), optional :: ntempArrays
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -1838,7 +1921,7 @@ contains
             call linf_assembleSubmeshVecScBdr2D (rvectorAssembly, rvector,&
                 rboundaryRegion, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
                 DedgePosition(:,1:NELbdc), fcoeff_buildVectorBlBdr2D_sim,&
-                rcollection, rperfconfig)
+                rcollection, ntempArrays, rperfconfig)
 
             ! Release the assembly structure.
             call linf_doneAssembly(rvectorAssembly)
@@ -1890,7 +1973,7 @@ contains
                 call linf_assembleSubmeshVecScBdr2D (rvectorAssembly, rvector,&
                     rboundaryReg, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
                     DedgePosition(:,1:NELbdc), fcoeff_buildVectorBlBdr2D_sim,&
-                    rcollection, rperfconfig)
+                    rcollection, ntempArrays, rperfconfig)
 
               end if
 
@@ -2056,7 +2139,7 @@ contains
 
 !<subroutine>
 
-  subroutine linf_allocAssemblyData(rvectorAssembly, nblocks)
+  subroutine linf_allocAssemblyData(rvectorAssembly, nblocks, ntempArrays)
 
 !<description>
   ! Auxiliary subroutine.
@@ -2067,6 +2150,13 @@ contains
   ! Optional: Number of blocks present in block or interleaved vectors
   !           If not present, nblocks=1 is assumed.
   integer, intent(in), optional :: nblocks
+
+  ! OPTIONAL: Number of temp arrays.
+  ! If this is specified (and larger than zero), a number of temporary
+  ! arrays is allocated and provided to the callback routine.
+  ! This temporary memory is user defined and can be used during the
+  ! assembly, e.g., for the temporary evaluation of FEM functions.
+  integer, intent(in), optional :: ntempArrays
 !</input>
 
 !<inputoutput>
@@ -2106,6 +2196,13 @@ contains
     ! No cubature points initalised up to now.
     rvectorAssembly%iinitialisedElements = 0
 
+    ! Allocate memory for user defined data.
+    nullify(rvectorAssembly%p_DtempArrays)
+    if (present(ntempArrays)) then
+      allocate(rvectorAssembly%p_DtempArrays(&
+          rvectorAssembly%ncubp,rvectorAssembly%nelementsPerBlock,ntempArrays))
+    end if
+
   end subroutine
 
   !****************************************************************************
@@ -2133,6 +2230,10 @@ contains
     deallocate(rvectorAssembly%p_Idofs)
     deallocate(rvectorAssembly%p_Dbas)
 
+    if (associated(rvectorAssembly%p_DtempArrays)) then
+      deallocate(rvectorAssembly%p_DtempArrays)
+    end if
+
   end subroutine
 
   !****************************************************************************
@@ -2140,7 +2241,7 @@ contains
 !<subroutine>
 
   subroutine linf_assembleSubmeshVector (rvectorAssembly, rvector, IelementList,&
-      fcoeff_buildVectorSc_sim, rcollection, rperfconfig)
+      fcoeff_buildVectorSc_sim, rcollection, ntempArrays, rperfconfig)
 
 !<description>
 
@@ -2157,6 +2258,16 @@ contains
   ! function $f$ which is to be discretised.
   include 'intf_coefficientVectorSc.inc'
   optional :: fcoeff_buildVectorSc_sim
+
+  ! OPTIONAL: Number of temp arrays.
+  ! If this is specified (and larger than zero), a number of temporary
+  ! arrays is allocated and provided to the callback routine.
+  ! This temporary memory is user defined and can be used during the
+  ! assembly, e.g., for the temporary evaluation of FEM functions.
+  !
+  ! The temporary memory is available in the callback function as
+  !    rdomainIntSubset%p_DtempArrays !
+  integer, intent(in), optional :: ntempArrays
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -2232,7 +2343,7 @@ contains
     !$omp         rlocalVectorAssembly)&
     !$omp if (size(IelementList) > p_rperfconfig%NELEMMIN_OMP)
     rlocalVectorAssembly = rvectorAssembly
-    call linf_allocAssemblyData(rlocalVectorAssembly)
+    call linf_allocAssemblyData(rlocalVectorAssembly,ntempArrays=ntempArrays)
 
     ! Get some more pointers to local data.
     p_Domega          => rlocalVectorAssembly%p_Domega
@@ -2334,6 +2445,12 @@ contains
       ! function values in the cubature points:
       if (present(fcoeff_buildVectorSc_sim)) then
         call domint_initIntegrationByEvalSet (p_revalElementSet,rintSubset)
+
+        ! Associate temp memory for the callback.
+        if (associated(rlocalVectorAssembly%p_DtempArrays)) then
+          call domint_setTempMemory (rintSubset,rlocalVectorAssembly%p_DtempArrays)
+        end if
+
         !rintSubset%ielementDistribution =  0
         rintSubset%ielementStartIdx     =  IELset
         rintSubset%p_Ielements          => IelementList(IELset:IELmax)
@@ -2470,7 +2587,7 @@ contains
 !<subroutine>
 
   subroutine linf_assembleSubmeshVecSc (rvectorAssembly, rvector, IelementList,&
-      fcoeff_buildVectorBl_sim, rcollection, rperfconfig)
+      fcoeff_buildVectorBl_sim, rcollection, ntempArrays, rperfconfig)
 
 !<description>
 
@@ -2487,6 +2604,16 @@ contains
   ! function $f$ which is to be discretised.
   include 'intf_coefficientVectorBl.inc'
   optional :: fcoeff_buildVectorBl_sim
+
+  ! OPTIONAL: Number of temp arrays.
+  ! If this is specified (and larger than zero), a number of temporary
+  ! arrays is allocated and provided to the callback routine.
+  ! This temporary memory is user defined and can be used during the
+  ! assembly, e.g., for the temporary evaluation of FEM functions.
+  !
+  ! The temporary memory is available in the callback function as
+  !    rdomainIntSubset%p_DtempArrays !
+  integer, intent(in), optional :: ntempArrays
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -2563,7 +2690,7 @@ contains
     !$omp         rlocalVectorAssembly)&
     !$omp if (size(IelementList) > p_rperfconfig%NELEMMIN_OMP)
     rlocalVectorAssembly = rvectorAssembly
-    call linf_allocAssemblyData(rlocalVectorAssembly, rvector%NVAR)
+    call linf_allocAssemblyData(rlocalVectorAssembly, rvector%NVAR, ntempArrays)
 
     ! Get some more pointers to local data.
     p_Domega          => rlocalVectorAssembly%p_Domega
@@ -2666,6 +2793,12 @@ contains
       ! function values in the cubature points:
       if (present(fcoeff_buildVectorBl_sim)) then
         call domint_initIntegrationByEvalSet (p_revalElementSet,rintSubset)
+
+        ! Associate temp memory for the callback.
+        if (associated(rlocalVectorAssembly%p_DtempArrays)) then
+          call domint_setTempMemory (rintSubset,rlocalVectorAssembly%p_DtempArrays)
+        end if
+
         !rintSubset%ielementDistribution =  0
         rintSubset%ielementStartIdx     =  IELset
         rintSubset%p_Ielements          => IelementList(IELset:IELmax)
@@ -2945,6 +3078,12 @@ contains
     ! function values in the cubature points:
     if (present(fcoeff_buildVectorScBdr1D_sim)) then
       call domint_initIntegrationByEvalSet (p_revalElementSet, rintSubset)
+
+      ! Associate temp memory for the callback.
+      if (associated(rvectorAssembly%p_DtempArrays)) then
+        call domint_setTempMemory (rintSubset,rvectorAssembly%p_DtempArrays)
+      end if
+
       !rintSubset%ielementDistribution  =  0
       rintSubset%ielementStartIdx      =  1
       rintSubset%p_Ielements           => IelementList
@@ -3042,7 +3181,7 @@ contains
 
   subroutine linf_assembleSubmeshVectorBdr2D (rvectorAssembly, rvector,&
       rboundaryRegion, IelementList, IelementOrientation, DedgePosition,&
-      fcoeff_buildVectorScBdr2D_sim, rcollection, rperfconfig)
+      fcoeff_buildVectorScBdr2D_sim, rcollection, ntempArrays, rperfconfig)
 
 !<description>
 
@@ -3069,6 +3208,16 @@ contains
   ! function $f$ which is to be discretised.
   include 'intf_coefficientVectorScBdr2D.inc'
   optional :: fcoeff_buildVectorScBdr2D_sim
+
+  ! OPTIONAL: Number of temp arrays.
+  ! If this is specified (and larger than zero), a number of temporary
+  ! arrays is allocated and provided to the callback routine.
+  ! This temporary memory is user defined and can be used during the
+  ! assembly, e.g., for the temporary evaluation of FEM functions.
+  !
+  ! The temporary memory is available in the callback function as
+  !    rdomainIntSubset%p_DtempArrays !
+  integer, intent(in), optional :: ntempArrays
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -3164,7 +3313,7 @@ contains
     !$omp         rintSubset,rlocalVectorAssembly)&
     !$omp if (size(IelementList) > p_rperfconfig%NELEMMIN_OMP)
     rlocalVectorAssembly = rvectorAssembly
-    call linf_allocAssemblyData(rlocalVectorAssembly)
+    call linf_allocAssemblyData(rlocalVectorAssembly,ntempArrays=ntempArrays)
 
     ! Get some more pointers to local data.
     p_Domega          => rlocalVectorAssembly%p_Domega
@@ -3329,6 +3478,12 @@ contains
       ! function values in the cubature points:
       if (present(fcoeff_buildVectorScBdr2D_sim)) then
         call domint_initIntegrationByEvalSet (p_revalElementSet, rintSubset)
+
+        ! Associate temp memory for the callback.
+        if (associated(rlocalVectorAssembly%p_DtempArrays)) then
+          call domint_setTempMemory (rintSubset,rlocalVectorAssembly%p_DtempArrays)
+        end if
+
         !rintSubset%ielementDistribution  =  0
         rintSubset%ielementStartIdx      =  IELset
         rintSubset%p_Ielements           => IelementList(IELset:IELmax)
@@ -3609,6 +3764,12 @@ contains
     ! function values in the cubature points:
     if (present(fcoeff_buildVectorBlBdr1D_sim)) then
       call domint_initIntegrationByEvalSet (p_revalElementSet, rintSubset)
+
+      ! Associate temp memory for the callback.
+      if (associated(rvectorAssembly%p_DtempArrays)) then
+        call domint_setTempMemory (rintSubset,rvectorAssembly%p_DtempArrays)
+      end if
+
       !rintSubset%ielementDistribution  =  0
       rintSubset%ielementStartIdx      =  1
       rintSubset%p_Ielements           => IelementList
@@ -3709,7 +3870,7 @@ contains
 
   subroutine linf_assembleSubmeshVecScBdr2D (rvectorAssembly, rvector,&
       rboundaryRegion, IelementList, IelementOrientation, DedgePosition,&
-      fcoeff_buildVectorBlBdr2D_sim, rcollection, rperfconfig)
+      fcoeff_buildVectorBlBdr2D_sim, rcollection, ntempArrays, rperfconfig)
 
 !<description>
 
@@ -3736,6 +3897,16 @@ contains
   ! function $f$ which is to be discretised.
   include 'intf_coefficientVectorBlBdr2D.inc'
   optional :: fcoeff_buildVectorBlBdr2D_sim
+
+  ! OPTIONAL: Number of temp arrays.
+  ! If this is specified (and larger than zero), a number of temporary
+  ! arrays is allocated and provided to the callback routine.
+  ! This temporary memory is user defined and can be used during the
+  ! assembly, e.g., for the temporary evaluation of FEM functions.
+  !
+  ! The temporary memory is available in the callback function as
+  !    rdomainIntSubset%p_DtempArrays !
+  integer, intent(in), optional :: ntempArrays
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -3832,7 +4003,7 @@ contains
     !$omp         rintSubset,rlocalVectorAssembly)&
     !$omp if (size(IelementList) > p_rperfconfig%NELEMMIN_OMP)
     rlocalVectorAssembly = rvectorAssembly
-    call linf_allocAssemblyData(rlocalVectorAssembly, rvector%NVAR)
+    call linf_allocAssemblyData(rlocalVectorAssembly, rvector%NVAR, ntempArrays)
 
     ! Get some more pointers to local data.
     p_Domega          => rlocalVectorAssembly%p_Domega
@@ -3998,6 +4169,12 @@ contains
       ! function values in the cubature points:
       if (present(fcoeff_buildVectorBlBdr2D_sim)) then
         call domint_initIntegrationByEvalSet (p_revalElementSet, rintSubset)
+
+        ! Associate temp memory for the callback.
+        if (associated(rlocalVectorAssembly%p_DtempArrays)) then
+          call domint_setTempMemory (rintSubset,rlocalVectorAssembly%p_DtempArrays)
+        end if
+
         !rintSubset%ielementDistribution  =  0
         rintSubset%ielementStartIdx      =  IELset
         rintSubset%p_Ielements           => IelementList(IELset:IELmax)
@@ -4140,7 +4317,7 @@ contains
 !<subroutine>
 
   subroutine linf_assembleSubmeshVecBl (rvectorAssembly, rvector,&
-      IelementList, fcoeff_buildVectorBl_sim, rcollection, rperfconfig)
+      IelementList, fcoeff_buildVectorBl_sim, rcollection, ntempArrays, rperfconfig)
 
 !<description>
 
@@ -4157,6 +4334,16 @@ contains
   ! vector-valued function $f$ which is to be discretised.
   include 'intf_coefficientVectorBl.inc'
   optional :: fcoeff_buildVectorBl_sim
+
+  ! OPTIONAL: Number of temp arrays.
+  ! If this is specified (and larger than zero), a number of temporary
+  ! arrays is allocated and provided to the callback routine.
+  ! This temporary memory is user defined and can be used during the
+  ! assembly, e.g., for the temporary evaluation of FEM functions.
+  !
+  ! The temporary memory is available in the callback function as
+  !    rdomainIntSubset%p_DtempArrays !
+  integer, intent(in), optional :: ntempArrays
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -4234,7 +4421,7 @@ contains
     !$omp         rlocalVectorAssembly)&
     !$omp if (size(IelementList) > p_rperfconfig%NELEMMIN_OMP)
     rlocalVectorAssembly = rvectorAssembly
-    call linf_allocAssemblyData(rlocalVectorAssembly, rvector%nblocks)
+    call linf_allocAssemblyData(rlocalVectorAssembly, rvector%nblocks, ntempArrays)
 
     ! Get some more pointers to local data.
     p_Domega          => rlocalVectorAssembly%p_Domega
@@ -4338,6 +4525,12 @@ contains
       ! function values in the cubature points:
       if (present(fcoeff_buildVectorBl_sim)) then
         call domint_initIntegrationByEvalSet (p_revalElementSet,rintSubset)
+
+        ! Associate temp memory for the callback.
+        if (associated(rlocalVectorAssembly%p_DtempArrays)) then
+          call domint_setTempMemory (rintSubset,rlocalVectorAssembly%p_DtempArrays)
+        end if
+
         !rintSubset%ielementDistribution = 0
         rintSubset%ielementStartIdx     =  IELset
         rintSubset%p_Ielements          => IelementList(IELset:IELmax)
@@ -4621,6 +4814,12 @@ contains
     ! function values in the cubature points:
     if (present(fcoeff_buildVectorBlBdr1D_sim)) then
       call domint_initIntegrationByEvalSet (p_revalElementSet, rintSubset)
+
+      ! Associate temp memory for the callback.
+      if (associated(rvectorAssembly%p_DtempArrays)) then
+        call domint_setTempMemory (rintSubset,rvectorAssembly%p_DtempArrays)
+      end if
+
       !rintSubset%ielementDistribution  =  0
       rintSubset%ielementStartIdx      =  1
       rintSubset%p_Ielements           => IelementList
@@ -4722,7 +4921,7 @@ contains
 
   subroutine linf_assembleSubmeshVecBlBdr2D (rvectorAssembly, rvector,&
       rboundaryRegion, IelementList, IelementOrientation, DedgePosition,&
-      fcoeff_buildVectorBlBdr2D_sim, rcollection, rperfconfig)
+      fcoeff_buildVectorBlBdr2D_sim, rcollection, ntempArrays, rperfconfig)
 
 !<description>
 
@@ -4749,6 +4948,16 @@ contains
   ! function $f$ which is to be discretised.
   include 'intf_coefficientVectorBlBdr2D.inc'
   optional :: fcoeff_buildVectorBlBdr2D_sim
+
+  ! OPTIONAL: Number of temp arrays.
+  ! If this is specified (and larger than zero), a number of temporary
+  ! arrays is allocated and provided to the callback routine.
+  ! This temporary memory is user defined and can be used during the
+  ! assembly, e.g., for the temporary evaluation of FEM functions.
+  !
+  ! The temporary memory is available in the callback function as
+  !    rdomainIntSubset%p_DtempArrays !
+  integer, intent(in), optional :: ntempArrays
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -4845,7 +5054,7 @@ contains
     !$omp         rintSubset,rlocalVectorAssembly)&
     !$omp if (size(IelementList) > p_rperfconfig%NELEMMIN_OMP)
     rlocalVectorAssembly = rvectorAssembly
-    call linf_allocAssemblyData(rlocalVectorAssembly, rvector%nblocks)
+    call linf_allocAssemblyData(rlocalVectorAssembly, rvector%nblocks, ntempArrays)
 
     ! Get some more pointers to local data.
     p_Domega          => rlocalVectorAssembly%p_Domega
@@ -5012,6 +5221,12 @@ contains
       ! function values in the cubature points:
       if (present(fcoeff_buildVectorBlBdr2D_sim)) then
         call domint_initIntegrationByEvalSet (p_revalElementSet, rintSubset)
+
+        ! Associate temp memory for the callback.
+        if (associated(rlocalVectorAssembly%p_DtempArrays)) then
+          call domint_setTempMemory (rintSubset,rlocalVectorAssembly%p_DtempArrays)
+        end if
+
         !rintSubset%ielementDistribution  =  0
         rintSubset%ielementStartIdx      =  IELset
         rintSubset%p_Ielements           => IelementList(IELset:IELmax)
@@ -5155,7 +5370,7 @@ contains
 
   subroutine linf_buildVectorScalar2 (rform, bclear, rvector, &
                                       fcoeff_buildVectorSc_sim, rcollection,&
-                                      rperfconfig)
+                                      ntempArrays, rperfconfig)
 
 !<description>
   ! DEPRECATED INTERFACE!
@@ -5197,6 +5412,16 @@ contains
   include 'intf_coefficientVectorSc.inc'
   optional :: fcoeff_buildVectorSc_sim
 
+  ! OPTIONAL: Number of temp arrays.
+  ! If this is specified (and larger than zero), a number of temporary
+  ! arrays is allocated and provided to the callback routine.
+  ! This temporary memory is user defined and can be used during the
+  ! assembly, e.g., for the temporary evaluation of FEM functions.
+  !
+  ! The temporary memory is available in the callback function as
+  !    rdomainIntSubset%p_DtempArrays !
+  integer, intent(in), optional :: ntempArrays
+
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
   type(t_perfconfig), intent(in), target, optional :: rperfconfig
@@ -5233,7 +5458,7 @@ contains
 
     ! Calculate the entries
     call linf_buildVectorScalar (rform, bclear, rvector, rcubatureInfo,&
-        fcoeff_buildVectorSc_sim, rcollection,rperfconfig)
+        fcoeff_buildVectorSc_sim, rcollection, ntempArrays, rperfconfig)
 
     ! Release the assembly structure if necessary.
     call spdiscr_releaseCubStructure(rcubatureInfo)
@@ -5246,7 +5471,7 @@ contains
 
   subroutine linf_buildVectorScalar3 (rform, bclear, rvector, rcubatureInfo,&
                                       fcoeff_buildVectorSc_sim, rcollection,&
-                                      rperfconfig)
+                                      ntempArrays, rperfconfig)
 
 !<description>
   ! This routine assembles the entries of a vector according to a linear form
@@ -5284,6 +5509,16 @@ contains
   ! OPTIONAL: A scalar cubature information structure that specifies the cubature
   ! formula(s) to use. If not specified, default settings are used.
   type(t_scalarCubatureInfo), intent(in), target, optional :: rcubatureInfo
+
+  ! OPTIONAL: Number of temp arrays.
+  ! If this is specified (and larger than zero), a number of temporary
+  ! arrays is allocated and provided to the callback routine.
+  ! This temporary memory is user defined and can be used during the
+  ! assembly, e.g., for the temporary evaluation of FEM functions.
+  !
+  ! The temporary memory is available in the callback function as
+  !    rdomainIntSubset%p_DtempArrays !
+  integer, intent(in), optional :: ntempArrays
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -5392,7 +5627,7 @@ contains
 
           ! Assemble the data for all elements in this element distribution
           call linf_assembleSubmeshVector (rvectorAssembly,rvector,&
-              p_IelementList,fcoeff_buildVectorSc_sim,rcollection,rperfconfig)
+              p_IelementList,fcoeff_buildVectorSc_sim,rcollection,ntempArrays,rperfconfig)
 
           ! Release the assembly structure.
           call linf_doneAssembly(rvectorAssembly)
@@ -5423,7 +5658,7 @@ contains
 
   subroutine linf_buildVecIntlScalar2 (rform, bclear, rvector,&
                                        fcoeff_buildVectorBl_sim, rcollection,&
-                                       rcubatureInfo, rperfconfig)
+                                       rcubatureInfo, ntempArrays, rperfconfig)
 
 !<description>
   ! This routine assembles the entries of a vector according to a linear form
@@ -5461,6 +5696,16 @@ contains
   ! OPTIONAL: A scalar cubature information structure that specifies the cubature
   ! formula(s) to use. If not specified, default settings are used.
   type(t_scalarCubatureInfo), intent(in), optional, target :: rcubatureInfo
+
+  ! OPTIONAL: Number of temp arrays.
+  ! If this is specified (and larger than zero), a number of temporary
+  ! arrays is allocated and provided to the callback routine.
+  ! This temporary memory is user defined and can be used during the
+  ! assembly, e.g., for the temporary evaluation of FEM functions.
+  !
+  ! The temporary memory is available in the callback function as
+  !    rdomainIntSubset%p_DtempArrays !
+  integer, intent(in), optional :: ntempArrays
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -5558,7 +5803,7 @@ contains
 
           ! Assemble the data for all elements in this element distribution
           call linf_assembleSubmeshVecSc (rvectorAssembly,rvector,&
-              p_IelementList,fcoeff_buildVectorBl_sim,rcollection,rperfconfig)
+              p_IelementList,fcoeff_buildVectorBl_sim,rcollection,ntempArrays,rperfconfig)
 
           ! Release the assembly structure.
           call linf_doneAssembly(rvectorAssembly)
@@ -5589,7 +5834,7 @@ contains
 
   subroutine linf_buildVectorBlock2 (rform, bclear, rvectorBlock,&
                                      fcoeff_buildVectorBl_sim, rcollection,&
-                                     rcubatureInfo,rperfconfig)
+                                     rcubatureInfo,ntempArrays,rperfconfig)
 
 !<description>
   ! This routine assembles the entries of a vector according to a linear form
@@ -5630,6 +5875,16 @@ contains
   ! formula(s) to use. If not specified, default settings are used.
   ! This is used for all blocks.
   type(t_scalarCubatureInfo), intent(in), optional, target :: rcubatureInfo
+
+  ! OPTIONAL: Number of temp arrays.
+  ! If this is specified (and larger than zero), a number of temporary
+  ! arrays is allocated and provided to the callback routine.
+  ! This temporary memory is user defined and can be used during the
+  ! assembly, e.g., for the temporary evaluation of FEM functions.
+  !
+  ! The temporary memory is available in the callback function as
+  !    rdomainIntSubset%p_DtempArrays !
+  integer, intent(in), optional :: ntempArrays
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -5741,7 +5996,7 @@ contains
 
           ! Assemble the data for all elements in this element distribution
           call linf_assembleSubmeshVecBl (rvectorAssembly,rvectorBlock,&
-              p_IelementList,fcoeff_buildVectorBl_sim,rcollection,rperfconfig)
+              p_IelementList,fcoeff_buildVectorBl_sim,rcollection,ntempArrays,rperfconfig)
 
           ! Release the assembly structure.
           call linf_doneAssembly(rvectorAssembly)
@@ -5772,7 +6027,7 @@ contains
 
   subroutine linf_buildVectorBlockBdr1D (rform, bclear, rvectorBlock,&
                                          fcoeff_buildVectorBlBdr1D_sim,&
-                                         iboundaryComp, rcollection, rperfconfig)
+                                         iboundaryComp, rcollection, ntempArrays, rperfconfig)
 
 !<description>
   ! This routine assembles the entries of a vector according to a linear form
@@ -5801,6 +6056,16 @@ contains
   ! A callback routine for the function to be discretised.
   include 'intf_coefficientVectorBlBdr1D.inc'
   optional :: fcoeff_buildVectorBlBdr1D_sim
+
+  ! OPTIONAL: Number of temp arrays.
+  ! If this is specified (and larger than zero), a number of temporary
+  ! arrays is allocated and provided to the callback routine.
+  ! This temporary memory is user defined and can be used during the
+  ! assembly, e.g., for the temporary evaluation of FEM functions.
+  !
+  ! The temporary memory is available in the callback function as
+  !    rdomainIntSubset%p_DtempArrays !
+  integer, intent(in), optional :: ntempArrays
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -5905,7 +6170,7 @@ contains
             call linf_initAssembly(rvectorAssembly, rform,&
                 p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
                 CUB_G1_1D, NELbdc, rperfconfig)
-            call linf_allocAssemblyData(rvectorAssembly, rvectorBlock%nblocks)
+            call linf_allocAssemblyData(rvectorAssembly, rvectorBlock%nblocks, ntempArrays)
 
             ! Assemble the data all elements
             call linf_assembleSubmeshVecBlBdr1D (rvectorAssembly,&
@@ -5951,7 +6216,7 @@ contains
               call linf_initAssembly(rvectorAssembly, rform,&
                   p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
                   CUB_G1_1D, NELbdc, rperfconfig)
-              call linf_allocAssemblyData(rvectorAssembly, rvectorBlock%nblocks)
+              call linf_allocAssemblyData(rvectorAssembly, rvectorBlock%nblocks, ntempArrays)
 
               ! Assemble the data for one element
               call linf_assembleSubmeshVecBlBdr1D (rvectorAssembly, rvectorBlock,&
@@ -5989,7 +6254,7 @@ contains
 
   subroutine linf_buildVectorBlockBdr2D (rform, ccubType, bclear, rvectorBlock,&
                                          fcoeff_buildVectorBlBdr2D_sim,&
-                                         rboundaryRegion, rcollection, rperfconfig)
+                                         rboundaryRegion, rcollection, ntempArrays, rperfconfig)
 
 !<description>
   ! This routine assembles the entries of a vector according to a linear form
@@ -6021,6 +6286,16 @@ contains
   ! A callback routine for the function to be discretised.
   include 'intf_coefficientVectorBlBdr2D.inc'
   optional :: fcoeff_buildVectorBlBdr2D_sim
+
+  ! OPTIONAL: Number of temp arrays.
+  ! If this is specified (and larger than zero), a number of temporary
+  ! arrays is allocated and provided to the callback routine.
+  ! This temporary memory is user defined and can be used during the
+  ! assembly, e.g., for the temporary evaluation of FEM functions.
+  !
+  ! The temporary memory is available in the callback function as
+  !    rdomainIntSubset%p_DtempArrays !
+  integer, intent(in), optional :: ntempArrays
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -6156,7 +6431,7 @@ contains
             call linf_assembleSubmeshVecBlBdr2D (rvectorAssembly, rvectorBlock,&
                 rboundaryRegion, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
                 DedgePosition(:,1:NELbdc), fcoeff_buildVectorBlBdr2D_sim,&
-                rcollection, rperfconfig)
+                rcollection, ntempArrays, rperfconfig)
 
             ! Release the assembly structure.
             call linf_doneAssembly(rvectorAssembly)
@@ -6208,7 +6483,7 @@ contains
                 call linf_assembleSubmeshVecBlBdr2D (rvectorAssembly, rvectorBlock,&
                     rboundaryReg, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
                     DedgePosition(:,1:NELbdc), fcoeff_buildVectorBlBdr2D_sim,&
-                    rcollection, rperfconfig)
+                    rcollection, ntempArrays, rperfconfig)
 
               end if
 
@@ -6242,7 +6517,7 @@ contains
 !<subroutine>
 
   subroutine linf_buildSimpleVector(rvector, rcubatureInfo, &
-      fcoeff_buildVectorSc_sim, bclear, cderiv, rcollection, rperfconfig)
+      fcoeff_buildVectorSc_sim, bclear, cderiv, rcollection, ntempArrays, rperfconfig)
 
 !<description>
 !</description>
@@ -6263,6 +6538,16 @@ contains
   ! OPTIONAL: A derivative specifier for the test functions. If not given,
   ! DER_FUNC is used.
   integer, optional, intent(in) :: cderiv
+
+  ! OPTIONAL: Number of temp arrays.
+  ! If this is specified (and larger than zero), a number of temporary
+  ! arrays is allocated and provided to the callback routine.
+  ! This temporary memory is user defined and can be used during the
+  ! assembly, e.g., for the temporary evaluation of FEM functions.
+  !
+  ! The temporary memory is available in the callback function as
+  !    rdomainIntSubset%p_DtempArrays !
+  integer, intent(in), optional :: ntempArrays
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -6295,7 +6580,7 @@ contains
 
     ! assemble
     call linf_buildVectorScalar3(rform, bclear2, rvector, rcubatureInfo, &
-        fcoeff_buildVectorSc_sim, rcollection, rperfconfig)
+        fcoeff_buildVectorSc_sim, rcollection, ntempArrays, rperfconfig)
 
   end subroutine
 

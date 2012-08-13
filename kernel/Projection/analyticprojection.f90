@@ -362,7 +362,7 @@ contains
 !<subroutine>
 
   subroutine anprj_discrDirect (rvector,&
-      ffunctionReference, rcollection, iorder, rperfconfig)
+      ffunctionReference, rcollection, iorder, ntempArrays, rperfconfig)
 
 !<description>
   ! Converts an analytically given function fcoeff_buildVectorSc_sim
@@ -401,6 +401,16 @@ contains
   ! approximation" to the given function -- which means by evaluating
   ! in edge midpoints.
   integer, intent(in), optional :: iorder
+
+  ! OPTIONAL: Number of temp arrays.
+  ! If this is specified (and larger than zero), a number of temporary
+  ! arrays is allocated and provided to the callback routine.
+  ! This temporary memory is user defined and can be used during the
+  ! assembly, e.g., for the temporary evaluation of FEM functions.
+  !
+  ! The temporary memory is available in the callback function as
+  !    rdomainIntSubset%p_DtempArrays !
+  integer, intent(in), optional :: ntempArrays
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -477,6 +487,9 @@ contains
     ! Element evaluation tag; collects some information necessary for evaluating
     ! the elements.
     integer(I32) :: cevaluationTag
+
+    ! Pointer to temporary memory for callback functions.
+    real(DP), dimension(:,:,:), pointer :: p_DtempArrays
 
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
@@ -667,6 +680,12 @@ contains
       ! Allocate memory for the function values
       allocate(Dcoefficients(ncubp,nelementsPerBlock))
 
+      ! Allocate memory for user defined data.
+      nullify(p_DtempArrays)
+      if (present(ntempArrays)) then
+        allocate(p_DtempArrays(ncubp,nelementsPerBlock,ntempArrays))
+      end if
+
       ! Initialisation of the element set.
       call elprep_init(revalElementSet)
 
@@ -717,6 +736,12 @@ contains
 
         ! Prepare the call to the evaluation routine of the analytic function.
         call domint_initIntegrationByEvalSet (revalElementSet,rintSubset)
+
+        ! Associate temp memory for the callback.
+        if (associated(p_DtempArrays)) then
+          call domint_setTempMemory (rintSubset,p_DtempArrays)
+        end if
+
         !rintSubset%ielementDistribution = icurrentElementDistr
         rintSubset%ielementStartIdx = IELset
         rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
@@ -815,6 +840,11 @@ contains
       deallocate(p_DcubPtsRef)
       deallocate(Dcoefficients)
       deallocate(IdofsTrial)
+      
+      ! Release the temp memory
+      if (associated(p_DtempArrays)) then
+        deallocate(p_DtempArrays)
+      end if
 
     end do ! icurrentElementDistr
 

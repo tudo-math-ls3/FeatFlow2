@@ -169,6 +169,9 @@ module trilinearformevaluation
     ! Pointer to the coefficients that are computed by the callback routine.
     real(DP), dimension(:,:,:), pointer :: p_Dcoefficients
 
+    ! Pointer to temporary memory for callback functions.
+    real(DP), dimension(:,:,:), pointer :: p_DtempArrays
+
   end type
 
 !</typeblock>
@@ -244,7 +247,7 @@ contains
 
   subroutine trilf_buildMatrixScalar (rform,bclear,rmatrixScalar,rvector,&
                                       fcoeff_buildTrilMatrixSc_sim,rcollection,&
-                                      rperfconfig)
+                                      ntempArrays,rperfconfig)
 
 !<description>
   ! This routine calculates the entries of a finite element matrix using
@@ -296,6 +299,16 @@ contains
   include 'intf_coefficientTrilMatrixSc.inc'
   optional :: fcoeff_buildTrilMatrixSc_sim
 
+  ! OPTIONAL: Number of temp arrays.
+  ! If this is specified (and larger than zero), a number of temporary
+  ! arrays is allocated and provided to the callback routine.
+  ! This temporary memory is user defined and can be used during the
+  ! assembly, e.g., for the temporary evaluation of FEM functions.
+  !
+  ! The temporary memory is available in the callback function as
+  !    rdomainIntSubset%p_DtempArrays !
+  integer, intent(in), optional :: ntempArrays
+
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
   type(t_perfconfig), intent(in), target, optional :: rperfconfig
@@ -337,7 +350,7 @@ contains
         !IF (PRESENT(fcoeff_buildMatrixSc_sim)) THEN
           call trilf_buildMatrix9d_conf2 (rform,bclear,rmatrixScalar,rvector,&
                                           fcoeff_buildTrilMatrixSc_sim,&
-                                          rcollection,rperfconfig)
+                                          rcollection,ntempArrays,rperfconfig)
       case (LSYSSC_MATRIX7)
         ! Convert structure 7 to structure 9.
         call lsyssc_convertMatrix (rmatrixScalar,LSYSSC_MATRIX9)
@@ -345,7 +358,7 @@ contains
         ! Create the matrix in structure 9
         call trilf_buildMatrix9d_conf2 (rform,bclear,rmatrixScalar,rvector,&
                                         fcoeff_buildTrilMatrixSc_sim,&
-                                        rcollection,rperfconfig)
+                                        rcollection,ntempArrays,rperfconfig)
 
         ! Convert back to structure 7
         call lsyssc_convertMatrix (rmatrixScalar,LSYSSC_MATRIX7)
@@ -372,7 +385,7 @@ contains
         !IF (PRESENT(fcoeff_buildMatrixSc_sim)) THEN
           call trilf_buildMatrix9d_conf2 (rform,bclear,rmatrixScalar,rvector,&
                                           fcoeff_buildTrilMatrixSc_sim,&
-                                          rcollection,rperfconfig)
+                                          rcollection,ntempArrays,rperfconfig)
 
       case (LSYSSC_MATRIX7)
         ! Convert structure 7 to structure 9
@@ -381,7 +394,7 @@ contains
         ! Create the matrix in structure 9
         call trilf_buildMatrix9d_conf2 (rform,bclear,rmatrixScalar,rvector,&
                                         fcoeff_buildTrilMatrixSc_sim,&
-                                        rcollection,rperfconfig)
+                                        rcollection,ntempArrays,rperfconfig)
 
         ! Convert back to structure 7
         call lsyssc_convertMatrix (rmatrixScalar,LSYSSC_MATRIX7)
@@ -410,7 +423,7 @@ contains
 
   subroutine trilf_buildMatrix9d_conf2 (rform,bclear,rmatrixScalar,rvector,&
                                         fcoeff_buildTrilMatrixSc_sim,rcollection,&
-                                        rperfconfig)
+                                        ntempArrays,rperfconfig)
 
 !<description>
   ! This routine calculates the entries of a finite element matrix.
@@ -454,6 +467,16 @@ contains
   ! Must be present if the matrix has nonconstant coefficients!
   include 'intf_coefficientTrilMatrixSc.inc'
   optional :: fcoeff_buildTrilMatrixSc_sim
+
+  ! OPTIONAL: Number of temp arrays.
+  ! If this is specified (and larger than zero), a number of temporary
+  ! arrays is allocated and provided to the callback routine.
+  ! This temporary memory is user defined and can be used during the
+  ! assembly, e.g., for the temporary evaluation of FEM functions.
+  !
+  ! The temporary memory is available in the callback function as
+  !    rdomainIntSubset%p_DtempArrays !
+  integer, intent(in), optional :: ntempArrays
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -1084,6 +1107,12 @@ contains
         ! Prepare an evaluation set that passes some information to the
         ! callback routine about where to evaluate
         call domint_initIntegrationByEvalSet(revalElementSet,rintSubset)
+
+        ! Associate temp memory for the callback.
+        if (present(ntempArrays)) then
+          call domint_allocTempMemory (rintSubset,ntempArrays)
+        end if
+
         !rintSubset%ielementDistribution = icurrentElementDistr
         rintSubset%ielementStartIdx = IELset
         rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
@@ -1501,11 +1530,20 @@ contains
 
 !<subroutine>
 
-  subroutine trilf_allocAssemblyData(rmatrixAssembly)
+  subroutine trilf_allocAssemblyData(rmatrixAssembly,ntempArrays)
 
 !<description>
   ! Auxiliary subroutine. Allocate 'local' memory, needed for assembling matrix entries.
 !</description>
+
+!<input>
+  ! OPTIONAL: Number of temp arrays.
+  ! If this is specified (and larger than zero), a number of temporary
+  ! arrays is allocated and provided to the callback routine.
+  ! This temporary memory is user defined and can be used during the
+  ! assembly, e.g., for the temporary evaluation of FEM functions.
+  integer, intent(in), optional :: ntempArrays
+!</input>
 
 !<inputoutput>
   ! A matrix assembly structure.
@@ -1583,6 +1621,13 @@ contains
     ! No cubature points initalised up to now.
     rmatrixAssembly%iinitialisedElements = 0
 
+    ! Allocate memory for user defined data.
+    nullify(rmatrixAssembly%p_DtempArrays)
+    if (present(ntempArrays)) then
+      allocate(rmatrixAssembly%p_DtempArrays(&
+          rmatrixAssembly%ncubp,rmatrixAssembly%nelementsPerBlock,ntempArrays))
+    end if
+
   end subroutine
 
   !****************************************************************************
@@ -1627,6 +1672,10 @@ contains
     deallocate(rmatrixAssembly%p_Kentry)
     deallocate(rmatrixAssembly%p_Dentry)
 
+    if (associated(rmatrixAssembly%p_DtempArrays)) then
+      deallocate(rmatrixAssembly%p_DtempArrays)
+    end if
+
   end subroutine
 
   !****************************************************************************
@@ -1634,7 +1683,8 @@ contains
 !<subroutine>
 
   subroutine trilf_assembleSubmeshMatrix9 (rmatrixAssembly, rmatrix, rvector,&
-      IelementList, fcoeff_buildTrilMatrixSc_sim, rcollection, rperfconfig)
+      IelementList, fcoeff_buildTrilMatrixSc_sim, rcollection, ntempArrays,&
+      rperfconfig)
 
 !<description>
 
@@ -1651,6 +1701,16 @@ contains
   ! Must be present if the matrix has nonconstant coefficients!
   include 'intf_coefficientTrilMatrixSc.inc'
   optional :: fcoeff_buildTrilMatrixSc_sim
+
+  ! OPTIONAL: Number of temp arrays.
+  ! If this is specified (and larger than zero), a number of temporary
+  ! arrays is allocated and provided to the callback routine.
+  ! This temporary memory is user defined and can be used during the
+  ! assembly, e.g., for the temporary evaluation of FEM functions.
+  !
+  ! The temporary memory is available in the callback function as
+  !    rdomainIntSubset%p_DtempArrays !
+  integer, intent(in), optional :: ntempArrays
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -1739,7 +1799,7 @@ contains
     !$omp         p_revalElementSet,rintSubset,rlocalMatrixAssembly)&
     !$omp if (size(IelementList) > p_rperfconfig%NELEMMIN_OMP)
     rlocalMatrixAssembly = rmatrixAssembly
-    call trilf_allocAssemblyData(rlocalMatrixAssembly)
+    call trilf_allocAssemblyData(rlocalMatrixAssembly,ntempArrays)
 
     ! Get some more pointers to local data.
     p_Kentry             => rlocalMatrixAssembly%p_Kentry
@@ -1888,6 +1948,12 @@ contains
       if (.not. rlocalMatrixAssembly%rform%ballCoeffConstant) then
         if (present(fcoeff_buildTrilMatrixSc_sim)) then
           call domint_initIntegrationByEvalSet (p_revalElementSet,rintSubset)
+
+          ! Associate temp memory for the callback.
+          if (associated(rlocalMatrixAssembly%p_DtempArrays)) then
+            call domint_setTempMemory (rintSubset,rlocalMatrixAssembly%p_DtempArrays)
+          end if
+
           !rintSubset%ielementDistribution  =  0
           rintSubset%ielementStartIdx      =  IELset
           rintSubset%p_Ielements           => IelementList(IELset:IELmax)
@@ -2153,7 +2219,7 @@ contains
 !<subroutine>
 
   recursive subroutine trilf_buildMatrixScalar2 (rform, bclear, rmatrix, rvector,&
-      fcoeff_buildTrilMatrixSc_sim,rcollection,rcubatureInfo,rperfconfig)
+      fcoeff_buildTrilMatrixSc_sim,rcollection,rcubatureInfo,ntempArrays,rperfconfig)
 
 !<description>
   ! This routine calculates the entries of a finite element matrix using
@@ -2215,6 +2281,16 @@ contains
   ! Must be present if the matrix has nonconstant coefficients!
   include 'intf_coefficientTrilMatrixSc.inc'
   optional :: fcoeff_buildTrilMatrixSc_sim
+
+  ! OPTIONAL: Number of temp arrays.
+  ! If this is specified (and larger than zero), a number of temporary
+  ! arrays is allocated and provided to the callback routine.
+  ! This temporary memory is user defined and can be used during the
+  ! assembly, e.g., for the temporary evaluation of FEM functions.
+  !
+  ! The temporary memory is available in the callback function as
+  !    rdomainIntSubset%p_DtempArrays !
+  integer, intent(in), optional :: ntempArrays
 
   ! OPTIONAL: A scalar cubature information structure that specifies the cubature
   ! formula(s) to use. If not specified, default settings are used.
@@ -2329,7 +2405,7 @@ contains
 
           ! Assemble the data for all elements in this element distribution
           call trilf_assembleSubmeshMatrix9 (rmatrixAssembly,rmatrix,rvector,&
-              p_IelementList,fcoeff_buildTrilMatrixSc_sim,rcollection,rperfconfig)
+              p_IelementList,fcoeff_buildTrilMatrixSc_sim,rcollection,ntempArrays,rperfconfig)
 
           ! Release the assembly structure.
           call trilf_doneAssembly(rmatrixAssembly)
@@ -2352,7 +2428,7 @@ contains
 
       ! Create the matrix in structure 9
       call trilf_buildMatrixScalar2 (rform, bclear, rmatrixBackup, rvector,&
-          fcoeff_buildTrilMatrixSc_sim,rcollection,rcubatureInfo,&
+          fcoeff_buildTrilMatrixSc_sim,rcollection,rcubatureInfo,ntempArrays,&
           rperfconfig)
 
       ! Convert back to structure 7

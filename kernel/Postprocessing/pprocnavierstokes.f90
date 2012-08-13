@@ -1284,7 +1284,7 @@ contains
 !<subroutine>
 
   subroutine ppns2D_bdforces_line(rvector,rregion,Dforces,ccub,df1,df2,cformulation,&
-      ffunctionReference,rcollection,rperfconfig)
+      ffunctionReference,rcollection,ntempArrays,rperfconfig)
 
 !<description>
   ! Calculates the drag-/lift-forces acting on a part of the real
@@ -1357,6 +1357,16 @@ contains
 
   ! OPTIONAL: A collection structure that is passed to ffunctionRefSimple.
   type(t_collection), intent(inout), target, optional :: rcollection
+
+  ! OPTIONAL: Number of temp arrays.
+  ! If this is specified (and larger than zero), a number of temporary
+  ! arrays is allocated and provided to the callback routine.
+  ! This temporary memory is user defined and can be used during the
+  ! assembly, e.g., for the temporary evaluation of FEM functions.
+  !
+  ! The temporary memory is available in the callback function as
+  !    rdomainIntSubset%p_DtempArrays !
+  integer, intent(in), optional :: ntempArrays
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -1598,6 +1608,12 @@ contains
       ! In case, dpf1 is nonconstant, calculate dpf1.
       if (present(ffunctionReference)) then
         call domint_initIntegrationByEvalSet (revalElementSet,rintSubset)
+
+        ! Associate temp memory for the callback.
+        if (present(ntempArrays)) then
+          call domint_allocTempMemory (rintSubset,ntempArrays)
+        end if
+
         !rintSubset%ielementDistribution = ieldistr
         rintSubset%ielementStartIdx = 1
         rintSubset%p_Ielements => IcurrentElementSet(1:nelements)
@@ -2846,7 +2862,7 @@ contains
 !<subroutine>
 
   subroutine ppns2D_bdforces_vol(rvector,rcharfct,Dforces,df1,df2,cformulation,&
-      ffunctionReference,rcollection,rperfconfig)
+      ffunctionReference,rcollection,ntempArrays,rperfconfig)
 
 !<description>
   ! Calculates the drag-/lift-forces of a function defined by rvector
@@ -2920,6 +2936,16 @@ contains
 
   ! OPTIONAL: A collection structure that is passed to ffunctionRefSimple.
   type(t_collection), intent(inout), target, optional :: rcollection
+
+  ! OPTIONAL: Number of temp arrays.
+  ! If this is specified (and larger than zero), a number of temporary
+  ! arrays is allocated and provided to the callback routine.
+  ! This temporary memory is user defined and can be used during the
+  ! assembly, e.g., for the temporary evaluation of FEM functions.
+  !
+  ! The temporary memory is available in the callback function as
+  !    rdomainIntSubset%p_DtempArrays !
+  integer, intent(in), optional :: ntempArrays
 
   ! OPTIONAL: local performance configuration. If not given, the
   ! global performance configuration is used.
@@ -3001,6 +3027,9 @@ contains
     ! Element evaluation tag; collects some information necessary for evaluating
     ! the elements.
     integer(I32) :: cevaluationTag
+
+    ! Pointer to temporary memory for callback functions.
+    real(DP), dimension(:,:,:), pointer :: p_DtempArrays
 
     ! Type of formulation
     integer :: cform
@@ -3102,6 +3131,12 @@ contains
       ! Allocate memory for the coefficients
       allocate(Dcoefficients(ncubp,nelementsPerBlock,13))
 
+      ! Allocate memory for user defined data.
+      nullify(p_DtempArrays)
+      if (present(ntempArrays)) then
+        allocate(p_DtempArrays(ncubp,nelementsPerBlock,ntempArrays))
+      end if
+
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
       ! a combined evaluation tag.
@@ -3166,6 +3201,12 @@ contains
         ! In case, dpf1 is nonconstant, calculate dpf1.
         if (present(ffunctionReference)) then
           call domint_initIntegrationByEvalSet (revalElementSet,rintSubset)
+
+          ! Associate temp memory for the callback.
+          if (associated(p_DtempArrays)) then
+            call domint_setTempMemory (rintSubset,p_DtempArrays)
+          end if
+
           !rintSubset%ielementDistribution = icurrentElementDistr
           rintSubset%ielementStartIdx = 1
           rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
@@ -3356,6 +3397,11 @@ contains
       deallocate(IdofsFunc1)
       deallocate(IdofsFunc2)
       deallocate(Dpf1)
+
+      ! Release the temp memory
+      if (associated(p_DtempArrays)) then
+        deallocate(p_DtempArrays)
+      end if
 
     end do ! icurrentElementDistr
 
