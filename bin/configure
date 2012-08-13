@@ -222,6 +222,7 @@ use constant SRCLIST_KERNEL =>
     "DOFMaintenance/feevaluation2.f90 " .
     "DOFMaintenance/blockmatassemblybase.f90 " .
     "DOFMaintenance/blockmatassembly.f90 " .
+    "DOFMaintenance/blockmatassemblystdop.f90 " .
 
     "ElementCubature/cubature.f90 ElementCubature/derivatives.f90 ElementCubature/element.f90 " .
     "ElementCubature/adaptivecubature.f90 " .
