@@ -483,7 +483,7 @@ module spatialdiscretisation
     type(t_triangulation), pointer   :: p_rtriangulation     => null()
 
     ! Number of solution components maintained by this structure.
-    integer                             :: ncomponents
+    integer                          :: ncomponents = 0
 
     ! A list of up to ncomponents scalar spatial discretisation structures.
     ! Each structure corresponds to one solution component and defines

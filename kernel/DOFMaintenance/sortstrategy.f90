@@ -41,8 +41,14 @@
 !# 7.) sstrat_initHierarchicalFEH
 !#     -> Calculates a renumbering strategy based on a FE space hierarchy
 !#
-!# 8.) sstrat_done
+!# 8.) sstrat_doneStrategy
 !#     -> Releases a renumbering strategy.
+!#
+!# 9.) sstrat_initBlockSorting
+!#     -> Initialises a block sorting strategy for multiple components.
+!#
+!# 10.) sstrat_doneBlockSorting
+!#     -> Releases a block sorting strategy.
 !#
 !# Auxiliary routines:
 !#
@@ -161,9 +167,26 @@ module sortstrategy
     
   end type
   
+!</typeblock>
+
   public :: t_sortStrategy
 
+!<typeblock>
+
+  ! A set of sorting strategies for multiple blocks (e.g., of block vectors).
+  type t_blockSortStrategies
+    
+    ! Number of blocks
+    integer :: nblocks = 0
+    
+    ! List of sorting strategies for all the blocks.
+    type(t_sortStrategy), dimension(:), pointer :: p_Rstrategies => null()
+    
+  end type
+  
 !</typeblock>
+
+  public :: t_blockSortStrategies
 
 !<typeblock description="Level hierarchy structure for te hierarchically calculated permutation">
 
@@ -200,7 +223,15 @@ module sortstrategy
   public :: sstrat_initRandom
   public :: sstrat_initHierarchical
   public :: sstrat_initHierarchicalFEH
-  public :: sstrat_done
+  public :: sstrat_doneStrategy
+  
+  public :: sstrat_initBlockSorting
+  public :: sstrat_doneBlockSorting
+  
+  interface sstrat_initBlockSorting
+    module procedure sstrat_initBlockSortingByDiscr
+    module procedure sstrat_initBlockSortingDirect
+  end interface
 
   ! Auxiliary worker routines
 
@@ -253,7 +284,7 @@ contains
     ! Is there an existing sorting strategy in the structure? Release
     ! if it has not the correct size.
     if ((rsortStrategy%nsize .ne. 0) .and. (rsortStrategy%nsize .ne. nsize)) then
-      call sstrat_done (rsortStrategy)
+      call sstrat_doneStrategy (rsortStrategy)
     end if
     
     if (rsortStrategy%nsize .ne. 0) then
@@ -619,7 +650,7 @@ contains
 
 !<subroutine>
 
-  subroutine sstrat_done (rsortStrategy)
+  subroutine sstrat_doneStrategy (rsortStrategy)
 
 !<description>
   ! Releases all data in a sorting strategy structure.
@@ -637,6 +668,89 @@ contains
     rsortStrategy%nsize = 0
     if (rsortStrategy%h_Ipermutation .ne. ST_NOHANDLE) then
       call storage_free (rsortStrategy%h_Ipermutation)
+    end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sstrat_initBlockSortingDirect (rblockStrategies,nblocks)
+
+!<description>
+  ! Initialise a block sorting strategy structure for the sorting of
+  ! multiple blocks.
+!</description>
+
+!<input>
+  ! Number of blocks
+  integer, intent(in) :: nblocks
+!</input>
+
+!<output>
+  ! The sorting strategy structure to be initialised
+  type(t_blockSortStrategies), intent(out) :: rblockStrategies
+!</output>
+
+!</subroutine>
+
+    ! Initialise the structure
+    rblockStrategies%nblocks = nblocks
+    allocate(rblockStrategies%p_Rstrategies(rblockStrategies%nblocks))
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sstrat_initBlockSortingByDiscr (rblockStrategies,rdiscretisation)
+
+!<description>
+  ! Initialise a block sorting strategy structure for the sorting of
+  ! multiple blocks.
+!</description>
+
+!<input>
+  ! Underlying discretisation
+  type(t_blockDiscretisation), intent(in) :: rdiscretisation
+!</input>
+
+!<output>
+  ! The sorting strategy structure to be initialised
+  type(t_blockSortStrategies), intent(out) :: rblockStrategies
+!</output>
+
+!</subroutine>
+
+    ! Initialise the structure
+    rblockStrategies%nblocks = rdiscretisation%ncomponents
+    allocate(rblockStrategies%p_Rstrategies(rblockStrategies%nblocks))
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sstrat_doneBlockSorting (rblockStrategies)
+
+!<description>
+  ! Releases a block sorting strategy structure.
+!</description>
+
+!<inputoutput>
+  ! The sorting strategy structure to be cleared up
+  type(t_blockSortStrategies), intent(inout) :: rblockStrategies
+!</inputoutput>
+
+!</subroutine>
+
+    ! Release the structure
+    if (rblockStrategies%nblocks .ne. 0) then
+      rblockStrategies%nblocks = 0
+      deallocate(rblockStrategies%p_Rstrategies)
     end if
 
   end subroutine
