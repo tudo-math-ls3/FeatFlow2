@@ -117,7 +117,7 @@ module fespacehierarchybase
     integer :: nmaxLevels = 0
 
     ! Level information.
-    type(t_feSpaceLevel), dimension(:), pointer :: p_rfeSpaces => null()
+    type(t_feSpaceLevel), dimension(:), pointer :: p_RfeSpaces => null()
 
   end type
 

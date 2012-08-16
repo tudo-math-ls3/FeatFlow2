@@ -19,28 +19,30 @@
 !#
 !# The following routines can be found in this module:
 !#
-!# 1.) sstrat_calcCuthillMcKee
+!# 1.) sstrat_initCuthillMcKee
 !#     -> Calculate column numbering using the Cuthill McKee algorithm
 !#
-!# 2.) sstrat_calcRevCuthillMcKee
+!# 2.) sstrat_initRevCuthillMcKee
 !#     -> Calculate column numbering using reverse Cuthill-McKee algorithm.
 !#
-!# 3.) sstrat_calcXYZsorting
+!# 3.) sstrat_initXYZsorting
 !#     -> Calculates rowwise renumbering based on Cartesian coordinates
 !#
-!# 4.) sstrat_calcFEASTsorting
+!# 4.) sstrat_initFEASTsorting
 !#     -> Calculates FEAST rowwise renumbering based cell adjacencies
 !#
-!# 5.) sstrat_calcStochastic
-!#     -> Calculates stochastic renumbering (i.e. a random permutation)
-!#        Deprecated; use sstrat_calcRandom instead.
-!#
-!# 6.) sstrat_calcRandom
+!# 5.) sstrat_initRandom
 !#     -> Calculates a random permutation.
 !#
-!# 7.) sstrat_calcHierarchical
+!# 6.) sstrat_initHierarchical
 !#     -> Calculates a renumbering strategy based on element patches
 !#        in a level hierarchy
+!#
+!# 7.) sstrat_initHierarchicalFEH
+!#     -> Calculates a renumbering strategy based on a FE space hierarchy
+!#
+!# 8.) sstrat_done
+!#     -> Releases a renumbering strategy.
 !#
 !# Auxiliary routines:
 !#
@@ -58,17 +60,6 @@
 !#
 !# 4.) sstrat_calcInversePermutation
 !#     -> Calculates an inverse permutation
-!#
-!#
-!# The renumbering routines in this module always calculate a
-!# permutation as well as its inverse permutation. The calculated
-!# permutation Ipermutation given as a parameter to the routines
-!# has length 2*N for N numbers. It contains the permutation in the
-!# first N and its inverse at the second N entries. Here, the
-!# exact meaning of the word 'permutation' is as follows:
-!#
-!#  Ipermutation (position in sorted vector) = position in unsorted vector.
-!#  Ipermutation (N+position in unsorted vector) = position in sorted vector.
 !#
 !# </purpose>
 !#########################################################################
@@ -89,6 +80,7 @@ module sortstrategy
   use dofmapping
   use sort
   use random
+  use fespacehierarchybase
 
   implicit none
 
@@ -108,7 +100,7 @@ module sortstrategy
   integer, parameter, public :: SSTRAT_RCM          = 2
 
   ! Row-wise sorting for point coordinate.
-  ! (As calculated by sstrat_calcXYZsorting with idirection=0.)
+  ! (As calculated by sstrat_initXYZsorting with idirection=0.)
   ! Only for special type of discretisations (<tex>$Q_1$</tex>, <tex>$\tilde Q_1$</tex>), where
   ! the DOF`s can be identified with X/Y/Z coordinates.
   ! Coincides with the sorting strategy of FEAST for simple-type domains
@@ -116,7 +108,7 @@ module sortstrategy
   integer, parameter, public :: SSTRAT_XYZCOORD     = 3
 
   ! Column-wise sorting for point coordinate.
-  ! (As calculated by sstrat_calcXYZsorting with idirection=1.)
+  ! (As calculated by sstrat_initXYZsorting with idirection=1.)
   ! Only for special type of discretisations (<tex>$Q_1$</tex>, <tex>$\tilde Q_1$</tex>), where
   ! the DOF`s can be identified with X/Y/Z coordinates.
   integer, parameter, public :: SSTRAT_ZYXCOORD     = 4
@@ -145,11 +137,39 @@ module sortstrategy
 
 !<types>
 
+!<typeblock>
+
+  ! Encapsules a sorting strategy which can be used
+  ! to resort matrices/vectors etc.
+  type t_sortStrategy
+    
+    ! Type of the sorting strategy. One of the SSTRAT_xxxx constants.
+    integer :: ctype = SSTRAT_UNSORTED
+    
+    ! Size of the permutation.
+    integer :: nsize = 0
+    
+    ! Handle to the permutation. The calculated
+    ! permutation Ipermutation given as a parameter to the routines
+    ! has length 2*nsize for nsize numbers. It contains the permutation in the
+    ! first N and its inverse at the second nsize entries. Here, the
+    ! exact meaning of the word "permutation" is as follows:
+    !
+    !  Ipermutation (position in sorted vector) = position in unsorted vector.
+    !  Ipermutation (nsize+position in unsorted vector) = position in sorted vector.    
+    integer :: h_Ipermutation = ST_NOHANDLE
+    
+  end type
+  
+  public :: t_sortStrategy
+
+!</typeblock>
+
 !<typeblock description="Level hierarchy structure for te hierarchically calculated permutation">
 
   ! A local structure for the hierarchical sorting strategy.
   ! Represents one level in the hierarchy.
-  type t_levelHirarchy
+  type t_levelHierarchy
 
     ! Pointer to the refinement-patch array of the level
     integer, dimension(:), pointer :: p_IrefinementPatch
@@ -173,6 +193,17 @@ module sortstrategy
 
 !</types>
 
+  public :: sstrat_initCuthillMcKee
+  public :: sstrat_initRevCuthillMcKee
+  public :: sstrat_initXYZsorting
+  public :: sstrat_initFEASTsorting
+  public :: sstrat_initRandom
+  public :: sstrat_initHierarchical
+  public :: sstrat_initHierarchicalFEH
+  public :: sstrat_done
+
+  ! Auxiliary worker routines
+
   interface sstrat_calcCuthillMcKee
     module procedure sstrat_calcCuthillMcKee_p
     module procedure sstrat_calcCuthillMcKee_h
@@ -185,6 +216,7 @@ module sortstrategy
   public :: sstrat_calcStochastic
   public :: sstrat_calcRandom
   public :: sstrat_calcHierarchical
+  public :: sstrat_calcHierarchicalFEH
   public :: sstrat_calcColNumberingCM7
   public :: sstrat_calcColNumberingCM9
   public :: sstrat_calcPermutationCM
@@ -196,26 +228,447 @@ contains
 
 !<subroutine>
 
+  subroutine sstrat_initStructure (rsortStrategy, ctype, nsize)
+
+!<description>
+  ! Internal subroutine. Initialises the sorting structure.
+!</description>
+
+!<inputoutput>
+  ! The sorting strategy structure which receives the output.
+  ! Any existing sorting strategy is overwritten.
+  type(t_sortStrategy), intent(inout) :: rsortStrategy
+!</inputoutput>
+
+!<input>
+  ! Type of the sorting strategy. An SSTRAT_xxxx constant.
+  integer, intent(in) :: ctype
+  
+  ! Size of the permutation.
+  integer, intent(in) :: nsize
+!</input>
+
+!</subroutine>
+
+    ! Is there an existing sorting strategy in the structure? Release
+    ! if it has not the correct size.
+    if ((rsortStrategy%nsize .ne. 0) .and. (rsortStrategy%nsize .ne. nsize)) then
+      call sstrat_done (rsortStrategy)
+    end if
+    
+    if (rsortStrategy%nsize .ne. 0) then
+      ! Allocate memory, initialise structure
+      rsortStrategy%nsize = nsize
+      rsortStrategy%ctype = ctype
+      call storage_new ("sstrat_initRandom", "Ipermutation", &
+            nsize*2_I32, ST_INT, rsortStrategy%h_Ipermutation,ST_NEWBLOCK_NOINIT)
+    end if
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sstrat_initRandom (rsortStrategy, nsize, iseed)
+
+!<description>
+  ! Generates a random permutation.
+!</description>
+
+!<inputoutput>
+  ! The sorting strategy structure which receives the output.
+  ! Any existing sorting strategy is overwritten.
+  type(t_sortStrategy), intent(inout) :: rsortStrategy
+!</inputoutput>
+
+!<input>
+  ! Size of the permutation.
+  integer, intent(in) :: nsize
+
+  ! OPTIONAL: A seed for the random number generator.
+  ! If not given, the value RNG_DEFAULT_S from random.f90 is used.
+  integer(I32), optional, intent(in) :: iseed
+!</input>
+
+!</subroutine>
+
+    ! Local variables
+    integer, dimension(:), pointer :: p_Ipermutation
+
+    ! Initialise
+    call sstrat_initStructure (rsortStrategy, SSTRAT_RANDOM, nsize)
+    
+    ! Calculate
+    call storage_getbase_int (rsortStrategy%h_Ipermutation,p_Ipermutation)
+    call sstrat_calcRandom (p_Ipermutation, iseed)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sstrat_initRevCuthillMcKee (rsortStrategy,rmatrix)
+
+!<description>
+  ! Computes a column renumbering strategy using the of reverse Cuthill-McKee
+  ! algorithm. The algorithm acceps a scalar matrix rmatrix and uses its
+  ! structure to calculate the renumbering.
+!</description>
+
+!<inputoutput>
+  ! The sorting strategy structure which receives the output.
+  ! Any existing sorting strategy is overwritten.
+  type(t_sortStrategy), intent(inout) :: rsortStrategy
+!</inputoutput>
+
+!<input>
+  ! Matrix which should be used to calculate the renumbering strategy
+  type(t_matrixScalar), intent(in) :: rmatrix
+!</input>
+
+!</subroutine>
+
+    ! The permutation array
+    integer, dimension(:), pointer :: p_Ipermutation, p_Iaux
+    integer :: i,n,h_Iaux
+
+    ! Initialise
+    call sstrat_initStructure (rsortStrategy, SSTRAT_RCM, rmatrix%NEQ)
+
+    ! Calculate ordering - choose a root of minimal degree and sort
+    ! level sets by non-decreasing degree. And reverse the ordering.
+    call storage_getbase_int (rsortStrategy%h_Ipermutation,p_Ipermutation)
+
+    call adj_calcCuthillMcKee(rmatrix%h_Kld, rmatrix%h_Kcol, h_Iaux, &
+        ior(ADJ_CMK_FLAG_REVERSE, ADJ_CMK_FLAG_ROOT_MIN))
+        !ior(ADJ_CMK_FLAG_REVERSE, &
+        !ior(ADJ_CMK_FLAG_SORT_MIN, ADJ_CMK_FLAG_ROOT_MIN)))
+    call storage_getbase_int(h_Iaux, p_Iaux)
+
+    ! Calculate permuations
+    n = size(p_Iaux)
+    do i = 1, n
+      p_Ipermutation(i) = p_Iaux(i)
+      p_Ipermutation(n+p_Iaux(i)) = i
+    end do
+
+    call storage_free(h_Iaux)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sstrat_initCuthillMcKee (rsortStrategy,rmatrix)
+
+!<description>
+  ! Computes a column renumbering strategy using the algorithm
+  ! of Cuthill-McKee. The algorithm acceps a scalar matrix rmatrix and
+  ! uses its structure to calculate the renumbering. The result
+  ! Ipermutation then receives the permutation and its inverse.
+!</description>
+
+!<inputoutput>
+  ! The sorting strategy structure which receives the output.
+  ! Any existing sorting strategy is overwritten.
+  type(t_sortStrategy), intent(inout) :: rsortStrategy
+!</inputoutput>
+
+!<input>
+  ! Matrix which should be used to calculate the renumbering strategy
+  type(t_matrixScalar), intent(in) :: rmatrix
+!</input>
+
+!</subroutine>
+
+  ! The permutation array
+  integer, dimension(:), pointer :: p_Ipermutation
+
+    ! Initialise
+    call sstrat_initStructure (rsortStrategy, SSTRAT_CM, rmatrix%NEQ)
+
+    ! Call the actual algorithm
+    call storage_getbase_int (rsortStrategy%h_Ipermutation,p_Ipermutation)
+    call sstrat_calcCuthillMcKee(rmatrix, p_Ipermutation)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sstrat_initXYZsorting (rsortStrategy,rdiscretisation,idirection)
+
+!<description>
+  ! Computes a column renumbering strategy based on the coordinates of
+  ! DOF`s. The routine supports 2D and 3D triangulations; in a 2D
+  ! triangulation, the Z-coordinate is ignored.
+  !
+  ! idirection specifies the sorting direction.
+  ! The standard sorting direction is idirection=0. In this case,
+  ! the DOF`s are sorted rowwise, i.e. first for the X-coordinate,
+  ! then for the Y-coordinate. This sorting strategy coincides with the
+  ! FEAST sorting strategy in simple situations like a unit square.
+  !
+  ! This sorting strategy can only applied for special type discretisations
+  ! where the DOF`s of the finite elements coincides with some sort of
+  ! point coordinates in the domain (like <tex>$Q_1$</tex>, edge midpoint based
+  ! <tex>$\tilde Q_1$</tex>). If this is not the case, the routine will stop the
+  ! program.
+  !
+  ! The algorithm acceps a scalar discretisation structure rdiscretisation and
+  ! uses its structure to calculate the renumbering. The result
+  ! Ipermutation then receives the permutation and its inverse.
+!</description>
+
+!<inputoutput>
+  ! The sorting strategy structure which receives the output.
+  ! Any existing sorting strategy is overwritten.
+  type(t_sortStrategy), intent(inout) :: rsortStrategy
+!</inputoutput>
+
+!<input>
+  ! Spatial discretisation structure that specifies the DOF`s and the
+  ! triangulation
+  type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+
+  ! OPTIONAL: Specifies the sorting direction.
+  ! =0: Sort first for X-, then for Y-, then for Z-coordinate.
+  !     In 2D this is rowwise sorting.
+  ! =1: Sort first for Z-, then for Y-, then for X-coordinate.
+  !     In 2D this is columnwise sorting.
+  ! If not specified, idirection=0 is assumed.
+  integer, intent(in),optional :: idirection
+!</input>
+
+!</subroutine>
+
+    ! The permutation array
+    integer, dimension(:), pointer :: p_Ipermutation
+
+    ! Initialise
+    if (.not. present(idirection)) then
+      call sstrat_initStructure (rsortStrategy, SSTRAT_XYZCOORD, &
+          dof_igetNDofGlob(rdiscretisation))
+    else
+      select case (idirection)
+      case (0)
+        call sstrat_initStructure (rsortStrategy, SSTRAT_XYZCOORD, &
+          dof_igetNDofGlob(rdiscretisation))
+      case (1)
+        call sstrat_initStructure (rsortStrategy, SSTRAT_ZYXCOORD, &
+          dof_igetNDofGlob(rdiscretisation))
+      case default
+        call output_line ("Invalid direction.", &
+                          OU_CLASS_ERROR,OU_MODE_STD,"sstrat_initXYZsorting")
+        call sys_halt()
+      end select
+    end if
+
+    ! Call the actual algorithm
+    call storage_getbase_int (rsortStrategy%h_Ipermutation,p_Ipermutation)
+    call sstrat_calcXYZsorting (rdiscretisation,p_Ipermutation,idirection)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sstrat_initHierarchical (rsortStrategy,Rdiscretisation)
+
+!<description>
+  ! This subroutine calculates a hierarchical renumbering strategy.
+  ! Based on a set of discretisation structures defining different levels
+  ! of a level hierarchy coming from a refinement process, the permutation
+  ! calculated by this routine tries to group DOF`s by element macros.
+!</description>
+
+!<inputoutput>
+  ! The sorting strategy structure which receives the output.
+  ! Any existing sorting strategy is overwritten.
+  type(t_sortStrategy), intent(inout) :: rsortStrategy
+!</inputoutput>
+
+!<input>
+  ! Array of discretisation structures identifying the different levels
+  ! of refinement. The discretisation structures must stem from a standard
+  ! 2-level refinement.
+  ! The last element in this array must correspond
+  ! to the permutation which is to be computed.
+  type(t_spatialDiscretisation), dimension(:), intent(in) :: Rdiscretisation
+!</input>
+
+!</subroutine>
+
+    ! The permutation array
+    integer, dimension(:), pointer :: p_Ipermutation
+
+    ! Initialise
+    call sstrat_initStructure (rsortStrategy, SSTRAT_HIERARCHICAL, &
+        dof_igetNDofGlob(Rdiscretisation(size(Rdiscretisation))))
+
+    ! Call the actual algorithm
+    call storage_getbase_int (rsortStrategy%h_Ipermutation,p_Ipermutation)
+    call sstrat_calcHierarchical (Rdiscretisation,p_Ipermutation)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sstrat_initHierarchicalFEH (rsortStrategy,rfeHierarchy,iblock)
+
+!<description>
+  ! This subroutine calculates a hierarchical renumbering strategy.
+  ! Based on a set of discretisation structures defining different levels
+  ! of a level hierarchy coming from a refinement process, the permutation
+  ! calculated by this routine tries to group DOF`s by element macros.
+  ! The hierarchy is expected as an FE space hierarchy.
+!</description>
+
+!<inputoutput>
+  ! The sorting strategy structure which receives the output.
+  ! Any existing sorting strategy is overwritten.
+  type(t_sortStrategy), intent(inout) :: rsortStrategy
+!</inputoutput>
+
+!<input>
+  ! FE space hierarchy.
+  type(t_feHierarchy), intent(in), target :: rfeHierarchy
+
+  ! Number of the solution block on every level in the hierarchy, 
+  ! the renumbering strategy should be calculated for.
+  integer, intent(in) :: iblock
+!</input>
+
+!</subroutine>
+
+    ! The permutation array
+    integer, dimension(:), pointer :: p_Ipermutation
+    type(t_feSpaceLevel), pointer :: p_rfeSpace
+
+    ! Initialise
+    p_rfeSpace => rfeHierarchy%p_RfeSpaces(rfeHierarchy%nlevels)
+    call sstrat_initStructure (rsortStrategy, SSTRAT_HIERARCHICAL, &
+        dof_igetNDofGlob(p_rfeSpace%p_rdiscretisation%RspatialDiscr(iblock)))
+
+    ! Call the actual algorithm
+    call storage_getbase_int (rsortStrategy%h_Ipermutation,p_Ipermutation)
+    call sstrat_calcHierarchicalFEH (rfeHierarchy,iblock,p_Ipermutation)
+
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  subroutine sstrat_initFEASTsorting (rsortStrategy,rdiscretisation,ifirstVertex)
+
+!<description>
+  ! Computes a column renumbering strategy based on the tensor product
+  ! structure of the domain. The DOF`s are numbered rowwise.
+  ! ifirstVertex must specify the first vertex (in the lower left corner)
+  ! of the domain. From here, a geometrical search is started to find
+  ! all DOF`s.
+  !
+  ! The renumbering strategy is only applicable to special-type
+  ! discretisations (like <tex>$Q_1$</tex>) and tensor product meshes (FEAST macros).
+  ! If this is not the case, the routine will stop the program.
+  !
+  ! The algorithm acceps a scalar discretisation structure rdiscretisation and
+  ! uses its structure to calculate the renumbering. The result
+  ! Ipermutation then receives the permutation and its inverse.
+!</description>
+
+!<inputoutput>
+  ! The sorting strategy structure which receives the output.
+  ! Any existing sorting strategy is overwritten.
+  type(t_sortStrategy), intent(inout) :: rsortStrategy
+!</inputoutput>
+
+!<input>
+  ! Spatial discretisation structure that specifies the DOF`s and the
+  ! triangulation
+  type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+
+  ! OPTIONAL: First vertex (lower left corner) of the domain.
+  ! If not specified, ifirstVertex=1 is assumed.
+  integer, intent(in), optional :: ifirstVertex
+!</input>
+
+!</subroutine>
+
+    ! The permutation array
+    integer, dimension(:), pointer :: p_Ipermutation
+
+    ! Initialise
+    call sstrat_initStructure (rsortStrategy, SSTRAT_FEAST, &
+        dof_igetNDofGlob(rdiscretisation))
+
+    ! Call the actual algorithm
+    call storage_getbase_int (rsortStrategy%h_Ipermutation,p_Ipermutation)
+    call sstrat_calcFEASTsorting (rdiscretisation,p_Ipermutation,ifirstVertex)
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sstrat_done (rsortStrategy)
+
+!<description>
+  ! Releases all data in a sorting strategy structure.
+!</description>
+
+!<inputoutput>
+  ! The sorting strategy structure to be released.
+  type(t_sortStrategy), intent(inout) :: rsortStrategy
+!</inputoutput>
+
+!</subroutine>
+
+    ! Reset the structure, release all memory
+    rsortStrategy%ctype = SSTRAT_UNSORTED
+    rsortStrategy%nsize = 0
+    if (rsortStrategy%h_Ipermutation .ne. ST_NOHANDLE) then
+      call storage_free (rsortStrategy%h_Ipermutation)
+    end if
+
+  end subroutine
+
+  ! ***************************************************************************
+  ! Actual worker routines
+  ! ***************************************************************************
+
+  ! ***************************************************************************
+
+!<subroutine>
+
   subroutine sstrat_calcStochastic (Ipermutation)
 
-  !<description>
-    ! Generates a random permutation.
-    ! DEPRECATED: use sstrat_calcRandom instead.
-    !
-    ! The used algorithm is Knuth shuffle.
-    ! (See e.g. [Knuth, 1969, 1998, The Art of Computer Programming vol. 2, 3rd ed.,
-    !  145–146. ISBN 0-201-89684-2] or http://en.wikipedia.org/wiki/Knuth_shuffle])
-  !</description>
+!<description>
+  ! AUXILIARY ROUTINE: Generates a random permutation.
+  ! DEPRECATED: Use sstrat_calcRandom instead.
+  !
+  ! The used algorithm is Knuth shuffle.
+  ! (See e.g. [Knuth, 1969, 1998, The Art of Computer Programming vol. 2, 3rd ed.,
+  !  145–146. ISBN 0-201-89684-2] or http://en.wikipedia.org/wiki/Knuth_shuffle])
+!</description>
 
-  !<output>
-    ! The permutation vector for sorting and its inverse.
-    ! With NEQ=NEQ(matrix):
-    !   Ipermutation(1:NEQ)       = permutation,
-    !   Ipermutation(NEQ+1:2*NEQ) = inverse permutation.
-    integer, dimension(:), intent(out) :: Ipermutation
-  !</output>
+!<output>
+  ! The permutation vector for sorting and its inverse.
+  ! With NEQ=NEQ(matrix):
+  !   Ipermutation(1:NEQ)       = permutation,
+  !   Ipermutation(NEQ+1:2*NEQ) = inverse permutation.
+  integer, dimension(:), intent(out) :: Ipermutation
+!</output>
 
-  !</subroutine>
+!</subroutine>
 
     real(DP) :: d
     integer :: i,k,n
@@ -255,7 +708,7 @@ contains
   subroutine sstrat_calcRandom (Ipermutation, iseed)
 
 !<description>
-  ! Generates a random permutation.
+  ! AUXILIARY ROUTINE: Generates a random permutation.
   !
   ! This routine has two major advantages over sstrat_calcStochastic:
   ! 1. It uses the FEAT2 pseudo-random number generator implemented in the
@@ -319,7 +772,7 @@ contains
   subroutine sstrat_calcRevCuthillMcKee (rmatrix, h_Ipermutation)
 
 !<description>
-  ! Computes a column renumbering strategy using the of reverse Cuthill-McKee
+  ! AUXILIARY ROUTINE: Computes a column renumbering strategy using the of reverse Cuthill-McKee
   ! algorithm. The algorithm acceps a scalar matrix rmatrix and uses its
   ! structure to calculate the renumbering.
 !</description>
@@ -341,7 +794,7 @@ contains
   integer :: i,n,h_Iaux
 
     ! Allocate an array for holding the resorting strategy.
-    call storage_new ('sstrat_calcRevCuthillMcKee', 'Ipermutation', &
+    call storage_new ("sstrat_calcRevCuthillMcKee", "Ipermutation", &
           2*rmatrix%NEQ, ST_INT, h_Ipermutation, ST_NEWBLOCK_NOINIT)
     call storage_getbase_int(h_Ipermutation, p_Ipermutation)
 
@@ -393,7 +846,7 @@ contains
   integer, dimension(:), pointer :: p_Ipermutation
 
     ! Allocate an array for holding the resorting strategy.
-    call storage_new ('sstrat_calcCuthillMcKee_h', 'Ipermutation', &
+    call storage_new ("sstrat_calcCuthillMcKee_h", "Ipermutation", &
           2*rmatrix%NEQ, ST_INT, h_Ipermutation, ST_NEWBLOCK_ZERO)
     call storage_getbase_int(h_Ipermutation,p_Ipermutation)
 
@@ -408,27 +861,27 @@ contains
 
   subroutine sstrat_calcCuthillMcKee_p (rmatrix,Ipermutation)
 
-  !<description>
-    ! Computes a column renumbering strategy using the algorithm
-    ! of Cuthill-McKee. The algorithm acceps a scalar matrix rmatrix and
-    ! uses its structure to calculate the renumbering. The result
-    ! Ipermutation then receives the permutation and its inverse.
-  !</description>
+!<description>
+  ! AUXILIARY ROUTINE: Computes a column renumbering strategy using the algorithm
+  ! of Cuthill-McKee. The algorithm acceps a scalar matrix rmatrix and
+  ! uses its structure to calculate the renumbering. The result
+  ! Ipermutation then receives the permutation and its inverse.
+!</description>
 
-  !<input>
-    ! Matrix which should be used to calculate the renumbering strategy
-    type(t_matrixScalar), intent(in) :: rmatrix
-  !</input>
+!<input>
+  ! Matrix which should be used to calculate the renumbering strategy
+  type(t_matrixScalar), intent(in) :: rmatrix
+!</input>
 
-  !<output>
-    ! The permutation vector for sorting and its inverse.
-    ! With NEQ=NEQ(matrix):
-    !   Ipermutation(1:NEQ)       = permutation,
-    !   Ipermutation(NEQ+1:2*NEQ) = inverse permutation.
-    integer, dimension(2*rmatrix%neq), intent(out) :: Ipermutation
-  !</output>
+!<output>
+  ! The permutation vector for sorting and its inverse.
+  ! With NEQ=NEQ(matrix):
+  !   Ipermutation(1:NEQ)       = permutation,
+  !   Ipermutation(NEQ+1:2*NEQ) = inverse permutation.
+  integer, dimension(2*rmatrix%neq), intent(out) :: Ipermutation
+!</output>
 
-  !</subroutine>
+!</subroutine>
 
   ! local variables
   integer :: h_Ideg,h_IcolTmp
@@ -444,7 +897,7 @@ contains
     ! At first, duplicate KCOL and also get a temporary Ideg array
     h_IcolTmp = ST_NOHANDLE
     call storage_copy(rmatrix%h_Kcol,h_IcolTmp)
-    call storage_new('sstrat_calcCuthillMcKee', 'KDEG', rmatrix%NEQ, &
+    call storage_new("sstrat_calcCuthillMcKee", "KDEG", rmatrix%NEQ, &
                      ST_INT, h_Ideg, ST_NEWBLOCK_NOINIT)
     call storage_getbase_int(h_IcolTmp, p_IcolTmp)
     call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
@@ -472,7 +925,7 @@ contains
     ! At first, duplicate KCOL and also get a temporary Ideg array
     h_IcolTmp = ST_NOHANDLE
     call storage_copy(rmatrix%h_Kcol,h_IcolTmp)
-    call storage_new('sstrat_calcCuthillMcKee', 'KDEG', rmatrix%NEQ, &
+    call storage_new("sstrat_calcCuthillMcKee", "KDEG", rmatrix%NEQ, &
                      ST_INT, h_Ideg, ST_NEWBLOCK_NOINIT)
     call storage_getbase_int(h_IcolTmp, p_IcolTmp)
     call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
@@ -494,7 +947,8 @@ contains
     call storage_free (h_IcolTmp)
 
   case DEFAULT
-    print *,'sstrat_calcCuthillMcKee: Unsupported matrix format'
+    call output_line ("Unsupported matrix format.", &
+        OU_CLASS_ERROR,OU_MODE_STD,"sstrat_calcCuthillMcKee")
     call sys_halt()
   end select
 
@@ -506,47 +960,47 @@ contains
 !<subroutine>
   subroutine sstrat_calcColNumberingCM7 (Ild, Icol, Icon, Ideg, neq, ndeg)
 
-    !<description>
-    ! Purpose: Cuthill McKee matrix renumbering
-    !          Calculate column numbering
+!<description>
+  ! AUXILIARY ROUTINE: Purpose: Cuthill McKee matrix renumbering
+  !          Calculate column numbering
 
-    ! The algorithm of Cuthill McKee interprets the system matrix as
-    ! adjacense matrix. Every Row denotes a node in the corresponing graph.
-    ! In the first step this function sorts the columns in every row
-    ! for increasing degree of the nodes in the matrix.
-    ! The matrix must have symmetric structure!
-    ! (For FE matrices this is always the case...)
-    !
-    ! Matrix storage technique 7 version.
-    !</description>
+  ! The algorithm of Cuthill McKee interprets the system matrix as
+  ! adjacense matrix. Every Row denotes a node in the corresponing graph.
+  ! In the first step this function sorts the columns in every row
+  ! for increasing degree of the nodes in the matrix.
+  ! The matrix must have symmetric structure!
+  ! (For FE matrices this is always the case...)
+  !
+  ! Matrix storage technique 7 version.
+!</description>
 
-  !<input>
+!<input>
 
-    ! Number of equations
-    integer,intent(in)                    :: neq
+  ! Number of equations
+  integer,intent(in)                    :: neq
 
-    ! Maximum number of entries != 0 in every row of the matrix
-    integer, intent(in)                   :: ndeg
+  ! Maximum number of entries != 0 in every row of the matrix
+  integer, intent(in)                   :: ndeg
 
-    ! Row description of matrix
-    integer, dimension(neq+1), intent(in) :: Ild
+  ! Row description of matrix
+  integer, dimension(neq+1), intent(in) :: Ild
 
-    ! Column description of matrix
-    integer, dimension(:), intent(in)     :: Icol
+  ! Column description of matrix
+  integer, dimension(:), intent(in)     :: Icol
 
-  !</input>
+!</input>
 
-  !<inputoutput>
-    ! Auxiliary vector; must be at least as long as the
-    ! maximum number of entries != 0 in every row of the matrix
-    integer, dimension(ndeg), intent(inout) :: Ideg
+!<inputoutput>
+  ! Auxiliary vector; must be at least as long as the
+  ! maximum number of entries != 0 in every row of the matrix
+  integer, dimension(ndeg), intent(inout) :: Ideg
 
-    ! Auxiliary vector; the column numbers of KCOL are assigned to this in
-    ! the order of increasing degree. When calling the routine the user
-    ! must copy the content of KCOL to this! These values are then
-    ! resorted.
-    integer, dimension(:), intent(inout)  :: Icon
-  !</inputoutput>
+  ! Auxiliary vector; the column numbers of KCOL are assigned to this in
+  ! the order of increasing degree. When calling the routine the user
+  ! must copy the content of KCOL to this! These values are then
+  ! resorted.
+  integer, dimension(:), intent(inout)  :: Icon
+!</inputoutput>
 
 !</subroutine>
 
@@ -679,50 +1133,50 @@ contains
   subroutine sstrat_calcColNumberingCM9 (Ild, Icol, Idiag, Icon, Ideg, &
                                          neq, ndeg)
 
-    !<description>
-    ! Purpose: Cuthill McKee matrix renumbering
-    !          Calculate column numbering
+!<description>
+  ! AUXILIARY ROUTINE: Purpose: Cuthill McKee matrix renumbering
+  !          Calculate column numbering
 
-    ! The algorithm of Cuthill McKee interprets the system matrix as
-    ! adjacense matrix. Every Row denotes a node in the corresponing graph.
-    ! In the first step this function sorts the columns in every row
-    ! for increasing degree of the nodes in the matrix.
-    ! The matrix must have symmetric structure!
-    ! (For FE matrices this is always the case...)
-    !
-    ! Matrix storage technique 9 version.
-    !</description>
+  ! The algorithm of Cuthill McKee interprets the system matrix as
+  ! adjacense matrix. Every Row denotes a node in the corresponing graph.
+  ! In the first step this function sorts the columns in every row
+  ! for increasing degree of the nodes in the matrix.
+  ! The matrix must have symmetric structure!
+  ! (For FE matrices this is always the case...)
+  !
+  ! Matrix storage technique 9 version.
+!</description>
 
-  !<input>
+!<input>
 
-    ! Number of equations
-    integer,intent(in)                    :: neq
+  ! Number of equations
+  integer,intent(in)                    :: neq
 
-    ! Maximum number of entries != 0 in every row of the matrix
-    integer, intent(in)                   :: ndeg
+  ! Maximum number of entries != 0 in every row of the matrix
+  integer, intent(in)                   :: ndeg
 
-    ! Row description of matrix
-    integer, dimension(neq+1), intent(in) :: Ild
+  ! Row description of matrix
+  integer, dimension(neq+1), intent(in) :: Ild
 
-    ! Column description of matrix
-    integer, dimension(:), intent(in)     :: Icol
+  ! Column description of matrix
+  integer, dimension(:), intent(in)     :: Icol
 
-    ! Incides of diagonal elements in structure 9 matrix
-    integer, dimension(:), intent(in)     :: Idiag
+  ! Incides of diagonal elements in structure 9 matrix
+  integer, dimension(:), intent(in)     :: Idiag
 
-  !</input>
+!</input>
 
-  !<inputoutput>
-    ! Auxiliary vector; must be at least as long as the
-    ! maximum number of entries != 0 in every row of the matrix
-    integer, dimension(ndeg), intent(inout) :: Ideg
+!<inputoutput>
+  ! Auxiliary vector; must be at least as long as the
+  ! maximum number of entries != 0 in every row of the matrix
+  integer, dimension(ndeg), intent(inout) :: Ideg
 
-    ! Auxiliary vector; the column numbers of KCOL are assigned to this in
-    ! the order of increasing degree. When calling the routine the user
-    ! must copy the content of KCOL to this! These values are then
-    ! resorted.
-    integer, dimension(:), intent(inout)  :: Icon
-  !</inputoutput>
+  ! Auxiliary vector; the column numbers of KCOL are assigned to this in
+  ! the order of increasing degree. When calling the routine the user
+  ! must copy the content of KCOL to this! These values are then
+  ! resorted.
+  integer, dimension(:), intent(inout)  :: Icon
+!</inputoutput>
 
 !</subroutine>
 
@@ -1032,7 +1486,7 @@ contains
   subroutine sstrat_calcXYZsorting (rdiscretisation,Ipermutation,idirection)
 
   !<description>
-    ! Computes a column renumbering strategy based on the coordinates of
+    ! AUXILIARY ROUTINE: Computes a column renumbering strategy based on the coordinates of
     ! DOF`s. The routine supports 2D and 3D triangulations; in a 2D
     ! triangulation, the Z-coordinate is ignored.
     !
@@ -1069,7 +1523,7 @@ contains
 
   !<output>
     ! The permutation vector for sorting and its inverse.
-    ! With NEQ=NEQ(matrix):
+    ! With NEQ=NDOF(rdiscredisation):
     !   Ipermutation(1:NEQ)       = permutation,
     !   Ipermutation(NEQ+1:2*NEQ) = inverse permutation.
     integer, dimension(:), intent(out) :: Ipermutation
@@ -1090,8 +1544,8 @@ contains
     integer :: idim,ivtlocal
 
     if (rdiscretisation%ndimension .eq. 0) then
-      call output_line ('Discretisation not initialised.', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'sstrat_calcRowwise')
+      call output_line ("Discretisation not initialised.", &
+                        OU_CLASS_ERROR,OU_MODE_STD,"sstrat_calcRowwise")
       call sys_halt()
     end if
 
@@ -1123,7 +1577,7 @@ contains
 
         Isize(1) = rdiscretisation%p_rtriangulation%ndim
         Isize(2) = nvt+nmt+nel
-        call storage_new ('rowwiseSorting', 'Dmidpoints', Isize, ST_DOUBLE, &
+        call storage_new ("rowwiseSorting", "Dmidpoints", Isize, ST_DOUBLE, &
                             hhandle, ST_NEWBLOCK_NOINIT)
         call storage_getbase_double2d (hhandle,p_Dcoords)
 
@@ -1173,7 +1627,7 @@ contains
         ! and sort for that. We have to calculate the midpoints for that...
         Isize(1) = rdiscretisation%p_rtriangulation%ndim
         Isize(2) = rdiscretisation%p_rtriangulation%NMT
-        call storage_new ('rowwiseSorting', 'Dmidpoints', Isize, ST_DOUBLE, &
+        call storage_new ("rowwiseSorting", "Dmidpoints", Isize, ST_DOUBLE, &
                             hhandle, ST_NEWBLOCK_NOINIT)
         call storage_getbase_double2d (hhandle,p_Dcoords)
 
@@ -1188,15 +1642,15 @@ contains
         ! Release temp array, finish
         call storage_free (hhandle)
 
-      case DEFAULT
-        call output_line ('Element type not supported.', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'sstrat_calcRowwise')
+      case default
+        call output_line ("Element type not supported.", &
+                          OU_CLASS_ERROR,OU_MODE_STD,"sstrat_calcRowwise")
         call sys_halt()
       end select
 
     case DEFAULT
-      call output_line ('Discretisation too complex.', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'sstrat_calcRowwise')
+      call output_line ("Discretisation too complex.", &
+                        OU_CLASS_ERROR,OU_MODE_STD,"sstrat_calcRowwise")
       call sys_halt()
     end select
 
@@ -1230,7 +1684,7 @@ contains
       ! Allocate a 2D array with (dim(Dcoords)+1,#coords) elements.
       Isize(1) = ubound(Dcoords,1)+1
       Isize(2) = ubound(Dcoords,2)
-      call storage_new ('rowwiseSorting', 'Dsort', Isize, ST_DOUBLE, &
+      call storage_new ("rowwiseSorting", "Dsort", Isize, ST_DOUBLE, &
                           h_Dsort, ST_NEWBLOCK_NOINIT)
       call storage_getbase_double2d (h_Dsort,p_Dsort)
 
@@ -1257,8 +1711,8 @@ contains
         end do
 
       case DEFAULT
-        call output_line ('Invalid direction!', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'sstrat_calcXYZsorting')
+        call output_line ("Invalid direction!", &
+                          OU_CLASS_ERROR,OU_MODE_STD,"sstrat_calcXYZsorting")
         call sys_halt()
       end select
 
@@ -1281,7 +1735,7 @@ contains
   subroutine sstrat_calcFEASTsorting (rdiscretisation,Ipermutation,ifirstVertex)
 
   !<description>
-    ! Computes a column renumbering strategy based on the tensor product
+    ! AUXILIARY ROUTINE: Computes a column renumbering strategy based on the tensor product
     ! structure of the domain. The DOF`s are numbered rowwise.
     ! ifirstVertex must specify the first vertex (in the lower left corner)
     ! of the domain. From here, a geometrical search is started to find
@@ -1326,8 +1780,8 @@ contains
     integer :: ivt
 
     if (rdiscretisation%ndimension .eq. 0) then
-      call output_line ('Discretisation not initialised.', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'sstrat_calcFEASTsorting')
+      call output_line ("Discretisation not initialised.", &
+                        OU_CLASS_ERROR,OU_MODE_STD,"sstrat_calcFEASTsorting")
       call sys_halt()
     end if
 
@@ -1365,14 +1819,14 @@ contains
             rdiscretisation%p_rtriangulation%NVT)
 
       case DEFAULT
-        call output_line ('Element type not supported.', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'sstrat_calcFEASTsorting')
+        call output_line ("Element type not supported.", &
+                          OU_CLASS_ERROR,OU_MODE_STD,"sstrat_calcFEASTsorting")
         call sys_halt()
       end select
 
     case DEFAULT
-      call output_line ('Discretisation too complex.', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'sstrat_calcFEASTsorting')
+      call output_line ("Discretisation too complex.", &
+                        OU_CLASS_ERROR,OU_MODE_STD,"sstrat_calcFEASTsorting")
       call sys_halt()
     end select
 
@@ -1648,7 +2102,7 @@ contains
   subroutine sstrat_calcHierarchical (Rdiscretisation,Ipermutation)
 
 !<description>
-  ! This subroutine calculates a hierarchical renumbering strategy.
+  ! AUXILIARY ROUTINE: This subroutine calculates a hierarchical renumbering strategy.
   ! Based on a set of discretisation structures defining different levels
   ! of a level hierarchy coming from a refinement process, the permutation
   ! calculated by this routine tries to group DOF`s by element macros.
@@ -1682,8 +2136,8 @@ contains
     N = size(Ipermutation)/2
 
     if (N .ne. dof_igetNDofGlob(Rdiscretisation(size(Rdiscretisation)))) then
-      call output_line ('Permutation target vector has the wrong size!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'sstrat_calcHierarchical')
+      call output_line ("Permutation target vector has the wrong size!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"sstrat_calcHierarchical")
       call sys_halt()
     end if
 
@@ -1693,8 +2147,8 @@ contains
       call calcHierarch(Rdiscretisation,Ipermutation)
 
     case DEFAULT
-      call output_line ('Invalid dimension.', &
-          OU_CLASS_ERROR,OU_MODE_STD,'sstrat_calcHierarchical')
+      call output_line ("Invalid dimension.", &
+          OU_CLASS_ERROR,OU_MODE_STD,"sstrat_calcHierarchical")
       call sys_halt()
     end select
 
@@ -1727,7 +2181,7 @@ contains
       integer, dimension(size(Rdiscretisation)) :: IpatchIndex
       integer, dimension(size(Rdiscretisation)) :: ImaxIndex
       integer, dimension(size(Rdiscretisation)) :: Ielement
-      type(t_levelHirarchy), dimension(size(Rdiscretisation)) :: Rhierarchy
+      type(t_levelHierarchy), dimension(size(Rdiscretisation)) :: Rhierarchy
       integer :: ilev,ndof,ieldistr,idof
       integer(I32) :: celement
       integer :: ipos
@@ -1773,8 +2227,8 @@ contains
       ! Set up a marker array where we remember whether we processed
       ! a DOF or not. Initialise with zero; all DOF`s we already
       ! processed are marked here with a 1.
-      call storage_new ('calcHierarch2Level2D', &
-          'mark', NEQ, ST_INT, hmarker, ST_NEWBLOCK_ZERO)
+      call storage_new ("calcHierarch2Level2D", &
+          "mark", NEQ, ST_INT, hmarker, ST_NEWBLOCK_ZERO)
       call storage_getbase_int (hmarker,p_Imarker)
 
       ipos = 0
@@ -1806,7 +2260,7 @@ contains
 
             ! Ielement(ilev-1) is not the patch number for level ilev.
             ! Set the start index to the first element in that patch
-            ! of the finer mesh. Remember the maximum index 'where the patch ends').
+            ! of the finer mesh. Remember the maximum index "where the patch ends").
             IpatchIndex(ilev) = &
               Rhierarchy(ilev)%p_IrefinementPatchIdx(Ielement(ilev-1))
             ImaxIndex(ilev) = &
@@ -1845,7 +2299,7 @@ contains
           end do
 
           ! Now we have to proceed to the next element. How to do that depends
-          ! on 'where we are'.
+          ! on "where we are".
           if (ilev .gt. 1) then
 
             ! Go to the next element in the current patch.
@@ -1890,10 +2344,279 @@ contains
   ! ***************************************************************************
 
 !<subroutine>
+
+  subroutine sstrat_calcHierarchicalFEH (rfeHierarchy,iblock,Ipermutation)
+
+!<description>
+  ! AUXILIARY ROUTINE: This subroutine calculates a hierarchical renumbering strategy.
+  ! Based on a set of discretisation structures defining different levels
+  ! of a level hierarchy coming from a refinement process, the permutation
+  ! calculated by this routine tries to group DOF`s by element macros.
+  ! The hierarchy is expected as an FE space hierarchy.
+!</description>
+
+!<input>
+  ! FE space hierarchy.
+  type(t_feHierarchy), intent(in), target :: rfeHierarchy
+  
+  ! Number of the solution block on every level in the hierarchy, 
+  ! the renumbering strategy should be calculated for.
+  integer, intent(in) :: iblock
+!</input>
+
+!<output>
+  ! The permutation vector for sorting and its inverse.
+  ! With NEQ=NEQ(matrix):
+  !   Ipermutation(1:NEQ)       = permutation,
+  !   Ipermutation(NEQ+1:2*NEQ) = inverse permutation.
+  integer, dimension(:), intent(out) :: Ipermutation
+!</output>
+
+!</subroutine>
+
+    integer :: N
+    type(t_feSpaceLevel), pointer :: p_rfeSpace
+
+    ! Length of the permutation. Must correspond to the #DOF`s
+    ! on the finest level.
+    N = size(Ipermutation)/2
+    
+    p_rfeSpace => rfeHierarchy%p_rfeSpaces(rfeHierarchy%nlevels)
+
+    if (N .ne. dof_igetNDofGlob(p_rfeSpace%p_rdiscretisation%RspatialDiscr(iblock))) then
+      call output_line ("Permutation target vector has the wrong size!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"sstrat_calcHierarchical")
+      call sys_halt()
+    end if
+
+    select case (p_rfeSpace%p_rdiscretisation%p_rtriangulation%ndim)
+    case (NDIM2D)
+      ! Regular 2-level refinement in 2D.
+      call calcHierarch(rfeHierarchy,iblock,Ipermutation)
+
+    case DEFAULT
+      call output_line ("Invalid dimension.", &
+          OU_CLASS_ERROR,OU_MODE_STD,"sstrat_calcHierarchical")
+      call sys_halt()
+    end select
+
+    ! Calculate the inverse permutation, that is it.
+    call sstrat_calcInversePermutation (Ipermutation(1:N), Ipermutation(N+1:) )
+
+  contains
+
+    subroutine calcHierarch(rfeHierarchy,iblock,Ipermutation)
+
+    ! FE space hierarchy.
+    type(t_feHierarchy), intent(in), target :: rfeHierarchy
+    
+    ! The number of the solution block
+    integer, intent(in) :: iblock
+
+    ! The permutation vector for sorting and its inverse.
+    ! With NEQ=NEQ(matrix):
+    !   Ipermutation(1:NEQ)       = permutation,
+    !   Ipermutation(NEQ+1:2*NEQ) = inverse permutation.
+    integer, dimension(:), intent(out) :: Ipermutation
+
+      ! local variables
+      type(t_triangulation), pointer :: p_rtriaCoarse,p_rtria
+      integer :: NEQ
+      integer :: hmarker
+      integer, dimension(:), pointer :: p_Imarker
+      integer, dimension(EL_MAXNBAS) :: Idofs
+      integer, dimension(:), allocatable :: IpatchIndex
+      integer, dimension(:), allocatable :: ImaxIndex
+      integer, dimension(:), allocatable :: Ielement
+      type(t_levelHierarchy), dimension(:), pointer :: p_Rhierarchy
+      integer :: ilev,ndof,ieldistr,idof
+      integer(I32) :: celement
+      integer :: ipos
+      integer :: ielcoarse
+      logical :: bisUniform
+      type(t_spatialDiscretisation), pointer :: p_rdiscr,p_rdiscrCoarse,p_rdiscrFine
+      
+      ! Temporary hierarchy
+      allocate(p_Rhierarchy(rfeHierarchy%nlevels))
+      allocate(IpatchIndex(rfeHierarchy%nlevels))
+      allocate(ImaxIndex(rfeHierarchy%nlevels))
+      allocate(Ielement(rfeHierarchy%nlevels))
+
+      ! Save pointers to the element patch arrays for all levels.
+      ! We will frequently need them.
+      
+      p_rdiscrCoarse => rfeHierarchy%p_RfeSpaces(1)%p_rdiscretisation%&
+          RspatialDiscr(iblock)
+      p_rdiscrFine => rfeHierarchy%p_RfeSpaces(rfeHierarchy%nlevels)%&
+          p_rdiscretisation%RspatialDiscr(iblock)
+      
+      do ilev=1,rfeHierarchy%nlevels
+        p_rdiscr => rfeHierarchy%p_RfeSpaces(ilev)%p_rdiscretisation%RspatialDiscr(iblock)
+      
+        ! Refinement information
+        if (ilev .gt. 1) then
+          p_rtria => p_rdiscr%p_rtriangulation
+          call storage_getbase_int (p_rtria%h_IrefinementPatch,&
+              p_Rhierarchy(ilev)%p_IrefinementPatch)
+          call storage_getbase_int (p_rtria%h_IrefinementPatchIdx,&
+              p_Rhierarchy(ilev)%p_IrefinementPatchIdx)
+        end if
+
+        ! Information about the discretisation: Arrays that allow
+        ! to determine the type of an element.
+        bisUniform = p_rdiscr%ccomplexity .eq. SPDISC_UNIFORM
+        p_Rhierarchy(ilev)%bisUniform = bisUniform
+
+        if (bisUniform) then
+          ! One element type for all elements
+          p_Rhierarchy(ilev)%celement = p_rdiscr%RelementDistr(1)%celement
+        else
+          ! A different element type for every element.
+          ! Get a pointer to the array that defines the element distribution
+          ! of the element. This allows us later to determine the element type.
+          call storage_getbase_int (p_rtria%h_IrefinementPatchIdx,&
+              p_Rhierarchy(ilev)%p_IelementDistr)
+        end if
+      end do
+
+      p_rtriaCoarse => p_rdiscrCoarse%p_rtriangulation
+
+      ! Get the number of DOF`s on the finest level. This is the
+      ! size of the permutation.
+      NEQ = dof_igetNDofGlob(p_rdiscrFine)
+
+      ! Set up a marker array where we remember whether we processed
+      ! a DOF or not. Initialise with zero; all DOF`s we already
+      ! processed are marked here with a 1.
+      call storage_new ("calcHierarch2Level2D", &
+          "mark", NEQ, ST_INT, hmarker, ST_NEWBLOCK_ZERO)
+      call storage_getbase_int (hmarker,p_Imarker)
+
+      ipos = 0
+      ilev = 1
+
+      ! IelementPatch(i) saves an index into the IrefinementPatch
+      ! array. When being on element iel on the coarser mesh i-1,
+      ! IelementPatch(i) is a pointer to the current subelement
+      ! in the finer mesh on level i.
+      !
+      ! Ielement(i) on the other hand saves the current element number
+      ! on level i.
+      !
+      ! Loop through all elements on the coarse mesh
+      do ielcoarse = 1,p_rtriaCoarse%NEL
+
+        Ielement(1) = ielcoarse
+
+        patchcycle: do
+
+          ! From this element, figure out the DOF`s of all subelements.
+          ! This has to be done patchwise on the finest level.
+          ! Thus, as long as we are not on the fines level, we have to
+          ! increase the current one.
+          do while (ilev .lt. rfeHierarchy%nlevels)
+
+            ! Go up
+            ilev = ilev + 1
+
+            ! Ielement(ilev-1) is not the patch number for level ilev.
+            ! Set the start index to the first element in that patch
+            ! of the finer mesh. Remember the maximum index "where the patch ends").
+            IpatchIndex(ilev) = &
+              p_Rhierarchy(ilev)%p_IrefinementPatchIdx(Ielement(ilev-1))
+            ImaxIndex(ilev) = &
+              p_Rhierarchy(ilev)%p_IrefinementPatchIdx(Ielement(ilev-1)+1)-1
+
+            ! Get the element number of the first element in the patch.
+            Ielement(ilev) = &
+              p_Rhierarchy(ilev)%p_IrefinementPatch(IpatchIndex(ilev))
+
+          end do
+
+          ! Get the discretisation of the current level
+          p_rdiscr => rfeHierarchy%p_RfeSpaces(ilev)%p_rdiscretisation%RspatialDiscr(iblock)
+
+          ! We are now on the maximum level on element Ielement(max).
+          ! Get the DOF`s of that element.
+          ! For that purpose, we need the element type.
+          if (p_Rhierarchy(ilev)%bisUniform) then
+            celement = p_Rhierarchy(ilev)%celement
+          else
+            ! Get the element distribution and from that the element type.
+            ieldistr = p_Rhierarchy(ilev)%p_IelementDistr(Ielement(ilev))
+            celement = p_rdiscr%RelementDistr(ieldistr)%celement
+          end if
+
+          ndof = elem_igetNDofLoc(celement)
+          call dof_locGlobMapping(p_rdiscr, Ielement(ilev),  Idofs)
+
+          ! Check the DOF`s. All DOF`s we do not have yet, we collect into the
+          ! permutation.
+          do idof = 1,ndof
+            if (p_Imarker(Idofs(idof)) .eq. 0) then
+              ipos = ipos + 1
+              Ipermutation(ipos) = Idofs(idof)
+
+              ! Mark the DOF as being handled.
+              p_Imarker(Idofs(idof)) = 1
+            end if
+          end do
+
+          ! Now we have to proceed to the next element. How to do that depends
+          ! on "where we are".
+          if (ilev .gt. 1) then
+
+            ! Go to the next element in the current patch.
+            IpatchIndex(ilev) = IpatchIndex(ilev) + 1
+
+            do while ((ilev .gt. 1) .and. &
+                    (IpatchIndex(ilev) .gt. ImaxIndex(ilev)))
+
+              ! All elements of the patch completed. Go down one level
+              ! and proceed there to the next element patch.
+              ilev = ilev - 1
+              IpatchIndex(ilev) = IpatchIndex(ilev) + 1
+
+            end do
+
+          end if
+
+          ! As long as we do not reach level 1, there are elements left
+          ! in the patch to proceed. So cycle the patchloop
+          ! to proceed to the next element.
+          if (ilev .eq. 1) then
+            exit patchcycle
+          else
+            ! Get the new current element number
+            Ielement(ilev) = &
+              p_Rhierarchy(ilev)%p_IrefinementPatch(IpatchIndex(ilev))
+          end if
+
+        end do patchcycle
+
+      end do
+
+      ! Release temp memory.
+      call storage_free (hmarker)
+      deallocate(p_Rhierarchy)
+      deallocate(IpatchIndex)
+      deallocate(ImaxIndex)
+      deallocate(Ielement)
+
+      ! Calculate the inverse permutation, that is it.
+      call sstrat_calcInversePermutation (Ipermutation(1:NEQ), Ipermutation(NEQ+1:) )
+
+    end subroutine
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
   subroutine sstrat_calcInversePermutation (IpermutationSource, IpermutationDest)
 
   !<description>
-    ! Computes the inverse of a permutation. IpermutationSource is a given
+    ! AUXILIARY ROUTINE: Computes the inverse of a permutation. IpermutationSource is a given
     ! permutation. IpermutationDest will receive the inverse permutation.
   !</description>
 
