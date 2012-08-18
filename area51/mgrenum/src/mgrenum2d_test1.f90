@@ -31,6 +31,7 @@ module mgrenum2d_test1
   use multileveloperators
   use multilevelprojection
   use stdoperators
+  use sortstrategybase
   use sortstrategy
   use paramlist
   use random
@@ -47,7 +48,7 @@ module mgrenum2d_test1
     type(t_matrixScalar) :: rmatProl
     type(t_interlevelProjectionBlock) :: rproj
     type(t_discreteBC) :: rdbc
-    integer :: h_Isort
+    type(t_blockSortStrategy) :: rsortStrategy
   end type
 
 contains
@@ -281,50 +282,55 @@ contains
       ! calculate sort strategy
       do i = NLMIN, NLMAX
 
-        ! allocate storage
-        n = Rlvl(i)%RmatSys%NEQ
-        call storage_new('mgrenum2d_1', 'h_Isort', 2*n, ST_INT, Rlvl(i)%h_Isort,ST_NEWBLOCK_NOINIT)
-        call storage_getbase_int(Rlvl(i)%h_Isort, p_Isort)
+        ! Create a sort strategy structure for our discretisation
+        call sstrat_initBlockSorting (Rlvl(i)%rsortStrategy,Rlvl(i)%rdisc)
 
         ! calculate permutation
         select case(isort)
         case (1)
-          call sstrat_calcCuthillMcKee(Rlvl(i)%rmatSys%RmatrixBlock(1,1), p_Isort)
+          call sstrat_initCuthillMcKee(Rlvl(i)%rsortStrategy%p_Rstrategies(1),&
+              Rlvl(i)%rmatSys%RmatrixBlock(1,1))
 
         case (2)
-          call sstrat_calcXYZsorting(Rlvl(i)%rdisc%RspatialDiscr(1), p_Isort)
+          call sstrat_initXYZsorting(Rlvl(i)%rsortStrategy%p_Rstrategies(1),&
+              Rlvl(i)%rdisc%RspatialDiscr(1))
 
         case (3)
-          call sstrat_calcStochastic(p_Isort)
+          call sstrat_initStochastic(Rlvl(i)%rsortStrategy%p_Rstrategies(1))
 
         case (4)
-          call aux_calcHierarchical(Rlvl(NLMIN:i), p_Isort)
+          call aux_initHierarchical(Rlvl(NLMIN:i),Rlvl(i)%rsortStrategy%p_Rstrategies(1))
 
         case (5)
-          call sstrat_calcRandom(p_Isort, iseed)
+          call sstrat_initRandom(Rlvl(i)%rsortStrategy%p_Rstrategies(1), iseed=iseed)
 
         end select
 
+        ! Attach the sorting strategy to the matrix. The matrix is not yet sorted.
+        call lsysbl_setSortStrategy (Rlvl(i)%rmatSys,Rlvl(i)%rsortStrategy,Rlvl(i)%rsortStrategy)
+            
         ! sort system matrix
-        call lsyssc_sortMatrix(Rlvl(i)%rmatSys%RmatrixBlock(1,1), .true.,1, Rlvl(i)%h_Isort)
+        call lsyssc_sortMatrix(Rlvl(i)%rmatSys%RmatrixBlock(1,1), .true.)
 
         ! now manually reset all information concerning the sorting in the matrix
         ! to fool the MG implementation thus avoiding that any unsorting is performed
         ! when prolongating or restricting vectors.
-        Rlvl(i)%rmatSys%RmatrixBlock(1,1)%isortStrategy = 0
-        Rlvl(i)%rmatSys%RmatrixBlock(1,1)%h_IsortPermutation = ST_NOHANDLE
+        Rlvl(i)%rmatSys%RmatrixBlock(1,1)%bcolumnsSorted = .false.
+        Rlvl(i)%rmatSys%RmatrixBlock(1,1)%browsSorted = .false.
 
       end do
 
+      ! Attach the sorting strategy to the matrix. The matrix is not yet sorted.
+      call lsysbl_setSortStrategy (rvecSol,Rlvl(NLMAX)%rsortStrategy)
+      call lsysbl_setSortStrategy (rvecSol,Rlvl(NLMAX)%rsortStrategy)
+
       ! sort vectors
-      call lsyssc_sortVectorInSitu(rvecSol%RvectorBlock(1), rvecTmp%RvectorBlock(1), 1, Rlvl(NLMAX)%h_Isort)
-      call lsyssc_sortVectorInSitu(rvecRhs%RvectorBlock(1), rvecTmp%RvectorBlock(1), 1, Rlvl(NLMAX)%h_Isort)
+      call lsyssc_sortVector(rvecSol%RvectorBlock(1),.true.,rvecTmp%RvectorBlock(1))
+      call lsyssc_sortVector(rvecRhs%RvectorBlock(1),.true.,rvecTmp%RvectorBlock(1))
 
       ! and remove any sorting information
-      rvecSol%RvectorBlock(1)%isortStrategy = 0
-      rvecSol%RvectorBlock(1)%h_IsortPermutation = ST_NOHANDLE
-      rvecRhs%RvectorBlock(1)%isortStrategy = 0
-      rvecRhs%RvectorBlock(1)%h_IsortPermutation = ST_NOHANDLE
+      rvecSol%RvectorBlock(1)%bisSorted = .false.
+      rvecRhs%RvectorBlock(1)%bisSorted = .false.
 
     end if
 
@@ -333,7 +339,8 @@ contains
       
       ! sort projection matrix
       if(isort .gt. 0) &
-        call aux_sortProjMatrix(Rlvl(i)%rmatProl, Rlvl(i-1)%h_Isort, Rlvl(i)%h_Isort)
+        call aux_sortProjMatrix(Rlvl(i)%rmatProl, &
+            Rlvl(i-1)%rsortStrategy%p_Rstrategies(1), Rlvl(i)%rsortStrategy%p_Rstrategies(1))
 
       ! initialize projection structure
       call mlprj_initProjectionMat (Rlvl(i)%rproj, Rlvl(i)%rmatSys)
@@ -509,8 +516,7 @@ contains
     call lsysbl_releaseVector (rvecRhs)
     call lsysbl_releaseVector (rvecSol)
     do i = NLMAX, NLMIN, -1
-      if(Rlvl(i)%h_Isort .ne. ST_NOHANDLE) &
-        call storage_free(Rlvl(i)%h_Isort)
+      call sstrat_doneBlockSorting (Rlvl(i)%rsortStrategy)
       call lsysbl_releaseMatrix (Rlvl(i)%rmatSys)
       call bcasm_releaseDiscreteBC (Rlvl(i)%rdbc)
       call spdiscr_releaseBlockDiscr(Rlvl(i)%rdisc)
@@ -587,14 +593,19 @@ contains
   !************************************************************************************************
 
   ! sorts a prolongation matrix
-  subroutine aux_sortProjMatrix(rmat, h_Ipc, h_Ipf)
+  subroutine aux_sortProjMatrix(rmat, rsortCoarse, rsortFine)
   type(t_matrixScalar), intent(inout) :: rmat
-  integer, intent(inout) :: h_Ipc, h_Ipf
+  type(t_sortStrategy), intent(in) :: rsortCoarse,rsortFine
 
   ! local variables
   integer :: i,j,k,j1,j2
+  integer :: h_Ipc, h_Ipf
   integer, dimension(:), pointer :: p_Kld, p_Kcol, p_Ipc, p_Ipf, p_Kld2, p_Kcol2
   real(DP), dimension(:), pointer :: p_DA, p_DA2
+
+    ! Get the handles to the permutation
+    h_Ipc = rsortCoarse%h_Ipermutation
+    h_Ipf = rsortFine%h_Ipermutation
 
     ! fetch matrix arrays
     call lsyssc_getbase_Kld(rmat, p_Kld)
@@ -692,9 +703,9 @@ contains
   !************************************************************************************************
 
   ! calculates hierarchical sorting
-  subroutine aux_calcHierarchical(Rlvl, p_Isort)
+  subroutine aux_initHierarchical(Rlvl, rsortStrategy)
   type(t_level), dimension(:), target, intent(in) :: Rlvl
-  integer, dimension(:), intent(out) :: p_Isort
+  type(t_sortStrategy), intent(inout) :: rsortStrategy
 
   type(t_spatialDiscretisation), dimension(:), pointer :: Rdisc
   integer :: i, m1, m2
@@ -707,7 +718,7 @@ contains
       call spdiscr_duplicateDiscrSc(Rlvl(i)%rdisc%RspatialDiscr(1), Rdisc(i), .true.)
     end do
 
-    call sstrat_calcHierarchical(Rdisc, p_Isort)
+    call sstrat_initHierarchical(rsortStrategy,Rdisc)
 
     do i = m2, m1, -1
       call spdiscr_releaseDiscr(Rdisc(i))
