@@ -55,6 +55,7 @@ module burgers1d_method6
   use element
   use bilinearformevaluation
   use linearformevaluation
+  use sortstrategybase
   use sortstrategy
   use filtersupport
   use multilevelprojection
@@ -96,6 +97,9 @@ module burgers1d_method6
     ! A variable describing the discrete boundary conditions.
     type(t_discreteBC) :: rdiscreteBC
   
+    ! Sorting strategy for resorting vectors/matrices.
+    type(t_blockSortStrategy) :: rsortStrategy
+
   end type
   
 !</typeblock>
@@ -176,20 +180,20 @@ contains
     
     ! Store the min/max level in the collection to be used in
     ! callback routines
-    call collct_setvalue_int(rproblem%rcollection,'NLMIN',ilvmin,.true.)
-    call collct_setvalue_int(rproblem%rcollection,'NLMAX',ilvmax,.true.)
+    call collct_setvalue_int(rproblem%rcollection,"NLMIN",ilvmin,.true.)
+    call collct_setvalue_int(rproblem%rcollection,"NLMAX",ilvmax,.true.)
 
     ! Get the path $PREDIR from the environment, where to read .prm/.tri files
     ! from. If that does not exist, write to the directory "./pre".
-    if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
+    if (.not. sys_getenv_string("PREDIR", spredir)) spredir = "./pre"
 
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
-    call boundary_read_prm(rproblem%rboundary, trim(spredir)//'/QUAD.prm')
+    call boundary_read_prm(rproblem%rboundary, trim(spredir)//"/QUAD.prm")
         
     ! Now read in the basic triangulation.
     call tria_readTriFile2D (rproblem%RlevelInfo(rproblem%ilvmin)%rtriangulation, &
-        trim(spredir)//'/QUAD.tri', rproblem%rboundary)
+        trim(spredir)//"/QUAD.tri", rproblem%rboundary)
     
     ! Refine the mesh up to the minimum level
     call tria_quickRefine2LevelOrdering(rproblem%ilvmin-1,&
@@ -240,9 +244,6 @@ contains
     ! An object for the block discretisation on one level
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
     
-    ! A cubature information structure on one level
-    type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
-    
     do i=rproblem%ilvmin,rproblem%ilvmax
       ! Ask the problem structure to give us the boundary and triangulation.
       ! We need it for the discretisation.
@@ -275,7 +276,7 @@ contains
           p_rdiscretisation%RspatialDiscr(1),rproblem%RlevelInfo(i)%rcubatureInfo,&
           CUB_GEN_AUTO_G2)
 
-      call collct_setvalue_cubinfo(rproblem%rcollection,'CUBINFO',&
+      call collct_setvalue_cubinfo(rproblem%rcollection,"CUBINFO",&
           rproblem%RlevelInfo(i)%rcubatureInfo,.true.,i)
 
     end do
@@ -317,10 +318,6 @@ contains
     ! A cubature information structure
     type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
 
-    ! Arrays for the Cuthill McKee renumbering strategy
-    integer, dimension(1) :: H_Iresort
-    integer, dimension(:), pointer :: p_Iresort
-    
     do i=rproblem%ilvmin,rproblem%ilvmax
       ! Ask the problem structure to give us the discretisation structure
       p_rdiscretisation => rproblem%RlevelInfo(i)%rdiscretisation
@@ -338,7 +335,7 @@ contains
       
       ! Save matrix to the collection.
       ! They maybe used later, expecially in nonlinear problems.
-      call collct_setvalue_mat(rproblem%rcollection,'SYSTEMMAT',p_rmatrix,.true.,i)
+      call collct_setvalue_mat(rproblem%rcollection,"SYSTEMMAT",p_rmatrix,.true.,i)
 
       ! Now using the discretisation, we can start to generate
       ! the structure of the system matrix which is to solve.
@@ -355,25 +352,17 @@ contains
       ! needs nonzero matrix entries for the symbolic factorisation!
       call lsyssc_allocEmptyMatrix(p_rmatrix%RmatrixBlock(1,1),LSYSSC_SETM_ONE)
       
-      ! Allocate an array for holding the resorting strategy.
-      call storage_new ('b1d6_initMatVec', 'Iresort', &
-            p_rmatrix%RmatrixBlock(1,1)%NEQ*2, ST_INT, h_Iresort(1), ST_NEWBLOCK_ZERO)
-      call storage_getbase_int(h_Iresort(1),p_Iresort)
-      
+      ! Create a sort strategy structure for our discretisation
+      call sstrat_initBlockSorting (rproblem%RlevelInfo(1)%rsortStrategy,p_rdiscretisation)
+
       ! Calculate the resorting strategy.
-      call sstrat_calcCuthillMcKee (p_rmatrix%RmatrixBlock(1,1),p_Iresort)
-      
-      ! Save the handle of the resorting strategy to the collection.
-      call collct_setvalue_int(rproblem%rcollection,'LAPLACE-CM',h_Iresort(1),.true.,i)
-      
-      ! Attach the sorting strategy without actually resorting the matrix -
-      ! this is done later when the entries are assembled!
-      ! The sorting strategy then holds for the matrix as well as for all
-      ! vectors derived from this matrix.
-      ! Commenting this line out would lead to totally disabling the
-      ! sorting in the whole application...
-      call lsyssc_sortMatrix (p_rmatrix%RmatrixBlock(1,1),.true.,&
-                              -SSTRAT_CM,h_Iresort(1))
+      call sstrat_initCuthillMcKee (rproblem%RlevelInfo(1)%rsortStrategy%p_Rstrategies(1),&
+          p_rmatrix%RmatrixBlock(1,1))
+
+      ! Attach the sorting strategy to the matrix. Thematrix is not yet sorted.
+      call lsysbl_setSortStrategy (p_rmatrix,&
+          rproblem%RlevelInfo(1)%rsortStrategy,&
+          rproblem%RlevelInfo(1)%rsortStrategy)
 
       ! Now on all levels except for the maximum one, create a temporary
       ! vector on that level, based on the matrix template.
@@ -384,7 +373,7 @@ contains
         
         ! Add the temp vector to the collection on level i
         ! for use in the callback routine
-        call collct_setvalue_vec(rproblem%rcollection,'RTEMPVEC',p_rtempVector,&
+        call collct_setvalue_vec(rproblem%rcollection,"RTEMPVEC",p_rtempVector,&
                                 .true.,i)
       end if
     end do
@@ -402,8 +391,8 @@ contains
 
     ! Save the solution/RHS vector to the collection. Might be used
     ! later (e.g. in nonlinear problems)
-    call collct_setvalue_vec(rproblem%rcollection,'RHS',p_rrhs,.true.)
-    call collct_setvalue_vec(rproblem%rcollection,'SOLUTION',p_rvector,.true.)
+    call collct_setvalue_vec(rproblem%rcollection,"RHS",p_rrhs,.true.)
+    call collct_setvalue_vec(rproblem%rcollection,"SOLUTION",p_rvector,.true.)
 
     ! The vector structure is ready but the entries are missing.
     ! So the next thing is to calculate the content of that vector.
@@ -428,6 +417,12 @@ contains
     ! Clear the solution vector on the finest level.
     call lsysbl_clearVector(rproblem%rvector)
     
+    ! Install the resorting strategy in the RHS- and the solution
+    ! vector, but do not resort them yet!
+    ! We resort the vectors just before solving.
+    call lsysbl_setSortStrategy (p_rrhs,rproblem%RlevelInfo(1)%rsortStrategy)
+    call lsysbl_setSortStrategy (p_rvector,rproblem%RlevelInfo(1)%rsortStrategy)
+
   end subroutine
 
   ! ***************************************************************************
@@ -487,11 +482,11 @@ contains
       ! conditions.
       call bcasm_initDiscreteBC(rproblem%RlevelInfo(i)%rdiscreteBC)
       !
-      ! We 'know' already (from the problem definition) that we have four boundary
+      ! We "know" already (from the problem definition) that we have four boundary
       ! segments in the domain. Each of these, we want to use for enforcing
       ! some kind of boundary condition.
       !
-      ! We ask the boundary routines to create a 'boundary region' - which is
+      ! We ask the boundary routines to create a "boundary region" - which is
       ! simply a part of the boundary corresponding to a boundary segment.
       ! A boundary region roughly contains the type, the min/max parameter value
       ! and whether the endpoints are inside the region or not.
@@ -500,7 +495,7 @@ contains
       ! We use this boundary region and specify that we want to have Dirichlet
       ! boundary there. The following call does the following:
       ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
-      !   We specify icomponent='1' to indicate that we set up the
+      !   We specify icomponent="1" to indicate that we set up the
       !   Dirichlet BC`s for the first (here: one and only) component in the
       !   solution vector.
       ! - Discretise the boundary condition so that the BC`s can be applied
@@ -519,7 +514,7 @@ contains
                                
       ! Edge 3 of boundary component 1.
       ! Ege 3 must be set up as Neumann boundary, which is realised as
-      ! simple 'do-$nothing'-boundary conditions. So we do not do anything with edge 3
+      ! simple "do-$nothing"-boundary conditions. So we do not do anything with edge 3
       ! CALL boundary_createRegion(p_rboundary,1,3,rboundaryRegion)
       ! CALL bcasm_newDirichletBConRealBD (p_rdiscretisation,1,&
       !     rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
@@ -639,18 +634,18 @@ contains
       type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
 
       ! Get maximum level from the collection
-      ilvmax = collct_getvalue_int (p_rcollection,'NLMAX')
+      ilvmax = collct_getvalue_int (p_rcollection,"NLMAX")
 
       ! Get the system matrix on the maximum level
-      p_rmatrix => collct_getvalue_mat (p_rcollection,'SYSTEMMAT',ilvmax)
+      p_rmatrix => collct_getvalue_mat (p_rcollection,"SYSTEMMAT",ilvmax)
       
       ! Get the cubature information structure
-      p_rcubatureInfo => collct_getvalue_cubinfo (p_rcollection,'CUBINFO',ilvmax)
+      p_rcubatureInfo => collct_getvalue_cubinfo (p_rcollection,"CUBINFO",ilvmax)
 
       ! Put a reference to rx into the collection. This way, we inform the callback
       ! routine of the matrix assembly about the solution vector to use
       ! fot the nonlinear term.
-      call collct_setvalue_vec(p_rcollection,'RX',rx,.true.)
+      call collct_setvalue_vec(p_rcollection,"RX",rx,.true.)
       
       ! Build the entries with the discretisation routine.
       
@@ -698,7 +693,7 @@ contains
           p_rcubatureInfo,coeff_burgers,p_rcollection)
 
       ! Remove the vector from the collection - not necessary anymore.
-      call collct_deletevalue (p_rcollection,'RX')
+      call collct_deletevalue (p_rcollection,"RX")
       
       ! Implement discrete boundary conditions into the matrix.
       ! Call the appropriate matrix filter to modify the system matrix
@@ -748,7 +743,7 @@ contains
     ! Damping parameter. Is set to rsolverNode%domega (usually = 1.0_DP)
     ! on the first call to the callback routine.
     ! The callback routine can modify this parameter according to any suitable
-    ! algorithm to calculate an 'optimal damping' parameter. The nonlinear loop
+    ! algorithm to calculate an "optimal damping" parameter. The nonlinear loop
     ! will then use this for adding rd to the solution vector:
     ! $$ x_{n+1} = x_n + domega*rd $$
     ! domega will stay at this value until it is changed again.
@@ -757,7 +752,7 @@ contains
     ! If the preconditioning was a success. Is normally automatically set to
     ! TRUE. If there is an error in the preconditioner, this flag can be
     ! set to FALSE. In this case, the nonlinear solver breaks down with
-    ! the error flag set to 'preconditioner broke down'.
+    ! the error flag set to "preconditioner broke down".
     logical, intent(inout)                        :: bsuccess
   !</inputoutput>
   
@@ -780,10 +775,10 @@ contains
     type(t_bilinearForm) :: rform
     type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
 
-      ! Our 'parent' (the caller of the nonlinear solver) has prepared
+      ! Our "parent" (the caller of the nonlinear solver) has prepared
       ! a preconditioner node for us (a linear solver with symbolically
       ! factorised matrices). Get this from the collection.
-      p_rsolverNode => collct_getvalue_linsol(p_rcollection,'LINSOLVER')
+      p_rsolverNode => collct_getvalue_linsol(p_rcollection,"LINSOLVER")
 
       ! The matrices are all attached to the solver node, and
       ! symbolic factorisation was already performed. The only thing that
@@ -798,15 +793,15 @@ contains
       ! on the other levels are still missing.
       !
       ! Get maximum/minimum level from the collection
-      ilvmin = collct_getvalue_int (p_rcollection,'NLMIN')
-      ilvmax = collct_getvalue_int (p_rcollection,'NLMAX')
+      ilvmin = collct_getvalue_int (p_rcollection,"NLMIN")
+      ilvmax = collct_getvalue_int (p_rcollection,"NLMAX")
       
       ! Get the interlevel projection structure and the temporary vector
       ! from the collection.
-      ! Our 'parent' prepared there how to interpolate the solution on the
+      ! Our "parent" prepared there how to interpolate the solution on the
       ! fine grid to coarser grids.
-      p_rprojection => collct_getvalue_ilvp(p_rcollection,'ILVPROJECTION')
-      p_rvectorTemp => collct_getvalue_vecsca(p_rcollection,'RTEMPSCALAR')
+      p_rprojection => collct_getvalue_ilvp(p_rcollection,"ILVPROJECTION")
+      p_rvectorTemp => collct_getvalue_vecsca(p_rcollection,"RTEMPSCALAR")
       
       ! Prepare the matrix assembly on level < NLMAX.
       !
@@ -849,19 +844,19 @@ contains
       do i=ilvmax-1,ilvmin,-1
 
         ! Get the cubature information structure
-        p_rcubatureInfo => collct_getvalue_cubinfo (p_rcollection,'CUBINFO',i)
+        p_rcubatureInfo => collct_getvalue_cubinfo (p_rcollection,"CUBINFO",i)
       
         ! Get the destination matrix on that level
-        p_rmatrix => collct_getvalue_mat (p_rcollection,'SYSTEMMAT',i)
+        p_rmatrix => collct_getvalue_mat (p_rcollection,"SYSTEMMAT",i)
         
         ! Get the temporary vector on level i. Will receive the solution
         ! vector on that level.
-        p_rvectorCoarse => collct_getvalue_vec (p_rcollection,'RTEMPVEC',i)
+        p_rvectorCoarse => collct_getvalue_vec (p_rcollection,"RTEMPVEC",i)
         
         ! Get the solution vector on level i+1. This is either the temporary
         ! vector on that level, or the solution vector on the maximum level.
         if (i .lt. ilvmax-1) then
-          p_rvectorFine => collct_getvalue_vec (p_rcollection,'RTEMPVEC',i+1)
+          p_rvectorFine => collct_getvalue_vec (p_rcollection,"RTEMPVEC",i+1)
         else
           p_rvectorFine => rx
         end if
@@ -876,13 +871,13 @@ contains
         ! Next step is to build the matrix entries with the discretisation routine.
         !
         ! Get the system matrix on the current level.
-        p_rmatrix => collct_getvalue_mat (p_rcollection,'SYSTEMMAT',i)
+        p_rmatrix => collct_getvalue_mat (p_rcollection,"SYSTEMMAT",i)
         
         ! Put a reference to the solution vector on the current level into
         ! the collection. This way, we inform the callback
         ! routine of the matrix assembly about the solution vector to use
         ! fot the nonlinear term.
-        call collct_setvalue_vec(p_rcollection,'RX',p_rvectorCoarse,.true.)
+        call collct_setvalue_vec(p_rcollection,"RX",p_rvectorCoarse,.true.)
         
         ! We specify the callback function coeff_Laplace for the coefficients.
         ! As long as we use constant coefficients, this routine is not used.
@@ -896,7 +891,7 @@ contains
             p_rcubatureInfo,coeff_burgers,p_rcollection)
         
         ! Remove RX from the collection, not needed there anymore.
-        call collct_deletevalue(p_rcollection,'RX')
+        call collct_deletevalue(p_rcollection,"RX")
         
         ! Implement discrete boundary conditions into the matrix.
         ! Call the appropriate matrix filter to modify the system matrix
@@ -911,24 +906,20 @@ contains
         !   resorted later)
         ! - to make the matrices consistent to those we put into the
         !   linear solver; we put sorted matrices into the linear solver!
-        call lsyssc_sortMatrix (p_rmatrix%RmatrixBlock(1,1),.true.,&
-                                abs(p_rmatrix%RmatrixBlock(1,1)%isortStrategy))
+        call lsyssc_sortMatrix (p_rmatrix%RmatrixBlock(1,1),.true.,.true.)
         
       end do
 
       ! Sort the matrix on the maximum level - do not forget this!
-      p_rmatrix => collct_getvalue_mat (p_rcollection,'SYSTEMMAT',ilvmax)
-      call lsyssc_sortMatrix (p_rmatrix%RmatrixBlock(1,1),.true.,&
-                              abs(p_rmatrix%RmatrixBlock(1,1)%isortStrategy))
+      p_rmatrix => collct_getvalue_mat (p_rcollection,"SYSTEMMAT",ilvmax)
+      call lsyssc_sortMatrix (p_rmatrix%RmatrixBlock(1,1),.true.,.true.)
 
       ! Ok, system matrices on all levels are assembled now.
       ! Now we turn to invokle the linear solver for preconditioning...
       !
-      ! Resort the vector rd in the same way as the matrix
-      ! before solving the corresponding linear
-      ! system/perform the preconditioning. Use p_rvectorTemp as temporary
-      ! vector for that purpose - it is prepared large enough.
-      call lsysbl_synchroniseSortMatVec(p_rmatrix,rd,p_rvectorTemp)
+      ! Resort the RHS and solution vector according to the resorting
+      ! strategy given in the matrix.
+      call lsysbl_sortVector (rd,.true.,p_rvectorTemp)
       
       ! Initialise data of the solver. This in fact performs a numeric
       ! factorisation of the matrices in UMFPACK-like solvers.
@@ -951,16 +942,18 @@ contains
       ! for the next iteration.
       call linsol_doneData (p_rsolverNode)
 
-      ! Unsort our rd again so that it is in the state it was before.
-      call lsysbl_sortVectorInSitu (rd,p_rvectorTemp,.false.)
-      
+      ! Unsort the vectors again in case they were resorted before calling
+      ! the solver.
+      ! We use the first subvector of rvecTmp as temporary data; it is
+      ! large enough, as we only have one block.
+      call lsysbl_sortVector (rd,.false.,p_rvectorTemp)
+
       ! Unsort the structure of all matrices without unsorting the entries.
       ! This of course means throwing away all matrices, but we do not need
       ! them anymore - they are reassembled in the next sweep.
       do i=ilvmin,ilvmax
-        p_rmatrix => collct_getvalue_mat (p_rcollection,'SYSTEMMAT',i)
-        call lsyssc_sortMatrix (p_rmatrix%RmatrixBlock(1,1),.false.,&
-                                -abs(p_rmatrix%RmatrixBlock(1,1)%isortStrategy))
+        p_rmatrix => collct_getvalue_mat (p_rcollection,"SYSTEMMAT",i)
+        call lsyssc_sortMatrix (p_rmatrix%RmatrixBlock(1,1),.false.,.false.)
       end do
 
     end subroutine
@@ -1062,7 +1055,7 @@ contains
     
     ! Add the interlevel projection structure to the collection; we can
     ! use it later for setting up nonlinear matrices.
-    call collct_setvalue_ilvp(rproblem%rcollection,'ILVPROJECTION',&
+    call collct_setvalue_ilvp(rproblem%rcollection,"ILVPROJECTION",&
                               rprojection,.true.)
     
     ! Then set up smoothers / coarse grid solver:
@@ -1126,10 +1119,9 @@ contains
     
     ! Set up a scalar temporary vector that we need for building up nonlinear
     ! matrices. It must be at least as large as MAXMEM and NEQ(finest level),
-    ! as we use it for resorting vectors, too.
-    call lsyssc_createVector (rtempVectorSc,max(imaxmem,rproblem%rrhs%NEQ),&
-                              .false.,ST_DOUBLE)
-    call collct_setvalue_vecsca(rproblem%rcollection,'RTEMPSCALAR',rtempVectorSc,.true.)
+    ! as we use it for resorting vectors as well.
+    call lsyssc_createVector (rtempVectorSc,max(imaxmem,rproblem%rrhs%NEQ),.false.)
+    call collct_setvalue_vecsca(rproblem%rcollection,"RTEMPSCALAR",rtempVectorSc,.true.)
     
     ! Before attaching the matrices to the solver and the initialisation of
     ! the problem structure, sort the matrix structure on all levels
@@ -1137,8 +1129,7 @@ contains
     ! entries - there are none!
     do i=ilvmin,ilvmax
       p_rmatrix => rproblem%RlevelInfo(i)%rmatrix
-      call lsyssc_sortMatrix (p_rmatrix%RmatrixBlock(1,1),.false.,&
-                              abs(p_rmatrix%RmatrixBlock(1,1)%isortStrategy))
+      call lsyssc_sortMatrix (p_rmatrix%RmatrixBlock(1,1),.true.,.false.)
     end do
     
     ! Attach the system matrices to the solver.
@@ -1168,12 +1159,11 @@ contains
     !  must be sorted to make their entries consistent!!!
     do i=ilvmin,ilvmax
       p_rmatrix => rproblem%RlevelInfo(i)%rmatrix
-      call lsyssc_sortMatrix (p_rmatrix%RmatrixBlock(1,1),.false.,&
-                              -abs(p_rmatrix%RmatrixBlock(1,1)%isortStrategy))
+      call lsyssc_sortMatrix (p_rmatrix%RmatrixBlock(1,1),.false.,.false.)
     end do
     
     ! Put the prepared solver node to the collection for later use.
-    call collct_setvalue_linsol(rproblem%rcollection,'LINSOLVER',p_rsolverNode,.true.)
+    call collct_setvalue_linsol(rproblem%rcollection,"LINSOLVER",p_rsolverNode,.true.)
     
     ! Create a temporary vector we need for the nonliner iteration.
     call lsysbl_createVecBlockIndirect (rproblem%rrhs, rtempBlock, .false.)
@@ -1192,13 +1182,13 @@ contains
     call lsyssc_releaseVector (rtempVectorSc)
     
     ! Remove the solver node from the collection - not needed anymore there
-    call collct_deletevalue(rproblem%rcollection,'LINSOLVER')
+    call collct_deletevalue(rproblem%rcollection,"LINSOLVER")
     
     ! Remove the temporary vector from the collection
-    call collct_deletevalue(rproblem%rcollection,'RTEMPSCALAR')
+    call collct_deletevalue(rproblem%rcollection,"RTEMPSCALAR")
     
     ! Remove the interlevel projection structure
-    call collct_deletevalue(rproblem%rcollection,'ILVPROJECTION')
+    call collct_deletevalue(rproblem%rcollection,"ILVPROJECTION")
     
     ! Clean up the linear solver, release all memory, remove the solver node
     ! from memory.
@@ -1208,11 +1198,11 @@ contains
     call mlprj_doneProjection (rprojection)
     
     call output_lbrk()
-    call output_line ('Nonlinear solver statistics')
-    call output_line ('---------------------------')
-    call output_line ('Initial defect: '//trim(sys_sdEL(rnlSol%DinitialDefect(1),15)))
-    call output_line ('Final defect:  '//trim(sys_sdEL(rnlSol%DfinalDefect(1),15)))
-    call output_line ('#Iterations:   '//trim(sys_siL(rnlSol%iiterations,10)))
+    call output_line ("Nonlinear solver statistics")
+    call output_line ("---------------------------")
+    call output_line ("Initial defect: "//trim(sys_sdEL(rnlSol%DinitialDefect(1),15)))
+    call output_line ("Final defect:  "//trim(sys_sdEL(rnlSol%DfinalDefect(1),15)))
+    call output_line ("#Iterations:   "//trim(sys_siL(rnlSol%iiterations,10)))
 
   end subroutine
 
@@ -1264,13 +1254,13 @@ contains
     !
     ! Get the path for writing postprocessing files from the environment variable
     ! $UCDDIR. If that does not exist, write to the directory "./gmv".
-    if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = './gmv'
+    if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = "./gmv"
 
     ! Start UCD export to VTK file:
-    call ucd_startVTK (rexport,UCD_FLAG_STANDARD,p_rtriangulation,trim(sucddir)//'/u6.vtk')
+    call ucd_startVTK (rexport,UCD_FLAG_STANDARD,p_rtriangulation,trim(sucddir)//"/u6.vtk")
     
     call lsyssc_getbase_double (p_rvector%RvectorBlock(1),p_Ddata)
-    call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
+    call ucd_addVariableVertexBased (rexport,"sol",UCD_VAR_STANDARD, p_Ddata)
     
     ! Write the file to disc, that is it.
     call ucd_write (rexport)
@@ -1295,7 +1285,7 @@ contains
 
 !</subroutine>
 
-    integer :: ihandle,i
+    integer :: i
 
     ! Release matrices and vectors on all levels
     do i=rproblem%ilvmax,rproblem%ilvmin,-1
@@ -1303,18 +1293,13 @@ contains
       call lsysbl_releaseMatrix (rproblem%RlevelInfo(i)%rmatrix)
 
       ! Delete the variables from the collection.
-      call collct_deletevalue (rproblem%rcollection,'SYSTEMMAT',i)
-      
-      ! Release the permutation for sorting matrix/vectors
-      ihandle = collct_getvalue_int (rproblem%rcollection,'LAPLACE-CM',i)
-      call storage_free (ihandle)
-      call collct_deletevalue (rproblem%rcollection,'LAPLACE-CM',i)
+      call collct_deletevalue (rproblem%rcollection,"SYSTEMMAT",i)
       
       ! Remove the temp vector that was used for interpolating the solution
       ! from higher to lower levels in the nonlinear iteration.
       if (i .lt. rproblem%ilvmax) then
         call lsysbl_releaseVector(rproblem%RlevelInfo(i)%rtempVector)
-        call collct_deletevalue(rproblem%rcollection,'RTEMPVEC',i)
+        call collct_deletevalue(rproblem%rcollection,"RTEMPVEC",i)
       end if
       
     end do
@@ -1323,9 +1308,12 @@ contains
     call lsysbl_releaseVector (rproblem%rvector)
     call lsysbl_releaseVector (rproblem%rrhs)
 
+    ! Release the sorting strategy
+    call sstrat_doneBlockSorting (rproblem%RlevelInfo(1)%rsortStrategy)
+
     ! Delete the variables from the collection.
-    call collct_deletevalue (rproblem%rcollection,'RHS')
-    call collct_deletevalue (rproblem%rcollection,'SOLUTION')
+    call collct_deletevalue (rproblem%rcollection,"RHS")
+    call collct_deletevalue (rproblem%rcollection,"SOLUTION")
 
   end subroutine
 
@@ -1381,7 +1369,7 @@ contains
 
       ! Release the cubature info structure.
       call spdiscr_releaseCubStructure(rproblem%RlevelInfo(i)%rcubatureInfo)
-      call collct_deletevalue (rproblem%rcollection,'CUBINFO',i)
+      call collct_deletevalue (rproblem%rcollection,"CUBINFO",i)
 
       ! Delete the block discretisation together with the associated
       ! scalar spatial discretisations.
@@ -1419,8 +1407,8 @@ contains
     ! Finally release the domain.
     call boundary_release (rproblem%rboundary)
     
-    call collct_deleteValue(rproblem%rcollection,'NLMAX')
-    call collct_deleteValue(rproblem%rcollection,'NLMIN')
+    call collct_deleteValue(rproblem%rcollection,"NLMAX")
+    call collct_deleteValue(rproblem%rcollection,"NLMIN")
 
   end subroutine
 
@@ -1431,7 +1419,7 @@ contains
   subroutine burgers1d6
   
 !<description>
-  ! This is a 'separated' burgers1d solver for solving a Burgers-1D
+  ! This is a "separated" burgers1d solver for solving a Burgers-1D
   ! problem. The different tasks of the problem are separated into
   ! subroutines. The problem uses a problem-specific structure for the
   ! communication: All subroutines add their generated information to the
@@ -1505,8 +1493,8 @@ contains
     
     ! Print some statistical data about the collection - anything forgotten?
     print *
-    print *,'Remaining collection statistics:'
-    print *,'--------------------------------'
+    print *,"Remaining collection statistics:"
+    print *,"--------------------------------"
     print *
     call collct_printStatistics (p_rproblem%rcollection)
     
