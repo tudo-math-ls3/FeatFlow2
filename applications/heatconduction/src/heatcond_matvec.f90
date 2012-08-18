@@ -90,10 +90,6 @@ contains
     ! A pointer to the discretisation structure with the data.
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
 
-    ! Arrays for the Cuthill McKee renumbering strategy
-    integer, dimension(1) :: H_Iresort
-    integer, dimension(:), pointer :: p_Iresort
-
     ! Parameters from the DAT file
     real(DP) :: alpha11,alpha12,alpha21,alpha22,beta1,beta2,gamma
     character(LEN=10) :: Sstr
@@ -282,30 +278,34 @@ contains
       p_rmatrixMass => rproblem%RlevelInfo(i)%rmatrixMass
       p_rmatrix => rproblem%RlevelInfo(i)%rmatrix
       
-      ! Allocate an array for holding the resorting strategy.
-      call storage_new ('hc5_initMatVec', 'Iresort', &
-            p_rmatrixStatic%RmatrixBlock(1,1)%NEQ*2, ST_INT, h_Iresort(1), &
-            ST_NEWBLOCK_ZERO)
-      call storage_getbase_int(h_Iresort(1),p_Iresort)
-      
-      ! Calculate the resorting strategy.
-      call sstrat_calcCuthillMcKee (p_rmatrixStatic%RmatrixBlock(1,1),p_Iresort)
-      
-      ! Save the handle of the resorting strategy to the collection.
-      call collct_setvalue_int(rproblem%rcollection,'LAPLACE-CM',h_Iresort(1),.true.,i)
-      
-      ! Resort the matrices according to the sorting strategy.
-      ! Note that as we share the structure between all matrices, we first
-      ! have to sort the 'child' matrices...
-      call lsyssc_sortMatrix (p_rmatrixMass%RmatrixBlock(1,1),.true.,&
-                              SSTRAT_CM,h_Iresort(1))
-      call lsyssc_sortMatrix (p_rmatrix%RmatrixBlock(1,1),.true.,&
-                              SSTRAT_CM,h_Iresort(1))
+      ! Create a sort strategy structure for our discretisation
+      call sstrat_initBlockSorting (rproblem%RlevelInfo(i)%rsortStrategy,p_rdiscretisation)
 
-      ! ...before sorting the 'parent' matrix!
-      call lsyssc_sortMatrix (p_rmatrixStatic%RmatrixBlock(1,1),.true.,&
-                              SSTRAT_CM,h_Iresort(1))
-                              
+      ! Calculate the resorting strategy.
+      call sstrat_initCuthillMcKee (rproblem%RlevelInfo(i)%rsortStrategy%p_Rstrategies(1),&
+          p_rmatrix%RmatrixBlock(1,1))
+      
+      ! Attach the sorting strategy to the matrices. The matrix is not yet sorted.
+      call lsysbl_setSortStrategy (p_rmatrixStatic,&
+          rproblem%RlevelInfo(i)%rsortStrategy,&
+          rproblem%RlevelInfo(i)%rsortStrategy)
+
+      call lsysbl_setSortStrategy (p_rmatrixMass,&
+          rproblem%RlevelInfo(i)%rsortStrategy,&
+          rproblem%RlevelInfo(i)%rsortStrategy)
+      
+      call lsysbl_setSortStrategy (p_rmatrix,&
+          rproblem%RlevelInfo(i)%rsortStrategy,&
+          rproblem%RlevelInfo(i)%rsortStrategy)
+
+      ! Resort the matrices
+      call lsysbl_sortMatrix (p_rmatrixStatic,.true.)
+      call lsysbl_sortMatrix (p_rmatrixMass,.true.)
+      
+      ! For the system matrix, we only resort the structure.
+      ! The entries are not sorted, they are undefined anyway.
+      call lsysbl_sortMatrix (p_rmatrix,.true.,.false.)
+      
     end do
 
   end subroutine
@@ -395,6 +395,12 @@ contains
 
     integer :: ihandle,i
 
+    ! Delete solution/RHS vector
+    call lsysbl_releaseVector (rproblem%rrhs)
+
+    ! Delete the variables from the collection.
+    call collct_deletevalue (rproblem%rcollection,'RHS')
+
     ! Release matrices and vectors on all levels
     do i=rproblem%ilvmax,rproblem%ilvmin,-1
 
@@ -412,17 +418,9 @@ contains
       ! Delete the matrix
       call lsysbl_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixStatic)
 
-      ! Release the permutation for sorting matrix/vectors
-      ihandle = collct_getvalue_int (rproblem%rcollection,'LAPLACE-CM',i)
-      call storage_free (ihandle)
-      call collct_deletevalue (rproblem%rcollection,'LAPLACE-CM',i)
+      ! Release the sorting strategy
+      call sstrat_doneBlockSorting (rproblem%RlevelInfo(i)%rsortStrategy)
     end do
-
-    ! Delete solution/RHS vector
-    call lsysbl_releaseVector (rproblem%rrhs)
-
-    ! Delete the variables from the collection.
-    call collct_deletevalue (rproblem%rcollection,'RHS')
 
   end subroutine
 

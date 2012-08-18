@@ -30,7 +30,6 @@ module heatcond_solver
   use bcassembly
   use triangulation
   use spatialdiscretisation
-  use sortstrategy
   use coarsegridcorrection
   use ucd
   use timestepping

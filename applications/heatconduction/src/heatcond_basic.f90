@@ -18,6 +18,7 @@ module heatcond_basic
   use vectorfilters
   use triangulation
   use spatialdiscretisation
+  use sortstrategybase
   use sortstrategy
   use timestepping
   use discretebc
@@ -61,6 +62,9 @@ module heatcond_basic
     ! are assembled.
     type(t_discreteBC), pointer :: p_rdiscreteBC => null()
   
+    ! Sorting strategy for resorting vectors/matrices.
+    type(t_blockSortStrategy) :: rsortStrategy
+
   end type
   
 !</typeblock>

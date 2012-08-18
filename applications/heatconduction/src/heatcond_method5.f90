@@ -117,33 +117,33 @@ contains
 
     ! Read the parameters from disc and put a reference to it
     ! to the collection
-    call sys_getcommandLineArg(1,smaster,sdefault='./data/heatcond.dat')
+    call sys_getcommandLineArg(1,smaster,sdefault="./data/heatcond.dat")
     call parlst_readfromfile (rparams, smaster)
 
     ! We want to solve our Laplace problem on level...
-    call parlst_getvalue_int (rparams, 'GENERAL', 'NLMIN', rproblem%ilvmin, 7)
-    call parlst_getvalue_int (rparams, 'GENERAL', 'NLMAX', rproblem%ilvmax, 7)
+    call parlst_getvalue_int (rparams, "GENERAL", "NLMIN", rproblem%ilvmin, 7)
+    call parlst_getvalue_int (rparams, "GENERAL", "NLMAX", rproblem%ilvmax, 7)
     
     ! Get the parameters for the time stepping scheme from the parameter list
-    call parlst_getvalue_int (rparams, 'TIMESTEPPING', 'CSCHEME', cscheme, 0)
-    call parlst_getvalue_int (rparams, 'TIMESTEPPING', 'NITERATIONS', niterations, 1000)
-    call parlst_getvalue_double (rparams, 'TIMESTEPPING', 'DTHETA', dtheta, 1.0_DP)
-    call parlst_getvalue_double (rparams, 'TIMESTEPPING', 'DTSTEP', dtstep, 0.1_DP)
-    call parlst_getvalue_double (rparams, 'TIMESTEPPING', 'DTIMEMIN', dtimemin, 0.0_DP)
-    call parlst_getvalue_double (rparams, 'TIMESTEPPING', 'DTIMEMAX', dtimemax, 1.0_DP)
+    call parlst_getvalue_int (rparams, "TIMESTEPPING", "CSCHEME", cscheme, 0)
+    call parlst_getvalue_int (rparams, "TIMESTEPPING", "NITERATIONS", niterations, 1000)
+    call parlst_getvalue_double (rparams, "TIMESTEPPING", "DTHETA", dtheta, 1.0_DP)
+    call parlst_getvalue_double (rparams, "TIMESTEPPING", "DTSTEP", dtstep, 0.1_DP)
+    call parlst_getvalue_double (rparams, "TIMESTEPPING", "DTIMEMIN", dtimemin, 0.0_DP)
+    call parlst_getvalue_double (rparams, "TIMESTEPPING", "DTIMEMAX", dtimemax, 1.0_DP)
     
     ! Get the path where to write gmv`s to.
-    call parlst_getvalue_string (rparams, 'GENERAL', &
-                                 'sucddir', sstring,'''./pre/QUAD.prm''')
+    call parlst_getvalue_string (rparams, "GENERAL", &
+                                 "sucddir", sstring,"""./pre/QUAD.prm""")
     read(sstring,*) rproblem%sucddir
     
     ! Get the path of the prm/tri files.
-    call parlst_getvalue_string (rparams, 'GENERAL', &
-                                 'sprmfile', sstring,'''./pre/QUAD.prm''')
+    call parlst_getvalue_string (rparams, "GENERAL", &
+                                 "sprmfile", sstring,"""./pre/QUAD.prm""")
     read(sstring,*) rproblem%sprmfile
 
-    call parlst_getvalue_string (rparams, 'GENERAL', &
-                                 'strifile', sstring,'''./pre/QUAD.tri''')
+    call parlst_getvalue_string (rparams, "GENERAL", &
+                                 "strifile", sstring,"""./pre/QUAD.tri""")
     read(sstring,*) rproblem%strifile
 
     ! Initialise the time stepping in the problem structure
@@ -165,7 +165,7 @@ contains
   subroutine heatcond5
   
 !<description>
-  ! This is a 'separated' heatcond solver for solving a nonstationary heat
+  ! This is a "separated" heatcond solver for solving a nonstationary heat
   ! conduction problem. The different tasks of the problem are separated into
   ! subroutines. The problem uses a problem-specific structure for the
   ! communication: All subroutines add their generated information to the
@@ -204,7 +204,7 @@ contains
     
     ! Initialise the collection.
     call collct_init (rproblem%rcollection)
-    call collct_setvalue_parlst (rproblem%rcollection, 'PARAMS', rparams, .true.)
+    call collct_setvalue_parlst (rproblem%rcollection, "PARAMS", rparams, .true.)
     
     ! Read in the parameters from the DAT file and initialise the basic
     ! structures with these.
@@ -260,7 +260,7 @@ contains
     deallocate (rproblem%RlevelInfo)
     
     ! Release parameter list
-    call collct_deletevalue (rproblem%rcollection,'PARAMS')
+    call collct_deletevalue (rproblem%rcollection,"PARAMS")
     call parlst_done (rparams)
     
     ! Release RHS and solution vector
@@ -269,8 +269,8 @@ contains
 
     ! Print some statistical data about the collection - anything forgotten?
     call output_lbrk ()
-    call output_line ('Remaining collection statistics:')
-    call output_line ('--------------------------------')
+    call output_line ("Remaining collection statistics:")
+    call output_line ("--------------------------------")
     call output_lbrk ()
     call collct_printStatistics (rproblem%rcollection)
     

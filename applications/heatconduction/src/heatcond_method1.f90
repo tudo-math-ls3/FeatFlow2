@@ -170,14 +170,14 @@ contains
 
     ! Get the path $PREDIR from the environment, where to read .prm/.tri files
     ! from. If that does not exist, write to the directory "./pre".
-    if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
+    if (.not. sys_getenv_string("PREDIR", spredir)) spredir = "./pre"
 
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
-    call boundary_read_prm(rboundary, trim(spredir)//'/QUAD.prm')
+    call boundary_read_prm(rboundary, trim(spredir)//"/QUAD.prm")
         
     ! Now read in the basic triangulation.
-    call tria_readTriFile2D (rtriangulation, trim(spredir)//'/QUAD.tri', rboundary)
+    call tria_readTriFile2D (rtriangulation, trim(spredir)//"/QUAD.tri", rboundary)
     
     ! Refine it.
     call tria_quickRefine2LevelOrdering (NLMAX-1,rtriangulation,rboundary)
@@ -245,8 +245,8 @@ contains
       dtime = dtime + dtstep
       
       call output_separator(OU_SEP_MINUS)
-      call output_line ('Time step '//trim(sys_siL(itimestep,6))// &
-                        '     Time '//trim(sys_sdL(dtime,5)))
+      call output_line ("Time step "//trim(sys_siL(itimestep,6))// &
+                        "     Time "//trim(sys_sdL(dtime,5)))
       call output_lbrk ()
 
       ! STEP 1: Form the right hand side:  dtimestep*f + M u_{old}
@@ -318,11 +318,11 @@ contains
       ! conditions.
       call bcasm_initDiscreteBC(rdiscreteBC)
       !
-      ! We 'know' already (from the problem definition) that we have four boundary
+      ! We "know" already (from the problem definition) that we have four boundary
       ! segments in the domain. Each of these, we want to use for enforcing
       ! some kind of boundary condition.
       !
-      ! We ask the boundary routines to create a 'boundary region' - which is
+      ! We ask the boundary routines to create a "boundary region" - which is
       ! simply a part of the boundary corresponding to a boundary segment.
       ! A boundary region roughly contains the type, the min/max parameter value
       ! and whether the endpoints are inside the region or not.
@@ -331,7 +331,7 @@ contains
       ! We use this boundary region and specify that we want to have Dirichlet
       ! boundary there. The following call does the following:
       ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
-      !   We specify icomponent='1' to indicate that we set up the
+      !   We specify icomponent="1" to indicate that we set up the
       !   Dirichlet BC`s for the first (here: one and only) component in the
       !   solution vector.
       ! - Discretise the boundary condition so that the BC`s can be applied
@@ -438,14 +438,14 @@ contains
       !
       ! Get the path for writing postprocessing files from the environment variable
       ! $UCDDIR. If that does not exist, write to the directory "./gmv".
-      if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = './gmv'
+      if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = "./gmv"
 
       ! Start UCD export to VTK file:
       call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-                        trim(sucddir)//'/u1.vtk.'//trim(sys_si0L(itimestep,5)))
+                        trim(sucddir)//"/u1.vtk."//trim(sys_si0L(itimestep,5)))
       
       call lsyssc_getbase_double (rvectorBlock%RvectorBlock(1),p_Ddata)
-      call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
+      call ucd_addVariableVertexBased (rexport,"sol",UCD_VAR_STANDARD, p_Ddata)
       
       ! Write the file to disc, that is it.
       call ucd_write (rexport)

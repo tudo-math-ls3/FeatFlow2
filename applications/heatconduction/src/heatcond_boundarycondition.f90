@@ -95,7 +95,7 @@ contains
     ! Also set Dquickaccess (1) to the simulation time for faster access by the
     ! callback routine.
     rproblem%rcollection%Dquickaccess (1) = rproblem%rtimedependence%dtime
-    call collct_setvalue_real(rproblem%rcollection,'TIME',&
+    call collct_setvalue_real(rproblem%rcollection,"TIME",&
          rproblem%rtimedependence%dtime,.true.)
     
     do i=rproblem%ilvmin,rproblem%ilvmax
@@ -122,11 +122,11 @@ contains
         call bcasm_clearDiscreteBC(rproblem%RlevelInfo(i)%p_rdiscreteBC)
       end if
       !
-      ! We 'know' already (from the problem definition) that we have four boundary
+      ! We "know" already (from the problem definition) that we have four boundary
       ! segments in the domain. Each of these, we want to use for enforcing
       ! some kind of boundary condition.
       !
-      ! We ask the boundary routines to create a 'boundary region' - which is
+      ! We ask the boundary routines to create a "boundary region" - which is
       ! simply a part of the boundary corresponding to a boundary segment.
       ! A boundary region roughly contains the type, the min/max parameter value
       ! and whether the endpoints are inside the region or not.
@@ -135,7 +135,7 @@ contains
       ! We use this boundary region and specify that we want to have Dirichlet
       ! boundary there. The following call does the following:
       ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
-      !   We specify icomponent='1' to indicate that we set up the
+      !   We specify icomponent="1" to indicate that we set up the
       !   Dirichlet BC`s for the first (here: one and only) component in the
       !   solution vector.
       ! - Discretise the boundary condition so that the BC`s can be applied
@@ -173,7 +173,7 @@ contains
     end do
     
     ! Remove the "TIME"-parameter from the collection again.
-    call collct_deletevalue (rproblem%rcollection,'TIME')
+    call collct_deletevalue (rproblem%rcollection,"TIME")
 
     ! On the finest level, attach the discrete BC also
     ! to the solution and RHS vector. They need it to be compatible

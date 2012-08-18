@@ -36,6 +36,7 @@ module heatcond_timeloop
   use bcassembly
   use triangulation
   use spatialdiscretisation
+  use sortstrategybase
   use sortstrategy
   use coarsegridcorrection
   use ucd
@@ -128,7 +129,7 @@ contains
     !
     ! The RHS of that equation therefore contains parts of the solution
     ! u_n, of the old RHS f_n and the new RHS f_{n+1}. At first, we make
-    ! a weighted copy of the current RHS f_n to the 'global' RHS vector
+    ! a weighted copy of the current RHS f_n to the "global" RHS vector
     ! according to the time stepping scheme.
     
     ilvmin = rproblem%ilvmin
@@ -150,8 +151,8 @@ contains
     ! Synchronise the sorting of the vectors according to the system matrix.
     ! We use the first subvector of rtempBlock as temporary data; it is
     ! large enough, as we have only one block.
-    call lsysbl_synchroniseSortMatVec (p_rmatrix,p_rrhs,rtempBlock%RvectorBlock(1))
-    call lsysbl_synchroniseSortMatVec (p_rmatrix,rvector,rtempBlock%RvectorBlock(1))
+    call lsysbl_synchroniseSort (p_rmatrix,p_rrhs,rtempBlock%RvectorBlock(1))
+    call lsysbl_synchroniseSort (p_rmatrix,rvector,rtempBlock%RvectorBlock(1))
     
     call lsysbl_blockMatVec(rproblem%RlevelInfo(ilvmax)%rmatrixStatic,&
          rvector,p_rrhs,&
@@ -172,7 +173,7 @@ contains
     call hc5_calcRHS (rproblem,rrhs)
     
     ! Add w_3*f_{n+1} to the current RHS. If necessary, unsort p_rrhs back before.
-    call lsysbl_sortVectorInSitu (p_rrhs,rtempBlock%RvectorBlock(1),.false.)
+    call lsysbl_sortVector (p_rrhs,.false.,rtempBlock%RvectorBlock(1))
     
     call lsysbl_vectorLinearComb(rrhs,p_rrhs,&
          rproblem%rtimedependence%rtimestepping%dweightNewRHS,1.0_DP)
@@ -219,7 +220,7 @@ contains
     if (ierror .ne. LINSOL_ERR_NOERROR) stop
     
     ! Synchronise p_rrhs with the matrix so it is compatible to the linear system.
-    call lsysbl_synchroniseSortMatVec (p_rmatrix,p_rrhs,rtempBlock%RvectorBlock(1))
+    call lsysbl_synchroniseSort (p_rmatrix,p_rrhs,rtempBlock%RvectorBlock(1))
 
     ! Finally solve the system. As we want to solve Ax=b with
     ! b being the real RHS and x being the real solution vector,
@@ -237,8 +238,8 @@ contains
     ! the solver.
     ! We use the first subvector of rtempBlock as temporary data; it is
     ! large enough, as we only have one block.
-    call lsysbl_sortVectorInSitu (p_rrhs,rtempBlock%RvectorBlock(1),.false.)
-    call lsysbl_sortVectorInSitu (rvector,rtempBlock%RvectorBlock(1),.false.)
+    call lsysbl_sortVector (p_rrhs,.false.,rtempBlock%RvectorBlock(1))
+    call lsysbl_sortVector (rvector,.false.,rtempBlock%RvectorBlock(1))
     
     ! Release the temporary vector
     call lsysbl_releaseVector (rtempBlock)
@@ -295,11 +296,11 @@ contains
     ! start the postprocessing.
     ! Start UCD export to VTK file:
     call ucd_startVTK (rexport,UCD_FLAG_STANDARD,p_rtriangulation,&
-                       trim(rproblem%sucddir)//'/u5.vtk.'//trim(sys_si0L(iiteration,5)))
+                       trim(rproblem%sucddir)//"/u5.vtk."//trim(sys_si0L(iiteration,5)))
     call ucd_setSimulationTime (rexport,dtime)
     
     call lsyssc_getbase_double (rvector%RvectorBlock(1),p_Ddata)
-    call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
+    call ucd_addVariableVertexBased (rexport,"sol",UCD_VAR_STANDARD, p_Ddata)
     
     ! Write the file to disc, that is it.
     call ucd_write (rexport)
@@ -346,8 +347,8 @@ contains
       rproblem%rtimedependence%iiteration = iiteration
       
       call output_separator(OU_SEP_MINUS)
-      call output_line ('Time step '//trim(sys_siL(iiteration,6))// &
-                        '     Time '//trim(sys_sdL(rproblem%rtimedependence%dtime,5)))
+      call output_line ("Time step "//trim(sys_siL(iiteration,6))// &
+                        "     Time "//trim(sys_sdL(rproblem%rtimedependence%dtime,5)))
       call output_lbrk ()
               
       ! Proceed to the next time step

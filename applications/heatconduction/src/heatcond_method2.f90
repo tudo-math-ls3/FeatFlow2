@@ -174,14 +174,14 @@ contains
 
     ! Get the path $PREDIR from the environment, where to read .prm/.tri files
     ! from. If that does not exist, write to the directory "./pre".
-    if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
+    if (.not. sys_getenv_string("PREDIR", spredir)) spredir = "./pre"
 
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
-    call boundary_read_prm(rboundary, trim(spredir)//'/QUAD.prm')
+    call boundary_read_prm(rboundary, trim(spredir)//"/QUAD.prm")
         
     ! Now read in the basic triangulation.
-    call tria_readTriFile2D (rtriangulation, trim(spredir)//'/QUAD.tri', rboundary)
+    call tria_readTriFile2D (rtriangulation, trim(spredir)//"/QUAD.tri", rboundary)
     
     ! Refine it.
     call tria_quickRefine2LevelOrdering (NLMAX-1,rtriangulation,rboundary)
@@ -218,7 +218,7 @@ contains
     call spdiscr_createDefCubStructure(&  
         rdiscretisation%RspatialDiscr(1),rcubatureInfo,CUB_GEN_AUTO_G3)
 
-    ! Up to now, everything is 'analytical'.
+    ! Up to now, everything is "analytical".
     ! Let us change that, let us start to discretise!
     !
     ! 1.) Boundary conditions
@@ -232,11 +232,11 @@ contains
     ! conditions.
     call bcasm_initDiscreteBC(rdiscreteBC)
     !
-    ! We 'know' already (from the problem definition) that we have four boundary
+    ! We "know" already (from the problem definition) that we have four boundary
     ! segments in the domain. Each of these, we want to use for enforcing
     ! some kind of boundary condition.
     !
-    ! We ask the boundary routines to create a 'boundary region' - which is
+    ! We ask the boundary routines to create a "boundary region" - which is
     ! simply a part of the boundary corresponding to a boundary segment.
     ! A boundary region roughly contains the type, the min/max parameter value
     ! and whether the endpoints are inside the region or not.
@@ -245,7 +245,7 @@ contains
     ! We use this boundary region and specify that we want to have Dirichlet
     ! boundary there. The following call does the following:
     ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
-    !   We specify icomponent='1' to indicate that we set up the
+    !   We specify icomponent="1" to indicate that we set up the
     !   Dirichlet BC`s for the first (here: one and only) component in the
     !   solution vector.
     ! - Discretise the boundary condition so that the BC`s can be applied
@@ -287,8 +287,8 @@ contains
     ! For the time dependent problem, we need a Laplace matrix and a
     ! Mass matrix. Both have exactly the same structure as rmatrix, but they
     ! have different entries!
-    ! We 'copy' the structure of rmatrix to the Mass and Laplace matrix in that
-    ! sense, that they 'share' their structure with rmatrix. This means, all
+    ! We "copy" the structure of rmatrix to the Mass and Laplace matrix in that
+    ! sense, that they "share" their structure with rmatrix. This means, all
     ! three matrices rmatrix, rmatrixMass and rmatrixLaplace have exactly
     ! the same structure. The arrays in memory defining that structure is
     ! shared among the matrices. This helps to save memory!
@@ -377,7 +377,7 @@ contains
     ! - A RHS vector for the solver (changing in every time step, missing)
     ! - A solution vector (changing in every time step, missing)
     ! Allocate memory for the missing vectors. They have exactly the same shape as
-    ! our RHS vector, so we can use the RHS to 'derive' the missing vectors.
+    ! our RHS vector, so we can use the RHS to "derive" the missing vectors.
     ! Note that this will also transfer the connected boundary conditions
     ! to the new vectors.
     ! Btw., the (initial) solution vector is filled with 0.
@@ -477,8 +477,8 @@ contains
       dtime = dtime + dtstep
       
       call output_separator(OU_SEP_MINUS)
-      call output_line ('Time step '//trim(sys_siL(itimestep,6))// &
-                        '     Time '//trim(sys_sdL(dtime,5)))
+      call output_line ("Time step "//trim(sys_siL(itimestep,6))// &
+                        "     Time "//trim(sys_sdL(dtime,5)))
       call output_lbrk ()
 
       ! Create the new RHS for the solver. To do this, calculate:
@@ -513,14 +513,14 @@ contains
       !
       ! Get the path for writing postprocessing files from the environment variable
       ! $UCDDIR. If that does not exist, write to the directory "./gmv".
-      if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = './gmv'
+      if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = "./gmv"
 
       ! Start UCD export to VTK file:
       call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-                        trim(sucddir)//'/u2.vtk.'//trim(sys_si0L(itimestep,5)))
+                        trim(sucddir)//"/u2.vtk."//trim(sys_si0L(itimestep,5)))
       
       call lsyssc_getbase_double (rvectorBlock%RvectorBlock(1),p_Ddata)
-      call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
+      call ucd_addVariableVertexBased (rexport,"sol",UCD_VAR_STANDARD, p_Ddata)
       
       ! Write the file to disc, that is it.
       call ucd_write (rexport)

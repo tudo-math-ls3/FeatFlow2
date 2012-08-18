@@ -8,26 +8,26 @@
 !# used during the matrix/vector assembly for specifying analytical data.
 !# There are three callback functions involved, which may be called depending
 !# on the situation. All of them correspond to a specific interface for
-!# callback functions, defined in 'intf_xxxx.inc' files.
+!# callback functions, defined in "intf_xxxx.inc" files.
 !#
 !# 1.) coeff_Laplace
 !#     -> Returns the coefficients for the Laplace matrix. This routine is
 !#        only used if the problem to calculate has nonconstant coefficients!
 !#        Otherwise the routine is dead.
 !#     -> Corresponds to the interface defined in the file
-!#        'intf_coefficientMatrixSc.inc'
+!#        "intf_coefficientMatrixSc.inc"
 !#
 !# 2.) coeff_RHS
 !#     -> Returns analytical values for the right hand side of the Laplace
 !#        equation.
 !#     -> Corresponds to the interface defined in the file
-!#        'intf_coefficientVectorSc.inc'
+!#        "intf_coefficientVectorSc.inc"
 !#
 !# 3.) getBoundaryValues
 !#     -> Returns analitical values on the (Dirichlet) boundary of the
 !#        problem to solve.
 !#     -> Corresponds to the interface defined in the file
-!#        'intf_bcassembly.inc'
+!#        "intf_bcassembly.inc"
 !#
 !# </purpose>
 !##############################################################################
@@ -231,7 +231,7 @@ contains
   ! This subroutine is called during the discretisation of boundary
   ! conditions. It calculates a special quantity on the boundary, which is
   ! then used by the discretisation routines to generate a discrete
-  ! 'snapshot' of the (actually analytic) boundary conditions.
+  ! "snapshot" of the (actually analytic) boundary conditions.
 !</description>
   
 !<input>
