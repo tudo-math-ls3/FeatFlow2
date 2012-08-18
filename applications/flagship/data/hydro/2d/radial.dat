@@ -139,7 +139,7 @@ ssolutionconstrainvariable(2) =
   pressure
 
 # number of failsafe steps in constrained initialisation
-nsolutionfailsafe = 3
+nsolutionfailsafe = 0
 
 # variables for failsafe constrained initialisation
 ssolutionfailsafevariable(5) =
@@ -152,12 +152,12 @@ ssolutionfailsafevariable(5) =
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
-#prmfile = %{sgriddirectory}/2d/square_01x01_quads.prm
-prmfile = %{sgriddirectory}/2d/rect_-05x05_quads.prm
+prmfile = %{sgriddirectory}/2d/square_01x01_quads.prm
+#prmfile = %{sgriddirectory}/2d/rect_-05x05_quads.prm
 
 # file which contains the triangulation
-trifile = %{sgriddirectory}/2d/rect_-05x05_quads.tri
-#trifile = %{sgriddirectory}/2d/square_01x01_quads.tri
+trifile = %{sgriddirectory}/2d/square_01x01_quads.tri
+#trifile = %{sgriddirectory}/2d/rect_-05x05_quads.tri
 
 # type of finite element space(s)
 #
@@ -199,11 +199,6 @@ isystemformat = 0
 
 #-------------------------------------------------------------------------------
 
-# Number of refinement steps used for summed cubature rules
-nsumcubRefLinForm = 2
-
-#-------------------------------------------------------------------------------
-
 # section name of the inviscid stabilisation
 inviscid = Inviscid
 
@@ -229,13 +224,13 @@ errorestimator = ErrorEstimator
 #  1 = axi-symmetric coordinate system (r,z) 2D
 #  2 = cylindrically symmetric coordinate system (r) 1D
 #  3 = spherically symmetric coordinate system (r) 1D
-icoordsystem = 1
+icoordsystem = 0
 
 # type of geometric source term
 # 0 = evaluate linear form by numerical integration
 # 1 = group formulation with consistent mass matrix
 # 2 = group formulation with lumped mass matrix
-igeometricsourcetype = 2
+igeometricsourcetype = 0
 
 
 ################################################################################
@@ -292,12 +287,11 @@ sucdsolution = out/radial
 sucderror = 
 
 # variables for ucd output
-sucdvariable(5) =
+sucdvariable(4) =
  density
  velocity
  energy
  pressure
- machnumber
 
 
 ################################################################################
@@ -385,10 +379,10 @@ depsSteady = 0.0
 ioutputlevel = 2
 
 # minimum multigrid level number
-nlmin = 4
+nlmin = 7
 
 # maximum multigrid level number
-nlmax = 4
+nlmax = 7
 
 # type of multigrid cycle
 # 0 = F-cylce
