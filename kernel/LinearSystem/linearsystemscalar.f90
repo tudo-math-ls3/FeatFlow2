@@ -26374,7 +26374,7 @@ contains
       integer :: iapathLength,ifanLength,i,j,k,k_mis
       integer :: icol1,icol2,icolor,icolor_center,icolor_fan,icolor_last
       integer :: iedge,iedge1,iedge2,iedge_fan,iedge_last,iedge_mis
-      integer :: ivert1,ivert2,ivertex,ivertex_fan,ivertex_last,ivertex_mis
+      integer :: ivert1,ivertex_fan,ivertex_last,ivertex_mis
       logical :: bendAtCenter
 
 

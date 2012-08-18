@@ -1791,7 +1791,7 @@ contains
     integer, intent(in) :: nrows, ncols
 
       ! local variables
-      integer :: id1,id2,i, idofrow, idofcol
+      integer :: id1,id2,idofrow
 
       ! Loop through the rows where we want to find indices.
       do id1 = 1, nrows

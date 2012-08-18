@@ -215,7 +215,7 @@ contains
       ! local variables
       real(DP), dimension(2) :: DabsDeriv,Dderiv,Dfunc
       real(DP), dimension(2,3) :: Dbas,dabsBas
-      real(DP) :: darea,ddet,dlength,dbdrInt
+      real(DP) :: darea,ddet
       real(DP) :: daux1,daux2,daux3
       real(DP) :: u1,u2,u3,u4,x1,x2,x3,x4,y1,y2,y3,y4
       integer :: iel,ivt,i1,i2,i3,i4,ive,ncontributions

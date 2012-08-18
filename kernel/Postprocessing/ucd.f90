@@ -1645,7 +1645,7 @@ contains
 
     ! local variables
     integer :: mfile,i,j,k,icoor,ncomp
-    integer :: ivt,ivt1,ivt2,nnodes
+    integer :: ivt,ivt1,ivt2
     integer :: imt
     integer :: iel
     real(DP), dimension(:), pointer :: p_Ddata
@@ -2564,8 +2564,8 @@ contains
     type(t_ucdExport), intent(inout) :: rexport
 
     ! local variables
-    integer :: i,j,k,icoor
-    integer :: ivt,ivt1,ivt2,nnodes,nvt,nverts,matnum
+    integer :: i,j
+    integer :: ivt,ivt1,ivt2,nvt,nverts,matnum
     integer :: imt
     integer :: iel
     real(DP), dimension(:), pointer :: p_Ddata
@@ -3633,14 +3633,11 @@ contains
     type(t_ucdExport), intent(inout) :: rexport
 
     ! local variables
-    integer :: mfile,i,j,k, num_ndata, num_cdata, ncells, nverts, &
-        lenTemp, ivt1, ivt2
-    real(DP), dimension(:,:), pointer :: p_DvertexCoords, p_DvertexRefined, &
-        p_Ddata2D
+    integer :: mfile,i,j,k, num_ndata, num_cdata, ncells, nverts
+    real(DP), dimension(:,:), pointer :: p_DvertexCoords, p_DvertexRefined
     real(DP), dimension(:), pointer :: p_Ddata
     integer, dimension(:,:), pointer :: p_IverticesAtElement
     integer, dimension(:), pointer :: p_IcellMaterial
-    real(DP), dimension(1:3) :: Dvert
     character(LEN=SYS_STRLEN) :: sdl
 
       ! Get file unit and export format
@@ -3907,11 +3904,10 @@ contains
 
     ! The export structure with all information
     type(t_ucdExport), intent(inout) :: rexport
-    integer :: mfile,i,j,k,jy,jz,ipoints,num_ndata,num_cdata,ncls,nverts,ncells,ipart
+    integer :: i,j,ipoints,ipart
     real(DP), dimension(:,:), pointer :: p_Ddata2D
     integer, dimension(:,:), pointer :: p_Itriangles
     integer, dimension(:), pointer :: p_IsurfData
-    character(LEN=SYS_STRLEN) :: sdl
     character(LEN=SYS_STRLEN) :: sfilepoly
     integer, dimension(GEOM_STANDARD_VCOUNT) :: iconnect
     integer :: ioffset1,ioffset2,ilengthPolylist,ioffset,ipolygonsTotal
@@ -4044,14 +4040,12 @@ contains
     type(t_ucdExport), intent(inout) :: rexport
 
     ! local variables
-    integer :: mfile,i,j,k,jy,jz,num_ndata,num_cdata,ncls,nverts,ncells
-    real(DP), dimension(:,:), pointer :: p_DvertexCoords, p_DvertexRefined, &
-        p_Ddata2D
+    integer :: mfile,i,j,k,num_ndata,num_cdata,ncls,nverts,ncells
+    real(DP), dimension(:,:), pointer :: p_DvertexCoords, p_DvertexRefined
     real(DP), dimension(:), pointer :: p_Ddata, p_Dx, p_Dy, p_Dz
     integer, dimension(:,:), pointer :: p_IverticesAtElement
     integer, dimension(:,:), pointer :: p_IedgesAtElement
     integer, dimension(:), allocatable :: p_InumVertsPerCell
-    real(DP), dimension(1:3) :: Dvert
     character(LEN=SYS_STRLEN) :: sdl
     logical :: bQuadratic, bVec2Sc
 
@@ -4848,7 +4842,7 @@ contains
       ! local variables
       integer, dimension(:,:), pointer :: p_IedgesAtElement
       integer, dimension(:,:), pointer :: p_IverticesAtEdge
-      integer :: i,j,ivt1,ivt2
+      integer :: i,ivt1,ivt2
 
       ! Get triangulation data
       call storage_getbase_int2d (rtriangulation%h_IedgesAtElement,p_IedgesAtElement)
@@ -6681,8 +6675,8 @@ contains
     type(t_ucdExport), intent(inout) :: rexport
 
       ! Local variables
-      integer :: ilinelen,ios,nmats,itype,i
-      character(LEN=SYS_STRLEN) :: skey,sline
+      integer :: nmats,itype,i
+      character(LEN=SYS_STRLEN) :: skey
       character(LEN=32), dimension(:), allocatable :: Snames
       integer, dimension(:), allocatable :: Imat
 
@@ -6754,9 +6748,8 @@ contains
     type(t_ucdExport), intent(inout) :: rexport
 
       ! Local variables
-      integer :: ilinelen,ios,itype
-      logical :: bfinish
-      character(LEN=SYS_STRLEN) :: sline,sname
+      integer :: itype
+      character(LEN=SYS_STRLEN) :: sname
       real(DP), dimension(:,:), allocatable :: Ddata
 
       ! Type of velocity data? Vertex or element based?
@@ -6845,8 +6838,7 @@ contains
     type(t_ucdExport), intent(inout) :: rexport
 
       ! Local variables
-      integer :: iel,ivt,i
-      integer :: ilinelen,ios,itype,ncomps,cnameflag
+      integer :: i,ilinelen,ios,itype,ncomps,cnameflag
       logical :: bfinish
       character(LEN=SYS_STRLEN) :: skey,sline,sname
       real(DP), dimension(:,:), allocatable :: Ddata
@@ -6972,7 +6964,7 @@ contains
     type(t_triangulation), intent(inout) :: rtriangulation
 
       ! Local variables
-      integer :: ilinelen,ios,ntracers,n,i,nve,ive
+      integer :: ilinelen,ios,n,i,nve
       integer :: nmaxnve
       character(LEN=SYS_STRLEN) :: skey,sdummy,sline
       real(DP), dimension(:), allocatable :: Dx,Dy,Dz
@@ -7173,7 +7165,6 @@ contains
       integer, dimension(:,:), pointer :: p_IverticesAtElement
       integer, dimension(:,:), pointer :: p_IneighboursAtElement
       integer, dimension(:), pointer :: p_IverticesAtBoundary
-      integer, dimension(:), allocatable :: IverticesAtBoundary
       integer, dimension(:), pointer :: p_IboundaryCpIdx
       integer :: ivt,iel,ive,nbct,nvbd,ivbd,ibctidx,icurrentbc
 
@@ -7289,7 +7280,6 @@ contains
       integer, dimension(:), pointer :: p_IelementsAtVertex
       integer, dimension(:), pointer :: p_IelementsAtVertexIdx
       integer, dimension(:), pointer :: p_IverticesAtBoundary
-      integer, dimension(:), allocatable :: IverticesAtBoundary
       integer, dimension(:), pointer :: p_IboundaryCpIdx
       integer :: ivt,ivt2
       integer :: iel,ielidx

@@ -3091,8 +3091,7 @@ contains
       integer :: iel,iel2
       integer :: ivt1,ivt2, ivtoffset, ivt
       integer, dimension(2) :: Isize
-      integer :: nnve, ive
-      real(DP) :: x,y
+      integer :: nnve
 
       ! Get the arrays with information of the source mesh.
       call storage_getbase_double2D (rsourceTriangulation%h_DvertexCoords,&
@@ -5169,7 +5168,6 @@ contains
       integer, dimension(:), pointer :: p_IvertAtBoundarySource
       integer, dimension(:), pointer :: p_IvertAtBoundaryDest
       integer, dimension(:), pointer :: p_IedgesAtBoundarySource
-      integer, dimension(:), pointer :: p_IedgesAtBoundaryDest
       integer, dimension(:), pointer :: p_InodalPropertyDest
       integer, dimension(:), pointer :: p_IboundaryCpIdxSource
       integer, dimension(:), pointer :: p_IboundaryCpIdxDest
@@ -5178,7 +5176,7 @@ contains
       integer, dimension(:,:), pointer :: p_IverticesAtEdge
       integer, dimension(:,:), pointer :: p_IverticesAtFace
 
-      integer :: ivt,ivbd,ibct,isize
+      integer :: ivt,ivbd,ibct
 
       ! Set pointers
       call storage_getbase_int(&
@@ -6774,7 +6772,6 @@ contains
 
       ! local variables
       real(DP), dimension(:,:), pointer :: p_DvertexCoords
-      real(DP), dimension(:), pointer :: p_DvertexParameterValue
       integer, dimension(:), pointer :: p_IboundaryCpIdx
       integer, dimension(:), pointer :: p_IverticesAtBoundary
       integer :: ivbd,ivt
@@ -7236,7 +7233,6 @@ contains
 
       ! local variables
       real(DP), dimension(:,:), pointer :: p_DvertexCoords
-      real(DP), dimension(:), pointer :: p_DvertexParameterValue
       integer, dimension(:), pointer :: p_IboundaryCpIdx
       integer, dimension(:), pointer :: p_IverticesAtBoundary
       integer :: ivbd,ivt
@@ -8625,7 +8621,7 @@ contains
         p_IedgesAtElement, p_IfacesAtElement, p_IverticesAtEdge, &
         p_IverticesAtFace, p_IedgesAtFace
     integer(I32), dimension(:), pointer :: p_ItwistIndex
-    integer :: iel, imt, iat, ivt, iedge, iface, nve, maxnve, maxnva
+    integer :: iel, imt, iat, ivt, iface, nve, maxnve, maxnva
     integer(I32) :: itwist
 
     ! Tetrahedron
@@ -9195,16 +9191,14 @@ contains
     integer, dimension(:), intent(inout) :: IrefTagsFine
 
       ! local variables
-      integer :: i
       integer :: nvt,nvtfine
       integer :: nmt,nmtfine
       integer :: nve
-      integer :: nel,iel,ielidx
+      integer :: nel,iel
       integer, dimension(5) :: IrefTag
       integer, dimension(4) :: iellocal
       integer, dimension(:,:), pointer :: p_IedgesAtElementC
       integer, dimension(:,:), pointer :: p_IedgesAtElementF
-      integer, dimension(:,:), pointer :: p_IverticesAtElement
 
       nvt = rtriaCoarse%NVT
       nmt = rtriaCoarse%NMT
@@ -17170,7 +17164,6 @@ contains
 !</subroutine>
 
     ! local variables
-    integer, dimension(:), pointer :: p_InodalProperty
     integer, dimension(:), pointer :: p_IboundaryCpIdx
     real(DP), dimension(:), pointer :: p_DvertexParameterValue
     integer :: ipos,ileft,iright

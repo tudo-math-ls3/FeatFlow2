@@ -2084,7 +2084,7 @@ contains
 
   ! local variables
   integer :: iel, ipt
-  real(DP) :: dax, day, dbx, dby, dcx, dcy, ddistx, ddisty
+  real(DP) :: dax, day, dbx, dby, dcx, dcy
 
   ! auxiliary factors for the bilinear quad mapping
   real(DP), dimension(TRAFO_NAUXJACMAX) :: DjacPrep

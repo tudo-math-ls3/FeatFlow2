@@ -601,7 +601,7 @@ contains
 
 
       ! local variables
-      real(DP) :: dminValue,dmaxValue,dVertexParameterPeriodic
+      real(DP) :: dminValue,dmaxValue
       integer :: ivbd,ivbdFirst,ivbdLast,ivt,ibct,isegment
 
       ! Loop over all boundary components
@@ -1127,7 +1127,7 @@ contains
 
       ! local variables
       integer :: ibeg,iend,ipos,jpos,iaux,idiag,jdiag
-      integer :: ivbd,ivbdFirst,ivbdLast,ivbdPeriodic,ivt,ivtPeriodic
+      integer :: ivbd,ivbdPeriodic,ivt,ivtPeriodic
       integer :: ibct,ibctPeriodic,isegment
 
       ! Loop over all boundary components
@@ -2214,7 +2214,7 @@ contains
 
 
       ! local variables
-      real(DP) :: dminValue,dmaxValue,dVertexParameterPeriodic
+      real(DP) :: dminValue,dmaxValue
       integer :: ivbd,ivbdFirst,ivbdLast,ivt,ibct,isegment
 
 
@@ -4159,7 +4159,7 @@ contains
       real(DP), dimension(nvar) :: Daux,Daux0
       real(DP), dimension(NDIM1D) :: DbdrNormal
       integer :: ivbd,ivbdPeriodic,ivt,ivtPeriodic,ipos
-      integer :: ibct,ibctPeriodic,isegment,ivar,jvar,iexpr
+      integer :: ibct,ibctPeriodic,isegment,ivar,iexpr
 
       ! Loop over all boundary components
       do ibct = 1, nbct
@@ -4344,9 +4344,9 @@ contains
       real(DP), dimension(NDIM2D) :: DbdrNormal,DpointNormal
       real(DP) :: dminValue,dmaxValue,dVertexParameterPeriodic
       real(DP) :: dnx,dny,dnxL,dnxR,dnyL,dnyR,dw,dwL,dwR
-      integer :: ibeg,iend,idiag,jdiag,ipos,jpos
+      integer :: ipos
       integer :: ivbd,ivbdFirst,ivbdLast,ivbdPeriodic,ivt,ivtPeriodic,ivtL,ivtR
-      integer :: ibct,ibctPeriodic,isegment,isegmentPeriodic,ivar,jvar,iexpr
+      integer :: ibct,ibctPeriodic,isegment,isegmentPeriodic,ivar,iexpr
 
       ! Loop over all boundary components
       do ibct = 1, nbct
@@ -6043,7 +6043,7 @@ contains
       ! local variables
       real(DP), dimension(NDIM3D+1) :: DvariableValues
       real(DP), dimension(nexpr) :: DbdrValues
-      real(DP), dimension(NDIM1D) :: DbdrNormal,DpointNormal
+      real(DP), dimension(NDIM1D) :: DbdrNormal
       integer :: ivbd,ivbdPeriodic,ivt,ivtPeriodic
       integer :: ipos,ibct,ibctPeriodic,ivar,isegment,iexpr
 

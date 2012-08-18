@@ -1084,8 +1084,6 @@ contains
 
 !</subroutine>
 
-    ! local variables: aux parameters
-    real(DP) :: daux1, daux2, daux3, daux4
     ! we split up the face into two triangles
     real(DP), dimension(3,3) :: Dtri1
     real(DP), dimension(3,3) :: Dtri2
@@ -1347,13 +1345,9 @@ contains
 !</result>
 
 !</subroutine>
-  real(dp), dimension(3,6) :: dnormals
-  real(DP), dimension(3,6) :: Dpv
   real(DP), dimension(3,1) :: DP1
-  real(DP) :: ddot1,ddot2,ddot3,ddot4,ddot5,ddot6,length
   real(DP) :: xmin,xmax,ymin,ymax,zmin,zmax,eps
   integer :: i
-  logical :: b2
 
   DP1(1,1)=dx
   DP1(2,1)=dy
@@ -1495,14 +1489,14 @@ contains
 
 !</subroutine>
   real(dp), dimension(2) :: Ddir,Dp1
-  real(DP), dimension(2) :: Dpv,Ddelta
-  real(DP) :: t,root,delta2,diff,dir2,eps,dirdotdelta,dt1,dt2
-  integer :: i,idresult
+  real(DP), dimension(2) :: Ddelta
+  real(DP) :: t,root,diff,dir2,eps,dirdotdelta,dt1,dt2
+  integer :: idresult
 
   eps=1e-10
 
   ! initialise by 0
-	idresult = 0
+  idresult = 0
   Dintersec=0
 
 	! get direction vector of the edge

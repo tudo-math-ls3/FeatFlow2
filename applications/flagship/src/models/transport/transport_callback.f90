@@ -5531,7 +5531,7 @@ contains
 !</subroutine>
 
     ! local variables
-    real(DP) :: dtime,depsilon,dxhat,dyhat
+    real(DP) :: dxhat,dyhat
     integer :: iel,ipoint
 
     select case(rcollection%IquickAccess(1))

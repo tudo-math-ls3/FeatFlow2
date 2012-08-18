@@ -656,7 +656,7 @@ contains
 
     ! local variables
     type(t_fparser), pointer :: p_rfparser
-    integer :: ipoint,iel,icomp,npointsPerElement,nelements
+    integer :: icomp,npointsPerElement,nelements
     real(DP) :: dtime
 
     ! This subroutine assumes that the first and second quick access
