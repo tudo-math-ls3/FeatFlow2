@@ -12,19 +12,19 @@
 !# Typical matrix filters are those working together with discrete
 !# boundary conditions. For Dirichlet boundary conditions e.g. some lines
 !# of the global matrix are usually replaced by unit vectors. The corresponding
-!# matrix modification routine is a kind of 'filter' for a matrix and
+!# matrix modification routine is a kind of "filter" for a matrix and
 !# can be found in this module.
 !#
 !# The following routines can be found here:
 !#
 !#  1.) matfil_discreteBC
-!#      -> Apply the 'discrete boundary conditions for matrices' filter
+!#      -> Apply the "discrete boundary conditions for matrices" filter
 !#         onto a given (block) matrix.
 !#         This e.g. replaces lines of a matrix corresponding to Dirichlet DOF`s
 !#         by unit vectors for all scalar submatrices where configured.
 !#
 !#  2.) matfil_discreteFBC
-!#      -> Apply the 'discrete fictitious boundary conditions for matríces'
+!#      -> Apply the "discrete fictitious boundary conditions for matríces"
 !#         filter onto a given (block) matrix.
 !#         This e.g. replaces lines of a matrix corresponding to Dirichlet DOF`s
 !#         by unit vectors for all scalar submatrices where configured.
@@ -36,7 +36,7 @@
 !#         of boundary conditions.
 !#
 !#  4.) matfil_normaliseToL20
-!#      -> Adds a row to a matrix containing 'ones'. This implements the
+!#      -> Adds a row to a matrix containing "ones". This implements the
 !#         explicit condition "int_{\Omega} v = 0" into a matrix.
 !#
 !#  5.) matfil_normaliseToL20LmassMat
@@ -71,6 +71,7 @@ module matrixfilters
   use dofmapping
   use matrixmodification
   use genoutput
+  use sortstrategybase
 
   implicit none
 
@@ -100,8 +101,8 @@ contains
   ! Implements discrete Dirichlet BC`s into a scalar matrix.
   ! This is normally done by replacing some lines of the matrix rmatrix
   ! (those belonging to Dirichlet nodes) by unit vectors or by zero-vectors
-  ! (depending on whether the matrix is a 'diagonal' matrix or an
-  ! 'off-diagonal' matrix in a larger block-system).
+  ! (depending on whether the matrix is a "diagonal" matrix or an
+  ! "off-diagonal" matrix in a larger block-system).
 !</description>
 
 !<input>
@@ -111,7 +112,7 @@ contains
 
   ! Off-diagonal matrix.
   ! If this is present and set to TRUE, it is assumed that the matrix is not
-  ! a main, guiding system matrix, but an 'off-diagonal' matrix in a
+  ! a main, guiding system matrix, but an "off-diagonal" matrix in a
   ! system with block-matrices (e.g. a matrix at position (2,1), (3,1),...
   ! or somewhere else in a block system). This modifies the way,
   ! boundary conditions are implemented into the matrix.
@@ -149,8 +150,8 @@ contains
   ! components of the subvector that is indexed by icomponent.
 
   if (.not.associated(p_idx)) then
-    call output_line ('DBC not configured',&
-        OU_CLASS_ERROR,OU_MODE_STD,'matfil_imposeDirichletBC')
+    call output_line ("DBC not configured",&
+        OU_CLASS_ERROR,OU_MODE_STD,"matfil_imposeDirichletBC")
     call sys_halt()
   end if
 
@@ -159,14 +160,14 @@ contains
   ! contains only some entries...
   !
   ! Is the matrix sorted?
-  if (rmatrix%isortStrategy .le. 0) then
+  if ((.not. rmatrix%browsSorted) .or. (.not. associated(rmatrix%p_rsortStrategyRows))) then
     ! Use mmod_replaceLinesByUnit/mmod_replaceLinesByZero to replace the
     ! corresponding rows in the matrix by unit vectors.
     ! For more complicated FE spaces, this might have
     ! to be modified in the future...
     !
-    ! We use mmod_replaceLinesByUnit for 'diagonal' matrix blocks (main
-    ! system matrices) and mmod_replaceLinesByZero for 'off-diagonal'
+    ! We use mmod_replaceLinesByUnit for "diagonal" matrix blocks (main
+    ! system matrices) and mmod_replaceLinesByZero for "off-diagonal"
     ! matrix blocks (in case of larger block systems)
 
     if (boffDiag) then
@@ -182,8 +183,7 @@ contains
     !
     ! Get the permutation from the matrix - or more precisely, the
     ! back-permutation, as we need this one for the loop below.
-    call storage_getbase_int (rmatrix%h_IsortPermutation,p_Iperm)
-    p_Iperm => p_Iperm(rmatrix%NEQ+1:)
+    call sstrat_getSortedPosInfo(rmatrix%p_rsortStrategyRows,p_Iperm)
 
     ! How many entries to handle in the first block?
     ilenleft = min(rdbcStructure%nDOF,NBLOCKSIZE)
@@ -195,7 +195,7 @@ contains
 
       ! And implement the BC`s with mmod_replaceLinesByUnit/
       ! mmod_replaceLinesByZero, depending on whether the matrix is a
-      ! 'main' system matrix or an 'off-diagonal' system matrix in a larger
+      ! "main" system matrix or an "off-diagonal" system matrix in a larger
       ! block system.
       if (boffDiag) then
         call mmod_replaceLinesByZero (rmatrix,Idofs(1:ilenleft))
@@ -222,8 +222,8 @@ contains
   ! Slip BC`s are treated like Dirichlet BC`s.
   ! This is normally done by replacing some lines of the matrix rmatrix
   ! (those belonging to Dirichlet nodes) by unit vectors or by zero-vectors
-  ! (depending on whether the matrix is a 'diagonal' matrix or an
-  ! 'off-diagonal' matrix in a larger block-system).
+  ! (depending on whether the matrix is a "diagonal" matrix or an
+  ! "off-diagonal" matrix in a larger block-system).
 !</description>
 
 !<input>
@@ -242,7 +242,7 @@ contains
 
   ! Off-diagonal matrix.
   ! If this is present and set to TRUE, it is assumed that the matrix is not
-  ! a main, guiding system matrix, but an 'off-diagonal' matrix in a
+  ! a main, guiding system matrix, but an "off-diagonal" matrix in a
   ! system with block-matrices (e.g. a matrix at position (2,1), (3,1),...
   ! or somewhere else in a block system). This modifies the way,
   ! boundary conditions are implemented into the matrix.
@@ -279,8 +279,8 @@ contains
   ! components of the subvector that is indexed by icomponent.
 
   if (.not.associated(p_idx)) then
-    call output_line ('DBC not configured',&
-        OU_CLASS_ERROR,OU_MODE_STD,'matfil_imposeNLSlipBC')
+    call output_line ("DBC not configured",&
+        OU_CLASS_ERROR,OU_MODE_STD,"matfil_imposeNLSlipBC")
     call sys_halt()
   end if
 
@@ -289,14 +289,14 @@ contains
   ! contains only some entries...
   !
   ! Is the matrix sorted?
-  if (rmatrix%isortStrategy .le. 0) then
+  if ((.not. rmatrix%browsSorted) .or. (.not. associated(rmatrix%p_rsortStrategyRows))) then
     ! Use mmod_clearOffdiags/mmod_replaceLinesByZero clear the
     ! offdiagonals of the system matrix.
     ! For more complicated FE spaces, this might have
     ! to be modified in the future...
     !
-    ! We use mmod_clearOffdiags for 'diagonal' matrix blocks (main
-    ! system matrices) and mmod_replaceLinesByZero for 'off-diagonal'
+    ! We use mmod_clearOffdiags for "diagonal" matrix blocks (main
+    ! system matrices) and mmod_replaceLinesByZero for "off-diagonal"
     ! matrix blocks (in case of larger block systems)
 
     if (boffDiag) then
@@ -316,8 +316,7 @@ contains
     !
     ! Get the permutation from the matrix - or more precisely, the
     ! back-permutation, as we need this one for the loop below.
-    call storage_getbase_int (rmatrix%h_IsortPermutation,p_Iperm)
-    p_Iperm => p_Iperm(rmatrix%NEQ+1:)
+    call sstrat_getSortedPosInfo(rmatrix%p_rsortStrategyRows,p_Iperm)
 
     ! How many entries to handle in the first block?
     ilenleft = min(rslipBCStructure%nDOF,NBLOCKSIZE)
@@ -329,7 +328,7 @@ contains
 
       ! And implement the BC`s with mmod_clearOffdiags/
       ! mmod_replaceLinesByZero, depending on whether the matrix is a
-      ! 'main' system matrix or an 'off-diagonal' system matrix in a larger
+      ! "main" system matrix or an "off-diagonal" system matrix in a larger
       ! block system.
       if (boffDiag) then
         call mmod_replaceLinesByZero (rmatrix,Idofs(1:ilenleft))
@@ -360,8 +359,8 @@ contains
   ! into a scalar matrix.
   ! This is normally done by replacing some lines of the matrix rmatrix
   ! (those belonging to Dirichlet nodes) by unit vectors or by zero-vectors
-  ! (depending on whether the matrix is a 'diagonal' matrix or an
-  ! 'off-diagonal' matrix in a larger block-system).
+  ! (depending on whether the matrix is a "diagonal" matrix or an
+  ! "off-diagonal" matrix in a larger block-system).
 !</description>
 
 !<input>
@@ -371,7 +370,7 @@ contains
 
   ! Off-diagonal matrix.
   ! If this is present and set to TRUE, it is assumed that the matrix is not
-  ! a main, guiding system matrix, but an 'off-diagonal' matrix in a
+  ! a main, guiding system matrix, but an "off-diagonal" matrix in a
   ! system with block-matrices (e.g. a matrix at position (2,1), (3,1),...
   ! or somewhere else in a block system). This modifies the way,
   ! boundary conditions are implemented into the matrix.
@@ -409,8 +408,8 @@ contains
   ! components of the subvector that is indexed by icomponent.
 
   if (.not.associated(p_idx)) then
-    call output_line ('DBC not configured',&
-        OU_CLASS_ERROR,OU_MODE_STD,'matfil_imposeDirichletFBC')
+    call output_line ("DBC not configured",&
+        OU_CLASS_ERROR,OU_MODE_STD,"matfil_imposeDirichletFBC")
     call sys_halt()
   end if
 
@@ -419,14 +418,14 @@ contains
   ! contains only some entries...
   !
   ! Is the matrix sorted?
-  if (rmatrix%isortStrategy .le. 0) then
+  if ((.not. rmatrix%browsSorted) .or. (.not. associated(rmatrix%p_rsortStrategyRows))) then
     ! Use mmod_replaceLinesByUnit/mmod_replaceLinesByZero to replace the
     ! corresponding rows in the matrix by unit vectors.
     ! For more complicated FE spaces, this might have
     ! to be modified in the future...
     !
-    ! We use mmod_replaceLinesByUnit for 'diagonal' matrix blocks (main
-    ! system matrices) and mmod_replaceLinesByZero for 'off-diagonal'
+    ! We use mmod_replaceLinesByUnit for "diagonal" matrix blocks (main
+    ! system matrices) and mmod_replaceLinesByZero for "off-diagonal"
     ! matrix blocks (in case of larger block systems)
 
     if (boffDiag) then
@@ -442,8 +441,7 @@ contains
     !
     ! Get the permutation from the matrix - or more precisely, the
     ! back-permutation, as we need this one for the loop below.
-    call storage_getbase_int (rmatrix%h_IsortPermutation,p_Iperm)
-    p_Iperm => p_Iperm(rmatrix%NEQ+1:)
+    call sstrat_getSortedPosInfo(rmatrix%p_rsortStrategyRows,p_Iperm)
 
     ! How many entries to handle in the first block?
     ilenleft = min(rdbcStructure%nDOF,NBLOCKSIZE)
@@ -455,7 +453,7 @@ contains
 
       ! And implement the BC`s with mmod_replaceLinesByUnit/
       ! mmod_replaceLinesByZero, depending on whether the matrix is a
-      ! 'main' system matrix or an 'off-diagonal' system matrix in a larger
+      ! "main" system matrix or an "off-diagonal" system matrix in a larger
       ! block system.
       if (boffDiag) then
         call mmod_replaceLinesByZero (rmatrix,Idofs(1:ilenleft))
@@ -516,16 +514,16 @@ contains
     ! Matrix must not be transposed
     if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) then
       call output_line (&
-          'Virtually transposed matrices not supported!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'matfil_normaliseToL20')
+          "Virtually transposed matrices not supported!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"matfil_normaliseToL20")
       call sys_halt()
     end if
 
     ! Only double precision supported.
     if (rmatrix%cdataType .ne. ST_DOUBLE) then
       call output_line (&
-          'Only double precision matrices supported!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'matfil_normaliseToL20')
+          "Only double precision matrices supported!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"matfil_normaliseToL20")
       call sys_halt()
     end if
 
@@ -617,7 +615,7 @@ contains
   ! Implements discrete Feast mirror BC`s into a scalar matrix.
   ! The FEAST mirror boundary condition is basically a Neumann boundary
   ! condition which is used for domain decomposition.
-  ! One assumes that there is an additional 'virtual' layer of cells added to
+  ! One assumes that there is an additional "virtual" layer of cells added to
   ! a boundary edge. This leads to a slight matrix modification for all
   ! DOF`s on that boundary edge.
   ! Example: For a 5-point stencil with <tex>$Q_1$</tex>, boundary DOF`s get matrix
@@ -637,7 +635,7 @@ contains
 
   ! Off-diagonal matrix.
   ! If this is present and set to TRUE, it is assumed that the matrix is not
-  ! a main, guiding system matrix, but an 'off-diagonal' matrix in a
+  ! a main, guiding system matrix, but an "off-diagonal" matrix in a
   ! system with block-matrices (e.g. a matrix at position (2,1), (3,1),...
   ! or somewhere else in a block system). This modifies the way,
   ! boundary conditions are implemented into the matrix.
@@ -654,73 +652,76 @@ contains
 
 !</subroutine>
 
-  ! local variables
-  integer, dimension(:), pointer :: p_ImirrorDOFs,p_ImirrorDOFsClosed
-  integer :: i,j
-  real(DP), dimension(:), pointer :: p_Da
-  integer, dimension(:), pointer :: p_Kcol,p_Iperm,p_IpermInverse
-  integer, dimension(:), pointer :: p_Kld
-  integer :: ia
-  integer :: idof
-  real(DP) :: dmirrorWeight
+    ! local variables
+    integer, dimension(:), pointer :: p_ImirrorDOFs,p_ImirrorDOFsClosed
+    integer :: i,j
+    real(DP), dimension(:), pointer :: p_Da
+    integer, dimension(:), pointer :: p_Kcol,p_Iperm,p_IpermInverse
+    integer, dimension(:), pointer :: p_Kld
+    integer :: ia
+    integer :: idof
+    real(DP) :: dmirrorWeight
 
-  ! Offdiagonal matrices are not processed by this routine up to now.
-  if (boffDiag) return
+    ! Offdiagonal matrices are not processed by this routine up to now.
+    if (boffDiag) return
 
-  ! Impose the DOF value directly into the vector - more precisely, into the
-  ! components of the subvector that is indexed by icomponent.
+    ! Impose the DOF value directly into the vector - more precisely, into the
+    ! components of the subvector that is indexed by icomponent.
 
-  if ((rmatrix%cmatrixFormat .ne. LSYSSC_MATRIX9) .and. &
-      (rmatrix%cmatrixFormat .ne. LSYSSC_MATRIX7)) then
-    call output_line ('Only matrix format 7 and 9 supported!',&
-        OU_CLASS_ERROR,OU_MODE_STD,'matfil_imposeFeastMirrorBC')
-    call sys_halt()
-  end if
+    if ((rmatrix%cmatrixFormat .ne. LSYSSC_MATRIX9) .and. &
+        (rmatrix%cmatrixFormat .ne. LSYSSC_MATRIX7)) then
+      call output_line ("Only matrix format 7 and 9 supported!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"matfil_imposeFeastMirrorBC")
+      call sys_halt()
+    end if
 
-  if (rmatrix%cdataType .ne. ST_DOUBLE) then
-    call output_line ('Matrix must be double precision!',&
-        OU_CLASS_ERROR,OU_MODE_STD,'matfil_imposeFeastMirrorBC')
-    call sys_halt()
-  end if
+    if (rmatrix%cdataType .ne. ST_DOUBLE) then
+      call output_line ("Matrix must be double precision!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"matfil_imposeFeastMirrorBC")
+      call sys_halt()
+    end if
 
-  if (rfmbcStructure%icomponent .eq. 0) then
-    call output_line ('FMBC not configured!',&
-        OU_CLASS_ERROR,OU_MODE_STD,'matfil_imposeFeastMirrorBC')
-    call sys_halt()
-  end if
+    if (rfmbcStructure%icomponent .eq. 0) then
+      call output_line ("FMBC not configured!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"matfil_imposeFeastMirrorBC")
+      call sys_halt()
+    end if
+    
+    if (rmatrix%bcolumnsSorted .or. rmatrix%browsSorted) then
+      call output_line ("Sorted matrices not supported!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"matfil_imposeFeastMirrorBC")
+      call sys_halt()
+    end if
 
-  if (rfmbcStructure%h_ImirrorDOFs .eq. ST_NOHANDLE) then
-    ! No data inside of this structure.
-    ! May happen if the region is not large enough to cover at least one DOF.
-    return
-  end if
+    if (rfmbcStructure%h_ImirrorDOFs .eq. ST_NOHANDLE) then
+      ! No data inside of this structure.
+      ! May happen if the region is not large enough to cover at least one DOF.
+      return
+    end if
 
-  ! Get the matrix data
-  call lsyssc_getbase_double (rmatrix,p_Da)
-  call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
-  call lsyssc_getbase_Kld (rmatrix,p_Kld)
+    ! Get the matrix data
+    call lsyssc_getbase_double (rmatrix,p_Da)
+    call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
+    call lsyssc_getbase_Kld (rmatrix,p_Kld)
 
-  ! Get the weight of the entries.
-  ! =2 on finest level, =1.5 on level NLMAX-1,...
-  !dmirrorWeight = 1.0_DP+REAL(4**rfmbcStructure%icoarseningLevel,DP)
-  dmirrorWeight = 1.0_DP+1.0_DP*real(2**rfmbcStructure%icoarseningLevel,DP)
+    ! Get the weight of the entries.
+    ! =2 on finest level, =1.5 on level NLMAX-1,...
+    !dmirrorWeight = 1.0_DP+REAL(4**rfmbcStructure%icoarseningLevel,DP)
+    dmirrorWeight = 1.0_DP+1.0_DP*real(2**rfmbcStructure%icoarseningLevel,DP)
 
-  ! Get pointers to the list of DOF`s that belong to that region and have
-  ! to be tackled.
-  ! p_ImirrorDOFs is a list of all DOF`s in the region.
-  ! p_ImirrorDOFsClosed is a list of all DOF`s in the closure of the region.
-  ! For every DOF in the region, it is neighbours have to be found in the
-  ! clusure. If that is the case, the corresponding matrix entry has to be doubled.
+    ! Get pointers to the list of DOF`s that belong to that region and have
+    ! to be tackled.
+    ! p_ImirrorDOFs is a list of all DOF`s in the region.
+    ! p_ImirrorDOFsClosed is a list of all DOF`s in the closure of the region.
+    ! For every DOF in the region, it is neighbours have to be found in the
+    ! clusure. If that is the case, the corresponding matrix entry has to be doubled.
 
-  call storage_getbase_int(rfmbcStructure%h_ImirrorDOFs,p_ImirrorDOFs)
-  call storage_getbase_int(rfmbcStructure%h_ImirrorDOFsClosed,p_ImirrorDOFsClosed)
+    call storage_getbase_int(rfmbcStructure%h_ImirrorDOFs,p_ImirrorDOFs)
+    call storage_getbase_int(rfmbcStructure%h_ImirrorDOFsClosed,p_ImirrorDOFsClosed)
 
-  ! The matrix column corresponds to the DOF. For every DOF decide on
-  ! whether it is on the FEAST mirror boundary component or not.
-  ! If yes, double the matrix entry.
-
-  ! Is the matrix sorted?
-  if (rmatrix%isortStrategy .le. 0) then
+    ! The matrix column corresponds to the DOF. For every DOF decide on
+    ! whether it is on the FEAST mirror boundary component or not.
+    ! If yes, double the matrix entry.
 
     ! Loop through the DOF`s. Each DOF gives us a matrix row to change.
     do i=1,size(p_ImirrorDOFs)
@@ -746,42 +747,43 @@ contains
 
     end do
 
-  else
-
-    ! Ok, matrix is sorted, so we have to filter all the DOF`s through the
-    ! permutation before using them for implementing boundary conditions.
-    !
-    ! Get the permutation/inverse permutation from the matrix to renumber the columns into
-    ! the actual DOF numbers.
-    call storage_getbase_int (rmatrix%h_IsortPermutation,p_Iperm)
-    p_IpermInverse => p_Iperm(1:rmatrix%NEQ)
-    p_Iperm => p_Iperm(rmatrix%NEQ+1:)
-
-    ! Loop through the DOF`s. Each DOF gives us a matrix row to change.
-    do i=1,size(p_ImirrorDOFs)
-
-      ! Loop through the matrix row. All DOF`s in that matrix row that
-      ! belong to our region have to be changed.
-      do ia=p_Kld(p_Iperm(p_ImirrorDOFs(i))),&
-            p_Kld(p_Iperm(p_ImirrorDOFs(i))+1)-1
-        ! Get the DOF.
-        idof = p_IpermInverse(p_Kcol(ia))
-
-        ! Search the DOF in our list. Ok, that is an n^2 algorithm.
-        ! It could easily replaced by an n log n algorithm since the list
-        ! of DOF`s is sorted!
-        do j=1,size(p_ImirrorDOFsClosed)
-          if (p_ImirrorDOFsClosed(j) .eq. idof) then
-            p_Da(ia) = dmirrorWeight * p_Da(ia)
-            exit
-          end if
-        end do
-
-      end do
-
-    end do
-
-  end if
+! DOES NOT WORK AT THE MOMENT. THE SORTING OF THE COLUMNS
+! MAY BE DIFFERENT FROM THE SORTING OF THE ROWS!!!
+!  else
+!
+!    ! Ok, matrix is sorted, so we have to filter all the DOF`s through the
+!    ! permutation before using them for implementing boundary conditions.
+!    !
+!    ! Get the permutation/inverse permutation from the matrix to renumber the columns into
+!    ! the actual DOF numbers.
+!    call sstrat_getUnsortedPosInfo(rmatrix%p_rsortStrategyRows,p_IpermInverse)
+!    call sstrat_getSortedPosInfo(rmatrix%p_rsortStrategyRows,p_Iperm)
+!
+!    ! Loop through the DOF`s. Each DOF gives us a matrix row to change.
+!    do i=1,size(p_ImirrorDOFs)
+!
+!      ! Loop through the matrix row. All DOF`s in that matrix row that
+!      ! belong to our region have to be changed.
+!      do ia=p_Kld(p_Iperm(p_ImirrorDOFs(i))),&
+!            p_Kld(p_Iperm(p_ImirrorDOFs(i))+1)-1
+!        ! Get the DOF.
+!        idof = p_IpermInverse(p_Kcol(ia))
+!
+!        ! Search the DOF in our list. Ok, that is an n^2 algorithm.
+!        ! It could easily replaced by an n log n algorithm since the list
+!        ! of DOF`s is sorted!
+!        do j=1,size(p_ImirrorDOFsClosed)
+!          if (p_ImirrorDOFsClosed(j) .eq. idof) then
+!            p_Da(ia) = dmirrorWeight * p_Da(ia)
+!            exit
+!          end if
+!        end do
+!
+!      end do
+!
+!    end do
+!
+!  end if
 
   end subroutine
 
@@ -841,7 +843,7 @@ contains
 
     if (.not. associated(p_RdiscreteBC)) return
 
-    ! Is the matrix a 'primal' matrix or is it a submatrix of another block matrix?
+    ! Is the matrix a "primal" matrix or is it a submatrix of another block matrix?
     boffdiagSubmatrix = rmatrix%imatrixSpec .eq. LSYSBS_MSPEC_OFFDIAGSUBMATRIX
 
     ! Now loop through all entries in this list:
@@ -908,8 +910,8 @@ contains
 
       case DEFAULT
         call output_line (&
-            'Unknown boundary condition'//sys_siL(p_RdiscreteBC(i)%itype,5),&
-            OU_CLASS_ERROR,OU_MODE_STD,'matfil_discreteBC')
+            "Unknown boundary condition"//sys_siL(p_RdiscreteBC(i)%itype,5),&
+            OU_CLASS_ERROR,OU_MODE_STD,"matfil_discreteBC")
         call sys_halt()
 
       end select
@@ -930,7 +932,7 @@ contains
   ! (if rdiscreteBC is not specified).
   !
   ! Note that slip boundary conditions are implemented by so called
-  ! 'nonlinear filters' (c.f. vectorfilters.f). Similarly to the vector
+  ! "nonlinear filters" (c.f. vectorfilters.f). Similarly to the vector
   ! filters, slip boundary conditions are not automatically implemented
   ! by matfil_discreteBC. To implement them, this routine must be called
   ! separately from matfil_discreteBC.
@@ -971,7 +973,7 @@ contains
 
     if (.not. associated(p_RdiscreteBC)) return
 
-    ! Is the matrix a 'primal' matrix or is it a submatrix of another block matrix?
+    ! Is the matrix a "primal" matrix or is it a submatrix of another block matrix?
     boffdiagSubmatrix = rmatrix%imatrixSpec .eq. LSYSBS_MSPEC_OFFDIAGSUBMATRIX
 
     ! Now loop through all entries in this list:
@@ -1047,7 +1049,7 @@ contains
 
     if (.not. associated(p_RdiscreteFBC)) return
 
-    ! Is the matrix a 'primal' matrix or is it a submatrix of another block matrix?
+    ! Is the matrix a "primal" matrix or is it a submatrix of another block matrix?
     boffdiagSubmatrix = rmatrix%imatrixSpec .eq. LSYSBS_MSPEC_OFFDIAGSUBMATRIX
 
     ! Now loop through all entries in this list:
@@ -1086,8 +1088,8 @@ contains
 
       case DEFAULT
         call output_line (&
-            'Unknown boundary condition'//sys_siL(p_RdiscreteFBC(i)%itype,5),&
-            OU_CLASS_ERROR,OU_MODE_STD,'matfil_discreteFBC')
+            "Unknown boundary condition"//sys_siL(p_RdiscreteFBC(i)%itype,5),&
+            OU_CLASS_ERROR,OU_MODE_STD,"matfil_discreteFBC")
         call sys_halt()
 
       end select

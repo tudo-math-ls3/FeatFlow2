@@ -5,7 +5,7 @@
 !#
 !# <purpose>
 !# This module contains routines to discretise analytically given boundary
-!# conditions. Analytically given boundary conditions are 'discretised', i.e.
+!# conditions. Analytically given boundary conditions are "discretised", i.e.
 !# a discrete version (realised by the structure t_discreteBCEntry in the case
 !# of BC`s on the real boundary and by the structure t_discreteFBCEntry in
 !# the case of fictitious boundary) is calculated.
@@ -13,9 +13,9 @@
 !# conditions into the solution vector. Therefore, this module contains
 !# the bridge how to put analytic boundary conditions into a discrete vector.
 !#
-!# The module works in tight relationship to the module 'vectorfilters'.
+!# The module works in tight relationship to the module "vectorfilters".
 !# While bcassembly provides the functionality to *create* the structures,
-!# the module 'vectorfilters' contains routines to *apply* the structure
+!# the module "vectorfilters" contains routines to *apply* the structure
 !# to a given vector.
 !# (This separation is necessary to prevent circular dependencies!)
 !#
@@ -271,8 +271,8 @@ contains
 !</subroutine>
 
     if (associated(rdiscreteBC%p_RdiscBCList)) then
-      call output_line ('Structure is already initialised!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'bcasm_initDiscreteBC')
+      call output_line ("Structure is already initialised!", &
+                        OU_CLASS_ERROR,OU_MODE_STD,"bcasm_initDiscreteBC")
       call sys_halt()
     end if
 
@@ -397,8 +397,8 @@ contains
 !</subroutine>
 
     if (associated(rdiscreteFBC%p_RdiscFBCList)) then
-      call output_line ('Structure is already initialised!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'bcasm_initDiscreteFBC')
+      call output_line ("Structure is already initialised!", &
+                        OU_CLASS_ERROR,OU_MODE_STD,"bcasm_initDiscreteFBC")
       call sys_halt()
     end if
 
@@ -615,7 +615,7 @@ contains
   ! The dirichlet boundary values for the left and right interval ends.
   real(DP), intent(in), optional :: dleft, dright
 
-  ! OPTIONAL: The equation for which the BC's should be applied to.
+  ! OPTIONAL: The equation for which the BC"s should be applied to.
   ! If not present, this defaults to the first equation.
   integer, optional :: iequation
 !</input>
@@ -644,8 +644,8 @@ contains
     integer, dimension(2) :: IbcIndex
 
     if (rdiscreteBC%inumEntriesAlloc .eq. 0) then
-      call output_line ('BC structure not initialised!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'bcasm_newDirichletBC_1D')
+      call output_line ("BC structure not initialised!", &
+                        OU_CLASS_ERROR,OU_MODE_STD,"bcasm_newDirichletBC_1D")
       call sys_halt()
     end if
 
@@ -662,8 +662,8 @@ contains
     if (p_rspatialDiscr%inumFESpaces .ne. 1) then
 
       ! Print an error message
-      call output_line ('Spatial discretisation must have 1 FE space!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'bcasm_newDirichletBC_1D')
+      call output_line ("Spatial discretisation must have 1 FE space!", &
+                        OU_CLASS_ERROR,OU_MODE_STD,"bcasm_newDirichletBC_1D")
 
       ! And exit the program
       call sys_halt()
@@ -702,15 +702,15 @@ contains
       ! and 1 DOF to be processed.
       p_rdirichlet%nDOF = 1
 
-      ! Initialise the BC's for equation iequation if present.
+      ! Initialise the BC"s for equation iequation if present.
       p_rdirichlet%icomponent = 1
       if (present(iequation)) &
         p_rdirichlet%icomponent = iequation
 
       ! Allocate the arrays
-      call storage_new('bcasm_newDirichletBC_1D', 'h_IdirichletDOFs', &
+      call storage_new("bcasm_newDirichletBC_1D", "h_IdirichletDOFs", &
           1, ST_INT, p_rdirichlet%h_IdirichletDOFs, ST_NEWBLOCK_NOINIT)
-      call storage_new('bcasm_newDirichletBC_1D', 'h_DdirichletValues', &
+      call storage_new("bcasm_newDirichletBC_1D", "h_DdirichletValues", &
           1, ST_DOUBLE, p_rdirichlet%h_DdirichletValues, ST_NEWBLOCK_NOINIT)
 
       ! Get the arrays for the dirichlet DOFs and values
@@ -786,15 +786,15 @@ contains
       ! and 1 DOF to be processed.
       p_rdirichlet%nDOF = 1
 
-      ! Initialise the BC's for equation iequation if present.
+      ! Initialise the BC"s for equation iequation if present.
       p_rdirichlet%icomponent = 1
       if (present(iequation)) &
         p_rdirichlet%icomponent = iequation
 
       ! Allocate the arrays
-      call storage_new('bcasm_newDirichletBC_1D', 'h_IdirichletDOFs', &
+      call storage_new("bcasm_newDirichletBC_1D", "h_IdirichletDOFs", &
           1, ST_INT, p_rdirichlet%h_IdirichletDOFs, ST_NEWBLOCK_NOINIT)
-      call storage_new('bcasm_newDirichletBC_1D', 'h_DdirichletValues', &
+      call storage_new("bcasm_newDirichletBC_1D", "h_DdirichletValues", &
           1, ST_DOUBLE, p_rdirichlet%h_DdirichletValues, ST_NEWBLOCK_NOINIT)
 
       ! Get the arrays for the dirichlet DOFs and values
@@ -970,8 +970,8 @@ contains
   type(t_boundaryRegion), intent(in) :: rboundaryRegion
 
   ! A callback function that calculates values on the boundary.
-  ! Is declared in the interface include file 'intf_bcassembly.inc'.
-  include 'intf_bcassembly.inc'
+  ! Is declared in the interface include file "intf_bcassembly.inc".
+  include "intf_bcassembly.inc"
 
   ! Optional: A collection structure to inform the callback function with
   ! additional information.
@@ -1057,8 +1057,8 @@ contains
     if ((iequation .lt. 1) .or. &
         (iequation .gt. size(rblockDiscretisation%RspatialDiscr))) then
       call output_line (&
-          'Specified equation number is out of range:'//trim(sys_siL(iequation,10)), &
-          OU_CLASS_ERROR,OU_MODE_STD,'bcasm_newDirichletBConRealBd')
+          "Specified equation number is out of range:"//trim(sys_siL(iequation,10)), &
+          OU_CLASS_ERROR,OU_MODE_STD,"bcasm_newDirichletBConRealBd")
       call sys_halt()
     end if
 
@@ -1161,7 +1161,7 @@ contains
     ! Ask the DOF-mapping routine to get us those DOF`s belonging to elements
     ! on the boundary.
     !
-    ! The 'mult' call only works on uniform discretisations. We cannot assume
+    ! The "mult" call only works on uniform discretisations. We cannot assume
     ! that and have to call dof_locGlobMapping for every element separately.
     if (p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) then
       call dof_locGlobMapping_mult(p_rspatialDiscr, &
@@ -1673,13 +1673,13 @@ contains
               ! Use a 2-point Gauss cubature formula to compute the integral
               ! mean value.
               !
-              ! Ok, that's a little bit more tricky. Get the parameter values
+              ! Ok, that"s a little bit more tricky. Get the parameter values
               ! of the points at first.
               !
               ! We neet to set up two values for each edge E: On one hand the
               ! integral mean value as for Q1T (with x:[-1,1]->E):
               !             1/|E| int_[-1,1] v(x(t)) dt
-              ! which is called '0th moment', on the other hand the '1st moment',
+              ! which is called "0th moment", on the other hand the "1st moment",
               ! which is the integral mean value:
               !             1/|E| int_[-1,1] v(x(t)) * t dt
               ! We do this by a 2-point gauss formula by asking the callback routine
@@ -1805,7 +1805,7 @@ contains
           ! We neet to set up two values for each edge E: On one hand the
           ! integral mean value as for Q1T (with x:[-1,1]->E):
           !             1/|E| int_[-1,1] v(x(t)) dt
-          ! which is called '0th moment', on the other hand the '1st moment',
+          ! which is called "0th moment", on the other hand the "1st moment",
           ! which is the integral mean value:
           !             1/|E| int_[-1,1] v(x(t)) * t dt
           ! We do this by a 2-point gauss formula by asking the callback routine
@@ -1921,7 +1921,7 @@ contains
           ! We neet to set up two values for each edge E: On one hand the
           ! integral mean value as for Q1T (with x:[-1,1]->E):
           !             1/|E| int_[-1,1] v(x(t)) dt
-          ! which is called '0th moment', on the other hand the '1st moment',
+          ! which is called "0th moment", on the other hand the "1st moment",
           ! which is the integral mean value:
           !             1/|E| int_[-1,1] v(x(t)) * t dt
           ! We do this by a 2-point gauss formula by asking the callback routine
@@ -2033,7 +2033,8 @@ contains
 
       case DEFAULT
 
-        print *,'bcasm_newDirichletBC: Unsupported element!'
+        call output_line("Unsupported element!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"bcasm_newDirichletBC")
         call sys_halt()
 
       end select
@@ -2060,13 +2061,13 @@ contains
 
       ! Allocate arrays for storing these DOF`s and their values - if values are
       ! computed.
-      call storage_new('bcasm_newDirichletBConRealBd', 'h_IdirichletDOFs', &
+      call storage_new("bcasm_newDirichletBConRealBd", "h_IdirichletDOFs", &
                       icount, ST_INT, p_rdirichletBCs%h_IdirichletDOFs, &
                       ST_NEWBLOCK_NOINIT)
       call storage_getbase_int(p_rdirichletBCs%h_IdirichletDOFs,p_IdirichletDOFs)
 
       if (iand(casmComplexity,int(not(BCASM_DISCFORDEFMAT),I32)) .ne. 0) then
-        call storage_new('bcasm_newDirichletBConRealBd', 'h_DdirichletValues', &
+        call storage_new("bcasm_newDirichletBConRealBd", "h_DdirichletValues", &
                         icount, ST_DOUBLE, p_rdirichletBCs%h_DdirichletValues, &
                         ST_NEWBLOCK_NOINIT)
         call storage_getbase_double(p_rdirichletBCs%h_DdirichletValues,p_DdirichletValues)
@@ -2204,7 +2205,7 @@ contains
     ! NOTE:
     ! The routine is definitively buggy!
     ! It was build to find a bug in FEAST. E.g. it works only if there are
-    ! 'enough' points in the boundary region and if the discretisation is
+    ! "enough" points in the boundary region and if the discretisation is
     ! done with Q1!
 
     ! The BC`s only exist as modification of the matrix.
@@ -2217,8 +2218,10 @@ contains
     p_rspatialDiscr => rblockDiscretisation%RspatialDiscr(iequation)
 
     if (p_rspatialDiscr%ccomplexity .ne. SPDISC_UNIFORM) then
-      print *,'Discrete FEAST mirror boundary conditions currently only supported'
-      print *,'for uniform discretisations!'
+      call output_line("Discrete FEAST mirror boundary conditions currently only supported",&
+          OU_CLASS_ERROR,OU_MODE_STD,"bcasm_discrBCFeastMirror")
+      call output_line("for uniform discretisations!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"bcasm_discrBCFeastMirror")
       call sys_halt()
     end if
 
@@ -2227,14 +2230,17 @@ contains
     call storage_getbase_int2d(p_rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
 
     if (p_rtriangulation%ndim .ne. NDIM2D) then
-      print *,'FEAST mirror boundary only support 2D!'
+      call output_line("FEAST mirror boundary only support 2D!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"bcasm_discrBCFeastMirror")
       call sys_halt()
     end if
 
     celement = p_rspatialDiscr%RelementDistr(1)%celement
     if (elem_getPrimaryElement(celement) .ne. EL_Q1) then
-      print *,'Discrete FEAST mirror boundary conditions currently only supported'
-      print *,'for Q1 element!'
+      call output_line("Discrete FEAST mirror boundary conditions currently only supported",&
+          OU_CLASS_ERROR,OU_MODE_STD,"bcasm_discrBCFeastMirror")
+      call output_line("for Q1 element!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"bcasm_discrBCFeastMirror")
       call sys_halt()
     end if
 
@@ -2277,7 +2283,7 @@ contains
     end if
 
     ! Allocate an array for all the DOF`s
-    call storage_new('bcasm_discrBCFeastMirror', 'h_ImirrorDOFs', &
+    call storage_new("bcasm_discrBCFeastMirror", "h_ImirrorDOFs", &
                     icount, ST_INT, &
                     p_rfeastMirrorBCs%h_ImirrorDOFs, ST_NEWBLOCK_ZERO)
     call storage_getbase_int(p_rfeastMirrorBCs%h_ImirrorDOFs,p_ImirrorDOFs)
@@ -2303,7 +2309,7 @@ contains
         icount, IelementsAtBoundary, IvtLocal=IverticesAtBoundaryIdx)
 
     ! Allocate an array for all the DOF`s
-    call storage_new('bcasm_discrBCFeastMirror', 'h_ImirrorDOFsClosed', &
+    call storage_new("bcasm_discrBCFeastMirror", "h_ImirrorDOFsClosed", &
                     icount, ST_INT, &
                     p_rfeastMirrorBCs%h_ImirrorDOFsClosed, ST_NEWBLOCK_ZERO)
     call storage_getbase_int(p_rfeastMirrorBCs%h_ImirrorDOFsClosed,p_ImirrorDOFs)
@@ -2378,8 +2384,8 @@ contains
   type(t_boundaryRegion), intent(in) :: rboundaryRegion
 
   ! A callback function that calculates values on the boundary.
-  ! Is declared in the interface include file 'intf_bcassembly.inc'.
-  include 'intf_bcassembly.inc'
+  ! Is declared in the interface include file "intf_bcassembly.inc".
+  include "intf_bcassembly.inc"
 
   ! Optional: A collection structure to inform the callback function with
   ! additional information.
@@ -2452,20 +2458,25 @@ contains
       rblockDiscretisation%RspatialDiscr(Iequations(1))
 
     if (p_rspatialDiscr%ccomplexity .ne. SPDISC_UNIFORM) then
-      print *,'Discrete pressure drop boundary conditions currently only supported'
-      print *,'for uniform discretisations!'
+      call output_line("Discrete pressure drop boundary conditions currently only supported",&
+          OU_CLASS_ERROR,OU_MODE_STD,"bcasm_newPdropBConRealBd")
+      call output_line("for uniform discretisations!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"bcasm_newPdropBConRealBd")
       call sys_halt()
     end if
 
     celement = p_rspatialDiscr%RelementDistr(1)%celement
     if (elem_getPrimaryElement(celement) .ne. EL_Q1T) then
-      print *,'Discrete pressure drop boundary conditions currently only supported'
-      print *,'for Q1~ element!'
+      call output_line("Discrete pressure drop boundary conditions currently only supported",&
+          OU_CLASS_ERROR,OU_MODE_STD,"bcasm_newPdropBConRealBd")
+      call output_line("for Q1~ element!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"bcasm_newPdropBConRealBd")
       call sys_halt()
     end if
 
     if (p_rspatialDiscr%ndimension .ne. NDIM2D) then
-      print *,'Pressure drop boundary conditions only support 2D!'
+      call output_line("Pressure drop boundary conditions only support 2D!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"bcasm_newPdropBConRealBd")
       call sys_halt()
     end if
 
@@ -2503,11 +2514,11 @@ contains
     p_rpressureDropBCs%nDOF = icount
 
     ! Allocate memory to save the DOF`s as well as all modifiers.
-    call storage_new('bcasm_discrBCpressureDrop', 'h_IpressureDropDOFs', &
+    call storage_new("bcasm_discrBCpressureDrop", "h_IpressureDropDOFs", &
                     icount, ST_INT, p_rpressureDropBCs%h_IpressureDropDOFs, &
                     ST_NEWBLOCK_NOINIT)
     ImodifierSize = (/NDIM2D,icount/)
-    call storage_new('bcasm_discrBCpressureDrop', 'h_Dmodifier', &
+    call storage_new("bcasm_discrBCpressureDrop", "h_Dmodifier", &
                       ImodifierSize, ST_DOUBLE, p_rpressureDropBCs%h_Dmodifier, &
                       ST_NEWBLOCK_NOINIT)
 
@@ -2548,7 +2559,7 @@ contains
       Dtangential(1:NDIM2D) = p_DvertexCoords(1:NDIM2D,ipoint2) &
                             - p_DvertexCoords(1:NDIM2D,ipoint1)
 
-      ! Get the inner normal vector. This compensates the '-' sign in front of
+      ! Get the inner normal vector. This compensates the "-" sign in front of
       ! the RHS in the formula on poage 269 in Turek`s book where the outer
       ! normal vector is used.
       Dnormal(1) = -Dtangential(2)
@@ -2707,20 +2718,25 @@ contains
       rblockDiscretisation%RspatialDiscr(Iequations(1))
 
     if (p_rspatialDiscr%ccomplexity .ne. SPDISC_UNIFORM) then
-      print *,'Discrete Slip boundary conditions currently only supported'
-      print *,'for uniform discretisations!'
+      call output_line("Discrete Slip boundary conditions currently only supported",&
+          OU_CLASS_ERROR,OU_MODE_STD,"bcasm_newSlipBConRealBd")
+      call output_line("for uniform discretisations!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"bcasm_newSlipBConRealBd")
       call sys_halt()
     end if
 
     celement = p_rspatialDiscr%RelementDistr(1)%celement
     if (elem_getPrimaryElement(celement) .ne. EL_Q1T) then
-      print *,'Discrete Slip boundary conditions currently only supported'
-      print *,'for Q1~ element!'
+      call output_line("Discrete Slip boundary conditions currently only supported",&
+          OU_CLASS_ERROR,OU_MODE_STD,"bcasm_newSlipBConRealBd")
+      call output_line("for Q1~ element!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"bcasm_newSlipBConRealBd")
       call sys_halt()
     end if
 
     if (p_rspatialDiscr%ndimension .ne. NDIM2D) then
-      print *,'Pressure drop boundary conditions only support 2D!'
+      call output_line("Pressure drop boundary conditions only support 2D!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"bcasm_newSlipBConRealBd")
       call sys_halt()
     end if
 
@@ -2761,11 +2777,11 @@ contains
     p_rslipBCs%nDOF = icount
 
     ! Allocate memory to save the DOF`s as well as all modifiers.
-    call storage_new('bcasm_discrBCSlip', 'h_IpressureDropDOFs', &
+    call storage_new("bcasm_discrBCSlip", "h_IpressureDropDOFs", &
                     icount, ST_INT, p_rslipBCs%h_IslipDOFs, &
                     ST_NEWBLOCK_NOINIT)
     InormalsSize = (/NDIM2D,icount/)
-    call storage_new('bcasm_discrBCSlip', 'h_Dnormals', &
+    call storage_new("bcasm_discrBCSlip", "h_Dnormals", &
                       InormalsSize, ST_DOUBLE, p_rslipBCs%h_DnormalVectors, &
                       ST_NEWBLOCK_NOINIT)
 
@@ -2887,8 +2903,8 @@ contains
   integer, dimension(:), intent(in) :: Iequations
 
   ! A callback function that calculates values in the domain.
-  ! Is declared in the interface include file 'intf_fbcassembly.inc'.
-  include 'intf_fbcassembly.inc'
+  ! Is declared in the interface include file "intf_fbcassembly.inc".
+  include "intf_fbcassembly.inc"
 
   ! Optional: A collection structure to inform the callback function with
   ! additional information.
@@ -2960,7 +2976,7 @@ contains
     ! In this first rough implementation, we assume that all equations
     ! are discretised with the same discretisation!
     ! Furthermore, Dirichlet values can only be specified for all solution
-    ! components; something like 'slip' where one component is left free
+    ! components; something like "slip" where one component is left free
     ! is not supported!
 
     p_rspatialDiscr => rblockDiscretisation%RspatialDiscr(Iequations(1))
@@ -3000,14 +3016,14 @@ contains
 
     IdofCount = (/nequations,nDOFs/)
     if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
-      call storage_new ('bcasm_discrFBCDirichlet', 'DofValues', &
+      call storage_new ("bcasm_discrFBCDirichlet", "DofValues", &
                         IdofCount, ST_DOUBLE, h_Ddofs, &
                         ST_NEWBLOCK_NOINIT)
       call storage_getbase_double2d (h_Ddofs,p_Ddofs)
     end if
 
     ! Initialise p_Idofs with zero.
-    call storage_new ('bcasm_discrFBCDirichlet', 'DofUsed', nDOFs, &
+    call storage_new ("bcasm_discrFBCDirichlet", "DofUsed", nDOFs, &
                       ST_INT, h_Idofs, ST_NEWBLOCK_ZERO)
     call storage_getbase_int (h_Idofs,p_Idofs)
 
@@ -3044,7 +3060,7 @@ contains
       p_Revaluation(ieq)%p_Dwhere => p_Dwhere
     end do
 
-    ! To collect the values of all the DOF's in question, we loop in sets
+    ! To collect the values of all the DOF"s in question, we loop in sets
     ! about the elements in every element distribution.
     !
     ! So at first, we loop over the element distribution which tells us the
@@ -3074,11 +3090,11 @@ contains
         isubsetLength = min(p_relementDist%NEL-isubsetStart+1,&
                             p_rperfconfig%NITEMSIM)
 
-        ! Get all the DOF's on all the elements in the current set.
+        ! Get all the DOF"s on all the elements in the current set.
         call dof_locGlobMapping_mult(p_rspatialDiscr, &
                   p_Ielements(isubsetStart:isubsetStart+isubsetLength-1), Idofs)
 
-        ! Now the element dependent part. What's the dimension of the current space?
+        ! Now the element dependent part. What"s the dimension of the current space?
         bok = .false.
         select case (p_rspatialDiscr%ndimension)
         case (NDIM1D)
@@ -3099,7 +3115,7 @@ contains
             bok = .true.
 
             ! Loop through the vertices of the elements and collect them.
-            ! The local DOF's 1..nve correspond to the corner vertices here.
+            ! The local DOF"s 1..nve correspond to the corner vertices here.
             do ielidx = 1,isubsetLength
               iel = p_Ielements(isubsetStart+ielidx-1)
               ! Index of the entry
@@ -3121,8 +3137,8 @@ contains
                                         rblockDiscretisation,&
                                         p_Revaluation, rcollection)
 
-            ! Save the computed values to the corresponding DOF's.
-            ! Already processed DOF's are strictily positive, they have
+            ! Save the computed values to the corresponding DOF"s.
+            ! Already processed DOF"s are strictily positive, they have
             ! the DOF number in p_Idofs!
             do ielidx = 1,isubsetLength
               iel = p_Ielements(isubsetStart+ielidx-1)
@@ -3144,7 +3160,7 @@ contains
               (p_relementDist%celement .eq. EL_Q2)) then
 
             ! Loop through the edges of the elements and collect them.
-            ! The local DOF's nve+1..2*nve correspond to the egdes here.
+            ! The local DOF"s nve+1..2*nve correspond to the egdes here.
             do ielidx = 1,isubsetLength
               iel = p_Ielements(isubsetStart+ielidx-1)
               ! Index of the entry
@@ -3168,8 +3184,8 @@ contains
                                         rblockDiscretisation,&
                                         p_Revaluation, rcollection)
 
-            ! Save the computed values to the corresponding DOF's.
-            ! Already processed DOF's are strictily positive, they have
+            ! Save the computed values to the corresponding DOF"s.
+            ! Already processed DOF"s are strictily positive, they have
             ! the DOF number in p_Idofs!
             do ielidx = 1,isubsetLength
               iel = p_Ielements(isubsetStart+ielidx-1)
@@ -3214,8 +3230,8 @@ contains
                                         rblockDiscretisation,&
                                         p_Revaluation, rcollection)
 
-            ! Save the computed values to the corresponding DOF's.
-            ! Already processed DOF's are strictily positive, they have
+            ! Save the computed values to the corresponding DOF"s.
+            ! Already processed DOF"s are strictily positive, they have
             ! the DOF number in p_Idofs!
             do ielidx = 1,isubsetLength
               iel = p_Ielements(isubsetStart+ielidx-1)
@@ -3240,7 +3256,7 @@ contains
             bok = .true.
 
             ! Loop through the edges of the elements and collect them.
-            ! The local DOF's nve+1..2*nve correspond to the egdes here.
+            ! The local DOF"s nve+1..2*nve correspond to the egdes here.
             do ielidx = 1,isubsetLength
               iel = p_Ielements(isubsetStart+ielidx-1)
               ! Index of the entry
@@ -3268,8 +3284,8 @@ contains
                                         rblockDiscretisation,&
                                         p_Revaluation, rcollection)
 
-            ! Save the computed values to the corresponding DOF's.
-            ! Already processed DOF's are strictily positive, they have
+            ! Save the computed values to the corresponding DOF"s.
+            ! Already processed DOF"s are strictily positive, they have
             ! the DOF number in p_Idofs!
             do ielidx = 1,isubsetLength
               iel = p_Ielements(isubsetStart+ielidx-1)
@@ -3303,7 +3319,7 @@ contains
             bok = .true.
 
             ! Loop through the vertices of the elements and collect them.
-            ! The local DOF's 1..nve correspond to the corner vertices here.
+            ! The local DOF"s 1..nve correspond to the corner vertices here.
             do ielidx = 1,isubsetLength
               iel = p_Ielements(isubsetStart+ielidx-1)
               ! Index of the entry
@@ -3325,8 +3341,8 @@ contains
                                         rblockDiscretisation,&
                                         p_Revaluation, rcollection)
 
-            ! Save the computed values to the corresponding DOF's.
-            ! Already processed DOF's are strictily positive, they have
+            ! Save the computed values to the corresponding DOF"s.
+            ! Already processed DOF"s are strictily positive, they have
             ! the DOF number in p_Idofs!
             do ielidx = 1,isubsetLength
               iel = p_Ielements(isubsetStart+ielidx-1)
@@ -3351,7 +3367,7 @@ contains
             bok = .true.
 
             ! Loop through the faces of the elements and collect them.
-            ! The local DOF's nve+1..2*nve correspond to the egdes here.
+            ! The local DOF"s nve+1..2*nve correspond to the egdes here.
             do ielidx = 1,isubsetLength
               iel = p_Ielements(isubsetStart+ielidx-1)
               ! Index of the entry
@@ -3381,8 +3397,8 @@ contains
                                         rblockDiscretisation,&
                                         p_Revaluation, rcollection)
 
-            ! Save the computed values to the corresponding DOF's.
-            ! Already processed DOF's are strictily positive, they have
+            ! Save the computed values to the corresponding DOF"s.
+            ! Already processed DOF"s are strictily positive, they have
             ! the DOF number in p_Idofs!
             do ielidx = 1,isubsetLength
               iel = p_Ielements(isubsetStart+ielidx-1)
@@ -3403,9 +3419,8 @@ contains
         end select
 
         if (.not. bok) then
-          call output_line (&
-              'Element space not supported!', &
-              OU_CLASS_ERROR,OU_MODE_STD,'bcasm_newDirichletBConFBD')
+          call output_line ("Element space not supported!", &
+              OU_CLASS_ERROR,OU_MODE_STD,"bcasm_newDirichletBConFBD")
           call sys_halt()
         end if
 
@@ -3422,8 +3437,8 @@ contains
     deallocate(p_Dwhere)
     deallocate(p_Revaluation)
 
-    ! Now, compress the p_Idofs/p_Ddofs array on to those DOF's
-    ! which must be set. These are those DOF's where p_Ddofs is positive.
+    ! Now, compress the p_Idofs/p_Ddofs array on to those DOF"s
+    ! which must be set. These are those DOF"s where p_Ddofs is positive.
     icount = 0
     do i=1,size(p_Idofs)
       if (p_Idofs(i) .gt. 0) then
@@ -3440,12 +3455,12 @@ contains
       if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
         ! In the 2D-array, the size of the 2nd dimension is changed to the
         ! number of DOF`s.
-        call storage_realloc ('bcasm_discrFBCDirichlet', icount, &
+        call storage_realloc ("bcasm_discrFBCDirichlet", icount, &
                               h_Ddofs, ST_NEWBLOCK_NOINIT)
         p_rdirichletFBCs%h_DdirichletValues = h_Ddofs
       end if
 
-      call storage_realloc ('bcasm_discrFBCDirichlet', icount, &
+      call storage_realloc ("bcasm_discrFBCDirichlet", icount, &
                             h_Idofs, ST_NEWBLOCK_NOINIT)
       p_rdirichletFBCs%h_IdirichletDOFs = h_Idofs
     else
@@ -3489,9 +3504,9 @@ contains
 !
 !    if (p_rspatialDiscr%ccomplexity .ne. SPDISC_UNIFORM) then
 !      call output_line (&
-!          'Element space not supported!', &
-!          OU_CLASS_ERROR,OU_MODE_STD,'bcasm_newDirichletBConFBD')
-!      print *,'bcasm_discrFBCDirichlet: Can only handle uniform discretisation!'
+!          "Element space not supported!", &
+!          OU_CLASS_ERROR,OU_MODE_STD,"bcasm_newDirichletBConFBD")
+!      call output_line("bcasm_discrFBCDirichlet: Can only handle uniform discretisation!"
 !      call sys_halt()
 !    end if
 !
@@ -3906,12 +3921,12 @@ contains
 !      if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
 !        ! In the 2D-array, the size of the 2nd dimension is changed to the
 !        ! number of DOF`s.
-!        call storage_realloc ('bcasm_discrFBCDirichlet', icurrentDof, &
+!        call storage_realloc ("bcasm_discrFBCDirichlet", icurrentDof, &
 !                              h_Ddofs, ST_NEWBLOCK_NOINIT)
 !        p_rdirichletFBCs%h_DdirichletValues = h_Ddofs
 !      end if
 !
-!      call storage_realloc ('bcasm_discrFBCDirichlet', icurrentDof, &
+!      call storage_realloc ("bcasm_discrFBCDirichlet", icurrentDof, &
 !                            h_Idofs, ST_NEWBLOCK_NOINIT)
 !      p_rdirichletFBCs%h_IdirichletDOFs = h_Idofs
 !    else
@@ -3997,8 +4012,8 @@ contains
   type(t_meshRegion), intent(in)          :: rmeshRegion
 
   ! A callback function that calculates values on the boundary.
-  ! Is declared in the interface include file 'intf_discretebc.inc'.
-  include 'intf_discretebc.inc'
+  ! Is declared in the interface include file "intf_discretebc.inc".
+  include "intf_discretebc.inc"
 
   ! Optional: A collection structure to inform the callback function with
   ! additional information.
@@ -4089,8 +4104,8 @@ contains
     if(.not. associated(p_rtria, rmeshRegion%p_rtriangulation)) then
 
       call output_line (&
-          'Different triangulations for spatial discretisation and mesh region!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'bcasm_newDirichletBConMR')
+          "Different triangulations for spatial discretisation and mesh region!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"bcasm_newDirichletBConMR")
       call sys_halt()
 
     end if
@@ -4169,7 +4184,7 @@ contains
     ! array twice. To ensure this, we will create an array called DOF-Bitmap.
     ! This is an array of 32-bit integers, but we will interpret it as an
     ! array of bits.
-    ! Assume we are currently processing the DOF with number 'idof', then we
+    ! Assume we are currently processing the DOF with number "idof", then we
     ! need to calculate 2 values to access the bit of the DOF in the bitmap:
     ! 1. idofHigh: the index of the 32-bit integer inside the bitmap where
     !              our DOF is in
@@ -4179,7 +4194,7 @@ contains
     ! idofHigh = ISHFT(idof-1,-5) + 1
     ! idofMask = INT(ISHFT(1,IAND(idof-1,31)),I32)
     !
-    ! To mark a DOF as 'processed' we need to apply an OR-operator:
+    ! To mark a DOF as "processed" we need to apply an OR-operator:
     ! p_IdofBitmap(idofHigh) = IOR(p_IdofBitmap(idofHigh),idofMask)
     !
     ! To check whether a DOF has already been processed we need to apply an
@@ -4190,7 +4205,7 @@ contains
     !
     ! Remark:
     ! The DOF bitmap works for both 32- and 64-bit systems. Remember that on
-    ! a 64-Bit system 'idofHigh' is 64-Bit where 'idofMask' is 32-Bit.
+    ! a 64-Bit system "idofHigh" is 64-Bit where "idofMask" is 32-Bit.
     !
 
     ! The length of the dof bitmap is = inumGlobalDofs/32 + 1
@@ -4391,7 +4406,7 @@ contains
         ! Okay, finally add the DOF into the list
         call addDofToDirichletEntry(p_rdirichlet, idof, Dvalues(1), ndofs)
 
-        ! And mark the DOF as 'processed' in the bitmap
+        ! And mark the DOF as "processed" in the bitmap
         p_IdofBitmap(idofHigh) = ior(p_IdofBitmap(idofHigh),int(idofMask))
 
         ! Let us go for the next element adjacent to the vertex
@@ -4561,7 +4576,7 @@ contains
           ! Okay, finally add the DOF into the list
           call addDofToDirichletEntry(p_rdirichlet, idof, Dvalues(1), ndofs)
 
-          ! And mark the DOF as 'processed' in the bitmap
+          ! And mark the DOF as "processed" in the bitmap
           p_IdofBitmap(idofHigh) = ior(p_IdofBitmap(idofHigh),int(idofMask))
 
           ! Let us go for the next element adjacent to the edge
@@ -4641,7 +4656,7 @@ contains
           ! Okay, finally add the DOF into the list
           call addDofToDirichletEntry(p_rdirichlet, idof, Dvalues(1), ndofs)
 
-          ! And mark the DOF as 'processed' in the bitmap
+          ! And mark the DOF as "processed" in the bitmap
           p_IdofBitmap(idofHigh) = ior(p_IdofBitmap(idofHigh),int(idofMask))
 
           ! Let us go for the next element adjacent to the edge
@@ -4839,7 +4854,7 @@ contains
         ! Okay, finally add the DOF into the list
         call addDofToDirichletEntry(p_rdirichlet, idof, Dvalues(1), ndofs)
 
-        ! And mark the DOF as 'processed' in the bitmap
+        ! And mark the DOF as "processed" in the bitmap
         p_IdofBitmap(idofHigh) = ior(p_IdofBitmap(idofHigh),int(idofMask))
 
         ! Let us go for the next element adjacent to the face
@@ -5169,17 +5184,17 @@ contains
         if (ndofs .le. 0) ndofs = NINC
 
         ! allocate the arrays
-        call storage_new('addDofToDirichletEntry', 'p_IdirichletDOFs',&
+        call storage_new("addDofToDirichletEntry", "p_IdirichletDOFs",&
           ndofs, ST_INT, rdirichlet%h_IdirichletDOFs, ST_NEWBLOCK_ZERO)
-        call storage_new('addDofToDirichletEntry', 'p_DdirichletValues',&
+        call storage_new("addDofToDirichletEntry", "p_DdirichletValues",&
           ndofs, ST_DOUBLE, rdirichlet%h_DdirichletValues, ST_NEWBLOCK_ZERO)
 
       else if (rdirichlet%nDOF .ge. ndofs) then
 
         ! The list is full, so resize it
-        call storage_realloc('addDofToDirichletEntry', ndofs+NINC,&
+        call storage_realloc("addDofToDirichletEntry", ndofs+NINC,&
           rdirichlet%h_IdirichletDOFs, ST_NEWBLOCK_ZERO, .true.)
-        call storage_realloc('addDofToDirichletEntry', ndofs+NINC,&
+        call storage_realloc("addDofToDirichletEntry", ndofs+NINC,&
           rdirichlet%h_DdirichletValues, ST_NEWBLOCK_ZERO, .true.)
 
         ! And remember that we have increased the list size

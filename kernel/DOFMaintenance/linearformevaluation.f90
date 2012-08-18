@@ -96,10 +96,10 @@
 !#        defined in terms of a volume integral for conforming discretisations.
 !#
 !# 2.) linf_allocAssemblyData
-!#     -> Allocate 'local' memory, needed for assembling vector entries.
+!#     -> Allocate "local" memory, needed for assembling vector entries.
 !#
 !# 3.) linf_releaseAssemblyData
-!#     -> Release 'local' memory, needed for assembling vector entries.
+!#     -> Release "local" memory, needed for assembling vector entries.
 !#
 !# Frequently asked questions \\
 !# -------------------------- \\
@@ -131,7 +131,7 @@
 !#
 !#  where coeff_RHS is a callback routine returning the RHS function. That is it.
 !#
-!# 2.) What is the 'manual matrix assembly'?
+!# 2.) What is the "manual matrix assembly"?
 !#
 !#  This is a possibility to assemble parts of the vector by specifying
 !#  an element, a cubature formula and a list of elements where to assemble.
@@ -145,7 +145,7 @@
 !#  another technique which you can also use if you want to assemble parts
 !#  of the vector on your own.
 !#
-!#  To 'manually' assemble parts of the matrix, you can use the
+!#  To "manually" assemble parts of the matrix, you can use the
 !#  linf_initAssembly / linf_doneAssembly / linf_assembleSubmeshVector
 !#  subroutines in conjunction with the linf_assembleSubmeshVector structure.
 !#  Assume e.g. that elements 501..750 of a mesh are discretised with Q1
@@ -196,7 +196,7 @@
 !#  the elements 501..750. That way, the user has the ability to
 !#  specify element type, element numbers and cubature formula manually
 !#  without having to specify everything in a discretisation structure;
-!#  that is the reason why this assembly is called 'manual' assembly.
+!#  that is the reason why this assembly is called "manual" assembly.
 !#
 !#  This method is extremely useful when one wants to assemble vectors with
 !#  adaptive/summed cubature formulas. Some parts of the domain can that way
@@ -451,7 +451,7 @@ contains
   logical, intent(in) :: bclear
 
   ! A callback routine for the function to be discretised.
-  include 'intf_coefficientVectorSc.inc'
+  include "intf_coefficientVectorSc.inc"
   optional :: fcoeff_buildVectorSc_sim
 
   ! OPTIONAL: Number of temp arrays.
@@ -508,7 +508,7 @@ contains
     ! If the vector is not set up as new vector, it has to be unsorted.
     ! If it is a new vector, we switch off the sorting.
     if (bclear) then
-      rvector%isortStrategy = -abs(rvector%isortStrategy)
+      rvector%bisSorted = .false.
     end if
 
     ! Calculate the entries
@@ -552,7 +552,7 @@ contains
 !  logical, intent(in) :: bclear
 !  
 !  ! A callback routine for the function to be discretised.
-!  include 'intf_coefficientVectorSc.inc'
+!  include "intf_coefficientVectorSc.inc"
 !  optional :: fcoeff_buildVectorSc_sim
 !
 !  ! OPTIONAL: local performance configuration. If not given, the
@@ -579,9 +579,9 @@ contains
 !  end if
 !  
 !  ! The vector must be unsorted, otherwise we can not set up the vector.
-!  if (rvector%isortStrategy .gt. 0) then
-!    call output_line('Vector must be unsorted!',&
-!        OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalar')
+!  if (rvector%bisSorted) then
+!    call output_line("Vector must be unsorted!",&
+!        OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorScalar")
 !    call sys_halt()
 !  end if
 !
@@ -596,14 +596,14 @@ contains
 !                                      fcoeff_buildVectorSc_sim, rcollection, rperfconfig)
 !
 !    case DEFAULT
-!      call output_line('Single precision vectors currently not supported!',&
-!          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalar')
+!      call output_line("Single precision vectors currently not supported!",&
+!          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorScalar")
 !      call sys_halt()
 !    end select
 !    
 !  else
-!    call output_line('General discretisation not implemented!',&
-!        OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalar')
+!    call output_line("General discretisation not implemented!",&
+!        OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorScalar")
 !    call sys_halt()
 !  end if
 !
@@ -620,7 +620,7 @@ contains
 !!<description>
 !  ! This routine calculates the entries of a discretised finite element vector.
 !  ! The discretisation is assumed to be conformal, i.e. the DOF`s
-!  ! of all finite elements must 'match'.
+!  ! of all finite elements must "match".
 !  ! The linear form is defined by
 !  !        <tex>(f,$\phi_i$), i=1..*</tex>
 !  ! with <tex>$\phi_i$</tex> being the test functions defined in the discretisation
@@ -648,7 +648,7 @@ contains
 !  
 !  ! A callback routine which is able to calculate the values of the
 !  ! function <tex>$f$</tex> which is to be discretised.
-!  include 'intf_coefficientVectorSc.inc'
+!  include "intf_coefficientVectorSc.inc"
 !  optional :: fcoeff_buildVectorSc_sim
 !
 !  ! OPTIONAL: local performance configuration. If not given, the
@@ -759,8 +759,8 @@ contains
 !    I1 = rform%Idescriptors(i)
 !    
 !    if ((I1 .le.0) .or. (I1 .gt. DER_MAXNDER)) then
-!      call output_line('Invalid descriptor',&
-!          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorDble_conf')
+!      call output_line("Invalid descriptor",&
+!          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorDble_conf")
 !      call sys_halt()
 !    endif
 !    
@@ -780,7 +780,7 @@ contains
 !
 !    ! Clear the entries in the vector - we need to start with zero
 !    ! when assembling a new vector.
-!    call storage_new ('linf_buildVectorDble_conf', 'vector', &
+!    call storage_new ("linf_buildVectorDble_conf", "vector", &
 !                        NEQ, ST_DOUBLE, rvector%h_Ddata, &
 !                        ST_NEWBLOCK_ZERO)
 !    call lsyssc_getbase_double (rvector,p_Ddata)
@@ -846,8 +846,8 @@ contains
 !      IA = rform%Idescriptors(IALBET)
 !      if ((IA.lt.0) .or. &
 !          (IA .gt. elem_getMaxDerivative(p_relementDistribution%celement))) then
-!        call output_line('Specified test-derivative '//trim(sys_siL(IA,3))//' not available!',&
-!            OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorDble_conf')
+!        call output_line("Specified test-derivative "//trim(sys_siL(IA,3))//" not available!",&
+!            OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorDble_conf")
 !        call sys_halt()
 !      end if
 !    end do
@@ -976,7 +976,7 @@ contains
 !      
 !      do IEL = 1,IELmax-IELset+1
 !        
-!        ! We make a 'local' approach, i.e. we calculate the values of the
+!        ! We make a "local" approach, i.e. we calculate the values of the
 !        ! integral into the vector DlocalData and add them later into
 !        ! the large solution vector.
 !        
@@ -1007,7 +1007,7 @@ contains
 !            ! -> IA=0: function value,
 !            !      =1: first derivative,
 !            !      =2: 2nd derivative,...
-!            !    as defined in the module 'derivative'.
+!            !    as defined in the module "derivative".
 !            
 !            IA = rform%Idescriptors(IALBET)
 !            
@@ -1043,7 +1043,7 @@ contains
 !        end do ! ICUBP
 !
 !        ! Incorporate the local vector into the global one.
-!        ! The 'local' DOF 1..indofTest is mapped to the global DOF using
+!        ! The "local" DOF 1..indofTest is mapped to the global DOF using
 !        ! the IdofsTest array.
 !        ! OpenMP-Extension: This is a critical section. Only one thread is
 !        ! allowed to write to the vector, otherwise the matrix may get
@@ -1108,7 +1108,7 @@ contains
   integer, intent(in), optional :: iboundaryComp
 
   ! A callback routine for the function to be discretised.
-  include 'intf_coefficientVectorScBdr1D.inc'
+  include "intf_coefficientVectorScBdr1D.inc"
   optional :: fcoeff_buildVectorScBdr1D_sim
 
   ! OPTIONAL: Number of temp arrays.
@@ -1146,14 +1146,14 @@ contains
 
     ! If the vector does not exist, stop here.
     if (rvector%h_Ddata .eq. ST_NOHANDLE) then
-      call output_line('Vector not available!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr1D')
+      call output_line("Vector not available!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorScalarBdr1D")
     end if
 
     ! The vector must be unsorted, otherwise we can not set up the vector.
-    if (rvector%isortStrategy .gt. 0) then
-      call output_line('Vector must be unsorted!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr1D')
+    if (rvector%bisSorted) then
+      call output_line("Vector must be unsorted!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorScalarBdr1D")
       call sys_halt()
     end if
 
@@ -1162,15 +1162,15 @@ contains
 
     ! The vector must provide a discretisation structure
     if (.not. associated(rvector%p_rspatialDiscr)) then
-      call output_line('No discretisation associated!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr1D')
+      call output_line("No discretisation associated!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorScalarBdr1D")
       call sys_halt()
     end if
 
     ! The discretisation must provide a triangulation structure
     if (.not. associated(rvector%p_rspatialDiscr%p_rtriangulation)) then
-      call output_line('No triangulation associated!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr1D')
+      call output_line("No triangulation associated!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorScalarBdr1D")
       call sys_halt()
     end if
 
@@ -1275,13 +1275,13 @@ contains
         end if
 
       case DEFAULT
-        call output_line('Single precision vectors currently not supported!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr1D')
+        call output_line("Single precision vectors currently not supported!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorScalarBdr1D")
       end select
 
     else
-      call output_line('General discretisation not implemented!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr1D')
+      call output_line("General discretisation not implemented!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorScalarBdr1D")
       call sys_halt()
   end if
 
@@ -1324,7 +1324,7 @@ contains
   type(t_boundaryRegion), intent(in), optional :: rboundaryRegion
 
   ! A callback routine for the function to be discretised.
-  include 'intf_coefficientVectorScBdr2D.inc'
+  include "intf_coefficientVectorScBdr2D.inc"
   optional :: fcoeff_buildVectorScBdr2D_sim
 
   ! OPTIONAL: Number of temp arrays.
@@ -1374,20 +1374,20 @@ contains
 
     ! If the vector does not exist, stop here.
     if (rvector%h_Ddata .eq. ST_NOHANDLE) then
-      call output_line('Vector not available!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr2D')
+      call output_line("Vector not available!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorScalarBdr2D")
     end if
 
     ! If the vector os stored in interleave format, stop here.
     if (rvector%NVAR .ne. 1) then
-      call output_line('Vector must not be in interleaved format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr2D')
+      call output_line("Vector must not be in interleaved format!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorScalarBdr2D")
     end if
 
     ! The vector must be unsorted, otherwise we can not set up the vector.
-    if (rvector%isortStrategy .gt. 0) then
-      call output_line('Vector must be unsorted!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr2D')
+    if (rvector%bisSorted) then
+      call output_line("Vector must be unsorted!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorScalarBdr2D")
       call sys_halt()
     end if
 
@@ -1396,22 +1396,22 @@ contains
 
     ! The vector must provide a discretisation structure
     if (.not. associated(rvector%p_rspatialDiscr)) then
-      call output_line('No discretisation associated!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr2D')
+      call output_line("No discretisation associated!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorScalarBdr2D")
       call sys_halt()
     end if
 
     ! The discretisation must provide a triangulation structure
     if (.not. associated(rvector%p_rspatialDiscr%p_rtriangulation)) then
-      call output_line('No triangulation associated!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr2D')
+      call output_line("No triangulation associated!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorScalarBdr2D")
       call sys_halt()
     end if
 
     ! The discretisation must provide a boundary structure
     if (.not. associated(rvector%p_rspatialDiscr%p_rboundary)) then
-      call output_line('No boundary associated!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr2D')
+      call output_line("No boundary associated!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorScalarBdr2D")
       call sys_halt()
     end if
 
@@ -1528,13 +1528,13 @@ contains
         end if
 
       case DEFAULT
-        call output_line('Single precision vectors currently not supported!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr2D')
+        call output_line("Single precision vectors currently not supported!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorScalarBdr2D")
       end select
 
     else
-      call output_line('General discretisation not implemented!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr2D')
+      call output_line("General discretisation not implemented!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorScalarBdr2D")
       call sys_halt()
     end if
 
@@ -1573,7 +1573,7 @@ contains
   integer, intent(in), optional :: iboundaryComp
 
   ! A callback routine for the function to be discretised.
-  include 'intf_coefficientVectorBlBdr1D.inc'
+  include "intf_coefficientVectorBlBdr1D.inc"
   optional :: fcoeff_buildVectorBlBdr1D_sim
 
   ! OPTIONAL: Number of temp arrays.
@@ -1611,14 +1611,14 @@ contains
 
     ! If the vector does not exist, stop here.
     if (rvector%h_Ddata .eq. ST_NOHANDLE) then
-      call output_line('Vector not available!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalarBdr1D')
+      call output_line("Vector not available!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVecIntlScalarBdr1D")
     end if
 
     ! The vector must be unsorted, otherwise we can not set up the vector.
-    if (rvector%isortStrategy .gt. 0) then
-      call output_line('Vector must be unsorted!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalarBdr1D')
+    if (rvector%bisSorted) then
+      call output_line("Vector must be unsorted!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVecIntlScalarBdr1D")
       call sys_halt()
     end if
 
@@ -1627,15 +1627,15 @@ contains
 
     ! The vector must provide a discretisation structure
     if (.not. associated(rvector%p_rspatialDiscr)) then
-      call output_line('No discretisation associated!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalarBdr1D')
+      call output_line("No discretisation associated!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVecIntlScalarBdr1D")
       call sys_halt()
     end if
 
     ! The discretisation must provide a triangulation structure
     if (.not. associated(rvector%p_rspatialDiscr%p_rtriangulation)) then
-      call output_line('No triangulation associated!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalarBdr1D')
+      call output_line("No triangulation associated!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVecIntlScalarBdr1D")
       call sys_halt()
     end if
 
@@ -1743,13 +1743,13 @@ contains
         end if
 
       case DEFAULT
-        call output_line('Single precision vectors currently not supported!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalarBdr1D')
+        call output_line("Single precision vectors currently not supported!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVecIntlScalarBdr1D")
       end select
 
     else
-      call output_line('General discretisation not implemented!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalarBdr1D')
+      call output_line("General discretisation not implemented!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVecIntlScalarBdr1D")
       call sys_halt()
     end if
 
@@ -1792,7 +1792,7 @@ contains
   type(t_boundaryRegion), intent(in), optional :: rboundaryRegion
 
   ! A callback routine for the function to be discretised.
-  include 'intf_coefficientVectorBlBdr2D.inc'
+  include "intf_coefficientVectorBlBdr2D.inc"
   optional :: fcoeff_buildVectorBlBdr2D_sim
 
   ! OPTIONAL: Number of temp arrays.
@@ -1842,14 +1842,14 @@ contains
 
     ! If the vector does not exist, stop here.
     if (rvector%h_Ddata .eq. ST_NOHANDLE) then
-      call output_line('Vector not available!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalarBdr2D')
+      call output_line("Vector not available!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVecIntlScalarBdr2D")
     end if
 
     ! The vector must be unsorted, otherwise we can not set up the vector.
-    if (rvector%isortStrategy .gt. 0) then
-      call output_line('Vector must be unsorted!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalarBdr2D')
+    if (rvector%bisSorted) then
+      call output_line("Vector must be unsorted!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVecIntlScalarBdr2D")
       call sys_halt()
     end if
 
@@ -1858,22 +1858,22 @@ contains
 
     ! The vector must provide a discretisation structure
     if (.not. associated(rvector%p_rspatialDiscr)) then
-      call output_line('No discretisation associated!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalarBdr2D')
+      call output_line("No discretisation associated!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVecIntlScalarBdr2D")
       call sys_halt()
     end if
 
     ! The discretisation must provide a triangulation structure
     if (.not. associated(rvector%p_rspatialDiscr%p_rtriangulation)) then
-      call output_line('No triangulation associated!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalarBdr2D')
+      call output_line("No triangulation associated!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVecIntlScalarBdr2D")
       call sys_halt()
     end if
 
     ! The discretisation must provide a boundary structure
     if (.not. associated(rvector%p_rspatialDiscr%p_rboundary)) then
-      call output_line('No boundary associated!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalarBdr2D')
+      call output_line("No boundary associated!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVecIntlScalarBdr2D")
       call sys_halt()
     end if
 
@@ -1990,13 +1990,13 @@ contains
         end if
 
       case DEFAULT
-        call output_line('Single precision vectors currently not supported!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalarBdr2D')
+        call output_line("Single precision vectors currently not supported!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVecIntlScalarBdr2D")
       end select
 
     else
-      call output_line('General discretisation not implemented!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalarBdr2D')
+      call output_line("General discretisation not implemented!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVecIntlScalarBdr2D")
       call sys_halt()
     end if
 
@@ -2078,8 +2078,8 @@ contains
       I1=rform%Idescriptors(i)
 
       if ((I1 .le.0) .or. (I1 .gt. DER_MAXNDER)) then
-        call output_line ('Invalid descriptor!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'linf_initAssembly')
+        call output_line ("Invalid descriptor!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"linf_initAssembly")
         call sys_halt()
       endif
 
@@ -2143,7 +2143,7 @@ contains
 
 !<description>
   ! Auxiliary subroutine.
-  ! Allocate 'local' memory, needed for assembling vector entries.
+  ! Allocate "local" memory, needed for assembling vector entries.
 !</description>
 
 !<input>
@@ -2213,7 +2213,7 @@ contains
 
 !<description>
   ! Auxiliary subroutine.
-  ! Release 'local' memory.
+  ! Release "local" memory.
 !</description>
 
 !<inputoutput>
@@ -2256,7 +2256,7 @@ contains
 
   ! A callback routine which is able to calculate the values of the
   ! function $f$ which is to be discretised.
-  include 'intf_coefficientVectorSc.inc'
+  include "intf_coefficientVectorSc.inc"
   optional :: fcoeff_buildVectorSc_sim
 
   ! OPTIONAL: Number of temp arrays.
@@ -2485,7 +2485,7 @@ contains
 
       do iel = 1,IELmax-IELset+1
 
-        ! We make a 'local' approach, i.e. we calculate the values of the
+        ! We make a "local" approach, i.e. we calculate the values of the
         ! integral into the vector DlocalData and add them later into
         ! the large solution vector.
 
@@ -2513,7 +2513,7 @@ contains
             ! -> IA=0: function value,
             !      =1: first derivative,
             !      =2: 2nd derivative,...
-            !    as defined in the module 'derivative'.
+            !    as defined in the module "derivative".
 
             ia = p_Idescriptors(ialbet)
 
@@ -2551,7 +2551,7 @@ contains
       end do ! iel
 
       ! Incorporate the local vector into the global one.
-      ! The 'local' DOF 1..indofTest is mapped to the global DOF using
+      ! The "local" DOF 1..indofTest is mapped to the global DOF using
       ! the IdofsTest array.
       !
       ! OpenMP-Extension: This is a critical section. Only one thread is
@@ -2602,7 +2602,7 @@ contains
 
   ! A callback routine which is able to calculate the values of the
   ! function $f$ which is to be discretised.
-  include 'intf_coefficientVectorBl.inc'
+  include "intf_coefficientVectorBl.inc"
   optional :: fcoeff_buildVectorBl_sim
 
   ! OPTIONAL: Number of temp arrays.
@@ -2833,7 +2833,7 @@ contains
 
       do iel = 1,IELmax-IELset+1
 
-        ! We make a 'local' approach, i.e. we calculate the values of the
+        ! We make a "local" approach, i.e. we calculate the values of the
         ! integral into the vector DlocalData and add them later into
         ! the large solution vector.
 
@@ -2861,7 +2861,7 @@ contains
             ! -> IA=0: function value,
             !      =1: first derivative,
             !      =2: 2nd derivative,...
-            !    as defined in the module 'derivative'.
+            !    as defined in the module "derivative".
 
             ia = p_Idescriptors(ialbet)
 
@@ -2899,7 +2899,7 @@ contains
       end do ! iel
 
       ! Incorporate the local vector into the global one.
-      ! The 'local' DOF 1..indofTest is mapped to the global DOF using
+      ! The "local" DOF 1..indofTest is mapped to the global DOF using
       ! the IdofsTest array.
       !
       ! OpenMP-Extension: This is a critical section. Only one thread is
@@ -2962,7 +2962,7 @@ contains
 
   ! A callback routine which is able to calculate the values of the
   ! function $f$ which is to be discretised.
-  include 'intf_coefficientVectorScBdr1D.inc'
+  include "intf_coefficientVectorScBdr1D.inc"
   optional :: fcoeff_buildVectorScBdr1D_sim
 
   ! OPTIONAL: local performance configuration. If not given, the
@@ -3017,8 +3017,8 @@ contains
     ! We only need to evaluate the test functions in a single boundary
     ! node. Therefore, the use of a one-point cubature rule is mandatory.
     if (ncubp .ne. 1) then
-      call output_line('Assembly structure must be initialised for 1-point cubature rule!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_assembleSubmeshVectorBdr1D')
+      call output_line("Assembly structure must be initialised for 1-point cubature rule!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_assembleSubmeshVectorBdr1D")
       call sys_halt()
     end if
 
@@ -3127,7 +3127,7 @@ contains
         ! -> IA=0: function value,
         !      =1: first derivative,
         !      =2: 2nd derivative,...
-        !    as defined in the module 'derivative'.
+        !    as defined in the module "derivative".
 
         ia = p_Idescriptors(ialbet)
 
@@ -3162,7 +3162,7 @@ contains
       end do ! ialbet
 
       ! Incorporate the local vector into the global one.
-      ! The 'local' DOF 1..indofTest is mapped to the global DOF using
+      ! The "local" DOF 1..indofTest is mapped to the global DOF using
       ! the IdofsTest array.
       do idofe = 1,indof
         p_Ddata(p_Idofs(idofe,iel)) = p_Ddata(p_Idofs(idofe,iel)) + DlocalData(idofe)
@@ -3206,7 +3206,7 @@ contains
 
   ! A callback routine which is able to calculate the values of the
   ! function $f$ which is to be discretised.
-  include 'intf_coefficientVectorScBdr2D.inc'
+  include "intf_coefficientVectorScBdr2D.inc"
   optional :: fcoeff_buildVectorScBdr2D_sim
 
   ! OPTIONAL: Number of temp arrays.
@@ -3521,7 +3521,7 @@ contains
 
       do iel = 1,IELmax-IELset+1
 
-        ! We make a 'local' approach, i.e. we calculate the values of the
+        ! We make a "local" approach, i.e. we calculate the values of the
         ! integral into the vector DlocalData and add them later into
         ! the large solution vector.
 
@@ -3548,7 +3548,7 @@ contains
             ! -> IA=0: function value,
             !      =1: first derivative,
             !      =2: 2nd derivative,...
-            !    as defined in the module 'derivative'.
+            !    as defined in the module "derivative".
 
             ia = p_Idescriptors(ialbet)
 
@@ -3586,7 +3586,7 @@ contains
       end do ! iel
 
       ! Incorporate the local vector into the global one.
-      ! The 'local' DOF 1..indofTest is mapped to the global DOF using
+      ! The "local" DOF 1..indofTest is mapped to the global DOF using
       ! the IdofsTest array.
       !
       ! OpenMP-Extension: This is a critical section. Only one thread is
@@ -3645,7 +3645,7 @@ contains
 
   ! A callback routine which is able to calculate the values of the
   ! function $f$ which is to be discretised.
-  include 'intf_coefficientVectorBlBdr1D.inc'
+  include "intf_coefficientVectorBlBdr1D.inc"
   optional :: fcoeff_buildVectorBlBdr1D_sim
 
   ! OPTIONAL: local performance configuration. If not given, the
@@ -3700,8 +3700,8 @@ contains
     ! We only need to evaluate the test functions in a single boundary
     ! node. Therefore, the use of a one-point cubature rule is mandatory.
     if (ncubp .ne. 1) then
-      call output_line('Assembly structure must be initialised for 1-point cubature rule!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_assembleSubmeshVecScBdr1D')
+      call output_line("Assembly structure must be initialised for 1-point cubature rule!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_assembleSubmeshVecScBdr1D")
       call sys_halt()
     end if
 
@@ -3813,7 +3813,7 @@ contains
         ! -> IA=0: function value,
         !      =1: first derivative,
         !      =2: 2nd derivative,...
-        !    as defined in the module 'derivative'.
+        !    as defined in the module "derivative".
 
         ia = p_Idescriptors(ialbet)
 
@@ -3848,7 +3848,7 @@ contains
       end do ! ialbet
 
       ! Incorporate the local vector into the global one.
-      ! The 'local' DOF 1..indofTest is mapped to the global DOF using
+      ! The "local" DOF 1..indofTest is mapped to the global DOF using
       ! the IdofsTest array.
       do idofe = 1,indof
         do ivar = 1, rvector%NVAR
@@ -3895,7 +3895,7 @@ contains
 
   ! A callback routine which is able to calculate the values of the
   ! function $f$ which is to be discretised.
-  include 'intf_coefficientVectorBlBdr2D.inc'
+  include "intf_coefficientVectorBlBdr2D.inc"
   optional :: fcoeff_buildVectorBlBdr2D_sim
 
   ! OPTIONAL: Number of temp arrays.
@@ -4212,7 +4212,7 @@ contains
 
       do iel = 1,IELmax-IELset+1
 
-        ! We make a 'local' approach, i.e. we calculate the values of the
+        ! We make a "local" approach, i.e. we calculate the values of the
         ! integral into the vector DlocalData and add them later into
         ! the large solution vector.
 
@@ -4239,7 +4239,7 @@ contains
             ! -> IA=0: function value,
             !      =1: first derivative,
             !      =2: 2nd derivative,...
-            !    as defined in the module 'derivative'.
+            !    as defined in the module "derivative".
 
             ia = p_Idescriptors(ialbet)
 
@@ -4277,7 +4277,7 @@ contains
       end do ! iel
 
       ! Incorporate the local vector into the global one.
-      ! The 'local' DOF 1..indofTest is mapped to the global DOF using
+      ! The "local" DOF 1..indofTest is mapped to the global DOF using
       ! the IdofsTest array.
       !
       ! OpenMP-Extension: This is a critical section. Only one thread is
@@ -4332,7 +4332,7 @@ contains
 
   ! A callback routine which is able to calculate the values of the
   ! vector-valued function $f$ which is to be discretised.
-  include 'intf_coefficientVectorBl.inc'
+  include "intf_coefficientVectorBl.inc"
   optional :: fcoeff_buildVectorBl_sim
 
   ! OPTIONAL: Number of temp arrays.
@@ -4565,7 +4565,7 @@ contains
 
       do iel = 1,IELmax-IELset+1
 
-        ! We make a 'local' approach, i.e. we calculate the values of the
+        ! We make a "local" approach, i.e. we calculate the values of the
         ! integral into the vector DlocalData and add them later into
         ! the large solution vector.
 
@@ -4593,7 +4593,7 @@ contains
             ! -> IA=0: function value,
             !      =1: first derivative,
             !      =2: 2nd derivative,...
-            !    as defined in the module 'derivative'.
+            !    as defined in the module "derivative".
 
             ia = p_Idescriptors(ialbet)
 
@@ -4631,7 +4631,7 @@ contains
       end do ! iel
 
       ! Incorporate the local vector into the global one.
-      ! The 'local' DOF 1..indofTest is mapped to the global DOF using
+      ! The "local" DOF 1..indofTest is mapped to the global DOF using
       ! the IdofsTest array.
       !
       ! OpenMP-Extension: This is a critical section. Only one thread is
@@ -4694,7 +4694,7 @@ contains
 
   ! A callback routine which is able to calculate the values of the
   ! function $f$ which is to be discretised.
-  include 'intf_coefficientVectorBlBdr1D.inc'
+  include "intf_coefficientVectorBlBdr1D.inc"
   optional :: fcoeff_buildVectorBlBdr1D_sim
 
   ! OPTIONAL: local performance configuration. If not given, the
@@ -4749,8 +4749,8 @@ contains
     ! We only need to evaluate the test functions in a single boundary
     ! node. Therefore, the use of a one-point cubature rule is mandatory.
     if (ncubp .ne. 1) then
-      call output_line('Assembly structure must be initialised for 1-point cubature rule!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_assembleSubmeshVecBlBdr1D')
+      call output_line("Assembly structure must be initialised for 1-point cubature rule!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_assembleSubmeshVecBlBdr1D")
       call sys_halt()
     end if
 
@@ -4863,7 +4863,7 @@ contains
         ! -> IA=0: function value,
         !      =1: first derivative,
         !      =2: 2nd derivative,...
-        !    as defined in the module 'derivative'.
+        !    as defined in the module "derivative".
 
         ia = p_Idescriptors(ialbet)
 
@@ -4898,7 +4898,7 @@ contains
       end do ! ialbet
 
       ! Incorporate the local vector into the global one.
-      ! The 'local' DOF 1..indofTest is mapped to the global DOF using
+      ! The "local" DOF 1..indofTest is mapped to the global DOF using
       ! the IdofsTest array.
       do iblock =1,rvector%nblocks
         do idofe = 1,indof
@@ -4946,7 +4946,7 @@ contains
 
   ! A callback routine which is able to calculate the values of the
   ! function $f$ which is to be discretised.
-  include 'intf_coefficientVectorBlBdr2D.inc'
+  include "intf_coefficientVectorBlBdr2D.inc"
   optional :: fcoeff_buildVectorBlBdr2D_sim
 
   ! OPTIONAL: Number of temp arrays.
@@ -5264,7 +5264,7 @@ contains
 
       do iel = 1,IELmax-IELset+1
 
-        ! We make a 'local' approach, i.e. we calculate the values of the
+        ! We make a "local" approach, i.e. we calculate the values of the
         ! integral into the vector DlocalData and add them later into
         ! the large solution vector.
 
@@ -5291,7 +5291,7 @@ contains
             ! -> IA=0: function value,
             !      =1: first derivative,
             !      =2: 2nd derivative,...
-            !    as defined in the module 'derivative'.
+            !    as defined in the module "derivative".
 
             ia = p_Idescriptors(ialbet)
 
@@ -5329,7 +5329,7 @@ contains
       end do ! iel
 
       ! Incorporate the local vector into the global one.
-      ! The 'local' DOF 1..indofTest is mapped to the global DOF using
+      ! The "local" DOF 1..indofTest is mapped to the global DOF using
       ! the IdofsTest array.
       !
       ! OpenMP-Extension: This is a critical section. Only one thread is
@@ -5409,7 +5409,7 @@ contains
   logical, intent(in) :: bclear
 
   ! A callback routine for the function to be discretised.
-  include 'intf_coefficientVectorSc.inc'
+  include "intf_coefficientVectorSc.inc"
   optional :: fcoeff_buildVectorSc_sim
 
   ! OPTIONAL: Number of temp arrays.
@@ -5503,7 +5503,7 @@ contains
   logical, intent(in) :: bclear
 
   ! A callback routine for the function to be discretised.
-  include 'intf_coefficientVectorSc.inc'
+  include "intf_coefficientVectorSc.inc"
   optional :: fcoeff_buildVectorSc_sim
 
   ! OPTIONAL: A scalar cubature information structure that specifies the cubature
@@ -5557,22 +5557,22 @@ contains
 
     ! If the vector does not exist, stop here.
     if (rvector%h_Ddata .eq. ST_NOHANDLE) then
-      call output_line('Vector not available!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalar')
+      call output_line("Vector not available!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorScalar")
       call sys_halt()
     end if
 
     ! If the vector os stored in interleave format, stop here.
     if (rvector%NVAR .ne. 1) then
-      call output_line('Vector must not be in interleaved format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalar')
+      call output_line("Vector must not be in interleaved format!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorScalar")
       call sys_halt()
     end if
 
     ! The vector must be unsorted, otherwise we can not set up the vector.
-    if (rvector%isortStrategy .gt. 0) then
-      call output_line('Vector must be unsorted!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalar')
+    if (rvector%bisSorted) then
+      call output_line("Vector must be unsorted!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorScalar")
       call sys_halt()
     end if
 
@@ -5581,8 +5581,8 @@ contains
 
     ! The vector must provide a discretisation structure
     if (.not. associated(rvector%p_rspatialDiscr)) then
-      call output_line('No discretisation associated!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalar')
+      call output_line("No discretisation associated!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorScalar")
       call sys_halt()
     end if
 
@@ -5635,13 +5635,13 @@ contains
         end do
 
       case default
-        call output_line('Single precision vectors currently not supported!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalar')
+        call output_line("Single precision vectors currently not supported!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorScalar")
       end select
 
     else
-      call output_line('General discretisation not implemented!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalar')
+      call output_line("General discretisation not implemented!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorScalar")
       call sys_halt()
     end if
 
@@ -5690,7 +5690,7 @@ contains
   logical, intent(in) :: bclear
 
   ! A callback routine for the function to be discretised.
-  include 'intf_coefficientVectorBl.inc'
+  include "intf_coefficientVectorBl.inc"
   optional :: fcoeff_buildVectorBl_sim
 
   ! OPTIONAL: A scalar cubature information structure that specifies the cubature
@@ -5743,14 +5743,14 @@ contains
 
     ! If the vector does not exist, stop here.
     if (rvector%h_Ddata .eq. ST_NOHANDLE) then
-      call output_line('Vector not available!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalar2')
+      call output_line("Vector not available!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVecIntlScalar2")
     end if
 
     ! The vector must be unsorted, otherwise we can not set up the vector.
-    if (rvector%isortStrategy .gt. 0) then
-      call output_line('Vector must be unsorted!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalar2')
+    if (rvector%bisSorted) then
+      call output_line("Vector must be unsorted!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVecIntlScalar2")
       call sys_halt()
     end if
 
@@ -5759,8 +5759,8 @@ contains
 
     ! The vector must provide a discretisation structure
     if (.not. associated(rvector%p_rspatialDiscr)) then
-      call output_line('No discretisation associated!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalar2')
+      call output_line("No discretisation associated!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVecIntlScalar2")
       call sys_halt()
     end if
 
@@ -5811,13 +5811,13 @@ contains
         end do
 
       case DEFAULT
-        call output_line('Single precision vectors currently not supported!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalar2')
+        call output_line("Single precision vectors currently not supported!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVecIntlScalar2")
       end select
 
     else
-      call output_line('General discretisation not implemented!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVecIntlScalar2')
+      call output_line("General discretisation not implemented!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVecIntlScalar2")
       call sys_halt()
     end if
 
@@ -5868,7 +5868,7 @@ contains
   logical, intent(in) :: bclear
 
   ! A callback routine for the function to be discretised.
-  include 'intf_coefficientVectorBl.inc'
+  include "intf_coefficientVectorBl.inc"
   optional :: fcoeff_buildVectorBl_sim
 
   ! OPTIONAL: A scalar cubature information structure that specifies the cubature
@@ -5926,15 +5926,15 @@ contains
 
     ! If the vector does not exist, stop here.
     if (rvectorBlock%h_Ddata .eq. ST_NOHANDLE) then
-      call output_line('Vector not available!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorBlock2')
+      call output_line("Vector not available!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorBlock2")
     end if
 
     ! The vector must be unsorted, otherwise we can not set up the vector.
     do iblock = 1, rvectorBlock%nblocks
-      if (rvectorBlock%RvectorBlock(iblock)%isortStrategy .gt. 0) then
-        call output_line('Vector must be unsorted!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorBlock2')
+      if (rvectorBlock%RvectorBlock(iblock)%bisSorted) then
+        call output_line("Vector must be unsorted!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorBlock2")
         call sys_halt()
       end if
     end do
@@ -5944,8 +5944,8 @@ contains
 
     ! The vector must provide a block discretisation structure
     if (.not. associated(rvectorBlock%p_rblockDiscr)) then
-      call output_line('No block discretisation associated!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorBlock2')
+      call output_line("No block discretisation associated!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorBlock2")
       call sys_halt()
     end if
 
@@ -5954,8 +5954,8 @@ contains
       call spdiscr_isDiscrCompatible(rvectorBlock%p_rblockDiscr%RspatialDiscr(1),&
           rvectorBlock%p_rblockDiscr%RspatialDiscr(iblock), bcompatible)
       if (.not.bcompatible) then
-        call output_line('All scalar subvectors must have the same spatial discretisation!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorBlock2')
+        call output_line("All scalar subvectors must have the same spatial discretisation!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorBlock2")
         call sys_halt()
       end if
     end do
@@ -6004,13 +6004,13 @@ contains
         end do
 
       case default
-        call output_line('Single precision vectors currently not supported!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorBlock2')
+        call output_line("Single precision vectors currently not supported!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorBlock2")
       end select
 
     else
-      call output_line('General discretisation not implemented!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorBlock2')
+      call output_line("General discretisation not implemented!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorBlock2")
       call sys_halt()
     end if
 
@@ -6054,7 +6054,7 @@ contains
   integer, intent(in), optional :: iboundaryComp
 
   ! A callback routine for the function to be discretised.
-  include 'intf_coefficientVectorBlBdr1D.inc'
+  include "intf_coefficientVectorBlBdr1D.inc"
   optional :: fcoeff_buildVectorBlBdr1D_sim
 
   ! OPTIONAL: Number of temp arrays.
@@ -6094,15 +6094,15 @@ contains
 
     ! If the vector does not exist, stop here.
     if (rvectorBlock%h_Ddata .eq. ST_NOHANDLE) then
-      call output_line('Vector not available!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorBlockBdr1D')
+      call output_line("Vector not available!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorBlockBdr1D")
     end if
 
     ! The vector must be unsorted, otherwise we can not set up the vector.
     do iblock = 1, rvectorBlock%nblocks
-      if (rvectorBlock%RvectorBlock(iblock)%isortStrategy .gt. 0) then
-        call output_line('Vector must be unsorted!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorBlockBdr1D')
+      if (rvectorBlock%RvectorBlock(iblock)%bisSorted) then
+        call output_line("Vector must be unsorted!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorBlockBdr1D")
         call sys_halt()
       end if
     end do
@@ -6112,8 +6112,8 @@ contains
 
     ! The vector must provide a block discretisation structure
     if (.not. associated(rvectorBlock%p_rblockDiscr)) then
-      call output_line('No block discretisation associated!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorBlockBdr1D')
+      call output_line("No block discretisation associated!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorBlockBdr1D")
       call sys_halt()
     end if
 
@@ -6122,8 +6122,8 @@ contains
       call spdiscr_isDiscrCompatible(rvectorBlock%p_rblockDiscr%RspatialDiscr(1),&
           rvectorBlock%p_rblockDiscr%RspatialDiscr(iblock), bcompatible)
       if (.not.bcompatible) then
-        call output_line('All scalar subvectors must have the same spatial discretisation!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorBlockBdr1D')
+        call output_line("All scalar subvectors must have the same spatial discretisation!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorBlockBdr1D")
         call sys_halt()
       end if
     end do
@@ -6133,8 +6133,8 @@ contains
 
     ! The discretisation must provide a triangulation structure
     if (.not. associated(p_rspatialDiscr%p_rtriangulation)) then
-      call output_line('No triangulation associated!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorBlockBdr1D')
+      call output_line("No triangulation associated!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorBlockBdr1D")
       call sys_halt()
     end if
 
@@ -6236,13 +6236,13 @@ contains
         end if
 
       case DEFAULT
-        call output_line('Single precision vectors currently not supported!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorBlockBdr1D')
+        call output_line("Single precision vectors currently not supported!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorBlockBdr1D")
       end select
 
     else
-      call output_line('General discretisation not implemented!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorBlockBdr1D')
+      call output_line("General discretisation not implemented!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorBlockBdr1D")
       call sys_halt()
     end if
 
@@ -6284,7 +6284,7 @@ contains
   type(t_boundaryRegion), intent(in), optional :: rboundaryRegion
 
   ! A callback routine for the function to be discretised.
-  include 'intf_coefficientVectorBlBdr2D.inc'
+  include "intf_coefficientVectorBlBdr2D.inc"
   optional :: fcoeff_buildVectorBlBdr2D_sim
 
   ! OPTIONAL: Number of temp arrays.
@@ -6336,15 +6336,15 @@ contains
 
     ! If the vector does not exist, stop here.
     if (rvectorBlock%h_Ddata .eq. ST_NOHANDLE) then
-      call output_line('Vector not available!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorBlockBdr2D')
+      call output_line("Vector not available!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorBlockBdr2D")
     end if
 
     ! The vector must be unsorted, otherwise we can not set up the vector.
     do iblock = 1, rvectorBlock%nblocks
-      if (rvectorBlock%RvectorBlock(iblock)%isortStrategy .gt. 0) then
-        call output_line('Vector must be unsorted!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorBlockBdr2D')
+      if (rvectorBlock%RvectorBlock(iblock)%bisSorted) then
+        call output_line("Vector must be unsorted!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorBlockBdr2D")
         call sys_halt()
       end if
     end do
@@ -6354,8 +6354,8 @@ contains
 
     ! The vector must provide a block discretisation structure
     if (.not. associated(rvectorBlock%p_rblockDiscr)) then
-      call output_line('No block discretisation associated!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorBlockBdr2D')
+      call output_line("No block discretisation associated!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorBlockBdr2D")
       call sys_halt()
     end if
 
@@ -6364,8 +6364,8 @@ contains
       call spdiscr_isDiscrCompatible(rvectorBlock%p_rblockDiscr%RspatialDiscr(1),&
           rvectorBlock%p_rblockDiscr%RspatialDiscr(iblock), bcompatible)
       if (.not.bcompatible) then
-        call output_line('All scalar subvectors must have the same spatial discretisation!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorBlockBdr2D')
+        call output_line("All scalar subvectors must have the same spatial discretisation!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorBlockBdr2D")
         call sys_halt()
       end if
     end do
@@ -6375,15 +6375,15 @@ contains
 
     ! The discretisation must provide a triangulation structure
     if (.not. associated(p_rspatialDiscr%p_rtriangulation)) then
-      call output_line('No triangulation associated!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorBlockBdr2D')
+      call output_line("No triangulation associated!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorBlockBdr2D")
       call sys_halt()
     end if
 
     ! The discretisation must provide a boundary structure
     if (.not. associated(p_rspatialDiscr%p_rboundary)) then
-      call output_line('No boundary associated!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorBlockBdr2D')
+      call output_line("No boundary associated!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorBlockBdr2D")
       call sys_halt()
     end if
 
@@ -6500,13 +6500,13 @@ contains
         end if
 
       case DEFAULT
-        call output_line('Single precision vectors currently not supported!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorBlockBdr2D')
+        call output_line("Single precision vectors currently not supported!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorBlockBdr2D")
       end select
 
     else
-      call output_line('General discretisation not implemented!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorBlockBdr2D')
+      call output_line("General discretisation not implemented!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorBlockBdr2D")
       call sys_halt()
     end if
 
@@ -6528,7 +6528,7 @@ contains
   type(t_scalarCubatureInfo), intent(in), target, optional :: rcubatureInfo
 
   ! A callback routine for the function to be discretised.
-  include 'intf_coefficientVectorSc.inc'
+  include "intf_coefficientVectorSc.inc"
   optional :: fcoeff_buildVectorSc_sim
 
   ! OPTIONAL: Whether to clear the vector before calculating the entries.

@@ -182,6 +182,7 @@ module vanka
   use quicksolver
   use spatialdiscretisation
   use storage
+  use sortstrategybase
 
   use vanka_navst2d
   use vanka_bouss2d
@@ -1316,10 +1317,10 @@ contains
 
         ! If the vector is sorted, push the DOF`s through the permutation to get
         ! the actual DOF`s.
-        if (rvector%RvectorBlock(i)%isortStrategy .gt. 0) then
+        if (rvector%RvectorBlock(i)%bisSorted) then
 
-          call storage_getbase_int(rvector%RvectorBlock(i)%h_IsortPermutation,&
-                                  p_Ipermutation)
+          call sstrat_getUnsortedPosInfo (&
+              rvector%RvectorBlock(i)%p_rsortStrategy,p_Ipermutation)
 
           do iel=1,IELmax-IELset+1
             do j=1,rvankaGeneral%p_InDofsLocal(i)
@@ -1327,7 +1328,7 @@ contains
               ! DOF`s - this needs the 2nd half of the permutation.
               rvankaGeneral%p_IelementDOFs(j,iel,i) = &
                  p_Ipermutation(rvankaGeneral%p_IelementDOFs(j,iel,i) &
-                +rvector%RvectorBlock(i)%NEQ)
+                 + rvector%RvectorBlock(i)%NEQ)
             end do
           end do
         end if

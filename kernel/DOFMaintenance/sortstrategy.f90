@@ -6,10 +6,6 @@
 !# <purpose>
 !# This module contains different routines to calculate resorting
 !# strategies for scalar vectors.
-!# A sorting strategy is simply a permutation of the numbers 1..NEQ
-!# how to permute a scalar vector and its inverse permutation.
-!# Both permutations are usually assigned as one large array
-!# to a (scalar) vector to indicate how it is resorted.
 !#
 !# Which information are necessary for the calculation of a permutation
 !# is completely algorithm dependent. Therefore, this module has full
@@ -72,7 +68,6 @@
 
 module sortstrategy
 
-!$use omp_lib
   use fsystem
   use storage
   use genoutput
@@ -81,116 +76,24 @@ module sortstrategy
   use spatialdiscretisation
   use element
   use triangulation
+  use sortstrategybase
   use linearsystemscalar
   use adjacency
   use dofmapping
   use sort
   use random
   use fespacehierarchybase
+  use dofmapping
 
   implicit none
 
   private
 
-!<constants>
-
-!<constantblock description="Sort strategy identifiers.">
-
-  ! No sort strategy; this must be =0!
-  integer, parameter, public :: SSTRAT_UNSORTED     = 0
-
-  ! Cuthill-McKee sort strategy
-  integer, parameter, public :: SSTRAT_CM           = 1
-
-  ! Reverse Cuthill-McKee sort strategy
-  integer, parameter, public :: SSTRAT_RCM          = 2
-
-  ! Row-wise sorting for point coordinate.
-  ! (As calculated by sstrat_initXYZsorting with idirection=0.)
-  ! Only for special type of discretisations (<tex>$Q_1$</tex>, <tex>$\tilde Q_1$</tex>), where
-  ! the DOF`s can be identified with X/Y/Z coordinates.
-  ! Coincides with the sorting strategy of FEAST for simple-type domains
-  ! like the unit square.
-  integer, parameter, public :: SSTRAT_XYZCOORD     = 3
-
-  ! Column-wise sorting for point coordinate.
-  ! (As calculated by sstrat_initXYZsorting with idirection=1.)
-  ! Only for special type of discretisations (<tex>$Q_1$</tex>, <tex>$\tilde Q_1$</tex>), where
-  ! the DOF`s can be identified with X/Y/Z coordinates.
-  integer, parameter, public :: SSTRAT_ZYXCOORD     = 4
-
-  ! General FEAST renumbering.
-  ! The DOF`s are numbered rowwise, independent of the geometrical
-  ! structure of the domain.
-  ! Only for special type of discretisations (<tex>$Q_1$</tex>) and tensor product meshes.
-  integer, parameter, public :: SSTRAT_FEAST        = 5
-
-  ! Stochastic renumbering / Random permutation.
-  ! The permutation is completely random.
-  integer, parameter, public :: SSTRAT_STOCHASTIC   = 6
-
-  ! Hierarchical renumbering: The permutation is calculated by a sequence of meshes,
-  ! regularly refined.
-  integer, parameter, public :: SSTRAT_HIERARCHICAL = 7
-
-  ! Random permutation.
-  ! The permutation is completely random.
-  integer, parameter, public :: SSTRAT_RANDOM       = 8
-
-!</constantblock>
-
-!</constants>
-
 !<types>
 
 !<typeblock>
 
-  ! Encapsules a sorting strategy which can be used
-  ! to resort matrices/vectors etc.
-  type t_sortStrategy
-    
-    ! Type of the sorting strategy. One of the SSTRAT_xxxx constants.
-    integer :: ctype = SSTRAT_UNSORTED
-    
-    ! Size of the permutation.
-    integer :: nsize = 0
-    
-    ! Handle to the permutation. The calculated
-    ! permutation Ipermutation given as a parameter to the routines
-    ! has length 2*nsize for nsize numbers. It contains the permutation in the
-    ! first N and its inverse at the second nsize entries. Here, the
-    ! exact meaning of the word "permutation" is as follows:
-    !
-    !  Ipermutation (position in sorted vector) = position in unsorted vector.
-    !  Ipermutation (nsize+position in unsorted vector) = position in sorted vector.    
-    integer :: h_Ipermutation = ST_NOHANDLE
-    
-  end type
-  
-!</typeblock>
-
-  public :: t_sortStrategy
-
-!<typeblock>
-
-  ! A set of sorting strategies for multiple blocks (e.g., of block vectors).
-  type t_blockSortStrategies
-    
-    ! Number of blocks
-    integer :: nblocks = 0
-    
-    ! List of sorting strategies for all the blocks.
-    type(t_sortStrategy), dimension(:), pointer :: p_Rstrategies => null()
-    
-  end type
-  
-!</typeblock>
-
-  public :: t_blockSortStrategies
-
-!<typeblock description="Level hierarchy structure for te hierarchically calculated permutation">
-
-  ! A local structure for the hierarchical sorting strategy.
+  ! A local (private) structure for the hierarchical sorting strategy.
   ! Represents one level in the hierarchy.
   type t_levelHierarchy
 
@@ -221,6 +124,7 @@ module sortstrategy
   public :: sstrat_initXYZsorting
   public :: sstrat_initFEASTsorting
   public :: sstrat_initRandom
+  public :: sstrat_initStochastic
   public :: sstrat_initHierarchical
   public :: sstrat_initHierarchicalFEH
   public :: sstrat_doneStrategy
@@ -275,25 +179,35 @@ contains
   ! Type of the sorting strategy. An SSTRAT_xxxx constant.
   integer, intent(in) :: ctype
   
-  ! Size of the permutation.
-  integer, intent(in) :: nsize
+  ! OPTIONAL: Size of the permutation.
+  ! If not present, the size is tried to be taken from the structure.
+  integer, intent(in), optional :: nsize
 !</input>
 
 !</subroutine>
 
+    integer :: nsizelocal
+
+    nsizelocal = rsortStrategy%nsize
+    if (present(nsize)) nsizelocal = nsize
+    
+    if (nsizelocal .eq. 0) then
+      call output_line ("Cannot determine size of the permutation.", &
+          OU_CLASS_ERROR,OU_MODE_STD,"sstrat_initStructure")
+      call sys_halt()
+    end if
+
     ! Is there an existing sorting strategy in the structure? Release
     ! if it has not the correct size.
-    if ((rsortStrategy%nsize .ne. 0) .and. (rsortStrategy%nsize .ne. nsize)) then
+    if ((rsortStrategy%nsize .ne. 0) .and. (rsortStrategy%nsize .ne. nsizelocal)) then
       call sstrat_doneStrategy (rsortStrategy)
     end if
-    
-    if (rsortStrategy%nsize .ne. 0) then
-      ! Allocate memory, initialise structure
-      rsortStrategy%nsize = nsize
-      rsortStrategy%ctype = ctype
-      call storage_new ("sstrat_initRandom", "Ipermutation", &
-            nsize*2_I32, ST_INT, rsortStrategy%h_Ipermutation,ST_NEWBLOCK_NOINIT)
-    end if
+
+    ! Allocate memory, initialise structure
+    rsortStrategy%nsize = nsizelocal
+    rsortStrategy%ctype = ctype
+    call storage_new ("sstrat_initStructure", "Ipermutation", &
+          nsizelocal*2, ST_INT, rsortStrategy%h_Ipermutation,ST_NEWBLOCK_NOINIT)
     
   end subroutine
 
@@ -315,7 +229,8 @@ contains
 
 !<input>
   ! Size of the permutation.
-  integer, intent(in) :: nsize
+  ! If not present, the size is tried to be taken from the structure.
+  integer, intent(in), optional :: nsize
 
   ! OPTIONAL: A seed for the random number generator.
   ! If not given, the value RNG_DEFAULT_S from random.f90 is used.
@@ -333,6 +248,43 @@ contains
     ! Calculate
     call storage_getbase_int (rsortStrategy%h_Ipermutation,p_Ipermutation)
     call sstrat_calcRandom (p_Ipermutation, iseed)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sstrat_initStochastic (rsortStrategy, nsize)
+
+!<description>
+  ! Generates a stochastic permutation.
+  ! DEPRECATED: Use sstrat_initRandom instead!
+!</description>
+
+!<inputoutput>
+  ! The sorting strategy structure which receives the output.
+  ! Any existing sorting strategy is overwritten.
+  type(t_sortStrategy), intent(inout) :: rsortStrategy
+!</inputoutput>
+
+!<input>
+  ! Size of the permutation.
+  ! If not present, the size is tried to be taken from the structure.
+  integer, intent(in), optional :: nsize
+!</input>
+
+!</subroutine>
+
+    ! Local variables
+    integer, dimension(:), pointer :: p_Ipermutation
+
+    ! Initialise
+    call sstrat_initStructure (rsortStrategy, SSTRAT_STOCHASTIC, nsize)
+    
+    ! Calculate
+    call storage_getbase_int (rsortStrategy%h_Ipermutation,p_Ipermutation)
+    call sstrat_calcStochastic (p_Ipermutation)
 
   end subroutine
 
@@ -665,10 +617,14 @@ contains
 
     ! Reset the structure, release all memory
     rsortStrategy%ctype = SSTRAT_UNSORTED
-    rsortStrategy%nsize = 0
     if (rsortStrategy%h_Ipermutation .ne. ST_NOHANDLE) then
       call storage_free (rsortStrategy%h_Ipermutation)
     end if
+
+    ! The size is not put to zero, so it is possible to
+    ! obtain the size from the structure if a new permutation
+    ! is allocated.
+    ! rsortStrategy%nsize = 0
 
   end subroutine
 
@@ -690,7 +646,7 @@ contains
 
 !<output>
   ! The sorting strategy structure to be initialised
-  type(t_blockSortStrategies), intent(out) :: rblockStrategies
+  type(t_blockSortStrategy), intent(out) :: rblockStrategies
 !</output>
 
 !</subroutine>
@@ -710,6 +666,11 @@ contains
 !<description>
   ! Initialise a block sorting strategy structure for the sorting of
   ! multiple blocks.
+  !
+  ! The routine automatically adjusts the size of the permutations
+  ! according to the number of DOFs in the discretisation.
+  ! The "nsize" parameter can then be omitted in the creation
+  ! of the sorting strategies.
 !</description>
 
 !<input>
@@ -719,14 +680,22 @@ contains
 
 !<output>
   ! The sorting strategy structure to be initialised
-  type(t_blockSortStrategies), intent(out) :: rblockStrategies
+  type(t_blockSortStrategy), intent(out) :: rblockStrategies
 !</output>
 
 !</subroutine>
 
+    integer :: i
+
     ! Initialise the structure
     rblockStrategies%nblocks = rdiscretisation%ncomponents
     allocate(rblockStrategies%p_Rstrategies(rblockStrategies%nblocks))
+    
+    ! Initialise the size of the blocks
+    do i=1,rblockStrategies%nblocks
+      rblockStrategies%p_Rstrategies(i)%nsize = &
+          dof_igetNDofGlob(rdiscretisation%RspatialDiscr(i))
+    end do
 
   end subroutine
 
@@ -742,13 +711,20 @@ contains
 
 !<inputoutput>
   ! The sorting strategy structure to be cleared up
-  type(t_blockSortStrategies), intent(inout) :: rblockStrategies
+  type(t_blockSortStrategy), intent(inout) :: rblockStrategies
 !</inputoutput>
 
 !</subroutine>
 
+    integer :: i
+
     ! Release the structure
     if (rblockStrategies%nblocks .ne. 0) then
+      ! Release all sorting structures.
+      do i=1,rblockStrategies%nblocks
+        call sstrat_doneStrategy (rblockStrategies%p_Rstrategies(i))
+      end do
+
       rblockStrategies%nblocks = 0
       deallocate(rblockStrategies%p_Rstrategies)
     end if
@@ -1060,7 +1036,7 @@ contains
     call storage_free (h_Ideg)
     call storage_free (h_IcolTmp)
 
-  case DEFAULT
+  case default
     call output_line ("Unsupported matrix format.", &
         OU_CLASS_ERROR,OU_MODE_STD,"sstrat_calcCuthillMcKee")
     call sys_halt()

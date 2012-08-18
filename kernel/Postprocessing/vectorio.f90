@@ -52,6 +52,7 @@ module vectorio
   use io
   use linearsystemscalar
   use linearsystemblock
+  use sortstrategybase
 
   implicit none
 
@@ -517,10 +518,9 @@ contains
     case (ST_DOUBLE)
       ! Permuted?
       nullify(p_Ipermutation)
-      if (bunsort .and. (lsyssc_isVectorSorted (rvector))) then
-        call storage_getbase_int (rvector%h_IsortPermutation,p_Ipermutation)
-        ! We must use the inverse permutation
-        p_Ipermutation => p_Ipermutation(rvector%NEQ+1:)
+      if (bunsort .and. rvector%bisSorted) then
+        ! Get the information how to get the sorted from the unsorted vector.
+        call sstrat_getSortedPosInfo (rvector%p_rsortStrategy,p_Ipermutation)
       end if
 
       call lsyssc_getbase_double (rvector,p_Ddata)
@@ -663,10 +663,9 @@ contains
     case (ST_DOUBLE)
       ! Permuted?
       nullify(p_Ipermutation)
-      if (bunsort .and. (lsyssc_isVectorSorted (rvector))) then
-        call storage_getbase_int (rvector%h_IsortPermutation,p_Ipermutation)
-        ! We must use the inverse permutation
-        p_Ipermutation => p_Ipermutation(NEQ+1:)
+      if (bunsort .and. rvector%bisSorted) then
+        ! Get the information how to get the sorted from the unsorted vector.
+        call sstrat_getSortedPosInfo (rvector%p_rsortStrategy,p_Ipermutation)
       end if
 
       call lsyssc_getbase_double (rvector,p_Ddata)
@@ -801,11 +800,9 @@ contains
       do i=1,rvector%nblocks
         ! Permuted?
         nullify(p_Ipermutation)
-        if (bunsort .and. (lsyssc_isVectorSorted (rvector%RvectorBlock(i)))) then
-          call storage_getbase_int (&
-              rvector%RvectorBlock(i)%h_IsortPermutation,p_Ipermutation)
-          ! We must use the inverse permutation
-          p_Ipermutation => p_Ipermutation(rvector%RvectorBlock(i)%NEQ+1:)
+        if (bunsort .and. rvector%RvectorBlock(i)%bisSorted) then
+          ! Get the information how to get the sorted from the unsorted vector.
+          call sstrat_getSortedPosInfo (rvector%RvectorBlock(i)%p_rsortStrategy,p_Ipermutation)
         end if
 
         call lsyssc_getbase_double (rvector%RvectorBlock(i),p_Ddata)
@@ -989,11 +986,9 @@ contains
       do i=1,nblocks
         ! Permuted?
         nullify(p_Ipermutation)
-        if (bunsorted .and. (lsyssc_isVectorSorted (rvector%RvectorBlock(i)))) then
-          call storage_getbase_int (rvector%RvectorBlock(i)%h_IsortPermutation,&
-              p_Ipermutation)
-          ! We must use the inverse permutation
-          p_Ipermutation => p_Ipermutation(rvector%RvectorBlock(i)%NEQ+1:)
+        if (bunsorted .and. rvector%RvectorBlock(i)%bisSorted) then
+          ! Get the information how to get the sorted from the unsorted vector.
+          call sstrat_getSortedPosInfo (rvector%RvectorBlock(i)%p_rsortStrategy,p_Ipermutation)
         end if
 
         call lsyssc_getbase_double (rvector%RvectorBlock(i),p_Ddata)
@@ -1100,10 +1095,9 @@ contains
     case (ST_DOUBLE)
       ! Permuted?
       nullify(p_Ipermutation)
-      if (bunsort .and. (lsyssc_isVectorSorted (rvector))) then
-        call storage_getbase_int (rvector%h_IsortPermutation,p_Ipermutation)
-        ! We must use the inverse permutation
-        p_Ipermutation => p_Ipermutation(rvector%NEQ+1:)
+      if (bunsort .and. rvector%bisSorted) then
+        ! Get the information how to get the sorted from the unsorted vector.
+        call sstrat_getSortedPosInfo (rvector%p_rsortStrategy,p_Ipermutation)
       end if
 
       call lsyssc_getbase_double (rvector,p_Ddata)
@@ -1207,11 +1201,9 @@ contains
       do iblock = 1,rvector%nblocks
         ! Permuted?
         nullify(p_Ipermutation)
-        if (bunsort .and. (lsyssc_isVectorSorted (rvector%RvectorBlock(iblock)))) then
-          call storage_getbase_int (&
-            rvector%RvectorBlock(iblock)%h_IsortPermutation,p_Ipermutation)
-          ! We must use the inverse permutation
-          p_Ipermutation => p_Ipermutation(rvector%RvectorBlock(iblock)%NEQ+1:)
+        if (bunsort .and. rvector%RvectorBlock(iblock)%bisSorted) then
+          ! Get the information how to get the sorted from the unsorted vector.
+          call sstrat_getSortedPosInfo (rvector%RvectorBlock(iblock)%p_rsortStrategy,p_Ipermutation)
         end if
 
         call lsyssc_getbase_double (rvector%RvectorBlock(iblock),p_Ddata)
@@ -1392,10 +1384,9 @@ contains
 
       ! Permuted?
       nullify(p_Ipermutation)
-      if (bunsort .and. (lsyssc_isVectorSorted (rvector))) then
-        call storage_getbase_int (rvector%h_IsortPermutation,p_Ipermutation)
-        ! We must use the inverse permutation
-        p_Ipermutation => p_Ipermutation(rvector%NEQ+1:)
+      if (bunsort .and. rvector%bisSorted) then
+        ! Get the information how to get the sorted from the unsorted vector.
+        call sstrat_getSortedPosInfo (rvector%p_rsortStrategy,p_Ipermutation)
       end if
 
       call lsyssc_getbase_double(rvector,p_Da)
@@ -1431,10 +1422,9 @@ contains
 
       ! Permuted?
       nullify(p_Ipermutation)
-      if (bunsort .and. (lsyssc_isVectorSorted (rvector))) then
-        call storage_getbase_int (rvector%h_IsortPermutation,p_Ipermutation)
-        ! We must use the inverse permutation
-        p_Ipermutation => p_Ipermutation(rvector%NEQ+1:)
+      if (bunsort .and. rvector%bisSorted) then
+        ! Get the information how to get the sorted from the unsorted vector.
+        call sstrat_getSortedPosInfo (rvector%p_rsortStrategy,p_Ipermutation)
       end if
 
       call lsyssc_getbase_single(rvector,p_Fa)

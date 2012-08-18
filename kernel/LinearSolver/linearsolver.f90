@@ -27,7 +27,7 @@
 !#           [B2  C] (y)   (f2)
 !#     </verb>
 !#     with a regular block matrix A, general block matrices B1 and B2
-!#     and a 'stabilisation' matrix $C \sim 0$.
+!#     and a "stabilisation" matrix $C \sim 0$.
 !#
 !# Cases 2.) + 3.) are special cases of 1.) in that sense, that specialised
 !# solvers are available for these kind of systems which allow faster solving.
@@ -263,10 +263,10 @@
 !# ---------------------------------------------------------- \\
 !# When going through this library, a newcomer would think:
 !#
-!#       'Where are the solvers? I can only find preconditioners!?!'
-!#       'And what should that thing with the defect vectors mean?'
+!#       "Where are the solvers? I can only find preconditioners!?!"
+!#       "And what should that thing with the defect vectors mean?"
 !#
-!# The reason is simple: 'Everything is a preconditioner for defect vectors!'
+!# The reason is simple: "Everything is a preconditioner for defect vectors!"
 !#
 !# A short explaination: Let us assume we want to solve a linear system:
 !#
@@ -317,7 +317,7 @@
 !#
 !# Remark: As sometimes ( :-) ) the user wants to solve a system $Ax=b$ with
 !#   a given solution vector and a given RHS which is not a defect vector,
-!#   the routine 'linsol_solveAdaptively' can be called. This builds the
+!#   the routine "linsol_solveAdaptively" can be called. This builds the
 !#   defect, performs a preconditioning and corrects the solution vector -
 !#   which is indeed solving the problem.
 !#   When calling this routine with x:=0, the defect is exactly the RHS, so
@@ -369,7 +369,7 @@
 !#     find it?
 !#
 !#     Pure Richardson iteration (<tex>$x_{n+1} = x_n + \omega (b-Ax)$</tex>) is called
-!#     'defect correction' here. Set up a defect correction solver and
+!#     "defect correction" here. Set up a defect correction solver and
 !#     modify the domega parameter in the solver node:
 !#
 !# <verb>
@@ -574,9 +574,9 @@
 !#     UMFPACK returns:
 !#      <tex> $$         rd := domega A^(-1) rd  $$ </tex>
 !#
-!#     thus one should usually use domega=1. 'Direct' solvers usually
+!#     thus one should usually use domega=1. "Direct" solvers usually
 !#     act this ways. Exceptions for this rule are algorithms that use this
-!#     parameter for 'internal damping' like SOR:
+!#     parameter for "internal damping" like SOR:
 !#
 !#      <tex> $$         rd := (D + domega L)^{-1} rd  $$ </tex>
 !#
@@ -869,7 +869,7 @@ module linearsolver
   !    the relative AND the absolute stopping criterium holds
   integer, parameter, public :: LINSOL_STOP_STANDARD     = 0
 
-  ! Use 'minimum' stopping criterion.
+  ! Use "minimum" stopping criterion.
   ! If depsRel>0: use relative stopping criterion.
   ! If depsAbs>0: use abs stopping criterion.
   ! If both are > 0: use one of them, i.e. the iteration stops when the
@@ -937,7 +937,7 @@ module linearsolver
   ! General VANKA solver
   integer, parameter, public :: LINSOL_VANKA_GENERAL           = 0
   
-  ! General VANKA solver. Specialised 'direct' version, i.e. when
+  ! General VANKA solver. Specialised "direct" version, i.e. when
   ! used as a smoother in multigrid, this bypasses the usual defect
   ! correction approach to give an additional speedup.
   integer, parameter, public :: LINSOL_VANKA_GENERALDIRECT     = 1
@@ -946,7 +946,7 @@ module linearsolver
   integer, parameter, public :: LINSOL_VANKA_2DNAVST           = 2
 
   ! Simple VANKA, 2D Navier-Stokes problem, general discretisation.
-  ! Specialised 'direct' version, i.e. when
+  ! Specialised "direct" version, i.e. when
   ! used as a smoother in multigrid, this bypasses the usual defect
   ! correction approach to give an additional speedup.
   integer, parameter, public :: LINSOL_VANKA_2DNAVSTDIRECT     = 3
@@ -955,7 +955,7 @@ module linearsolver
   integer, parameter, public :: LINSOL_VANKA_2DFNAVST          = 4
 
   ! Full VANKA, 2D Navier-Stokes problem, general discretisation.
-  ! Specialised 'direct' version, i.e. when
+  ! Specialised "direct" version, i.e. when
   ! used as a smoother in multigrid, this bypasses the usual defect
   ! correction approach to give an additional speedup.
   integer, parameter, public :: LINSOL_VANKA_2DFNAVSTDIRECT    = 5
@@ -965,7 +965,7 @@ module linearsolver
   integer, parameter, public :: LINSOL_VANKA_2DNAVSTSB         = 6
 
   ! Simple VANKA, 2D Navier-Stokes problem, general discretisation.
-  ! Specialised 'direct' version, i.e. when
+  ! Specialised "direct" version, i.e. when
   ! used as a smoother in multigrid, this bypasses the usual defect
   ! correction approach to give an additional speedup.
   ! Solution-based variant.
@@ -975,7 +975,7 @@ module linearsolver
   integer, parameter, public :: LINSOL_VANKA_2DFNAVSTOC        = 20
 
   ! Full VANKA, 2D Navier-Stokes optimal control problem, general discretisation.
-  ! Specialised 'direct' version, i.e. when
+  ! Specialised "direct" version, i.e. when
   ! used as a smoother in multigrid, this bypasses the usual defect
   ! correction approach to give an additional speedup.
   integer, parameter, public :: LINSOL_VANKA_2DFNAVSTOCDIRECT  = 21
@@ -984,7 +984,7 @@ module linearsolver
   integer, parameter, public :: LINSOL_VANKA_2DFNAVSTOCDIAG    = 22
 
   ! Diagonal VANKA, 2D Navier-Stokes optimal control problem, general discretisation.
-  ! Specialised 'direct' version, i.e. when
+  ! Specialised "direct" version, i.e. when
   ! used as a smoother in multigrid, this bypasses the usual defect
   ! correction approach to give an additional speedup.
   integer, parameter, public :: LINSOL_VANKA_2DFNAVSTOCDIAGDIR = 23
@@ -994,7 +994,7 @@ module linearsolver
   integer, parameter, public :: LINSOL_VANKA_2DFNAVSTOCDIAG2   = 24
 
   ! Diagonal VANKA, 2D Navier-Stokes optimal control problem, general discretisation.
-  ! Specialised 'direct' version, i.e. when
+  ! Specialised "direct" version, i.e. when
   ! used as a smoother in multigrid, this bypasses the usual defect
   ! correction approach to give an additional speedup.
   integer, parameter, public :: LINSOL_VANKA_2DFNAVSTOCDIAGDIR2 = 25
@@ -1004,7 +1004,7 @@ module linearsolver
   integer, parameter, public :: LINSOL_VANKA_2DFNAVSTOCFULL2   = 26
 
   ! Full VANKA, 2D Navier-Stokes optimal control problem, general discretisation.
-  ! Specialised 'direct' version, i.e. when
+  ! Specialised "direct" version, i.e. when
   ! used as a smoother in multigrid, this bypasses the usual defect
   ! correction approach to give an additional speedup.
   integer, parameter, public :: LINSOL_VANKA_2DFNAVSTOCFULLDIR2 = 27
@@ -1013,7 +1013,7 @@ module linearsolver
   integer, parameter, public :: LINSOL_VANKA_3DNAVST           = 30
 
   ! Simple VANKA, 3D Navier-Stokes problem, general discretisation.
-  ! Specialised 'direct' version, i.e. when
+  ! Specialised "direct" version, i.e. when
   ! used as a smoother in multigrid, this bypasses the usual defect
   ! correction approach to give an additional speedup.
   integer, parameter, public :: LINSOL_VANKA_3DNAVSTDIRECT     = 31
@@ -1022,7 +1022,7 @@ module linearsolver
   integer, parameter, public :: LINSOL_VANKA_3DFNAVST          = 32
 
   ! Full VANKA, 3D Navier-Stokes problem, general discretisation.
-  ! Specialised 'direct' version, i.e. when
+  ! Specialised "direct" version, i.e. when
   ! used as a smoother in multigrid, this bypasses the usual defect
   ! correction approach to give an additional speedup.
   integer, parameter, public :: LINSOL_VANKA_3DFNAVSTDIRECT    = 33
@@ -1128,14 +1128,14 @@ module linearsolver
   ! which contain sub-solvers like preconditioners or smoothers
   ! (like in MG), such a structure must be created also for the
   ! sub-solver and attached to the main solver. This way, the
-  ! structures form a ''solver tree'' with one solver-structure
+  ! structures form a ""solver tree"" with one solver-structure
   ! forming the root and the other structures, which are attached
   ! to this, forming the branches/nodes.
   !
   ! The structure contains general solver parameters which appear is
   ! many solvers. Whether or not a special parameter is respected
   ! by a solver depends on the solver (e.g. UMFPACK will not respect
-  ! the ''maximum iterations'' parameter). Further solver-specific
+  ! the ""maximum iterations"" parameter). Further solver-specific
   ! parameters which fit not into the general scheme are kept in
   ! solver specific structures.
   !
@@ -1323,7 +1323,7 @@ module linearsolver
     ! linsol_initProblemStructure and linsol_initProblemData will
     ! initialise only MG and UMFPACK, not ILU(3). Instead,
     ! ILU(3) is initialised if linsol_initProblemStructure and
-    ! linsol_initProblemData are called with 'isolverSubgroup=1'.
+    ! linsol_initProblemData are called with "isolverSubgroup=1".
     ! So, this mechanism provides a possibility to prevent some
     ! solvers from being initialised or allows to initialise
     ! some solvers manually.
@@ -1598,7 +1598,7 @@ module linearsolver
     ! Matrix output for debug.
     ! If this is set to a value <> 0, the numerical factorisation routine
     ! writes the matrix to a text file before factorising it.
-    ! The text file gets the name 'matrixN.txt' with N=imatrixDebugOutput.
+    ! The text file gets the name "matrixN.txt" with N=imatrixDebugOutput.
     ! This is for debugging purposes and should be used with care,
     ! as the text files grow rather quickly with the dimension!
     !
@@ -1936,7 +1936,7 @@ module linearsolver
     ! a value < 1E99_DP. In this case, the complete multigrid cycle on all
     ! levels except for the fine grid is repeated until
     !  |res. after postsmoothing| < depsRelCycle * |initial res on that level|.
-    ! This allows 'adaptive cycles' which e.g. gain one digit on a coarse
+    ! This allows "adaptive cycles" which e.g. gain one digit on a coarse
     ! level before prolongating the solution to the fine grid.
     ! This is an extension to the usual F/V/W-cycle scheme.
     real(DP)                      :: depsRelCycle             = 1E99_DP
@@ -2162,7 +2162,7 @@ module linearsolver
     ! a value < 1E99_DP. In this case, the complete multigrid cycle on all
     ! levels except for the fine grid is repeated until
     !  |res. after postsmoothing| < depsRelCycle * |initial res on that level|.
-    ! This allows 'adaptive cycles' which e.g. gain one digit on a coarse
+    ! This allows "adaptive cycles" which e.g. gain one digit on a coarse
     ! level before prolongating the solution to the fine grid.
     ! This is an extension to the usual F/V/W-cycle scheme.
     real(DP)                      :: depsRelCycle             = 1E99_DP
@@ -2771,7 +2771,7 @@ contains
   ! initialisation routine itself can call this procedure to initialise
   ! its sub-solver nodes.
   ! The initialisation of the problem structure allows the solver component
-  ! to perform some 'precalculation', e.g. the UMFPACK4 or ILU solver can
+  ! to perform some "precalculation", e.g. the UMFPACK4 or ILU solver can
   ! perform a symbolical factorisation. The problem structure usually does
   ! not change during a simulation, except when the grid moves e.g..
   
@@ -2870,7 +2870,7 @@ contains
   ! initialisation routine itself can call this procedure to initialise
   ! its sub-solver nodes.
   ! The initialisation of the problem structure allows the solver component
-  ! to perform some 'precalculation', e.g. the UMFPACK4 or ILU solver can
+  ! to perform some "precalculation", e.g. the UMFPACK4 or ILU solver can
   ! perform a numerical factorisation. The problem structure usually does
   ! not change during a simulation, except when the grid moves e.g.
 !</description>
@@ -3241,8 +3241,8 @@ contains
     if (.not. associated(p_rsolverNode)) then
       
       ! Print a warning message and return
-      call output_line ('Solver note not assigned!', &
-                        OU_CLASS_WARNING, OU_MODE_STD, 'linsol_releaseSolver')
+      call output_line ("Solver note not assigned!", &
+                        OU_CLASS_WARNING, OU_MODE_STD, "linsol_releaseSolver")
       return
       
     end if
@@ -3317,7 +3317,7 @@ contains
   ! solver configuration and the caller wants to modify a very special
   ! part of one of the subsolvers in it (like changing a solvers subtype).
   !
-  ! ralterConfig is a configuration block that specifies a 'command' and
+  ! ralterConfig is a configuration block that specifies a "command" and
   ! a couple of integer/double precision variables. This command block
   ! is passed to all solvers in the whole rsolverNode solver tree.
   ! Each subsolver then decides on it is own what to do with the configuration,
@@ -3376,12 +3376,12 @@ contains
 !<description>
   ! Tests a defect vector rdef whether it is in a defined tolerance configured
   ! in the solver node, so the iteration of an iterative solver can be
-  ! can be treated as 'converged'.
-  ! The iteration is treated as 'converged' if both, the relative and the
+  ! can be treated as "converged".
+  ! The iteration is treated as "converged" if both, the relative and the
   ! absolute convergence criterion are fulfilled (or only one of them,
   ! respectively, if the other is switched off).
   !
-  ! The solver must have initialised the 'dinitialDefect' variable
+  ! The solver must have initialised the "dinitialDefect" variable
   ! of the solver structure for this routine to work properly!
 !</description>
   
@@ -3485,11 +3485,11 @@ contains
 !<description>
   ! Tests a defect vector rx whether it is out of a defined tolerance configured
   ! in the solver node, so the iteration of an iterative solver can be
-  ! can be treated as 'diverged'.
-  ! The iteration is treated as 'diverged' if one criterion, the relative or the
+  ! can be treated as "diverged".
+  ! The iteration is treated as "diverged" if one criterion, the relative or the
   ! absolute divergence criterion is fulfilled.
   !
-  ! The solver must have initialised the 'dinitialDefect' variable
+  ! The solver must have initialised the "dinitialDefect" variable
   ! of the solver structure for this routine to work properly!
 !</description>
   
@@ -4080,7 +4080,7 @@ contains
     ! Initialisation. In our case: allocate temporary vectors for our data
     ! by using the associated matrix as template.
     ! That vectors are used in the defect correction so save the intermediate
-    ! 'solution' vector.
+    ! "solution" vector.
     call lsysbl_createVecBlockIndMat (rsolverNode%rsystemMatrix, &
           rsolverNode%p_rsubnodeDefCorr%rtempVector,.false.,.false.,&
           rsolverNode%cdefaultDataType)
@@ -4371,7 +4371,7 @@ contains
     ! <tex>   $$ x_{n+1}  =  x_n  +  \omega P^{-1} (b-Ax) $$  </tex>
     !
     ! At first, set up our temporary vectors, which holds the current
-    ! 'solution' and the current 'defect'. We already allocated them
+    ! "solution" and the current "defect". We already allocated them
     ! during the initialisation phase - now we want to use them!
     p_rx   => rsolverNode%p_rsubnodeDefCorr%rtempVector
     p_rdef => rsolverNode%p_rsubnodeDefCorr%rtempVector2
@@ -4382,6 +4382,11 @@ contains
     call lsysbl_assignDiscrIndirect (rd,p_rx)
     call lsysbl_assignDiscrIndirect (rd,p_rdef)
   
+      ! Synchronise the sorting without touching the entries in the
+    ! target vectors; they are temporary anyway.
+    call lsysbl_synchroniseSort (rd,p_rx  ,bautoUnsort=.false.)
+    call lsysbl_synchroniseSort (rd,p_rdef,bautoUnsort=.false.)
+
     ! rd is our RHS. p_rx points to a new vector which will be our
     ! iteration vector. At the end of this routine, we replace
     ! rd by p_rx.
@@ -4422,8 +4427,8 @@ contains
     else
 
       if (rsolverNode%ioutputLevel .ge. 2) then
-        call output_line ('DefCorr: Iteration '// &
-             trim(sys_siL(0,10))//',  !!RES!! = '//&
+        call output_line ("DefCorr: Iteration "// &
+             trim(sys_siL(0,10))//",  !!RES!! = "//&
              trim(sys_sdEL(rsolverNode%dinitialDefect,15)) )
       end if
 
@@ -4466,12 +4471,12 @@ contains
           if (rsolverNode%ioutputLevel .lt. 2) then
             do i=max(1,size(Dresqueue)-ite-1+1),size(Dresqueue)
               j = ite-max(1,size(Dresqueue)-ite+1)+i
-              call output_line ('DefCorr: Iteration '// &
-                  trim(sys_siL(j,10))//',  !!RES!! = '//&
+              call output_line ("DefCorr: Iteration "// &
+                  trim(sys_siL(j,10))//",  !!RES!! = "//&
                   trim(sys_sdEL(Dresqueue(i),15)) )
             end do
           end if
-          call output_line ('DefCorr: Solution diverging!')
+          call output_line ("DefCorr: Solution diverging!")
           rsolverNode%iresult = 1
           exit
         end if
@@ -4487,8 +4492,8 @@ contains
         ! print out the current residual
         if ((rsolverNode%ioutputLevel .ge. 2) .and. &
             (mod(ite,niteResOutput).eq.0)) then
-          call output_line ('DefCorr: Iteration '// &
-              trim(sys_siL(ite,10))//',  !!RES!! = '//&
+          call output_line ("DefCorr: Iteration "// &
+              trim(sys_siL(ite,10))//",  !!RES!! = "//&
               trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
         end if
 
@@ -4502,8 +4507,8 @@ contains
         ! No warning if we had to do exactly rsolverNode%nmaxIterations steps
         if ((rsolverNode%ioutputLevel .ge. 0) .and. &
             (rsolverNode%nmaxIterations .gt. rsolverNode%nminIterations)) then
-          call output_line ('DefCorr: Accuracy warning: '//&
-              'Solver did not reach the convergence criterion')
+          call output_line ("DefCorr: Accuracy warning: "//&
+              "Solver did not reach the convergence criterion")
         end if
 
         ite = rsolverNode%nmaxIterations
@@ -4514,8 +4519,8 @@ contains
       if ((rsolverNode%ioutputLevel .ge. 2) .and. &
           (ite .ge. 1) .and. (ite .lt. rsolverNode%nmaxIterations) .and. &
           (rsolverNode%iresult .ge. 0)) then
-        call output_line ('DefCorr: Iteration '// &
-            trim(sys_siL(ite,10))//',  !!RES!! = '//&
+        call output_line ("DefCorr: Iteration "// &
+            trim(sys_siL(ite,10))//",  !!RES!! = "//&
             trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
       end if
 
@@ -4554,31 +4559,31 @@ contains
       
       if ((rsolverNode%ioutputLevel .ge. 2) .and. (rsolverNode%iprintStatistics .eq. YES)) then
         call output_lbrk()
-        call output_line ('DefCorr statistics:')
+        call output_line ("DefCorr statistics:")
         call output_lbrk()
-        call output_line ('Iterations              : '//&
+        call output_line ("Iterations              : "//&
              trim(sys_siL(rsolverNode%iiterations,10)) )
-        call output_line ('!!INITIAL RES!!         : '//&
+        call output_line ("!!INITIAL RES!!         : "//&
              trim(sys_sdEL(rsolverNode%dinitialDefect,15)) )
-        call output_line ('!!RES!!                 : '//&
+        call output_line ("!!RES!!                 : "//&
              trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
         if (rsolverNode%dinitialDefect .gt. rsolverNode%drhsZero) then
-          call output_line ('!!RES!!/!!INITIAL RES!! : '//&
+          call output_line ("!!RES!!/!!INITIAL RES!! : "//&
             trim(sys_sdEL(rsolverNode%dfinalDefect / rsolverNode%dinitialDefect,15)) )
         else
-          call output_line ('!!RES!!/!!INITIAL RES!! : '//&
+          call output_line ("!!RES!!/!!INITIAL RES!! : "//&
                trim(sys_sdEL(0.0_DP,15)) )
         end if
         call output_lbrk ()
-        call output_line ('Rate of convergence     : '//&
+        call output_line ("Rate of convergence     : "//&
              trim(sys_sdEL(rsolverNode%dconvergenceRate,15)) )
 
       end if
 
       if (rsolverNode%ioutputLevel .eq. 1) then
         call output_line (&
-              'DefCorr: Iterations/Rate of convergence: '//&
-              trim(sys_siL(rsolverNode%iiterations,10))//' /'//&
+              "DefCorr: Iterations/Rate of convergence: "//&
+              trim(sys_siL(rsolverNode%iiterations,10))//" /"//&
               trim(sys_sdEL(rsolverNode%dconvergenceRate,15)) )
       end if
       
@@ -4641,8 +4646,8 @@ contains
     if (present(domega)) then
     
       ! DEPRECATED!
-      call output_line ('domega parameter is deprecated!', &
-                        OU_CLASS_WARNING,OU_MODE_STD, 'linsol_initJacobi')
+      call output_line ("domega parameter is deprecated!", &
+                        OU_CLASS_WARNING,OU_MODE_STD, "linsol_initJacobi")
                         
       p_rsolverNode%domega = domega
       
@@ -4848,8 +4853,8 @@ contains
               end if
 
             case default
-              call output_line ('Unsupported vector precision.', &
-                                OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precJacobi')
+              call output_line ("Unsupported vector precision.", &
+                                OU_CLASS_ERROR, OU_MODE_STD, "linsol_precJacobi")
               call sys_halt()
             end select
             
@@ -4897,20 +4902,20 @@ contains
               end if
 
             case default
-              call output_line ('Unsupported vector precision.', &
-                                OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precJacobi')
+              call output_line ("Unsupported vector precision.", &
+                                OU_CLASS_ERROR, OU_MODE_STD, "linsol_precJacobi")
               call sys_halt()
             end select
 
           case default
-            call output_line ('Unsupported matrix precision.', &
-                              OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precJacobi')
+            call output_line ("Unsupported matrix precision.", &
+                              OU_CLASS_ERROR, OU_MODE_STD, "linsol_precJacobi")
             call sys_halt()
           end select
         
         case default
-          call output_line ('Unsupported matrix format.', &
-                            OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precJacobi')
+          call output_line ("Unsupported matrix format.", &
+                            OU_CLASS_ERROR, OU_MODE_STD, "linsol_precJacobi")
           call sys_halt()
         end select
         
@@ -5188,20 +5193,20 @@ contains
                 domega,drelax,p_Dvector,p_rmatrix%dscaleFactor)
             
           case default
-            call output_line ('Unsupported vector precision.', &
-                              OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precSOR')
+            call output_line ("Unsupported vector precision.", &
+                              OU_CLASS_ERROR, OU_MODE_STD, "linsol_precSOR")
             call sys_halt()
           end select
           
         case default
-          call output_line ('Unsupported matrix precision.', &
-                            OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precSOR')
+          call output_line ("Unsupported matrix precision.", &
+                            OU_CLASS_ERROR, OU_MODE_STD, "linsol_precSOR")
           call sys_halt()
         end select
       
       case default
-        call output_line ('Unsupported matrix format.', &
-                          OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precSOR')
+        call output_line ("Unsupported matrix format.", &
+                          OU_CLASS_ERROR, OU_MODE_STD, "linsol_precSOR")
         call sys_halt()
       end select
       
@@ -5556,20 +5561,20 @@ contains
                 p_rmatrix%dscaleFactor)
             
           case default
-            call output_line ('Unsupported vector precision.', &
-                              OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precSSOR')
+            call output_line ("Unsupported vector precision.", &
+                              OU_CLASS_ERROR, OU_MODE_STD, "linsol_precSSOR")
             call sys_halt()
           end select
           
         case default
-          call output_line ('Unsupported matrix precision.', &
-                            OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precSSOR')
+          call output_line ("Unsupported matrix precision.", &
+                            OU_CLASS_ERROR, OU_MODE_STD, "linsol_precSSOR")
           call sys_halt()
         end select
       
       case default
-        call output_line ('Unsupported matrix format.', &
-                          OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precSSOR')
+        call output_line ("Unsupported matrix format.", &
+                          OU_CLASS_ERROR, OU_MODE_STD, "linsol_precSSOR")
         call sys_halt()
       end select
       
@@ -6037,8 +6042,8 @@ contains
 
     ! Stop if there is no matrix assigned
     if (rsolverNode%rsystemMatrix%NEQ .eq. 0) then
-      call output_line ('No matrix associated!', &
-                        OU_CLASS_ERROR, OU_MODE_STD, 'linsol_initStructureVANKA')
+      call output_line ("No matrix associated!", &
+                        OU_CLASS_ERROR, OU_MODE_STD, "linsol_initStructureVANKA")
       call sys_halt()
     end if
     
@@ -6100,8 +6105,8 @@ contains
 
     ! Stop if there is no matrix assigned
     if (rsolverNode%rsystemMatrix%NEQ .eq. 0) then
-      call output_line ('No matrix associated!', &
-                        OU_CLASS_ERROR, OU_MODE_STD, 'linsol_initDataVANKA')
+      call output_line ("No matrix associated!", &
+                        OU_CLASS_ERROR, OU_MODE_STD, "linsol_initDataVANKA")
       call sys_halt()
     end if
     
@@ -6376,7 +6381,11 @@ contains
     ! So assign now all discretisation-related information (boundary
     ! conditions,...) to the temporary vector.
     call lsysbl_assignDiscrIndirect (rd,p_rvector)
-  
+
+    ! Synchronise the sorting without touching the entries.
+    ! We will clear the target anyway.  
+    call lsysbl_synchroniseSort (rd,p_rvector,bautoUnsort=.false.)
+
     ! Clear our solution vector
     call lsysbl_clearVector (p_rvector)
     
@@ -6613,8 +6622,8 @@ contains
 
     ! Stop if there is no matrix assigned
     if (rsolverNode%rsystemMatrix%NEQ .eq. 0) then
-      call output_line ('No matrix associated!', &
-                        OU_CLASS_ERROR, OU_MODE_STD, 'linsol_initStructureSPSOR')
+      call output_line ("No matrix associated!", &
+                        OU_CLASS_ERROR, OU_MODE_STD, "linsol_initStructureSPSOR")
       call sys_halt()
     end if
     
@@ -6635,8 +6644,8 @@ contains
                              rsolverNode%rsystemMatrix, 0_I32)
 
     case default
-      call output_line ('Invalid SP-SOR subtype!', &
-                        OU_CLASS_ERROR, OU_MODE_STD, 'linsol_initStructureSPSOR')
+      call output_line ("Invalid SP-SOR subtype!", &
+                        OU_CLASS_ERROR, OU_MODE_STD, "linsol_initStructureSPSOR")
       call sys_halt()
     end select
         
@@ -6689,8 +6698,8 @@ contains
 
     ! Stop if there is no matrix assigned
     if (rsolverNode%rsystemMatrix%NEQ .eq. 0) then
-      call output_line ('No matrix associated!', &
-                        OU_CLASS_ERROR, OU_MODE_STD, 'linsol_initDataVANKA')
+      call output_line ("No matrix associated!", &
+                        OU_CLASS_ERROR, OU_MODE_STD, "linsol_initDataVANKA")
       call sys_halt()
     end if
     
@@ -6972,8 +6981,8 @@ contains
 
     ! Stop if there is no matrix assigned
     if (rsolverNode%rsystemMatrix%NEQ .eq. 0) then
-      call output_line ('No matrix associated!', &
-          OU_CLASS_ERROR, OU_MODE_STD, 'linsol_initStructureUMFPACK4')
+      call output_line ("No matrix associated!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_initStructureUMFPACK4")
       call sys_halt()
     end if
     
@@ -7020,8 +7029,8 @@ contains
     end select
     
     if (p_rmatrix%cdataType .ne. ST_DOUBLE) then
-      call output_line ('UMFPACK can only handle double precision matrices!', &
-          OU_CLASS_ERROR, OU_MODE_STD, 'linsol_initStructureUMFPACK4')
+      call output_line ("UMFPACK can only handle double precision matrices!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_initStructureUMFPACK4")
       call sys_halt()
     end if
 
@@ -7079,7 +7088,7 @@ contains
     ! compute memory usage of symbolic factorisation, that is
     !   Dinfo(UMFPACK_SIZE_OF_UNIT) * Dinfo(UMFPACK_SYMBOLIC_SIZE)
     ! and store it as a dummy node in the storage
-    call storage_newDummy('linsol_initStructureUMFPACK4', 'h_symbolicDummy', &
+    call storage_newDummy("linsol_initStructureUMFPACK4", "h_symbolicDummy", &
       int(Dinfo(4),I64) * int(Dinfo(15),I64), rsolverNode%p_rsubnodeUMFPACK4%h_symbolicDummy)
 
     ! Throw away the temporary matrix/matrices
@@ -7158,8 +7167,8 @@ contains
     ! Stop if there is no matrix assigned
     
     if (rsolverNode%rsystemMatrix%NEQ .eq. 0) then
-      call output_line ('No matrix associated!', &
-          OU_CLASS_ERROR, OU_MODE_STD, 'linsol_initDataUMFPACK4')
+      call output_line ("No matrix associated!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_initDataUMFPACK4")
       call sys_halt()
     end if
     
@@ -7179,8 +7188,8 @@ contains
     end if
 
     if (p_rmatrix%cdataType .ne. ST_DOUBLE) then
-      call output_line ('UMFPACK can only handle double precision matrices!', &
-          OU_CLASS_ERROR, OU_MODE_STD, 'linsol_initDataUMFPACK4')
+      call output_line ("UMFPACK can only handle double precision matrices!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_initDataUMFPACK4")
       call sys_halt()
     end if
 
@@ -7210,7 +7219,7 @@ contains
     if (rtempMatrix%dscaleFactor .ne. 1.0_DP) then
       ! The matrix entries have been duplicated above in this case, so we are
       ! allowed to change the entries of rtempMatrix without changing the
-      ! original entries. So, 'un'-scale the matrix.
+      ! original entries. So, "un"-scale the matrix.
       call lsyssc_scaleMatrix (rtempMatrix,rtempMatrix%dscaleFactor)
       rtempMatrix%dscaleFactor = 1.0_DP
     end if
@@ -7218,8 +7227,8 @@ contains
     ! If the debug flag is set, write out the matrix to a text file.
     if (rsolverNode%p_rsubnodeUMFPACK4%imatrixDebugOutput .gt. 0) then
       if (rsolverNode%ioutputLevel .ge. 0) then
-        call output_line ('Writing matrix to a text file.',&
-            OU_CLASS_WARNING,OU_MODE_STD,'linsol_initDataUMFPACK4')
+        call output_line ("Writing matrix to a text file.",&
+            OU_CLASS_WARNING,OU_MODE_STD,"linsol_initDataUMFPACK4")
       end if
       
       call lsyssc_getbase_double (rtempMatrix,p_DA)
@@ -7307,7 +7316,7 @@ contains
     ! compute memory usage of numeric factorisation, that is
     !   Dinfo(UMFPACK_SIZE_OF_UNIT) * Dinfo(UMFPACK_NUMERIC_SIZE)
     ! and store it as a dummy node in the storage
-    call storage_newDummy('linsol_initDataUMFPACK4', 'h_numericDummy', &
+    call storage_newDummy("linsol_initDataUMFPACK4", "h_numericDummy", &
       int(Dinfo(4),I64) * int(Dinfo(41),I64), rsolverNode%p_rsubnodeUMFPACK4%h_numericDummy)
 
     ! Throw away the temporary matrix/matrices
@@ -7498,8 +7507,8 @@ contains
     ! Check that our RHS db is double precision - UMFPACK supports only
     ! this.
     if (rd%cdataType .ne. ST_DOUBLE) then
-      call output_line ('UMFPACK only supports double precision vectors!', &
-          OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precUMFPACK4')
+      call output_line ("UMFPACK only supports double precision vectors!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_precUMFPACK4")
       call sys_halt()
     end if
 
@@ -7509,11 +7518,6 @@ contains
     ! Getch some information
     p_rsubnode => rsolverNode%p_rsubnodeUMFPACK4
     p_rb   => p_rsubnode%rtempVector
-    
-    ! All vectors share the same boundary conditions as rd!
-    ! So assign now all discretisation-related information (boundary
-    ! conditions,...) to the temporary vectors.
-    call lsysbl_assignDiscrIndirect (rd,p_rb)
     
     ! Copy the RHS rd to the temp vector; it will be overwritten
     ! by the solution vector
@@ -7528,7 +7532,7 @@ contains
       if (.not.((dres .ge. 1E-99_DP) .and. &
                 (dres .le. 1E99_DP))) dres = 0.0_DP
 
-      call output_line ('UMFPACK: !!Initial RES!! = '//trim(sys_sdEL(dres,15)) )
+      call output_line ("UMFPACK: !!Initial RES!! = "//trim(sys_sdEL(dres,15)) )
     end if
 
     ! Solve the system
@@ -7544,8 +7548,8 @@ contains
       if (.not.((dres .ge. 1E-99_DP) .and. &
                 (dres .le. 1E99_DP))) dres = 0.0_DP
 
-      call output_line ('UMFPACK: !!solution!!    = '//trim(sys_sdEL(dres,15))//&
-          ' Status = '//trim(sys_siL(int(Dinfo(1)),10)) )
+      call output_line ("UMFPACK: !!solution!!    = "//trim(sys_sdEL(dres,15))//&
+          " Status = "//trim(sys_siL(int(Dinfo(1)),10)) )
     end if
                 
     ! Check the solver status
@@ -7717,7 +7721,7 @@ contains
     if((rsolverNode%rsystemMatrix%nblocksPerRow .eq. 1) .and. &
        (rsolverNode%rsystemMatrix%nblocksPerCol .eq. 1)) then
       
-      ! The system matrix is a scalar matrix - that's fine.
+      ! The system matrix is a scalar matrix - that"s fine.
       ! In this case we just need to make a copy of the matrix
       ! structure.
       call lsysbl_duplicateMatrix(rsolverNode%rsystemMatrix, &
@@ -7727,7 +7731,7 @@ contains
     else
     
       ! The system matrix is a non-scalar block matrix.
-      ! In this case we'll assemble a global scalar matrix of it.
+      ! In this case we"ll assemble a global scalar matrix of it.
       call glsys_assembleGlobal(rsolverNode%rsystemMatrix, &
          rsolverNode%p_rsubnodeILU0%rmatLU, .true., .false.)
       
@@ -7792,8 +7796,8 @@ contains
     if((rsolverNode%rsystemMatrix%nblocksPerRow .eq. 1) .and. &
        (rsolverNode%rsystemMatrix%nblocksPerCol .eq. 1)) then
       
-      ! The system matrix is a scalar matrix - that's fine.
-      ! So let's copy the matrix content to our LU matrix.
+      ! The system matrix is a scalar matrix - that"s fine.
+      ! So let"s copy the matrix content to our LU matrix.
       call lsysbl_duplicateMatrix(rsolverNode%rsystemMatrix, &
           rsolverNode%p_rsubnodeILU0%rmatLU, &
           !LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPY)
@@ -7807,13 +7811,13 @@ contains
     else
     
       ! The system matrix is a non-scalar block matrix.
-      ! In this case we'll assemble a global scalar matrix of it.
+      ! In this case we"ll assemble a global scalar matrix of it.
       call glsys_assembleGlobal (rsolverNode%rsystemMatrix, &
          rsolverNode%p_rsubnodeILU0%rmatLU, .false., .true.)
     
     end if
     
-    ! Now let's fetch the matrix arrays
+    ! Now let"s fetch the matrix arrays
     call lsyssc_getbase_Kld(rsolverNode%p_rsubnodeILU0%rmatLU%RmatrixBlock(1,1), p_Kld)
     call lsyssc_getbase_Kcol(rsolverNode%p_rsubnodeILU0%rmatLU%RmatrixBlock(1,1), p_Kcol)
     call lsyssc_getbase_Kdiagonal(rsolverNode%p_rsubnodeILU0%rmatLU%RmatrixBlock(1,1), p_Kdiag)
@@ -7878,7 +7882,7 @@ contains
     ! release auxiliary array
     deallocate(p_Iaux)
     
-    ! That's it
+    ! That"s it
       
   end subroutine
   
@@ -8032,7 +8036,7 @@ contains
     ! When the scaling factor is not = 1, scale the vector.
     call lsysbl_scaleVector(rd,rsolverNode%domega)
     
-    ! That's it
+    ! That"s it
 
   end subroutine
 
@@ -8209,8 +8213,8 @@ contains
 
     ! Stop if there is no matrix assigned
     if (rsolverNode%rsystemMatrix%NEQ .eq. 0) then
-      call output_line ('Error: No matrix associated!', &
-          OU_CLASS_ERROR, OU_MODE_STD, 'linsol_initDataMILUs1x1')
+      call output_line ("Error: No matrix associated!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_initDataMILUs1x1")
       call sys_halt()
     end if
     
@@ -8225,8 +8229,8 @@ contains
     ! We only support scalar 1x1 matrices in structure 7 and 9.
     if ((p_rmatrix%nblocksPerCol .ne. 1) .or. &
         (p_rmatrix%nblocksPerRow .ne. 1)) then
-      call output_line ('(M)ILU(s) supports only 1x1 matrices!', &
-          OU_CLASS_ERROR, OU_MODE_STD, 'linsol_initDataMILUs1x1')
+      call output_line ("(M)ILU(s) supports only 1x1 matrices!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_initDataMILUs1x1")
       call sys_halt()
     end if
 
@@ -8234,15 +8238,15 @@ contains
 
     ! We only support scalar 1x1 matrices in structure 7 and 9.
     if (p_rmatrixSc%cdataType .ne. ST_DOUBLE) then
-      call output_line ('(M)ILU(s) supports only double precision matrices!', &
-          OU_CLASS_ERROR, OU_MODE_STD, 'linsol_initDataMILUs1x1')
+      call output_line ("(M)ILU(s) supports only double precision matrices!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_initDataMILUs1x1")
       call sys_halt()
     end if
     
     if ((p_rmatrixSc%cmatrixFormat .ne. LSYSSC_MATRIX9) .and.&
         (p_rmatrixSc%cmatrixFormat .ne. LSYSSC_MATRIX7)) then
-      call output_line ('(M)ILU(s) supports only structure 7 and 9 matrices!', &
-          OU_CLASS_ERROR, OU_MODE_STD, 'linsol_initDataMILUs1x1')
+      call output_line ("(M)ILU(s) supports only structure 7 and 9 matrices!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_initDataMILUs1x1")
       call sys_halt()
     end if
     
@@ -8268,8 +8272,8 @@ contains
     ! Error?
     select case (ierr)
     case (:-1)
-      call output_line ('(M)ILU(s) decomposition singular!', &
-          OU_CLASS_WARNING, OU_MODE_STD, 'linsol_initDataMILUs1x1')
+      call output_line ("(M)ILU(s) decomposition singular!", &
+          OU_CLASS_WARNING, OU_MODE_STD, "linsol_initDataMILUs1x1")
     case (0)
       ! everything ok
     case default
@@ -8286,7 +8290,7 @@ contains
       ! nzlu is the number of bytes needed for the jlu array
       ! reallocate if it uses more than twice the amount, ILU wanted
       if (rMILUDecomp%nzlu .lt. rMILUDecomp%isize/2) then
-        call storage_realloc('linsol_initDataMILUs1x1', rMILUDecomp%nzlu, &
+        call storage_realloc("linsol_initDataMILUs1x1", rMILUDecomp%nzlu, &
              rMILUDecomp%h_jlu, ST_NEWBLOCK_ZERO, .true.)
       end if
       
@@ -8408,8 +8412,8 @@ contains
   integer, dimension(:), pointer :: p_jlu,p_ilup
 
     if (rd%cdataType .ne. ST_DOUBLE) then
-      call output_line ('(M)ILU(s) only supports double precision vectors!', &
-          OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precMILUS1x1')
+      call output_line ("(M)ILU(s) only supports double precision vectors!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_precMILUS1x1")
       call sys_halt()
     end if
     
@@ -9022,6 +9026,13 @@ contains
     call lsysbl_assignDiscrIndirect (rd,p_DP)
     call lsysbl_assignDiscrIndirect (rd,p_DD)
     call lsysbl_assignDiscrIndirect (rd,p_rx)
+
+    ! Synchronise the sorting without touching the entries.
+    ! The target vectors are temporary anyway.
+    call lsysbl_synchroniseSort (rd,p_DR,bautoUnsort=.false.)
+    call lsysbl_synchroniseSort (rd,p_DP,bautoUnsort=.false.)
+    call lsysbl_synchroniseSort (rd,p_DD,bautoUnsort=.false.)
+    call lsysbl_synchroniseSort (rd,p_rx,bautoUnsort=.false.)
     
     if (bprec) then
       p_rprecSubnode => p_rsubnode%p_rpreconditioner
@@ -9081,8 +9092,8 @@ contains
     else
 
       if (rsolverNode%ioutputLevel .ge. 2) then
-        call output_line ('CG: Iteration '// &
-             trim(sys_siL(0,10))//',  !!RES!! = '//&
+        call output_line ("CG: Iteration "// &
+             trim(sys_siL(0,10))//",  !!RES!! = "//&
              trim(sys_sdEL(rsolverNode%dinitialDefect,15)) )
       end if
 
@@ -9132,7 +9143,7 @@ contains
           ! We are below machine exactness - we can not do anything more...
           ! May happen with very small problems with very few unknowns!
           if (rsolverNode%ioutputLevel .ge. 2) then
-            call output_line('CG: Convergence failed, ALPHA=0!')
+            call output_line("CG: Convergence failed, ALPHA=0!")
           end if
           rsolverNode%iresult = -2
           exit
@@ -9177,12 +9188,12 @@ contains
           if (rsolverNode%ioutputLevel .lt. 2) then
             do i=max(1,size(Dresqueue)-ite-1+1),size(Dresqueue)
               j = ite-max(1,size(Dresqueue)-ite+1)+i
-              call output_line ('CG: Iteration '// &
-                  trim(sys_siL(j,10))//',  !!RES!! = '//&
+              call output_line ("CG: Iteration "// &
+                  trim(sys_siL(j,10))//",  !!RES!! = "//&
                   trim(sys_sdEL(Dresqueue(i),15)) )
             end do
           end if
-          call output_line('CG: Solution diverging!')
+          call output_line("CG: Solution diverging!")
           rsolverNode%iresult = 1
           exit
         end if
@@ -9199,8 +9210,8 @@ contains
 
         if ((rsolverNode%ioutputLevel .ge. 2) .and. &
             (mod(ite,niteResOutput).eq.0)) then
-          call output_line ('CG: Iteration '// &
-              trim(sys_siL(ite,10))//',  !!RES!! = '//&
+          call output_line ("CG: Iteration "// &
+              trim(sys_siL(ite,10))//",  !!RES!! = "//&
               trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
         end if
         
@@ -9254,8 +9265,8 @@ contains
         ! No warning if we had to do exactly rsolverNode%nmaxIterations steps
         if ((rsolverNode%ioutputLevel .ge. 0) .and. &
             (rsolverNode%nmaxIterations .gt. rsolverNode%nminIterations)) then
-          call output_line ('CG: Accuracy warning: '//&
-              'Solver did not reach the convergence criterion')
+          call output_line ("CG: Accuracy warning: "//&
+              "Solver did not reach the convergence criterion")
         end if
 
         ite = rsolverNode%nmaxIterations
@@ -9266,8 +9277,8 @@ contains
       if ((rsolverNode%ioutputLevel .ge. 2) .and. &
           (ite .ge. 1) .and. (ite .lt. rsolverNode%nmaxIterations) .and. &
           (rsolverNode%iresult .ge. 0)) then
-        call output_line ('CG: Iteration '// &
-            trim(sys_siL(ite,10))//',  !!RES!! = '//&
+        call output_line ("CG: Iteration "// &
+            trim(sys_siL(ite,10))//",  !!RES!! = "//&
             trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
       end if
 
@@ -9307,31 +9318,31 @@ contains
 
       if ((rsolverNode%ioutputLevel .ge. 2) .and. (rsolverNode%iprintStatistics .eq. YES)) then
         call output_lbrk()
-        call output_line ('CG statistics:')
+        call output_line ("CG statistics:")
         call output_lbrk()
-        call output_line ('Iterations              : '//&
+        call output_line ("Iterations              : "//&
              trim(sys_siL(rsolverNode%iiterations,10)) )
-        call output_line ('!!INITIAL RES!!         : '//&
+        call output_line ("!!INITIAL RES!!         : "//&
              trim(sys_sdEL(rsolverNode%dinitialDefect,15)) )
-        call output_line ('!!RES!!                 : '//&
+        call output_line ("!!RES!!                 : "//&
              trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
         if (rsolverNode%dinitialDefect .gt. rsolverNode%drhsZero) then
-          call output_line ('!!RES!!/!!INITIAL RES!! : '//&
+          call output_line ("!!RES!!/!!INITIAL RES!! : "//&
             trim(sys_sdEL(rsolverNode%dfinalDefect / rsolverNode%dinitialDefect,15)) )
         else
-          call output_line ('!!RES!!/!!INITIAL RES!! : '//&
+          call output_line ("!!RES!!/!!INITIAL RES!! : "//&
                trim(sys_sdEL(0.0_DP,15)) )
         end if
         call output_lbrk ()
-        call output_line ('Rate of convergence     : '//&
+        call output_line ("Rate of convergence     : "//&
              trim(sys_sdEL(rsolverNode%dconvergenceRate,15)) )
 
       end if
 
       if (rsolverNode%ioutputLevel .eq. 1) then
         call output_line (&
-              'CG: Iterations/Rate of convergence: '//&
-              trim(sys_siL(rsolverNode%iiterations,10))//' /'//&
+              "CG: Iterations/Rate of convergence: "//&
+              trim(sys_siL(rsolverNode%iiterations,10))//" /"//&
               trim(sys_sdEL(rsolverNode%dconvergenceRate,15)) )
       end if
 
@@ -9925,6 +9936,15 @@ contains
     call lsysbl_assignDiscrIndirect (rd,p_DSA)
     call lsysbl_assignDiscrIndirect (rd,p_rx)
     
+    ! Synchronise the sorting without touching the entries in the
+    ! target vectors; they are temporary anyway.
+    call lsysbl_synchroniseSort (rd,p_DR ,bautoUnsort=.false.)
+    call lsysbl_synchroniseSort (rd,p_DR0,bautoUnsort=.false.)
+    call lsysbl_synchroniseSort (rd,p_DP ,bautoUnsort=.false.)
+    call lsysbl_synchroniseSort (rd,p_DPA,bautoUnsort=.false.)
+    call lsysbl_synchroniseSort (rd,p_DSA,bautoUnsort=.false.)
+    call lsysbl_synchroniseSort (rd,p_rx ,bautoUnsort=.false.)
+    
     if (bprec) then
       p_rprecSubnode => p_rsubnode%p_rpreconditioner
     end if
@@ -9988,8 +10008,8 @@ contains
     else
 
       if (rsolverNode%ioutputLevel .ge. 2) then
-        call output_line ('BiCGStab: Iteration '// &
-             trim(sys_siL(0,10))//',  !!RES!! = '//&
+        call output_line ("BiCGStab: Iteration "// &
+             trim(sys_siL(0,10))//",  !!RES!! = "//&
              trim(sys_sdEL(rsolverNode%dinitialDefect,15)) )
       end if
 
@@ -10005,8 +10025,8 @@ contains
         if (drho0*domega0 .eq. 0.0_DP) then
           ! Should not happen
           if (rsolverNode%ioutputLevel .ge. 2) then
-            call output_line ('BiCGStab: Iteration prematurely stopped! '//&
-                 'Correction vector is zero!')
+            call output_line ("BiCGStab: Iteration prematurely stopped! "//&
+                 "Correction vector is zero!")
           end if
 
           ! Some tuning for the output, then cancel.
@@ -10040,7 +10060,7 @@ contains
           ! We are below machine exactness - we can not do anything more...
           ! May happen with very small problems with very few unknowns!
           if (rsolverNode%ioutputLevel .ge. 2) then
-            call output_line ('BiCGStab: Convergence failed, ALPHA=0!')
+            call output_line ("BiCGStab: Convergence failed, ALPHA=0!")
           end if
           rsolverNode%iresult = -2
           exit
@@ -10070,7 +10090,7 @@ contains
         else
           if (domega2 .eq. 0.0_DP) then
             if (rsolverNode%ioutputLevel .ge. 2) then
-              call output_line ('BiCGStab: Convergence failed: omega=0!')
+              call output_line ("BiCGStab: Convergence failed: omega=0!")
             end if
             rsolverNode%iresult = -2
             exit
@@ -10098,12 +10118,12 @@ contains
           if (rsolverNode%ioutputLevel .lt. 2) then
             do i=max(1,size(Dresqueue)-ite-1+1),size(Dresqueue)
               j = ite-max(1,size(Dresqueue)-ite+1)+i
-              call output_line ('BiCGStab: Iteration '// &
-                  trim(sys_siL(j,10))//',  !!RES!! = '//&
+              call output_line ("BiCGStab: Iteration "// &
+                  trim(sys_siL(j,10))//",  !!RES!! = "//&
                   trim(sys_sdEL(Dresqueue(i),15)) )
             end do
           end if
-          call output_line ('BiCGStab: Solution diverging!')
+          call output_line ("BiCGStab: Solution diverging!")
           rsolverNode%iresult = 1
           exit
         end if
@@ -10120,8 +10140,8 @@ contains
 
         if ((rsolverNode%ioutputLevel .ge. 2) .and. &
             (mod(ite,niteResOutput).eq.0)) then
-          call output_line ('BiCGStab: Iteration '// &
-              trim(sys_siL(ite,10))//',  !!RES!! = '//&
+          call output_line ("BiCGStab: Iteration "// &
+              trim(sys_siL(ite,10))//",  !!RES!! = "//&
               trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
         end if
 
@@ -10134,8 +10154,8 @@ contains
         ! No warning if we had to do exactly rsolverNode%nmaxIterations steps
         if ((rsolverNode%ioutputLevel .ge. 0) .and. &
             (rsolverNode%nmaxIterations .gt. rsolverNode%nminIterations)) then
-          call output_line ('BiCGStab: Accuracy warning: '//&
-              'Solver did not reach the convergence criterion')
+          call output_line ("BiCGStab: Accuracy warning: "//&
+              "Solver did not reach the convergence criterion")
         end if
 
         ite = rsolverNode%nmaxIterations
@@ -10146,8 +10166,8 @@ contains
       if ((rsolverNode%ioutputLevel .ge. 2) .and. &
           (ite .ge. 1) .and. (ite .lt. rsolverNode%nmaxIterations) .and. &
           (rsolverNode%iresult .ge. 0)) then
-        call output_line ('BiCGStab: Iteration '// &
-            trim(sys_siL(ite,10))//',  !!RES!! = '//&
+        call output_line ("BiCGStab: Iteration "// &
+            trim(sys_siL(ite,10))//",  !!RES!! = "//&
             trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
       end if
 
@@ -10187,31 +10207,31 @@ contains
 
       if ((rsolverNode%ioutputLevel .ge. 2) .and. (rsolverNode%iprintStatistics .eq. YES)) then
         call output_lbrk()
-        call output_line ('BiCGStab statistics:')
+        call output_line ("BiCGStab statistics:")
         call output_lbrk()
-        call output_line ('Iterations              : '//&
+        call output_line ("Iterations              : "//&
              trim(sys_siL(rsolverNode%iiterations,10)) )
-        call output_line ('!!INITIAL RES!!         : '//&
+        call output_line ("!!INITIAL RES!!         : "//&
              trim(sys_sdEL(rsolverNode%dinitialDefect,15)) )
-        call output_line ('!!RES!!                 : '//&
+        call output_line ("!!RES!!                 : "//&
              trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
         if (rsolverNode%dinitialDefect .gt. rsolverNode%drhsZero) then
-          call output_line ('!!RES!!/!!INITIAL RES!! : '//&
+          call output_line ("!!RES!!/!!INITIAL RES!! : "//&
             trim(sys_sdEL(rsolverNode%dfinalDefect / rsolverNode%dinitialDefect,15)) )
         else
-          call output_line ('!!RES!!/!!INITIAL RES!! : '//&
+          call output_line ("!!RES!!/!!INITIAL RES!! : "//&
                trim(sys_sdEL(0.0_DP,15)) )
         end if
         call output_lbrk ()
-        call output_line ('Rate of convergence     : '//&
+        call output_line ("Rate of convergence     : "//&
              trim(sys_sdEL(rsolverNode%dconvergenceRate,15)) )
 
       end if
 
       if (rsolverNode%ioutputLevel .eq. 1) then
         call output_line (&
-              'BiCGStab: Iterations/Rate of convergence: '//&
-              trim(sys_siL(rsolverNode%iiterations,10))//' /'//&
+              "BiCGStab: Iterations/Rate of convergence: "//&
+              trim(sys_siL(rsolverNode%iiterations,10))//" /"//&
               trim(sys_sdEL(rsolverNode%dconvergenceRate,15)) )
       end if
       
@@ -10527,8 +10547,8 @@ contains
     ! We now need to check if the dimension of the Krylov subspace is
     ! positive. If it is not, we need to cancel the initialization here.
     if (p_rsubnode%ikrylovDim .le. 0) then
-      call output_line ('imension of Krylov subspace for GMRES(m) is <= 0 !', &
-          OU_CLASS_ERROR, OU_MODE_STD, 'mysubroutine')
+      call output_line ("imension of Krylov subspace for GMRES(m) is <= 0 !", &
+          OU_CLASS_ERROR, OU_MODE_STD, "mysubroutine")
       ierror = LINSOL_ERR_INITERROR
       call sys_halt()
     end if
@@ -10542,13 +10562,13 @@ contains
     ! and vectors for the Krylov subspace for GMRES here.
     
     ! Call our storage to allocate the 1D/2D arrays
-    call storage_new('linsol_initStructureGMRES', 'Dh', idim2, &
+    call storage_new("linsol_initStructureGMRES", "Dh", idim2, &
         ST_DOUBLE, p_rsubnode%hDh, ST_NEWBLOCK_NOINIT)
-    call storage_new('linsol_initStructureGMRES', 'Dc', idim, &
+    call storage_new("linsol_initStructureGMRES", "Dc", idim, &
         ST_DOUBLE, p_rsubnode%hDs, ST_NEWBLOCK_NOINIT)
-    call storage_new('linsol_initStructureGMRES', 'Ds', idim, &
+    call storage_new("linsol_initStructureGMRES", "Ds", idim, &
         ST_DOUBLE, p_rsubnode%hDc, ST_NEWBLOCK_NOINIT)
-    call storage_new('linsol_initStructureGMRES', 'Dq', idim+1, &
+    call storage_new("linsol_initStructureGMRES", "Dq", idim+1, &
         ST_DOUBLE,  p_rsubnode%hDq, ST_NEWBLOCK_NOINIT)
     
     ! Get the pointers
@@ -10934,11 +10954,23 @@ contains
     ! conditions,...) to the temporary vectors.
     do i=1, idim+1
       call lsysbl_assignDiscrIndirect (rd,p_rv(i))
+
+      ! Synchronise the sorting without touching the entries.
+      ! The target vectors are temporary anyway.
+      call lsysbl_synchroniseSort (rd,p_rv(i),bautoUnsort=.false.)
     end do
     do i=1, idim
       call lsysbl_assignDiscrIndirect (rd,p_rz(i))
+
+      ! Synchronise the sorting without touching the entries.
+      ! The target vectors are temporary anyway.
+      call lsysbl_synchroniseSort (rd,p_rz(i),bautoUnsort=.false.)
     end do
     call lsysbl_assignDiscrIndirect (rd,p_rx)
+    
+    ! Synchronise the sorting without touching the entries.
+    ! The target vector is overwritten anyway.
+    call lsysbl_synchroniseSort (rd,p_rx,bautoUnsort=.false.)
     
     ! Set pointers to the 1D/2D arrays
     p_Dh => p_rsubnode%Dh
@@ -10949,17 +10981,6 @@ contains
     ! And get the handle of Dq, since we need to call
     ! storage_clear during the iteration
     hDq = p_rsubnode%hDq
-    
-    ! All vectors share the same boundary conditions as rd!
-    ! So assign now all discretisation-related information (boundary
-    ! conditions,...) to the temporary vectors.
-    call lsysbl_assignDiscrIndirect (rd, p_rx)
-    do i=1,idim
-      call lsysbl_assignDiscrIndirect (rd, p_rz(i))
-    end do
-    do i=1,idim+1
-      call lsysbl_assignDiscrIndirect (rd, p_rv(i))
-    end do
     
     if (bprec) then
       p_rprecSubnode => p_rsubnode%p_rpreconditioner
@@ -11009,9 +11030,9 @@ contains
       rsolverNode%dfinalDefect = dfr
     else
       if (rsolverNode%ioutputLevel .ge. 2) then
-        call output_line ('GMRES('//&
-             trim(sys_siL(idim,10))//'): Iteration '//&
-             trim(sys_siL(0,10))//',  !!RES!! = '//&
+        call output_line ("GMRES("//&
+             trim(sys_siL(idim,10))//"): Iteration "//&
+             trim(sys_siL(0,10))//",  !!RES!! = "//&
              trim(sys_sdEL(rsolverNode%dinitialDefect,15)) )
       end if
 
@@ -11086,8 +11107,8 @@ contains
           else
             ! Well, let us just print a warning here...
             if(rsolverNode%ioutputLevel .ge. 2) then
-              call output_line ('GMRES('// trim(sys_siL(idim,10))//&
-                '): Warning: !!v(i+1)!! < EPS !')
+              call output_line ("GMRES("// trim(sys_siL(idim,10))//&
+                "): Warning: !!v(i+1)!! < EPS !")
             end if
           end if
           
@@ -11109,8 +11130,8 @@ contains
           if (dbeta < SYS_EPSREAL_DP) then
             dbeta = SYS_EPSREAL_DP
             if(rsolverNode%ioutputLevel .ge. 2) then
-              call output_line ('GMRES('// trim(sys_siL(idim,10))//&
-                '): Warning: beta < EPS !')
+              call output_line ("GMRES("// trim(sys_siL(idim,10))//&
+                "): Warning: beta < EPS !")
             end if
           end if
           
@@ -11138,9 +11159,9 @@ contains
           ! Print our current pseudo-residual-norm
           if ((rsolverNode%ioutputLevel .ge. 2) .and. &
             (mod(ite,niteResOutput).eq.0)) then
-            call output_line ('GMRES('//&
-              trim(sys_siL(idim,10))//'): Iteration '//&
-              trim(sys_siL(ite,10))//',  !q(i+1)! = '//&
+            call output_line ("GMRES("//&
+              trim(sys_siL(idim,10))//"): Iteration "//&
+              trim(sys_siL(ite,10))//",  !q(i+1)! = "//&
               trim(sys_sdEL(dpseudores,15)) )
           end if
 
@@ -11172,8 +11193,8 @@ contains
             ! We also want to check if our solution is diverging.
             if (linsol_testDivergence(rsolverNode,dpseudores)) then
               if(rsolverNode%ioutputLevel .ge. 2) then
-                call output_line ('GMRES('// trim(sys_siL(idim,10))//&
-                  '): Warning: Pseudo-residuals diverging!')
+                call output_line ("GMRES("// trim(sys_siL(idim,10))//&
+                  "): Warning: Pseudo-residuals diverging!")
               end if
               
               ! Instead of exiting the subroutine, we just exit the inner loop
@@ -11196,10 +11217,10 @@ contains
         i = min(i, idim)
         
         ! Step O.4:
-        ! Solve H' * q = q , where H' is the upper triangular matrix of
+        ! Solve H" * q = q , where H" is the upper triangular matrix of
         ! the upper left (i x i)-block of H.
-        ! We use the BLAS Level 2 subroutine 'dtrsv' to do the work for us
-        call dtrsv('U', 'N', 'N', i, p_Dh, idim, p_Dq, 1)
+        ! We use the BLAS Level 2 subroutine "dtrsv" to do the work for us
+        call dtrsv("U", "N", "N", i, p_Dh, idim, p_Dq, 1)
         
         ! Step O.5:
         ! Update our solution vector
@@ -11209,7 +11230,7 @@ contains
         end do
         
         ! Step O.6:
-        ! Calculate 'real' residual
+        ! Calculate "real" residual
         ! v(1) = b - (A * x)
         call lsysbl_copyVector (rd, p_rv(1))
         call lsysbl_blockMatVec(p_rmatrix, p_rx, p_rv(1), -1.0_DP, 1.0_DP)
@@ -11243,13 +11264,13 @@ contains
           if (rsolverNode%ioutputLevel .lt. 2) then
             do i=max(1,size(Dresqueue)-ite-1+1),size(Dresqueue)
               j = ite-max(1,size(Dresqueue)-ite+1)+i
-              call output_line ('GMRES: Iteration '// &
-                  trim(sys_siL(j,10))//',  !!RES!! = '//&
+              call output_line ("GMRES: Iteration "// &
+                  trim(sys_siL(j,10))//",  !!RES!! = "//&
                   trim(sys_sdEL(Dresqueue(i),15)) )
             end do
           end if
-          call output_line ('GMRES('// trim(sys_siL(idim,10))//&
-            '): Solution diverging!')
+          call output_line ("GMRES("// trim(sys_siL(idim,10))//&
+            "): Solution diverging!")
           rsolverNode%iresult = 1
           exit
         end if
@@ -11272,9 +11293,9 @@ contains
 
         if ((rsolverNode%ioutputLevel .ge. 2) .and. &
             (mod(ite,niteResOutput).eq.0)) then
-          call output_line ('GMRES('// trim(sys_siL(idim,10))//&
-            '): Iteration '//&
-            trim(sys_siL(ite,10))//',  !!RES!!  = '//&
+          call output_line ("GMRES("// trim(sys_siL(idim,10))//&
+            "): Iteration "//&
+            trim(sys_siL(ite,10))//",  !!RES!!  = "//&
             trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
         end if
 
@@ -11290,8 +11311,8 @@ contains
         ! No warning if we had to do exactly rsolverNode%nmaxIterations steps
         if ((rsolverNode%ioutputLevel .ge. 0) .and. &
             (rsolverNode%nmaxIterations .gt. rsolverNode%nminIterations)) then
-          call output_line ('GMRES: Accuracy warning: '//&
-              'Solver did not reach the convergence criterion')
+          call output_line ("GMRES: Accuracy warning: "//&
+              "Solver did not reach the convergence criterion")
         end if
 
         ite = rsolverNode%nmaxIterations
@@ -11302,9 +11323,9 @@ contains
       if ((rsolverNode%ioutputLevel .ge. 2) .and. &
           (ite .ge. 1) .and. (ite .lt. rsolverNode%nmaxIterations) .and. &
           (rsolverNode%iresult .ge. 0)) then
-        call output_line ('GMRES('// trim(sys_siL(idim,10))//&
-          '): Iteration '//&
-          trim(sys_siL(ite,10))//',  !!RES!!  = '//&
+        call output_line ("GMRES("// trim(sys_siL(idim,10))//&
+          "): Iteration "//&
+          trim(sys_siL(ite,10))//",  !!RES!!  = "//&
           trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
       end if
 
@@ -11344,31 +11365,31 @@ contains
 
       if ((rsolverNode%ioutputLevel .ge. 2) .and. (rsolverNode%iprintStatistics .eq. YES)) then
         call output_lbrk()
-        call output_line ('GMRES('// trim(sys_siL(idim,10))// ') statistics:')
+        call output_line ("GMRES("// trim(sys_siL(idim,10))// ") statistics:")
         call output_lbrk()
-        call output_line ('Iterations              : '//&
+        call output_line ("Iterations              : "//&
              trim(sys_siL(rsolverNode%iiterations,10)) )
-        call output_line ('!!INITIAL RES!!         : '//&
+        call output_line ("!!INITIAL RES!!         : "//&
              trim(sys_sdEL(rsolverNode%dinitialDefect,15)) )
-        call output_line ('!!RES!!                 : '//&
+        call output_line ("!!RES!!                 : "//&
              trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
         if (rsolverNode%dinitialDefect .gt. rsolverNode%drhsZero) then
-          call output_line ('!!RES!!/!!INITIAL RES!! : '//&
+          call output_line ("!!RES!!/!!INITIAL RES!! : "//&
             trim(sys_sdEL(rsolverNode%dfinalDefect / rsolverNode%dinitialDefect,15)) )
         else
-          call output_line ('!!RES!!/!!INITIAL RES!! : '//&
+          call output_line ("!!RES!!/!!INITIAL RES!! : "//&
                trim(sys_sdEL(0.0_DP,15)) )
         end if
         call output_lbrk ()
-        call output_line ('Rate of convergence     : '//&
+        call output_line ("Rate of convergence     : "//&
              trim(sys_sdEL(rsolverNode%dconvergenceRate,15)) )
 
       end if
 
       if (rsolverNode%ioutputLevel .eq. 1) then
-        call output_line ('GMRES('// trim(sys_siL(idim,10))//&
-          '): Iterations/Rate of convergence: ' //&
-              trim(sys_siL(rsolverNode%iiterations,10))//' /'//&
+        call output_line ("GMRES("// trim(sys_siL(idim,10))//&
+          "): Iterations/Rate of convergence: " //&
+              trim(sys_siL(rsolverNode%iiterations,10))//" /"//&
               trim(sys_sdEL(rsolverNode%dconvergenceRate,15)) )
       end if
 
@@ -11962,7 +11983,7 @@ contains
       
     end if
     
-    ! As we now need to solve '-S*p = g <==> 'S*p = -g`, we will simply
+    ! As we now need to solve "-S*p = g <==> "S*p = -g`, we will simply
     ! scale the defect by -1.
     call lsysbl_scaleVector(rp, -1.0_DP)
     
@@ -11999,7 +12020,7 @@ contains
   !
   ! It is allowed to use the same rinterlevelProjection on all levels,
   ! since the structure is level independent (as long as the
-  ! spatial discretisation structures on different levels are 'compatible'
+  ! spatial discretisation structures on different levels are "compatible"
   ! what they have to be anyway).
 !</description>
   
@@ -12019,7 +12040,7 @@ contains
   ! to the solver in the linsol_setMatrices routine.
   !
   ! Note that this structure is level-independent (as long as the
-  ! spatial discretisation structures on different levels are 'compatible'
+  ! spatial discretisation structures on different levels are "compatible"
   ! what they have to be anyway), so the same structure can be used
   ! to initialise all levels!
   type(t_interlevelProjectionBlock), intent(in) :: rprojection
@@ -12069,8 +12090,8 @@ contains
     ! Make sure the solver node is configured for multigrid
     if ((rsolverNode%calgorithm .ne. LINSOL_ALG_MULTIGRID) .or. &
         (.not. associated(rsolverNode%p_rsubnodeMultigrid))) then
-      call output_line ('Multigrid structure not initialised!', &
-          OU_CLASS_ERROR, OU_MODE_STD, 'linsol_addMultigridLevel')
+      call output_line ("Multigrid structure not initialised!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_addMultigridLevel")
       call sys_halt()
     end if
     
@@ -12218,8 +12239,8 @@ contains
     ! Make sure the solver node is configured for multigrid
     if ((rsolverNode%calgorithm .ne. LINSOL_ALG_MULTIGRID) .or. &
         (.not. associated(rsolverNode%p_rsubnodeMultigrid))) then
-      call output_line ('Multigrid structure not initialised!', &
-          OU_CLASS_ERROR, OU_MODE_STD, 'linsol_addMultigridLevel')
+      call output_line ("Multigrid structure not initialised!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_addMultigridLevel")
       call sys_halt()
     end if
     
@@ -12330,8 +12351,8 @@ contains
     ! Make sure the solver node is configured for multigrid
     if ((rsolverNode%calgorithm .ne. LINSOL_ALG_MULTIGRID) .or. &
         (.not. associated(rsolverNode%p_rsubnodeMultigrid))) then
-      call output_line ('Multigrid structure not initialised!', &
-          OU_CLASS_ERROR, OU_MODE_STD, 'linsol_removeMultigridLevel')
+      call output_line ("Multigrid structure not initialised!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_removeMultigridLevel")
       call sys_halt()
     end if
     
@@ -12719,15 +12740,15 @@ contains
     ! Make sure the solver node is configured for multigrid
     if ((rsolverNode%calgorithm .ne. LINSOL_ALG_MULTIGRID) .or. &
         (.not. associated(rsolverNode%p_rsubnodeMultigrid))) then
-      call output_line ('Multigrid structure not initialised!', &
-          OU_CLASS_ERROR, OU_MODE_STD, 'linsol_setMatrixMultigrid')
+      call output_line ("Multigrid structure not initialised!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_setMatrixMultigrid")
       call sys_halt()
     end if
     
     ! Make sure we have the right amount of matrices
     if (size(Rmatrices) .ne. rsolverNode%p_rsubnodeMultigrid%nlevels) then
-      call output_line ('Wrong number of matrices!', &
-          OU_CLASS_ERROR, OU_MODE_STD, 'linsol_setMatrixMultigrid')
+      call output_line ("Wrong number of matrices!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_setMatrixMultigrid")
       call sys_halt()
     end if
 
@@ -12834,15 +12855,15 @@ contains
     ! Make sure the solver node is configured for multigrid
     if ((rsolverNode%calgorithm .ne. LINSOL_ALG_MULTIGRID) .or. &
         (.not. associated(rsolverNode%p_rsubnodeMultigrid))) then
-      call output_line ('Multigrid structure not initialised!', &
-          OU_CLASS_ERROR, OU_MODE_STD, 'linsol_matCompatMultigrid')
+      call output_line ("Multigrid structure not initialised!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_matCompatMultigrid")
       call sys_halt()
     end if
     
     ! Make sure we have the right amount of matrices
     if (size(Rmatrices) .ne. rsolverNode%p_rsubnodeMultigrid%nlevels) then
-      call output_line ('Wrong number of matrices!', &
-          OU_CLASS_ERROR, OU_MODE_STD, 'linsol_matCompatMultigrid')
+      call output_line ("Wrong number of matrices!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_matCompatMultigrid")
       call sys_halt()
     end if
 
@@ -12995,8 +13016,8 @@ contains
     ! Make sure the solver node is configured for multigrid
     if ((rsolverNode%calgorithm .ne. LINSOL_ALG_MULTIGRID) .or. &
         (.not. associated(rsolverNode%p_rsubnodeMultigrid))) then
-      call output_line ('Multigrid structure not initialised!', &
-          OU_CLASS_ERROR, OU_MODE_STD, 'linsol_initStructureMultigrid')
+      call output_line ("Multigrid structure not initialised!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_initStructureMultigrid")
       call sys_halt()
     end if
 
@@ -13090,22 +13111,19 @@ contains
                       p_rcurrentLevel%rsystemMatrix))
       end if
 
-      ! All temporary vectors are marked as 'unsorted'. We can set the
+      ! All temporary vectors are marked as "unsorted". We can set the
       ! sorting flag directly here without using the resorting routines
       ! as the vectors have just been created.
       !
       ! Do not do anything to the RHS/temp vectors on the coarse grid
       ! and the solution vector on the fine grid -- they do not exist!
       if (associated(p_rcurrentLevel%p_rprevLevel)) then
-        p_rcurrentLevel%rrhsVector%RvectorBlock%isortStrategy = &
-          -abs(p_rcurrentLevel%rrhsVector%RvectorBlock%isortStrategy)
-        p_rcurrentLevel%rtempVector%RvectorBlock%isortStrategy = &
-          -abs(p_rcurrentLevel%rtempVector%RvectorBlock%isortStrategy)
+        p_rcurrentLevel%rrhsVector%RvectorBlock(:)%bisSorted = .false.
+        p_rcurrentLevel%rtempVector%RvectorBlock(:)%bisSorted = .false.
       end if
       
       if (associated(p_rcurrentLevel%p_rnextLevel)) then
-        p_rcurrentLevel%rsolutionVector%RvectorBlock%isortStrategy = &
-          -abs(p_rcurrentLevel%rsolutionVector%RvectorBlock%isortStrategy)
+        p_rcurrentLevel%rsolutionVector%RvectorBlock(:)%bisSorted = .false.
       end if
       
       ! And the next level...
@@ -13200,8 +13218,8 @@ contains
     ! Make sure the solver node is configured for multigrid
     if ((rsolverNode%calgorithm .ne. LINSOL_ALG_MULTIGRID) .or. &
         (.not. associated(rsolverNode%p_rsubnodeMultigrid))) then
-      call output_line ('Multigrid structure not initialised!', &
-          OU_CLASS_ERROR, OU_MODE_STD, 'linsol_initDataMultigrid')
+      call output_line ("Multigrid structure not initialised!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_initDataMultigrid")
       call sys_halt()
     end if
 
@@ -13286,8 +13304,8 @@ contains
     ! Make sure the solver node is configured for multigrid
     if ((rsolverNode%calgorithm .ne. LINSOL_ALG_MULTIGRID) .or. &
         (.not. associated(rsolverNode%p_rsubnodeMultigrid))) then
-      call output_line ('Multigrid structure not initialised!', &
-          OU_CLASS_ERROR, OU_MODE_STD, 'linsol_doneDataMultigrid')
+      call output_line ("Multigrid structure not initialised!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_doneDataMultigrid")
       call sys_halt()
     end if
 
@@ -13367,8 +13385,8 @@ contains
     ! Make sure the solver node is configured for multigrid
     if ((rsolverNode%calgorithm .ne. LINSOL_ALG_MULTIGRID) .or. &
         (.not. associated(rsolverNode%p_rsubnodeMultigrid))) then
-      call output_line ('Multigrid structure not initialised!', &
-          OU_CLASS_ERROR, OU_MODE_STD, 'linsol_doneStructureMultigrid')
+      call output_line ("Multigrid structure not initialised!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_doneStructureMultigrid")
       call sys_halt()
     end if
 
@@ -13416,7 +13434,7 @@ contains
         end if
 
         ! Release the temp vector for the coarse grid correction.
-        ! The vector shares its memory with the 'global' projection
+        ! The vector shares its memory with the "global" projection
         ! vector, so only release it if the other vector exists.
         if (rsolverNode%p_rsubnodeMultigrid%rprjTempVector%NEQ .gt. 0) then
           call lsysbl_releaseVector (p_rcurrentLevel%rcgcorrTempVector)
@@ -13471,8 +13489,8 @@ contains
     ! Make sure the solver node is configured for multigrid
     if ((rsolverNode%calgorithm .ne. LINSOL_ALG_MULTIGRID) .or. &
         (.not. associated(rsolverNode%p_rsubnodeMultigrid))) then
-      call output_line ('Multigrid structure not initialised!', &
-          OU_CLASS_ERROR, OU_MODE_STD, 'linsol_doneMultigrid')
+      call output_line ("Multigrid structure not initialised!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_doneMultigrid")
       call sys_halt()
     end if
 
@@ -13528,7 +13546,7 @@ contains
   ! rsolverNode%nmaxIterations so that the solver performs a definite
   ! number of iterations regardless of the residual.
   !
-  ! rx is assumed to be of 'defect' type. There are two types of smoothing
+  ! rx is assumed to be of "defect" type. There are two types of smoothing
   ! processes, depending on which type of preconditioner rsolverNode is:
   ! 1.) If rsolverNode is an iterative solver, linsol_smoothCorrection
   !     calls the associated solver P to compute <tex>$x=P^{-1}b$</tex> using
@@ -13638,8 +13656,8 @@ contains
             dres = lsysbl_vectorNorm (rtemp,rsolverNode%iresNorm)
             if (.not.((dres .ge. 1E-99_DP) .and. (dres .le. 1E99_DP))) dres = 0.0_DP
                       
-            call output_line ('Smoother: Step '//trim(sys_siL(i-1,10))//&
-                ' !!RES!! = '//trim(sys_sdEL(dres,15)) )
+            call output_line ("Smoother: Step "//trim(sys_siL(i-1,10))//&
+                " !!RES!! = "//trim(sys_sdEL(dres,15)) )
           end if
         
           ! Perform nmaxIterations:   x_n+1 = x_n + C^{-1} (b-Ax_n)
@@ -13657,8 +13675,8 @@ contains
           dres = lsysbl_vectorNorm (rtemp,rsolverNode%iresNorm)
           if (.not.((dres .ge. 1E-99_DP) .and. (dres .le. 1E99_DP))) dres = 0.0_DP
                     
-          call output_line ('Smoother: Step '//trim(sys_siL(i-1,10))//&
-              ' !!RES!! = '//trim(sys_sdEL(dres,15)) )
+          call output_line ("Smoother: Step "//trim(sys_siL(i-1,10))//&
+              " !!RES!! = "//trim(sys_sdEL(dres,15)) )
         end if
 
         ! That is it.
@@ -13723,8 +13741,8 @@ contains
         dres = lsysbl_vectorNorm (rtemp,rsolverNode%iresNorm)
         if (.not.((dres .ge. 1E-99_DP) .and. (dres .le. 1E99_DP))) dres = 0.0_DP
                   
-        call output_line ('Smoother: Step '//trim(sys_siL(i-1,10))//&
-            ' !!RES!! = '//trim(sys_sdEL(dres,15)) )
+        call output_line ("Smoother: Step "//trim(sys_siL(i-1,10))//&
+            " !!RES!! = "//trim(sys_sdEL(dres,15)) )
       end if
       
       ! Apply the filter to this defect before preconditioning
@@ -13739,8 +13757,8 @@ contains
       ! it would destroy out solution!
       if (rsolverNode%iresult .ne. 0) then
         if (rsolverNode%ioutputLevel .ge. 0) then
-          call output_line ('Smoothing canceled, preconditioner broke down!', &
-                            OU_CLASS_WARNING,OU_MODE_STD,'linsol_smoothCorrection')
+          call output_line ("Smoothing canceled, preconditioner broke down!", &
+                            OU_CLASS_WARNING,OU_MODE_STD,"linsol_smoothCorrection")
           exit
         end if
       end if
@@ -13757,8 +13775,8 @@ contains
       dres = lsysbl_vectorNorm (rtemp,rsolverNode%iresNorm)
       if (.not.((dres .ge. 1E-99_DP) .and. (dres .le. 1E99_DP))) dres = 0.0_DP
                 
-      call output_line ('Smoother: Step '//trim(sys_siL(i-1,10))//&
-          ' !!RES!! = '//trim(sys_sdEL(dres,15)) )
+      call output_line ("Smoother: Step "//trim(sys_siL(i-1,10))//&
+          " !!RES!! = "//trim(sys_sdEL(dres,15)) )
     end if
     
     ! Apply the filter to the solution to enforce e.g. integral-mean-value = 0
@@ -13839,8 +13857,8 @@ contains
 
     if (p_rsubnode%icycle .lt. 0) then
       ! Wrong cycle
-      call output_line ('Invalid cycle!', &
-          OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precMultigrid')
+      call output_line ("Invalid cycle!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_precMultigrid")
       rsolverNode%iresult = 2
       return
     end if
@@ -13848,8 +13866,8 @@ contains
     if ((.not. associated(p_rsubnode%p_rlevelInfoHead)) .or. &
         (.not. associated(p_rsubnode%p_rlevelInfoTail)) .or. &
         (p_rsubnode%nlevels .le. 0)) then
-      call output_line ('No levels attached!', &
-          OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precMultigrid')
+      call output_line ("No levels attached!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_precMultigrid")
       rsolverNode%iresult = 2
       return
     end if
@@ -13888,8 +13906,8 @@ contains
     if (associated(p_rcurrentLevel%p_rcoarseGridSolver)) then
     
       if (rsolverNode%ioutputLevel .gt. 1) then
-        call output_line ('Multigrid: Only one level. '//&
-             'Switching back to standard solver.')
+        call output_line ("Multigrid: Only one level. "//&
+             "Switching back to standard solver.")
       end if
       call linsol_precondDefect(p_rcurrentLevel%p_rcoarseGridSolver,rd)
       
@@ -13939,11 +13957,11 @@ contains
         ! how sorted vectors is dealed with, in case sorting is activated:
         !
         ! 1.) At the beginning of the algorithm, RHS, solution and temp vector
-        !     on the finest level are set up as 'sorted'. The whole algorithm
+        !     on the finest level are set up as "sorted". The whole algorithm
         !     here deals with sorted vectors, so that matrix/vector multiplication
         !     works.
         ! 2.) At the beginning of the algorithm, all temporary vectors on the
-        !     lower levels are set up as 'unsorted'.
+        !     lower levels are set up as "unsorted".
         ! 3.) When restricting the defect,
         !     - the defect is unsorted on level l
         !     - the unsorted defect is restricted to level l-1
@@ -13973,8 +13991,8 @@ contains
         ! Print out the initial residuum
 
         if (rsolverNode%ioutputLevel .ge. 2) then
-          call output_line ('Multigrid: Iteration '// &
-              trim(sys_siL(0,10))//',  !!RES!! = '//&
+          call output_line ("Multigrid: Iteration "// &
+              trim(sys_siL(0,10))//",  !!RES!! = "//&
               trim(sys_sdEL(rsolverNode%dinitialDefect,15)) )
         end if
         
@@ -14068,8 +14086,8 @@ contains
                 if (.not.((dres .ge. 1E-99_DP) .and. &
                           (dres .le. 1E99_DP))) dres = 0.0_DP
                           
-                call output_line ('Multigrid: Level '//trim(sys_siL(ilev,5))//&
-                    ' after presm.:     !!RES!! = '//trim(sys_sdEL(dres,15)) )
+                call output_line ("Multigrid: Level "//trim(sys_siL(ilev,5))//&
+                    " after presm.:     !!RES!! = "//trim(sys_sdEL(dres,15)) )
               end if
 
               ! Restriction of the defect. The restricted defect is placed
@@ -14079,11 +14097,11 @@ contains
               ! current level.
               !
               ! Make sure the vector is unsorted before the restriction!
-              ! We can use the 'global' temporary array p_rprjTempVector
+              ! We can use the "global" temporary array p_rprjTempVector
               ! as temporary memory during the resorting process.
               if (bsort) then
-                call lsysbl_sortVectorInSitu (p_rcurrentLevel%rtempVector,&
-                      p_rsubnode%rprjTempVector,.false.)
+                call lsysbl_sortVector (p_rcurrentLevel%rtempVector,&
+                      .false.,p_rsubnode%rprjTempVector)
               end if
               
               ! When restricting to the coarse grid, we directy restrict into
@@ -14105,7 +14123,7 @@ contains
                 ! (which is a defect vector against the 0-vector).
                 if (bfilter) then
                   ! Apply the filter chain to the vector.
-                  ! We are in 'unsorted' state; applying the filter here is
+                  ! We are in "unsorted" state; applying the filter here is
                   ! supposed to be a bit faster...
                   call filter_applyFilterChainVec (p_rlowerLevel%rrhsVector, &
                                                    p_RfilterChain)
@@ -14113,18 +14131,15 @@ contains
 
                 if (bsort) then
                   ! Resort the RHS on the lower level.
-                  call lsysbl_sortVectorInSitu (p_rlowerLevel%rrhsVector,&
-                        p_rsubnode%rprjTempVector,.true.)
+                  call lsysbl_sortVector (p_rlowerLevel%rrhsVector,&
+                        .true.,p_rsubnode%rprjTempVector)
 
                   ! Temp-vector and solution vector there are yet uninitialised,
                   ! therefore we can mark them as sorted without calling the
                   ! resorting routine.
-                  p_rlowerLevel%rtempVector%RvectorBlock(1:nblocks)%isortStrategy = &
-                  abs(p_rlowerLevel%rtempVector%RvectorBlock(1:nblocks)%isortStrategy)
+                  p_rlowerLevel%rtempVector%RvectorBlock(1:nblocks)%bisSorted = .true.
                   
-                  p_rlowerLevel%rsolutionVector%RvectorBlock(1:nblocks)% &
-                    isortStrategy = abs(p_rlowerLevel%rsolutionVector% &
-                    RvectorBlock(1:nblocks)%isortStrategy)
+                  p_rlowerLevel%rsolutionVector%RvectorBlock(1:nblocks)%bisSorted = .true.
                 end if
 
                 ! Choose zero as initial vector on lower level.
@@ -14139,7 +14154,7 @@ contains
                   if (.not.((dres .ge. 1E-99_DP) .and. &
                             (dres .le. 1E99_DP))) dres = 0.0_DP
                             
-                  ! In case adaptive cycles are activated, save the 'initial' residual
+                  ! In case adaptive cycles are activated, save the "initial" residual
                   ! of that level into the level structure. Then we can later check
                   ! if we have to repeat the cycle on the coarse mesh.
                   if (rsolverNode%p_rsubnodeMultigrid%depsRelCycle .ne. 1E99_DP) then
@@ -14150,8 +14165,8 @@ contains
                   ! If the output level is high enough, print that residuum norm.
                   if ((rsolverNode%ioutputLevel .ge. 3) .and. &
                       (mod(ite,niteResOutput).eq.0)) then
-                    call output_line ('Multigrid: Level '//trim(sys_siL(ilev-1,5))//&
-                        ' after restrict.:  !!RES!! = '//trim(sys_sdEL(dres,15)) )
+                    call output_line ("Multigrid: Level "//trim(sys_siL(ilev-1,5))//&
+                        " after restrict.:  !!RES!! = "//trim(sys_sdEL(dres,15)) )
                   end if
                   
                 end if
@@ -14169,7 +14184,7 @@ contains
                 ! (which is a defect vector against the 0-vector).
                 if (bfilter) then
                   ! Apply the filter chain to the vector.
-                  ! We are in 'unsorted' state; applying the filter here is
+                  ! We are in "unsorted" state; applying the filter here is
                   ! supposed to be a bit faster...
                   call filter_applyFilterChainVec (p_rlowerLevel%rsolutionVector, &
                                                    p_RfilterChain)
@@ -14177,8 +14192,8 @@ contains
 
                 if (bsort) then
                   ! Resort the RHS on the lower level.
-                  call lsysbl_sortVectorInSitu (p_rlowerLevel%rsolutionVector,&
-                        p_rsubnode%rprjTempVector,.true.)
+                  call lsysbl_sortVector (p_rlowerLevel%rsolutionVector,&
+                        .true.,p_rsubnode%rprjTempVector)
 
                   ! Temp-vector and RHS can be ignored on the coarse grid.
                 end if
@@ -14192,8 +14207,8 @@ contains
                   if (.not.((dres .ge. 1E-99_DP) .and. &
                             (dres .le. 1E99_DP))) dres = 0.0_DP
                             
-                  call output_line ('Multigrid: Level '//trim(sys_siL(ilev-1,5))//&
-                      ' after restrict.:  !!RES!! = '//trim(sys_sdEL(dres,15)) )
+                  call output_line ("Multigrid: Level "//trim(sys_siL(ilev-1,5))//&
+                      " after restrict.:  !!RES!! = "//trim(sys_sdEL(dres,15)) )
                 end if
 
               end if
@@ -14235,27 +14250,23 @@ contains
               ! to the temp vector on the finer level.
               !
               ! Make sure the vector is unsorted before the prolongation!
-              ! We can use the 'global' temporary array p_rprjTempVector
+              ! We can use the "global" temporary array p_rprjTempVector
               ! as temporary memory during the resorting process.
               if (bsort) then
-                call lsysbl_sortVectorInSitu (p_rlowerLevel%rsolutionVector,&
-                      p_rsubnode%rprjTempVector,.false.)
+                call lsysbl_sortVector (p_rlowerLevel%rsolutionVector,&
+                    .false.,p_rsubnode%rprjTempVector)
                 
                 ! Temp-vector and RHS vector there unused now,
                 ! therefore we can mark them as not sorted without calling the
                 ! resorting routine.
                 ! This prepares these vectors for the next sweep, when an unsorted
-                ! vector comes 'from above'.
+                ! vector comes "from above".
                 !
                 ! Note that this shall not be done on the coarse grid as there is
                 ! no temp/rhs vector!
                 if (associated(p_rlowerLevel%p_rprevLevel)) then
-                  p_rlowerLevel%rtempVector%RvectorBlock(1:nblocks)%isortStrategy = &
-                    -abs(p_rlowerLevel%rtempVector%RvectorBlock(1:nblocks)% &
-                    isortStrategy)
-                  p_rlowerLevel%rrhsVector%RvectorBlock(1:nblocks)% &
-                    isortStrategy = -abs(p_rlowerLevel%rrhsVector% &
-                    RvectorBlock(1:nblocks)%isortStrategy)
+                  p_rlowerLevel%rtempVector%RvectorBlock(1:nblocks)%bisSorted = .false.
+                  p_rlowerLevel%rrhsVector%RvectorBlock(1:nblocks)%bisSorted = .false.
                 end if
               end if
               call mlprj_performProlongation (p_rcurrentLevel%rprojection,&
@@ -14272,8 +14283,8 @@ contains
               if (bsort) then
                 ! Resort the temp vector on the current level so that it fits
                 ! to the RHS, solution vector and matrix again
-                call lsysbl_sortVectorInSitu (p_rcurrentLevel%rtempVector,&
-                      p_rsubnode%rprjTempVector,.true.)
+                call lsysbl_sortVector (p_rcurrentLevel%rtempVector,&
+                    .true.,p_rsubnode%rprjTempVector)
               end if
               
               ! Step length control. Get the optimal damping parameter for the
@@ -14325,10 +14336,10 @@ contains
                 if (.not.((dres .ge. 1E-99_DP) .and. &
                           (dres .le. 1E99_DP))) dres = 0.0_DP
                           
-                call output_line ('Multigrid: C.g.corr. step length ALPHA = '//&
+                call output_line ("Multigrid: C.g.corr. step length ALPHA = "//&
                     trim(sys_sdEL(dstep,15)) )
-                call output_line ('Multigrid: Level '//trim(sys_siL(ilev,5))//&
-                    ' after c.g.corr.:  !!RES!! = '//trim(sys_sdEL(dres,15)) )
+                call output_line ("Multigrid: Level "//trim(sys_siL(ilev,5))//&
+                    " after c.g.corr.:  !!RES!! = "//trim(sys_sdEL(dres,15)) )
               end if
                                             
               ! Perform the post-smoothing with the current solution vector
@@ -14355,8 +14366,8 @@ contains
                   if (.not.((dres .ge. 1E-99_DP) .and. &
                             (dres .le. 1E99_DP))) dres = 0.0_DP
                             
-                  call output_line ('Multigrid: Level '//trim(sys_siL(ilev,5))//&
-                      ' after postsm.:    !!RES!! = '//trim(sys_sdEL(dres,15)) )
+                  call output_line ("Multigrid: Level "//trim(sys_siL(ilev,5))//&
+                      " after postsm.:    !!RES!! = "//trim(sys_sdEL(dres,15)) )
                 end if
                                               
               end if
@@ -14413,8 +14424,8 @@ contains
                         call output_line ( &
                           trim( &
                           sys_siL(p_rcurrentLevel%icycleCount,10)) &
-                          //'''th repetition of cycle on level '// &
-                          trim(sys_siL(ilev,5))//'.')
+                          //"""th repetition of cycle on level "// &
+                          trim(sys_siL(ilev,5))//".")
                       end if
 
                       p_rcurrentLevel%icycleCount = p_rcurrentLevel%icycleCount+1
@@ -14474,12 +14485,12 @@ contains
           if (rsolverNode%ioutputLevel .lt. 2) then
             do i=max(1,size(Dresqueue)-ite-1+1),size(Dresqueue)
               j = ite-max(1,size(Dresqueue)-ite+1)+i
-              call output_line ('Multigrid: Iteration '// &
-                  trim(sys_siL(j,10))//',  !!RES!! = '//&
+              call output_line ("Multigrid: Iteration "// &
+                  trim(sys_siL(j,10))//",  !!RES!! = "//&
                   trim(sys_sdEL(Dresqueue(i),15)) )
             end do
           end if
-            call output_line ('Multigrid: Solution diverging!')
+            call output_line ("Multigrid: Solution diverging!")
             rsolverNode%iresult = 1
             exit
           end if
@@ -14496,8 +14507,8 @@ contains
 
           if ((rsolverNode%ioutputLevel .ge. 2) .and. &
               (mod(ite,niteResOutput).eq.0)) then
-            call output_line ('Multigrid: Iteration '// &
-                trim(sys_siL(ite,10))//',  !!RES!! = '//&
+            call output_line ("Multigrid: Iteration "// &
+                trim(sys_siL(ite,10))//",  !!RES!! = "//&
                 trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
           end if
           
@@ -14509,8 +14520,8 @@ contains
         if ((rsolverNode%ioutputLevel .ge. 2) .and. &
             (ite .ge. 1) .and. (ite .le. rsolverNode%nmaxIterations) .and. &
             (rsolverNode%iresult .ge. 0)) then
-          call output_line ('Multigrid: Iteration '// &
-              trim(sys_siL(ite,10))//',  !!RES!! = '//&
+          call output_line ("Multigrid: Iteration "// &
+              trim(sys_siL(ite,10))//",  !!RES!! = "//&
               trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
         end if
         
@@ -14522,8 +14533,8 @@ contains
           ! No warning if we had to do exactly rsolverNode%nmaxIterations steps
           if ((rsolverNode%ioutputLevel .ge. 0) .and. &
               (rsolverNode%nmaxIterations .gt. rsolverNode%nminIterations)) then
-            call output_line ('Multigrid: Accuracy warning: '//&
-                'Solver did not reach the convergence criterion')
+            call output_line ("Multigrid: Accuracy warning: "//&
+                "Solver did not reach the convergence criterion")
           end if
 
           ite = rsolverNode%nmaxIterations
@@ -14577,31 +14588,31 @@ contains
       
       if ((rsolverNode%ioutputLevel .ge. 2) .and. (rsolverNode%iprintStatistics .eq. YES)) then
         call output_lbrk()
-        call output_line ('Multigrid statistics:')
+        call output_line ("Multigrid statistics:")
         call output_lbrk()
-        call output_line ('Iterations              : '//&
+        call output_line ("Iterations              : "//&
              trim(sys_siL(rsolverNode%iiterations,10)) )
-        call output_line ('!!INITIAL RES!!         : '//&
+        call output_line ("!!INITIAL RES!!         : "//&
              trim(sys_sdEL(rsolverNode%dinitialDefect,15)) )
-        call output_line ('!!RES!!                 : '//&
+        call output_line ("!!RES!!                 : "//&
              trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
         if (rsolverNode%dinitialDefect .gt. rsolverNode%drhsZero) then
-          call output_line ('!!RES!!/!!INITIAL RES!! : '//&
+          call output_line ("!!RES!!/!!INITIAL RES!! : "//&
             trim(sys_sdEL(rsolverNode%dfinalDefect / rsolverNode%dinitialDefect,15)) )
         else
-          call output_line ('!!RES!!/!!INITIAL RES!! : '//&
+          call output_line ("!!RES!!/!!INITIAL RES!! : "//&
                trim(sys_sdEL(0.0_DP,15)) )
         end if
         call output_lbrk ()
-        call output_line ('Rate of convergence     : '//&
+        call output_line ("Rate of convergence     : "//&
              trim(sys_sdEL(rsolverNode%dconvergenceRate,15)) )
 
       end if
 
       if (rsolverNode%ioutputLevel .eq. 1) then
         call output_line (&
-              'MG: Iterations/Rate of convergence: '//&
-              trim(sys_siL(rsolverNode%iiterations,10))//' /'//&
+              "MG: Iterations/Rate of convergence: "//&
+              trim(sys_siL(rsolverNode%iiterations,10))//" /"//&
               trim(sys_sdEL(rsolverNode%dconvergenceRate,15)) )
       end if
 
@@ -14679,8 +14690,8 @@ contains
       ! Get it.
       p_rlevelInfo => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel)
     else
-      call output_line('Level out of range!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'linsol_getMultigrid2Level')
+      call output_line("Level out of range!",&
+                       OU_CLASS_ERROR,OU_MODE_STD,"linsol_getMultigrid2Level")
       call sys_halt()
     end if
 
@@ -14765,8 +14776,8 @@ contains
     ! Make sure the solver node is configured for multigrid
     if ((rsolverNode%calgorithm .ne. LINSOL_ALG_MULTIGRID2) .or. &
         (.not. associated(rsolverNode%p_rsubnodeMultigrid2))) then
-      call output_line ('Multigrid structure not initialised!', &
-          OU_CLASS_ERROR, OU_MODE_STD, 'linsol_cleanMultigrid2Levels')
+      call output_line ("Multigrid structure not initialised!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_cleanMultigrid2Levels")
       call sys_halt()
     end if
 
@@ -15124,15 +15135,15 @@ contains
     ! Make sure the solver node is configured for multigrid
     if ((rsolverNode%calgorithm .ne. LINSOL_ALG_MULTIGRID2) .or. &
         (.not. associated(rsolverNode%p_rsubnodeMultigrid2))) then
-      call output_line ('Multigrid structure not initialised!', &
-          OU_CLASS_ERROR, OU_MODE_STD, 'linsol_setMatrixMultigrid2')
+      call output_line ("Multigrid structure not initialised!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_setMatrixMultigrid2")
       call sys_halt()
     end if
     
     ! Make sure we have the right amount of matrices
     if (size(Rmatrices) .ne. rsolverNode%p_rsubnodeMultigrid2%nlevels) then
-      call output_line ('Wrong number of matrices!', &
-          OU_CLASS_ERROR, OU_MODE_STD, 'linsol_setMatrixMultigrid2')
+      call output_line ("Wrong number of matrices!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_setMatrixMultigrid2")
       call sys_halt()
     end if
 
@@ -15223,15 +15234,15 @@ contains
     ! Make sure the solver node is configured for multigrid
     if ((rsolverNode%calgorithm .ne. LINSOL_ALG_MULTIGRID2) .or. &
         (.not. associated(rsolverNode%p_rsubnodeMultigrid2))) then
-      call output_line ('Multigrid structure not initialised!', &
-          OU_CLASS_ERROR, OU_MODE_STD, 'linsol_matCompatMultigrid2')
+      call output_line ("Multigrid structure not initialised!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_matCompatMultigrid2")
       call sys_halt()
     end if
     
     ! Make sure we have the right amount of matrices
     if (size(Rmatrices) .ne. rsolverNode%p_rsubnodeMultigrid2%nlevels) then
-      call output_line ('Wrong number of matrices!', &
-          OU_CLASS_ERROR, OU_MODE_STD, 'linsol_matCompatMultigrid2')
+      call output_line ("Wrong number of matrices!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_matCompatMultigrid2")
       call sys_halt()
     end if
 
@@ -15372,8 +15383,8 @@ contains
     ! Make sure the solver node is configured for multigrid
     if ((rsolverNode%calgorithm .ne. LINSOL_ALG_MULTIGRID2) .or. &
         (.not. associated(rsolverNode%p_rsubnodeMultigrid2))) then
-      call output_line ('Multigrid structure not initialised!', &
-          OU_CLASS_ERROR, OU_MODE_STD, 'linsol_initStructureMultigrid2')
+      call output_line ("Multigrid structure not initialised!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_initStructureMultigrid2")
       call sys_halt()
     end if
     
@@ -15472,22 +15483,19 @@ contains
                       p_rcurrentLevel%rsystemMatrix))
       end if
 
-      ! All temporary vectors are marked as 'unsorted'. We can set the
+      ! All temporary vectors are marked as "unsorted". We can set the
       ! sorting flag directly here without using the resorting routines
       ! as the vectors have just been created.
       !
       ! Do not do anything to the RHS/temp vectors on the coarse grid
       ! and the solution vector on the fine grid -- they do not exist!
       if (ilevel .gt. 1) then
-        p_rcurrentLevel%rrhsVector%RvectorBlock%isortStrategy = &
-          -abs(p_rcurrentLevel%rrhsVector%RvectorBlock%isortStrategy)
-        p_rcurrentLevel%rtempVector%RvectorBlock%isortStrategy = &
-          -abs(p_rcurrentLevel%rtempVector%RvectorBlock%isortStrategy)
+        p_rcurrentLevel%rrhsVector%RvectorBlock%bisSorted = .false.
+        p_rcurrentLevel%rtempVector%RvectorBlock%bisSorted = .false.
       end if
       
       if (ilevel .lt. NLMAX) then
-        p_rcurrentLevel%rsolutionVector%RvectorBlock%isortStrategy = &
-          -abs(p_rcurrentLevel%rsolutionVector%RvectorBlock%isortStrategy)
+        p_rcurrentLevel%rsolutionVector%RvectorBlock%bisSorted = .false.
       end if
       
       ! And the next level...
@@ -15578,8 +15586,8 @@ contains
     ! Make sure the solver node is configured for multigrid
     if ((rsolverNode%calgorithm .ne. LINSOL_ALG_MULTIGRID2) .or. &
         (.not. associated(rsolverNode%p_rsubnodeMultigrid2))) then
-      call output_line ('Multigrid structure not initialised!', &
-          OU_CLASS_ERROR, OU_MODE_STD, 'linsol_initDataMultigrid2')
+      call output_line ("Multigrid structure not initialised!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_initDataMultigrid2")
       call sys_halt()
     end if
 
@@ -15673,8 +15681,8 @@ contains
     ! Make sure the solver node is configured for multigrid
     if ((rsolverNode%calgorithm .ne. LINSOL_ALG_MULTIGRID2) .or. &
         (.not. associated(rsolverNode%p_rsubnodeMultigrid2))) then
-      call output_line ('Multigrid structure not initialised!', &
-          OU_CLASS_ERROR, OU_MODE_STD, 'linsol_doneDataMultigrid2')
+      call output_line ("Multigrid structure not initialised!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_doneDataMultigrid2")
       call sys_halt()
     end if
 
@@ -15759,8 +15767,8 @@ contains
     ! Make sure the solver node is configured for multigrid
     if ((rsolverNode%calgorithm .ne. LINSOL_ALG_MULTIGRID2) .or. &
         (.not. associated(rsolverNode%p_rsubnodeMultigrid2))) then
-      call output_line ('Multigrid structure not initialised!', &
-          OU_CLASS_ERROR, OU_MODE_STD, 'linsol_doneStructureMultigrid2')
+      call output_line ("Multigrid structure not initialised!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_doneStructureMultigrid2")
       call sys_halt()
     end if
     
@@ -15812,7 +15820,7 @@ contains
         end if
 
         ! Release the temp vector for the coarse grid correction.
-        ! The vector shares its memory with the 'global' projection
+        ! The vector shares its memory with the "global" projection
         ! vector, so only release it if the other vector exists.
         if (p_rcurrentLevel%rcgcorrTempVector%NEQ .gt. 0) then
           call lsysbl_releaseVector (p_rcurrentLevel%rcgcorrTempVector)
@@ -15867,8 +15875,8 @@ contains
     ! Make sure the solver node is configured for multigrid
     if ((rsolverNode%calgorithm .ne. LINSOL_ALG_MULTIGRID2) .or. &
         (.not. associated(rsolverNode%p_rsubnodeMultigrid2))) then
-      call output_line ('Multigrid structure not initialised!', &
-          OU_CLASS_ERROR, OU_MODE_STD, 'linsol_doneMultigrid2')
+      call output_line ("Multigrid structure not initialised!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_doneMultigrid2")
       call sys_halt()
     end if
 
@@ -15960,15 +15968,15 @@ contains
 
     if (p_rsubnode%icycle .lt. 0) then
       ! Wrong cycle
-      call output_line ('Invalid cycle!', &
-          OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precMultigrid2')
+      call output_line ("Invalid cycle!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_precMultigrid2")
       rsolverNode%iresult = 2
       return
     end if
     
     if (.not. associated(rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo)) then
-      call output_line ('No levels attached!', &
-          OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precMultigrid2')
+      call output_line ("No levels attached!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_precMultigrid2")
       rsolverNode%iresult = 2
       return
     end if
@@ -16007,8 +16015,8 @@ contains
     if (nlmax .eq. 1) then
     
       if (rsolverNode%ioutputLevel .gt. 1) then
-        call output_line ('Multigrid: Only one level. '//&
-             'Switching back to standard solver.')
+        call output_line ("Multigrid: Only one level. "//&
+             "Switching back to standard solver.")
       end if
 
       ! clear and start timer
@@ -16074,11 +16082,11 @@ contains
         ! how sorted vectors is dealed with, in case sorting is activated:
         !
         ! 1.) At the beginning of the algorithm, RHS, solution and temp vector
-        !     on the finest level are set up as 'sorted'. The whole algorithm
+        !     on the finest level are set up as "sorted". The whole algorithm
         !     here deals with sorted vectors, so that matrix/vector multiplication
         !     works.
         ! 2.) At the beginning of the algorithm, all temporary vectors on the
-        !     lower levels are set up as 'unsorted'.
+        !     lower levels are set up as "unsorted".
         ! 3.) When restricting the defect,
         !     - the defect is unsorted on level l
         !     - the unsorted defect is restricted to level l-1
@@ -16113,8 +16121,8 @@ contains
         ! Print out the initial residuum
 
         if (rsolverNode%ioutputLevel .ge. 2) then
-          call output_line ('Multigrid: Iteration '// &
-              trim(sys_siL(0,10))//',  !!RES!! = '//&
+          call output_line ("Multigrid: Iteration "// &
+              trim(sys_siL(0,10))//",  !!RES!! = "//&
               trim(sys_sdEL(rsolverNode%dinitialDefect,15)) )
         end if
 
@@ -16261,8 +16269,8 @@ contains
                 if (.not.((dres .ge. 1E-99_DP) .and. &
                           (dres .le. 1E99_DP))) dres = 0.0_DP
                           
-                call output_line ('Multigrid: Level '//trim(sys_siL(ilev,5))//&
-                    ' after presm.:     !!RES!! = '//trim(sys_sdEL(dres,15)) )
+                call output_line ("Multigrid: Level "//trim(sys_siL(ilev,5))//&
+                    " after presm.:     !!RES!! = "//trim(sys_sdEL(dres,15)) )
               end if
 
               ! Restriction of the defect. The restricted defect is placed
@@ -16272,15 +16280,15 @@ contains
               ! current level.
               !
               ! Make sure the vector is unsorted before the restriction!
-              ! We can use the 'global' temporary array p_rprjTempVector
+              ! We can use the "global" temporary array p_rprjTempVector
               ! as temporary memory during the resorting process.
               if (bsort) then
                 ! clear and start timer
                 call stat_clearTimer(rtimer)
                 call stat_startTimer(rtimer)
 
-                call lsysbl_sortVectorInSitu (p_rcurrentLevel%rtempVector,&
-                      p_rsubnode%rprjTempVector,.false.)
+                call lsysbl_sortVector (p_rcurrentLevel%rtempVector,&
+                    .false.,p_rsubnode%rprjTempVector)
                 
                 ! stop timer and update sorting time
                 call stat_stopTimer(rtimer)
@@ -16325,7 +16333,7 @@ contains
                   call stat_startTimer(rtimer)
                 
                   ! Apply the filter chain to the vector.
-                  ! We are in 'unsorted' state; applying the filter here is
+                  ! We are in "unsorted" state; applying the filter here is
                   ! supposed to be a bit faster...
                   call filter_applyFilterChainVec (p_rlowerLevel%rrhsVector, &
                                                    p_RfilterChain)
@@ -16345,18 +16353,15 @@ contains
                   call stat_startTimer(rtimer)
                   
                   ! Resort the RHS on the lower level.
-                  call lsysbl_sortVectorInSitu (p_rlowerLevel%rrhsVector,&
-                        p_rsubnode%rprjTempVector,.true.)
+                  call lsysbl_sortVector (p_rlowerLevel%rrhsVector,&
+                      .true.,p_rsubnode%rprjTempVector)
 
                   ! Temp-vector and solution vector there are yet uninitialised,
                   ! therefore we can mark them as sorted without calling the
                   ! resorting routine.
-                  p_rlowerLevel%rtempVector%RvectorBlock(1:nblocks)%isortStrategy = &
-                  abs(p_rlowerLevel%rtempVector%RvectorBlock(1:nblocks)%isortStrategy)
+                  p_rlowerLevel%rtempVector%RvectorBlock(1:nblocks)%bisSorted = .true.
                   
-                  p_rlowerLevel%rsolutionVector%RvectorBlock(1:nblocks)% &
-                    isortStrategy = abs(p_rlowerLevel%rsolutionVector% &
-                    RvectorBlock(1:nblocks)%isortStrategy)
+                  p_rlowerLevel%rsolutionVector%RvectorBlock(1:nblocks)%bisSorted = .true.
                   
                   ! stop timer and update sorting time
                   call stat_stopTimer(rtimer)
@@ -16378,7 +16383,7 @@ contains
                   if (.not.((dres .ge. 1E-99_DP) .and. &
                             (dres .le. 1E99_DP))) dres = 0.0_DP
                             
-                  ! In case adaptive cycles are activated, save the 'initial' residual
+                  ! In case adaptive cycles are activated, save the "initial" residual
                   ! of that level into the level structure. Then we can later check
                   ! if we have to repeat the cycle on the coarse mesh.
                   if (p_rsubnode%depsRelCycle .ne. 1E99_DP) then
@@ -16389,8 +16394,8 @@ contains
                   ! If the output level is high enough, print that residuum norm.
                   if ((rsolverNode%ioutputLevel .ge. 3) .and. &
                       (mod(ite,niteResOutput).eq.0)) then
-                    call output_line ('Multigrid: Level '//trim(sys_siL(ilev-1,5))//&
-                        ' after restrict.:  !!RES!! = '//trim(sys_sdEL(dres,15)) )
+                    call output_line ("Multigrid: Level "//trim(sys_siL(ilev-1,5))//&
+                        " after restrict.:  !!RES!! = "//trim(sys_sdEL(dres,15)) )
                   end if
                   
                 end if
@@ -16422,7 +16427,7 @@ contains
                   call stat_startTimer(rtimer)
                 
                   ! Apply the filter chain to the vector.
-                  ! We are in 'unsorted' state; applying the filter here is
+                  ! We are in "unsorted" state; applying the filter here is
                   ! supposed to be a bit faster...
                   call filter_applyFilterChainVec (p_rlowerLevel%rsolutionVector, &
                                                    p_RfilterChain)
@@ -16442,8 +16447,8 @@ contains
                   call stat_startTimer(rtimer)
 
                   ! Resort the RHS on the lower level.
-                  call lsysbl_sortVectorInSitu (p_rlowerLevel%rsolutionVector,&
-                        p_rsubnode%rprjTempVector,.true.)
+                  call lsysbl_sortVector (p_rlowerLevel%rsolutionVector,&
+                      .true.,p_rsubnode%rprjTempVector)
 
                   ! Temp-vector and RHS can be ignored on the coarse grid.
                   
@@ -16465,8 +16470,8 @@ contains
                   if (.not.((dres .ge. 1E-99_DP) .and. &
                             (dres .le. 1E99_DP))) dres = 0.0_DP
                             
-                  call output_line ('Multigrid: Level '//trim(sys_siL(ilev-1,5))//&
-                      ' after restrict.:  !!RES!! = '//trim(sys_sdEL(dres,15)) )
+                  call output_line ("Multigrid: Level "//trim(sys_siL(ilev-1,5))//&
+                      " after restrict.:  !!RES!! = "//trim(sys_sdEL(dres,15)) )
                 end if
 
               end if
@@ -16533,31 +16538,27 @@ contains
               ! to the temp vector on the finer level.
               !
               ! Make sure the vector is unsorted before the prolongation!
-              ! We can use the 'global' temporary array p_rprjTempVector
+              ! We can use the "global" temporary array p_rprjTempVector
               ! as temporary memory during the resorting process.
               if (bsort) then
                 ! clear and start timer
                 call stat_clearTimer(rtimer)
                 call stat_startTimer(rtimer)
               
-                call lsysbl_sortVectorInSitu (p_rlowerLevel%rsolutionVector,&
-                      p_rsubnode%rprjTempVector,.false.)
+                call lsysbl_sortVector (p_rlowerLevel%rsolutionVector,&
+                    .false.,p_rsubnode%rprjTempVector)
                 
                 ! Temp-vector and RHS vector there unused now,
                 ! therefore we can mark them as not sorted without calling the
                 ! resorting routine.
                 ! This prepares these vectors for the next sweep, when an unsorted
-                ! vector comes 'from above'.
+                ! vector comes "from above".
                 !
                 ! Note that this shall not be done on the coarse grid as there is
                 ! no temp/rhs vector!
                 if (ilev .gt. 2) then
-                  p_rlowerLevel%rtempVector%RvectorBlock(1:nblocks)%isortStrategy = &
-                    -abs(p_rlowerLevel%rtempVector%RvectorBlock(1:nblocks)% &
-                    isortStrategy)
-                  p_rlowerLevel%rrhsVector%RvectorBlock(1:nblocks)% &
-                    isortStrategy = -abs(p_rlowerLevel%rrhsVector% &
-                    RvectorBlock(1:nblocks)%isortStrategy)
+                  p_rlowerLevel%rtempVector%RvectorBlock(1:nblocks)%bisSorted = .false.
+                  p_rlowerLevel%rrhsVector%RvectorBlock(1:nblocks)%bisSorted = .false.
                 end if
                 
                 ! stop timer and update sorting time
@@ -16609,8 +16610,8 @@ contains
               
                 ! Resort the temp vector on the current level so that it fits
                 ! to the RHS, solution vector and matrix again
-                call lsysbl_sortVectorInSitu (p_rcurrentLevel%rtempVector,&
-                      p_rsubnode%rprjTempVector,.true.)
+                call lsysbl_sortVector (p_rcurrentLevel%rtempVector,&
+                    .true.,p_rsubnode%rprjTempVector)
                 
                 ! stop timer and update sorting time
                 call stat_stopTimer(rtimer)
@@ -16680,10 +16681,10 @@ contains
                 if (.not.((dres .ge. 1E-99_DP) .and. &
                           (dres .le. 1E99_DP))) dres = 0.0_DP
                           
-                call output_line ('Multigrid: C.g.corr. step length ALPHA = '//&
+                call output_line ("Multigrid: C.g.corr. step length ALPHA = "//&
                     trim(sys_sdEL(dstep,15)) )
-                call output_line ('Multigrid: Level '//trim(sys_siL(ilev,5))//&
-                    ' after c.g.corr.:  !!RES!! = '//trim(sys_sdEL(dres,15)) )
+                call output_line ("Multigrid: Level "//trim(sys_siL(ilev,5))//&
+                    " after c.g.corr.:  !!RES!! = "//trim(sys_sdEL(dres,15)) )
               end if
 
               ! Perform the post-smoothing with the current solution vector
@@ -16721,8 +16722,8 @@ contains
                   if (.not.((dres .ge. 1E-99_DP) .and. &
                             (dres .le. 1E99_DP))) dres = 0.0_DP
                             
-                  call output_line ('Multigrid: Level '//trim(sys_siL(ilev,5))//&
-                      ' after postsm.:    !!RES!! = '//trim(sys_sdEL(dres,15)) )
+                  call output_line ("Multigrid: Level "//trim(sys_siL(ilev,5))//&
+                      " after postsm.:    !!RES!! = "//trim(sys_sdEL(dres,15)) )
                 end if
                                               
               end if
@@ -16779,8 +16780,8 @@ contains
                         call output_line ( &
                           trim( &
                           sys_siL(p_rcurrentLevel%icycleCount,10)) &
-                          //'''th repetition of cycle on level '// &
-                          trim(sys_siL(ilev,5))//'.')
+                          //"""th repetition of cycle on level "// &
+                          trim(sys_siL(ilev,5))//".")
                       end if
 
                       p_rcurrentLevel%icycleCount = p_rcurrentLevel%icycleCount+1
@@ -16864,12 +16865,12 @@ contains
           if (rsolverNode%ioutputLevel .lt. 2) then
             do i=max(1,size(Dresqueue)-ite-1+1),size(Dresqueue)
               j = ite-max(1,size(Dresqueue)-ite+1)+i
-              call output_line ('Multigrid: Iteration '// &
-                  trim(sys_siL(j,10))//',  !!RES!! = '//&
+              call output_line ("Multigrid: Iteration "// &
+                  trim(sys_siL(j,10))//",  !!RES!! = "//&
                   trim(sys_sdEL(Dresqueue(i),15)) )
             end do
           end if
-            call output_line ('Multigrid: Solution diverging!')
+            call output_line ("Multigrid: Solution diverging!")
             rsolverNode%iresult = 1
             exit
           end if
@@ -16886,8 +16887,8 @@ contains
 
           if ((rsolverNode%ioutputLevel .ge. 2) .and. &
               (mod(ite,niteResOutput).eq.0)) then
-            call output_line ('Multigrid: Iteration '// &
-                trim(sys_siL(ite,10))//',  !!RES!! = '//&
+            call output_line ("Multigrid: Iteration "// &
+                trim(sys_siL(ite,10))//",  !!RES!! = "//&
                 trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
           end if
           
@@ -16899,8 +16900,8 @@ contains
         if ((rsolverNode%ioutputLevel .ge. 2) .and. &
             (ite .ge. 1) .and. (ite .le. rsolverNode%nmaxIterations) .and. &
             (rsolverNode%iresult .ge. 0)) then
-          call output_line ('Multigrid: Iteration '// &
-              trim(sys_siL(ite,10))//',  !!RES!! = '//&
+          call output_line ("Multigrid: Iteration "// &
+              trim(sys_siL(ite,10))//",  !!RES!! = "//&
               trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
         end if
         
@@ -16912,8 +16913,8 @@ contains
           ! No warning if we had to do exactly rsolverNode%nmaxIterations steps
           if ((rsolverNode%ioutputLevel .ge. 0) .and. &
               (rsolverNode%nmaxIterations .gt. rsolverNode%nminIterations)) then
-            call output_line ('Multigrid: Accuracy warning: '//&
-                'Solver did not reach the convergence criterion')
+            call output_line ("Multigrid: Accuracy warning: "//&
+                "Solver did not reach the convergence criterion")
           end if
 
           ite = rsolverNode%nmaxIterations
@@ -16968,31 +16969,31 @@ contains
       
       if ((rsolverNode%ioutputLevel .ge. 2) .and. (rsolverNode%iprintStatistics .eq. YES)) then
         call output_lbrk()
-        call output_line ('Multigrid statistics:')
+        call output_line ("Multigrid statistics:")
         call output_lbrk()
-        call output_line ('Iterations              : '//&
+        call output_line ("Iterations              : "//&
              trim(sys_siL(rsolverNode%iiterations,10)) )
-        call output_line ('!!INITIAL RES!!         : '//&
+        call output_line ("!!INITIAL RES!!         : "//&
              trim(sys_sdEL(rsolverNode%dinitialDefect,15)) )
-        call output_line ('!!RES!!                 : '//&
+        call output_line ("!!RES!!                 : "//&
              trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
         if (rsolverNode%dinitialDefect .gt. rsolverNode%drhsZero) then
-          call output_line ('!!RES!!/!!INITIAL RES!! : '//&
+          call output_line ("!!RES!!/!!INITIAL RES!! : "//&
             trim(sys_sdEL(rsolverNode%dfinalDefect / rsolverNode%dinitialDefect,15)) )
         else
-          call output_line ('!!RES!!/!!INITIAL RES!! : '//&
+          call output_line ("!!RES!!/!!INITIAL RES!! : "//&
                trim(sys_sdEL(0.0_DP,15)) )
         end if
         call output_lbrk ()
-        call output_line ('Rate of convergence     : '//&
+        call output_line ("Rate of convergence     : "//&
              trim(sys_sdEL(rsolverNode%dconvergenceRate,15)) )
 
       end if
 
       if (rsolverNode%ioutputLevel .eq. 1) then
         call output_line (&
-              'MG: Iterations/Rate of convergence: '//&
-              trim(sys_siL(rsolverNode%iiterations,10))//' /'//&
+              "MG: Iterations/Rate of convergence: "//&
+              trim(sys_siL(rsolverNode%iiterations,10))//" /"//&
               trim(sys_sdEL(rsolverNode%dconvergenceRate,15)) )
       end if
 
@@ -17295,8 +17296,8 @@ contains
                   ! Test if local system could be solved
                   if (.not.bsuccess) then
                     call output_line ( &
-                      'Local matricx singular.', &
-                      OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precBlockJac')
+                      "Local matricx singular.", &
+                      OU_CLASS_ERROR, OU_MODE_STD, "linsol_precBlockJac")
                       do i = 1,size(DlocMat,1)
                         write(*,*) DlocMat(i,:)
                       end do
@@ -17323,21 +17324,21 @@ contains
               end do ! iFESpace
               
             case default
-              call output_line ('Unsupported vector precision.', &
-                                OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precBlockJac')
+              call output_line ("Unsupported vector precision.", &
+                                OU_CLASS_ERROR, OU_MODE_STD, "linsol_precBlockJac")
               call sys_halt()
             end select
          
          
           case default
-            call output_line ('Unsupported matrix precision.', &
-                              OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precBlockJac')
+            call output_line ("Unsupported matrix precision.", &
+                              OU_CLASS_ERROR, OU_MODE_STD, "linsol_precBlockJac")
             call sys_halt()
           end select
         
         case default
-          call output_line ('Unsupported matrix format.', &
-                            OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precBlockJac')
+          call output_line ("Unsupported matrix format.", &
+                            OU_CLASS_ERROR, OU_MODE_STD, "linsol_precBlockJac")
           call sys_halt()
         end select
         
@@ -17830,8 +17831,8 @@ contains
       ! Get it.
       p_rlevelInfo => rsolverNode%p_rsubnodeDeflGMRES%p_RlevelInfo(ilevel)
     else
-      call output_line('Level out of range!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'linsol_getDeflGMRESLevel')
+      call output_line("Level out of range!",&
+                       OU_CLASS_ERROR,OU_MODE_STD,"linsol_getDeflGMRESLevel")
       call sys_halt()
     end if
 
@@ -18528,21 +18529,16 @@ contains
       ! Do not do anything to the RHS/temp vectors on the coarse grid
       ! and the solution vector on the fine grid -- they do not exist!
       if (ilevel .gt. 1) then
-        p_rcurrentLevel%rrhsVector%RvectorBlock%isortStrategy = &
-          -abs(p_rcurrentLevel%rrhsVector%RvectorBlock%isortStrategy)
-
-        p_rcurrentLevel%rtempVector%RvectorBlock%isortStrategy = &
-          -abs(p_rcurrentLevel%rtempVector%RvectorBlock%isortStrategy)
-
-        p_rcurrentLevel%rsolutionVector%RvectorBlock%isortStrategy = &
-          -abs(p_rcurrentLevel%rsolutionVector%RvectorBlock%isortStrategy)
+        p_rcurrentLevel%rrhsVector%RvectorBlock(:)%bisSorted = .false.
+        p_rcurrentLevel%rtempVector%RvectorBlock(:)%bisSorted = .false.
+        p_rcurrentLevel%rsolutionVector%RvectorBlock(:)%bisSorted = .false.
       end if
       
       ! We now need to check if the dimension of the Krylov subspace is
       ! positive. If it is not, we need to cancel the initialization here.
       if (p_rcurrentLevel%ikrylowDim .le. 0) then
-        call output_line ('imension of Krylov subspace for GMRES(m) is <= 0 !', &
-            OU_CLASS_ERROR, OU_MODE_STD, 'mysubroutine')
+        call output_line ("imension of Krylov subspace for GMRES(m) is <= 0 !", &
+            OU_CLASS_ERROR, OU_MODE_STD, "mysubroutine")
         ierror = LINSOL_ERR_INITERROR
         call sys_halt()
       end if
@@ -18556,13 +18552,13 @@ contains
       ! and vectors for the Krylov subspace for GMRES here.
       
       ! Call our storage to allocate the 1D/2D arrays
-      call storage_new('linsol_initStructureGMRES', 'Dh', idim2, &
+      call storage_new("linsol_initStructureGMRES", "Dh", idim2, &
           ST_DOUBLE, p_rcurrentLevel%hDh, ST_NEWBLOCK_NOINIT)
-      call storage_new('linsol_initStructureGMRES', 'Dc', idim, &
+      call storage_new("linsol_initStructureGMRES", "Dc", idim, &
           ST_DOUBLE, p_rcurrentLevel%hDs, ST_NEWBLOCK_NOINIT)
-      call storage_new('linsol_initStructureGMRES', 'Ds', idim, &
+      call storage_new("linsol_initStructureGMRES", "Ds", idim, &
           ST_DOUBLE, p_rcurrentLevel%hDc, ST_NEWBLOCK_NOINIT)
-      call storage_new('linsol_initStructureGMRES', 'Dq', idim+1, &
+      call storage_new("linsol_initStructureGMRES", "Dq", idim+1, &
           ST_DOUBLE,  p_rcurrentLevel%hDq, ST_NEWBLOCK_NOINIT)
       
       ! Get the pointers
@@ -19158,9 +19154,9 @@ contains
       end if
 
       if (rsolverNode%ioutputLevel .ge. 2) then
-        call output_line ('GMRES('//&
-             trim(sys_siL(idim,10))//'): Iteration '//&
-             trim(sys_siL(0,10))//',  !!RES!! = '//&
+        call output_line ("GMRES("//&
+             trim(sys_siL(idim,10))//"): Iteration "//&
+             trim(sys_siL(0,10))//",  !!RES!! = "//&
              trim(sys_sdEL(rsolverNode%dinitialDefect,15)) )
       end if
 
@@ -19292,8 +19288,8 @@ contains
         else
           ! Well, let us just print a warning here...
           if(rsolverNode%ioutputLevel .ge. 2) then
-            call output_line ('GMRES('// trim(sys_siL(idim,10))//&
-              '): Warning: !!v(i+1)!! < EPS !')
+            call output_line ("GMRES("// trim(sys_siL(idim,10))//&
+              "): Warning: !!v(i+1)!! < EPS !")
           end if
         end if
         
@@ -19315,8 +19311,8 @@ contains
         if (dbeta < SYS_EPSREAL_DP) then
           dbeta = SYS_EPSREAL_DP
           if(rsolverNode%ioutputLevel .ge. 2) then
-            call output_line ('GMRES('// trim(sys_siL(idim,10))//&
-              '): Warning: beta < EPS !')
+            call output_line ("GMRES("// trim(sys_siL(idim,10))//&
+              "): Warning: beta < EPS !")
           end if
         end if
         
@@ -19345,9 +19341,9 @@ contains
           ! Print our current pseudo-residual-norm
           if ((rsolverNode%ioutputLevel .ge. 2) .and. &
             (mod(ite,niteResOutput).eq.0)) then
-            call output_line ('GMRES('//&
-              trim(sys_siL(idim,10))//'): Iteration '//&
-              trim(sys_siL(ite,10))//',  !q(i+1)! = '//&
+            call output_line ("GMRES("//&
+              trim(sys_siL(idim,10))//"): Iteration "//&
+              trim(sys_siL(ite,10))//",  !q(i+1)! = "//&
               trim(sys_sdEL(dpseudores,15)) )
           end if
         end if
@@ -19380,8 +19376,8 @@ contains
           ! We also want to check if our solution is diverging.
           if (linsol_testDivergence(rsolverNode,dpseudores)) then
             if(rsolverNode%ioutputLevel .ge. 2) then
-              call output_line ('GMRES('// trim(sys_siL(idim,10))//&
-                '): Warning: Pseudo-residuals diverging!')
+              call output_line ("GMRES("// trim(sys_siL(idim,10))//&
+                "): Warning: Pseudo-residuals diverging!")
             end if
             
             ! Instead of exiting the subroutine, we just exit the inner loop
@@ -19405,10 +19401,10 @@ contains
       i = min(i, idim)
       
       ! Step O.4:
-      ! Solve H' * q = q , where H' is the upper triangular matrix of
+      ! Solve H" * q = q , where H" is the upper triangular matrix of
       ! the upper left (i x i)-block of H.
-      ! We use the BLAS Level 2 subroutine 'dtrsv' to do the work for us
-      call dtrsv('U', 'N', 'N', i, p_Dh, idim, p_Dq, 1)
+      ! We use the BLAS Level 2 subroutine "dtrsv" to do the work for us
+      call dtrsv("U", "N", "N", i, p_Dh, idim, p_Dq, 1)
       
       ! Step O.5:
       ! Update our solution vector
@@ -19418,7 +19414,7 @@ contains
       end do
       
       ! Step O.6:
-      ! Calculate 'real' residual
+      ! Calculate "real" residual
       ! v(1) = b - (A * P * x)
       call lsysbl_copyVector (rb, p_rv(1))
       call lsysbl_copyVector (rx, p_rdefTempVector)
@@ -19460,13 +19456,13 @@ contains
           if (rsolverNode%ioutputLevel .lt. 2) then
             do i=max(1,size(Dresqueue)-ite-1+1),size(Dresqueue)
               j = ite-max(1,size(Dresqueue)-ite+1)+i
-              call output_line ('GMRES: Iteration '// &
-                  trim(sys_siL(j,10))//',  !!RES!! = '//&
+              call output_line ("GMRES: Iteration "// &
+                  trim(sys_siL(j,10))//",  !!RES!! = "//&
                   trim(sys_sdEL(Dresqueue(i),15)) )
             end do
           end if
-          call output_line ('GMRES('// trim(sys_siL(idim,10))//&
-            '): Solution diverging!')
+          call output_line ("GMRES("// trim(sys_siL(idim,10))//&
+            "): Solution diverging!")
           rsolverNode%iresult = 1
           exit
         end if
@@ -19489,9 +19485,9 @@ contains
   
         if ((rsolverNode%ioutputLevel .ge. 2) .and. &
             (mod(ite,niteResOutput).eq.0)) then
-          call output_line ('GMRES('// trim(sys_siL(idim,10))//&
-            '): Iteration '//&
-            trim(sys_siL(ite,10))//',  !!RES!!  = '//&
+          call output_line ("GMRES("// trim(sys_siL(idim,10))//&
+            "): Iteration "//&
+            trim(sys_siL(ite,10))//",  !!RES!!  = "//&
             trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
         end if
 
@@ -19525,8 +19521,8 @@ contains
         ! No warning if we had to do exactly rsolverNode%nmaxIterations steps
         if ((rsolverNode%ioutputLevel .ge. 0) .and. &
             (rsolverNode%nmaxIterations .gt. rsolverNode%nminIterations)) then
-          call output_line ('GMRES: Accuracy warning: '//&
-              'Solver did not reach the convergence criterion')
+          call output_line ("GMRES: Accuracy warning: "//&
+              "Solver did not reach the convergence criterion")
         end if
   
         ite = rsolverNode%nmaxIterations
@@ -19537,9 +19533,9 @@ contains
       if ((rsolverNode%ioutputLevel .ge. 2) .and. &
           (ite .ge. 1) .and. (ite .lt. rsolverNode%nmaxIterations) .and. &
           (rsolverNode%iresult .ge. 0)) then
-        call output_line ('GMRES('// trim(sys_siL(idim,10))//&
-          '): Iteration '//&
-          trim(sys_siL(ite,10))//',  !!RES!!  = '//&
+        call output_line ("GMRES("// trim(sys_siL(idim,10))//&
+          "): Iteration "//&
+          trim(sys_siL(ite,10))//",  !!RES!!  = "//&
           trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
       end if
   
@@ -19572,31 +19568,31 @@ contains
   
         if ((rsolverNode%ioutputLevel .ge. 2) .and. (rsolverNode%iprintStatistics .eq. YES)) then
           call output_lbrk()
-          call output_line ('GMRES('// trim(sys_siL(idim,10))// ') statistics:')
+          call output_line ("GMRES("// trim(sys_siL(idim,10))// ") statistics:")
           call output_lbrk()
-          call output_line ('Iterations              : '//&
+          call output_line ("Iterations              : "//&
                trim(sys_siL(rsolverNode%iiterations,10)) )
-          call output_line ('!!INITIAL RES!!         : '//&
+          call output_line ("!!INITIAL RES!!         : "//&
                trim(sys_sdEL(rsolverNode%dinitialDefect,15)) )
-          call output_line ('!!RES!!                 : '//&
+          call output_line ("!!RES!!                 : "//&
                trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
           if (rsolverNode%dinitialDefect .gt. rsolverNode%drhsZero) then
-            call output_line ('!!RES!!/!!INITIAL RES!! : '//&
+            call output_line ("!!RES!!/!!INITIAL RES!! : "//&
               trim(sys_sdEL(rsolverNode%dfinalDefect / rsolverNode%dinitialDefect,15)) )
           else
-            call output_line ('!!RES!!/!!INITIAL RES!! : '//&
+            call output_line ("!!RES!!/!!INITIAL RES!! : "//&
                  trim(sys_sdEL(0.0_DP,15)) )
           end if
           call output_lbrk ()
-          call output_line ('Rate of convergence     : '//&
+          call output_line ("Rate of convergence     : "//&
                trim(sys_sdEL(rsolverNode%dconvergenceRate,15)) )
   
         end if
   
         if (rsolverNode%ioutputLevel .eq. 1) then
-          call output_line ('GMRES('// trim(sys_siL(idim,10))//&
-            '): Iterations/Rate of convergence: ' //&
-                trim(sys_siL(rsolverNode%iiterations,10))//' /'//&
+          call output_line ("GMRES("// trim(sys_siL(idim,10))//&
+            "): Iterations/Rate of convergence: " //&
+                trim(sys_siL(rsolverNode%iiterations,10))//" /"//&
                 trim(sys_sdEL(rsolverNode%dconvergenceRate,15)) )
         end if
   
@@ -19842,9 +19838,9 @@ contains
       end if
 
       if (rsolverNode%ioutputLevel .ge. 2) then
-        call output_line ('GMRES('//&
-             trim(sys_siL(idim,10))//'): Iteration '//&
-             trim(sys_siL(0,10))//',  !!RES!! = '//&
+        call output_line ("GMRES("//&
+             trim(sys_siL(idim,10))//"): Iteration "//&
+             trim(sys_siL(0,10))//",  !!RES!! = "//&
              trim(sys_sdEL(rsolverNode%dinitialDefect,15)) )
       end if
 
@@ -19977,8 +19973,8 @@ contains
         else
           ! Well, let us just print a warning here...
           if(rsolverNode%ioutputLevel .ge. 2) then
-            call output_line ('GMRES('// trim(sys_siL(idim,10))//&
-              '): Warning: !!v(i+1)!! < EPS !')
+            call output_line ("GMRES("// trim(sys_siL(idim,10))//&
+              "): Warning: !!v(i+1)!! < EPS !")
           end if
         end if
         
@@ -20000,8 +19996,8 @@ contains
         if (dbeta < SYS_EPSREAL_DP) then
           dbeta = SYS_EPSREAL_DP
           if(rsolverNode%ioutputLevel .ge. 2) then
-            call output_line ('GMRES('// trim(sys_siL(idim,10))//&
-              '): Warning: beta < EPS !')
+            call output_line ("GMRES("// trim(sys_siL(idim,10))//&
+              "): Warning: beta < EPS !")
           end if
         end if
         
@@ -20030,9 +20026,9 @@ contains
           ! Print our current pseudo-residual-norm
           if ((rsolverNode%ioutputLevel .ge. 2) .and. &
             (mod(ite,niteResOutput).eq.0)) then
-            call output_line ('GMRES('//&
-              trim(sys_siL(idim,10))//'): Iteration '//&
-              trim(sys_siL(ite,10))//',  !q(i+1)! = '//&
+            call output_line ("GMRES("//&
+              trim(sys_siL(idim,10))//"): Iteration "//&
+              trim(sys_siL(ite,10))//",  !q(i+1)! = "//&
               trim(sys_sdEL(dpseudores,15)) )
           end if
         end if
@@ -20065,8 +20061,8 @@ contains
           ! We also want to check if our solution is diverging.
           if (linsol_testDivergence(rsolverNode,dpseudores)) then
             if(rsolverNode%ioutputLevel .ge. 2) then
-              call output_line ('GMRES('// trim(sys_siL(idim,10))//&
-                '): Warning: Pseudo-residuals diverging!')
+              call output_line ("GMRES("// trim(sys_siL(idim,10))//&
+                "): Warning: Pseudo-residuals diverging!")
             end if
             
             ! Instead of exiting the subroutine, we just exit the inner loop
@@ -20089,10 +20085,10 @@ contains
       i = min(i, idim)
       
       ! Step O.4:
-      ! Solve H' * q = q , where H' is the upper triangular matrix of
+      ! Solve H" * q = q , where H" is the upper triangular matrix of
       ! the upper left (i x i)-block of H.
-      ! We use the BLAS Level 2 subroutine 'dtrsv' to do the work for us
-      call dtrsv('U', 'N', 'N', i, p_Dh, idim, p_Dq, 1)
+      ! We use the BLAS Level 2 subroutine "dtrsv" to do the work for us
+      call dtrsv("U", "N", "N", i, p_Dh, idim, p_Dq, 1)
       
       ! Step O.5:
       ! Update our solution vector
@@ -20102,7 +20098,7 @@ contains
       end do
       
       ! Step O.6:
-      ! Calculate 'real' residual
+      ! Calculate "real" residual
       ! v(1) = b - (A * x)
       call lsysbl_copyVector (p_ractualRHS, p_rv(1))
       
@@ -20145,13 +20141,13 @@ contains
           if (rsolverNode%ioutputLevel .lt. 2) then
             do i=max(1,size(Dresqueue)-ite-1+1),size(Dresqueue)
               j = ite-max(1,size(Dresqueue)-ite+1)+i
-              call output_line ('GMRES: Iteration '// &
-                  trim(sys_siL(j,10))//',  !!RES!! = '//&
+              call output_line ("GMRES: Iteration "// &
+                  trim(sys_siL(j,10))//",  !!RES!! = "//&
                   trim(sys_sdEL(Dresqueue(i),15)) )
             end do
           end if
-          call output_line ('GMRES('// trim(sys_siL(idim,10))//&
-            '): Solution diverging!')
+          call output_line ("GMRES("// trim(sys_siL(idim,10))//&
+            "): Solution diverging!")
           rsolverNode%iresult = 1
           exit
         end if
@@ -20174,9 +20170,9 @@ contains
   
         if ((rsolverNode%ioutputLevel .ge. 2) .and. &
             (mod(ite,niteResOutput).eq.0)) then
-          call output_line ('GMRES('// trim(sys_siL(idim,10))//&
-            '): Iteration '//&
-            trim(sys_siL(ite,10))//',  !!RES!!  = '//&
+          call output_line ("GMRES("// trim(sys_siL(idim,10))//&
+            "): Iteration "//&
+            trim(sys_siL(ite,10))//",  !!RES!!  = "//&
             trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
         end if
 
@@ -20204,8 +20200,8 @@ contains
         ! No warning if we had to do exactly rsolverNode%nmaxIterations steps
         if ((rsolverNode%ioutputLevel .ge. 0) .and. &
             (rsolverNode%nmaxIterations .gt. rsolverNode%nminIterations)) then
-          call output_line ('GMRES: Accuracy warning: '//&
-              'Solver did not reach the convergence criterion')
+          call output_line ("GMRES: Accuracy warning: "//&
+              "Solver did not reach the convergence criterion")
         end if
   
         ite = rsolverNode%nmaxIterations
@@ -20216,9 +20212,9 @@ contains
       if ((rsolverNode%ioutputLevel .ge. 2) .and. &
           (ite .ge. 1) .and. (ite .lt. rsolverNode%nmaxIterations) .and. &
           (rsolverNode%iresult .ge. 0)) then
-        call output_line ('GMRES('// trim(sys_siL(idim,10))//&
-          '): Iteration '//&
-          trim(sys_siL(ite,10))//',  !!RES!!  = '//&
+        call output_line ("GMRES("// trim(sys_siL(idim,10))//&
+          "): Iteration "//&
+          trim(sys_siL(ite,10))//",  !!RES!!  = "//&
           trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
       end if
   
@@ -20251,31 +20247,31 @@ contains
   
         if ((rsolverNode%ioutputLevel .ge. 2) .and. (rsolverNode%iprintStatistics .eq. YES)) then
           call output_lbrk()
-          call output_line ('GMRES('// trim(sys_siL(idim,10))// ') statistics:')
+          call output_line ("GMRES("// trim(sys_siL(idim,10))// ") statistics:")
           call output_lbrk()
-          call output_line ('Iterations              : '//&
+          call output_line ("Iterations              : "//&
                trim(sys_siL(rsolverNode%iiterations,10)) )
-          call output_line ('!!INITIAL RES!!         : '//&
+          call output_line ("!!INITIAL RES!!         : "//&
                trim(sys_sdEL(rsolverNode%dinitialDefect,15)) )
-          call output_line ('!!RES!!                 : '//&
+          call output_line ("!!RES!!                 : "//&
                trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
           if (rsolverNode%dinitialDefect .gt. rsolverNode%drhsZero) then
-            call output_line ('!!RES!!/!!INITIAL RES!! : '//&
+            call output_line ("!!RES!!/!!INITIAL RES!! : "//&
               trim(sys_sdEL(rsolverNode%dfinalDefect / rsolverNode%dinitialDefect,15)) )
           else
-            call output_line ('!!RES!!/!!INITIAL RES!! : '//&
+            call output_line ("!!RES!!/!!INITIAL RES!! : "//&
                  trim(sys_sdEL(0.0_DP,15)) )
           end if
           call output_lbrk ()
-          call output_line ('Rate of convergence     : '//&
+          call output_line ("Rate of convergence     : "//&
                trim(sys_sdEL(rsolverNode%dconvergenceRate,15)) )
   
         end if
   
         if (rsolverNode%ioutputLevel .eq. 1) then
-          call output_line ('GMRES('// trim(sys_siL(idim,10))//&
-            '): Iterations/Rate of convergence: ' //&
-                trim(sys_siL(rsolverNode%iiterations,10))//' /'//&
+          call output_line ("GMRES("// trim(sys_siL(idim,10))//&
+            "): Iterations/Rate of convergence: " //&
+                trim(sys_siL(rsolverNode%iiterations,10))//" /"//&
                 trim(sys_sdEL(rsolverNode%dconvergenceRate,15)) )
         end if
   
@@ -20686,8 +20682,8 @@ contains
                   ! Test if local system could be solved
                   if (.not.bsuccess) then
                     call output_line ( &
-                      'Local matricx singular.', &
-                      OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precBlockSOR')
+                      "Local matricx singular.", &
+                      OU_CLASS_ERROR, OU_MODE_STD, "linsol_precBlockSOR")
                       do i = 1,size(DlocMat,1)
                         write(*,*) DlocMat(i,:)
                       end do
@@ -20780,8 +20776,8 @@ contains
                   ! Test if local system could be solved
                   if (.not.bsuccess) then
                     call output_line ( &
-                      'Local matricx singular.', &
-                      OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precBlockSOR')
+                      "Local matricx singular.", &
+                      OU_CLASS_ERROR, OU_MODE_STD, "linsol_precBlockSOR")
                       do i = 1,size(DlocMat,1)
                         write(*,*) DlocMat(i,:)
                       end do
@@ -20808,21 +20804,21 @@ contains
               end if ! Type of discretisation
               
             case default
-              call output_line ('Unsupported vector precision.', &
-                                OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precBlockSOR')
+              call output_line ("Unsupported vector precision.", &
+                                OU_CLASS_ERROR, OU_MODE_STD, "linsol_precBlockSOR")
               call sys_halt()
             end select
          
          
           case default
-            call output_line ('Unsupported matrix precision.', &
-                              OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precBlockSOR')
+            call output_line ("Unsupported matrix precision.", &
+                              OU_CLASS_ERROR, OU_MODE_STD, "linsol_precBlockSOR")
             call sys_halt()
           end select
         
         case default
-          call output_line ('Unsupported matrix format.', &
-                            OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precBlockSOR')
+          call output_line ("Unsupported matrix format.", &
+                            OU_CLASS_ERROR, OU_MODE_STD, "linsol_precBlockSOR")
           call sys_halt()
         end select
         
@@ -21174,7 +21170,7 @@ contains
                                exit
                              endif  
 !                             if ((iloc.eq.p_KLD(ig+1)-1).and.(jg.ne.p_KCOL(iloc))) then
-!                               write(*,*) 'nicht gefunden, iel, ielREF', iel, ielREF
+!                               write(*,*) "nicht gefunden, iel, ielREF", iel, ielREF
 !                             endif
                           end do
 
@@ -21204,8 +21200,8 @@ contains
                 ! Test if local system could be solved
                 if (.not.bsuccess) then
                   call output_line ( &
-                    'Local matricx singular.', &
-                    OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precBlockUpwGS')
+                    "Local matricx singular.", &
+                    OU_CLASS_ERROR, OU_MODE_STD, "linsol_precBlockUpwGS")
                     do i = 1,size(DlocMat,1)
                       write(*,*) DlocMat(i,:)
                     end do
@@ -21231,28 +21227,28 @@ contains
             
             else ! No uniform distribution
             
-              call output_line ('Discretisation not uniform - not supported.', &
-                              OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precBlockUpwGS')
+              call output_line ("Discretisation not uniform - not supported.", &
+                              OU_CLASS_ERROR, OU_MODE_STD, "linsol_precBlockUpwGS")
               call sys_halt()
             
             end if ! Type of discretisation
             
           case default
-            call output_line ('Unsupported vector precision.', &
-                              OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precBlockUpwGS')
+            call output_line ("Unsupported vector precision.", &
+                              OU_CLASS_ERROR, OU_MODE_STD, "linsol_precBlockUpwGS")
             call sys_halt()
           end select
        
        
         case default
-          call output_line ('Unsupported matrix precision.', &
-                            OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precBlockUpwGS')
+          call output_line ("Unsupported matrix precision.", &
+                            OU_CLASS_ERROR, OU_MODE_STD, "linsol_precBlockUpwGS")
           call sys_halt()
         end select
       
       case default
-        call output_line ('Unsupported matrix format.', &
-                          OU_CLASS_ERROR, OU_MODE_STD, 'linsol_precBlockUpwGS')
+        call output_line ("Unsupported matrix format.", &
+                          OU_CLASS_ERROR, OU_MODE_STD, "linsol_precBlockUpwGS")
         call sys_halt()
       end select
   
@@ -21526,8 +21522,8 @@ contains
       ! Maybe later add another element with lowest order to includevortex-like situations
       if (iv.eq.0) then
         call output_line ( &
-                      'Elements could not be sorted.', &
-                      OU_CLASS_ERROR, OU_MODE_STD, 'linsol_initDataBlockUpwGS')
+                      "Elements could not be sorted.", &
+                      OU_CLASS_ERROR, OU_MODE_STD, "linsol_initDataBlockUpwGS")
         call sys_halt()
       endif
       

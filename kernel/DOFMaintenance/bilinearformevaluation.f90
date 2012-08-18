@@ -10,7 +10,7 @@
 !# It contains the following set of routines:
 !#
 !# 1.) bilf_createMatrixStructure
-!#     -> Creates a 'scalar' matrix structure in a specified matrix
+!#     -> Creates a "scalar" matrix structure in a specified matrix
 !#        format according to a discretisation.
 !#
 !# 2.) bilf_buildMatrixScalar
@@ -64,10 +64,10 @@
 !#     -> Calculate the positions of local matrices in a global matrix.
 !#
 !# 5.) bilf_allocAssemblyData
-!#     -> Allocate 'local' memory, needed for assembling matrix entries.
+!#     -> Allocate "local" memory, needed for assembling matrix entries.
 !#
 !# 6.) bilf_releaseAssemblyData
-!#     > Release 'local' memory, needed for assembling matrix entries.
+!#     > Release "local" memory, needed for assembling matrix entries.
 !#
 !# NOTE:
 !#   In Windows if OpenMP is activated, this source file must not be processed
@@ -124,12 +124,12 @@
 !#
 !#  that is it.
 !#
-!# 2.) What is the 'manual matrix assembly'?
+!# 2.) What is the "manual matrix assembly"?
 !#
 !#  This is a possibility to assemble parts of the matrix by specifying
 !#  an element, a cubature formula and a list of elements where to assemble.
 !#
-!#  To 'manually' assemble parts of the matrix, you can use the
+!#  To "manually" assemble parts of the matrix, you can use the
 !#  bilf_initAssembly / bilf_doneAssembly / bilf_assembleSubmeshMatrix9
 !#  subroutines in conjunction with the t_bilfMatrixAssembly structure.
 !#  Assume e.g. that elements 501..750 of a mesh are discretised with Q1
@@ -189,7 +189,7 @@
 !#  the elements 501..750. That way, the user has the ability to
 !#  specify element type, element numbers and cubature formula manually
 !#  without having to specify everything in a discretisation structure;
-!#  that is the reason why this assembly is called 'manual' assembly.
+!#  that is the reason why this assembly is called "manual" assembly.
 !#
 !#  This method is extremely useful when one wants to assemble matrices with
 !#  adaptive/summed cubature formulas. Some parts of the domain can that way
@@ -234,7 +234,7 @@
 !#  cubature formula!!!).
 !#  Afterwards, call bilf_buildMatrixScalar to create the matrix and
 !#  release the info structure with spdiscr_releaseCubStructure at the
-!#  end. That's it.
+!#  end. That"s it.
 !#
 !# 4.) What about "temporary arrays"?
 !#
@@ -567,9 +567,9 @@ contains
         if (present(rdiscretisationTest)) then
 
           if (rdiscretisationTest%ccomplexity .ne. SPDISC_UNIFORM) then
-            call output_line ('Edge-based matrix constrution only for'//&
-                    ' uniform discr., supported.', &
-                    OU_CLASS_ERROR,OU_MODE_STD,'bilf_createMatrixStructure')
+            call output_line ("Edge-based matrix constrution only for"//&
+                    " uniform discr., supported.", &
+                    OU_CLASS_ERROR,OU_MODE_STD,"bilf_createMatrixStructure")
             call sys_halt()
           end if
 
@@ -579,8 +579,8 @@ contains
             rdiscretisationTest,imem,rperfconfig)
 
       case DEFAULT
-        call output_line ('Invalid matrix construction method.', &
-                OU_CLASS_ERROR,OU_MODE_STD,'bilf_createMatrixStructure')
+        call output_line ("Invalid matrix construction method.", &
+                OU_CLASS_ERROR,OU_MODE_STD,"bilf_createMatrixStructure")
         call sys_halt()
       end select
 
@@ -598,9 +598,9 @@ contains
 
         if (present(rdiscretisationTest)) then
           if (rdiscretisationTest%ccomplexity .eq. SPDISC_UNIFORM) then
-            call output_line ('Edge-based matrix constrution only for'//&
-                    ' uniform discr., supported.', &
-                    OU_CLASS_ERROR,OU_MODE_STD,'bilf_createMatrixStructure')
+            call output_line ("Edge-based matrix constrution only for"//&
+                    " uniform discr., supported.", &
+                    OU_CLASS_ERROR,OU_MODE_STD,"bilf_createMatrixStructure")
             call sys_halt()
           end if
         end if
@@ -609,8 +609,8 @@ contains
           rdiscretisationTest,imem,rperfconfig)
 
       case DEFAULT
-        call output_line ('Invalid matrix construction method.', &
-            OU_CLASS_ERROR,OU_MODE_STD,'bilf_createMatrixStructure')
+        call output_line ("Invalid matrix construction method.", &
+            OU_CLASS_ERROR,OU_MODE_STD,"bilf_createMatrixStructure")
         call sys_halt()
       end select
 
@@ -618,14 +618,14 @@ contains
       call lsyssc_convertMatrix (rmatrix,LSYSSC_MATRIX7)
 
     case DEFAULT
-      call output_line ('Not supported matrix structure!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'bilf_createMatrixStructure')
+      call output_line ("Not supported matrix structure!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"bilf_createMatrixStructure")
       call sys_halt()
     end select
 
   else
-    call output_line ('General discretisation not implemented!', &
-        OU_CLASS_ERROR,OU_MODE_STD,'bilf_createMatrixStructure')
+    call output_line ("General discretisation not implemented!", &
+        OU_CLASS_ERROR,OU_MODE_STD,"bilf_createMatrixStructure")
     call sys_halt()
   end if
 
@@ -668,7 +668,7 @@ contains
 
   ! OPTIONAL: A callback routine for nonconstant coefficient matrices.
   ! Must be present if the matrix has nonconstant coefficients!
-  include 'intf_coefficientMatrixSc.inc'
+  include "intf_coefficientMatrixSc.inc"
   optional :: fcoeff_buildMatrixSc_sim
 
   ! OPTIONAL: Number of temp arrays.
@@ -755,7 +755,7 @@ contains
 !  
 !  ! OPTIONAL: A callback routine for nonconstant coefficient matrices.
 !  ! Must be present if the matrix has nonconstant coefficients!
-!  include 'intf_coefficientMatrixSc.inc'
+!  include "intf_coefficientMatrixSc.inc"
 !  optional :: fcoeff_buildMatrixSc_sim
 !
 !  ! OPTIONAL: local performance configuration. If not given, the
@@ -778,15 +778,15 @@ contains
 !  ! of a vector, since there is a structure behind the matrix! So the caller
 !  ! has to make sure, the matrix is unsorted when this routine is called.
 !  if (rmatrix%isortStrategy .gt. 0) then
-!    call output_line ('Matrix-structure must be unsorted!', &
-!        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalar')
+!    call output_line ("Matrix-structure must be unsorted!", &
+!        OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrixScalar")
 !    call sys_halt()
 !  end if
 !
 !  if ((.not. associated(rmatrix%p_rspatialDiscrTest)) .or. &
 !      (.not. associated(rmatrix%p_rspatialDiscrTrial))) then
-!    call output_line ('No discretisation associated!', &
-!        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalar')
+!    call output_line ("No discretisation associated!", &
+!        OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrixScalar")
 !    call sys_halt()
 !  end if
 !  
@@ -829,13 +829,13 @@ contains
 !        call lsyssc_releaseMatrix (rmatrixBackup)
 !                                       
 !      case DEFAULT
-!        call output_line ('Not supported matrix structure!', &
-!            OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalar')
+!        call output_line ("Not supported matrix structure!", &
+!            OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrixScalar")
 !        call sys_halt()
 !      end select
 !    case DEFAULT
-!      call output_line ('Single precision matrices currently not supported!', &
-!          OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalar')
+!      call output_line ("Single precision matrices currently not supported!", &
+!          OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrixScalar")
 !      call sys_halt()
 !    end select
 !    
@@ -878,18 +878,18 @@ contains
 !        call lsyssc_releaseMatrix (rmatrixBackup)
 !
 !      case DEFAULT
-!        call output_line ('Not supported matrix structure!', &
-!            OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalar')
+!        call output_line ("Not supported matrix structure!", &
+!            OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrixScalar")
 !        call sys_halt()
 !      end select
 !    case DEFAULT
-!      call output_line ('Single precision matrices currently not supported!', &
-!          OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalar')
+!      call output_line ("Single precision matrices currently not supported!", &
+!          OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrixScalar")
 !      call sys_halt()
 !    end select
 !  case DEFAULT
-!    call output_line ('General discretisation not implemented!', &
-!        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalar')
+!    call output_line ("General discretisation not implemented!", &
+!        OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrixScalar")
 !    call sys_halt()
 !  end select
 !  
@@ -1048,13 +1048,13 @@ contains
   NEQ = rmatrix%NEQ
 
   if (NEQ .eq. 0) then
-    call output_line ('Empty matrix!', &
-        OU_CLASS_ERROR,OU_MODE_STD,'bilf_createMatrixStructure9_uni')
+    call output_line ("Empty matrix!", &
+        OU_CLASS_ERROR,OU_MODE_STD,"bilf_createMatrixStructure9_uni")
     call sys_halt()
   end if
 
   ! Allocate KLD...
-  call storage_new ('bilf_createMatStructure9_conf', 'KLD', &
+  call storage_new ("bilf_createMatStructure9_conf", "KLD", &
                       NEQ+1, ST_INT, rmatrix%h_KLD, &
                       ST_NEWBLOCK_NOINIT)
   ! This must be a storage_getbase, no lsyssc_getbase, since this is the
@@ -1062,7 +1062,7 @@ contains
   call storage_getbase_int(rmatrix%h_Kld,p_KLD)
 
   ! Allocate h_Kdiagonal
-  call storage_new ('bilf_createMatStructure9_conf', 'Kdiagonal', &
+  call storage_new ("bilf_createMatStructure9_conf", "Kdiagonal", &
                       NEQ, ST_INT, rmatrix%h_Kdiagonal, &
                       ST_NEWBLOCK_NOINIT)
   ! This must be a storage_getbase, no lsyssc_getbase, since this is the
@@ -1102,13 +1102,13 @@ contains
   ! imemblkSize = iallocated is necessary at the moment to simplify
   ! whether we leave a block or not.
 
-  call storage_new ('bilf_createMatStructure9_conf', 'Ihicol', &
+  call storage_new ("bilf_createMatStructure9_conf", "Ihicol", &
                       p_Isize(1), ST_INT, p_Ihcol(1), ST_NEWBLOCK_NOINIT)
   call storage_getbase_int (p_Ihcol(1),p_Icol)
 
   ! The new index array must be filled with 0 - otherwise
   ! the search routine below will not work!
-  call storage_new ('bilf_createMatStructure9_conf', 'p_Ihindx', &
+  call storage_new ("bilf_createMatStructure9_conf", "p_Ihindx", &
                       p_Isize(1), ST_INT, p_Ihindx(1), ST_NEWBLOCK_ZERO)
   call storage_getbase_int (p_Ihindx(1),p_Iindx)
 
@@ -1426,14 +1426,14 @@ contains
                     ! Allocate another imemblkSize elements for column numbers and
                     ! list pointers.
 
-                    call storage_new ('bilf_createMatStructure9_conf', 'Ihicol', &
+                    call storage_new ("bilf_createMatStructure9_conf", "Ihicol", &
                                         p_Isize (iblocks), ST_INT, p_Ihcol(iblocks), &
                                         ST_NEWBLOCK_NOINIT)
                     call storage_getbase_int (p_Ihcol(iblocks),p_Icol)
 
                     ! The new index array must be filled with 0 - otherwise
                     ! the search routine below will not work!
-                    call storage_new ('bilf_createMatStructure9_conf', 'p_Ihindx', &
+                    call storage_new ("bilf_createMatStructure9_conf", "p_Ihindx", &
                                         p_Isize (iblocks), ST_INT, p_Ihindx(iblocks), &
                                         ST_NEWBLOCK_ZERO)
                     call storage_getbase_int (p_Ihindx(iblocks),p_Iindx)
@@ -1510,7 +1510,7 @@ contains
   !
   ! At first, as we now NA, we can allocate the real KCOL now!
 
-  call storage_new ('bilf_createMatStructure9_conf', 'KCOL', &
+  call storage_new ("bilf_createMatStructure9_conf", "KCOL", &
                       NA, ST_INT, rmatrix%h_KCOL, &
                       ST_NEWBLOCK_NOINIT)
   ! This must be a storage_getbase, no lsyssc_getbase, since this is the
@@ -1806,13 +1806,13 @@ contains
   NEQ = rmatrix%NEQ
 
   if (NEQ .eq. 0) then
-    call output_line ('Empty matrix!', &
-        OU_CLASS_ERROR,OU_MODE_STD,'bilf_createMatStructure9_conf')
+    call output_line ("Empty matrix!", &
+        OU_CLASS_ERROR,OU_MODE_STD,"bilf_createMatStructure9_conf")
     call sys_halt()
   end if
 
   ! Allocate KLD...
-  call storage_new ('bilf_createMatStructure9_uni', 'KLD', &
+  call storage_new ("bilf_createMatStructure9_uni", "KLD", &
                       NEQ+1, ST_INT, rmatrix%h_KLD, &
                       ST_NEWBLOCK_NOINIT)
   ! This must be a storage_getbase, no lsyssc_getbase, since this is the
@@ -1820,7 +1820,7 @@ contains
   call storage_getbase_int (rmatrix%h_Kld,p_KLD)
 
   ! Allocate h_Kdiagonal
-  call storage_new ('bilf_createMatStructure9_conf', 'Kdiagonal', &
+  call storage_new ("bilf_createMatStructure9_conf", "Kdiagonal", &
                       NEQ, ST_INT, rmatrix%h_Kdiagonal, &
                       ST_NEWBLOCK_NOINIT)
   ! This must be a storage_getbase, no lsyssc_getbase, since this is the
@@ -1857,13 +1857,13 @@ contains
   ! imemblkSize = iallocated is necessary at the moment to simplify
   ! whether we leave a block or not.
 
-  call storage_new ('bilf_createMatStructure9_conf', 'Ihicol', &
+  call storage_new ("bilf_createMatStructure9_conf", "Ihicol", &
                       p_Isize(1), ST_INT, p_Ihcol(1), ST_NEWBLOCK_NOINIT)
   call storage_getbase_int (p_Ihcol(1),p_Icol)
 
   ! The new index array must be filled with 0 - otherwise
   ! the search routine below will not work!
-  call storage_new ('bilf_createMatStructure9_conf', 'p_Ihindx', &
+  call storage_new ("bilf_createMatStructure9_conf", "p_Ihindx", &
                       p_Isize(1), ST_INT, p_Ihindx(1), ST_NEWBLOCK_ZERO)
   call storage_getbase_int (p_Ihindx(1),p_Iindx)
 
@@ -2227,14 +2227,14 @@ contains
                     ! Allocate another imemblkSize elements for column numbers and
                     ! list pointers.
 
-                    call storage_new ('bilf_createMatStructure9_conf', 'Ihicol', &
+                    call storage_new ("bilf_createMatStructure9_conf", "Ihicol", &
                                         p_Isize (iblocks), ST_INT, p_Ihcol(iblocks), &
                                         ST_NEWBLOCK_NOINIT)
                     call storage_getbase_int (p_Ihcol(iblocks),p_Icol)
 
                     ! The new index array must be filled with 0 - otherwise
                     ! the search routine below will not work!
-                    call storage_new ('bilf_createMatStructure9_conf', 'p_Ihindx', &
+                    call storage_new ("bilf_createMatStructure9_conf", "p_Ihindx", &
                                         p_Isize (iblocks), ST_INT, p_Ihindx(iblocks), &
                                         ST_NEWBLOCK_ZERO)
                     call storage_getbase_int (p_Ihindx(iblocks),p_Iindx)
@@ -2320,7 +2320,7 @@ contains
 
   ! As we now NA, we can allocate the real KCOL now!
 
-  call storage_new ('bilf_createMatStructure9_conf', 'KCOL', &
+  call storage_new ("bilf_createMatStructure9_conf", "KCOL", &
                       NA, ST_INT, rmatrix%h_KCOL, &
                       ST_NEWBLOCK_NOINIT)
   call storage_getbase_int (rmatrix%h_Kcol,p_KCOL)
@@ -2465,7 +2465,7 @@ contains
 !  ! This routine calculates the entries of a finite element matrix.
 !  ! The matrix structure must be prepared with bilf_createMatrixStructure
 !  ! in advance. The discretisation is assumed to be conformal, i.e. the DOF`s
-!  ! of all finite elements must 'match'. Trial and test functions may be
+!  ! of all finite elements must "match". Trial and test functions may be
 !  ! different.
 !  ! In case the array for the matrix entries does not exist, the routine
 !  ! allocates memory in size of the matrix of the heap for the matrix entries.
@@ -2495,7 +2495,7 @@ contains
 !
 !  ! OPTIONAL: A callback routine for nonconstant coefficient matrices.
 !  ! Must be present if the matrix has nonconstant coefficients!
-!  INCLUDE 'intf_coefficientMatrixSc2.inc'
+!  INCLUDE "intf_coefficientMatrixSc2.inc"
 !  OPTIONAL :: fcoeff_buildMatrixSc_sim
 !!</input>
 !
@@ -2603,8 +2603,8 @@ contains
 !  !CHARACTER(LEN=20) :: CFILE
 !
 !  IF (.NOT. ASSOCIATED(rmatrix%p_rspatialDiscretisation)) THEN
-!    CALL output_line ('No discretisation associated!', &
-!        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf')
+!    CALL output_line ("No discretisation associated!", &
+!        OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrix9d_conf")
 !    CALL sys_halt()
 !  END IF
 !
@@ -2628,8 +2628,8 @@ contains
 !    I1=rform%Idescriptors(1,I)
 !
 !    IF ((I1 .LE.0) .OR. (I1 .GT. DER_MAXNDER)) THEN
-!      CALL output_line ('Invalid descriptor!', &
-!          OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf')
+!      CALL output_line ("Invalid descriptor!", &
+!          OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrix9d_conf")
 !      CALL sys_halt()
 !    ENDIF
 !
@@ -2639,8 +2639,8 @@ contains
 !    I1=rform%Idescriptors(2,I)
 !
 !    IF ((I1 .LE.0) .OR. (I1 .GT. DER_MAXNDER)) THEN
-!      CALL output_line ('Invalid descriptor!', &
-!          OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf')
+!      CALL output_line ("Invalid descriptor!", &
+!          OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrix9d_conf")
 !      CALL sys_halt()
 !    ENDIF
 !
@@ -2660,7 +2660,7 @@ contains
 !
 !    ! Clear the entries in the matrix - we need to start with zero
 !    ! when assembling a new matrix!
-!    CALL storage_new ('bilf_buildMatrix9d_conf', 'DA', &
+!    CALL storage_new ("bilf_buildMatrix9d_conf", "DA", &
 !                        NA, ST_DOUBLE, rmatrix%h_DA, &
 !                        ST_NEWBLOCK_ZERO)
 !    CALL lsyssc_getbase_double (rmatrix,p_DA)
@@ -2713,8 +2713,8 @@ contains
 !    ! Get the number of corner vertices of the element
 !    NVE = elem_igetNVE(p_relementDistribution%itrialElement)
 !    IF (NVE .NE. elem_igetNVE(p_relementDistribution%itestElement)) THEN
-!      CALL output_line ('Element spaces incompatible!', &
-!          OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf')
+!      CALL output_line ("Element spaces incompatible!", &
+!          OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrix9d_conf")
 !      CALL sys_halt()
 !    END IF
 !
@@ -2790,14 +2790,14 @@ contains
 !    ! need an additional array to save all the coefficients:
 !    IF (.NOT. rform%BconstantCoeff(icurrentElementDistr)) THEN
 !      IF (rform%ballCoeffConstant) THEN
-!        CALL output_line ('Some coefficients are not constant ' // &
-!            'although thy should be!', &
-!            OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf')
+!        CALL output_line ("Some coefficients are not constant " // &
+!            "although thy should be!", &
+!            OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrix9d_conf")
 !        CALL sys_halt()
 !      END IF
 !      IF (.NOT. PRESENT(fcoeff_buildMatrixSc_sim)) THEN
-!        CALL output_line ('Coefficient function not given!',&
-!            OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf')
+!        CALL output_line ("Coefficient function not given!",&
+!            OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrix9d_conf")
 !        CALL sys_halt()
 !      END IF
 !      ALLOCATE(Dcoefficients(rform%itermCount,ncubp,nelementsPerBlock))
@@ -3081,7 +3081,7 @@ contains
 !              ! -> Ix=0: function value,
 !              !      =1: first derivative,
 !              !      =2: 2nd derivative,...
-!              !    as defined in the module 'derivative'.
+!              !    as defined in the module "derivative".
 !
 !              IA = rform%Idescriptors(1,IALBET)
 !              IB = rform%Idescriptors(2,IALBET)
@@ -3177,7 +3177,7 @@ contains
 !              ! -> Ix=0: function value,
 !              !      =1: first derivative,
 !              !      =2: 2nd derivative,...
-!              !    as defined in the module 'derivative'.
+!              !    as defined in the module "derivative".
 !
 !              IA = rform%Idescriptors(1,IALBET)
 !              IB = rform%Idescriptors(2,IALBET)
@@ -3265,12 +3265,12 @@ contains
 !  !CALL ZTIME(DT(11))
 !
 !  !DO i=2,11
-!  !  PRINT *,'Time for assembly part ',i,': ',DT(i)-DT(i-1)
+!  !  PRINT *,"Time for assembly part ",i,": ",DT(i)-DT(i-1)
 !  !END DO
 !
-!  !CFILE = 'MATRIX2.TXT'
+!  !CFILE = "MATRIX2.TXT"
 !  !CALL OWM17(p_DA,p_KCOL,p_KLD,&
-!  !           NEQ,NEQ,.TRUE.,0,'MAT1  ',CFILE,'(D20.10)')
+!  !           NEQ,NEQ,.TRUE.,0,"MAT1  ",CFILE,"(D20.10)")
 !
 !  END SUBROUTINE
 
@@ -3285,7 +3285,7 @@ contains
 !  ! This routine calculates the entries of a finite element matrix.
 !  ! The matrix structure must be prepared with bilf_createMatrixStructure
 !  ! in advance. The discretisation is assumed to be conformal, i.e. the DOF`s
-!  ! of all finite elements must 'match'. Trial and test functions may be
+!  ! of all finite elements must "match". Trial and test functions may be
 !  ! different.
 !  ! In case the array for the matrix entries does not exist, the routine
 !  ! allocates memory in size of the matrix of the heap for the matrix entries.
@@ -3312,7 +3312,7 @@ contains
 !
 !  ! OPTIONAL: A callback routine for nonconstant coefficient matrices.
 !  ! Must be present if the matrix has nonconstant coefficients!
-!  INCLUDE 'intf_coefficientMatrixSc.inc'
+!  INCLUDE "intf_coefficientMatrixSc.inc"
 !  OPTIONAL :: fcoeff_buildMatrixSc_sim
 !!</input>
 !
@@ -3421,8 +3421,8 @@ contains
 !  TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisation
 !
 !  IF (.NOT. ASSOCIATED(rmatrix%p_rspatialDiscretisation)) THEN
-!    CALL output_line ('No discretisation associated!',&
-!        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf2')
+!    CALL output_line ("No discretisation associated!",&
+!        OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrix9d_conf2")
 !    CALL sys_halt()
 !  END IF
 !
@@ -3444,8 +3444,8 @@ contains
 !    I1=rform%Idescriptors(1,I)
 !
 !    IF ((I1 .LE.0) .OR. (I1 .GT. DER_MAXNDER)) THEN
-!      CALL output_line ('Invalid descriptor!',&
-!          OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf2')
+!      CALL output_line ("Invalid descriptor!",&
+!          OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrix9d_conf2")
 !      CALL sys_halt()
 !    ENDIF
 !
@@ -3455,8 +3455,8 @@ contains
 !    I1=rform%Idescriptors(2,I)
 !
 !    IF ((I1 .LE.0) .OR. (I1 .GT. DER_MAXNDER)) THEN
-!      CALL output_line ('Invalid descriptor!',&
-!          OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf2')
+!      CALL output_line ("Invalid descriptor!",&
+!          OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrix9d_conf2")
 !      CALL sys_halt()
 !    ENDIF
 !
@@ -3470,8 +3470,8 @@ contains
 !  ! We need KCOL/KLD of our matrix
 !  IF ((rmatrix%h_KCOL .EQ. ST_NOHANDLE) .OR. &
 !      (rmatrix%h_KLD .EQ. ST_NOHANDLE)) THEN
-!    CALL output_line ('No discretisation structure! Cannot assemble matrix!', &
-!                      OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf2')
+!    CALL output_line ("No discretisation structure! Cannot assemble matrix!", &
+!                      OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrix9d_conf2")
 !    CALL sys_halt()
 !  END IF
 !
@@ -3483,7 +3483,7 @@ contains
 !
 !    ! Clear the entries in the matrix - we need to start with zero
 !    ! when assembling a new matrix!
-!    CALL storage_new ('bilf_buildMatrix9d_conf', 'DA', &
+!    CALL storage_new ("bilf_buildMatrix9d_conf", "DA", &
 !                        NA, ST_DOUBLE, rmatrix%h_DA, &
 !                        ST_NEWBLOCK_ZERO)
 !    CALL lsyssc_getbase_double (rmatrix,p_DA)
@@ -3503,8 +3503,8 @@ contains
 !  p_rdiscretisation => rmatrix%p_rspatialDiscretisation
 !
 !  IF (.NOT. ASSOCIATED(p_rdiscretisation)) THEN
-!    CALL output_line ('No discretisation attached to the matrix!',&
-!        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf2')
+!    CALL output_line ("No discretisation attached to the matrix!",&
+!        OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrix9d_conf2")
 !    CALL sys_halt()
 !  END IF
 !
@@ -3542,8 +3542,8 @@ contains
 !    ! form the reference to the real element.
 !    NVE = elem_igetNVE(p_relementDistribution%itrialElement)
 !    IF (NVE .NE. elem_igetNVE(p_relementDistribution%itestElement)) THEN
-!      CALL output_line ('Element spaces incompatible!',&
-!          OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf2')
+!      CALL output_line ("Element spaces incompatible!",&
+!          OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrix9d_conf2")
 !      CALL sys_halt()
 !    END IF
 !
@@ -3596,17 +3596,17 @@ contains
 !      IB = rform%Idescriptors(2,IALBET)
 !      IF ((IA.LT.0) .OR. &
 !          (IA .GT. elem_getMaxDerivative(p_relementDistribution%itrialElement))) THEN
-!        CALL output_line ('Specified trial-derivative '//TRIM(sys_siL(IA,10))//&
-!            ' not available!',&
-!            OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf2')
+!        CALL output_line ("Specified trial-derivative "//TRIM(sys_siL(IA,10))//&
+!            " not available!",&
+!            OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrix9d_conf2")
 !        CALL sys_halt()
 !      END IF
 !
 !      IF ((IB.LT.0) .OR. &
 !          (IB .GT. elem_getMaxDerivative(p_relementDistribution%itestElement))) THEN
-!        CALL output_line ('Specified test-derivative '//TRIM(sys_siL(IA,10))//&
-!            ' not available!',&
-!            OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf2')
+!        CALL output_line ("Specified test-derivative "//TRIM(sys_siL(IA,10))//&
+!            " not available!",&
+!            OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrix9d_conf2")
 !        CALL sys_halt()
 !      END IF
 !    END DO
@@ -3660,14 +3660,14 @@ contains
 !    ! need an additional array to save all the coefficients:
 !    IF (.NOT. rform%BconstantCoeff(icurrentElementDistr)) THEN
 !      IF (rform%ballCoeffConstant) THEN
-!        CALL output_line ('Some coefficients are not constant ' // &
-!                'although thy should be!',&
-!            OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf2')
+!        CALL output_line ("Some coefficients are not constant " // &
+!                "although thy should be!",&
+!            OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrix9d_conf2")
 !        CALL sys_halt()
 !      END IF
 !      IF (.NOT. PRESENT(fcoeff_buildMatrixSc_sim)) THEN
-!        CALL output_line ('Coefficient function not given!',&
-!            OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf2')
+!        CALL output_line ("Coefficient function not given!",&
+!            OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrix9d_conf2")
 !        CALL sys_halt()
 !      END IF
 !      ALLOCATE(Dcoefficients(rform%itermCount,ncubp,nelementsPerBlock))
@@ -3981,7 +3981,7 @@ contains
 !              !
 !              ! -> Ix=0: function value,
 !              !      =1: first derivative, ...
-!              !    as defined in the module 'derivative'.
+!              !    as defined in the module "derivative".
 !
 !              IA = rform%Idescriptors(1,IALBET)
 !              IB = rform%Idescriptors(2,IALBET)
@@ -4087,7 +4087,7 @@ contains
 !              !
 !              ! -> Ix=0: function value,
 !              !      =1: first derivative, ...
-!              !    as defined in the module 'derivative'.
+!              !    as defined in the module "derivative".
 !
 !              IA = rform%Idescriptors(1,IALBET)
 !              IB = rform%Idescriptors(2,IALBET)
@@ -4201,7 +4201,7 @@ contains
 !  ! This routine calculates the entries of a finite element matrix.
 !  ! The matrix structure must be prepared with bilf_createMatrixStructure
 !  ! in advance. The discretisation is assumed to be conformal, i.e. the DOF`s
-!  ! of all finite elements must 'match'. Trial and test functions may be
+!  ! of all finite elements must "match". Trial and test functions may be
 !  ! different.
 !  ! In case the array for the matrix entries does not exist, the routine
 !  ! allocates memory in size of the matrix of the heap for the matrix entries.
@@ -4228,7 +4228,7 @@ contains
 !  
 !  ! OPTIONAL: A callback routine for nonconstant coefficient matrices.
 !  ! Must be present if the matrix has nonconstant coefficients!
-!  include 'intf_coefficientMatrixSc.inc'
+!  include "intf_coefficientMatrixSc.inc"
 !  optional :: fcoeff_buildMatrixSc_sim
 !
 !  ! A scalar cubature information structure that specifies the cubature
@@ -4342,8 +4342,8 @@ contains
 !
 !  if ((.not. associated(rmatrix%p_rspatialDiscrTest)) .or. &
 !      (.not. associated(rmatrix%p_rspatialDiscrTrial))) then
-!    call output_line ('No discretisation associated!',&
-!        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf2')
+!    call output_line ("No discretisation associated!",&
+!        OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrix9d_conf2")
 !    call sys_halt()
 !  end if
 !
@@ -4365,8 +4365,8 @@ contains
 !    I1=rform%Idescriptors(1,I)
 !    
 !    if ((I1 .le.0) .or. (I1 .gt. DER_MAXNDER)) then
-!      call output_line ('Invalid descriptor!',&
-!          OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf2')
+!      call output_line ("Invalid descriptor!",&
+!          OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrix9d_conf2")
 !      call sys_halt()
 !    endif
 !    
@@ -4376,8 +4376,8 @@ contains
 !    I1=rform%Idescriptors(2,I)
 !    
 !    if ((I1 .le.0) .or. (I1 .gt. DER_MAXNDER)) then
-!      call output_line ('Invalid descriptor!',&
-!          OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf2')
+!      call output_line ("Invalid descriptor!",&
+!          OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrix9d_conf2")
 !      call sys_halt()
 !    endif
 !    
@@ -4391,8 +4391,8 @@ contains
 !  ! We need KCOL/KLD of our matrix
 !  if ((rmatrix%h_KCOL .eq. ST_NOHANDLE) .or. &
 !      (rmatrix%h_KLD .eq. ST_NOHANDLE)) then
-!    call output_line ('No discretisation structure! Cannot assemble matrix!', &
-!                      OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf2')
+!    call output_line ("No discretisation structure! Cannot assemble matrix!", &
+!                      OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrix9d_conf2")
 !    call sys_halt()
 !  end if
 !  
@@ -4404,7 +4404,7 @@ contains
 !
 !    ! Clear the entries in the matrix - we need to start with zero
 !    ! when assembling a new matrix!
-!    call storage_new ('bilf_buildMatrix9d_conf', 'DA', &
+!    call storage_new ("bilf_buildMatrix9d_conf", "DA", &
 !                        NA, ST_DOUBLE, rmatrix%h_DA, &
 !                        ST_NEWBLOCK_ZERO)
 !    call lsyssc_getbase_double (rmatrix,p_DA)
@@ -4426,8 +4426,8 @@ contains
 !  
 !  if ((.not. associated(p_rdiscrTest)) .or. &
 !      (.not. associated(p_rdiscrTrial))) then
-!    call output_line ('No discretisation attached to the matrix!',&
-!        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf2')
+!    call output_line ("No discretisation attached to the matrix!",&
+!        OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrix9d_conf2")
 !    call sys_halt()
 !  end if
 !  
@@ -4465,8 +4465,8 @@ contains
 !    ! form the reference to the real element.
 !    NVE = elem_igetNVE(p_relementDistrTest%celement)
 !    if (NVE .ne. elem_igetNVE(p_relementDistrTrial%celement)) then
-!      call output_line ('Element spaces incompatible!',&
-!          OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf2')
+!      call output_line ("Element spaces incompatible!",&
+!          OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrix9d_conf2")
 !      call sys_halt()
 !    end if
 !    
@@ -4490,17 +4490,17 @@ contains
 !      IB = rform%Idescriptors(2,IALBET)
 !      if ((IA.lt.0) .or. &
 !          (IA .gt. elem_getMaxDerivative(p_relementDistrTrial%celement))) then
-!        call output_line ('Specified trial-derivative '//trim(sys_siL(IA,10))//&
-!            ' not available!',&
-!            OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf2')
+!        call output_line ("Specified trial-derivative "//trim(sys_siL(IA,10))//&
+!            " not available!",&
+!            OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrix9d_conf2")
 !        call sys_halt()
 !      end if
 !
 !      if ((IB.lt.0) .or. &
 !          (IB .gt. elem_getMaxDerivative(p_relementDistrTest%celement))) then
-!        call output_line ('Specified test-derivative '//trim(sys_siL(IA,10))//&
-!            ' not available!',&
-!            OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf2')
+!        call output_line ("Specified test-derivative "//trim(sys_siL(IA,10))//&
+!            " not available!",&
+!            OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrix9d_conf2")
 !        call sys_halt()
 !      end if
 !    end do
@@ -4553,14 +4553,14 @@ contains
 !    ! need an additional array to save all the coefficients:
 !    if (.not. rform%BconstantCoeff(icurrentElementDistr)) then
 !      if (rform%ballCoeffConstant) then
-!        call output_line ('Some coefficients are not constant ' // &
-!                'although they should be!',&
-!            OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf2')
+!        call output_line ("Some coefficients are not constant " // &
+!                "although they should be!",&
+!            OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrix9d_conf2")
 !        call sys_halt()
 !      end if
 !      if (.not. present(fcoeff_buildMatrixSc_sim)) then
-!        call output_line ('Coefficient function not given!',&
-!            OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf2')
+!        call output_line ("Coefficient function not given!",&
+!            OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrix9d_conf2")
 !        call sys_halt()
 !      end if
 !      allocate(Dcoefficients(rform%itermCount,ncubp,nelementsPerBlock))
@@ -4849,7 +4849,7 @@ contains
 !              !
 !              ! -> Ix=0: function value,
 !              !      =1: first derivative, ...
-!              !    as defined in the module 'derivative'.
+!              !    as defined in the module "derivative".
 !              
 !              IA = rform%Idescriptors(1,IALBET)
 !              IB = rform%Idescriptors(2,IALBET)
@@ -4955,7 +4955,7 @@ contains
 !              !
 !              ! -> Ix=0: function value,
 !              !      =1: first derivative, ...
-!              !    as defined in the module 'derivative'.
+!              !    as defined in the module "derivative".
 !              
 !              IA = rform%Idescriptors(1,IALBET)
 !              IB = rform%Idescriptors(2,IALBET)
@@ -5370,8 +5370,8 @@ contains
       I1=rform%Idescriptors(1,I)
 
       if ((I1 .le.0) .or. (I1 .gt. DER_MAXNDER)) then
-        call output_line ('Invalid descriptor!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'bilf_initAssembly')
+        call output_line ("Invalid descriptor!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"bilf_initAssembly")
         call sys_halt()
       endif
 
@@ -5381,8 +5381,8 @@ contains
       I1=rform%Idescriptors(2,I)
 
       if ((I1 .le.0) .or. (I1 .gt. DER_MAXNDER)) then
-        call output_line ('Invalid descriptor!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'bilf_initAssembly')
+        call output_line ("Invalid descriptor!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"bilf_initAssembly")
         call sys_halt()
       endif
 
@@ -5522,8 +5522,8 @@ contains
       I1=rform%Idescriptors(1,I)
       
       if ((I1 .le.0) .or. (I1 .gt. DER_MAXNDER)) then
-        call output_line ('Invalid descriptor!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'bilf_initAssembly')
+        call output_line ("Invalid descriptor!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"bilf_initAssembly")
         call sys_halt()
       endif
       
@@ -5533,8 +5533,8 @@ contains
       I1=rform%Idescriptors(2,I)
       
       if ((I1 .le.0) .or. (I1 .gt. DER_MAXNDER)) then
-        call output_line ('Invalid descriptor!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'bilf_initAssembly')
+        call output_line ("Invalid descriptor!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"bilf_initAssembly")
         call sys_halt()
       endif
       
@@ -5631,7 +5631,7 @@ contains
   subroutine bilf_allocAssemblyData(rmatrixAssembly,ntempArrays)
 
 !<description>
-  ! Auxiliary subroutine. Allocate 'local' memory, needed for assembling matrix entries.
+  ! Auxiliary subroutine. Allocate "local" memory, needed for assembling matrix entries.
 !</description>
 
 !<input>
@@ -5721,7 +5721,7 @@ contains
 
   subroutine bilf_releaseAssemblyData(rmatrixAssembly)
 
-  ! Auxiliary subroutine. Release 'local' memory.
+  ! Auxiliary subroutine. Release "local" memory.
 
 !<inputoutput>
   ! Matrix assembly structure to clean up
@@ -5775,7 +5775,7 @@ contains
 
   ! OPTIONAL: A callback routine for nonconstant coefficient matrices.
   ! Must be present if the matrix has nonconstant coefficients!
-  include 'intf_coefficientMatrixSc.inc'
+  include "intf_coefficientMatrixSc.inc"
   optional :: fcoeff_buildMatrixSc_sim
 
   ! OPTIONAL: Number of temp arrays.
@@ -6089,7 +6089,7 @@ contains
               !
               ! -> Ix=0: function value,
               !      =1: first derivative, ...
-              !    as defined in the module 'derivative'.
+              !    as defined in the module "derivative".
 
               ia = p_Idescriptors(1,ialbet)
               ib = p_Idescriptors(2,ialbet)
@@ -6174,7 +6174,7 @@ contains
               !
               ! -> Ix=0: function value,
               !      =1: first derivative, ...
-              !    as defined in the module 'derivative'.
+              !    as defined in the module "derivative".
 
               ia = rlocalMatrixAssembly%rform%Idescriptors(1,ialbet)
               ib = rlocalMatrixAssembly%rform%Idescriptors(2,ialbet)
@@ -6293,7 +6293,7 @@ contains
 
   ! OPTIONAL: A callback routine for nonconstant coefficient matrices.
   ! Must be present if the matrix has nonconstant coefficients!
-  include 'intf_coefficientMatrixScBdr1D.inc'
+  include "intf_coefficientMatrixScBdr1D.inc"
   optional :: fcoeff_buildMatrixScBdr1D_sim
 
   ! OPTIONAL: local performance configuration. If not given, the
@@ -6353,8 +6353,8 @@ contains
     ! single boundary node. Therefore, the use of a one-point cubature
     ! rule is mandatory.
     if (ncubp .ne. 1) then
-      call output_line('Assembly structure must be initialised for 1-point cubature rule!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'bilf_assembleSubmeshMat9Bdr1D')
+      call output_line("Assembly structure must be initialised for 1-point cubature rule!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"bilf_assembleSubmeshMat9Bdr1D")
       call sys_halt()
     end if
 
@@ -6525,7 +6525,7 @@ contains
           !
           ! -> Ix=0: function value,
           !      =1: first derivative, ...
-          !    as defined in the module 'derivative'.
+          !    as defined in the module "derivative".
 
           ia = p_Idescriptors(1,ialbet)
           ib = p_Idescriptors(2,ialbet)
@@ -6597,7 +6597,7 @@ contains
           !
           ! -> Ix=0: function value,
           !      =1: first derivative, ...
-          !    as defined in the module 'derivative'.
+          !    as defined in the module "derivative".
 
           ia = rmatrixAssembly%rform%Idescriptors(1,ialbet)
           ib = rmatrixAssembly%rform%Idescriptors(2,ialbet)
@@ -6724,7 +6724,7 @@ contains
 
   ! OPTIONAL: A callback routine for nonconstant coefficient matrices.
   ! Must be present if the matrix has nonconstant coefficients!
-  include 'intf_coefficientMatrixScBdr2D.inc'
+  include "intf_coefficientMatrixScBdr2D.inc"
   optional :: fcoeff_buildMatrixScBdr2D_sim
 
   ! OPTIONAL: Number of temp arrays.
@@ -7122,7 +7122,7 @@ contains
               !
               ! -> Ix=0: function value,
               !      =1: first derivative, ...
-              !    as defined in the module 'derivative'.
+              !    as defined in the module "derivative".
 
               ia = p_Idescriptors(1,ialbet)
               ib = p_Idescriptors(2,ialbet)
@@ -7206,7 +7206,7 @@ contains
               !
               ! -> Ix=0: function value,
               !      =1: first derivative, ...
-              !    as defined in the module 'derivative'.
+              !    as defined in the module "derivative".
 
               ia = rlocalMatrixAssembly%rform%Idescriptors(1,ialbet)
               ib = rlocalMatrixAssembly%rform%Idescriptors(2,ialbet)
@@ -7375,7 +7375,7 @@ contains
 
   ! OPTIONAL: A callback routine for nonconstant coefficient matrices.
   ! Must be present if the matrix has nonconstant coefficients!
-  include 'intf_coefficientMatrixSc.inc'
+  include "intf_coefficientMatrixSc.inc"
   optional :: fcoeff_buildMatrixSc_sim
   
   ! OPTIONAL: Number of temp arrays.
@@ -7422,16 +7422,16 @@ contains
   ! Note that we cannot switch off the sorting as easy as in the case
   ! of a vector, since there is a structure behind the matrix! So the caller
   ! has to make sure, the matrix is unsorted when this routine is called.
-  if (rmatrix%isortStrategy .gt. 0) then
-    call output_line ('Matrix-structure must be unsorted!', &
-        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalar2')
+  if (rmatrix%bcolumnsSorted .or. rmatrix%browsSorted) then
+    call output_line ("Matrix-structure must be unsorted!", &
+        OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrixScalar2")
     call sys_halt()
   end if
 
   if ((.not. associated(rmatrix%p_rspatialDiscrTest)) .or. &
       (.not. associated(rmatrix%p_rspatialDiscrTrial))) then
-    call output_line ('No discretisation associated!', &
-        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalar2')
+    call output_line ("No discretisation associated!", &
+        OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrixScalar2")
     call sys_halt()
   end if
 
@@ -7521,20 +7521,20 @@ contains
         call lsyssc_releaseMatrix (rmatrixBackup)
 
       case default
-        call output_line ('Not supported matrix structure!', &
-            OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalar2')
+        call output_line ("Not supported matrix structure!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrixScalar2")
         call sys_halt()
       end select
 
     case default
-      call output_line ('Single precision matrices currently not supported!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalar2')
+      call output_line ("Single precision matrices currently not supported!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrixScalar2")
       call sys_halt()
     end select
 
   case default
-    call output_line ('General discretisation not implemented!', &
-        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalar2')
+    call output_line ("General discretisation not implemented!", &
+        OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrixScalar2")
     call sys_halt()
   end select
 
@@ -7583,7 +7583,7 @@ contains
 
   ! OPTIONAL: A callback routine for nonconstant coefficient matrices.
   ! Must be present if the matrix has nonconstant coefficients!
-  include 'intf_coefficientMatrixScBdr1D.inc'
+  include "intf_coefficientMatrixScBdr1D.inc"
   optional :: fcoeff_buildMatrixScBdr1D_sim
 
   ! OPTIONAL: One of the BILF_MATC_xxxx constants that allow to specify
@@ -7638,33 +7638,33 @@ contains
   ! Note that we cannot switch off the sorting as easy as in the case
   ! of a vector, since there is a structure behind the matrix! So the caller
   ! has to make sure, the matrix is unsorted when this routine is called.
-  if (rmatrix%isortStrategy .gt. 0) then
-    call output_line ('Matrix-structure must be unsorted!', &
-        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalarBdr1D')
+  if (rmatrix%bcolumnsSorted .or. rmatrix%browsSorted) then
+    call output_line ("Matrix-structure must be unsorted!", &
+        OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrixScalarBdr1D")
     call sys_halt()
   end if
 
   ! The matrix must provide discretisation structures
   if ((.not. associated(rmatrix%p_rspatialDiscrTest)) .or. &
       (.not. associated(rmatrix%p_rspatialDiscrTrial))) then
-    call output_line ('No discretisation associated!', &
-        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalarBdr1D')
+    call output_line ("No discretisation associated!", &
+        OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrixScalarBdr1D")
     call sys_halt()
   end if
 
   ! The discretisation must provide a triangulation structure
   if ((.not. associated(rmatrix%p_rspatialDiscrTest%p_rtriangulation)) .or. &
       (.not. associated(rmatrix%p_rspatialDiscrTrial%p_rtriangulation))) then
-    call output_line('No triangulation associated!',&
-        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalarBdr1D')
+    call output_line("No triangulation associated!",&
+        OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrixScalarBdr1D")
     call sys_halt()
   end if
 
   ! Set pointers for quicker access
   p_rtriangulation => rmatrix%p_rspatialDiscrTest%p_rtriangulation
   if (.not.associated(p_rtriangulation, rmatrix%p_rspatialDiscrTrial%p_rtriangulation)) then
-    call output_line('Invalid triangulation associated!',&
-        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalarBdr1D')
+    call output_line("Invalid triangulation associated!",&
+        OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrixScalarBdr1D")
     call sys_halt()
   end if
 
@@ -7804,20 +7804,20 @@ contains
         call lsyssc_releaseMatrix (rmatrixBackup)
 
       case default
-        call output_line ('Not supported matrix structure!', &
-            OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalarBdr1D')
+        call output_line ("Not supported matrix structure!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrixScalarBdr1D")
         call sys_halt()
       end select
 
     case default
-      call output_line ('Single precision matrices currently not supported!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalarBdr1D')
+      call output_line ("Single precision matrices currently not supported!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrixScalarBdr1D")
       call sys_halt()
     end select
 
   case default
-    call output_line ('General discretisation not implemented!', &
-        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalarBdr1D')
+    call output_line ("General discretisation not implemented!", &
+        OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrixScalarBdr1D")
     call sys_halt()
   end select
 
@@ -7864,7 +7864,7 @@ contains
 
   ! OPTIONAL: A callback routine for nonconstant coefficient matrices.
   ! Must be present if the matrix has nonconstant coefficients!
-  include 'intf_coefficientMatrixScBdr2D.inc'
+  include "intf_coefficientMatrixScBdr2D.inc"
   optional :: fcoeff_buildMatrixScBdr2D_sim
 
   ! OPTIONAL: One of the BILF_MATC_xxxx constants that allow to specify
@@ -7922,48 +7922,48 @@ contains
   ! Note that we cannot switch off the sorting as easy as in the case
   ! of a vector, since there is a structure behind the matrix! So the caller
   ! has to make sure, the matrix is unsorted when this routine is called.
-  if (rmatrix%isortStrategy .gt. 0) then
-    call output_line ('Matrix-structure must be unsorted!', &
-        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalarBdr2D')
+  if (rmatrix%bcolumnsSorted .or. rmatrix%browsSorted) then
+    call output_line ("Matrix-structure must be unsorted!", &
+        OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrixScalarBdr2D")
     call sys_halt()
   end if
 
   ! The matrix must provide discretisation structures
   if ((.not. associated(rmatrix%p_rspatialDiscrTest)) .or. &
       (.not. associated(rmatrix%p_rspatialDiscrTrial))) then
-    call output_line ('No discretisation associated!', &
-        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalarBdr2D')
+    call output_line ("No discretisation associated!", &
+        OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrixScalarBdr2D")
     call sys_halt()
   end if
 
   ! The discretisation must provide a triangulation structure
   if ((.not. associated(rmatrix%p_rspatialDiscrTest%p_rtriangulation)) .or. &
       (.not. associated(rmatrix%p_rspatialDiscrTrial%p_rtriangulation))) then
-    call output_line('No triangulation associated!',&
-        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalarBdr2D')
+    call output_line("No triangulation associated!",&
+        OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrixScalarBdr2D")
     call sys_halt()
   end if
 
   ! The discretisation must provide a boundary structure
   if ((.not. associated(rmatrix%p_rspatialDiscrTest%p_rboundary)) .or. &
       (.not. associated(rmatrix%p_rspatialDiscrTrial%p_rboundary))) then
-    call output_line('No boundary associated!',&
-        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalarBdr2D')
+    call output_line("No boundary associated!",&
+        OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrixScalarBdr2D")
     call sys_halt()
   end if
 
   ! Set pointers for quicker access
   p_rboundary => rmatrix%p_rspatialDiscrTest%p_rboundary
   if (.not.associated(p_rboundary, rmatrix%p_rspatialDiscrTrial%p_rboundary)) then
-    call output_line('Invalid boundary associated!',&
-        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalarBdr2D')
+    call output_line("Invalid boundary associated!",&
+        OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrixScalarBdr2D")
     call sys_halt()
   end if
 
   p_rtriangulation => rmatrix%p_rspatialDiscrTest%p_rtriangulation
   if (.not.associated(p_rtriangulation, rmatrix%p_rspatialDiscrTrial%p_rtriangulation)) then
-    call output_line('Invalid triangulation associated!',&
-        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalarBdr2D')
+    call output_line("Invalid triangulation associated!",&
+        OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrixScalarBdr2D")
     call sys_halt()
   end if
 
@@ -8111,20 +8111,20 @@ contains
         call lsyssc_releaseMatrix (rmatrixBackup)
 
       case default
-        call output_line ('Not supported matrix structure!', &
-            OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalarBdr2D')
+        call output_line ("Not supported matrix structure!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrixScalarBdr2D")
         call sys_halt()
       end select
 
     case default
-      call output_line ('Single precision matrices currently not supported!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalarBdr2D')
+      call output_line ("Single precision matrices currently not supported!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrixScalarBdr2D")
       call sys_halt()
     end select
 
   case default
-    call output_line ('General discretisation not implemented!', &
-        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalarBdr2D')
+    call output_line ("General discretisation not implemented!", &
+        OU_CLASS_ERROR,OU_MODE_STD,"bilf_buildMatrixScalarBdr2D")
     call sys_halt()
   end select
 

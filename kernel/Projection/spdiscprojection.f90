@@ -158,8 +158,7 @@ contains
       call sys_halt()
     end if
 
-    if ((rsourceVector%isortStrategy .gt. 0) .or. &
-        (rdestVector%isortStrategy .gt. 0)) then
+    if (rsourceVector%bisSorted .or. rdestVector%bisSorted) then
       call output_line ('Vectors must be unsorted for projection!', &
                         OU_CLASS_ERROR,OU_MODE_STD,&
                         'spdp_projectSolutionScalar')

@@ -8,18 +8,18 @@
 !# or block vector. These can be used e.g. during a solution process to impose
 !# different quantities into solution and/or defect vectors.
 !#
-!# The discrete boundary conditions realised in the module 'bcassembly' are
-!# one type of filter. While being created in the module 'bcassembly',
+!# The discrete boundary conditions realised in the module "bcassembly" are
+!# one type of filter. While being created in the module "bcassembly",
 !# this module now provides the functionality to impose discrete boundary
 !# conditions into a vector.
 !# Also other filters can be found here, e.g. normalisation ov vectors, etc.
 !#
-!# 'Linear' and 'nonlinear' vector filters \\
+!# "Linear" and "nonlinear" vector filters \\
 !# --------------------------------------- \\
 !# There are two elemental types of vector filters realised here:
-!# 'Linear' filters and 'nonlinear' filters:
+!# "Linear" filters and "nonlinear" filters:
 !#
-!# a) 'Linear' filters
+!# a) "Linear" filters
 !#
 !#   These filters realise simple vector filters like
 !#   - implementation of Dirichlet boundary conditions
@@ -28,18 +28,18 @@
 !#   The name comes from the ability to be able to be used as a filter
 !#   when solving a *linear system*. Some iterative solvers like BiCGStab
 !#   or Multigrid allow a vector to be filtered during the iteration.
-!#   All filters marked as 'linear filters' can be collected to a
-!#   'filter chain' that is applied to a vector in such an iteration.
-!#   For this purpose, there exists a higher-level module 'filtersupport',
+!#   All filters marked as "linear filters" can be collected to a
+!#   "filter chain" that is applied to a vector in such an iteration.
+!#   For this purpose, there exists a higher-level module "filtersupport",
 !#   which realises such a filter chain.
 !#   Of course, they can be applied to a vector anytime manually, e.g. for
-!#   implementing Dirichlet boundary conditions 'by hand'.
+!#   implementing Dirichlet boundary conditions "by hand".
 !#
-!# b) 'Nonlinear' filters
+!# b) "Nonlinear" filters
 !#
 !#   All filters that can not be collected in a filter chain to be
 !#   applied during the solution of a linear system are called
-!#   'nonlinear filters'. These filters are usually called inside of
+!#   "nonlinear filters". These filters are usually called inside of
 !#   a nonlinear iteration to perform a special filtering to a vector
 !#   which is probably not possible to formulate in the calling convention
 !#   of a linear filter - e.g. if additional auxiliary vectors are used
@@ -49,8 +49,8 @@
 !#   - implementation of Pressure Drop boundary conditions.
 !#
 !# Note that filters are allowed consist a linear and a nonlinear part!
-!# In such a case, the 'nonlinear' filter part is usually called during
-!# the nonlinear iteration, while the 'linear' part is used during the
+!# In such a case, the "nonlinear" filter part is usually called during
+!# the nonlinear iteration, while the "linear" part is used during the
 !# solution of a linear system. An example for this may be the
 !# predictor-corrector implementation of Slip boundary conditions (not
 !# realised here), where the nonlinear iteration treats the BC while
@@ -65,32 +65,32 @@
 !#
 !#  2.) vecfil_discreteBCsol
 !#      -> Linear filter
-!#      -> Apply the 'discrete boundary conditions for solution vectors' filter
+!#      -> Apply the "discrete boundary conditions for solution vectors" filter
 !#         onto a given (block) solution vector.
 !#
 !#  3.) vecfil_discreteBCrhs
 !#      -> Linear filter
-!#      -> Apply the 'discrete boundary conditions for RHS vectors' filter
+!#      -> Apply the "discrete boundary conditions for RHS vectors" filter
 !#         onto a given (block) vector.
 !#
 !#  4.) vecfil_discreteBCdef
 !#      -> Linear filter
-!#      -> Apply the 'discrete boundary conditions for defect vectors' filter
+!#      -> Apply the "discrete boundary conditions for defect vectors" filter
 !#         onto a given (block) vector.
 !#
 !#  5.) vecfil_discreteFBCsol
 !#      -> Linear filter
-!#      -> Apply the 'discrete fictitious boundary conditions for solution vectors'
+!#      -> Apply the "discrete fictitious boundary conditions for solution vectors"
 !#         filter onto a given (block) solution vector.
 !#
 !#  6.) vecfil_discreteFBCrhs
 !#      -> Linear filter
-!#      -> Apply the 'discrete fictitious boundary conditions for RHS vectors'
+!#      -> Apply the "discrete fictitious boundary conditions for RHS vectors"
 !#         filter onto a given (block) vector.
 !#
 !#  7.) vecfil_discreteFBCdef
 !#      -> Linear filter
-!#      -> Apply the 'discrete fictitious boundary conditions for defect vectors'
+!#      -> Apply the "discrete fictitious boundary conditions for defect vectors"
 !#         filter onto a given (block) vector.
 !#
 !#  8.) vecfil_subvectorToL20
@@ -160,6 +160,7 @@ module vectorfilters
   use triangulation
   use derivatives
   use transformation
+  use sortstrategybase
 
   implicit none
 
@@ -228,16 +229,16 @@ contains
     ! the storage management.
 
     if (rdbcStructure%h_DdirichletValues .eq. ST_NOHANDLE) then
-      call output_line('Dirichlet BC''s not correctly configured!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletBC')
-      call output_line('Are the BC''s only configured for defect values?!?',&
-          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletBC')
+      call output_line("Dirichlet BC""s not correctly configured!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vecfil_imposeDirichletBC")
+      call output_line("Are the BC""s only configured for defect values?!?",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vecfil_imposeDirichletBC")
       call sys_halt()
     end if
 
     if (rdbcStructure%h_IdirichletDOFs .eq. ST_NOHANDLE) then
-      call output_line('DBC not configured',&
-          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletBC')
+      call output_line("DBC not configured",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vecfil_imposeDirichletBC")
       call sys_halt()
     end if
 
@@ -248,16 +249,16 @@ contains
     ! components of the subvector that is indexed by icomponent.
 
     if ((.not.associated(p_idx)).or.(.not.associated(p_val))) then
-      call output_line('DBC not configured',&
-          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletBC')
+      call output_line("DBC not configured",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vecfil_imposeDirichletBC")
       call sys_halt()
     end if
 
     call lsyssc_getbase_double (rx, p_vec)
 
     if (.not.associated(p_vec)) then
-      call output_line('No vector!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletBC')
+      call output_line("No vector!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vecfil_imposeDirichletBC")
       call sys_halt()
     end if
 
@@ -266,7 +267,7 @@ contains
     ! contains only some entries...
 
     ! Is the vector sorted?
-    if (rx%isortStrategy .le. 0) then
+    if (.not. rx%bisSorted) then
       ! No. Implement directly.
       do i=1,rdbcStructure%nDOF
         p_vec(p_idx(i)) = p_val(i)
@@ -275,10 +276,9 @@ contains
       ! Ups, vector sorted. At first get the permutation how its sorted
       ! - or more precisely, the back-permutation, as we need this one for
       ! the loop below.
-      call storage_getbase_int (rx%h_IsortPermutation,p_Iperm)
-      p_Iperm => p_Iperm(rx%NEQ+1:)
+      call sstrat_getSortedPosInfo(rx%p_rsortStrategy,p_Iperm)
 
-      ! And 'filter' each DOF during the boundary value implementation!
+      ! And "filter" each DOF during the boundary value implementation!
       do i=1,rdbcStructure%nDOF
         p_vec(p_Iperm(p_idx(i))) = p_val(i)
       end do
@@ -323,24 +323,24 @@ contains
     ! the storage management.
 
     if (rdbcStructure%h_IdirichletDOFs .eq. ST_NOHANDLE) then
-      call output_line('DBC not configured',&
-          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletDefectBC')
+      call output_line("DBC not configured",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vecfil_imposeDirichletDefectBC")
       call sys_halt()
     end if
 
     call storage_getbase_int(rdbcStructure%h_IdirichletDOFs,p_idx)
 
     if (.not.associated(p_idx)) then
-      call output_line('DBC not configured',&
-          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletDefectBC')
+      call output_line("DBC not configured",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vecfil_imposeDirichletDefectBC")
       call sys_halt()
     end if
 
     call lsyssc_getbase_double (rx, p_vec)
 
     if (.not.associated(p_vec)) then
-      call output_line('No vector!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletDefectBC')
+      call output_line("No vector!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vecfil_imposeDirichletDefectBC")
       call sys_halt()
     end if
 
@@ -352,7 +352,7 @@ contains
     ! contains only some entries...
 
     ! Is the vector sorted?
-    if (rx%isortStrategy .le. 0) then
+    if (.not. rx%bisSorted) then
       ! No. Implement directly.
       do i=1,rdbcStructure%nDOF
         p_vec(p_idx(i)) = 0.0_DP
@@ -361,10 +361,9 @@ contains
       ! Ups, vector sorted. At first get the permutation how its sorted -
       ! or more precisely, the back-permutation, as we need this one for
       ! the loop below.
-      call storage_getbase_int (rx%h_IsortPermutation,p_Iperm)
-      p_Iperm => p_Iperm(rx%NEQ+1:)
+      call sstrat_getSortedPosInfo(rx%p_rsortStrategy,p_Iperm)
 
-      ! And 'filter' each DOF during the boundary value implementation!
+      ! And "filter" each DOF during the boundary value implementation!
       do i=1,rdbcStructure%nDOF
         p_vec(p_Iperm(p_idx(i))) = 0.0_DP
       end do
@@ -417,10 +416,10 @@ contains
 
     if ((rdbcStructure%h_IdirichletDOFs .eq. ST_NOHANDLE) .or. &
         (rdbcStructure%h_DdirichletValues .eq. ST_NOHANDLE)) then
-      call output_line('Dirichlet BC''s not correctly configured!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletFBC')
-      call output_line('Are the BC''s only configured for defect values?!?',&
-          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletFBC')
+      call output_line("Dirichlet BC""s not correctly configured!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vecfil_imposeDirichletFBC")
+      call output_line("Are the BC""s only configured for defect values?!?",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vecfil_imposeDirichletFBC")
       call sys_halt()
     end if
 
@@ -428,8 +427,8 @@ contains
     call storage_getbase_double2d(rdbcStructure%h_DdirichletValues,p_val)
 
     if ((.not.associated(p_idx)).or.(.not.associated(p_val))) then
-      call output_line('DBC not configured',&
-          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletFBC')
+      call output_line("DBC not configured",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vecfil_imposeDirichletFBC")
       call sys_halt()
     end if
 
@@ -439,8 +438,8 @@ contains
     call lsyssc_getbase_double (rx, p_vec)
 
     if (.not.associated(p_vec)) then
-      call output_line('Error: No vector',&
-          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletFBC')
+      call output_line("Error: No vector",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vecfil_imposeDirichletFBC")
       call sys_halt()
     end if
 
@@ -449,7 +448,7 @@ contains
     ! contains only some entries...
 
     ! Is the vector sorted?
-    if (rx%isortStrategy .le. 0) then
+    if (.not. rx%bisSorted) then
       ! No. Implement directly.
       do i=1,rdbcStructure%nDOF
         p_vec(p_idx(i)) = p_val(icomponent,i)
@@ -458,10 +457,9 @@ contains
       ! Ups, vector sorted. At first get the permutation how its sorted
       ! - or more precisely, the back-permutation, as we need this one for
       ! the loop below.
-      call storage_getbase_int (rx%h_IsortPermutation,p_Iperm)
-      p_Iperm => p_Iperm(rx%NEQ+1:)
+      call sstrat_getSortedPosInfo(rx%p_rsortStrategy,p_Iperm)
 
-      ! And 'filter' each DOF during the boundary value implementation!
+      ! And "filter" each DOF during the boundary value implementation!
       do i=1,rdbcStructure%nDOF
         p_vec(p_Iperm(p_idx(i))) = p_val(icomponent,i)
       end do
@@ -507,24 +505,24 @@ contains
     ! the storage management.
 
     if (rdbcStructure%h_IdirichletDOFs .eq. ST_NOHANDLE) then
-      call output_line('DBC not configured',&
-          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletDefectFBC')
+      call output_line("DBC not configured",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vecfil_imposeDirichletDefectFBC")
       call sys_halt()
     end if
 
     call storage_getbase_int(rdbcStructure%h_IdirichletDOFs,p_idx)
 
     if (.not.associated(p_idx)) then
-      call output_line('DBC not configured',&
-          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletDefectFBC')
+      call output_line("DBC not configured",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vecfil_imposeDirichletDefectFBC")
       call sys_halt()
     end if
 
     call lsyssc_getbase_double (rx, p_vec)
 
     if (.not.associated(p_vec)) then
-      call output_line('No vector!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletDefectFBC')
+      call output_line("No vector!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vecfil_imposeDirichletDefectFBC")
       call sys_halt()
     end if
 
@@ -536,7 +534,7 @@ contains
     ! contains only some entries...
 
     ! Is the vector sorted?
-    if (rx%isortStrategy .le. 0) then
+    if (.not. rx%bisSorted) then
       ! No. Implement directly.
       do i=1,rdbcStructure%nDOF
         p_vec(p_idx(i)) = 0.0_DP
@@ -545,10 +543,9 @@ contains
       ! Ups, vector sorted. At first get the permutation how its sorted -
       ! or more precisely, the back-permutation, as we need this one for
       ! the loop below.
-      call storage_getbase_int (rx%h_IsortPermutation,p_Iperm)
-      p_Iperm => p_Iperm(rx%NEQ+1:)
+      call sstrat_getSortedPosInfo(rx%p_rsortStrategy,p_Iperm)
 
-      ! And 'filter' each DOF during the boundary value implementation!
+      ! And "filter" each DOF during the boundary value implementation!
       do i=1,rdbcStructure%nDOF
         p_vec(p_Iperm(p_idx(i))) = 0.0_DP
       end do
@@ -673,7 +670,7 @@ contains
 
       case (EL_QPW4DCP1_2D)
         ! piecewise discontinuous P1 on quads; including a fancy constraint
-        ! we'll call a separate subroutine for the dirty work here
+        ! we"ll call a separate subroutine for the dirty work here
         call vecfil_zim_QPW4DCP1_2D(rx)
 
       case (EL_DCQP1_2D)
@@ -686,16 +683,16 @@ contains
 
       case default
 
-        call output_line('Unsupported discretisation!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'vecfil_normaliseToL20Sca')
+        call output_line("Unsupported discretisation!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"vecfil_normaliseToL20Sca")
         call sys_halt()
 
       end select
 
     else
 
-      call output_line('Unsupported discretisation!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_normaliseToL20Sca')
+      call output_line("Unsupported discretisation!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vecfil_normaliseToL20Sca")
       call sys_halt()
 
     end if
@@ -739,7 +736,7 @@ contains
     dmean = 0.0_DP
     dvolume = 0.0_DP
 
-    ! fetch the vector's data array
+    ! fetch the vector"s data array
     call lsyssc_getbase_double(rx, p_Dx)
 
     ! fetch the triangulation from the vector
@@ -766,7 +763,7 @@ contains
     do iel = 1, p_rtria%NEL
 
       ! fetch the vertex corner coords; someone came up with the fantastic idea that the
-      ! piecewise affine trafo has to have 5 vertices, so we'll need to calculate the
+      ! piecewise affine trafo has to have 5 vertices, so we"ll need to calculate the
       ! midpoint as the fifth vertice, too...
       Dcoords(:, 5) = 0.0_DP
       do j = 1, 4
@@ -852,7 +849,7 @@ contains
     Bder = .false.
     Bder(DER_FUNC2D) = .true.
 
-    ! fetch the vector's data array
+    ! fetch the vector"s data array
     call lsyssc_getbase_double(rx, p_Dx)
 
     ! fetch the triangulation from the vector
@@ -959,7 +956,7 @@ contains
     Bder = .false.
     Bder(DER_FUNC2D) = .true.
 
-    ! fetch the vector's data array
+    ! fetch the vector"s data array
     call lsyssc_getbase_double(rx, p_Dx)
 
     ! fetch the triangulation from the vector
@@ -1033,7 +1030,7 @@ contains
   subroutine vecfil_normaliseSmallL1To0Sca (rx)
 
 !<description>
-  ! This routine realises the 'vector sum to 0' filter.
+  ! This routine realises the "vector sum to 0" filter.
   ! The vector rxis normalised to bring it to the vector sum = 0
   ! (which corresponds to an l1-norm = 0).
 !</description>
@@ -1073,8 +1070,8 @@ contains
   subroutine vecfil_OneEntryZero (rx,iblock,irow)
 
 !<description>
-  ! This routine puts a zero on the entry 'irow' of
-  ! the given block 'iblock' of the vector 'rx'
+  ! This routine puts a zero on the entry "irow" of
+  ! the given block "iblock" of the vector "rx"
 !</description>
 
 !<inputoutput>
@@ -1084,10 +1081,10 @@ contains
 
 
 !<input>
-  ! The entry of the vector 'rx' which is set to zero
+  ! The entry of the vector "rx" which is set to zero
   integer, intent(in) :: irow
   
-  ! The block of the vector 'rx' which will be modified
+  ! The block of the vector "rx" which will be modified
   integer, intent(in) :: iblock
 !</input>
 
@@ -1096,12 +1093,12 @@ contains
     real(DP), dimension(:), pointer :: p_Ddata
 
     if ((iblock .le. 0) .or. (iblock .gt. size(rx%RvectorBlock))) then
-      call output_line('isubvector out of allowed range!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_OneEntryZero')
+      call output_line("isubvector out of allowed range!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vecfil_OneEntryZero")
       call sys_halt()
     end if
 
-    ! Get the data and replace the entry 'irow' with ZERO
+    ! Get the data and replace the entry "irow" with ZERO
     call lsyssc_getbase_double (rx%RvectorBlock(iblock),p_Ddata)
     p_Ddata(irow) = 0.0_DP
 
@@ -1161,8 +1158,8 @@ contains
     ! components of the subvectors that is indexed by Icomponent(1..NDIM2D).
 
     if ((.not.associated(p_idx)).or.(.not.associated(p_val))) then
-      call output_line('Pressure drop BC not configured!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposePressureDropBC')
+      call output_line("Pressure drop BC not configured!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vecfil_imposePressureDropBC")
       call sys_halt()
     end if
 
@@ -1175,8 +1172,8 @@ contains
       call lsyssc_getbase_double (rx%RvectorBlock(icp), p_vec)
 
       if (.not.associated(p_vec)) then
-        call output_line('No vector!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposePressureDropBC')
+        call output_line("No vector!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"vecfil_imposePressureDropBC")
         call sys_halt()
       end if
 
@@ -1185,7 +1182,7 @@ contains
       ! contains only some entries...
 
       ! Is the vector sorted?
-      if (rx%RvectorBlock(j)%isortStrategy .le. 0) then
+      if (.not. rx%RvectorBlock(j)%bisSorted) then
         ! No. Implement directly.
         do i=1,rpdbcStructure%nDOF
           p_vec(p_idx(i)) = p_vec(p_idx(i)) + p_val(j,i)*dtimeweight
@@ -1194,10 +1191,9 @@ contains
         ! Oops, vector sorted. At first get the permutation how its sorted
         ! - or more precisely, the back-permutation, as we need this one for
         ! the loop below.
-        call storage_getbase_int (rx%RvectorBlock(j)%h_IsortPermutation,p_Iperm)
-        p_Iperm => p_Iperm(rx%RvectorBlock(j)%NEQ+1:)
+        call sstrat_getSortedPosInfo(rx%RvectorBlock(j)%p_rsortStrategy,p_Iperm)
 
-        ! And 'filter' each DOF during the boundary value implementation!
+        ! And "filter" each DOF during the boundary value implementation!
         do i=1,rpdbcStructure%nDOF
           p_vec(p_Iperm(p_idx(i))) = p_vec(p_Iperm(p_idx(i))) + &
                                      p_val(j,i) * dtimeweight
@@ -1253,15 +1249,15 @@ contains
 
     ! Only 2D supported at the moment
     if (rslipBCStructure%ncomponents .ne. NDIM2D) then
-      call output_line('Only 2D supported!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeNLSlipDefectBC')
+      call output_line("Only 2D supported!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vecfil_imposeNLSlipDefectBC")
       call sys_halt()
     end if
 
     ! Only double precision vectors supported.
     if (rx%cdataType .ne. ST_DOUBLE) then
-      call output_line('Only double precision supported!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeNLSlipDefectBC')
+      call output_line("Only double precision supported!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vecfil_imposeNLSlipDefectBC")
       call sys_halt()
     end if
 
@@ -1269,23 +1265,23 @@ contains
     ! the storage management.
 
     if (rslipBCStructure%h_IslipDOFs .eq. ST_NOHANDLE) then
-      call output_line('Slip-BC not configured!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeNLSlipDefectBC')
+      call output_line("Slip-BC not configured!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vecfil_imposeNLSlipDefectBC")
       call sys_halt()
     end if
 
     call storage_getbase_int(rslipBCStructure%h_IslipDOFs,p_idx)
 
     if (.not.associated(p_idx)) then
-      call output_line('Slip-BC not configured!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeNLSlipDefectBC')
+      call output_line("Slip-BC not configured!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vecfil_imposeNLSlipDefectBC")
       call sys_halt()
     end if
 
-    if (rx%RvectorBlock(rslipBCStructure%Icomponents(1))%isortStrategy .ne.&
-        rx%RvectorBlock(rslipBCStructure%Icomponents(2))%isortStrategy) then
-      call output_line('Subectors differently sorted!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeNLSlipDefectBC')
+    if (rx%RvectorBlock(rslipBCStructure%Icomponents(1))%bisSorted .neqv.&
+        rx%RvectorBlock(rslipBCStructure%Icomponents(2))%bisSorted) then
+      call output_line("Subectors differently sorted!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vecfil_imposeNLSlipDefectBC")
       call sys_halt()
     end if
 
@@ -1295,8 +1291,8 @@ contains
            rx%RvectorBlock(rslipBCStructure%Icomponents(2)), p_vecY)
 
     if ( (.not.associated(p_vecX)) .or. (.not.associated(p_vecX)) )then
-      call output_line('No vector!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeNLSlipDefectBC')
+      call output_line("No vector!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vecfil_imposeNLSlipDefectBC")
       call sys_halt()
     end if
 
@@ -1310,7 +1306,7 @@ contains
     ! contains only some entries...
 
     ! Is the vector sorted? If yes, all vectors are sorted the same way!
-    if (rx%RvectorBlock(1)%isortStrategy .le. 0) then
+    if (.not. rx%RvectorBlock(1)%bisSorted) then
       ! No. Implement directly.
       do i=1,rslipBCStructure%nDOF
         ! Get the DOF:
@@ -1327,10 +1323,9 @@ contains
       ! Ups, vector sorted. At first get the permutation how its sorted -
       ! or more precisely, the back-permutation, as we need this one for
       ! the loop below.
-      call storage_getbase_int (rx%RvectorBlock(1)%h_IsortPermutation,p_Iperm)
-      p_Iperm => p_Iperm(rx%NEQ+1:)
+      call sstrat_getSortedPosInfo(rx%RvectorBlock(1)%p_rsortStrategy,p_Iperm)
 
-      ! And 'filter' each DOF during the boundary value implementation!
+      ! And "filter" each DOF during the boundary value implementation!
       do i=1,rslipBCStructure%nDOF
         ! Get the DOF:
         idof = p_Iperm(p_idx(i))
@@ -1379,14 +1374,14 @@ contains
   ! components of the subvector that is indexed by icomponent.
 
   if (rx%cdataType .ne. ST_DOUBLE) then
-    call output_line('Matrix must be double precision!',&
-        OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeFeastMirrorBC')
+    call output_line("Matrix must be double precision!",&
+        OU_CLASS_ERROR,OU_MODE_STD,"vecfil_imposeFeastMirrorBC")
     call sys_halt()
   end if
 
   if (rfmbcStructure%icomponent .eq. 0) then
-    call output_line('FMBC not configured!',&
-        OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeFeastMirrorBC')
+    call output_line("FMBC not configured!",&
+        OU_CLASS_ERROR,OU_MODE_STD,"vecfil_imposeFeastMirrorBC")
     call sys_halt()
   end if
 
@@ -1422,7 +1417,7 @@ contains
   ! If yes, double the entry entry.
 
   ! Is the vector sorted?
-  if (rx%RvectorBlock(rfmbcStructure%icomponent)%isortStrategy .le. 0) then
+  if (.not. rx%RvectorBlock(rfmbcStructure%icomponent)%bisSorted) then
 
     ! Loop through the DOF`s. Each DOF gives us the number of an entry
     ! which is to be doubled.
@@ -1438,9 +1433,8 @@ contains
     ! Get the permutation (or more precisely, the inverse permutation)
     ! from the vector to renumber the columns into
     ! the actual DOF numbers.
-    call storage_getbase_int (&
-        rx%RvectorBlock(rfmbcStructure%icomponent)%h_IsortPermutation,p_Iperm)
-    p_Iperm => p_Iperm(rx%RvectorBlock(rfmbcStructure%icomponent)%NEQ+1:)
+    call sstrat_getSortedPosInfo(&
+        rx%RvectorBlock(rfmbcStructure%icomponent)%p_rsortStrategy,p_Iperm)
 
     ! Loop through the DOF`s. Each DOF gives us the number of an entry
     ! which is to be doubled.
@@ -1484,14 +1478,14 @@ contains
   ! components of the subvector that is indexed by icomponent.
 
   if (rx%cdataType .ne. ST_DOUBLE) then
-    call output_line('Matrix must be double precision!',&
-        OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeFeastMirrorDefBC')
+    call output_line("Matrix must be double precision!",&
+        OU_CLASS_ERROR,OU_MODE_STD,"vecfil_imposeFeastMirrorDefBC")
     call sys_halt()
   end if
 
   if (rfmbcStructure%icomponent .eq. 0) then
-    call output_line('FMBC not configured!',&
-        OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeFeastMirrorDefBC')
+    call output_line("FMBC not configured!",&
+        OU_CLASS_ERROR,OU_MODE_STD,"vecfil_imposeFeastMirrorDefBC")
     call sys_halt()
   end if
 
@@ -1516,7 +1510,7 @@ contains
     ! If yes, put the entry to zero.
 
     ! Is the vector sorted?
-    if (rx%RvectorBlock(rfmbcStructure%icomponent)%isortStrategy .le. 0) then
+    if (.not. rx%RvectorBlock(rfmbcStructure%icomponent)%bisSorted) then
 
       ! Loop through the DOF`s. Each DOF gives us the number of an entry
       ! which is to be doubled.
@@ -1532,9 +1526,8 @@ contains
       ! Get the permutation (or more precisely, the inverse permutation)
       ! from the vector to renumber the columns into
       ! the actual DOF numbers.
-      call storage_getbase_int (&
-          rx%RvectorBlock(rfmbcStructure%icomponent)%h_IsortPermutation,p_Iperm)
-      p_Iperm => p_Iperm(rx%RvectorBlock(rfmbcStructure%icomponent)%NEQ+1:)
+      call sstrat_getSortedPosInfo(&
+          rx%RvectorBlock(rfmbcStructure%icomponent)%p_rsortStrategy,p_Iperm)
 
       ! Loop through the DOF`s. Each DOF gives us the number of an entry
       ! which is to be doubled.
@@ -1557,7 +1550,7 @@ contains
   subroutine vecfil_discreteBCsol (rx,rdiscreteBC)
 
 !<description>
-  ! This routine realises the 'impose discrete boundary conditions to solution'
+  ! This routine realises the "impose discrete boundary conditions to solution"
   ! filter. This filter imposes the discrete boundary conditions rdiscreteBC
   ! (if specified) or (if rdiscreteBC is not specified) the boundary conditions
   ! which are  associated to the vector rx (with rx%p_discreteBC) to this
@@ -1627,9 +1620,9 @@ contains
 
       case default
         call output_line(&
-            'Unknown boundary condition:'//&
+            "Unknown boundary condition:"//&
             sys_siL(p_rdiscreteBC%p_RdiscBCList(i)%itype,5),&
-            OU_CLASS_ERROR,OU_MODE_STD,'vecfil_discreteBCsol')
+            OU_CLASS_ERROR,OU_MODE_STD,"vecfil_discreteBCsol")
 
         call sys_halt()
 
@@ -1647,7 +1640,7 @@ contains
   subroutine vecfil_discreteBCrhs (rx,rdiscreteBC)
 
 !<description>
-  ! This routine realises the 'impose discrete boundary conditions to RHS'
+  ! This routine realises the "impose discrete boundary conditions to RHS"
   ! filter. This filter imposes the discrete boundary conditions rdiscreteBC
   ! (if specified) or (if rdiscreteBC is not specified) the boundary conditions
   ! which are  associated to the vector rx (with rx%p_discreteBC) to this
@@ -1713,9 +1706,9 @@ contains
 
       case default
         call output_line(&
-            'Unknown boundary condition:'//&
+            "Unknown boundary condition:"//&
             sys_siL(p_rdiscreteBC%p_RdiscBCList(i)%itype,5),&
-            OU_CLASS_ERROR,OU_MODE_STD,'vecfil_discreteBCrhs')
+            OU_CLASS_ERROR,OU_MODE_STD,"vecfil_discreteBCrhs")
 
         call sys_halt()
 
@@ -1811,7 +1804,7 @@ contains
   subroutine vecfil_discreteBCdef (rx,rdiscreteBC)
 
 !<description>
-  ! This routine realises the 'impose discrete boundary conditions to defect'
+  ! This routine realises the "impose discrete boundary conditions to defect"
   ! filter. This filter imposes the discrete boundary conditions rdiscreteBC
   ! (if specified) or (if rdiscreteBC is not specified) the boundary conditions
   ! which are  associated to the defect vector rx (with rx%p_discreteBC) to
@@ -1883,9 +1876,9 @@ contains
 
       case default
         call output_line(&
-            'Unknown boundary condition:'//&
+            "Unknown boundary condition:"//&
             sys_siL(p_rdiscreteBC%p_RdiscBCList(i)%itype,5),&
-            OU_CLASS_ERROR,OU_MODE_STD,'vecfil_discreteBCdef')
+            OU_CLASS_ERROR,OU_MODE_STD,"vecfil_discreteBCdef")
         call sys_halt()
 
       end select
@@ -2035,8 +2028,8 @@ contains
 
       case default
         call output_line(&
-            'Unknown boundary condition:'//sys_siL(p_RdiscreteFBC(i)%itype,5),&
-            OU_CLASS_ERROR,OU_MODE_STD,'vecfil_discreteBCsol')
+            "Unknown boundary condition:"//sys_siL(p_RdiscreteFBC(i)%itype,5),&
+            OU_CLASS_ERROR,OU_MODE_STD,"vecfil_discreteBCsol")
         call sys_halt()
 
       end select
@@ -2122,8 +2115,8 @@ contains
 
       case default
         call output_line(&
-            'Unknown boundary condition:'//sys_siL(p_RdiscreteFBC(i)%itype,5),&
-            OU_CLASS_ERROR,OU_MODE_STD,'vecfil_discreteFBCrhs')
+            "Unknown boundary condition:"//sys_siL(p_RdiscreteFBC(i)%itype,5),&
+            OU_CLASS_ERROR,OU_MODE_STD,"vecfil_discreteFBCrhs")
         call sys_halt()
 
       end select
@@ -2210,8 +2203,8 @@ contains
 
       case default
         call output_line(&
-            'Unknown boundary condition:'//sys_siL(p_RdiscreteFBC(i)%itype,5),&
-            OU_CLASS_ERROR,OU_MODE_STD,'vecfil_discreteFBCdef')
+            "Unknown boundary condition:"//sys_siL(p_RdiscreteFBC(i)%itype,5),&
+            OU_CLASS_ERROR,OU_MODE_STD,"vecfil_discreteFBCdef")
         call sys_halt()
 
       end select
@@ -2228,7 +2221,7 @@ contains
   subroutine vecfil_subvectorToL20 (rx,isubvector)
 
 !<description>
-  ! This routine realises the 'subvector to <tex>$L^2_0$</tex>' filter.
+  ! This routine realises the "subvector to <tex>$L^2_0$</tex>" filter.
   ! The subvector isubvector of the block vector rx is normalised
   ! with vecfil_normaliseScalarToL20 to bring it to the space <tex>$L^2_0$</tex>.
 !</description>
@@ -2246,8 +2239,8 @@ contains
 !</subroutine>
 
     if ((isubvector .le. 0) .or. (isubvector .gt. size(rx%RvectorBlock))) then
-      call output_line('isubvector out of allowed range!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_subvectorToL20')
+      call output_line("isubvector out of allowed range!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vecfil_subvectorToL20")
       call sys_halt()
     end if
 
@@ -2269,7 +2262,7 @@ contains
   subroutine vecfil_subvectorSmallL1To0 (rx,isubvector)
 
 !<description>
-  ! This routine realises the 'vector sum to 0' filter.
+  ! This routine realises the "vector sum to 0" filter.
   ! The subvector isubvector of the block vector rx is normalised
   ! with vecfil_normaliseSmallL1To0Sca to bring it to the vector sum = 0
   ! (which corresponds to an l1-norm = 0).
@@ -2288,8 +2281,8 @@ contains
 !</subroutine>
 
     if ((isubvector .le. 0) .or. (isubvector .gt. size(rx%RvectorBlock))) then
-      call output_line('isubvector out of allowed range!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_normaliseSmallL1To0')
+      call output_line("isubvector out of allowed range!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vecfil_normaliseSmallL1To0")
       call sys_halt()
     end if
 

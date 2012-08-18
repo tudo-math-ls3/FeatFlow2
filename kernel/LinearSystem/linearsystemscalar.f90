@@ -46,25 +46,24 @@
 !#  9.) lsyssc_duplicateVector
 !#      -> Create a duplicate of a given vector
 !#
-!# 10.) lsyssc_sortVectorInSitu
-!#      -> Resort the entries of a vector or unsort them
+!# 10.) lsyssc_setSortStrategy
+!#      -> Attaches a sorting strategy to a vector/matrix.
+!#         The sorting can be activated/deactivated at any time.
 !#
-!# 11.) lsyssc_vectorActivateSorting
-!#      -> Resort the entries of a vector or unsort them according to
-!#         a previously attached sorting strategy
+!# 11.) lsyssc_sortVector
+!#      -> Resort the entries of a vector or unsort them according to a
+!#         previously attached sorting strategy
 !#
-!# 12.) lsyssc_synchroniseSortVecVec
+!# 12.) lsyssc_sortMatrix
+!#      -> Resort the entries of a matrix or unsort them according to a
+!#         previously attached sorting strategy.
+!#
+!# 13.) lsyssc_synchroniseSortVecVec
 !#      -> Synchronises the sorting strategy of a vector according to another
 !#         vector.
 !#
-!# 13.) lsyssc_synchroniseSortMatVec
+!# 14.) lsyssc_synchroniseSortMatVec
 !#      -> Synchronises the sorting strategy of a vector according to a matrix.
-!#
-!# 14.) lsyssc_sortMatrix
-!#      -> Resort the entries of a matrix or unsort them.
-!#
-!# 15.) lsyssc_unsortMatrix
-!#      -> Unsorts a matrix.
 !#
 !# 16.) lsyssc_isVectorCompatible
 !#      -> Checks whether two vectors are compatible to each other
@@ -172,12 +171,6 @@
 !#
 !# 47.) lsyssc_clearOffdiags
 !#      -> Clear all offdiagonal entries in a matrix.
-!#
-!# 48.) lsyssc_isMatrixSorted
-!#      -> Checks if a matrix is currently sorted.
-!#
-!# 49.) lsyssc_isVectorSorted
-!#      -> Checks if a vector is currently sorted.
 !#
 !# 50.) lsyssc_hasMatrixStructure
 !#      -> Check if a matrix has a structure in memory or not.
@@ -356,6 +349,7 @@ module linearsystemscalar
   use perfconfig
   use spatialdiscretisation
   use storage
+  use sortstrategybase
   use uuid
 
   implicit none
@@ -634,37 +628,13 @@ module linearsystemscalar
     ! Handle identifying the vector entries.
     ! = ST_NOHANDLE if not allocated on the global heap.
     integer :: h_Ddata = ST_NOHANDLE
-
-    ! Flag whether or not the vector is resorted.
-    !  <0: Vector is unsorted, sorting strategy is prepared in
-    !      h_IsortPermutation for a possible resorting of the entries.
-    !  =0: Vector is unsorted, no sorting strategy attached.
-    !  >0: Vector is sorted according to a sorting strategy.
-    ! The value identifies the sorting strategy used; this is
-    ! usually one of the SSTRAT_xxxx constants from the module
-    ! 'sortstrategy'.
-    ! If <> 0, the absolute value
-    !               |isortStrategy| > 0
-    ! indicates the sorting strategy to use, while the sign
-    ! indicates whether the sorting strategy is active on the
-    ! vector (+) or not (-).
-    ! The value is usually one of the SSTRAT_xxxx constants from
-    ! the module 'sortstrategy'.
-    integer :: isortStrategy = 0
-
-    ! Handle to renumbering strategy for resorting the vector.
-    ! The renumbering strategy is a vector
-    !   array [1..2*NEQ] of integer
-    ! The first NEQ entries (1..NEQ) represent the permutation how to
-    ! sort an unsorted vector. The second NEQ entries (NEQ+1..2*NEQ)
-    ! represent the inverse permutation.
-    ! Looking from another viewpoint with the background of how a vector
-    ! is renumbered, one can say:
-    !  p_IsortPermutation (position in sorted vector) = position in unsorted vector.
-    !  p_IsortPermutation (NEQ+position in unsorted vector) = position in sorted vector.
-    ! Whether or not the vector is actually sorted depends on the
-    ! flag isortStrategy!
-    integer :: h_IsortPermutation = ST_NOHANDLE
+    
+    ! Specifies if the vector is resorted.
+    logical :: bisSorted = .false.
+    
+    ! Pointer to the sorting strategy. May point to NULL()
+    ! if no sorting strategy is attached.
+    type(t_sortStrategy), pointer :: p_rsortStrategy => null()
 
     ! Start position of the vector data in the array identified by
     ! h_Ddata. Normally = 1. Can be set to > 1 if the vector is a subvector
@@ -756,33 +726,21 @@ module linearsystemscalar
     ! might ignore it. Therefore, use this factor with care!
     real(DP) :: dscaleFactor = 1.0_DP
 
-    ! Flag whether or not the matrix is resorted.
-    !  <0: Matrix is unsorted, sorting strategy is prepared in
-    !      h_IsortPermutation for a possible resorting of the entries.
-    !  =0: Matrix is unsorted, no sorting strategy attached.
-    !  >0: Matrix is sorted according to a sorting strategy.
-    ! If <> 0, the absolute value
-    !               |isortStrategy| > 0
-    ! indicates the sorting strategy to use, while the sign
-    ! indicates whether the sorting strategy is active on the
-    ! matrix (+) or not (-).
-    ! The value is usually one of the SSTRAT_xxxx constants from
-    ! the module 'sortstrategy'.
-    integer :: isortStrategy = 0
+    ! Specifies if the columns in the matrix are resorted.
+    logical :: bcolumnsSorted = .false.
 
-    ! Handle to renumbering strategy for resorting the matrix.
-    ! The renumbering strategy is a vector
-    !   array [1..2*NEQ] of integer
-    ! The first NEQ entries (1..NEQ) represent the permutation how to
-    ! sort an unsorted matrix. The second NEQ entries (NEQ+1..2*NEQ)
-    ! represent the inverse permutation.
-    ! Looking from another viewpoint with the background of how a matrix
-    ! is renumbered, one can say:
-    !  p_IsortPermutation (column in sorted matrix) = column in unsorted matrix.
-    !  p_IsortPermutation (NEQ+column in unsorted matrix) = column in sorted matrix.
-    ! Whether or not the matrix is actually sorted depends on the
-    ! flag isortStrategy!
-    integer :: h_IsortPermutation = ST_NOHANDLE
+    ! Pointer to the sorting strategy for the columns. May point to NULL()
+    ! if no sorting strategy is attached.
+    type(t_sortStrategy), pointer :: p_rsortStrategyColumns => null()
+
+    ! Specifies if the rows in the matrix are resorted.
+    logical :: browsSorted = .false.
+
+    ! Pointer to the sorting strategy for the rows. May point to NULL()
+    ! if no sorting strategy is attached.
+    ! May point to p_rsortStrategyColumns if the sorting strategy of
+    ! rows and columns match.
+    type(t_sortStrategy), pointer :: p_rsortStrategyRows => null()
 
     ! Data type of the entries in the vector. Either ST_SINGLE or
     ! ST_DOUBLE.
@@ -926,6 +884,11 @@ module linearsystemscalar
     module procedure lsyssc_matrixLinearComb
     module procedure lsyssc_matrixLinearComb2
   end interface lsyssc_matrixLinearComb
+  
+  interface lsyssc_setSortStrategy
+    module procedure lsyssc_setSortStrategyVec
+    module procedure lsyssc_setSortStrategyMat
+  end interface
 
   public :: lsyssc_matrixLinearComb
 
@@ -936,12 +899,8 @@ module linearsystemscalar
   public :: lsyssc_releaseVector
   public :: lsyssc_duplicateMatrix
   public :: lsyssc_duplicateVector
-  public :: lsyssc_sortVectorInSitu
-  public :: lsyssc_vectorActivateSorting
   public :: lsyssc_synchroniseSortVecVec
   public :: lsyssc_synchroniseSortMatVec
-  public :: lsyssc_sortMatrix
-  public :: lsyssc_unsortMatrix
   public :: lsyssc_isVectorCompatible
   public :: lsyssc_getbase_Kcol
   public :: lsyssc_getbase_Kld
@@ -970,8 +929,6 @@ module linearsystemscalar
   public :: lsyssc_isMatrixContentShared
   public :: lsyssc_createDiagMatrixStruc
   public :: lsyssc_clearOffdiags
-  public :: lsyssc_isMatrixSorted
-  public :: lsyssc_isVectorSorted
   public :: lsyssc_hasMatrixStructure
   public :: lsyssc_hasMatrixContent
   public :: lsyssc_releaseMatrixContent
@@ -1003,6 +960,9 @@ module linearsystemscalar
   public :: lsyssc_createMatrixAsymmPart
   public :: lsyssc_calcDeterminant
   public :: lsyssc_calcGerschgorin
+  public :: lsyssc_setSortStrategy
+  public :: lsyssc_sortVector
+  public :: lsyssc_sortMatrix
 
   public :: lsyssc_rebuildKdiagonal
   public :: lsyssc_infoMatrix
@@ -1087,37 +1047,32 @@ contains
       bcompatible = .false.
       return
     else
-      call output_line('Vectors not compatible, different size!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_isVectorCompatible')
+      call output_line("Vectors not compatible, different size!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_isVectorCompatible")
       call sys_halt()
     end if
   end if
 
-  ! isortStrategy < 0 means unsorted. Both unsorted is ok.
-
-  if ((rvector1%isortStrategy .gt. 0) .or. &
-      (rvector2%isortStrategy .gt. 0)) then
-
-    if (rvector1%isortStrategy .ne. &
-        rvector2%isortStrategy) then
-      if (present(bcompatible)) then
-        bcompatible = .false.
-        return
-      else
-        call output_line('Vectors not compatible, differenty sorted!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_isVectorCompatible')
-        call sys_halt()
-      end if
+  ! Check the sorting.
+  if (rvector1%bisSorted .neqv. rvector2%bisSorted) then
+    if (present(bcompatible)) then
+      bcompatible = .false.
+      return
+    else
+      call output_line("Matrix/vector not compatible, differently sorted!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_isMatrixVectorCompatible")
+      call sys_halt()
     end if
-
-    if (rvector1%h_isortPermutation .ne. &
-        rvector2%h_isortPermutation) then
+  end if
+  
+  if (rvector1%bisSorted) then
+    if (rvector1%p_rsortStrategy%ctype .ne. rvector2%p_rsortStrategy%ctype) then
       if (present(bcompatible)) then
         bcompatible = .false.
         return
       else
-        call output_line('Vectors not compatible, differenty sorted!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_isVectorCompatible')
+        call output_line("Matrix/vector not compatible, differently sorted!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_isMatrixVectorCompatible")
         call sys_halt()
       end if
     end if
@@ -1180,42 +1135,37 @@ contains
       bcompatible = .false.
       return
     else
-      call output_line('Vector/Matrix not compatible, different block structure!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_isMatrixVectorCompatible')
+      call output_line("Vector/Matrix not compatible, different block structure!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_isMatrixVectorCompatible")
       call sys_halt()
     end if
   end if
 
-  ! isortStrategy < 0 means unsorted. Both unsorted is ok.
-
-  if ((rvector%isortStrategy .gt. 0) .or. &
-      (rmatrix%isortStrategy .gt. 0)) then
-
-    if (rvector%isortStrategy .ne. &
-        rmatrix%isortStrategy) then
-      if (present(bcompatible)) then
-        bcompatible = .false.
-        return
-      else
-        call output_line('Vector/Matrix not compatible, differently sorted!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_isMatrixVectorCompatible')
-        call sys_halt()
-      end if
+  ! Check the sorting.
+  if (rmatrix%bcolumnsSorted .neqv. rvector%bisSorted) then
+    if (present(bcompatible)) then
+      bcompatible = .false.
+      return
+    else
+      call output_line("Matrix/vector not compatible, differently sorted!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_isMatrixVectorCompatible")
+      call sys_halt()
     end if
-
-    if (rvector%h_isortPermutation .ne. &
-        rmatrix%h_isortPermutation) then
+  end if
+  
+  if (rmatrix%bcolumnsSorted) then
+    if (rmatrix%p_rsortStrategyColumns%ctype .ne. rvector%p_rsortStrategy%ctype) then
       if (present(bcompatible)) then
         bcompatible = .false.
         return
       else
-        call output_line('Vector/Matrix not compatible, differently sorted!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_isMatrixVectorCompatible')
+        call output_line("Matrix/vector not compatible, differently sorted!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_isMatrixVectorCompatible")
         call sys_halt()
       end if
     end if
   end if
-
+    
   ! Ok, they are compatible
   if (present(bcompatible)) bcompatible = .true.
 
@@ -1261,8 +1211,8 @@ contains
       bcompatible = .false.
       return
     else
-      call output_line('Matrices not compatible, different block structure!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_isMatrixMatrixCompatible')
+      call output_line("Matrices not compatible, different block structure!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_isMatrixMatrixCompatible")
       call sys_halt()
     end if
   end if
@@ -1278,8 +1228,8 @@ contains
         bcompatible = .false.
         return
       else
-        call output_line('Matrices not compatible, different sparsity pattern!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_isMatrixMatrixCompatible')
+        call output_line("Matrices not compatible, different sparsity pattern!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_isMatrixMatrixCompatible")
         call sys_halt()
       end if
     end if
@@ -1294,39 +1244,48 @@ contains
         bcompatible = .false.
         return
       else
-        call output_line('Matrices not compatible, different sparsity pattern!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_isMatrixMatrixCompatible')
+        call output_line("Matrices not compatible, different sparsity pattern!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_isMatrixMatrixCompatible")
         call sys_halt()
       end if
     end if
 
   end if
 
-  ! isortStrategy < 0 means unsorted. Both unsorted is ok.
-
-  if ((rmatrix1%isortStrategy .gt. 0) .or. &
-      (rmatrix2%isortStrategy .gt. 0)) then
-
-    if (rmatrix1%isortStrategy .ne. &
-        rmatrix2%isortStrategy) then
+  ! Check the sorting.
+  if ((rmatrix1%bcolumnsSorted .neqv. rmatrix2%bcolumnsSorted) .or. &
+      (rmatrix1%browsSorted .neqv. rmatrix2%browsSorted)) then
+    if (present(bcompatible)) then
+      bcompatible = .false.
+      return
+    else
+      call output_line("Matrices not compatible, differently sorted!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_isMatrixMatrixCompatible")
+      call sys_halt()
+    end if
+  end if
+  
+  if (rmatrix1%bcolumnsSorted) then
+    if (rmatrix1%p_rsortStrategyColumns%ctype .ne. rmatrix2%p_rsortStrategyColumns%ctype) then
       if (present(bcompatible)) then
         bcompatible = .false.
         return
       else
-        call output_line('Matrices not compatible, differently sorted!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_isMatrixMatrixCompatible')
+        call output_line("Matrices not compatible, differently sorted!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_isMatrixMatrixCompatible")
         call sys_halt()
       end if
     end if
+  end if
 
-    if (rmatrix1%h_isortPermutation .ne. &
-        rmatrix2%h_isortPermutation) then
+  if (rmatrix1%browsSorted) then
+    if (rmatrix1%p_rsortStrategyRows%ctype .ne. rmatrix2%p_rsortStrategyRows%ctype) then
       if (present(bcompatible)) then
         bcompatible = .false.
         return
       else
-        call output_line('Matrices not compatible, differently sorted!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_isMatrixMatrixCompatible')
+        call output_line("Matrices not compatible, differently sorted!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_isMatrixMatrixCompatible")
         call sys_halt()
       end if
     end if
@@ -1379,8 +1338,8 @@ contains
         bcompatible = .false.
         return
       else
-        call output_line('Vector not compatible to discretisation, different NEQ!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_checkDiscretisation')
+        call output_line("Vector not compatible to discretisation, different NEQ!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_checkDiscretisation")
         call sys_halt()
       end if
     end if
@@ -2019,8 +1978,9 @@ contains
   ! Desired length of the vector
   integer, intent(in) :: NEQ
 
-  ! Whether to fill the vector with zero initially
-  logical, intent(in) :: bclear
+  ! OPTIONAL: Whether to fill the vector with zero initially.
+  ! If not specified, the vector is left uninitialised.
+  logical, intent(in), optional :: bclear
 
   ! OPTIONAL: Data type of the vector.
   ! If not specified, ST_DOUBLE is assumed.
@@ -2040,6 +2000,7 @@ contains
 
   integer :: cdata
   integer :: isize
+  logical :: bclr
 
     cdata = ST_DOUBLE
     if (present(cdataType)) cdata = cdataType
@@ -2057,7 +2018,11 @@ contains
 
     ! Handle - if NEQ > 0
     if (rvector%NEQ .gt. 0) then
-      if (bclear) then
+    
+      bclr = .false.
+      if (present(bclear)) bclr = bclear
+    
+      if (bclr) then
         call storage_new ('lsyssc_createVecDirect', 'ScalarVector', isize, &
                             cdata, rvector%h_Ddata, ST_NEWBLOCK_ZERO)
       else
@@ -2374,8 +2339,8 @@ contains
     rx%cdataType = cdata
 
     ! Transfer sorting strategy from the matrix to the vector
-    rx%isortStrategy      = rtemplateMat%isortStrategy
-    rx%h_IsortPermutation = rtemplateMat%h_IsortPermutation
+    rx%bisSorted = rtemplateMat%bcolumnsSorted
+    rx%p_rsortStrategy => rtemplateMat%p_rsortStrategyColumns
 
     if (present(bclear)) then
       if (bclear) then
@@ -2467,13 +2432,13 @@ contains
     ! can be ignored and reset. Otherwise, the vector needs to be unsorted
     ! prior to copying some part of it. Afterwards, no sorting strategy is
     ! available in any case.
-    if (bdocopy .and. rvector%isortStrategy > 0) then
-      call lsyssc_vectorActivateSorting(rvector,.false.)
+    if (bdocopy .and. rvector%bisSorted) then
+      call lsyssc_sortVector(rvector,.false.)
     end if
 
     ! Reset sorting strategy, there is none
-    rvector%isortStrategy      = 0
-    rvector%h_iSortPermutation = ST_NOHANDLE
+    rvector%bisSorted = .false.
+    nullify(rvector%p_rsortStrategy)
 
     ! Get current size of vector memory
     call storage_getsize(rvector%h_Ddata, isize)
@@ -2884,13 +2849,15 @@ contains
     ! can be ignored and reset. Otherwise, the matrix needs to be unsorted
     ! prior to copying some part of it. Afterwards, no sorting strategy is
     ! available in any case.
-    if (bdocopy .and. rmatrix%isortStrategy > 0) then
-      call lsyssc_unsortMatrix(rmatrix,.true.)
+    if (bdocopy .and. (rmatrix%bcolumnsSorted .or. rmatrix%browsSorted)) then
+      call lsyssc_sortMatrix(rmatrix,.false.)
     end if
 
     ! Reset sorting strategy, there is none
-    rmatrix%isortStrategy      = 0
-    rmatrix%h_isortPermutation = ST_NOHANDLE
+    rmatrix%bcolumnsSorted = .false.
+    rmatrix%browsSorted = .false.
+    nullify(rmatrix%p_rsortStrategyColumns)
+    nullify(rmatrix%p_rsortStrategyRows)
 
     ! Update NEQ, NCOLS and NA.
     rmatrix%NA    = max(0,NA)
@@ -3511,13 +3478,15 @@ contains
       ! can be ignored and reset. Otherwise, the matrix needs to be unsorted
       ! prior to copying some part of it. Afterwards, no sorting strategy is
       ! available in any case.
-      if (bdocopy .and. rmatrix%isortStrategy > 0) then
-        call lsyssc_unsortMatrix(rmatrix,.true.)
+      if (bdocopy .and. (rmatrix%bcolumnsSorted .or. rmatrix%browsSorted)) then
+        call lsyssc_sortMatrix(rmatrix,.false.)
       end if
 
       ! Reset sorting strategy, there is none
-      rmatrix%isortStrategy      = 0
-      rmatrix%h_isortPermutation = ST_NOHANDLE
+      rmatrix%bcolumnsSorted = .false.
+      rmatrix%browsSorted = .false.
+      nullify(rmatrix%p_rsortStrategyColumns)
+      nullify(rmatrix%p_rsortStrategyRows)
 
       ! Update NA
       rmatrix%NA = rmatrixTemplate%NA
@@ -5520,8 +5489,10 @@ contains
       rdestMatrix%NVAR   = rsourceMatrix%NVAR
       rdestMatrix%cmatrixFormat           = rsourceMatrix%cmatrixFormat
       rdestMatrix%cinterleavematrixFormat = rsourceMatrix%cinterleavematrixFormat
-      rdestMatrix%isortStrategy           = rsourceMatrix%isortStrategy
-      rdestMatrix%h_IsortPermutation      = rsourceMatrix%h_IsortPermutation
+      rdestMatrix%bcolumnsSorted          = rsourceMatrix%bcolumnsSorted
+      rdestMatrix%browsSorted             = rsourceMatrix%browsSorted
+      rdestMatrix%p_rsortStrategyColumns => rsourceMatrix%p_rsortStrategyColumns
+      rdestMatrix%p_rsortStrategyRows => rsourceMatrix%p_rsortStrategyRows
 
       ! Transfer all flags except the 'dup' flags
       iflag = iand(rsourceMatrix%imatrixSpec,not(LSYSSC_MSPEC_ISCOPY))
@@ -5621,8 +5592,10 @@ contains
       rdestMatrix%NNZROWS = rsourceMatrix%NNZROWS
       rdestMatrix%cmatrixFormat           = rsourceMatrix%cmatrixFormat
       rdestMatrix%cinterleavematrixFormat = rsourceMatrix%cinterleavematrixFormat
-      rdestMatrix%isortStrategy           = rsourceMatrix%isortStrategy
-      rdestMatrix%h_IsortPermutation      = rsourceMatrix%h_IsortPermutation
+      rdestMatrix%bcolumnsSorted          = rsourceMatrix%bcolumnsSorted
+      rdestMatrix%browsSorted             = rsourceMatrix%browsSorted
+      rdestMatrix%p_rsortStrategyColumns => rsourceMatrix%p_rsortStrategyColumns
+      rdestMatrix%p_rsortStrategyRows    => rsourceMatrix%p_rsortStrategyRows
 
       ! Transfer all flags except the 'dup' flags
       iflag = iand(rsourceMatrix%imatrixSpec,not(LSYSSC_MSPEC_ISCOPY))
@@ -6070,8 +6043,8 @@ contains
   rvector%cdataType = ST_DOUBLE
   rvector%iidxFirstEntry = 1
   rvector%bisCopy = .false.
-  rvector%isortStrategy = 0
-  rvector%h_IsortPermutation = ST_NOHANDLE
+  rvector%bisSorted = .false.
+  nullify(rvector%p_rsortStrategy)
   rvector%p_rspatialDiscr => null()
 
   end subroutine
@@ -6184,8 +6157,10 @@ contains
   !rmatrix%NCOLS = 0
   !rmatrix%NVAR = 1
   !rmatrix%dscaleFactor = 1.0_DP
-  !rmatrix%isortStrategy = 0
-  !rmatrix%h_IsortPermutation = ST_NOHANDLE
+  !rmatrix%bcolumnsSorted = .false.
+  !rmatrix%browsSorted = .false.
+  !nullify(rmatrix%p_rsortStrategyColumns)
+  !nullify(rmatrix%p_rsortStrategyRows)
   !rmatrix%p_rspatialDiscretisation => NULL()
 
   end subroutine
@@ -9979,7 +9954,7 @@ contains
 
 !<subroutine>
 
-  subroutine lsyssc_synchroniseSortVecVec (rvectorSrc,rvectorDst,rtemp)
+  subroutine lsyssc_synchroniseSortVecVec (rvectorSrc,rvectorDst,rtemp,bautoUnsort)
 
 !<description>
   ! Synchronises the sorting strategy of rvectorDest according to rvectorSrc:
@@ -9994,6 +9969,15 @@ contains
 !<input>
   ! Source vector defining the sorting strategy.
   type(t_vectorScalar), intent(in) :: rvectorSrc
+
+  ! OPTIONAL: Whether or not to check the target vector if it is already
+  ! sorted. Default is TRUE.
+  ! If set to TRUE and the target vector has already a sorting structure
+  ! attached, the target is sorted back.
+  ! If set to FALSE, the sorting of the target vector is deactivated and
+  ! rsortStrategy is installed as sorting strategy. The data of the vector
+  ! gets invalid. (Usually used for temp vectors.)
+  logical, intent(in), optional :: bautoUnsort
 !</input>
 
 !<inputoutput>
@@ -10002,7 +9986,7 @@ contains
   ! Must have the same size as rvectorSrc.
   type(t_vectorScalar), intent(inout) :: rvectorDst
 
-  ! A temporary vector. Must be of the same data type as rvector.
+  ! OPTIONAL: A temporary vector. Must be of the same data type as rvector.
   ! Must be at least as large as rvectorDst.
   type(t_vectorScalar), intent(inout) :: rtemp
 !</inputoutput>
@@ -10010,31 +9994,31 @@ contains
 !</subroutine>
 
     if (rvectorSrc%NEQ .ne. rvectorDst%NEQ) then
-      call output_line('Vectors have different size!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_synchroniseSortVecVec')
-      call sys_halt()
-    end if
-
-    if (rtemp%NEQ .lt. rvectorDst%NEQ) then
-      call output_line('Auxiliary vector too small!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_synchroniseSortVecVec')
+      call output_line("Vectors have different size!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_synchroniseSortVecVec")
       call sys_halt()
     end if
 
     ! If both are unsorted or both sorted in the same way, there is nothing to do.
-    if ((rvectorSrc%isortStrategy .eq. rvectorDst%isortStrategy) .or. &
-        ((rvectorSrc%isortStrategy .lt. 0) .and. (rvectorDst%isortStrategy .lt. 0))) &
-      return
-
-    ! Should rvectorDst be unsorted?
-    if (rvectorSrc%isortStrategy .lt. 0) then
-      call lsyssc_vectorActivateSorting (rvectorDst,.false.,rtemp)
-      return
+    if ((.not. rvectorSrc%bisSorted) .and. (.not. rvectorDst%bisSorted)) return
+    
+    if ((rvectorSrc%bisSorted) .and. (rvectorDst%bisSorted)) then
+      ! Exit if sorting strategy equal, nothing to do.
+      if (rvectorSrc%p_rsortStrategy%ctype .eq. rvectorDst%p_rsortStrategy%ctype) return
     end if
 
-    ! rvectorDst is differently sorted than rvectorDst; synchronise them!
-    call lsyssc_sortVectorInSitu (rvectorDst,rtemp,&
-         rvectorSrc%isortStrategy,rvectorSrc%h_IsortPermutation)
+    ! Sort the target vector back if sorted.
+    if (.not. present(bautoUnsort)) then
+      call lsyssc_sortVector (rvectorDst,.false.,rtemp)
+    else if (bautoUnsort) then
+      call lsyssc_sortVector (rvectorDst,.false.,rtemp)
+    end if
+    
+    ! Synchronise the strategy
+    call lsyssc_setSortStrategy (rvectorDst,rvectorSrc%p_rsortStrategy,bautoUnsort)
+    
+    ! Probably activate the sorting
+    call lsyssc_sortVector (rvectorDst,rvectorSrc%bisSorted,rtemp)
 
   end subroutine
 
@@ -10042,7 +10026,7 @@ contains
 
 !<subroutine>
 
-  subroutine lsyssc_synchroniseSortMatVec (rmatrixSrc,rvectorDst,rtemp)
+  subroutine lsyssc_synchroniseSortMatVec (rmatrixSrc,rvectorDst,rtemp,bautoUnsort)
 
 !<description>
   ! Synchronises the sorting strategy of rvectorDest according to rmatrixSrc:
@@ -10057,6 +10041,15 @@ contains
 !<input>
   ! Source matrix defining the sorting strategy.
   type(t_matrixScalar), intent(in) :: rmatrixSrc
+
+  ! OPTIONAL: Whether or not to check the target vector if it is already
+  ! sorted. Default is TRUE.
+  ! If set to TRUE and the target vector has already a sorting structure
+  ! attached, the target is sorted back.
+  ! If set to FALSE, the sorting of the target vector is deactivated and
+  ! rsortStrategy is installed as sorting strategy. The data of the vector
+  ! gets invalid. (Usually used for temp vectors.)
+  logical, intent(in), optional :: bautoUnsort
 !</input>
 
 !<inputoutput>
@@ -10065,40 +10058,46 @@ contains
   ! Must have the same size (NEQ) as rmatrixSrc.
   type(t_vectorScalar), intent(inout) :: rvectorDst
 
-  ! A temporary vector. Must be of the same data type as rvector.
+  ! OPTIOAL: A temporary vector. Must be of the same data type as rvector.
   ! Must be at least as large as rvectorDst.
-  type(t_vectorScalar), intent(inout) :: rtemp
+  type(t_vectorScalar), intent(inout), optional :: rtemp
 !</inputoutput>
 
 !</subroutine>
 
     if (rmatrixSrc%NEQ .ne. rvectorDst%NEQ) then
-      call output_line('Matrix and vector have different size!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_synchroniseSortMatVec')
+      call output_line("Matrix and vector have different size!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_synchroniseSortMatVec")
       call sys_halt()
     end if
 
     if (rtemp%NEQ .lt. rvectorDst%NEQ) then
-      call output_line('Auxiliary vector too small!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_synchroniseSortMatVec')
+      call output_line("Auxiliary vector too small!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_synchroniseSortMatVec")
       call sys_halt()
     end if
 
 
     ! If both are unsorted or both sorted in the same way, there is nothing to do.
-    if ((rmatrixSrc%isortStrategy .eq. rvectorDst%isortStrategy) .or. &
-        ((rmatrixSrc%isortStrategy .lt. 0) .and. (rvectorDst%isortStrategy .lt. 0))) &
-      return
-
-    ! Should rvectorDst be unsorted?
-    if (rmatrixSrc%isortStrategy .lt. 0) then
-      call lsyssc_vectorActivateSorting (rvectorDst,.false.,rtemp)
-      return
+    if ((.not. rmatrixSrc%bcolumnsSorted) .and. (.not. rvectorDst%bisSorted)) return
+    
+    if ((rmatrixSrc%bcolumnsSorted) .and. (rvectorDst%bisSorted)) then
+      ! Exit if sorting strategy equal, nothing to do.
+      if (rmatrixSrc%p_rsortStrategyColumns%ctype .eq. rvectorDst%p_rsortStrategy%ctype) return
     end if
-
-    ! rvectorDst is differently sorted than rvectorDst; synchronise them!
-    call lsyssc_sortVectorInSitu (rvectorDst,rtemp,&
-         rmatrixSrc%isortStrategy,rmatrixSrc%h_IsortPermutation)
+    
+    ! Sort the target vector back if sorted.
+    if (.not. present(bautoUnsort)) then
+      call lsyssc_sortVector (rvectorDst,.false.,rtemp)
+    else if (bautoUnsort) then
+      call lsyssc_sortVector (rvectorDst,.false.,rtemp)
+    end if
+    
+    ! Synchronise the strategy
+    call lsyssc_setSortStrategy (rvectorDst,rmatrixSrc%p_rsortStrategyColumns,bautoUnsort)
+    
+    ! Probably activate the sorting
+    call lsyssc_sortVector (rvectorDst,rmatrixSrc%bcolumnsSorted,rtemp)
 
   end subroutine
 
@@ -10106,283 +10105,256 @@ contains
 
 !<subroutine>
 
-  subroutine lsyssc_sortVectorInSitu (rvector,rtemp,isortStrategy,h_IsortPermutation)
+  subroutine lsyssc_setSortStrategyVec (rvector,rsortStrategy,bautoUnsort)
+
+!<description>
+  ! Attaches a sorting strategy to a vector.
+  ! the sorting can be activated at aty time by lsyssc_sortVector.
+!</description>
+
+!<input>
+  ! Sorting strategy.
+  type(t_sortStrategy), intent(in), target :: rsortStrategy
+  
+  ! OPTIONAL: Whether or not to check the target vector if it is already
+  ! sorted. Default is TRUE.
+  ! If set to TRUE and the target vector has already a sorting structure
+  ! attached, the target is sorted back.
+  ! If set to FALSE, the sorting of the target vector is deactivated and
+  ! rsortStrategy is installed as sorting strategy. The data of the vector
+  ! gets invalid. (Usually used for temp vectors.)
+  logical, intent(in), optional :: bautoUnsort
+!</input>
+
+!<inputoutput>
+  ! Vector to attach the sorting to
+  type(t_vectorScalar), intent(inout) :: rvector
+!</inputoutput>
+
+!</subroutine>
+
+    ! Revert any old sorting strategy.
+    if (.not. present(bautoUnsort)) then
+      
+      if (rvector%bisSorted) then
+        call lsyssc_sortVector(rvector,.false.)
+      end if
+      
+    else if (bautoUnsort) then
+      
+      if (rvector%bisSorted) then
+        call lsyssc_sortVector(rvector,.false.)
+      end if
+    
+    end if
+
+    rvector%bisSorted = .false.
+    rvector%p_rsortStrategy => rsortStrategy
+
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine lsyssc_setSortStrategyMat (&
+      rmatrix,rsortStrategyColumns,rsortStrategyRows,bautoUnsort)
+
+!<description>
+  ! Attaches a sorting strategy to a matrix.
+  ! the sorting can be activated at aty time by lsyssc_sortMatrix.
+!</description>
+
+!<input>
+  ! OPTIONAL: Sorting strategy for the columns.
+  ! If not specified, the columns remain unsorted.
+  type(t_sortStrategy), intent(in), target, optional :: rsortStrategyColumns
+
+  ! OPTIONAL: Sorting strategy for the rows.
+  ! If not specified, the rows remain unsorted.
+  type(t_sortStrategy), intent(in), target, optional :: rsortStrategyRows
+
+  ! OPTIONAL: Whether or not to check the target vector if it is already
+  ! sorted. Default is TRUE.
+  ! If set to TRUE and the target vector has already a sorting structure
+  ! attached, the target is sorted back.
+  ! If set to FALSE, the sorting of the target vector is deactivated and
+  ! rsortStrategy is installed as sorting strategy. The data of the vector
+  ! gets invalid. (Usually used for temp vectors.)
+  logical, intent(in), optional :: bautoUnsort
+!</input>
+
+!<inputoutput>
+  ! Matrix to attach the sorting to
+  type(t_matrixScalar), intent(inout) :: rmatrix
+!</inputoutput>
+
+!</subroutine>
+
+    ! Revert any old sorting strategy.
+    if (.not. present(bautoUnsort)) then
+
+      if (rmatrix%bcolumnsSorted .or. rmatrix%browsSorted) then
+        call lsyssc_sortMatrix(rmatrix,.false.)
+      end if
+
+    else if (bautoUnsort) then
+
+      if (rmatrix%bcolumnsSorted .or. rmatrix%browsSorted) then
+        call lsyssc_sortMatrix(rmatrix,.false.)
+      end if
+
+    end if
+
+    rmatrix%bcolumnsSorted = .false.
+    rmatrix%browsSorted = .false.
+    nullify(rmatrix%p_rsortStrategyColumns)
+    nullify(rmatrix%p_rsortStrategyRows)
+
+    if (present(rsortStrategyColumns)) then
+      rmatrix%p_rsortStrategyColumns => rsortStrategyColumns
+    end if
+    
+    if (present(rsortStrategyRows)) then
+      rmatrix%p_rsortStrategyRows => rsortStrategyRows
+    end if
+    
+    if (.not. associated(rmatrix%p_rsortStrategyColumns,rmatrix%p_rsortStrategyRows)) then
+      call output_line("Currently, different sorting strategies for columns and rows not supported!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_setSortStrategyMat")
+      call sys_halt()
+    end if
+
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine lsyssc_sortVector (rvector,bsort,rtemp)
 
 !<description>
   ! Resorts the entries of the given vector rvector or unsorts it.
-  ! rvector is the vector to be resorted, rtemp is a temporary vector and
-  ! isortStrategy is a type flag identifying the sorting algorithm.
   !
-  ! This routine can also be used to assign an unsorted vector a sorting
-  ! strategy without actually resorting it. For this purpose, isortStrategy
-  ! should be '- SSTRAT_xxxx' and h_IsortPermutation a handle to a
-  ! sorting strategy permutation.
+  ! The sorting strategy must have been attached to the vector in advance
+  ! by lsyssc_setSortStrategy.
 !</description>
+
+!<input>
+  ! TRUE if the sorting should be activated.
+  ! FALSE if the sorting should be deactivated.
+  logical, intent(in) :: bsort
+!</input>
 
 !<inputoutput>
   ! Vector to resort
   type(t_vectorScalar), intent(inout) :: rvector
 
-  ! A temporary vector. Must be of the same data type as rvector.
+  ! OPTIONAL: A temporary vector. Must be of the same data type as rvector.
   ! Must be at least as large as rvector.
-  type(t_vectorScalar), intent(inout) :: rtemp
-!</inputoutput>
-
-!<input>
-  ! Identifier for the sorting strategy to apply to the vector.
-  ! This is usually one of the SSTRAT_xxxx constants from the module
-  ! 'sortstrategy', although it is actually used here as follows:
-  ! <=0: Calculate the unsorted vector
-  !  >0: Resort the vector according to a permutation;
-  !      this is either the permutation specified in the vector
-  !      or that one identified by h_IsortPermutation
- integer, intent(in) :: isortStrategy
-
-  ! OPTIONAL: Handle to permutation to use for resorting the vector.
-  !
-  ! The array must be of the form
-  !    array [1..2*NEQ] of integer
-  ! with entries (1..NEQ)       = permutation
-  ! and  entries (NEQ+1..2*NEQ) = inverse permutation.
-  !
-  ! If not specified, the associated permutation rvector%h_IsortPermutation
-  ! is used.
-  ! If specified and isortStrategy>0, the vector is resorted according to
-  ! the permutation h_IsortPermutation (probably unsorted before if necessary).
-  !
-  ! In any case, the associated permutation of the vector
-  ! rvector%h_IsortPermutation is changed to h_IsortPermutation.
-  ! Remark: The memory associated to the previous sorting strategy
-  !  in this case is not released automatically; this has to be done by the
-  !  application!
-  integer, intent(in), optional :: h_IsortPermutation
-!</input>
-
-!</subroutine>
-
-  ! local variables
-  integer :: h_Iperm
-  integer, dimension(:), pointer :: p_Iperm
-  real(DP), dimension(:), pointer :: p_Ddata,p_Ddata2
-  real(SP), dimension(:), pointer :: p_Fdata,p_Fdata2
-  integer :: NEQ
-
-    ! Desired sorting strategy and currently active sorting strategy identical?
-    if (.not. present(h_IsortPermutation)) then
-
-      if (isortStrategy .eq. rvector%isortStrategy) return
-      if ((isortStrategy .le. 0) .and. (rvector%isortStrategy .le. 0)) return
-
-    else
-
-      if ((isortStrategy .le. 0) .and. (rvector%isortStrategy .le. 0)) then
-        if (h_IsortPermutation .ne. rvector%h_IsortPermutation) then
-          ! Vector is unsorted and should stay unsorted, but
-          ! permutation should change.
-          rvector%isortStrategy = isortStrategy
-          rvector%h_IsortPermutation = h_IsortPermutation
-        end if
-        return
-      end if
-      if ((isortStrategy .gt. 0) .and. (rvector%isortStrategy .gt. 0) .and.&
-          (h_IsortPermutation .eq. rvector%h_IsortPermutation)) return
-
-    end if
-
-    NEQ = rvector%NEQ
-
-    ! Get pointers to the vector data
-    select case (rvector%cdataType)
-    case (ST_DOUBLE)
-      call lsyssc_getbase_double(rvector,p_Ddata)
-      call lsyssc_getbase_double(rtemp,p_Ddata2)
-    case (ST_SINGLE)
-      call lsyssc_getbase_single(rvector,p_Fdata)
-      call lsyssc_getbase_single(rtemp,p_Fdata2)
-    case default
-      call output_line('Unsuppported data type!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_sortVectorInSitu')
-      call sys_halt()
-    end select
-
-
-    ! Sort the vector back?
-    if (isortStrategy .le. 0) then
-      ! Do it - with the associated permutation.
-      call storage_getbase_int(rvector%h_IsortPermutation,p_Iperm)
-
-      select case (rvector%cdataType)
-      case (ST_DOUBLE)
-        ! Copy the entries to the temp vector
-        call lalg_copyVectorDble (p_Ddata,p_Ddata2)
-        ! Then sort back. Use the inverse permutation.
-        call lalg_vectorSortDble (p_Ddata2,p_Ddata,p_Iperm(NEQ+1:NEQ*2))
-
-      case (ST_SINGLE)
-        ! Copy the entries to the temp vector
-        call lalg_copyVectorSngl (p_Fdata,p_Fdata2)
-        ! Then sort back. Use the inverse permutation.
-        call lalg_vectorSortSngl (p_Fdata2,p_Fdata,p_Iperm(NEQ+1:NEQ*2))
-
-      case default
-        call output_line('Unsuppported data type!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_sortVectorInSitu')
-        call sys_halt()
-
-      end select
-
-      ! Inform the vector about which sorting strategy we now use.
-      rvector%isortStrategy = isortStrategy
-      return
-    end if
-
-    ! Get the actual sorting strategy.
-    h_Iperm = rvector%h_IsortPermutation
-    if (present(h_IsortPermutation)) h_Iperm = h_IsortPermutation
-
-    ! Do we have to sort back before resorting?
-    if ((h_Iperm .ne. rvector%h_IsortPermutation) .and. &
-        (rvector%h_IsortPermutation .ne. ST_NOHANDLE) .and. &
-        (rvector%isortStrategy .gt. 0)) then
-
-      ! Sort back at first - with the associated permutation
-      call storage_getbase_int(rvector%h_IsortPermutation,p_Iperm)
-
-      select case (rvector%cdataType)
-      case (ST_DOUBLE)
-        ! Copy the entries to the temp vector
-        call lalg_copyVectorDble (p_Ddata,p_Ddata2)
-        ! Then sort back. Use the inverse permutation.
-        call lalg_vectorSortDble (p_Ddata2,p_Ddata,p_Iperm(NEQ+1:NEQ*2))
-
-      case (ST_SINGLE)
-        ! Copy the entries to the temp vector
-        call lalg_copyVectorSngl (p_Fdata,p_Fdata2)
-        ! Then sort back. Use the inverse permutation.
-        call lalg_vectorSortSngl (p_Fdata2,p_Fdata,p_Iperm(NEQ+1:NEQ*2))
-
-      case default
-        call output_line('Unsuppported data type!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_sortVectorInSitu')
-        call sys_halt()
-
-      end select
-
-      ! Change the sorting strategy in the vector to the one
-      ! we are now going to use. Throw away the old handle.
-      rvector%h_IsortPermutation = h_Iperm
-
-    end if
-
-    ! Now sort the vector according to h_Iperm
-    call storage_getbase_int(h_Iperm,p_Iperm)
-
-    select case (rvector%cdataType)
-    case (ST_DOUBLE)
-      ! Copy the entries to the temp vector
-      call lalg_copyVectorDble (p_Ddata,p_Ddata2)
-      ! Then do the sorting with the given permutation.
-      call lalg_vectorSortDble (p_Ddata2,p_Ddata,p_Iperm(1:NEQ))
-
-    case (ST_SINGLE)
-      ! Copy the entries to the temp vector
-      call lalg_copyVectorSngl (p_Fdata,p_Fdata2)
-      ! Then do the sorting with the given permutation.
-      call lalg_vectorSortSngl (p_Fdata2,p_Fdata,p_Iperm(1:NEQ))
-
-    case default
-      call output_line('Unsuppported data type!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_sortVectorInSitu')
-      call sys_halt()
-
-    end select
-
-    ! Inform the vector about which sorting strategy we now use.
-    rvector%isortStrategy = isortStrategy
-
-    ! If h_IsortPermutation was given, change the permutation
-    if (present(h_IsortPermutation)) rvector%h_IsortPermutation = h_IsortPermutation
-
-  end subroutine
-
-  !****************************************************************************
-
-!<subroutine>
-
-  subroutine lsyssc_vectorActivateSorting (rvector,bsort,rtemp)
-
-!<description>
-  ! Resorts the entries of the given vector rvector or unsorts it
-  ! according to the resorting strategy associated to rvector.
-!</description>
-
-!<inputoutput>
-  ! Vector to resort. The sorting strategy must have been attached to
-  ! rvector before with lsyssc_sortVectorInSitu, otherwise nothing happens.
-  type(t_vectorScalar), intent(inout) :: rvector
-
-  ! OPTIONAL: A temporary vector.
-  ! Must be of the same data type as rvector. Must be at least as
-  ! large as rvector. If not specified, a temporary vector is created
-  ! and released automatically on the heap.
   type(t_vectorScalar), intent(inout), target, optional :: rtemp
 !</inputoutput>
 
-!<input>
-  ! Whether to sort or unsort.
-  ! =TRUE : Activate sorting (if not activated)
-  ! =FALSE: Unsort vector (if sorted)
- logical, intent(in) :: bsort
-!</input>
-
 !</subroutine>
 
   ! local variables
+  integer, dimension(:), pointer :: p_Iperm
+  real(DP), dimension(:), pointer :: p_Ddata,p_Ddata2
+  real(SP), dimension(:), pointer :: p_Fdata,p_Fdata2
   type(t_vectorScalar), pointer :: p_rtemp
   type(t_vectorScalar), target :: rtempLocal
+  integer :: NEQ
+  
+    ! nothing to do?
+    if (.not. associated(rvector%p_rsortStrategy)) return
+    if (bsort .eqv. rvector%bisSorted) return
+    
+    ! If the sorting strategy is "unsorted", there is nothing to do,
+    ! we can leave the vector marked as "unsorted".
+    if (bsort .and. rvector%p_rsortStrategy%ctype .eq. SSTRAT_UNSORTED) then
+      return
+    end if
 
-  ! Cancel if there is nothing to do.
-  if (rvector%isortStrategy .eq. 0) return
-  if ((.not. bsort) .and. (rvector%isortStrategy .le. 0)) return
-  if (bsort .and. (rvector%isortStrategy .gt. 0)) return
+    ! Temporary vector available? If not, create a new one based on rvector.
+    if (present(rtemp)) then
+      p_rtemp => rtemp
+    else
+      p_rtemp => rtempLocal
+      
+      ! Create the temp vector as a pure data array.
+      call lsyssc_createVector (rtempLocal,rvector%NEQ)
+    end if
 
-  ! Temporary vector available? If not, create a new one based on rvector.
-  if (present(rtemp)) then
-    p_rtemp => rtemp
-  else
-    p_rtemp => rtempLocal
-    call lsyssc_copyVector (rvector,rtempLocal)
-  end if
+    if (p_rtemp%NEQ .lt. rvector%NEQ) then
+      call output_line("Temp vector too small!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_sortVector")
+      call sys_halt()
+    end if
 
-  ! Perform the sorting or unsorting
-  if (bsort) then
-    call lsyssc_sortVectorInSitu (rvector,p_rtemp,abs(rvector%isortStrategy))
-  else
-    call lsyssc_sortVectorInSitu (rvector,p_rtemp,-abs(rvector%isortStrategy))
-  end if
+    NEQ = rvector%NEQ
+    
+    ! Get pointers to the vector data.
+    ! Copy the vector to the temp vector
+    select case (rvector%cdataType)
+    case (ST_DOUBLE)
+      call lsyssc_getbase_double(rvector,p_Ddata)
+      call lsyssc_getbase_double(p_rtemp,p_Ddata2)
+      call lalg_copyVectorDble(p_Ddata,p_Ddata2,size(p_Ddata))
+    case (ST_SINGLE)
+      call lsyssc_getbase_single(rvector,p_Fdata)
+      call lsyssc_getbase_single(p_rtemp,p_Fdata2)
+      call lalg_copyVectorSngl(p_Fdata,p_Fdata2,size(p_Fdata))
+    case default
+      call output_line("Unsuppported data type!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_sortVector")
+      call sys_halt()
+    end select
 
-  ! Remove the temp vector if it is ours.
-  if (.not. present(rtemp)) then
-    call lsyssc_releaseVector (rtempLocal)
-  end if
+    ! Sort the vector?
+    if (bsort) then
+      call sstrat_getUnsortedPosInfo(rvector%p_rsortStrategy,p_Iperm)
+    else
+      call sstrat_getSortedPosInfo(rvector%p_rsortStrategy,p_Iperm)
+    end if
 
+    select case (rvector%cdataType)
+    case (ST_DOUBLE)
+      ! Then do the sorting with the given permutation.
+      call lalg_vectorSortDble (p_Ddata2,p_Ddata,p_Iperm)
+
+    case (ST_SINGLE)
+      ! Then do the sorting with the given permutation.
+      call lalg_vectorSortSngl (p_Fdata2,p_Fdata,p_Iperm)
+
+    case default
+      call output_line("Unsuppported data type!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_sortVector")
+      call sys_halt()
+
+    end select
+
+    ! Mark the vector as (un-)sorted
+    rvector%bisSorted = bsort
+    
+    ! Remove the temp vector if it is ours.
+    if (.not. present(rtemp)) then
+      call lsyssc_releaseVector (rtempLocal)
+    end if
+    
   end subroutine
 
   !****************************************************************************
 
 !<subroutine>
 
-  subroutine lsyssc_sortMatrix (rmatrix,bsortEntries,&
-                                isortStrategy,h_IsortPermutation)
+  subroutine lsyssc_sortMatrix (rmatrix,bsort,bincludeEntries)
 
 !<description>
   ! Matrix sorting. Sorts the entries and/or structure of a given
   ! matrix or unsorts them according to a permutation.
   !
-  ! This routine can also be used to assign an unsorted vector a sorting
-  ! strategy without actually resorting it. For this purpose, isortStrategy
-  ! should be '- SSTRAT_xxxx' and h_IsortPermutation a handle to a
-  ! sorting strategy permutation.
+  ! The sorting strategy must have been attached to the vector in advance
+  ! by lsyssc_setSortStrategy.
   !
   ! WARNING: This routine does NOT change any information (structure or content)
   !  which is marked as 'shared' with another matrix! Therefore, if the structure
@@ -10398,190 +10370,141 @@ contains
 !</inputoutput>
 
 !<input>
-  ! Sort the entries or only the structure of the matrix.
-  ! = FALSE: Only sort the structure of the matrix,
-  ! = TRUE : Sort both, entries and structure of the matrix.
-  logical, intent(in) :: bsortEntries
+  ! Defines whether or not to sort the matrix.
+  ! TRUE activates sorting, FALSE deactivates the sorting.
+  logical, intent(in) :: bsort
 
-  ! OPTIONAL: Identifier for the sorting strategy to apply to the matrix.
-  ! This is usually one of the SSTRAT_xxxx constants from the module
-  ! 'sortstrategy', although it is actually used here as follows:
-  ! <=0: Calculate the unsorted matrix
-  !  >0: Resort the vector according to a permutation;
-  !      this is either the permutation specified in the vector
-  !      or that one identified by h_IsortPermutation
-  ! If not specified, the sorting of the matrix is activated using
-  ! the isortStrategy specifier in the matrix -- i.e. this 'activates'
-  ! a previously attached sorting.
- integer, intent(in), optional :: isortStrategy
-
-  ! OPTIONAL: Handle to permutation to use for resorting the matrix.
-  !
-  ! The array must be of the form
-  !    array [1..2*NEQ] of integer
-  ! with entries (1..NEQ)       = permutation
-  ! and  entries (NEQ+1..2*NEQ) = inverse permutation.
-  !
-  ! If not specified, the associated permutation rmatrix%h_IsortPermutation
-  ! is used.
-  ! If specified and isortStrategy>0, the matrix is resorted according to
-  ! the permutation h_IsortPermutation (probably unsorted before if necessary).
-  !
-  ! In any case, the associated permutation of the matrix
-  ! rmatrix%h_IsortPermutation is changed to h_IsortPermutation.
-  ! Remark: The memory associated to the previous sorting strategy
-  !  in this case is not released automatically; this has to be done by the
-  !  application!
-  integer, intent(in), optional :: h_IsortPermutation
+  ! OPTIONAL: Defines whether or not to include the entries in the sorting.
+  ! TRUE sorts structure and entries (default).
+  ! FALSE only sorts the structure and ignores the entries.
+  ! Note that in this case, the entries are left in a most likely undefined state.
+  logical, intent(in), optional :: bincludeEntries
 !</input>
 
 !</subroutine>
 
   ! local variables
-  integer :: h_Iperm, isortStrat
-  integer, dimension(:), pointer :: p_Iperm
+  integer, dimension(:), pointer :: p_Iperm,p_IpermInverse
   integer :: NEQ
+  type(t_matrixScalar), target :: rmatrixLocal
   type(t_matrixScalar), pointer :: p_rmatrix
-  logical :: bsortEntriesTmp
+  integer :: cstructureDupFlag,ccontentDupFlag
+  logical :: bwithEntries
 
-  isortStrat = abs(rmatrix%isortStrategy)
-  if (present(isortStrategy)) isortStrat = isortStrategy
+    ! nothing to do?
+    if ((.not. associated(rmatrix%p_rsortStrategyColumns)) .and. &
+        (.not. associated(rmatrix%p_rsortStrategyRows))) return
+    if (bsort .eqv. (rmatrix%bcolumnsSorted .or. rmatrix%browsSorted)) return
+    
+    if (.not. associated(rmatrix%p_rsortStrategyColumns,rmatrix%p_rsortStrategyRows)) then
+      call output_line("Currently, different sorting strategies for columns and rows not supported!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_setSortMatrix")
+      call sys_halt()
+    end if
 
-    ! Desired sorting strategy and currently active sorting strategy identical?
-    if (.not. present(h_IsortPermutation)) then
+    ! The optional parameters
+    bwithEntries = .true.
+    if (present(bincludeEntries)) bwithEntries = bincludeEntries
 
-      if (isortStrat .eq. rmatrix%isortStrategy) return
-      if ((isortStrat .le. 0) .and. (rmatrix%isortStrategy .le. 0)) return
+    ! It is a little bit tricky now if structure and/or content of rmatrix
+    ! is shared with another matrix!
+    ! If that is the case, we make a copy of our matrix and work with that.
+    cstructureDupFlag = LSYSSC_DUP_SHARE
+    ccontentDupFlag = LSYSSC_DUP_SHARE
 
-    else
+    ! Check if the structure belongs to another matrix. If yes, we
+    ! create a copy of the structure and apply the sorting to a copy
+    ! of the matrix to prevent it from being destroyed.
+    if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .eq. &
+        LSYSSC_MSPEC_STRUCTUREISCOPY) then
+      cstructureDupFlag = LSYSSC_DUP_COPY
+    end if
 
-      if ((isortStrat .le. 0) .and. (rmatrix%isortStrategy .le. 0)) then
-        if (h_IsortPermutation .ne. rmatrix%h_IsortPermutation) then
-          ! Matrix is unsorted and should stay unsorted, but
-          ! permutation should change.
-          rmatrix%isortStrategy = isortStrat
-          rmatrix%h_IsortPermutation = h_IsortPermutation
-        end if
+    if (bwithEntries) then
+    
+      ! Check if the content belongs to another matrix. If yes, we
+      ! create a copy of the structure and apply the sorting to a copy
+      ! of the matrix to prevent it from being destroyed.
+      if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .eq. &
+          LSYSSC_MSPEC_CONTENTISCOPY) then
+        ccontentDupFlag = LSYSSC_DUP_COPY
+      end if
+    
+      if ((cstructureDupFlag .eq. LSYSSC_DUP_COPY) .and. &
+          (ccontentDupFlag .eq. LSYSSC_DUP_COPY)) then
+        ! The user wants to sort content and/or structure, but the everything belongs to
+        ! another matrix! Sorting would destroy that matrix, so we do not allow
+        ! that. Therefore, there is nothing to do here.
         return
       end if
-      if ((isortStrat .gt. 0) .and. (rmatrix%isortStrategy .gt. 0) .and.&
-          (h_IsortPermutation .eq. rmatrix%h_IsortPermutation)) return
-
+      
+    else
+    
+      if ((cstructureDupFlag .eq. LSYSSC_DUP_COPY) .and. &
+          .not. lsyssc_hasMatrixContent(rmatrix)) then
+        ! Also nothing to do.
+        return
+      end if
+      
     end if
-
-    NEQ = rmatrix%NEQ
-
-    ! Sort the matrix back?
-    if (isortStrat .le. 0) then
-      ! Get the permutation that describes how to resort the matrix:
-      call storage_getbase_int(rmatrix%h_IsortPermutation,p_Iperm)
-
-      ! Exchange the roles of the first and second part of p_Iperm.
-      ! This makes the permutation to the inverse permutation and vice versa.
-      ! Call the resort-subroutine with that to do the actual sorting.
-      call do_matsort (rmatrix,p_Iperm(NEQ+1:NEQ*2),p_Iperm(1:NEQ),bsortEntries)
-
-      ! Inform the vector about which sorting strategy we now use.
-      rmatrix%isortStrategy = isortStrat
-      return
-    end if
+    
+    ! Big question: Do we have to do a copy or not?
+    ! The routine do_matsort always sorts the structure, but not
+    ! necessarily the content...
 
     p_rmatrix => rmatrix
-    bsortEntriesTmp = bsortEntries
+    if ((cstructureDupFlag .ne. LSYSSC_DUP_SHARE) .or. &
+        (ccontentDupFlag .ne. LSYSSC_DUP_SHARE)) then
+      ! Copy necessary.
+      p_rmatrix => rmatrixLocal
+      call lsyssc_duplicateMatrix (rmatrix,rmatrixLocal,cstructureDupFlag,ccontentDupFlag)
+    end if
+    
+    ! Some preparations...
+    NEQ = rmatrix%NEQ
 
-    ! Get the actual sorting strategy.
-    h_Iperm = rmatrix%h_IsortPermutation
-    if (present(h_IsortPermutation)) h_Iperm = h_IsortPermutation
-
-    ! Do we have to sort back before resorting?
-    if ((h_Iperm .ne. rmatrix%h_IsortPermutation) .and. &
-        (rmatrix%h_IsortPermutation .ne. ST_NOHANDLE) .and. &
-        (rmatrix%isortStrategy .gt. 0)) then
-
-      ! That is a little bit tricky now if structure and/or content of rmatrix
-      ! is shared with another matrix!
-      ! If that is the case, we make a copy of our matrix and work with that.
-      if (.not. bsortEntries) then
-        if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .ne. 0) then
-          ! The user wants to sort the structure, but the structure belongs to
-          ! another matrix! Sorting would destroy that matrix, so we do not allow
-          ! that. Therefore, there is nothing to do here.
-          return
-        end if
-      else
-        if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_ISCOPY) .eq. LSYSSC_MSPEC_ISCOPY) then
-          ! Structure and content belongs to another matrix! Sorting would
-          ! destroy that matrix, so we do not allow that. Therefore, there is
-          ! nothing to do here.
-          return
-        end if
-        if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .eq. &
-            LSYSSC_MSPEC_CONTENTISCOPY) then
-          ! The user wants to sort structure and content, but the content belongs to
-          ! another matrix! Sorting would destroy that matrix, so we do not allow
-          ! that. Therefore, we only sort the structure.
-          bsortEntriesTmp = .false.
-        end if
-        if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .eq. &
-            LSYSSC_MSPEC_STRUCTUREISCOPY) then
-          ! The user wants to sort structure and content, but the structure belongs to
-          ! another matrix! Sorting would destroy that matrix, so we do not allow
-          ! that. This situation is a little but tricky, as we want to sort
-          ! the entries without sorting the structure AND we must sort back
-          ! at first. We have no chance, we allocate another matrix as a copy
-          ! of rmatrix and work with that. The first unsorting below will therefore
-          ! unsort structure AND content, so we can sort it later.
-          allocate (p_rmatrix)
-          call lsyssc_duplicateMatrix (rmatrix,p_rmatrix,LSYSSC_DUP_COPY,LSYSSC_DUP_COPY)
-        end if
-      end if
-
-      ! Sort back at first - with the associated permutation
-      call storage_getbase_int(p_rmatrix%h_IsortPermutation,p_Iperm)
-
+    ! Now sort the vector according to the permutation
+    call sstrat_getSortedPosInfo(p_rmatrix%p_rsortStrategyColumns,p_Iperm)
+    call sstrat_getUnsortedPosInfo(p_rmatrix%p_rsortStrategyColumns,p_IpermInverse)
+    
+    ! Sort the matrix?
+    if (bsort) then
+    
+      ! Call the sorting routine
+      call do_matsort (p_rmatrix,p_IpermInverse,p_Iperm,bwithEntries)
+    
+    ! Sort back.
+    else
+    
       ! Exchange the roles of the first and second part of p_Iperm.
       ! This makes the permutation to the inverse permutation and vice versa.
       ! Call the resort-subroutine with that to do the actual sorting.
-      call do_matsort (p_rmatrix,p_Iperm(NEQ+1:NEQ*2),p_Iperm(1:NEQ),bsortEntries)
-
-      ! If p_rmatrix is our local copy, manually change the ownership of the
-      ! structure. This will prevent the sorting routine below from sorting
-      ! the structure, which saves some time. But we have to remember to
-      ! switch the ownership back before releasing our local matrix!
-      if (.not. associated(p_rmatrix,rmatrix)) then
-        p_rmatrix%imatrixSpec = ior(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY)
-      end if
-
+      call do_matsort (p_rmatrix,p_Iperm,p_IpermInverse,bwithEntries)
+          
     end if
-
-    ! Now sort the vector according to h_Iperm
-    call storage_getbase_int(h_Iperm,p_Iperm)
-
-    ! This time, we do not exchange the roles of the permutation and
-    ! its inverse :-)
-    call do_matsort (p_rmatrix,p_Iperm(1:NEQ),p_Iperm(NEQ+1:NEQ*2),bsortEntries)
-
-    ! If p_rmatrix is our local copy, copy the content to rmatrix and release the
-    ! local copy. Because of the small 'hack' above, we first restore the
-    ! ownership status and then release the matrix.
+    
+    ! Mark the matrix as (un-)sorted
+    rmatrix%bcolumnsSorted = .false.
+    rmatrix%browsSorted = .false.
+    if (associated(rmatrix%p_rsortStrategyColumns)) then
+      rmatrix%bcolumnsSorted = bsort .and. (rmatrix%p_rsortStrategyColumns%ctype .ne. SSTRAT_UNSORTED)
+    end if
+    if (associated(rmatrix%p_rsortStrategyColumns)) then
+      rmatrix%browsSorted = bsort .and. (rmatrix%p_rsortStrategyRows%ctype .ne. SSTRAT_UNSORTED)
+    end if
+    
     if (.not. associated(p_rmatrix,rmatrix)) then
-      call lsyssc_duplicateMatrix (p_rmatrix,rmatrix,LSYSSC_DUP_COPY,LSYSSC_DUP_IGNORE)
-      p_rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,not(LSYSSC_MSPEC_STRUCTUREISCOPY))
-      call lsyssc_releaseMatrix (p_rmatrix)
+      ! Release the temp matrix
+      call lsyssc_releaseMatrix (rmatrixLocal)
     end if
-
-    ! Inform the vector about which sorting strategy we now use.
-    rmatrix%isortStrategy = isortStrat
-
-    ! If h_IsortPermutation was given, change the permutation
-    if (present(h_IsortPermutation)) rmatrix%h_IsortPermutation = h_IsortPermutation
-
+    
   contains
 
     !----------------------------------------------------------------
     ! Sort matrix or matrix entries.
     ! This calls the actual resorting routine, depending
     ! on the information tags in the matrix.
+    ! The routine does not replace handles in rmatrix.
 
     subroutine do_matsort (rmatrix,Itr1,Itr2,bsortEntries)
 
@@ -10674,8 +10597,8 @@ contains
               call lsyssc_sortMat9Ent_single (p_Fdata,p_FdataTmp,p_Kcol, &
                                               p_Kld, Itr1, Itr2, NEQ)
             case default
-              call output_line('Unsupported data type!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_sortVectorInSitu')
+              call output_line("Unsupported data type!",&
+                  OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_sortVector")
               call sys_halt()
             end select
 
@@ -10712,8 +10635,8 @@ contains
                                            p_Kld, p_KldTmp, p_Kdiag, &
                                            Itr1, Itr2, NEQ)
             case default
-              call output_line('Unsupported data type!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_sortVectorInSitu')
+              call output_line("Unsupported data type!",&
+                  OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_sortVector")
               call sys_halt()
             end select
 
@@ -10780,8 +10703,8 @@ contains
               call lsyssc_sortMat7Ent_single (p_Fdata,p_FdataTmp,p_Kcol, &
                                               p_Kld, Itr1, Itr2, NEQ)
             case default
-              call output_line('Unsupported data type!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_sortVectorInSitu')
+              call output_line("Unsupported data type!",&
+                  OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_sortVector")
               call sys_halt()
             end select
 
@@ -10817,8 +10740,8 @@ contains
                                           p_Kld, p_KldTmp, &
                                           Itr1, Itr2, NEQ)
             case default
-              call output_line('Unsupported data type!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_sortVectorInSitu')
+              call output_line("Unsupported data type!",&
+                  OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_sortVector")
               call sys_halt()
             end select
 
@@ -10854,8 +10777,8 @@ contains
             call lsyssc_getbase_single (rtempMatrix,p_FdataTmp)
             call lalg_vectorSortSngl (p_FdataTmp, p_Fdata, Itr1)
           case default
-            call output_line('Unsupported data type!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_sortVectorInSitu')
+            call output_line("Unsupported data type!",&
+                OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_sortVector")
             call sys_halt()
           end select
 
@@ -10865,8 +10788,8 @@ contains
         end if
 
       case default
-        call output_line('Unsupported matrix format!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_sortVectorInSitu')
+        call output_line("Unsupported matrix format!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_sortVector")
         call sys_halt()
 
       end select
@@ -12653,41 +12576,6 @@ contains
 
 !<subroutine>
 
-  subroutine lsyssc_unsortMatrix (rmatrix,bsortEntries)
-
-!<description>
-  ! This routine deactivates the sorting of matrix rmatrix, the matrix
-  ! is unsorted. If bsortEntries=TRUE, the entries of the matrix are unsorted
-  ! together with the structure; otherwise, only the structure is unsorted,
-  ! thus leaving the entries in an undefined state.
-  ! rmatrix%isortStrategy is set to negative to indicate that the sorting
-  ! is deactivated.
-!</description>
-
-!<inputoutput>
-  ! Vector to resort
-  type(t_matrixScalar), intent(inout), target :: rmatrix
-!</inputoutput>
-
-!<input>
-  ! Sort the entries or only the structure of the matrix.
-  ! = FALSE: Only sort the structure of the matrix,
-  ! = TRUE : Sort both, entries and structure of the matrix.
-  logical, intent(in) :: bsortEntries
-
-!</input>
-
-!</subroutine>
-
-    ! Call the sort-routine, deactivate the sorting -- if activated.
-    call lsyssc_sortMatrix (rmatrix,bsortEntries,-abs(rmatrix%isortStrategy))
-
-  end subroutine
-
-  !****************************************************************************
-
-!<subroutine>
-
   subroutine lsyssc_addIndex (h_Ix,ivalue,istartpos,ilength)
 
 !<description>
@@ -14312,12 +14200,12 @@ contains
   !     the content of the transposed matrix is invalid afterwards,
   !     but is not released/destroyed.
   ! =LSYSSC_TR_VIRTUAL             : Actually do not touch the matrix
-  !     structure, but invert the 'transposed' flag in imatrixSpec.
+  !     structure, but invert the "transposed" flag in imatrixSpec.
   !     rmatrix is marked as transposed without modifying the structures,
   !     and all matrix-vector operations will be performed with the transposed
   !     matrix.
   !     But caution: there may be some algorithms that do not work with such
-  !       'virtually' transposed matrices!
+  !       "virtually" transposed matrices!
   ! =LSYSSC_TR_VIRTUALCOPY         : The same as LSYSSC_TR_VIRTUAL, but
   !     creates a duplicate of the source matrix in memory, thus resulting
   !     in rtransposedMatrix being a totally independent matrix.
@@ -14404,8 +14292,8 @@ contains
       ! Sorry, that is not possible. The transpose routine needs the structure of
       ! the original matrix, otherwise it cannot compute how to transpose
       ! the entries!
-      call output_line('TRansposing matrix entries without structure is not possible!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_transposeMatrixInSitu')
+      call output_line("TRansposing matrix entries without structure is not possible!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_transposeMatrixInSitu")
       call sys_halt()
 
     end select
@@ -14456,21 +14344,21 @@ contains
     case (LSYSSC_MATRIX9,LSYSSC_MATRIX7,LSYSSC_MATRIXD)
 
       if (rsourceMatrix%NA .eq. 0) then
-        call output_line('Source matrix empry!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_transposeMatrixDirect')
+        call output_line("Source matrix empry!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_transposeMatrixDirect")
         call sys_halt()
       end if
 
       if (rsourceMatrix%cdataType .ne. ST_DOUBLE) then
-        call output_line('Invalid data type!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_transposeMatrixDirect')
+        call output_line("Invalid data type!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_transposeMatrixDirect")
         call sys_halt()
       end if
 
       if ((rsourceMatrix%NA .ne. rdestMatrix%NA) .or. &
           (rsourceMatrix%cdataType .ne. rdestMatrix%cdataType)) then
-        call output_line('Source and destination matrix incompatible!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_transposeMatrixDirect')
+        call output_line("Source and destination matrix incompatible!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_transposeMatrixDirect")
         call sys_halt()
       end if
 
@@ -14488,14 +14376,14 @@ contains
         call lalg_vectorSortDble (p_DaSource, p_DaDest, Ipermutation)
 
       case default
-        call output_line('Invalid data type!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_transposeMatrixDirect')
+        call output_line("Invalid data type!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_transposeMatrixDirect")
         call sys_halt()
       end select
 
     case default
-      call output_line('Unsupported matrix format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_transposeMatrixDirect')
+      call output_line("Unsupported matrix format!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_transposeMatrixDirect")
       call sys_halt()
     end select
 
@@ -16216,17 +16104,27 @@ contains
 
     ! Check if both matrices are compatible
     if (rmatrixA%NCOLS .ne. rmatrixB%NEQ) then
-      call output_line('Number of columns of matrix A is not compatible with '//&
-          'number of rows of matrix B!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
+      call output_line("Number of columns of matrix A is not compatible with "//&
+          "number of rows of matrix B!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_multMatMat")
       call sys_halt()
     end if
 
     ! Check if both matrices have the same sorting
-    if (rmatrixA%isortStrategy .ne. rmatrixB%isortStrategy) then
-      call output_line('Incompatible sorting strategies!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
-      call sys_halt()
+    if (rmatrixA%bcolumnsSorted .or. rmatrixB%bcolumnsSorted) then
+      if (rmatrixA%p_rsortStrategyColumns%ctype .ne. rmatrixB%p_rsortStrategyColumns%ctype) then
+        call output_line("Incompatible sorting strategies!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_multMatMat")
+        call sys_halt()
+      end if
+    end if
+
+    if (rmatrixA%browsSorted .or. rmatrixB%browsSorted) then
+      if (rmatrixA%p_rsortStrategyRows%ctype .ne. rmatrixB%p_rsortStrategyRows%ctype) then
+        call output_line("Incompatible sorting strategies!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_multMatMat")
+        call sys_halt()
+      end if
     end if
 
     ! Release matrix if required and set common variables
@@ -16241,8 +16139,10 @@ contains
     end if
 
     ! Set sorting strategy for matrix C
-    rmatrixC%isortStrategy = rmatrixA%isortStrategy
-    rmatrixC%h_IsortPermutation = rmatrixA%h_IsortPermutation
+    rmatrixC%bcolumnsSorted = rmatrixA%bcolumnsSorted
+    rmatrixC%browsSorted = rmatrixA%browsSorted
+    rmatrixC%p_rsortStrategyColumns => rmatrixA%p_rsortStrategyColumns
+    rmatrixC%p_rsortStrategyRows => rmatrixA%p_rsortStrategyRows
 
     ! Perform matrix-matrix multiplication
     select case (rmatrixA%cmatrixFormat)
@@ -16257,14 +16157,14 @@ contains
         if (bmemory) then
           rmatrixC%cmatrixFormat = LSYSSC_MATRIX1
           rmatrixC%NA = rmatrixA%NEQ*rmatrixB%NCOLS
-          call storage_new('lsyssc_multMatMat','h_Da',rmatrixC&
+          call storage_new("lsyssc_multMatMat","h_Da",rmatrixC&
               &%NA,rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
         end if
 
         ! Check if matrix is given in the correct format
         if (rmatrixC%cmatrixFormat .ne. LSYSSC_MATRIX1) then
-          call output_line('Destination matrix has incompatible format!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
+          call output_line("Destination matrix has incompatible format!",&
+              OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_multMatMat")
           call sys_halt()
         end if
 
@@ -16302,8 +16202,8 @@ contains
                   &%NCOLS,rmatrixB%NCOLS,DaA,FaB,DaC)
 
             case default
-              call output_line('Unsupported data type!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
+              call output_line("Unsupported data type!",&
+                  OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_multMatMat")
               call sys_halt()
             end select
 
@@ -16326,14 +16226,14 @@ contains
                   &%NCOLS,rmatrixB%NCOLS,FaA,FaB,FaC)
 
             case default
-              call output_line('Unsupported data type!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
+              call output_line("Unsupported data type!",&
+                  OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_multMatMat")
               call sys_halt()
             end select
 
           case default
-            call output_line('Unsupported data type!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
+            call output_line("Unsupported data type!",&
+                OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_multMatMat")
             call sys_halt()
           end select
         end if
@@ -16344,14 +16244,14 @@ contains
         if (bmemory) then
           rmatrixC%cmatrixFormat = LSYSSC_MATRIX1
           rmatrixC%NA = rmatrixA%NA
-          call storage_new('lsyssc_multMatMat','h_Da',rmatrixC&
+          call storage_new("lsyssc_multMatMat","h_Da",rmatrixC&
               &%NA,rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
         end if
 
         ! Check if matrix is given in the correct format
         if (rmatrixC%cmatrixFormat .ne. LSYSSC_MATRIX1) then
-          call output_line('Destination matrix has incompatible format!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
+          call output_line("Destination matrix has incompatible format!",&
+              OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_multMatMat")
           call sys_halt()
         end if
 
@@ -16389,8 +16289,8 @@ contains
                   &%NCOLS,DaA,FaB,DaC)
 
             case default
-              call output_line('Unsupported data type!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
+              call output_line("Unsupported data type!",&
+                  OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_multMatMat")
               call sys_halt()
             end select
 
@@ -16413,21 +16313,21 @@ contains
                   &%NCOLS,FaA,FaB,FaC)
 
             case default
-              call output_line('Unsupported data type!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
+              call output_line("Unsupported data type!",&
+                  OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_multMatMat")
               call sys_halt()
             end select
 
           case default
-            call output_line('Unsupported data type!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
+            call output_line("Unsupported data type!",&
+                OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_multMatMat")
             call sys_halt()
           end select
         end if
 
       case default
-        call output_line('Unsupported data type!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
+        call output_line("Unsupported data type!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_multMatMat")
         call sys_halt()
       end select
 
@@ -16443,14 +16343,14 @@ contains
         if (bmemory) then
           rmatrixC%cmatrixFormat = LSYSSC_MATRIXD
           rmatrixC%NA = rmatrixA%NA
-          call storage_new('lsyssc_multMatMat','h_Da',rmatrixC&
+          call storage_new("lsyssc_multMatMat","h_Da",rmatrixC&
               &%NA,rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
         end if
 
         ! Check if matrix is given in the correct format
         if (rmatrixC%cmatrixFormat .ne. LSYSSC_MATRIXD) then
-          call output_line('Destination matrix has incompatible format!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
+          call output_line("Destination matrix has incompatible format!",&
+              OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_multMatMat")
           call sys_halt()
         end if
 
@@ -16486,8 +16386,8 @@ contains
               DaC=DaA*FaB
 
             case default
-              call output_line('Unsupported data type!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
+              call output_line("Unsupported data type!",&
+                  OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_multMatMat")
               call sys_halt()
             end select
 
@@ -16508,14 +16408,14 @@ contains
               FaC=FaA*FaB
 
             case default
-              call output_line('Unsupported data type!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
+              call output_line("Unsupported data type!",&
+                  OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_multMatMat")
               call sys_halt()
             end select
 
           case default
-            call output_line('Unsupported data type!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
+            call output_line("Unsupported data type!",&
+                OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_multMatMat")
             call sys_halt()
           end select
         end if
@@ -16526,14 +16426,14 @@ contains
         if (bmemory) then
           rmatrixC%cmatrixFormat = LSYSSC_MATRIX1
           rmatrixC%NA = rmatrixB%NA
-          call storage_new('lsyssc_multMatMat','h_Da',rmatrixC&
+          call storage_new("lsyssc_multMatMat","h_Da",rmatrixC&
               &%NA,rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
         end if
 
         ! Check if matrix is given in the correct format
         if (rmatrixC%cmatrixFormat .ne. LSYSSC_MATRIX1) then
-          call output_line('Destination matrix has incompatible format!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
+          call output_line("Destination matrix has incompatible format!",&
+              OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_multMatMat")
           call sys_halt()
         end if
 
@@ -16571,8 +16471,8 @@ contains
                   &%NCOLS,DaA,FaB,DaC)
 
             case default
-              call output_line('Unsupported data type!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
+              call output_line("Unsupported data type!",&
+                  OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_multMatMat")
               call sys_halt()
             end select
 
@@ -16595,14 +16495,14 @@ contains
                   &%NCOLS,FaA,FaB,FaC)
 
             case default
-              call output_line('Unsupported data type!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
+              call output_line("Unsupported data type!",&
+                  OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_multMatMat")
               call sys_halt()
             end select
 
           case default
-            call output_line('Unsupported data type!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
+            call output_line("Unsupported data type!",&
+                OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_multMatMat")
             call sys_halt()
           end select
         end if
@@ -16613,14 +16513,14 @@ contains
         if (bmemory) then
           rmatrixC%cmatrixFormat = rmatrixB%cmatrixFormat
           rmatrixC%NA = rmatrixB%NA
-          call storage_new('lsyssc_multMatMat','h_Da',rmatrixC&
+          call storage_new("lsyssc_multMatMat","h_Da",rmatrixC&
               &%NA,rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
         end if
 
         ! Check if matrix is given in the correct format
         if (rmatrixC%cmatrixFormat .ne. rmatrixB%cmatrixFormat) then
-          call output_line('Destination matrix has incompatible format!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
+          call output_line("Destination matrix has incompatible format!",&
+              OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_multMatMat")
           call sys_halt()
         end if
 
@@ -16681,8 +16581,8 @@ contains
               end if
 
             case default
-              call output_line('Unsupported data type!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
+              call output_line("Unsupported data type!",&
+                  OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_multMatMat")
               call sys_halt()
             end select
 
@@ -16723,21 +16623,21 @@ contains
               end if
 
             case default
-              call output_line('Unsupported data type!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
+              call output_line("Unsupported data type!",&
+                  OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_multMatMat")
               call sys_halt()
             end select
 
           case default
-            call output_line('Unsupported data type!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
+            call output_line("Unsupported data type!",&
+                OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_multMatMat")
             call sys_halt()
           end select
         end if
 
       case default
-        call output_line('Unsupported data type!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
+        call output_line("Unsupported data type!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_multMatMat")
         call sys_halt()
       end select
 
@@ -16753,14 +16653,14 @@ contains
         if (bmemory) then
           rmatrixC%cmatrixFormat = rmatrixA%cmatrixFormat
           rmatrixC%NA = rmatrixA%NA
-          call storage_new('lsyssc_multMatMat','h_Da',rmatrixC&
+          call storage_new("lsyssc_multMatMat","h_Da",rmatrixC&
               &%NA,rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
         end if
 
         ! Check if matrix is given in the correct format
         if (rmatrixC%cmatrixFormat .ne. rmatrixA%cmatrixFormat) then
-          call output_line('Destination matrix has incompatible format!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
+          call output_line("Destination matrix has incompatible format!",&
+              OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_multMatMat")
           call sys_halt()
         end if
 
@@ -16821,8 +16721,8 @@ contains
               end if
 
             case default
-              call output_line('Unsupported data type!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
+              call output_line("Unsupported data type!",&
+                  OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_multMatMat")
               call sys_halt()
             end select
 
@@ -16863,14 +16763,14 @@ contains
               end if
 
             case default
-              call output_line('Unsupported data type!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
+              call output_line("Unsupported data type!",&
+                  OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_multMatMat")
               call sys_halt()
             end select
 
           case default
-            call output_line('Unsupported data type!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
+            call output_line("Unsupported data type!",&
+                OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_multMatMat")
             call sys_halt()
           end select
         end if
@@ -16896,24 +16796,24 @@ contains
           end if
 
           ! Set auxiliary pointers
-          call storage_new('lsyssc_multMatMat','Kaux',rmatrixB%NCOLS,&
+          call storage_new("lsyssc_multMatMat","Kaux",rmatrixB%NCOLS,&
               &ST_INT,h_Kaux,ST_NEWBLOCK_NOINIT)
           call storage_getbase_int(h_Kaux,Kaux)
 
           ! Compute number of nonzero matrix entries: NA
           rmatrixC%NA = do_mat79mat79mul_computeNA(KldA,KcolA&
               &,rmatrixA%NEQ,KldB,KcolB,Kaux)
-          call storage_new('lsyssc_multMatMat','h_Da',rmatrixC&
+          call storage_new("lsyssc_multMatMat","h_Da",rmatrixC&
               &%NA,rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
-          call storage_realloc('lsyssc_multMatMat',rmatrixC%NA&
+          call storage_realloc("lsyssc_multMatMat",rmatrixC%NA&
               &,rmatrixC%h_Kcol,ST_NEWBLOCK_NOINIT,.false.)
         end if
 
         ! Check if matrix is given in the correct format
         if (rmatrixC%cmatrixFormat .ne. max(rmatrixA%cmatrixFormat,&
             &rmatrixB%cmatrixFormat)) then
-          call output_line('Destination matrix has incompatible format',&
-              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
+          call output_line("Destination matrix has incompatible format",&
+              OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_multMatMat")
           call sys_halt()
         end if
 
@@ -16924,11 +16824,11 @@ contains
           call lsyssc_getbase_Kld(rmatrixC,KldC)
           call lsyssc_getbase_Kcol(rmatrixC,KcolC)
           if (h_Kaux .eq. ST_NOHANDLE) then
-            call storage_new('lsyssc_multMatMat','Kaux',max(rmatrixA&
+            call storage_new("lsyssc_multMatMat","Kaux",max(rmatrixA&
                 &%NEQ,max(rmatrixA%NCOLS,rmatrixB%NCOLS)),ST_INT&
                 &,h_Kaux,ST_NEWBLOCK_NOINIT)
           else
-            call storage_realloc('lsyssc_multMatMat',max(rmatrixA%NEQ&
+            call storage_realloc("lsyssc_multMatMat",max(rmatrixA%NEQ&
                 &,max(rmatrixA%NCOLS,rmatrixB%NCOLS)),h_Kaux&
                 &,ST_NEWBLOCK_NOINIT,.false.)
           end if
@@ -16953,11 +16853,11 @@ contains
           call lsyssc_getbase_Kld(rmatrixC,KldC)
           call lsyssc_getbase_Kcol(rmatrixC,KcolC)
           if (h_Daux .eq. ST_NOHANDLE) then
-            call storage_new('lsyssc_multMatMat','Daux',max(rmatrixA&
+            call storage_new("lsyssc_multMatMat","Daux",max(rmatrixA&
                 &%NEQ,max(rmatrixA%NCOLS,rmatrixB%NCOLS)),ST_DOUBLE&
                 &,h_Daux,ST_NEWBLOCK_NOINIT)
           else
-            call storage_realloc('lsyssc_multMatMat',max(rmatrixA%NEQ&
+            call storage_realloc("lsyssc_multMatMat",max(rmatrixA%NEQ&
                 &,max(rmatrixA%NCOLS,rmatrixB%NCOLS)),h_Daux&
                 &,ST_NEWBLOCK_NOINIT,.false.)
           end if
@@ -16990,8 +16890,8 @@ contains
                   &,KcolB,FaB,KldC,KcolC,DaC,Daux)
 
             case default
-              call output_line('Unsupported data type!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
+              call output_line("Unsupported data type!",&
+                  OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_multMatMat")
               call sys_halt()
             end select
 
@@ -17009,7 +16909,7 @@ contains
 
             case (ST_SINGLE)
               ! We need an additional vector FAUX
-              call storage_new('lsyssc_multMatMat','Faux',max(rmatrixA&
+              call storage_new("lsyssc_multMatMat","Faux",max(rmatrixA&
                   &%NEQ,max(rmatrixA%NCOLS,rmatrixB%NCOLS)),ST_SINGLE&
                   &,h_Faux,ST_NEWBLOCK_NOINIT)
               call storage_getbase_single(h_Faux,Faux)
@@ -17022,29 +16922,29 @@ contains
                   &,KcolB,FaB,KldC,KcolC,FaC,Faux)
 
             case default
-              call output_line('Unsupported data type!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
+              call output_line("Unsupported data type!",&
+                  OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_multMatMat")
               call sys_halt()
             end select
 
           case default
-            call output_line('Unsupported data type!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
+            call output_line("Unsupported data type!",&
+                OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_multMatMat")
             call sys_halt()
           end select
         end if
 
       case default
-        call output_line('Unsupported data type!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
+        call output_line("Unsupported data type!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_multMatMat")
         call sys_halt()
       end select
 
       !--------------------------------------------------------------
 
     case default
-      call output_line('Unsupported data type!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_multMatMat')
+      call output_line("Unsupported data type!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_multMatMat")
       call sys_halt()
     end select
 
@@ -17067,7 +16967,7 @@ contains
 
       ! Remark: MATRIX1 is stored row-wise. The intrinsic function
       !         MATMUL requires the matrix to be stored columnwise
-      !         Hence, compute C = A*B = (B'*A')'          (cpp fix: .')
+      !         Hence, compute C = A*B = (B"*A")"          (cpp fix: .")
 
       integer, intent(in) :: n,m,k
       real(DP), dimension(m,n), intent(in) :: Da1
@@ -17078,7 +16978,7 @@ contains
       ! intrinsic MATMUL Fortran90 routine. Hence, the BLAS routine
       ! is used whenever possible, that is, when all matrices have
       ! the same precision.
-      call DGEMM('N','N',k,n,m,1.0_DP,Da2,k,Da1,m,0.0_DP,Da3,k)
+      call DGEMM("N","N",k,n,m,1.0_DP,Da2,k,Da1,m,0.0_DP,Da3,k)
     end subroutine
 
     !**************************************************************
@@ -17091,14 +16991,14 @@ contains
 
       ! Remark: MATRIX1 is stored row-wise. The intrinsic function
       !         MATMUL requires the matrix to be stored columnwise
-      !         Hence, compute C = A*B = (B'*A')'        (cpp fix: .')
+      !         Hence, compute C = A*B = (B"*A")"        (cpp fix: .")
 
       integer, intent(in) :: n,m,k
       real(DP), dimension(m,n), intent(in) :: Da1
       real(SP), dimension(k,m), intent(in) :: Fa2
       real(DP), dimension(k,n), intent(inout) :: Da3
 
-      call DGEMM('N','N',k,n,m,1.0_DP,real(Fa2,DP),k,Da1,m,0.0_DP,Da3,k)
+      call DGEMM("N","N",k,n,m,1.0_DP,real(Fa2,DP),k,Da1,m,0.0_DP,Da3,k)
 !!$      Da3=MATMUL(Fa2,Da1)
     end subroutine
 
@@ -17112,14 +17012,14 @@ contains
 
       ! Remark: MATRIX1 is stored row-wise. The intrinsic function
       !         MATMUL requires the matrix to be stored columnwise
-      !         Hence, compute C = A*B = (B'*A')'        (cpp fix: .')
+      !         Hence, compute C = A*B = (B"*A")"        (cpp fix: .")
 
       integer, intent(in) :: n,m,k
       real(SP), dimension(m,n), intent(in) :: Fa1
       real(DP), dimension(k,m), intent(in) :: Da2
       real(DP), dimension(k,n), intent(inout) :: Da3
 
-      call DGEMM('N','N',k,n,m,1.0_DP,Da2,k,real(Fa1,DP),m,0.0_DP,Da3,k)
+      call DGEMM("N","N",k,n,m,1.0_DP,Da2,k,real(Fa1,DP),m,0.0_DP,Da3,k)
 !!$      Da3=MATMUL(Da2,Fa1)
     end subroutine
 
@@ -17133,7 +17033,7 @@ contains
 
       ! Remark: MATRIX1 is stored row-wise. The intrinsic function
       !         MATMUL requires the matrix to be stored columnwise
-      !         Hence, compute C = A*B = (B'*A')'        (cpp fix: .')
+      !         Hence, compute C = A*B = (B"*A")"        (cpp fix: .")
 
       integer, intent(in) :: n,m,k
       real(SP), dimension(m,n), intent(in) :: Fa1
@@ -17144,7 +17044,7 @@ contains
       ! intrinsic MATMUL Fortran90 routine. Hence, the BLAS routine
       ! is used whenever possible, that is, when all matrices have
       ! the same precision.
-      call SGEMM('N','N',k,n,m,1E0,Fa2,k,Fa1,m,0E0,Fa3,k)
+      call SGEMM("N","N",k,n,m,1E0,Fa2,k,Fa1,m,0E0,Fa3,k)
     end subroutine
 
     !**************************************************************
@@ -18282,8 +18182,10 @@ contains
         end if
         rdest%NEQ                = rmatrixA%NEQ
         rdest%NCOLS              = rmatrixA%NCOLS
-        rdest%isortStrategy      = rmatrixA%isortStrategy
-        rdest%h_IsortPermutation = rmatrixA%h_IsortPermutation
+        rdest%bcolumnsSorted     = rmatrixA%bcolumnsSorted
+        rdest%browsSorted        = rmatrixA%browsSorted
+        rdest%p_rsortStrategyColumns => rmatrixA%p_rsortStrategyColumns
+        rdest%p_rsortStrategyRows => rmatrixA%p_rsortStrategyRows
       else
         call output_line('Destination matrix must be given if BMEMORY=TRUE!',&
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
@@ -18302,11 +18204,52 @@ contains
     end if
 
     ! Check if all matrices have the same sorting
-    if ((rmatrixA%isortStrategy .ne. rmatrixB%isortStrategy) .or.&
-        (rmatrixA%isortStrategy .ne. p_rdest%isortStrategy)) then
-      call output_line('Sorting strategies are incompatible!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
-      call sys_halt()
+    if (rmatrixA%bcolumnsSorted .or. rmatrixB%bcolumnsSorted) then
+      if (rmatrixA%p_rsortStrategyColumns%ctype .ne. rmatrixB%p_rsortStrategyColumns%ctype) then
+        call output_line("Incompatible sorting strategies!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_matrixLinearComb")
+        call sys_halt()
+      end if
+    end if
+
+    if (rmatrixA%browsSorted .or. rmatrixB%browsSorted) then
+      if (rmatrixA%p_rsortStrategyRows%ctype .ne. rmatrixB%p_rsortStrategyRows%ctype) then
+        call output_line("Incompatible sorting strategies!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_matrixLinearComb")
+        call sys_halt()
+      end if
+    end if
+
+    if (rmatrixA%bcolumnsSorted .or. p_rdest%bcolumnsSorted) then
+      if (rmatrixA%p_rsortStrategyColumns%ctype .ne. p_rdest%p_rsortStrategyColumns%ctype) then
+        call output_line("Incompatible sorting strategies!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_matrixLinearComb")
+        call sys_halt()
+      end if
+    end if
+
+    if (rmatrixA%browsSorted .or. p_rdest%browsSorted) then
+      if (rmatrixA%p_rsortStrategyRows%ctype .ne. p_rdest%p_rsortStrategyRows%ctype) then
+        call output_line("Incompatible sorting strategies!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_matrixLinearComb")
+        call sys_halt()
+      end if
+    end if
+
+    if (rmatrixB%bcolumnsSorted .or. p_rdest%bcolumnsSorted) then
+      if (rmatrixB%p_rsortStrategyColumns%ctype .ne. p_rdest%p_rsortStrategyColumns%ctype) then
+        call output_line("Incompatible sorting strategies!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_matrixLinearComb")
+        call sys_halt()
+      end if
+    end if
+
+    if (rmatrixB%browsSorted .or. p_rdest%browsSorted) then
+      if (rmatrixB%p_rsortStrategyRows%ctype .ne. p_rdest%p_rsortStrategyRows%ctype) then
+        call output_line("Incompatible sorting strategies!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_matrixLinearComb")
+        call sys_halt()
+      end if
     end if
 
     ! Check if destination matrix has compatible data type
@@ -22399,7 +22342,12 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: isize
+    integer :: isize,isortcols,isortrows
+    
+    isortcols = 0
+    isortrows = 0
+    if (rmatrix%bcolumnsSorted) isortcols = 1
+    if (rmatrix%browsSorted) isortrows = 1
 
     call output_line ('ScalarMatrix:')
     call output_line ('-------------')
@@ -22413,8 +22361,22 @@ contains
     call output_line ('NCOLS:                   '//trim(sys_siL(rmatrix%NCOLS,15)))
     call output_line ('NVAR:                    '//trim(sys_siL(rmatrix%NVAR,15)))
     call output_line ('dscaleFactor:            '//trim(sys_sdL(rmatrix%dscaleFactor,2)))
-    call output_line ('isortStrategy:           '//trim(sys_siL(rmatrix%isortStrategy,15)))
-    call output_line ('h_IsortPermutation:      '//trim(sys_siL(rmatrix%h_IsortPermutation,15)))
+    call output_line ('bcolumnsSorted:          '//trim(sys_siL(isortcols,2)))
+    if (associated(rmatrix%p_rsortStrategyColumns)) then
+      call output_line ('isortStrategy cols:      '//trim(sys_siL(rmatrix%p_rsortStrategyColumns%ctype,15)))
+      call output_line ('h_Ipermutation cols:     '//trim(sys_siL(rmatrix%p_rsortStrategyColumns%h_Ipermutation,15)))
+    else
+      call output_line ('isortStrategy:           '//trim(sys_siL(0,15)))
+      call output_line ('h_Ipermutation:          '//trim(sys_siL(0,15)))
+    end if
+    call output_line ('browsSorted:             '//trim(sys_siL(isortrows,2)))
+    if (associated(rmatrix%p_rsortStrategyRows)) then
+      call output_line ('isortStrategy rows:      '//trim(sys_siL(rmatrix%p_rsortStrategyRows%ctype,15)))
+      call output_line ('h_Ipermutation rows:     '//trim(sys_siL(rmatrix%p_rsortStrategyRows%h_Ipermutation,15)))
+    else
+      call output_line ('isortStrategy:           '//trim(sys_siL(0,15)))
+      call output_line ('h_Ipermutation:          '//trim(sys_siL(0,15)))
+    end if
     call output_line ('h_Da:                    '//trim(sys_siL(rmatrix%h_Da,15)))
     if (rmatrix%h_Da .ne. ST_NOHANDLE) then
       call storage_getsize(rmatrix%h_Da,isize)
@@ -22472,7 +22434,10 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: isize
+    integer :: isize,isort
+    
+    isort = 0
+    if (rvector%bisSorted) isort = 1
 
     call output_line ('ScalarVector:')
     call output_line ('-------------')
@@ -22480,8 +22445,14 @@ contains
     call output_line ('cdataType:              '//trim(sys_siL(rvector%cdataType,15)))
     call output_line ('NEQ:                    '//trim(sys_siL(rvector%NEQ,15)))
     call output_line ('NVAR:                   '//trim(sys_siL(rvector%NVAR,15)))
-    call output_line ('isortStrategy:          '//trim(sys_siL(rvector%isortStrategy,15)))
-    call output_line ('h_IsortPermutation:     '//trim(sys_siL(rvector%h_IsortPermutation,15)))
+    call output_line ('bisSorted:              '//trim(sys_siL(isort,2)))
+    if (associated(rvector%p_rsortStrategy)) then
+      call output_line ('isortStrategy:          '//trim(sys_siL(rvector%p_rsortStrategy%ctype,15)))
+      call output_line ('h_Ipermutation:         '//trim(sys_siL(rvector%p_rsortStrategy%h_Ipermutation,15)))
+    else
+      call output_line ('isortStrategy:          '//trim(sys_siL(0,15)))
+      call output_line ('h_Ipermutation:         '//trim(sys_siL(0,15)))
+    end if
     call output_line ('h_Ddata:                '//trim(sys_siL(rvector%h_Ddata,15)))
     if (rvector%h_Ddata .ne. ST_NOHANDLE) then
       call storage_getsize(rvector%h_Ddata,isize)
@@ -22659,56 +22630,6 @@ contains
 
 !<function>
 
-  pure logical function lsyssc_isMatrixSorted (rmatrix)
-
-!<description>
-  ! Returns whether a matrix is sorted or not.
-!</description>
-
-!<input>
-  ! Matrix to check
-  type(t_matrixScalar), intent(in) :: rmatrix
-!</input>
-
-!<result>
-  ! Whether the matrix is sorted or not.
-!</result>
-
-!</function>
-
-    lsyssc_isMatrixSorted = rmatrix%isortStrategy .gt. 0
-
-  end function
-
-  !****************************************************************************
-
-!<function>
-
-  pure logical function lsyssc_isVectorSorted (rvector)
-
-!<description>
-  ! Returns whether a vector is sorted or not.
-!</description>
-
-!<input>
-  ! Vector to check
-  type(t_vectorScalar), intent(in) :: rvector
-!</input>
-
-!<result>
-  ! Whether the vector is sorted or not.
-!</result>
-
-!</function>
-
-    lsyssc_isVectorSorted = rvector%isortStrategy .gt. 0
-
-  end function
-
-  !****************************************************************************
-
-!<function>
-
   pure logical function lsyssc_hasMatrixStructure (rmatrix)
 
 !<description>
@@ -22791,43 +22712,38 @@ contains
 
     ! Source vector must not be stored in interleave format
     if (rvector1%NVAR .ne. 1) then
-      call output_line('Source vector must not be stored in interleave format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spreadVector')
+      call output_line("Source vector must not be stored in interleave format!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_spreadVector")
       call sys_halt()
     end if
 
     ! Vectors must have the same size
     if (rvector1%NEQ .ne. rvector2%NEQ) then
-      call output_line('Vectors not compatible, different size!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spreadVector')
+      call output_line("Vectors not compatible, different size!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_spreadVector")
       call sys_halt()
     end if
 
     ! Vectors must have the data type
     if (rvector1%cdataType .ne. rvector2%cdataType) then
-      call output_line('Vectors not compatible, different data type!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spreadVector')
+      call output_line("Vectors not compatible, different data type!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_spreadVector")
       call sys_halt()
     end if
 
-    ! isortStrategy < 0 means unsorted. Both unsorted is ok.
-
-    if ((rvector1%isortStrategy .gt. 0) .or. &
-        (rvector2%isortStrategy .gt. 0)) then
-
-      if (rvector1%isortStrategy .ne. &
-          rvector2%isortStrategy) then
-        call output_line('Vectors not compatible, differently sorted!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spreadVector')
+    ! Check the sorting
+    if (rvector1%bisSorted .neqv. rvector2%bisSorted) then
+      call output_line("Vectors not compatible, differently sorted!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_spreadVector")
+      call sys_halt()
+    end if
+    
+    if (rvector1%bisSorted) then
+      if (rvector1%p_rsortStrategy%ctype .ne. rvector2%p_rsortStrategy%ctype) then
+        call output_line("Vectors not compatible, differently sorted!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_spreadVector")
         call sys_halt()
       end if
-    end if
-
-    if (rvector1%h_isortPermutation .ne. &
-        rvector2%h_isortPermutation) then
-      call output_line('Vectors not compatible, differently sorted!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spreadVector')
-      call sys_halt()
     end if
 
     select case (rvector1%cdataType)
@@ -22847,8 +22763,8 @@ contains
       call do_spreadInt(p_Idata1, rvector2%NVAR, rvector2%NEQ, p_Idata2)
 
     case default
-      call output_line('Unsupported data type!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spreadVector')
+      call output_line("Unsupported data type!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_spreadVector")
       call sys_halt()
     end select
 
@@ -23123,22 +23039,19 @@ contains
 
     ! isortStrategy < 0 means unsorted. Both unsorted is ok.
 
-    if ((rvector1%isortStrategy .gt. 0) .or. &
-        (rvector2%isortStrategy .gt. 0)) then
-
-      if (rvector1%isortStrategy .ne. &
-          rvector2%isortStrategy) then
-        call output_line('Vectors not compatible, differently sorted!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_packVector')
+    ! Check the sorting
+    if (rvector1%bisSorted .neqv. rvector2%bisSorted) then
+      call output_line("Vectors not compatible, differently sorted!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_packVector")
+      call sys_halt()
+    end if
+    
+    if (rvector1%bisSorted) then
+      if (rvector1%p_rsortStrategy%ctype .ne. rvector2%p_rsortStrategy%ctype) then
+        call output_line("Vectors not compatible, differently sorted!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_packVector")
         call sys_halt()
       end if
-    end if
-
-    if (rvector1%h_isortPermutation .ne. &
-        rvector2%h_isortPermutation) then
-      call output_line('Vectors not compatible, differently sorted!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_packVector')
-      call sys_halt()
     end if
 
     select case (rvector1%cdataType)
@@ -23287,15 +23200,18 @@ contains
 
     ! Fill the array of data items: isortStrategy
     p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(5)
-    p_fpdbDataItem%ctype    = FPDB_INT
-    p_fpdbDataItem%sname    = 'isortStrategy'
-    p_fpdbDataItem%iinteger = rvector%isortStrategy
+    p_fpdbDataItem%ctype    = FPDB_LOGICAL
+    p_fpdbDataItem%sname    = 'bisSorted'
+    p_fpdbDataItem%blogical = rvector%bisSorted
 
-    ! Fill the array of data items: h_IsortPermutation
+    ! Fill the array of data items: h_Ipermutation
     p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(6)
-    p_fpdbDataItem%ctype    = FPDB_INT
-    p_fpdbDataItem%sname    = 'h_IsortPermutation'
-    p_fpdbDataItem%iinteger = rvector%h_IsortPermutation
+    p_fpdbDataItem%sname    = 'p_rsortStrategy'
+    if (associated(rvector%p_rsortStrategy)) then
+      p_fpdbDataItem%ctype = FPDB_LINK
+    else
+      p_fpdbDataItem%ctype = FPDB_NULL
+    end if
 
     ! Fill the array of data items: iidxFirstEntry
     p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(7)
@@ -23370,8 +23286,8 @@ contains
     rfpdbObjectItem%sname = sname
     rfpdbObjectItem%stype = 't_matrixScalar'
 
-    ! Allocate the array of data items: 20
-    allocate(rfpdbObjectItem%p_RfpdbDataItem(20))
+    ! Allocate the array of data items: 22
+    allocate(rfpdbObjectItem%p_RfpdbDataItem(22))
 
     ! Fill the array of data items: cmatrixFormat
     p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(1)
@@ -23421,68 +23337,86 @@ contains
     p_fpdbDataItem%sname   = 'dscaleFactor'
     p_fpdbDataItem%ddouble = rmatrix%dscaleFactor
 
-    ! Fill the array of data items: isortStrategy
+    ! Fill the array of data items: bcolumnsSorted
     p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(9)
-    p_fpdbDataItem%ctype    = FPDB_INT
-    p_fpdbDataItem%sname    = 'isortStrategy'
-    p_fpdbDataItem%iinteger = rmatrix%isortStrategy
+    p_fpdbDataItem%ctype    = FPDB_LOGICAL
+    p_fpdbDataItem%sname    = 'bcolumnsSorted'
+    p_fpdbDataItem%blogical = rmatrix%bcolumnsSorted
 
-    ! Fill the array of data items: h_IsortPermutation
+    ! Fill the array of data items: browsSorted
     p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(10)
-    p_fpdbDataItem%ctype    = FPDB_INT
-    p_fpdbDataItem%sname    = 'h_IsortPermutation'
-    p_fpdbDataItem%iinteger = rmatrix%h_IsortPermutation
+    p_fpdbDataItem%ctype    = FPDB_LOGICAL
+    p_fpdbDataItem%sname    = 'browsSorted'
+    p_fpdbDataItem%blogical = rmatrix%browsSorted
+
+    ! Fill the array of data items: p_rsortStrategyColumns
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(11)
+    p_fpdbDataItem%sname    = 'p_rsortStrategyColumns'
+    if (associated(rmatrix%p_rsortStrategyColumns)) then
+      p_fpdbDataItem%ctype = FPDB_LINK
+    else
+      p_fpdbDataItem%ctype = FPDB_NULL
+    end if
+
+    ! Fill the array of data items: p_rsortStrategyRows
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(12)
+    p_fpdbDataItem%sname    = 'p_rsortStrategyRows'
+    if (associated(rmatrix%p_rsortStrategyRows)) then
+      p_fpdbDataItem%ctype = FPDB_LINK
+    else
+      p_fpdbDataItem%ctype = FPDB_NULL
+    end if
 
     ! Fill the array of data items: cdataType
-    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(11)
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(13)
     p_fpdbDataItem%ctype    = FPDB_INT
     p_fpdbDataItem%sname    = 'cdataType'
     p_fpdbDataItem%iinteger = rmatrix%cdataType
 
     ! Fill the array of data items: h_Da
-    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(12)
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(14)
     p_fpdbDataItem%ctype    = FPDB_INT
     p_fpdbDataItem%sname    = 'h_Da'
     p_fpdbDataItem%iinteger = rmatrix%h_Da
 
     ! Fill the array of data items: h_Kcol
-    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(13)
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(15)
     p_fpdbDataItem%ctype    = FPDB_INT
     p_fpdbDataItem%sname    = 'h_Kcol'
     p_fpdbDataItem%iinteger = rmatrix%h_Kcol
 
     ! Fill the array of data items: h_Kld
-    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(14)
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(16)
     p_fpdbDataItem%ctype    = FPDB_INT
     p_fpdbDataItem%sname    = 'h_Kld'
     p_fpdbDataItem%iinteger = rmatrix%h_Kld
 
     ! Fill the array of data items: h_Kdiagonal
-    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(15)
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(17)
     p_fpdbDataItem%ctype    = FPDB_INT
     p_fpdbDataItem%sname    = 'h_Kdiagonal'
     p_fpdbDataItem%iinteger = rmatrix%h_Kdiagonal
 
     ! Fill the array of data items: ITags
-    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(16)
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(18)
     p_fpdbDataItem%ctype        =  FPDB_INT1D
     p_fpdbDataItem%sname        =  'ITags'
     p_fpdbDataItem%p_Iinteger1D => rmatrix%ITags
 
     ! Fill the array of data items: DTags
-    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(17)
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(19)
     p_fpdbDataItem%ctype       =  FPDB_DOUBLE1D
     p_fpdbDataItem%sname       =  'DTags'
     p_fpdbDataItem%p_Ddouble1D => rmatrix%DTags
 
     ! Fill the array of data items: bidenticalTrialAndTest
-    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(18)
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(20)
     p_fpdbDataItem%ctype    = FPDB_LOGICAL
     p_fpdbDataItem%sname    = 'bidenticalTrialAndTest'
     p_fpdbDataItem%blogical = rmatrix%bidenticalTrialAndTest
 
     ! Fill the array of data items: p_rspatialDiscrTrial
-    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(19)
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(21)
     p_fpdbDataItem%sname = 'p_rspatialDiscrTrial'
     if (associated(rmatrix%p_rspatialDiscrTrial)) then
       p_fpdbDataItem%ctype = FPDB_LINK
@@ -23492,7 +23426,7 @@ contains
 
 
     ! Fill the array of data items: p_rspatialDiscrTest
-    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(20)
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(22)
     p_fpdbDataItem%sname = 'p_rspatialDiscrTest'
     if (associated(rmatrix%p_rspatialDiscrTest)) then
       p_fpdbDataItem%ctype = FPDB_LINK
@@ -23527,23 +23461,23 @@ contains
     type(t_fpdbDataItem), pointer :: p_fpdbDataItem
 
     ! Check if ObjectItem has correct type
-    if (trim(rfpdbObjectItem%stype) .ne. 't_vectorScalar') then
-      call output_line ('Invalid object type!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectVec')
+    if (trim(rfpdbObjectItem%stype) .ne. "t_vectorScalar") then
+      call output_line ("Invalid object type!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_restoreFpdbObjectVec")
       call sys_halt()
     end if
 
     ! Check if DataItems are associated
     if (.not.associated(rfpdbObjectItem%p_RfpdbDataItem)) then
-      call output_line ('Missing data!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectVec')
+      call output_line ("Missing data!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_restoreFpdbObjectVec")
       call sys_halt()
     end if
 
     ! Check if DataItems have correct size
     if (size(rfpdbObjectItem%p_RfpdbDataItem) .ne. 11) then
-      call output_line ('Invalid data!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectVec')
+      call output_line ("Invalid data!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_restoreFpdbObjectVec")
       call sys_halt()
     end if
 
@@ -23553,9 +23487,9 @@ contains
     ! Restore the data from the DataItem: NEQ
     p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(1)
     if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
-        (trim(p_fpdbDataItem%sname) .ne. 'NEQ')) then
-      call output_line ('Invalid data: NEQ!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectVec')
+        (trim(p_fpdbDataItem%sname) .ne. "NEQ")) then
+      call output_line ("Invalid data: NEQ!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_restoreFpdbObjectVec")
       call sys_halt()
     else
       rvector%NEQ = p_fpdbDataItem%iinteger
@@ -23564,9 +23498,9 @@ contains
     ! Restore the data from the DataItem: NVAR
     p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(2)
     if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
-        (trim(p_fpdbDataItem%sname) .ne. 'NVAR')) then
-      call output_line ('Invalid data: NVAR!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectVec')
+        (trim(p_fpdbDataItem%sname) .ne. "NVAR")) then
+      call output_line ("Invalid data: NVAR!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_restoreFpdbObjectVec")
       call sys_halt()
     else
       rvector%NVAR = p_fpdbDataItem%iinteger
@@ -23575,9 +23509,9 @@ contains
     ! Restore the data from the DataItem: cdataType
     p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(3)
     if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
-        (trim(p_fpdbDataItem%sname) .ne. 'cdataType')) then
-      call output_line ('Invalid data: cdataType!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectVec')
+        (trim(p_fpdbDataItem%sname) .ne. "cdataType")) then
+      call output_line ("Invalid data: cdataType!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_restoreFpdbObjectVec")
       call sys_halt()
     else
       rvector%cdataType = p_fpdbDataItem%iinteger
@@ -23586,9 +23520,9 @@ contains
     ! Restore the data from the DataItem: h_Ddata
     p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(4)
     if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
-        (trim(p_fpdbDataItem%sname) .ne. 'h_Ddata')) then
-      call output_line ('Invalid data: h_Ddata!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectVec')
+        (trim(p_fpdbDataItem%sname) .ne. "h_Ddata")) then
+      call output_line ("Invalid data: h_Ddata!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_restoreFpdbObjectVec")
       call sys_halt()
     else
       rvector%h_Ddata = p_fpdbDataItem%iinteger
@@ -23596,32 +23530,38 @@ contains
 
     ! Restore the data from the DataItem: isortStrategy
     p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(5)
-    if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
-        (trim(p_fpdbDataItem%sname) .ne. 'isortStrategy')) then
-      call output_line ('Invalid data: isortStrategy!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectVec')
+    if ((p_fpdbDataItem%ctype .ne. FPDB_LOGICAL) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. "bisSorted")) then
+      call output_line ("Invalid data: bisSorted!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_restoreFpdbObjectVec")
       call sys_halt()
     else
-      rvector%isortStrategy = p_fpdbDataItem%iinteger
+      rvector%bisSorted = p_fpdbDataItem%blogical
     end if
 
-    ! Restore the data from the DataItem: h_IsortPermutation
+    ! Restore the data from the DataItem: h_Ipermutation
     p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(6)
-    if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
-        (trim(p_fpdbDataItem%sname) .ne. 'h_IsortPermutation')) then
-      call output_line ('Invalid data: h_IsortPermutation!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectVec')
+    if (trim(p_fpdbDataItem%sname) .ne. "p_rsortStrategy") then
+      call output_line ("Invalid data: p_rsortStrategy!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_restoreFpdbObjectVec")
       call sys_halt()
     else
-      rvector%h_IsortPermutation = p_fpdbDataItem%iinteger
+      if (p_fpdbDataItem%ctype .eq. FPDB_NULL) then
+        nullify(rvector%p_rsortStrategy)
+      elseif (p_fpdbDataItem%ctype .eq. FPDB_LINK) then
+      else
+        call output_line ("Invalid data: p_rsortingStrategy!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_restoreFpdbObjectVec")
+        call sys_halt()
+      end if
     end if
 
     ! Restore the data from the DataItem: iidxFirstEntry
     p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(7)
     if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
-        (trim(p_fpdbDataItem%sname) .ne. 'iidxFirstEntry')) then
-      call output_line ('Invalid data: iidxFirstEntry!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectVec')
+        (trim(p_fpdbDataItem%sname) .ne. "iidxFirstEntry")) then
+      call output_line ("Invalid data: iidxFirstEntry!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_restoreFpdbObjectVec")
       call sys_halt()
     else
       rvector%iidxFirstEntry = p_fpdbDataItem%iinteger
@@ -23630,9 +23570,9 @@ contains
     ! Restore the data from the DataItem: ITags
     p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(8)
     if ((p_fpdbDataItem%ctype .ne. FPDB_INT1D) .or.&
-        (trim(p_fpdbDataItem%sname) .ne. 'ITags')) then
-      call output_line ('Invalid data: ITags!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectVec')
+        (trim(p_fpdbDataItem%sname) .ne. "ITags")) then
+      call output_line ("Invalid data: ITags!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_restoreFpdbObjectVec")
       call sys_halt()
     else
       call fpdb_getdata_int1d(p_fpdbDataItem, rvector%ITags)
@@ -23641,9 +23581,9 @@ contains
     ! Restore the data from the DataItem: DTags
     p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(9)
     if ((p_fpdbDataItem%ctype .ne. FPDB_DOUBLE1D) .or.&
-        (trim(p_fpdbDataItem%sname) .ne. 'DTags')) then
-      call output_line ('Invalid data: DTags!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectVec')
+        (trim(p_fpdbDataItem%sname) .ne. "DTags")) then
+      call output_line ("Invalid data: DTags!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_restoreFpdbObjectVec")
       call sys_halt()
     else
       call fpdb_getdata_double1d(p_fpdbDataItem, rvector%DTags)
@@ -23652,9 +23592,9 @@ contains
     ! Restore the data from the DataItem: bisCopy
     p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(10)
     if ((p_fpdbDataItem%ctype .ne. FPDB_LOGICAL) .or.&
-        (trim(p_fpdbDataItem%sname) .ne. 'bisCopy')) then
-      call output_line ('Invalid data: bisCopy!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectVec')
+        (trim(p_fpdbDataItem%sname) .ne. "bisCopy")) then
+      call output_line ("Invalid data: bisCopy!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_restoreFpdbObjectVec")
       call sys_halt()
     else
       rvector%bisCopy = p_fpdbDataItem%blogical
@@ -23662,17 +23602,17 @@ contains
 
     ! Restore the data from the DataItem: p_rspatialDiscr
     p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(11)
-    if (trim(p_fpdbDataItem%sname) .ne. 'p_rspatialDiscr') then
-      call output_line ('Invalid data: p_rspatialDiscr!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectVec')
+    if (trim(p_fpdbDataItem%sname) .ne. "p_rspatialDiscr") then
+      call output_line ("Invalid data: p_rspatialDiscr!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_restoreFpdbObjectVec")
       call sys_halt()
     else
       if (p_fpdbDataItem%ctype .eq. FPDB_NULL) then
         nullify(rvector%p_rspatialDiscr)
       elseif (p_fpdbDataItem%ctype .eq. FPDB_LINK) then
       else
-        call output_line ('Invalid data: p_rspatialDiscr!', &
-            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectVec')
+        call output_line ("Invalid data: p_rspatialDiscr!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_restoreFpdbObjectVec")
         call sys_halt()
       end if
     end if
@@ -23704,23 +23644,23 @@ contains
     type(t_fpdbDataItem), pointer :: p_fpdbDataItem
 
     ! Check if ObjectItem has correct type
-    if (trim(rfpdbObjectItem%stype) .ne. 't_matrixScalar') then
-      call output_line ('Invalid object type!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+    if (trim(rfpdbObjectItem%stype) .ne. "t_matrixScalar") then
+      call output_line ("Invalid object type!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_restoreFpdbObjectMat")
       call sys_halt()
     end if
 
     ! Check if DataItems are associated
     if (.not.associated(rfpdbObjectItem%p_RfpdbDataItem)) then
-      call output_line ('Missing data!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+      call output_line ("Missing data!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_restoreFpdbObjectMat")
       call sys_halt()
     end if
 
     ! Check if DataItems have correct size
     if (size(rfpdbObjectItem%p_RfpdbDataItem) .ne. 20) then
-      call output_line ('Invalid data!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+      call output_line ("Invalid data!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_restoreFpdbObjectMat")
       call sys_halt()
     end if
 
@@ -23730,9 +23670,9 @@ contains
     ! Restore the data from the DataItem: cmatrixFormat
     p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(1)
     if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
-        (trim(p_fpdbDataItem%sname) .ne. 'cmatrixFormat')) then
-      call output_line ('Invalid data: cmatrixFormat!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+        (trim(p_fpdbDataItem%sname) .ne. "cmatrixFormat")) then
+      call output_line ("Invalid data: cmatrixFormat!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_restoreFpdbObjectMat")
       call sys_halt()
     else
       rmatrix%cmatrixFormat = p_fpdbDataItem%iinteger
@@ -23741,9 +23681,9 @@ contains
     ! Restore the data from the DataItem: cinterleavematrixFormat
     p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(2)
     if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
-        (trim(p_fpdbDataItem%sname) .ne. 'cinterleavematrixFormat')) then
-      call output_line ('Invalid data: cinterleavematrixFormat!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+        (trim(p_fpdbDataItem%sname) .ne. "cinterleavematrixFormat")) then
+      call output_line ("Invalid data: cinterleavematrixFormat!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_restoreFpdbObjectMat")
       call sys_halt()
     else
       rmatrix%cinterleavematrixFormat = p_fpdbDataItem%iinteger
@@ -23752,9 +23692,9 @@ contains
     ! Restore the data from the DataItem: imatrixSpec
     p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(3)
     if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
-        (trim(p_fpdbDataItem%sname) .ne. 'imatrixSpec')) then
-      call output_line ('Invalid data: imatrixSpec!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+        (trim(p_fpdbDataItem%sname) .ne. "imatrixSpec")) then
+      call output_line ("Invalid data: imatrixSpec!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_restoreFpdbObjectMat")
       call sys_halt()
     else
       rmatrix%imatrixSpec = p_fpdbDataItem%iinteger
@@ -23763,9 +23703,9 @@ contains
     ! Restore the data from the DataItem: NA
     p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(4)
     if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
-        (trim(p_fpdbDataItem%sname) .ne. 'NA')) then
-      call output_line ('Invalid data: NA!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+        (trim(p_fpdbDataItem%sname) .ne. "NA")) then
+      call output_line ("Invalid data: NA!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_restoreFpdbObjectMat")
       call sys_halt()
     else
       rmatrix%NA = p_fpdbDataItem%iinteger
@@ -23774,9 +23714,9 @@ contains
     ! Restore the data from the DataItem: NEQ
     p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(5)
     if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
-        (trim(p_fpdbDataItem%sname) .ne. 'NEQ')) then
-      call output_line ('Invalid data: NEQ!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+        (trim(p_fpdbDataItem%sname) .ne. "NEQ")) then
+      call output_line ("Invalid data: NEQ!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_restoreFpdbObjectMat")
       call sys_halt()
     else
       rmatrix%NEQ = p_fpdbDataItem%iinteger
@@ -23785,9 +23725,9 @@ contains
     ! Restore the data from the DataItem: NCOLS
     p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(6)
     if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
-        (trim(p_fpdbDataItem%sname) .ne. 'NCOLS')) then
-      call output_line ('Invalid data: NCOLS!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+        (trim(p_fpdbDataItem%sname) .ne. "NCOLS")) then
+      call output_line ("Invalid data: NCOLS!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_restoreFpdbObjectMat")
       call sys_halt()
     else
       rmatrix%NCOLS = p_fpdbDataItem%iinteger
@@ -23796,9 +23736,9 @@ contains
     ! Restore the data from the DataItem: NVAR
     p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(7)
     if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
-        (trim(p_fpdbDataItem%sname) .ne. 'NVAR')) then
-      call output_line ('Invalid data: NVAR!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+        (trim(p_fpdbDataItem%sname) .ne. "NVAR")) then
+      call output_line ("Invalid data: NVAR!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_restoreFpdbObjectMat")
       call sys_halt()
     else
       rmatrix%NVAR = p_fpdbDataItem%iinteger
@@ -23807,154 +23747,188 @@ contains
     ! Restore the data from the DataItem: dscaleFactor
     p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(8)
     if ((p_fpdbDataItem%ctype .ne. FPDB_DOUBLE) .or.&
-        (trim(p_fpdbDataItem%sname) .ne. 'dscaleFactor')) then
-      call output_line ('Invalid data: dscaleFactor!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+        (trim(p_fpdbDataItem%sname) .ne. "dscaleFactor")) then
+      call output_line ("Invalid data: dscaleFactor!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_restoreFpdbObjectMat")
       call sys_halt()
     else
       rmatrix%dscaleFactor = p_fpdbDataItem%ddouble
     end if
 
-    ! Restore the data from the DataItem: isortStrategy
+    ! Restore the data from the DataItem: bcolumnsSorted
     p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(9)
-    if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
-        (trim(p_fpdbDataItem%sname) .ne. 'isortStrategy')) then
-      call output_line ('Invalid data: isortStrategy!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+    if ((p_fpdbDataItem%ctype .ne. FPDB_LOGICAL) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. "bcolumnsSorted")) then
+      call output_line ("Invalid data: bcolumnsSorted!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_restoreFpdbObjectMat")
       call sys_halt()
     else
-      rmatrix%isortStrategy = p_fpdbDataItem%iinteger
+      rmatrix%bcolumnsSorted = p_fpdbDataItem%blogical
     end if
 
-    ! Restore the data from the DataItem: h_IsortPermutation
+    ! Restore the data from the DataItem: browsSorted
     p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(10)
-    if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
-        (trim(p_fpdbDataItem%sname) .ne. 'h_IsortPermutation')) then
-      call output_line ('Invalid data: h_IsortPermutation!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+    if ((p_fpdbDataItem%ctype .ne. FPDB_LOGICAL) .or.&
+        (trim(p_fpdbDataItem%sname) .ne. "browsSorted")) then
+      call output_line ("Invalid data: browsSorted!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_restoreFpdbObjectMat")
       call sys_halt()
     else
-      rmatrix%h_IsortPermutation = p_fpdbDataItem%iinteger
+      rmatrix%browsSorted = p_fpdbDataItem%blogical
+    end if
+
+    ! Restore the data from the DataItem: p_rsortStrategy
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(11)
+    if (trim(p_fpdbDataItem%sname) .ne. "p_rsortStrategyColumns") then
+      call output_line ("Invalid data: p_rsortStrategyColumns!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_restoreFpdbObjectMat")
+      call sys_halt()
+    else
+      if (p_fpdbDataItem%ctype .eq. FPDB_NULL) then
+        nullify(rmatrix%p_rsortStrategyColumns)
+      elseif (p_fpdbDataItem%ctype .eq. FPDB_LINK) then
+      else
+        call output_line ("Invalid data: p_rsortingStrategy!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_restoreFpdbObjectMat")
+        call sys_halt()
+      end if
+    end if
+
+    ! Restore the data from the DataItem: p_rsortStrategy
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(12)
+    if (trim(p_fpdbDataItem%sname) .ne. "p_rsortStrategyRows") then
+      call output_line ("Invalid data: p_rsortStrategyRows!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_restoreFpdbObjectMat")
+      call sys_halt()
+    else
+      if (p_fpdbDataItem%ctype .eq. FPDB_NULL) then
+        nullify(rmatrix%p_rsortStrategyRows)
+      elseif (p_fpdbDataItem%ctype .eq. FPDB_LINK) then
+      else
+        call output_line ("Invalid data: p_rsortingStrategyRows!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_restoreFpdbObjectMat")
+        call sys_halt()
+      end if
     end if
 
     ! Restore the data from the DataItem: cdataType
-    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(11)
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(13)
     if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
-        (trim(p_fpdbDataItem%sname) .ne. 'cdataType')) then
-      call output_line ('Invalid data: cdataType!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+        (trim(p_fpdbDataItem%sname) .ne. "cdataType")) then
+      call output_line ("Invalid data: cdataType!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_restoreFpdbObjectMat")
       call sys_halt()
     else
       rmatrix%cdataType = p_fpdbDataItem%iinteger
     end if
 
     ! Restore the data from the DataItem: h_Da
-    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(12)
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(14)
     if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
-        (trim(p_fpdbDataItem%sname) .ne. 'h_Da')) then
-      call output_line ('Invalid data: h_Da!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+        (trim(p_fpdbDataItem%sname) .ne. "h_Da")) then
+      call output_line ("Invalid data: h_Da!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_restoreFpdbObjectMat")
       call sys_halt()
     else
       rmatrix%h_Da = p_fpdbDataItem%iinteger
     end if
 
     ! Restore the data from the DataItem: h_Kcol
-    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(13)
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(15)
     if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
-        (trim(p_fpdbDataItem%sname) .ne. 'h_Kcol')) then
-      call output_line ('Invalid data: h_Kcol!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+        (trim(p_fpdbDataItem%sname) .ne. "h_Kcol")) then
+      call output_line ("Invalid data: h_Kcol!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_restoreFpdbObjectMat")
       call sys_halt()
     else
       rmatrix%h_Kcol = p_fpdbDataItem%iinteger
     end if
 
     ! Restore the data from the DataItem: h_Kld
-    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(14)
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(16)
     if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
-        (trim(p_fpdbDataItem%sname) .ne. 'h_Kld')) then
-      call output_line ('Invalid data: h_Kld!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+        (trim(p_fpdbDataItem%sname) .ne. "h_Kld")) then
+      call output_line ("Invalid data: h_Kld!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_restoreFpdbObjectMat")
       call sys_halt()
     else
       rmatrix%h_Kld = p_fpdbDataItem%iinteger
     end if
 
     ! Restore the data from the DataItem: h_Kdiagonal
-    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(15)
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(17)
     if ((p_fpdbDataItem%ctype .ne. FPDB_INT) .or.&
-        (trim(p_fpdbDataItem%sname) .ne. 'h_Kdiagonal')) then
-      call output_line ('Invalid data: h_Kdiagonal!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+        (trim(p_fpdbDataItem%sname) .ne. "h_Kdiagonal")) then
+      call output_line ("Invalid data: h_Kdiagonal!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_restoreFpdbObjectMat")
       call sys_halt()
     else
       rmatrix%h_Kdiagonal = p_fpdbDataItem%iinteger
     end if
 
     ! Restore the data from the DataItem: ITags
-    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(16)
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(18)
     if ((p_fpdbDataItem%ctype .ne. FPDB_INT1D) .or.&
-        (trim(p_fpdbDataItem%sname) .ne. 'ITags')) then
-      call output_line ('Invalid data: ITags!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+        (trim(p_fpdbDataItem%sname) .ne. "ITags")) then
+      call output_line ("Invalid data: ITags!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_restoreFpdbObjectMat")
       call sys_halt()
     else
       call fpdb_getdata_int1d(p_fpdbDataItem, rmatrix%ITags)
     end if
 
     ! Restore the data from the DataItem: DTags
-    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(17)
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(19)
     if ((p_fpdbDataItem%ctype .ne. FPDB_DOUBLE1D) .or.&
-        (trim(p_fpdbDataItem%sname) .ne. 'DTags')) then
-      call output_line ('Invalid data: DTags!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+        (trim(p_fpdbDataItem%sname) .ne. "DTags")) then
+      call output_line ("Invalid data: DTags!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_restoreFpdbObjectMat")
       call sys_halt()
     else
       call fpdb_getdata_double1d(p_fpdbDataItem, rmatrix%DTags)
     end if
 
     ! Restore the data from the DataItem: bidenticalTrialAndTest
-    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(18)
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(20)
     if ((p_fpdbDataItem%ctype .ne. FPDB_LOGICAL) .or.&
-        (trim(p_fpdbDataItem%sname) .ne. 'bidenticalTrialAndTest')) then
-      call output_line ('Invalid data: bidenticalTrialAndTest!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+        (trim(p_fpdbDataItem%sname) .ne. "bidenticalTrialAndTest")) then
+      call output_line ("Invalid data: bidenticalTrialAndTest!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_restoreFpdbObjectMat")
       call sys_halt()
     else
       rmatrix%bidenticalTrialAndTest = p_fpdbDataItem%blogical
     end if
 
     ! Restore the data from the DataItem: p_rspatialDiscrTrial
-    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(19)
-    if (trim(p_fpdbDataItem%sname) .eq. 'p_rspatialDiscrTrial') then
-      call output_line ('Invalid data: p_rspatialDiscrTrial!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(21)
+    if (trim(p_fpdbDataItem%sname) .eq. "p_rspatialDiscrTrial") then
+      call output_line ("Invalid data: p_rspatialDiscrTrial!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_restoreFpdbObjectMat")
       call sys_halt()
     else
       if (p_fpdbDataItem%ctype .eq. FPDB_NULL) then
         nullify(rmatrix%p_rspatialDiscrTrial)
       elseif (p_fpdbDataItem%ctype .eq. FPDB_LINK) then
       else
-        call output_line ('Invalid data: p_rspatialDiscrTrial!', &
-            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+        call output_line ("Invalid data: p_rspatialDiscrTrial!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_restoreFpdbObjectMat")
         call sys_halt()
       end if
     end if
 
     ! Restore the data from the DataItem: p_rspatialDiscrTest
-    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(20)
-    if (trim(p_fpdbDataItem%sname) .ne. 'p_rspatialDiscrTest') then
-      call output_line ('Invalid data: p_rspatialDiscrTest!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+    p_fpdbDataItem => rfpdbObjectItem%p_RfpdbDataItem(22)
+    if (trim(p_fpdbDataItem%sname) .ne. "p_rspatialDiscrTest") then
+      call output_line ("Invalid data: p_rspatialDiscrTest!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_restoreFpdbObjectMat")
       call sys_halt()
     else
       if (p_fpdbDataItem%ctype .eq. FPDB_NULL) then
         nullify(rmatrix%p_rspatialDiscrTest)
       elseif (p_fpdbDataItem%ctype .eq. FPDB_LINK) then
       else
-        call output_line ('Invalid data: p_rspatialDiscrTest!', &
-            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_restoreFpdbObjectMat')
+        call output_line ("Invalid data: p_rspatialDiscrTest!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_restoreFpdbObjectMat")
         call sys_halt()
       end if
     end if
@@ -24588,8 +24562,10 @@ contains
         rmatrix%neq,rmatrix%ncols)
 
     ! Copy basic properties
-    rdestMatrix%isortStrategy           = rmatrix%isortStrategy
-    rdestMatrix%h_IsortPermutation      = rmatrix%h_IsortPermutation
+    rdestMatrix%bcolumnsSorted          = rmatrix%bcolumnsSorted
+    rdestMatrix%browsSorted             = rmatrix%browsSorted
+    rdestMatrix%p_rsortStrategyColumns => rmatrix%p_rsortStrategyColumns
+    rdestMatrix%p_rsortStrategyRows => rmatrix%p_rsortStrategyRows
     rdestMatrix%p_rspatialDiscrTrial    => rmatrix%p_rspatialDiscrTrial
     rdestMatrix%p_rspatialDiscrTest     => rmatrix%p_rspatialDiscrTest
     rdestMatrix%bidenticalTrialAndTest  = rmatrix%bidenticalTrialAndTest

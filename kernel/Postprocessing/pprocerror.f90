@@ -378,8 +378,8 @@ contains
 
     ! Make sure we have the coefficient vectors
     if(.not. associated(rerror%p_RvecCoeff)) then
-      call output_line('Coefficient vectors missing!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarVec')
+      call output_line("Coefficient vectors missing!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"pperr_scalarVec")
       call sys_halt()
     end if
 
@@ -394,8 +394,8 @@ contains
       k = dof_igetNDofGlob(p_rdiscr)
       do i = 1, ncomp
         if(k .ne. rerror%p_RvecCoeff(i)%NEQ) then
-          call output_line('Discretisation and coefficient vectors incompatible!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarVec')
+          call output_line("Discretisation and coefficient vectors incompatible!",&
+              OU_CLASS_ERROR,OU_MODE_STD,"pperr_scalarVec")
           call sys_halt()
         end if
       end do
@@ -404,8 +404,8 @@ contains
       ! No, so grab the discretisation of the first coefficient vector.
       p_rdiscr => rerror%p_RvecCoeff(1)%p_rspatialDiscr
       if(.not. associated(p_rdiscr)) then
-        call output_line('No discretisation assigned!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarVec')
+        call output_line("No discretisation assigned!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"pperr_scalarVec")
         call sys_halt()
       end if
     end if
@@ -428,8 +428,8 @@ contains
       ifirstDer = DER_DERIV3D_X
       ilastDer  = DER_DERIV3D_Z
     case default
-      call output_line('Invalid discretisation!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarVec')
+      call output_line("Invalid discretisation!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"pperr_scalarVec")
       call sys_halt()
     end select
 
@@ -442,8 +442,8 @@ contains
     if(associated(rerror%p_DerrorL2)) then
       bcalcL2 = .true.
       if(ubound(rerror%p_DerrorL2,1) .lt. ncomp) then
-        call output_line('Dimension of p_DerrorL2 array is too small!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarVec')
+        call output_line("Dimension of p_DerrorL2 array is too small!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"pperr_scalarVec")
         call sys_halt()
       end if
       rerror%p_DerrorL2 = 0.0_DP
@@ -452,8 +452,8 @@ contains
     if(associated(rerror%p_DerrorH1)) then
       bcalcH1 = .true.
       if(ubound(rerror%p_DerrorH1,1) .lt. ncomp) then
-        call output_line('Dimension of p_DerrorH1 array is too small!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarVec')
+        call output_line("Dimension of p_DerrorH1 array is too small!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"pperr_scalarVec")
         call sys_halt()
       end if
       rerror%p_DerrorH1 = 0.0_DP
@@ -462,8 +462,8 @@ contains
     if(associated(rerror%p_DerrorL1)) then
       bcalcL1 = .true.
       if(ubound(rerror%p_DerrorL1,1) .lt. ncomp) then
-        call output_line('Dimension of p_DerrorL1 array is too small!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarVec')
+        call output_line("Dimension of p_DerrorL1 array is too small!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"pperr_scalarVec")
         call sys_halt()
       end if
       rerror%p_DerrorL1 = 0.0_DP
@@ -472,8 +472,8 @@ contains
     if(associated(rerror%p_DerrorMean)) then
       bcalcMean = .true.
       if(ubound(rerror%p_DerrorMean,1) .lt. ncomp) then
-        call output_line('Dimension of p_DerrorMean array is too small!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarVec')
+        call output_line("Dimension of p_DerrorMean array is too small!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"pperr_scalarVec")
         call sys_halt()
       end if
       rerror%p_DerrorMean = 0.0_DP
@@ -482,14 +482,14 @@ contains
     if(associated(rerror%p_RvecErrorL2)) then
       bcalcL2 = .true.
       if(ubound(rerror%p_RvecErrorL2,1) .lt. ncomp) then
-        call output_line('Dimension of p_RvecErrorL2 array is too small!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarVec')
+        call output_line("Dimension of p_RvecErrorL2 array is too small!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"pperr_scalarVec")
         call sys_halt()
       end if
       do i = 1, ncomp
         if(rerror%p_RvecErrorL2(i)%NEQ .lt. NEL) then
-          call output_line('Length of p_RvecErrorL2('//trim(sys_siL(i,4))//&
-              ') is too small!',OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarVec')
+          call output_line("Length of p_RvecErrorL2("//trim(sys_siL(i,4))//&
+              ") is too small!",OU_CLASS_ERROR,OU_MODE_STD,"pperr_scalarVec")
           call sys_halt()
         end if
         call lsyssc_clearVector(rerror%p_RvecErrorL2(i))
@@ -499,14 +499,14 @@ contains
     if(associated(rerror%p_RvecErrorH1)) then
       bcalcH1 = .true.
       if(ubound(rerror%p_RvecErrorH1,1) .lt. ncomp) then
-        call output_line('Dimension of p_RvecErrorH1 array is too small!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarVec')
+        call output_line("Dimension of p_RvecErrorH1 array is too small!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"pperr_scalarVec")
         call sys_halt()
       end if
       do i = 1, ncomp
         if(rerror%p_RvecErrorH1(i)%NEQ .lt. NEL) then
-          call output_line('Length of p_RvecErrorH1('//trim(sys_siL(i,4))//&
-              ') is too small!',OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarVec')
+          call output_line("Length of p_RvecErrorH1("//trim(sys_siL(i,4))//&
+              ") is too small!",OU_CLASS_ERROR,OU_MODE_STD,"pperr_scalarVec")
           call sys_halt()
         end if
         call lsyssc_clearVector(rerror%p_RvecErrorH1(i))
@@ -516,14 +516,14 @@ contains
     if(associated(rerror%p_RvecErrorL1)) then
       bcalcL1 = .true.
       if(ubound(rerror%p_RvecErrorL1,1) .lt. ncomp) then
-        call output_line('Dimension of p_RvecErrorL1 array is too small!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarVec')
+        call output_line("Dimension of p_RvecErrorL1 array is too small!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"pperr_scalarVec")
         call sys_halt()
       end if
       do i = 1, ncomp
         if(rerror%p_RvecErrorL1(i)%NEQ .lt. NEL) then
-          call output_line('Length of p_RvecErrorL1('//trim(sys_siL(i,4))//&
-              ') is too small!',OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarVec')
+          call output_line("Length of p_RvecErrorL1("//trim(sys_siL(i,4))//&
+              ") is too small!",OU_CLASS_ERROR,OU_MODE_STD,"pperr_scalarVec")
           call sys_halt()
         end if
         call lsyssc_clearVector(rerror%p_RvecErrorL1(i))
@@ -533,14 +533,14 @@ contains
     if(associated(rerror%p_RvecErrorMean)) then
       bcalcMean = .true.
       if(ubound(rerror%p_RvecErrorMean,1) .lt. ncomp) then
-        call output_line('Dimension of p_RvecErrorMean array is too small!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarVec')
+        call output_line("Dimension of p_RvecErrorMean array is too small!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"pperr_scalarVec")
         call sys_halt()
       end if
       do i = 1, ncomp
         if(rerror%p_RvecErrorMean(i)%NEQ .lt. NEL) then
-          call output_line('Length of p_RvecErrorMean('//trim(sys_siL(i,4))//&
-              ') is too small!',OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarVec')
+          call output_line("Length of p_RvecErrorMean("//trim(sys_siL(i,4))//&
+              ") is too small!",OU_CLASS_ERROR,OU_MODE_STD,"pperr_scalarVec")
           call sys_halt()
         end if
         call lsyssc_clearVector(rerror%p_RvecErrorMean(i))
@@ -1211,7 +1211,7 @@ contains
       p_rperfconfig => pperr_perfconfig
     end if
 
-    if (rvectorScalar%isortStrategy .gt. 0) then
+    if (rvectorScalar%bisSorted) then
       call output_line("Vector must be unsorted!",&
           OU_CLASS_ERROR, OU_MODE_STD, "pperr_scalar_conf")
       call sys_halt()
@@ -1741,7 +1741,7 @@ contains
   ! OPTIONAL: A callback function that provides the analytical reference
   ! function to which the error should be computed.
   ! If not specified, the reference function is assumed to be zero!
-  include 'intf_refFunctionScBdr2D.inc'
+  include "intf_refFunctionScBdr2D.inc"
   optional :: ffunctionReference
 
   ! OPTIONAL: A callback function that provides the weighting function
@@ -1785,22 +1785,22 @@ contains
     end if
 
     if (.not. associated(p_rdiscretisation)) then
-      call output_line('No discretisation structure!',&
-                       OU_CLASS_ERROR, OU_MODE_STD, 'pperr_scalarBoundary2D')
+      call output_line("No discretisation structure!",&
+                       OU_CLASS_ERROR, OU_MODE_STD, "pperr_scalarBoundary2D")
       call sys_halt()
     end if
 
     if (p_rdiscretisation%ndimension .ne. NDIM2D) then
-      call output_line('Only 2D discretisations allowed.',&
-                       OU_CLASS_ERROR, OU_MODE_STD, 'pperr_scalarBoundary2D')
+      call output_line("Only 2D discretisations allowed.",&
+                       OU_CLASS_ERROR, OU_MODE_STD, "pperr_scalarBoundary2D")
       call sys_halt()
     end if
 
     ! The vector must be unsorted, otherwise we can not set up the vector.
     if (present(rvectorScalar)) then
-      if (rvectorScalar%isortStrategy .gt. 0) then
-        call output_line('Vector must be unsorted!',&
-                         OU_CLASS_ERROR, OU_MODE_STD, 'pperr_scalarBoundary2D')
+      if (rvectorScalar%bisSorted) then
+        call output_line("Vector must be unsorted!",&
+                         OU_CLASS_ERROR, OU_MODE_STD, "pperr_scalarBoundary2D")
         call sys_halt()
       end if
       cdataType = rvectorScalar%cdataType
@@ -1821,8 +1821,8 @@ contains
                                           rvectorScalar, ffunctionReference,&
                                           rcollection, ffunctionWeight)
       case DEFAULT
-        call output_line('Single precision vectors currently not supported!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarBoundary2D')
+        call output_line("Single precision vectors currently not supported!",&
+                         OU_CLASS_ERROR,OU_MODE_STD,"pperr_scalarBoundary2D")
         call sys_halt()
       end select
 
@@ -1846,8 +1846,8 @@ contains
         end do
 
       case DEFAULT
-        call output_line('Single precision vectors currently not supported!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarBoundary2D')
+        call output_line("Single precision vectors currently not supported!",&
+                         OU_CLASS_ERROR,OU_MODE_STD,"pperr_scalarBoundary2D")
         call sys_halt()
       end select
 
@@ -2680,17 +2680,17 @@ contains
 
     ! The vectors must have the same number of blocks
     if (rvector%nblocks .ne. rvectorRef%nblocks) then
-      call output_line('Vectors have different number of blocks!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'pperr_blockErrorEstimate')
+      call output_line("Vectors have different number of blocks!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"pperr_blockErrorEstimate")
       call sys_halt()
     end if
 
     ! The vector must be unsorted.
     do iblock=1,rvector%nblocks
-      if (rvector%RvectorBlock(iblock)%isortStrategy    .gt. 0 .or.&
-          rvectorRef%RvectorBlock(iblock)%isortStrategy .gt. 0) then
-        call output_line('Vectors must be unsorted!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'pperr_blockErrorEstimate')
+      if (rvector%RvectorBlock(iblock)%bisSorted .or.&
+          rvectorRef%RvectorBlock(iblock)%bisSorted) then
+        call output_line("Vectors must be unsorted!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"pperr_blockErrorEstimate")
         call sys_halt()
       end if
     end do
@@ -2728,8 +2728,8 @@ contains
     ! Check that both discretisations have the same number of element distributions
     if (p_rdiscretisation%inumFESpaces .ne. &
         p_rdiscretisationRef%inumFESpaces) then
-      call output_line('Number of element distributions mismatch!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'pperr_blockErrorEstimate')
+      call output_line("Number of element distributions mismatch!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"pperr_blockErrorEstimate")
       call sys_halt()
     end if
 
@@ -2747,8 +2747,8 @@ contains
       ! Check if element distributions have different number of elements
       if (p_rdiscretisation%RelementDistr(ielementDistr)%NEL .ne. &
           p_rdiscretisation%RelementDistr(ielementDistrRef)%NEL) then
-        call output_line('Number of elements in distributions mismatch!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'pperr_blockErrorEstimate')
+        call output_line("Number of elements in distributions mismatch!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"pperr_blockErrorEstimate")
         call sys_halt()
       end if
 
@@ -2979,8 +2979,8 @@ contains
 
         case DEFAULT
 
-          call output_line('Requested error estimate not implemented!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'pperr_blockErrorEstimate')
+          call output_line("Requested error estimate not implemented!",&
+              OU_CLASS_ERROR,OU_MODE_STD,"pperr_blockErrorEstimate")
           call sys_halt()
 
         end select
@@ -3214,16 +3214,16 @@ contains
     end do
 
     if (.not. associated(p_rdiscretisation)) then
-      call output_line('No discretisation structure!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'pperr_blockStandardDeviation')
+      call output_line("No discretisation structure!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"pperr_blockStandardDeviation")
       call sys_halt()
     end if
 
     ! The vector must be unsorted.
     do iblock=1,rvector%nblocks
-      if (rvector%RvectorBlock(iblock)%isortStrategy .gt. 0) then
-        call output_line('Vectors must be unsorted!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'pperr_blockStandardDeviation')
+      if (rvector%RvectorBlock(iblock)%bisSorted) then
+        call output_line("Vectors must be unsorted!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"pperr_blockStandardDeviation")
         call sys_halt()
       end if
     end do

@@ -104,9 +104,8 @@
 !# 28.) lsysbl_setSortStrategy
 !#      -> Assigns a sorting strategy/permutation to every subvector
 !#
-!# 29.) lsysbl_sortVectorInSitu
-!#      -> Resort the entries of all subvectors according to an assigned
-!#         sorting strategy
+!# 29.) lsysbl_sortVector / lsysbl_sortMatrix
+!#      -> Activates the sorting of a vector / a matrix
 !#
 !# 30.) lsysbl_isVectorCompatible
 !#      -> Checks whether two vectors are compatible to each other
@@ -209,10 +208,8 @@
 !# 61.) lsysbl_getVectorMagnitude
 !#      -> Compute the vector magnitude.
 !#
-!# 62.) lsysbl_synchroniseSortVecVec
+!# 62.) lsysbl_synchroniseSort
 !#      -> Synchronises the sorting between a vector and another vector
-!#
-!# 63.) lsysbl_synchroniseSortMatVec
 !#      -> Synchrionises the sorting of a vector according to the sorting
 !#         of a matrix
 !#
@@ -252,6 +249,9 @@
 !# 74.) lsysbl_copyD2H_Matrix
 !#      -> Copies the data of a vector from the memory of the
 !#         coprocessor device to the host memory
+!#
+!# 75.) lsysbl_getScalarTempVector
+!#      -> Creates a scalar temp vector.
 !# </purpose>
 !##############################################################################
 
@@ -270,6 +270,7 @@ module linearsystemblock
   use perfconfig
   use spatialdiscretisation
   use storage
+  use sortstrategybase
   use uuid
 
   implicit none
@@ -534,6 +535,27 @@ module linearsystemblock
 
   public :: lsysbl_getbase_int
 
+  interface lsysbl_setSortStrategy
+    module procedure lsysbl_setSortStrategyVec
+    module procedure lsysbl_setSortStrategyMat
+  end interface
+
+  public :: lsysbl_setSortStrategy
+  
+  interface lsysbl_getScalarTempVector
+    module procedure lsysbl_getScalarTempVectorDiscr
+    module procedure lsysbl_getScalarTempVectorVec
+  end interface
+  
+  public :: lsysbl_getScalarTempVector
+  
+  interface lsysbl_synchroniseSort
+    module procedure lsysbl_synchroniseSortVecVec
+    module procedure lsysbl_synchroniseSortMatVec
+  end interface
+  
+  public :: lsysbl_synchroniseSort
+
   public :: lsysbl_invertedDiagMatVec
   public :: lsysbl_createMatFromScalar
   public :: lsysbl_createVecFromScalar
@@ -558,8 +580,8 @@ module linearsystemblock
   public :: lsysbl_clearVector
   public :: lsysbl_vectorLinearComb
   public :: lsysbl_scalarProduct
-  public :: lsysbl_setSortStrategy
-  public :: lsysbl_sortVectorInSitu
+  public :: lsysbl_sortVector
+  public :: lsysbl_sortMatrix
   public :: lsysbl_isVectorCompatible
   public :: lsysbl_isMatrixCompatible
   public :: lsysbl_isMatrixSorted
@@ -590,8 +612,6 @@ module linearsystemblock
   public :: lsysbl_moveToSubmatrix
   public :: lsysbl_allocEmptyMatrix
   public :: lsysbl_getVectorMagnitude
-  public :: lsysbl_synchroniseSortVecVec
-  public :: lsysbl_synchroniseSortMatVec
   public :: lsysbl_createScalarFromVec
   public :: lsysbl_convertScalarBlockVector
   public :: lsysbl_convertBlockScalarVector
@@ -599,6 +619,7 @@ module linearsystemblock
   public :: lsysbl_copyD2H_Vector
   public :: lsysbl_copyH2D_Matrix
   public :: lsysbl_copyD2H_Matrix
+
 
 contains
 
@@ -676,35 +697,32 @@ contains
       end if
     end if
 
-    ! isortStrategy < 0 means unsorted. Both unsorted is ok.
-
-    if ((rvector1%RvectorBlock(i)%isortStrategy .gt. 0) .or. &
-        (rvector2%RvectorBlock(i)%isortStrategy .gt. 0)) then
-
-      if (rvector1%RvectorBlock(i)%isortStrategy .ne. &
-          rvector2%RvectorBlock(i)%isortStrategy) then
-        if (present(bcompatible)) then
-          bcompatible = .false.
-          return
-        else
-          call output_line('Vectors not compatible, differently sorted!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_isVectorCompatible')
-          call sys_halt()
-        end if
+    ! Check the sorting.
+    if (rvector1%RvectorBlock(i)%bisSorted .neqv. rvector2%RvectorBlock(i)%bisSorted) then
+      if (present(bcompatible)) then
+        bcompatible = .false.
+        return
+      else
+        call output_line("Matrix/vector not compatible, differently sorted!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"lsysbl_isMatrixVectorCompatible")
+        call sys_halt()
       end if
-
-      if (rvector1%RvectorBlock(i)%h_isortPermutation .ne. &
-          rvector2%RvectorBlock(i)%h_isortPermutation) then
+    end if
+    
+    if (rvector1%RvectorBlock(i)%bisSorted) then
+      if (rvector1%RvectorBlock(i)%p_rsortStrategy%ctype .ne. &
+          rvector2%RvectorBlock(i)%p_rsortStrategy%ctype) then
         if (present(bcompatible)) then
           bcompatible = .false.
           return
         else
-          call output_line('Vectors not compatible, differently sorted!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_isVectorCompatible')
+          call output_line("Matrix/vector not compatible, differently sorted!",&
+              OU_CLASS_ERROR,OU_MODE_STD,"lsysbl_isMatrixVectorCompatible")
           call sys_halt()
         end if
       end if
     end if
+
   end do
 
   ! Ok, they are compatible
@@ -877,32 +895,27 @@ contains
         end if
       end if
 
-      ! isortStrategy < 0 means unsorted. Both unsorted is ok.
-
-
-      if ((rvector%RvectorBlock(itmp)%isortStrategy .gt. 0) .or. &
-          (rmatrix%RmatrixBlock(i,j)%isortStrategy .gt. 0)) then
-
-        if (rvector%RvectorBlock(itmp)%isortStrategy .ne. &
-            rmatrix%RmatrixBlock(i,j)%isortStrategy) then
-          if (present(bcompatible)) then
-            bcompatible = .false.
-            return
-          else
-            call output_line('Vector/Matrix not compatible, differently sorted!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_isMatrixCompatible')
-            call sys_halt()
-          end if
+      ! Check the sorting.
+      if (rmatrix%RmatrixBlock(i,j)%bcolumnsSorted .neqv. rvector%RvectorBlock(itmp)%bisSorted) then
+        if (present(bcompatible)) then
+          bcompatible = .false.
+          return
+        else
+          call output_line("Matrix/vector not compatible, differently sorted!",&
+              OU_CLASS_ERROR,OU_MODE_STD,"lsysbl_isMatrixVectorCompatible")
+          call sys_halt()
         end if
-
-        if (rvector%RvectorBlock(itmp)%h_isortPermutation .ne. &
-            rmatrix%RmatrixBlock(i,j)%h_isortPermutation) then
+      end if
+      
+      if (rmatrix%RmatrixBlock(i,j)%bcolumnsSorted) then
+        if (rmatrix%RmatrixBlock(i,j)%p_rsortStrategyColumns%ctype .ne. &
+            rvector%RvectorBlock(itmp)%p_rsortStrategy%ctype) then
           if (present(bcompatible)) then
             bcompatible = .false.
             return
           else
-            call output_line('Vector/Matrix not compatible, differently sorted!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_isMatrixCompatible')
+            call output_line("Matrix/vector not compatible, differently sorted!",&
+                OU_CLASS_ERROR,OU_MODE_STD,"lsysbl_isMatrixVectorCompatible")
             call sys_halt()
           end if
         end if
@@ -2412,10 +2425,8 @@ contains
             ! Give the vector the same sorting strategy as the matrix, so that
             ! the matrix and vector get compatible. Otherwise, things
             ! like matrix vector multiplication will not work...
-            rx%RvectorBlock(i)%isortStrategy = &
-              rtemplateMat%RmatrixBlock(j,i)%isortStrategy
-            rx%RvectorBlock(i)%h_IsortPermutation = &
-              rtemplateMat%RmatrixBlock(j,i)%h_IsortPermutation
+            rx%RvectorBlock(i)%p_rsortStrategy => &
+              rtemplateMat%RmatrixBlock(j,i)%p_rsortStrategyColumns
           else
             rx%RvectorBlock(i)%p_rspatialDiscr => &
               rtemplateMat%RmatrixBlock(i,j)%p_rspatialDiscrTest
@@ -2423,10 +2434,8 @@ contains
             ! Give the vector the same sorting strategy as the matrix, so that
             ! the matrix and vector get compatible. Otherwise, things
             ! like matrix vector multiplication will not work...
-            rx%RvectorBlock(i)%isortStrategy = &
-              rtemplateMat%RmatrixBlock(i,j)%isortStrategy
-            rx%RvectorBlock(i)%h_IsortPermutation = &
-              rtemplateMat%RmatrixBlock(i,j)%h_IsortPermutation
+            rx%RvectorBlock(i)%p_rsortStrategy => &
+              rtemplateMat%RmatrixBlock(i,j)%p_rsortStrategyColumns
 
             ! DOES THIS WORK?!?!? I do not know =) MK
           end if
@@ -4951,21 +4960,102 @@ contains
 
 !<subroutine>
 
-  subroutine lsysbl_sortVectorInSitu (rvector,rtemp,bsort)
+  subroutine lsysbl_getScalarTempVectorVec (rvector,rtempVector,bclear,cdataType)
+
+!<description>
+  ! Creates a scalar temp vector which is as large as the largest
+  ! subvector in rvector.
+!</description>
+
+!<input>
+  ! Block vector.
+  type(t_vectorBlock), intent(in) :: rvector
+  
+  ! OPTIONAL: Whether to fill the vector with zero initially.
+  ! If not specified, the vector is left uninitialised.
+  logical, intent(in), optional :: bclear
+
+  ! OPTIONAL: Data tyüe
+  integer, intent(in), optional :: cdataType
+!</input>
+
+!<output>
+  ! Scalar temp vector.
+  type(t_vectorScalar), intent(out) :: rtempVector
+!</output>
+
+!</subroutine>
+
+    integer :: iblock,NEQ
+
+    ! Loop over the blocks, get the largest subvectpr
+    NEQ = 0
+    do iblock = 1,rvector%nblocks
+      NEQ = max(NEQ,rvector%RvectorBlock(iblock)%NEQ)
+    end do
+    
+    ! Create the temp vector.
+    call lsyssc_createVecDirect (rtempVector,NEQ,bclear,cdataType)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lsysbl_getScalarTempVectorDiscr (rblockDiscr,rtempVector,bclear,cdataType)
+
+!<description>
+  ! Creates a scalar temp vector which is large enough to hold
+  ! all DOFs from the largest scalar discretisation in the block
+  ! discretisation.
+!</description>
+
+!<input>
+  ! Block discretisation.
+  type(t_blockDiscretisation), intent(in) :: rblockDiscr
+
+  ! OPTIONAL: Whether to fill the vector with zero initially.
+  ! If not specified, the vector is left uninitialised.
+  logical, intent(in), optional :: bclear
+
+  ! OPTIONAL: Data tyüe
+  integer, intent(in), optional :: cdataType
+!</input>
+
+!<output>
+  ! Scalar temp vector.
+  type(t_vectorScalar), intent(out) :: rtempVector
+!</output>
+
+!</subroutine>
+
+    integer :: iblock,NEQ
+
+    ! Loop over the blocks, get the largest subvectpr
+    NEQ = 0
+    do iblock = 1,rblockDiscr%ncomponents
+      NEQ = max(NEQ,dof_igetNDofGlob(rblockDiscr%RspatialDiscr(iblock)))
+    end do
+    
+    ! Create the temp vector.
+    call lsyssc_createVecDirect (rtempVector,NEQ,bclear,cdataType)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lsysbl_sortVector (rvector,bsort,rtemp)
 
 !<description>
   ! This routine sorts a block vector or unsorts it.
   ! If bsort=TRUE, the vector is sorted, otherwise it is unsorted.
+  ! the sorting is (de-)activated on all subvectors at once.
   !
-  ! The sorting uses the associated permutation of every subvector,
-  ! so before calling this routine, a permutation should be assigned
-  ! to every subvector, either manually or using lsysbl_setSortStrategy.
-  ! The associated sorting strategy tag will change to
-  !  + |subvector%isortStrategy|  - if bsort = TRUE
-  !  - |subvector%isortStrategy|  - if bsort = false
-  ! so the absolute value of rvector%isortStrategy indicates the sorting
-  ! strategy and the sign determines whether the (sub)vector is
-  ! actually sorted for the associated sorting strategy.
+  ! The sorting strategy must have been assigned in advance to the vector
+  ! (or the subvectors) using lsysbl_setSortStrategy.
 !</description>
 
 !<input>
@@ -4978,29 +5068,65 @@ contains
   ! The vector which is to be resorted
   type(t_vectorBlock), intent(inout) :: rvector
 
-  ! A scalar temporary vector. Must be of the same data type as rvector.
+  ! OPTIONAL: A scalar temporary vector. Must be of the same data type as rvector.
   ! Must be at least as large as the longest subvector in rvector.
-  type(t_vectorScalar), intent(inout) :: rtemp
+  type(t_vectorScalar), intent(inout), optional :: rtemp
 !</inputoutput>
 
 !</subroutine>
 
-  integer :: iblock
+    integer :: iblock
 
-  ! Loop over the blocks
-  if (bsort) then
+    ! Loop over the blocks
     do iblock = 1,rvector%nblocks
-      call lsyssc_sortVectorInSitu (&
-          rvector%RvectorBlock(iblock), rtemp,&
-          abs(rvector%RvectorBlock(iblock)%isortStrategy))
+      call lsyssc_sortVector (&
+          rvector%RvectorBlock(iblock), bsort, rtemp)
     end do
-  else
-    do iblock = 1,rvector%nblocks
-      call lsyssc_sortVectorInSitu (&
-          rvector%RvectorBlock(iblock), rtemp,&
-          -abs(rvector%RvectorBlock(iblock)%isortStrategy))
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lsysbl_sortMatrix (rmatrix,bsort,bincludeEntries)
+
+!<description>
+  ! This routine sorts a block matrix or unsorts it.
+  ! If bsort=TRUE, the matrix is sorted, otherwise it is unsorted.
+  ! the sorting is (de-)activated on all submatrices at once.
+  !
+  ! The sorting strategy must have been assigned in advance to the matrix
+  ! (or the subvectors) using lsysbl_setSortStrategy.
+!</description>
+
+!<input>
+  ! Whether to sort the vector (TRUE) or sort it back to unsorted state
+  ! (FALSE).
+  logical, intent(in) :: bsort
+
+  ! OPTIONAL: Defines whether or not to include the entries in the sorting.
+  ! TRUE sorts structure and entries (default).
+  ! FALSE only sorts the structure and ignores the entries.
+  ! Note that in this case, the entries are left in a most likely undefined state.
+  logical, intent(in), optional :: bincludeEntries
+!</input>
+
+!<inputoutput>
+  ! The matrix which is to be resorted
+  type(t_matrixBlock), intent(inout) :: rmatrix
+!</inputoutput>
+
+!</subroutine>
+
+    integer :: i,j
+
+    ! Loop over the blocks and sort/unsort
+    do j=1,rmatrix%nblocksPerRow
+      do i=1,rmatrix%nblocksPerCol
+        call lsyssc_sortMatrix (rmatrix%RmatrixBlock(i,j),bsort,bincludeEntries)
+      end do
     end do
-  end if
 
   end subroutine
 
@@ -5008,7 +5134,7 @@ contains
 
 !<subroutine>
 
-  subroutine lsysbl_synchroniseSortVecVec (rvectorSrc,rvectorDst,rtemp)
+  subroutine lsysbl_synchroniseSortVecVec (rvectorSrc,rvectorDst,rtemp,bautoUnsort)
 
 !<description>
   ! Synchronises the sorting strategy of rvectorDest according to rvectorSrc:
@@ -5023,6 +5149,15 @@ contains
 !<input>
   ! Source vector defining the sorting strategy.
   type(t_vectorBlock), intent(in) :: rvectorSrc
+
+  ! OPTIONAL: Whether or not to check the target vector if it is already
+  ! sorted. Default is TRUE.
+  ! If set to TRUE and the target vector has already a sorting structure
+  ! attached, the target is sorted back.
+  ! If set to FALSE, the sorting of the target vector is deactivated and
+  ! rsortStrategy is installed as sorting strategy. The data of the vector
+  ! gets invalid. (Usually used for temp vectors.)
+  logical, intent(in), optional :: bautoUnsort
 !</input>
 
 !<inputoutput>
@@ -5033,7 +5168,7 @@ contains
 
   ! A scalar temporary vector. Must be of the same data type as rvector.
   ! Must be at least as large as the longest subvector in rvector.
-  type(t_vectorScalar), intent(inout) :: rtemp
+  type(t_vectorScalar), intent(inout), optional :: rtemp
 !</inputoutput>
 
 !</subroutine>
@@ -5044,7 +5179,7 @@ contains
     do iblock = 1,rvectorDst%nblocks
       ! Synchronise every subvector
       call lsyssc_synchroniseSortVecVec (rvectorSrc%RvectorBlock(iblock),&
-          rvectorDst%RvectorBlock(iblock),rtemp)
+          rvectorDst%RvectorBlock(iblock),rtemp,bautoUnsort)
     end do
 
   end subroutine
@@ -5053,7 +5188,7 @@ contains
 
 !<subroutine>
 
-  subroutine lsysbl_synchroniseSortMatVec (rmatrixSrc,rvectorDst,rtemp)
+  subroutine lsysbl_synchroniseSortMatVec (rmatrixSrc,rvectorDst,rtemp,bautoUnsort)
 
 !<description>
   ! Synchronises the sorting strategy of rvectorDest according to rmatrixSrc:
@@ -5068,6 +5203,15 @@ contains
 !<input>
   ! Source matrix defining the sorting strategy.
   type(t_matrixBlock), intent(in) :: rmatrixSrc
+
+  ! OPTIONAL: Whether or not to check the target vector if it is already
+  ! sorted. Default is TRUE.
+  ! If set to TRUE and the target vector has already a sorting structure
+  ! attached, the target is sorted back.
+  ! If set to FALSE, the sorting of the target vector is deactivated and
+  ! rsortStrategy is installed as sorting strategy. The data of the vector
+  ! gets invalid. (Usually used for temp vectors.)
+  logical, intent(in), optional :: bautoUnsort
 !</input>
 
 !<inputoutput>
@@ -5095,7 +5239,7 @@ contains
       do i = 1,rmatrixSrc%nblocksPerCol
         if (rmatrixSrc%RmatrixBlock(i,j)%NEQ .ne. 0) then
           call lsyssc_synchroniseSortMatVec (rmatrixSrc%RmatrixBlock(i,j),&
-              rvectorDst%RvectorBlock(i),rtemp)
+              rvectorDst%RvectorBlock(i),rtemp,bautoUnsort)
           ! Next column / subvector
           exit
         end if
@@ -5108,52 +5252,162 @@ contains
 
 !<subroutine>
 
-  subroutine lsysbl_setSortStrategy (rvector,IsortStrategy,Hpermutations)
+  subroutine lsysbl_setSortStrategyVec (rvector,rblockSortStrategy,bautoUnsort)
 
 !<description>
   ! This routine simultaneously connects all subvectors of a block
-  ! vector with a sorting strategy. IsortStrategy is an array of tags
-  ! that identify the sorting strategy of each subvector. Hpermutation
-  ! is an array of handles. Each handle identifies the permutation
-  ! that is to assign to the corresponding subvector.
+  ! vector with a sorting strategy. rblockSortStrategy defines a block
+  ! sorting strategy, i.e., a set of sorting strategies for a couple
+  ! of blocks. These strategies are assigned to the blocks.
   !
-  ! The routine does not resort the vector. Only the identifier in
-  ! IsortStrategy and the handle of the permutation are saved to the
-  ! vector. To indicate that the subvector is not sorted, the negative
-  ! value of IsortStrategy is saved to subvector%isortStrategy.
+  ! Note: The routine does not resort the vector. 
 !</description>
 
 !<inputoutput>
   ! The vector which is to be resorted
   type(t_vectorBlock), intent(inout) :: rvector
+
+  ! OPTIONAL: Whether or not to check the target vector if it is already
+  ! sorted. Default is TRUE.
+  ! If set to TRUE and the target vector has already a sorting structure
+  ! attached, the target is sorted back.
+  ! If set to FALSE, the sorting of the target vector is deactivated and
+  ! rsortStrategy is installed as sorting strategy. The data of the vector
+  ! gets invalid. (Usually used for temp vectors.)
+  logical, intent(in), optional :: bautoUnsort
 !</inputoutput>
 
 !<input>
-  ! An array of sorting strategy identifiers (SSTRAT_xxxx), each for one
-  ! subvector of the global vector.
-  ! The negative value of this identifier is saved to the corresponding
-  ! subvector.
-  ! DIMENSION(rvector\%nblocks)
-  integer, dimension(:), intent(in) :: IsortStrategy
-
-  ! An array of handles. Each handle corresponds to a subvector and
-  ! defines a permutation how to resort the subvector.
-  ! Each permutation associated to a handle must be of the form
-  !    array [1..2*NEQ] of integer  (NEQ=NEQ(subvector))
-  ! with entries (1..NEQ)       = permutation
-  ! and  entries (NEQ+1..2*NEQ) = inverse permutation.
-  ! DIMENSION(rvector\%nblocks)
-  integer, dimension(:), intent(in) :: Hpermutations
-
+  ! A block sorting structure to be assigned to the vector.
+  type(t_blockSortStrategy), intent(in), target :: rblockSortStrategy
 !</input>
 
 !</subroutine>
 
-  ! Install the sorting strategy in every block.
-  rvector%RvectorBlock(1:rvector%nblocks)%isortStrategy = &
-    -abs(IsortStrategy(1:rvector%nblocks))
-  rvector%RvectorBlock(1:rvector%nblocks)%h_IsortPermutation = &
-    Hpermutations(1:rvector%nblocks)
+    integer :: iblock
+
+    ! Assign to all blocks
+    if (rblockSortStrategy%nblocks .ne. rvector%nblocks) then
+      call output_line("Invalid sorting strategy.",&
+          OU_CLASS_ERROR,OU_MODE_STD,"lsysbl_setSortStrategyVec")
+      call sys_halt()
+    end if
+    
+    do iblock = 1,rvector%nblocks
+      call lsyssc_setSortStrategy(rvector%RvectorBlock(iblock),&
+          rblockSortStrategy%p_Rstrategies(iblock),bautoUnsort)
+    end do
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lsysbl_setSortStrategyMat (&
+      rmatrix,rblockSortStrategyColumns,rblockSortStrategyRows,bautoUnsort)
+
+!<description>
+  ! This routine simultaneously connects all submatrices of a block
+  ! matrix with a sorting strategy. rblockSortStrategy defines a block
+  ! sorting strategy, i.e., a set of sorting strategies for a couple
+  ! of blocks. These strategies are assigned to the blocks.
+  !
+  ! Note: The routine does not resort the matrix.
+  ! Note: The routine currently only supports block diagonal matrices.
+!</description>
+
+!<inputoutput>
+  ! The matrix which is to be resorted
+  type(t_matrixBlock), intent(inout) :: rmatrix
+
+  ! OPTIONAL: Whether or not to check the target vector if it is already
+  ! sorted. Default is TRUE.
+  ! If set to TRUE and the target vector has already a sorting structure
+  ! attached, the target is sorted back.
+  ! If set to FALSE, the sorting of the target vector is deactivated and
+  ! rsortStrategy is installed as sorting strategy. The data of the vector
+  ! gets invalid. (Usually used for temp vectors.)
+  logical, intent(in), optional :: bautoUnsort
+!</inputoutput>
+
+!<input>
+  ! OPTIONAL: A block sorting structure to be assigned to the matrix for resorting the columns.
+  type(t_blockSortStrategy), intent(in), target, optional :: rblockSortStrategyColumns
+
+  ! OPTIONAL: A block sorting structure to be assigned to the matrix for resorting the rows.
+  type(t_blockSortStrategy), intent(in), target, optional :: rblockSortStrategyRows
+!</input>
+
+!</subroutine>
+
+    integer :: i,j
+
+    ! Assign to all blocks
+    if (present(rblockSortStrategyColumns)) then
+      if (rblockSortStrategyColumns%nblocks .ne. rmatrix%nblocksPerRow) then
+        call output_line("Invalid sorting strategy.",&
+            OU_CLASS_ERROR,OU_MODE_STD,"lsysbl_setSortStrategyMat")
+        call sys_halt()
+      end if
+    end if
+
+    if (present(rblockSortStrategyRows)) then
+      if (rblockSortStrategyRows%nblocks .ne. rmatrix%nblocksPerCol) then
+        call output_line("Invalid sorting strategy.",&
+            OU_CLASS_ERROR,OU_MODE_STD,"lsysbl_setSortStrategyMat")
+        call sys_halt()
+      end if
+    end if
+    
+    if (present(rblockSortStrategyColumns) .and. present(rblockSortStrategyRows)) then
+      do j=1,rmatrix%nblocksPerRow
+        do i=1,rmatrix%nblocksPerCol
+          
+          ! We currently only support block
+          if ((i .ne. j) .and. lsysbl_isSubmatrixPresent(rmatrix,i,j)) then
+            call output_line("Currently, only block diagonal matrices are supported.",&
+                OU_CLASS_ERROR,OU_MODE_STD,"lsysbl_setSortStrategyMat")
+            call sys_halt()
+          end if
+          
+          call lsyssc_setSortStrategy(rmatrix%RmatrixBlock(i,j),&
+              rblockSortStrategyColumns%p_Rstrategies(j),rblockSortStrategyRows%p_Rstrategies(j),&
+              bautoUnsort)
+        end do
+      end do
+    else if (present(rblockSortStrategyColumns)) then
+      do j=1,rmatrix%nblocksPerRow
+        do i=1,rmatrix%nblocksPerCol
+          
+          ! We currently only support block
+          if ((i .ne. j) .and. lsysbl_isSubmatrixPresent(rmatrix,i,j)) then
+            call output_line("Currently, only block diagonal matrices are supported.",&
+                OU_CLASS_ERROR,OU_MODE_STD,"lsysbl_setSortStrategyMat")
+            call sys_halt()
+          end if
+          
+          call lsyssc_setSortStrategy(rmatrix%RmatrixBlock(i,j),&
+              rblockSortStrategyColumns%p_Rstrategies(j),bautoUnsort=bautoUnsort)
+        end do
+      end do
+    else if (present(rblockSortStrategyRows)) then
+      do j=1,rmatrix%nblocksPerRow
+        do i=1,rmatrix%nblocksPerCol
+          
+          ! We currently only support block
+          if ((i .ne. j) .and. lsysbl_isSubmatrixPresent(rmatrix,i,j)) then
+            call output_line("Currently, only block diagonal matrices are supported.",&
+                OU_CLASS_ERROR,OU_MODE_STD,"lsysbl_setSortStrategyMat")
+            call sys_halt()
+          end if
+          
+          call lsyssc_setSortStrategy(rmatrix%RmatrixBlock(i,j),&
+              rsortStrategyRows=rblockSortStrategyRows%p_Rstrategies(j),&
+              bautoUnsort=bautoUnsort)
+        end do
+      end do
+    end if
 
   end subroutine
 
@@ -5180,20 +5434,19 @@ contains
 
 !</function>
 
-  integer :: i,j,k
+    logical :: bsorted
+    integer :: i,j
 
-  ! Loop through all matrices and get the largest sort-identifier
-  k = 0
-  do j=1,rmatrix%nblocksPerRow
-    do i=1,rmatrix%nblocksPerCol
-      if (rmatrix%RmatrixBlock(i,j)%NEQ .ne. 0) then
-        k = max(k,rmatrix%RmatrixBlock(i,j)%isortStrategy)
-      end if
+    ! Loop through all matrices and get the largest sort-identifier
+    bsorted = .false.
+    do j=1,rmatrix%nblocksPerRow
+      do i=1,rmatrix%nblocksPerCol
+        bsorted = bsorted .or. rmatrix%RmatrixBlock(i,j)%bcolumnsSorted .or. &
+            rmatrix%RmatrixBlock(i,j)%browsSorted
+      end do
     end do
-  end do
 
-  ! If k is greater than 0, at least one submatrix is sorted
-  lsysbl_isMatrixSorted = k .gt. 0
+    lsysbl_isMatrixSorted = bsorted
 
   end function
 
@@ -5220,18 +5473,16 @@ contains
 
 !</function>
 
-  integer :: i,k
+    logical :: bsorted
+    integer :: i
 
-  ! Loop through all matrices and get the largest sort-identifier
-  k = 0
-  do i=1,rvector%nblocks
-    if (rvector%RvectorBlock(i)%NEQ .ne. 0) then
-      k = max(k,rvector%RvectorBlock(i)%isortStrategy)
-    end if
-  end do
+    ! Loop through all matrices and get the largest sort-identifier
+    bsorted = .false.
+    do i=1,rvector%nblocks
+      bsorted = bsorted .or. rvector%RvectorBlock(i)%bisSorted
+    end do
 
-  ! If k is greater than 0, at least one submatrix is sorted
-  lsysbl_isVectorSorted = k .gt. 0
+    lsysbl_isVectorSorted = bsorted
 
   end function
 
@@ -6118,9 +6369,7 @@ contains
     ! available in any case.
     if (bdocopy) then
       do i = 1, rx%nblocks
-        if (rx%RvectorBlock(i)%isortStrategy > 0) then
-          call lsyssc_vectorActivateSorting(rx%RvectorBlock(i),.false.)
-        end if
+        call lsyssc_sortVector(rx%RvectorBlock(i),.false.)
       end do
       ! Make a copy of the unsorted content
       call lsysbl_duplicateVector(rx, rxTmp,&
@@ -6180,8 +6429,7 @@ contains
       n = n + rx%RvectorBlock(i)%NEQ*rx%RvectorBlock(i)%NVAR
 
       ! Remove any sorting strategy
-      rx%RvectorBlock(i)%isortStrategy      = 0
-      rx%RvectorBlock(i)%h_iSortPermutation = ST_NOHANDLE
+      nullify(rx%RvectorBlock(i)%p_rsortStrategy)
     end do
 
     ! If the content should be copied use the temporal vector
@@ -6555,9 +6803,7 @@ contains
       ! available in any case.
       if (bdocopy) then
         do i = 1, rx%nblocks
-          if (rx%RvectorBlock(i)%isortStrategy > 0) then
-            call lsyssc_vectorActivateSorting(rx%RvectorBlock(i),.false.)
-          end if
+          call lsyssc_sortVector(rx%RvectorBlock(i),.false.)
         end do
         ! Make a copy of the unsorted content
         call lsysbl_duplicateVector(rx, rxTmp,&
@@ -6607,10 +6853,8 @@ contains
             ! Give the vector the same sorting strategy as the matrix, so that
             ! the matrix and vector get compatible. Otherwise, things
             ! like matrix vector multiplication will not work...
-            rx%RvectorBlock(i)%isortStrategy = &
-                rtemplateMat%RmatrixBlock(j,i)%isortStrategy
-            rx%RvectorBlock(i)%h_IsortPermutation = &
-                rtemplateMat%RmatrixBlock(j,i)%h_IsortPermutation
+            rx%RvectorBlock(i)%p_rsortStrategy => &
+                rtemplateMat%RmatrixBlock(j,i)%p_rsortStrategyColumns
 
             ! Denote in the subvector that the handle belongs to us - not to
             ! the subvector.

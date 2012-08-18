@@ -714,8 +714,8 @@ contains
     integer :: i
     character    :: c
 
-    if (len(str) > len(strUpper)) then
-      print *, "sys_toupper_copy: target string is too short"
+    if (len(str) .gt. len(strUpper)) then
+      write (*,*) "sys_toupper_copy: target string is too short"
       call sys_halt()
     end if
 
@@ -799,8 +799,8 @@ contains
     integer :: i
     character    :: c
 
-    if (len(str) > len(strLower)) then
-      print *, "sys_tolower_copy: target string is too short"
+    if (len(str) .gt. len(strLower)) then
+      write (*,*) "sys_tolower_copy: target string is too short"
       call sys_halt()
     end if
 

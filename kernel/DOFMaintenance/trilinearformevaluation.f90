@@ -47,13 +47,13 @@
 !# 10.) trilf_initPerfConfig
 !#      -> Initialises the global performance configuration
 !#
-!# A 'trilinear form' is in our context a bilinear form whose coefficient
+!# A "trilinear form" is in our context a bilinear form whose coefficient
 !# function may depend on a Finite Element function:
 !# <tex>
 !#   $$ a(u,phi_i,psi_j)  =  \int c(x,y) f(u) g(\psi_j) h(\phi_i) $$
 !# </tex>
 !# with f,g,h derivative operators. Therefore, there is no
-!# special 'create structure' routine; the structure is generated based on the
+!# special "create structure" routine; the structure is generated based on the
 !# underlying bilinear form, which steps from the idea of treating u as
 !# a variable coefficient:
 !# <tex>
@@ -269,7 +269,7 @@ contains
   ! normally attached to the matrix by bilf_createMatrixStructure.
   !
   ! For the routine to work properly, it is important that the discretisation
-  ! structure of rvector is 'compatible' with the discretisation structure
+  ! structure of rvector is "compatible" with the discretisation structure
   ! of the matrix! I.e., the element distributions must be the same
   ! (in number and ordering of the elements) except for the element type!
   !
@@ -296,7 +296,7 @@ contains
 
   ! OPTIONAL: A callback routine for nonconstant coefficient matrices.
   ! Must be present if the matrix has nonconstant coefficients!
-  include 'intf_coefficientTrilMatrixSc.inc'
+  include "intf_coefficientTrilMatrixSc.inc"
   optional :: fcoeff_buildTrilMatrixSc_sim
 
   ! OPTIONAL: Number of temp arrays.
@@ -325,16 +325,16 @@ contains
   ! Note that we cannot switch off the sorting as easy as in the case
   ! of a vector, since there is a structure behind the matrix! So the caller
   ! has to make sure, the matrix is unsorted when this routine is called.
-  if (rmatrixScalar%isortStrategy .gt. 0) then
-    call output_line('Matrix-structure must be unsorted!',&
-        OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrixScalar')
+  if (rmatrixScalar%bcolumnsSorted .or. rmatrixScalar%browsSorted) then
+    call output_line("Matrix-structure must be unsorted!",&
+        OU_CLASS_ERROR,OU_MODE_STD,"trilf_buildMatrixScalar")
     call sys_halt()
   end if
 
   if ((.not. associated(rmatrixScalar%p_rspatialDiscrTest)) .or. &
       (.not. associated(rmatrixScalar%p_rspatialDiscrTrial))) then
-    call output_line('No discretisation associated!',&
-        OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrixScalar')
+    call output_line("No discretisation associated!",&
+        OU_CLASS_ERROR,OU_MODE_STD,"trilf_buildMatrixScalar")
     call sys_halt()
   end if
 
@@ -364,13 +364,13 @@ contains
         call lsyssc_convertMatrix (rmatrixScalar,LSYSSC_MATRIX7)
 
       case DEFAULT
-        call output_line('Not supported matrix structure!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrixScalar')
+        call output_line("Not supported matrix structure!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"trilf_buildMatrixScalar")
         call sys_halt()
       end select
     case DEFAULT
-      call output_line('Single precision matrices currently not supported!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrixScalar')
+      call output_line("Single precision matrices currently not supported!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"trilf_buildMatrixScalar")
       call sys_halt()
     end select
 
@@ -400,18 +400,18 @@ contains
         call lsyssc_convertMatrix (rmatrixScalar,LSYSSC_MATRIX7)
 
       case DEFAULT
-        call output_line('Not supported matrix structure!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrixScalar')
+        call output_line("Not supported matrix structure!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"trilf_buildMatrixScalar")
         call sys_halt()
       end select
     case DEFAULT
-      call output_line('Single precision matrices currently not supported!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrixScalar')
+      call output_line("Single precision matrices currently not supported!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"trilf_buildMatrixScalar")
       call sys_halt()
     end select
   case DEFAULT
-    call output_line('General discretisation not implemented!',&
-        OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrixScalar')
+    call output_line("General discretisation not implemented!",&
+        OU_CLASS_ERROR,OU_MODE_STD,"trilf_buildMatrixScalar")
     call sys_halt()
   end select
 
@@ -429,7 +429,7 @@ contains
   ! This routine calculates the entries of a finite element matrix.
   ! The matrix structure must be prepared with bilf_createMatrixStructure
   ! in advance. The discretisation is assumed to be conformal, i.e. the DOF`s
-  ! of all finite elements must 'match'. Trial and test functions may be
+  ! of all finite elements must "match". Trial and test functions may be
   ! different.
   ! In case the array for the matrix entries does not exist, the routine
   ! allocates memory in size of the matrix of the heap for the matrix entries.
@@ -439,7 +439,7 @@ contains
   ! normally attached to the matrix by bilf_createMatrixStructure.
   !
   ! For the routine to work properly, it is important that the discretisation
-  ! structure of rvector is 'compatible' with the discretisation structure
+  ! structure of rvector is "compatible" with the discretisation structure
   ! of the matrix! I.e., the element distributions must be the same
   ! (in number and ordering of the elements) except for the element type!
   !
@@ -465,7 +465,7 @@ contains
 
   ! OPTIONAL: A callback routine for nonconstant coefficient matrices.
   ! Must be present if the matrix has nonconstant coefficients!
-  include 'intf_coefficientTrilMatrixSc.inc'
+  include "intf_coefficientTrilMatrixSc.inc"
   optional :: fcoeff_buildTrilMatrixSc_sim
 
   ! OPTIONAL: Number of temp arrays.
@@ -592,8 +592,8 @@ contains
 
   if ((.not. associated(rmatrixScalar%p_rspatialDiscrTest)) .or. &
       (.not. associated(rmatrixScalar%p_rspatialDiscrTrial))) then
-    call output_line('No discretisation associated!',&
-        OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrix9d_conf2')
+    call output_line("No discretisation associated!",&
+        OU_CLASS_ERROR,OU_MODE_STD,"trilf_buildMatrix9d_conf2")
     call sys_halt()
   end if
 
@@ -616,8 +616,8 @@ contains
     I1=rform%Idescriptors(1,I)
 
     if ((I1 .lt.0) .or. (I1 .gt. DER_MAXNDER)) then
-      call output_line('Invalid descriptor!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrix9d_conf2')
+      call output_line("Invalid descriptor!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"trilf_buildMatrix9d_conf2")
       call sys_halt()
     endif
 
@@ -626,8 +626,8 @@ contains
     I1=rform%Idescriptors(2,I)
 
     if ((I1 .le.0) .or. (I1 .gt. DER_MAXNDER)) then
-      call output_line('Invalid descriptor!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrix9d_conf2')
+      call output_line("Invalid descriptor!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"trilf_buildMatrix9d_conf2")
       call sys_halt()
     endif
 
@@ -637,8 +637,8 @@ contains
     I1=rform%Idescriptors(3,I)
 
     if ((I1 .le.0) .or. (I1 .gt. DER_MAXNDER)) then
-      call output_line('Invalid descriptor!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrix9d_conf2')
+      call output_line("Invalid descriptor!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"trilf_buildMatrix9d_conf2")
       call sys_halt()
     endif
 
@@ -658,7 +658,7 @@ contains
 
     ! Clear the entries in the matrix - we need to start with zero
     ! when assembling a new matrix!
-    call storage_new ('trilf_buildMatrix9d_conf2', 'DA', &
+    call storage_new ("trilf_buildMatrix9d_conf2", "DA", &
                         NA, ST_DOUBLE, rmatrixScalar%h_DA, &
                         ST_NEWBLOCK_ZERO)
     call lsyssc_getbase_double (rmatrixScalar,p_DA)
@@ -680,28 +680,28 @@ contains
   p_rdiscrFunc => rvector%p_rspatialDiscr
 
   if (.not. associated(p_rdiscrTest)) then
-    call output_line('No discretisation attached to the matrix!',&
-        OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrix9d_conf2')
+    call output_line("No discretisation attached to the matrix!",&
+        OU_CLASS_ERROR,OU_MODE_STD,"trilf_buildMatrix9d_conf2")
     call sys_halt()
   end if
 
   if (.not. associated(p_rdiscrTrial)) then
-    call output_line('No discretisation attached to the matrix!',&
-        OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrix9d_conf2')
+    call output_line("No discretisation attached to the matrix!",&
+        OU_CLASS_ERROR,OU_MODE_STD,"trilf_buildMatrix9d_conf2")
     call sys_halt()
   end if
 
   if (.not. associated(p_rdiscrFunc)) then
-    call output_line('No discretisation attached to the matrix!',&
-        OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrix9d_conf2')
+    call output_line("No discretisation attached to the matrix!",&
+        OU_CLASS_ERROR,OU_MODE_STD,"trilf_buildMatrix9d_conf2")
     call sys_halt()
   end if
 
   if ((p_rdiscrTest%inumFESpaces .ne. p_rdiscrFunc%inumFESpaces) .or. &
       (p_rdiscrTrial%inumFESpaces .ne. p_rdiscrFunc%inumFESpaces) .or. &
       (p_rdiscrTrial%inumFESpaces .ne. p_rdiscrTest%inumFESpaces)) then
-    call output_line('Discretisations not compatible!',&
-        OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrix9d_conf2')
+    call output_line("Discretisations not compatible!",&
+        OU_CLASS_ERROR,OU_MODE_STD,"trilf_buildMatrix9d_conf2")
     call sys_halt()
   end if
 
@@ -743,14 +743,14 @@ contains
     ! Get the number of corner vertices of the element
     if (elem_igetShape(p_relementDistrTrial%celement) .ne. &
         elem_igetShape(p_relementDistrTest%celement)) then
-      call output_line('Element spaces incompatible!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrix9d_conf2')
+      call output_line("Element spaces incompatible!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"trilf_buildMatrix9d_conf2")
       call sys_halt()
     end if
     if (elem_igetShape(p_relementDistrTrial%celement) .ne. &
         elem_igetShape(p_relementDistrFunc%celement)) then
-      call output_line('Element spaces incompatible!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrix9d_conf2')
+      call output_line("Element spaces incompatible!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"trilf_buildMatrix9d_conf2")
       call sys_halt()
     end if
 
@@ -776,25 +776,25 @@ contains
 
       if ((ifunc.lt.0) .or. &
           (ifunc .gt. elem_getMaxDerivative(p_relementDistrFunc%celement))) then
-         call output_line('Specified function-derivative '&
-             //trim(sys_siL(ifunc,10))//' not available',&
-             OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrix9d_conf2')
+         call output_line("Specified function-derivative "&
+             //trim(sys_siL(ifunc,10))//" not available",&
+             OU_CLASS_ERROR,OU_MODE_STD,"trilf_buildMatrix9d_conf2")
         call sys_halt()
       end if
 
       if ((IA.le.0) .or. &
           (IA .gt. elem_getMaxDerivative(p_relementDistrTrial%celement))) then
-        call output_line('Specified trial-derivative '&
-             //trim(sys_siL(IA,10))//' not available',&
-             OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrix9d_conf2')
+        call output_line("Specified trial-derivative "&
+             //trim(sys_siL(IA,10))//" not available",&
+             OU_CLASS_ERROR,OU_MODE_STD,"trilf_buildMatrix9d_conf2")
         call sys_halt()
       end if
 
       if ((IB.le.0) .or. &
           (IB .gt. elem_getMaxDerivative(p_relementDistrTest%celement))) then
-        call output_line('Specified test-derivative '&
-             //trim(sys_siL(IB,10))//' not available',&
-             OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrix9d_conf2')
+        call output_line("Specified test-derivative "&
+             //trim(sys_siL(IB,10))//" not available",&
+             OU_CLASS_ERROR,OU_MODE_STD,"trilf_buildMatrix9d_conf2")
         call sys_halt()
       end if
     end do
@@ -1199,7 +1199,7 @@ contains
 
       ! Values of all basis functions calculated. Now we can start
       ! to integrate! As we have never the case of constant coefficients
-      ! (because of the FE function u involved), we have only the 'complex'
+      ! (because of the FE function u involved), we have only the "complex"
       ! loop here in comparison to the standard bilinear form.
       !
       ! Loop over the elements in the current set.
@@ -1230,7 +1230,7 @@ contains
             !
             ! -> Ix=0: function value,
             !      =1: first derivative, ...
-            !    as defined in the module 'derivative'.
+            !    as defined in the module "derivative".
 
             IA = rform%Idescriptors(2,IALBET)
             IB = rform%Idescriptors(3,IALBET)
@@ -1409,8 +1409,8 @@ contains
       I1=rform%Idescriptors(1,I)
 
       if ((I1 .le.0) .or. (I1 .gt. DER_MAXNDER)) then
-        call output_line ('Invalid descriptor!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'trilf_initAssembly')
+        call output_line ("Invalid descriptor!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"trilf_initAssembly")
         call sys_halt()
       endif
 
@@ -1419,8 +1419,8 @@ contains
       I1=rform%Idescriptors(2,I)
 
       if ((I1 .le.0) .or. (I1 .gt. DER_MAXNDER)) then
-        call output_line ('Invalid descriptor!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'trilf_initAssembly')
+        call output_line ("Invalid descriptor!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"trilf_initAssembly")
         call sys_halt()
       endif
 
@@ -1430,8 +1430,8 @@ contains
       I1=rform%Idescriptors(3,I)
 
       if ((I1 .le.0) .or. (I1 .gt. DER_MAXNDER)) then
-        call output_line ('Invalid descriptor!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'trilf_initAssembly')
+        call output_line ("Invalid descriptor!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"trilf_initAssembly")
         call sys_halt()
       endif
 
@@ -1472,8 +1472,8 @@ contains
     ! form the reference to the real element.
     rmatrixAssembly%NVE = elem_igetNVE(celementTest)
     if (elem_igetShape(celementTest) .ne. elem_igetShape(celementTrial)) then
-      call output_line ('Element spaces incompatible!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'trilf_initAssembly')
+      call output_line ("Element spaces incompatible!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"trilf_initAssembly")
       call sys_halt()
     end if
 
@@ -1533,7 +1533,7 @@ contains
   subroutine trilf_allocAssemblyData(rmatrixAssembly,ntempArrays)
 
 !<description>
-  ! Auxiliary subroutine. Allocate 'local' memory, needed for assembling matrix entries.
+  ! Auxiliary subroutine. Allocate "local" memory, needed for assembling matrix entries.
 !</description>
 
 !<input>
@@ -1636,7 +1636,7 @@ contains
 
   subroutine trilf_releaseAssemblyData(rmatrixAssembly)
 
-  ! Auxiliary subroutine. Release 'local' memory.
+  ! Auxiliary subroutine. Release "local" memory.
 
 !<inputoutput>
   ! Matrix assembly structure to clean up
@@ -1699,7 +1699,7 @@ contains
 
   ! OPTIONAL: A callback routine for nonconstant coefficient matrices.
   ! Must be present if the matrix has nonconstant coefficients!
-  include 'intf_coefficientTrilMatrixSc.inc'
+  include "intf_coefficientTrilMatrixSc.inc"
   optional :: fcoeff_buildTrilMatrixSc_sim
 
   ! OPTIONAL: Number of temp arrays.
@@ -2096,7 +2096,7 @@ contains
 
       ! Values of all basis functions calculated. Now we can start
       ! to integrate! As we have never the case of constant coefficients
-      ! (because of the FE function u involved), we have only the 'complex'
+      ! (because of the FE function u involved), we have only the "complex"
       ! loop here in comparison to the standard bilinear form.
 
       ! Clear the local matrices
@@ -2129,7 +2129,7 @@ contains
             !
             ! -> Ix=0: function value,
             !      =1: first derivative, ...
-            !    as defined in the module 'derivative'.
+            !    as defined in the module "derivative".
 
             ia = p_Idescriptors(2,ialbet)
             ib = p_Idescriptors(3,ialbet)
@@ -2241,7 +2241,7 @@ contains
   ! normally attached to the matrix by bilf_createMatrixStructure.
   !
   ! For the routine to work properly, it is important that the discretisation
-  ! structure of rvector is 'compatible' with the discretisation structure
+  ! structure of rvector is "compatible" with the discretisation structure
   ! of the matrix! I.e., the element distributions must be the same
   ! (in number and ordering of the elements) except for the element type!
   !
@@ -2279,7 +2279,7 @@ contains
 
   ! OPTIONAL: A callback routine for nonconstant coefficient matrices.
   ! Must be present if the matrix has nonconstant coefficients!
-  include 'intf_coefficientTrilMatrixSc.inc'
+  include "intf_coefficientTrilMatrixSc.inc"
   optional :: fcoeff_buildTrilMatrixSc_sim
 
   ! OPTIONAL: Number of temp arrays.
@@ -2329,24 +2329,24 @@ contains
   ! Note that we cannot switch off the sorting as easy as in the case
   ! of a vector, since there is a structure behind the matrix! So the caller
   ! has to make sure, the matrix is unsorted when this routine is called.
-  if (rmatrix%isortStrategy .gt. 0) then
-    call output_line ('Matrix-structure must be unsorted!', &
-        OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrixScalar2')
+  if (rmatrix%bcolumnsSorted .or. rmatrix%browsSorted) then
+    call output_line ("Matrix-structure must be unsorted!", &
+        OU_CLASS_ERROR,OU_MODE_STD,"trilf_buildMatrixScalar2")
     call sys_halt()
   end if
 
   ! The vector must be unsorted, otherwise we can not set up the matrix.
-  if (rvector%isortStrategy .gt. 0) then
-    call output_line ('Vector must be unsorted!', &
-        OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrixScalar2')
+  if (rvector%bisSorted) then
+    call output_line ("Vector must be unsorted!", &
+        OU_CLASS_ERROR,OU_MODE_STD,"trilf_buildMatrixScalar2")
     call sys_halt()
   end if
 
   if ((.not. associated(rmatrix%p_rspatialDiscrTest)) .or. &
       (.not. associated(rmatrix%p_rspatialDiscrTrial)) .or. &
       (.not. associated(rvector%p_rspatialDiscr))) then
-    call output_line ('No discretisation associated!', &
-        OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrixScalar2')
+    call output_line ("No discretisation associated!", &
+        OU_CLASS_ERROR,OU_MODE_STD,"trilf_buildMatrixScalar2")
     call sys_halt()
   end if
 
@@ -2367,8 +2367,8 @@ contains
 
     if (rmatrix%p_rspatialDiscrTest%inumFESpaces .ne.&
         rvector%p_rspatialDiscr%inumFESpaces) then
-      call output_line('Discretisations not compatible!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrixScalar2')
+      call output_line("Discretisations not compatible!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"trilf_buildMatrixScalar2")
       call sys_halt()
     end if
 
@@ -2412,8 +2412,8 @@ contains
         end do
 
       case default
-        call output_line ('Not supported matrix structure!', &
-            OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrixScalar2')
+        call output_line ("Not supported matrix structure!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"trilf_buildMatrixScalar2")
         call sys_halt()
       end select
 
@@ -2442,14 +2442,14 @@ contains
       call lsyssc_releaseMatrix (rmatrixBackup)
 
     case default
-      call output_line ('Single precision matrices currently not supported!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrixScalar2')
+      call output_line ("Single precision matrices currently not supported!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"trilf_buildMatrixScalar2")
       call sys_halt()
     end select
 
   case default
-    call output_line ('General discretisation not implemented!', &
-        OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrixScalar2')
+    call output_line ("General discretisation not implemented!", &
+        OU_CLASS_ERROR,OU_MODE_STD,"trilf_buildMatrixScalar2")
     call sys_halt()
   end select
 

@@ -217,8 +217,8 @@ contains
 
     case default
       ! Oops...
-      call output_line ('Cubature formula not supported!', &
-                        OU_CLASS_ERROR,OU_MODE_STD, 'ppns2D_bdforces_uniform')
+      call output_line ("Cubature formula not supported!", &
+          OU_CLASS_ERROR,OU_MODE_STD, "ppns2D_bdforces_uniform")
       call sys_halt()
     end select
 
@@ -381,18 +381,21 @@ contains
     neqP = rvector%RvectorBlock(3)%NEQ
 
     if (rvector%cdataType .ne. ST_DOUBLE) then
-      print *,'ppns2D_bdforces: Unsupported vector precision.'
+      call output_line ("Unsupported vector precision.", &
+          OU_CLASS_ERROR, OU_MODE_STD, "ppns2D_bdforces_uni_line")
       call sys_halt()
     end if
 
     ! We support only uniform discretisation structures.
     if (.not. associated(rvector%p_rblockDiscr)) then
-      print *,'ppns2D_bdforces_uni_line: No discretisation structure!'
+      call output_line ("No discretisation structure!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "ppns2D_bdforces_uni_line")
       call sys_halt()
     end if
 
     if (rvector%p_rblockDiscr%ccomplexity .ne. SPDISC_UNIFORM) then
-      print *,'ppns2D_bdforces_uni_line: Discretisation too complex!'
+      call output_line ("Discretisation too complex!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "ppns2D_bdforces_uni_line")
       call sys_halt()
     end if
 
@@ -401,10 +404,11 @@ contains
     call lsyssc_getbase_double (rvector%RvectorBlock(2),p_DdataUY)
     call lsyssc_getbase_double (rvector%RvectorBlock(3),p_DdataP)
 
-    if ((rvector%RvectorBlock(1)%isortStrategy > 0) .or. &
-        (rvector%RvectorBlock(2)%isortStrategy > 0) .or. &
-        (rvector%RvectorBlock(3)%isortStrategy > 0)) then
-      print *,'ppns2D_bdforces_uni_line: Resorted vectors not supported!'
+    if (rvector%RvectorBlock(1)%bisSorted .or. &
+        rvector%RvectorBlock(2)%bisSorted .or. &
+        rvector%RvectorBlock(3)%bisSorted) then
+      call output_line ("Resorted vectors not supported!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "ppns2D_bdforces_uni_line")
       call sys_halt()
     end if
 
@@ -465,7 +469,8 @@ contains
                                    p_DvertexCoordinates)
 
     if (p_rtriangulation%h_DvertexParameterValue .eq. ST_NOHANDLE) then
-      print *,'No boundary parameters available!'
+      call output_line ("No boundary parameters available!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "ppns2D_bdforces_uni_line")
       call sys_halt()
     end if
 
@@ -558,7 +563,7 @@ contains
         ! The FEAT2 convention to number the nodes of a quad is counterclockwise. From the
         ! point of view of a circle traversed clockwise the very same boundary points are
         ! traversed clockwise which is fine to determine the tangential vector. So, we
-        ! don't need to reverse the points and get the formula for the tangential:
+        ! don"t need to reverse the points and get the formula for the tangential:
         dtangential = dvt2(:) - dvt1(:)
 
         dedgelen = sqrt(dtangential(1)**2 + dtangential(2)**2)
@@ -585,7 +590,8 @@ contains
         end do
 
         if (ilocaledge .gt. nlocaledges) then
-          print *,'ppns2D_bdforces_uni_line: Edge not found. KMID destroyed?'
+          call output_line ("Edge not found. IedgesAtElement destroyed?", &
+              OU_CLASS_ERROR, OU_MODE_STD, "ppns2D_bdforces_uni_line")
           call sys_halt()
         end if
 
@@ -641,7 +647,7 @@ contains
         ! Which tensor formulation do we have?
         select case (cform)
         case (PPNAVST_GRADIENTTENSOR_SIMPLE)
-          ! 'Simple' gradient tensor formulation
+          ! "Simple" gradient tensor formulation
           !
           ! Loop over the cubature points on the current element
           ! to assemble the integral
@@ -685,7 +691,7 @@ contains
           end do ! icubp
 
         case (PPNAVST_GRADIENTTENSOR)
-          ! 'Full' Gradient tensor formulation
+          ! "Full" Gradient tensor formulation
           !
           ! We need to calculate the integral based on the following integrand:
           !   |-p         |   (du1/dx  du1/dy )   ( n_x )
@@ -940,18 +946,21 @@ contains
     neqP = rvector%RvectorBlock(3)%NEQ
 
     if (rvector%cdataType .ne. ST_DOUBLE) then
-      print *,'ppns2D_bdforces: Unsupported vector precision.'
+      call output_line ("Unsupported vector precision.", &
+          OU_CLASS_ERROR, OU_MODE_STD, "ppns2D_bdforces_uni_vol")
       call sys_halt()
     end if
 
     ! We support only uniform discretisation structures.
     if (.not. associated(rvector%p_rblockDiscr)) then
-      print *,'ppns2D_bdforces: No discretisation structure!'
+      call output_line ("No discretisation structure!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "ppns2D_bdforces_uni_vol")
       call sys_halt()
     end if
 
     if (rvector%p_rblockDiscr%ccomplexity .ne. SPDISC_UNIFORM) then
-      print *,'ppns2D_bdforces_uniform: Discretisation too complex!'
+      call output_line ("Discretisation too complex!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "ppns2D_bdforces_uni_vol")
       call sys_halt()
     end if
 
@@ -960,10 +969,11 @@ contains
     call lsyssc_getbase_double (rvector%RvectorBlock(2),p_DdataUY)
     call lsyssc_getbase_double (rvector%RvectorBlock(3),p_DdataP)
 
-    if ((rvector%RvectorBlock(1)%isortStrategy > 0) .or. &
-        (rvector%RvectorBlock(2)%isortStrategy > 0) .or. &
-        (rvector%RvectorBlock(3)%isortStrategy > 0)) then
-      print *,'ppns2D_bdforces_uniform: Resorted vectors not supported!'
+    if (rvector%RvectorBlock(1)%bisSorted .or. &
+        rvector%RvectorBlock(2)%bisSorted .or. &
+        rvector%RvectorBlock(3)%bisSorted) then
+      call output_line ("Resorted vectors not supported!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "ppns2D_bdforces_uni_vol")
       call sys_halt()
     end if
 
@@ -1027,7 +1037,8 @@ contains
                                    p_DvertexCoordinates)
 
     if (p_rtriangulation%h_DvertexParameterValue .eq. ST_NOHANDLE) then
-      print *,'No boundary parameters available!'
+      call output_line ("No boundary parameters available!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "ppns2D_bdforces_uni_vol")
       call sys_halt()
     end if
 
@@ -1115,7 +1126,8 @@ contains
         end do
 
         if (ilocaledge .gt. nlocaledges) then
-          print *,'ppns2D_bdforces: Edge not found. KMID destroyed?'
+          call output_line ("ppns2D_bdforces: Edge not found. KMID destroyed?", &
+              OU_CLASS_ERROR, OU_MODE_STD, "ppns2D_bdforces_uni_vol")
           call sys_halt()
         end if
 
@@ -1166,9 +1178,8 @@ contains
           Dalpha(ilocaledge) = 1.0_DP
 
         case default
-          call output_line ('Velocity element not supported!', &
-                            OU_CLASS_ERROR,OU_MODE_STD, &
-                            'ppns2D_bdforces_uni_vol')
+          call output_line ("Velocity element not supported!", &
+              OU_CLASS_ERROR, OU_MODE_STD, "ppns2D_bdforces_uni_vol")
           call sys_halt()
         end select
 
@@ -1352,7 +1363,7 @@ contains
   ! If not present, df1 is used as constant coefficient in the integral.
   ! If present, df1 is ignored and calculated by cubature point
   ! by this callback routine.
-  include '../Postprocessing/intf_refFunctionSc.inc'
+  include "../Postprocessing/intf_refFunctionSc.inc"
   optional :: ffunctionReference
 
   ! OPTIONAL: A collection structure that is passed to ffunctionRefSimple.
@@ -1454,20 +1465,23 @@ contains
     ! Some basic checks...
 
     if (rvector%cdataType .ne. ST_DOUBLE) then
-      print *,'ppns2D_bdforces: Unsupported vector precision.'
+      call output_line ("ppns2D_bdforces: Unsupported vector precision.", &
+          OU_CLASS_ERROR, OU_MODE_STD, "ppns2D_bdforces_line")
       call sys_halt()
     end if
 
     ! We support only uniform discretisation structures.
     if (.not. associated(rvector%p_rblockDiscr)) then
-      print *,'ppns2D_bdforces: No discretisation structure!'
+      call output_line ("No discretisation structure!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "ppns2D_bdforces_line")
       call sys_halt()
     end if
 
-    if ((rvector%RvectorBlock(1)%isortStrategy > 0) .or. &
-        (rvector%RvectorBlock(2)%isortStrategy > 0) .or. &
-        (rvector%RvectorBlock(3)%isortStrategy > 0)) then
-      print *,'ppns2D_bdforces_uniform: Resorted vectors not supported!'
+    if (rvector%RvectorBlock(1)%bisSorted .or. &
+        rvector%RvectorBlock(2)%bisSorted .or. &
+        rvector%RvectorBlock(3)%bisSorted) then
+      call output_line ("Resorted vectors not supported!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "ppns2D_bdforces_line")
       call sys_halt()
     end if
 
@@ -1498,7 +1512,8 @@ contains
     call storage_getbase_double2d (p_rtriangulation%h_DvertexCoords,p_DvertexCoords)
 
     if (p_rtriangulation%h_DvertexParameterValue .eq. ST_NOHANDLE) then
-      print *,'No boundary parameters available!'
+      call output_line ("No boundary parameters available!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "ppns2D_bdforces_line")
       call sys_halt()
     end if
 
@@ -1758,7 +1773,7 @@ contains
     ! Which tensor formulation do we have?
     select case (cform)
     case (PPNAVST_GRADIENTTENSOR_SIMPLE)
-      ! 'Simple' gradient tensor formulation
+      ! "Simple" gradient tensor formulation
       !
       ! Loop over the cubature points on the current element
       ! to assemble the integral
@@ -1814,7 +1829,7 @@ contains
       end do ! iel
 
     case (PPNAVST_GRADIENTTENSOR)
-      ! 'Full' Gradient tensor formulation
+      ! "Full" Gradient tensor formulation
       !
       ! We need to calculate the integral based on the following integrand:
       !   |-p         |   (du1/dx  du1/dy )   ( n_x )
@@ -2097,18 +2112,21 @@ contains
     neqP = rvector%RvectorBlock(4)%NEQ
 
     if (rvector%cdataType .ne. ST_DOUBLE) then
-      print *,'ppns3D_bdforces: Unsupported vector precision.'
+      call output_line ("Unsupported vector precision.", &
+          OU_CLASS_ERROR, OU_MODE_STD, "ppns3D_bdforces_uniform")
       call sys_halt()
     end if
 
     ! We support only uniform discretisation structures.
     if (.not. associated(rvector%p_rblockDiscr)) then
-      print *,'ppns3D_bdforces: No discretisation structure!'
+      call output_line ("No discretisation structure!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "ppns3D_bdforces_uniform")
       call sys_halt()
     end if
 
     if (rvector%p_rblockDiscr%ccomplexity .ne. SPDISC_UNIFORM) then
-      print *,'ppns3D_bdforces_uniform: Discretisation too complex!'
+      call output_line ("Discretisation too complex!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "ppns3D_bdforces_uniform")
       call sys_halt()
     end if
 
@@ -2118,11 +2136,12 @@ contains
     call lsyssc_getbase_double (rvector%RvectorBlock(3),p_DdataUZ)
     call lsyssc_getbase_double (rvector%RvectorBlock(4),p_DdataP)
 
-    if ((rvector%RvectorBlock(1)%isortStrategy > 0) .or. &
-        (rvector%RvectorBlock(2)%isortStrategy > 0) .or. &
-        (rvector%RvectorBlock(3)%isortStrategy > 0) .or. &
-        (rvector%RvectorBlock(4)%isortStrategy > 0)) then
-      print *,'ppns3D_bdforces_uniform: Resorted vectors not supported!'
+    if (rvector%RvectorBlock(1)%bisSorted .or. &
+        rvector%RvectorBlock(2)%bisSorted .or. &
+        rvector%RvectorBlock(3)%bisSorted .or. &
+        rvector%RvectorBlock(4)%bisSorted) then
+      call output_line ("ppns3D_bdforces_uniform: Resorted vectors not supported!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "ppns3D_bdforces_uniform")
       call sys_halt()
     end if
 
@@ -2426,7 +2445,7 @@ contains
 
       ! We have a bilinear mapping T: R^2 -> R^3, so the jacobian matrix
       ! of T is a 3x2 matrix. To get a useful replacement for the determinant
-      ! we set the determinant to ||(dT/dx) X (dT/dy)||_2, where 'X' denotes
+      ! we set the determinant to ||(dT/dx) X (dT/dy)||_2, where "X" denotes
       ! the 3D cross-product.
 
       ! Calculate transformation coefficients for the jacobian matrix
@@ -2525,28 +2544,33 @@ contains
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
 
     if (rvector%cdataType .ne. ST_DOUBLE) then
-      print *,'ppns2D_streamfct_uniform: Unsupported vector precision.'
+      call output_line ("Unsupported vector precision.", &
+          OU_CLASS_ERROR, OU_MODE_STD, "ppns2D_streamfct_uniform")
       call sys_halt()
     end if
 
     ! We support only uniform discretisation structures.
     if (.not. associated(rvector%p_rblockDiscr)) then
-      print *,'ppns2D_streamfct_uniform: No discretisation structure in rvector!'
+      call output_line ("No discretisation structure in rvector!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "ppns2D_streamfct_uniform")
       call sys_halt()
     end if
 
     if (rvector%p_rblockDiscr%ccomplexity .ne. SPDISC_UNIFORM) then
-      print *,'ppns2D_streamfct_uniform: Discretisation of rvector too complex!'
+      call output_line ("Discretisation of rvector too complex!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "ppns2D_streamfct_uniform")
       call sys_halt()
     end if
 
     if (.not. associated(rdestVector%p_rspatialDiscr)) then
-      print *,'ppns2D_streamfct_uniform: No discretisation structure in rdestVector!'
+      call output_line ("No discretisation structure in rdestVector!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "ppns2D_streamfct_uniform")
       call sys_halt()
     end if
 
     if (rdestVector%p_rspatialDiscr%ccomplexity .ne. SPDISC_UNIFORM) then
-      print *,'ppns2D_streamfct_uniform: Discretisation of rdestVector too complex!'
+      call output_line ("Discretisation of rdestVector too complex!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "ppns2D_streamfct_uniform")
       call sys_halt()
     end if
 
@@ -2558,21 +2582,25 @@ contains
         RelementDistr(1)%celement
 
     if (elem_getPrimaryElement(ieltype1) .ne. EL_Q1T) then
-      print *,'ppns2D_streamfct_uniform: rvector must be discretised with Q1~!'
+      call output_line ("rvector must be discretised with Q1~!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "ppns2D_streamfct_uniform")
     end if
 
     if (elem_getPrimaryElement(ieltype2) .ne. EL_Q1T) then
-      print *,'ppns2D_streamfct_uniform: rvector must be discretised with Q1~!'
+      call output_line ("rvector must be discretised with Q1~!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "ppns2D_streamfct_uniform")
     end if
 
     if (ieltypeDest .ne. EL_Q1) then
-      print *,'ppns2D_streamfct_uniform: rdestVector must be discretised with Q1!'
+      call output_line ("rdestVector must be discretised with Q1!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "ppns2D_streamfct_uniform")
     end if
 
-    if ((rvector%RvectorBlock(1)%isortStrategy > 0) .or. &
-        (rvector%RvectorBlock(2)%isortStrategy > 0) .or. &
-        (rdestVector%isortStrategy > 0)) then
-      print *,'ppns2D_bdforces_uniform: Resorted vectors not supported!'
+    if (rvector%RvectorBlock(1)%bisSorted .or. &
+        rvector%RvectorBlock(2)%bisSorted .or. &
+        rdestVector%bisSorted) then
+      call output_line ("Resorted vectors not supported!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "ppns2D_streamfct_uniform")
       call sys_halt()
     end if
 
@@ -2583,7 +2611,8 @@ contains
     !
     p_rtriangulation => rdestVector%p_rspatialDiscr%p_rtriangulation
     if (.not. associated(p_rtriangulation)) then
-      print *,'ppns2D_bdforces_uniform: Unknown triangulation!'
+      call output_line ("Unknown triangulation!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "ppns2D_streamfct_uniform")
     end if
 
     ! Get pointers to the subvectors from the block vector
@@ -2594,7 +2623,7 @@ contains
     call lsyssc_getbase_double (rdestVector,p_Dx)
 
     ! Auxiliary array
-    call storage_new ('ppns2D_streamfct_uniform', 'aux', &
+    call storage_new ("ppns2D_streamfct_uniform", "aux", &
                         p_rtriangulation%NVT, ST_INT, haux,ST_NEWBLOCK_ZERO)
     call storage_getbase_int (haux,p_Iind)
 
@@ -2664,7 +2693,7 @@ contains
 
       end if
 
-      ! Now we make a 'greedy' search from the current element to find
+      ! Now we make a "greedy" search from the current element to find
       ! as many other elements as possible where we can calculate the
       ! streamfunction.
       ! Look onto the adjacent elements of the current element if there is
@@ -2757,7 +2786,7 @@ contains
 
     ! Local number (1..NVE) of any of the vertices on the element iel
     ! where the streamfunction is already calculated. This will be used
-    ! as 'base' to calculate the others.
+    ! as "base" to calculate the others.
     integer, intent(in)                                :: ibaseIdx
 
     ! Marker array of length NVT. All vertices where streamfunction
@@ -2931,7 +2960,7 @@ contains
   ! If not present, df1 is used as constant coefficient in the integral.
   ! If present, df1 is ignored and calculated by cubature point
   ! by this callback routine.
-  include '../Postprocessing/intf_refFunctionSc.inc'
+  include "../Postprocessing/intf_refFunctionSc.inc"
   optional :: ffunctionReference
 
   ! OPTIONAL: A collection structure that is passed to ffunctionRefSimple.
@@ -3013,11 +3042,11 @@ contains
     type(t_evalElementSet) :: revalElementSet
     type(t_domainIntSubset) :: rintSubset
 
-    ! An allocateable array accepting the DOF's of a set of elements.
+    ! An allocateable array accepting the DOF"s of a set of elements.
     integer, dimension(:,:), allocatable, target :: IdofsTrial
-    ! An allocateable array accepting the DOF's of a set of elements.
+    ! An allocateable array accepting the DOF"s of a set of elements.
     integer, dimension(:,:), allocatable, target :: IdofsFunc1
-    ! An allocateable array accepting the DOF's of a set of elements.
+    ! An allocateable array accepting the DOF"s of a set of elements.
     integer, dimension(:,:), allocatable, target :: IdofsFunc2
 
 
@@ -3051,7 +3080,7 @@ contains
 
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
-    ! this is NEL. If there are too many elements, it's at most
+    ! this is NEL. If there are too many elements, it"s at most
     ! NELEMSIM. This is only used for allocating some arrays.
     nelementsPerBlock = min(p_rperfconfig%NELEMSIM,p_rtriangulation%NEL)
 
@@ -3081,7 +3110,7 @@ contains
       ! Cancel if this element distribution is empty.
       if (p_relementDistributionU%NEL .eq. 0) cycle
 
-      ! Get the number of local DOF's for trial functions
+      ! Get the number of local DOF"s for trial functions
       indofTrial = elem_igetNDofLoc(p_relementDistributionU%celement)
       indofFunc1 = elem_igetNDofLoc(p_relementDistributionA%celement)
       indofFunc2 = elem_igetNDofLoc(p_relementDistributionP%celement)
@@ -3090,8 +3119,8 @@ contains
       NVE = elem_igetNVE(p_relementDistributionU%celement)
 
       if (NVE .ne. elem_igetNVE(p_relementDistributionA%celement)) then
-        call output_line ('Element spaces incompatible!', &
-                          OU_CLASS_ERROR,OU_MODE_STD, 'ppns2D_bdforces_vol')
+        call output_line ("Element spaces incompatible!", &
+            OU_CLASS_ERROR, OU_MODE_STD, "ppns2D_bdforces_vol")
         call sys_halt()
       end if
 
@@ -3123,7 +3152,7 @@ contains
         Dpf1(:,:) = 1.0_DP
       end if
 
-      ! Allocate memory for the DOF's of all the elements.
+      ! Allocate memory for the DOF"s of all the elements.
       allocate(IdofsTrial(indofTrial,nelementsPerBlock))
       allocate(IdofsFunc1(indofFunc1,nelementsPerBlock))
       allocate(IdofsFunc2(indofFunc2,nelementsPerBlock))
@@ -3173,10 +3202,10 @@ contains
 
         IELmax = min(NEL,IELset-1+p_rperfconfig%NELEMSIM)
 
-        ! Calculate the global DOF's into IdofsTrial.
+        ! Calculate the global DOF"s into IdofsTrial.
         !
         ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-        ! global DOF's of our NELEMSIM elements simultaneously.
+        ! global DOF"s of our NELEMSIM elements simultaneously.
 
         !--------------------------------------------------------------------------------
         call dof_locGlobMapping_mult(rvector%p_rblockDiscr%RspatialDiscr(1), &
@@ -3218,7 +3247,7 @@ contains
           call domint_doneIntegration (rintSubset)
         end if
 
-        ! In the next loop, we don't have to evaluate the coordinates
+        ! In the next loop, we don"t have to evaluate the coordinates
         ! on the reference elements anymore.
         cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
 
@@ -3277,8 +3306,8 @@ contains
 
         select case (cform)
         case (PPNAVST_GRADIENTTENSOR_SIMPLE,PPNAVST_GRADIENTTENSOR)
-          ! 'Full' Gradient tensor formulation.
-          ! The 'simple' formulation is not available we do the 'full' here.
+          ! "Full" Gradient tensor formulation.
+          ! The "simple" formulation is not available we do the "full" here.
           !
           ! We need to calculate the integral based on the following integrand:
           !   |-p         |   (du1/dx  du1/dy )   ( n_x )
@@ -3288,7 +3317,7 @@ contains
           ! to assemble the integral
 
           ! Loop through elements in the set and for each element,
-          ! loop through the DOF's and cubature points to calculate the
+          ! loop through the DOF"s and cubature points to calculate the
           ! integral: int_Omega (-p * I + Dj(u)) * (-grad(alpha)) dx
           do IEL=1,IELmax-IELset+1
 
@@ -3342,7 +3371,7 @@ contains
           ! to assemble the integral
 
           ! Loop through elements in the set and for each element,
-          ! loop through the DOF's and cubature points to calculate the
+          ! loop through the DOF"s and cubature points to calculate the
           ! integral: int_Omega (-p * I + Dj(u)) * (-grad(alpha)) dx
           do IEL=1,IELmax-IELset+1
 
@@ -3533,12 +3562,12 @@ contains
       ! In the mean, an element has this size:
       dlocalh = dsize / sqrt(real(rvector%p_rblockDiscr%p_rtriangulation%NEL,dp))
 
-      ! Divide the length of the line by this, that's the mean number of elements
+      ! Divide the length of the line by this, that"s the mean number of elements
       ! on the line.
       nel = min(int(dnorm/dlocalh),1)
 
       ! Every refinement gives 2 elements, so the log2 of nel is the cubature
-      ! refinement. We add 2 levels as 'safety' buffer.
+      ! refinement. We add 2 levels as "safety" buffer.
       ireflevel = log(real(nel,dp))/log(2._DP) + 2
     else
       ! Take the given one.

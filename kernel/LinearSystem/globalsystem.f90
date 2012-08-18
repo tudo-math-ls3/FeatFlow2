@@ -494,8 +494,10 @@ contains
     rdestMatrix%RmatrixBlock(1,1)%cmatrixFormat = cmatrixFormat
     rdestMatrix%RmatrixBlock(1,1)%cdataType = cdataType
     rdestMatrix%RmatrixBlock(1,1)%imatrixSpec = 0
-    rdestMatrix%RmatrixBlock(1,1)%isortStrategy = 0
-    rdestMatrix%RmatrixBlock(1,1)%h_IsortPermutation = ST_NOHANDLE
+    rdestMatrix%RmatrixBlock(1,1)%bcolumnsSorted = .false.
+    rdestMatrix%RmatrixBlock(1,1)%browsSorted = .false.
+    nullify(rdestMatrix%RmatrixBlock(1,1)%p_rsortStrategyColumns)
+    nullify(rdestMatrix%RmatrixBlock(1,1)%p_rsortStrategyRows)
     rdestMatrix%RmatrixBlock(1,1)%dscaleFactor = 1.0_DP
 
   end subroutine glmatasm_initDestination

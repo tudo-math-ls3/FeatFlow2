@@ -29,7 +29,7 @@
 !# 5.) Either both M1 and M2 exist or none of them.
 !#     If they exist, then they have the same matrix structure.
 !#
-!# Please note that in contrast to the 'old' Navier-Stokes Vanka methods,
+!# Please note that in contrast to the "old" Navier-Stokes Vanka methods,
 !# the D-matrices must NOT be virtually transposed!
 !#
 !# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- \\
@@ -109,7 +109,7 @@ module vanka_bouss2d
   ! Diagonal-type VANKA
   integer, parameter, public :: VANKATP_BOUSS2D_DIAG       = 0
 
-  ! 'Full' VANKA
+  ! "Full" VANKA
   integer, parameter, public :: VANKATP_BOUSS2D_FULL       = 1
 
   ! Pressure-DOF based VANKA
@@ -300,8 +300,8 @@ contains
 
     ! Matrix must be 4x4.
     if ((rmatrix%nblocksPerCol .ne. 4) .or. (rmatrix%nblocksPerRow .ne. 4)) then
-      call output_line ('System matrix is not 4x4.',&
-          OU_CLASS_ERROR,OU_MODE_STD,'vanka_initBoussinesq2D')
+      call output_line ("System matrix is not 4x4.",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vanka_initBoussinesq2D")
       call sys_halt()
     end if
 
@@ -311,15 +311,15 @@ contains
     ! that of A(2,3) must be identical to A(3,2).
     if ((rmatrix%RmatrixBlock(1,3)%NA .ne. rmatrix%RmatrixBlock(3,1)%NA) .or. &
         (rmatrix%RmatrixBlock(1,3)%NEQ .ne. rmatrix%RmatrixBlock(3,1)%NCOLS)) then
-      call output_line ('Structure of B1 and B1^T different!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'vanka_initBoussinesq2D')
+      call output_line ("Structure of B1 and B1^T different!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vanka_initBoussinesq2D")
       call sys_halt()
     end if
 
     if ((rmatrix%RmatrixBlock(2,3)%NA .ne. rmatrix%RmatrixBlock(3,2)%NA) .or. &
         (rmatrix%RmatrixBlock(2,3)%NEQ .ne. rmatrix%RmatrixBlock(3,2)%NCOLS)) then
-      call output_line ('Structure of B2 and B2^T different!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'vanka_initBoussinesq2D')
+      call output_line ("Structure of B2 and B2^T different!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vanka_initBoussinesq2D")
       call sys_halt()
     end if
 
@@ -440,7 +440,7 @@ contains
       rvanka%ndofPres = rmatrix%RmatrixBlock(3,1)%NEQ
 
       ! And determine the total number of DOFs in one velocity component -
-      ! this is needed by the 'fast' variant.
+      ! this is needed by the "fast" variant.
       rvanka%ndofVelo = rmatrix%RmatrixBlock(1,1)%NEQ
 
       ! And one more time for the temperature...
@@ -462,8 +462,8 @@ contains
     p_rblockDiscr => rmatrix%p_rblockDiscrTest
 
     if (.not. associated(p_rblockDiscr)) then
-      call output_line ('No discretisation!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'vanka_initBoussinesq2D')
+      call output_line ("No discretisation!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vanka_initBoussinesq2D")
       call sys_halt()
     end if
 
@@ -477,8 +477,8 @@ contains
     if (rvanka%p_rspatialDiscrU%inumFESpaces .ne. &
         rvanka%p_rspatialDiscrV%inumFESpaces) then
       call output_line (&
-          'Discretisation structures of X- and Y-velocity incompatible!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'vanka_initBoussinesq2D')
+          "Discretisation structures of X- and Y-velocity incompatible!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vanka_initBoussinesq2D")
       call sys_halt()
     end if
 
@@ -490,8 +490,8 @@ contains
       ! If this is not the case, we cannot determine (at least not in reasonable time)
       ! which element type the pressure represents on a cell!
       call output_line (&
-          'Discretisation structures of velocity and pressure incompatible!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'vanka_initBoussinesq2D')
+          "Discretisation structures of velocity and pressure incompatible!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vanka_initBoussinesq2D")
       call sys_halt()
     end if
 
@@ -534,7 +534,7 @@ contains
   ! this routine, as this holds a reference to the system matrix.
   !
   ! The routine supports arbitrary conformal discretisations, but works
-  ! 'specialised'! That means, there must exist a specialised implementation
+  ! "specialised"! That means, there must exist a specialised implementation
   ! for every type of problem, which is called by this routine.
   ! So, if the user has a special problem, this routine must tackled to
   ! call the corresponding specialised VANKA variant for that problem!
@@ -577,11 +577,12 @@ contains
     if(csubtype .eq. VANKATP_BOUSS2D_PDOF) then
 
       ! Yes, we do. So call the corresponding routine here.
-      ! The pressure-DOF based Vanka is a 'black-box' algorithm which does
+      ! The pressure-DOF based Vanka is a "black-box" algorithm which does
       ! not need any information about the underlying discretisations.
       !call vanka_BS2D_pdof(rrhs, domega, rvector, rvanka)
-      print *, 'ERROR: vanka_Boussinesq2D'
-      stop
+      call output_line ("Error",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vanka_Boussinesq2D")
+      call sys_halt()
 
       ! And return here, as the rest of the code in this routine is only
       ! used by the other Vanka variants.
@@ -589,10 +590,11 @@ contains
 
     else if(csubtype .eq. VANKATP_BOUSS2D_PDOF_FAST) then
 
-      ! Yes, we do, but we use the 'fast variant'.
+      ! Yes, we do, but we use the "fast variant".
       !call vanka_BS2D_pdof_fast(rrhs, domega, rvector, rvanka)
-      print *, 'ERROR: vanka_Boussinesq2D'
-      stop
+      call output_line ("Error",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vanka_Boussinesq2D")
+      call sys_halt()
 
       ! And return here.
       return
@@ -621,7 +623,7 @@ contains
       end if
 
       ! Get the list of the elements to process.
-      ! We take the element list of the X-velocity as 'primary' element list
+      ! We take the element list of the X-velocity as "primary" element list
       ! and assume that it coincides to that of the Y-velocity (and to that
       ! of the pressure).
       call storage_getbase_int (p_relementDistrU%h_IelementList,p_IelementList)
@@ -652,15 +654,15 @@ contains
           end if
 
         case default
-          call output_line ('Unknown VANKA subtype!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'vanka_Boussinesq2D')
+          call output_line ("Unknown VANKA subtype!",&
+              OU_CLASS_ERROR,OU_MODE_STD,"vanka_Boussinesq2D")
           call sys_halt()
 
         end select
 
       else
-        call output_line ('Unsupported discretisation!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'vanka_Boussinesq2D')
+        call output_line ("Unsupported discretisation!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"vanka_Boussinesq2D")
         call sys_halt()
 
       end if
@@ -874,7 +876,7 @@ contains
       !
       !   if(dabs(dc) .gt. SYS_EPSREAL_DP) p_DS(idofP) = 1.0_DP / dc
       !
-      ! The problem has been 'solved' by using the following equivalent
+      ! The problem has been "solved" by using the following equivalent
       ! alternative:
       if((dc .gt. SYS_EPSREAL_DP) .or. (dc .lt. -SYS_EPSREAL_DP)) then
         p_DS(idofP) = 1.0_DP / dc

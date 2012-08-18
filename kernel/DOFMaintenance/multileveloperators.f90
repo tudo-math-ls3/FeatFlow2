@@ -236,8 +236,8 @@ contains
         ((rdiscretisationCoarse%ccomplexity .ne. SPDISC_UNIFORM) .or. &
          (rdiscretisationFine%ccomplexity .ne. SPDISC_UNIFORM))) then
 
-      call output_line ('Discretisations must be uniform or conformal!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'mlop_create2LvlMatrixStruct')
+      call output_line ("Discretisations must be uniform or conformal!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"mlop_create2LvlMatrixStruct")
       call sys_halt()
 
     end if
@@ -246,8 +246,8 @@ contains
     ! number of FE spaces.
     if(rdiscretisationCoarse%inumFESpaces .ne. rdiscretisationFine%inumFESpaces) then
 
-      call output_line ('Discretisations must have same number of FE spaces!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'mlop_create2LvlMatrixStruct')
+      call output_line ("Discretisations must have same number of FE spaces!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"mlop_create2LvlMatrixStruct")
       call sys_halt()
 
     end if
@@ -271,8 +271,8 @@ contains
       call lsyssc_convertMatrix (rmatrixScalar,LSYSSC_MATRIX7)
 
     case default
-      call output_line ('Not supported matrix structure!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'mlop_create2LvlMatrixStruct')
+      call output_line ("Not supported matrix structure!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"mlop_create2LvlMatrixStruct")
       call sys_halt()
 
     end select
@@ -333,9 +333,9 @@ contains
     ! Note that we cannot switch off the sorting as easy as in the case
     ! of a vector, since there is a structure behind the matrix! So the caller
     ! has to make sure, the matrix is unsorted when this routine is called.
-    if (rmatrixScalar%isortStrategy .gt. 0) then
-      call output_line ('Matrix-structure must be unsorted!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'mlop_build2LvlMassMatrix')
+    if (rmatrixScalar%bcolumnsSorted .or. rmatrixScalar%browsSorted) then
+      call output_line ("Matrix-structure must be unsorted!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"mlop_build2LvlMassMatrix")
       call sys_halt()
     end if
 
@@ -345,8 +345,8 @@ contains
         ((rdiscretisationCoarse%ccomplexity .ne. SPDISC_UNIFORM) .or. &
          (rdiscretisationFine%ccomplexity .ne. SPDISC_UNIFORM))) then
 
-      call output_line ('Discretisations must be uniform or conformal!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'mlop_build2LvlMassMatrix')
+      call output_line ("Discretisations must be uniform or conformal!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"mlop_build2LvlMassMatrix")
       call sys_halt()
 
     end if
@@ -355,8 +355,8 @@ contains
     ! number of FE spaces.
     if(rdiscretisationCoarse%inumFESpaces .ne. rdiscretisationFine%inumFESpaces) then
 
-      call output_line ('Discretisations must have same number of FE spaces!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'mlop_build2LvlMassMatrix')
+      call output_line ("Discretisations must have same number of FE spaces!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"mlop_build2LvlMassMatrix")
       call sys_halt()
 
     end if
@@ -392,8 +392,8 @@ contains
       call lsyssc_releaseMatrix (rmatrixBackup)
 
     case default
-      call output_line ('Not supported matrix structure!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'mlop_build2LvlMassMatrix')
+      call output_line ("Not supported matrix structure!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"mlop_build2LvlMassMatrix")
       call sys_halt()
 
     end select
@@ -463,9 +463,9 @@ contains
     ! Note that we cannot switch off the sorting as easy as in the case
     ! of a vector, since there is a structure behind the matrix! So the caller
     ! has to make sure, the matrix is unsorted when this routine is called.
-    if (rmatrixScalar%isortStrategy .gt. 0) then
-      call output_line ('Matrix-structure must be unsorted!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'mlop_build2LvlProlMatrix')
+    if (rmatrixScalar%bcolumnsSorted .or. rmatrixScalar%browsSorted) then
+      call output_line ("Matrix-structure must be unsorted!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"mlop_build2LvlProlMatrix")
       call sys_halt()
     end if
 
@@ -475,8 +475,8 @@ contains
         ((rdiscretisationCoarse%ccomplexity .ne. SPDISC_UNIFORM) .or. &
          (rdiscretisationFine%ccomplexity .ne. SPDISC_UNIFORM))) then
 
-      call output_line ('Discretisations must be uniform or conformal!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'mlop_build2LvlProlMatrix')
+      call output_line ("Discretisations must be uniform or conformal!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"mlop_build2LvlProlMatrix")
       call sys_halt()
 
     end if
@@ -485,8 +485,8 @@ contains
     ! number of FE spaces.
     if(rdiscretisationCoarse%inumFESpaces .ne. rdiscretisationFine%inumFESpaces) then
 
-      call output_line ('Discretisations must have same number of FE spaces!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'mlop_build2LvlProlMatrix')
+      call output_line ("Discretisations must have same number of FE spaces!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"mlop_build2LvlProlMatrix")
       call sys_halt()
 
     end if
@@ -522,8 +522,8 @@ contains
       call lsyssc_releaseMatrix (rmatrixBackup)
 
     case default
-      call output_line ('Not supported matrix structure!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'mlop_build2LvlProlMatrix')
+      call output_line ("Not supported matrix structure!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"mlop_build2LvlProlMatrix")
       call sys_halt()
 
     end select
@@ -592,9 +592,9 @@ contains
     ! Note that we cannot switch off the sorting as easy as in the case
     ! of a vector, since there is a structure behind the matrix! So the caller
     ! has to make sure, the matrix is unsorted when this routine is called.
-    if (rmatrixScalar%isortStrategy .gt. 0) then
-      call output_line ('Matrix-structure must be unsorted!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'mlop_build2LvlInterpMatrix')
+    if (rmatrixScalar%bcolumnsSorted .or. rmatrixScalar%browsSorted) then
+      call output_line ("Matrix-structure must be unsorted!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"mlop_build2LvlInterpMatrix")
       call sys_halt()
     end if
 
@@ -604,8 +604,8 @@ contains
         ((rdiscretisationCoarse%ccomplexity .ne. SPDISC_UNIFORM) .or. &
          (rdiscretisationFine%ccomplexity .ne. SPDISC_UNIFORM))) then
 
-      call output_line ('Discretisations must be uniform or conformal!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'mlop_build2LvlInterpMatrix')
+      call output_line ("Discretisations must be uniform or conformal!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"mlop_build2LvlInterpMatrix")
       call sys_halt()
 
     end if
@@ -614,8 +614,8 @@ contains
     ! number of FE spaces.
     if(rdiscretisationCoarse%inumFESpaces .ne. rdiscretisationFine%inumFESpaces) then
 
-      call output_line ('Discretisations must have same number of FE spaces!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'mlop_build2LvlInterpMatrix')
+      call output_line ("Discretisations must have same number of FE spaces!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"mlop_build2LvlInterpMatrix")
       call sys_halt()
 
     end if
@@ -651,8 +651,8 @@ contains
       call lsyssc_releaseMatrix (rmatrixBackup)
 
     case default
-      call output_line ('Not supported matrix structure!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'mlop_build2LvlInterpMatrix')
+      call output_line ("Not supported matrix structure!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"mlop_build2LvlInterpMatrix")
       call sys_halt()
 
     end select
@@ -804,17 +804,17 @@ contains
     NEQ = rmatrixScalar%NEQ
 
     if (NEQ .eq. 0) then
-      call output_line ('Empty matrix!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'mlop_create2LvlMatStruct9_conf')
+      call output_line ("Empty matrix!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"mlop_create2LvlMatStruct9_conf")
       call sys_halt()
     end if
 
     ! Allocate KLD...
-    call storage_new ('mlop_create2LvlMatStruct9_conf', 'KLD', &
+    call storage_new ("mlop_create2LvlMatStruct9_conf", "KLD", &
                         NEQ+1, ST_INT, rmatrixScalar%h_KLD, ST_NEWBLOCK_NOINIT)
 
     ! And allocate Kdiagonal - although it is not needed, it has to allocated.
-    call storage_new ('mlop_create2LvlMatStruct9_conf', 'KLD', &
+    call storage_new ("mlop_create2LvlMatStruct9_conf", "KLD", &
                         NEQ, ST_INT, rmatrixScalar%h_Kdiagonal, ST_NEWBLOCK_NOINIT)
 
     ! This must be a storage_getbase, no lsyssc_getbase, since this is the
@@ -844,13 +844,13 @@ contains
 
     ! imemblkSize = iallocated is necessary at the moment to simplify
     ! whether we leave a block or not.
-    call storage_new ('mlop_create2LvlMatStruct9_conf', 'Ihicol', &
+    call storage_new ("mlop_create2LvlMatStruct9_conf", "Ihicol", &
                         p_Isize(1), ST_INT, p_Ihcol(1), ST_NEWBLOCK_NOINIT)
     call storage_getbase_int (p_Ihcol(1),p_Icol)
 
     ! The new index array must be filled with 0 - otherwise
     ! the search routine below will not work!
-    call storage_new ('mlop_create2LvlMatStruct9_conf', 'p_Ihindx', &
+    call storage_new ("mlop_create2LvlMatStruct9_conf", "p_Ihindx", &
                         p_Isize(1), ST_INT, p_Ihindx(1), ST_NEWBLOCK_ZERO)
     call storage_getbase_int (p_Ihindx(1),p_Iindx)
 
@@ -1031,8 +1031,8 @@ contains
 
         ! If nelementsToDo is 0, then we have a serious problem...
         if (nelementsToDo .le. 0) then
-          call output_line ('INTERNAL ERROR: nelementsToDo = 0!', &
-              OU_CLASS_ERROR,OU_MODE_STD,'mlop_create2LvlMatStruct9_conf')
+          call output_line ("INTERNAL ERROR: nelementsToDo = 0!", &
+              OU_CLASS_ERROR,OU_MODE_STD,"mlop_create2LvlMatStruct9_conf")
           call sys_halt()
         end if
 
@@ -1203,14 +1203,14 @@ contains
                         ! Allocate another imemblkSize elements for column numbers and
                         ! list pointers.
 
-                        call storage_new ('mlop_create2LvlMatStruct9_conf', 'Ihicol', &
+                        call storage_new ("mlop_create2LvlMatStruct9_conf", "Ihicol", &
                                             p_Isize (iblocks), ST_INT, p_Ihcol(iblocks), &
                                             ST_NEWBLOCK_NOINIT)
                         call storage_getbase_int (p_Ihcol(iblocks),p_Icol)
 
                         ! The new index array must be filled with 0 - otherwise
                         ! the search routine below will not work!
-                        call storage_new ('mlop_create2LvlMatStruct9_conf', 'p_Ihindx', &
+                        call storage_new ("mlop_create2LvlMatStruct9_conf", "p_Ihindx", &
                                             p_Isize (iblocks), ST_INT, p_Ihindx(iblocks), &
                                             ST_NEWBLOCK_ZERO)
                         call storage_getbase_int (p_Ihindx(iblocks),p_Iindx)
@@ -1301,7 +1301,7 @@ contains
     ! each row.
     !
     ! At first, as we now NA, we can allocate the real KCOL now!
-    call storage_new ('mlop_create2LvlMatStruct9_conf', 'KCOL', &
+    call storage_new ("mlop_create2LvlMatStruct9_conf", "KCOL", &
                         NA, ST_INT, rmatrixScalar%h_KCOL, &
                         ST_NEWBLOCK_NOINIT)
 
@@ -1572,8 +1572,8 @@ contains
     ! We need KCOL/KLD of our matrix
     if ((rmatrixScalar%h_KCOL .eq. ST_NOHANDLE) .or. &
         (rmatrixScalar%h_KLD .eq. ST_NOHANDLE)) then
-      call output_line ('No discretisation structure! Cannot assemble matrix!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'mlop_build2LvlMass9_conf')
+      call output_line ("No discretisation structure! Cannot assemble matrix!", &
+                        OU_CLASS_ERROR,OU_MODE_STD,"mlop_build2LvlMass9_conf")
       call sys_halt()
     end if
 
@@ -1585,7 +1585,7 @@ contains
 
       ! Clear the entries in the matrix - we need to start with zero
       ! when assembling a new matrix!
-      call storage_new ('mlop_build2LvlMass9_conf', 'DA', &
+      call storage_new ("mlop_build2LvlMass9_conf", "DA", &
                           NA, ST_DOUBLE, rmatrixScalar%h_DA, &
                           ST_NEWBLOCK_ZERO)
       call lsyssc_getbase_double (rmatrixScalar,p_DA)
@@ -1825,8 +1825,8 @@ contains
 
         ! If nelementsToDo is 0, then we have a serious problem...
         if (nelementsToDo .le. 0) then
-          call output_line ('INTERNAL ERROR: nelementsToDo = 0!', &
-              OU_CLASS_ERROR,OU_MODE_STD,'mlop_build2LvlMass9_conf')
+          call output_line ("INTERNAL ERROR: nelementsToDo = 0!", &
+              OU_CLASS_ERROR,OU_MODE_STD,"mlop_build2LvlMass9_conf")
           call sys_halt()
         end if
 
@@ -2217,8 +2217,8 @@ contains
     ! We need KCOL/KLD of our matrix
     if ((rmatrixScalar%h_KCOL .eq. ST_NOHANDLE) .or. &
         (rmatrixScalar%h_KLD .eq. ST_NOHANDLE)) then
-      call output_line ('No matrix structure! Cannot assemble matrix!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'mlop_build2LvlProl9_conf')
+      call output_line ("No matrix structure! Cannot assemble matrix!", &
+                        OU_CLASS_ERROR,OU_MODE_STD,"mlop_build2LvlProl9_conf")
       call sys_halt()
     end if
 
@@ -2230,7 +2230,7 @@ contains
 
       ! Clear the entries in the matrix - we need to start with zero
       ! when assembling a new matrix!
-      call storage_new ('mlop_build2LvlProl9_conf', 'DA', &
+      call storage_new ("mlop_build2LvlProl9_conf", "DA", &
                           NA, ST_DOUBLE, rmatrixScalar%h_DA, &
                           ST_NEWBLOCK_ZERO)
       call lsyssc_getbase_double (rmatrixScalar,p_DA)
@@ -2484,8 +2484,8 @@ contains
 
         ! If nelementsToDo is 0, then we have a serious problem...
         if (nelementsToDo .le. 0) then
-          call output_line ('INTERNAL ERROR: nelementsToDo = 0!', &
-              OU_CLASS_ERROR,OU_MODE_STD,'mlop_build2LvlProl9_conf')
+          call output_line ("INTERNAL ERROR: nelementsToDo = 0!", &
+              OU_CLASS_ERROR,OU_MODE_STD,"mlop_build2LvlProl9_conf")
           call sys_halt()
         end if
 
@@ -2936,8 +2936,8 @@ contains
     ! We need KCOL/KLD of our matrix
     if ((rmatrixScalar%h_KCOL .eq. ST_NOHANDLE) .or. &
         (rmatrixScalar%h_KLD .eq. ST_NOHANDLE)) then
-      call output_line ('No matrix structure! Cannot assemble matrix!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'mlop_build2LvlInterp9_conf')
+      call output_line ("No matrix structure! Cannot assemble matrix!", &
+                        OU_CLASS_ERROR,OU_MODE_STD,"mlop_build2LvlInterp9_conf")
       call sys_halt()
     end if
 
@@ -2949,7 +2949,7 @@ contains
 
       ! Clear the entries in the matrix - we need to start with zero
       ! when assembling a new matrix!
-      call storage_new ('mlop_build2LvlInterp9_conf', 'DA', &
+      call storage_new ("mlop_build2LvlInterp9_conf", "DA", &
                           NA, ST_DOUBLE, rmatrixScalar%h_DA, &
                           ST_NEWBLOCK_ZERO)
       call lsyssc_getbase_double (rmatrixScalar,p_DA)
@@ -3200,8 +3200,8 @@ contains
 
         ! If nelementsToDo is 0, then we have a serious problem...
         if (nelementsToDo .le. 0) then
-          call output_line ('INTERNAL ERROR: nelementsToDo = 0!', &
-              OU_CLASS_ERROR,OU_MODE_STD,'mlop_build2LvlInterp9_conf')
+          call output_line ("INTERNAL ERROR: nelementsToDo = 0!", &
+              OU_CLASS_ERROR,OU_MODE_STD,"mlop_build2LvlInterp9_conf")
           call sys_halt()
         end if
 
@@ -3428,7 +3428,7 @@ contains
           do IELF = 1, NELREF
 
             ! Solve the system
-            call DGETRS('N',indofCoarse,indofFine,Dmass(:,:,IELC),&
+            call DGETRS("N",indofCoarse,indofFine,Dmass(:,:,IELC),&
                         inmaxdofCoarse,Ipivot,Dentry(:,:,NELF+IELF),&
                         inmaxdofFine,IDOFE)
 

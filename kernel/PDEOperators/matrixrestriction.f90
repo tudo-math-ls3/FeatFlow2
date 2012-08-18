@@ -40,6 +40,7 @@ module matrixrestriction
 !$use omp_lib
   use fsystem
   use storage
+  use genoutput
   use matrixmodification
   use basicgeometry
   use geometryaux
@@ -136,37 +137,43 @@ contains
 
     if ((rfineMatrix%cmatrixFormat .ne. LSYSSC_MATRIX9) .or. &
        (rcoarseMatrix%cmatrixFormat .ne. LSYSSC_MATRIX9)) then
-      print *,'mrest_matrixRestrictionEX3Y: Only format 9 matrices supported!'
+      call output_line ("Only format 9 matrices supported!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"mrest_matrixRestrictionEX3Y")
       call sys_halt()
     end if
 
     if ((iand(rfineMatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) .or. &
         (iand(rcoarseMatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0)) then
-      print *,'mrest_matrixRestrictionEX3Y: Matrix must not be transposed!'
+      call output_line ("Matrix must not be transposed!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"mrest_matrixRestrictionEX3Y")
       call sys_halt()
     end if
 
     if ((rfineMatrix%p_rspatialDiscrTest%ccomplexity .ne. SPDISC_UNIFORM) .or. &
         (rcoarseMatrix%p_rspatialDiscrTest%ccomplexity .ne. SPDISC_UNIFORM)) then
-      print *,'mrest_matrixRestrictionEX3Y: Only uniform discretisation supported!'
+      call output_line ("Only uniform discretisation supported!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"mrest_matrixRestrictionEX3Y")
       call sys_halt()
     end if
 
     if ((rfineMatrix%cdataType .ne. ST_DOUBLE) .or. &
         (rcoarseMatrix%cdataType .ne. ST_DOUBLE)) then
-      print *,'mrest_matrixRestrictionEX3Y: Only double precision matrices supported!'
+      call output_line ("Only double precision matrices supported!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"mrest_matrixRestrictionEX3Y")
       call sys_halt()
     end if
 
-    if ((rfineMatrix%isortStrategy .gt. 0) .or. &
-        (rcoarseMatrix%isortStrategy .gt. 0)) then
-      print *,'mrest_matrixRestrictionEX3Y: Sorted matrices not supported!'
+    if ((rfineMatrix%bcolumnsSorted .or. rcoarseMatrix%bcolumnsSorted) .or. &
+        (rfineMatrix%browsSorted .or. rcoarseMatrix%browsSorted)) then
+      call output_line ("Sorted matrices not supported!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"mrest_matrixRestrictionEX3Y")
       call sys_halt()
     end if
 
     if ((rfineMatrix%dscaleFactor .ne. 1.0_DP) .or. &
         (rcoarseMatrix%dscaleFactor .ne. 1.0_DP)) then
-      print *,'mrest_matrixRestrictionEX3Y: Scaled matrices not supported!'
+      call output_line ("Scaled matrices not supported!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"mrest_matrixRestrictionEX3Y")
       call sys_halt()
     end if
 
@@ -174,7 +181,8 @@ contains
     i2 = rcoarseMatrix%p_rspatialDiscrTrial%RelementDistr(1)%celement
     if ((elem_getPrimaryElement(i1) .ne. EL_Q1T) .or. &
         (elem_getPrimaryElement(i2) .ne. EL_Q1T)) then
-      print *,'mrest_matrixRestrictionEX3Y: Only Q1~-discretisation supported!'
+      call output_line ("Only Q1~-discretisation supported!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"mrest_matrixRestrictionEX3Y")
       call sys_halt()
     end if
 
