@@ -37,6 +37,7 @@ module elemdbg2d_test1
   use spdiscprojection
   use convection
   use collection
+  use sortstrategybase
   use sortstrategy
   use bilinearformevaluation
   use linearformevaluation
@@ -83,7 +84,7 @@ contains
   real(DP) :: ddist, depsRel, depsAbs, drelax, daux1, daux2, ddist2
   character(LEN=64) :: selement,scubature
   type(t_bilinearForm) :: rform
-  integer :: iucd, h_Ipermute
+  integer :: iucd
   type(t_ucdexport) :: rexport
   real(DP) :: dnu,dbeta1,dbeta2,dupsam,dgamma
   integer :: istabil, isolution, ifillin, clocalh
@@ -95,9 +96,8 @@ contains
   type(t_vectorBlock) :: rvelocityVector
   type(t_blockDiscretisation) :: rdiscretisationVel
   character(len=SYS_STRLEN) :: spredir, sucddir
+  type(t_blockSortStrategy) :: rsortStrategy
   
-    h_Ipermute = ST_NOHANDLE
-
     ! Fetch sytem variables
     if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
     if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = './ucd'
@@ -545,15 +545,18 @@ contains
         call linsol_initBiCGStab(p_rsolver, p_rprecond)
         
         ! Calculate a RCMK permutation
-        call sstrat_calcRevCuthillMcKee(rmatrix%RmatrixBlock(1,1), h_Ipermute)
+        call sstrat_initBlockSorting (rsortStrategy,rdiscretisation)
+        call sstrat_initRevCuthillMcKee(rsortStrategy%p_Rstrategies(1),rmatrix%RmatrixBlock(1,1))
         
+        ! Attach the sorting strategy
+        call lsysbl_setSortStrategy (rmatrix,rsortStrategy,rsortStrategy)
+        call lsysbl_setSortStrategy (rvecSol,rsortStrategy)
+        call lsysbl_setSortStrategy (rvecRhs,rsortStrategy)
+
         ! Permute matrix and vectors
-        call lsyssc_sortMatrix(rmatrix%RmatrixBlock(1,1), .true., &
-                               SSTRAT_RCM, h_Ipermute)
-        call lsyssc_sortVectorInSitu(rvecSol%RvectorBlock(1), &
-            rvecTmp%RvectorBlock(1), SSTRAT_RCM, h_Ipermute)
-        call lsyssc_sortVectorInSitu(rvecRhs%RvectorBlock(1), &
-            rvecTmp%RvectorBlock(1), SSTRAT_RCM, h_Ipermute)
+        call lsysbl_sortMatrix(rmatrix,.true.)
+        call lsysbl_sortVector(rvecSol,.true., rvecTmp%RvectorBlock(1))
+        call lsysbl_sortVector(rvecRhs,.true., rvecTmp%RvectorBlock(1))
       
       end select
       
@@ -572,11 +575,8 @@ contains
       ! Solve the system
       call linsol_solveAdaptively (p_rsolver,rvecSol,rvecRhs,rvecTmp)
       
-      ! If we have a permutation, unsort the solution vector
-      if(h_Ipermute .ne. ST_NOHANDLE) then
-        call lsyssc_sortVectorInSitu(rvecSol%RvectorBlock(1), &
-            rvecTmp%RvectorBlock(1), -SSTRAT_RCM)
-      end if
+      ! If necessary, unsort the solution vector
+      call lsyssc_sortVector (rvecSol%RvectorBlock(1), .false., rvecTmp%RvectorBlock(1))
       
       ! Calculate the errors to the reference function
       rerror%p_RvecCoeff => rvecSol%RvectorBlock(1:1)
@@ -621,7 +621,7 @@ contains
       call lsysbl_releaseVector (rvecSol)
       call lsysbl_releaseVector (rvecRhs)
       call lsysbl_releaseMatrix (rmatrix)
-      if(h_Ipermute .ne. ST_NOHANDLE) call storage_free(h_Ipermute)
+      call sstrat_doneBlockSorting (rsortStrategy)
       call bcasm_releaseDiscreteBC (rdiscreteBC)
       call spdiscr_releaseBlockDiscr(rdiscretisation)
       call tria_done (rtriangulation)
