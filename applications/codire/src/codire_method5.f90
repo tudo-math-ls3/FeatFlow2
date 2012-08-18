@@ -33,6 +33,7 @@ module codire_method5
   use vectorfilters
   use discretebc
   use bcassembly
+  use sortstrategybase
   use sortstrategy
   use triangulation
   use element
@@ -79,6 +80,9 @@ module codire_method5
     ! A variable describing the discrete boundary conditions.
     type(t_discreteBC) :: rdiscreteBC
   
+    ! Sorting strategy for resorting vectors/matrices.
+    type(t_blockSortStrategy) :: rsortStrategy
+
   end type
   
 !</typeblock>
@@ -282,10 +286,6 @@ contains
     ! A pointer to the discretisation structure with the data.
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
 
-    ! Arrays for the Cuthill McKee renumbering strategy
-    integer, dimension(1) :: H_Iresort
-    integer, dimension(:), pointer :: p_Iresort
-
     ! Parameters from the DAT file
     real(DP) :: alpha11,alpha12,alpha21,alpha22,beta1,beta2,gamma
     character(LEN=10) :: Sstr
@@ -327,19 +327,19 @@ contains
     rform%BconstantCoeff = .true.
     
     ! get the coefficients from the parameter list
-    call parlst_getvalue_string (rparams, 'EQUATION', 'ALPHA11', Sstr, '1.0')
+    call parlst_getvalue_string (rparams, "EQUATION", "ALPHA11", Sstr, "1.0")
     read(Sstr,*) alpha11
-    call parlst_getvalue_string (rparams, 'EQUATION', 'ALPHA12', Sstr, '0.0')
+    call parlst_getvalue_string (rparams, "EQUATION", "ALPHA12", Sstr, "0.0")
     read(Sstr,*) alpha12
-    call parlst_getvalue_string (rparams, 'EQUATION', 'ALPHA21', Sstr, '0.0')
+    call parlst_getvalue_string (rparams, "EQUATION", "ALPHA21", Sstr, "0.0")
     read(Sstr,*) alpha21
-    call parlst_getvalue_string (rparams, 'EQUATION', 'ALPHA22', Sstr, '1.0')
+    call parlst_getvalue_string (rparams, "EQUATION", "ALPHA22", Sstr, "1.0")
     read(Sstr,*) alpha22
-    call parlst_getvalue_string (rparams, 'EQUATION', 'BETA1', Sstr, '0.0')
+    call parlst_getvalue_string (rparams, "EQUATION", "BETA1", Sstr, "0.0")
     read(Sstr,*) beta1
-    call parlst_getvalue_string (rparams, 'EQUATION', 'BETA2', Sstr, '0.0')
+    call parlst_getvalue_string (rparams, "EQUATION", "BETA2", Sstr, "0.0")
     read(Sstr,*) beta2
-    call parlst_getvalue_string (rparams, 'EQUATION', 'GAMMA', Sstr, '0.0')
+    call parlst_getvalue_string (rparams, "EQUATION", "GAMMA", Sstr, "0.0")
     read(Sstr,*) gamma
     
     rform%Dcoefficients(1)  = alpha11
@@ -362,7 +362,7 @@ contains
 
       ! Save matrix and vectors to the collection.
       ! They maybe used later, expecially in nonlinear problems.
-      call collct_setvalue_mat(rproblem%rcollection,'LAPLACE',p_rmatrix,.true.,i)
+      call collct_setvalue_mat(rproblem%rcollection,"LAPLACE",p_rmatrix,.true.,i)
 
       ! Now as the discretisation is set up, we can start to generate
       ! the structure of the system matrix which is to solve.
@@ -385,21 +385,21 @@ contains
                                    p_rmatrix%RmatrixBlock(1,1),coeff_CoDiRe,&
                                    rproblem%rcollection)
 
-      ! Allocate an array for holding the resorting strategy.
-      call storage_new ('cdrm5_initMatVec', 'Iresort', &
-            p_rmatrix%RmatrixBlock(1,1)%NEQ*2, ST_INT, h_Iresort(1), ST_NEWBLOCK_ZERO)
-      call storage_getbase_int(h_Iresort(1),p_Iresort)
-      
+      ! Create a sort strategy structure for our discretisation
+      call sstrat_initBlockSorting (rproblem%RlevelInfo(i)%rsortStrategy,p_rdiscretisation)
+
       ! Calculate the resorting strategy.
-      call sstrat_calcCuthillMcKee (p_rmatrix%RmatrixBlock(1,1),p_Iresort)
+      call sstrat_initCuthillMcKee (rproblem%RlevelInfo(i)%rsortStrategy%p_Rstrategies(1),&
+          p_rmatrix%RmatrixBlock(1,1))
       
-      ! Save the handle of the resorting strategy to the collection.
-      call collct_setvalue_int(rproblem%rcollection,'LAPLACE-CM',h_Iresort(1),.true.,i)
+      ! Attach the sorting strategy to the matrix. The matrix is not yet sorted.
+      call lsysbl_setSortStrategy (p_rmatrix,&
+          rproblem%RlevelInfo(i)%rsortStrategy,&
+          rproblem%RlevelInfo(i)%rsortStrategy)
       
-      ! Resort the matrix according to the resorting strategy.
-      call lsyssc_sortMatrix (p_rmatrix%RmatrixBlock(1,1),.true.,&
-                              SSTRAT_CM,h_Iresort(1))
-    
+      ! Resort the matrix.
+      call lsysbl_sortMatrix (p_rmatrix,.true.)
+
     end do
     
     ! (Only) on the finest level, we need to calculate a RHS vector
@@ -410,8 +410,8 @@ contains
 
     ! Save the solution/RHS vector to the collection. Might be used
     ! later (e.g. in nonlinear problems)
-    call collct_setvalue_vec(rproblem%rcollection,'RHS',p_rrhs,.true.)
-    call collct_setvalue_vec(rproblem%rcollection,'SOLUTION',p_rvector,.true.)
+    call collct_setvalue_vec(rproblem%rcollection,"RHS",p_rrhs,.true.)
+    call collct_setvalue_vec(rproblem%rcollection,"SOLUTION",p_rvector,.true.)
 
     ! Now we want to build up the right hand side. At first we need a block
     ! vector of the right structure. Although we could manually create
@@ -444,6 +444,14 @@ contains
     ! Fill the solution vector with 0:
     call lsysbl_createVecBlockIndirect (p_rrhs, p_rvector, .true.)
     
+    ! Install the resorting strategy in the RHS- and the solution
+    ! vector, but do not resort them yet!
+    ! We resort the vectors just before solving.
+    call lsysbl_setSortStrategy (p_rrhs,&
+        rproblem%RlevelInfo(rproblem%ilvmax)%rsortStrategy)
+    call lsysbl_setSortStrategy (p_rvector,&
+        rproblem%RlevelInfo(rproblem%ilvmax)%rsortStrategy)
+
   end subroutine
 
   ! ***************************************************************************
@@ -500,11 +508,11 @@ contains
       ! conditions.
       call bcasm_initDiscreteBC(rproblem%RlevelInfo(i)%rdiscreteBC)
       !
-      ! We 'know' already (from the problem definition) that we have four boundary
+      ! We "know" already (from the problem definition) that we have four boundary
       ! segments in the domain. Each of these, we want to use for enforcing
       ! some kind of boundary condition.
       !
-      ! We ask the boundary routines to create a 'boundary region' - which is
+      ! We ask the boundary routines to create a "boundary region" - which is
       ! simply a part of the boundary corresponding to a boundary segment.
       ! A boundary region roughly contains the type, the min/max parameter value
       ! and whether the endpoints are inside the region or not.
@@ -513,7 +521,7 @@ contains
       ! We use this boundary region and specify that we want to have Dirichlet
       ! boundary there. The following call does the following:
       ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
-      !   We specify icomponent='1' to indicate that we set up the
+      !   We specify icomponent="1" to indicate that we set up the
       !   Dirichlet BC`s for the first (here: one and only) component in the
       !   solution vector.
       ! - Discretise the boundary condition so that the BC`s can be applied
@@ -675,16 +683,15 @@ contains
     
     ! Resort the RHS and solution vector according to the resorting
     ! strategy given in the matrix.
-    if (lsysbl_isMatrixSorted(p_rmatrix)) then
-      ! Use the temporary vector from above to store intermediate data.
-      ! The vectors are assumed to know how they are resorted (the strategy
-      ! is already attached to them). So call the resorting routines
-      ! to resort them as necessary!
-      ! We use the first subvector of rtempBlock as temporary data; it is
-      ! large enough, as we only have one block.
-      call lsysbl_sortVectorInSitu (p_rrhs,rtempBlock%RvectorBlock(1),.true.)
-      call lsysbl_sortVectorInSitu (p_rvector,rtempBlock%RvectorBlock(1),.true.)
-    end if
+    !
+    ! Use the temporary vector from above to store intermediate data.
+    ! The vectors are assumed to know how they are resorted (the strategy
+    ! is already attached to them). So call the resorting routines
+    ! to resort them as necessary!
+    ! We use the first subvector of rtempBlock as temporary data; it is
+    ! large enough, as we only have one block.
+    call lsysbl_synchroniseSort(p_rmatrix,p_rrhs,rtempBlock%RvectorBlock(1))
+    call lsysbl_synchroniseSort(p_rmatrix,p_rvector,rtempBlock%RvectorBlock(1))
     
     ! During the linear solver, the boundary conditions must
     ! frequently be imposed to the vectors. This is done using
@@ -784,10 +791,10 @@ contains
     
     ! Unsort the vectors again in case they were resorted before calling
     ! the solver.
-    ! We use the first subvector of rtempBlock as temporary data; it is
+    ! We use the first subvector of rvecTmp as temporary data; it is
     ! large enough, as we only have one block.
-    call lsysbl_sortVectorInSitu (p_rrhs,rtempBlock%RvectorBlock(1),.false.)
-    call lsysbl_sortVectorInSitu (p_rvector,rtempBlock%RvectorBlock(1),.false.)
+    call lsysbl_sortVector (p_rrhs,.false.,rtempBlock%RvectorBlock(1))
+    call lsysbl_sortVector (p_rvector,.false.,rtempBlock%RvectorBlock(1))
     
     ! Release the temporary vector
     call lsysbl_releaseVector (rtempBlock)
@@ -801,7 +808,7 @@ contains
   subroutine cdrm5_postprocessing (rproblem,sucddir)
   
 !<description>
-  ! Writes the solution into a GMV file.
+  ! Writes the solution into a VTK file.
 !</description>
 
 !<inputoutput>
@@ -819,7 +826,7 @@ contains
     ! We need some more variables for postprocessing
     real(DP), dimension(:), pointer :: p_Ddata
     
-    ! Output block for UCD output to GMV file
+    ! Output block for UCD output to VTK file
     type(t_ucdExport) :: rexport
 
     ! A pointer to the solution vector and to the triangulation.
@@ -836,12 +843,12 @@ contains
     ! p_rvector now contains our solution. We can now
     ! start the postprocessing.
 
-    ! Start UCD export to GMV file:
-    call ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,&
-        trim(sucddir)//'/u5.gmv')
+    ! Start UCD export to VTK file:
+    call ucd_startVTK (rexport,UCD_FLAG_STANDARD,p_rtriangulation,&
+        trim(sucddir)//"/u5.vtk")
     
     call lsyssc_getbase_double (p_rvector%RvectorBlock(1),p_Ddata)
-    call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
+    call ucd_addVariableVertexBased (rexport,"sol",UCD_VAR_STANDARD, p_Ddata)
     
     ! Write the file to disc, that is it.
     call ucd_write (rexport)
@@ -866,29 +873,28 @@ contains
 
 !</subroutine>
 
-    integer :: ihandle,i
-
-    ! Release matrices and vectors on all levels
-    do i=rproblem%ilvmax,rproblem%ilvmin,-1
-      ! Delete the matrix
-      call lsysbl_releaseMatrix (rproblem%RlevelInfo(i)%rmatrix)
-
-      ! Delete the variables from the collection.
-      call collct_deletevalue (rproblem%rcollection,'LAPLACE',i)
-      
-      ! Release the permutation for sorting matrix/vectors
-      ihandle = collct_getvalue_int (rproblem%rcollection,'LAPLACE-CM',i)
-      call storage_free (ihandle)
-      call collct_deletevalue (rproblem%rcollection,'LAPLACE-CM',i)
-    end do
+    integer :: i
 
     ! Delete solution/RHS vector
     call lsysbl_releaseVector (rproblem%rvector)
     call lsysbl_releaseVector (rproblem%rrhs)
 
     ! Delete the variables from the collection.
-    call collct_deletevalue (rproblem%rcollection,'RHS')
-    call collct_deletevalue (rproblem%rcollection,'SOLUTION')
+    call collct_deletevalue (rproblem%rcollection,"RHS")
+    call collct_deletevalue (rproblem%rcollection,"SOLUTION")
+
+    ! Release matrices and vectors on all levels
+    do i=rproblem%ilvmax,rproblem%ilvmin,-1
+      ! Delete the matrix
+      call lsysbl_releaseMatrix (rproblem%RlevelInfo(i)%rmatrix)
+
+      ! Release the sorting strategy
+      call sstrat_doneBlockSorting (rproblem%RlevelInfo(i)%rsortStrategy)
+
+      ! Delete the variables from the collection.
+      call collct_deletevalue (rproblem%rcollection,"LAPLACE",i)
+      
+    end do
 
   end subroutine
 
@@ -988,7 +994,7 @@ contains
   subroutine codire5
   
 !<description>
-  ! This is a 'separated' CoDiRe solver for solving a convection-diffusion-
+  ! This is a "separated" CoDiRe solver for solving a convection-diffusion-
   ! reaction problem. The different tasks of the problem are separated into
   ! subroutines. The problem uses a problem-specific structure for the
   ! communication: All subroutines add their generated information to the
@@ -1005,7 +1011,7 @@ contains
   ! 4.) Set up matrix
   ! 5.) Create solver structure
   ! 6.) Solve the problem
-  ! 7.) Write solution to GMV file
+  ! 7.) Write solution to VTK file
   ! 8.) Release all variables, finish
 !</description>
 
@@ -1039,20 +1045,20 @@ contains
     
     ! Read the parameters from disc and put a reference to it
     ! to the collection
-    call sys_getcommandLineArg(1,smaster,sdefault='./data/codire.dat')
+    call sys_getcommandLineArg(1,smaster,sdefault="./data/codire.dat")
     call parlst_readfromfile (rparams, smaster)
 
     ! We want to solve our Laplace problem on level...
-    call parlst_getvalue_int (rparams, 'GENERAL', 'NLMAX', NLMAX, 7)
+    call parlst_getvalue_int (rparams, "GENERAL", "NLMAX", NLMAX, 7)
 
     ! PRM file
-    call parlst_getvalue_string (rparams, 'GENERAL', &
-                                 'sfilePRM', sstring)
+    call parlst_getvalue_string (rparams, "GENERAL", &
+                                 "sfilePRM", sstring)
     read(sstring,*) sfilePRM
                                  
     ! TRI file
-    call parlst_getvalue_string (rparams, 'GENERAL', &
-                                 'sfileTRI', sstring)
+    call parlst_getvalue_string (rparams, "GENERAL", &
+                                 "sfileTRI", sstring)
     read(sstring,*) sfileTRI
 
     ! Initialise the collection.
@@ -1061,11 +1067,11 @@ contains
       call collct_addlevel (rproblem%rcollection)
     end do
 
-    call collct_setvalue_parlst (rproblem%rcollection, 'PARAMS', rparams, .true.)
+    call collct_setvalue_parlst (rproblem%rcollection, "PARAMS", rparams, .true.)
     
-    ! Get the path where to write gmv`s to.
-    call parlst_getvalue_string (rparams, 'GENERAL', &
-                                 'sucddir', sstring)
+    ! Get the path where to write VTK`s to.
+    call parlst_getvalue_string (rparams, "GENERAL", &
+                                 "sucddir", sstring)
     read(sstring,*) sucddir
 
     ! So now the different steps - one after the other.
@@ -1092,13 +1098,13 @@ contains
     call cdrm5_doneParamTriang (rproblem)
     
     ! Release parameter list
-    call collct_deletevalue (rproblem%rcollection,'PARAMS')
+    call collct_deletevalue (rproblem%rcollection,"PARAMS")
     call parlst_done (rparams)
 
     ! Print some statistical data about the collection - anything forgotten?
     print *
-    print *,'Remaining collection statistics:'
-    print *,'--------------------------------'
+    print *,"Remaining collection statistics:"
+    print *,"--------------------------------"
     print *
     call collct_printStatistics (rproblem%rcollection)
     

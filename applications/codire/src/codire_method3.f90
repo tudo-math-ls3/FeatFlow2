@@ -15,7 +15,7 @@
 !# as well as a collection structure for the communication with callback
 !# routines.
 !#
-!# On start of the routine, a data file 'data/codire.dat' is read from
+!# On start of the routine, a data file "data/codire.dat" is read from
 !# disc. The parameters in this file configure the problem to solve.
 !# </purpose>
 !##############################################################################
@@ -271,9 +271,9 @@ contains
 
     ! Save matrix and vectors to the collection.
     ! They maybe used later, expecially in nonlinear problems.
-    call collct_setvalue_vec(rproblem%rcollection,'RHS',p_rrhs,.true.)
-    call collct_setvalue_vec(rproblem%rcollection,'SOLUTION',p_rvector,.true.)
-    call collct_setvalue_mat(rproblem%rcollection,'LAPLACE',p_rmatrix,.true.)
+    call collct_setvalue_vec(rproblem%rcollection,"RHS",p_rrhs,.true.)
+    call collct_setvalue_vec(rproblem%rcollection,"SOLUTION",p_rvector,.true.)
+    call collct_setvalue_mat(rproblem%rcollection,"LAPLACE",p_rmatrix,.true.)
 
     ! Now as the discretisation is set up, we can start to generate
     ! the structure of the system matrix which is to solve.
@@ -319,19 +319,19 @@ contains
     rform%BconstantCoeff = .true.
     
     ! get the coefficients from the parameter list
-    call parlst_getvalue_string (rparams, 'EQUATION', 'ALPHA11', Sstr, '1.0')
+    call parlst_getvalue_string (rparams, "EQUATION", "ALPHA11", Sstr, "1.0")
     read(Sstr,*) alpha11
-    call parlst_getvalue_string (rparams, 'EQUATION', 'ALPHA12', Sstr, '0.0')
+    call parlst_getvalue_string (rparams, "EQUATION", "ALPHA12", Sstr, "0.0")
     read(Sstr,*) alpha12
-    call parlst_getvalue_string (rparams, 'EQUATION', 'ALPHA21', Sstr, '0.0')
+    call parlst_getvalue_string (rparams, "EQUATION", "ALPHA21", Sstr, "0.0")
     read(Sstr,*) alpha21
-    call parlst_getvalue_string (rparams, 'EQUATION', 'ALPHA22', Sstr, '1.0')
+    call parlst_getvalue_string (rparams, "EQUATION", "ALPHA22", Sstr, "1.0")
     read(Sstr,*) alpha22
-    call parlst_getvalue_string (rparams, 'EQUATION', 'BETA1', Sstr, '0.0')
+    call parlst_getvalue_string (rparams, "EQUATION", "BETA1", Sstr, "0.0")
     read(Sstr,*) beta1
-    call parlst_getvalue_string (rparams, 'EQUATION', 'BETA2', Sstr, '0.0')
+    call parlst_getvalue_string (rparams, "EQUATION", "BETA2", Sstr, "0.0")
     read(Sstr,*) beta2
-    call parlst_getvalue_string (rparams, 'EQUATION', 'GAMMA', Sstr, '0.0')
+    call parlst_getvalue_string (rparams, "EQUATION", "GAMMA", Sstr, "0.0")
     read(Sstr,*) gamma
     
     rform%Dcoefficients(1)  = alpha11
@@ -444,11 +444,11 @@ contains
     ! conditions.
     call bcasm_initDiscreteBC(rproblem%RlevelInfo(1)%rdiscreteBC)
     !
-    ! We 'know' already (from the problem definition) that we have four boundary
+    ! We "know" already (from the problem definition) that we have four boundary
     ! segments in the domain. Each of these, we want to use for enforcing
     ! some kind of boundary condition.
     !
-    ! We ask the boundary routines to create a 'boundary region' - which is
+    ! We ask the boundary routines to create a "boundary region" - which is
     ! simply a part of the boundary corresponding to a boundary segment.
     ! A boundary region roughly contains the type, the min/max parameter value
     ! and whether the endpoints are inside the region or not.
@@ -457,7 +457,7 @@ contains
     ! We use this boundary region and specify that we want to have Dirichlet
     ! boundary there. The following call does the following:
     ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
-    !   We specify icomponent='1' to indicate that we set up the
+    !   We specify icomponent="1" to indicate that we set up the
     !   Dirichlet BC`s for the first (here: one and only) component in the
     !   solution vector.
     ! - Discretise the boundary condition so that the BC`s can be applied
@@ -648,7 +648,7 @@ contains
   subroutine pm2_postprocessing (rproblem,sucddir)
   
 !<description>
-  ! Writes the solution into a GMV file.
+  ! Writes the solution into a VTK file.
 !</description>
 
 !<inputoutput>
@@ -666,7 +666,7 @@ contains
     ! We need some more variables for postprocessing
     real(DP), dimension(:), pointer :: p_Ddata
     
-    ! Output block for UCD output to GMV file
+    ! Output block for UCD output to VTK file
     type(t_ucdExport) :: rexport
 
     ! A pointer to the solution vector and to the triangulation.
@@ -683,12 +683,12 @@ contains
     ! p_rvector now contains our solution. We can now
     ! start the postprocessing.
 
-    ! Start UCD export to GMV file:
-    call ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,&
-        trim(sucddir)//'/u3.gmv')
+    ! Start UCD export to VTK file:
+    call ucd_startVTK (rexport,UCD_FLAG_STANDARD,p_rtriangulation,&
+        trim(sucddir)//"/u3.vtk")
     
     call lsyssc_getbase_double (p_rvector%RvectorBlock(1),p_Ddata)
-    call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
+    call ucd_addVariableVertexBased (rexport,"sol",UCD_VAR_STANDARD, p_Ddata)
     
     ! Write the file to disc, that is it.
     call ucd_write (rexport)
@@ -719,9 +719,9 @@ contains
     call lsysbl_releaseMatrix (rproblem%RlevelInfo(1)%rmatrix)
 
     ! Delete the variables from the collection.
-    call collct_deletevalue (rproblem%rcollection,'RHS')
-    call collct_deletevalue (rproblem%rcollection,'SOLUTION')
-    call collct_deletevalue (rproblem%rcollection,'LAPLACE')
+    call collct_deletevalue (rproblem%rcollection,"RHS")
+    call collct_deletevalue (rproblem%rcollection,"SOLUTION")
+    call collct_deletevalue (rproblem%rcollection,"LAPLACE")
 
   end subroutine
 
@@ -806,7 +806,7 @@ contains
   subroutine codire3
   
 !<description>
-  ! This is a 'separated' CoDiRe solver for solving a convection-diffusion-
+  ! This is a "separated" CoDiRe solver for solving a convection-diffusion-
   ! reaction problem. The different tasks of the problem are separated into
   ! subroutines. The problem uses a problem-specific structure for the
   ! communication: All subroutines add their generated information to the
@@ -823,7 +823,7 @@ contains
   ! 4.) Set up matrix
   ! 5.) Create solver structure
   ! 6.) Solve the problem
-  ! 7.) Write solution to GMV file
+  ! 7.) Write solution to VTK file
   ! 8.) Release all variables, finish
 !</description>
 
@@ -853,28 +853,28 @@ contains
     
     ! Read the parameters from disc and put a reference to it
     ! to the collection
-    call sys_getcommandLineArg(1,smaster,sdefault='./data/codire.dat')
+    call sys_getcommandLineArg(1,smaster,sdefault="./data/codire.dat")
     call parlst_readfromfile (rparams, smaster)
-    call collct_setvalue_parlst (rproblem%rcollection, 'PARAMS', rparams, .true.)
+    call collct_setvalue_parlst (rproblem%rcollection, "PARAMS", rparams, .true.)
 
     ! We want to solve our Laplace problem on level...
-    call parlst_getvalue_int (rparams, 'GENERAL', 'NLMAX', NLMAX, 7)
+    call parlst_getvalue_int (rparams, "GENERAL", "NLMAX", NLMAX, 7)
     
     ! Get the parameters...
     !
     ! PRM file
-    call parlst_getvalue_string (rparams, 'GENERAL', &
-                                 'sfilePRM', sstring)
+    call parlst_getvalue_string (rparams, "GENERAL", &
+                                 "sfilePRM", sstring)
     read(sstring,*) sfilePRM
                                  
     ! TRI file
-    call parlst_getvalue_string (rparams, 'GENERAL', &
-                                 'sfileTRI', sstring)
+    call parlst_getvalue_string (rparams, "GENERAL", &
+                                 "sfileTRI", sstring)
     read(sstring,*) sfileTRI
 
-    ! Get the path where to write gmv`s to.
-    call parlst_getvalue_string (rparams, 'GENERAL', &
-                                 'sucddir', sstring)
+    ! Get the path where to write VTK`s to.
+    call parlst_getvalue_string (rparams, "GENERAL", &
+                                 "sucddir", sstring)
     read(sstring,*) sucddir
     
     ! So now the different steps - one after the other.
@@ -901,13 +901,13 @@ contains
     call pm2_doneParamTriang (rproblem)
     
     ! Release parameter list
-    call collct_deletevalue (rproblem%rcollection,'PARAMS')
+    call collct_deletevalue (rproblem%rcollection,"PARAMS")
     call parlst_done (rparams)
 
     ! Print some statistical data about the collection - anything forgotten?
     print *
-    print *,'Remaining collection statistics:'
-    print *,'--------------------------------'
+    print *,"Remaining collection statistics:"
+    print *,"--------------------------------"
     print *
     call collct_printStatistics (rproblem%rcollection)
     
