@@ -3954,6 +3954,8 @@ contains
 
     ! Here, the real working routines follow
 
+#define _HYDRO_TOTALENERGY_ 3
+
     !**************************************************************
     ! Calculate the geometric source term for cylindrically (dalpha=1)
     ! or spherically symmetric (dalpha=2) flow in 1D. This routine
@@ -4441,6 +4443,9 @@ contains
       end if
       
     end subroutine doSource1DBlockConsistent
+
+#undef _HYDRO_TOTALENERGY_
+#define _HYDRO_TOTALENERGY_ 4
 
     !**************************************************************
     ! Calculate the geometric source term for axi-symmetric (dalpha=1)
@@ -4941,6 +4946,8 @@ contains
       end if
       
     end subroutine doSource2DBlockConsistent
+
+#undef _HYDRO_TOTALENERGY_
 
   end subroutine hydro_calcGeometricSourceterm
 
