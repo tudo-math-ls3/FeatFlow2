@@ -34,6 +34,7 @@ module renum2d_test1
   use genoutput
   use paramlist
   use statistics
+  use sortstrategybase
   use sortstrategy
     
   use renum2d_callback
@@ -57,7 +58,7 @@ module renum2d_test1
     type(t_discreteBC) :: rdiscreteBC
     
     ! Resorting strategy
-    integer :: h_Ipermutation
+    type(t_blockSortStrategy) :: rsortStrategy
   
   end type
 
@@ -391,10 +392,8 @@ contains
               call spdiscr_duplicateDiscrSc (Rlevels(i)%rdiscretisation%RspatialDiscr(1),&
                 Rdiscretisation(i), .true.)
           
-              ! Prepare a permutation
-              call storage_new('..', 'Iperm', 2*Rlevels(i)%rmatrix%NEQ, ST_INT, &
-                  Rlevels(i)%h_Ipermutation,ST_NEWBLOCK_ORDERED)
-              call storage_getbase_int(Rlevels(i)%h_Ipermutation,p_Ipermutation)
+              ! Create a sort strategy structure for our discretisation
+              call sstrat_initBlockSorting (Rlevels(i)%rsortStrategy,Rlevels(i)%rdiscretisation)
               
               ! Calculate the resorting
               select case (isortStrategy)
@@ -402,62 +401,76 @@ contains
                 ! Nothing to be done. 2-level ordering
               case (1)
                 ! Cuthill McKee
-                call sstrat_calcCuthillMcKee (Rlevels(i)%rmatrix%RmatrixBlock(1,1),p_Ipermutation)
+                call sstrat_initCuthillMcKee (Rlevels(i)%rsortStrategy%p_Rstrategies(1),&
+                    Rlevels(i)%rmatrix%RmatrixBlock(1,1))
 
-                call lsyssc_sortMatrix (Rlevels(i)%rmatrix%RmatrixBlock(1,1),.true.,&
-                                        SSTRAT_CM,Rlevels(i)%h_Ipermutation)
+                ! Attach the sorting strategy to the matrix. The matrix is not yet sorted.
+                call lsysbl_setSortStrategy (Rlevels(i)%rmatrix,&
+                    Rlevels(i)%rsortStrategy,Rlevels(i)%rsortStrategy)
+                
+                ! Sort the matrix
+                call lsysbl_sortMatrix (Rlevels(i)%rmatrix,.true.)
+                
+                ! Sort the vectors on the maximum level.
                 if (i .eq. NLMAX) then
-                  call lsyssc_synchroniseSortMatVec (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
-                      rrhsBlock%RvectorBlock(1),rtempBlock2%RvectorBLock(1))
-                  call lsyssc_synchroniseSortMatVec (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
-                      rvectorBlock%RvectorBlock(1),rtempBlock2%RvectorBLock(1))
-                  call lsyssc_synchroniseSortMatVec (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
-                      rtempBlock%RvectorBlock(1),rtempBlock2%RvectorBlock(1))
+                  call lsysbl_synchroniseSort (Rlevels(i)%rmatrix,rrhsBlock,rtempBlock2%RvectorBlock(1))
+                  call lsysbl_synchroniseSort (Rlevels(i)%rmatrix,rvectorBlock,rtempBlock2%RvectorBlock(1))
+                  call lsysbl_synchroniseSort (Rlevels(i)%rmatrix,rtempBlock,rtempBlock2%RvectorBlock(1))
                 end if
               case (2)
                 ! XYZ-Sorting
-                call sstrat_calcXYZsorting (Rlevels(i)%rdiscretisation%RspatialDiscr(1),&
-                    p_Ipermutation)
+                call sstrat_initXYZsorting (Rlevels(i)%rsortStrategy%p_Rstrategies(1),&
+                    Rlevels(i)%rdiscretisation%RspatialDiscr(1))
 
-                call lsyssc_sortMatrix (Rlevels(i)%rmatrix%RmatrixBlock(1,1),.true.,&
-                                        SSTRAT_XYZCOORD,Rlevels(i)%h_Ipermutation)
+                ! Attach the sorting strategy to the matrix. The matrix is not yet sorted.
+                call lsysbl_setSortStrategy (Rlevels(i)%rmatrix,&
+                    Rlevels(i)%rsortStrategy,Rlevels(i)%rsortStrategy)
+                
+                ! Sort the matrix
+                call lsysbl_sortMatrix (Rlevels(i)%rmatrix,.true.)
+                
+                ! Sort the vectors on the maximum level.
                 if (i .eq. NLMAX) then
-                  call lsyssc_synchroniseSortMatVec (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
-                      rrhsBlock%RvectorBlock(1),rtempBlock2%RvectorBLock(1))
-                  call lsyssc_synchroniseSortMatVec (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
-                      rvectorBlock%RvectorBlock(1),rtempBlock2%RvectorBLock(1))
-                  call lsyssc_synchroniseSortMatVec (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
-                      rtempBlock%RvectorBlock(1),rtempBlock2%RvectorBlock(1))
+                  call lsysbl_synchroniseSort (Rlevels(i)%rmatrix,rrhsBlock,rtempBlock2%RvectorBlock(1))
+                  call lsysbl_synchroniseSort (Rlevels(i)%rmatrix,rvectorBlock,rtempBlock2%RvectorBlock(1))
+                  call lsysbl_synchroniseSort (Rlevels(i)%rmatrix,rtempBlock,rtempBlock2%RvectorBlock(1))
                 end if
 
               case (3)
                 ! Stochastic resorting
-                call sstrat_calcStochastic (p_Ipermutation)
+                call sstrat_initStochastic (Rlevels(i)%rsortStrategy%p_Rstrategies(1))
 
-                call lsyssc_sortMatrix (Rlevels(i)%rmatrix%RmatrixBlock(1,1),.true.,&
-                                        SSTRAT_STOCHASTIC,Rlevels(i)%h_Ipermutation)
+                ! Attach the sorting strategy to the matrix. The matrix is not yet sorted.
+                call lsysbl_setSortStrategy (Rlevels(i)%rmatrix,&
+                    Rlevels(i)%rsortStrategy,Rlevels(i)%rsortStrategy)
+                
+                ! Sort the matrix
+                call lsysbl_sortMatrix (Rlevels(i)%rmatrix,.true.)
+                
+                ! Sort the vectors on the maximum level.
                 if (i .eq. NLMAX) then
-                  call lsyssc_synchroniseSortMatVec (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
-                      rrhsBlock%RvectorBlock(1),rtempBlock2%RvectorBLock(1))
-                  call lsyssc_synchroniseSortMatVec (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
-                      rvectorBlock%RvectorBlock(1),rtempBlock2%RvectorBLock(1))
-                  call lsyssc_synchroniseSortMatVec (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
-                      rtempBlock%RvectorBlock(1),rtempBlock2%RvectorBlock(1))
+                  call lsysbl_synchroniseSort (Rlevels(i)%rmatrix,rrhsBlock,rtempBlock2%RvectorBlock(1))
+                  call lsysbl_synchroniseSort (Rlevels(i)%rmatrix,rvectorBlock,rtempBlock2%RvectorBlock(1))
+                  call lsysbl_synchroniseSort (Rlevels(i)%rmatrix,rtempBlock,rtempBlock2%RvectorBlock(1))
                 end if
 
               case (4)
                 ! Hierarchical resorting
-                call sstrat_calcHierarchical (Rdiscretisation(NLMIN:i),p_Ipermutation)
+                call sstrat_initHierarchical (Rlevels(i)%rsortStrategy%p_Rstrategies(1),&
+                    Rdiscretisation(NLMIN:i))
 
-                call lsyssc_sortMatrix (Rlevels(i)%rmatrix%RmatrixBlock(1,1),.true.,&
-                                        SSTRAT_HIERARCHICAL,Rlevels(i)%h_Ipermutation)
+                ! Attach the sorting strategy to the matrix. The matrix is not yet sorted.
+                call lsysbl_setSortStrategy (Rlevels(i)%rmatrix,&
+                    Rlevels(i)%rsortStrategy,Rlevels(i)%rsortStrategy)
+                
+                ! Sort the matrix
+                call lsysbl_sortMatrix (Rlevels(i)%rmatrix,.true.)
+                
+                ! Sort the vectors on the maximum level.
                 if (i .eq. NLMAX) then
-                  call lsyssc_synchroniseSortMatVec (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
-                      rrhsBlock%RvectorBlock(1),rtempBlock2%RvectorBLock(1))
-                  call lsyssc_synchroniseSortMatVec (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
-                      rvectorBlock%RvectorBlock(1),rtempBlock2%RvectorBLock(1))
-                  call lsyssc_synchroniseSortMatVec (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
-                      rtempBlock%RvectorBlock(1),rtempBlock2%RvectorBlock(1))
+                  call lsysbl_synchroniseSort (Rlevels(i)%rmatrix,rrhsBlock,rtempBlock2%RvectorBlock(1))
+                  call lsysbl_synchroniseSort (Rlevels(i)%rmatrix,rvectorBlock,rtempBlock2%RvectorBlock(1))
+                  call lsysbl_synchroniseSort (Rlevels(i)%rmatrix,rtempBlock,rtempBlock2%RvectorBlock(1))
                 end if
               end select
               
@@ -467,8 +480,6 @@ contains
               call spdiscr_releaseDiscr(Rdiscretisation(i))
             end do
             deallocate(Rdiscretisation)
-
-
             
             ! Finally solve the system. As we want to solve Ax=b with
             ! b being the real RHS and x being the real solution vector,
@@ -505,7 +516,7 @@ contains
             call lsysbl_releaseVector (rrhsBlock)
             do i = NLMAX, NLMIN, -1
               call lsysbl_releaseMatrix (Rlevels(i)%rmatrix)
-              call storage_free (Rlevels(i)%h_Ipermutation)
+              call sstrat_doneBlockSorting (Rlevels(i)%rsortStrategy)
             end do
 
             ! Release our discrete version of the boundary conditions
