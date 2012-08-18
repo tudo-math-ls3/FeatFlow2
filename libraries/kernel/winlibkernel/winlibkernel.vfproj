@@ -157,6 +157,7 @@
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\matrixfilters.f90"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\multileveloperators.f90"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\multilevelprojection.f90"/>
+		<File RelativePath="..\..\..\kernel\DOFMaintenance\sortstrategybase.f90"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\sortstrategy.f90"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\spatialdiscretisation.f90"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\trilinearformevaluation.f90"/>
