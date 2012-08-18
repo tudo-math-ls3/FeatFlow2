@@ -615,7 +615,7 @@ contains
   ! The dirichlet boundary values for the left and right interval ends.
   real(DP), intent(in), optional :: dleft, dright
 
-  ! OPTIONAL: The equation for which the BC"s should be applied to.
+  ! OPTIONAL: The equation for which the BCs should be applied to.
   ! If not present, this defaults to the first equation.
   integer, optional :: iequation
 !</input>
@@ -702,7 +702,7 @@ contains
       ! and 1 DOF to be processed.
       p_rdirichlet%nDOF = 1
 
-      ! Initialise the BC"s for equation iequation if present.
+      ! Initialise the BCs for equation iequation if present.
       p_rdirichlet%icomponent = 1
       if (present(iequation)) &
         p_rdirichlet%icomponent = iequation
@@ -786,7 +786,7 @@ contains
       ! and 1 DOF to be processed.
       p_rdirichlet%nDOF = 1
 
-      ! Initialise the BC"s for equation iequation if present.
+      ! Initialise the BCs for equation iequation if present.
       p_rdirichlet%icomponent = 1
       if (present(iequation)) &
         p_rdirichlet%icomponent = iequation
@@ -1673,7 +1673,7 @@ contains
               ! Use a 2-point Gauss cubature formula to compute the integral
               ! mean value.
               !
-              ! Ok, that"s a little bit more tricky. Get the parameter values
+              ! Ok, that is a little bit more tricky. Get the parameter values
               ! of the points at first.
               !
               ! We neet to set up two values for each edge E: On one hand the
@@ -3060,7 +3060,7 @@ contains
       p_Revaluation(ieq)%p_Dwhere => p_Dwhere
     end do
 
-    ! To collect the values of all the DOF"s in question, we loop in sets
+    ! To collect the values of all the DOFs in question, we loop in sets
     ! about the elements in every element distribution.
     !
     ! So at first, we loop over the element distribution which tells us the
@@ -3090,7 +3090,7 @@ contains
         isubsetLength = min(p_relementDist%NEL-isubsetStart+1,&
                             p_rperfconfig%NITEMSIM)
 
-        ! Get all the DOF"s on all the elements in the current set.
+        ! Get all the DOFs on all the elements in the current set.
         call dof_locGlobMapping_mult(p_rspatialDiscr, &
                   p_Ielements(isubsetStart:isubsetStart+isubsetLength-1), Idofs)
 
@@ -3115,7 +3115,7 @@ contains
             bok = .true.
 
             ! Loop through the vertices of the elements and collect them.
-            ! The local DOF"s 1..nve correspond to the corner vertices here.
+            ! The local DOFs 1..nve correspond to the corner vertices here.
             do ielidx = 1,isubsetLength
               iel = p_Ielements(isubsetStart+ielidx-1)
               ! Index of the entry
@@ -3137,8 +3137,8 @@ contains
                                         rblockDiscretisation,&
                                         p_Revaluation, rcollection)
 
-            ! Save the computed values to the corresponding DOF"s.
-            ! Already processed DOF"s are strictily positive, they have
+            ! Save the computed values to the corresponding DOFs.
+            ! Already processed DOFs are strictily positive, they have
             ! the DOF number in p_Idofs!
             do ielidx = 1,isubsetLength
               iel = p_Ielements(isubsetStart+ielidx-1)
@@ -3160,7 +3160,7 @@ contains
               (p_relementDist%celement .eq. EL_Q2)) then
 
             ! Loop through the edges of the elements and collect them.
-            ! The local DOF"s nve+1..2*nve correspond to the egdes here.
+            ! The local DOFs nve+1..2*nve correspond to the egdes here.
             do ielidx = 1,isubsetLength
               iel = p_Ielements(isubsetStart+ielidx-1)
               ! Index of the entry
@@ -3184,8 +3184,8 @@ contains
                                         rblockDiscretisation,&
                                         p_Revaluation, rcollection)
 
-            ! Save the computed values to the corresponding DOF"s.
-            ! Already processed DOF"s are strictily positive, they have
+            ! Save the computed values to the corresponding DOFs.
+            ! Already processed DOFs are strictily positive, they have
             ! the DOF number in p_Idofs!
             do ielidx = 1,isubsetLength
               iel = p_Ielements(isubsetStart+ielidx-1)
@@ -3230,8 +3230,8 @@ contains
                                         rblockDiscretisation,&
                                         p_Revaluation, rcollection)
 
-            ! Save the computed values to the corresponding DOF"s.
-            ! Already processed DOF"s are strictily positive, they have
+            ! Save the computed values to the corresponding DOFs.
+            ! Already processed DOFs are strictily positive, they have
             ! the DOF number in p_Idofs!
             do ielidx = 1,isubsetLength
               iel = p_Ielements(isubsetStart+ielidx-1)
@@ -3256,7 +3256,7 @@ contains
             bok = .true.
 
             ! Loop through the edges of the elements and collect them.
-            ! The local DOF"s nve+1..2*nve correspond to the egdes here.
+            ! The local DOFs nve+1..2*nve correspond to the egdes here.
             do ielidx = 1,isubsetLength
               iel = p_Ielements(isubsetStart+ielidx-1)
               ! Index of the entry
@@ -3284,8 +3284,8 @@ contains
                                         rblockDiscretisation,&
                                         p_Revaluation, rcollection)
 
-            ! Save the computed values to the corresponding DOF"s.
-            ! Already processed DOF"s are strictily positive, they have
+            ! Save the computed values to the corresponding DOFs.
+            ! Already processed DOFs are strictily positive, they have
             ! the DOF number in p_Idofs!
             do ielidx = 1,isubsetLength
               iel = p_Ielements(isubsetStart+ielidx-1)
@@ -3319,7 +3319,7 @@ contains
             bok = .true.
 
             ! Loop through the vertices of the elements and collect them.
-            ! The local DOF"s 1..nve correspond to the corner vertices here.
+            ! The local DOFs 1..nve correspond to the corner vertices here.
             do ielidx = 1,isubsetLength
               iel = p_Ielements(isubsetStart+ielidx-1)
               ! Index of the entry
@@ -3341,8 +3341,8 @@ contains
                                         rblockDiscretisation,&
                                         p_Revaluation, rcollection)
 
-            ! Save the computed values to the corresponding DOF"s.
-            ! Already processed DOF"s are strictily positive, they have
+            ! Save the computed values to the corresponding DOFs.
+            ! Already processed DOFs are strictily positive, they have
             ! the DOF number in p_Idofs!
             do ielidx = 1,isubsetLength
               iel = p_Ielements(isubsetStart+ielidx-1)
@@ -3367,7 +3367,7 @@ contains
             bok = .true.
 
             ! Loop through the faces of the elements and collect them.
-            ! The local DOF"s nve+1..2*nve correspond to the egdes here.
+            ! The local DOFs nve+1..2*nve correspond to the egdes here.
             do ielidx = 1,isubsetLength
               iel = p_Ielements(isubsetStart+ielidx-1)
               ! Index of the entry
@@ -3397,8 +3397,8 @@ contains
                                         rblockDiscretisation,&
                                         p_Revaluation, rcollection)
 
-            ! Save the computed values to the corresponding DOF"s.
-            ! Already processed DOF"s are strictily positive, they have
+            ! Save the computed values to the corresponding DOFs.
+            ! Already processed DOFs are strictily positive, they have
             ! the DOF number in p_Idofs!
             do ielidx = 1,isubsetLength
               iel = p_Ielements(isubsetStart+ielidx-1)
@@ -3437,8 +3437,8 @@ contains
     deallocate(p_Dwhere)
     deallocate(p_Revaluation)
 
-    ! Now, compress the p_Idofs/p_Ddofs array on to those DOF"s
-    ! which must be set. These are those DOF"s where p_Ddofs is positive.
+    ! Now, compress the p_Idofs/p_Ddofs array on to those DOFs
+    ! which must be set. These are those DOFs where p_Ddofs is positive.
     icount = 0
     do i=1,size(p_Idofs)
       if (p_Idofs(i) .gt. 0) then

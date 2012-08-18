@@ -58,11 +58,11 @@
 !#      -> Resort the entries of a matrix or unsort them according to a
 !#         previously attached sorting strategy.
 !#
-!# 13.) lsyssc_synchroniseSortVecVec
+!# 13.) lsyssc_synchroniseSort = lsyssc_synchroniseSortVecVec
 !#      -> Synchronises the sorting strategy of a vector according to another
 !#         vector.
 !#
-!# 14.) lsyssc_synchroniseSortMatVec
+!# 14.) lsyssc_synchroniseSort = lsyssc_synchroniseSortMatVec
 !#      -> Synchronises the sorting strategy of a vector according to a matrix.
 !#
 !# 16.) lsyssc_isVectorCompatible
@@ -10219,12 +10219,6 @@ contains
       rmatrix%p_rsortStrategyRows => rsortStrategyRows
     end if
     
-    if (.not. associated(rmatrix%p_rsortStrategyColumns,rmatrix%p_rsortStrategyRows)) then
-      call output_line("Currently, different sorting strategies for columns and rows not supported!",&
-          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_setSortStrategyMat")
-      call sys_halt()
-    end if
-
   end subroutine
 
   !****************************************************************************
@@ -10389,19 +10383,13 @@ contains
   type(t_matrixScalar), target :: rmatrixLocal
   type(t_matrixScalar), pointer :: p_rmatrix
   integer :: cstructureDupFlag,ccontentDupFlag
-  logical :: bwithEntries
+  logical :: bwithEntries,bcols,brows
 
     ! nothing to do?
     if ((.not. associated(rmatrix%p_rsortStrategyColumns)) .and. &
         (.not. associated(rmatrix%p_rsortStrategyRows))) return
     if (bsort .eqv. (rmatrix%bcolumnsSorted .or. rmatrix%browsSorted)) return
     
-    if (.not. associated(rmatrix%p_rsortStrategyColumns,rmatrix%p_rsortStrategyRows)) then
-      call output_line("Currently, different sorting strategies for columns and rows not supported!",&
-          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_setSortMatrix")
-      call sys_halt()
-    end if
-
     ! The optional parameters
     bwithEntries = .true.
     if (present(bincludeEntries)) bwithEntries = bincludeEntries
@@ -10462,16 +10450,37 @@ contains
     
     ! Some preparations...
     NEQ = rmatrix%NEQ
-
-    ! Now sort the vector according to the permutation
-    call sstrat_getSortedPosInfo(p_rmatrix%p_rsortStrategyColumns,p_Iperm)
-    call sstrat_getUnsortedPosInfo(p_rmatrix%p_rsortStrategyColumns,p_IpermInverse)
     
+    ! What to sort?
+    brows = .false.
+    bcols = .false.
+    if (associated(p_rmatrix%p_rsortStrategyRows)) then
+      brows = p_rmatrix%p_rsortStrategyRows%ctype .ne. SSTRAT_UNSORTED
+    end if
+    if (associated(p_rmatrix%p_rsortStrategyColumns)) then
+      bcols = p_rmatrix%p_rsortStrategyColumns%ctype .ne. SSTRAT_UNSORTED
+    end if
+
     ! Sort the matrix?
     if (bsort) then
     
       ! Call the sorting routine
-      call do_matsort (p_rmatrix,p_IpermInverse,p_Iperm,bwithEntries)
+      if (bcols .and. brows) then
+        call sstrat_getUnsortedPosInfo(p_rmatrix%p_rsortStrategyRows,p_Iperm)
+        call sstrat_getSortedPosInfo(p_rmatrix%p_rsortStrategyColumns,p_IpermInverse)
+
+        call do_matsort (p_rmatrix,p_Iperm,p_IpermInverse,bwithEntries)
+
+      else if (bcols) then
+        call sstrat_getSortedPosInfo(p_rmatrix%p_rsortStrategyColumns,p_IpermInverse)
+
+        call do_matsort (p_rmatrix,Itr2=p_IpermInverse,bsortEntries=bwithEntries)
+
+      else if (brows) then
+        call sstrat_getUnsortedPosInfo(p_rmatrix%p_rsortStrategyRows,p_Iperm)
+
+        call do_matsort (p_rmatrix,Itr1=p_Iperm,bsortEntries=bwithEntries)
+      end if
     
     ! Sort back.
     else
@@ -10479,7 +10488,22 @@ contains
       ! Exchange the roles of the first and second part of p_Iperm.
       ! This makes the permutation to the inverse permutation and vice versa.
       ! Call the resort-subroutine with that to do the actual sorting.
-      call do_matsort (p_rmatrix,p_Iperm,p_IpermInverse,bwithEntries)
+      if (bcols .and. brows) then
+        call sstrat_getUnsortedPosInfo(p_rmatrix%p_rsortStrategyColumns,p_Iperm)
+        call sstrat_getSortedPosInfo(p_rmatrix%p_rsortStrategyRows,p_IpermInverse)
+
+        call do_matsort (p_rmatrix,p_IpermInverse,p_Iperm,bwithEntries)
+      
+      else if (bcols) then
+        call sstrat_getUnsortedPosInfo(p_rmatrix%p_rsortStrategyColumns,p_Iperm)
+
+        call do_matsort (p_rmatrix,Itr2=p_Iperm,bsortEntries=bwithEntries)
+      
+      else if (brows) then
+        call sstrat_getSortedPosInfo(p_rmatrix%p_rsortStrategyRows,p_IpermInverse)
+
+        call do_matsort (p_rmatrix,Itr1=p_IpermInverse,bsortEntries=bwithEntries)
+      end if
           
     end if
     
@@ -10489,7 +10513,7 @@ contains
     if (associated(rmatrix%p_rsortStrategyColumns)) then
       rmatrix%bcolumnsSorted = bsort .and. (rmatrix%p_rsortStrategyColumns%ctype .ne. SSTRAT_UNSORTED)
     end if
-    if (associated(rmatrix%p_rsortStrategyColumns)) then
+    if (associated(rmatrix%p_rsortStrategyRows)) then
       rmatrix%browsSorted = bsort .and. (rmatrix%p_rsortStrategyRows%ctype .ne. SSTRAT_UNSORTED)
     end if
     
@@ -10511,11 +10535,13 @@ contains
     ! The matrix to be resorted
     type(t_matrixScalar), intent(inout) :: rmatrix
 
-    ! The transformation to use
-    integer, dimension(:), intent(in) :: Itr1
+    ! OPTIONAL: The transformation to use for the rows.
+    ! If not specified, the identity is used.
+    integer, dimension(:), intent(in), optional :: Itr1
 
-    ! The inverse transformation
-    integer, dimension(:), intent(in) :: Itr2
+    ! OPTIONAL: The inverse transformation to use for the columns.
+    ! If not specified, the identity is used.
+    integer, dimension(:), intent(in), optional :: Itr2
 
     ! TRUE  = sort matrix structure + entries
     ! FALSE = sort only matrix structure
@@ -10799,6 +10825,8 @@ contains
   end subroutine
 
   !****************************************************************************
+  ! ACTUAL SORTING ROUTINES
+  !****************************************************************************
 
 !<subroutine>
 
@@ -10824,13 +10852,14 @@ contains
     integer, dimension(:), intent(in) :: IcolH
 
     ! Row positions of source matrix
-    integer, dimension(neq+1), intent(in) :: IldH
+    integer, dimension(:), intent(in) :: IldH
 
-    ! Permutation of 1..neq describing the sorting
-    integer, dimension(neq), intent(in) :: Itr1
+    ! Permutation of 1..neq describing the sorting of the rows.
+    integer, dimension(:), intent(in), optional :: Itr1
 
-    ! Permutation of 1..neq describing the sorting back
-    integer, dimension(neq), intent(in) :: Itr2
+    ! Permutation of 1..neq describing the inverse sorting of
+    ! the columns.
+    integer, dimension(:), intent(in), optional :: Itr2
 
 !</input>
 
@@ -10843,7 +10872,7 @@ contains
     integer, dimension(:), intent(out) :: Icol
 
     ! Row positions of destination matrix
-    integer, dimension(neq+1), intent(out) :: Ild
+    integer, dimension(:), intent(out) :: Ild
 
 !</output>
 
@@ -10868,7 +10897,8 @@ contains
     do i=1, neq
 
       ! Which row should be moved to here?
-      iidx = Itr1(i)
+      iidx = i
+      if (present(Itr1)) iidx = Itr1(i)
 
       ! Copy the diagonal element.
       ! The new row starts at position ildIdx. Save this to Ild.
@@ -10893,10 +10923,17 @@ contains
       ! Keeping that in mind, we set up:
       !  Ih1 := column numbers in the destination matrix.
       !  Ih2 := positions of the entries in the current row in the source matrix
-      do j=ih1Idx, ih2Idx
-        Ih1(j-ih1Idx+1) = Itr2(IcolH(j))
-        Ih2(j-ih1Idx+1) = j
-      end do
+      if (.not. present(Itr2)) then
+        do j=ih1Idx, ih2Idx
+          Ih1(j-ih1Idx+1) = IcolH(j)
+          Ih2(j-ih1Idx+1) = j
+        end do
+      else
+        do j=ih1Idx, ih2Idx
+          Ih1(j-ih1Idx+1) = Itr2(IcolH(j))
+          Ih2(j-ih1Idx+1) = j
+        end do
+      end if
 
       ! Call a small sorting algorithm to sort both, Ih1 and Ih2, for Ih1.
       ! Afterwards:
@@ -10952,13 +10989,14 @@ contains
     integer, dimension(:), intent(in) :: IcolH
 
     ! Row positions of source matrix
-    integer, dimension(neq+1), intent(in) :: IldH
+    integer, dimension(:), intent(in) :: IldH
 
-    ! Permutation of 1..neq describing the sorting
-    integer, dimension(neq), intent(in) :: Itr1
+    ! Permutation of 1..neq describing the sorting of the rows.
+    integer, dimension(:), intent(in), optional :: Itr1
 
-    ! Permutation of 1..neq describing the sorting back
-    integer, dimension(neq), intent(in) :: Itr2
+    ! Permutation of 1..neq describing the inverse sorting of
+    ! the columns.
+    integer, dimension(:), intent(in), optional :: Itr2
 
 !</input>
 
@@ -10971,7 +11009,7 @@ contains
     integer, dimension(:), intent(out) :: Icol
 
     ! Row positions of destination matrix
-    integer, dimension(neq+1), intent(out) :: Ild
+    integer, dimension(:), intent(out) :: Ild
 
 !</output>
 
@@ -10995,7 +11033,8 @@ contains
     ! we fetch the row Itr1(i) and write it to row i.
     do i=1, neq
       ! Which row should be moved to here?
-      iidx = Itr1(i)
+      iidx = i
+      if (present(Itr1)) iidx = Itr1(i)
 
       ! Copy the diagonal element.
       ! The new row starts at position ildIdx. Save this to Ild.
@@ -11020,10 +11059,17 @@ contains
       ! Keeping that in mind, we set up:
       !  Ih1 := column numbers in the destination matrix.
       !  Ih2 := positions of the entries in the current row in the source matrix
-      do j=ih1Idx, ih2Idx
-        Ih1(j-ih1Idx+1) = Itr2(IcolH(j))
-        Ih2(j-ih1Idx+1) = j
-      end do
+      if (.not. present(Itr2)) then
+        do j=ih1Idx, ih2Idx
+          Ih1(j-ih1Idx+1) = IcolH(j)
+          Ih2(j-ih1Idx+1) = j
+        end do
+      else
+        do j=ih1Idx, ih2Idx
+          Ih1(j-ih1Idx+1) = Itr2(IcolH(j))
+          Ih2(j-ih1Idx+1) = j
+        end do
+      end if
 
       ! Call a small sorting algorithm to sort both, Ih1 and Ih2, for Ih1.
       ! Afterwards:
@@ -11079,13 +11125,14 @@ contains
     integer, dimension(:), intent(in) :: IcolH
 
     ! Row positions of source matrix
-    integer, dimension(neq+1), intent(in) :: IldH
+    integer, dimension(:), intent(in) :: IldH
 
-    ! Permutation of 1..neq describing the sorting
-    integer, dimension(neq), intent(in) :: Itr1
+    ! Permutation of 1..neq describing the sorting of the rows.
+    integer, dimension(:), intent(in), optional :: Itr1
 
-    ! Permutation of 1..neq describing the sorting back
-    integer, dimension(neq), intent(in) :: Itr2
+    ! Permutation of 1..neq describing the inverse sorting of
+    ! the columns.
+    integer, dimension(:), intent(in), optional :: Itr2
 
 !</input>
 
@@ -11098,7 +11145,7 @@ contains
     integer, dimension(:), intent(out) :: Icol
 
     ! Row positions of destination matrix
-    integer, dimension(neq+1), intent(out) :: Ild
+    integer, dimension(:), intent(out) :: Ild
 
 !</output>
 
@@ -11122,7 +11169,8 @@ contains
     ! we fetch the row Itr1(i) and write it to row i.
     do i=1, neq
       ! Which row should be moved to here?
-      iidx = Itr1(i)
+      iidx = i
+      if (present(Itr1)) iidx = Itr1(i)
 
       ! Copy the diagonal element.
       ! The new row starts at position ildIdx. Save this to Ild.
@@ -11147,10 +11195,17 @@ contains
       ! Keeping that in mind, we set up:
       !  Ih1 := column numbers in the destination matrix.
       !  Ih2 := positions of the entries in the current row in the source matrix
-      do j=ih1Idx, ih2Idx
-        Ih1(j-ih1Idx+1) = Itr2(IcolH(j))
-        Ih2(j-ih1Idx+1) = j
-      end do
+      if (.not. present(Itr2)) then
+        do j=ih1Idx, ih2Idx
+          Ih1(j-ih1Idx+1) = IcolH(j)
+          Ih2(j-ih1Idx+1) = j
+        end do
+      else
+        do j=ih1Idx, ih2Idx
+          Ih1(j-ih1Idx+1) = Itr2(IcolH(j))
+          Ih2(j-ih1Idx+1) = j
+        end do
+      end if
 
       ! Call a small sorting algorithm to sort both, Ih1 and Ih2, for Ih1.
       ! Afterwards:
@@ -11207,13 +11262,14 @@ contains
     integer, dimension(:), intent(in) :: IcolH
 
     ! Row positions of source matrix
-    integer, dimension(neq+1), intent(in) :: IldH
+    integer, dimension(:), intent(in) :: IldH
 
-    ! Permutation of 1..neq describing the sorting
-    integer, dimension(neq), intent(in) :: Itr1
+    ! Permutation of 1..neq describing the sorting of the rows.
+    integer, dimension(:), intent(in), optional :: Itr1
 
-    ! Permutation of 1..neq describing the sorting back
-    integer, dimension(neq), intent(in) :: Itr2
+    ! Permutation of 1..neq describing the inverse sorting of
+    ! the columns.
+    integer, dimension(:), intent(in), optional :: Itr2
 
 !</input>
 
@@ -11245,7 +11301,8 @@ contains
     do i=1, neq
 
       ! Which row should be moved to here?
-      iidx = Itr1(i)
+      iidx = i
+      if (present(Itr1)) iidx = Itr1(i)
 
       ! Copy the diagonal element.
       ! The new row starts at position ildIdx.
@@ -11268,10 +11325,17 @@ contains
       ! Keeping that in mind, we set up:
       !  Ih1 := column numbers in the destination matrix.
       !  Ih2 := positions of the entries in the current row in the source matrix
-      do j=ih1Idx, ih2Idx
-        Ih1(j-ih1Idx+1) = Itr2(IcolH(j))
-        Ih2(j-ih1Idx+1) = j
-      end do
+      if (.not. present(Itr2)) then
+        do j=ih1Idx, ih2Idx
+          Ih1(j-ih1Idx+1) = IcolH(j)
+          Ih2(j-ih1Idx+1) = j
+        end do
+      else
+        do j=ih1Idx, ih2Idx
+          Ih1(j-ih1Idx+1) = Itr2(IcolH(j))
+          Ih2(j-ih1Idx+1) = j
+        end do
+      end if
 
       ! Call a small sorting algorithm to sort both, Ih1 and Ih2, for Ih1.
       ! Afterwards:
@@ -11322,13 +11386,14 @@ contains
     integer, dimension(:), intent(in) :: IcolH
 
     ! Row positions of source matrix
-    integer, dimension(neq+1), intent(in) :: IldH
+    integer, dimension(:), intent(in) :: IldH
 
-    ! Permutation of 1..neq describing the sorting
-    integer, dimension(neq), intent(in) :: Itr1
+    ! Permutation of 1..neq describing the sorting of the rows.
+    integer, dimension(:), intent(in), optional :: Itr1
 
-    ! Permutation of 1..neq describing the sorting back
-    integer, dimension(neq), intent(in) :: Itr2
+    ! Permutation of 1..neq describing the inverse sorting
+    ! of the columns.
+    integer, dimension(:), intent(in), optional :: Itr2
 
 !</input>
 
@@ -11359,7 +11424,8 @@ contains
     ! we fetch the row Itr1(i) and write it to row i.
     do i=1, neq
       ! Which row should be moved to here?
-      iidx = Itr1(i)
+      iidx = i
+      if (present(Itr1)) iidx = Itr1(i)
 
       ! Copy the diagonal element.
       ! The new row starts at position ildIdx.
@@ -11382,10 +11448,17 @@ contains
       ! Keeping that in mind, we set up:
       !  Ih1 := column numbers in the destination matrix.
       !  Ih2 := positions of the entries in the current row in the source matrix
-      do j=ih1Idx, ih2Idx
-        Ih1(j-ih1Idx+1) = Itr2(IcolH(j))
-        Ih2(j-ih1Idx+1) = j
-      end do
+      if (.not. present(Itr2)) then
+        do j=ih1Idx, ih2Idx
+          Ih1(j-ih1Idx+1) = IcolH(j)
+          Ih2(j-ih1Idx+1) = j
+        end do
+      else
+        do j=ih1Idx, ih2Idx
+          Ih1(j-ih1Idx+1) = Itr2(IcolH(j))
+          Ih2(j-ih1Idx+1) = j
+        end do
+      end if
 
       ! Call a small sorting algorithm to sort both, Ih1 and Ih2, for Ih1.
       ! Afterwards:
@@ -11436,13 +11509,14 @@ contains
     integer, dimension(:), intent(in) :: IcolH
 
     ! Row positions of source matrix
-    integer, dimension(neq+1), intent(in) :: IldH
+    integer, dimension(:), intent(in) :: IldH
 
-    ! Permutation of 1..neq describing the sorting
-    integer, dimension(neq), intent(in) :: Itr1
+    ! Permutation of 1..neq describing the sorting of the rows
+    integer, dimension(:), intent(in), optional :: Itr1
 
-    ! Permutation of 1..neq describing the sorting back
-    integer, dimension(neq), intent(in) :: Itr2
+    ! Permutation of 1..neq describing the inverse sorting
+    ! of the columns.
+    integer, dimension(:), intent(in), optional :: Itr2
 
 !</input>
 
@@ -11473,7 +11547,8 @@ contains
     ! we fetch the row Itr1(i) and write it to row i.
     do i=1, neq
       ! Which row should be moved to here?
-      iidx = Itr1(i)
+      iidx = i
+      if (present(Itr1)) iidx = Itr1(i)
 
       ! Copy the diagonal element.
       ! The new row starts at position ildIdx.
@@ -11496,10 +11571,17 @@ contains
       ! Keeping that in mind, we set up:
       !  Ih1 := column numbers in the destination matrix.
       !  Ih2 := positions of the entries in the current row in the source matrix
-      do j=ih1Idx, ih2Idx
-        Ih1(j-ih1Idx+1) = Itr2(IcolH(j))
-        Ih2(j-ih1Idx+1) = j
-      end do
+      if (.not. present(Itr2)) then
+        do j=ih1Idx, ih2Idx
+          Ih1(j-ih1Idx+1) = IcolH(j)
+          Ih2(j-ih1Idx+1) = j
+        end do
+      else
+        do j=ih1Idx, ih2Idx
+          Ih1(j-ih1Idx+1) = Itr2(IcolH(j))
+          Ih2(j-ih1Idx+1) = j
+        end do
+      end if
 
       ! Call a small sorting algorithm to sort both, Ih1 and Ih2, for Ih1.
       ! Afterwards:
@@ -11542,11 +11624,12 @@ contains
     ! Number of equations
     integer , intent(in) :: neq
 
-    ! Permutation of 1..neq describing how to resort
-    integer, dimension(neq), intent(in) :: Itr1
+    ! Permutation of 1..neq describing how to resort the rows.
+    integer, dimension(:), intent(in), optional :: Itr1
 
-    ! Permutation of 1..neq describing how to sort
-    integer, dimension(neq), intent(in) :: Itr2
+    ! Permutation of 1..neq describing how to sort the columns.
+    ! Inverse column permutation.
+    integer, dimension(:), intent(in), optional :: Itr2
 
 !</input>
 
@@ -11556,13 +11639,13 @@ contains
     integer, dimension(:), intent(inout) :: Icol
 
     ! Row description of matrix
-    integer, dimension(neq+1), intent(inout) :: Ild
+    integer, dimension(:), intent(inout) :: Ild
 
     ! Column structure of source matrix -> resorted matrix
     integer, dimension(:), intent(inout) :: IcolH
 
     ! Row positions of source matrix -> resorted matrix
-    integer, dimension(neq+1), intent(inout) :: IldH
+    integer, dimension(:), intent(inout) :: IldH
 
 !</inputoutput>
 !</subroutine>
@@ -11584,7 +11667,8 @@ contains
     ! we fetch the row Itr1(i) and write it to row i.
     do i=1, neq
       ! Which row should be moved to here?
-      iidx = Itr1(i)
+      iidx = i
+      if (present(Itr1)) iidx = Itr1(i)
 
       ! Copy the diagonal element.
       ! The new row starts at position ildIdx. Save this to Ild.
@@ -11608,10 +11692,17 @@ contains
       ! Keeping that in mind, we set up:
       !  Ih1 := column numbers in the destination matrix.
       !  Ih2 := positions of the entries in the current row in the source matrix
-      do j=ih1Idx, Ih2Idx
-        Ih1(j-ih1Idx+1)=Itr2(IcolH(j))
-        Ih2(j-ih1Idx+1)=j
-      end do
+      if (.not. present(Itr2)) then
+        do j=ih1Idx, ih2Idx
+          Ih1(j-ih1Idx+1) = IcolH(j)
+          Ih2(j-ih1Idx+1) = j
+        end do
+      else
+        do j=ih1Idx, ih2Idx
+          Ih1(j-ih1Idx+1) = Itr2(IcolH(j))
+          Ih2(j-ih1Idx+1) = j
+        end do
+      end if
 
       ! Call a small sorting algorithm to sort both, Ih1 and Ih2, for Ih1.
       ! Afterwards:
@@ -11661,13 +11752,13 @@ contains
     integer, dimension(:), intent(in) :: IcolH
 
     ! Row positions of source matrix
-    integer, dimension(neq+1), intent(in) :: IldH
+    integer, dimension(:), intent(in) :: IldH
 
     ! Permutation of 1..neq describing the sorting
-    integer, dimension(neq), intent(in) :: Itr1
+    integer, dimension(:), intent(in), optional :: Itr1
 
     ! Permutation of 1..neq describing the inverse permutation
-    integer, dimension(neq), intent(in) :: Itr2
+    integer, dimension(:), intent(in), optional :: Itr2
 
 !</input>
 
@@ -11680,10 +11771,10 @@ contains
     integer, dimension(:), intent(out) :: Icol
 
     ! Row positions of destination matrix
-    integer, dimension(neq+1), intent(out) :: Ild
+    integer, dimension(:), intent(out) :: Ild
 
     ! Positions of diagonal elements in the destination matrix
-    integer, dimension(neq+1), intent(out) :: Idiag
+    integer, dimension(:), intent(out) :: Idiag
 
 !</output>
 
@@ -11708,7 +11799,8 @@ contains
     do i=1, neq
 
       ! Which row should be moved to here?
-      iidx = Itr1(i)
+      iidx = i
+      if (present(Itr1)) iidx = Itr1(i)
 
       ! The new row starts at position ildIdx. Save this to Ild.
       Ild(i) = ildIdx
@@ -11729,10 +11821,17 @@ contains
       ! Keeping that in mind, we set up:
       !  Ih1 := column numbers in the destination matrix.
       !  Ih2 := positions of the entries in the current row in the source matrix
-      do j=ih1Idx, ih2Idx
-        Ih1(j-ih1Idx+1) = Itr2(IcolH(j))
-        Ih2(j-ih1Idx+1) = j
-      end do
+      if (.not. present(Itr2)) then
+        do j=ih1Idx, ih2Idx
+          Ih1(j-ih1Idx+1) = IcolH(j)
+          Ih2(j-ih1Idx+1) = j
+        end do
+      else
+        do j=ih1Idx, ih2Idx
+          Ih1(j-ih1Idx+1) = Itr2(IcolH(j))
+          Ih2(j-ih1Idx+1) = j
+        end do
+      end if
 
       ! Call a small sorting algorithm to sort both, Ih1 and Ih2, for Ih1.
       ! Afterwards:
@@ -11798,13 +11897,13 @@ contains
     integer, dimension(:), intent(in) :: IcolH
 
     ! Row positions of source matrix
-    integer, dimension(neq+1), intent(in) :: IldH
+    integer, dimension(:), intent(in) :: IldH
 
     ! Permutation of 1..neq describing the sorting
-    integer, dimension(neq), intent(in) :: Itr1
+    integer, dimension(:), intent(in), optional :: Itr1
 
     ! Permutation of 1..neq describing the inverse permutation
-    integer, dimension(neq), intent(in) :: Itr2
+    integer, dimension(:), intent(in), optional :: Itr2
 
 !</input>
 
@@ -11817,10 +11916,10 @@ contains
     integer, dimension(:), intent(out) :: Icol
 
     ! Row positions of destination matrix
-    integer, dimension(neq+1), intent(out) :: Ild
+    integer, dimension(:), intent(out) :: Ild
 
     ! Positions of diagonal elements in the destination matrix
-    integer, dimension(neq+1), intent(out) :: Idiag
+    integer, dimension(:), intent(out) :: Idiag
 
 !</output>
 
@@ -11845,7 +11944,8 @@ contains
     do i=1, neq
 
       ! Which row should be moved to here?
-      iidx = Itr1(i)
+      iidx = i
+      if (present(Itr1)) iidx = Itr1(i)
 
       ! The new row starts at position ildIdx. Save this to Ild.
       Ild(i) = ildIdx
@@ -11866,10 +11966,17 @@ contains
       ! Keeping that in mind, we set up:
       !  Ih1 := column numbers in the destination matrix.
       !  Ih2 := positions of the entries in the current row in the source matrix
-      do j=ih1Idx, ih2Idx
-        Ih1(j-ih1Idx+1) = Itr2(IcolH(j))
-        Ih2(j-ih1Idx+1) = j
-      end do
+      if (.not. present(Itr2)) then
+        do j=ih1Idx, ih2Idx
+          Ih1(j-ih1Idx+1) = IcolH(j)
+          Ih2(j-ih1Idx+1) = j
+        end do
+      else
+        do j=ih1Idx, ih2Idx
+          Ih1(j-ih1Idx+1) = Itr2(IcolH(j))
+          Ih2(j-ih1Idx+1) = j
+        end do
+      end if
 
       ! Call a small sorting algorithm to sort both, Ih1 and Ih2, for Ih1.
       ! Afterwards:
@@ -11935,13 +12042,13 @@ contains
     integer, dimension(:), intent(in) :: IcolH
 
     ! Row positions of source matrix
-    integer, dimension(neq+1), intent(in) :: IldH
+    integer, dimension(:), intent(in) :: IldH
 
     ! Permutation of 1..neq describing the sorting
-    integer, dimension(neq), intent(in) :: Itr1
+    integer, dimension(:), intent(in), optional :: Itr1
 
     ! Permutation of 1..neq describing the inverse permutation
-    integer, dimension(neq), intent(in) :: Itr2
+    integer, dimension(:), intent(in), optional :: Itr2
 
 !</input>
 
@@ -11954,10 +12061,10 @@ contains
     integer, dimension(:), intent(out) :: Icol
 
     ! Row positions of destination matrix
-    integer, dimension(neq+1), intent(out) :: Ild
+    integer, dimension(:), intent(out) :: Ild
 
     ! Positions of diagonal elements in the destination matrix
-    integer, dimension(neq+1), intent(out) :: Idiag
+    integer, dimension(:), intent(out) :: Idiag
 
 !</output>
 
@@ -11982,7 +12089,8 @@ contains
     do i=1, neq
 
       ! Which row should be moved to here?
-      iidx = Itr1(i)
+      iidx = i
+      if (present(Itr1)) iidx = Itr1(i)
 
       ! The new row starts at position ildIdx. Save this to Ild.
       Ild(i) = ildIdx
@@ -12003,10 +12111,17 @@ contains
       ! Keeping that in mind, we set up:
       !  Ih1 := column numbers in the destination matrix.
       !  Ih2 := positions of the entries in the current row in the source matrix
-      do j=ih1Idx, ih2Idx
-        Ih1(j-ih1Idx+1) = Itr2(IcolH(j))
-        Ih2(j-ih1Idx+1) = j
-      end do
+      if (.not. present(Itr2)) then
+        do j=ih1Idx, ih2Idx
+          Ih1(j-ih1Idx+1) = IcolH(j)
+          Ih2(j-ih1Idx+1) = j
+        end do
+      else
+        do j=ih1Idx, ih2Idx
+          Ih1(j-ih1Idx+1) = Itr2(IcolH(j))
+          Ih2(j-ih1Idx+1) = j
+        end do
+      end if
 
       ! Call a small sorting algorithm to sort both, Ih1 and Ih2, for Ih1.
       ! Afterwards:
@@ -12073,13 +12188,14 @@ contains
     integer, dimension(:), intent(in) :: IcolH
 
     ! Row positions of source matrix
-    integer, dimension(neq+1), intent(in) :: IldH
+    integer, dimension(:), intent(in) :: IldH
 
-    ! Permutation of 1..neq describing the sorting
-    integer, dimension(neq), intent(in) :: Itr1
+    ! Permutation of 1..neq describing the sorting of the rows
+    integer, dimension(:), intent(in), optional :: Itr1
 
     ! Permutation of 1..neq describing the inverse permutation
-    integer, dimension(neq), intent(in) :: Itr2
+    ! of the columns
+    integer, dimension(:), intent(in), optional :: Itr2
 
 !</input>
 
@@ -12111,7 +12227,8 @@ contains
     do i=1, neq
 
       ! Which row should be moved to here?
-      iidx = Itr1(i)
+      iidx = i
+      if (present(Itr1)) iidx = Itr1(i)
 
       ! Get the start- and end-index of the row that should be moved
       ! to here.
@@ -12129,10 +12246,17 @@ contains
       ! Keeping that in mind, we set up:
       !  Ih1 := column numbers in the destination matrix.
       !  Ih2 := positions of the entries in the current row in the source matrix
-      do j=ih1Idx, ih2Idx
-        Ih1(j-ih1Idx+1) = Itr2(IcolH(j))
-        Ih2(j-ih1Idx+1) = j
-      end do
+      if (.not. present(Itr2)) then
+        do j=ih1Idx, ih2Idx
+          Ih1(j-ih1Idx+1) = IcolH(j)
+          Ih2(j-ih1Idx+1) = j
+        end do
+      else
+        do j=ih1Idx, ih2Idx
+          Ih1(j-ih1Idx+1) = Itr2(IcolH(j))
+          Ih2(j-ih1Idx+1) = j
+        end do
+      end if
 
       ! Call a small sorting algorithm to sort both, Ih1 and Ih2, for Ih1.
       ! Afterwards:
@@ -12190,13 +12314,14 @@ contains
     integer, dimension(:), intent(in) :: IcolH
 
     ! Row positions of source matrix
-    integer, dimension(neq+1), intent(in) :: IldH
+    integer, dimension(:), intent(in) :: IldH
 
-    ! Permutation of 1..neq describing the sorting
-    integer, dimension(neq), intent(in) :: Itr1
+    ! Permutation of 1..neq describing the sorting of the rows
+    integer, dimension(:), intent(in), optional :: Itr1
 
     ! Permutation of 1..neq describing the inverse permutation
-    integer, dimension(neq), intent(in) :: Itr2
+    ! of the columns
+    integer, dimension(:), intent(in), optional :: Itr2
 
 !</input>
 
@@ -12228,7 +12353,8 @@ contains
     do i=1, neq
 
       ! Which row should be moved to here?
-      iidx = Itr1(i)
+      iidx = i
+      if (present(Itr1)) iidx = Itr1(i)
 
       ! Get the start- and end-index of the row that should be moved
       ! to here.
@@ -12246,10 +12372,17 @@ contains
       ! Keeping that in mind, we set up:
       !  Ih1 := column numbers in the destination matrix.
       !  Ih2 := positions of the entries in the current row in the source matrix
-      do j=ih1Idx, ih2Idx
-        Ih1(j-ih1Idx+1) = Itr2(IcolH(j))
-        Ih2(j-ih1Idx+1) = j
-      end do
+      if (.not. present(Itr2)) then
+        do j=ih1Idx, ih2Idx
+          Ih1(j-ih1Idx+1) = IcolH(j)
+          Ih2(j-ih1Idx+1) = j
+        end do
+      else
+        do j=ih1Idx, ih2Idx
+          Ih1(j-ih1Idx+1) = Itr2(IcolH(j))
+          Ih2(j-ih1Idx+1) = j
+        end do
+      end if
 
       ! Call a small sorting algorithm to sort both, Ih1 and Ih2, for Ih1.
       ! Afterwards:
@@ -12307,13 +12440,14 @@ contains
     integer, dimension(:), intent(in) :: IcolH
 
     ! Row positions of source matrix
-    integer, dimension(neq+1), intent(in) :: IldH
+    integer, dimension(:), intent(in) :: IldH
 
-    ! Permutation of 1..neq describing the sorting
-    integer, dimension(neq), intent(in) :: Itr1
+    ! Permutation of 1..neq describing the sorting of the rows
+    integer, dimension(:), intent(in), optional :: Itr1
 
     ! Permutation of 1..neq describing the inverse permutation
-    integer, dimension(neq), intent(in) :: Itr2
+    ! of the columns
+    integer, dimension(:), intent(in), optional :: Itr2
 
 !</input>
 
@@ -12345,7 +12479,8 @@ contains
     do i=1, neq
 
       ! Which row should be moved to here?
-      iidx = Itr1(i)
+      iidx = i
+      if (present(Itr1)) iidx = Itr1(i)
 
       ! Get the start- and end-index of the row that should be moved
       ! to here.
@@ -12363,10 +12498,17 @@ contains
       ! Keeping that in mind, we set up:
       !  Ih1 := column numbers in the destination matrix.
       !  Ih2 := positions of the entries in the current row in the source matrix
-      do j=ih1Idx, ih2Idx
-        Ih1(j-ih1Idx+1) = Itr2(IcolH(j))
-        Ih2(j-ih1Idx+1) = j
-      end do
+      if (.not. present(Itr2)) then
+        do j=ih1Idx, ih2Idx
+          Ih1(j-ih1Idx+1) = IcolH(j)
+          Ih2(j-ih1Idx+1) = j
+        end do
+      else
+        do j=ih1Idx, ih2Idx
+          Ih1(j-ih1Idx+1) = Itr2(IcolH(j))
+          Ih2(j-ih1Idx+1) = j
+        end do
+      end if
 
       ! Call a small sorting algorithm to sort both, Ih1 and Ih2, for Ih1.
       ! Afterwards:
@@ -12421,13 +12563,14 @@ contains
     integer, dimension(:), intent(in) :: IcolH
 
     ! Row positions of source matrix
-    integer, dimension(neq+1), intent(in) :: IldH
+    integer, dimension(:), intent(in) :: IldH
 
-    ! Permutation of 1..neq describing the sorting
-    integer, dimension(neq), intent(in) :: Itr1
+    ! Permutation of 1..neq describing the sorting of the rows
+    integer, dimension(:), intent(in), optional :: Itr1
 
     ! Permutation of 1..neq describing the inverse permutation
-    integer, dimension(neq), intent(in) :: Itr2
+    ! of the columns
+    integer, dimension(:), intent(in), optional :: Itr2
 
 !</input>
 
@@ -12437,10 +12580,10 @@ contains
     integer, dimension(:), intent(out) :: Icol
 
     ! Row positions of destination matrix
-    integer, dimension(neq+1), intent(out) :: Ild
+    integer, dimension(:), intent(out) :: Ild
 
     ! Positions of diagonal elements in the destination matrix
-    integer, dimension(neq+1), intent(out) :: Idiag
+    integer, dimension(:), intent(out) :: Idiag
 
 !</output>
 
@@ -12465,7 +12608,8 @@ contains
     do i=1, neq
 
       ! Which row should be moved to here?
-      iidx = Itr1(i)
+      iidx = i
+      if (present(Itr1)) iidx = Itr1(i)
 
       ! The new row starts at position ildIdx. Save this to Ild.
       Ild(i) = ildIdx
@@ -12486,10 +12630,17 @@ contains
       ! Keeping that in mind, we set up:
       !  Ih1 := column numbers in the destination matrix.
       !  Ih2 := positions of the entries in the current row in the source matrix
-      do j=ih1Idx, ih2Idx
-        Ih1(j-ih1Idx+1) = Itr2(IcolH(j))
-        Ih2(j-ih1Idx+1) = j
-      end do
+      if (.not. present(Itr2)) then
+        do j=ih1Idx, ih2Idx
+          Ih1(j-ih1Idx+1) = IcolH(j)
+          Ih2(j-ih1Idx+1) = j
+        end do
+      else
+        do j=ih1Idx, ih2Idx
+          Ih1(j-ih1Idx+1) = Itr2(IcolH(j))
+          Ih2(j-ih1Idx+1) = j
+        end do
+      end if
 
       ! Call a small sorting algorithm to sort both, Ih1 and Ih2, for Ih1.
       ! Afterwards:
@@ -12572,6 +12723,8 @@ contains
 
   end subroutine
 
+  !****************************************************************************
+  ! SORTING ROUTINES FINISHED
   !****************************************************************************
 
 !<subroutine>
@@ -14109,7 +14262,7 @@ contains
     integer, dimension(:), intent(inout) :: Icol
 
     ! Matrix row structure
-    integer, dimension(neq+1), intent(inout) :: Irow
+    integer, dimension(:), intent(inout) :: Irow
 !</inputoutput>
 !</subroutine>
 

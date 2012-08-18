@@ -5124,7 +5124,9 @@ contains
     ! Loop over the blocks and sort/unsort
     do j=1,rmatrix%nblocksPerRow
       do i=1,rmatrix%nblocksPerCol
-        call lsyssc_sortMatrix (rmatrix%RmatrixBlock(i,j),bsort,bincludeEntries)
+        if (lsysbl_isSubmatrixPresent (rmatrix,i,j)) then
+          call lsyssc_sortMatrix (rmatrix%RmatrixBlock(i,j),bsort,bincludeEntries)
+        end if
       end do
     end do
 
@@ -5363,48 +5365,30 @@ contains
     if (present(rblockSortStrategyColumns) .and. present(rblockSortStrategyRows)) then
       do j=1,rmatrix%nblocksPerRow
         do i=1,rmatrix%nblocksPerCol
-          
-          ! We currently only support block
-          if ((i .ne. j) .and. lsysbl_isSubmatrixPresent(rmatrix,i,j)) then
-            call output_line("Currently, only block diagonal matrices are supported.",&
-                OU_CLASS_ERROR,OU_MODE_STD,"lsysbl_setSortStrategyMat")
-            call sys_halt()
+          if (lsysbl_isSubmatrixPresent (rmatrix,i,j)) then
+            call lsyssc_setSortStrategy(rmatrix%RmatrixBlock(i,j),&
+                rblockSortStrategyColumns%p_Rstrategies(j),rblockSortStrategyRows%p_Rstrategies(i),&
+                bautoUnsort)
           end if
-          
-          call lsyssc_setSortStrategy(rmatrix%RmatrixBlock(i,j),&
-              rblockSortStrategyColumns%p_Rstrategies(j),rblockSortStrategyRows%p_Rstrategies(j),&
-              bautoUnsort)
         end do
       end do
     else if (present(rblockSortStrategyColumns)) then
       do j=1,rmatrix%nblocksPerRow
         do i=1,rmatrix%nblocksPerCol
-          
-          ! We currently only support block
-          if ((i .ne. j) .and. lsysbl_isSubmatrixPresent(rmatrix,i,j)) then
-            call output_line("Currently, only block diagonal matrices are supported.",&
-                OU_CLASS_ERROR,OU_MODE_STD,"lsysbl_setSortStrategyMat")
-            call sys_halt()
+          if (lsysbl_isSubmatrixPresent (rmatrix,i,j)) then
+            call lsyssc_setSortStrategy(rmatrix%RmatrixBlock(i,j),&
+                rblockSortStrategyColumns%p_Rstrategies(j),bautoUnsort=bautoUnsort)
           end if
-          
-          call lsyssc_setSortStrategy(rmatrix%RmatrixBlock(i,j),&
-              rblockSortStrategyColumns%p_Rstrategies(j),bautoUnsort=bautoUnsort)
         end do
       end do
     else if (present(rblockSortStrategyRows)) then
       do j=1,rmatrix%nblocksPerRow
         do i=1,rmatrix%nblocksPerCol
-          
-          ! We currently only support block
-          if ((i .ne. j) .and. lsysbl_isSubmatrixPresent(rmatrix,i,j)) then
-            call output_line("Currently, only block diagonal matrices are supported.",&
-                OU_CLASS_ERROR,OU_MODE_STD,"lsysbl_setSortStrategyMat")
-            call sys_halt()
+          if (lsysbl_isSubmatrixPresent (rmatrix,i,j)) then
+            call lsyssc_setSortStrategy(rmatrix%RmatrixBlock(i,j),&
+                rsortStrategyRows=rblockSortStrategyRows%p_Rstrategies(i),&
+                bautoUnsort=bautoUnsort)
           end if
-          
-          call lsyssc_setSortStrategy(rmatrix%RmatrixBlock(i,j),&
-              rsortStrategyRows=rblockSortStrategyRows%p_Rstrategies(j),&
-              bautoUnsort=bautoUnsort)
         end do
       end do
     end if
@@ -5441,8 +5425,10 @@ contains
     bsorted = .false.
     do j=1,rmatrix%nblocksPerRow
       do i=1,rmatrix%nblocksPerCol
-        bsorted = bsorted .or. rmatrix%RmatrixBlock(i,j)%bcolumnsSorted .or. &
-            rmatrix%RmatrixBlock(i,j)%browsSorted
+        if (lsysbl_isSubmatrixPresent (rmatrix,i,j)) then      
+          bsorted = bsorted .or. rmatrix%RmatrixBlock(i,j)%bcolumnsSorted .or. &
+              rmatrix%RmatrixBlock(i,j)%browsSorted
+        end if
       end do
     end do
 

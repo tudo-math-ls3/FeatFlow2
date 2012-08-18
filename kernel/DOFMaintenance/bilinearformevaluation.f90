@@ -234,7 +234,7 @@
 !#  cubature formula!!!).
 !#  Afterwards, call bilf_buildMatrixScalar to create the matrix and
 !#  release the info structure with spdiscr_releaseCubStructure at the
-!#  end. That"s it.
+!#  end. That is it.
 !#
 !# 4.) What about "temporary arrays"?
 !#

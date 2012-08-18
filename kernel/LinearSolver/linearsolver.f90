@@ -14424,7 +14424,7 @@ contains
                         call output_line ( &
                           trim( &
                           sys_siL(p_rcurrentLevel%icycleCount,10)) &
-                          //"""th repetition of cycle on level "// &
+                          //"'th repetition of cycle on level "// &
                           trim(sys_siL(ilev,5))//".")
                       end if
 
@@ -16780,7 +16780,7 @@ contains
                         call output_line ( &
                           trim( &
                           sys_siL(p_rcurrentLevel%icycleCount,10)) &
-                          //"""th repetition of cycle on level "// &
+                          //"'th repetition of cycle on level "// &
                           trim(sys_siL(ilev,5))//".")
                       end if
 
