@@ -229,9 +229,9 @@ contains
     ! the storage management.
 
     if (rdbcStructure%h_DdirichletValues .eq. ST_NOHANDLE) then
-      call output_line("Dirichlet BC""s not correctly configured!",&
+      call output_line("Dirichlet BCs not correctly configured!",&
           OU_CLASS_ERROR,OU_MODE_STD,"vecfil_imposeDirichletBC")
-      call output_line("Are the BC""s only configured for defect values?!?",&
+      call output_line("Are the BCs only configured for defect values?!?",&
           OU_CLASS_ERROR,OU_MODE_STD,"vecfil_imposeDirichletBC")
       call sys_halt()
     end if
@@ -416,9 +416,9 @@ contains
 
     if ((rdbcStructure%h_IdirichletDOFs .eq. ST_NOHANDLE) .or. &
         (rdbcStructure%h_DdirichletValues .eq. ST_NOHANDLE)) then
-      call output_line("Dirichlet BC""s not correctly configured!",&
+      call output_line("Dirichlet BCs not correctly configured!",&
           OU_CLASS_ERROR,OU_MODE_STD,"vecfil_imposeDirichletFBC")
-      call output_line("Are the BC""s only configured for defect values?!?",&
+      call output_line("Are the BCs only configured for defect values?!?",&
           OU_CLASS_ERROR,OU_MODE_STD,"vecfil_imposeDirichletFBC")
       call sys_halt()
     end if
@@ -736,7 +736,7 @@ contains
     dmean = 0.0_DP
     dvolume = 0.0_DP
 
-    ! fetch the vector"s data array
+    ! fetch the vectors data array
     call lsyssc_getbase_double(rx, p_Dx)
 
     ! fetch the triangulation from the vector
@@ -849,7 +849,7 @@ contains
     Bder = .false.
     Bder(DER_FUNC2D) = .true.
 
-    ! fetch the vector"s data array
+    ! fetch the vectors data array
     call lsyssc_getbase_double(rx, p_Dx)
 
     ! fetch the triangulation from the vector
@@ -956,7 +956,7 @@ contains
     Bder = .false.
     Bder(DER_FUNC2D) = .true.
 
-    ! fetch the vector"s data array
+    ! fetch the vectors data array
     call lsyssc_getbase_double(rx, p_Dx)
 
     ! fetch the triangulation from the vector

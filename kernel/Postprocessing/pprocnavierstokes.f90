@@ -3042,11 +3042,11 @@ contains
     type(t_evalElementSet) :: revalElementSet
     type(t_domainIntSubset) :: rintSubset
 
-    ! An allocateable array accepting the DOF"s of a set of elements.
+    ! An allocateable array accepting the DOFs of a set of elements.
     integer, dimension(:,:), allocatable, target :: IdofsTrial
-    ! An allocateable array accepting the DOF"s of a set of elements.
+    ! An allocateable array accepting the DOFs of a set of elements.
     integer, dimension(:,:), allocatable, target :: IdofsFunc1
-    ! An allocateable array accepting the DOF"s of a set of elements.
+    ! An allocateable array accepting the DOFs of a set of elements.
     integer, dimension(:,:), allocatable, target :: IdofsFunc2
 
 
@@ -3110,7 +3110,7 @@ contains
       ! Cancel if this element distribution is empty.
       if (p_relementDistributionU%NEL .eq. 0) cycle
 
-      ! Get the number of local DOF"s for trial functions
+      ! Get the number of local DOFs for trial functions
       indofTrial = elem_igetNDofLoc(p_relementDistributionU%celement)
       indofFunc1 = elem_igetNDofLoc(p_relementDistributionA%celement)
       indofFunc2 = elem_igetNDofLoc(p_relementDistributionP%celement)
@@ -3152,7 +3152,7 @@ contains
         Dpf1(:,:) = 1.0_DP
       end if
 
-      ! Allocate memory for the DOF"s of all the elements.
+      ! Allocate memory for the DOFs of all the elements.
       allocate(IdofsTrial(indofTrial,nelementsPerBlock))
       allocate(IdofsFunc1(indofFunc1,nelementsPerBlock))
       allocate(IdofsFunc2(indofFunc2,nelementsPerBlock))
@@ -3202,10 +3202,10 @@ contains
 
         IELmax = min(NEL,IELset-1+p_rperfconfig%NELEMSIM)
 
-        ! Calculate the global DOF"s into IdofsTrial.
+        ! Calculate the global DOFs into IdofsTrial.
         !
         ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-        ! global DOF"s of our NELEMSIM elements simultaneously.
+        ! global DOFs of our NELEMSIM elements simultaneously.
 
         !--------------------------------------------------------------------------------
         call dof_locGlobMapping_mult(rvector%p_rblockDiscr%RspatialDiscr(1), &
@@ -3317,7 +3317,7 @@ contains
           ! to assemble the integral
 
           ! Loop through elements in the set and for each element,
-          ! loop through the DOF"s and cubature points to calculate the
+          ! loop through the DOFs and cubature points to calculate the
           ! integral: int_Omega (-p * I + Dj(u)) * (-grad(alpha)) dx
           do IEL=1,IELmax-IELset+1
 
@@ -3371,7 +3371,7 @@ contains
           ! to assemble the integral
 
           ! Loop through elements in the set and for each element,
-          ! loop through the DOF"s and cubature points to calculate the
+          ! loop through the DOFs and cubature points to calculate the
           ! integral: int_Omega (-p * I + Dj(u)) * (-grad(alpha)) dx
           do IEL=1,IELmax-IELset+1
 
@@ -3562,7 +3562,7 @@ contains
       ! In the mean, an element has this size:
       dlocalh = dsize / sqrt(real(rvector%p_rblockDiscr%p_rtriangulation%NEL,dp))
 
-      ! Divide the length of the line by this, that"s the mean number of elements
+      ! Divide the length of the line by this, that is the mean number of elements
       ! on the line.
       nel = min(int(dnorm/dlocalh),1)
 

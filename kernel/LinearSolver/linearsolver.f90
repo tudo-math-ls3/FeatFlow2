@@ -1128,14 +1128,14 @@ module linearsolver
   ! which contain sub-solvers like preconditioners or smoothers
   ! (like in MG), such a structure must be created also for the
   ! sub-solver and attached to the main solver. This way, the
-  ! structures form a ""solver tree"" with one solver-structure
+  ! structures form a "solver tree" with one solver-structure
   ! forming the root and the other structures, which are attached
   ! to this, forming the branches/nodes.
   !
   ! The structure contains general solver parameters which appear is
   ! many solvers. Whether or not a special parameter is respected
   ! by a solver depends on the solver (e.g. UMFPACK will not respect
-  ! the ""maximum iterations"" parameter). Further solver-specific
+  ! the "maximum iterations" parameter). Further solver-specific
   ! parameters which fit not into the general scheme are kept in
   ! solver specific structures.
   !
@@ -7721,7 +7721,7 @@ contains
     if((rsolverNode%rsystemMatrix%nblocksPerRow .eq. 1) .and. &
        (rsolverNode%rsystemMatrix%nblocksPerCol .eq. 1)) then
       
-      ! The system matrix is a scalar matrix - that"s fine.
+      ! The system matrix is a scalar matrix - that is fine.
       ! In this case we just need to make a copy of the matrix
       ! structure.
       call lsysbl_duplicateMatrix(rsolverNode%rsystemMatrix, &
@@ -7796,7 +7796,7 @@ contains
     if((rsolverNode%rsystemMatrix%nblocksPerRow .eq. 1) .and. &
        (rsolverNode%rsystemMatrix%nblocksPerCol .eq. 1)) then
       
-      ! The system matrix is a scalar matrix - that"s fine.
+      ! The system matrix is a scalar matrix - that is fine.
       ! So let"s copy the matrix content to our LU matrix.
       call lsysbl_duplicateMatrix(rsolverNode%rsystemMatrix, &
           rsolverNode%p_rsubnodeILU0%rmatLU, &
@@ -7882,7 +7882,7 @@ contains
     ! release auxiliary array
     deallocate(p_Iaux)
     
-    ! That"s it
+    ! That is it
       
   end subroutine
   
@@ -8036,7 +8036,7 @@ contains
     ! When the scaling factor is not = 1, scale the vector.
     call lsysbl_scaleVector(rd,rsolverNode%domega)
     
-    ! That"s it
+    ! That is it
 
   end subroutine
 
