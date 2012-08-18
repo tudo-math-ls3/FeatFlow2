@@ -26784,7 +26784,6 @@ contains
             p_IdofColor(ivertex_mis) = ibset(p_IdofColor(ivertex_mis), icolor_center)
             p_IdofColor(j)           = ibset(p_IdofColor(j),           icolor_center)
           end if
-
         end if
         
       end do
@@ -26800,15 +26799,15 @@ contains
       ! of edges per colour group
       call lalg_clearVector(IedgeListIdx)
       edge1: do iedge = 1, size(IedgeList,2)
-        icol1 = p_IedgeColor(iedge)
-        IedgeListIdx(icol1+2) = IedgeListIdx(icol1+2)+1
+        icolor = p_IedgeColor(iedge)
+        IedgeListIdx(icolor+2) = IedgeListIdx(icolor+2)+1
       end do edge1
 
       ! Second shuffle pass: Compute starting position of each group
       IedgeListIdx(1) = 1
-      do icol1 = 2, size(IedgeListIdx)
-        IedgeListIdx(icolor) = IedgeListIdx(icol1)&
-                             + IedgeListIdx(icol1-1)
+      do icolor = 2, size(IedgeListIdx)
+        IedgeListIdx(icolor) = IedgeListIdx(icolor)&
+                             + IedgeListIdx(icolor-1)
       end do
 
       ! Make a temporal backup if the edge list
@@ -26822,12 +26821,12 @@ contains
       ! Third shuffle pass: Reorder the edges physically
       edge2: do iedge = 1, size(IedgeList,2)
         ! Get edge colour and first free position
-        icol1  = p_IedgeColor(iedge)+1
-        iedge1 = IedgeListIdx(icol1)
+        icolor = p_IedgeColor(iedge)+1
+        iedge1 = IedgeListIdx(icolor)
 
         ! Copy edge data into its correct position
         IedgeList(:,iedge1) = p_IedgeListTemp(:,iedge)
-        IedgeListIdx(icol1) = IedgeListIdx(icol1)+1
+        IedgeListIdx(icolor) = IedgeListIdx(icolor)+1
       end do edge2
 
       ! Fourth shuffle pass:
