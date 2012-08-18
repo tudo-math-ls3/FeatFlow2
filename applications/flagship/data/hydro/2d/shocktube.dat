@@ -56,7 +56,7 @@ iapproxtimederivativetype = 1
 # 1 = scalar dissipation (-1 = dimensional splitting)
 # 2 = tensorial dissipation (-2 = dimensional splitting)
 # 3 = Rusanov type (-3 = dimensional splitting)
-idissipationtype = 2
+idissipationtype = 1
 
 # type of system coupling
 # 0 = segregated approach
@@ -168,9 +168,7 @@ trifile = %{sgriddirectory}/2d/rect_01x0.1_quads.tri
 #              Q1~ non-parametric, edge-midpoint based
 # EL_EN31_2D   rotated bilinear nonconforming quadrilateral FE,
 #              Q1~ non-parametric, edge-midpoint based, new interface implementations
-#celement = EL_Q1_2D
-celement = EL_E030
-#celement = EL_E031
+celement = EL_Q1_2D
 
 # convert mesh to triangular mesh?
 iconvToTria = 0
@@ -277,7 +275,7 @@ sucdvariable(4) =
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 0
+ioutputlevel = 3
 
 # type of time-stepping algorithm
 # 1 = two-level theta-scheme
@@ -302,13 +300,13 @@ multisteps = 0
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 6.25e-5 #0.231
+dfinalTime = 0.231
 
 # initial time step size
-dinitialStep = 6.25e-5
+dinitialStep = 1e-3
 
 # lower bound for the admissible time step
-dminStep = 0.5e-3
+dminStep = 1e-3
 
 # upper bound for the admissible time step
 dmaxStep = 0.5e-3
@@ -352,10 +350,10 @@ depsSteady = 0.0
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 7
+nlmin = 4
 
 # maximum multigrid level number
-nlmax = 7
+nlmax = 4
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -471,7 +469,7 @@ depsStag = 0.0
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 0
+ioutputlevel = 3
 
 # norm to use for defect checking
 # 0 = Euclidian norm
