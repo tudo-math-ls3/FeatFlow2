@@ -8,7 +8,7 @@
 !# used during the matrix/vector assembly for specifying analytical data.
 !# There are three callback functions involved, which may be called depending
 !# on the situation. All of them correspond to a specific interface for
-!# callback functions, defined in 'intf_xxxx.inc' files.
+!# callback functions, defined in "intf_xxxx.inc" files.
 !#
 !# --- 3D version ---
 !#
@@ -16,19 +16,19 @@
 !#     -> Returns analytical values for the right hand side of the Laplace
 !#        equation. 3D case, Q2 bubble solution.
 !#     -> Corresponds to the interface defined in the file
-!#        'intf_coefficientVectorSc.inc'
+!#        "intf_coefficientVectorSc.inc"
 !#
 !# 2.) coeff_RHS_Sin3D
 !#     -> Returns analytical values for the right hand side of the Laplace
 !#        equation. 3D case, sinus bubble solution.
 !#     -> Corresponds to the interface defined in the file
-!#        'intf_coefficientVectorSc.inc'
+!#        "intf_coefficientVectorSc.inc"
 !#
 !# 3.) getBoundaryValuesMR_3D
 !#     -> Returns discrete values on the (Dirichlet) boundary of the
 !#        problem to solve.
 !#     -> Corresponds to the interface defined in the file
-!#        'intf_discretebc.inc'
+!#        "intf_discretebc.inc"
 !#
 !# 4.) getReferenceFunction_3D
 !#     -> Returns the values of the analytic function and its derivatives,
@@ -516,7 +516,7 @@ contains
   ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
   !
   ! The function may return SYS_INFINITY_DP as a value. This indicates the
-  ! framework to ignore the node and treat it as 'natural boundary condition'
+  ! framework to ignore the node and treat it as "natural boundary condition"
   ! node.
   real(DP), dimension(:), intent(out)            :: Dvalues
 !</output>

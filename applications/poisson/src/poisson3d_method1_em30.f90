@@ -139,10 +139,10 @@ contains
 
     ! Get the path $PREDIR from the environment, where to read .prm/.tri files
     ! from. If that does not exist, write to the directory "./pre".
-    if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
+    if (.not. sys_getenv_string("PREDIR", spredir)) spredir = "./pre"
 
     ! At first, read in the basic triangulation.
-    call tria_readTriFile3D (rtriangulation, trim(spredir)//'/CUBE.tri')
+    call tria_readTriFile3D (rtriangulation, trim(spredir)//"/CUBE.tri")
     
     ! Refine it.
     call tria_quickRefine2LevelOrdering (NLMAX-1,rtriangulation)
@@ -407,14 +407,14 @@ contains
     !
     ! Get the path for writing postprocessing files from the environment variable
     ! $UCDDIR. If that does not exist, write to the directory "./gmv".
-    if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = './gmv'
+    if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = "./gmv"
 
     ! Start UCD export to VTK file:
     call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-                       trim(sucddir)//'/u3d_1_em30.vtk')
+                       trim(sucddir)//"/u3d_1_em30.vtk")
     
     ! Add the solution to the UCD exporter
-    call ucd_addVectorByVertex (rexport, 'sol', UCD_VAR_STANDARD, &
+    call ucd_addVectorByVertex (rexport, "sol", UCD_VAR_STANDARD, &
         rvecSol%RvectorBlock(1))
     
     ! Write the file to disc, that is it.
@@ -437,11 +437,11 @@ contains
     ! Calculate the error to the reference function.
     call pperr_scalar (PPERR_L2ERROR,derror,rvecSol%RvectorBlock(1),&
                        getReferenceFunction_3D, rcubatureInfo=rcubatureInfo)
-    call output_line ('L2-error: ' // sys_sdEL(derror,10) )
+    call output_line ("L2-error: " // sys_sdEL(derror,10) )
 
     call pperr_scalar (PPERR_H1ERROR,derror,rvecSol%RvectorBlock(1),&
                        getReferenceFunction_3D, rcubatureInfo=rcubatureInfo)
-    call output_line ('H1-error: ' // sys_sdEL(derror,10) )
+    call output_line ("H1-error: " // sys_sdEL(derror,10) )
     
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Clean up

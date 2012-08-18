@@ -175,15 +175,15 @@ contains
     
     ! Get the path $PREDIR from the environment, where to read .prm/.tri files
     ! from. If that does not exist, write to the directory "./pre".
-    if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
+    if (.not. sys_getenv_string("PREDIR", spredir)) spredir = "./pre"
 
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
-    call boundary_read_prm(rboundary, trim(spredir)//'/QUAD.prm')
+    call boundary_read_prm(rboundary, trim(spredir)//"/QUAD.prm")
         
     ! Now read in the basic triangulation into our coarse level.
     call tria_readTriFile2D (Rlevels(NLMIN)%rtriangulation, &
-                             trim(spredir)//'/QUAD_TRIA.tri', rboundary)
+                             trim(spredir)//"/QUAD_TRIA.tri", rboundary)
     
     ! Refine it.
     call tria_quickRefine2LevelOrdering (NLMIN-1,&
@@ -474,7 +474,7 @@ contains
     ! We copy our matrices to a big matrix array and transfer that
     ! to the setMatrices routines. This intitialises then the matrices
     ! on all levels according to that array. Note that this does not
-    ! allocate new memory, we create only 'links' to existing matrices
+    ! allocate new memory, we create only "links" to existing matrices
     ! into Rmatrices(:)!
     allocate(Rmatrices(NLMIN:NLMAX))
     do i = NLMIN, NLMAX
@@ -528,14 +528,14 @@ contains
     !
     ! Get the path for writing postprocessing files from the environment variable
     ! $UCDDIR. If that does not exist, write to the directory "./gmv".
-    if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = './gmv'
+    if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = "./gmv"
 
     ! Start UCD export to VTK file:
     call ucd_startVTK (rexport,UCD_FLAG_STANDARD,&
-        Rlevels(NLMAX)%rtriangulation,trim(sucddir)//'/u2d_1_prolmat.vtk')
+        Rlevels(NLMAX)%rtriangulation,trim(sucddir)//"/u2d_1_prolmat.vtk")
     
     ! Add the solution to the UCD exporter
-    call ucd_addVectorByVertex (rexport, 'sol', UCD_VAR_STANDARD, &
+    call ucd_addVectorByVertex (rexport, "sol", UCD_VAR_STANDARD, &
         rvecSol%RvectorBlock(1))
     
     ! Write the file to disc, that is it.
@@ -545,11 +545,11 @@ contains
     ! Calculate the error to the reference function.
     call pperr_scalar (PPERR_L2ERROR,derror,rvecSol%RvectorBlock(1),&
         getReferenceFunction_2D, rcubatureInfo=Rlevels(NLMAX)%rcubatureInfo)
-    call output_line ('L2-error: ' // sys_sdEL(derror,10) )
+    call output_line ("L2-error: " // sys_sdEL(derror,10) )
 
     call pperr_scalar (PPERR_H1ERROR,derror,rvecSol%RvectorBlock(1),&
         getReferenceFunction_2D, rcubatureInfo=Rlevels(NLMAX)%rcubatureInfo)
-    call output_line ('H1-error: ' // sys_sdEL(derror,10) )
+    call output_line ("H1-error: " // sys_sdEL(derror,10) )
     
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Clean up

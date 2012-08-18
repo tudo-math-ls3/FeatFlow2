@@ -138,16 +138,16 @@ contains
 
     ! Get the path $PREDIR from the environment, where to read .prm/.tri files
     ! from. If that does not exist, write to the directory "./pre".
-    if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
+    if (.not. sys_getenv_string("PREDIR", spredir)) spredir = "./pre"
 
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
     ! Set rboundary to NULL() to create a new structure.
-    call boundary_read_prm(rproblem%rboundary, trim(spredir)//'/QUAD.prm')
+    call boundary_read_prm(rproblem%rboundary, trim(spredir)//"/QUAD.prm")
         
     ! Now read in the basic triangulation.
     call tria_readTriFile2D (rproblem%RlevelInfo(1)%rtriangulation, &
-        trim(spredir)//'/QUAD.tri', rproblem%rboundary)
+        trim(spredir)//"/QUAD.tri", rproblem%rboundary)
     
     ! Refine it.
     call tria_quickRefine2LevelOrdering (rproblem%NLMAX-1, &
@@ -277,9 +277,9 @@ contains
     
     ! Save matrix and vectors to the collection.
     ! They maybe used later, expecially in nonlinear problems.
-    call collct_setvalue_vec(rproblem%rcollection,'RHS',p_rrhs,.true.)
-    call collct_setvalue_vec(rproblem%rcollection,'SOLUTION',p_rvector,.true.)
-    call collct_setvalue_mat(rproblem%rcollection,'LAPLACE',p_rmatrix,.true.)
+    call collct_setvalue_vec(rproblem%rcollection,"RHS",p_rrhs,.true.)
+    call collct_setvalue_vec(rproblem%rcollection,"SOLUTION",p_rvector,.true.)
+    call collct_setvalue_mat(rproblem%rcollection,"LAPLACE",p_rmatrix,.true.)
 
     ! Now as the discretisation is set up, we can start to generate
     ! the structure of the system matrix which is to solve.
@@ -387,11 +387,11 @@ contains
     ! conditions.
     call bcasm_initDiscreteBC(rproblem%RlevelInfo(1)%rdiscreteBC)
     !
-    ! We 'know' already (from the problem definition) that we have four boundary
+    ! We "know" already (from the problem definition) that we have four boundary
     ! segments in the domain. Each of these, we want to use for enforcing
     ! some kind of boundary condition.
     !
-    ! We ask the boundary routines to create a 'boundary region' - which is
+    ! We ask the boundary routines to create a "boundary region" - which is
     ! simply a part of the boundary corresponding to a boundary segment.
     ! A boundary region roughly contains the type, the min/max parameter value
     ! and whether the endpoints are inside the region or not.
@@ -400,7 +400,7 @@ contains
     ! We use this boundary region and specify that we want to have Dirichlet
     ! boundary there. The following call does the following:
     ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
-    !   We specify icomponent='1' to indicate that we set up the
+    !   We specify icomponent="1" to indicate that we set up the
     !   Dirichlet BC`s for the first (here: one and only) component in the
     !   solution vector.
     ! - Discretise the boundary condition so that the BC`s can be applied
@@ -629,14 +629,14 @@ contains
     !
     ! Get the path for writing postprocessing files from the environment variable
     ! $UCDDIR. If that does not exist, write to the directory "./gmv".
-    if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = './gmv'
+    if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = "./gmv"
 
     ! Start UCD export to VTK file:
     call ucd_startVTK (rexport,UCD_FLAG_STANDARD,p_rtriangulation,&
-                       trim(sucddir)//'/u2d_2.vtk')
+                       trim(sucddir)//"/u2d_2.vtk")
     
     ! Add the solution to the UCD exporter
-    call ucd_addVectorByVertex (rexport, 'sol', UCD_VAR_STANDARD, &
+    call ucd_addVectorByVertex (rexport, "sol", UCD_VAR_STANDARD, &
         p_rvector%RvectorBlock(1))
     
     ! Write the file to disc, that is it.
@@ -646,11 +646,11 @@ contains
     ! Calculate the error to the reference function.
     call pperr_scalar (PPERR_L2ERROR,derror,p_rvector%RvectorBlock(1),&
                        getReferenceFunction_2D, rcubatureInfo=p_rcubatureInfo)
-    call output_line ('L2-error: ' // sys_sdEL(derror,10) )
+    call output_line ("L2-error: " // sys_sdEL(derror,10) )
 
     call pperr_scalar (PPERR_H1ERROR,derror,p_rvector%RvectorBlock(1),&
                        getReferenceFunction_2D, rcubatureInfo=p_rcubatureInfo)
-    call output_line ('H1-error: ' // sys_sdEL(derror,10) )
+    call output_line ("H1-error: " // sys_sdEL(derror,10) )
     
   end subroutine
 
@@ -677,9 +677,9 @@ contains
     call lsysbl_releaseMatrix (rproblem%RlevelInfo(1)%rmatrix)
 
     ! Delete the variables from the collection.
-    call collct_deletevalue (rproblem%rcollection,'RHS')
-    call collct_deletevalue (rproblem%rcollection,'SOLUTION')
-    call collct_deletevalue (rproblem%rcollection,'LAPLACE')
+    call collct_deletevalue (rproblem%rcollection,"RHS")
+    call collct_deletevalue (rproblem%rcollection,"SOLUTION")
+    call collct_deletevalue (rproblem%rcollection,"LAPLACE")
 
   end subroutine
 
@@ -767,7 +767,7 @@ contains
   subroutine poisson2d_2
   
 !<description>
-  ! This is a 'separated' poisson solver for solving a Poisson
+  ! This is a "separated" poisson solver for solving a Poisson
   ! problem. The different tasks of the problem are separated into
   ! subroutines. The problem uses a problem-specific structure for the
   ! communication: All subroutines add their generated information to the
@@ -829,8 +829,8 @@ contains
 
     ! Print some statistical data about the collection - anything forgotten?
     call output_lbrk ()
-    call output_line ('Remaining collection statistics:')
-    call output_line ('--------------------------------')
+    call output_line ("Remaining collection statistics:")
+    call output_line ("--------------------------------")
     call output_lbrk ()
     call collct_printStatistics (rproblem%rcollection)
     

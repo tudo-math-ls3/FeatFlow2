@@ -119,19 +119,19 @@ contains
     ! We want to solve our Poisson problem on level...
     NLMAX = 7
 
-    ! Fetch the system variables for the 'pre' and 'ucd' directories
-    if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
-    if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = './gmv'
+    ! Fetch the system variables for the "pre" and "ucd" directories
+    if (.not. sys_getenv_string("PREDIR", spredir)) spredir = "./pre"
+    if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = "./gmv"
 
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Read the boundary, read the mesh, refine
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     ! Read in the boundary
-    call boundary_read_prm(rboundary, trim(spredir) // '/QUAD.prm')
+    call boundary_read_prm(rboundary, trim(spredir) // "/QUAD.prm")
         
     ! Now read in the basic triangulation.
-    call tria_readTriFile2D (rtria, trim(spredir) // '/QUAD.tri', rboundary)
+    call tria_readTriFile2D (rtria, trim(spredir) // "/QUAD.tri", rboundary)
      
     ! Refine it up to the desired level.
     call tria_quickRefine2LevelOrdering (NLMAX-1, rtria, rboundary)
@@ -179,7 +179,7 @@ contains
     ! Initialise a discrete BC structure
     call bcasm_initDiscreteBC(rdiscreteBC)
 
-    ! Fetch the boundary's region. Passing 0 as the third parameter will give us a
+    ! Fetch the boundary`s region. Passing 0 as the third parameter will give us a
     ! region representing the whole boundary component instead of a single segment.
     call boundary_createRegion(rboundary, 1, 0, rregion)
 
@@ -254,10 +254,10 @@ contains
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     
     ! Start UCD export to VTK file:
-    call ucd_startVTK(rexport, UCD_FLAG_STANDARD, rtria, trim(sucddir) // '/u2d_0_smart.vtk')
+    call ucd_startVTK(rexport, UCD_FLAG_STANDARD, rtria, trim(sucddir) // "/u2d_0_smart.vtk")
     
     ! Add the solution to the UCD exporter
-    call ucd_addVectorByVertex (rexport, 'sol', UCD_VAR_STANDARD, rvecSol%RvectorBlock(1))
+    call ucd_addVectorByVertex (rexport, "sol", UCD_VAR_STANDARD, rvecSol%RvectorBlock(1))
     
     ! Write the file to disc, that is it.
     call ucd_write (rexport)
@@ -270,11 +270,11 @@ contains
     ! Calculate the error to the reference function.
     call pperr_scalar (PPERR_L2ERROR, derror, rvecSol%RvectorBlock(1), &
                        getReferenceFunction_2D, rcubatureInfo=rcubature)
-    call output_line ('L2-error: ' // sys_sdEL(derror,10) )
+    call output_line ("L2-error: " // sys_sdEL(derror,10) )
 
     call pperr_scalar (PPERR_H1ERROR, derror, rvecSol%RvectorBlock(1), &
                        getReferenceFunction_2D, rcubatureInfo=rcubature)
-    call output_line ('H1-error: ' // sys_sdEL(derror,10) )
+    call output_line ("H1-error: " // sys_sdEL(derror,10) )
     
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Clean up

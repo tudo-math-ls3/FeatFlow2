@@ -8,7 +8,7 @@
 !# used during the matrix/vector assembly for specifying analytical data.
 !# There are three callback functions involved, which may be called depending
 !# on the situation. All of them correspond to a specific interface for
-!# callback functions, defined in 'intf_xxxx.inc' files.
+!# callback functions, defined in "intf_xxxx.inc" files.
 !#
 !# --- 2D version ---
 !#
@@ -16,31 +16,31 @@
 !#     -> Returns analytical values for the right hand side of the Laplace
 !#        equation. 2D case, Q2 bubble solution.
 !#     -> Corresponds to the interface defined in the file
-!#        'intf_coefficientVectorSc.inc'
+!#        "intf_coefficientVectorSc.inc"
 !#
 !# 2.) coeff_RHS_Sin2D
 !#     -> Returns analytical values for the right hand side of the Laplace
 !#        equation. 2D case, sinus bubble solution.
 !#     -> Corresponds to the interface defined in the file
-!#        'intf_coefficientVectorSc.inc'
+!#        "intf_coefficientVectorSc.inc"
 !#
 !# 3.) getBoundaryValues_2D
 !#     -> Returns analytic values on the (Dirichlet) boundary of the
 !#        problem to solve.
 !#     -> Corresponds to the interface defined in the file
-!#        'intf_bcassembly.inc'
+!#        "intf_bcassembly.inc"
 !#
 !# 4.) getBoundaryValuesFBC_2D
 !#     -> Returns analytic values in the inner of the domain on
 !#        fictitious boundary objects
 !#     -> Corresponds to the interface defined in the file
-!#        'intf_bcfassembly.inc'
+!#        "intf_bcfassembly.inc"
 !#
 !# 5.) getBoundaryValuesMR_2D
 !#     -> Returns discrete values on the (Dirichlet) boundary of the
 !#        problem to solve.
 !#     -> Corresponds to the interface defined in the file
-!#        'intf_discretebc.inc'
+!#        "intf_discretebc.inc"
 !#
 !# 6.) getReferenceFunction_2D
 !#     -> Returns the values of the analytic function and its derivatives,
@@ -455,7 +455,7 @@ contains
   ! This subroutine is called during the discretisation of boundary
   ! conditions. It calculates a special quantity on the boundary, which is
   ! then used by the discretisation routines to generate a discrete
-  ! 'snapshot' of the (actually analytic) boundary conditions.
+  ! "snapshot" of the (actually analytic) boundary conditions.
 !</description>
   
 !<input>
@@ -549,7 +549,7 @@ contains
   ! This subroutine is called during the discretisation of boundary
   ! conditions on fictitious boundary components. It calculates a special quantity
   ! on the boundary, which is then used by the discretisation routines to
-  ! generate a discrete 'snapshot' of the (actually analytic) boundary conditions.
+  ! generate a discrete "snapshot" of the (actually analytic) boundary conditions.
   !
   ! The routine must calculate the values on all elements of the element
   ! list Ielements simultaneously. Iwhere is a list with vertex or edge numbers
@@ -614,7 +614,7 @@ contains
       
       ! Just make sure we are evaluating in the corners.
       if (Revaluation(1)%cinfoNeeded .ne. DISCFBC_NEEDFUNC) then
-        print *,'FBC: only corner evaluation supported at the moment!'
+        print *,"FBC: only corner evaluation supported at the moment!"
         stop
       end if
       
@@ -744,7 +744,7 @@ contains
   ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
   !
   ! The function may return SYS_INFINITY_DP as a value. This indicates the
-  ! framework to ignore the node and treat it as 'natural boundary condition'
+  ! framework to ignore the node and treat it as "natural boundary condition"
   ! node.
   real(DP), dimension(:), intent(out)                         :: Dvalues
 !</output>
@@ -768,7 +768,7 @@ contains
     use pprocerror
 
 !<description>
-  ! This routine defines a 'monitor function' for the adaptive grid refinement
+  ! This routine defines a "monitor function" for the adaptive grid refinement
   ! with the h-adaptivity refinement strategy. rindicator is a vector with
   ! NEL entries for all the elements in the triangulation. The routine must
   ! fill each entry with a value that tells the h-adaptivity routines whether
@@ -879,8 +879,8 @@ contains
           EL_P1, EL_Q1, rdiscrBlockRef%RspatialDiscr(2))
       
     case DEFAULT
-      call output_line('Unsupproted element type!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'getMonitorFunction')
+      call output_line("Unsupproted element type!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"getMonitorFunction")
       call sys_halt()
     end select
     

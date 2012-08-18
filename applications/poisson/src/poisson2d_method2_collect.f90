@@ -82,16 +82,16 @@ contains
 
     ! Get the path $PREDIR from the environment, where to read .prm/.tri files
     ! from. If that does not exist, write to the directory "./pre".
-    if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
+    if (.not. sys_getenv_string("PREDIR", spredir)) spredir = "./pre"
 
     ! At first, read in the parametrisation of the boundary and save
     ! it to p_rboundary.
     allocate(p_rboundary)
-    call boundary_read_prm(p_rboundary, trim(spredir)//'/QUAD.prm')
+    call boundary_read_prm(p_rboundary, trim(spredir)//"/QUAD.prm")
 
     ! Now read in the basic triangulation.
     allocate(p_rtriangulation)
-    call tria_readTriFile2D (p_rtriangulation, trim(spredir)//'/QUAD.tri', p_rboundary)
+    call tria_readTriFile2D (p_rtriangulation, trim(spredir)//"/QUAD.tri", p_rboundary)
     
     ! Refine it.
     call tria_quickRefine2LevelOrdering (ilv-1,p_rtriangulation,p_rboundary)
@@ -105,8 +105,8 @@ contains
     !
     ! *What* we need later is the definition of the boundary and the
     ! triangulation. Save these to the collection.
-    call collct_setvalue_bdry(rcollection,'DOMAIN',p_rboundary,.true.)
-    call collct_setvalue_tria(rcollection,'TRIA',p_rtriangulation,.true.)
+    call collct_setvalue_bdry(rcollection,"DOMAIN",p_rboundary,.true.)
+    call collct_setvalue_tria(rcollection,"TRIA",p_rtriangulation,.true.)
     
   end subroutine
 
@@ -145,8 +145,8 @@ contains
 
     ! Ask the collection to give us the boundary and triangulation.
     ! We need it for the discretisation.
-    rboundary => collct_getvalue_bdry(rcollection,'DOMAIN')
-    p_rtriangulation => collct_getvalue_tria(rcollection,'TRIA')
+    rboundary => collct_getvalue_bdry(rcollection,"DOMAIN")
+    p_rtriangulation => collct_getvalue_tria(rcollection,"TRIA")
     
     ! Now we can start to initialise the discretisation. At first, set up
     ! a block discretisation structure that specifies the blocks in the
@@ -164,7 +164,7 @@ contains
                                    
     ! Add the discretisation structure to the collection so that
     ! we can use it later.
-    call collct_setvalue_bldiscr(rcollection,'DISCR2D',p_rdiscretisation,.true.)
+    call collct_setvalue_bldiscr(rcollection,"DISCR2D",p_rdiscretisation,.true.)
     
     ! Set up an cubature info structure to tell the code which cubature
     ! formula to use
@@ -173,7 +173,7 @@ contains
     allocate(p_rcubatureInfo)    
     call spdiscr_createDefCubStructure(&  
         p_rdiscretisation%RspatialDiscr(1),p_rcubatureInfo,CUB_GEN_AUTO_G3)
-    call collct_setvalue_cubinfo(rcollection,'CUBINFO2D',p_rcubatureInfo,.true.)
+    call collct_setvalue_cubinfo(rcollection,"CUBINFO2D",p_rcubatureInfo,.true.)
 
   end subroutine
 
@@ -216,10 +216,10 @@ contains
     type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
 
     ! Ask the collection to give us the discretisation structure
-    p_rdiscretisation => collct_getvalue_bldiscr(rcollection,'DISCR2D')
+    p_rdiscretisation => collct_getvalue_bldiscr(rcollection,"DISCR2D")
 
     ! Get the cubature information structure
-    p_rcubatureInfo => collct_getvalue_cubinfo(rcollection,'CUBINFO2D')
+    p_rcubatureInfo => collct_getvalue_cubinfo(rcollection,"CUBINFO2D")
     
     ! Create the matrix and the vectors on the heap
     allocate(p_rmatrix)
@@ -232,9 +232,9 @@ contains
     
     ! Save matrix and vectors to the collection.
     ! They maybe used later, expecially in nonlinear problems.
-    call collct_setvalue_vec(rcollection,'RHS',p_rrhs,.true.)
-    call collct_setvalue_vec(rcollection,'SOLUTION',p_rvector,.true.)
-    call collct_setvalue_mat(rcollection,'LAPLACE',p_rmatrix,.true.)
+    call collct_setvalue_vec(rcollection,"RHS",p_rrhs,.true.)
+    call collct_setvalue_vec(rcollection,"SOLUTION",p_rvector,.true.)
+    call collct_setvalue_mat(rcollection,"LAPLACE",p_rmatrix,.true.)
 
     ! Now as the discretisation is set up, we can start to generate
     ! the structure of the system matrix which is to solve.
@@ -326,26 +326,26 @@ contains
     type(t_boundary), pointer :: p_rboundary
   
     ! Ask the collection to give us the discretisation structure and
-    p_rdiscretisation => collct_getvalue_bldiscr(rcollection,'DISCR2D')
+    p_rdiscretisation => collct_getvalue_bldiscr(rcollection,"DISCR2D")
     
     ! Get the domain from the discretisation
     p_rboundary => p_rdiscretisation%p_rboundary
 
     ! Get our matrix and right hand side from the collection.
-    p_rrhs    => collct_getvalue_vec(rcollection,'RHS')
-    p_rvector => collct_getvalue_vec(rcollection,'SOLUTION')
-    p_rmatrix => collct_getvalue_mat(rcollection,'LAPLACE')
+    p_rrhs    => collct_getvalue_vec(rcollection,"RHS")
+    p_rvector => collct_getvalue_vec(rcollection,"SOLUTION")
+    p_rmatrix => collct_getvalue_mat(rcollection,"LAPLACE")
     
     ! Create a t_discreteBC structure where we store all discretised boundary
     ! conditions.
     allocate (p_rdiscreteBC)
     call bcasm_initDiscreteBC(p_rdiscreteBC)
     !
-    ! We 'know' already (from the problem definition) that we have four boundary
+    ! We "know" already (from the problem definition) that we have four boundary
     ! segments in the domain. Each of these, we want to use for enforcing
     ! some kind of boundary condition.
     !
-    ! We ask the boundary routines to create a 'boundary region' - which is
+    ! We ask the boundary routines to create a "boundary region" - which is
     ! simply a part of the boundary corresponding to a boundary segment.
     ! A boundary region roughly contains the type, the min/max parameter value
     ! and whether the endpoints are inside the region or not.
@@ -354,7 +354,7 @@ contains
     ! We use this boundary region and specify that we want to have Dirichlet
     ! boundary there. The following call does the following:
     ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
-    !   We specify icomponent='1' to indicate that we set up the
+    !   We specify icomponent="1" to indicate that we set up the
     !   Dirichlet BC`s for the first (here: one and only) component in the
     !   solution vector.
     ! - Discretise the boundary condition so that the BC`s can be applied
@@ -391,7 +391,7 @@ contains
                 
     ! Save the structures to the collection, so we can access them
     ! without having the matrix or the vector.
-    call collct_setvalue_discbc(rcollection,'DISCBC',p_rdiscreteBC,.true.)
+    call collct_setvalue_discbc(rcollection,"DISCBC",p_rdiscreteBC,.true.)
 
   end subroutine
 
@@ -421,9 +421,9 @@ contains
     type(t_vectorBlock), pointer :: p_rrhs,p_rvector
 
     ! Get our matrix and right hand side from the collection.
-    p_rrhs    => collct_getvalue_vec(rcollection,'RHS')
-    p_rvector => collct_getvalue_vec(rcollection,'SOLUTION')
-    p_rmatrix => collct_getvalue_mat(rcollection,'LAPLACE')
+    p_rrhs    => collct_getvalue_vec(rcollection,"RHS")
+    p_rvector => collct_getvalue_vec(rcollection,"SOLUTION")
+    p_rmatrix => collct_getvalue_mat(rcollection,"LAPLACE")
     
     ! Next step is to implement boundary conditions into the RHS,
     ! solution and matrix. This is done using a vector/matrix filter
@@ -474,9 +474,9 @@ contains
     type(t_linsolNode), pointer :: p_rsolverNode,p_rpreconditioner
 
     ! Get our matrix and right hand side from the problem structure.
-    p_rrhs    => collct_getvalue_vec(rcollection,'RHS')
-    p_rvector => collct_getvalue_vec(rcollection,'SOLUTION')
-    p_rmatrix => collct_getvalue_mat(rcollection,'LAPLACE')
+    p_rrhs    => collct_getvalue_vec(rcollection,"RHS")
+    p_rvector => collct_getvalue_vec(rcollection,"SOLUTION")
+    p_rmatrix => collct_getvalue_mat(rcollection,"LAPLACE")
     
     ! Create a temporary vector for the solver - it needs that.
     call lsysbl_createVecBlockIndirect (p_rrhs, rvecTmp, .false.)
@@ -574,10 +574,10 @@ contains
     real(DP) :: derror
 
     ! Get the solution vector from the collection.
-    p_rvector => collct_getvalue_vec(rcollection,'SOLUTION')
+    p_rvector => collct_getvalue_vec(rcollection,"SOLUTION")
     
     ! Get the cubature information structure
-    p_rcubatureInfo => collct_getvalue_cubinfo(rcollection,'CUBINFO2D')
+    p_rcubatureInfo => collct_getvalue_cubinfo(rcollection,"CUBINFO2D")
     
     ! From the attached discretisation, get the underlying triangulation
     p_rtriangulation => &
@@ -588,14 +588,14 @@ contains
     !
     ! Get the path for writing postprocessing files from the environment variable
     ! $UCDDIR. If that does not exist, write to the directory "./gmv".
-    if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = './gmv'
+    if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = "./gmv"
 
     ! Start UCD export to VTK file:
     call ucd_startVTK (rexport,UCD_FLAG_STANDARD,p_rtriangulation,&
-                       trim(sucddir)//'/u2d_2_collect.vtk')
+                       trim(sucddir)//"/u2d_2_collect.vtk")
     
     ! Add the solution to the UCD exporter
-    call ucd_addVectorByVertex (rexport, 'sol', UCD_VAR_STANDARD, &
+    call ucd_addVectorByVertex (rexport, "sol", UCD_VAR_STANDARD, &
         p_rvector%RvectorBlock(1))
     
     ! Write the file to disc, that is it.
@@ -605,11 +605,11 @@ contains
     ! Calculate the error to the reference function.
     call pperr_scalar (PPERR_L2ERROR,derror,p_rvector%RvectorBlock(1),&
                        getReferenceFunction_2D, rcubatureInfo=p_rcubatureInfo)
-    call output_line ('L2-error: ' // sys_sdEL(derror,10) )
+    call output_line ("L2-error: " // sys_sdEL(derror,10) )
 
     call pperr_scalar (PPERR_H1ERROR,derror,p_rvector%RvectorBlock(1),&
                        getReferenceFunction_2D, rcubatureInfo=p_rcubatureInfo)
-    call output_line ('H1-error: ' // sys_sdEL(derror,10) )
+    call output_line ("H1-error: " // sys_sdEL(derror,10) )
     
   end subroutine
 
@@ -639,9 +639,9 @@ contains
     type(t_vectorBlock), pointer :: p_rrhs,p_rvector
 
     ! Get our matrix and right hand side from the collection.
-    p_rrhs    => collct_getvalue_vec(rcollection,'RHS')
-    p_rvector => collct_getvalue_vec(rcollection,'SOLUTION')
-    p_rmatrix => collct_getvalue_mat(rcollection,'LAPLACE')
+    p_rrhs    => collct_getvalue_vec(rcollection,"RHS")
+    p_rvector => collct_getvalue_vec(rcollection,"SOLUTION")
+    p_rmatrix => collct_getvalue_mat(rcollection,"LAPLACE")
 
     ! Release them from memory
     call lsysbl_releaseVector (p_rvector)
@@ -652,9 +652,9 @@ contains
     deallocate(p_rvector)
 
     ! Delete the variables from the collection.
-    call collct_deletevalue (rcollection,'RHS')
-    call collct_deletevalue (rcollection,'SOLUTION')
-    call collct_deletevalue (rcollection,'LAPLACE')
+    call collct_deletevalue (rcollection,"RHS")
+    call collct_deletevalue (rcollection,"SOLUTION")
+    call collct_deletevalue (rcollection,"LAPLACE")
 
   end subroutine
 
@@ -683,15 +683,15 @@ contains
     
     ! Get pointers to the discrete and analytic boundary conditions
     ! from the collection structure.
-    p_rdiscreteBC => collct_getvalue_discbc(rcollection,'DISCBC')
+    p_rdiscreteBC => collct_getvalue_discbc(rcollection,"DISCBC")
 
     ! Release our discrete version of the boundary conditions
     call bcasm_releaseDiscreteBC (p_rdiscreteBC)
     deallocate(p_rdiscreteBC)
 
     ! Delete the variables from the collection.
-    call collct_deletevalue (rcollection,'BDCOND')
-    call collct_deletevalue (rcollection,'DISCBC')
+    call collct_deletevalue (rcollection,"BDCOND")
+    call collct_deletevalue (rcollection,"DISCBC")
 
   end subroutine
 
@@ -721,7 +721,7 @@ contains
     type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
 
     ! Ask the collection to give us the discretisation structure
-    p_rdiscretisation => collct_getvalue_bldiscr(rcollection,'DISCR2D')
+    p_rdiscretisation => collct_getvalue_bldiscr(rcollection,"DISCR2D")
     
     ! Delete the discretisation...
     call spdiscr_releaseBlockDiscr(p_rdiscretisation)
@@ -730,10 +730,10 @@ contains
     deallocate(p_rdiscretisation)
     
     ! and remove it from the collection.
-    call collct_deletevalue (rcollection,'DISCR2D')
+    call collct_deletevalue (rcollection,"DISCR2D")
 
     ! A pointer to the cubature information structure with the data.    
-    p_rcubatureInfo => collct_getvalue_cubinfo(rcollection,'CUBINFO2D')
+    p_rcubatureInfo => collct_getvalue_cubinfo(rcollection,"CUBINFO2D")
     
     ! Delete the structure...
     call spdiscr_releaseCubStructure(p_rcubatureInfo)
@@ -742,7 +742,7 @@ contains
     deallocate(p_rcubatureInfo)
     
     ! and remove it from the collection.
-    call collct_deletevalue (rcollection,'CUBINFO2D')
+    call collct_deletevalue (rcollection,"CUBINFO2D")
     
   end subroutine
     
@@ -772,8 +772,8 @@ contains
 
     ! Ask the collection to give us the boundary and triangulation.
     ! We need it for the discretisation.
-    p_rboundary => collct_getvalue_bdry(rcollection,'DOMAIN')
-    p_rtriangulation => collct_getvalue_tria(rcollection,'TRIA')
+    p_rboundary => collct_getvalue_bdry(rcollection,"DOMAIN")
+    p_rtriangulation => collct_getvalue_tria(rcollection,"TRIA")
     
     ! Release the triangulation.
     call tria_done (p_rtriangulation)
@@ -784,8 +784,8 @@ contains
     deallocate(p_rboundary)
     
     ! Remove everything from the collection.
-    call collct_deletevalue (rcollection,'TRIA')
-    call collct_deletevalue (rcollection,'DOMAIN')
+    call collct_deletevalue (rcollection,"TRIA")
+    call collct_deletevalue (rcollection,"DOMAIN")
     
   end subroutine
 
@@ -796,7 +796,7 @@ contains
   subroutine poisson2d_2_collect
   
 !<description>
-  ! This is a 'separated' poisson solver for solving a Poisson
+  ! This is a "separated" poisson solver for solving a Poisson
   ! problem. The different tasks of the problem are separated into
   ! subroutines. The problem uses a collection structure for the communication:
   ! All subroutines add their generated information to the collection, so that
@@ -855,8 +855,8 @@ contains
     
     ! Print some statistical data about the collection - anything forgotten?
     call output_lbrk ()
-    call output_line ('Remaining collection statistics:')
-    call output_line ('--------------------------------')
+    call output_line ("Remaining collection statistics:")
+    call output_line ("--------------------------------")
     call output_lbrk ()
     call collct_printStatistics (rcollection)
     

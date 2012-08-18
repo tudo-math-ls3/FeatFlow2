@@ -391,14 +391,14 @@ contains
     !
     ! Get the path for writing postprocessing files from the environment variable
     ! $UCDDIR. If that does not exist, write to the directory "./gmv".
-    if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = './gmv'
+    if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = "./gmv"
 
     ! Start UCD export to VTK file:
     call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-                       trim(sucddir)//'/u1d_0_simple.vtk')
+                       trim(sucddir)//"/u1d_0_simple.vtk")
     
     ! Add the solution to the UCD exporter
-    call ucd_addVectorByVertex (rexport, 'sol', UCD_VAR_STANDARD, &
+    call ucd_addVectorByVertex (rexport, "sol", UCD_VAR_STANDARD, &
         rvecSol%RvectorBlock(1))
     
     ! Write the file to disc, that is it.
@@ -408,10 +408,10 @@ contains
     ! Calculate the error to the reference function.
     call pperr_scalar (PPERR_L2ERROR,derror,rvecSol%RvectorBlock(1),&
                        getReferenceFunction_1D, rcubatureInfo=rcubatureInfo)
-    call output_line ('L2-error: ' // sys_sdEL(derror,10) )
+    call output_line ("L2-error: " // sys_sdEL(derror,10) )
     call pperr_scalar (PPERR_H1ERROR,derror,rvecSol%RvectorBlock(1),&
                        getReferenceFunction_1D, rcubatureInfo=rcubatureInfo)
-    call output_line ('H1-error: ' // sys_sdEL(derror,10) )
+    call output_line ("H1-error: " // sys_sdEL(derror,10) )
     
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Clean up
