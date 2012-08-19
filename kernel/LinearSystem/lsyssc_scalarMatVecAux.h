@@ -311,7 +311,7 @@
 
     type(t_perfconfig), intent(in) :: rperfconfig
 
-    integer :: ia,icol,irow,ivar,jvar
+    integer :: ia,icol,irow,ivar
     real(__MatType__), dimension(NVAR) :: Ddtmp
     real(__MatType__) :: dtmp
 

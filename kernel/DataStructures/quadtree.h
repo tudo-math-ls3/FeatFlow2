@@ -1545,7 +1545,7 @@ contains
 
       ! local variables
       FEAT2_PP_TTYPE(T_TYPE) :: xmin,ymin,xmax,ymax,xmid,ymid
-      integer :: i,isize,jnode,nnode,ivt,imid1,imid2,imid3
+      integer :: i,isize,jnode,nnode,imid1,imid2,imid3
 
 
       ! Check if istart > iend then the node is empty
@@ -1719,7 +1719,6 @@ contains
       integer :: isplit
 
       ! local variables
-      FEAT2_PP_TTYPE(T_TYPE), dimension(2) :: Daux
       FEAT2_PP_TTYPE(T_TYPE) :: dpivot
       integer :: i, j, iaux
 
@@ -1827,9 +1826,8 @@ contains
       integer :: iresult
 
       ! local variables
-      FEAT2_PP_TTYPE(T_TYPE), dimension(2) :: DataTmp
       integer, dimension(QTREE_MAX) :: Knode
-      integer :: i,jvt,jnode,ipos,jpos,nemptyChildren
+      integer :: i,jnode,ipos,jpos,nemptyChildren
 
 
       ! Check status of current quad
