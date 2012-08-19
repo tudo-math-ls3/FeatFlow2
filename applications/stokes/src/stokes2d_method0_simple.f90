@@ -162,14 +162,14 @@ contains
 
     ! Get the path $PREDIR from the environment, where to read .prm/.tri files
     ! from. If that does not exist, write to the directory "./pre".
-    if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
+    if (.not. sys_getenv_string("PREDIR", spredir)) spredir = "./pre"
 
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
-    call boundary_read_prm(rboundary, trim(spredir)//'/QUAD.prm')
+    call boundary_read_prm(rboundary, trim(spredir)//"/QUAD.prm")
         
     ! Now read in the basic triangulation.
-    call tria_readTriFile2D (rtriangulation, trim(spredir)//'/QUAD.tri', rboundary)
+    call tria_readTriFile2D (rtriangulation, trim(spredir)//"/QUAD.tri", rboundary)
     
     ! Refine the mesh up to the minimum level
     call tria_quickRefine2LevelOrdering(NLMAX-1,rtriangulation,rboundary)
@@ -407,11 +407,11 @@ contains
     ! We first set up the boundary conditions for the X-velocity, then those
     ! of the Y-velocity.
     !
-    ! We 'know' already (from the problem definition) that we have four boundary
+    ! We "know" already (from the problem definition) that we have four boundary
     ! segments in the domain. Each of these, we want to use for enforcing
     ! some kind of boundary condition.
     !
-    ! We ask the boundary routines to create a 'boundary region' - which is
+    ! We ask the boundary routines to create a "boundary region" - which is
     ! simply a part of the boundary corresponding to a boundary segment.
     ! A boundary region roughly contains the type, the min/max parameter value
     ! and whether the endpoints are inside the region or not.
@@ -424,7 +424,7 @@ contains
     ! We use this boundary region and specify that we want to have Dirichlet
     ! boundary there. The following call does the following:
     ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
-    !   We specify icomponent='1' to indicate that we set up the
+    !   We specify icomponent="1" to indicate that we set up the
     !   Dirichlet BC`s for the first (here: one and only) component in the
     !   solution vector.
     ! - Discretise the boundary condition so that the BC`s can be applied
@@ -580,7 +580,7 @@ contains
     ! Paraview understands only Q1 solutions! So the task is now to create
     ! a Q1 solution from p_rvector and write that out.
     !
-    ! For this purpose, first create a 'derived' simple discretisation
+    ! For this purpose, first create a "derived" simple discretisation
     ! structure based on Q1 by copying the main guiding block discretisation
     ! structure and modifying the discretisation structures of the
     ! two velocity subvectors:
@@ -677,13 +677,13 @@ contains
     
     ! Get the path for writing postprocessing files from the environment variable
     ! $UCDDIR. If that does not exist, write to the directory "./gmv".
-    if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = './gmv'
+    if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = "./gmv"
 
     ! Now we have a Q1/Q1/Q0 solution in rprjVector.
     ! We can now start the postprocessing.
     ! Start UCD export to VTK file:
     call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-        trim(sucddir)//'/u2d_0_simple.vtk')
+        trim(sucddir)//"/u2d_0_simple.vtk")
 
     ! Write velocity field
     call lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
@@ -691,22 +691,22 @@ contains
     
     ! In case we use the VTK exporter, which supports vector output, we will
     ! pass the X- and Y-velocity at once to the ucd module.
-    call ucd_addVarVertBasedVec(rexport,'velocity',p_Ddata,p_Ddata2)
+    call ucd_addVarVertBasedVec(rexport,"velocity",p_Ddata,p_Ddata2)
 
     ! If we use the GMV exporter, we might replace the line above by the
     ! following two lines:
-    !CALL ucd_addVariableVertexBased (rexport,'X-vel',UCD_VAR_XVELOCITY, p_Ddata)
-    !CALL ucd_addVariableVertexBased (rexport,'Y-vel',UCD_VAR_YVELOCITY, p_Ddata2)
+    !CALL ucd_addVariableVertexBased (rexport,"X-vel",UCD_VAR_XVELOCITY, p_Ddata)
+    !CALL ucd_addVariableVertexBased (rexport,"Y-vel",UCD_VAR_YVELOCITY, p_Ddata2)
         
     ! Write pressure
     call lsyssc_getbase_double (rprjVector%RvectorBlock(3),p_Ddata)
-    call ucd_addVariableElementBased (rexport,'pressure',UCD_VAR_STANDARD, p_Ddata)
+    call ucd_addVariableElementBased (rexport,"pressure",UCD_VAR_STANDARD, p_Ddata)
     
     ! Write the file to disc, that is it.
     call ucd_write (rexport)
     call ucd_release (rexport)
 
-    ! Store the viscosity parameter nu in the collection's quick access array
+    ! Store the viscosity parameter nu in the collection"s quick access array
     rcollection%DquickAccess(1) = dnu
 
     ! Set up the error structure for velocity
@@ -724,11 +724,11 @@ contains
 
     ! Print the errors.
     call output_lbrk()
-    call output_line('|u - u_h|_L2 = ' // trim(sys_sdEL(DerrorUL2(1), 10)) &
-                                // ' ' // trim(sys_sdEL(DerrorUL2(2), 10)))
-    call output_line('|u - u_h|_H1 = ' // trim(sys_sdEL(DerrorUH1(1), 10)) &
-                                // ' ' // trim(sys_sdEL(DerrorUH1(2), 10)))
-    call output_line('|p - p_h|_L2 = ' // trim(sys_sdEL(derrorPL2(1), 10)))
+    call output_line("|u - u_h|_L2 = " // trim(sys_sdEL(DerrorUL2(1), 10)) &
+                                // " " // trim(sys_sdEL(DerrorUL2(2), 10)))
+    call output_line("|u - u_h|_H1 = " // trim(sys_sdEL(DerrorUH1(1), 10)) &
+                                // " " // trim(sys_sdEL(DerrorUH1(2), 10)))
+    call output_line("|p - p_h|_L2 = " // trim(sys_sdEL(derrorPL2(1), 10)))
 
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Clean up

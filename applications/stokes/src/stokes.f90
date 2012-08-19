@@ -30,6 +30,7 @@
 program stokes
 
   use stokes2d_method0_simple
+  use stokes2d_method0_resort
   use stokes2d_method1_mg
   use stokes2d_method1_schur
   use stokes2d_method2_sv
@@ -55,15 +56,15 @@ program stokes
   ! Initialise the output system.
   !
   ! Normally, we write all the output to the screen and to a file
-  ! './log/output.txt'.
+  ! "./log/output.txt".
   ! In the case that environment variables "$logdir"/"$resultsfile" exists,
   ! we write all the output to that file. This can be used e.g. in
   ! regression tests to compare results to reference results.
-  if (sys_getenv_string('LOGDIR',slogdir) .and. &
-      sys_getenv_string('RESULTFILE',slogfile)) then
-    call output_init (trim(slogdir)//'/'//trim(slogfile))
+  if (sys_getenv_string("LOGDIR",slogdir) .and. &
+      sys_getenv_string("RESULTFILE",slogfile)) then
+    call output_init (trim(slogdir)//"/"//trim(slogfile))
   else
-    call output_init ('./log/output.txt')
+    call output_init ("./log/output.txt")
   end if
 
   ! The very second thing in every program:
@@ -74,50 +75,56 @@ program stokes
 
   ! Call the problem to solve. 2d stokes 0:
   call output_lbrk()
-  call output_line('Calculating 2D Stokes-Problem 0 - simple')
-  call output_line('----------------------------------------')
+  call output_line("Calculating 2D Stokes-Problem 0 - simple")
+  call output_line("----------------------------------------")
   call stokes2d_0_simple
+
+  ! Call the problem to solve. 2d stokes 0:
+  call output_lbrk()
+  call output_line("Calculating 2D Stokes-Problem 0 - CM-sorting")
+  call output_line("--------------------------------------------")
+  call stokes2d_0_resort
 
   ! Call the problem to solve. 2d stokes 1:
   call output_lbrk()
-  call output_line('Calculating 2D Stokes-Problem 1 - multigrid')
-  call output_line('-------------------------------------------')
+  call output_line("Calculating 2D Stokes-Problem 1 - multigrid")
+  call output_line("-------------------------------------------")
   call stokes2d_1_mg
 
   ! Call the problem to solve. 2d stokes 1:
   call output_lbrk()
-  call output_line('Calculating 2D Stokes-Problem 1 - Schur-Complement')
-  call output_line('--------------------------------------------------')
+  call output_line("Calculating 2D Stokes-Problem 1 - Schur-Complement")
+  call output_line("--------------------------------------------------")
   call stokes2d_1_schur
 
   ! Call the problem to solve. 2d stokes 2:
   call output_lbrk()
-  call output_line('Calculating 2D Stokes-Problem 2 - simple VANKA')
-  call output_line('----------------------------------------------')
+  call output_line("Calculating 2D Stokes-Problem 2 - simple VANKA")
+  call output_line("----------------------------------------------")
   call stokes2d_2_sv
 
   ! Call the problem to solve. 2d stokes 2:
   call output_lbrk()
-  call output_line('Calculating 2D Stokes-Problem 2 - general VANKA')
-  call output_line('-----------------------------------------------')
+  call output_line("Calculating 2D Stokes-Problem 2 - general VANKA")
+  call output_line("-----------------------------------------------")
   call stokes2d_2_gv
 
   ! Call the problem to solve. 2d stokes 2:
   call output_lbrk()
-  call output_line('Calculating 2D Stokes-Problem 3 - general VANKA, block-assembly')
-  call output_line('---------------------------------------------------------------')
+  call output_line("Calculating 2D Stokes-Problem 3 - general VANKA, block-assembly")
+  call output_line("---------------------------------------------------------------")
   call stokes2d_3_block
 
   ! Call the problem to solve. 3d stokes 0:
   call output_lbrk()
-  call output_line('Calculating 3D Stokes-Problem 0 - simple')
-  call output_line('----------------------------------------')
+  call output_line("Calculating 3D Stokes-Problem 0 - simple")
+  call output_line("----------------------------------------")
   call stokes3d_0_simple
 
   ! Call the problem to solve. 3d stokes 1:
   call output_lbrk()
-  call output_line('Calculating 3D Stokes-Problem 1 - multigrid')
-  call output_line('-------------------------------------------')
+  call output_line("Calculating 3D Stokes-Problem 1 - multigrid")
+  call output_line("-------------------------------------------")
   call stokes3d_1_mg
 
   ! As the following two examples are Navier-Stokes examples rather than
@@ -125,19 +132,19 @@ program stokes
 
   ! Call the problem to solve. 2d navier-stokes 1:
   ! call output_lbrk()
-  ! call output_line('Calculating 2D Navier-Stokes-Problem 1 - multigrid')
-  ! call output_line('--------------------------------------------------')
+  ! call output_line("Calculating 2D Navier-Stokes-Problem 1 - multigrid")
+  ! call output_line("--------------------------------------------------")
   ! call navst2d_1_mg
 
   ! Call the problem to solve. 3d navier-stokes 1:
   ! call output_lbrk()
-  ! call output_line('Calculating 3D Navier-Stokes-Problem 1 - multigrid')
-  ! call output_line('--------------------------------------------------')
+  ! call output_line("Calculating 3D Navier-Stokes-Problem 1 - multigrid")
+  ! call output_line("--------------------------------------------------")
   ! call navst3d_1_mg
 
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.
-  ! This should display 'Handles in use=0' and 'Memory in use=0'!
+  ! This should display "Handles in use=0" and "Memory in use=0"!
   call output_lbrk()
   call storage_info(.true.)
   
