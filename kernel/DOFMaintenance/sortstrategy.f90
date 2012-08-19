@@ -37,13 +37,16 @@
 !# 7.) sstrat_initHierarchicalFEH
 !#     -> Calculates a renumbering strategy based on a FE space hierarchy
 !#
-!# 8.) sstrat_doneStrategy
+!# 8.) sstrat_copyStrategy
+!#     -> Creates a copy of a sorting strategy
+!#
+!# 9.) sstrat_doneStrategy
 !#     -> Releases a renumbering strategy.
 !#
-!# 9.) sstrat_initBlockSorting
-!#     -> Initialises a block sorting strategy for multiple components.
+!# 10.) sstrat_initBlockSorting
+!#      -> Initialises a block sorting strategy for multiple components.
 !#
-!# 10.) sstrat_doneBlockSorting
+!# 11.) sstrat_doneBlockSorting
 !#     -> Releases a block sorting strategy.
 !#
 !# Auxiliary routines:
@@ -128,6 +131,7 @@ module sortstrategy
   public :: sstrat_initHierarchical
   public :: sstrat_initHierarchicalFEH
   public :: sstrat_doneStrategy
+  public :: sstrat_copyStrategy
   
   public :: sstrat_initBlockSorting
   public :: sstrat_doneBlockSorting
@@ -602,6 +606,54 @@ contains
 
 !<subroutine>
 
+  subroutine sstrat_copyStrategy (rsortStrategySource,rsortStrategyDest,bshare)
+
+!<description>
+  ! Creates a copy of a sorting strategy
+!</description>
+
+!<input>
+  ! The source structure.
+  type(t_sortStrategy), intent(in) :: rsortStrategySource
+  
+  ! OPTIONAL: Whether the destination should share the data with the source.
+  ! FALSE=destination is independent.
+  ! TRUE=destination inherits the handles of the source structure (default).
+  !      Note: That means, if the source is released, the destination gets 
+  !      invalid!
+  logical, intent(in), optional :: bshare
+!</input>
+
+!<output>
+  ! The destination structure.
+  type(t_sortStrategy), intent(out) :: rsortStrategyDest
+!</output>
+
+!</subroutine>
+
+    logical :: bshareData
+    
+    bshareData = .true.
+    if (present(bshare)) bshareData = bshare
+
+    ! Copy the structure.
+    rsortStrategyDest = rsortStrategySource
+    
+    ! Set the "share"-status
+    rsortStrategyDest%bisCopy = bshareData
+    
+    ! Duplicate the memory if necessary
+    if (.not. bshareData) then
+      rsortStrategyDest%h_Ipermutation = ST_NOHANDLE
+      call storage_copy (rsortStrategySource%h_Ipermutation,rsortStrategyDest%h_Ipermutation)
+    end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
   subroutine sstrat_doneStrategy (rsortStrategy)
 
 !<description>
@@ -616,10 +668,15 @@ contains
 !</subroutine>
 
     ! Reset the structure, release all memory
-    rsortStrategy%ctype = SSTRAT_UNSORTED
-    if (rsortStrategy%h_Ipermutation .ne. ST_NOHANDLE) then
+    if ((rsortStrategy%h_Ipermutation .ne. ST_NOHANDLE) .and. &
+        (.not. rsortStrategy%bisCopy)) then
       call storage_free (rsortStrategy%h_Ipermutation)
     end if
+
+    ! Reset data    
+    rsortStrategy%ctype = SSTRAT_UNSORTED
+    rsortStrategy%h_Ipermutation = ST_NOHANDLE
+    rsortStrategy%bisCopy = .false.
 
     ! The size is not put to zero, so it is possible to
     ! obtain the size from the structure if a new permutation

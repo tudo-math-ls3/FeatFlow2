@@ -25,7 +25,7 @@
 !#
 !# 4.) D1 and D2 have the same matrix structure.
 !#
-!# Please note that in contrast to the 'old' Navier-Stokes Vanka methods,
+!# Please note that in contrast to the "old" Navier-Stokes Vanka methods,
 !# the D-matrices must NOT be virtually transposed!
 !#
 !#
@@ -35,8 +35,8 @@
 !#
 !# Unless you have some extraordinary wishes, this job is pretty easy
 !#
-!# At the bottom of this file you will find two templates: one for the 'full'
-!# and one for the 'diagonal' Vanka variant. Search this file for $TEMPLATE$
+!# At the bottom of this file you will find two templates: one for the "full"
+!# and one for the "diagonal" Vanka variant. Search this file for $TEMPLATE$
 !# to get to the template section. There is also a small description what
 !# needs to be done with that template.
 !#
@@ -122,7 +122,7 @@ module vanka_navst2d
   ! Diagonal-type VANKA
   integer, parameter, public :: VANKATP_NAVST2D_DIAG = 0
 
-  ! 'Full' VANKA
+  ! "Full" VANKA
   integer, parameter, public :: VANKATP_NAVST2D_FULL = 1
 
 !</constantblock>
@@ -253,8 +253,8 @@ contains
 
     ! Matrix must be 3x3.
     if ((rmatrix%nblocksPerCol .ne. 3) .or. (rmatrix%nblocksPerRow .ne. 3)) then
-      call output_line ('System matrix is not 3x3.',&
-          OU_CLASS_ERROR,OU_MODE_STD,'vanka_init_NavSt2D')
+      call output_line ("System matrix is not 3x3.",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vanka_init_NavSt2D")
       call sys_halt()
     end if
 
@@ -264,15 +264,31 @@ contains
     ! that of A(2,3) must be identical to A(3,2).
     if ((rmatrix%RmatrixBlock(1,3)%NA .ne. rmatrix%RmatrixBlock(2,3)%NA) .or. &
         (rmatrix%RmatrixBlock(1,3)%NEQ .ne. rmatrix%RmatrixBlock(2,3)%NEQ)) then
-      call output_line ('Structure of B1 and B2 different!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'vanka_init_NavSt2D')
+      call output_line ("Structure of B1 and B2 different!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vanka_init_NavSt2D")
       call sys_halt()
     end if
 
     if ((rmatrix%RmatrixBlock(3,1)%NA .ne. rmatrix%RmatrixBlock(3,2)%NA) .or. &
         (rmatrix%RmatrixBlock(3,1)%NEQ .ne. rmatrix%RmatrixBlock(3,2)%NEQ)) then
-      call output_line ('Structure of D1 and D2 different!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'vanka_init_NavSt2D')
+      call output_line ("Structure of D1 and D2 different!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vanka_init_NavSt2D")
+      call sys_halt()
+    end if
+
+    ! Virtually transposed matrices not supported
+    if ((iand(rmatrix%RmatrixBlock(3,1)%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) .or. &
+        (iand(rmatrix%RmatrixBlock(3,1)%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0)) then
+      call output_line ("Virtually transposed matrices not suppored!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vanka_init_NavSt2D")
+      call sys_halt()
+    end if
+
+    ! Sorted matríces not supported.
+    if ((rmatrix%RmatrixBlock(1,1)%bcolumnsSorted .or. rmatrix%RmatrixBlock(1,1)%browsSorted) .or. &
+        (rmatrix%RmatrixBlock(2,2)%bcolumnsSorted .or. rmatrix%RmatrixBlock(2,2)%browsSorted)) then
+      call output_line ("Sorted matrices not supported!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vanka_init_NavSt2D")
       call sys_halt()
     end if
 
@@ -354,8 +370,8 @@ contains
     p_rblockDiscr => rmatrix%p_rblockDiscrTest
 
     if (.not. associated(p_rblockDiscr)) then
-      call output_line ('No block discretisation assigned to matrix!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'vanka_init_NavSt2D')
+      call output_line ("No block discretisation assigned to matrix!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vanka_init_NavSt2D")
       call sys_halt()
     end if
 
@@ -367,8 +383,8 @@ contains
     if (p_rblockDiscr%RspatialDiscr(1)%inumFESpaces .ne. &
         p_rblockDiscr%RspatialDiscr(2)%inumFESpaces) then
       call output_line (&
-          'Discretisation structures of X- and Y-velocity incompatible!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'vanka_init_NavSt2D')
+          "Discretisation structures of X- and Y-velocity incompatible!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vanka_init_NavSt2D")
       call sys_halt()
     end if
 
@@ -380,8 +396,8 @@ contains
       ! If this is not the case, we cannot determine (at least not in reasonable time)
       ! which element type the pressure represents on a cell!
       call output_line (&
-          'Discretisation structures of velocity and pressure incompatible!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'vanka_init_NavSt2D')
+          "Discretisation structures of velocity and pressure incompatible!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vanka_init_NavSt2D")
       call sys_halt()
     end if
 
@@ -416,8 +432,8 @@ contains
       !         error message below is printed and the program is aborted.
 
       ! If we come out here, the discretisation is not supported
-      call output_line ('Discretisation not supported!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'vanka_init_NavSt2D')
+      call output_line ("Discretisation not supported!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vanka_init_NavSt2D")
       call sys_halt()
 
     end do
@@ -484,7 +500,7 @@ contains
       end if
 
       ! Get the list of the elements to process.
-      ! We take the element list of the X-velocity as 'primary' element list
+      ! We take the element list of the X-velocity as "primary" element list
       ! and assume that it coincides to that of the Y-velocity (and to that
       ! of the pressure).
       call storage_getbase_int (p_relementDistrV%h_IelementList,p_IelementList)
@@ -562,7 +578,7 @@ contains
 
 !<description>
   ! Performs a desired number of iterations of the Vanka solver for
-  ! 2D Navier-Stokes problem, 'diagonal' variant for Q1~/Q0 discretisations.
+  ! 2D Navier-Stokes problem, "diagonal" variant for Q1~/Q0 discretisations.
 !</description>
 
 !<input>
@@ -676,7 +692,7 @@ contains
     ! Get the multiplication factors
     Dmult = rvanka%Dmultipliers
 
-    ! Take care of the 'soft-deactivation' of the sub-matrices
+    ! Take care of the "soft-deactivation" of the sub-matrices
     bHaveA12 = bHaveA12 .and. ((Dmult(1,2) .ne. 0.0_DP) .or. &
                                (Dmult(2,1) .ne. 0.0_DP))
     bHaveC = bHaveC .and. (Dmult(3,3) .ne. 0.0_DP)
@@ -1039,7 +1055,7 @@ contains
 
 !<description>
   ! Performs a desired number of iterations of the Vanka solver for
-  ! 2D Navier-Stokes problem, 'diagonal' variant for Q2/QP1 discretisations.
+  ! 2D Navier-Stokes problem, "diagonal" variant for Q2/QP1 discretisations.
 !</description>
 
 !<input>
@@ -1158,7 +1174,7 @@ contains
     ! Get the multiplication factors
     Dmult = rvanka%Dmultipliers
 
-    ! Take care of the 'soft-deactivation' of the sub-matrices
+    ! Take care of the "soft-deactivation" of the sub-matrices
     bHaveA12 = bHaveA12 .and. ((Dmult(1,2) .ne. 0.0_DP) .or. &
                                (Dmult(2,1) .ne. 0.0_DP))
     bHaveC = bHaveC .and. (Dmult(3,3) .ne. 0.0_DP)
@@ -1529,7 +1545,7 @@ contains
 
 !<description>
   ! Performs a desired number of iterations of the Vanka solver for
-  ! 2D Navier-Stokes problem, 'full' variant for Q2/Qp1 discretisations.
+  ! 2D Navier-Stokes problem, "full" variant for Q2/Qp1 discretisations.
 !</description>
 
 !<input>
@@ -1651,7 +1667,7 @@ contains
     ! Get the multiplication factors
     Dmult = rvanka%Dmultipliers
 
-    ! Take care of the 'soft-deactivation' of the sub-matrices
+    ! Take care of the "soft-deactivation" of the sub-matrices
     bHaveC = bHaveC .and. (Dmult(3,3) .ne. 0.0_DP)
     bHaveA12 = bHaveA12 .and. &
       ((Dmult(1,2) .ne. 0.0_DP) .or. (Dmult(2,1) .ne. 0.0_DP))
@@ -1841,7 +1857,7 @@ contains
 
 !<description>
   ! Performs a desired number of iterations of the Vanka solver for
-  ! 2D Navier-Stokes problem, 'full' variant for Q1~/Q0 discretisations,
+  ! 2D Navier-Stokes problem, "full" variant for Q1~/Q0 discretisations,
   ! no off-diagonal A matrices (A12,A21).
 !</description>
 
@@ -1956,7 +1972,7 @@ contains
     ! Get the multiplication factors
     Dmult = rvanka%Dmultipliers
 
-    ! Take care of the 'soft-deactivation' of the sub-matrices
+    ! Take care of the "soft-deactivation" of the sub-matrices
     bHaveC = bHaveC .and. (Dmult(3,3) .ne. 0.0_DP)
 
     ! Clear the optional matrices
@@ -2320,7 +2336,7 @@ contains
 
 !<description>
   ! Performs a desired number of iterations of the Vanka solver for
-  ! 2D Navier-Stokes problem, 'full' variant for Q1~/Q0 discretisations,
+  ! 2D Navier-Stokes problem, "full" variant for Q1~/Q0 discretisations,
   ! off-diagonal A-matrices exist (A12,A21).
 !</description>
 
@@ -2430,7 +2446,7 @@ contains
     ! Get the multiplication factors
     Dmult = rvanka%Dmultipliers
 
-    ! Take care of the 'soft-deactivation' of the sub-matrices
+    ! Take care of the "soft-deactivation" of the sub-matrices
     bHaveC = bHaveC .and. (Dmult(3,3) .ne. 0.0_DP)
 
     if(bHaveC) then
@@ -2776,7 +2792,7 @@ contains
   !    routine you created from the template (see $TODO$ tag in that routine)
 
   ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-  ! $TEMPLATE$ for 'diagonal' Vanka
+  ! $TEMPLATE$ for "diagonal" Vanka
 
 !<!-- // hide from automatic documentation parser
 !<subroutine>
@@ -2786,7 +2802,7 @@ contains
 !
 !!<description>
 !  ! Performs a desired number of iterations of the Vanka solver for
-!  ! 2D Navier-Stokes problem, 'diagonal' variant for $TODO$ discretisations.
+!  ! 2D Navier-Stokes problem, "diagonal" variant for $TODO$ discretisations.
 !!</description>
 !
 !!<input>
@@ -2902,7 +2918,7 @@ contains
 !    ! Get the multiplication factors
 !    Dmult = rvanka%Dmultipliers
 !
-!    ! Take care of the 'soft-deactivation' of the sub-matrices
+!    ! Take care of the "soft-deactivation" of the sub-matrices
 !    bHaveA12 = bHaveA12 .and. ((Dmult(1,2) .ne. 0.0_DP) .or. &
 !                               (Dmult(2,1) .ne. 0.0_DP))
 !    bHaveC = bHaveC .and. (Dmult(3,3) .ne. 0.0_DP)
@@ -3099,7 +3115,7 @@ contains
 
   ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-  ! $TEMPLATE$ for 'full' Vanka
+  ! $TEMPLATE$ for "full" Vanka
 
 !<subroutine>
 !
@@ -3108,7 +3124,7 @@ contains
 !
 !!<description>
 !  ! Performs a desired number of iterations of the Vanka solver for
-!  ! 2D Navier-Stokes problem, 'full' variant for $TODO$ discretisations.
+!  ! 2D Navier-Stokes problem, "full" variant for $TODO$ discretisations.
 !!</description>
 !
 !!<input>
@@ -3227,7 +3243,7 @@ contains
 !    ! Get the multiplication factors
 !    Dmult = rvanka%Dmultipliers
 !
-!    ! Take care of the 'soft-deactivation' of the sub-matrices
+!    ! Take care of the "soft-deactivation" of the sub-matrices
 !    bHaveC = bHaveC .and. (Dmult(3,3) .ne. 0.0_DP)
 !    bHaveA12 = bHaveA12 .and. &
 !      ((Dmult(1,2) .ne. 0.0_DP) .or. (Dmult(2,1) .ne. 0.0_DP))

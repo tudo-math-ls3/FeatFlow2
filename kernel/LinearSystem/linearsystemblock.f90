@@ -870,6 +870,7 @@ contains
 !        END IF
 
       if(btransposed) then
+      
         itmp = i
         if (rvector%RvectorBlock(i)%NEQ .ne. rmatrix%RmatrixBlock(i,j)%NEQ) then
           if (present(bcompatible)) then
@@ -881,7 +882,35 @@ contains
             call sys_halt()
           end if
         end if
+
+        ! Check the sorting.
+        if (rmatrix%RmatrixBlock(i,j)%browsSorted .neqv. rvector%RvectorBlock(itmp)%bisSorted) then
+          if (present(bcompatible)) then
+            bcompatible = .false.
+            return
+          else
+            call output_line("Matrix/vector not compatible, differently sorted!",&
+                OU_CLASS_ERROR,OU_MODE_STD,"lsysbl_isMatrixVectorCompatible")
+            call sys_halt()
+          end if
+        end if
+        
+        if (rmatrix%RmatrixBlock(i,j)%browsSorted) then
+          if (rmatrix%RmatrixBlock(i,j)%p_rsortStrategyRows%ctype .ne. &
+              rvector%RvectorBlock(itmp)%p_rsortStrategy%ctype) then
+            if (present(bcompatible)) then
+              bcompatible = .false.
+              return
+            else
+              call output_line("Matrix/vector not compatible, differently sorted!",&
+                  OU_CLASS_ERROR,OU_MODE_STD,"lsysbl_isMatrixVectorCompatible")
+              call sys_halt()
+            end if
+          end if
+        end if
+
       else ! not transposed
+      
         itmp = j
         if (rvector%RvectorBlock(j)%NEQ .ne. rmatrix%RmatrixBlock(i,j)%NCOLS) then
           if (present(bcompatible)) then
@@ -893,23 +922,9 @@ contains
             call sys_halt()
           end if
         end if
-      end if
 
-      ! Check the sorting.
-      if (rmatrix%RmatrixBlock(i,j)%bcolumnsSorted .neqv. rvector%RvectorBlock(itmp)%bisSorted) then
-        if (present(bcompatible)) then
-          bcompatible = .false.
-          return
-        else
-          call output_line("Matrix/vector not compatible, differently sorted!",&
-              OU_CLASS_ERROR,OU_MODE_STD,"lsysbl_isMatrixVectorCompatible")
-          call sys_halt()
-        end if
-      end if
-      
-      if (rmatrix%RmatrixBlock(i,j)%bcolumnsSorted) then
-        if (rmatrix%RmatrixBlock(i,j)%p_rsortStrategyColumns%ctype .ne. &
-            rvector%RvectorBlock(itmp)%p_rsortStrategy%ctype) then
+        ! Check the sorting.
+        if (rmatrix%RmatrixBlock(i,j)%bcolumnsSorted .neqv. rvector%RvectorBlock(itmp)%bisSorted) then
           if (present(bcompatible)) then
             bcompatible = .false.
             return
@@ -919,6 +934,21 @@ contains
             call sys_halt()
           end if
         end if
+        
+        if (rmatrix%RmatrixBlock(i,j)%bcolumnsSorted) then
+          if (rmatrix%RmatrixBlock(i,j)%p_rsortStrategyColumns%ctype .ne. &
+              rvector%RvectorBlock(itmp)%p_rsortStrategy%ctype) then
+            if (present(bcompatible)) then
+              bcompatible = .false.
+              return
+            else
+              call output_line("Matrix/vector not compatible, differently sorted!",&
+                  OU_CLASS_ERROR,OU_MODE_STD,"lsysbl_isMatrixVectorCompatible")
+              call sys_halt()
+            end if
+          end if
+        end if
+
       end if
 
     end do

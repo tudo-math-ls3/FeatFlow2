@@ -1499,49 +1499,49 @@ contains
   idresult = 0
   Dintersec=0
 
-	! get direction vector of the edge
-	Ddir(:)=Dedge(:,2)-Dedge(:,1)
+  ! get direction vector of the edge
+  Ddir(:)=Dedge(:,2)-Dedge(:,1)
 
-	Dp1(:)=Dedge(:,1)
+  Dp1(:)=Dedge(:,1)
 
-	Ddelta(:)=Dp1(:)-Dc(:)
+  Ddelta(:)=Dp1(:)-Dc(:)
 
-	dir2=Ddir(1)**2+Ddir(2)**2
+  dir2=Ddir(1)**2+Ddir(2)**2
 
-	diff=(Ddelta(1)**2+Ddelta(2)**2)-drad**2
+  diff=(Ddelta(1)**2+Ddelta(2)**2)-drad**2
 
-	dirdotdelta = Ddir(1)*Ddelta(1)+Ddir(2)*Ddelta(2)
+  dirdotdelta = Ddir(1)*Ddelta(1)+Ddir(2)*Ddelta(2)
 
-	root = dirdotdelta**2 - dir2*diff
+  root = dirdotdelta**2 - dir2*diff
 
-	! the term under the root is negative, there is no intersection
-	if(root < 0.0_dp)then
-	  return
-	end if
+  ! the term under the root is negative, there is no intersection
+  if(root < 0.0_dp)then
+    return
+  end if
 
   ! the term under the root is equal to 0, we have one intersection 't'
-	if((0.0 .le. root).and.(root .le. eps))then
-		root=0.0_dp
-		t= -Ddir(1)*Ddelta(1)-Ddir(2)*Ddelta(2) /dir2
-		! we need point of intersection to be on the segment
-		if((0.0_dp .le. t).and.(t .le. 1.0_dp))then
-		  iresult = 1
-		  Dintersec(:,1)=Dp1(:)+ t*Ddir(:)
-		end if
-	! the term under the root is greater than zero
-	! we have to intersections dt1,dt2
-	else
-	  dt1=(-dirdotdelta + root)/dir2
-	  dt2=(-dirdotdelta - root)/dir2
-		if((0.0_dp .le. dt1).and.(dt1 .le. 1.0_dp))then
-		  iresult = iresult + 1
-		  Dintersec(:,1)=Dp1(:)+ dt1*Ddir(:)
-		end if
-		if((0.0_dp .le. dt2).and.(dt2 .le. 1.0_dp))then
-		  iresult = iresult + 1
-		  Dintersec(:,2)=Dp1(:)+ dt2*Ddir(:)
-		end if
-	end if
+  if((0.0 .le. root).and.(root .le. eps))then
+    root=0.0_dp
+    t= -Ddir(1)*Ddelta(1)-Ddir(2)*Ddelta(2) /dir2
+    ! we need point of intersection to be on the segment
+    if((0.0_dp .le. t).and.(t .le. 1.0_dp))then
+      iresult = 1
+      Dintersec(:,1)=Dp1(:)+ t*Ddir(:)
+    end if
+  ! the term under the root is greater than zero
+  ! we have to intersections dt1,dt2
+  else
+    dt1=(-dirdotdelta + root)/dir2
+    dt2=(-dirdotdelta - root)/dir2
+    if((0.0_dp .le. dt1).and.(dt1 .le. 1.0_dp))then
+      iresult = iresult + 1
+      Dintersec(:,1)=Dp1(:)+ dt1*Ddir(:)
+    end if
+    if((0.0_dp .le. dt2).and.(dt2 .le. 1.0_dp))then
+      iresult = iresult + 1
+      Dintersec(:,2)=Dp1(:)+ dt2*Ddir(:)
+    end if
+  end if
 
   end subroutine
 

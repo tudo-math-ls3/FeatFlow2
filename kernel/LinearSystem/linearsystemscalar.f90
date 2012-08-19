@@ -1142,19 +1142,11 @@ contains
   end if
 
   ! Check the sorting.
-  if (rmatrix%bcolumnsSorted .neqv. rvector%bisSorted) then
-    if (present(bcompatible)) then
-      bcompatible = .false.
-      return
-    else
-      call output_line("Matrix/vector not compatible, differently sorted!",&
-          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_isMatrixVectorCompatible")
-      call sys_halt()
-    end if
-  end if
-  
-  if (rmatrix%bcolumnsSorted) then
-    if (rmatrix%p_rsortStrategyColumns%ctype .ne. rvector%p_rsortStrategy%ctype) then
+  if (.not. btransposed) then
+
+    ! Sorting of the columns must match the vector
+
+    if (rmatrix%bcolumnsSorted .neqv. rvector%bisSorted) then
       if (present(bcompatible)) then
         bcompatible = .false.
         return
@@ -1164,6 +1156,48 @@ contains
         call sys_halt()
       end if
     end if
+    
+    if (rmatrix%bcolumnsSorted) then
+      if (rmatrix%p_rsortStrategyColumns%ctype .ne. rvector%p_rsortStrategy%ctype) then
+        if (present(bcompatible)) then
+          bcompatible = .false.
+          return
+        else
+          call output_line("Matrix/vector not compatible, differently sorted!",&
+              OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_isMatrixVectorCompatible")
+          call sys_halt()
+        end if
+      end if
+    end if
+    
+  else
+
+    ! Sorting of the rows must match the vector
+
+    if (rmatrix%browsSorted .neqv. rvector%bisSorted) then
+      if (present(bcompatible)) then
+        bcompatible = .false.
+        return
+      else
+        call output_line("Matrix/vector not compatible, differently sorted!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_isMatrixVectorCompatible")
+        call sys_halt()
+      end if
+    end if
+    
+    if (rmatrix%browsSorted) then
+      if (rmatrix%p_rsortStrategyRows%ctype .ne. rvector%p_rsortStrategy%ctype) then
+        if (present(bcompatible)) then
+          bcompatible = .false.
+          return
+        else
+          call output_line("Matrix/vector not compatible, differently sorted!",&
+              OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_isMatrixVectorCompatible")
+          call sys_halt()
+        end if
+      end if
+    end if
+
   end if
     
   ! Ok, they are compatible
@@ -10393,6 +10427,13 @@ contains
     ! The optional parameters
     bwithEntries = .true.
     if (present(bincludeEntries)) bwithEntries = bincludeEntries
+
+    ! Virtually transposed matrices cannot be sorted.
+    if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) then
+      call output_line("Sorting of virtually transposed matrices not supported.!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_sortMatrix")
+      call sys_halt()
+    end if
 
     ! It is a little bit tricky now if structure and/or content of rmatrix
     ! is shared with another matrix!

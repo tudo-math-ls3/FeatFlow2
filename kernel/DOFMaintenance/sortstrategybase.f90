@@ -97,6 +97,10 @@ module sortstrategybase
     ! Size of the permutation.
     integer :: nsize = 0
     
+    ! TRUE if the structure is a copy of another sorting strategy structure.
+    ! Prevents memory from being deallocated more than once.
+    logical :: bisCopy = .false.
+    
     ! Handle to the permutation. The calculated
     ! permutation Ipermutation given as a parameter to the routines
     ! has length 2*nsize for nsize numbers. It contains the permutation in the
