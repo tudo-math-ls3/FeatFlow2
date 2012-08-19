@@ -213,9 +213,9 @@ contains
     if (.not.rboundaryCondition%bStrongBdrCond) return
 
     ! Check if matrix is sorted?
-    if (rmatrix%isortStrategy .gt. 0) then
+    if (rmatrix%bcolumnsSorted .or. rmatrix%browsSorted) then
       bisSorted = .true.
-      call lsyssc_unsortMatrix(rmatrix, .true.)
+      call lsyssc_sortMatrix(rmatrix, .false.)
     else
       bisSorted = .false.
     end if
@@ -486,7 +486,7 @@ contains
     end select
 
     ! Do we have to re-sort matrix?
-    if (bisSorted) call lsyssc_sortMatrix(rmatrix, .true., rmatrix%isortStrategy)
+    if (bisSorted) call lsyssc_sortMatrix(rmatrix, .true.)
 
   contains
 
@@ -2021,15 +2021,15 @@ contains
     if (.not.rboundaryCondition%bStrongBdrCond) return
 
     ! Check if vector is sorted?
-    if (rvector%isortStrategy .gt. 0) then
+    if (rvector%bisSorted) then
       bisSorted = .true.
-      call lsyssc_vectorActivateSorting(rvector, .false.)
+      call lsyssc_sortVector(rvector, .false.)
     else
       bisSorted = .false.
     end if
 
     ! Set pointer for vector
-    call lsyssc_getbase_double (rvector, p_Dx)
+    call lsyssc_getbase_double(rvector, p_Dx)
 
     ! Get underlying triangulation structure
     if (present(rtriangulation)) then
@@ -2102,7 +2102,7 @@ contains
     end select
 
     ! Do we have to re-sort vector?
-    if (bisSorted) call lsyssc_vectorActivateSorting(rvector, .true.)
+    if (bisSorted) call lsyssc_sortVector(rvector, .true.)
 
   contains
 
@@ -2375,17 +2375,17 @@ contains
     call lsyssc_isVectorCompatible(rvector, rvectorFilter)
 
     ! Check if vector is sorted?
-    if (rvector%isortStrategy .gt. 0) then
+    if (rvector%bisSorted) then
       bisSorted = .true.
-      call lsyssc_vectorActivateSorting(rvector, .false.)
-      call lsyssc_vectorActivateSorting(rvectorFilter, .false.)
+      call lsyssc_sortVector(rvector, .false.)
+      call lsyssc_sortVector(rvectorFilter, .false.)
     else
       bisSorted = .false.
     end if
 
     ! Set pointer for vector
-    call lsyssc_getbase_double (rvector, p_Dx)
-    call lsyssc_getbase_double (rvectorFilter, p_Dvalue)
+    call lsyssc_getbase_double(rvector, p_Dx)
+    call lsyssc_getbase_double(rvectorFilter, p_Dvalue)
 
     ! Get underlying triangulation structure
     if (present(rtriangulation)) then
@@ -2459,8 +2459,8 @@ contains
 
     ! Do we have to re-sort vector?
     if (bisSorted) then
-      call lsyssc_vectorActivateSorting(rvector, .true.)
-      call lsyssc_vectorActivateSorting(rvectorFilter, .true.)
+      call lsyssc_sortVector(rvector, .true.)
+      call lsyssc_sortVector(rvectorFilter, .true.)
     end if
 
   contains
@@ -2727,9 +2727,9 @@ contains
       end if
 
       ! Check if vector is sorted
-      if (rvector%RvectorBlock(iblock)%isortStrategy .gt. 0) then
+      if (rvector%RvectorBlock(iblock)%bisSorted) then
         BisSorted(iblock) = .true.
-        call lsyssc_vectorActivateSorting(rvector%RvectorBlock(iblock), .false.)
+        call lsyssc_sortVector(rvector%RvectorBlock(iblock), .false.)
       else
         BisSorted(iblock) = .false.
       end if
@@ -2835,7 +2835,7 @@ contains
     ! Do we have to re-sort the vector?
     do iblock = 1, rvector%nblocks
       if (BisSorted(iblock))&
-          call lsyssc_vectorActivateSorting(rvector%RvectorBlock(iblock), .true.)
+          call lsyssc_sortVector(rvector%RvectorBlock(iblock), .true.)
     end do
 
   contains
@@ -3265,9 +3265,9 @@ contains
     if (.not.rboundaryCondition%bStrongBdrCond) return
 
     ! Check if vector is sorted?
-    if (rvector%isortStrategy .gt. 0) then
+    if (rvector%bisSorted) then
       bisSorted = .true.
-      call lsyssc_vectorActivateSorting(rvector, .false.)
+      call lsyssc_sortVector(rvector, .false.)
     else
       bisSorted = .false.
     end if
@@ -3366,7 +3366,7 @@ contains
     end select
 
     ! Do we have to re-sort vector
-    if (bisSorted) call lsyssc_vectorActivateSorting(rvector, .true.)
+    if (bisSorted) call lsyssc_sortVector(rvector, .true.)
 
   contains
 
@@ -3865,9 +3865,10 @@ contains
     do iblock = 1, rmatrix%nblocksPerCol
       do jblock = 1, rmatrix%nblocksPerRow
 
-        if (rmatrix%RmatrixBlock(jblock,iblock)%isortStrategy .gt. 0) then
+        if (rmatrix%RmatrixBlock(jblock,iblock)%bcolumnsSorted .or.&
+            rmatrix%RmatrixBlock(jblock,iblock)%browsSorted) then
           BisMatrixSorted(jblock,iblock) =.true.
-          call lsyssc_unsortMatrix(rmatrix%RmatrixBlock(jblock,iblock), .true.)
+          call lsyssc_sortMatrix(rmatrix%RmatrixBlock(jblock,iblock), .false.)
         else
           BisMatrixSorted(jblock,iblock) =.false.
         end if
@@ -3883,9 +3884,9 @@ contains
 
     ! Check if solution vector is sorted?
     do iblock = 1, rsolution%nblocks
-      if (rsolution%RvectorBlock(iblock)%isortStrategy .gt. 0) then
+      if (rsolution%RvectorBlock(iblock)%bisSorted) then
         BisSolutionSorted(iblock) = .true.
-        call lsyssc_vectorActivateSorting(rsolution%RvectorBlock(iblock), .false.)
+        call lsyssc_sortVector(rsolution%RvectorBlock(iblock), .false.)
       else
         BisSolutionSorted(iblock) = .false.
       end if
@@ -3893,9 +3894,9 @@ contains
 
     ! Check if defect vector is sorted?
     do iblock = 1, rdefect%nblocks
-      if (rdefect%RvectorBlock(iblock)%isortStrategy .gt. 0) then
+      if (rdefect%RvectorBlock(iblock)%bisSorted) then
         BisDefectSorted(iblock) = .true.
-        call lsyssc_vectorActivateSorting(rdefect%RvectorBlock(iblock), .false.)
+        call lsyssc_sortVector(rdefect%RvectorBlock(iblock), .false.)
       else
         BisDefectSorted(iblock) = .false.
       end if
@@ -4067,21 +4068,20 @@ contains
     do iblock = 1, rmatrix%nblocksPerRow
       do jblock = 1, rmatrix%nblocksPerCol
         if (BisMatrixSorted(jblock,iblock))&
-            call lsyssc_sortMatrix(rmatrix%RmatrixBlock(jblock,iblock),&
-            .true., rmatrix%RmatrixBlock(jblock,iblock)%isortStrategy)
+            call lsyssc_sortMatrix(rmatrix%RmatrixBlock(jblock,iblock), .true.)
       end do
     end do
 
     ! Do we have to re-sort solution vector?
     do iblock = 1, rsolution%nblocks
       if (BisSolutionSorted(iblock))&
-          call lsyssc_vectorActivateSorting(rsolution%RvectorBlock(iblock), .true.)
+          call lsyssc_sortVector(rsolution%RvectorBlock(iblock), .true.)
     end do
 
     ! Do we have to re-sort defect vector
     do iblock = 1, rdefect%nblocks
       if (BisDefectSorted(iblock))&
-          call lsyssc_vectorActivateSorting(rdefect%RvectorBlock(iblock), .true.)
+          call lsyssc_sortVector(rdefect%RvectorBlock(iblock), .true.)
     end do
 
   contains
@@ -4767,25 +4767,25 @@ contains
     if (.not.rboundaryCondition%bStrongBdrCond) return
 
     ! Check if matrix is sorted?
-    if (rmatrix%isortStrategy .gt. 0) then
+    if (rmatrix%bcolumnsSorted .or. rmatrix%browsSorted) then
       bisMatrixSorted = .true.
-      call lsyssc_unsortMatrix(rmatrix, .true.)
+      call lsyssc_sortMatrix(rmatrix, .false.)
     else
       bisMatrixSorted = .false.
     end if
 
     ! Check if solution vector is sorted?
-    if (rsolution%isortStrategy .gt. 0) then
+    if (rsolution%bisSorted) then
       bisSolutionSorted = .true.
-      call lsyssc_vectorActivateSorting(rsolution,.false.)
+      call lsyssc_sortVector(rsolution,.false.)
     else
       bisSolutionSorted = .false.
     end if
 
     ! Check if defect vector is sorted?
-    if (rdefect%isortStrategy .gt. 0) then
+    if (rdefect%bisSorted) then
       bisDefectSorted = .true.
-      call lsyssc_vectorActivateSorting(rdefect,.false.)
+      call lsyssc_sortVector(rdefect,.false.)
     else
       bisDefectSorted = .false.
     end if
@@ -5119,13 +5119,13 @@ contains
     end select
 
     ! Do we have to re-sort matrix?
-    if (bisMatrixSorted) call lsyssc_sortMatrix(rmatrix,.true.,rmatrix%isortStrategy)
+    if (bisMatrixSorted) call lsyssc_sortMatrix(rmatrix,.true.)
 
     ! Do we have to re-sort solution vector?
-    if (bisSolutionSorted) call lsyssc_vectorActivateSorting(rsolution,.true.)
+    if (bisSolutionSorted) call lsyssc_sortVector(rsolution,.true.)
 
     ! Do we have to re-sort defect vector
-    if (bisDefectSorted) call lsyssc_vectorActivateSorting(rdefect,.true.)
+    if (bisDefectSorted) call lsyssc_sortVector(rdefect,.true.)
 
   contains
 
