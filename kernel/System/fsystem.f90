@@ -105,6 +105,9 @@
 !# 26.) sys_charArrayToString
 !#      -> Converts a character array into a string
 !#
+!# 27.) sys_stringToHash / sys_stringToHashI64
+!#      -> Converts a string to a hash function
+!#
 !# </purpose>
 !##############################################################################
 
@@ -187,6 +190,8 @@ module fsystem
   public :: sys_dequote
   public :: sys_stringToCharArray
   public :: sys_charArrayToString
+  public :: sys_stringToHash
+  public :: sys_stringToHashI64
   public :: t_realPointer
   public :: t_real2DPointer
   public :: t_singlePointer
@@ -2539,5 +2544,109 @@ contains
     end do
 
   end subroutine
+
+!************************************************************************
+
+!<function>
+
+  function sys_stringToHash(svalue, ifold) result(ivalue)
+
+!<description>
+    ! This routine converts a given string into a hash function.
+!</description>
+
+!<input>
+    ! string
+    character(LEN=*), intent(in) :: svalue
+
+    ! folding number
+    integer, intent(in) :: ifold
+!</input>
+
+!<result>
+    ! hash value
+    integer :: ivalue
+!</result>
+!</function>
+    
+    ! local variables
+    integer(I64) :: ihash,imult
+    integer :: strlen,j,k
+    character :: c
+    
+    ! Hash algorithm: folding on a string, summed 4 bytes at a time
+    strlen = len(svalue)/4
+    ihash  = 0_I64
+    do j = 1, strlen
+      imult = 1_I64
+      do k = 1, 4
+        c = svalue(4*(j-1)+k:4*(j-1)+k)
+        ihash = ihash + ichar(c)*imult
+        imult = 256_I64 * imult
+      end do
+    end do
+    
+    imult = 1_I64
+    do k = 1, len(svalue)-4*strlen
+      c = svalue(4*strlen+k:4*strlen+k)
+      ihash = ihash+ichar(c)*imult
+      imult = 256_I64 * imult
+    end do
+    
+    ivalue = mod(ihash,ifold)
+    
+  end function
+
+!************************************************************************
+
+!<function>
+
+  function sys_stringToHashI64(svalue, ifold) result(ivalue)
+
+!<description>
+    ! This routine converts a given string into a hash function.
+!</description>
+
+!<input>
+    ! string
+    character(LEN=*), intent(in) :: svalue
+
+    ! folding number
+    integer(I64), intent(in) :: ifold
+!</input>
+
+!<result>
+    ! hash value
+    integer :: ivalue
+!</result>
+!</function>
+    
+    ! local variables
+    integer(I64) :: ihash,imult
+    integer :: strlen,j,k
+    character :: c
+    
+    ! Hash algorithm: folding on a string, summed 4 bytes at a time
+    strlen = len(svalue)/4
+    ihash  = 0_I64
+    do j = 1, strlen
+      imult = 1_I64
+      do k = 1, 4
+        c = svalue(4*(j-1)+k:4*(j-1)+k)
+        ihash = ihash + ichar(c)*imult
+        imult = 256_I64 * imult
+      end do
+    end do
+    
+    imult = 1_I64
+    do k = 1, len(svalue)-4*strlen
+      c = svalue(4*strlen+k:4*strlen+k)
+      ihash = ihash+ichar(c)*imult
+      imult = 256_I64 * imult
+    end do
+    
+    ivalue = mod(ihash,ifold)
+    
+  end function
 
 end module fsystem
