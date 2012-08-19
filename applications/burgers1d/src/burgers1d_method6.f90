@@ -353,16 +353,16 @@ contains
       call lsyssc_allocEmptyMatrix(p_rmatrix%RmatrixBlock(1,1),LSYSSC_SETM_ONE)
       
       ! Create a sort strategy structure for our discretisation
-      call sstrat_initBlockSorting (rproblem%RlevelInfo(1)%rsortStrategy,p_rdiscretisation)
+      call sstrat_initBlockSorting (rproblem%RlevelInfo(i)%rsortStrategy,p_rdiscretisation)
 
       ! Calculate the resorting strategy.
-      call sstrat_initCuthillMcKee (rproblem%RlevelInfo(1)%rsortStrategy%p_Rstrategies(1),&
+      call sstrat_initCuthillMcKee (rproblem%RlevelInfo(i)%rsortStrategy%p_Rstrategies(1),&
           p_rmatrix%RmatrixBlock(1,1))
 
       ! Attach the sorting strategy to the matrix. Thematrix is not yet sorted.
       call lsysbl_setSortStrategy (p_rmatrix,&
-          rproblem%RlevelInfo(1)%rsortStrategy,&
-          rproblem%RlevelInfo(1)%rsortStrategy)
+          rproblem%RlevelInfo(i)%rsortStrategy,&
+          rproblem%RlevelInfo(i)%rsortStrategy)
 
       ! Now on all levels except for the maximum one, create a temporary
       ! vector on that level, based on the matrix template.
@@ -420,8 +420,8 @@ contains
     ! Install the resorting strategy in the RHS- and the solution
     ! vector, but do not resort them yet!
     ! We resort the vectors just before solving.
-    call lsysbl_setSortStrategy (p_rrhs,rproblem%RlevelInfo(1)%rsortStrategy)
-    call lsysbl_setSortStrategy (p_rvector,rproblem%RlevelInfo(1)%rsortStrategy)
+    call lsysbl_setSortStrategy (p_rrhs,rproblem%RlevelInfo(rproblem%ilvmax)%rsortStrategy)
+    call lsysbl_setSortStrategy (p_rvector,rproblem%RlevelInfo(rproblem%ilvmax)%rsortStrategy)
 
   end subroutine
 
@@ -1287,6 +1287,14 @@ contains
 
     integer :: i
 
+    ! Delete solution/RHS vector
+    call lsysbl_releaseVector (rproblem%rvector)
+    call lsysbl_releaseVector (rproblem%rrhs)
+
+    ! Delete the variables from the collection.
+    call collct_deletevalue (rproblem%rcollection,"RHS")
+    call collct_deletevalue (rproblem%rcollection,"SOLUTION")
+
     ! Release matrices and vectors on all levels
     do i=rproblem%ilvmax,rproblem%ilvmin,-1
       ! Delete the matrix
@@ -1302,18 +1310,10 @@ contains
         call collct_deletevalue(rproblem%rcollection,"RTEMPVEC",i)
       end if
       
+      ! Release the sorting strategy
+      call sstrat_doneBlockSorting (rproblem%RlevelInfo(i)%rsortStrategy)
+
     end do
-
-    ! Delete solution/RHS vector
-    call lsysbl_releaseVector (rproblem%rvector)
-    call lsysbl_releaseVector (rproblem%rrhs)
-
-    ! Release the sorting strategy
-    call sstrat_doneBlockSorting (rproblem%RlevelInfo(1)%rsortStrategy)
-
-    ! Delete the variables from the collection.
-    call collct_deletevalue (rproblem%rcollection,"RHS")
-    call collct_deletevalue (rproblem%rcollection,"SOLUTION")
 
   end subroutine
 
