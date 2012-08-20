@@ -2593,7 +2593,7 @@ contains
       imult = 256_I64 * imult
     end do
     
-    ivalue = mod(ihash,ifold)
+    ivalue = mod(ihash,int(ifold,I64))
     
   end function
 
