@@ -514,14 +514,24 @@ contains
     ! Sorting
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     
+    ! Create a block sorting structure that represents the sorting strategy
+    ! of every block.
     call sstrat_initBlockSorting(rsortStrategy,rdiscretisation)
+    
+    ! Initialise the Cuthill McKee strategy for the first block. Copy it to
+    ! the 2nd block, so both blocks are resorted by Cuthill McKee.
     call sstrat_initCuthillMcKee(rsortStrategy%p_Rstrategies(1),rmatrix%RmatrixBlock(1,1))
     call sstrat_copyStrategy(rsortStrategy%p_Rstrategies(1),rsortStrategy%p_Rstrategies(2))
     
+    ! Attach the sorting strategies to the vectors and the matrix.
+    ! Concerning the matrix, we attach the strategy "twice", i.e.,
+    ! for the columns and the rows.
     call lsysbl_setSortStrategy(rmatrix,rsortStrategy,rsortStrategy)
     call lsysbl_setSortStrategy(rrhs,rsortStrategy)
     call lsysbl_setSortStrategy(rvector,rsortStrategy)
     
+    ! Resort the matrix and the vectors. The routines automatically allocate
+    ! the necessary temporary memory...
     call lsysbl_sortMatrix(rmatrix,.true.)
     call lsysbl_sortVector(rrhs,.true.)
     call lsysbl_sortVector(rvector,.true.)
