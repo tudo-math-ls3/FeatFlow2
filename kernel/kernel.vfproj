@@ -190,6 +190,7 @@
 		<File RelativePath=".\DOFMaintenance\bilinearformevaluation.f90"/>
 		<File RelativePath=".\DOFMaintenance\blockmatassembly.f90"/>
 		<File RelativePath=".\DOFMaintenance\blockmatassemblybase.f90"/>
+		<File RelativePath=".\DOFMaintenance\blockmatassemblystdop.f90"/>
 		<File RelativePath=".\DOFMaintenance\boundaryaux.f90"/>
 		<File RelativePath=".\DOFMaintenance\discretebc.f90"/>
 		<File RelativePath=".\DOFMaintenance\discretefbc.f90"/>
@@ -204,6 +205,7 @@
 		<File RelativePath=".\DOFMaintenance\multileveloperators.f90"/>
 		<File RelativePath=".\DOFMaintenance\multilevelprojection.f90"/>
 		<File RelativePath=".\DOFMaintenance\sortstrategy.f90"/>
+		<File RelativePath=".\DOFMaintenance\sortstrategybase.f90"/>
 		<File RelativePath=".\DOFMaintenance\spatialdiscretisation.f90"/>
 		<File RelativePath=".\DOFMaintenance\trilinearformevaluation.f90"/>
 		<File RelativePath=".\DOFMaintenance\ufci.f90"/>
