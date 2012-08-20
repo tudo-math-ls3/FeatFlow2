@@ -1052,6 +1052,12 @@ module linearsolver
 
   ! SP-SOR solver for 3D Navier-Stokes systems
   integer, parameter, public :: LINSOL_SPSOR_NAVST3D        = 2
+  
+  ! SP-SSOR solver for 2D Navier-Stokes systems
+  integer, parameter, public :: LINSOL_SPSSOR_NAVST2D       = 3
+  
+  ! SP-SSOR solver for 3D Navier-Stokes systems
+  integer, parameter, public :: LINSOL_SPSSOR_NAVST3D       = 4
 
 !</constantblock>
 
@@ -6638,10 +6644,20 @@ contains
       call spsor_initNavSt2D(rsolverNode%p_rsubnodeSPSOR%rdata, &
                              rsolverNode%rsystemMatrix, 0_I32)
 
+    case (LINSOL_SPSSOR_NAVST2D)
+      ! SP-SSOR for 2D Navier-Stokes systems
+      call spsor_initNavSt2D(rsolverNode%p_rsubnodeSPSOR%rdata, &
+                             rsolverNode%rsystemMatrix, SPSOR_FLAG_SYM)
+
     case (LINSOL_SPSOR_NAVST3D)
       ! SP-SOR for 3D Navier-Stokes systems
       call spsor_initNavSt3D(rsolverNode%p_rsubnodeSPSOR%rdata, &
                              rsolverNode%rsystemMatrix, 0_I32)
+
+    case (LINSOL_SPSSOR_NAVST3D)
+      ! SP-SSOR for 3D Navier-Stokes systems
+      call spsor_initNavSt3D(rsolverNode%p_rsubnodeSPSOR%rdata, &
+                             rsolverNode%rsystemMatrix, SPSOR_FLAG_SYM)
 
     case default
       call output_line ("Invalid SP-SOR subtype!", &
