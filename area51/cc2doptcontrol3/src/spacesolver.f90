@@ -1231,7 +1231,8 @@ contains
 !<subroutine>
 
   subroutine spaceslh_solve (rsolver,idofTime,csolgeneration,ceqnflags,rstatistics,&
-      isollevelSpace,rprimalSol,rdualSol,rcontrol,rprimalSolLin,rdualSolLin,rcontrolLin)
+      isollevelSpace,rprimalSol,rdualSol,rcontrol,rintermedcontrol,&
+      rprimalSolLin,rdualSolLin,rcontrolLin)
   
 !<description>
   ! Solves the spatial linear/nonlinear system.
@@ -1267,6 +1268,10 @@ contains
 
   ! Current solution of the control equation
   type(t_controlSpace), intent(inout), optional, target :: rcontrol
+
+  ! Current "intermediate" control, i.e., "u~ = P(-1/alpha lambda)",
+  ! computed from lambda.
+  type(t_controlSpace), intent(inout), optional, target :: rintermedcontrol
 
   ! Current solution of the primal equation. Defines the nonlinearity.
   ! The space level of the solution is specified by isollevelSpace.
@@ -1733,7 +1738,7 @@ contains
       
       call smva_getDef_primalLin (p_rd,&
           rsolver%ispacelevel,rsolver%itimelevel,idofTime,&
-          rsolver%p_roperatorAsmHier,rprimalSol,rcontrol,rprimalSolLin,rcontrolLin,&
+          rsolver%p_roperatorAsmHier,rprimalSol,rintermedControl,rprimalSolLin,rcontrolLin,&
           coptype,&
           rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(rsolver%ispacelevel),&
           rsolver%rtempData,csolgeneration,rtimer)

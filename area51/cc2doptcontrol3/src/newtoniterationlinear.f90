@@ -1509,6 +1509,8 @@ contains
     type(t_kktsystemDirDeriv), pointer :: p_rkktSysRhsCoarse, p_rkktSysSolCoarse, p_rkktSysSolFine
     type(t_kktsystemDirDeriv), pointer :: p_rkktSysSolution, p_rkktSysDefect
     type(t_newtonlinSolverStat) :: rlocalStat
+    type(t_iterationControl), pointer :: p_riter
+    type(t_iterationControl), target :: riterLocal
     
     ! Get multigrid parameters.
     p_rsubnodeMultigrid => rlinsolParam%p_rsubnodeMultigrid
@@ -1548,10 +1550,16 @@ contains
           p_rsubnodeMultigrid%ccycle,nlevels,nlevels,p_rsubnodeMultigrid%p_IcycleCount)
 
       ! On level nlevels, apply as many iterations as configured.
+      p_riter => rlinsolParam%riter
     else
       ! On all the other levels, apply as many iterations as configured in the cycle.
-      rlinsolParam%riter%nminIterations = p_rsubnodeMultigrid%p_IcycleCount(ilevel)
-      rlinsolParam%riter%nmaxIterations = p_rsubnodeMultigrid%p_IcycleCount(ilevel)
+      !
+      ! Get a copy of the iteration control structure and fix the number of
+      ! iterations.
+      riterLocal = rlinsolParam%riter
+      riterLocal%nminIterations = p_rsubnodeMultigrid%p_IcycleCount(ilevel)
+      riterLocal%nmaxIterations = p_rsubnodeMultigrid%p_IcycleCount(ilevel)
+      p_riter => riterLocal
     end if
     
     ! Apply the multigrid iteration
@@ -1566,7 +1574,7 @@ contains
     call kkt_clearDirDeriv (p_rkktSysSolution)
 
     ! Start the iteration
-    call itc_initIteration(rlinsolParam%riter)
+    call itc_initIteration(p_riter)
 
     do
     
@@ -1574,7 +1582,7 @@ contains
         ! On level < nlevels, do not calculate the next residual but
         ! exit immediately if the maximum number of iterations
         ! (= cycle count) is reached.
-        if (rlinsolParam%riter%niterations .ge. rlinsolParam%riter%nmaxIterations) exit
+        if (p_riter%niterations .ge. p_riter%nmaxIterations) exit
       end if
       
       ! Get the residual
@@ -1592,17 +1600,17 @@ contains
       ! Some checks and output on the maximum level
       if (ilevel .eq. nlevels) then
       
-        if (rlinsolParam%riter%cstatus .eq. ITC_STATUS_UNDEFINED) then
+        if (p_riter%cstatus .eq. ITC_STATUS_UNDEFINED) then
           ! Remember the initial residual
-          call itc_initResidual(rlinsolParam%riter,dres)
+          call itc_initResidual(p_riter,dres)
         else
           ! Push the residual, increase the iteration counter
-          call itc_pushResidual(rlinsolParam%riter,dres)
+          call itc_pushResidual(p_riter,dres)
         end if
 
         if (rlinsolParam%rprecParameters%ioutputLevel .ge. 2) then
           call output_line ("Space-time MG: Iteration "// &
-              trim(sys_siL(rlinsolParam%riter%niterations,10))// &
+              trim(sys_siL(p_riter%niterations,10))// &
               ", ||res(u)|| = "// &
               trim(sys_sdEL(dres,10)))
         end if
@@ -1610,12 +1618,12 @@ contains
         ! -------------------------------------------------------------
         ! Check for convergence / divergence / ...
         ! -------------------------------------------------------------
-        if (rlinsolParam%riter%cstatus .ne. ITC_STATUS_CONTINUE) exit
+        if (p_riter%cstatus .ne. ITC_STATUS_CONTINUE) exit
 
       else        
-        if (rlinsolParam%riter%cstatus .eq. ITC_STATUS_UNDEFINED) then
+        if (p_riter%cstatus .eq. ITC_STATUS_UNDEFINED) then
           ! Remember the initial residual
-          call itc_initResidual(rlinsolParam%riter,dres)
+          call itc_initResidual(p_riter,dres)
         end if
       end if
       
@@ -1731,7 +1739,7 @@ contains
 
     end do
     
-    rstatistics%niterations = rstatistics%niterations + rlinsolParam%riter%niterations
+    rstatistics%niterations = rstatistics%niterations + p_riter%niterations
 
     ! Initialise the cycle counter for the next run.
     call MG_initCycles (&

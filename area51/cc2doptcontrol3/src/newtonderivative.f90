@@ -17,7 +17,7 @@
 !#     -> Calculates the Newton derivative of the minmax-Projection
 !#        using an adaptive cubature approach.
 !#
-!# 3.) nwder_minMaxProjByMass
+!# 3.) nwder_minMaxProjByMass / nwder_minMaxProjMassFilter
 !#     -> Calculates the Newton derivative of the minmax-Projection
 !#        using a modification of the mass matrix.
 !#
@@ -68,6 +68,7 @@ module newtonderivative
   public :: nwder_rhsMinMaxProjByCubature
   public :: nwder_rhsMinMaxProjByMass
   public :: nwder_applyMinMaxProjByDof
+  public :: nwder_minMaxProjMassFilter
   
 contains
 
@@ -2928,6 +2929,231 @@ contains
       end if
     
     end subroutine
+
+  end subroutine
+
+! ***************************************************************************
+
+!<subroutine>
+
+  subroutine nwder_minMaxProjMassFilter (rmatrix,&
+      dwFctTest,rfunctionTest,dwMinTest,dwMaxTest,&
+      rfunctionMinTest,rfunctionMaxTest,&
+      dwShift,rfunctionShift)
+  
+!<description>
+  ! Cancels out all rows in the matrix rmatrix with
+  !     dwFctTest*rfunctionTest + dwShift*rfunctionShift > dwmaxTest*rfunctionMaxTest
+  ! or
+  !     dwFctTest*rfunctionTest + dwShift*rfunctionShift < dwminTest*rfunctionMinTest
+  ! If rfunctionMin/rfunctionMax are not specified, they are assumed
+  ! to be =1.
+  ! The operator is added to rvector.
+  ! The calculation is done based on the degrees of freedom in
+  ! rfunction, which corresponds to the operator
+  ! nwder_MinMaxProjByMass.
+  !
+  ! NOTE: This assumes rfunctionMin and rfunctionMax to be
+  ! discretised in the same space as rfunction!
+!</description>
+
+!<input>
+  ! Weight for the function rfunction.
+  real(DP), intent(in) :: dwFctTest
+  
+  ! Weight for the lower bound. If rfunctionMin is not specified,
+  ! this is the lower bound.
+  real(DP), intent(in) :: dwMinTest
+
+  ! Weight for the upper bound. If rfunctionMax is not specified,
+  ! this is the upper bound.
+  real(DP), intent(in) :: dwMaxTest
+  
+  ! An FE function specifying where the projection should be
+  ! applied. Whereever dwFctTest*rfunctionTest Tests the bounds,
+  ! the bounds are assumed.
+  type(t_vectorScalar), intent(in) :: rfunctionTest
+  
+  ! OPTIONAL: Function specifying the lower bound.
+  type(t_vectorScalar), intent(in), optional :: rfunctionMinTest
+
+  ! OPTIONAL: Function specifying the upper bound.
+  type(t_vectorScalar), intent(in), optional :: rfunctionMaxTest
+
+  ! OPTIONAL: Weight for the shift function.
+  ! If not present, =0 is assumed.
+  real(DP), optional :: dwShift
+  
+  ! OPTIONAL: Shift function
+  type(t_vectorScalar), intent(in), optional :: rfunctionShift
+!</input>
+
+!<inputoutput>
+  ! The vector which receives the projection.
+  type(t_matrixScalar), intent(inout) :: rmatrix
+!<inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    real(dp), dimension(:), pointer :: p_Ddata,p_DdataMin,p_DdataMax,p_DdataShift
+    integer, dimension(:), allocatable :: p_Idofs
+    integer :: i,nviolate
+    real(dp) :: du, dushift
+    type(t_matrixScalar), target :: rmassCopy
+    type(t_matrixScalar), pointer :: p_rmatrix
+    
+    ! Get the vector data
+    call lsyssc_getbase_double (rfunctionTest,p_Ddata)
+    
+    ! Lower/upper bound specified?
+    nullify(p_DdataMin)
+    nullify(p_DdataMax)
+    nullify(p_DdataShift)
+    
+    if (present(rfunctionMinTest)) then
+      call lsyssc_getbase_double (rfunctionMinTest,p_DdataMin)
+    end if
+
+    if (present(rfunctionMaxTest)) then
+      call lsyssc_getbase_double (rfunctionMaxTest,p_DdataMax)
+    end if
+
+    ! Shift function =0 by default    
+    dushift = 0.0_DP
+    if (present(dwShift)) then
+      duShift = dwShift
+    end if
+
+    if (present(rfunctionShift)) then
+      call lsyssc_getbase_double (rfunctionShift,p_DdataShift)
+    end if
+
+    
+    ! Figure out the DOF's violating the constraints
+    allocate(p_Idofs(rfunctionTest%NEQ))
+    
+    if (associated(p_DdataShift)) then
+
+      ! We have to take care of 4 cases, depending on which parameters
+      ! are specified.
+      if (associated(p_DdataMin) .and. associated(p_DdataMax)) then
+        
+        ! Both variable bounds specified
+        nviolate = 0
+        do i=1,rfunctionTest%NEQ
+          du = dwFctTest*p_Ddata(i) + duShift*p_DdataShift(i)
+          if ((du .le. dwMinTest*p_DdataMin(i)) .or. (du .ge. dwMaxTest*p_DdataMax(i))) then
+            nviolate = nviolate + 1
+            p_Idofs(nviolate) = i
+          end if
+        end do
+
+      else if (associated(p_DdataMin)) then
+        
+        ! Minimum specified
+        nviolate = 0
+        do i=1,rfunctionTest%NEQ
+          du = dwFctTest*p_Ddata(i) + duShift*p_DdataShift(i)
+          if ((du .le. dwMinTest*p_DdataMin(i)) .or. (du .ge. dwMaxTest)) then
+            nviolate = nviolate + 1
+            p_Idofs(nviolate) = i
+          end if
+        end do
+      
+      else if (associated(p_DdataMax)) then
+      
+        ! Maximum specified
+        nviolate = 0
+        do i=1,rfunctionTest%NEQ
+          du = dwFctTest*p_Ddata(i) + duShift*p_DdataShift(i)
+          if ((du .le. dwMinTest) .or. (du .ge. dwMaxTest*p_DdataMax(i))) then
+            nviolate = nviolate + 1
+            p_Idofs(nviolate) = i
+          end if
+        end do
+      
+      else
+      
+        ! None specified. Constant bounds.
+        nviolate = 0
+        do i=1,rfunctionTest%NEQ
+          du = dwFctTest*p_Ddata(i) + duShift*p_DdataShift(i)
+          if ((du .le. dwMinTest) .or. (du .ge. dwMaxTest)) then
+            nviolate = nviolate + 1
+            p_Idofs(nviolate) = i
+          end if
+        end do
+       
+      end if
+      
+      if (nviolate .gt. 0) then
+        ! Filter the matrix
+        call mmod_replaceLinesByZero (p_rmatrix,p_Idofs(1:nviolate))
+      end if
+      
+    else
+      ! We have to take care of 4 cases, depending on which parameters
+      ! are specified.
+      if (associated(p_DdataMin) .and. associated(p_DdataMax)) then
+        
+        ! Both variable bounds specified
+        nviolate = 0
+        do i=1,rfunctionTest%NEQ
+          du = dwFctTest*p_Ddata(i) + duShift
+          if ((du .le. dwMinTest*p_DdataMin(i)) .or. (du .ge. dwMaxTest*p_DdataMax(i))) then
+            nviolate = nviolate + 1
+            p_Idofs(nviolate) = i
+          end if
+        end do
+
+      else if (associated(p_DdataMin)) then
+        
+        ! Minimum specified
+        nviolate = 0
+        do i=1,rfunctionTest%NEQ
+          du = dwFctTest*p_Ddata(i) + duShift
+          if ((du .le. dwMinTest*p_DdataMin(i)) .or. (du .ge. dwMaxTest)) then
+            nviolate = nviolate + 1
+            p_Idofs(nviolate) = i
+          end if
+        end do
+      
+      else if (associated(p_DdataMax)) then
+      
+        ! Maximum specified
+        nviolate = 0
+        do i=1,rfunctionTest%NEQ
+          du = dwFctTest*p_Ddata(i) + duShift
+          if ((du .le. dwMinTest) .or. (du .ge. dwMaxTest*p_DdataMax(i))) then
+            nviolate = nviolate + 1
+            p_Idofs(nviolate) = i
+          end if
+        end do
+      
+      else
+      
+        ! None specified. Constant bounds.
+        nviolate = 0
+        do i=1,rfunctionTest%NEQ
+          du = dwFctTest*p_Ddata(i) + duShift
+          if ((du .le. dwMinTest) .or. (du .ge. dwMaxTest)) then
+            nviolate = nviolate + 1
+            p_Idofs(nviolate) = i
+          end if
+        end do
+       
+      end if
+      
+      if (nviolate .gt. 0) then
+        ! Filter the matrix
+        call mmod_replaceLinesByZero (rmatrix,p_Idofs(1:nviolate))
+      end if
+      
+    end if
+
+    ! Release memory
+    deallocate(p_Idofs)
 
   end subroutine
 

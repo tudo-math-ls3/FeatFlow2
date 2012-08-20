@@ -41,6 +41,7 @@ module optcanalysis
   use feevaluation2
   use blockmatassemblybase
   use blockmatassembly
+  use blockmatassemblystdop
   use collection
   
   use spacetimevectors

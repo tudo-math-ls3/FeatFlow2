@@ -500,7 +500,7 @@ contains
     call lsysbl_getbase_double (p_rvector,p_Ddata)
 
     ! -------------------------------------------------------------
-    ! Step 1: Solve the primal and dual system.
+    ! Step 1: Solve the primal system
     ! -------------------------------------------------------------
 
     if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
@@ -537,6 +537,10 @@ contains
     ! Add time to the time of the forward equation
     call stat_addTimers (rlocalStat%rtotalTime,rstatistics%rtimeForward)
 
+    ! -------------------------------------------------------------
+    ! Step 2: Solve the dual system
+    ! -------------------------------------------------------------
+
     if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
       call output_line ("Nonlin. space-time Residual: Solving the dual equation")
     end if
@@ -570,6 +574,12 @@ contains
       call output_line ("Nonlin. space-time Residual: Time for space-solver : "//&
           trim(sys_sdL(rlocalStat%rlssSolverStat%rtotalTime%delapsedReal,10)))
     end if
+
+    ! -------------------------------------------------------------
+    ! Step 3: Calculate the intermediate control from the dual
+    ! -------------------------------------------------------------
+    
+    call kkt_calcIntermediateControl (rkktsystem)
 
     ! -------------------------------------------------------------
     ! Step 2: Calculate the search direction   

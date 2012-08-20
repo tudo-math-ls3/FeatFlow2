@@ -50,6 +50,7 @@ module spacematvecassembly
   use structuresoperatorasm
   
   use spatialbc
+  use newtonderivative
   
   use assemblytemplates
   use fespacehierarchybase
@@ -1342,11 +1343,11 @@ contains
 !<subroutine>
 
   subroutine smva_getDef_primalLin (rdest,ispacelevel,itimelevel,idofTime,&
-      roperatorAsmHier,rprimalSol,rcontrol,rprimalSolLin,rcontrolLin,coptype,&
+      roperatorAsmHier,rprimalSol,rintermedControl,rprimalSolLin,rcontrolLin,coptype,&
       roptcBDCSpace,rtempData,csolgeneration,rtimerhs)
   
 !<description>
-  ! Calculates the defect in timestep idofTime of the linearised primaö equation
+  ! Calculates the defect in timestep idofTime of the linearised primal equation
   ! in one DOF in time.
 !</description>
 
@@ -1365,8 +1366,9 @@ contains
   ! ispacelevel and itimelevel.
   type(t_primalSpace), intent(inout) :: rprimalSol
 
-  ! Structure that defines the current control.
-  type(t_controlSpace), intent(inout) :: rcontrol
+  ! Structure that defines the current intermediate control, i.e.,
+  ! "u~ = P(-1/alpha lambda)", computed from lambda.
+  type(t_controlSpace), intent(inout) :: rintermedControl
 
   ! Structure that describes the solution of the linearised primal equation.
   type(t_primalSpace), intent(inout) :: rprimalSolLin
@@ -1560,7 +1562,7 @@ contains
           call stat_startTimer(rtimerhs)
 
           call smva_getRhs_primalLin (roperatorAsm,idofTime,&
-              rcontrol,rcontrolLin,1.0_DP,rdest)
+              rintermedControl,rcontrolLin,1.0_DP,rdest,p_rmatrix)
 
           call stat_stopTimer(rtimerhs)
           
@@ -3324,7 +3326,7 @@ contains
 !<subroutine>
 
   subroutine smva_getRhs_primalLin (rspaceTimeOperatorAsm,idofTime,&
-      rcontrol,rcontrolLin,dweight,rrhs)
+      rintermedControl,rcontrolLin,dweight,rrhs,rtempMatrix)
 
 !<description>
   ! Calculates the RHS of the linearised primal equation, based on a 'current'
@@ -3341,8 +3343,8 @@ contains
   ! Weight for the operator
   real(DP), intent(in) :: dweight
 
-  ! Current control, solution of the control equation.
-  type(t_controlSpace), intent(inout) :: rcontrol
+  ! Current intermediate control, control computed from the last dual solution.
+  type(t_controlSpace), intent(inout) :: rintermedControl
 
   ! Solution of the linearised control equation.
   type(t_controlSpace), intent(inout) :: rcontrolLin
@@ -3351,6 +3353,9 @@ contains
 !<inputoutput>
   ! Block vector receiving the result.
   type(t_vectorBlock), intent(inout) :: rrhs
+  
+  ! Temporary block matrix.
+  type(t_matrixBlock), intent(inout) :: rtempMatrix
 !</inputoutput>
 
 !</subroutine>
@@ -3363,6 +3368,8 @@ contains
     type(t_vectorBlock), pointer :: p_rvector1,p_rvector2
     real(DP) :: dtheta, dtstep, dtime, dtimeend, dtimestart
     type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
+    
+    real(DP) :: dwmin,dwmax,dlocalweight
 
     ! Cancel if nothing to do
     if (dweight .eq. 0.0_DP) return
@@ -3439,8 +3446,12 @@ contains
             ! Add the dual velocity if we have distributed control. Otherwise add dummy
             ! vectors which take no time in being computed.
             if (p_ranalyticData%p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
-              ! Position 1+2 = control
-              call sptivec_getVectorFromPool (rcontrol%p_rvectorAccess,idofTime,p_rvector1)
+
+              ! Position 1+2 = intermediate control.
+              ! Actually "-1/alpha lambda", but with constraints being activated,
+              ! this can also be "P(-1/alpha lambda)".
+              
+              call sptivec_getVectorFromPool (rintermedControl%p_rvectorAccess,idofTime,p_rvector1)
               call fev2_addVectorToEvalList(rvectorEval,p_rvector1%RvectorBlock(1),0)
               call fev2_addVectorToEvalList(rvectorEval,p_rvector1%RvectorBlock(2),0)
 
@@ -3466,6 +3477,57 @@ contains
             call fev2_releaseVectorList(rvectorEval)
             call user_doneCollectForVecAssembly (p_ranalyticData%p_rglobalData,rusercollection)
             
+            ! -----------------------------------
+            ! Special handling if DOF-based constraints
+            ! are active
+            ! -----------------------------------
+            if (p_ranalyticData%p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
+
+              select case (p_ranalyticData%p_rsettingsOptControl%rconstraints%cdistVelConstraints)
+                
+              ! ---------------------------------------------------------
+              ! Box constraints implemented by DOF.
+              ! ---------------------------------------------------------
+              case (1)
+              
+                ! In this case, the constraints are implemented by a modified
+                ! matrix-vector multiplication. We have to create a matrix
+                !    M~ = DP(-1/alpha lambda)
+                ! which is the standard mass matrix, but the rows with the corresponding
+                ! DOFs violating the bounds replaced by zero. these are those DOFs
+                ! in the intermediate control which match the min/max value of the
+                ! bounds exactly.
+                
+                ! Get the mass matrix.
+                call lsyssc_clearMatrix (rtempMatrix%RmatrixBlock(1,1))
+                call lsyssc_clearMatrix (rtempMatrix%RmatrixBlock(2,2))
+                call smva_getMassMatrix (rspaceTimeOperatorAsm,rtempMatrix,1.0_DP)
+                
+                ! Set up a modified mass matrix.
+                ! Use p_rvector1 from above -- it is still valid!
+                dwmin = p_ranalyticData%p_rsettingsOptControl%rconstraints%ddistVelUmin1
+                dwmax = p_ranalyticData%p_rsettingsOptControl%rconstraints%ddistVelUmax1
+                call nwder_minMaxProjMassFilter (rtempMatrix%RmatrixBlock(1,1),&
+                    1.0_DP,p_rvector1%RvectorBlock(1),dwmin,dwmax)
+
+                dwmin = p_ranalyticData%p_rsettingsOptControl%rconstraints%ddistVelUmin2
+                dwmax = p_ranalyticData%p_rsettingsOptControl%rconstraints%ddistVelUmax2
+                call nwder_minMaxProjMassFilter (rtempMatrix%RmatrixBlock(2,2),&
+                    1.0_DP,p_rvector1%RvectorBlock(2),dwmin,dwmax)
+                    
+                ! Multiply the lineraised control by the mass matrix, this
+                ! gives the rhs: rrhs = rrhs + M~ duLin
+                dlocalweight = dweight * p_ranalyticData%p_rdebugFlags%dprimalDualCoupling
+
+                call lsyssc_scalarMatVec (rtempMatrix%RmatrixBlock(1,1), &
+                    p_rvector2%Rvectorblock(1), rrhs%RvectorBlock(1), dlocalweight, 1.0_DP)
+                call lsyssc_scalarMatVec (rtempMatrix%RmatrixBlock(2,2), &
+                    p_rvector2%Rvectorblock(2), rrhs%RvectorBlock(2), dlocalweight, 1.0_DP)
+                
+              end select
+
+            end if
+
           end if
           
         ! ***********************************************************
@@ -3488,8 +3550,8 @@ contains
             ! Add the dual velocity if we have distributed control. Otherwise add dummy
             ! vectors which take no time in being computed.
             if (p_ranalyticData%p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
-              ! Position 1 = control
-              call sptivec_getVectorFromPool (rcontrol%p_rvectorAccess,idofTime,p_rvector1)
+              ! Position 1 = (intermediate) control
+              call sptivec_getVectorFromPool (rintermedControl%p_rvectorAccess,idofTime,p_rvector1)
               call fev2_addVectorToEvalList(rvectorEval,p_rvector1%RvectorBlock(1),0)
 
               ! Position 2 = update for the control
@@ -3511,6 +3573,52 @@ contains
             call fev2_releaseVectorList(rvectorEval)
             call user_doneCollectForVecAssembly (p_ranalyticData%p_rglobalData,rusercollection)
             
+            ! -----------------------------------
+            ! Special handling if DOF-based constraints
+            ! are active
+            ! -----------------------------------
+            if (p_ranalyticData%p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
+
+              select case (p_ranalyticData%p_rsettingsOptControl%rconstraints%cdistVelConstraints)
+                
+              ! ---------------------------------------------------------
+              ! Box constraints implemented by DOF.
+              ! ---------------------------------------------------------
+              case (1)
+              
+                ! In this case, the constraints are implemented by a modified
+                ! matrix-vector multiplication. We have to create a matrix
+                !    M~ = DP(-1/alpha lambda)
+                ! which is the standard mass matrix, but the rows with the corresponding
+                ! DOFs violating the bounds replaced by zero. these are those DOFs
+                ! in the intermediate control which match the min/max value of the
+                ! bounds exactly.
+                
+                ! Get the mass matrix.
+                call lsyssc_clearMatrix (rtempMatrix%RmatrixBlock(1,1))
+                
+                call smva_getMassMatrix (rspaceTimeOperatorAsm,rtempMatrix,1.0_DP)
+
+                ! Set up a modified mass matrix.
+                ! Use p_rvector1 from above -- it is still valid!
+                dwmin = p_ranalyticData%p_rsettingsOptControl%rconstraints%ddistVelUmin1
+                dwmax = p_ranalyticData%p_rsettingsOptControl%rconstraints%ddistVelUmax1
+                call nwder_minMaxProjMassFilter (rtempMatrix%RmatrixBlock(1,1),&
+                    1.0_DP,p_rvector1%RvectorBlock(1),dwmin,dwmax)
+
+                ! Multiply the lineraised control by the mass matrix, this
+                ! gives the rhs: rrhs = rrhs + M~ duLin
+                dlocalweight = dweight * p_ranalyticData%p_rdebugFlags%dprimalDualCoupling
+
+                call lsyssc_scalarMatVec (rtempMatrix%RmatrixBlock(1,1), &
+                    p_rvector2%Rvectorblock(1), rrhs%RvectorBlock(1), dlocalweight, 1.0_DP)
+                
+                call lsysbl_releaseMatrix (rtempMatrix)
+                
+              end select
+
+            end if
+
           end if
 
         end select ! Equation
@@ -4339,7 +4447,7 @@ contains
         dweight2 = dweight * &
             p_rspaceTimeOperatorAsm%p_ranalyticData%p_rdebugFlags%dprimalDualCoupling
 
-        if (dalpha .gt. 0.0_DP) then
+        if (dalpha .ge. 0.0_DP) then
 
           ! Get the nonlinearity lambda and its current linearisation LambdaLin=lambda'
           p_Du1 => revalVectors%p_RvectorData(1)%p_Ddata(:,:,:)
@@ -4361,7 +4469,7 @@ contains
           select case (p_ranalyticData%p_rsettingsOptControl%rconstraints%cdistVelConstraints)
             
           ! ---------------------------------------------------------
-          ! No constraints
+          ! No constraints,
           ! ---------------------------------------------------------
           case (0)
             
@@ -4397,11 +4505,19 @@ contains
               end do ! icubp
             
             end do ! iel
-            
+
           ! ---------------------------------------------------------
-          ! Constant box constraints
+          ! Box constraints implemented by DOF.
           ! ---------------------------------------------------------
           case (1)
+            ! Nothing to do here!
+            ! This case is implemented by a matrix-vector multiplication
+            ! with a modified mass matrix in the caller.
+
+          ! ---------------------------------------------------------
+          ! Constant box constraints implemented by cubature point.
+          ! ---------------------------------------------------------
+          case (2)
             
             ! Get the box constraints
             dumin1 = p_ranalyticData%p_rsettingsOptControl%rconstraints%ddistVelUmin1
@@ -5217,7 +5333,7 @@ contains
         dweight2 = dweight * &
             p_rspaceTimeOperatorAsm%p_ranalyticData%p_rdebugFlags%dprimalDualCoupling
 
-        if (dalpha .gt. 0.0_DP) then
+        if (dalpha .ge. 0.0_DP) then
 
           ! Get the nonlinearity lambda and its current linearisation LambdaLin=lambda'
           p_Du1 => revalVectors%p_RvectorData(1)%p_Ddata(:,:,:)

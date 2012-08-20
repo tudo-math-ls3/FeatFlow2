@@ -70,6 +70,11 @@ module kktsystem
     ! Solution of the control equation of the KKT system.
     type(t_controlSpace), pointer :: p_rcontrol => null()
 
+    ! "Intermediate" control. This is a control-like vector
+    !    u~ = -1/alpha lambda
+    ! computed from the dual solution lambda.
+    type(t_controlSpace), pointer :: p_rintermedControl => null()
+
     ! Underlying space-time operator assembly hierarchy
     ! specifying all possible space and time discretisations / levels.
     type(t_spacetimeOpAsmHierarchy), pointer :: p_roperatorAsmHier => null()
@@ -138,9 +143,12 @@ module kktsystem
   ! Solve the dual equation
   public :: kkt_solveDual
 
+  ! Calculate the intermediate control from a control
+  public :: kkt_calcIntermediateControl
+
   ! Calculate the control from the solution of the primal/dual equation
   public :: kkt_dualToControl
-
+  
   ! Calculate the residual of the control equation(s)
   public :: kkt_calcControlRes
 
@@ -227,6 +235,10 @@ contains
     allocate (rkktsystem%p_rcontrol)
     call kktsp_initControlVector (rkktsystem%p_rcontrol,&
         roperatorAsm%p_rspaceDiscrControl,roperatorAsm%p_rtimeDiscrControl)
+  
+    allocate (rkktsystem%p_rintermedControl)
+    call kktsp_initControlVector (rkktsystem%p_rintermedControl,&
+        roperatorAsm%p_rspaceDiscrControl,roperatorAsm%p_rtimeDiscrControl)
    
   end subroutine
 
@@ -256,6 +268,9 @@ contains
 
     call kktsp_doneDualVector (rkktsystem%p_rdualSol)
     deallocate (rkktsystem%p_rdualSol)
+
+    call kktsp_doneControlVector (rkktsystem%p_rintermedControl)
+    deallocate (rkktsystem%p_rintermedControl)
 
     call kktsp_doneControlVector (rkktsystem%p_rcontrol)
     deallocate (rkktsystem%p_rcontrol)
@@ -618,7 +633,7 @@ contains
 
           call sptivec_getVectorFromPool (&
               rcontrol%p_rvectorAccess,istep,p_rcontrolSpace)
-              
+
           ! icomp counts the component in the control
           icomp = 0
           
@@ -666,7 +681,7 @@ contains
                     -1.0_DP/p_rsettingsOptControl%dalphaC,0.0_DP)
 
               ! ----------------------------------------------------------
-              ! Box constraints
+              ! Box constraints, implemented by DOF
               ! ----------------------------------------------------------
               case (1)
               
@@ -688,6 +703,7 @@ contains
                   dweight = -1.0_DP/p_rsettingsOptControl%dalphaC
                 end if
                 
+                ! Create the "restricted" control.
                 dwmin = p_rsettingsOptControl%rconstraints%ddistVelUmin1
                 dwmax = p_rsettingsOptControl%rconstraints%ddistVelUmax1
                 icomp = icomp + 1
@@ -709,7 +725,7 @@ contains
                       p_rsettingsOptControl%dalphaC*dwmax,&
                     dweight,p_rdualSpace%RvectorBlock(icomp),&
                     dwmin,dwmax)
-                
+
               case default          
                 call output_line("Unknown constraints",&
                     OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControl")
@@ -776,7 +792,7 @@ contains
                 if (p_rsettingsOptControl%dalphaC .gt. 0.0_DP) then
                   dweight = -1.0_DP/p_rsettingsOptControl%dalphaC
                 end if
-                
+              
                 dwmin = p_rsettingsOptControl%rconstraints%ddistVelUmin1
                 dwmax = p_rsettingsOptControl%rconstraints%ddistVelUmax1
                 icomp = icomp + 1
@@ -808,6 +824,36 @@ contains
     
     end select    
     
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine kkt_calcIntermediateControl (rkktsystem)
+  
+!<description>
+  ! Calculates the intermediate control
+  !    u~ = P(-1/alpha lambda)
+  ! from the dual solution lamnda
+!</description>
+  
+!<inputoutput>
+  ! Structure defining the KKT system.
+  ! The control, primal and dual variable in this structure are used to
+  ! calculate the residual.
+  type(t_kktsystem), intent(inout), target :: rkktsystem
+!</inputoutput>
+
+!</subroutine>
+
+    ! Just call the "dual2control" routine to calculate a new control 
+    !
+    !      rresidual = P ( -1/alpha [B'(u)]* lambda )
+    !
+    ! from the primal/dual variables in rkktsystem.
+    call kkt_dualToControl (rkktsystem,rkktsystem%p_rintermedControl)
+
   end subroutine
 
   ! ***************************************************************************
@@ -853,12 +899,13 @@ contains
     !
     !   d  =  -J'(u)  =  -u + P ( -1/alpha [B'(u)]* lambda ) 
     !
-    ! We call kkt_dualToControl to calculate a new control 
+    ! The new control 
     !
     !      rresidual = P ( -1/alpha [B'(u)]* lambda )
     !
-    ! from the primal/dual variables in rkktsystem.
-    call kkt_dualToControl (rkktsystem,rresidual)
+    ! is already present as "intermediate control" in rkktsystem.
+    ! Transfer it to rresidual.
+    call kktsp_controlCopy (rkktsystem%p_rintermedControl,rresidual)
     
     ! Add -u:   rresidual = rresidual - u
     ! Calculate the norm of the residual.
@@ -949,7 +996,7 @@ contains
       call spaceslh_solve (rspaceSolver,idofTime,cspatialInitCondPolicy,&
           ceqnflags,rstatLocal,p_rkktsystem%ispacelevel,&
           p_rkktsystem%p_rprimalSol,&
-          rcontrol=p_rkktsystem%p_rcontrol,&
+          rintermedControl=p_rkktsystem%p_rintermedControl,&
           rprimalSolLin=rkktsystemDirDeriv%p_rprimalSolLin,&
           rcontrolLin=rkktsystemDirDeriv%p_rcontrolLin)
       output_iautoOutputIndent = output_iautoOutputIndent - 2
