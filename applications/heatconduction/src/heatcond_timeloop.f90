@@ -141,7 +141,7 @@ contains
     p_rrhs    => rproblem%rrhs
     
     ! Create a temporary vector we need for some preparations.
-    call lsysbl_createVecBlockIndirect (p_rrhs, rtempBlock, .false.)
+    call lsysbl_createVectorBlock (p_rrhs, rtempBlock, .false.)
     
     ! Set up w_2*N(u_n) + w_4*f_n.
     

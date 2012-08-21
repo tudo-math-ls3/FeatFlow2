@@ -8,7 +8,7 @@
 !# problem. The following routines can be found here:
 !#
 !# 1.) hc5_initMatVec
-!#     -> Allocate memory for matrices/vectors, generate 'static' matrices that
+!#     -> Allocate memory for matrices/vectors, generate "static" matrices that
 !#        do not change in time.
 !#
 !# 2.) hc5_calcRHS
@@ -133,19 +133,19 @@ contains
     rform%BconstantCoeff = .true.
     
     ! get the coefficients from the parameter list
-    call parlst_getvalue_string (rparams, 'EQUATION', 'ALPHA11', Sstr, '1.0')
+    call parlst_getvalue_string (rparams, "EQUATION", "ALPHA11", Sstr, "1.0")
     read(Sstr,*) alpha11
-    call parlst_getvalue_string (rparams, 'EQUATION', 'ALPHA12', Sstr, '0.0')
+    call parlst_getvalue_string (rparams, "EQUATION", "ALPHA12", Sstr, "0.0")
     read(Sstr,*) alpha12
-    call parlst_getvalue_string (rparams, 'EQUATION', 'ALPHA21', Sstr, '0.0')
+    call parlst_getvalue_string (rparams, "EQUATION", "ALPHA21", Sstr, "0.0")
     read(Sstr,*) alpha21
-    call parlst_getvalue_string (rparams, 'EQUATION', 'ALPHA22', Sstr, '1.0')
+    call parlst_getvalue_string (rparams, "EQUATION", "ALPHA22", Sstr, "1.0")
     read(Sstr,*) alpha22
-    call parlst_getvalue_string (rparams, 'EQUATION', 'BETA1', Sstr, '0.0')
+    call parlst_getvalue_string (rparams, "EQUATION", "BETA1", Sstr, "0.0")
     read(Sstr,*) beta1
-    call parlst_getvalue_string (rparams, 'EQUATION', 'BETA2', Sstr, '0.0')
+    call parlst_getvalue_string (rparams, "EQUATION", "BETA2", Sstr, "0.0")
     read(Sstr,*) beta2
-    call parlst_getvalue_string (rparams, 'EQUATION', 'GAMMA', Sstr, '0.0')
+    call parlst_getvalue_string (rparams, "EQUATION", "GAMMA", Sstr, "0.0")
     read(Sstr,*) gamma
     
     rform%Dcoefficients(1)  = alpha11
@@ -186,7 +186,7 @@ contains
 
       ! Save matrix and vectors to the collection.
       ! They maybe used later, expecially in nonlinear problems.
-      call collct_setvalue_mat(rproblem%rcollection,'LAPLACE',p_rmatrixStatic,.true.,i)
+      call collct_setvalue_mat(rproblem%rcollection,"LAPLACE",p_rmatrixStatic,.true.,i)
 
       ! Now as the discretisation is set up, we can start to generate
       ! the structure of the system matrix which is to solve.
@@ -220,7 +220,7 @@ contains
 
       ! Save matrix and vectors to the collection.
       ! They maybe used later, expecially in nonlinear problems.
-      call collct_setvalue_mat(rproblem%rcollection,'MASS',p_rmatrixMass,.true.,i)
+      call collct_setvalue_mat(rproblem%rcollection,"MASS",p_rmatrixMass,.true.,i)
       
       ! The structure of the mass matrix is the same as the system matrix.
       ! Initialise the structure as "shared" with the system matrix.
@@ -243,7 +243,7 @@ contains
 
       ! Save matrix and vectors to the collection.
       ! They maybe used later, expecially in nonlinear problems.
-      call collct_setvalue_mat(rproblem%rcollection,'SYSTEM',p_rmatrix,.true.,i)
+      call collct_setvalue_mat(rproblem%rcollection,"SYSTEM",p_rmatrix,.true.,i)
       
       ! The structure of the mass matrix is the same as the system matrix.
       ! Initialise the structure as "shared" with the static matrix.
@@ -261,7 +261,7 @@ contains
 
     ! Save the solution/RHS vector to the collection. Might be used
     ! later (e.g. in nonlinear problems)
-    call collct_setvalue_vec(rproblem%rcollection,'RHS',p_rrhs,.true.)
+    call collct_setvalue_vec(rproblem%rcollection,"RHS",p_rrhs,.true.)
 
     ! Reserve memory for all the vectors on the finest level.
     p_rdiscretisation => rproblem%RlevelInfo(rproblem%ilvmax)%p_rdiscretisation
@@ -298,13 +298,17 @@ contains
           rproblem%RlevelInfo(i)%rsortStrategy,&
           rproblem%RlevelInfo(i)%rsortStrategy)
 
-      ! Resort the matrices
-      call lsysbl_sortMatrix (p_rmatrixStatic,.true.)
-      call lsysbl_sortMatrix (p_rmatrixMass,.true.)
-      
+      ! Resort the system- and the mass matrices
       ! For the system matrix, we only resort the structure.
       ! The entries are not sorted, they are undefined anyway.
+      call lsysbl_sortMatrix (p_rmatrixMass,.true.)
       call lsysbl_sortMatrix (p_rmatrix,.true.,.false.)
+
+      ! Finally, sort the Laplace matrix.
+      ! Be aware that this matrix is the "owner" of the structure, i.e.,
+      ! it has to be sorted after the other matrices. Otherwise,
+      ! The other matrices would try to resort an already resorted structure!
+      call lsysbl_sortMatrix (p_rmatrixStatic,.true.)
       
     end do
 
@@ -346,7 +350,7 @@ contains
     ! Also set Dquickaccess (1) to the simulation time for faster access by the
     ! callback routine.
     rproblem%rcollection%Dquickaccess (1) = rproblem%rtimedependence%dtime
-    call collct_setvalue_real(rproblem%rcollection,'TIME',&
+    call collct_setvalue_real(rproblem%rcollection,"TIME",&
          rproblem%rtimedependence%dtime,.true.)
 
     ! The vector structure is done but the entries are missing.
@@ -372,7 +376,7 @@ contains
         coeff_RHS,rproblem%rcollection)
     
     ! Remove the "TIME"-parameter from the collection again.
-    call collct_deletevalue (rproblem%rcollection,'TIME')
+    call collct_deletevalue (rproblem%rcollection,"TIME")
     
   end subroutine
 
@@ -399,15 +403,15 @@ contains
     call lsysbl_releaseVector (rproblem%rrhs)
 
     ! Delete the variables from the collection.
-    call collct_deletevalue (rproblem%rcollection,'RHS')
+    call collct_deletevalue (rproblem%rcollection,"RHS")
 
     ! Release matrices and vectors on all levels
     do i=rproblem%ilvmax,rproblem%ilvmin,-1
 
       ! Delete the variables from the collection.
-      call collct_deletevalue (rproblem%rcollection,'SYSTEM',i)
-      call collct_deletevalue (rproblem%rcollection,'LAPLACE',i)
-      call collct_deletevalue (rproblem%rcollection,'MASS',i)
+      call collct_deletevalue (rproblem%rcollection,"SYSTEM",i)
+      call collct_deletevalue (rproblem%rcollection,"LAPLACE",i)
+      call collct_deletevalue (rproblem%rcollection,"MASS",i)
 
       ! Delete the system matrix
       call lsysbl_releaseMatrix (rproblem%RlevelInfo(i)%rmatrix)
