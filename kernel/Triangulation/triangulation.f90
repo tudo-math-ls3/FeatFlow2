@@ -768,8 +768,6 @@ module triangulation
 
 !<constantblock description="Neighbourhood specifiers for tria_getSubmeshNeighbourhood.">
 
-!</constantblock>
-
   ! All elements adjacent by vertices.
   integer(i32), parameter, public :: TRI_NEIGH_VERTEXNEIGHBOURS         = 2**0
 
@@ -783,6 +781,20 @@ module triangulation
   integer(i32), parameter, public :: TRI_NEIGH_ALL = TRI_NEIGH_VERTEXNEIGHBOURS + &
                                                      TRI_NEIGH_EDGENEIGHBOURS + &
                                                      TRI_NEIGH_FACENEIGHBOURS
+!</constantblock>
+
+!<constantblock description="Strategies for refining a quadrilateral into triangles.">
+
+  ! Do not convert quadrilaterals into triangles
+  integer, parameter, public :: TRI_CONVERT_NONE     = 0
+
+  ! Convert quadrilateral into two triangles
+  integer, parameter, public :: TRI_CONVERT_QUAD2TRI = 1
+
+  ! Convert quadrilateral into four triangles
+  integer, parameter, public :: TRI_CONVERT_QUAD4TRI = 2
+
+!</constantblock>
 
 !</constants>
 
@@ -10768,7 +10780,7 @@ contains
 
     nve = rtriangulation%NNVE
 
-    rtriangulation%NNEE  = rtriangulation%NNVE
+    rtriangulation%NNEE = rtriangulation%NNVE
 
     ! Comment: 'DCORVG'
     read (iunit,*)
@@ -11058,7 +11070,7 @@ contains
 
 !<subroutine>
 
-  subroutine tria_rawGridToTri (rtriangulation)
+  subroutine tria_rawGridToTri (rtriangulation, cstrategy)
 
 !<description>
   ! This routine converts a 2D 'raw' mesh into a triangular 2D mesh.
@@ -11073,6 +11085,13 @@ contains
   !  again.
 !</description>
 
+!<input>
+  ! OPTIONAL: defines the refinement strategy if present
+  ! If not present, then conversion is performed by the default
+  ! TRI_CONVERT_QUAD2TRI strategy.
+    integer, intent(in), optional :: cstrategy
+!</input>
+
 !<inputoutput>
   ! The triangulation structure to be converted.
   ! Is replaced by a triangular mesh.
@@ -11081,11 +11100,18 @@ contains
 
 !</subroutine>
 
-    integer :: icount
+    real(DP), dimension(:,:), pointer :: p_DvertexCoords
+    real(DP), dimension(:,:), pointer :: p_DvertexCoordsTri
+    integer :: icount,cstrat
+    integer :: h_IverticesAtElementTri,h_DvertexCoordsTri,h_InodalPropertyTri
+    integer, dimension(:), pointer :: p_InodalProperty
+    integer, dimension(:), pointer :: p_InodalPropertyTri
     integer, dimension(:,:), pointer :: p_IverticesAtElement
-    integer :: h_IverticesAtElementTri
     integer, dimension(:,:), pointer :: p_IverticesAtElementTri
     integer, dimension(2) :: Isize
+
+    cstrat = TRI_CONVERT_QUAD2TRI
+    if (present(cstrategy)) cstrat = cstrategy
 
     ! For this routine we currently assume that there are only triangles
     ! and quads in the triangulation. Might be a matter of change in
@@ -11100,30 +11126,93 @@ contains
     ! Check if quadrilaterals exists at all
     if (icount .eq. 0) return
 
-    ! Create a new p_IverticesAtElement array for the triangular mesh.
-    Isize = (/TRIA_NVETRI2D,icount+rtriangulation%NEL/)
-    call storage_new ('tria_quadToTri', 'KVERTTRI', Isize, ST_INT, &
-        h_IverticesAtElementTri,ST_NEWBLOCK_NOINIT)
-    call storage_getbase_int2d (h_IverticesAtElementTri,p_IverticesAtElementTri)
+    ! What kind of conversion strategy are we?
+    select case(cstrat)
 
-    ! Convert the array
-    call convert_QuadToTria (&
-        rtriangulation%NEL, icount,&
-        p_IverticesAtElement, p_IverticesAtElementTri)
+    case (TRI_CONVERT_NONE)
+      ! No conversion is performed
+      return
 
-    ! Replace the old array by the new, release the old one.
-    call storage_free (rtriangulation%h_IverticesAtElement)
-    rtriangulation%h_IverticesAtElement = h_IverticesAtElementTri
+    case (TRI_CONVERT_QUAD2TRI)
+      ! Convert each quadrilateral into two triangles
 
-    ! Finally, set up NEL and InelOfType.
-    ! Every quad got two triangles, so the number of elements increases by the number
-    ! of quads!
-    rtriangulation%NEL = rtriangulation%NEL + icount
-    rtriangulation%InelOfType(:) = 0
-    rtriangulation%InelOfType(TRIA_NVETRI2D) = rtriangulation%NEL
-    rtriangulation%nnve = 3
-    rtriangulation%NNEE = 3
+      ! Create a new p_IverticesAtElement array for the triangular mesh.
+      Isize = (/TRIA_NVETRI2D,icount+rtriangulation%NEL/)
+      call storage_new ('tria_rawGridToTri', 'KVERTTRI', Isize, ST_INT, &
+          h_IverticesAtElementTri,ST_NEWBLOCK_NOINIT)
+      call storage_getbase_int2d (h_IverticesAtElementTri,p_IverticesAtElementTri)
+      
+      ! Convert the array
+      call convert_Quad2Tria (&
+          rtriangulation%NEL, icount,&
+          p_IverticesAtElement, p_IverticesAtElementTri)
+      
+      ! Replace the old array by the new, release the old one.
+      call storage_free (rtriangulation%h_IverticesAtElement)
+      rtriangulation%h_IverticesAtElement = h_IverticesAtElementTri
+      
+      ! Finally, set up NEL and InelOfType.
+      ! Every quad got two triangles, so the number of elements
+      ! increases by the number of quads!
+      rtriangulation%NEL = rtriangulation%NEL + icount
+      rtriangulation%InelOfType(:) = 0
+      rtriangulation%InelOfType(TRIA_NVETRI2D) = rtriangulation%NEL
+      rtriangulation%nnve = 3
+      rtriangulation%NNEE = 3
 
+    case (TRI_CONVERT_QUAD4TRI)
+      ! Convert each quadrilateral into two triangles
+      
+      ! Create a new p_IverticesAtElement array for the triangular mesh.
+      Isize = (/TRIA_NVETRI2D,3*icount+rtriangulation%NEL/)
+      call storage_new ('tria_rawGridToTri', 'KVERTTRI', Isize, ST_INT, &
+          h_IverticesAtElementTri,ST_NEWBLOCK_NOINIT)
+      call storage_getbase_int2d (h_IverticesAtElementTri,p_IverticesAtElementTri)
+
+      ! Create a new p_InodalProperty array for the triangulat mesh.
+      call storage_new ('tria_rawGridToTri', 'KNPRTRI', icount+rtriangulation%NVT, &
+          ST_INT, h_InodalPropertyTri,ST_NEWBLOCK_NOINIT)
+      call storage_getbase_int(h_InodalPropertyTri,p_InodalPropertyTri)
+      call storage_getbase_int(rtriangulation%h_InodalProperty,p_InodalProperty)
+      
+      ! Create a new p_DvertexCoords array for the triangular mesh.
+      Isize = (/NDIM2D, icount+rtriangulation%NVT/)
+      call storage_new ('tria_rawGridToTri', 'DCORVG', Isize, ST_DOUBLE, &
+          h_DvertexCoordsTri,ST_NEWBLOCK_NOINIT)
+      call storage_getbase_double2d (h_DvertexCoordsTri, p_DvertexCoordsTri)
+      call storage_getbase_double2d (rtriangulation%h_DvertexCoords, p_DvertexCoords)
+            
+      ! Convert the array
+      call convert_Quad4Tria (&
+          rtriangulation%NEL, icount, rtriangulation%NVT,&
+          p_IverticesAtElement, p_IverticesAtElementTri,&
+          p_InodalProperty, p_InodalPropertyTri,&
+          p_DvertexCoords, p_DvertexCoordsTri)
+      
+      ! Replace the old array by the new, release the old one.
+      call storage_free (rtriangulation%h_IverticesAtElement)
+      call storage_free (rtriangulation%h_InodalProperty)
+      call storage_free (rtriangulation%h_DvertexCoords)
+      rtriangulation%h_IverticesAtElement = h_IverticesAtElementTri
+      rtriangulation%h_InodalProperty     = h_InodalPropertyTri
+      rtriangulation%h_DvertexCoords      = h_DvertexCoordsTri
+      
+      ! Finally, set up NEL and InelOfType.
+      ! Every quad got four triangles, so the number of elements
+      ! increases by three times the number of quads!
+      rtriangulation%NEL = rtriangulation%NEL + 3*icount
+      rtriangulation%NVT = rtriangulation%NVT + icount
+      rtriangulation%InelOfType(:) = 0
+      rtriangulation%InelOfType(TRIA_NVETRI2D) = rtriangulation%NEL
+      rtriangulation%nnve = 3
+      rtriangulation%NNEE = 3
+
+    case default
+      call output_line ('Invalid conversion strategy!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_rawGridToTri')
+      call sys_halt()
+    end select
+    
     ! If the mesh is an extended raw mesh, regenerate extended raw mesh
     ! information.
     if (rtriangulation%h_IelementsAtVertexIdx .ne. ST_NOHANDLE) then
@@ -11131,14 +11220,14 @@ contains
       call tria_resetToRaw(rtriangulation,.false.)
       call tria_initExtendedRawMesh (rtriangulation)
     end if
-
+    
     ! That is it.
-
+    
   contains
-
+    
   !<subroutine>
 
-    subroutine convert_QuadToTria (nel, nelquad, IverticesAtElement, Kvert_triang)
+    subroutine convert_Quad2Tria (nel, nelquad, IverticesAtElement, IverticesAtElementTri)
 
   !<description>
     ! Purpose: Convert mixed quad/tri mesh to triangular mesh
@@ -11162,7 +11251,7 @@ contains
   !<output>
     ! KVERT structure of the tri mesh
     ! array [1..4,1..nel+nelquad] of integer
-    integer, dimension(:,:), intent(out)  :: Kvert_triang
+    integer, dimension(:,:), intent(out)  :: IverticesAtElementTri
   !</output>
 
   !</subroutine>
@@ -11173,10 +11262,10 @@ contains
       j = nel
       do i=1,nel
         ! Copy the first three entries of each IverticesAtElement subarray
-        ! to the first half of Kvert_triang. They form NEL quads.
-        Kvert_triang(1,i) = IverticesAtElement(1,i)
-        Kvert_triang(2,i) = IverticesAtElement(2,i)
-        Kvert_triang(3,i) = IverticesAtElement(3,i)
+        ! to the first half of IverticesAtElementTri. They form NEL quads.
+        IverticesAtElementTri(1,i) = IverticesAtElement(1,i)
+        IverticesAtElementTri(2,i) = IverticesAtElement(2,i)
+        IverticesAtElementTri(3,i) = IverticesAtElement(3,i)
 
         ! For every quad we find, we produce a second triangle with triangle
         ! number NEL+1,...
@@ -11186,16 +11275,155 @@ contains
           j = j+1
 
           ! The second triangle in each quad consists of vertices 1,3,4.
-          Kvert_triang(1,j) = IverticesAtElement(1,i)
-          Kvert_triang(2,j) = IverticesAtElement(3,i)
-          Kvert_triang(3,j) = IverticesAtElement(4,i)
+          IverticesAtElementTri(1,j) = IverticesAtElement(1,i)
+          IverticesAtElementTri(2,j) = IverticesAtElement(3,i)
+          IverticesAtElementTri(3,j) = IverticesAtElement(4,i)
 
         end if
       end do
 
       ! That is it.
 
-    end subroutine convert_QuadToTria
+    end subroutine convert_Quad2Tria
+
+  !<subroutine>
+
+    subroutine convert_Quad4Tria (nel, nelquad, nvt,&
+                                  IverticesAtElement, IverticesAtElementTri,&
+                                  InodalProperty, InodalPropertyTri,&
+                                  DvertexCoords, DvertexCoordsTri)
+
+  !<description>
+    ! Purpose: Convert mixed quad/tri mesh to triangular mesh
+    !
+    ! This routine creates a triangular KVERT structure from a
+    ! quadrilateral KVERT structure.
+  !</description>
+
+  !<input>
+    ! Number of elements in the old grid
+    integer,intent(in) :: nel
+
+    ! Number of quads in the old grid
+    integer,intent(in) :: nelquad
+
+    ! Number of vertices in the old grid
+    integer,intent(in) :: nvt
+
+    ! KVERT structure of the old mesh
+    ! array [1..4,1..nel] of integer
+    integer, dimension(:,:), intent(in) :: IverticesAtElement
+
+    ! KNPR structure of the old mesh
+    ! array [1..NVT+NMT+NAT] of integer
+    integer, dimension(:), intent(in) :: InodalProperty
+    
+    ! DCORVG structure of the old mesh
+    ! array [1..2,1..NVT] of double precision
+    real(DP), dimension(:,:), intent(in) :: DvertexCoords
+  !</input>
+
+  !<output>
+    ! KVERT structure of the tri mesh
+    ! array [1..4,1..nel+nelquad] of integer
+    integer, dimension(:,:), intent(out)  :: IverticesAtElementTri
+
+    ! KNPR structure of the tri mesh
+    ! array [1..NVT+nelquad+NMT+NAT] of integer
+    integer, dimension(:), intent(out) :: InodalPropertyTri
+
+    ! DCORVG structure of the tri mesh
+    ! array [1..2,1..NVT+nelquad] of double precision
+    real(DP), dimension(:,:), intent(out) :: DvertexCoordsTri
+  !</output>
+
+  !</subroutine>
+
+      ! local variables
+      integer :: i,iel,ivt,i1,i2,i3,i4
+      real(DP) :: aux,aux1,aux2
+
+      do i=1,nvt
+        ! Copy all vertices from the old mesh to the new one
+        DvertexCoordsTri(1,i) = DvertexCoords(1,i)
+        DvertexCoordsTri(2,i) = DvertexCoords(2,i)
+      end do
+
+      do i=1,nvt
+        ! Copy all vertices from the old mesh to the new one
+        InodalPropertyTri(i) = InodalProperty(i)
+      end do
+      
+      ivt = nvt
+      iel = nel
+      do i=1,nel
+        ! For every quad we find, we compute the intersection of the
+        ! two diagonals and store the new vertex with number NVT+1,...
+        if (IverticesAtElement(4,i) .ne. 0) then
+
+          ! Get the next free vertex number behind the old vertices
+          ivt = ivt+1
+          
+          i1 = IverticesAtElement(1,i)
+          i2 = IverticesAtElement(2,i)
+          i3 = IverticesAtElement(3,i)
+          i4 = IverticesAtElement(4,i)
+          
+          ! The first triangle in each quad consists of vertices 1,2,5.
+          IverticesAtElementTri(1,i) = i1
+          IverticesAtElementTri(2,i) = i2
+          IverticesAtElementTri(3,i) = ivt
+
+          ! Get the next free element number behind the first set of triangles
+          iel = iel+1
+
+          ! The second triangle in each quad consists of vertices 2,3,5.
+          IverticesAtElementTri(1,iel) = i2
+          IverticesAtElementTri(2,iel) = i3
+          IverticesAtElementTri(3,iel) = ivt
+
+          ! Get the next free element number behind the first set of triangles
+          iel = iel+1
+
+          ! The third triangle in each quad consists of vertices 3,4,5.
+          IverticesAtElementTri(1,iel) = i3
+          IverticesAtElementTri(2,iel) = i4
+          IverticesAtElementTri(3,iel) = ivt
+
+          ! Get the next free element number behind the first set of triangles
+          iel = iel+1
+
+          ! The fourth triangle in each quad consists of vertices 4,1,5.
+          IverticesAtElementTri(1,iel) = i4
+          IverticesAtElementTri(2,iel) = i1
+          IverticesAtElementTri(3,iel) = ivt
+          
+          ! Compute intersection point
+          aux1 = (DvertexCoords(2,i4)-DvertexCoords(2,i2))*&
+                 (DvertexCoords(1,i4)-DvertexCoords(1,i3))&
+               + (DvertexCoords(1,i2)-DvertexCoords(1,i3))*&
+                 (DvertexCoords(2,i1)-DvertexCoords(2,i3))
+          aux2 = (DvertexCoords(1,i1)-DvertexCoords(1,i3))*&
+                 (DvertexCoords(2,i4)-DvertexCoords(2,i2))&
+               - (DvertexCoords(1,i4)-DvertexCoords(1,i2))*&
+                 (DvertexCoords(2,i1)-DvertexCoords(2,i3))
+          aux  = aux1/aux2
+
+          ! ... and store it as internal vertex
+          DvertexCoordsTri(1,ivt) = aux*DvertexCoords(1,i1)+(1.0-aux)*DvertexCoords(1,i3)
+          DvertexCoordsTri(2,ivt) = aux*DvertexCoords(2,i1)+(1.0-aux)*DvertexCoords(2,i3)
+          InodalPropertyTri(ivt)  = 0
+        else
+          ! Copy the data from an existing triangle
+          IverticesAtElementTri(1,i) = IverticesAtElement(1,i)
+          IverticesAtElementTri(2,i) = IverticesAtElement(2,i)
+          IverticesAtElementTri(3,i) = IverticesAtElement(3,i)
+        end if
+      end do
+
+      ! That is it.
+
+    end subroutine convert_Quad4Tria
 
   end subroutine tria_rawGridToTri
 

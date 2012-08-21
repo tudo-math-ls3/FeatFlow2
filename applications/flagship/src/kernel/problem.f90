@@ -124,12 +124,6 @@ module problem
   ! Generate extended raw mesh
   integer(I32), parameter, public :: PROBDESC_MSPEC_EXTENDEDRAW      = 2**0
 
-  ! Convert quadrilaterals to  triangles
-  integer(I32), parameter, public :: PROBDESC_MSPEC_CONVTRIANGLES    = 2**1
-
-  ! Convert hexahedrals to tetrahedrals
-  integer(I32), parameter, public :: PROBDESC_MSPEC_CONVTETRAHEDRALS = 2**2
-
 !</constantblock>
 
 !</constants>
@@ -191,6 +185,9 @@ module problem
 
     ! Name of the boundary parametrisation file
     character(LEN=SYS_STRLEN) :: prmfile
+
+    ! Strategy to convert triangulation
+    integer :: iconvStrategy = TRI_CONVERT_NONE
 
     ! Amount of stochastically mesh disturbance
     real(DP) :: ddisturbMesh = 0.0_DP
@@ -311,7 +308,7 @@ contains
     ! local variables
     type(t_problemLevel), pointer :: rproblemLevel, p_rproblemLevel
     integer :: ilev,istream
-    logical :: bnoExtendedRaw
+    logical :: bextendedRaw
 
     ! Initialise global problem structure
     call problem_createProblem(rproblem)
@@ -320,14 +317,14 @@ contains
     nullify(rproblemLevel); allocate(rproblemLevel)
     call problem_createLevel(rproblemLevel, rproblemDescriptor%nlmin)
 
-    bnoExtendedRaw = (iand(rproblemDescriptor%iproblemSpec,&
+    bextendedRaw = (iand(rproblemDescriptor%iproblemSpec,&
                            PROBDESC_MSPEC_EXTENDEDRAW) .eq. 0)
 
     select case(rproblemDescriptor%ndimension)
     case (NDIM1D)
       ! Read coarse mesh from TRI-file
       call tria_readTriFile1D(rproblemLevel%rtriangulation,&
-          rproblemDescriptor%trifile, bnoExtendedRaw)
+          rproblemDescriptor%trifile, bextendedRaw)
 
     case (NDIM2D)
       ! Create new boundary and read from PRM-file
@@ -336,28 +333,31 @@ contains
 
       ! Read coarse mesh from TRI-file
       call tria_readTriFile2D(rproblemLevel%rtriangulation,&
-          rproblemDescriptor%trifile, rproblem%rboundary,&
-          bnoextendedRaw)
+          rproblemDescriptor%trifile, rproblem%rboundary, .true.)
 
       ! Convert quadrilaterals to triangules if required
-      if (iand(rproblemDescriptor%iproblemSpec,&
-               PROBDESC_MSPEC_CONVTRIANGLES) .ne. 0) then
-        call tria_rawGridToTri(rproblemLevel%rtriangulation)
+      if (rproblemDescriptor%iconvStrategy .ne. TRI_CONVERT_NONE) then
+        call tria_rawGridToTri(rproblemLevel%rtriangulation,&
+                               rproblemDescriptor%iconvStrategy)
       end if
+      
+      ! Generate extended raw mesh
+      if (bextendedRaw) call tria_initExtendedRawMesh(rproblemLevel%rtriangulation)
 
     case (NDIM3D)
       ! Read coarse mesh from TRI-file
       call tria_readTriFile3D(rproblemLevel%rtriangulation,&
-          rproblemDescriptor%trifile, rproblem%rboundary,&
-          bnoextendedRaw)
-
+          rproblemDescriptor%trifile, rproblem%rboundary, .true.)
+      
       ! Convert hexahedrals to tetrahedrals if required
-      if (iand(rproblemDescriptor%iproblemSpec,&
-               PROBDESC_MSPEC_CONVTETRAHEDRALS) .ne. 0) then
+      if (rproblemDescriptor%iconvStrategy .ne. TRI_CONVERT_NONE) then
         call output_line('Conversion to tetrahedrals is not available yet!',&
             OU_CLASS_WARNING,OU_MODE_STD,'problem_initProblem')
         call sys_halt()
       end if
+
+      ! Generate extended raw mesh
+      if (bextendedRaw) call tria_initExtendedRawMesh(rproblemLevel%rtriangulation)
 
     case default
       call output_line('Invalid spatial dimension!',&

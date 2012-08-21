@@ -214,7 +214,7 @@ contains
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'ndimension', rproblemDescriptor%ndimension)
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'iconvtotria', iconvToTria, 0)
+        ssectionName, 'iconvtotria', iconvToTria, TRI_CONVERT_NONE)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'discretisation', discretisation, 0)
     call parlst_getvalue_int(rparlist,&
@@ -300,15 +300,8 @@ contains
     rproblemDescriptor%nmatrixBlock    = 0
     rproblemDescriptor%nvectorScalar   = 0
     rproblemDescriptor%nvectorBlock    = max(0, velocityfield, dofCoords)
-
-    ! Check if quadrilaterals should be converted to triangles
-    if (iconvToTria .ne. 0)&
-        rproblemDescriptor%iproblemSpec = rproblemDescriptor%iproblemSpec &
-                                        + PROBDESC_MSPEC_CONVTRIANGLES
-
-    ! Check if mesh should be disturbed stochastically
-    if (ddisturbmesh > 0.0_DP)&
-        rproblemDescriptor%ddisturbmesh = ddisturbmesh
+    rproblemDescriptor%iconvStrategy   = iconvToTria
+    rproblemDescriptor%ddisturbmesh    = ddisturbmesh
 
   end subroutine transp_initProblemDescriptor
 
