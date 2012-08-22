@@ -166,6 +166,63 @@ Rate of convergence     : 7.664441715622670E-01
 L2-error: 1.4802900323E-04
 H1-error: 3.7269151729E-02
 
+Calculating Poisson-2D-Problem with method 0 - CM-sorting
+---------------------------------------------------------
+BiCGStab: Iteration 0,  !!RES!! = 2.676879331135154E-03
+BiCGStab: Iteration 1,  !!RES!! = 7.408389459700625E-03
+BiCGStab: Iteration 2,  !!RES!! = 6.223543835740087E-03
+BiCGStab: Iteration 3,  !!RES!! = 4.928547408944423E-03
+BiCGStab: Iteration 4,  !!RES!! = 3.995137739384952E-03
+BiCGStab: Iteration 5,  !!RES!! = 3.320632793341661E-03
+BiCGStab: Iteration 6,  !!RES!! = 2.816046522403186E-03
+BiCGStab: Iteration 7,  !!RES!! = 2.423306889093711E-03
+BiCGStab: Iteration 8,  !!RES!! = 2.107784322829490E-03
+BiCGStab: Iteration 9,  !!RES!! = 1.847388453254152E-03
+BiCGStab: Iteration 10,  !!RES!! = 1.627858464878541E-03
+BiCGStab: Iteration 11,  !!RES!! = 1.439426823425494E-03
+BiCGStab: Iteration 12,  !!RES!! = 1.275318516726688E-03
+BiCGStab: Iteration 13,  !!RES!! = 1.130609539065326E-03
+BiCGStab: Iteration 14,  !!RES!! = 1.001690718045609E-03
+BiCGStab: Iteration 15,  !!RES!! = 8.858038659306959E-04
+BiCGStab: Iteration 16,  !!RES!! = 7.808210468454678E-04
+BiCGStab: Iteration 17,  !!RES!! = 6.850227437291980E-04
+BiCGStab: Iteration 18,  !!RES!! = 5.969912238128662E-04
+BiCGStab: Iteration 19,  !!RES!! = 5.154870414696530E-04
+BiCGStab: Iteration 20,  !!RES!! = 4.394240732607524E-04
+BiCGStab: Iteration 21,  !!RES!! = 3.679211557016492E-04
+BiCGStab: Iteration 22,  !!RES!! = 3.005006304058081E-04
+BiCGStab: Iteration 23,  !!RES!! = 2.373661898863140E-04
+BiCGStab: Iteration 24,  !!RES!! = 1.794246317356219E-04
+BiCGStab: Iteration 25,  !!RES!! = 1.281854744136248E-04
+BiCGStab: Iteration 26,  !!RES!! = 8.519259272820828E-05
+BiCGStab: Iteration 27,  !!RES!! = 5.164670861761331E-05
+BiCGStab: Iteration 28,  !!RES!! = 2.798724805281851E-05
+BiCGStab: Iteration 29,  !!RES!! = 1.388178346702944E-05
+BiCGStab: Iteration 30,  !!RES!! = 8.170847602253192E-06
+BiCGStab: Iteration 31,  !!RES!! = 6.864398325892533E-06
+BiCGStab: Iteration 32,  !!RES!! = 2.343723994831432E-06
+BiCGStab: Iteration 33,  !!RES!! = 1.661740445973690E-06
+BiCGStab: Iteration 34,  !!RES!! = 1.263590107642251E-06
+BiCGStab: Iteration 35,  !!RES!! = 4.905723916516949E-07
+BiCGStab: Iteration 36,  !!RES!! = 3.934272618807950E-07
+BiCGStab: Iteration 37,  !!RES!! = 2.603825681348778E-07
+BiCGStab: Iteration 38,  !!RES!! = 1.454687215290207E-07
+BiCGStab: Iteration 39,  !!RES!! = 1.032469635666201E-07
+BiCGStab: Iteration 40,  !!RES!! = 6.694188229022971E-08
+BiCGStab: Iteration 41,  !!RES!! = 4.473272173020981E-08
+BiCGStab: Iteration 42,  !!RES!! = 2.042772407969612E-08
+
+BiCGStab statistics:
+
+Iterations              : 42
+!!INITIAL RES!!         : 2.676879331135154E-03
+!!RES!!                 : 2.042772407969612E-08
+!!RES!!/!!INITIAL RES!! : 7.631171058814058E-06
+
+Rate of convergence     : 7.553651308565269E-01
+L2-error: 1.4802583948E-04
+H1-error: 3.7269151794E-02
+
 Calculating Poisson-2D-Problem with method 0 - block
 -----------------------------------------------------
 BiCGStab: Iteration 0,  !!RES!! = 2.676879331135164E-03
