@@ -192,12 +192,8 @@
 		<Filter Name="LinearSolver">
 		<File RelativePath="..\..\..\kernel\LinearSolver\coarsegridcorrection.f90"/>
 		<File RelativePath="..\..\..\kernel\LinearSolver\filtersupport.f90"/>
-		<File RelativePath="..\..\..\kernel\LinearSolver\filtersupport2.f90">
-			<FileConfiguration Name="Release ohne IPO|Win32" ExcludedFromBuild="true"/></File>
 		<File RelativePath="..\..\..\kernel\LinearSolver\iluk.f90"/>
 		<File RelativePath="..\..\..\kernel\LinearSolver\linearsolver.f90"/>
-		<File RelativePath="..\..\..\kernel\LinearSolver\linearsolver2.f90">
-			<FileConfiguration Name="Release ohne IPO|Win32" ExcludedFromBuild="true"/></File>
 		<File RelativePath="..\..\..\kernel\LinearSolver\linearsolverautoinitialise.f90"/>
 		<File RelativePath="..\..\..\kernel\LinearSolver\quicksolver.f90"/>
 		<File RelativePath="..\..\..\kernel\LinearSolver\spsor.f90"/>
