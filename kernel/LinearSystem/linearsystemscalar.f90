@@ -148,7 +148,7 @@
 !# 39.) lsyssc_multMatMat
 !#      -> Multiplies two matrices
 !#
-!# 40.) lsyssc_matrixLinearComb
+!# 40.) lsyssc_matrixLinearComb / lsyssc_matrixLinearCombIndexed
 !#      -> Adds two matrices
 !#
 !# 41.) lsyssc_swapVectors
@@ -27589,5 +27589,161 @@ contains
     end if
 
   end subroutine lsyssc_createMatrixFromGraph
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine lsyssc_matrixLinearCombIndexed (rmatrixA,rmatrixB,ca,cb,Irows)
+
+    !<description>
+    ! Performs a linear combination:
+    !   rmatrixB = ca*rmatrixA + cB*rmatrixB
+    !
+    ! Only those rows indexed by Irows are processed. 
+    ! Both matrices must have the same matrix format and structure.
+    ! </description>
+
+!<input>
+    ! Source matrix
+    type(t_matrixScalar), intent(in) :: rmatrixA
+
+    ! scaling factors
+    real(DP), intent(in) :: ca,cb
+
+    ! OPTIONAL: List of rows to be processed.
+    ! If not specified, all rows are processed.
+    integer, dimension(:), intent(in), optional :: Irows
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: Destination matrix.
+    type(t_matrixScalar), intent(inout), target, optional :: rmatrixB
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(:), pointer :: p_Ddata1, p_Ddata2
+    integer, dimension(:), pointer :: p_Kld
+    integer :: i,j
+
+    ! Check if all matrices are compatible
+    if ((rmatrixA%NEQ   .ne. rmatrixB%NEQ) .or.&
+        (rmatrixA%NCOLS .ne. rmatrixB%NCOLS)) then
+      call output_line("Number of rows/columns is not compatible!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_matrixLinearCombIndexed")
+      call sys_halt()
+    end if
+
+    ! Matrices must have the same formatcmatrixFormat
+    if (rmatrixA%cmatrixFormat   .ne. rmatrixB%cmatrixFormat) then
+      call output_line("Matrices have different format!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_matrixLinearCombIndexed")
+      call sys_halt()
+    end if
+
+    ! Check if all matrices have the same sorting
+    if (rmatrixA%bcolumnsSorted .or. rmatrixB%bcolumnsSorted) then
+      if (rmatrixA%p_rsortStrategyColumns%ctype .ne. rmatrixB%p_rsortStrategyColumns%ctype) then
+        call output_line("Incompatible sorting strategies!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_matrixLinearCombIndexed")
+        call sys_halt()
+      end if
+    end if
+
+    if (rmatrixA%browsSorted .or. rmatrixB%browsSorted) then
+      if (rmatrixA%p_rsortStrategyRows%ctype .ne. rmatrixB%p_rsortStrategyRows%ctype) then
+        call output_line("Incompatible sorting strategies!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_matrixLinearCombIndexed")
+        call sys_halt()
+      end if
+    end if
+
+    ! Check if destination matrix has compatible data type
+    if ((rmatrixA%cdatatype .ne. ST_DOUBLE) .or.&
+        (rmatrixB%cdatatype .ne. ST_DOUBLE)) then
+      call output_line("Data type of destination matrix not supported!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_matrixLinearCombIndexed")
+      call sys_halt()
+    end if
+    
+    select case (rmatrixA%cmatrixFormat)
+    case (LSYSSC_MATRIX9)
+
+      select case (rmatrixA%cmatrixFormat)
+      case (LSYSSC_MATRIX9)
+      
+        ! Get the data pointers
+        call lsyssc_getbase_double (rmatrixA,p_Ddata1)
+        call lsyssc_getbase_double (rmatrixB,p_Ddata2)
+        call lsyssc_getbase_Kld (rmatrixA,p_Kld)
+        
+        ! Linear combination of the rows
+        if (present(Irows)) then
+          ! Subset of the rows
+          if ((ca .eq. 0.0_DP) .and. (cb .eq. 0.0_DP)) then
+            do i=1,size(Irows)
+              do j=p_Kld(Irows(i)), p_Kld(Irows(i+1)-1)
+                p_Ddata2(j) = 0.0_DP
+              end do
+            end do
+          else if (ca .eq. 0.0_DP) then
+            do i=1,size(Irows)
+              do j=p_Kld(Irows(i)), p_Kld(Irows(i)+1)-1
+                p_Ddata2(j) = cb * p_Ddata2(j)
+              end do
+            end do
+          else if (cb .eq. 0.0_DP) then
+            do i=1,size(Irows)
+              do j=p_Kld(Irows(i)), p_Kld(Irows(i)+1)-1
+                p_Ddata2(j) = ca * p_Ddata1(j)
+              end do
+            end do
+          else
+            do i=1,size(Irows)
+              do j=p_Kld(Irows(i)), p_Kld(Irows(i)+1)-1
+                p_Ddata2(j) = ca * p_Ddata1(j) + cb * p_Ddata2(j)
+              end do
+            end do
+          end if
+        
+        else
+        
+          ! All rows
+          if ((ca .eq. 0.0_DP) .and. (cb .eq. 0.0_DP)) then
+            do j=1,rmatrixA%NA
+              p_Ddata2(j) = 0.0_DP
+            end do
+          else if (ca .eq. 0.0_DP) then
+            do j=1,rmatrixA%NA
+              p_Ddata2(j) = cb * p_Ddata2(j)
+            end do
+          else if (cb .eq. 0.0_DP) then
+            do j=1,rmatrixA%NA
+              p_Ddata2(j) = ca * p_Ddata1(j)
+            end do
+          else
+            do j=1,rmatrixA%NA
+              p_Ddata2(j) = ca * p_Ddata1(j) + cb * p_Ddata2(j)
+            end do
+          end if
+        end if        
+      
+      case default
+        call output_line(&
+            "Combination of source and destination matrix format not supported!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_matrixLinearCombIndexed")
+        call sys_halt()
+      end select
+
+    case default
+      call output_line(&
+          "Combination of source and destination matrix format not supported!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_matrixLinearCombIndexed")
+      call sys_halt()
+    end select      
+
+  end subroutine
 
 end module
