@@ -885,13 +885,16 @@ module linearsystemscalar
     module procedure lsyssc_matrixLinearComb2
   end interface lsyssc_matrixLinearComb
   
+  public :: lsyssc_matrixLinearComb
+
   interface lsyssc_setSortStrategy
     module procedure lsyssc_setSortStrategyVec
     module procedure lsyssc_setSortStrategyMat
   end interface
 
-  public :: lsyssc_matrixLinearComb
+  public :: lsyssc_setSortStrategy
 
+  public :: lsyssc_matrixLinearCombIndexed
   public :: lsyssc_initPerfConfig
   public :: lsyssc_scalarProduct
   public :: lsyssc_scalarMatVec
@@ -960,7 +963,6 @@ module linearsystemscalar
   public :: lsyssc_createMatrixAsymmPart
   public :: lsyssc_calcDeterminant
   public :: lsyssc_calcGerschgorin
-  public :: lsyssc_setSortStrategy
   public :: lsyssc_sortVector
   public :: lsyssc_sortMatrix
 
