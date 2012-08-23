@@ -145,6 +145,7 @@ module transport_application
   use graph
   use hadaptaux
   use hadaptivity
+  use linearalgebra
   use linearsystemblock
   use linearsystemscalar
   use paramlist
@@ -267,9 +268,10 @@ contains
     character(LEN=SYS_STRLEN) :: sindatfileName
     character(LEN=SYS_STRLEN) :: sbdrcondName
     character(LEN=SYS_STRLEN) :: algorithm
+    character(LEN=SYS_STRLEN) :: benchmark
 
     ! local variables
-    real(DP) :: derrorL2,derrorH1,derrorDispersion
+    real(DP) :: derrorL1,derrorL2,derrorH1,derrorDispersion
     integer :: systemMatrix, ndimension
 
 
@@ -404,6 +406,8 @@ contains
       ! Get global configuration from parameter list
       call parlst_getvalue_string(rparlist,&
           ssectionName, 'algorithm', algorithm)
+      call parlst_getvalue_string(rparlist,&
+          ssectionName, 'benchmark', benchmark, '')
       
       ! What solution algorithm should be applied?
       if (trim(algorithm) .eq. 'transient_primal') then
@@ -415,15 +419,20 @@ contains
             rbdrCondPrimal, rproblem, rtimestep, rsolver,&
             rsolutionPrimal, rcollection)
 
+        ! Estimate the error to the exact solution
         call transp_errestExact(rparlist, ssectionName,&
             rproblem%p_rproblemLevelMax, rsolutionPrimal,&
-            rtimestep%dTime, derrorL2=derrorL2,&
+            rtimestep%dTime, derrorL1=derrorL1, derrorL2=derrorL2,&
             derrorH1=derrorH1, rcollection=rcollection)
 
-        call transp_errestDispersion(rparlist, ssectionName,&
-            rproblem%p_rproblemLevelMax, rsolutionPrimal,&
-            rtimestep%dTime, derrorDispersion, rcollection)
+        ! Perform benchmark specific checks
+        if (trim(adjustl(benchmark)) .eq. 'Gaussian-Hill-2D') then
+          call transp_errestDispersionGHill(rparlist, ssectionName,&
+              rproblem%p_rproblemLevelMax, rsolutionPrimal,&
+              rtimestep%dTime, derrorDispersion, rcollection)
+        end if
 
+        ! Output solution to file
         call transp_outputSolution(rparlist, ssectionName,&
             rproblem%p_rproblemLevelMax,&
             rsolutionPrimal=rsolutionPrimal,&
@@ -434,16 +443,17 @@ contains
         ! Solve the primal and dual formulation for
         ! the time-dependent problem
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
         call transp_solveTransientPrimDual(rparlist, ssectionName,&
             rbdrCondPrimal, rbdrCondDual, rproblem, rtimestep,&
             rsolver, rsolutionPrimal, rsolutionDual, rcollection)
 
+        ! Estimate the error to the exact solution
         call transp_errestExact(rparlist, ssectionName,&
             rproblem%p_rproblemLevelMax, rsolutionPrimal,&
-            rtimestep%dTime, derrorL2=derrorL2,&
+            rtimestep%dTime, derrorL1=derrorL1, derrorL2=derrorL2,&
             derrorH1=derrorH1, rcollection=rcollection)
 
+        ! Output solution to file
         call transp_outputSolution(rparlist, ssectionName,&
             rproblem%p_rproblemLevelMax,&
             rsolutionPrimal, rsolutionDual, rtimestep%dTime)
@@ -458,11 +468,13 @@ contains
             rbdrCondPrimal, rproblem, rtimestep, rsolver,&
             rsolutionPrimal, rcollection)
 
+        ! Estimate the error to the exact solution
         call transp_errestExact(rparlist, ssectionName,&
             rproblem%p_rproblemLevelMax, rsolutionPrimal,&
-            rtimestep%dTime, derrorL2=derrorL2,&
+            rtimestep%dTime, derrorL1=derrorL1, derrorL2=derrorL2,&
             derrorH1=derrorH1, rcollection=rcollection)
 
+        ! Output solution to file
         call transp_outputSolution(rparlist, ssectionName,&
             rproblem%p_rproblemLevelMax,&
             rsolutionPrimal=rsolutionPrimal,&
@@ -478,11 +490,13 @@ contains
             rbdrCondPrimal, rbdrCondDual, rproblem, rtimestep,&
             rsolver, rsolutionPrimal, rsolutionDual, rcollection)
 
+        ! Estimate the error to the exact solution
         call transp_errestExact(rparlist, ssectionName,&
             rproblem%p_rproblemLevelMax, rsolutionPrimal,&
-            rtimestep%dTime, derrorL2=derrorL2,&
+            rtimestep%dTime, derrorL1=derrorL1, derrorL2=derrorL2,&
             derrorH1=derrorH1, rcollection=rcollection)
 
+        ! Output solution to file
         call transp_outputSolution(rparlist, ssectionName,&
             rproblem%p_rproblemLevelMax,&
             rsolutionPrimal, rsolutionDual, rtimestep%dTime)
@@ -497,11 +511,13 @@ contains
             rbdrCondPrimal, rproblem, rtimestep, rsolver,&
             rsolutionPrimal, rcollection)
         
+        ! Estimate the error to the exact solution
         call transp_errestExact(rparlist, ssectionName,&
             rproblem%p_rproblemLevelMax, rsolutionPrimal,&
-            rtimestep%dTime, derrorL2=derrorL2,&
+            rtimestep%dTime, derrorL1=derrorL1, derrorL2=derrorL2,&
             derrorH1=derrorH1, rcollection=rcollection)
 
+        ! Output solution to file
         call transp_outputSolution(rparlist, ssectionName,&
             rproblem%p_rproblemLevelMax,&
             rsolutionPrimal=rsolutionPrimal,&
@@ -517,11 +533,13 @@ contains
             rbdrCondPrimal, rbdrCondDual, rproblem, rtimestep,&
             rsolver, rsolutionPrimal, rsolutionDual, rcollection)
 
+        ! Estimate the error to the exact solution
         call transp_errestExact(rparlist, ssectionName,&
             rproblem%p_rproblemLevelMax, rsolutionPrimal,&
-            rtimestep%dTime, derrorL2=derrorL2,&
+            rtimestep%dTime, derrorL1=derrorL1, derrorL2=derrorL2,&
             derrorH1=derrorH1, rcollection=rcollection)
 
+        ! Output solution to file
         call transp_outputSolution(rparlist, ssectionName,&
             rproblem%p_rproblemLevelMax,&
             rsolutionPrimal, rsolutionDual, rtimestep%dTime)
@@ -669,6 +687,7 @@ contains
     character(LEN=SYS_STRLEN) :: soutputName
 
     ! local variables
+    real(DP) :: dnormL1, dnormL2
     real(dp) :: derror, dstepUCD, dtimeUCD, dstepAdapt, dtimeAdapt
     integer :: templateMatrix, systemMatrix, discretisation
     integer :: nlmin, ipreadapt, npreadapt, irhstype, ivelocitytype
@@ -914,6 +933,16 @@ contains
 
       ! Stop time measurement for solution procedure
       call stat_stopTimer(p_rtimerSolution)
+
+      ! Write norm of solution to benchmark logfile
+      if (OU_BENCHLOG .ne. 0) then
+        dnormL1 = lsysbl_vectorNorm(rsolution, LINALG_NORML1)
+        dnormL2 = lsysbl_vectorNorm(rsolution, LINALG_NORML2)
+        call output_line('T = '//trim(sys_sdEL(rtimestep%dTime,5))//&
+            '   ||u||_1 = '//trim(sys_sdEL(dnormL1,5))//&
+            '   ||u||_2 = '//trim(sys_sdEL(dnormL2,5)),&
+            OU_CLASS_MSG, OU_MODE_BENCHLOG)
+      end if
 
       ! Reached final time, then exit the infinite time loop?
       if (rtimestep%dTime .ge. rtimestep%dfinalTime) exit timeloop
@@ -1225,7 +1254,7 @@ contains
     character(LEN=SYS_STRLEN) :: sadaptivityName
 
     ! local variables
-    real(DP) :: derror
+    real(DP) :: derror, dnormL1, dnormL2
     integer :: templateMatrix, systemMatrix, discretisation
     integer :: nlmin, iadapt, nadapt, irhstype, ivelocitytype
 
@@ -1364,6 +1393,15 @@ contains
       ! Stop time measurement for solution procedure
       call stat_stopTimer(p_rtimerSolution)
 
+      ! Write norm of solution to benchmark logfile
+      if (OU_BENCHLOG .ne. 0) then
+        dnormL1 = lsysbl_vectorNorm(rsolution, LINALG_NORML1)
+        dnormL2 = lsysbl_vectorNorm(rsolution, LINALG_NORML2)
+        call output_line('T = '//trim(sys_sdEL(rtimestep%dTime,5))//&
+            '   ||u||_1 = '//trim(sys_sdEL(dnormL1,5))//&
+            '   ||u||_2 = '//trim(sys_sdEL(dnormL2,5)),&
+            OU_CLASS_MSG, OU_MODE_BENCHLOG)
+      end if
 
       if (iadapt .eq. nadapt) exit adaptloop
 
@@ -1548,7 +1586,7 @@ contains
     character(LEN=SYS_STRLEN) :: sadaptivityName
 
     ! local variables
-    real(dp) :: derror
+    real(dp) :: derror, dnormL1, dnormL2
     integer :: templateMatrix, systemMatrix, discretisation
     integer :: nlmin, iadapt, nadapt, irhstype, ivelocitytype
 
@@ -1685,6 +1723,16 @@ contains
       ! Stop time measurement for solution procedure
       call stat_stopTimer(p_rtimerSolution)
 
+      ! Write norm of primal solution to benchmark logfile
+      if (OU_BENCHLOG .ne. 0) then
+        dnormL1 = lsysbl_vectorNorm(rsolutionPrimal, LINALG_NORML1)
+        dnormL2 = lsysbl_vectorNorm(rsolutionPrimal, LINALG_NORML2)
+        call output_line('T = '//trim(sys_sdEL(rtimestep%dTime,5))//&
+            '   ||u||_1 = '//trim(sys_sdEL(dnormL1,5))//&
+            '   ||u||_2 = '//trim(sys_sdEL(dnormL2,5)),&
+            OU_CLASS_MSG, OU_MODE_BENCHLOG)
+      end if
+
 
       !-------------------------------------------------------------------------
       ! Compute the right-hand side for the dual problem
@@ -1733,6 +1781,16 @@ contains
 
       ! Stop time measurement for solution procedure
       call stat_stopTimer(p_rtimerSolution)
+
+      ! Write norm of dual solution to benchmark logfile
+      if (OU_BENCHLOG .ne. 0) then
+        dnormL1 = lsysbl_vectorNorm(rsolutionDual, LINALG_NORML1)
+        dnormL2 = lsysbl_vectorNorm(rsolutionDual, LINALG_NORML2)
+        call output_line('T = '//trim(sys_sdEL(rtimestep%dTime,5))//&
+            '   ||z||_1 = '//trim(sys_sdEL(dnormL1,5))//&
+            '   ||z||_2 = '//trim(sys_sdEL(dnormL2,5)),&
+            OU_CLASS_MSG, OU_MODE_BENCHLOG)
+      end if
 
 
       if (iadapt .eq. nadapt) exit adaptloop
@@ -1942,7 +2000,7 @@ contains
     character(LEN=SYS_STRLEN) :: sadaptivityName
 
     ! local variables
-    real(dp) :: derror
+    real(dp) :: derror, dnormL1, dnormL2
     integer :: templateMatrix, systemMatrix, discretisation
     integer :: nlmin, iadapt, nadapt, irhstype, ivelocitytype
 
@@ -2084,6 +2142,16 @@ contains
 
       ! Stop time measurement for solution procedure
       call stat_stopTimer(p_rtimerSolution)
+
+      ! Write norm of solution to benchmark logfile
+      if (OU_BENCHLOG .ne. 0) then
+        dnormL1 = lsysbl_vectorNorm(rsolution, LINALG_NORML1)
+        dnormL2 = lsysbl_vectorNorm(rsolution, LINALG_NORML2)
+        call output_line('T = '//trim(sys_sdEL(rtimestep%dTime,5))//&
+            '   ||u||_1 = '//trim(sys_sdEL(dnormL1,5))//&
+            '   ||u||_2 = '//trim(sys_sdEL(dnormL2,5)),&
+            OU_CLASS_MSG, OU_MODE_BENCHLOG)
+      end if
 
 
       if (iadapt .eq. nadapt) exit adaptloop
@@ -2269,7 +2337,7 @@ contains
     character(LEN=SYS_STRLEN) :: sadaptivityName
 
     ! local variables
-    real(dp) :: derror
+    real(dp) :: derror, dnormL1, dnormL2
     integer :: templateMatrix, systemMatrix, discretisation
     integer :: nlmin, iadapt, nadapt, irhstype, ivelocitytype
 
@@ -2414,6 +2482,15 @@ contains
       ! Stop time measurement for solution procedure
       call stat_stopTimer(p_rtimerSolution)
 
+      ! Write norm of primal solution to benchmark logfile
+      if (OU_BENCHLOG .ne. 0) then
+        dnormL1 = lsysbl_vectorNorm(rsolutionPrimal, LINALG_NORML1)
+        dnormL2 = lsysbl_vectorNorm(rsolutionPrimal, LINALG_NORML2)
+        call output_line('T = '//trim(sys_sdEL(rtimestep%dTime,5))//&
+            '   ||u||_1 = '//trim(sys_sdEL(dnormL1,5))//&
+            '   ||u||_2 = '//trim(sys_sdEL(dnormL2,5)),&
+            OU_CLASS_MSG, OU_MODE_BENCHLOG)
+      end if
 
       !-------------------------------------------------------------------------
       ! Compute the right-hand side for the dual problem
@@ -2468,6 +2545,16 @@ contains
 
       ! Stop time measurement for solution procedure
       call stat_stopTimer(p_rtimerSolution)
+
+      ! Write norm of dual solution to benchmark logfile
+      if (OU_BENCHLOG .ne. 0) then
+        dnormL1 = lsysbl_vectorNorm(rsolutionDual, LINALG_NORML1)
+        dnormL2 = lsysbl_vectorNorm(rsolutionDual, LINALG_NORML2)
+        call output_line('T = '//trim(sys_sdEL(rtimestep%dTime,5))//&
+            '   ||u||_1 = '//trim(sys_sdEL(dnormL1,5))//&
+            '   ||u||_2 = '//trim(sys_sdEL(dnormL2,5)),&
+            OU_CLASS_MSG, OU_MODE_BENCHLOG)
+      end if
 
 
       if (iadapt .eq. nadapt) exit adaptloop

@@ -19,6 +19,9 @@
 !# 3.) transp_errestExact
 !#     -> Estimates the solution error using a given analytical solution
 !#
+!# 4.) transp_errestDispersionGHill
+!#     -> Estimates the dispersion error for the rotating Gaussian hill
+!#
 !#
 !# The following internal routines are available:
 !#
@@ -65,7 +68,7 @@ module transport_errorestimation
   public :: transp_errestRecovery
   public :: transp_errestTargetFunc
   public :: transp_errestExact
-  public :: transp_errestDispersion
+  public :: transp_errestDispersionGHill
 
 contains
 
@@ -1133,8 +1136,9 @@ contains
       call collct_setvalue_pars(rcollectionTmp, 'rfparser', p_rfparser, .true.)
       
       call output_lbrk()
-      call output_line('Error Analysis')
-      call output_line('--------------')
+      call output_separator(OU_SEP_DOLLAR, OU_CLASS_MSG, OU_MODE_STD+OU_MODE_BENCHLOG)
+      call output_line('Error Analysis', OU_CLASS_MSG, OU_MODE_STD+OU_MODE_BENCHLOG)
+      call output_separator(OU_SEP_MINUS, OU_CLASS_MSG, OU_MODE_STD+OU_MODE_BENCHLOG)
 
       if (present(derrorL1)) then
         ! Calculate the L1-error of the reference solution
@@ -1148,7 +1152,8 @@ contains
           call pperr_scalar(PPERR_L1ERROR, derrorL1, rsolution%RvectorBlock(1),&
               transp_refFuncAnalytic, rcollectionTmp)
         end if
-        call output_line('exact L1-error: '//trim(sys_sdEP(derrorL2,15,6)))
+        call output_line('Exact L1-error: '//trim(sys_sdEP(derrorL1,15,6)),&
+            OU_CLASS_MSG, OU_MODE_STD+OU_MODE_BENCHLOG)
       end if
 
       if (present(derrorL2)) then
@@ -1163,7 +1168,8 @@ contains
           call pperr_scalar(PPERR_L2ERROR, derrorL2, rsolution%RvectorBlock(1),&
               transp_refFuncAnalytic, rcollectionTmp)
         end if
-        call output_line('exact L2-error: '//trim(sys_sdEP(derrorL2,15,6)))
+        call output_line('Exact L2-error: '//trim(sys_sdEP(derrorL2,15,6)),&
+            OU_CLASS_MSG, OU_MODE_STD+OU_MODE_BENCHLOG)
       end if
 
       if (present(derrorH1)) then
@@ -1178,14 +1184,19 @@ contains
           call pperr_scalar(PPERR_H1ERROR, derrorH1, rsolution%RvectorBlock(1),&
               transp_refFuncAnalytic, rcollectionTmp)
         end if
-        call output_line('exact H1-error: '//trim(sys_sdEP(derrorH1,15,6)))
+        call output_line('Exact H1-error: '//trim(sys_sdEP(derrorH1,15,6)),&
+            OU_CLASS_MSG, OU_MODE_STD+OU_MODE_BENCHLOG)
       end if
 
+      call output_separator(OU_SEP_DOLLAR, OU_CLASS_MSG, OU_MODE_STD+OU_MODE_BENCHLOG)
       call output_lbrk()
 
     case default
       call output_line('Analytical solution is not available!',&
           OU_CLASS_WARNING,OU_MODE_STD,'transp_errestExact')
+      if (present(derrorL1)) derrorL1 = -1.0_DP
+      if (present(derrorL2)) derrorL2 = -1.0_DP
+      if (present(derrorH1)) derrorH1 = -1.0_DP
     end select
    
   end subroutine transp_errestExact
@@ -1194,11 +1205,12 @@ contains
 
 !<subroutine>
 
-  subroutine transp_errestDispersion(rparlist, ssectionName,&
+  subroutine transp_errestDispersionGHill(rparlist, ssectionName,&
       rproblemLevel, rsolution, dtime, derror, rcollection)
 
 !<description>
-    ! This subroutine estimates the dispersion error of the discrete solution.
+    ! This subroutine estimates the dispersion error of the discrete solution
+    ! to the rotating Gaussian hill benchmark.
 !</description>
 
 !<input>
@@ -1229,8 +1241,11 @@ contains
 !</output>
 
     ! Local variables
+    type(t_fparser), pointer :: p_rfparser
     type(t_collection) :: rcollectionTmp
-    real(DP) :: dxhat, dyhat
+    character(LEN=SYS_STRLEN) :: sdiffusionName
+    real(DP), dimension(1) :: Dunity = (/1.0_DP/)
+    real(DP) :: dxhat,dyhat,dalpha
 
     ! Initialise temporal collection structure
     call collct_init(rcollectionTmp)
@@ -1238,24 +1253,35 @@ contains
     ! Compute integral quantities
     rcollectionTmp%IquickAccess(1) = 1
     call pperr_scalar(PPERR_MEANERROR, dxhat, rsolution%RvectorBlock(1),&
-        rcollection=rcollectionTmp, ffunctionWeight=transp_weightFuncGaussian)
+        rcollection=rcollectionTmp, ffunctionWeight=transp_weightFuncGHill)
     
     rcollectionTmp%IquickAccess(1) = 2
     call pperr_scalar(PPERR_MEANERROR, dyhat, rsolution%RvectorBlock(1),&
-        rcollection=rcollectionTmp, ffunctionWeight=transp_weightFuncGaussian)
+        rcollection=rcollectionTmp, ffunctionWeight=transp_weightFuncGHill)
 
     rcollectionTmp%IquickAccess(1) = 3
     rcollectionTmp%DquickAccess(1) = dxhat
     rcollectionTmp%DquickAccess(2) = dyhat
     call pperr_scalar(PPERR_MEANERROR, derror, rsolution%RvectorBlock(1),&
-        rcollection=rcollectionTmp, ffunctionWeight=transp_weightFuncGaussian)
+        rcollection=rcollectionTmp, ffunctionWeight=transp_weightFuncGHill)
 
-    ! Comput dispersion error
-    derror = derror / (4*dtime*(1e-3)) - 1.0_DP
+    ! Retrieve name/number of expression describing the diffusion coefficient
+    call parlst_getvalue_string(rparlist,&
+        ssectionName, 'sdiffusionname', sdiffusionName)
+
+    ! Get function parser from collection
+    p_rfparser => collct_getvalue_pars(rcollection,&
+        'rfparser', ssectionName=ssectionName)
+    
+    ! Evaluate the constant coefficient from the function parser
+    call fparser_evalFunction(p_rfparser, sdiffusionName, Dunity, dalpha)
+    
+    ! Compute dispersion error
+    derror = derror / (4*dtime*dalpha) - 1.0_DP
     
     call output_line('Dispersion-error: '//trim(sys_sdEP(derror,15,6)))
 
-  end subroutine transp_errestDispersion
+  end subroutine transp_errestDispersionGHill
 
   !*****************************************************************************
 
