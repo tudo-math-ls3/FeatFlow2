@@ -963,6 +963,12 @@ contains
                                  rsolver%p_solverSubnode(isolver))
       end do
 
+      ! Get minimum/maximum number of iterations
+      call parlst_getvalue_int(rparlist, ssectionName, "nminIterations", &
+                               rsolver%nminIterations)
+      call parlst_getvalue_int(rparlist, ssectionName, "nmaxIterations", &
+                               rsolver%nmaxIterations)
+
     case (SV_FMG)
       ! ----------------------------------------------------------------------------------
       ! Create a full multigrid solver:
@@ -1194,6 +1200,12 @@ contains
       call parlst_getvalue_int(rparlist, ssectionName, "isolver", &
                                rsolver%isolver)
 
+      ! Get minimum/maximum number of iterations
+      call parlst_getvalue_int(rparlist, ssectionName, "nminIterations", &
+                               rsolver%nminIterations)
+      call parlst_getvalue_int(rparlist, ssectionName, "nmaxIterations", &
+                               rsolver%nmaxIterations)
+
       ! Ok, now we set up the individual solver structure
       select case (rsolver%isolver)
       case (NLSOL_SOLVER_FIXEDPOINT)
@@ -1225,6 +1237,12 @@ contains
       ! filled with values.
       call parlst_getvalue_int(rparlist, ssectionName, "isolver", &
                                rsolver%isolver)
+
+      ! Get minimum/maximum number of iterations
+      call parlst_getvalue_int(rparlist, ssectionName, "nminIterations", &
+                               rsolver%nminIterations)
+      call parlst_getvalue_int(rparlist, ssectionName, "nmaxIterations", &
+                               rsolver%nmaxIterations)
 
       ! Ok, now set up the individual solver structures
       select case (rsolver%isolver)
@@ -1309,10 +1327,6 @@ contains
                              rsolver%iresNorm)
     call parlst_getvalue_int(rparlist, ssectionName, "istoppingCriterion", &
                              rsolver%istoppingCriterion)
-    call parlst_getvalue_int(rparlist, ssectionName, "nminIterations", &
-                             rsolver%nminIterations)
-    call parlst_getvalue_int(rparlist, ssectionName, "nmaxIterations", &
-                             rsolver%nmaxIterations)
     call parlst_getvalue_double(rparlist, ssectionName, "domega", &
                                 rsolver%domega)
     call parlst_getvalue_double(rparlist, ssectionName, "depsRel", &
