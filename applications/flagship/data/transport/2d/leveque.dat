@@ -164,28 +164,6 @@ trifile = %{sgriddirectory}/2d/square_01x01_quads.tri
 #              Q1~ non-parametric, edge-midpoint based
 # EL_EN31_2D   rotated bilinear nonconforming quadrilateral FE,
 #              Q1~ non-parametric, edge-midpoint based, new interface implementations
-#
-# EL_E001_2D   linear H1-conforming triangular FE, P1
-#
-# EL_E011_2D   bilinear H1-conforming quadrilateral FE, Q1 
-#              rotated bilinear non-conforming quadrilateral FE,
-#
-# EL_E020_2D   rotated linear nonconforming triangular FE,
-#              P1~, edge-midpoint based
-#
-# EL_E030_2D   rotated bilinear non-conforming quadrilateral FE,
-#              Q1~ parametric, integral mean value based
-# EL_EM30_2D   rotated bilinear non-conforming quadrilateral FE,
-#              Q1~ non-parametric, integral mean value based
-# EL_EN030_2D  rotated bilinear non-conforming quadrilateral FE,
-#              Q1~ non-parametric, integral mean value based, new implementation
-#
-# EL_E031_2D   rotated bilinear non-conforming quadrilateral FE,
-#              Q1~ parametric, edge-midpoint based
-# EL_EM31_2D   rotated bilinear non-conforming quadrilateral FE,
-#              Q1~ non-parametric, edge-midpoint based
-# EL_EN31_2D   rotated bilinear nonconforming quadrilateral FE,
-#              Q1~ non-parametric, edge-midpoint based, new interface implementations
 celement = EL_E011_2D
 
 # convert mesh to triangular mesh?
@@ -294,7 +272,7 @@ iformatUCD = 1
 # 0 = standard
 # 1 = linearisation with discontinuous P1 finite elements
 # 2 = linearisation with continuous P1 finite elements
-ilineariseucd = 1
+ilineariseucd = 0
 
 # number of refinement steps
 nrefineucd = 0
@@ -724,7 +702,7 @@ nmaxIterations = 100
 #  7 = BiCGSTAB
 #  8 = FGMRES
 # 11 = UMFPACK4
-isolver = 7
+isolver = 11
 
 # dimension of the Krylov subspace for FGMRES method
 nkrylov = 25

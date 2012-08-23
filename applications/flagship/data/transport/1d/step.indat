@@ -12,10 +12,13 @@ deffunc: @initsol1 = if(x >= 0.2 & x <= 0.4, 1.0, 0.0) ; x,t
 deffunc: @initsol2 = if(x >= 0.2 & x <= 0.4, -100*x^2+60*x-8, 0.0) ; x,t
 deffunc: @initsol3 = if(x >= 0.2 & x <= 0.4, 1-10*abs(x-0.3), 0.0) ; x,t
 
-# Specify the exact solution
-deffunc: @exactsol1 = if(x-t >= 0.2 & x-t <= 0.4, 1.0, 0.0) ; x,t
-deffunc: @exactsol2 = if(x-t >= 0.2 & x-t <= 0.4, -100*(x-t)^2+60*(x-t)-8, 0.0) ; x,t
-deffunc: @exactsol3 = if(x-t >= 0.2 & x-t <= 0.4, 1-10*abs(x-t-0.3), 0.0) ; x,t
+# Specify the exact solution and its derivative
+deffunc: @exactsol1_func   = if(x-t >= 0.2 & x-t <= 0.4, 1.0, 0.0) ; x,t
+deffunc: @exactsol2_func   = if(x-t >= 0.2 & x-t <= 0.4, -100*(x-t)^2+60*(x-t)-8, 0.0) ; x,t
+deffunc: @exactsol3_func   = if(x-t >= 0.2 & x-t <= 0.4, 1-10*abs(x-t-0.3), 0.0) ; x,t
+deffunc: @exactsol1_derivx = 0.0 ; x,t
+deffunc: @exactsol2_derivx = if(x-t >= 0.2 & x-t <= 0.4, -200*(x-t)+60, 0.0) ; x,t
+deffunc: @exactsol3_derivx = 0.0 ; x,t
 
 # Specify the velocity field
 deffunc: @velocity_x = 1.0 ; x,t

@@ -8,7 +8,8 @@
 ################################################################################
 
 # Specify the exact solution
-deffunc: @exactsol = 1 ; x,t
+deffunc: @exactsol_func   = 0.5*x*(1-x) ; x,t
+deffunc: @exactsol_derivx = 0.5-x ; x,t
 
 # Specify the diffusion coefficient
 deffunc: @diffusion = 1 ; x,t

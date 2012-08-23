@@ -19,7 +19,7 @@ defexpr:  r2  = (x-@x1)^2+(y-@y1)^2
 # Specify the initial solution
 deffunc: @initsol = EXP(-@r2/(4*_eps*t))/(4*_pi*_eps*t) ; x,y,t
 
-# Specify the exact solution
+# Specify the exact solution and its derivatives
 deffunc: @exactsol_func = EXP(-@r2/(4*_eps*t))/(4*_pi*_eps*t) ; x,y,t
 deffunc: @exactsol_derivx = -2*(x-@x1)*EXP(-@r2/(4*_eps*t))/(16*_exp*_pi*_eps*t^2) ; x,y,t
 deffunc: @exactsol_derivy = -2*(y-@y1)*EXP(-@r2/(4*_eps*t))/(16*_exp*_pi*_eps*t^2) ; x,y,t

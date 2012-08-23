@@ -10,12 +10,12 @@
 # Specify the initial solution
 deffunc: @initsol = if(x > 0.2 & x < 0.7, 1.0, 0.0) ; x,t
 
-# Specify the exact solution
-deffunc: @exactsol_func   = if(x-t >= 0.2 & x-t <= 0.4, 1.0, 0.0) ; x,t
-deffunc: @exactsol_derivx = 0 ; x,t
+# Specify the exact solution and its derivative
+deffunc: @exactsol_func   = if(x-t > 0.2 & x-t/2 < 0.7, 1.0, if(x <= 0.2 | x-t/2 >= 0.7, 0.0, 2.5*x-0.5)) ; x,t
+deffunc: @exactsol_derivx = if(x <= 0.2 | x-t/2 >= 0.7, 1.0, 0.0) ; x,t
 
 # Specify the diffusion coefficient
-deffunc: @diffusion = 1e-3 ; x,t
+deffunc: @diffusion = 0.0 ; x,t
 
 # Specify the boundary conditions for the primal problem
 [bdrcond_primal]

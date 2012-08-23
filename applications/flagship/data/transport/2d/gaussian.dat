@@ -33,6 +33,9 @@ ndimension = 2
 # solution algorithm
 algorithm = transient_primal
 
+# activate special benchmark checks
+benchmark   = Gaussian-Hill-2D
+
 #-------------------------------------------------------------------------------
 
 # type of mass matrix
@@ -100,7 +103,7 @@ srhsname =
 # 2 = PGM image
 # 3 = anayltical initial solution: consistent L2-projection
 # 4 = anayltical initial solution: lumped L2-projection
-isolutiontype = 3
+isolutiontype = 1
 
 # section name of initial solution
 ssolutionname = @initsol
@@ -109,7 +112,7 @@ ssolutionname = @initsol
 # 0 = no exact solution available
 # 1 = analytical initial solution
 # 2 = PGM image
-iexactsolutiontype = 0
+iexactsolutiontype = 1
 
 # section name of exact solution
 sexactsolutionname(3) =
@@ -166,6 +169,9 @@ celement = EL_Q1_2D
 
 # convert mesh to triangular mesh?
 iconvToTria = 0
+
+# disturb mesh
+ddisturbmesh = 0.0
 
 # type of matrix format
 # 7 = matrix format 7
@@ -273,7 +279,7 @@ ilineariseucd = 0
 nrefineucd = 0
 
 # time interval for UCD output
-dstepUCD = 1.0
+dstepUCD = 0.0
 
 # file for UCD output of solution
 sucdsolution = out/gaussian
@@ -314,10 +320,10 @@ theta = 0.5
 multisteps = 2
 
 # initial time for the simulation
-dinitialTime = 1.57079633
+dinitialTime = 1.57079632679490
 
 # final time for the simulation.
-dfinalTime = 6.2831853
+dfinalTime = 7.85398163397448
 
 # initial time step size
 dinitialStep = 0.001
@@ -646,7 +652,7 @@ depsStag = 0.0
 #  7 = BiCGSTAB
 #  8 = FGMRES
 # 50 = ILU
-isolver = 4
+isolver = 5
 
 # dimension of the Krylov subspace for FGMRES method
 nkrylov = 15
@@ -697,7 +703,7 @@ nmaxIterations = 100
 #  7 = BiCGSTAB
 #  8 = FGMRES
 # 11 = UMFPACK4
-isolver = 7
+isolver = 11
 
 # dimension of the Krylov subspace for FGMRES method
 nkrylov = 25
@@ -728,7 +734,7 @@ sprecondName = LinearPrecond
 #  4 = SOR
 #  5 = SSOR
 # 50 = ILU
-isolver = 50
+isolver = 0
 
 # tolerance of (M)ILU-preconditioner
 depsILU = 1e-12

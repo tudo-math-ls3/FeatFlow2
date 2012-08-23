@@ -1,78 +1,517 @@
 # -*- mode: any-ini; -*-
 
 ################################################################################
+# This file defines the default values of linear and nonlinear solvers.        #
+# Any value can be overwritten by the user in the application configuration.   #
+#                                                                              #
+# The solver structures are as follows:                                        #
+# * FullMultigridSolver (F-cycle)                                              #
+# * NonlinearMultigridSolver (F-cycle)                                         #
+# * LinearMultigridSolver (F-cycle)                                            #
+# * NonlinearSolver                                                            #
+# * LinearSolver                                                               #
+# * LinearSmoother                                                             #
+# * LinearPrecond                                                              #
+################################################################################
+
+
+################################################################################
 [FullMultigridSolver]
 ################################################################################
 
+# type of the solver
+# 0 = undefined
+# 1 = nonlinear single-grid solver
+# 2 = linear single-grid solver
+# 3 = nonlinear multi-grid solver
+# 4 = linear multi-grid solver
+# 5 = full multi-grid solver
+# 6 = coupled solver
+csolverType = 5
+
+# level of output information:
+# 0 = no output
+# 1 = errors
+# 2 = errors+warnings
+# 3 = information
+# 4 = verbose output
+ioutputlevel = 2
+
+# type of multigrid cycle
+# 0 = F-cylce
+# 1 = V-cycle
+# 2 = W-cycle
+# 3,4,5 = corresponding saw tooth variants
+icycle = 0
+
+# minimum number of multigrid steps
+ilmin = 1
+
+# maximum number of multigrid steps
+ilmax = 1
+
+# norm to use for defect checking
+# 0 = Euclidian norm
+# 1 = L1-norm
+# 2 = L2-norm
+# 3 = MAX-norm
 iresNorm = 0
+
+# stopping criterion
+# 0 = stop iteration of absolute AND relative criteria are satisfied
+# 1 = stop iteration of absolute OR  relative criteria are satisfied
 istoppingCriterion = 1
-nminiterations = 1
-nmaxiterations = 1
+
+# Relaxation factor; standard value = 1.0
+# If DOMEGA < 0 than implicit under-relaxation is perform by
+# ABS(DOMEGA). Otherwise, the value DOMEGA is used to perform
+# explicit under-relaxation of the system.
 domega = 1.0
+
+# Relative stopping criterion. Stop iteration if
+#   ||defect|| < EPSREL * ||initial defect||.
+# =0: ignore, use absolute stopping criterion
+# Remark: do not set depsAbs=depsRel=0!
 depsRel = 0.0
+
+# Absolute stopping criterion. Stop iteration if
+#   ||defect|| < EPSREL.
+# =0: ignore, use relative stopping criterion
+# Remark: do not set depsAbs=depsRel=0!
 depsAbs = 0.0
+
+# Relative stopping criterion. Stop iteration of
+#   ||current solution - last solution|| <= EPSSTAG
+# =0: ignore, do not check for stagnation
 depsStag = 0.0
+
+# Relative divergence criterion. Treat iteration as diverged if
+#   ||defect|| >= DIVREL * ||initial defect||
+# A value of SYS_INFINITY_DP disables the relative divergence check.
 ddivRel  = 1e99
+
+# Absolute divergence criterion. Treat iteration as diverged if
+#   ||defect|| >= DIVREL
+# A value of SYS_INFINITY_DP disables the absolute divergence check.
 ddivAbs  = 1e99
+
+# RHS-vector is treated as zero if max(rhs) < drhsZero
 drhsZero = 1e-30
+
+# Defect-vector is treated as zero if ||defect|| < ddefZero
 ddefZero = 1e-30
 
 ################################################################################
 [NonlinearMultigridSolver]
 ################################################################################
 
+# type of the solver
+# 0 = undefined
+# 1 = nonlinear single-grid solver
+# 2 = linear single-grid solver
+# 3 = nonlinear multi-grid solver
+# 4 = linear multi-grid solver
+# 5 = full multi-grid solver
+# 6 = coupled solver
+csolverType = 3
 
+# level of output information:
+# 0 = no output
+# 1 = errors
+# 2 = errors+warnings
+# 3 = information
+# 4 = verbose output
+ioutputlevel = 2
+
+# type of multigrid cycle
+# 0 = F-cylce
+# 1 = V-cycle
+# 2 = W-cycle
+# 3,4,5 = corresponding saw tooth variants
+icycle = 0
+
+# norm to use for defect checking
+# 0 = Euclidian norm
+# 1 = L1-norm
+# 2 = L2-norm
+# 3 = MAX-norm
+iresNorm = 0
+
+# stopping criterion
+# 0 = stop iteration of absolute AND relative criteria are satisfied
+# 1 = stop iteration of absolute OR  relative criteria are satisfied
+istoppingCriterion = 1
+
+# Relaxation factor; standard value = 1.0
+# If DOMEGA < 0 than implicit under-relaxation is perform by
+# ABS(DOMEGA). Otherwise, the value DOMEGA is used to perform
+# explicit under-relaxation of the system.
+domega = 1.0
+
+# Relative stopping criterion. Stop iteration if
+#   ||defect|| < EPSREL * ||initial defect||.
+# =0: ignore, use absolute stopping criterion
+# Remark: do not set depsAbs=depsRel=0!
+depsRel = 0.0
+
+# Absolute stopping criterion. Stop iteration if
+#   ||defect|| < EPSREL.
+# =0: ignore, use relative stopping criterion
+# Remark: do not set depsAbs=depsRel=0!
+depsAbs = 0.0
+
+# Relative stopping criterion. Stop iteration of
+#   ||current solution - last solution|| <= EPSSTAG
+# =0: ignore, do not check for stagnation
+depsStag = 0.0
+
+# Relative divergence criterion. Treat iteration as diverged if
+#   ||defect|| >= DIVREL * ||initial defect||
+# A value of SYS_INFINITY_DP disables the relative divergence check.
+ddivRel  = 1e99
+
+# Absolute divergence criterion. Treat iteration as diverged if
+#   ||defect|| >= DIVREL
+# A value of SYS_INFINITY_DP disables the absolute divergence check.
+ddivAbs  = 1e99
+
+# RHS-vector is treated as zero if max(rhs) < drhsZero
+drhsZero = 1e-30
+
+# Defect-vector is treated as zero if ||defect|| < ddefZero
+ddefZero = 1e-30
 
 ################################################################################
 [NonlinearSolver]
 ################################################################################
 
-iresNorm = 0
-istoppingCriterion = 1
-ddivRel  = 1e99
-ddivAbs  = 1e99
-drhsZero = 1e-30
-ddefZero = 1e-30
+# type of the solver
+# 0 = undefined
+# 1 = nonlinear single-grid solver
+# 2 = linear single-grid solver
+# 3 = nonlinear multi-grid solver
+# 4 = linear multi-grid solver
+# 5 = full multi-grid solver
+# 6 = coupled solver
+csolverType = 1
 
+# level of output information:
+# 0 = no output
+# 1 = errors
+# 2 = errors+warnings
+# 3 = information
+# 4 = verbose output
+ioutputlevel = 2
+
+# norm to use for defect checking
+# 0 = Euclidian norm
+# 1 = L1-norm
+# 2 = L2-norm
+# 3 = MAX-norm
+iresNorm = 0
+
+# stopping criterion
+# 0 = stop iteration of absolute AND relative criteria are satisfied
+# 1 = stop iteration of absolute OR  relative criteria are satisfied
+istoppingCriterion = 1
+
+# Relaxation factor; standard value = 1.0
+# If DOMEGA < 0 than implicit under-relaxation is perform by
+# ABS(DOMEGA). Otherwise, the value DOMEGA is used to perform
+# explicit under-relaxation of the system.
+domega = 1.0
+
+# Relative stopping criterion. Stop iteration if
+#   ||defect|| < EPSREL * ||initial defect||.
+# =0: ignore, use absolute stopping criterion
+# Remark: do not set depsAbs=depsRel=0!
+depsRel = 0.0
+
+# Absolute stopping criterion. Stop iteration if
+#   ||defect|| < EPSREL.
+# =0: ignore, use relative stopping criterion
+# Remark: do not set depsAbs=depsRel=0!
+depsAbs = 0.0
+
+# Relative stopping criterion. Stop iteration of
+#   ||current solution - last solution|| <= EPSSTAG
+# =0: ignore, do not check for stagnation
+depsStag = 0.0
+
+# Relative divergence criterion. Treat iteration as diverged if
+#   ||defect|| >= DIVREL * ||initial defect||
+# A value of SYS_INFINITY_DP disables the relative divergence check.
+ddivRel  = 1e99
+
+# Absolute divergence criterion. Treat iteration as diverged if
+#   ||defect|| >= DIVREL
+# A value of SYS_INFINITY_DP disables the absolute divergence check.
+ddivAbs  = 1e99
+
+# RHS-vector is treated as zero if max(rhs) < drhsZero
+drhsZero = 1e-30
+
+# Defect-vector is treated as zero if ||defect|| < ddefZero
+ddefZero = 1e-30
 
 ################################################################################
 [LinearMultigridSolver]
 ################################################################################
 
+# type of the solver
+# 0 = undefined
+# 1 = nonlinear single-grid solver
+# 2 = linear single-grid solver
+# 3 = nonlinear multi-grid solver
+# 4 = linear multi-grid solver
+# 5 = full multi-grid solver
+# 6 = coupled solver
+csolverType = 4
 
+# level of output information:
+# 0 = no output
+# 1 = errors
+# 2 = errors+warnings
+# 3 = information
+# 4 = verbose output
+ioutputlevel = 2
 
-################################################################################
-[LinearSmoother]
-################################################################################
+# type of multigrid cycle
+# 0 = F-cylce
+# 1 = V-cycle
+# 2 = W-cycle
+# 3,4,5 = corresponding saw tooth variants
+icycle = 0
 
+# norm to use for defect checking
+# 0 = Euclidian norm
+# 1 = L1-norm
+# 2 = L2-norm
+# 3 = MAX-norm
+iresNorm = 0
 
+# stopping criterion
+# 0 = stop iteration of absolute AND relative criteria are satisfied
+# 1 = stop iteration of absolute OR  relative criteria are satisfied
+istoppingCriterion = 1
+
+# Relaxation factor; standard value = 1.0
+# If DOMEGA < 0 than implicit under-relaxation is perform by
+# ABS(DOMEGA). Otherwise, the value DOMEGA is used to perform
+# explicit under-relaxation of the system.
+domega = 1.0
+
+# Relative stopping criterion. Stop iteration if
+#   ||defect|| < EPSREL * ||initial defect||.
+# =0: ignore, use absolute stopping criterion
+# Remark: do not set depsAbs=depsRel=0!
+depsRel = 0.0
+
+# Absolute stopping criterion. Stop iteration if
+#   ||defect|| < EPSREL.
+# =0: ignore, use relative stopping criterion
+# Remark: do not set depsAbs=depsRel=0!
+depsAbs = 0.0
+
+# Relative stopping criterion. Stop iteration of
+#   ||current solution - last solution|| <= EPSSTAG
+# =0: ignore, do not check for stagnation
+depsStag = 0.0
+
+# Relative divergence criterion. Treat iteration as diverged if
+#   ||defect|| >= DIVREL * ||initial defect||
+# A value of SYS_INFINITY_DP disables the relative divergence check.
+ddivRel  = 1e99
+
+# Absolute divergence criterion. Treat iteration as diverged if
+#   ||defect|| >= DIVREL
+# A value of SYS_INFINITY_DP disables the absolute divergence check.
+ddivAbs  = 1e99
+
+# RHS-vector is treated as zero if max(rhs) < drhsZero
+drhsZero = 1e-30
+
+# Defect-vector is treated as zero if ||defect|| < ddefZero
+ddefZero = 1e-30
 
 ################################################################################
 [LinearSolver]
 ################################################################################
 
+# type of the solver
+# 0 = undefined
+# 1 = nonlinear single-grid solver
+# 2 = linear single-grid solver
+# 3 = nonlinear multi-grid solver
+# 4 = linear multi-grid solver
+# 5 = full multi-grid solver
+# 6 = coupled solver
+csolverType = 2
+
+# level of output information:
+# 0 = no output
+# 1 = errors
+# 2 = errors+warnings
+# 3 = information
+# 4 = verbose output
+ioutputlevel = 2
+
+# norm to use for defect checking
+# 0 = Euclidian norm
+# 1 = L1-norm
+# 2 = L2-norm
+# 3 = MAX-norm
 iresNorm = 0
+
+# stopping criterion
+# 0 = stop iteration of absolute AND relative criteria are satisfied
+# 1 = stop iteration of absolute OR  relative criteria are satisfied
 istoppingCriterion = 1
+
+# Relaxation factor; standard value = 1.0
+# If DOMEGA < 0 than implicit under-relaxation is perform by
+# ABS(DOMEGA). Otherwise, the value DOMEGA is used to perform
+# explicit under-relaxation of the system.
+domega = 1.0
+
+# Relative stopping criterion. Stop iteration if
+#   ||defect|| < EPSREL * ||initial defect||.
+# =0: ignore, use absolute stopping criterion
+# Remark: do not set depsAbs=depsRel=0!
+depsRel = 0.0
+
+# Absolute stopping criterion. Stop iteration if
+#   ||defect|| < EPSREL.
+# =0: ignore, use relative stopping criterion
+# Remark: do not set depsAbs=depsRel=0!
+depsAbs = 0.0
+
+# Relative stopping criterion. Stop iteration of
+#   ||current solution - last solution|| <= EPSSTAG
+# =0: ignore, do not check for stagnation
+depsStag = 0.0
+
+# Relative divergence criterion. Treat iteration as diverged if
+#   ||defect|| >= DIVREL * ||initial defect||
+# A value of SYS_INFINITY_DP disables the relative divergence check.
 ddivRel  = 1e99
+
+# Absolute divergence criterion. Treat iteration as diverged if
+#   ||defect|| >= DIVREL
+# A value of SYS_INFINITY_DP disables the absolute divergence check.
 ddivAbs  = 1e99
+
+# RHS-vector is treated as zero if max(rhs) < drhsZero
 drhsZero = 1e-30
+
+# Defect-vector is treated as zero if ||defect|| < ddefZero
 ddefZero = 1e-30
 
+################################################################################
+[LinearSmoother]
+################################################################################
+
+# type of the solver
+# 0 = undefined
+# 1 = nonlinear single-grid solver
+# 2 = linear single-grid solver
+# 3 = nonlinear multi-grid solver
+# 4 = linear multi-grid solver
+# 5 = full multi-grid solver
+# 6 = coupled solver
+csolverType = 2
+
+# level of output information:
+# 0 = no output
+# 1 = errors
+# 2 = errors+warnings
+# 3 = information
+# 4 = verbose output
+ioutputlevel = 2
 
 ################################################################################
 [LinearPrecond]
 ################################################################################
 
+# type of the solver
+# 0 = undefined
+# 1 = nonlinear single-grid solver
+# 2 = linear single-grid solver
+# 3 = nonlinear multi-grid solver
+# 4 = linear multi-grid solver
+# 5 = full multi-grid solver
+# 6 = coupled solver
+csolverType = 2
+
+# level of output information:
+# 0 = no output
+# 1 = errors
+# 2 = errors+warnings
+# 3 = information
+# 4 = verbose output
+ioutputlevel = 2
 
 ################################################################################
 [Timestepping]
 ################################################################################
 
-# proportional exponent for PID controller
+# level of output information:
+# 0 = no output
+# 1 = errors
+# 2 = errors+warnings
+# 3 = information
+# 4 = verbose output
+ioutputlevel = 2
+
+# norm to use for solution variation checking
+# 0 = Euclidian norm
+# 1 = L1-norm
+# 2 = L2-norm
+# 3 = MAX-norm
+isolNorm = 0
+
+# Initial simulation time
+dinitialTime = 0.0
+
+# Lower bound for the admissible time step
+dminStep = %{Timestepping.dinitialStep}
+
+# Upper bound for the admissible time step
+dmaxStep = %{Timestepping.dinitialStep}
+
+#-------------------------------------------------------------------------------
+
+# Algorithm for adaptive time step control
+iadaptTimestep = 0
+
+# Initial time for performing adaptive time stepping
+dadaptTime = 0.0
+
+# Relative changes of the solution
+drelChange = 0.0
+
+# Relative stopping criterion. Stop time-stepping algorithm if
+#   || U^{N+1} - U^{N} || <= EPSSTAG * dStep
+# =0: ignore, do not stop time-stepping until final time is reached
+depsSteady = 0.0
+
+# Factor by which the time step is allowed to increase
+dIncreaseFactor = 2.0
+
+# Factor by which the time step is allowed to decrease
+dDecreaseFactor = 0.5
+
+# Factor by which the current time step should be scaled
+# if the current time step failed; must be < 1.0
+dstepReductionFactor = 0.9
+
+#-------------------------------------------------------------------------------
+
+# PID controller: proportional exponent
 dproportionalexponent = 0.075
 
-# integrap exponent for PID controller
+# PID controller: integral exponen
 dintegralexponent = 0.175
 
-# derivative exponent for PID controller
+# PID controller: derivative exponen
 dderivativeexponent = 0.01
