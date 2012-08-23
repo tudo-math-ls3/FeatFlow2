@@ -160,7 +160,7 @@ module timestepaux
 
     ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
     ! Relative stopping criterion. Stop time-stepping algorithm if
-    ! !! U^{N+1} - U^{N} !! <= EPSSTAG * dStep
+    !   || U^{N+1} - U^{N} || <= EPSSTAG * dStep
     ! =0: ignore, do not stop time-stepping until final time is reached
     real(DP) :: depsSteady = 0.0_DP
 
