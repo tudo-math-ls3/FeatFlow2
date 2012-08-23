@@ -467,6 +467,7 @@ contains
             ssectionNameHydro, ssectionNameTransport, RbdrCond,&
             rproblem, rtimestep, rsolver, Rsolution, rcollection)
 
+        ! Output solution to file
         call zpinch_outputSolution(rparlist, ssectionName,&
             rproblem%p_rproblemLevelMax, rsolution, rtimestep%dTime)
         
