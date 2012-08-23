@@ -487,11 +487,11 @@ module solveraux
     integer :: iresNorm = 0
 
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS:
-    ! Minimum number of iterations top perform
+    ! Minimum number of iterations to perform
     integer :: nminIterations = 0
 
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS:
-    ! Maximum number of iterations top perform
+    ! Maximum number of iterations to perform
     integer :: nmaxIterations = 0
 
     ! OUTPUT PARAMETER FOR ITERATIVE SOLVERS:
@@ -511,29 +511,27 @@ module solveraux
 
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS:
     ! Relative stopping criterion. Stop iteration if
-    ! !!defect!! < EPSREL * !!initial defect!!.
+    !   ||defect|| < EPSREL * ||initial defect||.
     ! =0: ignore, use absolute stopping criterion
     ! Remark: do not set depsAbs=depsRel=0!
     real(DP) :: depsRel = 0.0_DP
 
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS:
     ! Absolute stopping criterion. Stop iteration if
-    ! !!defect!! < EPSREL.
+    !   ||defect|| < EPSREL.
     ! =0: ignore, use relative stopping criterion
     ! Remark: do not set depsAbs=depsRel=0!
     real(DP) :: depsAbs = 0.0_DP
 
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS:
-    ! Relative divergence criterion. Treat iteration as
-    ! diverged if
-    !   !!defect!! >= DIVREL * !!initial defect!!
+    ! Relative divergence criterion. Treat iteration as diverged if
+    !   ||defect|| >= DIVREL * ||initial defect||
     ! A value of SYS_INFINITY_DP disables the relative divergence check.
     real(DP) :: ddivRel = SYS_INFINITY_DP
 
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS:
-    ! Absolute divergence criterion. Treat iteration as
-    ! diverged if
-    !   !!defect!! >= DIVREL
+    ! Absolute divergence criterion. Treat iteration as diverged if
+    !   ||defect|| >= DIVREL
     ! A value of SYS_INFINITY_DP disables the absolute divergence check.
     real(DP) :: ddivAbs = SYS_INFINITY_DP
 
@@ -542,12 +540,12 @@ module solveraux
     real(DP) :: drhsZero = 0.0_DP
 
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS:
-    ! Defect-vector is treated as zero if !!defect!! < ddefZero
+    ! Defect-vector is treated as zero if ||defect|| < ddefZero
     real(DP) :: ddefZero = 0.0_DP
 
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS:
     ! Relative stopping criterion. Stop iteration of
-    ! !!current solution - last solution!! <= EPSSTAG
+    ! ||current solution - last solution|| <= EPSSTAG
     ! =0: ignore, do not check for stagnation
     real(DP) :: depsStag = 0.0_DP
 
