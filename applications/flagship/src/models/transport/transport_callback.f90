@@ -75,33 +75,37 @@
 !#      -> Callback routine for the evaluation of the weights in
 !#         the target functional for goal-oriented error estimation
 !#
-!# 17.) transp_parseBoundaryCondition
+!# 17.) transp_weightFuncGHill
+!#      -> Callback routine for the evaluation of the weights in
+!#         the rotation of a Gaussian hill benchmark
+!#
+!# 18.) transp_parseBoundaryCondition
 !#      -> Callback routine for the treatment of boundary conditions
 !#
-!# 18.) transp_setBoundaryCondition
+!# 19.) transp_setBoundaryCondition
 !#      -> Imposes boundary conditions for nonlinear solver
 !#         by filtering the system matrix and the solution/residual
 !#         vector explicitly (i.e. strong boundary conditions)
 !#
-!# 19.) transp_calcBilfBdrCondition
+!# 20.) transp_calcBilfBdrCondition
 !#      -> Wrapper routine for the calculation of the bilinear form
 !#         arising from the weak imposition of boundary conditions;
 !#         this routine calls transp_calcBilfBdrCondXd with the
 !#         correct callback routines depending on the type of velocity
 !#         and the mode, i.e. primal or dual
 !#
-!# 20.) transp_calcLinfBdrCondition
+!# 21.) transp_calcLinfBdrCondition
 !#      -> Wrapper routine for the calculation of the linear form
 !#         arising from the weak imposition of boundary conditions;
 !#         this routine calls transp_calcLinfBdrCondXd with the
 !#         correct callback routines depending on the type of velocity
 !#         and the mode, i.e. primal or dual
 !#
-!# 21.) transp_calcOperatorBdrCondition
+!# 22.) transp_calcOperatorBdrCondition
 !#      -> Calculates the discrete operator at the boundary by the
 !#         group finite element formulation
 !#
-!# 22.) transp_calcVectorBdrCondition
+!# 23.) transp_calcVectorBdrCondition
 !#      -> Calculates the discrete vector at the boundary by the
 !#         group finite element formulation
 !#
@@ -194,7 +198,7 @@ module transport_callback
   public :: transp_coeffVectorAnalytic
   public :: transp_refFuncAnalytic
   public :: transp_weightFuncAnalytic
-  public :: transp_weightFuncGaussian
+  public :: transp_weightFuncGHill
   public :: transp_parseBoundaryCondition
   public :: transp_calcOperatorBdrCondition
   public :: transp_calcVectorBdrCondition
@@ -797,8 +801,9 @@ contains
           LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPY)
 
     case (DIFFUSION_VARIABLE)
-      print *, "Variable diffusion matrices are yet not implemented!"
-      stop
+      call output_line('Variable diffusion matrices are yet not implemented!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_calcJacobianThetaScheme')
+      call sys_halt()
 
     case default
       call output_line('Invalid type of diffusion!',&
@@ -1169,8 +1174,9 @@ contains
       end select
 
     case (DIFFUSION_VARIABLE)
-      print *, "Variable diffusion matrices are yet not implemented!"
-      stop
+      call output_line('Variable diffusion matrices are yet not implemented!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_calcJacobianThetaScheme')
+      call sys_halt()
 
     case default
       call output_line('Invalid type of diffusion!',&
@@ -4431,8 +4437,9 @@ contains
           ! Check if special treatment of mirror boundary condition is required
           if ((iand(p_IbdrCondType(isegment), BDRC_TYPEMASK) .eq. BDRC_PERIODIC) .or.&
               (iand(p_IbdrCondType(isegment), BDRC_TYPEMASK) .eq. BDRC_ANTIPERIODIC)) then
-            print *, "Mirror boundaries are not yet supported!"
-            stop
+            call output_line('Mirror boundaries are not yet supported!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'transp_calcVectorBdrCondition')
+            call sys_halt()
           end if
 
           ! Assemble the discrete vector
@@ -4441,7 +4448,7 @@ contains
               rcollectionTmp)
           
         case default
-          call output_line('Unsupported type of boundary copnditions !',&
+          call output_line('Unsupported type of boundary copnditions!',&
               OU_CLASS_ERROR,OU_MODE_STD,'transp_calcVectorBdrCondition')
           call sys_halt()
           
@@ -5467,7 +5474,7 @@ contains
 
 !<subroutine>
 
-  subroutine transp_weightFuncGaussian(rdiscretisation, nelements,&
+  subroutine transp_weightFuncGHill(rdiscretisation, nelements,&
       npointsPerElement, Dpoints, IdofsTest, rdomainIntSubset,&
       Dvalues, rcollection)
 
@@ -5565,7 +5572,7 @@ contains
       Dvalues = 0
     end select
     
-  end subroutine transp_weightFuncGaussian
+  end subroutine transp_weightFuncGHill
 
   ! *****************************************************************************
 
