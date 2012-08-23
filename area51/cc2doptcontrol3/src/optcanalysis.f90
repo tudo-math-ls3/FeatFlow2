@@ -972,7 +972,7 @@ contains
     
     real(DP) :: dval
     
-    integer :: istep,i,idoftime,icomp,ncomp
+    integer :: istep,i,icomp,ncomp
     real(DP),dimension(2) :: Derr
     type(t_collection), target :: rcollection,rlocalcoll
     type(t_vectorBlock), target :: rtempVector, rzeroVector
@@ -1006,7 +1006,7 @@ contains
     ! ---------------------------------------------------------
     ! Calculate ||y(T)-z(T)||^2
     ! ---------------------------------------------------------
-    if ((idoftime .eq. rkktsystem%p_rprimalSol%p_rvector%NEQtime) .and. &
+    if ((dtime .eq. rkktsystem%p_rprimalSol%p_rvector%p_rtimeDiscr%dtimeMax) .and. &
         (roperatorAsmHier%ranalyticData%p_rsettingsOptControl%ddeltaC .gt. 0.0_DP)) then
       Derror(3) = dval
     end if

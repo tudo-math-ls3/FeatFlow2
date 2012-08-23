@@ -576,13 +576,7 @@ contains
     end if
 
     ! -------------------------------------------------------------
-    ! Step 3: Calculate the intermediate control from the dual
-    ! -------------------------------------------------------------
-    
-    call kkt_calcIntermediateControl (rkktsystem)
-
-    ! -------------------------------------------------------------
-    ! Step 2: Calculate the search direction   
+    ! Step 3: Calculate the intermediate control and the search direction   
     ! -------------------------------------------------------------
 
     ! The search direction is just the residual in the control equation.
