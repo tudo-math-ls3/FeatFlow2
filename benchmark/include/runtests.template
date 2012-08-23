@@ -739,6 +739,7 @@ fb_runAndEvalBenchmarkTest() {
 
 	# Matthias' apps:
 	FLAGSHIP)
+	    echo "APPFLAGS  = "${APPFLAGS}
 	    echo "DATFILE   = "${DATFILE}
 	    echo "MGLEVELS  = "${MGLEVELS}
 	    if test "${FOOBAR+set}" = set ; then
@@ -746,6 +747,13 @@ fb_runAndEvalBenchmarkTest() {
 	    elif test "${FOOBAZ+set}" = set ; then
 		echo "FOOBAZ    = "${FOOBAZ}
 	    fi
+
+	    # This is a slight extension to the default behaviour.
+	    # Since the flagship application supports command line arguments
+	    # we prepend the contents of APPFLAGS to the variable DATFILE so
+	    # that additional FLAGS and the DAT file are passed to the executable
+	    DATFILE="${APPFLAGS} ${DATFILE}"
+	    echo "DATFILE   = "${DATFILE}
 	    ;;
 
 	*)
@@ -1168,7 +1176,7 @@ fb_runAndEvalBenchmarkTest() {
 			;;
 
 		    FLAGSHIP)
-			TABLE_HEADER='TODO_MATTHIAS_MOELLER'
+			TABLE_HEADER=''
 			;;
 
 		    *)

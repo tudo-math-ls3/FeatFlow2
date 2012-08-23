@@ -64,81 +64,143 @@ class = FLAGSHIP
 # test for the transport model
 #============================================================
 
+#------------------------------------------------------------
+# In the following tests the benchmark configurations are
+# tested as is to unsure that all provided parameter file
+# are valid.
+#------------------------------------------------------------
+
 # Test 1
-testid   = FLAGSHIP_TRANSPORT_001
-descr    = Solving steady transport problem with goal-oriented grid adaptation
-datfile  = data/apps_flagship/transport/2d/donut.dat
+testid   = FLAGSHIP_TRANSPORT_001_1D
+descr    = Buckley-Leverette equation in 1D
+datfile  = data/apps_flagship/orig/data/transport/1d/bucklev.dat
 mglevels = 1
 
+# Tricky, adjust directories, disable all terminal output
+appflags = "-Dslogdirectory=\$LOGDIR -Dsbenchlogfile=\$LOGDIR/\$RESULTFILE -Dsdatadirectory=data/apps_flagship/orig/data -Dsgriddirectory=data/apps_flagship/orig/grids -DTimestepping.ioutputlevel=0 -DFullMultigridSolver.ioutputlevel=0 -DNonlinearMultigridSolver.ioutputlevel=0 -DNonlinearSolver.ioutputlevel=0 -DLinearMultigridSolver.ioutputlevel=0 -DLinearSolver.ioutputlevel=0 -DOutput.iformatUCD=0"
+
 # Test 2
-testid   = FLAGSHIP_TRANSPORT_002
-descr    = Solving transient transport problem with Galerkin discretisation
-datfile  = data/apps_flagship/transport/2d/leveque.dat
-mglevels = 7
-ISTABILISATION = 0
+testid   = FLAGSHIP_TRANSPORT_002_1D
+descr    = Inviscid Burgers equation in 1D
+datfile  = data/apps_flagship/orig/data/transport/1d/burgers.dat
 
 # Test 3
-testid   = FLAGSHIP_TRANSPORT_003
-descr    = Solving transient transport problem with Upwind discretisation
-datfile  = data/apps_flagship/transport/2d/leveque.dat
-mglevels = 7
-ISTABILISATION = 1
+testid   = FLAGSHIP_TRANSPORT_003_1D
+descr    = Steady convection-diffusion equation in 1D
+datfile  = data/apps_flagship/orig/data/transport/1d/convdiff.dat
 
 # Test 4
-testid   = FLAGSHIP_TRANSPORT_004
-descr    = Solving transient transport problem with semi-explicit FEM-FCT discretisation
-datfile  = data/apps_flagship/transport/2d/leveque.dat
-mglevels = 7
-ISTABILISATION = 10
+testid   = FLAGSHIP_TRANSPORT_004_1D
+descr    = Poisson equation in 1D
+datfile  = data/apps_flagship/orig/data/transport/1d/poisson.dat
 
 # Test 5
-testid   = FLAGSHIP_TRANSPORT_005
-descr    = Solving transient transport problem with semi-implicit FEM-FCT discretisation
-datfile  = data/apps_flagship/transport/2d/leveque.dat
-mglevels = 7
-ISTABILISATION = 11
+testid   = FLAGSHIP_TRANSPORT_005_1D
+descr    = Convection of a sinusoidal profile in 1D
+datfile  = data/apps_flagship/orig/data/transport/1d/sinusoidal.dat
 
 # Test 6
-testid   = FLAGSHIP_TRANSPORT_006
-descr    = Solving transient transport problem with iterative FEM-FCT discretisation
-datfile  = data/apps_flagship/transport/2d/leveque.dat
-mglevels = 7
-ISTABILISATION = 12
+testid   = FLAGSHIP_TRANSPORT_006_1D
+descr    = Convection of a step profile in 1D
+datfile  = data/apps_flagship/orig/data/transport/1d/step.dat
 
-# Test 7
-testid   = FLAGSHIP_TRANSPORT_007
-descr    = Solving transient transport problem with linearised FEM-FCT discretisation
-datfile  = data/apps_flagship/transport/2d/leveque.dat
-mglevels = 7
-ISTABILISATION = 20
+#------------------------------------------------------------
+# In the following tests the different stabilisation
+# techniques are tested extensively.
+#------------------------------------------------------------
 
-# Test 8
-testid   = FLAGSHIP_TRANSPORT_008
-descr    = Solving transient transport problem with FEM-TVD discretisation
-datfile  = data/apps_flagship/transport/2d/leveque.dat
-mglevels = 7
-ISTABILISATION = 30
+# Test 1.1
+testid   = FLAGSHIP_TRANSPORT_101_1D
+descr    = Convection of a step profile in 1D with Galerkin discretisation
+datfile  = data/apps_flagship/orig/data/transport/1d/step.dat
 
-# Test 9
-testid   = FLAGSHIP_TRANSPORT_009
-descr    = Solving transient transport problem with FEM-GP discretisation
-datfile  = data/apps_flagship/transport/2d/leveque.dat
-mglevels = 7
-ISTABILISATION = 31
+# Tricky, adjust directories, disable all terminal output and overwrite
+# some fixed values by environment variables
+appflags = "-Dslogdirectory=\$LOGDIR -Dsbenchlogfile=\$LOGDIR/\$RESULTFILE -Dsdatadirectory=data/apps_flagship/orig/data -Dsgriddirectory=data/apps_flagship/orig/grids -DTimestepping.ioutputlevel=0 -DFullMultigridSolver.ioutputlevel=0 -DNonlinearMultigridSolver.ioutputlevel=0 -DNonlinearSolver.ioutputlevel=0 -DLinearMultigridSolver.ioutputlevel=0 -DLinearSolver.ioutputlevel=0 -DOutput.iformatUCD=0 -DTransport.imassantidiffusiontype=\$TRANSPORT_IMASSANTIDIFFUSIONTYPE -DTransport.iapproxtimederivativetype=\$TRANSPORT_IAPPROXTIMEDERIVATIVETYPE -DMass.istabilisation=\$MASS_ISTABILISATION -DConvection.istabilisation=\$CONVECTION_ISTABILISATION -DConvection.iprelimiting=\$CONVECTION_IPRELIMITING"
 
-# Test 10
-testid   = FLAGSHIP_TRANSPORT_010
-descr    = Solving transient transport problem with nonlinear upwind-biased FEM-LPT discretisation
-datfile  = data/apps_flagship/transport/2d/leveque.dat
-mglevels = 7
-ISTABILISATION = 41
+TRANSPORT_IMASSANTIDIFFUSIONTYPE=0
+TRANSPORT_IAPPROXTIMEDERIVATIVETYPE=0
+MASS_ISTABILISATION=0
+CONVECTION_ISTABILISATION=0
+CONVECTION_IPRELIMITING=0
 
-# Test 11
-testid   = FLAGSHIP_TRANSPORT_011
-descr    = Solving transient transport problem with linearised upwind-biased FEM-LPT discretisation
-datfile  = data/apps_flagship/transport/2d/leveque.dat
-mglevels = 7
-ISTABILISATION = 51
+# Test 1.2
+testid   = FLAGSHIP_TRANSPORT_102_1D
+descr    = Convection of a step profile in 1D with low-order discretisation
+
+CONVECTION_ISTABILISATION=1
+
+# Test 1.3
+testid   = FLAGSHIP_TRANSPORT_103_1D
+descr    = Convection of a step profile in 1D with semi-expl. FEM-FCT with prelimiting
+
+CONVECTION_ISTABILISATION=10
+CONVECTION_IPRELIMITING=1
+
+# Test 1.4
+testid   = FLAGSHIP_TRANSPORT_104_1D
+descr    = Convection of a step profile in 1D semi-impl. FEM-FCT with minmod prelimiting
+
+CONVECTION_ISTABILISATION=11
+CONVECTION_IPRELIMITING=2
+
+# Test 1.5
+testid   = FLAGSHIP_TRANSPORT_105_1D
+descr    = Convection of a step profile in 1D with iterative FEM-FCT with prelimiting
+
+CONVECTION_ISTABILISATION=12
+CONVECTION_IPRELIMITING=1
+
+# Test 1.6
+testid   = FLAGSHIP_TRANSPORT_106_1D
+descr    = Convection of a step profile in 1D with linearised FEM-FCT without prelimiting
+
+CONVECTION_ISTABILISATION=20
+CONVECTION_IPRELIMITING=0
+
+# Test 1.7
+testid   = FLAGSHIP_TRANSPORT_107_1D
+descr    = Convection of a step profile in 1D with linearised FEM-FCT with prelimiting
+
+CONVECTION_ISTABILISATION=20
+CONVECTION_IPRELIMITING=1
+
+# Test 1.8
+testid   = FLAGSHIP_TRANSPORT_108_1D
+descr    = Convection of a step profile in 1D with FEM-TVD
+
+CONVECTION_ISTABILISATION=30
+CONVECTION_IPRELIMITING=0
+
+# Test 1.9
+testid   = FLAGSHIP_TRANSPORT_109_1D
+descr    = Convection of a step profile in 1D with FEM-GP
+
+CONVECTION_ISTABILISATION=31
+CONVECTION_IPRELIMITING=0
+
+# Test 1.10
+testid   = FLAGSHIP_TRANSPORT_110_1D
+descr    = Convection of a step profile in 1D with nonlinear FEM-LPT
+
+MASS_ISTABILISATION=40
+CONVECTION_ISTABILISATION=41
+CONVECTION_IPRELIMITING=0
+
+# Test 1.11
+testid   = FLAGSHIP_TRANSPORT_111_1D
+descr    = Convection of a step profile in 1D with linearised FEM-LPT
+
+MASS_ISTABILISATION=50
+CONVECTION_ISTABILISATION=51
+CONVECTION_IPRELIMITING=0
+
+# Test 1
+#testid   = FLAGSHIP_TRANSPORT_001
+#descr    = Solving steady transport problem with goal-oriented grid adaptation
+#datfile  = data/apps_flagship/orig/data/transport/1d/step.dat
+#mglevels = 1
+#appflags = "-Dslogdirectory=\$LOGDIR -Dsbenchlogfile=\$LOGDIR/\$RESULTFILE -Dsdatadirectory=data/apps_flagship/orig/data -Dsgriddirectory=data/apps_flagship/orig/grids"
 
 #============================================================
 # test for the hydrodynamic model
