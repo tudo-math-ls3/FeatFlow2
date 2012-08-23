@@ -412,6 +412,8 @@ contains
       sfile = trim(rpostproc%sfilenameUCD)//"_dual"
     case (CCSPACE_CONTROL)
       sfile = trim(rpostproc%sfilenameUCD)//"_control"
+    case (CCSPACE_INTERMEDCONTROL)
+      sfile = trim(rpostproc%sfilenameUCD)//"_intermedcontrol"
     end select
     
     ! Create a filename for the visualisation output
@@ -571,18 +573,43 @@ contains
       ! -------------------------------------------
       ! Control equation
       ! -------------------------------------------
-      case (CCSPACE_CONTROL)
+      case (CCSPACE_CONTROL,CCSPACE_INTERMEDCONTROL)
+      
+        ! The shape of the control variable depends on what is controlled...
+        ! Initialise a component counter.
+        icomp = 1
       
         select case (rpostproc%p_rsettingsDiscr%ielementType)
         
         ! --------------------
+        ! Q2/QP1.
+        ! Manual output.
+        ! --------------------
+        case (4)
+          ! Data arrays
+          call lsyssc_getbase_double (Rvector%RvectorBlock(icomp),p_Ddata1)
+          call lsyssc_getbase_double (Rvector%RvectorBlock(icomp+1),p_Ddata2)
+          
+          ! Size of the arrays
+          nvt = Rvector%p_rblockDiscr%p_rtriangulation%nvt
+          nmt = Rvector%p_rblockDiscr%p_rtriangulation%nmt
+          nel = Rvector%p_rblockDiscr%p_rtriangulation%nel
+          
+          ! Write the velocity field
+          call ucd_addVarVertBasedVec(rexport, "control", UCD_VAR_STANDARD,&
+              p_Ddata1(1:nvt), p_Ddata2(1:nvt), &
+              DdataMid_X=p_Ddata1(nvt+1:nvt+nmt), &
+              DdataMid_Y=p_Ddata2(nvt+1:nvt+nmt), &
+              DdataElem_X=p_Ddata1(nvt+nmt+1:nvt+nmt+nel), &
+              DdataElem_Y=p_Ddata2(nvt+nmt+1:nvt+nmt+nel))
+              
+          icomp = icomp + 2
+
+        ! --------------------
         ! Standard output
         ! --------------------
         case default
-          ! The shape of the control variable depends on what is controlled...
-          ! Initialise a component counter.
-          icomp = 1
-          
+
           ! -------------------------------------------------
           ! Distributed control
           ! -------------------------------------------------
@@ -624,7 +651,7 @@ contains
       ! -------------------------------------------
       ! Control equation
       ! -------------------------------------------
-      case (CCSPACE_CONTROL)
+      case (CCSPACE_CONTROL,CCSPACE_INTERMEDCONTROL)
       
         ! The shape of the control variable depends on what is controlled...
         ! Initialise a component counter.
@@ -1378,7 +1405,7 @@ contains
             rsolution%p_rspaceTimeVector%p_rspaceDiscr%p_rtriangulation,&
             rphysics,roptcontrol,i-1,dtime,itag)
 
-      case (CCSPACE_DUAL,CCSPACE_CONTROL)
+      case (CCSPACE_DUAL,CCSPACE_CONTROL,CCSPACE_INTERMEDCONTROL)
       
         ! Current time
         call tdiscr_getTimestep(rsolution%p_rspaceTimeVector%p_rtimediscr,i,dtimeStart=dtime)
@@ -1723,7 +1750,15 @@ contains
     ! Data dump
     call optcpp_spaceTimeDump (rpostproc,&
         rkktsystem%p_rcontrol%p_rvectorAccess,CCSPACE_CONTROL,itag)
-  
+
+    ! ***************************************************************************
+    ! Intermediate control
+    ! ***************************************************************************
+    
+    ! Visualisation
+    call optcpp_spaceTimeVisualisation (rpostproc,&
+        rkktsystem%p_rintermedControl%p_rvectorAccess,CCSPACE_INTERMEDCONTROL,&
+        rsettings%rphysics,rsettings%rsettingsOptControl,itag)
 
 !      ! -------------------------------------------------------------------------
 !      ! Error analysis
@@ -1861,6 +1896,15 @@ contains
       ! Visualisation
       call optcpp_spaceTimeVisualisation (rpostproc,&
           rkktsystem%p_rcontrol%p_rvectorAccess,CCSPACE_CONTROL,&
+          rsettings%rphysics,rsettings%rsettingsOptControl,itag)
+          
+      ! ***************************************************************************
+      ! Intermediate control
+      ! ***************************************************************************
+      
+      ! Visualisation
+      call optcpp_spaceTimeVisualisation (rpostproc,&
+          rkktsystem%p_rintermedControl%p_rvectorAccess,CCSPACE_INTERMEDCONTROL,&
           rsettings%rphysics,rsettings%rsettingsOptControl,itag)
           
     end if

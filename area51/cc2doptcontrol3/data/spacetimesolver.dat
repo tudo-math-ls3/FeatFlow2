@@ -18,6 +18,7 @@
 ctypeIteration = 2
 
 # Whether to postprocess intermediate solutions.
+# =0: No postprocessing of intermediate solutions in the nonlinear loop.
 # =1: After each nonlinear step, apply postprocessing to the solution.
 # =2: Write postprocessing files with unique filename.
 # =3: After each nonlinear step, apply postprocessing to the solution.
@@ -327,6 +328,7 @@ ioutputLevel       = 2
 ctypeIteration = 2
 
 # Whether to postprocess intermediate solutions.
+# =0: no postprocessing of intermediate solutions in the nonlinear loop.
 # =1: After each nonlinear step, apply postprocessing to the solution.
 # =2: After each nonlinear step, apply postprocessing to the solution.
 #     Write postprocessing files with unique filename.

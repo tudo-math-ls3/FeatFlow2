@@ -1343,7 +1343,7 @@ contains
 !<subroutine>
 
   subroutine smva_getDef_primalLin (rdest,ispacelevel,itimelevel,idofTime,&
-      roperatorAsmHier,rprimalSol,rintermedControl,rprimalSolLin,rcontrolLin,coptype,&
+      roperatorAsmHier,rprimalSol,rprimalSolLin,rcontrolLin,coptype,&
       roptcBDCSpace,rtempData,csolgeneration,rtimerhs)
   
 !<description>
@@ -1365,10 +1365,6 @@ contains
   ! Must be discretised on the space and time level defined by
   ! ispacelevel and itimelevel.
   type(t_primalSpace), intent(inout) :: rprimalSol
-
-  ! Structure that defines the current intermediate control, i.e.,
-  ! "u~ = P(-1/alpha lambda)", computed from lambda.
-  type(t_controlSpace), intent(inout) :: rintermedControl
 
   ! Structure that describes the solution of the linearised primal equation.
   type(t_primalSpace), intent(inout) :: rprimalSolLin
@@ -1562,7 +1558,7 @@ contains
           call stat_startTimer(rtimerhs)
 
           call smva_getRhs_primalLin (roperatorAsm,idofTime,&
-              rintermedControl,rcontrolLin,1.0_DP,rdest,p_rmatrix)
+              rcontrolLin,1.0_DP,rdest,p_rmatrix)
 
           call stat_stopTimer(rtimerhs)
           
@@ -3326,7 +3322,7 @@ contains
 !<subroutine>
 
   subroutine smva_getRhs_primalLin (rspaceTimeOperatorAsm,idofTime,&
-      rintermedControl,rcontrolLin,dweight,rrhs,rtempMatrix)
+      rcontrolLin,dweight,rrhs,rtempMatrix)
 
 !<description>
   ! Calculates the RHS of the linearised primal equation, based on a 'current'
@@ -3342,9 +3338,6 @@ contains
 
   ! Weight for the operator
   real(DP), intent(in) :: dweight
-
-  ! Current intermediate control, control computed from the last dual solution.
-  type(t_controlSpace), intent(inout) :: rintermedControl
 
   ! Solution of the linearised control equation.
   type(t_controlSpace), intent(inout) :: rcontrolLin
@@ -3447,23 +3440,12 @@ contains
             ! vectors which take no time in being computed.
             if (p_ranalyticData%p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
 
-              ! Position 1+2 = intermediate control.
-              ! Actually "-1/alpha lambda", but with constraints being activated,
-              ! this can also be "P(-1/alpha lambda)".
-              
-              call sptivec_getVectorFromPool (rintermedControl%p_rvectorAccess,idofTime,p_rvector1)
-              call fev2_addVectorToEvalList(rvectorEval,p_rvector1%RvectorBlock(1),0)
-              call fev2_addVectorToEvalList(rvectorEval,p_rvector1%RvectorBlock(2),0)
-
-              ! Position 3+4 = update for the control
+              ! Position 1+2 = update for the control
               call sptivec_getVectorFromPool (rcontrolLin%p_rvectorAccess,idofTime,p_rvector2)
               call fev2_addVectorToEvalList(rvectorEval,p_rvector2%RvectorBlock(1),0)
               call fev2_addVectorToEvalList(rvectorEval,p_rvector2%RvectorBlock(2),0)
 
             else
-              call fev2_addDummyVectorToEvalList(rvectorEval)
-              call fev2_addDummyVectorToEvalList(rvectorEval)
-
               call fev2_addDummyVectorToEvalList(rvectorEval)
               call fev2_addDummyVectorToEvalList(rvectorEval)
             end if
@@ -3477,57 +3459,6 @@ contains
             call fev2_releaseVectorList(rvectorEval)
             call user_doneCollectForVecAssembly (p_ranalyticData%p_rglobalData,rusercollection)
             
-            ! -----------------------------------
-            ! Special handling if DOF-based constraints
-            ! are active
-            ! -----------------------------------
-            if (p_ranalyticData%p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
-
-              select case (p_ranalyticData%p_rsettingsOptControl%rconstraints%cdistVelConstraints)
-                
-              ! ---------------------------------------------------------
-              ! Box constraints implemented by DOF.
-              ! ---------------------------------------------------------
-              case (1)
-              
-                ! In this case, the constraints are implemented by a modified
-                ! matrix-vector multiplication. We have to create a matrix
-                !    M~ = DP(-1/alpha lambda)
-                ! which is the standard mass matrix, but the rows with the corresponding
-                ! DOFs violating the bounds replaced by zero. these are those DOFs
-                ! in the intermediate control which match the min/max value of the
-                ! bounds exactly.
-                
-                ! Get the mass matrix.
-                call lsyssc_clearMatrix (rtempMatrix%RmatrixBlock(1,1))
-                call lsyssc_clearMatrix (rtempMatrix%RmatrixBlock(2,2))
-                call smva_getMassMatrix (rspaceTimeOperatorAsm,rtempMatrix,1.0_DP)
-                
-                ! Set up a modified mass matrix.
-                ! Use p_rvector1 from above -- it is still valid!
-                dwmin = p_ranalyticData%p_rsettingsOptControl%rconstraints%ddistVelUmin1
-                dwmax = p_ranalyticData%p_rsettingsOptControl%rconstraints%ddistVelUmax1
-                call nwder_minMaxProjMassFilter (rtempMatrix%RmatrixBlock(1,1),&
-                    1.0_DP,p_rvector1%RvectorBlock(1),dwmin,dwmax)
-
-                dwmin = p_ranalyticData%p_rsettingsOptControl%rconstraints%ddistVelUmin2
-                dwmax = p_ranalyticData%p_rsettingsOptControl%rconstraints%ddistVelUmax2
-                call nwder_minMaxProjMassFilter (rtempMatrix%RmatrixBlock(2,2),&
-                    1.0_DP,p_rvector1%RvectorBlock(2),dwmin,dwmax)
-                    
-                ! Multiply the lineraised control by the mass matrix, this
-                ! gives the rhs: rrhs = rrhs + M~ duLin
-                dlocalweight = dweight * p_ranalyticData%p_rdebugFlags%dprimalDualCoupling
-
-                call lsyssc_scalarMatVec (rtempMatrix%RmatrixBlock(1,1), &
-                    p_rvector2%Rvectorblock(1), rrhs%RvectorBlock(1), dlocalweight, 1.0_DP)
-                call lsyssc_scalarMatVec (rtempMatrix%RmatrixBlock(2,2), &
-                    p_rvector2%Rvectorblock(2), rrhs%RvectorBlock(2), dlocalweight, 1.0_DP)
-                
-              end select
-
-            end if
-
           end if
           
         ! ***********************************************************
@@ -3550,17 +3481,12 @@ contains
             ! Add the dual velocity if we have distributed control. Otherwise add dummy
             ! vectors which take no time in being computed.
             if (p_ranalyticData%p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
-              ! Position 1 = (intermediate) control
-              call sptivec_getVectorFromPool (rintermedControl%p_rvectorAccess,idofTime,p_rvector1)
-              call fev2_addVectorToEvalList(rvectorEval,p_rvector1%RvectorBlock(1),0)
-
-              ! Position 2 = update for the control
+              
+              ! Position 1 = update for the control
               call sptivec_getVectorFromPool (rcontrolLin%p_rvectorAccess,idofTime,p_rvector2)
               call fev2_addVectorToEvalList(rvectorEval,p_rvector2%RvectorBlock(1),0)
 
             else
-              call fev2_addDummyVectorToEvalList(rvectorEval)
-
               call fev2_addDummyVectorToEvalList(rvectorEval)
             end if
 
@@ -3573,52 +3499,6 @@ contains
             call fev2_releaseVectorList(rvectorEval)
             call user_doneCollectForVecAssembly (p_ranalyticData%p_rglobalData,rusercollection)
             
-            ! -----------------------------------
-            ! Special handling if DOF-based constraints
-            ! are active
-            ! -----------------------------------
-            if (p_ranalyticData%p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
-
-              select case (p_ranalyticData%p_rsettingsOptControl%rconstraints%cdistVelConstraints)
-                
-              ! ---------------------------------------------------------
-              ! Box constraints implemented by DOF.
-              ! ---------------------------------------------------------
-              case (1)
-              
-                ! In this case, the constraints are implemented by a modified
-                ! matrix-vector multiplication. We have to create a matrix
-                !    M~ = DP(-1/alpha lambda)
-                ! which is the standard mass matrix, but the rows with the corresponding
-                ! DOFs violating the bounds replaced by zero. these are those DOFs
-                ! in the intermediate control which match the min/max value of the
-                ! bounds exactly.
-                
-                ! Get the mass matrix.
-                call lsyssc_clearMatrix (rtempMatrix%RmatrixBlock(1,1))
-                
-                call smva_getMassMatrix (rspaceTimeOperatorAsm,rtempMatrix,1.0_DP)
-
-                ! Set up a modified mass matrix.
-                ! Use p_rvector1 from above -- it is still valid!
-                dwmin = p_ranalyticData%p_rsettingsOptControl%rconstraints%ddistVelUmin1
-                dwmax = p_ranalyticData%p_rsettingsOptControl%rconstraints%ddistVelUmax1
-                call nwder_minMaxProjMassFilter (rtempMatrix%RmatrixBlock(1,1),&
-                    1.0_DP,p_rvector1%RvectorBlock(1),dwmin,dwmax)
-
-                ! Multiply the lineraised control by the mass matrix, this
-                ! gives the rhs: rrhs = rrhs + M~ duLin
-                dlocalweight = dweight * p_ranalyticData%p_rdebugFlags%dprimalDualCoupling
-
-                call lsyssc_scalarMatVec (rtempMatrix%RmatrixBlock(1,1), &
-                    p_rvector2%Rvectorblock(1), rrhs%RvectorBlock(1), dlocalweight, 1.0_DP)
-                
-                call lsysbl_releaseMatrix (rtempMatrix)
-                
-              end select
-
-            end if
-
           end if
 
         end select ! Equation
@@ -4429,19 +4309,7 @@ contains
         !
         !    rhs = (user defined) + u'
         !
-        ! with u being the control. If we have constraints, the 
-        ! right-hand side reads
-        !
-        !    rhs = (user defined) + DP(u) u'
-        !
-        ! DP(.) is the Newton derivative of the projection P(.). 
-        ! In case of Box constraints, there is
-        !
-        !   DP(u) = identity  where u is in the bounds
-        !         = 0         where u violates the bounds
-        !
-        ! Check the regularisation parameter ALPHA. Do we have
-        ! distributed control?
+        ! with u' being the linearised control.
         dalpha = p_ranalyticData%p_rsettingsOptControl%dalphaC
         
         dweight2 = dweight * &
@@ -4449,13 +4317,9 @@ contains
 
         if (dalpha .ge. 0.0_DP) then
 
-          ! Get the nonlinearity lambda and its current linearisation LambdaLin=lambda'
-          p_Du1 => revalVectors%p_RvectorData(1)%p_Ddata(:,:,:)
-          p_Du2 => revalVectors%p_RvectorData(2)%p_Ddata(:,:,:)
-
-          ! Get the nonlinearity lambda and its current linearisation LambdaLin=lambda'
-          p_DuLin1 => revalVectors%p_RvectorData(3)%p_Ddata(:,:,:)
-          p_DuLin2 => revalVectors%p_RvectorData(4)%p_Ddata(:,:,:)
+          ! Get the current linearised control
+          p_DuLin1 => revalVectors%p_RvectorData(1)%p_Ddata(:,:,:)
+          p_DuLin2 => revalVectors%p_RvectorData(2)%p_Ddata(:,:,:)
 
           ! Get the data arrays of the subvector
           p_rvectorData1 => RvectorData(1)
@@ -4466,134 +4330,39 @@ contains
           
           p_DbasTest => RvectorData(1)%p_DbasTest
 
-          select case (p_ranalyticData%p_rsettingsOptControl%rconstraints%cdistVelConstraints)
-            
-          ! ---------------------------------------------------------
-          ! No constraints,
-          ! ---------------------------------------------------------
-          case (0)
-            
-            ! Loop over the elements in the current set.
-            do iel = 1,nelements
+          ! Loop over the elements in the current set.
+          do iel = 1,nelements
 
-              ! Loop over all cubature points on the current element
-              do icubp = 1,npointsPerElement
+            ! Loop over all cubature points on the current element
+            do icubp = 1,npointsPerElement
 
-                ! Outer loop over the DOF's i=1..ndof on our current element,
-                ! which corresponds to the (test) basis functions Phi_i:
-                do idofe=1,p_rvectorData1%ndofTest
+              ! Outer loop over the DOF's i=1..ndof on our current element,
+              ! which corresponds to the (test) basis functions Phi_i:
+              do idofe=1,p_rvectorData1%ndofTest
+              
+                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! into dbasI
+                dbasI  = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
                 
-                  ! Fetch the contributions of the (test) basis functions Phi_i
-                  ! into dbasI
-                  dbasI  = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
-                  
-                  ! Get the values of lambda'
-                  duLin1 = p_DuLin1(icubp,iel,DER_FUNC2D)
-                  duLin2 = p_DuLin2(icubp,iel,DER_FUNC2D)
+                ! Get the values of lambda'
+                duLin1 = p_DuLin1(icubp,iel,DER_FUNC2D)
+                duLin2 = p_DuLin2(icubp,iel,DER_FUNC2D)
 
-                  ! Calculate the entries in the RHS.
-                  p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
-                      dweight2 * p_DcubWeight(icubp,iel) * &
-                      dulin1 * dbasI 
+                ! Calculate the entries in the RHS.
+                p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
+                    dweight2 * p_DcubWeight(icubp,iel) * &
+                    dulin1 * dbasI 
 
-                  p_DlocalVector2(idofe,iel) = p_DlocalVector2(idofe,iel) + &
-                      dweight2 * p_DcubWeight(icubp,iel) * &
-                      dulin2 * dbasI 
-                      
-                end do ! jdofe
+                p_DlocalVector2(idofe,iel) = p_DlocalVector2(idofe,iel) + &
+                    dweight2 * p_DcubWeight(icubp,iel) * &
+                    dulin2 * dbasI 
+                    
+              end do ! jdofe
 
-              end do ! icubp
-            
-            end do ! iel
-
-          ! ---------------------------------------------------------
-          ! Box constraints implemented by DOF.
-          ! ---------------------------------------------------------
-          case (1)
-            ! Nothing to do here!
-            ! This case is implemented by a matrix-vector multiplication
-            ! with a modified mass matrix in the caller.
-
-          ! ---------------------------------------------------------
-          ! Constant box constraints implemented by cubature point.
-          ! ---------------------------------------------------------
-          case (2)
-            
-            ! Get the box constraints
-            dumin1 = p_ranalyticData%p_rsettingsOptControl%rconstraints%ddistVelUmin1
-            dumin2 = p_ranalyticData%p_rsettingsOptControl%rconstraints%ddistVelUmin2
-            dumax1 = p_ranalyticData%p_rsettingsOptControl%rconstraints%ddistVelUmax1
-            dumax2 = p_ranalyticData%p_rsettingsOptControl%rconstraints%ddistVelUmax2
-
-            ! Loop over the elements in the current set.
-            do iel = 1,nelements
-
-              ! Loop over all cubature points on the current element
-              do icubp = 1,npointsPerElement
-
-                ! Get the control
-                du1 = p_Du1(icubp,iel,DER_FUNC2D)
-                du2 = p_Du2(icubp,iel,DER_FUNC2D)
-                
-                ! If the control violates the bounds, the Newton derivative
-                ! is zero, so only calculate something if the bounds
-                ! are not violated.
-
-                if ((du1 .gt. dumin1) .and. (du1 .lt. dumax1)) then
-                  
-                  ! Outer loop over the DOF's i=1..ndof on our current element,
-                  ! which corresponds to the (test) basis functions Phi_i:
-                  do idofe=1,p_rvectorData1%ndofTest
-                  
-                    ! Fetch the contributions of the (test) basis functions Phi_i
-                    ! into dbasI
-                    dbasI  = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
-                  
-                    ! Calculate the linearised control
-                    duLin1 = p_DuLin1(icubp,iel,DER_FUNC2D)
-
-                    ! Calculate the entries in the RHS.
-                    p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
-                        dweight2 * p_DcubWeight(icubp,iel) * &
-                        duLin1 * dbasI
-
-                  end do ! idofe
-                  
-                end if
-                  
-                if ((du2 .gt. dumin2) .and. (du2 .lt. dumax2)) then
-
-                  ! Outer loop over the DOF's i=1..ndof on our current element,
-                  ! which corresponds to the (test) basis functions Phi_i:
-                  do idofe=1,p_rvectorData1%ndofTest
-
-                    ! Fetch the contributions of the (test) basis functions Phi_i
-                    ! into dbasI
-                    dbasI  = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
-
-                    ! Calculate the linearised control
-                    duLin2 = p_DuLin2(icubp,iel,DER_FUNC2D)
-      
-                    ! Calculate the entries in the RHS.
-                    p_DlocalVector2(idofe,iel) = p_DlocalVector2(idofe,iel) + &
-                        dweight2 * p_DcubWeight(icubp,iel) * &
-                        duLin2 * dbasI 
-  
-                  end do ! jdofe
-
-                end if
-
-              end do ! icubp
-            
-            end do ! iel
-
-          case default
-            call output_line("Unknown constraints",&
-                OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_rhs")
-            call sys_halt()
-
-          end select ! constraints
+            end do ! icubp
           
+          end do ! iel
+
         end if
 
       ! ***********************************************************
@@ -5315,19 +5084,8 @@ contains
         !
         !    rhs = (user defined) + u'
         !
-        ! with u being the control. If we have constraints, the 
-        ! right-hand side reads
-        !
-        !    rhs = (user defined) + DP(u) u'
-        !
-        ! DP(.) is the Newton derivative of the projection P(.). 
-        ! In case of Box constraints, there is
-        !
-        !   DP(u) = identity  where u is in the bounds
-        !         = 0         where u violates the bounds
-        !
-        ! Check the regularisation parameter ALPHA. Do we have
-        ! distributed control?
+        ! with u' being the linearised control. 
+        
         dalpha = p_ranalyticData%p_rsettingsOptControl%dalphaC
         
         dweight2 = dweight * &
@@ -5335,11 +5093,8 @@ contains
 
         if (dalpha .ge. 0.0_DP) then
 
-          ! Get the nonlinearity lambda and its current linearisation LambdaLin=lambda'
-          p_Du1 => revalVectors%p_RvectorData(1)%p_Ddata(:,:,:)
-
-          ! Get the nonlinearity lambda and its current linearisation LambdaLin=lambda'
-          p_DuLin1 => revalVectors%p_RvectorData(3)%p_Ddata(:,:,:)
+          ! Get the linearised control u'
+          p_DuLin1 => revalVectors%p_RvectorData(1)%p_Ddata(:,:,:)
 
           ! Get the data arrays of the subvector
           p_rvectorData1 => RvectorData(1)
@@ -5348,99 +5103,34 @@ contains
           
           p_DbasTest => RvectorData(1)%p_DbasTest
 
-          select case (p_ranalyticData%p_rsettingsOptControl%rconstraints%cdistVelConstraints)
-            
-          ! ---------------------------------------------------------
-          ! No constraints
-          ! ---------------------------------------------------------
-          case (0)
-            
-            ! Loop over the elements in the current set.
-            do iel = 1,nelements
+          ! Loop over the elements in the current set.
+          do iel = 1,nelements
 
-              ! Loop over all cubature points on the current element
-              do icubp = 1,npointsPerElement
+            ! Loop over all cubature points on the current element
+            do icubp = 1,npointsPerElement
 
-                ! Outer loop over the DOF's i=1..ndof on our current element,
-                ! which corresponds to the (test) basis functions Phi_i:
-                do idofe=1,p_rvectorData1%ndofTest
+              ! Outer loop over the DOF's i=1..ndof on our current element,
+              ! which corresponds to the (test) basis functions Phi_i:
+              do idofe=1,p_rvectorData1%ndofTest
+              
+                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! into dbasI
+                dbasI  = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
                 
-                  ! Fetch the contributions of the (test) basis functions Phi_i
-                  ! into dbasI
-                  dbasI  = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
-                  
-                  ! Get the values of lambda'
-                  duLin1 = p_DuLin1(icubp,iel,DER_FUNC2D)
+                ! Get the values of lambda'
+                duLin1 = p_DuLin1(icubp,iel,DER_FUNC2D)
 
-                  ! Calculate the entries in the RHS.
-                  p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
-                      dweight2 * p_DcubWeight(icubp,iel) * &
-                      dulin1 * dbasI 
+                ! Calculate the entries in the RHS.
+                p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
+                    dweight2 * p_DcubWeight(icubp,iel) * &
+                    dulin1 * dbasI 
 
-                end do ! jdofe
+              end do ! jdofe
 
-              end do ! icubp
-            
-            end do ! iel
-            
-          ! ---------------------------------------------------------
-          ! Constant box constraints
-          ! ---------------------------------------------------------
-          case (1)
-            
-            ! Get the box constraints
-            dumin1 = p_ranalyticData%p_rsettingsOptControl%rconstraints%ddistVelUmin1
-            dumax1 = p_ranalyticData%p_rsettingsOptControl%rconstraints%ddistVelUmax1
-
-            dweight2 = dweight * &
-                p_rspaceTimeOperatorAsm%p_ranalyticData%p_rdebugFlags%dprimalDualCoupling
-
-            ! Loop over the elements in the current set.
-            do iel = 1,nelements
-
-              ! Loop over all cubature points on the current element
-              do icubp = 1,npointsPerElement
-
-                ! Get the control
-                du1 = p_Du1(icubp,iel,DER_FUNC2D)
-                
-                ! If the control violates the bounds, the Newton derivative
-                ! is zero, so only calculate something if the bounds
-                ! are not violated.
-
-                if ((du1 .gt. dumin1) .and. (du1 .lt. dumax1)) then
-                  
-                  ! Outer loop over the DOF's i=1..ndof on our current element,
-                  ! which corresponds to the (test) basis functions Phi_i:
-                  do idofe=1,p_rvectorData1%ndofTest
-                  
-                    ! Fetch the contributions of the (test) basis functions Phi_i
-                    ! into dbasI
-                    dbasI  = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
-                  
-                    ! Calculate the linearised control
-                    duLin1 = p_DuLin1(icubp,iel,DER_FUNC2D)
-
-                    ! Calculate the entries in the RHS.
-                    p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
-                        dweight2 * p_DcubWeight(icubp,iel) * &
-                        duLin1 * dbasI
-
-                  end do ! idofe
-                  
-                end if
-                  
-              end do ! icubp
-            
-            end do ! iel
-
-          case default
-            call output_line("Unknown constraints",&
-                OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_rhs")
-            call sys_halt()
-
-          end select ! constraints
+            end do ! icubp
           
+          end do ! iel
+            
         end if
 
       ! ***********************************************************

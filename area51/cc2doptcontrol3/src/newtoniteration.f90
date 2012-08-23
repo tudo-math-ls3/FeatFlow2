@@ -772,6 +772,8 @@ contains
     ! Apply the Newton iteration
     call itc_initIteration(rsolver%riter)
     
+    !rsolver%p_rsettingsSolver%rsettingsOptControl%rconstraints%cdistVelConstraints = 0
+    
     do while (.true.)
     
       ! The Newton iteration reads
@@ -985,6 +987,8 @@ contains
       end if
 
       call output_separator (OU_SEP_MINUS)
+      
+      !rsolver%p_rsettingsSolver%rsettingsOptControl%rconstraints%cdistVelConstraints = 1
 
     end do
     

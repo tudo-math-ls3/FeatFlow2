@@ -32,6 +32,9 @@ module constantsdiscretisation
   ! Control space
   integer, parameter, public :: CCSPACE_CONTROL = 4
 
+  ! Intermediate control, control computed from the dual solution
+  integer, parameter, public :: CCSPACE_INTERMEDCONTROL = 5
+
 !</constantblock>
 
 !<constantblock description = "Supported equations">

@@ -996,7 +996,6 @@ contains
       call spaceslh_solve (rspaceSolver,idofTime,cspatialInitCondPolicy,&
           ceqnflags,rstatLocal,p_rkktsystem%ispacelevel,&
           p_rkktsystem%p_rprimalSol,&
-          rintermedControl=p_rkktsystem%p_rintermedControl,&
           rprimalSolLin=rkktsystemDirDeriv%p_rprimalSolLin,&
           rcontrolLin=rkktsystemDirDeriv%p_rcontrolLin)
       output_iautoOutputIndent = output_iautoOutputIndent - 2
@@ -1122,7 +1121,7 @@ contains
 !</inputoutput>
 
 !<inputoutput>
-  ! OPTIONAL: If specified, this receives the control.
+  ! This receives the control of the linearised control equation.
   type(t_controlSpace), intent(inout) :: rcontrolLin
 !</inputoutput>
 
@@ -1243,7 +1242,7 @@ contains
                     -1.0_DP/p_rsettingsOptControl%dalphaC,0.0_DP)
               
               ! ----------------------------------------------------------
-              ! Box constraints
+              ! Box constraints, implemented by DOF.
               ! ----------------------------------------------------------
               case (1)
               
@@ -1428,13 +1427,13 @@ contains
 
     ! The (linearised) control equation reads:
     !
-    !    J''(u) g  =  g - (-1/alpha) P'(u) ( -1/alpha [B'(u)]* lambda_g )  =  rhs
+    !    J''(u) g  =  g - P'(-1/alpha B lambda) ( -1/alpha [B'(u)]* lambda_g )  =  rhs
     !
     ! The residual of the control equation is (for the distributed 
     ! control case)
     !
     !   res = rhs - J''(u) g
-    !       = rhs - g + (-1/alpha) P'(u) ( -1/alpha [B'(u)]* lambda_g )
+    !       = rhs - g + P'(-1/alpha B lambda) ( -1/alpha [B'(u)]* lambda_g )
     !
     ! The result is written to rresidual, thus, rresidual receives a
     ! fully qualified description of the residual in the control space.
@@ -1442,7 +1441,7 @@ contains
     ! First, add the RHS to the residual.
     ! This is done by creating an appropriate structure.
     !
-    ! a) rresidual = (-1/alpha) P'(u) ( -1/alpha [B'(u)]* lambda_g )
+    ! a) rresidual = P'(-1/alpha B lambda) ( -1/alpha [B'(u)]* lambda_g )
     ! We expect rkktsystemDirDeriv to represent the value "J''(u) g".
     ! To calculate the residual, we need a representation of this value
     ! in the control space.
