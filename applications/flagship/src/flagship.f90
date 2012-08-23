@@ -29,6 +29,7 @@ program flagship
   use fparser
   use fsystem
   use genoutput
+  use io
   use paramlist
   use signals
   use storage
@@ -45,13 +46,14 @@ program flagship
   type(t_parlist) :: rparlist
 
   ! local variables
-  character(LEN=SYS_STRLEN) :: cbuffer, hostname, hosttype, username
-  character(LEN=SYS_STRLEN) :: slogfile, serrorfile, sbenchlogfile
-  character(LEN=SYS_STRLEN) :: application
-  character(LEN=SYS_STRLEN) :: sparameterfile, sperfconfigfile
+  character(LEN=SYS_STRLEN) :: application,cbuffer
+  character(LEN=SYS_STRLEN) :: slogfile,serrorfile,sbenchlogfile
+  character(LEN=SYS_STRLEN) :: sparameterfile,sperfconfigfile
   character(LEN=10) :: stime
   character(LEN=8)  :: sdate
   integer, external :: signal_SIGINT, signal_SIGQUIT
+  integer :: iunit
+  logical :: bexit
 
 
 #ifdef ENABLE_COPROCESSOR_SUPPORT
@@ -93,40 +95,54 @@ program flagship
   call output_line('            Dortmund University of Technology')
   call output_line('            Vogelpothsweg 87, 44227 Dortmund, Germany')
   call output_separator(OU_SEP_STAR)
-  call getenv('HOST',cbuffer); hostname = adjustl(cbuffer)
-  call output_line('  Hostname:        '//trim(hostname))
-  call getenv('HOSTTYPE',cbuffer); hosttype = adjustl(cbuffer)
-  call output_line('  Hosttype:        '//trim(hosttype))
-  call getenv('USER',cbuffer); username = adjustl(cbuffer)
-  call output_line('  Username:        '//trim(username))
+  if (sys_getenv_string('HOST',cbuffer))&
+      call output_line('  Hostname:        '//trim(adjustl(cbuffer)))
+  if (sys_getenv_string('HOSTTYPE',cbuffer))&
+      call output_line('  Hosttype:        '//trim(adjustl(cbuffer)))
+  if (sys_getenv_string('USER',cbuffer))&
+      call output_line('  Username:        '//trim(adjustl(cbuffer)))
   call date_and_time(sdate, stime)
   call output_line('  Date:            '//sdate(7:8)//'.'//sdate(5:6)//'.'//sdate(1:4))
   call output_line('  Time:            '//stime(1:2)//':'//stime(3:4)//':'//stime(5:6))
 
-  ! Get command line arguments
-  if (command_argument_count() .eq. 0) then
+  ! Check presence of command line argument(s)
+  bexit = (sys_ncommandLineArgs() .eq. 0)
+
+  ! Check existence of parameter file
+  if (.not.bexit) then
+    call sys_getcommandLineArg(sys_ncommandLineArgs(), cbuffer)
+    sparameterfile = trim(adjustl(cbuffer))
+    bexit = .not.(sys_fileExists(iunit,sparameterfile))
+  end if
+  
+  ! Exit if application is not called correctly
+  if (bexit) then
+    call output_separator(OU_SEP_STAR)
     call output_lbrk()
-    call output_line('  PARAMETERFILE missing!!!')
+    call output_line('Application must be called as:')
+    call output_line('  appname <args> parameterfile')
     call output_lbrk()
-    call sys_halt()
+    call output_line('Admissible arguments are as follows:')
+    call output_line(' -D<section>.parameter:<entry>=value')
+    call output_line('   Overwrites the entry of the parameter in section by the given value.')
+    call output_line('   If <section> is missing then the default section is used.')
+    call output_line('   If <entry> is missing then the first entry is used.')
+    call output_lbrk()
+    call exit(-1)
   end if
 
   ! Initialise parameter list from file
-  call get_command_argument(command_argument_count(), cbuffer)
-  sparameterfile = adjustl(cbuffer)
   call parlst_init(rparlist)
-  call parlst_readfromfile(rparlist, trim(sparameterfile))
-  call parlst_getvalue_string(rparlist, '', "application", application)
-  call sys_tolower(application)
-  call output_line('  Application:     '//trim(application))
-  call output_line('  Parameterfile:   '//trim(sparameterfile))
-  call output_separator(OU_SEP_STAR)
-  call output_lbrk()
-  call output_line('The following settings are used for simulation')
-  call output_separator(OU_SEP_MINUS)
-  call parlst_info(rparlist)
-  call output_separator(OU_SEP_MINUS)
+  call parlst_readfromfile(rparlist, trim(sparameterfile), bexpandVars=.false.)
 
+  ! Check for command line arguments
+  call flagship_parseCmdlArguments(rparlist)
+
+  ! Expand all subvariables and environment variables to the actual values
+  call parlst_expandEnvVariables(rparlist)
+  call parlst_expandSubvars(rparlist)
+
+  ! Get log files for output
   call parlst_getvalue_string (rparlist,'',&
       'slogfile', slogfile, '')
   call parlst_getvalue_string (rparlist,'',&
@@ -138,12 +154,24 @@ program flagship
   
   ! Release output stuff
   call output_done()
-  
-  ! Initialise log file for output.
+
+  ! Initialise log file for output
   call output_init (slogfile, serrorfile, sbenchlogfile)
 
   ! Initialise global performace configurations
   call flagship_initPerfConfig(sperfconfigfile)
+
+  ! Switch to application module
+  call parlst_getvalue_string(rparlist, '', "application", application, '')
+  call sys_tolower(application)
+  call output_line('  Application:     '//trim(application))
+  call output_line('  Parameterfile:   '//trim(sparameterfile))
+  call output_separator(OU_SEP_STAR)
+  call output_lbrk()
+  call output_line('The following settings are used for simulation')
+  call output_separator(OU_SEP_MINUS)
+  call parlst_info(rparlist)
+  call output_separator(OU_SEP_MINUS)
 
   ! Switch to application module
   if (trim(application) .eq. 'transport') then
@@ -157,9 +185,10 @@ program flagship
 
   elseif (trim(application) .eq. 'mhd') then
     call mhd_app(rparlist, 'mhd')
+    
   else
     call output_line('Invalid application name!',&
-        OU_CLASS_WARNING,OU_MODE_STD,'flagship')
+        OU_CLASS_ERROR,OU_MODE_STD,'flagship')
     call sys_halt()
     
   end if
@@ -177,6 +206,136 @@ program flagship
 
   ! Close logfile
   call output_done()
+
+contains
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine flagship_parseCmdlArguments(rparlist)
+
+!<description>
+    ! This subroutine parses the commandline arguments and modifies the
+    ! parameter values in the global parameter list.
+!</description>
+
+!<inputoutput>
+    ! parameter list
+    type(t_parlist), intent(inout) :: rparlist
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_parlstSection), pointer :: p_rsection
+    character(LEN=PARLST_MLSECTION) :: ssection
+    character(LEN=PARLST_MLNAME) :: sparameter,sentry
+    character(LEN=PARLST_MLDATA) :: svalue
+    character(LEN=SYS_STRLEN) :: soption
+    character(LEN=PARLST_MLDATA), dimension(:), pointer :: Svalues
+    integer :: iarg,narg,iformat,itoken1,itoken2,isubstring,nsubstrings,i
+
+    iarg = 1; narg = sys_ncommandLineArgs()-1
+
+    cmdarg: do while(iarg .le. narg)
+      ! Retrieve next command line argument
+      call sys_getcommandLineArg(iarg,soption,svalue,iformat)
+
+      select case(iformat)
+      case (0)
+        ! Options without parameter values
+
+      case (1,2)
+        ! Options with given parameter values
+
+        ! What option are we?
+        if (soption(1:1) .eq. 'D') then
+
+          ! Tokenize string: soption=D<section>.variable:<entry>
+          itoken1 = scan(soption,'.')
+          if (itoken1 .ne. 0) then
+            ssection = trim(adjustl(soption(2:itoken1-1)))
+          else
+            ssection = ''
+          end if
+          
+          itoken2 = scan(soption,':')
+          if (itoken2 .ne. 0) then
+            sparameter = trim(adjustl(soption(max(2,itoken1+1):itoken2-1)))
+            sentry     = trim(adjustl(soption(max(2,itoken2+1):)))
+            read(sentry, fmt='(I10)') isubstring
+          else
+            sparameter = trim(adjustl(soption(max(2,itoken1+1):)))
+            sentry     = ''
+            isubstring = 0
+          end if
+
+          ! Query/add section in parameter list
+          call parlst_querysection(rparlist, trim(adjustl(ssection)), p_rsection)
+          if (.not.associated(p_rsection)) then
+            call parlst_addsection (rparlist, trim(adjustl(ssection)))
+            call parlst_querysection(rparlist, trim(adjustl(ssection)), p_rsection)
+          end if
+
+          ! We need to consider several cases
+          if (parlst_queryvalue(p_rsection, trim(adjustl(sparameter))) .ne. 0) then
+
+            ! Parameter exists already in section
+            if (isubstring .eq. 0) then
+              ! Overwrite existing value
+              call parlst_addvalue(p_rsection, trim(adjustl(sparameter)),&
+                  trim(adjustl(svalue)))
+            else
+              ! Get number of existing substrings
+              nsubstrings = parlst_querysubstrings(p_rsection, trim(adjustl(sparameter)))
+              if (isubstring .lt. nsubstrings) then
+                ! Overwrite existing substring
+                call parlst_setvalue(p_rsection, trim(adjustl(sparameter)),&
+                    trim(adjustl(svalue)), isubstring=isubstring)
+              else
+                ! Make a backup of existing substrings
+                allocate(Svalues(0:nsubstrings))
+                do i=0,nsubstrings
+                  call parlst_getvalue_string(p_rsection, trim(adjustl(sparameter)),&
+                      Svalues(i), isubstring=i)
+                end do
+                ! Increase the number of substrings
+                call parlst_addvalue(p_rsection, trim(adjustl(sparameter)),&
+                    trim(adjustl(svalue)), isubstring)
+                ! Copy existing substrings
+                do i=0,nsubstrings
+                  call parlst_setvalue(p_rsection, trim(adjustl(sparameter)),&
+                      Svalues(i), isubstring=i)
+                end do
+                ! Add new substring
+                call parlst_setvalue(p_rsection, trim(adjustl(sparameter)),&
+                    trim(adjustl(svalue)), isubstring=isubstring)
+                deallocate(Svalues)
+              end if
+            end if
+          else
+            ! Add new value to parameter list
+            if (isubstring .eq. 0) then
+              call parlst_addvalue(p_rsection, trim(adjustl(sparameter)),&
+                  trim(adjustl(svalue)))
+            else
+              call parlst_addvalue(p_rsection, trim(adjustl(sparameter)),&
+                  trim(adjustl(svalue)), isubstring)
+              call parlst_setvalue(p_rsection, trim(adjustl(sparameter)),&
+                  trim(adjustl(svalue)), isubstring=isubstring)
+            end if
+          end if
+        else
+          call output_line('Invalid option: '//trim(adjustl(soption))//'!',&
+              OU_CLASS_WARNING,OU_MODE_STD,'flagship')
+        end if
+      end select
+      
+      ! Proceed with next command line argument
+      iarg=iarg+1
+    end do cmdarg
+        
+  end subroutine flagship_parseCmdlArguments
 
 end program flagship
 

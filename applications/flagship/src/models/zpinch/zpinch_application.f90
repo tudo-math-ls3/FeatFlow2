@@ -33,13 +33,6 @@
 !#     -> Solves the primal formulation of the time-dependent
 !#        simplified MHD equations
 !#
-!#
-!# The following auxiliary routines are available:
-!#
-!# 1.) zpinch_parseCmdlArguments
-!#     -> Parses the list of commandline arguments and overwrites
-!#        parameter values from the parameter files
-!#
 !# </purpose>
 !##############################################################################
 
@@ -213,12 +206,6 @@ contains
         ssectionName, 'subapplication', ssectionNameHydro, isubstring=1)
     call parlst_getvalue_string(rparlist,&
         ssectionName, 'subapplication', ssectionNameTransport, isubstring=2)
-
-    ! Overwrite configuration from command line arguments. After this
-    ! subroutine has been called, the parameter list remains unchanged
-    ! unless the used updates some parameter values interactively.
-    call zpinch_parseCmdlArguments(rparlist)
-
 
     ! Initialise global collection structure
     call collct_init(rcollection)
@@ -1185,84 +1172,5 @@ contains
     call lsysbl_releaseVector(Rvector3(2))
 
   end subroutine zpinch_solveTransientPrimal
-
-  !*****************************************************************************
-  ! AUXILIARY ROUTINES
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine zpinch_parseCmdlArguments(rparlist)
-
-!<description>
-    ! This subroutine parses the commandline arguments and modifies the
-    ! parameter values in the global parameter list.
-!</description>
-
-!<inputoutput>
-    ! parameter list
-    type(t_parlist), intent(inout) :: rparlist
-!</inputoutput>
-!</subroutine>
-
-    ! local variables
-    character(LEN=SYS_STRLEN) :: cbuffer
-    integer :: iarg, narg
-
-    iarg = 1; narg = command_argument_count()
-
-    cmdarg: do
-      ! Retrieve next command line argument
-      call get_command_argument(iarg,cbuffer)
-
-      if ((trim(adjustl(cbuffer)) .eq. '-I') .or.&
-          (trim(adjustl(cbuffer)) .eq. '--inviscid')) then
-        
-        iarg = iarg+1
-        call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', 'inviscid', trim(adjustl(cbuffer)))
-        
-      elseif ((trim(adjustl(cbuffer)) .eq. '-T') .or.&
-              (trim(adjustl(cbuffer)) .eq. '--timestep')) then
-        
-        iarg = iarg+1
-        call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', 'timestep', trim(adjustl(cbuffer)))
-
-      elseif ((trim(adjustl(cbuffer)) .eq. '-S') .or.&
-              (trim(adjustl(cbuffer)) .eq. '--solver')) then
-
-        iarg = iarg+1
-        call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', 'solver', trim(adjustl(cbuffer)))
-
-      elseif ((trim(adjustl(cbuffer)) .eq. '-O') .or.&
-              (trim(adjustl(cbuffer)) .eq. '--output')) then
-
-        iarg = iarg+1
-        call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', 'output', trim(adjustl(cbuffer)))
-
-      elseif ((trim(adjustl(cbuffer)) .eq. '-E') .or.&
-              (trim(adjustl(cbuffer)) .eq. '--errorestimator')) then
-
-        iarg = iarg+1
-        call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', 'errorestimator', trim(adjustl(cbuffer)))
-
-      elseif ((trim(adjustl(cbuffer)) .eq. '-A') .or.&
-              (trim(adjustl(cbuffer)) .eq. '--adaptivity')) then
-
-        iarg = iarg+1
-        call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', 'adaptivity', trim(adjustl(cbuffer)))
-
-      else
-        iarg = iarg+1
-        if (iarg .ge. narg) exit cmdarg
-      end if
-    end do cmdarg
-
-  end subroutine zpinch_parseCmdlArguments
 
 end module zpinch_application

@@ -102,13 +102,6 @@
 !#        convection-diffusion-reaction equation directly
 !#
 !#
-!# The following auxiliary routines are available:
-!#
-!# 1.) transp_parseCmdlArguments
-!#     -> Parses the list of commandline arguments and overwrites
-!#        parameter values from the parameter files
-!#
-!#
 !# Frequently asked questions
 !# --------------------------
 !#
@@ -284,11 +277,6 @@ contains
 
     ! Start time measurement
     call stat_startTimer(rtimerPrePostprocess, STAT_TIMERSHORT)
-
-    ! Overwrite configuration from command line arguments. After this
-    ! subroutine has been called, the parameter list remains unchanged
-    ! unless the used updates some parameter values interactively.
-    call transp_parseCmdlArguments(rparlist)
 
     ! Initialise global collection structure
     call collct_init(rcollection)
@@ -2686,84 +2674,5 @@ contains
     end if
 
   end subroutine transp_solveSteadyStatePrimDual
-
-  !*****************************************************************************
-  ! AUXILIARY ROUTINES
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine transp_parseCmdlArguments(rparlist)
-
-!<description>
-    ! This subroutine parses the commandline arguments and modifies the
-    ! parameter values in the global parameter list.
-!</description>
-
-!<inputoutput>
-    ! parameter list
-    type(t_parlist), intent(inout) :: rparlist
-!</inputoutput>
-!</subroutine>
-
-    ! local variables
-    character(LEN=SYS_STRLEN) :: cbuffer
-    integer :: iarg, narg
-
-    iarg = 1; narg = command_argument_count()
-
-    cmdarg: do
-      ! Retrieve next command line argument
-      call get_command_argument(iarg,cbuffer)
-
-      if ((trim(adjustl(cbuffer)) .eq. '-I') .or.&
-          (trim(adjustl(cbuffer)) .eq. '--inviscid')) then
-        
-        iarg = iarg+1
-        call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', 'inviscid', trim(adjustl(cbuffer)))
-        
-      elseif ((trim(adjustl(cbuffer)) .eq. '-T') .or.&
-              (trim(adjustl(cbuffer)) .eq. '--timestep')) then
-        
-        iarg = iarg+1
-        call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', 'timestep', trim(adjustl(cbuffer)))
-
-      elseif ((trim(adjustl(cbuffer)) .eq. '-S') .or.&
-              (trim(adjustl(cbuffer)) .eq. '--solver')) then
-
-        iarg = iarg+1
-        call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', 'solver', trim(adjustl(cbuffer)))
-
-      elseif ((trim(adjustl(cbuffer)) .eq. '-O') .or.&
-              (trim(adjustl(cbuffer)) .eq. '--output')) then
-
-        iarg = iarg+1
-        call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', 'output', trim(adjustl(cbuffer)))
-
-      elseif ((trim(adjustl(cbuffer)) .eq. '-E') .or.&
-              (trim(adjustl(cbuffer)) .eq. '--errorestimator')) then
-
-        iarg = iarg+1
-        call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', 'errorestimator', trim(adjustl(cbuffer)))
-
-      elseif ((trim(adjustl(cbuffer)) .eq. '-A') .or.&
-              (trim(adjustl(cbuffer)) .eq. '--adaptivity')) then
-
-        iarg = iarg+1
-        call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', 'adaptivity', trim(adjustl(cbuffer)))
-
-      else
-        iarg = iarg+1
-        if (iarg .ge. narg) exit cmdarg
-      end if
-    end do cmdarg
-
-  end subroutine transp_parseCmdlArguments
 
 end module transport_application
