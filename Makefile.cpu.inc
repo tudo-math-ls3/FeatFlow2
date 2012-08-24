@@ -2453,12 +2453,12 @@ include $(TEMPLATESDIR)/sunstudio-generic.mk
 ifeq ($(call optimise), YES)
 MESSAGE  := $(MESSAGE) \
 	    echo '*** Message: Used auto-tuning by SunStudio Fortran compiler!';
-CFLAGSF77LIBS := -xautopar  $(CFLAGSF77LIBS)
-CFLAGSF77     := -xautopar  $(CFLAGSF77)
-CFLAGSF90     := -xautopar  $(CFLAGSF90)
-CFLAGSC       := -xautopar  $(CFLAGSC)
-CFLAGSCXX     := -xautopar  $(CFLAGSCXX)
-LDFLAGS       := -xautopar  $(LDFLAGS)
+CFLAGSF77LIBS := -xtarget=native  $(CFLAGSF77LIBS)
+CFLAGSF77     := -xtarget=native  $(CFLAGSF77)
+CFLAGSF90     := -xtarget=native  $(CFLAGSF90)
+CFLAGSC       := -xtarget=native  $(CFLAGSC)
+CFLAGSCXX     := -xtarget=native  $(CFLAGSCXX)
+LDFLAGS       := -xtarget=native  $(LDFLAGS)
 endif
 endif
 

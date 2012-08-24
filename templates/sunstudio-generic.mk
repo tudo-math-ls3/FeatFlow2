@@ -62,13 +62,18 @@ endif
 
 # Set default compile flags
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -DUSE_COMPILER_SUNSTUDIO $(CFLAGSF77LIBS) -fast -xtypemap=integer:32 
+
+# MM: -fast flag produces internal compiler errors; this is a reduced
+#     selection of compiler flags which would be set by the -fast flag
+FAST := -libmil -dalign -xlibmopt -xdepend -pad=local -fround=nearest -xregs=frameptr -xprefetch -xvector
+
+CFLAGSF77LIBS := -DUSE_COMPILER_SUNSTUDIO $(CFLAGSF77LIBS) $(FAST) -xtypemap=integer:32 
 CFLAGSF77     := $(CFLAGSF77LIBS) $(CFLAGSF77)
 CFLAGSF90     := -DHAS_INTRINSIC_FLUSH -DUSE_COMPILER_SUNSTUDIO $(CFLAGSF90) \
-	         -fast -moddir=$(OBJDIR)
-CFLAGSC       := -DUSE_COMPILER_SUNSTUDIO $(CFLAGSC) -fast 
+	         $(FAST) -moddir=$(OBJDIR)
+CFLAGSC       := -DUSE_COMPILER_SUNSTUDIO $(CFLAGSC) $(FAST)
 CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
-LDFLAGS       := $(LDFLAGS) -fast
+LDFLAGS       := $(LDFLAGS) $(FAST)
 else
 CFLAGSF77LIBS := -DUSE_COMPILER_SUNSTUDIO $(CFLAGSF77LIBS) -xtypemap=integer:32 -g -nolibmil 
 CFLAGSF77     := $(CFLAGSF77LIBS) $(CFLAGSF77)
@@ -80,6 +85,16 @@ CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
 LDFLAGS       := $(LDFLAGS)
 endif
 
+
+ifeq ($(strip $(OPT)), EXPENSIVE)
+# Specifying -xipo for interprocedural optimizations
+CFLAGSF77LIBS := -xipo $(CFLAGSF77LIBS)
+CFLAGSF77     := -xipo $(CFLAGSF77)
+CFLAGSF90     := -xipo $(CFLAGSF90)
+CFLAGSC       := -xipo $(CFLAGSC)
+CFLAGSCXX     := -xipo $(CFLAGSCXX)
+LDFLAGS       := -xipo $(LDFLAGS)
+endif
 
 
 # SunStudio 10 Fortran compiler benefits when setting -DENABLE_USE_ONLY, 
