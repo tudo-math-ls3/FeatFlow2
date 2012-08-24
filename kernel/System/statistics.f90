@@ -144,7 +144,7 @@ module statistics
   private
 
   ! Check for high-resolution clock; supported on Windows and Unix
-#if defined(_WIN32) || defined(__unix__)
+#if defined(_WIN32) || defined(unix) || defined(__unix) || defined(__unix__)
 #define HAS_HIGH_RES_CLOCK 1
 #endif
 

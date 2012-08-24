@@ -14,6 +14,7 @@
 module signals
 
 !$use omp_lib
+  use genoutput
 
   implicit none
 
@@ -94,7 +95,7 @@ contains
 !</input>
 !</subroutine>
 
-#if (!WINDOWS)
+#if defined(unix) || defined(__unix) || defined(__unix__)
 
     ! external subroutines written in C
     external :: signal_register
@@ -107,6 +108,11 @@ contains
       call signal_deregister(sig)
     end if
 
+#else
+
+    call output_line('Signal handling not implemented for OS!',&
+        OU_CLASS_WARNING,OU_MODE_STD,'fsignal')
+    
 #endif
 
   end subroutine fsignal

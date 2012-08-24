@@ -1,0 +1,44 @@
+List of preprocessor flags:
+---------------------------
+
+1) System identification flags
+
+_WIN32               : Defined for both 32-bit and 64-bit Windows environments
+_WIN64               : Defined for 64-bit Windows environments
+unix,__unix__,__unix : Defined on most UNIX environments
+_ILD32               : Defined on most 32-bit environments
+_LP64,__LP64__       : Defined on most 32-bit environments
+DEBUG, _DEBUG        : Defined of compiled in debug mode
+
+
+3) Flags to enable special features which are disabled by default
+
+ENABLE_COPROCESSOR_SUPPORT : enable support for coprocessor devices (e.g. CUDA)
+ENABLE_ERROR_TRACEBACK     : enable traceback up errors
+ENABLE_QUADPREC            : enable quad precision routines
+FEAT2_NURBS                : enable support for NURBS (requires additional library)
+
+
+4) Flags to indicate that architecture/OS has special features
+
+HAS_FLUSH           : fortran compiler has FLUSH function
+HAS_HIGH_RES_CLOCK  : high-resolution clock is available
+HAS_INTRINSIC_IARGC : fortran compiler has intrinsic IARGC function
+HAS_INTRINSIC_ISNAN : fortran compiler has intrinsic ISNAN function
+HAS_ISO_C_BINDING   : fortran compiler supports iso_c_bindings
+
+
+5) Flags to tell that some special featires should be used
+
+USE_COMPILER_XXX  : indicates compiler used to compile the code
+USE_C_PTR_STORAGE : storage manager uses C_PTR mechanism instead of standard
+                    ALLOCATE/DEALLOCATE which allows for higher memory throughput
+                    if ENABLE_COPROCESSOR_SUPPORT is turned on
+USE_LARGEINT      : use 64-bit Integers by default
+USE_OPENMP        : use Open-MP parallelisation
+
+
+5) Flags to active warning messages which are turned off be default
+
+WARN_DEPREC       : print warning message if depreceaded code is used
+

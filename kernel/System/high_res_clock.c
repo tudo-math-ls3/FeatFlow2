@@ -52,7 +52,7 @@ void hrc_diff(double* _elapsed, long long int* _time1, long long int* _time2)
     *_elapsed = 0.0; /* no high-resolution clock available */
 }
 
-#elif defined(__unix__)
+#elif defined(unix) || defined (__unix) || defined(__unix__)
 
 /* Unix API */
 
