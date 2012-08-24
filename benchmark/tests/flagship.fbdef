@@ -195,6 +195,30 @@ MASS_ISTABILISATION=50
 CONVECTION_ISTABILISATION=51
 CONVECTION_IPRELIMITING=0
 
+#------------------------------------------------------------
+# In the following tests the benchmark configurations are
+# tested as is to unsure that all provided parameter file
+# are valid.
+#------------------------------------------------------------
+
+# Test 1
+testid   = FLAGSHIP_TRANSPORT_001_2D
+descr    = Anisotropic diffusion equation in 2D
+datfile  = data/apps_flagship/orig/data/transport/2d/anisodiff.dat
+mglevels = 1
+
+# Tricky, adjust directories, disable all terminal output
+appflags = "-Dslogdirectory=\$LOGDIR -Dsbenchlogfile=\$LOGDIR/\$RESULTFILE -Dsdatadirectory=data/apps_flagship/orig/data -Dsgriddirectory=data/apps_flagship/orig/grids -DTimestepping.ioutputlevel=0 -DFullMultigridSolver.ioutputlevel=0 -DNonlinearMultigridSolver.ioutputlevel=0 -DNonlinearSolver.ioutputlevel=0 -DLinearMultigridSolver.ioutputlevel=0 -DLinearSolver.ioutputlevel=0 -DOutput.iformatUCD=0"
+
+# Test 2
+testid   = FLAGSHIP_TRANSPORT_002_2D
+descr    = Buckley-Leverette equation in space-time domain
+datfile  = data/apps_flagship/orig/data/transport/2d/bucklev.dat
+mglevels = 1
+
+# Test 3
+
+
 # Test 1
 #testid   = FLAGSHIP_TRANSPORT_001
 #descr    = Solving steady transport problem with goal-oriented grid adaptation
