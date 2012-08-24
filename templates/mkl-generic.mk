@@ -17,28 +17,86 @@ endif
 # Settings working with older Intel MKL releases (that did provide a generic libmkl.so)
 # LIBS     := $(LIBS) -lmkl -lguide -lpthread
 
-# Settings working with Intel MKL 10.2 Update X
+# Settings working with Intel MKL 10.2 Update X and above
+ifeq ($(strip $(OPENMP)), YES)
+# Threaded implementation
+
+# 32 bit
+ifeq ($(call match,$(ID),pc-.*-linux-.*-mkl.*),yes)
+LIBS := $(LIBS) -lmkl_intel -lmkl_intel_thread -lmkl_core
+endif
+
+# 64 bit
+ifeq ($(call match,$(ID),pc64-.*-linux-.*-mkl.*),yes)
+ifeq ($(strip $(INTSIZE)), LARGE)
+LIBS := $(LIBS) -lmkl_intel_ilp64 -lmkl_intel_thread -lmkl_core
+else
+LIBS := $(LIBS) -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core
+endif
+endif
+
+else
+# Sequential implementation
+
 # 32 bit
 ifeq ($(call match,$(ID),pc-.*-linux-.*-mkl.*),yes)
 LIBS := $(LIBS) -lmkl_intel -lmkl_sequential -lmkl_core
 endif
+
 # 64 bit
 ifeq ($(call match,$(ID),pc64-.*-linux-.*-mkl.*),yes)
+ifeq ($(strip $(INTSIZE)), LARGE)
+LIBS := $(LIBS) -lmkl_intel_ilp64 -lmkl_sequential -lmkl_core
+else
 LIBS := $(LIBS) -lmkl_intel_lp64 -lmkl_sequential -lmkl_core
+endif
+endif
+
 endif
 
 
 ##############################################################################
 # BLAS and LAPACK also needed by the Sparse Banded Blas benchmark
 ##############################################################################
+
+# Settings working with older Intel MKL releases (that did provide a generic libmkl.so)
 # SBB_LIBS     := $(SBB_LIBS) -lmkl -lguide -lpthread
+
+# Settings working with Intel MKL 10.2 Update X and above
+ifeq ($(strip $(OPENMP)), YES)
+# Threaded implementation
+
 # 32 bit
-ifeq ($(call match,$(ID),.*-.*-linux32-.*-mkl.*),yes)
+ifeq ($(call match,$(ID),pc-.*-linux-.*-mkl.*),yes)
+SBB_LIBS := $(SBB_LIBS) -lmkl_intel -lmkl_intel_thread -lmkl_core
+endif
+
+# 64 bit
+ifeq ($(call match,$(ID),pc64-.*-linux-.*-mkl.*),yes)
+ifeq ($(strip $(INTSIZE)), LARGE)
+SBB_LIBS := $(SBB_LIBS) -lmkl_intel_ilp64 -lmkl_intel_thread -lmkl_core
+else
+SBB_LIBS := $(SBB_LIBS) -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core
+endif
+endif
+
+else
+# Sequential implementation
+
+# 32 bit
+ifeq ($(call match,$(ID),pc-.*-linux-.*-mkl.*),yes)
 SBB_LIBS := $(SBB_LIBS) -lmkl_intel -lmkl_sequential -lmkl_core
 endif
+
 # 64 bit
-ifeq ($(call match,$(ID),.*-.*-linux64-.*-mkl.*),yes)
+ifeq ($(call match,$(ID),pc64-.*-linux-.*-mkl.*),yes)
+ifeq ($(strip $(INTSIZE)), LARGE)
+SBB_LIBS := $(SBB_LIBS) -lmkl_intel_ilp64 -lmkl_sequential -lmkl_core
+else
 SBB_LIBS := $(SBB_LIBS) -lmkl_intel_lp64 -lmkl_sequential -lmkl_core
+endif
+endif
+
 endif
 
 
