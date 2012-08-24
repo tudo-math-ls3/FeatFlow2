@@ -900,8 +900,8 @@ contains
 
     do while (.true.)
     
-!      if ((mod(rlinsolParam%rprecParameters%niterations,5) .eq. 0) .and.&
-!          (rlinsolParam%rprecParameters%niterations .ne. 0)) then
+!      if ((mod(rlinsolParam%riter%niterations,5) .eq. 0) .and.&
+!          (rlinsolParam%riter%niterations .ne. 0)) then
 !        ! Restart
 !
 !        ! Initialise used vectors with zero
@@ -916,7 +916,7 @@ contains
 !        dgammaOld = 1.0_DP
 !
 !        ! Create the initial defect in rd
-!        call output_line ("Restart.")
+!        call output_line ("Space-time CG: Restart.")
 !        output_iautoOutputIndent = output_iautoOutputIndent + 2
 !        call newtonlin_getResidual (rlinsolParam,rkktsystemDirDeriv,rrhs,p_rr,rlocalStat)
 !        output_iautoOutputIndent = output_iautoOutputIndent - 2
