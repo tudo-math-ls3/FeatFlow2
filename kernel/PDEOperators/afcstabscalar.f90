@@ -4222,7 +4222,6 @@ contains
         if (rafcstab%cafcstabType .eq. AFCSTAB_NLINFCT_IMPLICIT) then
 
           ! Set pointers
-          call lsyssc_getbase_double(rmatrix, p_Dmatrix)
           call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_DfluxPrel)
 
           ! We have to store the raw-antidiffusive fluxes based on the

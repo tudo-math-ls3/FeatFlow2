@@ -1088,7 +1088,7 @@ contains
       if (bclear) then
 
         ! Loop over all equations
-        !$omp parallel do default(shared) private(ia)&
+        !$omp parallel do default(shared) private(idx,ia)&
         !$omp if (size(IdiagList,2) > p_rperfconfig%NEQMIN_OMP)
         do idx = 1, size(IdiagList,2)
 
