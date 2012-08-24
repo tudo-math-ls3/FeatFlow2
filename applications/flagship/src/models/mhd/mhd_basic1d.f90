@@ -5,7 +5,7 @@
 !#
 !# <purpose>
 !# This module contains the basic routines required to solve the
-!# compressible MHD equations in 1D
+!# compressible ideal MHD equations in 1D
 !#
 !# The following routines are available:
 !#
@@ -78,7 +78,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: ieq, idx
+    integer :: ieq,idx
 
     
     if (trim(cvariable) .eq. 'density') then

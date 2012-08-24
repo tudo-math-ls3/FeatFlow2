@@ -5,7 +5,7 @@
 !#
 !# <purpose>
 !# This module contains all routines which are required to perform
-!# mesh adaptation for the compressible Euler/Navier-Stokes equations
+!# mesh adaptation for the compressible ideal MHD equations
 !#
 !# The following routines are available:
 !#
@@ -717,7 +717,7 @@ contains
     end select
 
   end subroutine mhd_hadaptCallbackBlock2d
-  
+
   !*****************************************************************************
 
 !<subroutine>

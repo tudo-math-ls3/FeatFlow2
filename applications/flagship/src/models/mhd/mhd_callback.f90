@@ -5,7 +5,7 @@
 !#
 !# <purpose>
 !# This module contains all callback functions which are required to
-!# solve the compressible MHD equations in arbitrary spatial dimensions.
+!# solve the compressible ideal MHD equations in arbitrary spatial dimensions.
 !#
 !# The following callback functions are available:
 !#
@@ -220,12 +220,14 @@ contains
 !</output>
 !</subroutine>
 
+
     ! local variables
     character(len=SYS_STRLEN) :: ssectionName
     
     ! Get section name
     call collct_getvalue_string(rcollection,&
         'ssectionname', ssectionName)
+
 
     ! Do we have to calculate the preconditioner?
     ! --------------------------------------------------------------------------
@@ -244,24 +246,25 @@ contains
       ! Compute the right-hand side
       call mhd_calcRhsRungeKuttaScheme(rproblemLevel, rtimestep,&
           rsolver, rsolution, rsolution0, rrhs, istep, ssectionName,&
-	  rcollection)
+          rcollection)
     end if
 
 
     ! Do we have to calculate the residual?
     ! --------------------------------------------------------------------------
     if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
+
       if (istep .eq. 0) then
         ! Compute the constant right-hand side
         call mhd_calcRhsThetaScheme(rproblemLevel, rtimestep,&
             rsolver, rsolution0, rrhs, ssectionName, rcollection,&
-	    rsource)
+            rsource)
       end if
 
       ! Compute the residual
       call mhd_calcResidualThetaScheme(rproblemLevel, rtimestep,&
           rsolver, rsolution, rsolution0, rrhs, rres, istep,&
-	  ssectionName, rcollection)
+          ssectionName, rcollection)
     end if
 
 
@@ -332,10 +335,10 @@ contains
 
     ! Get parameters from parameter list
     p_rparlist => collct_getvalue_parlst(rcollection,&
-          'rparlist', ssectionName=ssectionName)
+        'rparlist', ssectionName=ssectionName)
     call parlst_getvalue_int(p_rparlist,&
         ssectionName, 'systemmatrix', systemMatrix)
-
+    
     !---------------------------------------------------------------------------
     ! Check if fully explicit time-stepping is used
     !---------------------------------------------------------------------------
@@ -474,6 +477,8 @@ contains
 
       case (DISSIPATION_ZERO)
 
+        call lsysbl_clearMatrix(rproblemLevel%RmatrixBlock(systemMatrix))
+
         ! Assemble divergence operator without dissipation
 
         select case(rproblemLevel%rtriangulation%ndim)
@@ -525,7 +530,7 @@ contains
               rproblemLevel%RmatrixBlock(systemMatrix),&
               mhd_calcMatDiagMatD2d_sim, rcollection=rcollection,&
               rafcstab=rproblemLevel%Rafcstab(inviscidAFC))
-
+          
         case (NDIM3D)
           call gfsys_buildOperatorEdge(&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
@@ -653,7 +658,7 @@ contains
               rsolution, mhd_calcMatGalerkin3d_sim, dscale, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix),&
               mhd_calcMatDiag3d_sim, rcollection=rcollection)
-
+      
         case default
           call output_line('Invalid spatial dimension!',&
               OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcPrecondThetaScheme')
@@ -785,7 +790,7 @@ contains
     !---------------------------------------------------------------------------
     ! Assemble the global system operator
     !---------------------------------------------------------------------------
-
+    
     select case(isystemFormat)
 
     case (SYSTEM_INTERLEAVEFORMAT)
@@ -918,7 +923,7 @@ contains
 
 
     ! Impose boundary conditions in strong sence (if any)
-    call bdrf_filterMatrix(rsolver%rboundaryCondition, &
+    call bdrf_filterMatrix(rsolver%rboundaryCondition,&
         rproblemLevel%RmatrixBlock(systemMatrix))
 
     ! Ok, we updated the (nonlinear) system operator successfully. Now we still
@@ -973,8 +978,8 @@ contains
 !</inputoutput>
 !</subroutine>
 
-    print *, "!!! The calculation of the Jacobian matrix for the !!!"
-    print *, "!!! MHD equations has yet not been implemented     !!!"
+    print *, "!!! The calculation of the Jacobian matrix for the compressible !!!"
+    print *, "!!! ide MHD equations has yet not been implemented     !!!"
     stop
 
   end subroutine mhd_calcJacobianThetaScheme
@@ -1030,8 +1035,8 @@ contains
     real(DP) :: dscale
     integer :: consistentMassMatrix, lumpedMassMatrix, massMatrix
     integer :: imasstype, iblock, inviscidAFC
-
-
+    
+    
     ! Start time measurement for residual/rhs evaluation
     p_rtimer => collct_getvalue_timer(rcollection,&
         'rtimerAssemblyVector', ssectionName=ssectionName)
@@ -1039,7 +1044,7 @@ contains
 
     ! Get parameters from parameter list which are required unconditionally
     p_rparlist => collct_getvalue_parlst(rcollection,&
-          'rparlist', ssectionName=ssectionName)
+        'rparlist', ssectionName=ssectionName)
     call parlst_getvalue_int(p_rparlist,&
         ssectionName, 'lumpedmassmatrix', lumpedMassMatrix)
     call parlst_getvalue_int(p_rparlist,&
@@ -1094,22 +1099,22 @@ contains
         ! Perform preparation tasks for algebraic flux correction schemes
         ! of FCT-type which are based on a low-order predictor
         !-----------------------------------------------------------------------
-
+        
         call parlst_getvalue_int(p_rparlist,&
             ssectionName, 'inviscidAFC', inviscidAFC, 0)
-
+        
         if (inviscidAFC > 0) then
 
           ! What type of stabilisation are we?
           select case(rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType)
-
+            
           case (AFCSTAB_NLINFCT_EXPLICIT,&
                 AFCSTAB_NLINFCT_ITERATIVE,&
                 AFCSTAB_NLINFCT_IMPLICIT)
 
             ! Compute the low-order predictor based on the right-hand side
             ! and assemble the explicit part of the raw-antidiffusive fluxes
-
+            
             ! Set pointer to predictor
             p_rpredictor => rproblemLevel%Rafcstab(inviscidAFC)%p_rvectorPredictor
 
@@ -1117,12 +1122,12 @@ contains
             call lsysbl_invertedDiagMatVec(&
                 rproblemLevel%Rmatrix(lumpedMassMatrix),&
                 rrhs, 1.0_DP, p_rpredictor)
-
+            
             ! Set specifier
             rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec =&
                 ior(rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec,&
                     AFCSTAB_HAS_PREDICTOR)
-
+            
             ! Assemble explicit part of the raw-antidiffusive fluxes
             call mhd_calcFluxFCT(rproblemLevel, rsolution,&
                 rtimestep%theta, rtimestep%dStep, 1.0_DP, .true., .true.,&
@@ -1155,33 +1160,33 @@ contains
         ! Perform preparation tasks for algebraic flux correction schemes
         ! of FCT-type which are based on a low-order predictor
         !-----------------------------------------------------------------------
-
+        
         call parlst_getvalue_int(p_rparlist,&
             ssectionName, 'inviscidAFC', inviscidAFC, 0)
-
+        
         if (inviscidAFC > 0) then
 
           ! What type of stabilisation are we?
           select case(rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType)
-
+            
           case (AFCSTAB_NLINFCT_EXPLICIT,&
                 AFCSTAB_NLINFCT_ITERATIVE,&
                 AFCSTAB_NLINFCT_IMPLICIT)
 
             ! Compute the low-order predictor based on the right-hand side
             ! and assemble the explicit part of the raw-antidiffusive fluxes
-
+            
             ! Set pointer to predictor
             p_rpredictor => rproblemLevel%Rafcstab(inviscidAFC)%p_rvectorPredictor
 
             ! Compute $\tilde u = (M_L)^{-1}*b^n = u^n$
             call lsysbl_copyVector(rsolution, p_rpredictor)
-
+            
             ! Set specifier
             rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec =&
                 ior(rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec,&
                     AFCSTAB_HAS_PREDICTOR)
-
+            
             ! Assemble explicit part of the raw-antidiffusive fluxes
             call mhd_calcFluxFCT(rproblemLevel, rsolution,&
                 rtimestep%theta, rtimestep%dStep, 1.0_DP, .true., .true.,&
@@ -1189,9 +1194,9 @@ contains
                 rsolutionPredictor=p_rpredictor)
           end select
         end if
-
+        
       end if ! theta
-      
+
     case default
 
       !-------------------------------------------------------------------------
@@ -1204,12 +1209,14 @@ contains
 
       ! Clear right-hand side vector
       call lsysbl_clearVector(rrhs)
+
     end select
+
 
     ! Apply the source vector to the right-hand side (if any)
     if (present(rsource)) then
       if (rsource%NEQ .gt. 0)&
-        call lsysbl_vectorLinearComb(rsource, rrhs, 1.0_DP, 1.0_DP)
+          call lsysbl_vectorLinearComb(rsource, rrhs, 1.0_DP, 1.0_DP)
     end if
 
     ! Stop time measurement for rhs evaluation
@@ -1293,7 +1300,7 @@ contains
 
     ! Get parameters from parameter list which are required unconditionally
     p_rparlist => collct_getvalue_parlst(rcollection,&
-          'rparlist', ssectionName=ssectionName)
+        'rparlist', ssectionName=ssectionName)
     call parlst_getvalue_int(p_rparlist,&
         ssectionName, 'consistentmassmatrix', consistentMassMatrix)
     call parlst_getvalue_int(p_rparlist,&
@@ -1302,7 +1309,7 @@ contains
         ssectionName, 'inviscidAFC', inviscidAFC)
     call parlst_getvalue_int(p_rparlist,&
         ssectionName, 'imasstype', imasstype)
-
+    
     !-------------------------------------------------------------------------
     ! Initialise the residual by the constant right-hand side
     !
@@ -1332,7 +1339,7 @@ contains
         call lsyssc_scalarMatVec(&
             rproblemLevel%Rmatrix(massMatrix),&
             rsolution%RvectorBlock(iblock),&
-            rres%RvectorBlock(iblock) , -1._DP, 1.0_DP)
+            rres%RvectorBlock(iblock), -1._DP, 1.0_DP)
       end do
       
     case default
@@ -1391,17 +1398,16 @@ contains
     !
     !   $$ res := res + dscale*finviscid(u^(m),u^n) $$
     !-------------------------------------------------------------------------
-
+    
     ! What type if stabilisation is applied?
     select case(rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType)
     case (AFCSTAB_NLINFCT_EXPLICIT,&
           AFCSTAB_NLINFCT_ITERATIVE,&
           AFCSTAB_NLINFCT_IMPLICIT)
 
-
       ! Set pointer to the predictor vector
       p_rpredictor => rproblemLevel%Rafcstab(inviscidAFC)%p_rvectorPredictor
-
+      
       ! Set operation specifier
       ioperationSpec = AFCSTAB_FCTFLUX_IMPLICIT
       if (ite .gt. 0)&
@@ -1491,7 +1497,7 @@ contains
     ! Apply the source vector to the residual  (if any)
     if (present(rsource)) then
       if (rsource%NEQ .gt. 0)&
-      call lsysbl_vectorLinearComb(rsource, rres, -1.0_DP, 1.0_DP)
+          call lsysbl_vectorLinearComb(rsource, rres, -1.0_DP, 1.0_DP)
     end if
 
     ! Stop time measurement for residual/rhs evaluation
@@ -1554,8 +1560,8 @@ contains
     real(DP) :: dscale
     integer :: lumpedMassMatrix, consistentMassMatrix, massMatrix
     integer :: imasstype, iblock, massAFC, inviscidAFC, viscousAFC
-
-
+    
+    
     ! Start time measurement for residual/rhs evaluation
     p_rtimer => collct_getvalue_timer(rcollection,&
         'rtimerAssemblyVector', ssectionName=ssectionName)
@@ -1563,7 +1569,7 @@ contains
 
     ! Get parameters from parameter list which are required unconditionally
     p_rparlist => collct_getvalue_parlst(rcollection,&
-          'rparlist', ssectionName=ssectionName)
+        'rparlist', ssectionName=ssectionName)
     call parlst_getvalue_int(p_rparlist, ssectionName,&
         'lumpedmassmatrix', lumpedMassMatrix)
     call parlst_getvalue_int(p_rparlist, ssectionName,&
@@ -1736,7 +1742,7 @@ contains
 
     ! initial solution vector
     type(t_vectorBlock), intent(in) :: rsolution0
-
+    
     ! section name in parameter list and collection structure
     character(LEN=*), intent(in) :: ssectionName
 !</input>
@@ -1820,7 +1826,7 @@ contains
     end select
 
   end subroutine mhd_setBoundaryCondition
-
+  
   !*****************************************************************************
 
 !<subroutine>
@@ -1954,7 +1960,8 @@ contains
                 Sfailsafevariables(ivariable), isubstring=ivariable)
           end do
           
-          ! Compute FEM-FCT correction
+          ! Compute FEM-FCT correction without applying the
+          ! antidiffusive correction term to the low-order solution
           call mhd_calcCorrectionFCT(rproblemLevel,&
               rsolution, rtimestep%dStep, .false.,&
               AFCSTAB_FCTALGO_STANDARD-&
@@ -1970,7 +1977,7 @@ contains
               nsteps=nfailsafe, CvariableNames=SfailsafeVariables,&
               fcb_extractVariable=mhd_getVariable,&
               rcollection=rcollection)
-          
+                    
           ! Deallocate temporal memory
           deallocate(SfailsafeVariables)
           
@@ -1987,7 +1994,7 @@ contains
       end select
     end if
 
-
+        
     ! Impose boundary conditions for the solution vector
     select case(rproblemLevel%rtriangulation%ndim)
     case (NDIM1D)
@@ -2074,7 +2081,7 @@ contains
 
     ! Get parameters from parameter list
     p_rparlist => collct_getvalue_parlst(rcollection,&
-          'rparlist', ssectionName=ssectionName)
+        'rparlist', ssectionName=ssectionName)
 
     ! Get parameters from parameter list
     call parlst_getvalue_int(p_rparlist, ssectionName,&
@@ -2356,7 +2363,7 @@ contains
 
     ! section name in parameter list and collection structure
     character(LEN=*), intent(in) :: ssectionName
-    
+
     ! OPTIONAL: Parameter name of limiting variables in parameter list
     ! If not present, then the default string 'slimitingvariable' is used
     character(len=*), intent(in), optional :: slimitingvariableName
@@ -2385,7 +2392,7 @@ contains
 
     ! Get parameters from parameter list
     p_rparlist => collct_getvalue_parlst(rcollection,&
-          'rparlist', ssectionName=ssectionName)
+        'rparlist', ssectionName=ssectionName)
 
     ! Get parameters from parameter list
     call parlst_getvalue_int(p_rparlist, ssectionName,&
@@ -2442,7 +2449,7 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call afcsys_buildVectorFCT(&
-              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix), &
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               mhd_trafoFluxDensity1d_sim, mhd_trafoDiffDensity1d_sim,&
               rcollection=rcollection)
@@ -2556,7 +2563,7 @@ contains
               p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               mhd_trafoFluxMomentum3d_sim, mhd_trafoDiffMomentum3d_sim,&
-	      rcollection=rcollection,&
+              rcollection=rcollection,&
               fcb_limitEdgewise=mhd_limitEdgewiseMomentum)
         end select
 
@@ -2838,7 +2845,7 @@ contains
 
           ! Use callback function to compute transformed fluxes
           call fcb_calcFluxTransformation_sim(&
-              DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1), &
+              DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
               Dflux(:,IEDGEset:IEDGEmax), IEDGEmax-IEDGEset+1,&
               DtransformedFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1))
 
@@ -2912,7 +2919,7 @@ contains
 
           ! Use callback function to compute transformed fluxes
           call fcb_calcFluxTransformation_sim(&
-              DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1), &
+              DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
               Dflux(:,IEDGEset:IEDGEmax), IEDGEmax-IEDGEset+1,&
               DtransformedFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1))
           
@@ -3077,7 +3084,7 @@ contains
 
           ! Use callback function to compute transformed fluxes
           call fcb_calcFluxTransformation_sim(&
-              DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1), &
+              DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
               Dflux(:,IEDGEset:IEDGEmax), IEDGEmax-IEDGEset+1,&
               DtransformedFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1))
 
@@ -3151,7 +3158,7 @@ contains
 
           ! Use callback function to compute transformed fluxes
           call fcb_calcFluxTransformation_sim(&
-              DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1), &
+              DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
               Dflux(:,IEDGEset:IEDGEmax), IEDGEmax-IEDGEset+1,&
               DtransformedFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1))
           
@@ -3555,8 +3562,8 @@ contains
       deallocate(Ddata)
 
     case default
-      call output_line ('Invalid system format!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'mhd_coeffVectorFE')
+      call output_line ('Invalid system format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hydro_coeffVectorFE')
       call sys_halt()
     end select
     
@@ -3644,7 +3651,7 @@ contains
     p_rfparser => collct_getvalue_pars(rcollection,&
         trim(rcollection%SquickAccess(2)),&
         ssectionName=trim(rcollection%SquickAccess(1)))
-    
+        
     ! This subroutine assumes that the first quick access double value
     ! holds the simulation time
     dtime  = rcollection%DquickAccess(1)
@@ -3750,7 +3757,7 @@ contains
       ibdrCondType = BDRC_ANTIPERIODIC + BDRC_WEAK
     case ('ANTIPERIODIC_WEAK_LUMPED')
       ibdrCondType = BDRC_ANTIPERIODIC + BDRC_WEAK + BDRC_LUMPED
-
+    
     case default
       call output_line('Invalid type of boundary conditions!',&
           OU_CLASS_ERROR,OU_MODE_STD,'mhd_parseBoundaryCondition')
@@ -3824,25 +3831,26 @@ contains
     type(t_parlist), pointer :: p_rparlist
     integer :: inviscidAFC,inviscidGFEM,idissipationtype
 
+
     ! Set pointer to parameter list
     p_rparlist => collct_getvalue_parlst(rcollection,&
         'rparlist', ssectionName=ssectionName)
-
+    
     ! Get parameter from parameter list
     call parlst_getvalue_int(p_rparlist,&
         ssectionName, 'inviscidAFC', inviscidAFC, 0)
     call parlst_getvalue_int(p_rparlist,&
         ssectionName, 'inviscidGFEM', inviscidGFEM, inviscidAFC)
-
+    
     ! Do we have a zero scling parameter?
     if (dscale .eq. 0.0_DP) then
       if (bclear) call lsysbl_clearVector(rvector)
     else
-      
+
       ! Check if group finite element structure and stabilisation
       ! structure are both available
       if ((inviscidGFEM .le. 0) .or. (inviscidAFC .le. 0)) return
-
+      
       ! What type if stabilisation is applied?
       select case(rproblemLevel%Rafcstab(inviscidAFC)%cafcstabType)
         
@@ -3869,7 +3877,7 @@ contains
         end select
 
         !-----------------------------------------------------------------------
-        
+
       case (AFCSTAB_UPWIND,&
             AFCSTAB_NLINFCT_EXPLICIT,&
             AFCSTAB_NLINFCT_ITERATIVE,&
@@ -3881,7 +3889,7 @@ contains
         ! Get parameter from parameter list
         call parlst_getvalue_int(p_rparlist,&
             ssectionName, 'idissipationtype', idissipationtype)
-        
+    
         ! What type of dissipation is applied?
         select case(idissipationtype)
           
@@ -3910,7 +3918,7 @@ contains
           end select
           
           !---------------------------------------------------------------------
-
+          
         case (DISSIPATION_SCALAR)
           
           ! Assemble divergence of flux with scalar dissipation
@@ -3934,11 +3942,11 @@ contains
                 rsolution,&
                 mhd_calcFluxScDiss3d_sim, dscale, bclear, rvector, rcollection)
           end select
-          
+
           !---------------------------------------------------------------------
 
         case (DISSIPATION_SCALAR_DSPLIT)
-          
+
           ! Assemble divergence of flux with scalar dissipation
           ! adopting dimensional splitting
           
@@ -4018,7 +4026,7 @@ contains
           !---------------------------------------------------------------------
 
         case (DISSIPATION_RUSANOV)
-          
+
           ! Assemble divergence of flux with Rusanov-type flux
           
           select case(rproblemLevel%rtriangulation%ndim)
@@ -4040,7 +4048,7 @@ contains
                 rsolution,&
                 mhd_calcFluxRusDiss3d_sim, dscale, bclear, rvector, rcollection)
           end select
-          
+
           !---------------------------------------------------------------------
 
         case (DISSIPATION_RUSANOV_DSPLIT)
@@ -4073,7 +4081,7 @@ contains
               OU_CLASS_ERROR,OU_MODE_STD,'mhd_calcDivergenceVector')
           call sys_halt()
         end select
-        
+
         !-----------------------------------------------------------------------
 
       case (AFCSTAB_TVD)
@@ -4103,7 +4111,7 @@ contains
               mhd_calcFluxGalNoBdr3d_sim,&
               mhd_calcCharacteristics3d_sim, dscale, bclear, rvector, rcollection)
         end select
-        
+
         !-----------------------------------------------------------------------
 
       case default
@@ -4115,7 +4123,7 @@ contains
       !-------------------------------------------------------------------------
       ! Evaluate linear form for boundary integral (if any)
       !-------------------------------------------------------------------------
-      
+
       select case(rproblemLevel%rtriangulation%ndim)
       case (NDIM1D)
         call mhd_calcLinfBdrCond1D(rproblemLevel, rboundaryCondition,&
@@ -4134,7 +4142,7 @@ contains
         print *, "Boundary conditions in 3D have not been implemented yet!"
         stop
       end select
-      
+
     end if
 
   end subroutine mhd_calcDivergenceVector

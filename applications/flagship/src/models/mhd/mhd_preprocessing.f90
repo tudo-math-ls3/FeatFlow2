@@ -475,7 +475,7 @@ contains
     ! Create discretisation structure
     !---------------------------------------------------------------------------
     if (discretisation > 0) then
-
+      
       ! Initialise the discretisation structure
       p_rdiscretisation => rproblemLevel%Rdiscretisation(discretisation)
       if (p_rdiscretisation%ndimension .eq. 0) then
@@ -483,7 +483,7 @@ contains
         case (SYSTEM_INTERLEAVEFORMAT)
           call spdiscr_initBlockDiscr(p_rdiscretisation, 1,&
               rproblemLevel%rtriangulation)
-
+          
         case (SYSTEM_BLOCKFORMAT)
           call spdiscr_initBlockDiscr(p_rdiscretisation,&
               mhd_getNVAR(rproblemLevel), p_rtriangulation)
@@ -535,7 +535,7 @@ contains
       
       ! Deallocate temporal memory
       deallocate(Celement)
-      
+
       !-------------------------------------------------------------------------
       ! Configure evaluation of (bi-)linear formes
       !-------------------------------------------------------------------------
@@ -544,7 +544,7 @@ contains
         ! Check if special cubature formula for evaluating integral
         ! terms of the bilinear form are requested by the user
         nsubstrings = max(1, parlst_querysubstrings(rparlist,&
-            ssectionName, 'ccubTypeBilForm'))
+                             ssectionName, 'ccubTypeBilForm'))
         if (nsubstrings .ne. 0) then
           if (nsubstrings .eq. p_rdiscretisation%RspatialDiscr(1)%inumFESpaces) then
             do i = 1, nsubstrings
@@ -626,7 +626,7 @@ contains
               %RelementDistr(j)%ccubTypeEval, nsumcubRefEval)
         end do
       end do
-      
+
       !-------------------------------------------------------------------------
       ! Calculate coordinates of the global DOF`s
       if (dofCoords > 0) then
@@ -646,7 +646,7 @@ contains
         call lin_calcDofCoordsBlock(p_rdiscretisation,&
             rproblemLevel%RvectorBlock(dofCoords))
       end if
-      
+
       !-------------------------------------------------------------------------
       ! Create finite element matrices
       !-------------------------------------------------------------------------
@@ -823,7 +823,7 @@ contains
       ! Create consistent (and lumped) mass matrix as duplicate of the template matrix
       if (consistentMassMatrix > 0) then
         call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
-                                 rproblemLevel%Rmatrix(consistentMassMatrix))
+            rproblemLevel%Rmatrix(consistentMassMatrix))
         call stdop_assembleSimpleMatrix(&
             rproblemLevel%Rmatrix(consistentMassMatrix), DER_FUNC, DER_FUNC)
         
@@ -857,7 +857,7 @@ contains
         call stdop_assembleSimpleMatrix(rproblemLevel%Rmatrix(coeffMatrix_CX),&
                                         DER_DERIV3D_X, DER_FUNC)
       end if
-
+      
       !-------------------------------------------------------------------------
       ! Create coefficient matrix (phi, dphi/dy) as duplicate of the
       ! template matrix
@@ -877,7 +877,7 @@ contains
         call stdop_assembleSimpleMatrix(rproblemLevel%Rmatrix(coeffMatrix_CZ),&
                                         DER_DERIV3D_Z, DER_FUNC)
       end if
-      
+    
       !-------------------------------------------------------------------------
       ! Create coefficient matrix (dphi/dx, dphi/dx) as duplicate of the
       ! template matrix
@@ -897,7 +897,7 @@ contains
         call stdop_assembleSimpleMatrix(rproblemLevel%Rmatrix(coeffMatrix_CYY),&
                                         DER_DERIV3D_Y, DER_DERIV3D_Y)
       end if
-      
+    
       !-------------------------------------------------------------------------
       ! Create coefficient matrix (dphi/dz, dphi/dz) as duplicate of the
       ! template matrix
@@ -937,7 +937,7 @@ contains
         call stdop_assembleSimpleMatrix(rproblemLevel%Rmatrix(coeffMatrix_CYZ),&
                                         DER_DERIV3D_Y, DER_DERIV3D_Z)
       end if
-      
+
       !-------------------------------------------------------------------------
       ! Create group finite element structures and AFC-stabilisations
       !-------------------------------------------------------------------------
@@ -1052,11 +1052,11 @@ contains
           case (AFCSTAB_GALERKIN, AFCSTAB_UPWIND)
             ! No variable transformation needs to be performed
             NVARtransformed = 0
-            
+
           case (AFCSTAB_TVD, AFCSTAB_GP)
             ! Transformation to characteristic variables
             NVARtransformed = mhd_getNVAR(rproblemLevel)
-            
+
           case default
             ! Get number of expressions for limiting variables
             nvariable = max(1,&
@@ -1240,7 +1240,7 @@ contains
               rproblemLevel%RgroupFEMBlock(templateGFEM)%RgroupFEMBlock(1))
         end if
       end if
-      
+
       ! The auxiliary matrices are not needed any more
       if (coeffMatrix_CX > 0)&
           call lsyssc_releaseMatrix(rmatrixSX)
@@ -1255,7 +1255,7 @@ contains
     
     !**************************************************************
     ! Initialise the matrix structure by duplicating the template matrix
-    
+
     subroutine initMatrixStructure(rmatrixTemplate, rmatrix)
 
       type(t_matrixScalar), intent(in) :: rmatrixTemplate
@@ -1464,7 +1464,7 @@ contains
             OU_CLASS_ERROR, OU_MODE_STD, 'mhd_initSolution')
         call sys_halt()
       end if
-
+      
       ! Get global configuration from parameter list
       call parlst_getvalue_int(rparlist,&
           ssectionName, 'dofCoords', dofCoords)
@@ -1529,7 +1529,7 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'mhd_initSolution')
         call sys_halt()
       end if
-   
+      
 
     case (SOLUTION_ANALYTIC_L2_CONSISTENT,&
           SOLUTION_ANALYTIC_L2_LUMPED)
@@ -1611,7 +1611,7 @@ contains
 
       ! Loop over all blocks of the global solution vector
       do iblock = 1, rvector%nblocks
-                
+        
         ! Scalar vectors in interleaved format have to be treated differently
         if (rvector%RvectorBlock(iblock)%NVAR .eq. 1) then
 
@@ -1668,7 +1668,7 @@ contains
 
       ! Release temporal collection structure
       call collct_done(rcollectionTmp)
-
+      
       ! Store norm of load vector (if required)
       if (isolutionType .eq. SOLUTION_ANALYTIC_L2_CONSISTENT) then
         allocate(Dnorm0(rvector%nblocks))
@@ -1738,7 +1738,7 @@ contains
         rafcstab%cafcstabType = AFCSTAB_LINFCT_MASS
         call afcsys_initStabilisation(&
             rproblemLevel%RmatrixBlock(systemMatrix), rafcstab)
-
+        
         ! Compute the raw antidiffusive mass fluxes. Note that we may supply any
         ! callback function for assembling the antidiffusive fluxes since it
         ! will not be used for assembling antidiffusive mass fluxes !!!
@@ -1776,7 +1776,7 @@ contains
               CvariableNames=SsolutionFailsafeVariables,&
               fcb_extractVariable=mhd_getVariable,&
               rcollection=rcollection)
-          
+
           ! Deallocate temporal memory
           deallocate(SsolutionFailsafeVariables)
 
@@ -1866,6 +1866,7 @@ contains
 
     ! Release temporal memory
     call lsyssc_releaseVector(rvectorScalar)
+    
   end subroutine mhd_initSolution
 
 end module mhd_preprocessing

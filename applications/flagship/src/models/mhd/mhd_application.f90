@@ -63,11 +63,11 @@ module mhd_application
   use collection
   use flagship_basic
   use fparser
-  use fsystem
   use genoutput
   use graph
   use hadaptaux
   use hadaptivity
+  use linearalgebra
   use linearsystemblock
   use linearsystemscalar
   use paramlist
@@ -95,6 +95,7 @@ module mhd_application
   implicit none
 
   private
+
   public :: mhd_app
   public :: mhd_solveTransientPrimal
 
@@ -124,7 +125,7 @@ contains
 !</inputoutput>
 !</subroutine>
 
-    !****************************************************************************
+    !***************************************************************************
     ! Structures required for this application
 
     ! Global collection which is used to pass arguments to callback routines
@@ -183,12 +184,13 @@ contains
 
     ! Abstract problem descriptor
     type(t_problemDescriptor) :: rproblemDescriptor
-    
+
     ! Parameter file and section names
     character(LEN=SYS_STRLEN) :: sindatfileName
     character(LEN=SYS_STRLEN) :: sbdrcondName
     character(LEN=SYS_STRLEN) :: algorithm
-    
+    character(LEN=SYS_STRLEN) :: benchmark
+
     ! local variables
     integer :: isystemFormat, systemMatrix, ndimension
 
@@ -321,7 +323,9 @@ contains
       ! Get global configuration from parameter list
       call parlst_getvalue_string(rparlist,&
           ssectionName, 'algorithm', algorithm)
-               
+      call parlst_getvalue_string(rparlist,&
+          ssectionName, 'benchmark', benchmark, '')
+      
       ! What solution algorithm should be applied?
       if (trim(algorithm) .eq. 'transient_primal') then
         
@@ -338,8 +342,23 @@ contains
             dtime=rtimestep%dTime)
 
       else
-        call output_line(trim(algorithm)//' is not a valid solution algorithm!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'mhd_app')
+        if (trim(adjustl(benchmark)) .eq. '') then
+          call output_lbrk()
+          call output_separator(OU_SEP_DOLLAR,OU_CLASS_ERROR,OU_MODE_STD)
+          call output_line('This configuration was marked as deprecated by its maintainer!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'mhd_app')
+          call output_line('Please wait for an updated version of Featflow2 or contact!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'mhd_app')
+          call output_line('matthias.moeller@math.tu-dortmund.de if running this benchmark!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'mhd_app')
+          call output_line('is urgent!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'mhd_app')
+          call output_separator(OU_SEP_DOLLAR,OU_CLASS_ERROR,OU_MODE_STD)
+          call output_lbrk()
+        else
+          call output_line(trim(algorithm)//' is not a valid solution algorithm!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'mhd_app')
+        end if
         call sys_halt()
       end if
 
@@ -402,7 +421,8 @@ contains
       rbdrCond, rproblem, rtimestep, rsolver, rsolution, rcollection)
 
 !<description>
-      ! This subroutine solves the transient primal compressible ideal MDH equations
+      ! This subroutine solves the transient primal compressible ideal
+      ! MHD equations
       !
       !  $$ \frac{\partial U}{\partial t}+\nabla\cdot{\bf F}(U)=b $$
       !
@@ -432,12 +452,13 @@ contains
     ! solver struchture
     type(t_solver), intent(inout), target :: rsolver
 
-    ! primal solution vector
-    type(t_vectorBlock), intent(inout), target :: rsolution
-
     ! collection structure
     type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
+
+!<output>
+    ! primal solution vector
+    type(t_vectorBlock), intent(out), target :: rsolution
 !</subroutine>
 
     ! Pointer to the multigrid level
@@ -445,6 +466,9 @@ contains
 
     ! Pointer to the discretisation structure
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
+
+    ! Vector for the right-hand side
+    type(t_vectorBlock) :: rrhs
 
     ! Vectors for the linearised FCT algorithm
     type(t_vectorBlock) :: rvector1, rvector2, rvector3
@@ -466,14 +490,17 @@ contains
     type(t_timer), pointer :: p_rtimerTriangulation
     type(t_timer), pointer :: p_rtimerAssemblyCoeff
 
-    ! local variables
-    type(t_ucdExport) :: rimport
+    ! section names
     character(LEN=SYS_STRLEN) :: sadaptivityName
     character(LEN=SYS_STRLEN) :: soutputName
     character(LEN=SYS_STRLEN) :: sucdimport
+    
+    ! local variables
+    real(DP) :: dnormL1, dnormL2
+    type(t_ucdExport) :: rimport
     real(dp) :: derror, dstepUCD, dtimeUCD, dstepAdapt, dtimeAdapt
     integer :: templateMatrix, systemMatrix, isystemFormat, discretisation
-    integer :: ipreadapt, npreadapt, ndimension
+    integer :: ipreadapt, npreadapt, irhstype, ndimension
     integer, external :: signal_SIGINT
 
 
@@ -490,27 +517,32 @@ contains
         'rtimerTriangulation', ssectionName=ssectionName)
     p_rtimerAssemblyCoeff => collct_getvalue_timer(rcollection,&
         'rtimerAssemblyCoeff', ssectionName=ssectionName)
-    
+
     ! Start time measurement for pre-processing
     call stat_startTimer(p_rtimerPrePostprocess, STAT_TIMERSHORT)
 
     ! Get global parameters
     call parlst_getvalue_int(rparlist,&
+        ssectionName, 'irhstype', irhstype, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'isystemFormat', isystemFormat)
+    call parlst_getvalue_int(rparlist,&
         ssectionName, 'ndimension', ndimension)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'discretisation', discretisation)
 
-    ! Set pointer to maximum problem level
+    ! Set pointer to maximum problem level and discretisation
     p_rproblemLevel   => rproblem%p_rproblemLevelMax
     p_rdiscretisation => p_rproblemLevel%Rdiscretisation(discretisation)
 
     ! Create the solution vector
-    call lsysbl_createVectorBlock(p_rdiscretisation,&
-        rsolution, .false., ST_DOUBLE)
-    if (p_rdiscretisation%ncomponents .ne.&
-        mhd_getNVAR(p_rproblemLevel)) then
-      rsolution%RvectorBlock(1)%NVAR = mhd_getNVAR(p_rproblemLevel)
-      call lsysbl_resizeVectorBlock(rsolution, rsolution%NEQ, .false., .false.)
+    if (p_rdiscretisation%ncomponents .eq. mhd_getNVAR(p_rproblemLevel)) then
+      call lsysbl_createVectorBlock(p_rdiscretisation,&
+          rsolution, .false., ST_DOUBLE)
+    else
+      call lsysbl_createVectorBlock(p_rdiscretisation,&
+          mhd_getNVAR(p_rproblemLevel),&
+          rsolution, .false., ST_DOUBLE)
     end if
 
     ! Initialise the solution vector and impose boundary conditions
@@ -565,6 +597,8 @@ contains
         ! type to the callback function for h-adaptation
         call parlst_getvalue_int(rparlist,&
             ssectionName, 'templateMatrix', templateMatrix)
+        call parlst_getvalue_int(rparlist,&
+            ssectionName, 'systemMatrix', systemMatrix)
         call lsyssc_createGraphFromMatrix(&
             p_rproblemLevel%Rmatrix(templateMatrix), rgraph)
         call collct_setvalue_graph(rcollection, 'sparsitypattern',&
@@ -577,11 +611,11 @@ contains
           do ipreadapt = 1, npreadapt
 
             ! Compute the error estimator using recovery techniques
-            call mhd_errorestRecovery(rparlist, ssectionname,&
+            call mhd_errestRecovery(rparlist, ssectionname,&
                 p_rproblemLevel, rsolution, rtimestep%dinitialTime,&
-                relementError, derror)
+                relementError, derror, rcollection)
 
-            ! Set the names of the template matrix
+            ! Set the name of the template matrix
             rcollection%SquickAccess(1) = 'sparsitypattern'
 
             ! Attach the primal solution vector to the collection structure
@@ -603,16 +637,9 @@ contains
             call lsyssc_createMatrixFromGraph(rgraph,&
                 p_rproblemLevel%Rmatrix(templateMatrix))
 
-            ! Re-initialise all constant coefficient matrices
-            call mhd_initProblemLevel(rparlist,&
-                ssectionName, p_rproblemLevel, rcollection)
-
             ! Resize the solution vector accordingly
-            call parlst_getvalue_int(rparlist,&
-                ssectionName, 'systemMatrix', systemMatrix)
-            call lsysbl_resizeVecBlockIndMat(&
-                p_rproblemLevel%RmatrixBlock(systemMatrix),&
-                rsolution, .false., .true.)
+            call lsysbl_resizeVectorBlock(&
+                p_rproblemLevel%RmatrixBlock(systemMatrix), rsolution, .false.)
 
             ! Re-generate the initial solution vector and impose
             ! boundary conditions explicitly
@@ -633,13 +660,13 @@ contains
               call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
                   rtimestep%dinitialTime, mhd_calcBoundaryvalues3d)
             end select
+	    
+	    ! Re-initialise all constant coefficient matrices
+            call mhd_initProblemLevel(rparlist, ssectionName,&
+                p_rproblemLevel, rcollection, rbdrCond)
           end do
 
           ! Prepare internal data arrays of the solver structure
-          call parlst_getvalue_int(rparlist,&
-              ssectionName, 'systemMatrix', systemMatrix)
-          call parlst_getvalue_int(rparlist,&
-              ssectionName, 'isystemFormat', isystemFormat)
           call flagship_updateSolverMatrix(p_rproblemLevel, rsolver,&
               systemMatrix, isystemFormat, UPDMAT_ALL)
           call solver_updateStructure(rsolver)
@@ -704,15 +731,31 @@ contains
 
       case (TSTEP_RK_SCHEME)
 
-        ! Adopt explicit Runge-Kutta scheme
-        call tstep_performRKStep(p_rproblemLevel, rtimestep, rsolver,&
-            rsolution, mhd_nlsolverCallback, rcollection)
+        if (irhstype > 0) then
+          ! Explicit Runge-Kutta scheme with non-zero right-hand side vector
+          call tstep_performRKStep(p_rproblemLevel, rtimestep,&
+              rsolver, rsolution, mhd_nlsolverCallback,&
+              rcollection, rrhs)
+        else
+          ! Explicit Runge-Kutta scheme without right-hand side vector
+          call tstep_performRKStep(p_rproblemLevel, rtimestep,&
+              rsolver, rsolution, mhd_nlsolverCallback,&
+              rcollection)
+        end if
 
       case (TSTEP_THETA_SCHEME)
 
-        ! Adopt two-level theta-scheme
-        call tstep_performThetaStep(p_rproblemLevel, rtimestep,&
-            rsolver, rsolution, mhd_nlsolverCallback, rcollection)
+        if (irhstype > 0) then
+          ! Two-level theta-scheme with non-zero right-hand side vector
+          call tstep_performThetaStep(p_rproblemLevel, rtimestep,&
+              rsolver, rsolution, mhd_nlsolverCallback,&
+              rcollection, rrhs)
+        else
+          ! Two-level theta-scheme without right-hand side vector
+          call tstep_performThetaStep(p_rproblemLevel, rtimestep,&
+              rsolver, rsolution, mhd_nlsolverCallback,&
+              rcollection)
+        end if
 
       case default
         call output_line('Unsupported time-stepping algorithm!',&
@@ -727,6 +770,16 @@ contains
 
       ! Stop time measurement for solution procedure
       call stat_stopTimer(p_rtimerSolution)
+      
+      ! Write norm of solution to benchmark logfile
+      if (OU_BENCHLOG .ne. 0) then
+        dnormL1 = lsysbl_vectorNorm(rsolution, LINALG_NORML1)
+        dnormL2 = lsysbl_vectorNorm(rsolution, LINALG_NORML2)
+        call output_line('T = '//trim(sys_sdEL(rtimestep%dTime,5))//&
+            '   ||U||_1 = '//trim(sys_sdEL(dnormL1,5))//&
+            '   ||U||_2 = '//trim(sys_sdEL(dnormL2,5)),&
+            OU_CLASS_MSG, OU_MODE_BENCHLOG)
+      end if
 
       ! Reached final time, then exit the infinite time loop?
       if (rtimestep%dTime .ge. rtimestep%dfinalTime) exit timeloop
@@ -771,19 +824,19 @@ contains
         call stat_startTimer(p_rtimerErrorEstimation, STAT_TIMERSHORT)
 
         ! Compute the error estimator using recovery techniques
-        call mhd_errorestRecovery(rparlist, ssectionname,&
+        call mhd_errestRecovery(rparlist, ssectionname,&
             p_rproblemLevel, rsolution, rtimestep%dTime,&
-            relementError, derror)
+            relementError, derror, rcollection)
 
         ! Stop time measurement for error estimation
         call stat_stopTimer(p_rtimerErrorEstimation)
 
 
-        !-------------------------------------------------------------------------
+        !-----------------------------------------------------------------------
         ! Perform h-adaptation
-        !-------------------------------------------------------------------------
+        !-----------------------------------------------------------------------
 
-        ! Start time measurement for mesh adaptation
+        ! Start time measurement for h-adaptation
         call stat_startTimer(p_rtimerAdaptation, STAT_TIMERSHORT)
 
         ! Set the names of the template matrix
@@ -804,13 +857,17 @@ contains
         call lsyssc_createMatrixFromGraph(rgraph,&
             p_rproblemLevel%Rmatrix(templateMatrix))
 
-        ! Stop time measurement for mesh adaptation
+        ! Resize the solution vector accordingly
+        call lsysbl_resizeVectorBlock(&
+            p_rproblemLevel%RmatrixBlock(systemMatrix), rsolution, .false.)
+        
+        ! Stop time measurement for h-adaptation
         call stat_stopTimer(p_rtimerAdaptation)
 
 
-        !-------------------------------------------------------------------------
+        !-----------------------------------------------------------------------
         ! Re-generate the discretisation and coefficient matrices
-        !-------------------------------------------------------------------------
+        !-----------------------------------------------------------------------
 
         ! Start time measurement for generation of the triangulation
         call stat_startTimer(p_rtimerTriangulation, STAT_TIMERSHORT)
@@ -823,24 +880,14 @@ contains
         call stat_stopTimer(p_rtimerTriangulation)
 
 
-        ! Start time measurement for generation of constant
-        ! coefficient matrices
+        ! Start time measurement for generation of constant coefficient matrices
         call stat_startTimer(p_rtimerAssemblyCoeff, STAT_TIMERSHORT)
 
         ! Re-initialise all constant coefficient matrices
         call mhd_initProblemLevel(rparlist, ssectionName,&
-            p_rproblemLevel, rcollection)
-
-        ! Resize the solution vector accordingly
-        call parlst_getvalue_int(rparlist,&
-            ssectionName, 'systemmatrix', systemMatrix)
-        call lsysbl_resizeVecBlockIndMat(&
-            p_rproblemLevel%RmatrixBlock(systemMatrix),&
-            rsolution, .false., .true.)
+            p_rproblemLevel, rcollection, rbdrCond)
 
         ! Prepare internal data arrays of the solver structure
-        call parlst_getvalue_int(rparlist,&
-            ssectionName, 'isystemformat', isystemFormat)
         call flagship_updateSolverMatrix(p_rproblemLevel, rsolver,&
             systemMatrix, isystemFormat, UPDMAT_ALL)
         call solver_updateStructure(rsolver)
@@ -866,6 +913,7 @@ contains
     call lsysbl_releaseVector(rvector1)
     call lsysbl_releaseVector(rvector2)
     call lsysbl_releaseVector(rvector3)
+
   end subroutine mhd_solveTransientPrimal
 
 end module mhd_application

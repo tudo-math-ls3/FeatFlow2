@@ -5,7 +5,7 @@
 !#
 !# <purpose>
 !# This module contains the basic routines required to solve the
-!# compressible MHD equations in 3D
+!# compressible ideal MHD equations in 3D
 !#
 !# The following routines are available:
 !#

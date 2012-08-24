@@ -5,11 +5,11 @@
 !#
 !# <purpose>
 !# This module contains all routines which are required to perform
-!# error estimation for the compressible MHD equations.
+!# error estimation for the compressible ideal MHD equations.
 !#
 !# The following routines are available:
 !#
-!# 1.) mhd_errorestRecovery
+!# 1.) mhd_errestRecovery
 !#     -> Estimates the solution error using recovery techniques
 !#
 !#
@@ -26,6 +26,7 @@ module mhd_errorestimation
 #include "../../flagship.h"
 
 !$use omp_lib
+  use collection
   use fsystem
   use genoutput
   use linearsystemblock
@@ -44,7 +45,7 @@ module mhd_errorestimation
 
   private
 
-  public :: mhd_errorestRecovery
+  public :: mhd_errestRecovery
 
 contains
 
@@ -52,8 +53,8 @@ contains
 
 !<subroutine>
 
-  subroutine mhd_errorestRecovery(rparlist, ssectionName,&
-      rproblemLevel, rsolution, dtime, rerror, derror)
+  subroutine mhd_errestRecovery(rparlist, ssectionName,&
+      rproblemLevel, rsolution, dtime, rerror, derror, rcollection)
 
 !<description>
     ! This subroutine estimates the error of the discrete solution by
@@ -80,6 +81,11 @@ contains
     ! simulation time
     real(DP), intent(in) :: dtime
 !</input>
+
+!<inputoutput>
+    ! collection structure
+    type(t_collection), intent(inout), target :: rcollection
+!</inputoutput>
 
 !<output>
     ! element-wise error distribution
@@ -188,7 +194,7 @@ contains
 
       case default
         call output_line('Invalid type of error estimator!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'mhd_errorestRecovery')
+            OU_CLASS_ERROR,OU_MODE_STD,'mhd_errestRecovery')
         call sys_halt()
       end select
 
@@ -242,7 +248,7 @@ contains
         call mhd_calcProtectionLayer(rproblemLevel%rtriangulation,&
         nprotectLayers, dprotectLayerTolerance, rerror)
 
-  end subroutine mhd_errorestRecovery
+  end subroutine mhd_errestRecovery
 
   !*****************************************************************************
 

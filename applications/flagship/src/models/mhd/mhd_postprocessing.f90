@@ -5,7 +5,7 @@
 !#
 !# <purpose>
 !# This module contains all postprocessing routines which are required to
-!# solve the compressible MHD equations in arbitrary spatial dimensions.
+!# solve the compressible ideal MHD equations in arbitrary spatial dimensions
 !#
 !# The following routines are available:
 !#
@@ -103,7 +103,7 @@ contains
 
     ! persistent variable
     integer, save :: ifilenumber = 1
-    
+
     ! local variables
     type(t_ucdExport) :: rexport
     
@@ -599,7 +599,7 @@ contains
               call ucd_addTracerVariable(rexport, cvariable//csuffix,&
                   p_Ddata1)
             end if
-            
+
           end if
         end do
 
@@ -804,7 +804,7 @@ contains
       call lsyssc_getbase_double(rvector, p_Ddata)
       dmass2 = sum(p_Ddata)
       call lsyssc_releaseVector(rvector)
-            
+      
       ! Release matrices
       call lsyssc_releaseMatrix(rmatrix1)
       call lsyssc_releaseMatrix(rmatrix2)

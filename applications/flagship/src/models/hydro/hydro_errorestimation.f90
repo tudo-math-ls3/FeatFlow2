@@ -9,7 +9,7 @@
 !#
 !# The following routines are available:
 !#
-!# 1.) hydro_errorestRecovery
+!# 1.) hydro_errestRecovery
 !#     -> Estimates the solution error using recovery techniques
 !#
 !#
@@ -26,6 +26,7 @@ module hydro_errorestimation
 #include "../../flagship.h"
 
 !$use omp_lib
+  use collection
   use fsystem
   use genoutput
   use linearsystemblock
@@ -44,7 +45,7 @@ module hydro_errorestimation
 
   private
 
-  public :: hydro_errorestRecovery
+  public :: hydro_errestRecovery
 
 contains
 
@@ -52,8 +53,8 @@ contains
 
 !<subroutine>
 
-  subroutine hydro_errorestRecovery(rparlist, ssectionName,&
-      rproblemLevel, rsolution, dtime, rerror, derror)
+  subroutine hydro_errestRecovery(rparlist, ssectionName,&
+      rproblemLevel, rsolution, dtime, rerror, derror, rcollection)
 
 !<description>
     ! This subroutine estimates the error of the discrete solution by
@@ -80,6 +81,11 @@ contains
     ! simulation time
     real(DP), intent(in) :: dtime
 !</input>
+
+!<inputoutput>
+    ! collection structure
+    type(t_collection), intent(inout), target :: rcollection
+!</inputoutput>
 
 !<output>
     ! element-wise error distribution
@@ -188,7 +194,7 @@ contains
 
       case default
         call output_line('Invalid type of error estimator!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'hydro_errorestRecovery')
+            OU_CLASS_ERROR,OU_MODE_STD,'hydro_errestRecovery')
         call sys_halt()
       end select
 
@@ -242,7 +248,7 @@ contains
         call hydro_calcProtectionLayer(rproblemLevel%rtriangulation,&
         nprotectLayers, dprotectLayerTolerance, rerror)
 
-  end subroutine hydro_errorestRecovery
+  end subroutine hydro_errestRecovery
 
   !*****************************************************************************
 

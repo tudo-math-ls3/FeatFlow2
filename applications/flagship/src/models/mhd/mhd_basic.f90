@@ -5,7 +5,7 @@
 !#
 !# <purpose>
 !# This module contains the basic routines and provides all global
-!# variables which are required to solve the compressible MHD equations
+!# variables which are required to solve the compressible ideal MHD equations
 !#
 !# The following routines are available:
 !#
@@ -518,14 +518,15 @@ contains
     ! Allocate temporal memory
     allocate(p_Denergy(neq))
     call ucd_getVariable(rexport, 'total_energy', p_Denergy, nlength)
-    if (nlength .eq. -1)&
-        call ucd_getVariable(rexport, 'energy', p_Denergy)
+    if (nlength .eq. -1) then
+      call ucd_getVariable(rexport, 'energy', p_Denergy)
     
-    ! Generate total energy
-    if (nlength .eq. 1) then
-      do ieq = 1, neq
-        p_Denergy(ieq) = p_Denergy(ieq) * p_Ddensity(ieq)
-      end do
+      ! Generate total energy
+      if (nlength .eq. 1) then
+        do ieq = 1, neq
+          p_Denergy(ieq) = p_Denergy(ieq) * p_Ddensity(ieq)
+        end do
+      end if
     end if
     
     ! Set energy variable
@@ -537,7 +538,7 @@ contains
       
     ! Deallocate temporal memory
     deallocate(p_Ddensity, p_Denergy)
-
+    
   contains
 
     ! Here, the working routine follow

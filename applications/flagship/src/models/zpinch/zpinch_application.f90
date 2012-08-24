@@ -51,6 +51,7 @@ module zpinch_application
   use graph
   use hadaptaux
   use hadaptivity
+  use linearalgebra
   use linearsystemblock
   use linearsystemscalar
   use paramlist
@@ -133,10 +134,10 @@ contains
     ! Problem structure which holds all internal data (vectors/matrices)
     type(t_problem) :: rproblem
 
-    ! Time-stepping structures
+    ! Time-stepping structure
     type(t_timestep) :: rtimestep
 
-    ! Global solver structure and point
+    ! Global solver structure and pointer
     type(t_solver) :: rsolver
     type(t_solver), pointer :: p_rsolver => null()
 
@@ -178,6 +179,7 @@ contains
     character(LEN=SYS_STRLEN) :: sindatfileName
     character(LEN=SYS_STRLEN) :: sbdrcondName
     character(LEN=SYS_STRLEN) :: algorithm
+    character(LEN=SYS_STRLEN) :: benchmark
     character(LEN=SYS_STRLEN) :: ssectionNameHydro
     character(LEN=SYS_STRLEN) :: ssectionNameTransport
 
@@ -230,11 +232,11 @@ contains
         ssectionNameTransport, .true.)
 
 
-    ! Attach the parameter list and the timers to the
-    ! collection. Since we do not measure the time individually for
-    ! each submodel, the same timers will be attached to the section
-    ! that corresponds to the hydrodynamic model and the scalar
-    ! transport model so that the timings are cumulated.
+    ! Attach the parameter list and the timers to the collection.
+    ! Since we do not measure the time individually for each submodel,
+    ! the same timers will be attached to the section that corresponds
+    ! to the hydrodynamic model and the scalar transport model so that
+    ! the timings are cumulated.
     call collct_setvalue_parlst(rcollection,&
         'rparlist', rparlist, .true.,&
         ssectionName=ssectionName)
@@ -433,17 +435,18 @@ contains
     ! Stop time measurement for pre-processing
     call stat_stopTimer(rtimerPrePostprocess)
 
-
     !---------------------------------------------------------------------------
     ! Solution algorithm
     !---------------------------------------------------------------------------
 
-    if (rtimestep%dfinalTime .gt. rtimestep%dinitialTime) then
+    if (rtimestep%dfinalTime .ge. rtimestep%dinitialTime) then
 
       ! Get global configuration from parameter list
-      call parlst_getvalue_string(rparlist, ssectionName,&
-          'algorithm', algorithm)
-               
+      call parlst_getvalue_string(rparlist,&
+          ssectionName, 'algorithm', algorithm)
+      call parlst_getvalue_string(rparlist,&
+          ssectionName, 'benchmark', benchmark, '')
+      
       ! What solution algorithm should be applied?
       if (trim(algorithm) .eq. 'transient_primal') then
         
@@ -457,10 +460,25 @@ contains
         ! Output solution to file
         call zpinch_outputSolution(rparlist, ssectionName,&
             rproblem%p_rproblemLevelMax, rsolution, rtimestep%dTime)
-        
+
       else
-        call output_line(trim(algorithm)//' is not a valid solution algorithm!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'zpinch_app')
+        if (trim(adjustl(benchmark)) .eq. '') then
+          call output_lbrk()
+          call output_separator(OU_SEP_DOLLAR,OU_CLASS_ERROR,OU_MODE_STD)
+          call output_line('This configuration was marked as deprecated by its maintainer!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'zpinch_app')
+          call output_line('Please wait for an updated version of Featflow2 or contact!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'zpinch_app')
+          call output_line('matthias.moeller@math.tu-dortmund.de if running this benchmark!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'zpinch_app')
+          call output_line('is urgent!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'zpinch_app')
+          call output_separator(OU_SEP_DOLLAR,OU_CLASS_ERROR,OU_MODE_STD)
+          call output_lbrk()
+        else
+          call output_line(trim(algorithm)//' is not a valid solution algorithm!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'zpinch_app')
+        end if
         call sys_halt()
       end if
 
@@ -480,9 +498,11 @@ contains
     call stat_startTimer(rtimerPrepostProcess, STAT_TIMERSHORT)
 
     ! Release time-stepping
+    call tstep_infoTimestep(rtimestep, .false.)
     call tstep_releaseTimestep(rtimestep)
 
     ! Release solver
+    call solver_infoSolver(rsolver, .false.)
     call solver_releaseSolver(rsolver)
 
     ! Release problem structure
@@ -526,7 +546,7 @@ contains
 !</description>
 
 !<input>
-    ! section name in parameter list
+      ! section name in parameter list and collection structure
     character(LEN=*), intent(in) :: ssectionName
     character(LEN=*), intent(in) :: ssectionNameHydro
     character(LEN=*), intent(in) :: ssectionNameTransport
@@ -556,7 +576,7 @@ contains
 !</inputoutput>
 !</subroutine>
 
-    ! Pointer to the current multigrid level
+    ! Pointer to the multigrid level
     type(t_problemLevel), pointer :: p_rproblemLevel
 
     ! Pointer to the discretisation structure
@@ -577,7 +597,7 @@ contains
     ! Vectors for the linearised FCT algorithm
     type(t_vectorBlock), dimension(2) :: Rvector1, Rvector2, Rvector3
 
-    ! Vector for the element-wise feature indicator
+    ! Vector for the element-wise error distribution
     type(t_vectorScalar) :: relementError
 
     ! Structure for h-adaptation
@@ -603,6 +623,8 @@ contains
     character(LEN=SYS_STRLEN) :: soutputName
     character(LEN=SYS_STRLEN) :: sucdimport
     
+    ! local variables
+    real(DP) :: dnormL1, dnormL2
     real(dp) :: dstepUCD, dtimeUCD, dstepAdapt, dtimeAdapt
     real(dp) :: dscale
     integer :: templateMatrix, systemMatrix, isystemFormat
@@ -641,6 +663,8 @@ contains
 
     ! Get global parameters
     call parlst_getvalue_int(rparlist,&
+        ssectionName, 'isystemFormat', isystemFormat)
+    call parlst_getvalue_int(rparlist,&
         ssectionName, 'ndimension', ndimension)
 
     ! Set pointer to maximum problem level
@@ -658,27 +682,28 @@ contains
         p_rproblemLevel%Rdiscretisation(discretisationHydro)
 
     ! Create the solution vector
-    call lsysbl_createVectorBlock(p_rdiscretisation,&
-        p_rsolutionHydro, .false., ST_DOUBLE)
-    if (p_rdiscretisation%ncomponents .ne. hydro_getNVAR(p_rproblemLevel)) then
-      p_rsolutionHydro%RvectorBlock(1)%NVAR = hydro_getNVAR(p_rproblemLevel)
-      call lsysbl_resizeVectorBlock(p_rsolutionHydro,&
-          p_rsolutionHydro%NEQ, .false., .false.)
+    if (p_rdiscretisation%ncomponents .eq. hydro_getNVAR(p_rproblemLevel)) then
+      call lsysbl_createVectorBlock(p_rdiscretisation,&
+          p_rsolutionHydro, .false., ST_DOUBLE)
+    else
+      call lsysbl_createVectorBlock(p_rdiscretisation,&
+          hydro_getNVAR(p_rproblemLevel),&
+          p_rsolutionHydro, .false., ST_DOUBLE)
     end if
 
-    ! Initialise the solution vector
-    call hydro_initSolution(rparlist, ssectionNameHydro,&
-        p_rproblemLevel, rtimestep%dinitialTime, p_rsolutionHydro,&
-        rcollection)
-    
-    ! Impose boundary conditions
+    ! Initialise the solution vector and impose boundary conditions
+    call hydro_initSolution(rparlist, ssectionNameHydro, p_rproblemLevel,&
+        rtimestep%dinitialTime, p_rsolutionHydro, rcollection)
+
     select case(ndimension)
     case (NDIM1D)
       call bdrf_filterVectorExplicit(p_rbdrCondHydro, p_rsolutionHydro,&
           rtimestep%dinitialTime, hydro_calcBoundaryvalues1d)
+
     case (NDIM2D)
       call bdrf_filterVectorExplicit(p_rbdrCondHydro, p_rsolutionHydro,&
           rtimestep%dinitialTime, hydro_calcBoundaryvalues2d)
+
     case (NDIM3D)
       call bdrf_filterVectorExplicit(p_rbdrCondHydro, p_rsolutionHydro,&
           rtimestep%dinitialTime, hydro_calcBoundaryvalues3d)
@@ -710,7 +735,6 @@ contains
         p_rproblemLevel, rtimestep%dinitialTime,&
         p_rsolutionTransport, rcollection)
 
-    ! Impose boundary conditions
     call bdrf_filterVectorExplicit(p_rbdrCondTransport,&
         p_rsolutionTransport, rtimestep%dinitialTime)
 
@@ -746,11 +770,11 @@ contains
       call parlst_getvalue_int(rparlist,&
           trim(sadaptivityName), 'npreadapt', npreadapt)
 
+
       if ((dstepAdapt > 0.0_DP) .or. (npreadapt > 0)) then
 
         ! Initialise adaptation structure from parameter list
-        call hadapt_initFromParameterlist(rhadapt,&
-            rparlist, sadaptivityName)
+        call hadapt_initFromParameterlist(rhadapt, rparlist, sadaptivityName)
 
         ! Generate a dynamic graph for the sparsity pattern and attach
         ! it to the collection structure which is used to pass this
@@ -762,8 +786,8 @@ contains
             ssectionNameHydro, 'templateMatrix', templateMatrix)
         call lsyssc_createGraphFromMatrix(&
             p_rproblemLevel%Rmatrix(templateMatrix), rgraph)
-        call collct_setvalue_graph(rcollection,&
-            'sparsitypattern', rgraph, .true.)
+        call collct_setvalue_graph(rcollection, 'sparsitypattern',&
+            rgraph, .true.)
 
         ! Perform pre-adaptation?
         if (npreadapt > 0) then
@@ -788,7 +812,7 @@ contains
                 relementError, rcollection)
 
             ! Release element-wise error distribution
-            call lsyssc_releaseVector(rElementError)
+            call lsyssc_releaseVector(relementError)
 
             ! Generate standard mesh from raw mesh
             call tria_initStandardMeshFromRaw(&
@@ -807,7 +831,7 @@ contains
             ! Resize the solution vector for the hydrodynamic model accordingly
             call parlst_getvalue_int(rparlist,&
                 ssectionNameHydro, 'systemMatrix', systemMatrix)
-            call lsysbl_resizeVecBlockIndMat(&
+            call lsysbl_resizeVectorBlock(&
                 p_rproblemLevel%RmatrixBlock(systemMatrix),&
                 p_rsolutionHydro, .false., .true.)
 
@@ -1002,6 +1026,22 @@ contains
       ! Stop time measurement for solution procedure
       call stat_stopTimer(p_rtimerSolution)
       
+      ! Write norm of solution to benchmark logfile
+      if (OU_BENCHLOG .ne. 0) then
+        dnormL1 = lsysbl_vectorNorm(p_rsolutionHydro, LINALG_NORML1)
+        dnormL2 = lsysbl_vectorNorm(p_rsolutionHydro, LINALG_NORML2)
+        call output_line('T = '//trim(sys_sdEL(rtimestep%dTime,5))//&
+            '   ||U||_1 = '//trim(sys_sdEL(dnormL1,5))//&
+            '   ||U||_2 = '//trim(sys_sdEL(dnormL2,5)),&
+            OU_CLASS_MSG, OU_MODE_BENCHLOG)
+        dnormL1 = lsysbl_vectorNorm(p_rsolutionTransport, LINALG_NORML1)
+        dnormL2 = lsysbl_vectorNorm(p_rsolutionTransport, LINALG_NORML2)
+        call output_line('T = '//trim(sys_sdEL(rtimestep%dTime,5))//&
+            '   ||U||_1 = '//trim(sys_sdEL(dnormL1,5))//&
+            '   ||U||_2 = '//trim(sys_sdEL(dnormL2,5)),&
+            OU_CLASS_MSG, OU_MODE_BENCHLOG)
+      end if
+
       ! Reached final time, then exit the infinite time loop?
       if (rtimestep%dTime .ge. rtimestep%dfinalTime) exit timeloop
 
@@ -1115,7 +1155,7 @@ contains
         ! Resize the solution vector for the hydrodynamic model accordingly
         call parlst_getvalue_int(rparlist,&
             ssectionNameHydro, 'systemmatrix', systemMatrix)
-        call lsysbl_resizeVecBlockIndMat(&
+        call lsysbl_resizeVectorBlock(&
             p_rproblemLevel%RmatrixBlock(systemMatrix),&
             p_rsolutionHydro, .false., .true.)
 

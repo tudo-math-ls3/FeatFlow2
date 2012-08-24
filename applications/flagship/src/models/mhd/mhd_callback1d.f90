@@ -5,7 +5,7 @@
 !#
 !# <purpose>
 !# This module contains all callback functions which are required to
-!# solve the compressible MHDequations in 1D.
+!# solve the compressible ideal MHD equations in 1D.
 !#
 !# The following callback functions are available:
 !#

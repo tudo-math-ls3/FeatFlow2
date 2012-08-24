@@ -150,6 +150,7 @@ module transport_application
   use timestep
   use timestepaux
   use triangulation
+  use ucd
 
   ! Modules from transport model
   use transport_basic
@@ -212,7 +213,6 @@ contains
     type(t_boundaryCondition) :: rbdrCondDual
 
     ! Problem structure which holds all internal data (vectors/matrices)
-    ! for the convection-diffusion-reaction application
     type(t_problem) :: rproblem
 
     ! Time-stepping structure
@@ -533,8 +533,23 @@ contains
             rsolutionPrimal, rsolutionDual, rtimestep%dTime)
 
       else
-        call output_line(trim(algorithm)//' is not a valid solution algorithm!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'transp_app')
+        if (trim(adjustl(benchmark)) .eq. '') then
+          call output_lbrk()
+          call output_separator(OU_SEP_DOLLAR,OU_CLASS_ERROR,OU_MODE_STD)
+          call output_line('This configuration was marked as deprecated by its maintainer!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'transp_app')
+          call output_line('Please wait for an updated version of Featflow2 or contact!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'transp_app')
+          call output_line('matthias.moeller@math.tu-dortmund.de if running this benchmark!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'transp_app')
+          call output_line('is urgent!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'transp_app')
+          call output_separator(OU_SEP_DOLLAR,OU_CLASS_ERROR,OU_MODE_STD)
+          call output_lbrk()
+        else
+          call output_line(trim(algorithm)//' is not a valid solution algorithm!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'transp_app')
+        end if
         call sys_halt()
       end if
 
@@ -673,9 +688,11 @@ contains
     ! section names
     character(LEN=SYS_STRLEN) :: sadaptivityName
     character(LEN=SYS_STRLEN) :: soutputName
-
+    character(LEN=SYS_STRLEN) :: sucdimport
+    
     ! local variables
     real(DP) :: dnormL1, dnormL2
+    type(t_ucdExport) :: rimport
     real(dp) :: derror, dstepUCD, dtimeUCD, dstepAdapt, dtimeAdapt
     integer :: templateMatrix, systemMatrix, discretisation
     integer :: nlmin, ipreadapt, npreadapt, irhstype, ivelocitytype
@@ -778,8 +795,9 @@ contains
             rcollection%p_rvectorQuickAccess1 => rsolution
 
             ! Perform h-adaptation and update the triangulation structure
-            call transp_adaptTriangulation(rhadapt,&
-                p_rproblemLevel%rtriangulation, relementError, rcollection)
+            call transp_adaptTriangulation(&
+                rhadapt, p_rproblemLevel%rtriangulation,&
+                relementError, rcollection)
 
             ! Release element-wise error distribution
             call lsyssc_releaseVector(relementError)
@@ -793,14 +811,15 @@ contains
                 p_rproblemLevel%Rmatrix(templateMatrix))
 
             ! Resize the solution vector accordingly
-            call lsysbl_resizeVectorBlock(rsolution, &
-                p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
+            call lsysbl_resizeVectorBlock(p_rdiscretisation, &
+                rsolution, .false.)
 
             ! Re-generate the initial solution vector and impose
             !  boundary conditions explicitly
             call transp_initSolution(rparlist, ssectionname,&
                 p_rproblemLevel, rtimestep%dinitialTime, rsolution,&
                 rcollection)
+
             call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
                 rtimestep%dinitialTime)
 
@@ -810,11 +829,9 @@ contains
           end do
 
           ! Prepare internal data arrays of the solver structure
-          call parlst_getvalue_int(rparlist,&
-              ssectionName, 'systemMatrix', systemMatrix)
           call flagship_updateSolverMatrix(p_rproblemLevel, rsolver,&
-              systemMatrix, SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
-          call solver_updateStructure(rsolver)
+              systemMatrix, SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL) 
+         call solver_updateStructure(rsolver)
 
         end if   ! npreadapt > 0
 
@@ -824,6 +841,22 @@ contains
 
       dstepAdapt = 0.0_DP
 
+    end if
+
+    ! Get name of import file (if any)
+    call parlst_getvalue_string(rparlist,&
+        trim(soutputName), 'sucdimport', sucdimport, '')
+    
+    ! Do we have to read in a pre-computed solution?
+    if (trim(sucdimport) .ne. '') then
+      call ucd_readGMV(sucdimport, rimport, p_rproblemLevel%rtriangulation)
+      call ucd_getSimulationTime(rimport, rtimestep%dinitialTime)
+      call ucd_getSimulationTime(rimport, rtimestep%dTime)
+      call transp_setVariable(rimport, 'u', rsolution)
+      call ucd_release(rimport)
+      
+      ! Set time for solution output
+      dtimeUCD = rtimestep%dinitialTime
     end if
 
     ! Force initialisation of the discrete transport operator and the
@@ -959,7 +992,7 @@ contains
 
 
       !-------------------------------------------------------------------------
-      ! Perform mesh adaptation
+      ! Perform h-adaptation
       !-------------------------------------------------------------------------
 
       if ((dstepAdapt .gt. 0.0_DP) .and. (rtimestep%dTime .ge. dtimeAdapt)) then
@@ -987,7 +1020,7 @@ contains
         ! Perform h-adaptation
         !-----------------------------------------------------------------------
 
-        ! Start time measurement for mesh adaptation
+        ! Start time measurement for h-adaptation
         call stat_startTimer(p_rtimerAdaptation, STAT_TIMERSHORT)
 
         ! Set the name of the template matrix
@@ -997,8 +1030,9 @@ contains
         rcollection%p_rvectorQuickAccess1 => rsolution
 
         ! Perform h-adaptation and update the triangulation structure
-        call transp_adaptTriangulation(rhadapt,&
-            p_rproblemLevel%rtriangulation, relementError, rcollection)
+        call transp_adaptTriangulation(&
+	   rhadapt, p_rproblemLevel%rtriangulation,&
+	   relementError, rcollection)
 
         ! Release element-wise error distribution
         call lsyssc_releaseVector(relementError)
@@ -1008,10 +1042,10 @@ contains
             p_rproblemLevel%Rmatrix(templateMatrix))
 
         ! Resize the solution vector accordingly
-        call lsysbl_resizeVectorBlock(rsolution, &
-            p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
+        call lsysbl_resizeVectorBlock(p_rdiscretisation,&
+            rsolution, .false.)
 
-        ! Stop time measurement for mesh adaptation
+        ! Stop time measurement for h-adaptation
         call stat_stopTimer(p_rtimerAdaptation)
 
 
@@ -1038,8 +1072,6 @@ contains
             p_rproblemLevel, rcollection, rbdrCond)
 
         ! Prepare internal data arrays of the solver structure
-        call parlst_getvalue_int(rparlist,&
-            ssectionName, 'systemmatrix', systemMatrix)
         call flagship_updateSolverMatrix(p_rproblemLevel, rsolver,&
             systemMatrix, SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
         call solver_updateStructure(rsolver)
@@ -1058,8 +1090,8 @@ contains
 
         ! Re-initialise the right-hand side vector
         if (irhstype > 0) then
-          call lsysbl_resizeVectorBlock(rrhs,&
-              p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
+          call lsysbl_resizeVectorBlock(p_rdiscretisation,&
+              rrhs, .false.)
           call transp_initRHS(rparlist, ssectionName, p_rproblemLevel,&
               rtimestep%dinitialTime, rrhs, rcollection)
         end if
@@ -1306,6 +1338,8 @@ contains
         ! to the callback function for h-adaptation
         call parlst_getvalue_int(rparlist,&
             ssectionName, 'templateMatrix', templateMatrix)
+        call parlst_getvalue_int(rparlist,&
+            ssectionName, 'systemMatrix', systemMatrix)
         call lsyssc_createGraphFromMatrix(&
             p_rproblemLevel%Rmatrix(templateMatrix), rgraph)
         call collct_setvalue_graph(rcollection, 'sparsitypattern',&
@@ -1413,7 +1447,7 @@ contains
       ! Perform h-adaptation
       !-------------------------------------------------------------------------
 
-      ! Start time measurement for mesh adaptation
+      ! Start time measurement for h-adaptation
       call stat_startTimer(p_rtimerAdaptation, STAT_TIMERSHORT)
 
       ! Set the name of the template matrix
@@ -1423,21 +1457,22 @@ contains
       rcollection%p_rvectorQuickAccess1 => rsolution
 
       ! Perform h-adaptation and update the triangulation structure
-      call transp_adaptTriangulation(rhadapt,&
-          p_rproblemLevel%rtriangulation, relementError, rcollection)
+      call transp_adaptTriangulation(&
+          rhadapt, p_rproblemLevel%rtriangulation,&
+          relementError, rcollection)
 
       ! Update the template matrix according to the sparsity pattern
       call lsyssc_createMatrixFromGraph(rgraph,&
           p_rproblemLevel%Rmatrix(templateMatrix))
 
       ! Resize the solution vector accordingly
-      call lsysbl_resizeVectorBlock(rsolution,&
-          p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
+      call lsysbl_resizeVectorBlock(p_rdiscretisation,&
+          rsolution, .false.)
 
       ! Release element-wise error distribution
       call lsyssc_releaseVector(relementError)
 
-      ! Stop time measurement for mesh adaptation
+      ! Stop time measurement for h-adaptation
       call stat_stopTimer(p_rtimerAdaptation)
 
 
@@ -1464,8 +1499,6 @@ contains
           p_rproblemLevel, rcollection, rbdrCond)
 
       ! Prepare internal data arrays of the solver structure
-      call parlst_getvalue_int(rparlist,&
-          ssectionName, 'systemmatrix', systemMatrix)
       call flagship_updateSolverMatrix(p_rproblemLevel, rsolver,&
           systemMatrix, SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
       call solver_updateStructure(rsolver)
@@ -1636,6 +1669,8 @@ contains
         ! to the callback function for h-adaptation
         call parlst_getvalue_int(rparlist,&
             ssectionName, 'templateMatrix', templateMatrix)
+        call parlst_getvalue_int(rparlist,&
+            ssectionName, 'systemMatrix', systemMatrix)
         call lsyssc_createGraphFromMatrix(&
             p_rproblemLevel%Rmatrix(templateMatrix), rgraph)
         call collct_setvalue_graph(rcollection, 'sparsitypattern',&
@@ -1834,7 +1869,7 @@ contains
       ! Perform h-adaptation
       !-------------------------------------------------------------------------
 
-      ! Start time measurement for mesh adaptation
+      ! Start time measurement for h-adaptation
       call stat_startTimer(p_rtimerAdaptation, STAT_TIMERSHORT)
 
       ! Set the names of the template matrix and the solution vector
@@ -1844,21 +1879,22 @@ contains
       rcollection%p_rvectorQuickAccess1 => rsolutionPrimal
 
       ! Perform h-adaptation and update the triangulation structure
-      call transp_adaptTriangulation(rhadapt,&
-          p_rproblemLevel%rtriangulation, relementError, rcollection)
+      call transp_adaptTriangulation(&
+          rhadapt, p_rproblemLevel%rtriangulation,&
+          relementError, rcollection)
 
       ! Update the template matrix according to the sparsity pattern
       call lsyssc_createMatrixFromGraph(rgraph,&
           p_rproblemLevel%Rmatrix(templateMatrix))
 
       ! Resize the solution vector accordingly
-      call lsysbl_resizeVectorBlock(rsolutionPrimal,&
-          p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
+      call lsysbl_resizeVectorBlock(p_rdiscretisation,&
+          rsolutionPrimal, .false.)
 
       ! Release element-wise error distribution
       call lsyssc_releaseVector(relementError)
 
-      ! Stop time measurement for mesh adaptation
+      ! Stop time measurement for h-adaptation
       call stat_stopTimer(p_rtimerAdaptation)
 
 
@@ -1886,8 +1922,6 @@ contains
           p_rproblemLevel, rcollection, rbdrCondPrimal, rbdrCondDual)
 
       ! Prepare internal data arrays of the solver structure
-      call parlst_getvalue_int(rparlist,&
-          ssectionName, 'systemMatrix', systemMatrix)
       call flagship_updateSolverMatrix(p_rproblemLevel, rsolver,&
           systemMatrix, SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
       call solver_updateStructure(rsolver)
@@ -2056,6 +2090,8 @@ contains
         ! to the callback function for h-adaptation
         call parlst_getvalue_int(rparlist,&
             ssectionName, 'templateMatrix', templateMatrix)
+        call parlst_getvalue_int(rparlist,&
+            ssectionName, 'systemMatrix', systemMatrix)
         call lsyssc_createGraphFromMatrix(&
             p_rproblemLevel%Rmatrix(templateMatrix), rgraph)
         call collct_setvalue_graph(rcollection, 'sparsitypattern',&
@@ -2164,7 +2200,7 @@ contains
       ! Perform h-adaptation
       !-------------------------------------------------------------------------
 
-      ! Start time measurement for mesh adaptation
+      ! Start time measurement for h-adaptation
       call stat_startTimer(p_rtimerAdaptation, STAT_TIMERSHORT)
 
       ! Set the names of the template matrix and the solution vector
@@ -2174,21 +2210,22 @@ contains
       rcollection%p_rvectorQuickAccess1 => rsolution
 
       ! Perform h-adaptation and update the triangulation structure
-      call transp_adaptTriangulation(rhadapt,&
-          p_rproblemLevel%rtriangulation, relementError, rcollection)
+      call transp_adaptTriangulation(&
+          rhadapt, p_rproblemLevel%rtriangulation,&
+          relementError, rcollection)
 
       ! Update the template matrix according to the sparsity pattern
       call lsyssc_createMatrixFromGraph(rgraph,&
           p_rproblemLevel%Rmatrix(templateMatrix))
 
       ! Resize the solution vector accordingly
-      call lsysbl_resizeVectorBlock(rsolution,&
-          p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
+      call lsysbl_resizeVectorBlock(p_rdiscretisation,&
+          rsolution, .false.)
 
       ! Release element-wise error distribution
       call lsyssc_releaseVector(relementError)
 
-      ! Stop time measurement for mesh adaptation
+      ! Stop time measurement for h-adaptation
       call stat_stopTimer(p_rtimerAdaptation)
 
 
@@ -2394,6 +2431,8 @@ contains
         ! to the callback function for h-adaptation
         call parlst_getvalue_int(rparlist,&
             ssectionName, 'templateMatrix', templateMatrix)
+        call parlst_getvalue_int(rparlist,&
+            ssectionName, 'systemMatrix', systemMatrix)
         call lsyssc_createGraphFromMatrix(&
             p_rproblemLevel%Rmatrix(templateMatrix), rgraph)
         call collct_setvalue_graph(rcollection, 'sparsitypattern',&
@@ -2598,7 +2637,7 @@ contains
       ! Perform h-adaptation
       !-------------------------------------------------------------------------
 
-      ! Start time measurement for mesh adaptation
+      ! Start time measurement for h-adaptation
       call stat_startTimer(p_rtimerAdaptation, STAT_TIMERSHORT)
 
       ! Set the names of the template matrix and the solution vector
@@ -2608,20 +2647,21 @@ contains
       rcollection%p_rvectorQuickAccess1 => rsolutionPrimal
 
       ! Perform h-adaptation and update the triangulation structure
-      call transp_adaptTriangulation(rhadapt,&
-          p_rproblemLevel%rtriangulation, relementError, rcollection)
+      call transp_adaptTriangulation(&
+          rhadapt, p_rproblemLevel%rtriangulation,&
+          relementError, rcollection)
 
       ! Update the template matrix according to the sparsity pattern
       call lsyssc_createMatrixFromGraph(rgraph, p_rproblemLevel%Rmatrix(templateMatrix))
 
       ! Resize the solution vector accordingly
-      call lsysbl_resizeVectorBlock(rsolutionPrimal,&
-          p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
+      call lsysbl_resizeVectorBlock(p_rdiscretisation,&
+          rsolutionPrimal, .false.)
 
       ! Release element-wise error distribution
       call lsyssc_releaseVector(relementError)
 
-      ! Stop time measurement for mesh adaptation
+      ! Stop time measurement for h-adaptation
       call stat_stopTimer(p_rtimerAdaptation)
 
 
