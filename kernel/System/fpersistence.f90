@@ -440,42 +440,42 @@ module fpersistence
 
     ! -~-~-~ 1D quantities -~-~-~
 
-    real(QP), dimension(:), pointer     :: p_Qquad1D
-    real(DP), dimension(:), pointer     :: p_Ddouble1D
-    real(SP), dimension(:), pointer     :: p_Fsingle1D
-    integer, dimension(:), pointer      :: p_Iinteger1D
-    integer(I8), dimension(:), pointer  :: p_Iint8_1D
-    integer(I16), dimension(:), pointer :: p_Iint16_1D
-    integer(I32), dimension(:), pointer :: p_Iint32_1D
-    integer(I64), dimension(:), pointer :: p_Iint64_1D
-    logical, dimension(:), pointer      :: p_Blogical1D
-    character, dimension(:), pointer    :: p_Schar1D
+    real(QP), dimension(:), pointer     :: p_Qquad1D => null()
+    real(DP), dimension(:), pointer     :: p_Ddouble1D => null()
+    real(SP), dimension(:), pointer     :: p_Fsingle1D => null()
+    integer, dimension(:), pointer      :: p_Iinteger1D => null()
+    integer(I8), dimension(:), pointer  :: p_Iint8_1D => null()
+    integer(I16), dimension(:), pointer :: p_Iint16_1D => null()
+    integer(I32), dimension(:), pointer :: p_Iint32_1D => null()
+    integer(I64), dimension(:), pointer :: p_Iint64_1D => null()
+    logical, dimension(:), pointer      :: p_Blogical1D => null()
+    character, dimension(:), pointer    :: p_Schar1D => null()
 
     ! -~-~-~ 2D quantities -~-~-~
 
-    real(QP), dimension(:,:), pointer     :: p_Qquad2D
-    real(DP), dimension(:,:), pointer     :: p_Ddouble2D
-    real(SP), dimension(:,:), pointer     :: p_Fsingle2D
-    integer, dimension(:,:), pointer      :: p_Iinteger2D
-    integer(I8), dimension(:,:), pointer  :: p_Iint8_2D
-    integer(I16), dimension(:,:), pointer :: p_Iint16_2D
-    integer(I32), dimension(:,:), pointer :: p_Iint32_2D
-    integer(I64), dimension(:,:), pointer :: p_Iint64_2D
-    logical, dimension(:,:), pointer      :: p_Blogical2D
-    character, dimension(:,:), pointer    :: p_Schar2D
+    real(QP), dimension(:,:), pointer     :: p_Qquad2D => null()
+    real(DP), dimension(:,:), pointer     :: p_Ddouble2D => null()
+    real(SP), dimension(:,:), pointer     :: p_Fsingle2D => null()
+    integer, dimension(:,:), pointer      :: p_Iinteger2D => null()
+    integer(I8), dimension(:,:), pointer  :: p_Iint8_2D => null()
+    integer(I16), dimension(:,:), pointer :: p_Iint16_2D => null()
+    integer(I32), dimension(:,:), pointer :: p_Iint32_2D => null()
+    integer(I64), dimension(:,:), pointer :: p_Iint64_2D => null()
+    logical, dimension(:,:), pointer      :: p_Blogical2D => null()
+    character, dimension(:,:), pointer    :: p_Schar2D => null()
 
     ! -~-~-~ 3D quantities -~-~-~
 
-    real(QP), dimension(:,:,:), pointer     :: p_Qquad3D
-    real(DP), dimension(:,:,:), pointer     :: p_Ddouble3D
-    real(SP), dimension(:,:,:), pointer     :: p_Fsingle3D
-    integer, dimension(:,:,:), pointer      :: p_Iinteger3D
-    integer(I8), dimension(:,:,:), pointer  :: p_Iint8_3D
-    integer(I16), dimension(:,:,:), pointer :: p_Iint16_3D
-    integer(I32), dimension(:,:,:), pointer :: p_Iint32_3D
-    integer(I64), dimension(:,:,:), pointer :: p_Iint64_3D
-    logical, dimension(:,:,:), pointer      :: p_Blogical3D
-    character, dimension(:,:,:), pointer    :: p_Schar3D
+    real(QP), dimension(:,:,:), pointer     :: p_Qquad3D => null()
+    real(DP), dimension(:,:,:), pointer     :: p_Ddouble3D => null()
+    real(SP), dimension(:,:,:), pointer     :: p_Fsingle3D => null()
+    integer, dimension(:,:,:), pointer      :: p_Iinteger3D => null()
+    integer(I8), dimension(:,:,:), pointer  :: p_Iint8_3D => null()
+    integer(I16), dimension(:,:,:), pointer :: p_Iint16_3D => null()
+    integer(I32), dimension(:,:,:), pointer :: p_Iint32_3D => null()
+    integer(I64), dimension(:,:,:), pointer :: p_Iint64_3D => null()
+    logical, dimension(:,:,:), pointer      :: p_Blogical3D => null()
+    character, dimension(:,:,:), pointer    :: p_Schar3D => null()
 
   end type t_fpdbDataItem
 
@@ -1538,9 +1538,15 @@ contains
           call io_openFileForWriting(trim(rfpdb%spath)//&
                                      uuid_conv2String(rfpdbDataItem%ruuid)//'.fpd',&
                                      iunit, SYS_REPLACE, bformatted=.false.)
+          
+          ! Handling characters is slightly tricky since some
+          ! compilers (i.e. SUN/Oracle) produce internal compiler
+          ! errors if rfpdbDataItem%p_Schar1D is written to file
+          ! directly. Thus, we convert it into an array of integers
+          ! which correspond to their ASCII values and store them.
           write(iunit, err=2) rfpdbDataItem%Ilbounds,&
                               rfpdbDataItem%Iubounds,&
-                              rfpdbDataItem%p_Schar1D
+                              iachar(rfpdbDataItem%p_Schar1D)
           close(iunit)
         end if
 
@@ -1814,9 +1820,15 @@ contains
           call io_openFileForWriting(trim(rfpdb%spath)//&
                                      uuid_conv2String(rfpdbDataItem%ruuid)//'.fpd',&
                                      iunit, SYS_REPLACE, bformatted=.false.)
+          
+          ! Handling characters is slightly tricky since some
+          ! compilers (i.e. SUN/Oracle) produce internal compiler
+          ! errors if rfpdbDataItem%p_Schar1D is written to file
+          ! directly. Thus, we convert it into an array of integers
+          ! which correspond to their ASCII values and store them.
           write(iunit, err=2) rfpdbDataItem%Ilbounds,&
                               rfpdbDataItem%Iubounds,&
-                              rfpdbDataItem%p_Schar2D
+                              iachar(rfpdbDataItem%p_Schar2D)
           close(iunit)
         end if
 
@@ -2089,9 +2101,15 @@ contains
           call io_openFileForWriting(trim(rfpdb%spath)//&
                                      uuid_conv2String(rfpdbDataItem%ruuid)//'.fpd',&
                                      iunit, SYS_REPLACE, bformatted=.false.)
+
+          ! Handling characters is slightly tricky since some
+          ! compilers (i.e. SUN/Oracle) produce internal compiler
+          ! errors if rfpdbDataItem%p_Schar1D is written to file
+          ! directly. Thus, we convert it into an array of integers
+          ! which correspond to their ASCII values and store them.
           write(iunit, err=2) rfpdbDataItem%Ilbounds,&
                               rfpdbDataItem%Iubounds,&
-                              rfpdbDataItem%p_Schar3D
+                              iachar(rfpdbDataItem%p_Schar3D)
           close(iunit)
         end if
 
@@ -3304,6 +3322,7 @@ contains
 
     ! local variable
     integer, dimension(FPDB_MAXDIM) :: Ilbounds,Iubounds
+    integer, dimension(:), pointer :: p_Iascii1D
     character, dimension(:), pointer :: p_Schar1D
     integer :: iunit
 
@@ -3336,8 +3355,14 @@ contains
     ! Read content of UUID from data file
     call io_openFileForReading(trim(rfpdbDataItem%sfilename),&
                                iunit, bformatted=.false.)
-    read(iunit, err=1) Ilbounds, Iubounds, p_Schar1D
-    close(iunit)
+
+    ! Handling characters is slightly tricky since some compilers
+    ! (i.e. SUN/Oracle) produce internal compiler errors if
+    ! rfpdbDataItem%p_Schar1D is read form file directly. Thus, we
+    ! read its ASCII values and convert them to characters.
+    allocate(p_Iascii1D(rfpdbDataItem%Ilbounds(1):rfpdbDataItem%Iubounds(1)))
+    read(iunit, err=1) Ilbounds, Iubounds, p_Iascii1D; p_Schar1D=achar(p_Iascii1D)
+    close(iunit); deallocate(p_Iascii1D)
 
     ! That is it
     return
@@ -4005,6 +4030,7 @@ contains
 
     ! local variable
     integer, dimension(FPDB_MAXDIM) :: Ilbounds,Iubounds
+    integer, dimension(:,:), pointer :: p_Iascii2D
     character, dimension(:,:), pointer :: p_Schar2D
     integer :: iunit
 
@@ -4040,8 +4066,15 @@ contains
     ! Read content of UUID from data file
     call io_openFileForReading(trim(rfpdbDataItem%sfilename),&
                                iunit, bformatted=.false.)
-    read(iunit, err=1) Ilbounds, Iubounds, p_Schar2D
-    close(iunit)
+
+    ! Handling characters is slightly tricky since some compilers
+    ! (i.e. SUN/Oracle) produce internal compiler errors if
+    ! rfpdbDataItem%p_Schar2D is read form file directly. Thus, we
+    ! read its ASCII values and convert them to characters.
+    allocate(p_Iascii2D(rfpdbDataItem%Ilbounds(1):rfpdbDataItem%Iubounds(1),&
+                        rfpdbDataItem%Ilbounds(2):rfpdbDataItem%Iubounds(2)))
+    read(iunit, err=1) Ilbounds, Iubounds, p_Iascii2D; p_Schar2D=achar(p_Iascii2D)
+    close(iunit); deallocate(p_Iascii2D)
 
     ! That is it
     return
@@ -4736,6 +4769,7 @@ contains
 
     ! local variable
     integer, dimension(FPDB_MAXDIM) :: Ilbounds,Iubounds
+    integer, dimension(:,:,:), pointer :: p_Iascii3D
     character, dimension(:,:,:), pointer :: p_Schar3D
     integer :: iunit
 
@@ -4774,8 +4808,16 @@ contains
     ! Read content of UUID from data file
     call io_openFileForReading(trim(rfpdbDataItem%sfilename),&
                                iunit, bformatted=.false.)
-    read(iunit, err=1) Ilbounds, Iubounds, p_Schar3D
-    close(iunit)
+
+    ! Handling characters is slightly tricky since some compilers
+    ! (i.e. SUN/Oracle) produce internal compiler errors if
+    ! rfpdbDataItem%p_Schar3D is read form file directly. Thus, we
+    ! read its ASCII values and convert them to characters.
+    allocate(p_Iascii3D(rfpdbDataItem%Ilbounds(1):rfpdbDataItem%Iubounds(1),&
+                        rfpdbDataItem%Ilbounds(2):rfpdbDataItem%Iubounds(2),&
+                        rfpdbDataItem%Ilbounds(3):rfpdbDataItem%Iubounds(3)))
+    read(iunit, err=1) Ilbounds, Iubounds, p_Iascii3D; p_Schar3D=achar(p_Iascii3D)
+    close(iunit); deallocate(p_Iascii3D)
 
     ! That is it
     return
