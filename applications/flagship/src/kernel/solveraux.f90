@@ -4849,7 +4849,7 @@ contains
               do i = 0, 2
                 if (p_solverMultigrid%RtempVectors(nlmin+3*(ilev-nlmin)+i)%NEQ > 0) then
                   ! Resize existing vector
-                  call lsysbl_resizeVecBlockIndMat(p_solverMultigrid%rmatrix(ilev),&
+                  call lsysbl_resizeVectorBlock(p_solverMultigrid%rmatrix(ilev),&
                       p_solverMultigrid%RtempVectors(nlmin+3*(ilev-nlmin)+i), .false.)
                 else
                   ! Create vector from matrix
@@ -4864,7 +4864,7 @@ contains
           if (p_solverMultigrid%rmatrix(nlmax)%NEQ > 0) then
             if (p_solverMultigrid%RtempVectors(3*nlmax-2*nlmin)%NEQ > 0) then
               ! Resize existing vector
-              call lsysbl_resizeVecBlockIndMat(p_solverMultigrid%rmatrix(nlmax),&
+              call lsysbl_resizeVectorBlock(p_solverMultigrid%rmatrix(nlmax),&
                   p_solverMultigrid%RtempVectors(3*nlmax-2*nlmin), .false.)
             else
               ! Create vector from matrix
@@ -4925,7 +4925,7 @@ contains
             ! We need one temporal vector
             if (rsolver%p_solverUMFPACK%rtempVector%NEQ > 0) then
               ! Resize existing vector
-              call lsysbl_resizeVecBlockIndMat(rsolver%p_solverUMFPACK%rmatrix,&
+              call lsysbl_resizeVectorBlock(rsolver%p_solverUMFPACK%rmatrix,&
                                                rsolver%p_solverUMFPACK%rtempVector, .false.)
             else
               ! Create vector from matrix
@@ -4946,7 +4946,7 @@ contains
             ! We need one temporal vector
             if (rsolver%p_solverJacobi%rtempVector%NEQ > 0) then
               ! Resize existing vector
-              call lsysbl_resizeVecBlockIndMat(rsolver%p_solverJacobi%rmatrix,&
+              call lsysbl_resizeVectorBlock(rsolver%p_solverJacobi%rmatrix,&
                                                rsolver%p_solverJacobi%rtempVector, .false.)
             else
               ! Create vector from matrix
@@ -4968,7 +4968,7 @@ contains
             ! We need one temporal vector
             if (rsolver%p_solverSSOR%rtempVector%NEQ > 0) then
               ! Resize existing vector
-              call lsysbl_resizeVecBlockIndMat(rsolver%p_solverSSOR%rmatrix,&
+              call lsysbl_resizeVectorBlock(rsolver%p_solverSSOR%rmatrix,&
                                                rsolver%p_solverSSOR%rtempVector, .false.)
             else
               ! Create vector from matrix
@@ -4992,7 +4992,7 @@ contains
               ! Resize existing vectors
               do i = lbound(rsolver%p_solverBiCGSTAB%RtempVectors,1),&
                      ubound(rsolver%p_solverBiCGSTAB%RtempVectors,1)
-                call lsysbl_resizeVecBlockIndMat(rsolver%p_solverBiCGSTAB%rmatrix,&
+                call lsysbl_resizeVectorBlock(rsolver%p_solverBiCGSTAB%rmatrix,&
                                                  rsolver%p_solverBiCGSTAB%RtempVectors(i), .false.)
               end do
 
@@ -5025,7 +5025,7 @@ contains
               ! Resize existing vectors rv
               do i = lbound(rsolver%p_solverGMRES%rv,1),&
                      ubound(rsolver%p_solverGMRES%rv,1)
-                call lsysbl_resizeVecBlockIndMat(rsolver%p_solverGMRES%rmatrix,&
+                call lsysbl_resizeVectorBlock(rsolver%p_solverGMRES%rmatrix,&
                                                  rsolver%p_solverGMRES%rv(i), .false.)
               end do
             else
@@ -5041,7 +5041,7 @@ contains
               ! Resize existing vectors rz
               do i = lbound(rsolver%p_solverGMRES%rz,1),&
                      ubound(rsolver%p_solverGMRES%rz,1)
-                call lsysbl_resizeVecBlockIndMat(rsolver%p_solverGMRES%rmatrix,&
+                call lsysbl_resizeVectorBlock(rsolver%p_solverGMRES%rmatrix,&
                                                  rsolver%p_solverGMRES%rz(i), .false.)
               end do
             else
@@ -5070,7 +5070,7 @@ contains
             ! We need one temporal vector
             if (rsolver%p_solverILU%rtempVector%NEQ > 0) then
               ! Resize existing vector
-              call lsysbl_resizeVecBlockIndMat(rsolver%p_solverILU%rmatrix,&
+              call lsysbl_resizeVectorBlock(rsolver%p_solverILU%rmatrix,&
                                                rsolver%p_solverILU%rtempVector, .false.)
             else
               ! Create vector from matrix
