@@ -1,0 +1,41 @@
+# -*- mode: any-ini; -*-
+
+################################################################################
+# This file defines the default values for a posteriori error estimation.      #
+# Any value can be overwritten by the user in the application configuration.   #
+################################################################################
+
+################################################################################
+[ErrorEstimator]
+################################################################################
+
+# type of error estimator
+# 0 = no error estimation
+# 1 = L2-projection
+# 2 = node-based SPR
+# 3 = element-based SPR
+# 4 = face-based SPR
+# 5 = limited gradient averaging
+# 6 = second-difference indicator
+ierrorestimator = 1
+
+# type or grid indicator
+# 0 = as is
+# 1 = equidistribution
+# 2 = logarithmic equidistribution
+# 3 = fixed-rate strategy
+# 4 = RMS automatic treshold
+# 5 = balancing strategy
+igridindicator = 0
+
+# noise filter
+dnoisefilter = 0.0
+
+# absolute filter
+dabsfilter = 0.0
+
+# number of protection layers
+nprotectLayers = 0
+
+# tolerance for protection layers
+dprotectLayerTolerance = 0.0

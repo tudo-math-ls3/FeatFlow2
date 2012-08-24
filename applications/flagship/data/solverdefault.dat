@@ -201,7 +201,7 @@ csolverType = 1
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 2
+ioutputlevel = 3
 
 # norm to use for defect checking
 # 0 = Euclidian norm
@@ -461,7 +461,7 @@ ioutputlevel = 2
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 2
+ioutputlevel = 3
 
 # norm to use for solution variation checking
 # 0 = Euclidian norm

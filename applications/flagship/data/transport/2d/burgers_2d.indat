@@ -18,13 +18,13 @@ deffunc: @velocity_y = 2.0 ; x,y,t
 NBCT
 1
 NEXPR
-1
+4
 IBCT
 1
 NCOMP
 4
 PARAMETERS
-1.0  T  'PERIODIC_WEAK'  1  4
-2.0  F  'PERIODIC_WEAK'  1  3
-3.0  T  'PERIODIC_WEAK'  1  2
-4.0  F  'PERIODIC_WEAK'  1  1
+1.0  T  'PERIODIC_WEAK'  0.0  0.0  1  4
+2.0  F  'PERIODIC_WEAK'  0.0  0.0  1  3
+3.0  T  'PERIODIC_WEAK'  0.0  0.0  1  2
+4.0  F  'PERIODIC_WEAK'  0.0  0.0  1  1
