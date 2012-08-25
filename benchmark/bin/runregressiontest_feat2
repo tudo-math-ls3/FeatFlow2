@@ -506,6 +506,15 @@ fb_customise() {
 		    COMPILERNAME="OracleStudio 12.2"
 		    ;;
 
+		# Oracle Studio compiler suite 12.3
+		pc64-penryn-linux-sunstudio-*12.3)
+		    modules=""
+		    modules="$modules gotoblas/shared/64"
+		    modules="$modules oraclestudio/12.3"
+		    LIDOJOBNAMEPREFIX=ff2-sun123
+		    COMPILERNAME="OracleStudio 12.3"
+		    ;;
+
 		# Intel compiler suite 10.1.023
 		pc64-penryn-linux-intel-*10.1)
 		    modules=""
