@@ -476,7 +476,7 @@ contains
 !  !</subroutine>
 !  
 !      ! local variables
-!      real(DP) :: dbetaC,dnx,dny
+!      real(DP) :: dalphaL2BdC,dnx,dny
 !      type(t_vectorBlock), pointer :: p_rvector
 !      integer :: iel,ipt
 !      real(DP), dimension(:,:,:), allocatable :: DvecValues
@@ -486,7 +486,7 @@ contains
 !      
 !      ! Get the data for the evaluation
 !      p_rvector => rcollection%p_rvectorQuickAccess1
-!      dbetaC = rcollection%DquickAccess(1)
+!      dalphaL2BdC = rcollection%DquickAccess(1)
 !      
 !      allocate (DvecValues(ubound(Dvalues,1),ubound(Dvalues,2),8))
 !      
@@ -521,7 +521,7 @@ contains
 !                                DvecValues(ipt,iel,1)*DvecValues(ipt,iel,6)) ** 2 + &
 !                               (DvecValues(ipt,iel,8)*DvecValues(ipt,iel,4)*DvecValues(ipt,iel,6) + &
 !                                DvecValues(ipt,iel,8)*DvecValues(ipt,iel,5)*DvecValues(ipt,iel,7) + &
-!                                DvecValues(ipt,iel,1)*DvecValues(ipt,iel,7)) ** 2 ) / (dbetaC*dbetaC)
+!                                DvecValues(ipt,iel,1)*DvecValues(ipt,iel,7)) ** 2 ) / (dalphaL2BdC*dalphaL2BdC)
 !        
 !        end do
 !      end do
@@ -677,7 +677,7 @@ contains
         ! ---------------------------------------------------------
         icomp = 1
 
-        if (roperatorAsmHier%ranalyticData%p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
+        if (roperatorAsmHier%ranalyticData%p_rsettingsOptControl%dalphaDistC .ge. 0.0_DP) then
 
           ! Type of equation?
           select case (roperatorAsmHier%ranalyticData%p_rphysics%cequation)
@@ -768,7 +768,7 @@ contains
 !          Derror(3) = 0.5_DP*(Derr(1)**2+Derr(2)**2)
 !        end if
 !        
-!        if (dalphaC .gt. 0.0_DP) then
+!        if (dalphaDistC .gt. 0.0_DP) then
 !          ! Compute:
 !          ! Derror(2) = ||u|| = ||P[min/max](-1/alpha lambda)||^2_{L^2}.
 !          
@@ -778,13 +778,13 @@ contains
 !            select case (rconstraints%ccontrolConstraintsType)
 !            case (0)
 !              call nwder_applyMinMaxProjByDof (1.0_DP,rtempVector%RvectorBlock(4),&
-!                  -1.0_DP/dalphaC,rtempVector%RvectorBlock(4),&
-!                  -1.0_DP/dalphaC,rtempVector%RvectorBlock(4),&
+!                  -1.0_DP/dalphaDistC,rtempVector%RvectorBlock(4),&
+!                  -1.0_DP/dalphaDistC,rtempVector%RvectorBlock(4),&
 !                  rconstraints%dumin1,rconstraints%dumax1)
 !
 !              call nwder_applyMinMaxProjByDof (1.0_DP,rtempVector%RvectorBlock(5),&
-!                  -1.0_DP/dalphaC,rtempVector%RvectorBlock(5),&
-!                  -1.0_DP/dalphaC,rtempVector%RvectorBlock(5),&
+!                  -1.0_DP/dalphaDistC,rtempVector%RvectorBlock(5),&
+!                  -1.0_DP/dalphaDistC,rtempVector%RvectorBlock(5),&
 !                  rconstraints%dumin2,rconstraints%dumax2)
 !
 !            case (1)
@@ -794,15 +794,15 @@ contains
 !              
 !              ! Implement the constraints
 !              call nwder_applyMinMaxProjByDof (1.0_DP,rtempVector%RvectorBlock(4),&
-!                  -1.0_DP/dalphaC,rtempVector%RvectorBlock(4),&
-!                  -1.0_DP/dalphaC,rtempVector%RvectorBlock(4),&
+!                  -1.0_DP/dalphaDistC,rtempVector%RvectorBlock(4),&
+!                  -1.0_DP/dalphaDistC,rtempVector%RvectorBlock(4),&
 !                  1.0_DP,1.0_DP,&
 !                  rconstrSpace%p_rvectorumin%RvectorBlock(1),&
 !                  rconstrSpace%p_rvectorumax%RvectorBlock(1))
 !
 !              call nwder_applyMinMaxProjByDof (1.0_DP,rtempVector%RvectorBlock(5),&
-!                  -1.0_DP/dalphaC,rtempVector%RvectorBlock(5),&
-!                  -1.0_DP/dalphaC,rtempVector%RvectorBlock(5),&
+!                  -1.0_DP/dalphaDistC,rtempVector%RvectorBlock(5),&
+!                  -1.0_DP/dalphaDistC,rtempVector%RvectorBlock(5),&
 !                  1.0_DP,1.0_DP,&
 !                  rconstrSpace%p_rvectorumin%RvectorBlock(2),&
 !                  rconstrSpace%p_rvectorumax%RvectorBlock(2))
@@ -825,7 +825,7 @@ contains
 !          
 !        end if
 !
-!        if (dbetaC .gt. 0.0_DP) then
+!        if (dalphaL2BdC .gt. 0.0_DP) then
 !        
 !          ! Compute on the Dirichlet control boundary:
 !          ! Derror(2) = ||u||_GammaC = ||-1/alpha (nu*partial_n(u) + xi*n))||^2_{L^2(GammaC)}.
@@ -833,7 +833,7 @@ contains
 !          
 !          ! Prepare the collection
 !          rlocalColl%p_rnextCollection => rcollection
-!          rlocalColl%DquickAccess(1) = dbetaC
+!          rlocalColl%DquickAccess(1) = dalphaL2BdC
 !          call smva_prepareViscoAssembly (rphysics,rcollection,rtempVector)
 !          
 !          ! Pass rtempVector%RvectorBlock(4) as dummy, filled with 0.
@@ -876,16 +876,16 @@ contains
       
     ! Calculate J(.)
     Derror(1) = 0.5_DP*Derror(2)  &
-              + 0.5_DP*roperatorAsmHier%ranalyticData%p_rsettingsOptControl%dgammaC * Derror(3)  &
-              + 0.5_DP*roperatorAsmHier%ranalyticData%p_rsettingsOptControl%dalphaC * Derror(4)
+              + 0.5_DP*roperatorAsmHier%ranalyticData%p_rsettingsOptControl%dalphaEndTimeC * Derror(3)  &
+              + 0.5_DP*roperatorAsmHier%ranalyticData%p_rsettingsOptControl%dalphaDistC * Derror(4)
               
     ! Take some square roots to calculate the actual values.
     Derror(2:) = sqrt(Derror(2:))
     
-!    if (dalphaC .gt. 0.0_DP) then
+!    if (dalphaDistC .gt. 0.0_DP) then
 !      ! Calculate:
 !      !    alpha/2 ||u||^2 = alpha/2 ||P(-1/alpha lambda)||^2
-!      Derror(4) = Derror(4) + 0.5_DP * dalphaC * Derror(2)
+!      Derror(4) = Derror(4) + 0.5_DP * dalphaDistC * Derror(2)
 !      
 !      ! Calculate ||u|| = sqrt(||P(-1/alpha lambda)||^2)
 !      Derror(2) = sqrt(Derror(2))
@@ -893,10 +893,10 @@ contains
 !      Derror(2) = 0.0_DP
 !    end if
 !
-!    if (dbetaC .gt. 0.0_DP) then
+!    if (dalphaL2BdC .gt. 0.0_DP) then
 !      ! Calculate:
 !      !    alpha/2 ||u||^2 = beta/2 ||1/beta lambda)||^2
-!      Derror(4) = Derror(4) + 0.5_DP * dbetaC * Derror(5)
+!      Derror(4) = Derror(4) + 0.5_DP * dalphaL2BdC * Derror(5)
 !      
 !      ! Calculate ||u|| = sqrt(||1/beta lambda||^2)
 !      Derror(5) = sqrt(Derror(5))
@@ -1016,7 +1016,7 @@ contains
     ! ---------------------------------------------------------
     icomp = 1
 
-    if (roperatorAsmHier%ranalyticData%p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
+    if (roperatorAsmHier%ranalyticData%p_rsettingsOptControl%dalphaDistC .ge. 0.0_DP) then
 
       ! Type of equation?
       select case (roperatorAsmHier%ranalyticData%p_rphysics%cequation)
@@ -1054,8 +1054,8 @@ contains
       
     ! Calculate J(.)
     Derror(1) = 0.5_DP*Derror(2)  &
-              + 0.5_DP*roperatorAsmHier%ranalyticData%p_rsettingsOptControl%dgammaC * Derror(3)  &
-              + 0.5_DP*roperatorAsmHier%ranalyticData%p_rsettingsOptControl%dalphaC * Derror(4)
+              + 0.5_DP*roperatorAsmHier%ranalyticData%p_rsettingsOptControl%dalphaEndTimeC * Derror(3)  &
+              + 0.5_DP*roperatorAsmHier%ranalyticData%p_rsettingsOptControl%dalphaDistC * Derror(4)
               
     ! Take some square roots to calculate the actual values.
     Derror(2:) = sqrt(Derror(2:))

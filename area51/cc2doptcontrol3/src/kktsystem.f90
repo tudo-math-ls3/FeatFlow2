@@ -660,7 +660,7 @@ contains
             ! -----------------------------------------------------------
             ! Distributed control
             ! -----------------------------------------------------------
-            if (p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
+            if (p_rsettingsOptControl%dalphaDistC .ge. 0.0_DP) then
 
               ! The first two components of the control read
               !
@@ -670,13 +670,13 @@ contains
               icomp = icomp + 1
               call lsyssc_vectorLinearComb ( &
                   p_rcontrolSpace%RvectorBlock(icomp),p_rdualSpace%RvectorBlock(icomp),&
-                  1.0_DP-p_rsettingsOptControl%dalphaC,-1.0_DP,&
+                  1.0_DP-p_rsettingsOptControl%dalphaDistC,-1.0_DP,&
                   p_rintermedControl%RvectorBlock(icomp))
 
               icomp = icomp + 1
               call lsyssc_vectorLinearComb ( &
                   p_rcontrolSpace%RvectorBlock(icomp),p_rdualSpace%RvectorBlock(icomp),&
-                  1.0_DP-p_rsettingsOptControl%dalphaC,-1.0_DP,&
+                  1.0_DP-p_rsettingsOptControl%dalphaDistC,-1.0_DP,&
                   p_rintermedControl%RvectorBlock(icomp))
                   
               ! Do we have constraints?
@@ -687,7 +687,7 @@ contains
               ! ----------------------------------------------------------
               case (0)
 
-                if (p_rsettingsOptControl%dalphaC .eq. 0.0_DP) then
+                if (p_rsettingsOptControl%dalphaDistC .eq. 0.0_DP) then
                   call output_line("Alpha=0 not possible without contraints",&
                       OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControl")
                   call sys_halt()
@@ -749,7 +749,7 @@ contains
             ! -----------------------------------------------------------
             ! Distributed control
             ! -----------------------------------------------------------
-            if (p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
+            if (p_rsettingsOptControl%dalphaDistC .ge. 0.0_DP) then
 
               ! The first two components of the control read
               !
@@ -759,7 +759,7 @@ contains
               icomp = icomp + 1
               call lsyssc_vectorLinearComb ( &
                   p_rcontrolSpace%RvectorBlock(icomp),p_rdualSpace%RvectorBlock(icomp),&
-                  1.0_DP-p_rsettingsOptControl%dalphaC,-1.0_DP,&
+                  1.0_DP-p_rsettingsOptControl%dalphaDistC,-1.0_DP,&
                   p_rintermedControl%RvectorBlock(icomp))
 
               ! Do we have constraints?
@@ -770,7 +770,7 @@ contains
               ! ----------------------------------------------------------
               case (0)
 
-                if (p_rsettingsOptControl%dalphaC .eq. 0.0_DP) then
+                if (p_rsettingsOptControl%dalphaDistC .eq. 0.0_DP) then
                   call output_line("Alpha=0 not possible without contraints",&
                       OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControl")
                   call sys_halt()
@@ -1187,7 +1187,7 @@ contains
             ! -----------------------------------------------------------
             ! Distributed control
             ! -----------------------------------------------------------
-            if (p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
+            if (p_rsettingsOptControl%dalphaDistC .ge. 0.0_DP) then
 
               ! The linearised control equation reads
               !
@@ -1203,12 +1203,12 @@ contains
               icomp = icomp + 1
               call lsyssc_vectorLinearComb ( &
                   p_rcontrolSpaceLin%RvectorBlock(icomp),p_rdualSpaceLin%RvectorBlock(icomp),&
-                  1.0_DP-p_rsettingsOptControl%dalphaC,-1.0_DP,p_rcontrolSpaceLinOutput%RvectorBlock(icomp))
+                  1.0_DP-p_rsettingsOptControl%dalphaDistC,-1.0_DP,p_rcontrolSpaceLinOutput%RvectorBlock(icomp))
 
               icomp = icomp + 1
               call lsyssc_vectorLinearComb ( &
                   p_rcontrolSpaceLin%RvectorBlock(icomp),p_rdualSpaceLin%RvectorBlock(icomp),&
-                 1.0_DP-p_rsettingsOptControl%dalphaC,-1.0_DP,p_rcontrolSpaceLinOutput%RvectorBlock(icomp))
+                 1.0_DP-p_rsettingsOptControl%dalphaDistC,-1.0_DP,p_rcontrolSpaceLinOutput%RvectorBlock(icomp))
 
               ! The actual linearised control is calculated by
               ! applying an appropriate projection:
@@ -1224,7 +1224,7 @@ contains
               ! ----------------------------------------------------------
               case (0)
 
-                if (p_rsettingsOptControl%dalphaC .eq. 0.0_DP) then
+                if (p_rsettingsOptControl%dalphaDistC .eq. 0.0_DP) then
                   call output_line("Alpha=0 not possible without contraints",&
                       OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControlDirDeriv")
                   call sys_halt()
@@ -1273,7 +1273,7 @@ contains
             ! -----------------------------------------------------------
             ! Distributed control
             ! -----------------------------------------------------------
-            if (p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
+            if (p_rsettingsOptControl%dalphaDistC .ge. 0.0_DP) then
 
               ! The linearised control equation reads
               !
@@ -1288,7 +1288,7 @@ contains
               icomp = icomp + 1
               call lsyssc_vectorLinearComb ( &
                   p_rcontrolSpaceLin%RvectorBlock(icomp),p_rdualSpaceLin%RvectorBlock(icomp),&
-                  1.0_DP-p_rsettingsOptControl%dalphaC,-1.0_DP,p_rcontrolSpaceLinOutput%RvectorBlock(icomp))
+                  1.0_DP-p_rsettingsOptControl%dalphaDistC,-1.0_DP,p_rcontrolSpaceLinOutput%RvectorBlock(icomp))
 
               ! Do we have constraints?
               select case (p_rsettingsOptControl%rconstraints%cdistVelConstraints)
@@ -1298,7 +1298,7 @@ contains
               ! ----------------------------------------------------------
               case (0)
 
-                if (p_rsettingsOptControl%dalphaC .eq. 0.0_DP) then
+                if (p_rsettingsOptControl%dalphaDistC .eq. 0.0_DP) then
                   call output_line("Alpha=0 not possible without contraints",&
                       OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControlDirDeriv")
                   call sys_halt()
@@ -1487,7 +1487,7 @@ contains
         ! -----------------------------------------------------------
         ! Distributed control
         ! -----------------------------------------------------------
-        if (p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
+        if (p_rsettingsOptControl%dalphaDistC .ge. 0.0_DP) then
 
           ! Do we have constraints?
           select case (p_rsettingsOptControl%rconstraints%cdistVelConstraints)
@@ -1497,7 +1497,7 @@ contains
           ! ----------------------------------------------------------
           case (0)
 
-            if (p_rsettingsOptControl%dalphaC .eq. 0.0_DP) then
+            if (p_rsettingsOptControl%dalphaDistC .eq. 0.0_DP) then
               call output_line("Alpha=0 not possible without contraints",&
                   OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControlDirDeriv")
               call sys_halt()
@@ -1511,11 +1511,11 @@ contains
             !
             !   || alpha d || = || alpha u + lambda ||
             icomp = icomp + 1
-            dres = dres + (p_rsettingsOptControl%dalphaC * &
+            dres = dres + (p_rsettingsOptControl%dalphaDistC * &
                 lsyssc_vectorNorm(p_rcontrolSpace%RvectorBlock(icomp),iresnorm))**2
 
             icomp = icomp + 1
-            dres = dres + (p_rsettingsOptControl%dalphaC * &
+            dres = dres + (p_rsettingsOptControl%dalphaDistC * &
                 lsyssc_vectorNorm(p_rcontrolSpace%RvectorBlock(icomp),iresnorm))**2
                 
             itotalcomp = itotalcomp + 2
@@ -1527,7 +1527,7 @@ contains
 
             ! This scaling can only be done for alpha > 0.
             ! Otherwise, we have to use the non-scaled residual.
-            if (p_rsettingsOptControl%dalphaC .gt. 0.0_DP) then
+            if (p_rsettingsOptControl%dalphaDistC .gt. 0.0_DP) then
               
               ! The first two components of the control read
               !
@@ -1537,11 +1537,11 @@ contains
               !
               !   || alpha d || = || alpha u - alpha P(-1/alpha lambda)) ||
               icomp = icomp + 1
-              dres = dres + (p_rsettingsOptControl%dalphaC * &
+              dres = dres + (p_rsettingsOptControl%dalphaDistC * &
                   lsyssc_vectorNorm(p_rcontrolSpace%RvectorBlock(icomp),iresnorm))**2
 
               icomp = icomp + 1
-              dres = dres + (p_rsettingsOptControl%dalphaC * &
+              dres = dres + (p_rsettingsOptControl%dalphaDistC * &
                   lsyssc_vectorNorm(p_rcontrolSpace%RvectorBlock(icomp),iresnorm))**2
           
             else
@@ -1553,11 +1553,11 @@ contains
               !
               !   || d || = || u + P(1/alpha lambda) ||
               icomp = icomp + 1
-              dres = dres + (p_rsettingsOptControl%dalphaC * &
+              dres = dres + (p_rsettingsOptControl%dalphaDistC * &
                   lsyssc_vectorNorm(p_rcontrolSpace%RvectorBlock(icomp),iresnorm))**2
 
               icomp = icomp + 1
-              dres = dres + (p_rsettingsOptControl%dalphaC * &
+              dres = dres + (p_rsettingsOptControl%dalphaDistC * &
                   lsyssc_vectorNorm(p_rcontrolSpace%RvectorBlock(icomp),iresnorm))**2
             end if
                 
@@ -1582,7 +1582,7 @@ contains
         ! -----------------------------------------------------------
         ! Distributed control
         ! -----------------------------------------------------------
-        if (p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
+        if (p_rsettingsOptControl%dalphaDistC .ge. 0.0_DP) then
 
           ! Do we have constraints?
           select case (p_rsettingsOptControl%rconstraints%cdistVelConstraints)
@@ -1592,7 +1592,7 @@ contains
           ! ----------------------------------------------------------
           case (0)
 
-            if (p_rsettingsOptControl%dalphaC .eq. 0.0_DP) then
+            if (p_rsettingsOptControl%dalphaDistC .eq. 0.0_DP) then
               call output_line("Alpha=0 not possible without contraints",&
                   OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControlDirDeriv")
               call sys_halt()
@@ -1606,7 +1606,7 @@ contains
             !
             !   || alpha d || = || alpha u + lambda ||
             icomp = icomp + 1
-            dres = dres + (p_rsettingsOptControl%dalphaC * &
+            dres = dres + (p_rsettingsOptControl%dalphaDistC * &
                 lsyssc_vectorNorm(p_rcontrolSpace%RvectorBlock(icomp),iresnorm))**2
 
             itotalcomp = itotalcomp + 1
@@ -1830,7 +1830,7 @@ contains
           ! -----------------------------------------------------------
           ! Distributed control
           ! -----------------------------------------------------------
-          if (p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
+          if (p_rsettingsOptControl%dalphaDistC .ge. 0.0_DP) then
 
             ! Get the source vector with the discributed control.
             
@@ -1843,7 +1843,7 @@ contains
             ! ----------------------------------------------------------
             case (0,1)
 
-              if (p_rsettingsOptControl%dalphaC .eq. 0.0_DP) then
+              if (p_rsettingsOptControl%dalphaDistC .eq. 0.0_DP) then
                 call output_line("Alpha=0 not possible without contraints",&
                     OU_CLASS_ERROR,OU_MODE_STD,"kkt_getControlAtTime")
                 call sys_halt()
@@ -1875,7 +1875,7 @@ contains
           ! -----------------------------------------------------------
           ! Distributed control
           ! -----------------------------------------------------------
-          if (p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
+          if (p_rsettingsOptControl%dalphaDistC .ge. 0.0_DP) then
 
             ! Get the source vector with the discributed control.
             
@@ -1888,7 +1888,7 @@ contains
             ! ----------------------------------------------------------
             case (0,1)
 
-              if (p_rsettingsOptControl%dalphaC .eq. 0.0_DP) then
+              if (p_rsettingsOptControl%dalphaDistC .eq. 0.0_DP) then
                 call output_line("Alpha=0 not possible without contraints",&
                     OU_CLASS_ERROR,OU_MODE_STD,"kkt_getControlAtTime")
                 call sys_halt()

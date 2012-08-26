@@ -221,7 +221,7 @@ contains
     ! Control space
     ! ===============================================
     case (CCSPACE_CONTROL)
-      if (roptcontrol%dalphaC .ge. 0.0_DP) ncount = ncount + 1
+      if (roptcontrol%dalphaDistC .ge. 0.0_DP) ncount = ncount + 1
     end select
     
     rprojHierBlock%ncount = ncount
@@ -438,7 +438,7 @@ contains
             ! Stokes/Navier Stokes.
             ! -------------------------------------------------------------
             case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
-              if ((roptcontrol%dalphaC .ge. 0.0_DP) .and. (isubspace .eq. 1)) then
+              if ((roptcontrol%dalphaDistC .ge. 0.0_DP) .and. (isubspace .eq. 1)) then
                 call sptipr_getProlMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
                     rprojHier%p_RprolongationMat(i))
 
@@ -453,7 +453,7 @@ contains
             ! Heat equation
             ! -------------------------------------------------------------
             case (CCEQ_HEAT2D)
-              if ((roptcontrol%dalphaC .ge. 0.0_DP) .and. (isubspace .eq. 1)) then
+              if ((roptcontrol%dalphaDistC .ge. 0.0_DP) .and. (isubspace .eq. 1)) then
                 call sptipr_getProlMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
                     rprojHier%p_RprolongationMat(i))
 

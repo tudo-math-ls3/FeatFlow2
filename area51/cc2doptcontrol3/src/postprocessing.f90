@@ -613,7 +613,7 @@ contains
           ! -------------------------------------------------
           ! Distributed control
           ! -------------------------------------------------
-          if (roptcontrol%dalphaC .ge. 0.0_DP) then
+          if (roptcontrol%dalphaDistC .ge. 0.0_DP) then
             call ucd_addVectorFieldByVertex (rexport, &
                 "control", UCD_VAR_STANDARD,Rvector%RvectorBlock(icomp:icomp+1))
             icomp = icomp + 2
@@ -660,7 +660,7 @@ contains
         ! -------------------------------------------------
         ! Distributed control
         ! -------------------------------------------------
-        if (roptcontrol%dalphaC .ge. 0.0_DP) then
+        if (roptcontrol%dalphaDistC .ge. 0.0_DP) then
           call ucd_addVectorByVertex (rexport, &
               "control", UCD_VAR_STANDARD,Rvector%RvectorBlock(icomp))
           icomp = icomp + 1

@@ -3057,7 +3057,7 @@ contains
           ! in the velocity space.
           ! Only add this if we have distributed control. Otherwise add dummy
           ! vectors which take no time in being computed.
-          if (p_ranalyticData%p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
+          if (p_ranalyticData%p_rsettingsOptControl%dalphaDistC .ge. 0.0_DP) then
             call sptivec_getVectorFromPool (rcontrol%p_rvectorAccess,idofTime,p_rvector1)
             call fev2_addVectorToEvalList(rvectorEval,p_rvector1%RvectorBlock(1),0)
             call fev2_addVectorToEvalList(rvectorEval,p_rvector1%RvectorBlock(2),0)
@@ -3104,7 +3104,7 @@ contains
           ! in the solution space.
           ! Only add this if we have distributed control. Otherwise add dummy
           ! vectors which take no time in being computed.
-          if (p_ranalyticData%p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
+          if (p_ranalyticData%p_rsettingsOptControl%dalphaDistC .ge. 0.0_DP) then
             call sptivec_getVectorFromPool (rcontrol%p_rvectorAccess,idofTime,p_rvector1)
             call fev2_addVectorToEvalList(rvectorEval,p_rvector1%RvectorBlock(1),0)
           else
@@ -3438,7 +3438,7 @@ contains
           if (idoftime .gt. 1) then
             ! Add the dual velocity if we have distributed control. Otherwise add dummy
             ! vectors which take no time in being computed.
-            if (p_ranalyticData%p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
+            if (p_ranalyticData%p_rsettingsOptControl%dalphaDistC .ge. 0.0_DP) then
 
               ! Position 1+2 = update for the control
               call sptivec_getVectorFromPool (rcontrolLin%p_rvectorAccess,idofTime,p_rvector2)
@@ -3480,7 +3480,7 @@ contains
           if (idoftime .gt. 1) then
             ! Add the dual velocity if we have distributed control. Otherwise add dummy
             ! vectors which take no time in being computed.
-            if (p_ranalyticData%p_rsettingsOptControl%dalphaC .ge. 0.0_DP) then
+            if (p_ranalyticData%p_rsettingsOptControl%dalphaDistC .ge. 0.0_DP) then
               
               ! Position 1 = update for the control
               call sptivec_getVectorFromPool (rcontrolLin%p_rvectorAccess,idofTime,p_rvector2)
@@ -4254,7 +4254,7 @@ contains
         
         ! Check the regularisation parameter ALPHA. Do we have
         ! distributed control?
-        dalpha = p_ranalyticData%p_rsettingsOptControl%dalphaC
+        dalpha = p_ranalyticData%p_rsettingsOptControl%dalphaDistC
         
         dweight2 = dweight * &
             p_rspaceTimeOperatorAsm%p_ranalyticData%p_rdebugFlags%dprimalDualCoupling
@@ -4310,7 +4310,7 @@ contains
         !    rhs = (user defined) + u'
         !
         ! with u' being the linearised control.
-        dalpha = p_ranalyticData%p_rsettingsOptControl%dalphaC
+        dalpha = p_ranalyticData%p_rsettingsOptControl%dalphaDistC
         
         dweight2 = dweight * &
             p_rspaceTimeOperatorAsm%p_ranalyticData%p_rdebugFlags%dprimalDualCoupling
@@ -5035,7 +5035,7 @@ contains
         
         ! Check the regularisation parameter ALPHA. Do we have
         ! distributed control?
-        dalpha = p_ranalyticData%p_rsettingsOptControl%dalphaC
+        dalpha = p_ranalyticData%p_rsettingsOptControl%dalphaDistC
         
         dweight2 = dweight * &
             p_rspaceTimeOperatorAsm%p_ranalyticData%p_rdebugFlags%dprimalDualCoupling
@@ -5086,7 +5086,7 @@ contains
         !
         ! with u' being the linearised control. 
         
-        dalpha = p_ranalyticData%p_rsettingsOptControl%dalphaC
+        dalpha = p_ranalyticData%p_rsettingsOptControl%dalphaDistC
         
         dweight2 = dweight * &
             p_rspaceTimeOperatorAsm%p_ranalyticData%p_rdebugFlags%dprimalDualCoupling

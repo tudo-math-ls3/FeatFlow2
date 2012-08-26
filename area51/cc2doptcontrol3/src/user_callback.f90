@@ -236,8 +236,8 @@ contains
     rcollection%Dquickaccess(1) = dtime
     rcollection%Dquickaccess(2) = rglobalData%p_rtimeCoarse%dtimeInit
     rcollection%Dquickaccess(3) = rglobalData%p_rtimeCoarse%dtimeMax
-    rcollection%Dquickaccess(4) = rglobalData%p_rsettingsOptControl%dalphaC
-    rcollection%Dquickaccess(5) = rglobalData%p_rsettingsOptControl%dbetaC
+    rcollection%Dquickaccess(4) = rglobalData%p_rsettingsOptControl%dalphaDistC
+    rcollection%Dquickaccess(5) = rglobalData%p_rsettingsOptControl%dalphaL2BdC
     rcollection%Dquickaccess(6) = rglobalData%p_rsettingsOptControl%ddirichletBCPenalty
 
   end subroutine

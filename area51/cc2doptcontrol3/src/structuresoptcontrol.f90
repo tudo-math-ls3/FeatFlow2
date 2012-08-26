@@ -235,17 +235,17 @@ module structuresoptcontrol
     ! List of $\alpha$ parameter of the optimal control functional parameters. 
     ! If this is not =>NULL, a path following algorithm will be applied. 
     ! Every nonlinear step, the next value is taken.
-    real(DP), dimension(:), pointer :: p_DalphaC => null()
+    real(DP), dimension(:), pointer :: p_dalphaDistC => null()
     
     ! List of $\beta$ parameter of the optimal control functional parameters. 
     ! If this is not =>NULL, a path following algorithm will be applied. 
     ! Every nonlinear step, the next value is taken.
-    real(DP), dimension(:), pointer :: p_DbetaC => null()
+    real(DP), dimension(:), pointer :: p_dalphaL2BdC => null()
     
     ! List of $\gamma$ parameter of the optimal control functional parameters. 
     ! If this is not =>NULL, a path following algorithm will be applied. 
     ! Every nonlinear step, the next value is taken.
-    real(DP), dimension(:), pointer :: p_DgammaC => null()
+    real(DP), dimension(:), pointer :: p_dalphaEndTimeC => null()
   
   end type
 
@@ -259,16 +259,16 @@ module structuresoptcontrol
   type t_settings_optcontrol
   
     ! $\alpha$ parameter of the optimal control functional
-    real(DP) :: dalphaC = 1.0_DP
+    real(DP) :: dalphaDistC = 1.0_DP
     
     ! $\beta$ parameter of the optimal control functional via boundary control
-    real(DP) :: dbetaC = 1.0_DP
+    real(DP) :: dalphaL2BdC = 1.0_DP
     
     ! Penalty parameter for the dirichlet boundary control
     real(DP) :: ddirichletBCPenalty = 100.0_DP
     
     ! $\gamma$ parameter of the nonstationary optimal control functional
-    real(DP) :: dgammaC = 0.0_DP
+    real(DP) :: dalphaEndTimeC = 0.0_DP
 
     ! $\delta$ parameter of the terminal condition
     real(DP) :: ddeltaC = 0.0_DP
@@ -506,71 +506,71 @@ contains
     ! this defines a path following strategy, i.e., the parameters
     ! change according to the list in every nonlinear iteration.
     call parlst_getvalue_string (rparlist,ssectionOptC,&
-        "dalphaC",sstring,"-1.0",bdequote=.true.)
+        "dalphaDistC",sstring,"-1.0",bdequote=.true.)
 
     ! Is this a list?
     call sys_countParameters (sstring,ntokens)
     
     if (ntokens .eq. 1) then
     
-      read(sstring,*) roptcontrol%dalphaC
+      read(sstring,*) roptcontrol%dalphaDistC
       
     else if (ntokens .gt. 1) then
       ! Read the list
-      roptcontrol%dalphaC = 0.0_DP
-      allocate(roptcontrol%rpathfollowingdata%p_DalphaC(ntokens))
+      roptcontrol%dalphaDistC = 0.0_DP
+      allocate(roptcontrol%rpathfollowingdata%p_dalphaDistC(ntokens))
       
       ! Loop through all tokens and save them
       istart = 1
       do itoken = 1,ntokens
         call sys_getParameter (sstring,stoken,istart)
-        read(stoken,*) roptcontrol%rpathfollowingdata%p_DalphaC(itoken)
+        read(stoken,*) roptcontrol%rpathfollowingdata%p_dalphaDistC(itoken)
       end do
     end if
         
     call parlst_getvalue_string (rparlist,ssectionOptC,&
-        "dbetaC",sstring,"-1.0",bdequote=.true.)
+        "dalphaL2BdC",sstring,"-1.0",bdequote=.true.)
 
     ! Is this a list?
     call sys_countParameters (sstring,ntokens)
 
     if (ntokens .eq. 1) then
     
-      read(sstring,*) roptcontrol%dbetaC
+      read(sstring,*) roptcontrol%dalphaL2BdC
       
     else if (ntokens .gt. 1) then
       ! Read the list
-      roptcontrol%dbetaC = 0.0_DP
-      allocate(roptcontrol%rpathfollowingdata%p_DbetaC(ntokens))
+      roptcontrol%dalphaL2BdC = 0.0_DP
+      allocate(roptcontrol%rpathfollowingdata%p_dalphaL2BdC(ntokens))
       
       ! Loop through all tokens and save them
       istart = 1
       do itoken = 1,ntokens
         call sys_getParameter (sstring,stoken,istart)
-        read(stoken,*) roptcontrol%rpathfollowingdata%p_DbetaC(itoken)
+        read(stoken,*) roptcontrol%rpathfollowingdata%p_dalphaL2BdC(itoken)
       end do
     end if
 
     call parlst_getvalue_string (rparlist,ssectionOptC,&
-        "dgammaC",sstring,"0.0",bdequote=.true.)
+        "dalphaEndTimeC",sstring,"0.0",bdequote=.true.)
 
     ! Is this a list?
     call sys_countParameters (sstring,ntokens)
 
     if (ntokens .eq. 1) then
     
-      read(sstring,*) roptcontrol%dgammaC
+      read(sstring,*) roptcontrol%dalphaEndTimeC
 
     else if (ntokens .gt. 1) then
       ! Read the list
-      roptcontrol%dgammaC = 0.0_DP
-      allocate(roptcontrol%rpathfollowingdata%p_DgammaC(ntokens))
+      roptcontrol%dalphaEndTimeC = 0.0_DP
+      allocate(roptcontrol%rpathfollowingdata%p_dalphaEndTimeC(ntokens))
       
       ! Loop through all tokens and save them
       istart = 1
       do itoken = 1,ntokens
         call sys_getParameter (sstring,stoken,istart)
-        read(stoken,*) roptcontrol%rpathfollowingdata%p_DgammaC(itoken)
+        read(stoken,*) roptcontrol%rpathfollowingdata%p_dalphaEndTimeC(itoken)
       end do
     end if
 
@@ -662,16 +662,16 @@ contains
     end if
     
     ! Release path following data
-    if (associated(roptcontrol%rpathfollowingdata%p_DalphaC)) then
-      deallocate(roptcontrol%rpathfollowingdata%p_DalphaC)
+    if (associated(roptcontrol%rpathfollowingdata%p_dalphaDistC)) then
+      deallocate(roptcontrol%rpathfollowingdata%p_dalphaDistC)
     end if
 
-    if (associated(roptcontrol%rpathfollowingdata%p_DbetaC)) then
-      deallocate(roptcontrol%rpathfollowingdata%p_DbetaC)
+    if (associated(roptcontrol%rpathfollowingdata%p_dalphaL2BdC)) then
+      deallocate(roptcontrol%rpathfollowingdata%p_dalphaL2BdC)
     end if
 
-    if (associated(roptcontrol%rpathfollowingdata%p_DgammaC)) then
-      deallocate(roptcontrol%rpathfollowingdata%p_DgammaC)
+    if (associated(roptcontrol%rpathfollowingdata%p_dalphaEndTimeC)) then
+      deallocate(roptcontrol%rpathfollowingdata%p_dalphaEndTimeC)
     end if
 
   end subroutine
@@ -709,30 +709,30 @@ contains
 
     ! Change the data in roptcontrol.
     ! istep defines the array position of the element to take.
-    if (associated(roptcontrol%rpathfollowingdata%p_DalphaC)) then
-      roptControl%dalphaC = roptControl%rpathfollowingdata%p_DalphaC(&
-              min(size(roptcontrol%rpathfollowingdata%p_DalphaC),istep))
+    if (associated(roptcontrol%rpathfollowingdata%p_dalphaDistC)) then
+      roptControl%dalphaDistC = roptControl%rpathfollowingdata%p_dalphaDistC(&
+              min(size(roptcontrol%rpathfollowingdata%p_dalphaDistC),istep))
       if (bprint) then
         call output_line ("Path-Follower: Parameter ALPHA = "//&
-            trim(sys_sdEL(roptcontrol%dalphaC,10)))
+            trim(sys_sdEL(roptcontrol%dalphaDistC,10)))
       end if
     end if
 
-    if (associated(roptcontrol%rpathfollowingdata%p_DbetaC)) then
-      roptcontrol%dbetaC = roptControl%rpathfollowingdata%p_DbetaC(&
-              min(size(roptcontrol%rpathfollowingdata%p_DbetaC),istep))
+    if (associated(roptcontrol%rpathfollowingdata%p_dalphaL2BdC)) then
+      roptcontrol%dalphaL2BdC = roptControl%rpathfollowingdata%p_dalphaL2BdC(&
+              min(size(roptcontrol%rpathfollowingdata%p_dalphaL2BdC),istep))
       if (bprint) then
         call output_line ("Path-Follower: Parameter BETA  = "//&
-            trim(sys_sdEL(roptcontrol%dbetaC,10)))
+            trim(sys_sdEL(roptcontrol%dalphaL2BdC,10)))
       end if
     end if
 
-    if (associated(roptcontrol%rpathfollowingdata%p_DgammaC)) then
-      roptcontrol%dgammaC = roptControl%rpathfollowingdata%p_DgammaC(&
-              min(size(roptcontrol%rpathfollowingdata%p_DgammaC),istep))
+    if (associated(roptcontrol%rpathfollowingdata%p_dalphaEndTimeC)) then
+      roptcontrol%dalphaEndTimeC = roptControl%rpathfollowingdata%p_dalphaEndTimeC(&
+              min(size(roptcontrol%rpathfollowingdata%p_dalphaEndTimeC),istep))
       if (bprint) then
         call output_line ("Path-Follower: Parameter GAMMA = "//&
-            trim(sys_sdEL(roptcontrol%dgammaC,10)))
+            trim(sys_sdEL(roptcontrol%dalphaEndTimeC,10)))
       end if
     end if
 

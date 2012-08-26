@@ -278,7 +278,7 @@ contains
       ! -----------------------------------------------------------
       ! Distributed control
       ! -----------------------------------------------------------
-      if (roptControl%dalphaC .ge. 0.0_DP) then
+      if (roptControl%dalphaDistC .ge. 0.0_DP) then
         
         ! This is distributed control in the velocity space.
         ! The discretisation matches the discretisation of the primal velocity.
@@ -296,7 +296,7 @@ contains
       ! -----------------------------------------------------------
       ! Distributed control
       ! -----------------------------------------------------------
-      if (roptControl%dalphaC .ge. 0.0_DP) then
+      if (roptControl%dalphaDistC .ge. 0.0_DP) then
         
         ! This is distributed control in the velocity space.
         ! The discretisation matches the discretisation of the primal velocity.
