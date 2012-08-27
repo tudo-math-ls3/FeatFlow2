@@ -21,13 +21,13 @@ deffunc: @diffusion = 0.0 ; x,y,t
 NBCT
 1
 NEXPR
-3
+4
 IBCT
 1
 NCOMP
 4
 PARAMETERS
-1.0  T  'PERIODIC_WEAK' 1 3
+1.0  T  'PERIODIC_WEAK'   '0.0'  '0.0'  1  3
 2.0  F  'DIRICHLET_WEAK'  'SIN(_PI*x)'  '1e1'  '1.0' ; x,y,t
-3.0  F  'PERIODIC_WEAK' 1 1
+3.0  F  'PERIODIC_WEAK'   '0.0'  '0.0'  1  1
 4.0  T  'HOMNEUMANN_WEAK'

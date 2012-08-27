@@ -16,6 +16,7 @@ simportdatafiles(5) =
 ################################################################################
 
 application = transport
+benchmark   = deprecated
 
 ################################################################################
 [Transport]
@@ -34,7 +35,7 @@ sdualbdrcondname =
 ndimension = 2
 
 # solution algorithm
-algorithm = stationary_primal
+algorithm = stationary_primal_deprecated
 
 #-------------------------------------------------------------------------------
 
@@ -167,6 +168,9 @@ celement = EL_Q1_2D
 
 # convert mesh to triangular mesh?
 iconvToTria = 0
+
+# disturb mesh
+ddisturbmesh = 0.0
 
 # type of matrix format
 # 7 = matrix format 7

@@ -167,6 +167,9 @@ celement(2) =
 # convert mesh to triangular mesh?
 iconvToTria = 0
 
+# disturb mesh
+ddisturbmesh = 0.0
+
 # type of matrix format
 # 7 = matrix format 7
 # 9 = matrix format 9
