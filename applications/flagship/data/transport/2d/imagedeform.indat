@@ -6,12 +6,6 @@
 #                             Deformation of an image                          #
 ################################################################################
 
-# Specify the initial solution
-deffunc: @initsol = if(SQRT((x-1)^2+(y-1)^2 )<0.8,1,0) ; x,y,t
-
-# Specify the exact solution
-deffunc: @exactsol = if(SQRT((x-1)^2+(y-1)^2 )<0.8,1,0) ; x,y,t
-
 # Specify the velocity field
 deffunc: @velocity_x =  SIN(_pi*x)^2*SIN(2*_pi*y)*COS(_pi*t/1.5) ; x,y,t
 deffunc: @velocity_y = -SIN(_pi*y)^2*SIN(2*_pi*x)*COS(_pi*t/1.5) ; x,y,t
