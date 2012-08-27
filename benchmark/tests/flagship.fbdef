@@ -217,6 +217,23 @@ datfile  = data/apps_flagship/orig/data/transport/2d/bucklev.dat
 mglevels = 1
 
 # Test 3
+testid   = FLAGSHIP_TRANSPORT_003_2D
+descr    = Inviscid Burgers equation in space and time
+datfile  = data/apps_flagship/orig/data/transport/2d/burgers_stairs.dat
+mglevels = 1
+
+# Test 4
+testid   = FLAGSHIP_TRANSPORT_004_2D
+descr    = Rotation of a Gaussian hill
+datfile  = data/apps_flagship/orig/data/transport/2d/gaussian.dat
+mglevels = 1
+
+# Tricky, adjust directories, disable all terminal output;
+# perform just a few time steps
+appflags = "-Dslogdirectory=\$LOGDIR -Dsbenchlogfile=\$LOGDIR/\$RESULTFILE -Dsdatadirectory=data/apps_flagship/orig/data -Dsgriddirectory=data/apps_flagship/orig/grids -DTimestepping.ioutputlevel=0 -DFullMultigridSolver.ioutputlevel=0 -DNonlinearMultigridSolver.ioutputlevel=0 -DNonlinearSolver.ioutputlevel=0 -DLinearMultigridSolver.ioutputlevel=0 -DLinearSolver.ioutputlevel=0 -DOutput.iformatUCD=0 -DTimestepping.dfinalTime=2.0"
+
+
+
 
 
 # Test 1
