@@ -108,11 +108,16 @@ program flagship
   ! Check presence of command line argument(s)
   bexit = (sys_ncommandLineArgs() .eq. 0)
 
+  print *, "1. bexit=",bexit
+
   ! Check existence of parameter file
   if (.not.bexit) then
     call sys_getcommandLineArg(sys_ncommandLineArgs(), cbuffer)
     sparameterfile = trim(adjustl(cbuffer))
-    bexit = .not.(sys_fileExists(iunit,sparameterfile))
+    print *, "parameterfile:", sparameterfile
+    iunit = sys_getFreeUnit()
+    bexit = .not.(sys_fileExists(iunit,trim(sparameterfile)))
+    print *, "2. bexit=",bexit
   end if
   
   ! Exit if application is not called correctly
