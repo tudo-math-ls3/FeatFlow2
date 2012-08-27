@@ -698,7 +698,6 @@ contains
     integer :: nlmin, ipreadapt, npreadapt, irhstype, ivelocitytype
     integer, external :: signal_SIGINT
 
-
     ! Get timer structures
     p_rtimerPrePostprocess => collct_getvalue_timer(rcollection,&
         'rtimerPrePostprocess', ssectionName=ssectionName)
@@ -772,10 +771,12 @@ contains
         ! type to the callback function for h-adaptation
         call parlst_getvalue_int(rparlist,&
             ssectionName, 'templateMatrix', templateMatrix)
+        call parlst_getvalue_int(rparlist,&
+            ssectionName, 'systemMatrix', systemMatrix)
         call lsyssc_createGraphFromMatrix(&
             p_rproblemLevel%Rmatrix(templateMatrix), rgraph)
         call collct_setvalue_graph(rcollection, 'sparsitypattern',&
-            rgraph, .true.)
+            rgraph, .true., ssectionName=ssectionName)
 
         ! Perform pre-adaptation?
         if (npreadapt > 0) then
@@ -809,23 +810,22 @@ contains
             ! Update the template matrix according to the sparsity pattern
             call lsyssc_createMatrixFromGraph(rgraph,&
                 p_rproblemLevel%Rmatrix(templateMatrix))
-
+            
+            ! Re-initialise all constant coefficient matrices
+            call transp_initProblemLevel(rparlist, ssectionName,&
+                p_rproblemLevel, rcollection, rbdrCond)
+            
             ! Resize the solution vector accordingly
             call lsysbl_resizeVectorBlock(p_rdiscretisation, &
                 rsolution, .false.)
-
+            
             ! Re-generate the initial solution vector and impose
             !  boundary conditions explicitly
             call transp_initSolution(rparlist, ssectionname,&
                 p_rproblemLevel, rtimestep%dinitialTime, rsolution,&
                 rcollection)
-
             call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
                 rtimestep%dinitialTime)
-
-            ! Re-initialise all constant coefficient matrices
-            call transp_initProblemLevel(rparlist, ssectionName,&
-                p_rproblemLevel, rcollection, rbdrCond)
           end do
 
           ! Prepare internal data arrays of the solver structure
@@ -1343,7 +1343,7 @@ contains
         call lsyssc_createGraphFromMatrix(&
             p_rproblemLevel%Rmatrix(templateMatrix), rgraph)
         call collct_setvalue_graph(rcollection, 'sparsitypattern',&
-            rgraph, .true.)
+            rgraph, .true., ssectionName=ssectionName)
 
         ! Attach the primal solution vector to the collection structure
         rcollection%p_rvectorQuickAccess1 => rsolution
@@ -1674,7 +1674,7 @@ contains
         call lsyssc_createGraphFromMatrix(&
             p_rproblemLevel%Rmatrix(templateMatrix), rgraph)
         call collct_setvalue_graph(rcollection, 'sparsitypattern',&
-            rgraph, .true.)
+            rgraph, .true., ssectionName=ssectionName)
 
         ! Attach the primal solution vector to the collection structure
         rcollection%p_rvectorQuickAccess1 => rsolutionPrimal
@@ -1872,7 +1872,7 @@ contains
       ! Start time measurement for h-adaptation
       call stat_startTimer(p_rtimerAdaptation, STAT_TIMERSHORT)
 
-      ! Set the names of the template matrix and the solution vector
+      ! Set the name of the template matrix
       rcollection%SquickAccess(1) = 'sparsitypattern'
 
       ! Attach the primal solution vector to the collection structure
@@ -2025,7 +2025,6 @@ contains
     real(dp) :: derror, dnormL1, dnormL2
     integer :: templateMatrix, systemMatrix, discretisation
     integer :: nlmin, iadapt, nadapt, irhstype, ivelocitytype
-
 
     ! Get timer structures
     p_rtimerPrePostprocess => collct_getvalue_timer(rcollection,&
@@ -2203,7 +2202,7 @@ contains
       ! Start time measurement for h-adaptation
       call stat_startTimer(p_rtimerAdaptation, STAT_TIMERSHORT)
 
-      ! Set the names of the template matrix and the solution vector
+      ! Set the name of the template matrix
       rcollection%SquickAccess(1) = 'sparsitypattern'
 
       ! Attach the primal solution vector to the collection structure
@@ -2436,7 +2435,7 @@ contains
         call lsyssc_createGraphFromMatrix(&
             p_rproblemLevel%Rmatrix(templateMatrix), rgraph)
         call collct_setvalue_graph(rcollection, 'sparsitypattern',&
-            rgraph, .true.)
+            rgraph, .true., ssectionName=ssectionName)
 
         ! Attach the primal solution vector to the collection structure
         rcollection%p_rvectorQuickAccess1 => rsolutionPrimal
@@ -2640,7 +2639,7 @@ contains
       ! Start time measurement for h-adaptation
       call stat_startTimer(p_rtimerAdaptation, STAT_TIMERSHORT)
 
-      ! Set the names of the template matrix and the solution vector
+      ! Set the name of the template matrix
       rcollection%SquickAccess(1) = 'sparsitypattern'
 
       ! Attach the primal solution vector to the collection structure

@@ -69,6 +69,7 @@ contains
 
     ! local variables
     type(t_graph), pointer, save :: rgraph
+    character(len=SYS_STRLEN) :: ssectionName
     integer :: i1,i2,i3
 
 
@@ -79,9 +80,13 @@ contains
       ! This subroutine assumes that the name of the sparsity pattern
       ! is stored in the first quick access string.
 
+      ! Get section name
+      call collct_getvalue_string(rcollection,&
+          'ssectionname', ssectionName)
+
       ! Retrieve sparsity pattern from collection and build sparsity-graph.
       rgraph => collct_getvalue_graph(rcollection,&
-          trim(rcollection%SquickAccess(1)))
+          trim(rcollection%SquickAccess(1)), ssectionName=ssectionName)
 
 
     case(HADAPT_OPR_DONECALLBACK)
@@ -157,7 +162,8 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_graph), pointer, save :: rgraph
+    type(t_graph), pointer, save :: rgraph => null()
+    character(len=SYS_STRLEN) :: ssectionName
     integer :: i1,i2,i3,i4,i5,i6,i7,i8,i9
     integer :: e1,e2,e3,e4,e5,e6,e7,e8
 
@@ -169,9 +175,13 @@ contains
       ! This subroutine assumes that the name of the sparsity pattern
       ! is stored in the first quick access string.
 
+      ! Get section name
+      call collct_getvalue_string(rcollection,&
+          'ssectionname', ssectionName)
+
       ! Retrieve sparsity pattern from collection and build sparsity-graph.
       rgraph => collct_getvalue_graph(rcollection,&
-          trim(rcollection%SquickAccess(1)))
+          trim(rcollection%SquickAccess(1)), ssectionName=ssectionName)
 
 
     case(HADAPT_OPR_DONECALLBACK)
@@ -1383,7 +1393,7 @@ contains
 
     ! local variables
     type(t_graph), pointer, save :: rgraph
-
+    character(len=SYS_STRLEN) :: ssectionName
 
     ! What operation should be performed?
     select case(iOperation)
@@ -1392,9 +1402,13 @@ contains
       ! This subroutine assumes that the name of the sparsity pattern
       ! is stored in the first quick access string.
 
+      ! Get section name
+      call collct_getvalue_string(rcollection,&
+          'ssectionname', ssectionName)
+
       ! Retrieve sparsity pattern from collection and build sparsity-graph.
       rgraph => collct_getvalue_graph(rcollection,&
-          trim(rcollection%SquickAccess(1)))
+          trim(rcollection%SquickAccess(1)), ssectionName=ssectionName)
 
 
     case(HADAPT_OPR_DONECALLBACK)

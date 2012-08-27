@@ -787,7 +787,7 @@ contains
         call lsyssc_createGraphFromMatrix(&
             p_rproblemLevel%Rmatrix(templateMatrix), rgraph)
         call collct_setvalue_graph(rcollection, 'sparsitypattern',&
-            rgraph, .true.)
+            rgraph, .true., ssectionName=ssectionName)
 
         ! Perform pre-adaptation?
         if (npreadapt > 0) then

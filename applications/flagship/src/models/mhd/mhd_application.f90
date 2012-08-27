@@ -602,7 +602,7 @@ contains
         call lsyssc_createGraphFromMatrix(&
             p_rproblemLevel%Rmatrix(templateMatrix), rgraph)
         call collct_setvalue_graph(rcollection, 'sparsitypattern',&
-            rgraph, .true.)
+            rgraph, .true., ssectionName=ssectionName)
 
         ! Perform pre-adaptation?
         if (npreadapt > 0) then
@@ -637,16 +637,20 @@ contains
             call lsyssc_createMatrixFromGraph(rgraph,&
                 p_rproblemLevel%Rmatrix(templateMatrix))
 
+            ! Re-initialise all constant coefficient matrices
+            call mhd_initProblemLevel(rparlist, ssectionName,&
+                p_rproblemLevel, rcollection, rbdrCond)
+
             ! Resize the solution vector accordingly
             call lsysbl_resizeVectorBlock(&
                 p_rproblemLevel%RmatrixBlock(systemMatrix), rsolution, .false.)
 
-            ! Re-generate the initial solution vector and impose
-            ! boundary conditions explicitly
+            ! Re-generate the initial solution vector 
             call mhd_initSolution(rparlist, ssectionname,&
                 p_rproblemLevel, rtimestep%dinitialTime, rsolution,&
                 rcollection)
-
+            
+            ! Impose boundary conditions explicitly
             select case(ndimension)
             case (NDIM1D)
               call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
@@ -659,11 +663,7 @@ contains
             case (NDIM3D)
               call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
                   rtimestep%dinitialTime, mhd_calcBoundaryvalues3d)
-            end select
-	    
-	    ! Re-initialise all constant coefficient matrices
-            call mhd_initProblemLevel(rparlist, ssectionName,&
-                p_rproblemLevel, rcollection, rbdrCond)
+            end select    
           end do
 
           ! Prepare internal data arrays of the solver structure
