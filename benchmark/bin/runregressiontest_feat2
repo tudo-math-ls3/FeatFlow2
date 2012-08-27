@@ -533,11 +533,11 @@ fb_customise() {
 		    COMPILERNAME="Intel 11.0"
 		    ;;
 
-		# Intel compiler suite 12.0.1.107
+		# Intel compiler suite 12.0.5.220
 		pc64-penryn-linux-intel-*12.0)
 		    modules=""
 		    modules="$modules gotoblas/shared/64"
-		    modules="$modules intel/mkl intel/cce/12.0.1.107 intel/fce/12.0.1.107"
+		    modules="$modules intel/mkl intel/cce/12.0.5.220 intel/fce/12.0.5.220"
 		    LIDOJOBNAMEPREFIX=ff2-intel120
 		    COMPILERNAME="Intel 12.0"
 		    ;;
