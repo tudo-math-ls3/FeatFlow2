@@ -542,6 +542,15 @@ fb_customise() {
 		    COMPILERNAME="Intel 12.0"
 		    ;;
 
+		# Intel compiler suite 12.1.5.339
+		pc64-penryn-linux-intel-*12.1)
+		    modules=""
+		    modules="$modules gotoblas/shared/64"
+		    modules="$modules intel/mkl intel/cce/12.1.5.339 intel/fce/12.1.5.339"
+		    LIDOJOBNAMEPREFIX=ff2-intel121
+		    COMPILERNAME="Intel 12.1"
+		    ;;
+
 		# Intel compiler suite 11.1.075 and default build ID
 		pc64-penryn-linux-intel-*11.1|*)
 		    modules=""
