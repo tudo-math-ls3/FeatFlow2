@@ -1000,10 +1000,10 @@ contains
 !<input>
 
     !unit the file shall be attached to
-    integer :: iunit
+    integer, intent(in) :: iunit
 
     !name of the file to look at
-    character (len=*):: sname
+    character (len=*), intent(in):: sname
 
 !</input>
 
