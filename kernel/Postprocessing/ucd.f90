@@ -681,12 +681,14 @@ contains
     ! If we do not allocate any vertices, we can leave this routine here
     if (rrefine%nvertices .eq. 0) return
 
-    ! Otherwise allocate the vertices
-    if (rtria%ndim .eq. NDIM2D) then
-      I_dim(1) = 2
-    else
-      I_dim(1) = 3
-    end if
+    ! Get pointers to the triangulation`s arrays
+    call storage_getbase_double2D(rtria%h_DvertexCoords, p_DvertexCoords)
+    call storage_getbase_int2D(rtria%h_IverticesAtEdge, p_IvertsAtEdge)
+    call storage_getbase_int2D(rtria%h_IedgesAtElement, p_IedgesAtElement)
+    call storage_getbase_int2D(rtria%h_IverticesAtElement, p_IvertsAtElement)
+
+    ! Allocate the vertices
+    I_dim(1) = ubound(p_DvertexCoords,1)
     I_dim(2) = rrefine%nvertices
 
     call storage_new("ucd_refine", "p_Dvertices", I_dim, ST_DOUBLE, &
@@ -694,12 +696,6 @@ contains
 
     ! And get a pointer to them
     call storage_getbase_double2D(rrefine%h_DvertexCoords, p_DnewVerts)
-
-    ! Get pointers to the triangulation`s arrays
-    call storage_getbase_double2D(rtria%h_DvertexCoords, p_DvertexCoords)
-    call storage_getbase_int2D(rtria%h_IverticesAtEdge, p_IvertsAtEdge)
-    call storage_getbase_int2D(rtria%h_IedgesAtElement, p_IedgesAtElement)
-    call storage_getbase_int2D(rtria%h_IverticesAtElement, p_IvertsAtElement)
 
     ! Calculate the vertices
     off = 0
@@ -755,7 +751,14 @@ contains
     ! refinement...
     ! Since we work in 2D here, every refinement takes 4 new elements...
     ! TODO: This code may need to be replaced for 3D grids...
-    rrefine%ncells = rtria%NEL * 4
+    select case (rtria%ndim)
+    case (NDIM1D)
+      rrefine%ncells = rtria%NEL * 2
+    case (NDIM2D)
+      rrefine%ncells = rtria%NEL * 4
+    case (NDIM3D)
+      rrefine%ncells = rtria%NEL * 8
+    end select
 
     ! Allocate elements
     I_dim(1) = 4
@@ -778,6 +781,25 @@ contains
       k = k - 1
 
       select case(k)
+      case (2)
+        ! Refine the line:
+        !
+        !    1 ----------- 2    ==>   1 -----a----- 2
+        !                                 I     J
+        ! The line indices are
+        !
+        !  I => IEL
+        !  J => NEL + 2*(IEL - 1) + 1
+        !
+        ! Segment I
+        p_InewVertsAtElement(1, i) = p_IvertsAtElement(1, i)
+        p_InewVertsAtElement(2, i) = rtria%NVT + i
+        
+        ! Segment J
+        j = rtria%NEL + 2*i - 1
+        p_InewVertsAtElement(1, j) = rtria%NVT + i
+        p_InewVertsAtElement(2, j) = p_IvertsAtElement(2, i)
+      
       case (3)
         ! Let a coarse grid triangle have 3 vertices (1, 2, 3) and 3 edges
         ! (a, b, c), then it will be refined into 4 new triangles (I, J, K, L)
@@ -920,11 +942,14 @@ contains
     if ((iand(cflags,UCD_FLAG_USEELEMENTMIDPOINTS) .ne. 0) .or. &
         (iand(cflags,UCD_FLAG_ONCEREFINED) .ne. 0)) then
       rexport%nvertices = rexport%nvertices + rtriangulation%NEL
-      if (rtriangulation%NDIM .eq. NDIM2D) then
+      select case (rtriangulation%ndim)
+      case (NDIM1D) 
+        rexport%ncells = rtriangulation%NEL*2
+      case (NDIM2D) 
         rexport%ncells = rtriangulation%NEL*4
-      else
+      case (NDIM3D)
         rexport%ncells = rtriangulation%NEL*8
-      end if
+      end select
     end if
 
     ! Calculate grid refinement
@@ -987,11 +1012,14 @@ contains
     if ((iand(cflags,UCD_FLAG_USEELEMENTMIDPOINTS) .ne. 0) .or. &
         (iand(cflags,UCD_FLAG_ONCEREFINED) .ne. 0)) then
       rexport%nvertices = rexport%nvertices + rtriangulation%NEL
-      if (rtriangulation%NDIM .eq. NDIM2D) then
+      select case (rtriangulation%ndim)
+      case (NDIM1D) 
+        rexport%ncells = rtriangulation%NEL*2
+      case (NDIM2D) 
         rexport%ncells = rtriangulation%NEL*4
-      else
+      case (NDIM3D)
         rexport%ncells = rtriangulation%NEL*8
-      end if
+      end select
     end if
 
     ! Calculate grid refinement
@@ -1055,11 +1083,14 @@ contains
     if ((iand(cflags,UCD_FLAG_USEELEMENTMIDPOINTS) .ne. 0) .or. &
         (iand(cflags,UCD_FLAG_ONCEREFINED) .ne. 0)) then
       rexport%nvertices = rexport%nvertices + rtriangulation%NEL
-      if (rtriangulation%NDIM .eq. NDIM2D) then
+      select case (rtriangulation%ndim)
+      case (NDIM1D) 
+        rexport%ncells = rtriangulation%NEL*2
+      case (NDIM2D) 
         rexport%ncells = rtriangulation%NEL*4
-      else
+      case (NDIM3D)
         rexport%ncells = rtriangulation%NEL*8
-      end if
+      end select
     end if
 
     ! Calculate grid refinement
@@ -1138,11 +1169,14 @@ contains
     if ((iand(cflags,UCD_FLAG_USEELEMENTMIDPOINTS) .ne. 0) .or. &
         (iand(cflags,UCD_FLAG_ONCEREFINED) .ne. 0)) then
       rexport%nvertices = rexport%nvertices + rtriangulation%NEL
-      if (rtriangulation%NDIM .eq. NDIM2D) then
+      select case (rtriangulation%ndim)
+      case (NDIM1D) 
+        rexport%ncells = rtriangulation%NEL*2
+      case (NDIM2D) 
         rexport%ncells = rtriangulation%NEL*4
-      else
+      case (NDIM3D)
         rexport%ncells = rtriangulation%NEL*8
-      end if
+      end select
     end if
 
       ! Calculate grid refinement
@@ -1830,7 +1864,7 @@ contains
                 write(mfile,'(A)') 'line 2'
                 write(mfile,'(2I8)') p_IverticesAtElement(1:2,iel)
 
-              case DEFAULT
+              case default
                 call output_line ('Invalid element!',&
                     OU_CLASS_ERROR,OU_MODE_STD,'ucd_writeGMV')
               end select
@@ -1850,6 +1884,11 @@ contains
               ! We have i-1 vertices on that element -- so what is it?
               select case (i-1)
 
+              case (2)
+                ! Line in 2D
+                write(mfile,'(A)') 'line 2'
+                write(mfile,'(2I8)') p_IverticesAtElement(1:2,iel)
+
               case (3)
                 ! Triangle
                 write(mfile,'(A)') 'tri 3'
@@ -1860,7 +1899,7 @@ contains
                 write(mfile,'(A)')'quad 4'
                 write(mfile,'(4I8)') p_IverticesAtElement(1:4,iel)
 
-              case DEFAULT
+              case default
                 call output_line ('Invalid element!',&
                     OU_CLASS_ERROR,OU_MODE_STD,'ucd_writeGMV')
               end select
@@ -1879,6 +1918,11 @@ contains
 
               ! We have i-1 vertices on that element -- so what is it?
               select case (i-1)
+
+              case (2)
+                ! Line in 3D
+                write(mfile,'(A)') 'line 2'
+                write(mfile,'(2I8)') p_IverticesAtElement(1:2,iel)
 
               case (4)
                 ! Tetrahedron
@@ -1982,6 +2026,21 @@ contains
               ! We have i-1 vertices on that element -- so what is it?
               select case (i-1)
 
+              case (2)
+                ! Line in 2D.
+                !
+                ! The coarse grid element is
+                !
+                !   1 -----IEL----- 2
+                !
+                ! The once refined element is
+                !
+                !   1 -- IEL -- 1* -- NEL+IEL -- 2
+                !
+                ! Write the connectivity of element IEL
+                write(mfile,'(A)') 'line 2'
+                write(mfile,'(2I8)') p_IverticesAtElement(1,iel),iel+rexport%p_rtriangulation%NVT
+
               case (3)
                 ! Triangle.
                 !
@@ -2058,6 +2117,13 @@ contains
 
               ! We have i-1 vertices on that element -- so what is it?
               select case (i-1)
+
+              case (2)
+                ! Line in 3D.
+                !
+                ! Element "NEL+1"
+                write(mfile,'(A)') 'line 2'
+                write(mfile,'(2I8)') iel+rexport%p_rtriangulation%NVT,p_IverticesAtElement(2,iel)
 
               case (3)
                 ! Triangle.
@@ -2616,14 +2682,29 @@ contains
       ! Allocate temporal memory
       allocate(X(rexport%nvertices), Y(rexport%nvertices), Z(rexport%nvertices))
 
-      select case(rexport%p_Rtriangulation%ndim)
+      select case(rexport%p_rtriangulation%ndim)
 
       case(NDIM1D)
-        do ivt=1,rexport%p_Rtriangulation%NVT
-          X(ivt) =  real(p_DvertexCoords(1,ivt))
-          Y(ivt) = 0.0E0
-          Z(ivt) = 0.0E0
-        end do
+        select case (ubound(p_DvertexCoords,1))
+        case (1)
+          do ivt=1,rexport%p_Rtriangulation%NVT
+            X(ivt) = real(p_DvertexCoords(1,ivt))
+            Y(ivt) = 0.0E0
+            Z(ivt) = 0.0E0
+          end do
+        case (2)
+          do ivt=1,rexport%p_Rtriangulation%NVT
+            X(ivt) = real(p_DvertexCoords(1,ivt))
+            Y(ivt) = real(p_DvertexCoords(2,ivt))
+            Z(ivt) = 0.0E0
+          end do
+        case (3)
+          do ivt=1,rexport%p_Rtriangulation%NVT
+            X(ivt) = real(p_DvertexCoords(1,ivt))
+            Y(ivt) = real(p_DvertexCoords(2,ivt))
+            Z(ivt) = real(p_DvertexCoords(3,ivt))
+          end do
+        end select
 
         ! Store number of vertives already processed
         nvt = rexport%p_Rtriangulation%NVT
@@ -2895,7 +2976,7 @@ contains
               nod2ids(2) = int(p_IverticesAtElement(2,iel))
               call fgmvwrite_cell_type('line 2',2,nod2ids)
 
-            case DEFAULT
+            case default
               call output_line ('Invalid element!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'ucd_writeBGMV')
             end select
@@ -2915,6 +2996,12 @@ contains
             ! We have i-1 vertices on that element -- so what is it?
             select case (i-1)
 
+            case (2)
+              ! Line in 1D
+              nod2ids(1) = int(p_IverticesAtElement(1,iel))
+              nod2ids(2) = int(p_IverticesAtElement(2,iel))
+              call fgmvwrite_cell_type('line 2',2,nod2ids)
+
             case (3)
               ! Triangle
               nod3ids(1) = p_IverticesAtElement(1,iel)
@@ -2930,7 +3017,7 @@ contains
               nod4ids(4) = p_IverticesAtElement(4,iel)
               call fgmvwrite_cell_type('quad 4',4,nod4ids)
 
-            case DEFAULT
+            case default
               call output_line ('Invalid element!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'ucd_writeBGMV')
             end select
@@ -2949,6 +3036,12 @@ contains
 
             ! We have i-1 vertices on that element -- so what is it?
             select case (i-1)
+
+            case (2)
+              ! Line in 1D
+              nod2ids(1) = int(p_IverticesAtElement(1,iel))
+              nod2ids(2) = int(p_IverticesAtElement(2,iel))
+              call fgmvwrite_cell_type('line 2',2,nod2ids)
 
             case (4)
               ! Tetrahedron
@@ -3060,7 +3153,7 @@ contains
               nod2ids(2) = p_IverticesAtElement(2,iel)
               call fgmvwrite_cell_type('line 2',2,nod2ids)
 
-            case DEFAULT
+            case default
               call output_line ('Invalid element!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'ucd_writeBGMV')
             end select
@@ -3078,6 +3171,22 @@ contains
 
             ! We have i-1 vertices on that element -- so what is it?
             select case (i-1)
+
+            case (2)
+              ! Line in 1D.
+              !
+              ! The coarse grid element is
+              !
+              !   1 -----IEL----- 2
+              !
+              ! The once refined element is
+              !
+              !   1 -- IEL -- 1* -- NEL+IEL -- 2
+              !
+              ! Write the connectivity of element IEL
+              nod2ids(1) = p_IverticesAtElement(1,iel)
+              nod2ids(2) = iel+rexport%p_rtriangulation%NVT
+              call fgmvwrite_cell_type('line 2',2,nod2ids)
 
             case (3)
               ! Triangle.
@@ -3143,7 +3252,7 @@ contains
               nod4ids(4) = p_IedgesAtElement(4,iel)+rexport%p_rtriangulation%NVT
               call fgmvwrite_cell_type('quad 4',4,nod4ids)
 
-            case DEFAULT
+            case default
               call output_line ('Invalid element!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'ucd_writeBGMV')
             end select
@@ -3159,6 +3268,14 @@ contains
 
             ! We have i-1 vertices on that element -- so what is it?
             select case (i-1)
+
+            case (2)
+              ! Line in 2D.
+              !
+              ! Element "NEL+1"
+              nod2ids(1) = iel+rexport%p_rtriangulation%NVT
+              nod2ids(2) = p_IverticesAtElement(2,iel)
+              call fgmvwrite_cell_type('line 2',2,nod2ids)
 
             case (3)
               ! Triangle.
@@ -3205,7 +3322,7 @@ contains
               nod4ids(4) = p_IedgesAtElement(3,iel)+rexport%p_rtriangulation%NVT
               call fgmvwrite_cell_type('quad 4',4,nod4ids)
 
-            case DEFAULT
+            case default
               call output_line ('Invalid element!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'ucd_writeBGMV')
             end select
@@ -5349,7 +5466,16 @@ contains
     ! Copy edge midpoint data if available
     if (iand(rexport%cflags,UCD_FLAG_ONCEREFINED) .ne. 0) then
 
-      if (rexport%p_rtriangulation%NDIM .eq. NDIM2D) then
+      select case (rexport%p_rtriangulation%NDIM)
+      case (NDIM1D)
+        ! Implicitly use 2-level ordering to get the numbers of the sub-elements
+        do iel=1,rexport%p_rtriangulation%NEL
+          dv = p_Ddata(iel)
+          p_Ddata(rexport%p_rtriangulation%NEL+2*(iel-1)+1) = dv
+          p_Ddata(rexport%p_rtriangulation%NEL+2*(iel-1)+2) = dv
+        end do
+
+      case (NDIM2D)
         ! Implicitly use 2-level ordering to get the numbers of the sub-elements
         do iel=1,rexport%p_rtriangulation%NEL
           dv = p_Ddata(iel)
@@ -5357,7 +5483,8 @@ contains
           p_Ddata(rexport%p_rtriangulation%NEL+3*(iel-1)+2) = dv
           p_Ddata(rexport%p_rtriangulation%NEL+3*(iel-1)+3) = dv
         end do
-      else
+
+      case (NDIM3D)
         do iel=1,rexport%p_rtriangulation%NEL
           dv = p_Ddata(iel)
           p_Ddata(rexport%p_rtriangulation%NEL+7*(iel-1)+1) = dv
@@ -5368,7 +5495,7 @@ contains
           p_Ddata(rexport%p_rtriangulation%NEL+7*(iel-1)+6) = dv
           p_Ddata(rexport%p_rtriangulation%NEL+7*(iel-1)+7) = dv
         end do
-      end if
+      end select
 
     end if
 
@@ -6481,7 +6608,7 @@ contains
       read (scommand,*) skey,ntracers
 
       ! Allocate memory for X/Y or X/Y/Z coordinates
-      allocate (DtracerCoordinates(rexport%p_rtriangulation%ndim,ntracers))
+      allocate (DtracerCoordinates(max(2,rexport%p_rtriangulation%ndim),ntracers))
       allocate (DtracerTemp(ntracers))
 
 
@@ -6549,7 +6676,7 @@ contains
         write (mfile,*) imaterial,npoints
 
         ! Allocate memory for the polygon
-        allocate (Dcoordinates(rexport%p_rtriangulation%ndim,npoints))
+        allocate (Dcoordinates(max(2,rexport%p_rtriangulation%ndim),npoints))
         allocate (Dtemp(npoints))
 
         ! Read the polygon. All X-coordinates
@@ -6559,7 +6686,7 @@ contains
         read(mfile,*) Dcoordinates(2,:)
 
         ! Probably Z-coordinates
-        if (rexport%p_rtriangulation%ndim .eq. 3) then
+        if (rexport%p_rtriangulation%ndim .eq. NDIM3D) then
           read(mfile,*) Dcoordinates(3,:)
         else
           read(mfile,*) Dtemp(:)
