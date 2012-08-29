@@ -38,25 +38,30 @@
 !#        f=32*y*(1-y)+32*x*(1-x) + v(x,y)
 !#        with v(x,y) being a finite element function passed via parameters.
 !#
-!# 7.) bma_fcalc_integralOne
+!# 6.) bma_fcalc_rhsFE
+!#     -> Calculates the RHS vector based on the function 
+!#        f=v(x,y)
+!#        with v(x,y) being a finite element function passed via parameters.
+!#
+!# 8.) bma_fcalc_integralOne
 !#     -> Calculates the integral of the function v=1 (which results in the
 !#        size of the domain).
 !#
-!# 8.) bma_fcalc_integralFE
+!# 9.) bma_fcalc_integralFE
 !#     -> Calculates the integral of an arbitrary FEM function.
 !#
-!# 9.) bma_fcalc_bubbleL2error
-!#     -> Calculates the squared L2 error of a FEM function to a 
-!#        bubble function
+!# 10.) bma_fcalc_bubbleL2error
+!#      -> Calculates the squared L2 error of a FEM function to a 
+!#         bubble function
 !#        
-!# 10.) bma_fcalc_bubbleH1error
+!# 11.) bma_fcalc_bubbleH1error
 !#     -> Calculates the squared H1 error of a FEM function to a 
 !#        bubble function
 !#
-!# 11.) bma_fcalc_L2norm
+!# 12.) bma_fcalc_L2norm
 !#     -> Calculates the squared L2 norm of a FEM function
 !#        
-!# 12.) bma_fcalc_H1norm
+!# 13.) bma_fcalc_H1norm
 !#     -> Calculates the squared H1 (semi-)norm of a FEM function
 !# </purpose>
 !##############################################################################
@@ -90,6 +95,7 @@ module blockmatassemblystdop
   public :: bma_fcalc_rhsOne
   public :: bma_fcalc_rhsBubble
   public :: bma_fcalc_rhsBubblePlusFE
+  public :: bma_fcalc_rhsFE
   
   public :: bma_fcalc_integralOne
   public :: bma_fcalc_integralFE
@@ -1555,6 +1561,128 @@ contains
           ! Calculate the values of the RHS in the cubature point:
           !     f = 32*y*(1-y)+32*x*(1-x) + v(x,y)
           dval = 32.0_DP*dy*(1.0_DP-dy) + 32_DP*dx*(1.0_DP-dx) + p_Dfunc(icubp,iel)
+          
+          ! Outer loop over the DOF's i=1..ndof on our current element,
+          ! which corresponds to the (test) basis functions Phi_i:
+          do idofe=1,p_rvectorData%ndofTest
+          
+            ! Fetch the contributions of the (test) basis functions Phi_i
+            ! into dbasI
+            dbasI = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+            
+            ! Multiply the values of the basis functions
+            ! (1st derivatives) by the cubature weight and sum up
+            ! into the local vectors.
+            p_DlocalVector(idofe,iel) = p_DlocalVector(idofe,iel) + &
+                p_DcubWeight(icubp,iel) * dval * dbasI
+            
+          end do ! jdofe
+
+        end do ! icubp
+      
+      end do ! iel
+      
+    end do ! icomp
+    
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine bma_fcalc_rhsFE(rvectorData,rassemblyData,rvectorAssembly,&
+      npointsPerElement,nelements,revalVectors,rcollection)
+
+!<description>  
+    ! Calculates a right-hand side vector according to the right-hand
+    ! side function f = v(x,y)
+    ! with v being a FEM function.
+    !
+    ! The FEM function v(x,y) must be provided in revalVectors.
+    ! The routine only supports non-interleaved vectors.
+    !
+    ! This routine is typically used in L2 projections for setting up the
+    ! RHS based on a FEM function.
+!</description>
+
+!<inputoutput>
+    ! Vector data of all subvectors. The arrays p_Dentry of all subvectors
+    ! have to be filled with data.
+    type(t_bmaVectorData), dimension(:), intent(inout), target :: RvectorData
+!</inputoutput>
+
+!<input>
+    ! Data necessary for the assembly. Contains determinants and
+    ! cubature weights for the cubature,...
+    type(t_bmaVectorAssemblyData), intent(in) :: rassemblyData
+
+    ! Structure with all data about the assembly
+    type(t_bmaVectorAssembly), intent(in) :: rvectorAssembly
+    
+    ! Number of points per element
+    integer, intent(in) :: npointsPerElement
+    
+    ! Number of elements
+    integer, intent(in) :: nelements
+    
+    ! Values of FEM functions automatically evaluated in the
+    ! cubature points.
+    type(t_fev2Vectors), intent(in) :: revalVectors
+
+    ! User defined collection structure
+    type(t_collection), intent(inout), target, optional :: rcollection
+!</input>
+    
+!<subroutine>
+
+    ! Local variables
+    real(DP) :: dbasI, dval, dx, dy
+    integer :: icomp
+    integer :: iel, icubp, idofe
+    real(DP), dimension(:,:), pointer :: p_DlocalVector
+    real(DP), dimension(:,:,:,:), pointer :: p_DbasTest
+    real(DP), dimension(:,:), pointer :: p_DcubWeight
+    type(t_bmaVectorData), pointer :: p_rvectorData
+    real(DP), dimension(:,:,:), pointer :: p_Dpoints
+    real(DP), dimension(:,:), pointer :: p_Dfunc
+  
+    ! Get cubature weights data
+    p_DcubWeight => rassemblyData%p_DcubWeight
+
+    ! Get the coordinates of the cubature points
+    p_Dpoints => rassemblyData%revalElementSet%p_DpointsReal
+    
+    if (revalVectors%ncount .eq. 0) then
+      call output_line ("FEM function missing.",&
+          OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_rhsBubblePlusFE")
+      call sys_halt()
+    end if
+    
+    ! Get the data array with the values of the FEM function
+    ! in the cubature points
+    p_Dfunc => revalVectors%p_RvectorData(1)%p_Ddata(:,:,DER_FUNC2D)
+    
+    ! Loop over the components
+    do icomp = 1,size(rvectorData)
+
+      ! Get the data arrays of the subvector
+      p_rvectorData => RvectorData(icomp)
+      p_DlocalVector => RvectorData(icomp)%p_Dentry
+      p_DbasTest => RvectorData(icomp)%p_DbasTest
+    
+      ! Loop over the elements in the current set.
+      do iel = 1,nelements
+
+        ! Loop over all cubature points on the current element
+        do icubp = 1,npointsPerElement
+        
+          ! Get the coordinates of the cubature point.
+          dx = p_Dpoints(1,icubp,iel)
+          dy = p_Dpoints(2,icubp,iel)
+
+          ! Calculate the values of the RHS in the cubature point:
+          !     f = 32*y*(1-y)+32*x*(1-x) + v(x,y)
+          dval = p_Dfunc(icubp,iel)
           
           ! Outer loop over the DOF's i=1..ndof on our current element,
           ! which corresponds to the (test) basis functions Phi_i:
