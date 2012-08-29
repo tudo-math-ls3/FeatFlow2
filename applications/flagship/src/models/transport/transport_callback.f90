@@ -5836,8 +5836,8 @@ contains
               call lsyssc_getbase_double(&
                   rproblemLevel%Rmatrix(massmatrix), p_DdataMassMatrix)
               call doSourceVelocityLumped(dscale, deffectiveRadius,&
-                  rproblemLevel%RvectorBlock(dofCoords)%nblocks,&
-                  rsource%NEQ, bclear, p_DdofCoords, p_DdataMassMatrix,&
+                  rproblemLevel%rtriangulation%ndim, rsource%NEQ,&
+                  bclear, p_DdofCoords, p_DdataMassMatrix,&
                   p_DdataVelocity, p_DdataSolution, p_DdataSource)
               
             case (MASS_CONSISTENT)
@@ -5848,9 +5848,9 @@ contains
               call lsyssc_getbase_Kld(rproblemLevel%Rmatrix(massmatrix), p_Kld)
               call lsyssc_getbase_Kcol(rproblemLevel%Rmatrix(massmatrix), p_Kcol)
               call doSourceVelocityConsistent(dscale, deffectiveRadius,&
-                  rproblemLevel%RvectorBlock(dofCoords)%nblocks,&
-                  rsource%NEQ, bclear, p_DdofCoords, p_DdataMassMatrix, p_Kld,&
-                  p_Kcol, p_DdataVelocity, p_DdataSolution, p_DdataSource)
+                  rproblemLevel%rtriangulation%ndim, rsource%NEQ,&
+                  bclear, p_DdofCoords, p_DdataMassMatrix, p_Kld, p_Kcol,&
+                  p_DdataVelocity, p_DdataSolution, p_DdataSource)
               
             case default
               call output_line('Unsupported geometric source type!',&
@@ -5869,8 +5869,8 @@ contains
               call lsyssc_getbase_double(&
                   rproblemLevel%Rmatrix(massmatrix), p_DdataMassMatrix)
               call doSourceVelocityLumped(2*dscale, deffectiveRadius,&
-                  rproblemLevel%RvectorBlock(dofCoords)%nblocks,&
-                  rsource%NEQ, bclear, p_DdofCoords, p_DdataMassMatrix,&
+                  rproblemLevel%rtriangulation%ndim, rsource%NEQ,&
+                  bclear, p_DdofCoords, p_DdataMassMatrix,&
                   p_DdataVelocity, p_DdataSolution, p_DdataSource)
               
             case (MASS_CONSISTENT)
@@ -5881,8 +5881,8 @@ contains
               call lsyssc_getbase_Kld(rproblemLevel%Rmatrix(massmatrix), p_Kld)
               call lsyssc_getbase_Kcol(rproblemLevel%Rmatrix(massmatrix), p_Kcol)
               call doSourceVelocityConsistent(2*dscale, deffectiveRadius,&
-                  rproblemLevel%RvectorBlock(dofCoords)%nblocks,&
-                  rsource%NEQ, bclear, p_DdofCoords, p_DdataMassMatrix, p_Kld,&
+                  rproblemLevel%rtriangulation%ndim, rsource%NEQ,&
+                  bclear, p_DdofCoords, p_DdataMassMatrix, p_Kld,&
                   p_Kcol, p_DdataVelocity, p_DdataSolution, p_DdataSource)
               
             case default
@@ -5997,7 +5997,7 @@ contains
     ! vector using the lumped mass matrix.
     
     subroutine doSourceVelocityLumped(deffectiveScale,&
-        deffectiveRadius, ndim,neq, bclear, Dcoords, DdataMassMatrix,&
+        deffectiveRadius, ndim, neq, bclear, Dcoords, DdataMassMatrix,&
         DdataVelocity, DdataSolution, DdataSource)
 
       ! Effective scaling parameter (dalpha * dscale)
@@ -6016,7 +6016,7 @@ contains
       logical, intent(in) :: bclear
 
       ! Coordinates of the nodal degrees of freedom
-      real(DP), dimension(ndim,neq), intent(in) :: Dcoords
+      real(DP), dimension(:), intent(in) :: Dcoords
 
       ! Lumped mass matrix
       real(DP), dimension(:), intent(in) :: DdataMassMatrix
@@ -6046,7 +6046,8 @@ contains
         do ieq = 1, neq
 
           ! Get the r-coordinate and compute the radius
-          daux = Dcoords(1,ieq); dradius = max(abs(daux), deffectiveRadius)
+          daux = Dcoords(ndim*(ieq-1)+1)
+          dradius = max(abs(daux), deffectiveRadius)
 
           ! Compute unit vector into the origin, scale it be the user-
           ! defined scaling parameter dscale and devide it by the radius
@@ -6066,7 +6067,8 @@ contains
         do ieq = 1, neq
 
           ! Get the r-coordinate and compute the radius
-          daux = Dcoords(1,ieq); dradius = max(abs(daux), deffectiveRadius)
+          daux = Dcoords(ndim*(ieq-1)+1)
+          dradius = max(abs(daux), deffectiveRadius)
 
           ! Compute unit vector into the origin, scale it be the user-
           ! defined scaling parameter dscale and devide it by the radius
@@ -6109,7 +6111,7 @@ contains
       logical, intent(in) :: bclear
 
       ! Coordinates of the nodal degrees of freedom
-      real(DP), dimension(ndim,neq), intent(in) :: Dcoords
+      real(DP), dimension(:), intent(in) :: Dcoords
 
       ! Consistent mass matrix
       real(DP), dimension(:), intent(in) :: DdataMassMatrix
@@ -6151,7 +6153,8 @@ contains
             jeq = Kcol(ia)
             
             ! Get the r-coordinate and compute the radius
-            daux = Dcoords(1,jeq); dradius = max(abs(daux), deffectiveRadius)
+            daux = Dcoords(ndim*(jeq-1)+1)
+            dradius = max(abs(daux), deffectiveRadius)
             
             ! Compute unit vector into the origin, scale it be the user-
             ! defined scaling parameter dscale and devide it by the radius
@@ -6184,7 +6187,8 @@ contains
             jeq = Kcol(ia)
             
             ! Get the r-coordinate and compute the radius
-            daux = Dcoords(1,jeq); dradius = max(abs(daux), deffectiveRadius)
+            daux = Dcoords(ndim*(jeq-1)+1)
+            dradius = max(abs(daux), deffectiveRadius)
 
             ! Compute unit vector into the origin, scale it be the user-
             ! defined scaling parameter dscale and devide it by the radius

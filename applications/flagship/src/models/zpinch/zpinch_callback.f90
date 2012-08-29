@@ -740,13 +740,13 @@ contains
 
     ! local variables
     type(t_fparser), pointer :: p_rfparser
-    real(DP), dimension(:,:), pointer :: p_DvertexCoords
+    real(DP), dimension(:), pointer :: p_DdofCoords
     real(DP), dimension(:), pointer :: p_DdataTransport, p_DdataHydro
     real(DP), dimension(:), pointer :: p_DmassMatrix, p_DdataForce
     integer, dimension(:), pointer :: p_Kld, p_Kcol
     character(LEN=SYS_STRLEN) :: slorentzforceName
     real(DP) :: dcurrentDrive, deffectiveRadius
-    integer :: isystemFormat, massMatrix
+    integer :: isystemFormat, massMatrix, dofCoords
     integer :: neq, nvar, icomp, icoordsystem, ilorentzforcetype
     logical :: bcompatible
 
@@ -762,6 +762,8 @@ contains
         'ilorentzforcetype', ilorentzforcetype)
     call parlst_getvalue_int(rparlist, ssectionNameHydro,&
         'isystemformat', isystemFormat)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'dofCoords', dofCoords, 0)
     
     ! Check if solution vector and Lorentz force vector are compatible
     call lsysbl_isVectorCompatible(rsolutionHydro, rforce, bcompatible)
@@ -802,14 +804,10 @@ contains
     call lsysbl_getbase_double(rsolutionHydro, p_DdataHydro)
     call lsysbl_getbase_double(rsolutionTransport, p_DdataTransport)
 
-    ! Set pointer to the vertex coordinates
-    call storage_getbase_double2D(&
-        rproblemLevel%rtriangulation%h_DvertexCoords, p_DvertexCoords)
-
     ! Set dimensions
     neq  = rsolutionTransport%NEQ
     nvar = hydro_getNVAR(rproblemLevel)
-
+    
     ! Get function parser from collection structure
     p_rfparser => collct_getvalue_pars(rcollection,&
         'rfparser', ssectionName=ssectionName)
@@ -820,123 +818,141 @@ contains
 
     ! Evaluate the function parser
     call fparser_evalFunction(p_rfparser, icomp, (/dtime/), dcurrentDrive)
-
+    
     ! Multiply scaling parameter by the time step
     dcurrentDrive = dscale * dcurrentDrive
 
 
-    ! What type of system format are we?
-    select case(isystemFormat)
+    if (dofCoords > 0) then
+
+      ! Get coordinates of the global DOF`s
+      call lsysbl_getbase_double(&
+          rproblemLevel%RvectorBlock(dofCoords), p_DdofCoords)
       
-    case (SYSTEM_INTERLEAVEFORMAT)
-      
-      ! What type of coordinate system are we?
-      select case(icoordsystem)
+      ! What type of system format are we?
+      select case(isystemFormat)
         
-      case(COORDS_CARTESIAN)
-        ! Lorentz force term in Cartesian coordinate system
+      case (SYSTEM_INTERLEAVEFORMAT)
         
-        select case(ilorentzforcetype)
-        case (MASS_LUMPED)
-          call calcLorentzForceXYIntlLumped(dcurrentDrive, deffectiveRadius,&
-              neq, nvar, bclear, p_DvertexCoords, p_DmassMatrix,&
-              p_DdataTransport, p_DdataHydro, p_DdataForce)
+        ! What type of coordinate system are we?
+        select case(icoordsystem)
           
-        case (MASS_CONSISTENT)
-          call calcLorentzForceXYIntlConsistent(dcurrentDrive, deffectiveRadius,&
-              neq, nvar, bclear, p_DvertexCoords, p_Kld, p_Kcol, p_DmassMatrix,&
-              p_DdataTransport, p_DdataHydro, p_DdataForce)
+        case(COORDS_CARTESIAN)
+          ! Lorentz force term in Cartesian coordinate system
+          
+          select case(ilorentzforcetype)
+          case (MASS_LUMPED)
+            call calcLorentzForceXYIntlLumped(dcurrentDrive,&
+                deffectiveRadius, rproblemLevel%rtriangulation%ndim,&
+                neq, nvar, bclear, p_DdofCoords, p_DmassMatrix,&
+                p_DdataTransport, p_DdataHydro, p_DdataForce)
+            
+          case (MASS_CONSISTENT)
+            call calcLorentzForceXYIntlConsistent(dcurrentDrive,&
+                deffectiveRadius, rproblemLevel%rtriangulation%ndim,&
+                neq, nvar, bclear, p_DdofCoords, p_Kld, p_Kcol, p_DmassMatrix,&
+                p_DdataTransport, p_DdataHydro, p_DdataForce)
+            
+          case default
+            call output_line('Unsupported Lorentz force type!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'zpinch_calcLorentzforceTerm')
+            call sys_halt()
+          end select
+          
+        case(COORDS_AXIALSYMMETRY)
+          ! Lorentz force term in axi-symmetric coordinate system
+          
+          select case(ilorentzforcetype)
+          case (MASS_LUMPED)
+            call calcLorentzForceRZIntlLumped(dcurrentDrive,&
+                deffectiveRadius, rproblemLevel%rtriangulation%ndim,&
+                neq, nvar, bclear, p_DdofCoords, p_DmassMatrix,&
+                p_DdataTransport, p_DdataHydro, p_DdataForce)
+            
+          case (MASS_CONSISTENT)
+            call calcLorentzForceRZIntlConsistent(dcurrentDrive,&
+                deffectiveRadius, rproblemLevel%rtriangulation%ndim,&
+                neq, nvar, bclear, p_DdofCoords, p_Kld, p_Kcol, p_DmassMatrix,&
+                p_DdataTransport, p_DdataHydro, p_DdataForce)
+            
+          case default
+            call output_line('Unsupported Lorentz force type!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'zpinch_calcLorentzforceTerm')
+            call sys_halt()
+          end select
           
         case default
-          call output_line('Unsupported Lorentz force type!',&
+          call output_line('Invalid type of coordinate system!',&
               OU_CLASS_ERROR,OU_MODE_STD,'zpinch_calcLorentzforceTerm')
           call sys_halt()
         end select
         
         
-      case(COORDS_AXIALSYMMETRY)
-        ! Lorentz force term in axi-symmetric coordinate system
-        
-        select case(ilorentzforcetype)
-        case (MASS_LUMPED)
-          call calcLorentzForceRZIntlLumped(dcurrentDrive, deffectiveRadius,&
-              neq, nvar, bclear, p_DvertexCoords, p_DmassMatrix,&
-              p_DdataTransport, p_DdataHydro, p_DdataForce)
+      case (SYSTEM_BLOCKFORMAT)
+        ! What type of coordinate system are we?
+        select case(icoordsystem)
           
-        case (MASS_CONSISTENT)
-          call calcLorentzForceRZIntlConsistent(dcurrentDrive, deffectiveRadius,&
-              neq, nvar, bclear, p_DvertexCoords, p_Kld, p_Kcol, p_DmassMatrix,&
-              p_DdataTransport, p_DdataHydro, p_DdataForce)
+        case(COORDS_CARTESIAN)
+          ! Lorentz force term in Cartesian coordinate system
+          
+          select case(ilorentzforcetype)
+          case (MASS_LUMPED)
+            call calcLorentzForceXYBlockLumped(dcurrentDrive,&
+                deffectiveRadius, rproblemLevel%rtriangulation%ndim,&
+                neq, nvar, bclear, p_DdofCoords, p_DmassMatrix,&
+                p_DdataTransport, p_DdataHydro, p_DdataForce)
+            
+          case (MASS_CONSISTENT)
+            call calcLorentzForceXYBlockConsistent(dcurrentDrive,&
+                deffectiveRadius, rproblemLevel%rtriangulation%ndim,&
+                neq, nvar, bclear, p_DdofCoords, p_Kld, p_Kcol, p_DmassMatrix,&
+                p_DdataTransport, p_DdataHydro, p_DdataForce)
+            
+          case default
+            call output_line('Unsupported Lorentz force type!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'zpinch_calcLorentzforceTerm')
+            call sys_halt()
+          end select
+          
+        case(COORDS_AXIALSYMMETRY)
+          ! Lorentz force term in axi-symmetric coordinate system
+          
+          select case(ilorentzforcetype)
+          case (MASS_LUMPED)
+            call calcLorentzForceRZBlockLumped(dcurrentDrive,&
+                deffectiveRadius, rproblemLevel%rtriangulation%ndim,&
+                neq, nvar, bclear, p_DdofCoords, p_DmassMatrix,&
+                p_DdataTransport, p_DdataHydro, p_DdataForce)
+            
+          case (MASS_CONSISTENT)
+            call calcLorentzForceRZBlockConsistent(dcurrentDrive,&
+                deffectiveRadius, rproblemLevel%rtriangulation%ndim,&
+                neq, nvar, bclear, p_DdofCoords, p_Kld, p_Kcol, p_DmassMatrix,&
+                p_DdataTransport, p_DdataHydro, p_DdataForce)
+            
+          case default
+            call output_line('Unsupported Lorentz force type!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'zpinch_calcLorentzforceTerm')
+            call sys_halt()
+          end select
           
         case default
-          call output_line('Unsupported Lorentz force type!',&
+          call output_line('Invalid type of coordinate system!',&
               OU_CLASS_ERROR,OU_MODE_STD,'zpinch_calcLorentzforceTerm')
           call sys_halt()
         end select
         
       case default
-        call output_line('Invalid type of coordinate system!',&
+        call output_line('Invalid system format!',&
             OU_CLASS_ERROR,OU_MODE_STD,'zpinch_calcLorentzforceTerm')
         call sys_halt()
       end select
       
-      
-    case (SYSTEM_BLOCKFORMAT)
-      ! What type of coordinate system are we?
-      select case(icoordsystem)
-        
-      case(COORDS_CARTESIAN)
-        ! Lorentz force term in Cartesian coordinate system
-        
-        select case(ilorentzforcetype)
-        case (MASS_LUMPED)
-          call calcLorentzForceXYBlockLumped(dcurrentDrive, deffectiveRadius,&
-              neq, nvar, bclear, p_DvertexCoords, p_DmassMatrix,&
-              p_DdataTransport, p_DdataHydro, p_DdataForce)
-          
-        case (MASS_CONSISTENT)
-          call calcLorentzForceXYBlockConsistent(dcurrentDrive, deffectiveRadius,&
-              neq, nvar, bclear, p_DvertexCoords, p_Kld, p_Kcol, p_DmassMatrix,&
-              p_DdataTransport, p_DdataHydro, p_DdataForce)
-          
-        case default
-          call output_line('Unsupported Lorentz force type!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'zpinch_calcLorentzforceTerm')
-          call sys_halt()
-        end select
-        
-      case(COORDS_AXIALSYMMETRY)
-        ! Lorentz force term in axi-symmetric coordinate system
-        
-        select case(ilorentzforcetype)
-        case (MASS_LUMPED)
-          call calcLorentzForceRZBlockLumped(dcurrentDrive, deffectiveRadius,&
-              neq, nvar, bclear, p_DvertexCoords, p_DmassMatrix,&
-              p_DdataTransport, p_DdataHydro, p_DdataForce)
-          
-        case (MASS_CONSISTENT)
-          call calcLorentzForceRZBlockConsistent(dcurrentDrive, deffectiveRadius,&
-              neq, nvar, bclear, p_DvertexCoords, p_Kld, p_Kcol, p_DmassMatrix,&
-              p_DdataTransport, p_DdataHydro, p_DdataForce)
-          
-        case default
-          call output_line('Unsupported Lorentz force type!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'zpinch_calcLorentzforceTerm')
-          call sys_halt()
-        end select
-        
-      case default
-        call output_line('Invalid type of coordinate system!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'zpinch_calcLorentzforceTerm')
-        call sys_halt()
-      end select
-      
-    case default
-      call output_line('Invalid system format!',&
+    else
+      call output_line('Coordinates of DOFs not available!',&
           OU_CLASS_ERROR,OU_MODE_STD,'zpinch_calcLorentzforceTerm')
       call sys_halt()
-    end select
-    
+    end if
     
   contains
 
@@ -947,14 +963,14 @@ contains
     ! The system is stored in interleave format.
 
     subroutine calcLorentzForceXYIntlLumped(dcurrentDrive,&
-        deffectiveRadius, neq, nvar, bclear, DvertexCoords,&
+        deffectiveRadius, ndim, neq, nvar, bclear, Dcoords,&
         DmassMatrix, DdataTransport, DdataHydro, DdataForce)
 
-      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      real(DP), dimension(:), intent(in) :: Dcoords
       real(DP), dimension(nvar,neq), intent(in) :: DdataHydro
       real(DP), dimension(:), intent(in) :: DmassMatrix, DdataTransport
       real(DP), intent(in) :: dcurrentDrive, deffectiveRadius
-      integer, intent(in) :: neq, nvar
+      integer, intent(in) :: ndim, neq, nvar
       logical, intent(in) :: bclear
 
       real(DP), dimension(nvar,neq), intent(out) :: DdataForce
@@ -970,9 +986,9 @@ contains
         !$omp if (neq > ZPINCH_LORENTZFORCE_NEQMIN_OMP)
         do ieq = 1, neq
           
-          ! Get coordinates at node i
-          x1 = DvertexCoords(1,ieq)
-          x2 = DvertexCoords(2,ieq)
+          ! Get coordinates at node ieq
+          x1 = Dcoords(ndim*(ieq-1)+1)
+          x2 = Dcoords(ndim*(ieq-1)+2)
           
           ! Compute unit vector starting at the origin
           drad = sqrt(x1*x1 + x2*x2)
@@ -1005,9 +1021,9 @@ contains
         !$omp if (neq > ZPINCH_LORENTZFORCE_NEQMIN_OMP)
         do ieq = 1, neq
           
-          ! Get coordinates at node i
-          x1 = DvertexCoords(1,ieq)
-          x2 = DvertexCoords(2,ieq)
+          ! Get coordinates at node ieq
+          x1 = Dcoords(ndim*(ieq-1)+1)
+          x2 = Dcoords(ndim*(ieq-1)+2)
           
           ! Compute unit vector starting at the origin
           drad = sqrt(x1*x1 + x2*x2)
@@ -1042,15 +1058,15 @@ contains
     ! The system is stored in interleave format.
 
     subroutine calcLorentzForceXYIntlConsistent(dcurrentDrive,&
-        deffectiveRadius, neq, nvar, bclear, DvertexCoords,&
-        Kld, Kcol, DmassMatrix, DdataTransport, DdataHydro, DdataForce)
+        deffectiveRadius, ndim, neq, nvar, bclear, Dcoords, Kld, Kcol,&
+        DmassMatrix, DdataTransport, DdataHydro, DdataForce)
 
-      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      real(DP), dimension(:), intent(in) :: Dcoords
       real(DP), dimension(nvar,neq), intent(in) :: DdataHydro
       real(DP), dimension(:), intent(in) :: DmassMatrix, DdataTransport
       integer, dimension(:), intent(in) :: Kld, Kcol
       real(DP), intent(in) :: dcurrentDrive, deffectiveRadius
-      integer, intent(in) :: neq, nvar
+      integer, intent(in) :: ndim, neq, nvar
       logical, intent(in) :: bclear
 
       real(DP), dimension(nvar,neq), intent(out) :: DdataForce
@@ -1077,8 +1093,8 @@ contains
             jeq = Kcol(ia)
             
             ! Get coordinates at node jeq
-            x1 = DvertexCoords(1,jeq)
-            x2 = DvertexCoords(2,jeq)
+            x1 = Dcoords(ndim*(jeq-1)+1)
+            x2 = Dcoords(ndim*(jeq-1)+2)
             
             ! Compute unit vector starting at the origin
             drad = sqrt(x1*x1 + x2*x2)
@@ -1123,9 +1139,9 @@ contains
             ! Get nodal degree of freedom
             jeq = Kcol(ia)
           
-            ! Get coordinates at node i
-            x1 = DvertexCoords(1,jeq)
-            x2 = DvertexCoords(2,jeq)
+            ! Get coordinates at node jeq
+            x1 = Dcoords(ndim*(jeq-1)+1)
+            x2 = Dcoords(ndim*(jeq-1)+2)
             
             ! Compute unit vector starting at the origin
             drad = sqrt(x1*x1 + x2*x2)
@@ -1165,14 +1181,14 @@ contains
     ! The system is stored in interleave format.
 
     subroutine calcLorentzForceRZIntlLumped(dcurrentDrive,&
-        deffectiveRadius, neq, nvar, bclear, DvertexCoords, DmassMatrix,&
+        deffectiveRadius, ndim, neq, nvar, bclear, Dcoords, DmassMatrix,&
         DdataTransport, DdataHydro, DdataForce)
 
-      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      real(DP), dimension(:), intent(in) :: Dcoords
       real(DP), dimension(nvar,neq), intent(in) :: DdataHydro
       real(DP), dimension(:), intent(in) :: DmassMatrix, DdataTransport
       real(DP), intent(in) :: dcurrentDrive, deffectiveRadius
-      integer, intent(in) :: neq, nvar
+      integer, intent(in) :: ndim, neq, nvar
       logical, intent(in) :: bclear
       
       real(DP), dimension(nvar,neq), intent(out) :: DdataForce
@@ -1188,8 +1204,9 @@ contains
         !$omp if (neq > ZPINCH_LORENTZFORCE_NEQMIN_OMP)
         do ieq = 1, neq
           
-          ! Get x-coordinate at node i
-          x1 = DvertexCoords(1,ieq); drad = abs(x1)
+          ! Get x-coordinate at node ieq
+          x1 = Dcoords(ndim*(ieq-1)+1)
+          drad = abs(x1)
           
           ! Compute unit vector starting at the origin
           if (drad .gt. SYS_EPSREAL_DP) then
@@ -1218,8 +1235,9 @@ contains
         !$omp if (neq > ZPINCH_LORENTZFORCE_NEQMIN_OMP)
         do ieq = 1, neq
           
-          ! Get x-coordinate at node i
-          x1 = DvertexCoords(1,ieq); drad = abs(x1)
+          ! Get x-coordinate at node ieq
+          x1 = Dcoords(ndim*(ieq-1)+1)
+          drad = abs(x1)
           
           ! Compute unit vector starting at the origin
           if (drad .gt. SYS_EPSREAL_DP) then
@@ -1250,15 +1268,15 @@ contains
     ! The system is stored in interleave format.
 
     subroutine calcLorentzForceRZIntlConsistent(dcurrentDrive,&
-        deffectiveRadius, neq, nvar, bclear, DvertexCoords, Kld,&
-        Kcol, DmassMatrix, DdataTransport, DdataHydro, DdataForce)
+        deffectiveRadius, ndim, neq, nvar, bclear, Dcoords, Kld, Kcol,&
+        DmassMatrix, DdataTransport, DdataHydro, DdataForce)
 
-      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      real(DP), dimension(:), intent(in) :: Dcoords
       real(DP), dimension(nvar,neq), intent(in) :: DdataHydro
       real(DP), dimension(:), intent(in) :: DmassMatrix, DdataTransport
       integer, dimension(:), pointer :: Kld, Kcol
       real(DP), intent(in) :: dcurrentDrive, deffectiveRadius
-      integer, intent(in) :: neq, nvar
+      integer, intent(in) :: ndim, neq, nvar
       logical, intent(in) :: bclear
       
       real(DP), dimension(nvar,neq), intent(out) :: DdataForce
@@ -1284,8 +1302,9 @@ contains
             ! Get nodal degree of freedom
             jeq = Kcol(ia)
 
-            ! Get x-coordinate at node i
-            x1 = DvertexCoords(1,jeq); drad = abs(x1)
+            ! Get x-coordinate at node ejeq
+            x1 = Dcoords(ndim*(jeq-1)+1)
+            drad = abs(x1)
             
             ! Compute unit vector starting at the origin
             if (drad .gt. SYS_EPSREAL_DP) then
@@ -1325,8 +1344,9 @@ contains
             ! Get nodal degree of freedom
             jeq = Kcol(ia)
             
-            ! Get x-coordinate at node i
-            x1 = DvertexCoords(1,jeq); drad = abs(x1)
+            ! Get x-coordinate at node jeq
+            x1 = Dcoords(ndim*(jeq-1)+1)
+            drad = abs(x1)
             
             ! Compute unit vector starting at the origin
             if (drad .gt. SYS_EPSREAL_DP) then
@@ -1361,14 +1381,14 @@ contains
     ! The system is stored in block format.
 
     subroutine calcLorentzForceXYBlockLumped(dcurrentDrive,&
-        deffectiveRadius, neq, nvar, bclear, DvertexCoords,&
+        deffectiveRadius, ndim, neq, nvar, bclear, Dcoords,&
         DmassMatrix, DdataTransport, DdataHydro, DdataForce)
 
-      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      real(DP), dimension(:), intent(in) :: Dcoords
       real(DP), dimension(neq,nvar), intent(in) :: DdataHydro
       real(DP), dimension(:), intent(in) :: DmassMatrix, DdataTransport
       real(DP), intent(in) :: dcurrentDrive, deffectiveRadius
-      integer, intent(in) :: neq, nvar
+      integer, intent(in) :: ndim, neq, nvar
       logical, intent(in) :: bclear
 
       real(DP), dimension(neq,nvar), intent(out) :: DdataForce
@@ -1384,9 +1404,9 @@ contains
         !$omp if (neq > ZPINCH_LORENTZFORCE_NEQMIN_OMP)
         do ieq = 1, neq
           
-          ! Get coordinates at node i
-          x1 = DvertexCoords(1,ieq)
-          x2 = DvertexCoords(2,ieq)
+          ! Get coordinates at node ieq
+          x1 = Dcoords(ndim*(ieq-1)+1)
+          x2 = Dcoords(ndim*(ieq-1)+2)
           
           ! Compute unit vector starting at the origin
           drad = sqrt(x1*x1 + x2*x2)
@@ -1419,9 +1439,9 @@ contains
         !$omp if (neq > ZPINCH_LORENTZFORCE_NEQMIN_OMP)
         do ieq = 1, neq
           
-          ! Get coordinates at node i
-          x1 = DvertexCoords(1,ieq)
-          x2 = DvertexCoords(2,ieq)
+          ! Get coordinates at node ieq
+          x1 = Dcoords(ndim*(ieq-1)+1)
+          x2 = Dcoords(ndim*(ieq-1)+2)
           
           ! Compute unit vector starting at the origin
           drad = sqrt(x1*x1 + x2*x2)
@@ -1457,15 +1477,15 @@ contains
     ! The system is stored in block format.
 
     subroutine calcLorentzForceXYBlockConsistent(dcurrentDrive,&
-        deffectiveRadius, neq, nvar, bclear, DvertexCoords, Kld,&
-        Kcol, DmassMatrix, DdataTransport, DdataHydro, DdataForce)
+        deffectiveRadius, ndim, neq, nvar, bclear, Dcoords, Kld, Kcol,&
+        DmassMatrix, DdataTransport, DdataHydro, DdataForce)
 
-      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      real(DP), dimension(:), intent(in) :: Dcoords
       real(DP), dimension(neq,nvar), intent(in) :: DdataHydro
       real(DP), dimension(:), intent(in) :: DmassMatrix, DdataTransport
       integer, dimension(:), intent(in) :: Kld, Kcol
       real(DP), intent(in) :: dcurrentDrive, deffectiveRadius
-      integer, intent(in) :: neq, nvar
+      integer, intent(in) :: ndim, neq, nvar
       logical, intent(in) :: bclear
 
       real(DP), dimension(neq,nvar), intent(out) :: DdataForce
@@ -1492,8 +1512,8 @@ contains
             jeq = Kcol(ia)
 
             ! Get coordinates at node jeq
-            x1 = DvertexCoords(1,jeq)
-            x2 = DvertexCoords(2,jeq)
+            x1 = Dcoords(ndim*(jeq-1)+1)
+            x2 = Dcoords(ndim*(jeq-1)+2)
             
             ! Compute unit vector starting at the origin
             drad = sqrt(x1*x1 + x2*x2)
@@ -1539,8 +1559,8 @@ contains
             jeq = Kcol(ia)
           
             ! Get coordinates at node jeq
-            x1 = DvertexCoords(1,jeq)
-            x2 = DvertexCoords(2,jeq)
+            x1 = Dcoords(ndim*(jeq-1)+1)
+            x2 = Dcoords(ndim*(jeq-1)+2)
             
             ! Compute unit vector starting at the origin
             drad = sqrt(x1*x1 + x2*x2)
@@ -1580,14 +1600,14 @@ contains
     ! The system is stored in block format.
 
     subroutine calcLorentzForceRZBlockLumped(dcurrentDrive,&
-        deffectiveRadius, neq, nvar, bclear, DvertexCoords, DmassMatrix,&
+        deffectiveRadius, ndim, neq, nvar, bclear, Dcoords, DmassMatrix,&
         DdataTransport, DdataHydro, DdataForce)
 
-      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      real(DP), dimension(:), intent(in) :: Dcoords
       real(DP), dimension(neq,nvar), intent(in) :: DdataHydro
       real(DP), dimension(:), intent(in) :: DmassMatrix, DdataTransport
       real(DP), intent(in) :: dcurrentDrive, deffectiveRadius
-      integer, intent(in) :: neq, nvar
+      integer, intent(in) :: ndim, neq, nvar
       logical, intent(in) :: bclear
       
       real(DP), dimension(neq,nvar), intent(out) :: DdataForce
@@ -1603,8 +1623,9 @@ contains
         !$omp if (neq > ZPINCH_LORENTZFORCE_NEQMIN_OMP)
         do ieq = 1, neq
           
-          ! Get x-coordinate at node i
-          x1 = DvertexCoords(1,ieq); drad = abs(x1)
+          ! Get x-coordinate at node ieq
+          x1 = Dcoords(ndim*(ieq-1)+1)
+          drad = abs(x1)
           
           ! Compute unit vector starting at the origin
           if (drad .gt. SYS_EPSREAL_DP) then
@@ -1633,8 +1654,9 @@ contains
         !$omp if (neq > ZPINCH_LORENTZFORCE_NEQMIN_OMP)
         do ieq = 1, neq
           
-          ! Get x-coordinate at node i
-          x1 = DvertexCoords(1,ieq); drad = abs(x1)
+          ! Get x-coordinate at node ieq
+          x1 = Dcoords(ndim*(ieq-1)+1)
+          drad = abs(x1)
           
           ! Compute unit vector starting at the origin
           if (drad .gt. SYS_EPSREAL_DP) then
@@ -1665,15 +1687,15 @@ contains
     ! The system is stored in block format.
 
     subroutine calcLorentzForceRZBlockConsistent(dcurrentDrive,&
-        deffectiveRadius, neq, nvar, bclear, DvertexCoords, Kld,&
-        Kcol, DmassMatrix, DdataTransport, DdataHydro, DdataForce)
+        deffectiveRadius, ndim, neq, nvar, bclear, Dcoords, Kld, Kcol,&
+        DmassMatrix, DdataTransport, DdataHydro, DdataForce)
 
-      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      real(DP), dimension(:), intent(in) :: Dcoords
       real(DP), dimension(neq,nvar), intent(in) :: DdataHydro
       real(DP), dimension(:), intent(in) :: DmassMatrix, DdataTransport
       integer, dimension(:), intent(in) :: Kld, Kcol
       real(DP), intent(in) :: dcurrentDrive, deffectiveRadius
-      integer, intent(in) :: neq, nvar
+      integer, intent(in) :: ndim, neq, nvar
       logical, intent(in) :: bclear
       
       real(DP), dimension(neq,nvar), intent(out) :: DdataForce
@@ -1700,7 +1722,8 @@ contains
             jeq = Kcol(ia)
             
             ! Get x-coordinate at node jeq
-            x1 = DvertexCoords(1,jeq); drad = abs(x1)
+            x1 = Dcoords(ndim*(jeq-1)+1)
+            drad = abs(x1)
             
             ! Compute unit vector starting at the origin
             if (drad .gt. SYS_EPSREAL_DP) then
@@ -1741,7 +1764,8 @@ contains
             jeq = Kcol(ia)
 
             ! Get x-coordinate at node jeq
-            x1 = DvertexCoords(1,jeq); drad = abs(x1)
+            x1 = Dcoords(ndim*(jeq-1)+1)
+            drad = abs(x1)
             
             ! Compute unit vector starting at the origin
             if (drad .gt. SYS_EPSREAL_DP) then
