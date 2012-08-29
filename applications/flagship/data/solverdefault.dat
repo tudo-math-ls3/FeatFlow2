@@ -505,6 +505,12 @@ dDecreaseFactor = 0.5
 # if the current time step failed; must be < 1.0
 dstepReductionFactor = 0.9
 
+# Tolerance of relative changes
+depsRel = 0.0
+
+# Maximum tolerance for relative changes
+dmaxRel = 0.0
+
 #-------------------------------------------------------------------------------
 
 # PID controller: proportional exponent

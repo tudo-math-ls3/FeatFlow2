@@ -14,7 +14,9 @@ deffunc: @diffusion = 1 ; x,y,t
 deffunc: @rhs = 5*_pi^2*SIN(_pi*x)*SIN(2*_pi*y) ; x,y,t
 
 # Specify the exact solution
-deffunc: @exactsol = SIN(_pi*x)*sin(2*_pi*y) ; x,y,t
+deffunc: @exactsol_func   = SIN(_pi*x)*SIN(2*_pi*y) ; x,y,t
+deffunc: @exactsol_derivx = COS(_pi*x)*SIN(2*_pi*y)*_pi ; x,y,t
+deffunc: @exactsol_derivy = SIN(_pi*x)*COS(2*_pi*y)*2*_pi ; x,y,t
 
 # Specify the boundary conditions for the primal problem
 [bdrcond_primal]

@@ -12,30 +12,35 @@ deffunc: @initsol2 = if(ABS(x-0.5*y-0.2)<=0.15, 1-ABS(x-0.2-0.5*y)/0.15, 0) ; x,
 deffunc: @initsol3 = if(ABS(x-0.5*y-0.2)<=0.15, SQRT(1-((x-0.5*y-0.2)/0.15)^2), 0) ; x,y,t
 
 # Specify the exact solution
-deffunc: @exactsol1 = if(ABS(x-0.5*y-0.2)<=0.15, 1, 0) ; x,y,t
-deffunc: @exactsol2 = if(ABS(x-0.5*y-0.2)<=0.15, 1-ABS(x-0.2-0.5*y)/0.15, 0) ; x,y,t
-deffunc: @exactsol3 = if(ABS(x-0.5*y-0.2)<=0.15, SQRT(1-((x-0.5*y-0.2)/0.15)^2), 0) ; x,y,t
+deffunc: @exactsol1_func = if(ABS(x-0.5*y-0.2)<=0.15, 1, 0) ; x,y,t
+deffunc: @exactsol2_func = if(ABS(x-0.5*y-0.2)<=0.15, 1-ABS(x-0.2-0.5*y)/0.15, 0) ; x,y,t
+deffunc: @exactsol3_func = if(ABS(x-0.5*y-0.2)<=0.15, SQRT(1-((x-0.5*y-0.2)/0.15)^2), 0) ; x,y,t
+
+# Specify the derivative of the exact solution
+deffunc: @exactsol_derivx = 0 ; x,y,t
+deffunc: @exactsol_derivy = 0 ; x,y,t
 
 # Specify the  velocity field
 deffunc: @velocity_x = 0.5 ; x,y,t
 deffunc: @velocity_y = 1.0 ; x,y,t
 
 # Specify the boundary conditions for the primal problem no.1
-[bdrcond_primal1]
+[bdrcond1_primal]
 NBCT
 1
 NEXPR
-1
+3
 IBCT
 1
 NCOMP
-2
+1
 PARAMETERS
+1.0  T  'FLUX_WEAK'  '0.0'
 2.0  T  'FLUX_WEAK'  'if(ABS(x-0.2) <= 0.15, 1.0, 0.0)' ; x,y,t
 4.0  T  'FLUX_WEAK'  '0.0'
 
 # Specify the boundary conditions for the primal problem no.2
-[bdrcond_primal2]
+[bdrcond2_primal]
 NBCT
 1
 NEXPR
@@ -43,13 +48,14 @@ NEXPR
 IBCT
 1
 NCOMP
-2
+3
 PARAMETERS
+1.0  T  'FLUX_WEAK'  '0.0'
 2.0  T  'FLUX_WEAK'  'if(ABS(x-0.2) <= 0.15, SQRT(1-((x-0.2)/0.15)^2), 0.0)' ; x,y,t
 4.0  T  'FLUX_WEAK'  '0.0'
 
 # Specify the boundary conditions for the primal problem no.3
-[bdrcond_primal3]
+[bdrcond3_primal]
 NBCT
 1
 NEXPR
@@ -57,7 +63,8 @@ NEXPR
 IBCT
 1
 NCOMP
-2
+3
 PARAMETERS
+1.0  T  'FLUX_WEAK'  '0.0'
 2.0  T  'FLUX_WEAK'  'if(ABS(x-0.2) <= 0.15, 1-ABS(x-0.2)/0.15, 0.0)' ; x,y,t
 4.0  T  'FLUX_WEAK'  '0.0'

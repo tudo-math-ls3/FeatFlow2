@@ -16,6 +16,8 @@
 
 # Definition of user-defined constants
 defconst: ang = 10
+defconst: CbI = 4.0
+defconst: gamma = 1.0
 
 # Specify the initial solution
 deffunc: @initsol = if(y>=0.5,1-x,0) ; x,y,t
@@ -38,7 +40,7 @@ IBCT
 NCOMP
 4
 PARAMETERS
-0.5  T  'DIRICHLET_WEAK'  '1.0'  '0.0'  '1.0'
-2.0  T  'DIRICHLET_WEAK'  '0.0'  '0.0'  '1.0'
-3.0  T  'DIRICHLET_WEAK'  '0.0'  '1e4'  '1.0'
+0.5  T  'DIRICHLET_WEAK'  '1.0'  '_CbI'  '_gamma'
+2.0  T  'DIRICHLET_WEAK'  '0.0'  '_CbI'  '_gamma'
+3.0  T  'DIRICHLET_WEAK'  '0.0'  '_CbI'  '_gamma'
 4.0  F  'HOMNEUMANN_WEAK'

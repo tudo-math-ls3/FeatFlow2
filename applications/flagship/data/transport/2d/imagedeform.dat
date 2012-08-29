@@ -122,6 +122,7 @@ sexactsolutionname =
 # 1 = volume integral
 # 2 = surface integral
 # 3 = mixed volume/surface integral
+# 4 = analytical target functional
 itargetfunctype = 0
 
 # section name of target functional
@@ -306,18 +307,54 @@ multisteps = 0
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.001 #1.5
+dfinalTime = 1.5
 
 # initial time step size
-dinitialStep = 0.001
+dinitialStep = 1e-3
 
+# Lower bound for the admissible time step
+dminStep = 1e-5
+
+# Upper bound for the admissible time step
+dmaxStep = 1e-1
+
+#-------------------------------------------------------------------------------
+
+# Algorithm for adaptive time step control
+iadaptTimestep = 1
+
+# Initial time for performing adaptive time stepping
+dadaptTime = 0.0
+
+# Relative stopping criterion. Stop time-stepping algorithm if
+#   || U^{N+1} - U^{N} || <= EPSSTAG * dStep
+# =0: ignore, do not stop time-stepping until final time is reached
+depsSteady = 0.0
+
+# Factor by which the time step is allowed to increase
+dIncreaseFactor = 2.0
+
+# Factor by which the time step is allowed to decrease
+dDecreaseFactor = 0.5
+
+# Factor by which the current time step should be scaled
+# if the current time step failed; must be < 1.0
+dstepReductionFactor = 0.9
+
+# Tolerance of relative changes
+depsRel = 1e-2
+
+# Maximum tolerance for relative changes
+dmaxRel = 1e-1
+
+ioutputlevel=5
 
 ################################################################################
 [FullMultigridSolver]
 ################################################################################
 
 # multigrid level number
-nlev = 4
+nlev = 7
 
 
 ################################################################################
@@ -388,53 +425,7 @@ isolver = 50
 [Adaptivity]
 ################################################################################
 
-# number of pre-adaptation steps
-npreadapt = 4
-
-# maximum number of refinement levels
-nsubdividemax = 4
-
-# adaptation strategy
-# 1 = red-green
-iadaptationStrategy = 1
-
-# refinement tolerance
-drefinementTolerance = 0.05
-
-# coarsening tolerance
-dcoarseningTolerance = 0.02
-
 
 ################################################################################
 [ErrorEstimator]
 ################################################################################
-
-# type of error estimator
-# 1 = L2-projection
-# 2 = node-based SPR
-# 3 = element-based SPR
-# 4 = face-based SPR
-# 5 = limited gradient averaging
-# 6 = second-difference indicator
-ierrorestimator = 5
-
-# type or grid indicator
-# 0 = as is
-# 1 = equidistribution
-# 2 = logarithmic equidistribution
-# 3 = fixed-rate strategy
-# 4 = RMS automatic treshold
-# 5 = balancing strategy
-igridindicator = 1
-
-# noise filter
-dnoisefilter = 1e-3
-
-# absolute filter
-dabsfilter = 1e-4
-
-# number of protection layers
-nprotectLayers = 0
-
-# tolerance for protection layers
-dprotectLayerTolerance = 0.0

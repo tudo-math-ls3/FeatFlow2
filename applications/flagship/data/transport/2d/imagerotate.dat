@@ -122,6 +122,7 @@ sexactsolutionname =
 # 1 = volume integral
 # 2 = surface integral
 # 3 = mixed volume/surface integral
+# 4 = analytical target functional
 itargetfunctype = 0
 
 # section name of target functional
@@ -306,7 +307,7 @@ multisteps = 0
 dinitialTime = 0.0
 
 # final time for the simulation
-dfinalTime = 0.5 #6.2831853
+dfinalTime = 6.2831853
 
 # initial time step size
 dinitialStep = 0.001

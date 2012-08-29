@@ -12,15 +12,20 @@ defconst: width = 0.2
 
 # Definition of user-defined expressions
 defexpr:  sqr1 = SQRT(x^2+y^2)
-#defexpr:  sqr1 = ABS(x)
-defexpr:  r    = max(@sqr1, 1e-4)
+defexpr:  sqr2 = ABS(x)
+defexpr:  r1   = max(@sqr1, 1e-4)
+defexpr:  r2   = max(@sqr2, 1e-4)
 
 # Specify the initial solution
-deffunc: @initsol = if(@sqr1 < 1.0-_width | @sqr1 > 1.0+_width, 0, 1) ; x,y,t
+deffunc: @initsol1 = if(@sqr1 < 1.0-_width | @sqr1 > 1.0+_width, 0, 1) ; x,y,t
+deffunc: @initsol2 = if(@sqr2 < 1.0-_width | @sqr2 > 1.0+_width, 0, 1) ; x,y,t
 
 # Specify the velocity field
-deffunc: @velocity_x = -4*(t^3)*x/@r ; x,y,t
-deffunc: @velocity_y = -4*(t^3)*y/@r ; x,y,t
+deffunc: @velocity1_x = -4*(t^3)*x/@r1 ; x,y,t
+deffunc: @velocity1_y = -4*(t^3)*y/@r1 ; x,y,t
+
+deffunc: @velocity2_x = -4*(t^3)*x/@r2 ; x,y,t
+deffunc: @velocity2_y = -4*(t^3)*y/@r2 ; x,y,t
 
 # Specify the flux boundary conditions for the primal problem
 [bdrcond_primal]
@@ -33,4 +38,4 @@ IBCT
 NCOMP
 1
 PARAMETERS
-1.0  T  'FLUX_WEAK'  0.0
+4.0  T  'FLUX_WEAK'  0.0
