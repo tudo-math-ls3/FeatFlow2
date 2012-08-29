@@ -265,8 +265,27 @@ contains
 
     ! local variables
     real(DP) :: derrorL1,derrorL2,derrorH1,derrorDispersion
-    integer :: systemMatrix, ndimension
+    integer :: systemMatrix, ndimension, version
 
+
+    ! Check if configuration file is valid
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'version', version, 0)
+    if (version .lt. TRANSP_VERSION) then
+      call output_lbrk()
+      call output_separator(OU_SEP_DOLLAR,OU_CLASS_ERROR,OU_MODE_STD)
+      call output_line('This configuration file is deprecated!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_app')
+      call output_line('Please wait for an updated version of Featflow2 or contact',&
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_app')
+      call output_line('matthias.moeller@math.tu-dortmund.de',&
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_app')
+      call output_line('if running this benchmark is urgent!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_app')
+      call output_separator(OU_SEP_DOLLAR,OU_CLASS_ERROR,OU_MODE_STD)
+      call output_lbrk()
+      call sys_halt()
+    end if
 
     ! Start total time measurement
     call stat_startTimer(rtimerTotal)
@@ -533,26 +552,11 @@ contains
             rsolutionPrimal, rsolutionDual, rtimestep%dTime)
 
       else
-        if (trim(adjustl(benchmark)) .eq. '') then
-          call output_lbrk()
-          call output_separator(OU_SEP_DOLLAR,OU_CLASS_ERROR,OU_MODE_STD)
-          call output_line('This configuration was marked as deprecated by its maintainer!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'transp_app')
-          call output_line('Please wait for an updated version of Featflow2 or contact!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'transp_app')
-          call output_line('matthias.moeller@math.tu-dortmund.de if running this benchmark!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'transp_app')
-          call output_line('is urgent!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'transp_app')
-          call output_separator(OU_SEP_DOLLAR,OU_CLASS_ERROR,OU_MODE_STD)
-          call output_lbrk()
-        else
-          call output_line(trim(algorithm)//' is not a valid solution algorithm!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'transp_app')
-        end if
+        call output_line(trim(algorithm)//' is not a valid solution algorithm!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'transp_app')
         call sys_halt()
       end if
-
+      
     else
 
       ! Just output the computational mesh and exit

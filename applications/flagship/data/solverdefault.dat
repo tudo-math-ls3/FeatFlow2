@@ -30,12 +30,13 @@
 csolverType = 5
 
 # level of output information:
+# (b)enchmark log file, (t)erminal, (l)og file
 # 0 = no output
 # 1 = errors
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 2
+ioutputlevel = 222
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -116,12 +117,13 @@ ddefZero = 1e-30
 csolverType = 3
 
 # level of output information:
+# (b)enchmark log file, (t)erminal, (l)og file
 # 0 = no output
 # 1 = errors
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 2
+ioutputlevel = 222
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -196,12 +198,13 @@ ddefZero = 1e-30
 csolverType = 1
 
 # level of output information:
+# (b)enchmark log file, (t)erminal, (l)og file
 # 0 = no output
 # 1 = errors
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 3
+ioutputlevel = 333
 
 # norm to use for defect checking
 # 0 = Euclidian norm
@@ -269,12 +272,13 @@ ddefZero = 1e-30
 csolverType = 4
 
 # level of output information:
+# (b)enchmark log file, (t)erminal, (l)og file
 # 0 = no output
 # 1 = errors
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 2
+ioutputlevel = 222
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -349,12 +353,13 @@ ddefZero = 1e-30
 csolverType = 2
 
 # level of output information:
+# (b)enchmark log file, (t)erminal, (l)og file
 # 0 = no output
 # 1 = errors
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 2
+ioutputlevel = 222
 
 # norm to use for defect checking
 # 0 = Euclidian norm
@@ -422,12 +427,13 @@ ddefZero = 1e-30
 csolverType = 2
 
 # level of output information:
+# (b)enchmark log file, (t)erminal, (l)og file
 # 0 = no output
 # 1 = errors
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 2
+ioutputlevel = 222
 
 ################################################################################
 [LinearPrecond]
@@ -444,24 +450,26 @@ ioutputlevel = 2
 csolverType = 2
 
 # level of output information:
+# (b)enchmark log file, (t)erminal, (l)og file
 # 0 = no output
 # 1 = errors
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 2
+ioutputlevel = 222
 
 ################################################################################
 [Timestepping]
 ################################################################################
 
 # level of output information:
+# (b)enchmark log file, (t)erminal, (l)og file
 # 0 = no output
 # 1 = errors
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 3
+ioutputlevel = 333
 
 # norm to use for solution variation checking
 # 0 = Euclidian norm

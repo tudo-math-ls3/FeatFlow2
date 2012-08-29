@@ -37,6 +37,9 @@ sperfconfigfile = %{sdatadirectory}/perfconfig/default.pcfg
 [Mhd]
 ################################################################################
 
+# Version identifier
+version = %{version}
+
 # Position of the discretisation in the array of discretisations
 Discretisation = 1
 

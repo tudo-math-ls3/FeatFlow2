@@ -104,6 +104,7 @@
 
 #define TRANSP_USE_IBP
 #define TRANSP_USE_GFEM_AT_BOUNDARY
+#define TRANSP_VERSION 120829
 
 #if 0
 !###############################################################################
@@ -116,6 +117,7 @@
 #define HYDRO_GAMMA 1.4
 #undef  HYDRO_USE_ENTROPYFIX
 #define HYDRO_HARTEN_ENTROPYFIX 0.0
+#define HYDRO_VERSION 120829
 
 #if 0
 !###############################################################################
@@ -130,5 +132,14 @@
 #define MHD_XMAGFIELD_CONST 0.75
 #undef  MHD_USE_ENTROPYFIX
 #define MHD_HARTEN_ENTROPYFIX
+#define MHD_VERSION 120829
+
+#if 0
+!###############################################################################
+! Z-pinch model
+!###############################################################################
+#endif
+
+#define ZPINCH_VERSION 120829
 
 #endif

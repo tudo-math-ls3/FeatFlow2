@@ -1,5 +1,7 @@
 # -*- mode: any-ini; -*-
 
+version = 120829
+
 ################################################################################
 #                     Input parameters for the FEM-AFC solver                  #
 #                                                                              #
@@ -347,7 +349,6 @@ depsRel = 1e-2
 # Maximum tolerance for relative changes
 dmaxRel = 1e-1
 
-ioutputlevel=5
 
 ################################################################################
 [FullMultigridSolver]
