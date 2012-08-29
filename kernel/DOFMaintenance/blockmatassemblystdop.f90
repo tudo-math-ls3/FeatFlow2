@@ -1651,8 +1651,8 @@ contains
     ! Get cubature weights data
     p_DcubWeight => rassemblyData%p_DcubWeight
 
-    if (revalVectors%ncount .eq. 0) then
-      call output_line ("FEM function missing.",&
+    if (revalVectors%ncount .ne. size(rvectorData)) then
+      call output_line ("FEM function missing or wrong length.",&
           OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_rhsFE")
       call sys_halt()
     end if
