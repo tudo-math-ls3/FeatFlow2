@@ -4917,15 +4917,23 @@ contains
     case (LSYSSC_DUP_EMPTY)
 
       ! Allocate new memory if ry is empty. Do not initialise.
-      ! If ry contains data, we do not have to do anything.
+      ! If ry contains data, we do not have to do anything
+      ! if its size is compatible to that of rx. Otherwise,
+      ! we need to reallocate it with correct size.
       if (ry%h_Ddata .eq. ST_NOHANDLE) then
         call newMemory (rx,ry)
+      else
+        call storage_getsize (ry%h_Ddata, isize)
+        if (isize .lt. rx%NEQ) then
+          call storage_realloc('lsysbl_duplicateVector', rx%NEQ,&
+              ry%h_Ddata, ST_NEWBLOCK_NOINIT, .false.)
+        end if
       end if
 
     case DEFAULT
 
       call output_line('cdupContent unknown!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_enforceStructureDiscr')
+          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_duplicateVector')
       call sys_halt()
 
     end select

@@ -4744,6 +4744,7 @@ contains
     integer :: ioffset,cdataType
     logical :: bisCopy
     integer :: h_Ddata
+    integer :: isize
 
     ! First the structure
 
@@ -4839,9 +4840,17 @@ contains
     case (LSYSSC_DUP_EMPTY)
 
       ! Allocate new memory if ry is empty. Do not initialise.
-      ! If ry contains data, we do not have to do anything.
+      ! If ry contains data, we do not have to do anything
+      ! if its size is compatible to that of rx. Otherwise,
+      ! we need to reallocate it with correct size.
       if (ry%h_Ddata .eq. ST_NOHANDLE) then
         call allocDestinationVector (rx,ry)
+      else
+        call storage_getsize (ry%h_Ddata, isize)
+        if (isize .lt. rx%NEQ) then
+          call storage_realloc('lsyssc_duplicateVector', rx%NEQ,&
+              ry%h_Ddata, ST_NEWBLOCK_NOINIT, .false.)
+        end if
       end if
 
     case default
