@@ -482,11 +482,12 @@ contains
         select case(isystemFormat)
         case (SYSTEM_INTERLEAVEFORMAT)
           call spdiscr_initBlockDiscr(p_rdiscretisation, 1,&
-              rproblemLevel%rtriangulation)
+              p_rtriangulation, rproblemLevel%p_rproblem%rboundary)
           
         case (SYSTEM_BLOCKFORMAT)
           call spdiscr_initBlockDiscr(p_rdiscretisation,&
-              mhd_getNVAR(rproblemLevel), p_rtriangulation)
+              mhd_getNVAR(rproblemLevel), p_rtriangulation,&
+              rproblemLevel%p_rproblem%rboundary)
 
         case default
           call output_line('Unsupported system format!',&
@@ -511,7 +512,7 @@ contains
       select case(p_rdiscretisation%ndimension)
       case (NDIM1D)
         call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1),&
-            Celement(1), p_rtriangulation)
+            Celement(1), p_rtriangulation, rproblemLevel%p_rproblem%rboundary)
 
       case (NDIM2D)
         if (size(Celement) .eq. 1) then
@@ -525,7 +526,7 @@ contains
 
       case (NDIM3D)
         call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1),&
-            Celement(1), p_rtriangulation)
+            Celement(1), p_rtriangulation, rproblemLevel%p_rproblem%rboundary)
       
       case default
         call output_line('Invalid number of spatial dimensions',&

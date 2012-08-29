@@ -454,7 +454,8 @@ contains
       ! Initialise the discretisation structure
       p_rdiscretisation => rproblemLevel%Rdiscretisation(discretisation)
       if (p_rdiscretisation%ndimension .eq. 0) then
-        call spdiscr_initBlockDiscr(p_rdiscretisation, 1, p_rtriangulation)
+        call spdiscr_initBlockDiscr(p_rdiscretisation, 1, p_rtriangulation,&
+            rproblemLevel%p_rproblem%rboundary)
       end if
 
       ! Allocate temporal memory
@@ -473,7 +474,7 @@ contains
       select case(p_rdiscretisation%ndimension)
       case (NDIM1D)
         call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1),&
-            Celement(1), p_rtriangulation)
+            Celement(1), p_rtriangulation, rproblemLevel%p_rproblem%rboundary)
 
       case (NDIM2D)
         if (size(Celement) .eq. 1) then
@@ -487,7 +488,7 @@ contains
 
       case (NDIM3D)
         call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1),&
-            Celement(1), p_rtriangulation)
+            Celement(1), p_rtriangulation, rproblemLevel%p_rproblem%rboundary)
       
       case default
         call output_line('Invalid number of spatial dimensions',&
