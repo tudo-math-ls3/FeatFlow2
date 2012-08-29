@@ -232,8 +232,38 @@ mglevels = 1
 # perform just a few time steps
 appflags = "-Dslogdirectory=\$LOGDIR -Dsbenchlogfile=\$LOGDIR/\$RESULTFILE -Dsdatadirectory=data/apps_flagship/orig/data -Dsgriddirectory=data/apps_flagship/orig/grids -DTimestepping.ioutputlevel=0 -DFullMultigridSolver.ioutputlevel=0 -DNonlinearMultigridSolver.ioutputlevel=0 -DNonlinearSolver.ioutputlevel=0 -DLinearMultigridSolver.ioutputlevel=0 -DLinearSolver.ioutputlevel=0 -DOutput.iformatUCD=0 -DTimestepping.dfinalTime=2.0"
 
+# Test 5
 
+testid   = FLAGSHIP_TRANSPORT_005_2D
+descr    = Rotation of an image of the linux penguine with dynamic h-adaptivity
+datfile  = data/apps_flagship/orig/data/transport/2d/imagerotate.dat
+mglevels = 1
 
+# Tricky, adjust directories, disable all terminal output;
+# perform just a few time steps
+appflags = "-Dslogdirectory=\$LOGDIR -Dsbenchlogfile=\$LOGDIR/\$RESULTFILE -Dsdatadirectory=data/apps_flagship/orig/data -Dsgriddirectory=data/apps_flagship/orig/grids -DTimestepping.ioutputlevel=0 -DFullMultigridSolver.ioutputlevel=0 -DNonlinearMultigridSolver.ioutputlevel=0 -DNonlinearSolver.ioutputlevel=0 -DLinearMultigridSolver.ioutputlevel=0 -DLinearSolver.ioutputlevel=0 -DOutput.iformatUCD=0 -DTimestepping.dfinalTime=0.5"
+
+# Test 6
+
+testid   = FLAGSHIP_TRANSPORT_006_2D
+descr    = Deformation of an image of the linux penguine with adaptive time-stepping
+datfile  = data/apps_flagship/orig/data/transport/2d/imagedeform.dat
+mglevels = 1
+
+# Tricky, adjust directories, disable all terminal output;
+# reduce multigrid level
+appflags = "-Dslogdirectory=\$LOGDIR -Dsbenchlogfile=\$LOGDIR/\$RESULTFILE -Dsdatadirectory=data/apps_flagship/orig/data -Dsgriddirectory=data/apps_flagship/orig/grids -DTimestepping.ioutputlevel=0 -DFullMultigridSolver.ioutputlevel=0 -DNonlinearMultigridSolver.ioutputlevel=0 -DNonlinearSolver.ioutputlevel=0 -DLinearMultigridSolver.ioutputlevel=0 -DLinearSolver.ioutputlevel=0 -DOutput.iformatUCD=0 -DFullMultigridSolver.nlev=5"
+
+# Test 7
+
+testid   = FLAGSHIP_TRANSPORT_007_2D
+descr    = Implosion of a ring in rz coordinate system with geometric source term
+datfile  = data/apps_flagship/orig/data/transport/2d/implosion.dat
+mglevels = 1
+
+# Tricky, adjust directories, disable all terminal output;
+# reduce multigrid level and perform just a few timesteps
+appflags = "-Dslogdirectory=\$LOGDIR -Dsbenchlogfile=\$LOGDIR/\$RESULTFILE -Dsdatadirectory=data/apps_flagship/orig/data -Dsgriddirectory=data/apps_flagship/orig/grids -DTimestepping.ioutputlevel=0 -DFullMultigridSolver.ioutputlevel=0 -DNonlinearMultigridSolver.ioutputlevel=0 -DNonlinearSolver.ioutputlevel=0 -DLinearMultigridSolver.ioutputlevel=0 -DLinearSolver.ioutputlevel=0 -DOutput.iformatUCD=0 -DFullMultigridSolver.nlev=2 -DTimestepping.dfinaltime=0.3"
 
 
 # Test 1
