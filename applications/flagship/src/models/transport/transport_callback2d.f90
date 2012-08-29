@@ -2383,7 +2383,7 @@ do iedge = 1, nedges
             
             ! Compute the coefficient for the first term of the linear
             ! form which accounts for the penalty parameter.
-            Dcoefficients(1,ipoint,iel) = dscale* dpenalty*ddiffusion*&
+            Dcoefficients(1,ipoint,iel) = dscale*dpenalty*ddiffusion*&
                 Dvalue(ipoint,iel)/rdomainIntSubset%p_DedgeLength(iel)
 
             ! Compute the coefficients for the second and third terms
