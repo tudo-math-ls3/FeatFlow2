@@ -331,12 +331,13 @@ contains
     ! Outer coupling loop
     outer: do iiterations = 1, rsolver%nmaxIterations
 
-      if (rsolver%ioutputLevel .ge. SV_IOLEVEL_INFO) then
-        call output_lbrk()
-        call output_separator(OU_SEP_TILDE)
-        call output_line('Outer coupling iteration step '//trim(sys_siL(iiterations,5)))
-        call output_separator(OU_SEP_TILDE)
-        call output_lbrk()
+      if (rsolver%coutputModeInfo .gt. 0) then
+        call output_lbrk(OU_CLASS_MSG,rsolver%coutputModeInfo)
+        call output_separator(OU_SEP_TILDE,OU_CLASS_MSG,rsolver%coutputModeInfo)
+        call output_line('Outer coupling iteration step '//trim(sys_siL(iiterations,5)),&
+                         OU_CLASS_MSG,rsolver%coutputModeInfo)
+        call output_separator(OU_SEP_TILDE,OU_CLASS_MSG,rsolver%coutputModeInfo)
+        call output_lbrk(OU_CLASS_MSG,rsolver%coutputModeInfo)
       end if
 
       ! Initialisation
@@ -346,12 +347,13 @@ contains
       inner: do icomponent = 1, ncomponent
 
         ! Verbose output
-        if (rsolver%ioutputLevel .ge. SV_IOLEVEL_VERBOSE) then
-          call output_lbrk()
-          call output_separator(OU_SEP_MINUS)
-          call output_line('Inner coupling sub-step '//trim(sys_siL(icomponent,5)))
-          call output_separator(OU_SEP_MINUS)
-          call output_lbrk()
+        if (rsolver%coutputModeVerbose .gt. 0) then
+          call output_lbrk(OU_CLASS_MSG,rsolver%coutputModeVerbose)
+          call output_separator(OU_SEP_MINUS,OU_CLASS_MSG,rsolver%coutputModeVerbose)
+          call output_line('Inner coupling sub-step '//trim(sys_siL(icomponent,5)),&
+                           OU_CLASS_MSG,rsolver%coutputModeVerbose)
+          call output_separator(OU_SEP_MINUS,OU_CLASS_MSG,rsolver%coutputModeVerbose)
+          call output_lbrk(OU_CLASS_MSG,rsolver%coutputModeVerbose)
         end if
 
         ! Set pointer to nonlinear solver
@@ -413,15 +415,18 @@ contains
       end select
 
       ! Verbose output
-      if (rsolver%ioutputLevel .ge. SV_IOLEVEL_VERBOSE) then
-        call output_lbrk()
-        call output_separator(OU_SEP_TILDE)
-        call output_line('Outer iteration step:    '//trim(sys_siL(iiterations,5)))
-        call output_line('Norm of residual:        '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
+      if (rsolver%coutputModeVerbose .gt. 0) then
+        call output_lbrk(OU_CLASS_MSG,rsolver%coutputModeVerbose)
+        call output_separator(OU_SEP_TILDE,OU_CLASS_MSG,rsolver%coutputModeVerbose)
+        call output_line('Outer iteration step:    '//trim(sys_siL(iiterations,5)),&
+                         OU_CLASS_MSG,rsolver%coutputModeVerbose)
+        call output_line('Norm of residual:        '//trim(sys_sdEL(rsolver%dfinalDefect,5)),&
+                         OU_CLASS_MSG,rsolver%coutputModeVerbose)
         call output_line('Improvement of residual: '//trim(sys_sdEL(&
-                         rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)))
-        call output_separator(OU_SEP_TILDE)
-        call output_lbrk()
+                         rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)),&
+                         OU_CLASS_MSG,rsolver%coutputModeVerbose)
+        call output_separator(OU_SEP_TILDE,OU_CLASS_MSG,rsolver%coutputModeVerbose)
+        call output_lbrk(OU_CLASS_MSG,rsolver%coutputModeVerbose)
       end if
 
       ! Check divergence criteria
@@ -443,18 +448,24 @@ contains
     ! Compute convergence rates
     call solver_statistics(rsolver, iiterations)
 
-    if (rsolver%ioutputLevel .ge. SV_IOLEVEL_INFO) then
-      call output_lbrk()
-      call output_separator(OU_SEP_HASH)
-      call output_line('Coupled solution                '//solver_getstatus(rsolver))
-      call output_line('Number of outer iterations:     '//trim(sys_siL(rsolver%iiterations,5)))
-      call output_line('Norm of final residual:         '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
-      call output_line('Norm of initial residual:       '//trim(sys_sdEL(rsolver%dinitialDefect,5)))
+    if (rsolver%coutputModeInfo .gt. 0) then
+      call output_lbrk(OU_CLASS_MSG,rsolver%coutputModeInfo)
+      call output_separator(OU_SEP_HASH,OU_CLASS_MSG,rsolver%coutputModeInfo)
+      call output_line('Coupled solution                '//solver_getstatus(rsolver),&
+                       OU_CLASS_MSG,rsolver%coutputModeInfo)
+      call output_line('Number of outer iterations:     '//trim(sys_siL(rsolver%iiterations,5)),&
+                       OU_CLASS_MSG,rsolver%coutputModeInfo)
+      call output_line('Norm of final residual:         '//trim(sys_sdEL(rsolver%dfinalDefect,5)),&
+                       OU_CLASS_MSG,rsolver%coutputModeInfo)
+      call output_line('Norm of initial residual:       '//trim(sys_sdEL(rsolver%dinitialDefect,5)),&
+                       OU_CLASS_MSG,rsolver%coutputModeInfo)
       call output_line('Improvement of residual:        '//trim(sys_sdEL(&
-                       rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)))
-      call output_line('Convergence rate:               '//trim(sys_sdEL(rsolver%dconvergenceRate,5)))
-      call output_separator(OU_SEP_HASH)
-      call output_lbrk()
+                       rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)),&
+                       OU_CLASS_MSG,rsolver%coutputModeInfo)
+      call output_line('Convergence rate:               '//trim(sys_sdEL(rsolver%dconvergenceRate,5)),&
+                       OU_CLASS_MSG,rsolver%coutputModeInfo)
+      call output_separator(OU_SEP_HASH,OU_CLASS_MSG,rsolver%coutputModeInfo)
+      call output_lbrk(OU_CLASS_MSG,rsolver%coutputModeInfo)
     end if
 
   end subroutine nlsol_solveCoupledBlock
@@ -675,22 +686,26 @@ contains
               rcollection, rsource)
 
           ! Verbose output
-          if (rsolver%ioutputLevel .ge. SV_IOLEVEL_VERBOSE) then
-            call output_lbrk()
-            call output_separator(OU_SEP_TILDE)
-            call output_line('Nonlinear multigrid step: '//trim(sys_siL(imgstep,5)))
-            call output_line('Norm of residual:         '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
+          if (rsolver%coutputModeVerbose .gt. 0) then
+            call output_lbrk(OU_CLASS_MSG,rsolver%coutputModeVerbose)
+            call output_separator(OU_SEP_TILDE,OU_CLASS_MSG,rsolver%coutputModeVerbose)
+            call output_line('Nonlinear multigrid step: '//trim(sys_siL(imgstep,5)),&
+                             OU_CLASS_MSG,rsolver%coutputModeVerbose)
+            call output_line('Norm of residual:         '//trim(sys_sdEL(rsolver%dfinalDefect,5)),&
+                             OU_CLASS_MSG,rsolver%coutputModeVerbose)
             call output_line('Improvement of residual:  '//trim(sys_sdEL(rsolver%dfinalDefect/&
-                                                          max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)))
-            call output_separator(OU_SEP_TILDE)
-            call output_lbrk()
+                                                          max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)),&
+                             OU_CLASS_MSG,rsolver%coutputModeVerbose)
+            call output_separator(OU_SEP_TILDE,OU_CLASS_MSG,rsolver%coutputModeVerbose)
+            call output_lbrk(OU_CLASS_MSG,rsolver%coutputModeVerbose)
           end if
 
           ! Check if residual increased too much
           if (solver_testDivergence(rsolver)) then
-            if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
+            if (rsolver%coutputModeWarning .gt. 0) then
               call output_line('!!! Residual increased by factor '//trim(sys_sdEL(&
-                  rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5))//' !!!')
+                  rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5))//' !!!',&
+                  OU_CLASS_WARNING,rsolver%coutputModeWarning)
             end if
 
             ! Adjust solver status
@@ -713,18 +728,24 @@ contains
         ! Multigrid convergence rates
         call solver_statistics(rsolver, imgstep)
 
-        if (rsolver%ioutputLevel .ge. SV_IOLEVEL_INFO) then
-          call output_lbrk()
-          call output_separator(OU_SEP_TILDE)
-          call output_line('Nonlinear multigrid solution '//solver_getstatus(rsolver))
-          call output_line('Number of multigrid steps:   '//trim(sys_siL(rsolver%iiterations,5)))
-          call output_line('Norm of final residual:      '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
-          call output_line('Norm of initial residual:    '//trim(sys_sdEL(rsolver%dinitialDefect,5)))
+        if (rsolver%coutputModeInfo .gt. 0) then
+          call output_lbrk(OU_CLASS_MSG,rsolver%coutputModeInfo)
+          call output_separator(OU_SEP_TILDE,OU_CLASS_MSG,rsolver%coutputModeInfo)
+          call output_line('Nonlinear multigrid solution '//solver_getstatus(rsolver),&
+                           OU_CLASS_MSG,rsolver%coutputModeInfo)
+          call output_line('Number of multigrid steps:   '//trim(sys_siL(rsolver%iiterations,5)),&
+                           OU_CLASS_MSG,rsolver%coutputModeInfo)
+          call output_line('Norm of final residual:      '//trim(sys_sdEL(rsolver%dfinalDefect,5)),&
+                           OU_CLASS_MSG,rsolver%coutputModeInfo)
+          call output_line('Norm of initial residual:    '//trim(sys_sdEL(rsolver%dinitialDefect,5)),&
+                           OU_CLASS_MSG,rsolver%coutputModeInfo)
           call output_line('Residual improvement:        '//trim(sys_sdEL(rsolver%dfinalDefect/&
-                                                            max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)))
-          call output_line('Convergence rate:            '//trim(sys_sdEL(rsolver%dconvergenceRate,5)))
-          call output_separator(OU_SEP_TILDE)
-          call output_lbrk()
+                                                            max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)),&
+                           OU_CLASS_MSG,rsolver%coutputModeInfo)
+          call output_line('Convergence rate:            '//trim(sys_sdEL(rsolver%dconvergenceRate,5)),&
+                           OU_CLASS_MSG,rsolver%coutputModeInfo)
+          call output_separator(OU_SEP_TILDE,OU_CLASS_MSG,rsolver%coutputModeInfo)
+          call output_lbrk(OU_CLASS_MSG,rsolver%coutputModeInfo)
         end if
 
       end if
@@ -1060,9 +1081,10 @@ contains
 
     ! Check if initial residual is too large ...
     if (solver_testDivergence(p_rsolver)) then
-      if (p_rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
+      if (p_rsolver%coutputModeWarning .gt. 0) then
         call output_line('!!! Norm of initial residual is too large '//&
-            trim(sys_sdEL(p_rsolver%dinitialDefect,5))//' !!!')
+            trim(sys_sdEL(p_rsolver%dinitialDefect,5))//' !!!',&
+            OU_CLASS_WARNING,rsolver%coutputModeWarning)
       end if
 
       ! Adjust solver status
@@ -1074,9 +1096,10 @@ contains
 
     elseif (p_rsolver%dinitialDefect .le. p_rsolver%ddefZero) then
       ! ... or if it satisfies the desired tolerance already
-      if (p_rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
+      if (p_rsolver%coutputModeWarning .gt. 0) then
         call output_line('!!! Zero initial residual '//&
-            trim(sys_sdEL(p_rsolver%dinitialDefect,5))//' !!!')
+            trim(sys_sdEL(p_rsolver%dinitialDefect,5))//' !!!',&
+            OU_CLASS_WARNING,rsolver%coutputModeWarning)
       end if
 
       ! Adjust solver status
@@ -1156,18 +1179,23 @@ contains
         p_rsolver%dfinalDefect = lsysbl_vectorNorm(p_rres, p_rsolver%iresNorm)
 
         ! Verbose output
-        if (p_rsolver%ioutputLevel .ge. SV_IOLEVEL_VERBOSE) then
-          call output_lbrk()
-          call output_separator(OU_SEP_TILDE)
-          call output_line('Block-diagonal solution step '//trim(sys_siL(iiterations,5)))
-          call output_line('Norm of residual:            '//trim(sys_sdEL(p_rsolver%dfinalDefect,5)))
-          call output_line('Norm of previous residual:   '//trim(sys_sdEL(doldDefect,5)))
+        if (p_rsolver%coutputModeVerbose .gt. 0) then
+          call output_lbrk(OU_CLASS_MSG,rsolver%coutputModeVerbose)
+          call output_separator(OU_SEP_TILDE,OU_CLASS_MSG,rsolver%coutputModeVerbose)
+          call output_line('Block-diagonal solution step '//trim(sys_siL(iiterations,5)),&
+                           OU_CLASS_MSG,rsolver%coutputModeVerbose)
+          call output_line('Norm of residual:            '//trim(sys_sdEL(p_rsolver%dfinalDefect,5)),&
+                           OU_CLASS_MSG,rsolver%coutputModeVerbose)
+          call output_line('Norm of previous residual:   '//trim(sys_sdEL(doldDefect,5)),&
+                           OU_CLASS_MSG,rsolver%coutputModeVerbose)
           call output_line('Variation of residual:       '//trim(sys_sdEL(&
-                           p_rsolver%dfinalDefect/max(SYS_EPSREAL_DP, doldDefect),5)))
+                           p_rsolver%dfinalDefect/max(SYS_EPSREAL_DP, doldDefect),5)),&
+                           OU_CLASS_MSG,rsolver%coutputModeVerbose)
           call output_line('Improvement of residual:     '//trim(sys_sdEL(&
-                           p_rsolver%dfinalDefect/max(SYS_EPSREAL_DP, p_rsolver%dinitialDefect),5)))
-          call output_separator(OU_SEP_TILDE)
-          call output_lbrk()
+                           p_rsolver%dfinalDefect/max(SYS_EPSREAL_DP, p_rsolver%dinitialDefect),5)),&
+                           OU_CLASS_MSG,rsolver%coutputModeVerbose)
+          call output_separator(OU_SEP_TILDE,OU_CLASS_MSG,rsolver%coutputModeVerbose)
+          call output_lbrk(OU_CLASS_MSG,rsolver%coutputModeVerbose)
         end if
 
 
@@ -1212,18 +1240,23 @@ contains
         p_rsolver%dfinalDefect = lsysbl_vectorNorm(p_rres, p_rsolver%iresNorm)
 
         ! Verbose output
-        if (p_rsolver%ioutputLevel .ge. SV_IOLEVEL_VERBOSE) then
-          call output_lbrk()
-          call output_separator(OU_SEP_TILDE)
-          call output_line('Defect correction step       '//trim(sys_siL(iiterations,5)))
-          call output_line('Norm of residual:            '//trim(sys_sdEL(p_rsolver%dfinalDefect,5)))
-          call output_line('Norm of previous residual:   '//trim(sys_sdEL(doldDefect,5)))
+        if (p_rsolver%coutputModeVerbose .gt. 0) then
+          call output_lbrk(OU_CLASS_MSG,rsolver%coutputModeVerbose)
+          call output_separator(OU_SEP_TILDE,OU_CLASS_MSG,rsolver%coutputModeVerbose)
+          call output_line('Defect correction step       '//trim(sys_siL(iiterations,5)),&
+                           OU_CLASS_MSG,rsolver%coutputModeVerbose)
+          call output_line('Norm of residual:            '//trim(sys_sdEL(p_rsolver%dfinalDefect,5)),&
+                           OU_CLASS_MSG,rsolver%coutputModeVerbose)
+          call output_line('Norm of previous residual:   '//trim(sys_sdEL(doldDefect,5)),&
+                           OU_CLASS_MSG,rsolver%coutputModeVerbose)
           call output_line('Variation of residual:       '//trim(sys_sdEL(&
-                           p_rsolver%dfinalDefect/max(SYS_EPSREAL_DP, doldDefect),5)))
+                           p_rsolver%dfinalDefect/max(SYS_EPSREAL_DP, doldDefect),5)),&
+                           OU_CLASS_MSG,rsolver%coutputModeVerbose)
           call output_line('Improvement of residual:     '//trim(sys_sdEL(&
-                           p_rsolver%dfinalDefect/max(SYS_EPSREAL_DP, p_rsolver%dinitialDefect),5)))
-          call output_separator(OU_SEP_TILDE)
-          call output_lbrk()
+                           p_rsolver%dfinalDefect/max(SYS_EPSREAL_DP, p_rsolver%dinitialDefect),5)),&
+                           OU_CLASS_MSG,rsolver%coutputModeVerbose)
+          call output_separator(OU_SEP_TILDE,OU_CLASS_MSG,rsolver%coutputModeVerbose)
+          call output_lbrk(OU_CLASS_MSG,rsolver%coutputModeVerbose)
         end if
 
 
@@ -1324,18 +1357,23 @@ contains
         end if
 
         ! Verbose output
-        if (p_rsolver%ioutputLevel .ge. SV_IOLEVEL_VERBOSE) then
-          call output_lbrk()
-          call output_separator(OU_SEP_TILDE)
-          call output_line('Inexact Newton step          '//trim(sys_siL(iiterations,5)))
-          call output_line('Norm of residual:            '//trim(sys_sdEL(p_rsolver%dfinalDefect,5)))
-          call output_line('Norm of previous residual:   '//trim(sys_sdEL(doldDefect,5)))
+        if (p_rsolver%coutputModeVerbose .gt. 0) then
+          call output_lbrk(OU_CLASS_MSG,rsolver%coutputModeVerbose)
+          call output_separator(OU_SEP_TILDE,OU_CLASS_MSG,rsolver%coutputModeVerbose)
+          call output_line('Inexact Newton step          '//trim(sys_siL(iiterations,5)),&
+                           OU_CLASS_MSG,rsolver%coutputModeVerbose)
+          call output_line('Norm of residual:            '//trim(sys_sdEL(p_rsolver%dfinalDefect,5)),&
+                           OU_CLASS_MSG,rsolver%coutputModeVerbose)
+          call output_line('Norm of previous residual:   '//trim(sys_sdEL(doldDefect,5)),&
+                           OU_CLASS_MSG,rsolver%coutputModeVerbose)
           call output_line('Variation of residual:       '//trim(sys_sdEL(&
-                           p_rsolver%dfinalDefect/max(SYS_EPSREAL_DP, doldDefect),5)))
+                           p_rsolver%dfinalDefect/max(SYS_EPSREAL_DP, doldDefect),5)),&
+                           OU_CLASS_MSG,rsolver%coutputModeVerbose)
           call output_line('Improvement of residual:     '//trim(sys_sdEL(&
-                           p_rsolver%dfinalDefect/max(SYS_EPSREAL_DP, p_rsolver%dinitialDefect),5)))
-          call output_separator(OU_SEP_TILDE)
-          call output_lbrk()
+                           p_rsolver%dfinalDefect/max(SYS_EPSREAL_DP, p_rsolver%dinitialDefect),5)),&
+                           OU_CLASS_MSG,rsolver%coutputModeVerbose)
+          call output_separator(OU_SEP_TILDE,OU_CLASS_MSG,rsolver%coutputModeVerbose)
+          call output_lbrk(OU_CLASS_MSG,rsolver%coutputModeVerbose)
         end if
 
 
@@ -1355,9 +1393,10 @@ contains
 
       ! Check if residual increased too much
       if (solver_testDivergence(p_rsolver)) then
-        if (p_rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
+        if (p_rsolver%coutputModeWarning .gt. 0) then
           call output_line('!!! Residual increased by factor '//trim(sys_sdEL(&
-              p_rsolver%dfinalDefect/max(SYS_EPSREAL_DP, p_rsolver%dinitialDefect),5))//' !!!')
+              p_rsolver%dfinalDefect/max(SYS_EPSREAL_DP, p_rsolver%dinitialDefect),5))//' !!!',&
+              OU_CLASS_WARNING,rsolver%coutputModeWarning)
         end if
 
         ! Adjust solver status
@@ -1386,18 +1425,24 @@ contains
     call solver_statistics(p_rsolver, iiterations)
     call solver_copySolver(p_rsolver, rsolver, .false., .true.)
 
-    if (rsolver%ioutputLevel .ge. SV_IOLEVEL_INFO) then
-      call output_lbrk()
-      call output_separator(OU_SEP_HASH)
-      call output_line('Nonlinear solution              '//solver_getstatus(rsolver))
-      call output_line('Number of nonlinear iterations: '//trim(sys_siL(rsolver%iiterations,5)))
-      call output_line('Norm of final residual:         '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
-      call output_line('Norm of initial residual:       '//trim(sys_sdEL(rsolver%dinitialDefect,5)))
+    if (rsolver%coutputModeInfo .gt. 0) then
+      call output_lbrk(OU_CLASS_MSG,rsolver%coutputModeInfo)
+      call output_separator(OU_SEP_HASH,OU_CLASS_MSG,rsolver%coutputModeInfo)
+      call output_line('Nonlinear solution              '//solver_getstatus(rsolver),&
+                       OU_CLASS_MSG,rsolver%coutputModeInfo)
+      call output_line('Number of nonlinear iterations: '//trim(sys_siL(rsolver%iiterations,5)),&
+                       OU_CLASS_MSG,rsolver%coutputModeInfo)
+      call output_line('Norm of final residual:         '//trim(sys_sdEL(rsolver%dfinalDefect,5)),&
+                       OU_CLASS_MSG,rsolver%coutputModeInfo)
+      call output_line('Norm of initial residual:       '//trim(sys_sdEL(rsolver%dinitialDefect,5)),&
+                       OU_CLASS_MSG,rsolver%coutputModeInfo)
       call output_line('Improvement of residual:        '//trim(sys_sdEL(&
-                       rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)))
-      call output_line('Convergence rate:               '//trim(sys_sdEL(rsolver%dconvergenceRate,5)))
-      call output_separator(OU_SEP_HASH)
-      call output_lbrk()
+                       rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)),&
+                       OU_CLASS_MSG,rsolver%coutputModeInfo)
+      call output_line('Convergence rate:               '//trim(sys_sdEL(rsolver%dconvergenceRate,5)),&
+                        OU_CLASS_MSG,rsolver%coutputModeInfo)
+      call output_separator(OU_SEP_HASH,OU_CLASS_MSG,rsolver%coutputModeInfo)
+      call output_lbrk(OU_CLASS_MSG,rsolver%coutputModeInfo)
     end if
 
   end subroutine nlsol_solveFixedpointBlock

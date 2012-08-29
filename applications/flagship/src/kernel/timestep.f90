@@ -57,6 +57,9 @@
 !#     -> Checks the solution computed in one time step and adjust
 !#        the size of the time step accordingly
 !#
+!# 2.) tstep_decodeOutputLevel
+!#     -> Decodes the output level information into bitfields
+!#
 !# </purpose>
 !##############################################################################
 
@@ -214,6 +217,9 @@ contains
     call parlst_getvalue_double(rparlist, ssectionName,&
         "dadaptTime", rtimestep%dadaptTime)
 
+    ! Decode the output level
+    call tstep_decodeOutputLevel(rtimestep)
+
     ! Get solver dependent configuration values from parameter list
     select case(rtimestep%ctimestepType)
     case (TSTEP_THETA_SCHEME)
@@ -256,8 +262,11 @@ contains
       allocate(rtimestep%RtempVectors(4))
 
     case default
-      call output_line('Invalid type of time stepping algorithm!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'tstep_createTimestepDirect')
+      if (rtimestep%coutputModeError .gt. 0) then
+        call output_line('Invalid type of time stepping algorithm!',&
+            OU_CLASS_ERROR,rtimestep%coutputModeError,&
+            'tstep_createTimestepDirect')
+      end if
       call sys_halt()
     end select
 
@@ -311,8 +320,11 @@ contains
           "dmaxRel", rtimestep%p_rpidController%dmaxRel)
 
     case default
-       call output_line('Invalid type of adaptive time-stepping algorithm!',&
-           OU_CLASS_ERROR,OU_MODE_STD,'tstep_createTimestepDirect')
+      if (rtimestep%coutputModeError .gt. 0) then
+        call output_line('Invalid type of adaptive time-stepping algorithm!',&
+            OU_CLASS_ERROR,rtimestep%coutputModeError,&
+            'tstep_createTimestepDirect')
+      end if
       call sys_halt()
     end select
 
@@ -833,8 +845,11 @@ contains
         (/SV_NONLINEARMG, SV_NONLINEAR/))
 
     if (.not. associated(p_rsolver)) then
-      call output_line('Unsupported/invalid solver type!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'tstep_performThetaStepBl')
+      if (rtimestep%coutputModeError .gt. 0) then
+        call output_line('Unsupported/invalid solver type!',&
+            OU_CLASS_ERROR,rtimestep%coutputModeError,&
+            'tstep_performThetaStepBl')
+      end if
       call sys_halt()
     end if
 
@@ -881,16 +896,16 @@ contains
       rtimestep%dTime = rtimestep%dTime  + rtimestep%dStep
       rtimestep%nSteps= rtimestep%nSteps + 1
 
-
-      ! Output information to logfile/terminal
-      if (rtimestep%ioutputLevel .ge. TSTEP_IOLEVEL_INFO) then
-        call output_lbrk()
-        call output_separator(OU_SEP_AT)
+      ! Output information
+      if (rtimestep%coutputModeInfo .gt. 0) then
+        call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
+        call output_separator(OU_SEP_AT,OU_CLASS_MSG,rtimestep%coutputModeInfo)
         call output_line('Two-level theta-scheme, Time = '//&
                          trim(sys_sdEL(rtimestep%dTime,5))//&
-                         ' Stepsize = '//trim(sys_sdEL(rtimestep%dStep,5)))
-        call output_separator(OU_SEP_AT)
-        call output_lbrk()
+                         ' Stepsize = '//trim(sys_sdEL(rtimestep%dStep,5)),&
+                         OU_CLASS_MSG,rtimestep%coutputModeInfo)
+        call output_separator(OU_SEP_AT,OU_CLASS_MSG,rtimestep%coutputModeInfo)
+        call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
       end if
 
       ! Solve the nonlinear algebraic system in the time interval (t^n, t^{n+1})
@@ -908,12 +923,14 @@ contains
         ! Set time step to smaller value
         rtimestep%dStep = rtimestep%dStep/2.0_DP
 
-        if (rtimestep%ioutputLevel .ge. TSTEP_IOLEVEL_INFO) then
-          call output_lbrk()
-          call output_separator(OU_SEP_AT)
-          call output_line('First substep in automatic time step control')
-          call output_separator(OU_SEP_AT)
-          call output_lbrk()
+        ! Output information
+        if (rtimestep%coutputModeInfo .gt. 0) then
+          call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
+          call output_separator(OU_SEP_AT,OU_CLASS_MSG,rtimestep%coutputModeInfo)
+          call output_line('First substep in automatic time step control',&
+                           OU_CLASS_MSG,rtimestep%coutputModeInfo)
+          call output_separator(OU_SEP_AT,OU_CLASS_MSG,rtimestep%coutputModeInfo)
+          call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
         end if
 
         ! Solve the nonlinear algebraic system for time step t^n -> t^{n+1/2}
@@ -924,12 +941,14 @@ contains
         ! Save intermediate solution
         call lsysbl_copyVector(p_rsolutionRef, p_rsolutionAux)
 
-        if (rtimestep%ioutputLevel .ge. TSTEP_IOLEVEL_INFO) then
-          call output_lbrk()
-          call output_separator(OU_SEP_AT)
-          call output_line('Second substep in automatic time step control')
-          call output_separator(OU_SEP_AT)
-          call output_lbrk()
+        ! Output information
+        if (rtimestep%coutputModeInfo .gt. 0) then
+          call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
+          call output_separator(OU_SEP_AT,OU_CLASS_MSG,rtimestep%coutputModeInfo)
+          call output_line('Second substep in automatic time step control',&
+                           OU_CLASS_MSG,rtimestep%coutputModeInfo)
+          call output_separator(OU_SEP_AT,OU_CLASS_MSG,rtimestep%coutputModeInfo)
+          call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
         end if
 
         ! Solve the nonlinear algebraic system for time step t^{n+1/2} -> t^{n+1}
@@ -954,15 +973,20 @@ contains
 
       end if
 
-      if (rtimestep%ioutputlevel .ge. TSTEP_IOLEVEL_VERBOSE) then
-        call output_lbrk()
-        call output_separator(OU_SEP_TILDE)
-        call output_line('Time step was     '//merge('!!! rejected !!!','accepted        ',breject))
-        call output_line('New stepsize:     '//trim(sys_sdEL(rtimestep%dStep,5)))
-        call output_line('Last stepsize:    '//trim(sys_sdEL(rtimestep%dStep1,5)))
-        call output_line('Relative changes: '//trim(sys_sdEL(rtimestep%drelChange,5)))
-        call output_separator(OU_SEP_TILDE)
-        call output_lbrk()
+      ! Output information
+      if (rtimestep%coutputModeInfo .gt. 0) then
+        call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
+        call output_separator(OU_SEP_TILDE,OU_CLASS_MSG,rtimestep%coutputModeInfo)
+        call output_line('Time step was     '//merge('!!! rejected !!!','accepted        ',breject),&
+                         OU_CLASS_MSG,rtimestep%coutputModeInfo)
+        call output_line('New stepsize:     '//trim(sys_sdEL(rtimestep%dStep,5)),&
+                         OU_CLASS_MSG,rtimestep%coutputModeInfo)
+        call output_line('Last stepsize:    '//trim(sys_sdEL(rtimestep%dStep1,5)),&
+                         OU_CLASS_MSG,rtimestep%coutputModeInfo)
+        call output_line('Relative changes: '//trim(sys_sdEL(rtimestep%drelChange,5)),&
+                         OU_CLASS_MSG,rtimestep%coutputModeInfo)
+        call output_separator(OU_SEP_TILDE,OU_CLASS_MSG,rtimestep%coutputModeInfo)
+        call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
       end if
 
       ! Do we have to reject to current solution?
@@ -970,6 +994,13 @@ contains
         ! Yes, so restore the old solution and
         ! repeat the adaptive time-stepping loop
         call lsysbl_copyVector(p_rsolutionOld, rsolution)
+        
+        if (rtimestep%coutputModeWarning .gt. 0) then
+          call output_line('Time step was rejected!',&
+              OU_CLASS_WARNING,rtimestep%coutputModeWarning,&
+              'tstep_performThetaStepBl')
+        end if
+        
       else
         ! No, accept current solution and
         ! exit adaptive time-stepping loop
@@ -1182,8 +1213,11 @@ contains
     ! Check size of multi-component source vector (if any)
     if (present(Rsource)) then
       if (size(Rsource) .ne. ncomponent) then
-        call output_line('Dimension of coupled problem mismatch!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'tstep_performThetaStepBlCpl')
+        if (rtimestep%coutputModeError .gt. 0) then
+          call output_line('Dimension of coupled problem mismatch!',&
+              OU_CLASS_ERROR,rtimestep%coutputModeError,&
+              'tstep_performThetaStepBlCpl')
+        end if
         call sys_halt()
       end if
     end if
@@ -1192,8 +1226,11 @@ contains
     p_rsolver => solver_getNextSolverByType(rsolver, SV_COUPLED)
 
     if (.not. associated(p_rsolver)) then
-      call output_line('Unsupported/invalid solver type!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'tstep_performThetaStepBlCpl')
+      if (rtimestep%coutputModeError .gt. 0) then
+        call output_line('Unsupported/invalid solver type!',&
+            OU_CLASS_ERROR,rtimestep%coutputModeError,&
+            'tstep_performThetaStepBlCpl')
+      end if
       call sys_halt()
     end if
 
@@ -1251,15 +1288,16 @@ contains
       rtimestep%nSteps= rtimestep%nSteps + 1
 
 
-      ! Output information to logfile/terminal
-      if (rtimestep%ioutputLevel .ge. TSTEP_IOLEVEL_INFO) then
-        call output_lbrk()
-        call output_separator(OU_SEP_AT)
+      ! Output information
+      if (rtimestep%coutputModeInfo .gt. 0) then
+        call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
+        call output_separator(OU_SEP_AT,OU_CLASS_MSG,rtimestep%coutputModeInfo)
         call output_line('Two-level theta-scheme, Time = '//&
                          trim(sys_sdEL(rtimestep%dTime,5))//&
-                         ' Stepsize = '//trim(sys_sdEL(rtimestep%dStep,5)))
-        call output_separator(OU_SEP_AT)
-        call output_lbrk()
+                         ' Stepsize = '//trim(sys_sdEL(rtimestep%dStep,5)),&
+                         OU_CLASS_MSG,rtimestep%coutputModeInfo)
+        call output_separator(OU_SEP_AT,OU_CLASS_MSG,rtimestep%coutputModeInfo)
+        call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
       end if
 
       ! Solve the coupled system in the time interval (t^n, t^{n+1})
@@ -1276,12 +1314,13 @@ contains
         ! Set time step to smaller value
         rtimestep%dStep = rtimestep%dStep/2.0_DP
 
-        if (rtimestep%ioutputLevel .ge. TSTEP_IOLEVEL_INFO) then
-          call output_lbrk()
-          call output_separator(OU_SEP_AT)
-          call output_line('First substep in automatic time step control')
-          call output_separator(OU_SEP_AT)
-          call output_lbrk()
+      if (rtimestep%coutputModeInfo .gt. 0) then
+          call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
+          call output_separator(OU_SEP_AT,OU_CLASS_MSG,rtimestep%coutputModeInfo)
+          call output_line('First substep in automatic time step control',&
+                           OU_CLASS_MSG,rtimestep%coutputModeInfo)
+          call output_separator(OU_SEP_AT,OU_CLASS_MSG,rtimestep%coutputModeInfo)
+          call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
         end if
 
 
@@ -1296,12 +1335,13 @@ contains
               p_RsolutionAux(icomponent))
         end do
 
-        if (rtimestep%ioutputLevel .ge. TSTEP_IOLEVEL_INFO) then
-          call output_lbrk()
-          call output_separator(OU_SEP_AT)
-          call output_line('Second substep in automatic time step control')
-          call output_separator(OU_SEP_AT)
-          call output_lbrk()
+        if (rtimestep%coutputModeInfo .gt. 0) then
+          call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
+          call output_separator(OU_SEP_AT,OU_CLASS_MSG,rtimestep%coutputModeInfo)
+          call output_line('Second substep in automatic time step control',&
+                           OU_CLASS_MSG,rtimestep%coutputModeInfo)
+          call output_separator(OU_SEP_AT,OU_CLASS_MSG,rtimestep%coutputModeInfo)
+          call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
         end if
 
         ! Solve the nonlinear algebraic system for time step t^{n+1/2} -> t^{n+1}
@@ -1326,15 +1366,19 @@ contains
 
       end if
 
-      if (rtimestep%ioutputlevel .ge. TSTEP_IOLEVEL_VERBOSE) then
-        call output_lbrk()
-        call output_separator(OU_SEP_TILDE)
-        call output_line('Time step was     '//merge('!!! rejected !!!','accepted        ',breject))
-        call output_line('New stepsize:     '//trim(sys_sdEL(rtimestep%dStep,5)))
-        call output_line('Last stepsize:    '//trim(sys_sdEL(rtimestep%dStep1,5)))
-        call output_line('Relative changes: '//trim(sys_sdEL(rtimestep%drelChange,5)))
-        call output_separator(OU_SEP_TILDE)
-        call output_lbrk()
+      if (rtimestep%coutputModeInfo .gt. 0) then
+        call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
+        call output_separator(OU_SEP_TILDE,OU_CLASS_MSG,rtimestep%coutputModeInfo)
+        call output_line('Time step was     '//merge('!!! rejected !!!','accepted        ',breject),&
+                         OU_CLASS_MSG,rtimestep%coutputModeInfo)
+        call output_line('New stepsize:     '//trim(sys_sdEL(rtimestep%dStep,5)),&
+                         OU_CLASS_MSG,rtimestep%coutputModeInfo)
+        call output_line('Last stepsize:    '//trim(sys_sdEL(rtimestep%dStep1,5)),&
+                         OU_CLASS_MSG,rtimestep%coutputModeInfo)
+        call output_line('Relative changes: '//trim(sys_sdEL(rtimestep%drelChange,5)),&
+                         OU_CLASS_MSG,rtimestep%coutputModeInfo)
+        call output_separator(OU_SEP_TILDE,OU_CLASS_MSG,rtimestep%coutputModeInfo)
+        call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
       end if
 
       ! Do we have to reject to current solution?
@@ -1483,8 +1527,11 @@ contains
     p_rsolver => solver_getNextSolverByTypes(rsolver, (/SV_LINEARMG, SV_LINEAR/))
 
     if (.not. associated(p_rsolver)) then
-      call output_line('Unsupported/invalid solver type!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'tstep_performRKStepBl')
+      if (rtimestep%coutputModeError .gt. 0) then
+        call output_line('Unsupported/invalid solver type!',&
+            OU_CLASS_ERROR,rtimestep%coutputModeError,&
+            'tstep_performRKStepBl')
+      end if
       call sys_halt()
     end if
 
@@ -1528,25 +1575,27 @@ contains
       rtimestep%dTime = rtimestep%dTime  + rtimestep%dStep
       rtimestep%nSteps= rtimestep%nSteps + 1
 
-      if (rtimestep%ioutputLevel .ge. TSTEP_IOLEVEL_INFO) then
-        call output_lbrk()
-        call output_separator(OU_SEP_AT)
+      if (rtimestep%coutputModeInfo .gt. 0) then
+        call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
+        call output_separator(OU_SEP_AT,OU_CLASS_MSG,rtimestep%coutputModeInfo)
         call output_line('Explicit Runge-Kutta scheme, Time = '//trim(sys_sdEL(rtimestep%dTime,5))//&
-                         ' Stepsize = '//trim(sys_sdEL(rtimestep%dStep,5)))
-        call output_separator(OU_SEP_AT)
-        call output_lbrk()
+                         ' Stepsize = '//trim(sys_sdEL(rtimestep%dStep,5)),&
+                         OU_CLASS_MSG,rtimestep%coutputModeInfo)
+        call output_separator(OU_SEP_AT,OU_CLASS_MSG,rtimestep%coutputModeInfo)
+        call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
       end if
 
 
       ! Perform multi-step Runge-Kutta method
       do istep = 1, rtimestep%multisteps
 
-        if (rtimestep%ioutputLevel .ge. TSTEP_IOLEVEL_VERBOSE) then
-          call output_lbrk()
-          call output_separator(OU_SEP_AT)
-          call output_line('Explicit Runge-Kutta step '//trim(sys_siL(istep,5)))
-          call output_separator(OU_SEP_AT)
-          call output_lbrk()
+        if (rtimestep%coutputModeInfo .gt. 0) then
+          call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
+          call output_separator(OU_SEP_AT,OU_CLASS_MSG,rtimestep%coutputModeInfo)
+          call output_line('Explicit Runge-Kutta step '//trim(sys_siL(istep,5)),&
+                           OU_CLASS_MSG,rtimestep%coutputModeInfo)
+          call output_separator(OU_SEP_AT,OU_CLASS_MSG,rtimestep%coutputModeInfo)
+          call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
         end if
 
         ! Initialise the constant right-hand side vector
@@ -1598,24 +1647,26 @@ contains
         ! Set time step to smaller value
         rtimestep%dStep = rtimestep%dStep/2.0_DP
 
-        if (rtimestep%ioutputLevel .ge. TSTEP_IOLEVEL_INFO) then
-          call output_lbrk()
-          call output_separator(OU_SEP_AT)
-          call output_line('First substep in automatic time step control')
-          call output_separator(OU_SEP_AT)
-          call output_lbrk()
+        if (rtimestep%coutputModeInfo .gt. 0) then
+          call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
+          call output_separator(OU_SEP_AT,OU_CLASS_MSG,rtimestep%coutputModeInfo)
+          call output_line('First substep in automatic time step control',&
+                           OU_CLASS_MSG,rtimestep%coutputModeInfo)
+          call output_separator(OU_SEP_AT,OU_CLASS_MSG,rtimestep%coutputModeInfo)
+          call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
         end if
 
 
         ! Perform multi-step Runge-Kutta method for first step
         do istep = 1, rtimestep%multisteps
 
-          if (rtimestep%ioutputLevel .ge. TSTEP_IOLEVEL_VERBOSE) then
-            call output_lbrk()
-            call output_separator(OU_SEP_AT)
-            call output_line('Explicit Runge-Kutta step '//trim(sys_siL(istep,5)))
-            call output_separator(OU_SEP_AT)
-            call output_lbrk()
+          if (rtimestep%coutputModeInfo .gt. 0) then
+            call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
+            call output_separator(OU_SEP_AT,OU_CLASS_MSG,rtimestep%coutputModeInfo)
+            call output_line('Explicit Runge-Kutta step '//trim(sys_siL(istep,5)),&
+                             OU_CLASS_MSG,rtimestep%coutputModeInfo)
+            call output_separator(OU_SEP_AT,OU_CLASS_MSG,rtimestep%coutputModeInfo)
+            call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
           end if
 
 !!$          ! Compute the new right-hand side
@@ -1641,24 +1692,26 @@ contains
         ! Save intermediate solution
         call lsysbl_copyVector(p_rsolutionRef, p_rsolutionAux)
 
-        if (rtimestep%ioutputLevel .ge. TSTEP_IOLEVEL_INFO) then
-          call output_lbrk()
-          call output_separator(OU_SEP_AT)
-          call output_line('Second substep in automatic time step control')
-          call output_separator(OU_SEP_AT)
-          call output_lbrk()
+        if (rtimestep%coutputModeInfo .gt. 0) then
+          call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
+          call output_separator(OU_SEP_AT,OU_CLASS_MSG,rtimestep%coutputModeInfo)
+          call output_line('Second substep in automatic time step control',&
+                           OU_CLASS_MSG,rtimestep%coutputModeInfo)
+          call output_separator(OU_SEP_AT,OU_CLASS_MSG,rtimestep%coutputModeInfo)
+          call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
         end if
 
 
         ! Perform multi-step Runge-Kutta method for first step
         do istep = 1, rtimestep%multisteps
 
-          if (rtimestep%ioutputLevel .ge. TSTEP_IOLEVEL_VERBOSE) then
-            call output_lbrk()
-            call output_separator(OU_SEP_AT)
-            call output_line('Explicit Runge-Kutta step '//trim(sys_siL(istep,5)))
-            call output_separator(OU_SEP_AT)
-            call output_lbrk()
+          if (rtimestep%coutputModeInfo .gt. 0) then
+            call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
+            call output_separator(OU_SEP_AT,OU_CLASS_MSG,rtimestep%coutputModeInfo)
+            call output_line('Explicit Runge-Kutta step '//trim(sys_siL(istep,5)),&
+                             OU_CLASS_MSG,rtimestep%coutputModeInfo)
+            call output_separator(OU_SEP_AT,OU_CLASS_MSG,rtimestep%coutputModeInfo)
+            call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
           end if
 
 
@@ -1698,15 +1751,19 @@ contains
 
       end if
 
-      if (rtimestep%ioutputlevel .ge. TSTEP_IOLEVEL_VERBOSE) then
-        call output_lbrk()
-        call output_separator(OU_SEP_TILDE)
-        call output_line('Time step was     '//merge('!!! rejected !!!','accepted        ',breject))
-        call output_line('New stepsize:     '//trim(sys_sdEL(rtimestep%dStep,5)))
-        call output_line('Last stepsize:    '//trim(sys_sdEL(rtimestep%dStep1,5)))
-        call output_line('Relative changes: '//trim(sys_sdEL(rtimestep%drelChange,5)))
-        call output_separator(OU_SEP_TILDE)
-        call output_lbrk()
+      if (rtimestep%coutputModeInfo .gt. 0) then
+        call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
+        call output_separator(OU_SEP_TILDE,OU_CLASS_MSG,rtimestep%coutputModeInfo)
+        call output_line('Time step was     '//merge('!!! rejected !!!','accepted        ',breject),&
+                         OU_CLASS_MSG,rtimestep%coutputModeInfo)
+        call output_line('New stepsize:     '//trim(sys_sdEL(rtimestep%dStep,5)),&
+                         OU_CLASS_MSG,rtimestep%coutputModeInfo)
+        call output_line('Last stepsize:    '//trim(sys_sdEL(rtimestep%dStep1,5)),&
+                         OU_CLASS_MSG,rtimestep%coutputModeInfo)
+        call output_line('Relative changes: '//trim(sys_sdEL(rtimestep%drelChange,5)),&
+                         OU_CLASS_MSG,rtimestep%coutputModeInfo)
+        call output_separator(OU_SEP_TILDE,OU_CLASS_MSG,rtimestep%coutputModeInfo)
+        call output_lbrk(OU_CLASS_MSG,rtimestep%coutputModeInfo)
       end if
 
       ! Do we have to reject to current solution?
@@ -1947,8 +2004,11 @@ contains
             rsolution, fcb_nlsolverCallback, rcollection, rsource)
 
       case default
-        call output_line('Unsupported time-stepping algorithm!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'tstep_performPseudoSteppingBl')
+        if (rtimestep%coutputModeError .gt. 0) then
+          call output_line('Unsupported time-stepping algorithm!',&
+              OU_CLASS_ERROR,rtimestep%coutputModeError,&
+              'tstep_performPseudoSteppingBl')
+        end if
         call sys_halt()
       end select
 
@@ -2028,8 +2088,11 @@ contains
             rsolution, fcb_nlsolverCallback, rcollection, rsource)
 
       case default
-        call output_line('Unsupported time-stepping algorithm!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'tstep_performPseudoSteppingSc')
+        if (rtimestep%coutputModeError .gt. 0) then
+          call output_line('Unsupported time-stepping algorithm!',&
+              OU_CLASS_ERROR,rtimestep%coutputModeError,&
+              'tstep_performPseudoSteppingSc')
+        end if
         call sys_halt()
       end select
 
@@ -2113,8 +2176,11 @@ contains
       ! If the time step is already equal to the smallest
       ! admissible time step, then the simulation is terminated.
       if (rtimestep%dStep .le. rtimestep%dminStep + SYS_EPSREAL_DP) then
-        call output_line('Time step reached smallest admissible value!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'tstep_checkTimestep')
+        if (rtimestep%coutputModeError .gt. 0) then
+          call output_line('Time step reached smallest admissible value!',&
+              OU_CLASS_ERROR,rtimestep%coutputModeError,&
+              'tstep_checkTimestep')
+        end if
         call sys_halt()
       end if
 
@@ -2406,5 +2472,93 @@ contains
     end do
 
   end function tstep_checkTimestepCpl
+
+  ! *****************************************************************************
+
+!<subroutine>
+
+  subroutine tstep_decodeOutputLevel(rtimestep)
+
+!<description>
+    ! This subroutine decodes the output level information into bitfields
+!</description>
+
+!<inputoutput>
+    type(t_timestep), intent(inout) :: rtimestep
+!</inputoutput>
+!</subroutine>
+
+    ! local variable
+    character(len=3) :: coutputLevel
+    integer :: i
+
+    ! Initialisation
+    rtimestep%coutputModeError   = 0_I32
+    rtimestep%coutputModeWarning = 0_I32
+    rtimestep%coutputModeInfo    = 0_I32
+    rtimestep%coutputModeVerbose = 0_I32
+
+    coutputLevel = sys_i03(rtimestep%ioutputLevel)
+    
+    ! Check output level for benchmark log file
+    read(coutputLevel(1:1),*) i
+    select case(i)
+    case (TSTEP_IOLEVEL_VERBOSE)
+      rtimestep%coutputModeVerbose = rtimestep%coutputModeVerbose + OU_MODE_BENCHLOG
+    case (TSTEP_IOLEVEL_INFO)
+      rtimestep%coutputModeInfo    = rtimestep%coutputModeInfo    + OU_MODE_BENCHLOG
+    case (TSTEP_IOLEVEL_WARNING)
+      rtimestep%coutputModeWarning = rtimestep%coutputModeWarning + OU_MODE_BENCHLOG
+    case (TSTEP_IOLEVEL_ERROR)
+      rtimestep%coutputModeError   = rtimestep%coutputModeError   + OU_MODE_BENCHLOG
+    case (TSTEP_IOLEVEL_SILENT)
+    case default
+      call output_line('Invalid output level.',&
+          OU_CLASS_MSG, OU_MODE_STD,'tstep_decodeOutputLevel')
+    end select
+
+    ! Check output level for terminal
+    read(coutputLevel(2:2),*) i
+    select case(i)
+    case (TSTEP_IOLEVEL_VERBOSE)
+      rtimestep%coutputModeVerbose = rtimestep%coutputModeVerbose + OU_MODE_TERM
+    case (TSTEP_IOLEVEL_INFO)
+      rtimestep%coutputModeInfo    = rtimestep%coutputModeInfo    + OU_MODE_TERM
+    case (TSTEP_IOLEVEL_WARNING)
+      rtimestep%coutputModeWarning = rtimestep%coutputModeWarning + OU_MODE_TERM
+    case (TSTEP_IOLEVEL_ERROR)
+      rtimestep%coutputModeError   = rtimestep%coutputModeError   + OU_MODE_TERM
+    case (TSTEP_IOLEVEL_SILENT)
+    case default
+      call output_line('Invalid output level.',&
+          OU_CLASS_MSG, OU_MODE_STD,'tstep_decodeOutputLevel')
+    end select
+
+    ! Check output level for log file
+    read(coutputLevel(3:3),*) i
+    select case(i)
+    case (TSTEP_IOLEVEL_VERBOSE)
+      rtimestep%coutputModeVerbose = rtimestep%coutputModeVerbose + OU_MODE_LOG
+    case (TSTEP_IOLEVEL_INFO)
+      rtimestep%coutputModeInfo    = rtimestep%coutputModeInfo    + OU_MODE_LOG
+    case (TSTEP_IOLEVEL_WARNING)
+      rtimestep%coutputModeWarning = rtimestep%coutputModeWarning + OU_MODE_LOG
+    case (TSTEP_IOLEVEL_ERROR)
+      rtimestep%coutputModeError   = rtimestep%coutputModeError   + OU_MODE_LOG
+    case (TSTEP_IOLEVEL_SILENT)
+    case default
+      call output_line('Invalid output level.',&
+          OU_CLASS_MSG, OU_MODE_STD,'tstep_decodeOutputLevel')
+    end select
+
+    ! Adjust lower log levels
+    rtimestep%coutputModeInfo    = ior(rtimestep%coutputModeInfo,&
+                                       rtimestep%coutputModeVerbose)
+    rtimestep%coutputModeWarning = ior(rtimestep%coutputModeWarning,&
+                                       rtimestep%coutputModeInfo)
+    rtimestep%coutputModeError   = ior(rtimestep%coutputModeError,&
+                                       rtimestep%coutputModeWarning)
+
+  end subroutine tstep_decodeOutputLevel
 
 end module timestep

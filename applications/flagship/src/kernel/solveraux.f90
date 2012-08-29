@@ -117,6 +117,9 @@
 !# 2.) solver_initILU
 !#     -> Initialise the ILU-preconditioner
 !#
+!# 3.) solver_decodeOutputLevel
+!#     -> Decodes the output level information into bitfields
+!#
 !# </purpose>
 !##############################################################################
 
@@ -474,6 +477,12 @@ module solveraux
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS
     ! Information output level
     integer :: ioutputLevel = 0
+
+    ! INTERNAL PARAMETER FOR ITERATIVE SOLVERS
+    integer(I32) :: coutputModeError   = 0_I32
+    integer(I32) :: coutputModeWarning = 0_I32
+    integer(I32) :: coutputModeInfo    = 0_I32
+    integer(I32) :: coutputModeVerbose = 0_I32
 
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS
     integer :: istoppingCriterion = SV_STOP_ALL
@@ -1013,8 +1022,10 @@ contains
                                  rsolver%p_solverMultigrid%p_solverCoarsegrid)
 
       case default
-        call output_line('Invalid nonlinear solver for full multigrid solver!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'solver_createSolverDirect')
+        if (rsolver%coutputModeError .gt. 0) then
+          call output_line('Invalid nonlinear solver for full multigrid solver!',&
+              OU_CLASS_ERROR,rsolver%coutputModeError,'solver_createSolverDirect')
+        end if
         call sys_halt()
       end select
       ! Now, we are done with the full multigrid solver !!!
@@ -1063,8 +1074,10 @@ contains
                                  rsolver%p_solverMultigrid%p_solverCoarsegrid)
 
       case default
-        call output_line('Invalid coarse grid solver for nonlinear multigrid solver!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'solver_createSolverDirect')
+        if (rsolver%coutputModeError .gt. 0) then
+          call output_line('Invalid coarse grid solver for nonlinear multigrid solver!',&
+              OU_CLASS_ERROR,rsolver%coutputModeError,'solver_createSolverDirect')
+        end if
         call sys_halt()
       end select
 
@@ -1099,8 +1112,10 @@ contains
           call create_smoother(rparlist, ssmootherName, rsolver%p_solverMultigrid)
 
         case default
-          call output_line('Invalid smoother for nonlinear multigrid solver!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'solver_createSolverDirect')
+          if (rsolver%coutputModeError .gt. 0) then
+            call output_line('Invalid smoother for nonlinear multigrid solver!',&
+                OU_CLASS_ERROR,rsolver%coutputModeError,'solver_createSolverDirect')
+          end if
           call sys_halt()
         end select
       end if
@@ -1150,8 +1165,10 @@ contains
                                  rsolver%p_solverMultigrid%p_solverCoarsegrid)
 
       case default
-        call output_line('Invalid coarse grid solver for linear multigrid solver!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'solver_createSolverDirect')
+        if (rsolver%coutputModeError .gt. 0) then
+          call output_line('Invalid coarse grid solver for linear multigrid solver!',&
+              OU_CLASS_ERROR,rsolver%coutputModeError,'solver_createSolverDirect')
+        end if
         call sys_halt()
       end select
 
@@ -1182,8 +1199,10 @@ contains
           call create_smoother(rparlist, ssmootherName, rsolver%p_solverMultigrid)
 
         case default
-          call output_line('Invalid smoother for nonlinear multigrid solver!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'solver_createSolverDirect')
+          if (rsolver%coutputModeError .gt. 0) then
+            call output_line('Invalid smoother for nonlinear multigrid solver!',&
+                OU_CLASS_ERROR,rsolver%coutputModeError,'solver_createSolverDirect')
+          end if
           call sys_halt()
         end select
       end if
@@ -1213,8 +1232,10 @@ contains
         call create_preconditioner(rparlist, ssectionName, rsolver)
 
       case default
-        call output_line('Unsupported nonlinear solver!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'solver_createSolverDirect')
+        if (rsolver%coutputModeError .gt. 0) then
+          call output_line('Unsupported nonlinear solver!',&
+              OU_CLASS_ERROR,rsolver%coutputModeError,'solver_createSolverDirect')
+        end if
         call sys_halt()
       end select
 
@@ -1309,14 +1330,18 @@ contains
                                  rsolver%p_solverILU%ifill)
 
       case default
-        call output_line('Unsupported linear solver!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'solver_createSolverDirect')
+        if (rsolver%coutputModeError .gt. 0) then
+          call output_line('Unsupported linear solver!',&
+              OU_CLASS_ERROR,rsolver%coutputModeError,'solver_createSolverDirect')
+        end if
         call sys_halt()
       end select
 
     case default
-      call output_line('Unsupported solver type!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'solver_createSolverDirect')
+      if (rsolver%coutputModeError .gt. 0) then
+        call output_line('Unsupported solver type!',&
+            OU_CLASS_ERROR,rsolver%coutputModeError,'solver_createSolverDirect')
+      end if
       call sys_halt()
     end select
 
@@ -1343,6 +1368,9 @@ contains
                                 rsolver%drhsZero)
     call parlst_getvalue_double(rparlist, ssectionName, "ddefZero", &
                                 rsolver%ddefZero)
+
+    ! Decode the output level
+    call solver_decodeOutputLevel(rsolver)
 
   contains
 
@@ -1374,8 +1402,10 @@ contains
       ! Check if given solver matches the current solver type
       if ((rsolver%csolverType .ne. SV_UNDEFINED) .and.&
           (rsolver%csolverType .ne. csolverType)) then
-        call output_line('The given solver does not match specified type!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'create_preconditioner')
+        if (rsolver%coutputModeError .gt. 0) then
+          call output_line('The given solver does not match specified type!',&
+              OU_CLASS_ERROR,rsolver%coutputModeError,'create_preconditioner')
+        end if
         call sys_halt()
       end if
 
@@ -1421,8 +1451,10 @@ contains
                                       rsolver%p_solverNewton%dperturbationStrategy)
 
         case default
-          call output_line('Unsupported nonlinear preconditioner!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'create_preconditioner')
+          if (rsolver%coutputModeError .gt. 0) then
+            call output_line('Unsupported nonlinear preconditioner!',&
+                OU_CLASS_ERROR,rsolver%coutputModeError,'create_preconditioner')
+          end if
           call sys_halt()
         end select
 
@@ -1479,8 +1511,10 @@ contains
         rsolver%ddivAbs          = SYS_INFINITY_DP
 
       case default
-        call output_line('Unsupported preconditioner type!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'create_preconditioner')
+        if (rsolver%coutputModeError .gt. 0) then
+          call output_line('Unsupported preconditioner type!',&
+              OU_CLASS_ERROR,rsolver%coutputModeError,'create_preconditioner')
+        end if
         call sys_halt()
       end select
 
@@ -1491,7 +1525,7 @@ contains
     ! structure of type t_solverMultigrid. Each smoother subnode
     ! is created individually from the parameter list.
 
-    subroutine create_smoother(rparlist, ssectionName, rsolver)
+    subroutine create_smoother(rparlist, ssectionName, rmgsolver)
       ! Parameter list containing all data
       type(t_parlist), intent(in) :: rparlist
 
@@ -1499,7 +1533,7 @@ contains
       character(LEN=*), intent(in) :: ssectionName
 
       ! Multigrid solver structure
-      type(t_solverMultigrid), intent(inout) :: rsolver
+      type(t_solverMultigrid), intent(inout) :: rmgsolver
 
       ! local variables
       integer :: i,csolverType
@@ -1510,8 +1544,8 @@ contains
 
       ! In the first part mandatory and optional parameters which apply to some type
       ! of solvers are read from the parameter list and applied to the solverrr.
-      rsolver%ssmootherName = trim(adjustl(ssectionName))
-      rsolver%csmootherType = csolverType
+      rmgsolver%ssmootherName = trim(adjustl(ssectionName))
+      rmgsolver%csmootherType = csolverType
 
       ! What kind of smoother are we?
       select case(csolverType)
@@ -1522,10 +1556,10 @@ contains
 
         ! Create nonlinear smoother recursively. Note that we create only one (!) template
         ! smoother which will be used (later) do generate smoother subnodes on all levels.
-        if (rsolver%nlmin .lt. rsolver%nlmax) then
-          allocate(rsolver%p_smoother(rsolver%nlmin+1:rsolver%nlmax))
-          do i = rsolver%nlmin+1, rsolver%nlmax
-            call solver_createSolver(rparlist, ssectionName, rsolver%p_smoother(i))
+        if (rmgsolver%nlmin .lt. rmgsolver%nlmax) then
+          allocate(rmgsolver%p_smoother(rmgsolver%nlmin+1:rmgsolver%nlmax))
+          do i = rmgsolver%nlmin+1, rmgsolver%nlmax
+            call solver_createSolver(rparlist, ssectionName, rmgsolver%p_smoother(i))
           end do
         end if
 
@@ -1536,16 +1570,18 @@ contains
 
         ! Create linear smoother recursively. Note that we create an array of solvers
         ! for each level. Each level is created and initialised individually.
-        if (rsolver%nlmin .lt. rsolver%nlmax) then
-          allocate(rsolver%p_smoother(rsolver%nlmin+1:rsolver%nlmax))
-          do i = rsolver%nlmin+1, rsolver%nlmax
-            call solver_createSolver(rparlist, ssectionName, rsolver%p_smoother(i))
+        if (rmgsolver%nlmin .lt. rmgsolver%nlmax) then
+          allocate(rmgsolver%p_smoother(rmgsolver%nlmin+1:rmgsolver%nlmax))
+          do i = rmgsolver%nlmin+1, rmgsolver%nlmax
+            call solver_createSolver(rparlist, ssectionName, rmgsolver%p_smoother(i))
           end do
         end if
 
       case default
-        call output_line('Unsupported type of smoother!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'create_smoother')
+        if (rsolver%coutputModeError .gt. 0) then
+          call output_line('Unsupported type of smoother!',&
+              OU_CLASS_ERROR,rsolver%coutputModeError,'create_smoother')
+        end if
         call sys_halt()
       end select
 
@@ -2295,8 +2331,10 @@ contains
           trim(sys_siL(rsolver%niterations,15)))
 
     case default
-      call output_line('Unsupported solver type!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'solver_infoSolver')
+      if (rsolver%coutputModeError .gt. 0) then
+        call output_line('Unsupported solver type!',&
+            OU_CLASS_ERROR,rsolver%coutputModeError,'solver_infoSolver')
+      end if
       call sys_halt()
     end select
 
@@ -4073,8 +4111,10 @@ contains
 
       ! Check if multigrid level is specified
       if (.not.present(ilev)) then
-        call output_line('Multigrid level is missing!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'solver_setSolverMatrixScalar')
+        if (rsolver%coutputModeError .gt. 0) then
+          call output_line('Multigrid level is missing!',&
+              OU_CLASS_ERROR,rsolver%coutputModeError,'solver_setSolverMatrixScalar')
+        end if
         call sys_halt()
       end if
 
@@ -4094,13 +4134,17 @@ contains
           rsolver%isolverSpec = ior(rsolver%isolverSpec,&
                                     SV_SSPEC_NEEDSUPDATE)
         else
-          call output_line('Specified multigrid level does not exist!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'solver_setSolverMatrixScalar')
+          if (rsolver%coutputModeError .gt. 0) then
+            call output_line('Specified multigrid level does not exist!',&
+                OU_CLASS_ERROR,rsolver%coutputModeError,'solver_setSolverMatrixScalar')
+          end if
           call sys_halt()
         end if
       else
-        call output_line('Multigrid solver subnode does not exist!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'solver_setSolverMatrixScalar')
+        if (rsolver%coutputModeError .gt. 0) then
+          call output_line('Multigrid solver subnode does not exist!',&
+              OU_CLASS_ERROR,rsolver%coutputModeError,'solver_setSolverMatrixScalar')
+        end if
         call sys_halt()
       end if
 
@@ -4187,8 +4231,10 @@ contains
       end if
 
     case default
-      call output_line('Unsupported solver type!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'solver_setSolverMatrixScalar')
+      if (rsolver%coutputModeError .gt. 0) then
+        call output_line('Unsupported solver type!',&
+            OU_CLASS_ERROR,rsolver%coutputModeError,'solver_setSolverMatrixScalar')
+      end if
       call sys_halt()
     end select
 
@@ -4236,8 +4282,10 @@ contains
 
       ! Check if multigrid level is specified
       if (.not.present(ilev)) then
-        call output_line('Multigrid level is missing!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'solver_setSolverMatrixBlock')
+        if (rsolver%coutputModeError .gt. 0) then
+          call output_line('Multigrid level is missing!',&
+              OU_CLASS_ERROR,rsolver%coutputModeError,'solver_setSolverMatrixBlock')
+        end if
         call sys_halt()
       end if
 
@@ -4258,13 +4306,17 @@ contains
           rsolver%isolverSpec = ior(rsolver%isolverSpec,&
                                     SV_SSPEC_NEEDSUPDATE)
         else
-          call output_line('Specified multigrid level does not exist!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'solver_setSolverMatrixBlock')
+          if (rsolver%coutputModeError .gt. 0) then
+            call output_line('Specified multigrid level does not exist!',&
+                OU_CLASS_ERROR,rsolver%coutputModeError,'solver_setSolverMatrixBlock')
+          end if
           call sys_halt()
         end if
       else
-        call output_line('Multigrid solver subnode does not exist!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'solver_setSolverMatrixBlock')
+        if (rsolver%coutputModeError .gt. 0) then
+          call output_line('Multigrid solver subnode does not exist!',&
+              OU_CLASS_ERROR,rsolver%coutputModeError,'solver_setSolverMatrixBlock')
+        end if
         call sys_halt()
       end if
 
@@ -4357,8 +4409,10 @@ contains
       end if
 
     case default
-      call output_line('Unsupported solver type!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'solver_setSolverMatrixBlock')
+      if (rsolver%coutputModeError .gt. 0) then
+        call output_line('Unsupported solver type!',&
+            OU_CLASS_ERROR,rsolver%coutputModeError,'solver_setSolverMatrixBlock')
+      end if
       call sys_halt()
     end select
 
@@ -4415,8 +4469,10 @@ contains
 
 
     case default
-      call output_line('Unsupported solver type!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'solver_setPrecondMatrixScalar')
+      if (rsolver%coutputModeError .gt. 0) then
+        call output_line('Unsupported solver type!',&
+            OU_CLASS_ERROR,rsolver%coutputModeError,'solver_setPrecondMatrixScalar')
+      end if
       call sys_halt()
     end select
   end subroutine solver_setPrecondMatrixScalar
@@ -4473,8 +4529,10 @@ contains
 
 
     case default
-      call output_line('Unsupported solver type!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'solver_setPrecondMatrixBlock')
+      if (rsolver%coutputModeError .gt. 0) then
+        call output_line('Unsupported solver type!',&
+            OU_CLASS_ERROR,rsolver%coutputModeError,'solver_setPrecondMatrixBlock')
+      end if
       call sys_halt()
     end select
   end subroutine solver_setPrecondMatrixBlock
@@ -4526,8 +4584,10 @@ contains
 
         ! Check if multigrid level is specified
         if (.not.present(ilev)) then
-          call output_line('Multigrid level is missing!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'solver_setSmootherMatrixScalar')
+          if (rsolver%coutputModeError .gt. 0) then
+            call output_line('Multigrid level is missing!',&
+                OU_CLASS_ERROR,rsolver%coutputModeError,'solver_setSmootherMatrixScalar')
+          end if
           call sys_halt()
         end if
 
@@ -4545,8 +4605,10 @@ contains
               (ubound(p_smoother,1) .ge. ilev)) then
             call solver_setSolverMatrix(p_smoother(ilev), rmatrix)
           else
-            call output_line('Specified multigrid level does not exist!',&
-                             OU_CLASS_ERROR,OU_MODE_STD,'solver_setSmootherMatrixScalar')
+            if (rsolver%coutputModeError .gt. 0) then
+              call output_line('Specified multigrid level does not exist!',&
+                  OU_CLASS_ERROR,rsolver%coutputModeError,'solver_setSmootherMatrixScalar')
+            end if
             call sys_halt()
           end if
         end if
@@ -4554,8 +4616,10 @@ contains
 
 
     case default
-      call output_line('Unsupported solver type!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'solver_setSmootherMatrixScalar')
+      if (rsolver%coutputModeError .gt. 0) then
+        call output_line('Unsupported solver type!',&
+            OU_CLASS_ERROR,rsolver%coutputModeError,'solver_setSmootherMatrixScalar')
+      end if
       call sys_halt()
     end select
 
@@ -4608,8 +4672,10 @@ contains
 
         ! Check if multigrid level is specified
         if (.not.present(ilev)) then
-          call output_line('Multigrid level is missing!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'solver_setSmootherMatrixBlock')
+          if (rsolver%coutputModeError .gt. 0) then
+            call output_line('Multigrid level is missing!',&
+                OU_CLASS_ERROR,rsolver%coutputModeError,'solver_setSmootherMatrixBlock')
+          end if
           call sys_halt()
         end if
 
@@ -4627,8 +4693,10 @@ contains
               (ubound(p_smoother,1) .ge. ilev)) then
             call solver_setSolverMatrix(p_smoother(ilev), rmatrix)
           else
-            call output_line('Specified multigrid level does not exist!',&
-                             OU_CLASS_ERROR,OU_MODE_STD,'solver_setSmootherMatrixBlock')
+            if (rsolver%coutputModeError .gt. 0) then
+              call output_line('Specified multigrid level does not exist!',&
+                  OU_CLASS_ERROR,rsolver%coutputModeError,'solver_setSmootherMatrixBlock')
+            end if
             call sys_halt()
           end if
         end if
@@ -4636,8 +4704,10 @@ contains
 
 
     case default
-      call output_line('Unsupported solver type!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'solver_setSmootherMatrixBlock')
+      if (rsolver%coutputModeError .gt. 0) then
+        call output_line('Unsupported solver type!',&
+            OU_CLASS_ERROR,rsolver%coutputModeError,'solver_setSmootherMatrixBlock')
+      end if
       call sys_halt()
     end select
 
@@ -5089,8 +5159,10 @@ contains
 
 
     case default
-      call output_line('Unsupported solver type!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'solver_updateStructure')
+      if (rsolver%coutputModeError .gt. 0) then
+        call output_line('Unsupported solver type!',&
+            OU_CLASS_ERROR,rsolver%coutputModeError,'solver_updateStructure')
+      end if
       call sys_halt()
     end select
 
@@ -5101,44 +5173,44 @@ contains
     !*************************************************************
     ! Update the structure of the smoother
 
-    subroutine smoother_updateStructure(rsolver)
-      type(t_solverMultigrid), intent(inout) :: rsolver
+    subroutine smoother_updateStructure(rmgsolver)
+      type(t_solverMultigrid), intent(inout) :: rmgsolver
 
       ! local variables
       type(t_solver) :: rsolverTemplateSmoother
       integer :: ilbound,iubound
 
       ! What kind of smoother are we?
-      select case(rsolver%csmootherType)
+      select case(rmgsolver%csmootherType)
 
       case (SV_NONLINEAR, SV_LINEAR)
         ! ----------------------------------------------------------------------
         ! Nonlinear/Linear smoother subnode
 
         ! Check if subarray of smoothers exists
-        if (associated(rsolver%p_smoother)) then
+        if (associated(rmgsolver%p_smoother)) then
 
           ! Do we have to reallocate the subarray of smoothers?
-          ilbound = lbound(rsolver%p_smoother,1)
-          iubound = ubound(rsolver%p_smoother,1)
+          ilbound = lbound(rmgsolver%p_smoother,1)
+          iubound = ubound(rmgsolver%p_smoother,1)
 
-          if ((ilbound > rsolver%nlmin+1) .or. (iubound < rsolver%nlmax)) then
+          if ((ilbound > rmgsolver%nlmin+1) .or. (iubound < rmgsolver%nlmax)) then
 
             ! Create template solver from smoother
             call solver_createSolver(rsolverTemplateSmoother,&
-                                     rsolver%p_smoother(iubound))
+                                     rmgsolver%p_smoother(iubound))
 
             ! Release all existing smoother
             do i = ilbound, iubound
-              call solver_releaseSolver(rsolver%p_smoother(i))
+              call solver_releaseSolver(rmgsolver%p_smoother(i))
             end do
-            deallocate(rsolver%p_smoother)
+            deallocate(rmgsolver%p_smoother)
 
             ! Create new array of smoothers from template solver
-            if (rsolver%nlmin+1 .lt. rsolver%nlmax) then
-              allocate(rsolver%p_smoother(rsolver%nlmin+1:rsolver%nlmax))
-              do i = rsolver%nlmin+1, rsolver%nlmax
-                call solver_createSolver(rsolver%p_smoother(i),&
+            if (rmgsolver%nlmin+1 .lt. rmgsolver%nlmax) then
+              allocate(rmgsolver%p_smoother(rmgsolver%nlmin+1:rmgsolver%nlmax))
+              do i = rmgsolver%nlmin+1, rmgsolver%nlmax
+                call solver_createSolver(rmgsolver%p_smoother(i),&
                                          rsolverTemplateSmoother)
               end do
             end if
@@ -5150,23 +5222,27 @@ contains
           end if
 
         else
-          call output_line('Smoother structure does not exist!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'smoother_updateStructure')
+          if (rsolver%coutputModeError .gt. 0) then
+            call output_line('Smoother structure does not exist!',&
+                OU_CLASS_ERROR,rsolver%coutputModeError,'smoother_updateStructure')
+          end if
           call sys_halt()
         end if
 
         ! Ok, now the subarray of smoothers definitively exists and has the correct dimension.
         ! Initialise the smoothers on all levels, whereby each individual smoother is
         ! treated as a standard solver
-        do i = lbound(rsolver%p_smoother,1), &
-               ubound(rsolver%p_smoother,1)
-          call solver_updateStructure(rsolver%p_smoother(i))
+        do i = lbound(rmgsolver%p_smoother,1), &
+               ubound(rmgsolver%p_smoother,1)
+          call solver_updateStructure(rmgsolver%p_smoother(i))
         end do
 
 
       case default
-        call output_line('Unsupported solver type!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'smoother_updateStructure')
+        if (rsolver%coutputModeError .gt. 0) then
+          call output_line('Unsupported solver type!',&
+              OU_CLASS_ERROR,rsolver%coutputModeError,'smoother_updateStructure')
+        end if
         call sys_halt()
       end select
 
@@ -5322,8 +5398,10 @@ contains
 
 
     case default
-      call output_line('Unsupported solver type!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'solver_updateContent')
+      if (rsolver%coutputModeError .gt. 0) then
+        call output_line('Unsupported solver type!',&
+            OU_CLASS_ERROR,rsolver%coutputModeError,'solver_updateContent')
+      end if
       call sys_halt()
     end select
 
@@ -5383,7 +5461,7 @@ contains
     ! Check if scalar vectors are compatible
     if (rxFine%NVAR .ne. rxCoarse%NVAR) then
       call output_line('Scalar vectors must be compatible!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'solver_prolongationScalar')
+          OU_CLASS_ERROR,OU_MODE_STD,'solver_prolongationScalar')
       call sys_halt()
     end if
 
@@ -5511,7 +5589,7 @@ contains
 
     if (rxFine%nblocks .ne. rxCoarse%nblocks) then
       call output_line('Block vectors must be compatible!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'solver_prolongationBlock')
+          OU_CLASS_ERROR,OU_MODE_STD,'solver_prolongationBlock')
       call sys_halt()
     end if
 
@@ -5572,7 +5650,7 @@ contains
     ! Check if scalar vectors are compatible
     if (rxFine%NVAR .ne. rxCoarse%NVAR) then
       call output_line('Scalar vectors must be compatible!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'solver_restrictionScalar')
+          OU_CLASS_ERROR,OU_MODE_STD,'solver_restrictionScalar')
       call sys_halt()
     end if
 
@@ -5648,7 +5726,7 @@ contains
 
         case default
           call output_line('Invalid number of vertices per element!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'do_restrictionP1Q1')
+              OU_CLASS_ERROR,OU_MODE_STD,'do_restrictionP1Q1')
           call sys_halt()
         end select
       end do
@@ -5692,7 +5770,7 @@ contains
 
     if (rxFine%nblocks .ne. rxCoarse%nblocks) then
       call output_line('Block vectors must be compatible!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'solver_restrictionBlock')
+          OU_CLASS_ERROR,OU_MODE_STD,'solver_restrictionBlock')
       call sys_halt()
     end if
 
@@ -5843,8 +5921,10 @@ contains
       end if
 
     case default
-      call output_line('Invalid stopping criterion',&
-          OU_CLASS_ERROR,OU_MODE_STD,'solver_testConvergence')
+      if (rsolver%coutputModeError .gt. 0) then
+        call output_line('Invalid stopping criterion',&
+            OU_CLASS_ERROR,OU_MODE_STD,'solver_testConvergence')
+      end if
       call sys_halt()
     end select
 
@@ -6198,13 +6278,13 @@ contains
 
           case default
             call output_line('Unsupported interleave matrix format!',&
-                             OU_CLASS_ERROR,OU_MODE_STD,'do_scalarILU')
+                OU_CLASS_ERROR,OU_MODE_STD,'do_scalarILU')
             call sys_halt()
           end select
 
         case default
           call output_line('Unsupported matrix format!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'do_scalarILU')
+              OU_CLASS_ERROR,OU_MODE_STD,'do_scalarILU')
           call sys_halt()
         end select
 
@@ -6227,7 +6307,7 @@ contains
 
         case default
           call output_line('Unsupported matrix format!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'do_scalarILU')
+              OU_CLASS_ERROR,OU_MODE_STD,'do_scalarILU')
           call sys_halt()
         end select
 
@@ -6311,7 +6391,7 @@ contains
           select case(ierr)
           case (:-1)
             call output_line('Singular matrix!',&
-                             OU_CLASS_ERROR,OU_MODE_STD,'solver_initILU')
+                OU_CLASS_ERROR,OU_MODE_STD,'solver_initILU')
             call sys_halt()
 
           case (0)
@@ -6325,7 +6405,7 @@ contains
           case default
             ! Unknown error
             call output_line('Internal error!',&
-                             OU_CLASS_ERROR,OU_MODE_STD,'solver_initILU')
+                OU_CLASS_ERROR,OU_MODE_STD,'solver_initILU')
             call sys_halt()
           end select
         end do try
@@ -6834,7 +6914,7 @@ contains
     if ((rsolver%rmatrix%nblocksPerCol .eq. 0) .or.&
         (rsolver%rmatrix%nblocksPerRow .eq. 0)) then
       call output_line('Matrix must be associated to solver node!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'solver_initUMFPACK')
+          OU_CLASS_ERROR,OU_MODE_STD,'solver_initUMFPACK')
       call sys_halt()
     end if
 
@@ -6861,19 +6941,19 @@ contains
     case (1)
       ! Singular matrix
       call output_line('Matrix is singular!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'solver_initUMFPACK')
+          OU_CLASS_ERROR,OU_MODE_STD,'solver_initUMFPACK')
       call sys_halt()
 
     case (-1)
       ! Insufficient memory
       call output_line('Insufficient memory!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'solver_initUMFPACK')
+          OU_CLASS_ERROR,OU_MODE_STD,'solver_initUMFPACK')
       call sys_halt()
 
     case default
       ! Internal error
       call output_line('Internal UMFPACK error!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'solver_initUMFPACK')
+          OU_CLASS_ERROR,OU_MODE_STD,'solver_initUMFPACK')
       call sys_halt()
     end select
 
@@ -6891,19 +6971,19 @@ contains
     case (1)
       ! Singular matrix
       call output_line('Matrix is singular!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'solver_initUMFPACK')
+          OU_CLASS_ERROR,OU_MODE_STD,'solver_initUMFPACK')
       call sys_halt()
 
     case (-1)
       ! Insufficient memory
       call output_line('Insufficient memory!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'solver_initUMFPACK')
+          OU_CLASS_ERROR,OU_MODE_STD,'solver_initUMFPACK')
       call sys_halt()
 
     case default
       ! Unknown error
       call output_line('Internal UMFPACK error!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'solver_initUMFPACK')
+          OU_CLASS_ERROR,OU_MODE_STD,'solver_initUMFPACK')
       call sys_halt()
     end select
 
@@ -6946,7 +7026,7 @@ contains
 
         case default
           call output_line('Unsupported matrix format!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'initPrepareMatrix')
+              OU_CLASS_ERROR,OU_MODE_STD,'initPrepareMatrix')
           call sys_halt()
         end select
 
@@ -6957,7 +7037,7 @@ contains
       else
 
         call output_line('Block matrices are not supported!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'initPrepareMatrix')
+            OU_CLASS_ERROR,OU_MODE_STD,'initPrepareMatrix')
         call sys_halt()
 
       end if
@@ -6965,5 +7045,93 @@ contains
     end subroutine initPrepareMatrix
 
   end subroutine solver_initUMFPACK
+
+  ! *****************************************************************************
+
+!<subroutine>
+
+  subroutine solver_decodeOutputLevel(rsolver)
+
+!<description>
+    ! This subroutine decodes the output level information into bitfields
+!</description>
+
+!<inputoutput>
+    type(t_solver), intent(inout) :: rsolver
+!</inputoutput>
+!</subroutine>
+
+    ! local variable
+    character(len=3) :: coutputLevel
+    integer :: i
+
+    ! Initialisation
+    rsolver%coutputModeError   = 0_I32
+    rsolver%coutputModeWarning = 0_I32
+    rsolver%coutputModeInfo    = 0_I32
+    rsolver%coutputModeVerbose = 0_I32
+
+    coutputLevel = sys_i03(rsolver%ioutputLevel)
+    
+    ! Check output level for benchmark log file
+    read(coutputLevel(1:1),*) i
+    select case(i)
+    case (SV_IOLEVEL_VERBOSE)
+      rsolver%coutputModeVerbose = rsolver%coutputModeVerbose + OU_MODE_BENCHLOG
+    case (SV_IOLEVEL_INFO)
+      rsolver%coutputModeInfo    = rsolver%coutputModeInfo    + OU_MODE_BENCHLOG
+    case (SV_IOLEVEL_WARNING)
+      rsolver%coutputModeWarning = rsolver%coutputModeWarning + OU_MODE_BENCHLOG
+    case (SV_IOLEVEL_ERROR)
+      rsolver%coutputModeError   = rsolver%coutputModeError   + OU_MODE_BENCHLOG
+    case (SV_IOLEVEL_SILENT)
+    case default
+      call output_line('Invalid output level.',&
+          OU_CLASS_MSG, OU_MODE_STD,'solver_decodeOutputLevel')
+    end select
+
+    ! Check output level for terminal
+    read(coutputLevel(2:2),*) i
+    select case(i)
+    case (SV_IOLEVEL_VERBOSE)
+      rsolver%coutputModeVerbose = rsolver%coutputModeVerbose + OU_MODE_TERM
+    case (SV_IOLEVEL_INFO)
+      rsolver%coutputModeInfo    = rsolver%coutputModeInfo    + OU_MODE_TERM
+    case (SV_IOLEVEL_WARNING)
+      rsolver%coutputModeWarning = rsolver%coutputModeWarning + OU_MODE_TERM
+    case (SV_IOLEVEL_ERROR)
+      rsolver%coutputModeError   = rsolver%coutputModeError   + OU_MODE_TERM
+    case (SV_IOLEVEL_SILENT)
+    case default
+      call output_line('Invalid output level.',&
+          OU_CLASS_MSG, OU_MODE_STD,'solver_decodeOutputLevel')
+    end select
+
+    ! Check output level for log file
+    read(coutputLevel(3:3),*) i
+    select case(i)
+    case (SV_IOLEVEL_VERBOSE)
+      rsolver%coutputModeVerbose = rsolver%coutputModeVerbose + OU_MODE_LOG
+    case (SV_IOLEVEL_INFO)
+      rsolver%coutputModeInfo    = rsolver%coutputModeInfo    + OU_MODE_LOG
+    case (SV_IOLEVEL_WARNING)
+      rsolver%coutputModeWarning = rsolver%coutputModeWarning + OU_MODE_LOG
+    case (SV_IOLEVEL_ERROR)
+      rsolver%coutputModeError   = rsolver%coutputModeError   + OU_MODE_LOG
+    case (SV_IOLEVEL_SILENT)
+    case default
+      call output_line('Invalid output level.',&
+          OU_CLASS_MSG, OU_MODE_STD,'solver_decodeOutputLevel')
+    end select
+
+    ! Adjust lower log levels
+    rsolver%coutputModeInfo    = ior(rsolver%coutputModeInfo,&
+                                     rsolver%coutputModeVerbose)
+    rsolver%coutputModeWarning = ior(rsolver%coutputModeWarning,&
+                                     rsolver%coutputModeInfo)
+    rsolver%coutputModeError   = ior(rsolver%coutputModeError,&
+                                     rsolver%coutputModeWarning)
+
+  end subroutine solver_decodeOutputLevel
 
 end module solveraux

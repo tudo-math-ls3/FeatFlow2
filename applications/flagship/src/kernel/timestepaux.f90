@@ -89,6 +89,12 @@ module timestepaux
     ! This determines the output level of the time-stepping algorithm
     integer :: ioutputLevel = 0
 
+    ! INTERNAL PARAMETER FOR THE TIME-STEPPING ALGORITHM
+    integer(I32) :: coutputModeError   = 0_I32
+    integer(I32) :: coutputModeWarning = 0_I32
+    integer(I32) :: coutputModeInfo    = 0_I32
+    integer(I32) :: coutputModeVerbose = 0_I32
+
     ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
     ! Norm in which relative changes of solution should be measured
     integer :: isolNorm = 0
