@@ -1599,6 +1599,9 @@ contains
     ! with v being a FEM function.
     !
     ! The FEM function v(x,y) must be provided in revalVectors.
+    ! It must have as many components as the right hand side f,
+    ! f_i is computed from v_i.
+    !
     ! The routine only supports non-interleaved vectors.
     !
     ! This routine is typically used in L2 projections for setting up the
@@ -1636,31 +1639,23 @@ contains
 !<subroutine>
 
     ! Local variables
-    real(DP) :: dbasI, dval, dx, dy
+    real(DP) :: dbasI, dval
     integer :: icomp
     integer :: iel, icubp, idofe
     real(DP), dimension(:,:), pointer :: p_DlocalVector
     real(DP), dimension(:,:,:,:), pointer :: p_DbasTest
     real(DP), dimension(:,:), pointer :: p_DcubWeight
     type(t_bmaVectorData), pointer :: p_rvectorData
-    real(DP), dimension(:,:,:), pointer :: p_Dpoints
     real(DP), dimension(:,:), pointer :: p_Dfunc
   
     ! Get cubature weights data
     p_DcubWeight => rassemblyData%p_DcubWeight
 
-    ! Get the coordinates of the cubature points
-    p_Dpoints => rassemblyData%revalElementSet%p_DpointsReal
-    
     if (revalVectors%ncount .eq. 0) then
       call output_line ("FEM function missing.",&
-          OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_rhsBubblePlusFE")
+          OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_rhsFE")
       call sys_halt()
     end if
-    
-    ! Get the data array with the values of the FEM function
-    ! in the cubature points
-    p_Dfunc => revalVectors%p_RvectorData(1)%p_Ddata(:,:,DER_FUNC2D)
     
     ! Loop over the components
     do icomp = 1,size(rvectorData)
@@ -1670,18 +1665,18 @@ contains
       p_DlocalVector => RvectorData(icomp)%p_Dentry
       p_DbasTest => RvectorData(icomp)%p_DbasTest
     
+      ! Get the data array with the values of the FEM function v_i
+      ! in the cubature points.
+      p_Dfunc => revalVectors%p_RvectorData(icomp)%p_Ddata(:,:,DER_FUNC2D)
+      
       ! Loop over the elements in the current set.
       do iel = 1,nelements
 
         ! Loop over all cubature points on the current element
         do icubp = 1,npointsPerElement
         
-          ! Get the coordinates of the cubature point.
-          dx = p_Dpoints(1,icubp,iel)
-          dy = p_Dpoints(2,icubp,iel)
-
           ! Calculate the values of the RHS in the cubature point:
-          !     f = 32*y*(1-y)+32*x*(1-x) + v(x,y)
+          !     f_i = v_i(x,y)
           dval = p_Dfunc(icubp,iel)
           
           ! Outer loop over the DOF's i=1..ndof on our current element,
