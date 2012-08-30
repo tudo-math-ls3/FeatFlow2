@@ -3683,7 +3683,7 @@ contains
 !</subroutine>
 
     ! local variables
-    real(DP), dimension(:,:), pointer :: p_Dcoords
+    real(DP), dimension(:), pointer :: p_DdofCoords
     real(DP), dimension(:), pointer :: p_DdataSolution
     real(DP), dimension(:), pointer :: p_DdataSource
     real(DP), dimension(:), pointer :: p_DdataMassMatrix
@@ -3691,7 +3691,7 @@ contains
     character(LEN=SYS_STRLEN) :: smode
     real(DP) :: deffectiveRadius
     integer :: neq, nvar, icoordsystem, igeometricsourcetype
-    integer :: isystemFormat, massmatrix
+    integer :: isystemFormat, massmatrix, dofCoords
 
     ! Check of source and solution vector are compatible
     call lsysbl_isVectorCompatible(rsolution, rsource)
@@ -3717,6 +3717,8 @@ contains
           ssectionName, 'igeometricsourcetype', igeometricsourcetype, MASS_LUMPED)
       call parlst_getvalue_double(rparlist,&
           ssectionName, 'deffectiveRadius', deffectiveRadius, 1e-4_DP)
+      call parlst_getvalue_int(rparlist,&
+          ssectionName, 'dofCoords', dofCoords, 0)
       
       ! Get pointers
       call lsysbl_getbase_double(rsolution, p_DdataSolution)
@@ -3726,13 +3728,9 @@ contains
       nvar = hydro_getNVAR(rproblemLevel)
       neq  = rsolution%NEQ/nvar
       
-      ! Get coordinates of the triangulation
-      ! NOTE: This implementation only works for linear and bilinear finite
-      !       elements where the nodal degrees of freedom are located at the
-      !       vertices of the triangulation. For higher-order finite elements
-      !       the linearform needs to be assembled by numerical integration
-      call storage_getbase_double2d(&
-          rproblemLevel%rtriangulation%h_DvertexCoords, p_Dcoords)
+      ! Get coordinates of the global DOF`s
+      call lsysbl_getbase_double(&
+          rproblemLevel%RvectorBlock(dofCoords), p_DdofCoords)
       
       ! What type of coordinate system are we?
       select case(icoordsystem)
@@ -3757,12 +3755,14 @@ contains
           select case(isystemFormat)
           case (SYSTEM_INTERLEAVEFORMAT)
             call doSource2DIntlLumped(dscale, deffectiveRadius,&
-                neq, nvar, bclear, p_Dcoords, p_DdataMassMatrix,&
+                rproblemLevel%rtriangulation%ndim, neq, nvar, bclear,&
+                p_DdofCoords, p_DdataMassMatrix,&
                 p_DdataSolution, p_DdataSource)
 
           case (SYSTEM_BLOCKFORMAT)
             call doSource2DBlockLumped(dscale, deffectiveRadius,&
-                neq, nvar, bclear, p_Dcoords, p_DdataMassMatrix,&
+                rproblemLevel%rtriangulation%ndim, neq, nvar, bclear,&
+                p_DdofCoords, p_DdataMassMatrix,&
                 p_DdataSolution, p_DdataSource)
 
           case default
@@ -3783,13 +3783,15 @@ contains
           select case(isystemFormat)
           case (SYSTEM_INTERLEAVEFORMAT)
             call doSource2DIntlConsistent(dscale, deffectiveRadius,&
-                neq, nvar, bclear, p_Dcoords, p_DdataMassMatrix, p_Kld,&
-                p_Kcol, p_DdataSolution, p_DdataSource)
+                rproblemLevel%rtriangulation%ndim, neq, nvar, bclear,&
+                p_DdofCoords, p_DdataMassMatrix, p_Kld, p_Kcol,&
+                p_DdataSolution, p_DdataSource)
 
           case (SYSTEM_BLOCKFORMAT)
             call doSource2DBlockConsistent(dscale, deffectiveRadius,&
-                neq, nvar, bclear, p_Dcoords, p_DdataMassMatrix, p_Kld,&
-                p_Kcol, p_DdataSolution, p_DdataSource)
+                rproblemLevel%rtriangulation%ndim, neq, nvar, bclear,&
+                p_DdofCoords, p_DdataMassMatrix, p_Kld, p_Kcol,&
+                p_DdataSolution, p_DdataSource)
 
           case default
             call output_line('Invalid system format!',&
@@ -3820,12 +3822,14 @@ contains
           select case(isystemFormat)
           case (SYSTEM_INTERLEAVEFORMAT)
             call doSource1DIntlLumped(dscale, deffectiveRadius,&
-                neq, nvar, bclear, p_Dcoords, p_DdataMassMatrix,&
+                rproblemLevel%rtriangulation%ndim, neq, nvar, bclear,&
+                p_DdofCoords, p_DdataMassMatrix,&
                 p_DdataSolution, p_DdataSource)
             
           case (SYSTEM_BLOCKFORMAT)
             call doSource1DBlockLumped(dscale, deffectiveRadius,&
-                neq, nvar, bclear, p_Dcoords, p_DdataMassMatrix,&
+                rproblemLevel%rtriangulation%ndim, neq, nvar, bclear,&
+                p_DdofCoords, p_DdataMassMatrix,&
                 p_DdataSolution, p_DdataSource)
 
           case default
@@ -3846,13 +3850,15 @@ contains
           select case(isystemFormat)
           case (SYSTEM_INTERLEAVEFORMAT)
             call doSource1DIntlConsistent(dscale, deffectiveRadius,&
-                neq, nvar, bclear, p_Dcoords, p_DdataMassMatrix, p_Kld,&
-                p_Kcol, p_DdataSolution, p_DdataSource)
+                rproblemLevel%rtriangulation%ndim, neq, nvar, bclear,&
+                p_DdofCoords, p_DdataMassMatrix, p_Kld, p_Kcol,&
+                p_DdataSolution, p_DdataSource)
 
           case (SYSTEM_BLOCKFORMAT)
             call doSource1DBlockConsistent(dscale, deffectiveRadius,&
-                neq, nvar, bclear, p_Dcoords, p_DdataMassMatrix, p_Kld,&
-                p_Kcol, p_DdataSolution, p_DdataSource)
+                rproblemLevel%rtriangulation%ndim, neq, nvar, bclear,&
+                p_DdofCoords, p_DdataMassMatrix, p_Kld, p_Kcol,&
+                p_DdataSolution, p_DdataSource)
             
           case default
             call output_line('Invalid system format!',&
@@ -3883,12 +3889,14 @@ contains
           select case(isystemFormat)
           case (SYSTEM_INTERLEAVEFORMAT)
             call doSource1DIntlLumped(2*dscale, deffectiveRadius,&
-                neq, nvar, bclear, p_Dcoords, p_DdataMassMatrix,&
+                rproblemLevel%rtriangulation%ndim, neq, nvar, bclear,&
+                p_DdofCoords, p_DdataMassMatrix,&
                 p_DdataSolution, p_DdataSource)
 
           case (SYSTEM_BLOCKFORMAT)
             call doSource1DBlockLumped(2*dscale, deffectiveRadius,&
-                neq, nvar, bclear, p_Dcoords, p_DdataMassMatrix,&
+                rproblemLevel%rtriangulation%ndim, neq, nvar, bclear,&
+                p_DdofCoords, p_DdataMassMatrix,&
                 p_DdataSolution, p_DdataSource)
 
           case default
@@ -3909,13 +3917,15 @@ contains
           select case(isystemFormat)
           case (SYSTEM_INTERLEAVEFORMAT)
             call doSource1DIntlConsistent(2*dscale, deffectiveRadius,&
-                neq, nvar, bclear, p_Dcoords, p_DdataMassMatrix, p_Kld,&
-                p_Kcol, p_DdataSolution, p_DdataSource)
+                rproblemLevel%rtriangulation%ndim, neq, nvar, bclear,&
+                p_DdofCoords, p_DdataMassMatrix, p_Kld, p_Kcol,&
+                p_DdataSolution, p_DdataSource)
 
           case (SYSTEM_BLOCKFORMAT)
             call doSource1DBlockConsistent(2*dscale, deffectiveRadius,&
-                neq, nvar, bclear, p_Dcoords, p_DdataMassMatrix, p_Kld,&
-                p_Kcol, p_DdataSolution, p_DdataSource)
+                rproblemLevel%rtriangulation%ndim, neq, nvar, bclear,&
+                p_DdofCoords, p_DdataMassMatrix, p_Kld, p_Kcol,&
+                p_DdataSolution, p_DdataSource)
 
           case default
             call output_line('Invalid system format!',&
@@ -3963,7 +3973,7 @@ contains
     ! interleaved format using the lumped mass matrix.
     
     subroutine doSource1DIntlLumped(deffectiveScale,&
-        deffectiveRadius, neq, nvar, bclear, Dcoords,&
+        deffectiveRadius, ndim, neq, nvar, bclear, Dcoords,&
         DdataMassMatrix, DdataSolution, DdataSource)
 
       ! Effective scaling parameter (dalpha * dscale)
@@ -3971,6 +3981,9 @@ contains
 
       ! Effectiive radius
       real(DP), intent(in) :: deffectiveRadius
+
+      ! Spatial dimension
+      integer, intent(in) :: ndim
 
       ! Number of equation (nodal degrees of freedom)
       integer, intent(in) :: neq
@@ -3982,7 +3995,7 @@ contains
       logical, intent(in) :: bclear
 
       ! Coordinates of the nodal degrees of freedom
-      real(DP), dimension(:,:), intent(in) :: Dcoords
+      real(DP), dimension(:), intent(in) :: Dcoords
 
       ! Lumped mass matrix
       real(DP), dimension(:), intent(in) :: DdataMassMatrix
@@ -4010,7 +4023,8 @@ contains
         do ieq = 1, neq
 
           ! Get the r-coordinate and compute the radius
-          daux = Dcoords(1,ieq); dradius = max(abs(daux), deffectiveRadius)
+          daux = Dcoords(ndim*(ieq-1)+1)
+          dradius = max(abs(daux), deffectiveRadius)
 
           ! Compute unit vector into the origin, scale it be the user-
           ! defined scaling parameter dscale and devide it by the radius
@@ -4039,7 +4053,8 @@ contains
         do ieq = 1, neq
 
           ! Get the r-coordinate and compute the radius
-          daux = Dcoords(1,ieq); dradius = max(abs(daux), deffectiveRadius)
+          daux = Dcoords(ndim*(ieq-1)+1)
+          dradius = max(abs(daux), deffectiveRadius)
 
           ! Compute unit vector into the origin, scale it be the user-
           ! defined scaling parameter dscale and devide it by the radius
@@ -4070,7 +4085,7 @@ contains
     ! block format using the lumped mass matrix.
     
     subroutine doSource1DBlockLumped(deffectiveScale,&
-        deffectiveRadius, neq, nvar, bclear, Dcoords,&
+        deffectiveRadius, ndim, neq, nvar, bclear, Dcoords,&
         DdataMassMatrix, DdataSolution, DdataSource)
 
       ! Effective scaling parameter (dalpha * dscale)
@@ -4078,6 +4093,9 @@ contains
 
       ! Effectiive radius
       real(DP), intent(in) :: deffectiveRadius
+
+      ! Spatial dimension
+      integer, intent(in) :: ndim
 
       ! Number of equation (nodal degrees of freedom)
       integer, intent(in) :: neq
@@ -4089,7 +4107,7 @@ contains
       logical, intent(in) :: bclear
 
       ! Coordinates of the nodal degrees of freedom
-      real(DP), dimension(:,:), intent(in) :: Dcoords
+      real(DP), dimension(:), intent(in) :: Dcoords
 
       ! Lumped mass matrix
       real(DP), dimension(:), intent(in) :: DdataMassMatrix
@@ -4117,7 +4135,8 @@ contains
         do ieq = 1, neq
 
           ! Get the r-coordinate and compute the radius
-          daux = Dcoords(1,ieq); dradius = max(abs(daux), deffectiveRadius)
+          daux = Dcoords(ndim*(ieq-1)+1)
+          dradius = max(abs(daux), deffectiveRadius)
 
           ! Compute unit vector into the origin, scale it be the user-
           ! defined scaling parameter dscale and devide it by the radius
@@ -4146,7 +4165,8 @@ contains
         do ieq = 1, neq
 
           ! Get the r-coordinate and compute the radius
-          daux = Dcoords(1,ieq); dradius = max(abs(daux), deffectiveRadius)
+          daux = Dcoords(ndim*(ieq-1)+1)
+          dradius = max(abs(daux), deffectiveRadius)
 
           ! Compute unit vector into the origin, scale it be the user-
           ! defined scaling parameter dscale and devide it by the radius
@@ -4177,7 +4197,7 @@ contains
     ! interleaved format using the consistent mass matrix.
     
     subroutine doSource1DIntlConsistent(deffectiveScale,&
-        deffectiveRadius, neq, nvar, bclear, Dcoords,&
+        deffectiveRadius, ndim, neq, nvar, bclear, Dcoords,&
         DdataMassMatrix, Kld, Kcol, DdataSolution, DdataSource)
 
       ! Effective scaling parameter (dalpha * dscale)
@@ -4185,6 +4205,9 @@ contains
 
       ! Effectiive radius
       real(DP), intent(in) :: deffectiveRadius
+
+      ! Spatial dimension
+      integer, intent(in) :: ndim
 
       ! Number of equation (nodal degrees of freedom)
       integer, intent(in) :: neq
@@ -4196,7 +4219,7 @@ contains
       logical, intent(in) :: bclear
 
       ! Coordinates of the nodal degrees of freedom
-      real(DP), dimension(:,:), intent(in) :: Dcoords
+      real(DP), dimension(:), intent(in) :: Dcoords
 
       ! Consistent mass matrix
       real(DP), dimension(:), intent(in) :: DdataMassMatrix
@@ -4237,7 +4260,8 @@ contains
             jeq = Kcol(ia)
             
             ! Get the r-coordinate and compute the radius
-            daux = Dcoords(1,jeq); dradius = max(abs(daux), deffectiveRadius)
+            daux = Dcoords(ndim*(jeq-1)+1)
+            dradius = max(abs(daux), deffectiveRadius)
             
             ! Compute unit vector into the origin, scale it be the user-
             ! defined scaling parameter dscale and devide it by the radius
@@ -4279,7 +4303,8 @@ contains
             jeq = Kcol(ia)
             
             ! Get the r-coordinate and compute the radius
-            daux = Dcoords(1,jeq); dradius = max(abs(daux), deffectiveRadius)
+            daux = Dcoords(ndim*(jeq-1)+1)
+            dradius = max(abs(daux), deffectiveRadius)
 
             ! Compute unit vector into the origin, scale it be the user-
             ! defined scaling parameter dscale and devide it by the radius
@@ -4314,7 +4339,7 @@ contains
     ! block format using the consistent mass matrix.
     
     subroutine doSource1DBlockConsistent(deffectiveScale,&
-        deffectiveRadius, neq, nvar, bclear, Dcoords,&
+        deffectiveRadius, ndim, neq, nvar, bclear, Dcoords,&
         DdataMassMatrix, Kld, Kcol, DdataSolution, DdataSource)
 
       ! Effective scaling parameter (dalpha * dscale)
@@ -4323,6 +4348,9 @@ contains
       ! Effectiive radius
       real(DP), intent(in) :: deffectiveRadius
 
+      ! Spatial dimension
+      integer, intent(in) :: ndim
+      
       ! Number of equation (nodal degrees of freedom)
       integer, intent(in) :: neq
       
@@ -4333,7 +4361,7 @@ contains
       logical, intent(in) :: bclear
 
       ! Coordinates of the nodal degrees of freedom
-      real(DP), dimension(:,:), intent(in) :: Dcoords
+      real(DP), dimension(:), intent(in) :: Dcoords
 
       ! Consistent mass matrix
       real(DP), dimension(:), intent(in) :: DdataMassMatrix
@@ -4374,7 +4402,8 @@ contains
             jeq = Kcol(ia)
             
             ! Get the r-coordinate and compute the radius
-            daux = Dcoords(1,jeq); dradius = max(abs(daux), deffectiveRadius)
+            daux = Dcoords(ndim*(jeq-1)+1)
+            dradius = max(abs(daux), deffectiveRadius)
             
             ! Compute unit vector into the origin, scale it be the user-
             ! defined scaling parameter dscale and devide it by the radius
@@ -4416,7 +4445,8 @@ contains
             jeq = Kcol(ia)
             
             ! Get the r-coordinate and compute the radius
-            daux = Dcoords(1,jeq); dradius = max(abs(daux), deffectiveRadius)
+            daux = Dcoords(ndim*(jeq-1)+1)
+            dradius = max(abs(daux), deffectiveRadius)
 
             ! Compute unit vector into the origin, scale it be the user-
             ! defined scaling parameter dscale and devide it by the radius
@@ -4453,7 +4483,7 @@ contains
     ! systems stored in interleaved format using the lumped mass matrix.
     
     subroutine doSource2DIntlLumped(deffectiveScale,&
-        deffectiveRadius, neq, nvar, bclear, Dcoords,&
+        deffectiveRadius, ndim, neq, nvar, bclear, Dcoords,&
         DdataMassMatrix, DdataSolution, DdataSource)
 
       ! Effective scaling parameter (dalpha * dscale)
@@ -4461,7 +4491,10 @@ contains
 
       ! Effectiive radius
       real(DP), intent(in) :: deffectiveRadius
-
+      
+      ! Spatial dimension
+      integer, intent(in) :: ndim
+      
       ! Number of equation (nodal degrees of freedom)
       integer, intent(in) :: neq
       
@@ -4472,7 +4505,7 @@ contains
       logical, intent(in) :: bclear
 
       ! Coordinates of the nodal degrees of freedom
-      real(DP), dimension(:,:), intent(in) :: Dcoords
+      real(DP), dimension(:), intent(in) :: Dcoords
 
       ! Lumped mass matrix
       real(DP), dimension(:), intent(in) :: DdataMassMatrix
@@ -4500,7 +4533,8 @@ contains
         do ieq = 1, neq
 
           ! Get the r-coordinate and compute the radius
-          daux = Dcoords(1,ieq); dradius = max(abs(daux), deffectiveRadius)
+          daux = Dcoords(ndim*(ieq-1)+1)
+          dradius = max(abs(daux), deffectiveRadius)
 
           ! Compute unit vector into the origin, scale it be the user-
           ! defined scaling parameter dscale and devide it by the radius
@@ -4531,7 +4565,8 @@ contains
         do ieq = 1, neq
 
           ! Get the r-coordinate and compute the radius
-          daux = Dcoords(1,ieq); dradius = max(abs(daux), deffectiveRadius)
+          daux = Dcoords(ndim*(ieq-1)+1)
+          dradius = max(abs(daux), deffectiveRadius)
 
           ! Compute unit vector into the origin, scale it be the user-
           ! defined scaling parameter dscale and devide it by the radius
@@ -4563,7 +4598,7 @@ contains
     ! systems stored in block format using the lumped mass matrix.
     
     subroutine doSource2DBlockLumped(deffectiveScale,&
-        deffectiveRadius, neq, nvar, bclear, Dcoords,&
+        deffectiveRadius, ndim, neq, nvar, bclear, Dcoords,&
         DdataMassMatrix, DdataSolution, DdataSource)
 
       ! Effective scaling parameter (dalpha * dscale)
@@ -4571,6 +4606,9 @@ contains
 
       ! Effectiive radius
       real(DP), intent(in) :: deffectiveRadius
+
+      ! Spatial dimension
+      integer, intent(in) :: ndim
 
       ! Number of equation (nodal degrees of freedom)
       integer, intent(in) :: neq
@@ -4582,7 +4620,7 @@ contains
       logical, intent(in) :: bclear
 
       ! Coordinates of the nodal degrees of freedom
-      real(DP), dimension(:,:), intent(in) :: Dcoords
+      real(DP), dimension(:), intent(in) :: Dcoords
 
       ! Lumped mass matrix
       real(DP), dimension(:), intent(in) :: DdataMassMatrix
@@ -4610,7 +4648,8 @@ contains
         do ieq = 1, neq
 
           ! Get the r-coordinate and compute the radius
-          daux = Dcoords(1,ieq); dradius = max(abs(daux), deffectiveRadius)
+          daux = Dcoords(ndim*(ieq-1)+1)
+          dradius = max(abs(daux), deffectiveRadius)
 
           ! Compute unit vector into the origin, scale it be the user-
           ! defined scaling parameter dscale and devide it by the radius
@@ -4641,7 +4680,8 @@ contains
         do ieq = 1, neq
 
           ! Get the r-coordinate and compute the radius
-          daux = Dcoords(1,ieq); dradius = max(abs(daux), deffectiveRadius)
+          daux = Dcoords(ndim*(ieq-1)+1)
+          dradius = max(abs(daux), deffectiveRadius)
 
           ! Compute unit vector into the origin, scale it be the user-
           ! defined scaling parameter dscale and devide it by the radius
@@ -4673,7 +4713,7 @@ contains
     ! systems stored in interleaved format using the consistent mass matrix.
     
     subroutine doSource2DIntlConsistent(deffectiveScale,&
-        deffectiveRadius, neq, nvar, bclear, Dcoords,&
+        deffectiveRadius, ndim, neq, nvar, bclear, Dcoords,&
         DdataMassMatrix, Kld, Kcol, DdataSolution, DdataSource)
 
       ! Effective scaling parameter (dalpha * dscale)
@@ -4681,6 +4721,9 @@ contains
 
       ! Effectiive radius
       real(DP), intent(in) :: deffectiveRadius
+
+      ! Spatial dimension
+      integer, intent(in) :: ndim
 
       ! Number of equation (nodal degrees of freedom)
       integer, intent(in) :: neq
@@ -4692,7 +4735,7 @@ contains
       logical, intent(in) :: bclear
 
       ! Coordinates of the nodal degrees of freedom
-      real(DP), dimension(:,:), intent(in) :: Dcoords
+      real(DP), dimension(:), intent(in) :: Dcoords
 
       ! Consistent mass matrix
       real(DP), dimension(:), intent(in) :: DdataMassMatrix
@@ -4733,7 +4776,8 @@ contains
             jeq = Kcol(ia)
             
             ! Get the r-coordinate and compute the radius
-            daux = Dcoords(1,jeq); dradius = max(abs(daux), deffectiveRadius)
+            daux = Dcoords(ndim*(jeq-1)+1)
+            dradius = max(abs(daux), deffectiveRadius)
             
             ! Compute unit vector into the origin, scale it be the user-
             ! defined scaling parameter dscale and devide it by the radius
@@ -4777,7 +4821,8 @@ contains
             jeq = Kcol(ia)
             
             ! Get the r-coordinate and compute the radius
-            daux = Dcoords(1,jeq); dradius = max(abs(daux), deffectiveRadius)
+            daux = Dcoords(ndim*(jeq-1)+1)
+            dradius = max(abs(daux), deffectiveRadius)
 
             ! Compute unit vector into the origin, scale it be the user-
             ! defined scaling parameter dscale and devide it by the radius
@@ -4813,7 +4858,7 @@ contains
     ! systems stored in block format using the consistent mass matrix.
     
     subroutine doSource2DBlockConsistent(deffectiveScale,&
-        deffectiveRadius, neq, nvar, bclear, Dcoords,&
+        deffectiveRadius, ndim, neq, nvar, bclear, Dcoords,&
         DdataMassMatrix, Kld, Kcol, DdataSolution, DdataSource)
 
       ! Effective scaling parameter (dalpha * dscale)
@@ -4821,6 +4866,9 @@ contains
 
       ! Effectiive radius
       real(DP), intent(in) :: deffectiveRadius
+
+      ! Spatial dimension
+      integer, intent(in) :: ndim
 
       ! Number of equation (nodal degrees of freedom)
       integer, intent(in) :: neq
@@ -4832,7 +4880,7 @@ contains
       logical, intent(in) :: bclear
 
       ! Coordinates of the nodal degrees of freedom
-      real(DP), dimension(:,:), intent(in) :: Dcoords
+      real(DP), dimension(:), intent(in) :: Dcoords
 
       ! Consistent mass matrix
       real(DP), dimension(:), intent(in) :: DdataMassMatrix
@@ -4873,7 +4921,8 @@ contains
             jeq = Kcol(ia)
             
             ! Get the r-coordinate and compute the radius
-            daux = Dcoords(1,jeq); dradius = max(abs(daux), deffectiveRadius)
+            daux = Dcoords(ndim*(jeq-1)+1)
+            dradius = max(abs(daux), deffectiveRadius)
             
             ! Compute unit vector into the origin, scale it be the user-
             ! defined scaling parameter dscale and devide it by the radius
@@ -4917,7 +4966,8 @@ contains
             jeq = Kcol(ia)
             
             ! Get the r-coordinate and compute the radius
-            daux = Dcoords(1,jeq); dradius = max(abs(daux), deffectiveRadius)
+            daux = Dcoords(ndim*(jeq-1)+1)
+            dradius = max(abs(daux), deffectiveRadius)
 
             ! Compute unit vector into the origin, scale it be the user-
             ! defined scaling parameter dscale and devide it by the radius
