@@ -113,6 +113,9 @@
 !#      -> Linear filter
 !#      -> Replace one entry(row) of a subvector with zero.
 !#
+!# 13.) vecfil_dofOverwrite
+!#      -> Overwrites a set of DOFs with specified values.
+!#
 !# Auxiliary routines, usually not called by the main program:
 !#
 !#  1.) vecfil_imposeDirichletBC
@@ -184,6 +187,7 @@ module vectorfilters
   public :: vecfil_imposeNLSlipDefectBC
   public :: vecfil_normaliseSmallL1To0Sca
   public :: vecfil_OneEntryZero
+  public :: vecfil_dofOverwrite
 
 contains
 
@@ -1102,6 +1106,93 @@ contains
     call lsyssc_getbase_double (rx%RvectorBlock(iblock),p_Ddata)
     p_Ddata(irow) = 0.0_DP
 
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine vecfil_dofOverwrite (rx,ndofs,Idofs,Ddata)
+
+!<description>
+  ! Implements a "DOF override" filter. A set of DOFs Idofs
+  ! of rx is overwritten by Ddata. If Ddata is
+  ! not specified, the DOFs are overwritten with zero.
+!</description>
+
+!<inputoutput>
+  ! The vector which is to be filtered.
+  type(t_vectorScalar), intent(inout) :: rx
+!</inputoutput>
+
+
+!<input>
+  ! Number of entries in Idofs
+  integer, intent(in) :: ndofs
+  
+  ! List of DOFs to be overwritten.
+  integer, dimension(:), intent(in) :: Idofs
+  
+  ! OPTIONAL: Data to overwrite the DOFs with.
+  ! Of not specified, the DOFs are overwritten by zero.
+  real(DP), dimension(:), intent(in), optional :: Ddata
+!</input>
+
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(:), pointer :: p_Ddata
+    integer, dimension(:), pointer :: p_Iperm
+    integer :: i
+
+    ! Get the data
+    call lsyssc_getbase_double (rx,p_Ddata)
+    
+    ! Overwrite with zero or data
+    if (present(Ddata)) then
+      
+      ! Sorting strategy active?
+      if (.not. rx%bisSorted) then
+        
+        do i=1,ndofs
+          p_Ddata (Idofs(i)) = Ddata(i)
+        end do
+      
+      else
+      
+        ! Ups, vector sorted. At first get the permutation how its sorted
+        ! - or more precisely, the back-permutation, as we need this one for
+        ! the loop below.
+        call sstrat_getSortedPosInfo(rx%p_rsortStrategy,p_Iperm)
+
+        do i=1,ndofs
+          p_Ddata (p_Iperm(i)) = 0.0_DP
+        end do
+      end if
+    
+    else
+
+      ! Sorting strategy active?
+      if (.not. rx%bisSorted) then
+        
+        do i=1,ndofs
+          p_Ddata (i) = Ddata(i)
+        end do
+      
+      else
+      
+        ! Ups, vector sorted. At first get the permutation how its sorted
+        ! - or more precisely, the back-permutation, as we need this one for
+        ! the loop below.
+        call sstrat_getSortedPosInfo(rx%p_rsortStrategy,p_Iperm)
+
+        do i=1,ndofs
+          p_Ddata (p_Iperm(i)) = 0.0_DP
+        end do
+      end if
+      
+    end if
+    
   end subroutine
 
 ! ***************************************************************************

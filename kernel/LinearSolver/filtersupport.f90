@@ -6,7 +6,7 @@
 !# <purpose>
 !# This module contains filter routines that can be used in the solution
 !# process of the problem (especially when solving linear subproblems).
-!# For using filters in a solver, a ''filter chain'' must be build up.
+!# For using filters in a solver, a ""filter chain"" must be build up.
 !# This is a simple array of filter structures that describe the filter
 !# that should be applied to a vector one after the other.
 !#
@@ -22,19 +22,19 @@
 !# that loops about all subvectors of a given vector to implement the
 !# discrete boundary conditions.
 !#
-!# 'Linear' and 'nonlinear' filters \\
+!# "Linear" and "nonlinear" filters \\
 !# -------------------------------- \\
-!# There exist two types of filters: 'Linear' and 'nonlinear' ones:
+!# There exist two types of filters: "Linear" and "nonlinear" ones:
 !#
-!# a) 'Linear' filters can be applied by a filter chain when solving
+!# a) "Linear" filters can be applied by a filter chain when solving
 !#   a linear system. The routines in this file provide the functionality
 !#   to apply such a filter chain to a vector or a matrix.
 !#   Examples for such filters are:
 !#   - Implement Dirichlet boundary conditions into a matrix/vector,
 !#   - Filter a vector to be in <tex>$L^2_0$</tex>.
 !#
-!# b) 'Nonlinear' filters are usually used inside of a nonlinear loop.
-!#   Filters of this type are somehow 'special', as they usually need
+!# b) "Nonlinear" filters are usually used inside of a nonlinear loop.
+!#   Filters of this type are somehow "special", as they usually need
 !#   extended information. These filters cannot be incorporated in a
 !#   filter chain and can therefore only be called manually and not
 !#   during the solution process of a linear system.
@@ -49,6 +49,31 @@
 !# 2.) filter_applyFilterChainMat
 !#     -> Applies a given filter chain onto a (block) matrix.
 !#
+!# The following routines can be used to build up simple filter chains:
+!#
+!# 1.) filter_clearFilterChain
+!#     -> Clears a filter chain
+!#
+!# 2.) filter_newFilterDiscBCDef
+!#     -> Adds a filter for discrete boundary conditions on the real boundary
+!#
+!# 3.) filter_newFilterDiscFBCDef
+!#     -> Adds a filter for discrete boundary conditions on fict. boundary
+!#
+!# 4.) filter_newFilterToL20
+!#     -> Adds a filter to enforce the L2_9 space for a component
+!#
+!# 5.) filter_newFilterSmallL1to0
+!#     -> Adds a filter to enforce to enforce the l1-norm of a component
+!#        to be zero
+!#
+!# 6.) filter_newFilterOneEntryZero
+!#     -> Adds a filter to put one entry to zero
+!#
+!# 7.) filter_newFilterOverwriteDofs  
+!#     -> Adds a filter to set a couple of DOFs to predefined values
+!#
+!#
 !# How to use filters \\
 !# ------------------ \\
 !# Using filters is rather easy:
@@ -56,7 +81,8 @@
 !# a) Declare an array of size FILTER_MAXFILTERS:
 !#
 !# <code>
-!#      TYPE(t_filterChain), DIMENSION(FILTER_MAXFILTERS) :: RfilterChain
+!#      type(t_filterChain), dimension(FILTER_MAXFILTERS) :: RfilterChain
+!       integer :: nsize
 !# </code>
 !#
 !# b) All filters in this chain are automatically initialised to type
@@ -64,11 +90,10 @@
 !#    entries in that array to the filter you need, e.g.:
 !#
 !# <code>
-!#      RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
-!#      RfilterChain(2)%ifilterType = FILTER_DISCBCDEFFICT
-!#
-!#      RfilterChain(3)%ifilterType = FILTER_TOL20
-!#      RfilterChain(3)%itoL20component = 3
+!#      call filter_clearFilterChain (RfilterChain,nsize)
+!#      call filter_newFilterDiscBCDef (RfilterChain,nsize,rdiscreteBC)
+!#      call filter_newFilterDiscFBCDef (RfilterChain,nsize,rdiscreteFBC)
+!#      call filter_newFilterToL20 (RfilterChain,nsize,3)
 !# </code>
 !#
 !#    The above initialisation sets up a filter chain the implementation
@@ -86,9 +111,7 @@
 !#    or specify it when initialising a linear solver, e.g.
 !#
 !# <code>
-!#      TYPE(t_filterChain), DIMENSION(FILTER_MAXFILTERS), POINTER :: p_filterChain
-!#      p_filterChain => RfilterChain
-!#      CALL linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,p_filterChain)
+!#      CALL linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,RfilterChain)
 !# </code>
 !#
 !# Notes:
@@ -97,7 +120,7 @@
 !#    Setting ifilterType=FILTER_NOFILTER stops processing the filter chain
 !#    at this position.
 !#
-!# b) There is no memory attached to filters. Therefore, no cleanup is
+!# b) There is no memory allocated in filters. Therefore, no cleanup is
 !#    necessary.
 !#
 !# </purpose>
@@ -112,6 +135,9 @@ module filtersupport
   use spatialdiscretisation
   use matrixfilters
   use vectorfilters
+  
+  use discretebc
+  use discretefbc
 
   implicit none
 
@@ -120,6 +146,14 @@ module filtersupport
   public :: t_filterChain
   public :: filter_applyFilterChainVec
   public :: filter_applyFilterChainMat
+  
+  public :: filter_clearFilterChain
+  public :: filter_newFilterDiscBCDef
+  public :: filter_newFilterDiscFBCDef
+  public :: filter_newFilterToL20
+  public :: filter_newFilterSmallL1to0
+  public :: filter_newFilterOneEntryZero
+  public :: filter_newFilterOverwriteDofs  
 
 !<constants>
 
@@ -179,6 +213,9 @@ module filtersupport
   ! Vector filter for replacing one entry of a subvector with zero.
   integer, parameter, public :: FILTER_ONEENTRY0         =  11
 
+  ! Vector filter for replacing entries of a subvector by predefined values.
+  integer, parameter, public :: FILTER_OVERWRITEDOFS     = 12
+
 !</constantblock>
 
 !</constants>
@@ -212,6 +249,26 @@ module filtersupport
     ! Information tag for the ONEENTRY0 filter if ifilterType=FILTER_ONEENTRY0:
     ! Number of the entry (row) of the subvector that should be filtered.    
     integer                            :: irow = 0
+    
+    ! Reference to a boundary condition structure for the Dirichlet boundary 
+    ! condition filter or NULL if the predefined boundary conditions in the vector
+    ! should be applied.
+    type(t_discreteBC), pointer        :: p_rdiscreteBC => null()
+
+    ! Reference to a boundary condition structure for the Dirichlet boundary 
+    ! condition filter or NULL if the predefined boundary conditions in the vector
+    ! should be applied. Fictitious boundary.
+    type(t_discreteFBC), pointer       :: p_rdiscreteFBC => null()
+    
+    ! Number of DOFs to overwrite with the DOF overwrite filter.
+    integer                            :: ndofs = 0
+
+    ! Pointer to a list of DOFs to be overwritten by the DOF overwrite filter.
+    integer, dimension(:), pointer     :: p_IdofsOverwrite => null()
+    
+    ! Pointer to a list of values to overwrite the DOFs with in the DOF overwrite
+    ! filter, or NULL() if to overwrite by zero.
+    real(DP), dimension(:), pointer     :: p_DdofsOverwrite => null()
 
   end type
 
@@ -220,6 +277,330 @@ module filtersupport
 !</types>
 
 contains
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine filter_clearFilterChain (RfilterChain,nsize)
+
+!<description>
+  ! Resets all filters in a filter chain.
+!</description>
+
+!<output>
+  ! The filter chain to be resetted.
+  type(t_filterChain), dimension(:), intent(out) :: RfilterChain
+  
+  ! OPTIONAL: Number of filters in the filter chain.
+  ! Is set to zero.
+  integer, intent(out) :: nsize
+!</output>
+
+!</subroutine>
+
+    ! The "intent(out)" Resets the filter chain.
+    ! Just reset nsize if specified.
+    nsize = 0
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine filter_newFilterDiscBCDef (RfilterChain,nsize,rdiscreteBC)
+
+!<description>
+  ! Adds a "Discrete boundary condition to defect" filter for the "real boundary".
+!</description>
+
+!<input>
+  ! OPTIONAL: Boundary condition structure to filter the defect with.
+  ! If not specified, the default boundary condition structure in the
+  ! vector is used (DEPRECATED!).
+  type(t_discreteBC), intent(in), target, optional :: rdiscreteBC
+!</input>
+
+!<inputoutput>
+  ! The filter chain.
+  ! The new filter is appended at position nsize+1.
+  ! The array must be large enough!
+  type(t_filterChain), dimension(:), intent(inout) :: RfilterChain
+
+  ! Current size of the filter chain.
+  ! This number is increased by one and the new filter is appended.
+  !
+  ! For adding the first filter, this value must be set =0 !
+  integer, intent(inout) :: nsize
+!</inputoutput>
+
+!</subroutine>
+
+    if (size(RfilterChain) .lt. nsize+1) then
+      call output_line ("Filter chain not large enough!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "filter_newFilterDiscBCDefReal")
+      call sys_halt()
+    end if
+    
+    ! Append the filter.
+    nsize = nsize + 1
+    RfilterChain(nsize)%ifilterType = FILTER_DISCBCDEFREAL
+    nullify(RfilterChain(nsize)%p_rdiscreteBC)
+    if (present(rdiscreteBC)) RfilterChain(nsize)%p_rdiscreteBC => rdiscreteBC
+
+#if WARN_DEPREC
+    if (.not. present(rdiscreteBC)) then
+      call output_line ("Using deprecated feature. Please update your code.", &
+          OU_CLASS_WARNING,OU_MODE_STD,"filter_newFilterDiscBCDef")
+    end if
+#endif
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine filter_newFilterDiscFBCDef (RfilterChain,nsize,rdiscreteFBC)
+
+!<description>
+  ! Adds a "Discrete boundary condition to defect" filter for the "real boundary".
+!</description>
+
+!<input>
+  ! OPTIONAL: Boundary condition structure to filter the defect with.
+  ! If not specified, the default boundary condition structure in the
+  ! vector is used (DEPRECATED!).
+  type(t_discreteFBC), intent(in), target, optional :: rdiscreteFBC
+!</input>
+
+!<inputoutput>
+  ! The filter chain.
+  ! The new filter is appended at position nsize+1.
+  ! The array must be large enough!
+  type(t_filterChain), dimension(:), intent(inout) :: RfilterChain
+
+  ! Current size of the filter chain.
+  ! This number is increased by one and the new filter is appended.
+  !
+  ! For adding the first filter, this value must be set =0 !
+  integer, intent(inout) :: nsize
+!</inputoutput>
+
+!</subroutine>
+
+    if (size(RfilterChain) .lt. nsize+1) then
+      call output_line ("Filter chain not large enough!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "filter_newFilterDiscBCDefReal")
+      call sys_halt()
+    end if
+    
+    ! Append the filter.
+    nsize = nsize + 1
+    RfilterChain(nsize)%ifilterType = FILTER_DISCBCDEFREAL
+    nullify(RfilterChain(nsize)%p_rdiscreteFBC)
+    if (present(rdiscreteFBC)) RfilterChain(nsize)%p_rdiscreteFBC => rdiscreteFBC
+
+#if WARN_DEPREC
+    if (.not. present(rdiscreteFBC)) then
+      call output_line ("Using deprecated feature. Please update your code.", &
+          OU_CLASS_WARNING,OU_MODE_STD,"filter_newFilterDiscFBCDef")
+    end if
+#endif
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine filter_newFilterToL20 (RfilterChain,nsize,itoL20component)
+
+!<description>
+  ! Adds a "Vector to L2_0 space" filter to a filter chain.
+!</description>
+
+!<input>
+  ! Number of the component in the vector which should be filtered.
+  integer, intent(in) :: itoL20component
+!</input>
+
+!<inputoutput>
+  ! The filter chain.
+  ! The new filter is appended at position nsize+1.
+  ! The array must be large enough!
+  type(t_filterChain), dimension(:), intent(inout) :: RfilterChain
+
+  ! Current size of the filter chain.
+  ! This number is increased by one and the new filter is appended.
+  !
+  ! For adding the first filter, this value must be set =0 !
+  integer, intent(inout) :: nsize
+!</inputoutput>
+
+!</subroutine>
+
+    if (size(RfilterChain) .lt. nsize+1) then
+      call output_line ("Filter chain not large enough!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "filter_newFilterToL20")
+      call sys_halt()
+    end if
+    
+    ! Append the filter.
+    nsize = nsize + 1
+    RfilterChain(nsize)%ifilterType = FILTER_TOL20
+    RfilterChain(nsize)%itoL20component = itoL20component
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine filter_newFilterSmallL1to0 (RfilterChain,nsize,ismallL1to0component)
+
+!<description>
+  ! Adds a "l1-norm to zero" filter to a filter chain.
+!</description>
+
+!<input>
+  ! Number of the component in the vector which should be filtered.
+  integer, intent(in) :: ismallL1to0component
+!</input>
+
+!<inputoutput>
+  ! The filter chain.
+  ! The new filter is appended at position nsize+1.
+  ! The array must be large enough!
+  type(t_filterChain), dimension(:), intent(inout) :: RfilterChain
+
+  ! Current size of the filter chain.
+  ! This number is increased by one and the new filter is appended.
+  !
+  ! For adding the first filter, this value must be set =0 !
+  integer, intent(inout) :: nsize
+!</inputoutput>
+
+!</subroutine>
+
+    if (size(RfilterChain) .lt. nsize+1) then
+      call output_line ("Filter chain not large enough!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "filter_newFilterToL20")
+      call sys_halt()
+    end if
+    
+    ! Append the filter.
+    nsize = nsize + 1
+    RfilterChain(nsize)%ifilterType = FILTER_SMALLL1TO0
+    RfilterChain(nsize)%itoL20component = ismallL1to0component
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine filter_newFilterOneEntryZero (RfilterChain,nsize,iblock,irow)
+
+!<description>
+  ! Adds a "one entry to zero" filter to a filter chain.
+!</description>
+
+!<input>
+  ! Number of the component in the vector which should be filtered.
+  integer, intent(in) :: iblock
+  
+  ! Entry which should be set to zero
+  integer, intent(in) :: irow
+!</input>
+
+!<inputoutput>
+  ! The filter chain.
+  ! The new filter is appended at position nsize+1.
+  ! The array must be large enough!
+  type(t_filterChain), dimension(:), intent(inout) :: RfilterChain
+
+  ! Current size of the filter chain.
+  ! This number is increased by one and the new filter is appended.
+  !
+  ! For adding the first filter, this value must be set =0 !
+  integer, intent(inout) :: nsize
+!</inputoutput>
+
+!</subroutine>
+
+    if (size(RfilterChain) .lt. nsize+1) then
+      call output_line ("Filter chain not large enough!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "filter_newFilterOneEntryZero")
+      call sys_halt()
+    end if
+    
+    ! Append the filter.
+    nsize = nsize + 1
+    RfilterChain(nsize)%ifilterType = FILTER_ONEENTRY0
+    RfilterChain(nsize)%iblock = iblock
+    RfilterChain(nsize)%irow = irow
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine filter_newFilterOverwriteDofs (RfilterChain,nsize,&
+      iblock,ndofs,IdofsOverwrite,DdofsOverwrite)
+
+!<description>
+  ! Adds a "DOF overwrite" filter to a filter chain.
+!</description>
+
+!<input>
+  ! Number of the block in the vector to be filtered.
+  integer, intent(in) :: iblock
+
+  ! Number of DOFs in IdofsOverwrite
+  integer, intent(in) :: ndofs
+
+  ! List of DOFs to overwrite.
+  integer, dimension(:), intent(in), target :: IdofsOverwrite
+
+  ! OPTIONAL: List of DOFs to overwrite the DOFs with.
+  ! Of not specified, teh DOFs are overwritten by zero
+  REAL(DP), dimension(:), intent(in), target, optional :: DdofsOverwrite
+!</input>
+
+!<inputoutput>
+  ! The filter chain.
+  ! The new filter is appended at position nsize+1.
+  ! The array must be large enough!
+  type(t_filterChain), dimension(:), intent(inout) :: RfilterChain
+
+  ! Current size of the filter chain.
+  ! This number is increased by one and the new filter is appended.
+  !
+  ! For adding the first filter, this value must be set =0 !
+  integer, intent(inout) :: nsize
+!</inputoutput>
+
+!</subroutine>
+
+    if (size(RfilterChain) .lt. nsize+1) then
+      call output_line ("Filter chain not large enough!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "filter_newFilterOneEntryZero")
+      call sys_halt()
+    end if
+    
+    ! Append the filter.
+    nsize = nsize + 1
+    RfilterChain(nsize)%ifilterType = FILTER_OVERWRITEDOFS
+    RfilterChain(nsize)%iblock = iblock
+    RfilterChain(nsize)%ndofs = ndofs
+    RfilterChain(nsize)%p_IdofsOverwrite => IdofsOverwrite
+    nullify(RfilterChain(nsize)%p_DdofsOverwrite)
+    if (present(DdofsOverwrite)) RfilterChain(nsize)%p_DdofsOverwrite => DdofsOverwrite
+
+  end subroutine
 
   ! ***************************************************************************
 
@@ -270,27 +651,51 @@ contains
 
       case (FILTER_DISCBCSOLREAL)
         ! Impose Dirichlet boundary conditions into the solution vector rx
-        call vecfil_discreteBCsol (rx)
+        if (associated(RfilterChain(i)%p_rdiscreteBC)) then
+          call vecfil_discreteBCsol (rx,RfilterChain(i)%p_rdiscreteBC)
+        else
+          call vecfil_discreteBCsol (rx)
+        end if
 
       case (FILTER_DISCBCRHSREAL)
         ! Impose Dirichlet boundary conditions into the RHS vector rx
-        call vecfil_discreteBCrhs (rx)
+        if (associated(RfilterChain(i)%p_rdiscreteBC)) then
+          call vecfil_discreteBCrhs (rx,RfilterChain(i)%p_rdiscreteBC)
+        else
+          call vecfil_discreteBCrhs (rx)
+        end if
 
       case (FILTER_DISCBCDEFREAL)
         ! Impose Dirichlet boundary conditions into the defect vector rx
-        call vecfil_discreteBCdef (rx)
+        if (associated(RfilterChain(i)%p_rdiscreteBC)) then
+          call vecfil_discreteBCdef (rx,RfilterChain(i)%p_rdiscreteBC)
+        else
+          call vecfil_discreteBCdef (rx)
+        end if
 
       case (FILTER_DISCBCSOLFICT)
         ! Impose Dirichlet fictitious boundary conditions into the solution vector rx
-        call vecfil_discreteFBCsol (rx)
+        if (associated(RfilterChain(i)%p_rdiscreteBC)) then
+          call vecfil_discreteFBCsol (rx,RfilterChain(i)%p_rdiscreteFBC)
+        else
+          call vecfil_discreteFBCsol (rx)
+        end if
 
       case (FILTER_DISCBCRHSFICT)
         ! Impose Dirichlet fictitious boundary conditions into the RHS vector rx
-        call vecfil_discreteFBCrhs (rx)
+        if (associated(RfilterChain(i)%p_rdiscreteBC)) then
+          call vecfil_discreteFBCrhs (rx,RfilterChain(i)%p_rdiscreteFBC)
+        else
+          call vecfil_discreteFBCrhs (rx)
+        end if
 
       case (FILTER_DISCBCDEFFICT)
         ! Impose Dirichlet fictitious boundary conditions into the defect vector rx
-        call vecfil_discreteFBCdef (rx)
+        if (associated(RfilterChain(i)%p_rdiscreteBC)) then
+          call vecfil_discreteFBCdef (rx,RfilterChain(i)%p_rdiscreteFBC)
+        else
+          call vecfil_discreteFBCdef (rx)
+        end if
 
       case (FILTER_TOL20)
         ! Bring the subvector itoL20component of rx to the space <tex>$L^2_0$</tex>:
@@ -301,13 +706,28 @@ contains
         call vecfil_subvectorSmallL1To0 (rx,RfilterChain(i)%ismallL1to0component)
 
       case (FILTER_ONEENTRY0)
-        ! Replace the entry 'irow' of the subvector 'iblock' of rx with zero
+        ! Replace the entry "irow" of the subvector "iblock" of rx with zero
         call vecfil_OneEntryZero (rx,RfilterChain(i)%iblock,&
                                            RfilterChain(i)%irow)
 
+      case (FILTER_OVERWRITEDOFS)
+        ! Overwrite the specified DOFs
+        if (associated(RfilterChain(i)%p_DdofsOverwrite)) then
+          
+          call vecfil_dofOverwrite (rx%RvectorBlock(RfilterChain(i)%iblock),&
+              RfilterChain(i)%ndofs,RfilterChain(i)%p_IdofsOverwrite,&
+              RfilterChain(i)%p_DdofsOverwrite)
+        
+        else
+        
+          call vecfil_dofOverwrite (rx%RvectorBlock(RfilterChain(i)%iblock),&
+              RfilterChain(i)%ndofs,RfilterChain(i)%p_IdofsOverwrite)
+        
+        end if
+
       case default
-        call output_line ('Unknown filter.', OU_CLASS_WARNING, OU_MODE_STD, &
-                          'filter_applyFilterChainVec')
+        call output_line ("Unknown filter.", OU_CLASS_WARNING, OU_MODE_STD, &
+                          "filter_applyFilterChainVec")
         exit
 
       end select
@@ -329,7 +749,7 @@ contains
   ! tag FILTER_NOFILTER.
   !
   ! When implementing boundary conditions using filters, note that all
-  ! boundary conditions that are implemented with 'nonlinear filters' are
+  ! boundary conditions that are implemented with "nonlinear filters" are
   ! not implemented into the matrix with this routine - they must be
   ! implemented manually! The following boundary conditions are
   ! not implemented with a matrix filter chain:
@@ -373,21 +793,29 @@ contains
         ! Impose Dirichlet boundary conditions into the matrix rmatrix.
         ! The filter is the same for both, solution and defect filter,
         ! as the matrix modification is teh same (for now).
-        call matfil_discreteBC (rmatrix)
+        if (associated(RfilterChain(i)%p_rdiscreteBC)) then
+          call matfil_discreteBC (rmatrix,RfilterChain(i)%p_rdiscreteBC)
+        else
+          call matfil_discreteBC (rmatrix)
+        end if
 
       case (FILTER_DISCBCSOLFICT,FILTER_DISCBCRHSFICT, &
             FILTER_DISCBCDEFFICT,FILTER_DISCBCMATFICT)
         ! Impose Dirichlet fictitious boundary conditions into the matrix rmatrix.
         ! The filter is the same for both, solution and defect filter,
         ! as the matrix modification is teh same (for now).
-        call matfil_discreteFBC (rmatrix)
+        if (associated(RfilterChain(i)%p_rdiscreteBC)) then
+          call matfil_discreteFBC (rmatrix,RfilterChain(i)%p_rdiscreteFBC)
+        else
+          call matfil_discreteFBC (rmatrix)
+        end if
 
       case (FILTER_TOL20,FILTER_DONOTHING)
         ! These filters have no effect for matrices.
 
       case default
-        call output_line ('Unknown filter.', OU_CLASS_WARNING, OU_MODE_STD, &
-                          'filter_applyFilterChainMat')
+        call output_line ("Unknown filter.", OU_CLASS_WARNING, OU_MODE_STD, &
+                          "filter_applyFilterChainMat")
         exit
 
       end select

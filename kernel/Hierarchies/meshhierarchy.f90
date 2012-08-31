@@ -22,6 +22,9 @@
 !#
 !# 4.) mshh_printHierStatistics
 !#     -> Print statistics about the hierarchy.
+!#
+!# 5.) mshh_initManifHierarchy
+!#     -> Creates a hierarchy of manifolds (boundary meshes) based on a source.
 !# </purpose>
 !##############################################################################
 
@@ -40,6 +43,7 @@ module meshhierarchy
 
   public :: t_meshHierarchy
   public :: mshh_initHierarchy
+  public :: mshh_initManifHierarchy
   public :: mshh_refineHierarchy2lv
   public :: mshh_releaseHierarchy
   public :: mshh_printHierStatistics
@@ -551,6 +555,52 @@ contains
 
     do i=1,rmeshHierarchy%nlevels
       call tria_infoStatistics (rmeshHierarchy%p_Rtriangulations(i),i .eq. 1,i+iofs)
+    end do
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine mshh_initManifHierarchy (rmeshHierBoundary,rmeshHierarchy)
+
+!<description>
+  ! Creates a mesh hierarchy describing the manifolds (boundaries) of
+  ! rmeshHierarchy.
+!</description>
+
+!<input>
+  ! The FE space hierarchy.
+  type(t_meshHierarchy), intent(in) :: rmeshHierarchy
+!</input>
+
+!<output>
+  ! A mesh hierarchy with meshes that describe the boundary of rmeshHierarchy.
+  type(t_meshHierarchy), intent(out) :: rmeshHierBoundary
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer :: i
+
+    ! Initialise basic data based on the original hierarchy.
+    
+    rmeshHierBoundary%cflags = 0  ! no special refinement
+    rmeshHierBoundary%p_rboundary => rmeshHierarchy%p_rboundary
+    rmeshHierBoundary%nlevels = rmeshHierarchy%nlevels
+    rmeshHierBoundary%nmaxlevels = rmeshHierarchy%nmaxlevels
+    
+    allocate (rmeshHierBoundary%p_Rtriangulations(size(rmeshHierarchy%p_Rtriangulations)))
+    rmeshHierBoundary%p_rcoarseMesh => rmeshHierarchy%p_Rtriangulations(1)
+    rmeshHierBoundary%p_rfineMesh => rmeshHierarchy%p_Rtriangulations(rmeshHierarchy%nlevels)
+    
+    ! For every level in the sorrce hierarchy,
+    ! create an appropriate one in the destination.
+    do i=1,rmeshHierarchy%nlevels
+      call tria_createRawBdryTria2D(rmeshHierBoundary%p_Rtriangulations(i),&
+          rmeshHierarchy%p_Rtriangulations(i))
     end do
 
   end subroutine

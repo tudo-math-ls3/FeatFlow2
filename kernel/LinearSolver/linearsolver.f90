@@ -2021,7 +2021,8 @@ module linearsolver
     
     ! A pointer to a filter chain, as this solver supports filtering.
     ! The filter chain must be configured for being applied to defect vectors.
-    type(t_filterChain), dimension(:),pointer      :: p_RfilterChain => null()
+    ! If no pointer is set, the global filter chain is applied on this level.
+    type(t_filterChain), dimension(:), pointer :: p_RfilterChain => null()
     
     !<!-- ----------------------------------------------------------------------
     ! OPTIONAL parameters.
@@ -2216,11 +2217,12 @@ module linearsolver
     integer :: nlevels = 1
     
     ! A pointer to the level info structures for all the levels in multigrid
-    type(t_linsolMG2LevelInfo), dimension(:), pointer :: p_RlevelInfo
+    type(t_linsolMG2LevelInfo), dimension(:), pointer :: p_RlevelInfo => null()
     
-    ! A pointer to a filter chain, as this solver supports filtering.
-    ! The filter chain must be configured for being applied to defect vectors.
-    type(t_filterChain), dimension(:),pointer :: p_RfilterChain     => null()
+    ! A pointer to a general filter chain, as this solver supports filtering.
+    ! This filter chain is applied to the defect vectors of all levels
+    ! where no separate filter chain is provided in p_RlevelInfo.
+    type(t_filterChain), dimension(:), pointer :: p_RfilterChain     => null()
   
     ! A temp vector for the prolongation/restriction.
     ! Memory for this vector is allocated in initStructure and released
@@ -2415,7 +2417,7 @@ module linearsolver
     
     ! A pointer to a filter chain, as this solver supports filtering.
     ! The filter chain must be configured for being applied to defect vectors.
-    type(t_filterChain), dimension(:),pointer :: p_RfilterChain => null()
+    type(t_filterChain), dimension(:), pointer :: p_RfilterChain => null()
   
     ! A temp vector for the prolongation/restriction.
     ! Memory for this vector is allocated in initStructure and released
@@ -15053,7 +15055,7 @@ contains
     allocate(p_rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(nlevels))
     p_rsolverNode%p_rsubnodeMultigrid2%nlevels = nlevels
     
-    ! Attach the filter if given.
+    ! Attach the global filter if given.
     if (present(Rfilter)) then
       p_rsolverNode%p_rsubnodeMultigrid2%p_RfilterChain => Rfilter
     end if
@@ -15947,8 +15949,8 @@ contains
   integer :: nminIterations,nmaxIterations,niteResOutput,niteAsymptoticCVR
   integer :: ite,ilev,nlmax,i,j,nblocks
   real(DP) :: dres,dstep
-  logical :: bfilter,bsort
-  type(t_filterChain), dimension(:), pointer :: p_RfilterChain
+  logical :: bsort
+  type(t_filterChain), dimension(:), pointer :: p_RfilterChain,p_RfilterChainLower
   type(t_timer) :: rtimer
   
   ! The queue saves the current residual and the two previous residuals.
@@ -15967,9 +15969,6 @@ contains
     
     ! Getch some information
     p_rsubnode => rsolverNode%p_rsubnodeMultigrid2
-    
-    bfilter = associated(p_rsubnode%p_RfilterChain)
-    p_RfilterChain => p_rsubnode%p_RfilterChain
     
     ! Get the system matrix on the finest level:
     p_rmatrix => rsolverNode%rsystemMatrix
@@ -16131,6 +16130,15 @@ contains
         p_rcurrentLevel => p_rsubnode%p_RlevelInfo(ilev)
         p_rlowerLevel => p_rsubnode%p_RlevelInfo(ilev-1)
 
+        ! Prepare the filter. Take the filter on the level or the global one.
+        p_RfilterChain => p_rcurrentLevel%p_RfilterChain
+        if (.not. associated(p_RfilterChain)) &
+          p_RfilterChain => p_rsubnode%p_RfilterChain
+        
+        p_RfilterChainLower => p_rlowerLevel%p_RfilterChain
+        if (.not. associated(p_RfilterChainLower)) &
+          p_RfilterChainLower => p_rsubnode%p_RfilterChain
+
         ! On the current (max.) level we set ncycles to 1.
         p_rcurrentLevel%ncycles = 1
         
@@ -16188,7 +16196,7 @@ contains
           p_rcurrentLevel%dtimeDefect = &
             p_rcurrentLevel%dtimeDefect + rtimer%delapsedReal
 
-          if (bfilter) then
+          if (associated(p_RfilterChain)) then
             ! clear and start timer
             call stat_clearTimer(rtimer)
             call stat_startTimer(rtimer)
@@ -16257,14 +16265,14 @@ contains
               p_rcurrentLevel%dtimeDefect = &
                 p_rcurrentLevel%dtimeDefect + rtimer%delapsedReal
 
-              if (bfilter) then
+              if (associated(p_RfilterChain)) then
                 ! clear and start timer
                 call stat_clearTimer(rtimer)
                 call stat_startTimer(rtimer)
               
                 ! Apply the filter chain to the vector
                 call filter_applyFilterChainVec (p_rcurrentLevel%rtempVector, &
-                                                p_RfilterChain)
+                                                 p_RfilterChain)
                 
                 ! stop timer and update filtering time
                 call stat_stopTimer(rtimer)
@@ -16343,7 +16351,7 @@ contains
                 ! Apply the filter chain (e.g. to implement boundary conditions)
                 ! on just calculated right hand side
                 ! (which is a defect vector against the 0-vector).
-                if (bfilter) then
+                if (associated(p_RfilterChainLower)) then
                   ! clear and start timer
                   call stat_clearTimer(rtimer)
                   call stat_startTimer(rtimer)
@@ -16352,7 +16360,7 @@ contains
                   ! We are in "unsorted" state; applying the filter here is
                   ! supposed to be a bit faster...
                   call filter_applyFilterChainVec (p_rlowerLevel%rrhsVector, &
-                                                   p_RfilterChain)
+                                                   p_RfilterChainLower)
                   
                   ! stop timer and update filtering time
                   call stat_stopTimer(rtimer)
@@ -16437,7 +16445,7 @@ contains
                 ! Apply the filter chain (e.g. to implement boundary conditions)
                 ! on just calculated right hand side
                 ! (which is a defect vector against the 0-vector).
-                if (bfilter) then
+                if (associated(p_RfilterChainLower)) then
                   ! clear and start timer
                   call stat_clearTimer(rtimer)
                   call stat_startTimer(rtimer)
@@ -16446,7 +16454,7 @@ contains
                   ! We are in "unsorted" state; applying the filter here is
                   ! supposed to be a bit faster...
                   call filter_applyFilterChainVec (p_rlowerLevel%rsolutionVector, &
-                                                   p_RfilterChain)
+                                                   p_RfilterChainLower)
                   
                   ! stop timer and update filtering time
                   call stat_stopTimer(rtimer)
@@ -16499,6 +16507,17 @@ contains
               if (ilev .ne. 1) &
                 p_rlowerLevel => p_rsubnode%p_RlevelInfo(ilev-1)
               
+              ! Switch the filter. Take the filter on the level or the global one.
+              p_RfilterChain => p_rcurrentLevel%p_RfilterChain
+              if (.not. associated(p_RfilterChain)) &
+                p_RfilterChain => p_rsubnode%p_RfilterChain
+              
+              if (ilev .ne. 1) then
+                p_RfilterChainLower => p_rlowerLevel%p_RfilterChain
+                if (.not. associated(p_RfilterChainLower)) &
+                  p_RfilterChainLower => p_rsubnode%p_RfilterChain
+              end if
+              
               ! If we are not on the lowest level, repeat the smoothing of
               ! the solution/restriction of the new defect in the next loop
               ! pass...
@@ -16508,7 +16527,7 @@ contains
             ! Apply the filter chain (e.g. to implement boundary conditions)
             ! on the just calculated right hand side,
             ! which is currently located in rsolutionVector.
-            if (bfilter) then
+            if (associated(p_RfilterChain)) then
               ! clear and start timer
               call stat_clearTimer(rtimer)
               call stat_startTimer(rtimer)
@@ -16549,6 +16568,15 @@ contains
               ilev = ilev + 1
               p_rcurrentLevel => p_rsubnode%p_RlevelInfo(ilev)
               p_rlowerLevel => p_rsubnode%p_RlevelInfo(ilev-1)
+              
+              ! Switch the filter. Take the filter on the level or the global one.
+              p_RfilterChain => p_rcurrentLevel%p_RfilterChain
+              if (.not. associated(p_RfilterChain)) &
+                p_RfilterChain => p_rsubnode%p_RfilterChain
+              
+              p_RfilterChainLower => p_rlowerLevel%p_RfilterChain
+              if (.not. associated(p_RfilterChainLower)) &
+                p_RfilterChainLower => p_rsubnode%p_RfilterChain
               
               ! Prolongate the solution vector from the coarser level
               ! to the temp vector on the finer level.
@@ -16601,7 +16629,7 @@ contains
               p_rcurrentLevel%dtimeProlongation = &
                 p_rcurrentLevel%dtimeProlongation + rtimer%delapsedReal
 
-              if (bfilter) then
+              if (associated(p_RfilterChain)) then
                 ! clear and start timer
                 call stat_clearTimer(rtimer)
                 call stat_startTimer(rtimer)
@@ -16848,7 +16876,7 @@ contains
           p_rcurrentLevel%dtimeDefect = &
             p_rcurrentLevel%dtimeDefect + rtimer%delapsedReal
 
-          if (bfilter) then
+          if (associated(p_RfilterChain)) then
             ! clear and start timer
             call stat_clearTimer(rtimer)
             call stat_startTimer(rtimer)

@@ -17,11 +17,11 @@
 !#     -> Get number of global DOF`s described by a given block discretisation
 !#
 !# 3.) dof_locGlobMapping
-!#     -> Map the 'local' degrees of freedom 1..n on one element to the global
+!#     -> Map the "local" degrees of freedom 1..n on one element to the global
 !#        degrees of freedom according to a discretisaion
 !#
 !# 4.) dof_locGlobMapping_mult
-!#     -> Map the 'local' degrees of freedom 1..n on a set of elements to
+!#     -> Map the "local" degrees of freedom 1..n on a set of elements to
 !#        the global degrees of freedom according to a discretisaion.
 !#
 !# 5.) dof_infoDiscr
@@ -112,53 +112,79 @@ contains
     ! The number of global DOFs is directly taken from the discretisation structure
     dof_igetNDofGlob = rdiscretisation%ndof
     
-  case (NDIM1D)
-
-    celement = rdiscretisation%RelementDistr(1)%celement
-    dof_igetNDofGlob = NDFG_uniform1D (rdiscretisation%p_rtriangulation, celement)
-
-  case (NDIM2D)
+  case default
     if (rdiscretisation%ccomplexity .eq. SPDISC_UNIFORM) then
-
-      celement = rdiscretisation%RelementDistr(1)%celement
+ 
       ! Uniform discretisation - fall back to the old FEAT mapping
-      dof_igetNDofGlob = NDFG_uniform2D (rdiscretisation%p_rtriangulation, celement)
+      celement = rdiscretisation%RelementDistr(1)%celement
+      
+      select case(elem_igetDimension(celement))
+      case (NDIM1D)
 
+        dof_igetNDofGlob = NDFG_uniform1D (rdiscretisation%p_rtriangulation, celement)
+
+      case (NDIM2D)
+        dof_igetNDofGlob = NDFG_uniform2D (rdiscretisation%p_rtriangulation, celement)
+
+      case (NDIM3D)
+      
+        dof_igetNDofGlob = NDFG_uniform3D (rdiscretisation%p_rtriangulation, celement)
+
+      end select
+    
     else if (rdiscretisation%ccomplexity .eq. SPDISC_CONFORMAL) then
 
-      ! Conformal discretisation. That is a little bit tricky!
-      ! At first, we support only the case where two element types are mixed.
-      if (rdiscretisation%inumFESpaces .eq. 2) then
-        Celements(1) = rdiscretisation%RelementDistr(1)%celement
-        Celements(2) = rdiscretisation%RelementDistr(2)%celement
-
-        dof_igetNDofGlob = NDFG_conformal2D_2el (&
-            rdiscretisation%p_rtriangulation, Celements(1:2))
-
-      end if
-
-    end if
-
-  case (NDIM3D)
-    ! Currently, only uniform discretisations are supported.
-    if (rdiscretisation%ccomplexity .eq. SPDISC_UNIFORM) then
-
+      ! Conformal discretisation. Modified FEAT mapping.
+      !
+      ! From the first available element, we get the dimension
+      ! of the space.
       celement = rdiscretisation%RelementDistr(1)%celement
 
-      ! Uniform discretisation - fall back to the old FEAT mapping
-      dof_igetNDofGlob = NDFG_uniform3D (rdiscretisation%p_rtriangulation, celement)
+      select case(elem_igetDimension(celement))
+      case (NDIM1D)
 
+        dof_igetNDofGlob = NDFG_uniform1D (rdiscretisation%p_rtriangulation, celement)
+
+        if (rdiscretisation%inumFESpaces .eq. 2) then
+          call output_line("Conformal discretisation not completely supported!",&
+                          OU_CLASS_ERROR,OU_MODE_STD,"dof_igetNDofGlob")
+        end if
+
+      case (NDIM2D)
+        ! Conformal discretisation. That is a little bit tricky!
+        ! At first, we support only the case where two element types are mixed.
+        if (rdiscretisation%inumFESpaces .eq. 2) then
+          Celements(1) = rdiscretisation%RelementDistr(1)%celement
+          Celements(2) = rdiscretisation%RelementDistr(2)%celement
+
+          dof_igetNDofGlob = NDFG_conformal2D_2el (&
+              rdiscretisation%p_rtriangulation, Celements(1:2))
+
+        end if
+
+      case (NDIM3D)
+      
+        ! Currently, only uniform discretisations are supported.
+        dof_igetNDofGlob = NDFG_uniform3D (rdiscretisation%p_rtriangulation, celement)
+
+        if (rdiscretisation%inumFESpaces .eq. 2) then
+          call output_line("Conformal discretisation not completely supported!",&
+              OU_CLASS_ERROR,OU_MODE_STD,"dof_igetNDofGlob")
+        end if
+
+      case default
+
+        ! Dimension not supported
+        call output_line("Invalid discretisation dimension!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"dof_igetNDofGlob")
+        call sys_halt()
+
+      end select
+    
     end if
-
-  case default
-
-    ! Dimension not supported
-    call output_line('Invalid discretisation dimension!',&
-                     OU_CLASS_ERROR,OU_MODE_STD,'dof_igetNDofGlob')
-    call sys_halt()
-
+    
   end select
-
+    
   contains
 
     ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -202,6 +228,12 @@ contains
     case (EL_DG_T2_1D)
       ! DOF`s in the cell midpoints
       NDFG_uniform1D = 3*rtriangulation%NEL
+
+    case default
+      call output_line("Unknown element!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"NDFG_uniform1D")
+      call sys_halt()
+
     end select
 
     end function
@@ -288,6 +320,12 @@ contains
     case (EL_QPW4DCP1_2D)
       ! DOF`s in the cell midpoints
       NDFG_uniform2D = 11*rtriangulation%NEL
+
+    case default
+      call output_line("Unknown element!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"NDFG_uniform2D")
+      call sys_halt()
+
     end select
 
     end function
@@ -321,6 +359,10 @@ contains
       case (EL_P0, EL_Q0)
         ! DOF`s in the cell midpoints
         NDFG_conformal2D_2el = rtriangulation%NEL
+      case default
+        call output_line("Unknown element!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"NDFG_conformal2D_2el")
+        call sys_halt()
       end select
 
     case (EL_P1, EL_Q1)
@@ -328,6 +370,10 @@ contains
       case (EL_P1, EL_Q1)
         ! DOF`s in the vertices
         NDFG_conformal2D_2el = rtriangulation%NVT
+      case default
+        call output_line("Unknown element!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"NDFG_conformal2D_2el")
+        call sys_halt()
       end select
 
     case (EL_P2,EL_Q2)
@@ -337,6 +383,10 @@ contains
         ! Number of quads (quad midpoints)
         NDFG_conformal2D_2el = rtriangulation%NVT + rtriangulation%NMT + &
             rtriangulation%InelOfType(TRIA_NVEQUAD2D)
+      case default
+        call output_line("Unknown element!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"NDFG_conformal2D_2el")
+        call sys_halt()
       end select
 
     case (EL_P1T,EL_Q1T)
@@ -345,8 +395,16 @@ contains
         ! DOF`s in the edge midpoints
         NDFG_conformal2D_2el = rtriangulation%NMT
 
+      case default
+        call output_line("Unknown element!",&
+            OU_CLASS_ERROR,OU_MODE_STD,"NDFG_conformal2D_2el")
+        call sys_halt()
       end select
 
+    case default
+      call output_line("Unknown element!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"NDFG_conformal2D_2el")
+      call sys_halt()
     end select
 
     end function
@@ -391,6 +449,10 @@ contains
     case (EL_MSL2_3D)
       ! DOF`s in the vertices and faces
       NDFG_uniform3D = rtriangulation%NVT + rtriangulation%NAT
+    case default
+      call output_line("Unknown element!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"NDFG_conformal2D_2el")
+      call sys_halt()
     end select
 
     end function
@@ -556,7 +618,7 @@ contains
 
     select case(rdiscretisation%ndimension)
     case (NDIM1D)
-      ! Call the right 'multiple-get' routines for global DOF`s.
+      ! Call the right "multiple-get" routines for global DOF`s.
       ! For this purpose we evaluate the pointers in the discretisation
       ! structure (if necessary) to prevent another call using pointers...
       ! The number of global DOF`s depends on the element type...
@@ -609,7 +671,7 @@ contains
       ! At first we deal only with uniform discretisations
       if (rdiscretisation%ccomplexity .eq. SPDISC_UNIFORM) then
 
-        ! Call the right 'multiple-get' routines for global DOF`s.
+        ! Call the right "multiple-get" routines for global DOF`s.
         ! For this purpose we evaluate the pointers in the discretisation
         ! structure (if necessary) to prevent another call using pointers...
         ! The number of global DOF`s depends on the element type...
@@ -804,7 +866,7 @@ contains
       ! At first we deal only with uniform discretisations
       if (rdiscretisation%ccomplexity .eq. SPDISC_UNIFORM) then
 
-        ! Call the right 'multiple-get' routines for global DOF`s.
+        ! Call the right "multiple-get" routines for global DOF`s.
         ! For this purpose we evaluate the pointers in the discretisation
         ! structure (if necessary) to prevent another call using pointers...
         ! The number of global DOF`s depends on the element type...
@@ -854,13 +916,13 @@ contains
       end if
 
     case default
-      call output_line('Invalid discretisation!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'dof_locGlobMapping_mult')
+      call output_line("Invalid discretisation!",&
+                       OU_CLASS_ERROR,OU_MODE_STD,"dof_locGlobMapping_mult")
       call sys_halt()
     end select
 
-    call output_line('Unsupported discretisation!',&
-                     OU_CLASS_ERROR,OU_MODE_STD,'dof_locGlobMapping_mult')
+    call output_line("Unsupported discretisation!",&
+                     OU_CLASS_ERROR,OU_MODE_STD,"dof_locGlobMapping_mult")
     call sys_halt()
 
   end subroutine
@@ -1368,7 +1430,7 @@ contains
     ! Loop through the elements to handle
     do i=1,size(IelIdx)
       ! Calculate the global DOF`s. Every element gives 3 DOF`s which are
-      ! 'internally' associated to the vertices but are not coupled.
+      ! "internally" associated to the vertices but are not coupled.
       IdofGlob(1,i) = 1+3*(IelIdx(i)-1)
       IdofGlob(2,i) = 2+3*(IelIdx(i)-1)
       IdofGlob(3,i) = 3+3*(IelIdx(i)-1)
@@ -1413,7 +1475,7 @@ contains
     ! Loop through the elements to handle
     do i=1,size(IelIdx)
       ! Calculate the global DOF`s. Every element gives 4 DOF`s which are
-      ! 'internally' associated to the vertices but are not coupled.
+      ! "internally" associated to the vertices but are not coupled.
       IdofGlob(1,i) = 1+4*(IelIdx(i)-1)
       IdofGlob(2,i) = 2+4*(IelIdx(i)-1)
       IdofGlob(3,i) = 3+4*(IelIdx(i)-1)
@@ -2796,35 +2858,35 @@ contains
     type(t_elementDistribution), pointer :: p_relementDistr
 
     ! General information:
-    call output_line ('Dimension:                    '&
+    call output_line ("Dimension:                    "&
         //trim(sys_siL(rspatialDiscr%ndimension,10)))
-    call output_line ('Complexity:                   ',bnolinebreak=.true.,&
+    call output_line ("Complexity:                   ",bnolinebreak=.true.,&
         bnoTrim=.true.)
     select case (rspatialDiscr%ccomplexity)
     case (SPDISC_UNIFORM)
-      call output_line ('uniform',cdateTimeLogPolicy=OU_DTP_NONE)
+      call output_line ("uniform",cdateTimeLogPolicy=OU_DTP_NONE)
     case (SPDISC_CONFORMAL)
-      call output_line ('conformal',cdateTimeLogPolicy=OU_DTP_NONE)
+      call output_line ("conformal",cdateTimeLogPolicy=OU_DTP_NONE)
     case (SPDISC_MIXED)
-      call output_line ('mixed',cdateTimeLogPolicy=OU_DTP_NONE)
+      call output_line ("mixed",cdateTimeLogPolicy=OU_DTP_NONE)
     case DEFAULT
-      call output_line ('undefined',cdateTimeLogPolicy=OU_DTP_NONE)
+      call output_line ("undefined",cdateTimeLogPolicy=OU_DTP_NONE)
     end select
-    call output_line ('#DOFs:                        '&
+    call output_line ("#DOFs:                        "&
         //trim(sys_siL(dof_igetNDofGlob(rspatialDiscr),16)))
-    call output_line ('#finite element spaces:       '&
+    call output_line ("#finite element spaces:       "&
         //trim(sys_siL(rspatialDiscr%inumFESpaces,10)))
 
     ! Print out detailed information about the FE spaces.
-    call output_line ('Discretisation details:')
-    call output_line ('FE-space #elements       NVE   trial-element   test-element')
+    call output_line ("Discretisation details:")
+    call output_line ("FE-space #elements       NVE   trial-element   test-element")
 
     ! Loop through all element distributions
     do i=1,rspatialDiscr%inumFESpaces
 
       p_relementDistr => rspatialDiscr%RelementDistr(i)
 
-      call output_line ( ' ' &
+      call output_line ( " " &
         // sys_siL(i,8) &
         // sys_siL(p_relementDistr%NEL,16) &
         // sys_siL(elem_igetNVE(p_relementDistr%celement),6) &
@@ -2862,30 +2924,30 @@ contains
 
     integer :: i
 
-    call output_line ('Dimension:                    '&
+    call output_line ("Dimension:                    "&
         //trim(sys_siL(rblockDiscr%ndimension,10)))
-    call output_line ('Complexity:                   ',bnolinebreak=.true.,&
+    call output_line ("Complexity:                   ",bnolinebreak=.true.,&
         bnoTrim=.true.)
     select case (rblockDiscr%ccomplexity)
     case (SPDISC_UNIFORM)
-      call output_line ('uniform',cdateTimeLogPolicy=OU_DTP_NONE)
+      call output_line ("uniform",cdateTimeLogPolicy=OU_DTP_NONE)
     case (SPDISC_CONFORMAL)
-      call output_line ('conformal',cdateTimeLogPolicy=OU_DTP_NONE)
+      call output_line ("conformal",cdateTimeLogPolicy=OU_DTP_NONE)
     case (SPDISC_MIXED)
-      call output_line ('mixed',cdateTimeLogPolicy=OU_DTP_NONE)
+      call output_line ("mixed",cdateTimeLogPolicy=OU_DTP_NONE)
     case DEFAULT
-      call output_line ('undefined',cdateTimeLogPolicy=OU_DTP_NONE)
+      call output_line ("undefined",cdateTimeLogPolicy=OU_DTP_NONE)
     end select
-    call output_line ('#DOFs:                        '&
+    call output_line ("#DOFs:                        "&
         //trim(sys_siL(dof_igetNDofGlobBlock(rblockDiscr),16)))
 
-    call output_line ('Number of components:         '&
+    call output_line ("Number of components:         "&
         //trim(sys_siL(rblockDiscr%ncomponents,10)))
 
     if (bdetailed) then
       do i=1,rblockDiscr%ncomponents
         call output_lbrk ()
-        call output_line ('Solution component:           '//trim(sys_siL(i,10)))
+        call output_line ("Solution component:           "//trim(sys_siL(i,10)))
         call dof_infoDiscr(rblockDiscr%RspatialDiscr(i))
       end do
     end if
@@ -2930,7 +2992,7 @@ contains
       ! Allocate a temp array accepting the local DOF`s.
       !
       ! At first allocate an index array; this has to be build in advance.
-      call storage_new ('dof_precomputeDofMapping', 'h_IelementDofIdx', &
+      call storage_new ("dof_precomputeDofMapping", "h_IelementDofIdx", &
           p_rtriangulation%NEL+1, ST_INT, rdiscretisation%h_IelementDofIdx,   &
           ST_NEWBLOCK_ZERO)
       call storage_getbase_int(rdiscretisation%h_IelementDofIdx,p_IelementDofIdx)
@@ -2953,7 +3015,7 @@ contains
       end do
 
       ! Now get the actual DOF`s.
-      call storage_new ('dof_precomputeDofMapping', 'h_IelementDofs', &
+      call storage_new ("dof_precomputeDofMapping", "h_IelementDofs", &
           p_IelementDofIdx(p_rtriangulation%NEL+1)-1, ST_INT, rdiscretisation%h_IelementDofs,&
           ST_NEWBLOCK_ZERO)
       call storage_getbase_int(rdiscretisation%h_IelementDofs,p_IelementDofs)
@@ -2986,8 +3048,8 @@ contains
       rdiscretisation%bprecompiledDofMapping = .true.
 
     else
-      call output_line ('Discretisation does not support precomputed DOF''s!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'dof_precomputeDofMapping')
+      call output_line ("Discretisation does not support precomputed DOFs!", &
+                        OU_CLASS_ERROR,OU_MODE_STD,"dof_precomputeDofMapping")
       call sys_halt()
     end if
 
