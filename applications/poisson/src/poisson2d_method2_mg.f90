@@ -78,6 +78,13 @@ module poisson2d_method2_mg
     ! Sorting strategy for resorting vectors/matrices.
     type(t_blockSortStrategy) :: rsortStrategy
     
+    ! A filter chain to filter the vectors and the matrix during the
+    ! solution process.
+    type(t_filterChain), dimension(1) :: RfilterChain
+    
+    ! Number of filters in the filter chain
+    integer :: nfilters
+
   end type
   
 !</typeblock>
@@ -433,14 +440,10 @@ contains
   ! A pointer to the system matrix and the RHS vector as well as
   ! the discretisation
   type(t_matrixBlock), pointer :: p_rmatrix
-  type(t_vectorBlock), pointer :: p_rrhs,p_rvector
   type(t_blockDiscretisation), pointer :: p_rdiscretisation
 
   type(t_boundaryRegion) :: rboundaryRegion
 
-  ! Pointer to structure for saving discrete BC`s:
-  type(t_discreteBC), pointer :: p_rdiscreteBC
-    
     do i=rproblem%ilvmin,rproblem%ilvmax
     
       ! Get our matrix from the problem structure.
@@ -495,26 +498,8 @@ contains
           rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
           getBoundaryValues_2D,rproblem%rcollection)
 
-      ! Assign the BC`s to the vectors and the matrix. That way, these
-      ! boundary conditions are always connected to that matrix and that
-      ! vector.
-      p_rdiscreteBC => rproblem%RlevelInfo(i)%rdiscreteBC
-
-      call lsysbl_assignDiscreteBC(p_rmatrix,p_rdiscreteBC)
-      
     end do
 
-    ! On the finest level, attach the discrete BC also
-    ! to the solution and RHS vector. They need it to be compatible
-    ! to the matrix on the finest level.
-    p_rdiscreteBC => rproblem%RlevelInfo(rproblem%ilvmax)%rdiscreteBC
-    
-    p_rrhs    => rproblem%rrhs
-    p_rvector => rproblem%rvector
-    
-    call lsysbl_assignDiscreteBC(p_rrhs,p_rdiscreteBC)
-    call lsysbl_assignDiscreteBC(p_rvector,p_rdiscreteBC)
-                
   end subroutine
 
   ! ***************************************************************************
@@ -536,6 +521,7 @@ contains
 
   ! local variables
   integer :: i,ilvmax
+  type(t_discreteBC), pointer :: p_rdiscreteBC
   
     ! A pointer to the system matrix and the RHS vector as well as
     ! the discretisation
@@ -548,21 +534,21 @@ contains
     p_rrhs    => rproblem%rrhs
     p_rvector => rproblem%rvector
     
+    p_rdiscreteBC => rproblem%RlevelInfo(rproblem%ilvmax)%rdiscreteBC
+    
     ! Next step is to implement boundary conditions into the RHS,
     ! solution and matrix. This is done using a vector/matrix filter
     ! for discrete boundary conditions.
-    ! The discrete boundary conditions are already attached to the
-    ! vectors/matrix. Call the appropriate vector/matrix filter that
-    ! modifies the vectors/matrix according to the boundary conditions.
-    call vecfil_discreteBCrhs (p_rrhs)
-    call vecfil_discreteBCsol (p_rvector)
+    call vecfil_discreteBCrhs (p_rrhs,p_rdiscreteBC)
+    call vecfil_discreteBCsol (p_rvector,p_rdiscreteBC)
 
     ! Implement discrete boundary conditions into the matrices on all
     ! levels, too. Call the appropriate matrix filter to modify
     ! all matrices according to the attached discrete boundary conditions.
     do i=rproblem%ilvmin,rproblem%ilvmax
       p_rmatrix => rproblem%RlevelInfo(i)%rmatrix
-      call matfil_discreteBC (p_rmatrix)
+      p_rdiscreteBC => rproblem%RlevelInfo(i)%rdiscreteBC
+      call matfil_discreteBC (p_rmatrix,p_rdiscreteBC)
     end do
 
   end subroutine
@@ -591,10 +577,6 @@ contains
     ! Error indicator during initialisation of the solver
     integer :: ierror
   
-    ! A filter chain to filter the vectors and the matrix during the
-    ! solution process.
-    type(t_filterChain), dimension(1), target :: RfilterChain
-
     ! A pointer to the system matrix and the RHS vector as well as
     ! the discretisation
     type(t_matrixBlock), pointer :: p_rmatrix
@@ -644,14 +626,21 @@ contains
     ! would be wrong.
     ! Therefore, create a filter chain with one filter only,
     ! which implements Dirichlet-conditions into a defect vector.
-    RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
+    call filter_clearFilterChain (&
+        rproblem%RlevelInfo(ilvmax)%RfilterChain,&
+        rproblem%RlevelInfo(ilvmax)%nfilters)
+    call filter_newFilterDiscBCDef (&
+        rproblem%RlevelInfo(ilvmax)%RfilterChain,&
+        rproblem%RlevelInfo(ilvmax)%nfilters,&
+        rproblem%RlevelInfo(ilvmax)%rdiscreteBC)
 
     ! Now we have to build up the level information for multigrid.
     !
     ! Create a Multigrid-solver. Attach the above filter chain
     ! to the solver, so that the solver automatically filters
     ! the vector during the solution process.
-    call linsol_initMultigrid2 (p_rsolverNode,ilvmax-ilvmin+1,RfilterChain)
+    call linsol_initMultigrid2 (p_rsolverNode,ilvmax-ilvmin+1,&
+        rproblem%RlevelInfo(ilvmax)%RfilterChain)
     
     ! Then set up smoothers / coarse grid solver:
     do i=ilvmin,ilvmax
@@ -693,6 +682,9 @@ contains
       p_rlevelInfo%p_rcoarseGridSolver => p_rcoarseGridSolver
       p_rlevelInfo%p_rpresmoother => p_rsmoother
       p_rlevelInfo%p_rpostsmoother => p_rsmoother
+
+      ! Attach the filter chain which imposes boundary conditions on that level.
+      p_rlevelInfo%p_RfilterChain => rproblem%RlevelInfo(i)%RfilterChain
     end do
     
     ! Set the output level of the solver to 2 for some output

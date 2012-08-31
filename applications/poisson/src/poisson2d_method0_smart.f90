@@ -102,6 +102,9 @@ contains
     ! boundary conditions.
     type(t_filterChain), dimension(1), target :: RfilterChain
     
+    ! Number of filters in the filter chain
+    integer :: nfilters
+    
     ! NLMAX receives the level where we want to solve.
     integer :: NLMAX
     
@@ -186,9 +189,6 @@ contains
     ! Now assemble homogene Dirichlet BCs on that region
     call bcasm_newHomDirichletBConRealBd (rdiscr, 1, rregion, rdiscreteBC)
 
-    ! Assign the BC`s to the vectors and the matrix.
-    call lsysbl_assignDiscreteBC(rmatSystem, rdiscreteBC)
-
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Create RHS and solution vectors
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -207,16 +207,17 @@ contains
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     ! Filter the system; this will impose the previously assembled boundary conditions
-    call matfil_discreteBC (rmatSystem)
-    call vecfil_discreteBCrhs (rvecRhs)
-    call vecfil_discreteBCsol (rvecSol)
+    call matfil_discreteBC (rmatSystem,rdiscreteBC)
+    call vecfil_discreteBCrhs (rvecRhs,rdiscreteBC)
+    call vecfil_discreteBCsol (rvecSol,rdiscreteBC)
 
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Set up a linear solver
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     ! Set up a filter chain that filters our previously created boundary conditions
-    RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
+    call filter_clearFilterChain (RfilterChain,nfilters)
+    call filter_newFilterDiscBCDef (RfilterChain,nfilters,rdiscreteBC)
 
     ! Create a BiCGStab-solver without any preconditioner.
     nullify(p_rprecond)

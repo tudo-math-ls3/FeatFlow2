@@ -339,23 +339,12 @@ contains
                                         rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValues_2D)
 
-      ! Assign the BC`s to the vectors and the matrix. That way, these
-      ! boundary conditions are always connected to that matrix and that
-      ! vector.
-      call lsysbl_assignDiscreteBC(rmatSystem,rdiscreteBC)
-      call lsysbl_assignDiscreteBC(rvecRhs,rdiscreteBC)
-      call lsysbl_assignDiscreteBC(rvecSol,rdiscreteBC)
-      call lsysbl_assignDiscreteBC(rvecTmp,rdiscreteBC)
-      
       ! Next step is to implement boundary conditions into the RHS,
       ! solution and matrix. This is done using a vector/matrix filter
       ! for discrete boundary conditions.
-      ! The discrete boundary conditions are already attached to the
-      ! vectors/matrix. Call the appropriate vector/matrix filter that
-      ! modifies the vectors/matrix according to the boundary conditions.
-      call vecfil_discreteBCrhs (rvecRhs)
-      call vecfil_discreteBCsol (rvecSol)
-      call matfil_discreteBC (rmatSystem)
+      call vecfil_discreteBCrhs (rvecRhs,rdiscreteBC)
+      call vecfil_discreteBCsol (rvecSol,rdiscreteBC)
+      call matfil_discreteBC (rmatSystem,rdiscreteBC)
       
       ! +------------------------------------------------------------------------
       ! | INVOKE THE SOLVER

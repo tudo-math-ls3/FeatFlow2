@@ -393,9 +393,6 @@ contains
     type(t_vectorBlock), pointer :: p_rrhs,p_rvector
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
     
-    ! Pointer to structure for saving discrete BC`s:
-    type(t_discreteBC), pointer :: p_rdiscreteBC
-
     ! A boundary region
     type(t_boundaryRegion) :: rboundaryRegion
 
@@ -453,15 +450,6 @@ contains
         rboundaryRegion,rproblem%RlevelInfo(1)%rdiscreteBC,&
         getBoundaryValues_2D,rproblem%rcollection)
 
-    ! Assign the BC`s to the vectors and the matrix. That way, these
-    ! boundary conditions are always connected to that matrix and that
-    ! vector.
-    p_rdiscreteBC => rproblem%RlevelInfo(1)%rdiscreteBC
-
-    call lsysbl_assignDiscreteBC(p_rmatrix,p_rdiscreteBC)
-    call lsysbl_assignDiscreteBC(p_rrhs,p_rdiscreteBC)
-    call lsysbl_assignDiscreteBC(p_rvector,p_rdiscreteBC)
-                
   end subroutine
 
   ! ***************************************************************************
@@ -481,8 +469,11 @@ contains
 
 !</subroutine>
 
-  ! local variables
+    ! local variables
   
+    ! Pointer to structure for saving discrete BC`s:
+    type(t_discreteBC), pointer :: p_rdiscreteBC
+
     ! A pointer to the system matrix and the RHS vector as well as
     ! the discretisation
     type(t_matrixBlock), pointer :: p_rmatrix
@@ -493,15 +484,15 @@ contains
     p_rvector => rproblem%RlevelInfo(1)%rvector
     p_rmatrix => rproblem%RlevelInfo(1)%rmatrix
     
+    ! Get the boundary conditions
+    p_rdiscreteBC => rproblem%RlevelInfo(1)%rdiscreteBC
+    
     ! Next step is to implement boundary conditions into the RHS,
     ! solution and matrix. This is done using a vector/matrix filter
     ! for discrete boundary conditions.
-    ! The discrete boundary conditions are already attached to the
-    ! vectors/matrix. Call the appropriate vector/matrix filter that
-    ! modifies the vectors/matrix according to the boundary conditions.
-    call vecfil_discreteBCrhs (p_rrhs)
-    call vecfil_discreteBCsol (p_rvector)
-    call matfil_discreteBC (p_rmatrix)
+    call vecfil_discreteBCrhs (p_rrhs,p_rdiscreteBC)
+    call vecfil_discreteBCsol (p_rvector,p_rdiscreteBC)
+    call matfil_discreteBC (p_rmatrix,p_rdiscreteBC)
 
   end subroutine
 
@@ -530,6 +521,9 @@ contains
     ! A filter chain to filter the vectors and the matrix during the
     ! solution process.
     type(t_filterChain), dimension(1), target :: RfilterChain
+    
+    ! Number of filters in the filter chain
+    integer :: nfilters
 
     ! A pointer to the system matrix and the RHS vector as well as
     ! the discretisation
@@ -539,6 +533,9 @@ contains
 
     ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode,p_rpreconditioner
+
+    ! Pointer to structure for saving discrete BC`s:
+    type(t_discreteBC), pointer :: p_rdiscreteBC
 
     ! Get our matrix and right hand side from the problem structure.
     p_rrhs    => rproblem%RlevelInfo(1)%rrhs
@@ -562,7 +559,11 @@ contains
     ! would be wrong.
     ! Therefore, create a filter chain with one filter only,
     ! which implements Dirichlet-conditions into a defect vector.
-    RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
+
+    p_rdiscreteBC => rproblem%RlevelInfo(1)%rdiscreteBC
+
+    call filter_clearFilterChain (RfilterChain,nfilters)
+    call filter_newFilterDiscBCDef (RfilterChain,nfilters,p_rdiscreteBC)
 
     ! Create a BiCGStab-solver. Attach the above filter chain
     ! to the solver, so that the solver automatically filters

@@ -116,6 +116,9 @@ contains
     ! before/during the solution process. The filters usually implement
     ! boundary conditions.
     type(t_filterChain), dimension(2), target :: RfilterChain
+    
+    ! Number of filters in the filter chain
+    integer :: nfilters
 
     ! NLMAX receives the level where we want to solve.
     integer :: NLMAX
@@ -317,36 +320,18 @@ contains
     call bcasm_newDirichletBConFBD (rdiscretisation,Iequations,&
                                     rdiscreteFBC,getBoundaryValuesFBC_2D)
                              
-    ! Assign the BC`s to the vectors and the matrix. That way, these
-    ! boundary conditions are always connected to that matrix and that
-    ! vector.
-    call lsysbl_assignDiscreteBC(rmatSystem,rdiscreteBC)
-    call lsysbl_assignDiscreteBC(rvecRhs,rdiscreteBC)
-    call lsysbl_assignDiscreteBC(rvecSol,rdiscreteBC)
-    call lsysbl_assignDiscreteBC(rvecTmp,rdiscreteBC)
-    
-    ! Similarly for the fictitious boundary conditions
-    
-    call lsysbl_assignDiscreteFBC(rmatSystem,rdiscreteFBC)
-    call lsysbl_assignDiscreteFBC(rvecRhs,rdiscreteFBC)
-    call lsysbl_assignDiscreteFBC(rvecSol,rdiscreteFBC)
-    call lsysbl_assignDiscreteFBC(rvecTmp,rdiscreteFBC)
-                             
     ! Next step is to implement boundary conditions into the RHS,
     ! solution and matrix. This is done using a vector/matrix filter
     ! for discrete boundary conditions.
-    ! The discrete boundary conditions are already attached to the
-    ! vectors/matrix. Call the appropriate vector/matrix filter that
-    ! modifies the vectors/matrix according to the boundary conditions.
-    call vecfil_discreteBCrhs (rvecRhs)
-    call vecfil_discreteBCsol (rvecSol)
-    call matfil_discreteBC (rmatSystem)
+    call vecfil_discreteBCrhs (rvecRhs,rdiscreteBC)
+    call vecfil_discreteBCsol (rvecSol,rdiscreteBC)
+    call matfil_discreteBC (rmatSystem,rdiscreteBC)
     
     ! The same way, implement fictitious boundary components into the matrix
     ! and vectors:
-    call vecfil_discreteFBCrhs (rvecRhs)
-    call vecfil_discreteFBCsol (rvecSol)
-    call matfil_discreteFBC (rmatSystem)
+    call vecfil_discreteFBCrhs (rvecRhs,rdiscreteFBC)
+    call vecfil_discreteFBCsol (rvecSol,rdiscreteFBC)
+    call matfil_discreteFBC (rmatSystem,rdiscreteFBC)
     
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Set up a linear solver
@@ -359,8 +344,9 @@ contains
     ! So, set up a filter chain that filters the defect vector
     ! during the solution process to implement discrete boundary conditions
     ! as well as discrete fictitious boundary conditions.
-    RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
-    RfilterChain(2)%ifilterType = FILTER_DISCBCDEFFICT
+    call filter_clearFilterChain (RfilterChain,nfilters)
+    call filter_newFilterDiscBCDef (RfilterChain,nfilters,rdiscreteBC)
+    call filter_newFilterDiscFBCDef (RfilterChain,nfilters,rdiscreteFBC)
 
     ! Create a BiCGStab-solver. Attach the above filter chain
     ! to the solver, so that the solver automatically filters

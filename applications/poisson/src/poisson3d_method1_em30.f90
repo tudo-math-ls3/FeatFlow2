@@ -110,6 +110,9 @@ contains
     ! boundary conditions.
     type(t_filterChain), dimension(1), target :: RfilterChain
     
+    ! Number of filters in the filter chain
+    integer :: nfilters
+    
     ! NLMAX receives the level where we want to solve.
     integer :: NLMAX
     
@@ -278,23 +281,12 @@ contains
     ! We will not free the mesh region structure here, as we will need it
     ! later for calculating the Q1 solution.
 
-    ! Assign the BC`s to the vectors and the matrix. That way, these
-    ! boundary conditions are always connected to that matrix and that
-    ! vector.
-    call lsysbl_assignDiscreteBC(rmatSystem,rdiscreteBC)
-    call lsysbl_assignDiscreteBC(rvecRhs,rdiscreteBC)
-    call lsysbl_assignDiscreteBC(rvecSol,rdiscreteBC)
-    call lsysbl_assignDiscreteBC(rvecTmp,rdiscreteBC)
-
     ! Next step is to implement boundary conditions into the RHS,
     ! solution and matrix. This is done using a vector/matrix filter
     ! for discrete boundary conditions.
-    ! The discrete boundary conditions are already attached to the
-    ! vectors/matrix. Call the appropriate vector/matrix filter that
-    ! modifies the vectors/matrix according to the boundary conditions.
-    call vecfil_discreteBCrhs (rvecRhs)
-    call vecfil_discreteBCsol (rvecSol)
-    call matfil_discreteBC (rmatSystem)
+    call vecfil_discreteBCrhs (rvecRhs,rdiscreteBC)
+    call vecfil_discreteBCsol (rvecSol,rdiscreteBC)
+    call matfil_discreteBC (rmatSystem,rdiscreteBC)
 
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Set up a linear solver
@@ -306,7 +298,8 @@ contains
     ! defect vectors instead.
     ! So, set up a filter chain that filters the defect vector
     ! during the solution process to implement discrete boundary conditions.
-    RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
+    call filter_clearFilterChain (RfilterChain,nfilters)
+    call filter_newFilterDiscBCDef (RfilterChain,nfilters,rdiscreteBC)
 
     ! Create a BiCGStab-solver. Attach the above filter chain
     ! to the solver, so that the solver automatically filters
@@ -388,14 +381,8 @@ contains
     ! Free the mesh region structure as we will not need it anymore
     call mshreg_done(rmeshRegion)
 
-    ! Connect the vector to the BC`s
-    call lsysbl_assignDiscreteBC(rprjVector,rdiscreteBC_Q1)
-
-    ! Step 5: Set up a boundary condition filter for Dirichtley boundary conditions
-    ! and pass the vetor through it. This finally implement the Dirichtley
-    ! boundary conditions into the output vector
-    RfilterChain(1)%ifilterType = FILTER_DISCBCSOLREAL
-    call filter_applyFilterChainVec (rprjVector, RfilterChain)
+    ! Implement the boundary conditions
+    call vecfil_discreteBCsol (rprjVector,rdiscreteBC_Q1)
 
     ! Now we have a Q1 solution in rprjVector.
     !

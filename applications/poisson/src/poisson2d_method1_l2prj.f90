@@ -83,6 +83,14 @@ module poisson2d_method1_l2prj
     ! A variable describing the discrete boundary conditions.
     type(t_discreteBC) :: rdiscreteBC
   
+    ! A filter chain that describes how to filter the matrix/vector
+    ! before/during the solution process. The filters usually implement
+    ! boundary conditions.
+    type(t_filterChain), dimension(1) :: RfilterChain
+    
+    ! Number of filters in the filter chain
+    integer :: nfilters
+
   end type
   
 !</typeblock>
@@ -146,11 +154,6 @@ contains
     ! An array for the system matrix(matrices) during the initialisation of
     ! the linear solver.
     type(t_matrixBlock), dimension(:), pointer :: Rmatrices
-
-    ! A filter chain that describes how to filter the matrix/vector
-    ! before/during the solution process. The filters usually implement
-    ! boundary conditions.
-    type(t_filterChain), dimension(1), target :: RfilterChain
 
     ! One level of multigrid
     type(t_linsolMG2LevelInfo), pointer :: p_rlevelInfo
@@ -378,37 +381,26 @@ contains
                                         rboundaryRegion,Rlevels(i)%rdiscreteBC,&
                                         getBoundaryValues_2D)
       
-      ! Assign the BC`s to the matrix. That way, these
-      ! boundary conditions are always connected to that matrix.
-      call lsysbl_assignDiscreteBC(Rlevels(i)%rmatrix,Rlevels(i)%rdiscreteBC)
-  
       ! Also implement the boundary conditions into the matrix.
-      call matfil_discreteBC (Rlevels(i)%rmatrix)
+      call matfil_discreteBC (Rlevels(i)%rmatrix,Rlevels(i)%rdiscreteBC)
+      
+      ! During the linear solver, the boundary conditions are also
+      ! frequently imposed to the vectors. But as the linear solver
+      ! does not work with the actual solution vectors but with
+      ! defect vectors instead.
+      ! So, set up a filter chain that filters the defect vector
+      ! during the solution process to implement discrete boundary conditions.
+      call filter_clearFilterChain (Rlevels(i)%RfilterChain,Rlevels(i)%nfilters)
+      call filter_newFilterDiscBCDef (&
+          Rlevels(i)%RfilterChain,Rlevels(i)%nfilters,Rlevels(i)%rdiscreteBC)
       
     end do
-
-    ! Our right-hand-side/solution/temp vectors also needs to 
-    ! know the boundary conditions.
-    call lsysbl_assignDiscreteBC(rvecRhs,Rlevels(NLMAX)%rdiscreteBC)
-    call lsysbl_assignDiscreteBC(rvecSol,Rlevels(NLMAX)%rdiscreteBC)
-    call lsysbl_assignDiscreteBC(rvecTmp,Rlevels(NLMAX)%rdiscreteBC)
 
     ! Next step is to implement boundary conditions into the RHS,
     ! solution and matrix. This is done using a vector/matrix filter
     ! for discrete boundary conditions.
-    ! The discrete boundary conditions are already attached to the
-    ! vectors/matrix. Call the appropriate vector/matrix filter that
-    ! modifies the vectors/matrix according to the boundary conditions.
-    call vecfil_discreteBCrhs (rvecRhs)
-    call vecfil_discreteBCsol (rvecSol)
-    
-    ! During the linear solver, the boundary conditions are also
-    ! frequently imposed to the vectors. But as the linear solver
-    ! does not work with the actual solution vectors but with
-    ! defect vectors instead.
-    ! So, set up a filter chain that filters the defect vector
-    ! during the solution process to implement discrete boundary conditions.
-    RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
+    call vecfil_discreteBCrhs (rvecRhs,Rlevels(NLMAX)%rdiscreteBC)
+    call vecfil_discreteBCsol (rvecSol,Rlevels(NLMAX)%rdiscreteBC)
     
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Set up the L2-projection for Multigrid
@@ -471,7 +463,7 @@ contains
     ! Create a Multigrid-solver. Attach the above filter chain
     ! to the solver, so that the solver automatically filters
     ! the vector during the solution process.
-    call linsol_initMultigrid2 (p_rsolverNode,NLMAX-NLMIN+1,RfilterChain)
+    call linsol_initMultigrid2 (p_rsolverNode,NLMAX-NLMIN+1,Rlevels(NLMIN)%RfilterChain)
     
     ! Set up a coarse grid solver.
     ! The coarse grid in multigrid is always grid 1!
@@ -492,6 +484,9 @@ contains
       call linsol_getMultigrid2Level (p_rsolverNode,i-NLMIN+1,p_rlevelInfo)
       p_rlevelInfo%p_rpresmoother => p_rsmoother
       p_rlevelInfo%p_rpostsmoother => p_rsmoother
+
+      ! Attach the filter chain which imposes boundary conditions on that level.
+      p_rlevelInfo%p_RfilterChain => Rlevels(i)%RfilterChain
       
       ! Attach our user-defined projection to the level.
       call linsol_initProjMultigrid2Level(p_rlevelInfo,Rlevels(i)%rprojection)

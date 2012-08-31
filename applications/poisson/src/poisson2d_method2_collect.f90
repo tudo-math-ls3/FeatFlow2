@@ -382,13 +382,6 @@ contains
         rboundaryRegion,p_rdiscreteBC,&
         getBoundaryValues_2D,rcollection)
                              
-    ! Hang the pointer into the vectors and the matrix. That way, these
-    ! boundary conditions are always connected to that matrix and that
-    ! vector.
-    p_rmatrix%p_rdiscreteBC => p_rdiscreteBC
-    p_rrhs%p_rdiscreteBC => p_rdiscreteBC
-    p_rvector%p_rdiscreteBC => p_rdiscreteBC
-                
     ! Save the structures to the collection, so we can access them
     ! without having the matrix or the vector.
     call collct_setvalue_discbc(rcollection,"DISCBC",p_rdiscreteBC,.true.)
@@ -419,21 +412,20 @@ contains
     ! the discretisation
     type(t_matrixBlock), pointer :: p_rmatrix
     type(t_vectorBlock), pointer :: p_rrhs,p_rvector
+    type(t_discreteBC), pointer :: p_rdiscreteBC
 
     ! Get our matrix and right hand side from the collection.
     p_rrhs    => collct_getvalue_vec(rcollection,"RHS")
     p_rvector => collct_getvalue_vec(rcollection,"SOLUTION")
     p_rmatrix => collct_getvalue_mat(rcollection,"LAPLACE")
+    p_rdiscreteBC => collct_getvalue_discbc(rcollection,"DISCBC")
     
     ! Next step is to implement boundary conditions into the RHS,
     ! solution and matrix. This is done using a vector/matrix filter
     ! for discrete boundary conditions.
-    ! The discrete boundary conditions are already attached to the
-    ! vectors/matrix. Call the appropriate vector/matrix filter that
-    ! modifies the vectors/matrix according to the boundary conditions.
-    call vecfil_discreteBCrhs (p_rrhs)
-    call vecfil_discreteBCsol (p_rvector)
-    call matfil_discreteBC (p_rmatrix)
+    call vecfil_discreteBCrhs (p_rrhs,p_rdiscreteBC)
+    call vecfil_discreteBCsol (p_rvector,p_rdiscreteBC)
+    call matfil_discreteBC (p_rmatrix,p_rdiscreteBC)
 
   end subroutine
 
@@ -463,6 +455,9 @@ contains
     ! A filter chain to filter the vectors and the matrix during the
     ! solution process.
     type(t_filterChain), dimension(1), target :: RfilterChain
+    
+    ! Number of filters in the filter chain
+    integer :: nfilters
 
     ! A pointer to the system matrix and the RHS vector as well as
     ! the discretisation
@@ -472,6 +467,9 @@ contains
 
     ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode,p_rpreconditioner
+    
+    ! Pointer to structure for saving discrete BC`s:
+    type(t_discreteBC), pointer :: p_rdiscreteBC
 
     ! Get our matrix and right hand side from the problem structure.
     p_rrhs    => collct_getvalue_vec(rcollection,"RHS")
@@ -489,7 +487,11 @@ contains
     ! would be wrong.
     ! Therefore, create a filter chain with one filter only,
     ! which implements Dirichlet-conditions into a defect vector.
-    RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
+
+    p_rdiscreteBC => collct_getvalue_discbc(rcollection,"DISCBC")
+
+    call filter_clearFilterChain (RfilterChain,nfilters)
+    call filter_newFilterDiscBCDef (RfilterChain,nfilters,p_rdiscreteBC)
 
     ! Create a BiCGStab-solver. Attach the above filter chain
     ! to the solver, so that the solver automatically filters
