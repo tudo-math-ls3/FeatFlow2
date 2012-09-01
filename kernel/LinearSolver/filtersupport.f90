@@ -398,7 +398,7 @@ contains
     
     ! Append the filter.
     nsize = nsize + 1
-    RfilterChain(nsize)%ifilterType = FILTER_DISCBCDEFREAL
+    RfilterChain(nsize)%ifilterType = FILTER_DISCBCDEFFICT
     nullify(RfilterChain(nsize)%p_rdiscreteFBC)
     if (present(rdiscreteFBC)) RfilterChain(nsize)%p_rdiscreteFBC => rdiscreteFBC
 

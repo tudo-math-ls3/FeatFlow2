@@ -823,35 +823,35 @@ contains
 
     integer :: iblock,jblock,i,inumEntries !,icp
     logical :: boffdiagSubmatrix
-    type(t_discreteBCEntry), dimension(:), pointer :: p_RdiscreteBC
+    type(t_discreteBCEntry), dimension(:), pointer :: p_RdiscreteBCEntry
 
     ! Imposing boundary conditions normally changes the whole matrix!
     ! Take the given BC structure or
     ! grab the boundary condition entry list from the matrix. This
     ! is a list of all discretised boundary conditions in the system.
     if (present(rdiscreteBC)) then
-      p_RdiscreteBC => rdiscreteBC%p_RdiscBCList
+      p_RdiscreteBCEntry => rdiscreteBC%p_RdiscBCList
       inumEntries = rdiscreteBC%inumEntriesUsed
     else
-      if (.not. associated(rmatrix%p_rdiscreteBC)) then
+      if (.not. associated(rmatrix%p_RdiscreteBC)) then
         ! There are no BC`s available, so we cannot do anything!
         return
       end if
-      p_RdiscreteBC => rmatrix%p_rdiscreteBC%p_RdiscBCList
-      inumEntries = rmatrix%p_rdiscreteBC%inumEntriesUsed
+      p_RdiscreteBCEntry => rmatrix%p_RdiscreteBC%p_RdiscBCList
+      inumEntries = rmatrix%p_RdiscreteBC%inumEntriesUsed
     end if
 
-    if (.not. associated(p_RdiscreteBC)) return
+    if (.not. associated(p_RdiscreteBCEntry)) return
 
     ! Is the matrix a "primal" matrix or is it a submatrix of another block matrix?
     boffdiagSubmatrix = rmatrix%imatrixSpec .eq. LSYSBS_MSPEC_OFFDIAGSUBMATRIX
 
     ! Now loop through all entries in this list:
-    !DO i=1,SIZE(p_RdiscreteBC)
+    !DO i=1,SIZE(p_RdiscreteBCEntry)
     do i=1, inumEntries
 
       ! What for BC`s do we have here?
-      select case (p_RdiscreteBC(i)%itype)
+      select case (p_RdiscreteBCEntry(i)%itype)
       case (DISCBC_TPUNDEFINED)
         ! Do-nothing
 
@@ -859,7 +859,7 @@ contains
         ! Dirichlet boundary conditions.
         ! On which component are they defined? The component specifies
         ! the row of the block matrix that is to be altered.
-        iblock = p_RdiscreteBC(i)%rdirichletBCs%icomponent
+        iblock = p_RdiscreteBCEntry(i)%rdirichletBCs%icomponent
 
         ! Loop through this matrix row and implement the boundary conditions
         ! into the scalar submatrices.
@@ -873,7 +873,7 @@ contains
             call matfil_imposeDirichletBC (&
                         rmatrix%RmatrixBlock(iblock,jblock), &
                         (iblock .ne. jblock) .or. boffdiagSubmatrix,&
-                        p_RdiscreteBC(i)%rdirichletBCs)
+                        p_RdiscreteBCEntry(i)%rdirichletBCs)
           end if
         end do
 
@@ -890,7 +890,7 @@ contains
         ! FEAST mirror boundary conditions.
         ! On which component are they defined? The component specifies
         ! the row of the block matrix that is to be altered.
-        iblock = p_RdiscreteBC(i)%rfeastMirrorBCs%icomponent
+        iblock = p_RdiscreteBCEntry(i)%rfeastMirrorBCs%icomponent
 
         ! Loop through this matrix row and implement the boundary conditions
         ! into the scalar submatrices.
@@ -904,13 +904,13 @@ contains
             call matfil_imposeFeastMirrorBC (&
                         rmatrix%RmatrixBlock(iblock,jblock), &
                         (iblock .ne. jblock) .or. boffdiagSubmatrix,&
-                        p_RdiscreteBC(i)%rfeastMirrorBCs)
+                        p_RdiscreteBCEntry(i)%rfeastMirrorBCs)
           end if
         end do
 
       case DEFAULT
         call output_line (&
-            "Unknown boundary condition"//sys_siL(p_RdiscreteBC(i)%itype,5),&
+            "Unknown boundary condition"//sys_siL(p_RdiscreteBCEntry(i)%itype,5),&
             OU_CLASS_ERROR,OU_MODE_STD,"matfil_discreteBC")
         call sys_halt()
 
@@ -964,37 +964,50 @@ contains
 
     integer :: iblock,jblock,i,icp
     logical :: boffdiagSubmatrix
-    type(t_discreteBCEntry), dimension(:), pointer :: p_RdiscreteBC
+    type(t_discreteBCEntry), dimension(:), pointer :: p_RdiscreteBCEntry
+    type(t_discreteBC), pointer :: p_rdiscreteBC
 
-    ! Imposing boundary conditions normally changes the whole matrix!
-    ! Grab the boundary condition entry list from the matrix. This
-    ! is a list of all discretised boundary conditions in the system.
-    p_RdiscreteBC => rmatrix%p_rdiscreteBC%p_RdiscBCList
+    if (.not. present(rdiscreteBC)) then
+      ! Grab the boundary condition entry list from the matrix. This
+      ! is a list of all discretised boundary conditions in the system.
+      if (associated(rmatrix%p_rdiscreteBC)) then
+        p_rdiscreteBC => rmatrix%p_rdiscreteBC
+      else
+        ! No BC
+        nullify(p_rdiscreteBC)
+      end if
+    else
+      p_rdiscreteBC => rdiscreteBC
+    end if
 
-    if (.not. associated(p_RdiscreteBC)) return
+    if (.not. associated(p_rdiscreteBC)) return
+
+    p_RdiscreteBCEntry => p_rdiscreteBC%p_RdiscBCList
+
+    if (.not. associated(p_RdiscreteBCEntry)) return
 
     ! Is the matrix a "primal" matrix or is it a submatrix of another block matrix?
     boffdiagSubmatrix = rmatrix%imatrixSpec .eq. LSYSBS_MSPEC_OFFDIAGSUBMATRIX
 
     ! Now loop through all entries in this list:
-    !DO i=1,SIZE(p_RdiscreteBC)
-    do i=1, rmatrix%p_rdiscreteBC%inumEntriesUsed
+    !DO i=1,SIZE(p_RdiscreteBCEntry)
+    do i=1, rmatrix%p_RdiscreteBC%inumEntriesUsed
 
       ! Only implement slip boundary conditions.
-      if (p_RdiscreteBC(i)%itype .eq. DISCBC_TPSLIP) then
+      if (p_RdiscreteBCEntry(i)%itype .eq. DISCBC_TPSLIP) then
         ! Slip boundary conditions are treated like Dirichlet for all
         ! velocity components.
 
         ! Loop through all affected components to implement the BC`s.
-        do icp = 1,p_RdiscreteBC(i)%rslipBCs%ncomponents
-          iblock = p_RdiscreteBC(i)%rslipBCs%Icomponents(icp)
+        do icp = 1,p_RdiscreteBCEntry(i)%rslipBCs%ncomponents
+          iblock = p_RdiscreteBCEntry(i)%rslipBCs%Icomponents(icp)
 
           do jblock = 1,rmatrix%nblocksPerRow
             if (lsysbl_isSubmatrixPresent(rmatrix,iblock,jblock)) then
               call matfil_imposeNLSlipBC (&
                           rmatrix%RmatrixBlock(iblock,jblock), &
                           (iblock .ne. jblock) .or. boffdiagSubmatrix,bforprec,&
-                          p_RdiscreteBC(i)%rslipBCs)
+                          p_RdiscreteBCEntry(i)%rslipBCs)
             end if
           end do
 
@@ -1038,25 +1051,36 @@ contains
 
     integer :: iblock,jblock,i,j
     logical :: boffdiagSubmatrix
-    type(t_discreteFBCEntry), dimension(:), pointer :: p_RdiscreteFBC
+    type(t_discreteFBCEntry), dimension(:), pointer :: p_RdiscreteFBCEntry
+    type(t_discreteFBC), pointer :: p_rdiscreteBCfict
 
-    ! Imposing boundary conditions normally changes the whole matrix!
-    ! Grab the boundary condition entry list from the matrix. This
-    ! is a list of all discretised boundary conditions in the system.
-    if (.not. associated(rmatrix%p_rdiscreteBCfict)) return
+    if (.not. present(rdiscreteFBC)) then
+      ! Grab the boundary condition entry list from the matrix. This
+      ! is a list of all discretised boundary conditions in the system.
+      if (associated(rmatrix%p_rdiscreteBCfict)) then
+        p_rdiscreteBCfict => rmatrix%p_rdiscreteBCfict
+      else
+        ! No BC
+        nullify(p_rdiscreteBCfict)
+      end if
+    else
+      p_rdiscreteBCfict => rdiscreteFBC
+    end if
 
-    p_RdiscreteFBC => rmatrix%p_rdiscreteBCfict%p_RdiscFBCList
+    if (.not. associated(p_rdiscreteBCfict)) return
 
-    if (.not. associated(p_RdiscreteFBC)) return
+    p_RdiscreteFBCEntry => p_rdiscreteBCfict%p_RdiscFBCList
+
+    if (.not. associated(p_RdiscreteFBCEntry)) return
 
     ! Is the matrix a "primal" matrix or is it a submatrix of another block matrix?
     boffdiagSubmatrix = rmatrix%imatrixSpec .eq. LSYSBS_MSPEC_OFFDIAGSUBMATRIX
 
     ! Now loop through all entries in this list:
-    do i=1,size(p_RdiscreteFBC)
+    do i=1,size(p_RdiscreteFBCEntry)
 
       ! What for BC`s do we have here?
-      select case (p_RdiscreteFBC(i)%itype)
+      select case (p_RdiscreteFBCEntry(i)%itype)
       case (DISCFBC_TPUNDEFINED)
         ! Do-nothing
 
@@ -1064,9 +1088,9 @@ contains
         ! Dirichlet boundary conditions.
         !
         ! Loop through all blocks where to impose the BC`s:
-        do j=1,p_RdiscreteFBC(i)%rdirichletFBCs%ncomponents
+        do j=1,p_RdiscreteFBCEntry(i)%rdirichletFBCs%ncomponents
 
-          iblock = p_RdiscreteFBC(i)%rdirichletFBCs%Icomponents(j)
+          iblock = p_RdiscreteFBCEntry(i)%rdirichletFBCs%Icomponents(j)
 
           ! Loop through this matrix row and implement the boundary conditions
           ! into the scalar submatrices.
@@ -1080,7 +1104,7 @@ contains
               call matfil_imposeDirichletFBC (&
                           rmatrix%RmatrixBlock(iblock,jblock), &
                           (iblock .ne. jblock) .or. boffdiagSubmatrix,&
-                          p_RdiscreteFBC(i)%rdirichletFBCs)
+                          p_RdiscreteFBCEntry(i)%rdirichletFBCs)
             end if
           end do
 
@@ -1088,7 +1112,7 @@ contains
 
       case DEFAULT
         call output_line (&
-            "Unknown boundary condition"//sys_siL(p_RdiscreteFBC(i)%itype,5),&
+            "Unknown boundary condition"//sys_siL(p_RdiscreteFBCEntry(i)%itype,5),&
             OU_CLASS_ERROR,OU_MODE_STD,"matfil_discreteFBC")
         call sys_halt()
 
