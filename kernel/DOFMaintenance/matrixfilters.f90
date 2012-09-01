@@ -967,22 +967,16 @@ contains
     type(t_discreteBCEntry), dimension(:), pointer :: p_RdiscreteBCEntry
     type(t_discreteBC), pointer :: p_rdiscreteBC
 
+    nullify(p_rdiscreteBC)
     if (.not. present(rdiscreteBC)) then
       ! Grab the boundary condition entry list from the matrix. This
       ! is a list of all discretised boundary conditions in the system.
       if (associated(rmatrix%p_rdiscreteBC)) then
-        p_rdiscreteBC => rmatrix%p_rdiscreteBC
-      else
-        ! No BC
-        nullify(p_rdiscreteBC)
+        p_RdiscreteBCEntry => rmatrix%p_rdiscreteBC%p_RdiscBCList
       end if
     else
-      p_rdiscreteBC => rdiscreteBC
+      p_RdiscreteBCEntry => rdiscreteBC%p_RdiscBCList
     end if
-
-    if (.not. associated(p_rdiscreteBC)) return
-
-    p_RdiscreteBCEntry => p_rdiscreteBC%p_RdiscBCList
 
     if (.not. associated(p_RdiscreteBCEntry)) return
 
@@ -1052,24 +1046,17 @@ contains
     integer :: iblock,jblock,i,j
     logical :: boffdiagSubmatrix
     type(t_discreteFBCEntry), dimension(:), pointer :: p_RdiscreteFBCEntry
-    type(t_discreteFBC), pointer :: p_rdiscreteBCfict
 
+    nullify(p_RdiscreteFBCEntry)
     if (.not. present(rdiscreteFBC)) then
       ! Grab the boundary condition entry list from the matrix. This
       ! is a list of all discretised boundary conditions in the system.
       if (associated(rmatrix%p_rdiscreteBCfict)) then
-        p_rdiscreteBCfict => rmatrix%p_rdiscreteBCfict
-      else
-        ! No BC
-        nullify(p_rdiscreteBCfict)
+        p_RdiscreteFBCEntry => rmatrix%p_rdiscreteBCfict%p_RdiscFBCList
       end if
     else
-      p_rdiscreteBCfict => rdiscreteFBC
+      p_RdiscreteFBCEntry => rdiscreteFBC%p_RdiscFBCList
     end if
-
-    if (.not. associated(p_rdiscreteBCfict)) return
-
-    p_RdiscreteFBCEntry => p_rdiscreteBCfict%p_RdiscFBCList
 
     if (.not. associated(p_RdiscreteFBCEntry)) return
 
