@@ -44,7 +44,7 @@ module ccbasic
 
 !<typeblock>
 
-  ! A type block specifying all 'template' information which are depending
+  ! A type block specifying all "template" information which are depending
   ! on a discretisation and a triangulation. Such template information can be
   ! precalculated and is valid until the mesh or the FE spaces change.
   ! It can be used to create vectors and matrices e.g.

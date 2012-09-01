@@ -84,8 +84,10 @@ scoarseGridSolverSection = 'CC-COARSEGRIDSOLVER'
 # Type of preconditioner to be used for multilevel Krylow methods
 # (deflated GMRES).
 # =0: no preconditioner
+# =1: General VANKA
+# =2: Diagonal VANKA
 
-cpreconditionerMK = 0
+cpreconditionerMK = 2
 
 # Section defining the parameters for the preconditioner to be used
 # in multilevel Krylow methods.

@@ -90,14 +90,14 @@ contains
     
     ! Initialise the nonlinear solver node rnlSol with parameters from
     ! the INI/DAT files.
-    call cc_getNonlinearSolver (rnlSol, rproblem%rparamList, 'CC2D-NONLINEAR')
+    call cc_getNonlinearSolver (rnlSol, rproblem%rparamList, "CC2D-NONLINEAR")
 
     ! Initialise the nonlinear loop. This is to prepare everything for
     ! or callback routines that are called from the nonlinear solver.
     ! The preconditioner in that structure is initialised later.
     call cc_initNonlinearLoop (&
         rproblem,rproblem%NLMIN,rproblem%NLMAX,rvector,rrhs,&
-        rnonlinearIteration,'CC2D-NONLINEAR')
+        rnonlinearIteration,"CC2D-NONLINEAR")
         
     ! Set up all the weights in the core equation according to the current timestep.
     rnonlinearIteration%dalpha = 0.0_DP
@@ -121,13 +121,13 @@ contains
     call cc_doneNonlinearLoop (rnonlinearIteration)
              
     call output_lbrk()
-    call output_line ('Nonlinear solver statistics',coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
-    call output_line ('---------------------------',coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
-    call output_line ('Initial defect: '//trim(sys_sdEL(rnlSol%DinitialDefect(1),15)),&
+    call output_line ("Nonlinear solver statistics",coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
+    call output_line ("---------------------------",coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
+    call output_line ("Initial defect: "//trim(sys_sdEL(rnlSol%DinitialDefect(1),15)),&
         coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
-    call output_line ('Final defect:  '//trim(sys_sdEL(rnlSol%DfinalDefect(1),15)),&
+    call output_line ("Final defect:  "//trim(sys_sdEL(rnlSol%DfinalDefect(1),15)),&
         coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
-    call output_line ('#Iterations:   '//trim(sys_siL(rnlSol%iiterations,10)),&
+    call output_line ("#Iterations:   "//trim(sys_siL(rnlSol%iiterations,10)),&
         coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
     
   end subroutine

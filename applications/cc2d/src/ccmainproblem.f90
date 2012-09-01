@@ -66,7 +66,7 @@ contains
   subroutine cc2dmain
   
 !<description>
-  ! This is a 'separated' Navier-Stokes solver for solving a Navier-Stokes
+  ! This is a "separated" Navier-Stokes solver for solving a Navier-Stokes
   ! problem. The different tasks of the problem are separated into
   ! subroutines. The problem uses a problem-specific structure for the
   ! communication: All subroutines add their generated information to the
@@ -135,7 +135,7 @@ contains
     
     ! Print the configuration to the terminal
     if (p_rproblem%MSHOW_Initialisation .ge. 2) then
-      call output_line ('Parameters:')
+      call output_line ("Parameters:")
       call output_lbrk ()
       call parlst_info (p_rproblem%rparamList)
     end if
@@ -151,7 +151,7 @@ contains
     ! Parametrisation & Triangulation
     if (p_rproblem%MSHOW_Initialisation .ge. 1) then
       call output_separator (OU_SEP_MINUS)
-      call output_line('Initialising parametrisation / triangulation...')
+      call output_line("Initialising parametrisation / triangulation...")
     end if
     
     call stat_startTimer(rtimerGridGeneration)
@@ -169,7 +169,7 @@ contains
     ! Print mesh information
     if (p_rproblem%MSHOW_Initialisation .ge. 2) then
       call output_lbrk ()
-      call output_line ('Mesh statistics:')
+      call output_line ("Mesh statistics:")
       call output_lbrk ()
       do i=p_rproblem%NLMIN,p_rproblem%NLMAX
         call tria_infoStatistics (p_rproblem%RlevelInfo(i)%rtriangulation,&
@@ -180,16 +180,16 @@ contains
     ! Discretisation
     if (p_rproblem%MSHOW_Initialisation .ge. 1) then
       call output_separator (OU_SEP_MINUS)
-      call output_line('Initialising discretisation...')
+      call output_line("Initialising discretisation...")
     end if
     call cc_initDiscretisation (p_rproblem)
 
     if (p_rproblem%MSHOW_Initialisation .ge. 2) then
       call output_lbrk ()
-      call output_line ('Discretisation statistics:')
+      call output_line ("Discretisation statistics:")
       do i=p_rproblem%NLMIN,p_rproblem%NLMAX
         call output_lbrk ()
-        call output_line ('Level '//sys_siL(i,5))
+        call output_line ("Level "//sys_siL(i,5))
         call dof_infoDiscrBlock (p_rproblem%RlevelInfo(i)%rdiscretisation,.false.)
       end do
     end if
@@ -197,13 +197,13 @@ contains
     ! And all the other stuff...
     if (p_rproblem%MSHOW_Initialisation .ge. 1) then
       call output_separator (OU_SEP_MINUS)
-      call output_line('Initialising postprocessing...')
+      call output_line("Initialising postprocessing...")
     end if
     call cc_initPostprocessing (p_rproblem,rpostprocessing)
     
     if (p_rproblem%MSHOW_Initialisation .ge. 1) then
       call output_separator (OU_SEP_MINUS)
-      call output_line('Initialising matrices/vectors...')
+      call output_line("Initialising matrices/vectors...")
     end if
     
     call stat_startTimer(rtimerMatrixGeneration)
@@ -219,20 +219,20 @@ contains
     ! for the system matrix (Laplace, B, Mass,...)
     if (p_rproblem%MSHOW_Initialisation .ge. 1) then
       call output_separator (OU_SEP_MINUS)
-      call output_line('Generating basic matrices...')
+      call output_line("Generating basic matrices...")
     end if
     call cc_generateBasicMat (p_rproblem)
 
     ! Create the solution vector -- zero or read from file.
     if (p_rproblem%MSHOW_Initialisation .ge. 1) then
       call output_separator (OU_SEP_MINUS)
-      call output_line('Initialising initial solution vector...')
+      call output_line("Initialising initial solution vector...")
     end if
     call cc_initInitialSolution (p_rproblem,rvector)
 
     if (p_rproblem%MSHOW_Initialisation .ge. 1) then
       call output_separator (OU_SEP_MINUS)
-      call output_line('Initialising RHS vector...')
+      call output_line("Initialising RHS vector...")
     end if
     call cc_initRHSAssembly (p_rproblem%rparamList,rrhs%p_rblockDiscr,p_rproblem%rrhsAssembly)
 
@@ -244,7 +244,7 @@ contains
       ! Generate the RHS vector.
       if (p_rproblem%MSHOW_Initialisation .ge. 1) then
         call output_separator (OU_SEP_MINUS)
-        call output_line('Generating RHS vector...')
+        call output_line("Generating RHS vector...")
       end if
       call stat_clearTimer(rtimerRHSgeneration)
       call stat_startTimer(rtimerRHSgeneration)
@@ -258,7 +258,7 @@ contains
       ! Generate discrete boundary conditions
       if (p_rproblem%MSHOW_Initialisation .ge. 1) then
         call output_separator (OU_SEP_MINUS)
-        call output_line('Generating discrete boundary conditions...')
+        call output_line("Generating discrete boundary conditions...")
       end if
       call cc_initDiscreteBC (p_rproblem,rvector,rrhs)
 
@@ -268,7 +268,7 @@ contains
       ! Solve the problem
       if (p_rproblem%MSHOW_Initialisation .ge. 1) then
         call output_separator (OU_SEP_MINUS)
-        call output_line('Invoking stationary solver...')
+        call output_line("Invoking stationary solver...")
         call output_separator (OU_SEP_MINUS)
       end if
       
@@ -288,7 +288,7 @@ contains
       ! Generate the RHS vector for the first time step.
       if (p_rproblem%MSHOW_Initialisation .ge. 1) then
         call output_separator (OU_SEP_MINUS)
-        call output_line('Generating RHS vector...')
+        call output_line("Generating RHS vector...")
       end if
       call stat_clearTimer(rtimerRHSgeneration)
       call stat_startTimer(rtimerRHSgeneration)
@@ -304,14 +304,14 @@ contains
       ! does not like this.
       if (p_rproblem%MSHOW_Initialisation .ge. 1) then
         call output_separator (OU_SEP_MINUS)
-        call output_line('Generating discrete boundary conditions of first time step...')
+        call output_line("Generating discrete boundary conditions of first time step...")
       end if
       call cc_initDiscreteBC (p_rproblem,rvector,rrhs)
       
       ! Call the nonstationary solver to solve the problem.
       if (p_rproblem%MSHOW_Initialisation .ge. 1) then
         call output_separator (OU_SEP_MINUS)
-        call output_line('Invoking nonstationary solver...')
+        call output_line("Invoking nonstationary solver...")
         call output_separator (OU_SEP_MINUS)
       end if
       
@@ -346,8 +346,8 @@ contains
     
     ! Print some statistical data about the collection - anything forgotten?
     call output_lbrk ()
-    call output_line ('Remaining collection statistics:')
-    call output_line ('--------------------------------')
+    call output_line ("Remaining collection statistics:")
+    call output_line ("--------------------------------")
     call output_lbrk ()
     call collct_printStatistics (p_rproblem%rcollection)
     

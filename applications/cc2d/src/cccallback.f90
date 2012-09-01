@@ -8,39 +8,39 @@
 !# used during the matrix/vector assembly for specifying analytical data.
 !# There are three callback functions involved, which may be called depending
 !# on the situation. All of them correspond to a specific interface for
-!# callback functions, defined in 'intf_xxxx.inc' files.
+!# callback functions, defined in "intf_xxxx.inc" files.
 !#
 !# 1.) coeff_Stokes
 !#     -> Returns the coefficients for the Laplace matrix. This routine is
 !#        only used if the problem to calculate has nonconstant coefficients!
 !#        Otherwise the routine is dead.
 !#     -> Corresponds to the interface defined in the file
-!#        'intf_coefficientMatrixSc.inc'
+!#        "intf_coefficientMatrixSc.inc"
 !#
 !# 2.) coeff_Pressure
 !#     -> Returns the coefficients for the pressure matrix. This routine is
 !#        only used if the problem to calculate has nonconstant coefficients!
 !#        Otherwise the routine is dead.
 !#     -> Corresponds to the interface defined in the file
-!#        'intf_coefficientMatrixSc.inc'
+!#        "intf_coefficientMatrixSc.inc"
 !#
 !# 3.) coeff_RHS_x
 !#     -> Returns analytical values for the right hand side of the X-velocity
 !#        equation.
 !#     -> Corresponds to the interface defined in the file
-!#        'intf_coefficientVectorSc.inc'
+!#        "intf_coefficientVectorSc.inc"
 !#
 !# 4.) coeff_RHS_y
 !#     -> Returns analytical values for the right hand side of the Y-velocity
 !#        equation.
 !#     -> Corresponds to the interface defined in the file
-!#        'intf_coefficientVectorSc.inc'
+!#        "intf_coefficientVectorSc.inc"
 !#
 !# 5.) coeff_RHS_p
 !#     -> Returns analytical values for the right hand side of the pressure/
 !#        divergence equation.
 !#     -> Corresponds to the interface defined in the file
-!#        'intf_coefficientVectorSc.inc'
+!#        "intf_coefficientVectorSc.inc"
 !#
 !# 6.) coeff_AnalyticSolution_X
 !#     -> Returns analytical values for the desired flow field in X-direction.
@@ -61,19 +61,19 @@
 !#     -> Returns analytical values for the desired flow field in X-direction.
 !#     -> Is used for error analysis during the postprocessing.
 !#     -> Corresponds to the interface defined in the file
-!#        'intf_coefficientVectorSc.inc'
+!#        "intf_coefficientVectorSc.inc"
 !#
 !# 10.) ffunction_TargetY
 !#      -> Returns analytical values for the desired flow field in Y-direction.
 !#      -> Is used for error analysis during the postprocessing.
 !#      -> Corresponds to the interface defined in the file
-!#         'intf_coefficientVectorSc.inc'
+!#         "intf_coefficientVectorSc.inc"
 !#
 !# 11.) ffunction_TargetP
 !#      -> Returns analytical values for the desired pressure.
 !#      -> Is used for error analysis during the postprocessing.
 !#      -> Corresponds to the interface defined in the file
-!#         'intf_coefficientVectorSc.inc'
+!#         "intf_coefficientVectorSc.inc"
 !#
 !# 12.) getBoundaryValues
 !#     -> Returns analytical values on the boundary of the
@@ -82,7 +82,7 @@
 !# 13.) getBoundaryValuesFBC
 !#     -> Returns analytical values on the fictitious boundary components
 !#     -> Corresponds to the interface defined in the file
-!#        'intf_fbcassembly.inc'
+!#        "intf_fbcassembly.inc"
 !#
 !# 14.) cc_initCollectForAssembly
 !#     -> Is called prior to the assembly process.
@@ -168,19 +168,19 @@
 !#     [BDEXPRESSIONS]
 !#     ##############
 !#     bdExpressions(2) =
-!#       'Dirichlet0'     0    0.0
-!#       'mpartx'        -1    '-MFVELX'
+!#       "Dirichlet0"     0    0.0
+!#       "mpartx"        -1    "-MFVELX"
 !#
 !#     ##############
 !#     [BDCONDITIONS]
 !#     ##############
 !#     bdComponent1(4)=
-!#        1.0  3  1  'Dirichlet0'  'Dirichlet0'
+!#        1.0  3  1  "Dirichlet0"  "Dirichlet0"
 !#        2.0  0  0
-!#        3.0  3  1  'Dirichlet0'  'Dirichlet0'
+!#        3.0  3  1  "Dirichlet0"  "Dirichlet0"
 !#        4.0  0  0
 !#     bdComponent2(1)=
-!#        4.0  3  1  'mpartx'  'Dirichlet0'
+!#        4.0  3  1  "mpartx"  "Dirichlet0"
 !#
 !#     #####################
 !#     [TIME-DISCRETISATION]
@@ -1423,7 +1423,7 @@ contains
     ! This subroutine is called during the discretisation of boundary
     ! conditions on fictitious boundary components. It calculates a special quantity
     ! on the boundary, which is then used by the discretisation routines to
-    ! generate a discrete 'snapshot' of the (actually analytic) boundary conditions.
+    ! generate a discrete "snapshot" of the (actually analytic) boundary conditions.
     !
     ! The routine must calculate the values on all elements of the element
     ! list Ielements simultaneously. Iwhere is a list with vertex or edge numbers
@@ -1480,7 +1480,7 @@ contains
   !</subroutine>
 
     ! Note: the definition of (analytic) fictitious boundary components
-    ! is performed in 'cc_parseFBDconditions'.
+    ! is performed in "cc_parseFBDconditions".
     !
     ! By default, fictitious boundary handling is switched off!
     ! To switch the handling on, uncomment tge bcasm_XXXX-call
@@ -1655,8 +1655,8 @@ contains
         dy = dy / real(j,DP)
       
       case DEFAULT
-        call output_line ('Unsupported coordinate type to return.!', &
-            OU_CLASS_ERROR,OU_MODE_STD,'getBoundaryValuesFBC')
+        call output_line ("Unsupported coordinate type to return.!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"getBoundaryValuesFBC")
         call sys_halt()
       end select
       

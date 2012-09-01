@@ -269,14 +269,14 @@ contains
     call stat_startTimer(rtimer)
 
     ! Whether to apply postprocessing to rvector ot rvectorInt
-    call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
-        'ipostprocTimeInterpSolution', ipostprocTimeInterpSolution, 1)
+    call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
+        "ipostprocTimeInterpSolution", ipostprocTimeInterpSolution, 1)
 
     ! Think about writing out the solution...
-    call parlst_getvalue_double (rproblem%rparamList, 'CC-DISCRETISATION', &
-        'dwriteSolDeltaTime', dwriteSolDeltaTime, 0.0_DP)
-    call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
-        'iwriteSolDeltaSteps', iwriteSolDeltaSteps, 1)
+    call parlst_getvalue_double (rproblem%rparamList, "CC-DISCRETISATION", &
+        "dwriteSolDeltaTime", dwriteSolDeltaTime, 0.0_DP)
+    call parlst_getvalue_int (rproblem%rparamList, "CC-DISCRETISATION", &
+        "iwriteSolDeltaSteps", iwriteSolDeltaSteps, 1)
     if (iwriteSolDeltaSteps .lt. 1) iwriteSolDeltaSteps = 1
     
     ! Figure out if we have to write the solution. This is the case if
@@ -339,12 +339,12 @@ contains
     ! In a nonstationary simulation, first check if we are allowed
     ! to write something.
 
-    call parlst_getvalue_double (rproblem%rparamList, 'CC-POSTPROCESSING', &
-        'DMINTIMEUCD', dminTime, -1.E100_DP)
-    call parlst_getvalue_double (rproblem%rparamList, 'CC-POSTPROCESSING', &
-        'DMAXTIMEUCD', dmaxTime, 1.E100_DP)
-    call parlst_getvalue_double (rproblem%rparamList, 'CC-POSTPROCESSING', &
-        'DTIMEDIFFERENCEUCD', dtimeDifferenceUCD, 0.0_DP)
+    call parlst_getvalue_double (rproblem%rparamList, "CC-POSTPROCESSING", &
+        "DMINTIMEUCD", dminTime, -1.E100_DP)
+    call parlst_getvalue_double (rproblem%rparamList, "CC-POSTPROCESSING", &
+        "DMAXTIMEUCD", dmaxTime, 1.E100_DP)
+    call parlst_getvalue_double (rproblem%rparamList, "CC-POSTPROCESSING", &
+        "DTIMEDIFFERENCEUCD", dtimeDifferenceUCD, 0.0_DP)
                                     
     if ((dtime .ge. dminTime-1000.0*SYS_EPSREAL_DP) .and. &
         (dtime .le. dmaxTime+1000.0*SYS_EPSREAL_DP)) then
@@ -363,8 +363,8 @@ contains
     
       if (itime1 .ne. itime2) then
         ! Probably we have to interpolate the solution to the point dtime in time.
-        call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
-            'IINTERPOLATESOLUTIONUCD', iinterpolateSolutionUCD,1)
+        call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
+            "IINTERPOLATESOLUTIONUCD", iinterpolateSolutionUCD,1)
         if ((iinterpolateSolutionUCD .eq. 0) .or. (dtimeDifferenceUCD .eq. 0.0_DP) &
             .or. (dtimePrev .eq. dtime)) then
           ! No interpolation
@@ -384,12 +384,12 @@ contains
     ! Write film output (raw data vectors)
     !
     ! First check if we are allowed to write something.
-    call parlst_getvalue_double (rproblem%rparamList, 'CC-POSTPROCESSING', &
-        'DMINTIMEFILM', dminTime, -1.E100_DP)
-    call parlst_getvalue_double (rproblem%rparamList, 'CC-POSTPROCESSING', &
-        'DMAXTIMEFILM', dmaxTime, 1.E100_DP)
-    call parlst_getvalue_double (rproblem%rparamList, 'CC-POSTPROCESSING', &
-        'DTIMEDIFFERENCEFILM', dtimeDifferenceFilm, 0.0_DP)
+    call parlst_getvalue_double (rproblem%rparamList, "CC-POSTPROCESSING", &
+        "DMINTIMEFILM", dminTime, -1.E100_DP)
+    call parlst_getvalue_double (rproblem%rparamList, "CC-POSTPROCESSING", &
+        "DMAXTIMEFILM", dmaxTime, 1.E100_DP)
+    call parlst_getvalue_double (rproblem%rparamList, "CC-POSTPROCESSING", &
+        "DTIMEDIFFERENCEFILM", dtimeDifferenceFilm, 0.0_DP)
                                     
     if ((dtime .ge. dminTime-1000.0*SYS_EPSREAL_DP) .and. &
         (dtime .le. dmaxTime+1000.0*SYS_EPSREAL_DP)) then
@@ -408,8 +408,8 @@ contains
     
       if (itime1 .ne. itime2) then
         ! Probably we have to interpolate the solution to the point dtime in time.
-        call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
-            'IINTERPOLATESOLUTIONFILM', iinterpolateSolutionFilm,1)
+        call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
+            "IINTERPOLATESOLUTIONFILM", iinterpolateSolutionFilm,1)
         if ((iinterpolateSolutionFilm .eq. 0) .or. (dtimeDifferenceFilm .eq. 0.0_DP) &
             .or. (dtimePrev .eq. dtime)) then
           ! No interpolation
@@ -476,42 +476,42 @@ contains
     real(DP) :: dtimebackup
     type(t_scalarCubatureInfo) :: rcubatureInfoUV,rcubatureInfoP
     
-    call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
-        'IERRORANALYSISL2', icalcL2, 0)
-    call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
-        'IERRORANALYSISH1', icalcH1, 0)
-    call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
-        'ICALCKINETICENERGY', icalcEnergy, 1)
+    call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
+        "IERRORANALYSISL2", icalcL2, 0)
+    call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
+        "IERRORANALYSISH1", icalcH1, 0)
+    call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
+        "ICALCKINETICENERGY", icalcEnergy, 1)
 
-    call parlst_getvalue_string (rproblem%rparamList,'CC-POSTPROCESSING',&
-                                 'scubError',stemp,'')
-    if (stemp .eq. '') then
-      call parlst_getvalue_int (rproblem%rparamList,'CC-POSTPROCESSING',&
-                                'icubError',icubError,int(CUB_GEN_AUTO))
+    call parlst_getvalue_string (rproblem%rparamList,"CC-POSTPROCESSING",&
+                                 "scubError",stemp,"")
+    if (stemp .eq. "") then
+      call parlst_getvalue_int (rproblem%rparamList,"CC-POSTPROCESSING",&
+                                "icubError",icubError,int(CUB_GEN_AUTO))
     else
       icubError = cub_igetID(stemp)
     end if
 
-    call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
-        'IWRITEERRORANALYSISL2', iwriteErrorAnalysisL2, 0)
-    call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
-        'IWRITEERRORANALYSISH1', iwriteErrorAnalysisH1, 0)
-    call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
-        'IWRITEKINETICENERGY', iwriteKineticEnergy, 0)
+    call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
+        "IWRITEERRORANALYSISL2", iwriteErrorAnalysisL2, 0)
+    call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
+        "IWRITEERRORANALYSISH1", iwriteErrorAnalysisH1, 0)
+    call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
+        "IWRITEKINETICENERGY", iwriteKineticEnergy, 0)
 
-    call parlst_getvalue_string (rproblem%rparamList, 'CC-POSTPROCESSING', &
-        'SFILENAMEERRORANALYSISL2', sfilenameErrorAnalysisL2, "", bdequote=.true.)
-    if (sfilenameErrorAnalysisL2 .eq. '') &
+    call parlst_getvalue_string (rproblem%rparamList, "CC-POSTPROCESSING", &
+        "SFILENAMEERRORANALYSISL2", sfilenameErrorAnalysisL2, "", bdequote=.true.)
+    if (sfilenameErrorAnalysisL2 .eq. "") &
       iwriteErrorAnalysisL2 = 0
     
-    call parlst_getvalue_string (rproblem%rparamList, 'CC-POSTPROCESSING', &
-        'SFILENAMEERRORANALYSISH1', sfilenameErrorAnalysisH1, "", bdequote=.true.)
-    if (sfilenameErrorAnalysisH1 .eq. '') &
+    call parlst_getvalue_string (rproblem%rparamList, "CC-POSTPROCESSING", &
+        "SFILENAMEERRORANALYSISH1", sfilenameErrorAnalysisH1, "", bdequote=.true.)
+    if (sfilenameErrorAnalysisH1 .eq. "") &
       iwriteErrorAnalysisH1 = 0
     
-    call parlst_getvalue_string (rproblem%rparamList, 'CC-POSTPROCESSING', &
-        'SFILENAMEKINETICENERGY', sfilenameKineticEnergy, "", bdequote=.true.)
-    if (sfilenameKineticEnergy .eq. '') &
+    call parlst_getvalue_string (rproblem%rparamList, "CC-POSTPROCESSING", &
+        "SFILENAMEKINETICENERGY", sfilenameKineticEnergy, "", bdequote=.true.)
+    if (sfilenameKineticEnergy .eq. "") &
       iwriteKineticEnergy = 0
       
     ! Create an cubature info structure which contains our cubature rule
@@ -521,8 +521,8 @@ contains
         rsolution%RvectorBlock(3)%p_rspatialDiscr,rcubatureInfoP,int(icubError,I32))
     
     ! The error analysis might take place at an arbitrary time.
-    ! Therefore, modify the 'current' time to the time where we want to
-    ! do the analysis. Save the 'current' time and restore afterwards.
+    ! Therefore, modify the "current" time to the time where we want to
+    ! do the analysis. Save the "current" time and restore afterwards.
     ! This is necessary, as the user callback routines take the time
     ! for evaluation from here.
     dtimebackup = rproblem%rtimedependence%dtime
@@ -530,8 +530,8 @@ contains
     
     if ((icalcL2 .ne. 0) .or. (icalcH1 .ne. 0) .or. (icalcEnergy .ne. 0)) then
       call output_lbrk()
-      call output_line ('Error Analysis')
-      call output_line ('--------------')
+      call output_line ("Error Analysis")
+      call output_line ("--------------")
     end if
     
     ! When writing to a file is enabled, delete the file in the first timestep.
@@ -559,8 +559,8 @@ contains
 
       derrorP = Derr(3)
       
-      call output_line ('||u-reference||_L2 = '//trim(sys_sdEP(derrorVel,15,6)) )
-      call output_line ('||p-reference||_L2 = '//trim(sys_sdEP(derrorP,15,6)) )
+      call output_line ("||u-reference||_L2 = "//trim(sys_sdEP(derrorVel,15,6)) )
+      call output_line ("||p-reference||_L2 = "//trim(sys_sdEP(derrorP,15,6)) )
       
       call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
       
@@ -571,13 +571,13 @@ contains
             cflag, bfileExists,.true.)
         if ((cflag .eq. SYS_REPLACE) .or. (.not. bfileexists)) then
           ! Write a headline
-          write (iunit,'(A)') '# timestep time ||u-reference||_L2 ||p-reference||_L2'
+          write (iunit,"(A)") "# timestep time ||u-reference||_L2 ||p-reference||_L2"
         end if
-        stemp = trim(sys_siL(rproblem%rtimedependence%itimeStep,10)) // ' ' &
-            // trim(sys_sdEL(dtime,10)) // ' ' &
-            // trim(sys_sdEL(derrorVel,10)) // ' ' &
+        stemp = trim(sys_siL(rproblem%rtimedependence%itimeStep,10)) // " " &
+            // trim(sys_sdEL(dtime,10)) // " " &
+            // trim(sys_sdEL(derrorVel,10)) // " " &
             // trim(sys_sdEL(derrorP,10))
-        write (iunit,'(A)') trim (stemp)
+        write (iunit,"(A)") trim (stemp)
         close (iunit)
       end if
       
@@ -599,10 +599,10 @@ contains
       if ((Derr(1) .ne. -1.0_DP) .and. (Derr(2) .ne. -1.0_DP)) then
         derrorVel = sqrt(Derr(1)**2+Derr(2)**2)
 
-        call output_line ('||u-reference||_H1 = '//trim(sys_sdEP(derrorVel,15,6)),&
+        call output_line ("||u-reference||_H1 = "//trim(sys_sdEP(derrorVel,15,6)),&
             coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
       else
-        call output_line ('||u-reference||_H1 = not available',&
+        call output_line ("||u-reference||_H1 = not available",&
             coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
       end if
       
@@ -613,10 +613,10 @@ contains
       if (Derr(3) .ne. -1.0_DP) then
         derrorP = Derr(3)
 
-        call output_line ('||p-reference||_H1 = '//trim(sys_sdEP(derrorP,15,6)),&
+        call output_line ("||p-reference||_H1 = "//trim(sys_sdEP(derrorP,15,6)),&
             coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
       else
-        call output_line ('||p-reference||_H1 = not available',&
+        call output_line ("||p-reference||_H1 = not available",&
             coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
       end if
       
@@ -629,12 +629,12 @@ contains
             cflag, bfileExists,.true.)
         if ((cflag .eq. SYS_REPLACE) .or. (.not. bfileexists)) then
           ! Write a headline
-          write (iunit,'(A)') '# timestep time ||u-reference||_H1'
+          write (iunit,"(A)") "# timestep time ||u-reference||_H1"
         end if
-        stemp = trim(sys_siL(rproblem%rtimedependence%itimeStep,10)) // ' ' &
-            // trim(sys_sdEL(dtime,10)) // ' ' &
+        stemp = trim(sys_siL(rproblem%rtimedependence%itimeStep,10)) // " " &
+            // trim(sys_sdEL(dtime,10)) // " " &
             // trim(sys_sdEL(derrorVel,10))
-        write (iunit,'(A)') trim(stemp)
+        write (iunit,"(A)") trim(stemp)
         close (iunit)
       end if
       
@@ -652,14 +652,14 @@ contains
                          
       denergy = 0.5_DP*(Derr(1)**2+Derr(2)**2)
 
-      call output_line ('||u_1||_L2         = '//trim(sys_sdEP(Derr(1),15,6)),&
+      call output_line ("||u_1||_L2         = "//trim(sys_sdEP(Derr(1),15,6)),&
           coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
-      call output_line ('||u_2||_L2         = '//trim(sys_sdEP(Derr(2),15,6)),&
+      call output_line ("||u_2||_L2         = "//trim(sys_sdEP(Derr(2),15,6)),&
           coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
-      call output_line ('||u||_L2           = '//&
+      call output_line ("||u||_L2           = "//&
           trim(sys_sdEP(sqrt(Derr(1)**2+Derr(2)**2),15,6)),&
           coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
-      call output_line ('1/2||u||^2_L2      = '//trim(sys_sdEP(denergy,15,6)),&
+      call output_line ("1/2||u||^2_L2      = "//trim(sys_sdEP(denergy,15,6)),&
           coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
       
       call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
@@ -671,15 +671,15 @@ contains
             cflag, bfileExists,.true.)
         if ((cflag .eq. SYS_REPLACE) .or. (.not. bfileexists)) then
           ! Write a headline
-          write (iunit,'(A)') '# timestep time 1/2||u||^2_L2 ||u||_L2 ||u_1||_L2 ||u_2||_L2'
+          write (iunit,"(A)") "# timestep time 1/2||u||^2_L2 ||u||_L2 ||u_1||_L2 ||u_2||_L2"
         end if
-        stemp = trim(sys_siL(rproblem%rtimedependence%itimeStep,10)) // ' ' &
-            // trim(sys_sdEL(dtime,10)) // ' ' &
-            // trim(sys_sdEL(denergy,10)) // ' ' &
-            // trim(sys_sdEL(sqrt(Derr(1)**2+Derr(2)**2),10)) // ' ' &
-            // trim(sys_sdEL(Derr(1),10)) // ' ' &
+        stemp = trim(sys_siL(rproblem%rtimedependence%itimeStep,10)) // " " &
+            // trim(sys_sdEL(dtime,10)) // " " &
+            // trim(sys_sdEL(denergy,10)) // " " &
+            // trim(sys_sdEL(sqrt(Derr(1)**2+Derr(2)**2),10)) // " " &
+            // trim(sys_sdEL(Derr(1),10)) // " " &
             // trim(sys_sdEL(Derr(2),10))
-        write (iunit,'(A)') trim(stemp)
+        write (iunit,"(A)") trim(stemp)
         close (iunit)
       end if
 
@@ -689,7 +689,7 @@ contains
     call spdiscr_releaseCubStructure(rcubatureInfoUV)
     call spdiscr_releaseCubStructure(rcubatureInfoP)
     
-    ! Restore the 'current' time.
+    ! Restore the "current" time.
     rproblem%rtimedependence%dtime = dtimebackup
 
   end subroutine
@@ -819,26 +819,26 @@ contains
     logical :: bfileExists
     type(t_vectorScalar) :: rcharfct
     
-    call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
-        'icalcBodyForces', icalcBodyForces, 1)
-    call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
-        'ibodyForcesFormulation', ibodyForcesFormulation, -1)
-    call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
-        'ibodyForcesBdComponent', ibodyForcesBdComponent, 2)
-    call parlst_getvalue_double (rproblem%rparamList, 'CC-POSTPROCESSING', &
-        'dbdForcesCoeff1', dbdForcesCoeff1, rproblem%rphysics%dnu)
-    call parlst_getvalue_double (rproblem%rparamList, 'CC-POSTPROCESSING', &
-        'dbdForcesCoeff2', dbdForcesCoeff2, 0.1_DP * 0.2_DP**2)
+    call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
+        "icalcBodyForces", icalcBodyForces, 1)
+    call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
+        "ibodyForcesFormulation", ibodyForcesFormulation, -1)
+    call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
+        "ibodyForcesBdComponent", ibodyForcesBdComponent, 2)
+    call parlst_getvalue_double (rproblem%rparamList, "CC-POSTPROCESSING", &
+        "dbdForcesCoeff1", dbdForcesCoeff1, rproblem%rphysics%dnu)
+    call parlst_getvalue_double (rproblem%rparamList, "CC-POSTPROCESSING", &
+        "dbdForcesCoeff2", dbdForcesCoeff2, 0.1_DP * 0.2_DP**2)
     
     ! Probably cancel the calculation
     if (icalcBodyForces .eq. 0) return
     
     ! Information about writing body forces to a file.
-    call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
-        'IWRITEBODYFORCES', iwriteBodyForces, 0)
-    call parlst_getvalue_string (rproblem%rparamList, 'CC-POSTPROCESSING', &
-        'SFILENAMEBODYFORCES', sfilenameBodyForces, "", bdequote=.true.)
-    if (sfilenameBodyForces .eq. '') &
+    call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
+        "IWRITEBODYFORCES", iwriteBodyForces, 0)
+    call parlst_getvalue_string (rproblem%rparamList, "CC-POSTPROCESSING", &
+        "SFILENAMEBODYFORCES", sfilenameBodyForces, "", bdequote=.true.)
+    if (sfilenameBodyForces .eq. "") &
       iwriteBodyForces = 0
 
     ! When writing to a file is enabled, delete the file in the first timestep.
@@ -953,12 +953,12 @@ contains
       end select
 
       call output_lbrk()
-      call output_line ('Body forces')
-      call output_line ('-----------')
-      call output_line ('Body forces real bd., bdc/horiz/vert',&
+      call output_line ("Body forces")
+      call output_line ("-----------")
+      call output_line ("Body forces real bd., bdc/horiz/vert",&
           coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
-      call output_line (' '//trim(sys_siL(ibodyForcesBdComponent,10)) // ' / ' &
-          //trim(sys_sdEP(Dforces(1),15,6)) // ' / '&
+      call output_line (" "//trim(sys_siL(ibodyForcesBdComponent,10)) // " / " &
+          //trim(sys_sdEP(Dforces(1),15,6)) // " / "&
           //trim(sys_sdEP(Dforces(2),15,6)),&
           coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
       
@@ -969,14 +969,14 @@ contains
             cflag, bfileExists,.true.)
         if ((cflag .eq. SYS_REPLACE) .or. (.not. bfileexists)) then
           ! Write a headline
-          write (iunit,'(A)') '# timestep time bdc horiz vert'
+          write (iunit,"(A)") "# timestep time bdc horiz vert"
         end if
-        stemp = trim(sys_siL(rproblem%rtimedependence%itimeStep,10)) // ' ' &
-            // trim(sys_sdEL(dtime,10)) // ' ' &
-            // trim(sys_siL(ibodyForcesBdComponent,10)) // ' ' &
-            // trim(sys_sdEL(Dforces(1),10)) // ' '&
+        stemp = trim(sys_siL(rproblem%rtimedependence%itimeStep,10)) // " " &
+            // trim(sys_sdEL(dtime,10)) // " " &
+            // trim(sys_siL(ibodyForcesBdComponent,10)) // " " &
+            // trim(sys_sdEL(Dforces(1),10)) // " "&
             // trim(sys_sdEL(Dforces(2),10))
-        write (iunit,'(A)') trim(stemp)
+        write (iunit,"(A)") trim(stemp)
         close (iunit)
       end if
       
@@ -1034,9 +1034,9 @@ contains
             rtempVector, 1.0_DP, 1.0_DP)
         
         call output_lbrk()
-        call output_line ('Divergence')
-        call output_line ('----------')
-        call output_line ('Divergence = ' &
+        call output_line ("Divergence")
+        call output_line ("----------")
+        call output_line ("Divergence = " &
             //trim(sys_sdEP(lsyssc_vectorNorm(rtempVector,LINALG_NORML2),15,6)),&
           coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
             
@@ -1090,8 +1090,8 @@ contains
        (/ 3,3 /) )
 
     ! Get the number of points to evaluate
-    npoints = parlst_querysubstrings (rproblem%rparamList, 'CC-POSTPROCESSING', &
-        'CEVALUATEPOINTVALUES')
+    npoints = parlst_querysubstrings (rproblem%rparamList, "CC-POSTPROCESSING", &
+        "CEVALUATEPOINTVALUES")
         
     if (npoints .eq. 0) return
     
@@ -1103,7 +1103,7 @@ contains
     
     ! Read the points
     do i=1,npoints
-      call parlst_getvalue_string (rproblem%rparamList, 'CC-POSTPROCESSING', &
+      call parlst_getvalue_string (rproblem%rparamList, "CC-POSTPROCESSING", &
           "CEVALUATEPOINTVALUES", sparam, "", i)
       read (sparam,*) Dcoords(1,i),Dcoords(2,i),Itypes(i),Ider(i)
     end do
@@ -1127,8 +1127,8 @@ contains
     
     ! Print the values to the terminal
     call output_lbrk()
-    call output_line ('Point values')
-    call output_line ('------------')
+    call output_line ("Point values")
+    call output_line ("------------")
     do i=1,npoints
       write (sstr,"(A10,A,F9.4,A,F9.4,A,E16.10)") Sfctnames(1+Ider(i),Itypes(i)),&
           "(",Dcoords(1,i),",",Dcoords(2,i),") = ",Dvalues(i)
@@ -1136,10 +1136,10 @@ contains
     end do
     
     ! Get information about writing the stuff into a DAT file.
-    call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
-        'IWRITEPOINTVALUES', iwritePointValues, 0)
-    call parlst_getvalue_string (rproblem%rparamList, 'CC-POSTPROCESSING', &
-        'SFILENAMEPOINTVALUES', sfilenamePointValues, """""", bdequote=.true.)
+    call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
+        "IWRITEPOINTVALUES", iwritePointValues, 0)
+    call parlst_getvalue_string (rproblem%rparamList, "CC-POSTPROCESSING", &
+        "SFILENAMEPOINTVALUES", sfilenamePointValues, """""", bdequote=.true.)
     if (sfilenamePointValues .eq. "") iwritePointValues = 0
     
     ! When writing to a file is enabled, delete the file in the first timestep.
@@ -1153,23 +1153,23 @@ contains
           cflag, bfileExists,.true.)
       if ((cflag .eq. SYS_REPLACE) .or. (.not. bfileexists)) then
         ! Write a headline
-        write (iunit,'(A)') &
-          '# timestep time x y type deriv value x y type deriv value ...'
+        write (iunit,"(A)") &
+          "# timestep time x y type deriv value x y type deriv value ..."
       end if
       stemp = &
-          trim(sys_siL(rproblem%rtimedependence%itimeStep,10)) // ' ' // &
+          trim(sys_siL(rproblem%rtimedependence%itimeStep,10)) // " " // &
           trim(sys_sdEL(dtime,10))
-      write (iunit,ADVANCE='NO',FMT='(A)') trim(stemp)
+      write (iunit,ADVANCE="NO",FMT="(A)") trim(stemp)
       do i=1,npoints
-        stemp = ' ' //&
-            trim(sys_sdEL(Dcoords(1,i),5)) // ' ' // &
-            trim(sys_sdEL(Dcoords(2,i),5)) // ' ' // &
-            trim(sys_siL(Itypes(i),2)) // ' ' // &
-            trim(sys_siL(Ider(i),2)) // ' ' // &
+        stemp = " " //&
+            trim(sys_sdEL(Dcoords(1,i),5)) // " " // &
+            trim(sys_sdEL(Dcoords(2,i),5)) // " " // &
+            trim(sys_siL(Itypes(i),2)) // " " // &
+            trim(sys_siL(Ider(i),2)) // " " // &
             trim(sys_sdEL(Dvalues(i),10))
-        write (iunit,ADVANCE='NO',FMT='(A)') trim(stemp)
+        write (iunit,ADVANCE="NO",FMT="(A)") trim(stemp)
       end do
-      write (iunit,ADVANCE='YES',FMT='(A)') ""
+      write (iunit,ADVANCE="YES",FMT="(A)") ""
       close (iunit)
     end if
     
@@ -1215,8 +1215,8 @@ contains
     character(LEN=SYS_STRLEN) :: sstr,sfilenameFluxValues,stemp
 
     ! Get the number of points to evaluate
-    nlines = parlst_querysubstrings (rproblem%rparamList, 'CC-POSTPROCESSING', &
-        'CEVALUATEFLUXVALUES')
+    nlines = parlst_querysubstrings (rproblem%rparamList, "CC-POSTPROCESSING", &
+        "CEVALUATEFLUXVALUES")
         
     if (nlines .eq. 0) return
     
@@ -1226,7 +1226,7 @@ contains
     
     ! Read the points
     do i=1,nlines
-      call parlst_getvalue_string (rproblem%rparamList, 'CC-POSTPROCESSING', &
+      call parlst_getvalue_string (rproblem%rparamList, "CC-POSTPROCESSING", &
           "CEVALUATEFLUXVALUES", sparam, "", i)
       read (sparam,*) Dcoords(1,i,1),Dcoords(2,i,1),Dcoords(1,i,2),Dcoords(2,i,2)
     end do
@@ -1238,8 +1238,8 @@ contains
     
     ! Print the values to the terminal
     call output_lbrk()
-    call output_line ('Flux values')
-    call output_line ('-----------')
+    call output_line ("Flux values")
+    call output_line ("-----------")
     do i=1,nlines
       write (sstr,"(A,F9.4,A,F9.4,A,F9.4,A,F9.4,A,E16.10)") "flux (",&
           Dcoords(1,i,1),",",Dcoords(2,i,1),")->(",&
@@ -1248,10 +1248,10 @@ contains
     end do
     
     ! Get information about writing the stuff into a DAT file.
-    call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
-        'IWRITEFLUXVALUES', iwriteFluxValues, 0)
-    call parlst_getvalue_string (rproblem%rparamList, 'CC-POSTPROCESSING', &
-        'SFILENAMEFLUXVALUES', sfilenameFluxValues, """""",bdequote=.true.)
+    call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
+        "IWRITEFLUXVALUES", iwriteFluxValues, 0)
+    call parlst_getvalue_string (rproblem%rparamList, "CC-POSTPROCESSING", &
+        "SFILENAMEFLUXVALUES", sfilenameFluxValues, """""",bdequote=.true.)
     if (sfilenameFluxValues .eq. "") iwriteFluxValues = 0
     
     ! When writing to a file is enabled, delete the file in the first timestep.
@@ -1265,23 +1265,23 @@ contains
           cflag, bfileExists,.true.)
       if ((cflag .eq. SYS_REPLACE) .or. (.not. bfileexists)) then
         ! Write a headline
-        write (iunit,'(A)') &
-          '# timestep time x1 y1 x2 y2 value1 x1 y1 x2 y2 value2 ...'
+        write (iunit,"(A)") &
+          "# timestep time x1 y1 x2 y2 value1 x1 y1 x2 y2 value2 ..."
       end if
       stemp = &
-          trim(sys_siL(rproblem%rtimedependence%itimeStep,10)) // ' ' // &
+          trim(sys_siL(rproblem%rtimedependence%itimeStep,10)) // " " // &
           trim(sys_sdEL(dtime,10))
-      write (iunit,ADVANCE='NO',FMT='(A)') trim(stemp)
+      write (iunit,ADVANCE="NO",FMT="(A)") trim(stemp)
       do i=1,nlines
-        stemp = ' ' //&
-            trim(sys_sdEL(Dcoords(1,i,1),5)) // ' ' // &
-            trim(sys_sdEL(Dcoords(2,i,1),5)) // ' ' // &
-            trim(sys_sdEL(Dcoords(1,i,2),5)) // ' ' // &
-            trim(sys_sdEL(Dcoords(2,i,2),5)) // ' ' // &
+        stemp = " " //&
+            trim(sys_sdEL(Dcoords(1,i,1),5)) // " " // &
+            trim(sys_sdEL(Dcoords(2,i,1),5)) // " " // &
+            trim(sys_sdEL(Dcoords(1,i,2),5)) // " " // &
+            trim(sys_sdEL(Dcoords(2,i,2),5)) // " " // &
             trim(sys_sdEL(Dvalues(i),10))
-        write (iunit,ADVANCE='NO',FMT='(A)') trim(stemp)
+        write (iunit,ADVANCE="NO",FMT="(A)") trim(stemp)
       end do
-      write (iunit,ADVANCE='YES',FMT='(A)') ""
+      write (iunit,ADVANCE="YES",FMT="(A)") ""
       close (iunit)
     end if
     
@@ -1337,7 +1337,7 @@ contains
     ! A discretisation structure for Q1
     type(t_blockDiscretisation) :: rprjDiscretisation
 
-    ! A dynamic level information structure containing the BC's.
+    ! A dynamic level information structure containing the BC"s.
     type(t_dynamicLevelInfo), target :: rdynamicInfo
     
     ! Output block for UCD output to GMV file
@@ -1357,13 +1357,13 @@ contains
     character(SYS_STRLEN) :: sfile,sfilename
     
     ! Type of output:
-    call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
-                              'IOUTPUTUCD', ioutputUCD, 0)
+    call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
+                              "IOUTPUTUCD", ioutputUCD, 0)
     if (ioutputUCD .eq. 0) return
 
     ! Level of output:
-    call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
-                              'ILEVELUCD', ilevelUCD, 0)
+    call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
+                              "ILEVELUCD", ilevelUCD, 0)
     if (ilevelUCD .le. 0) then
       ilevelUCD = rproblem%NLMAX+ilevelUCD
     end if
@@ -1377,7 +1377,7 @@ contains
     ! GMV understands only Q1/P1 solutions! So the task is now to
     ! create a Q1/P1 solution from rvector and write that out.
     !
-    ! For this purpose, first create a 'derived' simple discretisation
+    ! For this purpose, first create a "derived" simple discretisation
     ! structure based on Q1/P1 by copying the main guiding block
     ! discretisation structure and modifying the discretisation
     ! structures of the two velocity subvectors:
@@ -1422,27 +1422,20 @@ contains
     call cc_assembleBDconditions (rproblem,rprjDiscretisation,&
         rdynamicInfo,rproblem%rcollection,.true.)
                             
-    ! Connect the vector to the BC`s
-    rprjVector%p_rdiscreteBC => rdynamicInfo%rdiscreteBC
-    
     ! The same way, discretise boundary conditions of fictitious boundary components.
     call cc_assembleFBDconditions (rproblem,rprjDiscretisation,&
         rdynamicInfo,rproblem%rcollection)
-    rprjVector%p_rdiscreteBCfict => rdynamicInfo%rdiscreteFBC
     
     ! Filter the solution vector to implement discrete BC`s.
-    call vecfil_discreteBCsol (rprjVector)
-
-    ! Filter the solution vector to implement discrete BC`s for fictitious
-    ! boundary components.
-    call vecfil_discreteFBCsol (rprjVector)
+    call vecfil_discreteBCsol (rprjVector,rdynamicInfo%rdiscreteBC)
+    call vecfil_discreteFBCsol (rprjVector,rdynamicInfo%rdiscreteFBC)
     
     ! Basic filename
-    call parlst_getvalue_string (rproblem%rparamList, 'CC-POSTPROCESSING', &
-                                 'SFILENAMEUCD', sfilename, "", bdequote=.true.)
+    call parlst_getvalue_string (rproblem%rparamList, "CC-POSTPROCESSING", &
+                                 "SFILENAMEUCD", sfilename, "", bdequote=.true.)
                                  
     ! Create the actual filename
-    sfile = trim(adjustl(sfilename))//'.'//sys_si0(rpostprocessing%inextFileSuffixUCD,5)
+    sfile = trim(adjustl(sfilename))//"."//sys_si0(rpostprocessing%inextFileSuffixUCD,5)
                                  
     ! Now we have a Q1/Q1/Q0 solution in rprjVector -- on the level NLMAX.
     ! The next step is to project it down to level ilevelUCD.
@@ -1456,7 +1449,7 @@ contains
     
     ! Start UCD export to GMV file:
     call output_lbrk ()
-    call output_line ('Writing visualisation file: '//sfile)
+    call output_line ("Writing visualisation file: "//sfile)
     
     select case (ioutputUCD)
     case (1)
@@ -1472,8 +1465,8 @@ contains
       call ucd_startBGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,sfile)
           
     case default
-      call output_line ('Invalid visualisation output type.', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'cc_writeUCD')
+      call output_line ("Invalid visualisation output type.", &
+                        OU_CLASS_ERROR,OU_MODE_STD,"cc_writeUCD")
       call sys_halt()
     end select
         
@@ -1483,10 +1476,10 @@ contains
     
     ! Write the configuration of the application as comment block
     ! to the output file.
-    call ucd_addCommentLine (rexport,'Configuration:')
-    call ucd_addCommentLine (rexport,'---------------')
+    call ucd_addCommentLine (rexport,"Configuration:")
+    call ucd_addCommentLine (rexport,"---------------")
     call ucd_addParameterList (rexport,rproblem%rparamList)
-    call ucd_addCommentLine (rexport,'---------------')
+    call ucd_addCommentLine (rexport,"---------------")
 
     ! Get the velocity field
     call lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
@@ -1496,8 +1489,8 @@ contains
     ! that can hardly be interpreted.
     
 !    ! Is the moving-frame formulatino active?
-!    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-!        'imovingFrame',imovingFrame,0)
+!    call parlst_getvalue_int (rproblem%rparamList,"CC-DISCRETISATION",&
+!        "imovingFrame",imovingFrame,0)
 !
 !    ! In this case, the postprocessing data must be modified by the
 !    ! moving frame velocity.
@@ -1515,16 +1508,16 @@ contains
 
     ! Write the velocity field
 
-    ! CALL ucd_addVariableVertexBased (rexport,'X-vel',UCD_VAR_XVELOCITY, &
+    ! CALL ucd_addVariableVertexBased (rexport,"X-vel",UCD_VAR_XVELOCITY, &
     !     p_Ddata(1:p_rtriangulation%NVT))
-    ! CALL ucd_addVariableVertexBased (rexport,'Y-vel',UCD_VAR_YVELOCITY, &
+    ! CALL ucd_addVariableVertexBased (rexport,"Y-vel",UCD_VAR_YVELOCITY, &
     !     p_Ddata2(1:p_rtriangulation%NVT))
-    call ucd_addVarVertBasedVec (rexport,'velocity',&
+    call ucd_addVarVertBasedVec (rexport,"velocity",&
         p_Ddata(1:p_rtriangulation%NVT),p_Ddata2(1:p_rtriangulation%NVT))
     
     ! Write pressure
     call lsyssc_getbase_double (rprjVector%RvectorBlock(3),p_Ddata)
-    call ucd_addVariableElementBased (rexport,'pressure',UCD_VAR_STANDARD, &
+    call ucd_addVariableElementBased (rexport,"pressure",UCD_VAR_STANDARD, &
         p_Ddata(1:p_rtriangulation%NEL))
 
     ! If we have a simple Q1 discretisation in the pressure, write it out as it is
@@ -1535,13 +1528,13 @@ contains
                 
       if (elem_getPrimaryElement(ieltype) .eq. EL_Q1) then
         call lsyssc_getbase_double (rvector%RvectorBlock(3),p_Ddata)
-        call ucd_addVariableVertexBased (rexport,'pressure',UCD_VAR_STANDARD, &
+        call ucd_addVariableVertexBased (rexport,"pressure",UCD_VAR_STANDARD, &
             p_Ddata(1:p_rtriangulation%NVT))
       else
         ! If this is QP1 or something else, project to Q1.
         call lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
         call spdp_projectToVertices (rvector%RvectorBlock(3),p_Ddata)
-        call ucd_addVariableVertexBased (rexport,'pressure',UCD_VAR_STANDARD, &
+        call ucd_addVariableVertexBased (rexport,"pressure",UCD_VAR_STANDARD, &
             p_Ddata(1:p_rtriangulation%NVT))
       end if
     end if
@@ -1558,7 +1551,7 @@ contains
         call ppns2D_streamfct_uniform (rvector,rprjVector%RvectorBlock(1))
         
         call lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
-        call ucd_addVariableVertexBased (rexport,'streamfunction',&
+        call ucd_addVariableVertexBased (rexport,"streamfunction",&
             UCD_VAR_STANDARD, p_Ddata(1:p_rtriangulation%NVT))
             
       end if
@@ -1580,7 +1573,7 @@ contains
 
       ! Write the viscosity
       call lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
-      call ucd_addVariableVertexBased (rexport,'viscosity',UCD_VAR_STANDARD, p_Ddata)
+      call ucd_addVariableVertexBased (rexport,"viscosity",UCD_VAR_STANDARD, p_Ddata)
     end if
 
     ! Write the file to disc, that is it.
@@ -1658,20 +1651,20 @@ contains
     logical :: bformatted
     
     ! Type of output:
-    call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
-                              'IOUTPUTFILM', ioutputFilm, 0)
+    call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
+                              "IOUTPUTFILM", ioutputFilm, 0)
     if (ioutputFilm .eq. 0) return
 
     ! Basic filename
-    call parlst_getvalue_string (rproblem%rparamList, 'CC-POSTPROCESSING', &
-                                 'SFILENAMEFILM', sfilename, "", bdequote=.true.)
+    call parlst_getvalue_string (rproblem%rparamList, "CC-POSTPROCESSING", &
+                                 "SFILENAMEFILM", sfilename, "", bdequote=.true.)
                                  
     ! Create the actual filename
-    sfile = trim(adjustl(sfilename))//'.'//sys_si0(rpostprocessing%inextFileSuffixFilm,5)
+    sfile = trim(adjustl(sfilename))//"."//sys_si0(rpostprocessing%inextFileSuffixFilm,5)
                                  
     ! Level of output:
-    call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
-                              'ILEVELFILM', ilevelFilm, 0)
+    call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
+                              "ILEVELFILM", ilevelFilm, 0)
     if (ilevelFilm .le. 0) then
       ilevelFilm = rproblem%NLMAX+ilevelFilm
     end if
@@ -1679,9 +1672,9 @@ contains
     ilevelFilm = min(rproblem%NLMAX,max(rproblem%NLMIN,ilevelFilm))
     
     if (ilevelFilm .lt. rproblem%NLMIN) then
-      call output_line ('Warning: Level for solution vector is < NLMIN! ' // &
-          'Writing out at level NLMIN!', &
-          OU_CLASS_WARNING,OU_MODE_STD,'cc_releasePreconditioner')
+      call output_line ("Warning: Level for solution vector is < NLMIN! " // &
+          "Writing out at level NLMIN!", &
+          OU_CLASS_WARNING,OU_MODE_STD,"cc_releasePreconditioner")
       call sys_halt()
       ilevelFilm = rproblem%NLMIN
     end if
@@ -1701,7 +1694,7 @@ contains
       call mlprj_initProjectionVec (rprojection,rvector2)
       
       ! Interpolate to the next higher level.
-      ! (Do not 'restrict'! Restriction would be for the dual space = RHS vectors!)
+      ! (Do not "restrict"! Restriction would be for the dual space = RHS vectors!)
 
       NEQ = mlprj_getTempMemoryVec (rprojection,rvector2,rvector1)
       if (NEQ .ne. 0) call lsyssc_createVector (rvectorTemp,NEQ,.false.)
@@ -1718,14 +1711,14 @@ contains
     end do
 
     call output_lbrk ()
-    call output_line ('Writing Film file: '//sfile)
+    call output_line ("Writing Film file: "//sfile)
 
     ! Write out the solution.
     if (bformatted) then
-      call vecio_writeBlockVectorHR (rvector1, 'SOLUTION', .true.,&
-         0, sfile, '(E22.15)')
+      call vecio_writeBlockVectorHR (rvector1, "SOLUTION", .true.,&
+         0, sfile, "(E22.15)")
     else
-      call vecio_writeBlockVectorHR (rvector1, 'SOLUTION', .true.,0, sfile)
+      call vecio_writeBlockVectorHR (rvector1, "SOLUTION", .true.,0, sfile)
     end if
 
     ! Release temp memory.
@@ -1765,7 +1758,7 @@ contains
 
     ! For postprocessing, we need discretisation structures in the Q0 and Q1 space,
     ! later perhaps in the Q2 space. For this purpose, derive the corresponding
-    ! discretisation structure using the 'main' discretisation structure on the
+    ! discretisation structure using the "main" discretisation structure on the
     ! maximum level.
     !
     ! For simplicity, we use only the discretisation structure of the X-velocity
@@ -1788,10 +1781,10 @@ contains
     ! Initialise the time/file suffix when the first UCD file is to be written out.
     rpostprocessing%bnonstationaryPostprocessing = (rproblem%itimedependence .ne. 0)
     if (rproblem%itimedependence .ne. 0) then
-      call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
-         'ISTARTSUFFIXUCD', rpostprocessing%inextFileSuffixUCD, 1)
-      call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
-         'ISTARTSUFFIXFILM', rpostprocessing%inextFileSuffixFilm, 1)
+      call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
+         "ISTARTSUFFIXUCD", rpostprocessing%inextFileSuffixUCD, 1)
+      call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
+         "ISTARTSUFFIXFILM", rpostprocessing%inextFileSuffixFilm, 1)
     end if
                                     
   end subroutine

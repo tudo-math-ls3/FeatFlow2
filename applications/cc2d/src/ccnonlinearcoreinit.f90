@@ -18,12 +18,12 @@
 !#        core equation for the use in a preconditioner.
 !#
 !# 2.) cc_initNonlinearLoop
-!#     -> Initialises a 'nonlinear iteration structure' with parameters from
+!#     -> Initialises a "nonlinear iteration structure" with parameters from
 !#        the DAT file. This is needed for solving the core equation.
 !#     -> Extension to cc_createNonlinearLoop.
 !#
 !# 3.) cc_doneNonlinearLoop
-!#     -> Cleans up a 'nonlinear iteration structure' initialised by
+!#     -> Cleans up a "nonlinear iteration structure" initialised by
 !#        cc_initNonlinearLoop.
 !#     -> Extension to cc_releaseNonlinearLoop.
 !#
@@ -43,7 +43,7 @@
 !# Auxiliary routines, not to be called from outside:
 !#
 !# 1.) cc_adjustPrecSpecials
-!#     -> Initialise some preconditioner 'specials' which must be
+!#     -> Initialise some preconditioner "specials" which must be
 !#        respected when assembling matrices for the preconditioner.
 !#
 !# 2.) cc_initLinearSolver
@@ -56,11 +56,11 @@
 !# ccnlinearcodeinit provides the routines to initialise
 !# preconditioner and important structures using the problem related
 !# structure. This module ccnonlinearcore on the other hand
-!# contains only the 'main' worker routines that do the work of the
+!# contains only the "main" worker routines that do the work of the
 !# nonlinear iteration -- independent of the problem structure!
 !#
 !# Note that this module and the "nonlinearcore" module are the only modules
-!# that 'know' the actual structure of the system matrix and how to link
+!# that "know" the actual structure of the system matrix and how to link
 !# it to the main problem! For the actual assembly of the matrices and defect
 !# vectors, routines of the module ccmatvecassembly are used.
 !#
@@ -285,25 +285,25 @@ contains
     
     ! Get the minimum/maximum damping parameter from the parameter list, save
     ! them to the nonlinear iteration structure (which is now initialised).
-    call parlst_getvalue_double (rproblem%rparamList, 'CC2D-NONLINEAR', &
-                                 'domegaMin', rnonlinearIteration%domegaMin, 0.0_DP)
+    call parlst_getvalue_double (rproblem%rparamList, "CC2D-NONLINEAR", &
+                                 "domegaMin", rnonlinearIteration%domegaMin, 0.0_DP)
                               
-    call parlst_getvalue_double (rproblem%rparamList, 'CC2D-NONLINEAR', &
-                                 'domegaMax', rnonlinearIteration%domegaMax, 2.0_DP)
+    call parlst_getvalue_double (rproblem%rparamList, "CC2D-NONLINEAR", &
+                                 "domegaMax", rnonlinearIteration%domegaMax, 2.0_DP)
     
     ! Save pointers to the RHS and solution vector
     rnonlinearIteration%p_rsolution => rvector
     rnonlinearIteration%p_rrhs => rrhs
     
-    ! Set the preconditioner to 'nothing'
+    ! Set the preconditioner to "nothing"
     rnonlinearIteration%rpreconditioner%ctypePreconditioning = -1
     
-    ! Deactivate any 'tweak' flags in the final-assembly structure
+    ! Deactivate any "tweak" flags in the final-assembly structure
     rnonlinearIteration%rprecSpecials%iadaptiveMatrices = 0
     
-    ! Assign the matrix pointers in the nonlinear iteration structure to
-    ! all our matrices that we want to use.
     do ilevel = nlmin,nlmax
+      ! Assign the matrix pointers in the nonlinear iteration structure to
+      ! all our matrices that we want to use.
       rnonlinearIteration%RcoreEquation(ilevel)%p_rdiscretisation => &
         rproblem%RlevelInfo(ilevel)%rdiscretisation
 
@@ -313,7 +313,16 @@ contains
         rproblem%RlevelInfo(ilevel)%rdynamicInfo
       rnonlinearIteration%RcoreEquation(ilevel)%p_rtempVector => &
         rproblem%RlevelInfo(ilevel)%rtempVector
+
+      ! Allocate memory for the filter chain.
+      allocate(rnonlinearIteration%RcoreEquation(ilevel)%p_RfilterChain(3))
+      
     end do
+
+    ! The filter chain for the nonlinear solver matches that of the
+    ! highest level.
+    rnonlinearIteration%p_RfilterChain => &
+        rnonlinearIteration%RcoreEquation(nlmax)%p_RfilterChain
       
     ! Clear auxiliary variables for the nonlinear iteration
     rnonlinearIteration%DresidualInit = 0.0_DP
@@ -322,52 +331,76 @@ contains
     call parlst_querysection(rproblem%rparamList, sname, p_rsection)
 
     if (.not. associated(p_rsection)) then
-      call output_line ('Cannot create nonlinear solver; no section '''//&
-          trim(sname)//'''!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'cc_initNonlinearLoop')
+      call output_line ("Cannot create nonlinear solver; no section """//&
+          trim(sname)//"""!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"cc_initNonlinearLoop")
       call sys_halt()
     end if
 
     ! Get stopping criteria of the nonlinear iteration
-    call parlst_getvalue_double (p_rsection, 'depsD', &
+    call parlst_getvalue_double (p_rsection, "depsD", &
                                  rnonlinearIteration%DepsNL(1), 0.1_DP)
 
-    call parlst_getvalue_double (p_rsection, 'depsDiv', &
+    call parlst_getvalue_double (p_rsection, "depsDiv", &
                                  rnonlinearIteration%DepsNL(2), 0.1_DP)
 
-    call parlst_getvalue_double (p_rsection, 'depsUR', &
+    call parlst_getvalue_double (p_rsection, "depsUR", &
                                  rnonlinearIteration%DepsNL(3), 0.1_DP)
 
-    call parlst_getvalue_double (p_rsection, 'depsPR', &
+    call parlst_getvalue_double (p_rsection, "depsPR", &
                                  rnonlinearIteration%DepsNL(4), 0.1_DP)
 
-    call parlst_getvalue_double (p_rsection, 'dDampingD', &
+    call parlst_getvalue_double (p_rsection, "dDampingD", &
                                  rnonlinearIteration%DepsNL(5), 0.1_DP)
       
-    ! Set up a filter that modifies the block vectors/matrix
-    ! according to boundary conditions. This filter chain is applied to each
-    ! defect vector during the linear and nonlinear iteration.
-    allocate(rnonlinearIteration%p_RfilterChain(3))
-    
-    ! Initialise the first filter of the filter chain as boundary
-    ! implementation filter for defect vectors:
-    rnonlinearIteration%p_RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
+  end subroutine
 
-    ! The second filter filters for boundary conditions of fictitious boundary
-    ! components
-    rnonlinearIteration%p_RfilterChain(2)%ifilterType = FILTER_DISCBCDEFFICT
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine cc_setupFilterChains (rnonlinearIteration)
+  
+!<description>
+  ! Initialises the filter chains on all levels
+!</description>
+
+!<output>
+  ! Nonlinar iteration structure saving data for the callback routines.
+  ! Is filled with data.
+  type(t_ccnonlinearIteration), intent(inout) :: rnonlinearIteration
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer :: ilevel,ifilter
+    type(t_dynamicLevelInfo), pointer :: p_rdynamicInfo
+    type(t_filterChain), dimension(:), pointer :: p_RfilterChain
     
-    ! Do we have Neumann boundary?
-    !
-    ! The bhasNeumannBoundary flag of the higher level decides about that...
-    bneumann = rproblem%RlevelInfo(rproblem%NLMAX)%rdynamicInfo%bhasNeumannBoundary
-    rnonlinearIteration%p_RfilterChain(3)%ifilterType = FILTER_DONOTHING
-    if (.not. bneumann) then
-      ! Pure Dirichlet problem -- Neumann boundary for the pressure.
-      ! Filter the pressure to avoid indefiniteness.
-      rnonlinearIteration%p_RfilterChain(3)%ifilterType = FILTER_TOL20
-      rnonlinearIteration%p_RfilterChain(3)%itoL20component = NDIM2D+1
-    end if
+    do ilevel = rnonlinearIteration%NLMIN,rnonlinearIteration%NLMAX
+    
+      p_rdynamicInfo => rnonlinearIteration%RcoreEquation(ilevel)%p_rdynamicInfo
+      p_RfilterChain => rnonlinearIteration%RcoreEquation(ilevel)%p_RfilterChain
+      
+      ! Start the filter chain
+      call filter_clearFilterChain (p_RfilterChain,ifilter)
+
+      ! Dirichlet boundary conditions
+      call filter_newFilterDiscBCDef (&
+          p_RfilterChain,ifilter,p_rdynamicInfo%rdiscreteBC)
+          
+      call filter_newFilterDiscFBCDef (&
+          p_RfilterChain,ifilter,p_rdynamicInfo%rdiscreteFBC)
+
+      ! Do we have a Neumann boundary component?
+      if (.not. p_rdynamicInfo%bhasNeumannBoundary) then
+        ! Pure Dirichlet problem -- Neumann boundary for the pressure.
+        ! Filter the pressure to avoid indefiniteness.
+        call filter_newFilterToL20 (p_RfilterChain,ifilter,3)
+      end if
+      
+    end do
     
   end subroutine
 
@@ -389,13 +422,19 @@ contains
 !</inputoutput>
 
 !</subroutine>
+
+    integer :: ilevel
     
-    ! Release the filter chain for the defect vectors.
-    if (associated(rnonlinearIteration%p_RfilterChain)) &
-      deallocate(rnonlinearIteration%p_RfilterChain)
+    nullify(rnonlinearIteration%p_RfilterChain)
+    
+    if (associated(rnonlinearIteration%RcoreEquation)) then
+      do ilevel = rnonlinearIteration%NLMIN,rnonlinearIteration%NLMAX
+        ! Release the filter chain
+        deallocate(rnonlinearIteration%RcoreEquation(ilevel)%p_RfilterChain)
+      end do
       
-    if (associated(rnonlinearIteration%RcoreEquation)) &
       deallocate(rnonlinearIteration%RcoreEquation)
+    end if
 
     rnonlinearIteration%NLMIN = 0
     rnonlinearIteration%NLMAX = 0
@@ -447,6 +486,7 @@ contains
     type(t_linsolNode), pointer :: p_rpreconditioner, p_rsmoother
     type(t_linsolNode), pointer :: p_rsolverNode
     real(DP) :: domegaA, domegaS
+    type(t_filterChain), dimension(:), pointer :: p_RfilterChain
 
     ! Check that there is a section called ssolverName - otherwise we
     ! cannot create anything!
@@ -456,31 +496,31 @@ contains
     call parlst_querysection(p_rparamList, ssection, p_rsection)
     
     if (.not. associated(p_rsection)) then
-      call output_line ('Cannot create linear solver; no section '''//trim(ssection)//&
-                        '''!', OU_CLASS_ERROR,OU_MODE_STD,'cc_initLinearSolver')
+      call output_line ("Cannot create linear solver; no section """//trim(ssection)//&
+                        """!", OU_CLASS_ERROR,OU_MODE_STD,"cc_initLinearSolver")
       call sys_halt()
     end if
     
     ! Get the parameters that configure the solver type
     
-    call parlst_getvalue_int (p_rsection, 'isolverType', isolverType, 1)
-    call parlst_getvalue_int (p_rsection, 'ismootherType', ismootherType, 3)
-    call parlst_getvalue_int (p_rsection, 'icoarseGridSolverType', &
+    call parlst_getvalue_int (p_rsection, "isolverType", isolverType, 1)
+    call parlst_getvalue_int (p_rsection, "ismootherType", ismootherType, 3)
+    call parlst_getvalue_int (p_rsection, "icoarseGridSolverType", &
         icoarseGridSolverType, 1)
-    call parlst_getvalue_int (p_rsection, 'cpreconditionerMK', &
+    call parlst_getvalue_int (p_rsection, "cpreconditionerMK", &
         cpreconditionerMK, 0)
         
     rnonlinearIteration%rprecSpecials%isolverType = isolverType
     rnonlinearIteration%rprecSpecials%ismootherType = ismootherType
     rnonlinearIteration%rprecSpecials%icoarseGridSolverType = icoarseGridSolverType
 
-    call parlst_getvalue_string (p_rsection, 'ssolverSection', &
+    call parlst_getvalue_string (p_rsection, "ssolverSection", &
         ssolverSection,"",bdequote=.true.)
-    call parlst_getvalue_string (p_rsection, 'ssmootherSection', &
+    call parlst_getvalue_string (p_rsection, "ssmootherSection", &
         ssmootherSection,"",bdequote=.true.)
-    call parlst_getvalue_string (p_rsection, 'scoarseGridSolverSection', &
+    call parlst_getvalue_string (p_rsection, "scoarseGridSolverSection", &
         scoarseGridSolverSection,"",bdequote=.true.)
-    call parlst_getvalue_string (p_rsection, 'ssectionPreconditionerMK', &
+    call parlst_getvalue_string (p_rsection, "ssectionPreconditionerMK", &
         ssectionPreconditionerMK,"",bdequote=.true.)
     
     ! Which type of solver do we have?
@@ -499,8 +539,7 @@ contains
       ! In a first step, initialise the main solver node for all our levels.
       nlevels = rnonlinearIteration%NLMAX - rnonlinearIteration%NLMIN + 1
       
-      call linsol_initMultigrid2 (p_rsolverNode,nlevels,&
-          rnonlinearIteration%p_RfilterChain)
+      call linsol_initMultigrid2 (p_rsolverNode,nlevels)
       
       ! Manually trim the coarse grid correction in Multigrid to multiply the
       ! pressure equation with -1. This (un)symmetrises the operator and gives
@@ -521,6 +560,12 @@ contains
       ! grid solver and configure it.
       call linsol_getMultigrid2Level (p_rsolverNode,1,p_rlevelInfo)
       
+      ! Get the filter chain on that level
+      p_RfilterChain => rnonlinearIteration%RcoreEquation(1)%p_RfilterChain
+      
+      ! Tell the coarse grid about that.
+      p_rlevelInfo%p_RfilterChain => p_RfilterChain
+      
       select case (icoarseGridSolverType)
       case (0)
         ! UMFPACK coarse grid solver. Easy.
@@ -537,7 +582,7 @@ contains
         call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DNAVST)
         
         call parlst_getvalue_string (p_rparamList, scoarseGridSolverSection, &
-            'spreconditionerSection', spreconditionerSection, "", bdequote=.true.)
+            "spreconditionerSection", spreconditionerSection, "", bdequote=.true.)
         call linsolinit_initParams (p_rpreconditioner,p_rparamList,&
             spreconditionerSection,LINSOL_ALG_UNDEFINED)
         call linsolinit_initParams (p_rpreconditioner,p_rparamList,&
@@ -545,7 +590,7 @@ contains
         
         ! Create the defect correction solver, attach VANKA as preconditioner.
         call linsol_initDefCorr (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner,&
-            rnonlinearIteration%p_RfilterChain)
+            p_RfilterChain)
         call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
             scoarseGridSolverSection,LINSOL_ALG_UNDEFINED)
         call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
@@ -561,7 +606,7 @@ contains
         call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DNAVST)
         
         call parlst_getvalue_string (p_rparamList, scoarseGridSolverSection, &
-           'spreconditionerSection', spreconditionerSection, "", bdequote=.true.)
+           "spreconditionerSection", spreconditionerSection, "", bdequote=.true.)
         call linsolinit_initParams (p_rpreconditioner,p_rparamList,&
             spreconditionerSection,LINSOL_ALG_UNDEFINED)
         call linsolinit_initParams (p_rpreconditioner,p_rparamList,&
@@ -569,7 +614,7 @@ contains
         
         ! Create the defect correction solver, attach VANKA as preconditioner.
         call linsol_initBiCGStab (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner,&
-            rnonlinearIteration%p_RfilterChain)
+            p_RfilterChain)
         call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
             scoarseGridSolverSection,LINSOL_ALG_UNDEFINED)
         call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
@@ -585,7 +630,7 @@ contains
         call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVST)
         
         call parlst_getvalue_string (p_rparamList, scoarseGridSolverSection, &
-           'spreconditionerSection', spreconditionerSection, "", bdequote=.true.)
+           "spreconditionerSection", spreconditionerSection, "", bdequote=.true.)
         call linsolinit_initParams (p_rpreconditioner,p_rparamList,&
             spreconditionerSection,LINSOL_ALG_UNDEFINED)
         call linsolinit_initParams (p_rpreconditioner,p_rparamList,&
@@ -593,7 +638,7 @@ contains
         
         ! Create the defect correction solver, attach VANKA as preconditioner.
         call linsol_initBiCGStab (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner,&
-            rnonlinearIteration%p_RfilterChain)
+            p_RfilterChain)
         call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
             scoarseGridSolverSection,LINSOL_ALG_UNDEFINED)
         call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
@@ -609,7 +654,7 @@ contains
         call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_GENERAL)
         
         call parlst_getvalue_string (p_rparamList, scoarseGridSolverSection, &
-           'spreconditionerSection', spreconditionerSection, "", bdequote=.true.)
+           "spreconditionerSection", spreconditionerSection, "", bdequote=.true.)
         call linsolinit_initParams (p_rpreconditioner,p_rparamList,&
             spreconditionerSection,LINSOL_ALG_UNDEFINED)
         call linsolinit_initParams (p_rpreconditioner,p_rparamList,&
@@ -617,7 +662,7 @@ contains
         
         ! Create the defect correction solver, attach VANKA as preconditioner.
         call linsol_initBiCGStab (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner,&
-            rnonlinearIteration%p_RfilterChain)
+            p_RfilterChain)
         call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
             scoarseGridSolverSection,LINSOL_ALG_UNDEFINED)
         call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
@@ -627,7 +672,7 @@ contains
         ! CG without preconditioning
         
         call linsol_initCG (p_rlevelInfo%p_rcoarseGridSolver,Rfilter=&
-            rnonlinearIteration%p_RfilterChain)
+            p_RfilterChain)
         call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
             scoarseGridSolverSection,LINSOL_ALG_UNDEFINED)
         call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
@@ -638,7 +683,7 @@ contains
         ! BiCGStab without preconditioning
         
         call linsol_initBiCGStab (p_rlevelInfo%p_rcoarseGridSolver,Rfilter=&
-            rnonlinearIteration%p_RfilterChain)
+            p_RfilterChain)
         call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
             scoarseGridSolverSection,LINSOL_ALG_UNDEFINED)
         call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
@@ -646,8 +691,8 @@ contains
 
       case default
       
-        call output_line ('Unknown coarse grid solver!', &
-            OU_CLASS_ERROR,OU_MODE_STD,'cc_initLinearSolver')
+        call output_line ("Unknown coarse grid solver!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"cc_initLinearSolver")
         call sys_halt()
 
       end select
@@ -661,7 +706,10 @@ contains
       ! presmoothing as well as for postsmoothing.
       
       do ilev = 2,nlevels
-
+      
+        ! Get the filter chain on that level
+        p_RfilterChain => rnonlinearIteration%RcoreEquation(ilev)%p_RfilterChain
+        
         ! Initialise the smoothers.
         select case (ismootherType)
         
@@ -704,7 +752,7 @@ contains
           case (6)
             call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DNAVST)
             call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner,&
-                rnonlinearIteration%p_RfilterChain)
+                p_RfilterChain)
 
             ! We need virtually transposed B-matrices as D-matrices for this preconditioner.
             rnonlinearIteration%rprecSpecials%bneedVirtTransposedD = .true.
@@ -712,7 +760,7 @@ contains
           case (7)
             call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVST)
             call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner,&
-                rnonlinearIteration%p_RfilterChain)
+                p_RfilterChain)
 
             ! We need virtually transposed B-matrices as D-matrices for this preconditioner.
             rnonlinearIteration%rprecSpecials%bneedVirtTransposedD = .true.
@@ -720,7 +768,7 @@ contains
           case (8)
             call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_GENERAL)
             call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner,&
-                rnonlinearIteration%p_RfilterChain)
+                p_RfilterChain)
 
           ! --- NEW IMPLEMENTATION ---
           case (101)
@@ -731,16 +779,16 @@ contains
           ! --- SP-SOR ---
           case (201)
             call parlst_getvalue_double (p_rparamList, ssmootherSection, &
-                      'domegaA', domegaA, 1.0_DP)
+                      "domegaA", domegaA, 1.0_DP)
             call parlst_getvalue_double (p_rparamList, ssmootherSection, &
-                      'domegaS', domegaS, 1.0_DP)
+                      "domegaS", domegaS, 1.0_DP)
 
             call linsol_initSPSOR (p_rsmoother,LINSOL_SPSOR_NAVST2D,domegaA,domegaS)
 
           case default
           
-            call output_line ('Unknown smoother!', &
-                OU_CLASS_ERROR,OU_MODE_STD,'cc_initLinearSolver')
+            call output_line ("Unknown smoother!", &
+                OU_CLASS_ERROR,OU_MODE_STD,"cc_initLinearSolver")
             call sys_halt()
 
           end select
@@ -753,14 +801,16 @@ contains
           
           ! Convert to a smoother with a defined number of smoothing steps.
           call parlst_getvalue_int (p_rparamList, ssmootherSection, &
-                    'nsmoothingSteps', nsm, 4)
+                    "nsmoothingSteps", nsm, 4)
           call linsol_convertToSmoother (p_rsmoother,nsm)
           
           ! Put the smoother into the level info structure as presmoother
           ! and postsmoother
           call linsol_getMultigrid2Level (p_rsolverNode,ilev,p_rlevelInfo)
+          
           p_rlevelInfo%p_rpresmoother => p_rsmoother
           p_rlevelInfo%p_rpostsmoother => p_rsmoother
+          p_rlevelInfo%p_RfilterChain => p_RfilterChain
           
           ! Set up the interlevel projection structure on all levels
           call linsol_initProjMultigrid2Level(p_rlevelInfo,&
@@ -769,8 +819,8 @@ contains
           
         case default
         
-          call output_line ('Unknown smoother!', &
-              OU_CLASS_ERROR,OU_MODE_STD,'cc_initLinearSolver')
+          call output_line ("Unknown smoother!", &
+              OU_CLASS_ERROR,OU_MODE_STD,"cc_initLinearSolver")
           call sys_halt()
 
         end select
@@ -778,11 +828,11 @@ contains
       end do
 
       ! Get information about adaptive matrix generation from INI/DAT files
-      call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
-          'iAdaptiveMatrix', rnonlinearIteration%rprecSpecials%iadaptiveMatrices, 0)
+      call parlst_getvalue_int (rproblem%rparamList, "CC-DISCRETISATION", &
+          "iAdaptiveMatrix", rnonlinearIteration%rprecSpecials%iadaptiveMatrices, 0)
                                 
-      call parlst_getvalue_double(rproblem%rparamList, 'CC-DISCRETISATION', &
-          'dAdMatThreshold', rnonlinearIteration%rprecSpecials%dAdMatThreshold, 20.0_DP)
+      call parlst_getvalue_double(rproblem%rparamList, "CC-DISCRETISATION", &
+          "dAdMatThreshold", rnonlinearIteration%rprecSpecials%dAdMatThreshold, 20.0_DP)
 
     case (2)
     
@@ -792,8 +842,7 @@ contains
       ! In a first step, initialise the main solver node for all our levels.
       nlevels = rnonlinearIteration%NLMAX - rnonlinearIteration%NLMIN + 1
       
-      call linsol_initDeflGMRes (p_rsolverNode,nlevels,&
-          Rfilter=rnonlinearIteration%p_RfilterChain)
+      call linsol_initDeflGMRes (p_rsolverNode,nlevels)
       
       ! Init standard solver parameters and extended multigrid parameters
       ! from the DAT file.
@@ -805,8 +854,14 @@ contains
       ! Ok, now we have to initialise all levels. 
       do ilev = 1,nlevels
 
+        ! Get the filter chain on that level
+        p_RfilterChain => rnonlinearIteration%RcoreEquation(ilev)%p_RfilterChain
+
         ! Get the level.
         call linsol_getDeflGMRESLevel (p_rsolverNode,ilev,p_rlevelInfoMK)
+        
+        ! Initialise the filter chain for imposing boundary conditions
+        p_rlevelInfoMK%p_RfilterChain => p_RfilterChain
 
         select case (cpreconditionerMK)
         case (0)
@@ -846,16 +901,16 @@ contains
       end do
 
       ! Get information about adaptive matrix generation from INI/DAT files
-      call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
-          'iAdaptiveMatrix', rnonlinearIteration%rprecSpecials%iadaptiveMatrices, 0)
+      call parlst_getvalue_int (rproblem%rparamList, "CC-DISCRETISATION", &
+          "iAdaptiveMatrix", rnonlinearIteration%rprecSpecials%iadaptiveMatrices, 0)
                                 
-      call parlst_getvalue_double(rproblem%rparamList, 'CC-DISCRETISATION', &
-          'dAdMatThreshold', rnonlinearIteration%rprecSpecials%dAdMatThreshold, 20.0_DP)
+      call parlst_getvalue_double(rproblem%rparamList, "CC-DISCRETISATION", &
+          "dAdMatThreshold", rnonlinearIteration%rprecSpecials%dAdMatThreshold, 20.0_DP)
 
     case default
     
-      call output_line ('Unknown linear solver!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'cc_initLinearSolver')
+      call output_line ("Unknown linear solver!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"cc_initLinearSolver")
       call sys_halt()
       
     end select
@@ -935,8 +990,8 @@ contains
     ! At first, ask the parameters in the INI/DAT file which type of
     ! preconditioner is to be used. The data in the preconditioner structure
     ! is to be initialised appropriately!
-    call parlst_getvalue_int (rproblem%rparamList, 'CC2D-NONLINEAR', &
-        'itypePreconditioning', &
+    call parlst_getvalue_int (rproblem%rparamList, "CC2D-NONLINEAR", &
+        "itypePreconditioning", &
         rnonlinearIteration%rpreconditioner%ctypePreconditioning, 1)
     
     select case (rnonlinearIteration%rpreconditioner%ctypePreconditioning)
@@ -952,12 +1007,12 @@ contains
       
       ! Figure out the name of the section that contains the information
       ! about the linear subsolver. Ask the parameter list from the INI/DAT file
-      ! for the 'slinearSolver' value
-      call parlst_getvalue_string (rproblem%rparamList, 'CC2D-NONLINEAR', &
-                                  'slinearSolver', ssolverName, "", bdequote=.true.)
-      if (ssolverName .eq. '') then
-        call output_line ('No linear subsolver!', &
-            OU_CLASS_ERROR,OU_MODE_STD,'cc_initPreconditioner')
+      ! for the "slinearSolver" value
+      call parlst_getvalue_string (rproblem%rparamList, "CC2D-NONLINEAR", &
+                                  "slinearSolver", ssolverName, "", bdequote=.true.)
+      if (ssolverName .eq. "") then
+        call output_line ("No linear subsolver!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"cc_initPreconditioner")
         call sys_halt()
       end if
       
@@ -975,7 +1030,7 @@ contains
         ! Initialise the projection structure with data from the INI/DAT
         ! files. This allows to configure prolongation/restriction.
         call cc_getProlRest (rnonlinearIteration%RcoreEquation(i)%p_rprojection, &
-            rproblem%RlevelInfo(i), rproblem%rparamList,  'CC-PROLREST')
+            rproblem%RlevelInfo(i), rproblem%rparamList,  "CC-PROLREST")
       
       end do
       
@@ -1020,8 +1075,8 @@ contains
     case default
       
       ! Unknown preconditioner
-      call output_line ('Unknown preconditioner for nonlinear iteration!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'cc_initPreconditioner')
+      call output_line ("Unknown preconditioner for nonlinear iteration!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"cc_initPreconditioner")
       call sys_halt()
       
     end select
@@ -1088,6 +1143,10 @@ contains
     ! the linear solver.
     type(t_matrixBlock), dimension(:), pointer :: Rmatrices
     
+    ! Set up the filter chains to support the current boundary conditions.
+    call cc_setupFilterChains (rnonlinearIteration)
+
+    ! Set up the preconditioner    
     select case (rnonlinearIteration%rpreconditioner%ctypePreconditioning)
     case (CCPREC_NONE)
       ! No preconditioner
@@ -1110,8 +1169,8 @@ contains
         ! Prepare the preconditioner matrices level i.
         if (binit .or. bstructuralUpdate) then
 
-          ! What type of matrix do we have? Is it a 'primitive' matrix
-          ! (with A11 and A22 being the same) or a 'full-tensor matrix'
+          ! What type of matrix do we have? Is it a "primitive" matrix
+          ! (with A11 and A22 being the same) or a "full-tensor matrix"
           ! with Aij all independent from each other
           if ((rnonlinearIteration%rpreconditioner%ctypePreconditioning .eq. &
               CCPREC_NEWTON) .or. &
@@ -1160,36 +1219,36 @@ contains
           ! Put the parameters for the extended Newton from the DAT file
           ! into the Adaptive-Newton configuration block.
           
-          call parlst_getvalue_string (rproblem%rparamList, 'CC2D-NONLINEAR', &
-              'spreconditionerAdaptiveNewton', snewton, "", bdequote=.true.)
-          if (snewton .ne. '') then
+          call parlst_getvalue_string (rproblem%rparamList, "CC2D-NONLINEAR", &
+              "spreconditionerAdaptiveNewton", snewton, "", bdequote=.true.)
+          if (snewton .ne. "") then
             ! Initialise the parameters of the adaptive Newton
             call parlst_getvalue_int (rproblem%rparamList, snewton, &
-                'nminFixPointIterations', rnonlinearIteration%rpreconditioner% &
+                "nminFixPointIterations", rnonlinearIteration%rpreconditioner% &
                 radaptiveNewton%nminFixPointIterations, 0)
 
             call parlst_getvalue_int (rproblem%rparamList, snewton, &
-                'nmaxFixPointIterations', rnonlinearIteration%rpreconditioner% &
+                "nmaxFixPointIterations", rnonlinearIteration%rpreconditioner% &
                 radaptiveNewton%nmaxFixPointIterations, 999)
 
             call parlst_getvalue_double (rproblem%rparamList, snewton, &
-                'depsAbsNewton', rnonlinearIteration%rpreconditioner% &
+                "depsAbsNewton", rnonlinearIteration%rpreconditioner% &
                 radaptiveNewton%depsAbsNewton, 1E-5_DP)
 
             call parlst_getvalue_double (rproblem%rparamList, snewton, &
-                'depsRelNewton', rnonlinearIteration%rpreconditioner% &
+                "depsRelNewton", rnonlinearIteration%rpreconditioner% &
                 radaptiveNewton%depsRelNewton, 1E99_DP)
 
             call parlst_getvalue_int (rproblem%rparamList, snewton, &
-                'cinexactNewton', rnonlinearIteration%rpreconditioner% &
+                "cinexactNewton", rnonlinearIteration%rpreconditioner% &
                 radaptiveNewton%cinexactNewton, 1)
 
             call parlst_getvalue_double (rproblem%rparamList, snewton, &
-                'dinexactNewtonEpsRel', rnonlinearIteration%rpreconditioner% &
+                "dinexactNewtonEpsRel", rnonlinearIteration%rpreconditioner% &
                 radaptiveNewton%dinexactNewtonEpsRel, 1.0E-2_DP)
 
             call parlst_getvalue_double (rproblem%rparamList, snewton, &
-                'dinexactNewtonExponent', rnonlinearIteration%rpreconditioner% &
+                "dinexactNewtonExponent", rnonlinearIteration%rpreconditioner% &
                 radaptiveNewton%dinexactNewtonExponent, 2.0_DP)
           end if
           
@@ -1200,7 +1259,7 @@ contains
         ! - a direct solver (UMFPACK) is used on a level or
         ! - if the general VANKA preconditioner is used.
         ! In these cases, we create a separate copy of B1 and B2 and transpose them.
-        ! Note that we do this only in that case when there is a 'structural update'
+        ! Note that we do this only in that case when there is a "structural update"
         ! (which means that the structure of the matrices have changed). Otherwise,
         ! B1^T and B2^T stay unchanged!
         !
@@ -1279,8 +1338,8 @@ contains
         call linsol_initStructure (rnonlinearIteration%rpreconditioner%p_rsolverNode,&
             ierror)
         if (ierror .ne. LINSOL_ERR_NOERROR) then
-          call output_line ('linsol_initStructure failed! Matrix invalid!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'cc_updatePreconditioner')
+          call output_line ("linsol_initStructure failed! Matrix invalid!", &
+                            OU_CLASS_ERROR,OU_MODE_STD,"cc_updatePreconditioner")
           call sys_halt()
         end if
         
@@ -1289,8 +1348,8 @@ contains
         call linsol_updateStructure (rnonlinearIteration%rpreconditioner%p_rsolverNode,&
             ierror)
         if (ierror .ne. LINSOL_ERR_NOERROR) then
-          call output_line ('linsol_updateStructure failed! Matrix invalid!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'cc_updatePreconditioner')
+          call output_line ("linsol_updateStructure failed! Matrix invalid!", &
+                            OU_CLASS_ERROR,OU_MODE_STD,"cc_updatePreconditioner")
           call sys_halt()
         end if
         
@@ -1304,8 +1363,8 @@ contains
     case DEFAULT
       
       ! Unknown preconditioner
-      call output_line ('Unknown preconditioner for nonlinear iteration!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'cc_updatePreconditioner')
+      call output_line ("Unknown preconditioner for nonlinear iteration!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"cc_updatePreconditioner")
       call sys_halt()
       
     end select
@@ -1371,8 +1430,8 @@ contains
     case DEFAULT
       
       ! Unknown preconditioner
-      call output_line ('Unknown preconditioner for nonlinear iteration!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'cc_releasePreconditioner')
+      call output_line ("Unknown preconditioner for nonlinear iteration!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"cc_releasePreconditioner")
       call sys_halt()
       
     end select
@@ -1430,7 +1489,7 @@ contains
     ! Now take a look which parameters appear in that section.
 
     ! Do we use matrix based projection for velocity?
-    call parlst_getvalue_int (p_rsection,'iprojTypeVelocity',i1,0)
+    call parlst_getvalue_int (p_rsection,"iprojTypeVelocity",i1,0)
     if(i1 .eq. 1) then
       
       ! Yes, so link the prolongation matrix to the projection structure,
@@ -1447,7 +1506,7 @@ contains
     end if
 
     ! Do we use matrix based projection for pressure?
-    call parlst_getvalue_int (p_rsection,'iprojTypePressure',i1,0)
+    call parlst_getvalue_int (p_rsection,"iprojTypePressure",i1,0)
     if(i1 .eq. 1) then
       
       ! Yes, so link the prolongation matrix to the projection structure.
@@ -1459,7 +1518,7 @@ contains
     end if
     
     ! Prolongation/restriction order for velocity components
-    call parlst_getvalue_int (p_rsection,'iinterpolationOrderVel',i1,-1)
+    call parlst_getvalue_int (p_rsection,"iinterpolationOrderVel",i1,-1)
     
     if (i1 .ne. -1) then
       ! Initialise order of prolongation/restriction for velocity components
@@ -1469,7 +1528,7 @@ contains
     end if
 
     ! Prolongation/restriction order for pressure
-    call parlst_getvalue_int (p_rsection,'iinterpolationOrderPress',i1,-1)
+    call parlst_getvalue_int (p_rsection,"iinterpolationOrderPress",i1,-1)
     
     if (i1 .ne. -1) then
       ! Initialise order of prolongation/restriction for velocity components
@@ -1480,7 +1539,7 @@ contains
     
     ! Prolongation/restriction variant for velocity components
     ! in case of Q1~ discretisation
-    call parlst_getvalue_int (p_rsection,'iinterpolationVariantVel',i1,0)
+    call parlst_getvalue_int (p_rsection,"iinterpolationVariantVel",i1,0)
     
     if (i1 .ne. -1) then
       rprojection%RscalarProjection(:,1:NDIM2D)%iprolVariant  = i1
@@ -1489,7 +1548,7 @@ contains
     
     ! Aspect-ratio indicator in case of Q1~ discretisation
     ! with extended prolongation/restriction
-    call parlst_getvalue_int (p_rsection,'iintARIndicatorEX3YVel',i1,1)
+    call parlst_getvalue_int (p_rsection,"iintARIndicatorEX3YVel",i1,1)
     
     if (i1 .ne. 1) then
       rprojection%RscalarProjection(:,1:NDIM2D)%iprolARIndicatorEX3Y  = i1
@@ -1498,7 +1557,7 @@ contains
 
     ! Aspect-ratio bound for switching to constant prolongation/restriction
     ! in case of Q1~ discretisation with extended prolongation/restriction
-    call parlst_getvalue_double (p_rsection,'dintARboundEX3YVel',d1,20.0_DP)
+    call parlst_getvalue_double (p_rsection,"dintARboundEX3YVel",d1,20.0_DP)
     
     if (d1 .ne. 20.0_DP) then
       rprojection%RscalarProjection(:,1:NDIM2D)%dprolARboundEX3Y  = d1
@@ -1515,7 +1574,7 @@ contains
   
 !<description>
   ! This routine adjusts parameters in the rprecSpecials according to the current
-  ! problem. This includes e.g. special 'tweaks' that must be done if the
+  ! problem. This includes e.g. special "tweaks" that must be done if the
   ! problem is a pure Dirichlet problem.
   !
   ! The routine must always be called if the situation changes during a

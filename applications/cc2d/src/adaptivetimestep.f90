@@ -8,7 +8,7 @@
 !# a nonstationary simulation with explicit time stepping.
 !#
 !# The adaptive time stepping basically works the following way:
-!#  a) Perform a predictor step to compute a 'predictor solution' u1 at time
+!#  a) Perform a predictor step to compute a "predictor solution" u1 at time
 !#     $t_{n}$ (e.g. by 1st order method)
 !#  b) Perform the real computation to compute a solution u2 at time
 !#     $t_{n}$ (e.g. 2nd order method)
@@ -21,7 +21,7 @@
 !# The following routines can be found here:
 !#
 !#  1.) adtstp_init
-!#      -> Initialise the 'adaptive time stepping structure' using a
+!#      -> Initialise the "adaptive time stepping structure" using a
 !#         parameter list.
 !#
 !#  2.) adtstp_calcTimeStep
@@ -226,54 +226,54 @@ contains
 
     if (.not. associated(p_rsection)) then
       call output_line (&
-          'Cannot configure adaptive time stepping! Parameter section not found!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'adtstp_init')
+          "Cannot configure adaptive time stepping! Parameter section not found!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"adtstp_init")
       call sys_halt()
     end if
 
     ! Get the paramters and fill our structure. Use the standard parameters
     ! from the Fortran initialisation (by INTENT(out)) for those who do not exist.
-    call parlst_getvalue_int(p_rsection,'cadaptiveTimeStepping',&
+    call parlst_getvalue_int(p_rsection,"cadaptiveTimeStepping",&
                             radTimeStepping%ctype,&
                             radTimeStepping%ctype)
 
-    call parlst_getvalue_int(p_rsection,'nrepetitions',&
+    call parlst_getvalue_int(p_rsection,"nrepetitions",&
                             radTimeStepping%nrepetitions,&
                             radTimeStepping%nrepetitions)
 
-    call parlst_getvalue_double(p_rsection,'dtimeStepMin',&
+    call parlst_getvalue_double(p_rsection,"dtimeStepMin",&
                             radTimeStepping%dtimeStepMin,&
                             radTimeStepping%dtimeStepMin)
 
-    call parlst_getvalue_double(p_rsection,'dtimeStepMax',&
+    call parlst_getvalue_double(p_rsection,"dtimeStepMax",&
                             radTimeStepping%dtimeStepMax,&
                             radTimeStepping%dtimeStepMax)
 
-    call parlst_getvalue_double(p_rsection,'dtimeStepFactor',&
+    call parlst_getvalue_double(p_rsection,"dtimeStepFactor",&
                             radTimeStepping%dtimeStepFactor,&
                             radTimeStepping%dtimeStepFactor)
 
-    call parlst_getvalue_double(p_rsection,'depsAdaptiveRelTimeStep',&
+    call parlst_getvalue_double(p_rsection,"depsAdaptiveRelTimeStep",&
                             radTimeStepping%depsAdaptiveRelTimeStep,&
                             radTimeStepping%depsAdaptiveRelTimeStep)
 
-    call parlst_getvalue_int(p_rsection,'cadTimeStepInit',&
+    call parlst_getvalue_int(p_rsection,"cadTimeStepInit",&
                             radTimeStepping%cadTimeStepInit,&
                             radTimeStepping%cadTimeStepInit)
 
-    call parlst_getvalue_double(p_rsection,'dadTimeStepInitDuration',&
+    call parlst_getvalue_double(p_rsection,"dadTimeStepInitDuration",&
                             radTimeStepping%dadTimeStepInitDuration,&
                             radTimeStepping%dadTimeStepInitDuration)
 
-    call parlst_getvalue_int(p_rsection,'cadTimeStepErrorControl',&
+    call parlst_getvalue_int(p_rsection,"cadTimeStepErrorControl",&
                            radTimeStepping%cadTimeStepErrorControl,&
                            radTimeStepping%cadTimeStepErrorControl)
 
-    call parlst_getvalue_double(p_rsection,'dadTimeStepEpsDuringInit',&
+    call parlst_getvalue_double(p_rsection,"dadTimeStepEpsDuringInit",&
                             radTimeStepping%dadTimeStepEpsDuringInit,&
                             radTimeStepping%dadTimeStepEpsDuringInit)
 
-    call parlst_getvalue_double(p_rsection,'dadTimeStepEpsAfterInit',&
+    call parlst_getvalue_double(p_rsection,"dadTimeStepEpsAfterInit",&
                             radTimeStepping%dadTimeStepEpsAfterInit,&
                             radTimeStepping%dadTimeStepEpsAfterInit)
 

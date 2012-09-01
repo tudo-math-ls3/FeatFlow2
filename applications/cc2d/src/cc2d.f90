@@ -52,7 +52,7 @@ program cc2d
 
   ! Call the problem to solve.
   call output_lbrk ()
-  call output_line ('Calculating cc2d-Problem')
+  call output_line ("Calculating cc2d-Problem")
   call output_separator (OU_SEP_MINUS)
   
   call cc2dmain ()
@@ -62,7 +62,7 @@ program cc2d
 
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.
-  ! This should display 'Handles in use=0' and 'Memory in use=0'!
+  ! This should display "Handles in use=0" and "Memory in use=0"!
   call output_lbrk ()
   call storage_info(.true.)
   

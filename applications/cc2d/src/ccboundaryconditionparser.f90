@@ -59,10 +59,10 @@ module ccboundaryconditionparser
 
   ! Section name of the section saving the boundary expressions, i.e. the
   ! expressions that are to be evaluated in each point on the boundary.
-  character(LEN=COLLCT_MLSECTION), parameter :: SEC_SBDEXPRESSIONS = 'BDEXPRESSIONS'
+  character(LEN=COLLCT_MLSECTION), parameter :: SEC_SBDEXPRESSIONS = "BDEXPRESSIONS"
 
   ! Name of the parser object for boundary value expressions
-  character(LEN=COLLCT_MLSECTION), parameter :: BDC_BDPARSER = 'BDEXPRPARSER'
+  character(LEN=COLLCT_MLSECTION), parameter :: BDC_BDPARSER = "BDEXPRPARSER"
 !</constantblock>
 
 !<constantblock description="The different types of boundary conditions supported by this module">
@@ -97,8 +97,8 @@ module ccboundaryconditionparser
   ! Depending on the situation, this list may be extended by situation
   ! specific variables or variables that are only available at runtime.
   character(LEN=10), dimension(11), parameter :: SEC_EXPRVARIABLES = &
-    (/'X     ','Y     ','Z     ','L     ','R     ','S     ','TIME  ',&
-      'MFVELX','MFVELY','MFACCX','MFACCY'/)
+    (/"X     ","Y     ","Z     ","L     ","R     ","S     ","TIME  ",&
+      "MFVELX","MFVELY","MFACCX","MFACCY"/)
 
 !</constantblock>
 
@@ -207,8 +207,8 @@ contains
     ! of the Y-velocity.
     !
     ! Get the expression/bc sections from the boundary condition block
-    call parlst_querysection(rproblem%rparamList, 'BDEXPRESSIONS', p_rsection)
-    call parlst_querysection(rproblem%rparamList, 'BDCONDITIONS', p_rbdcond)
+    call parlst_querysection(rproblem%rparamList, "BDEXPRESSIONS", p_rsection)
+    call parlst_querysection(rproblem%rparamList, "BDCONDITIONS", p_rbdcond)
     
     ! For intermediate storing of expression types, we use a local collection
     call collct_init (rcoll)
@@ -218,7 +218,7 @@ contains
     
     ! Create a parser structure for as many expressions as configured
     call fparser_create (rparser,&
-         parlst_querysubstrings (p_rsection, 'bdExpressions'))
+         parlst_querysubstrings (p_rsection, "bdExpressions"))
     
     ! Add the parser to the collection
     call collct_setvalue_pars (rcoll, BDC_BDPARSER, rparser, &
@@ -226,9 +226,9 @@ contains
     
     ! Add the boundary expressions to the collection into the
     ! specified section.
-    do i=1,parlst_querysubstrings (p_rsection, 'bdExpressions')
+    do i=1,parlst_querysubstrings (p_rsection, "bdExpressions")
     
-      call parlst_getvalue_string (p_rsection, 'bdExpressions', cstr, '', i)
+      call parlst_getvalue_string (p_rsection, "bdExpressions", cstr, "", i)
       
       ! Get the type and decide on the identifier how to save the expression.
       read(cstr,*) cname,ityp
@@ -270,8 +270,8 @@ contains
                                    0, SEC_SBDEXPRESSIONS)
                                    
       case DEFAULT
-        call output_line ('Expressions not implemented!', &
-            OU_CLASS_ERROR,OU_MODE_STD,'cc_parseBDconditions')
+        call output_line ("Expressions not implemented!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"cc_parseBDconditions")
         call sys_halt()
 
       end select
@@ -302,9 +302,9 @@ contains
     ! Loop through all boundary components we have.
     do ibdComponent = 1,boundary_igetNBoundComp(p_rboundary)
       
-      ! Parse the parameter 'bdComponentX'
-      write (cexpr,'(I10)') ibdComponent
-      cstr = 'bdComponent' // adjustl(cexpr)
+      ! Parse the parameter "bdComponentX"
+      write (cexpr,"(I10)") ibdComponent
+      cstr = "bdComponent" // adjustl(cexpr)
       
       ! We start at parameter value 0.0.
       dpar1 = 0.0_DP
@@ -346,7 +346,7 @@ contains
               ! Read the line again, get the expressions for X- and Y-velocity
               read(cstr,*) dvalue,iintervalEnds,ibctyp,sbdex1,sbdex2
               
-              ! For any string <> '', create the appropriate Dirichlet boundary
+              ! For any string <> "", create the appropriate Dirichlet boundary
               ! condition and add it to the list of boundary conditions.
               !
               ! The IquickAccess array is set up as follows:
@@ -366,8 +366,8 @@ contains
               !  DquickAccess(8) = Y-acceleration of the moving frame
               
               ! Is the moving-frame formulatino active?
-              call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                  'imovingFrame',imovingFrame,0)
+              call parlst_getvalue_int (rproblem%rparamList,"CC-DISCRETISATION",&
+                  "imovingFrame",imovingFrame,0)
                   
               rcoll%IquickAccess(5) = imovingFrame
                   
@@ -385,7 +385,7 @@ contains
               
               ! If the type is a double precision value, set the DquickAccess(4)
               ! to that value so it can quickly be accessed.
-              if (sbdex1 .ne. '') then
+              if (sbdex1 .ne. "") then
                 ! X-velocity
                 !
                 ! The 2nd element in IquickAccess saves the component number.
@@ -420,7 +420,7 @@ contains
                     
               end if
               
-              if (sbdex2 .ne. '') then
+              if (sbdex2 .ne. "") then
               
                 ! Y-velocity
                 !
@@ -462,7 +462,7 @@ contains
               ! Read the line again to get the actual parameters
               read(cstr,*) dvalue,iintervalEnds,ibctyp,sbdex1
               
-              ! For any string <> '', create the appropriate pressure drop boundary
+              ! For any string <> "", create the appropriate pressure drop boundary
               ! condition and add it to the list of boundary conditions.
               !
               ! The IquickAccess array is set up as follows:
@@ -482,8 +482,8 @@ contains
               !  DquickAccess(8) = Y-acceleration of the moving frame
               
               ! Is the moving-frame formulatino active?
-              call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                  'imovingFrame',imovingFrame,0)
+              call parlst_getvalue_int (rproblem%rparamList,"CC-DISCRETISATION",&
+                  "imovingFrame",imovingFrame,0)
                   
               rcoll%IquickAccess(5) = imovingFrame
                   
@@ -497,7 +497,7 @@ contains
                 rcoll%DquickAccess(5:8) = 0.0_DP
               end if
 
-              if (sbdex1 .ne. '') then
+              if (sbdex1 .ne. "") then
               
                 ! PDrop BCs are a type of Neumann BCs since there is no Dirichlet value
                 ! prescribed for the velocity. Check if there are edges in the region.
@@ -551,8 +551,8 @@ contains
                   rdynamicLevelInfo%rdiscreteBC,casmComplexity)
             
             case DEFAULT
-              call output_line ('Unknown boundary condition!', &
-                  OU_CLASS_ERROR,OU_MODE_STD,'cc_parseBDconditions')
+              call output_line ("Unknown boundary condition!", &
+                  OU_CLASS_ERROR,OU_MODE_STD,"cc_parseBDconditions")
               call sys_halt()
             end select
             
@@ -589,7 +589,7 @@ contains
     call collct_done (rcoll)
 
     ! The setting in the DAT file may overwrite our guess about Neumann boundaries.
-    call parlst_getvalue_int (p_rbdcond, 'ineumannBoundary', i, -1)
+    call parlst_getvalue_int (p_rbdcond, "ineumannBoundary", i, -1)
     select case (i)
     case (0)
       bNeumann = .false.
@@ -677,26 +677,26 @@ contains
 
     ! Allocate memory for the edges. We have at most as many edges as
     ! there are on the boudary.
-    call storage_new ('cc_getDirichletEdges','hedges',rtriangulation%NMBD,&
+    call storage_new ("cc_getDirichletEdges","hedges",rtriangulation%NMBD,&
         ST_INT,hedges,ST_NEWBLOCK_NOINIT)
     ncount = 0
     call storage_getbase_int (hedges, p_Iedges)
 
     ! Allocate another array for local edge numbers.
-    call storage_new ('cc_getDirichletEdges','hedgeslocal',rtriangulation%NMBD,&
+    call storage_new ("cc_getDirichletEdges","hedgeslocal",rtriangulation%NMBD,&
         ST_INT,hedgeslocal,ST_NEWBLOCK_NOINIT)
     ncount = 0
     call storage_getbase_int (hedgeslocal, p_Iedgeslocal)
     
-    ! Get the section describing the BC's.
-    call parlst_querysection(rproblem%rparamList, 'BDCONDITIONS', p_rbdcond)
+    ! Get the section describing the BCs.
+    call parlst_querysection(rproblem%rparamList, "BDCONDITIONS", p_rbdcond)
     
     ! Loop through all boundary components we have.
     do ibdComponent = 1,boundary_igetNBoundComp(p_rboundary)
       
-      ! Parse the parameter 'bdComponentX'
-      write (cexpr,'(I10)') ibdComponent
-      cstr = 'bdComponent' // adjustl(cexpr)
+      ! Parse the parameter "bdComponentX"
+      write (cexpr,"(I10)") ibdComponent
+      cstr = "bdComponent" // adjustl(cexpr)
       
       ! We start at parameter value 0.0.
       dpar1 = 0.0_DP
@@ -724,9 +724,9 @@ contains
               
               ! If the type is a double precision value, set the DquickAccess(4)
               ! to that value so it can quickly be accessed.
-              if (((icomponent .eq. 0) .and. ((sbdex1 .ne. '') .or. (sbdex2 .ne. ''))) .or. &
-                  ((icomponent .eq. 1) .and. (sbdex1 .ne. '')) .or. &
-                  ((icomponent .eq. 2) .and. (sbdex2 .ne. ''))) then
+              if (((icomponent .eq. 0) .and. ((sbdex1 .ne. "") .or. (sbdex2 .ne. ""))) .or. &
+                  ((icomponent .eq. 1) .and. (sbdex1 .ne. "")) .or. &
+                  ((icomponent .eq. 2) .and. (sbdex2 .ne. ""))) then
               
                 ! Add the edges.
                 !
@@ -786,7 +786,7 @@ contains
   ! This subroutine is called during the discretisation of boundary
   ! conditions. It calculates a special quantity on the boundary, which is
   ! then used by the discretisation routines to generate a discrete
-  ! 'snapshot' of the (actually analytic) boundary conditions.
+  ! "snapshot" of the (actually analytic) boundary conditions.
 !</description>
   
 !<input>
@@ -862,7 +862,7 @@ contains
   ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
   !
   ! The function may return SYS_INFINITY_DP as a value. This indicates the
-  ! framework to ignore the node and treat it as 'natural boundary condition'
+  ! framework to ignore the node and treat it as "natural boundary condition"
   ! node.
   real(DP), dimension(:), intent(out)                         :: Dvalues
 !</output>
@@ -1024,8 +1024,8 @@ contains
         !
         ! As collection, we pass rcollection%p_rcollection here; this is a pointer
         ! to the application specific, global collection that may be of interest for
-        ! callback routines. rcollection itself is actually a 'local' collection,
-        ! a 'wrapper' for the rcollection of the application!
+        ! callback routines. rcollection itself is actually a "local" collection,
+        ! a "wrapper" for the rcollection of the application!
         call getBoundaryValues (&
             stag,icomponent,rdiscretisation,rboundaryRegion,&
             dpar, d, rcollection%p_rnextCollection)

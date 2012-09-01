@@ -28,8 +28,8 @@
 !#   $\theta$           - weight for the Laplace matrix,
 !#   $\gamma$ = 0/1     - Switches the nonlinearity on/off;
 !#                          =0 for Stokes system,
-!#   $\eta$   = 0/1     - Switches the 'B'-term on/off,
-!#   $\tau$   = 0/1     - Switches the 'B^T'-term on/off,
+!#   $\eta$   = 0/1     - Switches the "B"-term on/off,
+!#   $\tau$   = 0/1     - Switches the "B^T"-term on/off,
 !#
 !# (y,p) is the velocity/pressure solution pair.
 !#
@@ -84,7 +84,7 @@
 !# To solve a system with the core equation, one has to deal with two
 !# main structures. On one hand, one has a nonlinear iteration structure
 !# t_nlsolNode from the kernel; this is initialised by cc_getNonlinearSolver.
-!# On the other hand, one has to maintain a 'nonlinear iteration structure'
+!# On the other hand, one has to maintain a "nonlinear iteration structure"
 !# of type t_ccNonlinearIteration, which configures the core equation and
 !# specifies parameters for the solver how to work.
 !#
@@ -96,7 +96,7 @@
 !#
 !#  c) Initialise further parameters in the core equation structure manually
 !#     (e.g. preconditioner, pointer to matrices, ...).
-!#     It is important, that the 'outer' application initialises pointers to
+!#     It is important, that the "outer" application initialises pointers to
 !#     matrices, otherwise nothing will work!
 !#     This all has to be done with the nonlinear-iteration-structure directly.
 !#
@@ -290,7 +290,7 @@ module ccnonlinearcore
   ! a collection if different flags.
   type t_ccPreconditionerSpecials
   
-    ! Whether to use 'adaptive matrices', i.e. set up coarse grid matrices
+    ! Whether to use "adaptive matrices", i.e. set up coarse grid matrices
     ! with the help of fine grid matrices. This is used for very special
     ! discretisations only (e.g. Q1~/Q0). =0: deactivate
     integer :: iadaptiveMatrices    = 0
@@ -307,19 +307,19 @@ module ccnonlinearcore
     ! If the preconditioner is the linear multigrid solver:
     ! Type of smoother.
     ! =0: general VANCA (slow, but independent of the discretisation and of the problem)
-    ! =1: general VANCA; 'direct' method, bypassing the defect correction approach.
+    ! =1: general VANCA; "direct" method, bypassing the defect correction approach.
     !     (-> specialised variant of 0, but slightly faster)
     ! =2: Simple Jacobi-like VANCA, 2D Navier Stokes problem, general discretisation
     !     (i.e. automatically chooses the best suitable VANCA variant).
     ! =3: Simple Jacobi-like VANCA, 2D Navier Stokes problem, general discretisation
     !     (i.e. automatically chooses the best suitable VANCA variant).
-    !     'direct' method, bypassing the defect correction approach.
+    !     "direct" method, bypassing the defect correction approach.
     !     (-> specialised variant of 8, but faster)
     ! =4: Full VANCA, 2D Navier Stokes problem, general discretisation
     !     (i.e. automatically chooses the best suitable VANCA variant).
     ! =5: Full VANCA, 2D Navier Stokes problem, general discretisation
     !     (i.e. automatically chooses the best suitable VANCA variant).
-    !     'direct' method, bypassing the defect correction approach.
+    !     "direct" method, bypassing the defect correction approach.
     !     (-> specialised variant of 10, but faster)
     integer :: ismootherType = 3
     
@@ -382,6 +382,10 @@ module ccnonlinearcore
     ! An interlevel projection structure for changing levels
     type(t_interlevelProjectionBlock), pointer :: p_rprojection => null()
 
+    ! A filter chain that is used for implementing boundary conditions 
+    ! on every level.
+    type(t_filterChain), dimension(:), pointer :: p_RfilterChain => null()
+
   end type
 
 !</typeblock>
@@ -437,14 +441,14 @@ module ccnonlinearcore
     type(t_vectorBlock), pointer :: p_rrhs => null()
     
     ! A filter chain that is used for implementing boundary conditions into
-    ! (linear and nonlinear) defect vectors.
+    ! (linear and nonlinear) defect vectors on the highest level.
     type(t_filterChain), dimension(:), pointer :: p_RfilterChain
     
     ! A t_ccPreconditioner saving information about the preconditioner.
     type(t_ccPreconditioner) :: rpreconditioner
     
     ! A t_ccPreconditionerSpecials structure that saves information about
-    ! special 'tweaks' in matrices such that everything works.
+    ! special "tweaks" in matrices such that everything works.
     type(t_ccPreconditionerSpecials) :: rprecSpecials
     
     ! An array of t_cccoreEquationOneLevel structures for all levels
@@ -671,7 +675,9 @@ contains
         call filter_applyFilterChainVec (rd, p_RfilterChain)
       end if
     
-      call vecfil_discreteNLSlipBCdef (rd)
+      call vecfil_discreteNLSlipBCdef (rd,&
+          rnonlinearIteration%RcoreEquation(rnonlinearIteration%NLMAX)%&
+          p_rdynamicInfo%rdiscreteBC)
       
       ! Gather statistics
       call stat_stopTimer(rtimer)
@@ -758,7 +764,7 @@ contains
 !    call lsysbl_getbase_double (rx,p_vec)
 !    call lsysbl_getbase_double (rtemp1,p_temp1)
 !    call lsysbl_getbase_double (rtemp2,p_temp2)
-!    ilvmax = collct_getvalue_int (p_rcollection,'NLMAX')
+!    ilvmax = collct_getvalue_int (p_rcollection,"NLMAX")
 
       ! Is there anything to do?
       if (rnonlinearIteration%domegaMin .ge. rnonlinearIteration%domegaMax) then
@@ -879,7 +885,9 @@ contains
       ! Filter the resulting defect vector through the slip-boundary-
       ! condition vector filter for implementing nonlinear slip boundary
       ! conditions into a defect vector.
-      call vecfil_discreteNLSlipBCdef (rtemp2)
+      call vecfil_discreteNLSlipBCdef (rtemp2,&
+          rnonlinearIteration%RcoreEquation(rnonlinearIteration%NLMAX)%&
+          p_rdynamicInfo%rdiscreteBC)
       
       ! ==================================================================
       ! For all terms in the fraction:
@@ -897,7 +905,9 @@ contains
       ! Filter the resulting defect vector through the slip-boundary-
       ! condition vector filter for implementing nonlinear slip boundary
       ! conditions into a defect vector.
-      call vecfil_discreteNLSlipBCdef (rtemp1)
+      call vecfil_discreteNLSlipBCdef (rtemp1,&
+          rnonlinearIteration%RcoreEquation(rnonlinearIteration%NLMAX)%&
+          p_rdynamicInfo%rdiscreteBC)
 
       ! Release the matrix again
       call lsysbl_releaseMatrix (rmatrix)
@@ -912,12 +922,12 @@ contains
       dskv2 = lsysbl_scalarProduct (rtemp1, rtemp1)
       
       if (dskv2 .lt. 1.0E-40_DP) then
-        call output_line ('dskv2 nearly zero. Optimal damping parameter singular.', &
-            OU_CLASS_ERROR,rsolverNode%coutputMode,'cc_getOptimalDamping')
-        call output_line ('Is the triangulation ok??? .tri-file destroyed?', &
-            OU_CLASS_ERROR,rsolverNode%coutputMode,'cc_getOptimalDamping')
-        call output_line ('Boundary conditions set up properly?', &
-            OU_CLASS_ERROR,rsolverNode%coutputMode,'cc_getOptimalDamping')
+        call output_line ("dskv2 nearly zero. Optimal damping parameter singular.", &
+            OU_CLASS_ERROR,rsolverNode%coutputMode,"cc_getOptimalDamping")
+        call output_line ("Is the triangulation ok??? .tri-file destroyed?", &
+            OU_CLASS_ERROR,rsolverNode%coutputMode,"cc_getOptimalDamping")
+        call output_line ("Boundary conditions set up properly?", &
+            OU_CLASS_ERROR,rsolverNode%coutputMode,"cc_getOptimalDamping")
         call sys_halt()
       end if
       
@@ -977,7 +987,7 @@ contains
     ! Damping parameter. Is set to rsolverNode%domega (usually = 1.0_DP)
     ! on the first call to the callback routine.
     ! The callback routine can modify this parameter according to any suitable
-    ! algorithm to calculate an 'optimal damping' parameter. The nonlinear loop
+    ! algorithm to calculate an "optimal damping" parameter. The nonlinear loop
     ! will then use this for adding rd to the solution vector:
     ! $$ x_{n+1} = x_n + domega*rd $$
     ! domega will stay at this value until it is changed again.
@@ -986,7 +996,7 @@ contains
     ! If the preconditioning was a success. Is normally automatically set to
     ! TRUE. If there is an error in the preconditioner, this flag can be
     ! set to FALSE. In this case, the nonlinear solver breaks down with
-    ! the error flag set to 'preconditioner broke down'.
+    ! the error flag set to "preconditioner broke down".
     logical, intent(inout)                        :: bsuccess
   !</inputoutput>
   
@@ -1092,7 +1102,7 @@ contains
         call stat_clearTimer(rtimer)
         call stat_startTimer(rtimer)
         
-        ! Our 'parent' (the caller of the nonlinear solver) has prepared
+        ! Our "parent" (the caller of the nonlinear solver) has prepared
         ! a preconditioner node for us (a linear solver with symbolically
         ! factorised matrices). Get this from the collection.
       
@@ -1188,8 +1198,8 @@ contains
         ! factorisation of the matrices in UMFPACK-like solvers.
         call linsol_initData (p_rsolverNode, ierror)
         if (ierror .ne. LINSOL_ERR_NOERROR) then
-          call output_line ('linsol_initData failed! Matrix singular!', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'cc_precondDefect')
+          call output_line ("linsol_initData failed! Matrix singular!", &
+                            OU_CLASS_ERROR,OU_MODE_STD,"cc_precondDefect")
           call sys_halt()
         end if
         
@@ -1234,7 +1244,7 @@ contains
         ! For this purpose, we need two temporary vectors.
         ! On one hand, we have p_rvectorTemp.
         ! Get the second temporary vector from the collection as it was
-        ! prepared by our 'parent' that invoked the nonlinear solver.
+        ! prepared by our "parent" that invoked the nonlinear solver.
         p_rvectorTemp => rnonlinearIteration%rpreconditioner%p_rtempVectorSc
         p_rvectorTemp2 => rnonlinearIteration%rpreconditioner%p_rtempVectorSc2
         
@@ -1269,7 +1279,7 @@ contains
       
       if ((.not. bsuccess) .and. (domega .ge. 0.001_DP)) then
         ! The preconditioner did actually not work, but the solution is not
-        ! 'too bad'. So we accept it still.
+        ! "too bad". So we accept it still.
         bsuccess = .true.
       end if
       
@@ -1277,7 +1287,9 @@ contains
         ! Filter the final defect
         p_RfilterChain => rnonlinearIteration%p_RfilterChain
         call filter_applyFilterChainVec (rd, p_RfilterChain)
-        call vecfil_discreteNLSlipBCdef (rd)
+        call vecfil_discreteNLSlipBCdef (rd,&
+            rnonlinearIteration%RcoreEquation(rnonlinearIteration%NLMAX)%&
+            p_rdynamicInfo%rdiscreteBC)
       end if
       
     contains
@@ -1335,12 +1347,9 @@ contains
 
         ! Get the interlevel projection structure and the temporary vector
         ! from the collection.
-        ! Our 'parent' prepared there how to interpolate the solution on the
+        ! Our "parent" prepared there how to interpolate the solution on the
         ! fine grid to coarser grids.
         p_rvectorTemp => rnonlinearIteration%rpreconditioner%p_rtempVectorSc
-
-        ! Get the filter chain. We need tghat later to filter the matrices.
-        p_RfilterChain => rnonlinearIteration%p_RfilterChain
 
         ! On all levels, we have to set up the nonlinear system matrix,
         ! so that the linear solver can be applied to it.
@@ -1354,6 +1363,9 @@ contains
           p_rmatrixFine => p_rmatrix
           p_rmatrix => rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixPreconditioner
         
+          ! Get the filter chain. We need tghat later to filter the matrices.
+          p_RfilterChain => rnonlinearIteration%RcoreEquation(ilev)%p_RfilterChain
+
           ! On the highest level, we use rx as solution to build the nonlinear
           ! matrix. On lower levels, we have to create a solution
           ! on that level from a fine-grid solution before we can use
@@ -1388,9 +1400,7 @@ contains
 
             ! Apply the filter chain to the temp vector.
             ! This implements the boundary conditions that are attached to it.
-            ! NOTE: Deactivated for standard CC2D compatibility -- and because
-            ! it has to be checked whether the correct boundary conditions
-            ! are attached to that vector!
+            ! NOTE: Deactivated for standard CC2D compatibility.
             ! CALL filter_applyFilterChainVec (p_rvectorCoarse, p_RfilterChain)
 
           end if
@@ -1414,7 +1424,7 @@ contains
           rnonlinearCCMatrix%dtau = rnonlinearIteration%dtau
 
           ! Assemble the matrix.
-          ! If we are on a lower level, we can specify a 'fine-grid' matrix.
+          ! If we are on a lower level, we can specify a "fine-grid" matrix.
           if (ilev .eq. NLMAX) then
             call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
                 p_rmatrix,rnonlinearCCMatrix,rproblem,p_rvectorCoarse)
@@ -1439,9 +1449,9 @@ contains
             call matfil_discreteFBC (p_rmatrix)
           end if
             
-          ! 'Nonlinear' boundary conditions like slip boundary conditions
+          ! "Nonlinear" boundary conditions like slip boundary conditions
           ! are not implemented with a filter chain into a matrix.
-          ! Call the appropriate matrix filter of 'nonlinear' boundary
+          ! Call the appropriate matrix filter of "nonlinear" boundary
           ! conditions manually:
           call matfil_discreteNLSlipBC (p_rmatrix,.true.)
             
@@ -1532,12 +1542,12 @@ contains
   !<output>
     ! Must be set to TRUE by the callback routine if the residuum rd
     ! is within a desired tolerance, so that the solver should treat
-    ! the iteration as 'converged'.
+    ! the iteration as "converged".
     logical, intent(out)                        :: bconvergence
   
     ! Must be set to TRUE by the callback routine if the residuum rd
     ! is out of a desired tolerance, so that the solver should treat
-    ! the iteration as 'diverged'.
+    ! the iteration as "diverged".
     logical, intent(out)                        :: bdivergence
   !</output>
 
@@ -1557,11 +1567,11 @@ contains
       if (ite .eq. 0) then
       
         call output_separator (OU_SEP_MINUS,coutputMode=rsolverNode%coutputMode)
-        call output_line (' IT  RELU     RELP     DEF-U    DEF-DIV'// &
-                          '  DEF-TOT  RHONL    OMEGNL   RHOMG',&
+        call output_line (" IT  RELU     RELP     DEF-U    DEF-DIV"// &
+                          "  DEF-TOT  RHONL    OMEGNL   RHOMG",&
                           coutputMode=rsolverNode%coutputMode)
         call output_separator (OU_SEP_MINUS,coutputMode=rsolverNode%coutputMode)
-        call output_line ('  0                   '// &
+        call output_line ("  0                   "// &
             trim(sys_sdEP(Dresiduals(1),9,2))//&
             trim(sys_sdEP(Dresiduals(2),9,2))//&
             trim(sys_sdEP(Dresiduals(3),9,2)),coutputMode=rsolverNode%coutputMode)
@@ -1585,12 +1595,12 @@ contains
         dresINIT = sqrt(rnonlinearIteration%DresidualInit(1)**2 + &
                         rnonlinearIteration%DresidualInit(2)**2)
                         
-        ! dresInit=0 may hardly occur -- except when we expect 'no flow'.
+        ! dresInit=0 may hardly occur -- except when we expect "no flow".
         ! But to prevent a check against "something<=0" in this case below,
         ! set dresInit to something <> 0.
         if (dresINIT .eq. 0.0_DP) dresINIT = 1.0_DP
 
-        ! Replace the 'old' residual by the current one
+        ! Replace the "old" residual by the current one
         rnonlinearIteration%DresidualOld(1:2) = Dresiduals(1:2)
 
         ! Nonlinear convergence rate
@@ -1645,7 +1655,7 @@ contains
         depsRES = rnonlinearIteration%DepsNL(5)*dresINIT ! -> ddampingD
         
         ! All residual information calculated.
-        ! Check for divergence; use a 'NOT' for better NaN handling.
+        ! Check for divergence; use a "NOT" for better NaN handling.
         bdivergence = .not. (dres/dresINIT .lt. 1E5)
         
         ! Check for convergence
@@ -1665,7 +1675,7 @@ contains
         
         ! Print residual information
         call output_line ( &
-            trim(sys_si(ite,3))//' '//&
+            trim(sys_si(ite,3))//" "//&
             trim(sys_sdEP(ddelU,9,2))// &
             trim(sys_sdEP(ddelP,9,2))// &
             trim(sys_sdEP(dresU,9,2))// &
@@ -1792,40 +1802,40 @@ contains
     call parlst_querysection(rparamList, sname, p_rsection)
 
     if (.not. associated(p_rsection)) then
-      call output_line ('Cannot create nonlinear solver; no section '''//&
-          trim(sname)//'''!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'cc_getNonlinearSolver')
+      call output_line ("Cannot create nonlinear solver; no section """//&
+          trim(sname)//"""!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"cc_getNonlinearSolver")
       call sys_halt()
     end if
     
     ! Parse the given parameters now to initialise the solver node.
     ! This is now CCxD-specific!
     
-    call parlst_getvalue_int (p_rsection, 'nminIterations', &
+    call parlst_getvalue_int (p_rsection, "nminIterations", &
                               rnlSolver%nminIterations, rnlSolver%nminIterations)
 
-    call parlst_getvalue_int (p_rsection, 'nmaxIterations', &
+    call parlst_getvalue_int (p_rsection, "nmaxIterations", &
                               rnlSolver%nmaxIterations, rnlSolver%nmaxIterations)
 
-    call parlst_getvalue_int (p_rsection, 'ioutputLevel', &
+    call parlst_getvalue_int (p_rsection, "ioutputLevel", &
                               rnlSolver%ioutputLevel, rnlSolver%ioutputLevel)
 
-    call parlst_getvalue_double (p_rsection, 'depsUR', &
+    call parlst_getvalue_double (p_rsection, "depsUR", &
                                  rnlSolver%DepsRel(1), rnlSolver%DepsRel(1))
     rnlSolver%DepsRel(2) = rnlSolver%DepsRel(1)
 
-    call parlst_getvalue_double (p_rsection, 'depsPR', &
+    call parlst_getvalue_double (p_rsection, "depsPR", &
                                  rnlSolver%DepsRel(3), rnlSolver%DepsRel(3))
 
-    call parlst_getvalue_double (p_rsection, 'depsD', &
+    call parlst_getvalue_double (p_rsection, "depsD", &
                                  rnlSolver%DepsAbs(1), rnlSolver%DepsAbs(1))
     rnlSolver%DepsAbs(2) = rnlSolver%DepsAbs(1)
 
-    call parlst_getvalue_double (p_rsection, 'depsDiv', &
+    call parlst_getvalue_double (p_rsection, "depsDiv", &
                                  rnlSolver%DepsAbs(3), rnlSolver%DepsAbs(3))
 
     ! Initial damping parameter.
-    call parlst_getvalue_double (p_rsection, 'domegaIni', &
+    call parlst_getvalue_double (p_rsection, "domegaIni", &
                                  rnlSolver%domega, rnlSolver%domega)
 
     ! We write out the data of the nonlinear solver to the benchmark
@@ -1973,8 +1983,8 @@ contains
         ! If bsuccess=false, the preconditioner had an error.
         if (.not. bsuccess) then
           if (rsolverNode%ioutputLevel .ge. 0) then
-            call output_line ('NLSOL: Iteration '//&
-                trim(sys_siL(ite,10))//' canceled as the preconditioner went down!',&
+            call output_line ("NLSOL: Iteration "//&
+                trim(sys_siL(ite,10))//" canceled as the preconditioner went down!",&
                 coutputMode=rsolverNode%coutputMode)
           end if
           rsolverNode%iresult = 3
@@ -1987,8 +1997,8 @@ contains
         ! So in this case, there is nothing to do, we can stop the iteration.
         if (domega .eq. 0.0_DP) then
           if (rsolverNode%ioutputLevel .ge. 1) then
-            call output_line ('NLSOL: Iteration '//&
-                trim(sys_siL(ite,10))//' canceled as there is no progress anymore!',&
+            call output_line ("NLSOL: Iteration "//&
+                trim(sys_siL(ite,10))//" canceled as there is no progress anymore!",&
                 coutputMode=rsolverNode%coutputMode)
           end if
           exit
@@ -2017,8 +2027,8 @@ contains
           ! Check for divergence
           if (bdivergence) then
             if (rsolverNode%ioutputLevel .ge. 0) then
-              call output_line ('NLSOL: Iteration '//&
-                  trim(sys_siL(ite,10))//' canceled, divergence detected!',&
+              call output_line ("NLSOL: Iteration "//&
+                  trim(sys_siL(ite,10))//" canceled, divergence detected!",&
                   coutputMode=rsolverNode%coutputMode)
             end if
             rsolverNode%iresult = 1

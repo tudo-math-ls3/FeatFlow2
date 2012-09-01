@@ -90,7 +90,7 @@ contains
     call parlst_init (rparlist)
     
     ! Check if a command line parameter specifies the master.dat file.
-    call sys_getcommandLineArg(1,smaster,sdefault='./data/master.dat')
+    call sys_getcommandLineArg(1,smaster,sdefault="./data/master.dat")
 
     ! Read parameters that configure the output
     inquire(file=smaster, exist=bexists)
@@ -100,18 +100,18 @@ contains
       ! contains references to subfiles with data.
       call parlst_readfromfile (rparlist, smaster)
     else
-      call parlst_readfromfile (rparlist, './data/output.dat')
+      call parlst_readfromfile (rparlist, "./data/output.dat")
     end if
     
     ! Now the real initialisation of the output including log file stuff!
-    call parlst_getvalue_string (rparlist,'GENERALOUTPUT',&
-                                'smsgLog',slogfile,'',bdequote=.true.)
+    call parlst_getvalue_string (rparlist,"GENERALOUTPUT",&
+                                "smsgLog",slogfile,"",bdequote=.true.)
 
-    call parlst_getvalue_string (rparlist,'GENERALOUTPUT',&
-                                'serrorLog',serrorfile,'',bdequote=.true.)
+    call parlst_getvalue_string (rparlist,"GENERALOUTPUT",&
+                                "serrorLog",serrorfile,"",bdequote=.true.)
 
-    call parlst_getvalue_string (rparlist,'GENERALOUTPUT',&
-                                'sbenchLog',sbenchlogfile,'',bdequote=.true.)
+    call parlst_getvalue_string (rparlist,"GENERALOUTPUT",&
+                                "sbenchLog",sbenchlogfile,"",bdequote=.true.)
     
     ! That temporary parameter list is not needed anymore.
     call parlst_done (rparlist)
@@ -141,9 +141,9 @@ contains
     character(LEN=SYS_STRLEN) :: smaster
     
     ! Check if a command line parameter specifies the master.dat file.
-    call sys_getcommandLineArg(1,smaster,sdefault='./data/master.dat')
+    call sys_getcommandLineArg(1,smaster,sdefault="./data/master.dat")
 
-    ! Read the file 'master.dat'.
+    ! Read the file "master.dat".
     ! If that does not exist, try to manually read files with parameters from a
     ! couple of files.
     inquire(file=smaster, exist=bexists)
@@ -153,16 +153,16 @@ contains
       ! contains references to subfiles with data.
       call parlst_readfromfile (rparamList, smaster)
     else
-      ! Each 'readfromfile' command adds the parameter of the specified file
+      ! Each "readfromfile" command adds the parameter of the specified file
       ! to the parameter list.
-      call parlst_readfromfile (rparamList, './data/discretisation.dat')
-      call parlst_readfromfile (rparamList, './data/linsol_cc2d.dat')
-      call parlst_readfromfile (rparamList, './data/nonlinsol_cc2d.dat')
-      call parlst_readfromfile (rparamList, './data/output.dat')
-      call parlst_readfromfile (rparamList, './data/paramtriang.dat')
-      call parlst_readfromfile (rparamList, './data/bdconditions.dat')
-      call parlst_readfromfile (rparamList, './data/timediscr.dat')
-      call parlst_readfromfile (rparamList, './data/postprocessing.dat')
+      call parlst_readfromfile (rparamList, "./data/discretisation.dat")
+      call parlst_readfromfile (rparamList, "./data/linsol_cc2d.dat")
+      call parlst_readfromfile (rparamList, "./data/nonlinsol_cc2d.dat")
+      call parlst_readfromfile (rparamList, "./data/output.dat")
+      call parlst_readfromfile (rparamList, "./data/paramtriang.dat")
+      call parlst_readfromfile (rparamList, "./data/bdconditions.dat")
+      call parlst_readfromfile (rparamList, "./data/timediscr.dat")
+      call parlst_readfromfile (rparamList, "./data/postprocessing.dat")
     end if
   
   end subroutine
@@ -186,11 +186,11 @@ contains
 
     ! Get the output level for the whole application -- during the
     ! initialisation phase and during the rest of the program.
-    call parlst_getvalue_int (rproblem%rparamList,'GENERALOUTPUT',&
-                              'MSHOW_Initialisation',rproblem%MSHOW_Initialisation,2)
+    call parlst_getvalue_int (rproblem%rparamList,"GENERALOUTPUT",&
+                              "MSHOW_Initialisation",rproblem%MSHOW_Initialisation,2)
 
-    call parlst_getvalue_int (rproblem%rparamList,'GENERALOUTPUT',&
-                              'MT_OutputLevel',rproblem%MT_OutputLevel,2)
+    call parlst_getvalue_int (rproblem%rparamList,"GENERALOUTPUT",&
+                              "MT_OutputLevel",rproblem%MT_OutputLevel,2)
 
   end subroutine
 
@@ -212,32 +212,32 @@ contains
 !</subroutine>
 
     ! Which type of problem to discretise? (Stokes, Navier-Stokes,...)
-    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                              'iEquation',rproblem%rphysics%iequation,0)
+    call parlst_getvalue_int (rproblem%rparamList,"CC-DISCRETISATION",&
+                              "iEquation",rproblem%rphysics%iequation,0)
 
     ! Type of subproblem (gradient tensor, deformation tensor,...)
-    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                              'isubEquation',rproblem%rphysics%isubEquation,0)
+    call parlst_getvalue_int (rproblem%rparamList,"CC-DISCRETISATION",&
+                              "isubEquation",rproblem%rphysics%isubEquation,0)
 
     ! Get the viscosity model
     ! Standard = 0 = constant viscosity
-    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                                 'cviscoModel',rproblem%rphysics%cviscoModel,0)
+    call parlst_getvalue_int (rproblem%rparamList,"CC-DISCRETISATION",&
+                                 "cviscoModel",rproblem%rphysics%cviscoModel,0)
                                  
-    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
-                                 'dviscoexponent',rproblem%rphysics%dviscoexponent,2.0_DP)
+    call parlst_getvalue_double (rproblem%rparamList,"CC-DISCRETISATION",&
+                                 "dviscoexponent",rproblem%rphysics%dviscoexponent,2.0_DP)
                                  
-    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
-                                 'dviscoEps',rproblem%rphysics%dviscoEps,0.01_DP)
+    call parlst_getvalue_double (rproblem%rparamList,"CC-DISCRETISATION",&
+                                 "dviscoEps",rproblem%rphysics%dviscoEps,0.01_DP)
 
-    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
-                                 'dviscoYield',rproblem%rphysics%dviscoYield,1.0_DP)
+    call parlst_getvalue_double (rproblem%rparamList,"CC-DISCRETISATION",&
+                                 "dviscoYield",rproblem%rphysics%dviscoYield,1.0_DP)
 
     ! Get the viscosity parameter, save it to the problem structure
     ! as well as into the collection.
     ! Note that the parameter in the DAT file is 1/nu !
-    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
-                                 'RE',rproblem%rphysics%dnu,1000.0_DP)
+    call parlst_getvalue_double (rproblem%rparamList,"CC-DISCRETISATION",&
+                                 "RE",rproblem%rphysics%dnu,1000.0_DP)
     
     rproblem%rphysics%dnu = 1.0_DP/rproblem%rphysics%dnu
     
@@ -269,11 +269,11 @@ contains
 
     ! Get the output level for the whole application -- during the
     ! initialisation phase and during the rest of the program.
-    call parlst_getvalue_int (rproblem%rparamList,'GENERALOUTPUT',&
-                              'MSHOW_Initialisation',rproblem%MSHOW_Initialisation,2)
+    call parlst_getvalue_int (rproblem%rparamList,"GENERALOUTPUT",&
+                              "MSHOW_Initialisation",rproblem%MSHOW_Initialisation,2)
 
-    call parlst_getvalue_int (rproblem%rparamList,'GENERALOUTPUT',&
-                              'MT_OutputLevel',rproblem%MT_OutputLevel,2)
+    call parlst_getvalue_int (rproblem%rparamList,"GENERALOUTPUT",&
+                              "MT_OutputLevel",rproblem%MT_OutputLevel,2)
 
     ! Get min/max level from the parameter file.
     !
@@ -281,10 +281,10 @@ contains
     ! the solution process.
     ! ilvmax receives the level where we want to solve.
     
-    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                              'NLMIN',ilvmin,2)
-    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                              'NLMAX',ilvmax,4)
+    call parlst_getvalue_int (rproblem%rparamList,"CC-DISCRETISATION",&
+                              "NLMIN",ilvmin,2)
+    call parlst_getvalue_int (rproblem%rparamList,"CC-DISCRETISATION",&
+                              "NLMAX",ilvmax,4)
 
     ! Initialise the level in the problem structure
     if(ilvmin .le. 0) then
@@ -299,11 +299,11 @@ contains
     allocate(rproblem%RlevelInfo(1:ilvmax))
 
     ! Type of boundary conditions
-    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                              'iBoundary',rproblem%iboundary,0)
+    call parlst_getvalue_int (rproblem%rparamList,"CC-DISCRETISATION",&
+                              "iBoundary",rproblem%iboundary,0)
 
     ! Time dependence
-    call cc_initParTimeDependence (rproblem,'TIME-DISCRETISATION',&
+    call cc_initParTimeDependence (rproblem,"TIME-DISCRETISATION",&
         rproblem%rparamList)
         
     ! Get the physics of the problem.
@@ -366,43 +366,43 @@ contains
     integer :: icubF
 
     ! Get the cubature formula for the RHS
-    call parlst_getvalue_string (rparlist,'CC-DISCRETISATION',&
-                                 'scubF',sstr,'')
-    if (sstr .eq. '') then
-      call parlst_getvalue_int (rparlist,'CC-DISCRETISATION',&
-                                'icubF',icubF,int(CUB_GEN_AUTO))
+    call parlst_getvalue_string (rparlist,"CC-DISCRETISATION",&
+                                 "scubF",sstr,"")
+    if (sstr .eq. "") then
+      call parlst_getvalue_int (rparlist,"CC-DISCRETISATION",&
+                                "icubF",icubF,int(CUB_GEN_AUTO))
     else
       icubF = cub_igetID(sstr)
     end if
     rrhsAssembly%icubF = icubF
         
     ! Just get the parameters.
-    call parlst_getvalue_int (rparlist,'CC-DISCRETISATION',&
-        'irhs',rrhsAssembly%ctype,0)
+    call parlst_getvalue_int (rparlist,"CC-DISCRETISATION",&
+        "irhs",rrhsAssembly%ctype,0)
     
-    call parlst_getvalue_int (rparlist,'CC-DISCRETISATION',&
-        'irhsFirstIndex',rrhsAssembly%ifirstindex,0)
+    call parlst_getvalue_int (rparlist,"CC-DISCRETISATION",&
+        "irhsFirstIndex",rrhsAssembly%ifirstindex,0)
 
-    call parlst_getvalue_int (rparlist,'CC-DISCRETISATION',&
-        'irhsFileCount',rrhsAssembly%inumfiles,0)
+    call parlst_getvalue_int (rparlist,"CC-DISCRETISATION",&
+        "irhsFileCount",rrhsAssembly%inumfiles,0)
 
-    call parlst_getvalue_int (rparlist,'CC-DISCRETISATION',&
-        'irhsFormatted',rrhsAssembly%iformatted,1)
+    call parlst_getvalue_int (rparlist,"CC-DISCRETISATION",&
+        "irhsFormatted",rrhsAssembly%iformatted,1)
 
-    call parlst_getvalue_double (rparlist,'CC-DISCRETISATION',&
-        'drhsTimeInit',rrhsAssembly%dtimeInit,0.0_DP)
+    call parlst_getvalue_double (rparlist,"CC-DISCRETISATION",&
+        "drhsTimeInit",rrhsAssembly%dtimeInit,0.0_DP)
 
-    call parlst_getvalue_double (rparlist,'CC-DISCRETISATION',&
-        'drhsTimeMax',rrhsAssembly%dtimeMax,0.0_DP)
+    call parlst_getvalue_double (rparlist,"CC-DISCRETISATION",&
+        "drhsTimeMax",rrhsAssembly%dtimeMax,0.0_DP)
 
-    call parlst_getvalue_double (rparlist,'CC-DISCRETISATION',&
-        'drhsMultiplyX',rrhsAssembly%dmultiplyX,1.0_DP)
+    call parlst_getvalue_double (rparlist,"CC-DISCRETISATION",&
+        "drhsMultiplyX",rrhsAssembly%dmultiplyX,1.0_DP)
 
-    call parlst_getvalue_double (rparlist,'CC-DISCRETISATION',&
-        'drhsMultiplyY',rrhsAssembly%dmultiplyY,1.0_DP)
+    call parlst_getvalue_double (rparlist,"CC-DISCRETISATION",&
+        "drhsMultiplyY",rrhsAssembly%dmultiplyY,1.0_DP)
     
-    call parlst_getvalue_string (rparlist,'CC-DISCRETISATION',&
-        'sfilenameRHS',rrhsAssembly%sfilename,'',bdequote=.true.)
+    call parlst_getvalue_string (rparlist,"CC-DISCRETISATION",&
+        "sfilenameRHS",rrhsAssembly%sfilename,"",bdequote=.true.)
 
     if ((rrhsAssembly%ctype .eq. 3) .or. (rrhsAssembly%ctype .eq. 4)) then
       if (rrhsAssembly%sfilename .eq. "") then

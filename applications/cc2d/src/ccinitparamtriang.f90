@@ -84,23 +84,23 @@ contains
     ! the solution process.
     ! ilvmax receives the level where we want to solve.
     
-    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                              'NLMIN',ilvmin,2)
-    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                              'NLMAX',ilvmax,4)
+    call parlst_getvalue_int (rproblem%rparamList,"CC-DISCRETISATION",&
+                              "NLMIN",ilvmin,2)
+    call parlst_getvalue_int (rproblem%rparamList,"CC-DISCRETISATION",&
+                              "NLMAX",ilvmax,4)
     
     ! Get the .prm and the .tri file from the parameter list.
-    call parlst_getvalue_string (rproblem%rparamList,'PARAMTRIANG',&
-                                 'sParametrisation',sPRMFile,bdequote=.true.)
+    call parlst_getvalue_string (rproblem%rparamList,"PARAMTRIANG",&
+                                 "sParametrisation",sPRMFile,bdequote=.true.)
                               
-    call parlst_getvalue_string (rproblem%rparamList,'PARAMTRIANG',&
-                                 'sMesh',sTRIFile,bdequote=.true.)
+    call parlst_getvalue_string (rproblem%rparamList,"PARAMTRIANG",&
+                                 "sMesh",sTRIFile,bdequote=.true.)
     
-    call parlst_getvalue_int (rproblem%rparamList,'PARAMTRIANG',&
-                              'iconvertToTriangleMesh',iconvertToTriangleMesh,0)
+    call parlst_getvalue_int (rproblem%rparamList,"PARAMTRIANG",&
+                              "iconvertToTriangleMesh",iconvertToTriangleMesh,0)
     
-    call parlst_getvalue_double (rproblem%rparamList,'PARAMTRIANG',&
-                                 'ddisturbMeshFactor',ddisturbMeshFactor,0.0_DP)
+    call parlst_getvalue_double (rproblem%rparamList,"PARAMTRIANG",&
+                                 "ddisturbMeshFactor",ddisturbMeshFactor,0.0_DP)
     
     ! Read in the parametrisation of the boundary and save it to rboundary.
     call boundary_read_prm(rproblem%rboundary, sPRMFile)
@@ -133,7 +133,7 @@ contains
     
     ! Compress the level hierarchy.
     ! Share the vertex coordinates of all levels, so the coarse grid coordinates
-    ! are 'contained' in the fine grid coordinates. The effect is:
+    ! are "contained" in the fine grid coordinates. The effect is:
     ! 1.) Save some memory
     ! 2.) Every change in the fine grid coordinates also affects the coarse
     !     grid coordinates and vice versa.

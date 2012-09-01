@@ -129,7 +129,7 @@ contains
   ! explicit time error prediction method. For this purpose, the application
   ! must perform the following tasks:
   ! The time
-  !  a) Perform a predictor step to compute a 'predictor solution' u1 at time
+  !  a) Perform a predictor step to compute a "predictor solution" u1 at time
   !     $t_{n}$ (e.g. by 1st order method)
   !  b) Perform the real computation to compute a solution u2 at time
   !     $t_{n}$ (e.g. 2nd order method)

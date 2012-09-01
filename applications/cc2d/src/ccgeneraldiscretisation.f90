@@ -186,32 +186,32 @@ contains
     
     ! Which discretisation is to use?
     ! Which cubature formula should be used?
-    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                              'iElementType',ielementType,3)
+    call parlst_getvalue_int (rproblem%rparamList,"CC-DISCRETISATION",&
+                              "iElementType",ielementType,3)
 
-    call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
-                                 'scubStokes',sstr,'')
-    if (sstr .eq. '') then
-      call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                                'icubStokes',icubA,int(CUB_GEN_AUTO))
+    call parlst_getvalue_string (rproblem%rparamList,"CC-DISCRETISATION",&
+                                 "scubStokes",sstr,"")
+    if (sstr .eq. "") then
+      call parlst_getvalue_int (rproblem%rparamList,"CC-DISCRETISATION",&
+                                "icubStokes",icubA,int(CUB_GEN_AUTO))
     else
       icubA = cub_igetID(sstr)
     end if
 
-    call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
-                                'scubB',sstr,'')
-    if (sstr .eq. '') then
-      call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                                'icubB',icubB,int(CUB_GEN_AUTO))
+    call parlst_getvalue_string (rproblem%rparamList,"CC-DISCRETISATION",&
+                                "scubB",sstr,"")
+    if (sstr .eq. "") then
+      call parlst_getvalue_int (rproblem%rparamList,"CC-DISCRETISATION",&
+                                "icubB",icubB,int(CUB_GEN_AUTO))
     else
       icubB = cub_igetID(sstr)
     end if
 
-    call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
-                                'scubMass',sstr,'')
-    if (sstr .eq. '') then
-      call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                                'icubM',icubM,int(CUB_GEN_AUTO))
+    call parlst_getvalue_string (rproblem%rparamList,"CC-DISCRETISATION",&
+                                "scubMass",sstr,"")
+    if (sstr .eq. "") then
+      call parlst_getvalue_int (rproblem%rparamList,"CC-DISCRETISATION",&
+                                "icubM",icubM,int(CUB_GEN_AUTO))
     else
       icubM = cub_igetID(sstr)
     end if
@@ -221,29 +221,29 @@ contains
     rproblem%rmatrixAssembly%icubM = icubM
     
     ! Stabilisation parameters.
-    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                              'IUPWIND',rproblem%rstabilisation%iupwind,0)
+    call parlst_getvalue_int (rproblem%rparamList,"CC-DISCRETISATION",&
+                              "IUPWIND",rproblem%rstabilisation%iupwind,0)
     
-    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
-                                 'DUPSAM',rproblem%rstabilisation%dupsam,0.0_DP)
+    call parlst_getvalue_double (rproblem%rparamList,"CC-DISCRETISATION",&
+                                 "DUPSAM",rproblem%rstabilisation%dupsam,0.0_DP)
 
-    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
-                                 'DUPSAMSTAR',rproblem%rstabilisation%dupsamstar,0.0_DP)
+    call parlst_getvalue_double (rproblem%rparamList,"CC-DISCRETISATION",&
+                                 "DUPSAMSTAR",rproblem%rstabilisation%dupsamstar,0.0_DP)
 
-    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
-                                 'DEOJEDGEEXP',rproblem%rstabilisation%deojEdgeExp,2.0_DP)
+    call parlst_getvalue_double (rproblem%rparamList,"CC-DISCRETISATION",&
+                                 "DEOJEDGEEXP",rproblem%rstabilisation%deojEdgeExp,2.0_DP)
     
-    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                                 'ILOCALH',rproblem%rstabilisation%clocalH,1)
+    call parlst_getvalue_int (rproblem%rparamList,"CC-DISCRETISATION",&
+                                 "ILOCALH",rproblem%rstabilisation%clocalH,1)
 
-    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                              'IELEMENTTYPESTABIL',iElementTypeStabil,0)
+    call parlst_getvalue_int (rproblem%rparamList,"CC-DISCRETISATION",&
+                              "IELEMENTTYPESTABIL",iElementTypeStabil,0)
 
-    call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
-                                 'scubEOJ',sstr,'')
-    if (sstr .eq. '') then
-      call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                                'icubEOJ',i,int(CUB_G4_1D))
+    call parlst_getvalue_string (rproblem%rparamList,"CC-DISCRETISATION",&
+                                 "scubEOJ",sstr,"")
+    if (sstr .eq. "") then
+      call parlst_getvalue_int (rproblem%rparamList,"CC-DISCRETISATION",&
+                                "icubEOJ",i,int(CUB_G4_1D))
       rproblem%rstabilisation%ccubEOJ = i
     else
       rproblem%rstabilisation%ccubEOJ = cub_igetID(sstr)
@@ -291,8 +291,8 @@ contains
       ! -----------------------------------------------------------------------
 
       ! Should we do mass lumping in the velocity?
-      call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
-          'IMASS', j, 0)
+      call parlst_getvalue_int (rproblem%rparamList, "CC-DISCRETISATION", &
+          "IMASS", j, 0)
       rproblem%rmatrixAssembly%bmassLumpingVelocity = j .eq. 0
 
         ! Set cubature formula for lumping. The constant from the DAT file corresponds
@@ -300,8 +300,8 @@ contains
         ! When to do simple mass lumping, replace the cubature formula by one
         ! that is compatible with the corresponding element to generate
         ! a diagonal mass matrix.
-      call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
-          'IMASSLUMPTYPE', rproblem%rmatrixAssembly%imassLumpTypeVelocity, LSYSSC_LUMP_DIAG)
+      call parlst_getvalue_int (rproblem%rparamList, "CC-DISCRETISATION", &
+          "IMASSLUMPTYPE", rproblem%rmatrixAssembly%imassLumpTypeVelocity, LSYSSC_LUMP_DIAG)
           
       ! Initialise the dynamic level information structure with basic information.
       call cc_initDynamicLevelInfo (rproblem%RlevelInfo(i)%rdynamicInfo)
@@ -485,7 +485,7 @@ contains
       ! Check the mesh to ensure that the discretisation is compatible.
       select case(elem_igetShape(ieltypeUV))
       case (BGEOM_SHAPE_TRIA)
-        ! Triangular element; ensure that we don't have quads in the mesh
+        ! Triangular element; ensure that we don"t have quads in the mesh
         if(rtriangulation%InelOfType(TRIA_NVEQUAD2D) .ne. 0) then
           call output_line (&
               "Discretisation does not support the current mesh!", &
@@ -494,7 +494,7 @@ contains
         end if
 
       case (BGEOM_SHAPE_QUAD)
-        ! Quadrilateral element; ensure that we don't have triangles in the mesh
+        ! Quadrilateral element; ensure that we don"t have triangles in the mesh
         if(rtriangulation%InelOfType(TRIA_NVETRI2D) .ne. 0) then
           call output_line (&
               "Discretisation does not support the current mesh!", &
@@ -607,14 +607,14 @@ contains
   integer :: cmatBuildType,istrongDerivativeBmatrix
   integer :: iprojTypeVelocity, iprojTypePressure
   
-    call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
-        'ISTRONGDERIVATIVEBMATRIX', istrongDerivativeBmatrix, 0)
+    call parlst_getvalue_int (rproblem%rparamList, "CC-DISCRETISATION", &
+        "ISTRONGDERIVATIVEBMATRIX", istrongDerivativeBmatrix, 0)
     
     ! Get the projection types
-    call parlst_getvalue_int (rproblem%rparamList, 'CC-PROLREST', &
-        'IPROJTYPEVELOCITY', iprojTypeVelocity, 0)
-    call parlst_getvalue_int (rproblem%rparamList, 'CC-PROLREST', &
-        'IPROJTYPEPRESSURE', iprojTypePressure, 0)
+    call parlst_getvalue_int (rproblem%rparamList, "CC-PROLREST", &
+        "IPROJTYPEVELOCITY", iprojTypeVelocity, 0)
+    call parlst_getvalue_int (rproblem%rparamList, "CC-PROLREST", &
+        "IPROJTYPEPRESSURE", iprojTypePressure, 0)
   
     ! When the jump stabilisation is used, we have to create an extended
     ! matrix stencil!
@@ -640,9 +640,9 @@ contains
     ! a standard Stokes matrix L which can be added later to the
     ! convection matrix, resulting in the nonlinear system matrix.
     !
-    ! At first, we create 'template' matrices that define the structure
+    ! At first, we create "template" matrices that define the structure
     ! of each of the submatrices in that global system. These matrices
-    ! are later used to 'derive' the actual Laplace/Stokes matrices
+    ! are later used to "derive" the actual Laplace/Stokes matrices
     ! by sharing the structure (KCOL/KLD).
     !
     ! Get a pointer to the template FEM matrix. This is used for the
@@ -811,8 +811,8 @@ contains
     ! Structure for the bilinear form for assembling Stokes,...
     ! TYPE(t_bilinearForm) :: rform
 
-    call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
-        'ISTRONGDERIVATIVEBMATRIX', istrongDerivativeBmatrix, 0)
+    call parlst_getvalue_int (rproblem%rparamList, "CC-DISCRETISATION", &
+        "ISTRONGDERIVATIVEBMATRIX", istrongDerivativeBmatrix, 0)
 
     ! Initialise the collection for the assembly process with callback routines.
     ! Basically, this stores the simulation time in the collection if the
@@ -1640,8 +1640,8 @@ contains
                 rproblem%rcollection)
                              
       ! Is the moving-frame formulatino active?
-      call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-          'imovingFrame',imovingFrame,0)
+      call parlst_getvalue_int (rproblem%rparamList,"CC-DISCRETISATION",&
+          "imovingFrame",imovingFrame,0)
           
       if (imovingFrame .ne. 0) then
       
@@ -1798,17 +1798,17 @@ contains
     type(t_scalarCubatureInfo) :: rcubatureInfo
 
     ! Get the parameter what to do with rvector
-    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-        'ctypeInitialSolution',ctypeInitialSolution,0)
-    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-        'iinitialSolutionLevel',iinitialSolutionLevel,0)
+    call parlst_getvalue_int (rproblem%rparamList,"CC-DISCRETISATION",&
+        "ctypeInitialSolution",ctypeInitialSolution,0)
+    call parlst_getvalue_int (rproblem%rparamList,"CC-DISCRETISATION",&
+        "iinitialSolutionLevel",iinitialSolutionLevel,0)
 
-    ! Remove possible ''-characters in the filename
-    call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
-        'sinitialSolutionFilename',sfile,"",bdequote=.true.)
+    ! Remove possible ""-characters in the filename
+    call parlst_getvalue_string (rproblem%rparamList,"CC-DISCRETISATION",&
+        "sinitialSolutionFilename",sfile,"",bdequote=.true.)
 
-    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-        'ielementTypeInitialSolution',ielementTypeInitialSolution,-1)
+    call parlst_getvalue_int (rproblem%rparamList,"CC-DISCRETISATION",&
+        "ielementTypeInitialSolution",ielementTypeInitialSolution,-1)
 
     ! What is the type of the initial solution?
     select case (ctypeInitialSolution)
@@ -1828,15 +1828,15 @@ contains
       
       if (ilev .lt. rproblem%NLMIN) then
         call output_line (&
-            'Level of start vector is < NLMIN! Initialising with zero!', &
-            OU_CLASS_WARNING,OU_MODE_STD,'cc_initInitialSolution')
+            "Level of start vector is < NLMIN! Initialising with zero!", &
+            OU_CLASS_WARNING,OU_MODE_STD,"cc_initInitialSolution")
         ilev = rproblem%NLMIN
       end if
 
       if (ilev .gt. rproblem%NLMAX) then
         call output_line (&
-            'Level of start vector is > NLMAX! Initialising with zero!', &
-            OU_CLASS_WARNING,OU_MODE_STD,'cc_initInitialSolution')
+            "Level of start vector is > NLMAX! Initialising with zero!", &
+            OU_CLASS_WARNING,OU_MODE_STD,"cc_initInitialSolution")
         ilev = rproblem%NLMAX
       end if
       
@@ -1857,8 +1857,8 @@ contains
             (rvector2%RvectorBlock(2)%NEQ .ne. rvector1%RvectorBlock(2)%NEQ) .or.&
             (rvector2%RvectorBlock(3)%NEQ .ne. rvector1%RvectorBlock(3)%NEQ)) then
           call output_line (&
-              'Start vector has invalid size!', &
-              OU_CLASS_WARNING,OU_MODE_STD,'cc_initInitialSolution')
+              "Start vector has invalid size!", &
+              OU_CLASS_WARNING,OU_MODE_STD,"cc_initInitialSolution")
           call sys_halt()
         end if
         
@@ -1958,7 +1958,7 @@ contains
       ! with f a RHS created by analytical point values.
 
       if (rproblem%MSHOW_Initialisation .ge. 1) &
-        call output_line('Preparing L2 projection of analytical initial solution...')
+        call output_line("Preparing L2 projection of analytical initial solution...")
 
       ! Get a pointer to the RHS on the finest level as well as to the
       ! block discretisation structure:
@@ -2019,7 +2019,7 @@ contains
       p_rsolverNode%ioutputLevel = 1
 
       if (rproblem%MSHOW_Initialisation .ge. 1) &
-        call output_line('Solving L2 projection for U1...')
+        call output_line("Solving L2 projection for U1...")
       
       ! We solve separately for the three components.
       ! Prepare the solver for the velocity.
@@ -2041,7 +2041,7 @@ contains
       
       if (p_rsolverNode%iresult .ne. 0) then
         ! Cancel, there is something wrong.
-        call output_line('Cannot compute L2 projection, solver broke down. Using zero!')
+        call output_line("Cannot compute L2 projection, solver broke down. Using zero!")
         call lsysbl_clearVector (rvector)
 
       else
@@ -2054,7 +2054,7 @@ contains
         call lsysbl_releaseVector (rsingleSol)
 
         if (rproblem%MSHOW_Initialisation .ge. 1) &
-          call output_line('Solving L2 projection for U2...')
+          call output_line("Solving L2 projection for U2...")
 
         call lsysbl_createVecFromScalar(rvector1%RvectorBlock(2),rsingleRHS)
         call lsysbl_createVecFromScalar(rvector%RvectorBlock(2),rsingleSol)
@@ -2064,7 +2064,7 @@ contains
         if (p_rsolverNode%iresult .ne. 0) then
           ! Cancel, there is something wrong.
           call output_line(&
-              'Cannot compute L2 projection, solver broke down. Using zero!')
+              "Cannot compute L2 projection, solver broke down. Using zero!")
           call lsysbl_clearVector (rvector)
           
         else
@@ -2077,7 +2077,7 @@ contains
           call lsysbl_releaseMatrix (Rmatrices(1))
 
           if (rproblem%MSHOW_Initialisation .ge. 1) &
-            call output_line('Solving L2 projection for P...')
+            call output_line("Solving L2 projection for P...")
 
           ! Attach a new matrix.
           call lsysbl_createMatFromScalar(&
@@ -2102,7 +2102,7 @@ contains
           if (p_rsolverNode%iresult .ne. 0) then
             ! Cancel, there is something wrong.
             call output_line(&
-                'Cannot compute L2 projection, solver broke down. Using zero!')
+                "Cannot compute L2 projection, solver broke down. Using zero!")
             call lsysbl_clearVector (rvector)
           end if
         end if
@@ -2161,14 +2161,14 @@ contains
     logical :: bformatted
 
     ! Get the parameter what to do with rvector
-    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                              'cwriteFinalSolution',cwriteFinalSolution,0)
-    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                              'iwriteSolutionLevel',iwriteSolutionLevel,0)
+    call parlst_getvalue_int (rproblem%rparamList,"CC-DISCRETISATION",&
+                              "cwriteFinalSolution",cwriteFinalSolution,0)
+    call parlst_getvalue_int (rproblem%rparamList,"CC-DISCRETISATION",&
+                              "iwriteSolutionLevel",iwriteSolutionLevel,0)
                               
-    ! Remove possible ''-characters in the filename
-    call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
-                                 'swriteSolutionFilename',sfile,"",bdequote=.true.)
+    ! Remove possible ""-characters in the filename
+    call parlst_getvalue_string (rproblem%rparamList,"CC-DISCRETISATION",&
+                                 "swriteSolutionFilename",sfile,"",bdequote=.true.)
 
     if (cwriteFinalSolution .eq. 0) return ! nothing to do.
     
@@ -2180,8 +2180,8 @@ contains
 
     if (iwriteSolutionLevel .lt. rproblem%NLMIN) then
       call output_line (&
-          'Warning: Level for solution vector is < NLMIN! Writing out at level NLMIN!',&
-          OU_CLASS_WARNING,OU_MODE_STD,'cc_initInitialSolution')
+          "Warning: Level for solution vector is < NLMIN! Writing out at level NLMIN!",&
+          OU_CLASS_WARNING,OU_MODE_STD,"cc_initInitialSolution")
       iwriteSolutionLevel = rproblem%NLMIN
     end if
     
@@ -2197,7 +2197,7 @@ contains
       call mlprj_initProjectionVec (rprojection,rvector2)
       
       ! Interpolate to the next higher level.
-      ! (Do not 'restrict'! Restriction would be for the dual space = RHS vectors!)
+      ! (Do not "restrict"! Restriction would be for the dual space = RHS vectors!)
 
       NEQ = mlprj_getTempMemoryVec (rprojection,rvector2,rvector1)
       if (NEQ .ne. 0) call lsyssc_createVector (rvectorTemp,NEQ,.false.)
@@ -2214,19 +2214,19 @@ contains
     end do
 
     call output_lbrk ()
-    call output_line ('Writing RAW solution file: '//sfile)
+    call output_line ("Writing RAW solution file: "//sfile)
 
     ! Write out the solution.
     if (bformatted) then
       if (.not. present(dtime)) then
-        call vecio_writeBlockVectorHR (rvector1, 'SOLUTION', .true.,&
-            0, sfile, '(E22.15)')
+        call vecio_writeBlockVectorHR (rvector1, "SOLUTION", .true.,&
+            0, sfile, "(E22.15)")
       else
-        call vecio_writeBlockVectorHR (rvector1, 'SOLUTION', .true.,&
-            0, sfile, '(E22.15)',"time="//trim(sys_sdL(dtime,15)))
+        call vecio_writeBlockVectorHR (rvector1, "SOLUTION", .true.,&
+            0, sfile, "(E22.15)","time="//trim(sys_sdL(dtime,15)))
       end if
     else
-      call vecio_writeBlockVectorHR (rvector1, 'SOLUTION', .true.,0, sfile)
+      call vecio_writeBlockVectorHR (rvector1, "SOLUTION", .true.,0, sfile)
     end if
 
     ! Release temp memory.

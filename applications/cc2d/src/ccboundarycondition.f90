@@ -108,19 +108,6 @@ contains
       
     end do
 
-    ! On the finest level, attach the discrete BC also
-    ! to the solution and RHS vector. They need it to be compatible
-    ! to the matrix on the finest level.
-    p_rdiscreteBC => rproblem%RlevelInfo(rproblem%NLMAX)%rdynamicInfo%rdiscreteBC
-    
-    rrhs%p_rdiscreteBC => p_rdiscreteBC
-    rvector%p_rdiscreteBC => p_rdiscreteBC
-
-    ! The same with the fictitious boundary BC`s
-    p_rdiscreteFBC => rproblem%RlevelInfo(rproblem%NLMAX)%rdynamicInfo%rdiscreteFBC
-    rrhs%p_rdiscreteBCfict => p_rdiscreteFBC
-    rvector%p_rdiscreteBCfict => p_rdiscreteFBC
-    
     ! Call the update routine to assemble the BC`s.
     call cc_updateDiscreteBC (rproblem)
                 
@@ -185,8 +172,7 @@ contains
 
 !<subroutine>
 
-  subroutine cc_implementBC (rproblem,rvector,rrhs,&
-      bsolvector,brhsvector)
+  subroutine cc_implementBC (rproblem,rvector,rrhs,bsolvector,brhsvector)
   
 !<description>
   ! Implements boundary conditions into the RHS and into a given solution vector.
@@ -223,11 +209,11 @@ contains
     
       ! Implement discrete boundary conditions into solution vector by
       ! filtering the vector.
-      call vecfil_discreteBCsol (rvector)
+      call vecfil_discreteBCsol (rvector,rproblem%RlevelInfo(ilvmax)%rdynamicInfo%rdiscreteBC)
       
       ! Implement discrete boundary conditions of fictitioous boundary comnponents
       ! into solution vector by filtering the vector.
-      call vecfil_discreteFBCsol (rvector)
+      call vecfil_discreteFBCsol (rvector,rproblem%RlevelInfo(ilvmax)%rdynamicInfo%rdiscreteFBC)
       
     end if
     
@@ -239,11 +225,11 @@ contains
       
       ! Implement discrete boundary conditions into RHS vector by
       ! filtering the vector.
-      call vecfil_discreteBCrhs (rrhs)
+      call vecfil_discreteBCrhs (rrhs,rproblem%RlevelInfo(ilvmax)%rdynamicInfo%rdiscreteBC)
 
       ! Implement discrete boundary conditions of fictitious boundary components
       ! into RHS vector by filtering the vector.
-      call vecfil_discreteFBCrhs (rrhs)
+      call vecfil_discreteFBCrhs (rrhs,rproblem%RlevelInfo(ilvmax)%rdynamicInfo%rdiscreteFBC)
 
     end if
     

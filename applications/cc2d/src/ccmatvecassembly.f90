@@ -31,15 +31,15 @@
 !#   $\theta$ - weight for the Laplace matrix,
 !#   $\gamma$ - weight in front of the nonlinearity;
 !#                =0 for Stokes system,
-!#   $\eta$   - Switches the 'B'-term on/off,
-!#   $\tau$   - Switches the 'B^T'-term on/off,
+!#   $\eta$   - Switches the "B"-term on/off,
+!#   $\tau$   - Switches the "B^T"-term on/off,
 !#   newton   - Weight for the Newton term
 !#
 !# This equation can be written as a nonlinear system $A(y)(y,p) = (f1,f2)$
 !# with a nonlinear matrix $A(\cdot)$. The structure t_nonlinearCCmatrix
 !# contains a description of this matrix, With this description, it is possible
-!# to do matrix vector multiplication or to 'evaluate' the matrix at a
-!# given 'point' $y$ to get the 'linearised' matrix $A(y)$.
+!# to do matrix vector multiplication or to "evaluate" the matrix at a
+!# given "point" $y$ to get the "linearised" matrix $A(y)$.
 !#
 !# The module contains the following routines:
 !#
@@ -101,7 +101,7 @@ module ccmatvecassembly
   
 !<constants>
 
-!<constantblock description="Identifiers for the 'coperation' input parameter of the matrix assembly routine">
+!<constantblock description="Identifiers for the "coperation" input parameter of the matrix assembly routine">
 
   ! Allocate memory if necessary.
   integer(I32), parameter :: CCMASM_ALLOCMEM              = 1
@@ -125,21 +125,21 @@ module ccmatvecassembly
   ! 1st-order upwind; configured by dupsam
   integer, parameter :: CCMASM_STAB_UPWIND            = 1
   
-  ! Edge-oriented stabilisation; configured by dupsam as 'gamma'
+  ! Edge-oriented stabilisation; configured by dupsam as "gamma"
   integer, parameter :: CCMASM_STAB_EDGEORIENTED      = 2
 
-  ! Fast Edge-oriented stabilisation; configured by dupsam as 'gamma'. Preconputed matrix.
+  ! Fast Edge-oriented stabilisation; configured by dupsam as "gamma". Preconputed matrix.
   integer, parameter :: CCMASM_STAB_FASTEDGEORIENTED  = 3
 
   ! Streamline diffusion; configured by dupsam. New implementation
   integer, parameter :: CCMASM_STAB_STREAMLINEDIFF2   = 4
 
-  ! Edge-oriented stabilisation; configured by dupsam as 'gamma'.
+  ! Edge-oriented stabilisation; configured by dupsam as "gamma".
   ! Nonlinear terms set up with the element independend SD routine.
   integer, parameter :: CCMASM_STAB_EDGEORIENTED2     = 5
 !</constantblock>
 
-!<constantblock description="Matrix type ID's specifying the general matrix class to set up.">
+!<constantblock description="Matrix type ID"s specifying the general matrix class to set up.">
 
   ! Standard matrix.
   integer, parameter :: CCMASM_MTP_AUTOMATIC         = 0
@@ -147,7 +147,7 @@ module ccmatvecassembly
   ! Standard matrix with decoupled velocity blocks
   integer, parameter :: CCMASM_MTP_DECOUPLED         = 1
   
-  ! Extended 'full-tensor' matrix with submatrices A11, A12, A21, A22, all independent from
+  ! Extended "full-tensor" matrix with submatrices A11, A12, A21, A22, all independent from
   ! each other.
   integer, parameter :: CCMASM_MTP_FULLTENSOR        = 2
 
@@ -163,7 +163,7 @@ module ccmatvecassembly
   ! does actually not exist in memory -- since it is nonlinear! Therefore,
   ! this structure contains all parameters and settings which are necessary
   ! do apply(!) the matrix to a vector or to evaluate it.
-  ! ('Evaluate a nonlinear matrix' means: Using a given FE-function $y$,
+  ! ("Evaluate a nonlinear matrix" means: Using a given FE-function $y$,
   ! assemble the linear matrix A(y).)
   type t_nonlinearCCMatrix
   
@@ -533,15 +533,15 @@ contains
   ! This routine assembles a global matrix, i.e. it evaluates the nonlinear
   ! system matrix $A(\cdot)$ at a point $y$. The rnonlinearCCMatrix
   ! must contain a description of the matrix.
-  ! The 'coperation' parameter tells the routine what to do.
+  ! The "coperation" parameter tells the routine what to do.
   ! The destination matrix rmatrix, which receives the evaluated matrix
   ! A(rvector), is then set up or updated.
   !
   ! The parameters rvector and rfineMatrix are optional. rvector must be
   ! specified, if the nonlinearity is activated (parameter $\gamma\not=0$ in
-  ! rnonlinearCCMatrix). This vector specifies the 'solution' where the
+  ! rnonlinearCCMatrix). This vector specifies the "solution" where the
   ! nonlinearity $u\nabla u$ is evaluated.
-  ! rfineMatrix allows to specify a matrix of a 'one level refined mesh'. This
+  ! rfineMatrix allows to specify a matrix of a "one level refined mesh". This
   ! is usually used when setting up preconditioners over multiple levels.
   ! Specifying such a matrix allows the routine (depending on the discretisation)
   ! to include some special stabilisation terms into the matrix rmatrix.
@@ -551,7 +551,7 @@ contains
 
 !<input>
 
-  ! One of the CCMASM_xxxx-constants. This parameter specifies 'what to do'.
+  ! One of the CCMASM_xxxx-constants. This parameter specifies "what to do".
   ! Using the CCMASM_ALLOCMEM constant, the routine will allocate memory in
   ! rmatrix for all the matrix blocks but will not compute any entries.
   ! Using the CCMASM_COMPUTE constant, the routine will compute the matrix
@@ -564,7 +564,7 @@ contains
   ! Therefore, CCMASM_COMPUTE should be used to update an existing matrix.
   !
   ! The constant CMASM_QUICKREFERENCES may be specified additional to one of
-  ! the other constants (e.g. as 'CCMASM_ALLOCANDCOMPUTE+CMASM_QUICKREFERENCES').
+  ! the other constants (e.g. as "CCMASM_ALLOCANDCOMPUTE+CMASM_QUICKREFERENCES").
   ! If specified, the routine tries to avoid memory allocation. This means e.g.
   ! that references to the original gradient (B-)matrices from rnonlinearCCMatrix
   ! are written to rmatrix; matrix entries are not copied!
@@ -577,7 +577,7 @@ contains
   ! Type of matrix that should be set up in rmatrix. One of the CCMASM_MTP_xxxx
   ! constants.
   ! Usually, CCMASM_MTP_AUTOMATIC is used here. This will automatically determine
-  ! the 'smallest possible' matrix structure fitting the needs of the input
+  ! the "smallest possible" matrix structure fitting the needs of the input
   ! parameters. By specifying another matrix type, the caller can explicitly
   ! take influence on the general matrix structure.
   !
@@ -585,7 +585,7 @@ contains
   ! CCMASM_MTP_AUTOMATIC should be specified here.
   integer, intent(in) :: cmatrixType
 
-  ! A t_nonlinearCCMatrix structure providing all necessary 'source' information
+  ! A t_nonlinearCCMatrix structure providing all necessary "source" information
   ! about how to set up the matrix.
   !
   ! Note that if coperation=CCMASM_ALLOCxxxx is specified, p_rmatrixTemplateXXXX
@@ -601,7 +601,7 @@ contains
   ! It specifies where to evaluate the nonlinearity.
   type(t_vectorBlock), intent(in), optional :: rvector
 
-  ! OPTIONAL: This parameter allows to specify a 'fine grid matrix'. This is
+  ! OPTIONAL: This parameter allows to specify a "fine grid matrix". This is
   ! usually done when assembling matrices on multiple levels. If specified, the
   ! routine will (if possible) try to include a level-dependent stabilisation
   ! term into the matrix (-> e.g. constant matrix restriction for nonparametric
@@ -718,14 +718,14 @@ contains
     subroutine allocMatrix (cmatrixType,rnonlinearCCMatrix,rmatrix,rproblem)
     
     ! Allocates memory for the system matrix. rnonlinearCCMatrix provides information
-    ! about the submatrices that are 'plugged into' rmatrix.
+    ! about the submatrices that are "plugged into" rmatrix.
     ! Therefore, before this routine is called, rnonlinearCCMatrix must have been set up.
 
     ! Type of matrix that should be set up in rmatrix. One of the CCMASM_MTP_xxxx
     ! constants.
     integer, intent(in) :: cmatrixType
 
-    ! A t_nonlinearCCMatrix structure providing all necessary 'source' information
+    ! A t_nonlinearCCMatrix structure providing all necessary "source" information
     ! about how to set up the matrix.
     type(t_nonlinearCCMatrix), intent(in), target :: rnonlinearCCMatrix
 
@@ -801,7 +801,7 @@ contains
           
       if (.not. bdecoupled .and. .not. bfulltensor) then
            
-        ! If X- and Y-velocity is to be treated in a 'coupled' way, the matrix
+        ! If X- and Y-velocity is to be treated in a "coupled" way, the matrix
         ! A22 is identical to A11! So mirror A11 to A22 sharing the
         ! structure and the content.
         call lsyssc_duplicateMatrix (rmatrix%RmatrixBlock(1,1),&
@@ -822,7 +822,7 @@ contains
       call lsyssc_assignDiscrDirectMat (rmatrix%RmatrixBlock(2,2),&
           p_rdiscretisation%RspatialDiscr(2))
 
-      ! A 'full tensor matrix' consists also of blocks A12 and A21.
+      ! A "full tensor matrix" consists also of blocks A12 and A21.
       if (bfulltensor) then
 
         ! We have a matrix in the following shape:
@@ -931,7 +931,7 @@ contains
     ! rmatrix := dalpha*M + dtheta*Laplace + dgamma*N(p_rvector) +
     !            dnewton*N*(p_rvector)
     
-    ! A t_nonlinearCCMatrix structure providing all necessary 'source' information
+    ! A t_nonlinearCCMatrix structure providing all necessary "source" information
     ! about how to set up the matrix.
     type(t_nonlinearCCMatrix), intent(in) :: rnonlinearCCMatrix
     
@@ -1194,8 +1194,8 @@ contains
           rupwind%dtheta = rnonlinearCCMatrix%dgamma
           
           if (rnonlinearCCMatrix%dnewton .ne. 0.0_DP) then
-            call output_line ('Warning: Upwind does not support assembly '&
-                //'of the Newton matrix!',OU_CLASS_TRACE1)
+            call output_line ("Warning: Upwind does not support assembly "&
+                //"of the Newton matrix!",OU_CLASS_TRACE1)
           end if
           
           ! Call the upwind method to calculate the nonlinear matrix.
@@ -1497,8 +1497,8 @@ contains
           call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
 
         case default
-          call output_line ('Don''t know how to set up nonlinearity!?!', &
-              OU_CLASS_ERROR,OU_MODE_STD,'assembleVelocityBlocks')
+          call output_line ("Don't know how to set up nonlinearity!?!", &
+              OU_CLASS_ERROR,OU_MODE_STD,"assembleVelocityBlocks")
           call sys_halt()
         
         end select
@@ -1622,14 +1622,14 @@ contains
     ! matrix building blocks in rlevelInfo, thus sharing all information
     ! with those matrices in rnonlinearCCMatrix. In this case, the caller must
     ! not change the matrix entries, because this would change the
-    ! original 'template' matrices!
+    ! original "template" matrices!
     ! (This can be used e.g. for setting up a matrix for building a defect
     !  vector without copying matrix data.)
     ! If bsharedMatrix=TRUE on the other hand, the matrix entries of the
     ! original template (B-) matrices are copied in memory,
     ! so the new matrix is allowed to be changed!
 
-    ! A t_nonlinearCCMatrix structure providing all necessary 'source' information
+    ! A t_nonlinearCCMatrix structure providing all necessary "source" information
     ! about how to set up the matrix.
     type(t_nonlinearCCMatrix), intent(in) :: rnonlinearCCMatrix
 
@@ -1709,7 +1709,7 @@ contains
                                     idubStructure,idubContent)
       
       ! Now, prepare D1 and D2. These matrices always share
-      ! their data with the 'template' matrices as the data in these
+      ! their data with the "template" matrices as the data in these
       ! matrices is usually not overwritten by boundary conditions.
       ! Check the flag bvirtualTransposedD; this decides on whether Di are
       ! created as virtually transposed B-matrices or by taking the D-matrices.
@@ -1738,7 +1738,7 @@ contains
     ! Initialises the pressure matrix with entries from
     ! the rnonlinearCCMatrix structure.
 
-    ! A t_nonlinearCCMatrix structure providing all necessary 'source' information
+    ! A t_nonlinearCCMatrix structure providing all necessary "source" information
     ! about how to set up the matrix.
     type(t_nonlinearCCMatrix), intent(in) :: rnonlinearCCMatrix
 
@@ -1780,7 +1780,7 @@ contains
   ! The routine will not include any boundary conditions in the defect.
 !</description>
 
-  ! A t_nonlinearCCMatrix structure providing all necessary 'source' information
+  ! A t_nonlinearCCMatrix structure providing all necessary "source" information
   ! about how to set up the matrix.
   !
   ! The caller must provide either p_rmatrixTemplateXXXX in this structure
@@ -1789,13 +1789,13 @@ contains
   ! of the matrix.
   type(t_nonlinearCCMatrix), intent(in) :: rnonlinearCCMatrix
 
-  ! This vector specifies the 'x' that is multiplied to the matrix.
+  ! This vector specifies the "x" that is multiplied to the matrix.
   type(t_vectorBlock), intent(in), target :: rx
 
-  ! Multiplication factor in front of the term 'A(ry) rx'.
+  ! Multiplication factor in front of the term "A(ry) rx".
   real(DP), intent(in) :: dcx
 
-  ! Multiplication factor in front of the term 'rd'.
+  ! Multiplication factor in front of the term "rd".
   real(DP), intent(in) :: dcd
 
   ! Standard problem structure that defines all underlying parameters.
@@ -1917,7 +1917,7 @@ contains
     ! itop..itop+1 in the velocity vector. rdefect must have been initialised
     ! with the right hand side vector.
     !
-    ! With a matrix 'A' of the theoretical form
+    ! With a matrix "A" of the theoretical form
     !
     !       A := dalpha*M + dtheta*Laplace + dgamma*N(p_rvector) +
     !            dnewton*N*(p_rvector)
@@ -1926,7 +1926,7 @@ contains
     !
     !       rdefect = rdefect - c A rvector
     
-    ! A t_nonlinearCCMatrix structure providing all necessary 'source' information
+    ! A t_nonlinearCCMatrix structure providing all necessary "source" information
     ! about how to set up the matrix.
     type(t_nonlinearCCMatrix), intent(in) :: rnonlinearCCMatrix
 
