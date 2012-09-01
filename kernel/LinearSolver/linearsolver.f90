@@ -2317,6 +2317,10 @@ module linearsolver
     ! =-1: niterations equals to ikrylowDim, the dimension of the Krylow space.
     integer :: niterations = -1
     
+    ! A pointer to a filter chain, as this solver supports filtering.
+    ! The filter chain must be configured for being applied to defect vectors.
+    type(t_filterChain), dimension(:),pointer      :: p_RfilterChain => null()
+    
     !<!-- ----------------------------------------------------------------------
     ! OPTIONAL parameters.
     ! May be initialised by the user in case of special situations
@@ -15950,7 +15954,7 @@ contains
   integer :: ite,ilev,nlmax,i,j,nblocks
   real(DP) :: dres,dstep
   logical :: bsort
-  type(t_filterChain), dimension(:), pointer :: p_RfilterChain,p_RfilterChainLower
+  type(t_filterChain), dimension(:), pointer :: p_RfilterChain,p_RfilterChainCoarse
   type(t_timer) :: rtimer
   
   ! The queue saves the current residual and the two previous residuals.
@@ -16135,9 +16139,9 @@ contains
         if (.not. associated(p_RfilterChain)) &
           p_RfilterChain => p_rsubnode%p_RfilterChain
         
-        p_RfilterChainLower => p_rlowerLevel%p_RfilterChain
-        if (.not. associated(p_RfilterChainLower)) &
-          p_RfilterChainLower => p_rsubnode%p_RfilterChain
+        p_RfilterChainCoarse => p_rlowerLevel%p_RfilterChain
+        if (.not. associated(p_RfilterChainCoarse)) &
+          p_RfilterChainCoarse => p_rsubnode%p_RfilterChain
 
         ! On the current (max.) level we set ncycles to 1.
         p_rcurrentLevel%ncycles = 1
@@ -16351,7 +16355,7 @@ contains
                 ! Apply the filter chain (e.g. to implement boundary conditions)
                 ! on just calculated right hand side
                 ! (which is a defect vector against the 0-vector).
-                if (associated(p_RfilterChainLower)) then
+                if (associated(p_RfilterChainCoarse)) then
                   ! clear and start timer
                   call stat_clearTimer(rtimer)
                   call stat_startTimer(rtimer)
@@ -16360,7 +16364,7 @@ contains
                   ! We are in "unsorted" state; applying the filter here is
                   ! supposed to be a bit faster...
                   call filter_applyFilterChainVec (p_rlowerLevel%rrhsVector, &
-                                                   p_RfilterChainLower)
+                                                   p_RfilterChainCoarse)
                   
                   ! stop timer and update filtering time
                   call stat_stopTimer(rtimer)
@@ -16445,7 +16449,7 @@ contains
                 ! Apply the filter chain (e.g. to implement boundary conditions)
                 ! on just calculated right hand side
                 ! (which is a defect vector against the 0-vector).
-                if (associated(p_RfilterChainLower)) then
+                if (associated(p_RfilterChainCoarse)) then
                   ! clear and start timer
                   call stat_clearTimer(rtimer)
                   call stat_startTimer(rtimer)
@@ -16454,7 +16458,7 @@ contains
                   ! We are in "unsorted" state; applying the filter here is
                   ! supposed to be a bit faster...
                   call filter_applyFilterChainVec (p_rlowerLevel%rsolutionVector, &
-                                                   p_RfilterChainLower)
+                                                   p_RfilterChainCoarse)
                   
                   ! stop timer and update filtering time
                   call stat_stopTimer(rtimer)
@@ -16513,9 +16517,9 @@ contains
                 p_RfilterChain => p_rsubnode%p_RfilterChain
               
               if (ilev .ne. 1) then
-                p_RfilterChainLower => p_rlowerLevel%p_RfilterChain
-                if (.not. associated(p_RfilterChainLower)) &
-                  p_RfilterChainLower => p_rsubnode%p_RfilterChain
+                p_RfilterChainCoarse => p_rlowerLevel%p_RfilterChain
+                if (.not. associated(p_RfilterChainCoarse)) &
+                  p_RfilterChainCoarse => p_rsubnode%p_RfilterChain
               end if
               
               ! If we are not on the lowest level, repeat the smoothing of
@@ -16574,9 +16578,9 @@ contains
               if (.not. associated(p_RfilterChain)) &
                 p_RfilterChain => p_rsubnode%p_RfilterChain
               
-              p_RfilterChainLower => p_rlowerLevel%p_RfilterChain
-              if (.not. associated(p_RfilterChainLower)) &
-                p_RfilterChainLower => p_rsubnode%p_RfilterChain
+              p_RfilterChainCoarse => p_rlowerLevel%p_RfilterChain
+              if (.not. associated(p_RfilterChainCoarse)) &
+                p_RfilterChainCoarse => p_rsubnode%p_RfilterChain
               
               ! Prolongate the solution vector from the coarser level
               ! to the temp vector on the finer level.
@@ -19019,7 +19023,7 @@ contains
 
     ! local variables
     type(t_linsolDeflGMRESLevelInfo), pointer :: p_rlevelInfo
-    type(t_linsolDeflGMRESLevelInfo), pointer :: p_rlevelInfoBelow
+    type(t_linsolDeflGMRESLevelInfo), pointer :: p_rlevelInfoCoarse
     type(t_linsolSubnodeDeflGMRES), pointer :: p_rsubnode
     type(t_linsolNode), pointer :: p_rprecSubnode
     integer :: nminIterations,nmaxIterations,nlmax
@@ -19042,21 +19046,21 @@ contains
     integer :: niteResOutput, idim, hDq
     
     ! Whether to filter/precondition, apply Gram-Schmidt twice
-    logical bprec,bfilter,btwiceGS
+    logical bprec,btwiceGS
     
     ! Pointers to temporary vectors - named for easier access
     type(t_vectorBlock), pointer :: p_rtempVector,p_rdefTempVector
     type(t_vectorBlock), dimension(:), pointer :: p_rv, p_rz
-    type(t_filterChain), dimension(:), pointer :: p_RfilterChain
+    type(t_filterChain), dimension(:), pointer :: p_RfilterChain,p_RfilterChainCoarse
     
     ! Get pointers to the current level and the GMRES parameters
     p_rsubnode => rsolverNode%p_rsubnodeDeflGMRES
     p_rlevelInfo => rsolverNode%p_rsubnodeDeflGMRES%p_RlevelInfo(ilevel)
     
-    nullify(p_rlevelInfoBelow)
+    nullify(p_rlevelInfoCoarse)
     if (ilevel .gt. 1) then
       ! The lower level
-      p_rlevelInfoBelow => rsolverNode%p_rsubnodeDeflGMRES%p_RlevelInfo(ilevel-1)
+      p_rlevelInfoCoarse => rsolverNode%p_rsubnodeDeflGMRES%p_RlevelInfo(ilevel-1)
     end if
     
     ! On the maximum level, apply as many iterations as configured in the
@@ -19091,7 +19095,6 @@ contains
 
     ! Use preconditioning? Filtering?
     bprec = associated(p_rlevelInfo%p_rpreconditioner)
-    bfilter = associated(p_rsubnode%p_RfilterChain)
     
     ! Apply Gram-Schmidt twice?
     btwiceGS = p_rsubnode%btwiceGS
@@ -19156,15 +19159,21 @@ contains
       p_rprecSubnode => p_rlevelInfo%p_rpreconditioner
     end if
     
-    if (bfilter) then
-      p_RfilterChain => p_rsubnode%p_RfilterChain
+    p_RfilterChain => p_rlevelInfo%p_RfilterChain
+    if (.not. associated(p_RfilterChain)) &
+        p_RfilterChain => p_rsubnode%p_RfilterChain
+
+    if (ilevel .gt. 1) then
+      p_RfilterChainCoarse => p_rlevelInfoCoarse%p_RfilterChain
+      if (.not. associated(p_RfilterChainCoarse)) &
+          p_RfilterChainCoarse => p_rsubnode%p_RfilterChain
     end if
     
     ! Copy our RHS to p_rv(1). As the iteration vector is 0, this
     ! is also our initial defect.
     call lsysbl_copyVector(rb,p_rv(1))
 
-    if (bfilter) then
+    if (associated(p_RfilterChain)) then
       call filter_applyFilterChainVec (p_rv(1), p_RfilterChain)
     end if
     
@@ -19234,7 +19243,7 @@ contains
         call lsysbl_copyVector (p_rv(i), p_rz(i))
         
         ! Apply deflation preconditioning to z(i)
-        if (associated(p_rlevelInfoBelow)) then
+        if (associated(p_rlevelInfoCoarse)) then
         
           ! Calculate z = (A P z  -  drelax lambda_max v(i))
           ! in the temp vector
@@ -19251,29 +19260,29 @@ contains
               1.0_DP, -p_rsubnode%drelax*p_rlevelInfo%dmaxEigenvalue)
 
           ! Apply the filter chain
-          if (bfilter) then
-            call filter_applyFilterChainVec (p_rtempVector, p_rsubnode%p_RfilterChain)
+          if (associated(p_RfilterChain)) then
+            call filter_applyFilterChainVec (p_rtempVector, p_RfilterChain)
           end if
           
           ! Restriction to the RHS of the lower level
           call mlprj_performRestriction (p_rlevelInfo%p_rprojection,&
-                p_rlevelInfoBelow%rrhsVector, &
+                p_rlevelInfoCoarse%rrhsVector, &
                 p_rtempVector, &
                 p_rsubnode%rprjTempVector)
 
           ! Apply the filter chain to the new RHS
-          if (bfilter) then
-            call filter_applyFilterChainVec (p_rlevelInfoBelow%rrhsVector, p_rsubnode%p_RfilterChain)
+          if (associated(p_RfilterChainCoarse)) then
+            call filter_applyFilterChainVec (p_rlevelInfoCoarse%rrhsVector, p_RfilterChainCoarse)
           end if
           
           ! Preconditioning on the lower level
-          call lsysbl_clearVector (p_rlevelInfoBelow%rsolutionVector)
+          call lsysbl_clearVector (p_rlevelInfoCoarse%rsolutionVector)
           call linsol_precDeflGMRES_recright (rsolverNode,ilevel-1,&
-              p_rlevelInfoBelow%rsolutionVector,p_rlevelInfoBelow%rrhsVector)
+              p_rlevelInfoCoarse%rsolutionVector,p_rlevelInfoCoarse%rrhsVector)
 
           ! Prolongation to our current level: t = I(...)
           call mlprj_performProlongation (p_rlevelInfo%p_rprojection,&
-                p_rlevelInfoBelow%rsolutionVector, &
+                p_rlevelInfoCoarse%rsolutionVector, &
                 p_rtempVector, &
                 p_rsubnode%rprjTempVector)
 
@@ -19283,7 +19292,7 @@ contains
         end if
         
         ! Apply filter chain to z(i)
-        if (bfilter) then
+        if (associated(p_RfilterChain)) then
           call filter_applyFilterChainVec (p_rz(i), p_RfilterChain)
         end if
         
@@ -19299,7 +19308,7 @@ contains
         
         call lsysbl_blockMatVec (p_rmatrix, p_rdefTempVector, p_rv(i+1), 1.0_DP, 0.0_DP)
 
-        if (bfilter) then
+        if (associated(p_RfilterChain)) then
           call filter_applyFilterChainVec (p_rv(i+1), p_RfilterChain)
         end if
         
@@ -19472,7 +19481,7 @@ contains
       call lsysbl_blockMatVec(p_rmatrix, p_rdefTempVector, p_rv(1), -1.0_DP, 1.0_DP)
 
       ! Call filter chain if given.
-      if (bfilter) then
+      if (associated(p_RfilterChain)) then
         call filter_applyFilterChainVec (p_rv(1), p_RfilterChain)
       end if
       
@@ -19678,7 +19687,7 @@ contains
 
     ! local variables
     type(t_linsolDeflGMRESLevelInfo), pointer :: p_rlevelInfo
-    type(t_linsolDeflGMRESLevelInfo), pointer :: p_rlevelInfoBelow
+    type(t_linsolDeflGMRESLevelInfo), pointer :: p_rlevelInfoCoarse
     type(t_linsolSubnodeDeflGMRES), pointer :: p_rsubnode
     type(t_linsolNode), pointer :: p_rprecSubnode
     integer :: nminIterations,nmaxIterations,nlmax
@@ -19701,21 +19710,21 @@ contains
     integer :: niteResOutput, idim, hDq
     
     ! Whether to filter/precondition, apply Gram-Schmidt twice
-    logical bprec,bfilter,btwiceGS
+    logical bprec,btwiceGS
     
     ! Pointers to temporary vectors - named for easier access
     type(t_vectorBlock), pointer :: p_rtempVector,p_rdefTempVector,p_ractualRHS
     type(t_vectorBlock), dimension(:), pointer :: p_rv, p_rz
-    type(t_filterChain), dimension(:), pointer :: p_RfilterChain
+    type(t_filterChain), dimension(:), pointer :: p_RfilterChain,p_RfilterChainCoarse
     
     ! Get pointers to the current level and the GMRES parameters
     p_rsubnode => rsolverNode%p_rsubnodeDeflGMRES
     p_rlevelInfo => rsolverNode%p_rsubnodeDeflGMRES%p_RlevelInfo(ilevel)
     
-    nullify(p_rlevelInfoBelow)
+    nullify(p_rlevelInfoCoarse)
     if (ilevel .gt. 1) then
       ! The lower level
-      p_rlevelInfoBelow => rsolverNode%p_rsubnodeDeflGMRES%p_RlevelInfo(ilevel-1)
+      p_rlevelInfoCoarse => rsolverNode%p_rsubnodeDeflGMRES%p_RlevelInfo(ilevel-1)
     end if
     
     ! On the maximum level, apply as many iterations as configured in the
@@ -19750,7 +19759,6 @@ contains
 
     ! Use preconditioning? Filtering?
     bprec = associated(p_rlevelInfo%p_rpreconditioner)
-    bfilter = associated(p_rsubnode%p_RfilterChain)
     
     ! Apply Gram-Schmidt twice?
     btwiceGS = p_rsubnode%btwiceGS
@@ -19815,8 +19823,14 @@ contains
       p_rprecSubnode => p_rlevelInfo%p_rpreconditioner
     end if
     
-    if (bfilter) then
-      p_RfilterChain => p_rsubnode%p_RfilterChain
+    p_RfilterChain => p_rlevelInfo%p_RfilterChain
+    if (.not. associated(p_RfilterChain)) &
+        p_RfilterChain => p_rsubnode%p_RfilterChain
+
+    if (ilevel .gt. 1) then
+      p_RfilterChainCoarse => p_rlevelInfoCoarse%p_RfilterChain
+      if (.not. associated(p_RfilterChainCoarse)) &
+          p_RfilterChainCoarse => p_rsubnode%p_RfilterChain
     end if
     
     ! ---------------------------------------------------------------
@@ -19848,7 +19862,7 @@ contains
     ! is also our initial defect.
     call lsysbl_copyVector(p_ractualRHS,p_rv(1))
 
-    if (bfilter) then
+    if (associated(p_RfilterChain)) then
       call filter_applyFilterChainVec (p_rv(1), p_RfilterChain)
     end if
     
@@ -19918,7 +19932,7 @@ contains
         call lsysbl_copyVector (p_rv(i), p_rz(i))
         
         ! Apply deflation preconditioning to z(i)
-        if (associated(p_rlevelInfoBelow)) then
+        if (associated(p_rlevelInfoCoarse)) then
         
           ! Calculate z = (P A z  -  drelax lambda_max v(i))
           ! in the temp vector
@@ -19937,29 +19951,29 @@ contains
               1.0_DP, -p_rsubnode%drelax*p_rlevelInfo%dmaxEigenvalue)
 
           ! Apply the filter chain
-          if (bfilter) then
-            call filter_applyFilterChainVec (p_rtempVector, p_rsubnode%p_RfilterChain)
+          if (associated(p_RfilterChain)) then
+            call filter_applyFilterChainVec (p_rtempVector, p_RfilterChain)
           end if
           
           ! Restriction to the RHS of the lower level
           call mlprj_performRestriction (p_rlevelInfo%p_rprojection,&
-                p_rlevelInfoBelow%rrhsVector, &
+                p_rlevelInfoCoarse%rrhsVector, &
                 p_rtempVector, &
                 p_rsubnode%rprjTempVector)
 
           ! Apply the filter chain to the new RHS
-          if (bfilter) then
-            call filter_applyFilterChainVec (p_rlevelInfoBelow%rrhsVector, p_rsubnode%p_RfilterChain)
+          if (associated(p_RfilterChainCoarse)) then
+            call filter_applyFilterChainVec (p_rlevelInfoCoarse%rrhsVector, p_RfilterChainCoarse)
           end if
           
           ! Preconditioning on the lower level
-          call lsysbl_clearVector (p_rlevelInfoBelow%rsolutionVector)
+          call lsysbl_clearVector (p_rlevelInfoCoarse%rsolutionVector)
           call linsol_precDeflGMRES_recleft (rsolverNode,ilevel-1,&
-              p_rlevelInfoBelow%rsolutionVector,p_rlevelInfoBelow%rrhsVector)
+              p_rlevelInfoCoarse%rsolutionVector,p_rlevelInfoCoarse%rrhsVector)
 
           ! Prolongation to our current level: t = I(...)
           call mlprj_performProlongation (p_rlevelInfo%p_rprojection,&
-                p_rlevelInfoBelow%rsolutionVector, &
+                p_rlevelInfoCoarse%rsolutionVector, &
                 p_rtempVector, &
                 p_rsubnode%rprjTempVector)
 
@@ -19969,7 +19983,7 @@ contains
         end if
         
         ! Apply filter chain to z(i)
-        if (bfilter) then
+        if (associated(p_RfilterChain)) then
           call filter_applyFilterChainVec (p_rz(i), p_RfilterChain)
         end if
         
@@ -19984,7 +19998,7 @@ contains
               p_rlevelInfo%p_rpreconditioner,p_rv(i+1))
         end if
 
-        if (bfilter) then
+        if (associated(p_RfilterChain)) then
           call filter_applyFilterChainVec (p_rv(i+1), p_RfilterChain)
         end if
         
@@ -20157,7 +20171,7 @@ contains
       call lsysbl_vectorLinearComb(p_rdefTempVector, p_rv(1), -1.0_DP, 1.0_DP)
 
       ! Call filter chain if given.
-      if (bfilter) then
+      if (associated(p_RfilterChain)) then
         call filter_applyFilterChainVec (p_rv(1), p_RfilterChain)
       end if
       
