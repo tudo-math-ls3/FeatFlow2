@@ -965,9 +965,8 @@ contains
     integer :: iblock,jblock,i,icp
     logical :: boffdiagSubmatrix
     type(t_discreteBCEntry), dimension(:), pointer :: p_RdiscreteBCEntry
-    type(t_discreteBC), pointer :: p_rdiscreteBC
 
-    nullify(p_rdiscreteBC)
+    nullify(p_RdiscreteBCEntry)
     if (.not. present(rdiscreteBC)) then
       ! Grab the boundary condition entry list from the matrix. This
       ! is a list of all discretised boundary conditions in the system.
