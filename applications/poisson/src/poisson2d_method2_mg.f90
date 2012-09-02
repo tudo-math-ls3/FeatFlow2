@@ -81,8 +81,8 @@ module poisson2d_method2_mg
     ! A filter chain to filter the vectors and the matrix during the
     ! solution process.
     type(t_filterChain), dimension(1) :: RfilterChain
-    
-    ! Number of filters in the filter chain
+
+    ! Number of filters in the filter chain.
     integer :: nfilters
 
   end type
@@ -415,6 +415,14 @@ contains
     ! Clear the solution vector on the finest level.
     call lsysbl_clearVector(rproblem%rvector)
     
+    ! Install the resorting strategy in the RHS- and the solution
+    ! vector, but do not resort them yet!
+    ! We resort the vectors just before solving.
+    call lsysbl_setSortStrategy (p_rrhs,&
+        rproblem%RlevelInfo(rproblem%ilvmax)%rsortStrategy)
+    call lsysbl_setSortStrategy (p_rvector,&
+        rproblem%RlevelInfo(rproblem%ilvmax)%rsortStrategy)
+
   end subroutine
 
   ! ***************************************************************************
@@ -533,9 +541,10 @@ contains
     ilvmax = rproblem%ilvmax
     p_rrhs    => rproblem%rrhs
     p_rvector => rproblem%rvector
-    
-    p_rdiscreteBC => rproblem%RlevelInfo(rproblem%ilvmax)%rdiscreteBC
-    
+
+    ! Get the BCs    
+    p_rdiscreteBC => rproblem%RlevelInfo(ilvmax)%rdiscreteBC
+
     ! Next step is to implement boundary conditions into the RHS,
     ! solution and matrix. This is done using a vector/matrix filter
     ! for discrete boundary conditions.
@@ -604,7 +613,7 @@ contains
     p_rmatrix => rproblem%RlevelInfo(ilvmax)%rmatrix
     
     ! Create a temporary vector we need that for some preparation.
-    call lsysbl_createVecBlockIndirect (p_rrhs, rvecTmp, .false.)
+    call lsysbl_createVectorBlock (p_rrhs, rvecTmp, .false.)
     
     ! Resort the RHS and solution vector according to the resorting
     ! strategy given in the matrix.
@@ -618,32 +627,21 @@ contains
     call lsysbl_synchroniseSort(p_rmatrix,p_rrhs,rvecTmp%RvectorBlock(1))
     call lsysbl_synchroniseSort(p_rmatrix,p_rvector,rvecTmp%RvectorBlock(1))
     
-    ! During the linear solver, the boundary conditions must
-    ! frequently be imposed to the vectors. This is done using
-    ! a filter chain. As the linear solver does not work with
-    ! the actual solution vectors but with defect vectors instead,
-    ! a filter for implementing the real boundary conditions
-    ! would be wrong.
-    ! Therefore, create a filter chain with one filter only,
-    ! which implements Dirichlet-conditions into a defect vector.
-    call filter_clearFilterChain (&
-        rproblem%RlevelInfo(ilvmax)%RfilterChain,&
-        rproblem%RlevelInfo(ilvmax)%nfilters)
-    call filter_newFilterDiscBCDef (&
-        rproblem%RlevelInfo(ilvmax)%RfilterChain,&
-        rproblem%RlevelInfo(ilvmax)%nfilters,&
-        rproblem%RlevelInfo(ilvmax)%rdiscreteBC)
-
     ! Now we have to build up the level information for multigrid.
     !
     ! Create a Multigrid-solver. Attach the above filter chain
     ! to the solver, so that the solver automatically filters
     ! the vector during the solution process.
-    call linsol_initMultigrid2 (p_rsolverNode,ilvmax-ilvmin+1,&
-        rproblem%RlevelInfo(ilvmax)%RfilterChain)
+    call linsol_initMultigrid2 (p_rsolverNode,ilvmax-ilvmin+1)
     
     ! Then set up smoothers / coarse grid solver:
     do i=ilvmin,ilvmax
+    
+      ! Set up a filter chain for implementing boundary conditions on that level
+      call filter_clearFilterChain (rproblem%RlevelInfo(i)%RfilterChain,&
+          rproblem%RlevelInfo(i)%nfilters)
+      call filter_newFilterDiscBCDef (rproblem%RlevelInfo(i)%RfilterChain,&
+          rproblem%RlevelInfo(i)%nfilters,rproblem%RlevelInfo(i)%rdiscreteBC)
       
       ! On the coarsest grid, set up a coarse grid solver and no smoother
       ! On finer grids, set up a smoother but no coarse grid solver.
@@ -668,7 +666,7 @@ contains
         ! CALL linsol_initJacobi (p_rsmoother)
         
         ! Setting up VANCA smoother for multigrid would be:
-        ! CALL linsol_initVANCA (p_rsmoother)
+        ! CALL linsol_initVANKA (p_rsmoother)
 
         ! Set up an ILU smoother for multigrid with damping parameter 0.7,
         ! 4 smoothing steps:

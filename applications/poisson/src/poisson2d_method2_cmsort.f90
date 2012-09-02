@@ -61,8 +61,7 @@ module poisson2d_method2_cmsort
     ! An object for saving the triangulation on the domain
     type(t_triangulation) :: rtriangulation
 
-    ! An object specifying the discretisation (structure of the
-    ! solution, trial/test functions,...)
+    ! An object specifying the discretisation (trial/test functions,...)
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
 
     ! Cubature info structure which encapsules the cubature formula
@@ -75,10 +74,17 @@ module poisson2d_method2_cmsort
 
     ! A variable describing the discrete boundary conditions.
     type(t_discreteBC) :: rdiscreteBC
+  
+    ! A filter chain to filter the vectors and the matrix during the
+    ! solution process.
+    type(t_filterChain), dimension(1) :: RfilterChain
+
+    ! Number of filters in the filter chain.
+    integer :: nfilters
     
     ! Sorting strategy for resorting vectors/matrices.
     type(t_blockSortStrategy) :: rsortStrategy
-  
+
   end type
   
 !</typeblock>
@@ -106,7 +112,7 @@ module poisson2d_method2_cmsort
     ! problem-dependent information which is e.g. passed to
     ! callback routines.
     type(t_collection) :: rcollection
-    
+
   end type
 
 !</typeblock>
@@ -160,12 +166,12 @@ contains
         trim(spredir)//"/QUAD.tri", rproblem%rboundary)
     
     ! Refine it.
-    call tria_quickRefine2LevelOrdering (rproblem%NLMAX-1,&
+    call tria_quickRefine2LevelOrdering (rproblem%NLMAX-1, &
         rproblem%RlevelInfo(1)%rtriangulation,rproblem%rboundary)
     
     ! And create information about adjacencies and everything one needs from
     ! a triangulation.
-    call tria_initStandardMeshFromRaw (rproblem%RlevelInfo(1)%rtriangulation,&
+    call tria_initStandardMeshFromRaw (rproblem%RlevelInfo(1)%rtriangulation, &
         rproblem%rboundary)
     
   end subroutine
@@ -339,7 +345,7 @@ contains
     call lsysbl_createVectorBlock (p_rdiscretisation,p_rrhs,.true.)
     call lsysbl_createVectorBlock (p_rdiscretisation,p_rvector,.true.)
 
-    ! The vector structure is done but the entries are missing.
+    ! The vector structure is ready but the entries are missing.
     ! So the next thing is to calculate the content of that vector.
     !
     ! At first set up the corresponding linear form (f,Phi_j):
@@ -471,13 +477,13 @@ contains
 
     ! local variables
   
-    ! Pointer to structure for saving discrete BC`s:
-    type(t_discreteBC), pointer :: p_rdiscreteBC
-
     ! A pointer to the system matrix and the RHS vector as well as
     ! the discretisation
     type(t_matrixBlock), pointer :: p_rmatrix
     type(t_vectorBlock), pointer :: p_rrhs,p_rvector
+
+    ! Pointer to structure for saving discrete BC`s:
+    type(t_discreteBC), pointer :: p_rdiscreteBC
 
     ! Get our matrix and right hand side from the problem structure.
     p_rrhs    => rproblem%RlevelInfo(1)%rrhs
@@ -518,13 +524,6 @@ contains
     ! Error indicator during initialisation of the solver
     integer :: ierror
   
-    ! A filter chain to filter the vectors and the matrix during the
-    ! solution process.
-    type(t_filterChain), dimension(1), target :: RfilterChain
-    
-    ! Number of filters in the filter chain
-    integer :: nfilters
-
     ! A pointer to the system matrix and the RHS vector as well as
     ! the discretisation
     type(t_matrixBlock), pointer :: p_rmatrix
@@ -562,8 +561,10 @@ contains
 
     p_rdiscreteBC => rproblem%RlevelInfo(1)%rdiscreteBC
 
-    call filter_clearFilterChain (RfilterChain,nfilters)
-    call filter_newFilterDiscBCDef (RfilterChain,nfilters,p_rdiscreteBC)
+    call filter_clearFilterChain (rproblem%RlevelInfo(1)%RfilterChain,&
+        rproblem%RlevelInfo(1)%nfilters)
+    call filter_newFilterDiscBCDef (rproblem%RlevelInfo(1)%RfilterChain,&
+        rproblem%RlevelInfo(1)%nfilters,rproblem%RlevelInfo(1)%rdiscreteBC)
 
     ! Create a BiCGStab-solver. Attach the above filter chain
     ! to the solver, so that the solver automatically filters
@@ -574,7 +575,8 @@ contains
     call linsol_initMILUs1x1 (p_rpreconditioner,0,0.0_DP)
     
     ! Then initialise the solver and use the above preconditioner.
-    call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,RfilterChain)
+    call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,&
+        rproblem%RlevelInfo(1)%RfilterChain)
     
     ! Set the output level of the solver to 2 for some output
     p_rsolverNode%ioutputLevel = 2
@@ -585,18 +587,26 @@ contains
     ! Initialise structure/data of the solver. This allows the
     ! solver to allocate memory / perform some precalculation
     ! to the problem.
-    call linsol_initStructure (p_rsolverNode,ierror)
-    if (ierror .ne. LINSOL_ERR_NOERROR) stop
-    call linsol_initData (p_rsolverNode,ierror)
-    if (ierror .ne. LINSOL_ERR_NOERROR) stop
+    call linsol_initStructure (p_rsolverNode, ierror)
+    
+    if (ierror .ne. LINSOL_ERR_NOERROR) then
+      call output_line("Matrix structure invalid!",OU_CLASS_ERROR)
+      call sys_halt()
+    end if
+
+    call linsol_initData (p_rsolverNode, ierror)
+    
+    if (ierror .ne. LINSOL_ERR_NOERROR) then
+      call output_line("Matrix singular!",OU_CLASS_ERROR)
+      call sys_halt()
+    end if
     
     ! Finally solve the system. As we want to solve Ax=b with
     ! b being the real RHS and x being the real solution vector,
     ! we use linsol_solveAdaptively. If b is a defect
     ! RHS and x a defect update to be added to a solution vector,
     ! we would have to use linsol_precondDefect instead.
-    call linsol_solveAdaptively (p_rsolverNode,&
-                                 p_rvector,p_rrhs,rvecTmp)
+    call linsol_solveAdaptively (p_rsolverNode,p_rvector,p_rrhs,rvecTmp)
     
     ! Release solver data and structure
     call linsol_doneData (p_rsolverNode)
@@ -681,11 +691,11 @@ contains
     
     ! Calculate the error to the reference function.
     call pperr_scalar (PPERR_L2ERROR,derror,p_rvector%RvectorBlock(1),&
-                       getReferenceFunction_2D,rcubatureInfo=p_rcubatureInfo)
+                       getReferenceFunction_2D, rcubatureInfo=p_rcubatureInfo)
     call output_line ("L2-error: " // sys_sdEL(derror,10) )
 
     call pperr_scalar (PPERR_H1ERROR,derror,p_rvector%RvectorBlock(1),&
-                       getReferenceFunction_2D,rcubatureInfo=p_rcubatureInfo)
+                       getReferenceFunction_2D, rcubatureInfo=p_rcubatureInfo)
     call output_line ("H1-error: " // sys_sdEL(derror,10) )
     
   end subroutine
@@ -832,6 +842,7 @@ contains
     
     ! Ok, let us start.
     ! We want to solve our Poisson problem on level...
+
     NLMAX = 7
     
     ! Initialise the collection.

@@ -68,6 +68,13 @@ module poisson2d_method2
     ! A variable describing the discrete boundary conditions.
     type(t_discreteBC) :: rdiscreteBC
   
+    ! A filter chain to filter the vectors and the matrix during the
+    ! solution process.
+    type(t_filterChain), dimension(1) :: RfilterChain
+
+    ! Number of filters in the filter chain.
+    integer :: nfilters
+
   end type
   
 !</typeblock>
@@ -142,7 +149,6 @@ contains
 
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
-    ! Set rboundary to NULL() to create a new structure.
     call boundary_read_prm(rproblem%rboundary, trim(spredir)//"/QUAD.prm")
         
     ! Now read in the basic triangulation.
@@ -205,7 +211,7 @@ contains
     call spdiscr_initBlockDiscr (p_rdiscretisation,1,&
                                  p_rtriangulation, rboundary)
                                    
-    ! SAve the discretisation structure to our local LevelInfo structure
+    ! Save the discretisation structure to our local LevelInfo structure
     ! for later use.
     rproblem%RlevelInfo(1)%p_rdiscretisation => p_rdiscretisation
 
@@ -286,8 +292,8 @@ contains
     ! We create that directly in the block (1,1) of the block matrix
     ! using the discretisation structure of the first block.
     call bilf_createMatrixStructure (&
-              p_rdiscretisation%RspatialDiscr(1),LSYSSC_MATRIX9,&
-              p_rmatrix%RmatrixBlock(1,1))
+        p_rdiscretisation%RspatialDiscr(1),LSYSSC_MATRIX9,&
+        p_rmatrix%RmatrixBlock(1,1))
     
     ! And now to the entries of the matrix. For assembling of the entries,
     ! we need a bilinear form, which first has to be set up manually.
@@ -316,7 +322,7 @@ contains
     ! so the callback routine has access to everything what is
     ! in the collection.
     call bilf_buildMatrixScalar (rform,.true.,&
-        p_rmatrix%RmatrixBlock(1,1),p_rcubatureInfo,rcollection=rproblem%rcollection)
+        p_rmatrix%RmatrixBlock(1,1),p_rcubatureInfo)
     
     ! Next step: Create a RHS vector and a solution vector and a temporary
     ! vector. All are filled with zero.
@@ -376,7 +382,7 @@ contains
     p_rvector => rproblem%RlevelInfo(1)%rvector
     p_rmatrix => rproblem%RlevelInfo(1)%rmatrix
     
-    ! From the matrix or the RHS we have access to the discretisation
+    ! From the matrix or the RHS we have access to the discretisation and the
     ! boundary conditions.
     p_rdiscretisation => p_rmatrix%p_rblockDiscrTest
     
@@ -444,7 +450,7 @@ contains
 
 !</subroutine>
 
-  ! local variables
+    ! local variables
   
     ! A pointer to the system matrix and the RHS vector as well as
     ! the discretisation
@@ -493,13 +499,6 @@ contains
     ! Error indicator during initialisation of the solver
     integer :: ierror
   
-    ! A filter chain to filter the vectors and the matrix during the
-    ! solution process.
-    type(t_filterChain), dimension(1), target :: RfilterChain
-    
-    ! Number of filters in the filter chain
-    integer :: nfilters
-
     ! A pointer to the system matrix and the RHS vector as well as
     ! the discretisation
     type(t_matrixBlock), pointer :: p_rmatrix
@@ -531,14 +530,17 @@ contains
 
     p_rdiscreteBC => rproblem%RlevelInfo(1)%rdiscreteBC
 
-    call filter_clearFilterChain (RfilterChain,nfilters)
-    call filter_newFilterDiscBCDef (RfilterChain,nfilters,p_rdiscreteBC)
+    call filter_clearFilterChain (rproblem%RlevelInfo(1)%RfilterChain,&
+        rproblem%RlevelInfo(1)%nfilters)
+    call filter_newFilterDiscBCDef (rproblem%RlevelInfo(1)%RfilterChain,&
+        rproblem%RlevelInfo(1)%nfilters,rproblem%RlevelInfo(1)%rdiscreteBC)
 
     ! Create a BiCGStab-solver. Attach the above filter chain
     ! to the solver, so that the solver automatically filters
     ! the vector during the solution process.
     nullify(p_rpreconditioner)
-    call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,RfilterChain)
+    call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,&
+        rproblem%RlevelInfo(1)%RfilterChain)
     
     ! Set the output level of the solver to 2 for some output
     p_rsolverNode%ioutputLevel = 2
