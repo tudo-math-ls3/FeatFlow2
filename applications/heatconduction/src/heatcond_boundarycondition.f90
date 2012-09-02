@@ -59,8 +59,7 @@ contains
   subroutine hc5_initDiscreteBC (rproblem)
   
 !<description>
-  ! This calculates the discrete version of the boundary conditions and
-  ! assigns it to the system matrix and RHS vector.
+  ! This calculates the discrete version of the boundary conditions.
 !</description>
 
 !<inputoutput>
@@ -73,14 +72,8 @@ contains
     ! local variables
     integer :: i
 
-    ! A pointer to the system matrix and the RHS vector as well as
-    ! the discretisation
-    type(t_matrixBlock), pointer :: p_rmatrix
-    type(t_vectorBlock), pointer :: p_rrhs
+    ! A pointer to discretisation
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
-
-    ! Pointer to structure for saving discrete BC`s:
-    type(t_discreteBC), pointer :: p_rdiscreteBC
     
     ! A set of variables describing the analytic boundary conditions.
     type(t_boundaryRegion) :: rboundaryRegion
@@ -100,12 +93,8 @@ contains
     
     do i=rproblem%ilvmin,rproblem%ilvmax
     
-      ! Get our matrix from the problem structure.
-      p_rmatrix => rproblem%RlevelInfo(i)%rmatrix
-      
-      ! From the matrix or the RHS we have access to the discretisation and the
-      ! analytic boundary conditions.
-      p_rdiscretisation => p_rmatrix%p_rblockDiscrTrial
+      ! Get the discretisation structure of that level.
+      p_rdiscretisation => rproblem%RlevelInfo(i)%p_rdiscretisation
       
       ! For implementing boundary conditions, we use a `filter technique with
       ! discretised boundary conditions`. This means, we first have to calculate
@@ -163,43 +152,23 @@ contains
          rboundaryRegion,rproblem%RlevelInfo(i)%p_rdiscreteBC,&
          getBoundaryValues)
 
-      ! Hang the pointer into the the matrix. That way, these
-      ! boundary conditions are always connected to that matrix and that
-      ! vector.
-      p_rdiscreteBC => rproblem%RlevelInfo(i)%p_rdiscreteBC
-      
-      p_rmatrix%p_rdiscreteBC => p_rdiscreteBC
-      
     end do
     
     ! Remove the "TIME"-parameter from the collection again.
     call collct_deletevalue (rproblem%rcollection,"TIME")
 
-    ! On the finest level, attach the discrete BC also
-    ! to the solution and RHS vector. They need it to be compatible
-    ! to the matrix on the finest level.
-    p_rdiscreteBC => rproblem%RlevelInfo(rproblem%ilvmax)%p_rdiscreteBC
-    
-    p_rrhs    => rproblem%rrhs
-    p_rrhs%p_rdiscreteBC => p_rdiscreteBC
-                
   end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine hc5_implementBC (rproblem,rvector,rrhs,dtimeWeight)
+  subroutine hc5_implementBC (rproblem,rvector,rrhs)
   
 !<description>
   ! Implements boundary conditions into the RHS, a given solution vector
   ! and into the system matrices on all levels specified in rproblem.
 !</description>
-
-!<input>
-  ! Time stepping weight. Standard is 1.0.
-  real(DP) :: dtimeWeight
-!</input>
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
@@ -243,7 +212,8 @@ contains
     ! all matrices according to the attached discrete boundary conditions.
     do i=rproblem%ilvmin,rproblem%ilvmax
       p_rmatrix => rproblem%RlevelInfo(i)%rmatrix
-      call matfil_discreteBC (p_rmatrix)
+      p_rdiscreteBC => rproblem%RlevelInfo(i)%p_rdiscreteBC
+      call matfil_discreteBC (p_rmatrix,p_rdiscreteBC)
     end do
 
   end subroutine

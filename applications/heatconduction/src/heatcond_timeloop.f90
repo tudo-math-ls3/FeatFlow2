@@ -199,7 +199,7 @@ contains
           
     ! Implement boundary conditions into the RHS vector, the solution vector
     ! and the current system matrices.
-    call hc5_implementBC (rproblem,rvector,p_rrhs,1.0_DP)
+    call hc5_implementBC (rproblem,rvector,p_rrhs)
           
     ! Preparation of the linear system completed!
     !
@@ -217,7 +217,11 @@ contains
     ! solver to allocate memory / perform some precalculation
     ! to the problem.
     call linsol_initData (p_rsolverNode,ierror)
-    if (ierror .ne. LINSOL_ERR_NOERROR) stop
+
+    if (ierror .ne. LINSOL_ERR_NOERROR) then
+      call output_line("Matrix singular!",OU_CLASS_ERROR)
+      call sys_halt()
+    end if
     
     ! Synchronise p_rrhs with the matrix so it is compatible to the linear system.
     call lsysbl_synchroniseSort (p_rmatrix,p_rrhs,rtempBlock%RvectorBlock(1))

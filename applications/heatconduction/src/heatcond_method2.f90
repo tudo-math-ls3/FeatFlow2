@@ -137,6 +137,9 @@ contains
     ! boundary conditions.
     type(t_filterChain), dimension(1), target :: RfilterChain
     
+    ! Number of filters in the filter chain
+    integer :: nfilters
+    
     ! NLMAX receives the level where we want to solve.
     integer :: NLMAX
     
@@ -341,10 +344,6 @@ contains
     ! Allocate memory for a temporary matrix.
     call lsysbl_allocEmptyMatrix(rmatrixBlock,LSYSSC_SETM_ZERO)
     
-    ! Hang the pointer of the boudnary conditions into the matrix. That way, these
-    ! boundary conditions are always connected to that matrix.
-    call lsysbl_assignDiscreteBC(rmatrixBlock,rdiscreteBC)
-    
     ! To give an overview, we now have (concerning the matrices):
     !
     ! - Laplace matrix -> rmatrixLaplaceBlock
@@ -385,13 +384,6 @@ contains
     call lsysbl_createVectorBlock(rdiscretisation,rtimeRhsBlock,.false.)
     call lsysbl_createVectorBlock(rdiscretisation,rtempBlock,.false.)
     
-    ! Assign the BC`s to the vectors. That way, these
-    ! boundary conditions are always connected to that matrix and that
-    ! vector.
-    call lsysbl_assignDiscreteBC(rrhsBlock,rdiscreteBC)
-    call lsysbl_assignDiscreteBC(rvectorBlock,rdiscreteBC)
-    call lsysbl_assignDiscreteBC(rtimeRhsBlock,rdiscreteBC)
-                             
     ! To give an overview, we now have (concerning the matrices):
     !
     ! - RHS vector "f"            -> rrhs and rrhsBlock (knowing the BC`s)
@@ -408,7 +400,8 @@ contains
     ! defect vectors instead.
     ! So, set up a filter chain that filters the defect vector
     ! during the solution process to implement discrete boundary conditions.
-    RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
+    call filter_clearFilterChain (RfilterChain,nfilters)
+    call filter_newFilterDiscBCDef (RfilterChain,nfilters,rdiscreteBC)
 
     ! Create a BiCGStab-solver. Attach the above filter chain
     ! to the solver, so that the solver automatically filters
@@ -440,7 +433,7 @@ contains
     ! The discrete boundary conditions are already attached to the
     ! matrix. Call the appropriate matrix filter that modifies the
     ! matrix according to the boundary conditions.
-    call matfil_discreteBC (rmatrixBlock)
+    call matfil_discreteBC (rmatrixBlock,rdiscreteBC)
 
     ! Attach the system matrix to the solver.
     ! First create an array with the matrix data (on all levels, but we
@@ -490,8 +483,8 @@ contains
           1.0_DP/dtstep, 1.0_DP)
           
       ! Implement the boundary conditions into the RHS and into the solution vector.
-      call vecfil_discreteBCrhs (rtimeRhsBlock)
-      call vecfil_discreteBCsol (rvectorBlock)
+      call vecfil_discreteBCrhs (rtimeRhsBlock,rdiscreteBC)
+      call vecfil_discreteBCsol (rvectorBlock,rdiscreteBC)
       
       ! Solve the system for the new time step:
       !
