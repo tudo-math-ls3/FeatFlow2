@@ -725,8 +725,6 @@ contains
     type(t_nlsolNode) :: rnlSol
     integer :: ierror
     type(t_linsolNode), pointer :: p_rsolverNode
-    type(t_matrixBlock), dimension(1) :: Rmatrices
-    type(t_matrixBlock), pointer :: p_rmatrix
     
     ! For solving the problem, we need to invoke a nonlinear solver.
     ! This nonlinear solver
@@ -743,12 +741,8 @@ contains
     ! At first, set up the linear solver as usual:
     call linsol_initUMFPACK4 (p_rsolverNode)
 
-    ! Get the system matrix on the finest level...
-    p_rmatrix => rproblem%rlevelInfo%rmatrix
-
     ! And associate it to the solver
-    Rmatrices = (/p_rmatrix/)
-    call linsol_setMatrices(p_rsolverNode,Rmatrices)
+    call linsol_setMatrix(p_rsolverNode,rproblem%rlevelInfo%rmatrix)
 
     ! Initialise structure of the solver. This allows the
     ! solver to allocate memory / perform some precalculation
