@@ -364,6 +364,9 @@ contains
     call linsol_getMultigrid2Level (p_rsolverNode,1,p_rlevelInfo)
     call linsol_initUMFPACK4 (p_rlevelInfo%p_rcoarseGridSolver)
     
+    ! Attach the filter chain which imposes boundary conditions on that level.
+    p_rlevelInfo%p_RfilterChain => Rlevels(1)%RfilterChain
+
     ! Now set up the other levels...
     do i = 2, nlevels
     
