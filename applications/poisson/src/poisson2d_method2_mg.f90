@@ -217,7 +217,7 @@ contains
   integer :: I
   
     ! An object for saving the domain:
-    type(t_boundary), pointer :: rboundary
+    type(t_boundary), pointer :: p_rboundary
     
     ! An object for saving the triangulation on the domain
     type(t_triangulation), pointer :: p_rtriangulation
@@ -232,7 +232,7 @@ contains
 
       ! Ask the problem structure to give us the boundary and triangulation.
       ! We need it for the discretisation.
-      rboundary => rproblem%rboundary
+      p_rboundary => rproblem%rboundary
       p_rtriangulation => rproblem%RlevelInfo(i)%rtriangulation
       
       ! Get the cubature information structure
@@ -243,7 +243,7 @@ contains
       ! solution vector. In this simple problem, we only have one block.
       allocate(p_rdiscretisation)
       call spdiscr_initBlockDiscr (p_rdiscretisation,1,&
-                                   p_rtriangulation, rboundary)
+                                   p_rtriangulation, p_rboundary)
 
       ! Save the discretisation structure to our local LevelInfo structure
       ! for later use.
@@ -255,7 +255,7 @@ contains
       ! for this solution component:
       call spdiscr_initDiscr_simple ( &
                   p_rdiscretisation%RspatialDiscr(1), &
-                  EL_Q1,p_rtriangulation, rboundary)
+                  EL_Q1,p_rtriangulation, p_rboundary)
 
       ! Set up an cubature info structure to tell the code which cubature
       ! formula to use
@@ -263,7 +263,7 @@ contains
       ! the cubature formula to use. Standard: Gauss 3x3.
       call spdiscr_createDefCubStructure(&  
           p_rdiscretisation%RspatialDiscr(1),rproblem%RlevelInfo(i)%rcubatureInfo,&
-          CUB_GEN_AUTO_G2)
+          CUB_GEN_AUTO_G3)
 
     end do
                                    

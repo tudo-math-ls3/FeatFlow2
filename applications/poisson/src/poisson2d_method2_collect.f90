@@ -132,7 +132,7 @@ contains
   ! local variables
   
     ! An object for saving the domain:
-    type(t_boundary), pointer :: rboundary
+    type(t_boundary), pointer :: p_rboundary
     
     ! An object for saving the triangulation on the domain
     type(t_triangulation), pointer :: p_rtriangulation
@@ -145,7 +145,7 @@ contains
 
     ! Ask the collection to give us the boundary and triangulation.
     ! We need it for the discretisation.
-    rboundary => collct_getvalue_bdry(rcollection,"DOMAIN")
+    p_rboundary => collct_getvalue_bdry(rcollection,"DOMAIN")
     p_rtriangulation => collct_getvalue_tria(rcollection,"TRIA")
     
     ! Now we can start to initialise the discretisation. At first, set up
@@ -153,14 +153,14 @@ contains
     ! solution vector. In this simple problem, we only have one block.
     allocate(p_rdiscretisation)
     call spdiscr_initBlockDiscr (p_rdiscretisation,1,&
-                                 p_rtriangulation, rboundary)
+                                 p_rtriangulation, p_rboundary)
     
     ! p_rdiscretisation%Rdiscretisations is a list of scalar discretisation
     ! structures for every component of the solution vector.
     ! Initialise the first element of the list to specify the element
     ! for this solution component:
     call spdiscr_initDiscr_simple (p_rdiscretisation%RspatialDiscr(1), &
-                                   EL_Q1,p_rtriangulation, rboundary)
+                                   EL_Q1,p_rtriangulation, p_rboundary)
                                    
     ! Add the discretisation structure to the collection so that
     ! we can use it later.

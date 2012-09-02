@@ -377,7 +377,7 @@ contains
     ! Create a Multigrid-solver. Attach the above filter chain
     ! to the solver, so that the solver automatically filters
     ! the vector during the solution process.
-    call linsol_initMultigrid2 (p_rsolverNode,NLMAX-NLMIN+1,Rlevels(NLMAX)%RfilterChain)
+    call linsol_initMultigrid2 (p_rsolverNode,NLMAX-NLMIN+1)
     
     ! Set up a coarse grid solver.
     ! The coarse grid in multigrid is always grid 1!
