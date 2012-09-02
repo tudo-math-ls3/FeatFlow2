@@ -45,7 +45,7 @@
 !#
 !#  3.) dom3d_c3d0_correctMesh
 !#      -> A routine which corrects a mesh after it was refined, i.e.
-!#         which 'projects' all vertices, which belong to the cylinder onto
+!#         which "projects" all vertices, which belong to the cylinder onto
 !#         the cylinder.
 !#
 !#  3.) dom3d_c3d0_calcParProfile
@@ -338,7 +338,7 @@ contains
   
 !<description>
   ! This routine is called to correct a mesh after it has been refined, i.e.
-  ! it 'projects' all vertices which belong to the cylinder onto the cylinder.
+  ! it "projects" all vertices which belong to the cylinder onto the cylinder.
 !</description>
   
 !</inputoutput>
@@ -449,7 +449,7 @@ contains
 
     case DEFAULT
       ! Invalid region
-      print *, 'ERROR: dom3d_c3d0_calcParProfile: Invalid region'
+      print *, "ERROR: dom3d_c3d0_calcParProfile: Invalid region"
       call sys_halt()
     end select
     

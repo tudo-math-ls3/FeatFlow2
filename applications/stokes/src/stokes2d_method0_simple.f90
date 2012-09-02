@@ -119,6 +119,9 @@ contains
     ! boundary conditions.
     type(t_filterChain), dimension(1), target :: RfilterChain
     
+    ! Number of filters in the filter chain
+    integer :: nfilters
+    
     ! NLMAX receives the level where we want to solve.
     integer :: NLMAX
     
@@ -485,23 +488,15 @@ contains
 
     ! The pressure does not need boundary conditions.
 
-    ! Assign the BC`s to the vectors and the matrix. That way, these
-    ! boundary conditions are always connected to that matrix and that
-    ! vector.
-    call lsysbl_assignDiscreteBC(rmatrix,rdiscreteBC)
-    call lsysbl_assignDiscreteBC(rrhs,rdiscreteBC)
-    call lsysbl_assignDiscreteBC(rvector,rdiscreteBC)
-    call lsysbl_assignDiscreteBC(rtempBlock,rdiscreteBC)
-    
     ! Next step is to implement boundary conditions into the RHS,
     ! solution and matrix. This is done using a vector/matrix filter
     ! for discrete boundary conditions.
     ! The discrete boundary conditions are already attached to the
     ! vectors/matrix. Call the appropriate vector/matrix filter that
     ! modifies the vectors/matrix according to the boundary conditions.
-    call vecfil_discreteBCrhs (rrhs)
-    call vecfil_discreteBCsol (rvector)
-    call matfil_discreteBC (rmatrix)
+    call vecfil_discreteBCrhs (rrhs,rdiscreteBC)
+    call vecfil_discreteBCsol (rvector,rdiscreteBC)
+    call matfil_discreteBC (rmatrix,rdiscreteBC)
 
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Set up a linear solver
@@ -515,7 +510,8 @@ contains
     ! would be wrong.
     ! Therefore, create a filter chain with one filter only,
     ! which implements Dirichlet-conditions into a defect vector.
-    RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
+    call filter_clearFilterChain (RfilterChain,nfilters)
+    call filter_newFilterDiscBCDef (RfilterChain,nfilters,rdiscreteBC)
 
     ! Create a BiCGStab-solver with VANKA preconditioner.
     ! Attach the above filter chain to the solver, so that the solver
@@ -667,13 +663,10 @@ contains
                                        rboundaryRegion,rprjDiscreteBC,&
                                        getBoundaryValues_2D)
 
-    ! Hang the pointer into the vector.
-    rprjVector%p_rdiscreteBC => rprjDiscreteBC
-
     ! Send the vector to the boundary-condition implementation filter.
     ! This modifies the vector according to the discrete boundary
     ! conditions.
-    call vecfil_discreteBCsol (rprjVector)
+    call vecfil_discreteBCsol (rprjVector,rprjDiscreteBC)
     
     ! Get the path for writing postprocessing files from the environment variable
     ! $UCDDIR. If that does not exist, write to the directory "./gmv".

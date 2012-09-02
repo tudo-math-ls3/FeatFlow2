@@ -131,7 +131,7 @@ contains
       ! Loop over all cubature points on the current element
       do icubp = 1,npointsPerElement
 
-        ! Outer loop over the DOF's i=1..ndof on our current element,
+        ! Outer loop over the DOFs i=1..ndof on our current element,
         ! which corresponds to the (test) basis functions Phi_i:
         do idofe=1,p_rmatrixDataA11%ndofTest
         
@@ -140,7 +140,7 @@ contains
           dbasIx = p_DbasTestA11(idofe,DER_DERIV2D_X,icubp,iel)
           dbasIy = p_DbasTestA11(idofe,DER_DERIV2D_Y,icubp,iel)
           
-          ! Inner loop over the DOF's j=1..ndof, which corresponds to
+          ! Inner loop over the DOFs j=1..ndof, which corresponds to
           ! the basis function Phi_j:
           do jdofe=1,p_rmatrixDataA11%ndofTrial
             
@@ -171,7 +171,7 @@ contains
       ! Loop over all cubature points on the current element
       do icubp = 1,npointsPerElement
 
-        ! Outer loop over the DOF's i=1..ndof on our current element,
+        ! Outer loop over the DOFs i=1..ndof on our current element,
         ! which corresponds to the (test) basis functions Phi_i:
         do idofe=1,p_rmatrixDataA13%ndofTest
         
@@ -180,7 +180,7 @@ contains
           dbasIx = p_DbasTestA13(idofe,DER_DERIV2D_X,icubp,iel)
           dbasIy = p_DbasTestA13(idofe,DER_DERIV2D_Y,icubp,iel)
           
-          ! Inner loop over the DOF's j=1..ndof, which corresponds to
+          ! Inner loop over the DOFs j=1..ndof, which corresponds to
           ! the basis function Phi_j:
           do jdofe=1,p_rmatrixDataA13%ndofTrial
             
@@ -284,7 +284,7 @@ contains
       ! Loop over all cubature points on the current element
       do icubp = 1,npointsPerElement
 
-        ! Outer loop over the DOF's i=1..ndof on our current element,
+        ! Outer loop over the DOFs i=1..ndof on our current element,
         ! which corresponds to the (test) basis functions Phi_i:
         do idofe=1,p_rvectorData1%ndofTest
         
@@ -318,7 +318,7 @@ contains
       ! Loop over all cubature points on the current element
       do icubp = 1,npointsPerElement
 
-        ! Outer loop over the DOF's i=1..ndof on our current element,
+        ! Outer loop over the DOFs i=1..ndof on our current element,
         ! which corresponds to the (test) basis functions Phi_i:
         do idofe=1,p_rvectorData3%ndofTest
         
@@ -713,14 +713,13 @@ contains
     ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode,p_rpreconditioner
 
-    ! An array for the system matrix(matrices) during the initialisation of
-    ! the linear solver.
-    type(t_matrixBlock), dimension(1) :: Rmatrices
-
     ! A filter chain that describes how to filter the matrix/vector
     ! before/during the solution process. The filters usually implement
     ! boundary conditions.
     type(t_filterChain), dimension(1), target :: RfilterChain
+    
+    ! Number of filters in the filter chain
+    integer :: nfilters
     
     ! NLMAX receives the level where we want to solve.
     integer :: NLMAX
@@ -765,14 +764,14 @@ contains
 
     ! Get the path $PREDIR from the environment, where to read .prm/.tri files
     ! from. If that does not exist, write to the directory "./pre".
-    if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
+    if (.not. sys_getenv_string("PREDIR", spredir)) spredir = "./pre"
 
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
-    call boundary_read_prm(rboundary, trim(spredir)//'/QUAD.prm')
+    call boundary_read_prm(rboundary, trim(spredir)//"/QUAD.prm")
         
     ! Now read in the basic triangulation.
-    call tria_readTriFile2D (rtriangulation, trim(spredir)//'/QUAD.tri', rboundary)
+    call tria_readTriFile2D (rtriangulation, trim(spredir)//"/QUAD.tri", rboundary)
     
     ! Refine the mesh up to the minimum level
     call tria_quickRefine2LevelOrdering(NLMAX-1,rtriangulation,rboundary)
@@ -922,11 +921,11 @@ contains
     ! We first set up the boundary conditions for the X-velocity, then those
     ! of the Y-velocity.
     !
-    ! We 'know' already (from the problem definition) that we have four boundary
+    ! We "know" already (from the problem definition) that we have four boundary
     ! segments in the domain. Each of these, we want to use for enforcing
     ! some kind of boundary condition.
     !
-    ! We ask the boundary routines to create a 'boundary region' - which is
+    ! We ask the boundary routines to create a "boundary region" - which is
     ! simply a part of the boundary corresponding to a boundary segment.
     ! A boundary region roughly contains the type, the min/max parameter value
     ! and whether the endpoints are inside the region or not.
@@ -939,7 +938,7 @@ contains
     ! We use this boundary region and specify that we want to have Dirichlet
     ! boundary there. The following call does the following:
     ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
-    !   We specify icomponent='1' to indicate that we set up the
+    !   We specify icomponent="1" to indicate that we set up the
     !   Dirichlet BC`s for the first (here: one and only) component in the
     !   solution vector.
     ! - Discretise the boundary condition so that the BC`s can be applied
@@ -1000,34 +999,25 @@ contains
 
     ! The pressure does not need boundary conditions.
 
-    ! Assign the boundary conditions to the matrix and the vectors.
-    call lsysbl_assignDiscreteBC(rmatrix,rdiscreteBC)
-    call lsysbl_assignDiscreteBC(rrhs,rdiscreteBC)
-    call lsysbl_assignDiscreteBC(rvector,rdiscreteBC)
-    
     ! Next step is to implement boundary conditions into the RHS,
     ! solution and matrix. This is done using a vector/matrix filter
     ! for discrete boundary conditions.
-    ! The discrete boundary conditions are already attached to the
-    ! vectors/matrix. Call the appropriate vector/matrix filter that
-    ! modifies the vectors/matrix according to the boundary conditions.
-    call vecfil_discreteBCrhs (rrhs)
-    call vecfil_discreteBCsol (rvector)
-    call matfil_discreteBC (rmatrix)
+    call vecfil_discreteBCrhs (rrhs,rdiscreteBC)
+    call vecfil_discreteBCsol (rvector,rdiscreteBC)
+    call matfil_discreteBC (rmatrix,rdiscreteBC)
 
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Set up a linear solver
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    ! During the linear solver, the boundary conditions must
-    ! frequently be imposed to the vectors. This is done using
-    ! a filter chain. As the linear solver does not work with
-    ! the actual solution vectors but with defect vectors instead,
-    ! a filter for implementing the real boundary conditions
-    ! would be wrong.
-    ! Therefore, create a filter chain with one filter only,
-    ! which implements Dirichlet-conditions into a defect vector.
-    RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
+    ! During the linear solver, the boundary conditions are also
+    ! frequently imposed to the vectors. But as the linear solver
+    ! does not work with the actual solution vectors but with
+    ! defect vectors instead.
+    ! So, set up a filter chain that filters the defect vector
+    ! during the solution process to implement discrete boundary conditions.
+    call filter_clearFilterChain (RfilterChain,nfilters)
+    call filter_newFilterDiscBCDef (RfilterChain,nfilters,rdiscreteBC)
 
     ! Create a BiCGStab-solver with VANCA preconditioner.
     ! Attach the above filter chain to the solver, so that the solver
@@ -1043,15 +1033,7 @@ contains
     p_rsolverNode%nmaxIterations = 200
 
     ! Attach the system matrix to the solver.
-    ! First create an array with the matrix data (on all levels, but we
-    ! only have one level here), then call the initialisation
-    ! routine to attach all these matrices.
-    ! Remark: Do not make a call like
-    !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
-    ! This does not work on all compilers, since the compiler would have
-    ! to create a temp array on the stack - which does not always work!
-    Rmatrices = (/rmatrix/)
-    call linsol_setMatrices(p_rsolverNode,Rmatrices)
+    call linsol_setMatrix(p_rsolverNode,rmatrix)
     
     ! Initialise structure/data of the solver. This allows the
     ! solver to allocate memory / perform some precalculation
@@ -1093,7 +1075,7 @@ contains
     ! GMV understands only Q1 solutions! So the task is now to create
     ! a Q1 solution from p_rvector and write that out.
     !
-    ! For this purpose, first create a 'derived' simple discretisation
+    ! For this purpose, first create a "derived" simple discretisation
     ! structure based on Q1 by copying the main guiding block discretisation
     ! structure and modifying the discretisation structures of the
     ! two velocity subvectors:
@@ -1180,23 +1162,20 @@ contains
                                        rboundaryRegion,rprjDiscreteBC,&
                                        getBoundaryValues_2D)
 
-    ! Assign the BCs to the vector
-    call lsysbl_assignDiscreteBC(rprjVector,rprjDiscreteBC)
-
     ! Send the vector to the boundary-condition implementation filter.
     ! This modifies the vector according to the discrete boundary
     ! conditions.
-    call vecfil_discreteBCsol (rprjVector)
+    call vecfil_discreteBCsol (rprjVector,rprjDiscreteBC)
     
     ! Get the path for writing postprocessing files from the environment variable
     ! $UCDDIR. If that does not exist, write to the directory "./gmv".
-    if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = './gmv'
+    if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = "./gmv"
 
     ! Now we have a Q1/Q1/Q0 solution in rprjVector.
     ! We can now start the postprocessing.
     ! Start UCD export to GMV file:
     call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-        trim(sucddir)//'/u2d_3_block.vtk')
+        trim(sucddir)//"/u2d_3_block.vtk")
 
     ! Write velocity field
     call lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
@@ -1204,16 +1183,16 @@ contains
     
     ! In case we use the VTK exporter, which supports vector output, we will
     ! pass the X- and Y-velocity at once to the ucd module.
-    call ucd_addVarVertBasedVec(rexport,'velocity',p_Ddata,p_Ddata2)
+    call ucd_addVarVertBasedVec(rexport,"velocity",p_Ddata,p_Ddata2)
 
     ! If we use the GMV exporter, we might replace the line above by the
     ! following two lines:
-    !CALL ucd_addVariableVertexBased (rexport,'X-vel',UCD_VAR_XVELOCITY, p_Ddata)
-    !CALL ucd_addVariableVertexBased (rexport,'Y-vel',UCD_VAR_YVELOCITY, p_Ddata2)
+    !CALL ucd_addVariableVertexBased (rexport,"X-vel",UCD_VAR_XVELOCITY, p_Ddata)
+    !CALL ucd_addVariableVertexBased (rexport,"Y-vel",UCD_VAR_YVELOCITY, p_Ddata2)
         
     ! Write pressure
     call lsyssc_getbase_double (rprjVector%RvectorBlock(3),p_Ddata)
-    call ucd_addVariableElementBased (rexport,'pressure',UCD_VAR_STANDARD, p_Ddata)
+    call ucd_addVariableElementBased (rexport,"pressure",UCD_VAR_STANDARD, p_Ddata)
     
     ! Write the file to disc, that is it.
     call ucd_write (rexport)
@@ -1225,7 +1204,7 @@ contains
     ! Error calculation
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     
-    ! Store the viscosity parameter nu in the collection's quick access array
+    ! Store the viscosity parameter nu in the collection"s quick access array
     rcollection%DquickAccess(1) = dnu
     
     ! Set up revalVectors with the velocity/pressure vectors.
@@ -1261,11 +1240,11 @@ contains
 
     ! Print the errors.
     call output_lbrk()
-    call output_line('|u - u_h|_L2 = ' // trim(sys_sdEL(sqrt(DerrorUL2(1)), 10)) &
-                                // ' ' // trim(sys_sdEL(sqrt(DerrorUL2(2)), 10)))
-    call output_line('|u - u_h|_H1 = ' // trim(sys_sdEL(sqrt(DerrorUH1(1)), 10)) &
-                                // ' ' // trim(sys_sdEL(sqrt(DerrorUH1(2)), 10)))
-    call output_line('|p - p_h|_L2 = ' // trim(sys_sdEL(sqrt(derrorPL2(1)), 10)))
+    call output_line("|u - u_h|_L2 = " // trim(sys_sdEL(sqrt(DerrorUL2(1)), 10)) &
+                                // " " // trim(sys_sdEL(sqrt(DerrorUL2(2)), 10)))
+    call output_line("|u - u_h|_H1 = " // trim(sys_sdEL(sqrt(DerrorUH1(1)), 10)) &
+                                // " " // trim(sys_sdEL(sqrt(DerrorUH1(2)), 10)))
+    call output_line("|p - p_h|_L2 = " // trim(sys_sdEL(sqrt(derrorPL2(1)), 10)))
     
     ! Cleanup
     call fev2_releaseVectorList(revalVectors)

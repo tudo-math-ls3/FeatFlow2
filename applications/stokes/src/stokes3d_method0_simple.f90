@@ -107,14 +107,13 @@ contains
     ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode,p_rpreconditioner
 
-    ! An array for the system matrix(matrices) during the initialisation of
-    ! the linear solver.
-    type(t_matrixBlock), dimension(1) :: Rmatrices
-
     ! A filter chain that describes how to filter the matrix/vector
     ! before/during the solution process. The filters usually implement
     ! boundary conditions.
     type(t_filterChain), dimension(1), target :: RfilterChain
+    
+    ! Number of filters in the filter chain
+    integer :: nfilters
     
     ! NLMAX receives the level where we want to solve.
     integer :: NLMAX
@@ -149,10 +148,10 @@ contains
 
     ! Get the path $PREDIR from the environment, where to read .prm/.tri files
     ! from. If that does not exist, write to the directory "./pre".
-    if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
+    if (.not. sys_getenv_string("PREDIR", spredir)) spredir = "./pre"
 
     ! At first, read in the basic triangulation.
-    call tria_readTriFile3D (rtriangulation, trim(spredir)//'/CUBE.tri')
+    call tria_readTriFile3D (rtriangulation, trim(spredir)//"/CUBE.tri")
     
     ! Refine the mesh up to the minimum level
     call tria_quickRefine2LevelOrdering(NLMAX-1,rtriangulation)
@@ -447,13 +446,6 @@ contains
     ! We will not release rmeshRegion yet, as we will need it for the
     ! postprocessing!
                              
-    ! Assign the BC`s to the vectors and the matrix. That way, these
-    ! boundary conditions are always connected to that matrix and that
-    ! vector.
-    call lsysbl_assignDiscreteBC(rmatrix,rdiscreteBC)
-    call lsysbl_assignDiscreteBC(rrhs,rdiscreteBC)
-    call lsysbl_assignDiscreteBC(rvector,rdiscreteBC)
-    call lsysbl_assignDiscreteBC(rtempBlock,rdiscreteBC)
     
     ! Next step is to implement boundary conditions into the RHS,
     ! solution and matrix. This is done using a vector/matrix filter
@@ -461,9 +453,9 @@ contains
     ! The discrete boundary conditions are already attached to the
     ! vectors/matrix. Call the appropriate vector/matrix filter that
     ! modifies the vectors/matrix according to the boundary conditions.
-    call vecfil_discreteBCrhs (rrhs)
-    call vecfil_discreteBCsol (rvector)
-    call matfil_discreteBC (rmatrix)
+    call vecfil_discreteBCrhs (rrhs,rdiscreteBC)
+    call vecfil_discreteBCsol (rvector,rdiscreteBC)
+    call matfil_discreteBC (rmatrix,rdiscreteBC)
 
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Set up a linear solver
@@ -477,7 +469,8 @@ contains
     ! would be wrong.
     ! Therefore, create a filter chain with one filter only,
     ! which implements Dirichlet-conditions into a defect vector.
-    RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
+    call filter_clearFilterChain (RfilterChain,nfilters)
+    call filter_newFilterDiscBCDef (RfilterChain,nfilters,rdiscreteBC)
 
     ! Create a BiCGStab-solver with VANKA preconditioner.
     ! Attach the above filter chain to the solver, so that the solver
@@ -493,15 +486,7 @@ contains
     p_rsolverNode%nmaxIterations = 200
 
     ! Attach the system matrix to the solver.
-    ! First create an array with the matrix data (on all levels, but we
-    ! only have one level here), then call the initialisation
-    ! routine to attach all these matrices.
-    ! Remark: Do not make a call like
-    !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
-    ! This does not work on all compilers, since the compiler would have
-    ! to create a temp array on the stack - which does not always work!
-    Rmatrices = (/rmatrix/)
-    call linsol_setMatrices(p_rsolverNode,Rmatrices)
+    call linsol_setMatrix(p_rsolverNode,rmatrix)
     
     ! Initialise structure/data of the solver. This allows the
     ! solver to allocate memory / perform some precalculation
@@ -542,7 +527,7 @@ contains
     ! Paraview understands only Q1 solutions! So the task is now to create
     ! a Q1 solution from p_rvector and write that out.
     !
-    ! For this purpose, first create a 'derived' simple discretisation
+    ! For this purpose, first create a "derived" simple discretisation
     ! structure based on Q1 by copying the main guiding block discretisation
     ! structure and modifying the discretisation structures of the
     ! two velocity subvectors:
@@ -581,23 +566,21 @@ contains
     ! Now we do not need the mesh region anymore, so release it
     call mshreg_done(rmeshRegion)
 
-    ! Assign the BCs to the vector
-    call lsysbl_assignDiscreteBC(rprjVector,rprjDiscreteBC)
     
     ! Send the vector to the boundary-condition implementation filter.
     ! This modifies the vector according to the attached discrete boundary
     ! conditions.
-    call vecfil_discreteBCsol (rprjVector)
+    call vecfil_discreteBCsol (rprjVector,rprjDiscreteBC)
     
     ! Get the path for writing postprocessing files from the environment variable
     ! $UCDDIR. If that does not exist, write to the directory "./gmv".
-    if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = './gmv'
+    if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = "./gmv"
 
     ! Now we have a Q1/Q1/Q1/Q0 solution in rprjVector.
     ! We can now start the postprocessing.
     ! Start UCD export to VTK file:
     call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-        trim(sucddir)//'/u3d_0_simple.vtk')
+        trim(sucddir)//"/u3d_0_simple.vtk")
 
     ! Write velocity field
     call lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
@@ -606,17 +589,17 @@ contains
     
     ! In case we use the VTK exporter, which supports vector output, we will
     ! pass the X-,Y- and Z-velocity at once to the ucd module.
-    call ucd_addVarVertBasedVec(rexport,'velocity',p_Ddata,p_Ddata2,p_Ddata3)
+    call ucd_addVarVertBasedVec(rexport,"velocity",p_Ddata,p_Ddata2,p_Ddata3)
 
     ! If we use the GMV exporter, we might replace the line above by the
     ! following two lines:
-    !CALL ucd_addVariableVertexBased (rexport,'X-vel',UCD_VAR_XVELOCITY, p_Ddata)
-    !CALL ucd_addVariableVertexBased (rexport,'Y-vel',UCD_VAR_YVELOCITY, p_Ddata2)
-    !CALL ucd_addVariableVertexBased (rexport,'Z-vel',UCD_VAR_ZVELOCITY, p_Ddata3)
+    !CALL ucd_addVariableVertexBased (rexport,"X-vel",UCD_VAR_XVELOCITY, p_Ddata)
+    !CALL ucd_addVariableVertexBased (rexport,"Y-vel",UCD_VAR_YVELOCITY, p_Ddata2)
+    !CALL ucd_addVariableVertexBased (rexport,"Z-vel",UCD_VAR_ZVELOCITY, p_Ddata3)
         
     ! Write pressure
     call lsyssc_getbase_double (rprjVector%RvectorBlock(4),p_Ddata)
-    call ucd_addVariableElementBased (rexport,'pressure',UCD_VAR_STANDARD, p_Ddata)
+    call ucd_addVariableElementBased (rexport,"pressure",UCD_VAR_STANDARD, p_Ddata)
     
     ! Write the file to disc, that is it.
     call ucd_write (rexport)

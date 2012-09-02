@@ -98,6 +98,14 @@ module stokes2d_method1_schur
     ! A variable describing the discrete boundary conditions.
     type(t_discreteBC) :: rdiscreteBC
   
+    ! A filter chain that describes how to filter the matrix/vector
+    ! before/during the solution process. The filters usually implement
+    ! boundary conditions.
+    type(t_filterChain), dimension(1) :: RfilterChain
+    
+    ! Number of filters in the filter chain
+    integer :: nfilters
+
   end type
   
 !</typeblock>
@@ -220,15 +228,15 @@ contains
 
     ! Get the path $PREDIR from the environment, where to read .prm/.tri files
     ! from. If that does not exist, write to the directory "./pre".
-    if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
+    if (.not. sys_getenv_string("PREDIR", spredir)) spredir = "./pre"
 
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
-    call boundary_read_prm(rboundary, trim(spredir)//'/QUAD.prm')
+    call boundary_read_prm(rboundary, trim(spredir)//"/QUAD.prm")
         
     ! Now read in the basic triangulation into our coarse level.
     call tria_readTriFile2D (Rlevels(NLMIN)%rtriangulation, &
-                             trim(spredir)//'/QUAD.tri', rboundary)
+                             trim(spredir)//"/QUAD.tri", rboundary)
     
     ! Refine the mesh up to the minimum level
     call tria_quickRefine2LevelOrdering (NLMIN-1,&
@@ -415,31 +423,27 @@ contains
       call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,2,&
           rboundaryRegion,Rlevels(i)%rdiscreteBC,getBoundaryValues_2D)
 
-      ! The pressure does not need boundary conditions.
-      ! Assign the BC`s to the vectors and the matrix. That way, these
-      ! boundary conditions are always connected to that matrix and that
-      ! vector.
-      call lsysbl_assignDiscreteBC(Rlevels(i)%rmatrix,Rlevels(i)%rdiscreteBC)
-
-      
       ! Next step is to implement boundary conditions into the matrix.
       ! This is done using a matrix filter for discrete boundary conditions.
       ! The discrete boundary conditions are already attached to the
       ! matrix. Call the appropriate matrix filter that modifies the matrix
       ! according to the boundary conditions.
-      call matfil_discreteBC (Rlevels(i)%rmatrix)
+      call matfil_discreteBC (Rlevels(i)%rmatrix,Rlevels(i)%rdiscreteBC)
     
+      ! Create a filter chain for the solver that implements boundary conditions
+      ! during the solution process.
+      call filter_clearFilterChain (Rlevels(i)%RfilterChain,Rlevels(i)%nfilters)
+      call filter_newFilterDiscBCDef (&
+          Rlevels(i)%RfilterChain,Rlevels(i)%nfilters,Rlevels(i)%rdiscreteBC)
+
     end do
 
     ! Also implement the discrete boundary conditions on the finest level
     ! onto our right-hand-side and solution vectors.
 
-    call lsysbl_assignDiscreteBC(rrhs,Rlevels(NLMAX)%rdiscreteBC)
-    call lsysbl_assignDiscreteBC(rvector,Rlevels(NLMAX)%rdiscreteBC)
-    call lsysbl_assignDiscreteBC(rtempBlock,Rlevels(NLMAX)%rdiscreteBC)
-    call vecfil_discreteBCrhs (rrhs)
-    call vecfil_discreteBCsol (rvector)
-
+    call vecfil_discreteBCrhs (rrhs,Rlevels(NLMAX)%rdiscreteBC)
+    call vecfil_discreteBCsol (rvector,Rlevels(NLMAX)%rdiscreteBC)
+    
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Set up a linear solver
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -456,13 +460,14 @@ contains
     ! as the filter-chain belongs to the global system and not only to the
     ! A-submatrices!
     ! (Todo: Test whether multigrid survives without a filter chain in the
-    !        case of 'harder' problems, too...)
+    !        case of "harder" problems, too...)
     call linsol_initMultigrid2 (p_rsubsolverA,NLMAX-NLMIN+1)
     
     ! Set up a coarse grid solver.
     ! The coarse grid in multigrid is always grid 1!
     call linsol_getMultigrid2Level (p_rsubsolverA,1,p_rlevelInfo)
     call linsol_initUMFPACK4 (p_rlevelInfo%p_rcoarseGridSolver)
+    p_rlevelInfo%p_rfilterChain => Rlevels(NLMIN)%RfilterChain
 
     ! Now set up the other levels...
     do i = NLMIN+1, NLMAX
@@ -478,12 +483,13 @@ contains
       call linsol_getMultigrid2Level (p_rsubsolverA,i-NLMIN+1,p_rlevelInfo)
       p_rlevelInfo%p_rpresmoother => p_rsmoother
       p_rlevelInfo%p_rpostsmoother => p_rsmoother
+      p_rlevelInfo%p_rfilterChain => Rlevels(i)%RfilterChain
       
     end do
     
     ! Make sure that multigrid always performs 3 iterations, disable
     ! the residual check and set its output level to -1 to avoid that
-    ! multigrid compains about 'accuracy warnings'.
+    ! multigrid compains about "accuracy warnings".
     p_rsubsolverA%nmaxiterations = 3
     p_rsubsolverA%irescheck = NO
     p_rsubsolverA%ioutputlevel = -1
@@ -507,7 +513,7 @@ contains
                           RmatrixS, LINSOL_SCHUR_TYPE_LTRI)
     
     ! Finally, create a BiCGStab solver for the global system.
-    call linsol_initBiCGStab(p_rsolverNode, p_rsolverSchur, RfilterChain)
+    call linsol_initBiCGStab(p_rsolverNode, p_rsolverSchur, Rlevels(NLMAX)%RfilterChain)
    
     ! Set the output level of the solver to 2 for some output
     p_rsolverNode%ioutputLevel = 2
@@ -562,14 +568,14 @@ contains
 
     ! Get the path for writing postprocessing files from the environment variable
     ! $UCDDIR. If that does not exist, write to the directory "./gmv".
-    if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = './gmv'
+    if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = "./gmv"
 
     ! Write velocity and pressure to VTK file
     call ucd_startVTK (rexport,UCD_FLAG_STANDARD,&
-        Rlevels(NLMAX)%rtriangulation,trim(sucddir)//'/u2d_1_schur.vtk')
+        Rlevels(NLMAX)%rtriangulation,trim(sucddir)//"/u2d_1_schur.vtk")
     
-    call ucd_addVarVertBasedVec(rexport, 'velocity', p_Du1, p_Du2)
-    call ucd_addVariableElementBased(rexport, 'pressure', UCD_VAR_STANDARD, p_Dp)
+    call ucd_addVarVertBasedVec(rexport, "velocity", p_Du1, p_Du2)
+    call ucd_addVariableElementBased(rexport, "pressure", UCD_VAR_STANDARD, p_Dp)
     
     call ucd_write (rexport)
     call ucd_release (rexport)
@@ -578,7 +584,7 @@ contains
     deallocate(p_Du2)
     deallocate(p_Du1)
 
-    ! Store the viscosity parameter nu in the collection's quick access array
+    ! Store the viscosity parameter nu in the collection"s quick access array
     rcollection%DquickAccess(1) = dnu
 
     ! Set up the error structure for velocity
@@ -596,11 +602,11 @@ contains
 
     ! Print the errors.
     call output_lbrk()
-    call output_line('|u - u_h|_L2 = ' // trim(sys_sdEL(DerrorUL2(1), 10)) &
-                                // ' ' // trim(sys_sdEL(DerrorUL2(2), 10)))
-    call output_line('|u - u_h|_H1 = ' // trim(sys_sdEL(DerrorUH1(1), 10)) &
-                                // ' ' // trim(sys_sdEL(DerrorUH1(2), 10)))
-    call output_line('|p - p_h|_L2 = ' // trim(sys_sdEL(derrorPL2(1), 10)))
+    call output_line("|u - u_h|_L2 = " // trim(sys_sdEL(DerrorUL2(1), 10)) &
+                                // " " // trim(sys_sdEL(DerrorUL2(2), 10)))
+    call output_line("|u - u_h|_H1 = " // trim(sys_sdEL(DerrorUH1(1), 10)) &
+                                // " " // trim(sys_sdEL(DerrorUH1(2), 10)))
+    call output_line("|p - p_h|_L2 = " // trim(sys_sdEL(derrorPL2(1), 10)))
 
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Clean up
