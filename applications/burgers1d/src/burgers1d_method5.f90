@@ -54,7 +54,6 @@ module burgers1d_method5
   use element
   use bilinearformevaluation
   use linearformevaluation
-  use sortstrategy
   use nonlinearsolver
   use ucd
   
@@ -86,7 +85,7 @@ module burgers1d_method5
 
     ! A variable describing the discrete boundary conditions.
     type(t_discreteBC) :: rdiscreteBC
-  
+
   end type
   
 !</typeblock>
@@ -199,9 +198,6 @@ contains
 
 !</subroutine>
 
-    ! local variables
-    integer :: i
-  
     ! An object for saving the domain:
     type(t_boundary), pointer :: p_rboundary
     
@@ -210,8 +206,6 @@ contains
 
     ! An object for the spatial discretisation
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
-
-    i=rproblem%ilvmax
 
     ! Ask the problem structure to give us the boundary and triangulation.
     ! We need it for the discretisation.
@@ -245,7 +239,7 @@ contains
         CUB_GEN_AUTO_G3)
         
     call collct_setvalue_cubinfo(rproblem%rcollection,"CUBINFO",&
-        rproblem%rlevelInfo%rcubatureInfo,.true.,i)
+        rproblem%rlevelInfo%rcubatureInfo,.true.,rproblem%ilvmax)
                                    
   end subroutine
 
@@ -268,9 +262,6 @@ contains
 
 !</subroutine>
 
-    ! local variables
-    integer :: i
-    
     ! A bilinear and linear form describing the analytic problem to solve
     type(t_linearForm) :: rlinform
     
@@ -283,12 +274,6 @@ contains
   
     ! A cubature information structure
     type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
-
-    ! Arrays for the Cuthill McKee renumbering strategy
-    integer, dimension(1) :: H_Iresort
-    integer, dimension(:), pointer :: p_Iresort
-
-    i=rproblem%ilvmax
 
     ! Ask the problem structure to give us the discretisation structure
     p_rdiscretisation => rproblem%rlevelInfo%rdiscretisation
@@ -304,7 +289,8 @@ contains
 
     ! Save matrix to the collection.
     ! They maybe used later, expecially in nonlinear problems.
-    call collct_setvalue_mat(rproblem%rcollection,"SYSTEMMAT",p_rmatrix,.true.,i)
+    call collct_setvalue_mat(rproblem%rcollection,"SYSTEMMAT",&
+        p_rmatrix,.true.,rproblem%ilvmax)
 
     ! Now using the discretisation, we can start to generate
     ! the structure of the system matrix which is to solve.
@@ -321,23 +307,8 @@ contains
     ! needs nonzero matrix entries for the symbolic factorisation!
     call lsyssc_allocEmptyMatrix(p_rmatrix%RmatrixBlock(1,1),LSYSSC_SETM_ONE)
     
-    ! Allocate an array for holding the resorting strategy.
-    call storage_new ("b1d5_initMatVec", "Iresort", &
-          p_rmatrix%RmatrixBlock(1,1)%NEQ*2, ST_INT, h_Iresort(1), ST_NEWBLOCK_ZERO)
-    call storage_getbase_int(h_Iresort(1),p_Iresort)
-    
-    ! Calculate the resorting strategy.
-    call sstrat_calcCuthillMcKee (p_rmatrix%RmatrixBlock(1,1),p_Iresort)
-    
-    ! Save the handle of the resorting strategy to the collection.
-    call collct_setvalue_int(rproblem%rcollection,"LAPLACE-CM",h_Iresort(1),.true.,i)
-    
-    ! We do not resort the matrix yet - this is done later when the entries
-    ! are assembled.
-      
     ! (Only) on the finest level, we need to calculate a RHS vector
     ! and to allocate a solution vector.
-    
     p_rrhs    => rproblem%rrhs
     p_rvector => rproblem%rvector
 
@@ -365,8 +336,6 @@ contains
     ! We pass our collection structure as well to this routine,
     ! so the callback routine has access to everything what is
     ! in the collection.
-    !
-    ! Note that the vector is unsorted when this call finishes!
     call linf_buildVectorScalar (&
         rlinform,.true.,p_rrhs%RvectorBlock(1),p_rcubatureInfo,&
         coeff_RHS,rproblem%rcollection)
@@ -383,8 +352,7 @@ contains
   subroutine b1d5_initDiscreteBC (rproblem)
   
 !<description>
-  ! This calculates the discrete version of the boundary conditions and
-  ! assigns it to the system matrix and RHS vector.
+  ! This calculates the discrete version of the boundary conditions.
 !</description>
 
 !<inputoutput>
@@ -400,24 +368,16 @@ contains
 
     ! A pointer to the system matrix and the RHS vector as well as
     ! the discretisation
-    type(t_matrixBlock), pointer :: p_rmatrix
-    type(t_vectorBlock), pointer :: p_rrhs,p_rvector
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
 
-    ! Pointer to structure for saving discrete BC`s:
-    type(t_discreteBC), pointer :: p_rdiscreteBC
-      
     ! A pointer to the domain
     type(t_boundary), pointer :: p_rboundary
     
     ilvmax=rproblem%ilvmax
     
-    ! Get our matrix from the problem structure.
-    p_rmatrix => rproblem%rlevelInfo%rmatrix
-    
     ! From the matrix or the RHS we have access to the discretisation and the
     ! analytic boundary conditions.
-    p_rdiscretisation => p_rmatrix%p_rblockDiscrTest
+    p_rdiscretisation => rproblem%rlevelInfo%rdiscretisation
     
     ! Get the domain from the problem structure
     p_rboundary => rproblem%rboundary
@@ -476,25 +436,11 @@ contains
     call bcasm_newDirichletBConRealBD (p_rdiscretisation,1,&
        rboundaryRegion,rproblem%rlevelInfo%rdiscreteBC,&
        getBoundaryValues,rproblem%rcollection)
-                             
-    ! Hang the pointer into the vectors and the matrix. That way, these
-    ! boundary conditions are always connected to that matrix and that
-    ! vector.
-    p_rdiscreteBC => rproblem%rlevelInfo%rdiscreteBC
-    
-    p_rmatrix%p_rdiscreteBC => p_rdiscreteBC
-      
-    ! On the finest level, attach the discrete BC also
-    ! to the solution and RHS vector. They need it to be compatible
-    ! to the matrix on the finest level.
-    p_rdiscreteBC => rproblem%rlevelInfo%rdiscreteBC
-    
-    p_rrhs    => rproblem%rrhs
-    p_rvector => rproblem%rvector
-    
-    call lsysbl_assignDiscreteBC(p_rrhs,p_rdiscreteBC)
-    call lsysbl_assignDiscreteBC(p_rvector,p_rdiscreteBC)
-                
+
+    ! Save to the collection                               
+    call collct_setvalue_discbc(rproblem%rcollection,"DISCRETEBC",&
+        rproblem%rlevelinfo%rdiscreteBC,.true.,ilvmax)
+
   end subroutine
 
   ! ***************************************************************************
@@ -519,6 +465,9 @@ contains
   
     ! A pointer to the RHS/solution vector
     type(t_vectorBlock), pointer :: p_rrhs,p_rvector
+
+    ! Pointer to structure for saving discrete BC`s:
+    type(t_discreteBC), pointer :: p_rdiscreteBC
     
     ! Get our the right hand side and solution from the problem structure
     ! on the finest level
@@ -532,8 +481,11 @@ contains
     ! The discrete boundary conditions are already attached to the
     ! vectors. Call the appropriate vector filter that modifies the vectors
     ! according to the boundary conditions.
-    call vecfil_discreteBCrhs (p_rrhs)
-    call vecfil_discreteBCsol (p_rvector)
+
+    p_rdiscreteBC => rproblem%rlevelinfo%rdiscreteBC
+
+    call vecfil_discreteBCrhs (p_rrhs,p_rdiscreteBC)
+    call vecfil_discreteBCsol (p_rvector,p_rdiscreteBC)
 
   end subroutine
 
@@ -577,6 +529,7 @@ contains
       type(t_bilinearForm) :: rform
       integer :: ilvmax
       type(t_matrixBlock), pointer :: p_rmatrix
+      type(t_discreteBC), pointer :: p_rdiscreteBC
 
       ! A cubature information structure
       type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
@@ -643,10 +596,13 @@ contains
       ! Remove the vector from the collection - not necessary anymore.
       call collct_deletevalue (p_rcollection,"RX")
       
+      ! Get the boundary conditions
+      p_rdiscreteBC => collct_getvalue_discbc (p_rcollection,"DISCRETEBC",ilvmax)
+
       ! Implement discrete boundary conditions into the matrix.
       ! Call the appropriate matrix filter to modify the system matrix
       ! according to the attached discrete boundary conditions.
-      call matfil_discreteBC (p_rmatrix)
+      call matfil_discreteBC (p_rmatrix,p_rdiscreteBC)
       
       ! Build the defect: d=b-Ax
       call lsysbl_copyVector (rb,rd)
@@ -655,7 +611,7 @@ contains
       ! Apply the defect-vector filter for discrete boundary conditions
       ! to modify the defect vector according to the (discrete) boundary
       ! conditions.
-      call vecfil_discreteBCdef (rd)
+      call vecfil_discreteBCdef (rd,p_rdiscreteBC)
 
       ! That is it
   
@@ -712,13 +668,10 @@ contains
     type(t_vectorBlock), intent(in), target       :: rb
   !</input>
   
-    ! An array for the system matrix(matrices) during the initialisation of
-    ! the linear solver.
-    integer :: ierror
-    type(t_linsolNode), pointer :: p_rsolverNode
-
-      ! A cubature information structure
-      type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
+      ! An array for the system matrix(matrices) during the initialisation of
+      ! the linear solver.
+      integer :: ierror
+      type(t_linsolNode), pointer :: p_rsolverNode
 
       ! Our "parent" (the caller of the nonlinear solver) has prepared
       ! a preconditioner node for us (a linear solver with symbolically
@@ -919,7 +872,7 @@ contains
 
 !</subroutine>
 
-    integer :: ihandle,ilvmax
+    integer :: ilvmax
 
     ! Release matrix and vectors on all levels
     ilvmax=rproblem%ilvmax
@@ -930,11 +883,6 @@ contains
     ! Delete the variables from the collection.
     call collct_deletevalue (rproblem%rcollection,"SYSTEMMAT",ilvmax)
     
-    ! Release the permutation for sorting matrix/vectors
-    ihandle = collct_getvalue_int (rproblem%rcollection,"LAPLACE-CM",ilvmax)
-    call storage_free (ihandle)
-    call collct_deletevalue (rproblem%rcollection,"LAPLACE-CM",ilvmax)
-
     ! Delete solution/RHS vector
     call lsysbl_releaseVector (rproblem%rvector)
     call lsysbl_releaseVector (rproblem%rrhs)
@@ -967,6 +915,9 @@ contains
 
     ilvmax=rproblem%ilvmax
       
+    ! Delete from the collection
+    call collct_deletevalue (rproblem%rcollection,"DISCRETEBC",ilvmax)
+
     ! Release our discrete version of the boundary conditions
     call bcasm_releaseDiscreteBC (rproblem%rlevelInfo%rdiscreteBC)
     

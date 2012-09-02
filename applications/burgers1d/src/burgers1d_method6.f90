@@ -100,6 +100,14 @@ module burgers1d_method6
     ! Sorting strategy for resorting vectors/matrices.
     type(t_blockSortStrategy) :: rsortStrategy
 
+    ! A filter chain that describes how to filter the matrix/vector
+    ! before/during the solution process. The filters usually implement
+    ! boundary conditions.
+    type(t_filterChain), dimension(1) :: RfilterChain
+    
+    ! Number of filters in the filter chain
+    integer :: nfilters
+
   end type
   
 !</typeblock>
@@ -274,7 +282,7 @@ contains
       ! the cubature formula to use. Standard: Gauss 3x3.
       call spdiscr_createDefCubStructure(&  
           p_rdiscretisation%RspatialDiscr(1),rproblem%RlevelInfo(i)%rcubatureInfo,&
-          CUB_GEN_AUTO_G2)
+          CUB_GEN_AUTO_G3)
 
       call collct_setvalue_cubinfo(rproblem%rcollection,"CUBINFO",&
           rproblem%RlevelInfo(i)%rcubatureInfo,.true.,i)
@@ -432,8 +440,7 @@ contains
   subroutine b1d6_initDiscreteBC (rproblem)
   
 !<description>
-  ! This calculates the discrete version of the boundary conditions and
-  ! assigns it to the system matrix and RHS vector.
+  ! This calculates the discrete version of the boundary conditions.
 !</description>
 
 !<inputoutput>
@@ -449,13 +456,8 @@ contains
 
     ! A pointer to the system matrix and the RHS vector as well as
     ! the discretisation
-    type(t_matrixBlock), pointer :: p_rmatrix
-    type(t_vectorBlock), pointer :: p_rrhs,p_rvector
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
 
-    ! Pointer to structure for saving discrete BC`s:
-    type(t_discreteBC), pointer :: p_rdiscreteBC
-      
     ! A pointer to the domain
     type(t_boundary), pointer :: p_rboundary
 
@@ -464,12 +466,9 @@ contains
 
     do i=rproblem%ilvmin,rproblem%ilvmax
     
-      ! Get our matrix from the problem structure.
-      p_rmatrix => rproblem%RlevelInfo(i)%rmatrix
-      
       ! From the matrix or the RHS we have access to the discretisation and the
       ! analytic boundary conditions.
-      p_rdiscretisation => p_rmatrix%p_rblockDiscrTest
+      p_rdiscretisation => rproblem%RlevelInfo(i)%rdiscretisation
       
       ! Now we have the raw problem. What is missing is the definition of the boundary
       ! conditions.
@@ -525,28 +524,13 @@ contains
       call bcasm_newDirichletBConRealBD (p_rdiscretisation,1,&
           rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
           getBoundaryValues,rproblem%rcollection)
-                               
-      ! Hang the pointer into the vectors and the matrix - more precisely,
-      ! to the first block matrix and the first subvector. That way, these
-      ! boundary conditions are always connected to that matrix and that
-      ! vector.
-      p_rdiscreteBC => rproblem%RlevelInfo(i)%rdiscreteBC
-      
-      p_rmatrix%p_rdiscreteBC => p_rdiscreteBC
-      
+
+      ! Save to the collection                               
+      call collct_setvalue_discbc(rproblem%rcollection,"DISCRETEBC",&
+          rproblem%RlevelInfo(i)%rdiscreteBC,.true.,i)
+
     end do
 
-    ! On the finest level, attach the discrete BC also
-    ! to the solution and RHS vector. They need it to be compatible
-    ! to the matrix on the finest level.
-    p_rdiscreteBC => rproblem%RlevelInfo(rproblem%ilvmax)%rdiscreteBC
-    
-    p_rrhs    => rproblem%rrhs
-    p_rvector => rproblem%rvector
-    
-    call lsysbl_assignDiscreteBC(p_rrhs,p_rdiscreteBC)
-    call lsysbl_assignDiscreteBC(p_rvector,p_rdiscreteBC)
-                
   end subroutine
 
   ! ***************************************************************************
@@ -566,9 +550,12 @@ contains
 
 !</subroutine>
 
-  ! local variables
-  integer :: ilvmax
+    ! local variables
+    integer :: ilvmax
   
+    ! Pointer to structure for saving discrete BC`s
+    type(t_discreteBC), pointer :: p_rdiscreteBC
+
     ! A pointer to the RHS/solution vector
     type(t_vectorBlock), pointer :: p_rrhs,p_rvector
     
@@ -584,8 +571,11 @@ contains
     ! The discrete boundary conditions are already attached to the
     ! vectors. Call the appropriate vector filter that modifies the vectors
     ! according to the boundary conditions.
-    call vecfil_discreteBCrhs (p_rrhs)
-    call vecfil_discreteBCsol (p_rvector)
+
+    p_rdiscreteBC => rproblem%RlevelInfo(rproblem%ilvmax)%rdiscreteBC
+
+    call vecfil_discreteBCrhs (p_rrhs,p_rdiscreteBC)
+    call vecfil_discreteBCsol (p_rvector,p_rdiscreteBC)
 
   end subroutine
 
@@ -629,6 +619,7 @@ contains
       type(t_bilinearForm) :: rform
       integer :: ilvmax
       type(t_matrixBlock), pointer :: p_rmatrix
+      type(t_discreteBC), pointer :: p_rdiscreteBC
 
       ! A cubature information structure
       type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
@@ -694,11 +685,14 @@ contains
 
       ! Remove the vector from the collection - not necessary anymore.
       call collct_deletevalue (p_rcollection,"RX")
+
+      ! Get the boundary conditions
+      p_rdiscreteBC => collct_getvalue_discbc (p_rcollection,"DISCRETEBC",ilvmax)
       
       ! Implement discrete boundary conditions into the matrix.
       ! Call the appropriate matrix filter to modify the system matrix
       ! according to the attached discrete boundary conditions.
-      call matfil_discreteBC (p_rmatrix)
+      call matfil_discreteBC (p_rmatrix,p_rdiscreteBC)
       
       ! Build the defect: d=b-Ax
       call lsysbl_copyVector (rb,rd)
@@ -707,7 +701,7 @@ contains
       ! Apply the defect-vector filter for discrete boundary conditions
       ! to modify the defect vector according to the (discrete) boundary
       ! conditions.
-      call vecfil_discreteBCdef (rd)
+      call vecfil_discreteBCdef (rd,p_rdiscreteBC)
 
       ! That is it
   
@@ -774,6 +768,7 @@ contains
     type(t_vectorScalar), pointer :: p_rvectorTemp
     type(t_bilinearForm) :: rform
     type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
+    type(t_discreteBC), pointer :: p_rdiscreteBC
 
       ! Our "parent" (the caller of the nonlinear solver) has prepared
       ! a preconditioner node for us (a linear solver with symbolically
@@ -893,10 +888,13 @@ contains
         ! Remove RX from the collection, not needed there anymore.
         call collct_deletevalue(p_rcollection,"RX")
         
+        ! Get the boundary conditions
+        p_rdiscreteBC => collct_getvalue_discbc (p_rcollection,"DISCRETEBC",i)
+
         ! Implement discrete boundary conditions into the matrix.
         ! Call the appropriate matrix filter to modify the system matrix
         ! according to the attached discrete boundary conditions.
-        call matfil_discreteBC (p_rmatrix)
+        call matfil_discreteBC (p_rmatrix,p_rdiscreteBC)
         
         ! Sort the matrix according to the attached sorting strategy -
         ! if there is a sorting strategy attached at all
@@ -989,10 +987,6 @@ contains
     ! the linear solver.
     type(t_matrixBlock), dimension(rproblem%ilvmax) :: Rmatrices
 
-    ! A filter chain to filter the vectors and the matrix during the
-    ! solution process.
-    type(t_filterChain), dimension(1), target :: RfilterChain
-
     ! One level of multigrid
     type(t_linsolMG2LevelInfo), pointer :: p_rlevelInfo
     
@@ -1026,21 +1020,11 @@ contains
     ! we can prepare once and use it through the whole solution process!
     !
     ! At first, set up the linear solver as usual.
-    !
-    ! During the linear solver, the boundary conditions must
-    ! frequently be imposed to the vectors. This is done using
-    ! a filter chain. As the linear solver does not work with
-    ! the actual solution vectors but with defect vectors instead,
-    ! a filter for implementing the real boundary conditions
-    ! would be wrong.
-    ! Therefore, create a filter chain with one filter only,
-    ! which implements Dirichlet-conditions into a defect vector.
-    RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
 
     ! Create a Multigrid-solver. Attach the above filter chain
     ! to the solver, so that the solver automatically filters
     ! the vector during the solution process.
-    call linsol_initMultigrid2 (p_rsolverNode,ilvmax-ilvmin+1,RfilterChain)
+    call linsol_initMultigrid2 (p_rsolverNode,ilvmax-ilvmin+1)
     
     ! Set the output level of the solver for some output
     p_rsolverNode%ioutputLevel = 1
@@ -1071,6 +1055,19 @@ contains
       ! Get the level
       call linsol_getMultigrid2Level (p_rsolverNode,1,p_rlevelInfo)
       
+      ! During the linear solver, the boundary conditions must
+      ! frequently be imposed to the vectors. This is done using
+      ! a filter chain. As the linear solver does not work with
+      ! the actual solution vectors but with defect vectors instead,
+      ! a filter for implementing the real boundary conditions
+      ! would be wrong.
+      ! Therefore, create a filter chain with one filter only,
+      ! which implements Dirichlet-conditions into a defect vector.
+      call filter_clearFilterChain (rproblem%RlevelInfo(i)%RfilterChain,&
+          rproblem%RlevelInfo(i)%nfilters)
+      call filter_newFilterDiscBCDef (rproblem%RlevelInfo(i)%RfilterChain,&
+          rproblem%RlevelInfo(i)%nfilters,rproblem%RlevelInfo(i)%rdiscreteBC)
+
       if (i .eq. ilvmin) then
         ! Set up a BiCGStab solver with ILU preconditioning as coarse grid solver
         ! would be:
@@ -1338,6 +1335,9 @@ contains
   integer :: i
 
     do i=rproblem%ilvmax,rproblem%ilvmin,-1
+      ! Delete from the collection
+      call collct_deletevalue (rproblem%rcollection,"DISCRETEBC",i)
+
       ! Release our discrete version of the boundary conditions
       call bcasm_releaseDiscreteBC (rproblem%RlevelInfo(i)%rdiscreteBC)
     end do
