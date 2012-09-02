@@ -128,10 +128,6 @@ contains
     ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode,p_rpreconditioner
 
-    ! An array for the system matrix(matrices) during the initialisation of
-    ! the linear solver.
-    type(t_matrixBlock), dimension(1) :: Rmatrices
-
     ! A filter chain that describes how to filter the matrix/vector
     ! before/during the solution process. The filters usually implement
     ! boundary conditions.
@@ -436,15 +432,7 @@ contains
     call matfil_discreteBC (rmatrixBlock,rdiscreteBC)
 
     ! Attach the system matrix to the solver.
-    ! First create an array with the matrix data (on all levels, but we
-    ! only have one level here), then call the initialisation
-    ! routine to attach all these matrices.
-    ! Remark: Do not make a call like
-    !    CALL linsol_setMatrices(p_RsolverNode,(/rmatrixBlock/))
-    ! This does not work on all compilers, since the compiler would have
-    ! to create a temp array on the stack - which does not always work!
-    Rmatrices = (/rmatrixBlock/)
-    call linsol_setMatrices(p_rsolverNode,Rmatrices)
+    call linsol_setMatrix(p_rsolverNode,rmatrixBlock)
     
     ! Initialise structure/data of the solver. This allows the
     ! solver to allocate memory / perform some precalculation
