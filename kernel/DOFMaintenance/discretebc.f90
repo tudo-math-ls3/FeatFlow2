@@ -112,6 +112,10 @@ module discretebc
     ! The component of the equation, this discrete BC is specified for
     ! (e.g. 1=X-velocity, 2=Y-velocity or similar)
     integer :: icomponent = 0
+    
+    ! Number of equations in the vector. Used to assure that the BC structure
+    ! is not applied to a wrong vector.
+    integer :: NEQ = 0
 
     ! Number of Dirichlet nodes; may be different from the length of the array!
     integer :: nDOF = 0
@@ -155,6 +159,10 @@ module discretebc
     ! (e.g. 1=X-velocity, 2=Y-velocity or similar)
     integer, dimension(:), pointer :: Icomponents => null()
 
+    ! Number of equations in the vector. Used to assure that the BC structure
+    ! is not applied to a wrong vector.
+    integer :: NEQ = 0
+
     ! Number of Dirichlet nodes; may be different from the length of the array!
     integer :: nDOF = 0
 
@@ -197,6 +205,10 @@ module discretebc
     ! in the solution vector that is modified (e.g. 1=X-velocity, 2=Y-velocity
     ! or similar)
     integer, dimension(:), pointer :: Icomponents => null()
+
+    ! Number of equations in the vector. Used to assure that the BC structure
+    ! is not applied to a wrong vector.
+    integer :: NEQ = 0
 
     ! Number of DOF`s in the arrays below; may be different from the length of
     ! the array!

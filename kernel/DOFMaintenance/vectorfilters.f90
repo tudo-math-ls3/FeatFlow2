@@ -266,6 +266,13 @@ contains
       call sys_halt()
     end if
 
+    ! Ensure that the BC and the vector are compatible.
+    if (rdbcStructure%NEQ .ne. rx%NEQ) then
+      call output_line("BC and vector incompatible.",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vecfil_imposeDirichletBC")
+      call sys_halt()
+    end if
+
     ! Only handle nDOF DOF`s, not the complete array!
     ! Probably, the array is longer (e.g. has the length of the vector), but
     ! contains only some entries...
@@ -344,6 +351,13 @@ contains
 
     if (.not.associated(p_vec)) then
       call output_line("No vector!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vecfil_imposeDirichletDefectBC")
+      call sys_halt()
+    end if
+
+    ! Ensure that the BC and the vector are compatible.
+    if (rdbcStructure%NEQ .ne. rx%NEQ) then
+      call output_line("BC and vector incompatible.",&
           OU_CLASS_ERROR,OU_MODE_STD,"vecfil_imposeDirichletDefectBC")
       call sys_halt()
     end if
@@ -447,6 +461,13 @@ contains
       call sys_halt()
     end if
 
+    ! Ensure that the BC and the vector are compatible.
+    if (rdbcStructure%NEQ .ne. rx%NEQ) then
+      call output_line("BC and vector incompatible.",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vecfil_imposeDirichletFBC")
+      call sys_halt()
+    end if
+
     ! Only handle nDOF DOF`s, not the complete array!
     ! Probably, the array is longer (e.g. has the length of the vector), but
     ! contains only some entries...
@@ -526,6 +547,13 @@ contains
 
     if (.not.associated(p_vec)) then
       call output_line("No vector!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vecfil_imposeDirichletDefectFBC")
+      call sys_halt()
+    end if
+
+    ! Ensure that the BC and the vector are compatible.
+    if (rdbcStructure%NEQ .ne. rx%NEQ) then
+      call output_line("BC and vector incompatible.",&
           OU_CLASS_ERROR,OU_MODE_STD,"vecfil_imposeDirichletDefectFBC")
       call sys_halt()
     end if
@@ -1268,12 +1296,19 @@ contains
         call sys_halt()
       end if
 
+      ! Ensure that the BC and the vector are compatible.
+      if (rpdbcStructure%NEQ .ne. rx%RvectorBlock(icp)%NEQ) then
+        call output_line("BC and vector incompatible.",&
+            OU_CLASS_ERROR,OU_MODE_STD,"vecfil_imposePressureDropBC")
+        call sys_halt()
+      end if
+
       ! Only handle nDOF DOF`s, not the complete array!
       ! Probably, the array is longer (e.g. has the length of the vector), but
       ! contains only some entries...
 
       ! Is the vector sorted?
-      if (.not. rx%RvectorBlock(j)%bisSorted) then
+      if (.not. rx%RvectorBlock(icp)%bisSorted) then
         ! No. Implement directly.
         do i=1,rpdbcStructure%nDOF
           p_vec(p_idx(i)) = p_vec(p_idx(i)) + p_val(j,i)*dtimeweight
@@ -1389,6 +1424,13 @@ contains
 
     call storage_getbase_double2d(rslipBCStructure%h_DnormalVectors,p_Dnormals)
 
+    ! Ensure that the BC and the vector are compatible.
+    if (rslipBCStructure%NEQ .ne. rx%RvectorBlock(rslipBCStructure%Icomponents(1))%NEQ) then
+      call output_line("BC and vector incompatible.",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vecfil_imposeNLSlipDefectBC")
+      call sys_halt()
+    end if
+
     ! Impose the BC-DOF`s directly - more precisely, into the
     ! components of all the subvectors.
     !
@@ -1397,7 +1439,7 @@ contains
     ! contains only some entries...
 
     ! Is the vector sorted? If yes, all vectors are sorted the same way!
-    if (.not. rx%RvectorBlock(1)%bisSorted) then
+    if (.not. rx%RvectorBlock(rslipBCStructure%Icomponents(1))%bisSorted) then
       ! No. Implement directly.
       do i=1,rslipBCStructure%nDOF
         ! Get the DOF:

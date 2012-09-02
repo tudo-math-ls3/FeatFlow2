@@ -155,6 +155,13 @@ contains
     call sys_halt()
   end if
 
+  ! Ensure that the BC and the matrix are compatible.
+  if (rdbcStructure%NEQ .ne. rmatrix%NEQ) then
+    call output_line("BC and vector incompatible.",&
+        OU_CLASS_ERROR,OU_MODE_STD,"matfil_imposeDirichletBC")
+    call sys_halt()
+  end if
+
   ! Only handle nDOF DOF`s, not the complete array!
   ! Probably, the array is longer (e.g. has the length of the vector), but
   ! contains only some entries...
@@ -284,6 +291,13 @@ contains
     call sys_halt()
   end if
 
+  ! Ensure that the BC and the matrix are compatible.
+  if (rslipBCStructure%NEQ .ne. rmatrix%NEQ) then
+    call output_line("BC and vector incompatible.",&
+        OU_CLASS_ERROR,OU_MODE_STD,"matfil_imposeNLSlipBC")
+    call sys_halt()
+  end if
+
   ! Only handle nDOF DOF`s, not the complete array!
   ! Probably, the array is longer (e.g. has the length of the vector), but
   ! contains only some entries...
@@ -409,6 +423,13 @@ contains
 
   if (.not.associated(p_idx)) then
     call output_line ("DBC not configured",&
+        OU_CLASS_ERROR,OU_MODE_STD,"matfil_imposeDirichletFBC")
+    call sys_halt()
+  end if
+
+  ! Ensure that the BC and the matrix are compatible.
+  if (rdbcStructure%NEQ .ne. rmatrix%NEQ) then
+    call output_line("BC and vector incompatible.",&
         OU_CLASS_ERROR,OU_MODE_STD,"matfil_imposeDirichletFBC")
     call sys_halt()
   end if

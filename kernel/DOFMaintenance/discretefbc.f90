@@ -109,6 +109,10 @@ module discretefbc
     ! is specified for (e.g. [1 2] = X-velocity(1) + Y-velocity(2))
     integer, dimension(:), pointer :: Icomponents => null()
 
+    ! Number of equations in the vector. Used to assure that the BC structure
+    ! is not applied to a wrong vector.
+    integer :: NEQ = 0
+
     ! Number of Dirichlet nodes; may be different from the length of the array!
     integer :: nDOF = 0
 

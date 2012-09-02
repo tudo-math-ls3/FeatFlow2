@@ -279,7 +279,7 @@ contains
     ! Allocate memory for a first couple of entries.
     call bcasm_newBCentry(rdiscreteBC)
 
-    ! Reset the number of used handles.
+    ! Reset the number of used handles,...
     rdiscreteBC%inumEntriesUsed = 0
 
     ! The rest of the structure is initialised by default initialisation.
@@ -405,7 +405,7 @@ contains
     ! Allocate memory for a first couple of entries.
     call bcasm_newFBCentry(rdiscreteFBC)
 
-    ! Reset the number of used handles.
+    ! Reset the number of used handles,...
     rdiscreteFBC%inumEntriesUsed = 0
 
     ! The rest of the structure is initialised by default initialisation.
@@ -701,11 +701,14 @@ contains
       ! In the current setting, there is always 1 boundary component
       ! and 1 DOF to be processed.
       p_rdirichlet%nDOF = 1
-
+      
       ! Initialise the BCs for equation iequation if present.
       p_rdirichlet%icomponent = 1
       if (present(iequation)) &
         p_rdirichlet%icomponent = iequation
+
+      ! Number of equations in this block
+      p_rdirichlet%NEQ = dof_igetNDofGlob(rblockDiscr%RspatialDiscr(p_rdirichlet%icomponent))
 
       ! Allocate the arrays
       call storage_new("bcasm_newDirichletBC_1D", "h_IdirichletDOFs", &
@@ -790,6 +793,9 @@ contains
       p_rdirichlet%icomponent = 1
       if (present(iequation)) &
         p_rdirichlet%icomponent = iequation
+
+      ! Number of equations in this block
+      p_rdirichlet%NEQ = dof_igetNDofGlob(rblockDiscr%RspatialDiscr(p_rdirichlet%icomponent))
 
       ! Allocate the arrays
       call storage_new("bcasm_newDirichletBC_1D", "h_IdirichletDOFs", &
@@ -1114,6 +1120,10 @@ contains
 
     p_rdirichletBCs%icomponent = iequation
     Icomponents(1) = iequation
+
+    ! Number of equations in this block
+    p_rdirichletBCs%NEQ = &
+        dof_igetNDofGlob(rblockDiscretisation%RspatialDiscr(p_rdirichletBCs%icomponent))
 
     ! We have to deal with all DOF`s on the boundary. This is highly element
     ! dependent and therefore a little bit tricky :(
@@ -2494,6 +2504,9 @@ contains
     allocate(p_rpressureDropBCs%Icomponents(1:NDIM2D))
     p_rpressureDropBCs%Icomponents(1:NDIM2D) = Iequations(1:NDIM2D)
 
+    ! Number of equations in this block
+    p_rpressureDropBCs%NEQ = dof_igetNDofGlob(p_rspatialDiscr)
+
     ! We have to deal with all DOF`s on the boundary. This is highly element
     ! dependent and therefore a little bit tricky :(
     ! But here we restrict to Q1~ only, which makes life a little bit easier.
@@ -2754,6 +2767,9 @@ contains
     allocate(p_rslipBCs%Icomponents(1:NDIM2D))
     p_rslipBCs%Icomponents(1:NDIM2D) = Iequations(1:NDIM2D)
 
+    ! Number of equations in this block
+    p_rslipBCs%NEQ = dof_igetNDofGlob(p_rspatialDiscr)
+
     ! We have to deal with all DOF`s on the boundary. This is highly element
     ! dependent and therefore a little bit tricky :(
     ! But here we restrict to Q1~ only, which makes life a little bit easier.
@@ -3002,6 +3018,9 @@ contains
     allocate(p_rdirichletFBCs%Icomponents(1:nequations))
     p_rdirichletFBCs%Icomponents(1:nequations) = Iequations(1:nequations)
 
+    ! Number of equations in this block
+    p_rdirichletFBCs%NEQ = dof_igetNDofGlob(p_rspatialDiscr)
+
     ! We have to collect all DOF`s and their values that belong to our current
     ! fictitious boundary object. Depending on the element type we will loop
     ! through all vertices, edges and elements in the triangulation
@@ -3012,7 +3031,7 @@ contains
     ! whether the DOF is actually used by our current FB object.
     ! More specifically, we remember the DOF value for each of the components!
 
-    nDOFs = dof_igetNDofGlob(p_rspatialDiscr)
+    nDOFs = p_rdirichletFBCs%NEQ
 
     IdofCount = (/nequations,nDOFs/)
     if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
@@ -4179,6 +4198,9 @@ contains
 
     ! Get the total number of global DOFs
     inumGlobalDofs = dof_igetNDofGlob(p_rspatDisc)
+
+    ! Number of equations in this block
+    p_rdirichlet%NEQ = inumGlobalDofs
 
     ! We have to ensure that one DOF does not get added to the dirichlet BC
     ! array twice. To ensure this, we will create an array called DOF-Bitmap.
