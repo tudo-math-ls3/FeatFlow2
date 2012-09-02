@@ -117,10 +117,6 @@ contains
     ! A solver node that accepts parameters for the linear solver
     type(t_linsolNode), pointer :: p_rsolverNode
 
-    ! An array for the system matrix(matrices) during the initialisation of
-    ! the linear solver.
-    type(t_matrixBlock), dimension(1) :: Rmatrices
-
     ! NLMAX receives the level where we want to solve.
     integer :: NLMAX
     
@@ -439,12 +435,6 @@ contains
     ! Now discretise the boundary conditions. The result is saved to rdiscreteBC.
     call ad1_discretiseBC (isolution,rdiscretisation,rcollection,rdiscreteBC)
 
-    ! Hang the pointer into the vector and matrix. That way, these
-    ! boundary conditions are always connected to that matrix and that
-    ! vector.
-    rmatrixBlock%p_rdiscreteBC => rdiscreteBC
-    rrhsBlock%p_rdiscreteBC => rdiscreteBC
-                             
     ! Now we have block vectors for the RHS and the matrix. What we
     ! need additionally is a block vector for the solution and
     ! temporary data. Create them using the RHS as template.
@@ -458,9 +448,9 @@ contains
     ! The discrete boundary conditions are already attached to the
     ! vectors/matrix. Call the appropriate vector/matrix filter that
     ! modifies the vectors/matrix according to the boundary conditions.
-    call vecfil_discreteBCrhs (rrhsBlock)
-    call vecfil_discreteBCsol (rvectorBlock)
-    call matfil_discreteBC (rmatrixBlock)
+    call vecfil_discreteBCrhs (rrhsBlock,rdiscreteBC)
+    call vecfil_discreteBCsol (rvectorBlock,rdiscreteBC)
+    call matfil_discreteBC (rmatrixBlock,rdiscreteBC)
     
     ! +------------------------------------------------------------------------
     ! | INVOKE THE SOLVER
@@ -480,16 +470,24 @@ contains
     !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
     ! This does not work on all compilers, since the compiler would have
     ! to create a temp array on the stack - which does not always work!
-    Rmatrices = (/rmatrixBlock/)
-    call linsol_setMatrices(p_RsolverNode,Rmatrices)
+    call linsol_setMatrix(p_RsolverNode,rmatrixBlock)
     
     ! Initialise structure/data of the solver. This allows the
     ! solver to allocate memory / perform some precalculation
     ! to the problem.
     call linsol_initStructure (p_rsolverNode, ierror)
-    if (ierror .ne. LINSOL_ERR_NOERROR) stop
+    
+    if (ierror .ne. LINSOL_ERR_NOERROR) then
+      call output_line("Matrix structure invalid!",OU_CLASS_ERROR)
+      call sys_halt()
+    end if
+
     call linsol_initData (p_rsolverNode, ierror)
-    if (ierror .ne. LINSOL_ERR_NOERROR) stop
+    
+    if (ierror .ne. LINSOL_ERR_NOERROR) then
+      call output_line("Matrix singular!",OU_CLASS_ERROR)
+      call sys_halt()
+    end if
     
     ! Finally solve the system. As we want to solve Ax=b with
     ! b being the real RHS and x being the real solution vector,
