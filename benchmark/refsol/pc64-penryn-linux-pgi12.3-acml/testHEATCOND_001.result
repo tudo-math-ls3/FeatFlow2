@@ -624,161 +624,161 @@ Calculating heatcond-Problem with method 5
 -------------------------------------------------------------------------------
 Time step 1     Time 0.00000
 
-Multigrid: Iteration 0,  !!RES!! = 1.247802771120683E-03
-Multigrid: Iteration 1,  !!RES!! = 9.844523795896707E-07
-Multigrid: Iteration 2,  !!RES!! = 2.293218555204201E-09
+Multigrid: Iteration 0,  !!RES!! = 1.227460368190788E-03
+Multigrid: Iteration 1,  !!RES!! = 9.684039722403453E-07
+Multigrid: Iteration 2,  !!RES!! = 2.255835387737908E-09
 
 Multigrid statistics:
 
 Iterations              : 2
-!!INITIAL RES!!         : 1.247802771120683E-03
-!!RES!!                 : 2.293218555204201E-09
-!!RES!!/!!INITIAL RES!! : 1.837805307279935E-06
+!!INITIAL RES!!         : 1.227460368190788E-03
+!!RES!!                 : 2.255835387737908E-09
+!!RES!!/!!INITIAL RES!! : 1.837807106605723E-06
 
-Rate of convergence     : 1.355656780781897E-03
+Rate of convergence     : 1.355657444417919E-03
 -------------------------------------------------------------------------------
 Time step 2     Time 0.01000
 
-Multigrid: Iteration 0,  !!RES!! = 1.174818129953504E-04
-Multigrid: Iteration 1,  !!RES!! = 3.495280542844445E-07
-Multigrid: Iteration 2,  !!RES!! = 8.610886501938339E-10
+Multigrid: Iteration 0,  !!RES!! = 1.287626345824338E-04
+Multigrid: Iteration 1,  !!RES!! = 3.583346135670496E-07
+Multigrid: Iteration 2,  !!RES!! = 8.807352614835919E-10
 
 Multigrid statistics:
 
 Iterations              : 2
-!!INITIAL RES!!         : 1.174818129953504E-04
-!!RES!!                 : 8.610886501938339E-10
-!!RES!!/!!INITIAL RES!! : 7.329548533847648E-06
+!!INITIAL RES!!         : 1.287626345824338E-04
+!!RES!!                 : 8.807352614835919E-10
+!!RES!!/!!INITIAL RES!! : 6.839990998473593E-06
 
-Rate of convergence     : 2.707313896438248E-03
+Rate of convergence     : 2.615337645214016E-03
 -------------------------------------------------------------------------------
 Time step 3     Time 0.02000
 
-Multigrid: Iteration 0,  !!RES!! = 4.714825807742043E-05
-Multigrid: Iteration 1,  !!RES!! = 1.857451830539575E-07
-Multigrid: Iteration 2,  !!RES!! = 4.888119317359333E-10
-Multigrid: Iteration 3,  !!RES!! = 1.357741107034407E-12
+Multigrid: Iteration 0,  !!RES!! = 4.798272069652599E-05
+Multigrid: Iteration 1,  !!RES!! = 1.879759763879827E-07
+Multigrid: Iteration 2,  !!RES!! = 4.932020044973856E-10
+Multigrid: Iteration 3,  !!RES!! = 1.364291226688613E-12
 
 Multigrid statistics:
 
 Iterations              : 3
-!!INITIAL RES!!         : 4.714825807742043E-05
-!!RES!!                 : 1.357741107034407E-12
-!!RES!!/!!INITIAL RES!! : 2.879726976985895E-08
+!!INITIAL RES!!         : 4.798272069652599E-05
+!!RES!!                 : 1.364291226688613E-12
+!!RES!!/!!INITIAL RES!! : 2.843296934572094E-08
 
-Rate of convergence     : 3.065140865350765E-03
+Rate of convergence     : 3.052160767358416E-03
 -------------------------------------------------------------------------------
 Time step 4     Time 0.03000
 
-Multigrid: Iteration 0,  !!RES!! = 2.878944808406857E-05
-Multigrid: Iteration 1,  !!RES!! = 1.227747679255196E-07
-Multigrid: Iteration 2,  !!RES!! = 3.494424746448965E-10
-Multigrid: Iteration 3,  !!RES!! = 1.066590409906151E-12
+Multigrid: Iteration 0,  !!RES!! = 2.905116091591278E-05
+Multigrid: Iteration 1,  !!RES!! = 1.236706573046947E-07
+Multigrid: Iteration 2,  !!RES!! = 3.512893327070603E-10
+Multigrid: Iteration 3,  !!RES!! = 1.070080063452549E-12
 
 Multigrid statistics:
 
 Iterations              : 3
-!!INITIAL RES!!         : 2.878944808406857E-05
-!!RES!!                 : 1.066590409906151E-12
-!!RES!!/!!INITIAL RES!! : 3.704796308673866E-08
+!!INITIAL RES!!         : 2.905116091591278E-05
+!!RES!!                 : 1.070080063452549E-12
+!!RES!!/!!INITIAL RES!! : 3.683433052984855E-08
 
-Rate of convergence     : 3.333661082597453E-03
+Rate of convergence     : 3.327241009980283E-03
 -------------------------------------------------------------------------------
 Time step 5     Time 0.04000
 
-Multigrid: Iteration 0,  !!RES!! = 2.019580829146403E-05
-Multigrid: Iteration 1,  !!RES!! = 8.939957697657645E-08
-Multigrid: Iteration 2,  !!RES!! = 2.656631961791713E-10
-Multigrid: Iteration 3,  !!RES!! = 8.432726788119385E-13
+Multigrid: Iteration 0,  !!RES!! = 2.032580958303400E-05
+Multigrid: Iteration 1,  !!RES!! = 8.990496977746100E-08
+Multigrid: Iteration 2,  !!RES!! = 2.669250880406868E-10
+Multigrid: Iteration 3,  !!RES!! = 8.466569376070338E-13
 
 Multigrid statistics:
 
 Iterations              : 3
-!!INITIAL RES!!         : 2.019580829146403E-05
-!!RES!!                 : 8.432726788119385E-13
-!!RES!!/!!INITIAL RES!! : 4.175483677810294E-08
+!!INITIAL RES!!         : 2.032580958303400E-05
+!!RES!!                 : 8.466569376070338E-13
+!!RES!!/!!INITIAL RES!! : 4.165427872126383E-08
 
-Rate of convergence     : 3.469249998557066E-03
+Rate of convergence     : 3.466462764833810E-03
 -------------------------------------------------------------------------------
 Time step 6     Time 0.05000
 
-Multigrid: Iteration 0,  !!RES!! = 1.514335974420714E-05
-Multigrid: Iteration 1,  !!RES!! = 6.801702224312091E-08
-Multigrid: Iteration 2,  !!RES!! = 2.055125963280626E-10
-Multigrid: Iteration 3,  !!RES!! = 6.604077766999252E-13
+Multigrid: Iteration 0,  !!RES!! = 1.522183935537207E-05
+Multigrid: Iteration 1,  !!RES!! = 6.835146221257325E-08
+Multigrid: Iteration 2,  !!RES!! = 2.064591723523813E-10
+Multigrid: Iteration 3,  !!RES!! = 6.633092712655087E-13
 
 Multigrid statistics:
 
 Iterations              : 3
-!!INITIAL RES!!         : 1.514335974420714E-05
-!!RES!!                 : 6.604077766999252E-13
-!!RES!!/!!INITIAL RES!! : 4.361038685305974E-08
+!!INITIAL RES!!         : 1.522183935537207E-05
+!!RES!!                 : 6.633092712655087E-13
+!!RES!!/!!INITIAL RES!! : 4.357615763639068E-08
 
-Rate of convergence     : 3.519897198407935E-03
+Rate of convergence     : 3.518976050425928E-03
 -------------------------------------------------------------------------------
 Time step 7     Time 0.06000
 
-Multigrid: Iteration 0,  !!RES!! = 1.179863945516764E-05
-Multigrid: Iteration 1,  !!RES!! = 5.311013860512318E-08
-Multigrid: Iteration 2,  !!RES!! = 1.609328934924946E-10
-Multigrid: Iteration 3,  !!RES!! = 5.175843373841066E-13
+Multigrid: Iteration 0,  !!RES!! = 1.185138078732649E-05
+Multigrid: Iteration 1,  !!RES!! = 5.334675813138078E-08
+Multigrid: Iteration 2,  !!RES!! = 1.616445923198037E-10
+Multigrid: Iteration 3,  !!RES!! = 5.198762905726883E-13
 
 Multigrid statistics:
 
 Iterations              : 3
-!!INITIAL RES!!         : 1.179863945516764E-05
-!!RES!!                 : 5.175843373841066E-13
-!!RES!!/!!INITIAL RES!! : 4.386813745354443E-08
+!!INITIAL RES!!         : 1.185138078732649E-05
+!!RES!!                 : 5.198762905726883E-13
+!!RES!!/!!INITIAL RES!! : 4.386630553029131E-08
 
-Rate of convergence     : 3.526818134317411E-03
+Rate of convergence     : 3.526769040598054E-03
 -------------------------------------------------------------------------------
 Time step 8     Time 0.07000
 
-Multigrid: Iteration 0,  !!RES!! = 9.416124686953826E-06
-Multigrid: Iteration 1,  !!RES!! = 4.223647559360192E-08
-Multigrid: Iteration 2,  !!RES!! = 1.275418312237161E-10
-Multigrid: Iteration 3,  !!RES!! = 4.085808588598150E-13
+Multigrid: Iteration 0,  !!RES!! = 9.454068606552307E-06
+Multigrid: Iteration 1,  !!RES!! = 4.241045399392375E-08
+Multigrid: Iteration 2,  !!RES!! = 1.280782047669391E-10
+Multigrid: Iteration 3,  !!RES!! = 4.103372717665650E-13
 
 Multigrid statistics:
 
 Iterations              : 3
-!!INITIAL RES!!         : 9.416124686953826E-06
-!!RES!!                 : 4.085808588598150E-13
-!!RES!!/!!INITIAL RES!! : 4.339161517539265E-08
+!!INITIAL RES!!         : 9.454068606552307E-06
+!!RES!!                 : 4.103372717665650E-13
+!!RES!!/!!INITIAL RES!! : 4.340324667013454E-08
 
-Rate of convergence     : 3.514001469347423E-03
+Rate of convergence     : 3.514315427377217E-03
 -------------------------------------------------------------------------------
 Time step 9     Time 0.08000
 
-Multigrid: Iteration 0,  !!RES!! = 7.632948052595807E-06
-Multigrid: Iteration 1,  !!RES!! = 3.404731181233892E-08
-Multigrid: Iteration 2,  !!RES!! = 1.022095133329218E-10
-Multigrid: Iteration 3,  !!RES!! = 3.255953438342798E-13
+Multigrid: Iteration 0,  !!RES!! = 7.661547726991292E-06
+Multigrid: Iteration 1,  !!RES!! = 3.417902686243354E-08
+Multigrid: Iteration 2,  !!RES!! = 1.026179426021916E-10
+Multigrid: Iteration 3,  !!RES!! = 3.269356902440482E-13
 
 Multigrid statistics:
 
 Iterations              : 3
-!!INITIAL RES!!         : 7.632948052595807E-06
-!!RES!!                 : 3.255953438342798E-13
-!!RES!!/!!INITIAL RES!! : 4.265656488040051E-08
+!!INITIAL RES!!         : 7.661547726991292E-06
+!!RES!!                 : 3.269356902440482E-13
+!!RES!!/!!INITIAL RES!! : 4.267227744235911E-08
 
-Rate of convergence     : 3.494046064580145E-03
+Rate of convergence     : 3.494475022982726E-03
 -------------------------------------------------------------------------------
 Time step 10     Time 0.09000
 
-Multigrid: Iteration 0,  !!RES!! = 6.251341529862401E-06
-Multigrid: Iteration 1,  !!RES!! = 2.772154091613244E-08
-Multigrid: Iteration 2,  !!RES!! = 8.269191997806920E-11
-Multigrid: Iteration 3,  !!RES!! = 2.618957811055961E-13
+Multigrid: Iteration 0,  !!RES!! = 6.273613460794544E-06
+Multigrid: Iteration 1,  !!RES!! = 2.782367613637483E-08
+Multigrid: Iteration 2,  !!RES!! = 8.300746827850248E-11
+Multigrid: Iteration 3,  !!RES!! = 2.629266006581365E-13
 
 Multigrid statistics:
 
 Iterations              : 3
-!!INITIAL RES!!         : 6.251341529862401E-06
-!!RES!!                 : 2.618957811055961E-13
-!!RES!!/!!INITIAL RES!! : 4.189433257718056E-08
+!!INITIAL RES!!         : 6.273613460794544E-06
+!!RES!!                 : 2.629266006581365E-13
+!!RES!!/!!INITIAL RES!! : 4.190991400749086E-08
 
-Rate of convergence     : 3.473109095364754E-03
+Rate of convergence     : 3.473539617398055E-03
 
 Remaining collection statistics:
 --------------------------------

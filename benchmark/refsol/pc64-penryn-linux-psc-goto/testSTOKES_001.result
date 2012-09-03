@@ -250,29 +250,29 @@ Rate of convergence     : 9.266907052652688E-02
 
 Calculating 2D Stokes-Problem 1 - Schur-Complement
 --------------------------------------------------
-BiCGStab: Iteration 0,  !!RES!! = 1.103253824600795E-01
-BiCGStab: Iteration 1,  !!RES!! = 4.212394313144257E-02
-BiCGStab: Iteration 2,  !!RES!! = 9.356222037301231E-03
-BiCGStab: Iteration 3,  !!RES!! = 3.320205314935759E-03
-BiCGStab: Iteration 4,  !!RES!! = 1.460497468356803E-03
-BiCGStab: Iteration 5,  !!RES!! = 4.151246975836426E-04
-BiCGStab: Iteration 6,  !!RES!! = 6.378609767321216E-05
-BiCGStab: Iteration 7,  !!RES!! = 1.403789328904720E-05
-BiCGStab: Iteration 8,  !!RES!! = 2.911434901096206E-06
-BiCGStab: Iteration 9,  !!RES!! = 8.914118229382925E-07
+BiCGStab: Iteration 0,  !!RES!! = 1.103509460296771E-01
+BiCGStab: Iteration 1,  !!RES!! = 4.210079932923827E-02
+BiCGStab: Iteration 2,  !!RES!! = 9.320783780160326E-03
+BiCGStab: Iteration 3,  !!RES!! = 3.314974868972804E-03
+BiCGStab: Iteration 4,  !!RES!! = 1.450189672399823E-03
+BiCGStab: Iteration 5,  !!RES!! = 3.953019535015496E-04
+BiCGStab: Iteration 6,  !!RES!! = 5.723788039178756E-05
+BiCGStab: Iteration 7,  !!RES!! = 1.283229531580907E-05
+BiCGStab: Iteration 8,  !!RES!! = 2.297224353997993E-06
+BiCGStab: Iteration 9,  !!RES!! = 6.933392585332581E-07
 
 BiCGStab statistics:
 
 Iterations              : 9
-!!INITIAL RES!!         : 1.103253824600795E-01
-!!RES!!                 : 8.914118229382925E-07
-!!RES!!/!!INITIAL RES!! : 8.079843487158034E-06
+!!INITIAL RES!!         : 1.103509460296771E-01
+!!RES!!                 : 6.933392585332581E-07
+!!RES!!/!!INITIAL RES!! : 6.283038646055611E-06
 
-Rate of convergence     : 2.717414466767630E-01
+Rate of convergence     : 2.642523504970544E-01
 
-|u - u_h|_L2 = 4.5789895352E-05 4.3862634579E-06
-|u - u_h|_H1 = 9.0184758039E-03 7.7301988750E-05
-|p - p_h|_L2 = 9.0299884909E-03
+|u - u_h|_L2 = 4.7310199589E-05 4.4172984651E-06
+|u - u_h|_H1 = 9.0184766908E-03 7.6882371025E-05
+|p - p_h|_L2 = 9.0303554488E-03
 
 Calculating 2D Stokes-Problem 2 - simple VANKA
 ----------------------------------------------

@@ -688,20 +688,20 @@ Remaining collection statistics:
 Calculating Poisson-2D-Problem with method 2 - multigrid
 --------------------------------------------------------
 Multigrid: Iteration 0,  !!RES!! = 2.676879331135154E-03
-Multigrid: Iteration 1,  !!RES!! = 3.324216215231024E-05
-Multigrid: Iteration 2,  !!RES!! = 1.157390393086884E-07
-Multigrid: Iteration 3,  !!RES!! = 8.264477696990270E-10
+Multigrid: Iteration 1,  !!RES!! = 3.324216215222510E-05
+Multigrid: Iteration 2,  !!RES!! = 1.157390393076385E-07
+Multigrid: Iteration 3,  !!RES!! = 8.264477681479070E-10
 
 Multigrid statistics:
 
 Iterations              : 3
 !!INITIAL RES!!         : 2.676879331135154E-03
-!!RES!!                 : 8.264477696990270E-10
-!!RES!!/!!INITIAL RES!! : 3.087355339803698E-07
+!!RES!!                 : 8.264477681479070E-10
+!!RES!!/!!INITIAL RES!! : 3.087355334009190E-07
 
-Rate of convergence     : 6.758684999605668E-03
-L2-error: 1.2750678608E-04
-H1-error: 3.7268393121E-02
+Rate of convergence     : 6.758684995377318E-03
+L2-error: 1.4801818753E-04
+H1-error: 3.7269151316E-02
 
 Remaining collection statistics:
 --------------------------------
