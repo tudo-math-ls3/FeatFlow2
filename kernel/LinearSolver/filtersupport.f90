@@ -61,7 +61,7 @@
 !#     -> Adds a filter for discrete boundary conditions on fict. boundary
 !#
 !# 4.) filter_newFilterToL20
-!#     -> Adds a filter to enforce the L2_9 space for a component
+!#     -> Adds a filter to enforce the L2_0 space for a component
 !#
 !# 5.) filter_newFilterSmallL1to0
 !#     -> Adds a filter to enforce to enforce the l1-norm of a component
@@ -365,7 +365,8 @@ contains
   subroutine filter_newFilterDiscFBCDef (RfilterChain,nsize,rdiscreteFBC)
 
 !<description>
-  ! Adds a "Discrete boundary condition to defect" filter for the "real boundary".
+  ! Adds a "Discrete boundary condition to defect" filter for the 
+  ! "fixtitious boundary".
 !</description>
 
 !<input>
