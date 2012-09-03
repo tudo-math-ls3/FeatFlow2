@@ -444,12 +444,6 @@ contains
     call collct_setvalue_vec(rproblem%rcollection,"RHS",p_rrhs,.true.)
     call collct_setvalue_vec(rproblem%rcollection,"SOLUTION",p_rvector,.true.)
 
-    ! Now we want to build up the right hand side. At first we need a block
-    ! vector of the right structure. Although we could manually create
-    ! that vector, the easiest way to set up the vector structure is
-    ! to create it by using our matrix as template:
-    call lsysbl_createVecBlockIndMat (p_rmatrix,p_rrhs, .false.)
-    
     ! The vector structure is ready but the entries are missing.
     ! So the next thing is to calculate the content of that vector.
     !
