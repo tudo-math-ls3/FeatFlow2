@@ -132,6 +132,7 @@ module solveraux
   use boundaryfilter
   use fsystem
   use genoutput
+  use globalsystem
   use linearalgebra
   use linearsystemblock
   use linearsystemscalar
@@ -7001,7 +7002,6 @@ contains
       type(t_matrixBlock), intent(in) :: rmatrixSrc
       type(t_matrixScalar), intent(inout) :: rmatrixDest
 
-
       ! Check if matrix is a 1x1 block matrix
       if ((rmatrixSrc%nblocksPerCol .eq. 1) .and.&
           (rmatrixSrc%nblocksPerRow .eq. 1)) then
@@ -7015,13 +7015,13 @@ contains
           call lsyssc_duplicateMatrix(rmatrixSrc%RmatrixBlock(1,1), rmatrixDest,&
                                       LSYSSC_DUP_COPY, LSYSSC_DUP_SHARE)
 
-        case (LSYSSC_MATRIX7)
+        case (LSYSSC_MATRIX7,LSYSSC_MATRIX7INTL,LSYSSC_MATRIX9INTL)
           ! For format 7, we have to modify the matrix slightly.
           ! Make a copy of the complete matrix
           call lsyssc_duplicateMatrix(rmatrixSrc%RmatrixBlock(1,1), rmatrixDest,&
                                       LSYSSC_DUP_COPY, LSYSSC_DUP_COPY)
 
-          ! Convert to format 9
+          ! Convert to format 9 (and remove interleaved format if required)
           call lsyssc_convertMatrix(rmatrixDest, LSYSSC_MATRIX9, .true.)
 
         case default
@@ -7030,17 +7030,16 @@ contains
           call sys_halt()
         end select
 
-        ! Since UMFPACK4 is written in C, all arrays start at position 0 instead of 1
-        call lsyssc_addIndex(rmatrixDest%h_Kld,  -1_I32, ilength=rmatrixDest%NEQ+1)
-        call lsyssc_addIndex(rmatrixDest%h_Kcol, -1_I32, ilength=rmatrixDest%NA)
-
       else
 
-        call output_line('Block matrices are not supported!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'initPrepareMatrix')
-        call sys_halt()
+        ! Convert block matrix into scalar matrix
+        call glsys_assembleGlobal(rmatrixSrc, rmatrixDest, .true., .true.)
 
       end if
+
+      ! Since UMFPACK4 is written in C, all arrays start at position 0 instead of 1
+      call lsyssc_addIndex(rmatrixDest%h_Kld,  -1_I32, ilength=rmatrixDest%NEQ+1)
+      call lsyssc_addIndex(rmatrixDest%h_Kcol, -1_I32, ilength=rmatrixDest%NA)
 
     end subroutine initPrepareMatrix
 
