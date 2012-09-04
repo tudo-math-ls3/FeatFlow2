@@ -30,15 +30,84 @@ module globalsystem
 
   public :: glsys_assembleGlobal
 
+  interface glsys_assembleGlobal
+    module procedure glsys_assembleGlobalScalar
+    module procedure glsys_assembleGlobalBlock
+  end interface
+
 contains
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine glsys_assembleGlobal (rsourceMatrix, rdestMatrix, &
-                                   bstructure, bcontent, &
-                                   cmatrixFormat, cdataType)
+  subroutine glsys_assembleGlobalScalar (rsourceMatrix, rdestMatrix, &
+                                         bstructure, bcontent, &
+                                         cmatrixFormat, cdataType)
+
+!<description>
+  ! This routine assembles a scalar matrix rdestMatrix from a
+  ! NxM block matrix rsourceMatrix.
+!</description>
+
+!<input>
+  ! The source matrix.
+  type(t_matrixBlock), intent(in) :: rsourceMatrix
+
+  ! Whether to assemble a new structure in rdestMatrix.
+  ! =TRUE (Standard): Release any old data/structure from rdestMatrix
+  !   and create a new one.
+  ! =FALSE          : rdestMatrix is assumed to be an existing matrix
+  !   of the correct dimension/size which does not have to be rebuild.
+  logical, intent(in) :: bstructure
+
+  ! Whether to assemble the matrix content.
+  ! =TRUE (Standard): The content of rsourceMatrix is build in rdestMatrix.
+  ! =FALSE          : No matrix content is build up in rdestMatrix.
+  logical, intent(in) :: bcontent
+
+  ! OPTIONAL: Target format of the matrix rdestMatrix. Standard is Format 9.
+  integer, intent(in), optional :: cmatrixFormat
+
+  ! OPTIONAL: Data type for the entries of rdestMatrix.
+  ! Standard is double precision.
+  integer, intent(in), optional :: cdataType
+
+!</input>
+
+!<output>
+  ! The destination matrix. If this matrix contains valid handles to
+  ! allocated memory blocks of the correct size for structure/entries,
+  ! this data is overwritten. If not, arrays are (re-)allocated in
+  ! the correct size.
+  type(t_matrixScalar), intent(inout) :: rdestMatrix
+!</output>
+
+!</subroutine>
+
+    ! local variable
+    type(t_matrixBlock) :: rdestMatrixBlock
+
+    ! Move scalar matrix to 1x1 bock matrix
+    call lsysbl_convertMatFromScalar (rdestMatrix, rdestMatrixBlock)
+    
+    ! Call block version of this routine
+    call glsys_assembleGlobalBlock (rsourceMatrix, rdestMatrixBlock, &
+        bstructure, bcontent, cmatrixFormat, cdataType)
+
+    ! Move 1x1 block matrix to scalar matrix
+    call lsyssc_moveMatrix (rdestMatrixBlock%RmatrixBlock(1,1), rdestMatrix)
+    call lsysbl_releaseMatrix (rdestMatrixBlock)
+
+  end subroutine glsys_assembleGlobalScalar
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine glsys_assembleGlobalBlock (rsourceMatrix, rdestMatrix, &
+                                        bstructure, bcontent, &
+                                        cmatrixFormat, cdataType)
 
 !<description>
   ! This routine assembles a 1x1 block matrix rdestMatrix from a
@@ -114,13 +183,13 @@ contains
 
     if (cdataTypeLocal .ne. ST_DOUBLE) then
       call output_line('Only double precision destination matrix supported!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'glsys_assembleGlobal')
+                       OU_CLASS_ERROR,OU_MODE_STD,'glsys_assembleGlobalBlock')
       call sys_halt()
     end if
 
     if (cmatrixFormatLocal .ne. LSYSSC_MATRIX9) then
       call output_line('Only format 9 destination matrix supported!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'glsys_assembleGlobal')
+                       OU_CLASS_ERROR,OU_MODE_STD,'glsys_assembleGlobalBlock')
       call sys_halt()
     end if
 
@@ -131,13 +200,13 @@ contains
 
           if (rsourceMatrix%RmatrixBlock(i,j)%cdataType .ne. ST_DOUBLE) then
             call output_line('Only double precision source matrices supported!',&
-                             OU_CLASS_ERROR,OU_MODE_STD,'glsys_assembleGlobal')
+                             OU_CLASS_ERROR,OU_MODE_STD,'glsys_assembleGlobalBlock')
             call sys_halt()
           end if
 
           if (rsourceMatrix%RmatrixBlock(i,j)%cmatrixFormat .ne. LSYSSC_MATRIX9) then
             call output_line('Only format 9 source matrices supported!',&
-                             OU_CLASS_ERROR,OU_MODE_STD,'glsys_assembleGlobal')
+                             OU_CLASS_ERROR,OU_MODE_STD,'glsys_assembleGlobalBlock')
             call sys_halt()
           end if
 
@@ -220,7 +289,7 @@ contains
         end if
       end if
 
-      if (balloc) call storage_new ('glsys_assembleGlobal', 'Kld',  &
+      if (balloc) call storage_new ('glsys_assembleGlobalBlock', 'Kld',  &
                                     rlocalMatrix%NEQ+1, &
                                     ST_INT, rdestMatrix%RmatrixBlock(1,1)%h_Kld,&
                                     ST_NEWBLOCK_ZERO)
@@ -242,7 +311,7 @@ contains
           call storage_free (rdestMatrix%RmatrixBlock(1,1)%h_Kcol)
         end if
       end if
-      if (balloc) call storage_new ('glsys_assembleGlobal', 'Kcol', &
+      if (balloc) call storage_new ('glsys_assembleGlobalBlock', 'Kcol', &
                                     rdestMatrix%RmatrixBlock(1,1)%NA, &
                                     ST_INT, rdestMatrix%RmatrixBlock(1,1)%h_Kcol,&
                                     ST_NEWBLOCK_NOINIT)
@@ -260,7 +329,7 @@ contains
           call storage_free (rdestMatrix%RmatrixBlock(1,1)%h_Da)
         end if
       end if
-      if (balloc) call storage_new ('glsys_assembleGlobal', 'Da', &
+      if (balloc) call storage_new ('glsys_assembleGlobalBlock', 'Da', &
                                     rdestMatrix%RmatrixBlock(1,1)%NA, &
                                     cdataTypeLocal, &
                                     rdestMatrix%RmatrixBlock(1,1)%h_Da,&
@@ -287,7 +356,7 @@ contains
 
       ! Allocate a Kdiagonal in the destination matrix
       if (balloc) call storage_new (&
-                        'glsys_assembleGlobal', 'Kdiagonal', rlocalMatrix%NEQ, &
+                        'glsys_assembleGlobalBlock', 'Kdiagonal', rlocalMatrix%NEQ, &
                         ST_INT, rdestMatrix%RmatrixBlock(1,1)%h_Kdiagonal,&
                         ST_NEWBLOCK_NOINIT)
 
@@ -329,7 +398,7 @@ contains
         end if
       end if
 
-      if (balloc) call storage_new ('glsys_assembleGlobal', 'Kld',  &
+      if (balloc) call storage_new ('glsys_assembleGlobalBlock', 'Kld',  &
                                     rlocalMatrix%NEQ+1, &
                                     ST_INT, rdestMatrix%RmatrixBlock(1,1)%h_Kld,&
                                     ST_NEWBLOCK_ZERO)
@@ -351,7 +420,7 @@ contains
           call storage_free (rdestMatrix%RmatrixBlock(1,1)%h_Kcol)
         end if
       end if
-      if (balloc) call storage_new ('glsys_assembleGlobal', 'Kcol', &
+      if (balloc) call storage_new ('glsys_assembleGlobalBlock', 'Kcol', &
                                     rdestMatrix%RmatrixBlock(1,1)%NA, &
                                     ST_INT, rdestMatrix%RmatrixBlock(1,1)%h_Kcol,&
                                     ST_NEWBLOCK_NOINIT)
@@ -361,7 +430,7 @@ contains
                                 Icolumns, Irows)
 
       ! Allocate a Kdiagonal in the destination matrix
-      call storage_new ('glsys_assembleGlobal', 'Kdiagonal', rlocalMatrix%NEQ, &
+      call storage_new ('glsys_assembleGlobalBlock', 'Kdiagonal', rlocalMatrix%NEQ, &
                         ST_INT, rdestMatrix%RmatrixBlock(1,1)%h_Kdiagonal,&
                         ST_NEWBLOCK_NOINIT)
 
@@ -403,7 +472,7 @@ contains
           call storage_free (rdestMatrix%RmatrixBlock(1,1)%h_Da)
         end if
       end if
-      if (balloc) call storage_new ('glsys_assembleGlobal', 'Da', &
+      if (balloc) call storage_new ('glsys_assembleGlobalBlock', 'Da', &
                                     rdestMatrix%RmatrixBlock(1,1)%NA, &
                                     cdataTypeLocal, &
                                     rdestMatrix%RmatrixBlock(1,1)%h_Da,&
@@ -423,7 +492,7 @@ contains
       end if
 
       if (rdestMatrix%RmatrixBlock(1,1)%h_Kdiagonal .eq. ST_NOHANDLE) then
-        call storage_new ('glsys_assembleGlobal', 'Kdiagonal', rlocalMatrix%NEQ, &
+        call storage_new ('glsys_assembleGlobalBlock', 'Kdiagonal', rlocalMatrix%NEQ, &
                         ST_INT, rdestMatrix%RmatrixBlock(1,1)%h_Kdiagonal,&
                         ST_NEWBLOCK_NOINIT)
       end if
@@ -446,7 +515,7 @@ contains
   deallocate(Irows)
   deallocate(Icolumns)
 
-  end subroutine glsys_assembleGlobal
+  end subroutine glsys_assembleGlobalBlock
 
   ! Auxiliary subroutines
 
