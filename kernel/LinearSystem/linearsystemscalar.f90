@@ -309,9 +309,9 @@
 !#     -> Creates an empty matrix without allocating data. Basic tags are
 !#        initialised.
 !#
-!# 9.) lsyssc_createEmptyMatrix9
-!#     -> Manually creates an empty matrix in format 9 for being
-!#        build with lsyssc_setRowMatrix9.
+!# 9.) lsyssc_createEmptyMatrix9 / lsyssc_createEmptyMatrix9Intl
+!#     -> Manually creates an empty matrix in format 9 or its interleaved 
+!#        counterpart for being build with lsyssc_setRowMatrix9.
 !#
 !# 10.) lsyssc_setRowMatrix9
 !#      -> Adds or replaces a row in a format-9 matrix.
@@ -742,7 +742,7 @@ module linearsystemscalar
     ! rows and columns match.
     type(t_sortStrategy), pointer :: p_rsortStrategyRows => null()
 
-    ! Data type of the entries in the vector. Either ST_SINGLE or
+    ! Data type of the entries in the matrix. Either ST_SINGLE or
     ! ST_DOUBLE.
     integer :: cdataType = ST_DOUBLE
 
@@ -976,6 +976,7 @@ module linearsystemscalar
   public :: lsyssc_createEmptyMatrixStub
   public :: lsyssc_setRowMatrix9
   public :: lsyssc_createEmptyMatrix9
+  public :: lsyssc_createEmptyMatrix9Intl
   public :: lsyssc_genEdgeList
   public :: lsyssc_regroupEdgeList
   public :: lsyssc_calcDimsFromMatrix
@@ -6442,15 +6443,15 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: i
   integer :: ihandle
   real(DP), dimension(:), pointer :: p_Ddata,p_Ddata2
   real(SP), dimension(:), pointer :: p_Fdata,p_Fdata2
-  integer, dimension(:), pointer :: p_Kcol
-  integer, dimension(:), pointer :: p_Kld,p_Kdiagonal
+  integer, dimension(:), pointer :: p_Kcol,p_Kcol2
+  integer, dimension(:), pointer :: p_Kld,p_Kld2
+  integer, dimension(:), pointer :: p_Kdiagonal,p_Kdiagonal2
   logical :: bentries,bstrucOwner,bentryOwner
-  integer :: NA,iA,iEQ
-  integer :: j,nrows,ncols
+  integer :: NA,iA,iA2,iEQ
+  integer :: i,j,nrows,ncols,ivar,jvar
   integer :: h_Da,h_Kcol,h_Kld,h_Kdiagonal
 
   ! Matrix is already in that format.
@@ -6472,10 +6473,25 @@ contains
   ! Which matrix type do we have?
   select case (rmatrix%cmatrixFormat)
   case (LSYSSC_MATRIX9)
-
+    !---------------------------------------------------------------------------
+    ! Source matrix format 9
+    !---------------------------------------------------------------------------
     select case (cmatrixFormat)
-    case (LSYSSC_MATRIX7)
+    case (LSYSSC_MATRIX9INTL)
+      !-------------------------------------------------------------------------
+      ! Desination matrix format 9intl
+      !-------------------------------------------------------------------------
 
+      ! Trivial conversion
+      rmatrix%cmatrixFormat = LSYSSC_MATRIX9INTL
+      rmatrix%cinterleavematrixFormat = LSYSSC_MATRIX1
+      rmatrix%NVAR = 1
+
+    case (LSYSSC_MATRIX7,LSYSSC_MATRIX7INTL)
+      !-------------------------------------------------------------------------
+      ! Desination matrix format 7 or 7intl
+      !-------------------------------------------------------------------------
+      
       if (.not. bstrucOwner) then
 
         ! Copy the structure so we are allowed to modify it.
@@ -6530,7 +6546,12 @@ contains
           rmatrix%h_Kdiagonal = ST_NOHANDLE
         end if
 
-        rmatrix%cmatrixFormat = LSYSSC_MATRIX7
+        ! Switch the matrix format
+        rmatrix%cmatrixFormat = cmatrixFormat
+        if (cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
+          rmatrix%cinterleavematrixFormat = LSYSSC_MATRIX1
+          rmatrix%NVAR = 1
+        end if
 
       else
 
@@ -6558,10 +6579,26 @@ contains
           rmatrix%h_Kdiagonal = ST_NOHANDLE
         end if
 
-        rmatrix%cmatrixFormat = LSYSSC_MATRIX7
+        ! Switch the matrix format
+        rmatrix%cmatrixFormat = cmatrixFormat
+        if (cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
+          rmatrix%cinterleavematrixFormat = LSYSSC_MATRIX1
+          rmatrix%NVAR = 1
+        end if
+
       end if
 
     case (LSYSSC_MATRIXD)
+      !-------------------------------------------------------------------------
+      ! Desination matrix format D (diagonal matrix)
+      !-------------------------------------------------------------------------
+
+      ! Check if matrix is a square matrix
+      if (rmatrix%NEQ .ne. rmatrix%NCOLS) then
+        call output_line('Cannot convert nonsquare matrix into diagonal matrix!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+        call sys_halt()
+      end if
 
       if (bentries .and. (rmatrix%h_Da .ne. ST_NOHANDLE)) then
 
@@ -6591,8 +6628,10 @@ contains
           do i=1,rmatrix%NEQ
             p_Ddata2(i) = p_Ddata(p_Kdiagonal(i))
           end do
-
+          
+          ! Switch the matrix format
           rmatrix%cmatrixFormat = LSYSSC_MATRIXD
+          rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,not(LSYSSC_MSPEC_STRUCTUREISCOPY))
 
         case (ST_SINGLE)
 
@@ -6618,7 +6657,9 @@ contains
             p_Fdata2(i) = p_Fdata(p_Kdiagonal(i))
           end do
 
+          ! Switch the matrix format
           rmatrix%cmatrixFormat = LSYSSC_MATRIXD
+          rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,not(LSYSSC_MSPEC_STRUCTUREISCOPY))
 
         case default
           call output_line('Unsupported data type!',&
@@ -6636,6 +6677,12 @@ contains
 
         rmatrix%NA = rmatrix%NEQ
 
+      else
+
+        ! Switch the matrix format
+        rmatrix%cmatrixFormat = LSYSSC_MATRIXD
+        rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,not(LSYSSC_MSPEC_STRUCTUREISCOPY))
+
       end if
 
       ! Release unused information
@@ -6650,8 +6697,11 @@ contains
       end if
 
     case (LSYSSC_MATRIX1)
+      !-------------------------------------------------------------------------
+      ! Desination matrix format 1 (full matrix)
+      !-------------------------------------------------------------------------
 
-      if (bentries) then
+      if (bentries .and. (rmatrix%h_Da .ne. ST_NOHANDLE)) then
 
         ! The structure is thrown away later so we do not care if the
         ! matrix is the owner of the structure or not at the moment
@@ -6696,15 +6746,17 @@ contains
           call storage_free(rmatrix%h_Da)
         end if
 
+        ! Switch the matrix format
         rmatrix%h_Da = ihandle
+        rmatrix%NA   = rmatrix%NEQ*rmatrix%NCOLS
         rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,not(LSYSSC_MSPEC_CONTENTISCOPY))
 
       end if
 
+      ! Switch the matrix format
       rmatrix%cmatrixFormat = LSYSSC_MATRIX1
-      rmatrix%NA = rmatrix%NEQ*rmatrix%NCOLS
       rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,not(LSYSSC_MSPEC_STRUCTUREISCOPY))
-
+      
       ! Release unused information
       if (bstrucOwner) then
         call storage_free (rmatrix%h_Kdiagonal)
@@ -6723,9 +6775,24 @@ contains
     end select
 
   case (LSYSSC_MATRIX7)
-
+    !---------------------------------------------------------------------------
+    ! Source matrix format 7
+    !---------------------------------------------------------------------------
     select case (cmatrixFormat)
-    case (LSYSSC_MATRIX9)
+    case (LSYSSC_MATRIX7INTL)
+      !-------------------------------------------------------------------------
+      ! Desination matrix format 7intl
+      !-------------------------------------------------------------------------
+      
+      ! Switch the matrix format
+      rmatrix%cmatrixFormat = LSYSSC_MATRIX7INTL
+      rmatrix%cinterleavematrixFormat = LSYSSC_MATRIX1
+      rmatrix%NVAR = 1
+
+    case (LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL)
+      !-------------------------------------------------------------------------
+      ! Desination matrix format 9 or 9intl
+      !-------------------------------------------------------------------------
 
       if (.not. bstrucOwner) then
 
@@ -6772,7 +6839,12 @@ contains
         ! No matrix entries, only resort the structure
         call lsyssc_sortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal, rmatrix%NEQ)
 
-        rmatrix%cmatrixFormat = LSYSSC_MATRIX9
+        ! Switch the matrix format
+        rmatrix%cmatrixFormat = cmatrixFormat
+        if (cmatrixFormat .eq. LSYSSC_MATRIX9INTL) then
+          rmatrix%cinterleavematrixFormat = LSYSSC_MATRIX1
+          rmatrix%NVAR = 1
+        end if
 
       else
 
@@ -6781,13 +6853,9 @@ contains
           call lsyssc_getbase_double (rmatrix,p_Ddata)
           call lsyssc_sortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal, rmatrix%NEQ, p_Ddata)
 
-          rmatrix%cmatrixFormat = LSYSSC_MATRIX9
-
         case (ST_SINGLE)
           call lsyssc_getbase_single (rmatrix,p_Fdata)
           call lsyssc_sortCSRsingle (p_Kcol, p_Kld, p_Kdiagonal, rmatrix%NEQ, p_Fdata)
-
-          rmatrix%cmatrixFormat = LSYSSC_MATRIX9
 
         case default
           call output_line('Unsupported data type!',&
@@ -6795,10 +6863,27 @@ contains
           call sys_halt()
         end select
 
+        ! Switch the matrix format
+        rmatrix%cmatrixFormat = cmatrixFormat
+        if (cmatrixFormat .eq. LSYSSC_MATRIX9INTL) then
+          rmatrix%cinterleavematrixFormat = LSYSSC_MATRIX1
+          rmatrix%NVAR = 1
+        end if
+        
       end if
 
     case (LSYSSC_MATRIXD)
+      !-------------------------------------------------------------------------
+      ! Desination matrix format D (diagonal matrix)
+      !-------------------------------------------------------------------------
 
+      ! Check if matrix is a square matrix
+      if (rmatrix%NEQ .ne. rmatrix%NCOLS) then
+        call output_line('Cannot convert nonsquare matrix into diagonal matrix!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+        call sys_halt()
+      end if
+      
       if (bentries .and. (rmatrix%h_Da .ne. ST_NOHANDLE)) then
 
         ! Convert from structure 7 to structure D by copying the
@@ -6828,7 +6913,9 @@ contains
             p_Ddata2(i) = p_Ddata(p_Kld(i))
           end do
 
+          ! Switch the matrix format
           rmatrix%cmatrixFormat = LSYSSC_MATRIXD
+          rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,not(LSYSSC_MSPEC_STRUCTUREISCOPY))
 
         case (ST_SINGLE)
 
@@ -6854,7 +6941,9 @@ contains
             p_Fdata2(i) = p_Fdata(p_Kld(i))
           end do
 
+          ! Switch the matrix format
           rmatrix%cmatrixFormat = LSYSSC_MATRIXD
+          rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,not(LSYSSC_MSPEC_STRUCTUREISCOPY))
 
         case default
           call output_line('Unsupported data type!',&
@@ -6872,6 +6961,12 @@ contains
 
         rmatrix%NA = rmatrix%NEQ
 
+      else
+
+        ! Switch the matrix format
+        rmatrix%cmatrixFormat = LSYSSC_MATRIXD
+        rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,not(LSYSSC_MSPEC_STRUCTUREISCOPY))
+
       end if
 
       ! Release unused information
@@ -6884,8 +6979,11 @@ contains
       end if
 
     case (LSYSSC_MATRIX1)
+      !-------------------------------------------------------------------------
+      ! Desination matrix format 1 (full matrix)
+      !-------------------------------------------------------------------------
 
-      if (bentries) then
+      if (bentries .and. (rmatrix%h_Da .ne. ST_NOHANDLE)) then
 
         ! The structure is thrown away later so we do not care if the
         ! matrix is the owner of the structure or not at the moment
@@ -6930,12 +7028,16 @@ contains
           call storage_free(rmatrix%h_Da)
         end if
 
+        ! Switch the matrix format
         rmatrix%h_Da = ihandle
+        rmatrix%NA   = rmatrix%NEQ*rmatrix%NCOLS
+        rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,not(LSYSSC_MSPEC_CONTENTISCOPY))
 
       end if
 
+      ! Switch the matrix format
       rmatrix%cmatrixFormat = LSYSSC_MATRIX1
-      rmatrix%NA = rmatrix%NEQ*rmatrix%NCOLS
+      rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,not(LSYSSC_MSPEC_STRUCTUREISCOPY))
 
       ! Release unused information
       if (bstrucOwner) then
@@ -6955,9 +7057,240 @@ contains
     end select
 
   case (LSYSSC_MATRIX1)
-
+    !---------------------------------------------------------------------------
+    ! Source matrix format 1 (full matrix)
+    !---------------------------------------------------------------------------
     select case (cmatrixFormat)
-    case (LSYSSC_MATRIX9)
+    case (LSYSSC_MATRIX7,LSYSSC_MATRIX7INTL)
+      !-------------------------------------------------------------------------
+      ! Desination matrix format 7 or 7intl
+      !-------------------------------------------------------------------------
+      
+      ! Get the matrix data
+      select case (rmatrix%cdataType)
+      case (ST_DOUBLE)
+        call lsyssc_getbase_double (rmatrix,p_Ddata2)
+      case (ST_SINGLE)
+        call lsyssc_getbase_single (rmatrix,p_Fdata2)
+      case default
+        call output_line('Unsupported data type!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+        call sys_halt()
+      end select
+
+      ! If the matrix is virtually transposed, NCOLS and NEQ are exchanged.
+      if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) then
+        nrows = rmatrix%NCOLS
+        ncols = rmatrix%NEQ
+      else
+        nrows = rmatrix%NEQ
+        ncols = rmatrix%NCOLS
+      end if
+
+      ! Count the number of nonzeroes
+      NA = 0
+      select case (rmatrix%cdataType)
+      case (ST_DOUBLE)
+        do j = 1,ncols
+          do i = 1,nrows
+            if (p_Ddata2((j-1)*nrows+i) .ne. 0.0_DP) NA = NA+1
+          end do
+        end do
+
+      case (ST_SINGLE)
+        do j = 1,ncols
+          do i = 1,nrows
+            if (p_Fdata2((j-1)*nrows+i) .ne. 0.0_SP) NA = NA+1
+          end do
+        end do
+      end select
+
+      ! Allocate Kcol, Kld
+      h_Kcol = ST_NOHANDLE
+      h_Kld = ST_NOHANDLE
+      call storage_new ('lsyssc_convertMatrix', 'Kcol', &
+            NA, ST_INT, h_Kcol, ST_NEWBLOCK_NOINIT)
+      call storage_new ('lsyssc_convertMatrix', 'Kld', &
+            nrows+1, ST_INT, h_Kld, ST_NEWBLOCK_NOINIT)
+      
+      call storage_getbase_int (h_Kcol,p_Kcol)
+      call storage_getbase_int (h_Kld,p_Kld)
+      
+      ! Transfer the entries -- rowwise.
+      ! If we do not have to transfer the entries, simply set up the structure.
+      if (bentries) then
+        
+        ! Allocate memory for the entries
+        h_Da = ST_NOHANDLE
+        call storage_new ('lsyssc_convertMatrix', 'Da', &
+              NA, rmatrix%cdataType, h_Da, ST_NEWBLOCK_NOINIT)
+
+        select case (rmatrix%cdataType)
+        case (ST_DOUBLE)
+          call storage_getbase_double (h_Da,p_Ddata)
+          iA = 0
+          do i = 1,nrows
+            p_Kld(i) = iA+1
+            ! Start with diagonal entry
+            if (p_Ddata2((i-1)*nrows+i) .ne. 0.0_DP) then
+              iA = iA + 1
+              p_Ddata(iA) = p_Ddata2((i-1)*nrows+i)
+              p_Kcol(iA) = i
+            end if
+            
+            ! Process left off-diagonal entries
+            do j = 1,i-1
+              if (p_Ddata2((j-1)*nrows+i) .ne. 0.0_DP) then
+                iA = iA + 1
+                p_Ddata(iA) = p_Ddata2((j-1)*nrows+i)
+                p_Kcol(iA) = j
+              end if
+            end do
+            
+            ! Process right off-diagonal entries
+            do j = i+1,ncols
+              if (p_Ddata2((j-1)*nrows+i) .ne. 0.0_DP) then
+                iA = iA + 1
+                p_Ddata(iA) = p_Ddata2((j-1)*nrows+i)
+                p_Kcol(iA) = j
+              end if
+            end do
+          end do
+          p_Kld(nrows+1) = NA+1
+          
+        case (ST_SINGLE)
+          call storage_getbase_single (h_Da,p_Fdata)
+          iA = 0
+          do i = 1,nrows
+            p_Kld(i) = iA+1
+            ! Start with diagonal entry
+            if (p_Fdata2((i-1)*nrows+i) .ne. 0.0_SP) then
+              iA = iA + 1
+              p_Fdata(iA) = p_Fdata2((i-1)*nrows+i)
+              p_Kcol(iA) = i
+            end if
+            
+            ! Process left off-diagonal entries
+            do j = 1,i-1
+              if (p_Fdata2((j-1)*nrows+i) .ne. 0.0_SP) then
+                iA = iA + 1
+                p_Fdata(iA) = p_Fdata2((j-1)*nrows+i)
+                p_Kcol(iA) = j
+              end if
+            end do
+            
+            ! Process right off-diagonal entries
+            do j = i+1,ncols
+              if (p_Fdata2((j-1)*nrows+i) .ne. 0.0_SP) then
+                iA = iA + 1
+                p_Fdata(iA) = p_Fdata2((j-1)*nrows+i)
+                p_Kcol(iA) = j
+              end if
+            end do
+          end do
+          p_Kld(nrows+1) = NA+1
+          
+        case default
+          call output_line('Unsupported data type!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+          call sys_halt()
+        end select
+        
+        ! Release the content if it belongs to this matrix.
+        ! Replace by the new content.
+        if (bentryOwner) then
+          call storage_free (rmatrix%h_Da)
+        end if
+
+        rmatrix%h_Da = h_Da
+
+      else
+
+        select case (rmatrix%cdataType)
+        case (ST_DOUBLE)
+          iA = 0
+          do i = 1,nrows
+            p_Kld(i) = iA+1
+            ! Start with diagonal entry
+            if (p_Ddata2((i-1)*nrows+i) .ne. 0.0_DP) then
+              iA = iA + 1
+              p_Kcol(iA) = i
+            end if
+            
+            ! Process left off-diagonal entries
+            do j = 1,i-1
+              if (p_Ddata2((j-1)*nrows+i) .ne. 0.0_DP) then
+                iA = iA + 1
+                p_Kcol(iA) = j
+              end if
+            end do
+            
+            ! Process right off-diagonal entries
+            do j = i+1,ncols
+              if (p_Ddata2((j-1)*nrows+i) .ne. 0.0_DP) then
+                iA = iA + 1
+                p_Kcol(iA) = j
+              end if
+            end do
+          end do
+          p_Kld(nrows+1) = NA+1
+
+        case (ST_SINGLE)
+          iA = 0
+          do i = 1,nrows
+            p_Kld(i) = iA+1
+            ! Start with diagonal entry
+            if (p_Fdata2((i-1)*nrows+i) .ne. 0.0_SP) then
+              iA = iA + 1
+              p_Kcol(iA) = i
+            end if
+            
+            ! Process left off-diagonal entries
+            do j = 1,i-1
+              if (p_Fdata2((j-1)*nrows+i) .ne. 0.0_SP) then
+                iA = iA + 1
+                p_Kcol(iA) = j
+              end if
+            end do
+            
+            ! Process right off-diagonal entries
+            do j = i+1,ncols
+              if (p_Fdata2((j-1)*nrows+i) .ne. 0.0_SP) then
+                iA = iA + 1
+                p_Kcol(iA) = j
+              end if
+            end do
+          end do
+          p_Kld(nrows+1) = NA+1
+
+        case default
+          call output_line('Unsupported data type!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+          call sys_halt()
+        end select
+
+        ! Do not touch the content. The result is left in an undefined state!
+
+      end if
+
+      ! Switch the matrix format
+      rmatrix%cmatrixFormat = cmatrixFormat
+      if (cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
+        rmatrix%cinterleavematrixFormat = LSYSSC_MATRIX1
+        rmatrix%NVAR = 1
+      end if
+
+      rmatrix%h_Kcol = h_Kcol
+      rmatrix%h_Kld = h_Kld
+      rmatrix%NA = NA
+
+      ! Switch off any duplication flag; the content now belongs to this matrix.
+      rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,not(LSYSSC_MSPEC_ISCOPY))
+      
+    case (LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL)
+      !-------------------------------------------------------------------------
+      ! Desination matrix format 9 or 9intl
+      !-------------------------------------------------------------------------
 
       ! Get the matrix data
       select case (rmatrix%cdataType)
@@ -6998,7 +7331,10 @@ contains
         end do
       end select
 
-      ! Allocate Kcol, Kld, Da,Kdiagonal
+      ! Allocate Kcol, Kld, Kdiagonal
+      h_Kcol = ST_NOHANDLE
+      h_Kld = ST_NOHANDLE
+      h_Kdiagonal = ST_NOHANDLE
       call storage_new ('lsyssc_convertMatrix', 'Kcol', &
             NA, ST_INT, h_Kcol, ST_NEWBLOCK_NOINIT)
       call storage_new ('lsyssc_convertMatrix', 'Kld', &
@@ -7015,12 +7351,13 @@ contains
       if (bentries) then
 
         ! Allocate memory for the entries
+        h_Da = ST_NOHANDLE
         call storage_new ('lsyssc_convertMatrix', 'Da', &
               NA, rmatrix%cdataType, h_Da, ST_NEWBLOCK_NOINIT)
-        call storage_getbase_double (h_Da,p_Ddata)
 
         select case (rmatrix%cdataType)
         case (ST_DOUBLE)
+          call storage_getbase_double (h_Da,p_Ddata)
           iA = 0
           do i = 1,nrows
             p_Kld(i) = iA+1
@@ -7039,6 +7376,7 @@ contains
           p_Kld(nrows+1) = NA+1
 
         case (ST_SINGLE)
+          call storage_getbase_single (h_Da,p_Fdata)
           iA = 0
           do i = 1,nrows
             p_Kld(i) = iA+1
@@ -7055,6 +7393,11 @@ contains
             if (i .gt. ncols) p_Kdiagonal(i) = iA  ! Kdiagonal was not set
           end do
           p_Kld(nrows+1) = NA+1
+
+        case default
+          call output_line('Unsupported data type!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+          call sys_halt()
         end select
 
         ! Release the content if it belongs to this matrix.
@@ -7101,6 +7444,11 @@ contains
             if (i .gt. ncols) p_Kdiagonal(i) = iA  ! Kdiagonal was not set
           end do
           p_Kld(nrows+1) = NA+1
+
+        case default
+          call output_line('Unsupported data type!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+          call sys_halt()
         end select
 
         ! Do not touch the content. The result is left in an undefined state!
@@ -7108,7 +7456,11 @@ contains
       end if
 
       ! Switch the matrix format
-      rmatrix%cmatrixFormat = LSYSSC_MATRIX9
+      rmatrix%cmatrixFormat = cmatrixFormat
+      if (cmatrixFormat .eq. LSYSSC_MATRIX9INTL) then
+        rmatrix%cinterleavematrixFormat = LSYSSC_MATRIX1
+        rmatrix%NVAR = 1
+      end if
 
       rmatrix%h_Kcol = h_Kcol
       rmatrix%h_Kld = h_Kld
@@ -7118,12 +7470,1011 @@ contains
       ! Switch off any duplication flag; the content now belongs to this matrix.
       rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,not(LSYSSC_MSPEC_ISCOPY))
 
+    case(LSYSSC_MATRIXD)
+      !-------------------------------------------------------------------------
+      ! Desination matrix format D (diagonal matrix)
+      !-------------------------------------------------------------------------
+      
+      ! Check if matrix is a square matrix
+      if (rmatrix%NEQ .ne. rmatrix%NCOLS) then
+        call output_line('Cannot convert nonsquare matrix into diagonal matrix!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+        call sys_halt()
+      end if
+
+      ! If the matrix is virtually transposed, NCOLS and NEQ are exchanged.
+      if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) then
+        nrows = rmatrix%NCOLS
+        ncols = rmatrix%NEQ
+      else
+        nrows = rmatrix%NEQ
+        ncols = rmatrix%NCOLS
+      end if
+
+      ! Transfer the entries
+      if (bentries) then
+
+        ! Allocate memory for the entries
+        h_Da = ST_NOHANDLE
+        call storage_new ('lsyssc_convertMatrix', 'Da', &
+            rmatrix%NEQ, rmatrix%cdataType, h_Da, ST_NEWBLOCK_NOINIT)
+
+        select case (rmatrix%cdataType)
+        case (ST_DOUBLE)
+          call storage_getbase_double (h_Da,p_Ddata)
+          call lsyssc_getbase_double (rmatrix,p_Ddata2)
+          do i = 1,nrows
+            p_Ddata(i) = p_Ddata2((i-1)*nrows+i)
+          end do
+
+        case (ST_SINGLE)
+          call storage_getbase_single (h_Da,p_Fdata)
+          call lsyssc_getbase_single (rmatrix,p_Fdata2)
+          do i = 1,nrows
+            p_Ddata(i) = p_Ddata2((i-1)*nrows+i)
+          end do
+
+        case default
+          call output_line('Unsupported data type!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+          call sys_halt()
+        end select
+        
+        ! Release the content if it belongs to this matrix.
+        ! Replace by the new content.
+        if (bentryOwner) then
+          call storage_free (rmatrix%h_Da)
+        end if
+        
+        rmatrix%h_Da = h_Da
+
+      end if
+
+      ! Switch the matrix format
+      rmatrix%cmatrixFormat = LSYSSC_MATRIXD
+
+      rmatrix%NA = nrows ! which is equal to ncols
+
+      ! Switch off any duplication flag; the content now belongs to this matrix.
+      rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,not(LSYSSC_MSPEC_ISCOPY))
+      
+    case default
+      call output_line('Cannot convert matrix!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+      call sys_halt()
     end select
 
-  case (LSYSSC_MATRIX9INTL)
+  case (LSYSSC_MATRIXD)
+    !---------------------------------------------------------------------------
+    ! Source matrix format D (diagonal matrix)
+    !---------------------------------------------------------------------------
+
+    ! Check if matrix is a square matrix
+    if ((rmatrix%NEQ .ne. rmatrix%NCOLS) .or.&
+        (rmatrix%NEQ .ne. rmatrix%NA)) then
+      call output_line('Cannot convert nonsquare diagonal matrix!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+      call sys_halt()
+    end if
 
     select case (cmatrixFormat)
+    case (LSYSSC_MATRIX7,LSYSSC_MATRIX7INTL)
+      !-------------------------------------------------------------------------
+      ! Desination matrix format 7 or 9intl
+      !-------------------------------------------------------------------------
+
+      ! Allocate Kcol, Kld
+      h_Kcol = ST_NOHANDLE
+      h_Kld = ST_NOHANDLE
+      call storage_new ('lsyssc_convertMatrix', 'Kcol', &
+          rmatrix%NA, ST_INT, h_Kcol, ST_NEWBLOCK_NOINIT)
+      call storage_new ('lsyssc_convertMatrix', 'Kld', &
+          rmatrix%NEQ+1, ST_INT, h_Kld, ST_NEWBLOCK_NOINIT)
+
+      call storage_getbase_int (h_Kcol,p_Kcol)
+      call storage_getbase_int (h_Kld,p_Kld)
+
+      ! Initialise 1,2,3,...,NEQ+1
+      do iEQ = 1,rmatrix%NEQ+1
+        p_Kld(iEQ) = iEQ
+      end do
+
+      ! Initialise 1,2,3,...,NA
+      do iA = 1,rmatrix%NA
+        p_Kcol(iA) = iA
+      end do
+            
+      ! Switch the matrix format
+      rmatrix%cmatrixFormat = cmatrixFormat
+      if (cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
+        rmatrix%cinterleavematrixFormat = LSYSSC_MATRIX1
+        rmatrix%NVAR = 1
+      end if
+            
+      rmatrix%h_Kcol = h_Kcol
+      rmatrix%h_Kld = h_Kld
+      
+      ! Switch off any duplication flag; the structure now belongs to this matrix.
+      rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,not(LSYSSC_MSPEC_STRUCTUREISCOPY))
+
+    case (LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL)
+      !-------------------------------------------------------------------------
+      ! Desination matrix format 9 or 9intl
+      !-------------------------------------------------------------------------
+      
+      ! Allocate Kcol, Kld, Kdiagonal
+      h_Kcol = ST_NOHANDLE
+      h_Kld = ST_NOHANDLE
+      h_Kdiagonal = ST_NOHANDLE
+      call storage_new ('lsyssc_convertMatrix', 'Kcol', &
+          rmatrix%NA, ST_INT, h_Kcol, ST_NEWBLOCK_NOINIT)
+      call storage_new ('lsyssc_convertMatrix', 'Kld', &
+          rmatrix%NEQ+1, ST_INT, h_Kld, ST_NEWBLOCK_NOINIT)
+      call storage_new ('lsyssc_convertMatrix', 'Kdiagonal', &
+          rmatrix%NEQ, ST_INT, h_Kdiagonal, ST_NEWBLOCK_NOINIT)
+
+      call storage_getbase_int (h_Kcol,p_Kcol)
+      call storage_getbase_int (h_Kld,p_Kld)
+      call storage_getbase_int (h_Kdiagonal,p_Kdiagonal)
+
+      ! Initialise 1,2,3,...,NEQ+1
+      do iEQ = 1,rmatrix%NEQ+1
+        p_Kld(iEQ) = iEQ
+      end do
+
+      ! Initialise 1,2,3,...,NEQ
+      do iEQ = 1,rmatrix%NEQ
+        p_Kdiagonal(iEQ) = iEQ
+      end do
+
+      ! Initialise 1,2,3,...,NA
+      do iA = 1,rmatrix%NA
+        p_Kcol(iA) = iA
+      end do
+            
+      ! Switch the matrix format
+      rmatrix%cmatrixFormat = cmatrixFormat
+      if (cmatrixFormat .eq. LSYSSC_MATRIX9INTL) then
+        rmatrix%cinterleavematrixFormat = LSYSSC_MATRIX1
+        rmatrix%NVAR = 1
+      end if
+            
+      rmatrix%h_Kcol = h_Kcol
+      rmatrix%h_Kld = h_Kld
+      rmatrix%h_Kdiagonal = h_Kdiagonal
+      
+      ! Switch off any duplication flag; the structure now belongs to this matrix.
+      rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,not(LSYSSC_MSPEC_STRUCTUREISCOPY))
+      
+    case (LSYSSC_MATRIX1)
+      !-------------------------------------------------------------------------
+      ! Desination matrix format 1 (full matrix)
+      !-------------------------------------------------------------------------
+
+      if (bentries .and. (rmatrix%h_Da .ne. ST_NOHANDLE)) then
+
+        ! Allocate new memory for full matrix
+        ihandle = ST_NOHANDLE
+        call storage_new ('lsyssc_convertMatrix', 'Da', rmatrix%NEQ*rmatrix%NCOLS,&
+            rmatrix%cdataType, ihandle, ST_NEWBLOCK_ZERO)
+
+        ! Convert diagonal matrix to full matrix by looping over all
+        ! diagonal entries and copying matrix entries one by one.
+        select case (rmatrix%cdataType)
+        case (ST_DOUBLE)
+          call lsyssc_getbase_double(rmatrix, p_Ddata)
+          call storage_getbase_double(ihandle, p_Ddata2)
+
+          do iEQ = 1,rmatrix%NEQ
+            p_Ddata2(iEQ) = p_Ddata(iEQ)
+          end do
+          
+        case (ST_SINGLE)
+          call lsyssc_getbase_single(rmatrix, p_Fdata)
+          call storage_getbase_single(ihandle, p_Fdata2)
+
+          do iEQ = 1,rmatrix%NEQ
+            p_Fdata2(iEQ) = p_Fdata(iEQ)
+          end do
+          
+        case default
+          call output_line('Unsupported data type!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+          call sys_halt()
+        end select
+        
+        if (bentryOwner .and. (rmatrix%h_Da .ne. ST_NOHANDLE)) then
+          call storage_free(rmatrix%h_Da)
+        end if
+        
+        ! Switch the matrix format
+        rmatrix%h_Da = ihandle
+        rmatrix%NA   = rmatrix%NEQ
+        rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,not(LSYSSC_MSPEC_CONTENTISCOPY))
+        
+      end if
+
+      ! Switch the matrix format
+      rmatrix%cmatrixFormat = LSYSSC_MATRIX1
+      rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,not(LSYSSC_MSPEC_STRUCTUREISCOPY))
+
+    case default
+      call output_line('Cannot convert matrix!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+      call sys_halt()
+    end select
+      
+  case (LSYSSC_MATRIX9INTL)
+    !---------------------------------------------------------------------------
+    ! Source matrix format 9intl
+    !---------------------------------------------------------------------------
+    select case (cmatrixFormat)
+    case (LSYSSC_MATRIXD)
+      !-------------------------------------------------------------------------
+      ! Desination matrix format D (diagonal matrix)
+      !-------------------------------------------------------------------------
+
+      ! Check if matrix is a square matrix
+      if (rmatrix%NEQ .ne. rmatrix%NCOLS) then
+        call output_line('Cannot convert nonsquare matrix into diagonal matrix!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+        call sys_halt()
+      end if
+      
+      if (bentries .and. (rmatrix%h_Da .ne. ST_NOHANDLE)) then
+        
+        ! Convert from structure 9 to structure D by copying the
+        ! diagonal to the front and reallocation of the memory
+        select case (rmatrix%cdataType)
+        case (ST_DOUBLE)
+          
+          call lsyssc_getbase_double (rmatrix,p_Ddata)
+          
+          if (.not. bentryOwner) then
+            ! Allocate new memory for the entries
+            rmatrix%h_Da = ST_NOHANDLE
+            call storage_new ('lsyssc_convertMatrix', 'Da', &
+                rmatrix%NEQ*rmatrix%NVAR, ST_DOUBLE, rmatrix%h_Da, ST_NEWBLOCK_NOINIT)
+            call storage_getbase_double (rmatrix%h_Da,p_Ddata2)
+            rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,not(LSYSSC_MSPEC_CONTENTISCOPY))
+          else
+            ! Destinatinon pointer points to source matrix.
+            ! This overwrites the original entries which is no problem as
+            ! extracting the diagonal is always a 'compression' overwriting
+            ! information that is not used anymore.
+            p_Ddata2 => p_Ddata
+          end if
+
+          call lsyssc_getbase_Kdiagonal (rmatrix,p_Kdiagonal)
+          select case(rmatrix%cinterleavematrixFormat)
+          case (LSYSSC_MATRIXD)
+            do i=1,rmatrix%NEQ
+              do ivar=1,rmatrix%NVAR
+                p_Ddata2(rmatrix%NVAR*(i-1)+ivar) = p_Ddata(rmatrix%NVAR*(p_Kdiagonal(i)-1)+ivar)
+              end do
+            end do
+
+          case (LSYSSC_MATRIX1)
+            do i=1,rmatrix%NEQ
+              do ivar=1,rmatrix%NVAR
+                p_Ddata2(rmatrix%NVAR*(i-1)+ivar) = p_Ddata(&
+                    rmatrix%NVAR*rmatrix%NVAR*(p_Kdiagonal(i)-1)+&
+                    rmatrix%NVAR*(ivar-1)+ivar)
+              end do
+            end do
+
+          case default
+            call output_line('Unsupported interleaved matrix format!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+            call sys_halt()
+          end select
+          
+        case (ST_SINGLE)
+
+          call lsyssc_getbase_single (rmatrix,p_Fdata)
+
+          if (.not. bentryOwner) then
+            ! Allocate new memory for the entries
+            rmatrix%h_Da = ST_NOHANDLE
+            call storage_new ('lsyssc_convertMatrix', 'Da', &
+                  rmatrix%NEQ*rmatrix%NVAR, ST_SINGLE, rmatrix%h_Da, ST_NEWBLOCK_NOINIT)
+            call storage_getbase_single (rmatrix%h_Da,p_Fdata2)
+            rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,not(LSYSSC_MSPEC_CONTENTISCOPY))
+          else
+            ! Destinatinon pointer points to source matrix.
+            ! This overwrites the original entries which is no problem as
+            ! extracting the diagonal is always a 'compression' overwriting
+            ! information that is not used anymore.
+            p_Fdata2 => p_Fdata
+          end if
+
+          call lsyssc_getbase_Kdiagonal (rmatrix,p_Kdiagonal)
+          select case(rmatrix%cinterleavematrixFormat)
+          case (LSYSSC_MATRIXD)
+            do i=1,rmatrix%NEQ
+              do ivar=1,rmatrix%NVAR
+                p_Fdata2(rmatrix%NVAR*(i-1)+ivar) = p_Fdata(rmatrix%NVAR*(p_Kdiagonal(i)-1)+ivar)
+              end do
+            end do
+
+          case (LSYSSC_MATRIX1)
+            do i=1,rmatrix%NEQ
+              do ivar=1,rmatrix%NVAR
+                p_Fdata2(rmatrix%NVAR*(i-1)+ivar) = p_Fdata(&
+                    rmatrix%NVAR*rmatrix%NVAR*(p_Kdiagonal(i)-1)+&
+                    rmatrix%NVAR*(ivar-1)+ivar)
+              end do
+            end do
+
+          case default
+            call output_line('Unsupported interleaved matrix format!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+            call sys_halt()
+          end select
+
+        case default
+          call output_line('Unsupported data type!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+          call sys_halt()
+        end select
+
+        ! Reallocate the entries-array to have only the diagonal entries.
+        ! In case we are not the owner, we have allocated new memory and thus
+        ! do not need to resize it again.
+        if (bentryOwner) then
+          call storage_realloc ('lsyssc_convertMatrix', rmatrix%NEQ*rmatrix%NVAR, &
+                                rmatrix%h_Da, ST_NEWBLOCK_NOINIT, bentries)
+        end if
+
+        rmatrix%NA = rmatrix%NEQ*rmatrix%NVAR
+
+      end if
+
+      ! Switch the matrix format
+      rmatrix%cmatrixFormat = LSYSSC_MATRIXD
+      rmatrix%cinterleavematrixFormat = LSYSSC_MATRIXUNDEFINED
+      rmatrix%NEQ = rmatrix%NEQ*rmatrix%NVAR
+      rmatrix%NCOLS = rmatrix%NCOLS*rmatrix%NVAR
+      rmatrix%NVAR = 1
+      rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,not(LSYSSC_MSPEC_STRUCTUREISCOPY))
+
+      ! Release unused information
+      if (bstrucOwner) then
+        call storage_free (rmatrix%h_Kdiagonal)
+        call storage_free (rmatrix%h_Kcol)
+        call storage_free (rmatrix%h_Kld)
+      else
+        rmatrix%h_Kdiagonal = ST_NOHANDLE
+        rmatrix%h_Kcol = ST_NOHANDLE
+        rmatrix%h_Kld = ST_NOHANDLE
+      end if
+      
+    case (LSYSSC_MATRIX1)
+      !-------------------------------------------------------------------------
+      ! Desination matrix format 1 (full matrix)
+      !-------------------------------------------------------------------------
+      
+      if (bentries .and. (rmatrix%h_Da .ne. ST_NOHANDLE)) then
+        
+        ! The structure is thrown away later so we do not care if the
+        ! matrix is the owner of the structure or not at the moment
+        call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
+        call lsyssc_getbase_Kld (rmatrix,p_Kld)
+        
+        ! Allocate new memory for full matrix
+        ihandle = ST_NOHANDLE
+        call storage_new ('lsyssc_convertMatrix', 'Da',&
+            rmatrix%NEQ*rmatrix%NCOLS*rmatrix%NVAR*rmatrix%NVAR,&
+            rmatrix%cdataType, ihandle, ST_NEWBLOCK_ZERO)
+        
+        ! Convert from format 9intl to format 1 by looping over all rows and
+        ! columns and copying matrix entries one by one.
+        select case (rmatrix%cdataType)
+        case (ST_DOUBLE)
+          call lsyssc_getbase_double(rmatrix, p_Ddata)
+          call storage_getbase_double(ihandle, p_Ddata2)
+          
+          select case(rmatrix%cinterleavematrixFormat)
+          case (LSYSSC_MATRIXD)
+            do iEQ = 1,rmatrix%NEQ
+              do ivar = 1,rmatrix%NVAR
+                do iA = p_Kld(ieq), p_Kld(ieq+1)-1
+                  p_Ddata2(&
+                      rmatrix%NEQ*rmatrix%NVAR*(rmatrix%NVAR*(p_Kcol(iA)-1)+ivar-1)+&
+                      rmatrix%NVAR*(iEQ-1)+ivar) = p_Ddata(&
+                      rmatrix%NVAR*(iA-1)+ivar)
+                end do
+              end do
+            end do
+            
+          case (LSYSSC_MATRIX1)
+            do iEQ = 1,rmatrix%NEQ
+              do ivar = 1,rmatrix%NVAR
+                do iA = p_Kld(ieq), p_Kld(ieq+1)-1
+                  do jvar = 1,rmatrix%NVAR
+                    p_Ddata2(&
+                        rmatrix%NEQ*rmatrix%NVAR*(rmatrix%NVAR*(p_Kcol(iA)-1)+jvar-1)+&
+                        rmatrix%NVAR*(iEQ-1)+ivar) = p_Ddata(&
+                        rmatrix%NVAR*rmatrix%NVAR*(iA-1)+&
+                        rmatrix%NVAR*(jvar-1)+ivar)
+                  end do
+                end do
+              end do
+            end do
+            
+          case default
+            call output_line('Unsupported interleaved matrix format!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+            call sys_halt()
+          end select
+          
+        case (ST_SINGLE)
+          call lsyssc_getbase_single(rmatrix, p_Fdata)
+          call storage_getbase_single(ihandle, p_Fdata2)
+          
+          select case(rmatrix%cinterleavematrixFormat)
+          case (LSYSSC_MATRIXD)
+            do iEQ = 1,rmatrix%NEQ
+              do ivar = 1,rmatrix%NVAR
+                do iA = p_Kld(ieq), p_Kld(ieq+1)-1
+                  p_Fdata2(&
+                      rmatrix%NEQ*rmatrix%NVAR*(rmatrix%NVAR*(p_Kcol(iA)-1)+ivar-1)+&
+                      rmatrix%NVAR*(iEQ-1)+ivar) = p_Fdata(&
+                      rmatrix%NVAR*(iA-1)+ivar)
+                end do
+              end do
+            end do
+            
+          case (LSYSSC_MATRIX1)
+            do iEQ = 1,rmatrix%NEQ
+              do ivar = 1,rmatrix%NVAR
+                do iA = p_Kld(ieq), p_Kld(ieq+1)-1
+                  do jvar = 1,rmatrix%NVAR
+                    p_Fdata2(&
+                        rmatrix%NEQ*rmatrix%NVAR*(rmatrix%NVAR*(p_Kcol(iA)-1)+jvar-1)+&
+                        rmatrix%NVAR*(iEQ-1)+ivar) = p_Fdata(&
+                        rmatrix%NVAR*rmatrix%NVAR*(iA-1)+&
+                        rmatrix%NVAR*(jvar-1)+ivar)
+                  end do
+                end do
+              end do
+            end do
+                        
+          case default
+            call output_line('Unsupported interleaved matrix format!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+            call sys_halt()
+          end select
+          
+        case default
+          call output_line('Unsupported data type!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+          call sys_halt()
+        end select
+        
+        if (bentryOwner .and. (rmatrix%h_Da .ne. ST_NOHANDLE)) then
+          call storage_free(rmatrix%h_Da)
+        end if
+        
+        ! Switch the matrix format
+        rmatrix%h_Da = ihandle
+        rmatrix%NA   = rmatrix%NEQ*rmatrix%NCOLS*rmatrix%NVAR*rmatrix%NVAR
+        rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,not(LSYSSC_MSPEC_CONTENTISCOPY))
+        
+      end if
+      
+      ! Switch the matrix format
+      rmatrix%cmatrixFormat = LSYSSC_MATRIX1
+      rmatrix%cinterleavematrixFormat = LSYSSC_MATRIXUNDEFINED
+      rmatrix%NEQ = rmatrix%NEQ*rmatrix%NVAR
+      rmatrix%NCOLS = rmatrix%NCOLS*rmatrix%NVAR
+      rmatrix%NVAR = 1
+      rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,not(LSYSSC_MSPEC_STRUCTUREISCOPY))
+      
+      ! Release unused information
+      if (bstrucOwner) then
+        call storage_free (rmatrix%h_Kdiagonal)
+        call storage_free (rmatrix%h_Kcol)
+        call storage_free (rmatrix%h_Kld)
+      else
+        rmatrix%h_Kdiagonal = ST_NOHANDLE
+        rmatrix%h_Kcol = ST_NOHANDLE
+        rmatrix%h_Kld = ST_NOHANDLE
+      end if
+      
+    case (LSYSSC_MATRIX7)
+      !-------------------------------------------------------------------------
+      ! Desination matrix format 7
+      !-------------------------------------------------------------------------
+
+      ! Compute number of nonzero entries
+      select case(rmatrix%cinterleavematrixFormat)
+      case (LSYSSC_MATRIXD)
+        NA = rmatrix%NA*rmatrix%NVAR
+      case (LSYSSC_MATRIX1)
+        NA = rmatrix%NA*rmatrix%NVAR*rmatrix%NVAR
+      case default
+        call output_line('Unsupported interleaved matrix format!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+        call sys_halt()
+      end select
+
+      ! Compute number of rows and columns
+      nrows = rmatrix%NEQ*rmatrix%NVAR
+      ncols = rmatrix%NCOLS*rmatrix%NVAR
+      
+      ! Allocate Kcol, Kld
+      h_Kcol = ST_NOHANDLE
+      h_Kld = ST_NOHANDLE
+      call storage_new ('lsyssc_convertMatrix', 'Kcol', &
+          NA, ST_INT, h_Kcol, ST_NEWBLOCK_NOINIT)
+      call storage_new ('lsyssc_convertMatrix', 'Kld', &
+          nrows+1, ST_INT, h_Kld, ST_NEWBLOCK_NOINIT)
+      
+      call storage_getbase_int (h_Kcol,p_Kcol)
+      call storage_getbase_int (h_Kld,p_Kld)
+      
+      ! The structure is modified later so we do not care if the
+      ! matrix is the owner of the structure or not at the moment
+      call lsyssc_getbase_Kcol (rmatrix,p_Kcol2)
+      call lsyssc_getbase_Kld (rmatrix,p_Kld2)
+      call lsyssc_getbase_Kdiagonal (rmatrix,p_Kdiagonal2)
+      
+      if (bentries .and. (rmatrix%h_Da .ne. ST_NOHANDLE)) then
+        
+        ! Get the matrix data
+        select case (rmatrix%cdataType)
+        case (ST_DOUBLE)
+          call lsyssc_getbase_double (rmatrix,p_Ddata2)
+        case (ST_SINGLE)
+          call lsyssc_getbase_single (rmatrix,p_Fdata2)
+        case default
+          call output_line('Unsupported data type!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+          call sys_halt()
+        end select
+
+        ! Allocate new memory for matrix
+        h_Da = ST_NOHANDLE
+        call storage_new ('lsyssc_convertMatrix', 'Da', NA,&
+            rmatrix%cdataType, h_Da, ST_NEWBLOCK_NOINIT)
+        
+        select case (rmatrix%cdataType)
+        case (ST_DOUBLE)
+          call storage_getbase_double (h_Da,p_Ddata)
+
+          select case(rmatrix%cinterleavematrixFormat)
+          case (LSYSSC_MATRIXD)
+            iA = 0
+            do i = 1,rmatrix%NEQ
+              do ivar = 1,rmatrix%NVAR
+                iA = iA + 1
+                p_Kld(rmatrix%NVAR*(i-1)+ivar) = iA
+                p_Kcol(iA) = rmatrix%NVAR*(i-1)+ivar
+                p_Ddata(iA) = p_Ddata2(&
+                    rmatrix%NVAR*(p_Kdiagonal2(i)-1)+ivar)
+                do iA2 = p_Kld2(i),p_Kld2(i+1)-1
+                  j = p_Kcol2(iA2)
+                  if (rmatrix%NVAR*(i-1).eq.rmatrix%NVAR*(j-1)) cycle
+                  iA = iA + 1
+                  p_Kcol(iA) = rmatrix%NVAR*(j-1)+ivar
+                  p_Ddata(iA) = p_Ddata2(rmatrix%NVAR*(iA2-1)+ivar)
+                end do
+              end do
+            end do
+            p_Kld(rmatrix%NEQ*rmatrix%NVAR+1) = NA+1
+            
+          case (LSYSSC_MATRIX1)
+            iA = 0
+            do i = 1,rmatrix%NEQ
+              do ivar = 1,rmatrix%NVAR
+                iA = iA + 1
+                p_Kld(rmatrix%NVAR*(i-1)+ivar) = iA
+                p_Kcol(iA) = rmatrix%NVAR*(i-1)+ivar
+                p_Ddata(iA) = p_Ddata2(&
+                    rmatrix%NVAR*rmatrix%NVAR*(p_Kdiagonal2(i)-1)+&
+                    rmatrix%NVAR*(ivar-1)+ivar)
+                do iA2 = p_Kld2(i),p_Kld2(i+1)-1
+                  do jvar = 1,rmatrix%NVAR
+                    j = p_Kcol2(iA2)
+                    if (rmatrix%NVAR*(i-1)+ivar.eq.rmatrix%NVAR*(j-1)+jvar) cycle
+                    iA = iA + 1
+                    p_Kcol(iA) = rmatrix%NVAR*(j-1)+jvar
+                    p_Ddata(iA) = p_Ddata2(rmatrix%NVAR*rmatrix%NVAR*(iA2-1)+&
+                                           rmatrix%NVAR*(jvar-1)+ivar)
+                  end do
+                end do
+              end do
+            end do
+            p_Kld(rmatrix%NEQ*rmatrix%NVAR+1) = NA+1
+            
+          case default
+            call output_line('Unsupported interleaved matrix format!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+            call sys_halt()
+          end select
+
+        case (ST_SINGLE)
+          call storage_getbase_single (h_Da,p_Fdata)
+
+          select case(rmatrix%cinterleavematrixFormat)
+          case (LSYSSC_MATRIXD)
+            iA = 0
+            do i = 1,rmatrix%NEQ
+              do ivar = 1,rmatrix%NVAR
+                iA = iA + 1
+                p_Kld(rmatrix%NVAR*(i-1)+ivar) = iA
+                p_Kcol(iA) = rmatrix%NVAR*(i-1)+ivar
+                p_Fdata(iA) = p_Fdata2(&
+                    rmatrix%NVAR*(p_Kdiagonal2(i)-1)+ivar)
+                do iA2 = p_Kld2(i),p_Kld2(i+1)-1
+                  j = p_Kcol2(iA2)
+                  if (rmatrix%NVAR*(i-1).eq.rmatrix%NVAR*(j-1)) cycle
+                  iA = iA + 1
+                  p_Kcol(iA) = rmatrix%NVAR*(j-1)+ivar
+                  p_Fdata(iA) = p_Fdata2(rmatrix%NVAR*(iA2-1)+ivar)
+                end do
+              end do
+            end do
+            p_Kld(rmatrix%NEQ*rmatrix%NVAR+1) = NA+1
+            
+          case (LSYSSC_MATRIX1)
+            iA = 0
+            do i = 1,rmatrix%NEQ
+              do ivar = 1,rmatrix%NVAR
+                iA = iA + 1
+                p_Kld(rmatrix%NVAR*(i-1)+ivar) = iA
+                p_Kcol(iA) = rmatrix%NVAR*(i-1)+ivar
+                p_Fdata(iA) = p_Fdata2(&
+                    rmatrix%NVAR*rmatrix%NVAR*(p_Kdiagonal2(i)-1)+&
+                    rmatrix%NVAR*(ivar-1)+ivar)
+                do iA2 = p_Kld2(i),p_Kld2(i+1)-1
+                  do jvar = 1,rmatrix%NVAR
+                    j = p_Kcol2(iA2)
+                    if (rmatrix%NVAR*(i-1)+ivar.eq.rmatrix%NVAR*(j-1)+jvar) cycle
+                    iA = iA + 1
+                    p_Kcol(iA) = rmatrix%NVAR*(j-1)+jvar
+                    p_Fdata(iA) = p_Fdata2(rmatrix%NVAR*rmatrix%NVAR*(iA2-1)+&
+                                           rmatrix%NVAR*(jvar-1)+ivar)
+                  end do
+                end do
+              end do
+            end do
+            p_Kld(rmatrix%NEQ*rmatrix%NVAR+1) = NA+1
+            
+          case default
+            call output_line('Unsupported interleaved matrix format!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+            call sys_halt()
+          end select
+          
+        case default
+          call output_line('Unsupported data type!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+          call sys_halt()
+        end select
+        
+        ! Release the content if it belongs to this matrix.
+        ! Replace by the new content.
+        if (bentryOwner) then
+          call storage_free (rmatrix%h_Da)
+        end if
+        
+        rmatrix%h_Da = h_Da
+        rmatrix%NA = NA
+
+      else
+        
+        select case(rmatrix%cinterleavematrixFormat)
+        case (LSYSSC_MATRIXD)
+          iA = 0
+          do i = 1,rmatrix%NEQ
+            do ivar = 1,rmatrix%NVAR
+              iA = iA + 1
+              p_Kld(rmatrix%NVAR*(i-1)+ivar) = iA
+              p_Kcol(iA) = rmatrix%NVAR*(i-1)+ivar
+              do iA2 = p_Kld2(i),p_Kld2(i+1)-1
+                j = p_Kcol2(iA2)
+                if (rmatrix%NVAR*(i-1).eq.rmatrix%NVAR*(j-1)) cycle
+                iA = iA + 1
+                p_Kcol(iA) = rmatrix%NVAR*(j-1)+ivar
+              end do
+            end do
+          end do
+          p_Kld(rmatrix%NEQ*rmatrix%NVAR+1) = NA+1
+          
+        case (LSYSSC_MATRIX1)
+          iA = 0
+          do i = 1,rmatrix%NEQ
+            do ivar = 1,rmatrix%NVAR
+              iA = iA + 1
+              p_Kld(rmatrix%NVAR*(i-1)+ivar) = iA
+              p_Kcol(iA) = rmatrix%NVAR*(i-1)+ivar
+              do iA2 = p_Kld2(i),p_Kld2(i+1)-1
+                do jvar = 1,rmatrix%NVAR
+                  j = p_Kcol2(iA2)
+                  if (rmatrix%NVAR*(i-1)+ivar.eq.rmatrix%NVAR*(j-1)+jvar) cycle
+                  iA = iA + 1
+                  p_Kcol(iA) = rmatrix%NVAR*(j-1)+jvar
+                end do
+              end do
+            end do
+          end do
+          p_Kld(rmatrix%NEQ*rmatrix%NVAR+1) = NA+1
+          
+        case default
+          call output_line('Unsupported interleaved matrix format!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+          call sys_halt()
+        end select
+        
+        ! Do not touch the content. The result is left in an undefined state!
+
+      end if
+
+      rmatrix%cmatrixFormat = LSYSSC_MATRIX7
+      rmatrix%cinterleavematrixFormat = LSYSSC_MATRIXUNDEFINED
+      rmatrix%NVAR = 1
+      rmatrix%NEQ = nrows
+      rmatrix%NCOLS = ncols
+
+      ! Release the structure if it belongs to this matrix.
+      ! Replace by the new content.
+      if (bstrucOwner) then
+        call storage_free (rmatrix%h_Kld)
+        call storage_free (rmatrix%h_Kcol)
+        call storage_free (rmatrix%h_Kdiagonal)
+      end if
+
+      rmatrix%h_Kld = h_Kld
+      rmatrix%h_Kcol = h_Kcol
+      rmatrix%h_Kdiagonal = ST_NOHANDLE
+
+      ! Switch off any duplication flag; the content now belongs to this matrix.
+      rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,not(LSYSSC_MSPEC_STRUCTUREISCOPY))
+
+    case (LSYSSC_MATRIX9)
+      !-------------------------------------------------------------------------
+      ! Desination matrix format 9
+      !-------------------------------------------------------------------------
+
+      ! Compute number of nonzero entries
+      select case(rmatrix%cinterleavematrixFormat)
+      case (LSYSSC_MATRIXD)
+        NA = rmatrix%NA*rmatrix%NVAR
+      case (LSYSSC_MATRIX1)
+        NA = rmatrix%NA*rmatrix%NVAR*rmatrix%NVAR
+      case default
+        call output_line('Unsupported interleaved matrix format!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+        call sys_halt()
+      end select
+
+      ! Compute number of rows and columns
+      nrows = rmatrix%NEQ*rmatrix%NVAR
+      ncols = rmatrix%NCOLS*rmatrix%NVAR
+      
+      ! Allocate Kcol, Kld, Kdiagonal
+      h_Kcol = ST_NOHANDLE
+      h_Kld = ST_NOHANDLE
+      h_Kdiagonal = ST_NOHANDLE
+      call storage_new ('lsyssc_convertMatrix', 'Kcol', &
+          NA, ST_INT, h_Kcol, ST_NEWBLOCK_NOINIT)
+      call storage_new ('lsyssc_convertMatrix', 'Kld', &
+          nrows+1, ST_INT, h_Kld, ST_NEWBLOCK_NOINIT)
+      call storage_new ('lsyssc_convertMatrix', 'Kdiagonal', &
+          nrows, ST_INT, h_Kdiagonal, ST_NEWBLOCK_NOINIT)
+      
+      call storage_getbase_int (h_Kcol,p_Kcol)
+      call storage_getbase_int (h_Kld,p_Kld)
+      call storage_getbase_int (h_Kdiagonal,p_Kdiagonal)
+
+      ! The structure is modified later so we do not care if the
+      ! matrix is the owner of the structure or not at the moment
+      call lsyssc_getbase_Kcol (rmatrix,p_Kcol2)
+      call lsyssc_getbase_Kld (rmatrix,p_Kld2)
+
+      if (bentries .and. (rmatrix%h_Da .ne. ST_NOHANDLE)) then
+        
+        ! Get the matrix data
+        select case (rmatrix%cdataType)
+        case (ST_DOUBLE)
+          call lsyssc_getbase_double (rmatrix,p_Ddata2)
+        case (ST_SINGLE)
+          call lsyssc_getbase_single (rmatrix,p_Fdata2)
+        case default
+          call output_line('Unsupported data type!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+          call sys_halt()
+        end select
+
+        ! Allocate new memory for matrix
+        h_Da = ST_NOHANDLE
+        call storage_new ('lsyssc_convertMatrix', 'Da', NA,&
+            rmatrix%cdataType, h_Da, ST_NEWBLOCK_NOINIT)
+        
+        select case (rmatrix%cdataType)
+        case (ST_DOUBLE)
+          call storage_getbase_double (h_Da,p_Ddata)
+
+          select case(rmatrix%cinterleavematrixFormat)
+          case (LSYSSC_MATRIXD)
+            iA = 0
+            do i = 1,rmatrix%NEQ
+              do ivar = 1,rmatrix%NVAR
+                p_Kld(rmatrix%NVAR*(i-1)+ivar) = iA+1
+                do iA2 = p_Kld2(i),p_Kld2(i+1)-1
+                  iA = iA + 1
+                  j  = p_Kcol2(iA2)
+                  p_Kcol(iA) = rmatrix%NVAR*(j-1)+ivar
+                  if (rmatrix%NVAR*(i-1).eq.rmatrix%NVAR*(j-1))&
+                      p_Kdiagonal(rmatrix%NVAR*(i-1)+ivar) = iA
+                  p_Ddata(iA) = p_Ddata2(rmatrix%NVAR*(iA2-1)+ivar)
+                end do
+              end do
+            end do
+            p_Kld(rmatrix%NEQ*rmatrix%NVAR+1) = NA+1
+            
+          case (LSYSSC_MATRIX1)
+            iA = 0
+            do i = 1,rmatrix%NEQ
+              do ivar = 1,rmatrix%NVAR
+                p_Kld(rmatrix%NVAR*(i-1)+ivar) = iA+1
+                do iA2 = p_Kld2(i),p_Kld2(i+1)-1
+                  do jvar = 1,rmatrix%NVAR
+                    iA = iA + 1
+                    j  = p_Kcol2(iA2)
+                    p_Kcol(iA) = rmatrix%NVAR*(j-1)+jvar
+                    if (rmatrix%NVAR*(i-1)+ivar.eq.rmatrix%NVAR*(j-1)+jvar)&
+                        p_Kdiagonal(rmatrix%NVAR*(i-1)+ivar) = iA
+                    p_Ddata(iA) = p_Ddata2(rmatrix%NVAR*rmatrix%NVAR*(iA2-1)+&
+                                           rmatrix%NVAR*(jvar-1)+ivar)
+                  end do
+                end do
+              end do
+            end do
+            p_Kld(rmatrix%NEQ*rmatrix%NVAR+1) = NA+1
+            
+          case default
+            call output_line('Unsupported interleaved matrix format!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+            call sys_halt()
+          end select
+
+        case (ST_SINGLE)
+          call storage_getbase_single (h_Da,p_Fdata)
+
+          select case(rmatrix%cinterleavematrixFormat)
+          case (LSYSSC_MATRIXD)
+            iA = 0
+            do i = 1,rmatrix%NEQ
+              do ivar = 1,rmatrix%NVAR
+                p_Kld(rmatrix%NVAR*(i-1)+ivar) = iA+1
+                do iA2 = p_Kld2(i),p_Kld2(i+1)-1
+                  iA = iA + 1
+                  j  = p_Kcol2(iA2)
+                  p_Kcol(iA) = rmatrix%NVAR*(j-1)+ivar
+                  if (rmatrix%NVAR*(i-1).eq.rmatrix%NVAR*(j-1))&
+                      p_Kdiagonal(rmatrix%NVAR*(i-1)+ivar) = iA
+                  p_Fdata(iA) = p_Fdata2(rmatrix%NVAR*(iA2-1)+ivar)
+                end do
+              end do
+            end do
+            p_Kld(rmatrix%NEQ*rmatrix%NVAR+1) = NA+1
+            
+          case (LSYSSC_MATRIX1)
+            iA = 0
+            do i = 1,rmatrix%NEQ
+              do ivar = 1,rmatrix%NVAR
+                p_Kld(rmatrix%NVAR*(i-1)+ivar) = iA+1
+                do iA2 = p_Kld2(i),p_Kld2(i+1)-1
+                  do jvar = 1,rmatrix%NVAR
+                    iA = iA + 1
+                    j  = p_Kcol2(iA2)
+                    p_Kcol(iA) = rmatrix%NVAR*(j-1)+jvar
+                    if (rmatrix%NVAR*(i-1)+ivar.eq.rmatrix%NVAR*(j-1)+jvar)&
+                        p_Kdiagonal(rmatrix%NVAR*(i-1)+ivar) = iA
+                    p_Fdata(iA) = p_Fdata2(rmatrix%NVAR*rmatrix%NVAR*(iA2-1)+&
+                                           rmatrix%NVAR*(jvar-1)+ivar)
+                  end do
+                end do
+              end do
+            end do
+            p_Kld(rmatrix%NEQ*rmatrix%NVAR+1) = NA+1
+            
+          case default
+            call output_line('Unsupported interleaved matrix format!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+            call sys_halt()
+          end select
+          
+        case default
+          call output_line('Unsupported data type!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+          call sys_halt()
+        end select
+        
+        ! Release the content if it belongs to this matrix.
+        ! Replace by the new content.
+        if (bentryOwner) then
+          call storage_free (rmatrix%h_Da)
+        end if
+        
+        rmatrix%h_Da = h_Da
+        rmatrix%NA = NA
+
+      else
+        
+        select case(rmatrix%cinterleavematrixFormat)
+        case (LSYSSC_MATRIXD)
+          iA = 0
+          do i = 1,rmatrix%NEQ
+            do ivar = 1,rmatrix%NVAR
+              p_Kld(rmatrix%NVAR*(i-1)+ivar) = iA+1
+              do iA2 = p_Kld2(i),p_Kld2(i+1)-1
+                iA = iA + 1
+                j  = p_Kcol2(iA2)
+                p_Kcol(iA) = rmatrix%NVAR*(j-1)+ivar
+                if (rmatrix%NVAR*(i-1).eq.rmatrix%NVAR*(j-1))&
+                    p_Kdiagonal(rmatrix%NVAR*(i-1)+ivar) = iA
+              end do
+            end do
+          end do
+          p_Kld(rmatrix%NEQ*rmatrix%NVAR+1) = NA+1
+          
+        case (LSYSSC_MATRIX1)
+          iA = 0
+          do i = 1,rmatrix%NEQ
+            do ivar = 1,rmatrix%NVAR
+              p_Kld(rmatrix%NVAR*(i-1)+ivar) = iA+1
+              do iA2 = p_Kld2(i),p_Kld2(i+1)-1
+                do jvar = 1,rmatrix%NVAR
+                  iA = iA + 1
+                  j  = p_Kcol2(iA2)
+                  p_Kcol(iA) = rmatrix%NVAR*(j-1)+jvar
+                  if (rmatrix%NVAR*(i-1)+ivar.eq.rmatrix%NVAR*(j-1)+jvar)&
+                      p_Kdiagonal(rmatrix%NVAR*(i-1)+ivar) = iA
+                end do
+              end do
+            end do
+          end do
+          p_Kld(rmatrix%NEQ*rmatrix%NVAR+1) = NA+1
+          
+        case default
+          call output_line('Unsupported interleaved matrix format!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+          call sys_halt()
+        end select
+        
+        ! Do not touch the content. The result is left in an undefined state!
+
+      end if
+
+      rmatrix%cmatrixFormat = LSYSSC_MATRIX9
+      rmatrix%cinterleavematrixFormat = LSYSSC_MATRIXUNDEFINED
+      rmatrix%NVAR = 1
+      rmatrix%NEQ = nrows
+      rmatrix%NCOLS = ncols
+
+      ! Release the structure if it belongs to this matrix.
+      ! Replace by the new content.
+      if (bstrucOwner) then
+        call storage_free (rmatrix%h_Kld)
+        call storage_free (rmatrix%h_Kcol)
+        call storage_free (rmatrix%h_Kdiagonal)
+      end if
+
+      rmatrix%h_Kld = h_Kld
+      rmatrix%h_Kcol = h_Kcol
+      rmatrix%h_Kdiagonal = h_Kdiagonal
+
+      ! Switch off any duplication flag; the content now belongs to this matrix.
+      rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,not(LSYSSC_MSPEC_STRUCTUREISCOPY))
+
     case (LSYSSC_MATRIX7INTL)
+      !-------------------------------------------------------------------------
+      ! Desination matrix format 7intl
+      !-------------------------------------------------------------------------
 
       if (.not. bstrucOwner) then
 
@@ -7179,6 +8530,7 @@ contains
           rmatrix%h_Kdiagonal = ST_NOHANDLE
         end if
 
+        ! Switch the matrix format
         rmatrix%cmatrixFormat = LSYSSC_MATRIX7INTL
 
       else
@@ -7235,6 +8587,7 @@ contains
           rmatrix%h_Kdiagonal = ST_NOHANDLE
         end if
 
+        ! Switch the matrix format
         rmatrix%cmatrixFormat = LSYSSC_MATRIX7INTL
       end if
 
@@ -7245,9 +8598,768 @@ contains
     end select
 
   case (LSYSSC_MATRIX7INTL)
-
+    !---------------------------------------------------------------------------
+    ! Source matrix format 7intl
+    !---------------------------------------------------------------------------
     select case (cmatrixFormat)
+    case (LSYSSC_MATRIXD)
+      !-------------------------------------------------------------------------
+      ! Desination matrix format D (diagonal matrix)
+      !-------------------------------------------------------------------------
+      
+      ! Check if matrix is a square matrix
+      if (rmatrix%NEQ .ne. rmatrix%NCOLS) then
+        call output_line('Cannot convert nonsquare matrix into diagonal matrix!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+        call sys_halt()
+      end if
+      
+      if (bentries .and. (rmatrix%h_Da .ne. ST_NOHANDLE)) then
+        
+        ! Convert from structure 9 to structure D by copying the
+        ! diagonal to the front and reallocation of the memory
+        select case (rmatrix%cdataType)
+        case (ST_DOUBLE)
+          
+          call lsyssc_getbase_double (rmatrix,p_Ddata)
+          
+          if (.not. bentryOwner) then
+            ! Allocate new memory for the entries
+            rmatrix%h_Da = ST_NOHANDLE
+            call storage_new ('lsyssc_convertMatrix', 'Da', &
+                rmatrix%NEQ*rmatrix%NVAR, ST_DOUBLE, rmatrix%h_Da, ST_NEWBLOCK_NOINIT)
+            call storage_getbase_double (rmatrix%h_Da,p_Ddata2)
+            rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,not(LSYSSC_MSPEC_CONTENTISCOPY))
+          else
+            ! Destinatinon pointer points to source matrix.
+            ! This overwrites the original entries which is no problem as
+            ! extracting the diagonal is always a 'compression' overwriting
+            ! information that is not used anymore.
+            p_Ddata2 => p_Ddata
+          end if
+
+          call lsyssc_getbase_Kld (rmatrix,p_Kld)
+          select case(rmatrix%cinterleavematrixFormat)
+          case (LSYSSC_MATRIXD)
+            do i=1,rmatrix%NEQ
+              do ivar=1,rmatrix%NVAR
+                p_Ddata2(rmatrix%NVAR*(i-1)+ivar) = p_Ddata(rmatrix%NVAR*(p_Kld(i)-1)+ivar)
+              end do
+            end do
+
+          case (LSYSSC_MATRIX1)
+            do i=1,rmatrix%NEQ
+              do ivar=1,rmatrix%NVAR
+                p_Ddata2(rmatrix%NVAR*(i-1)+ivar) = p_Ddata(&
+                    rmatrix%NVAR*rmatrix%NVAR*(p_Kld(i)-1)+&
+                    rmatrix%NVAR*(ivar-1)+ivar)
+              end do
+            end do
+
+          case default
+            call output_line('Unsupported interleaved matrix format!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+            call sys_halt()
+          end select
+          
+        case (ST_SINGLE)
+
+          call lsyssc_getbase_single (rmatrix,p_Fdata)
+
+          if (.not. bentryOwner) then
+            ! Allocate new memory for the entries
+            rmatrix%h_Da = ST_NOHANDLE
+            call storage_new ('lsyssc_convertMatrix', 'Da', &
+                  rmatrix%NEQ*rmatrix%NVAR, ST_SINGLE, rmatrix%h_Da, ST_NEWBLOCK_NOINIT)
+            call storage_getbase_single (rmatrix%h_Da,p_Fdata2)
+            rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,not(LSYSSC_MSPEC_CONTENTISCOPY))
+          else
+            ! Destinatinon pointer points to source matrix.
+            ! This overwrites the original entries which is no problem as
+            ! extracting the diagonal is always a 'compression' overwriting
+            ! information that is not used anymore.
+            p_Fdata2 => p_Fdata
+          end if
+
+          call lsyssc_getbase_Kld (rmatrix,p_Kld)
+          select case(rmatrix%cinterleavematrixFormat)
+          case (LSYSSC_MATRIXD)
+            do i=1,rmatrix%NEQ
+              do ivar=1,rmatrix%NVAR
+                p_Fdata2(rmatrix%NVAR*(i-1)+ivar) = p_Fdata(rmatrix%NVAR*(p_Kld(i)-1)+ivar)
+              end do
+            end do
+
+          case (LSYSSC_MATRIX1)
+            do i=1,rmatrix%NEQ
+              do ivar=1,rmatrix%NVAR
+                p_Fdata2(rmatrix%NVAR*(i-1)+ivar) = p_Fdata(&
+                    rmatrix%NVAR*rmatrix%NVAR*(p_Kld(i)-1)+&
+                    rmatrix%NVAR*(ivar-1)+ivar)
+              end do
+            end do
+
+          case default
+            call output_line('Unsupported interleaved matrix format!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+            call sys_halt()
+          end select
+
+        case default
+          call output_line('Unsupported data type!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+          call sys_halt()
+        end select
+
+        ! Reallocate the entries-array to have only the diagonal entries.
+        ! In case we are not the owner, we have allocated new memory and thus
+        ! do not need to resize it again.
+        if (bentryOwner) then
+          call storage_realloc ('lsyssc_convertMatrix', rmatrix%NEQ*rmatrix%NVAR, &
+                                rmatrix%h_Da, ST_NEWBLOCK_NOINIT, bentries)
+        end if
+
+        rmatrix%NA = rmatrix%NEQ*rmatrix%NVAR
+
+      end if
+
+      ! Switch the matrix format
+      rmatrix%cmatrixFormat = LSYSSC_MATRIXD
+      rmatrix%cinterleavematrixFormat = LSYSSC_MATRIXUNDEFINED
+      rmatrix%NEQ = rmatrix%NEQ*rmatrix%NVAR
+      rmatrix%NCOLS = rmatrix%NCOLS*rmatrix%NVAR
+      rmatrix%NVAR = 1
+      rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,not(LSYSSC_MSPEC_STRUCTUREISCOPY))
+
+      ! Release unused information
+      if (bstrucOwner) then
+        call storage_free (rmatrix%h_Kcol)
+        call storage_free (rmatrix%h_Kld)
+      else
+        rmatrix%h_Kcol = ST_NOHANDLE
+        rmatrix%h_Kld = ST_NOHANDLE
+      end if
+
+    case (LSYSSC_MATRIX1)
+      !-------------------------------------------------------------------------
+      ! Desination matrix format 1 (full matrix)
+      !-------------------------------------------------------------------------
+      
+      if (bentries .and. (rmatrix%h_Da .ne. ST_NOHANDLE)) then
+        
+        ! The structure is thrown away later so we do not care if the
+        ! matrix is the owner of the structure or not at the moment
+        call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
+        call lsyssc_getbase_Kld (rmatrix,p_Kld)
+        
+        ! Allocate new memory for full matrix
+        ihandle = ST_NOHANDLE
+        call storage_new ('lsyssc_convertMatrix', 'Da',&
+            rmatrix%NEQ*rmatrix%NCOLS*rmatrix%NVAR*rmatrix%NVAR,&
+            rmatrix%cdataType, ihandle, ST_NEWBLOCK_ZERO)
+        
+        ! Convert from format 9intl to format 1 by looping over all rows and
+        ! columns and copying matrix entries one by one.
+        select case (rmatrix%cdataType)
+        case (ST_DOUBLE)
+          call lsyssc_getbase_double(rmatrix, p_Ddata)
+          call storage_getbase_double(ihandle, p_Ddata2)
+          
+          select case(rmatrix%cinterleavematrixFormat)
+          case (LSYSSC_MATRIXD)
+            do iEQ = 1,rmatrix%NEQ
+              do ivar = 1,rmatrix%NVAR
+                do iA = p_Kld(ieq), p_Kld(ieq+1)-1
+                  p_Ddata2(&
+                      rmatrix%NEQ*rmatrix%NVAR*(rmatrix%NVAR*(p_Kcol(iA)-1)+ivar-1)+&
+                      rmatrix%NVAR*(iEQ-1)+ivar) = p_Ddata(&
+                      rmatrix%NVAR*(iA-1)+ivar)
+                end do
+              end do
+            end do
+            
+          case (LSYSSC_MATRIX1)
+            do iEQ = 1,rmatrix%NEQ
+              do ivar = 1,rmatrix%NVAR
+                do iA = p_Kld(ieq), p_Kld(ieq+1)-1
+                  do jvar = 1,rmatrix%NVAR
+                    p_Ddata2(&
+                        rmatrix%NEQ*rmatrix%NVAR*(rmatrix%NVAR*(p_Kcol(iA)-1)+jvar-1)+&
+                        rmatrix%NVAR*(iEQ-1)+ivar) = p_Ddata(&
+                        rmatrix%NVAR*rmatrix%NVAR*(iA-1)+&
+                        rmatrix%NVAR*(jvar-1)+ivar)
+                  end do
+                end do
+              end do
+            end do
+            
+          case default
+            call output_line('Unsupported interleaved matrix format!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+            call sys_halt()
+          end select
+          
+        case (ST_SINGLE)
+          call lsyssc_getbase_single(rmatrix, p_Fdata)
+          call storage_getbase_single(ihandle, p_Fdata2)
+          
+          select case(rmatrix%cinterleavematrixFormat)
+          case (LSYSSC_MATRIXD)
+            do iEQ = 1,rmatrix%NEQ
+              do ivar = 1,rmatrix%NVAR
+                do iA = p_Kld(ieq), p_Kld(ieq+1)-1
+                  p_Fdata2(&
+                      rmatrix%NEQ*rmatrix%NVAR*(rmatrix%NVAR*(p_Kcol(iA)-1)+ivar-1)+&
+                      rmatrix%NVAR*(iEQ-1)+ivar) = p_Fdata(&
+                      rmatrix%NVAR*(iA-1)+ivar)
+                end do
+              end do
+            end do
+            
+          case (LSYSSC_MATRIX1)
+            do iEQ = 1,rmatrix%NEQ
+              do ivar = 1,rmatrix%NVAR
+                do iA = p_Kld(ieq), p_Kld(ieq+1)-1
+                  do jvar = 1,rmatrix%NVAR
+                    p_Fdata2(&
+                        rmatrix%NEQ*rmatrix%NVAR*(rmatrix%NVAR*(p_Kcol(iA)-1)+jvar-1)+&
+                        rmatrix%NVAR*(iEQ-1)+ivar) = p_Fdata(&
+                        rmatrix%NVAR*rmatrix%NVAR*(iA-1)+&
+                        rmatrix%NVAR*(jvar-1)+ivar)
+                  end do
+                end do
+              end do
+            end do
+                        
+          case default
+            call output_line('Unsupported interleaved matrix format!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+            call sys_halt()
+          end select
+          
+        case default
+          call output_line('Unsupported data type!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+          call sys_halt()
+        end select
+        
+        if (bentryOwner .and. (rmatrix%h_Da .ne. ST_NOHANDLE)) then
+          call storage_free(rmatrix%h_Da)
+        end if
+        
+        ! Switch the matrix format
+        rmatrix%h_Da = ihandle
+        rmatrix%NA   = rmatrix%NEQ*rmatrix%NCOLS*rmatrix%NVAR*rmatrix%NVAR
+        rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,not(LSYSSC_MSPEC_CONTENTISCOPY))
+        
+      end if
+      
+      ! Switch the matrix format
+      rmatrix%cmatrixFormat = LSYSSC_MATRIX1
+      rmatrix%cinterleavematrixFormat = LSYSSC_MATRIXUNDEFINED
+      rmatrix%NEQ = rmatrix%NEQ*rmatrix%NVAR
+      rmatrix%NCOLS = rmatrix%NCOLS*rmatrix%NVAR
+      rmatrix%NVAR = 1
+      rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,not(LSYSSC_MSPEC_STRUCTUREISCOPY))
+      
+      ! Release unused information
+      if (bstrucOwner) then
+        call storage_free (rmatrix%h_Kcol)
+        call storage_free (rmatrix%h_Kld)
+      else
+        rmatrix%h_Kcol = ST_NOHANDLE
+        rmatrix%h_Kld = ST_NOHANDLE
+      end if
+
+    case (LSYSSC_MATRIX7)
+      !-------------------------------------------------------------------------
+      ! Desination matrix format 7
+      !-------------------------------------------------------------------------
+
+      ! Compute number of nonzero entries
+      select case(rmatrix%cinterleavematrixFormat)
+      case (LSYSSC_MATRIXD)
+        NA = rmatrix%NA*rmatrix%NVAR
+      case (LSYSSC_MATRIX1)
+        NA = rmatrix%NA*rmatrix%NVAR*rmatrix%NVAR
+      case default
+        call output_line('Unsupported interleaved matrix format!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+        call sys_halt()
+      end select
+
+      ! Compute number of rows and columns
+      nrows = rmatrix%NEQ*rmatrix%NVAR
+      ncols = rmatrix%NCOLS*rmatrix%NVAR
+
+      ! Allocate Kcol, Kld
+      h_Kcol = ST_NOHANDLE
+      h_Kld = ST_NOHANDLE
+      call storage_new ('lsyssc_convertMatrix', 'Kcol', &
+          NA, ST_INT, h_Kcol, ST_NEWBLOCK_NOINIT)
+      call storage_new ('lsyssc_convertMatrix', 'Kld', &
+          nrows+1, ST_INT, h_Kld, ST_NEWBLOCK_NOINIT)
+      
+      call storage_getbase_int (h_Kcol,p_Kcol)
+      call storage_getbase_int (h_Kld,p_Kld)
+      
+      ! The structure is modified later so we do not care if the
+      ! matrix is the owner of the structure or not at the moment
+      call lsyssc_getbase_Kcol (rmatrix,p_Kcol2)
+      call lsyssc_getbase_Kld (rmatrix,p_Kld2)
+      
+      if (bentries .and. (rmatrix%h_Da .ne. ST_NOHANDLE)) then
+        
+        ! Get the matrix data
+        select case (rmatrix%cdataType)
+        case (ST_DOUBLE)
+          call lsyssc_getbase_double (rmatrix,p_Ddata2)
+        case (ST_SINGLE)
+          call lsyssc_getbase_single (rmatrix,p_Fdata2)
+        case default
+          call output_line('Unsupported data type!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+          call sys_halt()
+        end select
+
+        ! Allocate new memory for matrix
+        h_Da = ST_NOHANDLE
+        call storage_new ('lsyssc_convertMatrix', 'Da', NA,&
+            rmatrix%cdataType, h_Da, ST_NEWBLOCK_NOINIT)
+        
+        select case (rmatrix%cdataType)
+        case (ST_DOUBLE)
+          call storage_getbase_double (h_Da,p_Ddata)
+
+          select case(rmatrix%cinterleavematrixFormat)
+          case (LSYSSC_MATRIXD)
+            iA = 0
+            do i = 1,rmatrix%NEQ
+              do ivar = 1,rmatrix%NVAR
+                iA = iA + 1
+                p_Kld(rmatrix%NVAR*(i-1)+ivar) = iA
+                p_Kcol(iA) = rmatrix%NVAR*(i-1)+ivar
+                p_Ddata(iA) = p_Ddata2(&
+                    rmatrix%NVAR*(p_Kld2(i)-1)+ivar)
+                do iA2 = p_Kld2(i),p_Kld2(i+1)-1
+                  j = p_Kcol2(iA2)
+                  if (rmatrix%NVAR*(i-1).eq.rmatrix%NVAR*(j-1)) cycle
+                  iA = iA + 1
+                  p_Kcol(iA) = rmatrix%NVAR*(j-1)+ivar
+                  p_Ddata(iA) = p_Ddata2(rmatrix%NVAR*(iA2-1)+ivar)
+                end do
+              end do
+            end do
+            p_Kld(rmatrix%NEQ*rmatrix%NVAR+1) = NA+1
+            
+          case (LSYSSC_MATRIX1)
+            iA = 0
+            do i = 1,rmatrix%NEQ
+              do ivar = 1,rmatrix%NVAR
+                iA = iA + 1
+                p_Kld(rmatrix%NVAR*(i-1)+ivar) = iA
+                p_Kcol(iA) = rmatrix%NVAR*(i-1)+ivar
+                p_Ddata(iA) = p_Ddata2(&
+                    rmatrix%NVAR*rmatrix%NVAR*(p_Kld2(i)-1)+&
+                    rmatrix%NVAR*(ivar-1)+ivar)
+                do iA2 = p_Kld2(i),p_Kld2(i+1)-1
+                  do jvar = 1,rmatrix%NVAR
+                    j = p_Kcol2(iA2)
+                    if (rmatrix%NVAR*(i-1)+ivar.eq.rmatrix%NVAR*(j-1)+jvar) cycle
+                    iA = iA + 1
+                    p_Kcol(iA) = rmatrix%NVAR*(j-1)+jvar
+                    p_Ddata(iA) = p_Ddata2(rmatrix%NVAR*rmatrix%NVAR*(iA2-1)+&
+                                           rmatrix%NVAR*(jvar-1)+ivar)
+                  end do
+                end do
+              end do
+            end do
+            p_Kld(rmatrix%NEQ*rmatrix%NVAR+1) = NA+1
+            
+          case default
+            call output_line('Unsupported interleaved matrix format!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+            call sys_halt()
+          end select
+
+        case (ST_SINGLE)
+          call storage_getbase_single (h_Da,p_Fdata)
+
+          select case(rmatrix%cinterleavematrixFormat)
+          case (LSYSSC_MATRIXD)
+            iA = 0
+            do i = 1,rmatrix%NEQ
+              do ivar = 1,rmatrix%NVAR
+                iA = iA + 1
+                p_Kld(rmatrix%NVAR*(i-1)+ivar) = iA
+                p_Kcol(iA) = rmatrix%NVAR*(i-1)+ivar
+                p_Fdata(iA) = p_Fdata2(&
+                    rmatrix%NVAR*(p_Kld2(i)-1)+ivar)
+                do iA2 = p_Kld2(i),p_Kld2(i+1)-1
+                  j = p_Kcol2(iA2)
+                  if (rmatrix%NVAR*(i-1).eq.rmatrix%NVAR*(j-1)) cycle
+                  iA = iA + 1
+                  p_Kcol(iA) = rmatrix%NVAR*(j-1)+ivar
+                  p_Fdata(iA) = p_Fdata2(rmatrix%NVAR*(iA2-1)+ivar)
+                end do
+              end do
+            end do
+            p_Kld(rmatrix%NEQ*rmatrix%NVAR+1) = NA+1
+            
+          case (LSYSSC_MATRIX1)
+            iA = 0
+            do i = 1,rmatrix%NEQ
+              do ivar = 1,rmatrix%NVAR
+                iA = iA + 1
+                p_Kld(rmatrix%NVAR*(i-1)+ivar) = iA
+                p_Kcol(iA) = rmatrix%NVAR*(i-1)+ivar
+                p_Fdata(iA) = p_Fdata2(&
+                    rmatrix%NVAR*rmatrix%NVAR*(p_Kld2(i)-1)+&
+                    rmatrix%NVAR*(ivar-1)+ivar)
+                do iA2 = p_Kld2(i),p_Kld2(i+1)-1
+                  do jvar = 1,rmatrix%NVAR
+                    j = p_Kcol2(iA2)
+                    if (rmatrix%NVAR*(i-1)+ivar.eq.rmatrix%NVAR*(j-1)+jvar) cycle
+                    iA = iA + 1
+                    p_Kcol(iA) = rmatrix%NVAR*(j-1)+jvar
+                    p_Fdata(iA) = p_Fdata2(rmatrix%NVAR*rmatrix%NVAR*(iA2-1)+&
+                                           rmatrix%NVAR*(jvar-1)+ivar)
+                  end do
+                end do
+              end do
+            end do
+            p_Kld(rmatrix%NEQ*rmatrix%NVAR+1) = NA+1
+            
+          case default
+            call output_line('Unsupported interleaved matrix format!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+            call sys_halt()
+          end select
+          
+        case default
+          call output_line('Unsupported data type!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+          call sys_halt()
+        end select
+        
+        ! Release the content if it belongs to this matrix.
+        ! Replace by the new content.
+        if (bentryOwner) then
+          call storage_free (rmatrix%h_Da)
+        end if
+        
+        rmatrix%h_Da = h_Da
+        rmatrix%NA = NA
+
+      else
+        
+        select case(rmatrix%cinterleavematrixFormat)
+        case (LSYSSC_MATRIXD)
+          iA = 0
+          do i = 1,rmatrix%NEQ
+            do ivar = 1,rmatrix%NVAR
+              iA = iA + 1
+              p_Kld(rmatrix%NVAR*(i-1)+ivar) = iA
+              p_Kcol(iA) = rmatrix%NVAR*(i-1)+ivar
+              do iA2 = p_Kld2(i),p_Kld2(i+1)-1
+                j = p_Kcol2(iA2)
+                if (rmatrix%NVAR*(i-1).eq.rmatrix%NVAR*(j-1)) cycle
+                iA = iA + 1
+                p_Kcol(iA) = rmatrix%NVAR*(j-1)+ivar
+              end do
+            end do
+          end do
+          p_Kld(rmatrix%NEQ*rmatrix%NVAR+1) = NA+1
+          
+        case (LSYSSC_MATRIX1)
+          iA = 0
+          do i = 1,rmatrix%NEQ
+            do ivar = 1,rmatrix%NVAR
+              iA = iA + 1
+              p_Kld(rmatrix%NVAR*(i-1)+ivar) = iA
+              p_Kcol(iA) = rmatrix%NVAR*(i-1)+ivar
+              do iA2 = p_Kld2(i),p_Kld2(i+1)-1
+                do jvar = 1,rmatrix%NVAR
+                  j = p_Kcol2(iA2)
+                  if (rmatrix%NVAR*(i-1)+ivar.eq.rmatrix%NVAR*(j-1)+jvar) cycle
+                  iA = iA + 1
+                  p_Kcol(iA) = rmatrix%NVAR*(j-1)+jvar
+                end do
+              end do
+            end do
+          end do
+          p_Kld(rmatrix%NEQ*rmatrix%NVAR+1) = NA+1
+          
+        case default
+          call output_line('Unsupported interleaved matrix format!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+          call sys_halt()
+        end select
+        
+        ! Do not touch the content. The result is left in an undefined state!
+
+      end if
+
+      rmatrix%cmatrixFormat = LSYSSC_MATRIX7
+      rmatrix%cinterleavematrixFormat = LSYSSC_MATRIXUNDEFINED
+      rmatrix%NVAR = 1
+      rmatrix%NEQ = nrows
+      rmatrix%NCOLS = ncols
+
+      ! Release the structure if it belongs to this matrix.
+      ! Replace by the new content.
+      if (bstrucOwner) then
+        call storage_free (rmatrix%h_Kld)
+        call storage_free (rmatrix%h_Kcol)
+      end if
+
+      rmatrix%h_Kld = h_Kld
+      rmatrix%h_Kcol = h_Kcol
+
+      ! Switch off any duplication flag; the content now belongs to this matrix.
+      rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,not(LSYSSC_MSPEC_STRUCTUREISCOPY))
+      
+    case (LSYSSC_MATRIX9)
+      !-------------------------------------------------------------------------
+      ! Desination matrix format 9
+      !-------------------------------------------------------------------------
+
+      ! Compute number of nonzero entries
+      select case(rmatrix%cinterleavematrixFormat)
+      case (LSYSSC_MATRIXD)
+        NA = rmatrix%NA*rmatrix%NVAR
+      case (LSYSSC_MATRIX1)
+        NA = rmatrix%NA*rmatrix%NVAR*rmatrix%NVAR
+      case default
+        call output_line('Unsupported interleaved matrix format!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+        call sys_halt()
+      end select
+
+      ! Compute number of rows and columns
+      nrows = rmatrix%NEQ*rmatrix%NVAR
+      ncols = rmatrix%NCOLS*rmatrix%NVAR
+      
+      ! Allocate Kcol, Kld, Kdiagonal
+      h_Kcol = ST_NOHANDLE
+      h_Kld = ST_NOHANDLE
+      h_Kdiagonal = ST_NOHANDLE
+      call storage_new ('lsyssc_convertMatrix', 'Kcol', &
+          NA, ST_INT, h_Kcol, ST_NEWBLOCK_NOINIT)
+      call storage_new ('lsyssc_convertMatrix', 'Kld', &
+          nrows+1, ST_INT, h_Kld, ST_NEWBLOCK_NOINIT)
+      call storage_new ('lsyssc_convertMatrix', 'Kdiagonal', &
+          nrows, ST_INT, h_Kdiagonal, ST_NEWBLOCK_NOINIT)
+      
+      call storage_getbase_int (h_Kcol,p_Kcol)
+      call storage_getbase_int (h_Kld,p_Kld)
+      call storage_getbase_int (h_Kdiagonal,p_Kdiagonal)
+
+      ! The structure is modified later so we do not care if the
+      ! matrix is the owner of the structure or not at the moment
+      call lsyssc_getbase_Kcol (rmatrix,p_Kcol2)
+      call lsyssc_getbase_Kld (rmatrix,p_Kld2)
+      
+      if (bentries .and. (rmatrix%h_Da .ne. ST_NOHANDLE)) then
+        
+        ! Get the matrix data
+        select case (rmatrix%cdataType)
+        case (ST_DOUBLE)
+          call lsyssc_getbase_double (rmatrix,p_Ddata2)
+        case (ST_SINGLE)
+          call lsyssc_getbase_single (rmatrix,p_Fdata2)
+        case default
+          call output_line('Unsupported data type!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+          call sys_halt()
+        end select
+
+        ! Allocate new memory for matrix
+        h_Da = ST_NOHANDLE
+        call storage_new ('lsyssc_convertMatrix', 'Da', NA,&
+            rmatrix%cdataType, h_Da, ST_NEWBLOCK_NOINIT)
+        
+        select case (rmatrix%cdataType)
+        case (ST_DOUBLE)
+          call storage_getbase_double (h_Da,p_Ddata)
+
+          select case(rmatrix%cinterleavematrixFormat)
+          case (LSYSSC_MATRIXD)
+            iA = 0
+            do i = 1,rmatrix%NEQ
+              do ivar = 1,rmatrix%NVAR
+                p_Kld(rmatrix%NVAR*(i-1)+ivar) = iA+1
+                do iA2 = p_Kld2(i),p_Kld2(i+1)-1
+                  iA = iA + 1
+                  j  = p_Kcol2(iA2)
+                  p_Kcol(iA) = rmatrix%NVAR*(j-1)+ivar
+                  if (rmatrix%NVAR*(i-1).eq.rmatrix%NVAR*(j-1))&
+                      p_Kdiagonal(rmatrix%NVAR*(i-1)+ivar) = iA
+                  p_Ddata(iA) = p_Ddata2(rmatrix%NVAR*(iA2-1)+ivar)
+                end do
+              end do
+            end do
+            p_Kld(rmatrix%NEQ*rmatrix%NVAR+1) = NA+1
+            
+          case (LSYSSC_MATRIX1)
+            iA = 0
+            do i = 1,rmatrix%NEQ
+              do ivar = 1,rmatrix%NVAR
+                p_Kld(rmatrix%NVAR*(i-1)+ivar) = iA+1
+                do iA2 = p_Kld2(i),p_Kld2(i+1)-1
+                  do jvar = 1,rmatrix%NVAR
+                    iA = iA + 1
+                    j  = p_Kcol2(iA2)
+                    p_Kcol(iA) = rmatrix%NVAR*(j-1)+jvar
+                    if (rmatrix%NVAR*(i-1)+ivar.eq.rmatrix%NVAR*(j-1)+jvar)&
+                        p_Kdiagonal(rmatrix%NVAR*(i-1)+ivar) = iA
+                    p_Ddata(iA) = p_Ddata2(rmatrix%NVAR*rmatrix%NVAR*(iA2-1)+&
+                                           rmatrix%NVAR*(jvar-1)+ivar)
+                  end do
+                end do
+              end do
+            end do
+            p_Kld(rmatrix%NEQ*rmatrix%NVAR+1) = NA+1
+            
+          case default
+            call output_line('Unsupported interleaved matrix format!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+            call sys_halt()
+          end select
+
+        case (ST_SINGLE)
+          call storage_getbase_single (h_Da,p_Fdata)
+
+          select case(rmatrix%cinterleavematrixFormat)
+          case (LSYSSC_MATRIXD)
+            iA = 0
+            do i = 1,rmatrix%NEQ
+              do ivar = 1,rmatrix%NVAR
+                p_Kld(rmatrix%NVAR*(i-1)+ivar) = iA+1
+                do iA2 = p_Kld2(i),p_Kld2(i+1)-1
+                  iA = iA + 1
+                  j  = p_Kcol2(iA2)
+                  p_Kcol(iA) = rmatrix%NVAR*(j-1)+ivar
+                  if (rmatrix%NVAR*(i-1).eq.rmatrix%NVAR*(j-1))&
+                      p_Kdiagonal(rmatrix%NVAR*(i-1)+ivar) = iA
+                  p_Fdata(iA) = p_Fdata2(rmatrix%NVAR*(iA2-1)+ivar)
+                end do
+              end do
+            end do
+            p_Kld(rmatrix%NEQ*rmatrix%NVAR+1) = NA+1
+            
+          case (LSYSSC_MATRIX1)
+            iA = 0
+            do i = 1,rmatrix%NEQ
+              do ivar = 1,rmatrix%NVAR
+                p_Kld(rmatrix%NVAR*(i-1)+ivar) = iA+1
+                do iA2 = p_Kld2(i),p_Kld2(i+1)-1
+                  do jvar = 1,rmatrix%NVAR
+                    iA = iA + 1
+                    j  = p_Kcol2(iA2)
+                    p_Kcol(iA) = rmatrix%NVAR*(j-1)+jvar
+                    if (rmatrix%NVAR*(i-1)+ivar.eq.rmatrix%NVAR*(j-1)+jvar)&
+                        p_Kdiagonal(rmatrix%NVAR*(i-1)+ivar) = iA
+                    p_Fdata(iA) = p_Fdata2(rmatrix%NVAR*rmatrix%NVAR*(iA2-1)+&
+                                           rmatrix%NVAR*(jvar-1)+ivar)
+                  end do
+                end do
+              end do
+            end do
+            p_Kld(rmatrix%NEQ*rmatrix%NVAR+1) = NA+1
+            
+          case default
+            call output_line('Unsupported interleaved matrix format!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+            call sys_halt()
+          end select
+          
+        case default
+          call output_line('Unsupported data type!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+          call sys_halt()
+        end select
+        
+        ! Release the content if it belongs to this matrix.
+        ! Replace by the new content.
+        if (bentryOwner) then
+          call storage_free (rmatrix%h_Da)
+        end if
+        
+        rmatrix%h_Da = h_Da
+        rmatrix%NA = NA
+
+      else
+        
+        select case(rmatrix%cinterleavematrixFormat)
+        case (LSYSSC_MATRIXD)
+          iA = 0
+          do i = 1,rmatrix%NEQ
+            do ivar = 1,rmatrix%NVAR
+              p_Kld(rmatrix%NVAR*(i-1)+ivar) = iA+1
+              do iA2 = p_Kld2(i),p_Kld2(i+1)-1
+                iA = iA + 1
+                j  = p_Kcol2(iA2)
+                p_Kcol(iA) = rmatrix%NVAR*(j-1)+ivar
+                if (rmatrix%NVAR*(i-1).eq.rmatrix%NVAR*(j-1))&
+                    p_Kdiagonal(rmatrix%NVAR*(i-1)+ivar) = iA
+              end do
+            end do
+          end do
+          p_Kld(rmatrix%NEQ*rmatrix%NVAR+1) = NA+1
+          
+        case (LSYSSC_MATRIX1)
+          iA = 0
+          do i = 1,rmatrix%NEQ
+            do ivar = 1,rmatrix%NVAR
+              p_Kld(rmatrix%NVAR*(i-1)+ivar) = iA+1
+              do iA2 = p_Kld2(i),p_Kld2(i+1)-1
+                do jvar = 1,rmatrix%NVAR
+                  iA = iA + 1
+                  j  = p_Kcol2(iA2)
+                  p_Kcol(iA) = rmatrix%NVAR*(j-1)+jvar
+                  if (rmatrix%NVAR*(i-1)+ivar.eq.rmatrix%NVAR*(j-1)+jvar)&
+                      p_Kdiagonal(rmatrix%NVAR*(i-1)+ivar) = iA
+                end do
+              end do
+            end do
+          end do
+          p_Kld(rmatrix%NEQ*rmatrix%NVAR+1) = NA+1
+          
+        case default
+          call output_line('Unsupported interleaved matrix format!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_convertMatrix')
+          call sys_halt()
+        end select
+        
+        ! Do not touch the content. The result is left in an undefined state!
+
+      end if
+
+      rmatrix%cmatrixFormat = LSYSSC_MATRIX9
+      rmatrix%cinterleavematrixFormat = LSYSSC_MATRIXUNDEFINED
+      rmatrix%NVAR = 1
+      rmatrix%NEQ = nrows
+      rmatrix%NCOLS = ncols
+
+      ! Release the structure if it belongs to this matrix.
+      ! Replace by the new content.
+      if (bstrucOwner) then
+        call storage_free (rmatrix%h_Kld)
+        call storage_free (rmatrix%h_Kcol)
+      end if
+
+      rmatrix%h_Kld = h_Kld
+      rmatrix%h_Kcol = h_Kcol
+      rmatrix%h_Kdiagonal = h_Kdiagonal
+
+      ! Switch off any duplication flag; the content now belongs to this matrix.
+      rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,not(LSYSSC_MSPEC_STRUCTUREISCOPY))
+
     case (LSYSSC_MATRIX9INTL)
+      !-------------------------------------------------------------------------
+      ! Desination matrix format 9intl
+      !-------------------------------------------------------------------------
 
       if (.not. bstrucOwner) then
 
@@ -7283,13 +9395,18 @@ contains
       ! Create a pointer to the diagonal
       call storage_new ('lsyssc_convertMatrix', 'Kdiagonal', &
           rmatrix%NEQ, ST_INT, rmatrix%h_Kdiagonal, ST_NEWBLOCK_NOINIT)
-      call lsyssc_getbase_Kdiagonal (rmatrix,p_Kdiagonal)
+
+      ! WARNING: lsyssc_getbase_Kdiagonal does not(!) work here, because
+      ! rmatrix is still in format LSYSSC_MATRIX7 and hence does not provide
+      ! the array Kdiagonal ;-)
+      call storage_getbase_int (rmatrix%h_Kdiagonal,p_Kdiagonal,rmatrix%NEQ)
 
       if ((.not. bentries) .or. (rmatrix%h_Da .eq. ST_NOHANDLE)) then
 
         ! No matrix entries, only resort the structure
         call lsyssc_sortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal, rmatrix%NEQ)
 
+        ! Switch the matrix format
         rmatrix%cmatrixFormat = LSYSSC_MATRIX9INTL
 
       else
@@ -7312,6 +9429,7 @@ contains
             call sys_halt()
           end select
 
+          ! Switch the matrix format
           rmatrix%cmatrixFormat = LSYSSC_MATRIX9INTL
 
         case (ST_SINGLE)
@@ -7331,6 +9449,7 @@ contains
             call sys_halt()
           end select
 
+          ! Switch the matrix format
           rmatrix%cmatrixFormat = LSYSSC_MATRIX9INTL
 
         case default
@@ -24354,9 +26473,10 @@ contains
   end subroutine
 
   ! ***************************************************************************
+
 !<subroutine>
 
-  subroutine lsyssc_createEmptyMatrix9 (rmatrix,neq,na,ncols)
+  subroutine lsyssc_createEmptyMatrix9 (rmatrix,neq,na,ncols,cdatatype)
 
 !<description>
   ! Creates an empty matrix in matrix format 9 (CSR). The matrix is designed
@@ -24372,6 +26492,9 @@ contains
 
   ! OPTIONAL: Number of columns. If not present, NEQ is assumed.
   integer, intent(in), optional :: ncols
+
+  ! OPTIONAL: Data type of the entries in the matrix
+  integer, intent(in), optional :: cdatatype
 !</input>
 
 !<output>
@@ -24389,9 +26512,92 @@ contains
 
     ! Allocate memory
     rmatrix%na = na
+    rmatrix%cdatatype = ST_DOUBLE
+    if (present(cdatatype)) rmatrix%cdatatype = cdatatype
 
     call storage_new ('lsyssc_createMatrixFormat9', 'Da', &
-        rmatrix%na, ST_DOUBLE, rmatrix%h_Da, ST_NEWBLOCK_ZERO)
+        rmatrix%na, rmatrix%cdatatype, rmatrix%h_Da, ST_NEWBLOCK_ZERO)
+    call storage_new ('lsyssc_createMatrixFormat9', 'Kcol', &
+        rmatrix%na, ST_INT, rmatrix%h_Kcol, ST_NEWBLOCK_ZERO)
+    call storage_new ('lsyssc_createMatrixFormat9', 'Kld', &
+        neq+1, ST_INT, rmatrix%h_Kld, ST_NEWBLOCK_ZERO)
+    call storage_new ('lsyssc_createMatrixFormat9', 'Kdiagonal', &
+        neq, ST_INT, rmatrix%h_Kdiagonal, ST_NEWBLOCK_ZERO)
+
+    ! Element na+1 in Kld must be = 1 since there are no elements
+    ! in the matrix.
+    call lsyssc_getbase_Kld (rmatrix,p_Kld)
+    p_Kld(neq+1) = 1
+
+  end subroutine
+
+! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lsyssc_createEmptyMatrix9Intl (rmatrix,cinterleavematrixFormat,&
+      nvar,neq,na,ncols,cdatatype)
+
+!<description>
+  ! Creates an empty matrix in matrix format 9intl (CSR interleaved).
+  ! The matrix is designed to have na entries, neq rows and ncols columns.
+!</description>
+
+!<input>
+  ! Interleaved format of the matrix.
+  integer, intent(in) :: cinterleavematrixFormat
+
+  ! Number of variables for interleaved matrix
+  integer, intent(in) :: nvar
+
+  ! Number of rows.
+  integer, intent(in) :: neq
+
+  ! Number of entries in the matrix.
+  integer, intent(in) :: na
+
+  ! OPTIONAL: Number of columns. If not present, NEQ is assumed.
+  integer, intent(in), optional :: ncols
+
+  ! OPTIONAL: Data type of the entries in the matrix
+  integer, intent(in), optional :: cdatatype
+!</input>
+
+!<output>
+  ! Matrix to create.
+  type(t_matrixScalar), intent(out), target :: rmatrix
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer, dimension(:), pointer :: p_Kld
+
+    ! Create basic matrix stub.
+    call lsyssc_createEmptyMatrixStub (rmatrix,LSYSSC_MATRIX9INTL,neq,ncols)
+    rmatrix%cinterleavematrixFormat = cinterleavematrixFormat
+    rmatrix%nvar = nvar
+
+    ! Allocate memory
+    rmatrix%na = na
+    rmatrix%cdatatype = ST_DOUBLE
+    if (present(cdatatype)) rmatrix%cdatatype = cdatatype
+
+    select case(cinterleavematrixFormat)
+    case (LSYSSC_MATRIX1)
+      call storage_new ('lsyssc_createMatrixFormat9', 'Da', &
+          rmatrix%na*rmatrix%nvar*rmatrix%nvar, rmatrix%cdatatype,&
+          rmatrix%h_Da, ST_NEWBLOCK_ZERO)
+    case (LSYSSC_MATRIXD)
+      call storage_new ('lsyssc_createMatrixFormat9', 'Da', &
+          rmatrix%na*rmatrix%nvar, rmatrix%cdatatype,&
+          rmatrix%h_Da, ST_NEWBLOCK_ZERO)
+    case default
+      call output_line('Unsupported interleave matrix format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_createEmptyMatrix9Intl')
+      call sys_halt()
+    end select
+
     call storage_new ('lsyssc_createMatrixFormat9', 'Kcol', &
         rmatrix%na, ST_INT, rmatrix%h_Kcol, ST_NEWBLOCK_ZERO)
     call storage_new ('lsyssc_createMatrixFormat9', 'Kld', &
@@ -24517,7 +26723,6 @@ contains
     end if
 
   end subroutine
-
 
   ! ***************************************************************************
 
