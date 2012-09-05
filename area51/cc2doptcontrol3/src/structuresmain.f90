@@ -36,12 +36,12 @@ module structuresmain
     integer :: ioutputInit = 2
 
     ! Log file for messages.
-    ! ='': Disable log file.
+    ! ="": Disable log file.
     character(len=SYS_STRLEN) :: smsgLog = "log/output.log"
 
     ! Log file for error messages; usually coincides with smsgLog to print
     ! errors into the same log file as standard messages.
-    ! ='': Use log file.
+    ! ="": Use log file.
     character(len=SYS_STRLEN) :: serrorLog = ""
     
   end type
@@ -132,13 +132,13 @@ contains
     ! Get the output level for the whole application -- during the
     ! initialisation phase and during the rest of the program.
     call parlst_getvalue_int (rparlist,ssection,&
-        'ioutputInit',routput%ioutputInit,2)
+        "ioutputInit",routput%ioutputInit,2)
 
     call parlst_getvalue_string (rparlist,ssection,&
-        'smsgLog',routput%smsgLog,"",bdequote=.true.)
+        "smsgLog",routput%smsgLog,"",bdequote=.true.)
 
     call parlst_getvalue_string (rparlist,ssection,&
-        'serrorLog',routput%serrorlog,"",bdequote=.true.)
+        "serrorLog",routput%serrorlog,"",bdequote=.true.)
 
   end subroutine
 

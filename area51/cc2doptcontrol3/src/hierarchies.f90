@@ -16,7 +16,7 @@
 !#
 !# 3.) init_initTimeHierarchy
 !#     -> Initialise a time hierarchy
-!'
+!"
 !# 4.) init_initSpaceDiscrHier
 !#     -> Initialise a spatial hierarchy
 !#
@@ -57,6 +57,7 @@ module hierarchies
   use fespacehierarchybase
   use fespacehierarchy
   use spacetimehierarchy
+  use subdomainfem
   
   use constantsdiscretisation
   use structuresdiscretisation
@@ -94,6 +95,9 @@ module hierarchies
     
     ! Space discretisation hierarchy of the primal space or NULL if not available.
     type(t_feHierarchy), pointer :: p_rfeHierarchyPrimal => null()
+    
+    ! A hierarchy of boundary meshes
+    type(t_meshHierarchy), pointer :: p_rmeshHierBoundary => null()
     
   end type
   
@@ -183,7 +187,7 @@ contains
     ! Allocate memory for the basic arrays on the heap
     ! 2d array of size(NDIM2D, NVT)
     Isize = (/NDIM2D,rtriangulation%NVT/)
-    call storage_new ('tria_read_tri2D', 'DCORVG', Isize, ST_DOUBLE, &
+    call storage_new ("tria_read_tri2D", "DCORVG", Isize, ST_DOUBLE, &
         rtriangulation%h_DvertexCoords, ST_NEWBLOCK_NOINIT)
         
     ! Get the pointers to the coordinate array
@@ -206,7 +210,7 @@ contains
     ! build the old KVERT...
     ! 2d array of size(NVE, NEL)
     Isize = (/rtriangulation%NNVE,rtriangulation%NEL/)
-    call storage_new ('tria_read_tri2D', 'KVERT', Isize, ST_INT, &
+    call storage_new ("tria_read_tri2D", "KVERT", Isize, ST_INT, &
         rtriangulation%h_IverticesAtElement, ST_NEWBLOCK_NOINIT)
         
     ! Get the pointer to the IverticesAtElement array and read the array
@@ -222,7 +226,7 @@ contains
     end do
     
     ! Allocate memory for InodalProperty
-    call storage_new ('tria_read_tri2D', 'KNPR', &
+    call storage_new ("tria_read_tri2D", "KNPR", &
         rtriangulation%NVT, ST_INT, &
         rtriangulation%h_InodalProperty, ST_NEWBLOCK_ZERO)
     
@@ -237,14 +241,14 @@ contains
     rtriangulation%NVBD = rtriangulation%NVT
     
     ! Allocate memory for IverticesAtBoundary.
-    call storage_new ('tria_generateBasicBoundary', &
-        'KVBD', rtriangulation%NVBD, &
+    call storage_new ("tria_generateBasicBoundary", &
+        "KVBD", rtriangulation%NVBD, &
         ST_INT, rtriangulation%h_IverticesAtBoundary, ST_NEWBLOCK_NOINIT)
         
     ! Allocate memory for the boundary component index vector.
     ! Initialise that with zero!
-    call storage_new ('tria_generateBasicBoundary', &
-        'KBCT', rtriangulation%NBCT+1, &
+    call storage_new ("tria_generateBasicBoundary", &
+        "KBCT", rtriangulation%NBCT+1, &
         ST_INT, rtriangulation%h_IboundaryCpIdx, ST_NEWBLOCK_ZERO)
     
     ! Get pointers to the arrays
@@ -265,8 +269,8 @@ contains
     end do
     
     ! Allocate memory for  and DvertexParameterValue
-    call storage_new ('tria_generateBasicBoundary', &
-        'DVBDP', rtriangulation%NVBD, &
+    call storage_new ("tria_generateBasicBoundary", &
+        "DVBDP", rtriangulation%NVBD, &
         ST_DOUBLE, rtriangulation%h_DvertexParameterValue, ST_NEWBLOCK_NOINIT)
     
     ! Get the array where to store boundary parameter values.
@@ -277,7 +281,7 @@ contains
         
     ! Initialise the parameter values of the vertices. For the bottommost
     ! edge, they coincide wit the coordinate. For the topmost edge,
-    ! that's 3 - x-coordinate.
+    ! that is 3 - x-coordinate.
     do ivt=1,ncellsX+1
       p_DvertexParameterValue (ivt) = p_Ddata2D(1,p_IverticesAtBoundary(ivt))
       p_DvertexParameterValue (ncellsX+1+ivt) = &
@@ -341,10 +345,10 @@ contains
     ! note that parlst_getvalue_string returns us exactly what stands
     ! in the parameter file, so we have to apply READ to get rid of
     ! probable ""!
-    call parlst_getvalue_string (rparlist,ssectionSpace,'sParametrisation',&
+    call parlst_getvalue_string (rparlist,ssectionSpace,"sParametrisation",&
         sPRMFile,bdequote=.true.)
                               
-    call parlst_getvalue_string (rparlist,ssectionSpace,'sMesh',&
+    call parlst_getvalue_string (rparlist,ssectionSpace,"sMesh",&
         sTRIFile,bdequote=.true.)
     
     ! Read in the parametrisation of the boundary and save it to rboundary.
@@ -352,18 +356,18 @@ contains
         
     ! Now set up the basic triangulation. Which type of triangulation should
     ! be set up?
-    call parlst_getvalue_int (rparlist,ssectionSpace,'imeshType',imeshType,0)
+    call parlst_getvalue_int (rparlist,ssectionSpace,"imeshType",imeshType,0)
     select case (imeshType)
     case (0)
       ! Standard mesh, specified by a TRI file.
       call tria_readTriFile2D (rtriangulation, sTRIFile, rboundary)
     case (1)
       ! Sliced QUAD mesh with ncellsX cells on the coarse grid.
-      call parlst_getvalue_int (rparlist,ssectionSpace,'ncellsX',ncellsX,1)
+      call parlst_getvalue_int (rparlist,ssectionSpace,"ncellsX",ncellsX,1)
       call cc_generateSlicedQuadMesh(rtriangulation,ncellsX)
     case default
-      call output_line ('Unknown mesh type!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'init_initParamTria')
+      call output_line ("Unknown mesh type!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"init_initParamTria")
       call sys_halt()
     end select
     
@@ -374,15 +378,15 @@ contains
     ! Time mesh / discretisation
     
     ! Get the parameters
-    call parlst_getvalue_int (rparlist,ssectionTime,'niterations', &
+    call parlst_getvalue_int (rparlist,ssectionTime,"niterations", &
         niterations, 1000)
-    call parlst_getvalue_double (rparlist,ssectionTime,'dtimestart', &
+    call parlst_getvalue_double (rparlist,ssectionTime,"dtimestart", &
         dtimeInit, 0.0_DP)
-    call parlst_getvalue_double (rparlist,ssectionTime,'dtimemax', &
+    call parlst_getvalue_double (rparlist,ssectionTime,"dtimemax", &
         dtimeMax, 20.0_DP)
-    call parlst_getvalue_int (rparlist, ssectionTime,'ctimeStepScheme', &
+    call parlst_getvalue_int (rparlist, ssectionTime,"ctimeStepScheme", &
         ctimeStepScheme, 0)
-    call parlst_getvalue_double (rparlist,ssectionTime,'dtimeStepTheta', &
+    call parlst_getvalue_double (rparlist,ssectionTime,"dtimeStepTheta", &
         dtimeStepTheta, 1.0_DP)
     
     ! Initialise the coarse time discretisation
@@ -451,7 +455,7 @@ contains
 !<subroutine>
 
   subroutine init_initSpaceHierarchy (rboundary,rrefinement,&
-      rtriaCoarse,rmeshHierarchy,ioutputLevel)
+      rtriaCoarse,rmeshHierarchy,rmeshHierBoundary,ioutputLevel)
   
 !<description>
   ! Initialises a space hierarchy based on a coarse mesh and a refinement
@@ -475,6 +479,9 @@ contains
 !<output>
   ! Refinement specification.
   type(t_meshHierarchy), intent(out) :: rmeshHierarchy
+
+  ! Mesh hierarchy on the boundaries of rmeshHierarchy.
+  type(t_meshHierarchy), intent(out) :: rmeshHierBoundary
 !</output>
 
 !</subroutine>
@@ -503,10 +510,22 @@ contains
 
     if (ioutputLevel .ge. 2) then
       call output_lbrk ()
-      call output_line ('Mesh hierarchy statistics:')
+      call output_line ("Mesh hierarchy statistics:")
       call output_line ("--------------------------")
       call mshh_printHierStatistics (rmeshHierarchy)
     end if
+    
+    ! Create appropriate meshes on the boundaries of the above
+    ! meshes.
+    call mshh_initManifHierarchy (rmeshHierBoundary,rmeshHierarchy)
+
+    if (ioutputLevel .ge. 2) then
+      call output_lbrk ()
+      call output_line ("Boundary mesh hierarchy statistics:")
+      call output_line ("-----------------------------------")
+      call mshh_printHierStatistics (rmeshHierBoundary)
+    end if
+    
     
   end subroutine
   
@@ -553,7 +572,7 @@ contains
 
     if (ioutputLevel .ge. 2) then
       call output_lbrk ()
-      call output_line ('Time hierarchy statistics:')
+      call output_line ("Time hierarchy statistics:")
       call output_line ("--------------------------")
       call tmsh_printHierStatistics (rtimeHierarchy)
     end if
@@ -612,6 +631,7 @@ contains
     case (CCSPACE_CONTROL)
       call kktsp_initControlSpaceDiscr (rspaceDiscr,&
           rdiscrParams%p_rfeHierarchyPrimal%p_rfeSpaces(ilevel)%p_rdiscretisation,&
+          rdiscrParams%p_rmeshHierBoundary%p_Rtriangulations(ilevel),&
           rdiscrParams%p_rsettingsSpaceDiscr,rdiscrParams%p_rphysics,&
           rdiscrParams%p_roptControl)
     end select
@@ -624,7 +644,7 @@ contains
 
   subroutine init_initSpaceDiscrHier (&
       rfeHierarchyPrimal,rfeHierarchyDual,rfeHierarchyControl,&
-      rphysics,roptControl,rsettingsDiscr,rmeshHierarchy,rboundary,&
+      rphysics,roptControl,rsettingsDiscr,rmeshHierarchy,rmeshHierBoundary,rboundary,&
       ioutputLevel)
 
 !<description>
@@ -644,6 +664,9 @@ contains
 
   ! A mesh hierarchy with all available space meshes.
   type(t_meshHierarchy), intent(in), target :: rmeshHierarchy
+
+  ! A mesh hierarchy describing the boundary meshes
+  type(t_meshHierarchy), intent(in), target :: rmeshHierBoundary
 
   ! Description of the boundary
   type(t_boundary), intent(in), target :: rboundary
@@ -681,6 +704,7 @@ contains
     rdiscrParams%p_rphysics => rphysics
     rdiscrParams%p_roptControl => roptControl
     rdiscrParams%p_rsettingsSpaceDiscr => rsettingsDiscr
+    rdiscrParams%p_rmeshHierBoundary => rmeshHierBoundary
     
     ! Create the hierarchy for the primal space
     rdiscrParams%cspace = CCSPACE_PRIMAL
@@ -700,7 +724,7 @@ contains
     call fesph_createHierarchy (rfeHierarchyDual,&
         rmeshHierarchy%nlevels,rmeshHierarchy,&
         fgetDist1LvDiscr,rcollection,rboundary)
-
+        
     ! Create the hierarchy for the control space
 
     rdiscrParams%cspace = CCSPACE_CONTROL
@@ -821,11 +845,11 @@ contains
     !
     ! Should we couple space and time coarsening/refinement?
     call parlst_getvalue_int (rparlist,ssection,&
-        'ispacelevelcoupledtotimelevel',ispacelevelcoupledtotimelevel,1)
+        "ispacelevelcoupledtotimelevel",ispacelevelcoupledtotimelevel,1)
 
     ! Parameters of the refinement?
     call parlst_getvalue_int (rparlist,ssection,&
-        'nmaxSimulRefLevel',nmaxSimulRefLevel,0)
+        "nmaxSimulRefLevel",nmaxSimulRefLevel,0)
     
     if (nmaxSimulRefLevel .le. 0) then
       nmaxSimulRefLevel = rrefinementTime%nlevels+&
@@ -834,7 +858,7 @@ contains
     nmaxSimulRefLevel = min(rrefinementTime%nlevels,max(1,nmaxSimulRefLevel))
         
     call parlst_getvalue_double (rparlist,ssection,&
-        'dspacetimeRefFactor',dspacetimeRefFactor,1.0_DP)
+        "dspacetimeRefFactor",dspacetimeRefFactor,1.0_DP)
 
     ! Create the hierarchies.
     call sth_initHierarchy (rspaceTimeHierPrimal,&
@@ -973,7 +997,7 @@ contains
       case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
       
         ! Prolongation/restriction order for velocity components
-        call parlst_getvalue_int (p_rsection,'iinterpolationOrderVel',i1,-1)
+        call parlst_getvalue_int (p_rsection,"iinterpolationOrderVel",i1,-1)
         
         if (i1 .ne. -1) then
           ! Initialise order of prolongation/restriction for velocity components
@@ -983,7 +1007,7 @@ contains
         end if
 
         ! Prolongation/restriction order for pressure
-        call parlst_getvalue_int (p_rsection,'iinterpolationOrderPress',i1,-1)
+        call parlst_getvalue_int (p_rsection,"iinterpolationOrderPress",i1,-1)
         
         if (i1 .ne. -1) then
           ! Initialise order of prolongation/restriction for pressure components
@@ -994,7 +1018,7 @@ contains
         
         ! Prolongation/restriction variant for velocity components
         ! in case of Q1~ discretisation
-        call parlst_getvalue_int (p_rsection,'iinterpolationVariantVel',i1,0)
+        call parlst_getvalue_int (p_rsection,"iinterpolationVariantVel",i1,0)
         
         if (i1 .ne. -1) then
           rprojection%RscalarProjection(:,1:NDIM2D)%iprolVariant  = i1
@@ -1003,7 +1027,7 @@ contains
         
         ! Aspect-ratio indicator in case of Q1~ discretisation
         ! with extended prolongation/restriction
-        call parlst_getvalue_int (p_rsection,'iintARIndicatorEX3YVel',i1,1)
+        call parlst_getvalue_int (p_rsection,"iintARIndicatorEX3YVel",i1,1)
         
         if (i1 .ne. 1) then
           rprojection%RscalarProjection(:,1:NDIM2D)%iprolARIndicatorEX3Y  = i1
@@ -1012,7 +1036,7 @@ contains
 
         ! Aspect-ratio bound for switching to constant prolongation/restriction
         ! in case of Q1~ discretisation with extended prolongation/restriction
-        call parlst_getvalue_double (p_rsection,'dintARboundEX3YVel',d1,20.0_DP)
+        call parlst_getvalue_double (p_rsection,"dintARboundEX3YVel",d1,20.0_DP)
         
         if (d1 .ne. 20.0_DP) then
           rprojection%RscalarProjection(:,1:NDIM2D)%dprolARboundEX3Y  = d1
@@ -1074,7 +1098,7 @@ contains
 
     ! Type of prolongation/restriction in time
     call parlst_getvalue_int (rparlist, ssection, &
-        'ctypeProjection', ctypeProjection, -1)
+        "ctypeProjection", ctypeProjection, -1)
      
     call sptipr_initProjectionBlock (rprjHierarchyBlock,rhierarchy,&
         rprojHierarchySpace,rphysics,roptcontrol,cspace,ctypeProjection)

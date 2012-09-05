@@ -127,7 +127,7 @@ module analyticsolution
 
 !<constantblock description="Variables that can be used in the expressions of the solution.">
     character(LEN=10), dimension(4), parameter :: ANSOL_VARIABLES = &
-      (/'TIME ','X    ','Y    ','Z    '/)
+      (/"TIME ","X    ","Y    ","Z    "/)
 !</constantblock>
 
 !<constantblock description="Type of the function solution">
@@ -196,7 +196,7 @@ module analyticsolution
     type(t_fparser) :: rparserExpression
     
     ! Name of the file or file sequence with the solution.
-    character(SYS_STRLEN) :: sfilename = ''
+    character(SYS_STRLEN) :: sfilename = ""
     
     ! Element type used for the discretisation of the solution.
     ! This is a user-defined ID and is used in the case where the
@@ -204,8 +204,8 @@ module analyticsolution
     integer :: ielementType = 0
     
     ! Name of the TRI file with the basic mesh corresponding to the solution.
-    ! ='': Use the same mesh as for the computation of the solution.
-    character(SYS_STRLEN) :: smesh = ''
+    ! ="": Use the same mesh as for the computation of the solution.
+    character(SYS_STRLEN) :: smesh = ""
 
     ! Underlying FE space
     type(t_feSpaceLevel) :: rfeSpace
@@ -711,8 +711,8 @@ contains
         (rsolution%ctype .ne. ANSOL_TP_EXPRESSIONS) .and. &
         (rsolution%ctype .ne. ANSOL_TP_BLENDED) .and. &
         (rsolution%ctype .ne. ANSOL_TP_ZERO)) then
-      call output_line('Incorrect solution initialisation!',&
-          OU_CLASS_ERROR, OU_MODE_STD,'ansol_configAnalytical')
+      call output_line("Incorrect solution initialisation!",&
+          OU_CLASS_ERROR, OU_MODE_STD,"ansol_configAnalytical")
       call sys_halt()
     end if
 
@@ -789,14 +789,14 @@ contains
     ! Basic checks
     if ((rsolution%ctype .ne. ANSOL_TP_MBUNDEFINED) .and. &
         (rsolution%ctype .ne. ANSOL_TP_MBSTATIONARYFILE)) then
-      call output_line('Incorrect solution initialisation!',&
-          OU_CLASS_ERROR, OU_MODE_STD,'ansol_configStationaryFile')
+      call output_line("Incorrect solution initialisation!",&
+          OU_CLASS_ERROR, OU_MODE_STD,"ansol_configStationaryFile")
       call sys_halt()
     end if
     
     if (sfilename .eq. "") then
-      call output_line('NO filename specified!!',&
-          OU_CLASS_ERROR, OU_MODE_STD,'ansol_configStationaryFile')
+      call output_line("NO filename specified!!",&
+          OU_CLASS_ERROR, OU_MODE_STD,"ansol_configStationaryFile")
       call sys_halt()
     end if
 
@@ -840,9 +840,9 @@ contains
   ! sfilename is a directory/file name pattern in the format of
   ! a FORMAT statement that forms the filename; this pattern must contain
   ! exactly one integer format specifier, which is replaced by the
-  ! file number in this routine (e.g. ' (''vector.txt.'',I5.5) ' will
-  ! load a file sequence 'vector.txt.00001','vector.txt.00002',
-  ! 'vector.txt.00003', ...).
+  ! file number in this routine (e.g. " (""vector.txt."",I5.5) " will
+  ! load a file sequence "vector.txt.00001","vector.txt.00002",
+  ! "vector.txt.00003", ...).
   ! istart and iend prescribe the minimum/maximum file number that is
   ! inserted into the filename: The routine loads in all all files
   ! from istart to iend and forms a space-time vector from that.
@@ -883,8 +883,8 @@ contains
     ! Basic checks
     if ((rsolution%ctype .ne. ANSOL_TP_MBUNDEFINED) .and. &
         (rsolution%ctype .ne. ANSOL_TP_MBSTATIONARYFILE)) then
-      call output_line('Incorrect solution initialisation!',&
-          OU_CLASS_ERROR, OU_MODE_STD,'ansol_configNonstationaryFile')
+      call output_line("Incorrect solution initialisation!",&
+          OU_CLASS_ERROR, OU_MODE_STD,"ansol_configNonstationaryFile")
       call sys_halt()
     end if
     
@@ -939,8 +939,8 @@ contains
     ! Basic checks
     if ((rsolution%ctype .ne. ANSOL_TP_MBUNDEFINED) .and. &
         (rsolution%ctype .ne. ANSOL_TP_MBSTATIONARYFILE)) then
-      call output_line('Incorrect solution initialisation!',&
-          OU_CLASS_ERROR, OU_MODE_STD,'ansol_configNonstationaryPrecalc')
+      call output_line("Incorrect solution initialisation!",&
+          OU_CLASS_ERROR, OU_MODE_STD,"ansol_configNonstationaryPrecalc")
       call sys_halt()
     end if
     
@@ -1007,8 +1007,8 @@ contains
     case (ANSOL_TP_ANALYTICAL)
       ! Nothing to do
 
-      ! call output_line('Solution undefined! Caller must evaluate the solution! Use iid as hint!',&
-      !     OU_CLASS_ERROR, OU_MODE_STD,'ansol_prepareEvalCollection')
+      ! call output_line("Solution undefined! Caller must evaluate the solution! Use iid as hint!",&
+      !     OU_CLASS_ERROR, OU_MODE_STD,"ansol_prepareEvalCollection")
       ! call sys_halt()
 
     case (ANSOL_TP_ZERO)
@@ -1057,8 +1057,8 @@ contains
       call collct_setvalue_vec (rcollection, trim(sname)//"_VEC", p_rvector, .true.)
 
     case default
-      call output_line('Case not implemented!',&
-          OU_CLASS_ERROR, OU_MODE_STD,'ansol_doneEvalCollection')
+      call output_line("Case not implemented!",&
+          OU_CLASS_ERROR, OU_MODE_STD,"ansol_doneEvalCollection")
       call sys_halt()
     end select
 
@@ -1101,8 +1101,8 @@ contains
     case (ANSOL_TP_ANALYTICAL)
       ! Nothing to do
 
-      ! call output_line('Solution undefined! Caller must evaluate the solution! Use iid as hint!',&
-      !     OU_CLASS_ERROR, OU_MODE_STD,'ansol_doneEvalCollection')
+      ! call output_line("Solution undefined! Caller must evaluate the solution! Use iid as hint!",&
+      !     OU_CLASS_ERROR, OU_MODE_STD,"ansol_doneEvalCollection")
       ! call sys_halt()
 
     case (ANSOL_TP_ZERO)
@@ -1142,8 +1142,8 @@ contains
       call collct_deletevalue (rcollection, trim(sname)//"_VEC")
 
     case default
-      call output_line('Case not implemented!',&
-          OU_CLASS_ERROR, OU_MODE_STD,'ansol_doneEvalCollection')
+      call output_line("Case not implemented!",&
+          OU_CLASS_ERROR, OU_MODE_STD,"ansol_doneEvalCollection")
       call sys_halt()
     end select
 
@@ -1270,7 +1270,7 @@ contains
           
       ! Calculate the blended value, release, finish.
 
-      ! Reshape the data, that's it.
+      ! Reshape the data, that is it.
       do i=1,nelements
         do j=1,npoints
           Dvalues(j,i) = (1-dweight) * Dvalues(j,i) + dweight * Dvalues2(j,i)
@@ -1309,8 +1309,8 @@ contains
         end do
         
       case default
-        call output_line('Case not implemented!',&
-            OU_CLASS_ERROR, OU_MODE_STD,'ansol_evaluateByCollection')
+        call output_line("Case not implemented!",&
+            OU_CLASS_ERROR, OU_MODE_STD,"ansol_evaluateByCollection")
         call sys_halt()
       end select
       
@@ -1318,7 +1318,7 @@ contains
       allocate(DvaluesAct(npoints*nelements))
       call fparser_evalFunction (p_rparser, idim, 2, p_Dval, DvaluesAct)
 
-      ! Reshape the data, that's it.
+      ! Reshape the data, that is it.
       do i=0,nelements-1
         do j=1,npoints
           Dvalues(j,i+1) = DvaluesAct(i*npoints+j)
@@ -1334,8 +1334,8 @@ contains
       if (present(ierror)) ierror = -1
       return
       
-      !call output_line('Solution undefined! Caller must evaluate the solution! Use iid as hint!',&
-      !    OU_CLASS_ERROR, OU_MODE_STD,'ansol_evaluateByCollection')
+      !call output_line("Solution undefined! Caller must evaluate the solution! Use iid as hint!",&
+      !    OU_CLASS_ERROR, OU_MODE_STD,"ansol_evaluateByCollection")
       !call sys_halt()
       
     case (ANSOL_TP_ZERO)
@@ -1404,8 +1404,8 @@ contains
       deallocate(DvaluesAct)
       
     case default
-      call output_line('Function not valid!',&
-          OU_CLASS_ERROR, OU_MODE_STD,'ansol_evaluateByCollection')
+      call output_line("Function not valid!",&
+          OU_CLASS_ERROR, OU_MODE_STD,"ansol_evaluateByCollection")
       call sys_halt()
     end select
   
@@ -1604,7 +1604,7 @@ contains
           
       ! Calculate the blended value, release, finish.
 
-      ! Reshape the data, that's it.
+      ! Reshape the data, that is it.
       do i=1,nelements
         do j=1,npoints
           Dvalues(j,i) = (1-dweight) * Dvalues(j,i) + dweight * Dvalues2(j,i)
@@ -1638,8 +1638,8 @@ contains
         end do
 
       case default
-        call output_line('Case not implemented!',&
-            OU_CLASS_ERROR, OU_MODE_STD,'ansol_evaluateByCollection')
+        call output_line("Case not implemented!",&
+            OU_CLASS_ERROR, OU_MODE_STD,"ansol_evaluateByCollection")
         call sys_halt()
       end select
       
@@ -1647,7 +1647,7 @@ contains
       allocate(DvaluesAct(npoints*nelements))
       call fparser_evalFunction (rsolution%rparserExpression, idim, 2, p_Dval, DvaluesAct)
 
-      ! Reshape the data, that's it.
+      ! Reshape the data, that is it.
       do i=0,nelements-1
         do j=1,npoints
           Dvalues(j,i+1) = DvaluesAct(i*npoints+j)
@@ -1659,8 +1659,8 @@ contains
       
     case (ANSOL_TP_ANALYTICAL)
       if (present(ierror)) ierror = -1
-      !call output_line('Solution undefined! Caller must evaluate the solution! Use iid as hint!',&
-      !    OU_CLASS_ERROR, OU_MODE_STD,'ansol_evaluateDirect')
+      !call output_line("Solution undefined! Caller must evaluate the solution! Use iid as hint!",&
+      !    OU_CLASS_ERROR, OU_MODE_STD,"ansol_evaluateDirect")
       !call sys_halt()
       
     case (ANSOL_TP_ZERO)
@@ -1700,8 +1700,8 @@ contains
         end do
 
       case default
-        call output_line('Case not implemented!',&
-            OU_CLASS_ERROR, OU_MODE_STD,'ansol_evaluateDirect')
+        call output_line("Case not implemented!",&
+            OU_CLASS_ERROR, OU_MODE_STD,"ansol_evaluateDirect")
         call sys_halt()
 
       end select
@@ -1752,8 +1752,8 @@ contains
       deallocate(DvaluesAct)
       
     case default
-      call output_line('Function not valid!',&
-          OU_CLASS_ERROR, OU_MODE_STD,'ansol_evaluateByCollection')
+      call output_line("Function not valid!",&
+          OU_CLASS_ERROR, OU_MODE_STD,"ansol_evaluateByCollection")
       call sys_halt()
     end select
   
@@ -2022,8 +2022,8 @@ contains
       end do
     
     case (1)
-      call output_line('L2 projection currently not supported!',&
-          OU_CLASS_ERROR, OU_MODE_STD,'ansol_prjToVector')
+      call output_line("L2 projection currently not supported!",&
+          OU_CLASS_ERROR, OU_MODE_STD,"ansol_prjToVector")
       call sys_halt()
     end select
     

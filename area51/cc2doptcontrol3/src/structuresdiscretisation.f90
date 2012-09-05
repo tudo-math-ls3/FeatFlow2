@@ -187,22 +187,22 @@ contains
 
     ! Get the parameters
     call parlst_getvalue_int (rparlist, ssection, &
-        'IUPWIND1', rstabilPrimal%cupwind)
+        "IUPWIND1", rstabilPrimal%cupwind)
     call parlst_getvalue_int (rparlist, ssection, &
-        'IUPWIND2', rstabilDual%cupwind)
+        "IUPWIND2", rstabilDual%cupwind)
     call parlst_getvalue_double (rparlist, ssection, &
-        'DUPSAM1', rstabilPrimal%dupsam)
+        "DUPSAM1", rstabilPrimal%dupsam)
     call parlst_getvalue_double (rparlist, ssection, &
-        'DUPSAM2', rstabilDual%dupsam)
+        "DUPSAM2", rstabilDual%dupsam)
 
     ! Get the flags that decides if in the dual equation, the convection is
     ! set up on the boundary. For the primal equation, this is always set up,
     ! so pass the values only to the stabilisation structure of the dual equation.
     call parlst_getvalue_int (rparlist, ssection, &
-        'CCONVECTIONONBOUNDARYDEFECT', rstabilDual%cconvectionOnBoundaryDefect,1)
+        "CCONVECTIONONBOUNDARYDEFECT", rstabilDual%cconvectionOnBoundaryDefect,1)
 
     call parlst_getvalue_int (rparlist, ssection, &
-        'CCONVECTIONONBOUNDARYMATRIX', rstabilDual%cconvectionOnBoundaryMatrix,1)
+        "CCONVECTIONONBOUNDARYMATRIX", rstabilDual%cconvectionOnBoundaryMatrix,1)
 
   end subroutine
   
@@ -235,40 +235,40 @@ contains
     integer :: icub
 
     call parlst_getvalue_int (rparlist,ssection,&
-        'ielementType',rsettingsSpaceDiscr%ielementType,3)
+        "ielementType",rsettingsSpaceDiscr%ielementType,3)
                               
-    call parlst_getvalue_string (rparlist,ssection,'scubStokes',sstr,"")
+    call parlst_getvalue_string (rparlist,ssection,"scubStokes",sstr,"")
     if (sstr .eq. "") then
       call parlst_getvalue_int (rparlist,ssection,&
-          'icubStokes',icub,int(SPDISC_CUB_AUTOMATIC))
+          "icubStokes",icub,int(SPDISC_CUB_AUTOMATIC))
     else
       icub = cub_igetID(sstr)
     end if
     rsettingsSpaceDiscr%icubStokes = icub
 
-    call parlst_getvalue_string (rparlist,ssection,'scubB',sstr,"")
+    call parlst_getvalue_string (rparlist,ssection,"scubB",sstr,"")
     if (sstr .eq. "") then
       call parlst_getvalue_int (rparlist,ssection,&
-          'icubB',icub,int(SPDISC_CUB_AUTOMATIC))
+          "icubB",icub,int(SPDISC_CUB_AUTOMATIC))
     else
       icub = cub_igetID(sstr)
     end if
     rsettingsSpaceDiscr%icubB = icub
 
-    call parlst_getvalue_string (rparlist,ssection,'scubF',sstr,"")
+    call parlst_getvalue_string (rparlist,ssection,"scubF",sstr,"")
     if (sstr .eq. "") then
       call parlst_getvalue_int (rparlist,ssection,&
-          'icubF',icub,int(SPDISC_CUB_AUTOMATIC))
+          "icubF",icub,int(SPDISC_CUB_AUTOMATIC))
     else
       icub = cub_igetID(sstr)
     end if
     rsettingsSpaceDiscr%icubF = icub
     
     ! Which cubature rule to use for mass matrices?
-    call parlst_getvalue_string (rparlist,ssection,'scubMass',sstr,"")
+    call parlst_getvalue_string (rparlist,ssection,"scubMass",sstr,"")
     if (sstr .eq. "") then
       call parlst_getvalue_int (rparlist,ssection,&
-          'icubM',icub,int(SPDISC_CUB_AUTOMATIC))
+          "icubM",icub,int(SPDISC_CUB_AUTOMATIC))
     else
       icub = cub_igetID(sstr)
     end if
@@ -308,30 +308,30 @@ contains
 
     ! Which type of problem to discretise? (Stokes, Navier-Stokes,...)
     call parlst_getvalue_int (rparlist,ssection,&
-        'iequation',rphysics%cequation,CCEQ_NAVIERSTOKES2D)
+        "cequation",rphysics%cequation,CCEQ_NAVIERSTOKES2D)
 
     ! Type of subproblem (gradient tensor, deformation tensor,...)
     call parlst_getvalue_int (rparlist,ssection,&
-        'isubEquation',rphysics%isubEquation,0)
+        "csubEquation",rphysics%isubEquation,0)
 
     ! Get the viscosity model
     ! Standard = 0 = constant viscosity
     call parlst_getvalue_int (rparlist,ssection,&
-        'cviscoModel',rphysics%cviscoModel,0)
+        "cviscoModel",rphysics%cviscoModel,0)
                                  
     call parlst_getvalue_double (rparlist,ssection,&
-        'dviscoexponent',rphysics%dviscoexponent,2.0_DP)
+        "dviscoexponent",rphysics%dviscoexponent,2.0_DP)
                                  
     call parlst_getvalue_double (rparlist,ssection,&
-        'dviscoEps',rphysics%dviscoEps,0.01_DP)
+        "dviscoEps",rphysics%dviscoEps,0.01_DP)
 
     call parlst_getvalue_double (rparlist,ssection,&
-        'dviscoYield',rphysics%dviscoYield,1.0_DP)
+        "dviscoYield",rphysics%dviscoYield,1.0_DP)
 
     ! Get the viscosity parameter.
     ! Note that the parameter in the DAT file is 1/nu !
     call parlst_getvalue_double (rparlist,ssection,&
-        'RE',rphysics%dnuConst,1000.0_DP)
+        "RE",rphysics%dnuConst,1000.0_DP)
     rphysics%dnuConst = 1E0_DP/rphysics%dnuConst
 
   end subroutine

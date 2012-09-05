@@ -18,13 +18,13 @@ isolverType = 1
 
 # Name of the section in this file which configures the solver.
 
-ssolverSection = 'CC-MULTIGRIDSOLVERFORW'
+ssolverSection = "CC-MULTIGRIDSOLVERFORW"
 
 # Type of smoother to use in multigrid.
 # Standard value = 2.
 # 0=General VANKA.
-# 1=General VANKA. 'Direct' method.
-#   Note: This doesn't seem to work!?!
+# 1=General VANKA. "Direct" method.
+#   Note: This doesn"t seem to work!?!
 # 2=Diagonal VANKA for 2D Navier-Stokes optimal control problem.
 # 3=Full VANKA for 2D Navier-Stokes optimal control problem.
 # 4=BiCGStab with Diagonal VANKA preconditioning
@@ -34,7 +34,7 @@ ismootherType = 4
 
 # Name of the section in this file which configures the smoother.
 
-ssmootherSection = 'CC-SMOOTHER'
+ssmootherSection = "CC-SMOOTHER"
 
 # Type of coarse grid solver. Standard = 1
 # =0: Gauss elimination (UMFPACK)
@@ -49,7 +49,7 @@ icoarseGridSolverType = 3
 
 # Name of the section in this file which configures the coarse grid solver.
 
-scoarseGridSolverSection = 'CC-COARSEGRIDSOLVER'
+scoarseGridSolverSection = "CC-COARSEGRIDSOLVER"
 
 # ------------------------------------------------------------------------
 # Linear solver for the forward iteration, backup solver
@@ -67,13 +67,13 @@ isolverType = 1
 
 # Name of the section in this file which configures the solver.
 
-ssolverSection = 'CC-MULTIGRIDSOLVERFORW'
+ssolverSection = "CC-MULTIGRIDSOLVERFORW"
 
 # Type of smoother to use in multigrid.
 # Standard value = 2.
 # 0=General VANKA.
-# 1=General VANKA. 'Direct' method.
-#   Note: This doesn't seem to work!?!
+# 1=General VANKA. "Direct" method.
+#   Note: This doesn"t seem to work!?!
 # 2=Diagonal VANKA for 2D Navier-Stokes optimal control problem.
 # 3=Full VANKA for 2D Navier-Stokes optimal control problem.
 # 4=BiCGStab with Diagonal VANKA preconditioning
@@ -83,7 +83,7 @@ ismootherType = 5
 
 # Name of the section in this file which configures the smoother.
 
-ssmootherSection = 'CC-SMOOTHER'
+ssmootherSection = "CC-SMOOTHER"
 
 # Type of coarse grid solver. Standard = 1
 # =0: Gauss elimination (UMFPACK)
@@ -98,7 +98,7 @@ icoarseGridSolverType = 4
 
 # Name of the section in this file which configures the coarse grid solver.
 
-scoarseGridSolverSection = 'CC-COARSEGRIDSOLVER'
+scoarseGridSolverSection = "CC-COARSEGRIDSOLVER"
 
 # ========================================================================
 # The following section specifies the parameters for the solver.
@@ -198,13 +198,13 @@ isolverType = 1
 
 # Name of the section in this file which configures the solver.
 
-ssolverSection = 'CC-MULTIGRIDSOLVERBACKW'
+ssolverSection = "CC-MULTIGRIDSOLVERBACKW"
 
 # Type of smoother to use in multigrid.
 # Standard value = 2.
 # 0=General VANKA.
-# 1=General VANKA. 'Direct' method.
-#   Note: This doesn't seem to work!?!
+# 1=General VANKA. "Direct" method.
+#   Note: This doesn"t seem to work!?!
 # 2=Diagonal VANKA for 2D Navier-Stokes optimal control problem.
 # 3=Full VANKA for 2D Navier-Stokes optimal control problem.
 # 4=BiCGStab with Diagonal VANKA preconditioning
@@ -214,7 +214,7 @@ ismootherType = 4
 
 # Name of the section in this file which configures the smoother.
 
-ssmootherSection = 'CC-SMOOTHER'
+ssmootherSection = "CC-SMOOTHER"
 
 # Type of coarse grid solver. Standard = 1
 # =0: Gauss elimination (UMFPACK)
@@ -229,7 +229,7 @@ icoarseGridSolverType = 3
 
 # Name of the section in this file which configures the coarse grid solver.
 
-scoarseGridSolverSection = 'CC-COARSEGRIDSOLVER'
+scoarseGridSolverSection = "CC-COARSEGRIDSOLVER"
 
 
 # ------------------------------------------------------------------------
@@ -247,13 +247,13 @@ isolverType = 1
 
 # Name of the section in this file which configures the solver.
 
-ssolverSection = 'CC-MULTIGRIDSOLVERBACKW'
+ssolverSection = "CC-MULTIGRIDSOLVERBACKW"
 
 # Type of smoother to use in multigrid.
 # Standard value = 2.
 # 0=General VANKA.
-# 1=General VANKA. 'Direct' method.
-#   Note: This doesn't seem to work!?!
+# 1=General VANKA. "Direct" method.
+#   Note: This doesn"t seem to work!?!
 # 2=Diagonal VANKA for 2D Navier-Stokes optimal control problem.
 # 3=Full VANKA for 2D Navier-Stokes optimal control problem.
 # 4=BiCGStab with Diagonal VANKA preconditioning
@@ -263,7 +263,7 @@ ismootherType = 5
 
 # Name of the section in this file which configures the smoother.
 
-ssmootherSection = 'CC-SMOOTHER'
+ssmootherSection = "CC-SMOOTHER"
 
 # Type of coarse grid solver. Standard = 1
 # =0: Gauss elimination (UMFPACK)
@@ -278,7 +278,7 @@ icoarseGridSolverType = 4
 
 # Name of the section in this file which configures the coarse grid solver.
 
-scoarseGridSolverSection = 'CC-COARSEGRIDSOLVER'
+scoarseGridSolverSection = "CC-COARSEGRIDSOLVER"
 
 # ========================================================================
 # The following section specifies the parameters for the solver.
@@ -378,13 +378,13 @@ isolverType = 1
 
 # Name of the section in this file which configures the solver.
 
-ssolverSection = 'CC-MULTIGRIDSOLVERLIN'
+ssolverSection = "CC-MULTIGRIDSOLVERLIN"
 
 # Type of smoother to use in multigrid.
 # Standard value = 2.
 # 0=General VANKA.
-# 1=General VANKA. 'Direct' method.
-#   Note: This doesn't seem to work!?!
+# 1=General VANKA. "Direct" method.
+#   Note: This doesn"t seem to work!?!
 # 2=Diagonal VANKA for 2D Navier-Stokes optimal control problem.
 # 3=Full VANKA for 2D Navier-Stokes optimal control problem.
 # 4=BiCGStab with Diagonal VANKA preconditioning
@@ -394,7 +394,7 @@ ismootherType = 4
 
 # Name of the section in this file which configures the smoother.
 
-ssmootherSection = 'CC-SMOOTHER'
+ssmootherSection = "CC-SMOOTHER"
 
 # Type of coarse grid solver. Standard = 1
 # =0: Gauss elimination (UMFPACK)
@@ -409,7 +409,7 @@ icoarseGridSolverType = 3
 
 # Name of the section in this file which configures the coarse grid solver.
 
-scoarseGridSolverSection = 'CC-COARSEGRIDSOLVER'
+scoarseGridSolverSection = "CC-COARSEGRIDSOLVER"
 
 
 # ------------------------------------------------------------------------
@@ -428,13 +428,13 @@ isolverType = 1
 
 # Name of the section in this file which configures the solver.
 
-ssolverSection = 'CC-MULTIGRIDSOLVERLIN'
+ssolverSection = "CC-MULTIGRIDSOLVERLIN"
 
 # Type of smoother to use in multigrid.
 # Standard value = 2.
 # 0=General VANKA.
-# 1=General VANKA. 'Direct' method.
-#   Note: This doesn't seem to work!?!
+# 1=General VANKA. "Direct" method.
+#   Note: This doesn"t seem to work!?!
 # 2=Diagonal VANKA for 2D Navier-Stokes optimal control problem.
 # 3=Full VANKA for 2D Navier-Stokes optimal control problem.
 # 4=BiCGStab with Diagonal VANKA preconditioning
@@ -444,7 +444,7 @@ ismootherType = 5
 
 # Name of the section in this file which configures the smoother.
 
-ssmootherSection = 'CC-SMOOTHER'
+ssmootherSection = "CC-SMOOTHER"
 
 # Type of coarse grid solver. Standard = 1
 # =0: Gauss elimination (UMFPACK)
@@ -459,7 +459,7 @@ icoarseGridSolverType = 4
 
 # Name of the section in this file which configures the coarse grid solver.
 
-scoarseGridSolverSection = 'CC-COARSEGRIDSOLVER'
+scoarseGridSolverSection = "CC-COARSEGRIDSOLVER"
 
 
 # ========================================================================
@@ -625,7 +625,7 @@ domega             = 0.8
 
 # Section in this file that defines the parameters of the preconditioner
 
-spreconditionerSection = 'CC-COARSEGRID-PRECONDITIONER'
+spreconditionerSection = "CC-COARSEGRID-PRECONDITIONER"
 
 ##############################
 [CC-COARSEGRID-PRECONDITIONER]

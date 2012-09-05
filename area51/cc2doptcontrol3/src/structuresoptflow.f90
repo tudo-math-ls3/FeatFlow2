@@ -32,6 +32,7 @@ module structuresoptflow
   use fespacehierarchybase
   use fespacehierarchy
   use spacetimehierarchy
+  use subdomainfem
 
   use spacetimevectors
   use analyticsolution
@@ -103,6 +104,10 @@ module structuresoptflow
 
     ! A mesh hierarchy with all available space meshes.
     type(t_meshHierarchy) :: rmeshHierarchy
+    
+    ! A mesh hierarchy that describes the boundaries of the
+    ! meshes in rmeshHierarchy
+    type(t_meshHierarchy) :: rmeshHierBoundary
     
     ! A hierarchy of space levels for the primal space
     type(t_feHierarchy) :: rfeHierarchyPrimal

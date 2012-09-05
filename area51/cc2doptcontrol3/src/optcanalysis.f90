@@ -280,8 +280,8 @@ contains
         ierror = 0
       
       case (1)
-        call output_line ('Error evaluating the target function.', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'optcana_evalFunction')
+        call output_line ("Error evaluating the target function.", &
+                          OU_CLASS_ERROR,OU_MODE_STD,"optcana_evalFunction")
         call sys_halt()
       end select
 
@@ -1251,7 +1251,7 @@ contains
 !      ! The same for the dual equation.
 !      ! Dual velocity, primal pressure.
 !      ! In rtempVector(4..6) is the dual solution at time dtimeDual,
-!      ! so we don't have to evaluate the function again!
+!      ! so we don"t have to evaluate the function again!
 !
 !      ! If we have a function in rreference, switch the time for ir.
 !      if (rreference%ctype .ne. ANSOL_TP_ANALYTICAL) then

@@ -183,7 +183,7 @@ contains
       dtime,rvector)
   
 !<description>
-  ! 'Unshifts' time shifts in the components of a vector.
+  ! "Unshifts" time shifts in the components of a vector.
   ! Interpolates quadratically a solution from rvectorPrev, rvectorCurr
   ! and rvectorNext into rvectorTarget such that it represents
   ! the solution at time dtimeTarget.
@@ -259,7 +259,7 @@ contains
     !         +(1/2)*(-t2*t^2+t2^2*t+t2^2-t^2-t+t2)*p3/(t2^2-1)
     
     select case (rpostproc%p_rphysics%cequation)
-    case (0,1)
+    case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
       ! Map the time midpoint(s)
       tmidPrimal = (dtimePrimal1+dtimePrimal3-2.0_DP*dtimePrimal2)/(dtimePrimal1-dtimePrimal3)
       tmidDual = (dtimeDual1+dtimeDual3-2.0_DP*dtimeDual2)/(dtimeDual1-dtimeDual3)
@@ -670,7 +670,7 @@ contains
     
     end select
 
-    ! Write the file to disc, that's it.
+    ! Write the file to disc, that is it.
     call ucd_write (rexport)
     call ucd_release (rexport)
 
@@ -834,7 +834,7 @@ contains
         
     if ((cflag .eq. SYS_REPLACE) .or. (.not. bfileexists)) then
       ! Write a headline
-      write (ifilehandle,'(A)') trim(sheadline)
+      write (ifilehandle,"(A)") trim(sheadline)
     end if
     
     if (present(bnewline)) then
@@ -1073,8 +1073,8 @@ contains
         
     ! Prepare terminal output
     call output_lbrk()
-    call output_line ('Point values')
-    call output_line ('------------')
+    call output_line ("Point values")
+    call output_line ("------------")
 
     ! File handle for writing to a data file
     iunit = 0
@@ -1227,7 +1227,7 @@ contains
         if (rpostproc%icalcForces .ne. 0) then
 
           call output_lbrk()
-          call output_line ('Body forces real bd., primal space, bdc/horiz/vert')
+          call output_line ("Body forces real bd., primal space, bdc/horiz/vert")
 
           ! Calculate drag-/lift coefficients on the 2nd boundary component.
           ! This is for the benchmark channel!
@@ -1239,18 +1239,18 @@ contains
               rpostproc%dbdForcesCoeff1,rpostproc%dbdForcesCoeff2)
 
           ! Output to the terminal        
-          call output_line (' 2 / ' &
-              //trim(sys_sdEP(Dforces(1),15,6)) // ' / '&
+          call output_line (" 2 / " &
+              //trim(sys_sdEP(Dforces(1),15,6)) // " / "&
               //trim(sys_sdEP(Dforces(2),15,6)) )
           
           ! Output to a file?
           if (rpostproc%iwriteBodyForces .ne. 0) then
           
             ! Write the result to a text file.
-            stemp = trim(sys_si0L(isolutionid,5)) // ' ' &
-                // trim(sys_sdEL(dtime,10)) // ' ' &
-                // trim(sys_si0L(rpostproc%ibodyForcesBdComponent,5)) // ' ' &
-                // trim(sys_sdEL(Dforces(1),10)) // ' '&
+            stemp = trim(sys_si0L(isolutionid,5)) // " " &
+                // trim(sys_sdEL(dtime,10)) // " " &
+                // trim(sys_si0L(rpostproc%ibodyForcesBdComponent,5)) // " " &
+                // trim(sys_sdEL(Dforces(1),10)) // " "&
                 // trim(sys_sdEL(Dforces(2),10))
 
             call optcpp_appendLineToDatafile (stemp,&
@@ -1269,13 +1269,13 @@ contains
               rpostproc%Dfluxline(1:2),rpostproc%Dfluxline(3:4),dflux)
               
           call output_lbrk()
-          call output_line ('Flux, primal space = '//trim(sys_sdEP(dflux,15,6)))
+          call output_line ("Flux, primal space = "//trim(sys_sdEP(dflux,15,6)))
 
           ! Write the result to a text file?
           if (rpostproc%iwriteflux .ne. 0) then
             ! Format: timestep current-time value
-            stemp = trim(sys_si0L(isolutionid,5)) // ' ' &
-                // trim(sys_sdEL(dtime,10)) // ' ' &
+            stemp = trim(sys_si0L(isolutionid,5)) // " " &
+                // trim(sys_sdEL(dtime,10)) // " " &
                 // trim(sys_sdEL(dflux,10))
 
             call optcpp_appendLineToDatafile (stemp,&
@@ -1296,19 +1296,19 @@ contains
           denergy = 0.5_DP*(Derr(1)**2+Derr(2)**2)
 
           call output_lbrk()
-          call output_line ('||y_1||_L2         = '//trim(sys_sdEP(Derr(1),15,6)))
-          call output_line ('||y_2||_L2         = '//trim(sys_sdEP(Derr(2),15,6)))
-          call output_line ('||y||_L2           = '//&
+          call output_line ("||y_1||_L2         = "//trim(sys_sdEP(Derr(1),15,6)))
+          call output_line ("||y_2||_L2         = "//trim(sys_sdEP(Derr(2),15,6)))
+          call output_line ("||y||_L2           = "//&
               trim(sys_sdEP(sqrt(Derr(1)**2+Derr(2)**2),15,6)))
-          call output_line ('1/2||y||^2_L2      = '//trim(sys_sdEP(denergy,15,6)))
+          call output_line ("1/2||y||^2_L2      = "//trim(sys_sdEP(denergy,15,6)))
           
           ! Write the result to a text file?
           if (rpostproc%iwriteKineticEnergy .ne. 0) then
-            stemp = trim(sys_si0L(isolutionid,5)) // ' ' &
-                // trim(sys_sdEL(dtime,10)) // ' ' &
-                // trim(sys_sdEL(denergy,10)) // ' ' &
-                // trim(sys_sdEL(sqrt(Derr(1)**2+Derr(2)**2),10)) // ' ' &
-                // trim(sys_sdEL(Derr(1),10)) // ' ' &
+            stemp = trim(sys_si0L(isolutionid,5)) // " " &
+                // trim(sys_sdEL(dtime,10)) // " " &
+                // trim(sys_sdEL(denergy,10)) // " " &
+                // trim(sys_sdEL(sqrt(Derr(1)**2+Derr(2)**2),10)) // " " &
+                // trim(sys_sdEL(Derr(1),10)) // " " &
                 // trim(sys_sdEL(Derr(2),10))
 
             call optcpp_appendLineToDatafile (stemp,&
@@ -1532,11 +1532,11 @@ contains
           ispacelevel, itimelevel, roperatorAsmHier, &
           rkktsystem)
 
-      call output_line ('||y-z||       = '//trim(sys_sdEL(Derror(2),10)))
-      call output_line ('||y(T)-z(T)|| = '//trim(sys_sdEL(Derror(3),10)))
-      call output_line ('||u||         = '//trim(sys_sdEL(Derror(4),10)))
-      call output_line ('||u_Gamma||   = '//trim(sys_sdEL(Derror(5),10)))
-      call output_line ('J(y,u)        = '//trim(sys_sdEL(Derror(1),10)))
+      call output_line ("||y-z||       = "//trim(sys_sdEL(Derror(2),10)))
+      call output_line ("||y(T)-z(T)|| = "//trim(sys_sdEL(Derror(3),10)))
+      call output_line ("||u||         = "//trim(sys_sdEL(Derror(4),10)))
+      call output_line ("||u_Gamma||   = "//trim(sys_sdEL(Derror(5),10)))
+      call output_line ("J(y,u)        = "//trim(sys_sdEL(Derror(1),10)))
     end if
 
   end subroutine
@@ -1773,25 +1773,25 @@ contains
 !            rvector,rpostproc%ranalyticRefFunction,&
 !            DerrorU,DerrorP,DerrorLambda,DerrorXi,.true.)
 !        call output_lbrk()
-!        call output_line ('||y-y0||_[0,T]           = '//trim(sys_sdEL(DerrorU(1),10)))
-!        call output_line ('||y-y0||_[0,T)           = '//trim(sys_sdEL(DerrorU(2),10)))
-!        call output_line ('||y-y0||_(0,T]           = '//trim(sys_sdEL(DerrorU(3),10)))
-!        call output_line ('||y-y0||_(0,T)           = '//trim(sys_sdEL(DerrorU(4),10)))
+!        call output_line ("||y-y0||_[0,T]           = "//trim(sys_sdEL(DerrorU(1),10)))
+!        call output_line ("||y-y0||_[0,T)           = "//trim(sys_sdEL(DerrorU(2),10)))
+!        call output_line ("||y-y0||_(0,T]           = "//trim(sys_sdEL(DerrorU(3),10)))
+!        call output_line ("||y-y0||_(0,T)           = "//trim(sys_sdEL(DerrorU(4),10)))
 !        
-!        call output_line ('||p-p0||_[0,T]           = '//trim(sys_sdEL(DerrorP(1),10)))
-!        call output_line ('||p-p0||_[0,T)           = '//trim(sys_sdEL(DerrorP(2),10)))
-!        call output_line ('||p-p0||_(0,T]           = '//trim(sys_sdEL(DerrorP(3),10)))
-!        call output_line ('||p-p0||_(0,T)           = '//trim(sys_sdEL(DerrorP(4),10)))
+!        call output_line ("||p-p0||_[0,T]           = "//trim(sys_sdEL(DerrorP(1),10)))
+!        call output_line ("||p-p0||_[0,T)           = "//trim(sys_sdEL(DerrorP(2),10)))
+!        call output_line ("||p-p0||_(0,T]           = "//trim(sys_sdEL(DerrorP(3),10)))
+!        call output_line ("||p-p0||_(0,T)           = "//trim(sys_sdEL(DerrorP(4),10)))
 !        
-!        call output_line ('||lambda-lambda0||_[0,T] = '//trim(sys_sdEL(DerrorLambda(1),10)))
-!        call output_line ('||lambda-lambda0||_[0,T) = '//trim(sys_sdEL(DerrorLambda(2),10)))
-!        call output_line ('||lambda-lambda0||_(0,T] = '//trim(sys_sdEL(DerrorLambda(3),10)))
-!        call output_line ('||lambda-lambda0||_(0,T) = '//trim(sys_sdEL(DerrorLambda(4),10)))
+!        call output_line ("||lambda-lambda0||_[0,T] = "//trim(sys_sdEL(DerrorLambda(1),10)))
+!        call output_line ("||lambda-lambda0||_[0,T) = "//trim(sys_sdEL(DerrorLambda(2),10)))
+!        call output_line ("||lambda-lambda0||_(0,T] = "//trim(sys_sdEL(DerrorLambda(3),10)))
+!        call output_line ("||lambda-lambda0||_(0,T) = "//trim(sys_sdEL(DerrorLambda(4),10)))
 !
-!        call output_line ('||xi-xi0||_[0,T]         = '//trim(sys_sdEL(DerrorXi(1),10)))
-!        call output_line ('||xi-xi0||_[0,T)         = '//trim(sys_sdEL(DerrorXi(2),10)))
-!        call output_line ('||xi-xi0||_(0,T]         = '//trim(sys_sdEL(DerrorXi(3),10)))
-!        call output_line ('||xi-xi0||_(0,T)         = '//trim(sys_sdEL(DerrorXi(4),10)))
+!        call output_line ("||xi-xi0||_[0,T]         = "//trim(sys_sdEL(DerrorXi(1),10)))
+!        call output_line ("||xi-xi0||_[0,T)         = "//trim(sys_sdEL(DerrorXi(2),10)))
+!        call output_line ("||xi-xi0||_(0,T]         = "//trim(sys_sdEL(DerrorXi(3),10)))
+!        call output_line ("||xi-xi0||_(0,T)         = "//trim(sys_sdEL(DerrorXi(4),10)))
 !      end if
     
   end subroutine
@@ -1926,25 +1926,25 @@ contains
 !            rvector,rpostproc%ranalyticRefFunction,&
 !            DerrorU,DerrorP,DerrorLambda,DerrorXi,.true.)
 !        call output_lbrk()
-!        call output_line ('||y-y0||_[0,T]           = '//trim(sys_sdEL(DerrorU(1),10)))
-!        call output_line ('||y-y0||_[0,T)           = '//trim(sys_sdEL(DerrorU(2),10)))
-!        call output_line ('||y-y0||_(0,T]           = '//trim(sys_sdEL(DerrorU(3),10)))
-!        call output_line ('||y-y0||_(0,T)           = '//trim(sys_sdEL(DerrorU(4),10)))
+!        call output_line ("||y-y0||_[0,T]           = "//trim(sys_sdEL(DerrorU(1),10)))
+!        call output_line ("||y-y0||_[0,T)           = "//trim(sys_sdEL(DerrorU(2),10)))
+!        call output_line ("||y-y0||_(0,T]           = "//trim(sys_sdEL(DerrorU(3),10)))
+!        call output_line ("||y-y0||_(0,T)           = "//trim(sys_sdEL(DerrorU(4),10)))
 !        
-!        call output_line ('||p-p0||_[0,T]           = '//trim(sys_sdEL(DerrorP(1),10)))
-!        call output_line ('||p-p0||_[0,T)           = '//trim(sys_sdEL(DerrorP(2),10)))
-!        call output_line ('||p-p0||_(0,T]           = '//trim(sys_sdEL(DerrorP(3),10)))
-!        call output_line ('||p-p0||_(0,T)           = '//trim(sys_sdEL(DerrorP(4),10)))
+!        call output_line ("||p-p0||_[0,T]           = "//trim(sys_sdEL(DerrorP(1),10)))
+!        call output_line ("||p-p0||_[0,T)           = "//trim(sys_sdEL(DerrorP(2),10)))
+!        call output_line ("||p-p0||_(0,T]           = "//trim(sys_sdEL(DerrorP(3),10)))
+!        call output_line ("||p-p0||_(0,T)           = "//trim(sys_sdEL(DerrorP(4),10)))
 !        
-!        call output_line ('||lambda-lambda0||_[0,T] = '//trim(sys_sdEL(DerrorLambda(1),10)))
-!        call output_line ('||lambda-lambda0||_[0,T) = '//trim(sys_sdEL(DerrorLambda(2),10)))
-!        call output_line ('||lambda-lambda0||_(0,T] = '//trim(sys_sdEL(DerrorLambda(3),10)))
-!        call output_line ('||lambda-lambda0||_(0,T) = '//trim(sys_sdEL(DerrorLambda(4),10)))
+!        call output_line ("||lambda-lambda0||_[0,T] = "//trim(sys_sdEL(DerrorLambda(1),10)))
+!        call output_line ("||lambda-lambda0||_[0,T) = "//trim(sys_sdEL(DerrorLambda(2),10)))
+!        call output_line ("||lambda-lambda0||_(0,T] = "//trim(sys_sdEL(DerrorLambda(3),10)))
+!        call output_line ("||lambda-lambda0||_(0,T) = "//trim(sys_sdEL(DerrorLambda(4),10)))
 !
-!        call output_line ('||xi-xi0||_[0,T]         = '//trim(sys_sdEL(DerrorXi(1),10)))
-!        call output_line ('||xi-xi0||_[0,T)         = '//trim(sys_sdEL(DerrorXi(2),10)))
-!        call output_line ('||xi-xi0||_(0,T]         = '//trim(sys_sdEL(DerrorXi(3),10)))
-!        call output_line ('||xi-xi0||_(0,T)         = '//trim(sys_sdEL(DerrorXi(4),10)))
+!        call output_line ("||xi-xi0||_[0,T]         = "//trim(sys_sdEL(DerrorXi(1),10)))
+!        call output_line ("||xi-xi0||_[0,T)         = "//trim(sys_sdEL(DerrorXi(2),10)))
+!        call output_line ("||xi-xi0||_(0,T]         = "//trim(sys_sdEL(DerrorXi(3),10)))
+!        call output_line ("||xi-xi0||_(0,T)         = "//trim(sys_sdEL(DerrorXi(4),10)))
 !      end if
     
   end subroutine

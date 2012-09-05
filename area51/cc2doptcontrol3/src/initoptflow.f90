@@ -93,7 +93,7 @@ contains
 
 !</subroutine>
 
-    character(len=SYS_STRLEN) :: sstr,sstr2,sstr3
+    character(len=SYS_STRLEN) :: sstr,sstr2,sstr3,sstr4,sstr5
     type(t_timeDiscretisation), pointer :: p_rtimeDiscr
     type(t_feSpaceLevel), pointer :: p_rfeSpacePrimal,p_rfeSpaceDual,p_rfeSpaceControl
     integer :: isuccess
@@ -128,6 +128,14 @@ contains
     call struc_getSpaceDiscrSettings (rparlist,rsettings%ssectionDiscrSpace,&
         rsettingsSolver%rsettingsSpaceDiscr)
 
+    ! Read basic optimal control parameters.
+    if (ioutputLevel .ge. 1) then
+      call output_lbrk()
+      call output_line ("Initialising optimal control parameters.")
+    end if
+    call init_initOptControl (rparlist,rsettings%ssectionOptControl,&
+        rsettingsSolver%rsettingsOptControl)
+
     ! Now, read the mesh and the domain
     if (ioutputLevel .ge. 1) then
       call output_lbrk()
@@ -152,7 +160,8 @@ contains
       call output_line ("Refining meshes in space.")
     end if
     call init_initSpaceHierarchy (rsettingsSolver%rboundary,rsettingsSolver%rrefinementSpace,&
-        rsettingsSolver%rtriaCoarse,rsettingsSolver%rmeshHierarchy,ioutputlevel)
+        rsettingsSolver%rtriaCoarse,rsettingsSolver%rmeshHierarchy,&
+        rsettingsSolver%rmeshHierBoundary,ioutputlevel)
 
     ! and time.
     if (ioutputLevel .ge. 1) then
@@ -174,7 +183,7 @@ contains
         rsettingsSolver%rfeHierarchyControl,&
         rsettingsSolver%rphysics,rsettingsSolver%rsettingsOptControl,&
         rsettingsSolver%rsettingsSpaceDiscr,rsettingsSolver%rmeshHierarchy,&
-        rsettingsSolver%rboundary,ioutputLevel)
+        rsettingsSolver%rmeshHierBoundary,rsettingsSolver%rboundary,ioutputLevel)
         
     ! Create interlevel projection structures for prlongation/restriction in space.
     if (ioutputLevel .ge. 1) then
@@ -301,17 +310,18 @@ contains
     call parlst_getvalue_string (rparlist,rsettings%ssectionOptControl,&
         "ssectionBoundaryCondDual",sstr3,bdequote=.true.)
     
+    call parlst_getvalue_string (rparlist,rsettings%ssectionOptControl,&
+        "ssectionBoundaryCondPrimalLin",sstr4,bdequote=.true.)
+        
+    call parlst_getvalue_string (rparlist,rsettings%ssectionOptControl,&
+        "ssectionBoundaryCondDualLin",sstr5,bdequote=.true.)
+    
     call struc_initBDC (rsettingsSolver%roptcBDC,rparlist,&
-        rsettingsSolver%rphysics,sstr,sstr2,sstr3)
+        rsettingsSolver%rphysics,rsettingsSolver%rsettingsOptControl,sstr,&
+        sstr2,sstr3,sstr4,sstr5)
 
     ! Ok, now we can initialise the Optimal-Control settings, read in the
     ! target function etc.
-    if (ioutputLevel .ge. 1) then
-      call output_lbrk()
-      call output_line ("Initialising optimal control parameters.")
-    end if
-    call init_initOptControl (rparlist,rsettings%ssectionOptControl,&
-        rsettingsSolver%rsettingsOptControl)
 
     if (ioutputLevel .ge. 1) then
       call output_lbrk()
@@ -367,8 +377,8 @@ contains
         rsettingsSolver%rboundary,rsettingsSolver%rphysics,isuccess)
 
     if (isuccess .eq. 1) then
-      call output_line ('Functions created by simulation not yet supported!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'init_initStandardSolver')
+      call output_line ("Functions created by simulation not yet supported!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"init_initStandardSolver")
       call sys_halt()
     end if
 
@@ -382,8 +392,8 @@ contains
         rsettingsSolver%rboundary,rsettingsSolver%rphysics,isuccess)
 
     if (isuccess .eq. 1) then
-      call output_line ('Functions created by simulation not yet supported!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'init_initStandardSolver')
+      call output_line ("Functions created by simulation not yet supported!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"init_initStandardSolver")
       call sys_halt()
     end if
        
@@ -430,8 +440,8 @@ contains
         rsettingsSolver%rboundary,rsettingsSolver%rphysics,isuccess)
 
     if (isuccess .eq. 1) then
-      call output_line ('Functions created by simulation not yet supported!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'init_initStandardSolver')
+      call output_line ("Functions created by simulation not yet supported!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"init_initStandardSolver")
       call sys_halt()
     end if
     
@@ -521,6 +531,7 @@ contains
     call tmsh_releaseHierarchy(rsettings%rtimeHierarchy)
 
     ! and the space meshes.
+    call mshh_releaseHierarchy(rsettings%rmeshHierBoundary)
     call mshh_releaseHierarchy(rsettings%rmeshHierarchy)
 
     ! Finally release the coarse mesh, bondary definition, etc.
@@ -619,15 +630,15 @@ contains
     
     ! Initialise the target function.
     call parlst_getvalue_string (rparlist,ssectionOptC,&
-        'stargetFunction',stargetFunction,bdequote=.true.)
+        "stargetFunction",stargetFunction,bdequote=.true.)
         
     call init_initFunction (rparlist,stargetFunction,roptcontrol%rtargetFunction,&
         rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,rfeHierPrimal,rboundary,&
         rphysics,isuccess)
     
     if (isuccess .eq. 1) then
-      call output_line ('Function created by simulation not yet supported!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'init_initOptControlTargetFunc2D')
+      call output_line ("Function created by simulation not yet supported!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"init_initOptControlTargetFunc2D")
       call sys_halt()
     end if
 
@@ -683,62 +694,73 @@ contains
     ! local variables
     character(len=SYS_STRLEN) :: sfunction
     
-    call parlst_getvalue_int (rparlist,ssectionOptC,&
-        "cdistVelConstraints",roptcontrol%rconstraints%cdistVelConstraints,&
-        roptcontrol%rconstraints%cdistVelConstraints)
-
-    ! DEPRECATED: ccontrolConstraintsType = cconstraintsType
-    call parlst_getvalue_int (rparlist,ssectionOptC,&
-        "cdistVelConstType",roptcontrol%rconstraints%cdistVelConstType,&
-        roptcontrol%rconstraints%cdistVelConstType)
-
-!    if (roptcontrol%rconstraints%cdistVelConstType .eq. 1) then
+    ! Check if the pointers to teh analytical solutions are set or not.
+    ! If a constraint is defined via an analytical solution and the pointer
+    ! is nor set, read in the solution. The section can be found in the
+    ! corresponding constraint-structure.
+    !
+    ! ... do be done
+    
+    
+    
+!    call parlst_getvalue_int (rparlist,ssectionOptC,&
+!        "rconstraintsDistCtrl%cconstraints",roptcontrol%rconstraints%rconstraintsDistCtrl%cconstraints,&
+!        roptcontrol%rconstraints%rconstraintsDistCtrl%cconstraints)
+!
+!    ! DEPRECATED: ccontrolConstraintsType = cconstraintsType
+!    call parlst_getvalue_int (rparlist,ssectionOptC,&
+!        "rconstraintsDistCtrl%constrType",roptcontrol%rconstraints%rconstraintsDistCtrl%constrType,&
+!        roptcontrol%rconstraints%rconstraintsDistCtrl%constrType)
+!        
+!        
+!
+!    if (roptcontrol%rconstraints%rconstraintsDistCtrl%constrType .eq. 1) then
 !      allocate (roptcontrol%rconstraints%p_rumin1)
 !      allocate (roptcontrol%rconstraints%p_rumax1)
 !      allocate (roptcontrol%rconstraints%p_rumin2)
 !      allocate (roptcontrol%rconstraints%p_rumax2)
 !      
 !      call parlst_getvalue_string (rparlist,ssectionOptC,&
-!          'ssectionumin1',sfunction,"",bdequote=.true.)
+!          "ssectionumin1",sfunction,"",bdequote=.true.)
 !          
 !      call init_initFunction (rparlist,sfunction,roptcontrol%rconstraints%p_rumin1,&
 !          rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,rfeHierPrimal,rboundary,isuccess)
 !      if (isuccess .eq. 1) then
-!        call output_line ('Cannot set up constraints! Invalid section: '//trim(sfunction), &
-!            OU_CLASS_ERROR,OU_MODE_STD,'init_initOptControlConstraints')
+!        call output_line ("Cannot set up constraints! Invalid section: "//trim(sfunction), &
+!            OU_CLASS_ERROR,OU_MODE_STD,"init_initOptControlConstraints")
 !        call sys_halt()
 !      end if
 !
 !      call parlst_getvalue_string (rparlist,ssectionOptC,&
-!          'ssectionumax1',sfunction,"",bdequote=.true.)
+!          "ssectionumax1",sfunction,"",bdequote=.true.)
 !
 !      call init_initFunction (rparlist,sfunction,roptcontrol%rconstraints%p_rumax1,&
 !          rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,rfeHierPrimal,rboundary,isuccess)
 !      if (isuccess .eq. 1) then
-!        call output_line ('Cannot set up constraints! Invalid section: '//trim(sfunction), &
-!            OU_CLASS_ERROR,OU_MODE_STD,'init_initOptControlConstraints')
+!        call output_line ("Cannot set up constraints! Invalid section: "//trim(sfunction), &
+!            OU_CLASS_ERROR,OU_MODE_STD,"init_initOptControlConstraints")
 !        call sys_halt()
 !      end if
 !
 !      call parlst_getvalue_string (rparlist,ssectionOptC,&
-!          'ssectionumin2',sfunction,"",bdequote=.true.)
+!          "ssectionumin2",sfunction,"",bdequote=.true.)
 !
 !      call init_initFunction (rparlist,sfunction,roptcontrol%rconstraints%p_rumin2,&
 !          rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,rfeHierPrimal,rboundary,isuccess)
 !      if (isuccess .eq. 1) then
-!        call output_line ('Cannot set up constraints! Invalid section: '//trim(sfunction), &
-!            OU_CLASS_ERROR,OU_MODE_STD,'init_initOptControlConstraints')
+!        call output_line ("Cannot set up constraints! Invalid section: "//trim(sfunction), &
+!            OU_CLASS_ERROR,OU_MODE_STD,"init_initOptControlConstraints")
 !        call sys_halt()
 !      end if
 !
 !      call parlst_getvalue_string (rparlist,ssectionOptC,&
-!          'ssectionumax2',sfunction,"",bdequote=.true.)
+!          "ssectionumax2",sfunction,"",bdequote=.true.)
 !
 !      call init_initFunction (rparlist,sfunction,roptcontrol%rconstraints%p_rumax2,&
 !          rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,rfeHierPrimal,rboundary,isuccess)
 !      if (isuccess .eq. 1) then
-!        call output_line ('Cannot set up constraints! Invalid section: '//trim(sfunction), &
-!            OU_CLASS_ERROR,OU_MODE_STD,'init_initOptControlConstraints')
+!        call output_line ("Cannot set up constraints! Invalid section: "//trim(sfunction), &
+!            OU_CLASS_ERROR,OU_MODE_STD,"init_initOptControlConstraints")
 !        call sys_halt()
 !      end if
 !
@@ -796,13 +818,13 @@ contains
     ! local variables
     character(len=SYS_STRLEN) :: sfunction
     
-    call parlst_getvalue_int (rparlist,ssectionOptC,&
-        "cstateConstraints",roptcontrol%rconstraints%cstateConstraints,&
-        roptcontrol%rconstraints%cstateConstraints)
-
-    call parlst_getvalue_int (rparlist,ssectionOptC,&
-        "cstateConstraintsType",roptcontrol%rconstraints%cstateConstraintsType,0)
-
+!    call parlst_getvalue_int (rparlist,ssectionOptC,&
+!        "rconstraintsState%cconstrType%cconstraints",roptcontrol%rconstraints%rconstraintsState%cconstraints,&
+!        roptcontrol%rconstraints%rconstraintsState%cconstrType%cconstraints)
+!
+!    call parlst_getvalue_int (rparlist,ssectionOptC,&
+!        "rconstraintsState%cconstrType%cconstraintsType",roptcontrol%rconstraints%rconstraintsState%cconstrType,0)
+!
 !    if (roptcontrol%rconstraints%ccontrolConstraintsType .eq. 1) then
 !      allocate (roptcontrol%rconstraints%p_rymin1)
 !      allocate (roptcontrol%rconstraints%p_rymax1)
@@ -810,46 +832,46 @@ contains
 !      allocate (roptcontrol%rconstraints%p_rymax2)
 !      
 !      call parlst_getvalue_string (rparlist,ssectionOptC,&
-!          'ssectionymin1',sfunction,"",bdequote=.true.)
+!          "ssectionymin1",sfunction,"",bdequote=.true.)
 !          
 !      call init_initFunction (rparlist,sfunction,roptcontrol%rconstraints%p_rymin1,&
 !          rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,rfeHierPrimal,rboundary,isuccess)
 !      if (isuccess .eq. 1) then
-!        call output_line ('Cannot set up constraints! Invalid section: '//trim(sfunction), &
-!            OU_CLASS_ERROR,OU_MODE_STD,'init_initOptStateConstraints')
+!        call output_line ("Cannot set up constraints! Invalid section: "//trim(sfunction), &
+!            OU_CLASS_ERROR,OU_MODE_STD,"init_initOptStateConstraints")
 !        call sys_halt()
 !      end if
 !
 !      call parlst_getvalue_string (rparlist,ssectionOptC,&
-!          'ssectionymax1',sfunction,"",bdequote=.true.)
+!          "ssectionymax1",sfunction,"",bdequote=.true.)
 !
 !      call init_initFunction (rparlist,sfunction,roptcontrol%rconstraints%p_rymax1,&
 !          rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,rfeHierPrimal,rboundary,isuccess)
 !      if (isuccess .eq. 1) then
-!        call output_line ('Cannot set up constraints! Invalid section: '//trim(sfunction), &
-!            OU_CLASS_ERROR,OU_MODE_STD,'init_initOptStateConstraints')
+!        call output_line ("Cannot set up constraints! Invalid section: "//trim(sfunction), &
+!            OU_CLASS_ERROR,OU_MODE_STD,"init_initOptStateConstraints")
 !        call sys_halt()
 !      end if
 !
 !      call parlst_getvalue_string (rparlist,ssectionOptC,&
-!          'ssectionymin2',sfunction,"",bdequote=.true.)
+!          "ssectionymin2",sfunction,"",bdequote=.true.)
 !
 !      call init_initFunction (rparlist,sfunction,roptcontrol%rconstraints%p_rymin2,&
 !          rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,rfeHierPrimal,rboundary,isuccess)
 !      if (isuccess .eq. 1) then
-!        call output_line ('Cannot set up constraints! Invalid section: '//trim(sfunction), &
-!            OU_CLASS_ERROR,OU_MODE_STD,'init_initOptStateConstraints')
+!        call output_line ("Cannot set up constraints! Invalid section: "//trim(sfunction), &
+!            OU_CLASS_ERROR,OU_MODE_STD,"init_initOptStateConstraints")
 !        call sys_halt()
 !      end if
 !
 !      call parlst_getvalue_string (rparlist,ssectionOptC,&
-!          'ssectionymax2',sfunction,"",bdequote=.true.)
+!          "ssectionymax2",sfunction,"",bdequote=.true.)
 !
 !      call init_initFunction (rparlist,sfunction,roptcontrol%rconstraints%p_rymax2,&
 !          rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,rfeHierPrimal,rboundary,isuccess)
 !      if (isuccess .eq. 1) then
-!        call output_line ('Cannot set up constraints! Invalid section: '//trim(sfunction), &
-!            OU_CLASS_ERROR,OU_MODE_STD,'init_initOptStateConstraints')
+!        call output_line ("Cannot set up constraints! Invalid section: "//trim(sfunction), &
+!            OU_CLASS_ERROR,OU_MODE_STD,"init_initOptStateConstraints")
 !        call sys_halt()
 !      end if
 !
@@ -888,7 +910,7 @@ contains
 !    end if
 
     ! Release state constraints
-!    if (roptcontrol%rconstraints%cstateConstraintsType .eq. 1) then
+!    if (roptcontrol%rconstraints%rconstraintsState%cconstrType%cconstraintsType .eq. 1) then
 !      call ansol_done(roptcontrol%rconstraints%p_rymin1)
 !      call ansol_done(roptcontrol%rconstraints%p_rymax1)
 !      call ansol_done(roptcontrol%rconstraints%p_rymin2)
@@ -1372,13 +1394,13 @@ contains
 !        "iwriteFlux",rpostproc%iwriteFlux,0)
 !
 !    call parlst_getvalue_string (rparlist,ssection,&
-!        'sfilenameFlux',rpostproc%sfilenameFlux,"",bdequote=.true.)
+!        "sfilenameFlux",rpostproc%sfilenameFlux,"",bdequote=.true.)
 !
 !    call parlst_getvalue_string (rparlist,ssection,&
-!        'dfluxline',sstr,"",bdequote=.true.)
+!        "dfluxline",sstr,"",bdequote=.true.)
 !        
 !    call parlst_getvalue_string (rparlist,ssection,&
-!        'dfluxline',sstr,"",bdequote=.true.)
+!        "dfluxline",sstr,"",bdequote=.true.)
 !    if (sstr .ne. "") then
 !      ! Read the start/end coordinates
 !      read(sstr,*) rpostproc%Dfluxline(1),rpostproc%Dfluxline(2),&
@@ -1394,7 +1416,7 @@ contains
 !        "iwriteKineticEnergy",rpostproc%iwriteKineticEnergy,0)
 !
 !    call parlst_getvalue_string (rparlist,ssection,&
-!        'sfilenameKineticEnergy',rpostproc%sfilenameKineticEnergy,"",bdequote=.true.)
+!        "sfilenameKineticEnergy",rpostproc%sfilenameKineticEnergy,"",bdequote=.true.)
 !
 !    ! Error calculation
 !
@@ -1448,7 +1470,7 @@ contains
 !        "iwritePointValues",rpostproc%iwritePointValues,0)
 !
 !    call parlst_getvalue_string (rparlist,ssection,&
-!        'sfilenamePointValues',rpostproc%sfilenamePointValues,"",bdequote=.true.)
+!        "sfilenamePointValues",rpostproc%sfilenamePointValues,"",bdequote=.true.)
 !
 !  end subroutine
 !

@@ -58,16 +58,16 @@ module constantsdiscretisation
   ! 1st-order upwind; configured by dupsam
   integer, parameter, public :: CCSTAB_UPWIND            = 1
   
-  ! Edge-oriented stabilisation; configured by dupsam as 'gamma'
+  ! Edge-oriented stabilisation; configured by dupsam as "gamma"
   integer, parameter, public :: CCSTAB_EDGEORIENTED      = 2
 
   ! Streamline diffusion; configured by dupsam, new implementation
   integer, parameter, public :: CCSTAB_STREAMLINEDIFF2   = 3
 
-  ! Edge-oriented stabilisation; configured by dupsam as 'gamma', new implementation
+  ! Edge-oriented stabilisation; configured by dupsam as "gamma", new implementation
   integer, parameter, public :: CCSTAB_EDGEORIENTED2     = 4
 
-  ! Edge-oriented stabilisation; configured by dupsam as 'gamma', new implementation.
+  ! Edge-oriented stabilisation; configured by dupsam as "gamma", new implementation.
   ! Precomputed matrix.
   integer, parameter, public :: CCSTAB_EDGEORIENTED3     = 5
 !</constantblock>

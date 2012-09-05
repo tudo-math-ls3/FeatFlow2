@@ -469,7 +469,7 @@ contains
   type(t_spacetimeNewton), intent(inout) :: rsolver
 
   ! Structure defining the KKT system. The control in this structure
-  ! defines the current 'state' of the Newton algorithm.
+  ! defines the current "state" of the Newton algorithm.
   ! On output, the primal and dual solution are updated.
   type(t_kktsystem), intent(inout) :: rkktsystem
   
@@ -766,19 +766,19 @@ contains
     ! Apply the Newton iteration
     call itc_initIteration(rsolver%riter)
     
-    !rsolver%p_rsettingsSolver%rsettingsOptControl%rconstraints%cdistVelConstraints = 0
+    !rsolver%p_rsettingsSolver%rsettingsOptControl%rconstraints%rconstraintsDistCtrl%cconstraints = 0
     
     do while (.true.)
     
       ! The Newton iteration reads
       !
-      !    u_n+1  =  u_n  -  [J''(u_n)]^-1  J'(u_n)
+      !    u_n+1  =  u_n  -  [J""(u_n)]^-1  J"(u_n)
       !
       ! or in other words,
       !
-      !    u_n+1  =  u_n  +  [J''(u_n)]^-1  d_n
+      !    u_n+1  =  u_n  +  [J""(u_n)]^-1  d_n
       !
-      ! with the residual   d_n = -J'(u_n)   specifying a 'search direction'.
+      ! with the residual   d_n = -J"(u_n)   specifying a "search direction".
       
       ! -------------------------------------------------------------
       ! Get the current residual / search direction
@@ -931,7 +931,7 @@ contains
       ! Actual Newton iteration. Apply the Newton preconditioner
       ! to get the Newton search direction:
       !
-      !    J''(u_n) g_n  =  d_n
+      !    J""(u_n) g_n  =  d_n
       !
       ! The control on the maximum level of p_rdirDerivHierarchy
       ! (identified by p_rsolutionDirDeriv%p_rcontrolLin) receives the result.
@@ -982,7 +982,7 @@ contains
 
       call output_separator (OU_SEP_MINUS)
       
-      !rsolver%p_rsettingsSolver%rsettingsOptControl%rconstraints%cdistVelConstraints = 1
+      !rsolver%p_rsettingsSolver%rsettingsOptControl%rconstraints%rconstraintsDistCtrl%cconstraints = 1
 
     end do
     
@@ -1016,7 +1016,7 @@ contains
 
 !<input>
   ! Defines the basic hierarchy of the solutions of the KKT system.
-  ! This can be a 'template' structure, i.e., memory for the solutions
+  ! This can be a "template" structure, i.e., memory for the solutions
   ! in rkktsystemHierarchy does not have to be allocated.
   type(t_kktsystemHierarchy), intent(in), target :: rkktsystemHierarchy
 

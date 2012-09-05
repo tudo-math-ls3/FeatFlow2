@@ -43,7 +43,7 @@ module assemblytemplates
 
 !<typeblock>
 
-  ! A type block specifying all 'static' information in space which are depending
+  ! A type block specifying all "static" information in space which are depending
   ! on a discretisation and a triangulation. Such static information can be
   ! precalculated and is valid until the mesh or the FE spaces change.
   type t_staticSpaceAsmTemplates

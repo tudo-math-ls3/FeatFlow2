@@ -347,7 +347,6 @@ contains
     integer :: ilev
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
     type(t_spacetimeOperatorAsm) :: roperatorAsm
-    type(t_discreteBC), pointer :: p_rdiscreteBC
     type(t_lssSolverStat) :: rlocalStatLss
     
     if (rsolver%p_rlssHierarchy%nlmin .gt. ispaceLevel) then
@@ -447,10 +446,6 @@ contains
           p_rdiscretisation,roperatorAsm%p_rasmTemplates,&
           rsolver%p_RassemblyFlags(ilev))
           
-      ! Bind discrete boundary conditions to the matrix
-      call sbch_getDiscreteBC (rsolver%p_roptcBDCSpaceHierarchy,ilev,p_rdiscreteBC)
-      call lsysbl_assignDiscreteBC (rsolver%p_Rmatrices(ilev),p_rdiscreteBC)
-          
       ! Provide the matrix to the linear solver
       call lssh_setMatrix(rsolver%p_rlsshierarchy,ilev,rsolver%p_Rmatrices(ilev))
       call lssh_setMatrix(rsolver%p_rlsshierarchy2,ilev,rsolver%p_Rmatrices(ilev))
@@ -465,9 +460,6 @@ contains
         allocate (rsolver%p_rd2)
         call lsysbl_createVectorBlock (p_rdiscretisation,rsolver%p_rd2)
         
-        ! Bind the boundary conditions to that vector
-        call lsysbl_assignDiscreteBC (rsolver%p_Rmatrices(ilev),p_rdiscreteBC)
-            
         select case (rsolver%copType)
         case (OPTP_PRIMAL,OPTP_PRIMALLIN,OPTP_PRIMALLIN_SIMPLE)
           call smva_allocTempData (rsolver%rtempData,&
@@ -503,7 +495,7 @@ contains
 
 !<subroutine>
 
-  subroutine spaceslh_initData_bdc (rsolver, idofTime)
+  subroutine spaceslh_initData_bdc (rsolver, idofTime, rcontrol)
   
 !<description>
   ! Initialises the boundary condition structures for time DOF idofTime
@@ -512,6 +504,9 @@ contains
 !<input>
   ! Number of the DOF in time.
   integer, intent(in) :: idofTime
+
+  ! OPTIONAL: Structure that defines the current control.
+  type(t_controlSpace), intent(inout), optional :: rcontrol
 !</input>
 
 !<inputoutput>
@@ -523,6 +518,7 @@ contains
 
     ! local variables
     integer :: ilev
+    type(t_vectorBlock), pointer :: p_rcontrolVec
     
     ! Clean up the boundary conditions.
     call sbch_resetBCstructure (rsolver%p_roptcBDCSpaceHierarchy)
@@ -531,13 +527,28 @@ contains
     ! and set up the boundary conditions.
     do ilev = rsolver%ispacelevel,rsolver%p_rlssHierarchy%nlmin,-1
     
-      ! Assemble Dirichlet/Neumann boundary conditions
-      call smva_initDirichletNeumannBC (&
-          rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(ilev),&
-          rsolver%p_roperatorAsmHier%ranalyticData%p_roptcBDC,&
-          rsolver%copType,&
-          rsolver%p_roperatorAsmHier,ilev,rsolver%itimelevel,idoftime,&
-          rsolver%p_roperatorAsmHier%ranalyticData%p_rglobalData)
+      if (.not. present(rcontrol)) then
+      
+        ! Assemble Dirichlet/Neumann boundary conditions
+        call smva_initDirichletNeumannBC (&
+            rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(ilev),&
+            rsolver%p_roperatorAsmHier%ranalyticData%p_roptcBDC,&
+            rsolver%copType,&
+            rsolver%p_roperatorAsmHier,ilev,rsolver%itimelevel,idoftime,&
+            rsolver%p_roperatorAsmHier%ranalyticData%p_rglobalData)
+      
+      else
+      
+        call sptivec_getVectorFromPool (rcontrol%p_rvectorAccess,idofTime,p_rcontrolVec)
+
+        ! Assemble Dirichlet/Neumann boundary conditions
+        call smva_initDirichletNeumannBC (&
+            rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(ilev),&
+            rsolver%p_roperatorAsmHier%ranalyticData%p_roptcBDC,&
+            rsolver%copType,&
+            rsolver%p_roperatorAsmHier,ilev,rsolver%itimelevel,idoftime,&
+            rsolver%p_roperatorAsmHier%ranalyticData%p_rglobalData,p_rcontrolVec)
+      end if
     
     end do
 
@@ -757,7 +768,6 @@ contains
 
     ! local variables
     integer :: ilev,iprevlv
-    logical :: bfull
     type(t_lssSolverStat) :: rlocalStatLss
     
     ! Calculate matrices and initialise the default solver?
@@ -1298,7 +1308,6 @@ contains
     real(DP) :: dres
     type(t_linsolNode), pointer :: p_rsolverNode
     real(DP), dimension(:), pointer :: p_Dd, p_Dx
-    type(t_discreteBC), pointer :: p_rdiscreteBC
     type(t_lssSolverStat) :: rlocalStatLss
     type(t_spaceslSolverStat) :: rlocalStat
     type(t_timer) :: rtimer
@@ -1309,16 +1318,6 @@ contains
     ! At first, get a temp vector we can use for creating defects,
     p_rd => rsolver%p_rd
     p_rd2 => rsolver%p_rd2
-    
-    ! Get the boundary conditions for the current timestep.
-    call stat_startTimer (rtimer)
-    call sbch_getDiscreteBC (&
-        rsolver%p_roptcBDCSpaceHierarchy,rsolver%ispacelevel,p_rdiscreteBC)
-    call stat_stopTimer (rtimer)
-        
-    ! Assign the boundary conditions to the temp vector.
-    ! Necessary for the linear solver.
-    call lsysbl_assignDiscreteBC (p_rd,p_rdiscreteBC)
     
     ! DEBUG!!!
     call lsysbl_getbase_double (p_rd,p_Dd)
@@ -1345,7 +1344,7 @@ contains
         ! No filter for the initial condition.
         if (idoftime .gt. 1) then
           call stat_startTimer (rtimer)
-          call spaceslh_initData_bdc (rsolver, idofTime)      
+          call spaceslh_initData_bdc (rsolver, idofTime, rcontrol)      
           call stat_stopTimer (rtimer)
         end if
       
@@ -1371,6 +1370,9 @@ contains
               rsolver%rtempData,SPINITCOND_PREVITERATE,rtimer)
         end if    
         
+        call spaceslh_implementBDC (p_rd, SPACESLH_VEC_DEFECT, &
+            rsolver%ispacelevel, rsolver)
+
         call stat_stopTimer (rstatistics%rtimeDefect)    
         call stat_addTimers (rtimer,rstatistics%rtimeRHS)
         
@@ -1583,6 +1585,9 @@ contains
           rsolver%p_roperatorAsmHier,rprimalSol,rdualSol,&
           rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(rsolver%ispacelevel),&
           rsolver%rtempData,csolgeneration,rtimer)
+
+      call spaceslh_implementBDC (p_rd, SPACESLH_VEC_DEFECT, &
+          rsolver%ispacelevel, rsolver)
       
       call stat_stopTimer (rstatistics%rtimeDefect)
       call stat_addTimers (rtimer,rstatistics%rtimeRHS)
@@ -1717,7 +1722,7 @@ contains
       ! Initialise boundary conditions
       ! -------------------------------------------------------------
       call stat_startTimer (rtimer)
-      call spaceslh_initData_bdc (rsolver, idofTime)      
+      call spaceslh_initData_bdc (rsolver, idofTime, rcontrolLin)      
       call stat_stopTimer (rtimer)
 
       ! -------------------------------------------------------------
@@ -1739,6 +1744,9 @@ contains
           rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(rsolver%ispacelevel),&
           rsolver%rtempData,csolgeneration,rtimer)
           
+      call spaceslh_implementBDC (p_rd, SPACESLH_VEC_DEFECT, &
+          rsolver%ispacelevel, rsolver)
+
       call stat_stopTimer (rstatistics%rtimeDefect)
       call stat_addTimers (rtimer,rstatistics%rtimeRHS)
           
@@ -1846,8 +1854,7 @@ contains
         call lsysbl_vectorLinearComb (p_rd,p_rx,1.0_DP,1.0_DP)
 
         ! Implement boundary conditions.
-        ! Use the defect filter since we are in the defect space.
-        call spaceslh_implementBDC (p_rx, SPACESLH_VEC_DEFECT, &
+        call spaceslh_implementBDC (p_rx, SPACESLH_VEC_SOLUTION, &
               rsolver%ispacelevel, rsolver)
 
         call sptivec_commitVecInPool(rprimalSolLin%p_rvectorAccess,idofTime)
@@ -1896,6 +1903,9 @@ contains
           rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(rsolver%ispacelevel),&
           rsolver%rtempData,csolgeneration,rtimer)
           
+      call spaceslh_implementBDC (p_rd, SPACESLH_VEC_DEFECT, &
+          rsolver%ispacelevel, rsolver)
+
       call stat_stopTimer (rstatistics%rtimeDefect)
       call stat_addTimers (rtimer,rstatistics%rtimeRHS)
           
@@ -2004,7 +2014,7 @@ contains
 
         ! Implement boundary conditions.
         ! Use the defect filter since we are in the defect space.
-        call spaceslh_implementBDC (p_rx, SPACESLH_VEC_DEFECT, &
+        call spaceslh_implementBDC (p_rx, SPACESLH_VEC_SOLUTION, &
               rsolver%ispacelevel, rsolver)
         
         call sptivec_commitVecInPool(rdualSolLin%p_rvectorAccess,idofTime)

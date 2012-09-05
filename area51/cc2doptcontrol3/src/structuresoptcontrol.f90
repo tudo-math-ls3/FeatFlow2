@@ -57,31 +57,31 @@ module structuresoptcontrol
 !    ! Type of constraints to apply to the control u.
 !    ! =0: No constraints.
 !    ! =1: Constant constraints on u active:
-!    !     ddistVelUmin1 <= u_1 <= ddistVelUmax1, ddistVelUmin2 <= u_2 <= ddistVelUmax2
+!    !     rconstraintsDistCtrl%dmin1 <= u_1 <= rconstraintsDistCtrl%dmax1, rconstraintsDistCtrl%dmin2 <= u_2 <= rconstraintsDistCtrl%dmax2
 !    !     Implementation by DOF.
 !    ! =2: Constant constraints on u active:
-!    !     ddistVelUmin1 <= u_1 <= ddistVelUmax1, ddistVelUmin2 <= u_2 <= ddistVelUmax2
+!    !     rconstraintsDistCtrl%dmin1 <= u_1 <= rconstraintsDistCtrl%dmax1, rconstraintsDistCtrl%dmin2 <= u_2 <= rconstraintsDistCtrl%dmax2
 !    !     Implemented by cubature point.
 !    ! =3: Constant constraints on u active: 
-!    !     ddistVelUmin1 <= u_1 <= ddistVelUmax1, ddistVelUmin2 <= u_2 <= ddistVelUmax2.
+!    !     rconstraintsDistCtrl%dmin1 <= u_1 <= rconstraintsDistCtrl%dmax1, rconstraintsDistCtrl%dmin2 <= u_2 <= rconstraintsDistCtrl%dmax2.
 !    !     Implemented by DOF. Newton matrix is approximative.
 !    ! =4: Constant constraints on u active: 
-!    !     ddistVelUmin1 <= u_1 <= ddistVelUmax1, ddistVelUmin2 <= u_2 <= ddistVelUmax2.
+!    !     rconstraintsDistCtrl%dmin1 <= u_1 <= rconstraintsDistCtrl%dmax1, rconstraintsDistCtrl%dmin2 <= u_2 <= rconstraintsDistCtrl%dmax2.
 !    !     Implemented by cubature point (more exact). Adaptive integration.
 !    integer :: ccontrolConstraints = 0
 !
 !    ! Type of definition of the constraints if ccontrolConstraints <> 0.
-!    ! =0: constants specified in ddistVelUmin1/2, ddistVelUmax1/2.
+!    ! =0: constants specified in rconstraintsDistCtrl%dmin1/2, rconstraintsDistCtrl%dmax1/2.
 !    ! =1: analytical functions defined in p_rumin1/2, p_rumax1/2.
 !    integer :: ccontrolConstraintsType = 0
 !
 !    ! Constraints on u_1
-!    real(DP) :: ddistVelUmin1 = -1.0E10
-!    real(DP) :: ddistVelUmax1 = 1.0E10
+!    real(DP) :: rconstraintsDistCtrl%dmin1 = -1.0E10
+!    real(DP) :: rconstraintsDistCtrl%dmax1 = 1.0E10
 !    
 !    ! Constraints in u_2
-!    real(DP) :: ddistVelUmin2 = -1.0E10
-!    real(DP) :: ddistVelUmax2 = 1.0E10
+!    real(DP) :: rconstraintsDistCtrl%dmin2 = -1.0E10
+!    real(DP) :: rconstraintsDistCtrl%dmax2 = 1.0E10
 !
 !    ! Analytical constraints for u_1
 !    type(t_anSolution), pointer :: p_rumin1 => null()
@@ -99,28 +99,28 @@ module structuresoptcontrol
 !    ! Type of constraints to apply to the state y.
 !    ! =0: No constraints.
 !    ! =1: Constant constraints on u active:
-!    !     dymin1 <= y_1 <= dymax1, dymin2 <= y_2 <= dymax2
+!    !     rconstraintsState%dmin1 <= y_1 <= rconstraintsState%dmax1, rconstraintsState%dmin2 <= y_2 <= rconstraintsState%dmax2
 !    !     Implementation by DOF.
 !    ! =2: Constant constraints on y active:
-!    !     dymin1 <= y_1 <= dymax1, dymin2 <= y_2 <= dymax2
+!    !     rconstraintsState%dmin1 <= y_1 <= rconstraintsState%dmax1, rconstraintsState%dmin2 <= y_2 <= rconstraintsState%dmax2
 !    !     Implemented by cubature point.
-!    integer :: cstateConstraints = 0
+!    integer :: rconstraintsState%cconstrType%cconstraints = 0
 !
 !    ! Type of definition of the constraints if ccontrolConstraints <> 0.
-!    ! =0: constants specified in ddistVelUmin1/2, ddistVelUmax1/2.
+!    ! =0: constants specified in rconstraintsDistCtrl%dmin1/2, rconstraintsDistCtrl%dmax1/2.
 !    ! =1: analytical functions defined in p_rumin1/2, p_rumax1/2.
-!    integer :: cstateConstraintsType = 0
+!    integer :: rconstraintsState%cconstrType%cconstraintsType = 0
 !
 !    ! Regularisation parameter for the Moreau-Yosida regularisation
-!    real(DP) :: dstateConstrReg = 1.0_DP
+!    real(DP) :: rconstraintsState%dregularisation = 1.0_DP
 !
 !    ! Constraints on u_1
-!    real(DP) :: dymin1 = -1.0E10
-!    real(DP) :: dymax1 = 1.0E10
+!    real(DP) :: rconstraintsState%dmin1 = -1.0E10
+!    real(DP) :: rconstraintsState%dmax1 = 1.0E10
 !    
 !    ! Constraints in u_2
-!    real(DP) :: dymin2 = -1.0E10
-!    real(DP) :: dymax2 = 1.0E10
+!    real(DP) :: rconstraintsState%dmin2 = -1.0E10
+!    real(DP) :: rconstraintsState%dmax2 = 1.0E10
 !
 !    ! Analytical constraints for u_1
 !    type(t_anSolution), pointer :: p_rymin1 => null()
@@ -151,73 +151,72 @@ module structuresoptcontrol
 
 !<types>
 
+!<typeblock>
+
+  ! Defines a set of contraints to any function
+  type t_optcConstraintsDef
+  
+    ! Type of constraints to apply.
+    ! =0: No constraints.
+    ! =1: Constant constraints active:
+    !     dmin1 <= u_1 <= dmax1, dmin2 <= u_2 <= dmax2
+    !     Implementation by DOF.
+    ! =2: Constant constraints active:
+    !     dmin1 <= u_1 <= dmax1, dmin2 <= u_2 <= dmax2
+    !     Implemented by cubature point.
+    integer :: cconstraints = 0
+
+    ! Type of definition of the constraints if ccontrolConstraints <> 0.
+    ! =0: constants specified in dmin1/2, dmax1/2.
+    ! =1: analytical functions defined in p_rmin1/2, p_rmax1/2.
+    integer :: cconstrType = 0
+
+    ! Constraints on u_1
+    real(DP) :: dmin1 = -1.0E10_DP
+    real(DP) :: dmax1 = 1.0E10_DP
+    
+    ! Section defining the minimum/maximum for the 1st component
+    character(LEN=SYS_STRLEN) :: ssectionMin1 = ""
+    character(LEN=SYS_STRLEN) :: ssectionMax1 = ""
+
+    ! Analytical constraints for u_1.
+    type(t_anSolution), pointer :: p_rmin1 => null()
+    type(t_anSolution), pointer :: p_rmax1 => null()
+
+    ! Constraints in u_2
+    real(DP) :: dmin2 = -1.0E10_DP
+    real(DP) :: dmax2 = 1.0E10_DP
+
+    ! Section defining the minimum/maximum for the 1st component
+    character(LEN=SYS_STRLEN) :: ssectionMin2 = ""
+    character(LEN=SYS_STRLEN) :: ssectionMax2 = ""
+  
+    ! Analytical constraints for u_2
+    type(t_anSolution), pointer :: p_rmin2 => null()
+    type(t_anSolution), pointer :: p_rmax2 => null()
+    
+    ! Regularisation parameter. Not used for all types of constraints
+    real(DP) :: dregularisation = 0.0_DP
+
+  end type
+
+!</typeblock>
+
+  public :: t_optcConstraintsDef
+
+!<typeblock>
+
   ! Type block encapsuling constraints, in space/time.
   type t_optcconstraintsSpaceTime
   
-    ! Type of constraints to apply to the distributed velocity control.
-    ! =0: No constraints.
-    ! =1: Constant constraints on u active:
-    !     ddistVelUmin1 <= u_1 <= ddistVelUmax1, ddistVelUmin2 <= u_2 <= ddistVelUmax2
-    !     Implementation by DOF.
-    ! =2: Constant constraints on u active:
-    !     ddistVelUmin1 <= u_1 <= ddistVelUmax1, ddistVelUmin2 <= u_2 <= ddistVelUmax2
-    !     Implemented by cubature point.
-    integer :: cdistVelConstraints = 0
-
-    ! Type of definition of the constraints if ccontrolConstraints <> 0.
-    ! =0: constants specified in ddistVelUmin1/2, ddistVelUmax1/2.
-    ! =1: analytical functions defined in p_rumin1/2, p_rumax1/2.
-    integer :: cdistVelConstType = 0
-
-    ! Constraints on u_1
-    real(DP) :: ddistVelUmin1 = -1.0E10
-    real(DP) :: ddistVelUmax1 = 1.0E10
-
-    ! Analytical constraints for u_1.
-    type(t_anSolution), pointer :: p_rdistVelUmin1 => null()
-    type(t_anSolution), pointer :: p_rdistVelUmax1 => null()
-
-    ! Constraints in u_2
-    real(DP) :: ddistVelUmin2 = -1.0E10
-    real(DP) :: ddistVelUmax2 = 1.0E10
-  
-    ! Analytical constraints for u_2
-    type(t_anSolution), pointer :: p_rdistVelUmin2 => null()
-    type(t_anSolution), pointer :: p_rdistVelUmax2 => null()
-  
-    ! Type of constraints to apply to the state y.
-    ! =0: No constraints.
-    ! =1: Constant constraints on u active:
-    !     dymin1 <= y_1 <= dymax1, dymin2 <= y_2 <= dymax2
-    !     Implementation by DOF.
-    ! =2: Constant constraints on y active:
-    !     dymin1 <= y_1 <= dymax1, dymin2 <= y_2 <= dymax2
-    !     Implemented by cubature point.
-    integer :: cstateConstraints = 0
-
-    ! Type of definition of the constraints if ccontrolConstraints <> 0.
-    ! =0: constants specified in ddistVelUmin1/2, ddistVelUmax1/2.
-    ! =1: analytical functions defined in p_rumin1/2, p_rumax1/2.
-    integer :: cstateConstraintsType = 0
-
-    ! Regularisation parameter for the Moreau-Yosida regularisation
-    real(DP) :: dstateConstrReg = 1.0_DP
-
-    ! Constraints on u_1
-    real(DP) :: dymin1 = -1.0E10
-    real(DP) :: dymax1 = 1.0E10
+    ! Constraints in the distributed control
+    type(t_optcConstraintsDef) :: rconstraintsDistCtrl
     
-    ! Constraints in u_2
-    real(DP) :: dymin2 = -1.0E10
-    real(DP) :: dymax2 = 1.0E10
-
-    ! Analytical constraints for u_1
-    type(t_anSolution), pointer :: p_rymin1 => null()
-    type(t_anSolution), pointer :: p_rymax1 => null()
+    ! Constraints in the L2 boundary control
+    type(t_optcConstraintsDef) :: rconstraintsL2BdC
     
-    ! Analytical constraints for u_2
-    type(t_anSolution), pointer :: p_rymin2 => null()
-    type(t_anSolution), pointer :: p_rymax2 => null()
+    ! Constraints in the state
+    type(t_optcConstraintsDef) :: rconstraintsState
     
   end type
 
@@ -479,6 +478,9 @@ contains
 !<description>
   ! Reads the parameters for the optimal control from the parameter list
   ! and stores them in the structure.
+  !
+  ! NOTE: Analytical constraints are not read from disc!
+  ! The caller has to do that!
 !</description>
 
 !<input>
@@ -585,43 +587,6 @@ contains
     call parlst_getvalue_int (rparlist,ssectionOptC,&
         "iconvectionExplicit",roptcontrol%iconvectionExplicit,0)
 
-    ! Set the type to "constraints by constant".
-    ! If the constraints are analytically given, this will be changed later.
-    roptcontrol%rconstraints%cdistVelConstraints = 0
-    roptcontrol%rconstraints%cdistVelConstType = 0
-
-    call parlst_getvalue_double (rparlist,ssectionOptC,&
-        "ddistVelUmin1",roptcontrol%rconstraints%ddistVelUmin1,-1.0E10_DP)
-
-    call parlst_getvalue_double (rparlist,ssectionOptC,&
-        "ddistVelUmax1",roptcontrol%rconstraints%ddistVelUmax1,1.0E10_DP)
-
-    call parlst_getvalue_double (rparlist,ssectionOptC,&
-        "ddistVelUmin2",roptcontrol%rconstraints%ddistVelUmin2,-1.0E10_DP)
-
-    call parlst_getvalue_double (rparlist,ssectionOptC,&
-        "ddistVelUmax2",roptcontrol%rconstraints%ddistVelUmax2,1.0E10_DP)
-
-    ! Set the type to "constraints by constant".
-    ! If the constraints are analytically given, this will be changed later.
-    roptcontrol%rconstraints%cstateConstraints = 0
-    roptcontrol%rconstraints%cstateConstraintsType = 0
-
-    call parlst_getvalue_double (rparlist,ssectionOptC,&
-        "dymin1",roptcontrol%rconstraints%dymin1,-1.0E10_DP)
-
-    call parlst_getvalue_double (rparlist,ssectionOptC,&
-        "dymax1",roptcontrol%rconstraints%dymax1,1.0E10_DP)
-
-    call parlst_getvalue_double (rparlist,ssectionOptC,&
-        "dymin2",roptcontrol%rconstraints%dymin2,-1.0E10_DP)
-
-    call parlst_getvalue_double (rparlist,ssectionOptC,&
-        "dymax2",roptcontrol%rconstraints%dymax2,1.0E10_DP)
-
-    call parlst_getvalue_double (rparlist,ssectionOptC,&
-        "dstateConstrReg",roptcontrol%rconstraints%dstateConstrReg,1.0_DP)
-        
     ! Observation area
     call parlst_getvalue_string (rparlist,ssectionOptC,&
         "DobservationArea",sstring,"")
@@ -637,6 +602,93 @@ contains
           roptcontrol%p_DobservationArea(4)
     end if
 
+    ! -------------------------------------------
+    ! Read the constraints
+    ! -------------------------------------------
+
+    ! Distributed control
+    call parlst_getvalue_string (rparlist,ssectionOptC,&
+        "ssectionConstrDistCtrl",sstring,"",bdequote=.true.)
+        
+    call soptc_getConstraints (rparlist,sstring,&
+        roptcontrol%rconstraints%rconstraintsDistCtrl)
+
+    ! L2 boundary control
+    call parlst_getvalue_string (rparlist,ssectionOptC,&
+        "ssectionConstrL2BdC",sstring,"",bdequote=.true.)
+        
+    call soptc_getConstraints (rparlist,sstring,&
+        roptcontrol%rconstraints%rconstraintsL2BdC)
+
+    ! State
+    call parlst_getvalue_string (rparlist,ssectionOptC,&
+        "ssectionConstrState",sstring,"",bdequote=.true.)
+        
+    call soptc_getConstraints (rparlist,sstring,&
+        roptcontrol%rconstraints%rconstraintsState)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine soptc_getConstraints (rparlist,ssection,rconstraints)
+  
+!<description>
+  ! Reads the parameters that defines a set of constraints.
+  !
+  ! NOTE: Analytical constraints are not read from disc!
+!</description>
+
+!<input>
+  ! Parameter list
+  type(t_parlist), intent(in) :: rparlist
+  
+  ! Section where the parameters of the constraints can be found.
+  character(len=*), intent(in) :: ssection
+!</input>
+
+!<inputoutput>
+  ! Constraints-structure, to be set up.
+  type(t_optcConstraintsDef), intent(out) :: rconstraints
+!</inputoutput>
+
+!</subroutine>
+    
+    call parlst_getvalue_int (rparlist,ssection,&
+        "cconstraints",rconstraints%cconstraints,0)
+
+    call parlst_getvalue_int (rparlist,ssection,&
+        "cconstrType",rconstraints%cconstrType,0)
+
+    call parlst_getvalue_double (rparlist,ssection,&
+        "dmin1",rconstraints%dmin1,-1.0E10_DP)
+
+    call parlst_getvalue_double (rparlist,ssection,&
+        "dmax1",rconstraints%dmax1,1.0E10_DP)
+
+    call parlst_getvalue_double (rparlist,ssection,&
+        "dmin2",rconstraints%dmin2,-1.0E10_DP)
+
+    call parlst_getvalue_double (rparlist,ssection,&
+        "dmax2",rconstraints%dmax2,1.0E10_DP)
+
+    call parlst_getvalue_double (rparlist,ssection,&
+        "dregularisation",rconstraints%dregularisation,1.0_DP)
+        
+    call parlst_getvalue_string (rparlist,ssection,&
+        "ssectionMin1",rconstraints%ssectionMin1,"",bdequote=.true.)
+
+    call parlst_getvalue_string (rparlist,ssection,&
+        "ssectionMax1",rconstraints%ssectionMax1,"",bdequote=.true.)
+
+    call parlst_getvalue_string (rparlist,ssection,&
+        "ssectionMin2",rconstraints%ssectionMin2,"",bdequote=.true.)
+
+    call parlst_getvalue_string (rparlist,ssection,&
+        "ssectionMax2",rconstraints%ssectionMax2,"",bdequote=.true.)
+        
   end subroutine
 
   ! ***************************************************************************

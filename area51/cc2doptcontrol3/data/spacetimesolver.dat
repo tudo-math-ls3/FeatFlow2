@@ -50,7 +50,7 @@ dtolAbs            = 1E-14
 # Type of stopping criterion
 ctolMode = 4
 
-# Maximum relative residual before the iteration is treated as 'divergent'
+# Maximum relative residual before the iteration is treated as "divergent"
 ddivRel = 1E20
 
 # General damping parameter when adding the preconditioned defect
@@ -195,7 +195,7 @@ dtolAbs            = 1E-14
 # Type of stopping criterion
 ctolMode = 4
 
-# Maximum relative residual before the iteration is treated as 'divergent'
+# Maximum relative residual before the iteration is treated as "divergent"
 ddivRel            = 1E20
 
 # General damping parameter when adding the preconditioned defect
@@ -294,7 +294,7 @@ dtolRel            = 1E-14
 # rel. error < dtolRel
 dtolAbs            = 1E-14
 
-# Maximum relative residual before the iteration is treated as 'divergent'
+# Maximum relative residual before the iteration is treated as "divergent"
 ddivRel            = 1E20
 
 # General damping parameter when adding the preconditioned defect

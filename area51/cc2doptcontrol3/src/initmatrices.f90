@@ -245,14 +245,14 @@ contains
       ! Laplace/Stokes matrix and probably for the mass matrix.
       ! It defines KCOL/KLD.
       
-      ! Create the matrix structure
+      ! Create the matrix structure for the velocity FEM space.
       call bilf_createMatrixStructure (&
           rstaticAsmTemplates%p_rdiscr,LSYSSC_MATRIX9,&
           rstaticAsmTemplates%rmatrixTemplateFEM,cconstrType=cmatBuildType)
 
       ! In case the element-based routine is used to create the matrices,
-      ! the 'offdiagonal' matrices have the same structure. If we used
-      ! the edge-based construction routine, the 'offdiagonal' matrices
+      ! the "offdiagonal" matrices have the same structure. If we used
+      ! the edge-based construction routine, the "offdiagonal" matrices
       ! can still be constructed with a smaller stencil.
       if (cmatBuildType .ne. BILF_MATC_ELEMENTBASED) then
         call bilf_createMatrixStructure (&
@@ -289,12 +289,12 @@ contains
       ! Connect the Stokes matrix to the template FEM matrix such that they
       ! use the same structure.
       !
-      ! Don't create a content array yet, it will be created by
+      ! Don"t create a content array yet, it will be created by
       ! the assembly routines later.
       call lsyssc_duplicateMatrix (rstaticAsmTemplates%rmatrixTemplateFEM,&
           rstaticAsmTemplates%rmatrixLaplace,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
       
-      ! Allocate memory for the entries; don't initialise the memory.
+      ! Allocate memory for the entries; don"t initialise the memory.
       call lsyssc_allocEmptyMatrix (&
           rstaticAsmTemplates%rmatrixLaplace,LSYSSC_SETM_UNDEFINED)
       
@@ -302,9 +302,9 @@ contains
       ! B-matrices
       ! -----------------------------------------------------------------------
       ! Create matrices for the gradient term.
-      ! Don't create a content array yet, it will be created by
+      ! Don"t create a content array yet, it will be created by
       ! the assembly routines later.
-      ! Allocate memory for the entries; don't initialise the memory.
+      ! Allocate memory for the entries; don"t initialise the memory.
       
       call lsyssc_duplicateMatrix (rstaticAsmTemplates%rmatrixTemplateGradient,&
           rstaticAsmTemplates%rmatrixB1,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
@@ -361,7 +361,7 @@ contains
       call mmod_expandToFullRow (rstaticAsmTemplates%rmatrixMassPressureExtStruc,1)
       call lsyssc_allocEmptyMatrix (rstaticAsmTemplates%rmatrixMassPressureExtStruc,&
           LSYSSC_SETM_UNDEFINED)
-
+          
     ! ---------------------------------------------------------------
     ! Heat equation
     ! ---------------------------------------------------------------
@@ -374,7 +374,7 @@ contains
       ! Laplace/Stokes matrix and probably for the mass matrix.
       ! It defines KCOL/KLD.
       
-      ! Create the matrix structure
+      ! Create the matrix structure for the main FEM space
       call bilf_createMatrixStructure (&
           rstaticAsmTemplates%p_rdiscr,LSYSSC_MATRIX9,&
           rstaticAsmTemplates%rmatrixTemplateFEM,cconstrType=cmatBuildType)
@@ -387,12 +387,12 @@ contains
       ! Connect the Stokes matrix to the template FEM matrix such that they
       ! use the same structure.
       !
-      ! Don't create a content array yet, it will be created by
+      ! Don"t create a content array yet, it will be created by
       ! the assembly routines later.
       call lsyssc_duplicateMatrix (rstaticAsmTemplates%rmatrixTemplateFEM,&
           rstaticAsmTemplates%rmatrixLaplace,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
       
-      ! Allocate memory for the entries; don't initialise the memory.
+      ! Allocate memory for the entries; don"t initialise the memory.
       call lsyssc_allocEmptyMatrix (&
           rstaticAsmTemplates%rmatrixLaplace,LSYSSC_SETM_UNDEFINED)
       
@@ -460,8 +460,6 @@ contains
       call lsyssc_releaseMatrix (rstaticAsmTemplates%rmatrixTemplateGradient)
     if (rstaticAsmTemplates%rmatrixTemplateFEM%NEQ .ne. 0) &
       call lsyssc_releaseMatrix (rstaticAsmTemplates%rmatrixTemplateFEM)
-    if (rstaticAsmTemplates%rmatrixTemplateFEMOffdiag%NEQ .ne. 0) &
-      call lsyssc_releaseMatrix (rstaticAsmTemplates%rmatrixTemplateFEMOffdiag)
     if (rstaticAsmTemplates%rmatrixTemplateFEMPressure%NEQ .ne. 0) &
       call lsyssc_releaseMatrix (rstaticAsmTemplates%rmatrixTemplateFEMPressure)
 
@@ -534,7 +532,7 @@ contains
           rstaticAsmTemplates%rmatrixD2,LSYSSC_TR_CONTENT)
           
       ! -----------------------------------------------------------------------
-      ! Mass matrices. They are used in so many cases, it's better we always
+      ! Mass matrices. They are used in so many cases, is it better we always
       ! have them available.
       ! -----------------------------------------------------------------------
 
@@ -568,7 +566,7 @@ contains
           .true.,1.0_DP,rstaticAsmTemplates%rcubatureInfo)
 
       ! -----------------------------------------------------------------------
-      ! Mass matrices. They are used in so many cases, it's better we always
+      ! Mass matrices. They are used in so many cases, is it better we always
       ! have them available.
       ! -----------------------------------------------------------------------
 
@@ -625,7 +623,7 @@ contains
       call lsyssc_clearMatrix (rstaticAsmTemplates%rmatrixEOJPrimal)
 
       ! Set up the jump stabilisation structure.
-      ! There's not much to do. Viscosity is set to 1.0 here.
+      ! There"s not much to do. Viscosity is set to 1.0 here.
       ! The operator is linear, so scaling the matrix by nu, one
       ! obtains the corresponding EOJ matrix.
       rjumpStabil%dnu = 1.0_DP
@@ -637,7 +635,7 @@ contains
       rjumpStabil%dtheta = 1.0_DP
 
       ! Call the jump stabilisation technique to stabilise that stuff.
-      ! We can assemble the jump part any time as it's independent of any
+      ! We can assemble the jump part any time as is it independent of any
       ! convective parts...
       call conv_jumpStabilisation2d (&
           rjumpStabil, CONV_MODMATRIX, rstaticAsmTemplates%rmatrixEOJPrimal)

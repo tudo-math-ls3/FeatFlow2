@@ -89,14 +89,14 @@ module structuresgeneral
     
     ! Modification to the discrete RHS.
     ! =0: No modification (standard).
-    ! =1: Disturb the primal velocity RHS in all DOF's with a random value.
-    ! =2: Disturb the primal velocity RHS in all DOF's except for the boundary DOF's
+    ! =1: Disturb the primal velocity RHS in all DOFs with a random value.
+    ! =2: Disturb the primal velocity RHS in all DOFs except for the boundary DOFs
     !     with a random value.
-    ! =3: Disturb the dual velocity RHS in all DOF's with a random value.
-    ! =4: Disturb the dual velocity RHS in all DOF's except for the boundary DOF's
+    ! =3: Disturb the dual velocity RHS in all DOFs with a random value.
+    ! =4: Disturb the dual velocity RHS in all DOFs except for the boundary DOFs
     !     with a random value.
-    ! =5: Disturb the velocity RHS in all DOF's with a random value.
-    ! =6: Disturb the velocity RHS in all DOF's except for the boundary DOF's
+    ! =5: Disturb the velocity RHS in all DOFs with a random value.
+    ! =6: Disturb the velocity RHS in all DOFs except for the boundary DOFs
     !     with a random value.
     integer :: crhsmodification = 0
 
@@ -184,25 +184,25 @@ contains
 !</subroutine>
 
     call parlst_getvalue_double (rparlist,ssection,&
-        'dprimalDualCoupling',rdebugFlags%dprimalDualCoupling,1.0_DP)
+        "dprimalDualCoupling",rdebugFlags%dprimalDualCoupling,1.0_DP)
 
     call parlst_getvalue_double (rparlist,ssection,&
-        'ddualPrimalCoupling',rdebugFlags%ddualPrimalCoupling,1.0_DP)
+        "ddualPrimalCoupling",rdebugFlags%ddualPrimalCoupling,1.0_DP)
 
     call parlst_getvalue_double (rparlist,ssection,&
-        'dterminalCondDecoupled',rdebugFlags%dterminalCondDecoupled,1.0_DP)
+        "dterminalCondDecoupled",rdebugFlags%dterminalCondDecoupled,1.0_DP)
 
     call parlst_getvalue_double (rparlist,ssection,&
-        'dtimeCoupling',rdebugFlags%dtimeCoupling,1.0_DP)
+        "dtimeCoupling",rdebugFlags%dtimeCoupling,1.0_DP)
 
     call parlst_getvalue_int (rparlist,ssection,&
-        'crhsmodification',rdebugFlags%crhsmodification,0)
+        "crhsmodification",rdebugFlags%crhsmodification,0)
 
     call parlst_getvalue_double (rparlist,ssection,&
-        'drhsrandomMax',rdebugFlags%drhsrandomMax,0.0_DP)
+        "drhsrandomMax",rdebugFlags%drhsrandomMax,0.0_DP)
 
     call parlst_getvalue_int (rparlist,ssection,&
-        'cwriteUmfpackMatrix',rdebugFlags%cwriteUmfpackMatrix,0)
+        "cwriteUmfpackMatrix",rdebugFlags%cwriteUmfpackMatrix,0)
 
   end subroutine
 
@@ -242,8 +242,8 @@ contains
     integer :: nlmin,nlmax
 
     ! Get the level numbers.
-    call parlst_getvalue_int (rparlist,ssectionSpace,'NLMIN',nlmin,1)
-    call parlst_getvalue_int (rparlist,ssectionSpace,'NLMAX',nlmax,2)
+    call parlst_getvalue_int (rparlist,ssectionSpace,"NLMIN",nlmin,1)
+    call parlst_getvalue_int (rparlist,ssectionSpace,"NLMAX",nlmax,2)
 
     ! Do some correction to the level numbers
     if (nlmin .le. 0) nlmin = nlmax+nlmin
@@ -256,8 +256,8 @@ contains
     rrefinementSpace%npreref = nlmin-1
 
     ! The same for the time mesh.
-    call parlst_getvalue_int (rparlist,ssectionTime,'TIMENLMIN',nlmin,1)
-    call parlst_getvalue_int (rparlist,ssectionTime,'TIMENLMAX',nlmax,2)
+    call parlst_getvalue_int (rparlist,ssectionTime,"TIMENLMIN",nlmin,1)
+    call parlst_getvalue_int (rparlist,ssectionTime,"TIMENLMAX",nlmax,2)
 
     ! Do some correction to the level numbers
     if (nlmin .le. 0) nlmin = nlmax+nlmin

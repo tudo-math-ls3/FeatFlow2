@@ -9,9 +9,9 @@
 # on the boundary. The number in braces "(n)" specifies
 # how many expressions are defined here. The following n lines define
 # n constant values in the form
-#   'name' type value
+#   "name" type value
 # with
-#   'name' : an arbitrary name; case insensitive
+#   "name" : an arbitrary name; case insensitive
 #   type   : -3=analytic reference solution. An integer value defines the 
 #               solution id of the function to be used on the boundary
 #               (see user_flows.f90)
@@ -47,15 +47,15 @@
 # _INFTY at some points (x,y) on the boundary. This return value will
 # make the corresponding part on the boundary be treated as Neumann
 # boundary! Thus by defining an expression relative to a parameter
-# value and the time, it's possible to create moving boundary conditions.
+# value and the time, it"s possible to create moving boundary conditions.
 
 bdExpressions(6) =
-  'pi'             0    3.14159265358979
-  'Umax'           0    1.0
-  'Dirichlet0'    -1    '0.0'
-  'ParProfile'     2    0.3
-  'ParProfileNeg'  2    -1.5
-  'ParProfExpr'   -1    '(3.0/2.0)*Y*(0.1-Y)/((0.1/2.0)**2)'
+  "pi"             0    3.14159265358979
+  "Umax"           0    1.0
+  "Dirichlet0"    -1    "0.0"
+  "ParProfile"     2    0.3
+  "ParProfileNeg"  2    -1.5
+  "ParProfExpr"   -1    "(3.0/2.0)*Y*(0.1-Y)/((0.1/2.0)**2)"
   
 
 #####################
@@ -72,27 +72,27 @@ bdExpressions(6) =
 ineumannBoundary = -1
 
 # For each boundary component, a bondary component specifier 
-# 'bdComponentX([n])' must exist. [n] defined the number of sub-segments
+# "bdComponentX([n])" must exist. [n] defined the number of sub-segments
 # that follow. A sub-segment either corresponds to an actual boundary
-# segment or is a 'free' boundary segment anywhere on the boundary.
+# segment or is a "free" boundary segment anywhere on the boundary.
 # To each sub-segment, a boundary condition is associated.
 #
 # Definition of boundary segments always start at parameter value 0.0.
 # Each specified sub-segment allows to specify the end parameter
 # value of the segment:
 # "    0  4.0  3  [bdcid] ..."
-#   Creates a boundary condition segment starting from the 'current' 
-#   parameter value, ending at parameter value '4.0'. '3' specifies 
+#   Creates a boundary condition segment starting from the "current" 
+#   parameter value, ending at parameter value "4.0". "3" specifies 
 #   that both, starting and ending point should belong to the segment.
-#   '1' is the number X of the boundary condition 'bdExpressionX'
+#   "1" is the number X of the boundary condition "bdExpressionX"
 #   defined above.
 #   Using a parameter value which is larger than the maximum parameter
-#   value will result in a 'wrap around', of the boundary condition
+#   value will result in a "wrap around", of the boundary condition
 #   segment, letting it start at the beginning of the boundary component
 #   again.
 # The last values in the list "x y a [bdcid] ..." have the following 
 # meaning:
-#  a = 0: Start- and endpoint don't belong to the interval
+#  a = 0: Start- and endpoint don"t belong to the interval
 #    = 1: Include startpoint of the interval
 #    = 2: Include endpoint of the interval
 #    = 3: Include start- and endpoint
@@ -101,8 +101,8 @@ ineumannBoundary = -1
 #                main solution components (e.g. velocity) component.
 #                For every component, an expression identifier follows
 #                that defines the value on that part of the boundary.
-#                Example:  1.0  3  1  'Dirichlet0'  'Dirichlet0'  
-#                          2.0  3  1  'Dirichlet1'  'Dirichlet0'  
+#                Example:  1.0  3  1  "Dirichlet0"  "Dirichlet0"  
+#                          2.0  3  1  "Dirichlet1"  "Dirichlet0"  
 #                Dirichlet-0-values between parameter value 0..1 for primal X- and
 #                Y-velocity. Between parameter value 1..2: Dirichlet-1-value for primal X-vel., 
 #                Dirichlet-0-value for Y-vel.
@@ -111,8 +111,8 @@ ineumannBoundary = -1
 #                main solution components (e.g. velocity) component.
 #                For every component, an expression identifier follows
 #                that defines the value on that part of the boundary.
-#                Example:  1.0  3  1  'Dirichlet0'  'Dirichlet0'  'Dirichlet0'  'Dirichlet0' 
-#                          2.0  3  1  'Dirichlet1'  'Dirichlet0'  'Dirichlet0'  'Dirichlet0' 
+#                Example:  1.0  3  1  "Dirichlet0"  "Dirichlet0"  "Dirichlet0"  "Dirichlet0" 
+#                          2.0  3  1  "Dirichlet1"  "Dirichlet0"  "Dirichlet0"  "Dirichlet0" 
 #                Dirichlet-0-values between parameter value 0..1 for primal X- and
 #                Y-velocity, dual X- and Y-velocity. Between parameter 
 #                value 1..2: Dirichlet-1-value for primal X-vel., 
@@ -123,21 +123,21 @@ ineumannBoundary = -1
 #          = 6 : Dirichlet-conditions for dual equation, do-nothing conditions for primal eqn.
 #          = 7 : Dirichlet boundary control boundary conditions, relative to a
 #                given inflow.
-#                Example:  1.0  7  1  'Dirichlet0'  'Dirichlet0'  
+#                Example:  1.0  7  1  "Dirichlet0"  "Dirichlet0"  
 
 #bdComponent1(3)=
-#  2.0  3  1  'Dirichlet0'  'Dirichlet0' # [0.0,1.0] : Dirichlet-0 boundary
-#  3.0  3  1  'Dirichlet1'  'Dirichlet0' # [2.0,3.0] : Dirichlet-0 boundary
-#  4.0  2  1  'Dirichlet0'  'Dirichlet0' # [2.0,3.0] : Dirichlet-0 boundary
+#  2.0  3  1  "Dirichlet0"  "Dirichlet0" # [0.0,1.0] : Dirichlet-0 boundary
+#  3.0  3  1  "Dirichlet1"  "Dirichlet0" # [2.0,3.0] : Dirichlet-0 boundary
+#  4.0  2  1  "Dirichlet0"  "Dirichlet0" # [2.0,3.0] : Dirichlet-0 boundary
 
 bdComponent1(4)=
-  1.0  3  1  'Dirichlet0'  'Dirichlet0' # [0.0,1.0] : Dirichlet-0 boundary
+  1.0  3  1  "Dirichlet0"  "Dirichlet0" # [0.0,1.0] : Dirichlet-0 boundary
   2.0  0  0                             # ]1.0,2.0[ : Neumann boundary = do-nothing
-  3.0  2  1  'Dirichlet0'  'Dirichlet0' # [2.0,3.0] : Dirichlet-0 boundary
-  4.0  3  1  'ParProfile'  'Dirichlet0' # [3.0,4.0] : parabolic profile
+  3.0  2  1  "Dirichlet0"  "Dirichlet0" # [2.0,3.0] : Dirichlet-0 boundary
+  4.0  3  1  "ParProfile"  "Dirichlet0" # [3.0,4.0] : parabolic profile
 
 bdComponent2(1)=
-  4.0  3  1  'Dirichlet0'  'Dirichlet0'  # Complete boundary component Dirichlet-0 boundary
+  4.0  3  1  "Dirichlet0"  "Dirichlet0"  # Complete boundary component Dirichlet-0 boundary
 
 ###################
 [BDCONDITIONS_DUAL]
@@ -147,7 +147,7 @@ bdComponent2(1)=
 # The shape of the dual Boundary conditions shall met the shape of the
 # primal boundary conditions. However, the type "automatic" can be chosen.
 # This defines the boundary conditions according to the primal equation.
-# The additional 'automatic' boundary condition type is defined as follows:
+# The additional "automatic" boundary condition type is defined as follows:
 #  [bdcid] = -1: automatic boundary condition.
 #                This holds only for the dual equation. Chooses the boundary
 #                condition according to the primal equation.
@@ -158,10 +158,48 @@ bdComponent2(1)=
 #  3.0  3  -1
 #  4.0  3  -1
 
+bdComponent1(4)=
+  1.0  3  -1
+  2.0  0  -1
+  3.0  2  -1
+  4.0  3  -1
+
+bdComponent2(1)=
+  4.0  3  -1
+
+
+########################
+[BDCONDITIONS_PRIMALLIN]
+########################
+
+# Boundary conditions for the linearised primal equation
+
+
 #bdComponent1(3)=
 #  2.0  3  -1
 #  3.0  3  -1
 #  4.0  2  -1
+
+bdComponent1(4)=
+  1.0  3  -1
+  2.0  0  -1
+  3.0  2  -1
+  4.0  3  -1
+
+bdComponent2(1)=
+  4.0  3  -1
+
+######################
+[BDCONDITIONS_DUALLIN]
+######################
+
+# Boundary conditions for the linearised dual equation.
+
+#bdComponent1(4)=
+#  1.0  3  -1
+#  2.0  0  -1
+#  3.0  3  -1
+#  4.0  3  -1
 
 bdComponent1(4)=
   1.0  3  -1

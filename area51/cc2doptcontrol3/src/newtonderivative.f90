@@ -120,17 +120,17 @@ contains
     ! DIMENSION(dimension,npointsPerElement,nelements)
     real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
     
-    ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(#local DOF's in trial space,nelements)
+    ! An array accepting the DOFs on all elements trial in the trial space.
+    ! DIMENSION(#local DOFs in trial space,nelements)
     integer, dimension(:,:), intent(IN) :: IdofsTrial
     
-    ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(#local DOF's in test space,nelements)
+    ! An array accepting the DOFs on all elements trial in the trial space.
+    ! DIMENSION(#local DOFs in test space,nelements)
     integer, dimension(:,:), intent(IN) :: IdofsTest
     
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
-    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+    ! is it usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
     ! Optional: A collection structure to provide additional
@@ -202,7 +202,7 @@ contains
         rdomainIntSubset%p_revalElementSet, &
         celement, rdomainIntSubset%p_IdofsTrial, DER_FUNC, Dfunc)
     
-    ! If a 'shift' function is present, shift the function.
+    ! If a "shift" function is present, shift the function.
     if (associated(p_rvectorShift)) then
       allocate(Dshift(ubound(Dcoefficients,2),ubound(Dcoefficients,3)))    
 
@@ -506,17 +506,17 @@ contains
     ! DIMENSION(dimension,npointsPerElement,nelements)
     real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
     
-    ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(#local DOF's in trial space,nelements)
+    ! An array accepting the DOFs on all elements trial in the trial space.
+    ! DIMENSION(#local DOFs in trial space,nelements)
     integer, dimension(:,:), intent(IN) :: IdofsTrial
     
-    ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(#local DOF's in test space,nelements)
+    ! An array accepting the DOFs on all elements trial in the trial space.
+    ! DIMENSION(#local DOFs in test space,nelements)
     integer, dimension(:,:), intent(IN) :: IdofsTest
     
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
-    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+    ! is it usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
     ! Optional: A collection structure to provide additional
@@ -1040,7 +1040,7 @@ contains
 
     ! Create an array that saves all elements on the border of the active set.
     nelements = rmatrix%p_rspatialDiscrTrial%p_rtriangulation%NEL
-    call storage_new ('', 'Ielements', nelements, ST_INT, ielemHandle, &
+    call storage_new ("", "Ielements", nelements, ST_INT, ielemHandle, &
         ST_NEWBLOCK_NOINIT)
 
     ! The IquickAccess(1) element saves the handle of the element list.
@@ -1206,7 +1206,7 @@ contains
     end if
 
     
-    ! Figure out the DOF's violating the constraints
+    ! Figure out the DOFs violating the constraints
     allocate(p_Idofs(rfunction%NEQ))
     
     if (associated(p_DdataShift)) then
@@ -1474,7 +1474,7 @@ contains
       ! Loop through the diagonal entries
       do i=1,rmatrix%NEQ
 
-        ! Calculate the diagonal entry, that's it
+        ! Calculate the diagonal entry, that is it
         
         du1 = -min(dwMax*p_DdataMax(i),max(dwMin*p_DdataMin(i),dwFct*p_Ddata(i) + dh))
         du2 = -min(dwMax*p_DdataMax(i),max(dwMin*p_DdataMin(i),dwFct*p_Ddata(i) - dh))
@@ -1490,7 +1490,7 @@ contains
       ! Loop through the diagonal entries
       do i=1,rmatrix%NEQ
 
-        ! Calculate the diagonal entry, that's it
+        ! Calculate the diagonal entry, that is it
         
         du1 = -min(dwMax,max(dwMin*p_DdataMin(i),dwFct*p_Ddata(i) + dh))
         du2 = -min(dwMax,max(dwMin*p_DdataMin(i),dwFct*p_Ddata(i) - dh))
@@ -1506,7 +1506,7 @@ contains
       ! Loop through the diagonal entries
       do i=1,rmatrix%NEQ
 
-        ! Calculate the diagonal entry, that's it
+        ! Calculate the diagonal entry, that is it
         
         du1 = -min(dwMax*p_DdataMax(i),max(dwMin,dwFct*p_Ddata(i) + dh))
         du2 = -min(dwMax*p_DdataMax(i),max(dwMin,dwFct*p_Ddata(i) - dh))
@@ -1522,7 +1522,7 @@ contains
       ! Loop through the diagonal entries
       do i=1,rmatrix%NEQ
 
-        ! Calculate the diagonal entry, that's it
+        ! Calculate the diagonal entry, that is it
         
         du1 = -min(dwMax,max(dwMin,dwFct*p_Ddata(i) + dh))
         du2 = -min(dwMax,max(dwMin,dwFct*p_Ddata(i) - dh))
@@ -1577,13 +1577,13 @@ contains
     ! DIMENSION(dimension,npointsPerElement,nelements)
     real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
 
-    ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(\#local DOF's in test space,nelements)
+    ! An array accepting the DOFs on all elements trial in the trial space.
+    ! DIMENSION(\#local DOFs in test space,nelements)
     integer, dimension(:,:), intent(IN) :: IdofsTest
 
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
-    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+    ! is it usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
 
     ! Optional: A collection structure to provide additional
@@ -1650,7 +1650,7 @@ contains
         rdomainIntSubset%p_revalElementSet, &
         celement, rdomainIntSubset%p_IdofsTrial, DER_FUNC, Dfunc(:,:))
 
-    ! Evaluate the 'violation' function
+    ! Evaluate the "violation" function
     allocate(Dviol(ubound(Dcoefficients,2),ubound(Dcoefficients,3)))
     call fevl_evaluate_sim (p_rvectorViol%RvectorBlock(1), &
         rdomainIntSubset%p_revalElementSet, &
@@ -1661,7 +1661,7 @@ contains
     
     if ((dwShift .ne. 0.0_DP) .and. associated (p_rvectorShift)) then
     
-      ! Evaluate the 'shift' function
+      ! Evaluate the "shift" function
       allocate(Dshift(ubound(Dcoefficients,2),ubound(Dcoefficients,3)))
       call fevl_evaluate_sim (p_rvectorShift%RvectorBlock(1), &
           rdomainIntSubset%p_revalElementSet, &
@@ -3030,7 +3030,7 @@ contains
     end if
 
     
-    ! Figure out the DOF's violating the constraints
+    ! Figure out the DOFs violating the constraints
     allocate(p_Idofs(rfunctionTest%NEQ))
     
     if (associated(p_DdataShift)) then

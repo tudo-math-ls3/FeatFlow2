@@ -10,11 +10,11 @@
 
 # Type of equation (ISTOKES); 0=Navier Stokes, 1=Stokes, 2=Heat equation
 
-iequation = 0
+cequation = 0
 
 # Subtype of the above equation; 0=Gradient tensor, 1=Deformation tensor
 
-isubEquation = 0
+csubEquation = 0
 
 # Model to use for the viscosity.
 # A value > 0 requires to set iupwind >= 4 to activate the extended assembly!

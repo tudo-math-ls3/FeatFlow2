@@ -114,14 +114,14 @@ contains
     call parlst_init (rparlist)
 
     ! Read parameters that configure the output
-    call parlst_readfromfile (rparlist, trim(DIR_DATA)//'/output.dat')
+    call parlst_readfromfile (rparlist, trim(DIR_DATA)//"/output.dat")
     
     ! Now the real initialisation of the output including log file stuff!
-    call parlst_getvalue_string (rparlist,'GENERALOUTPUT',&
-        'smsgLog',slogfile,"",bdequote=.true.)
+    call parlst_getvalue_string (rparlist,"GENERALOUTPUT",&
+        "smsgLog",slogfile,"",bdequote=.true.)
 
-    call parlst_getvalue_string (rparlist,'GENERALOUTPUT',&
-        'serrorLog',serrorfile,"",bdequote=.true.)
+    call parlst_getvalue_string (rparlist,"GENERALOUTPUT",&
+        "serrorLog",serrorfile,"",bdequote=.true.)
     
     ! That temporary parameter list is not needed anymore.
     call parlst_done (rparlist)
@@ -138,7 +138,7 @@ contains
   ! Evaluates command line parameters.
   ! In the current implementation, command line parameters are passed as
   ! text file. This routine searches in the main directory for a file
-  ! "cmdline.dat". If this file is found, it's opened and evaluated.
+  ! "cmdline.dat". If this file is found, is it opened and evaluated.
   ! Every line may contain a command line parameter in the form of
   ! a DAT file (name=value pairs).
   !
@@ -153,12 +153,12 @@ contains
     logical :: bexists
 
     ! Figure out if the file exists.
-    inquire(file='./cmdline.dat', exist=bexists)
+    inquire(file="./cmdline.dat", exist=bexists)
     
     if (bexists) then
       ! Read the file
       call parlst_init (rparamList)
-      call parlst_readfromfile (rparamList, './cmdline.dat')
+      call parlst_readfromfile (rparamList, "./cmdline.dat")
       
       ! Evaluate parameters
       call parlst_getvalue_string ( &
@@ -193,9 +193,9 @@ contains
     character(LEN=SYS_STRLEN) :: smaster
     
     ! Check if a command line parameter specifies the master.dat file.
-    call sys_getcommandLineArg(1,smaster,sdefault=trim(DIR_DATA)//'/master.dat')
+    call sys_getcommandLineArg(1,smaster,sdefault=trim(DIR_DATA)//"/master.dat")
 
-    ! Read the file 'master.dat'.
+    ! Read the file "master.dat".
     ! If that does not exist, try to manually read files with parameters from a
     ! couple of files.
     inquire(file=smaster, exist=bexists)
@@ -206,23 +206,23 @@ contains
       call parlst_readfromfile (rparamList, trim(smaster),trim(DIR_DATA))
     else
       call output_line("Master file not found: "//trim(smaster),&
-          OU_CLASS_WARNING,ssubroutine='main_getDat')
+          OU_CLASS_WARNING,ssubroutine="main_getDat")
       call output_line("Reading standard parameters.",&
-          OU_CLASS_WARNING,ssubroutine='main_getDat')
+          OU_CLASS_WARNING,ssubroutine="main_getDat")
     
-      ! Each 'readfromfile' command adds the parameter of the specified file
+      ! Each "readfromfile" command adds the parameter of the specified file
       ! to the parameter list.
-      call parlst_readfromfile (rparamList, trim(DIR_DATA)//'/main.dat')
-      call parlst_readfromfile (rparamList, trim(DIR_DATA)//'/bdconditions.dat')
-      call parlst_readfromfile (rparamList, trim(DIR_DATA)//'/discretisation.dat')
-      call parlst_readfromfile (rparamList, trim(DIR_DATA)//'/flows.dat')
-      call parlst_readfromfile (rparamList, trim(DIR_DATA)//'/linsol.dat')
-      call parlst_readfromfile (rparamList, trim(DIR_DATA)//'/optcontrol.dat')
-      call parlst_readfromfile (rparamList, trim(DIR_DATA)//'/output.dat')
-      call parlst_readfromfile (rparamList, trim(DIR_DATA)//'/paramtriang.dat')
-      call parlst_readfromfile (rparamList, trim(DIR_DATA)//'/postprocessing.dat')
-      call parlst_readfromfile (rparamList, trim(DIR_DATA)//'/spacetimesolver.dat')
-      call parlst_readfromfile (rparamList, trim(DIR_DATA)//'/timediscr.dat')
+      call parlst_readfromfile (rparamList, trim(DIR_DATA)//"/main.dat")
+      call parlst_readfromfile (rparamList, trim(DIR_DATA)//"/bdconditions.dat")
+      call parlst_readfromfile (rparamList, trim(DIR_DATA)//"/discretisation.dat")
+      call parlst_readfromfile (rparamList, trim(DIR_DATA)//"/flows.dat")
+      call parlst_readfromfile (rparamList, trim(DIR_DATA)//"/linsol.dat")
+      call parlst_readfromfile (rparamList, trim(DIR_DATA)//"/optcontrol.dat")
+      call parlst_readfromfile (rparamList, trim(DIR_DATA)//"/output.dat")
+      call parlst_readfromfile (rparamList, trim(DIR_DATA)//"/paramtriang.dat")
+      call parlst_readfromfile (rparamList, trim(DIR_DATA)//"/postprocessing.dat")
+      call parlst_readfromfile (rparamList, trim(DIR_DATA)//"/spacetimesolver.dat")
+      call parlst_readfromfile (rparamList, trim(DIR_DATA)//"/timediscr.dat")
     end if
   
   end subroutine
@@ -364,7 +364,7 @@ contains
   subroutine cc2doptccalculate (rsettings,rparlist)
   
 !<description>
-  ! This is a 'separated' Navier-Stokes solver for solving a Navier-Stokes
+  ! This is a "separated" Navier-Stokes solver for solving a Navier-Stokes
   ! problem. The different tasks of the problem are separated into
   ! subroutines. The problem uses a problem-specific structure for the
   ! communication: All subroutines add their generated information to the
@@ -420,7 +420,7 @@ contains
     ! Initialise the external storage management.
     
     call exstor_init (999,100)
-    !CALL exstor_attachDirectory('./ff2storage')
+    !CALL exstor_attachDirectory("./ff2storage")
     
     ! Ok, parameters are read in.
     ! Print the parameters to the terminal.
@@ -566,7 +566,7 @@ contains
     
     ! Call the problem to solve.
     call output_lbrk ()
-    call output_line ('Calculating cc2doptc-Problem')
+    call output_line ("Calculating cc2doptc-Problem")
     call output_separator (OU_SEP_MINUS)
     
     call cc2doptccalculate (rsettings,rparlist)
@@ -576,7 +576,7 @@ contains
 
     ! Print out heap statistics - just to check if everything
     ! is cleaned up.
-    ! This should display 'Handles in use=0' and 'Memory in use=0'!
+    ! This should display "Handles in use=0" and "Memory in use=0"!
     call output_lbrk ()
     call storage_info(.true.)
     

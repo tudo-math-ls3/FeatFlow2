@@ -1620,8 +1620,8 @@ contains
 
           call sptivec_getVectorFromPool (rprimalSolLin%p_rvectorAccess,idofTime,p_rvector)
           
-          ! Impose boundary conditions of the defect space.
-          call vecfil_discreteBCdef (p_rvector,roptcBDCSpace%rdiscreteBC)
+          ! Impose boundary conditions.
+          call vecfil_discreteBCsol (p_rvector,roptcBDCSpace%rdiscreteBC)
 
           call lsysbl_blockMatVec (p_rmatrix, p_rvector, rdest, -1.0_DP, 1.0_DP)
 
@@ -1925,8 +1925,8 @@ contains
 
           call sptivec_getVectorFromPool (rdualSolLin%p_rvectorAccess,idofTime,p_rvector)
           
-          ! Impose boundary conditions of the defect space.
-          call vecfil_discreteBCdef (p_rvector,roptcBDCSpace%rdiscreteBC)
+          ! Impose boundary conditions.
+          call vecfil_discreteBCsol (p_rvector,roptcBDCSpace%rdiscreteBC)
           
           call lsysbl_blockMatVec (p_rmatrix, p_rvector, rdest, -1.0_DP, 1.0_DP)
           
@@ -2255,7 +2255,7 @@ contains
   ! Time-level corresponding to the solution
   integer, intent(in) :: isollevelTime
 
-  ! Defines the 'previously' calculated space level.
+  ! Defines the "previously" calculated space level.
   ! Must be set =0 for the first call. For every subsequent call, 
   ! with ispacelevel monotoneously decreasing,
   ! this can be set to the previously assembled space level.
@@ -2298,6 +2298,13 @@ contains
 
     ! Which equation do we have?
     select case (p_ranalyticData%p_rphysics%cequation)
+
+    ! ***********************************************************
+    ! Heat/Stokes
+    ! ***********************************************************
+    case (CCEQ_HEAT2D,CCEQ_STOKES2D)
+    
+      ! No semilinear parts, nothing to do.
 
     ! ***********************************************************
     ! Navier Stokes
@@ -2384,7 +2391,7 @@ contains
   ! Operator type. Either OPTP_PRIMALLIN or OPTP_PRIMALLIN_SIMPLE.
   integer, intent(in) :: coptype
   
-  ! Defines the 'previously' calculated space level.
+  ! Defines the "previously" calculated space level.
   ! Must be set =0 for the first call. For every subsequent call, 
   ! with ispacelevel monotoneously decreasing,
   ! this can be set to the previously assembled space level.
@@ -2427,6 +2434,13 @@ contains
 
     ! Which equation do we have?
     select case (p_ranalyticData%p_rphysics%cequation)
+    
+    ! ***********************************************************
+    ! Heat/Stokes
+    ! ***********************************************************
+    case (CCEQ_HEAT2D,CCEQ_STOKES2D)
+    
+      ! No semilinear parts, nothing to do.
 
     ! ***********************************************************
     ! Navier Stokes
@@ -2510,7 +2524,7 @@ contains
   ! Time-level corresponding to the solution
   integer, intent(in) :: isollevelTime
 
-  ! Defines the 'previously' calculated space level.
+  ! Defines the "previously" calculated space level.
   ! Must be set =0 for the first call. For every subsequent call, 
   ! with ispacelevel monotoneously decreasing,
   ! this can be set to the previously assembled space level.
@@ -2553,6 +2567,13 @@ contains
 
     ! Which equation do we have?
     select case (p_ranalyticData%p_rphysics%cequation)
+
+    ! ***********************************************************
+    ! Heat/Stokes
+    ! ***********************************************************
+    case (CCEQ_HEAT2D,CCEQ_STOKES2D)
+    
+      ! No semilinear parts, nothing to do.
 
     ! ***********************************************************
     ! Navier Stokes
@@ -2918,7 +2939,7 @@ contains
       dweight,rrhs,rdiscreteInitCond)
 
 !<description>
-  ! Calculates the RHS of the primal equation, based on a 'current'
+  ! Calculates the RHS of the primal equation, based on a "current"
   ! dual solution.
 !</description>
 
@@ -3140,7 +3161,7 @@ contains
   subroutine smva_getRhs_Dual (rspaceTimeOperatorAsm,idofTime,rprimalSol,dweight,rrhs)
 
 !<description>
-  ! Calculates the RHS of the dual equation, based on a 'current'
+  ! Calculates the RHS of the dual equation, based on a "current"
   ! primal solution.
 !</description>
 
@@ -3325,7 +3346,7 @@ contains
       rcontrolLin,dweight,rrhs,rtempMatrix)
 
 !<description>
-  ! Calculates the RHS of the linearised primal equation, based on a 'current'
+  ! Calculates the RHS of the linearised primal equation, based on a "current"
   ! dual solution and dual linearised solution.
 !</description>
 
@@ -3362,8 +3383,6 @@ contains
     real(DP) :: dtheta, dtstep, dtime, dtimeend, dtimestart
     type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
     
-    real(DP) :: dwmin,dwmax,dlocalweight
-
     ! Cancel if nothing to do
     if (dweight .eq. 0.0_DP) return
 
@@ -3794,6 +3813,10 @@ contains
         ! Which equation do we have?
         select case (p_ranalyticData%p_rphysics%cequation)
 
+        case (CCEQ_HEAT2D,CCEQ_STOKES2D)
+        
+          ! No semilinear parts, nothing to do.
+
         ! ***********************************************************
         ! Navier Stokes
         ! ***********************************************************
@@ -3854,7 +3877,7 @@ contains
       npointsPerElement,nelements,revalVectors,rcollection)
 
 !<description>  
-    ! Calculates the semilinear part of the system matrix.
+    ! Calculates the semilinear part of the RHS.
 !</description>
 
 !<inputoutput>
@@ -3925,7 +3948,7 @@ contains
     ! -------------------------------------------------------------
     ! Stokes/Navier Stokes.
     ! -------------------------------------------------------------
-    case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+    case (CCEQ_NAVIERSTOKES2D)
       
       ! Primal or dual equation?
       select case (copType)
@@ -3969,7 +3992,7 @@ contains
           ! Loop over all cubature points on the current element
           do icubp = 1,npointsPerElement
 
-            ! Outer loop over the DOF's i=1..ndof on our current element,
+            ! Outer loop over the DOFs i=1..ndof on our current element,
             ! which corresponds to the (test) basis functions Phi_i:
             do idofe=1,p_rvectorData1%ndofTest
             
@@ -4080,7 +4103,6 @@ contains
     real(DP) :: dylin1, dylin2
     real(DP) :: dy1,dy2,dz1,dz2,du1,du2,dulin1,dulin2,drhs1,drhs2
     real(DP) :: dx,dy,dweight,dweight2
-    real(DP) :: dumin1,dumax1,dumin2,dumax2
     real(DP) :: dalpha
     integer :: iel, icubp, idofe, ierror, iid
     integer :: copType
@@ -4214,7 +4236,7 @@ contains
           ! Loop over all cubature points on the current element
           do icubp = 1,npointsPerElement
 
-            ! Outer loop over the DOF's i=1..ndof on our current element,
+            ! Outer loop over the DOFs i=1..ndof on our current element,
             ! which corresponds to the (test) basis functions Phi_i:
             do idofe=1,p_rvectorData1%ndofTest
             
@@ -4271,7 +4293,7 @@ contains
             ! Loop over all cubature points on the current element
             do icubp = 1,npointsPerElement
 
-              ! Outer loop over the DOF's i=1..ndof on our current element,
+              ! Outer loop over the DOFs i=1..ndof on our current element,
               ! which corresponds to the (test) basis functions Phi_i:
               do idofe=1,p_rvectorData1%ndofTest
               
@@ -4307,9 +4329,9 @@ contains
       
         ! For the linearised primal equation, the right-hand side reads
         !
-        !    rhs = (user defined) + u'
+        !    rhs = (user defined) + u"
         !
-        ! with u' being the linearised control.
+        ! with u" being the linearised control.
         dalpha = p_ranalyticData%p_rsettingsOptControl%dalphaDistC
         
         dweight2 = dweight * &
@@ -4336,7 +4358,7 @@ contains
             ! Loop over all cubature points on the current element
             do icubp = 1,npointsPerElement
 
-              ! Outer loop over the DOF's i=1..ndof on our current element,
+              ! Outer loop over the DOFs i=1..ndof on our current element,
               ! which corresponds to the (test) basis functions Phi_i:
               do idofe=1,p_rvectorData1%ndofTest
               
@@ -4344,7 +4366,7 @@ contains
                 ! into dbasI
                 dbasI  = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
                 
-                ! Get the values of lambda'
+                ! Get the values of lambda"
                 duLin1 = p_DuLin1(icubp,iel,DER_FUNC2D)
                 duLin2 = p_DuLin2(icubp,iel,DER_FUNC2D)
 
@@ -4454,7 +4476,7 @@ contains
           ! Loop over all cubature points on the current element
           do icubp = 1,npointsPerElement
 
-            ! Outer loop over the DOF's i=1..ndof on our current element,
+            ! Outer loop over the DOFs i=1..ndof on our current element,
             ! which corresponds to the (test) basis functions Phi_i:
             do idofe=1,p_rvectorData1%ndofTest
             
@@ -4584,7 +4606,7 @@ contains
             ! Loop over all cubature points on the current element
             do icubp = 1,npointsPerElement
 
-              ! Outer loop over the DOF's i=1..ndof on our current element,
+              ! Outer loop over the DOFs i=1..ndof on our current element,
               ! which corresponds to the (test) basis functions Phi_i:
               do idofe=1,p_rvectorData1%ndofTest
               
@@ -4640,7 +4662,7 @@ contains
               if ((dx .ge. p_DobservationArea(1)) .and. (dy .ge. p_DobservationArea(2)) .and. &
                   (dx .le. p_DobservationArea(3)) .and. (dy .le. p_DobservationArea(4))) then
                   
-                ! Outer loop over the DOF's i=1..ndof on our current element,
+                ! Outer loop over the DOFs i=1..ndof on our current element,
                 ! which corresponds to the (test) basis functions Phi_i:
                 do idofe=1,p_rvectorData1%ndofTest
                 
@@ -4685,7 +4707,7 @@ contains
         !
         ! there follows the addutional term
         !
-        !    rhs = y'
+        !    rhs = y"
         !
         ! in case the observation area is the complete domain.
         ! If the observation area is only a restricted domain Omega~,
@@ -4695,7 +4717,7 @@ contains
         !
         ! so the rhs of the linearised dual equation is
         !
-        !    rhs = Chi_Omega~ y'
+        !    rhs = Chi_Omega~ y"
 
         ! Get the nonlinearity
         p_Dylin1 => revalVectors%p_RvectorData(3)%p_Ddata(:,:,:)
@@ -4725,7 +4747,7 @@ contains
             ! Loop over all cubature points on the current element
             do icubp = 1,npointsPerElement
 
-              ! Outer loop over the DOF's i=1..ndof on our current element,
+              ! Outer loop over the DOFs i=1..ndof on our current element,
               ! which corresponds to the (test) basis functions Phi_i:
               do idofe=1,p_rvectorData1%ndofTest
               
@@ -4741,11 +4763,11 @@ contains
                 ! into the local vectors.
                 p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
                     dweight2 * p_DcubWeight(icubp,iel) * &
-                    ( dylin1 * dbasI ) ! (y',phi)
+                    ( dylin1 * dbasI ) ! (y",phi)
 
                 p_DlocalVector2(idofe,iel) = p_DlocalVector2(idofe,iel) + &
                     dweight2 * p_DcubWeight(icubp,iel) * &
-                    ( dylin2 * dbasI ) ! (y',phi)
+                    ( dylin2 * dbasI ) ! (y",phi)
                     
               end do ! jdofe
 
@@ -4774,7 +4796,7 @@ contains
               if ((dx .ge. p_DobservationArea(1)) .and. (dy .ge. p_DobservationArea(2)) .and. &
                   (dx .le. p_DobservationArea(3)) .and. (dy .le. p_DobservationArea(4))) then
 
-                ! Outer loop over the DOF's i=1..ndof on our current element,
+                ! Outer loop over the DOFs i=1..ndof on our current element,
                 ! which corresponds to the (test) basis functions Phi_i:
                 do idofe=1,p_rvectorData1%ndofTest
                 
@@ -4790,11 +4812,11 @@ contains
                   ! into the local vectors.
                   p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
                       dweight2 * p_DcubWeight(icubp,iel) * &
-                      ( dylin1 * dbasI ) ! (y',phi)
+                      ( dylin1 * dbasI ) ! (y",phi)
 
                   p_DlocalVector2(idofe,iel) = p_DlocalVector2(idofe,iel) + &
                       dweight2 * p_DcubWeight(icubp,iel) * &
-                      ( dylin2 * dbasI ) ! (y',phi)
+                      ( dylin2 * dbasI ) ! (y",phi)
                       
                 end do ! jdofe
 
@@ -4896,7 +4918,7 @@ contains
           ! Loop over all cubature points on the current element
           do icubp = 1,npointsPerElement
 
-            ! Outer loop over the DOF's i=1..ndof on our current element,
+            ! Outer loop over the DOFs i=1..ndof on our current element,
             ! which corresponds to the (test) basis functions Phi_i:
             do idofe=1,p_rvectorData1%ndofTest
             
@@ -5000,7 +5022,7 @@ contains
           ! Loop over all cubature points on the current element
           do icubp = 1,npointsPerElement
 
-            ! Outer loop over the DOF's i=1..ndof on our current element,
+            ! Outer loop over the DOFs i=1..ndof on our current element,
             ! which corresponds to the (test) basis functions Phi_i:
             do idofe=1,p_rvectorData1%ndofTest
             
@@ -5051,7 +5073,7 @@ contains
             ! Loop over all cubature points on the current element
             do icubp = 1,npointsPerElement
 
-              ! Outer loop over the DOF's i=1..ndof on our current element,
+              ! Outer loop over the DOFs i=1..ndof on our current element,
               ! which corresponds to the (test) basis functions Phi_i:
               do idofe=1,p_rvectorData1%ndofTest
               
@@ -5082,9 +5104,9 @@ contains
       
         ! For the linearised primal equation, the right-hand side reads
         !
-        !    rhs = (user defined) + u'
+        !    rhs = (user defined) + u"
         !
-        ! with u' being the linearised control. 
+        ! with u" being the linearised control. 
         
         dalpha = p_ranalyticData%p_rsettingsOptControl%dalphaDistC
         
@@ -5093,7 +5115,7 @@ contains
 
         if (dalpha .ge. 0.0_DP) then
 
-          ! Get the linearised control u'
+          ! Get the linearised control u"
           p_DuLin1 => revalVectors%p_RvectorData(1)%p_Ddata(:,:,:)
 
           ! Get the data arrays of the subvector
@@ -5109,7 +5131,7 @@ contains
             ! Loop over all cubature points on the current element
             do icubp = 1,npointsPerElement
 
-              ! Outer loop over the DOF's i=1..ndof on our current element,
+              ! Outer loop over the DOFs i=1..ndof on our current element,
               ! which corresponds to the (test) basis functions Phi_i:
               do idofe=1,p_rvectorData1%ndofTest
               
@@ -5117,7 +5139,7 @@ contains
                 ! into dbasI
                 dbasI  = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
                 
-                ! Get the values of lambda'
+                ! Get the values of lambda"
                 duLin1 = p_DuLin1(icubp,iel,DER_FUNC2D)
 
                 ! Calculate the entries in the RHS.
@@ -5195,7 +5217,7 @@ contains
           ! Loop over all cubature points on the current element
           do icubp = 1,npointsPerElement
 
-            ! Outer loop over the DOF's i=1..ndof on our current element,
+            ! Outer loop over the DOFs i=1..ndof on our current element,
             ! which corresponds to the (test) basis functions Phi_i:
             do idofe=1,p_rvectorData1%ndofTest
             
@@ -5294,7 +5316,7 @@ contains
             ! Loop over all cubature points on the current element
             do icubp = 1,npointsPerElement
 
-              ! Outer loop over the DOF's i=1..ndof on our current element,
+              ! Outer loop over the DOFs i=1..ndof on our current element,
               ! which corresponds to the (test) basis functions Phi_i:
               do idofe=1,p_rvectorData1%ndofTest
               
@@ -5343,7 +5365,7 @@ contains
               if ((dx .ge. p_DobservationArea(1)) .and. (dy .ge. p_DobservationArea(2)) .and. &
                   (dx .le. p_DobservationArea(3)) .and. (dy .le. p_DobservationArea(4))) then
                   
-                ! Outer loop over the DOF's i=1..ndof on our current element,
+                ! Outer loop over the DOFs i=1..ndof on our current element,
                 ! which corresponds to the (test) basis functions Phi_i:
                 do idofe=1,p_rvectorData1%ndofTest
                 
@@ -5382,7 +5404,7 @@ contains
         !
         ! there follows the addutional term
         !
-        !    rhs = y'
+        !    rhs = y"
         !
         ! in case the observation area is the complete domain.
         ! If the observation area is only a restricted domain Omega~,
@@ -5392,7 +5414,7 @@ contains
         !
         ! so the rhs of the linearised dual equation is
         !
-        !    rhs = Chi_Omega~ y'
+        !    rhs = Chi_Omega~ y"
 
         ! Get the nonlinearity
         p_Dylin1 => revalVectors%p_RvectorData(3)%p_Ddata(:,:,:)
@@ -5419,7 +5441,7 @@ contains
             ! Loop over all cubature points on the current element
             do icubp = 1,npointsPerElement
 
-              ! Outer loop over the DOF's i=1..ndof on our current element,
+              ! Outer loop over the DOFs i=1..ndof on our current element,
               ! which corresponds to the (test) basis functions Phi_i:
               do idofe=1,p_rvectorData1%ndofTest
               
@@ -5434,7 +5456,7 @@ contains
                 ! into the local vectors.
                 p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
                     dweight2 * p_DcubWeight(icubp,iel) * &
-                    ( dylin1 * dbasI ) ! (y',phi)
+                    ( dylin1 * dbasI ) ! (y",phi)
 
               end do ! jdofe
 
@@ -5463,7 +5485,7 @@ contains
               if ((dx .ge. p_DobservationArea(1)) .and. (dy .ge. p_DobservationArea(2)) .and. &
                   (dx .le. p_DobservationArea(3)) .and. (dy .le. p_DobservationArea(4))) then
 
-                ! Outer loop over the DOF's i=1..ndof on our current element,
+                ! Outer loop over the DOFs i=1..ndof on our current element,
                 ! which corresponds to the (test) basis functions Phi_i:
                 do idofe=1,p_rvectorData1%ndofTest
                 
@@ -5478,7 +5500,7 @@ contains
                   ! into the local vectors.
                   p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
                       dweight2 * p_DcubWeight(icubp,iel) * &
-                      ( dylin1 * dbasI ) ! (y',phi)
+                      ( dylin1 * dbasI ) ! (y",phi)
 
                 end do ! jdofe
 
@@ -5553,7 +5575,7 @@ contains
           ! Loop over all cubature points on the current element
           do icubp = 1,npointsPerElement
 
-            ! Outer loop over the DOF's i=1..ndof on our current element,
+            ! Outer loop over the DOFs i=1..ndof on our current element,
             ! which corresponds to the (test) basis functions Phi_i:
             do idofe=1,p_rvectorData1%ndofTest
             
@@ -5628,7 +5650,7 @@ contains
   ! Assembly flags
   type(t_assemblyFlags), intent(in) :: rasmFlags
 
-  ! Defines the 'previously' calculated space level.
+  ! Defines the "previously" calculated space level.
   ! Must be set =0 for the first call. For every subsequent call, 
   ! with ispacelevel monotoneously decreasing,
   ! this can be set to the previously assembled space level.
@@ -5713,7 +5735,7 @@ contains
         ! *************************************************************
         ! Heat/Stokes/Navier Stokes.
         ! *************************************************************
-        case (CCEQ_HEAT2D,CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+        case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
 
           ! ===============================================
           ! Prepare the linear parts of the matrix.
@@ -5762,20 +5784,39 @@ contains
               rtempdata,ipreviousSpaceLv)
 
           ! -----------------------------------------------
-          ! Implement boundary conditions
+          ! Implement restrictions in the space
           ! -----------------------------------------------
 
-          ! If this is an UMFPACK solver, and if this is the Stokes/Navier--Stokes
-          ! equations and pure Dirichlet boundary conditions, implement
-          ! the lumped mass matrix in the first row.
-          if (rasmFlags%bumfpackSolver .and. &
-              (roptcBDCSpace%rneumannBoundary%nregions .eq. 0)) then
-            Irows = (/1/)
-            call mmod_replaceLinesByZero (rmatrix%RmatrixBlock(3,1),Irows)
-            call mmod_replaceLinesByZero (rmatrix%RmatrixBlock(3,2),Irows)
-            call mmod_replaceLineByLumpedMass (rmatrix%RmatrixBlock(3,3),1,&
-                roperatorAsm%p_rasmTemplates%rmatrixMassPressureLumped)
-          end if
+          select case (p_ranalyticData%p_rphysics%cequation)
+        
+          case (CCEQ_HEAT2D)
+!
+!          ... to be implemented
+!
+!          ! If this is an UMFPACK solver, and if this is the Stokes/Navier--Stokes
+!          ! equations and pure Dirichlet boundary conditions, implement
+!          ! the lumped mass matrix in the first row.
+!          if (rasmFlags%bumfpackSolver .and. &
+!              (roptcBDCSpace%rdirichletBoundary%nregions .eq. 0) .and.
+!              (roptcBDCSpace%rdirichletControlBoundary%nregions .eq. 0)) then
+!            Irows = (/1/)
+!            call mmod_replaceLineByLumpedMass (rmatrix%RmatrixBlock(1,1),1,&
+!                roperatorAsm%p_rasmTemplates%rmatrixMassPressureLumped)
+!          end if
+
+          case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+            ! If this is an UMFPACK solver, and if this is the Stokes/Navier--Stokes
+            ! equations and pure Dirichlet boundary conditions, implement
+            ! the lumped mass matrix in the first row.
+            if (rasmFlags%bumfpackSolver .and. &
+                (roptcBDCSpace%rneumannBoundary%nregions .eq. 0)) then
+              Irows = (/1/)
+              call mmod_replaceLinesByZero (rmatrix%RmatrixBlock(3,1),Irows)
+              call mmod_replaceLinesByZero (rmatrix%RmatrixBlock(3,2),Irows)
+              call mmod_replaceLineByLumpedMass (rmatrix%RmatrixBlock(3,3),1,&
+                  roperatorAsm%p_rasmTemplates%rmatrixMassPressureLumped)
+            end if
+          end select
         
         end select ! Equation
 
@@ -5830,7 +5871,7 @@ contains
   ! Assembly flags
   type(t_assemblyFlags), intent(in) :: rasmFlags
 
-  ! Defines the 'previously' calculated space level.
+  ! Defines the "previously" calculated space level.
   ! Must be set =0 for the first call. For every subsequent call, 
   ! with ispacelevel monotoneously decreasing,
   ! this can be set to the previously assembled space level.
@@ -5907,18 +5948,11 @@ contains
 
         ! Which equation do we have?    
         select case (p_ranalyticData%p_rphysics%cequation)
-        
-        ! *************************************************************
-        ! Heat/Stokes.
-        ! *************************************************************
-        case (CCEQ_HEAT2D,CCEQ_STOKES2D)
-        
-          ! No semilinear parts, nothing to do.
 
         ! *************************************************************
         ! Heat/Stokes/Navier Stokes.
         ! *************************************************************
-        case (CCEQ_NAVIERSTOKES2D)
+        case (CCEQ_HEAT2D,CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
         
           ! ===============================================
           ! Prepare the linear parts of the matrix.
@@ -5969,27 +6003,46 @@ contains
               rprimalSol,isollevelSpace,isollevelTime,1.0_DP,&
               rtempdata,ipreviousSpaceLv)
 
-          ! -----------------------------------------------
-          ! Implement conditions
-          ! -----------------------------------------------
+          ! ===============================================
+          ! Implement restrictions of the space
+          ! ===============================================
 
-          ! If this is an UMFPACK solver, and if this is the Stokes/Navier--Stokes
-          ! equations and pure Dirichlet boundary conditions, implement
-          ! the lumped mass matrix in the first row.
-          if (rasmFlags%bumfpackSolver .and. &
-              (roptcBDCSpace%rneumannBoundary%nregions .eq. 0)) then
-            Irows = (/1/)
-            call mmod_replaceLinesByZero (rmatrix%RmatrixBlock(3,1),Irows)
-            call mmod_replaceLinesByZero (rmatrix%RmatrixBlock(3,2),Irows)
-            call mmod_replaceLineByLumpedMass (rmatrix%RmatrixBlock(3,3),1,&
-                roperatorAsm%p_rasmTemplates%rmatrixMassPressureLumped)
-          end if
+          select case (p_ranalyticData%p_rphysics%cequation)
         
+          case (CCEQ_HEAT2D)
+!
+!          ... to be implemented
+!
+!          ! If this is an UMFPACK solver, and if this is the Stokes/Navier--Stokes
+!          ! equations and pure Dirichlet boundary conditions, implement
+!          ! the lumped mass matrix in the first row.
+!          if (rasmFlags%bumfpackSolver .and. &
+!              (roptcBDCSpace%rdirichletBoundary%nregions .eq. 0) .and.
+!              (roptcBDCSpace%rdirichletControlBoundary%nregions .eq. 0)) then
+!            Irows = (/1/)
+!            call mmod_replaceLineByLumpedMass (rmatrix%RmatrixBlock(1,1),1,&
+!                roperatorAsm%p_rasmTemplates%rmatrixMassPressureLumped)
+!          end if
+
+          case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+            ! If this is an UMFPACK solver, and if this is the Stokes/Navier--Stokes
+            ! equations and pure Dirichlet boundary conditions, implement
+            ! the lumped mass matrix in the first row.
+            if (rasmFlags%bumfpackSolver .and. &
+                (roptcBDCSpace%rneumannBoundary%nregions .eq. 0)) then
+              Irows = (/1/)
+              call mmod_replaceLinesByZero (rmatrix%RmatrixBlock(3,1),Irows)
+              call mmod_replaceLinesByZero (rmatrix%RmatrixBlock(3,2),Irows)
+              call mmod_replaceLineByLumpedMass (rmatrix%RmatrixBlock(3,3),1,&
+                  roperatorAsm%p_rasmTemplates%rmatrixMassPressureLumped)
+            end if
+          end select
+
         end select ! Equation
       
-        ! -----------------------------------------------
+        ! ===============================================
         ! Implement Dirichlet/Neumann boundary conditions
-        ! -----------------------------------------------
+        ! ===============================================
         
         call matfil_discreteBC (rmatrix,roptcBDCSpace%rdiscreteBC)
       
@@ -6100,7 +6153,7 @@ contains
 !<subroutine>
 
   subroutine smva_initDirichletNeumannBC (roptcBDCSpace,roptcBDC,copType,&
-      roperatorAsmHier,ispacelevel,itimelevel,idoftime,rglobalData)
+      roperatorAsmHier,ispacelevel,itimelevel,idoftime,rglobalData,rvectorControl)
   
 !<description>
   ! Assembles Dirichlet and Neumann boundary conditions on level 
@@ -6130,6 +6183,9 @@ contains
   
   ! Global data, passed to callback routines
   type(t_globalData), intent(inout) :: rglobalData
+
+  ! OPTIONAL: A control specifying the current control.
+  type(t_vectorBlock), intent(in), target, optional :: rvectorControl
 !</input>
 
 !<inputoutput>
@@ -6203,7 +6259,7 @@ contains
                 p_ranalyticData%p_rphysics%cequation,copType,&
                 rglobalData,SBC_DIRICHLETBC+SBC_NEUMANN,&
                 roperatorAsm%p_rtimeDiscrPrimal,roperatorAsm%p_rspaceDiscrPrimal,&
-                roptcBDCSpace)
+                roptcBDCSpace,rvectorControl)
 
           end select ! Equation
         
@@ -6262,7 +6318,7 @@ contains
                 p_ranalyticData%p_rphysics%cequation,copType,&
                 rglobalData,SBC_DIRICHLETBC+SBC_NEUMANN,&
                 roperatorAsm%p_rtimeDiscrDual,roperatorAsm%p_rspaceDiscrDual,&
-                roptcBDCSpace)
+                roptcBDCSpace,rvectorControl)
 
           end select ! Equation
         

@@ -12,7 +12,7 @@
 #     The filename is stargetFunction below.
 # =2: The first file of a nonstationary function as prescribed by a sequence of 
 #     files on the hard disc. stargetFunction is the basic filename target. A number
-#     '.0000','.0001',... is appended to this to form the filename of the
+#     ".0000",".0001",... is appended to this to form the filename of the
 #     solution vector in every timestep. There must be exactly as many
 #     files present on the hard disc as prescribed by the 
 #     time discretisation!
@@ -54,29 +54,29 @@ ilevel = 7
 ielementType = -1
 
 # Name and path to the TRI file containing the mesh that corresponds to the
-# function. ='': Use the same TRI file as for the computation of the
+# function. ="": Use the same TRI file as for the computation of the
 # solution.
 # Only valid if ctype =1 or =2.
 
-smesh = ''
+smesh = ""
 
 # If ctype = 1, this is the filename of a file on disc containing
 # the function. The file must contain a solution at the same spatial
 # level as prescribed by ilevel.
 
-sfunctionFile = ''
+sfunctionFile = ""
 
 # Granularity parameter for the filenames of the function.
-# =1 will read '.00000', '.00001', '.00002', etc.
-# =2 will read '.00000', '.00002', '.00004', etc.
-# =n will read '.00000', '.0000n', etc.
+# =1 will read ".00000", ".00001", ".00002", etc.
+# =2 will read ".00000", ".00002", ".00004", etc.
+# =n will read ".00000", ".0000n", etc.
 
 idelta = 1
 
 # Number of files that describe the function. If this is set to -1,
 # the number of files is automatically determined by the number of timesteps
 # in the finest level. If this is >= 0, the function consists of nimesteps
-# files with file extension '.00000', '.00001', '.00002',...
+# files with file extension ".00000", ".00001", ".00002",...
 # If there are less files available on the hard disc that specified here,
 # the last solution is duplicated to fill the remaining time steps.
 
@@ -182,7 +182,7 @@ sexpression(2) =
 #     The filename is stargetFunction below.
 # =2: nonstationary function as prescribed by a sequence of files on the 
 #     hard disc. stargetFunction is the basic filename target. A number
-#     '.0000','.0001',... is appended to this to form the filename of the
+#     ".0000",".0001",... is appended to this to form the filename of the
 #     solution vector in every timestep. There must be exactly as many
 #     files present on the hard disc as prescribed by the 
 #     time discretisation!
@@ -224,29 +224,29 @@ ilevel = 7
 ielementType = -1
 
 # Name and path to the TRI file containing the mesh that corresponds to the
-# function. ='': Use the same TRI file as for the computation of the
+# function. ="": Use the same TRI file as for the computation of the
 # solution.
 # Only valid if ctype =1 or =2.
 
-smesh = ''
+smesh = ""
 
 # If ctype = 1/2, this is the filename of a file on disc containing
 # the function. The file must contain a solution at the same spatial
 # level as prescribed by ilevel.
 
-sfunctionFile = 'ns/drivencav_stat_lv7/solution7'
+sfunctionFile = "ns/drivencav_stat_lv7/solution7"
 
 # Granularity parameter for the filenames of the function if ctype=2.
-# =1 will read '.00000', '.00001', '.00002', etc.
-# =2 will read '.00000', '.00002', '.00004', etc.
-# =n will read '.00000', '.0000n', etc.
+# =1 will read ".00000", ".00001", ".00002", etc.
+# =2 will read ".00000", ".00002", ".00004", etc.
+# =n will read ".00000", ".0000n", etc.
 
 idelta = 1
 
 # If ctype=2/4: Number of files that describe the function. If this is set to -1,
 # the number of files is automatically determined by the number of timesteps
 # in the finest level. If this is >= 0, the function consists of nimesteps
-# files with file extension '.00000', '.00001', '.00002',...
+# files with file extension ".00000", ".00001", ".00002",...
 # If there are less files available on the hard disc that specified here,
 # the last solution is duplicated to fill the remaining time steps.
 
@@ -282,7 +282,7 @@ ifileformat = 1
 #     The filename is stargetFunction below.
 # =2: The first file of a nonstationary function as prescribed by a sequence of 
 #     files on the hard disc. stargetFunction is the basic filename target. A number
-#     '.0000','.0001',... is appended to this to form the filename of the
+#     ".0000",".0001",... is appended to this to form the filename of the
 #     solution vector in every timestep. There must be exactly as many
 #     files present on the hard disc as prescribed by the 
 #     time discretisation!
@@ -327,29 +327,29 @@ ilevel = 7
 ielementType = -1
 
 # Name and path to the TRI file containing the mesh that corresponds to the
-# function. ='': Use the same TRI file as for the computation of the
+# function. ="": Use the same TRI file as for the computation of the
 # solution.
 # Only valid if ctype =1 or =2.
 
-smesh = ''
+smesh = ""
 
 # If ctype = 1, this is the filename of a file on disc containing
 # the function. The file must contain a solution at the same spatial
 # level as prescribed by ilevel.
 
-sfunctionFile = ''
+sfunctionFile = ""
 
 # Granularity parameter for the filenames of the function.
-# =1 will read '.00000', '.00001', '.00002', etc.
-# =2 will read '.00000', '.00002', '.00004', etc.
-# =n will read '.00000', '.0000n', etc.
+# =1 will read ".00000", ".00001", ".00002", etc.
+# =2 will read ".00000", ".00002", ".00004", etc.
+# =n will read ".00000", ".0000n", etc.
 
 idelta = 1
 
 # Number of files that describe the function. If this is set to -1,
 # the number of files is automatically determined by the number of timesteps
 # in the finest level. If this is >= 0, the function consists of nimesteps
-# files with file extension '.00000', '.00001', '.00002',...
+# files with file extension ".00000", ".00001", ".00002",...
 # If there are less files available on the hard disc that specified here,
 # the last solution is duplicated to fill the remaining time steps.
 
@@ -386,7 +386,7 @@ ifileformat = 1
 #     The filename is stargetFunction below.
 # =2: nonstationary function as prescribed by a sequence of files on the 
 #     hard disc. stargetFunction is the basic filename target. A number
-#     '.0000','.0001',... is appended to this to form the filename of the
+#     ".0000",".0001",... is appended to this to form the filename of the
 #     solution vector in every timestep. There must be exactly as many
 #     files present on the hard disc as prescribed by the 
 #     time discretisation!
@@ -431,29 +431,29 @@ ilevel = 7
 ielementType = -1
 
 # Name and path to the TRI file containing the mesh that corresponds to the
-# function. ='': Use the same TRI file as for the computation of the
+# function. ="": Use the same TRI file as for the computation of the
 # solution.
 # Only valid if ctype =1 or =2.
 
-smesh = ''
+smesh = ""
 
 # If ctype = 1, this is the filename of a file on disc containing
 # the function. The file must contain a solution at the same spatial
 # level as prescribed by ilevel.
 
-sfunctionFile = 'ns/drivencav_stat_lv7/solution7'
+sfunctionFile = "ns/drivencav_stat_lv7/solution7"
 
 # Granularity parameter for the filenames of the function.
-# =1 will read '.00000', '.00001', '.00002', etc.
-# =2 will read '.00000', '.00002', '.00004', etc.
-# =n will read '.00000', '.0000n', etc.
+# =1 will read ".00000", ".00001", ".00002", etc.
+# =2 will read ".00000", ".00002", ".00004", etc.
+# =n will read ".00000", ".0000n", etc.
 
 idelta = 1
 
 # Number of files that describe the function. If this is set to -1,
 # the number of files is automatically determined by the number of timesteps
 # in the finest level. If this is >= 0, the function consists of nimesteps
-# files with file extension '.00000', '.00001', '.00002',...
+# files with file extension ".00000", ".00001", ".00002",...
 # If there are less files available on the hard disc that specified here,
 # the last solution is duplicated to fill the remaining time steps.
 

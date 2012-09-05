@@ -10,7 +10,7 @@
 !# The following files can be found here:
 !#
 !# 1.) sbc_assembleBDconditions
-!#     -> Assembles the definition of the BC's from sections given by DAT files
+!#     -> Assembles the definition of the BCs from sections given by DAT files
 !#        and sets up an analytical boundary condition description.
 !#
 !# 2.) sbc_releaseBoundaryList
@@ -44,6 +44,7 @@ module spatialbc
   use linearformevaluation
   use linearsystemscalar
   use vectorfilters
+  use element
 
   use fespacehierarchybase
   use fespacehierarchy
@@ -56,6 +57,8 @@ module spatialbc
   use structuresgeneral
   use structuresboundaryconditions
   use structuresoperatorasm
+  use structuresoptcontrol
+  use structuresdiscretisation
   
   use timediscretisation
 
@@ -94,7 +97,7 @@ contains
 
   subroutine sbc_assembleBDconditions (roptcBDC,dtime,cequation,&
       copType,rglobalData,casmFlags,rtimediscr,rspaceDiscr,roptcBDCSpace,&
-      rvectorDirichletBCCRHS)
+      rvectorControl)
 
 !<description>
   ! This initialises the analytic boundary conditions of the problem
@@ -132,14 +135,12 @@ contains
   ! A discretisation structure defining the space discretisation
   ! of the current level.
   type(t_blockDiscretisation), intent(in) :: rspaceDiscr
+
+  ! OPTIONAL: A control specifying the current control.
+  type(t_vectorBlock), intent(in), target, optional :: rvectorControl
 !</input>
 
 !<inputoutput>
-  ! OPTIONAL: A right-hand-side vector. If SBC_DIRICHLETBCC is specified,
-  ! this RHS vector is modified according to the boundary conditions
-  ! specified for the Dirichlet boundary control.
-  type(t_vectorBlock), intent(inout), optional :: rvectorDirichletBCCRHS
-
   ! Boundary condition structure that receives a definition of the boundary
   ! conditions. The assembled boundary conditions are appended to the
   ! elements in this structure.
@@ -177,25 +178,44 @@ contains
         roptcBDC%ssectionBdExpr, p_rsection)
         
     ! Get the section defining the primal or dual boundary conditions
-    if ((copType .eq. OPTP_PRIMAL) .or. &
-        (copType .eq. OPTP_PRIMALLIN) .or. &
-        (copType .eq. OPTP_PRIMALLIN_SIMPLE)) then
-        
+    select case (copType)
+    case (OPTP_PRIMAL)
+
       ! Primal boundary conditions
       call parlst_querysection(roptcBDC%p_rparList, &
           roptcBDC%ssectionBdCondPrim, p_rbdcond)
-          
-    else
+
+    case (OPTP_PRIMALLIN,OPTP_PRIMALLIN_SIMPLE)
+
+      ! Primal boundary conditions, linearised eqn.
+      call parlst_querysection(roptcBDC%p_rparList, &
+          roptcBDC%ssectionBdCondPrimLin, p_rbdcond)
+
+      ! Primal boundary conditions
+      call parlst_querysection(roptcBDC%p_rparList, &
+          roptcBDC%ssectionBdCondPrim, p_rbdcondPrimal)
+
+    case (OPTP_DUAL)
     
       ! Dual boundary conditions
       call parlst_querysection(roptcBDC%p_rparList, &
           roptcBDC%ssectionBdCondDual, p_rbdcond)
-          
+
       ! Primal boundary conditions
       call parlst_querysection(roptcBDC%p_rparList, &
           roptcBDC%ssectionBdCondPrim, p_rbdcondPrimal)
-          
-    end if
+
+    case (OPTP_DUALLIN,OPTP_DUALLIN_SIMPLE)
+    
+      ! Dual boundary conditions, linearised equation
+      call parlst_querysection(roptcBDC%p_rparList, &
+          roptcBDC%ssectionBdCondDualLin, p_rbdcond)
+
+      ! Primal boundary conditions
+      call parlst_querysection(roptcBDC%p_rparList, &
+          roptcBDC%ssectionBdCondPrim, p_rbdcondPrimal)
+
+    end select
         
     ! Initialise the user-defined assembly
     call collct_init (rusercollection)
@@ -203,9 +223,9 @@ contains
     ! Loop through all boundary components we have.
     do ibdComponent = 1,boundary_igetNBoundComp(p_rboundary)
 
-      ! Parse the parameter 'bdComponentX'
-      write (sexpr,'(I10)') ibdComponent
-      sbdcomp = 'bdComponent' // adjustl(sexpr)
+      ! Parse the parameter "bdComponentX"
+      write (sexpr,"(I10)") ibdComponent
+      sbdcomp = "bdComponent" // adjustl(sexpr)
       
       ! We start at parameter value 0.0.
       dpar1 = 0.0_DP
@@ -215,9 +235,7 @@ contains
       if (i .ne. 0) then
       
         ! get the corresponding index in the "primal" dection
-        if ((copType .ne. OPTP_PRIMAL) .and. &
-            (copType .ne. OPTP_PRIMALLIN) .and. &
-            (copType .ne. OPTP_PRIMALLIN_SIMPLE)) then
+        if (copType .ne. OPTP_PRIMAL) then
           iprimal = parlst_queryvalue (p_rbdcondPrimal, sbdcomp)
         end if
       
@@ -250,16 +268,14 @@ contains
               ! Now, which type of BC is to be created?
               select case (ibctyp)
               
-              ! --------------------------------------------------
-              ! Automatic boundary conditions. Dual equation only.
-              ! --------------------------------------------------
+              ! ------------------------------------------------------------------
+              ! Automatic boundary conditions. Dual and linearised equations only.
+              ! ------------------------------------------------------------------
               case (-1)
-                if ((copType .ne. OPTP_DUAL) .and. &
-                    (copType .ne. OPTP_DUALLIN) .and. &
-                    (copType .ne. OPTP_DUALLIN_SIMPLE)) then
+                if (copType .eq. OPTP_PRIMAL) then
                   call output_line (&
-                      "Automatic boundary conditions only allowed for the dual equation.", &
-                      OU_CLASS_ERROR,OU_MODE_STD,'cc_parseBDconditions')
+                      "Automatic boundary conditions only allowed.", &
+                      OU_CLASS_ERROR,OU_MODE_STD,"cc_parseBDconditions")
                   call sys_halt()
                 end if
                 
@@ -300,9 +316,10 @@ contains
                   rcollection%DquickAccess(2) = 0.0_DP
                   rcollection%SquickAccess(1) = ""
                   rcollection%p_rnextCollection => ruserCollection
-                  rcollection%IquickAccess(6:) = &
-                      transfer(r_t_p_optcBDC,rcollection%IquickAccess(6:),&
-                                    size(rcollection%IquickAccess(6:)))
+                  rcollection%IquickAccess(6) = 0
+                  rcollection%IquickAccess(7:) = &
+                      transfer(r_t_p_optcBDC,rcollection%IquickAccess(7:),&
+                                    size(rcollection%IquickAccess(7:)))
 
                   ! X-velocity
                   rcollection%IquickAccess(1) = 1
@@ -310,7 +327,7 @@ contains
                   call user_initCollectForVecAssembly (&
                       rglobalData,0,rcollection%IquickAccess(1),dtime,rusercollection)
                   
-                  ! Assemble the BC's.
+                  ! Assemble the BCs.
                   call bcasm_newDirichletBConRealBD (&
                       rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
                       roptcBDCSpace%rdiscreteBC,&
@@ -324,7 +341,61 @@ contains
                   call user_initCollectForVecAssembly (&
                       rglobalData,0,rcollection%IquickAccess(1),dtime,rusercollection)
                   
-                  ! Assemble the BC's.
+                  ! Assemble the BCs.
+                  call bcasm_newDirichletBConRealBD (&
+                      rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
+                      roptcBDCSpace%rdiscreteBC,&
+                      cc_getDirBCNavSt2D,rcollection)
+                      
+                  call user_doneCollectForVecAssembly (rglobalData,rusercollection)
+                  
+                ! --------------------------------------------------
+                ! L2 Dirichlet boundary control
+                ! --------------------------------------------------
+                case (7)
+                  ! Impose Dirichlet-0 boundary conditions 
+                  ! plus boundary control
+                
+                  rcollection%IquickAccess(2) = BDC_VALDOUBLE
+                  rcollection%IquickAccess(3) = 0
+                  rcollection%IquickAccess(4) = 0
+                  rcollection%IquickAccess(5) = 0
+                  rcollection%DquickAccess(1) = dtime
+                  rcollection%DquickAccess(2) = 0.0_DP
+                  rcollection%SquickAccess(1) = ""
+                  rcollection%p_rnextCollection => ruserCollection
+                  rcollection%IquickAccess(6) = 0
+                  rcollection%IquickAccess(7:) = &
+                      transfer(r_t_p_optcBDC,rcollection%IquickAccess(7:),&
+                                    size(rcollection%IquickAccess(7:)))
+
+                  if ((copType .eq. OPTP_PRIMALLIN) .or. (copType .eq. OPTP_PRIMALLIN_SIMPLE)) then
+                    ! Prescribed boundary conditions
+                    rcollection%IquickAccess(6) = 1
+                    rcollection%p_rvectorQuickAccess1 => rvectorControl
+                  end if
+
+                  ! X-velocity
+                  rcollection%IquickAccess(1) = 1
+                  
+                  call user_initCollectForVecAssembly (&
+                      rglobalData,0,rcollection%IquickAccess(1),dtime,rusercollection)
+                  
+                  ! Assemble the BCs.
+                  call bcasm_newDirichletBConRealBD (&
+                      rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
+                      roptcBDCSpace%rdiscreteBC,&
+                      cc_getDirBCNavSt2D,rcollection)
+                      
+                  call user_doneCollectForVecAssembly (rglobalData,rusercollection)
+
+                  ! Y-velocity
+                  rcollection%IquickAccess(1) = 2
+                  
+                  call user_initCollectForVecAssembly (&
+                      rglobalData,0,rcollection%IquickAccess(1),dtime,rusercollection)
+                  
+                  ! Assemble the BCs.
                   call bcasm_newDirichletBConRealBD (&
                       rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
                       roptcBDCSpace%rdiscreteBC,&
@@ -365,7 +436,7 @@ contains
                   ! Read the line again, get the expressions for X- and Y-velocity
                   read(sstr,*) dvalue,iintervalEnds,ibctyp,sbdex1,sbdex2
                 
-                  ! For any string <> '', create the appropriate Dirichlet boundary
+                  ! For any string <> "", create the appropriate Dirichlet boundary
                   ! condition and add it to the list of boundary conditions.
                   !
                   ! The IquickAccess array is set up as follows:
@@ -374,7 +445,9 @@ contains
                   !  IquickAccess(3) = iid
                   !  IquickAccess(4) = ivalue
                   !  IquickAccess(5) = 1, if parameters (x,y) are needed, =0 otherwise
-                  !  IquickAccess(6:...) = The binary content of r_t_p_optcBDC.
+                  !  IquickAccess(6) = type of boundary control to impose.
+                  !                    (=0: none, =1: Dirichlet L2)
+                  !  IquickAccess(7:...) = The binary content of r_t_p_optcBDC.
                   !
                   ! The DquickAccess array is set up as follows:
                   !  DquickAccess(1) = dtime
@@ -383,7 +456,7 @@ contains
                   ! The SquickAccess array is set up as follows:
                   !  SquickAccess(1) = Name of the expression
                   
-                  if (sbdex1 .ne. '') then
+                  if (sbdex1 .ne. "") then
                     
                     ! X-velocity
                     !
@@ -401,14 +474,15 @@ contains
                     rcollection%DquickAccess(2) = dvalue
                     rcollection%SquickAccess(1) = svalue
                     rcollection%p_rnextCollection => ruserCollection
-                    rcollection%IquickAccess(6:) = &
-                        transfer(r_t_p_optcBDC,rcollection%IquickAccess(6:),&
-                                      size(rcollection%IquickAccess(6:)))
+                    rcollection%IquickAccess(6) = 0
+                    rcollection%IquickAccess(7:) = &
+                        transfer(r_t_p_optcBDC,rcollection%IquickAccess(7:),&
+                                      size(rcollection%IquickAccess(7:)))
                     
                     call user_initCollectForVecAssembly (&
                         rglobalData,iid,rcollection%IquickAccess(1),dtime,rusercollection)
                     
-                    ! Assemble the BC's.
+                    ! Assemble the BCs.
                     call bcasm_newDirichletBConRealBD (&
                         rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
                         roptcBDCSpace%rdiscreteBC,&
@@ -418,7 +492,7 @@ contains
                     
                   end if
                       
-                  if (sbdex2 .ne. '') then
+                  if (sbdex2 .ne. "") then
                   
                     ! Y-velocity
                     !
@@ -436,14 +510,129 @@ contains
                     rcollection%DquickAccess(2) = dvalue
                     rcollection%SquickAccess(1) = svalue
                     rcollection%p_rnextCollection => ruserCollection
-                    rcollection%IquickAccess(6:) = &
-                        transfer(r_t_p_optcBDC,rcollection%IquickAccess(6:),&
-                                      size(rcollection%IquickAccess(6:)))
+                    rcollection%IquickAccess(6) = 0
+                    rcollection%IquickAccess(7:) = &
+                        transfer(r_t_p_optcBDC,rcollection%IquickAccess(7:),&
+                                      size(rcollection%IquickAccess(7:)))
                     
                     call user_initCollectForVecAssembly (&
                         rglobalData,iid,rcollection%IquickAccess(1),dtime,rusercollection)
                     
-                    ! Assemble the BC's.
+                    ! Assemble the BCs.
+                    call bcasm_newDirichletBConRealBD (&
+                        rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
+                        roptcBDCSpace%rdiscreteBC,&
+                        cc_getDirBCNavSt2D,rcollection)
+                        
+                    call user_doneCollectForVecAssembly (rglobalData,rusercollection)
+                    
+                  end if
+
+                end if
+
+              ! --------------------------------------------------
+              ! Dirichlet boundary control
+              ! --------------------------------------------------
+              case (7)
+
+                if (iand(casmFlags,SBC_DIRICHLETBC) .ne. 0) then
+
+                  ! Add the bondary region to the Dirichlet boundary regions.
+                  call sbc_addBoundaryRegion(&
+                      rboundaryRegion,roptcBDCSpace%rdirichletControlBoundary)
+
+                  ! Get the definition of the boundary condition.
+                  ! Read the line again, get the expressions for X- and Y-velocity
+                  read(sstr,*) dvalue,iintervalEnds,ibctyp,sbdex1,sbdex2
+                
+                  ! For any string <> "", create the appropriate Dirichlet boundary
+                  ! condition and add it to the list of boundary conditions.
+                  !
+                  ! The IquickAccess array is set up as follows:
+                  !  IquickAccess(1) = component under consideration (1=x-vel, 2=y-vel,...)
+                  !  IquickAccess(2) = expression type
+                  !  IquickAccess(3) = iid
+                  !  IquickAccess(4) = ivalue
+                  !  IquickAccess(5) = 1, if parameters (x,y) are needed, =0 otherwise
+                  !  IquickAccess(6) = type of boundary control to impose.
+                  !                    (=0: none, =1: Dirichlet L2)
+                  !  IquickAccess(7:...) = The binary content of r_t_p_optcBDC.
+                  !
+                  ! The DquickAccess array is set up as follows:
+                  !  DquickAccess(1) = dtime
+                  !  DquickAccess(2) = dvalue
+                  !
+                  ! The SquickAccess array is set up as follows:
+                  !  SquickAccess(1) = Name of the expression
+                  !
+                  ! The Quickvectors array is set up as follows:
+                  !  p_rvectorQuickAccess1 => rvectorControl
+                  
+                  if (sbdex1 .ne. "") then
+                    
+                    ! X-velocity
+                    !
+                    ! Get the expression information
+                    call struc_getBdExprInfo (roptcBDC,sbdex1,&
+                        ctype,iid,ivalue,dvalue,svalue,bneedsParams)
+                        
+                    rcollection%IquickAccess(1) = 1
+                    rcollection%IquickAccess(2) = ctype
+                    rcollection%IquickAccess(3) = iid
+                    rcollection%IquickAccess(4) = ivalue
+                    rcollection%IquickAccess(5) = 0
+                    if (bneedsParams) rcollection%IquickAccess(5) = 1
+                    rcollection%DquickAccess(1) = dtime
+                    rcollection%DquickAccess(2) = dvalue
+                    rcollection%SquickAccess(1) = svalue
+                    rcollection%p_rnextCollection => ruserCollection
+                    rcollection%IquickAccess(6) = 1
+                    rcollection%IquickAccess(7:) = &
+                        transfer(r_t_p_optcBDC,rcollection%IquickAccess(7:),&
+                                      size(rcollection%IquickAccess(7:)))
+                    rcollection%p_rvectorQuickAccess1 => rvectorControl
+                    
+                    call user_initCollectForVecAssembly (&
+                        rglobalData,iid,rcollection%IquickAccess(1),dtime,rusercollection)
+                    
+                    ! Assemble the BCs.
+                    call bcasm_newDirichletBConRealBD (&
+                        rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
+                        roptcBDCSpace%rdiscreteBC,&
+                        cc_getDirBCNavSt2D,rcollection)
+                        
+                    call user_doneCollectForVecAssembly (rglobalData,rusercollection)
+                    
+                  end if
+                      
+                  if (sbdex2 .ne. "") then
+                  
+                    ! Y-velocity
+                    !
+                    ! Get the expression information
+                    call struc_getBdExprInfo (roptcBDC,sbdex2,&
+                        ctype,iid,ivalue,dvalue,svalue,bneedsParams)
+                        
+                    rcollection%IquickAccess(1) = 2
+                    rcollection%IquickAccess(2) = ctype
+                    rcollection%IquickAccess(3) = iid
+                    rcollection%IquickAccess(4) = ivalue
+                    rcollection%IquickAccess(5) = 0
+                    if (bneedsParams) rcollection%IquickAccess(5) = 1
+                    rcollection%DquickAccess(1) = dtime
+                    rcollection%DquickAccess(2) = dvalue
+                    rcollection%SquickAccess(1) = svalue
+                    rcollection%p_rnextCollection => ruserCollection
+                    rcollection%IquickAccess(6) = 1
+                    rcollection%IquickAccess(7:) = &
+                        transfer(r_t_p_optcBDC,rcollection%IquickAccess(7:),&
+                                      size(rcollection%IquickAccess(7:)))
+                    rcollection%p_rvectorQuickAccess1 => rvectorControl
+                    
+                    call user_initCollectForVecAssembly (&
+                        rglobalData,iid,rcollection%IquickAccess(1),dtime,rusercollection)
+                    
+                    ! Assemble the BCs.
                     call bcasm_newDirichletBConRealBD (&
                         rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
                         roptcBDCSpace%rdiscreteBC,&
@@ -469,16 +658,14 @@ contains
               ! Now, which type of BC is to be created?
               select case (ibctyp)
               
-              ! --------------------------------------------------
-              ! Automatic boundary conditions. Dual equation only.
-              ! --------------------------------------------------
+              ! ------------------------------------------------------------------
+              ! Automatic boundary conditions. Dual and linearised equations only.
+              ! ------------------------------------------------------------------
               case (-1)
-                if ((copType .ne. OPTP_DUAL) .and. &
-                    (copType .ne. OPTP_DUALLIN) .and. &
-                    (copType .ne. OPTP_DUALLIN_SIMPLE)) then
+                if (copType .eq. OPTP_PRIMAL) then
                   call output_line (&
-                      "Automatic boundary conditions only allowed for the dual equation.", &
-                      OU_CLASS_ERROR,OU_MODE_STD,'cc_parseBDconditions')
+                      "Automatic boundary conditions only allowed.", &
+                      OU_CLASS_ERROR,OU_MODE_STD,"cc_parseBDconditions")
                   call sys_halt()
                 end if
                 
@@ -515,9 +702,10 @@ contains
                   rcollection%DquickAccess(2) = 0.0_DP
                   rcollection%SquickAccess(1) = ""
                   rcollection%p_rnextCollection => ruserCollection
-                  rcollection%IquickAccess(6:) = &
-                      transfer(r_t_p_optcBDC,rcollection%IquickAccess(6:),&
-                                    size(rcollection%IquickAccess(6:)))
+                  rcollection%IquickAccess(6) = 0
+                  rcollection%IquickAccess(7:) = &
+                      transfer(r_t_p_optcBDC,rcollection%IquickAccess(7:),&
+                                    size(rcollection%IquickAccess(7:)))
 
                   ! Solution
                   rcollection%IquickAccess(1) = 1
@@ -525,7 +713,7 @@ contains
                   call user_initCollectForVecAssembly (&
                       rglobalData,0,rcollection%IquickAccess(1),dtime,rusercollection)
                   
-                  ! Assemble the BC's.
+                  ! Assemble the BCs.
                   call bcasm_newDirichletBConRealBD (&
                       rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
                       roptcBDCSpace%rdiscreteBC,&
@@ -567,7 +755,7 @@ contains
                   ! Read the line again, get the expressions for the data field
                   read(sstr,*) dvalue,iintervalEnds,ibctyp,sbdex1
                 
-                  ! For any string <> '', create the appropriate Dirichlet boundary
+                  ! For any string <> "", create the appropriate Dirichlet boundary
                   ! condition and add it to the list of boundary conditions.
                   !
                   ! The IquickAccess array is set up as follows:
@@ -576,7 +764,7 @@ contains
                   !  IquickAccess(3) = iid
                   !  IquickAccess(4) = ivalue
                   !  IquickAccess(5) = 1, if parameters (x,y) are needed, =0 otherwise
-                  !  IquickAccess(6:...) = The binary content of r_t_p_optcBDC.
+                  !  IquickAccess(7:...) = The binary content of r_t_p_optcBDC.
                   !
                   ! The DquickAccess array is set up as follows:
                   !  DquickAccess(1) = dtime
@@ -585,7 +773,7 @@ contains
                   ! The SquickAccess array is set up as follows:
                   !  SquickAccess(1) = Name of the expression
                   
-                  if (sbdex1 .ne. '') then
+                  if (sbdex1 .ne. "") then
                     
                     ! X-velocity
                     !
@@ -603,14 +791,15 @@ contains
                     rcollection%DquickAccess(2) = dvalue
                     rcollection%SquickAccess(1) = svalue
                     rcollection%p_rnextCollection => ruserCollection
-                    rcollection%IquickAccess(6:) = &
-                        transfer(r_t_p_optcBDC,rcollection%IquickAccess(6:),&
-                                      size(rcollection%IquickAccess(6:)))
+                    rcollection%IquickAccess(6) = 0
+                    rcollection%IquickAccess(7:) = &
+                        transfer(r_t_p_optcBDC,rcollection%IquickAccess(7:),&
+                                      size(rcollection%IquickAccess(7:)))
                     
                     call user_initCollectForVecAssembly (&
                         rglobalData,iid,rcollection%IquickAccess(1),dtime,rusercollection)
                     
-                    ! Assemble the BC's.
+                    ! Assemble the BCs.
                     call bcasm_newDirichletBConRealBD (&
                         rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
                         roptcBDCSpace%rdiscreteBC,&
@@ -685,8 +874,8 @@ contains
 !    case (0,1)
 !      ! Stokes, Navier-Stokes, 2D
 !    
-!      ! For implementing boundary conditions, we use a 'filter technique with
-!      ! discretised boundary conditions'. This means, we first have to calculate
+!      ! For implementing boundary conditions, we use a "filter technique with
+!      ! discretised boundary conditions". This means, we first have to calculate
 !      ! a discrete version of the analytic BC, which we can implement into the
 !      ! solution/RHS vectors using the corresponding filter.
 !      !
@@ -711,7 +900,7 @@ contains
 !      
 !      ! Create a parser structure for as many expressions as configured
 !      call fparser_create (rparser,&
-!          parlst_querysubstrings (p_rsection, 'bdExpressions'))
+!          parlst_querysubstrings (p_rsection, "bdExpressions"))
 !      
 !      ! Add the parser to the collection
 !      call collct_setvalue_pars (rcoll, BDC_BDPARSER, rparser, &
@@ -719,9 +908,9 @@ contains
 !      
 !      ! Add the boundary expressions to the collection into the
 !      ! specified section.
-!      do i=1,parlst_querysubstrings (p_rsection, 'bdExpressions')
+!      do i=1,parlst_querysubstrings (p_rsection, "bdExpressions")
 !      
-!        call parlst_getvalue_string (p_rsection, 'bdExpressions', cstr, "", i)
+!        call parlst_getvalue_string (p_rsection, "bdExpressions", cstr, "", i)
 !        
 !        ! Get the type and decide on the identifier how to save the expression.
 !        read(cstr,*) cname,ityp
@@ -768,8 +957,8 @@ contains
 !                                    0, SEC_SBDEXPRESSIONS)
 !                                     
 !        case default
-!          call output_line ('Expressions not implemented!', &
-!              OU_CLASS_ERROR,OU_MODE_STD,'cc_parseBDconditions')
+!          call output_line ("Expressions not implemented!", &
+!              OU_CLASS_ERROR,OU_MODE_STD,"cc_parseBDconditions")
 !          call sys_halt()
 !
 !        end select
@@ -806,9 +995,9 @@ contains
 !        ! Loop through all boundary components we have.
 !        do ibdComponent = 1,boundary_igetNBoundComp(p_rboundary)
 !
-!          ! Parse the parameter 'bdComponentX'
-!          write (cexpr,'(I10)') ibdComponent
-!          cstr = 'bdComponent' // adjustl(cexpr)
+!          ! Parse the parameter "bdComponentX"
+!          write (cexpr,"(I10)") ibdComponent
+!          cstr = "bdComponent" // adjustl(cexpr)
 !          
 !          ! We start at parameter value 0.0.
 !          dpar1 = 0.0_DP
@@ -852,7 +1041,7 @@ contains
 !                    ! Read the line again, get the expressions for X- and Y-velocity
 !                    read(cstr,*) dvalue,iintervalEnds,ibctyp,sbdex1,sbdex2
 !                    
-!                    ! For any string <> '', create the appropriate Dirichlet boundary
+!                    ! For any string <> "", create the appropriate Dirichlet boundary
 !                    ! condition and add it to the list of boundary conditions.
 !                    !
 !                    ! The IquickAccess array is set up as follows:
@@ -867,12 +1056,12 @@ contains
 !                    rcoll%IquickAccess(1) = ibctyp
 !                    
 !                    if (iprimaldual .eq. 1) then
-!                      ! Primal BC's
+!                      ! Primal BCs
 !                      if (cbctype .eq. CCSPACE_PRIMAL) then
 !                      
 !                        ! If the type is a double precision value, set the DquickAccess(4)
 !                        ! to that value so it can quickly be accessed.
-!                        if (sbdex1 .ne. '') then
+!                        if (sbdex1 .ne. "") then
 !                          ! X-velocity
 !                          !
 !                          ! The 2nd element in IquickAccess saves the component number.
@@ -906,7 +1095,7 @@ contains
 !                          call user_initCollectForVecAssembly (&
 !                              rglobalData,iid,1,dtime,rcallbackcollection)
 !                          
-!                          ! Assemble the BC's.
+!                          ! Assemble the BCs.
 !                          call bcasm_newDirichletBConRealBD (&
 !                              rspaceDiscr,1,rboundaryRegion,rdiscreteBC,&
 !                              cc_getBDconditionsNavSt2D,rcoll)
@@ -915,7 +1104,7 @@ contains
 !                              
 !                        end if
 !                        
-!                        if (sbdex2 .ne. '') then
+!                        if (sbdex2 .ne. "") then
 !                        
 !                          ! Y-velocity
 !                          !
@@ -950,7 +1139,7 @@ contains
 !                          call user_initCollectForVecAssembly (&
 !                              rglobalData,iid,2,dtime,rcallbackcollection)
 !
-!                          ! Assemble the BC's.
+!                          ! Assemble the BCs.
 !                          call bcasm_newDirichletBConRealBD (&
 !                              rspaceDiscr,2,rboundaryRegion,rdiscreteBC,&
 !                              cc_getBDconditionsNavSt2D,rcoll)
@@ -965,14 +1154,14 @@ contains
 !                    
 !                    if (iprimaldual .eq. 2) then
 !                    
-!                      ! Dual BC's
+!                      ! Dual BCs
 !                      if (cbctype .eq. CCSPACE_DUAL) then
 !
 !                        ! Now the same thing again, this time separately for primal and dual
 !                        ! variables.
 !                        ! If a primal velocity is specified, Dirichlet-0-boundary conditions are
 !                        ! assumed for the corresponding dual.
-!                        if (sbdex1 .ne. '') then
+!                        if (sbdex1 .ne. "") then
 !                        
 !                          ! dual X-velocity if primal X-velocity exists
 !                          !
@@ -983,14 +1172,14 @@ contains
 !                          iexptyp = BDC_VALDOUBLE
 !                          rcoll%Dquickaccess(4) = 0.0_DP
 !                          rcoll%IquickAccess(3) = iexptyp
-!                          rcoll%SquickAccess(1) = ''
+!                          rcoll%SquickAccess(1) = ""
 !                          iid = 0
 !                          
 !                          rcoll%Dquickaccess(1) = dtime
 !                          call user_initCollectForVecAssembly (rglobalData,iid,4,dtime,rcallbackcollection)
 !
-!                          ! Assemble the BC's.
-!                          ! If we only assemble dual BC's and there are 3 solution components,
+!                          ! Assemble the BCs.
+!                          ! If we only assemble dual BCs and there are 3 solution components,
 !                          ! we assume the vector to specify exactly the dual solution.
 !                          call bcasm_newDirichletBConRealBD (&
 !                              rspaceDiscr,1+rspaceDiscr%ncomponents-3,rboundaryRegion,rdiscreteBC,&
@@ -1000,7 +1189,7 @@ contains
 !                              
 !                        end if
 !                        
-!                        if (sbdex2 .ne. '') then
+!                        if (sbdex2 .ne. "") then
 !                        
 !                          ! dual Y-velocity if primal Y-velocity exists
 !                          !
@@ -1011,14 +1200,14 @@ contains
 !                          iexptyp = BDC_VALDOUBLE
 !                          rcoll%Dquickaccess(4) = 0.0_DP
 !                          rcoll%IquickAccess(3) = iexptyp
-!                          rcoll%SquickAccess(1) = ''
+!                          rcoll%SquickAccess(1) = ""
 !                          iid = 0
 !                          
 !                          rcoll%Dquickaccess(1) = dtime
 !                          call user_initCollectForVecAssembly (rglobalData,iid,5,dtime,rcallbackcollection)
 !
-!                          ! Assemble the BC's.
-!                          ! If we only assemble dual BC's and there are 3 solution components,
+!                          ! Assemble the BCs.
+!                          ! If we only assemble dual BCs and there are 3 solution components,
 !                          ! we assume the vector to specify exactly the dual solution.
 !                          call bcasm_newDirichletBConRealBD (&
 !                              rspaceDiscr,2+rspaceDiscr%ncomponents-3,rboundaryRegion,rdiscreteBC,&
@@ -1041,7 +1230,7 @@ contains
 !                    ! Read the line again, get the expressions for X- and Y-velocity
 !                    read(cstr,*) dvalue,iintervalEnds,ibctyp,sbdex1,sbdex2,sbdex3,sbdex4
 !                    
-!                    ! For any string <> '', create the appropriate Dirichlet boundary
+!                    ! For any string <> "", create the appropriate Dirichlet boundary
 !                    ! condition and add it to the list of boundary conditions.
 !                    !
 !                    ! The IquickAccess array is set up as follows:
@@ -1057,11 +1246,11 @@ contains
 !                    
 !                    if (iprimaldual .eq. 1) then
 !                    
-!                      ! Primal BC's
+!                      ! Primal BCs
 !                      if (cbctype .eq. CCSPACE_PRIMAL) then
 !                        ! If the type is a double precision value, set the DquickAccess(4)
 !                        ! to that value so it can quickly be accessed.
-!                        if (sbdex1 .ne. '') then
+!                        if (sbdex1 .ne. "") then
 !                          ! X-velocity
 !                          !
 !                          ! The 2nd element in IquickAccess saves the component number.
@@ -1095,7 +1284,7 @@ contains
 !                          call user_initCollectForVecAssembly (&
 !                              rglobalData,iid,1,dtime,rcallbackcollection)
 !
-!                          ! Assemble the BC's.
+!                          ! Assemble the BCs.
 !                          call bcasm_newDirichletBConRealBD (&
 !                              rspaceDiscr,1,rboundaryRegion,rdiscreteBC,&
 !                              cc_getBDconditionsNavSt2D,rcoll)
@@ -1104,7 +1293,7 @@ contains
 !                              
 !                        end if
 !                        
-!                        if (sbdex2 .ne. '') then
+!                        if (sbdex2 .ne. "") then
 !                        
 !                          ! Y-velocity
 !                          !
@@ -1139,7 +1328,7 @@ contains
 !                          call user_initCollectForVecAssembly (&
 !                              rglobalData,iid,2,dtime,rcallbackcollection)
 !
-!                          ! Assemble the BC's.
+!                          ! Assemble the BCs.
 !                          call bcasm_newDirichletBConRealBD (&
 !                              rspaceDiscr,2,rboundaryRegion,rdiscreteBC,&
 !                              cc_getBDconditionsNavSt2D,rcoll)
@@ -1153,7 +1342,7 @@ contains
 !                    
 !                    if (iprimaldual .eq. 2) then
 !                    
-!                      ! Dual BC's
+!                      ! Dual BCs
 !                      if (cbctype .eq. CCSPACE_DUAL) then
 !                      
 !                        ! Now the same thing again, this time separately for primal and dual
@@ -1161,7 +1350,7 @@ contains
 !                        ! If a velocity is not specified, Dirichlet-0-boundary conditions are
 !                        ! assumed.
 !                        
-!                        if (sbdex3 .ne. '') then
+!                        if (sbdex3 .ne. "") then
 !                          ! X-velocity
 !                          !
 !                          ! The 2nd element in IquickAccess saves the component number.
@@ -1194,8 +1383,8 @@ contains
 !                          rcoll%Dquickaccess(1) = dtime
 !                          call user_initCollectForVecAssembly (rglobalData,iid,4,dtime,rcallbackcollection)
 !
-!                          ! Assemble the BC's.
-!                          ! If we only assemble dual BC's and there are 3 solution components,
+!                          ! Assemble the BCs.
+!                          ! If we only assemble dual BCs and there are 3 solution components,
 !                          ! we assume the vector to specify exactly the dual solution.
 !                          call bcasm_newDirichletBConRealBD (&
 !                              rspaceDiscr,1+rspaceDiscr%ncomponents-3,rboundaryRegion,rdiscreteBC,&
@@ -1205,7 +1394,7 @@ contains
 !
 !                        end if
 !                        
-!                        if (sbdex4 .ne. '') then
+!                        if (sbdex4 .ne. "") then
 !                        
 !                          ! Y-velocity
 !                          !
@@ -1239,8 +1428,8 @@ contains
 !                          rcoll%Dquickaccess(1) = dtime
 !                          call user_initCollectForVecAssembly (rglobalData,iid,5,dtime,rcallbackcollection)
 !
-!                          ! Assemble the BC's.
-!                          ! If we only assemble dual BC's and there are 3 solution components,
+!                          ! Assemble the BCs.
+!                          ! If we only assemble dual BCs and there are 3 solution components,
 !                          ! we assume the vector to specify exactly the dual solution.
 !                          call bcasm_newDirichletBConRealBD (&
 !                              rspaceDiscr,2+rspaceDiscr%ncomponents-3,rboundaryRegion,rdiscreteBC,&
@@ -1261,7 +1450,7 @@ contains
 !                  ! Read the line again, get the expressions for X- and Y-velocity
 !                  read(cstr,*) dvalue,iintervalEnds,ibctyp,sbdex1,sbdex2
 !                 
-!                  ! For any string <> '', create the appropriate Dirichlet boundary
+!                  ! For any string <> "", create the appropriate Dirichlet boundary
 !                  ! condition and add it to the list of boundary conditions.
 !                  !
 !                  ! The IquickAccess array is set up as follows:
@@ -1279,11 +1468,11 @@ contains
 !                    
 !                    if (iprimaldual .eq. 1) then
 !                    
-!                      ! Primal BC's
+!                      ! Primal BCs
 !                      if (cbctype .eq. CCSPACE_PRIMAL) then
 !                        ! If the type is a double precision value, set the DquickAccess(4)
 !                        ! to that value so it can quickly be accessed.
-!                        if (sbdex1 .ne. '') then
+!                        if (sbdex1 .ne. "") then
 !                          ! X-velocity
 !                          !
 !                          ! The 2nd element in IquickAccess saves the component number.
@@ -1317,7 +1506,7 @@ contains
 !                          call user_initCollectForVecAssembly (&
 !                              rglobalData,iid,1,dtime,rcallbackcollection)
 !
-!                          ! Assemble the BC's.
+!                          ! Assemble the BCs.
 !                          call bcasm_newDirichletBConRealBD (&
 !                              rspaceDiscr,1,rboundaryRegion,rdiscreteBC,&
 !                              cc_getBDconditionsNavSt2D,rcoll)
@@ -1326,7 +1515,7 @@ contains
 !                              
 !                        end if
 !                        
-!                        if (sbdex2 .ne. '') then
+!                        if (sbdex2 .ne. "") then
 !                        
 !                          ! Y-velocity
 !                          !
@@ -1361,7 +1550,7 @@ contains
 !                          call user_initCollectForVecAssembly (&
 !                              rglobalData,iid,2,dtime,rcallbackcollection)
 !
-!                          ! Assemble the BC's.
+!                          ! Assemble the BCs.
 !                          call bcasm_newDirichletBConRealBD (&
 !                              rspaceDiscr,2,rboundaryRegion,rdiscreteBC,&
 !                              cc_getBDconditionsNavSt2D,rcoll)
@@ -1396,7 +1585,7 @@ contains
 !                  ! Read the line again, get the expressions for X- and Y-velocity
 !                  read(cstr,*) dvalue,iintervalEnds,ibctyp,sbdex3,sbdex4
 !                  
-!                  ! For any string <> '', create the appropriate Dirichlet boundary
+!                  ! For any string <> "", create the appropriate Dirichlet boundary
 !                  ! condition and add it to the list of boundary conditions.
 !                  !
 !                  ! The IquickAccess array is set up as follows:
@@ -1429,7 +1618,7 @@ contains
 !                  if (iand(casmFlags,SBC_DIRICHLETBC) .ne. 0) then
 !                    if (iprimaldual .eq. 2) then
 !                    
-!                      ! Dual BC's
+!                      ! Dual BCs
 !                      if (cbctype .eq. CCSPACE_DUAL) then
 !                      
 !                        ! Now the same thing again, this time separately for primal and dual
@@ -1437,7 +1626,7 @@ contains
 !                        ! If a velocity is not specified, Dirichlet-0-boundary conditions are
 !                        ! assumed.
 !                        
-!                        if (sbdex3 .ne. '') then
+!                        if (sbdex3 .ne. "") then
 !                          ! X-velocity
 !                          !
 !                          ! The 2nd element in IquickAccess saves the component number.
@@ -1470,8 +1659,8 @@ contains
 !                          rcoll%Dquickaccess(1) = dtime
 !                          call user_initCollectForVecAssembly (rglobalData,iid,4,dtime,rcallbackcollection)
 !
-!                          ! Assemble the BC's.
-!                          ! If we only assemble dual BC's and there are 3 solution components,
+!                          ! Assemble the BCs.
+!                          ! If we only assemble dual BCs and there are 3 solution components,
 !                          ! we assume the vector to specify exactly the dual solution.
 !                          call bcasm_newDirichletBConRealBD (&
 !                              rspaceDiscr,1+rspaceDiscr%ncomponents-3,rboundaryRegion,rdiscreteBC,&
@@ -1481,7 +1670,7 @@ contains
 !
 !                        end if
 !                        
-!                        if (sbdex4 .ne. '') then
+!                        if (sbdex4 .ne. "") then
 !                        
 !                          ! Y-velocity
 !                          !
@@ -1515,8 +1704,8 @@ contains
 !                          rcoll%Dquickaccess(1) = dtime
 !                          call user_initCollectForVecAssembly (rglobalData,iid,5,dtime,rcallbackcollection)
 !
-!                          ! Assemble the BC's.
-!                          ! If we only assemble dual BC's and there are 3 solution components,
+!                          ! Assemble the BCs.
+!                          ! If we only assemble dual BCs and there are 3 solution components,
 !                          ! we assume the vector to specify exactly the dual solution.
 !                          call bcasm_newDirichletBConRealBD (&
 !                              rspaceDiscr,2+rspaceDiscr%ncomponents-3,rboundaryRegion,rdiscreteBC,&
@@ -1581,7 +1770,7 @@ contains
 !                        ! Read the boundary data specification and prepare the callback routine
 !                        read(cstr,*) dvalue,iintervalEnds,ibctyp,sbdex1,sbdex2
 !                        
-!                        ! For any string <> '', create the appropriate Dirichlet boundary
+!                        ! For any string <> "", create the appropriate Dirichlet boundary
 !                        ! condition and add it to the list of boundary conditions.
 !                        !
 !                        ! The IquickAccess array is set up as follows:
@@ -1598,12 +1787,12 @@ contains
 !                        ! The current boundary region is put to the collection
 !                        call collct_setvalue_bdreg (rcoll, "BDREG", rboundaryRegion, .true.)
 !                        
-!                        ! Primal BC's
+!                        ! Primal BCs
 !                        if (cbctype .eq. CCSPACE_PRIMAL) then
 !                        
 !                          ! If the type is a double precision value, set the DquickAccess(4)
 !                          ! to that value so it can quickly be accessed.
-!                          if (sbdex1 .ne. '') then
+!                          if (sbdex1 .ne. "") then
 !                            ! X-velocity
 !                            !
 !                            ! The 2nd element in IquickAccess saves the component number.
@@ -1646,7 +1835,7 @@ contains
 !                                
 !                          end if
 !                          
-!                          if (sbdex2 .ne. '') then
+!                          if (sbdex2 .ne. "") then
 !                          
 !                            ! Y-velocity
 !                            !
@@ -1681,7 +1870,7 @@ contains
 !                            call user_initCollectForVecAssembly (&
 !                                rglobalData,iid,2,dtime,rcallbackcollection)
 !
-!                            ! Assemble the BC's.
+!                            ! Assemble the BCs.
 !                            call linf_buildVectorScalarBdr2D (rlinformRhs, CUB_G4_1D, .false., &
 !                                rvectorDirichletBCCRHS%RvectorBlock(1),&
 !                                fcoeff_buildBCCRHS,rboundaryRegion, rcoll)
@@ -1704,7 +1893,7 @@ contains
 !                  if (iand(casmFlags,SBC_DIRICHLETBC) .ne. 0) then
 !                    if (iprimaldual .eq. 2) then
 !                    
-!                      ! Dual BC's
+!                      ! Dual BCs
 !                      if (cbctype .eq. CCSPACE_DUAL) then
 !
 !                        ! dual X-velocity if primal X-velocity exists
@@ -1713,15 +1902,15 @@ contains
 !                        iexptyp = BDC_VALDOUBLE
 !                        rcoll%Dquickaccess(4) = 0.0_DP
 !                        rcoll%IquickAccess(3) = iexptyp
-!                        rcoll%SquickAccess(1) = ''
+!                        rcoll%SquickAccess(1) = ""
 !                        iid = 0
 !                        
 !                        rcoll%Dquickaccess(1) = dtime
 !                        call user_initCollectForVecAssembly (rglobalData,iid,4,dtime,rcallbackcollection)
 !
-!                        ! Assemble the BC's.
+!                        ! Assemble the BCs.
 !                        ! The 2nd element in IquickAccess saves the component number.
-!                        ! If we only assemble dual BC's and there are 3 solution components,
+!                        ! If we only assemble dual BCs and there are 3 solution components,
 !                        ! we assume the vector to specify exactly the dual solution.
 !
 !                        rcoll%IquickAccess(2) = 1
@@ -1747,8 +1936,8 @@ contains
 !                  end if
 !
 !                case default
-!                  call output_line ('Unknown boundary condition!', &
-!                      OU_CLASS_ERROR,OU_MODE_STD,'cc_parseBDconditions')
+!                  call output_line ("Unknown boundary condition!", &
+!                      OU_CLASS_ERROR,OU_MODE_STD,"cc_parseBDconditions")
 !                  call sys_halt()
 !                end select
 !                
@@ -1917,7 +2106,7 @@ contains
   ! This subroutine is called during the discretisation of boundary
   ! conditions. It calculates the Dirichlet boundary conditions and is
   ! used by the discretisation routines to generate a discrete
-  ! 'snapshot' of the (actually analytic) boundary conditions.
+  ! "snapshot" of the (actually analytic) boundary conditions.
 !</description>
   
 !<input>
@@ -1993,20 +2182,28 @@ contains
   ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
   !
   ! The function may return SYS_INFINITY_DP as a value. This indicates the
-  ! framework to ignore the node and treat it as 'natural boundary condition'
+  ! framework to ignore the node and treat it as "natural boundary condition"
   ! node.
   real(DP), dimension(:), intent(out)                         :: Dvalues
 !</output>
   
 !</subroutine>
 
-    integer :: icomponent,cexprtype,iid,ivalue
+    integer :: icomponent,cexprtype,iid,ivalue,ccontrolType,icontrolcomp
     real(DP) :: dvalue
     logical :: bneedsParams
     real(DP), dimension(size(SEC_EXPRVARIABLES)) :: Dparams
     real(DP) :: d, dx, dy
     character(LEN=PARLST_LENLINEBUF) :: svalue
     type(t_p_optcBDC) :: r_t_p_optcBDC
+    type(t_vectorBlock), pointer :: p_rcontrol
+    type(t_settings_optcontrol), pointer :: p_roptControl
+    type(t_settings_physics), pointer :: p_rphysics
+    real(DP), dimension(:), pointer :: p_Ddata
+    integer :: iedge,iptpos,iv1,iv2
+    real(DP) :: dpar1, dpar2, dpar, dval
+    integer, dimension(:), pointer :: p_IboundaryCpIdx
+    real(DP), dimension(:), pointer :: p_DvertexParameterValue
     
     real(DP) :: dtime
 
@@ -2016,7 +2213,8 @@ contains
     !  IquickAccess(3) = iid
     !  IquickAccess(4) = ivalue
     !  IquickAccess(5) = 1, if parameters (x,y) are needed, =0 otherwise
-    !  IquickAccess(6) = Pointer to the t_optcBDC structure
+    !  IquickAccess(6) = Type of boundary control. =0: none, =1: Dirichlet L2
+    !  IquickAccess(7) = Pointer to the t_optcBDC structure
     !
     ! The DquickAccess array is set up as follows:
     !  DquickAccess(1) = dvalue
@@ -2033,8 +2231,13 @@ contains
     iid          = rcollection%Iquickaccess(3)
     ivalue       = rcollection%Iquickaccess(4)
     bneedsParams = rcollection%Iquickaccess(5) .ne. 0
-    r_t_p_optcBDC   = transfer(rcollection%IquickAccess(6:),r_t_p_optcBDC)
+    ccontrolType = rcollection%Iquickaccess(6)
+    r_t_p_optcBDC   = transfer(rcollection%IquickAccess(7:),r_t_p_optcBDC)
     dvalue       = rcollection%Dquickaccess(2)
+    p_rcontrol   => rcollection%p_rvectorQuickAccess1
+    
+    p_roptControl => r_t_p_optcBDC%p_roptcBDC%p_rsettingsOptControl
+    p_rphysics => r_t_p_optcBDC%p_roptcBDC%p_rphysics
     
     if (bneedsParams) then
       ! Calculate the parameter array
@@ -2106,8 +2309,8 @@ contains
         !
         ! As collection, we pass rcollection%p_rcollection here; this is a pointer
         ! to the application specific, global collection that may be of interest for
-        ! callback routines. rcollection itself is actually a 'local' collection,
-        ! a 'wrapper' for the rcollection of the application!
+        ! callback routines. rcollection itself is actually a "local" collection,
+        ! a "wrapper" for the rcollection of the application!
         call user_getBoundaryValues (&
             "",icomponent,rspaceDiscr,rboundaryRegion,&
             dwhere, Dvalues(1), rcollection%p_rnextCollection)
@@ -2118,8 +2321,8 @@ contains
         !
         ! As collection, we pass rcollection%p_rcollection here; this is a pointer
         ! to the application specific, global collection that may be of interest for
-        ! callback routines. rcollection itself is actually a 'local' collection,
-        ! a 'wrapper' for the rcollection of the application!
+        ! callback routines. rcollection itself is actually a "local" collection,
+        ! a "wrapper" for the rcollection of the application!
         call user_getBoundaryValues (&
             svalue,icomponent,rspaceDiscr,rboundaryRegion,&
             dwhere, Dvalues(1), rcollection%p_rnextCollection)
@@ -2131,6 +2334,100 @@ contains
       
       end select
       
+    end select
+    
+    select case (ccontrolType)
+    
+    ! ---------------------------------
+    ! L2 Dirichlet boudary control
+    ! ---------------------------------
+    case (1)
+    
+      if (p_roptControl%dalphaL2BdC .ge. 0.0_DP) then
+        if (.not. associated(p_rcontrol)) then
+          call output_line ("Control not specified.", &
+              OU_CLASS_ERROR,OU_MODE_STD,"cc_getDirBCNavSt2D")
+          call sys_halt()
+        end if
+        
+        select case (p_rphysics%cequation)
+        case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+        
+          ! Where is the boundary control?
+          icontrolcomp = icomponent
+          if (p_roptControl%dalphaDistC .ge. 0.0_DP) icontrolcomp = icontrolcomp + 2
+
+          ! Quick and dirty implementation...
+          
+          ! Element type?
+          select case (p_rcontrol%p_rblockDiscr%RspatialDiscr(icontrolcomp)%RelementDistr(1)%celement)
+          case (EL_P2_1D)
+            
+            ! Type of info?
+            select case (cinfoNeeded)
+            case (DISCBC_NEEDFUNC,DISCBC_NEEDFUNCMID,DISCBC_NEEDDERIV, &
+                  DISCBC_NEEDINTMEAN,DISCBC_NEEDNORMALSTRESS)
+              
+              ! Search the boundary edge that contains the parameter value
+              call tria_searchBoundaryEdgePar2D(rboundaryRegion%iboundCompIdx, dwhere, &
+                  rspaceDiscr%p_rtriangulation, rspaceDiscr%p_rboundary, iedge,&
+                  BDR_PAR_LENGTH)
+              !print *,"Richtig?"
+              
+              ! Get the vector data
+              call lsyssc_getbase_double (p_rcontrol%RvectorBlock(icontrolcomp),p_Ddata)
+              
+              ! Get the "relative" parameter value of dwhere.
+              call storage_getbase_int (&
+                  rspaceDiscr%p_rtriangulation%h_IboundaryCpIdx,p_IboundaryCpIdx)
+              call storage_getbase_double (&
+                  rspaceDiscr%p_rtriangulation%h_DvertexParameterValue,p_DvertexParameterValue)
+                  
+              iptpos = p_IboundaryCpIdx(rboundaryRegion%iboundCompIdx)
+              
+              ! First vertex number = edge number
+              dpar1 = p_DvertexParameterValue(iptpos-1+iedge)
+              iv1 = iedge
+              
+              ! Second vertex number = first vertex + 1 or overall first
+              if (iedge .lt. p_IboundaryCpIdx(rboundaryRegion%iboundCompIdx+1) &
+                            -p_IboundaryCpIdx(rboundaryRegion%iboundCompIdx)) then
+                dpar2 = p_DvertexParameterValue(iptpos-1+iedge+1)
+                iv2 = iedge+1
+              else
+                dpar2 = boundary_dgetMaxParVal(rspaceDiscr%p_rboundary, &
+                    rboundaryRegion%iboundCompIdx)
+                iv2 = p_IboundaryCpIdx(rboundaryRegion%iboundCompIdx)
+              end if
+              
+              ! Relative parameter value
+              dpar = (boundary_convertParameter(rspaceDiscr%p_rboundary, &
+                  rboundaryRegion%iboundCompIdx, dwhere, &
+                  BDR_PAR_LENGTH, BDR_PAR_01)-dpar1)/(dpar2-dpar1)
+                  
+              ! Quadratic interpolation over [-1,1]
+              call mprim_quadraticInterpolation (2*dpar-1.0_DP,&
+                  p_Ddata(iv1),p_Ddata(iedge+rspaceDiscr%p_rtriangulation%NVBD),p_Ddata(iv2),dval)
+              
+              Dvalues(1) = Dvalues(1) + dval
+
+            end select          
+          
+          case default
+            call output_line ("Unsupported element.", &
+                OU_CLASS_ERROR,OU_MODE_STD,"cc_getDirBCNavSt2D")
+            call sys_halt()
+          end select
+        
+        
+        case (CCEQ_HEAT2D)
+          call output_line ("Equation not supported.", &
+              OU_CLASS_ERROR,OU_MODE_STD,"cc_getDirBCNavSt2D")
+          call sys_halt()
+        end select
+        
+      end if
+    
     end select
   
   end subroutine
@@ -2152,7 +2449,7 @@ contains
 !  ! Boundary conditions in the problem.
 !  type(t_optcBDC), intent(inout) :: roptcBDC
 !
-!  ! Time where the BC's should be implemented.
+!  ! Time where the BCs should be implemented.
 !  real(DP), intent(IN) :: dtime
 !
 !  ! Type of solution space. CCSPACE_PRIMAL or CCSPACE_DUAL.
@@ -2200,7 +2497,7 @@ contains
 !      ! Initialise the boundary conditions
 !      call bcasm_initDiscreteBC(rdiscreteBClocal)
 !
-!      ! Assemble the BC's.
+!      ! Assemble the BCs.
 !      call sbc_assembleBDconditions (roptcBDC,dtime,cspace,&
 !          rglobalData,SBC_DIRICHLETBC,&
 !          rtimeDiscr,rspaceDiscr,rdiscreteBClocal)
@@ -2223,7 +2520,7 @@ contains
 !
 !    else
 !
-!      ! Assemble the BC's.
+!      ! Assemble the BCs.
 !      call sbc_assembleBDconditions (roptcBDC,dtime,cspace,&
 !          rglobalData,SBC_DIRICHLETBC,&
 !          rtimeDiscr,rspaceDiscr,rdiscreteBC)

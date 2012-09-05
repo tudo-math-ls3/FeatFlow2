@@ -78,7 +78,7 @@ module structurespostproc
     character(len=SYS_STRLEN) :: sfilenameUCD = "./gmv/u"
     
     ! Output format for the primal solution.
-    ! =0: don't write
+    ! =0: don"t write
     ! =1: write out, use formatted output (default).
     ! =2: write out, use unformatted output.
     integer :: cwritePrimalSol = 0
@@ -88,7 +88,7 @@ module structurespostproc
     character(len=SYS_STRLEN) :: sfilenamePrimalSol = ""
 
     ! Output format for the dual solution.
-    ! =0: don't write
+    ! =0: don"t write
     ! =1: write out, use formatted output (default).
     ! =2: write out, use unformatted output.
     integer :: cwriteDualSol = 0
@@ -98,7 +98,7 @@ module structurespostproc
     character(len=SYS_STRLEN) :: sfilenameDualSol = ""
     
     ! Output format for the control.
-    ! =0: don't write
+    ! =0: don"t write
     ! =1: write out, use formatted output (default).
     ! =2: write out, use unformatted output.
     integer :: cwriteControl = 0
@@ -315,13 +315,13 @@ contains
         "iwriteFlux",rpostproc%iwriteFlux,0)
 
     call parlst_getvalue_string (rparlist,ssection,&
-        'sfilenameFlux',rpostproc%sfilenameFlux,"",bdequote=.true.)
+        "sfilenameFlux",rpostproc%sfilenameFlux,"",bdequote=.true.)
 
     call parlst_getvalue_string (rparlist,ssection,&
-        'dfluxline',sstr,"",bdequote=.true.)
+        "dfluxline",sstr,"",bdequote=.true.)
         
     call parlst_getvalue_string (rparlist,ssection,&
-        'dfluxline',sstr,"",bdequote=.true.)
+        "dfluxline",sstr,"",bdequote=.true.)
         
     if (sstr .ne. "") then
       ! Read the start/end coordinates
@@ -338,7 +338,7 @@ contains
         "iwriteKineticEnergy",rpostproc%iwriteKineticEnergy,0)
 
     call parlst_getvalue_string (rparlist,ssection,&
-        'sfilenameKineticEnergy',rpostproc%sfilenameKineticEnergy,"",bdequote=.true.)
+        "sfilenameKineticEnergy",rpostproc%sfilenameKineticEnergy,"",bdequote=.true.)
 
     ! Error calculation
 

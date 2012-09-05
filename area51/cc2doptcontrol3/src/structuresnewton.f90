@@ -283,8 +283,8 @@ contains
     call parlst_querysection(rparamList, ssection, p_rsection)
 
     if (.not. associated(p_rsection)) then
-      call output_line ("Cannot create nonlinear solver; no section ''"//&
-          trim(ssection)//"''!", &
+      call output_line ("Cannot create nonlinear solver; no section """//&
+          trim(ssection)//"""!", &
           OU_CLASS_ERROR,OU_MODE_STD,"newtonit_initBasicParams")
       call sys_halt()
     end if
@@ -404,8 +404,8 @@ contains
     call parlst_querysection(rparamList, ssection, p_rsection)
 
     if (.not. associated(p_rsection)) then
-      call output_line ("Cannot create linear solver; no section ''"//&
-          trim(ssection)//"''!", &
+      call output_line ("Cannot create linear solver; no section """//&
+          trim(ssection)//"""!", &
           OU_CLASS_ERROR,OU_MODE_STD,"newtonlin_initBasicParams")
       call sys_halt()
     end if

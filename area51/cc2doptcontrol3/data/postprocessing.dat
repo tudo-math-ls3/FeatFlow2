@@ -15,45 +15,45 @@
 ioutputUCD = 3
 
 # Filename prefix for visualisation output.
-# ='': Disable visualisation output
+# ="": Disable visualisation output
 
-sfilenameUCD = 'gmv/u'
+sfilenameUCD = "gmv/u"
 
 # Output format for the primal solution.
-# =0: don't write
+# =0: don"t write
 # =1: write out, use formatted output (default).
 # =2: write out, use unformatted output.
 
 cwritePrimalSol = 0
 
 # Output format for the dual solution.
-# =0: don't write
+# =0: don"t write
 # =1: write out, use formatted output (default).
 # =2: write out, use unformatted output.
 
 cwriteDualSol = 0
 
 # Output format for the final control.
-# =0: don't write
+# =0: don"t write
 # =1: write out, use formatted output (default).
 # =2: write out, use unformatted output.
 
 cwriteControl = 1
 
-# Filename prefix for output of the primal solution vector. If this is '',
+# Filename prefix for output of the primal solution vector. If this is "",
 # the solution vector is not written out.
 
-sfilenamePrimalSol = ''
+sfilenamePrimalSol = ""
 
-# Filename prefix for output of the dual solution vector. If this is '',
+# Filename prefix for output of the dual solution vector. If this is "",
 # the solution vector is not written out.
 
-sfilenameDualSol = ''
+sfilenameDualSol = ""
 
-# Filename prefix for output of the control vector. If this is '',
+# Filename prefix for output of the control vector. If this is "",
 # the control vector is not written out.
 
-sfilenameControl = './ns/control'
+sfilenameControl = "./ns/control"
 
 # ------------------------------------------------------------------------
 # Statistical values concerning the functional J(.) to minimise
@@ -70,7 +70,7 @@ cwriteFunctionalStatistics = 1
 
 # Filename which receives the statistics
 
-sfunctionalStatisticsFilename = './ns/functional'
+sfunctionalStatisticsFilename = "./ns/functional"
 
 
 # ------------------------------------------------------------------------
@@ -118,7 +118,7 @@ iwriteBodyForces = 1
 
 # Filename for the body forces
 
-sfilenameBodyForces = 'ns/bdforces'
+sfilenameBodyForces = "ns/bdforces"
 
 # ------------------------------------------------------------------------
 # Flux values
@@ -138,7 +138,7 @@ iwriteFlux = 0
 
 # Filename for the flux
 
-sfilenameFlux = 'ns/flux'
+sfilenameFlux = "ns/flux"
 
 # Whether to calculate the kinetic energy
 
@@ -150,7 +150,7 @@ iwriteKineticEnergy = 0
 
 # Filename for the kinetic energy
 
-sfilenameKineticEnergy = 'ns/kineticenergy'
+sfilenameKineticEnergy = "ns/kineticenergy"
 
 # ------------------------------------------------------------------------
 # Point values
@@ -168,7 +168,7 @@ sfilenameKineticEnergy = 'ns/kineticenergy'
 # Heat equation
 #   type=1: primal solution
 #
-# Example: Don't evaluate anything:
+# Example: Don"t evaluate anything:
 #   cevaluatePointValuesPrimal(0) =
 #
 # Example: Evaluate the pressure in (0.15,0.2) and (0.25,0.2)
@@ -184,5 +184,5 @@ iwritePointValues = 0
 
 # Filename for the point values
 
-sfilenamePointValuesPrimal = '%{ssolutiondirectory}/pointvalues_primal'
+sfilenamePointValuesPrimal = "%{ssolutiondirectory}/pointvalues_primal"
 

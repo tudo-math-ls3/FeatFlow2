@@ -285,8 +285,8 @@ contains
       end do
     
     else
-      call output_line ('Invalid refinement!.', &
-          OU_CLASS_ERROR,OU_MODE_STD,'sth_defineHierarchyByCoarsening')
+      call output_line ("Invalid refinement!.", &
+          OU_CLASS_ERROR,OU_MODE_STD,"sth_defineHierarchyByCoarsening")
       call sys_halt()
     end if
     
@@ -330,8 +330,8 @@ contains
 !</subroutine>
 
     if ((ilevel .lt. 1) .or. (ilevel .gt. rhierarchy%nlevels)) then
-      call output_line ('Invalid level!.', &
-          OU_CLASS_ERROR,OU_MODE_STD,'sth_getLevel')
+      call output_line ("Invalid level!.", &
+          OU_CLASS_ERROR,OU_MODE_STD,"sth_getLevel")
       call sys_halt()
     end if
     

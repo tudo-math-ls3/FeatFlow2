@@ -10,14 +10,14 @@
 #############
 
 # Filename of the parametrisation of the domain
-sParametrisation = './pre/QUAD.prm'
+sParametrisation = "./pre/QUAD.prm"
 
 # Filename of the coarse grid mesh
-sMesh = './pre/QUAD.tri'
+sMesh = "./pre/QUAD.tri"
 
 # Type of mesh to use as coarse mesh.
 # =0: the mesh is specified in the TRI file smesh
-# =1: 'Sliced quad mesh'. This is a standard QUAD mesh with ncellsX
+# =1: "Sliced quad mesh". This is a standard QUAD mesh with ncellsX
 #     cells in X-direction on the coarse grid. The cells show an
 #     anisotropy of ncells:1.
 #     Note that in this case the PRM-file QUAD.PRM must be chosen!

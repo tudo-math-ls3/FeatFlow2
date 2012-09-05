@@ -100,13 +100,13 @@ contains
       if (rspaceTimeVector%NEQtime .eq. 2) then
         ! Special case: only one timestep!
         !
-        ! Get the 'relative' evaluation time; this in the interval 0..1
+        ! Get the "relative" evaluation time; this in the interval 0..1
         dreltime = dabstime/dntimesteps
         
         ! Interpolate linearly.
         call interpolateLinear (dreltime,0,1,rspaceTimeVector,rvector)
       else
-        ! Get the 'relative' evaluation time; this in the interval -1..1
+        ! Get the "relative" evaluation time; this in the interval -1..1
         dreltime = dabstime-real(itimestep,DP)
         
         ! Is this the first or the last timestep?
@@ -140,7 +140,7 @@ contains
         return
       end if
         
-      ! Get the 'relative' evaluation time; this in the interval -1..1
+      ! Get the "relative" evaluation time; this in the interval -1..1
       dreltime = dabstime-0.5_DP-real(itimestep,DP)
       
       if (rspaceTimeVector%NEQtime .eq. 2) then
@@ -173,8 +173,8 @@ contains
       end if
               
     else
-      call output_line ('Unsupported time discretisation.', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'fetevl_evaluate')
+      call output_line ("Unsupported time discretisation.", &
+                        OU_CLASS_ERROR,OU_MODE_STD,"fetevl_evaluate")
       call sys_halt()
     end if
     
@@ -189,10 +189,10 @@ contains
     ! Interpolation weight; range 0..1 with 0~istep1 and 1~istep2.
     real(DP), intent(IN) :: dt
     
-    ! 'Left' time step corresponding to dt=0.
+    ! "Left" time step corresponding to dt=0.
     integer, intent(IN) :: istep1
 
-    ! 'Right' time step corresponding to dt=1.
+    ! "Right" time step corresponding to dt=1.
     integer, intent(IN) :: istep2
     
     ! Space time vector containing the data.
@@ -230,13 +230,13 @@ contains
     ! Interpolation weight; range -1..1 with 0~istep1 and 0~istep2 and 1~istep3
     real(DP), intent(IN) :: dt
     
-    ! 'Left' time step corresponding to dt=-1.
+    ! "Left" time step corresponding to dt=-1.
     integer, intent(IN) :: istep1
 
-    ! 'Middle' time step corresponding to dt=0.
+    ! "Middle" time step corresponding to dt=0.
     integer, intent(IN) :: istep2
 
-    ! 'Right' time step corresponding to dt=1.
+    ! "Right" time step corresponding to dt=1.
     integer, intent(IN) :: istep3
     
     ! Space time vector containing the data.

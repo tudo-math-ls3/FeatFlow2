@@ -20,12 +20,15 @@ module kktsystemspaces
   use linearsystemscalar
   use linearsystemblock
   
+  use bcassemblybase
+  
   use scalarpde
   use linearformevaluation
   use bilinearformevaluation
   use feevaluation2
   use blockmatassemblybase
   use blockmatassembly
+  use subdomainfem
   use collection
   
   use spacetimevectors
@@ -237,15 +240,18 @@ contains
 !<subroutine>
 
   subroutine kktsp_initControlSpaceDiscr (rspaceDiscr,&
-      rspaceDiscrPrimal,rsettingsDiscr,rphysics,roptControl)
-  
+      rspaceDiscrPrimal,rtriaBoundary,rsettingsDiscr,rphysics,roptControl)
+
 !<description>
-  ! Initialises the space discretisation of the dual space.
+  ! Initialises the space discretisation of the control space.
 !</description>
 
 !<input>
   ! Space discretisation of the primal space.
   type(t_blockDiscretisation), intent(in), target :: rspaceDiscrPrimal
+  
+  ! Triangulation of the boundary.
+  type(t_triangulation), intent(in) :: rtriaBoundary
 
   ! Underlying physics
   type(t_settings_physics), intent(in) :: rphysics
@@ -263,6 +269,10 @@ contains
 !</output>
 
 !</subroutine>
+
+    ! local variables
+    integer, dimension(:), pointer :: p_Ielements
+    integer :: nelements
 
     ! The structure of the control space is a bit confusing, since
     ! it depends on the control applied.
@@ -287,6 +297,26 @@ contains
         return
         
       end if
+      
+      if (roptControl%dalphaL2BdC .ge. 0.0_DP) then
+      
+        ! L2 Dirichlet boundary control. This is a bit harder.
+        !
+        ! Create a discretisation of the boundary based on the current
+        ! discretisation. It should be compatible to the current discretisation.
+        
+        call spdiscr_initBlockDiscr (rspaceDiscr,2,rtriaBoundary,&
+            rspaceDiscrPrimal%p_rboundary)
+        
+        call spdiscr_createCompDiscrManif1D(rspaceDiscr%RspatialDiscr(1),&
+            rspaceDiscrPrimal%RspatialDiscr(1),rtriaBoundary)
+
+        call spdiscr_duplicateDiscrSc (rspaceDiscr%RspatialDiscr(1), &
+            rspaceDiscr%RspatialDiscr(2), .true.)
+        
+        return
+      
+      end if
     
     ! -------------------------------------------------------------
     ! Heat equation
@@ -305,9 +335,98 @@ contains
         return
         
       end if
+
+      if (roptControl%dalphaL2BdC .ge. 0.0_DP) then
+      
+        ! L2 Dirichlet boundary control. This is a bit harder.
+        ! 
+        !
+        ! Create a discretisation of the boundary based on the current
+        ! discretisation. It should be compatible to the current discretisation.
+        
+        call spdiscr_initBlockDiscr (rspaceDiscr,2,rtriaBoundary,&
+            rspaceDiscrPrimal%p_rboundary)
+        
+        call spdiscr_createCompDiscrManif1D(rspaceDiscr%RspatialDiscr(1),&
+            rspaceDiscrPrimal%RspatialDiscr(1),rtriaBoundary)
+            
+        return
+      
+      end if
     
     end select
 
+  end subroutine
+
+  ! ***************************************************************************
+  
+  subroutine kktsp_getElementsOnBd (rboundary,rtriangulation,p_Ielements,nelements)
+  
+  ! Auxiliary routine. Determines all elements on the boundary of the domain.
+  
+  ! Underlying boundary
+  type(t_boundary), intent(in) :: rboundary
+  
+  ! underlying trinagulation
+  type(t_triangulation), intent(in) :: rtriangulation
+  
+  ! OUT: Pointer to a list of elements on the boundary
+  integer, dimension(:), pointer :: p_Ielements
+  
+  ! OUT: number of elements on the boundary
+  integer, intent(out) :: nelements
+  
+    ! local variables
+    integer :: nel,i,j,ibct
+    type(t_boundaryRegion) :: rregion
+    
+    ! Determine maximum total number of elements on the boundary
+    nelements = 0
+    do i=1,boundary_igetNBoundComp(rboundary)
+      call boundary_createRegion (rboundary, i, 0, rregion)
+      call bcasm_getElementsInBdRegion (rtriangulation,rregion,nel)
+      nelements = nelements + nel
+    end do
+
+    ! Calcel here if there are no elements
+    nullify(p_Ielements)
+    if (nelements .eq. 0) return
+
+    ! Allocate a list where to save the element numbers.
+    allocate(p_Ielements(nelements))
+    
+    ! Get all the elements
+    nelements = 0
+    do ibct=1,boundary_igetNBoundComp(rboundary)
+      call boundary_createRegion (rboundary, ibct, 0, rregion)
+      call bcasm_getElementsInBdRegion (rtriangulation,rregion,nel,IelList=p_Ielements(nelements+1:))
+      
+      if (nel .gt. 1) then
+        ! Cancel out duplicates as far as possible.
+        i = 1
+        j = 1
+        do i = 2,nel
+          if (p_Ielements(nelements+j) .ne. p_Ielements(nelements+i)) then
+            j = j + 1
+            p_Ielements(nelements+j) = p_Ielements(nelements+i)
+          end if
+        end do
+
+        ! Actual number of elements
+        nel = j
+        
+        ! Reduce by one if first and last element match.
+        if (nel .gt. 1) then
+          if (p_Ielements(nelements+1) .eq. p_Ielements(nelements+nel)) then
+            nel = nel - 1
+          end if
+        end if
+
+      end if      
+      
+      nelements = nelements + nel
+    end do
+  
   end subroutine
 
   ! ***************************************************************************

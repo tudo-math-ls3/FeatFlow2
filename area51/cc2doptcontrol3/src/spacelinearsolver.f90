@@ -39,16 +39,6 @@ module spacelinearsolver
 
 !<constants>
 
-!<constantblock description = "Supported equations">
-
-  ! General linear equation
-  integer, parameter :: LSS_EQN_GENERAL = 0
-
-  ! 2D Stokes / Navier-Stokes equations
-  integer, parameter :: LSS_EQN_STNAVST2D = 1
-
-!</constantblock>
-
 !<constantblock description = "Solver types">
 
   ! General linear equation
@@ -99,19 +89,19 @@ module spacelinearsolver
     ! If the preconditioner is the linear multigrid solver:
     ! Type of smoother.
     ! =0: general VANKA (slow, but independent of the discretisation and of the problem)
-    ! =1: general VANKA; 'direct' method, bypassing the defect correction approach.
+    ! =1: general VANKA; "direct" method, bypassing the defect correction approach.
     !     (-> specialised variant of 0, but slightly faster)
     ! =2: Simple Jacobi-like VANKA, 2D Navier Stokes problem, general discretisation
     !     (i.e. automatically chooses the best suitable VANKA variant).
     ! =3: Simple Jacobi-like VANKA, 2D Navier Stokes problem, general discretisation
     !     (i.e. automatically chooses the best suitable VANKA variant).
-    !     'direct' method, bypassing the defect correction approach.
+    !     "direct" method, bypassing the defect correction approach.
     !     (-> specialised variant of 8, but faster)
     ! =4: Full VANKA, 2D Navier Stokes problem, general discretisation
     !     (i.e. automatically chooses the best suitable VANKA variant).
     ! =5: Full VANKA, 2D Navier Stokes problem, general discretisation
     !     (i.e. automatically chooses the best suitable VANKA variant).
-    !     'direct' method, bypassing the defect correction approach.
+    !     "direct" method, bypassing the defect correction approach.
     !     (-> specialised variant of 10, but faster)
     integer :: ismootherType = 0
     
@@ -128,12 +118,18 @@ module spacelinearsolver
     ! For Multigrid based solvers, pointer to the coarse grid solver
     type (t_linsolNode), pointer :: p_rcoarseGridSolver => null()
 
+    ! Pointer to the system matrix.
+    ! Used for this level and all higher levels.
+    type(t_matrixBlock), pointer :: p_rmatrix => null()
+
     ! A filter chain that is used for implementing boundary conditions or other
     ! things when invoking the linear solver.
+    ! Used for this level and all higher levels.
     type(t_filterChain), dimension(6) :: RfilterChain
     
-    ! Pointer to the system matrix.
-    type(t_matrixBlock), pointer :: p_rmatrix => null()
+    ! Number of filters in the filter chain
+    integer :: nfilters = 0
+    
   end type
 
 !</typeblock>
@@ -151,7 +147,7 @@ module spacelinearsolver
     integer :: nlmax = 0
   
     ! Underlying equation, the solvers in this structure support.
-    integer :: cequation = LSS_EQN_GENERAL
+    integer :: cequation = CCEQ_NAVIERSTOKES2D
 
     ! Hierarchy of FEM spaces associated with the linear solvers.
     type(t_feHierarchy), pointer :: p_feSpaceHierarchy => null()
@@ -220,7 +216,7 @@ contains
 
 !<subroutine>
 
-  subroutine lssh_initSolver (rsolver,cequation,nlevels,rprjHierarchy,&
+  subroutine lssh_initSolver (rlssHierarchy,rsolver,cequation,nlevels,rprjHierarchy,&
       rparList,ssection,rdebugFlags)
   
 !<description>
@@ -228,7 +224,10 @@ contains
 !</description>
 
 !<input>
-  ! Underlying equation. One of the LSS_EQN_xxxx constants.
+  ! Underlying solver hierarchy.
+  type(t_linsolHierarchySpace), intent(in) :: rlssHierarchy
+
+  ! Underlying equation. One of the CEQ_XXXX constants.
   integer, intent(in) :: cequation
   
   ! Number of available levels in the underlying hierarchy.
@@ -271,8 +270,8 @@ contains
     call parlst_querysection(rparList, ssection, p_rsection)
     
     if (.not. associated(p_rsection)) then
-      call output_line ("Cannot create linear solver; no section '"//trim(ssection)//&
-                        "'!", OU_CLASS_ERROR,OU_MODE_STD,"lssh_initSolver")
+      call output_line ("Cannot create linear solver; no section ""//trim(ssection)//&
+                        ""!", OU_CLASS_ERROR,OU_MODE_STD,"lssh_initSolver")
       call sys_halt()
     end if
 
@@ -312,8 +311,7 @@ contains
     case (1)
     
       ! At first, initialise the solver.
-      call linsol_initMultigrid2 (p_rsolverNode,nlevels,&
-          rsolver%RfilterChain)
+      call linsol_initMultigrid2 (p_rsolverNode,nlevels)
       
       ! Init standard solver parameters and extended multigrid parameters
       ! from the DAT file.
@@ -382,7 +380,7 @@ contains
           
           ! Create the defect correction solver, attach VANKA as preconditioner.
           call linsol_initDefCorr (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner,&
-              rsolver%RfilterChain)
+              rlssHierarchy%p_RlinearSolvers(1)%RfilterChain)
           call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,rparList,&
               scoarseGridSolverSection,LINSOL_ALG_UNDEFINED)
           call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,rparList,&
@@ -404,7 +402,7 @@ contains
           
           ! Create the defect correction solver, attach VANKA as preconditioner.
           call linsol_initDefCorr (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner,&
-              rsolver%RfilterChain)
+              rlssHierarchy%p_RlinearSolvers(1)%RfilterChain)
           call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,rparList,&
               scoarseGridSolverSection,LINSOL_ALG_UNDEFINED)
           call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,rparList,&
@@ -426,7 +424,7 @@ contains
           
           ! Create the defect correction solver, attach VANKA as preconditioner.
           call linsol_initBiCGStab (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner,&
-              rsolver%RfilterChain)
+              rlssHierarchy%p_RlinearSolvers(1)%RfilterChain)
           call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,rparList,&
               scoarseGridSolverSection,LINSOL_ALG_UNDEFINED)
           call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,rparList,&
@@ -448,7 +446,7 @@ contains
           
           ! Create the defect correction solver, attach VANKA as preconditioner.
           call linsol_initBiCGStab (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner,&
-              rsolver%RfilterChain)
+              rlssHierarchy%p_RlinearSolvers(1)%RfilterChain)
           call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,rparList,&
               scoarseGridSolverSection,LINSOL_ALG_UNDEFINED)
           call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,rparList,&
@@ -470,7 +468,7 @@ contains
           
           ! Create the defect correction solver, attach VANKA as preconditioner.
           call linsol_initDefCorr (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner,&
-              rsolver%RfilterChain)
+              rlssHierarchy%p_RlinearSolvers(1)%RfilterChain)
           call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,rparList,&
               scoarseGridSolverSection,LINSOL_ALG_UNDEFINED)
           call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,rparList,&
@@ -492,7 +490,7 @@ contains
           
           ! Create the defect correction solver, attach VANKA as preconditioner.
           call linsol_initBiCGStab (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner,&
-              rsolver%RfilterChain)
+              rlssHierarchy%p_RlinearSolvers(1)%RfilterChain)
           call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,rparList,&
               scoarseGridSolverSection,LINSOL_ALG_UNDEFINED)
           call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,rparList,&
@@ -505,6 +503,9 @@ contains
           call sys_halt()
             
         end select
+        
+        ! Remember the filter chain to use on that level
+        p_rlevelInfo%p_RfilterChain => rlssHierarchy%p_RlinearSolvers(1)%RfilterChain
         
         ! Save the reference to the coarse grid solver.
         rsolver%p_rcoarseGridSolver => p_rlevelInfo%p_rcoarseGridSolver
@@ -539,11 +540,11 @@ contains
             case (4)
               call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_NAVST2D_DIAG)
               call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner,&
-                  rsolver%RfilterChain)
+                  rlssHierarchy%p_RlinearSolvers(ilev)%RfilterChain)
             case (5)
               call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_NAVST2D_FULL)
               call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner,&
-                  rsolver%RfilterChain)
+                  rlssHierarchy%p_RlinearSolvers(ilev)%RfilterChain)
             case (6)
               call linsol_initSPSOR (p_rsmoother,LINSOL_SPSOR_NAVST2D)
             end select
@@ -564,6 +565,7 @@ contains
             call linsol_getMultigrid2Level (p_rsolverNode,ilev,p_rlevelInfo)
             p_rlevelInfo%p_rpresmoother => p_rsmoother
             p_rlevelInfo%p_rpostsmoother => p_rsmoother
+            p_rlevelInfo%p_rfilterChain => rlssHierarchy%p_RlinearSolvers(ilev)%RfilterChain
             
             ! Set up the interlevel projection structure for the projection from/to
             ! the lower level.
@@ -731,7 +733,7 @@ contains
   ! Maximum level in the hierarchy. <=0: use level MAX+nlmax
   integer, intent(in) :: nlmax
 
-  ! Underlying equation. One of the LSS_EQN_xxxx constants.
+  ! Underlying equation. One of the CEQ_xxxx constants.
   integer, intent(in) :: cequation
 
   ! Parameter list with solver parameters
@@ -782,7 +784,7 @@ contains
     ! -----------------------------------------------------
     ! Initialise the solvers
     do i=rlssHierarchy%nlmin,rlssHierarchy%nlmax
-      call lssh_initSolver (&
+      call lssh_initSolver (rlssHierarchy,&
           rlssHierarchy%p_RlinearSolvers(i),cequation,i,&
           rprjHierarchy,rparList,ssection,rdebugFlags)
     end do
@@ -946,230 +948,225 @@ contains
 !</subroutine>
 
     ! lcoal variables
-    integer :: ifilter
+    integer :: ifilter,ilev
     type(t_linsolSpace), pointer :: p_rlinsolSpace
     type(t_optcBDCSpace), pointer :: p_roptcBDCSpace
     type(t_linsolMG2LevelInfo), pointer :: p_rlevelInfo
     
-    ! Get the solver structure of that level
-    p_rlinsolSpace => rlssHierarchy%p_RlinearSolvers(ilevel)
-    
     ! Get the corresponding boundary condition structure
     p_roptcBDCSpace => roptcBDCSpaceHierarchy%p_RoptcBDCspace(ilevel)
-    
-    ! Initialise the filter chain according to cflags.
-    ! This is partially equation dependent.
-    
-    ifilter = 0
-    p_rlinsolSpace%RfilterChain(:)%ifilterType = FILTER_DONOTHING
-    
-    ! Filter for Dirichlet boundary conditions
-    ifilter = ifilter + 1
-    p_rlinsolSpace%RfilterChain(ifilter)%ifilterType = FILTER_DISCBCDEFREAL
-    
-    select case (rlsshierarchy%cequation)
 
-    ! ---------------------------------------------------
-    ! 2D Stokes / Navier-Stokes
-    ! ---------------------------------------------------
-    case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
-
-      ! Pressure filter for iterative solvers
-      select case (p_rlinsolSpace%isolverType)
+    ! Initialis the filter chains of all levels to incorporate
+    ! the correct boundary conditions.
+    do ilev = 1,ilevel
+    
+      ! Get the solver structure of that level
+      p_rlinsolSpace => rlssHierarchy%p_RlinearSolvers(ilev)
       
-      ! ---------------------------------------------------
-      ! UMFPACK
-      ! ---------------------------------------------------
-      case (LSS_LINSOL_UMFPACK)
-        ! Matrix name for debug output: Matrix to text file.
-        p_rlinsolSpace%p_rsolverNode%p_rsubnodeUmfpack4%smatrixName = &
-            "mat"//trim(rlssHierarchy%p_rdebugFlags%sstringTag)
-          
-      ! ---------------------------------------------------
-      ! Multigrid
-      ! ---------------------------------------------------
-      case (LSS_LINSOL_MG)
-        
-        ! Smoother or coarse grid solver?
-        select case (ilevel)
-        
-        ! -------------------------------------------------
-        ! Coarse grid solver
-        ! -------------------------------------------------
-        case (1)
+      ! Initialise the filter chain according to cflags.
+      ! This is partially equation dependent.
+      call filter_clearFilterChain (p_rlinsolSpace%RfilterChain,ifilter)
+      
+      ! Filter for Dirichlet boundary conditions
+      call filter_newFilterDiscBCDef (p_rlinsolSpace%RfilterChain,ifilter,&
+          p_roptcBDCSpace%rdiscreteBC)
+      
+      select case (rlsshierarchy%cequation)
 
-          ! -----------------------------------------------
-          ! Integral-mean-value-zero filter for pressure
-          ! -----------------------------------------------
-          if (p_roptcBDCSpace%rneumannBoundary%nregions .eq. 0) then
-          
-            ! Active if there is no Neumann boundary
-          
-            select case (p_rlinsolSpace%icoarseGridSolverType)
-            
-            ! -----------------------------------
-            ! UMFPACK
-            ! -----------------------------------
-            case (0)
-              !call output_line (&
-              !    "UMFPACK coarse grid solver does not support filtering!",&
-              !    OU_CLASS_ERROR,OU_MODE_STD,"lssh_initData")
-              !call sys_halt()
-              ifilter = ifilter + 1
-              p_rlinsolSpace%RfilterChain(ifilter)%ifilterType = FILTER_ONEENTRY0
-              p_rlinsolSpace%RfilterChain(ifilter)%iblock = 3
-              p_rlinsolSpace%RfilterChain(ifilter)%irow = 1
+      ! ---------------------------------------------------
+      ! 2D Stokes / Navier-Stokes
+      ! ---------------------------------------------------
+      case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
 
-            ! -----------------------------------
-            ! Iterative solver
-            ! -----------------------------------
-            case default
-              ifilter = ifilter + 1
-              p_rlinsolSpace%RfilterChain(ifilter)%ifilterType = FILTER_TOL20
-              p_rlinsolSpace%RfilterChain(ifilter)%itoL20component = 3
-            end select
-            
-          end if
+        ! Pressure filter for iterative solvers
+        select case (p_rlinsolSpace%isolverType)
         
-        ! -------------------------------------------------
-        ! Smoother
-        ! -------------------------------------------------
-        case (2:)
-
-          ! -----------------------------------------------
-          ! Integral-mean-value-zero filter for pressure
-          ! -----------------------------------------------
-          if (p_roptcBDCSpace%rneumannBoundary%nregions .eq. 0) then
-          
-            ! Active if there is no Neumann boundary
-
-            ifilter = ifilter + 1
-            p_rlinsolSpace%RfilterChain(ifilter)%ifilterType = FILTER_TOL20
-            p_rlinsolSpace%RfilterChain(ifilter)%itoL20component = 3
- 
-          end if
-        
-        end select ! ilevel
-        
-        ! -----------------------------------
-        ! DEBUG Flags
-        ! -----------------------------------
-        select case (p_rlinsolSpace%icoarseGridSolverType)
-        
-        ! -----------------------------------
+        ! ---------------------------------------------------
         ! UMFPACK
-        ! -----------------------------------
-        case (0)
-        
+        ! ---------------------------------------------------
+        case (LSS_LINSOL_UMFPACK)
           ! Matrix name for debug output: Matrix to text file.
-          call linsol_getMultigrid2Level (&
-              rlssHierarchy%p_RlinearSolvers(ilevel)%p_rsolverNode,1,p_rlevelInfo)
-          p_rlevelInfo%p_rcoarseGridSolver%p_rsubnodeUmfpack4%smatrixName = &
+          p_rlinsolSpace%p_rsolverNode%p_rsubnodeUmfpack4%smatrixName = &
               "mat"//trim(rlssHierarchy%p_rdebugFlags%sstringTag)
-          
-        end select
-      
-      end select ! Outer solver
-      
-    ! ---------------------------------------------------
-    ! Heat equation
-    ! ---------------------------------------------------
-    case (CCEQ_HEAT2D)
-
-      ! Pressure filter for iterative solvers
-      select case (p_rlinsolSpace%isolverType)
-      
-      ! ---------------------------------------------------
-      ! UMFPACK
-      ! ---------------------------------------------------
-      case (LSS_LINSOL_UMFPACK)
-        ! Matrix name for debug output: Matrix to text file.
-        p_rlinsolSpace%p_rsolverNode%p_rsubnodeUmfpack4%smatrixName = &
-            "mat"//trim(rlssHierarchy%p_rdebugFlags%sstringTag)
-
-      ! ---------------------------------------------------
-      ! Multigrid
-      ! ---------------------------------------------------
-      case (LSS_LINSOL_MG)
-        
-        ! Smoother or coarse grid solver?
-        select case (ilevel)
-        
-        ! -------------------------------------------------
-        ! Coarse grid solver
-        ! -------------------------------------------------
-        case (1)
-
-          ! -----------------------------------------------
-          ! Integral-mean-value-zero filter for solution
-          ! -----------------------------------------------
-          if (p_roptcBDCSpace%rdirichletBoundary%nregions .eq. 0) then
-          
-            ! Active if there is no Dirichlet boundary
-          
-            select case (p_rlinsolSpace%icoarseGridSolverType)
             
-            ! -----------------------------------
-            ! UMFPACK
-            ! -----------------------------------
-            case (0)
-              call output_line (&
-                  "UMFPACK coarse grid solver does not support filtering!",&
-                  OU_CLASS_ERROR,OU_MODE_STD,"lssh_initData")
-              call sys_halt()
+        ! ---------------------------------------------------
+        ! Multigrid
+        ! ---------------------------------------------------
+        case (LSS_LINSOL_MG)
+          
+          ! Smoother or coarse grid solver?
+          select case (ilevel)
+          
+          ! -------------------------------------------------
+          ! Coarse grid solver
+          ! -------------------------------------------------
+          case (1)
 
-            ! -----------------------------------
-            ! Iterative solver
-            ! -----------------------------------
-            case default
-              ifilter = ifilter + 1
-              p_rlinsolSpace%RfilterChain(ifilter)%ifilterType = FILTER_TOL20
-              p_rlinsolSpace%RfilterChain(ifilter)%itoL20component = 1
-            end select
+            ! -----------------------------------------------
+            ! Integral-mean-value-zero filter for pressure
+            ! -----------------------------------------------
+            if (p_roptcBDCSpace%rneumannBoundary%nregions .eq. 0) then
             
-          end if
-        
-        ! -------------------------------------------------
-        ! Smoother
-        ! -------------------------------------------------
-        case (2:)
+              ! Active if there is no Neumann boundary
+            
+              select case (p_rlinsolSpace%icoarseGridSolverType)
+              
+              ! -----------------------------------
+              ! UMFPACK
+              ! -----------------------------------
+              case (0)
+                !call output_line (&
+                !    "UMFPACK coarse grid solver does not support filtering!",&
+                !    OU_CLASS_ERROR,OU_MODE_STD,"lssh_initData")
+                !call sys_halt()
+                call filter_newFilterOneEntryZero (p_rlinsolSpace%RfilterChain,ifilter,3,1)
 
-          ! -----------------------------------------------
-          ! Integral-mean-value-zero filter for the solution
-          ! -----------------------------------------------
-          if (p_roptcBDCSpace%rdirichletBoundary%nregions .eq. 0) then
-          
-            ! Active if there is no Dirichlet boundary
-
-            ifilter = ifilter + 1
-            p_rlinsolSpace%RfilterChain(ifilter)%ifilterType = FILTER_TOL20
-            p_rlinsolSpace%RfilterChain(ifilter)%itoL20component = 1
- 
-          end if
-        
-        end select ! ilevel
-        
-        ! -----------------------------------
-        ! DEBUG Flags
-        ! -----------------------------------
-        select case (p_rlinsolSpace%icoarseGridSolverType)
-        
-        ! -----------------------------------
-        ! UMFPACK
-        ! -----------------------------------
-        case (0)
-        
-          ! Matrix name for debug output: Matrix to text file.
-          call linsol_getMultigrid2Level (&
-              rlssHierarchy%p_RlinearSolvers(ilevel)%p_rsolverNode,1,p_rlevelInfo)
-          p_rlevelInfo%p_rcoarseGridSolver%p_rsubnodeUmfpack4%smatrixName = &
-              "mat"//trim(rlssHierarchy%p_rdebugFlags%sstringTag)
-          
-        end select
-      
-      end select ! Outer solver
+              ! -----------------------------------
+              ! Iterative solver
+              ! -----------------------------------
+              case default
+              
+                call filter_newFilterToL20 (p_rlinsolSpace%RfilterChain,ifilter,3)
                 
-    end select ! equation
+              end select
+              
+            end if
+          
+          ! -------------------------------------------------
+          ! Smoother
+          ! -------------------------------------------------
+          case (2:)
+
+            ! -----------------------------------------------
+            ! Integral-mean-value-zero filter for pressure
+            ! -----------------------------------------------
+            if (p_roptcBDCSpace%rneumannBoundary%nregions .eq. 0) then
+            
+              ! Active if there is no Neumann boundary
+              call filter_newFilterToL20 (p_rlinsolSpace%RfilterChain,ifilter,3)
+   
+            end if
+          
+          end select ! ilevel
+          
+          ! -----------------------------------
+          ! DEBUG Flags
+          ! -----------------------------------
+          select case (p_rlinsolSpace%icoarseGridSolverType)
+          
+          ! -----------------------------------
+          ! UMFPACK
+          ! -----------------------------------
+          case (0)
+          
+            ! Matrix name for debug output: Matrix to text file.
+            call linsol_getMultigrid2Level (&
+                rlssHierarchy%p_RlinearSolvers(ilevel)%p_rsolverNode,1,p_rlevelInfo)
+            p_rlevelInfo%p_rcoarseGridSolver%p_rsubnodeUmfpack4%smatrixName = &
+                "mat"//trim(rlssHierarchy%p_rdebugFlags%sstringTag)
+            
+          end select
+        
+        end select ! Outer solver
+        
+      ! ---------------------------------------------------
+      ! Heat equation
+      ! ---------------------------------------------------
+      case (CCEQ_HEAT2D)
+
+        ! Pressure filter for iterative solvers
+        select case (p_rlinsolSpace%isolverType)
+        
+        ! ---------------------------------------------------
+        ! UMFPACK
+        ! ---------------------------------------------------
+        case (LSS_LINSOL_UMFPACK)
+          ! Matrix name for debug output: Matrix to text file.
+          p_rlinsolSpace%p_rsolverNode%p_rsubnodeUmfpack4%smatrixName = &
+              "mat"//trim(rlssHierarchy%p_rdebugFlags%sstringTag)
+
+        ! ---------------------------------------------------
+        ! Multigrid
+        ! ---------------------------------------------------
+        case (LSS_LINSOL_MG)
+          
+          ! Smoother or coarse grid solver?
+          select case (ilevel)
+          
+          ! -------------------------------------------------
+          ! Coarse grid solver
+          ! -------------------------------------------------
+          case (1)
+
+            ! -----------------------------------------------
+            ! Integral-mean-value-zero filter for solution
+            ! -----------------------------------------------
+            if (p_roptcBDCSpace%rdirichletBoundary%nregions .eq. 0) then
+            
+              ! Active if there is no Dirichlet boundary
+            
+              select case (p_rlinsolSpace%icoarseGridSolverType)
+              
+              ! -----------------------------------
+              ! UMFPACK
+              ! -----------------------------------
+              case (0)
+                call output_line (&
+                    "UMFPACK coarse grid solver does not support filtering!",&
+                    OU_CLASS_ERROR,OU_MODE_STD,"lssh_initData")
+                call sys_halt()
+
+              ! -----------------------------------
+              ! Iterative solver
+              ! -----------------------------------
+              case default
+              
+                call filter_newFilterToL20 (p_rlinsolSpace%RfilterChain,ifilter,1)
+
+              end select
+              
+            end if
+          
+          ! -------------------------------------------------
+          ! Smoother
+          ! -------------------------------------------------
+          case (2:)
+
+            ! -----------------------------------------------
+            ! Integral-mean-value-zero filter for the solution
+            ! -----------------------------------------------
+            if (p_roptcBDCSpace%rdirichletBoundary%nregions .eq. 0) then
+            
+              ! Active if there is no Dirichlet boundary
+              call filter_newFilterToL20 (p_rlinsolSpace%RfilterChain,ifilter,1)
+
+            end if
+          
+          end select ! ilevel
+          
+          ! -----------------------------------
+          ! DEBUG Flags
+          ! -----------------------------------
+          select case (p_rlinsolSpace%icoarseGridSolverType)
+          
+          ! -----------------------------------
+          ! UMFPACK
+          ! -----------------------------------
+          case (0)
+          
+            ! Matrix name for debug output: Matrix to text file.
+            call linsol_getMultigrid2Level (&
+                rlssHierarchy%p_RlinearSolvers(ilevel)%p_rsolverNode,1,p_rlevelInfo)
+            p_rlevelInfo%p_rcoarseGridSolver%p_rsubnodeUmfpack4%smatrixName = &
+                "mat"//trim(rlssHierarchy%p_rdebugFlags%sstringTag)
+            
+          end select
+        
+        end select ! Outer solver
+                  
+      end select ! equation
+      
+    end do ! ilevel
 
     ! Initialise the solver node
     call stat_startTimer (rstatistics%rtimeNumericFactorisation)

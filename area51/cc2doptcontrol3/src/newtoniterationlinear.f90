@@ -539,7 +539,7 @@ contains
   ! Solver statistics
   type(t_newtonlinSolverStat), intent(out) :: rstatistics
 
-  ! Receives the result: d = J''(u)g
+  ! Receives the result: d = J""(u)g
   type(t_controlSpace), intent(inout), target :: rrhs
 !</output>
 
@@ -1107,7 +1107,7 @@ contains
   type(t_linsolParameters), intent(in) :: rsolver
 
   ! Defines the basic hierarchy of the solutions of the KKT system.
-  ! This can be a 'template' structure, i.e., memory for the solutions
+  ! This can be a "template" structure, i.e., memory for the solutions
   ! in rkktsystemHierarchy does not have to be allocated.
   type(t_kktsystemHierarchy), intent(in), target :: rkktsystemHierarchy
 !</input>
@@ -1760,7 +1760,7 @@ contains
   ! Calculates the Newton search direction by applying the Newton
   ! preconditioner to the given residual rnewtonDir.
   ! This calculates a correction g with
-  !      J''(u) g = d
+  !      J""(u) g = d
   ! where d=rnewtonDir. On return of this routine, there is rnewtonDir=g.
 !</description>
 
@@ -1806,12 +1806,12 @@ contains
     ! For the calculation of the Newon search direction, we have to solve
     ! the linear system
     !
-    !    J''(u) g = d
+    !    J""(u) g = d
     !
     ! On the entry of this routine, there is d=rnewtonDir. When the routine
     ! is left, rnewtonDir receives g.
     !
-    ! For this purpose, we need a linear solver based on J''(u) in the
+    ! For this purpose, we need a linear solver based on J""(u) in the
     ! control space. For distributed control, this is multigrid-based,
     ! for boundary control (or general control with a limited number of
     ! control variables) a single-grid solver.
@@ -1972,7 +1972,7 @@ contains
 
 !<input>
   ! Defines the basic hierarchy of the solutions of the KKT system.
-  ! This can be a 'template' structure, i.e., memory for the solutions
+  ! This can be a "template" structure, i.e., memory for the solutions
   ! in rkktsystemHierarchy does not have to be allocated.
   type(t_kktsystemHierarchy), intent(in), target :: rkktsystemHierarchy
 

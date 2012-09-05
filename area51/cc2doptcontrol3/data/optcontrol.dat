@@ -11,6 +11,12 @@ ssectionBoundaryCondPrimal = BDCONDITIONS_PRIMAL
 # Section defining the boundary conditions of the dual equation
 ssectionBoundaryCondDual = BDCONDITIONS_DUAL
 
+# Section defining the boundary conditions of the linearised primal equation
+ssectionBoundaryCondPrimalLin = BDCONDITIONS_PRIMALLIN
+
+# Section defining the boundary conditions of the linearised dual equation
+ssectionBoundaryCondDualLin = BDCONDITIONS_DUALLIN
+
 # Name of the section that defines the target flow.
 stargetFunction = OPTCTARGETFUNCTION
 
@@ -25,6 +31,15 @@ srhsDual = RIGHTHANDSIDE_DUAL
 
 # Name of the section defining the physics
 ssectionPhysics = CC-PHYSICS
+
+# Name of the section defining the constraints in the distributed control
+ssectionConstrDistCtrl = CONSTRAINTS_DISTCTRL
+
+# Name of the section defining the constraints in the L2 boundary control
+ssectionConstrL2BdC = CONSTRAINTS_L2BDC
+
+# Name of the section defining the constraints in the state control
+ssectionConstrState = CONSTRAINTS_STATE
 
 # Regularisation parameter ALPHA for the ||u||-term in the optimal-control problem.
 # -1.0 = no distributed control
@@ -68,65 +83,6 @@ iconvectionExplicit = 0
 # =1: System scaled by Delta(t) to normalise diagonal blocks.
 csystemScaling = 0
 
-# Type of constraints to apply to the control u.
-# =0: No constraints.
-# =1: Constant constraints on u active: dumin1 <= u_1 <= dumax1, dumin2 <= u_2 <= dumax2.
-#     Implemented by DOF.
-# =2: Constant constraints on u active: dumin1 <= u_1 <= dumax1, dumin2 <= u_2 <= dumax2.
-#     Implemented by cubature point (more exact). Analytic Newton matrix.
-cdistVelConstraints = 0
-
-# Type of definition of the constraints if ccontrolConstraints <> 0.
-# =0: constants specified in dumin1/2, dumax1/2.
-# =1: functions defined in the sections ssectionumin1/2, ssectionumax1/2.
-cdistVelConstType = 0
-
-# Constraints on u_1
-ddistVelUmin1 = -0.5 #5 #-1E10 #-0.01
-ddistVelUmax1 = 0.5 #2 #1E10 #0.01
-
-ssectionumin1 = 
-ssectionumax1 = 
-
-# Constraints in u_2
-ddistVelUmin2 = -0.5 #2 #-1E10 #-0.01
-ddistVelUmax2 = 0.5 #5 #1E10 #0.01
-
-ssectionumin2 = 
-ssectionumax2 = 
-
-# Type of constraints to apply to the state y
-# =0: No constraints.
-# =1: Constant constraints on y active: dumin1 <= u_1 <= dumax1, dumin2 <= u_2 <= dumax2.
-#     Implemented by DOF. Moreau-Yosida regularisation.
-# =2: Constant constraints on u active: dumin1 <= u_1 <= dumax1, dumin2 <= u_2 <= dumax2.
-#     Implemented by cubature point (more exact). Analytic Newton matrix.
-#     Moreau-Yosida regularisation.
-cstateConstraints = 0
-
-# Type of definition of the constraints if ccontrolConstraints <> 0.
-# =0: constants specified in dumin1/2, dumax1/2.
-# =1: functions defined in the sections ssectionumin1/2, ssectionumax1/2.
-cstateConstraintsType = 0
-
-# Regularisation parameter for the Moreau-Yosida regularisation
-
-dstateConstrReg = 1.0
-
-# Constraints on u_1
-dymin1 = -0.5
-dymax1 = 0.5
-
-ssectionymin1 = 
-ssectionymax1 = 
-
-# Constraints in u_2
-dymin2 = -0.5
-dymax2 = 0.5
-
-ssectionymin2 = 
-ssectionymax2 = 
-
 # Area of observation.
 # This defines an observation box in the format
 #   DobservationArea = x1 y1 x2 y2
@@ -136,3 +92,99 @@ ssectionymax2 =
 # If not specified, the whole domain is observed.
 
 dobservationArea = 
+
+######################
+[CONSTRAINTS_DISTCTRL]
+######################
+
+# Type of constraints to apply to the control u.
+# =0: No constraints.
+# =1: Constant constraints on u active: dmin1 <= u_1 <= dmax1, dmin2 <= u_2 <= dmax2.
+#     Implemented by DOF.
+# =2: Constant constraints on u active: dmin1 <= u_1 <= dmax1, dmin2 <= u_2 <= dmax2.
+#     Implemented by cubature point (more exact). Analytic Newton matrix.
+cconstraints = 0
+
+# Type of definition of the constraints if cdistVelConstraints <> 0.
+# =0: constants specified in dmin1/2, dmax1/2.
+# =1: functions defined in the sections ssectionmin1/2, ssectionmax1/2.
+constrType = 0
+
+# Constraints on u_1
+dmin1 = -0.5 #5 #-1E10 #-0.01
+dmax1 = 0.5 #2 #1E10 #0.01
+
+ssectionmin1 = 
+ssectionmax1 = 
+
+# Constraints in u_2
+dmin2 = -0.5 #2 #-1E10 #-0.01
+dmax2 = 0.5 #5 #1E10 #0.01
+
+ssectionmin2 = 
+ssectionmax2 = 
+
+###################
+[CONSTRAINTS_L2BDC]
+###################
+
+# Type of constraints to apply to the control u.
+# =0: No constraints.
+# =1: Constant constraints on u active: dmin1 <= u_1 <= dmax1, dmin2 <= u_2 <= dmax2.
+#     Implemented by DOF.
+cconstraints = 0
+
+# Type of definition of the constraints if cdistVelConstraints <> 0.
+# =0: constants specified in dmin1/2, dmax1/2.
+# =1: functions defined in the sections ssectionmin1/2, ssectionmax1/2.
+constrType = 0
+
+# Constraints on u_1
+dmin1 = -1E10
+dmax1 = 1E10
+
+ssectionmin1 = 
+ssectionmax1 = 
+
+# Constraints in u_2
+dmin2 = 0.0
+dmax2 = 0.0
+
+ssectionmin2 = 
+ssectionmax2 = 
+
+###################
+[CONSTRAINTS_STATE]
+###################
+
+# Type of constraints to apply to the state y
+# =0: No constraints.
+# =1: Constant constraints on y active: dumin1 <= u_1 <= dumax1, dumin2 <= u_2 <= dumax2.
+#     Implemented by DOF. Moreau-Yosida regularisation.
+# =2: Constant constraints on u active: dumin1 <= u_1 <= dumax1, dumin2 <= u_2 <= dumax2.
+#     Implemented by cubature point (more exact). Analytic Newton matrix.
+#     Moreau-Yosida regularisation.
+cconstraints = 0
+
+# Type of definition of the constraints if ccontrolConstraints <> 0.
+# =0: constants specified in dumin1/2, dumax1/2.
+# =1: functions defined in the sections ssectionumin1/2, ssectionumax1/2.
+cconstrType = 0
+
+# Regularisation parameter for the Moreau-Yosida regularisation
+dregularisation = 1.0
+
+# Constraints on u_1
+dmin1 = -0.5
+dmax1 = 0.5
+
+ssectionMin1 = 
+ssectionMax1 = 
+
+# Constraints in u_2
+dmin2 = -0.5
+dmax2 = 0.5
+
+ssectionMin2 = 
+ssectionMax2 = 
+

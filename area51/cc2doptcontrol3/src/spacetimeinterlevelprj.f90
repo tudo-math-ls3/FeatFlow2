@@ -600,11 +600,11 @@ contains
     if (ndofCoarse .eq. ndofFine) then
       ! No time prolongation, identity matrix.
       rprolMatrix%NA = ndofFine
-      call storage_new ('sptipr_getProlMatrixPrimal', 'KLD', &
+      call storage_new ("sptipr_getProlMatrixPrimal", "KLD", &
           ndofFine+1, ST_INT, rprolMatrix%h_KLD,ST_NEWBLOCK_ZERO)
-      call storage_new ('sptipr_getProlMatrixPrimal', 'KCOL', &
+      call storage_new ("sptipr_getProlMatrixPrimal", "KCOL", &
           rprolMatrix%NA, ST_INT, rprolMatrix%h_KCOL,ST_NEWBLOCK_ZERO)
-      call storage_new ('sptipr_getProlMatrixPrimal', 'DA', &
+      call storage_new ("sptipr_getProlMatrixPrimal", "DA", &
           rprolMatrix%NA, ST_DOUBLE, rprolMatrix%h_Da,ST_NEWBLOCK_ZERO)
 
       call lsyssc_getbase_double (rprolMatrix,p_Da)
@@ -631,11 +631,11 @@ contains
       ! the coarse mesh to the fine mesh.
     
       rprolMatrix%NA = ndofFine
-      call storage_new ('sptipr_getProlMatrixPrimal', 'KLD', &
+      call storage_new ("sptipr_getProlMatrixPrimal", "KLD", &
           ndofFine+1, ST_INT, rprolMatrix%h_KLD,ST_NEWBLOCK_ZERO)
-      call storage_new ('sptipr_getProlMatrixPrimal', 'KCOL', &
+      call storage_new ("sptipr_getProlMatrixPrimal", "KCOL", &
           rprolMatrix%NA, ST_INT, rprolMatrix%h_KCOL,ST_NEWBLOCK_ZERO)
-      call storage_new ('sptipr_getProlMatrixPrimal', 'DA', &
+      call storage_new ("sptipr_getProlMatrixPrimal", "DA", &
           rprolMatrix%NA, ST_DOUBLE, rprolMatrix%h_Da,ST_NEWBLOCK_ZERO)
 
       call lsyssc_getbase_double (rprolMatrix,p_Da)
@@ -689,11 +689,11 @@ contains
       ! and is organised in 2x2 blocks
       
       rprolMatrix%NA = 3*ndofCoarse-2
-      call storage_new ('sptipr_getProlMatrixPrimal', 'KLD', &
+      call storage_new ("sptipr_getProlMatrixPrimal", "KLD", &
           ndofFine+1, ST_INT, rprolMatrix%h_KLD,ST_NEWBLOCK_ZERO)
-      call storage_new ('sptipr_getProlMatrixPrimal', 'KCOL', &
+      call storage_new ("sptipr_getProlMatrixPrimal", "KCOL", &
           rprolMatrix%NA, ST_INT, rprolMatrix%h_KCOL,ST_NEWBLOCK_ZERO)
-      call storage_new ('sptipr_getProlMatrixPrimal', 'DA', &
+      call storage_new ("sptipr_getProlMatrixPrimal", "DA", &
           rprolMatrix%NA, ST_DOUBLE, rprolMatrix%h_Da,ST_NEWBLOCK_ZERO)
 
       call lsyssc_getbase_double (rprolMatrix,p_Da)
@@ -727,11 +727,11 @@ contains
       ! Piecewise cubic interpolation in the inner.
 
       rprolMatrix%NA = 1 + 3 + max(0,ndofcoarse-3)*5 + 1 + 3 + 1
-      call storage_new ('sptipr_getProlMatrixPrimal', 'KLD', &
+      call storage_new ("sptipr_getProlMatrixPrimal", "KLD", &
           ndofFine+1, ST_INT, rprolMatrix%h_KLD,ST_NEWBLOCK_ZERO)
-      call storage_new ('sptipr_getProlMatrixPrimal', 'KCOL', &
+      call storage_new ("sptipr_getProlMatrixPrimal", "KCOL", &
           rprolMatrix%NA, ST_INT, rprolMatrix%h_KCOL,ST_NEWBLOCK_ZERO)
-      call storage_new ('sptipr_getProlMatrixPrimal', 'DA', &
+      call storage_new ("sptipr_getProlMatrixPrimal", "DA", &
           rprolMatrix%NA, ST_DOUBLE, rprolMatrix%h_Da,ST_NEWBLOCK_ZERO)
 
       call lsyssc_getbase_double (rprolMatrix,p_Da)
@@ -848,11 +848,11 @@ contains
     if (ndofCoarse .eq. ndofFine) then
       ! No time prolongation, identity matrix.
       rprolMatrix%NA = ndofFine
-      call storage_new ('sptipr_getProlMatrixPrimal', 'KLD', &
+      call storage_new ("sptipr_getProlMatrixPrimal", "KLD", &
           ndofFine+1, ST_INT, rprolMatrix%h_KLD,ST_NEWBLOCK_ZERO)
-      call storage_new ('sptipr_getProlMatrixPrimal', 'KCOL', &
+      call storage_new ("sptipr_getProlMatrixPrimal", "KCOL", &
           rprolMatrix%NA, ST_INT, rprolMatrix%h_KCOL,ST_NEWBLOCK_ZERO)
-      call storage_new ('sptipr_getProlMatrixPrimal', 'DA', &
+      call storage_new ("sptipr_getProlMatrixPrimal", "DA", &
           rprolMatrix%NA, ST_DOUBLE, rprolMatrix%h_Da,ST_NEWBLOCK_ZERO)
 
       call lsyssc_getbase_double (rprolMatrix,p_Da)
@@ -955,11 +955,11 @@ contains
       dtheta = rspaceTimeHierarchy%p_rtimeHierarchy%p_RtimeLevels(1)%dtheta
       
       rprolMatrix%NA = 4+(ndofFine-2)*2
-      call storage_new ('sptipr_getProlMatrixPrimal', 'KLD', &
+      call storage_new ("sptipr_getProlMatrixPrimal", "KLD", &
           ndofFine+1, ST_INT, rprolMatrix%h_KLD,ST_NEWBLOCK_ZERO)
-      call storage_new ('sptipr_getProlMatrixPrimal', 'KCOL', &
+      call storage_new ("sptipr_getProlMatrixPrimal", "KCOL", &
           rprolMatrix%NA, ST_INT, rprolMatrix%h_KCOL,ST_NEWBLOCK_ZERO)
-      call storage_new ('sptipr_getProlMatrixPrimal', 'DA', &
+      call storage_new ("sptipr_getProlMatrixPrimal", "DA", &
           rprolMatrix%NA, ST_DOUBLE, rprolMatrix%h_Da,ST_NEWBLOCK_ZERO)
 
       call lsyssc_getbase_double (rprolMatrix,p_Da)
@@ -1066,11 +1066,11 @@ contains
     if (ndofCoarse .eq. ndofFine) then
       ! No time prolongation, identity matrix.
       rprolMatrix%NA = ndofFine
-      call storage_new ('sptipr_getProlMatrixPrimal', 'KLD', &
+      call storage_new ("sptipr_getProlMatrixPrimal", "KLD", &
           ndofFine+1, ST_INT, rprolMatrix%h_KLD,ST_NEWBLOCK_ZERO)
-      call storage_new ('sptipr_getProlMatrixPrimal', 'KCOL', &
+      call storage_new ("sptipr_getProlMatrixPrimal", "KCOL", &
           rprolMatrix%NA, ST_INT, rprolMatrix%h_KCOL,ST_NEWBLOCK_ZERO)
-      call storage_new ('sptipr_getProlMatrixPrimal', 'DA', &
+      call storage_new ("sptipr_getProlMatrixPrimal", "DA", &
           rprolMatrix%NA, ST_DOUBLE, rprolMatrix%h_Da,ST_NEWBLOCK_ZERO)
 
       call lsyssc_getbase_double (rprolMatrix,p_Da)
@@ -1116,11 +1116,11 @@ contains
       !
       
       rprolMatrix%NA = ndofCoarse
-      call storage_new ('sptipr_getProlMatrixPrimal', 'KLD', &
+      call storage_new ("sptipr_getProlMatrixPrimal", "KLD", &
           ndofCoarse+1, ST_INT, rprolMatrix%h_KLD,ST_NEWBLOCK_ZERO)
-      call storage_new ('sptipr_getProlMatrixPrimal', 'KCOL', &
+      call storage_new ("sptipr_getProlMatrixPrimal", "KCOL", &
           rprolMatrix%NA, ST_INT, rprolMatrix%h_KCOL,ST_NEWBLOCK_ZERO)
-      call storage_new ('sptipr_getProlMatrixPrimal', 'DA', &
+      call storage_new ("sptipr_getProlMatrixPrimal", "DA", &
           rprolMatrix%NA, ST_DOUBLE, rprolMatrix%h_Da,ST_NEWBLOCK_ZERO)
 
       call lsyssc_getbase_double (rprolMatrix,p_Da)
@@ -1198,11 +1198,11 @@ contains
     if (ndofCoarse .eq. ndofFine) then
       ! No time prolongation, identity matrix.
       rprolMatrix%NA = ndofFine
-      call storage_new ('sptipr_getProlMatrixPrimal', 'KLD', &
+      call storage_new ("sptipr_getProlMatrixPrimal", "KLD", &
           ndofFine+1, ST_INT, rprolMatrix%h_KLD,ST_NEWBLOCK_ZERO)
-      call storage_new ('sptipr_getProlMatrixPrimal', 'KCOL', &
+      call storage_new ("sptipr_getProlMatrixPrimal", "KCOL", &
           rprolMatrix%NA, ST_INT, rprolMatrix%h_KCOL,ST_NEWBLOCK_ZERO)
-      call storage_new ('sptipr_getProlMatrixPrimal', 'DA', &
+      call storage_new ("sptipr_getProlMatrixPrimal", "DA", &
           rprolMatrix%NA, ST_DOUBLE, rprolMatrix%h_Da,ST_NEWBLOCK_ZERO)
 
       call lsyssc_getbase_double (rprolMatrix,p_Da)
@@ -1286,11 +1286,11 @@ contains
       dtheta = rspaceTimeHierarchy%p_rtimeHierarchy%p_RtimeLevels(1)%dtheta
       
       rprolMatrix%NA = ndofFine
-      call storage_new ('sptipr_getProlMatrixPrimal', 'KLD', &
+      call storage_new ("sptipr_getProlMatrixPrimal", "KLD", &
           ndofCoarse+1, ST_INT, rprolMatrix%h_KLD,ST_NEWBLOCK_ZERO)
-      call storage_new ('sptipr_getProlMatrixPrimal', 'KCOL', &
+      call storage_new ("sptipr_getProlMatrixPrimal", "KCOL", &
           rprolMatrix%NA, ST_INT, rprolMatrix%h_KCOL,ST_NEWBLOCK_ZERO)
-      call storage_new ('sptipr_getProlMatrixPrimal', 'DA', &
+      call storage_new ("sptipr_getProlMatrixPrimal", "DA", &
           rprolMatrix%NA, ST_DOUBLE, rprolMatrix%h_Da,ST_NEWBLOCK_ZERO)
 
       call lsyssc_getbase_double (rprolMatrix,p_Da)

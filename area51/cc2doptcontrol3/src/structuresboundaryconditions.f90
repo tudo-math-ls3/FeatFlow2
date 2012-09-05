@@ -23,6 +23,7 @@ module structuresboundaryconditions
   use bcassemblybase
   
   use structuresdiscretisation
+  use structuresoptcontrol
   
   implicit none
   
@@ -86,7 +87,7 @@ module structuresboundaryconditions
   ! Depending on the situation, this list may be extended by situation
   ! specific variables or variables that are only available at runtime.
   character(LEN=10), dimension(7), parameter, public :: SEC_EXPRVARIABLES = &
-    (/'X    ','Y    ','Z    ','L    ','R    ','S    ','TIME '/)
+    (/"X    ","Y    ","Z    ","L    ","R    ","S    ","TIME "/)
 
 !</constantblock>
 
@@ -115,6 +116,9 @@ module structuresboundaryconditions
   
     ! Physics of the problem
     type(t_settings_physics), pointer :: p_rphysics => null()
+    
+    ! Reference to the optimal control parameters
+    type(t_settings_optcontrol), pointer :: p_rsettingsOptControl => null()
 
     ! A parameter list that saves the boundary conditions.
     type(t_parlist), pointer :: p_rparList => null()
@@ -133,6 +137,11 @@ module structuresboundaryconditions
     ! Primal and dual equations.
     character(len=SYS_STRLEN) :: ssectionBdCondPrim = ""
     character(len=SYS_STRLEN) :: ssectionBdCondDual = ""
+
+    ! Name of the section in rparamList describing the boundary conditions
+    ! in the linearised equation
+    character(len=SYS_STRLEN) :: ssectionBdCondPrimLin = ""
+    character(len=SYS_STRLEN) :: ssectionBdCondDualLin = ""
 
   end type
 
@@ -267,8 +276,9 @@ contains
 
 !<subroutine>
 
-  subroutine struc_initBDC (roptcBDC,rparlist,rphysics,&
-      ssectionBdExpr,ssectionBdCondPrim,ssectionBdCondDual)
+  subroutine struc_initBDC (roptcBDC,rparlist,rphysics,rsettingsOptControl,&
+      ssectionBdExpr,ssectionBdCondPrim,ssectionBdCondDual,&
+      ssectionBdCondPrimLin,ssectionBdCondDualLin)
   
 !<description>
   ! Initialises a boundary condition structure.
@@ -280,6 +290,9 @@ contains
 
   ! Structure defining the physics.
   type(t_settings_physics), target :: rphysics
+  
+  ! Optimal control parameter structure
+  type(t_settings_optcontrol), target :: rsettingsOptControl
 
   ! Name of the section defining a set of expressions to be used
   ! for being evaluated on the boundary.
@@ -290,6 +303,12 @@ contains
   
   ! Section defining the boundary conditions for the dual equations
   character(len=*), intent(in) :: ssectionBdCondDual
+
+  ! Section defining the boundary conditions for the linearised primal equations
+  character(len=*), intent(in) :: ssectionBdCondPrimLin
+  
+  ! Section defining the boundary conditions for the linearised dual equations
+  character(len=*), intent(in) :: ssectionBdCondDualLin
 !</input>
 
 !<inputoutput>
@@ -307,9 +326,12 @@ contains
 
     roptcBDC%p_rphysics => rphysics
     roptcBDC%p_rparList => rparlist
+    roptcBDC%p_rsettingsOptControl => rsettingsOptControl
     roptcBDC%ssectionBdExpr     = ssectionBdExpr
     roptcBDC%ssectionBdCondPrim = ssectionBdCondPrim
     roptcBDC%ssectionBdCondDual = ssectionBdCondDual
+    roptcBDC%ssectionBdCondPrimLin = ssectionBdCondPrimLin
+    roptcBDC%ssectionBdCondDualLin = ssectionBdCondDualLin
 
     ! Create a parser structure for as many expressions as configured
     call parlst_querysection(rparlist, ssectionBdExpr, p_rsection)
@@ -322,13 +344,13 @@ contains
     
     ! Create a parser structure for as many expressions as configured
     call fparser_create (roptcBDC%rparser,&
-        parlst_querysubstrings (p_rsection, 'bdExpressions'))
+        parlst_querysubstrings (p_rsection, "bdExpressions"))
     
     ! Add the boundary expressions to the collection into the
     ! specified section.
-    do i=1,parlst_querysubstrings (p_rsection, 'bdExpressions')
+    do i=1,parlst_querysubstrings (p_rsection, "bdExpressions")
     
-      call parlst_getvalue_string (p_rsection, 'bdExpressions', sstr, "", i)
+      call parlst_getvalue_string (p_rsection, "bdExpressions", sstr, "", i)
       
       ! Every expression has an associated ivalue and dvalue.
       ivalue = 0
@@ -578,6 +600,8 @@ contains
     roptcBDC%ssectionBdExpr     = ""
     roptcBDC%ssectionBdCondPrim = ""
     roptcBDC%ssectionBdCondDual = ""
+    roptcBDC%ssectionBdCondPrimLin = ""
+    roptcBDC%ssectionBdCondDualLin = ""
 
   end subroutine
 

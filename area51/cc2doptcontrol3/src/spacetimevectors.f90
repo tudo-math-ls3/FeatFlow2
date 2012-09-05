@@ -4,7 +4,7 @@
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This module realises 'space-time-vectors'. A 'space-time-vector' is
+!# This module realises "space-time-vectors". A "space-time-vector" is
 !# a list of block vectors. Every block vector represents a timestep in
 !# a nonstationary simulation where the timestep length and the number of
 !# timesteps is fixed.
@@ -103,22 +103,19 @@
 !# 27.) sptivec_commitVecInPool
 !#      -> Writes a vector from the pool back to the actual vector.
 !#
-!# 28.) sptivec_bindDiscreteBCtoBuffer
-!#      -> Binds discrete boundary conditions to a pool
-!#
-!# 29.) sptivec_assurePoolSize
+!# 28.) sptivec_assurePoolSize
 !#      -> Assures that a vector pool has a minimum size
 !#
-!# 30.) sptivec_isVecInPool
+!# 29.) sptivec_isVecInPool
 !#      -> Checks if a vector is in the pool and directly available
 !#
-!# 31.) sptivec_lockVecInPool
+!# 30.) sptivec_lockVecInPool
 !#      -> Locks a vector in the pool
 !#
-!# 32.) sptivec_unlockVecInPool
+!# 31.) sptivec_unlockVecInPool
 !#      -> unlocks a vector in the pool
 !#
-!# 33.) sptivec_getUnusedIndex
+!# 32.) sptivec_getUnusedIndex
 !#      -> Calculates the index which is not used and which can be used
 !#         for obtaining a free buffer from the pool
 !# </purpose>
@@ -182,17 +179,16 @@ module spacetimevectors
   public :: sptivec_lockVecInPool
   public :: sptivec_unlockVecInPool
   public :: sptivec_bindPoolToVec
-  public :: sptivec_bindDiscreteBCtoBuffer
   public :: sptivec_isVecinPool
 
 !<types>
 
 !<typeblock>
 
-  ! This structure saves a 'space-time-vector'. A space-time-vector is basically
+  ! This structure saves a "space-time-vector". A space-time-vector is basically
   ! a list of block vectors for every timestep of a nonstationary simulation
   ! which simulates simultaneously in space and time. Some parts of this
-  ! vector may be written to disc if there's not enough memory.
+  ! vector may be written to disc if there"s not enough memory.
   !
   ! The vector can be accessed in two ways: On the one hand, one can read a
   ! specific time step by its number. On the other hand, one can access the
@@ -204,7 +200,7 @@ module spacetimevectors
   
     ! This flag defines a scaling factor for each substep. The scaling is applied
     ! when a subvector is read and is reset to 1.0 if a subvector is saved.
-    ! The whole vector is zero if it's new and if it's cleared by clearVector.
+    ! The whole vector is zero if is it new and if is it cleared by clearVector.
     real(DP), dimension(:), pointer :: p_Dscale => null()
     
     ! Pointer to a time discretisation structure that defines the
@@ -219,7 +215,7 @@ module spacetimevectors
     ! shape of the spatial vectors or nor.
     logical :: btestfctSpace = .false.
     
-    ! Number of equations in each subvector of the 'global time-step vector'.
+    ! Number of equations in each subvector of the "global time-step vector".
     integer :: NEQ = 0
     
     ! Number of subvectors saved in p_IdataHandleList.
@@ -247,7 +243,7 @@ module spacetimevectors
   ! The pool automatically loads vectors from the space time vector on demand
   ! and buffers read data to gain quicker access to frequently used components
   ! of the vector.
-  ! The structure can also be used 'unbounded', i.e. detached from a space-time
+  ! The structure can also be used "unbounded", i.e. detached from a space-time
   ! vector. In this case, the owner of the structure can store timesteps
   ! to the structure which are automatically deleted if the buffer is full.
   type t_spaceTimeVectorAccess
@@ -314,7 +310,7 @@ contains
   ! Number of equations in the vectors
   integer, intent(IN) :: NEQ
   
-  ! Number of DOF's in time to maintain.
+  ! Number of DOFs in time to maintain.
   ! The number of subvectors that is reserved is therefore ntimesteps+1!
   integer, intent(IN) :: NEQtime
 
@@ -356,7 +352,7 @@ contains
     
     ! Allocate memory for every subvector
     do i=1,NEQtime
-      call exstor_new ('sptivec_initVector', 'stvec_'//trim(sys_siL(i,10)), &
+      call exstor_new ("sptivec_initVector", "stvec_"//trim(sys_siL(i,10)), &
         NEQ, ST_DOUBLE, rx%p_IdataHandleList(i), ST_NEWBLOCK_ZERO)
     end do
     
@@ -377,7 +373,7 @@ contains
 !</desctiprion>
 
 !<input>
-  ! Number of DOF's in time to maintain.
+  ! Number of DOFs in time to maintain.
   ! The number of subvectors that is reserved is therefore ntimesteps+1!
   integer, intent(IN) :: NEQtime
 
@@ -426,7 +422,7 @@ contains
     
     ! Allocate memory for every subvector
     do i=1,NEQtime
-      call exstor_new ('sptivec_initVector', 'stvec_'//trim(sys_siL(i,10)), &
+      call exstor_new ("sptivec_initVector", "stvec_"//trim(sys_siL(i,10)), &
         rx%NEQ, ST_DOUBLE, rx%p_IdataHandleList(i), &
         ST_NEWBLOCK_ZERO)
     end do
@@ -477,7 +473,7 @@ contains
 
     ! Initialise the data.
 
-    ! Get the number of DOF's in time.
+    ! Get the number of DOFs in time.
     NEQtime = tdiscr_igetNDofGlob(rtimediscr)
     
     istart = 1
@@ -503,7 +499,7 @@ contains
     
     ! Allocate memory for every subvector
     do i=istart,iend
-      call exstor_new ('sptivec_initVector', 'stvec_'//trim(sys_siL(i,10)), &
+      call exstor_new ("sptivec_initVector", "stvec_"//trim(sys_siL(i,10)), &
         rx%NEQ, ST_DOUBLE, rx%p_IdataHandleList(i), &
         ST_NEWBLOCK_ZERO)
     end do
@@ -533,8 +529,8 @@ contains
     integer :: i
 
     if (.not. associated(rx%p_IdataHandleList)) then
-      call output_line('Warning: Releasing unused vector!',&
-          ssubroutine='sptivec_releaseVector')
+      call output_line("Warning: Releasing unused vector!",&
+          ssubroutine="sptivec_releaseVector")
       return
     end if
 
@@ -588,14 +584,14 @@ contains
 
     ! Make sure we can store the timestep data.
     if ((isubvector .lt. 1) .or. (isubvector .gt. rx%NEQtime)) then
-      call output_line('Invalid timestep number!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_setTimestepData')
+      call output_line("Invalid timestep number!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"sptivec_setTimestepData")
       call sys_halt()
     end if
     
     if (rvector%NEQ .ne. rx%NEQ) then
-      call output_line('Vector size invalid!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_setTimestepData')
+      call output_line("Vector size invalid!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"sptivec_setTimestepData")
       call sys_halt()
     end if
 
@@ -608,7 +604,7 @@ contains
     ! Save the vector data. If necessary, new memory is allocated -- as the
     ! default value of the handle in the handle list is ST_NOHANDLE.
     !
-    ! Don't use storage_copy, as this might give errors in case the array
+    ! Don"t use storage_copy, as this might give errors in case the array
     ! behind the handle is longer than the vector!
     call lsysbl_getbase_double (rvector,p_Dsource)
     !CALL storage_getbase_double (rx%p_IdataHandleList(isubvector),p_Ddest)
@@ -652,14 +648,14 @@ contains
     ! Make sure we can store the timestep data.
     if ((isubvector .lt. 1) .or. &
         (isubvector .gt. rx%NEQtime)) then
-      call output_line('Invalid timestep number!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_getTimestepData')
+      call output_line("Invalid timestep number!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"sptivec_getTimestepData")
       call sys_halt()
     end if
     
     if (rvector%NEQ .ne. rx%NEQ) then
-      call output_line('Vector size invalid!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_getTimestepData')
+      call output_line("Vector size invalid!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"sptivec_getTimestepData")
       call sys_halt()
     end if
     
@@ -678,7 +674,7 @@ contains
 
     ! Get the vector data.
     !
-    ! Don't use storage_copy, as this might give errors in case the array
+    ! Don"t use storage_copy, as this might give errors in case the array
     ! behind the handle is longer than the vector!
     !CALL storage_getbase_double (rx%p_IdataHandleList(isubvector),&
     !    p_Dsource)
@@ -732,14 +728,14 @@ contains
 
     ! Make sure we can store the timestep data.
     if ((dtimestamp .lt. 0.0_DP) .or. (dtimestamp .gt. 1.0_DP)) then
-      call output_line('Invalid time stamp!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_getTimestepDataByTime')
+      call output_line("Invalid time stamp!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"sptivec_getTimestepDataByTime")
       call sys_halt()
     end if
     
     if (rvector%NEQ .ne. rx%NEQ) then
-      call output_line('Vector size invalid!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_getTimestepData')
+      call output_line("Vector size invalid!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"sptivec_getTimestepData")
       call sys_halt()
     end if
     
@@ -748,7 +744,7 @@ contains
     dabstime = dtimestamp*real(rx%NEQtime-1,DP)+1.0_DP
     itimestep2 = int(dabstime + 0.5_DP)
     
-    ! Calculate the 'relative' time in the interval [-1,1], where -1 corresponds
+    ! Calculate the "relative" time in the interval [-1,1], where -1 corresponds
     ! to timestep itimestep1, 0 to itimestep2 and +1 to itimestep3.
     ! This will be used to evaluate the quadratic polynomial.
     dreltime = dabstime-real(itimestep2,DP)
@@ -860,20 +856,20 @@ contains
     real(DP), dimension(:), pointer :: p_Dx,p_Dy
     
     if (rx%NEQ .ne. ry%NEQ) then
-      call output_line('Space-time vectors have different size!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_vectorLinearComb')
+      call output_line("Space-time vectors have different size!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"sptivec_vectorLinearComb")
       call sys_halt()
     end if
 
     if (rx%NEQtime .ne. ry%NEQtime) then
-      call output_line('Space-time vectors have different number of timesteps!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_vectorLinearComb')
+      call output_line("Space-time vectors have different number of timesteps!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"sptivec_vectorLinearComb")
       call sys_halt()
     end if
     
     Isize(1) = rx%NEQ
 
-    ! Allocate a 'little bit' of memory for the subvectors
+    ! Allocate a "little bit" of memory for the subvectors
     call lsysbl_createVecBlockDirect (rxBlock,Isize,.false.)
     call lsysbl_createVecBlockDirect (ryBlock,Isize,.false.)
 
@@ -939,20 +935,20 @@ contains
     end if
     
     if (rx%NEQ .ne. ry%NEQ) then
-      call output_line('Space-time vectors have different size!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_copyVector')
+      call output_line("Space-time vectors have different size!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"sptivec_copyVector")
       call sys_halt()
     end if
 
     if (rx%NEQtime .ne. ry%NEQtime) then
-      call output_line('Space-time vectors have different number of timesteps!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_copyVector')
+      call output_line("Space-time vectors have different number of timesteps!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"sptivec_copyVector")
       call sys_halt()
     end if
 
     Isize(1) = rx%NEQ
 
-    ! Allocate a 'little bit' of memory for the subvectors
+    ! Allocate a "little bit" of memory for the subvectors
     call lsysbl_createVecBlockDirect (rxBlock,Isize,.false.)
     call lsysbl_createVecBlockDirect (ryBlock,Isize,.false.)
     
@@ -1017,20 +1013,20 @@ contains
     real(DP), dimension(:), pointer :: p_Dx,p_Dy
     
     if (rx%NEQ .ne. ry%NEQ) then
-      call output_line('Space-time vectors have different size!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_scalarProduct')
+      call output_line("Space-time vectors have different size!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"sptivec_scalarProduct")
       call sys_halt()
     end if
 
     if (rx%NEQtime .ne. ry%NEQtime) then
-      call output_line('Space-time vectors have different number of timesteps!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_scalarProduct')
+      call output_line("Space-time vectors have different number of timesteps!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"sptivec_scalarProduct")
       call sys_halt()
     end if
 
     Isize(1) = rx%NEQ
 
-    ! Allocate a 'little bit' of memory for the subvectors
+    ! Allocate a "little bit" of memory for the subvectors
     call lsysbl_createVecBlockDirect (rxBlock,Isize,.false.)
     call lsysbl_createVecBlockDirect (ryBlock,Isize,.false.)
     
@@ -1080,7 +1076,7 @@ contains
   
   ! An array with weights for each component of a solution
   ! vector in a timestep. Dweights(i) is multiplied to
-  ! the i'th solution component of each timestep.
+  ! the i-th solution component of each timestep.
   real(DP), dimension(:), intent(IN) :: Dweights
 !</input>
 
@@ -1099,20 +1095,20 @@ contains
     real(DP), dimension(:), pointer :: p_Dx,p_Dy
     
     if (rx%NEQ .ne. ry%NEQ) then
-      call output_line('Space-time vectors have different size!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_scalarProduct')
+      call output_line("Space-time vectors have different size!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"sptivec_scalarProduct")
       call sys_halt()
     end if
 
     if (rx%NEQtime .ne. ry%NEQtime) then
-      call output_line('Space-time vectors have different number of timesteps!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_scalarProduct')
+      call output_line("Space-time vectors have different number of timesteps!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"sptivec_scalarProduct")
       call sys_halt()
     end if
 
     Isize(1) = rx%NEQ
 
-    ! Allocate a 'little bit' of memory for the subvectors
+    ! Allocate a "little bit" of memory for the subvectors
     call lsysbl_createVecBlockDirect (rxBlock,Isize,.false.)
     call lsysbl_createVecBlockDirect (ryBlock,Isize,.false.)
     
@@ -1180,7 +1176,7 @@ contains
 
     Isize(1) = rx%NEQ
 
-    ! Allocate a 'little bit' of memory for the subvectors
+    ! Allocate a "little bit" of memory for the subvectors
     call lsysbl_createVecBlockDirect (rxBlock,Isize,.false.)
     
     dnorm = 0.0_DP
@@ -1434,17 +1430,17 @@ contains
 !</subroutine>
 
     ! Save the content of the structure
-    call collct_setvalue_int (rcollection,trim(sname)//'_NEQ',&
+    call collct_setvalue_int (rcollection,trim(sname)//"_NEQ",&
         rx%NEQ,.true.,ilevel,ssection)
   
-    call collct_setvalue_int (rcollection,trim(sname)//'_NTST',&
+    call collct_setvalue_int (rcollection,trim(sname)//"_NTST",&
         rx%NEQtime,.true.,ilevel,ssection)
 
     if (rx%NEQtime .ne. 0) then
-      call collct_setvalue_intarr (rcollection,trim(sname)//'_NTST',&
+      call collct_setvalue_intarr (rcollection,trim(sname)//"_NTST",&
           rx%p_IdataHandleList,.true.,ilevel,ssection)
       
-      call collct_setvalue_realarr (rcollection,trim(sname)//'_SCALE',&
+      call collct_setvalue_realarr (rcollection,trim(sname)//"_SCALE",&
           rx%p_Dscale,.true.,ilevel,ssection)
 
       ! Otherwise the pointers are NULL()!
@@ -1491,20 +1487,20 @@ contains
     rx%bisCopy = .true.
 
     ! Get the content of the structure
-    rx%NEQ = collct_getvalue_int (rcollection,trim(sname)//'_NEQ',&
+    rx%NEQ = collct_getvalue_int (rcollection,trim(sname)//"_NEQ",&
         ilevel,ssection)
   
-    rx%NEQtime = collct_getvalue_int (rcollection,trim(sname)//'_NTST',&
+    rx%NEQtime = collct_getvalue_int (rcollection,trim(sname)//"_NTST",&
         ilevel,ssection)
         
     if (rx%NEQtime .ne. 0) then
       ! For the handle list, we need to allocate some memory...
       allocate(rx%p_IdataHandleList(rx%NEQtime))
 
-      call collct_getvalue_intarr (rcollection,trim(sname)//'_NTST',&
+      call collct_getvalue_intarr (rcollection,trim(sname)//"_NTST",&
           rx%p_IdataHandleList,ilevel,ssection)
 
-      call collct_getvalue_realarr (rcollection,trim(sname)//'_SCALE',&
+      call collct_getvalue_realarr (rcollection,trim(sname)//"_SCALE",&
           rx%p_Dscale,ilevel,ssection)
     end if
 
@@ -1539,19 +1535,19 @@ contains
 !</subroutine>
 
     ! Remove all entries
-    call collct_deleteValue (rcollection,trim(sname)//'_DIR',&
+    call collct_deleteValue (rcollection,trim(sname)//"_DIR",&
         ilevel,ssection)
 
-    call collct_deleteValue (rcollection,trim(sname)//'_SCALE',&
+    call collct_deleteValue (rcollection,trim(sname)//"_SCALE",&
         ilevel,ssection)
   
-    call collct_deleteValue (rcollection,trim(sname)//'_NEQ',&
+    call collct_deleteValue (rcollection,trim(sname)//"_NEQ",&
         ilevel,ssection)
   
-    call collct_deleteValue (rcollection,trim(sname)//'_NTST',&
+    call collct_deleteValue (rcollection,trim(sname)//"_NTST",&
         ilevel,ssection)
         
-    call collct_deleteValue (rcollection,trim(sname)//'_NTST',&
+    call collct_deleteValue (rcollection,trim(sname)//"_NTST",&
         ilevel,ssection)
 
   end subroutine
@@ -1568,9 +1564,9 @@ contains
   ! hard disc. sfilename is a directory/file name pattern in the format of
   ! a FORMAT statement that forms the filename; this pattern must contain
   ! exactly one integer format specifier, which is replaced by the
-  ! file number in this routine (e.g. ' (''vector.txt.'',I5.5) ' will
-  ! load a file sequence 'vector.txt.00001','vector.txt.00002',
-  ! 'vector.txt.00003', ...).
+  ! file number in this routine (e.g. " (""vector.txt."",I5.5) " will
+  ! load a file sequence "vector.txt.00001","vector.txt.00002",
+  ! "vector.txt.00003", ...).
   ! istart and iend prescribe the minimum/maximum file number that is
   ! inserted into the filename: The routine loads in all all files
   ! from istart to iend and forms a space-time vector from that.
@@ -1678,8 +1674,8 @@ contains
 
           ! Save the data
           if (size(p_Ddata2) .ne. size(p_Ddata)) then
-            call output_line('Input vector has incorrect length; truncating.',&
-                OU_CLASS_WARNING,ssubroutine='sptivec_loadFromFileSequence')
+            call output_line("Input vector has incorrect length; truncating.",&
+                OU_CLASS_WARNING,ssubroutine="sptivec_loadFromFileSequence")
             call lalg_copyVector(p_Ddata2,p_Ddata,min(size(p_Ddata2),size(p_Ddata)))
             call exstor_setdata_storage (rx%p_IdataHandleList(1+ifileidx),hdata)
           else
@@ -1703,22 +1699,22 @@ contains
       else
         if (i .eq. istart) then
           ! The first file must exist!
-          call output_line ('The first file must exist!', &
-              ssubroutine='sptivec_loadFromFileSequence')
+          call output_line ("The first file must exist!", &
+              ssubroutine="sptivec_loadFromFileSequence")
         end if
 
         if (brepeat) then
-          call output_line ('Warning: Unable to load file "'//trim(sfile) &
-              //'". Repeating last solution!', &
-              ssubroutine='sptivec_loadFromFileSequence')
+          call output_line ("Warning: Unable to load file ""//trim(sfile) &
+              //"". Repeating last solution!", &
+              ssubroutine="sptivec_loadFromFileSequence")
         
           ! Copy the data from the last known solution to the current one.
           call exstor_copy (&
               rx%p_IdataHandleList(1+ilast),&
               rx%p_IdataHandleList(1+ifileidx))
         else
-          call output_line ('Warning: Unable to load file "'//trim(sfile) &
-              //'". Assuming zero!', ssubroutine='sptivec_loadFromFileSequence')
+          call output_line ("Warning: Unable to load file ""//trim(sfile) &
+              //"". Assuming zero!", ssubroutine="sptivec_loadFromFileSequence")
         
           ! Clear that array. Zero solution.
           call exstor_clear (rx%p_IdataHandleList(1+ifileidx))
@@ -1750,9 +1746,9 @@ contains
   ! hard disc. sfilename is a directory/file name pattern in the format of
   ! a FORMAT statement that forms the filename; this pattern must contain
   ! exactly one integer format specifier, which is replaced by the
-  ! file number in this routine (e.g. ' (''vector.txt.'',I5.5) ' will
-  ! load a file sequence 'vector.txt.00000','vector.txt.00001',
-  ! 'vector.txt.00002', ...).
+  ! file number in this routine (e.g. " (""vector.txt."",I5.5) " will
+  ! load a file sequence "vector.txt.00000","vector.txt.00001",
+  ! "vector.txt.00002", ...).
   !
   ! The destination files are written out using vecio_writeBlockVectorHR
   ! or vecio_writeVectorHR. Old files are overwritten.
@@ -1769,7 +1765,7 @@ contains
   logical, intent(IN) :: bformatted
   
   ! OPTIONAL: Format string that is used for exporting data to files.
-  ! E.g. '(E20.10)'.
+  ! E.g. "(E20.10)".
   character(LEN=SYS_STRLEN), intent(IN), optional :: sformat
 !</input>
 
@@ -1814,13 +1810,13 @@ contains
       
       ! Save that to disc.
       if (.not. bformatted) then
-        call vecio_writeBlockVectorHR (p_rx, 'vector', .true.,&
+        call vecio_writeBlockVectorHR (p_rx, "vector", .true.,&
                                       0, sfile)
       else if (.not. present(sformat)) then
-          call vecio_writeBlockVectorHR (p_rx, 'vector', .true.,&
-                                        0, sfile, '(E24.16)')
+          call vecio_writeBlockVectorHR (p_rx, "vector", .true.,&
+                                        0, sfile, "(E24.16)")
       else
-        call vecio_writeBlockVectorHR (p_rx, 'vector', .true.,&
+        call vecio_writeBlockVectorHR (p_rx, "vector", .true.,&
                                        0, sfile, sformat)
       end if
     
@@ -1947,7 +1943,7 @@ contains
     
     Isize(1) = rx%NEQ
 
-    ! Allocate a 'little bit' of memory for the subvectors
+    ! Allocate a "little bit" of memory for the subvectors
     call lsysbl_createVecBlockDirect (rxBlock,Isize,.false.)
     
     ! DEBUG!!!
@@ -1962,8 +1958,8 @@ contains
       do j=1,size(p_Dx)
         call output_line (sys_sdEP(p_Dx(j),20,10))
       end do
-      !call vecio_writeBlockVectorHR (rxBlock, '', .false.,&
-      !    OU_TERMINAL, '', '(E15.5)')
+      !call vecio_writeBlockVectorHR (rxBlock, "", .false.,&
+      !    OU_TERMINAL, "", "(E15.5)")
 
     end do
 
@@ -2028,7 +2024,7 @@ contains
   subroutine sptivec_createAccessPoolByDisc (rspaceDiscr,raccessPool,isize)
 
 !<description>
-  ! Creates an 'unbounded' access pool based on a space-time discretisation.
+  ! Creates an "unbounded" access pool based on a space-time discretisation.
   ! The pool serves as a buffer for intermediate data and returns NULL
   ! in sptivec_getVectorFromPool if the owner tries to fetch a timestep
   ! which is not in the buffer.
@@ -2185,14 +2181,14 @@ contains
   
     if (iindex .le. 0) then
       call output_line ("Invalid index!",&
-          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_getVectorFromPool')
+          OU_CLASS_ERROR,OU_MODE_STD,"sptivec_getVectorFromPool")
       call sys_halt()
     end if
     
     if (raccessPool%inextFreeVector .eq. 0) then
       ! No free vector available
       call output_line ("No free vector available!",&
-          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_getVectorFromPool')
+          OU_CLASS_ERROR,OU_MODE_STD,"sptivec_getVectorFromPool")
       call sys_halt()
     end if
   
@@ -2271,7 +2267,7 @@ contains
   
       if (iindex .lt. 0) then
         call output_line ("Invalid index!",&
-            OU_CLASS_ERROR,OU_MODE_STD,'sptivec_getVectorFromPool')
+            OU_CLASS_ERROR,OU_MODE_STD,"sptivec_getVectorFromPool")
         call sys_halt()
       end if
 
@@ -2312,13 +2308,13 @@ contains
     
     if (iindex .le. 0) then
       call output_line ("Invalid index!",&
-          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_getVectorFromPool')
+          OU_CLASS_ERROR,OU_MODE_STD,"sptivec_getVectorFromPool")
       call sys_halt()
     end if
 
     if (.not. associated(raccessPool%p_rspaceTimeVector)) then
-      call output_line('No space-time vector associated!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_commitVecInPool')
+      call output_line("No space-time vector associated!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"sptivec_commitVecInPool")
       call sys_halt()
     end if
   
@@ -2331,8 +2327,8 @@ contains
       end if
     end do
   
-    call output_line('Vector destroyed, cannot be written!',&
-        OU_CLASS_ERROR,OU_MODE_STD,'sptivec_commitVecInPool')
+    call output_line("Vector destroyed, cannot be written!",&
+        OU_CLASS_ERROR,OU_MODE_STD,"sptivec_commitVecInPool")
     call sys_halt()
     
   end subroutine
@@ -2402,14 +2398,14 @@ contains
    
     if (iindex .le. 0) then
       call output_line ("Invalid index!",&
-          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_getVectorFromPool')
+          OU_CLASS_ERROR,OU_MODE_STD,"sptivec_getVectorFromPool")
       call sys_halt()
     end if
 
     if (raccessPool%inextFreeVector .eq. 0) then
       ! No free vector available
       call output_line ("No free vector available!",&
-          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_getVectorFromPool')
+          OU_CLASS_ERROR,OU_MODE_STD,"sptivec_getVectorFromPool")
       call sys_halt()
     end if
   
@@ -2445,48 +2441,6 @@ contains
       ! The loop terminates since the lock-routine ensures that
       ! we have a free vector available.
     end do
-    
-  end subroutine
-
-  ! ***************************************************************************
-
-!<subroutine>
-
-  subroutine sptivec_bindDiscreteBCtoBuffer (raccessPool,rdiscreteBC,rdiscreteFBC)
-
-!<description>
-  ! Binds discrete boundary conditions to all buffers.
-!</desctiprion>
-
-!<inputoutput>
-  ! Access-pool structure to be accessed.
-  type(t_spaceTimeVectorAccess), intent(inout), target :: raccessPool
-  
-  ! OPTIONAL: Structure with discrete boundary conditions to be bound to
-  ! all vectors in the buffer.
-  type(t_discreteBC), target, optional :: rdiscreteBC
-  
-  ! OPTIONAL: Structure with discrete fictitious boundary conditions to be bound to
-  ! all vectors in the buffer.
-  type(t_discreteFBC), target, optional :: rdiscreteFBC
-!</inputoutput>
-
-!</subroutine>
-
-    integer :: i
-   
-    ! Binf the discrete BC's to all vectors in the buffer.
-    if (present(rdiscreteBC)) then
-      do i=1,size(raccessPool%p_IvectorIndex)
-        call lsysbl_assignDiscreteBC (raccessPool%p_RvectorPool(i),rdiscreteBC)
-      end do
-    end if
-
-    if (present(rdiscreteFBC)) then
-      do i=1,size(raccessPool%p_IvectorIndex)
-        call lsysbl_assignDiscreteFBC (raccessPool%p_RvectorPool(i),rdiscreteFBC)
-      end do
-    end if
     
   end subroutine
 
@@ -2544,7 +2498,7 @@ contains
     
     if (iindex .le. 0) then
       call output_line ("Invalid index!",&
-          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_getVectorFromPool')
+          OU_CLASS_ERROR,OU_MODE_STD,"sptivec_getVectorFromPool")
       call sys_halt()
     end if
     
@@ -2588,8 +2542,8 @@ contains
       
     end do
 
-    call output_line('Invalid vector!',&
-        OU_CLASS_ERROR,OU_MODE_STD,'sptivec_lockVecInPool')
+    call output_line("Invalid vector!",&
+        OU_CLASS_ERROR,OU_MODE_STD,"sptivec_lockVecInPool")
     call sys_halt()
   
   end subroutine
@@ -2618,13 +2572,13 @@ contains
     
     if (iindex .le. 0) then
       call output_line ("Invalid index!",&
-          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_getVectorFromPool')
+          OU_CLASS_ERROR,OU_MODE_STD,"sptivec_getVectorFromPool")
       call sys_halt()
     end if
     
     if (.not. associated(raccessPool%p_rspaceTimeVector)) then
-      call output_line('No space-time vector associated!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_commitVecInPool')
+      call output_line("No space-time vector associated!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"sptivec_commitVecInPool")
       call sys_halt()
     end if
   
@@ -2641,8 +2595,8 @@ contains
       end if
     end do
 
-    call output_line('Invalid vector!',&
-        OU_CLASS_ERROR,OU_MODE_STD,'sptivec_lockVecInPool')
+    call output_line("Invalid vector!",&
+        OU_CLASS_ERROR,OU_MODE_STD,"sptivec_lockVecInPool")
     call sys_halt()
   
   end subroutine
@@ -2677,13 +2631,13 @@ contains
     
     if (iindex .le. 0) then
       call output_line ("Invalid index!",&
-          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_getVectorFromPool')
+          OU_CLASS_ERROR,OU_MODE_STD,"sptivec_getVectorFromPool")
       call sys_halt()
     end if
     
     if (.not. associated(raccessPool%p_rspaceTimeVector)) then
-      call output_line('No space-time vector associated!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_commitVecInPool')
+      call output_line("No space-time vector associated!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"sptivec_commitVecInPool")
       call sys_halt()
     end if
     
@@ -2760,7 +2714,7 @@ contains
     dabstime = dtimestamp*real(raccessPool%p_rspaceTimeVector%NEQtime-1,DP)+1.0_DP
     itimestep2 = int(dabstime + 0.5_DP)
     
-    ! Calculate the 'relative' time in the interval [-1,1], where -1 corresponds
+    ! Calculate the "relative" time in the interval [-1,1], where -1 corresponds
     ! to timestep itimestep1, 0 to itimestep2 and +1 to itimestep3.
     ! This will be used to evaluate the quadratic polynomial.
     dreltime = dabstime-real(itimestep2,DP)
