@@ -772,11 +772,11 @@ contains
     
       ! The Newton iteration reads
       !
-      !    u_n+1  =  u_n  -  [J""(u_n)]^-1  J"(u_n)
+      !    u_n+1  =  u_n  -  [J''(u_n)]^-1  J"(u_n)
       !
       ! or in other words,
       !
-      !    u_n+1  =  u_n  +  [J""(u_n)]^-1  d_n
+      !    u_n+1  =  u_n  +  [J''(u_n)]^-1  d_n
       !
       ! with the residual   d_n = -J"(u_n)   specifying a "search direction".
       
@@ -931,7 +931,7 @@ contains
       ! Actual Newton iteration. Apply the Newton preconditioner
       ! to get the Newton search direction:
       !
-      !    J""(u_n) g_n  =  d_n
+      !    J''(u_n) g_n  =  d_n
       !
       ! The control on the maximum level of p_rdirDerivHierarchy
       ! (identified by p_rsolutionDirDeriv%p_rcontrolLin) receives the result.

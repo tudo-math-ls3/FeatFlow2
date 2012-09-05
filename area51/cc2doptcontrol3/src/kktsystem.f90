@@ -1824,17 +1824,17 @@ contains
   
 !<description>
   ! Calculates the residual of the control equation of the linearised
-  ! KKT system  "J""(u) u~ = d".
+  ! KKT system  "J''(u) u~ = d".
 !</description>
   
 !<input>
   ! Structure defining the KKT system.
   ! The control / primal / dual variables in this structure
-  ! shall define the value of the functional "J""(u) u~".
+  ! shall define the value of the functional "J''(u) u~".
   type(t_kktsystemDirDeriv), intent(inout), target :: rkktsystemDirDeriv
 
   ! The right-hand side "d" of the control equation in the linearised
-  ! KKT system "J""(u) u~ = d".
+  ! KKT system "J''(u) u~ = d".
   type(t_controlSpace), intent(inout) :: rrhs
 
   ! type of norm. A LINALG_NORMxxxx constant.
@@ -1855,13 +1855,13 @@ contains
 
     ! The (linearised) control equation reads:
     !
-    !    J""(u) u~  =  u~ - P"(u_intermed) ( u~ - ( lambda~ + alpha u~ ) )  =  rhs
+    !    J''(u) u~  =  u~ - P'(u_intermed) ( u~ - ( lambda~ + alpha u~ ) )  =  rhs
     !
     ! The residual of the control equation is (for the distributed 
     ! control case)
     !
-    !   res = rhs - J""(u) u~
-    !       = rhs - u~ + P"(u_intermed) ( u~ - ( lambda~ + alpha u~ ) )
+    !   res = rhs - J''(u) u~
+    !       = rhs - u~ + P'(u_intermed) ( u~ - ( lambda~ + alpha u~ ) )
     !
     ! The result is written to rresidual, thus, rresidual receives a
     ! fully qualified description of the residual in the control space.
@@ -1869,7 +1869,7 @@ contains
     ! First, add the RHS to the residual.
     ! This is done by creating an appropriate structure.
     !
-    ! a) rresidual = P"(u_intermed) ( u~ - ( lambda~ + alpha u~ ) )
+    ! a) rresidual = P'(u_intermed) ( u~ - ( lambda~ + alpha u~ ) )
     ! We expect rkktsystemDirDeriv to represent u, u_intermed, u~ and lambda~.
     call kkt_dualToControlDirDeriv (rkktsystemDirDeriv,rresidual)
 
@@ -2146,13 +2146,13 @@ contains
   
 !<description>
   ! Applies the control equation of the linearised
-  ! KKT system:  "d := J""(u) u~"  for a given u~.
+  ! KKT system:  "d := J''(u) u~"  for a given u~.
 !</description>
   
 !<input>
   ! Structure defining the KKT system.
   ! The control / primal / dual variables in this structure
-  ! shall define the value of the functional "J""(u) u~".
+  ! shall define the value of the functional "J''(u) u~".
   type(t_kktsystemDirDeriv), intent(inout), target :: rkktsystemDirDeriv
 !</input>
 
@@ -2165,12 +2165,12 @@ contains
 
     ! The (linearised) control equation reads:
     !
-    !    J""(u) u~  =  u~ - P"(u_intermed) ( u~ - (lambda~ + alpha u~ ) )
+    !    J''(u) u~  =  u~ - P'(u_intermed) ( u~ - (lambda~ + alpha u~ ) )
     !
     ! The result is written to rrhs, thus, rrhs receives a
     ! fully qualified description of matrix-vector-product in the control space.
     !
-    ! a) rrhs = P"(u_intermed) ( u~ - (lambda~ + alpha u~ ) )
+    ! a) rrhs = P'(u_intermed) ( u~ - (lambda~ + alpha u~ ) )
     ! We expect rkktsystemDirDeriv to represent u, u_intermed, u~ and lambda~.
     call kkt_dualToControlDirDeriv (rkktsystemDirDeriv,rrhs)
 
