@@ -6450,7 +6450,7 @@ contains
   integer, dimension(:), pointer :: p_Kld,p_Kld2
   integer, dimension(:), pointer :: p_Kdiagonal,p_Kdiagonal2
   logical :: bentries,bstrucOwner,bentryOwner
-  integer :: NA,iA,iA2,iEQ
+  integer :: NA,iA,iA2,iA3,iEQ
   integer :: i,j,nrows,ncols,ivar,jvar
   integer :: h_Da,h_Kcol,h_Kld,h_Kdiagonal
 
@@ -9189,13 +9189,28 @@ contains
             do i = 1,rmatrix%NEQ
               do ivar = 1,rmatrix%NVAR
                 p_Kld(rmatrix%NVAR*(i-1)+ivar) = iA+1
-                do iA2 = p_Kld2(i),p_Kld2(i+1)-1
+
+                do iA2 = p_Kld2(i)+1,p_Kld2(i+1)-1
+                  j = p_Kcol2(iA2)
+                  ! Check if we reached the position of the diagonal entry
+                  if (j>i) exit
                   iA = iA + 1
-                  j  = p_Kcol2(iA2)
                   p_Kcol(iA) = rmatrix%NVAR*(j-1)+ivar
-                  if (rmatrix%NVAR*(i-1).eq.rmatrix%NVAR*(j-1))&
-                      p_Kdiagonal(rmatrix%NVAR*(i-1)+ivar) = iA
                   p_Ddata(iA) = p_Ddata2(rmatrix%NVAR*(iA2-1)+ivar)
+                end do
+
+                ! Special treatment of diagonal block
+                iA = iA + 1
+                j = p_Kcol2(p_Kld2(i))
+                p_Kcol(iA) = rmatrix%NVAR*(j-1)+ivar
+                p_Kdiagonal(rmatrix%NVAR*(j-1)+ivar) = iA
+                p_Ddata(iA) = p_Ddata2(rmatrix%NVAR*(p_Kld2(i)-1)+ivar)
+                
+                do iA3 = iA2,p_Kld2(i+1)-1
+                  iA = iA + 1
+                  j = p_Kcol2(iA3)
+                  p_Kcol(iA) = rmatrix%NVAR*(j-1)+ivar
+                  p_Ddata(iA) = p_Ddata2(rmatrix%NVAR*(iA3-1)+ivar)
                 end do
               end do
             end do
@@ -9206,14 +9221,36 @@ contains
             do i = 1,rmatrix%NEQ
               do ivar = 1,rmatrix%NVAR
                 p_Kld(rmatrix%NVAR*(i-1)+ivar) = iA+1
-                do iA2 = p_Kld2(i),p_Kld2(i+1)-1
+
+                do iA2 = p_Kld2(i)+1,p_Kld2(i+1)-1
+                  j = p_Kcol2(iA2)
+                  ! Check if we reached the position of the diagonal entry
+                  if (j>i) exit
                   do jvar = 1,rmatrix%NVAR
                     iA = iA + 1
-                    j  = p_Kcol2(iA2)
                     p_Kcol(iA) = rmatrix%NVAR*(j-1)+jvar
-                    if (rmatrix%NVAR*(i-1)+ivar.eq.rmatrix%NVAR*(j-1)+jvar)&
-                        p_Kdiagonal(rmatrix%NVAR*(i-1)+ivar) = iA
                     p_Ddata(iA) = p_Ddata2(rmatrix%NVAR*rmatrix%NVAR*(iA2-1)+&
+                                           rmatrix%NVAR*(jvar-1)+ivar)
+                  end do
+                end do
+
+                ! Special treatment of diagonal block
+                j = p_Kcol2(p_Kld2(i))
+                do jvar = 1,rmatrix%NVAR
+                  iA = iA + 1
+                  p_Kcol(iA) = rmatrix%NVAR*(j-1)+jvar
+                  p_Ddata(iA) = p_Ddata2(rmatrix%NVAR*rmatrix%NVAR*(p_Kld2(i)-1)+&
+                                         rmatrix%NVAR*(jvar-1)+ivar)
+                  if (rmatrix%NVAR*(i-1)+ivar.eq.rmatrix%NVAR*(j-1)+jvar)&
+                      p_Kdiagonal(rmatrix%NVAR*(j-1)+jvar) = iA
+                end do
+
+                do iA3 = iA2,p_Kld2(i+1)-1
+                  do jvar = 1,rmatrix%NVAR
+                    iA = iA + 1
+                    j = p_Kcol2(iA3)
+                    p_Kcol(iA) = rmatrix%NVAR*(j-1)+jvar
+                    p_Ddata(iA) = p_Ddata2(rmatrix%NVAR*rmatrix%NVAR*(iA3-1)+&
                                            rmatrix%NVAR*(jvar-1)+ivar)
                   end do
                 end do
@@ -9236,13 +9273,28 @@ contains
             do i = 1,rmatrix%NEQ
               do ivar = 1,rmatrix%NVAR
                 p_Kld(rmatrix%NVAR*(i-1)+ivar) = iA+1
-                do iA2 = p_Kld2(i),p_Kld2(i+1)-1
+
+                do iA2 = p_Kld2(i)+1,p_Kld2(i+1)-1
+                  j = p_Kcol2(iA2)
+                  ! Check if we reached the position of the diagonal entry
+                  if (j>i) exit
                   iA = iA + 1
-                  j  = p_Kcol2(iA2)
                   p_Kcol(iA) = rmatrix%NVAR*(j-1)+ivar
-                  if (rmatrix%NVAR*(i-1).eq.rmatrix%NVAR*(j-1))&
-                      p_Kdiagonal(rmatrix%NVAR*(i-1)+ivar) = iA
                   p_Fdata(iA) = p_Fdata2(rmatrix%NVAR*(iA2-1)+ivar)
+                end do
+
+                ! Special treatment of diagonal block
+                iA = iA + 1
+                j = p_Kcol2(p_Kld2(i))
+                p_Kcol(iA) = rmatrix%NVAR*(j-1)+ivar
+                p_Kdiagonal(rmatrix%NVAR*(j-1)+ivar) = iA
+                p_Fdata(iA) = p_Fdata2(rmatrix%NVAR*(p_Kld2(i)-1)+ivar)
+                
+                do iA3 = iA2,p_Kld2(i+1)-1
+                  iA = iA + 1
+                  j = p_Kcol2(iA3)
+                  p_Kcol(iA) = rmatrix%NVAR*(j-1)+ivar
+                  p_Fdata(iA) = p_Fdata2(rmatrix%NVAR*(iA3-1)+ivar)
                 end do
               end do
             end do
@@ -9253,14 +9305,36 @@ contains
             do i = 1,rmatrix%NEQ
               do ivar = 1,rmatrix%NVAR
                 p_Kld(rmatrix%NVAR*(i-1)+ivar) = iA+1
-                do iA2 = p_Kld2(i),p_Kld2(i+1)-1
+
+                do iA2 = p_Kld2(i)+1,p_Kld2(i+1)-1
+                  j = p_Kcol2(iA2)
+                  ! Check if we reached the position of the diagonal entry
+                  if (j>i) exit
                   do jvar = 1,rmatrix%NVAR
                     iA = iA + 1
-                    j  = p_Kcol2(iA2)
                     p_Kcol(iA) = rmatrix%NVAR*(j-1)+jvar
-                    if (rmatrix%NVAR*(i-1)+ivar.eq.rmatrix%NVAR*(j-1)+jvar)&
-                        p_Kdiagonal(rmatrix%NVAR*(i-1)+ivar) = iA
                     p_Fdata(iA) = p_Fdata2(rmatrix%NVAR*rmatrix%NVAR*(iA2-1)+&
+                                           rmatrix%NVAR*(jvar-1)+ivar)
+                  end do
+                end do
+
+                ! Special treatment of diagonal block
+                j = p_Kcol2(p_Kld2(i))
+                do jvar = 1,rmatrix%NVAR
+                  iA = iA + 1
+                  p_Kcol(iA) = rmatrix%NVAR*(j-1)+jvar
+                  p_Fdata(iA) = p_Fdata2(rmatrix%NVAR*rmatrix%NVAR*(p_Kld2(i)-1)+&
+                                         rmatrix%NVAR*(jvar-1)+ivar)
+                  if (rmatrix%NVAR*(i-1)+ivar.eq.rmatrix%NVAR*(j-1)+jvar)&
+                      p_Kdiagonal(rmatrix%NVAR*(j-1)+jvar) = iA
+                end do
+
+                do iA3 = iA2,p_Kld2(i+1)-1
+                  do jvar = 1,rmatrix%NVAR
+                    iA = iA + 1
+                    j = p_Kcol2(iA3)
+                    p_Kcol(iA) = rmatrix%NVAR*(j-1)+jvar
+                    p_Fdata(iA) = p_Fdata2(rmatrix%NVAR*rmatrix%NVAR*(iA3-1)+&
                                            rmatrix%NVAR*(jvar-1)+ivar)
                   end do
                 end do
@@ -9297,12 +9371,25 @@ contains
           do i = 1,rmatrix%NEQ
             do ivar = 1,rmatrix%NVAR
               p_Kld(rmatrix%NVAR*(i-1)+ivar) = iA+1
-              do iA2 = p_Kld2(i),p_Kld2(i+1)-1
+              
+              do iA2 = p_Kld2(i)+1,p_Kld2(i+1)-1
+                j = p_Kcol2(iA2)
+                ! Check if we reached the position of the diagonal entry
+                if (j>i) exit
                 iA = iA + 1
-                j  = p_Kcol2(iA2)
                 p_Kcol(iA) = rmatrix%NVAR*(j-1)+ivar
-                if (rmatrix%NVAR*(i-1).eq.rmatrix%NVAR*(j-1))&
-                    p_Kdiagonal(rmatrix%NVAR*(i-1)+ivar) = iA
+              end do
+              
+              ! Special treatment of diagonal block
+              iA = iA + 1
+              j = p_Kcol2(p_Kld2(i))
+              p_Kcol(iA) = rmatrix%NVAR*(j-1)+ivar
+              p_Kdiagonal(rmatrix%NVAR*(j-1)+ivar) = iA
+              
+              do iA3 = iA2,p_Kld2(i+1)-1
+                iA = iA + 1
+                j = p_Kcol2(iA3)
+                p_Kcol(iA) = rmatrix%NVAR*(j-1)+ivar
               end do
             end do
           end do
@@ -9313,13 +9400,31 @@ contains
           do i = 1,rmatrix%NEQ
             do ivar = 1,rmatrix%NVAR
               p_Kld(rmatrix%NVAR*(i-1)+ivar) = iA+1
-              do iA2 = p_Kld2(i),p_Kld2(i+1)-1
+              
+              do iA2 = p_Kld2(i)+1,p_Kld2(i+1)-1
+                j = p_Kcol2(iA2)
+                ! Check if we reached the position of the diagonal entry
+                if (j>i) exit
                 do jvar = 1,rmatrix%NVAR
                   iA = iA + 1
-                  j  = p_Kcol2(iA2)
                   p_Kcol(iA) = rmatrix%NVAR*(j-1)+jvar
-                  if (rmatrix%NVAR*(i-1)+ivar.eq.rmatrix%NVAR*(j-1)+jvar)&
-                      p_Kdiagonal(rmatrix%NVAR*(i-1)+ivar) = iA
+                end do
+              end do
+              
+              ! Special treatment of diagonal block
+              j = p_Kcol2(p_Kld2(i))
+              do jvar = 1,rmatrix%NVAR
+                iA = iA + 1
+                p_Kcol(iA) = rmatrix%NVAR*(j-1)+jvar
+                if (rmatrix%NVAR*(i-1)+ivar.eq.rmatrix%NVAR*(j-1)+jvar)&
+                    p_Kdiagonal(rmatrix%NVAR*(j-1)+jvar) = iA
+              end do
+              
+              do iA3 = iA2,p_Kld2(i+1)-1
+                do jvar = 1,rmatrix%NVAR
+                  iA = iA + 1
+                  j = p_Kcol2(iA3)
+                  p_Kcol(iA) = rmatrix%NVAR*(j-1)+jvar
                 end do
               end do
             end do
