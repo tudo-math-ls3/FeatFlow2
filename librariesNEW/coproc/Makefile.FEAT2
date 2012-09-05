@@ -81,7 +81,7 @@ include ../create_library.mk
 $(COPROCLIB):  LOCKFILE = ../LOCK.creating.libcoproc.a
 $(COPROCLIB):  WAITTIME = 15
 $(COPROCLIB):  RETRIES  = 24
-$(COPROCLIB):	$(OBJ) $(OBJ_CUDA) $(OBJ_OPENGL)
+$(COPROCLIB):	$(OBJ) $(OBJ_CUDA)
 	@$(CREATE_LIB)
 
 
