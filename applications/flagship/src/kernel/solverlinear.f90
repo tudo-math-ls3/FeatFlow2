@@ -720,25 +720,6 @@ contains
     ! Check compatibility
     call lsysbl_isVectorCompatible(ru, rf)
 
-    ! Check if vector comes from a scalar one
-    if (ru%nblocks .ne. 1 .or. rf%nblocks .ne. 1) then
-      if (rsolver%coutputModeError .gt. 0) then
-        call output_line('UMFPACK4 can only be used for scalar equations!',&
-            OU_CLASS_ERROR,rsolver%coutputModeError,'linsol_solveUMFPACK')
-      end if
-      call sys_halt()
-    end if
-
-    ! Check if vector is stored in interleave format
-    if ((ru%RvectorBlock(1)%NVAR .ne. 1) .or. &
-        (rf%RvectorBlock(1)%NVAR .ne. 1)) then
-      if (rsolver%coutputModeError .gt. 0) then
-        call output_line('Scalar vectors must not contain multiple components!',&
-            OU_CLASS_ERROR,rsolver%coutputModeError,'linsol_solveUMFPACK')
-      end if
-      call sys_halt()
-    end if
-
     if (rsolver%drhsZero > 0.0_DP) then
       rsolver%dinitialRHS = lsysbl_vectorNorm(rf, LINALG_NORMMAX)
 
