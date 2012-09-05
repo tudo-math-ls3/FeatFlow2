@@ -17404,8 +17404,19 @@ contains
     end if
 
     if (rdestMatrix%h_Da .eq. ST_NOHANDLE) then
-      call storage_new ('lsyssc_auxcopy_Da', 'Da', rsourceMatrix%NA, &
-          rsourceMatrix%cdataType, rdestMatrix%h_Da,ST_NEWBLOCK_NOINIT)
+      select case(rsourceMatrix%cinterleavematrixFormat)
+      case (LSYSSC_MATRIX1)
+        call storage_new ('lsyssc_auxcopy_Da', 'Da',&
+            rsourceMatrix%NA*rsourceMatrix%NVAR*rsourceMatrix%NVAR, &
+            rsourceMatrix%cdataType, rdestMatrix%h_Da,ST_NEWBLOCK_NOINIT)
+      case (LSYSSC_MATRIXD)
+        call storage_new ('lsyssc_auxcopy_Da', 'Da',&
+            rsourceMatrix%NA*rsourceMatrix%NVAR, &
+            rsourceMatrix%cdataType, rdestMatrix%h_Da,ST_NEWBLOCK_NOINIT)
+      case default
+        call storage_new ('lsyssc_auxcopy_Da', 'Da', rsourceMatrix%NA, &
+            rsourceMatrix%cdataType, rdestMatrix%h_Da,ST_NEWBLOCK_NOINIT)
+      end select
     end if
 
     select case (rsourceMatrix%cdataType)
