@@ -1,14 +1,19 @@
 # -*- mode: any-ini; -*-
 
+version = 120829
+
 ################################################################################
 #                     Input parameters for the FEM-AFC solver                  #
 #                                                                              #
 #                 Woodward and Colella's blast wave problem in 2D              #
 ################################################################################
 
-simportdatafiles(2) =
+simportdatafiles(5) =
   '../../hydro/2d/default.dat'
   '../../solverdefault.dat'
+  '../../adaptivitydefault.dat'
+  '../../errorestdefault.dat'
+  '../../solver_singlegrid_defcor.dat'
 
 ################################################################################
 
@@ -53,9 +58,9 @@ iapproxtimederivativetype = 1
 
 # type of dissipation
 # 0 = no dissipation
-# 1 = scalar dissipation
-# 2 = tensorial dissipation
-# 3 = Rusanov type
+# 1 = scalar dissipation (-1 = dimensional splitting)
+# 2 = tensorial dissipation (-2 = dimensional splitting)
+# 3 = Rusanov type (-3 = dimensional splitting)
 idissipationtype = 3
 
 # type of system coupling
@@ -69,6 +74,8 @@ isystemcoupling = 0
 # 2 = low-order scheme with tensorial dissipation
 # 3 = low-order schemes of Rusanov type
 isystemPrecond = 3
+
+#-------------------------------------------------------------------------------
 
 # variables for flux correction
 # (i)  for synchronised flux correction list 
@@ -86,7 +93,7 @@ isystemPrecond = 3
 slimitingvariable(2) = 
   density
   pressure
-
+  
 # number of failsafe steps
 nfailsafe = 0
 
@@ -98,8 +105,11 @@ sfailsafevariable(3) =
 
 # type of initial solution profile
 # 0 = zero initial solution
-# 1 = analytical initial solution
-isolutiontype = 1
+# 1 = analytical initial solution: pointwise values
+# 2 = PGM image
+# 3 = anayltical initial solution: consistent L2-projection
+# 4 = anayltical initial solution: lumped L2-projection
+isolutiontype = 3
 
 # section name of initial solution
 ssolutionname(4) = 
@@ -110,11 +120,29 @@ ssolutionname(4) =
 
 # type of exact solution profile
 # 0 = no exact solution available
-# 1 = analytical initial solution
+# 1 = analytical exact solution
+# 2 = PGM image
+# 3 = GMV reference solution
 iexactsolutiontype = 0
 
 # section name of exact solution
 sexactsolutionname =
+
+# variables for constrained initialisation
+ssolutionconstrainvariable(2) =
+  density
+  pressure
+
+# number of failsafe steps in constrained initialisation
+nsolutionfailsafe = 3
+
+# variables for failsafe constrained initialisation
+ssolutionfailsafevariable(5) =
+  density
+  pressure
+  velocity_x
+  velocity_y
+  energy
 
 #-------------------------------------------------------------------------------
 
@@ -147,7 +175,9 @@ trifile = %{sgriddirectory}/2d/rect_01x0.01_quads.tri
 #              Q1~ non-parametric, edge-midpoint based
 # EL_EN31_2D   rotated bilinear nonconforming quadrilateral FE,
 #              Q1~ non-parametric, edge-midpoint based, new interface implementations
-celement = EL_Q1_2D
+celement(2) =
+  EL_P1_2D
+  EL_Q1_2D
 
 # convert mesh to triangular mesh?
 iconvToTria = 0
@@ -228,7 +258,7 @@ ilineariseucd = 0
 nrefineucd = 0
 
 # time interval for UCD output
-dstepUCD = 1e-3
+dstepUCD = 0.0
 
 # file for UCD output of solution
 sucdsolution = out/blastwave
@@ -242,19 +272,11 @@ sucdvariable(5) =
  velocity
  energy
  pressure
- internal_energy
+ machnumber
 
 ################################################################################
 [Timestepping]
 ################################################################################
-
-# level of output information:
-# 0 = no output
-# 1 = errors
-# 2 = errors+warnings
-# 3 = information
-# 4 = verbose output
-ioutputlevel = 3
 
 # type of time-stepping algorithm
 # 1 = two-level theta-scheme
@@ -262,21 +284,11 @@ ioutputlevel = 3
 # 5 = full MG
 ctimestepType = 1
 
-# norm to use for solution variation checking
-# 0 = Euclidian norm
-# 1 = L1-norm
-# 2 = L2-norm
-# 3 = MAX-norm
-isolNorm = 0
-
 # implicitness parameter: Valid values of THETA are in the range [0,1]
 theta = 0.5
 
 # number of steps for multisteps scheme
 multisteps = 0
-
-# initial time for the simulation
-dinitialTime = 0.0
 
 # final time for the simulation.
 dfinalTime = 0.038
@@ -284,178 +296,18 @@ dfinalTime = 0.038
 # initial time step size
 dinitialStep = 1e-5
 
-# lower bound for the admissible time step
-dminStep = 1e-5
-
-# upper bound for the admissible time step
-dmaxStep = 1e-5
-
-# adaptive time stepping algorithm
-iadaptTimestep = 0
-
-# initial time for adaptive time stepping
-dadaptTime = 0.0
-
-# minimum factor by which time step may change
-ddecreaseFactor = 0.1
-
-# maximum factor by which time step may change
-dincreaseFactor = 1.5
-
-# reduction factor by which time step is reduced if simulation fails
-dstepReductionFactor = 0.5
-
-# target tolerace for relative changes
-depsRel = 0.0
-
-# absolute tolerance for relative changes
-depsAbs = 0.0
-
-# tolerance for steady state convergence
-depsSteady = 0.0
-
 
 ################################################################################
 [FullMultigridSolver]
- csolverType = 5
 ################################################################################
 
-# level of output information:
-# 0 = no output
-# 1 = errors
-# 2 = errors+warnings
-# 3 = information
-# 4 = verbose output
-ioutputlevel = 2
-
-# minimum multigrid level number
-nlmin = 1
-
-# maximum multigrid level number
-nlmax = 1
-
-# type of multigrid cycle
-# 0 = F-cylce
-# 1 = V-cycle
-# 2 = W-cycle
-# 3,4,5 = corresponding saw tooth variants
-icycle = 0
-
-# minimum number of multigrid steps
-ilmin = 1
-
-# maximum number of multigrid steps
-ilmax = 1
-
-# nonlinear subsolver
-# 1 = nonlinear single-grid solver
-# 3 = nonlinear multigrid solver
-isolver = 1
-
-# name of the subsolver
-ssolvername = NonlinearSolver
-
-
-################################################################################
-[NonlinearMultigridSolver]
- csolverType = 3
-################################################################################
-
-# level of output information:
-# 0 = no output
-# 1 = errors
-# 2 = errors+warnings
-# 3 = information
-# 4 = verbose output
-ioutputlevel = 0
-
-# norm to use for defect checking
-# 0 = Euclidian norm
-# 1 = L1-norm
-# 2 = L2-norm
-# 3 = MAX-norm
-iresNorm = 0
-
-# minimum multigrid level number
-# If NLMIN = NLMAX then the nonlinear problem is solved by a single-grid solver
-nlmin = 1
-
-# maximum multigrid level number (see NLMIN)
-nlmax = 1
-
-# minimum number of linear mg steps
-ilmin = 1
-
-# maximum number of linear mg steps
-ilmax = 100
-
-# type of multigrid cycle
-# 0 = F-cylce
-# 1 = V-cycle
-# 2 = W-cycle
-# 3,4,5 =  corresponding saw tooth variants
-icycle = 1
-
-# nonlinear coarse grid solver
-# 1 = nonlinear single-grid solver
-# 3 = nonlinear multigrid solver
-isolver = 1
-
-# name of nonlinear coarse grid solver
-ssolvername = NonlinearSolver
-
-# smoother for the nonlinear multigrid solver
-# =1, nonlinear single-grid smoother, =3 nonlinear multigrid smoother
-ismoother = 1
-
-# name of nonlinear smoother
-ssmoothername = NonlinearSolver
-
-# number of presmoothing steps (if saw tooth variant is used, then no
-# presmoothing steps are performed in the coarse-to-fine part of the cycle)
-npresmooth = 2
-
-# number of postsmoothing steps (if saw tooth variant is used, then no
-# postsmoothing steps are performed in the coarse-to-fine part of the cycle)
-npostsmooth = 2
-
-# factor for pre/postsm. on coarser levels (On each level l, the number of
-# smoothing steps is computed from SM_l=SM_L*NSFAC**(L-l), where L stands
-# for the finest grid level and SM_L is the prescribed number of smoothing steps)
-nsfac = 1
-
-# nonlinear relaxation parameter
-domega = 1.0
-
-# absolute tolerance for residual
-depsAbs = 1e-12
-
-# relative tolerance for residual
-depsRel = 0.0
-
-# relative tolerance for stagnation
-depsStag = 0.0
+# multigrid level number
+nlev = 1
 
 
 ################################################################################
 [NonlinearSolver]
- csolverType = 1
 ################################################################################
-
-# level of output information:
-# 0 = no output
-# 1 = errors
-# 2 = errors+warnings
-# 3 = information
-# 4 = verbose output
-ioutputlevel = 3
-
-# norm to use for defect checking
-# 0 = Euclidian norm
-# 1 = L1-norm
-# 2 = L2-norm
-# 3 = MAX-norm
-iresNorm = 0
 
 # minimum number of nonlinear steps
 nminIterations = 1
@@ -463,127 +315,7 @@ nminIterations = 1
 # maximum number of nonlinear steps
 nmaxIterations = 100
 
-# preconditioner for the nonlinear solver
-# 1 = block-diagonal preconditioner
-# 2 = defect-correction algorithm
-# 3 = algebraic Newton algorithm
-iprecond = 2
-
-# nonlinear solver
-# 101 = fixed-point iteration
-# 102 = predictor-corrector fixed-point iteration
-isolver = 101
-
-# strategy for choosing the perturbation parameter in Newton's method
-# 1 = NITSOL
-# 2 = SQRT(EPS)
-# otherwise, user-defined value
-dperturbationStrategy = 1
-
-# strategy for choosing the forcing term in Newton's method
-# 1 = choice 1 by Eisenstat/Walker
-# 2 = choice 2 by Eisenstat/Walker
-# 3 = choice by Brown/Saad
-# 4 = choice by Dembo/Steihaug
-# otherwise, user-defined fixed value
-dforcingStrategy = 1
-
-# check sufficient decrease condition in globalisation
-# 0 = apply Newton increment without globalisation
-# 1 = check sufficient decrease condition and perform backtracking if required
-icheckSufficientDecrease = 0
-
-# maximum number of backtracking steps
-nmaxBacktrackingSteps = 5
-
-# update frequency of Jacobian
-iupdateFrequency = 0
-
 # nonlinear relaxation parameter
-domega = 1.0
-
-# absolute tolerance for residual
-depsAbs = 1e-10
-
-# relative tolerance for residual
-depsRel = 0.0
-
-# relative tolerance for stagnation
-depsStag = 0.0
-
-# name of linear sub-solver
-ssolvername = LinearSolver
-
-
-################################################################################
-[LinearMultigridSolver]
- csolverType = 4
-################################################################################
-
-# level of output information:
-# 0 = no output
-# 1 = errors
-# 2 = errors+warnings
-# 3 = information
-# 4 = verbose output
-ioutputlevel = 0
-
-# norm to use for defect checking
-# 0 = Euclidian norm
-# 1 = L1-norm
-# 2 = L2-norm
-# 3 = MAX-norm
-iresNorm = 0
-
-# minimum multigrid level number
-# If NLMIN = NLMAX then the nonlinear problem is solved by a single-grid solver
-nlmin = 1
-
-# maximum multigrid level number (see NLMIN)
-nlmax = 1
-
-# minimum number of linear mg steps
-ilmin = 1
-
-# maximum number of linear mg steps
-ilmax = 100
-
-# type of multigrid cycle
-# 0 = F-cylce
-# 1 = V-cycle
-# 2 = W-cycle
-# 3,4,5 =  corresponding saw tooth variants
-icycle = 1
-
-# linear coarse grid solver
-# 2 = linear single-grid solver
-isolver = 2
-
-# name of linear coarse grid solver
-ssolvername = LinearSolver
-
-# smoother for the linear multigrid solver
-# 2 = linear single-grid solver
-# 4 = linear multigrid solver
-ismoother = 2
-
-# name of smoother
-ssmoothername = LinearSmoother
-
-# number of presmoothing steps (if saw tooth variant is used, then no
-# presmoothing steps are performed in the coarse-to-fine part of the cycle)
-npresmooth = 2
-
-# number of postsmoothing steps (if saw tooth variant is used, then no
-# postsmoothing steps are performed in the coarse-to-fine part of the cycle)
-npostsmooth = 2
-
-# factor for pre/postsm. on coarser levels (On each level l, the number of
-# smoothing steps is computed from SM_l=SM_L*NSFAC**(L-l), where L stands
-# for the finest grid level and SM_L is the prescribed number of smoothing steps)
-nsmoothfactor = 1
-
-# linear relaxation parameter
 domega = 1.0
 
 # absolute tolerance for residual
@@ -597,54 +329,8 @@ depsStag = 0.0
 
 
 ################################################################################
-[LinearSmoother]
- csolverType = 2
-################################################################################
-
-# smoother for the linear multigrid solver
-#  2 = Jacobi
-#  4 = SOR
-#  5 = SSOR
-#  7 = BiCGSTAB
-#  8 = FGMRES
-# 50 = ILU
-isolver = 7
-
-# dimension of the Krylov subspace for FGMRES method
-nkrylov = 15
-
-# tolerance of (M)ILU-preconditioner
-depsILU = 1e-12
-
-# size of fill-in for (M)ILU(s)
-ifill = 0
-
-# (M)ILU(s) relaxation
-domega = 1.0
-
-# name of preconditioner
-sprecondName = LinearPrecond
-
-
-################################################################################
 [LinearSolver]
- csolverType = 2
 ################################################################################
-
-# level of output information:
-# 0 = no output
-# 1 = errors
-# 2 = errors+warnings
-# 3 = information
-# 4 = verbose output
-ioutputlevel = 2
-
-# norm to use for defect checking
-# 0 = Euclidian norm
-# 1 = L1-norm
-# 2 = L2-norm
-# 3 = MAX-norm
-iresNorm = 0
 
 # minimum number of linear steps
 nminIterations = 1
@@ -661,28 +347,18 @@ nmaxIterations = 100
 # 11 = UMFPACK4
 isolver = 5
 
-# dimension of the Krylov subspace for FGMRES method
-nkrylov = 25
-
-# linear relaxation parameter
-domega = 1.0
-
 # absolute tolerance for residual
 depsAbs = 1e-12
 
 # relative tolerance for residual
-depsRel = 1e-1
+depsRel = 1e-8
 
 # relative tolerance for stagnation
 depsStag = 0.0
 
-# name of preconditioner
-sprecondName = LinearPrecond
-
 
 ################################################################################
 [LinearPrecond]
- csolverType = 2
 ################################################################################
 
 # preconditioner for the linear single-grid solver
@@ -692,22 +368,10 @@ sprecondName = LinearPrecond
 # 50 = ILU
 isolver = 50
 
-# tolerance of (M)ILU-preconditioner
-depsILU = 1e-12
-
-# size of fill-in for (M)ILU(s)
-ifill = 0
-
-# (M)ILU(s) relaxation
-domega = 1.0
-
 
 ################################################################################
 [Adaptivity]
 ################################################################################
-
-# number of pre-adaptation steps
-npreadapt = 0
 
 # number of adaptation steps
 nadapt = 0

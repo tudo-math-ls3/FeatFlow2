@@ -86,12 +86,16 @@ isystemPrecond = 1
 # (ii) for sequential/multiplicative flux correction list
 #      all variables one by one, e.g.
 #
-slimitingvariable(2) =
+# slimitingvariable(3) =
+#      density
+#      pressure
+#      velocity
+slimitingvariable(2) = 
   density
   pressure
   
 # number of failsafe steps
-nfailsafe = 0
+nfailsafe = 3
 
 # variables for failsafe flux correction
 sfailsafevariable(2) =
@@ -175,7 +179,7 @@ imatrixformat = 9
 # type of system format
 # 0 = interleave scalar format
 # 1 = block system
-isystemformat = 1
+isystemformat = 0
 
 #-------------------------------------------------------------------------------
 
@@ -219,7 +223,7 @@ istabilisation = 20
 #  0 = no prelimiting
 #  1 = standard prelimiting
 #  2 = minmod prelimiting
-iprelimiting = 0
+iprelimiting = 1
 
 
 ################################################################################
@@ -330,7 +334,7 @@ nmaxIterations = 100
 #  7 = BiCGSTAB
 #  8 = FGMRES
 # 11 = UMFPACK4
-isolver = 11
+isolver = 5
 
 # absolute tolerance for residual
 depsAbs = 1e-12
