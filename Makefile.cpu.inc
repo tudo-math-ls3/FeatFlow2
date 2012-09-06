@@ -173,7 +173,7 @@ SRCEXTRA      = $(FEAT2BASEDIR)/kernel/Postprocessing/gmvwritef.c \
 		$(FEAT2BASEDIR)/kernel/System/storage_malloc.c
 
 # List of all libraries available (queried for purge* targets)
-ALLLIB        = amd blas lapack splib umfpack
+ALLLIB        = agmg amd blas coproc inshape2d lapack metis splib umfpack
 
 # libraries to be built (e.g. 'blas' if there is no system-wide blas;
 # on a typical system set this to 'metis umfpack' only)

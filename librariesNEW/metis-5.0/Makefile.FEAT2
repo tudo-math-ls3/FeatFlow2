@@ -1,0 +1,211 @@
+# -*- makefile -*-
+
+# Which compiler to use
+CC = cc
+
+# What optimization level to use
+OPTFLAGS =
+
+# What options to be used by the compiler
+COPTIONS =
+
+# What options to be used by the loader
+LDOPTIONS =
+
+# What to use for create a library
+AR = ar -rv
+
+# What to use for indexing the archive
+RANLIB = ranlib
+
+# Where to store the object files
+OBJDIR = object
+
+INCLUDES = -I.
+
+CFLAGS = $(CFLAGSC) $(OPTFLAGS) $(INCLUDES) $(COMOPTC)
+LD = LC_ALL=C $(CC) -L.
+
+
+# SRC = Lib/coarsen.c Lib/fm.c Lib/initpart.c Lib/match.c Lib/ccgraph.c \
+#       Lib/memory.c Lib/pmetis.c Lib/pqueue.c Lib/refine.c \
+#       Lib/util.c Lib/timing.c Lib/debug.c Lib/bucketsort.c \
+#       Lib/graph.c Lib/stat.c Lib/kmetis.c Lib/kwayrefine.c \
+#       Lib/kwayfm.c Lib/balance.c Lib/ometis.c Lib/srefine.c \
+#       Lib/sfm.c Lib/separator.c Lib/mincover.c Lib/mmd.c \
+#       Lib/mesh.c Lib/meshpart.c Lib/frename.c Lib/fortran.c \
+#       Lib/myqsort.c Lib/compress.c Lib/parmetis.c Lib/estmem.c \
+#       Lib/mpmetis.c Lib/mcoarsen.c Lib/mmatch.c Lib/minitpart.c \
+#       Lib/mbalance.c Lib/mrefine.c Lib/mutil.c Lib/mfm.c \
+#       Lib/mkmetis.c Lib/mkwayrefine.c Lib/mkwayfmh.c \
+#       Lib/mrefine2.c Lib/minitpart2.c Lib/mbalance2.c Lib/mfm2.c \
+#       Lib/kvmetis.c Lib/kwayvolrefine.c Lib/kwayvolfm.c \
+#       Lib/subdomains.c
+
+SRC = libmetis/auxapi.c libmetis/balance.c libmetis/bucketsort.c \
+      libmetis/checkgraph.c libmetis/coarsen.c libmetis/compress.c \
+      libmetis/contig.c libmetis/debug.c libmetis/fm.c libmetis/fortran.c \
+      libmetis/frename.c libmetis/gklib.c libmetis/graph.c libmetis/initpart.c \
+      libmetis/kmetis.c libmetis/kwayfm.c libmetis/kwayrefine.c \
+      libmetis/mcutil.c libmetis/mesh.c libmetis/meshpart.c libmetis/minconn.c \
+      libmetis/mincover.c libmetis/mmd.c libmetis/ometis.c libmetis/options.c \
+      libmetis/parmetis.c libmetis/pmetis.c libmetis/refine.c \
+      libmetis/separator.c libmetis/sfm.c libmetis/srefine.c libmetis/stat.c \
+      libmetis/timing.c libmetis/util.c libmetis/wspace.c \
+      GKlib/b64.c GKlib/blas.c GKlib/csr.c GKlib/error.c GKlib/evaluate.c \
+      GKlib/fkvkselect.c GKlib/fs.c GKlib/getopt.c GKlib/gkregex.c \
+      GKlib/htable.c GKlib/io.c GKlib/itemsets.c GKlib/mcore.c GKlib/memory.c \
+      GKlib/omp.c GKlib/pdb.c GKlib/pqueue.c GKlib/random.c GKlib/seq.c \
+      GKlib/sort.c GKlib/string.c GKlib/timers.c GKlib/tokenizer.c \
+      GKlib/gk_util.c metis5_f95wrapper_feast.c
+
+
+
+OBJS = $(patsubst %.c, $(OBJDIR)/%.o, $(notdir $(SRC)))
+
+libmetis.a: $(OBJDIR)/libmetis.a
+
+#-------------------------------------------------------------------------------
+# Create the library
+#-------------------------------------------------------------------------------
+# Note:
+# Explicitly take precautions to reflect the considerations in Section 11.3 of 
+# the GNU Make Manual, http://www.gnu.org/software/make/manual/make.html#Archive-Pitfalls:
+# This Makefile is potentially called simultaneously from multiple make processes,
+# e.g. when compiling the FEAT2 regression benchmark in parallel. Concurrent 
+# attempts to create the archive should not happen. Try to avoid it with the
+# usual FEAT2 lock file mechanism.
+include ../create_library.mk
+$(OBJDIR)/libmetis.a:  LOCKFILE = ../LOCK.creating.libmetis.a
+$(OBJDIR)/libmetis.a:  WAITTIME = 15
+$(OBJDIR)/libmetis.a:  RETRIES  = 24
+$(OBJDIR)/libmetis.a: $(OBJS)
+	@$(CREATE_LIB)
+
+# All object files go to a single object directory in FEAT2 and in that case
+# either the object code of libmetis/util.c or GKlib/util.c is lost. So, avoid
+# that GKlib/util.c gets compiled and instead compile its copy named
+# GKlib/gk_util.c
+GKlib/gk_util.c: GKlib/util.c
+	cp -p GKlib/util.c GKlib/gk_util.c
+
+
+# Function to delete a single file at once
+define remove_file
+ rm -f $(file)
+
+endef
+
+clean:
+        # Delete every file separately to prevent errors of kind: 
+        # execvp: rm: Arg list too long
+	-$(foreach file, $(OBJS) $(OBJDIR)/libmetis.a, $(remove_file))
+	-if test -d $(OBJDIR); then rmdir $(OBJDIR); fi;
+
+purge:
+        # Delete every file separately to prevent errors of kind: 
+        # execvp: rm: Arg list too long
+	-$(foreach file, $(OBJS) $(OBJDIR)/libmetis.a, $(remove_file))
+	-for dir in $(OBJDIR); do if test -d $${dir}; then rmdir $${dir}; fi; done
+	-rm -rf BUILD-Windows.txt BUILD.txt CMakeLists.txt Changelog GKlib Install.txt \
+	        LICENSE.txt Makefile build graphs include libmetis manual programs vsgen.bat
+
+
+# An order-only prerequisites shall not be put on the same line as a prerequisite 
+# of an implicit rule. Otherwise the target defined in this implicit rule is
+# rebuilt every time you invoke make!
+$(OBJS): | $(OBJDIR)
+$(OBJDIR)/%.o: GKlib/%.c
+	LC_ALL=C $(CC) $(CFLAGS) -Iinclude -IGKlib -Ilibmetis -c $< -o $@
+
+$(OBJDIR)/%.o: libmetis/%.c
+	LC_ALL=C $(CC) $(CFLAGS) -Iinclude -IGKlib -Ilibmetis -c $< -o $@
+
+$(OBJDIR):
+	@test -d $(OBJDIR) || (rm -f $(OBJDIR); mkdir -p $(OBJDIR))
+
+# Override implicit rule for GKlib/util.o to prevent attempts to compile it
+$(OBJDIR)/util.o: libmetis/util.c
+	LC_ALL=C $(CC) $(CFLAGS) -Iinclude -IGKlib -Ilibmetis -c $< -o $@
+
+$(OBJDIR)/metis5_f95wrapper_feast.o: metis5_f95wrapper_feast.c
+	LC_ALL=C $(CC) $(CFLAGS) -Iinclude -c $< -o $@
+
+
+
+#-------------------------------------------------------------------------------
+# Unpack tarball as required.
+#-------------------------------------------------------------------------------
+# Note: This is trickier than one might think:
+# A tarball should only get extracted (and possibly patched) once. If already
+# extracted, there is no need to reextract it. Parallel make runs should stick
+# to this rule as well.
+# All source files are created by one rule, the extract command. But 
+# implementing it like:
+#   $(SRC_METIS):
+#         <extract tarball>
+# would mean that e.g. in a 4-way parallel make run, a tarball would get
+# extracted 4 times in parallel, because make is not aware that the rule is
+# identical for the first 4 items of $(SRC_METIS). Extracting the same tarball 
+# several times simultaneously, may cause several problems. Among those is 
+# the case where a source file gets already compiled while it is being 
+# overwritten by its copy from the tarball. Beware of doing that.
+# Things get worse when multiple external Makefiles call this Makefile in
+# parallel and ask for the compilation of the library. This happens regularly
+# when compiling the FEAT2 regression benchmark as this is usually done in
+# parallel with up to 32 processes.
+# The extraction of tarballs needs to be serialised somehow - which is not
+# possible with GNU Make 3.81 (or earlier) intrinsics (in particular the target 
+# .NOTPARALLEL is not an option.)
+
+
+# Function to download a tarball - as a serialised operation
+# using a locking mechanism
+include ../download.mk
+
+# Function to unpack a tarball - as a serialised operation
+# using a locking mechanism
+include ../unpack.mk
+
+
+#-------------------------------------------------------------------------------
+# Automatically extract METIS tarball when required.
+#-------------------------------------------------------------------------------
+
+METIS_TARBALL = ../metis-5.0.tar.gz
+
+# List of required source files from METIS package. Purpose: let them share
+# a single common prerequisite that in turn is created by unpacking the tarball.
+# That's the key to serialise the unpacking process.
+SRC_METIS = $(SRC)
+
+
+# Choose the last file that is extracted from the METIS tarball. It's
+# existence indicates that the METIS tarball has been unpacked already
+# completely. This approach is a hack to serialise a parallel make run,
+# parallel threads pause till make has passed through this needle's eye.
+LAST_FILE_FROM_METIS_TARBALL = ../metis-5.0/GKlib/omp.c
+$(SRC_METIS) GKlib/util.c: $(LAST_FILE_FROM_METIS_TARBALL)
+
+# To catch the case where several applications simultaneously
+# try to build the METIS library (e.g. parallel make of the 
+# FEAT2 regression benchmark), this extractions needs to deploy
+# a locking mechanism.
+$(LAST_FILE_FROM_METIS_TARBALL):  NAME     = "METIS 5.0 reference implementation sources"
+$(LAST_FILE_FROM_METIS_TARBALL):  TARBALL  = $(METIS_TARBALL)
+$(LAST_FILE_FROM_METIS_TARBALL):  LOCKFILE = ../LOCK.unpack.metis-5.0.tar.gz
+$(LAST_FILE_FROM_METIS_TARBALL):  WAITTIME = 15
+$(LAST_FILE_FROM_METIS_TARBALL):  RETRIES  = 24
+$(LAST_FILE_FROM_METIS_TARBALL):  PATCHCMD   = cat ../metis-5.0_fix_pgi_compile_error.patch | patch -u -p0
+$(LAST_FILE_FROM_METIS_TARBALL):  PATCHTEXT1 = "\# Patching METIS 5.0 sources to prevent compile errors with PGI 7.1-6 up to 11.7."
+$(LAST_FILE_FROM_METIS_TARBALL): | $(METIS_TARBALL)
+	@$(call UNPACK)
+
+# Try to download tar ball if not present
+$(METIS_TARBALL):  URL      = http://glaros.dtc.umn.edu/gkhome/fetch/sw/metis/metis-5.0.tar.gz
+$(METIS_TARBALL):  TARBALL  = $(METIS_TARBALL)
+$(METIS_TARBALL):  LOCKFILE = ../LOCK.download.metis-5.0.tar.gz
+$(METIS_TARBALL):  WAITTIME = 15
+$(METIS_TARBALL):  RETRIES  = 24
+$(METIS_TARBALL):
+	@$(call DOWNLOAD)

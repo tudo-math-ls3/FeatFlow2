@@ -1,0 +1,216 @@
+# -*- makefile -*-
+
+#-------------------------------------------------------------------------------
+# Default values for compiler and archiver. Usually explicitly overritten
+# by call from FEAT2 application.
+#-------------------------------------------------------------------------------
+FORTRAN = gfortran
+OPTS    = -O
+ARCH    = ar -rv
+RANLIB  = ranlib
+OBJDIR  = object
+
+
+
+#-------------------------------------------------------------------------------
+# From here till the end of the file are additional instructions added for
+# smooth FEAT2 integration:
+#-------------------------------------------------------------------------------
+
+.PHONY:	default
+default: $(OBJDIR)/libagmg.a
+
+SRCLIST = SRC/cagmg.f90 SRC/cagmg_mumps.f90 \
+	  SRC/dagmg.f90 SRC/dagmg_mumps.f90 \
+	  SRC/sagmg.f90 SRC/sagmg_mumps.f90 \
+	  SRC/zagmg.f90 SRC/zagmg_mumps.f90
+OBJS = $(patsubst %.f90, $(OBJDIR)/%.o, $(notdir $(SRCLIST)))
+
+
+
+#-------------------------------------------------------------------------------
+# Create the library
+#-------------------------------------------------------------------------------
+# Note:
+# Explicitly take precautions to reflect the considerations in Section 11.3 of
+# the GNU Make Manual, http://www.gnu.org/software/make/manual/make.html#Archive-Pitfalls:
+# This Makefile is potentially called simultaneously from multiple make processes,
+# e.g. when compiling the FEAT2 regression benchmark in parallel. Concurrent
+# attempts to create the archive should not happen. Try to avoid it with the
+# usual FEAT2 lock file mechanism.
+include ../create_library.mk
+$(OBJDIR)/libagmg.a:  LOCKFILE = ../LOCK.creating.libagmg.a
+$(OBJDIR)/libagmg.a:  WAITTIME = 15
+$(OBJDIR)/libagmg.a:  RETRIES  = 24
+$(OBJDIR)/libagmg.a: $(OBJ)
+	@$(CREATE_LIB)
+
+
+
+#-------------------------------------------------------------------------------
+# Before creating any object file, first create the object directory.
+#-------------------------------------------------------------------------------
+# Note:
+# An order-only prerequisite shall not be put on the same line as a prerequisite
+# of an implicit rule. Otherwise the target defined in this implicit rule is
+# rebuilt every time you invoke make!
+$(OBJS): | $(OBJDIR)
+$(OBJDIR)/%.o: %.f90
+	$(FORTRAN) $(OPTS) -c $< -o $@
+
+$(OBJDIR):
+	@test -d $(OBJDIR) || (rm -f $(OBJDIR); mkdir -p $(OBJDIR))
+
+
+#-------------------------------------------------------------------------------
+# Unpack tarballs as required.
+#-------------------------------------------------------------------------------
+# Note: This is trickier than one might think:
+# A tarball should only get extracted (and possibly patched) once. If already
+# extracted, there is no need to reextract it. Parallel make runs should stick
+# to this rule as well.
+# All source files are created by one rule, the extract command. But
+# implementing it like:
+#   $(SRC_AGMG):
+#         <extract tarball>
+# would mean that e.g. in a 4-way parallel make run, a tarball would get
+# extracted 4 times in parallel, because make is not aware that the rule is
+# identical for the first 4 items of $(SRC_AGMG). The same holds for
+# $(SRC_SUITESPARSE_CONFIG). Extracting the same tarball several times
+# simultaneously, gives rise to several problems. Among those is the case
+# where a source file gets already compiled while it is being overwritten by
+# its copy from the tarball. Beware of doing that.
+# Things get worse when multiple external Makefiles call this Makefile in
+# parallel and ask for the compilation of the library. This happens regularly
+# when compiling the FEAT2 regression benchmark as this is usually done in
+# parallel with up to 32 processes.
+# The extraction of tarballs needs to be serialised somehow - which is not
+# possible with GNU Make 3.81 (or earlier) intrinsics (in particular the target
+# .NOTPARALLEL is not an option.)
+
+
+# Function to download a tarball - as a serialised operation
+# using a locking mechanism
+include ../download.mk
+
+# Function to unpack a tarball - as a serialised operation
+# using a locking mechanism
+include ../unpack.mk
+
+
+#-------------------------------------------------------------------------------
+# Automatically extract AGMG tarball when required.
+#-------------------------------------------------------------------------------
+
+AGMG_TARBALL = ../AGMG_3.1.2.tar.gz
+
+# List of required source files from AGMG package. Purpose: let them share
+# a single common prerequisite that in turn is created by unpacking the tarball.
+# That's the key to serialise the unpacking process.
+SRC_AGMG = $(SRCLIST)
+
+# Choose the last file that is extracted from the AGMG tarball. It's
+# existence indicates that the AGMG tarball has been unpacked already
+# completely. This approach is a hack to serialise a parallel make run,
+# parallel threads pause till make has passed through this needle's eye.
+LAST_FILE_FROM_AGMG_TARBALL = ../AGMG_3.1.2/Doc/userguide.pdf
+$(SRC_AGMG): $(LAST_FILE_FROM_AGMG_TARBALL) $(LAST_FILE_FROM_SUITESPARSE_CONFIG_TARBALL)
+
+# To catch the case where several applications simultaneously
+# try to build the UMFPACK library (e.g. parallel make of the
+# FEAT2 regression benchmark), this extractions needs to deploy
+# a locking mechanism.
+$(LAST_FILE_FROM_AGMG_TARBALL):  NAME     = "AGMG 2.3.1 sources"
+$(LAST_FILE_FROM_AGMG_TARBALL):  TARBALL  = $(AGMG_TARBALL)
+$(LAST_FILE_FROM_AGMG_TARBALL):  LOCKFILE = ../LOCK.unpack.agmg-2.3.1.tar.gz
+$(LAST_FILE_FROM_AGMG_TARBALL):  WAITTIME = 15
+$(LAST_FILE_FROM_AGMG_TARBALL):  RETRIES  = 24
+$(LAST_FILE_FROM_AGMG_TARBALL):  PATCHCMD = echo
+$(LAST_FILE_FROM_AGMG_TARBALL): | $(AGMG_TARBALL)
+	@$(call UNPACK)
+
+# Try to download tar ball if not present
+$(AGMG_TARBALL):  URL      = http://homepages.ulb.ac.be/~ynotay/AGMG/AGMG_3.1.2.tar.gz.gz
+$(AGMG_TARBALL):  TARBALL  = $(AGMG_TARBALL)
+$(AGMG_TARBALL):  LOCKFILE = ../LOCK.download./AGMG_3.1.2.tar.gz
+$(AGMG_TARBALL):  WAITTIME = 15
+$(AGMG_TARBALL):  RETRIES  = 24
+$(AGMG_TARBALL):
+	@$(call DOWNLOAD)
+
+
+#-------------------------------------------------------------------------------
+# Clean up targets
+#-------------------------------------------------------------------------------
+
+# Functions to delete a single file / directory at once
+# (The reason why we need this and the magic why this works lies within
+#  the blank line after the remove command. This way the remove commands
+#  in a foreach-loop are triggered one after another - in separate
+#  sub-shells. Not in a single sub-shell command. As this may result
+#  on some machines in error messages of type:
+#  execvp: rm: Arg list too long)
+define remove_file
+    rm -f $(file)
+
+endef
+
+
+# Recursively remove directories. For the first two directory levels
+# print an error message if removal failed. (The restriction to two
+# levels is rather arbitrary. It's the least number of directory levels
+# created by a FEAST Makefile. To show an error message unconditionally
+# is not desired as one would eventually always get an error message, at
+# least when trying to remove /)
+# The for loop is to deal with given directory wildcards like object/pc-*-*-*.
+define remove_directory
+    @rmdirFailures=""; \
+     for dir in $(dir); do \
+	depth=0; \
+	while test -d "$${dir}" -a "$${dir}" != '.' -a "$${dir}" != '/'; do \
+	    if rmdir "$${dir}" 2>/dev/null; then \
+		echo "rmdir $${dir}"; \
+		dir=`dirname $${dir}`; \
+	    else \
+		test $${depth} -lt 2 && rmdirFailures="$${rmdirFailures} $${dir}"; \
+		dir='.'; \
+	    fi; \
+	    depth=`expr $${depth} + 1`; \
+	done; \
+    done; \
+    for dir in $${rmdirFailures}; do \
+	if test -d "$${dir}"; then \
+	    $(print_directory_not_empty); \
+	fi; \
+    done
+
+endef
+
+# Function to be called if directory removal did not work unexpectedly.
+define print_directory_not_empty
+    (echo; \
+     echo '# ---------------------------------------------------------------------'; \
+     echo '# This Makefile previously created the directory '; \
+     echo '#'; \
+     echo "# $${dir}"; \
+     echo '#'; \
+     echo '# and was about to remove it. Since there are files in that directory'; \
+     echo '# that this Makefile did not create, it will not be removed.'; \
+     echo '# ---------------------------------------------------------------------')
+endef
+
+
+.PHONY:	clean
+clean:
+        # Delete every file separately to prevent errors of kind:
+        # execvp: rm: Arg list too long
+	-$(foreach file, $(OBJS) $(OBJDIR)/libagmg.a, $(remove_file))
+	$(foreach dir, $(OBJDIR), $(remove_directory))
+
+.PHONY:	purge
+purge:
+        # Delete every file separately to prevent errors of kind:
+        # execvp: rm: Arg list too long
+	-$(foreach file, $(OBJS) $(OBJDIR)/libagmg.a, $(remove_file))
+	$(foreach dir, $(OBJDIR), $(remove_directory))
+	-rm -rf Doc Example_par Example_seq Matlab README SRC

@@ -2645,10 +2645,10 @@ sub create_feastAppMakefile {
 
 
     ##############################################################################
-    # Libraries (coproc, metis, umfpack, blas, lapack, splib)
+    # Libraries (AGMG, AMD, blas, coproc, inshape2d, lapack, metis, splib, umfpack)
     print MAKEFILE_HDL
         "##############################################################################\n" .
-        "# Libraries (coproc, metis, umfpack, AMD, blas, lapack, splib)\n\n" .
+        "# Libraries (AGMG, AMD, blas, coproc, inshape2d, lapack, metis, splib, umfpack)\n\n" .
 
         "# A prerequisite for all libraries is that the object directory\n" .
         "# to store should exist. The pipe is to determine that we want\n" .
@@ -2692,7 +2692,7 @@ sub create_feastAppMakefile {
     # metis library path settings
         "# metis library path settings\n" .
         "\$(OBJDIR_LIB)/libmetis.a clean-metis purge-metis: \\\n" .
-        "\tDIR = \$(FEAT2BASEDIR)/librariesNEW/metis-4.0\n\n" .
+        "\tDIR = \$(FEAT2BASEDIR)/librariesNEW/metis-5.0\n\n" .
 
     # metis library
         "# Create metis library\n" .
@@ -2788,19 +2788,34 @@ sub create_feastAppMakefile {
         "\t\tARCH=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" \\\n" .
         "\t\tOBJDIR=\"\$(OBJDIR_LIB)\")\n\n" .
 
-    # inshape path settings
-        "# inshape library path settings\n" .
+    # inshape2d path settings
+        "# inshape2d library path settings\n" .
         "\$(OBJDIR_LIB)/libinshape2d.a clean-inshape2d purge-inshape2d: \\\n" .
         "\tDIR = \$(FEAT2BASEDIR)/librariesNEW/inshape\n\n" .
 
-    # inshape library
-        "# Create inshape library\n" .
+    # inshape2d library
+        "# Create inshape2d library\n" .
         ".PHONY: \$(OBJDIR_LIB)/libinshape2d.a\n" .
         "\$(OBJDIR_LIB)/libinshape2d.a:\n" .
-        "\t\@echo \"# Building inshape library\"\n" .
+        "\t\@echo \"# Building inshape2d library\"\n" .
         "\t(cd \$(DIR) && \\\n" .
         "\t    $makeInMakefile -f Makefile.FEAT2 \$\@ \\\n" .
-        "\t\tFORTRAN=\"\$(PREF77) \$(F77)\" OPTS=\"\$(CFLAGSF77LIBS)\" \\\n" .
+        "\t\tARCH=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" \\\n" .
+        "\t\tOBJDIR=\"\$(OBJDIR_LIB)\")\n\n" .
+
+    # AGMG path settings
+        "# AGMG library path settings\n" .
+        "\$(OBJDIR_LIB)/libagmg.a clean-agmg purge-agmg: \\\n" .
+        "\tDIR = \$(FEAT2BASEDIR)/librariesNEW/AGMG_3.1.2\n\n" .
+
+    # AGMG library
+        "# Create AGMG library\n" .
+	".PHONY: \$(OBJDIR_LIB)/libagmg.a\n" .
+        "\$(OBJDIR_LIB)/libagmg.a:\n" .
+        "\t\@echo \"# Building AGMG library\"\n" .
+        "\t(cd \$(DIR) && \\\n" .
+        "\t    $makeInMakefile -f Makefile.FEAT2 \$\@ \\\n" .
+	"\t\tF95=\"\$(PREF90) \$(F90)\" OPTS=\"\$(CFLAGSF77LIBS)\" \\\n" .
         "\t\tARCH=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" \\\n" .
         "\t\tOBJDIR=\"\$(OBJDIR_LIB)\")\n\n";
 
@@ -3570,7 +3585,15 @@ sub create_feastAppMakefile {
         "\t\@echo \"  list-ids       print a list of valid build IDs for current host\"\n" .
         "\t\@echo \"  list-all-ids   print a list of all valid build IDs\"\n" .
         "\t\@echo \"  <library>      compile only <library>, where <library> is one of\"\n" .
-        "\t\@echo \"                   'umfpack', 'blas', 'lapack', 'splib' etc.\"\n" .
+        "\t\@echo \"                   'agmg' - aggregation-based algebraic multigrid metho \"\n" .
+        "\t\@echo \"                   'amd' - approximate minimum degree ordering\"\n" .
+        "\t\@echo \"                   'blas' - basic linear algebra subprograms\"\n" .
+        "\t\@echo \"                   'coproc' - co-processor support\"\n" .
+        "\t\@echo \"                   'inshape2d' - NURBS-curves and surfaces \"\n" .
+        "\t\@echo \"                   'lapack' - linear algebra package\"\n" .
+        "\t\@echo \"                   'metis' - graph partitioning and fill-reduction matrix ordering \"\n" .
+        "\t\@echo \"                   'splib' iterative methods and preconditioners\"\n" .
+        "\t\@echo \"                   'umfpack' - unsymmetric multifrontal sparse LU factorization\"\n" .
         "\t\@echo \"  <object file>  compile <object file>, where <object file> is one of FEAT2's\"\n" .
         "\t\@echo \"                   object files. (The object directory can be omitted). Those\"\n" .
         "\t\@echo \"                   modules <object file> depends on will be built if necessary\"\n" .
@@ -3787,9 +3810,9 @@ sub create_feastBenchmarkMakefile {
         "\t\@\$(MAKE) -C\$(SRCDIR) libs\n" .
         "\n" .
         "# Generic rule to build a specific library only\n" .
-        ".PHONY:\tamd blas coproc lapack libamd.a libblas.a libcoproc.a \\\n" .
+        ".PHONY:\tagmg amd blas coproc lapack libagmg.a libamd.a libblas.a libcoproc.a \\\n" .
         "\tliblapack.a libmetis.a libsplib.a libumfpack.a metis splib umfpack\n" .
-        "amd blas coproc lapack libamd.a libblas.a libcoproc.a \\\n" .
+        "agmg amd blas coproc lapack libagmg.a libamd.a libblas.a libcoproc.a \\\n" .
         "liblapack.a libmetis.a libsplib.a libumfpack.a metis splib umfpack:\n" .
         "\t\@\$(MAKE) -C\$(SRCDIR) \$\@\n" .
         "\n" .
@@ -5099,7 +5122,7 @@ sub show_help {
 	"                    --binary=32 : Generate code for 32-bit environment.\n" .
 	"                    --binary=64 : Generate code for 64-bit environment.\n" .
         "--buildlib=<string> Specify libraries to build\n" .
-        "                    (like: umfpack blas lapack splib)\n" .
+        "                    (like: agmg amd blas coproc inshape2d lapack metis splib umfpack)\n" .
         "--cc=<file>         C compiler\n" .
         "--cflagsc=<string>  Set C compiler flags to <string>\n" .
         "--cflagscoproc=<string>\n" .

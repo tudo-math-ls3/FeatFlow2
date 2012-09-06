@@ -624,5 +624,5 @@ purge:
 	-rm -rf Demo Doc Include Lib MATLAB Makefile README.txt Source Tcov
 	-rm -rf ../SuiteSparse_config/Makefile ../SuiteSparse_config/README.txt \
                 ../SuiteSparse_config/SuiteSparse_config.c ../SuiteSparse_config/SuiteSparse_config.h \
-                ../SuiteSparse_config/SuiteSparse_config.mk ../SuiteSparse_config/SuiteSparse_config_Mac.mk \
-                ../SuiteSparse_config/xerbla
+                ../SuiteSparse_config/SuiteSparse_config.mk ../SuiteSparse_config/SuiteSparse_config_GPU.mk \
+                ../SuiteSparse_config/SuiteSparse_config_Mac.mk ../SuiteSparse_config/xerbla

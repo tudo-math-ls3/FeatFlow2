@@ -1,0 +1,11 @@
+--- GKlib/string.c	2011-07-28 18:43:07.000000000 +0200
++++ GKlib/string.c	2011-09-05 16:05:58.000000000 +0200
+@@ -482,7 +482,7 @@
+ 
+ 
+ 
+-#if !defined(WIN32) && !defined(__MINGW32__)
++#if !defined(WIN32) && !defined(__MINGW32__) && !defined(__PGI)
+ /************************************************************************/
+ /*! \brief Converts a date/time string into its equivalent time_t value
+ 
