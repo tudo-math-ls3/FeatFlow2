@@ -42,7 +42,7 @@ include ../create_library.mk
 $(OBJDIR)/libagmg.a:  LOCKFILE = ../LOCK.creating.libagmg.a
 $(OBJDIR)/libagmg.a:  WAITTIME = 15
 $(OBJDIR)/libagmg.a:  RETRIES  = 24
-$(OBJDIR)/libagmg.a: $(OBJ)
+$(OBJDIR)/libagmg.a: $(OBJS)
 	@$(CREATE_LIB)
 
 
@@ -55,7 +55,7 @@ $(OBJDIR)/libagmg.a: $(OBJ)
 # of an implicit rule. Otherwise the target defined in this implicit rule is
 # rebuilt every time you invoke make!
 $(OBJS): | $(OBJDIR)
-$(OBJDIR)/%.o: %.f90
+$(OBJDIR)/%.o: SRC/%.f90
 	$(FORTRAN) $(OPTS) -c $< -o $@
 
 $(OBJDIR):
@@ -120,9 +120,9 @@ $(SRC_AGMG): $(LAST_FILE_FROM_AGMG_TARBALL) $(LAST_FILE_FROM_SUITESPARSE_CONFIG_
 # try to build the UMFPACK library (e.g. parallel make of the
 # FEAT2 regression benchmark), this extractions needs to deploy
 # a locking mechanism.
-$(LAST_FILE_FROM_AGMG_TARBALL):  NAME     = "AGMG 2.3.1 sources"
+$(LAST_FILE_FROM_AGMG_TARBALL):  NAME     = "AGMG 3.1.2 sources"
 $(LAST_FILE_FROM_AGMG_TARBALL):  TARBALL  = $(AGMG_TARBALL)
-$(LAST_FILE_FROM_AGMG_TARBALL):  LOCKFILE = ../LOCK.unpack.agmg-2.3.1.tar.gz
+$(LAST_FILE_FROM_AGMG_TARBALL):  LOCKFILE = ../LOCK.unpack.agmg-3.1.2.tar.gz
 $(LAST_FILE_FROM_AGMG_TARBALL):  WAITTIME = 15
 $(LAST_FILE_FROM_AGMG_TARBALL):  RETRIES  = 24
 $(LAST_FILE_FROM_AGMG_TARBALL):  PATCHCMD = echo
@@ -130,9 +130,9 @@ $(LAST_FILE_FROM_AGMG_TARBALL): | $(AGMG_TARBALL)
 	@$(call UNPACK)
 
 # Try to download tar ball if not present
-$(AGMG_TARBALL):  URL      = http://homepages.ulb.ac.be/~ynotay/AGMG/AGMG_3.1.2.tar.gz.gz
+$(AGMG_TARBALL):  URL      = http://homepages.ulb.ac.be/~ynotay/AGMG/AGMG_3.1.2.tar.gz
 $(AGMG_TARBALL):  TARBALL  = $(AGMG_TARBALL)
-$(AGMG_TARBALL):  LOCKFILE = ../LOCK.download./AGMG_3.1.2.tar.gz
+$(AGMG_TARBALL):  LOCKFILE = ../LOCK.download.AGMG_3.1.2.tar.gz
 $(AGMG_TARBALL):  WAITTIME = 15
 $(AGMG_TARBALL):  RETRIES  = 24
 $(AGMG_TARBALL):
