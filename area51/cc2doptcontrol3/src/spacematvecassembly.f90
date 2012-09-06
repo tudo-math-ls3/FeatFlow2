@@ -6255,11 +6255,11 @@ contains
           case (CCEQ_HEAT2D,CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
         
             ! Assemble
-            call sbc_assembleBDconditions (roptcBDC,dtimeend,&
+            call sbc_assembleBDconditions (roptcBDC,roptcBDCSpace,dtimeend,&
                 p_ranalyticData%p_rphysics%cequation,copType,&
-                rglobalData,SBC_DIRICHLETBC+SBC_NEUMANN,&
-                roperatorAsm%p_rtimeDiscrPrimal,roperatorAsm%p_rspaceDiscrPrimal,&
-                roptcBDCSpace,rvectorControl)
+                SBC_DISCRETEBC+SBC_DIRICHLETBC+SBC_DIRICHLETBCC+SBC_NEUMANN,&
+                roperatorAsm%p_rspaceDiscrPrimal,rglobalData,&
+                rvectorControl)
 
           end select ! Equation
         
@@ -6314,11 +6314,11 @@ contains
           case (CCEQ_HEAT2D,CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
         
             ! Assemble
-            call sbc_assembleBDconditions (roptcBDC,dtimestart,&
+            call sbc_assembleBDconditions (roptcBDC,roptcBDCSpace,dtimestart,&
                 p_ranalyticData%p_rphysics%cequation,copType,&
-                rglobalData,SBC_DIRICHLETBC+SBC_NEUMANN,&
-                roperatorAsm%p_rtimeDiscrDual,roperatorAsm%p_rspaceDiscrDual,&
-                roptcBDCSpace,rvectorControl)
+                SBC_DISCRETEBC+SBC_DIRICHLETBC+SBC_DIRICHLETBCC+SBC_NEUMANN,&
+                roperatorAsm%p_rspaceDiscrDual,rglobalData,&
+                rvectorControl)
 
           end select ! Equation
         

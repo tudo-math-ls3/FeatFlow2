@@ -17,6 +17,7 @@ module structuresboundaryconditions
   use collection
   use fparser
   use mprimitives
+  use spatialdiscretisation
   
   use boundary
   use discretebc
@@ -92,17 +93,20 @@ module structuresboundaryconditions
 !</constantblock>
 
 !<constantblock description="Assembly mode for boundary conditions">
+  ! Assembles discrete boundary conditions.
+  integer, parameter, public :: SBC_DISCRETEBC = 1
+
   ! Assembles strong Dirichlet boundary conditions
-  integer, parameter, public :: SBC_DIRICHLETBC = 1
+  integer, parameter, public :: SBC_DIRICHLETBC = 2
 
   ! Assembles Neumann boundary conditions.
-  integer, parameter, public :: SBC_NEUMANN = 2
+  integer, parameter, public :: SBC_NEUMANN = 4
 
   ! Assembles Dirichlet boudary control boundary conditions.
-  integer, parameter, public :: SBC_DIRICHLETBCC = 4
+  integer, parameter, public :: SBC_DIRICHLETBCC = 8
   
   ! Assembles all boundary conditions.
-  integer, parameter, public :: SBC_ALL = SBC_DIRICHLETBC + SBC_NEUMANN + SBC_DIRICHLETBCC
+  integer, parameter, public :: SBC_ALL = SBC_DISCRETEBC + SBC_DIRICHLETBC + SBC_NEUMANN + SBC_DIRICHLETBCC
 !</constantblock>
 
 !</constants>
@@ -182,16 +186,16 @@ module structuresboundaryconditions
 
 !<typeblock>
 
-  ! Encapsules all Neumann boundary parts in the domain
+  ! Encapsules a set of boundary regions in the domain
   type t_boundaryRegionList
   
-    ! Number of Neumann boundary regions in the primal equation
+    ! Number of boundary regions
     integer :: nregions = 0
 
-    ! Pointer to the head of a list of Neumann boundary regions, primal equation
+    ! Pointer to the head of a list of boundary regions
     type(t_bdRegionEntry), pointer :: p_rbdHead => null()
 
-    ! Pointer to the tail of a list of Neumann boundary regions, primal equation
+    ! Pointer to the tail of a list of boundary regions
     type(t_bdRegionEntry), pointer :: p_rbdTail => null()
   
   end type
@@ -262,9 +266,12 @@ module structuresboundaryconditions
   ! Adds boundary region to a list of boundary regions.
   public :: sbc_addBoundaryRegion
   
-  ! Releases a rregionList structure that was allocated in
-  ! sbc_assembleBDconditions.
-  public :: sbc_releaseBoundaryList 
+  ! Releases a rregionList structure that set up with
+  ! sbc_addBoundaryRegion.
+  public :: sbc_releaseBdRegionList 
+
+  ! Determine all DOFs in a boundary region list.
+  public :: sbc_getDofsInBdRegionList
 
   ! Obtains a pointer to the discrete boundary condition structure
   ! on level ilevel.
@@ -648,7 +655,7 @@ contains
 
 !<subroutine>
 
-  subroutine sbc_releaseBoundaryList (rregionList)
+  subroutine sbc_releaseBdRegionList (rregionList)
   
 !<description>
   ! Releases a rregionList structure that was allocated in
@@ -679,6 +686,71 @@ contains
 
   end subroutine
   
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sbc_getDofsInBdRegionList (rspatialDiscr,rregionList,ndofs,IdofsArray)
+  
+!<description>
+  ! Collects all DOFs in a boundary region list
+!</desctiption>
+
+!<input>
+  ! The discretisation structure of the underlying discretisation.
+  type(t_spatialDiscretisation), intent(in) :: rspatialDiscr
+
+  ! List of boundary regions
+  type(t_boundaryRegionList), intent(in) :: rregionList
+!</input>
+
+!<output>
+  ! Number of DOFs
+  integer, intent(out) :: ndofs
+  
+  ! OPTIONAL: Array where the DOFs are saved to. The array must be large enough.
+  integer, dimension(:), intent(out), optional :: IdofsArray
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer :: ndofsLocal
+    type(t_bdRegionEntry), pointer :: p_rbdRegion
+
+    if (rregionList%nregions .eq. 0) return
+    
+    if (.not. present(IdofsArray)) then
+      ! Loop through all boundary regions and determine the number of DOFs.
+      p_rbdRegion => rregionList%p_rbdHead
+      
+      ndofs = 0
+      do while (associated(p_rbdRegion))
+      
+        call bcasm_getDOFsInBDRegion (rspatialDiscr, &
+            p_rbdRegion%rboundaryRegion, ndofs=ndofsLocal)
+            
+        ndofs = ndofs + ndofsLocal
+      
+      end do
+    else
+      ! Loop through all boundary regions and save the DOFs.
+      p_rbdRegion => rregionList%p_rbdHead
+      
+      ndofs = 0
+      do while (associated(p_rbdRegion))
+      
+        call bcasm_getDOFsInBDRegion (rspatialDiscr, &
+            p_rbdRegion%rboundaryRegion, ndofs=ndofsLocal,&
+            IdofsArray=IdofsArray(ndofs+1:))
+            
+        ndofs = ndofs + ndofsLocal
+      
+      end do
+    end if    
+
+  end subroutine
+
   ! ***************************************************************************
 
 !<subroutine>

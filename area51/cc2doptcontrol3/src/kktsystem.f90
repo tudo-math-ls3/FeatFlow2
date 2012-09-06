@@ -24,6 +24,8 @@ module kktsystem
   use linearsystemblock
   
   use scalarpde
+  use dofmapping
+  use bcassemblybase
   use linearformevaluation
   use bilinearformevaluation
   use feevaluation2
@@ -33,6 +35,7 @@ module kktsystem
   use linearsolver
   use feevaluation
   use statistics
+  use numbersets
   
   use spacetimevectors
   use analyticsolution
@@ -40,11 +43,13 @@ module kktsystem
   use constantsdiscretisation
   use structuresdiscretisation
   use structuresoptcontrol
+  use structuresboundaryconditions
   use structuresgeneral
   use assemblytemplates
   
   use structuresoperatorasm
   use spacematvecassembly
+  use spatialbc
   
   use kktsystemspaces
   use spacesolver
@@ -82,6 +87,9 @@ module kktsystem
     ! Underlying space-time operator assembly hierarchy
     ! specifying all possible space and time discretisations / levels.
     type(t_spacetimeOpAsmHierarchy), pointer :: p_roperatorAsmHier => null()
+    
+    ! Boundary conditions of the system.
+    type(t_optcBDC), pointer :: p_roptcBDC => null()
 
     ! Space-level in the global space-time hierarchy, the solver should be applied to.
     integer :: ispacelevel = 0
@@ -189,7 +197,7 @@ contains
 !<subroutine>
 
   subroutine kkt_initKKTsystem (rkktsystem,&
-      roperatorAsmHier,ispacelevel,itimelevel)
+      roperatorAsmHier,ispacelevel,itimelevel,roptcBDC)
   
 !<description>
   ! Initialises a KKT system structure.
@@ -198,6 +206,9 @@ contains
 !<input>  
   ! Parameters for the assembly of space-time operators
   type(t_spacetimeOpAsmHierarchy), intent(in), target :: roperatorAsmHier
+  
+  ! Boudary conditions of the KKT system
+  type(t_optcBDC), intent(in), target :: roptcBDC
 
   ! Space-level in the global space-time hierarchy, the solver should be applied to.
   integer, intent(in) :: ispacelevel
@@ -218,6 +229,7 @@ contains
 
     ! Remember the structures
     rkktsystem%p_roperatorAsmHier => roperatorAsmHier
+    rkktsystem%p_roptcBDC => roptcBDC
     rkktsystem%ispacelevel = ispacelevel
     rkktsystem%itimelevel = itimelevel
     
@@ -579,10 +591,11 @@ contains
 
     ! local variables
     integer :: icomp,istep
-    real(DP) :: dtheta,dwmin,dwmax
+    real(DP) :: dtheta,dwmin,dwmax,dtime
     type(t_vectorBlock), pointer :: p_rdualSpace, p_rcontrolSpace, p_rintermedControl
     type(t_vectorBlock), pointer :: p_rcontrolSpaceOutput
     type(t_spaceTimeVector), pointer :: p_rdualSol
+    type(t_optcBDCSpace) :: roptcBDCspace
 
     type(t_settings_physics), pointer :: p_rphysics
     type(t_settings_optcontrol), pointer :: p_rsettingsOptControl
@@ -754,86 +767,99 @@ contains
             ! -----------------------------------------------------------
             if (p_rsettingsOptControl%dalphaL2BdC .ge. 0.0_DP) then
 
-              ! The first two components of the control read
-              !
-              !    u_intermed  =  u - [ alpha u - (nu dn lambda - xi n) ]
-              !                =  (1-alpha) u + nu dn lambda - xi n
-              !
-              ! Calculate "nu dn lambda - xi n"
-              call kkt_calcL2BdCNavSt (roperatorAsm%p_rasmTemplates,p_rphysics,&
-                  p_rdualSpace,p_rintermedControl,icomp+1)
-              
-              ! Calculate
-              !    u_intermed = (1-alpha) u + u_intermed
-              icomp = icomp + 1
-              call lsyssc_vectorLinearComb ( &
-                  p_rcontrolSpace%RvectorBlock(icomp),p_rintermedControl%RvectorBlock(icomp),&
-                  1.0_DP-p_rsettingsOptControl%dalphaL2BdC,1.0_DP,&
-                  p_rintermedControl%RvectorBlock(icomp))
+              ! No control in the initial solution
+              if (istep .gt. 1) then
 
-              icomp = icomp + 1
-              call lsyssc_vectorLinearComb ( &
-                  p_rcontrolSpace%RvectorBlock(icomp),p_rintermedControl%RvectorBlock(icomp),&
-                  1.0_DP-p_rsettingsOptControl%dalphaL2BdC,1.0_DP,&
-                  p_rintermedControl%RvectorBlock(icomp))
+                ! Characteristics of the current timestep.
+                call tdiscr_getTimestep(roperatorasm%p_rtimeDiscrPrimal,istep-1,dtime)
+
+                ! Calculate the region where boundary control is applied
+                call sbc_assembleBDconditions (rkktSystem%p_roptcBDC,roptcBDCSpace,dtime,&
+                    p_rphysics%cequation,OPTP_PRIMAL,SBC_DIRICHLETBCC,&
+                    p_rintermedControl%p_rblockDiscr)
+
+                ! The first two components of the control read
+                !
+                !    u_intermed  =  u - [ alpha u - (nu dn lambda - xi n) ]
+                !                =  (1-alpha) u + nu dn lambda - xi n
+                !
+                ! Calculate "nu dn lambda - xi n"
+                call kkt_calcL2BdCNavSt (roperatorAsm%p_rasmTemplates,p_rphysics,&
+                    p_rdualSpace,p_rintermedControl,icomp+1,roptcBDCSpace)
+                
+                ! Calculate
+                !    u_intermed = (1-alpha) u + u_intermed
+                icomp = icomp + 1
+                call lsyssc_vectorLinearComb ( &
+                    p_rcontrolSpace%RvectorBlock(icomp),p_rintermedControl%RvectorBlock(icomp),&
+                    1.0_DP-p_rsettingsOptControl%dalphaL2BdC,1.0_DP,&
+                    p_rintermedControl%RvectorBlock(icomp))
+
+                icomp = icomp + 1
+                call lsyssc_vectorLinearComb ( &
+                    p_rcontrolSpace%RvectorBlock(icomp),p_rintermedControl%RvectorBlock(icomp),&
+                    1.0_DP-p_rsettingsOptControl%dalphaL2BdC,1.0_DP,&
+                    p_rintermedControl%RvectorBlock(icomp))
+                    
+                ! Do we have constraints?
+                select case (p_rsettingsOptControl%rconstraints%rconstraintsL2BdC%cconstraints)
+
+                ! ----------------------------------------------------------
+                ! No constraints
+                ! ----------------------------------------------------------
+                case (0)
+
+                  if (p_rsettingsOptControl%dalphaL2BdC .eq. 0.0_DP) then
+                    call output_line("Alpha=0 not possible without contraints",&
+                        OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControl")
+                    call sys_halt()
+                  end if
                   
-              ! Do we have constraints?
-              select case (p_rsettingsOptControl%rconstraints%rconstraintsL2BdC%cconstraints)
+                  icomp = icomp - 2                
 
-              ! ----------------------------------------------------------
-              ! No constraints
-              ! ----------------------------------------------------------
-              case (0)
+                  icomp = icomp + 1
+                  call lsyssc_copyVector (&
+                      p_rintermedControl%RvectorBlock(icomp),p_rcontrolSpaceOutput%RvectorBlock(icomp))
 
-                if (p_rsettingsOptControl%dalphaL2BdC .eq. 0.0_DP) then
-                  call output_line("Alpha=0 not possible without contraints",&
+                  icomp = icomp + 1
+                  call lsyssc_copyVector (&
+                      p_rintermedControl%RvectorBlock(icomp),p_rcontrolSpaceOutput%RvectorBlock(icomp))
+
+                ! ----------------------------------------------------------
+                ! Box constraints, implemented by DOF
+                ! ----------------------------------------------------------
+                case (1)
+                
+                  ! Applying the projection to the intermediate control gives the control:
+                  !
+                  !   u = P(u_intermed)
+                  
+                  icomp = icomp - 2
+                  
+                  dwmin = p_rsettingsOptControl%rconstraints%rconstraintsL2BdC%dmin1
+                  dwmax = p_rsettingsOptControl%rconstraints%rconstraintsL2BdC%dmax1
+                  icomp = icomp + 1
+                  call nwder_applyMinMaxProjByDof (&
+                      p_rcontrolSpaceOutput%RvectorBlock(icomp),1.0_DP,&
+                      1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax,&
+                      1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax)
+
+                  dwmin = p_rsettingsOptControl%rconstraints%rconstraintsL2BdC%dmin2
+                  dwmax = p_rsettingsOptControl%rconstraints%rconstraintsL2BdC%dmax2
+                  icomp = icomp + 1
+                  call nwder_applyMinMaxProjByDof (&
+                      p_rcontrolSpaceOutput%RvectorBlock(icomp),1.0_DP,&
+                      1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax,&
+                      1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax)
+
+                case default          
+                  call output_line("Unknown constraints",&
                       OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControl")
                   call sys_halt()
-                end if
+
+                end select ! constraints
                 
-                icomp = icomp - 2                
-
-                icomp = icomp + 1
-                call lsyssc_copyVector (&
-                    p_rintermedControl%RvectorBlock(icomp),p_rcontrolSpaceOutput%RvectorBlock(icomp))
-
-                icomp = icomp + 1
-                call lsyssc_copyVector (&
-                    p_rintermedControl%RvectorBlock(icomp),p_rcontrolSpaceOutput%RvectorBlock(icomp))
-
-              ! ----------------------------------------------------------
-              ! Box constraints, implemented by DOF
-              ! ----------------------------------------------------------
-              case (1)
-              
-                ! Applying the projection to the intermediate control gives the control:
-                !
-                !   u = P(u_intermed)
-                
-                icomp = icomp - 2
-                
-                dwmin = p_rsettingsOptControl%rconstraints%rconstraintsL2BdC%dmin1
-                dwmax = p_rsettingsOptControl%rconstraints%rconstraintsL2BdC%dmax1
-                icomp = icomp + 1
-                call nwder_applyMinMaxProjByDof (&
-                    p_rcontrolSpaceOutput%RvectorBlock(icomp),1.0_DP,&
-                    1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax,&
-                    1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax)
-
-                dwmin = p_rsettingsOptControl%rconstraints%rconstraintsL2BdC%dmin2
-                dwmax = p_rsettingsOptControl%rconstraints%rconstraintsL2BdC%dmax2
-                icomp = icomp + 1
-                call nwder_applyMinMaxProjByDof (&
-                    p_rcontrolSpaceOutput%RvectorBlock(icomp),1.0_DP,&
-                    1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax,&
-                    1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax)
-
-              case default          
-                call output_line("Unknown constraints",&
-                    OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControl")
-                call sys_halt()
-
-              end select ! constraints
+              end if
 
             end if ! alphaL2BdC
 
@@ -938,7 +964,7 @@ contains
 
 !<subroutine>
 
-  subroutine kkt_calcL2BdCNavSt (rasmTemplates,rphysics,rdualSol,rcontrol,icomp)
+  subroutine kkt_calcL2BdCNavSt (rasmTemplates,rphysics,rdualSol,rcontrol,icomp,roptcBDCspace)
   
 !<description>
   ! Calculates the L2 boundary control term
@@ -959,6 +985,9 @@ contains
   ! Component in the control from which on the boundary control term
   ! should be saved to.
   integer, intent(in) :: icomp
+  
+  ! Structure defining boundary conditions
+  type(t_optcBDCSpace), intent(in) :: roptcBDCspace
 !</input>
 
 !<inputoutput>
@@ -978,7 +1007,7 @@ contains
     real(DP), dimension(:), pointer :: p_DedgeParameterValue
     real(DP), dimension(:), pointer :: p_Ddata
     integer, dimension(:), pointer :: p_IboundaryCpIdx
-    integer :: ibct,iseg,iidx1,iidx2,i,NEQ,nvbd
+    integer :: ibct,iseg,iidx1,iidx2,i,NEQ,nvbd,NEQlocal
     real(DP) :: dnu
     
     p_rdiscr => rdualSol%p_rblockDiscr%RspatialDiscr(1)
@@ -1064,44 +1093,76 @@ contains
       ! Loop over the boundary components
       do ibct = 1,p_rdiscr%p_rtriangulation%nbct
       
+        ! Get the position of the boundary segment
+        iidx1 = p_IboundaryCpIdx(ibct)
+        iidx2 = p_IboundaryCpIdx(ibct+1)-1
+        NEQlocal = iidx2-iidx1
+
         ! Evaluare XI
-        call fevl_evaluateBdr2d (DER_FUNC, p_Dxi, rdualSol%RvectorBlock(3), &
-            p_DparValues,ibct,BDR_PAR_01)
+        call fevl_evaluateBdr2d (DER_FUNC, p_Dxi(iidx1:iidx2), rdualSol%RvectorBlock(3), &
+            p_DparValues(iidx1:iidx2),ibct,BDR_PAR_01)
+
+        call fevl_evaluateBdr2d (DER_FUNC, p_Dxi(iidx1+nvbd:iidx2+nvbd), rdualSol%RvectorBlock(3), &
+            p_DparValues(iidx1+nvbd:iidx2+nvbd),ibct,BDR_PAR_01)
 
         ! Evaluare D(lambda1)
-        call fevl_evaluateBdr2d (DER_DERIV2D_X, p_DlambdaX, rdualSol%RvectorBlock(1), &
-            p_DparValues,ibct,BDR_PAR_01)
+        call fevl_evaluateBdr2d (DER_DERIV2D_X, p_DlambdaX(iidx1:iidx2), rdualSol%RvectorBlock(1), &
+            p_DparValues(iidx1:iidx2),ibct,BDR_PAR_01)
 
-        call fevl_evaluateBdr2d (DER_DERIV2D_Y, p_DlambdaY, rdualSol%RvectorBlock(1), &
-            p_DparValues,ibct,BDR_PAR_01)
+        call fevl_evaluateBdr2d (DER_DERIV2D_Y, p_DlambdaY(iidx1:iidx2), rdualSol%RvectorBlock(1), &
+            p_DparValues(iidx1:iidx2),ibct,BDR_PAR_01)
+
+        call fevl_evaluateBdr2d (DER_DERIV2D_X, p_DlambdaX(iidx1+nvbd:iidx2+nvbd), rdualSol%RvectorBlock(1), &
+            p_DparValues(iidx1+nvbd:iidx2+nvbd),ibct,BDR_PAR_01)
+
+        call fevl_evaluateBdr2d (DER_DERIV2D_Y, p_DlambdaY(iidx1+nvbd:iidx2+nvbd), rdualSol%RvectorBlock(1), &
+            p_DparValues(iidx1+nvbd:iidx2+nvbd),ibct,BDR_PAR_01)
             
         call lsyssc_getbase_double (rcontrol%RvectorBlock(icomp),p_Ddata)
             
         ! Calculate the control in X-direction
-        do i=1,NEQ
-        
-          p_Ddata(i) = &
+        do i=1,NEQlocal
+          ! vertices
+          p_Ddata(iidx1-1+i) = &
               dnu * p_DlambdaX(i)*p_DnormalX(i)  +  dnu * p_DlambdaY(i)*p_DnormalY(i) - &
               p_Dxi(i)*p_DnormalX(i)
-        
+        end do
+
+        do i=nvbd+1,nvbd+NEQlocal
+          ! edges
+          p_Ddata(iidx1-1+i) = &
+              dnu * p_DlambdaX(i)*p_DnormalX(i)  +  dnu * p_DlambdaY(i)*p_DnormalY(i) - &
+              p_Dxi(i)*p_DnormalX(i)
         end do
             
         ! Evaluare D(lambda2)
-        call fevl_evaluateBdr2d (DER_DERIV2D_X, p_DlambdaX, rdualSol%RvectorBlock(2), &
-            p_DparValues,ibct,BDR_PAR_01)
+        call fevl_evaluateBdr2d (DER_DERIV2D_X, p_DlambdaX(iidx1:iidx2), rdualSol%RvectorBlock(2), &
+            p_DparValues(iidx1:iidx2),ibct,BDR_PAR_01)
 
-        call fevl_evaluateBdr2d (DER_DERIV2D_Y, p_DlambdaY, rdualSol%RvectorBlock(2), &
-            p_DparValues,ibct,BDR_PAR_01)
+        call fevl_evaluateBdr2d (DER_DERIV2D_Y, p_DlambdaY(iidx1:iidx2), rdualSol%RvectorBlock(2), &
+            p_DparValues(iidx1:iidx2),ibct,BDR_PAR_01)
+
+        call fevl_evaluateBdr2d (DER_DERIV2D_X, p_DlambdaX(iidx1+nvbd:iidx2+nvbd), rdualSol%RvectorBlock(2), &
+            p_DparValues(iidx1+nvbd:iidx2+nvbd),ibct,BDR_PAR_01)
+
+        call fevl_evaluateBdr2d (DER_DERIV2D_Y, p_DlambdaY(iidx1+nvbd:iidx2+nvbd), rdualSol%RvectorBlock(2), &
+            p_DparValues(iidx1+nvbd:iidx2+nvbd),ibct,BDR_PAR_01)
             
         call lsyssc_getbase_double (rcontrol%RvectorBlock(icomp+1),p_Ddata)
             
         ! Calculate the control in Y-direction
-        do i=1,NEQ
-        
-          p_Ddata(i) = &
+        do i=1,NEQlocal
+          ! vertices
+          p_Ddata(iidx1-1+i) = &
               dnu * p_DlambdaX(i)*p_DnormalX(i)  +  dnu * p_DlambdaY(i)*p_DnormalY(i) - &
               p_Dxi(i)*p_DnormalY(i)
-        
+        end do
+
+        do i=nvbd+1,nvbd+NEQlocal
+          ! edges
+          p_Ddata(iidx1-1+i) = &
+              dnu * p_DlambdaX(i)*p_DnormalX(i)  +  dnu * p_DlambdaY(i)*p_DnormalY(i) - &
+              p_Dxi(i)*p_DnormalY(i)
         end do
       
       end do
@@ -1112,6 +1173,12 @@ contains
       deallocate (p_DlambdaX)
       deallocate (p_DlambdaY)
       deallocate (p_Dxi)
+      
+      ! Restrict the computed control to the L2 boundary control region
+      call kkt_restrictControlToBDRegion (&
+          rcontrol,icomp,p_rdiscr,roptcBDCspace%rdirichletControlBoundary)
+      call kkt_restrictControlToBDRegion (&
+          rcontrol,icomp+1,p_rdiscr,roptcBDCspace%rdirichletControlBoundary)
         
     case default
     
@@ -1119,6 +1186,111 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,"kkt_solvePrimal")
       call sys_halt()
     end select
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine kkt_restrictControlToBDRegion (rcontrol,icomp,rspatialDiscr,rbdRegionList)
+  
+!<description>
+  ! Restricts a control vector to a set of boundary regions defined
+  ! by rbdRegionList. DOFs not in this region are set to zero.
+!</description>
+  
+!<input>
+  ! Boundary regino list, the control is to be restricted to.
+  type(t_boundaryRegionList), intent(in) :: rbdRegionList
+  
+  ! Spatial discretisation structure of the 2D space.
+  type(t_spatialDiscretisation), intent(in) :: rspatialDiscr
+  
+  ! Number of the component in the control which is to be restricted.
+  integer, intent(in) :: icomp
+!</input>
+
+!<inputoutput>
+  ! Control vector.
+  type(t_vectorBlock), intent(inout) :: rcontrol
+!</inputoutput>
+
+!</subroutine>
+
+    type(t_bdRegionEntry), pointer :: p_rbdEntry
+    type(t_directAccessIntSet) :: rset
+    integer :: h_Idofs
+    integer :: i,nvbd
+    integer, dimension(:), pointer :: p_Idofs
+    integer, dimension(:), pointer :: p_IverticesOnBoundary
+    integer, dimension(:), pointer :: p_IedgesOnBoundary
+    real(DP), dimension(:), pointer :: p_Ddata
+    
+    ! Allocate an integer set for canceling out entries
+    call nsets_initDASet (rset,dof_igetNDofGlob(rspatialDiscr))
+
+    ! Loop over the boundary regions.
+    p_rbdEntry => rbdRegionList%p_rbdHead
+    do while (associated(p_rbdEntry))
+      
+      ! Figure out the DOFs there.
+      h_Idofs = ST_NOHANDLE
+      call bcasm_getDOFsInBDRegion (rspatialDiscr,p_rbdEntry%rboundaryRegion, h_Idofs)
+      call storage_getbase_int (h_Idofs,p_Idofs)
+      
+      ! Mark these DOFs.
+      call nsets_putElements (rset,p_Idofs)
+      
+      ! Release the DOF-list
+      call storage_free (h_Idofs)
+      
+      ! Next
+      p_rbdEntry => p_rbdEntry%p_nextBdRegion
+      
+    end do
+    
+    ! Quick and dirty implementation...
+    
+    ! Element type?
+    select case (rcontrol%p_rblockDiscr%RspatialDiscr(icomp)%RelementDistr(1)%celement)
+    
+    case (EL_P2_1D)
+      ! Next step: Loop through all vertices/edges on the boundary = DOFs in the
+      ! control vector (in that order).
+
+      nvbd = rspatialDiscr%p_rtriangulation%nvbd
+      call lsyssc_getbase_double (rcontrol%RvectorBlock(icomp),p_Ddata)
+
+      call storage_getbase_int (rspatialDiscr%p_rtriangulation%h_IverticesAtBoundary,&
+          p_IverticesOnBoundary)
+      call storage_getbase_int (rspatialDiscr%p_rtriangulation%h_IedgesAtBoundary,&
+          p_IedgesOnBoundary)
+          
+      do i=1,nvbd
+      
+        ! If this vertex is not in the set, set the corresponding vector entry to zero.
+        if (nsets_DASetContains (rset,p_IverticesOnBoundary(i)) .eq. 0) then
+          p_Ddata(i) = 0.0_DP
+        end if
+
+        ! The DOF of the edge is shifted by nvbd. Check the edge
+        if (nsets_DASetContains (rset,&
+            rspatialDiscr%p_rtriangulation%NVT+p_IedgesOnBoundary(i)) .eq. 0) then
+          p_Ddata(nvbd+i) = 0.0_DP
+        end if
+      
+      end do
+    
+    
+    case default
+      call output_line ("Unsupported element.", &
+          OU_CLASS_ERROR,OU_MODE_STD,"cc_getDirBCNavSt2D")
+      call sys_halt()
+    end select
+    
+    ! Release the set, finish
+    call nsets_doneDASet (rset)
 
   end subroutine
 
@@ -1234,16 +1406,16 @@ contains
 
     ! The control equation reads
     !
-    !   J"(u)  =  u - P ( u - ( lambda + alpha u) )  =  0
+    !   J'(u)  =  u - P ( u - ( lambda + alpha u) )  =  0
     !
     ! with P(.) the projection operator to the admissible space
     ! of controls. In the case of no constraints, this reduces to
     !
-    !   J"(u)  =  lambda + alpha u
+    !   J'(u)  =  lambda + alpha u
     !
     ! The residual of the control equation is its negative.
     !
-    !   d  =  -J"(u)  =  P ( u - ( lambda + alpha u) )  -  u
+    !   d  =  -J'(u)  =  P ( u - ( lambda + alpha u) )  -  u
     !
     ! The "intermediate" control, i.e. the term in the projection,
     !
@@ -1476,10 +1648,11 @@ contains
    
     ! local variables
     integer :: icomp,istep
-    real(DP) :: dtheta,dwmin,dwmax
+    real(DP) :: dtheta,dwmin,dwmax,dtime
     type(t_vectorBlock), pointer :: p_rdualSpaceLin, p_rcontrolSpaceLin
     type(t_vectorBlock), pointer :: p_rcontrolSpaceLinOutput, p_rintermedControl
     type(t_spaceTimeVector), pointer :: p_rdualSolLin
+    type(t_optcBDCSpace) :: roptcBDCspace
 
     type(t_settings_physics), pointer :: p_rphysics
     type(t_settings_optcontrol), pointer :: p_rsettingsOptControl
@@ -1656,73 +1829,86 @@ contains
             ! -----------------------------------------------------------
             if (p_rsettingsOptControl%dalphaL2BdC .ge. 0.0_DP) then
 
-              ! The first two components of the control read
-              !
-              !    u_intermed~  =  u~ - [ alpha u~ - (nu dn lambda~ - xi~ n) ]
-              !                 =  (1-alpha) u~ + nu dn lambda~ - xi~ n
-              !
-              ! Calculate "nu dn lambda - xi n"
-              call kkt_calcL2BdCNavSt (roperatorAsm%p_rasmTemplates,p_rphysics,&
-                  p_rdualSpaceLin,p_rcontrolSpaceLinOutput,icomp+1)
-                  
-              ! Calculate
-              !    u_intermed~ = (1-alpha) u~ + u_intermed
-              icomp = icomp + 1
-              call lsyssc_vectorLinearComb ( &
-                  p_rcontrolSpaceLin%RvectorBlock(icomp),p_rcontrolSpaceLinOutput%RvectorBlock(icomp),&
-                  1.0_DP-p_rsettingsOptControl%dalphaL2BdC,1.0_DP,&
-                  p_rcontrolSpaceLinOutput%RvectorBlock(icomp))
+              ! No control in the initial solution
+              if (istep .gt. 1) then
 
-              icomp = icomp + 1
-              call lsyssc_vectorLinearComb ( &
-                  p_rcontrolSpaceLin%RvectorBlock(icomp),p_rcontrolSpaceLinOutput%RvectorBlock(icomp),&
-                  1.0_DP-p_rsettingsOptControl%dalphaL2BdC,1.0_DP,&
-                  p_rcontrolSpaceLinOutput%RvectorBlock(icomp))
-                  
-              ! Do we have constraints?
-              select case (p_rsettingsOptControl%rconstraints%rconstraintsL2BdC%cconstraints)
+                ! Characteristics of the current timestep.
+                call tdiscr_getTimestep(roperatorasm%p_rtimeDiscrPrimal,istep-1,dtime)
 
-              ! ----------------------------------------------------------
-              ! No constraints
-              ! ----------------------------------------------------------
-              case (0)
+                ! Calculate the region where boundary control is applied
+                call sbc_assembleBDconditions (rkktsystemDirDeriv%p_rkktSystem%p_roptcBDC,&
+                    roptcBDCSpace,dtime,p_rphysics%cequation,OPTP_PRIMAL,SBC_DIRICHLETBCC,&
+                    p_rintermedControl%p_rblockDiscr)
 
-                if (p_rsettingsOptControl%dalphaL2BdC .eq. 0.0_DP) then
-                  call output_line("Alpha=0 not possible without contraints",&
+                ! The first two components of the control read
+                !
+                !    u_intermed~  =  u~ - [ alpha u~ - (nu dn lambda~ - xi~ n) ]
+                !                 =  (1-alpha) u~ + nu dn lambda~ - xi~ n
+                !
+                ! Calculate "nu dn lambda - xi n"
+                call kkt_calcL2BdCNavSt (roperatorAsm%p_rasmTemplates,p_rphysics,&
+                    p_rdualSpaceLin,p_rcontrolSpaceLinOutput,icomp+1,roptcBDCSpace)
+                    
+                ! Calculate
+                !    u_intermed~ = (1-alpha) u~ + u_intermed
+                icomp = icomp + 1
+                call lsyssc_vectorLinearComb ( &
+                    p_rcontrolSpaceLin%RvectorBlock(icomp),p_rcontrolSpaceLinOutput%RvectorBlock(icomp),&
+                    1.0_DP-p_rsettingsOptControl%dalphaL2BdC,1.0_DP,&
+                    p_rcontrolSpaceLinOutput%RvectorBlock(icomp))
+
+                icomp = icomp + 1
+                call lsyssc_vectorLinearComb ( &
+                    p_rcontrolSpaceLin%RvectorBlock(icomp),p_rcontrolSpaceLinOutput%RvectorBlock(icomp),&
+                    1.0_DP-p_rsettingsOptControl%dalphaL2BdC,1.0_DP,&
+                    p_rcontrolSpaceLinOutput%RvectorBlock(icomp))
+                    
+                ! Do we have constraints?
+                select case (p_rsettingsOptControl%rconstraints%rconstraintsL2BdC%cconstraints)
+
+                ! ----------------------------------------------------------
+                ! No constraints
+                ! ----------------------------------------------------------
+                case (0)
+
+                  if (p_rsettingsOptControl%dalphaL2BdC .eq. 0.0_DP) then
+                    call output_line("Alpha=0 not possible without contraints",&
+                        OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControlDirDeriv")
+                    call sys_halt()
+                  end if
+                
+                ! ----------------------------------------------------------
+                ! Box constraints, implemented by DOF.
+                ! ----------------------------------------------------------
+                case (1)
+                
+                  icomp = icomp - 2
+
+                  ! Create the "restricted" control.
+                  dwmin = p_rsettingsOptControl%rconstraints%rconstraintsL2BdC%dmin1
+                  dwmax = p_rsettingsOptControl%rconstraints%rconstraintsL2BdC%dmax1
+                  icomp = icomp + 1
+                  call nwder_applyMinMaxProjByDof (&
+                      p_rcontrolSpaceLinOutput%RvectorBlock(icomp),1.0_DP,&
+                      1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax,&
+                      1.0_DP,p_rcontrolSpaceLinOutput%RvectorBlock(icomp),0.0_DP,0.0_DP)
+
+                  dwmin = p_rsettingsOptControl%rconstraints%rconstraintsL2BdC%dmin2
+                  dwmax = p_rsettingsOptControl%rconstraints%rconstraintsL2BdC%dmax2
+                  icomp = icomp + 1
+                  call nwder_applyMinMaxProjByDof (&
+                      p_rcontrolSpaceLinOutput%RvectorBlock(icomp),1.0_DP,&
+                      1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax,&
+                      1.0_DP,p_rcontrolSpaceLinOutput%RvectorBlock(icomp),0.0_DP,0.0_DP)
+
+                case default          
+                  call output_line("Unknown constraints",&
                       OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControlDirDeriv")
                   call sys_halt()
-                end if
-              
-              ! ----------------------------------------------------------
-              ! Box constraints, implemented by DOF.
-              ! ----------------------------------------------------------
-              case (1)
-              
-                icomp = icomp - 2
 
-                ! Create the "restricted" control.
-                dwmin = p_rsettingsOptControl%rconstraints%rconstraintsL2BdC%dmin1
-                dwmax = p_rsettingsOptControl%rconstraints%rconstraintsL2BdC%dmax1
-                icomp = icomp + 1
-                call nwder_applyMinMaxProjByDof (&
-                    p_rcontrolSpaceLinOutput%RvectorBlock(icomp),1.0_DP,&
-                    1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax,&
-                    1.0_DP,p_rcontrolSpaceLinOutput%RvectorBlock(icomp),0.0_DP,0.0_DP)
-
-                dwmin = p_rsettingsOptControl%rconstraints%rconstraintsL2BdC%dmin2
-                dwmax = p_rsettingsOptControl%rconstraints%rconstraintsL2BdC%dmax2
-                icomp = icomp + 1
-                call nwder_applyMinMaxProjByDof (&
-                    p_rcontrolSpaceLinOutput%RvectorBlock(icomp),1.0_DP,&
-                    1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax,&
-                    1.0_DP,p_rcontrolSpaceLinOutput%RvectorBlock(icomp),0.0_DP,0.0_DP)
-
-              case default          
-                call output_line("Unknown constraints",&
-                    OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControlDirDeriv")
-                call sys_halt()
-
-              end select ! constraints
+                end select ! constraints
+                
+              end if
 
             end if ! alphaL2BdC
 
@@ -1986,11 +2172,11 @@ contains
             !
             !   || alpha d || = || alpha u + lambda ||
             icomp = icomp + 1
-            dres = dres + (p_rsettingsOptControl%dalphaDistC * &
+            dres = dres + ( & !p_rsettingsOptControl%dalphaDistC * &
                 lsyssc_vectorNorm(p_rcontrolSpace%RvectorBlock(icomp),iresnorm))**2
 
             icomp = icomp + 1
-            dres = dres + (p_rsettingsOptControl%dalphaDistC * &
+            dres = dres + ( & !p_rsettingsOptControl%dalphaDistC * &
                 lsyssc_vectorNorm(p_rcontrolSpace%RvectorBlock(icomp),iresnorm))**2
                 
             itotalcomp = itotalcomp + 2
@@ -2012,11 +2198,11 @@ contains
               !
               !   || alpha d || = || alpha u - alpha P(-1/alpha lambda)) ||
               icomp = icomp + 1
-              dres = dres + (p_rsettingsOptControl%dalphaDistC * &
+              dres = dres + (& !p_rsettingsOptControl%dalphaDistC * &
                   lsyssc_vectorNorm(p_rcontrolSpace%RvectorBlock(icomp),iresnorm))**2
 
               icomp = icomp + 1
-              dres = dres + (p_rsettingsOptControl%dalphaDistC * &
+              dres = dres + (& !p_rsettingsOptControl%dalphaDistC * &
                   lsyssc_vectorNorm(p_rcontrolSpace%RvectorBlock(icomp),iresnorm))**2
           
             else
@@ -2028,11 +2214,11 @@ contains
               !
               !   || d || = || u + P(1/alpha lambda) ||
               icomp = icomp + 1
-              dres = dres + (p_rsettingsOptControl%dalphaDistC * &
+              dres = dres + (& !p_rsettingsOptControl%dalphaDistC * &
                   lsyssc_vectorNorm(p_rcontrolSpace%RvectorBlock(icomp),iresnorm))**2
 
               icomp = icomp + 1
-              dres = dres + (p_rsettingsOptControl%dalphaDistC * &
+              dres = dres + (& !p_rsettingsOptControl%dalphaDistC * &
                   lsyssc_vectorNorm(p_rcontrolSpace%RvectorBlock(icomp),iresnorm))**2
             end if
                 
@@ -2070,11 +2256,11 @@ contains
           !
           !   || alpha d || = || alpha u + lambda ||
           icomp = icomp + 1
-          dres = dres + (p_rsettingsOptControl%dalphaL2BdC * &
+          dres = dres + (& !p_rsettingsOptControl%dalphaL2BdC * &
               lsyssc_vectorNorm(p_rcontrolSpace%RvectorBlock(icomp),iresnorm))**2
 
           icomp = icomp + 1
-          dres = dres + (p_rsettingsOptControl%dalphaL2BdC * &
+          dres = dres + (& !p_rsettingsOptControl%dalphaL2BdC * &
               lsyssc_vectorNorm(p_rcontrolSpace%RvectorBlock(icomp),iresnorm))**2
               
           itotalcomp = itotalcomp + 2
@@ -2115,7 +2301,7 @@ contains
             !
             !   || alpha d || = || alpha u + lambda ||
             icomp = icomp + 1
-            dres = dres + (p_rsettingsOptControl%dalphaDistC * &
+            dres = dres + (& !p_rsettingsOptControl%dalphaDistC * &
                 lsyssc_vectorNorm(p_rcontrolSpace%RvectorBlock(icomp),iresnorm))**2
 
             itotalcomp = itotalcomp + 1

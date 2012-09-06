@@ -759,17 +759,17 @@ contains
     
     if (rx%NEQtime .eq. 2) then
       ! Special case: only one timestep!
-      itimestep1 = 0
-      itimestep2 = 0
-      itimestep3 = 1
+      itimestep1 = 1
+      itimestep2 = 1
+      itimestep3 = 2
     else
       ! Is this the first or the last timestep?
       if (itimestep2 .eq. 1) then
         ! First timestep. Interpolate between timesteps 0,1 and 2, evaluate
         ! near timestep 0.
-        itimestep1 = 0
-        itimestep2 = 1
-        itimestep3 = 2
+        itimestep1 = 1
+        itimestep2 = 2
+        itimestep3 = 3
       else if (itimestep2 .eq. rx%NEQtime) then
         ! Last timestep. Interpolate between timesteps n-2,n-1 and n, evaluate
         ! near timestep n.

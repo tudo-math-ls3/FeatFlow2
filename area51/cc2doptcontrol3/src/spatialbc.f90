@@ -13,7 +13,7 @@
 !#     -> Assembles the definition of the BCs from sections given by DAT files
 !#        and sets up an analytical boundary condition description.
 !#
-!# 2.) sbc_releaseBoundaryList
+!# 2.) sbc_releaseBdRegionList
 !#     -> Release memory allocated in sbc_assembleBDconditions.
 !#
 !# 3.) sbc_implementDirichletBC
@@ -70,10 +70,10 @@ module spatialbc
   
 !<types>
 
-!<types>
+!</types>
 
   public :: sbc_assembleBDconditions
-  public :: sbc_releaseBoundaryList
+  public :: sbc_releaseBdRegionList
   !public :: sbc_implementDirichletBC
   
   ! Resets the structure for discrete boundary conditions.
@@ -95,9 +95,8 @@ contains
 
 !<subroutine>
 
-  subroutine sbc_assembleBDconditions (roptcBDC,dtime,cequation,&
-      copType,rglobalData,casmFlags,rtimediscr,rspaceDiscr,roptcBDCSpace,&
-      rvectorControl)
+  subroutine sbc_assembleBDconditions (roptcBDC,roptcBDCSpace,dtime,cequation,&
+      copType,casmFlags,rspaceDiscr,rglobalData,rvectorControl)
 
 !<description>
   ! This initialises the analytic boundary conditions of the problem
@@ -122,21 +121,21 @@ contains
   ! depending on which equation to solve.
   integer :: copType
   
-  ! Global data, passed to callback routines
-  type(t_globalData), intent(inout) :: rglobalData
-
   ! Assembly flags, determines what to assemble.
   ! One of the SBC_xxxx flags.
   integer, intent(in) :: casmFlags
-  
-  ! A discretisation structure defining the underlying time discretisation.
-  type(t_timeDiscretisation), intent(in) :: rtimeDiscr
   
   ! A discretisation structure defining the space discretisation
   ! of the current level.
   type(t_blockDiscretisation), intent(in) :: rspaceDiscr
 
+  ! OPTIONAL; Global data, passed to callback routines
+  ! Must be specified if casmFlags contains SBC_DISCRETEBC.
+  type(t_globalData), intent(inout), optional :: rglobalData
+
   ! OPTIONAL: A control specifying the current control.
+  ! Used for boundary control.
+  ! Must be specified if casmFlags contains SBC_DISCRETEBC.
   type(t_vectorBlock), intent(in), target, optional :: rvectorControl
 !</input>
 
@@ -431,102 +430,106 @@ contains
                   call sbc_addBoundaryRegion(&
                       rboundaryRegion,roptcBDCSpace%rdirichletBoundary)
 
-                  ! Simple Dirichlet boundary.
-                  ! Get the definition of the boundary condition.
-                  ! Read the line again, get the expressions for X- and Y-velocity
-                  read(sstr,*) dvalue,iintervalEnds,ibctyp,sbdex1,sbdex2
-                
-                  ! For any string <> "", create the appropriate Dirichlet boundary
-                  ! condition and add it to the list of boundary conditions.
-                  !
-                  ! The IquickAccess array is set up as follows:
-                  !  IquickAccess(1) = component under consideration (1=x-vel, 2=y-vel,...)
-                  !  IquickAccess(2) = expression type
-                  !  IquickAccess(3) = iid
-                  !  IquickAccess(4) = ivalue
-                  !  IquickAccess(5) = 1, if parameters (x,y) are needed, =0 otherwise
-                  !  IquickAccess(6) = type of boundary control to impose.
-                  !                    (=0: none, =1: Dirichlet L2)
-                  !  IquickAccess(7:...) = The binary content of r_t_p_optcBDC.
-                  !
-                  ! The DquickAccess array is set up as follows:
-                  !  DquickAccess(1) = dtime
-                  !  DquickAccess(2) = dvalue
-                  !
-                  ! The SquickAccess array is set up as follows:
-                  !  SquickAccess(1) = Name of the expression
+                  if (iand(casmFlags,SBC_DISCRETEBC) .ne. 0) then
                   
-                  if (sbdex1 .ne. "") then
-                    
-                    ! X-velocity
+                    ! Simple Dirichlet boundary.
+                    ! Get the definition of the boundary condition.
+                    ! Read the line again, get the expressions for X- and Y-velocity
+                    read(sstr,*) dvalue,iintervalEnds,ibctyp,sbdex1,sbdex2
+                  
+                    ! For any string <> "", create the appropriate Dirichlet boundary
+                    ! condition and add it to the list of boundary conditions.
                     !
-                    ! Get the expression information
-                    call struc_getBdExprInfo (roptcBDC,sbdex1,&
-                        ctype,iid,ivalue,dvalue,svalue,bneedsParams)
-                        
-                    rcollection%IquickAccess(1) = 1
-                    rcollection%IquickAccess(2) = ctype
-                    rcollection%IquickAccess(3) = iid
-                    rcollection%IquickAccess(4) = ivalue
-                    rcollection%IquickAccess(5) = 0
-                    if (bneedsParams) rcollection%IquickAccess(5) = 1
-                    rcollection%DquickAccess(1) = dtime
-                    rcollection%DquickAccess(2) = dvalue
-                    rcollection%SquickAccess(1) = svalue
-                    rcollection%p_rnextCollection => ruserCollection
-                    rcollection%IquickAccess(6) = 0
-                    rcollection%IquickAccess(7:) = &
-                        transfer(r_t_p_optcBDC,rcollection%IquickAccess(7:),&
-                                      size(rcollection%IquickAccess(7:)))
+                    ! The IquickAccess array is set up as follows:
+                    !  IquickAccess(1) = component under consideration (1=x-vel, 2=y-vel,...)
+                    !  IquickAccess(2) = expression type
+                    !  IquickAccess(3) = iid
+                    !  IquickAccess(4) = ivalue
+                    !  IquickAccess(5) = 1, if parameters (x,y) are needed, =0 otherwise
+                    !  IquickAccess(6) = type of boundary control to impose.
+                    !                    (=0: none, =1: Dirichlet L2)
+                    !  IquickAccess(7:...) = The binary content of r_t_p_optcBDC.
+                    !
+                    ! The DquickAccess array is set up as follows:
+                    !  DquickAccess(1) = dtime
+                    !  DquickAccess(2) = dvalue
+                    !
+                    ! The SquickAccess array is set up as follows:
+                    !  SquickAccess(1) = Name of the expression
                     
-                    call user_initCollectForVecAssembly (&
-                        rglobalData,iid,rcollection%IquickAccess(1),dtime,rusercollection)
-                    
-                    ! Assemble the BCs.
-                    call bcasm_newDirichletBConRealBD (&
-                        rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
-                        roptcBDCSpace%rdiscreteBC,&
-                        cc_getDirBCNavSt2D,rcollection)
-                        
-                    call user_doneCollectForVecAssembly (rglobalData,rusercollection)
-                    
-                  end if
+                    if (sbdex1 .ne. "") then
                       
-                  if (sbdex2 .ne. "") then
-                  
-                    ! Y-velocity
-                    !
-                    ! Get the expression information
-                    call struc_getBdExprInfo (roptcBDC,sbdex2,&
-                        ctype,iid,ivalue,dvalue,svalue,bneedsParams)
+                      ! X-velocity
+                      !
+                      ! Get the expression information
+                      call struc_getBdExprInfo (roptcBDC,sbdex1,&
+                          ctype,iid,ivalue,dvalue,svalue,bneedsParams)
+                          
+                      rcollection%IquickAccess(1) = 1
+                      rcollection%IquickAccess(2) = ctype
+                      rcollection%IquickAccess(3) = iid
+                      rcollection%IquickAccess(4) = ivalue
+                      rcollection%IquickAccess(5) = 0
+                      if (bneedsParams) rcollection%IquickAccess(5) = 1
+                      rcollection%DquickAccess(1) = dtime
+                      rcollection%DquickAccess(2) = dvalue
+                      rcollection%SquickAccess(1) = svalue
+                      rcollection%p_rnextCollection => ruserCollection
+                      rcollection%IquickAccess(6) = 0
+                      rcollection%IquickAccess(7:) = &
+                          transfer(r_t_p_optcBDC,rcollection%IquickAccess(7:),&
+                                        size(rcollection%IquickAccess(7:)))
+                      
+                      call user_initCollectForVecAssembly (&
+                          rglobalData,iid,rcollection%IquickAccess(1),dtime,rusercollection)
+                      
+                      ! Assemble the BCs.
+                      call bcasm_newDirichletBConRealBD (&
+                          rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
+                          roptcBDCSpace%rdiscreteBC,&
+                          cc_getDirBCNavSt2D,rcollection)
+                          
+                      call user_doneCollectForVecAssembly (rglobalData,rusercollection)
+                      
+                    end if
                         
-                    rcollection%IquickAccess(1) = 2
-                    rcollection%IquickAccess(2) = ctype
-                    rcollection%IquickAccess(3) = iid
-                    rcollection%IquickAccess(4) = ivalue
-                    rcollection%IquickAccess(5) = 0
-                    if (bneedsParams) rcollection%IquickAccess(5) = 1
-                    rcollection%DquickAccess(1) = dtime
-                    rcollection%DquickAccess(2) = dvalue
-                    rcollection%SquickAccess(1) = svalue
-                    rcollection%p_rnextCollection => ruserCollection
-                    rcollection%IquickAccess(6) = 0
-                    rcollection%IquickAccess(7:) = &
-                        transfer(r_t_p_optcBDC,rcollection%IquickAccess(7:),&
-                                      size(rcollection%IquickAccess(7:)))
+                    if (sbdex2 .ne. "") then
                     
-                    call user_initCollectForVecAssembly (&
-                        rglobalData,iid,rcollection%IquickAccess(1),dtime,rusercollection)
+                      ! Y-velocity
+                      !
+                      ! Get the expression information
+                      call struc_getBdExprInfo (roptcBDC,sbdex2,&
+                          ctype,iid,ivalue,dvalue,svalue,bneedsParams)
+                          
+                      rcollection%IquickAccess(1) = 2
+                      rcollection%IquickAccess(2) = ctype
+                      rcollection%IquickAccess(3) = iid
+                      rcollection%IquickAccess(4) = ivalue
+                      rcollection%IquickAccess(5) = 0
+                      if (bneedsParams) rcollection%IquickAccess(5) = 1
+                      rcollection%DquickAccess(1) = dtime
+                      rcollection%DquickAccess(2) = dvalue
+                      rcollection%SquickAccess(1) = svalue
+                      rcollection%p_rnextCollection => ruserCollection
+                      rcollection%IquickAccess(6) = 0
+                      rcollection%IquickAccess(7:) = &
+                          transfer(r_t_p_optcBDC,rcollection%IquickAccess(7:),&
+                                        size(rcollection%IquickAccess(7:)))
+                      
+                      call user_initCollectForVecAssembly (&
+                          rglobalData,iid,rcollection%IquickAccess(1),dtime,rusercollection)
+                      
+                      ! Assemble the BCs.
+                      call bcasm_newDirichletBConRealBD (&
+                          rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
+                          roptcBDCSpace%rdiscreteBC,&
+                          cc_getDirBCNavSt2D,rcollection)
+                          
+                      call user_doneCollectForVecAssembly (rglobalData,rusercollection)
+                      
+                    end if
                     
-                    ! Assemble the BCs.
-                    call bcasm_newDirichletBConRealBD (&
-                        rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
-                        roptcBDCSpace%rdiscreteBC,&
-                        cc_getDirBCNavSt2D,rcollection)
-                        
-                    call user_doneCollectForVecAssembly (rglobalData,rusercollection)
-                    
-                  end if
+                  end if ! SBC_DISCRETEBC
 
                 end if
 
@@ -535,112 +538,115 @@ contains
               ! --------------------------------------------------
               case (7)
 
-                if (iand(casmFlags,SBC_DIRICHLETBC) .ne. 0) then
+                if (iand(casmFlags,SBC_DIRICHLETBCC) .ne. 0) then
 
                   ! Add the bondary region to the Dirichlet boundary regions.
                   call sbc_addBoundaryRegion(&
                       rboundaryRegion,roptcBDCSpace%rdirichletControlBoundary)
 
-                  ! Get the definition of the boundary condition.
-                  ! Read the line again, get the expressions for X- and Y-velocity
-                  read(sstr,*) dvalue,iintervalEnds,ibctyp,sbdex1,sbdex2
-                
-                  ! For any string <> "", create the appropriate Dirichlet boundary
-                  ! condition and add it to the list of boundary conditions.
-                  !
-                  ! The IquickAccess array is set up as follows:
-                  !  IquickAccess(1) = component under consideration (1=x-vel, 2=y-vel,...)
-                  !  IquickAccess(2) = expression type
-                  !  IquickAccess(3) = iid
-                  !  IquickAccess(4) = ivalue
-                  !  IquickAccess(5) = 1, if parameters (x,y) are needed, =0 otherwise
-                  !  IquickAccess(6) = type of boundary control to impose.
-                  !                    (=0: none, =1: Dirichlet L2)
-                  !  IquickAccess(7:...) = The binary content of r_t_p_optcBDC.
-                  !
-                  ! The DquickAccess array is set up as follows:
-                  !  DquickAccess(1) = dtime
-                  !  DquickAccess(2) = dvalue
-                  !
-                  ! The SquickAccess array is set up as follows:
-                  !  SquickAccess(1) = Name of the expression
-                  !
-                  ! The Quickvectors array is set up as follows:
-                  !  p_rvectorQuickAccess1 => rvectorControl
+                  if (iand(casmFlags,SBC_DISCRETEBC) .ne. 0) then
+                    ! Get the definition of the boundary condition.
+                    ! Read the line again, get the expressions for X- and Y-velocity
+                    read(sstr,*) dvalue,iintervalEnds,ibctyp,sbdex1,sbdex2
                   
-                  if (sbdex1 .ne. "") then
-                    
-                    ! X-velocity
+                    ! For any string <> "", create the appropriate Dirichlet boundary
+                    ! condition and add it to the list of boundary conditions.
                     !
-                    ! Get the expression information
-                    call struc_getBdExprInfo (roptcBDC,sbdex1,&
-                        ctype,iid,ivalue,dvalue,svalue,bneedsParams)
-                        
-                    rcollection%IquickAccess(1) = 1
-                    rcollection%IquickAccess(2) = ctype
-                    rcollection%IquickAccess(3) = iid
-                    rcollection%IquickAccess(4) = ivalue
-                    rcollection%IquickAccess(5) = 0
-                    if (bneedsParams) rcollection%IquickAccess(5) = 1
-                    rcollection%DquickAccess(1) = dtime
-                    rcollection%DquickAccess(2) = dvalue
-                    rcollection%SquickAccess(1) = svalue
-                    rcollection%p_rnextCollection => ruserCollection
-                    rcollection%IquickAccess(6) = 1
-                    rcollection%IquickAccess(7:) = &
-                        transfer(r_t_p_optcBDC,rcollection%IquickAccess(7:),&
-                                      size(rcollection%IquickAccess(7:)))
-                    rcollection%p_rvectorQuickAccess1 => rvectorControl
+                    ! The IquickAccess array is set up as follows:
+                    !  IquickAccess(1) = component under consideration (1=x-vel, 2=y-vel,...)
+                    !  IquickAccess(2) = expression type
+                    !  IquickAccess(3) = iid
+                    !  IquickAccess(4) = ivalue
+                    !  IquickAccess(5) = 1, if parameters (x,y) are needed, =0 otherwise
+                    !  IquickAccess(6) = type of boundary control to impose.
+                    !                    (=0: none, =1: Dirichlet L2)
+                    !  IquickAccess(7:...) = The binary content of r_t_p_optcBDC.
+                    !
+                    ! The DquickAccess array is set up as follows:
+                    !  DquickAccess(1) = dtime
+                    !  DquickAccess(2) = dvalue
+                    !
+                    ! The SquickAccess array is set up as follows:
+                    !  SquickAccess(1) = Name of the expression
+                    !
+                    ! The Quickvectors array is set up as follows:
+                    !  p_rvectorQuickAccess1 => rvectorControl
                     
-                    call user_initCollectForVecAssembly (&
-                        rglobalData,iid,rcollection%IquickAccess(1),dtime,rusercollection)
-                    
-                    ! Assemble the BCs.
-                    call bcasm_newDirichletBConRealBD (&
-                        rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
-                        roptcBDCSpace%rdiscreteBC,&
-                        cc_getDirBCNavSt2D,rcollection)
-                        
-                    call user_doneCollectForVecAssembly (rglobalData,rusercollection)
-                    
-                  end if
+                    if (sbdex1 .ne. "") then
                       
-                  if (sbdex2 .ne. "") then
-                  
-                    ! Y-velocity
-                    !
-                    ! Get the expression information
-                    call struc_getBdExprInfo (roptcBDC,sbdex2,&
-                        ctype,iid,ivalue,dvalue,svalue,bneedsParams)
+                      ! X-velocity
+                      !
+                      ! Get the expression information
+                      call struc_getBdExprInfo (roptcBDC,sbdex1,&
+                          ctype,iid,ivalue,dvalue,svalue,bneedsParams)
+                          
+                      rcollection%IquickAccess(1) = 1
+                      rcollection%IquickAccess(2) = ctype
+                      rcollection%IquickAccess(3) = iid
+                      rcollection%IquickAccess(4) = ivalue
+                      rcollection%IquickAccess(5) = 0
+                      if (bneedsParams) rcollection%IquickAccess(5) = 1
+                      rcollection%DquickAccess(1) = dtime
+                      rcollection%DquickAccess(2) = dvalue
+                      rcollection%SquickAccess(1) = svalue
+                      rcollection%p_rnextCollection => ruserCollection
+                      rcollection%IquickAccess(6) = 1
+                      rcollection%IquickAccess(7:) = &
+                          transfer(r_t_p_optcBDC,rcollection%IquickAccess(7:),&
+                                        size(rcollection%IquickAccess(7:)))
+                      rcollection%p_rvectorQuickAccess1 => rvectorControl
+                      
+                      call user_initCollectForVecAssembly (&
+                          rglobalData,iid,rcollection%IquickAccess(1),dtime,rusercollection)
+                      
+                      ! Assemble the BCs.
+                      call bcasm_newDirichletBConRealBD (&
+                          rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
+                          roptcBDCSpace%rdiscreteBC,&
+                          cc_getDirBCNavSt2D,rcollection)
+                          
+                      call user_doneCollectForVecAssembly (rglobalData,rusercollection)
+                      
+                    end if
                         
-                    rcollection%IquickAccess(1) = 2
-                    rcollection%IquickAccess(2) = ctype
-                    rcollection%IquickAccess(3) = iid
-                    rcollection%IquickAccess(4) = ivalue
-                    rcollection%IquickAccess(5) = 0
-                    if (bneedsParams) rcollection%IquickAccess(5) = 1
-                    rcollection%DquickAccess(1) = dtime
-                    rcollection%DquickAccess(2) = dvalue
-                    rcollection%SquickAccess(1) = svalue
-                    rcollection%p_rnextCollection => ruserCollection
-                    rcollection%IquickAccess(6) = 1
-                    rcollection%IquickAccess(7:) = &
-                        transfer(r_t_p_optcBDC,rcollection%IquickAccess(7:),&
-                                      size(rcollection%IquickAccess(7:)))
-                    rcollection%p_rvectorQuickAccess1 => rvectorControl
+                    if (sbdex2 .ne. "") then
                     
-                    call user_initCollectForVecAssembly (&
-                        rglobalData,iid,rcollection%IquickAccess(1),dtime,rusercollection)
+                      ! Y-velocity
+                      !
+                      ! Get the expression information
+                      call struc_getBdExprInfo (roptcBDC,sbdex2,&
+                          ctype,iid,ivalue,dvalue,svalue,bneedsParams)
+                          
+                      rcollection%IquickAccess(1) = 2
+                      rcollection%IquickAccess(2) = ctype
+                      rcollection%IquickAccess(3) = iid
+                      rcollection%IquickAccess(4) = ivalue
+                      rcollection%IquickAccess(5) = 0
+                      if (bneedsParams) rcollection%IquickAccess(5) = 1
+                      rcollection%DquickAccess(1) = dtime
+                      rcollection%DquickAccess(2) = dvalue
+                      rcollection%SquickAccess(1) = svalue
+                      rcollection%p_rnextCollection => ruserCollection
+                      rcollection%IquickAccess(6) = 1
+                      rcollection%IquickAccess(7:) = &
+                          transfer(r_t_p_optcBDC,rcollection%IquickAccess(7:),&
+                                        size(rcollection%IquickAccess(7:)))
+                      rcollection%p_rvectorQuickAccess1 => rvectorControl
+                      
+                      call user_initCollectForVecAssembly (&
+                          rglobalData,iid,rcollection%IquickAccess(1),dtime,rusercollection)
+                      
+                      ! Assemble the BCs.
+                      call bcasm_newDirichletBConRealBD (&
+                          rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
+                          roptcBDCSpace%rdiscreteBC,&
+                          cc_getDirBCNavSt2D,rcollection)
+                          
+                      call user_doneCollectForVecAssembly (rglobalData,rusercollection)
+                      
+                    end if
                     
-                    ! Assemble the BCs.
-                    call bcasm_newDirichletBConRealBD (&
-                        rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
-                        roptcBDCSpace%rdiscreteBC,&
-                        cc_getDirBCNavSt2D,rcollection)
-                        
-                    call user_doneCollectForVecAssembly (rglobalData,rusercollection)
-                    
-                  end if
+                   end if ! SBC_DISCRETEBC
 
                 end if
 
@@ -750,64 +756,67 @@ contains
                   call sbc_addBoundaryRegion(&
                       rboundaryRegion,roptcBDCSpace%rdirichletBoundary)
 
-                  ! Simple Dirichlet boundary.
-                  ! Get the definition of the boundary condition.
-                  ! Read the line again, get the expressions for the data field
-                  read(sstr,*) dvalue,iintervalEnds,ibctyp,sbdex1
-                
-                  ! For any string <> "", create the appropriate Dirichlet boundary
-                  ! condition and add it to the list of boundary conditions.
-                  !
-                  ! The IquickAccess array is set up as follows:
-                  !  IquickAccess(1) = component under consideration (1=x-vel, 2=y-vel,...)
-                  !  IquickAccess(2) = expression type
-                  !  IquickAccess(3) = iid
-                  !  IquickAccess(4) = ivalue
-                  !  IquickAccess(5) = 1, if parameters (x,y) are needed, =0 otherwise
-                  !  IquickAccess(7:...) = The binary content of r_t_p_optcBDC.
-                  !
-                  ! The DquickAccess array is set up as follows:
-                  !  DquickAccess(1) = dtime
-                  !  DquickAccess(2) = dvalue
-                  !
-                  ! The SquickAccess array is set up as follows:
-                  !  SquickAccess(1) = Name of the expression
+                  if (iand(casmFlags,SBC_DISCRETEBC) .ne. 0) then
+                    ! Simple Dirichlet boundary.
+                    ! Get the definition of the boundary condition.
+                    ! Read the line again, get the expressions for the data field
+                    read(sstr,*) dvalue,iintervalEnds,ibctyp,sbdex1
                   
-                  if (sbdex1 .ne. "") then
-                    
-                    ! X-velocity
+                    ! For any string <> "", create the appropriate Dirichlet boundary
+                    ! condition and add it to the list of boundary conditions.
                     !
-                    ! Get the expression information
-                    call struc_getBdExprInfo (roptcBDC,sbdex1,&
-                        ctype,iid,ivalue,dvalue,svalue,bneedsParams)
-                        
-                    rcollection%IquickAccess(1) = 1
-                    rcollection%IquickAccess(2) = ctype
-                    rcollection%IquickAccess(3) = iid
-                    rcollection%IquickAccess(4) = ivalue
-                    rcollection%IquickAccess(5) = 0
-                    if (bneedsParams) rcollection%IquickAccess(5) = 1
-                    rcollection%DquickAccess(1) = dtime
-                    rcollection%DquickAccess(2) = dvalue
-                    rcollection%SquickAccess(1) = svalue
-                    rcollection%p_rnextCollection => ruserCollection
-                    rcollection%IquickAccess(6) = 0
-                    rcollection%IquickAccess(7:) = &
-                        transfer(r_t_p_optcBDC,rcollection%IquickAccess(7:),&
-                                      size(rcollection%IquickAccess(7:)))
+                    ! The IquickAccess array is set up as follows:
+                    !  IquickAccess(1) = component under consideration (1=x-vel, 2=y-vel,...)
+                    !  IquickAccess(2) = expression type
+                    !  IquickAccess(3) = iid
+                    !  IquickAccess(4) = ivalue
+                    !  IquickAccess(5) = 1, if parameters (x,y) are needed, =0 otherwise
+                    !  IquickAccess(7:...) = The binary content of r_t_p_optcBDC.
+                    !
+                    ! The DquickAccess array is set up as follows:
+                    !  DquickAccess(1) = dtime
+                    !  DquickAccess(2) = dvalue
+                    !
+                    ! The SquickAccess array is set up as follows:
+                    !  SquickAccess(1) = Name of the expression
                     
-                    call user_initCollectForVecAssembly (&
-                        rglobalData,iid,rcollection%IquickAccess(1),dtime,rusercollection)
+                    if (sbdex1 .ne. "") then
+                      
+                      ! X-velocity
+                      !
+                      ! Get the expression information
+                      call struc_getBdExprInfo (roptcBDC,sbdex1,&
+                          ctype,iid,ivalue,dvalue,svalue,bneedsParams)
+                          
+                      rcollection%IquickAccess(1) = 1
+                      rcollection%IquickAccess(2) = ctype
+                      rcollection%IquickAccess(3) = iid
+                      rcollection%IquickAccess(4) = ivalue
+                      rcollection%IquickAccess(5) = 0
+                      if (bneedsParams) rcollection%IquickAccess(5) = 1
+                      rcollection%DquickAccess(1) = dtime
+                      rcollection%DquickAccess(2) = dvalue
+                      rcollection%SquickAccess(1) = svalue
+                      rcollection%p_rnextCollection => ruserCollection
+                      rcollection%IquickAccess(6) = 0
+                      rcollection%IquickAccess(7:) = &
+                          transfer(r_t_p_optcBDC,rcollection%IquickAccess(7:),&
+                                        size(rcollection%IquickAccess(7:)))
+                      
+                      call user_initCollectForVecAssembly (&
+                          rglobalData,iid,rcollection%IquickAccess(1),dtime,rusercollection)
+                      
+                      ! Assemble the BCs.
+                      call bcasm_newDirichletBConRealBD (&
+                          rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
+                          roptcBDCSpace%rdiscreteBC,&
+                          cc_getDirBCNavSt2D,rcollection)
+                          
+                      call user_doneCollectForVecAssembly (rglobalData,rusercollection)
+                      
+                    end if
                     
-                    ! Assemble the BCs.
-                    call bcasm_newDirichletBConRealBD (&
-                        rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
-                        roptcBDCSpace%rdiscreteBC,&
-                        cc_getDirBCNavSt2D,rcollection)
-                        
-                    call user_doneCollectForVecAssembly (rglobalData,rusercollection)
-                    
-                  end if
+                  end if ! SBC_DISCRETEBC
                       
                 end if
 
@@ -2567,9 +2576,9 @@ contains
     call bcasm_clearDiscreteBC(roptcBDCSpace%rdiscreteBC)
     
     ! Release boundary region lists
-    call sbc_releaseBoundaryList (roptcBDCSpace%rneumannBoundary)
-    call sbc_releaseBoundaryList (roptcBDCSpace%rdirichletBoundary)
-    call sbc_releaseBoundaryList (roptcBDCSpace%rdirichletControlBoundary)
+    call sbc_releaseBdRegionList (roptcBDCSpace%rneumannBoundary)
+    call sbc_releaseBdRegionList (roptcBDCSpace%rdirichletBoundary)
+    call sbc_releaseBdRegionList (roptcBDCSpace%rdirichletControlBoundary)
     
   end subroutine
 

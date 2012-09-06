@@ -452,11 +452,13 @@ contains
         p_rsettingsSolver%roperatorAsmHier,&
         p_rsettingsSolver%rspaceTimeHierPrimal,&
         p_rsettingsSolver%rspaceTimeHierDual,&
-        p_rsettingsSolver%rspaceTimeHierControl,.false.)
+        p_rsettingsSolver%rspaceTimeHierControl,.false.,&
+        p_rsettingsSolver%roptcBDC)
         
     ! Allocate a solution
     call kkth_initKKTSystem (rsolution,rkktsystemHierarchy,&
-        rkktsystemHierarchy%nlevels,p_rsettingsSolver%roperatorAsmHier)
+        rkktsystemHierarchy%nlevels,p_rsettingsSolver%roperatorAsmHier,&
+        p_rsettingsSolver%roptcBDC)
     
     if (rsettings%routput%ioutputInit .ge. 1) then
       call output_lbrk()

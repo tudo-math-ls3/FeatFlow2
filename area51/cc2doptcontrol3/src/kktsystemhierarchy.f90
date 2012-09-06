@@ -26,6 +26,7 @@ module kktsystemhierarchy
   use kktsystem
   
   use structuresoperatorasm
+  use structuresboundaryconditions
   use spacematvecassembly
 
   implicit none
@@ -266,7 +267,7 @@ contains
 
 !<subroutine>
 
-  subroutine kkth_initKKTSystem (rkktsystem,rkktsystemHierarchy,ilevel,roperatorAsmHier)
+  subroutine kkth_initKKTSystem (rkktsystem,rkktsystemHierarchy,ilevel,roperatorAsmHier,roptcBDC)
   
 !<description>
   ! Initialises a KKT system structure for level ilevel of the hierarchy
@@ -282,6 +283,9 @@ contains
   
   ! Hierarchy of all possible space-time operators
   type(t_spacetimeOpAsmHierarchy), intent(in), target :: roperatorAsmHier
+
+  ! Boudary conditions of the KKT system
+  type(t_optcBDC), intent(in), target :: roptcBDC
 !</input>
 
 !<output>
@@ -303,7 +307,7 @@ contains
     
     ! Initialise the KKT system on level i
     call kkt_initKKTsystem (rkktsystem,roperatorAsmHier,&
-        ispacelevel, itimelevel)
+        ispacelevel, itimelevel, roptcBDC)
 
   end subroutine
 
@@ -313,7 +317,7 @@ contains
 
   subroutine kkth_initHierarchy (rkktsystemHierarchy,roperatorAsmHier,&
       rspaceTimeHierPrimal,rspaceTimeHierDual,rspaceTimeHierControl,ballocate,&
-      rkktSystemMaxLevel)
+      roptcBDC,rkktSystemMaxLevel)
   
 !<description>
   ! Initialises a hierarchy of KKT systems.
@@ -335,6 +339,9 @@ contains
   ! Whether or not to allocate memory for the solutions
   logical, intent(in) :: ballocate
   
+  ! Boudary conditions of the KKT system
+  type(t_optcBDC), intent(in), target :: roptcBDC
+
   ! OPTIONAL: A KKT system solution on the maximum level.
   ! If specified, this solution is used on the maximum level, and
   ! no memory is allocated in the hierarchy for the maximum level.
@@ -377,7 +384,7 @@ contains
         ! Initialise the KKT system on level i
         call kkth_initKKTSystem (&
             rkktsystemHierarchy%p_RkktSystems(i),rkktsystemHierarchy,i,&
-            roperatorAsmHier)
+            roperatorAsmHier,roptcBDC)
       end do
       
     end if

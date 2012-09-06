@@ -772,13 +772,13 @@ contains
     
       ! The Newton iteration reads
       !
-      !    u_n+1  =  u_n  -  [J''(u_n)]^-1  J"(u_n)
+      !    u_n+1  =  u_n  -  [J''(u_n)]^-1  J'(u_n)
       !
       ! or in other words,
       !
       !    u_n+1  =  u_n  +  [J''(u_n)]^-1  d_n
       !
-      ! with the residual   d_n = -J"(u_n)   specifying a "search direction".
+      ! with the residual   d_n = -J'(u_n)   specifying a "search direction".
       
       ! -------------------------------------------------------------
       ! Get the current residual / search direction
@@ -1082,7 +1082,8 @@ contains
         rsolver%p_rkktsystemHierarchy%p_roperatorAsmHier,&
         rsolver%p_rkktsystemHierarchy%p_rspaceTimeHierPrimal,&
         rsolver%p_rkktsystemHierarchy%p_rspaceTimeHierDual,&
-        rsolver%p_rkktsystemHierarchy%p_rspaceTimeHierControl,.true.,rsolution)
+        rsolver%p_rkktsystemHierarchy%p_rspaceTimeHierControl,.true.,&
+        rsolver%p_rsettingsSolver%roptcBDC,rsolution)
 
     ! create tempoprary memory for the search direction connected with
     ! the above solution hierarchy.
