@@ -362,6 +362,8 @@ KERNEL_SRC=$(patsubst %.cpp, $(SRCDIR)/%.cpp, $(KERNEL_CPP))
 
 KERNEL_OBJ=$(patsubst %.cpp, $(OBJDIR)/%.o, $(KERNEL_CPP))
 
+OBJS = $(KERNEL_OBJ) $(ZLIB_OBJ) $(ON_OBJ)
+
 #-------------------------------------------------------------------------------
 # Create the library
 #-------------------------------------------------------------------------------
