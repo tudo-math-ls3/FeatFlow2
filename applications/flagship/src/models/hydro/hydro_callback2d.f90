@@ -9514,7 +9514,7 @@ contains
           ! Compute convervative variables
           IDX3(DstateM,4,ipoint,iel,_,_,_) = IDX3(DstateM,4,ipoint,iel,_,_,_)/((HYDRO_GAMMA)-RCONST(1.0))&
               + IDX3(DstateM,1,ipoint,iel,_,_,_)*RCONST(0.5)*(IDX3(DstateM,2,ipoint,iel,_,_,_)**2+&
-                                                          IDX3(DstateM,3,ipoint,iel,_,_,_)**2)
+                                                              IDX3(DstateM,3,ipoint,iel,_,_,_)**2)
           IDX3(DstateM,2,ipoint,iel,_,_,_) = IDX3(DstateM,1,ipoint,iel,_,_,_)*IDX3(DstateM,2,ipoint,iel,_,_,_)
           IDX3(DstateM,3,ipoint,iel,_,_,_) = IDX3(DstateM,1,ipoint,iel,_,_,_)*IDX3(DstateM,3,ipoint,iel,_,_,_)
         end do
