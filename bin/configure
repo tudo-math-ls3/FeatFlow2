@@ -1819,10 +1819,6 @@ sub create_feastAppMakefile {
         "#  settings on the command line or as a configure option.)\n" .
         "##############################################################################\n" .
         "\n" .
-        "ifeq (\$(strip \$(CFLAGSF77LIBS)),)\n" .
-        "CFLAGSF77LIBS = \$(CFLAGSF77)\n" .
-        "endif\n\n" .
-
         "ifeq (\$(strip \$(MPI)), YES)\n" .
         "LIBDIR := \$(MPILIBDIR) \$(LIBDIR)\n" .
         "LIBS   := \$(MPILIBS)   \$(LIBS)\n" .
@@ -2381,7 +2377,7 @@ sub create_feastAppMakefile {
 	"# Create build rule for object files from Fortran 90 source\n" .
         "\$(OBJF90): | \$(OBJDIR)\n" .
         "\$(OBJF90):\n" .
-        "\tCPPFLAGS=\"\$(CPPFLAGS)\" \\\n\$(F90CPP) \$(PREF90) \$(F90) \$(APPONLYFLAGS) \$(CFLAGSF90) \$(MPIINC) \$(INC) -c \$< -o \$@ \$(call MOVE_MOD_FILES)\n\n" .
+        "\tCPPFLAGS=\"\$(CPPFLAGS)\" \\\n\$(F90CPP) \$(PREF90) \$(F90) \$(APPONLYFLAGS) \$(CFLAGSF90) \$(MODOPTION)\$(OBJDIR) \$(MPIINC) \$(INC) -c \$< -o \$@ \$(call MOVE_MOD_FILES)\n\n" .
 
     # Create separate rule for source file containing program
         "# Compile statement for source file containing program start\n" .
@@ -2389,7 +2385,7 @@ sub create_feastAppMakefile {
         "#  and, hence, we should not try to move a .mod file as we do with any module.)\n" .
         "\$(OBJPRG): | \$(OBJDIR)\n" .
         "\$(OBJPRG):\n" .
-        "\tCPPFLAGS=\"\$(CPPFLAGS)\" \\\n\$(F90CPP) \$(PREF90) \$(F90) \$(APPONLYFLAGS) \$(CFLAGSF90) \$(MPIINC) \$(INC) -c \$< -o \$@\n\n" .
+        "\tCPPFLAGS=\"\$(CPPFLAGS)\" \\\n\$(F90CPP) \$(PREF90) \$(F90) \$(APPONLYFLAGS) \$(CFLAGSF90) \$(MODOPTION)\$(OBJDIR) \$(MPIINC) \$(INC) -c \$< -o \$@\n\n" .
 
     # Include implicit rules for files only needed for specific
     # build IDs. They are listed in $(SRCEXTRA) and are supposed
@@ -2420,7 +2416,7 @@ sub create_feastAppMakefile {
 	"# them from being compiled prematurely, e.g. in a highly parallel make run\n" .
 	"# (make -j N, with N>32 or N missing).\n" .
 	"\$(patsubst %.f90, \$(OBJDIR)/%.o, \$(filter %.f90, \$(notdir \$(SRCEXTRA) \$(SRCEXTRA_APP)))): \$(SRCEXTRA) \$(SRCEXTRA_APP) \$(filter-out \$(OBJEXTRA), \$(OBJ))\n" .
-	"\tCPPFLAGS=\"\$(CPPFLAGS)\" \\\n\$(F90CPP) \$(PREF90) \$(F90) \$(APPONLYFLAGS) \$(CFLAGSF90) \$(MPIINC) \$(INC) -c \$(filter %/\$(notdir \$(basename \$\@)).f90, \$(SRCEXTRA) \$(SRCEXTRA_APP)) -o \$\@\n\n" .
+	"\tCPPFLAGS=\"\$(CPPFLAGS)\" \\\n\$(F90CPP) \$(PREF90) \$(F90) \$(APPONLYFLAGS) \$(CFLAGSF90) \$(MODOPTION)\$(OBJDIR) \$(MPIINC) \$(INC) -c \$(filter %/\$(notdir \$(basename \$\@)).f90, \$(SRCEXTRA) \$(SRCEXTRA_APP)) -o \$\@\n\n" .
 
     # Generic rule for *.c files out of SRCEXTRA and SRCEXTRA_APP
 	"# Generic rule for *.c files out of SRCEXTRA and SRCEXTRA_APP\n" .
@@ -2676,7 +2672,7 @@ sub create_feastAppMakefile {
         "\t\tOPT=\"\$(OPT)\" \\\n" .
         "\t\tCFLAGSCOPROC_FROM_FEAT2=\"\$(CFLAGSCOPROC)\" \\\n" .
         "\t\tCFLAGSCUDA=\"\$(CFLAGSCUDA)\" \\\n" .
-        "\t\tCFLAGSF90=\"\$(CFLAGSF90)\" \\\n" .
+        "\t\tCFLAGSF90=\"\$(CFLAGSF90) \$(MODOPTION)\$(OBJDIR)\" \\\n" .
         "\t\tAPPONLYFLAGS=\"\$(APPONLYFLAGS)\" \\\n" .
         "\t\tARCH=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" \\\n" .
         "\t\tOBJDIR=\"\$(OBJDIR_LIB)\" \\\n" .
@@ -2749,7 +2745,7 @@ sub create_feastAppMakefile {
         "\t\@echo \"# Building blas library\"\n" .
         "\t(cd \$(DIR) && \\\n" .
         "\t    $makeInMakefile -f Makefile.FEAT2 \$\@ \\\n" .
-        "\t\tFORTRAN=\"\$(PREF77) \$(F77)\" OPTS=\"\$(CFLAGSF77LIBS)\" \\\n" .
+        "\t\tFORTRAN=\"\$(PREF77) \$(F77)\" OPTS=\"\$(CFLAGSF77)\" \\\n" .
         "\t\tARCH=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" \\\n" .
         "\t\tOBJDIR=\"\$(OBJDIR_LIB)\")\n\n" .
 
@@ -2768,7 +2764,7 @@ sub create_feastAppMakefile {
         "\t\@echo \"# Building lapack library\"\n" .
         "\t(cd \$(DIR) && \\\n" .
         "\t    $makeInMakefile -f Makefile.FEAT2 \$\@ \\\n" .
-	"\t\tF95=\"\$(PREF90) \$(F90)\" OPTS=\"\$(CFLAGSF77LIBS)\" \\\n" .
+	"\t\tF95=\"\$(PREF90) \$(F90)\" OPTS=\"\$(CFLAGSF90) \$(MODOPTION)\$(OBJDIR_LIB)\" \\\n" .
         "\t\tARCH=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" GOTOBLAS_PATCH_FOR_LAPACK=\"\$(GOTOBLAS_PATCH_FOR_LAPACK)\" \\\n" .
         "\t\tOBJDIR=\"\$(OBJDIR_LIB)\")\n\n" .
 
@@ -2784,7 +2780,7 @@ sub create_feastAppMakefile {
         "\t\@echo \"# Building splib library\"\n" .
         "\t(cd \$(DIR) && \\\n" .
         "\t    $makeInMakefile -f Makefile.FEAT2 \$\@ \\\n" .
-        "\t\tFORTRAN=\"\$(PREF77) \$(F77)\" OPTS=\"\$(CFLAGSF77LIBS)\" \\\n" .
+        "\t\tFORTRAN=\"\$(PREF77) \$(F77)\" OPTS=\"\$(CFLAGSF77)\" \\\n" .
         "\t\tARCH=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" \\\n" .
         "\t\tOBJDIR=\"\$(OBJDIR_LIB)\")\n\n" .
 
@@ -2815,7 +2811,7 @@ sub create_feastAppMakefile {
         "\t\@echo \"# Building AGMG library\"\n" .
         "\t(cd \$(DIR) && \\\n" .
         "\t    $makeInMakefile -f Makefile.FEAT2 \$\@ \\\n" .
-	"\t\tF95=\"\$(PREF90) \$(F90)\" OPTS=\"\$(CFLAGSF77LIBS)\" \\\n" .
+	"\t\tF95=\"\$(PREF90) \$(F90)\" OPTS=\"\$(CFLAGSF90) \$(MODOPTION)\$(OBJDIR_LIB)\" \\\n" .
         "\t\tARCH=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" \\\n" .
         "\t\tOBJDIR=\"\$(OBJDIR_LIB)\")\n\n";
 
@@ -3038,7 +3034,6 @@ sub create_feastAppMakefile {
         "        # flags. The mechanism ensures that all object files have been compiled\n" .
         "        # with the very same settings when it comes to linking. The settings\n" .
         "        # stored are:\n" .
-        "        # CFLAGSF77LIBS = [...]\n" .
         "        # CFLAGSF77     = [...]\n" .
         "        # CFLAGSF90     = [...]\n" .
         "        # CFLAGSC       = [...]\n" .
@@ -3079,9 +3074,7 @@ sub create_feastAppMakefile {
         "\tFILE=\"\$(DIR)/\$(FILE_CUDA_INFO).ls\";      \$(ls-lLd-for-compiler-foo); \\\n" .
         "\tif test -s \$(DIR)/\$(COMPILER_SETTINGS); then \\\n" .
         "\t    recompile=no; \\\n" .
-        "\t    (echo 'CFLAGSF77LIBS =' \$(CFLAGSF77LIBS) | \\\n" .
-        "\t\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
-        "\t     echo 'CFLAGSF77     =' \$(CFLAGSF77) | \\\n" .
+        "\t    (echo 'CFLAGSF77     =' \$(CFLAGSF77) | \\\n" .
         "\t\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
         "\t     echo 'CFLAGSF90     =' \$(CFLAGSF90) | \\\n" .
         "\t\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g; \\\n" .
@@ -3161,9 +3154,7 @@ sub create_feastAppMakefile {
         "\tFILE=\"\$(DIR)/\$(FILE_CUDA_INFO).version\"; \$(version-info-compiler-foo); \\\n" .
         "\tif test -s \$(DIR)/\$(COMPILER_SETTINGS); then \\\n" .
         "\t    recompile=no; \\\n" .
-        "\t    (echo 'CFLAGSF77LIBS =' \$(CFLAGSF77LIBS) | \\\n" .
-        "\t\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
-        "\t     echo 'CFLAGSF77     =' \$(CFLAGSF77) | \\\n" .
+        "\t    (echo 'CFLAGSF77     =' \$(CFLAGSF77) | \\\n" .
         "\t\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
         "\t     echo 'CFLAGSF90     =' \$(CFLAGSF90) | \\\n" .
         "\t\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g; \\\n" .
@@ -3329,7 +3320,6 @@ sub create_feastAppMakefile {
         "# flags. The mechanism ensures that all object files have been compiled\n" .
         "# with the very same settings when it comes to linking. The settings\n" .
         "# stored are:\n" .
-        "# CFLAGSF77LIBS = [...]\n" .
         "# CFLAGSF77     = [...]\n" .
         "# CFLAGSF90     = [...]\n" .
         "# CFLAGSC       = [...]\n" .
@@ -3418,9 +3408,7 @@ sub create_feastAppMakefile {
         "\t    exit 1; \\\n" .
         "\tfi; \\\n" .
         "    fi; \\\n" .
-        "    (echo 'CFLAGSF77LIBS =' \$(CFLAGSF77LIBS) | \\\n" .
-        "\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
-        "     echo 'CFLAGSF77     =' \$(CFLAGSF77) | \\\n" .
+        "    (echo 'CFLAGSF77     =' \$(CFLAGSF77) | \\\n" .
         "\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g;\"; \\\n" .
         "     echo 'CFLAGSF90     =' \$(CFLAGSF90) | \\\n" .
         "\tsed -e \"s^-DENABLE_SERIAL_BUILD[ ]*^^g; \\\n" .

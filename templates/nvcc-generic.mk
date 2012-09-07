@@ -18,7 +18,7 @@ CUDAVERSION  = $(CUDA) --version | tail -n 1
 
 
 ##############################################################################
-# compiler flags 
+# compiler flags
 # (including non-architecture specific optimisation flags)
 ##############################################################################
 
@@ -52,7 +52,7 @@ endif
 
 # Set compile flags part 2
 ifeq ($(strip $(HAS_CUDA10)),YES)
-CFLAGSCUDA := $(CFLAGSCUDA)  -arch sm_10 
+CFLAGSCUDA := $(CFLAGSCUDA)  -arch sm_10
 endif
 ifeq ($(strip $(HAS_CUDA11)),YES)
 CFLAGSCUDA := $(CFLAGSCUDA)  -arch sm_11

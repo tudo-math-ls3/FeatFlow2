@@ -14,6 +14,11 @@ CC        = pgcc
 CXX	  = pgCC
 LD        = pgf95
 
+# Compiler flag to specify the directory where module files should be
+# placed when created and where they should be searched for.
+# Note: Do not remove ticks and whitespace!
+MODOPTION = '-module '
+
 # If preprocessor switch -DENABLE_SERIAL_BUILD does not occur in compiler flags,
 # a build for parallel execution is requested.
 ifeq (,$(findstring -DENABLE_SERIAL_BUILD ,$(APPONLYFLAGS) $(CFLAGSF90) ))
@@ -37,25 +42,33 @@ CXXVERSION = $(CXX) -V | head -n 2
 
 
 ##############################################################################
-# compiler flags 
+# compiler flags
 # (including non-architecture specific optimisation flags)
 ##############################################################################
 
 # Set default type of integer variables explicitly
 ifeq ($(strip $(INTSIZE)), LARGE)
 CFLAGSF77     := $(CFLAGSF77) -DUSE_LARGEINT -i8
-CFLAGSF90     := $(CFLAGSF90) -DUSE_LARGEINT -i8
 endif
-# $(CC) and $(CXX) do not have such a corresponding option, so we have to 
+# $(CC) and $(CXX) do not have such a corresponding option, so we have to
 # pray that they default the 'int' type properly.
 
 
 
 # Specify -openmp for all PGI compilers
 ifeq ($(strip $(OPENMP)), YES)
-CFLAGSF77LIBS := -DUSE_OPENMP -mp $(CFLAGSF77LIBS)
+CFLAGSF77     := -DUSE_OPENMP -mp $(CFLAGSF77)
 CFLAGSC       := -DUSE_OPENMP -mp $(CFLAGSC)
 LDFLAGS       := -DUSE_OPENMP -mp $(LDFLAGS)
+endif
+
+
+
+ifeq ($(strip $(OPT)), EXPENSIVE)
+# Specify -Mipa for all PGI compilers
+CFLAGSF77     := -Mipa $(CFLAGSF77)
+CFLAGSC       := -Mipa $(CFLAGSC)
+LDFLAGS       := -Mipa $(LDFLAGS)
 endif
 
 
@@ -63,41 +76,27 @@ endif
 # Set default compile flags
 ifeq ($(call optimise), YES)
 # -Mcache_align is important when using ACML.
-CFLAGSF77LIBS := -DUSE_COMPILER_PGI $(CFLAGSF77LIBS) -O4 -fastsse \
+CFLAGSF77     := -DUSE_COMPILER_PGI $(CFLAGSF77) -O4 -fastsse \
 		 -Mcray=pointer -Mcache_align -Minline=size:32 -Munroll=c:4 \
 		 -Mvect=assoc,prefetch,sse
-CFLAGSF77     := $(CFLAGSF77LIBS) $(CFLAGSF77)
 # PGI F90 Compiler v6.1.x most likely needs "-g -Msave" otherwise FEAT2 used to
 # crash as soon as it tries to start solving something! This might have been
 # fixed, though, with revision 2.5 of parallel.f90.
 CFLAGSF90     := -DENABLE_USE_ONLY -DHAS_INTRINSIC_FLUSH $(CFLAGSF90) \
-		 $(CFLAGSF77LIBS) -module $(OBJDIR) -I $(OBJDIR)
+		 $(CFLAGSF77)
 CFLAGSC       := -DUSE_COMPILER_PGI $(CFLAGSC) -O4 -fastsse \
 		 -Mcache_align -Minline=size:32 -Munroll=c:4 \
 		 -Mvect=assoc,prefetch,sse
 LDFLAGS       := $(LDFLAGS)
 else
-CFLAGSF77LIBS := -DUSE_COMPILER_PGI $(CFLAGSF77LIBS) -O0 -g -Mbounds
-CFLAGSF77     := $(CFLAGSF77LIBS) $(CFLAGSF77)
-# PGI F90 Compiler (at least 6.1.x) needs 
+CFLAGSF77     := -DUSE_COMPILER_PGI $(CFLAGSF77) -O0 -g -Mbounds
+# PGI F90 Compiler (at least 6.1.x) needs
 # * -g flag (even for -O0 optimisation level)
 # otherwise FEAT2 crashes as soon as it tries to start solving something!
 CFLAGSF90     := -DENABLE_USE_ONLY -DHAS_INTRINSIC_FLUSH $(CFLAGSF90) \
-	         $(CFLAGSF77LIBS) -module $(OBJDIR) -I $(OBJDIR)
+	         $(CFLAGSF77)
 CFLAGSC       := -DUSE_COMPILER_PGI $(CFLAGSC) -O0 -g -B -Mbounds
 LDFLAGS       := $(LDFLAGS)
-endif
-
-
-
-ifeq ($(strip $(OPT)), EXPENSIVE)
-# Specify -Mipa for all PGI compilers
-CFLAGSF77LIBS := -Mipa $(CFLAGSF77LIBS)
-CFLAGSF77     := -Mipa $(CFLAGSF77)
-CFLAGSF90     := -Mipa $(CFLAGSF90)
-CFLAGSC       := -Mipa $(CFLAGSC)
-CFLAGSCXX     := -Mipa $(CFLAGSCXX)
-LDFLAGS       := -Mipa $(LDFLAGS)
 endif
 
 
@@ -323,7 +322,7 @@ pgimaxversion_6_1=\
 
 
 
-# The PGI compiler 7.2 and above supports ISO_C_BINDING 
+# The PGI compiler 7.2 and above supports ISO_C_BINDING
 ifeq ($(call pgiminversion_7_2),yes)
 CFLAGSF90     := -DHAS_ISO_C_BINDING $(CFLAGSF90)
 endif
@@ -358,7 +357,7 @@ MODEXTENSION = mod
 
 
 ##############################################################################
-# Manual moving of generated module information files to 
+# Manual moving of generated module information files to
 # object directory needed?
 ##############################################################################
 MOVEMOD   = NO
@@ -371,11 +370,11 @@ SBB_CVERSIONCMD = $(F77) -V  2>&1 | sed 's|(R)||g; 2!d;'
 
 
 # The settings needed to compile a FEAT2 application are "wildly" distributed
-# over several files ((Makefile.inc and templates/*.mk) and if-branches 
-# (in an attempt to reduce duplicate code and inconsistencies among all build 
-# IDs that e.g. use the same MPI environment). Not having all settings at 
-# *one* place entails the risk (especially in the event of setting up a new 
-# build ID) that settings are incompletely defined. A simple typo in a matching 
+# over several files ((Makefile.inc and templates/*.mk) and if-branches
+# (in an attempt to reduce duplicate code and inconsistencies among all build
+# IDs that e.g. use the same MPI environment). Not having all settings at
+# *one* place entails the risk (especially in the event of setting up a new
+# build ID) that settings are incompletely defined. A simple typo in a matching
 # rule in Makefile.inc may prevent that the compiler and compiler command line
 # flags are set. Compilation would fail with the most peculiar errors - if not
 # the Makefile had been set up to catch such a case.
@@ -383,8 +382,8 @@ SBB_CVERSIONCMD = $(F77) -V  2>&1 | sed 's|(R)||g; 2!d;'
 # compiler family, BLAS implementation, MPI environment. Whenever setting
 # one of these, an according flag is set. They are named TOKEN1 up to TOKEN6.
 # Before starting to actually compile a FEAT2 application, every Makefile
-# generated by bin/configure checks whether all six tokens are set *for the 
-# choosen build ID*. If not, the user gets an error message describing exactly 
+# generated by bin/configure checks whether all six tokens are set *for the
+# choosen build ID*. If not, the user gets an error message describing exactly
 # what information is missing, e.g. token 5 not set which means there is no
 # information available which BLAS implementation to use and where to find the
 # library.

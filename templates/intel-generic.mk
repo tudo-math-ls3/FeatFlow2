@@ -14,11 +14,16 @@ CC        = icc
 CXX       = icpc
 LD        = ifort
 
+# Compiler flag to specify the directory where module files should be
+# placed when created and where they should be searched for.
+# Note: Do not remove ticks and whitespace!
+MODOPTION = '-module '
+
 # If preprocessor switch -DENABLE_SERIAL_BUILD does not occur in compiler flags,
 # a build for parallel execution is requested.
 ifeq (,$(findstring -DENABLE_SERIAL_BUILD ,$(APPONLYFLAGS) $(CFLAGSF90) ))
 ifeq ($(strip $(MPIWRAPPERS)), YES)
-F77       = mpif77 
+F77       = mpif77
 F90       = mpif90
 CC        = mpicc
 CXX	  = mpiCC
@@ -44,18 +49,27 @@ CXXVERSION = $(CXX) -V 2>&1 | head -n 1
 # Set default type of integer variables explicitly
 ifeq ($(strip $(INTSIZE)), LARGE)
 CFLAGSF77     := $(CFLAGSF77) -DUSE_LARGEINT -integer_size 64
-CFLAGSF90     := $(CFLAGSF90) -DUSE_LARGEINT -integer_size 64
 endif
-# $(CC) and $(CXX) do not have such a corresponding option, so we have to 
+# $(CC) and $(CXX) do not have such a corresponding option, so we have to
 # pray that they default the 'int' type properly.
 
 
 
 # Specify -openmp for all Intel compilers
 ifeq ($(strip $(OPENMP)), YES)
-CFLAGSF77LIBS := -DUSE_OPENMP -openmp $(CFLAGSF77LIBS)
+CFLAGSF77     := -DUSE_OPENMP -openmp $(CFLAGSF77)
 CFLAGSC       := -DUSE_OPENMP -openmp $(CFLAGSC)
 LDFLAGS       := -DUSE_OPENMP -openmp $(LDFLAGS)
+endif
+
+
+
+ifeq ($(strip $(OPT)), EXPENSIVE)
+# Specifying -ipo for all Intel compilers is only feasible
+# if all Intel compilers have the same build date!
+CFLAGSF77     := -ipo $(CFLAGSF77)
+CFLAGSC       := -ipo $(CFLAGSC)
+LDFLAGS       := -ipo $(LDFLAGS)
 endif
 
 
@@ -75,46 +89,31 @@ ifeq ($(call optimise), YES)
 #  -opt-malloc-options=3 : enables optimal malloc algorithm
 #  -pad                  : enables the changing of the variable and array memory layout.
 #  -unroll               : enables aggressive loop unrolling
-CFLAGSF77LIBS := -DUSE_COMPILER_INTEL $(CFLAGSF77LIBS) -O3 \
+CFLAGSF77     := -DUSE_COMPILER_INTEL $(CFLAGSF77) -O3 \
 		 -unroll-aggressive -ip -fp-model precise \
 		 -assume underscore -no-prec-div -pad -opt-malloc-options=3
-CFLAGSF77     := $(CFLAGSF77LIBS) $(CFLAGSF77)
-CFLAGSF90     := -DHAS_INTRINSIC_FLUSH $(CFLAGSF90) $(CFLAGSF77LIBS) \
-		 -module $(OBJDIR) -align records -assume buffered_io
+CFLAGSF90     := -DHAS_INTRINSIC_FLUSH $(CFLAGSF90) $(CFLAGSF77) \
+		 -align records -assume buffered_io
 CFLAGSC       := -DUSE_COMPILER_INTEL $(CFLAGSC) -O3 -unroll-aggressive -ip -fp-model precise
 CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
-LDFLAGS       := $(LDFLAGS) 
+LDFLAGS       := $(LDFLAGS)
 #
 # no optimisations
 #
 else
 #
-CFLAGSF77LIBS := $(CFLAGSF77LIBS) -DUSE_COMPILER_INTEL -O0 -g -fpe0 -assume underscore
+CFLAGSF77     := -DUSE_COMPILER_INTEL $(CFLAGSF77) -O0 -g -fpe0 -assume underscore
 # the following (additional) flags make ifort super-strict and allow e.g.
 # the detection of out-of-bounds accesses. Unfortunately, they already complain
 # about such errors deep inside the numerical factorisation in UMFPACK (at
 # least in version 5.5.2, which is the only one I tested), so the use of
 # an iterative/alternative coarse grid solver is recommended.
-#CFLAGSF77LIBS := $(CFLAGSF77LIBS) -check all -debug -fp-stack-check -traceback -ftrapuv 
-CFLAGSF77     := $(CFLAGSF77LIBS) $(CFLAGSF77)
-CFLAGSF90     := -DHAS_INTRINSIC_FLUSH $(CFLAGSF90) $(CFLAGSF77LIBS) \
-		 -module $(OBJDIR) -C -check bounds -traceback -warn all -assume buffered_io
+#CFLAGSF77     := $(CFLAGSF77) -check all -debug -fp-stack-check -traceback -ftrapuv
+CFLAGSF90     := -DHAS_INTRINSIC_FLUSH $(CFLAGSF90) $(CFLAGSF77) \
+		 -C -check bounds -traceback -warn all -assume buffered_io
 CFLAGSC       := -DUSE_COMPILER_INTEL $(CFLAGSC) -O0 -g
 CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
-LDFLAGS       := $(LDFLAGS) 
-endif
-
-
-
-ifeq ($(strip $(OPT)), EXPENSIVE)
-# Specifying -ipo for all Intel compilers is only feasible
-# if all Intel compilers have the same build date!
-CFLAGSF77LIBS := -ipo $(CFLAGSF77LIBS)
-CFLAGSF77     := -ipo $(CFLAGSF77)
-CFLAGSF90     := -ipo $(CFLAGSF90)
-CFLAGSC       := -ipo $(CFLAGSC)
-CFLAGSCXX     := -ipo $(CFLAGSCXX)
-LDFLAGS       := -ipo $(LDFLAGS)
+LDFLAGS       := $(LDFLAGS)
 endif
 
 
@@ -228,7 +227,7 @@ intelmaxversion_6_0=\
 
 
 
-# Enable workarounds for Intel 10.1.0[0-1][0-9] compiler releases, 
+# Enable workarounds for Intel 10.1.0[0-1][0-9] compiler releases,
 # (not necessary for Intel 10.1.021)
 ifneq (,$(findstring 10.1.00,$(INTELVERSION)))
 CFLAGSF90     := -DUSE_COMPILER_INTEL_EARLY_10_1_WORKAROUNDS $(CFLAGSF90)
@@ -237,7 +236,7 @@ ifneq (,$(findstring 10.1.01,$(INTELVERSION)))
 CFLAGSF90     := -DUSE_COMPILER_INTEL_EARLY_10_1_WORKAROUNDS $(CFLAGSF90)
 endif
 
-# The Intel compiler 10.1 and above supports ISO_C_BINDING 
+# The Intel compiler 10.1 and above supports ISO_C_BINDING
 ifeq ($(call intelminversion_10_1),yes)
 CFLAGSF90     := -DHAS_ISO_C_BINDING $(CFLAGSF90)
 endif
@@ -258,7 +257,7 @@ MODEXTENSION = mod
 
 
 ##############################################################################
-# Manual moving of generated module information files to 
+# Manual moving of generated module information files to
 # object directory needed?
 ##############################################################################
 MOVEMOD   = NO
@@ -271,11 +270,11 @@ SBB_CVERSIONCMD = $(F77) -V  2>&1 | sed 's|(R)||g; 1!d;'
 
 
 # The settings needed to compile a FEAT2 application are "wildly" distributed
-# over several files ((Makefile.inc and templates/*.mk) and if-branches 
-# (in an attempt to reduce duplicate code and inconsistencies among all build 
-# IDs that e.g. use the same MPI environment). Not having all settings at 
-# *one* place entails the risk (especially in the event of setting up a new 
-# build ID) that settings are incompletely defined. A simple typo in a matching 
+# over several files ((Makefile.inc and templates/*.mk) and if-branches
+# (in an attempt to reduce duplicate code and inconsistencies among all build
+# IDs that e.g. use the same MPI environment). Not having all settings at
+# *one* place entails the risk (especially in the event of setting up a new
+# build ID) that settings are incompletely defined. A simple typo in a matching
 # rule in Makefile.inc may prevent that the compiler and compiler command line
 # flags are set. Compilation would fail with the most peculiar errors - if not
 # the Makefile had been set up to catch such a case.
@@ -283,8 +282,8 @@ SBB_CVERSIONCMD = $(F77) -V  2>&1 | sed 's|(R)||g; 1!d;'
 # compiler family, BLAS implementation, MPI environment. Whenever setting
 # one of these, an according flag is set. They are named TOKEN1 up to TOKEN6.
 # Before starting to actually compile a FEAT2 application, every Makefile
-# generated by bin/configure checks whether all six tokens are set *for the 
-# choosen build ID*. If not, the user gets an error message describing exactly 
+# generated by bin/configure checks whether all six tokens are set *for the
+# choosen build ID*. If not, the user gets an error message describing exactly
 # what information is missing, e.g. token 5 not set which means there is no
 # information available which BLAS implementation to use and where to find the
 # library.

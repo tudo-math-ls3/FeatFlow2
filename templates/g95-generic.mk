@@ -14,6 +14,11 @@ CC        = gcc
 CXX       = g++
 LD        = g95
 
+# Compiler flag to specify the directory where module files should be
+# placed when created and where they should be searched for.
+# Note: Do not remove ticks!
+MODOPTION = '-fmod='
+
 # If preprocessor switch -DENABLE_SERIAL_BUILD does not occur in compiler flags,
 # a build for parallel execution is requested.
 ifeq (,$(findstring -DENABLE_SERIAL_BUILD ,$(APPONLYFLAGS) $(CFLAGSF90) ))
@@ -37,16 +42,15 @@ CXXVERSION = $(CXX) --version | head -n 1
 
 
 ##############################################################################
-# compiler flags 
+# compiler flags
 # (including non-architecture specific optimisation flags)
 ##############################################################################
 
 # Set default type of integer variables explicitly
 ifeq ($(strip $(INTSIZE)), LARGE)
 CFLAGSF77     := $(CFLAGSF77) -DUSE_LARGEINT -i8
-CFLAGSF90     := $(CFLAGSF90) -DUSE_LARGEINT -i8
 endif
-# $(CC) and $(CXX) do not have such a corresponding option, so we have to 
+# $(CC) and $(CXX) do not have such a corresponding option, so we have to
 # pray that they default the 'int' type properly.
 
 
@@ -65,27 +69,24 @@ endif
 
 # Set default compile flags
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -DUSE_COMPILER_G95 $(CFLAGSF77LIBS) -O3 \
+CFLAGSF77     := -DUSE_COMPILER_G95 $(CFLAGSF77) -O3 \
 		 -ffast-math -foptimize-register-move \
 		 -fprefetch-loop-arrays -funroll-loops -static \
 		 -fno-second-underscore
-CFLAGSF77     := $(CFLAGSF77LIBS) $(CFLAGSF77)
 CFLAGSF90     := -DENABLE_USE_ONLY -DHAS_INTRINSIC_FLUSH \
-	         $(CFLAGSF90) $(CFLAGSF77LIBS) -fmod=$(OBJDIR)
+	         $(CFLAGSF90) $(CFLAGSF77)
 CFLAGSC       := -DUSE_COMPILER_G95 $(CFLAGSC) -O3 \
 		 -ffast-math -foptimize-register-move -fprefetch-loop-arrays \
-		 -funroll-loops -static 
+		 -funroll-loops -static
 CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
 LDFLAGS       := $(LDFLAGS)
 else
-CFLAGSF77LIBS := -DUSE_COMPILER_G95 $(CFLAGSF77LIBS) -g -fno-second-underscore #-pg
+CFLAGSF77     := -DUSE_COMPILER_G95 $(CFLAGSF77) -g -fno-second-underscore #-pg
 # Don't include "-fbounds-check" in CFLAGSF77 as the SBBLAS routines
-# are peppered with out-of-bounds accesses (i[0] and i[n]). That's 
+# are peppered with out-of-bounds accesses (i[0] and i[n]). That's
 # Turek-style code and nobody volunteered so far to fix it.
-CFLAGSF77     := $(CFLAGSF77LIBS) $(CFLAGSF77) # -fbounds-check
 CFLAGSF90     := -DENABLE_USE_ONLY -DHAS_INTRINSIC_FLUSH \
-	         $(CFLAGSF90) $(CFLAGSF77LIBS) -fmod=$(OBJDIR) \
-	         -fbounds-check -ftrace=full
+	         $(CFLAGSF90) $(CFLAGSF77) -fbounds-check -ftrace=full
 CFLAGSC       := -DUSE_COMPILER_G95 $(CFLAGSC) -g -fbounds-check #-pg
 CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
 LDFLAGS       := $(LDFLAGS) #-pg
@@ -96,10 +97,10 @@ endif
 # Workarounds for known problems:
 
 # Workaround 1:
-# * g95 v0.9 does not provide an intrinsic isatty function, 
+# * g95 v0.9 does not provide an intrinsic isatty function,
 #   every daily snapshot since january 2006 does.
 #
-#   Workaround: provide own interface to C backend isatty 
+#   Workaround: provide own interface to C backend isatty
 #               for g95 versions that do not provide an isatty symbol.
 #   Only test, if g95 is found in path.
 ifneq ($(shell (which 2>/dev/null $(F90))),)
@@ -156,7 +157,7 @@ MODEXTENSION = mod
 
 
 ##############################################################################
-# Manual moving of generated module information files to 
+# Manual moving of generated module information files to
 # object directory needed?
 ##############################################################################
 MOVEMOD   = NO
@@ -169,11 +170,11 @@ SBB_CVERSIONCMD  = $(F77) --version  | sed 's|[(|)]||g; 1!d;'
 
 
 # The settings needed to compile a FEAT2 application are "wildly" distributed
-# over several files ((Makefile.inc and templates/*.mk) and if-branches 
-# (in an attempt to reduce duplicate code and inconsistencies among all build 
-# IDs that e.g. use the same MPI environment). Not having all settings at 
-# *one* place entails the risk (especially in the event of setting up a new 
-# build ID) that settings are incompletely defined. A simple typo in a matching 
+# over several files ((Makefile.inc and templates/*.mk) and if-branches
+# (in an attempt to reduce duplicate code and inconsistencies among all build
+# IDs that e.g. use the same MPI environment). Not having all settings at
+# *one* place entails the risk (especially in the event of setting up a new
+# build ID) that settings are incompletely defined. A simple typo in a matching
 # rule in Makefile.inc may prevent that the compiler and compiler command line
 # flags are set. Compilation would fail with the most peculiar errors - if not
 # the Makefile had been set up to catch such a case.
@@ -181,8 +182,8 @@ SBB_CVERSIONCMD  = $(F77) --version  | sed 's|[(|)]||g; 1!d;'
 # compiler family, BLAS implementation, MPI environment. Whenever setting
 # one of these, an according flag is set. They are named TOKEN1 up to TOKEN6.
 # Before starting to actually compile a FEAT2 application, every Makefile
-# generated by bin/configure checks whether all six tokens are set *for the 
-# choosen build ID*. If not, the user gets an error message describing exactly 
+# generated by bin/configure checks whether all six tokens are set *for the
+# choosen build ID*. If not, the user gets an error message describing exactly
 # what information is missing, e.g. token 5 not set which means there is no
 # information available which BLAS implementation to use and where to find the
 # library.

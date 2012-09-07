@@ -116,7 +116,6 @@ F90CPP        = $(FEAT2BASEDIR)/bin/f90cpp
 # Fortran 77 compiler
 F77           = echo; echo "No Fortran 77 compiler specified."; echo; exit 1; echo
 # Fortran 77 compiler options
-CFLAGSF77LIBS =
 CFLAGSF77     =
 
 # Fortran 90 compiler
@@ -341,7 +340,6 @@ ifeq ($(call match,$(ID),pc-athlon-.*-g95-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=athlon $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=athlon $(CFLAGSF77)
 CFLAGSF90     := -march=athlon $(CFLAGSF90)
 CFLAGSC       := -march=athlon $(CFLAGSC)
@@ -355,7 +353,6 @@ ifeq ($(call match,$(ID),pc-athlon-.*-gcc-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=athlon $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=athlon $(CFLAGSF77)
 CFLAGSF90     := -march=athlon $(CFLAGSF90)
 CFLAGSC       := -march=athlon $(CFLAGSC)
@@ -370,14 +367,12 @@ include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
 ifeq ($(call intelminversion_11_0),yes)
-CFLAGSF77LIBS := -xSSE $(CFLAGSF77LIBS)
 CFLAGSF77     := -xSSE $(CFLAGSF77)
 CFLAGSF90     := -xSSE $(CFLAGSF90)
 CFLAGSC       := -xSSE $(CFLAGSC)
 CFLAGSCXX     := -xSSE $(CFLAGSCXX)
 LDFLAGS       := -xSSE $(LDFLAGS)
 else
-CFLAGSF77LIBS := -axK $(CFLAGSF77LIBS)
 CFLAGSF77     := -axK $(CFLAGSF77)
 CFLAGSF90     := -axK $(CFLAGSF90)
 CFLAGSC       := -axK $(CFLAGSC)
@@ -392,7 +387,6 @@ ifeq ($(call match,$(ID),pc-athlon-.*-pgi-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/pgi-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -tp athlon $(CFLAGSF77LIBS)
 CFLAGSF77     := -tp athlon $(CFLAGSF77)
 CFLAGSF90     := -tp athlon $(CFLAGSF90)
 CFLAGSC       := -tp athlon $(CFLAGSC)
@@ -406,7 +400,6 @@ ifeq ($(call match,$(ID),pc-athlon-.*-psc-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/pathscale-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=athlon $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=athlon $(CFLAGSF77)
 CFLAGSF90     := -march=athlon $(CFLAGSF90)
 CFLAGSC       := -march=athlon $(CFLAGSC)
@@ -427,7 +420,6 @@ ifeq ($(call match,$(ID),(pc|pc64)-(athlon64|athlon64x2|turion64|turion64x2)-.*-
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=athlon64 $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=athlon64 $(CFLAGSF77)
 CFLAGSF90     := -march=athlon64 $(CFLAGSF90)
 CFLAGSC       := -march=athlon64 $(CFLAGSC)
@@ -441,7 +433,6 @@ ifeq ($(call match,$(ID),(pc|pc64)-(athlon64|athlon64x2|turion64|turion64x2)-.*-
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=athlon64 $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=athlon64 $(CFLAGSF77)
 CFLAGSF90     := -march=athlon64 $(CFLAGSF90)
 CFLAGSC       := -march=athlon64 $(CFLAGSC)
@@ -456,14 +447,12 @@ include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
 ifeq ($(call intelminversion_11_0),yes)
-CFLAGSF77LIBS := -xSSE2 $(CFLAGSF77LIBS)
 CFLAGSF77     := -xSSE2 $(CFLAGSF77)
 CFLAGSF90     := -xSSE2 $(CFLAGSF90)
 CFLAGSC       := -xSSE2 $(CFLAGSC)
 CFLAGSCXX     := -xSSE2 $(CFLAGSCXX)
 LDFLAGS       := -xSSE2 $(LDFLAGS)
 else
-CFLAGSF77LIBS := -axW $(CFLAGSF77LIBS)
 CFLAGSF77     := -axW $(CFLAGSF77)
 CFLAGSF90     := -axW $(CFLAGSF90)
 CFLAGSC       := -axW $(CFLAGSC)
@@ -479,14 +468,12 @@ include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
 ifeq ($(call intelminversion_11_0),yes)
-CFLAGSF77LIBS := -xSSE3 $(CFLAGSF77LIBS)
 CFLAGSF77     := -xSSE3 $(CFLAGSF77)
 CFLAGSF90     := -xSSE3 $(CFLAGSF90)
 CFLAGSC       := -xSSE3 $(CFLAGSC)
 CFLAGSCXX     := -xSSE3 $(CFLAGSCXX)
 LDFLAGS       := -xSSE3 $(LDFLAGS)
 else
-CFLAGSF77LIBS := -axP $(CFLAGSF77LIBS)
 CFLAGSF77     := -axP $(CFLAGSF77)
 CFLAGSF90     := -axP $(CFLAGSF90)
 CFLAGSC       := -axP $(CFLAGSC)
@@ -501,7 +488,6 @@ ifeq ($(call match,$(ID),pc-(athlon64|athlon64x2|turion64|turion64x2)-.*-pgi-.*)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/pgi-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -tp k8-32 $(CFLAGSF77LIBS)
 CFLAGSF77     := -tp k8-32 $(CFLAGSF77)
 CFLAGSF90     := -tp k8-32 $(CFLAGSF90)
 CFLAGSC       := -tp k8-32 $(CFLAGSC)
@@ -515,7 +501,6 @@ ifeq ($(call match,$(ID),pc64-(athlon64|athlon64x2|turion64|turion64x2)-.*-pgi-.
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/pgi-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -tp k8-64 $(CFLAGSF77LIBS)
 CFLAGSF77     := -tp k8-64 $(CFLAGSF77)
 CFLAGSF90     := -tp k8-64 $(CFLAGSF90)
 CFLAGSC       := -tp k8-64 $(CFLAGSC)
@@ -529,7 +514,6 @@ ifeq ($(call match,$(ID),(pc|pc64)-(athlon64|athlon64x2|turion64|turion64x2)-.*-
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/pathscale-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=athlon64 $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=athlon64 $(CFLAGSF77)
 CFLAGSF90     := -march=athlon64 $(CFLAGSF90)
 CFLAGSC       := -march=athlon64 $(CFLAGSC)
@@ -550,7 +534,6 @@ ifeq ($(call match,$(ID),pc-athlonxp-.*-g95-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=athlon-xp $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=athlon-xp $(CFLAGSF77)
 CFLAGSF90     := -march=athlon-xp $(CFLAGSF90)
 CFLAGSC       := -march=athlon-xp $(CFLAGSC)
@@ -564,7 +547,6 @@ ifeq ($(call match,$(ID),pc-athlonxp-.*-gcc-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=athlon-xp $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=athlon-xp $(CFLAGSF77)
 CFLAGSF90     := -march=athlon-xp $(CFLAGSF90)
 CFLAGSC       := -march=athlon-xp $(CFLAGSC)
@@ -579,14 +561,12 @@ include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
 ifeq ($(call intelminversion_11_0),yes)
-CFLAGSF77LIBS := -xSSE $(CFLAGSF77LIBS)
 CFLAGSF77     := -xSSE $(CFLAGSF77)
 CFLAGSF90     := -xSSE $(CFLAGSF90)
 CFLAGSC       := -xSSE $(CFLAGSC)
 CFLAGSCXX     := -xSSE $(CFLAGSCXX)
 LDFLAGS       := -xSSE $(LDFLAGS)
 else
-CFLAGSF77LIBS := -axK $(CFLAGSF77LIBS)
 CFLAGSF77     := -axK $(CFLAGSF77)
 CFLAGSF90     := -axK $(CFLAGSF90)
 CFLAGSC       := -axK $(CFLAGSC)
@@ -601,7 +581,6 @@ ifeq ($(call match,$(ID),pc-athlonxp-.*-pgi-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/pgi-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -tp athlonxp $(CFLAGSF77LIBS)
 CFLAGSF77     := -tp athlonxp $(CFLAGSF77)
 CFLAGSF90     := -tp athlonxp $(CFLAGSF90)
 CFLAGSC       := -tp athlonxp $(CFLAGSC)
@@ -615,7 +594,6 @@ ifeq ($(call match,$(ID),pc-athlonxp-.*-psc-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/pathscale-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=athlon $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=athlon $(CFLAGSF77)
 CFLAGSF90     := -march=athlon $(CFLAGSF90)
 CFLAGSC       := -march=athlon $(CFLAGSC)
@@ -645,7 +623,6 @@ ifeq ($(call match,$(ID),(pc|pc64)-(opteron|opteronx2)-.*-g95-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=opteron $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=opteron $(CFLAGSF77)
 CFLAGSF90     := -march=opteron $(CFLAGSF90)
 CFLAGSC       := -march=opteron $(CFLAGSC)
@@ -659,7 +636,6 @@ ifeq ($(call match,$(ID),(pc|pc64)-(opteron|opteronx2)-.*-gcc-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=opteron $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=opteron $(CFLAGSF77)
 CFLAGSF90     := -march=opteron $(CFLAGSF90)
 CFLAGSC       := -march=opteron $(CFLAGSC)
@@ -675,14 +651,12 @@ include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
 ifeq ($(call intelminversion_11_0),yes)
-CFLAGSF77LIBS := -xSSE2 $(CFLAGSF77LIBS)
 CFLAGSF77     := -xSSE2 $(CFLAGSF77)
 CFLAGSF90     := -xSSE2 $(CFLAGSF90)
 CFLAGSC       := -xSSE2 $(CFLAGSC)
 CFLAGSCXX     := -xSSE2 $(CFLAGSCXX)
 LDFLAGS       := -xSSE2 $(LDFLAGS)
 else
-CFLAGSF77LIBS := -axW $(CFLAGSF77LIBS)
 CFLAGSF77     := -axW $(CFLAGSF77)
 CFLAGSF90     := -axW $(CFLAGSF90)
 CFLAGSC       := -axW $(CFLAGSC)
@@ -697,7 +671,6 @@ ifeq ($(call match,$(ID),pc-phenom(opteron|opteronx2)-.*-pgi-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/pgi-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -tp k8-32 $(CFLAGSF77LIBS)
 CFLAGSF77     := -tp k8-32 $(CFLAGSF77)
 CFLAGSF90     := -tp k8-32 $(CFLAGSF90)
 CFLAGSC       := -tp k8-32 $(CFLAGSC)
@@ -711,7 +684,6 @@ ifeq ($(call match,$(ID),pc64-(opteron|opteronx2)-.*-pgi-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/pgi-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -tp k8-64 $(CFLAGSF77LIBS)
 CFLAGSF77     := -tp k8-64 $(CFLAGSF77)
 CFLAGSF90     := -tp k8-64 $(CFLAGSF90)
 CFLAGSC       := -tp k8-64 $(CFLAGSC)
@@ -725,7 +697,6 @@ ifeq ($(call match,$(ID),(pc|pc64)-(opteron|opteronx2)-.*-psc-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/pathscale-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -mtune=opteron -mcpu=opteron -march=opteron $(CFLAGSF77LIBS)
 CFLAGSF77     := -mtune=opteron -mcpu=opteron -march=opteron $(CFLAGSF77)
 CFLAGSF90     := -mtune=opteron -mcpu=opteron -march=opteron $(CFLAGSF90)
 CFLAGSC       := -mtune=opteron -mcpu=opteron -march=opteron $(CFLAGSC)
@@ -764,7 +735,6 @@ include $(TEMPLATESDIR)/linux-generic.mk
 # are not prepared for them any more. (SB, 2006-06-02)
 #
 # # # # # # # # # # #      WARNING !!!     # # # # # # # # # # #
-CFLAGSF77LIBS := $(CFLAGSF77LIBS) -assume 2underscore
 CFLAGSF77     := $(CFLAGSF77) -assume 2underscore
 CFLAGSF90     := $(filter-out -DMPICALLS_NO_UNDERSCORE, $(CFLAGSF90)) \
 		-DMPICALLS_NO_UNDERSCORE -assume 2underscore
@@ -795,7 +765,6 @@ ifeq ($(call match,$(ID),(pc|pc64)-phenom-.*-g95-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=athlon64 $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=athlon64 $(CFLAGSF77)
 CFLAGSF90     := -march=athlon64 $(CFLAGSF90)
 CFLAGSC       := -march=athlon64 $(CFLAGSC)
@@ -809,7 +778,6 @@ ifeq ($(call match,$(ID),(pc|pc64)-phenom-.*-gcc-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=amdfam10 $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=amdfam10 $(CFLAGSF77)
 CFLAGSF90     := -march=amdfam10 $(CFLAGSF90)
 CFLAGSC       := -march=amdfam10 $(CFLAGSC)
@@ -824,14 +792,12 @@ include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
 ifeq ($(call intelminversion_11_0),yes)
-CFLAGSF77LIBS := -xSSE4.1 $(CFLAGSF77LIBS)
 CFLAGSF77     := -xSSE4.1 $(CFLAGSF77)
 CFLAGSF90     := -xSSE4.1 $(CFLAGSF90)
 CFLAGSC       := -xSSE4.1 $(CFLAGSC)
 CFLAGSCXX     := -xSSE4.1 $(CFLAGSCXX)
 LDFLAGS       := -xSSE4.1 $(LDFLAGS)
 else
-CFLAGSF77LIBS := -xT $(CFLAGSF77LIBS)
 CFLAGSF77     := -xT $(CFLAGSF77)
 CFLAGSF90     := -xT $(CFLAGSF90)
 CFLAGSC       := -xT $(CFLAGSC)
@@ -846,7 +812,6 @@ ifeq ($(call match,$(ID),pc-phenom-.*-pgi-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/pgi-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -tp barcelona-32 $(CFLAGSF77LIBS)
 CFLAGSF77     := -tp barcelona-32 $(CFLAGSF77)
 CFLAGSF90     := -tp barcelona-32 $(CFLAGSF90)
 CFLAGSC       := -tp barcelona-32 $(CFLAGSC)
@@ -860,7 +825,6 @@ ifeq ($(call match,$(ID),pc64-phenom-.*-pgi-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/pgi-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -tp barcelona-64 $(CFLAGSF77LIBS)
 CFLAGSF77     := -tp barcelona-64 $(CFLAGSF77)
 CFLAGSF90     := -tp barcelona-64 $(CFLAGSF90)
 CFLAGSC       := -tp barcelona-64 $(CFLAGSC)
@@ -874,7 +838,6 @@ ifeq ($(call match,$(ID),(pc|pc64)-phenom-.*-psc-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/pathscale-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=barcelona $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=barcelona $(CFLAGSF77)
 CFLAGSF90     := -march=barcelona $(CFLAGSF90)
 CFLAGSC       := -march=barcelona $(CFLAGSC)
@@ -895,7 +858,6 @@ ifeq ($(call match,$(ID),(pc|pc64)-phenomII-.*-g95-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=athlon64 $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=athlon64 $(CFLAGSF77)
 CFLAGSF90     := -march=athlon64 $(CFLAGSF90)
 CFLAGSC       := -march=athlon64 $(CFLAGSC)
@@ -909,7 +871,6 @@ ifeq ($(call match,$(ID),(pc|pc64)-phenomII-.*-gcc-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=amdfam10 $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=amdfam10 $(CFLAGSF77)
 CFLAGSF90     := -march=amdfam10 $(CFLAGSF90)
 CFLAGSC       := -march=amdfam10 $(CFLAGSC)
@@ -924,14 +885,12 @@ include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
 ifeq ($(call intelminversion_11_0),yes)
-CFLAGSF77LIBS := -xSSE4.1 $(CFLAGSF77LIBS)
 CFLAGSF77     := -xSSE4.1 $(CFLAGSF77)
 CFLAGSF90     := -xSSE4.1 $(CFLAGSF90)
 CFLAGSC       := -xSSE4.1 $(CFLAGSC)
 CFLAGSCXX     := -xSSE4.1 $(CFLAGSCXX)
 LDFLAGS       := -xSSE4.1 $(LDFLAGS)
 else
-CFLAGSF77LIBS := -xT $(CFLAGSF77LIBS)
 CFLAGSF77     := -xT $(CFLAGSF77)
 CFLAGSF90     := -xT $(CFLAGSF90)
 CFLAGSC       := -xT $(CFLAGSC)
@@ -946,7 +905,6 @@ ifeq ($(call match,$(ID),pc-phenomII-.*-pgi-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/pgi-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -tp shanghai-32 $(CFLAGSF77LIBS)
 CFLAGSF77     := -tp shanghai-32 $(CFLAGSF77)
 CFLAGSF90     := -tp shanghai-32 $(CFLAGSF90)
 CFLAGSC       := -tp shanghai-32 $(CFLAGSC)
@@ -960,7 +918,6 @@ ifeq ($(call match,$(ID),pc64-phenomII-.*-pgi-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/pgi-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -tp shanghai-64 $(CFLAGSF77LIBS)
 CFLAGSF77     := -tp shanghai-64 $(CFLAGSF77)
 CFLAGSF90     := -tp shanghai-64 $(CFLAGSF90)
 CFLAGSC       := -tp shanghai-64 $(CFLAGSC)
@@ -974,7 +931,6 @@ ifeq ($(call match,$(ID),pc-phenomII-.*-psc-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/pathscale-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=barcelona $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=barcelona $(CFLAGSF77)
 CFLAGSF90     := -march=barcelona $(CFLAGSF90)
 CFLAGSC       := -march=barcelona $(CFLAGSC)
@@ -995,7 +951,6 @@ ifeq ($(call match,$(ID),(pc|pc64)-(opteron4100|opteron6100)-.*-g95-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=athlon64 $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=athlon64 $(CFLAGSF77)
 CFLAGSF90     := -march=athlon64 $(CFLAGSF90)
 CFLAGSC       := -march=athlon64 $(CFLAGSC)
@@ -1009,7 +964,6 @@ ifeq ($(call match,$(ID),(pc|pc64)-(opteron4100|opteron6100)-.*-gcc-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=amdfam10 $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=amdfam10 $(CFLAGSF77)
 CFLAGSF90     := -march=amdfam10 $(CFLAGSF90)
 CFLAGSC       := -march=amdfam10 $(CFLAGSC)
@@ -1024,14 +978,12 @@ include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
 ifeq ($(call intelminversion_11_0),yes)
-CFLAGSF77LIBS := -xSSE4.1 $(CFLAGSF77LIBS)
 CFLAGSF77     := -xSSE4.1 $(CFLAGSF77)
 CFLAGSF90     := -xSSE4.1 $(CFLAGSF90)
 CFLAGSC       := -xSSE4.1 $(CFLAGSC)
 CFLAGSCXX     := -xSSE4.1 $(CFLAGSCXX)
 LDFLAGS       := -xSSE4.1 $(LDFLAGS)
 else
-CFLAGSF77LIBS := -xT $(CFLAGSF77LIBS)
 CFLAGSF77     := -xT $(CFLAGSF77)
 CFLAGSF90     := -xT $(CFLAGSF90)
 CFLAGSC       := -xT $(CFLAGSC)
@@ -1046,7 +998,6 @@ ifeq ($(call match,$(ID),pc-(opteron4100|opteron6100)-.*-pgi-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/pgi-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -tp istanbul-32 $(CFLAGSF77LIBS)
 CFLAGSF77     := -tp istanbul-32 $(CFLAGSF77)
 CFLAGSF90     := -tp istanbul-32 $(CFLAGSF90)
 CFLAGSC       := -tp istanbul-32 $(CFLAGSC)
@@ -1060,7 +1011,6 @@ ifeq ($(call match,$(ID),pc64-(opteron4100|opteron6100)-.*-pgi-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/pgi-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -tp istanbul-64 $(CFLAGSF77LIBS)
 CFLAGSF77     := -tp istanbul-64 $(CFLAGSF77)
 CFLAGSF90     := -tp istanbul-64 $(CFLAGSF90)
 CFLAGSC       := -tp istanbul-64 $(CFLAGSC)
@@ -1074,7 +1024,6 @@ ifeq ($(call match,$(ID),pc-phenomII-.*-psc-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/pathscale-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=barcelona $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=barcelona $(CFLAGSF77)
 CFLAGSF90     := -march=barcelona $(CFLAGSF90)
 CFLAGSC       := -march=barcelona $(CFLAGSC)
@@ -1095,7 +1044,6 @@ ifeq ($(call match,$(ID),armv7l-cortexa9-linux-gcc-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(strip $(optimise)), YES)
-CFLAGSF77LIBS := -mcpu=cortex-a9 -march=armv7-a -mtune=cortex-a9 -mfloat-abi=softfp \
                  -mfp=vfpv3-d16 -mfpu=vfp -fopenmp -funroll-loops \
                  -DENABLE_CORTEXA_OPTIMISATIONS $(CFLAGSF77LIBS)
 CFLAGSF77     := -mcpu=cortex-a9 -march=armv7-a -mtune=cortex-a9 -mfloat-abi=softfp \
@@ -1169,7 +1117,6 @@ ifeq ($(call match,$(ID),pc-pentium3-.*-g95-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=pentium3 $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=pentium3 $(CFLAGSF77)
 CFLAGSF90     := -march=pentium3 $(CFLAGSF90)
 CFLAGSC       := -march=pentium3 $(CFLAGSC)
@@ -1183,7 +1130,6 @@ ifeq ($(call match,$(ID),pc-pentium3-.*-gcc-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=pentium3 $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=pentium3 $(CFLAGSF77)
 CFLAGSF90     := -march=pentium3 $(CFLAGSF90)
 CFLAGSC       := -march=pentium3 $(CFLAGSC)
@@ -1198,14 +1144,12 @@ include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
 ifeq ($(call intelminversion_11_0),yes)
-CFLAGSF77LIBS := -xSSE $(CFLAGSF77LIBS)
 CFLAGSF77     := -xSSE $(CFLAGSF77)
 CFLAGSF90     := -xSSE $(CFLAGSF90)
 CFLAGSC       := -xSSE $(CFLAGSC)
 CFLAGSCXX     := -xSSE $(CFLAGSCXX)
 LDFLAGS       := -xSSE $(LDFLAGS)
 else
-CFLAGSF77LIBS := -xK $(CFLAGSF77LIBS)
 CFLAGSF77     := -xK $(CFLAGSF77)
 CFLAGSF90     := -xK $(CFLAGSF90)
 CFLAGSC       := -xK $(CFLAGSC)
@@ -1220,7 +1164,6 @@ ifeq ($(call match,$(ID),pc-pentium3-.*-pgi-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/pgi-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -tp piii $(CFLAGSF77LIBS)
 CFLAGSF77     := -tp piii $(CFLAGSF77)
 CFLAGSF90     := -tp piii $(CFLAGSF90)
 CFLAGSC       := -tp piii $(CFLAGSC)
@@ -1241,7 +1184,6 @@ ifeq ($(call match,$(ID),pc-pentiumm-.*-g95-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=pentium-m $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=pentium-m $(CFLAGSF77)
 CFLAGSF90     := -march=pentium-m $(CFLAGSF90)
 CFLAGSC       := -march=pentium-m $(CFLAGSC)
@@ -1255,7 +1197,6 @@ ifeq ($(call match,$(ID),pc-pentiumm-.*-gcc-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=pentium-m $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=pentium-m $(CFLAGSF77)
 CFLAGSF90     := -march=pentium-m $(CFLAGSF90)
 CFLAGSC       := -march=pentium-m $(CFLAGSC)
@@ -1270,14 +1211,12 @@ include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
 ifeq ($(call intelminversion_11_0),yes)
-CFLAGSF77LIBS := -xSSE2 $(CFLAGSF77LIBS)
 CFLAGSF77     := -xSSE2 $(CFLAGSF77)
 CFLAGSF90     := -xSSE2 $(CFLAGSF90)
 CFLAGSC       := -xSSE2 $(CFLAGSC)
 CFLAGSCXX     := -xSSE2 $(CFLAGSCXX)
 LDFLAGS       := -xSSE2 $(LDFLAGS)
 else
-CFLAGSF77LIBS := -xB $(CFLAGSF77LIBS)
 CFLAGSF77     := -xB $(CFLAGSF77)
 CFLAGSF90     := -xB $(CFLAGSF90)
 CFLAGSC       := -xB $(CFLAGSC)
@@ -1299,7 +1238,6 @@ ifeq ($(call match,$(ID),pc-pentium4-.*-g95-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=pentium4 $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=pentium4 $(CFLAGSF77)
 CFLAGSF90     := -march=pentium4 $(CFLAGSF90)
 CFLAGSC       := -march=pentium4 $(CFLAGSC)
@@ -1313,7 +1251,6 @@ ifeq ($(call match,$(ID),pc64-pentium4-.*-g95-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=nocona $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=nocona $(CFLAGSF77)
 CFLAGSF90     := -march=nocona $(CFLAGSF90)
 CFLAGSC       := -march=nocona $(CFLAGSC)
@@ -1327,7 +1264,6 @@ ifeq ($(call match,$(ID),pc-pentium4-.*-gcc-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=pentium4 $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=pentium4 $(CFLAGSF77)
 CFLAGSF90     := -march=pentium4 $(CFLAGSF90)
 CFLAGSC       := -march=pentium4 $(CFLAGSC)
@@ -1341,7 +1277,6 @@ ifeq ($(call match,$(ID),pc64-pentium4-.*-gcc-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=nocona $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=nocona $(CFLAGSF77)
 CFLAGSF90     := -march=nocona $(CFLAGSF90)
 CFLAGSC       := -march=nocona $(CFLAGSC)
@@ -1356,14 +1291,12 @@ include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
 ifeq ($(call intelminversion_11_0),yes)
-CFLAGSF77LIBS := -xSSE2 $(CFLAGSF77LIBS)
 CFLAGSF77     := -xSSE2 $(CFLAGSF77)
 CFLAGSF90     := -xSSE2 $(CFLAGSF90)
 CFLAGSC       := -xSSE2 $(CFLAGSC)
 CFLAGSCXX     := -xSSE2 $(CFLAGSCXX)
 LDFLAGS       := -xSSE2 $(LDFLAGS)
 else
-CFLAGSF77LIBS := -xN $(CFLAGSF77LIBS)
 CFLAGSF77     := -xN $(CFLAGSF77)
 CFLAGSF90     := -xN $(CFLAGSF90)
 CFLAGSC       := -xN $(CFLAGSC)
@@ -1379,14 +1312,12 @@ include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
 ifeq ($(call intelminversion_11_0),yes)
-CFLAGSF77LIBS := -xSSE2 $(CFLAGSF77LIBS)
 CFLAGSF77     := -xSSE2 $(CFLAGSF77)
 CFLAGSF90     := -xSSE2 $(CFLAGSF90)
 CFLAGSC       := -xSSE2 $(CFLAGSC)
 CFLAGSCXX     := -xSSE2 $(CFLAGSCXX)
 LDFLAGS       := -xSSE2 $(LDFLAGS)
 else
-CFLAGSF77LIBS := -xW $(CFLAGSF77LIBS)
 CFLAGSF77     := -xW $(CFLAGSF77)
 CFLAGSF90     := -xW $(CFLAGSF90)
 CFLAGSC       := -xW $(CFLAGSC)
@@ -1401,7 +1332,6 @@ ifeq ($(call match,$(ID),(pc|pc64)-pentium4-.*-pgi-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/pgi-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -tp piv $(CFLAGSF77LIBS)
 CFLAGSF77     := -tp piv $(CFLAGSF77)
 CFLAGSF90     := -tp piv $(CFLAGSF90)
 CFLAGSC       := -tp piv $(CFLAGSC)
@@ -1415,7 +1345,6 @@ ifeq ($(call match,$(ID),(pc|pc64)-pentium4-.*-psc-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/pathscale-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=pentium4 $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=pentium4 $(CFLAGSF77)
 CFLAGSF90     := -march=pentium4 $(CFLAGSF90)
 CFLAGSC       := -march=pentium4 $(CFLAGSC)
@@ -1436,7 +1365,6 @@ ifeq ($(call match,$(ID),pc-coreduo-.*-g95-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=prescott $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=prescott $(CFLAGSF77)
 CFLAGSF90     := -march=prescott $(CFLAGSF90)
 CFLAGSC       := -march=prescott $(CFLAGSC)
@@ -1450,7 +1378,6 @@ ifeq ($(call match,$(ID),pc64-coreduo-.*-g95-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=nocona $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=nocona $(CFLAGSF77)
 CFLAGSF90     := -march=nocona $(CFLAGSF90)
 CFLAGSC       := -march=nocona $(CFLAGSC)
@@ -1465,7 +1392,6 @@ ifeq ($(call match,$(ID),pc-coreduo-.*-gcc-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=prescott -msse3 -mfpmath=sse $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=prescott -msse3 -mfpmath=sse $(CFLAGSF77)
 CFLAGSF90     := -march=prescott -msse3 -mfpmath=sse $(CFLAGSF90)
 CFLAGSC       := -march=prescott -msse3 -mfpmath=sse $(CFLAGSC)
@@ -1480,14 +1406,12 @@ include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(call optimise), YES)
 ifeq ($(call gfortranminversion_4_3),yes)
-CFLAGSF77LIBS := -march=core2 $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=core2 $(CFLAGSF77)
 CFLAGSF90     := -march=core2 $(CFLAGSF90)
 CFLAGSC       := -march=core2 $(CFLAGSC)
 CFLAGSCXX     := -march=core2 $(CFLAGSCXX)
 LDFLAGS       := -march=core2 $(LDFLAGS)
 else
-CFLAGSF77LIBS := -march=nocona -msse3 -mfpmath=sse $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=nocona -msse3 -mfpmath=sse $(CFLAGSF77)
 CFLAGSF90     := -march=nocona -msse3 -mfpmath=sse $(CFLAGSF90)
 CFLAGSC       := -march=nocona -msse3 -mfpmath=sse $(CFLAGSC)
@@ -1503,14 +1427,12 @@ include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
 ifeq ($(call intelminversion_11_0),yes)
-CFLAGSF77LIBS := -xSSE3 $(CFLAGSF77LIBS)
 CFLAGSF77     := -xSSE3 $(CFLAGSF77)
 CFLAGSF90     := -xSSE3 $(CFLAGSF90)
 CFLAGSC       := -xSSE3 $(CFLAGSC)
 CFLAGSCXX     := -xSSE3 $(CFLAGSCXX)
 LDFLAGS       := -xSSE3 $(LDFLAGS)
 else
-CFLAGSF77LIBS := -xP $(CFLAGSF77LIBS)
 CFLAGSF77     := -xP $(CFLAGSF77)
 CFLAGSF90     := -xP $(CFLAGSF90)
 CFLAGSC       := -xP $(CFLAGSC)
@@ -1526,14 +1448,12 @@ include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
 ifeq ($(call intelminversion_11_0),yes)
-CFLAGSF77LIBS := -xSSE3 $(CFLAGSF77LIBS)
 CFLAGSF77     := -xSSE3 $(CFLAGSF77)
 CFLAGSF90     := -xSSE3 $(CFLAGSF90)
 CFLAGSC       := -xSSE3 $(CFLAGSC)
 CFLAGSCXX     := -xSSE3 $(CFLAGSCXX)
 LDFLAGS       := -xSSE3 $(LDFLAGS)
 else
-CFLAGSF77LIBS := -xT $(CFLAGSF77LIBS)
 CFLAGSF77     := -xT $(CFLAGSF77)
 CFLAGSF90     := -xT $(CFLAGSF90)
 CFLAGSC       := -xT $(CFLAGSC)
@@ -1548,7 +1468,6 @@ ifeq ($(call match,$(ID),pc-coreduo-.*-pgi-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/pgi-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -tp core2-32 $(CFLAGSF77LIBS)
 CFLAGSF77     := -tp core2-32 $(CFLAGSF77)
 CFLAGSF90     := -tp core2-32 $(CFLAGSF90)
 CFLAGSC       := -tp core2-32 $(CFLAGSC)
@@ -1562,7 +1481,6 @@ ifeq ($(call match,$(ID),pc64-coreduo-.*-pgi-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/pgi-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -tp core2-64 $(CFLAGSF77LIBS)
 CFLAGSF77     := -tp core2-64 $(CFLAGSF77)
 CFLAGSF90     := -tp core2-64 $(CFLAGSF90)
 CFLAGSC       := -tp core2-64 $(CFLAGSC)
@@ -1576,7 +1494,6 @@ ifeq ($(call match,$(ID),(pc|pc64)-coreduo-.*-psc-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/pathscale-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=core $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=core $(CFLAGSF77)
 CFLAGSF90     := -march=core $(CFLAGSF90)
 CFLAGSC       := -march=core $(CFLAGSC)
@@ -1604,7 +1521,6 @@ ifeq ($(call match,$(ID),pc-coresolo-.*-g95-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=prescott -mtune=prescott -msse $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=prescott -mtune=prescott -msse $(CFLAGSF77)
 CFLAGSF90     := -march=prescott -mtune=prescott -msse $(CFLAGSF90)
 CFLAGSC       := -march=prescott -mtune=prescott -msse $(CFLAGSC)
@@ -1617,7 +1533,6 @@ ifeq ($(call match,$(ID),pc-coresolo-.*-gcc-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=prescott $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=prescott $(CFLAGSF77)
 CFLAGSF90     := -march=prescott $(CFLAGSF90)
 CFLAGSC       := -march=prescott $(CFLAGSC)
@@ -1632,14 +1547,12 @@ include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
 ifeq ($(call intelminversion_11_0),yes)
-CFLAGSF77LIBS := -msse3 $(CFLAGSF77LIBS)
 CFLAGSF77     := -msse3 $(CFLAGSF77)
 CFLAGSF90     := -msse3 $(CFLAGSF90)
 CFLAGSC       := -msse3 $(CFLAGSC)
 CFLAGSCXX     := -msse3 $(CFLAGSCXX)
 LDFLAGS       := -msse3 $(LDFLAGS)
 else
-CFLAGSF77LIBS := -xO $(CFLAGSF77LIBS)
 CFLAGSF77     := -xO $(CFLAGSF77)
 CFLAGSF90     := -xO $(CFLAGSF90)
 CFLAGSC       := -xO $(CFLAGSC)
@@ -1661,7 +1574,6 @@ ifeq ($(call match,$(ID),pc-penryn-.*-g95-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=prescott $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=prescott $(CFLAGSF77)
 CFLAGSF90     := -march=prescott $(CFLAGSF90)
 CFLAGSC       := -march=prescott $(CFLAGSC)
@@ -1675,7 +1587,6 @@ ifeq ($(call match,$(ID),pc64-penryn-.*-g95-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=nocona $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=nocona $(CFLAGSF77)
 CFLAGSF90     := -march=nocona $(CFLAGSF90)
 CFLAGSC       := -march=nocona $(CFLAGSC)
@@ -1689,7 +1600,6 @@ ifeq ($(call match,$(ID),pc-penryn-.*-gcc-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=prescott $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=prescott $(CFLAGSF77)
 CFLAGSF90     := -march=prescott $(CFLAGSF90)
 CFLAGSC       := -march=prescott $(CFLAGSC)
@@ -1704,14 +1614,12 @@ include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(call optimise), YES)
 ifeq ($(call gfortranminversion_4_3),yes)
-CFLAGSF77LIBS := -march=core2 $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=core2 $(CFLAGSF77)
 CFLAGSF90     := -march=core2 $(CFLAGSF90)
 CFLAGSC       := -march=core2 $(CFLAGSC)
 CFLAGSCXX     := -march=core2 $(CFLAGSCXX)
 LDFLAGS       := -march=core2 $(LDFLAGS)
 else
-CFLAGSF77LIBS := -march=nocona $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=nocona $(CFLAGSF77)
 CFLAGSF90     := -march=nocona $(CFLAGSF90)
 CFLAGSC       := -march=nocona $(CFLAGSC)
@@ -1727,14 +1635,12 @@ include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
 ifeq ($(call intelminversion_11_0),yes)
-CFLAGSF77LIBS := -xSSE4.1 $(CFLAGSF77LIBS)
 CFLAGSF77     := -xSSE4.1 $(CFLAGSF77)
 CFLAGSF90     := -xSSE4.1 $(CFLAGSF90)
 CFLAGSC       := -xSSE4.1 $(CFLAGSC)
 CFLAGSCXX     := -xSSE4.1 $(CFLAGSCXX)
 LDFLAGS       := -xSSE4.1 $(LDFLAGS)
 else
-CFLAGSF77LIBS := -xT $(CFLAGSF77LIBS)
 CFLAGSF77     := -xT $(CFLAGSF77)
 CFLAGSF90     := -xT $(CFLAGSF90)
 CFLAGSC       := -xT $(CFLAGSC)
@@ -1749,7 +1655,6 @@ ifeq ($(call match,$(ID),pc-penryn-.*-pgi-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/pgi-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -tp penryn-32 $(CFLAGSF77LIBS)
 CFLAGSF77     := -tp penryn-32 $(CFLAGSF77)
 CFLAGSF90     := -tp penryn-32 $(CFLAGSF90)
 CFLAGSC       := -tp penryn-32 $(CFLAGSC)
@@ -1763,7 +1668,6 @@ ifeq ($(call match,$(ID),pc64-penryn-.*-pgi-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/pgi-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -tp penryn-64 $(CFLAGSF77LIBS)
 CFLAGSF77     := -tp penryn-64 $(CFLAGSF77)
 CFLAGSF90     := -tp penryn-64 $(CFLAGSF90)
 CFLAGSC       := -tp penryn-64 $(CFLAGSC)
@@ -1784,7 +1688,6 @@ ifeq ($(call match,$(ID),pc-nehalem-.*-g95-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=prescott $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=prescott $(CFLAGSF77)
 CFLAGSF90     := -march=prescott $(CFLAGSF90)
 CFLAGSC       := -march=prescott $(CFLAGSC)
@@ -1798,7 +1701,6 @@ ifeq ($(call match,$(ID),pc64-nehalem-.*-g95-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=nocona $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=nocona $(CFLAGSF77)
 CFLAGSF90     := -march=nocona $(CFLAGSF90)
 CFLAGSC       := -march=nocona $(CFLAGSC)
@@ -1812,7 +1714,6 @@ ifeq ($(call match,$(ID),pc-nehalem-.*-gcc-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=prescott $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=prescott $(CFLAGSF77)
 CFLAGSF90     := -march=prescott $(CFLAGSF90)
 CFLAGSC       := -march=prescott $(CFLAGSC)
@@ -1827,14 +1728,12 @@ include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(call optimise), YES)
 ifeq ($(call gfortranminversion_4_3),yes)
-CFLAGSF77LIBS := -march=core2 -mtune=core2 -msse4 -msse4.1 -msse4.2 -mfpmath=sse $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=core2 -mtune=core2 -msse4 -msse4.1 -msse4.2 -mfpmath=sse $(CFLAGSF77)
 CFLAGSF90     := -march=core2 -mtune=core2 -msse4 -msse4.1 -msse4.2 -mfpmath=sse $(CFLAGSF90)
 CFLAGSC       := -march=core2 -mtune=core2 -msse4 -msse4.1 -msse4.2 -mfpmath=sse $(CFLAGSC)
 CFLAGSCXX     := -march=core2 -mtune=core2 -msse4 -msse4.1 -msse4.2 -mfpmath=sse $(CFLAGSCXX)
 LDFLAGS       := -march=core2 -mtune=core2 -msse4 -msse4.1 -msse4.2 -mfpmath=sse $(LDFLAGS)
 else
-CFLAGSF77LIBS := -march=nocona $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=nocona $(CFLAGSF77)
 CFLAGSF90     := -march=nocona $(CFLAGSF90)
 CFLAGSC       := -march=nocona $(CFLAGSC)
@@ -1850,14 +1749,12 @@ include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
 ifeq ($(call intelminversion_11_0),yes)
-CFLAGSF77LIBS := -xSSE4.2 $(CFLAGSF77LIBS)
 CFLAGSF77     := -xSSE4.2 $(CFLAGSF77)
 CFLAGSF90     := -xSSE4.2 $(CFLAGSF90)
 CFLAGSC       := -xSSE4.2 $(CFLAGSC)
 CFLAGSCXX     := -xSSE4.2 $(CFLAGSCXX)
 LDFLAGS       := -xSSE4.2 $(LDFLAGS)
 else
-CFLAGSF77LIBS := -xT $(CFLAGSF77LIBS)
 CFLAGSF77     := -xT $(CFLAGSF77)
 CFLAGSF90     := -xT $(CFLAGSF90)
 CFLAGSC       := -xT $(CFLAGSC)
@@ -1872,7 +1769,6 @@ ifeq ($(call match,$(ID),pc-nehalem-.*-pgi-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/pgi-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -tp nehalem-32 $(CFLAGSF77LIBS)
 CFLAGSF77     := -tp nehalem-32 $(CFLAGSF77)
 CFLAGSF90     := -tp nehalem-32 $(CFLAGSF90)
 CFLAGSC       := -tp nehalem-32 $(CFLAGSC)
@@ -1886,7 +1782,6 @@ ifeq ($(call match,$(ID),pc64-nehalem-.*-pgi-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/pgi-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -tp nehalem-64 $(CFLAGSF77LIBS)
 CFLAGSF77     := -tp nehalem-64 $(CFLAGSF77)
 CFLAGSF90     := -tp nehalem-64 $(CFLAGSF90)
 CFLAGSC       := -tp nehalem-64 $(CFLAGSC)
@@ -1907,7 +1802,6 @@ ifeq ($(call match,$(ID),ia64-itanium-.*-gcc-.*),yes)
 include $(TEMPLATESDIR)/ia64-generic.mk
 include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=itanium $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=itanium $(CFLAGSF77)
 CFLAGSF90     := -march=itanium $(CFLAGSF90)
 CFLAGSC       := -march=itanium $(CFLAGSC)
@@ -1930,7 +1824,6 @@ ifeq ($(call match,$(ID),ia64-itanium2-.*-gcc-.*),yes)
 include $(TEMPLATESDIR)/ia64-generic.mk
 include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=itanium2 $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=itanium2 $(CFLAGSF77)
 CFLAGSF90     := -march=itanium2 $(CFLAGSF90)
 CFLAGSC       := -march=itanium2 $(CFLAGSC)
@@ -1984,7 +1877,6 @@ ifeq ($(call match,$(ID),ia64-itanium2x2-.*-gcc-.*),yes)
 include $(TEMPLATESDIR)/ia64-generic.mk
 include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -march=itanium2 $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=itanium2 $(CFLAGSF77)
 CFLAGSF90     := -march=itanium2 $(CFLAGSF90)
 CFLAGSC       := -march=itanium2 $(CFLAGSC)
@@ -2034,7 +1926,6 @@ include $(TEMPLATESDIR)/necsx-generic.mk
 include $(TEMPLATESDIR)/necsxcompiler-generic.mk
 include $(TEMPLATESDIR)/superux-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -sx6 $(CFLAGSF77LIBS)
 CFLAGSF77     := -sx6 $(CFLAGSF77)
 CFLAGSF90     := -sx6 $(CFLAGSF90)
 CFLAGSC       := -sx6 $(CFLAGSC)
@@ -2054,7 +1945,6 @@ include $(TEMPLATESDIR)/necsx-generic.mk
 include $(TEMPLATESDIR)/necsxcompiler-generic.mk
 include $(TEMPLATESDIR)/superux-generic.mk
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -sx8 $(CFLAGSF77LIBS) #-ftrace
 CFLAGSF77     := -sx8 $(CFLAGSF77)  #-ftrace
 CFLAGSF90     := -sx8 $(CFLAGSF90) #-Wf~-L fmtlist map summary transform~ -ftrace
 CFLAGSC       := -sx8 $(CFLAGSC) #-ftrace
@@ -2104,7 +1994,6 @@ include $(TEMPLATESDIR)/g95-generic.mk
 # Umfpack install instructions advice to set this flag on Sun.
 CFLAGSC       := -DNSUNPERF $(CFLAGSC)
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -mcpu=ultrasparc $(CFLAGSF77LIBS)
 CFLAGSF77     := -mcpu=ultrasparc $(CFLAGSF77)
 CFLAGSF90     := -mcpu=ultrasparc $(CFLAGSF90)
 CFLAGSC       := -mcpu=ultrasparc $(CFLAGSC)
@@ -2121,7 +2010,6 @@ include $(TEMPLATESDIR)/g95-generic.mk
 include $(TEMPLATESDIR)/sunperf-generic.mk
 CFLAGSC       := $(CFLAGSC) #-DNSUNPERF
 ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -mcpu=ultrasparc $(CFLAGSF77LIBS)
 CFLAGSF77     := -mcpu=ultrasparc $(CFLAGSF77)
 CFLAGSF90     := -mcpu=ultrasparc $(CFLAGSF90)
 CFLAGSC       := -mcpu=ultrasparc $(CFLAGSC)
@@ -2138,7 +2026,6 @@ include $(TEMPLATESDIR)/sunstudio-generic.mk
 # Umfpack install instructions advice to set this flag on Sun.
 CFLAGSC       := -DNSUNPERF $(CFLAGSC)
 # Have 32bit binaries built on Sun
-CFLAGSF77LIBS := -xarch=native $(CFLAGSF77LIBS)
 CFLAGSF77     := -xarch=native $(CFLAGSF77)
 CFLAGSF90     := -xarch=native $(CFLAGSF90)
 CFLAGSC       := -xarch=native $(CFLAGSC)
@@ -2181,7 +2068,6 @@ include $(TEMPLATESDIR)/sunstudio-generic.mk
 # Umfpack install instructions advice to set this flag on Sun.
 CFLAGSC       := -DNSUNPERF $(CFLAGSC)
 # Have 64bit binaries built on Sun
-CFLAGSF77LIBS := $(CFLAGSF77LIBS) -xarch=native64
 CFLAGSF77     := $(CFLAGSF77)     -xarch=native64
 CFLAGSF90     := $(CFLAGSF90)     -xarch=native64
 CFLAGSC       := $(CFLAGSC)       -xarch=native64
@@ -2220,7 +2106,6 @@ include $(TEMPLATESDIR)/sunstudio-generic.mk
 # Umfpack install instructions advice to set this flag on Sun.
 CFLAGSC       := -DNSUNPERF $(CFLAGSC)
 # Have 64bit binaries built on Sun
-CFLAGSF77LIBS := $(CFLAGSF77LIBS) -xarch=native64
 CFLAGSF77     := $(CFLAGSF77)     -xarch=native64
 CFLAGSF90     := $(CFLAGSF90)     -xarch=native64
 CFLAGSC       := $(CFLAGSC)       -xarch=native64
@@ -2377,7 +2262,6 @@ ifeq ($(call optimise), YES)
 ifeq ($(call gfortranminversion_4_2),yes)
 MESSAGE  := $(MESSAGE) \
 	    echo '*** Message: Used auto-tuning by GNU GCC compiler!';
-CFLAGSF77LIBS := -march=native $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=native $(CFLAGSF77)
 CFLAGSF90     := -march=native $(CFLAGSF90)
 CFLAGSC       := -march=native $(CFLAGSC)
@@ -2396,7 +2280,6 @@ include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
 ifeq ($(call intelminversion_11_0),yes)
-CFLAGSF77LIBS := -xHOST $(CFLAGSF77LIBS)
 CFLAGSF77     := -xHOST $(CFLAGSF77)
 CFLAGSF90     := -xHOST $(CFLAGSF90)
 CFLAGSC       := -xHOST $(CFLAGSC)
@@ -2436,7 +2319,6 @@ include $(TEMPLATESDIR)/pathscale-generic.mk
 ifeq ($(call optimise), YES)
 MESSAGE  := $(MESSAGE) \
 	    echo '*** Message: Used auto-tuning by PathScale Fortran compiler!';
-CFLAGSF77LIBS := -march=auto $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=auto $(CFLAGSF77)
 CFLAGSF90     := -march=auto $(CFLAGSF90)
 CFLAGSC       := -march=auto $(CFLAGSC)
@@ -2453,7 +2335,6 @@ include $(TEMPLATESDIR)/sunstudio-generic.mk
 ifeq ($(call optimise), YES)
 MESSAGE  := $(MESSAGE) \
 	    echo '*** Message: Used auto-tuning by SunStudio Fortran compiler!';
-CFLAGSF77LIBS := -xtarget=native  $(CFLAGSF77LIBS)
 CFLAGSF77     := -xtarget=native  $(CFLAGSF77)
 CFLAGSF90     := -xtarget=native  $(CFLAGSF90)
 CFLAGSC       := -xtarget=native  $(CFLAGSC)
@@ -2511,7 +2392,6 @@ endif
 ifeq ($(strip $(gcc42better)), YES)
 MESSAGE  := $(MESSAGE) \
 	    echo '*** Message: Used auto-tuning by GNU GCC compiler!';
-CFLAGSF77LIBS := -march=native $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=native $(CFLAGSF77)
 CFLAGSF90     := -march=native $(CFLAGSF90)
 CFLAGSC       := -march=native $(CFLAGSC)
@@ -2530,7 +2410,6 @@ include $(TEMPLATESDIR)/ia64-generic.mk
 include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
 ifeq ($(call intelminversion_11_0),yes)
-CFLAGSF77LIBS := -xHOST $(CFLAGSF77LIBS)
 CFLAGSF77     := -xHOST $(CFLAGSF77)
 CFLAGSF90     := -xHOST $(CFLAGSF90)
 CFLAGSC       := -xHOST $(CFLAGSC)
@@ -2560,7 +2439,6 @@ include $(TEMPLATESDIR)/pathscale-generic.mk
 ifeq ($(call optimise), YES)
 MESSAGE  := $(MESSAGE) \
 	    echo '*** Message: Used auto-tuning by PathScale Fortran compiler!';
-CFLAGSF77LIBS := -march=auto $(CFLAGSF77LIBS)
 CFLAGSF77     := -march=auto $(CFLAGSF77)
 CFLAGSF90     := -march=auto $(CFLAGSF90)
 CFLAGSC       := -march=auto $(CFLAGSC)
@@ -2577,7 +2455,6 @@ include $(TEMPLATESDIR)/sunstudio-generic.mk
 ifeq ($(call optimise), YES)
 MESSAGE  := $(MESSAGE) \
 	    echo '*** Message: Used auto-tuning by SunStudio Fortran compiler!';
-CFLAGSF77LIBS := -xautopar  $(CFLAGSF77LIBS)
 CFLAGSF77     := -xautopar  $(CFLAGSF77)
 CFLAGSF90     := -xautopar  $(CFLAGSF90)
 CFLAGSC       := -xautopar  $(CFLAGSC)
@@ -2712,7 +2589,6 @@ include $(TEMPLATESDIR)/optmpich-generic.mk
 # are not prepared for them any more. (SB, 2006-06-02)
 #
 # # # # # # # # # # #      WARNING !!!     # # # # # # # # # # #
-CFLAGSF77LIBS := $(CFLAGSF77LIBS) -assume 2underscore
 CFLAGSF77     := $(CFLAGSF77) -assume 2underscore
 CFLAGSF90     := $(filter-out -DMPICALLS_NO_UNDERSCORE, $(CFLAGSF90)) \
 		-DMPICALLS_NO_UNDERSCORE -assume 2underscore
@@ -2754,7 +2630,6 @@ endif
 # Check for forced 32bit/64bit binary
 ##############################################################################
 ifeq ($(strip $(BINARY)), 32)
-CFLAGSF77LIBS := -m32 $(CFLAGSF77LIBS)
 CFLAGSF77     := -m32 $(CFLAGSF77)
 CFLAGSF90     := -m32 $(CFLAGSF90)
 CFLAGSC       := -m32 $(CFLAGSC)
@@ -2763,7 +2638,6 @@ LDFLAGS       := -m32 $(LDFLAGS)
 endif
 
 ifeq ($(strip $(BINARY)), 64)
-CFLAGSF77LIBS := -m64 $(CFLAGSF77LIBS)
 CFLAGSF77     := -m64 $(CFLAGSF77)
 CFLAGSF90     := -m64 $(CFLAGSF90)
 CFLAGSC       := -m64 $(CFLAGSC)
@@ -2879,7 +2753,7 @@ endif
 	@echo '  OPT          =' $(OPT)
 	@echo '  CPPFLAGS     =' $(CPPFLAGS)
 	@echo '  CFLAGSF77    =' $(CFLAGSF77)
-	@echo '  CFLAGSF90    =' $(CFLAGSF90)
+	@echo '  CFLAGSF90    =' $(CFLAGSF90) $(MODOPTION)$(OBJDIR)
 	@echo '  CFLAGSC      =' $(CFLAGSC)
 	@echo '  CFLAGSCXX    =' $(CFLAGSCXX)
 ifneq (,$(findstring YES,$(HAS_CUDA10)$(HAS_CUDA11)$(HAS_CUDA12)$(HAS_CUDA13)$(HAS_CUDA20)$(HAS_CUDA21)$(HAS_CUDA30)))
