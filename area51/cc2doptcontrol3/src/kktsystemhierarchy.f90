@@ -144,7 +144,7 @@ contains
   type(t_kktsystemHierarchy), intent(in) :: rkktsystemHierarchy
   
   ! Level, the KKT system should be created corresponding to.
-  ! If this is set to <= 0, rkktsystem will be created at level NLMAX-ilevel
+  ! If this is set to <= 0, rkktsystem will be created at level NLMAX+ilevel
   integer, intent(in) :: ilevel
 !</input>
 
@@ -161,7 +161,7 @@ contains
     type(t_timeDiscretisation), pointer :: p_rtimeDiscr
     
     ilev = ilevel
-    if (ilevel .le. 0) ilev = rkktsystemHierarchy%nlevels-ilevel
+    if (ilevel .le. 0) ilev = rkktsystemHierarchy%nlevels+ilevel
 
     ! Get the spatial and time discretisations of that level
     call sth_getLevel (rkktsystemHierarchy%p_rspaceTimeHierPrimal,ilev,&
@@ -189,7 +189,7 @@ contains
   type(t_kktsystemHierarchy), intent(in) :: rkktsystemHierarchy
   
   ! Level, the KKT system should be created corresponding to.
-  ! If this is set to <= 0, rkktsystem will be created at level NLMAX-ilevel
+  ! If this is set to <= 0, rkktsystem will be created at level NLMAX+ilevel
   integer, intent(in) :: ilevel
 !</input>
 
@@ -206,7 +206,7 @@ contains
     type(t_timeDiscretisation), pointer :: p_rtimeDiscr
     
     ilev = ilevel
-    if (ilevel .le. 0) ilev = rkktsystemHierarchy%nlevels-ilevel
+    if (ilevel .le. 0) ilev = rkktsystemHierarchy%nlevels+ilevel
 
     ! Get the spatial and time discretisations of that level
     call sth_getLevel (rkktsystemHierarchy%p_rspaceTimeHierDual,ilev,&
@@ -234,7 +234,7 @@ contains
   type(t_kktsystemHierarchy), intent(in) :: rkktsystemHierarchy
   
   ! Level, the KKT system should be created corresponding to.
-  ! If this is set to <= 0, rkktsystem will be created at level NLMAX-ilevel
+  ! If this is set to <= 0, rkktsystem will be created at level NLMAX+ilevel
   integer, intent(in) :: ilevel
 !</input>
 
@@ -251,7 +251,7 @@ contains
     type(t_timeDiscretisation), pointer :: p_rtimeDiscr
     
     ilev = ilevel
-    if (ilevel .le. 0) ilev = rkktsystemHierarchy%nlevels-ilevel
+    if (ilevel .le. 0) ilev = rkktsystemHierarchy%nlevels+ilevel
 
     ! Get the spatial and time discretisations of that level
     call sth_getLevel (rkktsystemHierarchy%p_rspaceTimeHierControl,ilev,&
@@ -278,7 +278,7 @@ contains
   type(t_kktsystemHierarchy), intent(in) :: rkktsystemHierarchy
 
   ! Level, the KKT system should be created corresponding to.
-  ! If this is set to <= 0, rkktsystem will be created at level NLMAX-ilevel
+  ! If this is set to <= 0, rkktsystem will be created at level NLMAX+ilevel
   integer, intent(in) :: ilevel
   
   ! Hierarchy of all possible space-time operators
@@ -299,7 +299,7 @@ contains
     integer :: ilev, ispacelevel, itimelevel
     
     ilev = ilevel
-    if (ilevel .le. 0) ilev = rkktsystemHierarchy%nlevels-ilevel
+    if (ilevel .le. 0) ilev = rkktsystemHierarchy%nlevels+ilevel
 
     ! Get the spatial and time discretisations of that level
     call sth_getLevel (rkktsystemHierarchy%p_rspaceTimeHierPrimal,ilev,&
@@ -460,7 +460,7 @@ contains
     integer :: ilev
     
     ilev = ilevel
-    if (ilev .eq. 0) ilev = rkktsystemHierarchy%nlevels+ilev
+    if (ilev .le. 0) ilev = rkktsystemHierarchy%nlevels+ilev
     
     ! Get the pointer
     if ((ilev .eq. rkktsystemHierarchy%nlevels) .and. &
@@ -489,7 +489,7 @@ contains
   type(t_kktsystemDirDerivHierarchy), intent(inout) :: rkktsystemDirDerivHier
 
   ! Level, the KKT system derivative should be created corresponding to.
-  ! If this is set to <= 0, rkktsystem will be created at level NLMAX-ilevel
+  ! If this is set to <= 0, rkktsystem will be created at level NLMAX+ilevel
   integer, intent(in) :: ilevel
 !</input>
 
@@ -505,7 +505,7 @@ contains
     type(t_kktSystem), pointer :: p_rkktsystem
     
     ilev = ilevel
-    if (ilevel .le. 0) ilev = rkktsystemDirDerivHier%nlevels-ilevel
+    if (ilevel .le. 0) ilev = rkktsystemDirDerivHier%nlevels+ilevel
 
     ! Get the KKT system solution on that level
     call kkth_getKKTsystem (&
@@ -619,7 +619,7 @@ contains
     integer :: ilev
     
     ilev = ilevel
-    if (ilev .eq. 0) ilev = rkktsystemDirDerivHier%nlevels+ilev
+    if (ilev .le. 0) ilev = rkktsystemDirDerivHier%nlevels+ilev
     
     ! Get the pointer
     p_rkktSystemDirDeriv => rkktsystemDirDerivHier%p_RkktSysDirDeriv(ilev)

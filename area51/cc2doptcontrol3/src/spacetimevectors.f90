@@ -267,6 +267,9 @@ module spacetimevectors
     ! is called. If this is =0, no vector is available.
     integer :: inextFreeVector = 0
     
+    ! First index used for temporary vectors. Usually MAXINT-size-1 of the pool,
+    ! so there are more temp indices available than of the buffer is can hold.
+    integer :: ifirstIndexTempVec = 0
   end type
 
 !</typeblock>
@@ -1704,8 +1707,8 @@ contains
         end if
 
         if (brepeat) then
-          call output_line ("Warning: Unable to load file ""//trim(sfile) &
-              //"". Repeating last solution!", &
+          call output_line ("Warning: Unable to load file """//trim(sfile) &
+              //""". Repeating last solution!", &
               ssubroutine="sptivec_loadFromFileSequence")
         
           ! Copy the data from the last known solution to the current one.
@@ -1713,8 +1716,8 @@ contains
               rx%p_IdataHandleList(1+ilast),&
               rx%p_IdataHandleList(1+ifileidx))
         else
-          call output_line ("Warning: Unable to load file ""//trim(sfile) &
-              //"". Assuming zero!", ssubroutine="sptivec_loadFromFileSequence")
+          call output_line ("Warning: Unable to load file """//trim(sfile) &
+              //""". Assuming zero!", ssubroutine="sptivec_loadFromFileSequence")
         
           ! Clear that array. Zero solution.
           call exstor_clear (rx%p_IdataHandleList(1+ifileidx))
@@ -1985,6 +1988,7 @@ contains
   
   ! Size of the pool.
   integer, intent(in) :: isize
+  
 !</input>
 
 !<output>
@@ -2014,6 +2018,10 @@ contains
     raccessPool%p_IvectorIndex(:) = 0
     
     raccessPool%inextFreeVector = 1
+
+    ! First temp vector is MAXINT-isize-1, so there are more
+    ! temp indices available than the buffer can hold.
+    raccessPool%ifirstIndexTempVec = SYS_MAXINT-isize-1
 
   end subroutine
 
@@ -2065,6 +2073,10 @@ contains
     raccessPool%p_IvectorIndex(:) = 0
     
     raccessPool%inextFreeVector = 1
+    
+    ! First temp vector is MAXINT-isize-1, so there are more
+    ! temp indices available than the buffer can hold.
+    raccessPool%ifirstIndexTempVec = SYS_MAXINT-isize-1
 
   end subroutine
 
@@ -2369,13 +2381,8 @@ contains
    
     if (iindex .eq. -1) then
     
-      ! Calculate a new index. Start counting from NEQtime+1 or 1,
-      ! depending on whether a vector is associated or not.
-      if (associated(raccessPool%p_rspaceTimeVector)) then
-        iindex = raccessPool%p_rspaceTimeVector%NEQtime+1
-      else
-        iindex = 1
-      end if
+      ! Calculate a new index. Start counting from ifirstIndexTempVec.
+      iindex = raccessPool%ifirstIndexTempVec
       
       ! Increase until a not-used index if found.
       indexsearch: do

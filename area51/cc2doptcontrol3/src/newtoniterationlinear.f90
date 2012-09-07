@@ -1525,9 +1525,12 @@ contains
         end if
       end if
 
+      ! Solve. Do not work in-situ. We take the solution
+      ! directly from rkktsysDirDerivHierarchy after the solution process
+      ! is completed.
       output_iautoOutputIndent = output_iautoOutputIndent + 2
       call newtonlin_precond (p_rsubnodeMultigrid%p_rsubSolvers(ilevel),&
-          rkktsysDirDerivHierarchy,rrhs,rstatistics,ilevel)
+          rkktsysDirDerivHierarchy,rrhs,rstatistics,ilevel,binsitu=.false.)
       output_iautoOutputIndent = output_iautoOutputIndent - 2
     
       if (nlevels .eq. 1) then
@@ -1754,7 +1757,7 @@ contains
 !<subroutine>
 
   recursive subroutine newtonlin_precond (&
-      rlinsolParam,rkktsysDirDerivHierarchy,rnewtonDir,rstatistics,ilevel)
+      rlinsolParam,rkktsysDirDerivHierarchy,rnewtonDir,rstatistics,ilevel,binsitu)
   
 !<description>
   ! Calculates the Newton search direction by applying the Newton
@@ -1776,11 +1779,17 @@ contains
 
   ! Hierarchy of directional derivatives of the KKT system.
   ! Used for temporary calculations.
+  ! The solution at level ilevel receives the result.
   type(t_kktsystemDirDerivHierarchy), intent(inout) :: rkktsysDirDerivHierarchy
 
   ! This structure contains the search direction to be
-  ! preconditioned. Will be replaced by the precoditioned search direction.
+  ! preconditioned. Will be replaced by the precoditioned search direction
+  ! if binSitu=true.
   type(t_controlSpace), intent(inout) :: rnewtonDir
+  
+  ! OPTIONAL: Whether to work in-situ. If set to TRUE(default),
+  ! rnewtonDir is replaced by the result.
+  logical, intent(in), optional :: binsitu
 !</inputoutput>
 
 !<output>
@@ -1856,8 +1865,15 @@ contains
     end select
         
     ! Overwrite the rnewtonDir with the update.
-    call kktsp_controlLinearComb (&
-        p_rkktsysDirDeriv%p_rcontrolLin,1.0_DP,rnewtonDir,0.0_DP)
+    if (present(binsitu)) then
+      if (binsitu) then
+        call kktsp_controlLinearComb (&
+            p_rkktsysDirDeriv%p_rcontrolLin,1.0_DP,rnewtonDir,0.0_DP)
+      end if
+    else
+      call kktsp_controlLinearComb (&
+          p_rkktsysDirDeriv%p_rcontrolLin,1.0_DP,rnewtonDir,0.0_DP)
+    end if
     
     ! Add the time which this routine needed.    
     call stat_stopTimer (rtimer)
@@ -2085,6 +2101,10 @@ contains
       call sptipr_performInterpolation (rlinsolParam%p_RprjHierSpaceTimeControl,ilevel,&
           p_rkktSystemCoarse%p_rcontrol%p_rvectorAccess, &
           p_rkktSystem%p_rcontrol%p_rvectorAccess)
+
+      call sptipr_performInterpolation (rlinsolParam%p_RprjHierSpaceTimeControl,ilevel,&
+          p_rkktSystemCoarse%p_rintermedControl%p_rvectorAccess, &
+          p_rkktSystem%p_rintermedControl%p_rvectorAccess)
     
     end do
 

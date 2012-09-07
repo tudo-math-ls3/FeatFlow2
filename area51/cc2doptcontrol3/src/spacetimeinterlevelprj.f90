@@ -222,6 +222,7 @@ contains
     ! ===============================================
     case (CCSPACE_CONTROL)
       if (roptcontrol%dalphaDistC .ge. 0.0_DP) ncount = ncount + 1
+      if (roptcontrol%dalphaL2BdC .ge. 0.0_DP) ncount = ncount + 1
     end select
     
     rprojHierBlock%ncount = ncount
@@ -318,7 +319,7 @@ contains
 !</output>
 
 !</subroutine>
-    integer :: i,itimeOrder,cthetaschemetype
+    integer :: i,itimeOrder,cthetaschemetype,ispace
     type(t_matrixScalar) :: rprolmat2
 
     ! Remember the physics; necessary so we know how and what to project
@@ -438,30 +439,87 @@ contains
             ! Stokes/Navier Stokes.
             ! -------------------------------------------------------------
             case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
-              if ((roptcontrol%dalphaDistC .ge. 0.0_DP) .and. (isubspace .eq. 1)) then
-                call sptipr_getProlMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
-                    rprojHier%p_RprolongationMat(i))
+            
+              ! Control type counter
+              ispace = 1
+              
+              if (roptcontrol%dalphaDistC .ge. 0.0_DP) then
+                if (isubspace .eq. ispace) then
+                  ! Distributed control corresponds to the time dual space
+                  
+                  call sptipr_getProlMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
+                      rprojHier%p_RprolongationMat(i))
 
-                call sptipr_getProlMatrixPrimal(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
-                    rprolmat2)
+                  call sptipr_getProlMatrixPrimal(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
+                      rprolmat2)
 
-                call sptipr_getInterpMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
-                    rprojHier%p_RinterpolationMat(i))
+                  call sptipr_getInterpMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
+                      rprojHier%p_RinterpolationMat(i))
+                end if
+
+                ! Next control
+                ispace = ispace + 1
+              end if
+
+              if (roptcontrol%dalphaL2BdC .ge. 0.0_DP) then
+                if (isubspace .eq. ispace) then
+                  ! Boundary conditions correspond to the time primal space.
+                  
+                  call sptipr_getProlMatrixPrimal(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
+                      rprojHier%p_RprolongationMat(i))
+
+                  call sptipr_getProlMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
+                      rprolmat2)
+
+                  call sptipr_getInterpMatrixprimal(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
+                      rprojHier%p_RinterpolationMat(i))
+                end if
+
+                ! Next control
+                ispace = ispace + 1
               end if
 
             ! -------------------------------------------------------------
             ! Heat equation
             ! -------------------------------------------------------------
             case (CCEQ_HEAT2D)
-              if ((roptcontrol%dalphaDistC .ge. 0.0_DP) .and. (isubspace .eq. 1)) then
-                call sptipr_getProlMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
-                    rprojHier%p_RprolongationMat(i))
+            
+              ! Control type counter
+              ispace = 1
+              
+              if (roptcontrol%dalphaDistC .ge. 0.0_DP) then
+                if (isubspace .eq. ispace) then
+                  ! Distributed control corresponds to the time dual space
+                  call sptipr_getProlMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
+                      rprojHier%p_RprolongationMat(i))
 
-                call sptipr_getProlMatrixPrimal(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
-                    rprolmat2)
+                  call sptipr_getProlMatrixPrimal(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
+                      rprolmat2)
 
-                call sptipr_getInterpMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
-                    rprojHier%p_RinterpolationMat(i))
+                  call sptipr_getInterpMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
+                      rprojHier%p_RinterpolationMat(i))
+                end if
+
+                ! Next control
+                ispace = ispace + 1
+              end if
+
+              if (roptcontrol%dalphaL2BdC .ge. 0.0_DP) then
+                if (isubspace .eq. ispace) then
+                  ! Boundary conditions correspond to the time primal space.
+
+                  call sptipr_getProlMatrixPrimal(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
+                      rprojHier%p_RprolongationMat(i))
+
+                  call sptipr_getProlMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
+                      rprolmat2)
+
+                  call sptipr_getInterpMatrixPrimal(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
+                      rprojHier%p_RinterpolationMat(i))
+                end if
+
+                ! Next control
+                ispace = ispace + 1
               end if
                   
             end select
@@ -1442,7 +1500,7 @@ contains
     end do
     
     ! The access pool receives the prolongated solution and is
-    ! not bounded to and space-time vector!
+    ! not connected to a space-time vector!
     call sptivec_createAccessPool (rfineVector%p_rspaceDiscr,raccessPool,i+1)
     
     ! We need one temp vector. 
