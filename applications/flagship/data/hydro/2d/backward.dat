@@ -10,7 +10,6 @@ version = 120829
 # From:  K. Takayama and O. Inoue, "Shock wave diffraction over a 90 degree    #
 #        sharp corner - Posters presented at 18th ISSW", Shock Waves Vol. 1    #
 #        pages 301-312, 1991.                                                  #
-#                                                                              #
 ################################################################################
 
 simportdatafiles(5) =
