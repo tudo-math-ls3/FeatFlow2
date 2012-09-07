@@ -40,6 +40,19 @@ SRCLIST=SRC/ilaenv.f SRC/ieeeck.f SRC/iparmq.f \
 	SRC/dorm2r.f SRC/dlassq.f SRC/dlarf.f SRC/dlarfg.f SRC/dlapy2.f \
 	INSTALL/dlamch.f
 
+# Lapack routines required by AGMG library
+SRCLIST+=SRC/cgetf2.f SRC/cgetrf.f SRC/cgetrs.f \
+	 SRC/claswp.f SRC/ctptrs.f SRC/dgetf2.f \
+	 SRC/dgetrf.f SRC/dgetrs.f SRC/disnan.f \
+	 SRC/dlaisnan.f SRC/dlaswp.f SRC/dpotf2.f \
+	 SRC/dpotrf.f SRC/dtptrs.f SRC/ieeeck.f \
+	 SRC/ilaenv.f SRC/iparmq.f SRC/sgetf2.f \
+	 SRC/sgetrf.f SRC/sgetrs.f SRC/sisnan.f \
+	 SRC/slaisnan.f SRC/slaswp.f SRC/spotf2.f \
+	 SRC/spotrf.f SRC/stptrs.f SRC/zgetf2.f \
+	 SRC/zgetrf.f SRC/zgetrs.f SRC/zlaswp.f \
+	 SRC/ztptrs.f
+
 ifneq ($(GOTOBLAS_PATCH_FOR_LAPACK), REQUIRED)
 # Do compile the following LAPACK source files except when using
 # a recent GotoBLAS version as the symbols are already contained therein.
