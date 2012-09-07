@@ -252,7 +252,7 @@ contains
     ! Read through the complete file and look for the specified
     ! boundary section section
     ios = 0
-    readline: do while(ios .eq. 0)
+    do while(ios .eq. 0)
       
       ! Read next line in file
       call io_readlinefromfile(iunit, sdata, idatalen, ios)
@@ -624,13 +624,20 @@ contains
           end if
 
         end do ! icomp
-        exit readline
+
+        ! That is all
+        close(iunit)
+        return
       end if
-    end do readline
+    end do
     
     ! Close the file, finish
     close(iunit)
 
+    call output_line('Unable to read boundary conditions from file!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'bdrc_readBoundaryCondition')
+    call sys_halt()
+    
   end subroutine bdrc_readBoundaryCondition
 
   ! *****************************************************************************
