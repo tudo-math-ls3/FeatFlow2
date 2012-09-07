@@ -2812,7 +2812,7 @@ sub create_feastAppMakefile {
         "\t(cd \$(DIR) && \\\n" .
         "\t    $makeInMakefile -f Makefile.FEAT2 \$\@ \\\n" .
 	"\t\tF95=\"\$(PREF90) \$(F90)\" OPTS=\"\$(CFLAGSF90) \$(MODOPTION)\$(OBJDIR_LIB)\" \\\n" .
-        "\t\tARCH=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" \\\n" .
+        "\t\tARCH=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" MODEXTENSION=\"\$(MODEXTENSION)\" \\\n" .
         "\t\tOBJDIR=\"\$(OBJDIR_LIB)\")\n\n";
 
     # Clean rule for every library
@@ -2820,7 +2820,7 @@ sub create_feastAppMakefile {
         "# Clean rule for every library\n" .
         "\$(BUILDLIB:%=clean-%):\n" .
         "\t\@( cd \$(DIR) && \\\n" .
-        "\t    \$(MAKE) -f Makefile.FEAT2 OBJDIR=\"\$(OBJDIR_LIB)\" ";
+        "\t    \$(MAKE) -f Makefile.FEAT2 OBJDIR=\"\$(OBJDIR_LIB)\" MODEXTENSION=\"\$(MODEXTENSION)\" ";
     # This is technically wrong, it suffices to pass the HAS_* flags only to the coproc library.
     # But I do not speak enough perl to do this, so we just pass these flags to all libraries,
     # silently assuming that all other libs' clean targets will not break if they see them.
@@ -2838,7 +2838,7 @@ sub create_feastAppMakefile {
         "\$(ALLLIB:%=purge-%): PURGEDIR = \$(dir \$(OBJDIR_LIB))\n" .
         "\$(ALLLIB:%=purge-%):\n" .
         "\t\@( cd \$(DIR) && \\\n" .
-        "\t    \$(MAKE) -f Makefile.FEAT2 OBJDIR=\"\$(PURGEDIR)*-*-*-*-*-opt*\" ";
+        "\t    \$(MAKE) -f Makefile.FEAT2 OBJDIR=\"\$(PURGEDIR)*-*-*-*-*-opt*\" MODEXTENSION=\"\$(MODEXTENSION)\" ";
     $tmparray = (defined($cl{'COPROCLIST'})) ? $cl{'COPROCLIST'} : $defaults{'COPROCLIST'};
     foreach $entry ( @{ $tmparray } ) {
 	print MAKEFILE_HDL "HAS_" . uc($entry) . "=\"YES\" ";

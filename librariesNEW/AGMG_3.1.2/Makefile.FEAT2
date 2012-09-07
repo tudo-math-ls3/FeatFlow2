@@ -24,6 +24,29 @@ SRCLIST = SRC/cagmg.f90 SRC/cagmg_mumps.f90 \
 	  SRC/dagmg.f90 SRC/dagmg_mumps.f90 \
 	  SRC/sagmg.f90 SRC/sagmg_mumps.f90 \
 	  SRC/zagmg.f90 SRC/zagmg_mumps.f90
+MODLIST = agmg_mumps_ooc_common.mod  \
+          agmg_mumps_static_mapping.mod cagmg_allroutines.mod  \
+          cagmg_mem.mod cagmg_mumps_comm_buffer.mod  \
+          cagmg_mumps_load.mod cagmg_mumps_ooc.mod  \
+          cagmg_mumps_ooc_buffer.mod  \
+          cagmg_mumps_parallel_analysis.mod  \
+          cagmg_mumps_struc_def.mod cagmgpar_allroutines.mod  \
+          cagmgpar_mem.mod dagmg_allroutines.mod dagmg_mem.mod  \
+          dagmg_mumps_comm_buffer.mod dagmg_mumps_load.mod  \
+          dagmg_mumps_ooc.mod dagmg_mumps_ooc_buffer.mod  \
+          dagmg_mumps_parallel_analysis.mod  \
+          dagmg_mumps_struc_def.mod dagmgpar_allroutines.mod  \
+          dagmgpar_mem.mod sagmg_allroutines.mod sagmg_mem.mod  \
+          sagmg_mumps_comm_buffer.mod sagmg_mumps_load.mod  \
+          sagmg_mumps_ooc.mod sagmg_mumps_ooc_buffer.mod  \
+          sagmg_mumps_parallel_analysis.mod  \
+          sagmg_mumps_struc_def.mod sagmgpar_allroutines.mod  \
+          sagmgpar_mem.mod tools_common.mod  \
+          zagmg_allroutines.mod zagmg_mem.mod  \
+          zagmg_mumps_comm_buffer.mod zagmg_mumps_load.mod  \
+          zagmg_mumps_ooc.mod zagmg_mumps_ooc_buffer.mod  \
+          zagmg_mumps_parallel_analysis.mod  \
+          zagmg_mumps_struc_def.mod zagmgpar_allroutines.mod
 OBJS = $(patsubst %.f90, $(OBJDIR)/%.o, $(notdir $(SRCLIST)))
 
 
@@ -205,6 +228,7 @@ clean:
         # Delete every file separately to prevent errors of kind:
         # execvp: rm: Arg list too long
 	-$(foreach file, $(OBJS) $(OBJDIR)/libagmg.a, $(remove_file))
+	-$(foreach file, $(patsubst %.mod, $(OBJDIR)/%.$(MODEXTENSION), $(MODLIST)), $(remove_file))
 	$(foreach dir, $(OBJDIR), $(remove_directory))
 
 .PHONY:	purge
@@ -212,5 +236,6 @@ purge:
         # Delete every file separately to prevent errors of kind:
         # execvp: rm: Arg list too long
 	-$(foreach file, $(OBJS) $(OBJDIR)/libagmg.a, $(remove_file))
+	-$(foreach file, $(patsubst %.mod, $(OBJDIR)/%.$(MODEXTENSION), $(MODLIST)), $(remove_file))
 	$(foreach dir, $(OBJDIR), $(remove_directory))
 	-rm -rf Doc Example_par Example_seq Matlab README SRC
