@@ -460,7 +460,7 @@
 !#      DISCRETISATION AND THE BOUNDARY CONDITIONS!
 !#
 !#      Therefore, temporary vectors can be created with
-!#      lsysbl_createVecBlockIndMat using the system matrix as template.
+!#      lsysbl_createVectorBlock using the system matrix as template.
 !#      This also sets the boundary conditions etc. correctly, i.e.
 !#      produce a compatible vector.
 !#      Inside of the solver, you can also transfer properties of the
@@ -4093,11 +4093,11 @@ contains
     ! by using the associated matrix as template.
     ! That vectors are used in the defect correction so save the intermediate
     ! "solution" vector.
-    call lsysbl_createVecBlockIndMat (rsolverNode%rsystemMatrix, &
+    call lsysbl_createVectorBlock (rsolverNode%rsystemMatrix, &
           rsolverNode%p_rsubnodeDefCorr%rtempVector,.false.,.false.,&
           rsolverNode%cdefaultDataType)
 
-    call lsysbl_createVecBlockIndMat (rsolverNode%rsystemMatrix, &
+    call lsysbl_createVectorBlock (rsolverNode%rsystemMatrix, &
           rsolverNode%p_rsubnodeDefCorr%rtempVector2,.false.,.false.,&
           rsolverNode%cdefaultDataType)
   
@@ -4396,8 +4396,8 @@ contains
   
       ! Synchronise the sorting without touching the entries in the
     ! target vectors; they are temporary anyway.
-    call lsysbl_synchroniseSort (rd,p_rx  ,bautoUnsort=.false.)
-    call lsysbl_synchroniseSort (rd,p_rdef,bautoUnsort=.false.)
+    call lsysbl_synchroniseSort (rd,p_rx  ,bsyncEntries=.false.)
+    call lsysbl_synchroniseSort (rd,p_rdef,bsyncEntries=.false.)
 
     ! rd is our RHS. p_rx points to a new vector which will be our
     ! iteration vector. At the end of this routine, we replace
@@ -6064,7 +6064,7 @@ contains
     if (isubgroup .ne. rsolverNode%isolverSubgroup) return
 
     ! Allocate a temporary vector
-    call lsysbl_createVecBlockIndMat (rsolverNode%rsystemMatrix, &
+    call lsysbl_createVectorBlock (rsolverNode%rsystemMatrix, &
           rsolverNode%p_rsubnodeVANKA%rtempVector,.false.,.false.,&
           rsolverNode%cdefaultDataType)
         
@@ -6396,7 +6396,7 @@ contains
 
     ! Synchronise the sorting without touching the entries.
     ! We will clear the target anyway.  
-    call lsysbl_synchroniseSort (rd,p_rvector,bautoUnsort=.false.)
+    call lsysbl_synchroniseSort (rd,p_rvector,bsyncEntries=.false.)
 
     ! Clear our solution vector
     call lsysbl_clearVector (p_rvector)
@@ -7121,7 +7121,7 @@ contains
     end if
     
     ! Allocate a temporary vector
-    call lsysbl_createVecBlockIndMat (rsolverNode%rsystemMatrix, &
+    call lsysbl_createVectorBlock (rsolverNode%rsystemMatrix, &
           rsolverNode%p_rsubnodeUMFPACK4%rtempVector,.false.,.false.,&
           rsolverNode%cdefaultDataType)
     
@@ -8729,7 +8729,7 @@ contains
     ! structure for allocating the temp vectors.
     p_rsubnode => rsolverNode%p_rsubnodeCG
     do i=1,4
-      call lsysbl_createVecBlockIndMat (rsolverNode%rsystemMatrix, &
+      call lsysbl_createVectorBlock (rsolverNode%rsystemMatrix, &
           p_rsubnode%RtempVectors(i),.false.,.false.,&
           rsolverNode%cdefaultDataType)
     end do
@@ -9051,10 +9051,10 @@ contains
 
     ! Synchronise the sorting without touching the entries.
     ! The target vectors are temporary anyway.
-    call lsysbl_synchroniseSort (rd,p_DR,bautoUnsort=.false.)
-    call lsysbl_synchroniseSort (rd,p_DP,bautoUnsort=.false.)
-    call lsysbl_synchroniseSort (rd,p_DD,bautoUnsort=.false.)
-    call lsysbl_synchroniseSort (rd,p_rx,bautoUnsort=.false.)
+    call lsysbl_synchroniseSort (rd,p_DR,bsyncEntries=.false.)
+    call lsysbl_synchroniseSort (rd,p_DP,bsyncEntries=.false.)
+    call lsysbl_synchroniseSort (rd,p_DD,bsyncEntries=.false.)
+    call lsysbl_synchroniseSort (rd,p_rx,bsyncEntries=.false.)
     
     if (bprec) then
       p_rprecSubnode => p_rsubnode%p_rpreconditioner
@@ -9633,7 +9633,7 @@ contains
     ! structure for allocating the temp vectors.
     p_rsubnode => rsolverNode%p_rsubnodeBiCGStab
     do i=1,6
-      call lsysbl_createVecBlockIndMat (rsolverNode%rsystemMatrix, &
+      call lsysbl_createVectorBlock (rsolverNode%rsystemMatrix, &
           p_rsubnode%RtempVectors(i),.false.,.false.,rsolverNode%cdefaultDataType)
     end do
 
@@ -9960,12 +9960,12 @@ contains
     
     ! Synchronise the sorting without touching the entries in the
     ! target vectors; they are temporary anyway.
-    call lsysbl_synchroniseSort (rd,p_DR ,bautoUnsort=.false.)
-    call lsysbl_synchroniseSort (rd,p_DR0,bautoUnsort=.false.)
-    call lsysbl_synchroniseSort (rd,p_DP ,bautoUnsort=.false.)
-    call lsysbl_synchroniseSort (rd,p_DPA,bautoUnsort=.false.)
-    call lsysbl_synchroniseSort (rd,p_DSA,bautoUnsort=.false.)
-    call lsysbl_synchroniseSort (rd,p_rx ,bautoUnsort=.false.)
+    call lsysbl_synchroniseSort (rd,p_DR ,bsyncEntries=.false.)
+    call lsysbl_synchroniseSort (rd,p_DR0,bsyncEntries=.false.)
+    call lsysbl_synchroniseSort (rd,p_DP ,bsyncEntries=.false.)
+    call lsysbl_synchroniseSort (rd,p_DPA,bsyncEntries=.false.)
+    call lsysbl_synchroniseSort (rd,p_DSA,bsyncEntries=.false.)
+    call lsysbl_synchroniseSort (rd,p_rx ,bsyncEntries=.false.)
     
     if (bprec) then
       p_rprecSubnode => p_rsubnode%p_rpreconditioner
@@ -10605,16 +10605,16 @@ contains
     
     ! Create them
     do i=1, idim+1
-      call lsysbl_createVecBlockIndMat (rsolverNode%rsystemMatrix, &
+      call lsysbl_createVectorBlock (rsolverNode%rsystemMatrix, &
           p_rsubnode%p_rv(i),.false.,.false.,rsolverNode%cdefaultDataType)
     end do
     do i=1, idim
-      call lsysbl_createVecBlockIndMat (rsolverNode%rsystemMatrix, &
+      call lsysbl_createVectorBlock (rsolverNode%rsystemMatrix, &
           p_rsubnode%p_rz(i),.false.,.false.,rsolverNode%cdefaultDataType)
     end do
     
     ! Create an iteration vector x
-    call lsysbl_createVecBlockIndMat (rsolverNode%rsystemMatrix, &
+    call lsysbl_createVectorBlock (rsolverNode%rsystemMatrix, &
         p_rsubnode%rx,.false.,.false.,rsolverNode%cdefaultDataType)
     
     ! Okay, that is all!
@@ -10979,20 +10979,20 @@ contains
 
       ! Synchronise the sorting without touching the entries.
       ! The target vectors are temporary anyway.
-      call lsysbl_synchroniseSort (rd,p_rv(i),bautoUnsort=.false.)
+      call lsysbl_synchroniseSort (rd,p_rv(i),bsyncEntries=.false.)
     end do
     do i=1, idim
       call lsysbl_assignDiscrIndirect (rd,p_rz(i))
 
       ! Synchronise the sorting without touching the entries.
       ! The target vectors are temporary anyway.
-      call lsysbl_synchroniseSort (rd,p_rz(i),bautoUnsort=.false.)
+      call lsysbl_synchroniseSort (rd,p_rz(i),bsyncEntries=.false.)
     end do
     call lsysbl_assignDiscrIndirect (rd,p_rx)
     
     ! Synchronise the sorting without touching the entries.
     ! The target vector is overwritten anyway.
-    call lsysbl_synchroniseSort (rd,p_rx,bautoUnsort=.false.)
+    call lsysbl_synchroniseSort (rd,p_rx,bsyncEntries=.false.)
     
     ! Set pointers to the 1D/2D arrays
     p_Dh => p_rsubnode%Dh
@@ -13092,7 +13092,7 @@ contains
         ! solution vector - as solution vector on the fine grid,
         ! the vector which comes as parameter
         ! to the multigrid  preconditioner is used.
-        call lsysbl_createVecBlockIndMat (p_rmatrix, &
+        call lsysbl_createVectorBlock (p_rmatrix, &
               p_rcurrentLevel%rsolutionVector,.false.,.false.,&
               rsolverNode%cdefaultDataType)
               
@@ -13104,10 +13104,10 @@ contains
       ! by the solution vector.
       if (associated(p_rcurrentLevel%p_rprevLevel)) then
       
-        call lsysbl_createVecBlockIndMat (p_rmatrix, &
+        call lsysbl_createVectorBlock (p_rmatrix, &
               p_rcurrentLevel%rrhsVector,.false.,.false.,&
               rsolverNode%cdefaultDataType)
-        call lsysbl_createVecBlockIndMat (p_rmatrix, &
+        call lsysbl_createVectorBlock (p_rmatrix, &
               p_rcurrentLevel%rtempVector,.false.,.false.,&
               rsolverNode%cdefaultDataType)
               
@@ -13843,7 +13843,7 @@ contains
   integer :: nminIterations,nmaxIterations,niteResOutput,niteAsymptoticCVR
   integer :: ite,ilev,nlmax,i,j,nblocks
   real(DP) :: dres,dstep
-  logical :: bfilter,bsort
+  logical :: bfilter
   type(t_filterChain), dimension(:), pointer :: p_RfilterChain
   
   ! The queue saves the current residual and the two previous residuals.
@@ -13971,30 +13971,6 @@ contains
         
       else
         
-        ! Ok, we can start with multigrid.
-        ! At first check the sorting state of the vector.
-        bsort = lsysbl_isVectorSorted(rd)
-        
-        ! To deal with sorted vectors is a bit tricky! Here a small summary
-        ! how sorted vectors is dealed with, in case sorting is activated:
-        !
-        ! 1.) At the beginning of the algorithm, RHS, solution and temp vector
-        !     on the finest level are set up as "sorted". The whole algorithm
-        !     here deals with sorted vectors, so that matrix/vector multiplication
-        !     works.
-        ! 2.) At the beginning of the algorithm, all temporary vectors on the
-        !     lower levels are set up as "unsorted".
-        ! 3.) When restricting the defect,
-        !     - the defect is unsorted on level l
-        !     - the unsorted defect is restricted to level l-1
-        !     - the restricted defect on level l-1 is sorted
-        ! 4.) When prolongating a correction vector,
-        !     - the correction vector on level l-1 is unsorted
-        !     - the unsorted vector is prolongated to level l
-        !     - the unsorted vector on level l is sorted
-        ! So at the end of the MG sweep, we have the same situation as at the start
-        ! of the algorithm.
-        
         ! At first, reset the cycle counters of all levels
         p_rcurrentLevel => p_rsubnode%p_rlevelInfoHead
         do while(associated(p_rcurrentLevel%p_rnextLevel))
@@ -14117,15 +14093,7 @@ contains
               ! The projection parameters from level ilev to level
               ! ilev-1 is configured in the rprojection structure of the
               ! current level.
-              !
-              ! Make sure the vector is unsorted before the restriction!
-              ! We can use the "global" temporary array p_rprjTempVector
-              ! as temporary memory during the resorting process.
-              if (bsort) then
-                call lsysbl_sortVector (p_rcurrentLevel%rtempVector,&
-                      .false.,p_rsubnode%rprjTempVector)
-              end if
-              
+              !              
               ! When restricting to the coarse grid, we directy restrict into
               ! the solution vector. It is used there as RHS and replaced in-situ
               ! by the solution by the coarse grid solver. So do not need the RHS vector
@@ -14149,19 +14117,6 @@ contains
                   ! supposed to be a bit faster...
                   call filter_applyFilterChainVec (p_rlowerLevel%rrhsVector, &
                                                    p_RfilterChain)
-                end if
-
-                if (bsort) then
-                  ! Resort the RHS on the lower level.
-                  call lsysbl_sortVector (p_rlowerLevel%rrhsVector,&
-                        .true.,p_rsubnode%rprjTempVector)
-
-                  ! Temp-vector and solution vector there are yet uninitialised,
-                  ! therefore we can mark them as sorted without calling the
-                  ! resorting routine.
-                  p_rlowerLevel%rtempVector%RvectorBlock(1:nblocks)%bisSorted = .true.
-                  
-                  p_rlowerLevel%rsolutionVector%RvectorBlock(1:nblocks)%bisSorted = .true.
                 end if
 
                 ! Choose zero as initial vector on lower level.
@@ -14210,14 +14165,6 @@ contains
                   ! supposed to be a bit faster...
                   call filter_applyFilterChainVec (p_rlowerLevel%rsolutionVector, &
                                                    p_RfilterChain)
-                end if
-
-                if (bsort) then
-                  ! Resort the RHS on the lower level.
-                  call lsysbl_sortVector (p_rlowerLevel%rsolutionVector,&
-                        .true.,p_rsubnode%rprjTempVector)
-
-                  ! Temp-vector and RHS can be ignored on the coarse grid.
                 end if
 
                 ! Extended output
@@ -14270,27 +14217,6 @@ contains
               
               ! Prolongate the solution vector from the coarser level
               ! to the temp vector on the finer level.
-              !
-              ! Make sure the vector is unsorted before the prolongation!
-              ! We can use the "global" temporary array p_rprjTempVector
-              ! as temporary memory during the resorting process.
-              if (bsort) then
-                call lsysbl_sortVector (p_rlowerLevel%rsolutionVector,&
-                    .false.,p_rsubnode%rprjTempVector)
-                
-                ! Temp-vector and RHS vector there unused now,
-                ! therefore we can mark them as not sorted without calling the
-                ! resorting routine.
-                ! This prepares these vectors for the next sweep, when an unsorted
-                ! vector comes "from above".
-                !
-                ! Note that this shall not be done on the coarse grid as there is
-                ! no temp/rhs vector!
-                if (associated(p_rlowerLevel%p_rprevLevel)) then
-                  p_rlowerLevel%rtempVector%RvectorBlock(1:nblocks)%bisSorted = .false.
-                  p_rlowerLevel%rrhsVector%RvectorBlock(1:nblocks)%bisSorted = .false.
-                end if
-              end if
               call mlprj_performProlongation (p_rcurrentLevel%rprojection,&
                     p_rlowerLevel%rsolutionVector, &
                     p_rcurrentLevel%rtempVector, &
@@ -14302,13 +14228,6 @@ contains
                                                  p_RfilterChain)
               end if
 
-              if (bsort) then
-                ! Resort the temp vector on the current level so that it fits
-                ! to the RHS, solution vector and matrix again
-                call lsysbl_sortVector (p_rcurrentLevel%rtempVector,&
-                    .true.,p_rsubnode%rprjTempVector)
-              end if
-              
               ! Step length control. Get the optimal damping parameter for the
               ! defect correction.
               ! Use either the standard system matrix for this purpose or
@@ -15467,7 +15386,7 @@ contains
         ! solution vector - as solution vector on the fine grid,
         ! the vector which comes as parameter
         ! to the multigrid  preconditioner is used.
-        call lsysbl_createVecBlockIndMat (p_rmatrix, &
+        call lsysbl_createVectorBlock (p_rmatrix, &
               p_rcurrentLevel%rsolutionVector,.false.,.false.,&
               rsolverNode%cdefaultDataType)
         p_rtemplVect => p_rcurrentLevel%rsolutionVector
@@ -15476,10 +15395,10 @@ contains
       ! vectors. The RHS on the coarse grid is replaced in-situ
       ! by the solution vector.
       if (ilevel .gt. 1) then
-        call lsysbl_createVecBlockIndMat (p_rmatrix, &
+        call lsysbl_createVectorBlock (p_rmatrix, &
               p_rcurrentLevel%rrhsVector,.false.,.false.,&
               rsolverNode%cdefaultDataType)
-        call lsysbl_createVecBlockIndMat (p_rmatrix, &
+        call lsysbl_createVectorBlock (p_rmatrix, &
               p_rcurrentLevel%rtempVector,.false.,.false.,&
               rsolverNode%cdefaultDataType)
         p_rtemplVect => p_rcurrentLevel%rtempVector
@@ -15953,7 +15872,6 @@ contains
   integer :: nminIterations,nmaxIterations,niteResOutput,niteAsymptoticCVR
   integer :: ite,ilev,nlmax,i,j,nblocks
   real(DP) :: dres,dstep
-  logical :: bsort
   type(t_filterChain), dimension(:), pointer :: p_RfilterChain,p_RfilterChainCoarse
   type(t_timer) :: rtimer
   
@@ -16092,30 +16010,6 @@ contains
         rsolverNode%dasymptoticConvergenceRate = 0.0_DP
         
       else
-        
-        ! Ok, we can start with multigrid.
-        ! At first check the sorting state of the vector.
-        bsort = lsysbl_isVectorSorted(rd)
-        
-        ! To deal with sorted vectors is a bit tricky! Here a small summary
-        ! how sorted vectors is dealed with, in case sorting is activated:
-        !
-        ! 1.) At the beginning of the algorithm, RHS, solution and temp vector
-        !     on the finest level are set up as "sorted". The whole algorithm
-        !     here deals with sorted vectors, so that matrix/vector multiplication
-        !     works.
-        ! 2.) At the beginning of the algorithm, all temporary vectors on the
-        !     lower levels are set up as "unsorted".
-        ! 3.) When restricting the defect,
-        !     - the defect is unsorted on level l
-        !     - the unsorted defect is restricted to level l-1
-        !     - the restricted defect on level l-1 is sorted
-        ! 4.) When prolongating a correction vector,
-        !     - the correction vector on level l-1 is unsorted
-        !     - the unsorted vector is prolongated to level l
-        !     - the unsorted vector on level l is sorted
-        ! So at the end of the MG sweep, we have the same situation as at the start
-        ! of the algorithm.
         
         ! At first, reset the cycle counters of all levels
         do i=1,nlmax-1
@@ -16306,25 +16200,6 @@ contains
               ! The projection parameters from level ilev to level
               ! ilev-1 is configured in the rprojection structure of the
               ! current level.
-              !
-              ! Make sure the vector is unsorted before the restriction!
-              ! We can use the "global" temporary array p_rprjTempVector
-              ! as temporary memory during the resorting process.
-              if (bsort) then
-                ! clear and start timer
-                call stat_clearTimer(rtimer)
-                call stat_startTimer(rtimer)
-
-                call lsysbl_sortVector (p_rcurrentLevel%rtempVector,&
-                    .false.,p_rsubnode%rprjTempVector)
-                
-                ! stop timer and update sorting time
-                call stat_stopTimer(rtimer)
-                p_rsubnode%dtimeResorting = &
-                  p_rsubnode%dtimeResorting + rtimer%delapsedReal
-                p_rcurrentLevel%dtimeResorting = &
-                  p_rcurrentLevel%dtimeResorting + rtimer%delapsedReal
-              end if
               
               ! When restricting to the coarse grid, we directy restrict into
               ! the solution vector. It is used there as RHS and replaced in-situ
@@ -16374,30 +16249,12 @@ contains
                     p_rlowerLevel%dtimeFiltering + rtimer%delapsedReal
                 end if
 
-
-                if (bsort) then
-                  ! clear and start timer
-                  call stat_clearTimer(rtimer)
-                  call stat_startTimer(rtimer)
-                  
-                  ! Resort the RHS on the lower level.
-                  call lsysbl_sortVector (p_rlowerLevel%rrhsVector,&
-                      .true.,p_rsubnode%rprjTempVector)
-
-                  ! Temp-vector and solution vector there are yet uninitialised,
-                  ! therefore we can mark them as sorted without calling the
-                  ! resorting routine.
-                  p_rlowerLevel%rtempVector%RvectorBlock(1:nblocks)%bisSorted = .true.
-                  
-                  p_rlowerLevel%rsolutionVector%RvectorBlock(1:nblocks)%bisSorted = .true.
-                  
-                  ! stop timer and update sorting time
-                  call stat_stopTimer(rtimer)
-                  p_rsubnode%dtimeResorting = &
-                    p_rsubnode%dtimeResorting + rtimer%delapsedReal
-                  p_rlowerLevel%dtimeResorting = &
-                    p_rlowerLevel%dtimeResorting + rtimer%delapsedReal
-                end if
+                ! Synchronise the sorting of the RHS and solution vector
+                ! on the lower level.
+                ! Just install the sorting strategy, do not sort the entries.
+                ! We overwrite the vector anyway with zero next.
+                call lsysbl_synchroniseSort (&
+                    p_rlowerLevel%rrhsVector,p_rlowerLevel%rsolutionVector,bsyncEntries=.false.)
 
                 ! Choose zero as initial vector on lower level.
                 call lsysbl_clearVector (p_rlowerLevel%rsolutionVector)
@@ -16468,27 +16325,6 @@ contains
                     p_rlowerLevel%dtimeFiltering + rtimer%delapsedReal
                 end if
                 
-
-                if (bsort) then
-                  ! clear and start timer
-                  call stat_clearTimer(rtimer)
-                  call stat_startTimer(rtimer)
-
-                  ! Resort the RHS on the lower level.
-                  call lsysbl_sortVector (p_rlowerLevel%rsolutionVector,&
-                      .true.,p_rsubnode%rprjTempVector)
-
-                  ! Temp-vector and RHS can be ignored on the coarse grid.
-                  
-                  ! stop timer and update sorting time
-                  call stat_stopTimer(rtimer)
-                  p_rsubnode%dtimeResorting = &
-                    p_rsubnode%dtimeResorting + rtimer%delapsedReal
-                  p_rlowerLevel%dtimeResorting = &
-                    p_rlowerLevel%dtimeResorting + rtimer%delapsedReal
-
-                end if
-
                 ! Extended output
                 if ((rsolverNode%ioutputLevel .ge. 3) .and. &
                     (mod(ite,niteResOutput).eq.0)) then
@@ -16584,39 +16420,6 @@ contains
               
               ! Prolongate the solution vector from the coarser level
               ! to the temp vector on the finer level.
-              !
-              ! Make sure the vector is unsorted before the prolongation!
-              ! We can use the "global" temporary array p_rprjTempVector
-              ! as temporary memory during the resorting process.
-              if (bsort) then
-                ! clear and start timer
-                call stat_clearTimer(rtimer)
-                call stat_startTimer(rtimer)
-              
-                call lsysbl_sortVector (p_rlowerLevel%rsolutionVector,&
-                    .false.,p_rsubnode%rprjTempVector)
-                
-                ! Temp-vector and RHS vector there unused now,
-                ! therefore we can mark them as not sorted without calling the
-                ! resorting routine.
-                ! This prepares these vectors for the next sweep, when an unsorted
-                ! vector comes "from above".
-                !
-                ! Note that this shall not be done on the coarse grid as there is
-                ! no temp/rhs vector!
-                if (ilev .gt. 2) then
-                  p_rlowerLevel%rtempVector%RvectorBlock(1:nblocks)%bisSorted = .false.
-                  p_rlowerLevel%rrhsVector%RvectorBlock(1:nblocks)%bisSorted = .false.
-                end if
-                
-                ! stop timer and update sorting time
-                call stat_stopTimer(rtimer)
-                p_rsubnode%dtimeResorting = &
-                  p_rsubnode%dtimeResorting + rtimer%delapsedReal
-                p_rlowerLevel%dtimeResorting = &
-                  p_rlowerLevel%dtimeResorting + rtimer%delapsedReal
-              end if
-              
               ! clear and start timer
               call stat_clearTimer(rtimer)
               call stat_startTimer(rtimer)
@@ -16648,25 +16451,6 @@ contains
                   p_rsubnode%dtimeFiltering + rtimer%delapsedReal
                 p_rcurrentLevel%dtimeFiltering = &
                   p_rcurrentLevel%dtimeFiltering + rtimer%delapsedReal
-              end if
-              
-
-              if (bsort) then
-                ! clear and start timer
-                call stat_clearTimer(rtimer)
-                call stat_startTimer(rtimer)
-              
-                ! Resort the temp vector on the current level so that it fits
-                ! to the RHS, solution vector and matrix again
-                call lsysbl_sortVector (p_rcurrentLevel%rtempVector,&
-                    .true.,p_rsubnode%rprjTempVector)
-                
-                ! stop timer and update sorting time
-                call stat_stopTimer(rtimer)
-                p_rsubnode%dtimeResorting = &
-                  p_rsubnode%dtimeResorting + rtimer%delapsedReal
-                p_rcurrentLevel%dtimeResorting = &
-                  p_rcurrentLevel%dtimeResorting + rtimer%delapsedReal
               end if
               
               ! clear and start timer
@@ -17547,7 +17331,7 @@ contains
     if (isubgroup .ne. rsolverNode%isolverSubgroup) return
     
     ! Allocate memory for the temp vector
-    call lsysbl_createVecBlockIndMat (rsolverNode%rsystemMatrix, &
+    call lsysbl_createVectorBlock (rsolverNode%rsystemMatrix, &
         rsolverNode%p_rsubnodeSpecDefl%rvectorTemp,.false.,.false.,&
         rsolverNode%cdefaultDataType)
     
@@ -18529,24 +18313,24 @@ contains
       p_rmatrix => p_rcurrentLevel%rsystemMatrix
       nullify(p_rtemplVect)
 
-      call lsysbl_createVecBlockIndMat (p_rmatrix, &
+      call lsysbl_createVectorBlock (p_rmatrix, &
             p_rcurrentLevel%rsolutionVector,.false.,.false.,&
             rsolverNode%cdefaultDataType)
       p_rtemplVect => p_rcurrentLevel%rsolutionVector
       
-      call lsysbl_createVecBlockIndMat (p_rmatrix, &
+      call lsysbl_createVectorBlock (p_rmatrix, &
             p_rcurrentLevel%rrhsVector,.false.,.false.,&
             rsolverNode%cdefaultDataType)
             
-      call lsysbl_createVecBlockIndMat (p_rmatrix, &
+      call lsysbl_createVectorBlock (p_rmatrix, &
             p_rcurrentLevel%rtempVector,.false.,.false.,&
             rsolverNode%cdefaultDataType)
 
-      call lsysbl_createVecBlockIndMat (p_rmatrix, &
+      call lsysbl_createVectorBlock (p_rmatrix, &
             p_rcurrentLevel%rdefTempVector,.false.,.false.,&
             rsolverNode%cdefaultDataType)
 
-      call lsysbl_createVecBlockIndMat (p_rmatrix, &
+      call lsysbl_createVectorBlock (p_rmatrix, &
             p_rcurrentLevel%ractualRHS,.false.,.false.,&
             rsolverNode%cdefaultDataType)
 
@@ -18621,16 +18405,16 @@ contains
       
       ! Create them
       do i=1, idim+1
-        call lsysbl_createVecBlockIndMat (p_rmatrix, &
+        call lsysbl_createVectorBlock (p_rmatrix, &
             p_rcurrentLevel%p_rv(i),.false.,.false.,rsolverNode%cdefaultDataType)
       end do
       do i=1, idim
-        call lsysbl_createVecBlockIndMat (p_rmatrix, &
+        call lsysbl_createVectorBlock (p_rmatrix, &
             p_rcurrentLevel%p_rz(i),.false.,.false.,rsolverNode%cdefaultDataType)
       end do
       
       ! Create an iteration vector x
-      call lsysbl_createVecBlockIndMat (p_rmatrix, &
+      call lsysbl_createVectorBlock (p_rmatrix, &
           p_rcurrentLevel%rx,.false.,.false.,rsolverNode%cdefaultDataType)
       
       ! And the next level...
@@ -19130,9 +18914,11 @@ contains
     ! conditions,...) to the temporary vectors.
     do i=1, idim+1
       call lsysbl_assignDiscrIndirect (rb,p_rv(i))
+      call lsysbl_synchroniseSort (rb,p_rv(i),bsyncEntries=.false.)
     end do
     do i=1, idim
       call lsysbl_assignDiscrIndirect (rb,p_rz(i))
+      call lsysbl_synchroniseSort (rb,p_rz(i),bsyncEntries=.false.)
     end do
     
     ! Set pointers to the 1D/2D arrays
@@ -19144,16 +18930,6 @@ contains
     ! And get the handle of Dq, since we need to call
     ! storage_clear during the iteration
     hDq = p_rlevelInfo%hDq
-    
-    ! All vectors share the same boundary conditions as rb!
-    ! So assign now all discretisation-related information (boundary
-    ! conditions,...) to the temporary vectors.
-    do i=1,idim
-      call lsysbl_assignDiscrIndirect (rb, p_rz(i))
-    end do
-    do i=1,idim+1
-      call lsysbl_assignDiscrIndirect (rb, p_rv(i))
-    end do
     
     if (bprec) then
       p_rprecSubnode => p_rlevelInfo%p_rpreconditioner
@@ -19276,6 +19052,8 @@ contains
           end if
           
           ! Preconditioning on the lower level
+          call lsysbl_synchroniseSort (&
+              p_rlevelInfoCoarse%rrhsVector,p_rlevelInfoCoarse%rsolutionVector,bsyncEntries=.false.)
           call lsysbl_clearVector (p_rlevelInfoCoarse%rsolutionVector)
           call linsol_precDeflGMRES_recright (rsolverNode,ilevel-1,&
               p_rlevelInfoCoarse%rsolutionVector,p_rlevelInfoCoarse%rrhsVector)
@@ -19794,9 +19572,11 @@ contains
     ! conditions,...) to the temporary vectors.
     do i=1, idim+1
       call lsysbl_assignDiscrIndirect (rb,p_rv(i))
+      call lsysbl_synchroniseSort (rb,p_rv(i),bsyncEntries=.false.)
     end do
     do i=1, idim
       call lsysbl_assignDiscrIndirect (rb,p_rz(i))
+      call lsysbl_synchroniseSort (rb,p_rz(i),bsyncEntries=.false.)
     end do
     
     ! Set pointers to the 1D/2D arrays
@@ -19808,16 +19588,6 @@ contains
     ! And get the handle of Dq, since we need to call
     ! storage_clear during the iteration
     hDq = p_rlevelInfo%hDq
-    
-    ! All vectors share the same boundary conditions as rb!
-    ! So assign now all discretisation-related information (boundary
-    ! conditions,...) to the temporary vectors.
-    do i=1,idim
-      call lsysbl_assignDiscrIndirect (rb, p_rz(i))
-    end do
-    do i=1,idim+1
-      call lsysbl_assignDiscrIndirect (rb, p_rv(i))
-    end do
     
     if (bprec) then
       p_rprecSubnode => p_rlevelInfo%p_rpreconditioner
@@ -19967,6 +19737,8 @@ contains
           end if
           
           ! Preconditioning on the lower level
+          call lsysbl_synchroniseSort (&
+              p_rlevelInfoCoarse%rrhsVector,p_rlevelInfoCoarse%rsolutionVector,bsyncEntries=.false.)
           call lsysbl_clearVector (p_rlevelInfoCoarse%rsolutionVector)
           call linsol_precDeflGMRES_recleft (rsolverNode,ilevel-1,&
               p_rlevelInfoCoarse%rsolutionVector,p_rlevelInfoCoarse%rrhsVector)

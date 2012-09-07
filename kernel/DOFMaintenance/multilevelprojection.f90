@@ -75,19 +75,19 @@
 !# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- \\
 !#  Some notes on the L2-Projection grid transfer  \\
 !# ----------------------------------------------- \\
-!# The possibility to choose 'real' L2-projection for multi-level grid
+!# The possibility to choose "real" L2-projection for multi-level grid
 !# transfer has been added mainly for research purposes, especially with
 !# non-conforming elements.
 !#
-!# In contrast to the 'hard-coded' grid transfer this method has 2 advantages:
+!# In contrast to the "hard-coded" grid transfer this method has 2 advantages:
 !#
 !# +1. It is a black-box projection, i.e. one can apply the multigrid solver
 !#     on discretisations for which the developer has not (yet) written hard-
 !#     coded grid transfer operators.
 !#
 !# +2. It provides true L2-orthogonality also for non-conforming elements.
-!#     The 'hard-coded' grid transfer for non-conforming elements is just an
-!#     approximation of the 'true' L2-projection operator, thus usually giving
+!#     The "hard-coded" grid transfer for non-conforming elements is just an
+!#     approximation of the "true" L2-projection operator, thus usually giving
 !#     worse results.
 !#
 !# But it also has 2 major disadvantages:
@@ -99,7 +99,7 @@
 !#     assembled by the multileveloperators module which, until now, supports
 !#     only uniform discretisations (and no triangular meshes).
 !#
-!# -2. The grid transfer is (in contrast to the 'hard-coded' projection)
+!# -2. The grid transfer is (in contrast to the "hard-coded" projection)
 !#     very expensive and time consuming, as each prolongation and each
 !#     restriction involves solving a linear system with the fine mesh mass
 !#     matrix.
@@ -109,7 +109,7 @@
 !# - WARNING! -
 !# ------------
 !# </verb>
-!# There is no support for the 'mlprj_performInterpolation' routine using
+!# There is no support for the "mlprj_performInterpolation" routine using
 !# L2-projection, and it is NOT planned to implement it! If you want to
 !# restrict a solution vector using L2-projection you will need to do it by
 !# yourself
@@ -129,7 +129,7 @@
 !# - WARNING! -
 !# ------------
 !# </verb>
-!# There is no support for the 'mlprj_performInterpolation' routine using
+!# There is no support for the "mlprj_performInterpolation" routine using
 !# matrix-based grid transfer, and it is NOT planned to implement it! If you
 !# want to restrict a solution vector using a matrix you will need to do it
 !# by yourself
@@ -189,6 +189,7 @@ module multilevelprojection
   use element
   use quicksolver
   use linearalgebra
+  use dofmapping
 
   implicit none
 
@@ -246,13 +247,13 @@ module multilevelprojection
   ! One t_interlevelProjectionScalar structure is associated to one
   ! t_elementDistribution structure of a spatial discretisation.
   ! t_interlevelProjectionScalar is not part if the t_spatialDiscretisation
-  ! structure, as t_interlevelProjectionScalar resides 'between' levels:
+  ! structure, as t_interlevelProjectionScalar resides "between" levels:
   ! If there is one t_spatialDiscretisation structure for level 3 and
   ! one for level 4, the t_interlevelProjectionScalar structure is
-  ! logically arranged at level '3.5' to configure the projection
+  ! logically arranged at level "3.5" to configure the projection
   ! between level 3 and 4. For this reason, there is one
   ! t_interlevelProjectionScalar less than levels: As there is no level 0,
-  ! the structure for level '0.5' is missing!
+  ! the structure for level "0.5" is missing!
 
   type t_interlevelProjectionScalar
 
@@ -268,7 +269,7 @@ module multilevelprojection
     ! the DOF`s do not fit together at all, e.g. when using <tex>$Q_1$</tex>
     ! prolongation when using <tex>$Q_2$</tex> for the discretisation.
     !
-    ! A value of EL_UNDEFINED indicates that the 'natural' prolongation
+    ! A value of EL_UNDEFINED indicates that the "natural" prolongation
     ! (i.e. that configured by the spatial discretisation) should be used.
     integer(I32)                :: ielementTypeProlongation = EL_UNDEFINED
 
@@ -322,7 +323,7 @@ module multilevelprojection
     ! the DOF`s do not fit together at all, e.g. when using <tex>$Q_1$</tex>
     ! restriction when using <tex>$Q_2$</tex> for the discretisation.
     !
-    ! A value of EL_UNDEFINED indicates that the 'natural' restriction
+    ! A value of EL_UNDEFINED indicates that the "natural" restriction
     ! (i.e. that configured by the spatial discretisation) should be used.
     integer(I32)                :: ielementTypeRestriction = EL_UNDEFINED
 
@@ -376,7 +377,7 @@ module multilevelprojection
     ! all, e.g. when using <tex>$Q_1$</tex> interpolation when using <tex>$Q_2$</tex>
     ! for the discretisation.
     !
-    ! A value of EL_UNDEFINED indicates that the 'natural' interpolation
+    ! A value of EL_UNDEFINED indicates that the "natural" interpolation
     ! (i.e. that configured by the spatial discretisation) should be used.
     integer(I32)                :: ielementTypeInterpolation = EL_UNDEFINED
 
@@ -438,7 +439,7 @@ module multilevelprojection
   !
   ! The default initialisation initialises this structure with the
   ! usual values for the whole grid transfer process. If there is special
-  ! need for 'reconfiguring' the grid transfer for a special element
+  ! need for "reconfiguring" the grid transfer for a special element
   ! type in a special equation, the application can change the content.
 
   type t_interlevelProjectionBlock
@@ -580,8 +581,8 @@ contains
 !</subroutine>
 
     if (rdiscretisation%ncomponents .eq. 0) then
-      call output_line ('No discretisation!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_initProjectionDiscr')
+      call output_line ("No discretisation!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"mlprj_initProjectionDiscr")
       call sys_halt()
     end if
 
@@ -630,8 +631,8 @@ contains
     integer :: i
 
     if (rvector%nblocks .eq. 0) then
-      call output_line ('No discretisation!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_initProjectionVec')
+      call output_line ("No discretisation!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"mlprj_initProjectionVec")
       call sys_halt()
     end if
 
@@ -685,15 +686,15 @@ contains
     integer :: i,j
 
     if (rmatrix%nblocksPerRow .le. 0) then
-      call output_line ('No discretisation!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_initProjectionMat')
+      call output_line ("No discretisation!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"mlprj_initProjectionMat")
       call sys_halt()
     end if
 
     allocate(p_Rdiscr(rmatrix%nblocksPerRow))
 
     ! Set up an array of discretisation structures for all the equations.
-    ! In every 'column' of the block matrix, search for the first existing
+    ! In every "column" of the block matrix, search for the first existing
     ! matrix and use its properties for initialisation
     do i=1,rmatrix%nblocksPerRow
       do j=1,rmatrix%nblocksPerCol
@@ -812,8 +813,8 @@ contains
 
     ! Check to see if the two discretisation structures fit together
     if (releDistrCoarse%celement .ne. releDistrFine%celement) then
-      call output_line ('Element distributions on the coarse and fine grid incompatible!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_getProjectionStrategy')
+      call output_line ("Element distributions on the coarse and fine grid incompatible!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"mlprj_getProjectionStrategy")
       call sys_halt()
     end if
 
@@ -837,24 +838,24 @@ contains
     if (ractProjection%ielementTypeProlongation .ne. releDistrCoarse%celement) then
       ! Here, we can insert some additional code so that E030 is compatible eith EM30
       ! and so on...
-      call output_line ('Element distribution of the grid and interlevel projection incompatible!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_getProjectionStrategy')
+      call output_line ("Element distribution of the grid and interlevel projection incompatible!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"mlprj_getProjectionStrategy")
       call sys_halt()
     end if
 
     if (ractProjection%ielementTypeRestriction .ne. releDistrCoarse%celement) then
       ! Here, we can insert some additional code so that E030 is compatible eith EM30
       ! and so on...
-      call output_line ('Element distribution of the grid and interlevel projection incompatible!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_getProjectionStrategy')
+      call output_line ("Element distribution of the grid and interlevel projection incompatible!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"mlprj_getProjectionStrategy")
       call sys_halt()
     end if
 
     if (ractProjection%ielementTypeInterpolation .ne. releDistrCoarse%celement) then
       ! Here, we can insert some additional code so that E030 is compatible eith EM30
       ! and so on...
-      call output_line ('Element distribution of the grid and interlevel projection incompatible!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_getProjectionStrategy')
+      call output_line ("Element distribution of the grid and interlevel projection incompatible!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"mlprj_getProjectionStrategy")
       call sys_halt()
     end if
 
@@ -898,8 +899,9 @@ contains
   ! local variables
   integer :: i, nmem, nmemtotal
 
-    ! Assume that we do not need any additional memory.
-    nmemtotal = 0
+    ! Reserve at least as much memory as DOFs on the fine grid.
+    ! Necessary for resorting sorted vectors.
+    nmemtotal = dof_igetNDofGlob(rdiscrFine)
 
     ! Now loop through all scalar projections
     do i = 1, ubound(RprojectionScalar,1)
@@ -975,8 +977,8 @@ contains
   integer :: imemmax,imemact
 
     if (size(RdiscrCoarse) .ne. size(RdiscrFine)) then
-      call output_line ('Coarse and fine grid incompatible!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_getTempMemoryDirect')
+      call output_line ("Coarse and fine grid incompatible!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"mlprj_getTempMemoryDirect")
       call sys_halt()
     end if
 
@@ -1043,8 +1045,8 @@ contains
   integer :: i
 
     if ((rvectorCoarse%nblocks .eq. 0) .or. (rvectorFine%nblocks .eq. 0)) then
-      call output_line ('No discretisation!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_getTempMemoryVec')
+      call output_line ("No discretisation!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"mlprj_getTempMemoryVec")
       call sys_halt()
     end if
 
@@ -1109,8 +1111,8 @@ contains
   integer :: i,j
 
     if ((rmatrixCoarse%nblocksPerRow .le. 0) .or. (rmatrixFine%nblocksPerRow .le. 0)) then
-      call output_line ('No discretisation!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_getTempMemoryMat')
+      call output_line ("No discretisation!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"mlprj_getTempMemoryMat")
       call sys_halt()
     end if
 
@@ -1123,9 +1125,9 @@ contains
         if (lsysbl_isSubmatrixPresent(rmatrixCoarse,j,i)) then
           if (.not. &
               associated(rmatrixCoarse%RmatrixBlock(j,i)%p_rspatialDiscrTrial)) then
-            call output_line ('No discretisation structure in coarse matrix at ' // &
-                trim(sys_siL(i,4)) // ',' // trim(sys_siL(j,4)), &
-                OU_CLASS_ERROR,OU_MODE_STD,'mlprj_getTempMemoryMat')
+            call output_line ("No discretisation structure in coarse matrix at " // &
+                trim(sys_siL(i,4)) // "," // trim(sys_siL(j,4)), &
+                OU_CLASS_ERROR,OU_MODE_STD,"mlprj_getTempMemoryMat")
             call sys_halt()
           end if
           p_RdiscrCoarse(i) = &
@@ -1140,9 +1142,9 @@ contains
         if (lsysbl_isSubmatrixPresent(rmatrixFine,j,i)) then
           if (.not. &
               associated(rmatrixFine%RmatrixBlock(j,i)%p_rspatialDiscrTrial)) then
-            call output_line ('No discretisation structure in fine matrix at ' // &
-                trim(sys_siL(i,4)) // ',' // trim(sys_siL(j,4)), &
-                OU_CLASS_ERROR,OU_MODE_STD,'mlprj_getTempMemoryMat')
+            call output_line ("No discretisation structure in fine matrix at " // &
+                trim(sys_siL(i,4)) // "," // trim(sys_siL(j,4)), &
+                OU_CLASS_ERROR,OU_MODE_STD,"mlprj_getTempMemoryMat")
             call sys_halt()
           end if
           p_RdiscrFine(i) = &
@@ -1212,6 +1214,7 @@ contains
   type(t_spatialDiscretisation), pointer :: p_rdiscrCoarse,p_rdiscrFine
   type(t_triangulation), pointer :: p_rtriaCoarse,p_rtriaFine
   type(t_interlevelProjectionScalar) :: ractProjection
+  logical :: bsorted
 
   ! Pointers into the triangulation
   integer, dimension(:,:), pointer :: p_IverticesAtElementCoarse,&
@@ -1231,20 +1234,14 @@ contains
     ! The vectors must be of data type DOUBLE - we do not support anything
     ! different at the moment...
     if (rcoarseVector%cdataType .ne. ST_DOUBLE) then
-      call output_line ('Coarse grid vector has unsupported data type!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_performProlongation')
+      call output_line ("Coarse grid vector has unsupported data type!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"mlprj_performProlongation")
       call sys_halt()
     end if
 
     if (rfineVector%cdataType .ne. ST_DOUBLE) then
-      call output_line ('Fine grid vector has unsupported data type!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_performProlongation')
-      call sys_halt()
-    end if
-
-    if (lsysbl_isVectorSorted(rfineVector) .or. lsysbl_isVectorSorted(rcoarseVector)) then
-      call output_line ('Vectors must be unsorted for level change!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_performProlongation')
+      call output_line ("Fine grid vector has unsupported data type!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"mlprj_performProlongation")
       call sys_halt()
     end if
 
@@ -1262,7 +1259,7 @@ contains
 
       ! Skip this block if it is empty
       if (rcoarseVector%RvectorBlock(i)%NEQ .le. 0) cycle
-
+      
       ! What type of prolongation do we use here?
       select case(rprojection%RscalarProjection(1,i)%iprojType)
       case (MLP_PROJ_TYPE_L2_PROJ)
@@ -1290,16 +1287,16 @@ contains
       ! We need a discretisation:
       if ((.not. associated(p_rdiscrCoarse)) .or. &
           (.not. associated(p_rdiscrFine))) then
-        call output_line ('Intergrid transfer: No discretisation!', &
-            OU_CLASS_ERROR,OU_MODE_STD,'mlprj_performProlongation')
+        call output_line ("Intergrid transfer: No discretisation!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"mlprj_performProlongation")
         call sys_halt()
       end if
 
       ! Currently, we support only uniform triangulations.
       if ((p_rdiscrCoarse%ccomplexity .ne. SPDISC_UNIFORM) .or. &
           (p_rdiscrCoarse%ccomplexity .ne. SPDISC_UNIFORM)) then
-        call output_line ('Intergrid transfer supports currently only uniform discretisations!', &
-            OU_CLASS_ERROR,OU_MODE_STD,'mlprj_performProlongation')
+        call output_line ("Intergrid transfer supports currently only uniform discretisations!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"mlprj_performProlongation")
         call sys_halt()
       end if
 
@@ -1315,6 +1312,18 @@ contains
             p_rdiscrCoarse%RelementDistr(1), &
             p_rdiscrFine%RelementDistr(1), &
             ractProjection)
+
+      ! Is the vector sorted?
+      bsorted = rcoarseVector%RvectorBlock(i)%bisSorted
+      
+      ! The following hard-coded variants only work for unsorted vectors.
+      if (bsorted) then
+        call lsyssc_sortVector (rcoarseVector%RvectorBlock(i),.false.,rtempVector)
+        
+        ! Fine vector is set to "unsorted". The entries are overwritten,
+        ! so we do not need to change them
+        rfineVector%RvectorBlock(i)%bisSorted = .false.
+      end if
 
       ! Depending on the element type of the trial functions in the
       ! discretisation, choose the right prolongation and call it.
@@ -1432,7 +1441,7 @@ contains
           call mlprj_prolUniformQ1_double (p_DuCoarse, p_DuFine, &
                     p_IverticesAtEdgeCoarse, p_IverticesAtElementCoarse, &
                     p_rtriaCoarse%NVT, p_rtriaCoarse%NMT, p_rtriaCoarse%NEL)
-           ! 'old' implementation
+           ! "old" implementation
 !            CALL storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
 !                                p_IverticesAtElementCoarse)
 !            CALL storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
@@ -1696,10 +1705,16 @@ contains
              p_IneighboursAtElementFine, p_rtriaCoarse%NEL)
 
       case default
-        call output_line ('Unknown element!', &
-            OU_CLASS_ERROR,OU_MODE_STD,'mlprj_performProlongation')
+        call output_line ("Unknown element!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"mlprj_performProlongation")
         call sys_halt()
       end select
+      
+      ! Switch back sorted vectors.
+      if (bsorted) then
+        call lsyssc_sortVector (rfineVector%RvectorBlock(i),.true.,rtempVector)
+        call lsyssc_sortVector (rcoarseVector%RvectorBlock(i),.true.,rtempVector)
+      end if
 
     end do  ! i
 
@@ -1752,6 +1767,7 @@ contains
 
   ! local variables
   integer :: i,istart,iend
+  logical :: bsorted
   type(t_spatialDiscretisation), pointer :: p_rdiscrCoarse,p_rdiscrFine
   type(t_interlevelProjectionScalar) :: ractProjection
   type(t_triangulation), pointer :: p_rtriaCoarse,p_rtriaFine
@@ -1774,20 +1790,14 @@ contains
     ! The vectors must be of data type DOUBLE - we do not support anything
     ! different at the moment...
     if (rcoarseVector%cdataType .ne. ST_DOUBLE) then
-      call output_line ('Coarse grid vector has unsupported data type!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_performRestriction')
+      call output_line ("Coarse grid vector has unsupported data type!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"mlprj_performRestriction")
       call sys_halt()
     end if
 
     if (rfineVector%cdataType .ne. ST_DOUBLE) then
-      call output_line ('Fine grid vector has unsupported data type!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_performRestriction')
-      call sys_halt()
-    end if
-
-    if (lsysbl_isVectorSorted(rfineVector) .or. lsysbl_isVectorSorted(rcoarseVector)) then
-      call output_line ('Vectors must be unsorted for level change!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_performRestriction')
+      call output_line ("Fine grid vector has unsupported data type!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"mlprj_performRestriction")
       call sys_halt()
     end if
 
@@ -1843,16 +1853,16 @@ contains
       ! We need a discretisation:
       if ((.not. associated(p_rdiscrCoarse)) .or. &
           (.not. associated(p_rdiscrFine))) then
-        call output_line ('Intergrid transfer: No discretisation!', &
-            OU_CLASS_ERROR,OU_MODE_STD,'mlprj_performRestriction')
+        call output_line ("Intergrid transfer: No discretisation!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"mlprj_performRestriction")
         call sys_halt()
       end if
 
       ! Currently, we support only uniform triangulations.
       if ((p_rdiscrCoarse%ccomplexity .ne. SPDISC_UNIFORM) .or. &
           (p_rdiscrFine%ccomplexity .ne. SPDISC_UNIFORM)) then
-        call output_line ('Intergrid transfer supports currently only uniform discretisations!', &
-            OU_CLASS_ERROR,OU_MODE_STD,'mlprj_performRestriction')
+        call output_line ("Intergrid transfer supports currently only uniform discretisations!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"mlprj_performRestriction")
         call sys_halt()
       end if
 
@@ -1868,6 +1878,18 @@ contains
             p_rdiscrCoarse%RelementDistr(1), &
             p_rdiscrFine%RelementDistr(1), &
             ractProjection)
+
+      ! Is the vector sorted?
+      bsorted = rfineVector%RvectorBlock(i)%bisSorted
+      
+      ! The following hard-coded variants only work for unsorted vectors.
+      if (bsorted) then
+        call lsyssc_sortVector (rfineVector%RvectorBlock(i),.false.,rtempVector)
+        
+        ! Coarse vector is set to "unsorted". The entries are overwritten,
+        ! so we do not need to change them
+        rcoarseVector%RvectorBlock(i)%bisSorted = .false.
+      end if
 
       ! Depending on the element type of the trial functions in the
       ! discretisation, choose the right prolongation and call it.
@@ -1987,7 +2009,7 @@ contains
           call mlprj_restUniformQ1_double (p_DuCoarse, p_DuFine, &
                     p_IverticesAtEdgeCoarse, p_IverticesAtElementCoarse, &
                     p_rtriaCoarse%NVT, p_rtriaCoarse%NMT, p_rtriaCoarse%NEL)
-           ! 'old' implementation
+           ! "old" implementation
 !            CALL storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
 !                                p_IverticesAtElementFine)
 !            CALL storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
@@ -2257,10 +2279,16 @@ contains
              p_IneighboursAtElementFine, p_rtriaCoarse%NEL)
 
       case default
-        call output_line ('Unknown element!', &
-            OU_CLASS_ERROR,OU_MODE_STD,'mlprj_performRestriction')
+        call output_line ("Unknown element!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"mlprj_performRestriction")
         call sys_halt()
       end select
+
+      ! Switch back sorted vectors.
+      if (bsorted) then
+        call lsyssc_sortVector (rfineVector%RvectorBlock(i),.true.,rtempVector)
+        call lsyssc_sortVector (rcoarseVector%RvectorBlock(i),.true.,rtempVector)
+      end if
 
     end do  ! i
 
@@ -2289,7 +2317,7 @@ contains
   type(t_interlevelProjectionBlock), intent(in) :: rprojection
 
   ! Fine grid vector
-  type(t_vectorBlock), intent(in) :: rfineVector
+  type(t_vectorBlock), intent(inout) :: rfineVector
 
   ! OPTIONAL: Component of the vector, the interpolation should be applied to.
   ! If not present, the interpolation is applied to all components.
@@ -2314,6 +2342,7 @@ contains
 
   ! local variables
   integer :: i,istart,iend
+  logical :: bsorted
   type(t_spatialDiscretisation), pointer :: p_rdiscrCoarse,p_rdiscrFine
   type(t_interlevelProjectionScalar) :: ractProjection
   type(t_triangulation), pointer :: p_rtriaCoarse,p_rtriaFine
@@ -2334,20 +2363,14 @@ contains
     ! The vectors must be of data type DOUBLE - we do not support anything
     ! different at the moment...
     if (rcoarseVector%cdataType .ne. ST_DOUBLE) then
-      call output_line ('Coarse grid vector has unsupported data type!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_performInterpolation')
+      call output_line ("Coarse grid vector has unsupported data type!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"mlprj_performInterpolation")
       call sys_halt()
     end if
 
     if (rfineVector%cdataType .ne. ST_DOUBLE) then
-      call output_line ('Fine grid vector has unsupported data type!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_performInterpolation')
-      call sys_halt()
-    end if
-
-    if (lsysbl_isVectorSorted(rfineVector) .or. lsysbl_isVectorSorted(rcoarseVector)) then
-      call output_line ('Vectors must be unsorted for level change!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_performInterpolation')
+      call output_line ("Fine grid vector has unsupported data type!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"mlprj_performInterpolation")
       call sys_halt()
     end if
 
@@ -2370,8 +2393,8 @@ contains
       select case(rprojection%RscalarProjection(1,i)%iprojType)
       case(MLP_PROJ_TYPE_L2_PROJ)
         ! NOT SUPPORTED!
-        call output_line ('L2-projection not supported for interpolation!', &
-            OU_CLASS_ERROR,OU_MODE_STD,'mlprj_performInterpolation')
+        call output_line ("L2-projection not supported for interpolation!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"mlprj_performInterpolation")
         call sys_halt()
 
       case(MLP_PROJ_TYPE_MATRIX)
@@ -2394,16 +2417,16 @@ contains
       ! We need a discretisation:
       if ((.not. associated(p_rdiscrCoarse)) .or. &
           (.not. associated(p_rdiscrFine))) then
-        call output_line ('Intergrid transfer: No discretisation!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_performInterpolation')
+        call output_line ("Intergrid transfer: No discretisation!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"mlprj_performInterpolation")
         call sys_halt()
       end if
 
       ! Currently, we support only uniform triangulations.
       if ((p_rdiscrCoarse%ccomplexity .ne. SPDISC_UNIFORM) .or. &
           (p_rdiscrCoarse%ccomplexity .ne. SPDISC_UNIFORM)) then
-        call output_line ('Intergrid transfer supports currently only uniform discretisations!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_performInterpolation')
+        call output_line ("Intergrid transfer supports currently only uniform discretisations!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"mlprj_performInterpolation")
         call sys_halt()
       end if
 
@@ -2419,6 +2442,18 @@ contains
             p_rdiscrCoarse%RelementDistr(1), &
             p_rdiscrFine%RelementDistr(1), &
             ractProjection)
+
+      ! Is the vector sorted?
+      bsorted = rfineVector%RvectorBlock(i)%bisSorted
+      
+      ! The following hard-coded variants only work for unsorted vectors.
+      if (bsorted) then
+        call lsyssc_sortVector (rfineVector%RvectorBlock(i),.false.,rtempVector)
+        
+        ! Coarse vector is set to "unsorted". The entries are overwritten,
+        ! so we do not need to change them
+        rcoarseVector%RvectorBlock(i)%bisSorted = .false.
+      end if
 
       ! Depending on the element type of the trial functions in the
       ! discretisation, choose the right prolongation and call it.
@@ -2614,10 +2649,16 @@ contains
              p_IneighboursAtElementFine, p_rtriaCoarse%NEL)
 
       case default
-        call output_line ('Unknown element!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_performInterpolation')
+        call output_line ("Unknown element!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"mlprj_performInterpolation")
         call sys_halt()
       end select
+
+      ! Switch back sorted vectors.
+      if (bsorted) then
+        call lsyssc_sortVector (rfineVector%RvectorBlock(i),.true.,rtempVector)
+        call lsyssc_sortVector (rcoarseVector%RvectorBlock(i),.true.,rtempVector)
+      end if
 
     end do  ! i
 
@@ -2720,8 +2761,8 @@ contains
   integer :: iel
   integer :: IELH1,IELH2
 
-    ! The information that was 'distributed' in the prolongation has to
-    ! be 'collected'.
+    ! The information that was "distributed" in the prolongation has to
+    ! be "collected".
 
     ! Loop over the elements to collect the missing additive contributions:
     do iel=1,NELcoarse
@@ -2775,8 +2816,8 @@ contains
   integer :: iel
   integer :: IELH1,IELH2
 
-    ! The information that was 'distributed' in the prolongation has to
-    ! be 'collected'.
+    ! The information that was "distributed" in the prolongation has to
+    ! be "collected".
 
     ! Loop over the elements to collect the missing additive contributions:
     do iel=1,NELcoarse
@@ -2847,7 +2888,7 @@ contains
       ! If IEL is the current element index of the coarse grid element,
       ! then it was refined into 2 new fine grid elements with indices
       ! IEL and NVT+IEL, where NVT is the number of coarse grid vertices.
-      ! The 'new' vertice in the fine grid corresponding to the coarse grid
+      ! The "new" vertice in the fine grid corresponding to the coarse grid
       ! element IEL is the second vertice of the fine grid element IEL
       ! (and the first of the fine grid element NVT+IEL).
       DuFine(IvertsAtElemFine(2,iel)) = Q2 * (duh1 + duh2)
@@ -2894,8 +2935,8 @@ contains
   integer :: iel
   integer :: ifgv, icgv1, icgv2
 
-    ! The information that was 'distributed' in the prolongation has to
-    ! be 'collected'.
+    ! The information that was "distributed" in the prolongation has to
+    ! be "collected".
     !
     ! Copy the first NVT entries - this gives the first additive contribution.
     call lalg_copyVectorDble (DuFine(1:size(DuCoarse)),DuCoarse)
@@ -2903,10 +2944,10 @@ contains
     ! Loop over the elements to collect the missing additive contributions:
     do iel=1,NELcoarse
 
-      ! Get the 'new' fine grid vertice
+      ! Get the "new" fine grid vertice
       ifgv = IvertsAtElemFine(2,iel)
 
-      ! Get the 'old' coarse grid vertices
+      ! Get the "old" coarse grid vertices
       icgv1 = IvertsAtElemCoarse(1,iel)
       icgv2 = IvertsAtElemCoarse(2,iel)
 
@@ -2995,7 +3036,7 @@ contains
   real(DP) :: dv1,dv2,del
 
     ! Copy all DOFs from the coarse grid into the fine grid -
-    ! the DOFs belonging to the 'new' fine grid vertices get
+    ! the DOFs belonging to the "new" fine grid vertices get
     ! their values from the edge midpoints in the coarse grid.
     call lalg_copyVectorDble (DuCoarse,DuFine(1:size(DuCoarse)))
 
@@ -3063,8 +3104,8 @@ contains
   real(DP) :: dem1,dem2
   integer :: icgv1, icgv2,icgem
 
-    ! The information that was 'distributed' in the prolongation has to
-    ! be 'collected'.
+    ! The information that was "distributed" in the prolongation has to
+    ! be "collected".
     !
     ! Copy the first NVT entries - this gives the first additive contribution.
     call lalg_copyVectorDble (DuFine(1:size(DuCoarse)),DuCoarse)
@@ -3274,8 +3315,8 @@ contains
   integer :: ivtp1, ivtp2, ivtq1, ivtq2,ivt
   real(DP) :: dpf,dqf,ddet
 
-    ! The information that was 'distributed' in the prolongation has to
-    ! be 'collected'.
+    ! The information that was "distributed" in the prolongation has to
+    ! be "collected".
 
     ! Copy the first NVTcoarse entries - these are the coefficients of the
     ! basis functions for the function values.
@@ -3446,8 +3487,8 @@ contains
   integer :: iel
   integer :: IELH1,IELH2,IELH3,IELH4
 
-    ! The information that was 'distributed' in the prolongation has to
-    ! be 'collected'.
+    ! The information that was "distributed" in the prolongation has to
+    ! be "collected".
 
     ! Loop over the elements to collect the missing additive contributions:
     do iel=1,NELcoarse
@@ -3503,8 +3544,8 @@ contains
   integer :: iel
   integer :: IELH1,IELH2,IELH3,IELH4
 
-    ! The information that was 'distributed' in the prolongation has to
-    ! be 'collected'.
+    ! The information that was "distributed" in the prolongation has to
+    ! be "collected".
 
     ! Loop over the elements to collect the missing additive contributions:
     do iel=1,NELcoarse
@@ -3637,8 +3678,8 @@ contains
   integer :: iel
   integer :: ih1
 
-    ! The information that was 'distributed' in the prolongation has to
-    ! be 'collected'.
+    ! The information that was "distributed" in the prolongation has to
+    ! be "collected".
     !
     ! Copy the first NVT entries - this gives the first additive contribution.
     call lalg_copyVectorDble (DuFine(1:size(DuCoarse)),DuCoarse)
@@ -4517,7 +4558,7 @@ contains
       DUH9= DuFine(I9)
 
       ! Now collect the information in the same way as it was
-      ! 'distributed' by the prolongation routine.
+      ! "distributed" by the prolongation routine.
       ! This realises the adjoint operator of the prolongation.
 
       ! Calculate the value of the edge IM1
@@ -4661,7 +4702,7 @@ contains
       DUH9= DuFine(I9)
 
       ! Now collect the information in the same way as it was
-      ! 'distributed' by the prolongation routine.
+      ! "distributed" by the prolongation routine.
       ! This realises the adjoint operator of the prolongation.
 
       ! Calculate the value of the edge IM1
@@ -4804,8 +4845,8 @@ contains
   integer :: iel
   integer :: IELH1,IELH2,IELH3,IELH4
 
-    ! The information that was 'distributed' in the prolongation has to
-    ! be 'collected'.
+    ! The information that was "distributed" in the prolongation has to
+    ! be "collected".
 
     ! Loop over the elements to collect the missing additive contributions:
     do iel=1,NELcoarse
@@ -4861,8 +4902,8 @@ contains
   integer :: iel
   integer :: IELH1,IELH2,IELH3,IELH4
 
-    ! The information that was 'distributed' in the prolongation has to
-    ! be 'collected'.
+    ! The information that was "distributed" in the prolongation has to
+    ! be "collected".
 
     ! Loop over the elements to collect the missing additive contributions:
     do iel=1,NELcoarse
@@ -4891,7 +4932,7 @@ contains
   subroutine mlprj_prolUniformQ1_double (DuCoarse,DuFine, &
                IverticesAtEdgeCoarse, IverticesAtElementCoarse, &
                NVTcoarse, NMTcoarse, NELcoarse)
-! 'old' parameter list
+! "old" parameter list
 !               IverticesAtElementCoarse,IverticesAtElementFine,&
 !               IneighboursAtElementCoarse,IneighboursAtElementFine,NELcoarse)
 
@@ -4963,7 +5004,7 @@ contains
           DuCoarse(IverticesAtElementCoarse(4,iel)))
     end do
 
-!  This is the 'old' implemention, based on Feat 1.x
+!  This is the "old" implemention, based on Feat 1.x
 !  ! local variables
 !  REAL(DP), PARAMETER :: Q2 = 0.5_DP
 !  REAL(DP), PARAMETER :: Q4 = 0.25_DP
@@ -5044,7 +5085,7 @@ contains
   ! Number of elements in the coarse grid
   integer, intent(in) :: NELcoarse
 
-! 'old' parameters
+! "old" parameters
 !  ! IverticesAtElement array (KVERT) on the fine grid
 !  INTEGER, DIMENSION(:,:), INTENT(in) :: IverticesAtElementFine
 !
@@ -5068,8 +5109,8 @@ contains
   integer :: ivt
   real(DP) :: dx
 
-    ! The information that was 'distributed' in the prolongation has to
-    ! be 'collected'.
+    ! The information that was "distributed" in the prolongation has to
+    ! be "collected".
     !
     ! Copy the first NVT entries - this gives the first additive contribution.
     call lalg_copyVectorDble (DuFine(1:NVTcoarse),DuCoarse)
@@ -5102,7 +5143,7 @@ contains
       DuCoarse(ivt) = DuCoarse(ivt) + dx
     end do
 
-! This is the 'old' implementation, based on Feat 1.x
+! This is the "old" implementation, based on Feat 1.x
 !  ! local variables
 !  REAL(DP), PARAMETER :: Q2 = 0.5_DP
 !  REAL(DP), PARAMETER :: Q4 = 0.25_DP
@@ -5110,8 +5151,8 @@ contains
 !  INTEGER :: iel
 !  INTEGER :: i1,i2,i3,i4
 !
-!    ! The information that was 'distributed' in the prolongation has to
-!    ! be 'collected'.
+!    ! The information that was "distributed" in the prolongation has to
+!    ! be "collected".
 !    !
 !    ! Copy the first NVT entries - this gives the first additive contribution.
 !    CALL lalg_copyVectorDble (DuFine(1:SIZE(DuCoarse)),DuCoarse)
@@ -5295,8 +5336,8 @@ contains
   integer :: iel
   integer :: i1,i2,i3,i4
 
-    ! The information that was 'distributed' in the prolongation has to
-    ! be 'collected'.
+    ! The information that was "distributed" in the prolongation has to
+    ! be "collected".
     call lalg_clearVectorDble (DuCoarse)
 
     ! Loop over the elements to collect the missing additive contributions:
@@ -5375,8 +5416,8 @@ contains
   integer :: iel
   integer :: i1,i2,i3,i4
 
-    ! The information that was 'distributed' in the prolongation has to
-    ! be 'collected'.
+    ! The information that was "distributed" in the prolongation has to
+    ! be "collected".
     !
     ! Copy the first NVT entries - this gives the first additive contribution.
     call lalg_copyVectorDble (DuFine(1:size(DuCoarse)),DuCoarse)
@@ -5527,7 +5568,7 @@ contains
       IelFine(4)=IneighboursAtElementFine(2,IelFine(3))
 
       ! Loop over the fine grid elements in the coarse grid element.
-      ! 'Distribute' the information from the edge midpoints and the element
+      ! "Distribute" the information from the edge midpoints and the element
       ! midpoint to the edge midpoints/element midpoints of the
       ! fine grid element.
       do i=1,4
@@ -5623,8 +5664,8 @@ contains
   integer :: i
   integer, dimension(4) :: IelFine
 
-    ! The information that was 'distributed' in the prolongation has to
-    ! be 'collected'.
+    ! The information that was "distributed" in the prolongation has to
+    ! be "collected".
     !
     ! Copy the first NVT+NMT+NEL (coarse) entries - this gives the first
     ! additive contribution: The values in the corners/edge midpoints/
@@ -5918,8 +5959,8 @@ contains
   integer :: iel
   integer :: ielh1,ielh2,ielh3,ielh4
 
-    ! The information that was 'distributed' in the prolongation has to
-    ! be 'collected'. This means, we apply the transposed prolongation
+    ! The information that was "distributed" in the prolongation has to
+    ! be "collected". This means, we apply the transposed prolongation
     ! matrix to the RHS vector.
 
     ! Loop over the elements to collect the additive contributions:
@@ -6605,7 +6646,7 @@ contains
       DUH12=DuFine(I12)
 
       ! Now collect the information in the same way as it was
-      ! 'distributed' by the prolongation routine.
+      ! "distributed" by the prolongation routine.
       ! This realises the adjoint operator of the prolongation.
       !
       ! Calculate the value of the edge IM1
@@ -6962,7 +7003,7 @@ contains
 
 
       ! Collect the information in the same way as it was
-      ! 'distributed' by the prolongation routine.
+      ! "distributed" by the prolongation routine.
       ! This realises the adjoint operator of the prolongation.
       !
       ! Calculate the value of the edge IM1
@@ -7759,7 +7800,7 @@ contains
       DUH12=DuFine(I12)
 
       ! Now collect the information in the same way as it was
-      ! 'distributed' by the prolongation routine.
+      ! "distributed" by the prolongation routine.
       ! This realises the adjoint operator of the prolongation.
       !
       ! Calculate the value of the edge IM1
@@ -8116,7 +8157,7 @@ contains
 
 
       ! Collect the information in the same way as it was
-      ! 'distributed' by the prolongation routine.
+      ! "distributed" by the prolongation routine.
       ! This realises the adjoint operator of the prolongation.
       !
       ! Calculate the value of the edge IM1
@@ -8252,8 +8293,8 @@ contains
   integer :: iel
   integer, dimension(8) :: ielf
 
-    ! The information that was 'distributed' in the prolongation has to
-    ! be 'collected'.
+    ! The information that was "distributed" in the prolongation has to
+    ! be "collected".
 
     ! Loop over the elements to collect the missing additive contributions:
     do iel=1,NELcoarse
@@ -8309,8 +8350,8 @@ contains
   integer :: iel
   integer, dimension(8) :: ielf
 
-    ! The information that was 'distributed' in the prolongation has to
-    ! be 'collected'.
+    ! The information that was "distributed" in the prolongation has to
+    ! be "collected".
 
     ! Loop over the elements to collect the missing additive contributions:
     do iel=1,NELcoarse
@@ -8479,8 +8520,8 @@ contains
   integer :: ivt
   real(DP) :: dx
 
-    ! The information that was 'distributed' in the prolongation has to
-    ! be 'collected'.
+    ! The information that was "distributed" in the prolongation has to
+    ! be "collected".
     !
     ! Copy the first NVT entries - this gives the first additive contribution.
     call lalg_copyVectorDble (DuFine(1:NVTcoarse),DuCoarse)
@@ -9320,7 +9361,7 @@ contains
   real(DP), dimension(4) :: Dtn
   integer, dimension(7,4) :: Idf
 
-  ! 'Projection' coefficients
+  ! "Projection" coefficients
   real(DP), parameter :: R11 =   27.0_DP / 808.0_DP
   real(DP), parameter :: R12 = 1239.0_DP / 808.0_DP
 
@@ -9523,7 +9564,7 @@ contains
   real(DP), dimension(4) :: Dtn,Dtf
   integer, dimension(9) :: Idf
 
-  ! 'Projection' coefficients
+  ! "Projection" coefficients
   real(DP), parameter :: R11 =   27.0_DP / 808.0_DP
   real(DP), parameter :: R12 = 1239.0_DP / 808.0_DP
 
@@ -9718,7 +9759,7 @@ contains
   real(DP), dimension(4) :: Dtn,Dtf
   integer, dimension(9) :: Idf
 
-  ! 'Projection' coefficients
+  ! "Projection" coefficients
   real(DP), parameter :: Q11 =  1.0_DP /  8.0_DP    ! 0.125
   real(DP), parameter :: Q12 =  1.0_DP /  4.0_DP    ! 0.25
   real(DP), parameter :: Q13 =  3.0_DP / 16.0_DP    ! 0.1875
@@ -9919,7 +9960,7 @@ contains
   real(DP), dimension(4) :: Dtn
   integer, dimension(8,4) :: Idf
 
-  ! 'Projection' coefficients
+  ! "Projection" coefficients
   real(DP), parameter :: R11 =   27.0_DP / 808.0_DP
   real(DP), parameter :: R12 = 1239.0_DP / 808.0_DP
 
@@ -9933,7 +9974,7 @@ contains
   real(DP), parameter :: R33 = 0.0_DP
   real(DP), parameter :: R34 = 1 / 16.0_DP
 
-!  ! 'Interpolation' coefficients
+!  ! "Interpolation" coefficients
 !  real(DP), parameter :: R11 =  3.0_DP / 32.0_DP  ! 0.09375_DP
 !  real(DP), parameter :: R12 = 51.0_DP / 32.0_DP  ! 1.59375_DP
 !
@@ -10156,7 +10197,7 @@ contains
   real(DP), dimension(4) :: Dtn,Dtf
   integer, dimension(10) :: Idf
 
-  ! 'Projection' coefficients
+  ! "Projection" coefficients
   real(DP), parameter :: R11 =   27.0_DP / 808.0_DP
   real(DP), parameter :: R12 = 1239.0_DP / 808.0_DP
 
@@ -10170,7 +10211,7 @@ contains
   real(DP), parameter :: R33 = 0.0_DP
   real(DP), parameter :: R34 = 1 / 16.0_DP
 
-!  ! 'Interpolation' coefficients
+!  ! "Interpolation" coefficients
 !  real(DP), parameter :: R11 =  3.0_DP / 32.0_DP  ! 0.09375_DP
 !  real(DP), parameter :: R12 = 51.0_DP / 32.0_DP  ! 1.59375_DP
 !
@@ -10387,7 +10428,7 @@ contains
   real(DP), dimension(4) :: Dtn,Dtf
   integer, dimension(10) :: Idf
 
-  ! 'Projection' coefficients
+  ! "Projection" coefficients
   real(DP), parameter :: Q11 =  1.0_DP /  8.0_DP    ! 0.125
   real(DP), parameter :: Q12 =  1.0_DP /  4.0_DP    ! 0.25
   real(DP), parameter :: Q13 =  3.0_DP / 16.0_DP    ! 0.1875
@@ -10646,8 +10687,8 @@ contains
   integer :: iel
   integer :: IELH1,IELH2,IELH3,IELH4
 
-    ! The information that was 'distributed' in the prolongation has to
-    ! be 'collected'.
+    ! The information that was "distributed" in the prolongation has to
+    ! be "collected".
 
     ! Loop over the elements to collect the missing additive contributions:
     do iel=1,NELcoarse
@@ -10707,8 +10748,8 @@ contains
   integer :: iel
   integer :: IELH1,IELH2,IELH3,IELH4
 
-    ! The information that was 'distributed' in the prolongation has to
-    ! be 'collected'.
+    ! The information that was "distributed" in the prolongation has to
+    ! be "collected".
 
     ! Loop over the elements to collect the missing additive contributions:
     do iel=1,NELcoarse
@@ -10852,8 +10893,8 @@ contains
   integer :: IELH1,IELH2,IELH3,IELH4
   real(dp) :: dh1, dh2, dh3, dh4
 
-    ! The information that was 'distributed' in the prolongation has to
-    ! be 'collected'.
+    ! The information that was "distributed" in the prolongation has to
+    ! be "collected".
 
     ! Loop over the elements to collect the missing additive contributions:
     do iel=1,NELcoarse
@@ -10941,8 +10982,8 @@ contains
   integer :: IELH1,IELH2,IELH3,IELH4
   real(dp) :: dh1, dh2, dh3, dh4
 
-    ! The information that was 'distributed' in the prolongation has to
-    ! be 'collected'.
+    ! The information that was "distributed" in the prolongation has to
+    ! be "collected".
 
     ! Loop over the elements to collect the missing additive contributions:
     do iel=1,NELcoarse
@@ -11091,8 +11132,8 @@ contains
   integer :: IELH1,IELH2,IELH3,IELH4
   real(dp) :: dh1, dh2, dh3, dh4
 
-    ! The information that was 'distributed' in the prolongation has to
-    ! be 'collected'.
+    ! The information that was "distributed" in the prolongation has to
+    ! be "collected".
 
     ! Loop over the elements to collect the missing additive contributions:
     do iel=1,NELcoarse
@@ -11170,8 +11211,8 @@ contains
   integer :: iel
   integer :: IELH1,IELH2,IELH3,IELH4
 
-    ! The information that was 'distributed' in the prolongation has to
-    ! be 'collected'.
+    ! The information that was "distributed" in the prolongation has to
+    ! be "collected".
 
     ! Loop over the elements to collect the missing additive contributions:
     do iel=1,NELcoarse
@@ -11348,8 +11389,8 @@ contains
   integer :: IELH1,IELH2,IELH3,IELH4
   real(dp) :: dh1, dh2, dh3, dh4
 
-    ! The information that was 'distributed' in the prolongation has to
-    ! be 'collected'.
+    ! The information that was "distributed" in the prolongation has to
+    ! be "collected".
 
     ! Loop over the elements to collect the missing additive contributions:
     do iel=1,NELcoarse
@@ -11473,8 +11514,8 @@ contains
   integer :: iel
   integer :: IELH1,IELH2,IELH3,IELH4
 
-    ! The information that was 'distributed' in the prolongation has to
-    ! be 'collected'.
+    ! The information that was "distributed" in the prolongation has to
+    ! be "collected".
 
     ! Loop over the elements to collect the missing additive contributions:
     do iel=1,NELcoarse
@@ -11542,8 +11583,8 @@ contains
 !          (rmass%cmatrixFormat .ne. LSYSSC_MATRIX9) then
 !
 !          ! We cannot handle this...
-!          call output_line('Mass matrix must be a type 7/9 matrix!', &
-!              OU_CLASS_ERROR,OU_MODE_STD,'mlprj_initL2Projection')
+!          call output_line("Mass matrix must be a type 7/9 matrix!", &
+!              OU_CLASS_ERROR,OU_MODE_STD,"mlprj_initL2Projection")
 !
 !          call sys_halt()
 !
@@ -11555,8 +11596,8 @@ contains
        if(rmass%cmatrixFormat .ne. LSYSSC_MATRIX9) then
 
           ! We cannot handle this...
-          call output_line('Mass matrix must be a type 9 matrix!', &
-              OU_CLASS_ERROR,OU_MODE_STD,'mlprj_initL2Projection')
+          call output_line("Mass matrix must be a type 9 matrix!", &
+              OU_CLASS_ERROR,OU_MODE_STD,"mlprj_initL2Projection")
 
           call sys_halt()
 
@@ -11614,8 +11655,8 @@ contains
     if(rtempVector%NEQ .lt. rfineVector%NEQ) then
 
       ! The temporary vector is too small...
-      call output_line('Temporary vector is too small!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_prolScalarL2')
+      call output_line("Temporary vector is too small!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"mlprj_prolScalarL2")
 
       call sys_halt()
 
@@ -11684,8 +11725,8 @@ contains
     if(rtempVector%NEQ .lt. 2*rfineVector%NEQ) then
 
       ! The temporary vector is too small...
-      call output_line('Temporary vector is too small!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'mlprj_restScalarL2')
+      call output_line("Temporary vector is too small!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"mlprj_restScalarL2")
 
       call sys_halt()
 
@@ -12049,7 +12090,7 @@ contains
   type(t_interlevelProjectionHier), intent(inout) :: rprjHierarchy
 
   ! Fine grid vector
-  type(t_vectorBlock), intent(in) :: rfineVector
+  type(t_vectorBlock), intent(inout) :: rfineVector
 
   ! Level of the fine grid vector.
   integer, intent(in) :: ifineLevel

@@ -5174,7 +5174,7 @@ contains
 
 !<subroutine>
 
-  subroutine lsysbl_synchroniseSortVecVec (rvectorSrc,rvectorDst,rtemp,bautoUnsort)
+  subroutine lsysbl_synchroniseSortVecVec (rvectorSrc,rvectorDst,rtemp,bsyncEntries)
 
 !<description>
   ! Synchronises the sorting strategy of rvectorDest according to rvectorSrc:
@@ -5190,14 +5190,14 @@ contains
   ! Source vector defining the sorting strategy.
   type(t_vectorBlock), intent(in) :: rvectorSrc
 
-  ! OPTIONAL: Whether or not to check the target vector if it is already
-  ! sorted. Default is TRUE.
+  ! OPTIONAL: Whether or not to sort the target vector. Default is TRUE.
   ! If set to TRUE and the target vector has already a sorting structure
   ! attached, the target is sorted back.
-  ! If set to FALSE, the sorting of the target vector is deactivated and
-  ! rsortStrategy is installed as sorting strategy. The data of the vector
-  ! gets invalid. (Usually used for temp vectors.)
-  logical, intent(in), optional :: bautoUnsort
+  ! If set to FALSE, teh routine assumes that rvectorDst is a temp
+  ! vector and sets the sorting strategies according to rvectorSrc.
+  ! However, no entries are sorted in memory, the data of rvectorDst
+  ! gets invalid.
+  logical, intent(in), optional :: bsyncEntries
 !</input>
 
 !<inputoutput>
@@ -5219,7 +5219,7 @@ contains
     do iblock = 1,rvectorDst%nblocks
       ! Synchronise every subvector
       call lsyssc_synchroniseSortVecVec (rvectorSrc%RvectorBlock(iblock),&
-          rvectorDst%RvectorBlock(iblock),rtemp,bautoUnsort)
+          rvectorDst%RvectorBlock(iblock),rtemp,bsyncEntries)
     end do
 
   end subroutine
@@ -5228,7 +5228,7 @@ contains
 
 !<subroutine>
 
-  subroutine lsysbl_synchroniseSortMatVec (rmatrixSrc,rvectorDst,rtemp,bautoUnsort)
+  subroutine lsysbl_synchroniseSortMatVec (rmatrixSrc,rvectorDst,rtemp,bsyncEntries)
 
 !<description>
   ! Synchronises the sorting strategy of rvectorDest according to rmatrixSrc:
@@ -5244,14 +5244,14 @@ contains
   ! Source matrix defining the sorting strategy.
   type(t_matrixBlock), intent(in) :: rmatrixSrc
 
-  ! OPTIONAL: Whether or not to check the target vector if it is already
-  ! sorted. Default is TRUE.
+  ! OPTIONAL: Whether or not to sort the target vector. Default is TRUE.
   ! If set to TRUE and the target vector has already a sorting structure
   ! attached, the target is sorted back.
-  ! If set to FALSE, the sorting of the target vector is deactivated and
-  ! rsortStrategy is installed as sorting strategy. The data of the vector
-  ! gets invalid. (Usually used for temp vectors.)
-  logical, intent(in), optional :: bautoUnsort
+  ! If set to FALSE, teh routine assumes that rvectorDst is a temp
+  ! vector and sets the sorting strategies according to rvectorSrc.
+  ! However, no entries are sorted in memory, the data of rvectorDst
+  ! gets invalid.
+  logical, intent(in), optional :: bsyncEntries
 !</input>
 
 !<inputoutput>
@@ -5279,7 +5279,7 @@ contains
       do i = 1,rmatrixSrc%nblocksPerCol
         if (rmatrixSrc%RmatrixBlock(i,j)%NEQ .ne. 0) then
           call lsyssc_synchroniseSortMatVec (rmatrixSrc%RmatrixBlock(i,j),&
-              rvectorDst%RvectorBlock(i),rtemp,bautoUnsort)
+              rvectorDst%RvectorBlock(i),rtemp,bsyncEntries)
           ! Next column / subvector
           exit
         end if

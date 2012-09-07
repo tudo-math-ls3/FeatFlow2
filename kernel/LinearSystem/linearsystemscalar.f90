@@ -12223,7 +12223,7 @@ contains
 
 !<subroutine>
 
-  subroutine lsyssc_synchroniseSortVecVec (rvectorSrc,rvectorDst,rtemp,bautoUnsort)
+  subroutine lsyssc_synchroniseSortVecVec (rvectorSrc,rvectorDst,rtemp,bsyncEntries)
 
 !<description>
   ! Synchronises the sorting strategy of rvectorDest according to rvectorSrc:
@@ -12239,14 +12239,14 @@ contains
   ! Source vector defining the sorting strategy.
   type(t_vectorScalar), intent(in) :: rvectorSrc
 
-  ! OPTIONAL: Whether or not to check the target vector if it is already
-  ! sorted. Default is TRUE.
+  ! OPTIONAL: Whether or not to sort the target vector. Default is TRUE.
   ! If set to TRUE and the target vector has already a sorting structure
   ! attached, the target is sorted back.
-  ! If set to FALSE, the sorting of the target vector is deactivated and
-  ! rsortStrategy is installed as sorting strategy. The data of the vector
-  ! gets invalid. (Usually used for temp vectors.)
-  logical, intent(in), optional :: bautoUnsort
+  ! If set to FALSE, teh routine assumes that rvectorDst is a temp
+  ! vector and sets the sorting strategies according to rvectorSrc.
+  ! However, no entries are sorted in memory, the data of rvectorDst
+  ! gets invalid.
+  logical, intent(in), optional :: bsyncEntries
 !</input>
 
 !<inputoutput>
@@ -12262,6 +12262,8 @@ contains
 
 !</subroutine>
 
+    logical :: bsort
+
     if (rvectorSrc%NEQ .ne. rvectorDst%NEQ) then
       call output_line("Vectors have different size!",&
           OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_synchroniseSortVecVec")
@@ -12276,18 +12278,24 @@ contains
       if (rvectorSrc%p_rsortStrategy%ctype .eq. rvectorDst%p_rsortStrategy%ctype) return
     end if
 
+    bsort = .true.
+    if (present(bsyncEntries)) bsort = bsyncEntries
+
     ! Sort the target vector back if sorted.
-    if (.not. present(bautoUnsort)) then
-      call lsyssc_sortVector (rvectorDst,.false.,rtemp)
-    else if (bautoUnsort) then
+    if (bsort) then
       call lsyssc_sortVector (rvectorDst,.false.,rtemp)
     end if
     
     ! Synchronise the strategy
-    call lsyssc_setSortStrategy (rvectorDst,rvectorSrc%p_rsortStrategy,bautoUnsort)
+    call lsyssc_setSortStrategy (rvectorDst,rvectorSrc%p_rsortStrategy,bsyncEntries)
     
-    ! Probably activate the sorting
-    call lsyssc_sortVector (rvectorDst,rvectorSrc%bisSorted,rtemp)
+    ! Probably activate the sorting.
+    if (bsort) then
+      call lsyssc_sortVector (rvectorDst,rvectorSrc%bisSorted,rtemp)
+    else
+      ! Old vector gets invalid now. Just activate the sorting.
+      rvectorDst%bisSorted = rvectorSrc%bisSorted
+    end if
 
   end subroutine
 
@@ -12295,7 +12303,7 @@ contains
 
 !<subroutine>
 
-  subroutine lsyssc_synchroniseSortMatVec (rmatrixSrc,rvectorDst,rtemp,bautoUnsort)
+  subroutine lsyssc_synchroniseSortMatVec (rmatrixSrc,rvectorDst,rtemp,bsyncEntries)
 
 !<description>
   ! Synchronises the sorting strategy of rvectorDest according to rmatrixSrc:
@@ -12311,14 +12319,14 @@ contains
   ! Source matrix defining the sorting strategy.
   type(t_matrixScalar), intent(in) :: rmatrixSrc
 
-  ! OPTIONAL: Whether or not to check the target vector if it is already
-  ! sorted. Default is TRUE.
+  ! OPTIONAL: Whether or not to sort the target vector. Default is TRUE.
   ! If set to TRUE and the target vector has already a sorting structure
   ! attached, the target is sorted back.
-  ! If set to FALSE, the sorting of the target vector is deactivated and
-  ! rsortStrategy is installed as sorting strategy. The data of the vector
-  ! gets invalid. (Usually used for temp vectors.)
-  logical, intent(in), optional :: bautoUnsort
+  ! If set to FALSE, teh routine assumes that rvectorDst is a temp
+  ! vector and sets the sorting strategies according to rvectorSrc.
+  ! However, no entries are sorted in memory, the data of rvectorDst
+  ! gets invalid.
+  logical, intent(in), optional :: bsyncEntries
 !</input>
 
 !<inputoutput>
@@ -12334,6 +12342,8 @@ contains
 
 !</subroutine>
 
+    logical :: bsort
+
     if (rmatrixSrc%NEQ .ne. rvectorDst%NEQ) then
       call output_line("Matrix and vector have different size!",&
           OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_synchroniseSortMatVec")
@@ -12346,7 +12356,6 @@ contains
       call sys_halt()
     end if
 
-
     ! If both are unsorted or both sorted in the same way, there is nothing to do.
     if ((.not. rmatrixSrc%bcolumnsSorted) .and. (.not. rvectorDst%bisSorted)) return
     
@@ -12355,18 +12364,24 @@ contains
       if (rmatrixSrc%p_rsortStrategyColumns%ctype .eq. rvectorDst%p_rsortStrategy%ctype) return
     end if
     
+    bsort = .true.
+    if (present(bsyncEntries)) bsort = bsyncEntries
+
     ! Sort the target vector back if sorted.
-    if (.not. present(bautoUnsort)) then
-      call lsyssc_sortVector (rvectorDst,.false.,rtemp)
-    else if (bautoUnsort) then
+    if (bsort) then
       call lsyssc_sortVector (rvectorDst,.false.,rtemp)
     end if
     
     ! Synchronise the strategy
-    call lsyssc_setSortStrategy (rvectorDst,rmatrixSrc%p_rsortStrategyColumns,bautoUnsort)
+    call lsyssc_setSortStrategy (rvectorDst,rmatrixSrc%p_rsortStrategyColumns,bsyncEntries)
     
-    ! Probably activate the sorting
-    call lsyssc_sortVector (rvectorDst,rmatrixSrc%bcolumnsSorted,rtemp)
+    ! Probably activate the sorting.
+    if (bsort) then
+      call lsyssc_sortVector (rvectorDst,rmatrixSrc%bcolumnsSorted,rtemp)
+    else
+      ! Old vector gets invalid now. Just activate the sorting.
+      rvectorDst%bisSorted = rmatrixSrc%bcolumnsSorted
+    end if
 
   end subroutine
 

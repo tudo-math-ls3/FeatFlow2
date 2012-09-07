@@ -683,8 +683,6 @@ contains
 
     ! Get pointers to the triangulation`s arrays
     call storage_getbase_double2D(rtria%h_DvertexCoords, p_DvertexCoords)
-    call storage_getbase_int2D(rtria%h_IverticesAtEdge, p_IvertsAtEdge)
-    call storage_getbase_int2D(rtria%h_IedgesAtElement, p_IedgesAtElement)
     call storage_getbase_int2D(rtria%h_IverticesAtElement, p_IvertsAtElement)
 
     ! Allocate the vertices
@@ -699,7 +697,8 @@ contains
 
     ! Calculate the vertices
     off = 0
-    if (bedgeMids) then
+    if (bedgeMids .and. (rtria%h_IverticesAtEdge .ne. ST_NOHANDLE)) then
+      call storage_getbase_int2D(rtria%h_IverticesAtEdge, p_IvertsAtEdge)
       do i = 1, rtria%NMT
         do j = 1, ubound(p_DvertexCoords, 1)
           p_DnewVerts(j, i) = 0.5_DP * &
@@ -761,13 +760,17 @@ contains
     end select
 
     ! Allocate elements
-    I_dim(1) = 4
+    I_dim(1) = ubound(p_IvertsAtElement,1)
     I_dim(2) = rrefine%ncells
     call storage_new("ucd_refine", "p_DnewVertsAtElement", I_dim, &
         ST_INT, rrefine%h_IverticesAtElement, ST_NEWBLOCK_ZERO)
 
     ! And get a pointer to them
     call storage_getbase_int2D(rrefine%h_IverticesAtElement, p_InewVertsAtElement)
+
+    if (rtria%h_IedgesAtElement .ne. ST_NOHANDLE) then
+      call storage_getbase_int2D(rtria%h_IedgesAtElement, p_IedgesAtElement)
+    end if
 
     ! Now go through all elements
     do i = 1, rtria%NEL
@@ -789,14 +792,14 @@ contains
         ! The line indices are
         !
         !  I => IEL
-        !  J => NEL + 2*(IEL - 1) + 1
+        !  J => NEL + IEL
         !
         ! Segment I
         p_InewVertsAtElement(1, i) = p_IvertsAtElement(1, i)
         p_InewVertsAtElement(2, i) = rtria%NVT + i
         
         ! Segment J
-        j = rtria%NEL + 2*i - 1
+        j = rtria%NEL + i
         p_InewVertsAtElement(1, j) = rtria%NVT + i
         p_InewVertsAtElement(2, j) = p_IvertsAtElement(2, i)
       
