@@ -6,29 +6,32 @@
 # SFB708: Lavalnozzle #1                                                       #
 #                                                                              #
 # Initial conditions:                                                          #
-#   rho = 1.168410716538306     [kg/m^3]                                       #
+#   rho = 1.16841071653831      [kg/m^3]                                       #
 #   v_x = 0.0                   [m/s]                                          #
 #   v_y = 0.0                   [m/s]                                          #
-#   p   = 1.0                   [bar]                                          #
-#   E   = 2.141414726477100e+05 [J/kg]                                         #
+#   p   = 100000.0              [Pa]                                           #
+#   E   = 250000.000000000      [J/kg]                                         #
 #                                                                              #
 # Boundary conditions:                                                         #
 #  -inlet-                                                                     #
-#   rho = 5.958894654345359     [kg/m^3]                                       #
-#   v_x = 68.868979494100302    [m/s]                                          #
+#   rho = 5.95889465434536      [kg/m^3]                                       #
+#   v_x = 68.8689794941003      [m/s]                                          #
 #   v_y = 0.0                   [m/s]                                          #
-#   p   = 5.1                   [bar]                                          #
-#   E   = 2.140002912397471e+05 [J/kg]                                         #
+#   p   = 510000.0              [Pa]                                           #
+#   E   = 1289131.32899091      [J/kg]                                         #
 #                                                                              #
 #  -outlet-                                                                    #
-#   p   = 1.0                   [bar]                                          #
+#   p   = 100000.0              [Pa]                                           #
 #                                                                              #
+#------------------------------------------------------------------------------#
+# Nondimensional quantities                                                    #
+#   rho_r = rho, vel_r = v_x, len_r = 1.0 (from inlet boundary conditions)     #
 ################################################################################
 
 # Specify the initial solution
-deffunc: @initsol_rho  = 1.168410716538306 ; x,y,t
-deffunc: @initsol_vel  = 0.0 ; x,y,t
-deffunc: @initsol_Etot = 1.275205191496879e+06 ; x,y,t
+deffunc: @initsol_rho  = if (x < -100.0, 1.0, 0.196078431372549) ; x,y,t
+deffunc: @initsol_vel  = if (x < -100.0, 1.0, 0.0) ; x,y,t
+deffunc: @initsol_Etot = if (x < -100.0, 45.6125297847116, 8.84559407543365) ; x,y,t
 
 # Specify the boundary conditions
 [bdrcond_primal]
@@ -39,6 +42,9 @@ NEXPR
 IBCT
 1
 NCOMP
-1
+4
 PARAMETERS
-4.0 T  'SUPEROUTLET_WEAK'
+4.0  T  'FREESLIP_WEAK'
+9.0  F  'SUPEROUTLET_WEAK'  # '3.53823763017346'
+13.0 F  'FREESLIP_WEAK'
+14.0 F  'SUPERINLET_WEAK'  '1.0'  '1.0'  '0.0'  '18.0450119138846'
