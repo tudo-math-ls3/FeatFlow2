@@ -422,6 +422,15 @@ contains
 
     end if
 
+    ! Check against maximum iterations
+    if(riter%niterations .ge. riter%nmaxIterations) then
+
+      ! maximum number of iterations fulfilled
+      riter%cstatus = ITC_STATUS_MAX_ITER
+      return
+
+    end if
+
   end subroutine
 
 ! *************************************************************************************************
