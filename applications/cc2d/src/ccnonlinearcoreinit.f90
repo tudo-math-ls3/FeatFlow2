@@ -275,8 +275,8 @@ contains
     logical :: bneumann
     type(t_parlstSection), pointer :: p_rsection
 
-    rnonlinearIteration%NLMIN = NLMIN
-    rnonlinearIteration%NLMAX = NLMAX
+    rnonlinearIteration%NLMIN = nlmin
+    rnonlinearIteration%NLMAX = nlmax
 
     ! Initialise the matrix pointers on all levels that we have to maintain.
     allocate(rnonlinearIteration%RcoreEquation(NLMIN:NLMAX))
@@ -561,7 +561,8 @@ contains
       call linsol_getMultigrid2Level (p_rsolverNode,1,p_rlevelInfo)
       
       ! Get the filter chain on that level
-      p_RfilterChain => rnonlinearIteration%RcoreEquation(1)%p_RfilterChain
+      p_RfilterChain => &
+          rnonlinearIteration%RcoreEquation(rnonlinearIteration%NLMIN)%p_RfilterChain
       
       ! Tell the coarse grid about that.
       p_rlevelInfo%p_RfilterChain => p_RfilterChain
@@ -708,7 +709,8 @@ contains
       do ilev = 2,nlevels
       
         ! Get the filter chain on that level
-        p_RfilterChain => rnonlinearIteration%RcoreEquation(ilev)%p_RfilterChain
+        p_RfilterChain => &
+            rnonlinearIteration%RcoreEquation(rnonlinearIteration%NLMIN-1+ilev)%p_RfilterChain
         
         ! Initialise the smoothers.
         select case (ismootherType)
@@ -855,7 +857,8 @@ contains
       do ilev = 1,nlevels
 
         ! Get the filter chain on that level
-        p_RfilterChain => rnonlinearIteration%RcoreEquation(ilev)%p_RfilterChain
+        p_RfilterChain => &
+            rnonlinearIteration%RcoreEquation(rnonlinearIteration%NLMIN-1+ilev)%p_RfilterChain
 
         ! Get the level.
         call linsol_getDeflGMRESLevel (p_rsolverNode,ilev,p_rlevelInfoMK)
