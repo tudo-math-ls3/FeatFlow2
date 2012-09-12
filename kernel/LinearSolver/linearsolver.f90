@@ -1675,8 +1675,8 @@ module linearsolver
     integer :: hDc, hDs, hDq, hDh
     
     ! Some temporary vectors
-    type(t_vectorBlock), dimension(:), pointer :: p_rv                => null()
-    type(t_vectorBlock), dimension(:), pointer :: p_rz                => null()
+    type(t_vectorBlock), dimension(:), pointer :: p_Rv                => null()
+    type(t_vectorBlock), dimension(:), pointer :: p_Rz                => null()
     type(t_vectorBlock) :: rx
   
     ! A pointer to the solver node for the preconditioner or NULL(),
@@ -2367,8 +2367,8 @@ module linearsolver
     integer :: hDc, hDs, hDq, hDh
     
     ! Some temporary vectors
-    type(t_vectorBlock), dimension(:), pointer :: p_rv => null()
-    type(t_vectorBlock), dimension(:), pointer :: p_rz => null()
+    type(t_vectorBlock), dimension(:), pointer :: p_Rv => null()
+    type(t_vectorBlock), dimension(:), pointer :: p_Rz => null()
     type(t_vectorBlock) :: rx
 
     type(t_vectorBlock) :: rtempVector
@@ -10600,17 +10600,17 @@ contains
     call storage_getbase_double(p_rsubnode%hDq, p_rsubnode%Dq)
     
     ! Allocate space for our auxiliary vectors
-    allocate(p_rsubnode%p_rv(idim+1))
-    allocate(p_rsubnode%p_rz(idim))
+    allocate(p_rsubnode%p_Rv(idim+1))
+    allocate(p_rsubnode%p_Rz(idim))
     
     ! Create them
     do i=1, idim+1
       call lsysbl_createVectorBlock (rsolverNode%rsystemMatrix, &
-          p_rsubnode%p_rv(i),.false.,.false.,rsolverNode%cdefaultDataType)
+          p_rsubnode%p_Rv(i),.false.,.false.,rsolverNode%cdefaultDataType)
     end do
     do i=1, idim
       call lsysbl_createVectorBlock (rsolverNode%rsystemMatrix, &
-          p_rsubnode%p_rz(i),.false.,.false.,rsolverNode%cdefaultDataType)
+          p_rsubnode%p_Rz(i),.false.,.false.,rsolverNode%cdefaultDataType)
     end do
     
     ! Create an iteration vector x
@@ -10791,17 +10791,17 @@ contains
     idim = p_rsubnode%ikrylovDim
     
     ! Release auxiliary vectors
-    if (associated(p_rsubnode%p_rz)) then
+    if (associated(p_rsubnode%p_Rz)) then
       do i=1, idim
-        call lsysbl_releaseVector(p_rsubnode%p_rz(i))
+        call lsysbl_releaseVector(p_rsubnode%p_Rz(i))
       end do
       do i=1, idim+1
-        call lsysbl_releaseVector(p_rsubnode%p_rv(i))
+        call lsysbl_releaseVector(p_rsubnode%p_Rv(i))
       end do
     
       ! Destroy them
-      deallocate(p_rsubnode%p_rz)
-      deallocate(p_rsubnode%p_rv)
+      deallocate(p_rsubnode%p_Rz)
+      deallocate(p_rsubnode%p_Rv)
     endif
 
     ! Release iteration vector
@@ -10912,7 +10912,7 @@ contains
   
   ! Pointers to temporary vectors - named for easier access
   type(t_vectorBlock), pointer :: p_rx
-  type(t_vectorBlock), dimension(:), pointer :: p_rv, p_rz
+  type(t_vectorBlock), dimension(:), pointer :: p_Rv, p_Rz
   type(t_linsolNode), pointer :: p_rprecSubnode
   type(t_filterChain), dimension(:), pointer :: p_RfilterChain
   
@@ -10965,9 +10965,9 @@ contains
 
     ! Set pointers to the temporary vectors
     ! defect vectors
-    p_rz => p_rsubnode%p_rz
+    p_Rz => p_rsubnode%p_Rz
     ! basis vectors
-    p_rv => p_rsubnode%p_rv
+    p_Rv => p_rsubnode%p_Rv
     ! solution vector
     p_rx => p_rsubnode%rx
 
@@ -10975,18 +10975,18 @@ contains
     ! So assign now all discretisation-related information (boundary
     ! conditions,...) to the temporary vectors.
     do i=1, idim+1
-      call lsysbl_assignDiscrIndirect (rd,p_rv(i))
+      call lsysbl_assignDiscrIndirect (rd,p_Rv(i))
 
       ! Synchronise the sorting without touching the entries.
       ! The target vectors are temporary anyway.
-      call lsysbl_synchroniseSort (rd,p_rv(i),bsyncEntries=.false.)
+      call lsysbl_synchroniseSort (rd,p_Rv(i),bsyncEntries=.false.)
     end do
     do i=1, idim
-      call lsysbl_assignDiscrIndirect (rd,p_rz(i))
+      call lsysbl_assignDiscrIndirect (rd,p_Rz(i))
 
       ! Synchronise the sorting without touching the entries.
       ! The target vectors are temporary anyway.
-      call lsysbl_synchroniseSort (rd,p_rz(i),bsyncEntries=.false.)
+      call lsysbl_synchroniseSort (rd,p_Rz(i),bsyncEntries=.false.)
     end do
     call lsysbl_assignDiscrIndirect (rd,p_rx)
     
@@ -11017,19 +11017,19 @@ contains
     ! Clear our iteration vector p_rx.
     call lsysbl_clearVector (p_rx)
       
-    ! Copy our RHS rd to p_rv(1). As the iteration vector is 0, this
+    ! Copy our RHS rd to p_Rv(1). As the iteration vector is 0, this
     ! is also our initial defect.
-    call lsysbl_copyVector(rd,p_rv(1))
+    call lsysbl_copyVector(rd,p_Rv(1))
     if (bfilter) then
-      call filter_applyFilterChainVec (p_rv(1), p_RfilterChain)
+      call filter_applyFilterChainVec (p_Rv(1), p_RfilterChain)
     end if
     
     ! Get the norm of the residuum
     ! We need to calculate the norm twice, since we need one for
     ! the stopping criterion (selected by the user) and the
     ! euclidian norm for the internal GMRES algorithm
-    dfr = lsysbl_vectorNorm (p_rv(1),rsolverNode%iresNorm)
-    dres = lsysbl_vectorNorm (p_rv(1),LINALG_NORMEUCLID)
+    dfr = lsysbl_vectorNorm (p_Rv(1),rsolverNode%iresNorm)
+    dres = lsysbl_vectorNorm (p_Rv(1),LINALG_NORMEUCLID)
     if (.not.((dfr .ge. 1E-99_DP) .and. &
               (dfr .le. 1E99_DP))) dfr = 0.0_DP
 
@@ -11072,7 +11072,7 @@ contains
         
         ! Step O.2:
         ! Now scale the defect by the inverse of its norm
-        call lsysbl_scaleVector (p_rv(1), 1.0_DP / dres)
+        call lsysbl_scaleVector (p_Rv(1), 1.0_DP / dres)
         
         ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
         ! -= Inner Loop (GMRES iterations)
@@ -11083,49 +11083,49 @@ contains
         
           ! Step I.1:
           ! Solve P * z(i) = v(i), where P is the preconditioner matrix
-          call lsysbl_copyVector (p_rv(i), p_rz(i))
+          call lsysbl_copyVector (p_Rv(i), p_Rz(i))
           
           ! Apply preconditioner to z(i)
           if (bprec) then
-            call linsol_precondDefect (p_rprecSubnode, p_rz(i))
+            call linsol_precondDefect (p_rprecSubnode, p_Rz(i))
           end if
           
           ! Apply filter chain to z(i)
           if (bfilter) then
-            call filter_applyFilterChainVec (p_rz(i), p_RfilterChain)
+            call filter_applyFilterChainVec (p_Rz(i), p_RfilterChain)
           end if
           
           
           ! Step I.2:
           ! Calculate v(i+1) = A * z(i)
-          call lsysbl_blockMatVec (p_rmatrix, p_rz(i), p_rv(i+1), 1.0_DP, 0.0_DP)
+          call lsysbl_blockMatVec (p_rmatrix, p_Rz(i), p_Rv(i+1), 1.0_DP, 0.0_DP)
           
           
           ! Step I.3:
           ! Perfom Gram-Schmidt process (1st time)
           do k = 1, i
-            p_Dh(k,i) = lsysbl_scalarProduct(p_rv(i+1), p_rv(k))
-            call lsysbl_vectorLinearComb(p_rv(k), p_rv(i+1), -p_Dh(k,i), 1.0_DP)
+            p_Dh(k,i) = lsysbl_scalarProduct(p_Rv(i+1), p_Rv(k))
+            call lsysbl_vectorLinearComb(p_Rv(k), p_Rv(i+1), -p_Dh(k,i), 1.0_DP)
           end do
           
           ! If the user wishes, perform Gram-Schmidt one more time
           ! to improve numerical stability.
           if (btwiceGS) then
             do k = 1, i
-              dtmp = lsysbl_scalarProduct(p_rv(i+1), p_rv(k))
+              dtmp = lsysbl_scalarProduct(p_Rv(i+1), p_Rv(k))
               p_Dh(k,i) = p_Dh(k,i) + dtmp;
-              call lsysbl_vectorLinearComb(p_rv(k), p_rv(i+1), -dtmp, 1.0_DP)
+              call lsysbl_vectorLinearComb(p_Rv(k), p_Rv(i+1), -dtmp, 1.0_DP)
             end do
           end if
           
           ! Step I.4:
           ! Calculate alpha = ||v(i+1)||_2
-          dalpha = lsysbl_vectorNorm (p_rv(i+1), LINALG_NORMEUCLID)
+          dalpha = lsysbl_vectorNorm (p_Rv(i+1), LINALG_NORMEUCLID)
           
           ! Step I.5:
           ! Scale v(i+1) by the inverse of its euclid norm
           if (dalpha > SYS_EPSREAL_DP) then
-            call lsysbl_scaleVector (p_rv(i+1), 1.0_DP / dalpha)
+            call lsysbl_scaleVector (p_Rv(i+1), 1.0_DP / dalpha)
           else
             ! Well, let us just print a warning here...
             if(rsolverNode%ioutputLevel .ge. 2) then
@@ -11248,28 +11248,28 @@ contains
         ! Update our solution vector
         ! x = x + q(1)*z(1) + q(2)*z(2) + ... + q(i)*z(i)
         do k = 1, i
-          call lsysbl_vectorLinearComb(p_rz(k), p_rx, p_Dq(k), 1.0_DP)
+          call lsysbl_vectorLinearComb(p_Rz(k), p_rx, p_Dq(k), 1.0_DP)
         end do
         
         ! Step O.6:
         ! Calculate "real" residual
         ! v(1) = b - (A * x)
-        call lsysbl_copyVector (rd, p_rv(1))
-        call lsysbl_blockMatVec(p_rmatrix, p_rx, p_rv(1), -1.0_DP, 1.0_DP)
+        call lsysbl_copyVector (rd, p_Rv(1))
+        call lsysbl_blockMatVec(p_rmatrix, p_rx, p_Rv(1), -1.0_DP, 1.0_DP)
 
         ! Step O.7:
         ! Call filter chain if given.
         if (bfilter) then
-          call filter_applyFilterChainVec (p_rv(1), p_RfilterChain)
+          call filter_applyFilterChainVec (p_Rv(1), p_RfilterChain)
         end if
         
         ! Step O.8:
         ! Calculate euclid norm of the residual (needed for next q)
-        dres = lsysbl_vectorNorm (p_rv(1), LINALG_NORMEUCLID)
+        dres = lsysbl_vectorNorm (p_Rv(1), LINALG_NORMEUCLID)
         
         ! Calculate residual norm for stopping criterion
         ! TODO: try to avoid calculating the norm twice
-        dfr = lsysbl_vectorNorm (p_rv(1), rsolverNode%iresNorm)
+        dfr = lsysbl_vectorNorm (p_Rv(1), rsolverNode%iresNorm)
         
         ! Step O.9:
         ! Test for convergence, divergence and write some output now
@@ -18400,17 +18400,17 @@ contains
       call storage_getbase_double(p_rcurrentLevel%hDq, p_rcurrentLevel%Dq)
       
       ! Allocate space for our auxiliary vectors
-      allocate(p_rcurrentLevel%p_rv(idim+1))
-      allocate(p_rcurrentLevel%p_rz(idim))
+      allocate(p_rcurrentLevel%p_Rv(idim+1))
+      allocate(p_rcurrentLevel%p_Rz(idim))
       
       ! Create them
       do i=1, idim+1
         call lsysbl_createVectorBlock (p_rmatrix, &
-            p_rcurrentLevel%p_rv(i),.false.,.false.,rsolverNode%cdefaultDataType)
+            p_rcurrentLevel%p_Rv(i),.false.,.false.,rsolverNode%cdefaultDataType)
       end do
       do i=1, idim
         call lsysbl_createVectorBlock (p_rmatrix, &
-            p_rcurrentLevel%p_rz(i),.false.,.false.,rsolverNode%cdefaultDataType)
+            p_rcurrentLevel%p_Rz(i),.false.,.false.,rsolverNode%cdefaultDataType)
       end do
       
       ! Create an iteration vector x
@@ -18693,17 +18693,17 @@ contains
       idim = p_rcurrentLevel%ikrylowDim
       
       ! Release auxiliary vectors
-      if (associated(p_rcurrentLevel%p_rz)) then
+      if (associated(p_rcurrentLevel%p_Rz)) then
         do i=1, idim
-          call lsysbl_releaseVector(p_rcurrentLevel%p_rz(i))
+          call lsysbl_releaseVector(p_rcurrentLevel%p_Rz(i))
         end do
         do i=1, idim+1
-          call lsysbl_releaseVector(p_rcurrentLevel%p_rv(i))
+          call lsysbl_releaseVector(p_rcurrentLevel%p_Rv(i))
         end do
       
         ! Destroy them
-        deallocate(p_rcurrentLevel%p_rz)
-        deallocate(p_rcurrentLevel%p_rv)
+        deallocate(p_rcurrentLevel%p_Rz)
+        deallocate(p_rcurrentLevel%p_Rv)
       endif
   
       ! Release iteration vector
@@ -18834,7 +18834,7 @@ contains
     
     ! Pointers to temporary vectors - named for easier access
     type(t_vectorBlock), pointer :: p_rtempVector,p_rdefTempVector
-    type(t_vectorBlock), dimension(:), pointer :: p_rv, p_rz
+    type(t_vectorBlock), dimension(:), pointer :: p_Rv, p_Rz
     type(t_filterChain), dimension(:), pointer :: p_RfilterChain,p_RfilterChainCoarse
     
     ! Get pointers to the current level and the GMRES parameters
@@ -18900,25 +18900,26 @@ contains
     
     ! Set pointers to the temporary vectors
     ! defect vectors
-    p_rz => p_rlevelInfo%p_rz
+    p_Rz => p_rlevelInfo%p_Rz
     ! basis vectors
-    p_rv => p_rlevelInfo%p_rv
+    p_Rv => p_rlevelInfo%p_Rv
     ! temp vector
     p_rtempVector => p_rlevelInfo%rtempVector
     
     ! temp vector for defect creation with preconditioning
     p_rdefTempVector => p_rlevelInfo%rdefTempVector
+    call lsysbl_synchroniseSort (rb,p_rdefTempVector,bsyncEntries=.false.)
 
     ! All vectors share the same boundary conditions as rd!
     ! So assign now all discretisation-related information (boundary
     ! conditions,...) to the temporary vectors.
     do i=1, idim+1
-      call lsysbl_assignDiscrIndirect (rb,p_rv(i))
-      call lsysbl_synchroniseSort (rb,p_rv(i),bsyncEntries=.false.)
+      call lsysbl_assignDiscrIndirect (rb,p_Rv(i))
+      call lsysbl_synchroniseSort (rb,p_Rv(i),bsyncEntries=.false.)
     end do
     do i=1, idim
-      call lsysbl_assignDiscrIndirect (rb,p_rz(i))
-      call lsysbl_synchroniseSort (rb,p_rz(i),bsyncEntries=.false.)
+      call lsysbl_assignDiscrIndirect (rb,p_Rz(i))
+      call lsysbl_synchroniseSort (rb,p_Rz(i),bsyncEntries=.false.)
     end do
     
     ! Set pointers to the 1D/2D arrays
@@ -18945,12 +18946,12 @@ contains
           p_RfilterChainCoarse => p_rsubnode%p_RfilterChain
     end if
     
-    ! Copy our RHS to p_rv(1). As the iteration vector is 0, this
+    ! Copy our RHS to p_Rv(1). As the iteration vector is 0, this
     ! is also our initial defect.
-    call lsysbl_copyVector(rb,p_rv(1))
+    call lsysbl_copyVector(rb,p_Rv(1))
 
     if (associated(p_RfilterChain)) then
-      call filter_applyFilterChainVec (p_rv(1), p_RfilterChain)
+      call filter_applyFilterChainVec (p_Rv(1), p_RfilterChain)
     end if
     
     ! Get the norm of the residuum.
@@ -18958,7 +18959,7 @@ contains
     ! the stopping criterion (selected by the user) and the
     ! euclidian norm for the internal GMRES algorithm
     dfr = lsysbl_vectorNorm (rb,rsolverNode%iresNorm)
-    dres = lsysbl_vectorNorm (p_rv(1),LINALG_NORMEUCLID)
+    dres = lsysbl_vectorNorm (p_Rv(1),LINALG_NORMEUCLID)
     if (.not.((dfr .ge. 1E-99_DP) .and. &
               (dfr .le. 1E99_DP))) dfr = 0.0_DP
 
@@ -19005,7 +19006,7 @@ contains
       
       ! Step O.2:
       ! Now scale the defect by the inverse of its norm
-      call lsysbl_scaleVector (p_rv(1), 1.0_DP / dres)
+      call lsysbl_scaleVector (p_Rv(1), 1.0_DP / dres)
       
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
       ! -= Inner Loop (GMRES iterations)
@@ -19016,15 +19017,15 @@ contains
       
         ! Step I.1:
         ! Solve P * z(i) = v(i), where P is the preconditioner matrix
-        call lsysbl_copyVector (p_rv(i), p_rz(i))
+        call lsysbl_copyVector (p_Rv(i), p_Rz(i))
         
         ! Apply deflation preconditioning to z(i)
         if (associated(p_rlevelInfoCoarse)) then
         
           ! Calculate z = (A P z  -  drelax lambda_max v(i))
           ! in the temp vector
-          call lsysbl_copyVector (p_rv(i),p_rtempVector)
-          call lsysbl_copyVector (p_rz(i),p_rdefTempVector)
+          call lsysbl_copyVector (p_Rv(i),p_rtempVector)
+          call lsysbl_copyVector (p_Rz(i),p_rdefTempVector)
           
           ! Preconditioning
           if (bprec) then
@@ -19065,57 +19066,57 @@ contains
                 p_rsubnode%rprjTempVector)
 
           ! Correction: z(i) = v(i) - t
-          call lsysbl_vectorLinearComb (p_rtempVector,p_rz(i),-1.0_DP,1.0_DP)
+          call lsysbl_vectorLinearComb (p_rtempVector,p_Rz(i),-1.0_DP,1.0_DP)
         
         end if
         
         ! Apply filter chain to z(i)
         if (associated(p_RfilterChain)) then
-          call filter_applyFilterChainVec (p_rz(i), p_RfilterChain)
+          call filter_applyFilterChainVec (p_Rz(i), p_RfilterChain)
         end if
         
         ! Step I.2:
         ! Calculate v(i+1) = A * P * z(i)
         
-        call lsysbl_copyVector (p_rz(i),p_rdefTempVector)
+        call lsysbl_copyVector (p_Rz(i),p_rdefTempVector)
 
         if (bprec) then
           call linsol_precondDefect (&
               p_rlevelInfo%p_rpreconditioner,p_rdefTempVector)
         end if
         
-        call lsysbl_blockMatVec (p_rmatrix, p_rdefTempVector, p_rv(i+1), 1.0_DP, 0.0_DP)
+        call lsysbl_blockMatVec (p_rmatrix, p_rdefTempVector, p_Rv(i+1), 1.0_DP, 0.0_DP)
 
         if (associated(p_RfilterChain)) then
-          call filter_applyFilterChainVec (p_rv(i+1), p_RfilterChain)
+          call filter_applyFilterChainVec (p_Rv(i+1), p_RfilterChain)
         end if
         
         
         ! Step I.3:
         ! Perfom Gram-Schmidt process (1st time)
         do k = 1, i
-          p_Dh(k,i) = lsysbl_scalarProduct(p_rv(i+1), p_rv(k))
-          call lsysbl_vectorLinearComb(p_rv(k), p_rv(i+1), -p_Dh(k,i), 1.0_DP)
+          p_Dh(k,i) = lsysbl_scalarProduct(p_Rv(i+1), p_Rv(k))
+          call lsysbl_vectorLinearComb(p_Rv(k), p_Rv(i+1), -p_Dh(k,i), 1.0_DP)
         end do
         
         ! If the user wishes, perform Gram-Schmidt one more time
         ! to improve numerical stability.
         if (btwiceGS) then
           do k = 1, i
-            dtmp = lsysbl_scalarProduct(p_rv(i+1), p_rv(k))
+            dtmp = lsysbl_scalarProduct(p_Rv(i+1), p_Rv(k))
             p_Dh(k,i) = p_Dh(k,i) + dtmp
-            call lsysbl_vectorLinearComb(p_rv(k), p_rv(i+1), -dtmp, 1.0_DP)
+            call lsysbl_vectorLinearComb(p_Rv(k), p_Rv(i+1), -dtmp, 1.0_DP)
           end do
         end if
         
         ! Step I.4:
         ! Calculate alpha = ||v(i+1)||_2
-        dalpha = lsysbl_vectorNorm (p_rv(i+1), LINALG_NORMEUCLID)
+        dalpha = lsysbl_vectorNorm (p_Rv(i+1), LINALG_NORMEUCLID)
         
         ! Step I.5:
         ! Scale v(i+1) by the inverse of its euclid norm
         if (dalpha > SYS_EPSREAL_DP) then
-          call lsysbl_scaleVector (p_rv(i+1), 1.0_DP / dalpha)
+          call lsysbl_scaleVector (p_Rv(i+1), 1.0_DP / dalpha)
         else
           ! Well, let us just print a warning here...
           if(rsolverNode%ioutputLevel .ge. 2) then
@@ -19241,13 +19242,13 @@ contains
       ! Update our solution vector
       ! x = x + q(1)*z(1) + q(2)*z(2) + ... + q(i)*z(i)
       do k = 1, i
-        call lsysbl_vectorLinearComb(p_rz(k), rx, p_Dq(k), 1.0_DP)
+        call lsysbl_vectorLinearComb(p_Rz(k), rx, p_Dq(k), 1.0_DP)
       end do
       
       ! Step O.6:
       ! Calculate "real" residual
       ! v(1) = b - (A * P * x)
-      call lsysbl_copyVector (rb, p_rv(1))
+      call lsysbl_copyVector (rb, p_Rv(1))
       call lsysbl_copyVector (rx, p_rdefTempVector)
       
       ! Preconditioning
@@ -19256,20 +19257,20 @@ contains
             p_rlevelInfo%p_rpreconditioner,p_rdefTempVector)
       end if
 
-      call lsysbl_blockMatVec(p_rmatrix, p_rdefTempVector, p_rv(1), -1.0_DP, 1.0_DP)
+      call lsysbl_blockMatVec(p_rmatrix, p_rdefTempVector, p_Rv(1), -1.0_DP, 1.0_DP)
 
       ! Call filter chain if given.
       if (associated(p_RfilterChain)) then
-        call filter_applyFilterChainVec (p_rv(1), p_RfilterChain)
+        call filter_applyFilterChainVec (p_Rv(1), p_RfilterChain)
       end if
       
       ! Step O.7:
       ! Calculate euclid norm of the residual (needed for next q)
-      dres = lsysbl_vectorNorm (p_rv(1), LINALG_NORMEUCLID)
+      dres = lsysbl_vectorNorm (p_Rv(1), LINALG_NORMEUCLID)
       
       ! Calculate residual norm for stopping criterion
       ! TODO: try to avoid calculating the norm twice
-      dfr = lsysbl_vectorNorm (p_rv(1), rsolverNode%iresNorm)
+      dfr = lsysbl_vectorNorm (p_Rv(1), rsolverNode%iresNorm)
       
       ! Step O.8:
       ! Test for convergence, divergence and write some output now
@@ -19492,7 +19493,7 @@ contains
     
     ! Pointers to temporary vectors - named for easier access
     type(t_vectorBlock), pointer :: p_rtempVector,p_rdefTempVector,p_ractualRHS
-    type(t_vectorBlock), dimension(:), pointer :: p_rv, p_rz
+    type(t_vectorBlock), dimension(:), pointer :: p_Rv, p_Rz
     type(t_filterChain), dimension(:), pointer :: p_RfilterChain,p_RfilterChainCoarse
     
     ! Get pointers to the current level and the GMRES parameters
@@ -19558,25 +19559,26 @@ contains
     
     ! Set pointers to the temporary vectors
     ! defect vectors
-    p_rz => p_rlevelInfo%p_rz
+    p_Rz => p_rlevelInfo%p_Rz
     ! basis vectors
-    p_rv => p_rlevelInfo%p_rv
+    p_Rv => p_rlevelInfo%p_Rv
     ! temp vector
     p_rtempVector => p_rlevelInfo%rtempVector
     
     ! temp vector for defect creation with preconditioning
     p_rdefTempVector => p_rlevelInfo%rdefTempVector
+    call lsysbl_synchroniseSort (rb,p_rdefTempVector,bsyncEntries=.false.)
 
     ! All vectors share the same boundary conditions as rd!
     ! So assign now all discretisation-related information (boundary
     ! conditions,...) to the temporary vectors.
     do i=1, idim+1
-      call lsysbl_assignDiscrIndirect (rb,p_rv(i))
-      call lsysbl_synchroniseSort (rb,p_rv(i),bsyncEntries=.false.)
+      call lsysbl_assignDiscrIndirect (rb,p_Rv(i))
+      call lsysbl_synchroniseSort (rb,p_Rv(i),bsyncEntries=.false.)
     end do
     do i=1, idim
-      call lsysbl_assignDiscrIndirect (rb,p_rz(i))
-      call lsysbl_synchroniseSort (rb,p_rz(i),bsyncEntries=.false.)
+      call lsysbl_assignDiscrIndirect (rb,p_Rz(i))
+      call lsysbl_synchroniseSort (rb,p_Rz(i),bsyncEntries=.false.)
     end do
     
     ! Set pointers to the 1D/2D arrays
@@ -19628,12 +19630,12 @@ contains
       
     end if
     
-    ! Copy our RHS to p_rv(1). As the iteration vector is 0, this
+    ! Copy our RHS to p_Rv(1). As the iteration vector is 0, this
     ! is also our initial defect.
-    call lsysbl_copyVector(p_ractualRHS,p_rv(1))
+    call lsysbl_copyVector(p_ractualRHS,p_Rv(1))
 
     if (associated(p_RfilterChain)) then
-      call filter_applyFilterChainVec (p_rv(1), p_RfilterChain)
+      call filter_applyFilterChainVec (p_Rv(1), p_RfilterChain)
     end if
     
     ! Get the norm of the residuum.
@@ -19641,7 +19643,7 @@ contains
     ! the stopping criterion (selected by the user) and the
     ! euclidian norm for the internal GMRES algorithm
     dfr = lsysbl_vectorNorm (p_ractualRHS,rsolverNode%iresNorm)
-    dres = lsysbl_vectorNorm (p_rv(1),LINALG_NORMEUCLID)
+    dres = lsysbl_vectorNorm (p_Rv(1),LINALG_NORMEUCLID)
     if (.not.((dfr .ge. 1E-99_DP) .and. &
               (dfr .le. 1E99_DP))) dfr = 0.0_DP
 
@@ -19688,7 +19690,7 @@ contains
       
       ! Step O.2:
       ! Now scale the defect by the inverse of its norm
-      call lsysbl_scaleVector (p_rv(1), 1.0_DP / dres)
+      call lsysbl_scaleVector (p_Rv(1), 1.0_DP / dres)
       
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
       ! -= Inner Loop (GMRES iterations)
@@ -19699,16 +19701,16 @@ contains
       
         ! Step I.1:
         ! Solve P * z(i) = v(i), where P is the preconditioner matrix
-        call lsysbl_copyVector (p_rv(i), p_rz(i))
+        call lsysbl_copyVector (p_Rv(i), p_Rz(i))
         
         ! Apply deflation preconditioning to z(i)
         if (associated(p_rlevelInfoCoarse)) then
         
           ! Calculate z = (P A z  -  drelax lambda_max v(i))
           ! in the temp vector
-          call lsysbl_copyVector (p_rv(i),p_rtempVector)
+          call lsysbl_copyVector (p_Rv(i),p_rtempVector)
           
-          call lsysbl_blockMatVec (p_rlevelInfo%rsystemMatrix, p_rz(i),p_rdefTempVector, &
+          call lsysbl_blockMatVec (p_rlevelInfo%rsystemMatrix, p_Rz(i),p_rdefTempVector, &
               1.0_DP, 0.0_DP)
           
           ! Preconditioning
@@ -19750,56 +19752,56 @@ contains
                 p_rsubnode%rprjTempVector)
 
           ! Correction: z(i) = v(i) - t
-          call lsysbl_vectorLinearComb (p_rtempVector,p_rz(i),-1.0_DP,1.0_DP)
+          call lsysbl_vectorLinearComb (p_rtempVector,p_Rz(i),-1.0_DP,1.0_DP)
         
         end if
         
         ! Apply filter chain to z(i)
         if (associated(p_RfilterChain)) then
-          call filter_applyFilterChainVec (p_rz(i), p_RfilterChain)
+          call filter_applyFilterChainVec (p_Rz(i), p_RfilterChain)
         end if
         
         
         ! Step I.2:
         ! Calculate v(i+1) = P * A * z(i)
-        call lsysbl_blockMatVec (p_rmatrix, p_rz(i), p_rv(i+1), 1.0_DP, 0.0_DP)
+        call lsysbl_blockMatVec (p_rmatrix, p_Rz(i), p_Rv(i+1), 1.0_DP, 0.0_DP)
         
         ! Preconditioning + filtering
         if (bprec) then
           call linsol_precondDefect (&
-              p_rlevelInfo%p_rpreconditioner,p_rv(i+1))
+              p_rlevelInfo%p_rpreconditioner,p_Rv(i+1))
         end if
 
         if (associated(p_RfilterChain)) then
-          call filter_applyFilterChainVec (p_rv(i+1), p_RfilterChain)
+          call filter_applyFilterChainVec (p_Rv(i+1), p_RfilterChain)
         end if
         
         
         ! Step I.3:
         ! Perfom Gram-Schmidt process (1st time)
         do k = 1, i
-          p_Dh(k,i) = lsysbl_scalarProduct(p_rv(i+1), p_rv(k))
-          call lsysbl_vectorLinearComb(p_rv(k), p_rv(i+1), -p_Dh(k,i), 1.0_DP)
+          p_Dh(k,i) = lsysbl_scalarProduct(p_Rv(i+1), p_Rv(k))
+          call lsysbl_vectorLinearComb(p_Rv(k), p_Rv(i+1), -p_Dh(k,i), 1.0_DP)
         end do
         
         ! If the user wishes, perform Gram-Schmidt one more time
         ! to improve numerical stability.
         if (btwiceGS) then
           do k = 1, i
-            dtmp = lsysbl_scalarProduct(p_rv(i+1), p_rv(k))
+            dtmp = lsysbl_scalarProduct(p_Rv(i+1), p_Rv(k))
             p_Dh(k,i) = p_Dh(k,i) + dtmp
-            call lsysbl_vectorLinearComb(p_rv(k), p_rv(i+1), -dtmp, 1.0_DP)
+            call lsysbl_vectorLinearComb(p_Rv(k), p_Rv(i+1), -dtmp, 1.0_DP)
           end do
         end if
         
         ! Step I.4:
         ! Calculate alpha = ||v(i+1)||_2
-        dalpha = lsysbl_vectorNorm (p_rv(i+1), LINALG_NORMEUCLID)
+        dalpha = lsysbl_vectorNorm (p_Rv(i+1), LINALG_NORMEUCLID)
         
         ! Step I.5:
         ! Scale v(i+1) by the inverse of its euclid norm
         if (dalpha > SYS_EPSREAL_DP) then
-          call lsysbl_scaleVector (p_rv(i+1), 1.0_DP / dalpha)
+          call lsysbl_scaleVector (p_Rv(i+1), 1.0_DP / dalpha)
         else
           ! Well, let us just print a warning here...
           if(rsolverNode%ioutputLevel .ge. 2) then
@@ -19924,13 +19926,13 @@ contains
       ! Update our solution vector
       ! x = x + q(1)*z(1) + q(2)*z(2) + ... + q(i)*z(i)
       do k = 1, i
-        call lsysbl_vectorLinearComb(p_rz(k), rx, p_Dq(k), 1.0_DP)
+        call lsysbl_vectorLinearComb(p_Rz(k), rx, p_Dq(k), 1.0_DP)
       end do
       
       ! Step O.6:
       ! Calculate "real" residual
       ! v(1) = b - (A * x)
-      call lsysbl_copyVector (p_ractualRHS, p_rv(1))
+      call lsysbl_copyVector (p_ractualRHS, p_Rv(1))
       
       call lsysbl_blockMatVec(p_rmatrix, rx, p_rdefTempVector, 1.0_DP, 0.0_DP)
       
@@ -19940,20 +19942,20 @@ contains
             p_rlevelInfo%p_rpreconditioner,p_rdefTempVector)
       end if
 
-      call lsysbl_vectorLinearComb(p_rdefTempVector, p_rv(1), -1.0_DP, 1.0_DP)
+      call lsysbl_vectorLinearComb(p_rdefTempVector, p_Rv(1), -1.0_DP, 1.0_DP)
 
       ! Call filter chain if given.
       if (associated(p_RfilterChain)) then
-        call filter_applyFilterChainVec (p_rv(1), p_RfilterChain)
+        call filter_applyFilterChainVec (p_Rv(1), p_RfilterChain)
       end if
       
       ! Step O.7:
       ! Calculate euclid norm of the residual (needed for next q)
-      dres = lsysbl_vectorNorm (p_rv(1), LINALG_NORMEUCLID)
+      dres = lsysbl_vectorNorm (p_Rv(1), LINALG_NORMEUCLID)
       
       ! Calculate residual norm for stopping criterion
       ! TODO: try to avoid calculating the norm twice
-      dfr = lsysbl_vectorNorm (p_rv(1), rsolverNode%iresNorm)
+      dfr = lsysbl_vectorNorm (p_Rv(1), rsolverNode%iresNorm)
       
       ! Step O.8:
       ! Test for convergence, divergence and write some output now
@@ -20168,6 +20170,13 @@ contains
     nlmax = rsolverNode%p_rsubnodeDeflGMRES%nlevels
     p_rlevelInfo => rsolverNode%p_rsubnodeDeflGMRES%p_RlevelInfo(nlmax)
     
+    
+    ! Sort the temporary solution vector without changing the entries.
+    ! Sorting the entries is not necessary since we clear the vector
+    ! afterwards.
+    call lsysbl_synchroniseSort (rd,p_rlevelInfo%rsolutionVector,bsyncEntries=.false.)
+    
+    ! Clear the initial solution vector.
     call lsysbl_clearVector (p_rlevelInfo%rsolutionVector)
     
     if (rsolverNode%p_rsubnodeDeflGMRES%brightprec) then
@@ -20186,8 +20195,6 @@ contains
     call lsysbl_vectorLinearComb (p_rlevelInfo%rsolutionVector,rd,rsolverNode%domega,0.0_DP)
   
   end subroutine
-  
-  
   
 ! *****************************************************************************
 ! Routines for the Block-SOR solver (for DG discretisations)
