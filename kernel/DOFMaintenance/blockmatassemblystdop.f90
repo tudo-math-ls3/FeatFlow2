@@ -12,18 +12,18 @@
 !# They can directly be used with bma_buildMatrix, bma_buildVector and 
 !# bma_buildIntegral:
 !#
-!# 1.) bma_fcalc_mass
-!#     -> Used with bma_buildMatrix, this calculates mass matrices in all
-!#        diagonal blocks of a block matrix.
+!# 1.) bma_fcalc_mass / bma_fcalc_mass
+!#     -> Used with bma_buildMatrix, this calculates mass matrices 
+!#        at a specified position / in all diagonal blocks of a block matrix.
 !#
-!# 2.) bma_fcalc_laplace
+!# 2.) bma_fcalc_laplace / bma_fcalc_laplaceDiag
 !#     -> Used with bma_buildMatrix, this calculates Laplace matrices matrices
-!#        in all diagonal blocks of a block matrix.
+!#        at a specified position / in all diagonal blocks of a block matrix.
 !#
-!# 3.) bma_fcalc_convection
+!# 3.) bma_fcalc_convection_ugradvw
 !#     -> Used with bma_buildMatrix, this routine can be used to assemble
-!#        a standard convection operator in the first diagonal blocks
-!#        of a block matrix
+!#        a standard convection operator at a specified position in a block
+!#        matrix.
 !#
 !# 4.) bma_fcalc_rhsOne
 !#     -> Calculates the RHS vector based on the function f=1.
@@ -88,9 +88,11 @@ module blockmatassemblystdop
 
   !************************************************************************
 
+  public :: bma_fcalc_massDiag
   public :: bma_fcalc_mass
+  public :: bma_fcalc_laplaceDiag
   public :: bma_fcalc_laplace
-  public :: bma_fcalc_convection
+  public :: bma_fcalc_convection_ugradvw
   
   public :: bma_fcalc_rhsOne
   public :: bma_fcalc_rhsBubble
@@ -110,7 +112,7 @@ contains
 
 !<subroutine>
 
-  subroutine bma_fcalc_mass(RmatrixData,rassemblyData,rmatrixAssembly,&
+  subroutine bma_fcalc_massDiag(RmatrixData,rassemblyData,rmatrixAssembly,&
       npointsPerElement,nelements,revalVectors,rcollection)
 
 !<description>  
@@ -156,16 +158,8 @@ contains
 
 !<subroutine>
 
-    ! Local variables
-    real(DP) :: dbasI, dbasJ
-    integer :: iel, icubp, idofe, jdofe, i, ivar, nvar
-    real(DP), dimension(:,:,:), pointer :: p_DlocalMatrix
-    real(DP), dimension(:,:,:,:), pointer :: p_DlocalMatrixIntl
-    real(DP), dimension(:,:,:,:), pointer :: p_DbasTrial,p_DbasTest
-    real(DP), dimension(:,:), pointer :: p_DcubWeight
-    type(t_bmaMatrixData), pointer :: p_rmatrixData
-
-    integer :: istart, iend
+    integer :: i,istart,iend
+    type(t_collection) :: rlocalCollection
     real(DP) :: dscale
 
     ! First/last block, multiplier
@@ -181,110 +175,19 @@ contains
       end if
       dscale = rcollection%DquickAccess(1)
     end if
+    
+    ! Prepare a local collection
+    rlocalCollection%DquickAccess(1) = dscale
 
-    ! Get cubature weights data
-    p_DcubWeight => rassemblyData%p_DcubWeight
-
-    ! Loop over the diagonal blocks
-    do i = istart,iend
-
-      ! Get local data
-      p_rmatrixData => RmatrixData(i,i)
-      p_DbasTrial => RmatrixData(i,i)%p_DbasTrial
-      p_DbasTest => RmatrixData(i,i)%p_DbasTest
-
-      ! Interleaved matrix?
-      if (.not. p_rmatrixData%bisInterleaved) then
-
-        ! Get the matrix data      
-        p_DlocalMatrix => RmatrixData(i,i)%p_Dentry
-
-        ! Loop over the elements in the current set.
-        do iel = 1,nelements
-
-          ! Loop over all cubature points on the current element
-          do icubp = 1,npointsPerElement
-
-            ! Outer loop over the DOF's i=1..ndof on our current element,
-            ! which corresponds to the (test) basis functions Phi_i:
-            do idofe=1,p_rmatrixData%ndofTest
-
-              ! Fetch the contributions of the (test) basis functions Phi_i
-              ! into dbasI
-              dbasI = p_DbasTest(idofe,DER_FUNC,icubp,iel)
-
-              ! Inner loop over the DOF's j=1..ndof, which corresponds to
-              ! the basis function Phi_j:
-              do jdofe=1,p_rmatrixData%ndofTrial
-
-                ! Fetch the contributions of the (trial) basis function Phi_j
-                ! into dbasJ
-                dbasJ = p_DbasTrial(jdofe,DER_FUNC,icubp,iel)
-
-                ! Multiply the values of the basis functions
-                ! (1st derivatives) by the cubature weight and sum up
-                ! into the local matrices.
-                p_DlocalMatrix(jdofe,idofe,iel) = p_DlocalMatrix(jdofe,idofe,iel) + &
-                    dscale * p_DcubWeight(icubp,iel) * dbasJ*dbasI
-
-              end do ! idofe
-
-            end do ! jdofe
-
-          end do ! icubp
-
-        end do ! iel
-
-      else
-
-        ! Get the matrix data      
-        p_DlocalMatrixIntl => RmatrixData(i,i)%p_DentryIntl
-
-        ! Interleave-data
-        nvar = RmatrixData(i,i)%nvar
-
-        ! Loop over the elements in the current set.
-        do iel = 1,nelements
-
-          ! Loop over all cubature points on the current element
-          do icubp = 1,npointsPerElement
-
-            ! Outer loop over the DOF's i=1..ndof on our current element,
-            ! which corresponds to the (test) basis functions Phi_i:
-            do idofe=1,p_rmatrixData%ndofTest
-
-              ! Fetch the contributions of the (test) basis functions Phi_i
-              ! into dbasI
-              dbasI = p_DbasTest(idofe,DER_FUNC,icubp,iel)
-
-              ! Inner loop over the DOF's j=1..ndof, which corresponds to
-              ! the basis function Phi_j:
-              do jdofe=1,p_rmatrixData%ndofTrial
-
-                ! Fetch the contributions of the (trial) basis function Phi_j
-                ! into dbasJ
-                dbasJ = p_DbasTrial(jdofe,DER_FUNC,icubp,iel)
-
-                do ivar = 1,nvar
-
-                  ! Multiply the values of the basis functions
-                  ! (1st derivatives) by the cubature weight and sum up
-                  ! into the local matrices.
-                  p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) = &
-                      p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) + &
-                          dscale * p_DcubWeight(icubp,iel) * dbasJ*dbasI
-
-                end do ! ivar
-
-              end do ! idofe
-
-            end do ! jdofe
-
-          end do ! icubp
-
-        end do ! iel
-
-      end if
+    ! Loop through all diagonal blocks   
+    do i = istart, iend
+    
+      ! Calculate the Laplace at teh diagonal position i.
+      rlocalCollection%IquickAccess(1) = i
+      rlocalCollection%IquickAccess(2) = i
+    
+      call bma_fcalc_mass(RmatrixData,rassemblyData,rmatrixAssembly,&
+          npointsPerElement,nelements,revalVectors,rlocalCollection)
 
     end do
 
@@ -294,7 +197,192 @@ contains
 
 !<subroutine>
 
-  subroutine bma_fcalc_laplace(RmatrixData,rassemblyData,rmatrixAssembly,&
+  subroutine bma_fcalc_mass(RmatrixData,rassemblyData,rmatrixAssembly,&
+      npointsPerElement,nelements,revalVectors,rcollection)
+
+!<description>  
+    ! Calculates the Mass operator in all diagonal matrices.
+    !
+    ! Note: If rcollection is not specified, the matrix is calculated
+    ! in all diagonal blocks with a multiplier of 1.
+    ! If rcollection is specified, the following parameters are expected:
+    ! rcollection%DquickAccess(1) = multiplier in front of the mass matrix.
+    ! rcollection%IquickAccess(1) = x-position in the destination matrix
+    ! rcollection%IquickAccess(2) = y-position in the destination matrix
+!</description>
+
+!<inputoutput>
+    ! Matrix data of all matrices. The arrays p_Dentry of all submatrices
+    ! have to be filled with data.
+    type(t_bmaMatrixData), dimension(:,:), intent(inout), target :: RmatrixData
+!</inputoutput>
+
+!<input>
+    ! Data necessary for the assembly. Contains determinants and
+    ! cubature weights for the cubature,...
+    type(t_bmaMatrixAssemblyData), intent(in) :: rassemblyData
+
+    ! Structure with all data about the assembly
+    type(t_bmaMatrixAssembly), intent(in) :: rmatrixAssembly
+
+    ! Number of points per element
+    integer, intent(in) :: npointsPerElement
+
+    ! Number of elements
+    integer, intent(in) :: nelements
+
+    ! Values of FEM functions automatically evaluated in the
+    ! cubature points.
+    type(t_fev2Vectors), intent(in) :: revalVectors
+
+    ! User defined collection structure
+    type(t_collection), intent(inout), target, optional :: rcollection
+!</input>
+
+!<subroutine>
+
+    ! Local variables
+    real(DP) :: dbasI, dbasJ
+    integer :: iel, icubp, idofe, jdofe, ivar, nvar
+    real(DP), dimension(:,:,:), pointer :: p_DlocalMatrix
+    real(DP), dimension(:,:,:,:), pointer :: p_DlocalMatrixIntl
+    real(DP), dimension(:,:,:,:), pointer :: p_DbasTrial,p_DbasTest
+    real(DP), dimension(:,:), pointer :: p_DcubWeight
+    type(t_bmaMatrixData), pointer :: p_rmatrixData
+
+    integer :: ix, iy
+    real(DP) :: dscale
+
+    ! Get parameters
+    dscale = 1.0_DP
+    iy = 1
+    ix = 1
+
+    if (present(rcollection)) then
+      dscale = rcollection%DquickAccess(1)
+      ix = rcollection%IquickAccess(1)
+      iy = rcollection%IquickAccess(2)
+
+      ! Cancel if nothing to do or parameters wrong
+      if (dscale .eq. 0.0_DP) return
+
+      if ((ix .lt. 1) .or. (iy .lt. 1) .or. &
+          (ix .gt. ubound(RmatrixData,2)) .or. (iy .gt. ubound(RmatrixData,1))) then
+        call output_line ("Parameters wrong.",&
+            OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_mass")
+        call sys_halt()
+      end if
+
+    end if
+
+    ! Get cubature weights data
+    p_DcubWeight => rassemblyData%p_DcubWeight
+
+    ! Get local data
+    p_rmatrixData => RmatrixData(iy,ix)
+    p_DbasTrial => RmatrixData(iy,ix)%p_DbasTrial
+    p_DbasTest => RmatrixData(iy,ix)%p_DbasTest
+
+    ! Interleaved matrix?
+    if (.not. p_rmatrixData%bisInterleaved) then
+
+      ! Get the matrix data      
+      p_DlocalMatrix => RmatrixData(iy,ix)%p_Dentry
+
+      ! Loop over the elements in the current set.
+      do iel = 1,nelements
+
+        ! Loop over all cubature points on the current element
+        do icubp = 1,npointsPerElement
+
+          ! Outer loop over the DOF's i=1..ndof on our current element,
+          ! which corresponds to the (test) basis functions Phi_i:
+          do idofe=1,p_rmatrixData%ndofTest
+
+            ! Fetch the contributions of the (test) basis functions Phi_i
+            ! into dbasI
+            dbasI = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+
+            ! Inner loop over the DOF's j=1..ndof, which corresponds to
+            ! the basis function Phi_j:
+            do jdofe=1,p_rmatrixData%ndofTrial
+
+              ! Fetch the contributions of the (trial) basis function Phi_j
+              ! into dbasJ
+              dbasJ = p_DbasTrial(jdofe,DER_FUNC,icubp,iel)
+
+              ! Multiply the values of the basis functions
+              ! (1st derivatives) by the cubature weight and sum up
+              ! into the local matrices.
+              p_DlocalMatrix(jdofe,idofe,iel) = p_DlocalMatrix(jdofe,idofe,iel) + &
+                  dscale * p_DcubWeight(icubp,iel) * dbasJ*dbasI
+
+            end do ! idofe
+
+          end do ! jdofe
+
+        end do ! icubp
+
+      end do ! iel
+
+    else
+
+      ! Get the matrix data      
+      p_DlocalMatrixIntl => RmatrixData(iy,ix)%p_DentryIntl
+
+      ! Interleave-data
+      nvar = RmatrixData(iy,ix)%nvar
+
+      ! Loop over the elements in the current set.
+      do iel = 1,nelements
+
+        ! Loop over all cubature points on the current element
+        do icubp = 1,npointsPerElement
+
+          ! Outer loop over the DOF's i=1..ndof on our current element,
+          ! which corresponds to the (test) basis functions Phi_i:
+          do idofe=1,p_rmatrixData%ndofTest
+
+            ! Fetch the contributions of the (test) basis functions Phi_i
+            ! into dbasI
+            dbasI = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+
+            ! Inner loop over the DOF's j=1..ndof, which corresponds to
+            ! the basis function Phi_j:
+            do jdofe=1,p_rmatrixData%ndofTrial
+
+              ! Fetch the contributions of the (trial) basis function Phi_j
+              ! into dbasJ
+              dbasJ = p_DbasTrial(jdofe,DER_FUNC,icubp,iel)
+
+              do ivar = 1,nvar
+
+                ! Multiply the values of the basis functions
+                ! (1st derivatives) by the cubature weight and sum up
+                ! into the local matrices.
+                p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) = &
+                    p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) + &
+                        dscale * p_DcubWeight(icubp,iel) * dbasJ*dbasI
+
+              end do ! ivar
+
+            end do ! idofe
+
+          end do ! jdofe
+
+        end do ! icubp
+
+      end do ! iel
+
+    end if
+
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine bma_fcalc_laplaceDiag(RmatrixData,rassemblyData,rmatrixAssembly,&
       npointsPerElement,nelements,revalVectors,rcollection)
 
 !<description>  
@@ -340,15 +428,8 @@ contains
 
 !<subroutine>
 
-    real(DP) :: dbasIx, dbasJx, dbasIy, dbasJy, dbasIz, dbasJz
-    integer :: iel, icubp, idofe, jdofe, i, ivar, nvar
-    real(DP), dimension(:,:,:), pointer :: p_DlocalMatrix
-    real(DP), dimension(:,:,:,:), pointer :: p_DlocalMatrixIntl
-    real(DP), dimension(:,:,:,:), pointer :: p_DbasTrial,p_DbasTest
-    real(DP), dimension(:,:), pointer :: p_DcubWeight
-    type(t_bmaMatrixData), pointer :: p_rmatrixData
-
-    integer :: istart, iend
+    integer :: i,istart,iend
+    type(t_collection) :: rlocalCollection
     real(DP) :: dscale
 
     ! First/last block, multiplier
@@ -364,312 +445,19 @@ contains
       end if
       dscale = rcollection%DquickAccess(1)
     end if
-
-    ! Get cubature weights data
-    p_DcubWeight => rassemblyData%p_DcubWeight
+    
+    ! Prepare a local collection
+    rlocalCollection%DquickAccess(1) = dscale
 
     ! Loop through all diagonal blocks   
     do i = istart, iend
-
-      ! Get local data
-      p_rmatrixData => RmatrixData(i,i)
-      p_DbasTrial => RmatrixData(i,i)%p_DbasTrial
-      p_DbasTest => RmatrixData(i,i)%p_DbasTest
-
-      ! Interleaved matrix?
-      if (.not. p_rmatrixData%bisInterleaved) then
-
-        ! Get the matrix data
-        p_DlocalMatrix => RmatrixData(i,i)%p_Dentry
-
-        ! What's the dimension?
-        select case (rmatrixAssembly%p_rtriangulation%ndim)
-
-        case (NDIM1D)
-
-          ! 1D Laplace matrix
-
-          ! Loop over the elements in the current set.
-          do iel = 1,nelements
-
-            ! Loop over all cubature points on the current element
-            do icubp = 1,npointsPerElement
-
-              ! Outer loop over the DOF's i=1..ndof on our current element,
-              ! which corresponds to the (test) basis functions Phi_i:
-              do idofe=1,p_rmatrixData%ndofTest
-
-                ! Fetch the contributions of the (test) basis functions Phi_i
-                ! into dbasI
-                dbasIx = p_DbasTest(idofe,DER_DERIV1D_X,icubp,iel)
-
-                ! Inner loop over the DOF's j=1..ndof, which corresponds to
-                ! the basis function Phi_j:
-                do jdofe=1,p_rmatrixData%ndofTrial
-
-                  ! Fetch the contributions of the (trial) basis function Phi_j
-                  ! into dbasJ
-                  dbasJx = p_DbasTrial(jdofe,DER_DERIV1D_X,icubp,iel)
-
-                  ! Multiply the values of the basis functions
-                  ! (1st derivatives) by the cubature weight and sum up
-                  ! into the local matrices.
-                  p_DlocalMatrix(jdofe,idofe,iel) = p_DlocalMatrix(jdofe,idofe,iel) + &
-                      dscale * p_DcubWeight(icubp,iel) * dbasJx*dbasIx
-
-                end do ! idofe
-
-              end do ! jdofe
-
-            end do ! icubp
-
-          end do ! iel
-
-        case (NDIM2D)
-
-          ! 2D Laplace matrix
-
-          ! Loop over the elements in the current set.
-          do iel = 1,nelements
-
-            ! Loop over all cubature points on the current element
-            do icubp = 1,npointsPerElement
-
-              ! Outer loop over the DOF's i=1..ndof on our current element,
-              ! which corresponds to the (test) basis functions Phi_i:
-              do idofe=1,p_rmatrixData%ndofTest
-
-                ! Fetch the contributions of the (test) basis functions Phi_i
-                ! into dbasI
-                dbasIx = p_DbasTest(idofe,DER_DERIV2D_X,icubp,iel)
-                dbasIy = p_DbasTest(idofe,DER_DERIV2D_Y,icubp,iel)
-
-                ! Inner loop over the DOF's j=1..ndof, which corresponds to
-                ! the basis function Phi_j:
-                do jdofe=1,p_rmatrixData%ndofTrial
-
-                  ! Fetch the contributions of the (trial) basis function Phi_j
-                  ! into dbasJ
-                  dbasJx = p_DbasTrial(jdofe,DER_DERIV2D_X,icubp,iel)
-                  dbasJy = p_DbasTrial(jdofe,DER_DERIV2D_Y,icubp,iel)
-
-                  ! Multiply the values of the basis functions
-                  ! (1st derivatives) by the cubature weight and sum up
-                  ! into the local matrices.
-                  p_DlocalMatrix(jdofe,idofe,iel) = p_DlocalMatrix(jdofe,idofe,iel) + &
-                      dscale * p_DcubWeight(icubp,iel) * ( dbasJx*dbasIx + dbasJy*dbasIy )
-
-                end do ! idofe
-
-              end do ! jdofe
-
-            end do ! icubp
-
-          end do ! iel
-
-        case (NDIM3D)
-
-          ! 3D Laplace matrix
-
-          ! Loop over the elements in the current set.
-          do iel = 1,nelements
-
-            ! Loop over all cubature points on the current element
-            do icubp = 1,npointsPerElement
-
-              ! Outer loop over the DOF's i=1..ndof on our current element,
-              ! which corresponds to the (test) basis functions Phi_i:
-              do idofe=1,p_rmatrixData%ndofTest
-
-                ! Fetch the contributions of the (test) basis functions Phi_i
-                ! into dbasI
-                dbasIx = p_DbasTest(idofe,DER_DERIV3D_X,icubp,iel)
-                dbasIy = p_DbasTest(idofe,DER_DERIV3D_Y,icubp,iel)
-                dbasIz = p_DbasTest(idofe,DER_DERIV3D_Z,icubp,iel)
-
-                ! Inner loop over the DOF's j=1..ndof, which corresponds to
-                ! the basis function Phi_j:
-                do jdofe=1,p_rmatrixData%ndofTrial
-
-                  ! Fetch the contributions of the (trial) basis function Phi_j
-                  ! into dbasJ
-                  dbasJx = p_DbasTrial(jdofe,DER_DERIV3D_X,icubp,iel)
-                  dbasJy = p_DbasTrial(jdofe,DER_DERIV3D_Y,icubp,iel)
-                  dbasJz = p_DbasTrial(jdofe,DER_DERIV3D_Z,icubp,iel)
-
-                  ! Multiply the values of the basis functions
-                  ! (1st derivatives) by the cubature weight and sum up
-                  ! into the local matrices.
-                  p_DlocalMatrix(jdofe,idofe,iel) = p_DlocalMatrix(jdofe,idofe,iel) + &
-                      dscale * p_DcubWeight(icubp,iel) * &
-                              ( dbasJx*dbasIx + dbasJy*dbasIy + dbasJz*dbasIz )
-
-                end do ! idofe
-
-              end do ! jdofe
-
-            end do ! icubp
-
-          end do ! iel
-
-        end select
-
-      else
-
-        ! Get the matrix data      
-        p_DlocalMatrixIntl => RmatrixData(i,i)%p_DentryIntl
-
-        ! Interleave-data
-        nvar = RmatrixData(i,i)%nvar
-
-        ! What's the dimension?
-        select case (rmatrixAssembly%p_rtriangulation%ndim)
-
-        case (NDIM1D)
-
-          ! 1D Laplace matrix
-
-          ! Loop over the elements in the current set.
-          do iel = 1,nelements
-
-            ! Loop over all cubature points on the current element
-            do icubp = 1,npointsPerElement
-
-              ! Outer loop over the DOF's i=1..ndof on our current element,
-              ! which corresponds to the (test) basis functions Phi_i:
-              do idofe=1,p_rmatrixData%ndofTest
-
-                ! Fetch the contributions of the (test) basis functions Phi_i
-                ! into dbasI
-                dbasIx = p_DbasTest(idofe,DER_DERIV1D_X,icubp,iel)
-
-                ! Inner loop over the DOF's j=1..ndof, which corresponds to
-                ! the basis function Phi_j:
-                do jdofe=1,p_rmatrixData%ndofTrial
-
-                  ! Fetch the contributions of the (trial) basis function Phi_j
-                  ! into dbasJ
-                  dbasJx = p_DbasTrial(jdofe,DER_DERIV1D_X,icubp,iel)
-
-                  do ivar = 1,nvar
-
-                    ! Multiply the values of the basis functions
-                    ! (1st derivatives) by the cubature weight and sum up
-                    ! into the local matrices.
-                    p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) = &
-                        p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) + &
-                          dscale * p_DcubWeight(icubp,iel) * dbasJx*dbasIx
-
-                  end do ! ivar
-
-                end do ! idofe
-
-              end do ! jdofe
-
-            end do ! icubp
-
-          end do ! iel
-
-        case (NDIM2D)
-
-          ! 2D Laplace matrix
-
-          ! Loop over the elements in the current set.
-          do iel = 1,nelements
-
-            ! Loop over all cubature points on the current element
-            do icubp = 1,npointsPerElement
-
-              ! Outer loop over the DOF's i=1..ndof on our current element,
-              ! which corresponds to the (test) basis functions Phi_i:
-              do idofe=1,p_rmatrixData%ndofTest
-
-                ! Fetch the contributions of the (test) basis functions Phi_i
-                ! into dbasI
-                dbasIx = p_DbasTest(idofe,DER_DERIV2D_X,icubp,iel)
-                dbasIy = p_DbasTest(idofe,DER_DERIV2D_Y,icubp,iel)
-
-                ! Inner loop over the DOF's j=1..ndof, which corresponds to
-                ! the basis function Phi_j:
-                do jdofe=1,p_rmatrixData%ndofTrial
-
-                  ! Fetch the contributions of the (trial) basis function Phi_j
-                  ! into dbasJ
-                  dbasJx = p_DbasTrial(jdofe,DER_DERIV2D_X,icubp,iel)
-                  dbasJy = p_DbasTrial(jdofe,DER_DERIV2D_Y,icubp,iel)
-
-                  do ivar = 1,nvar
-
-                    ! Multiply the values of the basis functions
-                    ! (1st derivatives) by the cubature weight and sum up
-                    ! into the local matrices.
-                    p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) = &
-                        p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) + &
-                            dscale * p_DcubWeight(icubp,iel) * ( dbasJx*dbasIx + dbasJy*dbasIy )
-
-                  end do ! ivar
-
-                end do ! idofe
-
-              end do ! jdofe
-
-            end do ! icubp
-
-          end do ! iel
-
-        case (NDIM3D)
-
-          ! 3D Laplace matrix
-
-          ! Loop over the elements in the current set.
-          do iel = 1,nelements
-
-            ! Loop over all cubature points on the current element
-            do icubp = 1,npointsPerElement
-
-              ! Outer loop over the DOF's i=1..ndof on our current element,
-              ! which corresponds to the (test) basis functions Phi_i:
-              do idofe=1,p_rmatrixData%ndofTest
-
-                ! Fetch the contributions of the (test) basis functions Phi_i
-                ! into dbasI
-                dbasIx = p_DbasTest(idofe,DER_DERIV3D_X,icubp,iel)
-                dbasIy = p_DbasTest(idofe,DER_DERIV3D_Y,icubp,iel)
-                dbasIz = p_DbasTest(idofe,DER_DERIV3D_Z,icubp,iel)
-
-                ! Inner loop over the DOF's j=1..ndof, which corresponds to
-                ! the basis function Phi_j:
-                do jdofe=1,p_rmatrixData%ndofTrial
-
-                  ! Fetch the contributions of the (trial) basis function Phi_j
-                  ! into dbasJ
-                  dbasJx = p_DbasTrial(jdofe,DER_DERIV3D_X,icubp,iel)
-                  dbasJy = p_DbasTrial(jdofe,DER_DERIV3D_Y,icubp,iel)
-                  dbasJz = p_DbasTrial(jdofe,DER_DERIV3D_Z,icubp,iel)
-
-                  do ivar = 1,nvar
-
-                    ! Multiply the values of the basis functions
-                    ! (1st derivatives) by the cubature weight and sum up
-                    ! into the local matrices.
-                    p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) = &
-                        p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) + &
-                            dscale * p_DcubWeight(icubp,iel) * &
-                                    ( dbasJx*dbasIx + dbasJy*dbasIy + dbasJz*dbasIz )
-
-                  end do ! ivar
-
-                end do ! idofe
-
-              end do ! jdofe
-
-            end do ! icubp
-
-          end do ! iel
-
-        end select
-
-      end if
+    
+      ! Calculate the Laplace at teh diagonal position i.
+      rlocalCollection%IquickAccess(1) = i
+      rlocalCollection%IquickAccess(2) = i
+    
+      call bma_fcalc_laplace(RmatrixData,rassemblyData,rmatrixAssembly,&
+          npointsPerElement,nelements,revalVectors,rlocalCollection)
 
     end do
 
@@ -679,19 +467,408 @@ contains
 
 !<subroutine>
 
-  subroutine bma_fcalc_convection(RmatrixData,rassemblyData,rmatrixAssembly,&
+  subroutine bma_fcalc_laplace(RmatrixData,rassemblyData,rmatrixAssembly,&
       npointsPerElement,nelements,revalVectors,rcollection)
 
 !<description>  
-    ! Calculates a convection operator "(u grad) ." into the top/left position
-    ! of a block matrix (position 1/1).
+    ! Calculates the Laplace operator at position (x,y) in a block matrix.
+    !
+    ! Note: If rcollection is not specified, the matrix is calculated
+    ! in all diagonal blocks with a multiplier of 1.
+    ! If rcollection is specified, the following parameters are expected:
+    ! rcollection%DquickAccess(1) = multiplier in front of the mass matrix.
+    ! rcollection%IquickAccess(1) = x-coordinate in the block matrix
+    ! rcollection%IquickAccess(2) = y-coordinate in the block matrix
+!</description>
+
+!<inputoutput>
+    ! Matrix data of all matrices. The arrays p_Dentry of all submatrices
+    ! have to be filled with data.
+    type(t_bmaMatrixData), dimension(:,:), intent(inout), target :: RmatrixData
+!</inputoutput>
+
+!<input>
+    ! Data necessary for the assembly. Contains determinants and
+    ! cubature weights for the cubature,...
+    type(t_bmaMatrixAssemblyData), intent(in) :: rassemblyData
+
+    ! Structure with all data about the assembly
+    type(t_bmaMatrixAssembly), intent(in) :: rmatrixAssembly
+
+    ! Number of points per element
+    integer, intent(in) :: npointsPerElement
+
+    ! Number of elements
+    integer, intent(in) :: nelements
+
+    ! Values of FEM functions automatically evaluated in the
+    ! cubature points.
+    type(t_fev2Vectors), intent(in) :: revalVectors
+
+    ! User defined collection structure
+    type(t_collection), intent(inout), target, optional :: rcollection
+!</input>
+
+!<subroutine>
+
+    real(DP) :: dbasIx, dbasJx, dbasIy, dbasJy, dbasIz, dbasJz
+    integer :: iel, icubp, idofe, jdofe, ivar, nvar
+    real(DP), dimension(:,:,:), pointer :: p_DlocalMatrix
+    real(DP), dimension(:,:,:,:), pointer :: p_DlocalMatrixIntl
+    real(DP), dimension(:,:,:,:), pointer :: p_DbasTrial,p_DbasTest
+    real(DP), dimension(:,:), pointer :: p_DcubWeight
+    type(t_bmaMatrixData), pointer :: p_rmatrixData
+
+    integer :: ix,iy
+    real(DP) :: dscale
+
+    ! Get parameters
+    dscale = 1.0_DP
+    iy = 1
+    ix = 1
+
+    if (present(rcollection)) then
+      dscale = rcollection%DquickAccess(1)
+      ix = rcollection%IquickAccess(1)
+      iy = rcollection%IquickAccess(2)
+
+      ! Cancel if nothing to do or parameters wrong
+      if (dscale .eq. 0.0_DP) return
+
+      if ((ix .lt. 1) .or. (iy .lt. 1) .or. &
+          (ix .gt. ubound(RmatrixData,2)) .or. (iy .gt. ubound(RmatrixData,1))) then
+        call output_line ("Parameters wrong.",&
+            OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_laplace")
+        call sys_halt()
+      end if
+
+    end if
+
+    ! Get cubature weights data
+    p_DcubWeight => rassemblyData%p_DcubWeight
+
+    ! Get local data
+    p_rmatrixData => RmatrixData(iy,ix)
+    p_DbasTrial => RmatrixData(iy,ix)%p_DbasTrial
+    p_DbasTest => RmatrixData(iy,ix)%p_DbasTest
+
+    ! Interleaved matrix?
+    if (.not. p_rmatrixData%bisInterleaved) then
+
+      ! Get the matrix data
+      p_DlocalMatrix => RmatrixData(iy,ix)%p_Dentry
+
+      ! What's the dimension?
+      select case (rmatrixAssembly%p_rtriangulation%ndim)
+
+      case (NDIM1D)
+
+        ! 1D Laplace matrix
+
+        ! Loop over the elements in the current set.
+        do iel = 1,nelements
+
+          ! Loop over all cubature points on the current element
+          do icubp = 1,npointsPerElement
+
+            ! Outer loop over the DOF's i=1..ndof on our current element,
+            ! which corresponds to the (test) basis functions Phi_i:
+            do idofe=1,p_rmatrixData%ndofTest
+
+              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! into dbasI
+              dbasIx = p_DbasTest(idofe,DER_DERIV1D_X,icubp,iel)
+
+              ! Inner loop over the DOF's j=1..ndof, which corresponds to
+              ! the basis function Phi_j:
+              do jdofe=1,p_rmatrixData%ndofTrial
+
+                ! Fetch the contributions of the (trial) basis function Phi_j
+                ! into dbasJ
+                dbasJx = p_DbasTrial(jdofe,DER_DERIV1D_X,icubp,iel)
+
+                ! Multiply the values of the basis functions
+                ! (1st derivatives) by the cubature weight and sum up
+                ! into the local matrices.
+                p_DlocalMatrix(jdofe,idofe,iel) = p_DlocalMatrix(jdofe,idofe,iel) + &
+                    dscale * p_DcubWeight(icubp,iel) * dbasJx*dbasIx
+
+              end do ! idofe
+
+            end do ! jdofe
+
+          end do ! icubp
+
+        end do ! iel
+
+      case (NDIM2D)
+
+        ! 2D Laplace matrix
+
+        ! Loop over the elements in the current set.
+        do iel = 1,nelements
+
+          ! Loop over all cubature points on the current element
+          do icubp = 1,npointsPerElement
+
+            ! Outer loop over the DOF's i=1..ndof on our current element,
+            ! which corresponds to the (test) basis functions Phi_i:
+            do idofe=1,p_rmatrixData%ndofTest
+
+              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! into dbasI
+              dbasIx = p_DbasTest(idofe,DER_DERIV2D_X,icubp,iel)
+              dbasIy = p_DbasTest(idofe,DER_DERIV2D_Y,icubp,iel)
+
+              ! Inner loop over the DOF's j=1..ndof, which corresponds to
+              ! the basis function Phi_j:
+              do jdofe=1,p_rmatrixData%ndofTrial
+
+                ! Fetch the contributions of the (trial) basis function Phi_j
+                ! into dbasJ
+                dbasJx = p_DbasTrial(jdofe,DER_DERIV2D_X,icubp,iel)
+                dbasJy = p_DbasTrial(jdofe,DER_DERIV2D_Y,icubp,iel)
+
+                ! Multiply the values of the basis functions
+                ! (1st derivatives) by the cubature weight and sum up
+                ! into the local matrices.
+                p_DlocalMatrix(jdofe,idofe,iel) = p_DlocalMatrix(jdofe,idofe,iel) + &
+                    dscale * p_DcubWeight(icubp,iel) * ( dbasJx*dbasIx + dbasJy*dbasIy )
+
+              end do ! idofe
+
+            end do ! jdofe
+
+          end do ! icubp
+
+        end do ! iel
+
+      case (NDIM3D)
+
+        ! 3D Laplace matrix
+
+        ! Loop over the elements in the current set.
+        do iel = 1,nelements
+
+          ! Loop over all cubature points on the current element
+          do icubp = 1,npointsPerElement
+
+            ! Outer loop over the DOF's i=1..ndof on our current element,
+            ! which corresponds to the (test) basis functions Phi_i:
+            do idofe=1,p_rmatrixData%ndofTest
+
+              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! into dbasI
+              dbasIx = p_DbasTest(idofe,DER_DERIV3D_X,icubp,iel)
+              dbasIy = p_DbasTest(idofe,DER_DERIV3D_Y,icubp,iel)
+              dbasIz = p_DbasTest(idofe,DER_DERIV3D_Z,icubp,iel)
+
+              ! Inner loop over the DOF's j=1..ndof, which corresponds to
+              ! the basis function Phi_j:
+              do jdofe=1,p_rmatrixData%ndofTrial
+
+                ! Fetch the contributions of the (trial) basis function Phi_j
+                ! into dbasJ
+                dbasJx = p_DbasTrial(jdofe,DER_DERIV3D_X,icubp,iel)
+                dbasJy = p_DbasTrial(jdofe,DER_DERIV3D_Y,icubp,iel)
+                dbasJz = p_DbasTrial(jdofe,DER_DERIV3D_Z,icubp,iel)
+
+                ! Multiply the values of the basis functions
+                ! (1st derivatives) by the cubature weight and sum up
+                ! into the local matrices.
+                p_DlocalMatrix(jdofe,idofe,iel) = p_DlocalMatrix(jdofe,idofe,iel) + &
+                    dscale * p_DcubWeight(icubp,iel) * &
+                            ( dbasJx*dbasIx + dbasJy*dbasIy + dbasJz*dbasIz )
+
+              end do ! idofe
+
+            end do ! jdofe
+
+          end do ! icubp
+
+        end do ! iel
+
+      end select
+
+    else
+
+      ! Get the matrix data      
+      p_DlocalMatrixIntl => RmatrixData(iy,ix)%p_DentryIntl
+
+      ! Interleave-data
+      nvar = RmatrixData(iy,ix)%nvar
+
+      ! What's the dimension?
+      select case (rmatrixAssembly%p_rtriangulation%ndim)
+
+      case (NDIM1D)
+
+        ! 1D Laplace matrix
+
+        ! Loop over the elements in the current set.
+        do iel = 1,nelements
+
+          ! Loop over all cubature points on the current element
+          do icubp = 1,npointsPerElement
+
+            ! Outer loop over the DOF's i=1..ndof on our current element,
+            ! which corresponds to the (test) basis functions Phi_i:
+            do idofe=1,p_rmatrixData%ndofTest
+
+              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! into dbasI
+              dbasIx = p_DbasTest(idofe,DER_DERIV1D_X,icubp,iel)
+
+              ! Inner loop over the DOF's j=1..ndof, which corresponds to
+              ! the basis function Phi_j:
+              do jdofe=1,p_rmatrixData%ndofTrial
+
+                ! Fetch the contributions of the (trial) basis function Phi_j
+                ! into dbasJ
+                dbasJx = p_DbasTrial(jdofe,DER_DERIV1D_X,icubp,iel)
+
+                do ivar = 1,nvar
+
+                  ! Multiply the values of the basis functions
+                  ! (1st derivatives) by the cubature weight and sum up
+                  ! into the local matrices.
+                  p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) = &
+                      p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) + &
+                        dscale * p_DcubWeight(icubp,iel) * dbasJx*dbasIx
+
+                end do ! ivar
+
+              end do ! idofe
+
+            end do ! jdofe
+
+          end do ! icubp
+
+        end do ! iel
+
+      case (NDIM2D)
+
+        ! 2D Laplace matrix
+
+        ! Loop over the elements in the current set.
+        do iel = 1,nelements
+
+          ! Loop over all cubature points on the current element
+          do icubp = 1,npointsPerElement
+
+            ! Outer loop over the DOF's i=1..ndof on our current element,
+            ! which corresponds to the (test) basis functions Phi_i:
+            do idofe=1,p_rmatrixData%ndofTest
+
+              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! into dbasI
+              dbasIx = p_DbasTest(idofe,DER_DERIV2D_X,icubp,iel)
+              dbasIy = p_DbasTest(idofe,DER_DERIV2D_Y,icubp,iel)
+
+              ! Inner loop over the DOF's j=1..ndof, which corresponds to
+              ! the basis function Phi_j:
+              do jdofe=1,p_rmatrixData%ndofTrial
+
+                ! Fetch the contributions of the (trial) basis function Phi_j
+                ! into dbasJ
+                dbasJx = p_DbasTrial(jdofe,DER_DERIV2D_X,icubp,iel)
+                dbasJy = p_DbasTrial(jdofe,DER_DERIV2D_Y,icubp,iel)
+
+                do ivar = 1,nvar
+
+                  ! Multiply the values of the basis functions
+                  ! (1st derivatives) by the cubature weight and sum up
+                  ! into the local matrices.
+                  p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) = &
+                      p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) + &
+                          dscale * p_DcubWeight(icubp,iel) * ( dbasJx*dbasIx + dbasJy*dbasIy )
+
+                end do ! ivar
+
+              end do ! idofe
+
+            end do ! jdofe
+
+          end do ! icubp
+
+        end do ! iel
+
+      case (NDIM3D)
+
+        ! 3D Laplace matrix
+
+        ! Loop over the elements in the current set.
+        do iel = 1,nelements
+
+          ! Loop over all cubature points on the current element
+          do icubp = 1,npointsPerElement
+
+            ! Outer loop over the DOF's i=1..ndof on our current element,
+            ! which corresponds to the (test) basis functions Phi_i:
+            do idofe=1,p_rmatrixData%ndofTest
+
+              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! into dbasI
+              dbasIx = p_DbasTest(idofe,DER_DERIV3D_X,icubp,iel)
+              dbasIy = p_DbasTest(idofe,DER_DERIV3D_Y,icubp,iel)
+              dbasIz = p_DbasTest(idofe,DER_DERIV3D_Z,icubp,iel)
+
+              ! Inner loop over the DOF's j=1..ndof, which corresponds to
+              ! the basis function Phi_j:
+              do jdofe=1,p_rmatrixData%ndofTrial
+
+                ! Fetch the contributions of the (trial) basis function Phi_j
+                ! into dbasJ
+                dbasJx = p_DbasTrial(jdofe,DER_DERIV3D_X,icubp,iel)
+                dbasJy = p_DbasTrial(jdofe,DER_DERIV3D_Y,icubp,iel)
+                dbasJz = p_DbasTrial(jdofe,DER_DERIV3D_Z,icubp,iel)
+
+                do ivar = 1,nvar
+
+                  ! Multiply the values of the basis functions
+                  ! (1st derivatives) by the cubature weight and sum up
+                  ! into the local matrices.
+                  p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) = &
+                      p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) + &
+                          dscale * p_DcubWeight(icubp,iel) * &
+                                  ( dbasJx*dbasIx + dbasJy*dbasIy + dbasJz*dbasIz )
+
+                end do ! ivar
+
+              end do ! idofe
+
+            end do ! jdofe
+
+          end do ! icubp
+
+        end do ! iel
+
+      end select
+
+    end if
+
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine bma_fcalc_convection_ugradvw(RmatrixData,rassemblyData,rmatrixAssembly,&
+      npointsPerElement,nelements,revalVectors,rcollection)
+
+!<description>  
+    ! Calculates a convection operator "( (u grad) v, w)" at position (x,y)
+    ! of a block matrix, with a convection u given as a finite element function.
+    ! v is the trial and w the test basis function.
     !
     ! Note: If rcollection is not specified, the matrix is calculated
     ! in all diagonal blocks with a multiplier of 1.
     ! If rcollection is specified, the following parameters are expected:
     !
     ! rcollection%DquickAccess(1) = multiplier in front of the operator.
-    ! rcollection%IquickAccess(1) = 0, if the convection is a constant vector field.
+    ! rcollection%IquickAccess(1) = x-position in the matrix where to set up the operator.
+    ! rcollection%IquickAccess(2) = y-position in the matrix where to set up the operator.
+    ! rcollection%IquickAccess(3) = 0, if the convection is a constant vector field.
     !                                  in this case:
     !                                  1D: rcollection%DquickAccess(2)   = x-velocity
     !                                  2D: rcollection%DquickAccess(2:3) = x/y-velocity
@@ -727,7 +904,9 @@ contains
     !
     !     ...
     !
-    !     rcollection%IquickAccess(1) = 1          ! Nonconstant viscosity
+    !     rcollection%IquickAccess(1) = 1          ! x-Position in the matrix
+    !     rcollection%IquickAccess(2) = 1          ! y-Position in the matrix
+    !     rcollection%IquickAccess(3) = 1          ! Nonconstant viscosity
     !     rcollection%DquickAccess(1) = 1.0_DP     ! Scaling
     !
     !     ! Add the X-, Y- and Z-velocity to revalVectors
@@ -836,7 +1015,7 @@ contains
     type(t_bmaMatrixData), pointer :: p_rmatrixData11,p_rmatrixData22,p_rmatrixData33
     real(DP), dimension(:,:,:), pointer :: p_Du1,p_Du2,p_Du3
 
-    integer :: ndim
+    integer :: ndim,ix,iy
     real(DP) :: dscale
     real(DP) :: dvelX, dvelY, dvelZ
     logical :: bvelConst
@@ -850,12 +1029,14 @@ contains
     dvelY = 0.0_DP
     dvelZ = 0.0_DP
     bvelConst = .true.
+    ix = 1
+    iy = 1
     
     if (present(rcollection)) then
       dscale = rcollection%DquickAccess(1)
       
       ! Constant velocity?
-      bvelConst = (rcollection%IquickAccess(1) .eq. 0)
+      bvelConst = (rcollection%IquickAccess(3) .eq. 0)
       
       if (bvelConst) then
         ! Get the constant velocity
@@ -864,27 +1045,31 @@ contains
         if (ndim .ge. 3) dvelZ = rcollection%DquickAccess(4)
       end if
       
+      ! Position
+      ix = rcollection%IquickAccess(1)
+      iy = rcollection%IquickAccess(2)
+
     end if
     
     ! Get cubature weights data
     p_DcubWeight => rassemblyData%p_DcubWeight
 
     ! Get local data
-    p_DbasTrial => RmatrixData(1,1)%p_DbasTrial
-    p_DbasTest => RmatrixData(1,1)%p_DbasTest
+    p_DbasTrial => RmatrixData(iy,ix)%p_DbasTrial
+    p_DbasTest => RmatrixData(iy,ix)%p_DbasTest
 
     ! Set up the local matrix of the convection.
     select case (ndim)
     case (NDIM1D)
       ! Matrices to be set up
-      p_rmatrixData11 => RmatrixData(1,1)
+      p_rmatrixData11 => RmatrixData(iy,ix)
       
-      p_DlocalMatrix11 => RmatrixData(1,1)%p_Dentry
+      p_DlocalMatrix11 => RmatrixData(iy,ix)%p_Dentry
       
       ! Currently, interleaved matrices are not supported
       if (p_rmatrixData11%bisInterleaved) then
         call output_line ("Interleaved matrices not supported",&
-            OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection")
+            OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_ugradvw")
         call sys_halt()
       end if
 
@@ -933,7 +1118,7 @@ contains
 
         if (revalVectors%ncount .lt. 1) then
           call output_line ("FEM function missing.",&
-              OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection")
+              OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_ugradvw")
           call sys_halt()
         end if
 
@@ -987,16 +1172,16 @@ contains
     case (NDIM2D)
 
       ! Matrices to be set up
-      p_rmatrixData11 => RmatrixData(1,1)
-      p_rmatrixData22 => RmatrixData(2,2)
+      p_rmatrixData11 => RmatrixData(iy,ix)
+      p_rmatrixData22 => RmatrixData(iy+1,ix+1)
       
-      p_DlocalMatrix11 => RmatrixData(1,1)%p_Dentry
-      p_DlocalMatrix22 => RmatrixData(2,2)%p_Dentry
+      p_DlocalMatrix11 => RmatrixData(iy,ix)%p_Dentry
+      p_DlocalMatrix22 => RmatrixData(iy+1,ix+1)%p_Dentry
 
       ! Currently, interleaved matrices are not supported
       if (p_rmatrixData11%bisInterleaved) then
         call output_line ("Interleaved matrices not supported",&
-            OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection")
+            OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_ugradvw")
         call sys_halt()
       end if
 
@@ -1052,7 +1237,7 @@ contains
 
         if (revalVectors%ncount .lt. 2) then
           call output_line ("FEM function missing.",&
-              OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection")
+              OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_ugradvw")
           call sys_halt()
         end if
 
@@ -1115,18 +1300,18 @@ contains
     case (NDIM3D)
 
       ! Matrices to be set up
-      p_rmatrixData11 => RmatrixData(1,1)
-      p_rmatrixData22 => RmatrixData(2,2)
-      p_rmatrixData33 => RmatrixData(3,3)
+      p_rmatrixData11 => RmatrixData(iy,ix)
+      p_rmatrixData22 => RmatrixData(iy+1,ix+1)
+      p_rmatrixData33 => RmatrixData(iy+2,ix+2)
 
-      p_DlocalMatrix11 => RmatrixData(1,1)%p_Dentry
-      p_DlocalMatrix22 => RmatrixData(2,2)%p_Dentry
-      p_DlocalMatrix33 => RmatrixData(3,3)%p_Dentry
+      p_DlocalMatrix11 => RmatrixData(iy,ix)%p_Dentry
+      p_DlocalMatrix22 => RmatrixData(iy+1,ix+1)%p_Dentry
+      p_DlocalMatrix33 => RmatrixData(iy+2,ix+2)%p_Dentry
 
       ! Currently, interleaved matrices are not supported
       if (p_rmatrixData11%bisInterleaved) then
         call output_line ("Interleaved matrices not supported",&
-            OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection")
+            OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_ugradvw")
         call sys_halt()
       end if
 
@@ -1191,7 +1376,7 @@ contains
 
         if (revalVectors%ncount .lt. 3) then
           call output_line ("FEM function missing.",&
-              OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_bubbleH1error")
+              OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_ugradvw")
           call sys_halt()
         end if
 
