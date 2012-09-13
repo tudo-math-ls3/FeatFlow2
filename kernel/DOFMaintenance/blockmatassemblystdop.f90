@@ -25,53 +25,58 @@
 !#        the convection operator ( (u grad) v, w) at a specified position in a block
 !#        matrix.
 !#
-!# 4.) bma_fcalc_convection_graduvw
+!# 4.) bma_fcalc_convection_vugradw
+!#     -> Used with bma_buildMatrix, this routine can be used to assemble
+!#        the convection operator ( v, (u grad) w) at a specified position in a block
+!#        matrix.
+!#
+!# 5.) bma_fcalc_convection_graduvw
 !#     -> Used with bma_buildMatrix, this routine can be used to assemble
 !#        the convection operator ( (grad u) v, w) at a specified position in a block
 !#        matrix.
 !#
-!# 5.) bma_fcalc_convection_vgraduw
+!# 6.) bma_fcalc_convection_vgraduw
 !#     -> Used with bma_buildMatrix, this routine can be used to assemble
 !#        the convection operator ( v, (grad u) w) at a specified position in a block
 !#        matrix.
 !#
-!# 6.) bma_fcalc_rhsOne
+!# 7.) bma_fcalc_rhsOne
 !#     -> Calculates the RHS vector based on the function f=1.
 !#
-!# 7.) bma_fcalc_rhsBubble
+!# 8.) bma_fcalc_rhsBubble
 !#     -> Calculates the RHS vector based on the function f=32*y*(1-y)+32*x*(1-x)
 !#        which is the RHS for u=16*x*(1-x)*y*(1-y) in the Laplace
 !#        equation -Laplace(u)=f.
 !#
-!# 8.) bma_fcalc_rhsBubblePlusFE
+!# 9.) bma_fcalc_rhsBubblePlusFE
 !#     -> Calculates the RHS vector based on the function 
 !#        f=32*y*(1-y)+32*x*(1-x) + v(x,y)
 !#        with v(x,y) being a finite element function passed via parameters.
 !#
-!# 9.) bma_fcalc_rhsFE
+!# 10.) bma_fcalc_rhsFE
 !#     -> Calculates the RHS vector based on the function 
 !#        f=v(x,y)
 !#        with v(x,y) being a finite element function passed via parameters.
 !#
-!# 10.) bma_fcalc_integralOne
+!# 11.) bma_fcalc_integralOne
 !#     -> Calculates the integral of the function v=1 (which results in the
 !#        size of the domain).
 !#
-!# 11.) bma_fcalc_integralFE
+!# 12.) bma_fcalc_integralFE
 !#     -> Calculates the integral of an arbitrary FEM function.
 !#
-!# 12.) bma_fcalc_bubbleL2error
+!# 13.) bma_fcalc_bubbleL2error
 !#      -> Calculates the squared L2 error of a FEM function to a 
 !#         bubble function
 !#        
-!# 13.) bma_fcalc_bubbleH1error
+!# 14.) bma_fcalc_bubbleH1error
 !#     -> Calculates the squared H1 error of a FEM function to a 
 !#        bubble function
 !#
-!# 14.) bma_fcalc_L2norm
+!# 15.) bma_fcalc_L2norm
 !#     -> Calculates the squared L2 norm of a FEM function
 !#        
-!# 15.) bma_fcalc_H1norm
+!# 16.) bma_fcalc_H1norm
 !#     -> Calculates the squared H1 (semi-)norm of a FEM function
 !# </purpose>
 !##############################################################################
@@ -984,7 +989,7 @@ contains
     ! taking care of the flags RmatrixData(:,:)%bsharedMatrixData which indicate
     ! which matrix data is shared.
     !
-    ! Remark 4:
+    ! Remark 5:
     ! Interleaved matrices are currently not supported.
 !</remarks>
 
@@ -1467,6 +1472,573 @@ contains
 
 !<subroutine>
 
+  subroutine bma_fcalc_convection_vugradw(RmatrixData,rassemblyData,rmatrixAssembly,&
+      npointsPerElement,nelements,revalVectors,rcollection)
+
+!<description>  
+    ! Calculates a convection operator "( v, (u grad) w )" at position (x,y)
+    ! of a block matrix, with a convection u given as a finite element function.
+    ! v is the trial and w the test basis function.
+    !
+    ! Note: If rcollection is not specified, the matrix is calculated
+    ! in all diagonal blocks with a multiplier of 1.
+    ! If rcollection is specified, the following parameters are expected:
+    !
+    ! rcollection%DquickAccess(1) = multiplier in front of the operator.
+    ! rcollection%IquickAccess(1) = x-position in the matrix where to set up the operator.
+    ! rcollection%IquickAccess(2) = y-position in the matrix where to set up the operator.
+    ! rcollection%IquickAccess(3) = 0, if the convection is a constant vector field.
+    !                                  in this case:
+    !                                  1D: rcollection%DquickAccess(2)   = x-velocity
+    !                                  2D: rcollection%DquickAccess(2:3) = x/y-velocity
+    !                                  3D: rcollection%DquickAccess(2:4) = x/y/z-velocity
+    !                             = 1, if the convection is specified by a
+    !                                  finite element velocity field. In this case,
+    !                                  a finite element velocity field must be specified
+    !                                  as parameter revalVectors to the call of 
+    !                                  bma_buildMatrix. The first vector must be the
+    !                                  X-velocity, the 2nd the Y-velocity and 
+    !                                  the third the Z-velocity.
+!</description>
+
+!<remarks>
+    ! Remark 1: 
+    ! Using the routines from feevaluation2, it is possible to specify
+    ! a nonconstant velocity field. The corresponding code looks as follows:
+    !
+    ! <verb>
+    !     use feevaluation2
+    !
+    !     ...
+    !
+    !     type(t_collection) :: rcollection
+    !     type(t_scalarCubatureInfo) :: rcubatureInfo   ! Cubature formula
+    !     type(t_matrixBlock) :: rmatrix                ! Matrix to be calculated
+    !
+    !     type(t_vectorBlock) :: rvelocity        ! The velocity field
+    !     type(t_fev2Vectors) :: revalVectors     ! Collection of vectors to evaluate
+    !
+    !     ! Prepare the cubature formula
+    !     call spdiscr_createDefCubStructure (..., rcubatureInfo, CUB_GEN_AUTO)
+    !
+    !     ...
+    !
+    !     rcollection%IquickAccess(1) = 1          ! x-Position in the matrix
+    !     rcollection%IquickAccess(2) = 1          ! y-Position in the matrix
+    !     rcollection%IquickAccess(3) = 1          ! Nonconstant viscosity
+    !     rcollection%DquickAccess(1) = 1.0_DP     ! Scaling
+    !
+    !     ! Add the X-, Y- and Z-velocity to revalVectors
+    !     call fev2_addVectorToEvalList(revalVectors,rvelocity%RvectorBlock(1),0)
+    !     call fev2_addVectorToEvalList(revalVectors,rvelocity%RvectorBlock(2),0)
+    !     call fev2_addVectorToEvalList(revalVectors,rvelocity%RvectorBlock(3),0)
+    !
+    !     ! Set up the matrix
+    !     call bma_buildMatrix (rmatrix,BMA_CALC_STANDARD, bma_fcalc_convection_vugradw, &
+    !         rcollection, revalVectors=revalVectors,rcubatureInfo=rcubatureInfo)
+    !
+    !     ! Release the vector structure
+    !     call fev2_releaseVectorList(revalVectors)
+    !
+    !     ...
+    !
+    !     ! Release the cubature formula
+    !     call spdiscr_releaseCubStructure (rcubatureInfo)
+    ! </verb>
+    !
+    ! Remark 2:
+    ! The routine currently assumes that all velocity components are discretised
+    ! with the same FEM space.
+    !
+    ! Remark 3:
+    ! The routine currently assumes that all velocity matrices are independent.
+    ! Matrices sharing data are not supported. This cound be realised by
+    ! taking care of the flags RmatrixData(:,:)%bsharedMatrixData which indicate
+    ! which matrix data is shared.
+    !
+    ! Remark 4:
+    ! Interleaved matrices are currently not supported.
+!</remarks>
+
+!<inputoutput>
+    ! Matrix data of all matrices. The arrays p_Dentry of all submatrices
+    ! have to be filled with data.
+    type(t_bmaMatrixData), dimension(:,:), intent(inout), target :: RmatrixData
+!</inputoutput>
+
+!<input>
+    ! Data necessary for the assembly. Contains determinants and
+    ! cubature weights for the cubature,...
+    type(t_bmaMatrixAssemblyData), intent(in) :: rassemblyData
+
+    ! Structure with all data about the assembly
+    type(t_bmaMatrixAssembly), intent(in) :: rmatrixAssembly
+
+    ! Number of points per element
+    integer, intent(in) :: npointsPerElement
+
+    ! Number of elements
+    integer, intent(in) :: nelements
+
+    ! Values of FEM functions automatically evaluated in the
+    ! cubature points.
+    type(t_fev2Vectors), intent(in) :: revalVectors
+
+    ! User defined collection structure
+    type(t_collection), intent(inout), target, optional :: rcollection
+!</input>
+
+!<subroutine>
+
+    ! Local variables
+    real(DP) :: dbasJ, dbasIx, dbasIy, dbasIz
+    integer :: iel, icubp, idofe, jdofe
+    real(DP), dimension(:,:,:), pointer :: p_DlocalMatrix11,p_DlocalMatrix22,p_DlocalMatrix33
+    type(t_bmaMatrixData), pointer :: p_rmatrixData11,p_rmatrixData22,p_rmatrixData33
+    real(DP), dimension(:,:,:,:), pointer :: p_DbasTrial,p_DbasTest
+    real(DP), dimension(:,:), pointer :: p_DcubWeight
+    real(DP), dimension(:,:,:), pointer :: p_Du1,p_Du2,p_Du3
+
+    integer :: ndim,ix,iy
+    real(DP) :: dscale
+    real(DP) :: dvelX, dvelY, dvelZ
+    logical :: bvelConst
+
+    ! Dimension of the underlying space
+    ndim = rmatrixAssembly%p_rtriangulation%ndim
+    
+    ! Get parameters
+    dscale = 1.0_DP
+    dvelX = 0.0_DP
+    dvelY = 0.0_DP
+    dvelZ = 0.0_DP
+    bvelConst = .true.
+    ix = 1
+    iy = 1
+    
+    if (present(rcollection)) then
+      dscale = rcollection%DquickAccess(1)
+      
+      ! Constant velocity?
+      bvelConst = (rcollection%IquickAccess(3) .eq. 0)
+      
+      if (bvelConst) then
+        ! Get the constant velocity
+        dvelX = rcollection%DquickAccess(2)
+        if (ndim .ge. NDIM2D) dvelY = rcollection%DquickAccess(3)
+        if (ndim .ge. NDIM3D) dvelZ = rcollection%DquickAccess(4)
+      end if
+      
+      ! Position
+      ix = rcollection%IquickAccess(1)
+      iy = rcollection%IquickAccess(2)
+
+    end if
+    
+    ! Get cubature weights data
+    p_DcubWeight => rassemblyData%p_DcubWeight
+
+    ! Get local data
+    p_DbasTrial => RmatrixData(iy,ix)%p_DbasTrial
+    p_DbasTest => RmatrixData(iy,ix)%p_DbasTest
+
+    ! Set up the local matrix of the convection.
+    select case (ndim)
+    case (NDIM1D)
+      ! Matrices to be set up
+      p_rmatrixData11 => RmatrixData(iy,ix)
+      
+      p_DlocalMatrix11 => RmatrixData(iy,ix)%p_Dentry
+      
+      ! Currently, interleaved matrices are not supported
+      if (p_rmatrixData11%bisInterleaved) then
+        call output_line ("Interleaved matrices not supported",&
+            OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_ugradvw")
+        call sys_halt()
+      end if
+
+      if (bvelConst) then
+      
+        ! Set up the matrix for constant velocity.
+      
+        ! Loop over the elements in the current set.
+        do iel = 1,nelements
+
+          ! Loop over all cubature points on the current element
+          do icubp = 1,npointsPerElement
+
+            ! Outer loop over the DOF's i=1..ndof on our current element,
+            ! which corresponds to the (test) basis functions Phi_i:
+            do idofe=1,p_rmatrixData11%ndofTest
+
+              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! into dbasI
+              dbasIx = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+
+              ! Inner loop over the DOF's j=1..ndof, which corresponds to
+              ! the basis function Phi_j:
+              do jdofe=1,p_rmatrixData11%ndofTrial
+
+                ! Fetch the contributions of the (trial) basis function Phi_j
+                ! into dbasJ
+                dbasJ = p_DbasTrial(jdofe,DER_DERIV1D_X,icubp,iel)
+                
+                ! Multiply the values of the basis functions
+                ! (1st derivatives) by the cubature weight and sum up
+                ! into the local matrices.
+                p_DlocalMatrix11(jdofe,idofe,iel) = p_DlocalMatrix11(jdofe,idofe,iel) + &
+                    dscale * p_DcubWeight(icubp,iel) * &
+                    ( dbasJ * dvelX * dbasIx )            ! ( phi , u1 psi_x )
+
+              end do ! idofe
+
+            end do ! jdofe
+
+          end do ! icubp
+
+        end do ! iel
+        
+      else
+
+        if (revalVectors%ncount .lt. 1) then
+          call output_line ("FEM function missing.",&
+              OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_ugradvw")
+          call sys_halt()
+        end if
+
+        ! Set up the matrix for nonconstant velocity.
+        !
+        ! Get the velocity field from the parameters
+        p_Du1 => revalVectors%p_RvectorData(1)%p_Ddata
+      
+        ! Loop over the elements in the current set.
+        do iel = 1,nelements
+
+          ! Loop over all cubature points on the current element
+          do icubp = 1,npointsPerElement
+
+            ! Velocity field in this cubature point
+            dvelX = p_Du1(icubp,iel,DER_FUNC)
+            
+            ! Outer loop over the DOF's i=1..ndof on our current element,
+            ! which corresponds to the (test) basis functions Phi_i:
+            do idofe=1,p_rmatrixData11%ndofTest
+
+              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! into dbasI
+              dbasIx = p_DbasTest(idofe,DER_DERIV1D_X,icubp,iel)
+
+              ! Inner loop over the DOF's j=1..ndof, which corresponds to
+              ! the basis function Phi_j:
+              do jdofe=1,p_rmatrixData11%ndofTrial
+
+                ! Fetch the contributions of the (trial) basis function Phi_j
+                ! into dbasJ
+                dbasJ = p_DbasTrial(jdofe,DER_FUNC,icubp,iel)
+                
+                ! Multiply the values of the basis functions
+                ! (1st derivatives) by the cubature weight and sum up
+                ! into the local matrices.
+                p_DlocalMatrix11(jdofe,idofe,iel) = p_DlocalMatrix11(jdofe,idofe,iel) + &
+                    dscale * p_DcubWeight(icubp,iel) * &
+                    ( dbasJ * dvelX * dbasIx )            ! ( phi , u1 psi_x )
+
+              end do ! idofe
+
+            end do ! jdofe
+
+          end do ! icubp
+
+        end do ! iel
+        
+      end if
+      
+    case (NDIM2D)
+
+      ! Matrices to be set up
+      p_rmatrixData11 => RmatrixData(iy,ix)
+      p_rmatrixData22 => RmatrixData(iy+1,ix+1)
+      
+      p_DlocalMatrix11 => RmatrixData(iy,ix)%p_Dentry
+      p_DlocalMatrix22 => RmatrixData(iy+1,ix+1)%p_Dentry
+
+      ! Currently, interleaved matrices are not supported
+      if (p_rmatrixData11%bisInterleaved) then
+        call output_line ("Interleaved matrices not supported",&
+            OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_ugradvw")
+        call sys_halt()
+      end if
+
+      if (bvelConst) then
+      
+        ! Set up the matrix for constant velocity.
+      
+        ! Loop over the elements in the current set.
+        do iel = 1,nelements
+
+          ! Loop over all cubature points on the current element
+          do icubp = 1,npointsPerElement
+
+            ! Outer loop over the DOF's i=1..ndof on our current element,
+            ! which corresponds to the (test) basis functions Phi_i:
+            do idofe=1,p_rmatrixData11%ndofTest
+
+              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! into dbasI
+              dbasIx = p_DbasTest(idofe,DER_DERIV2D_X,icubp,iel)
+              dbasIy = p_DbasTest(idofe,DER_DERIV2D_Y,icubp,iel)
+
+              ! Inner loop over the DOF's j=1..ndof, which corresponds to
+              ! the basis function Phi_j:
+              do jdofe=1,p_rmatrixData11%ndofTrial
+
+                ! Fetch the contributions of the (trial) basis function Phi_j
+                ! into dbasJ
+                dbasJ = p_DbasTrial(jdofe,DER_FUNC,icubp,iel)
+                
+                ! Multiply the values of the basis functions
+                ! (1st derivatives) by the cubature weight and sum up
+                ! into the local matrices.
+                p_DlocalMatrix11(jdofe,idofe,iel) = p_DlocalMatrix11(jdofe,idofe,iel) + &
+                    dscale * p_DcubWeight(icubp,iel) * &
+                    ( dbasJ * dvelX * dbasIx + &          ! ( phi , u1 psi_x )
+                      dbasJ * dvelY * dbasIy )            ! ( phi , u2 psi_y )
+
+                p_DlocalMatrix22(jdofe,idofe,iel) = p_DlocalMatrix22(jdofe,idofe,iel) + &
+                    dscale * p_DcubWeight(icubp,iel) * &
+                    ( dbasJ * dvelX * dbasIx + &          ! ( phi , u1 psi_x )
+                      dbasJ * dvelY * dbasIy )            ! ( phi , u2 psi_y )
+
+              end do ! idofe
+
+            end do ! jdofe
+
+          end do ! icubp
+
+        end do ! iel
+        
+      else
+
+        if (revalVectors%ncount .lt. 2) then
+          call output_line ("FEM function missing.",&
+              OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_ugradvw")
+          call sys_halt()
+        end if
+
+        ! Set up the matrix for nonconstant velocity.
+        !
+        ! Get the velocity field from the parameters
+        p_Du1 => revalVectors%p_RvectorData(1)%p_Ddata
+        p_Du2 => revalVectors%p_RvectorData(2)%p_Ddata
+      
+        ! Loop over the elements in the current set.
+        do iel = 1,nelements
+
+          ! Loop over all cubature points on the current element
+          do icubp = 1,npointsPerElement
+
+            ! Velocity field in this cubature point
+            dvelX = p_Du1(icubp,iel,DER_FUNC)
+            dvelY = p_Du2(icubp,iel,DER_FUNC)
+            
+            ! Outer loop over the DOF's i=1..ndof on our current element,
+            ! which corresponds to the (test) basis functions Phi_i:
+            do idofe=1,p_rmatrixData11%ndofTest
+
+              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! into dbasI
+              dbasIx = p_DbasTest(idofe,DER_DERIV2D_X,icubp,iel)
+              dbasIy = p_DbasTest(idofe,DER_DERIV2D_Y,icubp,iel)
+
+              ! Inner loop over the DOF's j=1..ndof, which corresponds to
+              ! the basis function Phi_j:
+              do jdofe=1,p_rmatrixData11%ndofTrial
+
+                ! Fetch the contributions of the (trial) basis function Phi_j
+                ! into dbasJ
+                dbasJ = p_DbasTrial(jdofe,DER_FUNC,icubp,iel)
+                
+                ! Multiply the values of the basis functions
+                ! (1st derivatives) by the cubature weight and sum up
+                ! into the local matrices.
+                p_DlocalMatrix11(jdofe,idofe,iel) = p_DlocalMatrix11(jdofe,idofe,iel) + &
+                    dscale * p_DcubWeight(icubp,iel) * &
+                    ( dbasJ * dvelX * dbasIx + &          ! ( phi , u1 psi_x )
+                      dbasJ * dvelY * dbasIy )            ! ( phi , u2 psi_y )
+
+                p_DlocalMatrix22(jdofe,idofe,iel) = p_DlocalMatrix22(jdofe,idofe,iel) + &
+                    dscale * p_DcubWeight(icubp,iel) * &
+                    ( dbasJ * dvelX * dbasIx + &          ! ( phi , u1 psi_x )
+                      dbasJ * dvelY * dbasIy )            ! ( phi , u2 psi_y )
+
+              end do ! idofe
+
+            end do ! jdofe
+
+          end do ! icubp
+
+        end do ! iel
+        
+      end if
+
+    case (NDIM3D)
+
+      ! Matrices to be set up
+      p_rmatrixData11 => RmatrixData(iy,ix)
+      p_rmatrixData22 => RmatrixData(iy+1,ix+1)
+      p_rmatrixData33 => RmatrixData(iy+2,ix+2)
+
+      p_DlocalMatrix11 => RmatrixData(iy,ix)%p_Dentry
+      p_DlocalMatrix22 => RmatrixData(iy+1,ix+1)%p_Dentry
+      p_DlocalMatrix33 => RmatrixData(iy+2,ix+2)%p_Dentry
+
+      ! Currently, interleaved matrices are not supported
+      if (p_rmatrixData11%bisInterleaved) then
+        call output_line ("Interleaved matrices not supported",&
+            OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_ugradvw")
+        call sys_halt()
+      end if
+
+      if (bvelConst) then
+      
+        ! Set up the matrix for constant velocity.
+      
+        ! Loop over the elements in the current set.
+        do iel = 1,nelements
+
+          ! Loop over all cubature points on the current element
+          do icubp = 1,npointsPerElement
+
+            ! Outer loop over the DOF's i=1..ndof on our current element,
+            ! which corresponds to the (test) basis functions Phi_i:
+            do idofe=1,p_rmatrixData11%ndofTest
+
+              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! into dbasI
+              dbasIx = p_DbasTest(idofe,DER_DERIV3D_X,icubp,iel)
+              dbasIy = p_DbasTest(idofe,DER_DERIV3D_Y,icubp,iel)
+              dbasIz = p_DbasTest(idofe,DER_DERIV3D_Z,icubp,iel)
+
+              ! Inner loop over the DOF's j=1..ndof, which corresponds to
+              ! the basis function Phi_j:
+              do jdofe=1,p_rmatrixData11%ndofTrial
+
+                ! Fetch the contributions of the (trial) basis function Phi_j
+                ! into dbasJ
+                dbasJ = p_DbasTrial(jdofe,DER_FUNC,icubp,iel)
+                
+                ! Multiply the values of the basis functions
+                ! (1st derivatives) by the cubature weight and sum up
+                ! into the local matrices.
+                p_DlocalMatrix11(jdofe,idofe,iel) = p_DlocalMatrix11(jdofe,idofe,iel) + &
+                    dscale * p_DcubWeight(icubp,iel) * &
+                    ( dbasJ * dvelX * dbasIx + &          ! ( phi , u1 psi_x )
+                      dbasJ * dvelY * dbasIy + &          ! ( phi , u2 psi_y )
+                      dbasJ * dvelZ * dbasIz )            ! ( phi , u3 psi_z )
+
+                p_DlocalMatrix22(jdofe,idofe,iel) = p_DlocalMatrix22(jdofe,idofe,iel) + &
+                    dscale * p_DcubWeight(icubp,iel) * &
+                    ( dbasJ * dvelX * dbasIx + &          ! ( phi , u1 psi_x )
+                      dbasJ * dvelY * dbasIy + &          ! ( phi , u2 psi_y )
+                      dbasJ * dvelZ * dbasIz )            ! ( phi , u3 psi_z )
+
+                p_DlocalMatrix33(jdofe,idofe,iel) = p_DlocalMatrix33(jdofe,idofe,iel) + &
+                    dscale * p_DcubWeight(icubp,iel) * &
+                    ( dbasJ * dvelX * dbasIx + &          ! ( phi , u1 psi_x )
+                      dbasJ * dvelY * dbasIy + &          ! ( phi , u2 psi_y )
+                      dbasJ * dvelZ * dbasIz )            ! ( phi , u3 psi_z )
+
+              end do ! idofe
+
+            end do ! jdofe
+
+          end do ! icubp
+
+        end do ! iel
+        
+      else
+
+        if (revalVectors%ncount .lt. 3) then
+          call output_line ("FEM function missing.",&
+              OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_ugradvw")
+          call sys_halt()
+        end if
+
+        ! Set up the matrix for nonconstant velocity.
+        !
+        ! Get the velocity field from the parameters
+        p_Du1 => revalVectors%p_RvectorData(1)%p_Ddata
+        p_Du2 => revalVectors%p_RvectorData(2)%p_Ddata
+        p_Du3 => revalVectors%p_RvectorData(3)%p_Ddata
+      
+        ! Loop over the elements in the current set.
+        do iel = 1,nelements
+
+          ! Loop over all cubature points on the current element
+          do icubp = 1,npointsPerElement
+
+            ! Velocity field in this cubature point
+            dvelX = p_Du1(icubp,iel,DER_FUNC)
+            dvelY = p_Du2(icubp,iel,DER_FUNC)
+            dvelZ = p_Du3(icubp,iel,DER_FUNC)
+            
+            ! Outer loop over the DOF's i=1..ndof on our current element,
+            ! which corresponds to the (test) basis functions Phi_i:
+            do idofe=1,p_rmatrixData11%ndofTest
+
+              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! into dbasI
+              dbasIx = p_DbasTest(idofe,DER_DERIV3D_X,icubp,iel)
+              dbasIy = p_DbasTest(idofe,DER_DERIV3D_Y,icubp,iel)
+              dbasIz = p_DbasTest(idofe,DER_DERIV3D_Z,icubp,iel)
+
+              ! Inner loop over the DOF's j=1..ndof, which corresponds to
+              ! the basis function Phi_j:
+              do jdofe=1,p_rmatrixData11%ndofTrial
+
+                ! Fetch the contributions of the (trial) basis function Phi_j
+                ! into dbasJ
+                dbasJ = p_DbasTrial(jdofe,DER_FUNC,icubp,iel)
+                
+                ! Multiply the values of the basis functions
+                ! (1st derivatives) by the cubature weight and sum up
+                ! into the local matrices.
+                p_DlocalMatrix11(jdofe,idofe,iel) = p_DlocalMatrix11(jdofe,idofe,iel) + &
+                    dscale * p_DcubWeight(icubp,iel) * &
+                    ( dbasJ * dvelX * dbasIx + &          ! ( phi , u1 psi_x )
+                      dbasJ * dvelY * dbasIy + &          ! ( phi , u2 psi_y )
+                      dbasJ * dvelZ * dbasIz )            ! ( phi , u3 psi_z )
+
+                p_DlocalMatrix22(jdofe,idofe,iel) = p_DlocalMatrix22(jdofe,idofe,iel) + &
+                    dscale * p_DcubWeight(icubp,iel) * &
+                    ( dbasJ * dvelX * dbasIx + &          ! ( phi , u1 psi_x )
+                      dbasJ * dvelY * dbasIy + &          ! ( phi , u2 psi_y )
+                      dbasJ * dvelZ * dbasIz )            ! ( phi , u3 psi_z )
+
+                p_DlocalMatrix33(jdofe,idofe,iel) = p_DlocalMatrix33(jdofe,idofe,iel) + &
+                    dscale * p_DcubWeight(icubp,iel) * &
+                    ( dbasJ * dvelX * dbasIx + &          ! ( phi , u1 psi_x )
+                      dbasJ * dvelY * dbasIy + &          ! ( phi , u2 psi_y )
+                      dbasJ * dvelZ * dbasIz )            ! ( phi , u3 psi_z )
+
+              end do ! idofe
+
+            end do ! jdofe
+
+          end do ! icubp
+
+        end do ! iel
+        
+      end if
+
+    end select
+
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
   subroutine bma_fcalc_convection_graduvw(RmatrixData,rassemblyData,rmatrixAssembly,&
       npointsPerElement,nelements,revalVectors,rcollection)
 
@@ -1594,11 +2166,11 @@ contains
     real(DP), dimension(:,:,:), pointer :: p_DlocalMatrix11,p_DlocalMatrix12,p_DlocalMatrix13
     real(DP), dimension(:,:,:), pointer :: p_DlocalMatrix21,p_DlocalMatrix22,p_DlocalMatrix23
     real(DP), dimension(:,:,:), pointer :: p_DlocalMatrix31,p_DlocalMatrix32,p_DlocalMatrix33
-    real(DP), dimension(:,:,:,:), pointer :: p_DbasTrial,p_DbasTest
-    real(DP), dimension(:,:), pointer :: p_DcubWeight
     type(t_bmaMatrixData), pointer :: p_rmatrixData11,p_rmatrixData12,p_rmatrixData13
     type(t_bmaMatrixData), pointer :: p_rmatrixData21,p_rmatrixData22,p_rmatrixData23
     type(t_bmaMatrixData), pointer :: p_rmatrixData31,p_rmatrixData32,p_rmatrixData33
+    real(DP), dimension(:,:,:,:), pointer :: p_DbasTrial,p_DbasTest
+    real(DP), dimension(:,:), pointer :: p_DcubWeight
     real(DP), dimension(:,:,:), pointer :: p_Du1,p_Du2,p_Du3
 
     integer :: ndim,ix,iy
@@ -1930,12 +2502,24 @@ contains
 
       ! Matrices to be set up
       p_rmatrixData11 => RmatrixData(iy,ix)
+      p_rmatrixData12 => RmatrixData(iy,ix+1)
+      p_rmatrixData13 => RmatrixData(iy,ix+2)
+      p_rmatrixData21 => RmatrixData(iy+1,ix)
       p_rmatrixData22 => RmatrixData(iy+1,ix+1)
+      p_rmatrixData23 => RmatrixData(iy+1,ix+2)
+      p_rmatrixData31 => RmatrixData(iy+2,ix)
+      p_rmatrixData32 => RmatrixData(iy+2,ix+1)
       p_rmatrixData33 => RmatrixData(iy+2,ix+2)
-
+      
       p_DlocalMatrix11 => RmatrixData(iy,ix)%p_Dentry
+      p_DlocalMatrix12 => RmatrixData(iy,ix+1)%p_Dentry
+      p_DlocalMatrix13 => RmatrixData(iy,ix+3)%p_Dentry
+      p_DlocalMatrix21 => RmatrixData(iy+1,ix)%p_Dentry
       p_DlocalMatrix22 => RmatrixData(iy+1,ix+1)%p_Dentry
-      p_DlocalMatrix33 => RmatrixData(iy+2,ix+2)%p_Dentry
+      p_DlocalMatrix23 => RmatrixData(iy+1,ix+3)%p_Dentry
+      p_DlocalMatrix31 => RmatrixData(iy+2,ix)%p_Dentry
+      p_DlocalMatrix32 => RmatrixData(iy+2,ix+1)%p_Dentry
+      p_DlocalMatrix33 => RmatrixData(iy+2,ix+3)%p_Dentry
 
       ! Currently, interleaved matrices are not supported
       if (p_rmatrixData11%bisInterleaved) then
@@ -2587,12 +3171,24 @@ contains
 
       ! Matrices to be set up
       p_rmatrixData11 => RmatrixData(iy,ix)
+      p_rmatrixData12 => RmatrixData(iy,ix+1)
+      p_rmatrixData13 => RmatrixData(iy,ix+2)
+      p_rmatrixData21 => RmatrixData(iy+1,ix)
       p_rmatrixData22 => RmatrixData(iy+1,ix+1)
+      p_rmatrixData23 => RmatrixData(iy+1,ix+2)
+      p_rmatrixData31 => RmatrixData(iy+2,ix)
+      p_rmatrixData32 => RmatrixData(iy+2,ix+1)
       p_rmatrixData33 => RmatrixData(iy+2,ix+2)
-
+      
       p_DlocalMatrix11 => RmatrixData(iy,ix)%p_Dentry
+      p_DlocalMatrix12 => RmatrixData(iy,ix+1)%p_Dentry
+      p_DlocalMatrix13 => RmatrixData(iy,ix+3)%p_Dentry
+      p_DlocalMatrix21 => RmatrixData(iy+1,ix)%p_Dentry
       p_DlocalMatrix22 => RmatrixData(iy+1,ix+1)%p_Dentry
-      p_DlocalMatrix33 => RmatrixData(iy+2,ix+2)%p_Dentry
+      p_DlocalMatrix23 => RmatrixData(iy+1,ix+3)%p_Dentry
+      p_DlocalMatrix31 => RmatrixData(iy+2,ix)%p_Dentry
+      p_DlocalMatrix32 => RmatrixData(iy+2,ix+1)%p_Dentry
+      p_DlocalMatrix33 => RmatrixData(iy+2,ix+3)%p_Dentry
 
       ! Currently, interleaved matrices are not supported
       if (p_rmatrixData11%bisInterleaved) then
