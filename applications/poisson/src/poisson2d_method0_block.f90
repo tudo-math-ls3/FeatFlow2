@@ -207,6 +207,8 @@ contains
     
     ! Pass the constant dnu=1.0 in front of the Laplace via rcollection.
     rcollection%DquickAccess(1) = 1.0_DP
+    rcollection%IquickAccess(1) = 1
+    rcollection%IquickAccess(2) = 1
 
     ! The routine "bma_fcalc_laplace" can be found in "blockmatassembly.f90" as
     ! an example for a matrix calculation routine!
