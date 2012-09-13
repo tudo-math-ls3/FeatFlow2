@@ -12,7 +12,7 @@
 !# They can directly be used with bma_buildMatrix, bma_buildVector and 
 !# bma_buildIntegral:
 !#
-!# 1.) bma_fcalc_mass / bma_fcalc_mass
+!# 1.) bma_fcalc_mass / bma_fcalc_massDiag
 !#     -> Used with bma_buildMatrix, this calculates mass matrices 
 !#        at a specified position / in all diagonal blocks of a block matrix.
 !#
@@ -108,6 +108,7 @@ module blockmatassemblystdop
   public :: bma_fcalc_laplaceDiag
   public :: bma_fcalc_laplace
   public :: bma_fcalc_convection_ugradvw
+  public :: bma_fcalc_convection_vugradw
   public :: bma_fcalc_convection_graduvw
   public :: bma_fcalc_convection_vgraduw
   
