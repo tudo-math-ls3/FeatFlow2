@@ -3253,15 +3253,15 @@ contains
 
                 p_DlocalMatrix31(jdofe,idofe,iel) = p_DlocalMatrix31(jdofe,idofe,iel) + &
                     dscale * p_DcubWeight(icubp,iel) * &
-                    ( dbasJ * dvelX3 * dbasI )            ! ( phi , u1_y psi )
+                    ( dbasJ * dvelX3 * dbasI )            ! ( phi , u1_z psi )
 
                 p_DlocalMatrix32(jdofe,idofe,iel) = p_DlocalMatrix32(jdofe,idofe,iel) + &
                     dscale * p_DcubWeight(icubp,iel) * &
-                    ( dbasJ * dvelY3 * dbasI )            ! ( phi , u2_y psi )
+                    ( dbasJ * dvelY3 * dbasI )            ! ( phi , u2_z psi )
 
                 p_DlocalMatrix33(jdofe,idofe,iel) = p_DlocalMatrix33(jdofe,idofe,iel) + &
                     dscale * p_DcubWeight(icubp,iel) * &
-                    ( dbasJ * dvelZ3 * dbasI )            ! ( phi , u3_y psi )
+                    ( dbasJ * dvelZ3 * dbasI )            ! ( phi , u3_z psi )
 
               end do ! idofe
 
@@ -3350,15 +3350,15 @@ contains
 
                 p_DlocalMatrix31(jdofe,idofe,iel) = p_DlocalMatrix31(jdofe,idofe,iel) + &
                     dscale * p_DcubWeight(icubp,iel) * &
-                    ( dbasJ * dvelX3 * dbasI )            ! ( phi , u1_y psi )
+                    ( dbasJ * dvelX3 * dbasI )            ! ( phi , u1_z psi )
 
                 p_DlocalMatrix32(jdofe,idofe,iel) = p_DlocalMatrix32(jdofe,idofe,iel) + &
                     dscale * p_DcubWeight(icubp,iel) * &
-                    ( dbasJ * dvelY3 * dbasI )            ! ( phi , u2_y psi )
+                    ( dbasJ * dvelY3 * dbasI )            ! ( phi , u2_z psi )
 
                 p_DlocalMatrix33(jdofe,idofe,iel) = p_DlocalMatrix33(jdofe,idofe,iel) + &
                     dscale * p_DcubWeight(icubp,iel) * &
-                    ( dbasJ * dvelZ3 * dbasI )            ! ( phi , u3_y psi )
+                    ( dbasJ * dvelZ3 * dbasI )            ! ( phi , u3_z psi )
 
               end do ! idofe
 
