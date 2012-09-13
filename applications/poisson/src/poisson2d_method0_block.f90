@@ -207,6 +207,8 @@ contains
     
     ! Pass the constant dnu=1.0 in front of the Laplace via rcollection.
     rcollection%DquickAccess(1) = 1.0_DP
+    
+    ! Laplace is to be assembled at position (x,y) = (1,1) in the block matrix
     rcollection%IquickAccess(1) = 1
     rcollection%IquickAccess(2) = 1
 
