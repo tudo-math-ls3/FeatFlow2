@@ -1094,14 +1094,19 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: ctypeProjection
+    integer :: ctimeProjectionProl,ctimeProjectionRest,ctimeProjectionInterp
 
     ! Type of prolongation/restriction in time
     call parlst_getvalue_int (rparlist, ssection, &
-        "ctypeProjection", ctypeProjection, -1)
+        "ctimeProjectionProl", ctimeProjectionProl, -1)
+    call parlst_getvalue_int (rparlist, ssection, &
+        "ctimeProjectionRest", ctimeProjectionRest, -1)
+    call parlst_getvalue_int (rparlist, ssection, &
+        "ctimeProjectionInterp", ctimeProjectionInterp, -1)
      
     call sptipr_initProjectionBlock (rprjHierarchyBlock,rhierarchy,&
-        rprojHierarchySpace,rphysics,roptcontrol,cspace,ctypeProjection)
+        rprojHierarchySpace,rphysics,roptcontrol,cspace,&
+        ctimeProjectionProl,ctimeProjectionRest,ctimeProjectionInterp)
     
   end subroutine
 

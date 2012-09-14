@@ -190,6 +190,12 @@ module kktsystem
   ! Calculates the control at a given point in time.
   public :: kkt_getControlAtTime
 
+  ! Saves the solutions of a KKT system to file sequences
+  public :: kkt_saveToFiles
+
+  ! Saves the solutions of a KKT system to file sequences
+  public :: kkt_saveDirDerivToFiles
+
 contains
 
   ! ***************************************************************************
@@ -312,7 +318,7 @@ contains
 !</output>
 
 !</subroutine>
-
+  
     ! Remember the structures
     rkktsystemDirDeriv%p_rkktsystem => rkktsystem
     
@@ -866,7 +872,7 @@ contains
           ! -------------------------------------------------------------
           ! Heat equation
           ! -------------------------------------------------------------
-          case (CCEQ_HEAT2D)
+          case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
             
             ! Which type of control is applied?
             
@@ -1658,6 +1664,9 @@ contains
     type(t_settings_optcontrol), pointer :: p_rsettingsOptControl
 
     type(t_spacetimeOperatorAsm) :: roperatorAsm
+    
+    ! DEBUG!!!
+    real(DP), dimension(:), pointer :: p_Ddual,p_Dcontrol,p_DcontrolOut,p_DintermedC
 
     ! Fetch some structures
     p_rphysics => &
@@ -1725,7 +1734,13 @@ contains
 
           call sptivec_getVectorFromPool (&
               rkktsystemDirDeriv%p_rkktSystem%p_rintermedControl%p_rvectorAccess,istep,p_rintermedControl)
-              
+
+          ! DEBUG!!!
+          call lsysbl_getbase_double (p_rdualSpaceLin,p_Ddual)
+          call lsysbl_getbase_double (p_rcontrolSpaceLin,p_Dcontrol)
+          call lsysbl_getbase_double (p_rcontrolSpaceLinOutput,p_DcontrolOut)
+          call lsysbl_getbase_double (p_rintermedControl,p_DintermedC)
+
           ! icomp counts the component in the control
           icomp = 0
           
@@ -1915,7 +1930,7 @@ contains
           ! -------------------------------------------------------------
           ! Heat equation
           ! -------------------------------------------------------------
-          case (CCEQ_HEAT2D)
+          case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
             
             ! Which type of control is applied?
             
@@ -2270,7 +2285,7 @@ contains
       ! -------------------------------------------------------------
       ! Heat equation
       ! -------------------------------------------------------------
-      case (CCEQ_HEAT2D)
+      case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
         
         ! Which type of control is applied?
         
@@ -2386,6 +2401,7 @@ contains
     call kktsp_clearPrimal (rkktsystem%p_rprimalSol)
     call kktsp_clearDual (rkktsystem%p_rdualSol)
     call kktsp_clearControl (rkktsystem%p_rcontrol)
+    call kktsp_clearControl (rkktsystem%p_rintermedControl)
 
   end subroutine
 
@@ -2563,7 +2579,7 @@ contains
         ! -------------------------------------------------------------
         ! Heat Stokes.
         ! -------------------------------------------------------------
-        case (CCEQ_HEAT2D)
+        case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
           
           ! Which type of control is applied?
           
@@ -2626,6 +2642,142 @@ contains
     ! Unlock the vector, finish
     call sptivec_unlockVecInPool (rkktsystem%p_rcontrol%p_rvectorAccess,iindex)
     
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine kkt_saveToFiles (rkktSystem,sfilename,cspace)
+!<description>
+  ! Saves the solutions of a KKT system to file sequences
+!</description>
+
+!<input>
+  ! The solutions to be saved.
+  type(t_kktsystem), intent(inout), target :: rkktsystem
+  
+  ! Basic filename
+  character(len=*), intent(in) :: sfilename
+
+  ! OPTIONAL: Space to be saved. If not specified, all spaces
+  ! will be saved.
+  integer, intent(in), optional :: cspace
+!</input>
+
+!</subroutine>
+
+    logical :: bprimal, bdual, bcontrol, bintermed
+    
+    bprimal = .false.
+    bdual = .false.
+    bcontrol = .false.
+    bintermed = .false.
+    
+    if (.not. present(cspace)) then
+    
+      bprimal = .true.
+      bdual = .true.
+      bcontrol = .true.
+
+    else
+    
+      select case (cspace)
+      case (CCSPACE_PRIMAL)
+        bprimal = .true.
+        
+      case (CCSPACE_DUAL)
+        bdual = .true.
+        
+      case (CCSPACE_CONTROL)
+        bcontrol = .true.
+
+      case (CCSPACE_INTERMEDCONTROL)
+        bintermed = .true.
+        
+      end select
+    
+    end if
+
+    if (bprimal) &
+      call sptivec_saveToFileSequence (&
+          rkktsystem%p_rprimalSol%p_rvector,"("""//trim(sfilename)//"_primal."",I5.5)",.true.)
+    if (bdual) &
+      call sptivec_saveToFileSequence (&
+          rkktsystem%p_rdualSol%p_rvector,"("""//trim(sfilename)//"_dual."",I5.5)",.true.)
+    if (bcontrol) &
+      call sptivec_saveToFileSequence (&
+          rkktsystem%p_rcontrol%p_rvector,"("""//trim(sfilename)//"_control."",I5.5)",.true.)
+    if (bintermed) &
+      call sptivec_saveToFileSequence (&
+          rkktsystem%p_rintermedControl%p_rvector,"("""//trim(sfilename)//"_intermedc."",I5.5)",.true.)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine kkt_saveDirDerivToFiles (rkktSystemDirDeriv,sfilename,cspace)
+!<description>
+  ! Saves the directional derivative of a KKT system to file sequences
+!</description>
+
+!<input>
+  ! The solutions to be saved.
+  type(t_kktsystemDirDeriv), intent(inout), target :: rkktSystemDirDeriv
+  
+  ! Basic filename
+  character(len=*), intent(in) :: sfilename
+
+  ! OPTIONAL: Space to be saved. If not specified, all spaces
+  ! will be saved.
+  integer, intent(in), optional :: cspace
+!</input>
+
+!</subroutine>
+
+    logical :: bprimal, bdual, bcontrol
+    
+    bprimal = .false.
+    bdual = .false.
+    bcontrol = .false.
+    
+    if (.not. present(cspace)) then
+    
+      bprimal = .true.
+      bdual = .true.
+      bcontrol = .true.
+
+    else
+    
+      select case (cspace)
+      case (CCSPACE_PRIMAL)
+        bprimal = .true.
+        
+      case (CCSPACE_DUAL)
+        bdual = .true.
+        
+      case (CCSPACE_CONTROL)
+        bcontrol = .true.
+        
+      end select
+    
+    end if
+
+    if (bprimal) &
+      call sptivec_saveToFileSequence (&
+          rkktSystemDirDeriv%p_rprimalSolLin%p_rvector,&
+          "("""//trim(sfilename)//"_primallin."",I5.5)",.true.)
+    if (bdual) &
+      call sptivec_saveToFileSequence (&
+          rkktSystemDirDeriv%p_rdualSolLin%p_rvector,&
+          "("""//trim(sfilename)//"_duallin."",I5.5)",.true.)
+    if (bcontrol) &
+      call sptivec_saveToFileSequence (&
+          rkktSystemDirDeriv%p_rcontrolLin%p_rvector,&
+          "("""//trim(sfilename)//"_controllin."",I5.5)",.true.)
+
   end subroutine
 
 end module

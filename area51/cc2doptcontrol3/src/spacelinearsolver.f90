@@ -585,7 +585,7 @@ contains
       ! ---------------------------------------------------
       ! Heat equation
       ! ---------------------------------------------------
-      case (CCEQ_HEAT2D)
+      case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
 
         ! ---------------------------------------------------
         ! Coarse grid solver
@@ -602,6 +602,12 @@ contains
               rdebugFlags%cwriteUmfpackMatrix
           p_rlevelInfo%p_rcoarseGridSolver%p_rsubnodeUmfpack4%smatrixName = "matrix.txt"
           
+        case (1)
+          ! BiCGStab with SOR
+          call linsol_initSOR (p_rpreconditioner)
+          call linsol_initBiCGStab (p_rlevelInfo%p_rcoarseGridSolver,&
+              p_rpreconditioner,rlssHierarchy%p_RlinearSolvers(1)%RfilterChain)
+          
         case default
         
           call output_line ("Unknown coarse grid solver.", &
@@ -610,6 +616,9 @@ contains
             
         end select
         
+        ! Remember the filter chain to use on that level
+        p_rlevelInfo%p_RfilterChain => rlssHierarchy%p_RlinearSolvers(1)%RfilterChain
+
         ! Save the reference to the coarse grid solver.
         rsolver%p_rcoarseGridSolver => p_rlevelInfo%p_rcoarseGridSolver
         
@@ -654,6 +663,7 @@ contains
             call linsol_getMultigrid2Level (p_rsolverNode,ilev,p_rlevelInfo)
             p_rlevelInfo%p_rpresmoother => p_rsmoother
             p_rlevelInfo%p_rpostsmoother => p_rsmoother
+            p_rlevelInfo%p_rfilterChain => rlssHierarchy%p_RlinearSolvers(ilev)%RfilterChain
             
             ! Set up the interlevel projection structure for the projection from/to
             ! the lower level.
@@ -953,13 +963,13 @@ contains
     type(t_optcBDCSpace), pointer :: p_roptcBDCSpace
     type(t_linsolMG2LevelInfo), pointer :: p_rlevelInfo
     
-    ! Get the corresponding boundary condition structure
-    p_roptcBDCSpace => roptcBDCSpaceHierarchy%p_RoptcBDCspace(ilevel)
-
     ! Initialis the filter chains of all levels to incorporate
     ! the correct boundary conditions.
     do ilev = 1,ilevel
     
+      ! Get the corresponding boundary condition structure
+      p_roptcBDCSpace => roptcBDCSpaceHierarchy%p_RoptcBDCspace(ilev)
+
       ! Get the solver structure of that level
       p_rlinsolSpace => rlssHierarchy%p_RlinearSolvers(ilev)
       
@@ -1072,7 +1082,7 @@ contains
       ! ---------------------------------------------------
       ! Heat equation
       ! ---------------------------------------------------
-      case (CCEQ_HEAT2D)
+      case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
 
         ! Pressure filter for iterative solvers
         select case (p_rlinsolSpace%isolverType)
@@ -1111,17 +1121,18 @@ contains
               ! UMFPACK
               ! -----------------------------------
               case (0)
-                call output_line (&
-                    "UMFPACK coarse grid solver does not support filtering!",&
-                    OU_CLASS_ERROR,OU_MODE_STD,"lssh_initData")
-                call sys_halt()
+                !call output_line (&
+                !    "UMFPACK coarse grid solver does not support filtering!",&
+                !    OU_CLASS_ERROR,OU_MODE_STD,"lssh_initData")
+                !call sys_halt()
+                call filter_newFilterOneEntryZero (p_rlinsolSpace%RfilterChain,ifilter,1,1)
 
               ! -----------------------------------
               ! Iterative solver
               ! -----------------------------------
               case default
               
-                call filter_newFilterToL20 (p_rlinsolSpace%RfilterChain,ifilter,1)
+                call filter_newFilterSmallL1to0 (p_rlinsolSpace%RfilterChain,ifilter,1)
 
               end select
               
@@ -1138,7 +1149,7 @@ contains
             if (p_roptcBDCSpace%rdirichletBoundary%nregions .eq. 0) then
             
               ! Active if there is no Dirichlet boundary
-              call filter_newFilterToL20 (p_rlinsolSpace%RfilterChain,ifilter,1)
+              call filter_newFilterSmallL1to0 (p_rlinsolSpace%RfilterChain,ifilter,1)
 
             end if
           

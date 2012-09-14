@@ -321,7 +321,7 @@ contains
     ! -------------------------------------------------------------
     ! Heat equation
     ! -------------------------------------------------------------
-    case (CCEQ_HEAT2D)
+    case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
     
       ! -----------------------------------------------------------
       ! Distributed control
@@ -806,8 +806,13 @@ contains
 !</result>
 
 !</subroutine>
+    
+    real(DP) :: dtemp
 
+    dtemp = rx%p_rvector%p_Dscale(1)
+    rx%p_rvector%p_Dscale(1) = 0.0_DP
     kktsp_getNormControl = sptivec_vectorNorm (rx%p_rvector,iresnorm)
+    rx%p_rvector%p_Dscale(1) = dtemp
 
   end function
 
@@ -989,10 +994,17 @@ contains
 
 !</subroutine>
 
+    real(DP) :: dtemp
+
     kktsp_scalarProductControl = 0.0_DP
     if (associated (rx%p_rvector)) then
       ! Calculate the scalar product.
+
+      dtemp = rx%p_rvector%p_Dscale(1)
+      rx%p_rvector%p_Dscale(1) = 0.0_DP
       kktsp_scalarProductControl = sptivec_scalarProduct (rx%p_rvector, ry%p_rvector)
+      rx%p_rvector%p_Dscale(1) = dtemp
+
     end if
     
   end function

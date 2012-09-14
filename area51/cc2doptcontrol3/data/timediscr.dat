@@ -61,7 +61,14 @@ dtimeStepTheta = 1.0
 #     the restriction uses a constant interpolation of the primal
 #     space to synchronise in time with the dual space.
 
-ctypeProjection = 1
+# Prolongation
+ctimeProjectionProl = 1
+
+# Restriction
+ctimeProjectionRest = 1
+
+# Interpolation
+ctimeProjectionInterp = 1
 
 # ========================================================================
 # This section defines a combined space-time refinement.

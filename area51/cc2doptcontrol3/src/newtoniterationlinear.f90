@@ -29,6 +29,7 @@ module newtoniterationlinear
   use blockmatassembly
   use collection
   use iterationcontrol
+  use matrixmodification
   
   use spacetimevectors
   use analyticsolution
@@ -52,6 +53,7 @@ module newtoniterationlinear
   use spacetimeinterlevelprj
   
   use structuresnewton
+  use postprocessing
   
   implicit none
   
@@ -435,7 +437,7 @@ contains
     ! Forward equation
     ! --------------------
 
-    if (rlinsolParam%rprecParameters%ioutputLevel .ge. 2) then
+    if (rlinsolParam%rprecParameters%ioutputLevel .ge. 3) then
       call output_line ("Linear space-time Residual: Solving the primal equation")
     end if
 
@@ -448,7 +450,7 @@ contains
 
     output_iautoOutputIndent = output_iautoOutputIndent - 2
     
-    if (rlinsolParam%rprecParameters%ioutputLevel .ge. 3) then
+    if (rlinsolParam%rprecParameters%ioutputLevel .ge. 4) then
       call output_line ("Linear space-time Residual: Time for solving      : "//&
           trim(sys_sdL(rlocalStat%rtotalTime%delapsedReal,10)))
       call output_line ("Linear space-time Residual: Time for space-defects: "//&
@@ -472,7 +474,7 @@ contains
     ! Backward equation
     ! --------------------
 
-    if (rlinsolParam%rprecParameters%ioutputLevel .ge. 2) then
+    if (rlinsolParam%rprecParameters%ioutputLevel .ge. 3) then
       call output_line ("Linear space-time Residual: Solving the dual equation")
     end if
 
@@ -485,7 +487,7 @@ contains
 
     output_iautoOutputIndent = output_iautoOutputIndent - 2
     
-    if (rlinsolParam%rprecParameters%ioutputLevel .ge. 3) then
+    if (rlinsolParam%rprecParameters%ioutputLevel .ge. 4) then
       call output_line ("Linear space-time Residual: Time for solving      : "//&
           trim(sys_sdL(rlocalStat%rtotalTime%delapsedReal,10)))
       call output_line ("Linear space-time Residual: Time for space-defects: "//&
@@ -558,7 +560,7 @@ contains
     ! Forward equation
     ! --------------------
 
-    if (rlinsolParam%rprecParameters%ioutputLevel .ge. 2) then
+    if (rlinsolParam%rprecParameters%ioutputLevel .ge. 3) then
       call output_line ("Linear space-time Residual: Solving the primal equation")
     end if
 
@@ -571,7 +573,7 @@ contains
     
     output_iautoOutputIndent = output_iautoOutputIndent - 2
 
-    if (rlinsolParam%rprecParameters%ioutputLevel .ge. 3) then
+    if (rlinsolParam%rprecParameters%ioutputLevel .ge. 4) then
       call output_line ("Linear space-time Residual: Time for solving      : "//&
           trim(sys_sdL(rlocalStat%rtotalTime%delapsedReal,10)))
       call output_line ("Linear space-time Residual: Time for space-defects: "//&
@@ -595,7 +597,7 @@ contains
     ! Backward equation
     ! --------------------
 
-    if (rlinsolParam%rprecParameters%ioutputLevel .ge. 2) then
+    if (rlinsolParam%rprecParameters%ioutputLevel .ge. 3) then
       call output_line ("Linear space-time Residual: Solving the dual equation")
     end if
 
@@ -608,7 +610,7 @@ contains
 
     output_iautoOutputIndent = output_iautoOutputIndent - 2
 
-    if (rlinsolParam%rprecParameters%ioutputLevel .ge. 3) then
+    if (rlinsolParam%rprecParameters%ioutputLevel .ge. 4) then
       call output_line ("Linear space-time Residual: Time for solving      : "//&
           trim(sys_sdL(rlocalStat%rtotalTime%delapsedReal,10)))
       call output_line ("Linear space-time Residual: Time for space-defects: "//&
@@ -1029,6 +1031,18 @@ contains
       call output_lbrk()
       call itc_printStatistics(rlinsolParam%riter)
     end if
+    
+!    ! DEBUG!!!
+!    call newtonlin_getResidual (rlinsolParam,rkktsystemDirDeriv,rrhs,p_rr,rlocalStat)
+!    call kkt_controlResidualNorm (&
+!        rkktsystemDirDeriv%p_rkktsystem%p_roperatorAsmHier%ranalyticData,&
+!        p_rr,dres,rlinsolParam%rprecParameters%iresnorm)
+!    if (rlinsolParam%rprecParameters%ioutputLevel .ge. 2) then
+!      call output_line ("Space-time CG: Finished "// &
+!          trim(sys_siL(rlinsolParam%riter%niterations,10))// &
+!          ", ||res(u)|| = "// &
+!          trim(sys_sdEL(dres,10)))
+!    end if
 
   end subroutine
 
@@ -1512,11 +1526,56 @@ contains
     type(t_iterationControl), pointer :: p_riter
     type(t_iterationControl), target :: riterLocal
     
+!    ! DEBUG!!!
+!    type(t_spacetimeOperatorAsm) :: roperatorAsm
+    
     ! Get multigrid parameters.
     p_rsubnodeMultigrid => rlinsolParam%p_rsubnodeMultigrid
 
+!    ! DEBUG!!!
+!    call optcpp_spaceTimeVisualisation (rlinsolParam%p_rsettingsSolver%rpostproc,rrhs%p_rvectorAccess,&
+!        CCSPACE_INTERMEDCONTROL,rlinsolParam%p_rsettingsSolver%rphysics,&
+!        rlinsolParam%p_rsettingsSolver%rsettingsOptControl,10+ilevel)        
+!    call sptivec_saveToFileSequence (&
+!        rrhs%p_rvector,"(""ns/controllin."//trim(sys_siL(10+ilevel,10))//"."",I5.5)",.true.)
+!    call kkth_getKKTsystemDirDeriv (rkktsysDirDerivHierarchy,ilevel,p_rkktSysSolution)
+!    
+!    
+!    call optcpp_spaceTimeVisualisation (rlinsolParam%p_rsettingsSolver%rpostproc,&
+!        p_rkktSysSolution%p_rkktSystem%p_rprimalSol%p_rvectorAccess,CCSPACE_PRIMAL,&
+!        rlinsolParam%p_rsettingsSolver%rphysics,rlinsolParam%p_rsettingsSolver%rsettingsOptControl,10+ilevel)        
+!    
+!    call optcpp_spaceTimeVisualisation (rlinsolParam%p_rsettingsSolver%rpostproc,&
+!        p_rkktSysSolution%p_rkktSystem%p_rdualSol%p_rvectorAccess,CCSPACE_DUAL,&
+!        rlinsolParam%p_rsettingsSolver%rphysics,rlinsolParam%p_rsettingsSolver%rsettingsOptControl,10+ilevel)        
+!
+!    call sptivec_saveToFileSequence (&
+!        p_rkktSysSolution%p_rkktSystem%p_rprimalSol%p_rvector,"(""ns/primal."//trim(sys_siL(10+ilevel,10))//"."",I5.5)",.true.)
+!    call sptivec_saveToFileSequence (&
+!        p_rkktSysSolution%p_rkktSystem%p_rdualSol%p_rvector,"(""ns/dual."//trim(sys_siL(10+ilevel,10))//"."",I5.5)",.true.)
+!    call sptivec_saveToFileSequence (&
+!        p_rkktSysSolution%p_rkktSystem%p_rintermedControl%p_rvector,"(""ns/intermedc."//trim(sys_siL(10+ilevel,10))//"."",I5.5)",.true.)
+!    call sptivec_saveToFileSequence (&
+!        p_rkktSysSolution%p_rkktSystem%p_rcontrol%p_rvector,"(""ns/control."//trim(sys_siL(10+ilevel,10))//"."",I5.5)",.true.)
+
     ! On level 1 apply the coarse grid solver
     if (ilevel .eq. 1) then
+
+!      call sptivec_loadFromFileSequence (&
+!          rrhs%p_rvector,"(""ns/controllin."//trim(sys_siL(10+ilevel,10))//"."",I5.5)",0,20,1,.true.)
+!      call sptivec_scaleVector (rrhs%p_rvector,0.9_DP)
+!      call sptivec_loadfromfilesequence (&
+!          p_rkktsyssolution%p_rkktsystem%p_rprimalsol%p_rvector,"(""ns/primal."//trim(sys_sil(10+ilevel,10))//"."",i5.5)",0,20,1,.true.)
+!      call sptivec_loadfromfilesequence (&
+!          p_rkktsyssolution%p_rkktsystem%p_rdualsol%p_rvector,"(""ns/dual."//trim(sys_sil(10+ilevel,10))//"."",i5.5)",0,20,1,.true.)
+!      call sptivec_loadfromfilesequence (&
+!          p_rkktsyssolution%p_rkktsystem%p_rintermedcontrol%p_rvector,"(""ns/intermedc."//trim(sys_sil(10+ilevel,10))//"."",i5.5)",0,20,1,.true.)
+!      call sptivec_loadfromfilesequence (&
+!          p_rkktsyssolution%p_rkktsystem%p_rcontrol%p_rvector,"(""ns/control."//trim(sys_sil(10+ilevel,10))//"."",i5.5)",0,20,1,.true.)
+!      
+!      call optcpp_spaceTimeVisualisation (rlinsolParam%p_rsettingsSolver%rpostproc,&
+!          rrhs%p_rvectorAccess,CCSPACE_INTERMEDCONTROL,rlinsolParam%p_rsettingsSolver%rphysics,&
+!          rlinsolParam%p_rsettingsSolver%rsettingsOptControl,30+ilevel)
       
       if (nlevels .eq. 1) then
         if (rlinsolParam%rprecParameters%ioutputLevel .ge. 1) then
@@ -1538,6 +1597,21 @@ contains
         call itc_copyStatistics (p_rsubnodeMultigrid%p_rsubSolvers(ilevel)%riter,rlinsolParam%riter)
       end if
     
+!      ! DEBUG!!!
+!      call kkth_getKKTsystemDirDeriv (rkktsysDirDerivHierarchy,ilevel,p_rkktSysSolution)
+!      call optcpp_spaceTimeVisualisation (rlinsolParam%p_rsettingsSolver%rpostproc,&
+!          p_rkktSysSolution%p_rcontrolLin%p_rvectorAccess,CCSPACE_CONTROL,&
+!          rlinsolParam%p_rsettingsSolver%rphysics,rlinsolParam%p_rsettingsSolver%rsettingsOptControl,20+ilevel)
+!
+!      call optcpp_spaceTimeVisualisation (rlinsolParam%p_rsettingsSolver%rpostproc,&
+!          p_rkktSysSolution%p_rprimalSolLin%p_rvectorAccess,CCSPACE_PRIMAL,&
+!          rlinsolParam%p_rsettingsSolver%rphysics,rlinsolParam%p_rsettingsSolver%rsettingsOptControl,20+ilevel)
+!      
+!      call optcpp_spaceTimeVisualisation (rlinsolParam%p_rsettingsSolver%rpostproc,&
+!          p_rkktSysSolution%p_rdualSolLin%p_rvectorAccess,CCSPACE_DUAL,&
+!          rlinsolParam%p_rsettingsSolver%rphysics,rlinsolParam%p_rsettingsSolver%rsettingsOptControl,20+ilevel)
+
+
       ! Finish
       return
     end if
@@ -1670,6 +1744,15 @@ contains
           p_rkktSysRhsCoarse%p_rcontrolLin%p_rvectorAccess, &
           p_rkktSysDefect%p_rcontrolLin%p_rvectorAccess)
       
+!      ! DEBUG!!!
+!      call stoh_getOpAsm_slvtlv (roperatorAsm,&
+!          p_rkktSysRhsCoarse%p_rkktsystem%p_roperatorAsmHier,&
+!          p_rkktSysRhsCoarse%p_rkktsystem%ispacelevel,&
+!          p_rkktSysRhsCoarse%p_rkktsystem%itimelevel)
+!      call smva_projectToDiv0 (roperatorAsm%p_rasmTemplates,&
+!          p_rkktSysRhsCoarse%p_rdualSolLin%p_rvectorAccess,&
+!          p_rkktSysRhsCoarse%p_rcontrolLin%p_rvectorAccess)
+      
       call stat_stopTimer(rstatistics%rtimeProlRest)
       
       if (ilevel-1 .eq. 1) then
@@ -1750,6 +1833,154 @@ contains
         
     call stat_stopTimer(rstatistics%rtotalTime)
 
+!    ! DEBUG!!!
+!    call kkth_getKKTsystemDirDeriv (rkktsysDirDerivHierarchy,ilevel,p_rkktSysSolution)
+!    call optcpp_spaceTimeVisualisation (rlinsolParam%p_rsettingsSolver%rpostproc,&
+!        p_rkktSysSolution%p_rcontrolLin%p_rvectorAccess,CCSPACE_CONTROL,&
+!        rlinsolParam%p_rsettingsSolver%rphysics,rlinsolParam%p_rsettingsSolver%rsettingsOptControl,10+ilevel)  
+        
+  end subroutine
+
+  
+! ***************************************************************************
+
+!<subroutine>
+
+  subroutine smva_projectSpaceToDiv0 (rasmTemplates,rdiscrDual,rvector)
+  
+!<description>
+  ! Projects a vector into the divergence free subspace.
+!</description>
+
+!<input>
+  ! Assembly templates
+  type(t_staticSpaceAsmTemplates), intent(in) :: rasmTemplates
+  
+  ! Block discretisation of the dual space
+  type(t_blockDiscretisation), intent(in) :: rdiscrDual
+!</input>
+
+!<inputoutput>
+  ! Vector to be projected
+  type(t_vectorBlock), intent(inout) :: rvector
+!</inputoutput>
+
+!</subroutine>
+  
+    ! local variables
+    type(t_vectorBlock) :: rrhs,rtemp,rsol
+    type(t_matrixBlock) :: rmatrix
+    type(t_linsolNode), pointer :: p_rsolverNode
+    integer :: ierror
+    real(DP), dimension(:), pointer :: p_Dx,p_Db
+    integer, dimension(1) :: Irows
+    
+    ! Set up the RHS
+    call lsysbl_createVectorBlock (rdiscrDual,rrhs)
+    call lsysbl_createVectorBlock (rdiscrDual,rtemp)
+    call lsysbl_createVectorBlock (rdiscrDual,rsol)
+    
+    ! DEBUG!!!
+    call lsysbl_getbase_double (rrhs,p_Db)
+    call lsysbl_getbase_double (rsol,p_Dx)
+    
+    ! Matrix-vector multiplication with the mass matix
+    call lsyssc_scalarMatVec (rasmTemplates%rmatrixMass,&
+        rvector%RvectorBlock(1),rrhs%RvectorBlock(1),1.0_DP,0.0_DP)
+    call lsyssc_scalarMatVec (rasmTemplates%rmatrixMass,&
+        rvector%RvectorBlock(2),rrhs%RvectorBlock(2),1.0_DP,0.0_DP)
+    call lsyssc_copyVector (rvector%RvectorBlock(1),rsol%RvectorBlock(1))
+    call lsyssc_copyVector (rvector%RvectorBlock(2),rsol%RvectorBlock(2))
+    call lsyssc_clearVector (rsol%RvectorBlock(3))
+    call lsyssc_clearVector (rrhs%RvectorBlock(3))
+
+    ! Set up a block matrix
+    call lsysbl_createEmptyMatrix (rmatrix,3,3)
+    call lsyssc_duplicateMatrix (rasmTemplates%rmatrixMass,rmatrix%RmatrixBlock(1,1),&
+        LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+    call lsyssc_duplicateMatrix (rasmTemplates%rmatrixMass,rmatrix%RmatrixBlock(2,2),&
+        LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+    call lsyssc_duplicateMatrix (rasmTemplates%rmatrixB1,rmatrix%RmatrixBlock(1,3),&
+        LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+    call lsyssc_duplicateMatrix (rasmTemplates%rmatrixB2,rmatrix%RmatrixBlock(2,3),&
+        LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+    call lsyssc_duplicateMatrix (rasmTemplates%rmatrixD1,rmatrix%RmatrixBlock(3,1),&
+        LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+    call lsyssc_duplicateMatrix (rasmTemplates%rmatrixD2,rmatrix%RmatrixBlock(3,2),&
+        LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+    call lsyssc_duplicateMatrix (rasmTemplates%rmatrixMassPressureExtStruc,rmatrix%RmatrixBlock(3,3),&
+        LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+    call lsyssc_clearMatrix (rmatrix%RmatrixBlock(3,3))
+    Irows = (/1/)
+    call mmod_replaceLinesByZero (rmatrix%RmatrixBlock(3,1),Irows)
+    call mmod_replaceLinesByZero (rmatrix%RmatrixBlock(3,2),Irows)
+    call mmod_replaceLineByLumpedMass (rmatrix%RmatrixBlock(3,3),1,&
+        rasmTemplates%rmatrixMassPressureLumpInt)
+    call lsysbl_updateMatStrucInfo (rmatrix)
+    
+    ! Solve
+    call linsol_initUMFPACK4 (p_rsolverNode)
+    call linsol_setMatrix (p_rsolverNode,rmatrix)
+    call linsol_initStructure (p_rsolverNode, ierror)
+    call linsol_initData (p_rsolverNode, ierror)
+    call linsol_solveAdaptively (p_rsolverNode, rsol,rrhs,rtemp)
+    call linsol_doneData (p_rsolverNode)
+    call linsol_doneStructure (p_rsolverNode)
+    call linsol_releaseSolver (p_rsolverNode)
+
+    ! Get the solution    
+    call lsyssc_copyVector (rsol%RvectorBlock(1),rvector%RvectorBlock(1))
+    call lsyssc_copyVector (rsol%RvectorBlock(2),rvector%RvectorBlock(2))
+
+    ! Clean up
+    call lsysbl_releaseMatrix (rmatrix)
+    call lsysbl_releaseVector (rrhs)
+    call lsysbl_releaseVector (rtemp)
+    call lsysbl_releaseVector (rsol)
+
+  end subroutine
+
+! ***************************************************************************
+
+!<subroutine>
+
+  subroutine smva_projectToDiv0 (rasmTemplates,rdualSol,rcontrol)
+  
+!<description>
+  ! Projects a control vector into the divergence free subspace.
+!</description>
+
+!<input>
+  ! Assembly templates
+  type(t_staticSpaceAsmTemplates), intent(in) :: rasmTemplates
+
+  ! Dual solution, corresponding to the control
+  type(t_spaceTimeVectorAccess), intent(in) :: rdualSol
+!</input>
+
+!<inputoutput>
+  ! Control vector to be projected
+  type(t_spaceTimeVectorAccess), intent(inout) :: rcontrol
+!</inputoutput>
+
+!</subroutine>
+  
+    ! local variables
+    integer :: istep
+    type(t_vectorBlock), pointer :: p_rvector
+    
+    do istep=1,rcontrol%p_rspaceTimeVector%NEQtime
+      ! Get the subvector
+      call sptivec_getVectorFromPool (rcontrol, istep, p_rvector)
+      
+      ! Project into the divergence free space
+      call smva_projectSpaceToDiv0 (rasmTemplates,rdualSol%p_rspaceDiscr,p_rvector)
+      
+      ! Save back
+      call sptivec_commitVecInPool (rcontrol, istep)
+      
+    end do
+    
   end subroutine
 
   ! ***************************************************************************

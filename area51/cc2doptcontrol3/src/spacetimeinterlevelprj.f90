@@ -80,15 +80,35 @@ module spacetimeinterlevelprj
   ! of space-time levels.
   type t_sptiProjHierarchy
 
-    ! Type of projection in time.
+    ! Type of projection in time. Prolongation.
     ! =-1: undefined
-    ! =0: constant prolongation/restriction
-    ! =1: linear prolongation/restriction. Central differences. 
+    ! =0: constant prolongation
+    ! =1: linear prolongation. Central differences. 
     !     Solutions located at the endpoints of the time interval.
-    ! =2: linear prolongation/restriction. Central differences.
+    ! =2: linear prolongation. Central differences.
     !     Solutions located in time according to the theta scheme.
     !     Full linear restriction with interpolation in time.
-    integer :: ctimeProjection = -1
+    integer :: ctimeProjectionProl = -1
+
+    ! Type of projection in time. Restriction.
+    ! =-1: undefined
+    ! =0: constant restriction
+    ! =1: linear restriction. Central differences. 
+    !     Solutions located at the endpoints of the time interval.
+    ! =2: linear restriction. Central differences.
+    !     Solutions located in time according to the theta scheme.
+    !     Full linear restriction with interpolation in time.
+    integer :: ctimeProjectionRest = -1
+
+    ! Type of projection in time. Interpolation.
+    ! =-1: undefined
+    ! =0: constant interpolation
+    ! =1: linear interpolation. Central differences. 
+    !     Solutions located at the endpoints of the time interval.
+    ! =2: linear interpolation. Central differences.
+    !     Solutions located in time according to the theta scheme.
+    !     Full linear restriction with interpolation in time.
+    integer :: ctimeProjectionInterp = -1
     
     ! List of components in the vector to which this type
     ! of projection is to be applied.
@@ -155,7 +175,8 @@ contains
 !<subroutine>
 
   subroutine sptipr_initProjectionBlock (rprojHierBlock,rspaceTimeHierarchy,&
-      rprojHierarchySpace,rphysics,roptcontrol,cspace,ctimeProjection)
+      rprojHierarchySpace,rphysics,roptcontrol,cspace,&
+      ctimeProjectionProl,ctimeProjectionRest,ctimeProjectionInterp)
   
 !<description>
   !
@@ -181,14 +202,20 @@ contains
   ! =CCSPACE_CONTROL : Control space
   integer, intent(in) :: cspace
 
-  ! Type of projection in time.
+  ! Type of projection in time. Prolongation.
   ! =-1: automatic.
   ! =0: constant prolongation/restriction
   ! =1: linear prolongation/restriction. Central differences. 
   !     Solutions located at the endpoints in time.
   ! =2: linear prolongation/restriction. Central differences. 
   !     Dual Solutions located in time according to the theta scheme.
-  integer, intent(in), optional :: ctimeProjection
+  integer, intent(in) :: ctimeProjectionProl
+
+  ! Type of projection in time. Restriction.
+  integer, intent(in) :: ctimeProjectionRest
+
+  ! Type of projection in time. Interpolation.
+  integer, intent(in) :: ctimeProjectionInterp
 !</input>
 
 !<output>
@@ -200,9 +227,11 @@ contains
 
     ! local variables
     integer :: i,ncount
+    integer :: cforwardbackward
     
     ! Number of components depends on the type of control,...
     ncount = 0
+    cforwardbackward = 0
 
     select case (cspace)
     ! ===============================================
@@ -210,17 +239,20 @@ contains
     ! ===============================================
     case (CCSPACE_PRIMAL)
       ncount = 1
+      cforwardbackward = 1
     
     ! ===============================================
     ! Dual space
     ! ===============================================
     case (CCSPACE_DUAL)
       ncount = 1
+      cforwardbackward = -1
 
     ! ===============================================
     ! Control space
     ! ===============================================
     case (CCSPACE_CONTROL)
+      cforwardbackward = -1
       if (roptcontrol%dalphaDistC .ge. 0.0_DP) ncount = ncount + 1
       if (roptcontrol%dalphaL2BdC .ge. 0.0_DP) ncount = ncount + 1
     end select
@@ -231,7 +263,9 @@ contains
     ! Initialise all substructures
     do i=1,rprojHierBlock%ncount
       call sptipr_initProjection (rprojHierBlock%p_RprojHier(i),rspaceTimeHierarchy,&
-          rprojHierarchySpace,rphysics,roptcontrol,cspace,ctimeProjection,i)
+          rprojHierarchySpace,rphysics,roptcontrol,cspace,&
+          ctimeProjectionProl,ctimeProjectionRest,ctimeProjectionInterp,&
+          i,cforwardbackward)
     end do
 
   end subroutine
@@ -272,7 +306,9 @@ contains
 !<subroutine>
 
   subroutine sptipr_initProjection (rprojHier,rspaceTimeHierarchy,&
-      rprojHierarchySpace,rphysics,roptcontrol,cspace,ctimeProjection,isubspace)
+      rprojHierarchySpace,rphysics,roptcontrol,cspace,&
+      ctimeProjectionProl,ctimeProjectionRest,ctimeProjectionInterp,&
+      isubspace,cforwardbackward)
   
 !<description>
   !
@@ -298,19 +334,31 @@ contains
   ! =CCSPACE_CONTROL : Control space
   integer, intent(in) :: cspace
 
-  ! Type of projection in time.
+  ! Type of projection in time. Prolongation.
   ! =-1: automatic.
   ! =0: constant prolongation/restriction
   ! =1: linear prolongation/restriction. Central differences. 
   !     Solutions located at the endpoints in time.
   ! =1: linear prolongation/restriction. Central differences. 
   !     Dual Solutions located in time according to the theta scheme.
-  integer, intent(in) :: ctimeProjection
+  integer, intent(in) :: ctimeProjectionProl
+
+  ! Type of projection in time. Restriction.
+  integer, intent(in) :: ctimeProjectionRest
+
+  ! Type of projection in time. Interpolation.
+  integer, intent(in) :: ctimeProjectionInterp
   
   ! Part of the solution which should be projected with
   ! the above projection. This is usually =1 except for some controls, e.g.,
   ! where one part has to be projected in a different way than another.
   integer, intent(in) :: isubspace
+  
+  ! =1 : Projection is initialised for an equation "forward" in time.
+  ! =0 : Projection is initialised for an equation where the direction
+  !      in time is not important.
+  ! =-1: Projection is initialised for an equation "backward" in time.
+  integer, intent(in) :: cforwardbackward
 !</input>
 
 !<output>
@@ -336,26 +384,72 @@ contains
     nullify(rprojHier%p_Icomponents)
 
     ! Set ctimeProjection
-    rprojHier%ctimeProjection = ctimeProjection
+    rprojHier%ctimeProjectionProl = ctimeProjectionProl
+    rprojHier%ctimeProjectionRest = ctimeProjectionRest
+    rprojHier%ctimeProjectionInterp = ctimeProjectionInterp
 
-    if (rprojHier%ctimeProjection .eq. -1) then
+    if (rprojHier%ctimeProjectionProl .eq. -1) then
       ! Automatic mode. Select the order based on the time stepping scheme.
       call tdiscr_getOrder(rprojHier%p_rtimeCoarseDiscr,itimeOrder)
       select case (itimeOrder)
       case (0)
-        rprojHier%ctimeProjection = 0
+        rprojHier%ctimeProjectionProl = 0
       case (1)
-        rprojHier%ctimeProjection = 1
+        rprojHier%ctimeProjectionProl = 1
       case (2)
-        rprojHier%ctimeProjection = 2
+        rprojHier%ctimeProjectionProl = 2
       case default
-        rprojHier%ctimeProjection = 1
+        rprojHier%ctimeProjectionProl = 1
       end select
       
       ! If our special 1-step scheme is activated, reduce the order to 1 in order
       ! to activate the corresponding prol/rest.
       if (cthetaschemetype .eq. 1) then
-        rprojHier%ctimeProjection = 2
+        rprojHier%ctimeProjectionProl = 2
+      end if
+      
+    end if
+    
+    if (rprojHier%ctimeProjectionRest .eq. -1) then
+      ! Automatic mode. Select the order based on the time stepping scheme.
+      call tdiscr_getOrder(rprojHier%p_rtimeCoarseDiscr,itimeOrder)
+      select case (itimeOrder)
+      case (0)
+        rprojHier%ctimeProjectionRest = 0
+      case (1)
+        rprojHier%ctimeProjectionRest = 1
+      case (2)
+        rprojHier%ctimeProjectionRest = 2
+      case default
+        rprojHier%ctimeProjectionRest = 1
+      end select
+      
+      ! If our special 1-step scheme is activated, reduce the order to 1 in order
+      ! to activate the corresponding prol/rest.
+      if (cthetaschemetype .eq. 1) then
+        rprojHier%ctimeProjectionRest = 2
+      end if
+      
+    end if
+    
+    if (rprojHier%ctimeProjectionInterp .eq. -1) then
+      ! Automatic mode. Select the order based on the time stepping scheme.
+      call tdiscr_getOrder(rprojHier%p_rtimeCoarseDiscr,itimeOrder)
+      select case (itimeOrder)
+      case (0)
+        rprojHier%ctimeProjectionInterp = 0
+      case (1)
+        rprojHier%ctimeProjectionInterp = 1
+      case (2)
+        rprojHier%ctimeProjectionInterp = 2
+      case default
+        rprojHier%ctimeProjectionInterp = 1
+      end select
+      
+      ! If our special 1-step scheme is activated, reduce the order to 1 in order
+      ! to activate the corresponding prol/rest.
+      if (cthetaschemetype .eq. 1) then
+        rprojHier%ctimeProjectionInterp = 2
       end if
       
     end if
@@ -374,7 +468,7 @@ contains
       ! The dual restriction matrix is the transpose of the primal prolongation matrix!
       ! This is because the primal RHS is located at the timesteps of the dual
       ! solution (between the primal timesteps) and vice versa!!!
-      select case (rprojHier%ctimeProjection)
+      select case (rprojHier%ctimeProjectionProl)
       case (0,1,2)
       
         if (i .lt. rspaceTimeHierarchy%nlevels) then
@@ -389,13 +483,13 @@ contains
           ! Primal space
           ! ===============================================
           case (CCSPACE_PRIMAL)
-            call sptipr_getProlMatrixPrimal(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
-                rprojHier%p_RprolongationMat(i))
+            call sptipr_getProlMatrixPrimal(rspaceTimeHierarchy,i,rprojHier%ctimeProjectionProl,&
+                rprojHier%p_RprolongationMat(i),cforwardbackward .ge. 0)
                 
-            call sptipr_getProlMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
-                rprolmat2)
+            call sptipr_getProlMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjectionRest,&
+                rprolmat2,cforwardbackward .ge. 0)
 
-            call sptipr_getInterpMatrixPrimal(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
+            call sptipr_getInterpMatrixPrimal(rspaceTimeHierarchy,i,rprojHier%ctimeProjectionInterp,&
                 rprojHier%p_RinterpolationMat(i))
 
             !call matio_writeMatrixHR (rprojHier%p_RprolongationMatPrimal(i), "pmat",&
@@ -408,13 +502,13 @@ contains
           ! Dual space
           ! ===============================================
           case (CCSPACE_DUAL)
-            call sptipr_getProlMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
-                rprojHier%p_RprolongationMat(i))
+            call sptipr_getProlMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjectionProl,&
+                rprojHier%p_RprolongationMat(i),cforwardbackward .gt. 0)
 
-            call sptipr_getProlMatrixPrimal(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
-                rprolmat2)
+            call sptipr_getProlMatrixPrimal(rspaceTimeHierarchy,i,rprojHier%ctimeProjectionRest,&
+                rprolmat2,cforwardbackward .gt. 0)
 
-            call sptipr_getInterpMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
+            call sptipr_getInterpMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjectionInterp,&
                 rprojHier%p_RinterpolationMat(i))
 
             !call matio_writeMatrixHR (rprojHier%p_RprolongationMatDual(i), "dmat",&
@@ -447,13 +541,13 @@ contains
                 if (isubspace .eq. ispace) then
                   ! Distributed control corresponds to the time dual space
                   
-                  call sptipr_getProlMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
-                      rprojHier%p_RprolongationMat(i))
+                  call sptipr_getProlMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjectionProl,&
+                      rprojHier%p_RprolongationMat(i),cforwardbackward .gt. 0)
 
-                  call sptipr_getProlMatrixPrimal(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
-                      rprolmat2)
+                  call sptipr_getProlMatrixPrimal(rspaceTimeHierarchy,i,rprojHier%ctimeProjectionRest,&
+                      rprolmat2,cforwardbackward .gt. 0)
 
-                  call sptipr_getInterpMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
+                  call sptipr_getInterpMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjectionInterp,&
                       rprojHier%p_RinterpolationMat(i))
                 end if
 
@@ -465,13 +559,13 @@ contains
                 if (isubspace .eq. ispace) then
                   ! Boundary conditions correspond to the time primal space.
                   
-                  call sptipr_getProlMatrixPrimal(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
-                      rprojHier%p_RprolongationMat(i))
+                  call sptipr_getProlMatrixPrimal(rspaceTimeHierarchy,i,rprojHier%ctimeProjectionProl,&
+                      rprojHier%p_RprolongationMat(i),cforwardbackward .gt. 0)
 
-                  call sptipr_getProlMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
-                      rprolmat2)
+                  call sptipr_getProlMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjectionRest,&
+                      rprolmat2,cforwardbackward .gt. 0)
 
-                  call sptipr_getInterpMatrixprimal(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
+                  call sptipr_getInterpMatrixprimal(rspaceTimeHierarchy,i,rprojHier%ctimeProjectionInterp,&
                       rprojHier%p_RinterpolationMat(i))
                 end if
 
@@ -482,7 +576,7 @@ contains
             ! -------------------------------------------------------------
             ! Heat equation
             ! -------------------------------------------------------------
-            case (CCEQ_HEAT2D)
+            case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
             
               ! Control type counter
               ispace = 1
@@ -490,13 +584,13 @@ contains
               if (roptcontrol%dalphaDistC .ge. 0.0_DP) then
                 if (isubspace .eq. ispace) then
                   ! Distributed control corresponds to the time dual space
-                  call sptipr_getProlMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
-                      rprojHier%p_RprolongationMat(i))
+                  call sptipr_getProlMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjectionProl,&
+                      rprojHier%p_RprolongationMat(i),cforwardbackward .le. 0)
 
-                  call sptipr_getProlMatrixPrimal(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
-                      rprolmat2)
+                  call sptipr_getProlMatrixPrimal(rspaceTimeHierarchy,i,rprojHier%ctimeProjectionRest,&
+                      rprolmat2,cforwardbackward .le. 0)
 
-                  call sptipr_getInterpMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
+                  call sptipr_getInterpMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjectionInterp,&
                       rprojHier%p_RinterpolationMat(i))
                 end if
 
@@ -508,13 +602,13 @@ contains
                 if (isubspace .eq. ispace) then
                   ! Boundary conditions correspond to the time primal space.
 
-                  call sptipr_getProlMatrixPrimal(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
-                      rprojHier%p_RprolongationMat(i))
+                  call sptipr_getProlMatrixPrimal(rspaceTimeHierarchy,i,rprojHier%ctimeProjectionProl,&
+                      rprojHier%p_RprolongationMat(i),cforwardbackward .le. 0)
 
-                  call sptipr_getProlMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
-                      rprolmat2)
+                  call sptipr_getProlMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjectionRest,&
+                      rprolmat2,cforwardbackward .le. 0)
 
-                  call sptipr_getInterpMatrixPrimal(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
+                  call sptipr_getInterpMatrixPrimal(rspaceTimeHierarchy,i,rprojHier%ctimeProjectionInterp,&
                       rprojHier%p_RinterpolationMat(i))
                 end if
 
@@ -600,7 +694,9 @@ contains
     if (associated(rprojHier%p_Icomponents)) deallocate(rprojHier%p_Icomponents)
     
     ! Set itimeOrder=0 -> structure not initialised anymore.
-    rprojHier%ctimeProjection = -1
+    rprojHier%ctimeProjectionProl = -1
+    rprojHier%ctimeProjectionRest = -1
+    rprojHier%ctimeProjectionInterp = -1
 
   end subroutine
   
@@ -608,7 +704,8 @@ contains
 
 !<subroutine>
 
-  subroutine sptipr_getProlMatrixPrimal (rspaceTimeHierarchy,ilevel,ctimeProjection,rprolMatrix)
+  subroutine sptipr_getProlMatrixPrimal (&
+      rspaceTimeHierarchy,ilevel,ctimeProjection,rprolMatrix,bforward)
   
 !<description>
   ! Creates a prolongation matrix for the primal space between time-level
@@ -624,6 +721,10 @@ contains
   
   ! Type of prolongation.
   integer, intent(in) :: ctimeProjection
+  
+  ! TRUE if the prolongation is to be set up for an equation forward
+  ! in time.
+  logical, intent(in) :: bforward
 !</input>
 
 !<output>
@@ -709,13 +810,25 @@ contains
       p_Da(1) = 1.0_DP
       p_Kcol(1) = 1
       
-      do icol = 1,ndofCoarse-1
-        p_Kcol(2+2*(icol-1)) = icol
-        p_Da(2+2*(icol-1)) = 1.0_DP
+      if (bforward) then
+        ! Forward directed equation.
+        do icol = 1,ndofCoarse-1
+          p_Kcol(2+2*(icol-1)) = icol
+          p_Da(2+2*(icol-1)) = 1.0_DP
 
-        p_Kcol(3+2*(icol-1)) = icol+1
-        p_Da(3+2*(icol-1)) = 1.0_DP
-      end do
+          p_Kcol(3+2*(icol-1)) = icol+1
+          p_Da(3+2*(icol-1)) = 1.0_DP
+        end do
+      else
+        ! Backward directed equation
+        do icol = 1,ndofCoarse-1
+          p_Kcol(2+2*(icol-1)) = icol+1
+          p_Da(2+2*(icol-1)) = 1.0_DP
+
+          p_Kcol(3+2*(icol-1)) = icol+1
+          p_Da(3+2*(icol-1)) = 1.0_DP
+        end do
+      end if
 
     case (1,2)
       ! Simplest case.
@@ -779,6 +892,16 @@ contains
         p_Da(-1+3*icol+1) = 0.5_DP
         p_Da(-1+3*icol+2) = 1.0_DP
       end do
+        
+      if (.not. bforward) then
+      
+        ! Small change, 2nd timestep on the fione mesh stems from an extrapolation.
+        p_Kcol(2) = 2
+        p_Kcol(3) = 3
+        p_Da(2) = 1.5_DP
+        p_Da(3) = -0.5_DP
+      
+      end if
 
     case (4)
       ! Piecewise quadratic interpolation at the beginning/end.
@@ -854,7 +977,8 @@ contains
 
 !<subroutine>
 
-  subroutine sptipr_getProlMatrixDual (rspaceTimeHierarchy,ilevel,ctimeProjection,rprolMatrix)
+  subroutine sptipr_getProlMatrixDual (&
+      rspaceTimeHierarchy,ilevel,ctimeProjection,rprolMatrix,bforward)
   
 !<description>
   ! Creates a prolongation matrix for the dual space between time-level
@@ -870,6 +994,10 @@ contains
   
   ! Type of the prolongation.
   integer, intent(in) :: ctimeProjection
+
+  ! TRUE if the prolongation is to be set up for an equation forward
+  ! in time.
+  logical, intent(in) :: bforward
 !</input>
 
 !<output>
@@ -1063,7 +1191,8 @@ contains
       p_Da(5+4*(ndofCoarse-2)+1) = 1.5_DP-0.5_DP*dtheta ! 1.25_DP
       
     case default
-      call sptipr_getProlMatrixPrimal (rspaceTimeHierarchy,ilevel,ctimeProjection,rprolMatrix)
+      call sptipr_getProlMatrixPrimal (rspaceTimeHierarchy,ilevel,ctimeProjection,&
+          rprolMatrix,bforward)
 
     end select
             
@@ -1491,7 +1620,21 @@ contains
     ! Allocate temp memory
     i = 0
     do icompidx = 1,rprojHierBlock%ncount
-      select case (rprojHierBlock%p_RprojHier(icompidx)%ctimeProjection)
+      select case (rprojHierBlock%p_RprojHier(icompidx)%ctimeProjectionProl)
+      case (0,1,2)
+        i = max(i,3)
+      case default
+        i = max(i,10)
+      end select
+
+      select case (rprojHierBlock%p_RprojHier(icompidx)%ctimeProjectionRest)
+      case (0,1,2)
+        i = max(i,3)
+      case default
+        i = max(i,10)
+      end select
+
+      select case (rprojHierBlock%p_RprojHier(icompidx)%ctimeProjectionInterp)
       case (0,1,2)
         i = max(i,3)
       case default
@@ -1664,7 +1807,21 @@ contains
     ! Allocate temp memory
     i = 0
     do icompidx = 1,rprojHierBlock%ncount
-      select case (rprojHierBlock%p_RprojHier(icompidx)%ctimeProjection)
+      select case (rprojHierBlock%p_RprojHier(icompidx)%ctimeProjectionProl)
+      case (0,1,2)
+        i = max(i,3)
+      case default
+        i = max(i,10)
+      end select
+
+      select case (rprojHierBlock%p_RprojHier(icompidx)%ctimeProjectionRest)
+      case (0,1,2)
+        i = max(i,3)
+      case default
+        i = max(i,10)
+      end select
+
+      select case (rprojHierBlock%p_RprojHier(icompidx)%ctimeProjectionInterp)
       case (0,1,2)
         i = max(i,3)
       case default
@@ -1896,7 +2053,21 @@ contains
     ! Allocate temp memory
     i = 0
     do icompidx = 1,rprojHierBlock%ncount
-      select case (rprojHierBlock%p_RprojHier(icompidx)%ctimeProjection)
+      select case (rprojHierBlock%p_RprojHier(icompidx)%ctimeProjectionProl)
+      case (0,1,2)
+        i = max(i,3)
+      case default
+        i = max(i,10)
+      end select
+
+      select case (rprojHierBlock%p_RprojHier(icompidx)%ctimeProjectionRest)
+      case (0,1,2)
+        i = max(i,3)
+      case default
+        i = max(i,10)
+      end select
+
+      select case (rprojHierBlock%p_RprojHier(icompidx)%ctimeProjectionInterp)
       case (0,1,2)
         i = max(i,3)
       case default

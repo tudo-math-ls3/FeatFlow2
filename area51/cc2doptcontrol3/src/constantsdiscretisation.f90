@@ -47,6 +47,9 @@ module constantsdiscretisation
 
   ! Heat equation, 2D
   integer, parameter, public :: CCEQ_HEAT2D = 2
+
+  ! Nonlinear Heat equation, 2D, test example 1
+  integer, parameter, public :: CCEQ_NL1HEAT2D = 3
   
 !</constantblock>
 

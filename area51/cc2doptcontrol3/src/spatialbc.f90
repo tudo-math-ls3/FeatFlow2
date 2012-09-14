@@ -295,112 +295,134 @@ contains
                 ! Neumann boundary conditions
                 ! --------------------------------------------------
                 case (0)
-                if (iand(casmFlags,SBC_NEUMANN) .ne. 0) then
-                  ! Add the bondary region to the Neumann boundary regions.
-                  call sbc_addBoundaryRegion(&
-                      rboundaryRegion,roptcBDCSpace%rneumannBoundary)
-                end if
+                  if (iand(casmFlags,SBC_NEUMANN) .ne. 0) then
+                    ! Add the bondary region to the Neumann boundary regions.
+                    call sbc_addBoundaryRegion(&
+                        rboundaryRegion,roptcBDCSpace%rneumannBoundary)
+                  end if
                   
                 ! --------------------------------------------------
                 ! Dirichlet boundary conditions
                 ! --------------------------------------------------
                 case (1)
-                  ! Impose Dirichlet-0 boundary conditions in the dual equation
-                
-                  rcollection%IquickAccess(2) = BDC_VALDOUBLE
-                  rcollection%IquickAccess(3) = 0
-                  rcollection%IquickAccess(4) = 0
-                  rcollection%IquickAccess(5) = 0
-                  rcollection%DquickAccess(1) = dtime
-                  rcollection%DquickAccess(2) = 0.0_DP
-                  rcollection%SquickAccess(1) = ""
-                  rcollection%p_rnextCollection => ruserCollection
-                  rcollection%IquickAccess(6) = 0
-                  rcollection%IquickAccess(7:) = &
-                      transfer(r_t_p_optcBDC,rcollection%IquickAccess(7:),&
-                                    size(rcollection%IquickAccess(7:)))
+                  if (iand(casmFlags,SBC_DIRICHLETBC) .ne. 0) then
+                  
+                    ! Add the bondary region to the Dirichlet boundary regions.
+                    call sbc_addBoundaryRegion(&
+                        rboundaryRegion,roptcBDCSpace%rdirichletBoundary)
 
-                  ! X-velocity
-                  rcollection%IquickAccess(1) = 1
-                  
-                  call user_initCollectForVecAssembly (&
-                      rglobalData,0,rcollection%IquickAccess(1),dtime,rusercollection)
-                  
-                  ! Assemble the BCs.
-                  call bcasm_newDirichletBConRealBD (&
-                      rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
-                      roptcBDCSpace%rdiscreteBC,&
-                      cc_getDirBCNavSt2D,rcollection)
-                      
-                  call user_doneCollectForVecAssembly (rglobalData,rusercollection)
+                    if (iand(casmFlags,SBC_DISCRETEBC) .ne. 0) then
+                      ! Impose Dirichlet-0 boundary conditions in the dual equation
+                    
+                      rcollection%IquickAccess(2) = BDC_VALDOUBLE
+                      rcollection%IquickAccess(3) = 0
+                      rcollection%IquickAccess(4) = 0
+                      rcollection%IquickAccess(5) = 0
+                      rcollection%DquickAccess(1) = dtime
+                      rcollection%DquickAccess(2) = 0.0_DP
+                      rcollection%SquickAccess(1) = ""
+                      rcollection%p_rnextCollection => ruserCollection
+                      rcollection%IquickAccess(6) = 0
+                      rcollection%IquickAccess(7:) = &
+                          transfer(r_t_p_optcBDC,rcollection%IquickAccess(7:),&
+                                        size(rcollection%IquickAccess(7:)))
 
-                  ! Y-velocity
-                  rcollection%IquickAccess(1) = 2
-                  
-                  call user_initCollectForVecAssembly (&
-                      rglobalData,0,rcollection%IquickAccess(1),dtime,rusercollection)
-                  
-                  ! Assemble the BCs.
-                  call bcasm_newDirichletBConRealBD (&
-                      rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
-                      roptcBDCSpace%rdiscreteBC,&
-                      cc_getDirBCNavSt2D,rcollection)
+                      ! X-velocity
+                      rcollection%IquickAccess(1) = 1
                       
-                  call user_doneCollectForVecAssembly (rglobalData,rusercollection)
+                      call user_initCollectForVecAssembly (&
+                          rglobalData,0,rcollection%IquickAccess(1),dtime,rusercollection)
+                      
+                      ! Assemble the BCs.
+                      call bcasm_newDirichletBConRealBD (&
+                          rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
+                          roptcBDCSpace%rdiscreteBC,&
+                          cc_getDirBCNavSt2D,rcollection)
+                          
+                      call user_doneCollectForVecAssembly (rglobalData,rusercollection)
+
+                      ! Y-velocity
+                      rcollection%IquickAccess(1) = 2
+                      
+                      call user_initCollectForVecAssembly (&
+                          rglobalData,0,rcollection%IquickAccess(1),dtime,rusercollection)
+                      
+                      ! Assemble the BCs.
+                      call bcasm_newDirichletBConRealBD (&
+                          rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
+                          roptcBDCSpace%rdiscreteBC,&
+                          cc_getDirBCNavSt2D,rcollection)
+                          
+                      call user_doneCollectForVecAssembly (rglobalData,rusercollection)
+                      
+                    end if
+                    
+                  end if
                   
                 ! --------------------------------------------------
                 ! L2 Dirichlet boundary control
                 ! --------------------------------------------------
                 case (7)
-                  ! Impose Dirichlet-0 boundary conditions 
-                  ! plus boundary control
-                
-                  rcollection%IquickAccess(2) = BDC_VALDOUBLE
-                  rcollection%IquickAccess(3) = 0
-                  rcollection%IquickAccess(4) = 0
-                  rcollection%IquickAccess(5) = 0
-                  rcollection%DquickAccess(1) = dtime
-                  rcollection%DquickAccess(2) = 0.0_DP
-                  rcollection%SquickAccess(1) = ""
-                  rcollection%p_rnextCollection => ruserCollection
-                  rcollection%IquickAccess(6) = 0
-                  rcollection%IquickAccess(7:) = &
-                      transfer(r_t_p_optcBDC,rcollection%IquickAccess(7:),&
-                                    size(rcollection%IquickAccess(7:)))
+                  if (iand(casmFlags,SBC_DIRICHLETBCC) .ne. 0) then
+                    ! Add the bondary region to the Dirichlet boundary regions.
+                    call sbc_addBoundaryRegion(&
+                        rboundaryRegion,roptcBDCSpace%rdirichletControlBoundary)
+                        
+                  if (iand(casmFlags,SBC_DISCRETEBC) .ne. 0) then
 
-                  if ((copType .eq. OPTP_PRIMALLIN) .or. (copType .eq. OPTP_PRIMALLIN_SIMPLE)) then
-                    ! Prescribed boundary conditions
-                    rcollection%IquickAccess(6) = 1
-                    rcollection%p_rvectorQuickAccess1 => rvectorControl
+                      ! Impose Dirichlet-0 boundary conditions 
+                      ! plus boundary control
+                    
+                      rcollection%IquickAccess(2) = BDC_VALDOUBLE
+                      rcollection%IquickAccess(3) = 0
+                      rcollection%IquickAccess(4) = 0
+                      rcollection%IquickAccess(5) = 0
+                      rcollection%DquickAccess(1) = dtime
+                      rcollection%DquickAccess(2) = 0.0_DP
+                      rcollection%SquickAccess(1) = ""
+                      rcollection%p_rnextCollection => ruserCollection
+                      rcollection%IquickAccess(6) = 0
+                      rcollection%IquickAccess(7:) = &
+                          transfer(r_t_p_optcBDC,rcollection%IquickAccess(7:),&
+                                        size(rcollection%IquickAccess(7:)))
+
+                      if ((copType .eq. OPTP_PRIMALLIN) .or. (copType .eq. OPTP_PRIMALLIN_SIMPLE)) then
+                        ! Prescribed boundary conditions
+                        rcollection%IquickAccess(6) = 1
+                        rcollection%p_rvectorQuickAccess1 => rvectorControl
+                      end if
+
+                      ! X-velocity
+                      rcollection%IquickAccess(1) = 1
+                      
+                      call user_initCollectForVecAssembly (&
+                          rglobalData,0,rcollection%IquickAccess(1),dtime,rusercollection)
+                      
+                      ! Assemble the BCs.
+                      call bcasm_newDirichletBConRealBD (&
+                          rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
+                          roptcBDCSpace%rdiscreteBC,&
+                          cc_getDirBCNavSt2D,rcollection)
+                          
+                      call user_doneCollectForVecAssembly (rglobalData,rusercollection)
+
+                      ! Y-velocity
+                      rcollection%IquickAccess(1) = 2
+                      
+                      call user_initCollectForVecAssembly (&
+                          rglobalData,0,rcollection%IquickAccess(1),dtime,rusercollection)
+                      
+                      ! Assemble the BCs.
+                      call bcasm_newDirichletBConRealBD (&
+                          rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
+                          roptcBDCSpace%rdiscreteBC,&
+                          cc_getDirBCNavSt2D,rcollection)
+                          
+                      call user_doneCollectForVecAssembly (rglobalData,rusercollection)
+                    
+                    end if
+                  
                   end if
-
-                  ! X-velocity
-                  rcollection%IquickAccess(1) = 1
-                  
-                  call user_initCollectForVecAssembly (&
-                      rglobalData,0,rcollection%IquickAccess(1),dtime,rusercollection)
-                  
-                  ! Assemble the BCs.
-                  call bcasm_newDirichletBConRealBD (&
-                      rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
-                      roptcBDCSpace%rdiscreteBC,&
-                      cc_getDirBCNavSt2D,rcollection)
-                      
-                  call user_doneCollectForVecAssembly (rglobalData,rusercollection)
-
-                  ! Y-velocity
-                  rcollection%IquickAccess(1) = 2
-                  
-                  call user_initCollectForVecAssembly (&
-                      rglobalData,0,rcollection%IquickAccess(1),dtime,rusercollection)
-                  
-                  ! Assemble the BCs.
-                  call bcasm_newDirichletBConRealBD (&
-                      rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
-                      roptcBDCSpace%rdiscreteBC,&
-                      cc_getDirBCNavSt2D,rcollection)
-                      
-                  call user_doneCollectForVecAssembly (rglobalData,rusercollection)
                   
                 case default
                   call output_line ("Cannot set up automatic boundary conditions", &
@@ -659,7 +681,7 @@ contains
             ! ----------------------
             ! Heat equation
             ! ----------------------
-            case (CCEQ_HEAT2D)
+            case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
             
               ! Now, which type of BC is to be created?
               select case (ibctyp)
@@ -692,40 +714,58 @@ contains
                 ! Neumann boundary conditions
                 ! --------------------------------------------------
                 case (0)
-                  ! Nothing to do
+                
+                  if (iand(casmFlags,SBC_NEUMANN) .ne. 0) then
+                    ! Add the bondary region to the Neumann boundary regions.
+                    call sbc_addBoundaryRegion(&
+                        rboundaryRegion,roptcBDCSpace%rneumannBoundary)
+                  end if
                   
                 ! --------------------------------------------------
                 ! Dirichlet boundary conditions
                 ! --------------------------------------------------
                 case (1)
-                  ! Impose Dirichlet-0 boundary conditions in the dual equation
                 
-                  rcollection%IquickAccess(2) = BDC_VALDOUBLE
-                  rcollection%IquickAccess(3) = 0
-                  rcollection%IquickAccess(4) = 0
-                  rcollection%IquickAccess(5) = 0
-                  rcollection%DquickAccess(1) = dtime
-                  rcollection%DquickAccess(2) = 0.0_DP
-                  rcollection%SquickAccess(1) = ""
-                  rcollection%p_rnextCollection => ruserCollection
-                  rcollection%IquickAccess(6) = 0
-                  rcollection%IquickAccess(7:) = &
-                      transfer(r_t_p_optcBDC,rcollection%IquickAccess(7:),&
-                                    size(rcollection%IquickAccess(7:)))
+                  if (iand(casmFlags,SBC_DIRICHLETBC) .ne. 0) then
+                    
+                    ! Add the bondary region to the Dirichlet boundary regions.
+                    call sbc_addBoundaryRegion(&
+                        rboundaryRegion,roptcBDCSpace%rdirichletBoundary)
+                        
+                    if (iand(casmFlags,SBC_DISCRETEBC) .ne. 0) then
+                    
+                      ! Impose Dirichlet-0 boundary conditions in the dual equation
+                    
+                      rcollection%IquickAccess(2) = BDC_VALDOUBLE
+                      rcollection%IquickAccess(3) = 0
+                      rcollection%IquickAccess(4) = 0
+                      rcollection%IquickAccess(5) = 0
+                      rcollection%DquickAccess(1) = dtime
+                      rcollection%DquickAccess(2) = 0.0_DP
+                      rcollection%SquickAccess(1) = ""
+                      rcollection%p_rnextCollection => ruserCollection
+                      rcollection%IquickAccess(6) = 0
+                      rcollection%IquickAccess(7:) = &
+                          transfer(r_t_p_optcBDC,rcollection%IquickAccess(7:),&
+                                        size(rcollection%IquickAccess(7:)))
 
-                  ! Solution
-                  rcollection%IquickAccess(1) = 1
-                  
-                  call user_initCollectForVecAssembly (&
-                      rglobalData,0,rcollection%IquickAccess(1),dtime,rusercollection)
-                  
-                  ! Assemble the BCs.
-                  call bcasm_newDirichletBConRealBD (&
-                      rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
-                      roptcBDCSpace%rdiscreteBC,&
-                      cc_getDirBCNavSt2D,rcollection)
+                      ! Solution
+                      rcollection%IquickAccess(1) = 1
                       
-                  call user_doneCollectForVecAssembly (rglobalData,rusercollection)
+                      call user_initCollectForVecAssembly (&
+                          rglobalData,0,rcollection%IquickAccess(1),dtime,rusercollection)
+                      
+                      ! Assemble the BCs.
+                      call bcasm_newDirichletBConRealBD (&
+                          rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
+                          roptcBDCSpace%rdiscreteBC,&
+                          cc_getDirBCNavSt2D,rcollection)
+                          
+                      call user_doneCollectForVecAssembly (rglobalData,rusercollection)
+                      
+                    end if
+                  
+                  end if
 
                 case default
                   call output_line ("Cannot set up automatic boundary conditions", &
@@ -738,6 +778,7 @@ contains
               ! Neumann boundary conditions
               ! --------------------------------------------------
               case (0)
+              
                 if (iand(casmFlags,SBC_NEUMANN) .ne. 0) then
                   ! Add the bondary region to the Neumann boundary regions
                   ! if there is a structure present.
@@ -757,6 +798,7 @@ contains
                       rboundaryRegion,roptcBDCSpace%rdirichletBoundary)
 
                   if (iand(casmFlags,SBC_DISCRETEBC) .ne. 0) then
+                  
                     ! Simple Dirichlet boundary.
                     ! Get the definition of the boundary condition.
                     ! Read the line again, get the expressions for the data field
@@ -2429,7 +2471,7 @@ contains
           end select
         
         
-        case (CCEQ_HEAT2D)
+        case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
           call output_line ("Equation not supported.", &
               OU_CLASS_ERROR,OU_MODE_STD,"cc_getDirBCNavSt2D")
           call sys_halt()

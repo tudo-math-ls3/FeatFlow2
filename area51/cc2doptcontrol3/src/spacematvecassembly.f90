@@ -28,6 +28,8 @@ module spacematvecassembly
   use statistics
   use matrixmodification
   
+  use linearsolver
+  
   use scalarpde
   use linearformevaluation
   use bilinearformevaluation
@@ -280,7 +282,7 @@ contains
     ! *************************************************************
     ! Heat equation
     ! *************************************************************
-    case (CCEQ_HEAT2D)
+    case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
     
       ! ---------------------------------------------------
       ! 1x1 block matrix, only the solution
@@ -424,7 +426,7 @@ contains
   integer, intent(in) :: ileveldest
   
   ! Source vector
-  type(t_vectorBlock), intent(in), target :: rsolution
+  type(t_vectorBlock), intent(inout), target :: rsolution
   
   ! Level corresponding to rsolution
   integer, intent(in) :: ilevelsource
@@ -647,7 +649,7 @@ contains
         ! *************************************************************
         ! Heat/Stokes/Navier Stokes.
         ! *************************************************************
-        case (CCEQ_HEAT2D,CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+        case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D,CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
       
           ! ***********************************************
           ! PREVIOUS TIMESTEP
@@ -874,7 +876,7 @@ contains
         ! *************************************************************
         ! Heat/Stokes/Navier Stokes.
         ! *************************************************************
-        case (CCEQ_HEAT2D,CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+        case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D,CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
       
           ! ***********************************************
           ! PREVIOUS TIMESTEP
@@ -1026,6 +1028,9 @@ contains
           
           call vecfil_discreteBCsol (p_rvector,roptcBDCSpace%rdiscreteBC)
           call lsysbl_blockMatVec (p_rmatrix, p_rvector, rdest, -1.0_DP, 1.0_DP)
+          
+          ! Revert the change in the vector.
+          call sptivec_invalidateVecInPool (rprimalSol%p_rvectorAccess,idofTime)
 
         end select ! Equation
       
@@ -1161,7 +1166,7 @@ contains
         ! *************************************************************
         ! Heat/Stokes/Navier Stokes.
         ! *************************************************************
-        case (CCEQ_HEAT2D,CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+        case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D,CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
         
           ! ***********************************************
           ! NEXT TIMESTEP
@@ -1321,8 +1326,10 @@ contains
           call lsysbl_getbase_double (p_rvector,p_Dx)
           
           call vecfil_discreteBCsol (p_rvector,roptcBDCSpace%rdiscreteBC)
-          
           call lsysbl_blockMatVec (p_rmatrix, p_rvector, rdest, -1.0_DP, 1.0_DP)
+          
+          ! Revert the change in the vector.
+          call sptivec_invalidateVecInPool (rdualSol%p_rvectorAccess,idofTime)
           
         end select ! Equation
       
@@ -1410,7 +1417,7 @@ contains
     type(t_matrixBlock), pointer :: p_rmatrix
     
     ! DEBUG!!!
-    real(DP), dimension(:), pointer :: p_Ddest
+    real(DP), dimension(:), pointer :: p_Ddest,p_Dx
     call lsysbl_getbase_double (rdest,p_Ddest)
     
     ! Get the corresponding operator assembly structure
@@ -1464,7 +1471,7 @@ contains
         ! *************************************************************
         ! Heat/Stokes/Navier Stokes.
         ! *************************************************************
-        case (CCEQ_HEAT2D,CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+        case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D,CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
 
           ! ***********************************************
           ! PREVIOUS TIMESTEP
@@ -1620,10 +1627,15 @@ contains
 
           call sptivec_getVectorFromPool (rprimalSolLin%p_rvectorAccess,idofTime,p_rvector)
           
+          ! DEBUG!!!
+          call lsysbl_getbase_double (p_rvector,p_Dx)
+
           ! Impose boundary conditions.
           call vecfil_discreteBCsol (p_rvector,roptcBDCSpace%rdiscreteBC)
-
           call lsysbl_blockMatVec (p_rmatrix, p_rvector, rdest, -1.0_DP, 1.0_DP)
+
+          ! Revert the change in the vector.
+          call sptivec_invalidateVecInPool (rprimalSolLin%p_rvectorAccess,idofTime)
 
         end select ! Equation
       
@@ -1714,7 +1726,7 @@ contains
     type(t_matrixBlock), pointer :: p_rmatrix
     
     ! DEBUG!!!
-    real(DP), dimension(:), pointer :: p_Ddest
+    real(DP), dimension(:), pointer :: p_Ddest,p_Dx
     call lsysbl_getbase_double (rdest,p_Ddest)
     
     ! Get the corresponding operator assembly structure
@@ -1768,7 +1780,7 @@ contains
         ! *************************************************************
         ! Heat/Stokes/Navier Stokes.
         ! *************************************************************
-        case (CCEQ_HEAT2D,CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+        case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D,CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
 
           ! ***********************************************
           ! NEXT TIMESTEP
@@ -1925,11 +1937,16 @@ contains
 
           call sptivec_getVectorFromPool (rdualSolLin%p_rvectorAccess,idofTime,p_rvector)
           
+          ! DEBUG!!!
+          call lsysbl_getbase_double (p_rvector,p_Dx)
+
           ! Impose boundary conditions.
           call vecfil_discreteBCsol (p_rvector,roptcBDCSpace%rdiscreteBC)
-          
           call lsysbl_blockMatVec (p_rmatrix, p_rvector, rdest, -1.0_DP, 1.0_DP)
           
+          ! Revert the change in the vector.
+          call sptivec_invalidateVecInPool (rdualSolLin%p_rvectorAccess,idofTime)
+
           ! ***********************************************
           ! ADDITIONAL RHS TERMS
           ! ***********************************************
@@ -1943,7 +1960,7 @@ contains
           !
           ! For the assembly, the RHS assembly has to be invoked.
           call smva_getSemilinRhs_dualLin (roperatorAsm,idofTime,&
-              rdualSol,rprimalSolLin,coptype,-1.0_DP,rdest)
+              rprimalSol,rdualSol,rprimalSolLin,coptype,-1.0_DP,rdest)
           
         end select ! Equation
       
@@ -2010,7 +2027,7 @@ contains
     ! ***********************************************************
     ! Heat equation
     ! ***********************************************************
-    case (CCEQ_HEAT2D)
+    case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
     
       call lsyssc_matrixLinearComb (&
           rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixMass,&
@@ -2072,7 +2089,7 @@ contains
     ! ***********************************************************
     ! Heat equation
     ! ***********************************************************
-    case (CCEQ_HEAT2D)
+    case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
     
       call lsyssc_matrixLinearComb (&
           rspaceTimeOperatorAsm%p_rasmTemplates%rmatrixLaplace,&
@@ -2305,6 +2322,41 @@ contains
     case (CCEQ_HEAT2D,CCEQ_STOKES2D)
     
       ! No semilinear parts, nothing to do.
+      
+    case (CCEQ_NL1HEAT2D)
+
+      ! ------------------------------------------
+      ! Prepare the evaluation of the nonlinearity
+      ! ------------------------------------------
+
+      ! Get the nonlinearity
+      call sptivec_getVectorFromPool (rprimalSol%p_rvectorAccess,idofTime,p_rvector)
+
+      ! Project the solution of level iprev down to the current space level.
+      ! The pointer p_rvector will be changed to the memory location where the
+      ! interpolated vector is written to.
+      call smva_interpolateToLevel (&
+          p_rvector,ispacelevel,p_rvector,isollevelSpace,CCSPACE_PRIMAL,&
+          rtempData,1,ipreviousSpaceLv,&
+          roperatorAsmHier%p_rprjHierSpacePrimal,roperatorAsmHier%p_rprjHierSpaceDual)
+            
+      ! ------------------------------------------
+      ! Assemble the matrix
+      ! ------------------------------------------
+
+      ! Notify the callback routine what to assemble.
+      rcollection%IquickAccess(1) = OPTP_PRIMAL
+      
+      ! Vector 1 = primal solution.
+      call fev2_addVectorToEvalList(rvectorEval,p_rvector%RvectorBlock(1),1)
+      
+      ! Build the matrix
+      call bma_buildMatrix (rmatrix,BMA_CALC_STANDARD,&
+          smva_fcalc_semilinearMat, rcollection, revalVectors=rvectorEval,&
+          rcubatureInfo=roperatorAsm%p_rasmTemplates%rcubatureInfoMass)
+          
+      ! Cleanup
+      call fev2_releaseVectorList(rvectorEval)
 
     ! ***********************************************************
     ! Navier Stokes
@@ -2442,6 +2494,41 @@ contains
     
       ! No semilinear parts, nothing to do.
 
+    case (CCEQ_NL1HEAT2D)
+
+      ! ------------------------------------------
+      ! Prepare the evaluation of the nonlinearity
+      ! ------------------------------------------
+      
+      ! Get the nonlinearity
+      call sptivec_getVectorFromPool (rprimalSol%p_rvectorAccess,idofTime,p_rvector)
+
+      ! Project the solution of level iprev down to the current space level.
+      ! The pointer p_rvector will be changed to the memory location where the
+      ! interpolated vector is written to.
+      call smva_interpolateToLevel (&
+          p_rvector,ispacelevel,p_rvector,isollevelSpace,CCSPACE_PRIMAL,&
+          rtempData,1,ipreviousSpaceLv,&
+          roperatorAsmHier%p_rprjHierSpacePrimal,roperatorAsmHier%p_rprjHierSpaceDual)
+
+      ! ------------------------------------------
+      ! Assemble the matrix
+      ! ------------------------------------------
+
+      ! Notify the callback routine what to assemble.
+      rcollection%IquickAccess(1) = coptype
+      
+      ! Vector 1 = primal solution.
+      call fev2_addVectorToEvalList(rvectorEval,p_rvector%RvectorBlock(1),1)
+      
+      ! Build the matrix
+      call bma_buildMatrix (rmatrix,BMA_CALC_STANDARD,&
+          smva_fcalc_semilinearMat, rcollection, revalVectors=rvectorEval,&
+          rcubatureInfo=roperatorAsm%p_rasmTemplates%rcubatureInfoMass)
+          
+      ! Cleanup
+      call fev2_releaseVectorList(rvectorEval)
+
     ! ***********************************************************
     ! Navier Stokes
     ! ***********************************************************
@@ -2575,6 +2662,40 @@ contains
     
       ! No semilinear parts, nothing to do.
 
+    case (CCEQ_NL1HEAT2D)
+
+      ! ------------------------------------------
+      ! Prepare the evaluation of the nonlinearity
+      ! ------------------------------------------
+      
+      ! Get the nonlinearity
+      call sptivec_getVectorFromPool (rprimalSol%p_rvectorAccess,idofTime,p_rvector)
+      
+      ! Project the solution of level iprev down to the current space level.
+      ! The pointer p_rvector will be changed to the memory location where the
+      ! interpolated vector is written to.
+      call smva_interpolateToLevel (&
+          p_rvector,ispacelevel,p_rvector,isollevelSpace,CCSPACE_PRIMAL,&
+          rtempData,1,ipreviousSpaceLv,&
+          roperatorAsmHier%p_rprjHierSpacePrimal,roperatorAsmHier%p_rprjHierSpaceDual)
+
+      ! ------------------------------------------
+      ! Assemble the matrix
+      ! ------------------------------------------
+      
+      rcollection%IquickAccess(1) = OPTP_DUAL
+      
+      ! Vector 1 = primal solution, including 1st derivative.
+      call fev2_addVectorToEvalList(rvectorEval,p_rvector%RvectorBlock(1),1)
+      
+      ! Build the matrix
+      call bma_buildMatrix (rmatrix,BMA_CALC_STANDARD,&
+          smva_fcalc_semilinearMat, rcollection, revalVectors=rvectorEval,&
+          rcubatureInfo=roperatorAsm%p_rasmTemplates%rcubatureInfoMass)
+          
+      ! Cleanup
+      call fev2_releaseVectorList(rvectorEval)
+
     ! ***********************************************************
     ! Navier Stokes
     ! ***********************************************************
@@ -2689,39 +2810,159 @@ contains
     ! Type of the operator to compute.
     copType = rcollection%IquickAccess(1)
 
-    ! Get the nonlinearity Y -- X-velocity and Y-velocity.
-    p_DnonlinearityY1 => revalVectors%p_RvectorData(1)%p_Ddata(:,:,:)
-    p_DnonlinearityY2 => revalVectors%p_RvectorData(2)%p_Ddata(:,:,:)
-
     ! Weight of the operator.
     dweight = rcollection%DquickAccess(1)
 
     ! Get cubature weights data
     p_DcubWeight => rassemblyData%p_DcubWeight
 
-    ! Get local data of the velocity submatrices.
-    ! They are all discretised with the same FEM space.
-    p_rmatrixData11 => RmatrixData(1,1)
-    p_rmatrixData21 => RmatrixData(2,1)
-    p_rmatrixData12 => RmatrixData(1,2)
-    p_rmatrixData22 => RmatrixData(2,2)
-    p_DbasTrial => RmatrixData(1,1)%p_DbasTrial
-    p_DbasTest => RmatrixData(1,1)%p_DbasTest
-
-    ! Get the matrix data      
-    p_DlocalMatrix11 => RmatrixData(1,1)%p_Dentry
-    p_DlocalMatrix12 => RmatrixData(1,2)%p_Dentry
-    p_DlocalMatrix21 => RmatrixData(2,1)%p_Dentry
-    p_DlocalMatrix22 => RmatrixData(2,2)%p_Dentry
-
     ! Which equation do we have?
     select case (p_ranalyticData%p_rphysics%cequation)
+
+    ! -------------------------------------------------------------
+    ! Nonlinear Heat equation
+    ! -------------------------------------------------------------
+    case (CCEQ_NL1HEAT2D)
+
+      ! Get the nonlinearity Y
+      p_DnonlinearityY1 => revalVectors%p_RvectorData(1)%p_Ddata(:,:,:)
+
+      ! Get local data of the velocity submatrices.
+      ! They are all discretised with the same FEM space.
+      p_rmatrixData11 => RmatrixData(1,1)
+      p_DbasTrial => RmatrixData(1,1)%p_DbasTrial
+      p_DbasTest => RmatrixData(1,1)%p_DbasTest
+
+      ! Get the matrix data      
+      p_DlocalMatrix11 => RmatrixData(1,1)%p_Dentry
+
+      ! Primal or dual equation?
+      select case (copType)
+
+      ! ***********************************************************
+      ! Nonlinear Heat equation. Forward equation.
+      ! ***********************************************************
+      case (OPTP_PRIMAL)
+      
+        ! ---------------------------------------------------------
+        ! Assemble the nonlinearity "(y^3 (phi_j) , phi_i)"
+        do iel = 1,nelements
+          do icubp = 1,npointsPerElement
+          
+            ! Get the X-velocity and the Y-velocity in that point
+            ! du1 = y_1
+            du1 = p_DnonlinearityY1(icubp,iel,DER_FUNC2D)
+          
+            do idofe=1,p_rmatrixData11%ndofTest
+
+              dbasI = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
+
+              do jdofe=1,p_rmatrixData11%ndofTrial
+
+                dbasJ = p_DbasTrial(jdofe,DER_FUNC2D,icubp,iel)
+
+                p_DlocalMatrix11(jdofe,idofe,iel) = p_DlocalMatrix11(jdofe,idofe,iel) + &
+                    dweight * p_DcubWeight(icubp,iel) * du1**3 * dbasJ*dbasI
+
+              end do ! idofe
+            end do ! jdofe
+          end do ! icubp
+        end do ! iel
+          
+      ! ***********************************************************
+      ! Linearised Nonlinear Heat equation. Forward equation.
+      ! ***********************************************************
+      case (OPTP_PRIMALLIN_SIMPLE,OPTP_PRIMALLIN)
+
+        ! ---------------------------------------------------------
+        ! The nonlinearity is here
+        !    "(3*y^2 (phi_j) , phi_i)"  
+        do iel = 1,nelements
+          do icubp = 1,npointsPerElement
+
+            ! Get the solution
+            !   du1 = y_1
+            du1 = p_DnonlinearityY1(icubp,iel,DER_FUNC2D)
+
+            do idofe=1,p_rmatrixData11%ndofTest
+
+              dbasI = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
+
+              do jdofe=1,p_rmatrixData11%ndofTrial
+
+                dbasJ  = p_DbasTrial(jdofe,DER_FUNC2D,icubp,iel)
+
+                p_DlocalMatrix11(jdofe,idofe,iel) = p_DlocalMatrix11(jdofe,idofe,iel) + &
+                    dweight * p_DcubWeight(icubp,iel) * &
+                    ( 3.0_DP*du1**2 * dbasJ*dbasI )
+
+              end do ! idofe
+            end do ! jdofe
+          end do ! icubp
+        end do ! iel
+
+      ! ***********************************************************
+      ! Nonlinear Heat equation. Backward equation.
+      ! ***********************************************************
+      case (OPTP_DUAL)
+        
+        ! ---------------------------------------------------------
+        ! Assemble the nonlinearity. There is
+        !   "( phi_j , (3*y^2) phi_i)"
+        ! The dual equation is always linear, so there is de-facto
+        ! only one type of equation. However, whether the dual equation
+        ! is used for the Newton iteration or not, the right-hand side
+        ! changes.
+        do iel = 1,nelements
+          do icubp = 1,npointsPerElement
+
+            ! Get the solution:
+            !   du1 = y_1
+            du1 = p_DnonlinearityY1(icubp,iel,DER_FUNC2D)
+
+            do idofe=1,p_rmatrixData11%ndofTest
+
+              dbasI  = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
+
+              do jdofe=1,p_rmatrixData11%ndofTrial
+
+                dbasJ = p_DbasTrial(jdofe,DER_FUNC2D,icubp,iel)
+
+                p_DlocalMatrix11(jdofe,idofe,iel) = p_DlocalMatrix11(jdofe,idofe,iel) + &
+                    dweight * p_DcubWeight(icubp,iel) * &
+                      ( 3.0_DP*du1**2 * dbasJ * dbasI )
+
+              end do ! idofe
+            end do ! jdofe
+          end do ! icubp
+        end do ! iel
+        
+      end select
 
     ! -------------------------------------------------------------
     ! Navier Stokes.
     ! -------------------------------------------------------------
     case (CCEQ_NAVIERSTOKES2D)
       
+      ! Get the nonlinearity Y -- X-velocity and Y-velocity.
+      p_DnonlinearityY1 => revalVectors%p_RvectorData(1)%p_Ddata(:,:,:)
+      p_DnonlinearityY2 => revalVectors%p_RvectorData(2)%p_Ddata(:,:,:)
+
+      ! Get local data of the velocity submatrices.
+      ! They are all discretised with the same FEM space.
+      p_rmatrixData11 => RmatrixData(1,1)
+      p_rmatrixData21 => RmatrixData(2,1)
+      p_rmatrixData12 => RmatrixData(1,2)
+      p_rmatrixData22 => RmatrixData(2,2)
+      p_DbasTrial => RmatrixData(1,1)%p_DbasTrial
+      p_DbasTest => RmatrixData(1,1)%p_DbasTest
+
+      ! Get the matrix data      
+      p_DlocalMatrix11 => RmatrixData(1,1)%p_Dentry
+      p_DlocalMatrix12 => RmatrixData(1,2)%p_Dentry
+      p_DlocalMatrix21 => RmatrixData(2,1)%p_Dentry
+      p_DlocalMatrix22 => RmatrixData(2,2)%p_Dentry
+
       ! Primal or dual equation?
       select case (copType)
 
@@ -3100,7 +3341,7 @@ contains
         ! ***********************************************************
         ! Heat equation
         ! ***********************************************************
-        case (CCEQ_HEAT2D)
+        case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
       
           ! ---------------------------------------------------------
           ! The one-and-only RHS
@@ -3121,10 +3362,10 @@ contains
           ! Vector 1 = Temp-vectors for the RHS.
           call fev2_addDummyVectorToEvalList(rvectorEval)
           
-          ! Vector 2 = dual solution -- for the calculation of distributed control
+          ! Vector 2 = control -- for the calculation of distributed control
           ! in the solution space.
-          ! Only add this if we have distributed control. Otherwise add dummy
-          ! vectors which take no time in being computed.
+          ! Only add this if we have distributed control. Otherwise add a dummy
+          ! vector which takes no time in being computed.
           if (p_ranalyticData%p_rsettingsOptControl%dalphaDistC .ge. 0.0_DP) then
             call sptivec_getVectorFromPool (rcontrol%p_rvectorAccess,idofTime,p_rvector1)
             call fev2_addVectorToEvalList(rvectorEval,p_rvector1%RvectorBlock(1),0)
@@ -3135,7 +3376,7 @@ contains
           ! Build the vector
           call bma_buildVector (rrhs,BMA_CALC_STANDARD,&
               smva_fcalc_rhs, rcollection, revalVectors=rvectorEval,&
-              rcubatureInfo=rspaceTimeOperatorAsm%p_rasmTemplates%rcubatureInfoRHScontinuity)
+              rcubatureInfo=rspaceTimeOperatorAsm%p_rasmTemplates%rcubatureInfoRHS)
           
           ! Cleanup
           call fev2_releaseVectorList(rvectorEval)
@@ -3292,7 +3533,7 @@ contains
         ! ***********************************************************
         ! Heat equation
         ! ***********************************************************
-        case (CCEQ_HEAT2D)
+        case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
         
           ! Evaluation point of the RHS in time
           dtime = dtimestart
@@ -3318,7 +3559,7 @@ contains
           ! Build the vector
           call bma_buildVector (rrhs,BMA_CALC_STANDARD,&
               smva_fcalc_rhs, rcollection, revalVectors=rvectorEval,&
-              rcubatureInfo=rspaceTimeOperatorAsm%p_rasmTemplates%rcubatureInfoRHScontinuity)
+              rcubatureInfo=rspaceTimeOperatorAsm%p_rasmTemplates%rcubatureInfoRHS)
           
           ! Cleanup
           call fev2_releaseVectorList(rvectorEval)
@@ -3483,7 +3724,7 @@ contains
         ! ***********************************************************
         ! Heat equation
         ! ***********************************************************
-        case (CCEQ_HEAT2D)
+        case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
         
           ! Evaluation point of the RHS in time
           dtime = dtimestart + dtheta * dtstep
@@ -3512,7 +3753,7 @@ contains
             ! Build the vector
             call bma_buildVector (rrhs,BMA_CALC_STANDARD,&
                 smva_fcalc_rhs, rcollection, revalVectors=rvectorEval,&
-                rcubatureInfo=rspaceTimeOperatorAsm%p_rasmTemplates%rcubatureInfoRHScontinuity)
+                rcubatureInfo=rspaceTimeOperatorAsm%p_rasmTemplates%rcubatureInfoRHS)
             
             ! Cleanup
             call fev2_releaseVectorList(rvectorEval)
@@ -3669,7 +3910,7 @@ contains
         ! ***********************************************************
         ! Heat equation
         ! ***********************************************************
-        case (CCEQ_HEAT2D)
+        case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
         
           ! Evaluation point of the RHS in time
           dtime = dtimestart
@@ -3692,7 +3933,7 @@ contains
           ! Build the vector
           call bma_buildVector (rrhs,BMA_CALC_STANDARD,&
               smva_fcalc_rhs, rcollection, revalVectors=rvectorEval,&
-              rcubatureInfo=rspaceTimeOperatorAsm%p_rasmTemplates%rcubatureInfoRHScontinuity)
+              rcubatureInfo=rspaceTimeOperatorAsm%p_rasmTemplates%rcubatureInfoRHS)
           
           ! Cleanup
           call fev2_releaseVectorList(rvectorEval)
@@ -3714,8 +3955,8 @@ contains
   
 !<subroutine>
 
-  subroutine smva_getSemilinRhs_dualLin (rspaceTimeOperatorAsm,idofTime,rdualSol,rprimalSolLin,&
-      coptype,dweight,rrhs)
+  subroutine smva_getSemilinRhs_dualLin (rspaceTimeOperatorAsm,idofTime,&
+      rprimalSol,rdualSol,rprimalSolLin,coptype,dweight,rrhs)
 
 !<description>
   ! Implements semilinear parts of the linearised dual operator
@@ -3734,6 +3975,9 @@ contains
 
   ! Weight for the operator
   real(DP), intent(in) :: dweight
+
+  ! Space-time vector which contains the solution of the primal equation.
+  type(t_primalSpace), intent(inout) :: rprimalSol
 
   ! Space-time vector which contains the solution of the dual equation.
   type(t_dualSpace), intent(inout) :: rdualSol
@@ -3754,7 +3998,7 @@ contains
     type(t_collection) :: rcollection
     type(t_collection), target :: ruserCollection
     type(t_fev2Vectors) :: rvectorEval
-    type(t_vectorBlock), pointer :: p_rvector1,p_rvector2
+    type(t_vectorBlock), pointer :: p_rvector1,p_rvector2,p_rvector3
     real(DP) :: dtheta, dtstep, dtimeend, dtimestart
     type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
 
@@ -3813,9 +4057,36 @@ contains
         ! Which equation do we have?
         select case (p_ranalyticData%p_rphysics%cequation)
 
+        ! ***********************************************************
+        ! Heat equation
+        ! ***********************************************************
         case (CCEQ_HEAT2D,CCEQ_STOKES2D)
         
           ! No semilinear parts, nothing to do.
+
+        case (CCEQ_NL1HEAT2D)
+
+          ! Prepare the evaluation.
+          !
+          ! Vector 1 = dual solution.
+          call sptivec_getVectorFromPool (rdualSol%p_rvectorAccess,idofTime,p_rvector1)
+          call fev2_addVectorToEvalList(rvectorEval,p_rvector1%RvectorBlock(1),0)
+
+          ! Vector 2 = linearised primal solution.
+          call sptivec_getVectorFromPool (rprimalSolLin%p_rvectorAccess,idofTime,p_rvector2)
+          call fev2_addVectorToEvalList(rvectorEval,p_rvector2%RvectorBlock(1),1)
+
+          ! Vector 3 = primal solution.
+          call sptivec_getVectorFromPool (rprimalSol%p_rvectorAccess,idofTime,p_rvector3)
+          call fev2_addVectorToEvalList(rvectorEval,p_rvector3%RvectorBlock(1),0)
+          
+          ! Build the vector
+          call bma_buildVector (rrhs,BMA_CALC_STANDARD,&
+              smva_fcalc_semilinRhs, rcollection, revalVectors=rvectorEval,&
+              rcubatureInfo=rspaceTimeOperatorAsm%p_rasmTemplates%rcubatureInfoRHS)
+          
+          ! Cleanup
+          call fev2_releaseVectorList(rvectorEval)
 
         ! ***********************************************************
         ! Navier Stokes
@@ -3912,7 +4183,7 @@ contains
 
     ! Local variables
     real(DP) :: dbasI, dbasIx, dbasIy
-    real(DP) :: dlambda1, dlambda2, dylin1, dylin2, dylin1x, dylin1y, dylin2x, dylin2y
+    real(DP) :: dlambda1, dlambda2, dylin1, dylin2, dylin1x, dylin1y, dylin2x, dylin2y, dy1
     real(DP) :: dweight
     integer :: iel, icubp, idofe
     integer :: copType
@@ -3922,6 +4193,7 @@ contains
     type(t_bmaVectorData), pointer :: p_rvectorData1,p_rvectorData2
     real(DP), dimension(:,:,:), pointer :: p_Dlambda1,p_Dlambda2
     real(DP), dimension(:,:,:), pointer :: p_Dylin1,p_Dylin2
+    real(DP), dimension(:,:,:), pointer :: p_Dy1
 
     type(p_t_spacetimeOperatorAsm) :: rp_rspaceTimeOperatorAsm
     type(t_spacetimeOperatorAsm), pointer :: p_rspaceTimeOperatorAsm
@@ -3948,6 +4220,90 @@ contains
     ! -------------------------------------------------------------
     ! Stokes/Navier Stokes.
     ! -------------------------------------------------------------
+    case (CCEQ_NL1HEAT2D)
+      
+      ! Primal or dual equation?
+      select case (copType)
+
+      ! ***********************************************************
+      ! Nonlinear heat equation. Linearised backward equation.
+      ! ***********************************************************
+      case (OPTP_DUALLIN)
+      
+        ! The additional operator assembled here and added to the
+        ! right-hand side vector reads as follows:
+        !
+        !   dweight * ( lambda , 3 ylin^2 phi )
+        !
+        ! with lambda being the solution of the dual equation
+        ! and ylin being the solution of the linearised primal equation.
+        ! Writing this operator in a component-wise way is a bit
+        ! tideous, see below...
+        !
+        ! This calculation shall not be included in the RHS calculation
+        ! as it is used with different timestep weight than the RHS.
+
+        ! Get the nonlinearity
+        p_Dlambda1 => revalVectors%p_RvectorData(1)%p_Ddata(:,:,:)
+        p_Dylin1 => revalVectors%p_RvectorData(2)%p_Ddata(:,:,:)
+        p_Dy1 => revalVectors%p_RvectorData(3)%p_Ddata(:,:,:)
+      
+        ! Get the data arrays of the subvector
+        p_rvectorData1 => RvectorData(1)
+        
+        p_DlocalVector1 => RvectorData(1)%p_Dentry
+        
+        p_DbasTest => RvectorData(1)%p_DbasTest
+        
+        ! Loop over the elements in the current set.
+        do iel = 1,nelements
+
+          ! Loop over all cubature points on the current element
+          do icubp = 1,npointsPerElement
+
+            ! Outer loop over the DOFs i=1..ndof on our current element,
+            ! which corresponds to the (test) basis functions Phi_i:
+            do idofe=1,p_rvectorData1%ndofTest
+            
+              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! into dbasI
+              dbasI  = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
+              
+              ! Get the values of lambda and ylin.
+              dlambda1 = p_Dlambda1(icubp,iel,DER_FUNC2D)
+              dylin1 = p_Dylin1(icubp,iel,DER_FUNC2D)
+              dy1 = p_Dy1(icubp,iel,DER_FUNC2D)
+              
+              ! Multiply the values of the basis functions
+              ! (1st derivatives) by the cubature weight and sum up
+              ! into the local vectors.
+              p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
+                  dweight * p_DcubWeight(icubp,iel) * &
+                  ( dlambda1 * 6.0_DP * dy1 * dylin1 * dbasI )
+                  
+            end do ! jdofe
+
+          end do ! icubp
+        
+        end do ! iel
+
+      ! ***********************************************************
+      ! Nonlinear heat equation. Simplified linearised backward equation.
+      ! ***********************************************************
+      case (OPTP_DUALLIN_SIMPLE)
+        
+        ! Nothing to do, we ignore here any nonlinear term.
+
+      case default
+        call output_line ("Unknown operator.", &
+            OU_CLASS_ERROR,OU_MODE_STD,"smva_fcalc_semilinRhs")
+        call sys_halt()
+
+      end select
+
+    ! -------------------------------------------------------------
+    ! Stokes/Navier Stokes.
+    ! -------------------------------------------------------------
     case (CCEQ_NAVIERSTOKES2D)
       
       ! Primal or dual equation?
@@ -3961,7 +4317,7 @@ contains
         ! The additional operator assembled here and added to the
         ! right-hand side vector reads as follows:
         !
-        !   dweight * ( lambda , (ylin grad) (phi) + grad(y) phi )
+        !   dweight * ( lambda , (ylin grad) (phi) + grad(ylin) phi )
         !
         ! with lambda being the solution of the dual equation
         ! and ylin being the solution of the linearised primal equation.
@@ -4329,9 +4685,9 @@ contains
       
         ! For the linearised primal equation, the right-hand side reads
         !
-        !    rhs = (user defined) + u"
+        !    rhs = (user defined) + u'
         !
-        ! with u" being the linearised control.
+        ! with u' being the linearised control.
         dalpha = p_ranalyticData%p_rsettingsOptControl%dalphaDistC
         
         dweight2 = dweight * &
@@ -4707,7 +5063,7 @@ contains
         !
         ! there follows the addutional term
         !
-        !    rhs = y"
+        !    rhs = y'
         !
         ! in case the observation area is the complete domain.
         ! If the observation area is only a restricted domain Omega~,
@@ -4717,7 +5073,7 @@ contains
         !
         ! so the rhs of the linearised dual equation is
         !
-        !    rhs = Chi_Omega~ y"
+        !    rhs = Chi_Omega~ y'
 
         ! Get the nonlinearity
         p_Dylin1 => revalVectors%p_RvectorData(3)%p_Ddata(:,:,:)
@@ -4763,11 +5119,11 @@ contains
                 ! into the local vectors.
                 p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
                     dweight2 * p_DcubWeight(icubp,iel) * &
-                    ( dylin1 * dbasI ) ! (y",phi)
+                    ( dylin1 * dbasI ) ! (y',phi)
 
                 p_DlocalVector2(idofe,iel) = p_DlocalVector2(idofe,iel) + &
                     dweight2 * p_DcubWeight(icubp,iel) * &
-                    ( dylin2 * dbasI ) ! (y",phi)
+                    ( dylin2 * dbasI ) ! (y',phi)
                     
               end do ! jdofe
 
@@ -4812,11 +5168,11 @@ contains
                   ! into the local vectors.
                   p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
                       dweight2 * p_DcubWeight(icubp,iel) * &
-                      ( dylin1 * dbasI ) ! (y",phi)
+                      ( dylin1 * dbasI ) ! (y',phi)
 
                   p_DlocalVector2(idofe,iel) = p_DlocalVector2(idofe,iel) + &
                       dweight2 * p_DcubWeight(icubp,iel) * &
-                      ( dylin2 * dbasI ) ! (y",phi)
+                      ( dylin2 * dbasI ) ! (y',phi)
                       
                 end do ! jdofe
 
@@ -4955,7 +5311,7 @@ contains
     ! -------------------------------------------------------------
     ! Heat equation
     ! -------------------------------------------------------------
-    case (CCEQ_HEAT2D)
+    case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
     
       ! Primal or dual equation?
       select case (copType)
@@ -5065,7 +5421,7 @@ contains
         if (dalpha .ge. 0.0_DP) then
 
           ! Get the control.
-          p_Du1 => revalVectors%p_RvectorData(3)%p_Ddata(:,:,:)
+          p_Du1 => revalVectors%p_RvectorData(2)%p_Ddata(:,:,:)
 
           ! Loop over the elements in the current set.
           do iel = 1,nelements
@@ -5299,7 +5655,7 @@ contains
         ! ------------------------------------------------
       
         ! Get the nonlinearity y.
-        p_Dy1 => revalVectors%p_RvectorData(3)%p_Ddata(:,:,:)
+        p_Dy1 => revalVectors%p_RvectorData(2)%p_Ddata(:,:,:)
 
         dweight2 = dweight * &
             p_rspaceTimeOperatorAsm%p_ranalyticData%p_rdebugFlags%ddualPrimalCoupling
@@ -5404,7 +5760,7 @@ contains
         !
         ! there follows the addutional term
         !
-        !    rhs = y"
+        !    rhs = y'
         !
         ! in case the observation area is the complete domain.
         ! If the observation area is only a restricted domain Omega~,
@@ -5414,10 +5770,10 @@ contains
         !
         ! so the rhs of the linearised dual equation is
         !
-        !    rhs = Chi_Omega~ y"
+        !    rhs = Chi_Omega~ y'
 
         ! Get the nonlinearity
-        p_Dylin1 => revalVectors%p_RvectorData(3)%p_Ddata(:,:,:)
+        p_Dylin1 => revalVectors%p_RvectorData(2)%p_Ddata(:,:,:)
       
         ! Get the data arrays of the subvector
         p_rvectorData1 => RvectorData(1)
@@ -5456,7 +5812,7 @@ contains
                 ! into the local vectors.
                 p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
                     dweight2 * p_DcubWeight(icubp,iel) * &
-                    ( dylin1 * dbasI ) ! (y",phi)
+                    ( dylin1 * dbasI ) ! (y',phi)
 
               end do ! jdofe
 
@@ -5500,7 +5856,7 @@ contains
                   ! into the local vectors.
                   p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
                       dweight2 * p_DcubWeight(icubp,iel) * &
-                      ( dylin1 * dbasI ) ! (y",phi)
+                      ( dylin1 * dbasI ) ! (y',phi)
 
                 end do ! jdofe
 
@@ -5735,7 +6091,7 @@ contains
         ! *************************************************************
         ! Heat/Stokes/Navier Stokes.
         ! *************************************************************
-        case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+        case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D,CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
 
           ! ===============================================
           ! Prepare the linear parts of the matrix.
@@ -5783,28 +6139,30 @@ contains
               rprimalSol,isollevelSpace,isollevelTime,1.0_DP,coptype,&
               rtempdata,ipreviousSpaceLv)
 
-          ! -----------------------------------------------
+          ! ===============================================
           ! Implement restrictions in the space
-          ! -----------------------------------------------
+          ! ===============================================
 
           select case (p_ranalyticData%p_rphysics%cequation)
         
-          case (CCEQ_HEAT2D)
-!
-!          ... to be implemented
-!
-!          ! If this is an UMFPACK solver, and if this is the Stokes/Navier--Stokes
-!          ! equations and pure Dirichlet boundary conditions, implement
-!          ! the lumped mass matrix in the first row.
-!          if (rasmFlags%bumfpackSolver .and. &
-!              (roptcBDCSpace%rdirichletBoundary%nregions .eq. 0) .and.
-!              (roptcBDCSpace%rdirichletControlBoundary%nregions .eq. 0)) then
-!            Irows = (/1/)
-!            call mmod_replaceLineByLumpedMass (rmatrix%RmatrixBlock(1,1),1,&
-!                roperatorAsm%p_rasmTemplates%rmatrixMassPressureLumped)
-!          end if
+          case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
+
+            ! If this is an UMFPACK solver, and if this is the heat equation
+            ! equations and pure Neumann boundary conditions, implement
+            ! the lumped mass matrix in the first row.
+            if (rasmFlags%bumfpackSolver .and. &
+                (roptcBDCSpace%rdirichletBoundary%nregions .eq. 0) .and. &
+                (roptcBDCSpace%rdirichletControlBoundary%nregions .eq. 0)) then
+                
+              ! Replace the first row by the lumped mass matrix.
+              Irows = (/1/)
+              call mmod_replaceLineByLumpedMass (rmatrix%RmatrixBlock(1,1),1,&
+                  roperatorAsm%p_rasmTemplates%rmatrixMassLumpInt)
+
+            end if
 
           case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+          
             ! If this is an UMFPACK solver, and if this is the Stokes/Navier--Stokes
             ! equations and pure Dirichlet boundary conditions, implement
             ! the lumped mass matrix in the first row.
@@ -5814,7 +6172,7 @@ contains
               call mmod_replaceLinesByZero (rmatrix%RmatrixBlock(3,1),Irows)
               call mmod_replaceLinesByZero (rmatrix%RmatrixBlock(3,2),Irows)
               call mmod_replaceLineByLumpedMass (rmatrix%RmatrixBlock(3,3),1,&
-                  roperatorAsm%p_rasmTemplates%rmatrixMassPressureLumped)
+                  roperatorAsm%p_rasmTemplates%rmatrixMassPressureLumpInt)
             end if
           end select
         
@@ -5952,7 +6310,7 @@ contains
         ! *************************************************************
         ! Heat/Stokes/Navier Stokes.
         ! *************************************************************
-        case (CCEQ_HEAT2D,CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+        case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D,CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
         
           ! ===============================================
           ! Prepare the linear parts of the matrix.
@@ -6009,20 +6367,22 @@ contains
 
           select case (p_ranalyticData%p_rphysics%cequation)
         
-          case (CCEQ_HEAT2D)
-!
-!          ... to be implemented
-!
-!          ! If this is an UMFPACK solver, and if this is the Stokes/Navier--Stokes
-!          ! equations and pure Dirichlet boundary conditions, implement
-!          ! the lumped mass matrix in the first row.
-!          if (rasmFlags%bumfpackSolver .and. &
-!              (roptcBDCSpace%rdirichletBoundary%nregions .eq. 0) .and.
-!              (roptcBDCSpace%rdirichletControlBoundary%nregions .eq. 0)) then
-!            Irows = (/1/)
-!            call mmod_replaceLineByLumpedMass (rmatrix%RmatrixBlock(1,1),1,&
-!                roperatorAsm%p_rasmTemplates%rmatrixMassPressureLumped)
-!          end if
+          case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
+
+            ! If this is an UMFPACK solver, and if this is the heat equation
+            ! equations and pure Neumann boundary conditions, implement
+            ! the lumped mass matrix in the first row.
+            if (rasmFlags%bumfpackSolver .and. &
+                (roptcBDCSpace%rdirichletBoundary%nregions .eq. 0) .and. &
+                (roptcBDCSpace%rdirichletControlBoundary%nregions .eq. 0)) then
+                
+              ! Replace the first row by the lumped mass matrix.
+              Irows = (/1/)
+              call mmod_replaceLineByLumpedMass (rmatrix%RmatrixBlock(1,1),1,&
+                  roperatorAsm%p_rasmTemplates%rmatrixMassLumpInt)
+
+            end if
+
 
           case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
             ! If this is an UMFPACK solver, and if this is the Stokes/Navier--Stokes
@@ -6034,7 +6394,7 @@ contains
               call mmod_replaceLinesByZero (rmatrix%RmatrixBlock(3,1),Irows)
               call mmod_replaceLinesByZero (rmatrix%RmatrixBlock(3,2),Irows)
               call mmod_replaceLineByLumpedMass (rmatrix%RmatrixBlock(3,3),1,&
-                  roperatorAsm%p_rasmTemplates%rmatrixMassPressureLumped)
+                  roperatorAsm%p_rasmTemplates%rmatrixMassPressureLumpInt)
             end if
           end select
 
@@ -6252,7 +6612,7 @@ contains
           ! *************************************************************
           ! Heat/Stokes/Navier Stokes.
           ! *************************************************************
-          case (CCEQ_HEAT2D,CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+          case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D,CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
         
             ! Assemble
             call sbc_assembleBDconditions (roptcBDC,roptcBDCSpace,dtimeend,&
@@ -6311,7 +6671,7 @@ contains
           ! *************************************************************
           ! Heat/Stokes/Navier Stokes.
           ! *************************************************************
-          case (CCEQ_HEAT2D,CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+          case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D,CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
         
             ! Assemble
             call sbc_assembleBDconditions (roptcBDC,roptcBDCSpace,dtimestart,&
@@ -6581,7 +6941,7 @@ contains
       ! ***********************************************************
       ! Heat equation
       ! ***********************************************************
-      case (CCEQ_HEAT2D)
+      case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
     
         ! ---------------------------------------------------------
         ! Create the RHS of the L2 projection
@@ -6602,7 +6962,7 @@ contains
         ! Build the vector
         call bma_buildVector (rdiscreteInitCond%rrhs,BMA_CALC_STANDARD,&
             smva_fcalc_rhs, rcollection, revalVectors=rvectorEval,&
-            rcubatureInfo=rspaceTimeOperatorAsm%p_rasmTemplates%rcubatureInfoRHScontinuity)
+            rcubatureInfo=rspaceTimeOperatorAsm%p_rasmTemplates%rcubatureInfoRHS)
         
         ! Cleanup
         call fev2_releaseVectorList(rvectorEval)
@@ -6721,5 +7081,5 @@ contains
     call sptivec_commitVecInPool(rprimalSol%p_rvectorAccess,1)
 
   end subroutine
-  
+
 end module

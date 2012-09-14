@@ -198,7 +198,7 @@ contains
     ! *************************************************************
     ! Heat equation
     ! *************************************************************
-    case (CCEQ_HEAT2D)
+    case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
     
       select case (ieltype)
       case (0)
@@ -326,7 +326,7 @@ contains
     ! *************************************************************
     ! Heat equation
     ! *************************************************************
-    case (CCEQ_HEAT2D)
+    case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
     
       select case (ieltype)
       case (0)

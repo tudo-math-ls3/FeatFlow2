@@ -108,6 +108,8 @@ module postprocessing
   public :: optcpp_postprocessing
   public :: optcpp_postprocessSubstep
   
+  public :: optcpp_spaceTimeVisualisation
+  
 contains
 
   ! ***************************************************************************
@@ -625,7 +627,7 @@ contains
     ! ********************************************
     ! Heat equation
     ! ********************************************
-    case (CCEQ_HEAT2D)
+    case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
     
       ! Current space?
       select case (cspace)
@@ -968,7 +970,7 @@ contains
     ! -------------------------------------------------------------
     ! Heat equation.
     ! -------------------------------------------------------------
-    case (CCEQ_HEAT2D)
+    case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
 
       if (icomponent .eq. 1) then
 
@@ -1330,7 +1332,7 @@ contains
     ! -------------------------------------------------------------
     ! Heat equation.
     ! -------------------------------------------------------------
-    case (CCEQ_HEAT2D)
+    case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
 
       ! Nothing to do up to now.
 

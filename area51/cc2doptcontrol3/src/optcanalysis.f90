@@ -211,7 +211,7 @@ contains
     ! *************************************************************
     ! Heat equation
     ! *************************************************************
-    case (CCEQ_HEAT2D)
+    case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
 
       ! Get the data array with the values of the FEM function
       ! in the cubature points
@@ -691,7 +691,7 @@ contains
           ! *************************************************************
           ! Heat equation
           ! *************************************************************
-          case (CCEQ_HEAT2D)
+          case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
             ncomp = 1
 
           end select
@@ -1030,7 +1030,7 @@ contains
       ! *************************************************************
       ! Heat equation
       ! *************************************************************
-      case (CCEQ_HEAT2D)
+      case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
         ncomp = 1
 
       end select

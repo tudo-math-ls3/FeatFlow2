@@ -130,6 +130,9 @@ module assemblytemplates
     ! Precalculated mass matrix
     type(t_matrixScalar) :: rmatrixMass
 
+    ! Precalculated lumped mass matrix.
+    type(t_matrixScalar) :: rmatrixMassLumpInt
+
     ! Precalculated mass matrix for the pressure space.
     type(t_matrixScalar) :: rmatrixMassPressure
 
@@ -138,7 +141,7 @@ module assemblytemplates
     type(t_matrixScalar) :: rmatrixMassPressureExtStruc
     
     ! Precalculated lumped mass matrix for the pressure space.
-    type(t_matrixScalar) :: rmatrixMassPressureLumped
+    type(t_matrixScalar) :: rmatrixMassPressureLumpInt
 
     ! Precalculated EOJ matrix in the primal velocity space.
     ! Calculated with nu=1.

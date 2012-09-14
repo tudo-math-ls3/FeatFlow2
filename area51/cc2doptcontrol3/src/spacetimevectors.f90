@@ -1560,7 +1560,7 @@ contains
 !<subroutine>
 
   subroutine sptivec_loadFromFileSequence (rx,sfilename,istart,iend,idelta,&
-      bformatted,brepeatLast,rblockDiscretisation)
+      bformatted,brepeatLast,ifirstTargetIdx,rblockDiscretisation)
 
 !<description>
   ! This routine loads a space-time vector from a sequence of files on the
@@ -1610,11 +1610,14 @@ contains
   ! Standard value = false = missing solutions are set to zero.
   logical, optional :: brepeatLast
   
+  ! OPTIONAL: Index of the first entry in the destination vector which should
+  ! be overwritten. If not specified, this defaults to 1.
+  integer, intent(in), optional :: ifirstTargetIdx
+
   ! OPTIONAL: A block discretisation structure that defines the shape of the spatial
   ! vectors. If not specified, the vectors will be read in as pure data vectors
   ! without a discretisation attached.
   type(t_blockDiscretisation), intent(IN), target, optional :: rblockDiscretisation
-
 !</input>
 
 !<inputoutput>
@@ -1630,13 +1633,16 @@ contains
     ! Local variables
     type(t_vectorBlock) :: rvector
     character(SYS_STRLEN) :: sfile,sarray
-    integer :: i,ilast,ifileidx
+    integer :: i,ilast,ifileidx,ifirsttarget
     logical :: bexists,brepeat
     integer :: hdata
     real(dp), dimension(:), pointer :: p_Ddata,p_Ddata2
     
     brepeat = .false.
     if (present(brepeatLast)) brepeat = brepeatLast
+
+    ifirsttarget = 1
+    if (present(ifirstTargetIdx)) ifirsttarget = ifirstTargetIdx
     
     call storage_new ("sptivec_loadFromFileSequence", "hdata", &
         rx%NEQ,ST_DOUBLE, hdata, ST_NEWBLOCK_NOINIT)
@@ -1668,7 +1674,8 @@ contains
 
           if ((i .eq. istart) .and. (rx%NEQtime .eq. 0)) then
             ! At the first file, create a space-time vector holding the data.
-            call sptivec_initVectorPlain (rx,rvector%NEQ,(iend-istart+1)/max(1,idelta))
+            call sptivec_initVectorPlain (rx,rvector%NEQ,(iend-istart+1)/max(1,idelta),&
+                istartidx=ifirsttarget)
           end if
           
           if (i .eq. istart) then
@@ -1680,22 +1687,29 @@ contains
             call output_line("Input vector has incorrect length; truncating.",&
                 OU_CLASS_WARNING,ssubroutine="sptivec_loadFromFileSequence")
             call lalg_copyVector(p_Ddata2,p_Ddata,min(size(p_Ddata2),size(p_Ddata)))
-            call exstor_setdata_storage (rx%p_IdataHandleList(1+ifileidx),hdata)
+            call exstor_setdata_storage (rx%p_IdataHandleList(ifirsttarget+ifileidx),hdata)
           else
-            call exstor_setdata_storage (rx%p_IdataHandleList(1+ifileidx),rvector%h_Ddata)
+            call exstor_setdata_storage (rx%p_IdataHandleList(ifirsttarget+ifileidx),rvector%h_Ddata)
           end if
+
+          ! The vector is scaled by 1.0.
+          rx%p_Dscale(ifirsttarget+ifileidx) = 1.0_DP
     
         else
   
           call vecio_readBlockVectorHR (rvector, sarray, .false.,&
-            0, sfile, bformatted)
+              0, sfile, bformatted)
 
           if (i .eq. istart) then
             ! At the first file, create a space-time vector holding the data.
             call sptivec_initVector (rx,1+iend-istart,rblockDiscretisation)
           end if
+          
           ! Save the data
-          call exstor_setdata_storage (rx%p_IdataHandleList(1+ifileidx),rvector%h_Ddata)
+          call exstor_setdata_storage (rx%p_IdataHandleList(ifirsttarget+ifileidx),rvector%h_Ddata)
+
+          ! The vector is scaled by 1.0.
+          rx%p_Dscale(ifirsttarget+ifileidx) = 1.0_DP
           
         end if
         
@@ -1727,10 +1741,6 @@ contains
     end do
     
     call storage_free(hdata)
-    
-    ! The vector is scaled by 1.0.
-    ! rx%p_Dscale(:) = 1.0_DP
-    call lalg_setVectorDble(rx%p_Dscale(:),1.0_DP)
     
     ! Remove the temp vector
     call lsysbl_releaseVector (rvector)
@@ -2190,6 +2200,9 @@ contains
 !</subroutine>
 
     integer :: i
+    
+    ! DEBUG!!!
+    real(DP), dimension(:), pointer :: p_Ddata
   
     if (iindex .le. 0) then
       call output_line ("Invalid index!",&
@@ -2208,6 +2221,7 @@ contains
     do i=1,size(raccessPool%p_IvectorIndex)
       if (abs(raccessPool%p_IvectorIndex(i)) .eq. iindex) then
         p_rx => raccessPool%p_RvectorPool(i)
+        call lsysbl_getbase_double (p_rx,p_Ddata)
         return
       end if
     end do
@@ -2227,6 +2241,7 @@ contains
     
     ! Here is our read vector
     p_rx => raccessPool%p_RvectorPool(raccessPool%inextFreeVector)
+    call lsysbl_getbase_double (p_rx,p_Ddata)
 
     ! Find a new free position
     do 

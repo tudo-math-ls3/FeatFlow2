@@ -619,7 +619,7 @@ contains
       ! *************************************************************
       ! Heat equation
       ! *************************************************************
-      case (CCEQ_HEAT2D)
+      case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
 
         ! Pure Neumann problem?
 
@@ -627,7 +627,7 @@ contains
         ! Integral-mean-value-zero filter for the vector
         ! -----------------------------------------------
         if (p_roptcBDCSpace%rdirichletBoundary%nregions .eq. 0) then
-          call vecfil_subvectorToL20 (rvector,3)
+          call vecfil_subvectorSmallL1To0 (rvector,1)
         end if
 
       end select      
@@ -667,7 +667,7 @@ contains
         ! Integral-mean-value-zero filter for the vector
         ! -----------------------------------------------
         if (p_roptcBDCSpace%rdirichletBoundary%nregions .eq. 0) then
-          call vecfil_subvectorToL20 (rvector,3)
+          call vecfil_subvectorSmallL1To0 (rvector,1)
         end if
 
       end select      
@@ -699,7 +699,7 @@ contains
       ! *************************************************************
       ! Heat equation
       ! *************************************************************
-      case (CCEQ_HEAT2D)
+      case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
 
         ! Pure Neumann problem?
 
@@ -707,7 +707,7 @@ contains
         ! Integral-mean-value-zero filter for the vector
         ! -----------------------------------------------
         if (p_roptcBDCSpace%rdirichletBoundary%nregions .eq. 0) then
-          call vecfil_subvectorToL20 (rvector,3)
+          call vecfil_subvectorSmallL1To0 (rvector,1)
         end if
 
       end select      
@@ -1342,11 +1342,11 @@ contains
         ! Initialise boundary conditions
         ! -------------------------------------------------------------
         ! No filter for the initial condition.
-        if (idoftime .gt. 1) then
+        !if (idoftime .gt. 1) then
           call stat_startTimer (rtimer)
           call spaceslh_initData_bdc (rsolver, idofTime, rcontrol)      
           call stat_stopTimer (rtimer)
-        end if
+        !end if
       
         ! -------------------------------------------------------------
         ! Get the nonlinear defect

@@ -39,6 +39,7 @@ module initmatrices
   use storage
   use genoutput
   use element
+  use linearalgebra
   use boundary
   use triangulation
   use spatialdiscretisation
@@ -249,7 +250,7 @@ contains
       call bilf_createMatrixStructure (&
           rstaticAsmTemplates%p_rdiscr,LSYSSC_MATRIX9,&
           rstaticAsmTemplates%rmatrixTemplateFEM,cconstrType=cmatBuildType)
-
+          
       ! In case the element-based routine is used to create the matrices,
       ! the "offdiagonal" matrices have the same structure. If we used
       ! the edge-based construction routine, the "offdiagonal" matrices
@@ -365,7 +366,7 @@ contains
     ! ---------------------------------------------------------------
     ! Heat equation
     ! ---------------------------------------------------------------
-    case (CCEQ_HEAT2D)
+    case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
 
       ! -----------------------------------------------------------------------
       ! General matrix templates
@@ -378,6 +379,9 @@ contains
       call bilf_createMatrixStructure (&
           rstaticAsmTemplates%p_rdiscr,LSYSSC_MATRIX9,&
           rstaticAsmTemplates%rmatrixTemplateFEM,cconstrType=cmatBuildType)
+
+      ! Expand the first row to full to support pure Neumann problems
+      ! call mmod_expandToFullRow (rstaticAsmTemplates%rmatrixTemplateFEM,1)
 
       ! Ok, now we use the matrices from above to create the actual submatrices.
       
@@ -433,8 +437,10 @@ contains
       call lsyssc_releaseMatrix (rstaticAsmTemplates%rmatrixMassPressure)
     if (rstaticAsmTemplates%rmatrixMassPressureExtStruc%NEQ .ne. 0) &
       call lsyssc_releaseMatrix (rstaticAsmTemplates%rmatrixMassPressureExtStruc)
-    if (rstaticAsmTemplates%rmatrixMassPressureLumped%NEQ .ne. 0) &
-      call lsyssc_releaseMatrix (rstaticAsmTemplates%rmatrixMassPressureLumped)
+    if (rstaticAsmTemplates%rmatrixMassPressureLumpInt%NEQ .ne. 0) &
+      call lsyssc_releaseMatrix (rstaticAsmTemplates%rmatrixMassPressureLumpInt)
+    if (rstaticAsmTemplates%rmatrixMassLumpInt%NEQ .ne. 0) &
+      call lsyssc_releaseMatrix (rstaticAsmTemplates%rmatrixMassLumpInt)
 
     ! Release Stokes, B1, B2,... matrices
     if (rstaticAsmTemplates%rmatrixD2T%NEQ .ne. 0) &
@@ -497,6 +503,10 @@ contains
 
 !</subroutine>
 
+    ! local variables
+    real(DP), dimension(:), pointer :: p_Ddata
+    integer :: nel
+
     select case (rphysics%cequation)
     
     ! ---------------------------------------------------------------
@@ -538,7 +548,7 @@ contains
 
       ! Call the standard matrix setup routine to build the mass matrices.
       call stdop_assembleSimpleMatrix (rstaticAsmTemplates%rmatrixMass,&
-          DER_FUNC,DER_FUNC,1.0_DP,.true.,rstaticAsmTemplates%rcubatureInfoRHScontinuity)
+          DER_FUNC,DER_FUNC,1.0_DP,.true.,rstaticAsmTemplates%rcubatureInfoMass)
 
       call stdop_assembleSimpleMatrix (rstaticAsmTemplates%rmatrixMassPressure,&
           DER_FUNC,DER_FUNC,1.0_DP,.true.,rstaticAsmTemplates%rcubatureInfoMassPressure)
@@ -546,16 +556,29 @@ contains
       call stdop_assembleSimpleMatrix (rstaticAsmTemplates%rmatrixMassPressureExtStruc,&
           DER_FUNC,DER_FUNC,1.0_DP,.true.,rstaticAsmTemplates%rcubatureInfoMassPressure)
           
-      ! Create a lumped mass matrix.
+      ! Create a lumped mass matrix that represents the integral over the domain
+      ! if being multiplied to a FEM function and summed up.
       call lsyssc_duplicateMatrix (rstaticAsmTemplates%rmatrixMassPressure,&
-          rstaticAsmTemplates%rmatrixMassPressureLumped,LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
-      call lsyssc_lumpMatrixScalar (rstaticAsmTemplates%rmatrixMassPressureLumped,&
-          LSYSSC_LUMP_DIAG,.true.)
+          rstaticAsmTemplates%rmatrixMassPressureLumpInt,LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+          
+      select case (rsettingsSpaceDiscr%ielementType)
+      case (4)
+        ! QP1 pressure. The matrix is created in a slightly different way
+        ! to represent the integral over the domain
+        call lsyssc_lumpMatrixScalar (rstaticAsmTemplates%rmatrixMassPressureLumpInt,&
+            LSYSSC_LUMP_STD,.true.)
+        nel = rstaticAsmTemplates%rmatrixMassPressureLumpInt%p_rspatialDiscrTest%p_rtriangulation%NEL
+        call lsyssc_getbase_double (rstaticAsmTemplates%rmatrixMassPressureLumpInt,p_Ddata)
+        call lalg_clearVector (p_Ddata(NEL+1:))
+      case default
+        call lsyssc_lumpMatrixScalar (rstaticAsmTemplates%rmatrixMassPressureLumpInt,&
+            LSYSSC_LUMP_DIAG,.true.)
+      end select
           
     ! ---------------------------------------------------------------
     ! Heat equation
     ! ---------------------------------------------------------------
-    case (CCEQ_HEAT2D)
+    case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
 
       ! ---------------------------------
       ! Laplace matrix
@@ -571,7 +594,15 @@ contains
       ! -----------------------------------------------------------------------
 
       call stdop_assembleSimpleMatrix (rstaticAsmTemplates%rmatrixMass,&
-          DER_FUNC,DER_FUNC,1.0_DP,.true.,rstaticAsmTemplates%rcubatureInfoRHScontinuity)
+          DER_FUNC,DER_FUNC,1.0_DP,.true.,rstaticAsmTemplates%rcubatureInfoMass)
+
+      ! Create a lumped mass matrix that represents the integral over the domain
+      ! if being multiplied to a FEM function and summed up.
+      call lsyssc_duplicateMatrix (rstaticAsmTemplates%rmatrixMass,&
+          rstaticAsmTemplates%rmatrixMassLumpInt,LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+
+      call lsyssc_lumpMatrixScalar (rstaticAsmTemplates%rmatrixMassLumpInt,&
+          LSYSSC_LUMP_DIAG,.true.)
 
     end select
 
@@ -615,7 +646,7 @@ contains
     ! ---------------------------------------------------------------
     ! Heat/Stokes/Navier Stokes.
     ! ---------------------------------------------------------------
-    case (CCEQ_HEAT2D,CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+    case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D,CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
     
       ! Create an empty matrix
       call lsyssc_duplicateMatrix (rstaticAsmTemplates%rmatrixTemplateFEM,&
@@ -893,7 +924,7 @@ contains
     ! *************************************************************
     ! Heat equation
     ! *************************************************************
-    case (CCEQ_HEAT2D)
+    case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
       ! Create a block matrix
       call lsysbl_createMatBlockByDiscr (rblockDiscr,rmassMatrix)
       

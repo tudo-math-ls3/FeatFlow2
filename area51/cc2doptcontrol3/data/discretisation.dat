@@ -8,7 +8,11 @@
 [CC-PHYSICS]
 ############
 
-# Type of equation (ISTOKES); 0=Navier Stokes, 1=Stokes, 2=Heat equation
+# Type of equation (ISTOKES).
+# =0: Navier Stokes
+# =1: Stokes
+# =2: Heat equation
+# =3: Nonlinear heat equation example: y_t -Laplace(y) + y^3 = u
 
 cequation = 0
 
@@ -66,6 +70,10 @@ NLMAX              = 4
 # ------------------------------------------------------------------------
 
 # Type of element pair to use for the discretisation.
+# For the Heat equation:
+# 0 = Q1
+# 1 = Q2
+# For the Stokes/Navier-Stokes equations:
 # 0 = Q1~(E031) / Q1~(E031) / Q0
 # 1 = Q1~(E030) / Q1~(E030) / Q0
 # 2 = Q1~(EM31) / Q1~(EM31) / Q0
