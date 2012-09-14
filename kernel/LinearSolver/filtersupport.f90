@@ -494,7 +494,7 @@ contains
     ! Append the filter.
     nsize = nsize + 1
     RfilterChain(nsize)%ifilterType = FILTER_SMALLL1TO0
-    RfilterChain(nsize)%itoL20component = ismallL1to0component
+    RfilterChain(nsize)%ismallL1to0component = ismallL1to0component
 
   end subroutine
 
