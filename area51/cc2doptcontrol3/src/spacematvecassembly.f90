@@ -3623,6 +3623,7 @@ contains
     type(t_vectorBlock), pointer :: p_rvector1,p_rvector2
     real(DP) :: dtheta, dtstep, dtime, dtimeend, dtimestart
     type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
+    real(DP), dimension(:), pointer :: p_Dx1,p_Dx2
     
     ! Cancel if nothing to do
     if (dweight .eq. 0.0_DP) return
@@ -3745,6 +3746,7 @@ contains
               ! Position 1 = update for the control
               call sptivec_getVectorFromPool (rcontrolLin%p_rvectorAccess,idofTime,p_rvector2)
               call fev2_addVectorToEvalList(rvectorEval,p_rvector2%RvectorBlock(1),0)
+              call lsysbl_getbase_double (p_rvector2,p_Dx1)
 
             else
               call fev2_addDummyVectorToEvalList(rvectorEval)
@@ -3817,6 +3819,7 @@ contains
     type(t_vectorBlock), pointer :: p_rvector1,p_rvector2
     real(DP) :: dtheta, dtstep, dtime, dtimeend, dtimestart
     type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
+    real(DP), dimension(:), pointer :: p_Dx1,p_Dx2
 
     ! Cancel if nothing to do
     if (dweight .eq. 0.0_DP) return
@@ -3924,11 +3927,13 @@ contains
           ! Vector 1 = dual solution
           call sptivec_getVectorFromPool (rdualSol%p_rvectorAccess,idofTime,p_rvector1)
           call fev2_addVectorToEvalList(rvectorEval,p_rvector1%RvectorBlock(1),1)
+          call lsysbl_getbase_double (p_rvector1,p_Dx1)
 
           ! Vector 2 = linearised primal solution. We need the 1st
           ! derivative as well.
           call sptivec_getVectorFromPool (rprimalSolLin%p_rvectorAccess,idofTime,p_rvector2)
           call fev2_addVectorToEvalList(rvectorEval,p_rvector2%RvectorBlock(1),1)
+          call lsysbl_getbase_double (p_rvector2,p_Dx2)
           
           ! Build the vector
           call bma_buildVector (rrhs,BMA_CALC_STANDARD,&

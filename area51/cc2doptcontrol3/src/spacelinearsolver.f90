@@ -270,8 +270,8 @@ contains
     call parlst_querysection(rparList, ssection, p_rsection)
     
     if (.not. associated(p_rsection)) then
-      call output_line ("Cannot create linear solver; no section ""//trim(ssection)//&
-                        ""!", OU_CLASS_ERROR,OU_MODE_STD,"lssh_initSolver")
+      call output_line ("Cannot create linear solver; no section """//trim(ssection)//&
+                        """!", OU_CLASS_ERROR,OU_MODE_STD,"lssh_initSolver")
       call sys_halt()
     end if
 
@@ -304,6 +304,9 @@ contains
       ! This is the UMFPACK solver. Very easy to initialise. No parameters at all.
       ! This solver works for all types of equations.
       call linsol_initUMFPACK4 (p_rsolverNode)
+
+      p_rsolverNode%p_rsubnodeUmfpack4%imatrixDebugOutput = rdebugFlags%cwriteUmfpackMatrix
+      p_rsolverNode%p_rsubnodeUmfpack4%smatrixName = "matrix.txt"
     
     ! ---------------------------------------------------------------
     ! Multigrid solver
@@ -313,6 +316,11 @@ contains
       ! At first, initialise the solver.
       call linsol_initMultigrid2 (p_rsolverNode,nlevels)
       
+      call linsolinit_initParams (p_rsolverNode,rparList,&
+          scoarseGridSolverSection,LINSOL_ALG_UNDEFINED)
+      call linsolinit_initParams (p_rsolverNode,rparList,&
+          scoarseGridSolverSection,p_rsolverNode%calgorithm)
+
       ! Init standard solver parameters and extended multigrid parameters
       ! from the DAT file.
       call linsolinit_initParams (p_rsolverNode,rparList,ssolverSection,&
@@ -360,6 +368,12 @@ contains
         case (0)
           ! UMFPACK coarse grid solver. Easy.
           call linsol_initUMFPACK4 (p_rlevelInfo%p_rcoarseGridSolver)
+
+          call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,rparList,&
+              scoarseGridSolverSection,LINSOL_ALG_UNDEFINED)
+          call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,rparList,&
+              scoarseGridSolverSection,p_rlevelInfo%p_rcoarseGridSolver%calgorithm)
+
           p_rlevelInfo%p_rcoarseGridSolver%p_rsubnodeUmfpack4%imatrixDebugOutput = &
               rdebugFlags%cwriteUmfpackMatrix
           p_rlevelInfo%p_rcoarseGridSolver%p_rsubnodeUmfpack4%smatrixName = "matrix.txt"
@@ -384,7 +398,7 @@ contains
           call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,rparList,&
               scoarseGridSolverSection,LINSOL_ALG_UNDEFINED)
           call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,rparList,&
-              scoarseGridSolverSection,p_rpreconditioner%calgorithm)
+              scoarseGridSolverSection,p_rlevelInfo%p_rcoarseGridSolver%calgorithm)
           
         case (2)
           ! Defect correction with full VANKA preconditioning.
@@ -406,7 +420,7 @@ contains
           call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,rparList,&
               scoarseGridSolverSection,LINSOL_ALG_UNDEFINED)
           call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,rparList,&
-              scoarseGridSolverSection,p_rpreconditioner%calgorithm)
+              scoarseGridSolverSection,p_rlevelInfo%p_rcoarseGridSolver%calgorithm)
           
         case (3)
           ! BiCGStab with diagonal VANKA preconditioning.
@@ -598,6 +612,12 @@ contains
         case (0)
           ! UMFPACK coarse grid solver. Easy.
           call linsol_initUMFPACK4 (p_rlevelInfo%p_rcoarseGridSolver)
+
+          call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,rparList,&
+              scoarseGridSolverSection,LINSOL_ALG_UNDEFINED)
+          call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,rparList,&
+              scoarseGridSolverSection,p_rlevelInfo%p_rcoarseGridSolver%calgorithm)
+
           p_rlevelInfo%p_rcoarseGridSolver%p_rsubnodeUmfpack4%imatrixDebugOutput = &
               rdebugFlags%cwriteUmfpackMatrix
           p_rlevelInfo%p_rcoarseGridSolver%p_rsubnodeUmfpack4%smatrixName = "matrix.txt"
@@ -607,6 +627,33 @@ contains
           call linsol_initSOR (p_rpreconditioner)
           call linsol_initBiCGStab (p_rlevelInfo%p_rcoarseGridSolver,&
               p_rpreconditioner,rlssHierarchy%p_RlinearSolvers(1)%RfilterChain)
+
+          call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,rparList,&
+              scoarseGridSolverSection,LINSOL_ALG_UNDEFINED)
+          call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,rparList,&
+              scoarseGridSolverSection,p_rlevelInfo%p_rcoarseGridSolver%calgorithm)
+
+        case (2)
+          ! CG with SOR
+          call linsol_initSOR (p_rpreconditioner)
+          call linsol_initCG (p_rlevelInfo%p_rcoarseGridSolver,&
+              p_rpreconditioner,rlssHierarchy%p_RlinearSolvers(1)%RfilterChain)
+
+          call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,rparList,&
+              scoarseGridSolverSection,LINSOL_ALG_UNDEFINED)
+          call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,rparList,&
+              scoarseGridSolverSection,p_rlevelInfo%p_rcoarseGridSolver%calgorithm)
+
+        case (3)
+          ! Defect correction with SOR
+          call linsol_initSOR (p_rpreconditioner)
+          call linsol_initDefCorr (p_rlevelInfo%p_rcoarseGridSolver,&
+              p_rpreconditioner,rlssHierarchy%p_RlinearSolvers(1)%RfilterChain)
+
+          call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,rparList,&
+              scoarseGridSolverSection,LINSOL_ALG_UNDEFINED)
+          call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,rparList,&
+              scoarseGridSolverSection,p_rlevelInfo%p_rcoarseGridSolver%calgorithm)
           
         case default
         
@@ -645,6 +692,11 @@ contains
               call linsol_initJacobi (p_rsmoother)
             case (1)
               call linsol_initSOR (p_rsmoother)
+            case default
+            
+              call output_line ("Unknown preconditioner.", &
+                  OU_CLASS_ERROR,OU_MODE_STD,"lssh_initSolver")
+              call sys_halt()
             end select
             
             ! Initialise the parameters -- if there are any.

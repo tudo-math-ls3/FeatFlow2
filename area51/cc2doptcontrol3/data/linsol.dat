@@ -621,7 +621,7 @@ ioutputLevel       = 0
 
 # Relaxation parameter
 
-domega             = 0.8
+domega             = 1.0
 
 # Section in this file that defines the parameters of the preconditioner
 
@@ -633,4 +633,4 @@ spreconditionerSection = "CC-COARSEGRID-PRECONDITIONER"
 
 # Relaxation parameter
 
-domega             = 1.0
+domega             = 0.8

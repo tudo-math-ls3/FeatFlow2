@@ -496,7 +496,7 @@ contains
     
     call stat_startTimer (rstatistics%rtotalTime)
     
-    call sptivec_getVectorFromPool(rkktsystem%p_rdualSol%p_rvectorAccess,2,p_rvector)
+    call sptivec_getVectorFromPool(rkktsystem%p_rcontrol%p_rvectorAccess,1,p_rvector)
     call lsysbl_getbase_double (p_rvector,p_Ddata)
 
     ! -------------------------------------------------------------

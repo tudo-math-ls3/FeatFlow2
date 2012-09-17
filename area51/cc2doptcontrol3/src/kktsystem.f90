@@ -2123,6 +2123,7 @@ contains
     ! local variables
     integer :: icomp,istep,itotalcomp
     type(t_vectorBlock), pointer :: p_rcontrolSpace
+    real(DP), dimension(:), pointer :: p_Ddata
 
     type(t_settings_physics), pointer :: p_rphysics
     type(t_settings_optcontrol), pointer :: p_rsettingsOptControl
@@ -2141,11 +2142,14 @@ contains
     itotalcomp = 0
     
     ! Loop over all timesteps.
-    do istep = 1,rcontrolRes%p_rvector%p_rtimeDiscr%nintervals+1
+    do istep = 2,rcontrolRes%p_rvector%p_rtimeDiscr%nintervals+1
     
       ! Get the control vector.
       call sptivec_getVectorFromPool (&
           rcontrolRes%p_rvectorAccess,istep,p_rcontrolSpace)
+          
+      ! DEBUG!!!
+      call lsysbl_getbase_double (p_rcontrolSpace,p_Ddata)
           
       ! icomp counts the component in the control
       icomp = 0
