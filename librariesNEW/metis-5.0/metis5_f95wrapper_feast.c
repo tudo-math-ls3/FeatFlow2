@@ -9,7 +9,7 @@
  * interface that omits the NULL pointers and hardwire the NULL pointers in
  * the C wrapper.
  */
-#include <libio.h>
+#include <stdio.h>
 #include "include/metis.h"
 
 int feastmetis_partgraphrecursive(idx_t *nvtxs, idx_t *ncon, idx_t *xadj,
