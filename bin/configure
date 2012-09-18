@@ -1087,7 +1087,7 @@ sub check_options {
     # Valid keywords? (both for options that take exactly one string and those that can take multiple)
     my %validkeywords = (
 	"BINARY"              => [ "std", "32", "64" ],
-	"COPROCLIST"          => [ "cpu", "cuda10", "cuda11", "cuda12", "cuda13", "cuda20", "cuda21", "cuda30", "opengl" ],  # List of valid coprocessor backends
+	"COPROCLIST"          => [ "cpu", "cuda10", "cuda11", "cuda12", "cuda13", "cuda20", "cuda21", "cuda30", "cuda35", "opengl" ],  # List of valid coprocessor backends
 	"FORCE_ID"            => [ "yes", "no" ],
         "INTSIZE"             => [ "std", "large" ],
         "MPI"                 => [ "yes", "no" ],
@@ -1751,13 +1751,13 @@ sub create_feastAppMakefile {
         print MAKEFILE_HDL
             "# Coprocessor-specific special options\n" .
 	    "SRCEXTRA     := \$(SRCEXTRA)\n" .
-	    "BUILDLIB     := \$(BUILDLIB) coproc\n" .
+	    "BUILDLIB     := coproc \$(BUILDLIB)\n" .
 	    "LIBS         := -lcoproc \$(LIBS)\n" .
 	    "APPONLYFLAGS := -DENABLE_COPROCESSOR_SUPPORT \$(APPONLYFLAGS) \n";
 
 	# if CUDA is listed as coprocessor,  it needs to be linked linked against the binary
 	foreach $entry ('cuda10', 'cuda11', 'cuda12', 'cuda13',
-			'cuda20', 'cuda21', 'cuda30') {
+			'cuda20', 'cuda21', 'cuda30', 'cuda35') {
 	    if (defined($coprocs{$entry})) {
 		print MAKEFILE_HDL
 		    "# CUDA is among the list of coprocessors, so link against the CUDA runtime.\n" .
@@ -5127,7 +5127,7 @@ sub show_help {
 	"--coproclist=<string>\n" .
 	"                    Identifier for coprocessor support.\n" .
 	"                    Valid IDs are: cpu, opengl, cuda10, cuda11, cuda12,\n" .
-	"                    cuda13, cuda20, cuda21, cuda30. Note that the cpu identifier\n" .
+	"                    cuda13, cuda20, cuda21, cuda30, cuda35. Note that the cpu identifier\n" .
 	"                    must always be set if coprocessor support is requested.\n" .
         "--cpp=<file>        C preprocessor\n" .
         "--cuda=<file>       CUDA compiler\n" .
