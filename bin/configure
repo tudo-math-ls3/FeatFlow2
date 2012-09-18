@@ -238,10 +238,10 @@ use constant SRCLIST_KERNEL =>
 
     "LinearAlgebra/linearalgebra.f90 " .
 
-    "LinearSolver/coarsegridcorrection.f90 LinearSolver/filtersupport.f90 " .
-    "LinearSolver/iluk.f90 LinearSolver/linearsolver.f90 LinearSolver/linearsolverautoinitialise.f90 " .
-    "LinearSolver/quicksolver.f90 LinearSolver/vanka.f90 LinearSolver/vanka_bouss2d.f90 " .
-    "LinearSolver/vanka_optcontrol.f90 " .
+    "LinearSolver/agmgdummy.f90 LinearSolver/coarsegridcorrection.f90 " .
+    "LinearSolver/filtersupport.f90 LinearSolver/iluk.f90 LinearSolver/linearsolver.f90 " .
+    "LinearSolver/linearsolverautoinitialise.f90 LinearSolver/quicksolver.f90 " .
+    "LinearSolver/vanka.f90 LinearSolver/vanka_bouss2d.f90 LinearSolver/vanka_optcontrol.f90 " .
     "LinearSolver/vanka_navst2d.f90 LinearSolver/spsor.f90 " .
 
     "LinearSystem/globalsystem.f90 LinearSystem/linearsystemblock.f90 " .
