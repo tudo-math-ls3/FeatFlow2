@@ -117,7 +117,10 @@
 !# 2.) solver_initILU
 !#     -> Initialise the ILU-preconditioner
 !#
-!# 3.) solver_decodeOutputLevel
+!# 3.) solver_initAGMG
+!#     -> Initialise the AGMG preconditioner
+!#
+!# 4.) solver_decodeOutputLevel
 !#     -> Decodes the output level information into bitfields
 !#
 !# </purpose>
@@ -128,6 +131,9 @@ module solveraux
 #include "../flagship.h"
 
 !$use omp_lib
+#ifndef ENABLE_AGMG
+  use agmgdummy
+#endif
   use boundarycondaux
   use boundaryfilter
   use fsystem
@@ -144,16 +150,17 @@ module solveraux
 
   private
   public :: t_solver
-  public :: t_solverMultigrid
-  public :: t_solverUMFPACK
-  public :: t_solverJacobi
-  public :: t_solverSSOR
+  public :: t_solverAGMG
+  public :: t_solverAndersonMixing
   public :: t_solverBiCGSTAB
+  public :: t_solverDefcor
   public :: t_solverGMRES
   public :: t_solverILU
-  public :: t_solverDefcor
+  public :: t_solverJacobi
+  public :: t_solverMultigrid
   public :: t_solverNewton
-  public :: t_solverAndersonMixing
+  public :: t_solverSSOR
+  public :: t_solverUMFPACK
 
   public :: solver_createSolver
   public :: solver_releaseSolver
@@ -400,6 +407,9 @@ module solveraux
   ! Identifier for Umfpack4
   integer, parameter, public :: LINSOL_SOLVER_UMFPACK4 = 11
 
+  ! Identifier for AGMG
+  integer, parameter, public :: LINSOL_SOLVER_AGMG     = 12
+
   ! MILU(s) solver (scalar system)
   integer, parameter, public :: LINSOL_SOLVER_ILU      = 50
 !</constantblock>
@@ -608,6 +618,12 @@ module solveraux
 
     ! INTERNAL: substructure for Newton`s method
     type(t_solverNewton), pointer :: p_solverNewton => null()
+
+    ! INTERNAL: substructure for Anderson`s mixing algorithm
+    type(t_solverAndersonMixing), pointer :: p_solverAndersonMixing => null()
+
+    ! INTERNAL: substructure for AGMG solver
+    type(t_solverAGMG), pointer :: p_solverAGMG => null()
   end type t_solver
 
 !</typeblock>
@@ -897,12 +913,39 @@ module solveraux
     integer :: iposition = 1
 
     ! Solution vectors from previous steps
-    type(t_vectorBlock), dimension(:), allocatable :: RsolutionVectors
+    type(t_vectorBlock), dimension(:), pointer :: RsolutionVectors => null()
 
     ! Correction vectors from previous steps
-    type(t_vectorBlock), dimension(:), allocatable :: RcorrectionVectors
+    type(t_vectorBlock), dimension(:), pointer :: RcorrectionVectors => null()
 
   end type t_solverAndersonMixing
+
+!</typeblock>
+
+! *****************************************************************************
+
+!<typeblock>
+
+  ! This data structure contains all local data for the AGMG solver
+
+  type t_solverAGMG
+
+    ! System matrix
+    type(t_matrixBlock) :: rmatrix
+
+    ! INPUT: restart parameter for GCR iteration method; if nrest=1,
+    ! then flexible CG is used instead of GCR (in this case the matrix
+    ! must be symmetric nd positive definite). The default value
+    ! suggested by the authors of AGMG is 10.
+    integer :: nrest = 10
+
+    ! INTERNAL PARAMETER FOR AGMG SOLVER
+    integer :: cdataType = ST_DOUBLE
+
+    ! INTERNAL MEMORY FOR AGMG SOLVER
+    type(t_matrixScalar) :: rmatrixScalar
+
+  end type t_solverAGMG
 
 !</typeblock>
 
@@ -1330,6 +1373,11 @@ contains
         call parlst_getvalue_int(rparlist, ssectionName, "ifill", &
                                  rsolver%p_solverILU%ifill)
 
+      case (LINSOL_SOLVER_AGMG)
+        allocate(rsolver%p_solverAGMG)
+        call parlst_getvalue_int(rparlist, ssectionName, "nrest", &
+                                 rsolver%p_solverAGMG%nrest)
+
       case default
         if (rsolver%coutputModeError .gt. 0) then
           call output_line('Unsupported linear solver!',&
@@ -1492,6 +1540,12 @@ contains
                                       rsolver%p_solverILU%domega)
           call parlst_getvalue_int(rparlist, ssectionName, "ifill", &
                                    rsolver%p_solverILU%ifill)
+
+        case (LINSOL_SOLVER_AGMG)
+          allocate(rsolver%p_solverAGMG)
+          call parlst_getvalue_int(rparlist, ssectionName, "nrest", &
+                                   rsolver%p_solverAGMG%nrest)
+
 
         case default
           ! Ok, we could not identify one of the simple preconditioners.
@@ -1720,6 +1774,24 @@ contains
       nullify(rsolver%p_solverNewton)
     end if
 
+    ! Anderson`s mixing algorithm
+    if (associated(rsolverTemplate%p_solverAndersonMixing)) then
+      allocate(rsolver%p_solverAndersonMixing)
+      call create_solverAndersonMixing(rsolver%p_solverAndersonMixing,&
+                                       rsolverTemplate%p_solverAndersonMixing)
+    else
+      nullify(rsolver%p_solverAndersonMixing)
+    end if
+
+    ! AGMG solver
+    if (associated(rsolverTemplate%p_solverAGMG)) then
+      allocate(rsolver%p_solverAGMG)
+      call create_solverAGMG(rsolver%p_solverAGMG,&
+                                       rsolverTemplate%p_solverAGMG)
+    else
+      nullify(rsolver%p_solverAGMG)
+    end if
+
   contains
 
     ! Here, the real working routine follows
@@ -1902,6 +1974,47 @@ contains
       rsolver%dperturbationStrategy    = rsolver%dperturbationStrategy
     end subroutine create_solverNewton
 
+    !*************************************************************
+    ! Create a Newton algorithm
+
+    subroutine create_solverAndersonMixing(rsolver, rsolverTemplate)
+      type(t_solverAndersonMixing), intent(in) :: rsolverTemplate
+      type(t_solverAndersonMixing), intent(out) :: rsolver
+
+      ! local variables
+      integer :: ilbound,iubound
+
+      rsolver%nmaxLeastsquaresSteps = rsolverTemplate%nmaxLeastsquaresSteps
+
+      if (associated(rsolverTemplate%RsolutionVectors)) then
+        ilbound = lbound(rsolverTemplate%RsolutionVectors,1)
+        iubound = ubound(rsolverTemplate%RsolutionVectors,1)
+        allocate(rsolver%RsolutionVectors(ilbound:iubound))
+      else
+        nullify(rsolver%RsolutionVectors)
+      end if
+
+      if (associated(rsolverTemplate%RcorrectionVectors)) then
+        ilbound = lbound(rsolverTemplate%RcorrectionVectors,1)
+        iubound = ubound(rsolverTemplate%RcorrectionVectors,1)
+        allocate(rsolver%RcorrectionVectors(ilbound:iubound))
+      else
+        nullify(rsolver%RcorrectionVectors)
+      end if
+
+    end subroutine create_solverAndersonMixing
+
+    !*************************************************************
+    ! Create an AGMG solver
+
+    subroutine create_solverAGMG(rsolver, rsolverTemplate)
+      type(t_solverAGMG), intent(in) :: rsolverTemplate
+      type(t_solverAGMG), intent(out) :: rsolver
+
+      ! Do nothing, the INTENT(out) initialises the solver
+
+    end subroutine create_solverAGMG
+
   end subroutine solver_createSolverIndirect
 
   ! ***************************************************************************
@@ -2005,6 +2118,20 @@ contains
       nullify(rsolver%p_solverNewton)
     end if
 
+    ! Anderson`s mixing algorithm
+    if (associated(rsolver%p_solverAndersonMixing)) then
+      call release_solverAndersonMixing(rsolver%p_solverAndersonMixing)
+      deallocate(rsolver%p_solverAndersonMixing)
+      nullify(rsolver%p_solverAndersonMixing)
+    end if
+
+    ! AGMG solver
+    if (associated(rsolver%p_solverAGMG)) then
+      call release_solverAGMG(rsolver%p_solverAGMG)
+      deallocate(rsolver%p_solverAGMG)
+      nullify(rsolver%p_solverAGMG)
+    end if
+
   contains
 
     ! Here, the real working routine follows
@@ -2012,207 +2139,245 @@ contains
     !*************************************************************
     ! Release multigrid solver
 
-    subroutine release_solverMultigrid(rsolver)
-      type(t_solverMultigrid), intent(inout) :: rsolver
+    subroutine release_solverMultigrid(rsolverMultigrid)
+      type(t_solverMultigrid), intent(inout) :: rsolverMultigrid
 
       ! local variables
       integer :: i
 
       ! Release matrices
-      if (associated(rsolver%rmatrix)) then
-        do i = lbound(rsolver%rmatrix,1),&
-               ubound(rsolver%rmatrix,1)
-          call lsysbl_releaseMatrix(rsolver%rmatrix(i))
+      if (associated(rsolverMultigrid%rmatrix)) then
+        do i = lbound(rsolverMultigrid%rmatrix,1),&
+               ubound(rsolverMultigrid%rmatrix,1)
+          call lsysbl_releaseMatrix(rsolverMultigrid%rmatrix(i))
         end do
-        deallocate(rsolver%rmatrix)
-        nullify(rsolver%rmatrix)
+        deallocate(rsolverMultigrid%rmatrix)
+        nullify(rsolverMultigrid%rmatrix)
       end if
 
       ! Release temporal vectors
-      if (associated(rsolver%RtempVectors)) then
-        do i = lbound(rsolver%RtempVectors,1),&
-               ubound(rsolver%RtempVectors,1)
-          call lsysbl_releaseVector(rsolver%RtempVectors(i))
+      if (associated(rsolverMultigrid%RtempVectors)) then
+        do i = lbound(rsolverMultigrid%RtempVectors,1),&
+               ubound(rsolverMultigrid%RtempVectors,1)
+          call lsysbl_releaseVector(rsolverMultigrid%RtempVectors(i))
         end do
-        deallocate(rsolver%RtempVectors)
-        nullify(rsolver%RtempVectors)
+        deallocate(rsolverMultigrid%RtempVectors)
+        nullify(rsolverMultigrid%RtempVectors)
       end if
 
       ! Release coarse grid solver if required
-      if (associated(rsolver%p_solverCoarsegrid)) then
-        call solver_releaseSolver(rsolver%p_solverCoarsegrid)
-        deallocate(rsolver%p_solverCoarsegrid)
-        nullify(rsolver%p_solverCoarsegrid)
+      if (associated(rsolverMultigrid%p_solverCoarsegrid)) then
+        call solver_releaseSolver(rsolverMultigrid%p_solverCoarsegrid)
+        deallocate(rsolverMultigrid%p_solverCoarsegrid)
+        nullify(rsolverMultigrid%p_solverCoarsegrid)
       end if
 
       ! Release all smoother subnodes
-      if (associated(rsolver%p_smoother)) then
-        do i = lbound(rsolver%p_smoother,1),&
-               ubound(rsolver%p_smoother,1)
-          call solver_releaseSolver(rsolver%p_smoother(i))
+      if (associated(rsolverMultigrid%p_smoother)) then
+        do i = lbound(rsolverMultigrid%p_smoother,1),&
+               ubound(rsolverMultigrid%p_smoother,1)
+          call solver_releaseSolver(rsolverMultigrid%p_smoother(i))
         end do
-        deallocate(rsolver%p_smoother)
-        nullify(rsolver%p_smoother)
+        deallocate(rsolverMultigrid%p_smoother)
+        nullify(rsolverMultigrid%p_smoother)
       end if
     end subroutine release_solverMultigrid
 
     !*************************************************************
     ! Release UMFPACK solver
 
-    subroutine release_solverUMFPACK(rsolver)
-      type(t_solverUMFPACK), intent(inout) :: rsolver
+    subroutine release_solverUMFPACK(rsolverUMFPACK)
+      type(t_solverUMFPACK), intent(inout) :: rsolverUMFPACK
 
       integer :: i
 
       ! Release UMFPACK handles
-      if (rsolver%isymbolic .ne. 0) call UMF4FSYM(rsolver%isymbolic)
-      if (rsolver%inumeric  .ne. 0) call UMF4FNUM(rsolver%inumeric)
+      if (rsolverUMFPACK%isymbolic .ne. 0) call UMF4FSYM(rsolverUMFPACK%isymbolic)
+      if (rsolverUMFPACK%inumeric  .ne. 0) call UMF4FNUM(rsolverUMFPACK%inumeric)
 
-      if (associated(rsolver%IsymbolicBlock)) then
-        do i = lbound(rsolver%IsymbolicBlock,1),&
-               ubound(Rsolver%IsymbolicBlock,1)
-          if (rsolver%IsymbolicBlock(i) .ne. 0) call UMF4FSYM(rsolver%IsymbolicBlock(i))
+      if (associated(rsolverUMFPACK%IsymbolicBlock)) then
+        do i = lbound(rsolverUMFPACK%IsymbolicBlock,1),&
+               ubound(RsolverUMFPACK%IsymbolicBlock,1)
+          if (rsolverUMFPACK%IsymbolicBlock(i) .ne. 0)&
+              call UMF4FSYM(rsolverUMFPACK%IsymbolicBlock(i))
         end do
-        deallocate(rsolver%IsymbolicBlock)
+        deallocate(rsolverUMFPACK%IsymbolicBlock)
       end if
 
-      if (associated(rsolver%InumericBlock)) then
-        do i = lbound(rsolver%InumericBlock,1),&
-               ubound(Rsolver%InumericBlock,1)
-          if (rsolver%InumericBlock(i) .ne. 0) call UMF4FNUM(rsolver%InumericBlock(i))
+      if (associated(rsolverUMFPACK%InumericBlock)) then
+        do i = lbound(rsolverUMFPACK%InumericBlock,1),&
+               ubound(RsolverUMFPACK%InumericBlock,1)
+          if (rsolverUMFPACK%InumericBlock(i) .ne. 0)&
+              call UMF4FNUM(rsolverUMFPACK%InumericBlock(i))
         end do
-        deallocate(rsolver%InumericBlock)
+        deallocate(rsolverUMFPACK%InumericBlock)
       end if
 
       ! Release matrix
-      call lsysbl_releaseMatrix(rsolver%rmatrix)
+      call lsysbl_releaseMatrix(rsolverUMFPACK%rmatrix)
 
       ! Release temporal vector
-      call lsysbl_releaseVector(rsolver%rtempVector)
+      call lsysbl_releaseVector(rsolverUMFPACK%rtempVector)
     end subroutine release_solverUMFPACK
 
     !*************************************************************
     ! Release Jacobi solver
 
-    subroutine release_solverJacobi(rsolver)
-      type(t_solverJacobi), intent(inout) :: rsolver
+    subroutine release_solverJacobi(rolverJacobi)
+      type(t_solverJacobi), intent(inout) :: rolverJacobi
 
       ! Release matrix
-      call lsysbl_releaseMatrix(rsolver%rmatrix)
+      call lsysbl_releaseMatrix(rolverJacobi%rmatrix)
 
       ! Release temporal vector
-      call lsysbl_releaseVector(rsolver%rtempVector)
+      call lsysbl_releaseVector(rolverJacobi%rtempVector)
     end subroutine release_solverJacobi
 
     !*************************************************************
     ! Release (S)SOR solver
 
-    subroutine release_solverSSOR(rsolver)
-      type(t_solverSSOR), intent(inout) :: rsolver
+    subroutine release_solverSSOR(rsolverSSOR)
+      type(t_solverSSOR), intent(inout) :: rsolverSSOR
 
       ! Release matrix
-      call lsysbl_releaseMatrix(rsolver%rmatrix)
+      call lsysbl_releaseMatrix(rsolverSSOR%rmatrix)
 
       ! Release temporal vector
-      call lsysbl_releaseVector(rsolver%rtempVector)
+      call lsysbl_releaseVector(rsolverSSOR%rtempVector)
     end subroutine release_solverSSOR
 
     !*************************************************************
     ! Release BiCGSTAB solver
 
-    subroutine release_solverBiCGSTAB(rsolver)
-      type(t_solverBiCGSTAB), intent(inout) :: rsolver
+    subroutine release_solverBiCGSTAB(rsolverBiCGSTAB)
+      type(t_solverBiCGSTAB), intent(inout) :: rsolverBiCGSTAB
 
       ! local variables
       integer :: i
 
       ! Release matrix
-      call lsysbl_releaseMatrix(rsolver%rmatrix)
+      call lsysbl_releaseMatrix(rsolverBiCGSTAB%rmatrix)
 
       ! Release temporal vectors
-      do i = lbound(rsolver%RtempVectors,1),&
-             ubound(rsolver%RtempVectors,1)
-        call lsysbl_releaseVector(rsolver%RtempVectors(i))
+      do i = lbound(rsolverBiCGSTAB%RtempVectors,1),&
+             ubound(rsolverBiCGSTAB%RtempVectors,1)
+        call lsysbl_releaseVector(rsolverBiCGSTAB%RtempVectors(i))
       end do
 
       ! Release preconditioner if required
-      if (associated(rsolver%p_precond)) then
-        call solver_releaseSolver(rsolver%p_precond)
-        deallocate(rsolver%p_precond)
-        nullify(rsolver%p_precond)
+      if (associated(rsolverBiCGSTAB%p_precond)) then
+        call solver_releaseSolver(rsolverBiCGSTAB%p_precond)
+        deallocate(rsolverBiCGSTAB%p_precond)
+        nullify(rsolverBiCGSTAB%p_precond)
       end if
     end subroutine release_solverBiCGSTAB
 
     !*************************************************************
     ! Release GMRES solver
 
-    subroutine release_solverGMRES(rsolver)
-      type(t_solverGMRES), intent(inout) :: rsolver
+    subroutine release_solverGMRES(rsolverGMRES)
+      type(t_solverGMRES), intent(inout) :: rsolverGMRES
 
       ! local variables
       integer :: i
 
       ! Release matrix
-      call lsysbl_releaseMatrix(rsolver%rmatrix)
+      call lsysbl_releaseMatrix(rsolverGMRES%rmatrix)
 
       ! Release handles
-      call storage_free(rsolver%h_Dh)
-      call storage_free(rsolver%h_Dc)
-      call storage_free(rsolver%h_Ds)
-      call storage_free(rsolver%h_Dq)
+      call storage_free(rsolverGMRES%h_Dh)
+      call storage_free(rsolverGMRES%h_Dc)
+      call storage_free(rsolverGMRES%h_Ds)
+      call storage_free(rsolverGMRES%h_Dq)
 
       ! Release temporal vectors
-      do i = lbound(rsolver%rv,1),&
-             ubound(rsolver%rv,1)
-        call lsysbl_releaseVector(rsolver%rv(i))
+      do i = lbound(rsolverGMRES%rv,1),&
+             ubound(rsolverGMRES%rv,1)
+        call lsysbl_releaseVector(rsolverGMRES%rv(i))
       end do
 
-      do i = lbound(rsolver%rz,1),&
-             ubound(rsolver%rz,1)
-        call lsysbl_releaseVector(rsolver%rz(i))
+      do i = lbound(rsolverGMRES%rz,1),&
+             ubound(rsolverGMRES%rz,1)
+        call lsysbl_releaseVector(rsolverGMRES%rz(i))
       end do
 
       ! Deallocate subarray of temporal vectors
-      deallocate(rsolver%rv)
-      deallocate(rsolver%rz)
-      nullify(rsolver%rv)
-      nullify(rsolver%rz)
+      deallocate(rsolverGMRES%rv)
+      deallocate(rsolverGMRES%rz)
+      nullify(rsolverGMRES%rv)
+      nullify(rsolverGMRES%rz)
 
       ! Release preconditioner if required
-      if (associated(rsolver%p_precond)) then
-        call solver_releaseSolver(rsolver%p_precond)
-        deallocate(rsolver%p_precond)
-        nullify(rsolver%p_precond)
+      if (associated(rsolverGMRES%p_precond)) then
+        call solver_releaseSolver(rsolverGMRES%p_precond)
+        deallocate(rsolverGMRES%p_precond)
+        nullify(rsolverGMRES%p_precond)
       end if
     end subroutine release_solverGMRES
 
     !*************************************************************
     ! Release ILU solver
 
-    recursive subroutine release_solverILU(rsolver)
-      type(t_solverILU), intent(inout) :: rsolver
+    recursive subroutine release_solverILU(rsolverILU)
+      type(t_solverILU), intent(inout) :: rsolverILU
 
       integer :: i
 
       ! Release structure for block ILU solver
-      if (associated(rsolver%p_rsolverBlockILU)) then
-        do i = lbound(rsolver%p_rsolverBlockILU,1),&
-               ubound(rsolver%p_rsolverBlockILU,1)
-          call release_solverILU(rsolver%p_rsolverBlockILU(i))
+      if (associated(rsolverILU%p_rsolverBlockILU)) then
+        do i = lbound(rsolverILU%p_rsolverBlockILU,1),&
+               ubound(rsolverILU%p_rsolverBlockILU,1)
+          call release_solverILU(rsolverILU%p_rsolverBlockILU(i))
         end do
-        deallocate(rsolver%p_rsolverBlockILU)
+        deallocate(rsolverILU%p_rsolverBlockILU)
       end if
 
       ! Release handles
-      if (rsolver%h_Idata .ne. ST_NOHANDLE) call storage_free(rsolver%h_Idata)
-      if (rsolver%h_Ddata .ne. ST_NOHANDLE) call storage_free(rsolver%h_Ddata)
+      if (rsolverILU%h_Idata .ne. ST_NOHANDLE) call storage_free(rsolverILU%h_Idata)
+      if (rsolverILU%h_Ddata .ne. ST_NOHANDLE) call storage_free(rsolverILU%h_Ddata)
 
       ! Release matrix
-      call lsysbl_releaseMatrix(rsolver%rmatrix)
+      call lsysbl_releaseMatrix(rsolverILU%rmatrix)
 
       ! Release temporal vector
-      call lsysbl_releaseVector(rsolver%rtempVector)
+      call lsysbl_releaseVector(rsolverILU%rtempVector)
     end subroutine release_solverILU
+
+    !*************************************************************
+    ! Release AGMG solver
+
+    subroutine release_solverAGMG(rsolverAGMG)
+      type(t_solverAGMG), intent(inout) :: rsolverAGMG
+
+      ! local dummy variables
+      integer, dimension(:), pointer :: p_Kld, p_Kcol
+      real(DP), dimension(:), pointer :: p_Da
+      real(SP), dimension(:), pointer :: p_Fa
+
+      ! Set pointers
+      call lsyssc_getbase_Kld(rsolverAGMG%rmatrixScalar, p_Kld)
+      call lsyssc_getbase_Kcol(rsolverAGMG%rmatrixScalar, p_Kcol)
+
+      ! Erase setup and release internal memory
+      select case(rsolverAGMG%cdataType)
+      case (ST_DOUBLE)
+        call lsyssc_getbase_double(rsolverAGMG%rmatrixScalar, p_Da)
+        call dagmg(rsolverAGMG%rmatrixScalar%NEQ, p_Da, p_Kcol, p_Kld,&
+            p_Da, p_Da, -1, 0, 1, 1, 0.0_DP)
+      case (ST_SINGLE)
+        call lsyssc_getbase_single(rsolverAGMG%rmatrixScalar, p_Fa)
+        call sagmg(rsolverAGMG%rmatrixScalar%NEQ, p_Fa, p_Kcol, p_Kld,&
+            p_Fa, p_Fa, -1, 0, 1, 1, 0.0_SP)
+      case default
+         call output_line('Unsupported data type!',&
+             OU_CLASS_ERROR,rsolver%coutputModeError,'release_solverAGMG')
+       end select
+
+       ! Release matrix (and its temporal copy)
+      call lsysbl_releaseMatrix(rsolverAGMG%rmatrix)
+      call lsyssc_releaseMatrix(rsolverAGMG%rmatrixScalar)
+
+     end subroutine release_solverAGMG
 
     !*************************************************************
     ! Release defect correction algorithm
@@ -2245,6 +2410,32 @@ contains
         call lsysbl_releaseVector(rprecond%RtempVectors(i))
       end do
     end subroutine release_solverNewton
+
+    !*************************************************************
+    ! Release Andersons`s mixing algorithm
+
+    subroutine release_solverAndersonMixing(rsolverAndersonMixing)
+      type(t_solverAndersonMixing), intent(inout) :: rsolverAndersonMixing
+
+      ! local variables
+      integer :: i
+
+      ! Release internal solution vectors
+      if (associated(rsolverAndersonMixing%RsolutionVectors)) then
+        do i = lbound(rsolverAndersonMixing%RsolutionVectors,1),&
+            ubound(rsolverAndersonMixing%RsolutionVectors,1)
+          call lsysbl_releaseVector(rsolverAndersonMixing%RsolutionVectors(i))
+        end do
+      end if
+
+      ! Release internal correction vectors
+      if (associated(rsolverAndersonMixing%RcorrectionVectors)) then
+        do i = lbound(rsolverAndersonMixing%RcorrectionVectors,1),&
+            ubound(rsolverAndersonMixing%RcorrectionVectors,1)
+          call lsysbl_releaseVector(rsolverAndersonMixing%RcorrectionVectors(i))
+        end do
+      end if
+    end subroutine release_solverAndersonMixing
 
   end subroutine solver_releaseSolver
 
@@ -2499,6 +2690,26 @@ contains
         end do
       end if
 
+      ! Anderson`s mixing algorithm
+      if (associated(rsolver%p_solverAndersonMixing)) then
+        call output_lbrk()
+        call output_line('>>> Anderson mixing algorithm:')
+        call output_line('nmaxLeastsquaresSteps: '//trim(sys_siL(rsolver%p_solverAndersonMixing%nmaxLeastsquaresSteps,3)))
+        call output_line('>>> Temporal solution vectors:')
+        call output_line('---------------------')
+        do i = lbound(rsolver%p_solverAndersonMixing%RsolutionVectors,1),&
+               ubound(rsolver%p_solverAndersonMixing%RsolutionVectors,1)
+          call lsysbl_infoVector(rsolver%p_solverAndersonMixing%RsolutionVectors(i))
+        end do
+        call output_line('>>> Temporal correction vectors:')
+        call output_line('---------------------')
+        do i = lbound(rsolver%p_solverAndersonMixing%RcorrectionVectors,1),&
+               ubound(rsolver%p_solverAndersonMixing%RcorrectionVectors,1)
+          call lsysbl_infoVector(rsolver%p_solverAndersonMixing%RcorrectionVectors(i))
+        end do
+        call output_line('------------------------------')
+      end if
+
       ! Solver subnode
       if (associated(rsolver%p_solverSubnode)) then
         do i = 1, size(rsolver%p_solverSubnode)
@@ -2566,6 +2777,17 @@ contains
           call output_line('----------------------')
           call solver_infoSolver(rsolver%p_solverMultigrid%p_solverCoarsegrid, bprint)
         end if
+      end if
+
+      ! AGMG solver
+      if (associated(rsolver%p_solverAGMG)) then
+        call output_lbrk()
+        call output_line('>>> AGMG subnode:')
+        call output_line('--------------------')
+        call output_line('nrest:   '//trim(sys_siL(rsolver%p_solverAGMG%nrest,3)))
+        call output_line('>>> system matrix:')
+        call output_line('------------------')
+        call lsysbl_infoMatrix(rsolver%p_solverAGMG%rmatrix)
       end if
 
     else
@@ -2638,6 +2860,13 @@ contains
         call output_line('--------------------------')
       end if
 
+      ! Anderson`s mixing algorithm
+      if (associated(rsolver%p_solverAndersonMixing)) then
+        call output_lbrk()
+        call output_line('>>> Anderson mixing algorithm:')
+        call output_line('------------------------------')
+      end if
+
       ! Solver subnode
       if (associated(rsolver%p_solverSubnode)) then
         do i = 1, size(rsolver%p_solverSubnode)
@@ -2672,6 +2901,13 @@ contains
           call output_line('----------------------')
           call solver_infoSolver(rsolver%p_solverMultigrid%p_solverCoarsegrid, bprint)
         end if
+      end if
+
+      ! AGMG solver
+      if (associated(rsolver%p_solverAGMG)) then
+        call output_lbrk()
+        call output_line('>>> AGMG subnode:')
+        call output_line('--------------------')
       end if
 
     end if
@@ -2759,6 +2995,12 @@ contains
                                 bresetStatistics)
       end if
     end if
+
+    ! Reset Anderson`s mixing algorithm
+    if (associated(rsolver%p_solverAndersonMixing)) then
+      rsolver%p_solverAndersonMixing%iposition = 1
+    end if
+
   end subroutine solver_resetSolver
 
   ! ***************************************************************************
@@ -2825,6 +3067,11 @@ contains
     if (associated(rsolver%p_solverILU)) then
       call remove_solverILU(rsolver%p_solverILU)
     end if
+    
+    ! AGMG solver
+    if (associated(rsolver%p_solverAGMG)) then
+      call remove_solverAGMG(rsolver%p_solverAGMG)
+    end if
 
     ! Defcor preconditioner
     if (associated(rsolver%p_solverDefcor)) then
@@ -2836,6 +3083,11 @@ contains
       call remove_solverNewton(rsolver%p_solverNewton)
     end if
 
+    ! Anderson`s mixing algorithm
+    if (associated(rsolver%p_solverAndersonMixing)) then
+      call remove_solverAndersonMixing(rsolver%p_solverAndersonMixing)
+    end if
+
   contains
 
     ! Here, the real working routine follows
@@ -2843,38 +3095,38 @@ contains
     !*************************************************************
     ! Remove temporal data from multigrid solver
 
-    subroutine remove_solverMultigrid(rsolver)
-      type(t_solverMultigrid), intent(inout) :: rsolver
+    subroutine remove_solverMultigrid(rsolverMultigrid)
+      type(t_solverMultigrid), intent(inout) :: rsolverMultigrid
 
       ! local variables
       integer :: i
 
       ! Release matrix
-      if (associated(rsolver%rmatrix)) then
-        do i = lbound(rsolver%rmatrix,1),&
-               ubound(rsolver%rmatrix,1)
-          call lsysbl_releaseMatrix(rsolver%rmatrix(i))
+      if (associated(rsolverMultigrid%rmatrix)) then
+        do i = lbound(rsolverMultigrid%rmatrix,1),&
+               ubound(rsolverMultigrid%rmatrix,1)
+          call lsysbl_releaseMatrix(rsolverMultigrid%rmatrix(i))
         end do
       end if
 
       ! Release temporal vectors
-      if (associated(rsolver%RtempVectors)) then
-        do i = lbound(rsolver%RtempVectors,1),&
-               ubound(rsolver%RtempVectors,1)
-          call lsysbl_releaseVector(rsolver%RtempVectors(i))
+      if (associated(rsolverMultigrid%RtempVectors)) then
+        do i = lbound(rsolverMultigrid%RtempVectors,1),&
+               ubound(rsolverMultigrid%RtempVectors,1)
+          call lsysbl_releaseVector(rsolverMultigrid%RtempVectors(i))
         end do
       end if
 
       ! Remove temporal from coarsegrid solver
-      if (associated(rsolver%p_solverCoarsegrid)) then
-        call solver_removeTempFromSolver(rsolver%p_solverCoarsegrid)
+      if (associated(rsolverMultigrid%p_solverCoarsegrid)) then
+        call solver_removeTempFromSolver(rsolverMultigrid%p_solverCoarsegrid)
       end if
 
       ! Remove temporals from smoother
-      if (associated(rsolver%p_smoother)) then
-        do i = lbound(rsolver%p_smoother,1),&
-               ubound(rsolver%p_smoother,1)
-          call solver_removeTempFromSolver(rsolver%p_smoother(i))
+      if (associated(rsolverMultigrid%p_smoother)) then
+        do i = lbound(rsolverMultigrid%p_smoother,1),&
+               ubound(rsolverMultigrid%p_smoother,1)
+          call solver_removeTempFromSolver(rsolverMultigrid%p_smoother(i))
         end do
       end if
     end subroutine remove_solverMultigrid
@@ -2882,163 +3134,223 @@ contains
     !*************************************************************
     ! Remove temporal data from UMFPACK solver
 
-    subroutine remove_solverUMFPACK(rsolver)
-      type(t_solverUMFPACK), intent(inout) :: rsolver
+    subroutine remove_solverUMFPACK(rsolverUMFPACK)
+      type(t_solverUMFPACK), intent(inout) :: rsolverUMFPACK
 
       integer :: i
 
       ! Release UMFPACK handles
-      if (rsolver%isymbolic .ne. 0) call UMF4FSYM(rsolver%isymbolic)
-      if (rsolver%inumeric  .ne. 0) call UMF4FNUM(rsolver%inumeric)
+      if (rsolverUMFPACK%isymbolic .ne. 0) call UMF4FSYM(rsolverUMFPACK%isymbolic)
+      if (rsolverUMFPACK%inumeric  .ne. 0) call UMF4FNUM(rsolverUMFPACK%inumeric)
 
-      if (associated(rsolver%IsymbolicBlock)) then
-        do i = lbound(rsolver%IsymbolicBlock,1),&
-               ubound(Rsolver%IsymbolicBlock,1)
-          if (rsolver%IsymbolicBlock(i) .ne. 0) call UMF4FSYM(rsolver%IsymbolicBlock(i))
+      if (associated(rsolverUMFPACK%IsymbolicBlock)) then
+        do i = lbound(rsolverUMFPACK%IsymbolicBlock,1),&
+               ubound(RsolverUMFPACK%IsymbolicBlock,1)
+          if (rsolverUMFPACK%IsymbolicBlock(i) .ne. 0)&
+              call UMF4FSYM(rsolverUMFPACK%IsymbolicBlock(i))
         end do
       end if
 
-      if (associated(rsolver%InumericBlock)) then
-        do i = lbound(rsolver%InumericBlock,1),&
-               ubound(Rsolver%InumericBlock,1)
-          if (rsolver%InumericBlock(i) .ne. 0) call UMF4FNUM(rsolver%InumericBlock(i))
+      if (associated(rsolverUMFPACK%InumericBlock)) then
+        do i = lbound(rsolverUMFPACK%InumericBlock,1),&
+               ubound(RsolverUMFPACK%InumericBlock,1)
+          if (rsolverUMFPACK%InumericBlock(i) .ne. 0)&
+              call UMF4FNUM(rsolverUMFPACK%InumericBlock(i))
         end do
       end if
 
       ! Release matrix
-      call lsysbl_releaseMatrix(rsolver%rmatrix)
+      call lsysbl_releaseMatrix(rsolverUMFPACK%rmatrix)
 
       ! Release temporal vector
-      call lsysbl_releaseVector(rsolver%rtempVector)
+      call lsysbl_releaseVector(rsolverUMFPACK%rtempVector)
     end subroutine remove_solverUMFPACK
 
     !*************************************************************
     ! Remove temporal data from Jacobi solver
 
-    subroutine remove_solverJacobi(rsolver)
-      type(t_solverJacobi), intent(inout) :: rsolver
+    subroutine remove_solverJacobi(rsolverJacobi)
+      type(t_solverJacobi), intent(inout) :: rsolverJacobi
 
       ! Release matrix
-      call lsysbl_releaseMatrix(rsolver%rmatrix)
+      call lsysbl_releaseMatrix(rsolverJacobi%rmatrix)
 
       ! Release temporal vector
-      call lsysbl_releaseVector(rsolver%rtempVector)
+      call lsysbl_releaseVector(rsolverJacobi%rtempVector)
     end subroutine remove_solverJacobi
 
     !*************************************************************
     ! Remove temporal data from (S)SOR solver
 
-    subroutine remove_solverSSOR(rsolver)
-      type(t_solverSSOR), intent(inout) :: rsolver
+    subroutine remove_solverSSOR(rsolverSSOR)
+      type(t_solverSSOR), intent(inout) :: rsolverSSOR
 
       ! Release matrix
-      call lsysbl_releaseMatrix(rsolver%rmatrix)
+      call lsysbl_releaseMatrix(rsolverSSOR%rmatrix)
 
       ! Release temporal vector
-      call lsysbl_releaseVector(rsolver%rtempVector)
+      call lsysbl_releaseVector(rsolverSSOR%rtempVector)
     end subroutine remove_solverSSOR
 
     !*************************************************************
     ! Remove temporal data from BiCGSTAB solver
 
-    subroutine remove_solverBiCGSTAB(rsolver)
-      type(t_solverBiCGSTAB), intent(inout) :: rsolver
+    subroutine remove_solverBiCGSTAB(rsolverBiCGSTAB)
+      type(t_solverBiCGSTAB), intent(inout) :: rsolverBiCGSTAB
 
       ! local variables
       integer :: i
 
       ! Release matrix
-      call lsysbl_releaseMatrix(rsolver%rmatrix)
+      call lsysbl_releaseMatrix(rsolverBiCGSTAB%rmatrix)
 
       ! Release temporal vectors
-      do i = lbound(rsolver%RtempVectors,1),&
-             ubound(rsolver%RtempVectors,1)
-        call lsysbl_releaseVector(rsolver%RtempVectors(i))
+      do i = lbound(rsolverBiCGSTAB%RtempVectors,1),&
+             ubound(rsolverBiCGSTAB%RtempVectors,1)
+        call lsysbl_releaseVector(rsolverBiCGSTAB%RtempVectors(i))
       end do
 
       ! Remove temporals from preconditioner
-      if (associated(rsolver%p_precond)) then
-        call solver_removeTempFromSolver(rsolver%p_precond)
+      if (associated(rsolverBiCGSTAB%p_precond)) then
+        call solver_removeTempFromSolver(rsolverBiCGSTAB%p_precond)
       end if
     end subroutine remove_solverBiCGSTAB
 
     !*************************************************************
     ! Remove temporal data from GMRES solver
 
-    subroutine remove_solverGMRES(rsolver)
-      type(t_solverGMRES), intent(inout) :: rsolver
+    subroutine remove_solverGMRES(rsolverGMRES)
+      type(t_solverGMRES), intent(inout) :: rsolverGMRES
 
       ! local variables
       integer :: i
 
       ! Release matrix
-      call lsysbl_releaseMatrix(rsolver%rmatrix)
+      call lsysbl_releaseMatrix(rsolverGMRES%rmatrix)
 
       ! Release temporal vectors
-      do i = lbound(rsolver%rv,1),&
-             ubound(rsolver%rv,1)
-        call lsysbl_releaseVector(rsolver%rv(i))
+      do i = lbound(rsolverGMRES%rv,1),&
+             ubound(rsolverGMRES%rv,1)
+        call lsysbl_releaseVector(rsolverGMRES%rv(i))
       end do
 
-      do i = lbound(rsolver%rz,1),&
-             ubound(rsolver%rz,1)
-        call lsysbl_releaseVector(rsolver%rz(i))
+      do i = lbound(rsolverGMRES%rz,1),&
+             ubound(rsolverGMRES%rz,1)
+        call lsysbl_releaseVector(rsolverGMRES%rz(i))
       end do
 
       ! Remove temporals from preconditioner
-      if (associated(rsolver%p_precond)) then
-        call solver_removeTempFromSolver(rsolver%p_precond)
+      if (associated(rsolverGMRES%p_precond)) then
+        call solver_removeTempFromSolver(rsolverGMRES%p_precond)
       end if
     end subroutine remove_solverGMRES
 
     !*************************************************************
     ! Remove temporal data from ILU solver
 
-    subroutine remove_solverILU(rsolver)
-      type(t_solverILU), intent(inout) :: rsolver
+    subroutine remove_solverILU(rsolverILU)
+      type(t_solverILU), intent(inout) :: rsolverILU
 
       ! Release ILU handles
-      if (rsolver%h_Idata .ne. ST_NOHANDLE) call storage_free(rsolver%h_Idata)
-      if (rsolver%h_Ddata .ne. ST_NOHANDLE) call storage_free(rsolver%h_Ddata)
+      if (rsolverILU%h_Idata .ne. ST_NOHANDLE) call storage_free(rsolverILU%h_Idata)
+      if (rsolverILU%h_Ddata .ne. ST_NOHANDLE) call storage_free(rsolverILU%h_Ddata)
 
       ! Release matrix
-      call lsysbl_releaseMatrix(rsolver%rmatrix)
+      call lsysbl_releaseMatrix(rsolverILU%rmatrix)
 
       ! Release temporal vector
-      call lsysbl_releaseVector(rsolver%rtempVector)
+      call lsysbl_releaseVector(rsolverILU%rtempVector)
     end subroutine remove_solverILU
+
+    !*************************************************************
+    ! Remove temporal data from AGMG solver
+
+    subroutine remove_solverAGMG(rsolverAGMG)
+      type(t_solverAGMG), intent(inout) :: rsolverAGMG
+
+      ! local dummy variables
+      integer, dimension(:), pointer :: p_Kld, p_Kcol
+      real(DP), dimension(:), pointer :: p_Da
+      real(SP), dimension(:), pointer :: p_Fa
+
+      ! Set pointers
+      call lsyssc_getbase_Kld(rsolverAGMG%rmatrixScalar, p_Kld)
+      call lsyssc_getbase_Kcol(rsolverAGMG%rmatrixScalar, p_Kcol)
+
+      ! Erase setup and release internal memory
+      select case(rsolverAGMG%cdataType)
+      case (ST_DOUBLE)
+        call lsyssc_getbase_double(rsolverAGMG%rmatrixScalar, p_Da)
+        call dagmg(rsolverAGMG%rmatrixScalar%NEQ, p_Da, p_Kcol, p_Kld,&
+            p_Da, p_Da, -1, 0, 1, 1, 0.0_DP)
+      case (ST_SINGLE)
+        call lsyssc_getbase_single(rsolverAGMG%rmatrixScalar, p_Fa)
+        call sagmg(rsolverAGMG%rmatrixScalar%NEQ, p_Fa, p_Kcol, p_Kld,&
+            p_Fa, p_Fa, -1, 0, 1, 1, 0.0_SP)
+      case default
+         call output_line('Unsupported data type!',&
+             OU_CLASS_ERROR,rsolver%coutputModeError,'remove_solverAGMG')
+       end select
+       
+       ! Release matrix (and its temporal copy)
+      call lsysbl_releaseMatrix(rsolverAGMG%rmatrix)
+      call lsyssc_releaseMatrix(rsolverAGMG%rmatrixScalar)
+
+    end subroutine remove_solverAGMG
 
     !*************************************************************
     ! Remove temporal data from defect correction algorithm
 
-    subroutine remove_solverDefcor(rsolver)
-      type(t_solverDefcor), intent(inout) :: rsolver
+    subroutine remove_solverDefcor(rsolverDefcor)
+      type(t_solverDefcor), intent(inout) :: rsolverDefcor
 
       ! local variables
       integer :: i
 
       ! Release temporal vectors
-      do i = lbound(rsolver%RtempVectors,1),&
-             ubound(rsolver%RtempVectors,1)
-        call lsysbl_releaseVector(rsolver%RtempVectors(i))
+      do i = lbound(rsolverDefcor%RtempVectors,1),&
+             ubound(rsolverDefcor%RtempVectors,1)
+        call lsysbl_releaseVector(rsolverDefcor%RtempVectors(i))
       end do
     end subroutine remove_solverDefcor
 
     !*************************************************************
     ! Remove temporal data from Newton`s algorithm
 
-    subroutine remove_solverNewton(rsolver)
-      type(t_solverNewton), intent(inout) :: rsolver
+    subroutine remove_solverNewton(rsolverNewton)
+      type(t_solverNewton), intent(inout) :: rsolverNewton
 
       ! local variables
       integer :: i
 
       ! Release temporal vectors
-      do i = lbound(rsolver%RtempVectors,1),&
-             ubound(rsolver%RtempVectors,1)
-        call lsysbl_releaseVector(rsolver%RtempVectors(i))
+      do i = lbound(rsolverNewton%RtempVectors,1),&
+             ubound(rsolverNewton%RtempVectors,1)
+        call lsysbl_releaseVector(rsolverNewton%RtempVectors(i))
       end do
     end subroutine remove_solverNewton
+
+    !*************************************************************
+    ! Remove temporal data from Anderson`s mixing algorithm
+
+    subroutine remove_solverAndersonMixing(rsolverAndersonMixing)
+      type(t_solverAndersonMixing), intent(inout) :: rsolverAndersonMixing
+
+      ! local variables
+      integer :: i
+
+      ! Release temporal solution vectors
+      do i = lbound(rsolverAndersonMixing%RsolutionVectors,1),&
+             ubound(rsolverAndersonMixing%RsolutionVectors,1)
+        call lsysbl_releaseVector(rsolverAndersonMixing%RsolutionVectors(i))
+      end do
+
+      ! Release temporal correction vectors
+      do i = lbound(rsolverAndersonMixing%RcorrectionVectors,1),&
+             ubound(rsolverAndersonMixing%RcorrectionVectors,1)
+        call lsysbl_releaseVector(rsolverAndersonMixing%RcorrectionVectors(i))
+      end do
+    end subroutine remove_solverAndersonMixing
 
   end subroutine solver_removeTempFromSolver
 
@@ -4231,6 +4543,19 @@ contains
                                   SV_SSPEC_NEEDSUPDATE)
       end if
 
+      ! AGMG subnode
+      if (associated(rsolver%p_solverAGMG)) then
+
+        ! Release existing matrix and set new matrix
+        call lsysbl_releaseMatrix(rsolver%p_solverAGMG%rmatrix)
+        call lsysbl_createMatFromScalar(rmatrix,&
+                                        rsolver%p_solverAGMG%rmatrix)
+
+        ! Mark solver for update: structure + content
+        rsolver%isolverSpec = ior(rsolver%isolverSpec,&
+                                  SV_SSPEC_NEEDSUPDATE)
+      end if
+
     case default
       if (rsolver%coutputModeError .gt. 0) then
         call output_line('Unsupported solver type!',&
@@ -4402,6 +4727,20 @@ contains
         call lsysbl_releaseMatrix(rsolver%p_solverILU%rmatrix)
         call lsysbl_duplicateMatrix(rmatrix,&
                                     rsolver%p_solverILU%rmatrix,&
+                                    LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
+
+        ! Mark solver for update: structure + content
+        rsolver%isolverSpec = ior(rsolver%isolverSpec,&
+                                  SV_SSPEC_NEEDSUPDATE)
+      end if
+
+      ! AGMG subnode
+      if (associated(rsolver%p_solverAGMG)) then
+
+        ! Release existing matrix and set new matrix
+        call lsysbl_releaseMatrix(rsolver%p_solverAGMG%rmatrix)
+        call lsysbl_duplicateMatrix(rmatrix,&
+                                    rsolver%p_solverAGMG%rmatrix,&
                                     LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
 
         ! Mark solver for update: structure + content
@@ -5152,6 +5491,7 @@ contains
           end if
         end if   ! ILU solver
 
+
         ! Remove update marker from specification bitfields
         rsolver%isolverSpec = iand(rsolver%isolverSpec,&
                                    not(SV_SSPEC_STRUCTURENEEDSUPDATE))
@@ -5390,6 +5730,11 @@ contains
           if (associated(rsolver%p_solverGMRES%p_precond)) then
             call solver_updateContent(rsolver%p_solverGMRES%p_precond)
           end if
+        end if
+
+        ! Initialise AGMG solver
+        if (associated(rsolver%p_solverAGMG)) then
+          call solver_initAGMG(rsolver%p_solverAGMG)
         end if
 
         ! Remove update marker from specification bitfields
@@ -6895,7 +7240,7 @@ contains
 !</description>
 
 !<inputoutput>
-    ! Umfpack-solver structure
+    ! UMFPACK-solver structure
     type(t_solverUMFPACK), intent(inout) :: rsolver
 !</inputoutput>
 !</subroutine>
@@ -6923,8 +7268,8 @@ contains
     call initPrepareMatrix(rsolver%rmatrix, rmatrixScalar)
 
     ! Set pointers to row- and column indices and data array
-    call lsyssc_getbase_Kld   (rmatrixScalar, p_Kld)
-    call lsyssc_getbase_Kcol  (rmatrixScalar, p_Kcol)
+    call lsyssc_getbase_Kld(rmatrixScalar, p_Kld)
+    call lsyssc_getbase_Kcol(rmatrixScalar, p_Kcol)
     call lsyssc_getbase_double(rmatrixScalar, p_Da)
 
 
@@ -7044,6 +7389,113 @@ contains
     end subroutine initPrepareMatrix
 
   end subroutine solver_initUMFPACK
+
+  ! *****************************************************************************
+
+!<subroutine>
+
+  subroutine solver_initAGMG(rsolver)
+
+!<description>
+    ! This subroutine initialises the AGMG subsystem
+!</description>
+
+!<inputoutput>
+    ! AGMG-solver structure
+    type(t_solverAGMG), intent(inout) :: rsolver
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    integer, dimension(:), pointer :: p_Kcol
+    integer, dimension(:), pointer :: p_Kld
+    real(DP), dimension(:), pointer :: p_Da, p_Dx, p_Df
+    real(SP), dimension(:), pointer :: p_Fa, p_Fx, p_Ff
+
+    ! Check if matrix is associated
+    if ((rsolver%rmatrix%nblocksPerCol .eq. 0) .or.&
+        (rsolver%rmatrix%nblocksPerRow .eq. 0)) then
+      call output_line('Matrix must be associated to solver node!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'solver_initAGMG')
+      call sys_halt()
+    end if
+
+    ! Prepare the system matrix for UMFPACK and convert it into a scalar matrix
+    call initPrepareMatrix(rsolver%rmatrix, rsolver%rmatrixScalar)
+
+    ! Set pointers to row- and column indices and data array
+    call lsyssc_getbase_Kld(rsolver%rmatrixScalar, p_Kld)
+    call lsyssc_getbase_Kcol(rsolver%rmatrixScalar, p_Kcol)
+
+    ! Perform internal setup of AGMG solver
+    select case(rsolver%rmatrixScalar%cdataType)
+    case(ST_DOUBLE)
+      call lsyssc_getbase_double(rsolver%rmatrixScalar, p_Da)
+      call dagmg(rsolver%rmatrixScalar%NEQ, p_Da, p_Kcol, p_Kld, p_Df, p_Dx,&
+          1, 0, rsolver%nrest, 0, 0.0_DP)
+    case(ST_SINGLE)
+      call lsyssc_getbase_single(rsolver%rmatrixScalar, p_Fa)
+      call sagmg(rsolver%rmatrixScalar%NEQ, p_Fa, p_Kcol, p_Kld, p_Ff, p_Fx,&
+          1, 0, rsolver%nrest, 0, 0.0_SP)
+    case default
+      call output_line('Unsupported data type!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'solver_initAGMG')
+      call sys_halt()
+    end select
+    
+    print *, "We are here"
+    stop
+
+ contains
+
+    ! Here, the real working routine follows
+
+    !*************************************************************
+    ! Prepare the matrix for UMFACK
+
+    subroutine initPrepareMatrix(rmatrixSrc, rmatrixDest)
+      type(t_matrixBlock), intent(in) :: rmatrixSrc
+      type(t_matrixScalar), intent(inout) :: rmatrixDest
+
+      ! Check if matrix is a 1x1 block matrix
+      if ((rmatrixSrc%nblocksPerCol .eq. 1) .and.&
+          (rmatrixSrc%nblocksPerRow .eq. 1)) then
+
+        ! Initialise working matrix
+        select case(rmatrixSrc%RmatrixBlock(1,1)%cmatrixFormat)
+
+        case (LSYSSC_MATRIX7,LSYSSC_MATRIX9)
+          ! Format 7 or 9 is directly supported by AGMG library
+          ! Make a copy of the matrix structure, but use the same matrix entries.
+          call lsyssc_duplicateMatrix(rmatrixSrc%RmatrixBlock(1,1), rmatrixDest,&
+                                      LSYSSC_DUP_COPY, LSYSSC_DUP_COPY)
+
+        case (LSYSSC_MATRIX7INTL,LSYSSC_MATRIX9INTL)
+          ! For matrices stored in interleaved format, we have to
+          ! modify the matrix slightly.
+          ! Make a copy of the complete matrix
+          call lsyssc_duplicateMatrix(rmatrixSrc%RmatrixBlock(1,1), rmatrixDest,&
+                                      LSYSSC_DUP_COPY, LSYSSC_DUP_COPY)
+
+          ! Convert to format 9 (and remove interleaved format if required)
+          call lsyssc_convertMatrix(rmatrixDest, LSYSSC_MATRIX9, .true.)
+
+        case default
+          call output_line('Unsupported matrix format!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'initPrepareMatrix')
+          call sys_halt()
+        end select
+
+      else
+
+        ! Convert block matrix into scalar matrix
+        call glsys_assembleGlobal(rmatrixSrc, rmatrixDest, .true., .true.)
+
+      end if
+
+    end subroutine initPrepareMatrix
+
+  end subroutine solver_initAGMG
 
   ! *****************************************************************************
 
