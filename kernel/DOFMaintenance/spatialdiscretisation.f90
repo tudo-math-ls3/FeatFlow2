@@ -3556,7 +3556,7 @@ contains
 !<subroutine>
 
   subroutine spdiscr_createDefCubStructure (rdiscretisation, rcubatureInfo, &
-      ccubType, rtrafoInfo)
+      ccubType, nlevels, rtrafoInfo)
 
 !<description>
   ! Creates a default cubature information structure based on a discretisation.
@@ -3573,11 +3573,15 @@ contains
   !
   ! DEPRECATED: Additionally, the following constants are allowed for compatibility to
   ! the old discretisation structure. 
-  ! =CUB_GEN_DEPR_BILFORM: Take ccubTypeBilForm from the discretisation stricture.
-  ! =CUB_GEN_DEPR_LINFORM: Take ccubTypeLinForm from the discretisation stricture.
-  ! =CUB_GEN_DEPR_EVAL: Take ccubTypeEval from the discretisation stricture
+  ! =CUB_GEN_DEPR_BILFORM: Take ccubTypeBilForm from the discretisation structure.
+  ! =CUB_GEN_DEPR_LINFORM: Take ccubTypeLinForm from the discretisation structure.
+  ! =CUB_GEN_DEPR_EVAL: Take ccubTypeEval from the discretisation structure
   integer(I32), intent(in), optional :: ccubType
   
+  ! OPTIONAL: Number of refinements of the reference element if a summed
+  ! cubature rule should be employed.
+  integer, intent(in), optional :: nlevels
+
   ! OPTIONAL: A transformation structure that defines the transformation
   ! from the reference to the real element(s). If not specified, the default
   ! transformation is used.
@@ -3654,7 +3658,7 @@ contains
     end if
 
     ! Initialise the cubature formula
-    call spdiscr_defineCubature (rdiscretisation, rcubatureInfo, ccub)
+    call spdiscr_defineCubature (rdiscretisation, rcubatureInfo, ccub, nlevels)
 
     ! Post-correction. Is the cubature formula specified?      
     if (present(ccubType)) then
@@ -3708,7 +3712,7 @@ contains
 
 !<subroutine>
 
-  subroutine spdiscr_defineCubature (rdiscretisation, rcubatureInfo, ccubType)
+  subroutine spdiscr_defineCubature (rdiscretisation, rcubatureInfo, ccubType, nlevels)
 
 !<description>
   ! Initialises the cubature formula in rcubatureInfo according to ccubType.
@@ -3728,6 +3732,10 @@ contains
   ! E.g., CUB_GEN_AUTO initialises the cubature formula with the default
   ! cubature rule for each FEM space.
   integer, intent(in) :: ccubType
+
+  ! OPTIONAL: Number of refinements of the reference element if a summed
+  ! cubature rule should be employed.
+  integer, intent(in), optional :: nlevels
 !</input>
 
 !<inputoutput>
@@ -3774,7 +3782,7 @@ contains
         end do
 
       case (CUB_GEN_AUTO_LUMPMASS)
-        ! Stabdard cubature formula that lumps the mass matrix
+        ! Standard cubature formula that lumps the mass matrix
         do i = 1,rcubatureInfo%ninfoBlockCount
           ielementDistr = rcubatureInfo%p_RinfoBlocks(i)%ielementDistr
           rcubatureInfo%p_RinfoBlocks(i)%ccubature = &
@@ -3784,6 +3792,14 @@ contains
       end select
 
     end select
+
+    ! Do we need a summed cubature rule?
+    if (present(nlevels)) then
+      do i = 1,rcubatureInfo%ninfoBlockCount
+        rcubatureInfo%p_RinfoBlocks(i)%ccubature =&
+            cub_getSummedCubType(rcubatureInfo%p_RinfoBlocks(i)%ccubature, nlevels)
+      end do
+    end if
 
   end subroutine
 
