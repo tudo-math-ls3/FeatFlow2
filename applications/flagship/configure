@@ -8,22 +8,7 @@
 LC_ALL=C
 export LC_ALL
 
-# Enable preprocessor support
-APPONLYFLAGS="-DUSE_PREPROC_F90CPP"
-
-# Define global memory layout
-APPONLYFLAGS="$APPONLYFLAGS,-DMEMORY_LAYOUT=COLUMN_MAJOR_ORDER"
-
-# Enable auto-tuning using genetic algorithms.
-if ([ -n "${AUTOTUNE+x}" ] && [ "$AUTOTUNE" = "YES" ]); then
-APPONLYFLAGS="$APPONLYFLAGS,-DENABLE_AUTOTUNE"
-fi
-
-# Enable use of coproc_malloc/coproc_free
-if ([ -n "${COPROC+x}" ] && [ "$COPROC" = "YES" ]); then
-APPONLYFLAGS="$APPONLYFLAGS,-DUSE_C_PTR_STORAGE=C_PTR_STORAGE_COPROC"
-fi
-
+################################################################
 # Specify header files which should be copied to the object directory
 HEADER_FILES_TO_COPY="src/flagship.h
  src/models/hydro/hydro.h
@@ -33,35 +18,58 @@ HEADER_FILES_TO_COPY="src/flagship.h
  src/kernel/thermodynamics.h
  src/kernel/magnetohydrodynamics.h"
 
+################################################################
 # Specify list of application source files
 # (disable any ls alias setting)
 SRCLIST_APP="`\ls src/*.f90 src/models/*/*.f90 src/kernel/*.f90 2>/dev/null` "
-SRCEXTRA_APP="src/coloring.c"
+SRCEXTRA_APP=" "
 
-# Add coprocessor support (if available)
-# (disable any ls alias setting)
+################################################################
+# Enable preprocessor support
+APPONLYFLAGS="-DUSE_PREPROC_F90CPP"
+
+################################################################
+# Define global memory layout
+APPONLYFLAGS="$APPONLYFLAGS,-DMEMORY_LAYOUT=COLUMN_MAJOR_ORDER"
+
+################################################################
+# Enable auto-tuning using genetic algorithms.
+if ([ -n "${AUTOTUNE+x}" ] && [ "$AUTOTUNE" = "YES" ]); then
+APPONLYFLAGS="$APPONLYFLAGS,-DENABLE_AUTOTUNE"
+fi
+
+################################################################
+# Enable use of coprocessor support (if available)
 if ([ -n "${COPROC+x}" ] && [ "$COPROC" = "YES" ]); then
+APPONLYFLAGS="$APPONLYFLAGS,-DUSE_C_PTR_STORAGE=C_PTR_STORAGE_COPROC"
 SRCEXTRA_APP="$SRCEXTRA_APP `\ls src/*.c src/*.h src/models/*/*.h src/kernel/*.h src/models/*/*.cu 2>/dev/null` "
+COPROC="--coproc=cuda20"
+else
+COPROC=""
 fi
 
-# Use system-wide configure
-if ([ -n "${COPROC+x}" ] && [ "$COPROC" = "YES" ]); then
-../../bin/configure \
-    --appname=flagship-\$\(ID\) \
-    --programfile=src/flagship.f90 \
-    --srclist_app="${SRCLIST_APP}" \
-    --srcextra_app="${SRCEXTRA_APP}" \
-    --header-files-to-copy="${HEADER_FILES_TO_COPY}" \
-    --apponlyflags="${APPONLYFLAGS}" \
-    --coproc=cuda20 \
-    "$@"
-else
-../../bin/configure \
-    --appname=flagship-\$\(ID\) \
-    --programfile=src/flagship.f90 \
-    --srclist_app="${SRCLIST_APP}" \
-    --srcextra_app="${SRCEXTRA_APP}" \
-    --header-files-to-copy="${HEADER_FILES_TO_COPY}" \
-    --apponlyflags="${APPONLYFLAGS}" \
-    "$@"
+################################################################
+# Enable AGMG library.
+if ([ -n "${AGMG+x}" ] && [ "$AGMG" = "YES" ]); then
+APPONLYFLAGS="$APPONLYFLAGS,-DENABLE_AGMG"
+# TODO: need to add agmg library and patch it!
 fi
+
+################################################################
+# Enable external coloring library library.
+if ([ -n "${COLORINGTEST+x}" ] && [ "$COLORINGTEST" = "YES" ]); then
+APPONLYFLAGS="$APPONLYFLAGS,-DENABLE_COLORINGTEST"
+SRCEXTRA_APP="$SRCEXTRA_APP src/coloring.c"
+fi
+
+################################################################
+# Use system-wide configure
+../../bin/configure \
+    --appname=flagship-\$\(ID\) \
+    --programfile=src/flagship.f90 \
+    --srclist_app="${SRCLIST_APP}" \
+    --srcextra_app="${SRCEXTRA_APP}" \
+    --header-files-to-copy="${HEADER_FILES_TO_COPY}" \
+    --apponlyflags="${APPONLYFLAGS}" \
+    "${COPROC}" \
+    "$@"
