@@ -91,6 +91,11 @@ module structuresdiscretisation
     ! cubature formula for RHS F
     integer(i32) :: icubF = CUB_GEN_AUTO
 
+    ! Support for integral mean value constraints.
+    ! If set =1, integral mean value constraints are supported. The matrix
+    ! structure is enlarged appropriately. This slows down the computation.
+    integer :: csupportIntMeanConstr = 0
+
     ! Stabilisation parameters for the convection in the primal system.
     type(t_settings_stabil) :: rstabilConvecPrimal
 
@@ -278,6 +283,10 @@ contains
     call struc_initStabil (rparlist,&
         rsettingsSpaceDiscr%rstabilConvecPrimal,&
         rsettingsSpaceDiscr%rstabilConvecDual,ssection)
+
+    ! Support for integral mean value constraints.
+    call parlst_getvalue_int (rparlist,ssection,&
+        "csupportIntMeanConstr",rsettingsSpaceDiscr%csupportIntMeanConstr,0)
 
   end subroutine
 

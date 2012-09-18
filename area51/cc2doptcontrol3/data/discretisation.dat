@@ -127,6 +127,13 @@ cconvectionOnBoundaryMatrix = 1
 
 iBoundary          = 2
 
+# Support for integral mean value constraints (e.g. in pure Neumann/Dirichlet
+# problems).
+# If set =1, integral mean value constraints are supported. The matrix
+# structure is enlarged appropriately. This slows down the computation.
+
+csupportIntMeanConstr = 0
+
 # ------------------------------------------------------------------------
 
 # cubature formula for Mass matrix

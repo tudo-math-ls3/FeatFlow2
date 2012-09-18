@@ -206,7 +206,7 @@ contains
 
 !<subroutine>
 
-  subroutine inmat_allocStaticMatrices (rstaticAsmTemplates,rphysics)
+  subroutine inmat_allocStaticMatrices (rstaticAsmTemplates,rsettingsSpaceDiscr,rphysics)
   
 !<description>
   ! Allocates memory and generates the structure of all static matrices
@@ -216,6 +216,9 @@ contains
 !<input>
   ! Physics of the problem
   type(t_settings_physics), intent(in) :: rphysics
+
+   ! Structure with discretisation settings
+   type(t_settings_spacediscr), intent(in) :: rsettingsSpaceDiscr
 !</input>
 
 !<inputoutput>
@@ -381,7 +384,10 @@ contains
           rstaticAsmTemplates%rmatrixTemplateFEM,cconstrType=cmatBuildType)
 
       ! Expand the first row to full to support pure Neumann problems
-      ! call mmod_expandToFullRow (rstaticAsmTemplates%rmatrixTemplateFEM,1)
+      ! if we have to support integral mean value constraints.
+      if (rsettingsSpaceDiscr%csupportIntMeanConstr .eq. 1) then
+        call mmod_expandToFullRow (rstaticAsmTemplates%rmatrixTemplateFEM,1)
+      end if
 
       ! Ok, now we use the matrices from above to create the actual submatrices.
       
@@ -754,7 +760,8 @@ contains
           rfeHierarchyDual%p_rfeSpaces(ilevel)%p_rdiscretisation,&
           rfeHierarchyControl%p_rfeSpaces(ilevel)%p_rdiscretisation)
           
-      call inmat_allocStaticMatrices (rhierarchy%p_RasmTemplList(ilevel),rphysics)
+      call inmat_allocStaticMatrices (rhierarchy%p_RasmTemplList(ilevel),&
+          rsettingsSpaceDiscr,rphysics)
     end do
 
   end subroutine

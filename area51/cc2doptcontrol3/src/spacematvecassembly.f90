@@ -6381,10 +6381,16 @@ contains
                 (roptcBDCSpace%rdirichletBoundary%nregions .eq. 0) .and. &
                 (roptcBDCSpace%rdirichletControlBoundary%nregions .eq. 0)) then
                 
-              ! Replace the first row by the lumped mass matrix.
-              Irows = (/1/)
-              call mmod_replaceLineByLumpedMass (rmatrix%RmatrixBlock(1,1),1,&
-                  roperatorAsm%p_rasmTemplates%rmatrixMassLumpInt)
+              if (p_ranalyticData%p_rsettingsSpaceDiscr%csupportIntMeanConstr .eq. 1) then
+                ! Replace the first row by the lumped mass matrix.
+                Irows = (/1/)
+                call mmod_replaceLineByLumpedMass (rmatrix%RmatrixBlock(1,1),1,&
+                    roperatorAsm%p_rasmTemplates%rmatrixMassLumpInt)
+              else
+                call output_line("Support for integral mean value constraint not activated.",&
+                    OU_CLASS_ERROR,OU_MODE_STD,"smva_assembleMatrix_dual")
+                call sys_halt()
+              end if
 
             end if
 

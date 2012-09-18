@@ -558,7 +558,7 @@ contains
 
 !<subroutine>
 
-  subroutine spaceslh_implementBDC (rvector, cvectype, ilevel, rsolver)
+  subroutine spaceslh_implementBDC (rvector, cvectype, ilevel, rsolver, rasmTemplates)
   
 !<description>
   ! Implementa boundary conditions into a vector rvector
@@ -573,6 +573,9 @@ contains
 
   ! Solver structure
   type(t_spaceSolverHierarchy), intent(in) :: rsolver
+  
+  ! Assembly templates of that level.
+  type(t_staticSpaceAsmTemplates), intent(in) :: rasmTemplates
 !</input>
 
 !<inputoutput>
@@ -626,17 +629,19 @@ contains
         ! -----------------------------------------------
         ! Integral-mean-value-zero filter for the vector
         ! -----------------------------------------------
-        if (p_roptcBDCSpace%rdirichletBoundary%nregions .eq. 0) then
-          call vecfil_subvectorSmallL1To0 (rvector,1)
+        if ((p_roptcBDCspace%rdirichletBoundary%nregions .eq. 0) .and. &
+            (p_roptcBDCspace%rdirichletControlBoundary%nregions .eq. 0)) then
+          call vecfil_subvectorL1To0byLmass (rvector,1,rasmTemplates%rmatrixMassLumpInt)
+          !call vecfil_subvectorSmallL1To0 (rvector,1)
         end if
 
       end select      
-
+  
     ! ---------------------------------
     ! RHS vector
     ! ---------------------------------
     case (SPACESLH_VEC_RHS)
-      ! Dirichlet/Neumann BC
+      ! Dirichlet BC
       call vecfil_discreteBCrhs (rvector,p_roptcBDCspace%rdiscreteBC)
 
       ! Which equation do we have?    
@@ -666,7 +671,9 @@ contains
         ! -----------------------------------------------
         ! Integral-mean-value-zero filter for the vector
         ! -----------------------------------------------
-        if (p_roptcBDCSpace%rdirichletBoundary%nregions .eq. 0) then
+        if ((p_roptcBDCspace%rdirichletBoundary%nregions .eq. 0) .and. &
+            (p_roptcBDCspace%rdirichletControlBoundary%nregions .eq. 0)) then
+          !call vecfil_subvectorToL20byLMass (rvector,1,rasmTemplates%rmatrixMassLumpInt)
           call vecfil_subvectorSmallL1To0 (rvector,1)
         end if
 
@@ -706,12 +713,112 @@ contains
         ! -----------------------------------------------
         ! Integral-mean-value-zero filter for the vector
         ! -----------------------------------------------
-        if (p_roptcBDCSpace%rdirichletBoundary%nregions .eq. 0) then
+        if ((p_roptcBDCspace%rdirichletBoundary%nregions .eq. 0) .and. &
+            (p_roptcBDCspace%rdirichletControlBoundary%nregions .eq. 0)) then
+          !call vecfil_subvectorToL20byLMass (rvector,1,rasmTemplates%rmatrixMassLumpInt)
           call vecfil_subvectorSmallL1To0 (rvector,1)
         end if
 
       end select      
 
+    end select
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine spaceslh_initData_rhs (rvector, cvectype, rsolver)
+  
+!<description>
+  ! Final preparation of the RHS vector to be supplied to a linear solver.
+  ! Implements boundary conditions, restrictions in the space (e.g.,
+  ! integral mean value constraints), etc.
+!</description>
+
+!<input>
+  ! Type of the vector. One of the SPACESLH_VEC_xxxx constants
+  integer, intent(in) :: cvectype
+
+  ! Solver structure of the underlying linear solver.
+  type(t_spaceSolverHierarchy), intent(in), target :: rsolver
+!</input>
+
+!<inputoutput>
+  ! Vector to be accomplished.
+  type(t_vectorBlock), intent(inout) :: rvector
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    type(t_assemblyFlags), pointer :: p_rasmFlags
+    type(t_optcBDCSpace), pointer :: p_roptcBDCspace
+    type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
+    type(t_staticSpaceAsmTemplates), pointer :: p_rasmTemplates
+    real(DP), dimension(:), pointer :: p_Ddata, p_Da
+    real(DP) :: dint
+    integer :: i
+
+    ! DEBUG!!!
+    call lsysbl_getbase_double  (rvector,p_Ddata)
+
+    ! Get the assembly flags of that level
+    p_rasmFlags => rsolver%p_RassemblyFlags(rsolver%ispacelevel)
+
+    ! Get the boundary conditions structure
+    p_roptcBDCspace => rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(rsolver%ispacelevel)
+    
+    ! Get the analytic data
+    p_ranalyticData => rsolver%p_roperatorAsmHier%ranalyticData
+    
+    ! Assembly templates
+    p_rasmTemplates => &
+        rsolver%p_roperatorAsmHier%p_rstaticSpaceAsmHier%p_RasmTemplList(rsolver%ispacelevel)
+
+    ! Implement strong boundary conditions
+    call spaceslh_implementBDC (rvector, cvectype, rsolver%ispacelevel, rsolver, p_rasmTemplates)
+        
+    ! Restrictions in the space, integral mean value restrictions, ...
+    select case (p_ranalyticData%p_rphysics%cequation)
+    ! -------------------------------------------
+    ! Heat equation
+    ! -------------------------------------------
+    case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
+    
+      if (p_rasmFlags%bumfpackSolver .and. &
+          (p_roptcBDCSpace%rdirichletBoundary%nregions .eq. 0) .and. &
+          (p_roptcBDCSpace%rdirichletControlBoundary%nregions .eq. 0)) then
+          
+        if (p_ranalyticData%p_rsettingsSpaceDiscr%csupportIntMeanConstr .eq. 1) then
+!          ! Sum up tghe entries f_i. This gives the integradl mean value of
+!          ! f with f_i = (f,phi_i).
+!          call lsysbl_getbase_double  (rvector,p_Ddata)
+!          dint = sum(p_Ddata)
+!          
+!          ! Multiply by the diagonal of the lumped mass matrix and subtract.
+!          ! N THis gives an f with int(f) = 0.
+!          call lsyssc_getbase_double (p_rasmTemplates%rmatrixMassLumpInt,p_Da)
+!          do i=1,size(p_Ddata)
+!            p_Ddata(i) = p_Ddata(i) - dint*p_Da(i)
+!          end do
+          ! Bring the RHS to the space L^1_0.
+          call vecfil_subvectorSmallL1To0 (rvector,1)
+        
+          ! Replace the first row by zero.
+          ! In combination with the lumped mass matrix in the first row of the
+          ! system matrix, this implements the constraint.
+          call vecfil_OneEntryZero (rvector,1,1)
+        end if
+      end if
+    
+    ! -------------------------------------------
+    ! Stokes/Navier Stokes
+    ! -------------------------------------------
+    case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+      print *,"Missing..."
+      call sys_halt()
     end select
 
   end subroutine
@@ -1311,6 +1418,7 @@ contains
     type(t_lssSolverStat) :: rlocalStatLss
     type(t_spaceslSolverStat) :: rlocalStat
     type(t_timer) :: rtimer
+    type(t_spacetimeOperatorAsm) :: roperatorAsm
    
     ! Clear statistics
     call stat_startTimer (rstatistics%rtotalTime)
@@ -1318,6 +1426,9 @@ contains
     ! At first, get a temp vector we can use for creating defects,
     p_rd => rsolver%p_rd
     p_rd2 => rsolver%p_rd2
+    
+    call stoh_getOpAsm_slvtlv (&
+        roperatorAsm,rsolver%p_roperatorAsmHier,isollevelSpace,rsolver%itimelevel)
     
     ! DEBUG!!!
     call lsysbl_getbase_double (p_rd,p_Dd)
@@ -1371,7 +1482,7 @@ contains
         end if    
         
         call spaceslh_implementBDC (p_rd, SPACESLH_VEC_DEFECT, &
-            rsolver%ispacelevel, rsolver)
+            rsolver%ispacelevel, rsolver, roperatorAsm%p_rasmTemplates)
 
         call stat_stopTimer (rstatistics%rtimeDefect)    
         call stat_addTimers (rtimer,rstatistics%rtimeRHS)
@@ -1476,6 +1587,9 @@ contains
             
         call spacesl_sumStatistics (rlocalStat,rstatistics,.false.)
         
+        ! Final modifications of the RHS of the linear system
+        call spaceslh_initData_rhs (p_rd, SPACESLH_VEC_DEFECT, rsolver)
+            
         ! -------------------------------------------------------------
         ! Call the linear solver
         ! -------------------------------------------------------------
@@ -1508,6 +1622,9 @@ contains
               
           call spacesl_sumStatistics (rlocalStat,rstatistics,.false.)
           
+          ! Final modifications of the RHS of the linear system
+          call spaceslh_initData_rhs (p_rd, SPACESLH_VEC_DEFECT, rsolver)
+
           ! Solve the system
           output_iautoOutputIndent = output_iautoOutputIndent + 2
           call lssh_precondDefect (&
@@ -1546,7 +1663,7 @@ contains
 
         ! Implement boundary conditions
         call spaceslh_implementBDC (p_rx, SPACESLH_VEC_SOLUTION, &
-            rsolver%ispacelevel, rsolver)
+            rsolver%ispacelevel, rsolver, roperatorAsm%p_rasmTemplates)
         
         call sptivec_commitVecInPool(rprimalSol%p_rvectorAccess,idofTime)
         call stat_stopTimer (rtimer)        
@@ -1587,7 +1704,7 @@ contains
           rsolver%rtempData,csolgeneration,rtimer)
 
       call spaceslh_implementBDC (p_rd, SPACESLH_VEC_DEFECT, &
-          rsolver%ispacelevel, rsolver)
+          rsolver%ispacelevel, rsolver, roperatorAsm%p_rasmTemplates)
       
       call stat_stopTimer (rstatistics%rtimeDefect)
       call stat_addTimers (rtimer,rstatistics%rtimeRHS)
@@ -1617,6 +1734,9 @@ contains
             rprimalSol,rsolver%ispacelevel,rlocalStat,.false.)
             
         call spacesl_sumStatistics (rlocalStat,rstatistics,.false.)
+
+        ! Final modifications of the RHS of the linear system
+        call spaceslh_initData_rhs (p_rd, SPACESLH_VEC_DEFECT, rsolver)
 
         ! -------------------------------------------------------------
         ! Call the linear solver, it does the job for us.
@@ -1649,6 +1769,9 @@ contains
               rprimalSol,rsolver%ispacelevel,rlocalStat,.true.)
               
           call spacesl_sumStatistics (rlocalStat,rstatistics,.false.)
+
+          ! Final modifications of the RHS of the linear system
+          call spaceslh_initData_rhs (p_rd, SPACESLH_VEC_DEFECT, rsolver)
 
           call lssh_precondDefect (&
               rsolver%p_rlsshierarchy2,rsolver%ispacelevel,p_rd,rlocalStatLss,p_rsolverNode)
@@ -1696,7 +1819,7 @@ contains
 
         ! Implement boundary conditions
         call spaceslh_implementBDC (p_rx, SPACESLH_VEC_SOLUTION, &
-              rsolver%ispacelevel, rsolver)
+              rsolver%ispacelevel, rsolver, roperatorAsm%p_rasmTemplates)
 
         call sptivec_commitVecInPool(rdualSol%p_rvectorAccess,idofTime)
 
@@ -1745,7 +1868,7 @@ contains
           rsolver%rtempData,csolgeneration,rtimer)
           
       call spaceslh_implementBDC (p_rd, SPACESLH_VEC_DEFECT, &
-          rsolver%ispacelevel, rsolver)
+          rsolver%ispacelevel, rsolver, roperatorAsm%p_rasmTemplates)
 
       call stat_stopTimer (rstatistics%rtimeDefect)
       call stat_addTimers (rtimer,rstatistics%rtimeRHS)
@@ -1775,6 +1898,9 @@ contains
             rprimalSol,rsolver%ispacelevel,coptype,rlocalStat,.false.)
             
         call spacesl_sumStatistics (rlocalStat,rstatistics,.false.)
+
+        ! Final modifications of the RHS of the linear system
+        call spaceslh_initData_rhs (p_rd, SPACESLH_VEC_DEFECT, rsolver)
 
         ! -------------------------------------------------------------
         ! Call the linear solver, it does the job for us.
@@ -1807,6 +1933,9 @@ contains
               rprimalSol,rsolver%ispacelevel,coptype,rlocalStat,.true.)
               
           call spacesl_sumStatistics (rlocalStat,rstatistics,.false.)
+
+          ! Final modifications of the RHS of the linear system
+          call spaceslh_initData_rhs (p_rd, SPACESLH_VEC_DEFECT, rsolver)
 
           call lssh_precondDefect (&
               rsolver%p_rlsshierarchy2,rsolver%ispacelevel,p_rd,rlocalStatLss,p_rsolverNode)
@@ -1855,7 +1984,7 @@ contains
 
         ! Implement boundary conditions.
         call spaceslh_implementBDC (p_rx, SPACESLH_VEC_SOLUTION, &
-              rsolver%ispacelevel, rsolver)
+              rsolver%ispacelevel, rsolver, roperatorAsm%p_rasmTemplates)
 
         call sptivec_commitVecInPool(rprimalSolLin%p_rvectorAccess,idofTime)
         call stat_startTimer (rtimer)
@@ -1904,7 +2033,7 @@ contains
           rsolver%rtempData,csolgeneration,rtimer)
           
       call spaceslh_implementBDC (p_rd, SPACESLH_VEC_DEFECT, &
-          rsolver%ispacelevel, rsolver)
+          rsolver%ispacelevel, rsolver, roperatorAsm%p_rasmTemplates)
 
       call stat_stopTimer (rstatistics%rtimeDefect)
       call stat_addTimers (rtimer,rstatistics%rtimeRHS)
@@ -1934,6 +2063,9 @@ contains
             rprimalSol,rsolver%ispacelevel,rlocalStat,.false.)
         
         call spacesl_sumStatistics (rlocalStat,rstatistics,.false.)
+
+        ! Final modifications of the RHS of the linear system
+        call spaceslh_initData_rhs (p_rd, SPACESLH_VEC_DEFECT, rsolver)
 
         ! -------------------------------------------------------------
         ! Call the linear solver, it does the job for us.
@@ -1966,6 +2098,9 @@ contains
               rprimalSol,rsolver%ispacelevel,rlocalStat,.true.)
           
           call spacesl_sumStatistics (rlocalStat,rstatistics,.false.)
+
+          ! Final modifications of the RHS of the linear system
+          call spaceslh_initData_rhs (p_rd, SPACESLH_VEC_DEFECT, rsolver)
 
           call lssh_precondDefect (&
               rsolver%p_rlsshierarchy2,rsolver%ispacelevel,p_rd,rlocalStatLss,p_rsolverNode)
@@ -2015,7 +2150,7 @@ contains
         ! Implement boundary conditions.
         ! Use the defect filter since we are in the defect space.
         call spaceslh_implementBDC (p_rx, SPACESLH_VEC_SOLUTION, &
-              rsolver%ispacelevel, rsolver)
+              rsolver%ispacelevel, rsolver, roperatorAsm%p_rasmTemplates)
         
         call sptivec_commitVecInPool(rdualSolLin%p_rvectorAccess,idofTime)
 
