@@ -291,7 +291,7 @@ contains
     
     ! A scalar matrix and vector. The vector accepts the RHS of the problem
     ! in scalar form.
-    type(t_matrixScalar) :: rmatrixLaplace, rmatrixMass
+    type(t_matrixScalar) :: rmatrixLaplace, rmatrixMass, rmatrixMassLump
 
     ! A block matrix and a couple of block vectors. These will be filled
     ! with data for the linear solver.
@@ -325,7 +325,8 @@ contains
     
     ! Relaxation parameters
     real(DP) :: dalpha
-    logical :: bboundsActive,bpointBC
+    logical :: bboundsActive
+    integer :: itypeBC
     real(dp) :: dmax,dmin
     
     ! Output block for UCD output to GMV file
@@ -343,20 +344,31 @@ contains
     ! Relaxation parameter
     dalpha = 0.001_DP
     
-    ! TRUE=BC only on (0,0). FALSE=BC on whole boundary.
-    bpointBC = .true.
+    ! 0=Neumann problem
+    ! 1=BC on whole boundary.
+    ! 2=BC only on (0,0). 
+    itypeBC = 0
     
-    if (bpointBC) then
+    select case (itypeBC)
+    case (0)
+      bboundsActive = .false.
+    case (1)
       ! Bounds on the control
       bboundsActive = .true.
       dmin = -1.0_DP
       dmax = 1.0_DP
-    else
+    case (2)
       ! Bounds on the control
       bboundsActive = .true.
       dmin = 0.0_DP
       dmax = 15.0_DP
-    end if
+    case (3)
+      ! No bounds
+      bboundsActive = .false.
+    case (4)
+      ! No bounds
+      bboundsActive = .false.
+    end select
     
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
@@ -398,6 +410,11 @@ contains
     call lsyssc_duplicateMatrix (rmatrixLaplace,rmatrixMass,&
         LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
     call stdop_assembleSimpleMatrix (rmatrixMass,DER_FUNC,DER_FUNC)
+    
+    ! Lumped mass matrix
+    call lsyssc_duplicateMatrix (rmatrixMass,rmatrixMassLump,&
+        LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+    call lsyssc_lumpMatrixScalar (rmatrixMassLump,LSYSSC_LUMP_DIAG,.true.)
 
     ! -----
     ! Boundary conditions
@@ -406,20 +423,21 @@ contains
     
     call bcasm_initDiscreteBC(rdiscreteBC)
     
-    ! Edge 1 of boundary component 1 the domain.
-    call boundary_createRegion(rboundary,1,1,rboundaryRegion)
-    if (bpointBC) rboundaryRegion%dmaxParam = 0.0_DP
-    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
-                                       rboundaryRegion,rdiscreteBC,&
-                                       getBoundaryValuesPrimal_2D)
-           
-    if (.not. bpointBC) then
+    select case (itypeBC)
+    case (0)
+    case (1,3)
+      ! Edge 1 of boundary component 1 the domain.
+      call boundary_createRegion(rboundary,1,1,rboundaryRegion)
+      call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                                        rboundaryRegion,rdiscreteBC,&
+                                        getBoundaryValuesPrimal_2D)
+             
       ! Now to the edge 2 of boundary component 1 the domain.
       call boundary_createRegion(rboundary,1,2,rboundaryRegion)
       call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                         rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValuesPrimal_2D)
-                               
+                                
       ! Edge 3 of boundary component 1.
       call boundary_createRegion(rboundary,1,3,rboundaryRegion)
       call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
@@ -431,22 +449,20 @@ contains
       call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                         rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValuesPrimal_2D)
-    end if
 
-    ! ---
-    ! The same for the dual variable.
-    call boundary_createRegion(rboundary,1,1,rboundaryRegion)
-    if (bpointBC) rboundaryRegion%dmaxParam = 0.0_DP
-    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
-                                       rboundaryRegion,rdiscreteBC,&
-                                       getBoundaryValuesDual_2D)
-    if (.not. bpointBC) then
+      ! ---
+      ! The same for the dual variable.
+      call boundary_createRegion(rboundary,1,1,rboundaryRegion)
+      call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+                                        rboundaryRegion,rdiscreteBC,&
+                                        getBoundaryValuesDual_2D)
+
       ! Now to the edge 2 of boundary component 1 the domain.
       call boundary_createRegion(rboundary,1,2,rboundaryRegion)
       call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
                                         rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValuesDual_2D)
-                               
+                                
       ! Edge 3 of boundary component 1.
       call boundary_createRegion(rboundary,1,3,rboundaryRegion)
       call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
@@ -458,13 +474,31 @@ contains
       call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
                                         rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValuesDual_2D)
-    end if
+      
+    case (2,4)
+      ! Edge 1 of boundary component 1 the domain.
+      call boundary_createRegion(rboundary,1,1,rboundaryRegion)
+      rboundaryRegion%dmaxParam = 0.0_DP
+      
+      call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                                        rboundaryRegion,rdiscreteBC,&
+                                        getBoundaryValuesPrimal_2D)
+             
+      ! ---
+      ! The same for the dual variable.
+      call boundary_createRegion(rboundary,1,1,rboundaryRegion)
+      rboundaryRegion%dmaxParam = 0.0_DP
+      
+      call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+                                        rboundaryRegion,rdiscreteBC,&
+                                        getBoundaryValuesDual_2D)
 
+    end select
+    
     ! -----
     ! Linear system: Basic structure.
     !
     ! Create a 2x2 matrix and 2-block vectors from the discretisation.
-    call lsysbl_createMatBlockByDiscr (rdiscretisation,rmatrixBlock)
     call lsysbl_createVecBlockByDiscr (rdiscretisation,rrhsBlock)
     call lsysbl_createVecBlockByDiscr (rdiscretisation,rvectorBlock)
     call lsysbl_createVecBlockByDiscr (rdiscretisation,rtempRhsBlock)
@@ -499,6 +533,7 @@ contains
       !  (d2)    ( -z )   ( -M    A                 ) ( p )
       ! We do this manually...
       
+      call lsysbl_getbase_double (rtempRhsBlock,p_Ddata)
       call lsysbl_copyVector (rrhsBlock,rtempRhsBlock)
       
       call lsyssc_scalarMatVec (rmatrixLaplace,&
@@ -518,11 +553,35 @@ contains
       call lsyssc_scalarMatVec (rmatrixMass,&
           rvectorTmp,rtempRhsBlock%RvectorBlock(1),1.0_DP,1.0_DP)
       
+      if (itypeBC .eq. 0) then
+        ! Prepare a pure Neumann problem.
+        !
+        ! impose int(f)=0 into the RHS using the l1-0 filter
+        call vecfil_subvectorSmallL1To0 (rtempRhsBlock,1)
+        call vecfil_subvectorSmallL1To0 (rtempRhsBlock,2)
+      end if
+
+      ! Include boundary conditions
+      call vecfil_discreteBCdef (rtempRhsBlock,rdiscreteBC)
+      
+      ! Check for convergence
+      if (ite .eq. 1) then
+        dinitRes = lsysbl_vectorNorm(rtempRhsBlock,LINALG_NORML2)
+        call output_line ('Iteration: '//TRIM(sys_siL(ite-1,10))//&
+            ', Initial defect: '//sys_sdEL(dinitRes,10))
+      else
+        dcurrentRes = lsysbl_vectorNorm(rtempRhsBlock,LINALG_NORML2)
+        call output_line ('Iteration: '//TRIM(sys_siL(ite-1,10))//&
+            ', Current defect: '//sys_sdEL(dcurrentRes,10))
+        if (dcurrentRes .lt. dinitRes * 1E-10_DP) exit
+      end if
+      
       ! Prepare the preconditioner matrix (Newton).
+      call lsysbl_createMatBlockByDiscr (rdiscretisation,rmatrixBlock)
       call lsyssc_duplicateMatrix (rmatrixLaplace,rmatrixBlock%RmatrixBlock(1,1),&
-          LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+          LSYSSC_DUP_COPY,LSYSSC_DUP_COPY)
       call lsyssc_duplicateMatrix (rmatrixLaplace,rmatrixBlock%RmatrixBlock(2,2),&
-          LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+          LSYSSC_DUP_COPY,LSYSSC_DUP_COPY)
       call lsyssc_duplicateMatrix (rmatrixMass,rmatrixBlock%RmatrixBlock(2,1),&
           LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
       rmatrixBlock%RmatrixBlock(2,1)%dscaleFactor = -1.0_DP
@@ -540,22 +599,23 @@ contains
             rvectorBlock%RvectorBlock(2), dalpha, dmin, dmax)
       end if
     
-      ! Include boundary conditions
-      call vecfil_discreteBCdef (rtempRhsBlock,rdiscreteBC)
-      
-      ! Check for convergence
-      if (ite .eq. 1) then
-        dinitRes = lsysbl_vectorNorm(rtempRhsBlock,LINALG_NORML2)
-        call output_line ('Iteration: '//TRIM(sys_siL(ite-1,10))//&
-            ', Initial defect: '//sys_sdEL(dinitRes,10))
-      else
-        dcurrentRes = lsysbl_vectorNorm(rtempRhsBlock,LINALG_NORML2)
-        call output_line ('Iteration: '//TRIM(sys_siL(ite-1,10))//&
-            ', Current defect: '//sys_sdEL(dcurrentRes,10))
-        if (dcurrentRes .lt. dinitRes * 1E-10_DP) exit
-      end if
-      
       call matfil_discreteBC (rmatrixBlock,rdiscreteBC)
+      
+      if (itypeBC .eq. 0) then
+        ! Prepare a pure Neumann problem.
+        !
+        ! impose int(f)=0 into the RHS using the l1-0 filter
+        call vecfil_OneEntryZero (rtempRhsBlock,1,1)
+        call vecfil_OneEntryZero (rtempRhsBlock,2,1)
+        
+        ! Impose the condition int(u)=0 into the matrix using
+        ! the lumped mass matrix.
+        call mmod_replaceLineByLumpedMass (rmatrixBlock%RmatrixBlock(1,1),1,rmatrixMassLump)
+        call mmod_replaceLineByLumpedMass (rmatrixBlock%RmatrixBlock(2,2),1,rmatrixMassLump)
+        call mmod_replaceLinesByZero (rmatrixBlock%RmatrixBlock(1,2),(/1/))
+        call mmod_replaceLinesByZero (rmatrixBlock%RmatrixBlock(2,1),(/1/))
+        
+      end if
       
       ! Prepare an UMFPACK solver for the system
       call linsol_initUMFPACK4(p_rsolverNode)
@@ -571,8 +631,7 @@ contains
       !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
       ! This doesn't work on all compilers, since the compiler would have
       ! to create a temp array on the stack - which does not always work!
-      Rmatrices = (/rmatrixBlock/)
-      call linsol_setMatrices(p_RsolverNode,Rmatrices)
+      call linsol_setMatrix(p_RsolverNode,rmatrixBlock)
       
       ! Initialise structure/data of the solver. This allows the
       ! solver to allocate memory / perform some precalculation
@@ -592,6 +651,18 @@ contains
       ! Release the solver node and all subnodes attached to it (if at all):
       call linsol_releaseSolver (p_rsolverNode)
       
+      ! Release the matrix
+      call lsysbl_releaseMatrix (rmatrixBlock)
+
+      if (itypeBC .eq. 0) then
+        ! Solution filter for the pure Neumann problem.
+        ! Actually not necessaty.
+        !
+        ! Impose int(f)=0 into the correction using the L1-0 filter
+        call vecfil_subvectorL1To0byLmass (rtempRhsBlock,1,rmatrixMassLump)
+
+      end if
+
       ! Sum up the correction to the current solution.
       call lsysbl_vectorLinearComb (rtempRhsBlock,rvectorBlock,1.0_DP,1.0_DP)
       
@@ -603,8 +674,8 @@ contains
     ! That's it, rvectorBlock now contains our solution. We can now
     ! start the postprocessing.
     ! Start UCD export to GMV file:
-    call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-                       'gmv/ups2d_0_simple.gmv')
+    call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+                       'gmv/up2d_0_simple.vtk')
                        
     call spdp_stdProjectionToP1Q1Scalar (rvectorBlock%RvectorBlock(1),&
       rvectorOutput,rdiscrOutput)
@@ -647,8 +718,8 @@ contains
     call lsysbl_releaseVector (rtempRhsBlock)
     call lsysbl_releaseVector (rvectorBlock)
     call lsysbl_releaseVector (rrhsBlock)
-    call lsysbl_releaseMatrix (rmatrixBlock)
 
+    call lsyssc_releaseMatrix (rmatrixMassLump)
     call lsyssc_releaseMatrix (rmatrixMass)
     call lsyssc_releaseMatrix (rmatrixLaplace)
     

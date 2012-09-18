@@ -417,11 +417,24 @@ contains
 !</output>
   
 !</subroutine>
+  integer :: i,j
 
   select case (cderivative)
   case (DER_FUNC)
     ! u(x,y) = 16*x*(1-x)*y*(1-y)
-    Dvalues (:,:) = Dpoints(1,:,:)+Dpoints(2,:,:)
+    do i=1,nelements
+      do j=1,npointsPerElement
+        Dvalues(j,i) = Dpoints(1,j,i) + Dpoints(2,j,i)
+!        if (  (Dpoints(1,j,i) .gt. 0.25_DP) .and. (Dpoints(1,j,i) .lt. 0.75_DP) &
+!        .and. (Dpoints(2,j,i) .gt. 0.25_DP) .and. (Dpoints(2,j,i) .lt. 0.75_DP)) then
+!          Dvalues (j,i) = 1.0_DP
+!        else
+!          Dvalues (j,i) = 0.0_DP
+!        end if
+      end do
+    end do
+    
+        !Dpoints(1,:,:)+Dpoints(2,:,:)
         !16.0_DP * Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:)) * &
         !                      Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:))
   case (DER_DERIV_X)
@@ -549,7 +562,7 @@ contains
         rboundaryRegion%iboundCompIdx, dwhere, dx, dy)
 
     ! Return zero Dirichlet boundary values for all situations.
-    Dvalues(1) = dx+dy
+    Dvalues(1) = 0.0_DP
   
   end subroutine
 
