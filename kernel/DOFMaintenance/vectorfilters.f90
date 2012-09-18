@@ -108,6 +108,8 @@
 !# 11.) vecfil_subvectorSmallL1To0
 !#      -> Linear filter
 !#      -> Normalise a subvector to have an l1 vector sum = 0.
+!#      -> For RHS based on a Lagrangian FE basus, this also shifts the function
+!#         to the space L^1_0, i.e., there is int(f_i) = 0.
 !#
 !# 12.) vecfil_OneEntryZero (rx,iblock,irow)
 !#      -> Linear filter
@@ -115,6 +117,10 @@
 !#
 !# 13.) vecfil_dofOverwrite
 !#      -> Overwrites a set of DOFs with specified values.
+!#
+!# 11.) vecfil_subvectorL1To0ByLmass
+!#      -> Linear filter
+!#      -> Normalise a subvector to int(f)=0 by using a lumped mass matrix
 !#
 !# Auxiliary routines, usually not called by the main program:
 !#
@@ -140,6 +146,12 @@
 !#
 !#  7.) vecfil_normaliseSmallL1To0Sca (rx)
 !#      -> Normalise a scalar vector to have an l1 vector sum = 0.
+!#      -> For RHS based on a Lagrangian FE basus, this also shifts the function
+!#         to the space, i.e., there is int(rx) = 0.
+!#
+!#  8.) vecfil_normaliseL1To0ScaByLmass (rx,rmassMatLumped)
+!#      -> Normalise a scalar vector to int(rx)=0
+!#      -> For Lagrangian based finite elements.
 !# </purpose>
 !##############################################################################
 
@@ -180,12 +192,14 @@ module vectorfilters
   public :: vecfil_discreteNLSlipBCdef
   public :: vecfil_discreteNLPDropBCrhs
   public :: vecfil_subvectorSmallL1To0
+  public :: vecfil_subvectorL1To0ByLMass
   public :: vecfil_imposeDirichletBC
   public :: vecfil_imposeDirichletDefectBC
   public :: vecfil_imposeDirichletFBC
   public :: vecfil_imposePressureDropBC
   public :: vecfil_imposeNLSlipDefectBC
   public :: vecfil_normaliseSmallL1To0Sca
+  public :: vecfil_normaliseL1To0ScaByLMass
   public :: vecfil_OneEntryZero
   public :: vecfil_dofOverwrite
 
@@ -1065,6 +1079,9 @@ contains
   ! This routine realises the "vector sum to 0" filter.
   ! The vector rxis normalised to bring it to the vector sum = 0
   ! (which corresponds to an l1-norm = 0).
+  !
+  ! For Lagrangian FE, this also shifts RHS functions to the space L^1_0,
+  ! i.e., there is int(f_isubvector) = 0 with f being a RHS function.
 !</description>
 
 !<inputoutput>
@@ -1078,21 +1095,156 @@ contains
     integer :: ieq
     real(DP) :: dsum
 
-    ! Sum up all components of the vector
+    ! We expect f=rx to be a RHS vector in the FE sense.
+    !
+    ! Sum up all components of the vector and divide by
+    ! NEQ. This gives the integral mean value of f.
+    ! With f_i = (f,phi_i), there is for Lagrangian finite elements,
+    !
+    !    dsum  =  sum_i f_i  =  sum_i (f,phi_i)  =  (f,sum_i phi_i)  =  (f,1)
+    !
     call lsyssc_getbase_double (rx,p_Ddata)
     dsum = 0
     do ieq = 1,rx%NEQ
       dsum = dsum + p_Ddata(ieq)
     end do
 
-    ! Divide by NEQ to get the mean value
+    ! Divide by NEQ to get the mean value:
+    !
+    !    dsum = 1/NEQ (f,1)
     dsum = dsum / real(rx%NEQ,DP)
 
-    ! Substract this from all components; this finishes the filter.
+    ! Substract this from all components. We obtain the discrete RHS vector
+    ! of a function f wirh int(f) = 0:
+    !
+    ! Let f^new be implicitely defined by the entries
+    !
+    !    f^new_i  =  ( f^new, phi_i )  :=  f_i - dsum
+    !
+    ! with i=,...,NEQ. Then, there is for Lagrangian type finite elements,
+    !
+    !    ( f^new, 1 )  =  ( f^new, sum_i phi_i )
+    !                  =  sum_i ( f^new, phi_i )  
+    !                  =  sum_i f^new_i
+    !                  =  sum_i [ f_i - dsum ]
+    !                  =  sum_i f_i  -  sum_i ( (f,1)/NEQ )
+    !                  =  (f,1) - (f,1)
+    !                  = 0
     do ieq = 1,rx%NEQ
       p_Ddata(ieq) = p_Ddata(ieq) - dsum
     end do
 
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine vecfil_normaliseL1To0ScaByLmass (rx,rmassMatLump)
+
+!<description>
+  ! This routine realises the "vector sum to 0" filter.
+  ! The vector rxis normalised to bring it to the vector sum = 0
+  ! (which corresponds to an l1-norm = 0).
+  !
+  ! For Lagrangian FE, this also shifts RHS functions to the space L^1_0,
+  ! i.e., there is int(f_isubvector) = 0 with f being a RHS function.
+!</description>
+
+!<input>
+  ! Lumped mass matrix.
+  type(t_matrixScalar), intent(in) :: rmassMatLump
+!</input>
+
+!<inputoutput>
+  ! The vector which is to be normalised.
+  type(t_vectorScalar), intent(inout),target :: rx
+!</inputoutput>
+
+!</subroutine>
+
+    real(DP), dimension(:), pointer :: p_Ddata,p_Da
+    integer, dimension(:), pointer :: p_Kdiagonal
+    integer :: ieq
+    real(DP) :: dsum
+    
+    call lsyssc_isMatrixCompatible (rx,rmassMatLump,.false.)
+
+    ! Calculate the integral of the function by a multiplication
+    ! with the mass matrix plus summation. For a lumped
+    ! mass matrix, tehre is:
+    !
+    !  ( u, 1 )  = ( sum u_j phi_j, 1 )
+    !            = sum_j u_j ( phi_j, sum_i phi_i )
+    !            = sum_j u_j sum_i ( phi_j, phi_i )
+    !            = sum_j u_j sum_i m_ij
+    !            = sum_j [sum_i m_ji] u_j
+    !            = sum_i m_jj u_j
+    
+    call lsyssc_getbase_double (rx,p_Ddata)
+    
+    ! Multiply with the lumped mass matrix.
+    ! Calculate:    dsum = (u, 1).
+    !
+    ! Calculate the new vector by subtracting (u, 1)/(NEQ*m_jj)
+    ! in every component:
+    !
+    !  u^new_j := u_j - (u, 1)/(NEQ*m_jj)
+    !
+    ! As a result, the FE function fulfils
+    !
+    !  ( u^new, 1 ) = ( sum_j u^new_j phi_j, 1 )
+    !               = ( sum_j [u_j - (u, 1)/(NEQ*m_jj)] phi_j, 1 )
+    !               = ( sum_j u_j phi_j, 1 )  -  ( sum_j (u, 1)/(NEQ*m_jj) phi_j, 1 )
+    !               = ( u, 1 )                -  (u, 1)/NEQ ( sum_j phi_j/m_jj, 1 )
+    !               = ( u, 1 )                -  (u, 1)/NEQ ( sum_j phi_j/m_jj, sum_i phi_i )
+    !               = ( u, 1 )                -  (u, 1)/NEQ sum_j sum_i ( phi_j, phi_i ) / m_jj
+    !               = ( u, 1 )                -  (u, 1)/NEQ sum_j [sum_i m_ij] / m_jj
+    !               = ( u, 1 )                -  (u, 1)/NEQ sum_j [sum_i m_ji] / m_jj
+    !               = ( u, 1 )                -  (u, 1)/NEQ sum_j m_jj / m_jj
+    !               = ( u, 1 )                -  (u, 1)
+    !               = 0
+    !
+    ! i.e., the integral mean value is zero.
+    select case (rmassMatLump%cmatrixFormat)
+    case (LSYSSC_MATRIXD)
+    
+      ! Matrix format D
+      call lsyssc_getbase_double (rmassMatLump,p_Da)
+      dsum = 0.0_DP
+      do ieq = 1,size(p_Ddata)
+        dsum = dsum + p_Da(ieq) * p_Ddata(ieq)
+      end do
+      
+      dsum = dsum / real(size(p_Ddata),DP)
+
+      do ieq = 1,size(p_Ddata)
+        p_Ddata(ieq) = p_Ddata(ieq) - dsum / p_Da(ieq)
+      end do
+      
+    case (LSYSSC_MATRIX9)
+    
+      ! Matrix format 9. We need an additional diagonal pointer.
+      call lsyssc_getbase_double (rmassMatLump,p_Da)
+      call lsyssc_getbase_Kdiagonal (rmassMatLump,p_Kdiagonal)
+      dsum = 0.0_DP
+      do ieq = 1,size(p_Ddata)
+        dsum = dsum + p_Da(p_Kdiagonal(ieq)) * p_Ddata(ieq)
+      end do
+      
+      dsum = dsum / real(size(p_Ddata),DP)
+
+      do ieq = 1,size(p_Ddata)
+        p_Ddata(ieq) = p_Ddata(ieq) - dsum / p_Da(p_Kdiagonal(ieq))
+      end do
+
+    case default
+      call output_line("Unsupported matrix format!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vecfil_normaliseL1To0ScaByLmass")
+      call sys_halt()
+      
+    end select
+    
   end subroutine
 
   ! ***************************************************************************
@@ -2399,6 +2551,9 @@ contains
   ! The subvector isubvector of the block vector rx is normalised
   ! with vecfil_normaliseSmallL1To0Sca to bring it to the vector sum = 0
   ! (which corresponds to an l1-norm = 0).
+  !
+  ! For Lagrangian FE, this also shifts RHS functions to the space L^1_0,
+  ! i.e., there is int(f_isubvector) = 0 with f being a RHS function.
 !</description>
 
 !<inputoutput>
@@ -2427,6 +2582,57 @@ contains
 
     ! Normalise the subvector isubvector
     call vecfil_normaliseSmallL1To0Sca (rx%RvectorBlock(isubvector))
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine vecfil_subvectorL1To0byLmass (rx,isubvector,rmassMatLump)
+
+!<description>
+  ! This routine realises the "vector sum to 0" filter.
+  ! The subvector isubvector of the block vector rx is normalised
+  ! with vecfil_normaliseL1To0ScabyLmass.
+  ! A lumped mass matrix is used for this approach; it is only
+  ! applicable in Lagrangian type FE spaces.
+  !
+  ! For Lagrangian FE, this results in a FE function rx with
+  ! int(rx) = 0.
+!</description>
+
+!<input>
+  ! Lumped mass matrix.
+  type(t_matrixScalar), intent(in) :: rmassMatLump
+!</input>
+
+!<inputoutput>
+
+  ! The block vector which is partially to be normalised.
+  type(t_vectorBlock), intent(inout),target :: rx
+
+  ! The number of the subvector in rx which is to be normalised.
+  integer, intent(in) :: isubvector
+
+!</inputoutput>
+
+!</subroutine>
+
+    if ((isubvector .le. 0) .or. (isubvector .gt. size(rx%RvectorBlock))) then
+      call output_line("isubvector out of allowed range!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"vecfil_normaliseSmallL1To0")
+      call sys_halt()
+    end if
+
+    ! Do not use one single IF here as this may lead to errors depending
+    ! on the compiler (subvector=0 and access to vector(isubvector)).
+    if ((rx%RvectorBlock(isubvector)%h_Ddata .eq. ST_NOHANDLE) .or. &
+        (rx%RvectorBlock(isubvector)%NEQ .le. 0)) &
+      return
+
+    ! Normalise the subvector isubvector
+    call vecfil_normaliseL1To0ScabyLMass (rx%RvectorBlock(isubvector),rmassMatLump)
 
   end subroutine
 
