@@ -213,13 +213,18 @@ contains
       call tria_initStandardMeshFromRaw (&
           rmeshHierarchy%p_Rtriangulations(i),p_rboundary)
 
-      ! Probably share the coordinates of the coarse mesh with the fine mesh.
-      if (iand(clocalflags,MSHH_REF_SHAREDCOORDS) .ne. 0) then
-        call tria_compress2LevelOrdHierarchy (&
-            rmeshHierarchy%p_Rtriangulations(i),&
-            rmeshHierarchy%p_Rtriangulations(i-1))
-      end if
     end do
+
+    ! Probably share the coordinates of the coarse mesh with the fine mesh.
+    if (iand(clocalflags,MSHH_REF_SHAREDCOORDS) .ne. 0) then
+    
+      do i=max(rmeshHierarchy%nmaxlevels,nlevels)-1,rmeshHierarchy%nlevels,-1
+        call tria_compress2LevelOrdHierarchy (&
+            rmeshHierarchy%p_Rtriangulations(i+1),&
+            rmeshHierarchy%p_Rtriangulations(i))
+      end do
+
+    end if
 
     ! Now, we have nlevels levels available.
     rmeshHierarchy%nlevels = max(rmeshHierarchy%nmaxlevels,nlevels)
