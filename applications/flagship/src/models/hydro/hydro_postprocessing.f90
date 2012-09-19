@@ -114,9 +114,12 @@ contains
     real(DP), dimension(:,:), allocatable :: DdofCoords
     real(DP), dimension(:), pointer :: p_DdataPrimal,p_DdataDual
     real(DP), dimension(:), pointer :: p_DdofCoords
+    real(DP), dimension(1) :: DtimeAux
+    real(DP) :: density_ref, velocity_ref, length_ref
     integer :: isystemFormat,iformatUCD,ilineariseUCD,nrefineUCD
     integer :: dofCoords,idofe,idim
     logical :: bexportMeshOnly,bdiscontinuous
+    logical :: bconvert
 
     ! Initialisation
     bexportMeshOnly = .true.
@@ -140,6 +143,20 @@ contains
                              'ilineariseucd', ilineariseUCD, UCDEXPORT_STD)
     call parlst_getvalue_int(rparlist, trim(soutputName),&
                              'nrefineucd', nrefineUCD, 0)
+
+    ! Get reference values for density, velocity and length to convert
+    ! non-dimensional quantities into physical quantities
+    call parlst_getvalue_double(rparlist, trim(soutputName),&
+                                'density_ref', density_ref, 1.0_DP)
+    call parlst_getvalue_double(rparlist, trim(soutputName),&
+                                'velocity_ref', velocity_ref, 1.0_DP)
+    call parlst_getvalue_double(rparlist, trim(soutputName),&
+                                'length_ref', length_ref, 1.0_DP)
+
+    ! Do we have to convert into physical quantities?
+    bconvert = ((density_ref  .ne. 1.0_DP) .or.&
+                (velocity_ref .ne. 1.0_DP) .or.&
+                (length_ref   .ne. 1.0_DP))
 
     if (iformatUCD .eq. 0) then
       call output_line('No valid output format is specified!',&
@@ -199,7 +216,12 @@ contains
     ifilenumber = ifilenumber+1
 
     ! Set simulation time
-    if (present(dtime)) call ucd_setSimulationTime(rexport, dtime)
+    if (present(dtime)) then
+      DtimeAux = dtime
+      if (bconvert) call hydro_convertVariableDim(Dtime, 'time',&
+          density_ref, velocity_ref, length_ref)
+      call ucd_setSimulationTime(rexport, DtimeAux(1))
+    end if
 
     ! Prepare array containing the coordinates of the DOFs
     if (.not.bexportMeshOnly .and. dofCoords .gt. 0) then
@@ -228,11 +250,11 @@ contains
     
     ! Add primal solution vector
     if (associated(p_DdataPrimal))&
-        call outputSolution(rexport, p_DdataPrimal,'', (dofCoords.gt.0))
+        call outputSolution(rexport, p_DdataPrimal,'', (dofCoords.gt.0), bconvert)
     
     ! Add dual solution vector
     if (associated(p_DdataDual))&
-        call outputSolution(rexport, p_DdataDual,'_dual', (dofCoords.gt.0))
+        call outputSolution(rexport, p_DdataDual,'_dual', (dofCoords.gt.0), bconvert)
 
     ! Write UCD file
     call ucd_write(rexport)
@@ -253,12 +275,12 @@ contains
     !***************************************************************************
     ! This subroutine outputs the solution given by the array Ddata
 
-    subroutine outputSolution(rexport, Ddata, csuffix, btracers)
+    subroutine outputSolution(rexport, Ddata, csuffix, btracers, bconvert)
       
       ! Input parameters
       real(DP), dimension(:), intent(in) :: Ddata
       character(len=*), intent(in) :: csuffix
-      logical, intent(in) :: btracers
+      logical, intent(in) :: btracers,bconvert
 
       ! Input/output paramters
       type(t_ucdExport), intent(inout) :: rexport
@@ -321,6 +343,10 @@ contains
             case (NDIM1D)
               call hydro_getVarInterleaveFormat1d(rvector1%NEQ, NVAR1D,&
                   'velocity_x', Ddata, p_Ddata1)
+              if (bconvert) then
+                call hydro_convertVariableDim(p_Ddata1, 'velocity',&
+                    density_ref, velocity_ref, length_ref)
+              end if
               call ucd_addVarVertBasedVec(rexport, 'velocity'//csuffix,&
                   UCD_VAR_VELOCITY, p_Ddata1)
 
@@ -334,6 +360,12 @@ contains
                   'velocity_x', Ddata, p_Ddata1)
               call hydro_getVarInterleaveFormat2d(rvector2%NEQ, NVAR2D,&
                   'velocity_y', Ddata, p_Ddata2)
+              if (bconvert) then
+                call hydro_convertVariableDim(p_Ddata1, 'velocity',&
+                    density_ref, velocity_ref, length_ref)
+                call hydro_convertVariableDim(p_Ddata2, 'velocity',&
+                    density_ref, velocity_ref, length_ref)
+              end if
               call ucd_addVarVertBasedVec(rexport, 'velocity'//csuffix,&
                   UCD_VAR_VELOCITY, p_Ddata1, p_Ddata2)
 
@@ -352,6 +384,14 @@ contains
                   'velocity_y', Ddata, p_Ddata2)
               call hydro_getVarInterleaveFormat3d(rvector3%NEQ, NVAR3D,&
                   'velocity_z', Ddata, p_Ddata3)
+              if (bconvert) then
+                call hydro_convertVariableDim(p_Ddata1, 'velocity',&
+                    density_ref, velocity_ref, length_ref)
+                call hydro_convertVariableDim(p_Ddata2, 'velocity',&
+                    density_ref, velocity_ref, length_ref)
+                call hydro_convertVariableDim(p_Ddata3, 'velocity',&
+                    density_ref, velocity_ref, length_ref)
+              end if
               call ucd_addVarVertBasedVec(rexport, 'velocity'//csuffix,&
                   UCD_VAR_VELOCITY, p_Ddata1, p_Ddata2, p_Ddata3)
 
@@ -372,6 +412,10 @@ contains
             case (NDIM1D)
               call hydro_getVarInterleaveFormat1d(rvector1%NEQ, NVAR1D,&
                   'momentum_x', Ddata, p_Ddata1)
+              if (bconvert) then
+                call hydro_convertVariableDim(p_Ddata1, 'momentum',&
+                    density_ref, velocity_ref, length_ref)
+              end if
               call ucd_addVarVertBasedVec(rexport, 'momentum'//csuffix,&
                   p_Ddata1)
 
@@ -385,6 +429,12 @@ contains
                   'momentum_x', Ddata, p_Ddata1)
               call hydro_getVarInterleaveFormat2d(rvector2%NEQ, NVAR2D,&
                   'momentum_y', Ddata, p_Ddata2)
+              if (bconvert) then
+                call hydro_convertVariableDim(p_Ddata1, 'momentum',&
+                    density_ref, velocity_ref, length_ref)
+                call hydro_convertVariableDim(p_Ddata2, 'momentum',&
+                    density_ref, velocity_ref, length_ref)
+              end if
               call ucd_addVarVertBasedVec(rexport, 'momentum'//csuffix,&
                   p_Ddata1, p_Ddata2)
 
@@ -402,6 +452,14 @@ contains
                   'momentum_y', Ddata, p_Ddata2)
               call hydro_getVarInterleaveFormat3d(rvector3%NEQ, NVAR3D,&
                   'momentum_z', Ddata, p_Ddata3)
+              if (bconvert) then
+                call hydro_convertVariableDim(p_Ddata1, 'momentum',&
+                    density_ref, velocity_ref, length_ref)
+                call hydro_convertVariableDim(p_Ddata2, 'momentum',&
+                    density_ref, velocity_ref, length_ref)
+                call hydro_convertVariableDim(p_Ddata3, 'momentum',&
+                    density_ref, velocity_ref, length_ref)
+              end if
               call ucd_addVarVertBasedVec(rexport, 'momentum'//csuffix,&
                   p_Ddata1, p_Ddata2, p_Ddata3)
 
@@ -430,6 +488,11 @@ contains
                   cvariable, Ddata, p_Ddata1)
             end select
             
+            if (bconvert) then
+              call hydro_convertVariableDim(p_Ddata1, cvariable,&
+                  density_ref, velocity_ref, length_ref)
+            end if
+
             call ucd_addVariableVertexBased(rexport, cvariable//csuffix,&
                 UCD_VAR_STANDARD, p_Ddata1)
 
@@ -457,6 +520,10 @@ contains
             case (NDIM1D)
               call hydro_getVarBlockFormat1d(rvector1%NEQ, NVAR1D,&
                   'velocity_x', Ddata, p_Ddata1)
+              if (bconvert) then
+                call hydro_convertVariableDim(p_Ddata1, 'velocity',&
+                    density_ref, velocity_ref, length_ref)
+              end if
               call ucd_addVarVertBasedVec(rexport, 'velocity'//csuffix,&
                   UCD_VAR_VELOCITY, p_Ddata1)
 
@@ -470,6 +537,12 @@ contains
                   'velocity_x', Ddata, p_Ddata1)
               call hydro_getVarBlockFormat2d(rvector2%NEQ, NVAR2D,&
                   'velocity_y', Ddata, p_Ddata2)
+              if (bconvert) then
+                call hydro_convertVariableDim(p_Ddata1, 'velocity',&
+                    density_ref, velocity_ref, length_ref)
+                call hydro_convertVariableDim(p_Ddata2, 'velocity',&
+                    density_ref, velocity_ref, length_ref)
+              end if
               call ucd_addVarVertBasedVec(rexport, 'velocity'//csuffix,&
                   UCD_VAR_VELOCITY, p_Ddata1, p_Ddata2)
 
@@ -487,6 +560,14 @@ contains
                   'velocity_y', Ddata, p_Ddata2)
               call hydro_getVarBlockFormat3d(rvector3%NEQ, NVAR3D,&
                   'velocity_z', Ddata, p_Ddata3)
+              if (bconvert) then
+                call hydro_convertVariableDim(p_Ddata1, 'velocity',&
+                    density_ref, velocity_ref, length_ref)
+                call hydro_convertVariableDim(p_Ddata2, 'velocity',&
+                    density_ref, velocity_ref, length_ref)
+                call hydro_convertVariableDim(p_Ddata3, 'velocity',&
+                    density_ref, velocity_ref, length_ref)
+              end if
               call ucd_addVarVertBasedVec(rexport, 'velocity'//csuffix,&
                   UCD_VAR_VELOCITY, p_Ddata1, p_Ddata2, p_Ddata3)
 
@@ -507,6 +588,10 @@ contains
             case (NDIM1D)
               call hydro_getVarBlockFormat1d(rvector1%NEQ, NVAR1D,&
                   'momentum_x', Ddata, p_Ddata1)
+              if (bconvert) then
+                call hydro_convertVariableDim(p_Ddata1, 'momentum',&
+                    density_ref, velocity_ref, length_ref)
+              end if
               call ucd_addVarVertBasedVec(rexport, 'momentum'//csuffix, p_Ddata1)
               
               if (btracers) then
@@ -519,6 +604,12 @@ contains
                   'momentum_x', Ddata, p_Ddata1)
               call hydro_getVarBlockFormat2d(rvector2%NEQ, NVAR2D,&
                   'momentum_y', Ddata, p_Ddata2)
+              if (bconvert) then
+                call hydro_convertVariableDim(p_Ddata1, 'momentum',&
+                    density_ref, velocity_ref, length_ref)
+                call hydro_convertVariableDim(p_Ddata2, 'momentum',&
+                    density_ref, velocity_ref, length_ref)
+              end if
               call ucd_addVarVertBasedVec(rexport, 'momentum'//csuffix,&
                   p_Ddata1, p_Ddata2)
 
@@ -536,6 +627,14 @@ contains
                   'momentum_y', Ddata, p_Ddata2)
               call hydro_getVarBlockFormat3d(rvector3%NEQ, NVAR3D,&
                   'momentum_z', Ddata, p_Ddata3)
+              if (bconvert) then
+                call hydro_convertVariableDim(p_Ddata1, 'momentum',&
+                    density_ref, velocity_ref, length_ref)
+                call hydro_convertVariableDim(p_Ddata2, 'momentum',&
+                    density_ref, velocity_ref, length_ref)
+                call hydro_convertVariableDim(p_Ddata3, 'momentum',&
+                    density_ref, velocity_ref, length_ref)
+              end if
               call ucd_addVarVertBasedVec(rexport, 'momentum'//csuffix,&
                   p_Ddata1, p_Ddata2, p_Ddata3)
               
@@ -563,6 +662,11 @@ contains
               call hydro_getVarBlockFormat3d(rvector1%NEQ, NVAR3D,&
                   cvariable, Ddata, p_Ddata1)
             end select
+
+            if (bconvert) then
+              call hydro_convertVariableDim(p_Ddata1, cvariable,&
+                  density_ref, velocity_ref, length_ref)
+            end if
 
             call ucd_addVariableVertexBased(rexport, cvariable//csuffix,&
                 UCD_VAR_STANDARD, p_Ddata1)

@@ -22,6 +22,16 @@
 !# 4.) hydro_setVariables
 !#     -> Sets the conservative variables from an UCD import
 !#
+!# 5.) hydro_convertVariableNondim = hydro_convertVariableNondim1 /
+!#                                   hydro_convertVariableNondimDble /
+!#                                   hydro_convertVariableNondimSngl /
+!#     -> Non-dimensionalizes a physical variable using reference values
+!#
+!# 6.) hydro_convertVariableDim = hydro_convertVariableDim1 /
+!#                                hydro_convertVariableDimDble /
+!#                                hydro_convertVariableDimSngl
+!#     -> Convert a non-dimensionalized variable into its physical quantity
+!#
 !# </purpose>
 !##############################################################################
 
@@ -40,6 +50,7 @@ module hydro_basic
   use linearsystemscalar
   use problem
   use statistics
+  use storage
   use triangulation
   use ucd
 
@@ -55,6 +66,20 @@ module hydro_basic
   public :: hydro_getNVARtransformed
   public :: hydro_getVariable
   public :: hydro_setVariables
+  public :: hydro_convertVariableNonDim
+  public :: hydro_convertVariableDim
+
+  interface hydro_convertVariableNonDim
+    module procedure hydro_convertVariableNonDim1
+    module procedure hydro_convertVariableNonDimDble
+    module procedure hydro_convertVariableNonDimSngl
+  end interface hydro_convertVariableNonDim
+
+  interface hydro_convertVariableDim
+    module procedure hydro_convertVariableDim1
+    module procedure hydro_convertVariableDimDble
+    module procedure hydro_convertVariableDimSngl
+  end interface hydro_convertVariableDim
 
 !<constants>
 
@@ -656,5 +681,564 @@ contains
     end subroutine setVarBlockformat
 
   end subroutine hydro_setVariables
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine hydro_convertVariableNonDim1(rvectorScalar, cvariable,&
+                                          density_ref, velocity_ref, length_ref)
+
+!<description>
+    ! This subroutine non-dimensionalises the physical variable given
+    ! in rvectorScalar based on the reference values density_ref,
+    ! velocity_ref and length_ref and overwrites rvectorScalar.
+!</description>
+
+!<input>
+    ! Identifier for the variable
+    character(LEN=*), intent(in) :: cvariable
+
+    ! Reference values
+    real(DP), intent(in) :: density_ref,velocity_ref,length_ref
+!</input>
+
+!<inputoutput>
+    ! On input: scalar physical variable
+    ! On output: non-dimensionalised variable
+    type(t_vectorScalar), intent(inout) :: rvectorScalar
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(:), pointer :: p_Ddata
+    real(SP), dimension(:), pointer :: p_Fdata
+
+    if (rvectorScalar%NEQ .eq. 0) then
+      call output_line ('Cannot convert empty vector', &
+          OU_CLASS_WARNING,OU_MODE_STD,'hydro_convertVariableNonDim1')
+      return
+    end if
+    
+    select case(rvectorScalar%cdataType)
+    case (ST_DOUBLE)
+      call lsyssc_getbase_double(rvectorScalar, p_Ddata)
+      call hydro_convertVariableNonDimDble(p_Ddata, cvariable,&
+          density_ref, velocity_ref, length_ref)
+
+    case (ST_SINGLE)
+      call lsyssc_getbase_single(rvectorScalar, p_Fdata)
+      call hydro_convertVariableNonDimSngl(p_Fdata, cvariable,&
+          real(density_ref,SP), real(velocity_ref,SP), real(length_ref,SP))
+
+    case default
+      call output_line ('Unspported data type', &
+          OU_CLASS_ERROR,OU_MODE_STD,'hydro_convertVariableNonDim1')
+      call sys_halt()
+    end select
+
+  end subroutine hydro_convertVariableNonDim1
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine hydro_convertVariableNonDimDble(Ddata, cvariable,&
+                                             density_ref, velocity_ref, length_ref)
+
+!<description>
+    ! This subroutine non-dimensionalises the physical variable given
+    ! in the double-valued array Ddata based on the reference values
+    ! density_ref, velocity_ref and length_ref and overwrites Ddata.
+!</description>
+
+!<input>
+    ! Identifier for the variable
+    character(LEN=*), intent(in) :: cvariable
+
+    ! Reference values
+    real(DP), intent(in) :: density_ref,velocity_ref,length_ref
+!</input>
+
+!<inputoutput>
+    ! On input: scalar physical variable
+    ! On output: non-dimensionalised variable
+    real(DP), dimension(:), intent(inout) :: Ddata
+!</inputoutput>
+!</subroutine>
+
+    ! local variable
+    integer :: ieq
+
+    if (trim(cvariable) .eq. 'density') then
+      ! density = density_phys / density_ref
+      do ieq=1,size(Ddata)
+        Ddata(ieq) = Ddata(ieq)/density_ref
+      end do
+
+    elseif (trim(cvariable) .eq. 'velocity') then
+      ! velocity = velocity_phys / velocity_ref
+      do ieq=1,size(Ddata)
+        Ddata(ieq) = Ddata(ieq)/velocity_ref
+      end do
+      
+    elseif (trim(cvariable) .eq. 'momentum') then
+      ! momentum = momentum_phys / (density_ref*velocity_ref)
+      do ieq=1,size(Ddata)
+        Ddata(ieq) = Ddata(ieq)/(density_ref*velocity_ref)
+      end do
+
+    elseif (trim(cvariable) .eq. 'energy') then
+      ! energy = energy_phys / (density_ref*velocity_ref^2)
+      do ieq=1,size(Ddata)
+        Ddata(ieq) = Ddata(ieq)/(density_ref*velocity_ref*velocity_ref)
+      end do
+
+    elseif (trim(cvariable) .eq. 'total_energy') then
+      ! energy = energy_phys / (velocity_ref^2)
+      do ieq=1,size(Ddata)
+        Ddata(ieq) = Ddata(ieq)/(velocity_ref*velocity_ref)
+      end do
+
+    elseif (trim(cvariable) .eq. 'internal_energy') then
+      ! energy = energy_phys / (velocity_ref^2)
+      do ieq=1,size(Ddata)
+        Ddata(ieq) = Ddata(ieq)/(velocity_ref*velocity_ref)
+      end do
+
+    elseif (trim(cvariable) .eq. 'kinetic_energy') then
+      ! energy = energy_phys / (velocity_ref^2)
+      do ieq=1,size(Ddata)
+        Ddata(ieq) = Ddata(ieq)/(velocity_ref*velocity_ref)
+      end do
+      
+    elseif (trim(cvariable) .eq. 'pressure') then
+      ! pressure = pressure_phys / (density_ref*velocity_ref^2)
+      do ieq=1,size(Ddata)
+        Ddata(ieq) = Ddata(ieq)/(density_ref*velocity_ref*velocity_ref)
+      end do
+
+    elseif (trim(cvariable) .eq. 'machnumber') then
+      ! No conversion needed
+
+    elseif (trim(cvariable) .eq. 'speedofsound') then
+      ! soundspeed = soundspeed_phys / velocity_ref
+      do ieq=1,size(Ddata)
+        Ddata(ieq) = Ddata(ieq)/velocity_ref
+      end do
+
+    elseif (trim(cvariable) .eq. 'coordinate') then
+      ! coordinate = coordinate_phys / length_ref
+      do ieq=1,size(Ddata)
+        Ddata(ieq) = Ddata(ieq)/length_ref
+      end do
+
+    elseif (trim(cvariable) .eq. 'time') then
+      ! time = velocity_ref * time_phys / length_ref
+      do ieq=1,size(Ddata)
+        Ddata(ieq) = velocity_ref*Ddata(ieq)/length_ref
+      end do
+
+    else
+      
+      call output_line('Invalid variable name!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hydro_convertVariableNonDimDble')
+      call sys_halt()
+      
+    end if
+
+  end subroutine hydro_convertVariableNonDimDble
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine hydro_convertVariableNonDimSngl(Fdata, cvariable,&
+                                             density_ref, velocity_ref, length_ref)
+
+!<description>
+    ! This subroutine non-dimensionalises the physical variable given
+    ! in the single-valued array Fdata based on the reference values
+    ! density_ref, velocity_ref and length_ref and overwrites Fdata.
+!</description>
+
+!<input>
+    ! Identifier for the variable
+    character(LEN=*), intent(in) :: cvariable
+
+    ! Reference values
+    real(SP), intent(in) :: density_ref,velocity_ref,length_ref
+!</input>
+
+!<inputoutput>
+    ! On input: scalar physical variable
+    ! On output: non-dimensionalised variable
+    real(SP), dimension(:), intent(inout) :: Fdata
+!</inputoutput>
+!</subroutine>
+
+    ! local variable
+    integer :: ieq
+
+    if (trim(cvariable) .eq. 'density') then
+      ! density = density_phys / density_ref
+      do ieq=1,size(Fdata)
+        Fdata(ieq) = Fdata(ieq)/density_ref
+      end do
+
+    elseif (trim(cvariable) .eq. 'velocity') then
+      ! velocity = velocity_phys / velocity_ref
+      do ieq=1,size(Fdata)
+        Fdata(ieq) = Fdata(ieq)/velocity_ref
+      end do
+      
+    elseif (trim(cvariable) .eq. 'momentum') then
+      ! momentum = momentum_phys / (density_ref*velocity_ref)
+      do ieq=1,size(Fdata)
+        Fdata(ieq) = Fdata(ieq)/(density_ref*velocity_ref)
+      end do
+
+    elseif (trim(cvariable) .eq. 'energy') then
+      ! energy = energy_phys / (density_ref*velocity_ref^2)
+      do ieq=1,size(Fdata)
+        Fdata(ieq) = Fdata(ieq)/(density_ref*velocity_ref*velocity_ref)
+      end do
+
+    elseif (trim(cvariable) .eq. 'total_energy') then
+      ! energy = energy_phys / (velocity_ref^2)
+      do ieq=1,size(Fdata)
+        Fdata(ieq) = Fdata(ieq)/(velocity_ref*velocity_ref)
+      end do
+
+    elseif (trim(cvariable) .eq. 'internal_energy') then
+      ! energy = energy_phys / (velocity_ref^2)
+      do ieq=1,size(Fdata)
+        Fdata(ieq) = Fdata(ieq)/(velocity_ref*velocity_ref)
+      end do
+
+    elseif (trim(cvariable) .eq. 'kinetic_energy') then
+      ! energy = energy_phys / (velocity_ref^2)
+      do ieq=1,size(Fdata)
+        Fdata(ieq) = Fdata(ieq)/(velocity_ref*velocity_ref)
+      end do
+      
+    elseif (trim(cvariable) .eq. 'pressure') then
+      ! pressure = pressure_phys / (density_ref*velocity_ref^2)
+      do ieq=1,size(Fdata)
+        Fdata(ieq) = Fdata(ieq)/(density_ref*velocity_ref*velocity_ref)
+      end do
+
+    elseif (trim(cvariable) .eq. 'machnumber') then
+      ! No conversion needed
+
+    elseif (trim(cvariable) .eq. 'speedofsound') then
+      ! soundspeed = soundspeed_phys / velocity_ref
+      do ieq=1,size(Fdata)
+        Fdata(ieq) = Fdata(ieq)/velocity_ref
+      end do
+
+    elseif (trim(cvariable) .eq. 'coordinate') then
+      ! coordinate = coordinate_phys / length_ref
+      do ieq=1,size(Fdata)
+        Fdata(ieq) = Fdata(ieq)/length_ref
+      end do
+
+    elseif (trim(cvariable) .eq. 'time') then
+      ! time = velocity_ref * time_phys / length_ref
+      do ieq=1,size(Fdata)
+        Fdata(ieq) = velocity_ref*Fdata(ieq)/length_ref
+      end do
+
+    else
+      
+      call output_line('Invalid variable name!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hydro_convertVariableNonDimSngl')
+      call sys_halt()
+      
+    end if
+
+  end subroutine hydro_convertVariableNonDimSngl
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine hydro_convertVariableDim1(rvectorScalar, cvariable,&
+                                       density_ref, velocity_ref, length_ref)
+
+!<description>
+    ! This subroutine converts a non-dimensional variable given in
+    ! rvectorScalar into physical quantities based on the reference
+    ! values density_ref, velocity_ref and length_ref and
+    ! overwrites rvectorScalar.
+!</description>
+
+!<input>
+    ! Identifier for the variable
+    character(LEN=*), intent(in) :: cvariable
+
+    ! Reference values
+    real(DP), intent(in) :: density_ref,velocity_ref,length_ref
+!</input>
+
+!<inputoutput>
+    ! On input: non-dimensionalised variable
+    ! On output: scalar physical variable
+    type(t_vectorScalar), intent(inout) :: rvectorScalar
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(:), pointer :: p_Ddata
+    real(SP), dimension(:), pointer :: p_Fdata
+
+    if (rvectorScalar%NEQ .eq. 0) then
+      call output_line ('Cannot convert empty vector', &
+          OU_CLASS_WARNING,OU_MODE_STD,'hydro_convertVariableDim1')
+      return
+    end if
+
+    select case(rvectorScalar%cdataType)
+    case (ST_DOUBLE)
+      call lsyssc_getbase_double(rvectorScalar, p_Ddata)
+      call hydro_convertVariableDimDble(p_Ddata, cvariable,&
+          density_ref, velocity_ref, length_ref)
+
+    case (ST_SINGLE)
+      call lsyssc_getbase_single(rvectorScalar, p_Fdata)
+      call hydro_convertVariableDimSngl(p_Fdata, cvariable,&
+          real(density_ref,SP), real(velocity_ref,SP), real(length_ref,SP))
+
+    case default
+      call output_line ('Unspported data type', &
+          OU_CLASS_ERROR,OU_MODE_STD,'hydro_convertVariableDim1')
+      call sys_halt()
+    end select
+
+  end subroutine hydro_convertVariableDim1
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine hydro_convertVariableDimDble(Ddata, cvariable,&
+                                          density_ref, velocity_ref, length_ref)
+
+!<description>
+    ! This subroutine converts a non-dimensional variable given in the
+    ! double-valued array Ddata into physical quantities based on the
+    ! reference values density_ref, velocity_ref and length_ref and
+    ! overwrites Ddata.
+!</description>
+
+!<input>
+    ! Identifier for the variable
+    character(LEN=*), intent(in) :: cvariable
+
+    ! Reference values
+    real(DP), intent(in) :: density_ref,velocity_ref,length_ref
+!</input>
+
+!<inputoutput>
+    ! On input: non-dimensionalised variable
+    ! On output: scalar physical variable
+    real(DP), dimension(:), intent(inout) :: Ddata
+!</inputoutput>
+!</subroutine>
+
+    ! local variable
+    integer :: ieq
+
+    if (trim(cvariable) .eq. 'density') then
+      ! density_phys = density * density_ref
+      do ieq=1,size(Ddata)
+        Ddata(ieq) = Ddata(ieq)*density_ref
+      end do
+
+    elseif (trim(cvariable) .eq. 'velocity') then
+      ! velocity_phys = velocity * velocity_ref
+      do ieq=1,size(Ddata)
+        Ddata(ieq) = Ddata(ieq)*velocity_ref
+      end do
+      
+    elseif (trim(cvariable) .eq. 'momentum') then
+      ! momentum_phys = momentum * (density_ref*velocity_ref)
+      do ieq=1,size(Ddata)
+        Ddata(ieq) = Ddata(ieq)*(density_ref*velocity_ref)
+      end do
+
+    elseif (trim(cvariable) .eq. 'energy') then
+      ! energy_phys = energy * (density_ref*velocity_ref^2)
+      do ieq=1,size(Ddata)
+        Ddata(ieq) = Ddata(ieq)*(density_ref*velocity_ref*velocity_ref)
+      end do
+
+    elseif (trim(cvariable) .eq. 'total_energy') then
+      ! energy_phys = energy * (velocity_ref^2)
+      do ieq=1,size(Ddata)
+        Ddata(ieq) = Ddata(ieq)*(velocity_ref*velocity_ref)
+      end do
+
+    elseif (trim(cvariable) .eq. 'internal_energy') then
+      ! energy_phys = energy * (velocity_ref^2)
+      do ieq=1,size(Ddata)
+        Ddata(ieq) = Ddata(ieq)*(velocity_ref*velocity_ref)
+      end do
+
+    elseif (trim(cvariable) .eq. 'kinetic_energy') then
+      ! energy_phys = energy * (velocity_ref^2)
+      do ieq=1,size(Ddata)
+        Ddata(ieq) = Ddata(ieq)*(velocity_ref*velocity_ref)
+      end do
+      
+    elseif (trim(cvariable) .eq. 'pressure') then
+      ! pressure_phys = pressure * (density_ref*velocity_ref^2)
+      do ieq=1,size(Ddata)
+        Ddata(ieq) = Ddata(ieq)*(density_ref*velocity_ref*velocity_ref)
+      end do
+
+    elseif (trim(cvariable) .eq. 'machnumber') then
+      ! No conversion needed
+
+    elseif (trim(cvariable) .eq. 'speedofsound') then
+      ! soundspeed_phys = soundspeed * velocity_ref
+      do ieq=1,size(Ddata)
+        Ddata(ieq) = Ddata(ieq)*velocity_ref
+      end do
+
+    elseif (trim(cvariable) .eq. 'coordinate') then
+      ! coordinate_phys = coordinate * length_ref
+      do ieq=1,size(Ddata)
+        Ddata(ieq) = Ddata(ieq)*length_ref
+      end do
+
+    elseif (trim(cvariable) .eq. 'time') then
+      ! time_phys = length_ref * time / velocity_ref
+      do ieq=1,size(Ddata)
+        Ddata(ieq) = length_ref*Ddata(ieq)/velocity_ref
+      end do
+
+    else
+      
+      print *, trim(cvariable)
+
+      call output_line('Invalid variable name!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hydro_convertVariableDimDble')
+      call sys_halt()
+      
+    end if
+      
+  end subroutine hydro_convertVariableDimDble
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine hydro_convertVariableDimSngl(Fdata, cvariable,&
+                                          density_ref, velocity_ref, length_ref)
+
+!<description>
+    ! This subroutine converts a non-dimensional variable given in the
+    ! single-valued array Fdata into physical quantities based on the
+    ! reference values density_ref, velocity_ref and length_ref and
+    ! overwrites Fdata.
+!</description>
+
+!<input>
+    ! Identifier for the variable
+    character(LEN=*), intent(in) :: cvariable
+
+    ! Reference values
+    real(SP), intent(in) :: density_ref,velocity_ref,length_ref
+!</input>
+
+!<inputoutput>
+    ! On input: non-dimensionalised variable
+    ! On output: scalar physical variable
+    real(SP), dimension(:), intent(inout) :: Fdata
+!</inputoutput>
+!</subroutine>
+
+    ! local variable
+    integer :: ieq
+
+    if (trim(cvariable) .eq. 'density') then
+      ! density_phys = density * density_ref
+      do ieq=1,size(Fdata)
+        Fdata(ieq) = Fdata(ieq)*density_ref
+      end do
+
+    elseif (trim(cvariable) .eq. 'velocity') then
+      ! velocity_phys = velocity * velocity_ref
+      do ieq=1,size(Fdata)
+        Fdata(ieq) = Fdata(ieq)*velocity_ref
+      end do
+      
+    elseif (trim(cvariable) .eq. 'momentum') then
+      ! momentum_phys = momentum * (density_ref*velocity_ref)
+      do ieq=1,size(Fdata)
+        Fdata(ieq) = Fdata(ieq)*(density_ref*velocity_ref)
+      end do
+
+    elseif (trim(cvariable) .eq. 'energy') then
+      ! energy_phys = energy * (density_ref*velocity_ref^2)
+      do ieq=1,size(Fdata)
+        Fdata(ieq) = Fdata(ieq)*(density_ref*velocity_ref*velocity_ref)
+      end do
+
+    elseif (trim(cvariable) .eq. 'total_energy') then
+      ! energy_phys = energy * (velocity_ref^2)
+      do ieq=1,size(Fdata)
+        Fdata(ieq) = Fdata(ieq)*(velocity_ref*velocity_ref)
+      end do
+
+    elseif (trim(cvariable) .eq. 'internal_energy') then
+      ! energy_phys = energy * (velocity_ref^2)
+      do ieq=1,size(Fdata)
+        Fdata(ieq) = Fdata(ieq)*(velocity_ref*velocity_ref)
+      end do
+
+    elseif (trim(cvariable) .eq. 'kinetic_energy') then
+      ! energy_phys = energy * (velocity_ref^2)
+      do ieq=1,size(Fdata)
+        Fdata(ieq) = Fdata(ieq)*(velocity_ref*velocity_ref)
+      end do
+      
+    elseif (trim(cvariable) .eq. 'pressure') then
+      ! pressure_phys = pressure * (density_ref*velocity_ref^2)
+      do ieq=1,size(Fdata)
+        Fdata(ieq) = Fdata(ieq)*(density_ref*velocity_ref*velocity_ref)
+      end do
+
+    elseif (trim(cvariable) .eq. 'machnumber') then
+      ! No conversion needed
+
+    elseif (trim(cvariable) .eq. 'speedofsound') then
+      ! soundspeed_phys = soundspeed * velocity_ref
+      do ieq=1,size(Fdata)
+        Fdata(ieq) = Fdata(ieq)*velocity_ref
+      end do
+
+    elseif (trim(cvariable) .eq. 'coordinate') then
+      ! coordinate_phys = coordinate * length_ref
+      do ieq=1,size(Fdata)
+        Fdata(ieq) = Fdata(ieq)*length_ref
+      end do
+
+    elseif (trim(cvariable) .eq. 'time') then
+      ! time_phys = length_ref * time / velocity_ref
+      do ieq=1,size(Fdata)
+        Fdata(ieq) = length_ref*Fdata(ieq)/velocity_ref
+      end do
+
+    else
+      
+      call output_line('Invalid variable name!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hydro_convertVariableDimSngl')
+      call sys_halt()
+      
+    end if
+      
+  end subroutine hydro_convertVariableDimSngl
 
 end module hydro_basic
