@@ -44,8 +44,10 @@ program gridgenlaval2d
   ! Predefined values
   real(DP) :: dangle1  = 85.0_DP
   real(DP) :: dangle2  =  2.0_DP
-  real(DP) :: darea    =  0.5_DP
-  real(DP) :: ddist    =  1.0_DP
+  real(DP) :: ddistin  =  1.0_DP
+  real(DP) :: ddistout =  1.0_DP
+  real(DP) :: ddistcon =  1.0_DP  
+  real(DP) :: ddistdiv =  1.0_DP  
   real(DP) :: dheight0 =  7.0_DP
   real(DP) :: dheight1 =  1.0_DP
   real(DP) :: dheight2 =  1.0_DP
@@ -66,7 +68,10 @@ program gridgenlaval2d
   real(DP), dimension(2,ncoords) :: Dpoints
 
   ! Definition of output filename
-  character(len=80) :: cfilename = "grid"
+  character(len=1024) :: coutputfile = "grid"
+
+  ! Options passed to triangle
+  character(len=1024) :: ctriangleopts = "-j -C"
 
   ! Definition of output format
   character(LEN=*), parameter :: cFormat = '(F32.15)'
@@ -113,34 +118,54 @@ program gridgenlaval2d
       write(*,'(A)') "    #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - +"
       write(*,'(A)') "    |<------------------- length ------------------>|"
       write(*,*)
+      write(*,'(A,T30,A)') '-a,  --area','average area of triangles'
+      write(*,'(A,T30,A)') '-a1, --angle1','angle of the circle segment'
+      write(*,'(A,T30,A)') '-a2, --angle2','angle of the diverging chamber'
+      write(*,'(A,T30,A)') '-D,  --Delaunay','generate conforming Delaunay '//&
+          'triangulation and not just constrained Delaunay triangulation'
+      write(*,'(A,T30,A)') '-di,  --distinlet','average distance between '//&
+          'points along the inlet boundary'
+      write(*,'(A,T30,A)') '-dc,  --distconvergent','average distance between '//&
+          'points along the convergent part of the boundary'
+      write(*,'(A,T30,A)') '-dd,  --distdivergent','average distance between '//&
+          'points along the divergent part of the boundary'
+      write(*,'(A,T30,A)') '-do,  --distoutlet','average distance between '//&
+          'points along the outlet boundary'
+      write(*,'(A,T30,A)') '-F, --Fortune','use Steven Fortunes algorithm for '//&
+          'Delaunay triangulation'
       write(*,'(A,T30,A)') '-h,  -H,  --help','this help screen'
-      write(*,'(A,T30,A)') '-a1, --angle1' ,'angle of the circle segment'
-      write(*,'(A,T30,A)') '-a2, --angle2' ,'angle of the diverging chamber'
-      write(*,'(A,T30,A)') '-a,  --area' ,'average area of triangles'
-      write(*,'(A,T30,A)') '-d,  --dist' ,'average distance between points along the boundary'
-      write(*,'(A,T30,A)') '-f,  --filename','name of the output file'
-      write(*,'(T30,A)')   'If not given, the generated grid is stored in file "grid.tri/prm".'
       write(*,'(A,T30,A)') '-h0, --height0','height of the midpoint of the inlet'
       write(*,'(A,T30,A)') '-h1, --height1','height of the inlet chamber'
       write(*,'(A,T30,A)') '-h2, --height2','height of the inlet chamber'
       write(*,'(A,T30,A)') '-h3, --height3','height of the outlet chamber'
+      write(*,'(A,T30,A)') '-i, --incremental','use incremental algorithm for Delaunay triangulation'
       write(*,'(A,T30,A)') '-l,  --length','length of the nozzle (without outlet chamber)'
+      write(*,'(A,T30,A)') '-o,  --outputfile','name of the output file'
+      write(*,'(T30,A)')   'If not given, the generated grid is stored in file "grid.tri/prm".'
+      write(*,'(A,T30,A)') '-Q, --quiet','suppress output other than errors'
+      write(*,'(A,T30,A)') '-q,  --quality','Quality mesh generation with no '//&
+          'angles smaller than 20 degrees'
       write(*,'(A,T30,A)') '-r0, --radius0','radius of the inlet'
       write(*,'(A,T30,A)') '-r1, --radius1','radius of the circle segment'
-      write(*,'(A,T30,A)') '-s,  --segment','number of segments of the circle segment'
-      write(*,'(A,T30,A)') '-x1'            ,'horizontal position of the circle segment'
-      write(*,'(A,T30,A)') '-y1'            ,'vertical position of the circle segment'
-      write(*,'(A,T30,A)') '-w1, --width1' ,'width of the inlet chamber'
-      write(*,'(A,T30,A)') '-w2, --width2' ,'width of the inlet chamber'
-      write(*,'(A,T30,A)') '-w3, --width3' ,'width of the outlet chamber'
+      write(*,'(A,T30,A)') '-x1','horizontal position of the circle segment'
+      write(*,'(A,T30,A)') '-V, --verbose','print detailed information'
+      write(*,'(A,T30,A)') '-Y','do not insert Steiner points on the boundary'
+      write(*,'(A,T30,A)') '-YY','do not insert Steiner points anywhere'
+      write(*,'(A,T30,A)') '-y1','vertical position of the circle segment'
+      write(*,'(A,T30,A)') '-w1, --width1','width of the inlet chamber'
+      write(*,'(A,T30,A)') '-w2, --width2','width of the inlet chamber'
+      write(*,'(A,T30,A)') '-w3, --width3','width of the outlet chamber'
       write(*,*)
       write(*,'(A)') 'Report bugs to <matthias.moeller@math.tu-dortmund.de>.'
       stop
 
+    case('-A','--Area')
+      ctriangleopts = trim(adjustl(ctriangleopts))//' -a'
+      
     case('-a','--area')
       call get_command_argument(i+1, cbuffer)
-      read(cbuffer,*) darea
-
+      ctriangleopts = trim(adjustl(ctriangleopts))//' -a'//trim(adjustl(cbuffer))
+      
     case('-a1','--angle1')
       call get_command_argument(i+1, cbuffer)
       read(cbuffer,*) dangle1
@@ -149,6 +174,28 @@ program gridgenlaval2d
       call get_command_argument(i+1, cbuffer)
       read(cbuffer,*) dangle2
       
+    case('-D','--Delaunay')
+      ctriangleopts = trim(adjustl(ctriangleopts))//' -D'
+
+    case('-di','--distinlet')
+      call get_command_argument(i+1, cbuffer)
+      read(cbuffer,*) ddistin
+      
+    case('-do','--distoutlet')
+      call get_command_argument(i+1, cbuffer)
+      read(cbuffer,*) ddistout
+
+    case('-dc','--distconvergent')
+      call get_command_argument(i+1, cbuffer)
+      read(cbuffer,*) ddistcon
+
+    case('-dd','--distdivergent')
+      call get_command_argument(i+1, cbuffer)
+      read(cbuffer,*) ddistdiv
+
+    case('-F','--Fortune')
+      ctriangleopts = trim(adjustl(ctriangleopts))//' -F'
+
     case('-h0','--height0')
       call get_command_argument(i+1, cbuffer)
       read(cbuffer,*) dheight0
@@ -165,9 +212,22 @@ program gridgenlaval2d
       call get_command_argument(i+1, cbuffer)
       read(cbuffer,*) dheight3
 
+    case('-i','--incremental')
+      ctriangleopts = trim(adjustl(ctriangleopts))//' -i'
+
     case('-l','--length')
       call get_command_argument(i+1, cbuffer)
       read(cbuffer,*) dlength
+
+    case('-o','--outputfile')
+      call get_command_argument(i+1, coutputfile)
+      ctriangleopts = trim(adjustl(ctriangleopts))//' -p '//trim(adjustl(coutputfile))
+
+    case('-Q','--quiet')
+      ctriangleopts = trim(adjustl(ctriangleopts))//' -Q'
+      
+    case('-q','--quality')
+      ctriangleopts = trim(adjustl(ctriangleopts))//' -q'
 
     case('-r0','--radius0')
       call get_command_argument(i+1, cbuffer)
@@ -180,6 +240,15 @@ program gridgenlaval2d
     case('-x1')
       call get_command_argument(i+1, cbuffer)
       read(cbuffer,*) dx1
+
+    case('-V','--verbose')
+      ctriangleopts = trim(adjustl(ctriangleopts))//' -V'
+
+    case('-Y')
+      ctriangleopts = trim(adjustl(ctriangleopts))//' -Y'
+
+    case('-YY')
+      ctriangleopts = trim(adjustl(ctriangleopts))//' -YY'
 
     case('-y1')
       call get_command_argument(i+1, cbuffer)
@@ -196,14 +265,6 @@ program gridgenlaval2d
     case('-w3','--width3')
       call get_command_argument(i+1, cbuffer)
       read(cbuffer,*) dwidth3
-
-    case('-f','--filename')
-      call get_command_argument(i+1, cbuffer)
-      read(cbuffer,*) cfilename
-      
-    case('-d','--dist')
-      call get_command_argument(i+1, cbuffer)
-      read(cbuffer,*) ddist
       
     end select
   end do
@@ -217,7 +278,7 @@ program gridgenlaval2d
 
   write(*,'(A)') 'Generating grid'
   write(*,'(A)') '---------------'
-  write(*,'(A,T45,A)') 'name of output file: ',trim(adjustl(cfilename))
+  write(*,'(A,T45,A)') 'name of output file: ',trim(adjustl(coutputfile))
 
   !-----------------------------------------------------------------------------
   ! Generate coordinates of all corners
@@ -278,7 +339,7 @@ program gridgenlaval2d
   ! Generate PRM-file
   !-----------------------------------------------------------------------------
 
-  open(unit=100, file=trim(adjustl(cfilename))//'.prm')
+  open(unit=100, file=trim(adjustl(coutputfile))//'.prm')
 
   write(100,'(A)') 'NBCT'
   write(100,'(A)') '1'
@@ -569,10 +630,10 @@ program gridgenlaval2d
   npoints = 0
   brewrite = .false.
 
-1 open(unit=100, file=trim(adjustl(cfilename))//'.poly', form='formatted')
+1 open(unit=100, file=trim(adjustl(coutputfile))//'.poly', form='formatted')
   
   ! Write file header
-  write(100, '(A)') "# "//trim(adjustl(cfilename))//'.poly'
+  write(100, '(A)') "# "//trim(adjustl(coutputfile))//'.poly'
   write(100, '(A)') "#"
   write(100, '(A)') "# Poly file generated by gridgenlaval2d."
   write(100, '(A)') "#"
@@ -622,7 +683,14 @@ program gridgenlaval2d
                          (Dpoints(2,mod(ipoint,ncoords)+1)-Dpoints(2,ipoint))**2)
 
       ! Compute number of auxiliary segments
-      nsubsegments = nint(dsegmentlen/ddist)
+      select case(ipoint)
+      case(1:4,14:ncoords)
+        nsubsegments = nint(dsegmentlen/ddistin)
+      case (6,12)
+        nsubsegments = nint(dsegmentlen/ddistdiv)
+      case default
+        nsubsegments = nint(dsegmentlen/ddistout)
+      end select
 
       ! Write vertex coordinates of auxiliary points
       do isubpoint = 1, nsubsegments-1
@@ -653,7 +721,7 @@ program gridgenlaval2d
       dsegmentlen = dradius1*dangle1
 
       ! Compute number of auxiliary segments
-      nsubsegments = nint(dsegmentlen/ddist)
+      nsubsegments = nint(dsegmentlen/ddistcon)
 
       ! Write vertex coordinates of auxiliary points
       do isubpoint = 1, nsubsegments-1
@@ -682,7 +750,7 @@ program gridgenlaval2d
       dsegmentlen = dradius1*dangle1
 
       ! Compute number of auxiliary segments
-      nsubsegments = nint(dsegmentlen/ddist)
+      nsubsegments = nint(dsegmentlen/ddistcon)
 
       ! Write vertex coordinates of auxiliary points
       do isubpoint = nsubsegments-1, 1, -1
@@ -727,7 +795,11 @@ program gridgenlaval2d
   end do
 
   ! Write number of holes
+  write(100, '(A)') "# Number of holes"
   write(100, '(A)') "0"
+
+  ! Write number of regional attributes and/or area constraints
+  write(100, '(A)') "# Number of regional attributes and/or area constraints"
   write(100, '(A)') "0"
 
   close(100)
@@ -737,24 +809,21 @@ program gridgenlaval2d
     brewrite = .true.
     goto 1
   end if
-  
-  ! Generate conforming Delaunay triangulation (-D) subject to a
-  ! user-defined element area (-a) without generating additional
-  ! Steiner points on the boundary (-Y) based on vertex distribution
-  write(cbuffer1, cFormat) darea
-  call system('triangle -V -Y -D '//&
-      ' -a'//trim(adjustl(cbuffer1))//&
-      ' -p '//trim(adjustl(cfilename))//'.poly')
+
+  ! Call triangle mesh generator with specified options
+  write(*,*) "Calling triangle with the following options:"
+  write(*,*) trim(adjustl(ctriangleopts))
+  call system('triangle '//trim(adjustl(ctriangleopts)))
   
   !---------------------------------------------------------------------------
   ! Read data for inner triangulation and convert it into TRI format
   !---------------------------------------------------------------------------
   
-  open(unit=100, file=trim(adjustl(cfilename))//'.1.node')
+  open(unit=100, file=trim(adjustl(coutputfile))//'.1.node')
   read(100, fmt=*) nvt
   close(100)
   
-  open(unit=100, file=trim(adjustl(cfilename))//'.1.ele')
+  open(unit=100, file=trim(adjustl(coutputfile))//'.1.ele')
   read(100, fmt=*) nel
   close(100)
   
@@ -762,7 +831,7 @@ program gridgenlaval2d
   ! Generate TRI-file
   !-----------------------------------------------------------------------------
   
-  open(unit=100, file=trim(adjustl(cfilename))//'.tri')
+  open(unit=100, file=trim(adjustl(coutputfile))//'.tri')
   
   write(100,'(A)') 'Coarse mesh 2D'
   write(100,'(A)') 'Generated by gridgencirc2d'
@@ -781,7 +850,7 @@ program gridgenlaval2d
   ! Copy/convert coordinates from external triangulation
   !---------------------------------------------------------------------------
 
-  open(unit=200, file=trim(adjustl(cfilename))//'.1.node')
+  open(unit=200, file=trim(adjustl(coutputfile))//'.1.node')
   read(200, fmt=*) nvt
   
   ! Read node file line by line and convert coordinates
@@ -812,7 +881,7 @@ program gridgenlaval2d
   ! Copy elements of inner region from external triangulation
   !---------------------------------------------------------------------------
   
-  open(unit=200, file=trim(adjustl(cfilename))//'.1.ele')
+  open(unit=200, file=trim(adjustl(coutputfile))//'.1.ele')
   read(200, fmt=*) nel
   
   ! Read element file line by line and convert coordinates

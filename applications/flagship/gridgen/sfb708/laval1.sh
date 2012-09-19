@@ -5,8 +5,10 @@ export PATH=$PATH:"$PWD/../bin"
 
 # Generate 2d grid
 gridgenlaval2d \
-    -a 0.25 \
-    -d 0.5 \
+    -di 2.0 \
+    -do 10.0 \
+    -dc 0.5 \
+    -dd 2.0 \
     -x1 5.0 \
     -y1 8.205 \
     -h0 0.0 \
@@ -17,10 +19,14 @@ gridgenlaval2d \
     -r1 5.0 \
     -w1 10.0 \
     -w2 0.0 \
-    -w3 50 \
+    -w3 150 \
     -a1 90.0 \
     -a2 0.674785758658841 \
     -l  50.0 \
-    -f nozzle1
+    -o nozzle1 \
+    -Q -q -F -a 2
+
+#    -a 25.0 \
+#    -d 0.5 \
 
 showme nozzle1.1
