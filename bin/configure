@@ -2764,7 +2764,7 @@ sub create_feastAppMakefile {
         "\t\@echo \"# Building lapack library\"\n" .
         "\t(cd \$(DIR) && \\\n" .
         "\t    $makeInMakefile -f Makefile.FEAT2 \$\@ \\\n" .
-	"\t\tF95=\"\$(PREF90) \$(F90)\" OPTS=\"\$(CFLAGSF90) \$(MODOPTION)\$(OBJDIR_LIB)\" \\\n" .
+	"\t\tF95=\"\$(PREF90) eval \$(F90)\" OPTS=\"\$(CFLAGSF90) \$(MODOPTION)\$(OBJDIR_LIB)\" \\\n" .
         "\t\tARCH=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" GOTOBLAS_PATCH_FOR_LAPACK=\"\$(GOTOBLAS_PATCH_FOR_LAPACK)\" \\\n" .
         "\t\tOBJDIR=\"\$(OBJDIR_LIB)\")\n\n" .
 
@@ -2811,7 +2811,7 @@ sub create_feastAppMakefile {
         "\t\@echo \"# Building AGMG library\"\n" .
         "\t(cd \$(DIR) && \\\n" .
         "\t    $makeInMakefile -f Makefile.FEAT2 \$\@ \\\n" .
-	"\t\tFORTRAN=\"\$(PREF90) \$(F90)\" OPTS=\"\$(CFLAGSF90) \$(MODOPTION)\$(OBJDIR_LIB)\" \\\n" .
+	"\t\tFORTRAN=\"\$(PREF90) eval \$(F90)\" OPTS=\"\$(CFLAGSF90) \$(MODOPTION)\$(OBJDIR_LIB)\" \\\n" .
         "\t\tARCH=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" MODEXTENSION=\"\$(MODEXTENSION)\" \\\n" .
         "\t\tOBJDIR=\"\$(OBJDIR_LIB)\")\n\n";
 
