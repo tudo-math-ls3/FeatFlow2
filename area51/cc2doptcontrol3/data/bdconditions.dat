@@ -124,6 +124,10 @@ ineumannBoundary = -1
 #          = 7 : Dirichlet boundary control boundary conditions, relative to a
 #                given inflow.
 #                Example:  1.0  7  1  "Dirichlet0"  "Dirichlet0"  
+#          = 8 : Inhomogeneous Neumann boudary conditions. The inhomogenity has to be
+#                specified with expressions.
+#                Example:  1.0  8  3  "Dirichlet1"  "Dirichlet1"  
+
 
 #bdComponent1(3)=
 #  2.0  3  1  "Dirichlet0"  "Dirichlet0" # [0.0,1.0] : Dirichlet-0 boundary
