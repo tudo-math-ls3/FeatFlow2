@@ -218,7 +218,7 @@ contains
     ! Set simulation time
     if (present(dtime)) then
       DtimeAux = dtime
-      if (bconvert) call hydro_convertVariableDim(Dtime, 'time',&
+      if (bconvert) call hydro_convertVariableDim(DtimeAux, 'time',&
           density_ref, velocity_ref, length_ref)
       call ucd_setSimulationTime(rexport, DtimeAux(1))
     end if
