@@ -61,7 +61,7 @@ iapproxtimederivativetype = 1
 # 1 = scalar dissipation (-1 = dimensional splitting)
 # 2 = tensorial dissipation (-2 = dimensional splitting)
 # 3 = Rusanov type (-3 = dimensional splitting)
-idissipationtype = 1
+idissipationtype = 3
 
 # type of system coupling
 # 0 = segregated approach
@@ -73,7 +73,7 @@ isystemcoupling = 0
 # 1 = low-order scheme with scalar dissipation
 # 2 = low-order scheme with tensorial dissipation
 # 3 = low-order schemes of Rusanov type
-isystemPrecond = 1
+isystemPrecond = 3
 
 #-------------------------------------------------------------------------------
 
@@ -109,13 +109,13 @@ sfailsafevariable(3) =
 # 2 = PGM image
 # 3 = anayltical initial solution: consistent L2-projection
 # 4 = anayltical initial solution: lumped L2-projection
-isolutiontype = 3
+isolutiontype = 1
 
 # section name of initial solution
 ssolutionname(4) = 
   @initsol_rho
-  @initsol_vel
-  @initsol_vel
+  @initsol_v_x
+  @initsol_v_y
   @initsol_Etot
 
 # type of exact solution profile
@@ -256,10 +256,10 @@ ilineariseucd = 0
 nrefineucd = 0
 
 # time interval for UCD output
-dstepUCD = 0.01
+dstepUCD = 0.1
 
 # file for UCD output of solution
-sucdsolution = out/sfb708_lavalnozzle1
+sucdsolution = out/sfb708_lavalnozzle1_new
 
 # file for UCD output of error
 sucderror =
@@ -272,6 +272,10 @@ sucdvariable(6) =
  pressure
  machnumber
  speedofsound
+
+# reference values for non-dimensionalisation
+density_ref =   5.95889465434536
+velocity_ref = 68.8689794941003
 
 ################################################################################
 [Timestepping]
@@ -290,7 +294,7 @@ theta = 1.0
 multisteps = 0
 
 # final time for the simulation.
-dfinalTime = 1.0
+dfinalTime = 50.0
 
 # initial time step size
 dinitialStep = 1e-3

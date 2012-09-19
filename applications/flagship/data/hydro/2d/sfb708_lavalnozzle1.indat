@@ -24,14 +24,49 @@
 #   p   = 100000.0              [Pa]                                           #
 #                                                                              #
 #------------------------------------------------------------------------------#
-# Nondimensional quantities                                                    #
+# Reference values for non-dimensionalisation                                  #
 #   rho_r = rho, vel_r = v_x, len_r = 1.0 (from inlet boundary conditions)     #
 ################################################################################
 
-# Specify the initial solution
-deffunc: @initsol_rho  = if (x < -100.0, 1.0, 0.196078431372549) ; x,y,t
-deffunc: @initsol_vel  = if (x < -100.0, 1.0, 0.0) ; x,y,t
-deffunc: @initsol_Etot = if (x < -100.0, 45.6125297847116, 8.84559407543365) ; x,y,t
+# Global constants
+defconst: gamma    = 1.4
+
+# Reference values
+defconst: rho_ref =  5.95889465434536
+defconst: vel_ref = 68.8689794941003
+defconst: len_ref =  1.0
+
+# Initial conditions in physical units
+defconst: rho_init = 1.16841071653831
+defconst: v_x_init = 0.0
+defconst: v_y_init = 0.0
+defconst: p_init   = 1.0e5
+
+# Inlet boundary conditions in physical units
+defconst: rho_in   =  5.95889465434536
+defconst: v_x_in   = 68.8689794941003
+defconst: v_y_in   =  0.0
+defconst: p_in     =  5.1e5
+
+# Outlet boundary condition in physical units
+defconst: p_out    = 1.0e5
+
+################################################################################
+# *** DO NOT EDIT THE FOLLOWING LINES ***
+
+# Initial total energy in physical units 
+defexpr: Etot_init = _p_init/(_gamma-1.0) + 0.5 * _rho_init * (_v_x_init^2 + _v_y_init^2)
+
+# Inlet boundary condition for total energy
+defexpr: Etot_in   = _p_in/(_gamma-1.0) + 0.5 * _rho_in * (_v_x_in^2 + _v_y_in^2)
+
+################################################################################
+
+# Specify the initial solution (non-dimensionalised)
+deffunc: @initsol_rho  = _rho_init/_rho_ref ; x,y,t
+deffunc: @initsol_v_x  = _v_x_init/_vel_ref ; x,y,t
+deffunc: @initsol_v_y  = _v_y_init/_vel_ref ; x,y,t
+deffunc: @initsol_Etot = @Etot_init/(_rho_ref*_vel_ref^2) ; x,y,t
 
 # Specify the boundary conditions
 [bdrcond_primal]
@@ -44,7 +79,10 @@ IBCT
 NCOMP
 4
 PARAMETERS
-4.0  T  'FREESLIP_WEAK'
-9.0  F  'SUPEROUTLET_WEAK'  # '3.53823763017346'
+5.0  T  'FREESLIP_WEAK'
+8.0  F  'SUBOUTLET_WEAK'   '_p_out/(_rho_ref*_vel_ref^2)'
 13.0 F  'FREESLIP_WEAK'
-14.0 F  'SUPERINLET_WEAK'  '1.0'  '1.0'  '0.0'  '18.0450119138846'
+14.0 F  'FREESTREAM_WEAK'  '_rho_in/_rho_ref' ...
+                           '_v_x_in/_vel_ref' ...
+                           '_v_y_in/_vel_ref' ...
+                           '_p_in/(_rho_ref*_vel_ref^2)'
