@@ -250,7 +250,8 @@
 !# 9.) fparser_ErrorMsg
 !#     -> Get error message from function parser
 !#
-!# 10.) fparser_PrintByteCode
+!# 10.) fparser_PrintByteCode = fparser_PrintByteCodeByName /
+!#                              fparser_PrintByteCodeByNumber
 !#      -> Print the bytecode stack (very technical!)
 !#
 !# 11.) fparser_parseFileForKeyword
@@ -403,6 +404,11 @@ module fparser
     module procedure fparser_parseFunctionByName
     module procedure fparser_parseFunctionByNumber
   end interface
+
+  interface fparser_printByteCode
+    module procedure fparser_printByteCodeByName
+    module procedure fparser_printByteCodeByNumber
+  end interface fparser_printByteCode
 
   !****************************************************************************
   !****************************************************************************
@@ -1885,7 +1891,37 @@ contains
 
 !<subroutine>
 
-  subroutine fparser_PrintByteCode(rfparser, icomp)
+  subroutine fparser_PrintByteCodeByName(rfparser, scompName)
+
+!<description>
+    ! Print the compiled bytecode stack
+!</description>
+
+!<input>
+    ! Function parser
+    type(t_fparser), intent(in) :: rfparser
+
+    ! Function name
+    character(LEN=*), intent(in) :: scompName
+!</input>
+!</subroutine>
+
+    ! local variables
+    integer :: icomp
+
+    ! Lookup function by name
+    icomp = fparser_getFunctionNumber(rfparser, scompName)
+
+    ! Print bytecode
+    call fparser_PrintByteCodeByNumber(rfparser, icomp)
+
+  end subroutine fparser_PrintByteCodeByName
+
+  ! *****************************************************************************
+
+!<subroutine>
+
+  subroutine fparser_PrintByteCodeByNumber(rfparser, icomp)
 
 !<description>
     ! Print the compiled bytecode stack
@@ -1967,7 +2003,7 @@ contains
       end select
     end do
 
-  end subroutine fparser_PrintByteCode
+  end subroutine fparser_PrintByteCodeByNumber
 
   ! *****************************************************************************
 
