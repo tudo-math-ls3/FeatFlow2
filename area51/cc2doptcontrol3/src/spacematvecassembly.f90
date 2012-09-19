@@ -3382,6 +3382,12 @@ contains
           call fev2_releaseVectorList(rvectorEval)
           call ansol_doneEvalCollection (rcollection,"RHS")
           call user_doneCollectForVecAssembly (p_ranalyticData%p_rglobalData,rusercollection)
+          
+          ! -----------------------------------------
+          ! Inhomogeneous Neumann boundary conditions
+          ! -----------------------------------------
+          call sbc_assembleInhomNeumannRHS (p_ranalyticData%p_roptcBDC,rrhs,dtime,&
+              p_ranalyticData%p_rphysics%cequation,OPTP_PRIMAL,p_ranalyticData%p_rglobalData)
 
         end select ! Equation
 

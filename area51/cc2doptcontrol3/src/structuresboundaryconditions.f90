@@ -158,7 +158,10 @@ module structuresboundaryconditions
   ! Pointer to a t_optcBDC structure.
   type t_p_optcBDC
   
-    type(t_optcBDC), pointer :: p_roptcBDC
+    type(t_optcBDC), pointer :: p_roptcBDC => null()
+    
+    ! Pointer to a boundary region, for inhomogeneous Neumann BC
+    type(t_boundaryRegion), pointer :: p_rboundaryRegion => null()
 
   end type
 

@@ -902,35 +902,35 @@ contains
 
     do while (.true.)
     
-!      if ((mod(rlinsolParam%riter%niterations,5) .eq. 0) .and.&
-!          (rlinsolParam%riter%niterations .ne. 0)) then
-!        ! Restart
-!
-!        ! Initialise used vectors with zero
-!        call kktsp_clearControl(p_rr)
-!        call kktsp_clearControl(p_rp%p_rcontrolLin)
-!        call kktsp_clearControl(p_rAp)
-!        
-!        ! Initialization
-!        dalpha = 1.0_DP
-!        dbeta  = 1.0_DP
-!        dgamma = 1.0_DP
-!        dgammaOld = 1.0_DP
-!
-!        ! Create the initial defect in rd
-!        call output_line ("Space-time CG: Restart.")
-!        output_iautoOutputIndent = output_iautoOutputIndent + 2
-!        call newtonlin_getResidual (rlinsolParam,rkktsystemDirDeriv,rrhs,p_rr,rlocalStat)
-!        output_iautoOutputIndent = output_iautoOutputIndent - 2
-!            
-!        call newtonlin_sumStatistics(rlocalStat,rstatistics,NLIN_STYPE_RESCALC)
-!            
-!        call kktsp_controlCopy (p_rr,p_rp%p_rcontrolLin)
-!
-!        ! Scalar product of rp.
-!        dgamma = kktsp_scalarProductControl(p_rr,p_rr)
-!
-!      end if
+      if ((mod(rlinsolParam%riter%niterations,5) .eq. 0) .and.&
+          (rlinsolParam%riter%niterations .ne. 0)) then
+        ! Restart
+
+        ! Initialise used vectors with zero
+        call kktsp_clearControl(p_rr)
+        call kktsp_clearControl(p_rp%p_rcontrolLin)
+        call kktsp_clearControl(p_rAp)
+        
+        ! Initialization
+        dalpha = 1.0_DP
+        dbeta  = 1.0_DP
+        dgamma = 1.0_DP
+        dgammaOld = 1.0_DP
+
+        ! Create the initial defect in rd
+        call output_line ("Space-time CG: Restart.")
+        output_iautoOutputIndent = output_iautoOutputIndent + 2
+        call newtonlin_getResidual (rlinsolParam,rkktsystemDirDeriv,rrhs,p_rr,rlocalStat)
+        output_iautoOutputIndent = output_iautoOutputIndent - 2
+            
+        call newtonlin_sumStatistics(rlocalStat,rstatistics,NLIN_STYPE_RESCALC)
+            
+        call kktsp_controlCopy (p_rr,p_rp%p_rcontrolLin)
+
+        ! Scalar product of rp.
+        dgamma = kktsp_scalarProductControl(p_rr,p_rr)
+
+      end if
     
       ! -------------------------------------------------------------
       ! Norm of the residual
