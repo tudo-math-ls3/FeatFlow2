@@ -401,25 +401,8 @@ contains
     ! approach. Note that this does only works for Lagrangian based
     ! finite elements (i.e., DOFs corresponds to values in vertices)
     
-    ! Step 1: Filter the RHS to fulfil "int(f)=0".
-    !
-    ! This is done by applying a "Small L1 to 0" filter.
-    ! Note that for Lagrangian based finite elements , this exactly
-    ! produces RHS entries f_i=(f,phi_i) that comes from an analytical
-    ! f with int(f)=0.
-    call vecfil_subvectorSmallL1To0 (rvecRhs,1)
-    
-    ! Step 2: Modify the matrix/rhs and impose the mean value condition.
-    !
-    ! We impose the diagonal of a lumped mass matrix as first row into the
-    ! matrix. Furthermore, we modify the first entry of the RHS to be =0.
-    ! This imposes the condition "int(u)=0" into the system.
-    !
-    ! a) Modification of the RHS:
-    call vecfil_oneEntryZero (rvecRhs,1,1)
-    
-    ! b) Generate a diagonal lumped mass matrix based on the structure of the 
-    !    Laplace matrix
+    ! Step 1: Generate a diagonal lumped mass matrix based on the structure of the 
+    !         Laplace matrix
     call lsyssc_duplicateMatrix (rmatSystem%RmatrixBlock(1,1),rmassMatrixLumped,&
         LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
     
@@ -428,7 +411,20 @@ contains
     call stdop_assembleSimpleMatrix (rmassMatrixLumped,DER_FUNC,DER_FUNC,1.0_DP)
     call lsyssc_lumpMatrixScalar (rmassMatrixLumped,LSYSSC_LUMP_DIAG,.true.)
     
-    ! c) Impose the diagonal of the lumped mass matrix as first row
+    ! Step 2: Filter the RHS to fulfil "int(f)=0".
+    ! This means, subtract the integral mean value: f:=f-int(f)/|Omega|
+    call vecfil_rhsL1To0ByLmass (rvecRhs%RvectorBlock(1),rmassMatrixLumped)
+    
+    ! Step 3: Modify the matrix/rhs and impose the mean value condition.
+    !
+    ! We impose the diagonal of a lumped mass matrix as first row into the
+    ! matrix. Furthermore, we modify the first entry of the RHS to be =0.
+    ! This imposes the condition "int(u)=0" into the system.
+    !
+    ! a) Modification of the RHS, impose a zero at f_1.
+    call vecfil_oneEntryZero (rvecRhs,1,1)
+    
+    ! b) Impose the diagonal of the lumped mass matrix as first row
     !    of the system matrix. Note that this changes the structure
     !    of the matrix! The first row is full afterwards.
     call mmod_replaceLineByLumpedMass (rmatSystem%RmatrixBlock(1,1),1,rmassMatrixLumped)
