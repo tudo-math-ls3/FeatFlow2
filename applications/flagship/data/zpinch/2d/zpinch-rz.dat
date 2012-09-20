@@ -92,7 +92,6 @@ trifile = %{sgriddirectory}/2d/zpinch_3x120_rz.tri
 # EL_E001_2D   linear H1-conforming triangular FE, P1
 #
 # EL_E011_2D   bilinear H1-conforming quadrilateral FE, Q1 
-#              rotated bilinear non-conforming quadrilateral FE,
 #
 # EL_E020_2D   rotated linear nonconforming triangular FE,
 #              P1~, edge-midpoint based
@@ -101,7 +100,7 @@ trifile = %{sgriddirectory}/2d/zpinch_3x120_rz.tri
 #              Q1~ parametric, integral mean value based
 # EL_EM30_2D   rotated bilinear non-conforming quadrilateral FE,
 #              Q1~ non-parametric, integral mean value based
-# EL_EN030_2D  rotated bilinear non-conforming quadrilateral FE,
+# EL_EN30_2D   rotated bilinear non-conforming quadrilateral FE,
 #              Q1~ non-parametric, integral mean value based, new implementation
 #
 # EL_E031_2D   rotated bilinear non-conforming quadrilateral FE,
@@ -285,7 +284,6 @@ trifile = %{Zpinch.trifile}
 # EL_E001_2D   linear H1-conforming triangular FE, P1
 #
 # EL_E011_2D   bilinear H1-conforming quadrilateral FE, Q1 
-#              rotated bilinear non-conforming quadrilateral FE,
 #
 # EL_E020_2D   rotated linear nonconforming triangular FE,
 #              P1~, edge-midpoint based
@@ -294,7 +292,7 @@ trifile = %{Zpinch.trifile}
 #              Q1~ parametric, integral mean value based
 # EL_EM30_2D   rotated bilinear non-conforming quadrilateral FE,
 #              Q1~ non-parametric, integral mean value based
-# EL_EN030_2D  rotated bilinear non-conforming quadrilateral FE,
+# EL_EN30_2D   rotated bilinear non-conforming quadrilateral FE,
 #              Q1~ non-parametric, integral mean value based, new implementation
 #
 # EL_E031_2D   rotated bilinear non-conforming quadrilateral FE,
@@ -509,7 +507,6 @@ trifile = %{Hydro.trifile}
 # EL_E001_2D   linear H1-conforming triangular FE, P1
 #
 # EL_E011_2D   bilinear H1-conforming quadrilateral FE, Q1 
-#              rotated bilinear non-conforming quadrilateral FE,
 #
 # EL_E020_2D   rotated linear nonconforming triangular FE,
 #              P1~, edge-midpoint based
@@ -518,7 +515,7 @@ trifile = %{Hydro.trifile}
 #              Q1~ parametric, integral mean value based
 # EL_EM30_2D   rotated bilinear non-conforming quadrilateral FE,
 #              Q1~ non-parametric, integral mean value based
-# EL_EN030_2D  rotated bilinear non-conforming quadrilateral FE,
+# EL_EN30_2D   rotated bilinear non-conforming quadrilateral FE,
 #              Q1~ non-parametric, integral mean value based, new implementation
 #
 # EL_E031_2D   rotated bilinear non-conforming quadrilateral FE,

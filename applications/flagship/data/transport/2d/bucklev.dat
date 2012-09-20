@@ -146,7 +146,6 @@ trifile = %{sgriddirectory}/2d/rect_2x1.tri
 # EL_E001_2D   linear H1-conforming triangular FE, P1
 #
 # EL_E011_2D   bilinear H1-conforming quadrilateral FE, Q1 
-#              rotated bilinear non-conforming quadrilateral FE,
 #
 # EL_E020_2D   rotated linear nonconforming triangular FE,
 #              P1~, edge-midpoint based
@@ -155,7 +154,7 @@ trifile = %{sgriddirectory}/2d/rect_2x1.tri
 #              Q1~ parametric, integral mean value based
 # EL_EM30_2D   rotated bilinear non-conforming quadrilateral FE,
 #              Q1~ non-parametric, integral mean value based
-# EL_EN030_2D  rotated bilinear non-conforming quadrilateral FE,
+# EL_EN30_2D   rotated bilinear non-conforming quadrilateral FE,
 #              Q1~ non-parametric, integral mean value based, new implementation
 #
 # EL_E031_2D   rotated bilinear non-conforming quadrilateral FE,
