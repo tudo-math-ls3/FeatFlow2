@@ -31,6 +31,7 @@ program poisson
   use poisson1d_method0_simple
   use poisson1d_method1_mg
   use poisson2d_method0_simple
+  use poisson2d_method0_neumann
   use poisson2d_method0_block
   use poisson2d_method0_smart
   use poisson2d_method0_cmsort
@@ -101,6 +102,12 @@ program poisson
   call output_line ("Calculating Poisson-2D-Problem with method 0 - smart")
   call output_line ("----------------------------------------------------")
   call poisson2d_0_smart
+
+  ! Call the problem to solve. Poisson 2D method 1 - pure Neumann problem:
+  call output_lbrk ()
+  call output_line ("Calculating Poisson-2D-Problem with method 0 - Neumann")
+  call output_line ("------------------------------------------------------")
+  call poisson2d_0_neumann
 
   ! Call the problem to solve. Poisson 2D method 1 - CM-sorting:
   call output_lbrk ()
