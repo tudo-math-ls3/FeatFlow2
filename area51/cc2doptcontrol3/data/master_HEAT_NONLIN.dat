@@ -113,7 +113,7 @@ ielementType = 4
 [OPTCTARGETFUNCTION]
 ctype = 3
 sexpression(1) =
-  "X+Y"
+  "X+Y-1"
 
 [CC-PHYSICS]
 cequation = 3
