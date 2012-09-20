@@ -195,9 +195,6 @@ contains
       end do
     end if
 
-    ! Deallocate temporal memory
-    deallocate(IdofsLoc)
-
     ! Initialise coordinates of the DOFs?
     if (associated(rdomainIntSubset%p_Dcoords)) then
 
@@ -429,6 +426,9 @@ contains
       nullify(rdofSubset%p_DdofCoords)
     end if
 
+    ! Deallocate temporal memory
+    deallocate(IdofsLoc)
+
   end subroutine dofprep_initDofSet
 
   !*****************************************************************************
@@ -569,10 +569,6 @@ contains
       end do
     end do
 
-    ! Deallocate temporal memory
-    deallocate(IdofsLoc)
-
-
     ! Initialise coordinates of the DOFs?
     if (associated(rdomainIntSubset%p_Dcoords)) then
 
@@ -600,11 +596,13 @@ contains
       case (EL_P1T_2D,EL_Q1T_2D)
         ! For P1~ and Q1~ finite elements in 2D the degrees of freedom
         ! coincide with the edge midpoints, thus they need to be
-        ! computed from the vertex coordinates
+        ! computed from the vertex coordinates making the start and
+        ! end points of the edge at the boundary
         do iel = 1, rdofSubset%nelements
+          ! Get the local number of the endpoint
           rdofSubset%p_DdofCoords(:,1,iel) =&
               0.5_DP * (rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(1,iel),iel)+&
-                        rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(2,iel),iel))
+                        rdomainIntSubset%p_Dcoords(:,mod(rdofSubset%p_IdofsLoc(1,iel)+1,3)+1,iel))
         end do
 
       case (EL_P2_2D,EL_Q2_2D)
@@ -702,6 +700,9 @@ contains
     else
       nullify(rdofSubset%p_DdofPosition)
     end if
+
+    ! Deallocate temporal memory
+    deallocate(IdofsLoc)
 
   end subroutine dofprep_initDofSetAtBoundary
 
