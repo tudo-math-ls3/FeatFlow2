@@ -432,13 +432,6 @@ contains
             rtimestep%dTime, derrorL1=derrorL1, derrorL2=derrorL2,&
             derrorH1=derrorH1, rcollection=rcollection)
 
-        ! Perform benchmark specific checks
-        if (trim(adjustl(benchmark)) .eq. 'Gaussian-Hill-2D') then
-          call transp_errestDispersionGHill(rparlist, ssectionName,&
-              rproblem%p_rproblemLevelMax, rsolutionPrimal,&
-              rtimestep%dTime, derrorDispersion, rcollection)
-        end if
-
         ! Output solution to file
         call transp_outputSolution(rparlist, ssectionName,&
             rproblem%p_rproblemLevelMax,&
@@ -557,6 +550,13 @@ contains
         call sys_halt()
       end if
       
+      ! Perform benchmark specific checks
+      if (trim(adjustl(benchmark)) .eq. 'Gaussian-Hill-2D') then
+        call transp_errestDispersionGHill(rparlist, ssectionName,&
+            rproblem%p_rproblemLevelMax, rsolutionPrimal,&
+            rtimestep%dTime, derrorDispersion, rcollection)
+      end if
+
     else
 
       ! Just output the computational mesh and exit
@@ -645,7 +645,7 @@ contains
     ! time-stepping structure
     type(t_timestep), intent(inout) :: rtimestep
 
-    ! solver struchture
+    ! solver structure
     type(t_solver), intent(inout), target :: rsolver
 
     ! collection structure
