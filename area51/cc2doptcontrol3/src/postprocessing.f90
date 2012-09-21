@@ -1487,6 +1487,7 @@ contains
             rsolution%p_rspaceTimeVector%p_rtimediscr%dtimeInit,&
             rsolution%p_rspaceTimeVector%p_rtimediscr%dtimeMax,&
             0.0_DP,1.0_DP,dtimerel)
+        dtimerel = min(max(0.0_DP,dtimerel),1.0_DP)
 
         ! Get the solution
         iindex = -1
@@ -1507,6 +1508,7 @@ contains
             rsolution%p_rspaceTimeVector%p_rtimediscr%dtimeInit,&
             rsolution%p_rspaceTimeVector%p_rtimediscr%dtimeMax,&
             0.0_DP,1.0_DP,dtimerel)
+        dtimerel = min(max(0.0_DP,dtimerel),1.0_DP)
 
         ! Get the solution
         iindex = -1

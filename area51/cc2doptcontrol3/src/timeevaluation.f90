@@ -71,6 +71,7 @@ contains
         rspaceTimeVector%p_rtimeDiscr%dtimeInit,&
         rspaceTimeVector%p_rtimeDiscr%dtimeMax,&
         0.0_DP,dntimesteps,dabstime)
+    dabstime = min(max(0.0_DP,dabstime),1.0_DP)
 
     ! Is the destination vector empty? If yes, create a new one.
     if (rvector%NEQ .eq. 0) then

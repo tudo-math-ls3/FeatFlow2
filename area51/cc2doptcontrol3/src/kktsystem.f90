@@ -2524,6 +2524,7 @@ contains
         ! Rescale the time into the range [0,1].
         call mprim_linearRescale(dacttime,&
             p_rtimeDiscr%dtimeInit,p_rtimeDiscr%dtimeMax,0.0_DP,1.0_DP,dacttime)
+        dacttime = min(max(0.0_DP,dacttime),1.0_DP)
         
         ! Get the control at that time.
         call sptivec_getTimestepDataByTime (&

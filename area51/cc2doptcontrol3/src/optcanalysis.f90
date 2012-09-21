@@ -336,6 +336,7 @@ contains
     call mprim_linearRescale(dtime,&
         rprimalSol%p_rvector%p_rtimeDiscr%dtimeInit,rprimalSol%p_rvector%p_rtimeDiscr%dtimeMax,&
         0.0_DP,1.0_DP,dtimerel)
+    dtimerel = min(max(0.0_DP,dtimerel),1.0_DP)
 
     ! Reserve memory in the pool for the solution
     iindex = -1
