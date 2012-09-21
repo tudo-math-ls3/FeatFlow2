@@ -420,7 +420,7 @@ contains
         rsolver%iresnorm, rsolver%iresnorm)
 
     call parlst_getvalue_double (p_rsection, "domega", &
-                                 rsolver%domega, rsolver%domega)
+        rsolver%domega, rsolver%domega)
 
   end subroutine
 

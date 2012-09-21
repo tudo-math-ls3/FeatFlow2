@@ -631,8 +631,7 @@ contains
         ! -----------------------------------------------
         if ((p_roptcBDCspace%rdirichletBoundary%nregions .eq. 0) .and. &
             (p_roptcBDCspace%rdirichletControlBoundary%nregions .eq. 0)) then
-          call vecfil_subvectorL1To0byLmass (rvector,1,rasmTemplates%rmatrixMassLumpInt)
-          !call vecfil_subvectorSmallL1To0 (rvector,1)
+          call vecfil_solL1To0byLmass (rvector%Rvectorblock(1),rasmTemplates%rmatrixMassLumpInt)
         end if
 
       end select      
@@ -673,8 +672,7 @@ contains
         ! -----------------------------------------------
         if ((p_roptcBDCspace%rdirichletBoundary%nregions .eq. 0) .and. &
             (p_roptcBDCspace%rdirichletControlBoundary%nregions .eq. 0)) then
-          !call vecfil_subvectorToL20byLMass (rvector,1,rasmTemplates%rmatrixMassLumpInt)
-          call vecfil_subvectorSmallL1To0 (rvector,1)
+          call vecfil_rhsL1To0ByLmass (rvector%RvectorBlock(1),rasmTemplates%rmatrixMassLumpInt)
         end if
 
       end select      
@@ -715,8 +713,7 @@ contains
         ! -----------------------------------------------
         if ((p_roptcBDCspace%rdirichletBoundary%nregions .eq. 0) .and. &
             (p_roptcBDCspace%rdirichletControlBoundary%nregions .eq. 0)) then
-          !call vecfil_subvectorToL20byLMass (rvector,1,rasmTemplates%rmatrixMassLumpInt)
-          call vecfil_subvectorSmallL1To0 (rvector,1)
+          call vecfil_rhsL1To0ByLmass (rvector%Rvectorblock(1),rasmTemplates%rmatrixMassLumpInt)
         end if
 
       end select      

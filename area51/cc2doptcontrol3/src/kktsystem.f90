@@ -2021,7 +2021,8 @@ contains
 
 !<subroutine>
 
-  subroutine kkt_calcControlResDirDeriv (rkktsystemDirDeriv,rrhs,rresidual,dres,iresnorm)
+  subroutine kkt_calcControlResDirDeriv (rkktsystemDirDeriv,rrhs,rresidual,&
+      dres,iresnorm)
   
 !<description>
   ! Calculates the residual of the control equation of the linearised

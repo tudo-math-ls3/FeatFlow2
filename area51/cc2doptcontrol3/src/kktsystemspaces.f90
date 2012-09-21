@@ -161,6 +161,9 @@ module kktsystemspaces
   
   ! Calculates the norm of a control vector
   public :: kktsp_getNormControl
+
+  ! Compares the norms of the subvectors on the terminal.
+  public :: kktsp_controlCompare
   
 contains
 
@@ -1008,5 +1011,47 @@ contains
     end if
     
   end function
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine kktsp_controlCompare (rx,ry)
+  
+!<description>
+  ! Prints the norms of the subvectors in rx and ry to the terminal.
+!</description>
+
+!<input>
+  ! Source vector in the control space.
+  type(t_controlSpace), intent(inout) :: rx
+  
+  ! Multiplication factor
+  type(t_controlSpace), intent(inout) :: ry
+!</input>
+
+!</subroutine>
+
+    ! local variables
+    type(t_vectorBlock), pointer :: p_rx,p_ry
+    integer :: i
+    real(DP) :: dnorm1, dnorm2
+
+    if (associated (rx%p_rvector)) then
+    
+      do i=1,rx%p_rvector%NEQtime
+        call sptivec_getVectorFromPool (rx%p_rvectorAccess,i,p_rx)
+        call sptivec_getVectorFromPool (ry%p_rvectorAccess,i,p_ry)
+        
+        dnorm1 = lsysbl_vectorNorm (p_rx,LINALG_NORML2)
+        dnorm2 = lsysbl_vectorNorm (p_ry,LINALG_NORML2)
+        call output_line (&
+            "Vector comparison: ||rx("//trim(sys_siL(i,10))//")|| = "//trim(sys_sdEL(dnorm1,10))//&
+            ", ||ry("//trim(sys_siL(i,10))//")|| = "//trim(sys_sdEL(dnorm2,10)))
+      end do
+
+    end if
+
+  end subroutine
 
 end module

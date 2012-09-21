@@ -637,18 +637,74 @@ contains
       ! -------------------------------------------
       case (CCSPACE_PRIMAL)
       
-        ! Write the solution data
-        call ucd_addVectorByVertex (rexport, &
-            "solution_p", UCD_VAR_STANDARD, Rvector%RvectorBlock(1))
+        select case (rpostproc%p_rsettingsDiscr%ielementType)
+        
+        ! --------------------
+        ! Q2
+        ! Manual output.
+        ! --------------------
+        case (1)
+          ! Data arrays
+          call lsyssc_getbase_double (Rvector%RvectorBlock(1),p_Ddata1)
+          
+          ! Size of the arrays
+          nvt = Rvector%p_rblockDiscr%p_rtriangulation%nvt
+          nmt = Rvector%p_rblockDiscr%p_rtriangulation%nmt
+          nel = Rvector%p_rblockDiscr%p_rtriangulation%nel
+          
+          ! Write the velocity field
+          call ucd_addVariableVertexBased(rexport, "solution_p", UCD_VAR_STANDARD,&
+              p_Ddata1(1:nvt), &
+              DdataMid=p_Ddata1(nvt+1:nvt+nmt), &
+              DdataElem=p_Ddata1(nvt+nmt+1:nvt+nmt+nel))
+              
+        ! --------------------
+        ! Standard output
+        ! --------------------
+        case default
+
+          ! Write the solution data
+          call ucd_addVectorByVertex (rexport, &
+              "solution_p", UCD_VAR_STANDARD, Rvector%RvectorBlock(1))
+        
+        end select
       
       ! -------------------------------------------
       ! Dual equation
       ! -------------------------------------------
       case (CCSPACE_DUAL)
 
-        ! Write the solution data
-        call ucd_addVectorByVertex (rexport, &
-            "solution_d", UCD_VAR_STANDARD, Rvector%RvectorBlock(1))
+        select case (rpostproc%p_rsettingsDiscr%ielementType)
+        
+        ! --------------------
+        ! Q2
+        ! Manual output.
+        ! --------------------
+        case (1)
+          ! Data arrays
+          call lsyssc_getbase_double (Rvector%RvectorBlock(1),p_Ddata1)
+          
+          ! Size of the arrays
+          nvt = Rvector%p_rblockDiscr%p_rtriangulation%nvt
+          nmt = Rvector%p_rblockDiscr%p_rtriangulation%nmt
+          nel = Rvector%p_rblockDiscr%p_rtriangulation%nel
+          
+          ! Write the velocity field
+          call ucd_addVariableVertexBased(rexport, "solution_d", UCD_VAR_STANDARD,&
+              p_Ddata1(1:nvt), &
+              DdataMid=p_Ddata1(nvt+1:nvt+nmt), &
+              DdataElem=p_Ddata1(nvt+nmt+1:nvt+nmt+nel))
+              
+        ! --------------------
+        ! Standard output
+        ! --------------------
+        case default
+
+          ! Write the solution data
+          call ucd_addVectorByVertex (rexport, &
+              "solution_d", UCD_VAR_STANDARD, Rvector%RvectorBlock(1))
+              
+        end select
       
       ! -------------------------------------------
       ! Control equation
@@ -662,11 +718,45 @@ contains
         ! -------------------------------------------------
         ! Distributed control
         ! -------------------------------------------------
-        if (roptcontrol%dalphaDistC .ge. 0.0_DP) then
-          call ucd_addVectorByVertex (rexport, &
-              "control", UCD_VAR_STANDARD,Rvector%RvectorBlock(icomp))
+        select case (rpostproc%p_rsettingsDiscr%ielementType)
+        
+        ! --------------------
+        ! Q2
+        ! Manual output.
+        ! --------------------
+        case (1)
+          ! Data arrays
+          call lsyssc_getbase_double (Rvector%RvectorBlock(icomp),p_Ddata1)
+          
+          ! Size of the arrays
+          nvt = Rvector%p_rblockDiscr%p_rtriangulation%nvt
+          nmt = Rvector%p_rblockDiscr%p_rtriangulation%nmt
+          nel = Rvector%p_rblockDiscr%p_rtriangulation%nel
+          
+          ! Write the velocity field
+          call ucd_addVariableVertexBased(rexport, "control", UCD_VAR_STANDARD,&
+              p_Ddata1(1:nvt), &
+              DdataMid=p_Ddata1(nvt+1:nvt+nmt), &
+              DdataElem=p_Ddata1(nvt+nmt+1:nvt+nmt+nel))
+              
           icomp = icomp + 1
-        end if
+
+        ! --------------------
+        ! Standard output
+        ! --------------------
+        case default
+
+          ! -------------------------------------------------
+          ! Distributed control
+          ! -------------------------------------------------
+          if (roptcontrol%dalphaDistC .ge. 0.0_DP) then
+            call ucd_addVectorByVertex (rexport, &
+                "control", UCD_VAR_STANDARD,Rvector%RvectorBlock(icomp))
+            icomp = icomp + 1
+          end if
+
+        end select
+
 
       end select
     

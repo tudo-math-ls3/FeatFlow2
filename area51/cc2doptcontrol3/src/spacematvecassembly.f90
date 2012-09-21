@@ -4469,7 +4469,7 @@ contains
     real(DP) :: dbasI
     real(DP) :: dylin1, dylin2
     real(DP) :: dy1,dy2,dz1,dz2,du1,du2,dulin1,dulin2,drhs1,drhs2
-    real(DP) :: dx,dy,dweight,dweight2
+    real(DP) :: dx,dy,dweight,dweight2,dweight3
     real(DP) :: dalpha
     integer :: iel, icubp, idofe, ierror, iid
     integer :: copType
@@ -4995,12 +4995,12 @@ contains
                 
                 ! Calculate the entries in the RHS.
                 p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
-                    dweight2 * p_DcubWeight(icubp,iel) * &
-                    (dy1 - dz1) * dbasI 
+                    p_DcubWeight(icubp,iel) * &
+                    (dweight2*dy1 - dweight*dz1) * dbasI 
 
                 p_DlocalVector2(idofe,iel) = p_DlocalVector2(idofe,iel) + &
-                    dweight2 * p_DcubWeight(icubp,iel) * &
-                    (dy2 - dz2) * dbasI 
+                    p_DcubWeight(icubp,iel) * &
+                    (dweight2*dy2 - dweight*dz2) * dbasI 
                     
               end do ! jdofe
 
@@ -5046,12 +5046,12 @@ contains
                   dz2 = p_Dz2(icubp,iel,DER_FUNC2D)
                   
                   p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
-                      dweight2 * p_DcubWeight(icubp,iel) * &
-                      ( dy1 - dz1 ) * dbasI 
+                      p_DcubWeight(icubp,iel) * &
+                      ( dweight2*dy1 - dweight*dz1 ) * dbasI 
 
                   p_DlocalVector2(idofe,iel) = p_DlocalVector2(idofe,iel) + &
-                      dweight2 * p_DcubWeight(icubp,iel) * &
-                      ( dy2 - dz2 ) * dbasI 
+                      p_DcubWeight(icubp,iel) * &
+                      ( dweight2*dy2 - dweight*dz2 ) * dbasI 
                       
                 end do ! jdofe
                 
@@ -5129,12 +5129,12 @@ contains
                 ! (1st derivatives) by the cubature weight and sum up
                 ! into the local vectors.
                 p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
-                    dweight2 * p_DcubWeight(icubp,iel) * &
-                    ( dylin1 * dbasI ) ! (y',phi)
+                    p_DcubWeight(icubp,iel) * &
+                    ( dweight2*dylin1 * dweight*dbasI ) ! (y',phi)
 
                 p_DlocalVector2(idofe,iel) = p_DlocalVector2(idofe,iel) + &
-                    dweight2 * p_DcubWeight(icubp,iel) * &
-                    ( dylin2 * dbasI ) ! (y',phi)
+                    p_DcubWeight(icubp,iel) * &
+                    ( dweight2*dylin2 * dweight*dbasI ) ! (y',phi)
                     
               end do ! jdofe
 
@@ -5702,8 +5702,8 @@ contains
                 
                 ! Calculate the entries in the RHS.
                 p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
-                    dweight2 * p_DcubWeight(icubp,iel) * &
-                    (dy1 - dz1) * dbasI 
+                    p_DcubWeight(icubp,iel) * &
+                    (dweight2*dy1 - dweight*dz1) * dbasI 
 
               end do ! jdofe
 
@@ -5747,8 +5747,8 @@ contains
                   dz1 = p_Dz1(icubp,iel,DER_FUNC2D)
                   
                   p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
-                      dweight2 * p_DcubWeight(icubp,iel) * &
-                      ( dy1 - dz1 ) * dbasI 
+                      p_DcubWeight(icubp,iel) * &
+                      ( dweight2*dy1 - dweight*dz1 ) * dbasI 
 
                 end do ! jdofe
                 

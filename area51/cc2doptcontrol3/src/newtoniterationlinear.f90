@@ -222,6 +222,9 @@ module newtoniterationlinear
     ! KKT system hierarchy for RHS vectors on the different levels
     type(t_kktsystemDirDerivHierarchy) :: rrhsHier
   
+    ! KKT system hierarchy for temporary vectors on the different levels
+    type(t_kktsystemDirDerivHierarchy) :: rtempHier
+
     ! Cycle counter
     integer, dimension(:), pointer :: p_IcycleCount => null()
 
@@ -906,29 +909,34 @@ contains
           (rlinsolParam%riter%niterations .ne. 0)) then
         ! Restart
 
-        ! Initialise used vectors with zero
-        call kktsp_clearControl(p_rr)
-        call kktsp_clearControl(p_rp%p_rcontrolLin)
-        call kktsp_clearControl(p_rAp)
-        
         ! Initialization
         dalpha = 1.0_DP
         dbeta  = 1.0_DP
         dgamma = 1.0_DP
         dgammaOld = 1.0_DP
-
+        
+        ! DEBUG!!!
+        !call kktsp_controlCopy (p_rr,p_rp%p_rcontrolLin)
+        
         ! Create the initial defect in rd
         call output_line ("Space-time CG: Restart.")
-        output_iautoOutputIndent = output_iautoOutputIndent + 2
-        call newtonlin_getResidual (rlinsolParam,rkktsystemDirDeriv,rrhs,p_rr,rlocalStat)
-        output_iautoOutputIndent = output_iautoOutputIndent - 2
+        !output_iautoOutputIndent = output_iautoOutputIndent + 2
+        !call newtonlin_getResidual (rlinsolParam,rkktsystemDirDeriv,rrhs,p_rr,rlocalStat)
+        !output_iautoOutputIndent = output_iautoOutputIndent - 2
             
-        call newtonlin_sumStatistics(rlocalStat,rstatistics,NLIN_STYPE_RESCALC)
+        !call newtonlin_sumStatistics(rlocalStat,rstatistics,NLIN_STYPE_RESCALC)
+
+        ! DEBUG!!!
+        !call kktsp_controlCompare (p_rr,p_rp%p_rcontrolLin)
             
         call kktsp_controlCopy (p_rr,p_rp%p_rcontrolLin)
 
         ! Scalar product of rp.
         dgamma = kktsp_scalarProductControl(p_rr,p_rr)
+
+        ! Initialise used vectors with zero
+        !call kktsp_clearControl(p_rr)
+        call kktsp_clearControl(p_rAp)
 
       end if
     
@@ -997,7 +1005,10 @@ contains
           rkktsystemDirDeriv%p_rcontrolLin,1.0_DP)
 
       ! Update the residual
-      call kktsp_controlLinearComb (p_rAp,-dalpha,p_rr,1.0_DP)
+      !call kktsp_controlLinearComb (p_rAp,-dalpha,p_rr,1.0_DP)
+      output_iautoOutputIndent = output_iautoOutputIndent + 2
+      call newtonlin_getResidual (rlinsolParam,rkktsystemDirDeriv,rrhs,p_rr,rlocalStat)
+      output_iautoOutputIndent = output_iautoOutputIndent - 2
           
       ! Calculate beta
       dgammaOld = dgamma
@@ -1110,6 +1121,59 @@ contains
 
 !<subroutine>
 
+  subroutine newtonlin_initExtParams (rsolver,ssection,rparamList,rparentSolver)
+  
+!<description>
+  ! Initialises extended solver parameters according to a parameter list.
+!</description>
+  
+!<input>
+  ! Parameter list with the parameters configuring the nonlinear solver
+  type(t_parlist), intent(in) :: rparamList
+
+  ! Name of the section in the parameter list containing the parameters
+  ! of the nonlinear solver.
+  character(LEN=*), intent(in) :: ssection
+
+  ! OPTIONAL: Solver structure of the main solver.
+  ! If present, default parameters are taken from here.
+  type(t_linsolParameters), intent(in), optionaL :: rparentSolver
+!</input>
+
+!<output>
+  ! Solver structure of the subsolver to be set up
+  type(t_linsolParameters), intent(inout) :: rsolver
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    type(t_parlstSection), pointer :: p_rsection
+
+    call parlst_querysection(rparamList, ssection, p_rsection)
+
+    if (.not. associated(p_rsection)) then
+      call output_line ("Cannot create linear solver; no section """//&
+          trim(ssection)//"""!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"newtonlin_initExtParams")
+      call sys_halt()
+    end if
+
+    ! Generation of the initial condition    
+    if (present(rparentSolver)) then
+      rsolver%cspatialInitCondPolicy = rparentSolver%cspatialInitCondPolicy
+    end if
+    
+    ! May be overwritten by a parameter in the section.
+    call parlst_getvalue_int (p_rsection, "cspatialInitCondPolicy", &  
+        rsolver%cspatialInitCondPolicy, rsolver%cspatialInitCondPolicy)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
   subroutine newtonlin_initStrucMultigrid (rsolver,rlinsolMultigrid,rkktsystemHierarchy)
   
 !<description>
@@ -1157,13 +1221,16 @@ contains
     case (NLIN_SOLVER_RICHARDSON)
     
       ! Partial initialisation of the corresponding linear solver structure
+      allocate(rlinsolMultigrid%p_rsubSolvers(1)%p_rsubnodeRichardson)
+
       rlinsolMultigrid%p_rsubSolvers(1)%csolverType = NLIN_SOLVER_RICHARDSON
       call newtonlin_initBasicParams (&
           rlinsolMultigrid%p_rsubSolvers(1)%rprecParameters,&
           rlinsolMultigrid%p_rsubSolvers(1)%riter,&
           rlinsolMultigrid%ssectionCoarseGridSolver,rlinsolMultigrid%p_rparList)
-
-      allocate(rlinsolMultigrid%p_rsubSolvers(1)%p_rsubnodeRichardson)
+      call newtonlin_initExtParams (&
+          rlinsolMultigrid%p_rsubSolvers(1),&
+          rlinsolMultigrid%ssectionCoarseGridSolver,rlinsolMultigrid%p_rparList,rsolver)
 
     ! -------------------------------
     ! CG solver
@@ -1171,12 +1238,16 @@ contains
     case (NLIN_SOLVER_CG)
     
       ! Partial initialisation of the corresponding linear solver structure
+      allocate(rlinsolMultigrid%p_rsubSolvers(1)%p_rsubnodeCG)
+
       rlinsolMultigrid%p_rsubSolvers(1)%csolverType = NLIN_SOLVER_CG
       call newtonlin_initBasicParams (&
           rlinsolMultigrid%p_rsubSolvers(1)%rprecParameters,&
           rlinsolMultigrid%p_rsubSolvers(1)%riter,&
           rlinsolMultigrid%ssectionCoarseGridSolver,rlinsolMultigrid%p_rparList)
-      allocate(rlinsolMultigrid%p_rsubSolvers(1)%p_rsubnodeCG)
+      call newtonlin_initExtParams (&
+          rlinsolMultigrid%p_rsubSolvers(1),&
+          rlinsolMultigrid%ssectionCoarseGridSolver,rlinsolMultigrid%p_rparList,rsolver)
 
     case default
       call output_line ("Invalid coarse grid solver.", &
@@ -1197,28 +1268,34 @@ contains
       case (NLIN_SOLVER_RICHARDSON)
 
         ! Partial initialisation of the corresponding linear solver structure
+        allocate(rlinsolMultigrid%p_rsubSolvers(ilevel)%p_rsubnodeRichardson)
+
         rlinsolMultigrid%p_rsubSolvers(ilevel)%csolverType = NLIN_SOLVER_RICHARDSON
         call newtonlin_initBasicParams (&
             rlinsolMultigrid%p_rsubSolvers(ilevel)%rprecParameters,&
             rlinsolMultigrid%p_rsubSolvers(ilevel)%riter,&
             rlinsolMultigrid%ssectionSmoother,rlinsolMultigrid%p_rparList)
+        call newtonlin_initExtParams (&
+            rlinsolMultigrid%p_rsubSolvers(ilevel),&
+            rlinsolMultigrid%ssectionSmoother,rlinsolMultigrid%p_rparList,rsolver)
         
-        allocate(rlinsolMultigrid%p_rsubSolvers(ilevel)%p_rsubnodeRichardson)
-
       ! -------------------------------
       ! CG smoother
       ! -------------------------------
       case (NLIN_SOLVER_CG)
 
         ! Partial initialisation of the corresponding linear solver structure
+        allocate(rlinsolMultigrid%p_rsubSolvers(ilevel)%p_rsubnodeCG)
+
         rlinsolMultigrid%p_rsubSolvers(ilevel)%csolverType = NLIN_SOLVER_CG
         call newtonlin_initBasicParams (&
             rlinsolMultigrid%p_rsubSolvers(ilevel)%rprecParameters,&
             rlinsolMultigrid%p_rsubSolvers(ilevel)%riter,&
             rlinsolMultigrid%ssectionSmoother,rlinsolMultigrid%p_rparList)
+        call newtonlin_initExtParams (&
+            rlinsolMultigrid%p_rsubSolvers(ilevel),&
+            rlinsolMultigrid%ssectionSmoother,rlinsolMultigrid%p_rparList,rsolver)
         
-        allocate(rlinsolMultigrid%p_rsubSolvers(ilevel)%p_rsubnodeCG)
-
       case default
         call output_line ("Invalid smoother.", &
             OU_CLASS_ERROR,OU_MODE_STD,"newtonlin_initStrucMultigrid")
@@ -1283,6 +1360,7 @@ contains
     call kkth_initHierarchyDirDeriv (rlinsolMultigrid%rsolutionHier,rsolutionHierarchy)
     call kkth_initHierarchyDirDeriv (rlinsolMultigrid%rdefectHier,rsolutionHierarchy)
     call kkth_initHierarchyDirDeriv (rlinsolMultigrid%rrhsHier,rsolutionHierarchy)
+    call kkth_initHierarchyDirDeriv (rlinsolMultigrid%rtempHier,rsolutionHierarchy)
    
   end subroutine
 
@@ -1317,6 +1395,7 @@ contains
     call kkth_doneHierarchyDirDeriv (rlinsolMultigrid%rsolutionHier)
     call kkth_doneHierarchyDirDeriv (rlinsolMultigrid%rdefectHier)
     call kkth_doneHierarchyDirDeriv (rlinsolMultigrid%rrhsHier)
+    call kkth_doneHierarchyDirDeriv (rlinsolMultigrid%rtempHier)
 
   end subroutine
 
@@ -1519,9 +1598,9 @@ contains
 
     ! local variables
     type(t_linsolMultigrid), pointer :: p_rsubnodeMultigrid
-    real(DP) :: dres
+    real(DP) :: dres,dalpha
     type(t_kktsystemDirDeriv), pointer :: p_rkktSysRhsCoarse, p_rkktSysSolCoarse, p_rkktSysSolFine
-    type(t_kktsystemDirDeriv), pointer :: p_rkktSysSolution, p_rkktSysDefect
+    type(t_kktsystemDirDeriv), pointer :: p_rkktSysSolution, p_rkktSysDefect, p_rkktSysTemp
     type(t_newtonlinSolverStat) :: rlocalStat
     type(t_iterationControl), pointer :: p_riter
     type(t_iterationControl), target :: riterLocal
@@ -1646,6 +1725,7 @@ contains
     call kkth_getKKTsystemDirDeriv (p_rsubnodeMultigrid%rsolutionHier,ilevel-1,p_rkktSysSolCoarse)
     call kkth_getKKTsystemDirDeriv (p_rsubnodeMultigrid%rsolutionHier,ilevel,p_rkktSysSolFine)
     call kkth_getKKTsystemDirDeriv (p_rsubnodeMultigrid%rdefectHier,ilevel,p_rkktSysDefect)
+    call kkth_getKKTsystemDirDeriv (p_rsubnodeMultigrid%rtempHier,ilevel,p_rkktSysTemp)
     
     ! Zero initial solution
     call kkt_clearDirDeriv (p_rkktSysSolution)
@@ -1656,10 +1736,12 @@ contains
     do
     
       if (ilevel .lt. nlevels) then
-        ! On level < nlevels, do not calculate the next residual but
-        ! exit immediately if the maximum number of iterations
-        ! (= cycle count) is reached.
-        if (p_riter%niterations .ge. p_riter%nmaxIterations) exit
+        if (p_riter%cstatus .ne. ITC_STATUS_UNDEFINED) then
+          ! On level < nlevels, do not calculate the next residual but
+          ! exit immediately if the maximum number of iterations
+          ! (= cycle count) will be reached.
+          if (p_riter%niterations+1 .ge. p_riter%nmaxIterations) exit
+        end if
       end if
       
       ! Get the residual
@@ -1701,7 +1783,18 @@ contains
         if (p_riter%cstatus .eq. ITC_STATUS_UNDEFINED) then
           ! Remember the initial residual
           call itc_initResidual(p_riter,dres)
+        else
+          ! Push the residual, increase the iteration counter
+          call itc_pushResidual(p_riter,dres)
         end if
+
+        if (rlinsolParam%rprecParameters%ioutputLevel .ge. 2) then
+          call output_line ("Space-time MG: Level "//trim(sys_siL(ilevel,10))// &
+              ", Step "//trim(sys_siL(p_riter%niterations,10))// &
+              ", ||res(u)|| = "// &
+              trim(sys_sdEL(dres,10)))
+        end if
+
       end if
       
       ! Apply presmoothing
@@ -1790,12 +1883,22 @@ contains
       
       call stat_stopTimer(rstatistics%rtimeProlRest)
 
+      dalpha = 1.0_DP
+!      call newtonlin_calcCorrEnergyMin (rlinsolParam,&
+!          p_rkktSysSolution,p_rkktSysDefect,rrhs,&
+!          p_rkktSysTemp%p_rcontrolLin,dalpha)
+!
+!      if (rlinsolParam%rprecParameters%ioutputLevel .ge. 2) then
+!        call output_line (&
+!            "Space-time Multigrid: Coarse grid correction weight: "//trim(sys_sdEL(dalpha,10)))
+!      end if
+
       ! And the actual correction...
       call kktsp_controlLinearComb (&
           p_rkktSysDefect%p_rcontrolLin,&
           p_rsubnodeMultigrid%dcoarseGridCorrectionWeight,&
           p_rkktSysSolution%p_rcontrolLin,&
-          1.0_DP)
+          dalpha)
 
       ! Apply postsmoothing
       if (p_rsubnodeMultigrid%nsmpost .ne. 0) then
@@ -1841,6 +1944,163 @@ contains
         
   end subroutine
 
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine newtonlin_calcCorrEnergyMin (rlinsolParam,&
+      rvector,rcorrVector,rrhs,rtempVector,dalpha,rstatistics)
+
+!<description>
+  ! This routine calculates the optimal coarse grid correction parameter
+  ! alpha adaptively, using the energy minimisation formula.
+!</description>
+
+!<inputoutput>
+  ! Parameters for the iteration.
+  ! The output parameters are changed according to the iteration.
+  type(t_linsolParameters), intent(inout), target :: rlinsolParam
+
+  ! The current (uncorrected) solution vector
+  type(t_kktsystemDirDeriv), intent(inout) :: rvector
+
+  ! The correction vector which war calculated with the coarse grid
+  ! and is to be added to the solution vector:
+  !   x = x + alpha * correction
+  ! (with correction=<tex>$P^{-1}(b-Ax)$</tex> and <tex>$P^{-1}=$</tex> multigrid on the
+  ! coarse level.
+  type(t_kktsystemDirDeriv), intent(inout) :: rcorrVector
+
+  ! The current RHS vector
+  type(t_controlSpace), intent(inout) :: rrhs
+
+!</input>
+
+!<inputoutput>
+  ! A temporary vector
+  type(t_controlSpace), intent(inout) :: rtempVector
+!</inputoutput>
+
+!<output>
+  ! The optimal correction parameter <tex>$\alpha$</tex> for the coarse grid correction.
+  real(DP), intent(out) :: dalpha
+
+  ! Solver statistics. Statistics of the residual calculation are added to this.
+  type(t_newtonlinSolverStat), intent(out), optional :: rstatistics
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    type(t_newtonlinSolverStat) :: rlocatStat
+    real(DP) :: a,b
+
+    ! We calculate the optimal alpha by energy minimisation, i.e.
+    ! (c.f. p. 206 in Turek`s book):
+    !
+    !             ( f_k - A_k x_k  ,  corr_k )
+    ! alpha_k := -------------------------------------
+    !             ( A_k corr_k     ,  corr_k )
+    !
+    ! For this purpose, we need the temporary vector.
+    !
+    ! Calculate nominator of the fraction
+
+    call newtonlin_getResidual (rlinsolParam,rvector,rrhs,rtempVector,rlocatStat)
+    a = kktsp_scalarProductControl(rtempVector,rcorrVector%p_rcontrolLin)
+
+    call newtonlin_applyOperator (rlinsolParam,rcorrVector,rtempVector,rlocatStat)
+    b = kktsp_scalarProductControl(rtempVector,rcorrVector%p_rcontrolLin)
+
+    ! Return the alpha.
+    if (b .ne. 0.0_DP) then
+      dalpha = a/b
+    else
+      dalpha = 1.0_DP
+    end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine newtonlin_calcCorrDefMin (rlinsolParam,&
+      rvector,rcorrVector,rrhs,rtempVector,rtempVector2,dalpha,rstatistics)
+
+!<description>
+  ! This routine calculates the optimal coarse grid correction parameter
+  ! alpha adaptively, using the energy minimisation formula.
+!</description>
+
+!<inputoutput>
+  ! Parameters for the iteration.
+  ! The output parameters are changed according to the iteration.
+  type(t_linsolParameters), intent(inout), target :: rlinsolParam
+
+  ! The current (uncorrected) solution vector
+  type(t_kktsystemDirDeriv), intent(inout) :: rvector
+
+  ! The correction vector which war calculated with the coarse grid
+  ! and is to be added to the solution vector:
+  !   x = x + alpha * correction
+  ! (with correction=<tex>$P^{-1}(b-Ax)$</tex> and <tex>$P^{-1}=$</tex> multigrid on the
+  ! coarse level.
+  type(t_kktsystemDirDeriv), intent(inout) :: rcorrVector
+
+  ! The current RHS vector
+  type(t_controlSpace), intent(inout) :: rrhs
+
+!</input>
+
+!<inputoutput>
+  ! A temporary vector
+  type(t_controlSpace), intent(inout) :: rtempVector
+
+  ! A second temporary vector
+  type(t_controlSpace), intent(inout) :: rtempVector2
+!</inputoutput>
+
+!<output>
+  ! The optimal correction parameter <tex>$\alpha$</tex> for the coarse grid correction.
+  real(DP), intent(out) :: dalpha
+
+  ! Solver statistics. Statistics of the residual calculation are added to this.
+  type(t_newtonlinSolverStat), intent(out) :: rstatistics
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    real(DP) :: a,b
+    type(t_newtonlinSolverStat) :: rlocatStat
+
+    ! We calculate the optimal alpha by energy minimisation, i.e.
+    ! (c.f. p. 206 in Turek`s book):
+    !
+    !             ( f_k - A_k x_k  ,  A_k corr_k )
+    ! alpha_k := -------------------------------------
+    !             ( A_k corr_k     ,  A_k corr_k )
+    !
+    ! For this purpose, we need the temporary vector.
+    !
+    ! Calculate nominator of the fraction
+
+    call newtonlin_getResidual (rlinsolParam,rvector,rrhs,rtempVector,rlocatStat)
+    call newtonlin_applyOperator (rlinsolParam,rcorrVector,rtempVector2,rlocatStat)
+
+    ! Calculate the nominator / demoninator of the fraction
+    a = kktsp_scalarProductControl(rtempVector,rtempVector2)
+    b = kktsp_scalarProductControl(rtempVector2,rtempVector2)
+
+    ! Return the alpha.
+    if (b .ne. 0.0_DP) then
+      dalpha = a/b
+    else
+      dalpha = 1.0_DP
+    end if
+
+  end subroutine
   
 ! ***************************************************************************
 
@@ -2162,15 +2422,12 @@ contains
     ! Get the corresponding parameters from the parameter list.
     call newtonlin_initBasicParams (&
         rlinsolParam%rprecParameters,rlinsolParam%riter,ssection,rparlist)
+    call newtonlin_initExtParams (rlinsolParam,ssection,rparlist)
 
     ! Solver type
     call parlst_getvalue_int (rparlist, ssection, "csolverType", &
         rlinsolParam%csolverType, rlinsolParam%csolverType)
 
-    ! Generation of the initial condition
-    call parlst_getvalue_int (rparlist, ssection, "cspatialInitCondPolicy", &
-        rlinsolParam%cspatialInitCondPolicy, rlinsolParam%cspatialInitCondPolicy)
-        
     select case (rlinsolParam%csolverType)
     
     ! -----------------------------------------------------
