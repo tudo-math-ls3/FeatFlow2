@@ -669,17 +669,6 @@ contains
                 -roperatorAsmHier%ranalyticData%p_rdebugFlags%dtimeCoupling/dtstep)
             
             ! -----------------------------------------
-            ! Laplace -- if the viscosity is constant
-            if (p_ranalyticData%p_rphysics%cviscoModel .eq. 0) then
-              call smva_getLaplaceMatrix (&
-                  roperatorAsm,p_rmatrix,p_ranalyticData%p_rphysics%dnuConst)
-            else
-              call output_line("Nonconstant viscosity not supported.",&
-                  OU_CLASS_ERROR,OU_MODE_STD,"smva_apply_primal")
-              call sys_halt()
-            end if
-
-            ! -----------------------------------------
             ! Realise the defect
             ! Boundary conditions do not need to be implemented here,
             ! they are fore sure in the solution dure to teh forward iteration.
