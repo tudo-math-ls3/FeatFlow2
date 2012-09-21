@@ -518,6 +518,7 @@ contains
     call lsysbl_releaseVector (rvecSol)
     call lsysbl_releaseVector (rvecRhs)
     call lsysbl_releaseMatrix (rmatSystem)
+    call lsyssc_releaseMatrix (rmassMatrixLumped)
 
     ! Release the cubature info structure.
     call spdiscr_releaseCubStructure(rcubatureInfo)
