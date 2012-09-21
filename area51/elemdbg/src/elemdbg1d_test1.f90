@@ -87,6 +87,7 @@ contains
   type(t_collection) :: rcollect
   character(len=SYS_STRLEN) :: sucddir
   type(t_blockSortStrategy) :: rsortStrategy
+  type(t_scalarCubatureInfo) :: rcubatureInfo
   
     ! Fetch sytem variables
     if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = './ucd'
@@ -156,11 +157,6 @@ contains
     cshape = elem_igetShape(celement)
     if(cshape .ne. BGEOM_SHAPE_LINE) then
       call output_line('Element is not a valid 1D element!', &
-        OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg1d_1')
-      call sys_halt()
-    end if
-    if(cshape .ne. cub_igetShape(ccubature)) then
-      call output_line('Element and cubature formula incompatible!', &
         OU_CLASS_ERROR, OU_MODE_STD, 'elemdbg1d_1')
       call sys_halt()
     end if
@@ -324,8 +320,12 @@ contains
       ! Set up discretisation
       call spdiscr_initBlockDiscr (rdiscretisation,1,rtriangulation)
       call spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
-          celement, ccubature, rtriangulation)
-                   
+          celement, rtriangulation)
+
+      ! Set up a cubature info structure
+      call spdiscr_createDefCubStructure(&  
+          rdiscretisation%RspatialDiscr(1), rcubatureInfo, ccubature)
+      
       ! Create matrix structure
       call lsysbl_createMatBlockByDiscr(rdiscretisation, rmatrix)
       if ((itest .eq. 103) .and. (istabil .eq. 2)) then
@@ -375,11 +375,13 @@ contains
       case(101)
         ! Assemble Mass matrix
         call stdop_assembleSimpleMatrix(rmatrix%RmatrixBlock(1,1), &
-                                        DER_FUNC1D, DER_FUNC1D)
+                                        DER_FUNC1D, DER_FUNC1D,&
+                                        rcubatureInfo=rcubatureInfo)
       
       case(102)
         ! Assemble Laplace matrix
-        call stdop_assembleLaplaceMatrix(rmatrix%RmatrixBlock(1,1))
+        call stdop_assembleLaplaceMatrix(rmatrix%RmatrixBlock(1,1),&
+                                         rcubatureInfo=rcubatureInfo)
       
       case(103)
         ! Assemble Laplace + Convection
@@ -390,7 +392,8 @@ contains
         rform%Idescriptors(2,2) = DER_FUNC1D
         rform%Dcoefficients(1) = dnu
         rform%Dcoefficients(2) = dbeta1
-        call bilf_buildMatrixScalar (rform,.false.,rmatrix%RmatrixBlock(1,1))
+        call bilf_buildMatrixScalar (rform,.false.,rmatrix%RmatrixBlock(1,1),&
+                                     rcubatureInfo)
 
         if(istabil .eq. 2) then
           ! Assemble the jump stabilisation
@@ -406,8 +409,8 @@ contains
       ! Assemble RHS vector
       rlinform%itermCount = 1
       rlinform%Idescriptors(1) = DER_FUNC1D
-      call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1),&
-            rlinform,.true.,rvecRhs%RvectorBlock(1),coeff_RHS1D,rcollect)
+      call linf_buildVectorScalar (rlinform,.true.,rvecRhs%RvectorBlock(1),&
+                                   rcubatureInfo,coeff_RHS1D,rcollect)
 
       ! In any case except for L2-projection, filter the system
       if(itest .ne. 101) then
