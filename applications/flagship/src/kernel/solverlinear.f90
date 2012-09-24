@@ -41,28 +41,31 @@
 !# 8.) linsol_solveFgmres
 !#     -> flexible GMRES(m) method
 !#
-!# 9.) linsol_precond
-!#     -> Perform preconditioning $C^{-1}Au=C^{-1}f$
+!# 9.) linsol_solveAGMG
+!#     -> AGMG solver
 !#
-!# 10.) linsol_precondJacobi
+!# 10.) linsol_precond
+!#      -> Perform preconditioning $C^{-1}Au=C^{-1}f$
+!#
+!# 11.) linsol_precondJacobi
 !#      -> Jacobi preconditioner
 !#
-!# 11.) linsol_precondSSOR
+!# 12.) linsol_precondSSOR
 !#      -> (S)SOR preconditioner
 !#
-!# 12.) linsol_precondILU
+!# 13.) linsol_precondILU
 !#      -> ILU preconditioner
 !#
-!# 13.) linsol_smooth
+!# 14.) linsol_smooth
 !#      -> Perform smoothing of $Au=f$
 !#
-!# 14.) linsol_smoothJacobi
+!# 15.) linsol_smoothJacobi
 !#      -> Jacobi smoother
 !#
-!# 15.) linsol_smoothSSOR
+!# 16.) linsol_smoothSSOR
 !#      -> (S)SOR smoother
 !#
-!# 16.) linsol_smoothILU
+!# 17.) linsol_smoothILU
 !#      -> ILU smoother
 !# </purpose>
 !##############################################################################
@@ -178,8 +181,8 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_solverMultigrid), pointer :: p_solverMultigrid
-    type(t_solver), pointer :: p_solverSinglegrid
+    type(t_solverMultigrid), pointer :: p_rsolverMultigrid
+    type(t_solver), pointer :: p_rsolverSinglegrid
     type(t_solver) :: rsolverTemp
     type(t_vectorBlock), pointer :: p_rres
     real(DP) :: doldDefect
@@ -220,7 +223,7 @@ contains
     case (SV_LINEARMG)
 
       ! Check if multigrid solver exists
-      if (.not.associated(rsolver%p_solverMultigrid)) then
+      if (.not.associated(rsolver%p_rsolverMultigrid)) then
         if (rsolver%coutputModeError .gt. 0) then
           call output_line('Multigrid solver does not exists!',&
               OU_CLASS_ERROR,rsolver%coutputModeError,'linsol_solveMultigridBlock')
@@ -229,16 +232,16 @@ contains
       end if
 
       ! Set pointer
-      p_solverMultigrid => rsolver%p_solverMultigrid
+      p_rsolverMultigrid => rsolver%p_rsolverMultigrid
 
       ! Check if multigrid solver is called for only one grid level
-      if (p_solverMultigrid%nlmin .eq. p_solverMultigrid%nlmax) then
+      if (p_rsolverMultigrid%nlmin .eq. p_rsolverMultigrid%nlmax) then
 
         !-----------------------------------------------------------------------
         ! Single grid solver: Au=b
 
         ! Check if single-grid solver exists
-        if (.not.associated(p_solverMultigrid%p_solverCoarsegrid)) then
+        if (.not.associated(p_rsolverMultigrid%p_rsolverCoarsegrid)) then
           if (rsolver%coutputModeError .gt. 0) then
             call output_line('Coarsegrid solver does not exists!',&
                 OU_CLASS_ERROR,rsolver%coutputModeError,'linsol_solveMultigridBlock')
@@ -247,30 +250,30 @@ contains
         end if
 
         ! Set pointer
-        p_solverSinglegrid => p_solverMultigrid%p_solverCoarsegrid
+        p_rsolverSinglegrid => p_rsolverMultigrid%p_rsolverCoarsegrid
 
         ! The outer nonlinear solver may have modified the linear multigrid
         ! solver, e.g., Newton`s method may have defined an absolute tolerance
         ! for the linear solver to satisfy some sufficient decrease condition.
         ! Hence, copy the original input parameters of the linear single grid
         ! solver to the temporal structure rsolverTemp and impose the new values.
-        call solver_copySolver(p_solverSinglegrid, rsolverTemp, .true., .false.)
-        call solver_copySolver(rsolver, p_solverSinglegrid, .true., .false.)
+        call solver_copySolver(p_rsolverSinglegrid, rsolverTemp, .true., .false.)
+        call solver_copySolver(rsolver, p_rsolverSinglegrid, .true., .false.)
 
         ! Perform single-grid solution
-        call linsol_solveSinglegrid(p_solverSinglegrid, ru, rf)
+        call linsol_solveSinglegrid(p_rsolverSinglegrid, ru, rf)
 
         ! Compute statistical data from the single-grid solver
-        call solver_statistics(p_solverSinglegrid, p_solverSinglegrid%iiterations)
+        call solver_statistics(p_rsolverSinglegrid, p_rsolverSinglegrid%iiterations)
 
         ! Restore the old data from the temporal structure rsolverTemp
         ! and adopt the output parameters from the single grid solver
         ! Restore the old data from the linear coarse grid solver
-        call solver_copySolver(rsolverTemp, p_solverSinglegrid, .true., .false.)
-        call solver_copySolver(p_solverSinglegrid, rsolver, .false., .true.)
+        call solver_copySolver(rsolverTemp, p_rsolverSinglegrid, .true., .false.)
+        call solver_copySolver(p_rsolverSinglegrid, rsolver, .false., .true.)
 
 
-        select case(p_solverSinglegrid%isolver)
+        select case(p_rsolverSinglegrid%isolver)
         case(LINSOL_SOLVER_JACOBI,&
              LINSOL_SOLVER_SOR,&
              LINSOL_SOLVER_SSOR)
@@ -317,12 +320,12 @@ contains
         ! Multigrid solver: Au=b
 
         ! Set pointer for residual vector
-        p_rres => p_solverMultigrid%rtempVectors(3*rproblemLevel%ilev-&
-                                                 2*p_solverMultigrid%nlmin)
+        p_rres => p_rsolverMultigrid%rtempVectors(3*rproblemLevel%ilev-&
+                                                 2*p_rsolverMultigrid%nlmin)
 
         ! Compute the initial linear residual: res=f-A*u
         call lsysbl_copyVector(rf, p_rres)
-        call lsysbl_blockMatVec(p_solverMultigrid%rmatrix(rproblemLevel%ilev),&
+        call lsysbl_blockMatVec(p_rsolverMultigrid%rmatrix(rproblemLevel%ilev),&
                                 ru, p_rres, -1.0_DP, 1.0_DP)
 
         ! Compute norm of initial defect
@@ -363,15 +366,15 @@ contains
 
 
         ! Perform prescribed number of multigrid steps
-        mgstep: do imgstep = 1, p_solverMultigrid%ilmax
+        mgstep: do imgstep = 1, p_rsolverMultigrid%ilmax
 
           ! Perform one linear two-grid step
-          mgcycle = merge(1, 2, p_solverMultigrid%icycle .eq. 1)
+          mgcycle = merge(1, 2, p_rsolverMultigrid%icycle .eq. 1)
           call linsol_solveTwogrid(rproblemLevel, rsolver, ru, rf, mgcycle)
 
           ! Compute the new linear defect: res=f-A*u
           call lsysbl_copyVector(rf, p_rres)
-          call lsysbl_blockMatVec(p_solverMultigrid%rmatrix(rproblemLevel%ilev),&
+          call lsysbl_blockMatVec(p_rsolverMultigrid%rmatrix(rproblemLevel%ilev),&
                                   ru, p_rres, -1.0_DP, 1.0_DP)
 
           ! Compute norm of new linear defect
@@ -414,7 +417,7 @@ contains
           end if
 
           ! Check convergence criteria
-          if (imgstep .ge. p_solverMultigrid%ilmin) then
+          if (imgstep .ge. p_rsolverMultigrid%ilmin) then
             if (solver_testConvergence(rsolver)) then
               rsolver%istatus = SV_CONVERGED
               exit mgstep
@@ -507,17 +510,17 @@ contains
 
 
     ! Check if current level is already the coarse grid level
-    if (rproblemLevel%ilev .eq. rsolver%p_solverMultigrid%nlmin) then
+    if (rproblemLevel%ilev .eq. rsolver%p_rsolverMultigrid%nlmin) then
 
       !-------------------------------------------------------------------------
       ! Solve coarse grid problem
 
       ! Set pointers
-      p_raux => rsolver%p_solverMultigrid%rtempVectors(rproblemLevel%ilev)
+      p_raux => rsolver%p_rsolverMultigrid%rtempVectors(rproblemLevel%ilev)
 
       ! Solve on the coarsest grid
       call lsysbl_clearVector(p_raux)
-      call linsol_solveSinglegrid(rsolver%p_solverMultigrid%p_solverCoarsegrid,&
+      call linsol_solveSinglegrid(rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid,&
                                   p_raux, rff)
 
       ! Apply increment: u:=u+omega*aux
@@ -528,7 +531,7 @@ contains
       end if
 
       ! Adjust multigrid cycle
-      if (rsolver%p_solverMultigrid%icycle .eq. 0) mgcycle = 1
+      if (rsolver%p_rsolverMultigrid%icycle .eq. 0) mgcycle = 1
 
     else
 
@@ -536,27 +539,27 @@ contains
       ! Recursive application of two-grid algorithm
 
       ! Set pointers
-      ioffset =  -2*rsolver%p_solverMultigrid%nlmin+3*(rproblemLevel%ilev-1)
-      p_raux  => rsolver%p_solverMultigrid%rtempVectors(ioffset+1)
-      p_rresc => rsolver%p_solverMultigrid%rtempVectors(ioffset+2)
-      p_rresf => rsolver%p_solverMultigrid%rtempVectors(ioffset+3)
+      ioffset =  -2*rsolver%p_rsolverMultigrid%nlmin+3*(rproblemLevel%ilev-1)
+      p_raux  => rsolver%p_rsolverMultigrid%rtempVectors(ioffset+1)
+      p_rresc => rsolver%p_rsolverMultigrid%rtempVectors(ioffset+2)
+      p_rresf => rsolver%p_rsolverMultigrid%rtempVectors(ioffset+3)
 
       call lsysbl_clearVector(p_raux)
       call lsysbl_clearVector(p_rresc)
 
       ! Apply presmoothing steps
-      if (rsolver%p_solverMultigrid%npresmooth > 0) then
-        nsmooth = rsolver%p_solverMultigrid%npresmooth *&
-                  rsolver%p_solverMultigrid%nsmoothfactor**&
-                  (rsolver%p_solverMultigrid%nlmax-rproblemLevel%ilev)
+      if (rsolver%p_rsolverMultigrid%npresmooth > 0) then
+        nsmooth = rsolver%p_rsolverMultigrid%npresmooth *&
+                  rsolver%p_rsolverMultigrid%nsmoothfactor**&
+                  (rsolver%p_rsolverMultigrid%nlmax-rproblemLevel%ilev)
         call linsol_smooth(rproblemLevel,&
-                           rsolver%p_solverMultigrid%p_smoother(rproblemLevel%ilev),&
+                           rsolver%p_rsolverMultigrid%p_smoother(rproblemLevel%ilev),&
                            ruf, rff, nsmooth)
       end if
 
       ! Compute the linear residual: r=f-A*u
       call lsysbl_copyVector(rff, p_rresf)
-      call lsysbl_blockMatVec(rsolver%p_solverMultigrid%rmatrix(rproblemLevel%ilev),&
+      call lsysbl_blockMatVec(rsolver%p_rsolverMultigrid%rmatrix(rproblemLevel%ilev),&
                               ruf, p_rresf, -1.0_DP, 1.0_DP)
 
       ! Restrict the residual: resc=R(f-A*u)
@@ -570,16 +573,16 @@ contains
       ! Compute the coarse grid correction recursively, whereby
       ! raux is initialised by zeros (see above)
       do icycle = 1, merge(1, mgcycle, rproblemLevel%p_rproblemLevelCoarse%ilev .eq.&
-                                       rsolver%p_solverMultigrid%nlmin)
+                                       rsolver%p_rsolverMultigrid%nlmin)
         call linsol_solveTwogrid(rproblemLevel%p_rproblemLevelCoarse,&
                                  rsolver, p_raux, p_rresc, mgcycle)
       end do
 
       ! Set pointers
-      ioffset = -2*rsolver%p_solverMultigrid%nlmin+3*(rproblemLevel%ilev-1)
-      p_raux  => rsolver%p_solverMultigrid%rtempVectors(ioffset+1)
-      p_rresc => rsolver%p_solverMultigrid%rtempVectors(ioffset+2)
-      p_rresf => rsolver%p_solverMultigrid%rtempVectors(ioffset+3)
+      ioffset = -2*rsolver%p_rsolverMultigrid%nlmin+3*(rproblemLevel%ilev-1)
+      p_raux  => rsolver%p_rsolverMultigrid%rtempVectors(ioffset+1)
+      p_rresc => rsolver%p_rsolverMultigrid%rtempVectors(ioffset+2)
+      p_rresf => rsolver%p_rsolverMultigrid%rtempVectors(ioffset+3)
 
       ! Perform prolongation: resf=P(raux)
       call lsysbl_clearVector(p_rresf)
@@ -597,18 +600,18 @@ contains
       end if
 
       ! Apply postsmoothing steps
-      if (rsolver%p_solverMultigrid%npostsmooth > 0) then
-        nsmooth = rsolver%p_solverMultigrid%npostsmooth *&
-                  rsolver%p_solverMultigrid%nsmoothfactor**&
-                  (rsolver%p_solverMultigrid%nlmax-rproblemLevel%ilev)
+      if (rsolver%p_rsolverMultigrid%npostsmooth > 0) then
+        nsmooth = rsolver%p_rsolverMultigrid%npostsmooth *&
+                  rsolver%p_rsolverMultigrid%nsmoothfactor**&
+                  (rsolver%p_rsolverMultigrid%nlmax-rproblemLevel%ilev)
         call linsol_smooth(rproblemLevel,&
-                           rsolver%p_solverMultigrid%p_smoother(rproblemLevel%ilev),&
+                           rsolver%p_rsolverMultigrid%p_smoother(rproblemLevel%ilev),&
                            ruf, rff, nsmooth)
       end if
 
       ! Adjust multigrid cycle
-      if ((rproblemLevel%ilev .eq. rsolver%p_solverMultigrid%nlmax) .and.&
-          (rsolver%p_solverMultigrid%icycle .eq. 0)) mgcycle=2
+      if ((rproblemLevel%ilev .eq. rsolver%p_rsolverMultigrid%nlmax) .and.&
+          (rsolver%p_rsolverMultigrid%icycle .eq. 0)) mgcycle=2
     end if
   end subroutine linsol_solveTwogrid
 
@@ -647,7 +650,7 @@ contains
       call sys_halt()
     end if
 
-    ! Waht type of solver are we?
+    ! What type of solver are we?
     select case(rsolver%isolver)
     case(LINSOL_SOLVER_UMFPACK4)
       ! Solve directly: UMFPACK4 (only for scalar problems)
@@ -672,6 +675,11 @@ contains
     case(LINSOL_SOLVER_GMRES)
       ! Solve iteratively: Flexible GMRES
       call linsol_solveFgmres(rsolver, ru, rf)
+
+
+    case(LINSOL_SOLVER_AGMG)
+      ! Solve iteratively: AGMG
+      call linsol_solveAGMG(rsolver, ru, rf)
 
 
     case default
@@ -710,7 +718,7 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_solverUMFPACK), pointer :: p_solver
+    type(t_solverUMFPACK), pointer :: p_rsolver
     type(t_matrixBlock), pointer :: p_rmatrix
     type(t_vectorBlock), pointer :: p_rr
     real(DP), dimension(:), pointer :: p_Du,p_Df
@@ -741,14 +749,19 @@ contains
     end if
 
     ! Set pointers
-    p_solver  => rsolver%p_solverUMFPACK
-    p_rmatrix => p_solver%rmatrix
-    p_rr      => p_solver%rtempVector
+    p_rsolver  => rsolver%p_rsolverUMFPACK
+    p_rmatrix => p_rsolver%rmatrix
+    p_rr      => p_rsolver%rtempVector
     call lsyssc_getbase_double(ru%RvectorBlock(1), p_Du)
     call lsyssc_getbase_double(rf%RvectorBlock(1), p_Df)
 
+    ! Compute initial residual
+    call lsysbl_copyVector(rf, p_rr)
+    call lsysbl_blockMatVec(p_rmatrix, ru, p_rr, -1.0_DP, 1.0_DP)
+    rsolver%dinitialDefect = lsysbl_vectorNorm(p_rr, rsolver%iresNorm)
+
     ! Solve the system directly
-    call UMF4SOL(ksys, p_Du, p_Df, p_solver%inumeric, p_solver%Dcontrol, Dinfo)
+    call UMF4SOL(ksys, p_Du, p_Df, p_rsolver%inumeric, p_rsolver%Dcontrol, Dinfo)
 
     ! Check Dinfo(1) if there is an error
     select case(int(Dinfo(1)))
@@ -779,13 +792,32 @@ contains
       end if
     end select
 
-    ! Compute linear residual
+    ! Compute final residual
     call lsysbl_copyVector(rf, p_rr)
     call lsysbl_blockMatVec(p_rmatrix, ru, p_rr, -1.0_DP, 1.0_DP)
     rsolver%dfinalDefect = lsysbl_vectorNorm(p_rr, rsolver%iresNorm)
 
     ! Compute solver statistics
     call solver_statistics(rsolver, 1)
+
+    if (rsolver%coutputModeInfo .gt. 0) then
+      call output_lbrk(OU_CLASS_MSG,rsolver%coutputModeInfo)
+      call output_separator(OU_SEP_PERC,OU_CLASS_MSG,rsolver%coutputModeInfo)
+      call output_line('UMFPACK solution           '//solver_getstatus(rsolver),&
+                       OU_CLASS_MSG,rsolver%coutputModeInfo)
+      call output_line('Norm of final residual:    '//trim(sys_sdEL(rsolver%dfinalDefect,5)),&
+                       OU_CLASS_MSG,rsolver%coutputModeInfo)
+      call output_line('Norm of initial residual:  '//trim(sys_sdEL(rsolver%dinitialDefect,5)),&
+                       OU_CLASS_MSG,rsolver%coutputModeInfo)
+      call output_line('Improvement of residual:   '//trim(sys_sdEL(&
+                       rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)),&
+                       OU_CLASS_MSG,rsolver%coutputModeInfo)
+      call output_line('Convergence rate:          '//trim(sys_sdEL(rsolver%dconvergenceRate,5)),&
+                       OU_CLASS_MSG,rsolver%coutputModeInfo)
+      call output_separator(OU_SEP_PERC,OU_CLASS_MSG,rsolver%coutputModeInfo)
+      call output_lbrk(OU_CLASS_MSG,rsolver%coutputModeInfo)
+    end if
+
   end subroutine linsol_solveUMFPACK
 
   ! ***************************************************************************
@@ -841,8 +873,8 @@ contains
     end if
 
     ! Set pointers
-    p_rmatrix => rsolver%p_solverJacobi%rmatrix
-    p_rres    => rsolver%p_solverJacobi%rtempVector
+    p_rmatrix => rsolver%p_rsolverJacobi%rmatrix
+    p_rres    => rsolver%p_rsolverJacobi%rtempVector
 
     ! Check compatibility
     call lsysbl_isVectorCompatible(ru, rf)
@@ -1037,8 +1069,8 @@ contains
     end if
 
     ! Set pointers
-    p_rmatrix => rsolver%p_solverSSOR%rmatrix
-    p_rres    => rsolver%p_solverSSOR%rtempVector
+    p_rmatrix => rsolver%p_rsolverSSOR%rmatrix
+    p_rres    => rsolver%p_rsolverSSOR%rtempVector
 
     ! Check compatibility
     call lsysbl_isVectorCompatible(ru, rf)
@@ -1211,8 +1243,8 @@ contains
     real(DP), parameter :: EPS_RESTART = 1E-5_DP
 
     ! local variables
-    type(t_solverBiCGSTAB), pointer :: p_solverBiCGSTAB
-    type(t_solver), pointer :: p_solverPrecond
+    type(t_solverBiCGSTAB), pointer :: p_rsolverBiCGSTAB
+    type(t_solver), pointer :: p_rsolverPrecond
     type(t_matrixBlock), pointer :: p_rmatrix
     type(t_vectorBlock), pointer :: p_rr,p_rr0,p_rr1,p_rp,p_rpa,p_rpa1,p_rsa,p_rsa1
     real(DP) :: alpha,beta,omega,rho0,rho1,nrm0,doldDefect
@@ -1243,21 +1275,21 @@ contains
 
 
     ! Set pointers
-    p_solverBiCGSTAB => rsolver%p_solverBiCGSTAB
-    p_rmatrix        => p_solverBiCGSTAB%rmatrix
-    p_rr             => p_solverBiCGSTAB%rtempVectors(1)
-    p_rr0            => p_solverBiCGSTAB%rtempVectors(2)
-    p_rr1            => p_solverBiCGSTAB%rtempVectors(3)
-    p_rp             => p_solverBiCGSTAB%rtempVectors(4)
-    p_rpa            => p_solverBiCGSTAB%rtempVectors(5)
-    p_rpa1           => p_solverBiCGSTAB%rtempVectors(6)
-    p_rsa            => p_solverBiCGSTAB%rtempVectors(7)
-    p_rsa1           => p_solverBiCGSTAB%rtempVectors(8)
+    p_rsolverBiCGSTAB => rsolver%p_rsolverBiCGSTAB
+    p_rmatrix        => p_rsolverBiCGSTAB%rmatrix
+    p_rr             => p_rsolverBiCGSTAB%rtempVectors(1)
+    p_rr0            => p_rsolverBiCGSTAB%rtempVectors(2)
+    p_rr1            => p_rsolverBiCGSTAB%rtempVectors(3)
+    p_rp             => p_rsolverBiCGSTAB%rtempVectors(4)
+    p_rpa            => p_rsolverBiCGSTAB%rtempVectors(5)
+    p_rpa1           => p_rsolverBiCGSTAB%rtempVectors(6)
+    p_rsa            => p_rsolverBiCGSTAB%rtempVectors(7)
+    p_rsa1           => p_rsolverBiCGSTAB%rtempVectors(8)
 
     ! Check for preconditioner
-    if (associated(p_solverBiCGSTAB%p_precond)) then
+    if (associated(p_rsolverBiCGSTAB%p_precond)) then
       bprec = .true.
-      p_solverPrecond => p_solverBiCGSTAB%p_precond
+      p_rsolverPrecond => p_rsolverBiCGSTAB%p_precond
     else
       bprec = .false.
     end if
@@ -1288,7 +1320,7 @@ contains
     ! ... and apply preconditioner if required
     if (bprec) then
       call lsysbl_copyVector(p_rr, p_rr1)
-      call linsol_precond(p_solverPrecond, p_rr)
+      call linsol_precond(p_rsolverPrecond, p_rr)
     end if
 
     ! Check if initial residual is too large ...
@@ -1348,7 +1380,7 @@ contains
       call lsysbl_blockMatVec(p_rmatrix, p_rp, p_rpa, 1.0_DP, 0.0_DP)
       if (bprec) then
         call lsysbl_copyVector(p_rpa, p_rpa1)
-        call linsol_precond(p_solverPrecond, p_rpa)
+        call linsol_precond(p_rsolverPrecond, p_rpa)
       end if
 
       ! Compute alpha:=(r,r0)/(pa,r0)
@@ -1374,7 +1406,7 @@ contains
       call lsysbl_blockMatVec(p_rmatrix, p_rr, p_rsa, 1.0_DP, 0.0_DP)
       if (bprec) then
         call lsysbl_copyVector(p_rsa, p_rsa1)
-        call linsol_precond(p_solverPrecond, p_rsa)
+        call linsol_precond(p_rsolverPrecond, p_rsa)
       end if
 
       ! Compute omega:=(sa,r)/(sa,sa)
@@ -1496,8 +1528,8 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_solverGMRES), pointer :: p_solverGMRES
-    type(t_solver), pointer :: p_solverPrecond
+    type(t_solverGMRES), pointer :: p_rsolverGMRES
+    type(t_solver), pointer :: p_rsolverPrecond
     type(t_matrixBlock), pointer :: p_rmatrix
     type(t_vectorBlock), dimension(:), pointer :: p_rv
     type(t_vectorBlock), dimension(:), pointer :: p_rz
@@ -1530,19 +1562,19 @@ contains
     end if
 
     ! Set pointers
-    p_solverGMRES  => rsolver%p_solverGMRES
-    p_rmatrix      => p_solverGMRES%rmatrix
-    p_rv           => p_solverGMRES%rv
-    p_rz           => p_solverGMRES%rz; l=size(p_rz)
-    call storage_getbase_double2D(p_solverGMRES%h_Dh, p_Dh)
-    call storage_getbase_double(p_solverGMRES%h_Dc, p_Dc)
-    call storage_getbase_double(p_solverGMRES%h_Ds, p_Ds)
-    call storage_getbase_double(p_solverGMRES%h_Dq, p_Dq)
+    p_rsolverGMRES => rsolver%p_rsolverGMRES
+    p_rmatrix      => p_rsolverGMRES%rmatrix
+    p_rv           => p_rsolverGMRES%rv
+    p_rz           => p_rsolverGMRES%rz; l=size(p_rz)
+    call storage_getbase_double2D(p_rsolverGMRES%h_Dh, p_Dh)
+    call storage_getbase_double(p_rsolverGMRES%h_Dc, p_Dc)
+    call storage_getbase_double(p_rsolverGMRES%h_Ds, p_Ds)
+    call storage_getbase_double(p_rsolverGMRES%h_Dq, p_Dq)
 
     ! Check for preconditioner
-    if (associated(p_solverGMRES%p_precond)) then
+    if (associated(p_rsolverGMRES%p_precond)) then
       bprec = .true.
-      p_solverPrecond => p_solverGMRES%p_precond
+      p_rsolverPrecond => p_rsolverGMRES%p_precond
     else
       bprec = .false.
     end if
@@ -1615,7 +1647,7 @@ contains
         call lsysbl_copyVector(p_rv(i), p_rz(i))
 
         if (bprec) then
-          call linsol_precond(p_solverPrecond, p_rz(i))
+          call linsol_precond(p_rsolverPrecond, p_rz(i))
         end if
 
         ! Set v(i+1):=A*z(i)
@@ -1762,6 +1794,156 @@ contains
 
   end subroutine linsol_solveFgmres
 
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine linsol_solveAGMG(rsolver, ru, rf)
+
+!<description>
+    ! This subroutine solves the linear system $Au=f$
+    ! by means of the aggregation-based algebraic multigrid method
+!</description>
+
+!<input>
+    ! Right-hand side vector
+    type(t_vectorBlock), intent(in) :: rf
+!</input>
+
+!<inputoutput>
+    ! Linear solver structure
+    type(t_solver) :: rsolver
+
+    ! Solution vector
+    type(t_vectorBlock), intent(inout) :: ru
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_solverAGMG), pointer :: p_rsolver
+    type(t_matrixBlock), pointer :: p_rmatrix
+    type(t_vectorBlock), pointer :: p_rr
+    real(DP), dimension(:), pointer :: p_Da,p_Du,p_Df
+    real(SP), dimension(:), pointer :: p_Fa,p_Fu,p_Ff
+    integer, dimension(:), pointer :: p_Kld,p_Kcol
+    real(DP) :: dtolerance
+    integer :: iterations
+    
+
+    ! Check for zero right-hand side
+    if (rsolver%drhsZero > 0.0_DP) then
+      rsolver%dinitialRHS = lsysbl_vectorNorm(rf, LINALG_NORMMAX)
+
+      if (rsolver%dinitialRHS .le. rsolver%drhsZero) then
+        if (rsolver%coutputModeWarning .gt. 0) then
+          call output_line('!!! Zero initial right-hand side '//trim(&
+              sys_sdEL(rsolver%dinitialRHS,5))//' !!!',&
+              OU_CLASS_WARNING,rsolver%coutputModeWarning)
+        end if
+
+        ! Clear solution vector and adjust solver status
+        call lsysbl_clearVector(ru)
+        rsolver%istatus          = SV_ZERO_RHS
+        rsolver%dconvergenceRate = 0.0_DP
+
+        ! That is it, return.
+        return
+      end if
+    end if
+
+    ! Set pointers
+    p_rsolver => rsolver%p_rsolverAGMG
+    p_rmatrix => p_rsolver%rmatrix
+    p_rr      => p_rsolver%rtempVector
+    call lsyssc_getbase_Kld(p_rsolver%rmatrixScalar, p_Kld)
+    call lsyssc_getbase_Kcol(p_rsolver%rmatrixScalar, p_Kcol)
+    
+    ! Check compatibility
+    call lsysbl_isVectorCompatible(ru, rf)
+    call lsysbl_isMatrixCompatible(ru, p_rmatrix, .false.)
+
+    ! Initialise the maximum number of iterations
+    iterations = rsolver%nmaxIterations
+    
+    ! Initialise relative tolerance
+    dtolerance = min(rsolver%depsRel,&
+        rsolver%depsAbs*lsysbl_vectorNorm(rf,LINALG_NORML2))
+
+    ! Compute initial residual
+    call lsysbl_copyVector(rf, p_rr)
+    call lsysbl_blockMatVec(p_rmatrix, ru, p_rr, -1.0_DP, 1.0_DP)
+    rsolver%dinitialDefect = lsysbl_vectorNorm(p_rr, rsolver%iresNorm)
+
+    ! Since the right-hand side is overwritten by the AGMG subroutine
+    ! we need to work on a copy of the right-hand side
+    call lsysbl_copyVector(rf, p_rr)
+
+    ! What data type are we
+    select case(p_rsolver%rmatrixScalar%cdataType)
+    case (ST_DOUBLE)
+      call lsysbl_getbase_double(ru, p_Du)
+      call lsysbl_getbase_double(p_rr, p_Df)
+      call lsyssc_getbase_double(p_rsolver%rmatrixScalar, p_Da)
+      
+      ! Call external subroutine from AGMG library
+      if (rsolver%coutputModeInfo .gt. 0) then
+        call dagmg(p_rsolver%rmatrixScalar%NEQ, p_Da, p_Kcol, p_Kld, p_Df, p_Du,&
+            2, OU_TERMINAL, p_rsolver%nrest, iterations, dtolerance)
+      else
+        call dagmg(p_rsolver%rmatrixScalar%NEQ, p_Da, p_Kcol, p_Kld, p_Df, p_Du,&
+            2, OU_LOG, p_rsolver%nrest, iterations, dtolerance)
+      end if
+
+    case(ST_SINGLE)
+      call lsysbl_getbase_single(ru, p_Fu)
+      call lsysbl_getbase_single(rf, p_Ff)
+      call lsyssc_getbase_single(p_rsolver%rmatrixScalar, p_Fa)
+
+      ! Call external subroutine from AGMG library
+      if (rsolver%coutputModeInfo .gt. 0) then
+        call sagmg(p_rsolver%rmatrixScalar%NEQ, p_Fa, p_Kcol, p_Kld, p_Ff, p_Fu,&
+            2, OU_TERMINAL, p_rsolver%nrest, iterations, real(dtolerance,SP))
+      else
+        call sagmg(p_rsolver%rmatrixScalar%NEQ, p_Fa, p_Kcol, p_Kld, p_Ff, p_Fu,&
+            2, OU_LOG, p_rsolver%nrest, iterations, real(dtolerance,SP))
+      end if
+
+    case default
+      call output_line('Unsupported data type!',&
+          OU_CLASS_ERROR,rsolver%coutputModeError,'linsol_solveAGMG')
+      call sys_halt()
+    end select
+
+    ! Compute final residual
+    call lsysbl_copyVector(rf, p_rr)
+    call lsysbl_blockMatVec(p_rmatrix, ru, p_rr, -1.0_DP, 1.0_DP)
+    rsolver%dfinalDefect = lsysbl_vectorNorm(p_rr, rsolver%iresNorm)
+
+    ! Compute solver statistics
+    call solver_statistics(rsolver, iterations)
+
+    if (rsolver%coutputModeInfo .gt. 0) then
+      call output_lbrk(OU_CLASS_MSG,rsolver%coutputModeInfo)
+      call output_separator(OU_SEP_PERC,OU_CLASS_MSG,rsolver%coutputModeInfo)
+      call output_line('AGMG solution             '//solver_getstatus(rsolver),&
+                       OU_CLASS_MSG,rsolver%coutputModeInfo)
+      call output_line('Number of AGMG  steps:    '//trim(sys_siL(rsolver%iiterations,5)),&
+                       OU_CLASS_MSG,rsolver%coutputModeInfo)
+      call output_line('Norm of final residual:    '//trim(sys_sdEL(rsolver%dfinalDefect,5)),&
+                       OU_CLASS_MSG,rsolver%coutputModeInfo)
+      call output_line('Norm of initial residual:  '//trim(sys_sdEL(rsolver%dinitialDefect,5)),&
+                       OU_CLASS_MSG,rsolver%coutputModeInfo)
+      call output_line('Improvement of residual:   '//trim(sys_sdEL(&
+                       rsolver%dfinalDefect/max(SYS_EPSREAL_DP, rsolver%dinitialDefect),5)),&
+                       OU_CLASS_MSG,rsolver%coutputModeInfo)
+      call output_line('Convergence rate:          '//trim(sys_sdEL(rsolver%dconvergenceRate,5)),&
+                       OU_CLASS_MSG,rsolver%coutputModeInfo)
+      call output_separator(OU_SEP_PERC,OU_CLASS_MSG,rsolver%coutputModeInfo)
+      call output_lbrk(OU_CLASS_MSG,rsolver%coutputModeInfo)
+    end if
+
+  end subroutine linsol_solveAGMG
+
   ! *****************************************************************************
 
 !<subroutine>
@@ -1854,7 +2036,7 @@ contains
     integer :: iblock
 
     ! Set pointers
-    p_rmatrixBlock  => rsolver%p_solverJacobi%rmatrix
+    p_rmatrixBlock  => rsolver%p_rsolverJacobi%rmatrix
 
     ! Set relaxation parameter
     if (rsolver%domega < 0.0_DP) then
@@ -2090,7 +2272,7 @@ contains
     end if
 
     ! Set pointers
-    p_rmatrixBlock => rsolver%p_solverSSOR%rmatrix
+    p_rmatrixBlock => rsolver%p_rsolverSSOR%rmatrix
 
     ! Loop over all blocks
     do iblock = 1, ru%nblocks
@@ -2851,19 +3033,19 @@ contains
     end interface
 
     ! local variables
-    type(t_solverILU), pointer :: p_solver
+    type(t_solverILU), pointer :: p_rsolver
     integer :: iblock
 
 
     ! Set pointer
-    p_solver => rsolver%p_solverILU
+    p_rsolver => rsolver%p_rsolverILU
 
     ! Do we have a block vector?
     if (ru%nblocks .ne. 1) then
 
       ! Check if vector and preconditioner are compatible
-      if (associated(p_solver%p_rsolverBlockILU)) then
-        if (size(p_solver%p_rsolverBlockILU,1) .ne. ru%nblocks) then
+      if (associated(p_rsolver%p_rsolverBlockILU)) then
+        if (size(p_rsolver%p_rsolverBlockILU,1) .ne. ru%nblocks) then
           if (rsolver%coutputModeError .gt. 0) then
             call output_line('Block-ILU preconditioner and vector are not compatible!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'linsol_precondILU')
@@ -2879,12 +3061,12 @@ contains
 
       ! Loop over all blocks
       do iblock = 1, ru%nblocks
-        call do_scalarILU(p_solver%p_rsolverBlockILU(iblock), ru%RvectorBlock(iblock))
+        call do_scalarILU(p_rsolver%p_rsolverBlockILU(iblock), ru%RvectorBlock(iblock))
       end do
 
     else
 
-      call do_scalarILU(p_solver, ru%RvectorBlock(1))
+      call do_scalarILU(p_rsolver, ru%RvectorBlock(1))
 
     end if
 
@@ -3409,7 +3591,7 @@ contains
     integer :: iiterations
 
     ! Set pointers
-    rsolverJacobi => rsolver%p_solverJacobi
+    rsolverJacobi => rsolver%p_rsolverJacobi
     rmatrix       => rsolverJacobi%rmatrix
     rres          => rsolverJacobi%rtempVector
 
@@ -3464,7 +3646,7 @@ contains
     integer :: iiterations
 
     ! Set pointers
-    rsolverSSOR => rsolver%p_solverSSOR
+    rsolverSSOR => rsolver%p_rsolverSSOR
     rmatrix     => rsolverSSOR%rmatrix
     rres        => rsolverSSOR%rtempVector
 
@@ -3519,7 +3701,7 @@ contains
     integer :: iiterations
 
     ! Set pointers
-    rsolverILU => rsolver%p_solverILU
+    rsolverILU => rsolver%p_rsolverILU
     rmatrix    => rsolverILU%rmatrix
     raux       => rsolverILU%rtempVector
 

@@ -2444,14 +2444,14 @@ contains
     rtimestep0 = rtimestep
 
     ! Loop over all componenets
-    do icomponent = 1, size(rsolver%p_solverSubnode)
+    do icomponent = 1, size(rsolver%p_rsolverSubnode)
 
       ! Adopt values from original time step structure
       rtimestep1 = rtimestep0
 
       ! Check if time step can be accepted
       breject = breject .or. tstep_checkTimestep(&
-          rtimestep1, rsolver%p_solverSubnode(icomponent),&
+          rtimestep1, rsolver%p_rsolverSubnode(icomponent),&
           Rsolution1(icomponent), Rsolution2(icomponent))
 
       ! Update original time step

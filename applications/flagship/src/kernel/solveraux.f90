@@ -453,7 +453,7 @@ module solveraux
   !
   ! For single grid solvers, it contains all specifig solver and preconditioner
   ! nodes which need to be allocated/deallocated depending on the solver/
-  ! preconditioner type. In addition, it contains a subnode p_solverMultigrid
+  ! preconditioner type. In addition, it contains a subnode p_rsolverMultigrid
   ! which has to be allocated/deallocated in case the solver is applied
   ! to multiple grid levels.
 
@@ -590,40 +590,40 @@ module solveraux
     type(t_boundaryCondition), pointer :: rboundaryCondition => null()
 
     ! INTERNAL: substructure for generic solvers
-    type(t_solver), dimension(:), pointer :: p_solverSubnode => null()
+    type(t_solver), dimension(:), pointer :: p_rsolverSubnode => null()
 
     ! INTERNAL: substructure for Multigrid solver
-    type(t_solverMultigrid), pointer :: p_solverMultigrid => null()
+    type(t_solverMultigrid), pointer :: p_rsolverMultigrid => null()
 
     ! INTERNAL: substructure for UMFPACK solver
-    type(t_solverUMFPACK), pointer :: p_solverUMFPACK => null()
+    type(t_solverUMFPACK), pointer :: p_rsolverUMFPACK => null()
 
     ! INTERNAL: substructure for Jacobi solver
-    type(t_solverJacobi), pointer :: p_solverJacobi => null()
+    type(t_solverJacobi), pointer :: p_rsolverJacobi => null()
 
     ! INTERNAL: substructure for (S)SOR solver
-    type(t_solverSSOR), pointer :: p_solverSSOR => null()
+    type(t_solverSSOR), pointer :: p_rsolverSSOR => null()
 
     ! INTERNAL: substructure for BiCGSTAB solver
-    type(t_solverBiCGSTAB), pointer :: p_solverBiCGSTAB => null()
+    type(t_solverBiCGSTAB), pointer :: p_rsolverBiCGSTAB => null()
 
     ! INTERNAL: substructure for GMRES solver
-    type(t_solverGMRES), pointer :: p_solverGMRES => null()
+    type(t_solverGMRES), pointer :: p_rsolverGMRES => null()
 
     ! INTERNAL: substructure for ILU solver
-    type(t_solverILU), pointer :: p_solverILU => null()
+    type(t_solverILU), pointer :: p_rsolverILU => null()
 
     ! INTERNAL: substructure for Defect correction
-    type(t_solverDefcor), pointer :: p_solverDefcor => null()
+    type(t_solverDefcor), pointer :: p_rsolverDefcor => null()
 
     ! INTERNAL: substructure for Newton`s method
-    type(t_solverNewton), pointer :: p_solverNewton => null()
+    type(t_solverNewton), pointer :: p_rsolverNewton => null()
 
     ! INTERNAL: substructure for Anderson`s mixing algorithm
-    type(t_solverAndersonMixing), pointer :: p_solverAndersonMixing => null()
+    type(t_solverAndersonMixing), pointer :: p_rsolverAndersonMixing => null()
 
     ! INTERNAL: substructure for AGMG solver
-    type(t_solverAGMG), pointer :: p_solverAGMG => null()
+    type(t_solverAGMG), pointer :: p_rsolverAGMG => null()
   end type t_solver
 
 !</typeblock>
@@ -674,7 +674,7 @@ module solveraux
     integer :: nsmoothFactor = 0
 
     ! INTERNAL: structure for coarsegrid solver
-    type(t_solver), pointer :: p_solverCoarsegrid => null()
+    type(t_solver), pointer :: p_rsolverCoarsegrid => null()
 
     ! INTERNAL: structure for smoothing
     type(t_solver), dimension(:), pointer :: p_smoother => null()
@@ -801,7 +801,6 @@ module solveraux
 
     ! Preconditioner
     type(t_solver), pointer :: p_precond => null()
-
   end type t_solverGMRES
 
 !</typeblock>
@@ -917,7 +916,6 @@ module solveraux
 
     ! Correction vectors from previous steps
     type(t_vectorBlock), dimension(:), pointer :: RcorrectionVectors => null()
-
   end type t_solverAndersonMixing
 
 !</typeblock>
@@ -945,6 +943,8 @@ module solveraux
     ! INTERNAL MEMORY FOR AGMG SOLVER
     type(t_matrixScalar) :: rmatrixScalar
 
+    ! INTERNAL: temporal vectors
+    type(t_vectorBlock) :: rtempVector
   end type t_solverAGMG
 
 !</typeblock>
@@ -1004,16 +1004,16 @@ contains
       ! ----------------------------------------------------------------------------------
       ! Create a coupled solver:
       ! ~~~~~~~~~~~~~~~~~~~~~~~~
-      ! This type of solver has an array of p_solverSubnode subnodes, where each
+      ! This type of solver has an array of p_rsolverSubnode subnodes, where each
       ! solver subnode represents the complete solver structure for an individual
       ! component of the coupled problem.
       nsolver = parlst_querysubstrings(rparlist, ssectionName, "ssolvername")
-      allocate(rsolver%p_solverSubnode(nsolver))
+      allocate(rsolver%p_rsolverSubnode(nsolver))
       do isolver = 1, nsolver
         call parlst_getvalue_string(rparlist, ssectionName, "ssolvername",&
                                     ssolverName, isubstring=isolver)
         call solver_createSolver(rparlist, ssolverName,&
-                                 rsolver%p_solverSubnode(isolver))
+                                 rsolver%p_rsolverSubnode(isolver))
       end do
 
       ! Get minimum/maximum number of iterations
@@ -1026,24 +1026,24 @@ contains
       ! ----------------------------------------------------------------------------------
       ! Create a full multigrid solver:
       ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-      ! This type of solver has a p_solverMultigrid subnode and a p_solverCoarsegrid
+      ! This type of solver has a p_rsolverMultigrid subnode and a p_rsolverCoarsegrid
       ! subnode which is located below the multigrid solver subnode. Both structures
       ! are allocated and filled with required values.
-      allocate(rsolver%p_solverMultigrid)
+      allocate(rsolver%p_rsolverMultigrid)
       call parlst_getvalue_int(rparlist, ssectionName, "nlmin",&
-                               rsolver%p_solverMultigrid%nlmin)
+                               rsolver%p_rsolverMultigrid%nlmin)
       call parlst_getvalue_int(rparlist, ssectionName, "nlmax",&
-                               rsolver%p_solverMultigrid%nlmax)
+                               rsolver%p_rsolverMultigrid%nlmax)
       call parlst_getvalue_int(rparlist, ssectionName, "icycle", &
-                               rsolver%p_solverMultigrid%icycle)
+                               rsolver%p_rsolverMultigrid%icycle)
       call parlst_getvalue_int(rparlist, ssectionName, "ilmin", &
-                               rsolver%p_solverMultigrid%ilmin)
+                               rsolver%p_rsolverMultigrid%ilmin)
       call parlst_getvalue_int(rparlist, ssectionName, "ilmax", &
-                               rsolver%p_solverMultigrid%ilmax)
+                               rsolver%p_rsolverMultigrid%ilmax)
 
       ! Set initial levels
-      rsolver%p_solverMultigrid%initialNlmin = rsolver%p_solverMultigrid%nlmin
-      rsolver%p_solverMultigrid%initialNlmax = rsolver%p_solverMultigrid%nlmax
+      rsolver%p_rsolverMultigrid%initialNlmin = rsolver%p_rsolverMultigrid%nlmin
+      rsolver%p_rsolverMultigrid%initialNlmax = rsolver%p_rsolverMultigrid%nlmax
 
       ! Coarsegrid solver:
       ! ~~~~~~~~~~~~~~~~~~
@@ -1052,7 +1052,7 @@ contains
       ! Note that it suffices to have one nonlinear coarse grid solver for all
       ! multigrid levels since the nonlinear solver has no matrices and all
       ! temporal vectors are resised in the nonlinear solver routines.
-      allocate(rsolver%p_solverMultigrid%p_solverCoarsegrid)
+      allocate(rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid)
 
       ! Get type of solver and create solver structure recursively:
       ! For full multigrid only nonlinear multi- or single-grid solvers are
@@ -1063,7 +1063,7 @@ contains
       case (SV_NONLINEARMG, SV_NONLINEAR)
         call parlst_getvalue_string(rparlist, ssectionName, "ssolvername", ssolverName)
         call solver_createSolver(rparlist, ssolverName,&
-                                 rsolver%p_solverMultigrid%p_solverCoarsegrid)
+                                 rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid)
 
       case default
         if (rsolver%coutputModeError .gt. 0) then
@@ -1079,32 +1079,32 @@ contains
       ! ----------------------------------------------------------------------------------
       ! Create a nonlinear multigrid solver:
       ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-      ! This type of solver has a p_solverMultigrid subnode and a p_solverCoarsegrid
+      ! This type of solver has a p_rsolverMultigrid subnode and a p_rsolverCoarsegrid
       ! subnode which is located below the multigrid solver subnode. Both structures
       ! are allocated and filled with required values.
       ! In addition, a nonlinear multigrid solver may have a nonlinear smoother which
       ! is used to improve the approximation of the nonlinear solution on each level.
-      allocate(rsolver%p_solverMultigrid)
+      allocate(rsolver%p_rsolverMultigrid)
       call parlst_getvalue_int(rparlist, ssectionName, "nlmin", &
-                               rsolver%p_solverMultigrid%nlmin)
+                               rsolver%p_rsolverMultigrid%nlmin)
       call parlst_getvalue_int(rparlist, ssectionName, "nlmax", &
-                               rsolver%p_solverMultigrid%nlmax)
+                               rsolver%p_rsolverMultigrid%nlmax)
       call parlst_getvalue_int(rparlist, ssectionName, "icycle", &
-                               rsolver%p_solverMultigrid%icycle)
+                               rsolver%p_rsolverMultigrid%icycle)
       call parlst_getvalue_int(rparlist, ssectionName, "ilmin", &
-                               rsolver%p_solverMultigrid%ilmin)
+                               rsolver%p_rsolverMultigrid%ilmin)
       call parlst_getvalue_int(rparlist, ssectionName, "ilmax", &
-                               rsolver%p_solverMultigrid%ilmax)
+                               rsolver%p_rsolverMultigrid%ilmax)
 
       ! Set initial levels
-      rsolver%p_solverMultigrid%initialNlmin = rsolver%p_solverMultigrid%nlmin
-      rsolver%p_solverMultigrid%initialNlmax = rsolver%p_solverMultigrid%nlmax
+      rsolver%p_rsolverMultigrid%initialNlmin = rsolver%p_rsolverMultigrid%nlmin
+      rsolver%p_rsolverMultigrid%initialNlmax = rsolver%p_rsolverMultigrid%nlmax
 
       ! Coarsegrid solver:
       ! ~~~~~~~~~~~~~~~~~~
       ! Ok, we need a so-called coarse grid solver which is used to solve the
       ! nonlinear algebraic system on the coarsest grid.
-      allocate(rsolver%p_solverMultigrid%p_solverCoarsegrid)
+      allocate(rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid)
 
       ! Get type of solver and create solver structure recursively:
       ! For nonlinear multigrid only nonlinear multi- or single-grid solvers are
@@ -1115,7 +1115,7 @@ contains
       case (SV_FMG, SV_NONLINEARMG, SV_NONLINEAR)
         call parlst_getvalue_string(rparlist, ssectionName, "ssolvername", ssolverName)
         call solver_createSolver(rparlist, ssolverName,&
-                                 rsolver%p_solverMultigrid%p_solverCoarsegrid)
+                                 rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid)
 
       case default
         if (rsolver%coutputModeError .gt. 0) then
@@ -1132,15 +1132,15 @@ contains
       ! postsmoothing should be applied and allocate smoother
       ! structute accordingly.
       call parlst_getvalue_int(rparlist, ssectionName, "npresmooth", &
-                               rsolver%p_solverMultigrid%npresmooth)
+                               rsolver%p_rsolverMultigrid%npresmooth)
       call parlst_getvalue_int(rparlist, ssectionName, "npostsmooth", &
-                               rsolver%p_solverMultigrid%npostsmooth)
+                               rsolver%p_rsolverMultigrid%npostsmooth)
 
       ! Create smoother recursively
-      if ((rsolver%p_solverMultigrid%npresmooth  .ne. 0) .or. &
-          (rsolver%p_solverMultigrid%npostsmooth .ne. 0)) then
+      if ((rsolver%p_rsolverMultigrid%npresmooth  .ne. 0) .or. &
+          (rsolver%p_rsolverMultigrid%npostsmooth .ne. 0)) then
         call parlst_getvalue_int(rparlist, ssectionName, "nsmoothFactor", &
-                                 rsolver%p_solverMultigrid%nsmoothFactor)
+                                 rsolver%p_rsolverMultigrid%nsmoothFactor)
         call parlst_getvalue_int(rparlist, ssectionName, "ismoother", &
                                  ismoother)
         call parlst_getvalue_string(rparlist, ssectionName, "ssmootherName", &
@@ -1152,8 +1152,8 @@ contains
         select case(ismoother)
 
         case (SV_NONLINEAR, SV_NONLINEARMG)
-          rsolver%p_solverMultigrid%csmootherType = ismoother
-          call create_smoother(rparlist, ssmootherName, rsolver%p_solverMultigrid)
+          rsolver%p_rsolverMultigrid%csmootherType = ismoother
+          call create_smoother(rparlist, ssmootherName, rsolver%p_rsolverMultigrid)
 
         case default
           if (rsolver%coutputModeError .gt. 0) then
@@ -1170,32 +1170,32 @@ contains
       ! ----------------------------------------------------------------------------------
       ! Create a linear multigrid solver:
       ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-      ! This type of solver has a p_solverMultigrid subnode and a p_solverCoarsegrid
+      ! This type of solver has a p_rsolverMultigrid subnode and a p_rsolverCoarsegrid
       ! subnode which is located below the multigrid solver subnode. Both structures
       ! are allocated and filled with required values.
       ! In addition, a linear multigrid solver may have a linear smoother which is used
       ! to improve the approximation of the linear solution on each level.
-      allocate(rsolver%p_solverMultigrid)
+      allocate(rsolver%p_rsolverMultigrid)
       call parlst_getvalue_int(rparlist, ssectionName, "nlmin", &
-                               rsolver%p_solverMultigrid%nlmin)
+                               rsolver%p_rsolverMultigrid%nlmin)
       call parlst_getvalue_int(rparlist, ssectionName, "nlmax", &
-                               rsolver%p_solverMultigrid%nlmax)
+                               rsolver%p_rsolverMultigrid%nlmax)
       call parlst_getvalue_int(rparlist, ssectionName, "icycle", &
-                               rsolver%p_solverMultigrid%icycle)
+                               rsolver%p_rsolverMultigrid%icycle)
       call parlst_getvalue_int(rparlist, ssectionName, "ilmin", &
-                               rsolver%p_solverMultigrid%ilmin)
+                               rsolver%p_rsolverMultigrid%ilmin)
       call parlst_getvalue_int(rparlist, ssectionName, "ilmax", &
-                               rsolver%p_solverMultigrid%ilmax)
+                               rsolver%p_rsolverMultigrid%ilmax)
 
       ! Set initial levels
-      rsolver%p_solverMultigrid%initialNlmin = rsolver%p_solverMultigrid%nlmin
-      rsolver%p_solverMultigrid%initialNlmax = rsolver%p_solverMultigrid%nlmax
+      rsolver%p_rsolverMultigrid%initialNlmin = rsolver%p_rsolverMultigrid%nlmin
+      rsolver%p_rsolverMultigrid%initialNlmax = rsolver%p_rsolverMultigrid%nlmax
 
       ! Coarsegrid solver:
       ! ~~~~~~~~~~~~~~~~~~
       ! Ok, we need a so-called coarse grid solver which is used to solve the
       ! linear algebraic equation on the coarsest grid.
-      allocate(rsolver%p_solverMultigrid%p_solverCoarsegrid)
+      allocate(rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid)
 
       ! Get type of solver and create solver structure recursively:
       ! For linear multigrid only linear multi- or single-grid solvers are
@@ -1206,7 +1206,7 @@ contains
       case (SV_LINEARMG, SV_LINEAR)
         call parlst_getvalue_string(rparlist, ssectionName, "ssolverName", ssolverName)
         call solver_createSolver(rparlist, ssolverName,&
-                                 rsolver%p_solverMultigrid%p_solverCoarsegrid)
+                                 rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid)
 
       case default
         if (rsolver%coutputModeError .gt. 0) then
@@ -1221,15 +1221,15 @@ contains
       ! Optionally, we need a pre-/postsmoothing algorithm to smooth the linear algebraic equation.
       ! Check if either pre- or postsmoothing should be applied and allocate smoother accordingly.
       call parlst_getvalue_int(rparlist, ssectionName, "npresmooth", &
-                               rsolver%p_solverMultigrid%npresmooth)
+                               rsolver%p_rsolverMultigrid%npresmooth)
       call parlst_getvalue_int(rparlist, ssectionName, "npostsmooth", &
-                               rsolver%p_solverMultigrid%npostsmooth)
+                               rsolver%p_rsolverMultigrid%npostsmooth)
 
       ! Create smoother recursively
-      if ((rsolver%p_solverMultigrid%npresmooth  .ne. 0) .or. &
-          (rsolver%p_solverMultigrid%npostsmooth .ne. 0)) then
+      if ((rsolver%p_rsolverMultigrid%npresmooth  .ne. 0) .or. &
+          (rsolver%p_rsolverMultigrid%npostsmooth .ne. 0)) then
         call parlst_getvalue_int(rparlist, ssectionName, "nsmoothfactor", &
-                                 rsolver%p_solverMultigrid%nsmoothfactor)
+                                 rsolver%p_rsolverMultigrid%nsmoothfactor)
         call parlst_getvalue_int(rparlist, ssectionName, "ismoother", &
                                  ismoother)
         call parlst_getvalue_string(rparlist, ssectionName, "ssmootherName", &
@@ -1240,7 +1240,7 @@ contains
         select case(ismoother)
 
         case (SV_LINEAR, SV_LINEARMG)
-          call create_smoother(rparlist, ssmootherName, rsolver%p_solverMultigrid)
+          call create_smoother(rparlist, ssmootherName, rsolver%p_rsolverMultigrid)
 
         case default
           if (rsolver%coutputModeError .gt. 0) then
@@ -1287,10 +1287,10 @@ contains
       ! if a linear multigrid or single grid solver should be employed. Hence,
       ! we just get the name of the linear solver from the parameter list and
       ! create the linear solver recursively:
-      allocate(rsolver%p_solverSubnode(1))
+      allocate(rsolver%p_rsolverSubnode(1))
       call parlst_getvalue_string(rparlist, ssectionName, "ssolverName", &
                                   ssolverName)
-      call solver_createSolver(rparlist, ssolverName, rsolver%p_solverSubnode(1))
+      call solver_createSolver(rparlist, ssolverName, rsolver%p_rsolverSubnode(1))
       ! Now, we are done with the nonlinear singlegrid solver !!!
 
     case (SV_LINEAR)
@@ -1312,71 +1312,71 @@ contains
       ! Ok, now set up the individual solver structures
       select case (rsolver%isolver)
       case (LINSOL_SOLVER_UMFPACK4)
-        allocate(rsolver%p_solverUMFPACK)
+        allocate(rsolver%p_rsolverUMFPACK)
         ! Initialise control structure
-        call UMF4DEF(rsolver%p_solverUMFPACK%Dcontrol)
+        call UMF4DEF(rsolver%p_rsolverUMFPACK%Dcontrol)
 
       case (LINSOL_SOLVER_JACOBI)
-        allocate(rsolver%p_solverJacobi)
+        allocate(rsolver%p_rsolverJacobi)
 
       case (LINSOL_SOLVER_SOR,LINSOL_SOLVER_SSOR)
-        allocate(rsolver%p_solverSSOR)
+        allocate(rsolver%p_rsolverSSOR)
 
       case (LINSOL_SOLVER_BICGSTAB)
-        allocate(rsolver%p_solverBiCGSTAB)
+        allocate(rsolver%p_rsolverBiCGSTAB)
 
         ! Check for preconditioner
         call parlst_getvalue_string(rparlist, ssectionName, "sprecondName", &
                                     sprecondName)
 
         if (trim(adjustl(sprecondName)) .ne. "") then
-          allocate(rsolver%p_solverBiCGSTAB%p_precond)
+          allocate(rsolver%p_rsolverBiCGSTAB%p_precond)
           call create_preconditioner(rparlist, sprecondName,&
-                                     rsolver%p_solverBiCGSTAB%p_precond)
+                                     rsolver%p_rsolverBiCGSTAB%p_precond)
         end if
 
       case (LINSOL_SOLVER_GMRES)
-        allocate(rsolver%p_solverGMRES)
+        allocate(rsolver%p_rsolverGMRES)
 
         ! Get dimension of Krylov subspace
         call parlst_getvalue_int(rparlist, ssectionName, "nkrylov", &
                                  nKrylov)
-        allocate(rsolver%p_solverGMRES%rv(nKrylov+1))
-        allocate(rsolver%p_solverGMRES%rz(nKrylov))
+        allocate(rsolver%p_rsolverGMRES%rv(nKrylov+1))
+        allocate(rsolver%p_rsolverGMRES%rz(nKrylov))
 
         Isize=nKrylov+1
         call storage_new('solver_createDirect', 'Dh', Isize, ST_DOUBLE,&
-                         rsolver%p_solverGMRES%h_Dh, ST_NEWBLOCK_NOINIT)
+                         rsolver%p_rsolverGMRES%h_Dh, ST_NEWBLOCK_NOINIT)
         call storage_new('solver_createDirect', 'Dc', nKrylov, ST_DOUBLE,&
-                         rsolver%p_solverGMRES%h_Dc, ST_NEWBLOCK_NOINIT)
+                         rsolver%p_rsolverGMRES%h_Dc, ST_NEWBLOCK_NOINIT)
         call storage_new('solver_createDirect', 'Ds', nKrylov, ST_DOUBLE,&
-                         rsolver%p_solverGMRES%h_Ds, ST_NEWBLOCK_NOINIT)
+                         rsolver%p_rsolverGMRES%h_Ds, ST_NEWBLOCK_NOINIT)
         call storage_new('solver_createDirect', 'Dq', nKrylov+1, ST_DOUBLE,&
-                         rsolver%p_solverGMRES%h_Dq, ST_NEWBLOCK_NOINIT)
+                         rsolver%p_rsolverGMRES%h_Dq, ST_NEWBLOCK_NOINIT)
 
         ! Check for preconditioner
         call parlst_getvalue_string(rparlist, ssectionName, "sprecondName", &
                                     sprecondName)
 
         if (trim(adjustl(sprecondName)) .ne. "") then
-          allocate(rsolver%p_solverGMRES%p_precond)
+          allocate(rsolver%p_rsolverGMRES%p_precond)
           call create_preconditioner(rparlist, sprecondName,&
-                                     rsolver%p_solverGMRES%p_precond)
+                                     rsolver%p_rsolverGMRES%p_precond)
         end if
 
       case (LINSOL_SOLVER_ILU)
-        allocate(rsolver%p_solverILU)
+        allocate(rsolver%p_rsolverILU)
         call parlst_getvalue_double(rparlist, ssectionName, "depsILU", &
-                                    rsolver%p_solverILU%depsILU)
+                                    rsolver%p_rsolverILU%depsILU)
         call parlst_getvalue_double(rparlist, ssectionName, "domega", &
-                                    rsolver%p_solverILU%domega)
+                                    rsolver%p_rsolverILU%domega)
         call parlst_getvalue_int(rparlist, ssectionName, "ifill", &
-                                 rsolver%p_solverILU%ifill)
+                                 rsolver%p_rsolverILU%ifill)
 
       case (LINSOL_SOLVER_AGMG)
-        allocate(rsolver%p_solverAGMG)
+        allocate(rsolver%p_rsolverAGMG)
         call parlst_getvalue_int(rparlist, ssectionName, "nrest", &
-                                 rsolver%p_solverAGMG%nrest)
+                                 rsolver%p_rsolverAGMG%nrest)
 
       case default
         if (rsolver%coutputModeError .gt. 0) then
@@ -1484,20 +1484,20 @@ contains
         select case(rsolver%iprecond)
         case (NLSOL_PRECOND_BLOCKD,&
               NLSOL_PRECOND_DEFCOR)
-          allocate(rsolver%p_solverDefcor)
+          allocate(rsolver%p_rsolverDefcor)
 
         case (NLSOL_PRECOND_NEWTON)
-          allocate(rsolver%p_solverNewton)
+          allocate(rsolver%p_rsolverNewton)
           call parlst_getvalue_int(rparlist, ssectionName, "icheckSufficientDecrease",&
-                                   rsolver%p_solverNewton%icheckSufficientDecrease)
+                                   rsolver%p_rsolverNewton%icheckSufficientDecrease)
           call parlst_getvalue_int(rparlist, ssectionName, "nmaxBacktrackingSteps",&
-                                   rsolver%p_solverNewton%nmaxBacktrackingSteps)
+                                   rsolver%p_rsolverNewton%nmaxBacktrackingSteps)
           call parlst_getvalue_int(rparlist, ssectionName, "iupdateFrequency",&
-                                   rsolver%p_solverNewton%iupdateFrequency)
+                                   rsolver%p_rsolverNewton%iupdateFrequency)
           call parlst_getvalue_double(rparlist, ssectionName, "dforcingStrategy",&
-                                      rsolver%p_solverNewton%dforcingStrategy)
+                                      rsolver%p_rsolverNewton%dforcingStrategy)
           call parlst_getvalue_double(rparlist, ssectionName, "dperturbationStrategy",&
-                                      rsolver%p_solverNewton%dperturbationStrategy)
+                                      rsolver%p_rsolverNewton%dperturbationStrategy)
 
         case default
           if (rsolver%coutputModeError .gt. 0) then
@@ -1527,24 +1527,24 @@ contains
           ! do nothing
 
         case (LINSOL_SOLVER_JACOBI)
-          allocate(rsolver%p_solverJacobi)
+          allocate(rsolver%p_rsolverJacobi)
 
         case (LINSOL_SOLVER_SOR,LINSOL_SOLVER_SSOR)
-          allocate(rsolver%p_solverSSOR)
+          allocate(rsolver%p_rsolverSSOR)
 
         case (LINSOL_SOLVER_ILU)
-          allocate(rsolver%p_solverILU)
+          allocate(rsolver%p_rsolverILU)
           call parlst_getvalue_double(rparlist, ssectionName, "depsILU", &
-                                      rsolver%p_solverILU%depsILU)
+                                      rsolver%p_rsolverILU%depsILU)
           call parlst_getvalue_double(rparlist, ssectionName, "domega", &
-                                      rsolver%p_solverILU%domega)
+                                      rsolver%p_rsolverILU%domega)
           call parlst_getvalue_int(rparlist, ssectionName, "ifill", &
-                                   rsolver%p_solverILU%ifill)
+                                   rsolver%p_rsolverILU%ifill)
 
         case (LINSOL_SOLVER_AGMG)
-          allocate(rsolver%p_solverAGMG)
+          allocate(rsolver%p_rsolverAGMG)
           call parlst_getvalue_int(rparlist, ssectionName, "nrest", &
-                                   rsolver%p_solverAGMG%nrest)
+                                   rsolver%p_rsolverAGMG%nrest)
 
 
         case default
@@ -1683,113 +1683,113 @@ contains
     ! Next, we have to proceed to the subnodes and create them recursively
 
     ! Generic solver subnode
-    if (associated(rsolverTemplate%p_solverSubnode)) then
-      allocate(rsolver%p_solverSubnode(size(rsolverTemplate%p_solverSubnode)))
-      do i = 1, size(rsolverTemplate%p_solverSubnode)
-        call solver_createSolver(rsolver%p_solverSubnode(i),&
-                                 rsolverTemplate%p_solverSubnode(i))
+    if (associated(rsolverTemplate%p_rsolverSubnode)) then
+      allocate(rsolver%p_rsolverSubnode(size(rsolverTemplate%p_rsolverSubnode)))
+      do i = 1, size(rsolverTemplate%p_rsolverSubnode)
+        call solver_createSolver(rsolver%p_rsolverSubnode(i),&
+                                 rsolverTemplate%p_rsolverSubnode(i))
       end do
     else
-      nullify(rsolver%p_solverSubnode)
+      nullify(rsolver%p_rsolverSubnode)
     end if
 
     ! Multigrid solver
-    if (associated(rsolverTemplate%p_solverMultigrid)) then
-      allocate(rsolver%p_solverMultigrid)
-      call create_solverMultigrid(rsolver%p_solverMultigrid,&
-                                  rsolverTemplate%p_solverMultigrid)
+    if (associated(rsolverTemplate%p_rsolverMultigrid)) then
+      allocate(rsolver%p_rsolverMultigrid)
+      call create_solverMultigrid(rsolver%p_rsolverMultigrid,&
+                                  rsolverTemplate%p_rsolverMultigrid)
     else
-      nullify(rsolver%p_solverMultigrid)
+      nullify(rsolver%p_rsolverMultigrid)
     end if
 
     ! UMFPACK solver
-    if (associated(rsolverTemplate%p_solverUMFPACK)) then
-      allocate(rsolver%p_solverUMFPACK)
-      call create_solverUMFPACK(rsolver%p_solverUMFPACK,&
-                                rsolverTemplate%p_solverUMFPACK)
+    if (associated(rsolverTemplate%p_rsolverUMFPACK)) then
+      allocate(rsolver%p_rsolverUMFPACK)
+      call create_solverUMFPACK(rsolver%p_rsolverUMFPACK,&
+                                rsolverTemplate%p_rsolverUMFPACK)
     else
-      nullify(rsolver%p_solverUMFPACK)
+      nullify(rsolver%p_rsolverUMFPACK)
     end if
 
     ! Jacobi solver
-    if (associated(rsolverTemplate%p_solverJacobi)) then
-      allocate(rsolver%p_solverJacobi)
-      call create_solverJacobi(rsolver%p_solverJacobi,&
-                               rsolverTemplate%p_solverJacobi)
+    if (associated(rsolverTemplate%p_rsolverJacobi)) then
+      allocate(rsolver%p_rsolverJacobi)
+      call create_solverJacobi(rsolver%p_rsolverJacobi,&
+                               rsolverTemplate%p_rsolverJacobi)
     else
-      nullify(rsolver%p_solverJacobi)
+      nullify(rsolver%p_rsolverJacobi)
     end if
 
     ! (S)SOR solver
-    if (associated(rsolverTemplate%p_solverSSOR)) then
-      allocate(rsolver%p_solverSSOR)
-      call create_solverSSOR(rsolver%p_solverSSOR,&
-                             rsolverTemplate%p_solverSSOR)
+    if (associated(rsolverTemplate%p_rsolverSSOR)) then
+      allocate(rsolver%p_rsolverSSOR)
+      call create_solverSSOR(rsolver%p_rsolverSSOR,&
+                             rsolverTemplate%p_rsolverSSOR)
     else
-      nullify(rsolver%p_solverSSOR)
+      nullify(rsolver%p_rsolverSSOR)
     end if
 
     ! BiCGSTAB solver
-    if (associated(rsolverTemplate%p_solverBiCGSTAB)) then
-      allocate(rsolver%p_solverBiCGSTAB)
-      call create_solverBiCGSTAB(rsolver%p_solverBiCGSTAB,&
-                                 rsolverTemplate%p_solverBiCGSTAB)
+    if (associated(rsolverTemplate%p_rsolverBiCGSTAB)) then
+      allocate(rsolver%p_rsolverBiCGSTAB)
+      call create_solverBiCGSTAB(rsolver%p_rsolverBiCGSTAB,&
+                                 rsolverTemplate%p_rsolverBiCGSTAB)
     else
-      nullify(rsolver%p_solverBiCGSTAB)
+      nullify(rsolver%p_rsolverBiCGSTAB)
     end if
 
     ! GMRES solver
-    if (associated(rsolverTemplate%p_solverGMRES)) then
-      allocate(rsolver%p_solverGMRES)
-      call create_solverGMRES(rsolver%p_solverGMRES,&
-                              rsolverTemplate%p_solverGMRES)
+    if (associated(rsolverTemplate%p_rsolverGMRES)) then
+      allocate(rsolver%p_rsolverGMRES)
+      call create_solverGMRES(rsolver%p_rsolverGMRES,&
+                              rsolverTemplate%p_rsolverGMRES)
     else
-      nullify(rsolver%p_solverGMRES)
+      nullify(rsolver%p_rsolverGMRES)
     end if
 
     ! ILU solver
-    if (associated(rsolverTemplate%p_solverILU)) then
-      allocate(rsolver%p_solverILU)
-      call create_solverILU(rsolver%p_solverILU,&
-                            rsolverTemplate%p_solverILU)
+    if (associated(rsolverTemplate%p_rsolverILU)) then
+      allocate(rsolver%p_rsolverILU)
+      call create_solverILU(rsolver%p_rsolverILU,&
+                            rsolverTemplate%p_rsolverILU)
     else
-      nullify(rsolver%p_solverILU)
+      nullify(rsolver%p_rsolverILU)
     end if
 
     ! Defect correction algorithm
-    if (associated(rsolverTemplate%p_solverDefcor)) then
-      allocate(rsolver%p_solverDefcor)
-      call create_solverDefcor(rsolver%p_solverDefcor,&
-                               rsolverTemplate%p_solverDefcor)
+    if (associated(rsolverTemplate%p_rsolverDefcor)) then
+      allocate(rsolver%p_rsolverDefcor)
+      call create_solverDefcor(rsolver%p_rsolverDefcor,&
+                               rsolverTemplate%p_rsolverDefcor)
     else
-      nullify(rsolver%p_solverDefcor)
+      nullify(rsolver%p_rsolverDefcor)
     end if
 
     ! Newton`s algorithm
-    if (associated(rsolverTemplate%p_solverNewton)) then
-      allocate(rsolver%p_solverNewton)
-      call create_solverNewton(rsolver%p_solverNewton,&
-                               rsolverTemplate%p_solverNewton)
+    if (associated(rsolverTemplate%p_rsolverNewton)) then
+      allocate(rsolver%p_rsolverNewton)
+      call create_solverNewton(rsolver%p_rsolverNewton,&
+                               rsolverTemplate%p_rsolverNewton)
     else
-      nullify(rsolver%p_solverNewton)
+      nullify(rsolver%p_rsolverNewton)
     end if
 
     ! Anderson`s mixing algorithm
-    if (associated(rsolverTemplate%p_solverAndersonMixing)) then
-      allocate(rsolver%p_solverAndersonMixing)
-      call create_solverAndersonMixing(rsolver%p_solverAndersonMixing,&
-                                       rsolverTemplate%p_solverAndersonMixing)
+    if (associated(rsolverTemplate%p_rsolverAndersonMixing)) then
+      allocate(rsolver%p_rsolverAndersonMixing)
+      call create_solverAndersonMixing(rsolver%p_rsolverAndersonMixing,&
+                                       rsolverTemplate%p_rsolverAndersonMixing)
     else
-      nullify(rsolver%p_solverAndersonMixing)
+      nullify(rsolver%p_rsolverAndersonMixing)
     end if
 
     ! AGMG solver
-    if (associated(rsolverTemplate%p_solverAGMG)) then
-      allocate(rsolver%p_solverAGMG)
-      call create_solverAGMG(rsolver%p_solverAGMG,&
-                                       rsolverTemplate%p_solverAGMG)
+    if (associated(rsolverTemplate%p_rsolverAGMG)) then
+      allocate(rsolver%p_rsolverAGMG)
+      call create_solverAGMG(rsolver%p_rsolverAGMG,&
+                                       rsolverTemplate%p_rsolverAGMG)
     else
-      nullify(rsolver%p_solverAGMG)
+      nullify(rsolver%p_rsolverAGMG)
     end if
 
   contains
@@ -1811,12 +1811,12 @@ contains
       rsolver = rsolverTemplate
 
       ! Create coarsegrid solver if required
-      if (associated(rsolverTemplate%p_solverCoarsegrid)) then
-        allocate(rsolver%p_solverCoarsegrid)
-        call solver_createSolver(rsolver%p_solverCoarsegrid,&
-                                 rsolverTemplate%p_solverCoarsegrid)
+      if (associated(rsolverTemplate%p_rsolverCoarsegrid)) then
+        allocate(rsolver%p_rsolverCoarsegrid)
+        call solver_createSolver(rsolver%p_rsolverCoarsegrid,&
+                                 rsolverTemplate%p_rsolverCoarsegrid)
       else
-        nullify(rsolver%p_solverCoarsegrid)
+        nullify(rsolver%p_rsolverCoarsegrid)
       end if
 
       ! Create smoother if required
@@ -2047,89 +2047,89 @@ contains
     ! Afterwards the subnode is  physically deallocated and its pointer is nullifies.
 
     ! Generic solver subnode
-    if (associated(rsolver%p_solverSubnode)) then
-      do i = 1, size(rsolver%p_solverSubnode)
-        call solver_releaseSolver(rsolver%p_solverSubnode(i))
+    if (associated(rsolver%p_rsolverSubnode)) then
+      do i = 1, size(rsolver%p_rsolverSubnode)
+        call solver_releaseSolver(rsolver%p_rsolverSubnode(i))
       end do
-      deallocate(rsolver%p_solverSubnode)
-      nullify(rsolver%p_solverSubnode)
+      deallocate(rsolver%p_rsolverSubnode)
+      nullify(rsolver%p_rsolverSubnode)
     end if
 
     ! Multigrid solver
-    if (associated(rsolver%p_solverMultigrid)) then
-      call release_solverMultigrid(rsolver%p_solverMultigrid)
-      deallocate(rsolver%p_solverMultigrid)
-      nullify(rsolver%p_solverMultigrid)
+    if (associated(rsolver%p_rsolverMultigrid)) then
+      call release_solverMultigrid(rsolver%p_rsolverMultigrid)
+      deallocate(rsolver%p_rsolverMultigrid)
+      nullify(rsolver%p_rsolverMultigrid)
     end if
 
     ! UMFPACK solver
-    if (associated(rsolver%p_solverUMFPACK)) then
-      call release_solverUMFPACK(rsolver%p_solverUMFPACK)
-      deallocate(rsolver%p_solverUMFPACK)
-      nullify(rsolver%p_solverUMFPACK)
+    if (associated(rsolver%p_rsolverUMFPACK)) then
+      call release_solverUMFPACK(rsolver%p_rsolverUMFPACK)
+      deallocate(rsolver%p_rsolverUMFPACK)
+      nullify(rsolver%p_rsolverUMFPACK)
     end if
 
     ! Jacobi solver
-    if (associated(rsolver%p_solverJacobi)) then
-      call release_solverJacobi(rsolver%p_solverJacobi)
-      deallocate(rsolver%p_solverJacobi)
-      nullify(rsolver%p_solverJacobi)
+    if (associated(rsolver%p_rsolverJacobi)) then
+      call release_solverJacobi(rsolver%p_rsolverJacobi)
+      deallocate(rsolver%p_rsolverJacobi)
+      nullify(rsolver%p_rsolverJacobi)
     end if
 
     ! (S)SOR solver
-    if (associated(rsolver%p_solverSSOR)) then
-      call release_solverSSOR(rsolver%p_solverSSOR)
-      deallocate(rsolver%p_solverSSOR)
-      nullify(rsolver%p_solverSSOR)
+    if (associated(rsolver%p_rsolverSSOR)) then
+      call release_solverSSOR(rsolver%p_rsolverSSOR)
+      deallocate(rsolver%p_rsolverSSOR)
+      nullify(rsolver%p_rsolverSSOR)
     end if
 
     ! BiCGSTAB solver
-    if (associated(rsolver%p_solverBiCGSTAB)) then
-      call release_solverBiCGSTAB(rsolver%p_solverBiCGSTAB)
-      deallocate(rsolver%p_solverBiCGSTAB)
-      nullify(rsolver%p_solverBiCGSTAB)
+    if (associated(rsolver%p_rsolverBiCGSTAB)) then
+      call release_solverBiCGSTAB(rsolver%p_rsolverBiCGSTAB)
+      deallocate(rsolver%p_rsolverBiCGSTAB)
+      nullify(rsolver%p_rsolverBiCGSTAB)
     end if
 
     ! GMRES solver
-    if (associated(rsolver%p_solverGMRES)) then
-      call release_solverGMRES(rsolver%p_solverGMRES)
-      deallocate(rsolver%p_solverGMRES)
-      nullify(rsolver%p_solverGMRES)
+    if (associated(rsolver%p_rsolverGMRES)) then
+      call release_solverGMRES(rsolver%p_rsolverGMRES)
+      deallocate(rsolver%p_rsolverGMRES)
+      nullify(rsolver%p_rsolverGMRES)
     end if
 
     ! ILU solver
-    if (associated(rsolver%p_solverILU)) then
-      call release_solverILU(rsolver%p_solverILU)
-      deallocate(rsolver%p_solverILU)
-      nullify(rsolver%p_solverILU)
+    if (associated(rsolver%p_rsolverILU)) then
+      call release_solverILU(rsolver%p_rsolverILU)
+      deallocate(rsolver%p_rsolverILU)
+      nullify(rsolver%p_rsolverILU)
     end if
 
     ! Defect correction algorithm
-    if (associated(rsolver%p_solverDefcor)) then
-      call release_solverDefcor(rsolver%p_solverDefcor)
-      deallocate(rsolver%p_solverDefcor)
-      nullify(rsolver%p_solverDefcor)
+    if (associated(rsolver%p_rsolverDefcor)) then
+      call release_solverDefcor(rsolver%p_rsolverDefcor)
+      deallocate(rsolver%p_rsolverDefcor)
+      nullify(rsolver%p_rsolverDefcor)
     end if
 
     ! Newton`s algorithm
-    if (associated(rsolver%p_solverNewton)) then
-      call release_solverNewton(rsolver%p_solverNewton)
-      deallocate(rsolver%p_solverNewton)
-      nullify(rsolver%p_solverNewton)
+    if (associated(rsolver%p_rsolverNewton)) then
+      call release_solverNewton(rsolver%p_rsolverNewton)
+      deallocate(rsolver%p_rsolverNewton)
+      nullify(rsolver%p_rsolverNewton)
     end if
 
     ! Anderson`s mixing algorithm
-    if (associated(rsolver%p_solverAndersonMixing)) then
-      call release_solverAndersonMixing(rsolver%p_solverAndersonMixing)
-      deallocate(rsolver%p_solverAndersonMixing)
-      nullify(rsolver%p_solverAndersonMixing)
+    if (associated(rsolver%p_rsolverAndersonMixing)) then
+      call release_solverAndersonMixing(rsolver%p_rsolverAndersonMixing)
+      deallocate(rsolver%p_rsolverAndersonMixing)
+      nullify(rsolver%p_rsolverAndersonMixing)
     end if
 
     ! AGMG solver
-    if (associated(rsolver%p_solverAGMG)) then
-      call release_solverAGMG(rsolver%p_solverAGMG)
-      deallocate(rsolver%p_solverAGMG)
-      nullify(rsolver%p_solverAGMG)
+    if (associated(rsolver%p_rsolverAGMG)) then
+      call release_solverAGMG(rsolver%p_rsolverAGMG)
+      deallocate(rsolver%p_rsolverAGMG)
+      nullify(rsolver%p_rsolverAGMG)
     end if
 
   contains
@@ -2166,10 +2166,10 @@ contains
       end if
 
       ! Release coarse grid solver if required
-      if (associated(rsolverMultigrid%p_solverCoarsegrid)) then
-        call solver_releaseSolver(rsolverMultigrid%p_solverCoarsegrid)
-        deallocate(rsolverMultigrid%p_solverCoarsegrid)
-        nullify(rsolverMultigrid%p_solverCoarsegrid)
+      if (associated(rsolverMultigrid%p_rsolverCoarsegrid)) then
+        call solver_releaseSolver(rsolverMultigrid%p_rsolverCoarsegrid)
+        deallocate(rsolverMultigrid%p_rsolverCoarsegrid)
+        nullify(rsolverMultigrid%p_rsolverCoarsegrid)
       end if
 
       ! Release all smoother subnodes
@@ -2362,12 +2362,22 @@ contains
       select case(rsolverAGMG%cdataType)
       case (ST_DOUBLE)
         call lsyssc_getbase_double(rsolverAGMG%rmatrixScalar, p_Da)
-        call dagmg(rsolverAGMG%rmatrixScalar%NEQ, p_Da, p_Kcol, p_Kld,&
-            p_Da, p_Da, -1, 0, 1, 1, 0.0_DP)
+        if (rsolver%coutputModeInfo .gt. 0) then
+          call dagmg(rsolverAGMG%rmatrixScalar%NEQ, p_Da, p_Kcol, p_Kld,&
+              p_Da, p_Da, -1, OU_TERMINAL, rsolverAGMG%nrest, 0, 0.0_DP)
+        else
+          call dagmg(rsolverAGMG%rmatrixScalar%NEQ, p_Da, p_Kcol, p_Kld,&
+              p_Da, p_Da, -1, OU_LOG, rsolverAGMG%nrest, 0, 0.0_DP)
+        end if
       case (ST_SINGLE)
         call lsyssc_getbase_single(rsolverAGMG%rmatrixScalar, p_Fa)
-        call sagmg(rsolverAGMG%rmatrixScalar%NEQ, p_Fa, p_Kcol, p_Kld,&
-            p_Fa, p_Fa, -1, 0, 1, 1, 0.0_SP)
+        if (rsolver%coutputModeInfo .gt. 0) then
+          call sagmg(rsolverAGMG%rmatrixScalar%NEQ, p_Fa, p_Kcol, p_Kld,&
+              p_Fa, p_Fa, -1, OU_TERMINAL, rsolverAGMG%nrest, 0, 0.0_SP)
+        else
+          call sagmg(rsolverAGMG%rmatrixScalar%NEQ, p_Fa, p_Kcol, p_Kld,&
+              p_Fa, p_Fa, -1, OU_LOG, rsolverAGMG%nrest, 0, 0.0_SP)
+        end if
       case default
          call output_line('Unsupported data type!',&
              OU_CLASS_ERROR,rsolver%coutputModeError,'release_solverAGMG')
@@ -2377,6 +2387,8 @@ contains
       call lsysbl_releaseMatrix(rsolverAGMG%rmatrix)
       call lsyssc_releaseMatrix(rsolverAGMG%rmatrixScalar)
 
+      ! Release temporal vector
+      call lsysbl_releaseVector(rsolverAGMG%rtempVector)
      end subroutine release_solverAGMG
 
     !*************************************************************
@@ -2476,45 +2488,45 @@ contains
     select case(rsolver%csolverType)
     case (SV_COUPLED)
       call output_line('Number of coupled components:                 '//&
-          trim(sys_siL(size(rsolver%p_solverSubnode),3)))
+          trim(sys_siL(size(rsolver%p_rsolverSubnode),3)))
 
     case (SV_FMG)
       call output_line('Number of full multigrid steps:               '//&
           trim(sys_siL(rsolver%niterations,15)))
-      if (associated(rsolver%p_solverMultigrid%p_solverCoarsegrid)) then
+      if (associated(rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid)) then
         if (rsolver%niterations .ne. 0)&
             call output_line('Number of nonlinear steps per multigrid step: '&
-            //trim(sys_siL(int(rsolver%p_solverMultigrid%p_solverCoarsegrid%niterations/&
+            //trim(sys_siL(int(rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid%niterations/&
             real(rsolver%niterations, DP)),15)))
       end if
 
     case (SV_NONLINEARMG)
       call output_line('Number of nonlinear multigrid steps:          '//&
           trim(sys_siL(rsolver%niterations, 15)))
-      if (associated(rsolver%p_solverMultigrid%p_solverCoarsegrid)) then
+      if (associated(rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid)) then
         if (rsolver%niterations .ne. 0)&
             call output_line('Number of nonlinear steps per multigrid step: '//&
-            trim(sys_siL(int(rsolver%p_solverMultigrid%p_solverCoarsegrid%niterations/&
+            trim(sys_siL(int(rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid%niterations/&
             real(rsolver%niterations,DP)),15)))
       end if
 
     case (SV_LINEARMG)
       call output_line('Number of linear steps:                       '//&
           trim(sys_siL(rsolver%niterations,15)))
-      if (associated(rsolver%p_solverMultigrid%p_solverCoarsegrid)) then
+      if (associated(rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid)) then
         if (rsolver%niterations .ne. 0)&
             call output_line('Number of linear steps per multigrid step:    '//&
-            trim(sys_siL(int(rsolver%p_solverMultigrid%p_solverCoarsegrid%niterations/&
+            trim(sys_siL(int(rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid%niterations/&
             real(rsolver%niterations,DP)),15)))
       end if
 
     case(SV_NONLINEAR)
       call output_line('Number of nonlinear steps:                    '//&
           trim(sys_siL(rsolver%niterations,15)))
-      if (associated(rsolver%p_solverSubnode)) then
+      if (associated(rsolver%p_rsolverSubnode)) then
         if (rsolver%niterations .ne. 0)&
             call output_line('Number of linear steps per nonlinear step:    '//&
-            trim(sys_siL(int(rsolver%p_solverSubnode(1)%niterations/&
+            trim(sys_siL(int(rsolver%p_rsolverSubnode(1)%niterations/&
             real(rsolver%niterations,DP)),15)))
       end if
 
@@ -2562,169 +2574,169 @@ contains
       call output_line('dconvergenceRate:                             '//trim(sys_sdL(rsolver%dconvergenceRate,5)))
 
       ! UMFPACK4 solver
-      if (associated(rsolver%p_solverUMFPACK)) then
+      if (associated(rsolver%p_rsolverUMFPACK)) then
         call output_lbrk()
         call output_line('>>> UMFPACK subnode:')
         call output_line('--------------------')
-        call output_line('isymbolic: '//trim(sys_siL(int(rsolver%p_solverUMFPACK%isymbolic),5)))
-        call output_line('inumeric:  '//trim(sys_siL(int(rsolver%p_solverUMFPACK%inumeric),5)))
+        call output_line('isymbolic: '//trim(sys_siL(int(rsolver%p_rsolverUMFPACK%isymbolic),5)))
+        call output_line('inumeric:  '//trim(sys_siL(int(rsolver%p_rsolverUMFPACK%inumeric),5)))
         call output_line('>>> system matrix:')
         call output_line('------------------')
-        call lsysbl_infoMatrix(rsolver%p_solverUMFPACK%rmatrix)
+        call lsysbl_infoMatrix(rsolver%p_rsolverUMFPACK%rmatrix)
         call output_line('>>> temporal vector:')
         call output_line('--------------------')
-        call lsysbl_infoVector(rsolver%p_solverUMFPACK%rtempVector)
+        call lsysbl_infoVector(rsolver%p_rsolverUMFPACK%rtempVector)
       end if
 
       ! Jacobi solver
-      if (associated(rsolver%p_solverJacobi)) then
+      if (associated(rsolver%p_rsolverJacobi)) then
         call output_lbrk()
         call output_line('>>> Jacobi solver:')
         call output_line('------------------')
         call output_line('>>> System matrix:')
         call output_line('------------------')
-        call lsysbl_infoMatrix(rsolver%p_solverJacobi%rmatrix)
+        call lsysbl_infoMatrix(rsolver%p_rsolverJacobi%rmatrix)
       end if
 
       ! (S)SOR solver
-      if (associated(rsolver%p_solverSSOR)) then
+      if (associated(rsolver%p_rsolverSSOR)) then
         call output_lbrk()
         call output_line('>>> (S)SOR solver:')
         call output_line('------------------')
         call output_line('>>> System matrix:')
         call output_line('------------------')
-        call lsysbl_infoMatrix(rsolver%p_solverSSOR%rmatrix)
+        call lsysbl_infoMatrix(rsolver%p_rsolverSSOR%rmatrix)
       end if
 
       ! BiCGSTAB solver
-      if (associated(rsolver%p_solverBiCGSTAB)) then
+      if (associated(rsolver%p_rsolverBiCGSTAB)) then
         call output_lbrk()
         call output_line('>>> BiCGSTAB solver:')
         call output_line('--------------------')
         call output_line('>>> Temporal vectors:')
         call output_line('---------------------')
-        do i = lbound(rsolver%p_solverBiCGSTAB%RtempVectors,1),&
-               ubound(rsolver%p_solverBiCGSTAB%RtempVectors,1)
-          call lsysbl_infoVector(rsolver%p_solverBiCGSTAB%RtempVectors(i))
+        do i = lbound(rsolver%p_rsolverBiCGSTAB%RtempVectors,1),&
+               ubound(rsolver%p_rsolverBiCGSTAB%RtempVectors,1)
+          call lsysbl_infoVector(rsolver%p_rsolverBiCGSTAB%RtempVectors(i))
         end do
         call output_line('>>> System matrix:')
         call output_line('------------------')
-        call lsysbl_infoMatrix(rsolver%p_solverBiCGSTAB%rmatrix)
-        if (associated(rsolver%p_solverBiCGSTAB%p_precond)) then
+        call lsysbl_infoMatrix(rsolver%p_rsolverBiCGSTAB%rmatrix)
+        if (associated(rsolver%p_rsolverBiCGSTAB%p_precond)) then
           call output_line('>>> Preconditioner:')
           call output_line('-------------------')
-          call solver_infoSolver(rsolver%p_solverBiCGSTAB%p_precond, bprint)
+          call solver_infoSolver(rsolver%p_rsolverBiCGSTAB%p_precond, bprint)
         end if
       end if
 
       ! GMRES solver
-      if (associated(rsolver%p_solverGMRES)) then
+      if (associated(rsolver%p_rsolverGMRES)) then
         call output_lbrk()
         call output_line('>>> GMRES solver:')
         call output_line('-----------------')
-        call output_line('h_Dh: '//trim(sys_siL(rsolver%p_solverGMRES%h_Dh,5)))
-        call output_line('h_Dc: '//trim(sys_siL(rsolver%p_solverGMRES%h_Dc,5)))
-        call output_line('h_Ds: '//trim(sys_siL(rsolver%p_solverGMRES%h_Ds,5)))
-        call output_line('h_Dq: '//trim(sys_siL(rsolver%p_solverGMRES%h_Dq,5)))
-        if (associated(rsolver%p_solverGMRES%rv)) then
+        call output_line('h_Dh: '//trim(sys_siL(rsolver%p_rsolverGMRES%h_Dh,5)))
+        call output_line('h_Dc: '//trim(sys_siL(rsolver%p_rsolverGMRES%h_Dc,5)))
+        call output_line('h_Ds: '//trim(sys_siL(rsolver%p_rsolverGMRES%h_Ds,5)))
+        call output_line('h_Dq: '//trim(sys_siL(rsolver%p_rsolverGMRES%h_Dq,5)))
+        if (associated(rsolver%p_rsolverGMRES%rv)) then
           call output_line('>>> Temporal vector RV (first entry):')
           call output_line('-------------------------------------')
-          call lsysbl_infoVector(rsolver%p_solverGMRES%rv(1))
+          call lsysbl_infoVector(rsolver%p_rsolverGMRES%rv(1))
         end if
-        if (associated(rsolver%p_solverGMRES%rz)) then
+        if (associated(rsolver%p_rsolverGMRES%rz)) then
           call output_line('>>> Temporal vector RZ (first entry):')
           call output_line('-------------------------------------')
-          call lsysbl_infoVector(rsolver%p_solverGMRES%rz(1))
+          call lsysbl_infoVector(rsolver%p_rsolverGMRES%rz(1))
         end if
         call output_line('>>> System matrix:')
         call output_linE('------------------')
-        call lsysbl_infoMatrix(rsolver%p_solverGMRES%rmatrix)
-        if (associated(rsolver%p_solverGMRES%p_precond)) then
+        call lsysbl_infoMatrix(rsolver%p_rsolverGMRES%rmatrix)
+        if (associated(rsolver%p_rsolverGMRES%p_precond)) then
           call output_line('>>> Preconditioner:')
           call output_line('-------------------')
-          call solver_infoSolver(rsolver%p_solverGMRES%p_precond, bprint)
+          call solver_infoSolver(rsolver%p_rsolverGMRES%p_precond, bprint)
         end if
       end if
 
       ! ILU solver
-      if (associated(rsolver%p_solverILU)) then
+      if (associated(rsolver%p_rsolverILU)) then
         call output_lbrk()
         call output_line('>>> ILU solver:')
         call output_line('---------------')
-        call output_line('ifill:   '//trim(sys_siL(rsolver%p_solverILU%ifill,3)))
-        call output_line('domega:  '//trim(sys_sdL(rsolver%p_solverILU%domega,5)))
-        call output_line('depsILU: '//trim(sys_sdL(rsolver%p_solverILU%depsILU,5)))
+        call output_line('ifill:   '//trim(sys_siL(rsolver%p_rsolverILU%ifill,3)))
+        call output_line('domega:  '//trim(sys_sdL(rsolver%p_rsolverILU%domega,5)))
+        call output_line('depsILU: '//trim(sys_sdL(rsolver%p_rsolverILU%depsILU,5)))
         call output_line('>>> system matrix:')
         call output_line('------------------')
-        call lsysbl_infoMatrix(rsolver%p_solverILU%rmatrix)
+        call lsysbl_infoMatrix(rsolver%p_rsolverILU%rmatrix)
       end if
 
       ! Defcor preconditioner
-      if (associated(rsolver%p_solverDefcor)) then
+      if (associated(rsolver%p_rsolverDefcor)) then
         call output_lbrk()
         call output_line('>>> Defect correction preconditioner:')
         call output_line('-------------------------------------')
         call output_line('>>> Temporal vectors:')
         call output_line('---------------------')
-        do i = lbound(rsolver%p_solverDefcor%RtempVectors,1),&
-               ubound(rsolver%p_solverDefcor%RtempVectors,1)
-          call lsysbl_infoVector(rsolver%p_solverDefcor%RtempVectors(i))
+        do i = lbound(rsolver%p_rsolverDefcor%RtempVectors,1),&
+               ubound(rsolver%p_rsolverDefcor%RtempVectors,1)
+          call lsysbl_infoVector(rsolver%p_rsolverDefcor%RtempVectors(i))
         end do
       end if
 
       ! Newton preconditioner
-      if (associated(rsolver%p_solverNewton)) then
+      if (associated(rsolver%p_rsolverNewton)) then
         call output_lbrk()
         call output_line('>>> Newton preconditioner:')
         call output_line('--------------------------')
-        call output_line('icheckSufficientDecrease: '//trim(sys_siL(rsolver%p_solverNewton%icheckSufficientDecrease,3)))
-        call output_line('nmaxBacktrackingSteps:    '//trim(sys_siL(rsolver%p_solverNewton%nmaxBacktrackingSteps,5)))
-        call output_line('iupdateFrequency:         '//trim(sys_siL(rsolver%p_solverNewton%iupdateFrequency,5)))
-        call output_line('dforcingStrategy:         '//trim(sys_sdL(rsolver%p_solverNewton%dforcingStrategy,5)))
-        call output_line('dperturbationStrategy:    '//trim(sys_sdL(rsolver%p_solverNewton%dperturbationStrategy,5)))
+        call output_line('icheckSufficientDecrease: '//trim(sys_siL(rsolver%p_rsolverNewton%icheckSufficientDecrease,3)))
+        call output_line('nmaxBacktrackingSteps:    '//trim(sys_siL(rsolver%p_rsolverNewton%nmaxBacktrackingSteps,5)))
+        call output_line('iupdateFrequency:         '//trim(sys_siL(rsolver%p_rsolverNewton%iupdateFrequency,5)))
+        call output_line('dforcingStrategy:         '//trim(sys_sdL(rsolver%p_rsolverNewton%dforcingStrategy,5)))
+        call output_line('dperturbationStrategy:    '//trim(sys_sdL(rsolver%p_rsolverNewton%dperturbationStrategy,5)))
         call output_line('>>> Temporal vectors:')
         call output_line('---------------------')
-        do i = lbound(rsolver%p_solverNewton%RtempVectors,1),&
-               ubound(rsolver%p_solverNewton%RtempVectors,1)
-          call lsysbl_infoVector(rsolver%p_solverNewton%RtempVectors(i))
+        do i = lbound(rsolver%p_rsolverNewton%RtempVectors,1),&
+               ubound(rsolver%p_rsolverNewton%RtempVectors,1)
+          call lsysbl_infoVector(rsolver%p_rsolverNewton%RtempVectors(i))
         end do
       end if
 
       ! Anderson`s mixing algorithm
-      if (associated(rsolver%p_solverAndersonMixing)) then
+      if (associated(rsolver%p_rsolverAndersonMixing)) then
         call output_lbrk()
         call output_line('>>> Anderson mixing algorithm:')
-        call output_line('nmaxLeastsquaresSteps: '//trim(sys_siL(rsolver%p_solverAndersonMixing%nmaxLeastsquaresSteps,3)))
+        call output_line('nmaxLeastsquaresSteps: '//trim(sys_siL(rsolver%p_rsolverAndersonMixing%nmaxLeastsquaresSteps,3)))
         call output_line('>>> Temporal solution vectors:')
         call output_line('---------------------')
-        do i = lbound(rsolver%p_solverAndersonMixing%RsolutionVectors,1),&
-               ubound(rsolver%p_solverAndersonMixing%RsolutionVectors,1)
-          call lsysbl_infoVector(rsolver%p_solverAndersonMixing%RsolutionVectors(i))
+        do i = lbound(rsolver%p_rsolverAndersonMixing%RsolutionVectors,1),&
+               ubound(rsolver%p_rsolverAndersonMixing%RsolutionVectors,1)
+          call lsysbl_infoVector(rsolver%p_rsolverAndersonMixing%RsolutionVectors(i))
         end do
         call output_line('>>> Temporal correction vectors:')
         call output_line('---------------------')
-        do i = lbound(rsolver%p_solverAndersonMixing%RcorrectionVectors,1),&
-               ubound(rsolver%p_solverAndersonMixing%RcorrectionVectors,1)
-          call lsysbl_infoVector(rsolver%p_solverAndersonMixing%RcorrectionVectors(i))
+        do i = lbound(rsolver%p_rsolverAndersonMixing%RcorrectionVectors,1),&
+               ubound(rsolver%p_rsolverAndersonMixing%RcorrectionVectors,1)
+          call lsysbl_infoVector(rsolver%p_rsolverAndersonMixing%RcorrectionVectors(i))
         end do
         call output_line('------------------------------')
       end if
 
       ! Solver subnode
-      if (associated(rsolver%p_solverSubnode)) then
-        do i = 1, size(rsolver%p_solverSubnode)
+      if (associated(rsolver%p_rsolverSubnode)) then
+        do i = 1, size(rsolver%p_rsolverSubnode)
           call output_lbrk()
           call output_line('>>> Generic solver subnode: '//trim(sys_siL(i,3)))
           call output_line('-------------------------------')
-          call solver_infoSolver(rsolver%p_solverSubnode(i), bprint)
+          call solver_infoSolver(rsolver%p_rsolverSubnode(i), bprint)
         end do
       end if
 
       ! Multigrid solver
-      if (associated(rsolver%p_solverMultigrid)) then
+      if (associated(rsolver%p_rsolverMultigrid)) then
         call output_lbrk()
         call output_line('>>> Multigrid solver:')
-        select case(rsolver%p_solverMultigrid%icycle)
+        select case(rsolver%p_rsolverMultigrid%icycle)
         case (0)
           call output_line('cycle: F-cycle')
         case (-1,1)
@@ -2734,177 +2746,177 @@ contains
         case default
           call output_line('cycle: unknown !!!')
         end select
-        call output_line('nlmin:         '//trim(sys_siL(rsolver%p_solverMultigrid%initialNlmin,5))//', '//&
-                                            trim(sys_siL(rsolver%p_solverMultigrid%nlmin,5)))
-        call output_line('nlmax          '//trim(sys_siL(rsolver%p_solverMultigrid%initialNlmax,5))//', '//&
-                                            trim(sys_siL(rsolver%p_solverMultigrid%nlmax,5)))
-        call output_line('ilmin:         '//trim(sys_siL(rsolver%p_solverMultigrid%ilmin,5)))
-        call output_line('ilmax:         '//trim(sys_siL(rsolver%p_solverMultigrid%ilmax,5)))
-        call output_line('csmootherType: '//trim(sys_siL(rsolver%p_solverMultigrid%csmootherType,5)))
-        call output_line('npresmooth:    '//trim(sys_siL(rsolver%p_solverMultigrid%npresmooth,5)))
-        call output_line('npostmooth:    '//trim(sys_siL(rsolver%p_solverMultigrid%npostsmooth,5)))
-        if (associated(rsolver%p_solverMultigrid%rmatrix)) then
+        call output_line('nlmin:         '//trim(sys_siL(rsolver%p_rsolverMultigrid%initialNlmin,5))//', '//&
+                                            trim(sys_siL(rsolver%p_rsolverMultigrid%nlmin,5)))
+        call output_line('nlmax          '//trim(sys_siL(rsolver%p_rsolverMultigrid%initialNlmax,5))//', '//&
+                                            trim(sys_siL(rsolver%p_rsolverMultigrid%nlmax,5)))
+        call output_line('ilmin:         '//trim(sys_siL(rsolver%p_rsolverMultigrid%ilmin,5)))
+        call output_line('ilmax:         '//trim(sys_siL(rsolver%p_rsolverMultigrid%ilmax,5)))
+        call output_line('csmootherType: '//trim(sys_siL(rsolver%p_rsolverMultigrid%csmootherType,5)))
+        call output_line('npresmooth:    '//trim(sys_siL(rsolver%p_rsolverMultigrid%npresmooth,5)))
+        call output_line('npostmooth:    '//trim(sys_siL(rsolver%p_rsolverMultigrid%npostsmooth,5)))
+        if (associated(rsolver%p_rsolverMultigrid%rmatrix)) then
           call output_line('>>> System matrices:')
           call output_line('--------------------')
-          do i = lbound(rsolver%p_solverMultigrid%rmatrix,1),&
-                 ubound(rsolver%p_solverMultigrid%rmatrix,1)
-            call lsysbl_infoMatrix(rsolver%p_solverMultigrid%rmatrix(i))
+          do i = lbound(rsolver%p_rsolverMultigrid%rmatrix,1),&
+                 ubound(rsolver%p_rsolverMultigrid%rmatrix,1)
+            call lsysbl_infoMatrix(rsolver%p_rsolverMultigrid%rmatrix(i))
           end do
         end if
         call output_line('>>> Temporal vectors:')
         call output_line('---------------------')
-        if (associated(rsolver%p_solverMultigrid%RtempVectors)) then
-          do i = lbound(rsolver%p_solverMultigrid%RtempVectors,1),&
-                 ubound(rsolver%p_solverMultigrid%RtempVectors,1)
-            call lsysbl_infoVector(rsolver%p_solverMultigrid%RtempVectors(i))
+        if (associated(rsolver%p_rsolverMultigrid%RtempVectors)) then
+          do i = lbound(rsolver%p_rsolverMultigrid%RtempVectors,1),&
+                 ubound(rsolver%p_rsolverMultigrid%RtempVectors,1)
+            call lsysbl_infoVector(rsolver%p_rsolverMultigrid%RtempVectors(i))
           end do
         end if
 
         ! Smoothers
-        if (associated(rsolver%p_solverMultigrid%p_smoother)) then
-          do i = lbound(rsolver%p_solverMultigrid%p_smoother,1),&
-                 ubound(rsolver%p_solverMultigrid%p_smoother,1)
+        if (associated(rsolver%p_rsolverMultigrid%p_smoother)) then
+          do i = lbound(rsolver%p_rsolverMultigrid%p_smoother,1),&
+                 ubound(rsolver%p_rsolverMultigrid%p_smoother,1)
             call output_lbrk()
             call output_line('>>> Smoother on Level '//trim(sys_siL(i,3)))
-            call solver_infoSolver(rsolver%p_solverMultigrid%p_smoother(i), bprint)
+            call solver_infoSolver(rsolver%p_rsolverMultigrid%p_smoother(i), bprint)
           end do
         end if
 
         ! Coarse-grid solver
-        if (associated(rsolver%p_solverMultigrid%p_solverCoarsegrid)) then
+        if (associated(rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid)) then
           call output_lbrk()
           call output_line('>>> Coarsegrid solver:')
           call output_line('----------------------')
-          call solver_infoSolver(rsolver%p_solverMultigrid%p_solverCoarsegrid, bprint)
+          call solver_infoSolver(rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid, bprint)
         end if
       end if
 
       ! AGMG solver
-      if (associated(rsolver%p_solverAGMG)) then
+      if (associated(rsolver%p_rsolverAGMG)) then
         call output_lbrk()
         call output_line('>>> AGMG subnode:')
         call output_line('--------------------')
-        call output_line('nrest:   '//trim(sys_siL(rsolver%p_solverAGMG%nrest,3)))
+        call output_line('nrest:   '//trim(sys_siL(rsolver%p_rsolverAGMG%nrest,3)))
         call output_line('>>> system matrix:')
         call output_line('------------------')
-        call lsysbl_infoMatrix(rsolver%p_solverAGMG%rmatrix)
+        call lsysbl_infoMatrix(rsolver%p_rsolverAGMG%rmatrix)
       end if
 
     else
 
       ! UMFPACK4 solver
-      if (associated(rsolver%p_solverUMFPACK)) then
+      if (associated(rsolver%p_rsolverUMFPACK)) then
         call output_lbrk()
         call output_line('>>> UMFPACK subnode:')
         call output_line('--------------------')
       end if
 
       ! Jacobi solver
-      if (associated(rsolver%p_solverJacobi)) then
+      if (associated(rsolver%p_rsolverJacobi)) then
         call output_lbrk()
         call output_line('>>> Jacobi solver:')
         call output_line('------------------')
       end if
 
       ! (S)SOR solver
-      if (associated(rsolver%p_solverSSOR)) then
+      if (associated(rsolver%p_rsolverSSOR)) then
         call output_lbrk()
         call output_line('>>> (S)SOR solver:')
         call output_line('------------------')
       end if
 
       ! BiCGSTAB solver
-      if (associated(rsolver%p_solverBiCGSTAB)) then
+      if (associated(rsolver%p_rsolverBiCGSTAB)) then
         call output_lbrk()
         call output_line('>>> BiCGSTAB solver:')
         call output_line('--------------------')
-        if (associated(rsolver%p_solverBiCGSTAB%p_precond)) then
+        if (associated(rsolver%p_rsolverBiCGSTAB%p_precond)) then
         call output_lbrk()
           call output_line('>>> Preconditioner:')
           call output_line('-------------------')
-          call solver_infoSolver(rsolver%p_solverBiCGSTAB%p_precond)
+          call solver_infoSolver(rsolver%p_rsolverBiCGSTAB%p_precond)
         end if
       end if
 
       ! GMRES solver
-      if (associated(rsolver%p_solverGMRES)) then
+      if (associated(rsolver%p_rsolverGMRES)) then
         call output_lbrk()
         call output_line('>>> GMRES solver:')
         call output_line('-----------------')
-        if (associated(rsolver%p_solverGMRES%p_precond)) then
+        if (associated(rsolver%p_rsolverGMRES%p_precond)) then
           call output_lbrk()
           call output_line('>>> Preconditioner:')
           call output_line('-------------------')
-          call solver_infoSolver(rsolver%p_solverGMRES%p_precond)
+          call solver_infoSolver(rsolver%p_rsolverGMRES%p_precond)
         end if
       end if
 
       ! ILU solver
-      if (associated(rsolver%p_solverILU)) then
+      if (associated(rsolver%p_rsolverILU)) then
         call output_lbrk()
         call output_line('>>> ILU solver:')
         call output_line('---------------')
       end if
 
       ! Defcor preconditioner
-      if (associated(rsolver%p_solverDefcor)) then
+      if (associated(rsolver%p_rsolverDefcor)) then
         call output_lbrk()
         call output_line('>>> Defect correction preconditioner:')
         call output_line('-------------------------------------')
       end if
 
       ! Newton preconditioner
-      if (associated(rsolver%p_solverNewton)) then
+      if (associated(rsolver%p_rsolverNewton)) then
         call output_lbrk()
         call output_line('>>> Newton preconditioner:')
         call output_line('--------------------------')
       end if
 
       ! Anderson`s mixing algorithm
-      if (associated(rsolver%p_solverAndersonMixing)) then
+      if (associated(rsolver%p_rsolverAndersonMixing)) then
         call output_lbrk()
         call output_line('>>> Anderson mixing algorithm:')
         call output_line('------------------------------')
       end if
 
       ! Solver subnode
-      if (associated(rsolver%p_solverSubnode)) then
-        do i = 1, size(rsolver%p_solverSubnode)
+      if (associated(rsolver%p_rsolverSubnode)) then
+        do i = 1, size(rsolver%p_rsolverSubnode)
           call output_lbrk()
           call output_line('>>> Generic solver subnode: '//trim(sys_siL(i,3)))
           call output_line('-------------------------------')
-          call solver_infoSolver(rsolver%p_solverSubnode(i), bprint)
+          call solver_infoSolver(rsolver%p_rsolverSubnode(i), bprint)
         end do
       end if
 
       ! Multigrid solver
-      if (associated(rsolver%p_solverMultigrid)) then
+      if (associated(rsolver%p_rsolverMultigrid)) then
         call output_lbrk()
         call output_line('>>> Multigrid solver:')
         call output_line('---------------------')
 
         ! Smoothers
-        if (associated(rsolver%p_solverMultigrid%p_smoother)) then
-          do i = lbound(rsolver%p_solverMultigrid%p_smoother,1),&
-                 ubound(rsolver%p_solverMultigrid%p_smoother,1)
+        if (associated(rsolver%p_rsolverMultigrid%p_smoother)) then
+          do i = lbound(rsolver%p_rsolverMultigrid%p_smoother,1),&
+                 ubound(rsolver%p_rsolverMultigrid%p_smoother,1)
             call output_lbrk()
             call output_line('>>> Smoother on Level '//trim(sys_siL(i,3)))
             call output_line('-------------------------')
-            call solver_infoSolver(rsolver%p_solverMultigrid%p_smoother(i), bprint)
+            call solver_infoSolver(rsolver%p_rsolverMultigrid%p_smoother(i), bprint)
           end do
         end if
 
         ! Coarse-grid solver
-        if (associated(rsolver%p_solverMultigrid%p_solverCoarsegrid)) then
+        if (associated(rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid)) then
           call output_lbrk()
           call output_line('>>> Coarsegrid solver:')
           call output_line('----------------------')
-          call solver_infoSolver(rsolver%p_solverMultigrid%p_solverCoarsegrid, bprint)
+          call solver_infoSolver(rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid, bprint)
         end if
       end if
 
       ! AGMG solver
-      if (associated(rsolver%p_solverAGMG)) then
+      if (associated(rsolver%p_rsolverAGMG)) then
         call output_lbrk()
         call output_line('>>> AGMG subnode:')
         call output_line('--------------------')
@@ -2952,53 +2964,53 @@ contains
     end if
 
     ! Reset generic solver subnode
-    if (associated(rsolver%p_solverSubnode)) then
-      do i = 1, size(rsolver%p_solverSubnode)
-        call solver_resetSolver(rsolver%p_solverSubnode(i), bresetStatistics)
+    if (associated(rsolver%p_rsolverSubnode)) then
+      do i = 1, size(rsolver%p_rsolverSubnode)
+        call solver_resetSolver(rsolver%p_rsolverSubnode(i), bresetStatistics)
       end do
     end if
 
     ! Reset multigrid solver
-    if (associated(rsolver%p_solverMultigrid)) then
+    if (associated(rsolver%p_rsolverMultigrid)) then
 
       ! Reset multigrid levels
-      rsolver%p_solverMultigrid%nlmin = rsolver%p_solverMultigrid%initialNlmin
-      rsolver%p_solverMultigrid%nlmax = rsolver%p_solverMultigrid%initialNlmax
+      rsolver%p_rsolverMultigrid%nlmin = rsolver%p_rsolverMultigrid%initialNlmin
+      rsolver%p_rsolverMultigrid%nlmax = rsolver%p_rsolverMultigrid%initialNlmax
 
       ! Reset coarsegrid solver
-      if (associated(rsolver%p_solverMultigrid%p_solverCoarsegrid)) then
-        call solver_resetSolver(rsolver%p_solverMultigrid%p_solverCoarsegrid,&
+      if (associated(rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid)) then
+        call solver_resetSolver(rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid,&
                                 bresetStatistics)
       end if
 
       ! Reset smoother
-      if (associated(rsolver%p_solverMultigrid%p_smoother)) then
-        do i = lbound(rsolver%p_solverMultigrid%p_smoother,1),&
-               ubound(rsolver%p_solverMultigrid%p_smoother,1)
-          call solver_resetSolver(rsolver%p_solverMultigrid%p_smoother(i),&
+      if (associated(rsolver%p_rsolverMultigrid%p_smoother)) then
+        do i = lbound(rsolver%p_rsolverMultigrid%p_smoother,1),&
+               ubound(rsolver%p_rsolverMultigrid%p_smoother,1)
+          call solver_resetSolver(rsolver%p_rsolverMultigrid%p_smoother(i),&
                                   bresetStatistics)
         end do
       end if
     end if
 
     ! Reset preconditioners
-    if (associated(rsolver%p_solverBiCGSTAB)) then
-      if (associated(rsolver%p_solverBiCGSTAB%p_precond)) then
-        call solver_resetSolver(rsolver%p_solverBiCGSTAB%p_precond,&
+    if (associated(rsolver%p_rsolverBiCGSTAB)) then
+      if (associated(rsolver%p_rsolverBiCGSTAB%p_precond)) then
+        call solver_resetSolver(rsolver%p_rsolverBiCGSTAB%p_precond,&
                                 bresetStatistics)
       end if
     end if
 
-    if (associated(rsolver%p_solverGMRES)) then
-      if (associated(rsolver%p_solverGMRES%p_precond)) then
-        call solver_resetSolver(rsolver%p_solverGMRES%p_precond,&
+    if (associated(rsolver%p_rsolverGMRES)) then
+      if (associated(rsolver%p_rsolverGMRES%p_precond)) then
+        call solver_resetSolver(rsolver%p_rsolverGMRES%p_precond,&
                                 bresetStatistics)
       end if
     end if
 
     ! Reset Anderson`s mixing algorithm
-    if (associated(rsolver%p_solverAndersonMixing)) then
-      rsolver%p_solverAndersonMixing%iposition = 1
+    if (associated(rsolver%p_rsolverAndersonMixing)) then
+      rsolver%p_rsolverAndersonMixing%iposition = 1
     end if
 
   end subroutine solver_resetSolver
@@ -3027,65 +3039,65 @@ contains
     ! Hence, we can directly proceed to the subnodes.
 
     ! Generic solver subnode
-    if (associated(rsolver%p_solverSubnode)) then
-      do i = 1, size(rsolver%p_solverSubnode)
-        call solver_removeTempFromSolver(rsolver%p_solverSubnode(i))
+    if (associated(rsolver%p_rsolverSubnode)) then
+      do i = 1, size(rsolver%p_rsolverSubnode)
+        call solver_removeTempFromSolver(rsolver%p_rsolverSubnode(i))
       end do
     end if
 
     ! Multigrid solver
-    if (associated(rsolver%p_solverMultigrid)) then
-      call remove_solverMultigrid(rsolver%p_solverMultigrid)
+    if (associated(rsolver%p_rsolverMultigrid)) then
+      call remove_solverMultigrid(rsolver%p_rsolverMultigrid)
     end if
 
     ! UMFPACK solver
-    if (associated(rsolver%p_solverUMFPACK)) then
-      call remove_solverUMFPACK(rsolver%p_solverUMFPACK)
+    if (associated(rsolver%p_rsolverUMFPACK)) then
+      call remove_solverUMFPACK(rsolver%p_rsolverUMFPACK)
     end if
 
     ! Jacobi solver
-    if (associated(rsolver%p_solverJacobi)) then
-      call remove_solverJacobi(rsolver%p_solverJacobi)
+    if (associated(rsolver%p_rsolverJacobi)) then
+      call remove_solverJacobi(rsolver%p_rsolverJacobi)
     end if
 
     ! (S)SOR solver
-    if (associated(rsolver%p_solverSSOR)) then
-      call remove_solverSSOR(rsolver%p_solverSSOR)
+    if (associated(rsolver%p_rsolverSSOR)) then
+      call remove_solverSSOR(rsolver%p_rsolverSSOR)
     end if
 
     ! BiCGSTAB solver
-    if (associated(rsolver%p_solverBiCGSTAB)) then
-      call remove_solverBiCGSTAB(rsolver%p_solverBiCGSTAB)
+    if (associated(rsolver%p_rsolverBiCGSTAB)) then
+      call remove_solverBiCGSTAB(rsolver%p_rsolverBiCGSTAB)
     end if
 
     ! GMRES solver
-    if (associated(rsolver%p_solverGMRES)) then
-      call remove_solverGMRES(rsolver%p_solverGMRES)
+    if (associated(rsolver%p_rsolverGMRES)) then
+      call remove_solverGMRES(rsolver%p_rsolverGMRES)
     end if
 
     ! ILU solver
-    if (associated(rsolver%p_solverILU)) then
-      call remove_solverILU(rsolver%p_solverILU)
+    if (associated(rsolver%p_rsolverILU)) then
+      call remove_solverILU(rsolver%p_rsolverILU)
     end if
     
     ! AGMG solver
-    if (associated(rsolver%p_solverAGMG)) then
-      call remove_solverAGMG(rsolver%p_solverAGMG)
+    if (associated(rsolver%p_rsolverAGMG)) then
+      call remove_solverAGMG(rsolver%p_rsolverAGMG)
     end if
 
     ! Defcor preconditioner
-    if (associated(rsolver%p_solverDefcor)) then
-      call remove_solverDefcor(rsolver%p_solverDefcor)
+    if (associated(rsolver%p_rsolverDefcor)) then
+      call remove_solverDefcor(rsolver%p_rsolverDefcor)
     end if
 
     ! Newton preconditioner
-    if (associated(rsolver%p_solverNewton)) then
-      call remove_solverNewton(rsolver%p_solverNewton)
+    if (associated(rsolver%p_rsolverNewton)) then
+      call remove_solverNewton(rsolver%p_rsolverNewton)
     end if
 
     ! Anderson`s mixing algorithm
-    if (associated(rsolver%p_solverAndersonMixing)) then
-      call remove_solverAndersonMixing(rsolver%p_solverAndersonMixing)
+    if (associated(rsolver%p_rsolverAndersonMixing)) then
+      call remove_solverAndersonMixing(rsolver%p_rsolverAndersonMixing)
     end if
 
   contains
@@ -3118,8 +3130,8 @@ contains
       end if
 
       ! Remove temporal from coarsegrid solver
-      if (associated(rsolverMultigrid%p_solverCoarsegrid)) then
-        call solver_removeTempFromSolver(rsolverMultigrid%p_solverCoarsegrid)
+      if (associated(rsolverMultigrid%p_rsolverCoarsegrid)) then
+        call solver_removeTempFromSolver(rsolverMultigrid%p_rsolverCoarsegrid)
       end if
 
       ! Remove temporals from smoother
@@ -3281,12 +3293,22 @@ contains
       select case(rsolverAGMG%cdataType)
       case (ST_DOUBLE)
         call lsyssc_getbase_double(rsolverAGMG%rmatrixScalar, p_Da)
-        call dagmg(rsolverAGMG%rmatrixScalar%NEQ, p_Da, p_Kcol, p_Kld,&
-            p_Da, p_Da, -1, 0, 1, 1, 0.0_DP)
+        if (rsolver%coutputModeInfo .gt. 0) then
+          call dagmg(rsolverAGMG%rmatrixScalar%NEQ, p_Da, p_Kcol, p_Kld,&
+              p_Da, p_Da, -1, OU_TERMINAL, rsolverAGMG%nrest, 0, 0.0_DP)
+        else
+          call dagmg(rsolverAGMG%rmatrixScalar%NEQ, p_Da, p_Kcol, p_Kld,&
+              p_Da, p_Da, -1, OU_LOG, rsolverAGMG%nrest, 0, 0.0_DP)
+        end if
       case (ST_SINGLE)
         call lsyssc_getbase_single(rsolverAGMG%rmatrixScalar, p_Fa)
-        call sagmg(rsolverAGMG%rmatrixScalar%NEQ, p_Fa, p_Kcol, p_Kld,&
-            p_Fa, p_Fa, -1, 0, 1, 1, 0.0_SP)
+        if (rsolver%coutputModeInfo .gt. 0) then
+          call sagmg(rsolverAGMG%rmatrixScalar%NEQ, p_Fa, p_Kcol, p_Kld,&
+              p_Fa, p_Fa, -1, OU_TERMINAL, rsolverAGMG%nrest, 0, 0.0_SP)
+        else
+          call sagmg(rsolverAGMG%rmatrixScalar%NEQ, p_Fa, p_Kcol, p_Kld,&
+              p_Fa, p_Fa, -1, OU_LOG, rsolverAGMG%nrest, 0, 0.0_SP)
+        end if
       case default
          call output_line('Unsupported data type!',&
              OU_CLASS_ERROR,rsolver%coutputModeError,'remove_solverAGMG')
@@ -3296,6 +3318,8 @@ contains
       call lsysbl_releaseMatrix(rsolverAGMG%rmatrix)
       call lsyssc_releaseMatrix(rsolverAGMG%rmatrixScalar)
 
+      ! Release temporal vector
+      call lsysbl_releaseVector(rsolverAGMG%rtempVector)
     end subroutine remove_solverAGMG
 
     !*************************************************************
@@ -3381,7 +3405,7 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_solverMultigrid), pointer :: p_solverMultigrid
+    type(t_solverMultigrid), pointer :: p_rsolverMultigrid
     type(t_solver) :: rsolverTemplateSmoother
     integer :: i, nlmin, nlmax, ilbound, iubound
 
@@ -3398,80 +3422,80 @@ contains
     end if
 
     ! Do we have a solver subnode?
-    if (associated(rsolver%p_solverSubnode)) then
-      do i = 1, size(rsolver%p_solverSubnode)
-        call solver_adjustHierarchy(rsolver%p_solverSubnode(i), nlmin, nlmax)
+    if (associated(rsolver%p_rsolverSubnode)) then
+      do i = 1, size(rsolver%p_rsolverSubnode)
+        call solver_adjustHierarchy(rsolver%p_rsolverSubnode(i), nlmin, nlmax)
       end do
     end if
 
     ! Do we have a multigrid structure?
-    if (associated(rsolver%p_solverMultigrid)) then
-      p_solverMultigrid => rsolver%p_solverMultigrid
+    if (associated(rsolver%p_rsolverMultigrid)) then
+      p_rsolverMultigrid => rsolver%p_rsolverMultigrid
 
       ! Should multigrid be used or is NLMIN = NLMAX
-      if (p_solverMultigrid%initialNlmin .eq. &
-          p_solverMultigrid%initialNlmax) then
+      if (p_rsolverMultigrid%initialNlmin .eq. &
+          p_rsolverMultigrid%initialNlmax) then
 
         ! Check maximum multigrid level
-        if (p_solverMultigrid%nlmax .ne. nlmax) then
-          p_solverMultigrid%nlmax = nlmax
+        if (p_rsolverMultigrid%nlmax .ne. nlmax) then
+          p_rsolverMultigrid%nlmax = nlmax
           rsolver%isolverSpec = ior(rsolver%isolverSpec,&
                                     SV_SSPEC_STRUCTURENEEDSUPDATE)
         end if
 
         ! Check minimum multigrid level
-        if (p_solverMultigrid%nlmin .ne. nlmax) then
-          p_solverMultigrid%nlmin = nlmax
+        if (p_rsolverMultigrid%nlmin .ne. nlmax) then
+          p_rsolverMultigrid%nlmin = nlmax
           rsolver%isolverSpec = ior(rsolver%isolverSpec,&
                                     SV_SSPEC_STRUCTURENEEDSUPDATE)
         end if
       else
 
         ! Check maximum multigrid level
-        if (p_solverMultigrid%nlmax .ne. nlmax) then
-          p_solverMultigrid%nlmax = nlmax
+        if (p_rsolverMultigrid%nlmax .ne. nlmax) then
+          p_rsolverMultigrid%nlmax = nlmax
           rsolver%isolverSpec = ior(rsolver%isolverSpec,&
                                     SV_SSPEC_STRUCTURENEEDSUPDATE)
         end if
 
         ! Check minimum multigrid level
-        if (p_solverMultigrid%nlmin .ne. min(nlmin, p_solverMultigrid%nlmin, nlmax)) then
-          p_solverMultigrid%nlmin = min(nlmin, p_solverMultigrid%nlmin, nlmax)
+        if (p_rsolverMultigrid%nlmin .ne. min(nlmin, p_rsolverMultigrid%nlmin, nlmax)) then
+          p_rsolverMultigrid%nlmin = min(nlmin, p_rsolverMultigrid%nlmin, nlmax)
           rsolver%isolverSpec = ior(rsolver%isolverSpec,&
                                     SV_SSPEC_STRUCTURENEEDSUPDATE)
         end if
       end if
 
       ! Do we have a coarse grid solver?
-      if (associated(p_solverMultigrid%p_solverCoarsegrid)) then
-        call solver_adjustHierarchy(p_solverMultigrid%p_solverCoarsegrid, nlmin, nlmax)
+      if (associated(p_rsolverMultigrid%p_rsolverCoarsegrid)) then
+        call solver_adjustHierarchy(p_rsolverMultigrid%p_rsolverCoarsegrid, nlmin, nlmax)
       end if
 
       ! Do we have a smoother?
-      if (associated(p_solverMultigrid%p_smoother)) then
-        ilbound = lbound(p_solverMultigrid%p_smoother, 1)
-        iubound = ubound(p_solverMultigrid%p_smoother, 1)
+      if (associated(p_rsolverMultigrid%p_smoother)) then
+        ilbound = lbound(p_rsolverMultigrid%p_smoother, 1)
+        iubound = ubound(p_rsolverMultigrid%p_smoother, 1)
 
         ! Do we have to adjust smoother?
-        if ((p_solverMultigrid%nlmin+1 .ne. ilbound) .or.&
-            (p_solverMultigrid%nlmax   .ne. iubound)) then
+        if ((p_rsolverMultigrid%nlmin+1 .ne. ilbound) .or.&
+            (p_rsolverMultigrid%nlmax   .ne. iubound)) then
 
           ! Create template solver from smoother
           call solver_createSolver(rsolverTemplateSmoother,&
-                                   p_solverMultigrid%p_smoother(iubound))
+                                   p_rsolverMultigrid%p_smoother(iubound))
 
           ! Release all existing smoothers
           do i = ilbound, iubound
-            call solver_releaseSolver(p_solverMultigrid%p_smoother(i))
+            call solver_releaseSolver(p_rsolverMultigrid%p_smoother(i))
           end do
-          deallocate(p_solverMultigrid%p_smoother)
+          deallocate(p_rsolverMultigrid%p_smoother)
 
           ! Create new array of smoothers from template solver
-          if (p_solverMultigrid%nlmin .lt. p_solverMultigrid%nlmax) then
-            allocate(p_solverMultigrid%p_smoother(&
-                p_solverMultigrid%nlmin:p_solverMultigrid%nlmax))
-            do i = p_solverMultigrid%nlmin+1, p_solverMultigrid%nlmax
-              call solver_createSolver(p_solverMultigrid%p_smoother(i),&
+          if (p_rsolverMultigrid%nlmin .lt. p_rsolverMultigrid%nlmax) then
+            allocate(p_rsolverMultigrid%p_smoother(&
+                p_rsolverMultigrid%nlmin:p_rsolverMultigrid%nlmax))
+            do i = p_rsolverMultigrid%nlmin+1, p_rsolverMultigrid%nlmax
+              call solver_createSolver(p_rsolverMultigrid%p_smoother(i),&
                                        rsolverTemplateSmoother)
             end do
           end if
@@ -3484,9 +3508,9 @@ contains
 
         ! Finally, adjust hierarchy in smoothers, whereby the maximum
         ! multigrid level cannot exceed the level of the smoother
-        do i = p_solverMultigrid%nlmin+1, p_solverMultigrid%nlmax
-          call solver_adjustHierarchy(p_solverMultigrid%p_smoother(i),&
-                                      p_solverMultigrid%nlmin, min(i, p_solverMultigrid%nlmax))
+        do i = p_rsolverMultigrid%nlmin+1, p_rsolverMultigrid%nlmax
+          call solver_adjustHierarchy(p_rsolverMultigrid%p_smoother(i),&
+                                      p_rsolverMultigrid%nlmin, min(i, p_rsolverMultigrid%nlmax))
         end do
       end if
     end if
@@ -3494,16 +3518,16 @@ contains
     ! Do we have a single-grid solver which has a preconditioner?
 
     ! BiCGSTAB ?
-    if (associated(rsolver%p_solverBiCGSTAB)) then
-      if (associated(rsolver%p_solverBiCGSTAB%p_precond)) then
-        call solver_adjustHierarchy(rsolver%p_solverBiCGSTAB%p_precond)
+    if (associated(rsolver%p_rsolverBiCGSTAB)) then
+      if (associated(rsolver%p_rsolverBiCGSTAB%p_precond)) then
+        call solver_adjustHierarchy(rsolver%p_rsolverBiCGSTAB%p_precond)
       end if
     end if
 
     ! GMRES ?
-    if (associated(rsolver%p_solverGMRES)) then
-      if (associated(rsolver%p_solverGMRES%p_precond)) then
-        call solver_adjustHierarchy(rsolver%p_solverGMRES%p_precond)
+    if (associated(rsolver%p_rsolverGMRES)) then
+      if (associated(rsolver%p_rsolverGMRES%p_precond)) then
+        call solver_adjustHierarchy(rsolver%p_rsolverGMRES%p_precond)
       end if
     end if
 
@@ -3547,137 +3571,137 @@ contains
       select case(rsolver%csolverType)
       case (SV_FMG)
         call startIndent(cindent, "Full Multigrid-Solver")
-        if (associated(rsolver%p_solverMultigrid)) then
+        if (associated(rsolver%p_rsolverMultigrid)) then
           call continueIndent(cindent, "NLMIN: "//&
-              trim(adjustl(sys_si(rsolver%p_solverMultigrid%nlmin,3)))//" ("//&
-              trim(adjustl(sys_si(rsolver%p_solverMultigrid%initialNlmin,3)))//")")
+              trim(adjustl(sys_si(rsolver%p_rsolverMultigrid%nlmin,3)))//" ("//&
+              trim(adjustl(sys_si(rsolver%p_rsolverMultigrid%initialNlmin,3)))//")")
           call continueIndent(cindent, "NLMAX: "//&
-              trim(adjustl(sys_si(rsolver%p_solverMultigrid%nlmax,3)))//" ("//&
-              trim(adjustl(sys_si(rsolver%p_solverMultigrid%initialNlmax,3)))//")")
+              trim(adjustl(sys_si(rsolver%p_rsolverMultigrid%nlmax,3)))//" ("//&
+              trim(adjustl(sys_si(rsolver%p_rsolverMultigrid%initialNlmax,3)))//")")
 
-          if (associated(rsolver%p_solverMultigrid%p_smoother)) then
-            do i = lbound(rsolver%p_solverMultigrid%p_smoother,1),&
-                   ubound(rsolver%p_solverMultigrid%p_smoother,1)
+          if (associated(rsolver%p_rsolverMultigrid%p_smoother)) then
+            do i = lbound(rsolver%p_rsolverMultigrid%p_smoother,1),&
+                   ubound(rsolver%p_rsolverMultigrid%p_smoother,1)
 
               call continueIndent(cindent, "Smoother on level "//&
                   trim(adjustl(sys_si(i,3))))
-              call showLevel(rsolver%p_solverMultigrid%p_smoother(i), cindent//"  |")
+              call showLevel(rsolver%p_rsolverMultigrid%p_smoother(i), cindent//"  |")
             end do
           end if
 
-          if (associated(rsolver%p_solverMultigrid%p_solverCoarsegrid)) then
+          if (associated(rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid)) then
             call continueIndent(cindent, "Coarsegrid-Solver")
-            call showLevel(rsolver%p_solverMultigrid%p_solverCoarsegrid,cindent//"  |")
+            call showLevel(rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid,cindent//"  |")
           end if
         end if
         call stopIndent(cindent)
 
       case (SV_NONLINEARMG)
         call startIndent(cindent, "Nonlinear Multigrid-Solver")
-        if (associated(rsolver%p_solverMultigrid)) then
+        if (associated(rsolver%p_rsolverMultigrid)) then
           call continueIndent(cindent, "NLMIN: "//&
-              trim(adjustl(sys_si(rsolver%p_solverMultigrid%nlmin,3)))//" ("//&
-              trim(adjustl(sys_si(rsolver%p_solverMultigrid%initialNlmin,3)))//")")
+              trim(adjustl(sys_si(rsolver%p_rsolverMultigrid%nlmin,3)))//" ("//&
+              trim(adjustl(sys_si(rsolver%p_rsolverMultigrid%initialNlmin,3)))//")")
           call continueIndent(cindent, "NLMAX: "//&
-              trim(adjustl(sys_si(rsolver%p_solverMultigrid%nlmax,3)))//" ("//&
-              trim(adjustl(sys_si(rsolver%p_solverMultigrid%initialNlmax,3)))//")")
+              trim(adjustl(sys_si(rsolver%p_rsolverMultigrid%nlmax,3)))//" ("//&
+              trim(adjustl(sys_si(rsolver%p_rsolverMultigrid%initialNlmax,3)))//")")
 
-          if (associated(rsolver%p_solverMultigrid%p_smoother)) then
-            do i = lbound(rsolver%p_solverMultigrid%p_smoother,1),&
-                   ubound(rsolver%p_solverMultigrid%p_smoother,1)
+          if (associated(rsolver%p_rsolverMultigrid%p_smoother)) then
+            do i = lbound(rsolver%p_rsolverMultigrid%p_smoother,1),&
+                   ubound(rsolver%p_rsolverMultigrid%p_smoother,1)
 
               call continueIndent(cindent, "Smoother on level "//&
                   trim(adjustl(sys_si(i,3))))
-              call showLevel(rsolver%p_solverMultigrid%p_smoother(i), cindent//"  |")
+              call showLevel(rsolver%p_rsolverMultigrid%p_smoother(i), cindent//"  |")
             end do
           end if
 
-          if (associated(rsolver%p_solverMultigrid%p_solverCoarsegrid)) then
+          if (associated(rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid)) then
             call continueIndent(cindent, "Coarsegrid-Solver")
-            call showLevel(rsolver%p_solverMultigrid%p_solverCoarsegrid,cindent//"  |")
+            call showLevel(rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid,cindent//"  |")
           end if
         end if
         call stopIndent(cindent)
 
       case (SV_LINEARMG)
         call startIndent(cindent, "Linear Multigrid-Solver")
-        if (associated(rsolver%p_solverMultigrid)) then
+        if (associated(rsolver%p_rsolverMultigrid)) then
           call continueIndent(cindent, "NLMIN: "//&
-              trim(adjustl(sys_si(rsolver%p_solverMultigrid%nlmin,3)))//" ("//&
-              trim(adjustl(sys_si(rsolver%p_solverMultigrid%initialNlmin,3)))//")")
+              trim(adjustl(sys_si(rsolver%p_rsolverMultigrid%nlmin,3)))//" ("//&
+              trim(adjustl(sys_si(rsolver%p_rsolverMultigrid%initialNlmin,3)))//")")
           call continueIndent(cindent, "NLMAX: "//&
-              trim(adjustl(sys_si(rsolver%p_solverMultigrid%nlmax,3)))//" ("//&
-              trim(adjustl(sys_si(rsolver%p_solverMultigrid%initialNlmax,3)))//")")
+              trim(adjustl(sys_si(rsolver%p_rsolverMultigrid%nlmax,3)))//" ("//&
+              trim(adjustl(sys_si(rsolver%p_rsolverMultigrid%initialNlmax,3)))//")")
 
-          if (associated(rsolver%p_solverMultigrid%p_smoother)) then
-            do i = lbound(rsolver%p_solverMultigrid%p_smoother,1),&
-                   ubound(rsolver%p_solverMultigrid%p_smoother,1)
+          if (associated(rsolver%p_rsolverMultigrid%p_smoother)) then
+            do i = lbound(rsolver%p_rsolverMultigrid%p_smoother,1),&
+                   ubound(rsolver%p_rsolverMultigrid%p_smoother,1)
 
               call continueIndent(cindent, "Smoother on level "//&
                   trim(adjustl(sys_si(i,3))))
-              call showLevel(rsolver%p_solverMultigrid%p_smoother(i), cindent//"  |")
+              call showLevel(rsolver%p_rsolverMultigrid%p_smoother(i), cindent//"  |")
             end do
           end if
 
-          if (associated(rsolver%p_solverMultigrid%p_solverCoarsegrid)) then
+          if (associated(rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid)) then
             call continueIndent(cindent, "Coarsegrid-Solver")
-            call showLevel(rsolver%p_solverMultigrid%p_solverCoarsegrid,cindent//"  |")
+            call showLevel(rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid,cindent//"  |")
           end if
         end if
         call stopIndent(cindent)
 
       case(SV_NONLINEAR)
         call startIndent(cindent, "Nonlinear Solver")
-        if (associated(rsolver%p_solverSubnode)) then
+        if (associated(rsolver%p_rsolverSubnode)) then
           call continueIndent(cindent, "Subsolver")
-          call showLevel(rsolver%p_solverSubnode(1),cindent//"  |")
+          call showLevel(rsolver%p_rsolverSubnode(1),cindent//"  |")
         end if
 
-        if (associated(rsolver%p_solverDefcor)) then
+        if (associated(rsolver%p_rsolverDefcor)) then
           call continueIndent(cindent, "Defect-correction Solver")
         end if
 
-        if (associated(rsolver%p_solverNewton)) then
+        if (associated(rsolver%p_rsolverNewton)) then
           call continueIndent(cindent, "Newton Solver")
         end if
         call stopIndent(cindent)
 
       case(SV_LINEAR)
         call startIndent(cindent, "Linear Solver")
-        if (associated(rsolver%p_solverSubnode)) then
+        if (associated(rsolver%p_rsolverSubnode)) then
           call continueIndent(cindent, "Subsolver")
-          call showLevel(rsolver%p_solverSubnode(1),cindent//"  |")
+          call showLevel(rsolver%p_rsolverSubnode(1),cindent//"  |")
         end if
 
-        if (associated(rsolver%p_solverUMFPACK)) then
+        if (associated(rsolver%p_rsolverUMFPACK)) then
           call continueIndent(cindent, "UMFPACK Solver")
         end if
 
-        if (associated(rsolver%p_solverJacobi)) then
+        if (associated(rsolver%p_rsolverJacobi)) then
           call continueIndent(cindent, "Jacobi Solver")
         end if
 
-        if (associated(rsolver%p_solverSSOR)) then
+        if (associated(rsolver%p_rsolverSSOR)) then
           call continueIndent(cindent, "SSOR Solver")
         end if
 
-        if (associated(rsolver%p_solverBiCGSTAB)) then
+        if (associated(rsolver%p_rsolverBiCGSTAB)) then
           call continueIndent(cindent, "BiCGSTAB Solver")
-          if (associated(rsolver%p_solverBiCGSTAB%p_precond)) then
+          if (associated(rsolver%p_rsolverBiCGSTAB%p_precond)) then
             call continueIndent(cindent, "BiCGSTAB Preconditioner")
-            call showLevel(rsolver%p_solverBiCGSTAB%p_precond,cindent//"  |")
+            call showLevel(rsolver%p_rsolverBiCGSTAB%p_precond,cindent//"  |")
           end if
         end if
 
-        if (associated(rsolver%p_solverGMRES)) then
+        if (associated(rsolver%p_rsolverGMRES)) then
           call continueIndent(cindent, "GMRES Solver")
-          if (associated(rsolver%p_solverGMRES%p_precond)) then
+          if (associated(rsolver%p_rsolverGMRES%p_precond)) then
             call continueIndent(cindent, "GMRES Preconditioner")
-            call showLevel(rsolver%p_solverGMRES%p_precond,cindent//"  |")
+            call showLevel(rsolver%p_rsolverGMRES%p_precond,cindent//"  |")
           end if
         end if
 
-        if (associated(rsolver%p_solverILU)) then
+        if (associated(rsolver%p_rsolverILU)) then
           call continueIndent(cindent, "ILU Solver")
         end if
         call stopIndent(cindent)
@@ -3862,9 +3886,9 @@ contains
     select case(rsolver%csolverType)
 
     case (SV_COUPLED)
-      if (associated(rsolver%p_solverSubnode)) then
-        if (size(rsolver%p_solverSubnode) .ge. isub) then
-          p_rsubsolver => rsolver%p_solverSubnode(isub)
+      if (associated(rsolver%p_rsolverSubnode)) then
+        if (size(rsolver%p_rsolverSubnode) .ge. isub) then
+          p_rsubsolver => rsolver%p_rsolverSubnode(isub)
         else
           nullify(p_rsubsolver)
         end if
@@ -3873,9 +3897,9 @@ contains
       end if
 
     case (SV_FMG, SV_NONLINEARMG, SV_LINEARMG)
-      if (associated(rsolver%p_solverMultigrid)) then
-        if (associated(rsolver%p_solverMultigrid%p_solverCoarsegrid)) then
-          p_rsubsolver => rsolver%p_solverMultigrid%p_solverCoarsegrid
+      if (associated(rsolver%p_rsolverMultigrid)) then
+        if (associated(rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid)) then
+          p_rsubsolver => rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid
         else
           nullify(p_rsubsolver)
         end if
@@ -3884,8 +3908,8 @@ contains
       end if
 
     case (SV_NONLINEAR, SV_LINEAR)
-      if (associated(rsolver%p_solverSubnode)) then
-        p_rsubsolver => rsolver%p_solverSubnode(1)
+      if (associated(rsolver%p_rsolverSubnode)) then
+        p_rsubsolver => rsolver%p_rsolverSubnode(1)
       else
         nullify(p_rsubsolver)
       end if
@@ -4035,19 +4059,19 @@ contains
       nlmin = huge(1)
 
       ! Do we have a generic solver subnode?
-      if (associated(rsolver%p_solverSubnode)) then
-        do i = 1, size(rsolver%p_solverSubnode)
-          nlmin = min(nlmin, get_nlmin(rsolver%p_solverSubnode(i)))
+      if (associated(rsolver%p_rsolverSubnode)) then
+        do i = 1, size(rsolver%p_rsolverSubnode)
+          nlmin = min(nlmin, get_nlmin(rsolver%p_rsolverSubnode(i)))
         end do
       end if
 
       ! Do we have multigrid subnode?
-      if (associated(rsolver%p_solverMultigrid)) then
-        nlmin = min(nlmin, rsolver%p_solverMultigrid%nlmin)
+      if (associated(rsolver%p_rsolverMultigrid)) then
+        nlmin = min(nlmin, rsolver%p_rsolverMultigrid%nlmin)
 
         ! Do we have coarsegrid subnode?
-        if (associated(rsolver%p_solverMultigrid%p_solverCoarsegrid)) then
-          nlmin = min(nlmin, get_nlmin(rsolver%p_solverMultigrid%p_solverCoarsegrid))
+        if (associated(rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid)) then
+          nlmin = min(nlmin, get_nlmin(rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid))
         end if
       end if
     end function get_nlmin
@@ -4113,19 +4137,19 @@ contains
       nlmax = 0
 
       ! Do we have a generic solver subnode?
-      if (associated(rsolver%p_solverSubnode)) then
-        do i = 1, size(rsolver%p_solverSubnode)
-          nlmax = max(nlmax, get_nlmax(rsolver%p_solverSubnode(i)))
+      if (associated(rsolver%p_rsolverSubnode)) then
+        do i = 1, size(rsolver%p_rsolverSubnode)
+          nlmax = max(nlmax, get_nlmax(rsolver%p_rsolverSubnode(i)))
         end do
       end if
 
       ! Do we have multigrid subnode?
-      if (associated(rsolver%p_solverMultigrid)) then
-        nlmax = max(nlmax, rsolver%p_solverMultigrid%nlmax)
+      if (associated(rsolver%p_rsolverMultigrid)) then
+        nlmax = max(nlmax, rsolver%p_rsolverMultigrid%nlmax)
 
         ! Do we have coarsegrid subnode?
-        if (associated(rsolver%p_solverMultigrid%p_solverCoarsegrid)) then
-          nlmax = max(nlmax, get_nlmax(rsolver%p_solverMultigrid%p_solverCoarsegrid))
+        if (associated(rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid)) then
+          nlmax = max(nlmax, get_nlmax(rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid))
         end if
       end if
     end function get_nlmax
@@ -4172,26 +4196,26 @@ contains
       integer :: i
 
       ! Do we have a generic solver subnode?
-      if (associated(rsolver%p_solverSubnode)) then
-        do i = 1, size(rsolver%p_solverSubnode)
-          call set_nlmin(rsolver%p_solverSubnode(i), nlmin)
+      if (associated(rsolver%p_rsolverSubnode)) then
+        do i = 1, size(rsolver%p_rsolverSubnode)
+          call set_nlmin(rsolver%p_rsolverSubnode(i), nlmin)
         end do
       end if
 
       ! Do we have multigrid subnode?
-      if (associated(rsolver%p_solverMultigrid)) then
-        rsolver%p_solverMultigrid%nlmin = nlmin
+      if (associated(rsolver%p_rsolverMultigrid)) then
+        rsolver%p_rsolverMultigrid%nlmin = nlmin
 
         ! Do we have coarsegrid subnode?
-        if (associated(rsolver%p_solverMultigrid%p_solverCoarsegrid)) then
-          call set_nlmin(rsolver%p_solverMultigrid%p_solverCoarsegrid, nlmin)
+        if (associated(rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid)) then
+          call set_nlmin(rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid, nlmin)
         end if
 
         ! Do we have a smoother subnode?
-        if (associated(rsolver%p_solverMultigrid%p_smoother)) then
-          do i = lbound(rsolver%p_solverMultigrid%p_smoother,1),&
-                 ubound(rsolver%p_solverMultigrid%p_smoother,1)
-            call set_nlmin(rsolver%p_solverMultigrid%p_smoother(i), nlmin)
+        if (associated(rsolver%p_rsolverMultigrid%p_smoother)) then
+          do i = lbound(rsolver%p_rsolverMultigrid%p_smoother,1),&
+                 ubound(rsolver%p_rsolverMultigrid%p_smoother,1)
+            call set_nlmin(rsolver%p_rsolverMultigrid%p_smoother(i), nlmin)
           end do
         end if
       end if
@@ -4199,16 +4223,16 @@ contains
       ! Do we have a single-grid solver which has a preconditioner?
 
       ! BiCGSTAB ?
-      if (associated(rsolver%p_solverBiCGSTAB)) then
-        if (associated(rsolver%p_solverBiCGSTAB%p_precond)) then
-          call set_nlmin(rsolver%p_solverBiCGSTAB%p_precond, nlmin)
+      if (associated(rsolver%p_rsolverBiCGSTAB)) then
+        if (associated(rsolver%p_rsolverBiCGSTAB%p_precond)) then
+          call set_nlmin(rsolver%p_rsolverBiCGSTAB%p_precond, nlmin)
         end if
       end if
 
       ! GMRES ?
-      if (associated(rsolver%p_solverGMRES)) then
-        if (associated(rsolver%p_solverGMRES%p_precond)) then
-          call set_nlmin(rsolver%p_solverGMRES%p_precond, nlmin)
+      if (associated(rsolver%p_rsolverGMRES)) then
+        if (associated(rsolver%p_rsolverGMRES%p_precond)) then
+          call set_nlmin(rsolver%p_rsolverGMRES%p_precond, nlmin)
         end if
       end if
     end subroutine set_nlmin
@@ -4255,26 +4279,26 @@ contains
       integer :: i
 
       ! Do we have a generic solver subnode?
-      if (associated(rsolver%p_solverSubnode)) then
-        do i = 1, size(rsolver%p_solverSubnode)
-          call set_nlmax(rsolver%p_solverSubnode(i), nlmax)
+      if (associated(rsolver%p_rsolverSubnode)) then
+        do i = 1, size(rsolver%p_rsolverSubnode)
+          call set_nlmax(rsolver%p_rsolverSubnode(i), nlmax)
         end do
       end if
 
       ! Do we have multigrid subnode?
-      if (associated(rsolver%p_solverMultigrid)) then
-        rsolver%p_solverMultigrid%nlmax = nlmax
+      if (associated(rsolver%p_rsolverMultigrid)) then
+        rsolver%p_rsolverMultigrid%nlmax = nlmax
 
         ! Do we have coarsegrid subnode?
-        if (associated(rsolver%p_solverMultigrid%p_solverCoarsegrid)) then
-          call set_nlmax(rsolver%p_solverMultigrid%p_solverCoarsegrid, nlmax)
+        if (associated(rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid)) then
+          call set_nlmax(rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid, nlmax)
         end if
 
         ! Do we have a smoother subnode?
-        if (associated(rsolver%p_solverMultigrid%p_smoother)) then
-          do i = lbound(rsolver%p_solverMultigrid%p_smoother,1),&
-                 ubound(rsolver%p_solverMultigrid%p_smoother,1)
-            call set_nlmax(rsolver%p_solverMultigrid%p_smoother(i), nlmax)
+        if (associated(rsolver%p_rsolverMultigrid%p_smoother)) then
+          do i = lbound(rsolver%p_rsolverMultigrid%p_smoother,1),&
+                 ubound(rsolver%p_rsolverMultigrid%p_smoother,1)
+            call set_nlmax(rsolver%p_rsolverMultigrid%p_smoother(i), nlmax)
           end do
         end if
       end if
@@ -4282,16 +4306,16 @@ contains
       ! Do we have a single-grid solver which has a preconditioner?
 
       ! BiCGSTAB ?
-      if (associated(rsolver%p_solverBiCGSTAB)) then
-        if (associated(rsolver%p_solverBiCGSTAB%p_precond)) then
-          call set_nlmax(rsolver%p_solverBiCGSTAB%p_precond, nlmax)
+      if (associated(rsolver%p_rsolverBiCGSTAB)) then
+        if (associated(rsolver%p_rsolverBiCGSTAB%p_precond)) then
+          call set_nlmax(rsolver%p_rsolverBiCGSTAB%p_precond, nlmax)
         end if
       end if
 
       ! GMRES ?
-      if (associated(rsolver%p_solverGMRES)) then
-        if (associated(rsolver%p_solverGMRES%p_precond)) then
-          call set_nlmax(rsolver%p_solverGMRES%p_precond, nlmax)
+      if (associated(rsolver%p_rsolverGMRES)) then
+        if (associated(rsolver%p_rsolverGMRES%p_precond)) then
+          call set_nlmax(rsolver%p_rsolverGMRES%p_precond, nlmax)
         end if
       end if
     end subroutine set_nlmax
@@ -4336,28 +4360,28 @@ contains
     if (.not.brecursive) return
 
     ! Do we have a generic solver subnode?
-    if (associated(rsolver%p_solverSubnode)) then
-      do i = 1, size(rsolver%p_solverSubnode)
-        call solver_setBoundaryCondition(rsolver%p_solverSubnode(i),&
+    if (associated(rsolver%p_rsolverSubnode)) then
+      do i = 1, size(rsolver%p_rsolverSubnode)
+        call solver_setBoundaryCondition(rsolver%p_rsolverSubnode(i),&
             rboundaryCondition, brecursive)
       end do
     end if
 
     ! Do we have a multigrid subnode?
-    if (associated(rsolver%p_solverMultigrid)) then
+    if (associated(rsolver%p_rsolverMultigrid)) then
 
       ! Do we have a coarsegrid solver?
-      if (associated(rsolver%p_solverMultigrid%p_solverCoarsegrid)) then
+      if (associated(rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid)) then
         call solver_setBoundaryCondition(&
-            rsolver%p_solverMultigrid%p_solverCoarsegrid, rboundaryCondition, brecursive)
+            rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid, rboundaryCondition, brecursive)
       end if
 
       ! Do we have a smoother?
-      if (associated(rsolver%p_solverMultigrid%p_smoother)) then
-        do i = lbound(rsolver%p_solverMultigrid%p_smoother,1),&
-               ubound(rsolver%p_solverMultigrid%p_smoother,1)
+      if (associated(rsolver%p_rsolverMultigrid%p_smoother)) then
+        do i = lbound(rsolver%p_rsolverMultigrid%p_smoother,1),&
+               ubound(rsolver%p_rsolverMultigrid%p_smoother,1)
           call solver_setBoundaryCondition(&
-              rsolver%p_solverMultigrid%p_smoother(i), rboundaryCondition, brecursive)
+              rsolver%p_rsolverMultigrid%p_smoother(i), rboundaryCondition, brecursive)
         end do
       end if
     end if
@@ -4365,18 +4389,18 @@ contains
     ! Do we have a single-grid solver which has a preconditioner
 
     ! BiCGSTAB ?
-    if (associated(rsolver%p_solverBiCGSTAB)) then
-      if (associated(rsolver%p_solverBiCGSTAB%p_precond)) then
+    if (associated(rsolver%p_rsolverBiCGSTAB)) then
+      if (associated(rsolver%p_rsolverBiCGSTAB%p_precond)) then
         call solver_setBoundaryCondition(&
-            rsolver%p_solverBiCGSTAB%p_precond, rboundaryCondition, brecursive)
+            rsolver%p_rsolverBiCGSTAB%p_precond, rboundaryCondition, brecursive)
       end if
     end if
 
     ! GMRES ?
-    if (associated(rsolver%p_solverGMRES)) then
-      if (associated(rsolver%p_solverGMRES%p_precond)) then
+    if (associated(rsolver%p_rsolverGMRES)) then
+      if (associated(rsolver%p_rsolverGMRES%p_precond)) then
         call solver_setBoundaryCondition(&
-            rsolver%p_solverGMRES%p_precond, rboundaryCondition, brecursive)
+            rsolver%p_rsolverGMRES%p_precond, rboundaryCondition, brecursive)
       end if
     end if
 
@@ -4407,7 +4431,7 @@ contains
 !</subroutine>
 
     ! local variable
-    type(t_solverMultigrid), pointer :: p_solverMultigrid
+    type(t_solverMultigrid), pointer :: p_rsolverMultigrid
 
 
     ! What kind of solver are we?
@@ -4420,7 +4444,7 @@ contains
     case (SV_LINEARMG)
       ! ------------------------------------------------------------------------
       ! Set system matrices for linear multigrid solver
-      p_solverMultigrid => rsolver%p_solverMultigrid
+      p_rsolverMultigrid => rsolver%p_rsolverMultigrid
 
       ! Check if multigrid level is specified
       if (.not.present(ilev)) then
@@ -4432,16 +4456,16 @@ contains
       end if
 
       ! Check if subarray of matrices exists
-      if (associated(p_solverMultigrid%Rmatrix)) then
+      if (associated(p_rsolverMultigrid%Rmatrix)) then
 
         ! Check if subarray of matrices has correct size
-        if ((lbound(p_solverMultigrid%Rmatrix,1) .le. ilev) .and.&
-            (ubound(p_solverMultigrid%Rmatrix,1) .ge. ilev)) then
+        if ((lbound(p_rsolverMultigrid%Rmatrix,1) .le. ilev) .and.&
+            (ubound(p_rsolverMultigrid%Rmatrix,1) .ge. ilev)) then
 
           ! Release existing matrix and set new matrix
-          call lsysbl_releaseMatrix(p_solverMultigrid%Rmatrix(ilev))
+          call lsysbl_releaseMatrix(p_rsolverMultigrid%Rmatrix(ilev))
           call lsysbl_createMatFromScalar(rmatrix,&
-                                          p_solverMultigrid%Rmatrix(ilev))
+                                          p_rsolverMultigrid%Rmatrix(ilev))
 
           ! Mark solver for update: structure + content
           rsolver%isolverSpec = ior(rsolver%isolverSpec,&
@@ -4466,12 +4490,12 @@ contains
       ! ------------------------------------------------------------------------
 
       ! UMFPACK subnode
-      if (associated(rsolver%p_solverUMFPACK)) then
+      if (associated(rsolver%p_rsolverUMFPACK)) then
 
         ! Release existing matrix and set new matrix
-        call lsysbl_releaseMatrix(rsolver%p_solverUMFPACK%rmatrix)
+        call lsysbl_releaseMatrix(rsolver%p_rsolverUMFPACK%rmatrix)
         call lsysbl_createMatFromScalar(rmatrix,&
-                                        rsolver%p_solverUMFPACK%rmatrix)
+                                        rsolver%p_rsolverUMFPACK%rmatrix)
 
         ! Mark solver for update: structure + content
         rsolver%isolverSpec = ior(rsolver%isolverSpec,&
@@ -4479,12 +4503,12 @@ contains
       end if
 
       ! Jacobi subnode
-      if (associated(rsolver%p_solverJacobi)) then
+      if (associated(rsolver%p_rsolverJacobi)) then
 
         ! Release existing matrix and set new matrix
-        call lsysbl_releaseMatrix(rsolver%p_solverJacobi%rmatrix)
+        call lsysbl_releaseMatrix(rsolver%p_rsolverJacobi%rmatrix)
         call lsysbl_createMatFromScalar(rmatrix,&
-                                        rsolver%p_solverJacobi%rmatrix)
+                                        rsolver%p_rsolverJacobi%rmatrix)
 
         ! Mark solver for update: structure + content
         rsolver%isolverSpec = ior(rsolver%isolverSpec,&
@@ -4492,12 +4516,12 @@ contains
       end if
 
       ! (S)SOR subnode
-      if (associated(rsolver%p_solverSSOR)) then
+      if (associated(rsolver%p_rsolverSSOR)) then
 
         ! Release existing matrix and set new matrix
-        call lsysbl_releaseMatrix(rsolver%p_solverSSOR%rmatrix)
+        call lsysbl_releaseMatrix(rsolver%p_rsolverSSOR%rmatrix)
         call lsysbl_createMatFromScalar(rmatrix,&
-                                        rsolver%p_solverSSOR%rmatrix)
+                                        rsolver%p_rsolverSSOR%rmatrix)
 
         ! Mark solver for update: structure + content
         rsolver%isolverSpec = ior(rsolver%isolverSpec,&
@@ -4505,12 +4529,12 @@ contains
       end if
 
       ! BiCGSTAB subnode
-      if (associated(rsolver%p_solverBiCGSTAB)) then
+      if (associated(rsolver%p_rsolverBiCGSTAB)) then
 
         ! Release existing matrix and set new matrix
-        call lsysbl_releaseMatrix(rsolver%p_solverBiCGSTAB%rmatrix)
+        call lsysbl_releaseMatrix(rsolver%p_rsolverBiCGSTAB%rmatrix)
         call lsysbl_createMatFromScalar(rmatrix,&
-                                        rsolver%p_solverBiCGSTAB%rmatrix)
+                                        rsolver%p_rsolverBiCGSTAB%rmatrix)
 
         ! Mark solver for update: structure + content
         rsolver%isolverSpec = ior(rsolver%isolverSpec,&
@@ -4518,12 +4542,12 @@ contains
       end if
 
       ! GMRES subnode
-      if (associated(rsolver%p_solverGMRES)) then
+      if (associated(rsolver%p_rsolverGMRES)) then
 
         ! Release existing matrix and set new matrix
-        call lsysbl_releaseMatrix(rsolver%p_solverGMRES%rmatrix)
+        call lsysbl_releaseMatrix(rsolver%p_rsolverGMRES%rmatrix)
         call lsysbl_createMatFromScalar(rmatrix,&
-                                        rsolver%p_solverGMRES%rmatrix)
+                                        rsolver%p_rsolverGMRES%rmatrix)
 
         ! Mark solver for update: structure + content
         rsolver%isolverSpec = ior(rsolver%isolverSpec,&
@@ -4531,12 +4555,12 @@ contains
       end if
 
       ! ILU subnode
-      if (associated(rsolver%p_solverILU)) then
+      if (associated(rsolver%p_rsolverILU)) then
 
         ! Release existing matrix and set new matrix
-        call lsysbl_releaseMatrix(rsolver%p_solverILU%rmatrix)
+        call lsysbl_releaseMatrix(rsolver%p_rsolverILU%rmatrix)
         call lsysbl_createMatFromScalar(rmatrix,&
-                                        rsolver%p_solverILU%rmatrix)
+                                        rsolver%p_rsolverILU%rmatrix)
 
         ! Mark solver for update: structure + content
         rsolver%isolverSpec = ior(rsolver%isolverSpec,&
@@ -4544,12 +4568,12 @@ contains
       end if
 
       ! AGMG subnode
-      if (associated(rsolver%p_solverAGMG)) then
+      if (associated(rsolver%p_rsolverAGMG)) then
 
         ! Release existing matrix and set new matrix
-        call lsysbl_releaseMatrix(rsolver%p_solverAGMG%rmatrix)
+        call lsysbl_releaseMatrix(rsolver%p_rsolverAGMG%rmatrix)
         call lsysbl_createMatFromScalar(rmatrix,&
-                                        rsolver%p_solverAGMG%rmatrix)
+                                        rsolver%p_rsolverAGMG%rmatrix)
 
         ! Mark solver for update: structure + content
         rsolver%isolverSpec = ior(rsolver%isolverSpec,&
@@ -4591,7 +4615,7 @@ contains
 !</subroutine>
 
     ! local variable
-    type(t_solverMultigrid), pointer :: p_solverMultigrid
+    type(t_solverMultigrid), pointer :: p_rsolverMultigrid
 
 
     ! What kind of solver are we?
@@ -4604,7 +4628,7 @@ contains
     case (SV_LINEARMG)
       ! ------------------------------------------------------------------------
       ! Set system matrices for linear multigrid solver
-      p_solverMultigrid => rsolver%p_solverMultigrid
+      p_rsolverMultigrid => rsolver%p_rsolverMultigrid
 
       ! Check if multigrid level is specified
       if (.not.present(ilev)) then
@@ -4616,16 +4640,16 @@ contains
       end if
 
       ! Check if subarray of matrices exists
-      if (associated(p_solverMultigrid%Rmatrix)) then
+      if (associated(p_rsolverMultigrid%Rmatrix)) then
 
         ! Check if subarray of matrices has correct size
-        if ((lbound(p_solverMultigrid%Rmatrix,1) .le. ilev) .and.&
-            (ubound(p_solverMultigrid%Rmatrix,1) .ge. ilev)) then
+        if ((lbound(p_rsolverMultigrid%Rmatrix,1) .le. ilev) .and.&
+            (ubound(p_rsolverMultigrid%Rmatrix,1) .ge. ilev)) then
 
           ! Release existing matrix and set new matrix
-          call lsysbl_releaseMatrix(p_solverMultigrid%Rmatrix(ilev))
+          call lsysbl_releaseMatrix(p_rsolverMultigrid%Rmatrix(ilev))
           call lsysbl_duplicateMatrix(rmatrix,&
-                                      p_solverMultigrid%rmatrix(ilev),&
+                                      p_rsolverMultigrid%rmatrix(ilev),&
                                       LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
 
           ! Mark solver for update: structure + content
@@ -4651,12 +4675,12 @@ contains
       ! ------------------------------------------------------------------------
 
       ! UMFPACK subnode
-      if (associated(rsolver%p_solverUMFPACK)) then
+      if (associated(rsolver%p_rsolverUMFPACK)) then
 
         ! Release existing matrix and set new matrix
-        call lsysbl_releaseMatrix(rsolver%p_solverUMFPACK%rmatrix)
+        call lsysbl_releaseMatrix(rsolver%p_rsolverUMFPACK%rmatrix)
         call lsysbl_duplicateMatrix(rmatrix,&
-                                    rsolver%p_solverUMFPACK%rmatrix,&
+                                    rsolver%p_rsolverUMFPACK%rmatrix,&
                                     LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
 
         ! Mark solver for update: structure + content
@@ -4665,12 +4689,12 @@ contains
       end if
 
       ! Jacobi subnode
-      if (associated(rsolver%p_solverJacobi)) then
+      if (associated(rsolver%p_rsolverJacobi)) then
 
         ! Release existing matrix and set new matrix
-        call lsysbl_releaseMatrix(rsolver%p_solverJacobi%rmatrix)
+        call lsysbl_releaseMatrix(rsolver%p_rsolverJacobi%rmatrix)
         call lsysbl_duplicateMatrix(rmatrix,&
-                                    rsolver%p_solverJacobi%rmatrix,&
+                                    rsolver%p_rsolverJacobi%rmatrix,&
                                     LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
 
         ! Mark solver for update: structure + content
@@ -4679,12 +4703,12 @@ contains
       end if
 
       ! (S)SOR subnode
-      if (associated(rsolver%p_solverSSOR)) then
+      if (associated(rsolver%p_rsolverSSOR)) then
 
         ! Release existing matrix and set new matrix
-        call lsysbl_releaseMatrix(rsolver%p_solverSSOR%rmatrix)
+        call lsysbl_releaseMatrix(rsolver%p_rsolverSSOR%rmatrix)
         call lsysbl_duplicateMatrix(rmatrix,&
-                                    rsolver%p_solverSSOR%rmatrix,&
+                                    rsolver%p_rsolverSSOR%rmatrix,&
                                     LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
 
         ! Mark solver for update: structure + content
@@ -4693,12 +4717,12 @@ contains
       end if
 
       ! BiCGSTAB subnode
-      if (associated(rsolver%p_solverBiCGSTAB)) then
+      if (associated(rsolver%p_rsolverBiCGSTAB)) then
 
         ! Release existing matrix and set new matrix
-        call lsysbl_releaseMatrix(rsolver%p_solverBiCGSTAB%rmatrix)
+        call lsysbl_releaseMatrix(rsolver%p_rsolverBiCGSTAB%rmatrix)
         call lsysbl_duplicateMatrix(rmatrix,&
-                                    rsolver%p_solverBiCGSTAB%rmatrix,&
+                                    rsolver%p_rsolverBiCGSTAB%rmatrix,&
                                     LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
 
         ! Mark solver for update: structure + content
@@ -4707,12 +4731,12 @@ contains
       end if
 
       ! GMRES subnode
-      if (associated(rsolver%p_solverGMRES)) then
+      if (associated(rsolver%p_rsolverGMRES)) then
 
         ! Release existing matrix and set new matrix
-        call lsysbl_releaseMatrix(rsolver%p_solverGMRES%rmatrix)
+        call lsysbl_releaseMatrix(rsolver%p_rsolverGMRES%rmatrix)
         call lsysbl_duplicateMatrix(rmatrix,&
-                                    rsolver%p_solverGMRES%rmatrix,&
+                                    rsolver%p_rsolverGMRES%rmatrix,&
                                     LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
 
         ! Mark solver for update: structure + content
@@ -4721,12 +4745,12 @@ contains
       end if
 
       ! ILU subnode
-      if (associated(rsolver%p_solverILU)) then
+      if (associated(rsolver%p_rsolverILU)) then
 
         ! Release existing matrix and set new matrix
-        call lsysbl_releaseMatrix(rsolver%p_solverILU%rmatrix)
+        call lsysbl_releaseMatrix(rsolver%p_rsolverILU%rmatrix)
         call lsysbl_duplicateMatrix(rmatrix,&
-                                    rsolver%p_solverILU%rmatrix,&
+                                    rsolver%p_rsolverILU%rmatrix,&
                                     LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
 
         ! Mark solver for update: structure + content
@@ -4735,12 +4759,12 @@ contains
       end if
 
       ! AGMG subnode
-      if (associated(rsolver%p_solverAGMG)) then
+      if (associated(rsolver%p_rsolverAGMG)) then
 
         ! Release existing matrix and set new matrix
-        call lsysbl_releaseMatrix(rsolver%p_solverAGMG%rmatrix)
+        call lsysbl_releaseMatrix(rsolver%p_rsolverAGMG%rmatrix)
         call lsysbl_duplicateMatrix(rmatrix,&
-                                    rsolver%p_solverAGMG%rmatrix,&
+                                    rsolver%p_rsolverAGMG%rmatrix,&
                                     LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
 
         ! Mark solver for update: structure + content
@@ -4792,17 +4816,17 @@ contains
     case (SV_LINEAR)
       ! ------------------------------------------------------------------------
       ! BiCGSTAB solver
-      if (associated(rsolver%p_solverBiCGSTAB)) then
-        if (associated(rsolver%p_solverBiCGSTAB%p_precond)) then
-          call solver_setSolverMatrix(rsolver%p_solverBiCGSTAB%p_precond,&
+      if (associated(rsolver%p_rsolverBiCGSTAB)) then
+        if (associated(rsolver%p_rsolverBiCGSTAB%p_precond)) then
+          call solver_setSolverMatrix(rsolver%p_rsolverBiCGSTAB%p_precond,&
                                       rmatrix, ilev)
         end if
       end if
 
       ! GMRES solver
-      if (associated(rsolver%p_solverGMRES)) then
-        if (associated(rsolver%p_solverGMRES%p_precond)) then
-          call solver_setSolverMatrix(rsolver%p_solverGMRES%p_precond,&
+      if (associated(rsolver%p_rsolverGMRES)) then
+        if (associated(rsolver%p_rsolverGMRES%p_precond)) then
+          call solver_setSolverMatrix(rsolver%p_rsolverGMRES%p_precond,&
                                       rmatrix, ilev)
         end if
       end if
@@ -4852,17 +4876,17 @@ contains
     case (SV_LINEAR)
       ! ------------------------------------------------------------------------
       ! BiCGSTAB solver
-      if (associated(rsolver%p_solverBiCGSTAB)) then
-        if (associated(rsolver%p_solverBiCGSTAB%p_precond)) then
-          call solver_setSolverMatrix(rsolver%p_solverBiCGSTAB%p_precond,&
+      if (associated(rsolver%p_rsolverBiCGSTAB)) then
+        if (associated(rsolver%p_rsolverBiCGSTAB%p_precond)) then
+          call solver_setSolverMatrix(rsolver%p_rsolverBiCGSTAB%p_precond,&
                                       rmatrix, ilev)
         end if
       end if
 
       ! GMRES solver
-      if (associated(rsolver%p_solverGMRES)) then
-        if (associated(rsolver%p_solverGMRES%p_precond)) then
-          call solver_setSolverMatrix(rsolver%p_solverGMRES%p_precond,&
+      if (associated(rsolver%p_rsolverGMRES)) then
+        if (associated(rsolver%p_rsolverGMRES%p_precond)) then
+          call solver_setSolverMatrix(rsolver%p_rsolverGMRES%p_precond,&
                                       rmatrix, ilev)
         end if
       end if
@@ -4902,7 +4926,7 @@ contains
 !</subroutine>
 
     ! local variable
-    type(t_solverMultigrid), pointer :: p_solverMultigrid
+    type(t_solverMultigrid), pointer :: p_rsolverMultigrid
     type(t_solver), dimension(:), pointer :: p_smoother
 
     ! What kind of solver are we?
@@ -4920,7 +4944,7 @@ contains
     case (SV_LINEARMG)
       ! ------------------------------------------------------------------------
       ! Linear multigrid solver
-      if (associated(rsolver%p_solverMultigrid)) then
+      if (associated(rsolver%p_rsolverMultigrid)) then
 
         ! Check if multigrid level is specified
         if (.not.present(ilev)) then
@@ -4932,13 +4956,13 @@ contains
         end if
 
         ! Set pointer
-        p_solverMultigrid => rsolver%p_solverMultigrid
+        p_rsolverMultigrid => rsolver%p_rsolverMultigrid
 
         ! Check if subarray of smoothers exists
-        if (associated(p_solverMultigrid%p_smoother)) then
+        if (associated(p_rsolverMultigrid%p_smoother)) then
 
           ! Set pointer
-          p_smoother => p_solverMultigrid%p_smoother
+          p_smoother => p_rsolverMultigrid%p_smoother
 
           ! Check if subarray of smoothers has correct size
           if ((lbound(p_smoother,1) .le. ilev) .and.&
@@ -4990,7 +5014,7 @@ contains
 !</subroutine>
 
     ! local variable
-    type(t_solverMultigrid), pointer :: p_solverMultigrid
+    type(t_solverMultigrid), pointer :: p_rsolverMultigrid
     type(t_solver), dimension(:), pointer :: p_smoother
 
     ! What kind of solver are we?
@@ -5008,7 +5032,7 @@ contains
     case (SV_LINEARMG)
       ! ------------------------------------------------------------------------
       ! Linear multigrid solver
-      if (associated(rsolver%p_solverMultigrid)) then
+      if (associated(rsolver%p_rsolverMultigrid)) then
 
         ! Check if multigrid level is specified
         if (.not.present(ilev)) then
@@ -5020,13 +5044,13 @@ contains
         end if
 
         ! Set pointer
-        p_solverMultigrid => rsolver%p_solverMultigrid
+        p_rsolverMultigrid => rsolver%p_rsolverMultigrid
 
         ! Check if subarray of smoothers exists
-        if (associated(p_solverMultigrid%p_smoother)) then
+        if (associated(p_rsolverMultigrid%p_smoother)) then
 
           ! Set pointer
-          p_smoother => p_solverMultigrid%p_smoother
+          p_smoother => p_rsolverMultigrid%p_smoother
 
           ! Check if subarray of smoothers has correct size
           if ((lbound(p_smoother,1) .le. ilev) .and.&
@@ -5086,7 +5110,7 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_solverMultigrid), pointer :: p_solverMultigrid
+    type(t_solverMultigrid), pointer :: p_rsolverMultigrid
     integer :: i,ilev,ilbound,iubound,nlmin,nlmax
 
     ! What kind of solver are we?
@@ -5101,9 +5125,9 @@ contains
                                  not(SV_SSPEC_STRUCTURENEEDSUPDATE))
 
       ! Proceed to solver subnodes
-      if (associated(rsolver%p_solverSubnode)) then
-        do i = 1, size(rsolver%p_solverSubnode)
-          call solver_updateStructure(rsolver%p_solverSubnode(i))
+      if (associated(rsolver%p_rsolverSubnode)) then
+        do i = 1, size(rsolver%p_rsolverSubnode)
+          call solver_updateStructure(rsolver%p_rsolverSubnode(i))
         end do
       end if
 
@@ -5117,9 +5141,9 @@ contains
                                  not(SV_SSPEC_STRUCTURENEEDSUPDATE))
 
       ! Proceed to coarsegrid solver
-      if (associated(rsolver%p_solverMultigrid)) then
-        if (associated(rsolver%p_solverMultigrid%p_solverCoarsegrid)) then
-          call solver_updateStructure(rsolver%p_solverMultigrid%p_solverCoarsegrid)
+      if (associated(rsolver%p_rsolverMultigrid)) then
+        if (associated(rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid)) then
+          call solver_updateStructure(rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid)
         end if
       end if
 
@@ -5127,17 +5151,17 @@ contains
     case (SV_NONLINEARMG)
       ! ------------------------------------------------------------------------
       ! Nonlinear multigrid solver
-      if (associated(rsolver%p_solverMultigrid)) then
+      if (associated(rsolver%p_rsolverMultigrid)) then
 
         ! Set pointer
-        p_solverMultigrid => rsolver%p_solverMultigrid
+        p_rsolverMultigrid => rsolver%p_rsolverMultigrid
 
         ! Check if structure needs update
         if (iand(rsolver%isolverSpec, SV_SSPEC_STRUCTURENEEDSUPDATE) .ne. 0) then
 
           ! Step 1: Prepare structure
-          nlmin = p_solverMultigrid%nlmin
-          nlmax = p_solverMultigrid%nlmax
+          nlmin = p_rsolverMultigrid%nlmin
+          nlmax = p_rsolverMultigrid%nlmax
 
           ! Check if subarray for temporal vectors exists.
           ! Remark: On each level NLMIN+1,...,NLMAX, we need three
@@ -5145,25 +5169,25 @@ contains
           ! coarsegrid and auxiliary solution vector plus one auxiliary
           ! solution vector on the coarsest level, i.e., NLMIN.
           ! Hence, the array must have dimensions (NLMIN : 3*NLMAX-2*NLMIN)
-          if (associated(p_solverMultigrid%RtempVectors)) then
+          if (associated(p_rsolverMultigrid%RtempVectors)) then
 
             ! Do we have to reallocate the subarray of matrices?
-            ilbound = lbound(p_solverMultigrid%RtempVectors,1)
-            iubound = ubound(p_solverMultigrid%RtempVectors,1)
+            ilbound = lbound(p_rsolverMultigrid%RtempVectors,1)
+            iubound = ubound(p_rsolverMultigrid%RtempVectors,1)
 
             if ((ilbound > nlmin) .or. (iubound < 3*nlmax-2*nlmin)) then
               do i = ilbound, iubound
-                call lsysbl_releaseVector(p_solverMultigrid%RtempVectors(i))
+                call lsysbl_releaseVector(p_rsolverMultigrid%RtempVectors(i))
               end do
-              deallocate(p_solverMultigrid%RtempVectors)
+              deallocate(p_rsolverMultigrid%RtempVectors)
 
               ! Allocate subarray(NLMIN:3*NLMAX-2*NLMIN) for temporal vectors
-              allocate(p_solverMultigrid%RtempVectors(nlmin:3*nlmax-2*nlmin))
+              allocate(p_rsolverMultigrid%RtempVectors(nlmin:3*nlmax-2*nlmin))
             end if
 
           else
             ! Allocate subarray(NLMIN:3*NLMAX-2*NLMIN) for temporal vectors
-            allocate(p_solverMultigrid%RtempVectors(nlmin:3*nlmax-2*nlmin))
+            allocate(p_rsolverMultigrid%RtempVectors(nlmin:3*nlmax-2*nlmin))
           end if
           ! The initialisation of temporal arrays will be done in the
           ! nonlinear multigrid solver itself since no matrices are
@@ -5179,38 +5203,38 @@ contains
     case (SV_LINEARMG)
       ! ------------------------------------------------------------------------
       ! Linear multigrid solver
-      if (associated(rsolver%p_solverMultigrid)) then
+      if (associated(rsolver%p_rsolverMultigrid)) then
 
         ! Set pointer
-        p_solverMultigrid => rsolver%p_solverMultigrid
+        p_rsolverMultigrid => rsolver%p_rsolverMultigrid
 
         ! Check if structure needs update
         if (iand(rsolver%isolverSpec, SV_SSPEC_STRUCTURENEEDSUPDATE) .ne. 0) then
 
           ! Step 1: prepare structure
-          nlmin = p_solverMultigrid%nlmin
-          nlmax = p_solverMultigrid%nlmax
+          nlmin = p_rsolverMultigrid%nlmin
+          nlmax = p_rsolverMultigrid%nlmax
 
           ! Check if subarray for system matrices exist
-          if (associated(p_solverMultigrid%rmatrix)) then
+          if (associated(p_rsolverMultigrid%rmatrix)) then
 
             ! Do we have to reallocate the subarray of matrices?
-            ilbound = lbound(p_solverMultigrid%rmatrix,1)
-            iubound = ubound(p_solverMultigrid%rmatrix,1)
+            ilbound = lbound(p_rsolverMultigrid%rmatrix,1)
+            iubound = ubound(p_rsolverMultigrid%rmatrix,1)
 
             if ((ilbound > nlmin) .or. (iubound < nlmax)) then
               do i = ilbound, iubound
-                call lsysbl_releaseMatrix(p_solverMultigrid%rmatrix(i))
+                call lsysbl_releaseMatrix(p_rsolverMultigrid%rmatrix(i))
               end do
-              deallocate(p_solverMultigrid%rmatrix)
+              deallocate(p_rsolverMultigrid%rmatrix)
 
               ! Allocate subarray(NLMIN:NLMAX) for system matrices
-              allocate(p_solverMultigrid%rmatrix(nlmin:nlmax))
+              allocate(p_rsolverMultigrid%rmatrix(nlmin:nlmax))
             end if
 
           else
             ! Allocate subarray(NLMIN:NLMAX) for system matrices
-            allocate(p_solverMultigrid%rmatrix(nlmin:nlmax))
+            allocate(p_rsolverMultigrid%rmatrix(nlmin:nlmax))
           end if
 
           ! Check if subarray for temporal vectors exists.
@@ -5219,25 +5243,25 @@ contains
           ! coarsegrid and auxiliary solution vector plus one auxiliary
           ! solution vector on the coarsest level, i.e., NLMIN.
           ! Hence, the array must have dimensions (NLMIN : 3*NLMAX-2*NLMIN
-          if (associated(p_solverMultigrid%RtempVectors)) then
+          if (associated(p_rsolverMultigrid%RtempVectors)) then
 
             ! Do we have to reallocate the subarray of matrices?
-            ilbound = lbound(p_solverMultigrid%RtempVectors,1)
-            iubound = ubound(p_solverMultigrid%RtempVectors,1)
+            ilbound = lbound(p_rsolverMultigrid%RtempVectors,1)
+            iubound = ubound(p_rsolverMultigrid%RtempVectors,1)
 
             if ((ilbound > nlmin) .or. (iubound < 3*nlmax-2*nlmin)) then
               do i = ilbound, iubound
-                call lsysbl_releaseVector(p_solverMultigrid%RtempVectors(i))
+                call lsysbl_releaseVector(p_rsolverMultigrid%RtempVectors(i))
               end do
-              deallocate(p_solverMultigrid%RtempVectors)
+              deallocate(p_rsolverMultigrid%RtempVectors)
 
               ! Allocate subarray(NLMIN:3*NLMAX-2*NLMIN) for temporal vectors
-              allocate(p_solverMultigrid%RtempVectors(nlmin:3*nlmax-2*nlmin))
+              allocate(p_rsolverMultigrid%RtempVectors(nlmin:3*nlmax-2*nlmin))
             end if
 
           else
             ! Allocate subarray(NLMIN:3*NLMAX-2*NLMIN) for temporal vectors
-            allocate(p_solverMultigrid%RtempVectors(nlmin:3*nlmax-2*nlmin))
+            allocate(p_rsolverMultigrid%RtempVectors(nlmin:3*nlmax-2*nlmin))
           end if
 
 
@@ -5253,33 +5277,33 @@ contains
           do ilev = nlmin, nlmax-1
 
             ! Check if we have a usable matrix for current level
-            if (p_solverMultigrid%rmatrix(ilev)%NEQ > 0) then
+            if (p_rsolverMultigrid%rmatrix(ilev)%NEQ > 0) then
 
               ! We need three vectors on each level except for the highest level
               do i = 0, 2
-                if (p_solverMultigrid%RtempVectors(nlmin+3*(ilev-nlmin)+i)%NEQ > 0) then
+                if (p_rsolverMultigrid%RtempVectors(nlmin+3*(ilev-nlmin)+i)%NEQ > 0) then
                   ! Resize existing vector
-                  call lsysbl_resizeVectorBlock(p_solverMultigrid%rmatrix(ilev),&
-                      p_solverMultigrid%RtempVectors(nlmin+3*(ilev-nlmin)+i), .false.)
+                  call lsysbl_resizeVectorBlock(p_rsolverMultigrid%rmatrix(ilev),&
+                      p_rsolverMultigrid%RtempVectors(nlmin+3*(ilev-nlmin)+i), .false.)
                 else
                   ! Create vector from matrix
-                  call lsysbl_createVecBlockIndMat(p_solverMultigrid%rmatrix(ilev),&
-                      p_solverMultigrid%RtempVectors(nlmin+3*(ilev-nlmin)+i), .false.)
+                  call lsysbl_createVecBlockIndMat(p_rsolverMultigrid%rmatrix(ilev),&
+                      p_rsolverMultigrid%RtempVectors(nlmin+3*(ilev-nlmin)+i), .false.)
                 end if
               end do
             end if
           end do
 
           ! Finally, create one temporal vectors on the finest grid
-          if (p_solverMultigrid%rmatrix(nlmax)%NEQ > 0) then
-            if (p_solverMultigrid%RtempVectors(3*nlmax-2*nlmin)%NEQ > 0) then
+          if (p_rsolverMultigrid%rmatrix(nlmax)%NEQ > 0) then
+            if (p_rsolverMultigrid%RtempVectors(3*nlmax-2*nlmin)%NEQ > 0) then
               ! Resize existing vector
-              call lsysbl_resizeVectorBlock(p_solverMultigrid%rmatrix(nlmax),&
-                  p_solverMultigrid%RtempVectors(3*nlmax-2*nlmin), .false.)
+              call lsysbl_resizeVectorBlock(p_rsolverMultigrid%rmatrix(nlmax),&
+                  p_rsolverMultigrid%RtempVectors(3*nlmax-2*nlmin), .false.)
             else
               ! Create vector from matrix
-              call lsysbl_createVecBlockIndMat(p_solverMultigrid%rmatrix(nlmax),&
-                  p_solverMultigrid%RtempVectors(3*nlmax-2*nlmin), .false.)
+              call lsysbl_createVecBlockIndMat(p_rsolverMultigrid%rmatrix(nlmax),&
+                  p_rsolverMultigrid%RtempVectors(3*nlmax-2*nlmin), .false.)
             end if
 
             ! Remove update marker from specification bitfields
@@ -5290,14 +5314,14 @@ contains
 
 
         ! Update coarsegrid solver
-        if (associated(p_solverMultigrid%p_solverCoarsegrid)) then
-          call solver_updateStructure(p_solverMultigrid%p_solverCoarsegrid)
+        if (associated(p_rsolverMultigrid%p_rsolverCoarsegrid)) then
+          call solver_updateStructure(p_rsolverMultigrid%p_rsolverCoarsegrid)
         end if
 
 
         ! Update smoother subnode
-        if (associated(p_solverMultigrid%p_smoother)) then
-          call smoother_updateStructure(p_solverMultigrid)
+        if (associated(p_rsolverMultigrid%p_smoother)) then
+          call smoother_updateStructure(p_rsolverMultigrid)
         end if
       end if
 
@@ -5311,8 +5335,8 @@ contains
                                  not(SV_SSPEC_STRUCTURENEEDSUPDATE))
 
       ! Proceed to the generic solver subnode
-      if (associated(rsolver%p_solverSubnode)) then
-        call solver_updateStructure(rsolver%p_solverSubnode(1))
+      if (associated(rsolver%p_rsolverSubnode)) then
+        call solver_updateStructure(rsolver%p_rsolverSubnode(1))
       end if
 
 
@@ -5327,20 +5351,20 @@ contains
       if (iand(rsolver%isolverSpec, SV_SSPEC_STRUCTURENEEDSUPDATE) .ne. 0) then
 
         ! UMFPACK solver
-        if (associated(rsolver%p_solverUMFPACK)) then
+        if (associated(rsolver%p_rsolverUMFPACK)) then
 
           ! Check if matrix is attached
-          if (rsolver%p_solverUMFPACK%rmatrix%NEQ > 0) then
+          if (rsolver%p_rsolverUMFPACK%rmatrix%NEQ > 0) then
 
             ! We need one temporal vector
-            if (rsolver%p_solverUMFPACK%rtempVector%NEQ > 0) then
+            if (rsolver%p_rsolverUMFPACK%rtempVector%NEQ > 0) then
               ! Resize existing vector
-              call lsysbl_resizeVectorBlock(rsolver%p_solverUMFPACK%rmatrix,&
-                                               rsolver%p_solverUMFPACK%rtempVector, .false.)
+              call lsysbl_resizeVectorBlock(rsolver%p_rsolverUMFPACK%rmatrix,&
+                                               rsolver%p_rsolverUMFPACK%rtempVector, .false.)
             else
               ! Create vector from matrix
-              call lsysbl_createVecBlockIndMat(rsolver%p_solverUMFPACK%rmatrix,&
-                                               rsolver%p_solverUMFPACK%rtempVector, .false.)
+              call lsysbl_createVecBlockIndMat(rsolver%p_rsolverUMFPACK%rmatrix,&
+                                               rsolver%p_rsolverUMFPACK%rtempVector, .false.)
             end if
 
           end if
@@ -5348,20 +5372,20 @@ contains
 
 
         ! Jacobi solver
-        if (associated(rsolver%p_solverJacobi)) then
+        if (associated(rsolver%p_rsolverJacobi)) then
 
           ! Check if matrix is attached
-          if (rsolver%p_solverJacobi%rmatrix%NEQ > 0) then
+          if (rsolver%p_rsolverJacobi%rmatrix%NEQ > 0) then
 
             ! We need one temporal vector
-            if (rsolver%p_solverJacobi%rtempVector%NEQ > 0) then
+            if (rsolver%p_rsolverJacobi%rtempVector%NEQ > 0) then
               ! Resize existing vector
-              call lsysbl_resizeVectorBlock(rsolver%p_solverJacobi%rmatrix,&
-                                               rsolver%p_solverJacobi%rtempVector, .false.)
+              call lsysbl_resizeVectorBlock(rsolver%p_rsolverJacobi%rmatrix,&
+                                               rsolver%p_rsolverJacobi%rtempVector, .false.)
             else
               ! Create vector from matrix
-              call lsysbl_createVecBlockIndMat(rsolver%p_solverJacobi%rmatrix,&
-                                               rsolver%p_solverJacobi%rtempVector, .false.)
+              call lsysbl_createVecBlockIndMat(rsolver%p_rsolverJacobi%rmatrix,&
+                                               rsolver%p_rsolverJacobi%rtempVector, .false.)
             end if
 
           end if
@@ -5370,20 +5394,20 @@ contains
 
         ! (S)SOR solver - nothing to update since no temporal vectors
         !                 are required and no preconditioning is available
-        if (associated(rsolver%p_solverSSOR)) then
+        if (associated(rsolver%p_rsolverSSOR)) then
 
           ! Check if matrix is attached
-          if (rsolver%p_solverSSOR%rmatrix%NEQ > 0) then
+          if (rsolver%p_rsolverSSOR%rmatrix%NEQ > 0) then
 
             ! We need one temporal vector
-            if (rsolver%p_solverSSOR%rtempVector%NEQ > 0) then
+            if (rsolver%p_rsolverSSOR%rtempVector%NEQ > 0) then
               ! Resize existing vector
-              call lsysbl_resizeVectorBlock(rsolver%p_solverSSOR%rmatrix,&
-                                               rsolver%p_solverSSOR%rtempVector, .false.)
+              call lsysbl_resizeVectorBlock(rsolver%p_rsolverSSOR%rmatrix,&
+                                               rsolver%p_rsolverSSOR%rtempVector, .false.)
             else
               ! Create vector from matrix
-              call lsysbl_createVecBlockIndMat(rsolver%p_solverSSOR%rmatrix,&
-                                               rsolver%p_solverSSOR%rtempVector, .false.)
+              call lsysbl_createVecBlockIndMat(rsolver%p_rsolverSSOR%rmatrix,&
+                                               rsolver%p_rsolverSSOR%rtempVector, .false.)
             end if
 
           end if
@@ -5391,101 +5415,101 @@ contains
 
 
         ! BiCGSTAB solver
-        if (associated(rsolver%p_solverBiCGSTAB)) then
+        if (associated(rsolver%p_rsolverBiCGSTAB)) then
 
           ! Check if matrix is attached
-          if (rsolver%p_solverBiCGSTAB%rmatrix%NEQ > 0) then
+          if (rsolver%p_rsolverBiCGSTAB%rmatrix%NEQ > 0) then
 
             ! We need some temporal vectors
-            if (rsolver%p_solverBiCGSTAB%RtempVectors(1)%NEQ > 0) then
+            if (rsolver%p_rsolverBiCGSTAB%RtempVectors(1)%NEQ > 0) then
 
               ! Resize existing vectors
-              do i = lbound(rsolver%p_solverBiCGSTAB%RtempVectors,1),&
-                     ubound(rsolver%p_solverBiCGSTAB%RtempVectors,1)
-                call lsysbl_resizeVectorBlock(rsolver%p_solverBiCGSTAB%rmatrix,&
-                                                 rsolver%p_solverBiCGSTAB%RtempVectors(i), .false.)
+              do i = lbound(rsolver%p_rsolverBiCGSTAB%RtempVectors,1),&
+                     ubound(rsolver%p_rsolverBiCGSTAB%RtempVectors,1)
+                call lsysbl_resizeVectorBlock(rsolver%p_rsolverBiCGSTAB%rmatrix,&
+                                                 rsolver%p_rsolverBiCGSTAB%RtempVectors(i), .false.)
               end do
 
             else
 
               ! Create vectors from matrix
-              do i = lbound(rsolver%p_solverBiCGSTAB%RtempVectors,1),&
-                     ubound(rsolver%p_solverBiCGSTAB%RtempVectors,1)
-                call lsysbl_createVecBlockIndMat(rsolver%p_solverBiCGSTAB%rmatrix,&
-                                                 rsolver%p_solverBiCGSTAB%RtempVectors(i), .false.)
+              do i = lbound(rsolver%p_rsolverBiCGSTAB%RtempVectors,1),&
+                     ubound(rsolver%p_rsolverBiCGSTAB%RtempVectors,1)
+                call lsysbl_createVecBlockIndMat(rsolver%p_rsolverBiCGSTAB%rmatrix,&
+                                                 rsolver%p_rsolverBiCGSTAB%RtempVectors(i), .false.)
               end do
             end if
           end if
 
           ! Check if preconditioner is attached
-          if (associated(rsolver%p_solverBiCGSTAB%p_precond)) then
-            call solver_updateStructure(rsolver%p_solverBiCGSTAB%p_precond)
+          if (associated(rsolver%p_rsolverBiCGSTAB%p_precond)) then
+            call solver_updateStructure(rsolver%p_rsolverBiCGSTAB%p_precond)
           end if
         end if   ! BiCGSTAB solver
 
 
         ! GMRES solver
-        if (associated(rsolver%p_solverGMRES)) then
+        if (associated(rsolver%p_rsolverGMRES)) then
 
           ! Check if matrix is attached
-          if (rsolver%p_solverGMRES%rmatrix%NEQ > 0) then
+          if (rsolver%p_rsolverGMRES%rmatrix%NEQ > 0) then
 
             ! We need some temporal vectors
-            if (rsolver%p_solverGMRES%rv(1)%NEQ > 0) then
+            if (rsolver%p_rsolverGMRES%rv(1)%NEQ > 0) then
               ! Resize existing vectors rv
-              do i = lbound(rsolver%p_solverGMRES%rv,1),&
-                     ubound(rsolver%p_solverGMRES%rv,1)
-                call lsysbl_resizeVectorBlock(rsolver%p_solverGMRES%rmatrix,&
-                                                 rsolver%p_solverGMRES%rv(i), .false.)
+              do i = lbound(rsolver%p_rsolverGMRES%rv,1),&
+                     ubound(rsolver%p_rsolverGMRES%rv,1)
+                call lsysbl_resizeVectorBlock(rsolver%p_rsolverGMRES%rmatrix,&
+                                                 rsolver%p_rsolverGMRES%rv(i), .false.)
               end do
             else
               ! Create vectors rz from matrix
-              do i = lbound(rsolver%p_solverGMRES%rv,1),&
-                     ubound(rsolver%p_solverGMRES%rv,1)
-                call lsysbl_createVecBlockIndMat(rsolver%p_solverGMRES%rmatrix,&
-                                                 rsolver%p_solverGMRES%rv(i), .false.)
+              do i = lbound(rsolver%p_rsolverGMRES%rv,1),&
+                     ubound(rsolver%p_rsolverGMRES%rv,1)
+                call lsysbl_createVecBlockIndMat(rsolver%p_rsolverGMRES%rmatrix,&
+                                                 rsolver%p_rsolverGMRES%rv(i), .false.)
               end do
             end if
 
-            if (rsolver%p_solverGMRES%rz(1)%NEQ > 0) then
+            if (rsolver%p_rsolverGMRES%rz(1)%NEQ > 0) then
               ! Resize existing vectors rz
-              do i = lbound(rsolver%p_solverGMRES%rz,1),&
-                     ubound(rsolver%p_solverGMRES%rz,1)
-                call lsysbl_resizeVectorBlock(rsolver%p_solverGMRES%rmatrix,&
-                                                 rsolver%p_solverGMRES%rz(i), .false.)
+              do i = lbound(rsolver%p_rsolverGMRES%rz,1),&
+                     ubound(rsolver%p_rsolverGMRES%rz,1)
+                call lsysbl_resizeVectorBlock(rsolver%p_rsolverGMRES%rmatrix,&
+                                                 rsolver%p_rsolverGMRES%rz(i), .false.)
               end do
             else
               ! Create vectors rz from matrix
-              do i = lbound(rsolver%p_solverGMRES%rz,1),&
-                     ubound(rsolver%p_solverGMRES%rz,1)
-                call lsysbl_createVecBlockIndMat(rsolver%p_solverGMRES%rmatrix,&
-                                                 rsolver%p_solverGMRES%rz(i), .false.)
+              do i = lbound(rsolver%p_rsolverGMRES%rz,1),&
+                     ubound(rsolver%p_rsolverGMRES%rz,1)
+                call lsysbl_createVecBlockIndMat(rsolver%p_rsolverGMRES%rmatrix,&
+                                                 rsolver%p_rsolverGMRES%rz(i), .false.)
               end do
             end if
           end if
 
           ! Check if preconditioner is attached
-          if (associated(rsolver%p_solverGMRES%p_precond)) then
-            call solver_updateStructure(rsolver%p_solverGMRES%p_precond)
+          if (associated(rsolver%p_rsolverGMRES%p_precond)) then
+            call solver_updateStructure(rsolver%p_rsolverGMRES%p_precond)
           end if
         end if   ! GMRES solver
 
 
         ! ILU solver
-        if (associated(rsolver%p_solverILU)) then
+        if (associated(rsolver%p_rsolverILU)) then
 
           ! Check if matrix is attached
-          if (rsolver%p_solverILU%rmatrix%NEQ > 0) then
+          if (rsolver%p_rsolverILU%rmatrix%NEQ > 0) then
 
             ! We need one temporal vector
-            if (rsolver%p_solverILU%rtempVector%NEQ > 0) then
+            if (rsolver%p_rsolverILU%rtempVector%NEQ > 0) then
               ! Resize existing vector
-              call lsysbl_resizeVectorBlock(rsolver%p_solverILU%rmatrix,&
-                                               rsolver%p_solverILU%rtempVector, .false.)
+              call lsysbl_resizeVectorBlock(rsolver%p_rsolverILU%rmatrix,&
+                                               rsolver%p_rsolverILU%rtempVector, .false.)
             else
               ! Create vector from matrix
-              call lsysbl_createVecBlockIndMat(rsolver%p_solverILU%rmatrix,&
-                                               rsolver%p_solverILU%rtempVector, .false.)
+              call lsysbl_createVecBlockIndMat(rsolver%p_rsolverILU%rmatrix,&
+                                               rsolver%p_rsolverILU%rtempVector, .false.)
             end if
 
           end if
@@ -5610,7 +5634,7 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_solverMultigrid), pointer :: p_solverMultigrid
+    type(t_solverMultigrid), pointer :: p_rsolverMultigrid
     integer :: i
 
     ! What kind of solver are we?
@@ -5624,9 +5648,9 @@ contains
                                  not(SV_SSPEC_CONTENTNEEDSUPDATE))
 
       ! Proceed to coarsegrid solver
-      if (associated(rsolver%p_solverMultigrid)) then
-        if (associated(rsolver%p_solverMultigrid%p_solverCoarsegrid)) then
-          call solver_updateContent(rsolver%p_solverMultigrid%p_solverCoarsegrid)
+      if (associated(rsolver%p_rsolverMultigrid)) then
+        if (associated(rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid)) then
+          call solver_updateContent(rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid)
         end if
       end if
 
@@ -5639,21 +5663,21 @@ contains
       rsolver%isolverSpec = iand(rsolver%isolverSpec,&
                                  not(SV_SSPEC_CONTENTNEEDSUPDATE))
 
-      if (associated(rsolver%p_solverMultigrid)) then
+      if (associated(rsolver%p_rsolverMultigrid)) then
 
         ! Set pointer
-        p_solverMultigrid => rsolver%p_solverMultigrid
+        p_rsolverMultigrid => rsolver%p_rsolverMultigrid
 
         ! Proceed to coarse grid solver
-        if (associated(p_solverMultigrid%p_solverCoarsegrid)) then
-          call solver_updateContent(p_solverMultigrid%p_solverCoarsegrid)
+        if (associated(p_rsolverMultigrid%p_rsolverCoarsegrid)) then
+          call solver_updateContent(p_rsolverMultigrid%p_rsolverCoarsegrid)
         end if
 
         ! ... and smoother
-        if (associated(p_solverMultigrid%p_smoother)) then
-          do i = lbound(p_solverMultigrid%p_smoother,1),&
-                 ubound(p_solverMultigrid%p_smoother,1)
-            call solver_updateContent(p_solverMultigrid%p_smoother(i))
+        if (associated(p_rsolverMultigrid%p_smoother)) then
+          do i = lbound(p_rsolverMultigrid%p_smoother,1),&
+                 ubound(p_rsolverMultigrid%p_smoother,1)
+            call solver_updateContent(p_rsolverMultigrid%p_smoother(i))
           end do
         end if
       end if
@@ -5668,8 +5692,8 @@ contains
                                  not(SV_SSPEC_CONTENTNEEDSUPDATE))
 
       ! Porceed to the generic solver subnode
-      if (associated(rsolver%p_solverSubnode)) then
-        call solver_updateContent(rsolver%p_solverSubnode(1))
+      if (associated(rsolver%p_rsolverSubnode)) then
+        call solver_updateContent(rsolver%p_rsolverSubnode(1))
       end if
 
 
@@ -5681,21 +5705,21 @@ contains
       rsolver%isolverSpec = iand(rsolver%isolverSpec,&
                                  not(SV_SSPEC_CONTENTNEEDSUPDATE))
 
-      if (associated(rsolver%p_solverMultigrid)) then
+      if (associated(rsolver%p_rsolverMultigrid)) then
 
         ! Set pointer
-        p_solverMultigrid => rsolver%p_solverMultigrid
+        p_rsolverMultigrid => rsolver%p_rsolverMultigrid
 
         ! Proceed to coarse grid solver
-        if (associated(p_solverMultigrid%p_solverCoarsegrid)) then
-          call solver_updateContent(p_solverMultigrid%p_solverCoarsegrid)
+        if (associated(p_rsolverMultigrid%p_rsolverCoarsegrid)) then
+          call solver_updateContent(p_rsolverMultigrid%p_rsolverCoarsegrid)
         end if
 
         ! ... and smoother
-        if (associated(p_solverMultigrid%p_smoother)) then
-          do i = lbound(p_solverMultigrid%p_smoother,1),&
-                 ubound(p_solverMultigrid%p_smoother,1)
-            call solver_updateContent(p_solverMultigrid%p_smoother(i))
+        if (associated(p_rsolverMultigrid%p_smoother)) then
+          do i = lbound(p_rsolverMultigrid%p_smoother,1),&
+                 ubound(p_rsolverMultigrid%p_smoother,1)
+            call solver_updateContent(p_rsolverMultigrid%p_smoother(i))
           end do
         end if
       end if
@@ -5709,32 +5733,32 @@ contains
       if (iand(rsolver%isolverSpec, SV_SSPEC_CONTENTNEEDSUPDATE) .ne. 0) then
 
         ! Initialise UMFPACK solver
-        if (associated(rsolver%p_solverUMFPACK)) then
-          call solver_initUMFPACK(rsolver%p_solverUMFPACK)
+        if (associated(rsolver%p_rsolverUMFPACK)) then
+          call solver_initUMFPACK(rsolver%p_rsolverUMFPACK)
         end if
 
         ! Initialise ILU factorisation
-        if (associated(rsolver%p_solverILU)) then
-          call solver_initILU(rsolver%p_solverILU)
+        if (associated(rsolver%p_rsolverILU)) then
+          call solver_initILU(rsolver%p_rsolverILU)
         end if
 
         ! Initialise preconditioner of BiCGSTAB solver
-        if (associated(rsolver%p_solverBiCGSTAB)) then
-          if (associated(rsolver%p_solverBiCGSTAB%p_precond)) then
-            call solver_updateContent(rsolver%p_solverBiCGSTAB%p_precond)
+        if (associated(rsolver%p_rsolverBiCGSTAB)) then
+          if (associated(rsolver%p_rsolverBiCGSTAB%p_precond)) then
+            call solver_updateContent(rsolver%p_rsolverBiCGSTAB%p_precond)
           end if
         end if
 
         ! Initialise preconditioner of GMRES solver
-        if (associated(rsolver%p_solverGMRES)) then
-          if (associated(rsolver%p_solverGMRES%p_precond)) then
-            call solver_updateContent(rsolver%p_solverGMRES%p_precond)
+        if (associated(rsolver%p_rsolverGMRES)) then
+          if (associated(rsolver%p_rsolverGMRES%p_precond)) then
+            call solver_updateContent(rsolver%p_rsolverGMRES%p_precond)
           end if
         end if
 
         ! Initialise AGMG solver
-        if (associated(rsolver%p_solverAGMG)) then
-          call solver_initAGMG(rsolver%p_solverAGMG)
+        if (associated(rsolver%p_rsolverAGMG)) then
+          call solver_initAGMG(rsolver%p_rsolverAGMG)
         end if
 
         ! Remove update marker from specification bitfields
@@ -7431,21 +7455,18 @@ contains
     select case(rsolver%rmatrixScalar%cdataType)
     case(ST_DOUBLE)
       call lsyssc_getbase_double(rsolver%rmatrixScalar, p_Da)
-      call dagmg(rsolver%rmatrixScalar%NEQ, p_Da, p_Kcol, p_Kld, p_Df, p_Dx,&
-          1, 0, rsolver%nrest, 0, 0.0_DP)
+      call dagmg(rsolver%rmatrixScalar%NEQ, p_Da, p_Kcol, p_Kld,&
+          p_Df, p_Dx, 1, OU_TERMINAL, rsolver%nrest, 0, 0.0_DP)
     case(ST_SINGLE)
       call lsyssc_getbase_single(rsolver%rmatrixScalar, p_Fa)
-      call sagmg(rsolver%rmatrixScalar%NEQ, p_Fa, p_Kcol, p_Kld, p_Ff, p_Fx,&
-          1, 0, rsolver%nrest, 0, 0.0_SP)
+      call sagmg(rsolver%rmatrixScalar%NEQ, p_Fa, p_Kcol, p_Kld,&
+          p_Ff, p_Fx, 1, OU_TERMINAL, rsolver%nrest, 0, 0.0_SP)
     case default
       call output_line('Unsupported data type!',&
           OU_CLASS_ERROR,OU_MODE_STD,'solver_initAGMG')
       call sys_halt()
     end select
     
-    print *, "We are here"
-    stop
-
  contains
 
     ! Here, the real working routine follows

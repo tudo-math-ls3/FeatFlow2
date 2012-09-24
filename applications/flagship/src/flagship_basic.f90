@@ -438,7 +438,7 @@ contains
         ! Directly proceed to the coarsegrid solver which serves as
         ! nonlinear solver on each level
         call updatematrix(rproblemLevel,&
-                          rsolver%p_solverMultigrid%p_solverCoarsegrid,&
+                          rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid,&
                           imatrix, isystemformat, iupdflag, nlmin, nlmax)
 
 
@@ -449,21 +449,21 @@ contains
 
         ! Directly proceed to the coarsegrid solver
         call updateMatrix(rproblemLevel,&
-                          rsolver%p_solverMultigrid%p_solverCoarsegrid,&
+                          rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid,&
                           imatrix, isystemformat, iupdflag,&
-                          rsolver%p_solverMultigrid%nlmin,&
-                          rsolver%p_solverMultigrid%nlmin)
+                          rsolver%p_rsolverMultigrid%nlmin,&
+                          rsolver%p_rsolverMultigrid%nlmin)
 
         ! Proceed to the smoothers
-        if (associated(rsolver%p_solverMultigrid%p_smoother)) then
-          do i = lbound(rsolver%p_solverMultigrid%p_smoother,1),&
-                 ubound(rsolver%p_solverMultigrid%p_smoother,1)
+        if (associated(rsolver%p_rsolverMultigrid%p_smoother)) then
+          do i = lbound(rsolver%p_rsolverMultigrid%p_smoother,1),&
+                 ubound(rsolver%p_rsolverMultigrid%p_smoother,1)
 
             call updateMatrix(rproblemLevel,&
-                              rsolver%p_solverMultigrid%p_smoother(i),&
+                              rsolver%p_rsolverMultigrid%p_smoother(i),&
                               imatrix, isystemformat, iupdflag,&
-                              rsolver%p_solverMultigrid%nlmin,&
-                              rsolver%p_solverMultigrid%nlmin)
+                              rsolver%p_rsolverMultigrid%nlmin,&
+                              rsolver%p_rsolverMultigrid%nlmin)
           end do
         end if
 
@@ -474,22 +474,22 @@ contains
         if (iand(iupdflag, UPDMAT_NORECURSIVE) .eq. UPDMAT_NORECURSIVE) return
 
         ! Directly proceed to the linear solver subnode.
-        call updateMatrix(rproblemLevel, rsolver%p_solverSubnode(1),&
+        call updateMatrix(rproblemLevel, rsolver%p_rsolverSubnode(1),&
                           imatrix, isystemformat, iupdflag, nlmin, nlmax)
 
 
       case (SV_LINEARMG)
 
         ! Are there multiple levels?
-        if (rsolver%p_solverMultigrid%nlmin .eq.&
-            rsolver%p_solverMultigrid%nlmax) then
+        if (rsolver%p_rsolverMultigrid%nlmin .eq.&
+            rsolver%p_rsolverMultigrid%nlmax) then
 
           ! Proceed to single grid solver
           call updateMatrix(rproblemLevel,&
-                            rsolver%p_solverMultigrid%p_solverCoarsegrid,&
+                            rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid,&
                             imatrix, isystemformat, iupdflag,&
-                            rsolver%p_solverMultigrid%nlmin,&
-                            rsolver%p_solverMultigrid%nlmin)
+                            rsolver%p_rsolverMultigrid%nlmin,&
+                            rsolver%p_rsolverMultigrid%nlmin)
 
         else
 
@@ -565,10 +565,10 @@ contains
                              UPDMAT_LINEARMG_COARSEGRID) then
             ! Set the system matrix for the linear coarse grid solver
             call updateMatrix(p_rproblemLevelCoarse,&
-                              rsolver%p_solverMultigrid%p_solverCoarsegrid,&
+                              rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid,&
                               imatrix, isystemformat, iupdflag,&
-                              rsolver%p_solverMultigrid%nlmin,&
-                              rsolver%p_solverMultigrid%nlmin)
+                              rsolver%p_rsolverMultigrid%nlmin,&
+                              rsolver%p_rsolverMultigrid%nlmin)
           end if
         end if
 

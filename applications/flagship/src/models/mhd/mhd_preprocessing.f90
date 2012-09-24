@@ -142,8 +142,8 @@ contains
     ! Initialise solver structure
     call solver_createSolver(rparlist, ssolverName, rsolver)
     if (rsolver%csolverType .eq. SV_FMG) then
-      nlmin = rsolver%p_solverMultigrid%nlmin
-      nlmax = rsolver%p_solverMultigrid%nlmax
+      nlmin = rsolver%p_rsolverMultigrid%nlmin
+      nlmax = rsolver%p_rsolverMultigrid%nlmax
       call solver_adjustHierarchy(rsolver, nlmin, nlmax)
     else
       call solver_adjustHierarchy(rsolver)

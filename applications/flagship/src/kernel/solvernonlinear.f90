@@ -301,7 +301,7 @@ contains
     end if
 
     ! Check if subsolvers are associated
-    if (.not.associated(rsolver%p_solverSubnode)) then
+    if (.not.associated(rsolver%p_rsolverSubnode)) then
       call output_line('No subsolver is associated!',&
           OU_CLASS_ERROR,OU_MODE_STD,'nlsol_solveCoupledBlock')
       call sys_halt()
@@ -310,7 +310,7 @@ contains
     ! Check compatibility of arrays
     ncomponent = size(Rsolution)
     if (size(RsolutionInitial) .ne. ncomponent .or.&
-        size(rsolver%p_solverSubnode) .ne. ncomponent) then
+        size(rsolver%p_rsolverSubnode) .ne. ncomponent) then
       call output_line('Vectors/solver are not compatible!',&
           OU_CLASS_ERROR,OU_MODE_STD,'nlsol_solveCoupledBlock')
       call sys_halt()
@@ -600,8 +600,8 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_solverMultigrid), pointer :: p_solverMultigrid
-    type(t_solver), pointer :: p_solverNonlinear
+    type(t_solverMultigrid), pointer :: p_rsolverMultigrid
+    type(t_solver), pointer :: p_rsolverNonlinear
     integer :: imgstep, mgcycle
 
     ! What kind of solver are we?
@@ -629,38 +629,38 @@ contains
     case (SV_NONLINEARMG)
 
       ! Check if multigrid solver exists
-      if (.not.associated(rsolver%p_solverMultigrid)) then
+      if (.not.associated(rsolver%p_rsolverMultigrid)) then
         call output_line('Multigrid solver does not exists!',&
             OU_CLASS_ERROR,OU_MODE_STD,'nlsol_solveMultigridBlock')
         call sys_halt()
       end if
 
       ! Set pointer
-      p_solverMultigrid => rsolver%p_solverMultigrid
+      p_rsolverMultigrid => rsolver%p_rsolverMultigrid
 
       ! Check if multigrid solver is called for only one grid level
-      if (p_solverMultigrid%nlmin .eq. p_solverMultigrid%nlmax) then
+      if (p_rsolverMultigrid%nlmin .eq. p_rsolverMultigrid%nlmax) then
 
         !-----------------------------------------------------------------------
         ! Single grid solver: G(u)=f
         !-----------------------------------------------------------------------
 
         ! Check if single-grid solver exists
-        if (.not.associated(p_solverMultigrid%p_solverCoarsegrid)) then
+        if (.not.associated(p_rsolverMultigrid%p_rsolverCoarsegrid)) then
           call output_line('Coarsegrid solver does not exists!',&
               OU_CLASS_ERROR,OU_MODE_STD,'nlsol_solveMultigridBlock')
           call sys_halt()
         end if
 
         ! Set pointer
-        p_solverNonlinear => p_solverMultigrid%p_solverCoarsegrid
+        p_rsolverNonlinear => p_rsolverMultigrid%p_rsolverCoarsegrid
 
         ! What kind of solver are we?
-        select case(p_solverNonlinear%isolver)
+        select case(p_rsolverNonlinear%isolver)
 
         case (NLSOL_SOLVER_FIXEDPOINT)
           call nlsol_solveFixedPoint(rproblemLevel, rtimestep,&
-              p_solverNonlinear, rsolution, rsolutionInitial,&
+              p_rsolverNonlinear, rsolution, rsolutionInitial,&
               fcb_nlsolverCallback, rcollection, rsource)
 
         case default
@@ -677,10 +677,10 @@ contains
         !-----------------------------------------------------------------------
 
         ! Perform prescribed number of multigrid steps
-        mgstep: do imgstep = 1, p_solverMultigrid%ilmax
+        mgstep: do imgstep = 1, p_rsolverMultigrid%ilmax
 
           ! Perform one nonlinear two-grid step
-          mgcycle = merge(1, 2, p_solverMultigrid%icycle .eq. 1)
+          mgcycle = merge(1, 2, p_rsolverMultigrid%icycle .eq. 1)
           call nlsol_solveTwogrid(rproblemLevel, rtimestep, rsolver,&
               rsolution, rsolutionInitial, fcb_nlsolverCallback,&
               rcollection, rsource)
@@ -716,7 +716,7 @@ contains
           end if
 
           ! Check convergence criteria
-          if (imgstep .ge. p_solverMultigrid%ilmin) then
+          if (imgstep .ge. p_rsolverMultigrid%ilmin) then
             if (solver_testConvergence(rsolver)) then
               rsolver%istatus = SV_CONVERGED
               exit mgstep
@@ -977,7 +977,7 @@ contains
     end if
 
     ! Set pointer to linear solver
-    p_rsolverLinear => p_rsolver%p_solverSubnode(1)
+    p_rsolverLinear => p_rsolver%p_rsolverSubnode(1)
     if (.not. associated(p_rsolverLinear)) then
       call output_line('No subsolver is associated!',&
           OU_CLASS_ERROR,OU_MODE_STD,'nlsol_solveFixedpointBlock')
@@ -1004,9 +1004,9 @@ contains
          NLSOL_PRECOND_NEWTON_FAILED)
 
       ! Set pointers
-      p_rrhs => p_rsolver%p_solverDefcor%rTempVectors(1)
-      p_rres => p_rsolver%p_solverDefcor%rTempVectors(2)
-      p_raux => p_rsolver%p_solverDefcor%rTempVectors(3)
+      p_rrhs => p_rsolver%p_rsolverDefcor%rTempVectors(1)
+      p_rres => p_rsolver%p_rsolverDefcor%rTempVectors(2)
+      p_raux => p_rsolver%p_rsolverDefcor%rTempVectors(3)
 
       ! Check if compatible vectors are available.
       call lsysbl_isVectorCompatible(rsolution, p_rrhs, bcompatible)
@@ -1035,11 +1035,11 @@ contains
     case(NLSOL_PRECOND_NEWTON)
 
       ! Set pointers
-      p_rrhs   => p_rsolver%p_solverNewton%rTempVectors(1)
-      p_rres   => p_rsolver%p_solverNewton%rTempVectors(2)
-      p_raux   => p_rsolver%p_solverNewton%rTempVectors(3)
-      p_rufs   => p_rsolver%p_solverNewton%rTempVectors(4)
-      p_rresfs => p_rsolver%p_solverNewton%rTempVectors(5)
+      p_rrhs   => p_rsolver%p_rsolverNewton%rTempVectors(1)
+      p_rres   => p_rsolver%p_rsolverNewton%rTempVectors(2)
+      p_raux   => p_rsolver%p_rsolverNewton%rTempVectors(3)
+      p_rufs   => p_rsolver%p_rsolverNewton%rTempVectors(4)
+      p_rresfs => p_rsolver%p_rsolverNewton%rTempVectors(5)
 
       ! Check if compatible vectors are available.
       call lsysbl_isVectorCompatible(rsolution, p_rrhs, bcompatible)
@@ -1269,7 +1269,7 @@ contains
         ! Compute forcing term (reset forcing term in the first iteration)
         call nlsol_calcForcingTerm(p_rsolver%dfinalDefect, doldDefect,&
             p_rsolverLinear%dfinalDefect, drtlm, redfac, eta,&
-            iiterations, p_rsolver%p_solverNewton%dforcingStrategy)
+            iiterations, p_rsolver%p_rsolverNewton%dforcingStrategy)
 
         ! Modify the solver structure for inexact Newton: The linear
         ! system needs to be solved such that the inexact Newton
@@ -1336,7 +1336,7 @@ contains
         else
 
           ! Assemble Jacobian matrix
-          if (mod(iiterations-1, max(1, p_rsolver%p_solverNewton%iupdateFrequency)) .eq. 0) then
+          if (mod(iiterations-1, max(1, p_rsolver%p_rsolverNewton%iupdateFrequency)) .eq. 0) then
 
             ! Calculate the Jacobian matrix and impose boundary conditions
             ioperationSpec = NLSOL_OPSPEC_CALCJACOBIAN
@@ -1555,7 +1555,7 @@ contains
 
     ! Backtracking loop
     backtrack: do ibacktrackingsteps = 1,&
-        rsolver%p_solverNewton%nmaxBacktrackingSteps
+        rsolver%p_rsolverNewton%nmaxBacktrackingSteps
 
       ! Add increment to solution vector: u = u_k+aux
       if (rsolver%domega < 0.0_DP) then
@@ -1579,7 +1579,7 @@ contains
       rsolver%dfinalDefect = lsysbl_vectorNorm(rres, rsolver%iresNorm)
 
       ! Return if sufficient decrease condition is satisfied or no checks need to be performed
-      if ((rsolver%p_solverNewton%icheckSufficientDecrease .eq. 0) .or. &
+      if ((rsolver%p_rsolverNewton%icheckSufficientDecrease .eq. 0) .or. &
           (rsolver%dfinalDefect .le. (1.0_DP-T*(1.0_DP-eta))*doldDefect)) then
         return
       end if

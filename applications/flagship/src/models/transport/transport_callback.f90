@@ -743,7 +743,7 @@ contains
     ! build the Jacobian matrix using the memory of the operator L.
 
     ! Compute step lenth of the solution perturbation
-    select case(int(rsolver%p_solverNewton%dperturbationStrategy))
+    select case(int(rsolver%p_rsolverNewton%dperturbationStrategy))
     case (PERTURB_NITSOL)
       ! Choice h=[(1+|u|)*EPS]^{1/(1+p)} by Pernice et al. in
       ! M. Pernice, H.F. Walker, NITSOL: a Newton iterative solver
@@ -756,7 +756,7 @@ contains
 
     case default
       hstep = max(SYS_EPSREAL_DP,&
-                  rsolver%p_solverNewton%dperturbationStrategy)
+                  rsolver%p_rsolverNewton%dperturbationStrategy)
     end select
 
 
