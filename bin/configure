@@ -370,6 +370,7 @@ my %cl = ();
 
 # defaults for Makefile variables
 my %defaults = (
+    AGMG                 => "NO",
     APPNAME              => "feat2app",
     APPONLYFLAGS         => [],
     AR                   => "",
@@ -397,11 +398,11 @@ my %defaults = (
     LDFLAGS              => [],
     LIBDIR               => [],
     LIBS                 => [],
-    MPI                  => "NO",
     MODE                 => "NO",   # deprecated
     MODEXTENSION         => "",
     MONITOR_COMPILE_ENV  => "YES",
     MOVEMOD              => "",
+    MPI                  => "NO",
     MPIINC               => [],
     MPILIBDIR            => [],
     MPILIBS              => [],
@@ -447,8 +448,9 @@ my %defaults = (
 # lower case.
 my $unknownoption=0;
 GetOptions (
+            "no-agmg"                       => sub { $cl{'AGMG'} = 0 },
+            "agmg:s"                        => \$cl{'AGMG'},
             "appname=s"                     => \$cl{'APPNAME'},
-            "no-opt"                        => sub { $cl{'OPT'} = 0 },
             "apponlyflags=s{0,}"            => \@{ $cl{'APPONLYFLAGS'} },
             "ar=s"                          => \$cl{'AR'},
             "binary=s"                      => \$cl{'BINARY'},
@@ -515,6 +517,7 @@ GetOptions (
             "objdir-lib-prefix=s"           => \$cl{'objdirlibprefix'},
             "no-openmp"                     => sub { $cl{'OPENMP'} = 0 },
             "openmp:s"                      => \$cl{'OPENMP'},
+            "no-opt"                        => sub { $cl{'OPT'} = 0 },
             "opt:s"                         => \$cl{'OPT'},
             "parallel"                      => sub { $cl{'MPI'} = "yes" },
             "precc=s{0,}"                   => \$cl{'PRECC'},
@@ -657,6 +660,7 @@ if ($cl{'regressionbenchmark'}) {
     # Pipe through command line options of regression benchmark configure
     # call to benchmark applications' configure
     my $options = "";
+    $options .= " --agmg=\""           . $cl{'AGMG'}                       . "\"" if (defined($cl{'AGMG'}) && $cl{'AGMG'});
     $options .= " --apponlyflags=\""   . join(',', @{$cl{'APPONLYFLAGS'}}) . "\"" if ($#{$cl{'APPONLYFLAGS'}}  >= 0);
     $options .= " --binary=\""         . $cl{'BINARY'}                     . "\"" if (defined($cl{'BINARY'}) && $cl{'BINARY'});
     $options .= " --buildlib=\""       . join(',', @{$cl{'BUILDLIB'}})     . "\"" if ($#{$cl{'BUILDLIB'}} >= 0);
@@ -1004,7 +1008,7 @@ sub check_options {
     # * $cl{'OPT'} has an empty value when --opt has been specified
     # * $cl{'OPT'} has value 0 when --no-opt has been specified
     # * $cl{'OPT'} has value "string" when --opt="string" has been specified
-    foreach my $entry ('MPI', 'OPT', 'OPENMP') {
+    foreach my $entry ('AGMG', 'MPI', 'OPT', 'OPENMP') {
 	if (defined($cl{$entry})) {
 	    $cl{$entry} = 1 if ($cl{$entry} eq "");
 	}
@@ -1027,8 +1031,9 @@ sub check_options {
     #   command line options
     # * Values are converted to upper case for the Makefile
     # * 0/1 values are mapped to NO/YES for the Makefile
-    foreach my $entry ('BINARY', 'FORCE_ID', 'INTSIZE', 'MODE', 'MONITOR_COMPILE_ENV',
-                       'MPI', 'MPIWRAPPERS', 'OPENMP', 'OPT', 'RELINK_ALWAYS') {
+    foreach my $entry ('AGMG', 'BINARY', 'FORCE_ID', 'INTSIZE', 'MODE',
+		       'MONITOR_COMPILE_ENV', 'MPI', 'MPIWRAPPERS',
+		       'OPENMP', 'OPT', 'RELINK_ALWAYS') {
 	# Check environment variable MAKEFLAGS and give a warning if
 	# options given via environment *and* command line collide.
 	if ($ENV{'MAKEFLAGS'}) {
@@ -1086,6 +1091,7 @@ sub check_options {
 
     # Valid keywords? (both for options that take exactly one string and those that can take multiple)
     my %validkeywords = (
+        "AGMG"                => [ "yes", "no" ],
 	"BINARY"              => [ "std", "32", "64" ],
 	"COPROCLIST"          => [ "cpu", "cuda10", "cuda11", "cuda12", "cuda13", "cuda20", "cuda21", "cuda30", "cuda35", "opengl" ],  # List of valid coprocessor backends
 	"FORCE_ID"            => [ "yes", "no" ],
@@ -1357,6 +1363,11 @@ sub create_feastAppMakefile {
         "# of your machine (at the expense of a possibly drastic increase in compile\n" .
         "# compile time) enable full optimisation with \"EXPENSIVE\".\n" .
 	"OPT                 = $entry\n\n";
+
+    $entry = (defined($cl{'AGMG'})) ? $cl{'AGMG'} : $defaults{'AGMG'};
+    print MAKEFILE_HDL
+        "# Create binary with AGMG support?\n" .
+        "AGMG                = $entry\n\n";
 
     $entry = (defined($cl{'APPNAME'})) ? $cl{'APPNAME'} : $defaults{'APPNAME'};
     print MAKEFILE_HDL
@@ -1966,6 +1977,30 @@ sub create_feastAppMakefile {
 	"CXX  = \$(F77)\n" .
 	"LD   = \$(F77)\n" .
 	"endif\n\n" .
+
+	"# Makefile variable AGMG must have exactly one out of two possible values:\n" .
+        "# YES or NO\n" .
+        "# In case neither YES nor NO are given as mode, unset all compiler\n" .
+        "# definitions in order to always raise an error when make is invoked.\n" .
+        "ifneq (\$(strip \$(AGMG)), YES)\n" .
+        "ifneq (\$(strip \$(AGMG)), NO)\n" .
+        "MESSAGE := \$(MESSAGE) \\\n" .
+        "\t   echo; \\\n" .
+        "\t   echo '*** Error: Build type AGMG=\$(AGMG) unknown.'; \\\n" .
+        "\t   echo '***        Valid keywords are YES or NO.'; \\\n" .
+        "\t   echo '***        Cowardly refusing compilation.'; \\\n" .
+        "\t   echo; \\\n" .
+        "\t   exit 1;\n" .
+        "# The trailing 'echo' in the next command definition is necessary to catch\n" .
+        "# all the command line options a compile command usually gets.\n" .
+        "F77 = \$(MESSAGE) echo\n" .
+        "F90 = \$(F77)\n" .
+        "CC  = \$(F77)\n" .
+        "CXX = \$(F77)\n" .
+        "LD  = \$(F77)\n" .
+        "endif\n" .
+        "endif\n" .
+        "\n\n" .
 
 	"# Makefile variable BINARY must have exactly one out of three possible values:\n" .
         "# STD, 32 or 64\n" .
@@ -3592,27 +3627,29 @@ sub create_feastAppMakefile {
         "\t\@echo \"                   no need to remember or know the name of that directory\"\n" .
         "\t\@echo \"\"\n" .
         "\t\@echo \"Makefile variables that you might consider overwriting on the command line include:\"\n" .
+	"\t\@echo \"  AGMG=<YES|NO>\"\n" .
+        "\t\@echo \"                 whether to add AGMG support to the application\"\n" .
         "\t\@echo \"  APPNAME=<string>\"\n" .
         "\t\@echo \"                 application name\"\n" .
-        "\t\@echo \"  OPT=<NO|YES|EXPENSIVE>\"\n" .
-        "\t\@echo \"                 whether to compile application without, with normal optimisation\"\n" .
-        "\t\@echo \"                   or expensive optimisation flags. 'make OPT=NO' is equivalent to\"\n" .
-        "\t\@echo \"                   'make debug'\"\n" .
-        "\t\@echo \"  MPIWRAPPERS=<NO|YES>\"\n" .
-        "\t\@echo \"                 whether or not to use MPI wrapper commands for compilation\"\n" .
-        "\t\@echo \"  RELINK_ALWAYS=<NO|YES>\"\n" .
-        "\t\@echo \"                 whether or not $make should relink an application every time it\"\n" .
-        "\t\@echo \"                   is invoked regardless whether a source file has changed\"\n" .
-        "\t\@echo \"  MONITOR_COMPILE_ENV=<NO|YES>\"\n" .
+	"\t\@echo \"  MODE=<PARALLEL|SERIAL> (deprecated, use MPI=<YES|NO>)\"\n" .
+        "\t\@echo \"                 whether to build parallel or serial version of application\"\n" .
+	"\t\@echo \"  MONITOR_COMPILE_ENV=<NO|YES>\"\n" .
         "\t\@echo \"                 whether or not $make should check path and modification dates\"\n" .
         "\t\@echo \"                   of compilers and compiler settings across multiple\"\n" .
         "\t\@echo \"                   compilation attempts\"\n" .
-        "\t\@echo \"  MODE=<PARALLEL|SERIAL> (deprecated, use MPI=<YES|NO>)\"\n" .
-        "\t\@echo \"                 whether to build parallel or serial version of application\"\n" .
-        "\t\@echo \"  MPI=<YES|NO>\"\n" .
+	"\t\@echo \"  MPI=<YES|NO>\"\n" .
         "\t\@echo \"                 whether to build a MPI or serial version of the application\"\n" .
+	"\t\@echo \"  MPIWRAPPERS=<NO|YES>\"\n" .
+        "\t\@echo \"                 whether or not to use MPI wrapper commands for compilation\"\n" .
         "\t\@echo \"  OPENMP=<YES|NO>\"\n" .
         "\t\@echo \"                 whether to add OpenMP support to the application\"\n" .
+	"\t\@echo \"  OPT=<NO|YES|EXPENSIVE>\"\n" .
+        "\t\@echo \"                 whether to compile application without, with normal optimisation\"\n" .
+        "\t\@echo \"                   or expensive optimisation flags. 'make OPT=NO' is equivalent to\"\n" .
+        "\t\@echo \"                   'make debug'\"\n" .
+	"\t\@echo \"  RELINK_ALWAYS=<NO|YES>\"\n" .
+        "\t\@echo \"                 whether or not $make should relink an application every time it\"\n" .
+        "\t\@echo \"                   is invoked regardless whether a source file has changed\"\n" .
         "\t\@echo \"\"\n" .
         "\n\n";
 
@@ -4203,7 +4240,7 @@ sub debug_command_line_options {
     my $string = "";
 
     my $colwidth = 0;
-    foreach my $entry ('APPNAME', 'APPONLYFLAGS', 'AR', 'BINARY', 'BUILDLIB', 'CC', 'CFLAGSC',
+    foreach my $entry ('AGMG', 'APPNAME', 'APPONLYFLAGS', 'AR', 'BINARY', 'BUILDLIB', 'CC', 'CFLAGSC',
 		       'CFLAGSCOPROC', 'CFLAGSCXX', 'CFLAGSF77', 'CFLAGSF90', 'CFLAGSCUDA',
 		       'COPROCLIST', 'CPP', 'CUDA', 'CXX', 'F77', 'F90', 'FORCE_ID',
 		       'HEADER_FILES_TO_COPY', 'ID', 'INC',
@@ -4214,7 +4251,7 @@ sub debug_command_line_options {
     }
     $colwidth++;
 
-    foreach my $entry ('APPNAME', 'APPONLYFLAGS', 'AR', 'BINARY', 'BUILDLIB', 'CC', 'CFLAGSC',
+    foreach my $entry ('AGMG', 'APPNAME', 'APPONLYFLAGS', 'AR', 'BINARY', 'BUILDLIB', 'CC', 'CFLAGSC',
 		       'CFLAGSCOPROC', 'CFLAGSCXX', 'CFLAGSF77', 'CFLAGSF90', 'CFLAGSCUDA',
 		       'COPROCLIST', 'CPP', 'CUDA', 'CXX', 'F77', 'F90', 'FORCE_ID',
 		       'HEADER_FILES_TO_COPY', 'ID', 'INC',
@@ -5014,6 +5051,10 @@ sub print_statistics_about_feastAppMakefile {
     print "  Application binary               : will be " .
 	( ($string eq "YES") ? "relinked every time make is invoked" : "linked only when missing" ) . "\n";
 
+    $string = (defined($cl{'AGMG'})) ? $cl{'AGMG'} : $defaults{'AGMG'};
+    print "  AGMG support                   : " .
+        ( ($string eq "YES") ? "yes" : "no" ) . "\n";
+
     print "  Application binary type          : ";
     $string = (defined($cl{'BINARY'})) ? $cl{'BINARY'} : $defaults{'BINARY'};
     if ($string eq "STD") {
@@ -5093,6 +5134,8 @@ sub show_help {
         "Options specified here will override these settings.\n" .
         "Configuration:\n" .
         "--------------\n" .
+	"--[no-]agmg         Create Makefile for application with/without AGMG support\n" .
+        "                    (default: " . lc($defaults{'AGMG'}) . ").\n" .
         "--appname=<file>    Set application name to <file> (default: " . $defaults{'APPNAME'} . ")\n" .
         "--apponlyflags=<string>\n" .
         "                    Additional preprocessor and compiler flags used only\n" .

@@ -231,6 +231,18 @@ endif
 
 
 ##############################################################################
+# FEAT2 can be linked with the external AGMG library by Y.Notay
+
+##############################################################################
+ifeq ($(AGMG), YES)
+BUILDLIB := agmg $(BUILDLIB)
+LIBS     := -lagmg $(LIBS)
+APPONLYFLAGS := -DENABLE_AGMG $(APPONLYFLAGS)
+endif
+
+
+
+##############################################################################
 
 # This block extends the compiler options by machine dependent settings
 # and libraries (optimised BLAS/LAPack versions for example).
@@ -2750,7 +2762,12 @@ endif
 	fi
 	@echo
 	@echo 'Flags to be used:'
-	@echo '  OPT          =' $(OPT)
+	@echo '  AGMG         =' $(AGMG)
+	@echo '  APPNAME      =' $(APPNAME)
+	@echo '  APPONLYFLAGS =' $(APPONLYFLAGS)
+	@echo '  AR           =' $(AR)
+	@echo '  BINARY       =' $(BINARY)
+	@echo '  BUILDLIB     =' $(BUILDLIB)
 	@echo '  CPPFLAGS     =' $(CPPFLAGS)
 	@echo '  CFLAGSF77    =' $(CFLAGSF77)
 	@echo '  CFLAGSF90    =' $(CFLAGSF90) $(MODOPTION)$(OBJDIR)
@@ -2759,31 +2776,36 @@ endif
 ifneq (,$(findstring YES,$(HAS_CUDA10)$(HAS_CUDA11)$(HAS_CUDA12)$(HAS_CUDA13)$(HAS_CUDA20)$(HAS_CUDA21)$(HAS_CUDA30)))
 	@echo '  CFLAGSCUDA   =' $(CFLAGSCUDA)
 endif
-	@echo '  LDFLAGS      =' $(LDFLAGS)
-	@echo '  APPONLYFLAGS =' $(APPONLYFLAGS)
-	@echo '  MODEXTENSION =' $(MODEXTENSION)
-	@echo '  MOVEMOD      =' $(MOVEMOD)
+ifneq ($(strip $(COPROCLIST)),)
+	@echo '  COPROCLIST   =' $()
+	@echo '  CFLAGSCOPROC =' $(CFLAGSCOPROC)
+endif
+	@echo '  FORCE_ID     =' $(FORCE_ID)
 	@echo '  INC          =' $(INC)
 	@echo '  INTSIZE      =' $(INTSIZE)
-	@echo '  SRCEXTRA     =' $(SRCEXTRA)
-	@echo '  SRCEXTRA_APP =' $(SRCEXTRA_APP)
-	@echo '  BUILDLIB     =' $(BUILDLIB)
+	@echo '  LDFLAGS      =' $(LDFLAGS)
 	@echo '  LIBDIR       =' $(LIBDIR)
 	@echo '  LIBS         =' $(LIBS)
+	@echo '  MODE         =' $(MODE)
+	@echo '  MODEXTENSION =' $(MODEXTENSION)
+	@echo '  MOVEMOD      =' $(MOVEMOD)
         # If preprocessor switch -DENABLE_SERIAL_BUILD does occur in compiler flags,
         # a build for serial execution is requested.
 	@if test -z "$(findstring -DENABLE_SERIAL_BUILD ,$(APPONLYFLAGS) $(CFLAGSF90) )"; then \
+	    echo '  MPI          =' $(MPI); \
 	    echo '  MPIINC       =' $(MPIINC); \
 	    echo '  MPILIBDIR    =' $(MPILIBDIR); \
 	    echo '  MPILIBS      =' $(MPILIBS); \
+	    echo '  MPIWRAPPERS  =' $(MPIWRAPPERS); \
 	fi
-	@echo '  AR           =' $(AR)
-	@echo '  RANLIB       =' $(RANLIB)
 	@echo '  OBJDIR       =' $(OBJDIR)
 	@echo '  OBJDIR_LIB   =' $(OBJDIR_LIB)
-ifneq ($(strip $(COPROCESSOR)),)
-	@echo '  COPROCESSOR  =' $(COPROCESSOR)
-endif
+	@echo '  OPENMP       =' $(OPENMP)
+	@echo '  OPT          =' $(OPT)
+	@echo '  RANLIB       =' $(RANLIB)
+	@echo '  RELINK_ALWAYS=' $(RELINK_ALWAYS)
+	@echo '  SRCEXTRA     =' $(SRCEXTRA)
+	@echo '  SRCEXTRA_APP =' $(SRCEXTRA_APP)
 	@echo
         # If preprocessor switch -DENABLE_SERIAL_BUILD does occur in compiler flags,
         # a build for serial execution is requested.
