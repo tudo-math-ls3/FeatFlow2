@@ -1106,7 +1106,7 @@ contains
     integer :: iunit,ieq,nnz
     real(DP) :: dthres
     character(LEN=10) :: cstat,cpos
-    character(LEN=50) :: sformat
+    character(LEN=40) :: sformat
 
     ! Replace small values by zero
     dthres = 1E-12_DP
@@ -1141,7 +1141,7 @@ contains
 
     ! Let`s check if the matrix has content
     if (bdata .and. .not.lsyssc_hasMatrixContent(rmatrix)) then
-      write(UNIT=iunit,FMT=50) smatrixName,&
+      write(UNIT=iunit,FMT=40) smatrixName,&
           rmatrix%NEQ*rmatrix%NVAR, rmatrix%NCOLS*rmatrix%NVAR
       close(UNIT=iunit)
       return
@@ -1173,7 +1173,7 @@ contains
                               OU_CLASS_ERROR,OU_MODE_STD,'matio_spyMatrix')
             call sys_halt()
           end select
-          write(UNIT=iunit,FMT=30)
+          write(UNIT=iunit,FMT=20)
 
         case (ST_SINGLE)
           write(UNIT=iunit,FMT=10)
@@ -1190,7 +1190,7 @@ contains
                               OU_CLASS_ERROR,OU_MODE_STD,'matio_spyMatrix')
             call sys_halt()
           end select
-          write(UNIT=iunit,FMT=30)
+          write(UNIT=iunit,FMT=20)
 
         case DEFAULT
           call output_line ('Unsupported matrix type!', &
@@ -1217,7 +1217,7 @@ contains
                             OU_CLASS_ERROR,OU_MODE_STD,'matio_spyMatrix')
           call sys_halt()
         end select
-        write(UNIT=iunit,FMT=30)
+        write(UNIT=iunit,FMT=20)
       end if
 
     case (LSYSSC_MATRIX7,LSYSSC_MATRIX9)
@@ -1233,14 +1233,14 @@ contains
           call lsyssc_getbase_double(rmatrix,p_Da)
           call do_spy_mat79matD_double(iunit,rmatrix%NEQ,rmatrix%NCOLS,1,&
               p_Kld,p_Kcol,sformat,p_Da,dthres,nnz)
-          write(UNIT=iunit,FMT=30)
+          write(UNIT=iunit,FMT=20)
 
         case (ST_SINGLE)
           write(UNIT=iunit,FMT=10)
           call lsyssc_getbase_single(rmatrix,p_Fa)
           call do_spy_mat79matD_single(iunit,rmatrix%NEQ,rmatrix%NCOLS,1,&
               p_Kld,p_Kcol,sformat,p_Fa,dthres,nnz)
-          write(UNIT=iunit,FMT=30)
+          write(UNIT=iunit,FMT=20)
 
         case DEFAULT
           call output_line ('Unsupported matrix type!', &
@@ -1256,7 +1256,7 @@ contains
         ! Output only matrix structure
         write(UNIT=iunit,FMT=10)
         call do_spy_mat79matD_double(iunit,rmatrix%NEQ,rmatrix%NCOLS,1,p_Kld,p_Kcol,sformat)
-        write(UNIT=iunit,FMT=30)
+        write(UNIT=iunit,FMT=20)
       end if
 
     case(LSYSSC_MATRIXD)
@@ -1276,7 +1276,7 @@ contains
               nnz = nnz+1
             end if
           end do
-          write(UNIT=iunit,FMT=30)
+          write(UNIT=iunit,FMT=20)
 
         case (ST_SINGLE)
           write(UNIT=iunit,FMT=10)
@@ -1287,7 +1287,7 @@ contains
               nnz = nnz+1
             end if
           end do
-          write(UNIT=iunit,FMT=30)
+          write(UNIT=iunit,FMT=20)
 
         case DEFAULT
           call output_line ('Unsupported matrix type!', &
@@ -1305,7 +1305,7 @@ contains
         do ieq=1,rmatrix%NEQ
           write(UNIT=iunit,FMT=sformat) ieq,ieq,1
         end do
-        write(UNIT=iunit,FMT=30)
+        write(UNIT=iunit,FMT=20)
 
       end if
 
@@ -1318,13 +1318,13 @@ contains
           write(UNIT=iunit,FMT=10)
           call lsyssc_getbase_double(rmatrix,p_Da)
           call do_spy_mat1_double(iunit,rmatrix%NEQ,rmatrix%NCOLS,sformat,p_Da,dthres,nnz)
-          write(UNIT=iunit,FMT=30)
+          write(UNIT=iunit,FMT=20)
 
         case (ST_SINGLE)
           write(UNIT=iunit,FMT=10)
           call lsyssc_getbase_single(rmatrix,p_Fa)
           call do_spy_mat1_single(iunit,rmatrix%NEQ,rmatrix%NCOLS,sformat,p_Fa,dthres,nnz)
-          write(UNIT=iunit,FMT=30)
+          write(UNIT=iunit,FMT=20)
 
         case DEFAULT
           call output_line ('Unsupported matrix type!', &
@@ -1340,7 +1340,7 @@ contains
         ! Output only matrix structure
         write(UNIT=iunit,FMT=10)
         call do_spy_mat1_double(iunit,rmatrix%NEQ,rmatrix%NCOLS,sformat)
-        write(UNIT=iunit,FMT=30)
+        write(UNIT=iunit,FMT=20)
 
       end if
 
@@ -1353,21 +1353,20 @@ contains
 
     ! Close file
     if (nnz .gt. 0) then
-      write(UNIT=iunit,FMT=40) smatrixName,&
+      write(UNIT=iunit,FMT=30) smatrixName,&
           rmatrix%NEQ*rmatrix%NVAR, rmatrix%NCOLS*rmatrix%NVAR
     else
-      write(UNIT=iunit,FMT=60)
-      write(UNIT=iunit,FMT=50) smatrixName,&
+      write(UNIT=iunit,FMT=50)
+      write(UNIT=iunit,FMT=40) smatrixName,&
           rmatrix%NEQ*rmatrix%NVAR, rmatrix%NCOLS*rmatrix%NVAR
     end if
     close(UNIT=iunit)
       
 10  format("data=[...")
-! 20  format(I10,1X,I10,1X,E15.8,";...") ! removed, replaced by user defined format
-30  format("];")
-40  format(A,"=sparse(data(:,1),data(:,2),data(:,3),",I10,",",I10,"); clear data;")
-50  format(A,"=sparse(",I10,",",I10,");")
-60  format("clear data;")
+20  format("];")
+30  format(A,"=sparse(data(:,1),data(:,2),data(:,3),",I10,",",I10,"); clear data;")
+40  format(A,"=sparse(",I10,",",I10,");")
+50  format("clear data;")
 
   end subroutine matio_spyMatrix
 
