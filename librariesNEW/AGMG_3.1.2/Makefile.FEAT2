@@ -20,7 +20,8 @@ OBJDIR  = object
 .PHONY:	default
 default: $(OBJDIR)/libagmg.a
 
-SRCLIST = SRC/cagmg.f90 SRC/cagmg_mumps.f90 \
+SRCLIST = SRC/agmg_mumps.f90 \
+	  SRC/cagmg.f90 SRC/cagmg_mumps.f90 \
 	  SRC/dagmg.f90 SRC/dagmg_mumps.f90 \
 	  SRC/sagmg.f90 SRC/sagmg_mumps.f90 \
 	  SRC/zagmg.f90 SRC/zagmg_mumps.f90
