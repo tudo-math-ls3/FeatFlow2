@@ -293,6 +293,9 @@ contains
     case (EL_QPW4P2_2D)
       ! 1 DOF in each vertex, 1 DOF in each edge and 5 in the element
       NDFG_uniform2D = rtriangulation%NVT + rtriangulation%NMT + 5*rtriangulation%NEL
+    case (EL_QPW4P1T_2D)
+      ! 1 DOF per edge and 4 in the element
+      NDFG_uniform2D = rtriangulation%NMT + 4*rtriangulation%NEL
     case (EL_P1T, EL_Q1T)
       ! 1 DOF per edge
       NDFG_uniform2D = rtriangulation%NMT
@@ -742,6 +745,11 @@ contains
           call storage_getbase_int2D (p_rtriangulation%h_IedgesAtElement,p_2darray2)
           call dof_locGlobUniMult_QPW4P2(p_2darray, p_2darray2, IelIdx, IdofGlob, &
               p_rtriangulation%NVT,p_rtriangulation%NMT)
+          return
+        case (EL_QPW4P1T_2D)
+          ! DOF`s in the edges and along the diagonales within the element
+          call storage_getbase_int2D (p_rtriangulation%h_IedgesAtElement,p_2darray)
+          call dof_locGlobUniMult_QPW4P1T(p_2darray, IelIdx, IdofGlob, p_rtriangulation%NMT)
           return
         case (EL_Q1TB)
           ! DOF`s in the edges
@@ -1389,6 +1397,62 @@ contains
       IdofGlob(11,i) = NVT + NMT + 5*(IelIdx(i)-1) + 3
       IdofGlob(12,i) = NVT + NMT + 5*(IelIdx(i)-1) + 4
       IdofGlob(13,i) = NVT + NMT + 5*(IelIdx(i)-1) + 5
+    end do
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  pure subroutine dof_locGlobUniMult_QPW4P1T(IedgesAtElement, IelIdx, IdofGlob, NMT)
+
+!<description>
+  ! This subroutine calculates the global indices in the array IdofGlob
+  ! of the degrees of freedom of the elements in the list IelIdx.
+  ! all elements in the list are assumed to be quadrilateral, piecewise rotated
+  ! linear nonconforming P1~ elements.
+  ! A uniform grid is assumed, i.e. a grid completely discretised the
+  ! same element.
+!</description>
+
+!<input>
+
+  ! An array with the number of edges adjacent on each element of the
+  ! triangulation.
+  integer, dimension(:,:), intent(in) :: IedgesAtElement
+
+  ! Element indices, where the mapping should be computed.
+  integer, dimension(:), intent(in) :: IelIdx
+
+  ! Total number of edges
+  integer, intent(in) :: NMT
+
+!</input>
+
+!<output>
+
+  ! Array of global DOF numbers; for every element in IelIdx there is
+  ! a subarray in this list receiving the corresponding global DOF`s.
+  integer, dimension(:,:), intent(out) :: IdofGlob
+
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  integer :: i
+
+    ! Loop through the elements to handle
+    do i=1,size(IelIdx)
+      ! Calculate the global DOF`s - which are simply the edge numbers.
+      IdofGlob(1:4,i) = IedgesAtElement(1:4,IelIdx(i))
+
+      ! plus 4 times the element, for the four inner edges
+      IdofGlob(5,i) = NMT + 4*(IelIdx(i)-1) + 1
+      IdofGlob(6,i) = NMT + 4*(IelIdx(i)-1) + 2
+      IdofGlob(7,i) = NMT + 4*(IelIdx(i)-1) + 3
+      IdofGlob(8,i) = NMT + 4*(IelIdx(i)-1) + 4
     end do
 
   end subroutine

@@ -438,6 +438,9 @@ module element
   ! ID of piecewise discontinous linear element, 4 triangles in a quad
   integer(I32), parameter, public :: EL_QPW4DCP1_2D = EL_2D + 17
 
+  ! ID of piecewise rotated linear nonconforming element, 4 triangles in a quad
+  integer(I32), parameter, public :: EL_QPW4P1T_2D = EL_2D + 18
+
   ! ID of nonconforming parametric linear P1 element on a quadrilareral
   ! element, given by function value in the midpoint and the two
   ! derivatives.
@@ -847,6 +850,8 @@ contains
       elem_igetID = EL_QPW4P1_2D
     else if (selem .eq. "EL_QPW4P2_2D") then
       elem_igetID = EL_QPW4P2_2D
+    else if (selem .eq. "EL_QPW4P1T_2D") then
+      elem_igetID = EL_QPW4P1T_2D
     else if (selem .eq. "EL_EM11" .or. selem .eq. "EL_EM11_2D") then
       elem_igetID = EL_EM11_2D
     else if (selem .eq. "EL_Q2" .or. selem .eq. "EL_Q2_2D" .or.&
@@ -1059,6 +1064,8 @@ contains
       sname = 'EL_QPW4P1_2D'
     case (EL_QPW4P2_2D)
       sname = 'EL_QPW4P2_2D'
+    case (EL_QPW4P1T_2D)
+      sname = 'EL_QPW4P1T_2D'
     ! discontinous elements
     case (EL_Q0_2D)         ! alias: EL_DCQP0_2D
       sname = 'EL_Q0_2D'
@@ -1326,10 +1333,14 @@ contains
       ndofAtVertices = 4
       ndofAtElement  = 1
     case (EL_QPW4P2_2D)
-      ! 4 DOFs in the corners, 4 in the edges 5 in the element
+      ! 4 DOFs in the corners, 4 in the edges and 5 in the element
       ndofAtVertices = 4
       ndofAtEdges = 4
       ndofAtElement = 5
+    case (EL_QPW4P1T_2D)
+      ! 4 DOFs in the edges and 4 in the element
+      ndofAtEdges = 4
+      ndofAtElement = 4
     case (EL_Q1T)
       ! local DOFs for Ex30
       ndofAtEdges    = 4
@@ -1610,7 +1621,9 @@ contains
     ! affine quadrilateral/hexahedral transformation, need to be handled
     ! specially here.
 
-    if ((celement .eq. EL_QPW4P1_2D) .or. (celement .eq. EL_QPW4DCP1_2D)) then
+    if ((celement .eq. EL_QPW4P1_2D) .or.&
+        (celement .eq. EL_QPW4DCP1_2D) .or.&
+        (celement .eq. EL_QPW4P1T_2D)) then
       elem_igetTrafoType = TRAFO_ID_PWLINSIMCUBE + TRAFO_DIM_2D
       return
     end if
@@ -1734,7 +1747,7 @@ contains
     case (EL_QP1)
       ! Function + 1st derivative
       elem_getMaxDerivative = 3
-    case (EL_QPW4P1_2D)
+    case (EL_QPW4P1_2D,EL_QPW4P1T_2D)
       ! Function + 1st derivative
       elem_getMaxDerivative = 3
     case (EL_QPW4P2_2D)
@@ -1987,7 +2000,8 @@ contains
     case (EL_Q0, EL_Q1, EL_Q2, EL_Q3, EL_QP1,&
           EL_Q1T, EL_Q1TB, EL_Q2T, EL_Q2TB, EL_Q3T_2D,&
           EL_DG_T0_2D, EL_DG_T1_2D, EL_DG_T2_2D,&
-          EL_DG_Q1_2D, EL_DG_Q2_2D, EL_QPW4P1_2D, EL_QPW4P2_2D, &
+          EL_DG_Q1_2D, EL_DG_Q2_2D,&
+          EL_QPW4P1_2D, EL_QPW4P1T_2D, EL_QPW4P2_2D, &
           EL_DCQP1_2D, EL_DCQP2_2D, EL_QPW4DCP1_2D)
       ! 2D Quadrilateral
       ishp = BGEOM_SHAPE_QUAD
@@ -2158,13 +2172,13 @@ contains
         call elem_Q1 (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_EM11_2D)
         bwrapSim2 = .true.
-      case (EL_Q2, EL_DG_Q2_2D)
+      case (EL_Q2,EL_DG_Q2_2D)
         call elem_Q2 (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_Q2H_2D)
         bwrapSim2 = .true.
       case (EL_QP1)
         call elem_QP1 (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-      case (EL_QPW4P1_2D,EL_QPW4P2_2D)
+      case (EL_QPW4P1_2D,EL_QPW4P1T_2D,EL_QPW4P2_2D)
         bwrapSim2 = .true.
       case (EL_QP1NP,EL_QP1NPD)
         call elem_QP1NP (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
@@ -2925,6 +2939,10 @@ contains
     case (EL_QPW4P1_2D)
       ! New implementation
       call elem_eval_QPW4P1_2D(celement, revalElementSet, Bder, Dbas)
+
+    case (EL_QPW4P1T_2D)
+      ! New implementation
+      call elem_eval_QPW4P1T_2D(celement, revalElementSet, Bder, Dbas)
 
     case (EL_QPW4P2_2D)
       ! New implementation
