@@ -1350,13 +1350,15 @@ contains
         allocate(Col(ncol))
       
         call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
-        Col = p_Kcol(p_Kld(irow):p_Kld(irow+1)-1)
+        call lalg_copyVectorInt (p_Kcol(p_Kld(irow):p_Kld(irow+1)-1),Col)
         
         call storage_realloc ("mmod_expandToFullRow",&
             rmatrix%NA+icoldiff,rmatrix%h_Kcol,ST_NEWBLOCK_NOINIT)
 
         ! Restructure the Kcol array, move the data.
-        call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
+        ! We *on-purpose* use storage_getbase here since lsyssc_getbase
+        ! does not work -- it would take rmatrix%NA into account!
+        call storage_getbase_int (rmatrix%h_Kcol,p_Kcol)
         call copyVectorInt (p_Kcol(p_Kld(irow+1):p_Kld(rmatrix%NEQ+1)-1),&
             p_Kcol(p_Kld(irow+1)+icoldiff:p_Kld(rmatrix%NEQ+1)+icoldiff-1))
 
@@ -1370,13 +1372,15 @@ contains
           end if
 
           call lsyssc_getbase_double (rmatrix,p_Da)
-          Da = p_Da(p_Kld(irow):p_Kld(irow+1)-1)
+          call lalg_copyVectorDble (p_Da(p_Kld(irow):p_Kld(irow+1)-1),Da)
 
           call storage_realloc ("mmod_expandToFullRow",&
               rmatrix%NA+icoldiff,rmatrix%h_Da,ST_NEWBLOCK_NOINIT)
 
-          ! Move the data
-          call lsyssc_getbase_double (rmatrix,p_Da)
+          ! Move the data.
+          ! We *on-purpose* use storage_getbase here since lsyssc_getbase
+          ! does not work -- it would take rmatrix%NA into account!
+          call storage_getbase_double (rmatrix%h_Da,p_Da)
           call copyVectorDble (p_Da(p_Kld(irow+1):p_Kld(rmatrix%NEQ+1)-1),&
               p_Da(p_Kld(irow+1)+icoldiff:p_Kld(rmatrix%NEQ+1)+icoldiff-1))
 
@@ -1427,7 +1431,8 @@ contains
         deallocate(Col)
         deallocate(Da)
         
-        ! Fix the matrix size
+        ! Fix the matrix size.
+        ! After this, lsyssc_getbase_XXXX works again.
         rmatrix%NA = rmatrix%NA+icoldiff
 
       end if
