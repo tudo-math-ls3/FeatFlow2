@@ -75,6 +75,9 @@ module solverlinear
 #include "../flagship.h"
 
 !$use omp_lib
+#ifndef ENABLE_AGMG
+  use agmgdummy
+#endif
   use boundaryfilter
   use fsystem
   use genoutput
