@@ -3832,8 +3832,9 @@ contains
         call storage_free(rcubatureInfo%p_RinfoBlocks(i)%h_IelementList)
       end if
     end do
-
-    deallocate(rcubatureInfo%p_RinfoBlocks)
+    
+    if (associated(rcubatureInfo%p_RinfoBlocks))&
+        deallocate(rcubatureInfo%p_RinfoBlocks)
 
   end subroutine
 
