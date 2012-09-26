@@ -3243,13 +3243,16 @@ contains
     ! -= 1D Line Elements =-
     case (EL_P0_1D,EL_DG_T0_1D)
       Dpoints(1,1) =  0.0_DP
+
     case (EL_P1_1D,EL_DG_T1_1D)
       Dpoints(1,1) = -1.0_DP
       Dpoints(1,2) =  1.0_DP
+
     case (EL_P2_1D,EL_DG_T2_1D)
       Dpoints(1,1) = -1.0_DP
       Dpoints(1,2) =  1.0_DP
       Dpoints(1,3) =  0.0_DP
+
     case (EL_S31_1D)
       Dpoints(1,1) = -1.0_DP
       Dpoints(1,2) =  1.0_DP
@@ -3261,6 +3264,7 @@ contains
       Dpoints(1,1) = 1.0_DP/3.0_DP
       Dpoints(2,1) = 1.0_DP/3.0_DP
       Dpoints(3,1) = 1.0_DP/3.0_DP
+
     case (EL_P1)
       Dpoints(1,1) = 1.0_DP
       Dpoints(2,1) = 0.0_DP
@@ -3273,6 +3277,7 @@ contains
       Dpoints(1,3) = 0.0_DP
       Dpoints(2,3) = 0.0_DP
       Dpoints(3,3) = 1.0_DP
+
     case (EL_P2)
       Dpoints(1,1) = 1.0_DP
       Dpoints(2,1) = 0.0_DP
@@ -3297,6 +3302,7 @@ contains
       Dpoints(1,6) = 0.5_DP
       Dpoints(2,6) = 0.0_DP
       Dpoints(3,6) = 0.5_DP
+
     case (EL_P3)
       Dpoints(1,1) = 1.0_DP
       Dpoints(2,1) = 0.0_DP
@@ -3351,6 +3357,7 @@ contains
     case (EL_Q0)
       Dpoints(1,1) = 0.0_DP
       Dpoints(2,1) = 0.0_DP
+
     case (EL_Q1,EL_DG_Q1_2D)
       Dpoints(1,1) = -1.0_DP
       Dpoints(2,1) = -1.0_DP
@@ -3363,6 +3370,7 @@ contains
 
       Dpoints(1,4) = -1.0_DP
       Dpoints(2,4) =  1.0_DP
+
     case (EL_Q2,EL_DG_Q2_2D,EL_Q2T)
       Dpoints(1,1) = -1.0_DP
       Dpoints(2,1) = -1.0_DP
@@ -3390,8 +3398,10 @@ contains
 
       Dpoints(1,9) =  0.0_DP
       Dpoints(2,9) =  0.0_DP
+  
     case (EL_QP1)
       Dpoints      = 0.0_DP
+
     case (EL_Q1T)
       Dpoints(1,1) =  0.0_DP
       Dpoints(2,1) = -1.0_DP
@@ -3452,6 +3462,46 @@ contains
       Dpoints(1,10) =  0.0_DP
       Dpoints(2,10) =  0.0_DP
 
+    case (EL_QPW4P1_2D)
+      Dpoints(1,1) = -1.0_DP
+      Dpoints(2,1) = -1.0_DP
+
+      Dpoints(1,2) =  1.0_DP
+      Dpoints(2,2) = -1.0_DP
+
+      Dpoints(1,3) =  1.0_DP
+      Dpoints(2,3) =  1.0_DP
+
+      Dpoints(1,4) = -1.0_DP
+      Dpoints(2,4) =  1.0_DP
+
+      Dpoints(1,5) =  0.0_DP
+      Dpoints(2,5) =  0.0_DP
+
+    case (EL_QPW4P1T_2D)
+      Dpoints(1,1) =  0.0_DP
+      Dpoints(2,1) = -1.0_DP
+
+      Dpoints(1,2) =  1.0_DP
+      Dpoints(2,2) =  0.0_DP
+
+      Dpoints(1,3) =  0.0_DP
+      Dpoints(2,3) =  1.0_DP
+
+      Dpoints(1,4) = -1.0_DP
+      Dpoints(2,4) =  0.0_DP
+
+      Dpoints(1,5) =  0.5_DP
+      Dpoints(2,5) = -0.5_DP
+
+      Dpoints(1,6) =  0.5_DP
+      Dpoints(2,6) =  0.5_DP
+
+      Dpoints(1,7) = -0.5_DP
+      Dpoints(2,7) =  0.5_DP
+
+      Dpoints(1,8) = -0.5_DP
+      Dpoints(2,8) = -0.5_DP
 
     ! -= 3D Tetrahedron Elements =-
     case (EL_P0_3D)
@@ -3459,6 +3509,7 @@ contains
       Dpoints(2,1) = 1.0_DP/3.0_DP
       Dpoints(3,1) = 1.0_DP/3.0_DP
       Dpoints(4,1) = 1.0_DP/3.0_DP
+
     case (EL_P1_3D)
       Dpoints(1,1) = 1.0_DP
       Dpoints(2,1) = 0.0_DP
@@ -3485,6 +3536,7 @@ contains
       Dpoints(1,1) = 0.0_DP
       Dpoints(2,1) = 0.0_DP
       Dpoints(3,1) = 0.0_DP
+
     case (EL_Q1_3D)
       Dpoints(1,1) = -1.0_DP
       Dpoints(2,1) = -1.0_DP

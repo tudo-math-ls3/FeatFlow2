@@ -152,6 +152,12 @@ contains
     case (EL_Q1_2D,EL_Q1T_2D)
       IdofsLoc = (/1,2,3,4/)
 
+    case (EL_QPW4P1_2D)
+      IdofsLoc = (/1,2,3,4,5/)
+
+    case (EL_QPW4P1T_2D)
+      IdofsLoc = (/1,2,3,4,5,6,7,8/)
+
     case (EL_P2_2D)
       IdofsLoc = (/1,4,2,5,3,6/)
 
@@ -353,6 +359,62 @@ contains
                          rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(6,iel),iel))
         end do
 
+      case (EL_QPW4P1_2D)
+        ! For piecewise linear elements in 2D with four triangles in a
+        ! quad four degress coincide of freedom with the vertices of
+        ! the elements and one degree of freedom is located at the
+        ! intersection of the two diagonals.
+        do iel = 1, rdofSubset%nelements
+          ! Copy the vertex coordinates
+          rdofSubset%p_DdofCoords(:,1,iel) =&
+              rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(1,iel),iel)
+          rdofSubset%p_DdofCoords(:,2,iel) =&
+              rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(2,iel),iel)
+          rdofSubset%p_DdofCoords(:,3,iel) =&
+              rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(3,iel),iel)
+          rdofSubset%p_DdofCoords(:,4,iel) =&
+              rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(4,iel),iel)
+
+          rdofSubset%p_DdofCoords(:,5,iel) = 0.5_DP *&
+              (rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(1,iel),iel)+&
+               rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(3,iel),iel))
+        end do
+
+      case (EL_QPW4P1T_2D)
+        ! For piecewise nonconforming linear elements in 2D with four
+        ! triangles in a quad four degress coincide of freedom with
+        ! the vertices of the elements and one degree of freedom is
+        ! located at the intersection of the two diagonals.
+        do iel = 1, rdofSubset%nelements
+          ! Compute the coordinates of the edge midpoints
+          rdofSubset%p_DdofCoords(:,1,iel) =&
+              0.5_DP * (rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(1,iel),iel)+&
+                        rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(2,iel),iel))
+          rdofSubset%p_DdofCoords(:,2,iel) =&
+              0.5_DP * (rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(2,iel),iel)+&
+                        rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(3,iel),iel))
+          rdofSubset%p_DdofCoords(:,3,iel) =&
+              0.5_DP * (rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(3,iel),iel)+&
+                        rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(4,iel),iel))
+          rdofSubset%p_DdofCoords(:,4,iel) =&
+              0.5_DP * (rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(4,iel),iel)+&
+                        rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(1,iel),iel))
+
+          ! Compute the coordinates along the diagonals
+          rdofSubset%p_DdofCoords(:,5,iel) = 0.25_DP *&
+              (rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(2,iel),iel)+&
+               rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(4,iel),iel))
+          rdofSubset%p_DdofCoords(:,6,iel) = 0.75_DP *&
+              (rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(1,iel),iel)+&
+               rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(3,iel),iel))
+          rdofSubset%p_DdofCoords(:,7,iel) = 0.75_DP *&
+              (rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(2,iel),iel)+&
+               rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(4,iel),iel))
+          rdofSubset%p_DdofCoords(:,8,iel) = 0.25_DP *&
+              (rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(1,iel),iel)+&
+               rdomainIntSubset%p_Dcoords(:,rdofSubset%p_IdofsLoc(3,iel),iel))
+        end do
+
       case (EL_P2_2D)
         ! For P2 finite elements in 2D three degrees of freedom
         ! coincide with the vertices of the elements and three degrees
@@ -500,7 +562,7 @@ contains
       allocate(IdofsLoc(1,3))
       IdofsLoc = reshape((/1, 2, 3/),shape(IdofsLoc))
 
-    case (EL_Q1T_2D)
+    case (EL_Q1T_2D,EL_QPW4P1T_2D)
       rdofSubset%ndofsPerElement = 1
       allocate(IdofsLoc(1,4))
       IdofsLoc = reshape((/1, 2, 3, 4/),shape(IdofsLoc))
@@ -510,7 +572,7 @@ contains
       allocate(IdofsLoc(2,3))
       IdofsLoc = reshape((/1,2, 2,3, 3,1/),shape(IdofsLoc))
 
-    case (EL_Q1_2D)
+    case (EL_Q1_2D,EL_QPW4P1_2D)
       rdofSubset%ndofsPerElement = 2
       allocate(IdofsLoc(2,4))
       IdofsLoc = reshape((/1,2, 2,3, 3,4, 4,1/),shape(IdofsLoc))
@@ -583,7 +645,8 @@ contains
       ! Calculate the coordinates of the DOFs.
       ! What type of finite element are we?
       select case(elem_getPrimaryElement(rdofSubset%celement))       
-      case (EL_P1_1D,EL_P1_2D,EL_Q1_2D,EL_P1_3D,EL_Q1_3D,EL_Y1_3D,EL_R1_3D)
+      case (EL_P1_1D,EL_P1_2D,EL_Q1_2D,EL_P1_3D,EL_Q1_3D,EL_Y1_3D,EL_R1_3D,&
+            EL_QPW4P1_2D)
         ! For P1,Q1,Y1 and R1 finite elements the degrees of freedom coincide
         ! with the vertices of the element, thus they can be copied.
         do iel = 1, rdofSubset%nelements
@@ -593,7 +656,7 @@ contains
           end do
         end do
 
-      case (EL_P1T_2D,EL_Q1T_2D)
+      case (EL_P1T_2D,EL_Q1T_2D,EL_QPW4P1T_2D)
         ! For P1~ and Q1~ finite elements in 2D the degrees of freedom
         ! coincide with the edge midpoints, thus they need to be
         ! computed from the vertex coordinates making the start and
@@ -659,7 +722,7 @@ contains
       ! Calculate the positions of the DOFs.
       ! What type of finite element are we?
       select case(elem_getPrimaryElement(rdofSubset%celement))
-      case (EL_P1_2D,EL_Q1_2D)
+      case (EL_P1_2D,EL_Q1_2D,EL_QPW4P1_2D)
         ! For P1 and Q1 finite elements in 2D the degrees of freedom
         ! coincide with the vertices of the element, thus they are
         ! located at the endpoints of the reference interval [-1,1]
@@ -667,7 +730,7 @@ contains
           rdofSubset%p_DdofPosition(:,iel) = rdomainIntSubset%p_DedgePosition(:,iel)
         end do
 
-      case (EL_P1T_2D,EL_Q1T_2D)
+      case (EL_P1T_2D,EL_Q1T_2D,EL_QPW4P1T_2D)
         ! For P1~ and Q1~ finite elements in 2D the degrees of freedom
         ! coincide with the edge midpoints, thus they are located at
         ! the midpoint of the reference interval [-1,1]
