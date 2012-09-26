@@ -13,7 +13,8 @@ simportdatafiles = '../1d/default.dat'
 ################################################################################
 
 # Position of the constant coefficient matrix CY in the scalar matrix structure
-CoeffMatrix_CY = 9
+CoeffMatrix_CY(1) = 9
+                    %{Transport.CoeffMatrix_CX:1}
 
 # Type of cubature rule used at the boundary
 ccubTypeBdr = 103

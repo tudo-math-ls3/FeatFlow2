@@ -13,13 +13,16 @@ simportdatafiles = '../1d/default.dat'
 ################################################################################
 
 # Position of the constant coefficient matrix CY in the scalar matrix structure
-CoeffMatrix_CY = 6
+CoeffMatrix_CY(1) = 6
+                    %{Hydro.CoeffMatrix_CX:1}
 
 # Position of the constant coefficient matrix CYY in the scalar matrix structure
-CoeffMatrix_CYY = 0
+CoeffMatrix_CYY(1) = 0
+                     %{Hydro.CoeffMatrix_CXX:1}
 
 # Position of the constant coefficient matrix CXY in the scalar matrix structure
-CoeffMatrix_CXY = 0
+CoeffMatrix_CXY(1) = 0
+                     %{Hydro.CoeffMatrix_CXX:1}
 
 # Type of cubature rule used at the boundary
 ccubTypeBdr = 103

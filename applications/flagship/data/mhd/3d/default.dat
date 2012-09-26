@@ -13,27 +13,35 @@ simportdatafiles = '../1d/default.dat'
 ################################################################################
 
 # Position of the constant coefficient matrix CY in the scalar matrix structure
-CoeffMatrix_CY = 7
+CoeffMatrix_CY(1) = 7
+                    %{Mhd.CoeffMatrix_CX:1}
 
 # Position of the constant coefficient matrix CZ in the scalar matrix structure
-CoeffMatrix_CZ = 8
+CoeffMatrix_CZ(1) = 8
+                    %{Mhd.CoeffMatrix_CX:1}
 
 # Position of the constant coefficient matrix CXX in the scalar matrix structure
-CoeffMatrix_CXX = 0 #9
+CoeffMatrix_CXX(1) = 0 #9
+                     %{Mhd.CoeffMatrix_CXX:1}
 
 # Position of the constant coefficient matrix CYY in the scalar matrix structure
-CoeffMatrix_CYY = 0 #10
+CoeffMatrix_CYY(1) = 0 #10
+                     %{Mhd.CoeffMatrix_CXX:1}
 
 # Position of the constant coefficient matrix CZZ in the scalar matrix structure
-CoeffMatrix_CZZ = 0 #11
+CoeffMatrix_CZZ(1) = 0 #11
+                     %{Mhd.CoeffMatrix_CXX:1}
 
 # Position of the constant coefficient matrix CXY in the scalar matrix structure
-CoeffMatrix_CXY = 0 #12
+CoeffMatrix_CXY(1) = 0 #12
+                     %{Mhd.CoeffMatrix_CXX:1}
 
 # Position of the constant coefficient matrix CXZ in the scalar matrix structure
-CoeffMatrix_CXZ = 0 #13
+CoeffMatrix_CXZ(1) = 0 #13
+                     %{Mhd.CoeffMatrix_CXX:1}
 
 # Position of the constant coefficient matrix CYZ in the scalar matrix structure
-CoeffMatrix_CYZ = 0 #14
+CoeffMatrix_CYZ(1) = 0 #14
+                     %{Mhd.CoeffMatrix_CXX:1}
 
 #------------------------------------------------------------------------------

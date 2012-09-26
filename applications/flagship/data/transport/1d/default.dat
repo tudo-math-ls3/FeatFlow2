@@ -49,6 +49,13 @@ DofCoords = 1
 # Position of the velocity field data in the block vector structure
 VelocityField = 2
 
+# Cubature info sections
+CubatureInfo(4) =
+    CubFuncFunc
+    CubFuncDeriv
+    CubDerivDeriv
+    CubFunc
+
 #-------------------------------------------------------------------------------
 
 # Position of the group finite element block for the convective term
@@ -92,15 +99,42 @@ JacobianMatrix = 3
 TransportMatrix = 4
 
 # Position of the consistent mass matrix in the scalar matrix structure
-ConsistentMassMatrix = 5
+ConsistentMassMatrix(1) = 5
+                          CubFuncFunc
 
 # Position of the lumped mass matrix in the scalar matrix structure
 LumpedMassMatrix = 6
 
 # Position of the constant coefficient matrix S in the scalar matrix structure
-CoeffMatrix_S = 7
+CoeffMatrix_S(1) = 7
+                  CubDerivDeriv
 
 # Position of the constant coefficient matrix CX in the scalar matrix structure
-CoeffMatrix_CX = 8
+CoeffMatrix_CX(1) = 8
+                    CubFuncDeriv
+
+#-------------------------------------------------------------------------------
+
+[CubFuncFunc]
+ccubType = AUTO_G3
+nlevel   = 0
+
+#-------------------------------------------------------------------------------
+
+[CubFuncDeriv]
+ccubType = AUTO_G3
+nlevel   = 0
+
+#-------------------------------------------------------------------------------
+
+[CubDerivDeriv]
+ccubType = AUTO_G3
+nlevel   = 0
+
+#-------------------------------------------------------------------------------
+
+[CubFunc]
+ccubType = AUTO_G3
+nlevel   = 0
 
 #-------------------------------------------------------------------------------

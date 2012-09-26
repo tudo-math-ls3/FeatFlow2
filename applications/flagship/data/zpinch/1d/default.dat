@@ -43,7 +43,15 @@ Discretisation = 1
 # Position of the DOF coordinates in the block vector structure
 DofCoords = 1
 
+# Cubature info sections
+CubatureInfo(4) =
+    CubFuncFunc
+    CubFuncDeriv
+    CubDerivDeriv
+    CubFunc
+
 #-------------------------------------------------------------------------------
+
 # Position of the group finite element block for the inviscid term
 InviscidGFEM = 1
 
@@ -60,6 +68,7 @@ PrimalBdrGFEM = 4
 DualBdrGFEM = 5
 
 #-------------------------------------------------------------------------------
+
 # Position of the stabilisation for the inviscid term
 InviscidAFC = 1
 
@@ -81,16 +90,19 @@ SystemMatrix = 2
 JacobianMatrix = 0
 
 # Position of the consistent mass matrix in the scalar matrix structure
-ConsistentMassMatrix = 3
+ConsistentMassMatrix(1) = 3
+                          CubFuncFunc
 
 # Position of the lumped mass matrix in the scalar matrix structure
 LumpedMassMatrix = 4
 
 # Position of the constant coefficient matrix CX in the scalar matrix structure
-CoeffMatrix_CX = 5
+CoeffMatrix_CX(1) = 5
+                    CubFuncDeriv
 
 # Position of the constant coefficient matrix CXX in the scalar matrix structure
-CoeffMatrix_CXX = 0
+CoeffMatrix_CXX(1) = 0
+                     CubDerivDeriv
 
 ################################################################################
 [Transport]
@@ -104,6 +116,13 @@ DofCoords = 2
 
 # Position of the velocity field data in the block vector structure
 VelocityField = 3
+
+# Cubature info sections
+CubatureInfo(4) =
+    CubFuncFunc
+    CubFuncDeriv
+    CubDerivDeriv
+    CubFunc
 
 #-------------------------------------------------------------------------------
 
@@ -157,7 +176,8 @@ LumpedMassMatrix = %{Hydro.LumpedMassMatrix}
 CoeffMatrix_CX = %{Hydro.CoeffMatrix_CX}
 
 # Position of the constant coefficient matrix S in the scalar matrix structure
-CoeffMatrix_S = 0
+CoeffMatrix_S(1) = 0
+                   CubDerivDeriv
 
 ################################################################################
 [Timestepping]
@@ -173,3 +193,27 @@ dintegralexponent = 0.175
 dderivativeexponent = 0.01
 
 #------------------------------------------------------------------------------
+
+[CubFuncFunc]
+ccubType = AUTO_G3
+nlevel   = 0
+
+#-------------------------------------------------------------------------------
+
+[CubFuncDeriv]
+ccubType = AUTO_G3
+nlevel   = 0
+
+#-------------------------------------------------------------------------------
+
+[CubDerivDeriv]
+ccubType = AUTO_G3
+nlevel   = 0
+
+#-------------------------------------------------------------------------------
+
+[CubFunc]
+ccubType = AUTO_G3
+nlevel   = 0
+
+#-------------------------------------------------------------------------------

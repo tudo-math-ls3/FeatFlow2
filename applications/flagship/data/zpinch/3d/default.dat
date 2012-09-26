@@ -13,25 +13,32 @@ simportdatafiles = '../1d/default.dat'
 ################################################################################
 
 # Position of the constant coefficient matrix CY in the scalar matrix structure
-CoeffMatrix_CY = 6
+CoeffMatrix_CY(1) = 6
+                    %{Hydro.CoeffMatrix_CX:1}
 
 # Position of the constant coefficient matrix CZ in the scalar matrix structure
-CoeffMatrix_CY = 7
+CoeffMatrix_CY(1) = 7
+                    %{Hydro.CoeffMatrix_CX:1}
 
 # Position of the constant coefficient matrix CYY in the scalar matrix structure
-CoeffMatrix_CYY = 0
+CoeffMatrix_CYY(1) = 0
+                     %{Hydro.CoeffMatrix_CXX:1}
 
 # Position of the constant coefficient matrix CZZ in the scalar matrix structure
-CoeffMatrix_CZZ = 0
+CoeffMatrix_CZZ(1) = 0
+                     %{Hydro.CoeffMatrix_CXX:1}
 
 # Position of the constant coefficient matrix CXY in the scalar matrix structure
-CoeffMatrix_CXY = 0
+CoeffMatrix_CXY(1) = 0
+                     %{Hydro.CoeffMatrix_CXX:1}
 
 # Position of the constant coefficient matrix CXZ in the scalar matrix structure
-CoeffMatrix_CXZ = 0
+CoeffMatrix_CXZ(1) = 0
+                     %{Hydro.CoeffMatrix_CXX:1}
 
 # Position of the constant coefficient matrix CYZ in the scalar matrix structure
-CoeffMatrix_CYZ = 0
+CoeffMatrix_CYZ(1) = 0
+                     %{Hydro.CoeffMatrix_CXX:1}
 
 ################################################################################
 [Transport]

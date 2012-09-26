@@ -46,6 +46,14 @@ Discretisation = 1
 # Position of the DOF coordinates in the block vector structure
 DofCoords = 1
 
+
+# Cubature info sections
+CubatureInfo(4) =
+    CubFuncFunc
+    CubFuncDeriv
+    CubDerivDeriv
+    CubFunc
+
 #-------------------------------------------------------------------------------
 
 # Position of the group finite element block for the inviscid term
@@ -86,15 +94,42 @@ JacobianMatrix = 2
 TemplateMatrix = 3
 
 # Position of the consistent mass matrix in the scalar matrix structure
-ConsistentMassMatrix = 4
+ConsistentMassMatrix(1) = 4
+                          CubFuncFunc
 
 # Position of the lumped mass matrix in the scalar matrix structure
 LumpedMassMatrix = 5
 
 # Position of the constant coefficient matrix CX in the scalar matrix structure
-CoeffMatrix_CX = 6
+CoeffMatrix_CX(1) = 6
+                    CubFuncDeriv
 
 # Position of the constant coefficient matrix CXX in the scalar matrix structure
-CoeffMatrix_CXX = 0 #7
+CoeffMatrix_CXX(1) = 0 #7
+                     CubDerivDeriv
+
+#-------------------------------------------------------------------------------
+
+[CubFuncFunc]
+ccubType = AUTO_G3
+nlevel   = 0
+
+#-------------------------------------------------------------------------------
+
+[CubFuncDeriv]
+ccubType = AUTO_G3
+nlevel   = 0
+
+#-------------------------------------------------------------------------------
+
+[CubDerivDeriv]
+ccubType = AUTO_G3
+nlevel   = 0
+
+#-------------------------------------------------------------------------------
+
+[CubFunc]
+ccubType = AUTO_G3
+nlevel   = 0
 
 #-------------------------------------------------------------------------------

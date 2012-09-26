@@ -13,9 +13,11 @@ simportdatafiles = '../1d/default.dat'
 ################################################################################
 
 # Position of the constant coefficient matrix CY in the scalar matrix structure
-CoeffMatrix_CY = 9
+CoeffMatrix_CY(1) = 9
+                    %{Transport.CoeffMatrix_CX:1}
 
 # Position of the constant coefficient matrix CZ in the scalar matrix structure
-CoeffMatrix_CZ = 10
+CoeffMatrix_CZ(1) = 10
+                    %{Transport.CoeffMatrix_CX:1}
 
 #-------------------------------------------------------------------------------
