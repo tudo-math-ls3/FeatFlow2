@@ -1498,7 +1498,7 @@ contains
           call output_line (&
               trim(sys_si(idofTime-1,8)) // &
               " " // trim(sys_si(rsolver%riter%niterations,4)) // &
-              " " // trim(sys_sdEL(dres,1)) )
+              " " // trim(sys_sdEL(dres,8)) )
         end if
 
         ! -------------------------------------------------------------
@@ -1715,7 +1715,7 @@ contains
         call output_line (&
             trim(sys_si(idofTime-1,8)) // &
             " " // trim(sys_si(0,4)) // &
-            " " // trim(sys_sdEL(dres,1)) )
+            " " // trim(sys_sdEL(dres,8)) )
       end if
 
       ! Cancel if the defect is zero.
@@ -1798,7 +1798,7 @@ contains
           call output_line (&
               trim(sys_si(idofTime-1,8)) // &
               " " // trim(sys_si(1,4)) // &
-              " " // trim(sys_sdEL(dres,1)) )
+              " " // trim(sys_sdEL(dres,8)) )
         end if
 
         ! -------------------------------------------------------------
@@ -1879,7 +1879,7 @@ contains
         call output_line (&
             trim(sys_si(idofTime-1,8)) // &
             " " // trim(sys_si(0,4)) // &
-            " " // trim(sys_sdEL(dres,1)) )
+            " " // trim(sys_sdEL(dres,8)) )
       end if
 
       ! Cancel if the defect is zero.
@@ -1962,7 +1962,7 @@ contains
           call output_line (&
               trim(sys_si(idofTime-1,8)) // &
               " " // trim(sys_si(1,4)) // &
-              " " // trim(sys_sdEL(dres,1)) )
+              " " // trim(sys_sdEL(dres,8)) )
         end if
 
         ! -------------------------------------------------------------
@@ -2044,7 +2044,7 @@ contains
         call output_line (&
             trim(sys_si(idofTime-1,8)) // &
             " " // trim(sys_si(0,4)) // &
-            " " // trim(sys_sdEL(dres,1)) )
+            " " // trim(sys_sdEL(dres,8)) )
       end if
 
       ! Cancel if the defect is zero.
@@ -2128,7 +2128,7 @@ contains
           call output_line (&
               trim(sys_si(idofTime-1,8)) // &
               " " // trim(sys_si(1,4)) // &
-              " " // trim(sys_sdEL(dres,1)) )
+              " " // trim(sys_sdEL(dres,8)) )
         end if
 
         ! -------------------------------------------------------------

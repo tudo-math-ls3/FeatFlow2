@@ -2675,7 +2675,7 @@ contains
       rcollection%IquickAccess(1) = OPTP_DUAL
       
       ! Vector 1 = primal solution, including 1st derivative.
-      call fev2_addVectorToEvalList(rvectorEval,p_rvector%RvectorBlock(1),1)
+      call fev2_addVectorToEvalList(rvectorEval,p_rvector%RvectorBlock(1),0)
       
       ! Build the matrix
       call bma_buildMatrix (rmatrix,BMA_CALC_STANDARD,&
@@ -2772,7 +2772,7 @@ contains
     ! Local variables
     real(DP) :: dweight
     real(DP) :: dbasI, dbasJ, dbasIx, dbasJx, dbasIy, dbasJy
-    real(DP) :: du1, du2, du1x, du1y, du2x, du2y
+    real(DP) :: dy1, dy2, dy1x, dy1y, dy2x, dy2y
     integer :: iel, icubp, idofe, jdofe
     integer :: coptype
     real(DP), dimension(:,:,:), pointer :: p_DlocalMatrix11
@@ -2834,13 +2834,14 @@ contains
       case (OPTP_PRIMAL)
       
         ! ---------------------------------------------------------
-        ! Assemble the nonlinearity "(y^3 (phi_j) , phi_i)"
+        ! Assemble the nonlinearity "(y^2 (phi_j) , phi_i)".
+        ! Multiplication with y results in the nonlinearity (y^2)y = y^3.
         do iel = 1,nelements
           do icubp = 1,npointsPerElement
           
             ! Get the X-velocity and the Y-velocity in that point
-            ! du1 = y_1
-            du1 = p_DnonlinearityY1(icubp,iel,DER_FUNC2D)
+            ! dy1 = y_1
+            dy1 = p_DnonlinearityY1(icubp,iel,DER_FUNC2D)
           
             do idofe=1,p_rmatrixData11%ndofTest
 
@@ -2851,7 +2852,7 @@ contains
                 dbasJ = p_DbasTrial(jdofe,DER_FUNC2D,icubp,iel)
 
                 p_DlocalMatrix11(jdofe,idofe,iel) = p_DlocalMatrix11(jdofe,idofe,iel) + &
-                    dweight * p_DcubWeight(icubp,iel) * du1**3 * dbasJ*dbasI
+                    dweight * p_DcubWeight(icubp,iel) * dy1**2 * dbasJ*dbasI
 
               end do ! idofe
             end do ! jdofe
@@ -2870,8 +2871,8 @@ contains
           do icubp = 1,npointsPerElement
 
             ! Get the solution
-            !   du1 = y_1
-            du1 = p_DnonlinearityY1(icubp,iel,DER_FUNC2D)
+            !   dy1 = y_1
+            dy1 = p_DnonlinearityY1(icubp,iel,DER_FUNC2D)
 
             do idofe=1,p_rmatrixData11%ndofTest
 
@@ -2883,7 +2884,7 @@ contains
 
                 p_DlocalMatrix11(jdofe,idofe,iel) = p_DlocalMatrix11(jdofe,idofe,iel) + &
                     dweight * p_DcubWeight(icubp,iel) * &
-                    ( 3.0_DP*du1**2 * dbasJ*dbasI )
+                    ( 3.0_DP * dy1**2 * dbasJ*dbasI )
 
               end do ! idofe
             end do ! jdofe
@@ -2906,8 +2907,8 @@ contains
           do icubp = 1,npointsPerElement
 
             ! Get the solution:
-            !   du1 = y_1
-            du1 = p_DnonlinearityY1(icubp,iel,DER_FUNC2D)
+            !   dy1 = y_1
+            dy1 = p_DnonlinearityY1(icubp,iel,DER_FUNC2D)
 
             do idofe=1,p_rmatrixData11%ndofTest
 
@@ -2919,7 +2920,7 @@ contains
 
                 p_DlocalMatrix11(jdofe,idofe,iel) = p_DlocalMatrix11(jdofe,idofe,iel) + &
                     dweight * p_DcubWeight(icubp,iel) * &
-                      ( 3.0_DP*du1**2 * dbasJ * dbasI )
+                      ( 3.0_DP * dy1**2 * dbasJ * dbasI )
 
               end do ! idofe
             end do ! jdofe
@@ -2978,9 +2979,9 @@ contains
             do icubp = 1,npointsPerElement
             
               ! Get the X-velocity and the Y-velocity in that point
-              ! du1 = y_1, du2 = y_2
-              du1 = p_DnonlinearityY1(icubp,iel,DER_FUNC2D)
-              du2 = p_DnonlinearityY2(icubp,iel,DER_FUNC2D)
+              ! dy1 = y_1, dy2 = y_2
+              dy1 = p_DnonlinearityY1(icubp,iel,DER_FUNC2D)
+              dy2 = p_DnonlinearityY2(icubp,iel,DER_FUNC2D)
             
               do idofe=1,p_rmatrixData11%ndofTest
 
@@ -2992,7 +2993,7 @@ contains
                   dbasJy = p_DbasTrial(jdofe,DER_DERIV2D_Y,icubp,iel)
 
                   p_DlocalMatrix11(jdofe,idofe,iel) = p_DlocalMatrix11(jdofe,idofe,iel) + &
-                      dweight * p_DcubWeight(icubp,iel) * (dbasJx*du1+dbasJy*du2)*dbasI
+                      dweight * p_DcubWeight(icubp,iel) * (dbasJx*dy1+dbasJy*dy2)*dbasI
 
                 end do ! idofe
               end do ! jdofe
@@ -3007,9 +3008,9 @@ contains
             do icubp = 1,npointsPerElement
 
               ! Get the X-velocity and the Y-velocity in that point:
-              ! du1 = y_1, du2 = y_2
-              du1 = p_DnonlinearityY1(icubp,iel,DER_FUNC2D)
-              du2 = p_DnonlinearityY2(icubp,iel,DER_FUNC2D)
+              ! dy1 = y_1, dy2 = y_2
+              dy1 = p_DnonlinearityY1(icubp,iel,DER_FUNC2D)
+              dy2 = p_DnonlinearityY2(icubp,iel,DER_FUNC2D)
 
               do idofe=1,p_rmatrixData11%ndofTest
 
@@ -3021,10 +3022,10 @@ contains
                   dbasJy = p_DbasTrial(jdofe,DER_DERIV2D_Y,icubp,iel)
 
                   p_DlocalMatrix11(jdofe,idofe,iel) = p_DlocalMatrix11(jdofe,idofe,iel) + &
-                      dweight * p_DcubWeight(icubp,iel) * (dbasJx*du1+dbasJy*du2)*dbasI
+                      dweight * p_DcubWeight(icubp,iel) * (dbasJx*dy1+dbasJy*dy2)*dbasI
 
                   p_DlocalMatrix22(jdofe,idofe,iel) = p_DlocalMatrix22(jdofe,idofe,iel) + &
-                      dweight * p_DcubWeight(icubp,iel) * (dbasJx*du1+dbasJy*du2)*dbasI
+                      dweight * p_DcubWeight(icubp,iel) * (dbasJx*dy1+dbasJy*dy2)*dbasI
 
                 end do ! idofe
               end do ! jdofe
@@ -3046,15 +3047,15 @@ contains
           do icubp = 1,npointsPerElement
 
             ! Get the X-velocity and the Y-velocity in that point:
-            ! du1 = y_1, du2 = y_2
-            du1 = p_DnonlinearityY1(icubp,iel,DER_FUNC2D)
-            du2 = p_DnonlinearityY2(icubp,iel,DER_FUNC2D)
+            ! dy1 = y_1, dy2 = y_2
+            dy1 = p_DnonlinearityY1(icubp,iel,DER_FUNC2D)
+            dy2 = p_DnonlinearityY2(icubp,iel,DER_FUNC2D)
 
             ! as well as their derivatives
-            du1x = p_DnonlinearityY1(icubp,iel,DER_DERIV2D_X)
-            du1y = p_DnonlinearityY1(icubp,iel,DER_DERIV2D_Y)
-            du2x = p_DnonlinearityY2(icubp,iel,DER_DERIV2D_X)
-            du2y = p_DnonlinearityY2(icubp,iel,DER_DERIV2D_Y)
+            dy1x = p_DnonlinearityY1(icubp,iel,DER_DERIV2D_X)
+            dy1y = p_DnonlinearityY1(icubp,iel,DER_DERIV2D_Y)
+            dy2x = p_DnonlinearityY2(icubp,iel,DER_DERIV2D_X)
+            dy2y = p_DnonlinearityY2(icubp,iel,DER_DERIV2D_Y)
 
             do idofe=1,p_rmatrixData11%ndofTest
 
@@ -3068,21 +3069,21 @@ contains
 
                 p_DlocalMatrix11(jdofe,idofe,iel) = p_DlocalMatrix11(jdofe,idofe,iel) + &
                     dweight * p_DcubWeight(icubp,iel) * &
-                    ( (dbasJx*du1+dbasJy*du2)*dbasI + &    ! "((y grad) (phi_j) , phi_i)"
-                      du1x * dbasJ * dbasI )               !  "( grad(y) phi_j , phi_i)"
+                    ( (dbasJx*dy1+dbasJy*dy2)*dbasI + &    ! "((y grad) (phi_j) , phi_i)"
+                      dy1x * dbasJ * dbasI )               !  "( grad(y) phi_j , phi_i)"
 
                 p_DlocalMatrix12(jdofe,idofe,iel) = p_DlocalMatrix12(jdofe,idofe,iel) + &
                     dweight * p_DcubWeight(icubp,iel) * &
-                    ( du1y * dbasJ * dbasI )               !  "( grad(y) phi_j , phi_i)"
+                    ( dy1y * dbasJ * dbasI )               !  "( grad(y) phi_j , phi_i)"
 
                 p_DlocalMatrix21(jdofe,idofe,iel) = p_DlocalMatrix21(jdofe,idofe,iel) + &
                     dweight * p_DcubWeight(icubp,iel) * &
-                    ( du2x * dbasJ * dbasI )               !  "( grad(y) phi_j , phi_i)"
+                    ( dy2x * dbasJ * dbasI )               !  "( grad(y) phi_j , phi_i)"
 
                 p_DlocalMatrix22(jdofe,idofe,iel) = p_DlocalMatrix22(jdofe,idofe,iel) + &
                     dweight * p_DcubWeight(icubp,iel) * &
-                    ( ( dbasJx*du1+dbasJy*du2)*dbasI + &   ! "((y grad) (phi_j) , phi_i)"
-                      du2y * dbasJ * dbasI )               !  "( grad(y) phi_j , phi_i)"
+                    ( ( dbasJx*dy1+dbasJy*dy2)*dbasI + &   ! "((y grad) (phi_j) , phi_i)"
+                      dy2y * dbasJ * dbasI )               !  "( grad(y) phi_j , phi_i)"
 
               end do ! idofe
             end do ! jdofe
@@ -3112,15 +3113,15 @@ contains
           do icubp = 1,npointsPerElement
 
             ! Get the X-velocity and the Y-velocity in that point:
-            ! du1 = y_1, du2 = y_2
-            du1 = p_DnonlinearityY1(icubp,iel,DER_FUNC2D)
-            du2 = p_DnonlinearityY2(icubp,iel,DER_FUNC2D)
+            ! dy1 = y_1, dy2 = y_2
+            dy1 = p_DnonlinearityY1(icubp,iel,DER_FUNC2D)
+            dy2 = p_DnonlinearityY2(icubp,iel,DER_FUNC2D)
 
             ! as well as their derivatives
-            du1x = p_DnonlinearityY1(icubp,iel,DER_DERIV2D_X)
-            du1y = p_DnonlinearityY1(icubp,iel,DER_DERIV2D_Y)
-            du2x = p_DnonlinearityY2(icubp,iel,DER_DERIV2D_X)
-            du2y = p_DnonlinearityY2(icubp,iel,DER_DERIV2D_Y)
+            dy1x = p_DnonlinearityY1(icubp,iel,DER_DERIV2D_X)
+            dy1y = p_DnonlinearityY1(icubp,iel,DER_DERIV2D_Y)
+            dy2x = p_DnonlinearityY2(icubp,iel,DER_DERIV2D_X)
+            dy2y = p_DnonlinearityY2(icubp,iel,DER_DERIV2D_Y)
 
             do idofe=1,p_rmatrixData11%ndofTest
 
@@ -3134,21 +3135,21 @@ contains
 
                 p_DlocalMatrix11(jdofe,idofe,iel) = p_DlocalMatrix11(jdofe,idofe,iel) + &
                     dweight * p_DcubWeight(icubp,iel) * &
-                      ( dbasJ * (du1*dbasIx+du2*dbasIy) + &  !  "( phi_j , (y grad) phi_i)"
-                        dbasJ * du1x * dbasI )               !  "( phi_j ,  grad(y) phi_i)"
+                      ( dbasJ * (dy1*dbasIx+dy2*dbasIy) + &  !  "( phi_j , (y grad) phi_i)"
+                        dbasJ * dy1x * dbasI )               !  "( phi_j ,  grad(y) phi_i)"
 
                 p_DlocalMatrix12(jdofe,idofe,iel) = p_DlocalMatrix12(jdofe,idofe,iel) + &
                     dweight * p_DcubWeight(icubp,iel) * &
-                      ( dbasJ * du2x * dbasI )               !  "( phi_j ,  grad(y) phi_i)"
+                      ( dbasJ * dy2x * dbasI )               !  "( phi_j ,  grad(y) phi_i)"
 
                 p_DlocalMatrix21(jdofe,idofe,iel) = p_DlocalMatrix21(jdofe,idofe,iel) + &
                     dweight * p_DcubWeight(icubp,iel) * &
-                      ( dbasJ * du1y * dbasI )               !  "( phi_j ,  grad(y) phi_i)"
+                      ( dbasJ * dy1y * dbasI )               !  "( phi_j ,  grad(y) phi_i)"
 
                 p_DlocalMatrix22(jdofe,idofe,iel) = p_DlocalMatrix22(jdofe,idofe,iel) + &
                     dweight * p_DcubWeight(icubp,iel) * &
-                      ( dbasJ * (du1*dbasIx+du2*dbasIy) + &  !  "( phi_j , (y grad) phi_i)"
-                        dbasJ * du2y * dbasI )               !  "( phi_j ,  grad(y) phi_i)"
+                      ( dbasJ * (dy1*dbasIx+dy2*dbasIy) + &  !  "( phi_j , (y grad) phi_i)"
+                        dbasJ * dy2y * dbasI )               !  "( phi_j ,  grad(y) phi_i)"
 
               end do ! idofe
             end do ! jdofe
@@ -4074,7 +4075,7 @@ contains
 
           ! Vector 2 = linearised primal solution.
           call sptivec_getVectorFromPool (rprimalSolLin%p_rvectorAccess,idofTime,p_rvector2)
-          call fev2_addVectorToEvalList(rvectorEval,p_rvector2%RvectorBlock(1),1)
+          call fev2_addVectorToEvalList(rvectorEval,p_rvector2%RvectorBlock(1),0)
 
           ! Vector 3 = primal solution.
           call sptivec_getVectorFromPool (rprimalSol%p_rvectorAccess,idofTime,p_rvector3)
@@ -4233,7 +4234,7 @@ contains
         ! The additional operator assembled here and added to the
         ! right-hand side vector reads as follows:
         !
-        !   dweight * ( lambda , 3 ylin^2 phi )
+        !   dweight * ( lambda , 6 y ylin phi )
         !
         ! with lambda being the solution of the dual equation
         ! and ylin being the solution of the linearised primal equation.
