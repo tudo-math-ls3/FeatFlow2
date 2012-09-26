@@ -205,6 +205,7 @@ contains
     integer :: coeffMatrix_CZ
     integer :: coeffMatrix_S
     integer :: iconvToTria
+    integer :: ncubatureInfo
         
     ! Get global configuration from parameter list
     call parlst_getvalue_string(rparlist,&
@@ -223,6 +224,9 @@ contains
         ssectionName, 'velocityfield', velocityfield, 0)
     call parlst_getvalue_double(rparlist,&
         ssectionName, 'ddisturbmesh', ddisturbmesh, 0.0_DP)
+
+    ncubatureInfo = parlst_querysubstrings(rparlist,&
+        ssectionName, 'CubatureInfo')
 
     ! Get global positions of matrices
     call parlst_getvalue_int(rparlist,&
@@ -277,6 +281,7 @@ contains
 
     ! Set additional problem descriptor
     rproblemDescriptor%ndiscretisation = max(0, discretisation)
+    rproblemDescriptor%ncubatureInfo   = max(0, ncubatureInfo)
     rproblemDescriptor%nafcstab        = max(0, massAFC,&
                                                 convectionAFC,&
                                                 diffusionAFC)
@@ -370,9 +375,10 @@ contains
     integer, dimension(:), allocatable :: Celement
     integer, dimension(:), pointer :: p_IbdrCondCpIdx
     real(DP) :: dmeshdisturb
-    integer :: nsumcubRefBilForm,nsumcubRefLinForm,nsumcubRefEval
-    integer :: ccubType,i,ibdc,isegment,j,nmatrices,nsubstrings,neq
+    integer :: nlevel,ncubatureInfo
+    integer :: i,ibdc,isegment,nmatrices,nsubstrings,neq
     character(len=SYS_STRLEN) :: selemName,smass,sconvection,sdiffusion
+    character(len=SYS_STRLEN) :: scubatureInfo,scubType
 
     ! Retrieve application specific parameters from the parameter list
     call parlst_getvalue_int(rparlist,&
@@ -422,12 +428,6 @@ contains
         ssectionName, 'discretisation', discretisation, 0)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'dofCoords', dofCoords, 0)
-    call parlst_getvalue_int(rparlist,&
-        ssectionName, 'nsumcubRefBilForm', nsumcubRefBilForm, 0)
-    call parlst_getvalue_int(rparlist,&
-        ssectionName, 'nsumcubRefLinForm', nsumcubRefLinForm, 0)
-    call parlst_getvalue_int(rparlist,&
-        ssectionName, 'nsumcubRefEval', nsumcubRefEval, 0)
 
     ! Default is empty section, i.e. no configuration
     call parlst_getvalue_string(rparlist,&
@@ -445,7 +445,7 @@ contains
         ssectionName, 'dmeshdisturb', dmeshdisturb, 0.0_DP)
     if (dmeshdisturb .gt. 0.0_DP)&
         call meshmod_disturbMesh(p_rtriangulation, dmeshdisturb)
-
+   
     !---------------------------------------------------------------------------
     ! Create discretisation structure
     !---------------------------------------------------------------------------
@@ -500,85 +500,27 @@ contains
       deallocate(Celement)
 
       !-------------------------------------------------------------------------
-      ! Configure evaluation of (bi-)linear formes
+      ! Create cubature info structures
       !-------------------------------------------------------------------------
-
-      if (parlst_queryvalue(rparlist, ssectionName, 'ccubTypeBilForm') .ne. 0) then
-        ! Check if special cubature formula for evaluating integral
-        ! terms of the bilinear form are requested by the user
-        nsubstrings = max(1, parlst_querysubstrings(rparlist,&
-                             ssectionName, 'ccubTypeBilForm'))
-        if (nsubstrings .ne. 0) then
-          if (nsubstrings .eq. p_rdiscretisation%RspatialDiscr(1)%inumFESpaces) then
-            do i = 1, nsubstrings
-              call parlst_getvalue_int(rparlist,&
-                  ssectionName, 'ccubTypeBilForm', ccubType, 0, i)
-              if (ccubType .ne. 0)&
-                  p_rdiscretisation%RspatialDiscr(1)%RelementDistr(i)%ccubTypeBilForm = ccubType
-            end do
-          else
-            call output_line('Number of substrings does not match number of FE spaces!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'transp_initProblemLevel')
-            call sys_halt()
-          end if
-        end if
-      end if
+      ncubatureInfo = parlst_querysubstrings(rparlist,&
+          ssectionName, 'CubatureInfo')
       
-      if (parlst_queryvalue(rparlist, ssectionName, 'ccubTypeLinForm') .ne. 0) then
-        ! Check if special cubature formula for evaluating integral
-        ! terms of the linear form are requested by the user
-        nsubstrings = max(1, parlst_querysubstrings(rparlist,&
-                             ssectionName, 'ccubTypeLinForm'))
-        if (nsubstrings .ne. 0) then
-          if (nsubstrings .eq. p_rdiscretisation%RspatialDiscr(1)%inumFESpaces) then
-            do i = 1, nsubstrings
-              call parlst_getvalue_int(rparlist,&
-                  ssectionName, 'ccubTypeLinForm', ccubType, 0, i)
-              if (ccubType .ne. 0)&
-                  p_rdiscretisation%RspatialDiscr(1)%RelementDistr(i)%ccubTypeLinForm = ccubType
-            end do
-          else
-            call output_line('Number of substrings does not match number of FE spaces!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'transp_initProblemLevel')
-            call sys_halt()
-          end if
-        end if
-      end if
-
-      if (parlst_queryvalue(rparlist, ssectionName, 'ccubTypeEval') .ne. 0) then
-        ! Check if special cubature formula for evaluating integral
-        ! terms of allother terms are requested by the user
-        nsubstrings = max(1, parlst_querysubstrings(rparlist,&
-                             ssectionName, 'ccubTypeEval'))
-        if (nsubstrings .ne. 0) then
-          if (nsubstrings .eq. p_rdiscretisation%RspatialDiscr(1)%inumFESpaces) then
-            do i = 1, nsubstrings
-              call parlst_getvalue_int(rparlist,&
-                  ssectionName, 'ccubTypeEval', ccubType, 0, i)
-              if (ccubType .ne. 0)&
-                  p_rdiscretisation%RspatialDiscr(1)%RelementDistr(i)%ccubTypeEval = ccubType
-            end do
-          else
-            call output_line('Number of substrings does not match number of FE spaces!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'transp_initProblemLevel')
-            call sys_halt()
-          end if
-        end if
-      end if
-
-      ! Enforce using summed cubature formula (if any)
-      do i = 1, p_rdiscretisation%ncomponents
-        do j = 1, p_rdiscretisation%RspatialDiscr(i)%inumFESpaces
-          p_rdiscretisation%RspatialDiscr(i)%RelementDistr(j)%ccubTypeBilForm =&
-              cub_getSummedCubType(p_rdiscretisation%RspatialDiscr(i)&
-              %RelementDistr(j)%ccubTypeBilForm, nsumcubRefBilForm)
-          p_rdiscretisation%RspatialDiscr(i)%RelementDistr(j)%ccubTypeLinForm =&
-              cub_getSummedCubType(p_rdiscretisation%RspatialDiscr(i)&
-              %RelementDistr(j)%ccubTypeLinForm, nsumcubRefLinForm)
-          p_rdiscretisation%RspatialDiscr(i)%RelementDistr(j)%ccubTypeEval =&
-              cub_getSummedCubType(p_rdiscretisation%RspatialDiscr(i)&
-              %RelementDistr(j)%ccubTypeEval, nsumcubRefEval)
-        end do
+      do i = 1, ncubatureInfo
+        ! Get section name of cubatureinfo structire
+        call parlst_getvalue_string(rparlist,&
+            ssectionName, 'CubatureInfo', scubatureinfo, isubstring=i)
+        
+        ! Read cubatureinfo from parameter file
+        call parlst_getvalue_string(rparlist,&
+            scubatureInfo, 'ccubType', scubType)
+        call parlst_getvalue_int(rparlist,&
+            scubatureInfo, 'nlevel', nlevel)
+        
+        ! Create cubatureinfo structure
+        call spdiscr_createDefCubStructure(&  
+            p_rdiscretisation%RspatialDiscr(1),&
+            rproblemLevel%RcubatureInfo(i),&
+            cub_igetID(scubType), nlevel)
       end do
       
       !-------------------------------------------------------------------------
@@ -669,9 +611,27 @@ contains
       if (consistentMassMatrix > 0) then
         call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
                                  rproblemLevel%Rmatrix(consistentMassMatrix))
-        call stdop_assembleSimpleMatrix(&
-            rproblemLevel%Rmatrix(consistentMassMatrix), DER_FUNC, DER_FUNC)
-        
+        ! Do we have a precomputed cubatureinfo structure?
+        i = -1; nsubstrings =&
+            parlst_querysubstrings(rparlist,&
+            ssectionName, 'consistentmassmatrix')
+        if (nsubstrings .eq. 1) then
+          call parlst_getvalue_string(rparlist,&
+              ssectionName, 'consistentmassmatrix', scubatureInfo, isubstring=1)
+          i = parlst_findvalue(rparlist,&
+              ssectionName, 'CubatureInfo', trim(adjustl(scubatureInfo)))
+        end if
+
+        if (i .eq. -1) then
+          call stdop_assembleSimpleMatrix(&
+              rproblemLevel%Rmatrix(consistentMassMatrix),&
+              DER_FUNC, DER_FUNC)
+        else
+          call stdop_assembleSimpleMatrix(&
+              rproblemLevel%Rmatrix(consistentMassMatrix),&
+              DER_FUNC, DER_FUNC, rcubatureInfo=rproblemLevel%RcubatureInfo(i))
+        end if
+                
         ! Create lumped mass matrix
         if (lumpedMassMatrix > 0) then
           call lsyssc_duplicateMatrix(&
@@ -687,8 +647,28 @@ contains
             rproblemLevel%Rmatrix(templateMatrix),&
             rproblemLevel%Rmatrix(lumpedMassMatrix),&
             LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
-        call stdop_assembleSimpleMatrix(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix), DER_FUNC, DER_FUNC)
+
+        ! Do we have a precomputed cubatureinfo structure?
+        i = -1; nsubstrings =&
+            parlst_querysubstrings(rparlist,&
+            ssectionName, 'lumpedmassmatrix')
+        if (nsubstrings .eq. 1) then
+          call parlst_getvalue_string(rparlist,&
+              ssectionName, 'lumpedmassmatrix', scubatureInfo, isubstring=1)
+          i = parlst_findvalue(rparlist,&
+              ssectionName, 'CubatureInfo', trim(adjustl(scubatureInfo)))
+        end if
+
+        if (i .eq. -1) then
+          call stdop_assembleSimpleMatrix(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              DER_FUNC, DER_FUNC)
+        else
+          call stdop_assembleSimpleMatrix(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              DER_FUNC, DER_FUNC, rcubatureInfo=rproblemLevel%RcubatureInfo(i))
+        end if
+
         call lsyssc_lumpMatrixScalar(&
             rproblemLevel%Rmatrix(lumpedMassMatrix), LSYSSC_LUMP_DIAG)
       end if
@@ -702,20 +682,52 @@ contains
         ! Get function parser from collection
         p_rfparser => collct_getvalue_pars(rcollection,&
             'rfparser', ssectionName=ssectionName)
+
+        ! Do we have a precomputed cubatureinfo structure?
+        i = -1; nsubstrings =&
+            parlst_querysubstrings(rparlist,&
+            ssectionName, 'consistentmassmatrix')
+        if (nsubstrings .eq. 1) then
+          call parlst_getvalue_string(rparlist,&
+              ssectionName, 'coeffMatrix_S', scubatureInfo, isubstring=1)
+          i = parlst_findvalue(rparlist,&
+              ssectionName, 'CubatureInfo', trim(adjustl(scubatureInfo)))
+        end if
         
-        select case(p_rtriangulation%ndim)
-        case (NDIM1D)
-          call initDiffusionMatrix1D(p_rfparser,&
-              rproblemLevel%Rmatrix(coeffMatrix_S))
-        case (NDIM2D)
-          call initDiffusionMatrix2D(p_rfparser,&
-              rproblemLevel%Rmatrix(coeffMatrix_S))
-        case (NDIM3D)
-          call initDiffusionMatrix3D(p_rfparser,&
-              rproblemLevel%Rmatrix(coeffMatrix_S))
-        case default
-          call lsyssc_releaseMatrix(rproblemLevel%Rmatrix(coeffMatrix_S))
-        end select
+        if (i .eq. -1) then
+          ! Assemble diffusion matrix without precomputed cubatureinfo
+          select case(p_rtriangulation%ndim)
+          case (NDIM1D)
+            call initDiffusionMatrix1D(p_rfparser,&
+                rproblemLevel%Rmatrix(coeffMatrix_S))
+          case (NDIM2D)
+            call initDiffusionMatrix2D(p_rfparser,&
+                rproblemLevel%Rmatrix(coeffMatrix_S))
+          case (NDIM3D)
+            call initDiffusionMatrix3D(p_rfparser,&
+                rproblemLevel%Rmatrix(coeffMatrix_S))
+          case default
+            call lsyssc_releaseMatrix(rproblemLevel%Rmatrix(coeffMatrix_S))
+          end select
+        else
+          ! Assemble diffusion matrix with precomputed cubatureinfo
+          select case(p_rtriangulation%ndim)
+          case (NDIM1D)
+            call initDiffusionMatrix1D(p_rfparser,&
+                rproblemLevel%Rmatrix(coeffMatrix_S),&
+                rproblemLevel%RcubatureInfo(i))
+          case (NDIM2D)
+            call initDiffusionMatrix2D(p_rfparser,&
+                rproblemLevel%Rmatrix(coeffMatrix_S),&
+                rproblemLevel%RcubatureInfo(i))
+          case (NDIM3D)
+            call initDiffusionMatrix3D(p_rfparser,&
+                rproblemLevel%Rmatrix(coeffMatrix_S),&
+                rproblemLevel%RcubatureInfo(i))
+          case default
+            call lsyssc_releaseMatrix(rproblemLevel%Rmatrix(coeffMatrix_S))
+          end select
+        end if
       end if
       
       !-------------------------------------------------------------------------
@@ -724,8 +736,26 @@ contains
       if (coeffMatrix_CX > 0) then
         call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
                                  rproblemLevel%Rmatrix(coeffMatrix_CX))
-        call stdop_assembleSimpleMatrix(rproblemLevel%Rmatrix(coeffMatrix_CX),&
-                                        DER_DERIV3D_X, DER_FUNC)
+        ! Do we have a precomputed cubatureinfo structure?
+        i = -1; nsubstrings =&
+            parlst_querysubstrings(rparlist,&
+            ssectionName, 'coeffMatrix_CX')
+        if (nsubstrings .eq. 1) then
+          call parlst_getvalue_string(rparlist,&
+              ssectionName, 'coeffMatrix_CX', scubatureInfo, isubstring=1)
+          i = parlst_findvalue(rparlist,&
+              ssectionName, 'CubatureInfo', trim(adjustl(scubatureInfo)))
+        end if
+
+        if (i .eq. -1) then
+          call stdop_assembleSimpleMatrix(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX),&
+              DER_DERIV3D_X, DER_FUNC)
+        else
+          call stdop_assembleSimpleMatrix(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX),&
+              DER_DERIV3D_X, DER_FUNC, rcubatureInfo=rproblemLevel%RcubatureInfo(i))
+        end if
       end if
 
       !-------------------------------------------------------------------------
@@ -734,8 +764,26 @@ contains
       if (coeffMatrix_CY > 0) then
         call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
                                  rproblemLevel%Rmatrix(coeffMatrix_CY))
-        call stdop_assembleSimpleMatrix(rproblemLevel%Rmatrix(coeffMatrix_CY),&
-                                        DER_DERIV3D_Y, DER_FUNC)
+        ! Do we have a precomputed cubatureinfo structure?
+        i = -1; nsubstrings =&
+            parlst_querysubstrings(rparlist,&
+            ssectionName, 'coeffMatrix_CY')
+        if (nsubstrings .eq. 1) then
+          call parlst_getvalue_string(rparlist,&
+              ssectionName, 'coeffMatrix_CY', scubatureInfo, isubstring=1)
+          i = parlst_findvalue(rparlist,&
+              ssectionName, 'CubatureInfo', trim(adjustl(scubatureInfo)))
+        end if
+
+        if (i .eq. -1) then
+          call stdop_assembleSimpleMatrix(&
+              rproblemLevel%Rmatrix(coeffMatrix_CY),&
+              DER_DERIV3D_Y, DER_FUNC)
+        else
+          call stdop_assembleSimpleMatrix(&
+              rproblemLevel%Rmatrix(coeffMatrix_CY),&
+              DER_DERIV3D_Y, DER_FUNC, rcubatureInfo=rproblemLevel%RcubatureInfo(i))
+        end if
       end if
       
       !-------------------------------------------------------------------------
@@ -744,8 +792,26 @@ contains
       if (coeffMatrix_CZ > 0) then
         call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
                                  rproblemLevel%Rmatrix(coeffMatrix_CZ))
-        call stdop_assembleSimpleMatrix(rproblemLevel%Rmatrix(coeffMatrix_CZ),&
-                                        DER_DERIV3D_Z, DER_FUNC)
+        ! Do we have a precomputed cubatureinfo structure?
+        i = -1; nsubstrings =&
+            parlst_querysubstrings(rparlist,&
+            ssectionName, 'coeffMatrix_CZ')
+        if (nsubstrings .eq. 1) then
+          call parlst_getvalue_string(rparlist,&
+              ssectionName, 'coeffMatrix_CZ', scubatureInfo, isubstring=1)
+          i = parlst_findvalue(rparlist,&
+              ssectionName, 'CubatureInfo', trim(adjustl(scubatureInfo)))
+        end if
+
+        if (i .eq. -1) then
+          call stdop_assembleSimpleMatrix(&
+              rproblemLevel%Rmatrix(coeffMatrix_CZ),&
+              DER_DERIV3D_Z, DER_FUNC)
+        else
+          call stdop_assembleSimpleMatrix(&
+              rproblemLevel%Rmatrix(coeffMatrix_CZ),&
+              DER_DERIV3D_Z, DER_FUNC, rcubatureInfo=rproblemLevel%RcubatureInfo(i))
+        end if
       end if
       
       !-------------------------------------------------------------------------
@@ -1113,10 +1179,11 @@ contains
     !**************************************************************
     ! Initialise the diffusion matrix in 1D
 
-    subroutine initDiffusionMatrix1D(rfparser, rmatrix)
+    subroutine initDiffusionMatrix1D(rfparser, rmatrix, rcubatureinfo)
 
       type(t_fparser), intent(in) :: rfparser
       type(t_matrixScalar), intent(inout) :: rmatrix
+      type(t_scalarCubatureInfo), intent(in), optional :: rcubatureInfo
 
       ! local variables
       character(LEN=SYS_STRLEN) :: sdiffusionName
@@ -1141,7 +1208,7 @@ contains
 
         ! Assemble the Laplace matrix multiplied by the negative value
         ! of the physical diffusion parameter alpha
-        call stdop_assembleLaplaceMatrix(rmatrix, .true., -dalpha)
+        call stdop_assembleLaplaceMatrix(rmatrix, .true., -dalpha, rcubatureInfo)
 
       case default
         call lsyssc_clearMatrix(rmatrix)
@@ -1152,10 +1219,11 @@ contains
     !**************************************************************
     ! Initialise the diffusion matrix in 2D
 
-    subroutine initDiffusionMatrix2D(rfparser, rmatrix)
+    subroutine initDiffusionMatrix2D(rfparser, rmatrix, rcubatureInfo)
 
       type(t_fparser), intent(in) :: rfparser
       type(t_matrixScalar), intent(inout) :: rmatrix
+      type(t_scalarCubatureInfo), intent(in), optional :: rcubatureInfo
 
       ! local variables
       type(t_bilinearform) :: rform
@@ -1180,7 +1248,7 @@ contains
 
         ! Assemble the Laplace matrix multiplied by the negative value
         ! of the physical diffusion parameter alpha
-        call stdop_assembleLaplaceMatrix(rmatrix, .true., -dalpha)
+        call stdop_assembleLaplaceMatrix(rmatrix, .true., -dalpha, rcubatureInfo)
 
       case (DIFFUSION_ANISOTROPIC)
 
@@ -1214,7 +1282,7 @@ contains
         rform%Idescriptors(2,4) = DER_DERIV2D_Y
 
         ! Assemble the anisotropic diffusion matrix
-        call bilf_buildMatrixScalar(rform, .true., rmatrix)
+        call bilf_buildMatrixScalar(rform, .true., rmatrix, rcubatureInfo)
 
       case default
         call lsyssc_clearMatrix(rmatrix)
@@ -1225,10 +1293,11 @@ contains
     !**************************************************************
     ! Initialise the diffusion matrix in 3D
 
-    subroutine initDiffusionMatrix3D(rfparser, rmatrix)
+    subroutine initDiffusionMatrix3D(rfparser, rmatrix, rcubatureInfo)
 
       type(t_fparser), intent(in) :: rfparser
       type(t_matrixScalar), intent(inout) :: rmatrix
+      type(t_scalarCubatureInfo), intent(in), optional :: rcubatureInfo
 
       ! local variables
       type(t_bilinearform) :: rform
@@ -1253,7 +1322,7 @@ contains
 
         ! Assemble the Laplace matrix multiplied by the negative value
         ! of the physical diffusion parameter alpha
-        call stdop_assembleLaplaceMatrix(rmatrix, .true., -dalpha)
+        call stdop_assembleLaplaceMatrix(rmatrix, .true., -dalpha, rcubatureInfo)
 
       case (DIFFUSION_ANISOTROPIC)
 
@@ -1302,7 +1371,7 @@ contains
         rform%Idescriptors(2,9) = DER_DERIV3D_Z
 
         ! Assemble the anisotropic diffusion matrix
-        call bilf_buildMatrixScalar(rform, .true., rmatrix)
+        call bilf_buildMatrixScalar(rform, .true., rmatrix, rcubatureInfo)
 
       case default
         call lsyssc_clearMatrix(rmatrix)
