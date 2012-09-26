@@ -187,6 +187,9 @@
 !# 13.) parlst_info
 !#      -> Print the parameter list to the terminal
 !#
+!# 14.) parlst_findvalue
+!#      -> Checks if a given value exists and returns its substring index
+!#
 !# Auxiliary routines
 !#
 !# 1.) parlst_readfromsinglefile
@@ -379,6 +382,11 @@ module paramlist
     module procedure parlst_getvalue_double_direct
   end interface
 
+  interface parlst_findvalue
+    module procedure parlst_findvalue_direct
+    module procedure parlst_findvalue_indir
+  end interface
+
   public :: parlst_init
   public :: parlst_readfromfile
   public :: parlst_clear
@@ -399,6 +407,7 @@ module paramlist
   public :: parlst_expandEnvVariables
   public :: parlst_expandSubvars
   public :: parlst_dumptofile
+  public :: parlst_findvalue
 
 contains
 
@@ -3336,6 +3345,164 @@ contains
     end do ! isection
 
   end subroutine
+
+  ! ***************************************************************************
+
+!<function>
+
+  integer function parlst_findvalue_indir (rsection, sparameter, svalue) &
+               result (isubstring)
+
+!<description>
+  ! Checks whether the parameter sparameter in the section rsection
+  ! has the given value svalue.
+!</description>
+
+!<result>
+  ! The index of the substring in the parameter sparameter which has value
+  ! svalue or =-1, if the parameter does not exist within the section.
+!</result>
+
+!<input>
+
+  ! The section where to search for the parameter
+  type(t_parlstSection), intent(in) :: rsection
+
+  ! The parameter name to search for.
+  character(LEN=*), intent(in) :: sparameter
+
+  ! The value to search for
+  character(LEN=*), intent(in) :: svalue
+
+!</input>
+
+!</function>
+
+    ! local variables
+    integer :: idx
+    character(LEN=PARLST_MLNAME) :: paramname
+    character(LEN(svalue)) :: sbuf
+    
+    if (sparameter .eq. '') then
+      call output_line ('Empty parameter name!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'parlst_lookfor_indir')
+      call sys_halt()
+    end if
+    
+    ! Create the upper-case parameter name
+    paramname = adjustl(sparameter)
+    call sys_toupper (paramname)
+    
+    ! Get the parameter index into 'idx', finish.
+    call parlst_fetchparameter(rsection, paramname, idx)
+    
+    ! Check if value svalue exists in some substring and return its
+    ! index; of the value does not exists return -1
+    if (idx .eq. 0) then
+      call sys_charArrayToString(&
+          rsection%p_Rvalues(idx)%p_sentry, sbuf)
+      if (trim(sbuf) .eq. trim(svalue)) then
+        isubstring = 0
+      else
+        isubstring = -1
+      end if
+    else
+      do isubstring = 0, rsection%p_Rvalues(idx)%nsize
+        call sys_charArrayToString(&
+            rsection%p_Rvalues(idx)%p_SentryList(:,isubstring), sbuf)
+        if (trim(sbuf) .eq. trim(svalue)) then
+          return
+        end if
+      end do
+      
+      ! We did not find the desired value
+      isubstring = -1
+    end if
+    
+  end function
+
+  ! ***************************************************************************
+
+!<function>
+
+  integer function parlst_findvalue_direct (rparlist, ssectionName, sparameter, svalue) &
+               result (isubstring)
+
+!<description>
+  ! Checks whether the parameter sparameter in the section ssectionname
+  ! in the parameter list rparlist has the given value.
+!</description>
+
+!<result>
+  ! The index of the substring in the parameter sparameter which has value
+  ! svalue or =-1, if the parameter does not exist within the section.
+!</result>
+
+!<input>
+
+  ! The parameter list.
+  type(t_parlist), intent(in) :: rparlist
+
+  ! The section name - '' identifies the unnamed section.
+  character(LEN=*), intent(in) :: ssectionName
+
+  ! The parameter name to search for.
+  character(LEN=*), intent(in) :: sparameter
+
+  ! The value to search for
+  character(LEN=*), intent(in) :: svalue
+
+!</input>
+
+!</function>
+
+    ! local variables
+    integer :: idx
+    type(t_parlstSection), pointer :: p_rsection
+    character(LEN(svalue)) :: sbuf
+
+    ! Cancel if the list is not initialised.
+    if (rparlist%isectionCount .eq. 0) then
+      call output_line ('Parameter list not initialised!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'parlst_findvalue_direct')
+      call sys_halt()
+    end if
+    
+    ! Get the section
+    call parlst_querysection(rparlist, ssectionName, p_rsection)
+    if (.not. associated(p_rsection)) then
+      call output_line ('Section not found: '//trim(ssectionName), &
+          OU_CLASS_ERROR,OU_MODE_STD,'parlst_findvalue_direct')
+      return
+    end if
+
+    ! Get the parameter index
+    idx = parlst_queryvalue_indir (p_rsection, sparameter)
+    
+    ! Check if value svalue exists in some substring and return its
+    ! index; of the value does not exists return -1
+    if (idx .eq. 0) then
+      call sys_charArrayToString(&
+          p_rsection%p_Rvalues(idx)%p_sentry, sbuf)
+      if (trim(sbuf) .eq. trim(svalue)) then
+        isubstring = 0
+      else
+        isubstring = -1
+      end if
+    else
+      do isubstring = 0, p_rsection%p_Rvalues(idx)%nsize
+        call sys_charArrayToString(&
+            p_rsection%p_Rvalues(idx)%p_SentryList(:,isubstring), sbuf)
+        if (trim(sbuf) .eq. trim(svalue)) then
+          return
+        end if
+      end do
+      
+      ! We did not find the desired value
+      isubstring = -1
+    end if
+    
+  end function
 
   ! ***************************************************************************
 
