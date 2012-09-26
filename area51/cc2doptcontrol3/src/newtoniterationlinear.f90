@@ -244,6 +244,9 @@ module newtoniterationlinear
     
     ! More temporary memory
     type(t_kktsystemDirDeriv) :: rp
+    
+    ! Use real residual in the iteration.
+    logical :: brealres = .true.
   end type
 
   !</typeblock>
@@ -890,7 +893,7 @@ contains
     dgamma = 1.0_DP
     dgammaOld = 1.0_DP
     
-    brealres = .false.
+    brealres = rlinsolParam%p_rsubnodeCG%brealRes
 
     ! Create the initial defect in rd
     output_iautoOutputIndent = output_iautoOutputIndent + 2
@@ -1214,6 +1217,7 @@ contains
 
     ! local variables
     type(t_parlstSection), pointer :: p_rsection
+    integer :: irealres
 
     call parlst_querysection(rparamList, ssection, p_rsection)
 
@@ -1232,6 +1236,13 @@ contains
     ! May be overwritten by a parameter in the section.
     call parlst_getvalue_int (p_rsection, "cspatialInitCondPolicy", &  
         rsolver%cspatialInitCondPolicy, rsolver%cspatialInitCondPolicy)
+
+    if (rsolver%csolverType .eq. NLIN_SOLVER_CG) then
+      ! CG parameters
+      call parlst_getvalue_int (p_rsection, "brealres", &  
+          irealres, 0)
+      rsolver%p_rsubnodeCG%brealres = irealres .ne. 0
+    end if
 
   end subroutine
 
