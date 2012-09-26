@@ -2489,7 +2489,7 @@ contains
     if (present(slength)) then
       j = slength
     else
-      j = len_trim(sstring)
+      j = min(len_trim(sstring),size(schararray))
     end if
 
     ! Copy all characters.
@@ -2534,7 +2534,7 @@ contains
     if (present(slength)) then
       j = slength
     else
-      j = size(schararray)
+      j = min(size(schararray),len(sstring))
     end if
 
     ! Copy all characters.
