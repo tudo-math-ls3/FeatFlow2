@@ -10428,7 +10428,7 @@ contains
               Dbas(4,DER_FUNC2D,i,j) =  0.0_DP
               Dbas(5,DER_FUNC2D,i,j) =  0.0_DP
               Dbas(6,DER_FUNC2D,i,j) =  1.0_DP+dx-dy
-              Dbas(7,DER_FUNC2D,i,j) =  1.0_DP-dx+dy
+              Dbas(7,DER_FUNC2D,i,j) =  1.0_DP-dx-dy
               Dbas(8,DER_FUNC2D,i,j) =  0.0_DP
 
             else
@@ -10481,20 +10481,20 @@ contains
             if (dy .le. -dx) then
               ! We are in T1.
 
-              Dbas(1,DER_DERIV2D_X,i,j) =  2.0_DP*a21*ddet
+              Dbas(1,DER_DERIV2D_X,i,j) = -(-2.0_DP)*a21*ddet
               Dbas(2,DER_DERIV2D_X,i,j) =  0.0_DP
               Dbas(3,DER_DERIV2D_X,i,j) =  0.0_DP
               Dbas(4,DER_DERIV2D_X,i,j) =  0.0_DP
               Dbas(5,DER_DERIV2D_X,i,j) =  (a22-a21)*ddet
               Dbas(6,DER_DERIV2D_X,i,j) =  0.0_DP
               Dbas(7,DER_DERIV2D_X,i,j) =  0.0_DP
-              Dbas(8,DER_DERIV2D_X,i,j) = -(a22+a21)*ddet
+              Dbas(8,DER_DERIV2D_X,i,j) =  (-a22-a21)*ddet
 
               Dbas(1,DER_DERIV2D_Y,i,j) = -2.0_DP*a11*ddet
               Dbas(2,DER_DERIV2D_Y,i,j) =  0.0_DP
               Dbas(3,DER_DERIV2D_Y,i,j) =  0.0_DP
               Dbas(4,DER_DERIV2D_Y,i,j) =  0.0_DP
-              Dbas(5,DER_DERIV2D_Y,i,j) = -(a12-a11)*ddet
+              Dbas(5,DER_DERIV2D_Y,i,j) =  (-a12+a11)*ddet
               Dbas(6,DER_DERIV2D_Y,i,j) =  0.0_DP
               Dbas(7,DER_DERIV2D_Y,i,j) =  0.0_DP
               Dbas(8,DER_DERIV2D_Y,i,j) =  (a12+a11)*ddet
@@ -10506,8 +10506,8 @@ contains
               Dbas(2,DER_DERIV2D_X,i,j) =  2.0_DP*a22*ddet
               Dbas(3,DER_DERIV2D_X,i,j) =  0.0_DP
               Dbas(4,DER_DERIV2D_X,i,j) =  0.0_DP
-              Dbas(5,DER_DERIV2D_X,i,j) = -(a22-a21)*ddet 
-              Dbas(6,DER_DERIV2D_X,i,j) = -(a22+a21)*ddet 
+              Dbas(5,DER_DERIV2D_X,i,j) =  (-a22+a21)*ddet 
+              Dbas(6,DER_DERIV2D_X,i,j) =  (-a22-a21)*ddet 
               Dbas(7,DER_DERIV2D_X,i,j) =  0.0_DP
               Dbas(8,DER_DERIV2D_X,i,j) =  0.0_DP
 
@@ -10532,7 +10532,7 @@ contains
               Dbas(4,DER_DERIV2D_X,i,j) =  0.0_DP
               Dbas(5,DER_DERIV2D_X,i,j) =  0.0_DP
               Dbas(6,DER_DERIV2D_X,i,j) =  (a22+a21)*ddet
-              Dbas(7,DER_DERIV2D_X,i,j) = -(a22-a21)*ddet
+              Dbas(7,DER_DERIV2D_X,i,j) =  (-a22+a21)*ddet
               Dbas(8,DER_DERIV2D_X,i,j) =  0.0_DP
 
               Dbas(1,DER_DERIV2D_Y,i,j) =  0.0_DP
@@ -10540,7 +10540,7 @@ contains
               Dbas(3,DER_DERIV2D_Y,i,j) =  2.0_DP*a11*ddet
               Dbas(4,DER_DERIV2D_Y,i,j) =  0.0_DP
               Dbas(5,DER_DERIV2D_Y,i,j) =  0.0_DP
-              Dbas(6,DER_DERIV2D_Y,i,j) = -(a12+a11)*ddet
+              Dbas(6,DER_DERIV2D_Y,i,j) =  (-a12-a11)*ddet
               Dbas(7,DER_DERIV2D_Y,i,j) =  (a12-a11)*ddet
               Dbas(8,DER_DERIV2D_Y,i,j) =  0.0_DP
 
@@ -10550,7 +10550,7 @@ contains
               Dbas(1,DER_DERIV2D_X,i,j) =  0.0_DP
               Dbas(2,DER_DERIV2D_X,i,j) =  0.0_DP
               Dbas(3,DER_DERIV2D_X,i,j) =  0.0_DP
-              Dbas(4,DER_DERIV2D_X,i,j) = -2.0_DP*a22
+              Dbas(4,DER_DERIV2D_X,i,j) = -2.0_DP*a22*ddet
               Dbas(5,DER_DERIV2D_X,i,j) =  0.0_DP
               Dbas(6,DER_DERIV2D_X,i,j) =  0.0_DP
               Dbas(7,DER_DERIV2D_X,i,j) =  (a22-a21)*ddet
@@ -10559,11 +10559,11 @@ contains
               Dbas(1,DER_DERIV2D_Y,i,j) =  0.0_DP
               Dbas(2,DER_DERIV2D_Y,i,j) =  0.0_DP
               Dbas(3,DER_DERIV2D_Y,i,j) =  0.0_DP
-              Dbas(4,DER_DERIV2D_Y,i,j) =  2.0_DP*a12
+              Dbas(4,DER_DERIV2D_Y,i,j) =  2.0_DP*a12*ddet
               Dbas(5,DER_DERIV2D_Y,i,j) =  0.0_DP
               Dbas(6,DER_DERIV2D_Y,i,j) =  0.0_DP
-              Dbas(7,DER_DERIV2D_Y,i,j) = -(a12-a11)*ddet
-              Dbas(8,DER_DERIV2D_Y,i,j) = -(a12+a11)*ddet
+              Dbas(7,DER_DERIV2D_Y,i,j) =  (-a12+a11)*ddet
+              Dbas(8,DER_DERIV2D_Y,i,j) =  (-a12-a11)*ddet
 
             end if
           end if
