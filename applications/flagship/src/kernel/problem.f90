@@ -157,6 +157,9 @@ module problem
     ! Number of discretisations
     integer :: ndiscretisation
 
+    ! Number of cubature info structures
+    integer :: ncubatureinfo
+
     ! Number of AFC stabilisations
     integer :: nafcstab
 
@@ -248,6 +251,9 @@ module problem
 
     ! Array of discretisation structure
     type(t_blockDiscretisation), dimension(:), pointer :: Rdiscretisation => null()
+
+    ! Array of scalar cubature info structures
+    type(t_scalarCubatureInfo), dimension(:), pointer :: RcubatureInfo => null()
 
     ! Array of AFC stabilisations
     type(t_afcstab), dimension(:), pointer :: Rafcstab => null()
@@ -382,6 +388,9 @@ contains
     if (rproblemDescriptor%ndiscretisation .gt. 0)&
         allocate(rproblemLevel%Rdiscretisation(&
         rproblemDescriptor%ndiscretisation))
+    if (rproblemDescriptor%ncubatureInfo .gt. 0)&
+        allocate(rproblemLevel%RcubatureInfo(&
+        rproblemDescriptor%ncubatureInfo))
     if (rproblemDescriptor%nmatrixScalar .gt. 0)&
         allocate(rproblemLevel%Rmatrix(&
         rproblemDescriptor%nmatrixScalar))
@@ -436,6 +445,9 @@ contains
       if (rproblemDescriptor%ndiscretisation .gt. 0)&
         allocate(rproblemLevel%Rdiscretisation(&
         rproblemDescriptor%ndiscretisation))
+      if (rproblemDescriptor%ncubatureInfo .gt. 0)&
+          allocate(rproblemLevel%RcubatureInfo(&
+          rproblemDescriptor%ncubatureInfo))
       if (rproblemDescriptor%nmatrixScalar .gt. 0)&
           allocate(rproblemLevel%Rmatrix(&
           rproblemDescriptor%nmatrixScalar))
@@ -898,6 +910,15 @@ contains
         call spdiscr_releaseBlockDiscr(rproblemLevel%Rdiscretisation(i))
       end do
       deallocate(rproblemLevel%Rdiscretisation)
+    end if
+
+    ! Release scalar cubature info structures
+    if (associated(rproblemLevel%RcubatureInfo)) then
+      do i = lbound(rproblemLevel%RcubatureInfo,1),&
+             ubound(rproblemLevel%RcubatureInfo,1)
+        call spdiscr_releaseCubStructure(rproblemLevel%RcubatureInfo(i))
+      end do
+      deallocate(rproblemLevel%RcubatureInfo)
     end if
 
     ! Release all scalar matrices
@@ -1418,6 +1439,8 @@ contains
     ! Discretisations, etc.
     rproblemDescriptor%ndiscretisation = max(rproblemDescriptor1%ndiscretisation,&
                                              rproblemDescriptor2%ndiscretisation)
+    rproblemDescriptor%ncubatureInfo   = max(rproblemDescriptor1%ncubatureInfo,&
+                                             rproblemDescriptor2%ncubatureInfo)
     rproblemDescriptor%nafcstab        = max(rproblemDescriptor1%nafcstab,&
                                              rproblemDescriptor2%nafcstab)
     rproblemDescriptor%ngroupfemBlock  = max(rproblemDescriptor1%ngroupfemBlock,&
