@@ -35,6 +35,12 @@
 !#  8.) itc_copyStatistics
 !#      -> Copies the statistics data to another iteration structure
 !#
+!#  9.) itc_repushResidual
+!#      -> Reverts the last push and pushes the residual again
+!#
+!#  10.) itc_resetResidualQueue
+!#      -> Resets the structure up to the first push
+!#
 !# ****************************************************************************
 !# Information regarding stopping criterions
 !# -----------------------------------------
@@ -175,6 +181,8 @@ private
   public :: itc_initIteration
   public :: itc_initResidual
   public :: itc_pushResidual
+  public :: itc_repushResidual
+  public :: itc_resetResidualQueue
   public :: itc_calcConvRateReal
   public :: itc_calcConvRateAsymptotic
   public :: itc_printStatistics
@@ -310,6 +318,9 @@ private
 
     ! Residual queue.
     real(DP), dimension(ITC_RES_QUEUE_SIZE) :: Dresiduals
+    
+    ! Output: Number of consecutive iterations without a reset inbetween.
+    integer :: nconsecIterations = 0
 
   end type
 
@@ -347,6 +358,7 @@ contains
     riter%dresInitial = 0.0_DP
     riter%dresFinal = 0.0_DP
     riter%Dresiduals(1) = 0.0_DP
+    riter%nconsecIterations = 0
     riter%cstatus = ITC_STATUS_UNDEFINED
 
   end subroutine
@@ -437,6 +449,72 @@ contains
 
 !<subroutine>
 
+  subroutine itc_repushResidual(riter, dres)
+
+!<description>
+  ! Reverts the last push and pushes the residual again.
+!</description>
+
+!<inputoutput>
+  ! The iteration structure to be updated.
+  type(t_iterationControl), intent(inout) :: riter
+!</inputoutput>
+
+!<input>
+  ! The new residual
+  real(DP), intent(in) :: dres
+!</input>
+
+!</subroutine>
+
+    ! Decrement the iteration counter and push.
+    if (riter%niterations .gt. 0) then
+      riter%niterations = riter%niterations - 1
+    end if
+    
+    if (riter%nconsecIterations .gt. 0) then
+      riter%nconsecIterations = riter%nconsecIterations - 1
+    end if
+    
+    call itc_pushResidual(riter, dres)
+
+  end subroutine
+
+! *************************************************************************************************
+
+!<subroutine>
+
+  subroutine itc_resetResidualQueue(riter)
+
+!<description>
+  ! Resets the residual queue. Deletes all collected residuals and leaves
+  ! only the initial residual and the iteration counter.
+  ! The state is resetted to "ITC_STATUS_CONTINUE".
+!</description>
+
+!<inputoutput>
+  ! The iteration structure to be resetted.
+  type(t_iterationControl), intent(inout) :: riter
+!</inputoutput>
+
+!</subroutine>
+
+    ! Reset the residual queue
+    riter%dresFinal = riter%dresInitial
+    riter%Dresiduals(1) = riter%dresInitial
+    
+    ! Workaround if nstagiter=1.
+    riter%Dresiduals(ITC_RES_QUEUE_SIZE) = riter%dresInitial
+    
+    riter%nconsecIterations = -1
+    riter%cstatus = ITC_STATUS_CONTINUE
+
+  end subroutine
+
+! *************************************************************************************************
+
+!<subroutine>
+
   subroutine itc_pushResidual(riter, dres)
 
 !<description>
@@ -460,9 +538,10 @@ contains
   logical :: btolRel, btolAbs, bdivRel, bdivAbs, bstag, bconv, bdiv, borbit
 
     ! set current defect and increase iteration count
-    riter%niterations = riter%niterations+1
+    riter%niterations = riter%niterations + 1
+    riter%nconsecIterations = riter%nconsecIterations + 1
     riter%dresFinal = dres
-    riter%Dresiduals(mod(riter%nIterations, ITC_RES_QUEUE_SIZE)+1) = dres
+    riter%Dresiduals(mod(riter%nconsecIterations, ITC_RES_QUEUE_SIZE)+1) = dres
 
     ! detect NaNs if possible -- we'll do this before performing any fancy
     ! calculations to avoid NaN arithmetic here...
@@ -611,7 +690,7 @@ contains
     end if
 
     ! Check for stagnation?
-    if((riter%nstagIter .gt. 0) .and. (riter%nstagIter .lt. riter%niterations)) then
+    if ((riter%nstagIter .gt. 0) .and. (riter%nstagIter .lt. riter%nconsecIterations)) then
 
       ! assume stagnation
       bstag = .true.
@@ -621,9 +700,9 @@ contains
       do i = 1, n
 
         ! calculate indices in residual queue
-        j = mod(riter%niterations + ITC_RES_QUEUE_SIZE - i    , &
+        j = mod(riter%nconsecIterations + 1 + ITC_RES_QUEUE_SIZE - i    , &
                 ITC_RES_QUEUE_SIZE) + 1
-        k = mod(riter%niterations + ITC_RES_QUEUE_SIZE - i - 1, &
+        k = mod(riter%nconsecIterations + 1 + ITC_RES_QUEUE_SIZE - i - 1, &
                 ITC_RES_QUEUE_SIZE) + 1
 
         ! check for stagnation
@@ -642,7 +721,7 @@ contains
     end if
 
     ! Check for orbiting?
-    if((riter%nminPeriods .gt. 0) .and. (riter%nminPeriods .lt. riter%niterations)) then
+    if ((riter%nminPeriods .gt. 0) .and. (riter%nminPeriods .lt. riter%nconsecIterations)) then
 
       ! loop over all allowed cluster lengths
       do i = 2, riter%nmaxClusters
@@ -655,11 +734,11 @@ contains
 
           ! calculate offset from current iteration
           k = j*i - 1
-          if(k .ge. min(riter%niterations,ITC_RES_QUEUE_SIZE)) then
+          if(k .ge. min(riter%nconsecIterations,ITC_RES_QUEUE_SIZE)) then
             borbit = .false.
             exit
           end if
-          k = mod(riter%niterations+ITC_RES_QUEUE_SIZE-k, ITC_RES_QUEUE_SIZE)
+          k = mod(riter%nconsecIterations+ITC_RES_QUEUE_SIZE-k, ITC_RES_QUEUE_SIZE)
 
           ! check difference
           dx = (riter%Dresiduals(k) - riter%dresFinal)
@@ -773,8 +852,8 @@ contains
     if(present(niter)) n = min(max(1,niter), ITC_RES_QUEUE_SIZE-1)
     n = min(n, riter%nIterations-1) + 1
 
-    i = mod(riter%nIterations  , ITC_RES_QUEUE_SIZE) + 1
-    j = mod(riter%nIterations-n, ITC_RES_QUEUE_SIZE) + 1
+    i = mod(riter%nconsecIterations  , ITC_RES_QUEUE_SIZE) + 1
+    j = mod(riter%nconsecIterations-n, ITC_RES_QUEUE_SIZE) + 1
 
     ! Calculate convergence rate
     dcr = (riter%Dresiduals(i) / riter%Dresiduals(j)) ** (1.0_DP / real(n,DP))
