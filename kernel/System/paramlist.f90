@@ -3381,7 +3381,7 @@ contains
     ! local variables
     integer :: idx
     character(LEN=PARLST_MLNAME) :: paramname
-    character(LEN(svalue)) :: sbuf
+    character(len(svalue)) :: sbuf
     
     if (sparameter .eq. '') then
       call output_line ('Empty parameter name!', &
@@ -3459,7 +3459,7 @@ contains
     ! local variables
     integer :: idx
     type(t_parlstSection), pointer :: p_rsection
-    character(LEN(svalue)) :: sbuf
+    character(len(svalue)) :: sbuf
 
     ! Cancel if the list is not initialised.
     if (rparlist%isectionCount .eq. 0) then
