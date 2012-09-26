@@ -63,6 +63,11 @@ bdComponent1(4)=
   2.0  1  8 "Dirichlet1"
   3.0  1  8 "Dirichlet1"
   4.0  1  8 "Dirichlet-1"
+#bdComponent1(4)=
+#  1.0  1  1 "Dirichlet0"
+#  2.0  1  1 "Dirichlet0"
+#  3.0  1  1 "Dirichlet0"
+#  4.0  1  1 "Dirichlet0"
 #4.0  3  0
 #1 "Dirichlet0"  
 
@@ -113,15 +118,15 @@ ielementType = 4
 [OPTCTARGETFUNCTION]
 ctype = 3
 sexpression(1) =
-  "X+Y-1"
+  "X+Y"
 
 [CC-PHYSICS]
 cequation = 3
 RE = 1
 
 [CC-DISCRETISATION]
-NLMIN              = 6
-NLMAX              = 6
+NLMIN              = 4
+NLMAX              = 5
 iElementType       = 1
 scubMass           = G4X4
 scubStokes         = G4X4
@@ -132,9 +137,9 @@ csupportIntMeanConstr = 1
 [TIME-DISCRETISATION]
 dtimeInit = 0.0
 dtimeMax = 0.1
-niterations = 20
+niterations = 10
 TIMENLMIN = 1
-TIMENLMAX = 1
+TIMENLMAX = 2
 dtimeStepTheta = 1.0
 
 # Für lineare FD in der Zeit brauchen wir eine konstante
@@ -182,22 +187,23 @@ dmax2 = 0.0
 ioutputUCD = 4
 
 [SPACETIME-REFINEMENT]
-ispacelevelcoupledtotimelevel = 2
+ispacelevelcoupledtotimelevel = 1
 
 [SPACETIME-SOLVER]
 ctypeIteration = 3
-dtolrel = 1E-8
+dtolrel = 1E-11
+dtolAbs = 1E-11
 nmaxIterations = 15
 ioutputlevel = 2
 cpostprocessIterates = 3
 cspatialInitCondPolicy = 0
-dtolAbs = 1E-12
 
 [SPACETIME-ADAPTIVENEWTON]
 cpartialNewton = 2
-nminPartialNewtonIterations = 1 # 3
-nmaxPartialNewtonIterations = 1 # 3
+nminPartialNewtonIterations = 0 # 3
+nmaxPartialNewtonIterations = 0 # 3
 dinexactNewtonTolRel = 1.0E-2
+dinexactNewtonTolAbs = 1E-12
 
 [SPACETIME-LINSOLVER]
 ioutputlevel = 2
@@ -206,7 +212,7 @@ cspatialInitCondPolicy = 0
 nminIterations     = 1
 nmaxIterations     = 10
 dtolRel            = 1E-2
-dtolAbs            = 1E-13
+dtolAbs            = 1E-12
 domega = 1.0
 
 [SPACETIME-MULTIGRID]
@@ -214,27 +220,31 @@ nsmPre = 0
 nsmPost = 2
 ccycle = 1 # 0
 csmoother = 3
+#csmoother = 1
 ccoarseGridSolver = 3
 #ccoarseGridSolver = 1
 
 [SPACETIME-SMOOTHER]
 domega = 1.0
 ioutputlevel = 2
+brealres = 0
 
 [SPACETIME-COARSEGRIDSOLVER]
-dtolRel = 1E-4
-dtolAbs = 1E-3
+dtolRel = 1E-3
+ctolMode = 4
+dtolAbs = 1E-13
 nminiterations = 1
-nmaxiterations = 30
+nmaxiterations = 200
 #nmaxiterations = 50
 domega = 1.0
 ioutputlevel = 2
 nstagIter = 3
 dstagRate = 1.05
+brealres = 0
 
 [CC-NONLINEARSOLVER]
 ctypeIteration = 2
-dtolrel = 1E-5
+dtolrel = 1E-15
 #dtolabs = 1E-5
 ioutputLevel = 0
 
