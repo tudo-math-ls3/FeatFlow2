@@ -183,7 +183,7 @@ include ../unpack.mk
 # Automatically extract LAPACK tarball when required.
 #-------------------------------------------------------------------------------
 
-LAPACK_TARBALL  = ../lapack-3.4.1.tgz
+LAPACK_TARBALL  = ../lapack-3.4.2.tgz
 
 # List of required source files from LAPACK package. Purpose: let them share
 # a single common prerequisite that in turn is created by unpacking the tarball.
@@ -203,9 +203,9 @@ $(SRC_LAPACK): $(LAST_FILE_FROM_LAPACK_TARBALL)
 # a locking mechanism.
 # Note: When updating LAPACK, please do not forget to update the
 #       diff ignore option in benchmark/bin/runregressiontest !
-$(LAST_FILE_FROM_LAPACK_TARBALL):  NAME       = "LAPACK 3.4.1 reference implementation sources"
+$(LAST_FILE_FROM_LAPACK_TARBALL):  NAME       = "LAPACK 3.4.2 reference implementation sources"
 $(LAST_FILE_FROM_LAPACK_TARBALL):  TARBALL    = $(LAPACK_TARBALL)
-$(LAST_FILE_FROM_LAPACK_TARBALL):  LOCKFILE   = ../LOCK.unpack.lapack-3.4.1.tar.gz
+$(LAST_FILE_FROM_LAPACK_TARBALL):  LOCKFILE   = ../LOCK.unpack.lapack-3.4.2.tar.gz
 # Wait 15 minutes at most
 $(LAST_FILE_FROM_LAPACK_TARBALL):  WAITTIME   = 30
 $(LAST_FILE_FROM_LAPACK_TARBALL):  RETRIES    = 30
@@ -214,9 +214,9 @@ $(LAST_FILE_FROM_LAPACK_TARBALL): | $(LAPACK_TARBALL)
 	@$(call UNPACK)
 
 # Try to download tar ball if not present
-$(LAPACK_TARBALL):  URL      = http://www.netlib.org/lapack/lapack-3.4.1.tgz
+$(LAPACK_TARBALL):  URL      = http://www.netlib.org/lapack/lapack-3.4.2.tgz
 $(LAPACK_TARBALL):  TARBALL  = $(LAPACK_TARBALL)
-$(LAPACK_TARBALL):  LOCKFILE = ../LOCK.download.lapack-3.4.1.tar.gz
+$(LAPACK_TARBALL):  LOCKFILE = ../LOCK.download.lapack-3.4.2.tar.gz
 $(LAPACK_TARBALL):  WAITTIME = 15
 $(LAPACK_TARBALL):  RETRIES  = 24
 $(LAPACK_TARBALL):

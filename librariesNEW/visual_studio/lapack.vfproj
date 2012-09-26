@@ -42,21 +42,21 @@
 				<Tool Name="VFPostBuildEventTool"/></Configuration></Configurations>
 	<Files>
 		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
-		<File RelativePath="..\lapack-3.4.1\SRC\dgesv.f"/>
-		<File RelativePath="..\lapack-3.4.1\SRC\dgetf2.f"/>
-		<File RelativePath="..\lapack-3.4.1\SRC\dgetrf.f"/>
-		<File RelativePath="..\lapack-3.4.1\SRC\dgetrs.f"/>
-		<File RelativePath="..\lapack-3.4.1\SRC\dlaswp.f"/>
-		<File RelativePath="..\lapack-3.4.1\SRC\ieeeck.f"/>
-		<File RelativePath="..\lapack-3.4.1\SRC\ilaenv.f"/>
-		<File RelativePath="..\lapack-3.4.1\SRC\iparmq.f"/>
-		<File RelativePath="..\lapack-3.4.1\SRC\lsamen.f"/>
-		<File RelativePath="..\lapack-3.4.1\SRC\sgesv.f"/>
-		<File RelativePath="..\lapack-3.4.1\SRC\sgetf2.f"/>
-		<File RelativePath="..\lapack-3.4.1\SRC\sgetrf.f"/>
-		<File RelativePath="..\lapack-3.4.1\SRC\sgetrs.f"/>
-		<File RelativePath="..\lapack-3.4.1\SRC\slaswp.f"/></Filter>
+		<File RelativePath="..\lapack-3.4.2\SRC\dgesv.f"/>
+		<File RelativePath="..\lapack-3.4.2\SRC\dgetf2.f"/>
+		<File RelativePath="..\lapack-3.4.2\SRC\dgetrf.f"/>
+		<File RelativePath="..\lapack-3.4.2\SRC\dgetrs.f"/>
+		<File RelativePath="..\lapack-3.4.2\SRC\dlaswp.f"/>
+		<File RelativePath="..\lapack-3.4.2\SRC\ieeeck.f"/>
+		<File RelativePath="..\lapack-3.4.2\SRC\ilaenv.f"/>
+		<File RelativePath="..\lapack-3.4.2\SRC\iparmq.f"/>
+		<File RelativePath="..\lapack-3.4.2\SRC\lsamen.f"/>
+		<File RelativePath="..\lapack-3.4.2\SRC\sgesv.f"/>
+		<File RelativePath="..\lapack-3.4.2\SRC\sgetf2.f"/>
+		<File RelativePath="..\lapack-3.4.2\SRC\sgetrf.f"/>
+		<File RelativePath="..\lapack-3.4.2\SRC\sgetrs.f"/>
+		<File RelativePath="..\lapack-3.4.2\SRC\slaswp.f"/></Filter>
 		<Filter Name="Source Files (Install)">
-		<File RelativePath="..\lapack-3.4.1\INSTALL\dlamch.f"/>
-		<File RelativePath="..\lapack-3.4.1\INSTALL\slamch.f"/></Filter></Files>
+		<File RelativePath="..\lapack-3.4.2\INSTALL\dlamch.f"/>
+		<File RelativePath="..\lapack-3.4.2\INSTALL\slamch.f"/></Filter></Files>
 	<Globals/></VisualStudioProject>

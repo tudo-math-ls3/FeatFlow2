@@ -9,7 +9,7 @@ rem the library/-ies and extract them.
 
 call .\AMD\getfiles_win.cmd
 call .\BLAS\getfiles_win.cmd
-call .\lapack-3.4.1\getfiles_win.cmd
+call .\lapack-3.4.2\getfiles_win.cmd
 call .\SuiteSparse_config\getfiles_win.cmd
 call .\UMFPACK\getfiles_win.cmd
 
