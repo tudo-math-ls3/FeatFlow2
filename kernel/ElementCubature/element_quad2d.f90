@@ -10347,7 +10347,7 @@ contains
   ! -------------------
   ! This element is piecewisely defined by 4 triangles in one
   ! quad. There are 8 DOFs: the four edge midpoints plus the four
-  ! midpoints aling the intersected diagonals:
+  ! midpoints along the intersected diagonals:
   !
   ! -1,1              1,1       a3                a2
   !   +-------------+             +------*------+

@@ -1335,12 +1335,12 @@ contains
     case (EL_QPW4P2_2D)
       ! 4 DOFs in the corners, 4 in the edges and 5 in the element
       ndofAtVertices = 4
-      ndofAtEdges = 4
-      ndofAtElement = 5
+      ndofAtEdges    = 4
+      ndofAtElement  = 5
     case (EL_QPW4P1T_2D)
       ! 4 DOFs in the edges and 4 in the element
-      ndofAtEdges = 4
-      ndofAtElement = 4
+      ndofAtEdges    = 4
+      ndofAtElement  = 4
     case (EL_Q1T)
       ! local DOFs for Ex30
       ndofAtEdges    = 4
