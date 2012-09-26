@@ -1359,8 +1359,8 @@ contains
         ! We *on-purpose* use storage_getbase here since lsyssc_getbase
         ! does not work -- it would take rmatrix%NA into account!
         call storage_getbase_int (rmatrix%h_Kcol,p_Kcol)
-        call copyVectorInt (p_Kcol(p_Kld(irow+1):p_Kld(rmatrix%NEQ+1)-1),&
-            p_Kcol(p_Kld(irow+1)+icoldiff:p_Kld(rmatrix%NEQ+1)+icoldiff-1))
+        call copyVectorInt (p_Kcol,&
+            p_Kld(irow+1),p_Kld(rmatrix%NEQ+1)-1,p_Kld(irow+1)+icoldiff)
 
         ! Restructure the data if there is any
         if (lsyssc_hasMatrixContent(rmatrix)) then
@@ -1381,8 +1381,8 @@ contains
           ! We *on-purpose* use storage_getbase here since lsyssc_getbase
           ! does not work -- it would take rmatrix%NA into account!
           call storage_getbase_double (rmatrix%h_Da,p_Da)
-          call copyVectorDble (p_Da(p_Kld(irow+1):p_Kld(rmatrix%NEQ+1)-1),&
-              p_Da(p_Kld(irow+1)+icoldiff:p_Kld(rmatrix%NEQ+1)+icoldiff-1))
+          call copyVectorDble (p_Da,&
+              p_Kld(irow+1),p_Kld(rmatrix%NEQ+1)-1,p_Kld(irow+1)+icoldiff)
 
         end if
 
@@ -1447,72 +1447,60 @@ contains
 
   ! ***************************************************************************
 
-    subroutine copyVectorInt (Ix,Iy,n)
+    subroutine copyVectorInt (Ix,istartpos,iendpos,inewpos)
 
-    ! Copies an integer vector Ix: Iy = Ix.
+    ! Copies an integer vector Ix(inewpos:) = Ix(istartpos,iendpos).
     ! Copies backwards; used to copy parts in a vector
     ! to a higher address.
 
     ! Source vector
-    integer, dimension(:), intent(in) :: Ix
+    integer, dimension(:), intent(inout) :: Ix
 
-    ! OPTIONAL: Size of the vector
-    integer, intent(in), optional :: n
+    ! Start position
+    integer, intent(in) :: istartpos
 
-    ! Destination vector
-    integer, dimension(:), intent(out) :: Iy
+    ! End position
+    integer, intent(in) :: iendpos
+    
+    ! New start position
+    integer, intent(in) :: inewpos
 
-    integer :: i
+    integer :: i,ioffset
 
-      if (.not. present(n)) then
-
-        do i = size(Ix),1,-1
-          Iy(i) = Ix(i)
-        end do
-
-      else
-
-        do i =  n,1,-1
-          Iy(i) = Ix(i)
-        end do
-
-      end if
+      ioffset = inewpos-istartpos
+      do i = iendpos,istartpos,-1
+        Ix(i+ioffset) = Ix(i)
+      end do
 
     end subroutine
 
 
   ! ***************************************************************************
 
-    subroutine copyVectorDble (Dx,Dy,n)
+    subroutine copyVectorDble (Dx,istartpos,iendpos,inewpos)
 
-    ! Copies an integer vector Dx: Dy = Dx.
+    ! Copies an real vector Dx(inewpos:) = Dx(istartpos,iendpos).
     ! Copies backwards; used to copy parts in a vector
     ! to a higher address.
 
     ! Source vector
-    real(DP), dimension(:), intent(in) :: Dx
+    real(DP), dimension(:), intent(inout) :: Dx
 
-    ! OPTIONAL: Size of the vector
-    integer, intent(in), optional :: n
+    ! Start position
+    integer, intent(in) :: istartpos
 
-    ! Destination vector
-    real(DP), dimension(:), intent(out) :: Dy
+    ! End position
+    integer, intent(in) :: iendpos
+    
+    ! New start position
+    integer, intent(in) :: inewpos
 
-    integer :: i
+    integer :: i,ioffset
 
-      if (.not. present(n)) then
-
-        do i = size(Dx),1,-1
-          Dy(i) = Dx(i)
-        end do
-
-      else
-
-        do i =  n,1,-1
-          Dy(i) = Dx(i)
-        end do
-
-      end if
+      ioffset = inewpos-istartpos
+      do i = iendpos,istartpos,-1
+        Dx(i+ioffset) = Dx(i)
+      end do
 
     end subroutine
 
