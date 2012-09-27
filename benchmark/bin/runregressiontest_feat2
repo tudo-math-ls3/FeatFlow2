@@ -1039,11 +1039,9 @@ fb_checkWhetherToRun() {
 	    test $DEBUG -gt 0 && echo "# Check whether regression benchmark needs to be run"
 	    ignore=""
 	    for string in \
-		'benchmark_*' .svn AMD AMD-2.3.0.tar.gz BLAS \
-		SuiteSparse_config SuiteSparse_config-4.0.0.tar.gz \
-		UMFPACK UMFPACK-5.6.0.tar.gz codefragments 'docs_*' \
-		documentation incoming lapack-3.4.1 lapack-3.4.1.tgz \
-		splib splib.tar.gz
+		'benchmark_*' .svn AGMG_3.1.2 AMD BLAS SuiteSparse_config \
+		UMFPACK codefragments docs_* documentation incoming \
+		lapack-3.4.2 splib
 	    do
 		ignore="${ignore} -x ${string}"
 	    done
