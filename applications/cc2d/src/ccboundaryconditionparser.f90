@@ -16,6 +16,48 @@
 !# 2.) cc_assembleFBDconditions
 !#     -> Assembles fictitious boundary boundary conditions.
 !#
+!# 3.) cc_assembleInhomNeumann
+!#     -> Assembles inhomogeneous Neumann BCs into a RHS vector.
+!#
+!# Internal subroutines:
+!#
+!# 1.) cc_initAnalyticBC / cc_doneAnalyticBC
+!#     -> initialise/clenaup a structure encapsuling the analytic BCs
+!#
+!# 2.) cc_getExprType
+!#     -> Determine the type of an expression
+!#
+!# 3.) cc_getIvalue / cc_getDvalue / cc_getSvalue
+!#     -> Determine information about an expression
+!#
+!# 4.) cc_getBDCinfo
+!#     -> Obtain information about the boundary conditions on a boundary
+!#        component
+!#
+!# 5.) cc_getSegmentInfo
+!#     -> Determine the BCs on a boundary segment
+!#
+!# 6.) cc_initBCassembly / cc_doneBCassembly
+!#     -> Initialise/Cleanup the BC assembly
+!#
+!# 7.) cc_getBCassemblyPointer
+!#     -> For callback routines: Retrieve a BC assembly structure
+!#        from a collection
+!#
+!# 8.) cc_getDirichletEdges
+!#     -> Determine all edges with Dirichlet BCs
+!#
+!# 9.) cc_prepareExpressionEval
+!#     -> Prepare the evaluation of an expression
+!#
+!# 10.) cc_evalBoundaryValue
+!#      -> Evaluate an expression in a point on the boundary.
+!#
+!# 11.) cc_fcoeff_bdConditions
+!#      -> Callback routine for Dirichlet BCs
+!#
+!# 12.) cc2d_fcoeff_inhomNeumann
+!#      -> Callback routine for inhomogeneous Neumann BCs
 !# </purpose>
 !##############################################################################
 
@@ -52,6 +94,8 @@ module ccboundaryconditionparser
   use cccallback
   
   implicit none
+  
+  private
 
 !<constants>
 
@@ -201,6 +245,10 @@ module ccboundaryconditionparser
 !</typeblock>
 
 !</types>
+
+  public :: cc_assembleBDconditions
+  public :: cc_assembleFBDconditions
+  public :: cc_assembleInhomNeumann
 
 contains
 
