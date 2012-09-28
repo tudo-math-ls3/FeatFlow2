@@ -87,6 +87,7 @@ module ccboundaryconditionparser
   use paramlist
   use bcassembly
   use scalarpde
+  use derivatives
   
   use collection
   use convection
