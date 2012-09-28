@@ -789,24 +789,15 @@ contains
           (p_roptcBDCSpace%rdirichletControlBoundary%nregions .eq. 0)) then
           
         if (p_ranalyticData%p_rsettingsSpaceDiscr%csupportIntMeanConstr .eq. 1) then
-!          ! Sum up tghe entries f_i. This gives the integradl mean value of
-!          ! f with f_i = (f,phi_i).
-!          call lsysbl_getbase_double  (rvector,p_Ddata)
-!          dint = sum(p_Ddata)
-!          
-!          ! Multiply by the diagonal of the lumped mass matrix and subtract.
-!          ! N THis gives an f with int(f) = 0.
-!          call lsyssc_getbase_double (p_rasmTemplates%rmatrixMassLumpInt,p_Da)
-!          do i=1,size(p_Ddata)
-!            p_Ddata(i) = p_Ddata(i) - dint*p_Da(i)
-!          end do
+
           ! Bring the RHS to the space L^1_0.
-          call vecfil_subvectorSmallL1To0 (rvector,1)
+          call vecfil_rhsL1To0ByLmass (rvector%RvectorBlock(1),p_rasmTemplates%rmatrixMassLumpInt)
         
           ! Replace the first row by zero.
           ! In combination with the lumped mass matrix in the first row of the
           ! system matrix, this implements the constraint.
           call vecfil_OneEntryZero (rvector,1,1)
+
         end if
       end if
     
@@ -814,8 +805,24 @@ contains
     ! Stokes/Navier Stokes
     ! -------------------------------------------
     case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
-      print *,"Missing..."
-      call sys_halt()
+
+      if (p_rasmFlags%bumfpackSolver .and. &
+          (p_roptcBDCSpace%rneumannBoundary%nregions .eq. 0)) then
+          
+        if (p_ranalyticData%p_rsettingsSpaceDiscr%csupportIntMeanConstr .eq. 1) then
+
+          ! Bring the RHS to the space L^1_0.
+          call vecfil_rhsL1To0ByLmass (rvector%RvectorBlock(3),&
+              p_rasmTemplates%rmatrixMassPressureLumpInt)
+        
+          ! Replace the first row by zero.
+          ! In combination with the lumped mass matrix in the first row of the
+          ! system matrix, this implements the constraint.
+          call vecfil_OneEntryZero (rvector,3,1)
+
+        end if
+      end if
+
     end select
 
   end subroutine
