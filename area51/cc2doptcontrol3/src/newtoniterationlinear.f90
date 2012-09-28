@@ -1008,8 +1008,8 @@ contains
           dgammaOld = 1.0_DP
           
           ! Now calculate using the real residual.
-          call output_line ("Space-time CG: Not converged. Switching to real residual calculation.")
-          brealres = .true.
+          call output_line ("Space-time CG: Not converged. Continuing...")
+          !brealres = .true.
           
           call kktsp_controlCopy (p_rr,p_rp%p_rcontrolLin)
 
@@ -1045,9 +1045,9 @@ contains
       ! Calculate the parameter ALPHA
       dtemp = kktsp_scalarProductControl(p_rp%p_rcontrolLin,p_rAp)
       if (abs(dtemp) .gt. SYS_MINREAL_DP) then
-        !dalpha = dgamma / dtemp
-        dalpha = kktsp_scalarProductControl(p_rp%p_rcontrolLin,p_rr)
-        dalpha = dalpha / dtemp
+        dalpha = dgamma / dtemp
+        !dalpha = kktsp_scalarProductControl(p_rp%p_rcontrolLin,p_rr)
+        !dalpha = dalpha / dtemp
       else
         dalpha = 0.0_DP
       end if
