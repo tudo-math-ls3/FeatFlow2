@@ -372,7 +372,7 @@ contains
 
 !</subroutine>
 
-    ivalue = collct_getvalue_real (&
+    ivalue = collct_getvalue_int (&
         ranalyticBC%rbcCollection, sexpression, 0, SEC_SBDEXPRESSIONS)
 
   end subroutine
