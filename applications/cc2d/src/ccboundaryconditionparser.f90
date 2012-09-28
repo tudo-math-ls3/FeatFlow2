@@ -1483,7 +1483,6 @@ contains
     ! local variables
     integer :: ipt,iel,cnormalmean
     real(DP) :: dpar
-    real(DP), dimension(NDIM2D) :: Dnormal
     type(t_bcassemblyData), pointer :: p_rbcAssemblyData
 
     ! Get a pointer to the boundary assembly data from the collection.
@@ -1496,27 +1495,6 @@ contains
         dpar = boundary_convertParameter(p_rbcAssemblyData%p_rboundary, ibct, &
             DpointPar(ipt,iel), BDR_PAR_LENGTH, BDR_PAR_01)
         
-        ! The normal vector is a bit tricky. Normally, we take the "mean"
-        ! setting.
-        cnormalMean = BDR_NORMAL_MEAN
-        
-        ! Exception: If the parameter value corresponds to the beginning
-        ! of the interval, we take the setting 'left'. On the right end,
-        ! we take the setting 'right'.
-        ! Reason: If this happens, the left/right point belongs to the interval,
-        ! so it is more likely that the normal vector should be guided by
-        ! the interval.
-        if (dpar .eq. p_rbcAssemblyData%rboundaryRegion%dminParam) then
-          cnormalMean = BDR_NORMAL_LEFT
-        else if (dpar .eq. p_rbcAssemblyData%rboundaryRegion%dmaxParam) then
-          cnormalMean = BDR_NORMAL_RIGHT
-        end if
-        
-        ! Get the normal vector in that point
-        call boundary_getNormalVec2D(p_rbcAssemblyData%p_rboundary, &
-            p_rbcAssemblyData%rboundaryRegion%iboundCompIdx, &
-            dpar, Dnormal(1), Dnormal(2), cnormalMean)
-      
         ! Calculate the expression in the current point.
         call cc_evalBoundaryValue (p_rbcAssemblyData,dpar,Dcoefficients(1,ipt,iel))
       end do
