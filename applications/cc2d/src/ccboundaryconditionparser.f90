@@ -96,13 +96,111 @@ module ccboundaryconditionparser
   !
   ! Depending on the situation, this list may be extended by situation
   ! specific variables or variables that are only available at runtime.
-  character(LEN=10), dimension(11), parameter :: SEC_EXPRVARIABLES = &
+  character(LEN=10), dimension(13), parameter :: SEC_EXPRVARIABLES = &
     (/"X     ","Y     ","Z     ","L     ","R     ","S     ","TIME  ",&
-      "MFVELX","MFVELY","MFACCX","MFACCY"/)
+      "MFVELX","MFVELY","MFACCX","MFACCY","NX    ","NY    "/)
 
 !</constantblock>
 
 !</constants>
+
+!<types>
+
+!<typeblock>
+
+  ! COntains an analytic description of the boundary conditions
+  ! based on expressions, including a parser object for parsing
+  ! the expressions.
+  type t_analyticBC
+  
+    ! A compiled expression for evaluation at runtime
+    type(t_fparser) :: rparser
+    
+    ! A local collection we use for storing named parameters during the
+    ! parsing process.
+    type(t_collection) :: rbcCollection
+
+    ! Section in the parameter list specifying the segment information.
+    type(t_parlstSection), pointer :: p_rbdcond => null()
+
+  end type
+
+!</typeblock>
+
+!<typeblock>
+
+  ! A structure which is passed to the callback routine for assembly.
+  type t_bcassemblyData
+    
+    ! Pointer to the problem data
+    type(t_problem), pointer :: p_rproblem => null()
+    
+    ! Definition of the underlying boundary
+    type(t_boundary), pointer :: p_rboundary => null()
+    
+    ! Discretisation structure currently under investigation.
+    type(t_blockDiscretisation), pointer :: p_rdiscretisation => null()
+
+    ! Current boundary region in process.
+    type(t_boundaryRegion) :: rboundaryRegion
+    
+    ! The definition of the analytic boundary conditions.
+    type(t_analyticBC) :: ranalyticBC
+    
+    ! Pointer to a user defined collection structure
+    type(t_collection), pointer :: p_ruserCollection => null()
+    
+    ! Current time where to set up the BCs
+    real(DP) :: dtime = 0.0_DP
+    
+    ! Minimum time
+    real(DP) :: dtimeMin = 0.0_DP
+
+    ! Maximum time
+    real(DP) :: dtimeMax = 0.0_DP
+    
+    !<!-- Boudnary condition specific parameters -->
+    
+    ! Type of boundary condition
+    integer :: cbcType = 0
+    
+    ! component under consideration (1=x-vel, 2=y-vel,...)
+    integer :: icomponent = 0
+    
+    ! expression type
+    integer :: cexprType = 0
+    
+    ! Integer tag for the expression
+    integer :: ivalue = 0
+    
+    ! Real value for the expression
+    real(DP) :: dvalue = 0.0_DP
+    
+    ! Whether or not the moving frame formulation is active.
+    integer :: imovingFrame = 0
+    
+    ! Name of the expression
+    character(len=PARLST_MLNAME) :: sexprName = ""
+    
+    !  X/Y-velocity of the moving frame
+    real(DP), dimension(NDIM2D) :: DmframeVel = 0.0_DP
+    
+    !  X/Y-acceleration of the moving frame
+    real(DP), dimension(NDIM2D) :: DmframeAcc = 0.0_DP
+    
+  end type
+
+!</typeblock>
+
+!<typeblock>
+  ! Structure encapsuling a pointer to t_bcassemblyData, for being passed
+  ! to callback routines.
+  type t_p_bcassemblyData
+    type(t_bcassemblyData), pointer :: p_rbcAssemblyData => null()
+  end type
+!</typeblock>
+
+!</types>
 
 contains
 
@@ -110,8 +208,508 @@ contains
 
 !<subroutine>
 
+  subroutine cc_initAnalyticBC (rparlist,ranalyticBC)
+
+!<description>
+  ! Initialises a boundary condition structure for the evaluation
+  ! of boundary conditions. Note: This is level independent
+  ! and based on parser expressions.
+!</description>
+  
+!<inputoutput>
+  ! Parmeter list with parameters concerning boundary conditions.
+  type(t_parlist), intent(inout), target :: rparlist
+!</inputoutput>
+
+!<output>
+  ! Boundary condition object receiving an analytic definition
+  ! of the boundary conditions.
+  type(t_analyticBC), intent(out) :: ranalyticBC
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer :: i,ityp,ivalue
+    real(DP) :: dvalue
+    character(LEN=PARLST_MLDATA) :: cstr,cexpr
+    character(LEN=PARLST_MLNAME) :: cname
+    
+    ! A pointer to the section with the expressions and the boundary conditions
+    type(t_parlstSection), pointer :: p_rsection
+    
+    ! We need the analytic description of the boundary conditions.
+    ! Initialise a structure for boundary conditions, which accepts this,
+    ! on the heap.
+    !
+    ! We first set up the boundary conditions for the X-velocity, then those
+    ! of the Y-velocity.
+    !
+    ! Get the expression/bc sections from the boundary condition block
+    call parlst_querysection(rparlist, "BDEXPRESSIONS", p_rsection)
+    call parlst_querysection(rparlist, "BDCONDITIONS", ranalyticBC%p_rbdcond)
+    
+    ! For intermediate storing of expression types, we use a local collection
+    call collct_init (ranalyticBC%rbcCollection)
+    
+    ! Add a section to the collection that accepts the boundary expressions
+    call collct_addsection (ranalyticBC%rbcCollection, SEC_SBDEXPRESSIONS)
+    
+    ! Create a parser structure for as many expressions as configured
+    call fparser_create (ranalyticBC%rparser,&
+         parlst_querysubstrings (p_rsection, "bdExpressions"))
+    
+    ! Add the boundary expressions to the collection into the
+    ! specified section.
+    do i=1,parlst_querysubstrings (p_rsection, "bdExpressions")
+    
+      call parlst_getvalue_string (p_rsection, "bdExpressions", cstr, "", i)
+      
+      ! Get the type and decide on the identifier how to save the expression.
+      read(cstr,*) cname,ityp
+      
+      select case (ityp)
+      case (BDC_USERDEF)
+        ! Name of a hardcoded expression realised in the callback routines
+        read(cstr,*) cname,ityp,cexpr
+        call collct_setvalue_string (ranalyticBC%rbcCollection, &
+            cname, cexpr, .true., 0, SEC_SBDEXPRESSIONS)
+
+      case (BDC_EXPRESSION)
+        ! General expression; not implemented yet
+        read(cstr,*) cname,ityp,cexpr
+        
+        ! Compile the expression; the expression gets number i
+        call fparser_parseFunction (ranalyticBC%rparser, i, cexpr, SEC_EXPRVARIABLES)
+        
+        ! Add the number of the function in the parser object to
+        ! the collection with the name of the expression
+        call collct_setvalue_int (ranalyticBC%rbcCollection, &
+            cname, i, .true., 0, SEC_SBDEXPRESSIONS)
+        
+      case (BDC_VALDOUBLE)
+        ! Real-value
+        read(cstr,*) cname,ityp,dvalue
+        call collct_setvalue_real (ranalyticBC%rbcCollection, &
+            cname, dvalue, .true., 0, SEC_SBDEXPRESSIONS)
+      case (BDC_VALINT)
+        ! Integer-value
+        read(cstr,*) cname,ityp,ivalue
+        call collct_setvalue_int (ranalyticBC%rbcCollection, &
+            cname, ivalue, .true., 0, SEC_SBDEXPRESSIONS)
+                
+      case (BDC_VALPARPROFILE)
+        ! Parabolic profile with specified maximum velocity
+        read(cstr,*) cname,ityp,dvalue
+        call collct_setvalue_real (ranalyticBC%rbcCollection, &
+            cname, dvalue, .true., 0, SEC_SBDEXPRESSIONS)
+                                   
+      case default
+        call output_line ("Expressions not implemented!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"cc_initBDconditions")
+        call sys_halt()
+
+      end select
+      
+      ! Put the type of the expression to the temporary collection section
+      call collct_setvalue_int (ranalyticBC%rbcCollection, cname, ityp, .true.)
+      
+    end do
+    
+  end subroutine
+
+  ! **************************************************************************
+
+!<subroutine>
+
+  subroutine cc_getExprType (ranalyticBC,sexpression,iexprType)
+
+!<description>
+  ! Returns the type of an expression.
+!</description>
+  
+!<input>
+  ! Boundary condition object.
+  type(t_analyticBC), intent(inout) :: ranalyticBC
+  
+  ! Name of the expression
+  character(len=*), intent(in) :: sexpression
+!</input>
+
+!<output>
+  ! Type of the expression
+  integer, intent(out) :: iexprType
+!</output>
+
+!</subroutine>
+
+    iexprType = collct_getvalue_int (ranalyticBC%rbcCollection, sexpression)
+
+  end subroutine
+
+  ! **************************************************************************
+
+!<subroutine>
+
+  subroutine cc_getIvalue (ranalyticBC,sexpression,ivalue)
+
+!<description>
+  ! Returns the ivalue for an expression.
+!</description>
+  
+!<input>
+  ! Boundary condition object.
+  type(t_analyticBC), intent(inout) :: ranalyticBC
+  
+  ! Name of the expression
+  character(len=*), intent(in) :: sexpression
+!</input>
+
+!<output>
+  ! Integer value
+  integer, intent(out) :: ivalue
+!</output>
+
+!</subroutine>
+
+    ivalue = collct_getvalue_real (&
+        ranalyticBC%rbcCollection, sexpression, 0, SEC_SBDEXPRESSIONS)
+
+  end subroutine
+
+  ! **************************************************************************
+
+!<subroutine>
+
+  subroutine cc_getDvalue (ranalyticBC,sexpression,dvalue)
+
+!<description>
+  ! Returns the dvalue for an expression.
+!</description>
+  
+!<input>
+  ! Boundary condition object.
+  type(t_analyticBC), intent(inout) :: ranalyticBC
+  
+  ! Name of the expression
+  character(len=*), intent(in) :: sexpression
+!</input>
+
+!<output>
+  ! Real value
+  real(DP), intent(out) :: dvalue
+!</output>
+
+!</subroutine>
+
+    dvalue = collct_getvalue_real (ranalyticBC%rbcCollection, &
+        sexpression, 0, SEC_SBDEXPRESSIONS)
+
+  end subroutine
+
+  ! **************************************************************************
+
+!<subroutine>
+
+  subroutine cc_getSvalue (ranalyticBC,sexpression,svalue)
+
+!<description>
+  ! Returns the svalue for an expression.
+!</description>
+  
+!<input>
+  ! Boundary condition object.
+  type(t_analyticBC), intent(inout) :: ranalyticBC
+  
+  ! Name of the expression
+  character(len=*), intent(in) :: sexpression
+!</input>
+
+!<output>
+  ! Strinbg value
+  character(len=*), intent(out) :: svalue
+!</output>
+
+!</subroutine>
+
+    call collct_getvalue_string (ranalyticBC%rbcCollection, &
+        sexpression, svalue, 0, SEC_SBDEXPRESSIONS)
+
+  end subroutine
+
+  ! **************************************************************************
+
+!<subroutine>
+
+  subroutine cc_getBDCinfo (ranalyticBC,ibct,iindex,nsegments)
+
+!<description>
+  ! Returns information about the boundary condition definition on a boundary
+  ! component.
+!</description>
+  
+!<input>
+  ! Boundary condition object.
+  type(t_analyticBC), intent(in) :: ranalyticBC
+  
+  ! Number of the boundary component
+  integer, intent(in) :: ibct
+!</input>
+
+!<output>
+  ! Index of the boundary component. =0 if there is no definition for this 
+  ! boundary component.
+  integer, intent(out) :: iindex
+
+  ! Number of segments that define the BCs on this bondary component.
+  ! =0, if if there is no definition for this boundary component.
+  integer, intent(out) :: nsegments
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    character(LEN=PARLST_MLDATA) :: cstr,cexpr
+
+    nsegments = 0
+
+    ! Parse the parameter "bdComponentX"
+    write (cexpr,"(I10)") ibct
+    cstr = "bdComponent" // adjustl(cexpr)
+    
+    ! Get the index of the parameter (in the parameter list)
+    iindex = parlst_queryvalue (ranalyticBC%p_rbdcond, cstr)
+    if (iindex .ne. 0) then
+      ! Number of segments that define the BCs there.
+      nsegments = parlst_querysubstrings (ranalyticBC%p_rbdcond, cstr)
+    end if
+
+  end subroutine
+
+  ! **************************************************************************
+
+!<subroutine>
+
+  subroutine cc_getSegmentInfo (&
+      ranalyticBC,iindex,isegment,dpar,iintervalsEnd,cbcType,sparams)
+
+!<description>
+  ! Returns information about a boundary condition segment on a boundary
+  ! component.
+!</description>
+  
+!<input>
+  ! Boundary condition object.
+  type(t_analyticBC), intent(in) :: ranalyticBC
+  
+  ! Index of the boundary component, returned by cc_getBDCinfo.
+  integer, intent(in) :: iindex
+
+  ! Number of the segment where to return information for.
+  integer, intent(in) :: isegment
+!</input>
+
+!<output>
+  ! End parameter value of the segment
+  real(DP), intent(out) :: dpar
+  
+  ! Definition of the endpoint inclusion.
+  ! =0: NO endpoints included.
+  ! =1: start point included
+  ! =2: Ending point included
+  ! =3: Start and ending point included into the segment.
+  integer, intent(out) :: iintervalsEnd
+  
+  ! Type of the boundary conditions here.
+  integer, intent(out) :: cbcType
+  
+  ! Additional parameters, boundary condition type dependent.
+  ! Must be evaluated by the caller.
+  character(LEN=*), intent(out) :: sparams
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    character(LEN=PARLST_MLDATA) :: sstr,sstr2
+    integer :: ntokens,istart
+
+    ! Get information about that segment.
+    call parlst_getvalue_string (ranalyticBC%p_rbdcond, iindex, sstr, isubstring=isegment)
+    
+    call sys_counttokens (sstr,ntokens)
+    if (ntokens .lt. 3) then
+      call output_line ("Invalid definition of boundary conditions!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"cc_getSegmentInfo")
+      call output_line (""""//trim(sstr)//"""", &
+          OU_CLASS_ERROR,OU_MODE_STD,"cc_getSegmentInfo")
+      call sys_halt()
+    end if
+    
+    ! Read the segment parameters
+    read(sstr,*) dpar,iintervalsEnd,cbcType
+
+    ! Get the position of the parameters
+    istart = 1
+    call sys_getNextToken (sstr,sstr2,istart)
+    call sys_getNextToken (sstr,sstr2,istart)
+    call sys_getNextToken (sstr,sstr2,istart)
+    
+    ! Get the remaining parameters (if there are any)
+    if (istart .ne. 0) then
+      sparams = trim(sstr(istart:))
+    else
+      sparams = ""
+    end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine cc_doneAnalyticBC (ranalyticBC)
+
+!<description>
+  ! Cleans up an analytic BC structure.
+!</description>
+  
+!<inputoutput>
+  ! Structure to be cleaned up
+  type(t_analyticBC), intent(inout) :: ranalyticBC
+!</inputoutput>
+
+!</subroutine>
+
+    ! Release the content
+    call fparser_release (ranalyticBC%rparser)
+    call collct_done (ranalyticBC%rbcCollection)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine cc_initBCassembly (rproblem,rdiscretisation,ruserCollection,&
+      rbcAssemblyData,rcollection)
+
+!<description>
+  ! Prepares the assembly of bonudary conditions.
+!</description>
+
+!<input>
+  ! A problem structure saving problem-dependent information.
+  type(t_problem), intent(inout), target :: rproblem
+  
+  ! User defined collection structure to be passed to callback routines
+  type(t_collection), intent(in), target :: ruserCollection
+  
+  ! Discretisation structure currently under investigation
+  type(t_blockDiscretisation), target :: rdiscretisation
+
+!</input>
+  
+!<output>
+  ! Boundary condition assembly data, to be set up
+  type(t_bcassemblyData), intent(out), target :: rbcAssemblyData
+!</output>
+
+!<inputoutput>
+  ! Collection structure where a pointer to rbcAssemblyData is saved to.
+  type(t_collection), intent(inout) :: rcollection
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    type(t_p_bcassemblyData) :: rp_bcassemblyData
+    
+    ! Create rbcAssemblyData based on the given data.
+    !
+    ! At first, we need the analytic description of the boundary conditions.
+    call cc_initAnalyticBC (rproblem%rparamlist,rbcAssemblyData%ranalyticBC)
+    
+    rbcAssemblyData%p_rproblem => rproblem
+    rbcAssemblyData%p_rboundary => rproblem%rboundary
+    rbcAssemblyData%p_ruserCollection => ruserCollection
+    rbcAssemblyData%p_rdiscretisation => rdiscretisation
+    rbcAssemblyData%dtime = rproblem%rtimedependence%dtime
+    rbcAssemblyData%dtimeMin = rproblem%rtimedependence%dtimeInit
+    rbcAssemblyData%dtimeMax = rproblem%rtimedependence%dtimeMax
+
+    ! Create a pointer to this, encapsuled in a structure.
+    rp_bcassemblyData%p_rbcAssemblyData => rbcAssemblyData
+    
+    ! Transfer this pointer into the IquickAccess array of the collection.
+    ! We can get it from there later.
+    rcollection%IquickAccess(:) = &
+        transfer(rp_bcassemblyData,rcollection%IquickAccess(:),size(rcollection%IquickAccess(:)))
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine cc_getBCassemblyPointer (rcollection,p_rbcAssemblyData)
+
+!<description>
+  ! Returns a pointer to the BC assembly data. The pointer is obtained
+  ! from the given collection
+!</description>
+
+!<input>
+  ! Collection structure. Must have been prepared with cc_initBCassembly.
+  type(t_collection), intent(in) :: rcollection
+!</input>
+
+!<inputoutput>
+  ! Pointer to be obtained.
+  type(t_bcassemblyData), pointer :: p_rbcAssemblyData
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    type(t_p_bcassemblyData) :: rp_bcassemblyData
+
+    ! Get back the pointer
+    rp_bcassemblyData = transfer(rcollection%IquickAccess(:),rp_bcassemblyData)
+    
+    ! Return the pointer
+    p_rbcAssemblyData => rp_bcassemblyData%p_rbcAssemblyData
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine cc_doneBCassembly (rbcAssemblyData)
+
+!<description>
+  ! Cleans up the boundary condition assembly structures.
+!</description>
+
+!<inputoutput>
+  ! Boundary condition assembly data, to be cleaned up
+  type(t_bcassemblyData), intent(inout) :: rbcAssemblyData
+!</inputoutput>
+
+!</subroutine>
+
+    ! Not much to do
+    call cc_doneAnalyticBC (rbcAssemblyData%ranalyticBC)
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
   subroutine cc_assembleBDconditions (rproblem,rdiscretisation,rdynamicLevelInfo,&
-    rcollection,bforPostprocessing)
+      rcollection,bforPostprocessing)
 
 !<description>
   ! This initialises the analytic boundary conditions of the problem
@@ -152,44 +750,26 @@ contains
 
     ! local variables
     logical :: bNeumann
-    integer :: i,ityp,ivalue,ibdComponent,isegment,iintervalEnds
-    integer :: ibctyp,icount,iexptyp
-    integer, dimension(2) :: IminIndex,imaxIndex
-    real(DP) :: dvalue,dpar1,dpar2
-    character(LEN=PARLST_MLDATA) :: cstr,cexpr,sbdex1,sbdex2
-    character(LEN=PARLST_MLNAME) :: cname
+    integer :: i
+    character(LEN=PARLST_MLDATA) :: sparams,sbdex1,sbdex2
+    type(t_bcassemblyData) :: rbcAssemblyData
+    type(t_collection) :: rlocalCollection
+    real(DP) :: dpar1,dpar2
+    integer, dimension(2) :: IminIndex,ImaxIndex
+    integer :: iindex,nsegments,ibdComponent,isegment,iintervalEnds
+    integer :: ibctype,icount
     integer, dimension(NDIM2D) :: IvelEqns
     integer(I32) :: casmComplexity
-    integer :: imovingFrame
-    
-    ! A local collection we use for storing named parameters during the
-    ! parsing process.
-    type(t_collection) :: rcoll
     
     ! Triangulation on currently highest level.
     type(t_triangulation), pointer :: p_rtriangulation
 
-    ! A set of variables describing the analytic boundary conditions.
-    type(t_boundaryRegion) :: rboundaryRegion
-    
-    ! A pointer to the domain
-    type(t_boundary), pointer :: p_rboundary
-    
-    ! A pointer to the section with the expressions and the boundary conditions
-    type(t_parlstSection), pointer :: p_rsection,p_rbdcond
-    
-    ! A compiled expression for evaluation at runtime
-    type(t_fparser), target :: rparser
-    
     ! Determine what to assemble
     casmComplexity = BCASM_DISCFORALL
     if (present(bforPostprocessing)) then
       ! Assemble only for the solution vector
       if (bforPostprocessing) casmComplexity = BCASM_DISCFORSOL
     endif
-    
-    ! Get the domain from the problem structure
-    p_rboundary => rdiscretisation%p_rboundary
     
     ! Get the triangulation on the highest level
     p_rtriangulation => rdiscretisation%p_rtriangulation
@@ -199,397 +779,192 @@ contains
     ! a discrete version of the analytic BC, which we can implement into the
     ! solution/RHS vectors using the corresponding filter.
     !
-    ! At first, we need the analytic description of the boundary conditions.
-    ! Initialise a structure for boundary conditions, which accepts this,
-    ! on the heap.
-    !
-    ! We first set up the boundary conditions for the X-velocity, then those
-    ! of the Y-velocity.
-    !
-    ! Get the expression/bc sections from the boundary condition block
-    call parlst_querysection(rproblem%rparamList, "BDEXPRESSIONS", p_rsection)
-    call parlst_querysection(rproblem%rparamList, "BDCONDITIONS", p_rbdcond)
+    ! At first, initialise the assembly.
+    call cc_initBCassembly (rproblem,rdiscretisation,rcollection,&
+        rbcAssemblyData,rlocalCollection)
     
-    ! For intermediate storing of expression types, we use a local collection
-    call collct_init (rcoll)
-    
-    ! Add a section to the collection that accepts the boundary expressions
-    call collct_addsection (rcoll, SEC_SBDEXPRESSIONS)
-    
-    ! Create a parser structure for as many expressions as configured
-    call fparser_create (rparser,&
-         parlst_querysubstrings (p_rsection, "bdExpressions"))
-    
-    ! Add the parser to the collection
-    call collct_setvalue_pars (rcoll, BDC_BDPARSER, rparser, &
-                                .true., 0, SEC_SBDEXPRESSIONS)
-    
-    ! Add the boundary expressions to the collection into the
-    ! specified section.
-    do i=1,parlst_querysubstrings (p_rsection, "bdExpressions")
-    
-      call parlst_getvalue_string (p_rsection, "bdExpressions", cstr, "", i)
-      
-      ! Get the type and decide on the identifier how to save the expression.
-      read(cstr,*) cname,ityp
-      
-      select case (ityp)
-      case (BDC_USERDEF)
-        ! Name of a hardcoded expression realised in the callback routines
-        read(cstr,*) cname,ityp,cexpr
-        call collct_setvalue_string (rcoll, cname, cexpr, .true., &
-                                     0, SEC_SBDEXPRESSIONS)
-
-      case (BDC_EXPRESSION)
-        ! General expression; not implemented yet
-        read(cstr,*) cname,ityp,cexpr
+    ! Is the moving-frame formulatino active?
+    call parlst_getvalue_int (rproblem%rparamList,"CC-DISCRETISATION",&
+        "imovingFrame",rbcAssemblyData%imovingFrame,0)
         
-        ! Compile the expression; the expression gets number i
-        call fparser_parseFunction (rparser, i, cexpr, SEC_EXPRVARIABLES)
-        
-        ! Add the number of the function in the parser object to
-        ! the collection with the name of the expression
-        call collct_setvalue_int (rcoll, cname, i, .true., &
-                                   0, SEC_SBDEXPRESSIONS)
-        
-      case (BDC_VALDOUBLE)
-        ! Real-value
-        read(cstr,*) cname,ityp,dvalue
-        call collct_setvalue_real (rcoll, cname, dvalue, .true., &
-                                   0, SEC_SBDEXPRESSIONS)
-      case (BDC_VALINT)
-        ! Integer-value
-        read(cstr,*) cname,ityp,ivalue
-        call collct_setvalue_int (rcoll, cname, ivalue, .true., &
-                                   0, SEC_SBDEXPRESSIONS)
-                
-      case (BDC_VALPARPROFILE)
-        ! Parabolic profile with specified maximum velocity
-        read(cstr,*) cname,ityp,dvalue
-        call collct_setvalue_real (rcoll, cname, dvalue, .true., &
-                                   0, SEC_SBDEXPRESSIONS)
-                                   
-      case DEFAULT
-        call output_line ("Expressions not implemented!", &
-            OU_CLASS_ERROR,OU_MODE_STD,"cc_parseBDconditions")
-        call sys_halt()
-
-      end select
-      
-      ! Put the type of the expression to the temporary collection section
-      call collct_setvalue_int (rcoll, cname, ityp, .true.)
-      
-    end do
+    if (rbcAssemblyData%imovingFrame .ne. 0) then
     
-    bNeumann = .false.
+      ! Get the velocity and acceleration from the callback routine.
+      ! Pass the user collection for this task.
+      call getMovingFrameVelocity (&
+          rbcAssemblyData%DmframeVel,rbcAssemblyData%DmframeAcc,rcollection)
+          
+    else
+      rbcAssemblyData%DmframeVel(:) = 0.0_DP
+      rbcAssemblyData%DmframeAcc(:) = 0.0_DP
+    end if
     
     ! Now to the actual boundary conditions.
     !
-    ! Put some information to the quick access arrays for access
-    ! in the callback routine.
-    call cc_initCollectForAssembly (rproblem,rcoll)
+    ! Log if there is Neumann boundary    
+    bNeumann = .false.
     
-    ! DquickAccess(1)   = current simulation time
-    ! DquickAccess(2)   = minimum simulation time
-    ! DquickAccess(3)   = maximum simulation time
-    ! DquickAccess(4)   = BC specific information.
-    !
-    ! Put a link to the previous collection into that local collection.
-    ! That allows us to access it or to pass it to user defined callback
-    ! functions.
-    rcoll%p_rnextCollection => rcollection
-
     ! Loop through all boundary components we have.
-    do ibdComponent = 1,boundary_igetNBoundComp(p_rboundary)
+    do ibdComponent = 1,boundary_igetNBoundComp(rbcAssemblyData%p_rboundary)
       
-      ! Parse the parameter "bdComponentX"
-      write (cexpr,"(I10)") ibdComponent
-      cstr = "bdComponent" // adjustl(cexpr)
+      ! Get information about that component: Number of segments,...
+      call cc_getBDCinfo (rbcAssemblyData%ranalyticBC,ibdComponent,iindex,nsegments)
       
+      ! Parse the segments.
       ! We start at parameter value 0.0.
       dpar1 = 0.0_DP
       
-      i = parlst_queryvalue (p_rbdcond, cstr)
-      if (i .ne. 0) then
-        ! Parameter exists. Get the values in there.
-        do isegment = 1,parlst_querysubstrings (p_rbdcond, cstr)
-          
-          call parlst_getvalue_string (p_rbdcond, i, cstr, isubstring=isegment)
-          ! Read the segment parameters
-          read(cstr,*) dpar2,iintervalEnds,ibctyp
-          
-          ! Form a boundary condition segment that covers that boundary part
-          if (dpar2 .ge. dpar1) then
-            
-            rboundaryRegion%dminParam = dpar1
-            rboundaryRegion%dmaxParam = dpar2
-            rboundaryRegion%iboundCompIdx = ibdComponent
-            rboundaryRegion%dmaxParamBC = &
-              boundary_dgetMaxParVal(p_rboundary, ibdComponent)
-            rboundaryRegion%iproperties = iintervalEnds
-            
-            ! Now, which type of BC is to be created?
-            select case (ibctyp)
-            
-            case (0)
-              ! Usually there is Neumann boundary in this region, but we can not be
-              ! sure. Check if, on the highest level, there is at least one edge
-              ! of the triangulation belonging to the boundary. If yes, we
-              ! have found Neumann boundary. If no, the segment is just too
-              ! small to be considered as Neumann boundary.
-              
-              call bcasm_getElementsInBdRegion (p_rtriangulation,rboundaryRegion, icount)
-              if (icount .gt. 0) bNeumann = .true.
-            
-            case (1)
-              ! Simple Dirichlet boundary
-              ! Read the line again, get the expressions for X- and Y-velocity
-              read(cstr,*) dvalue,iintervalEnds,ibctyp,sbdex1,sbdex2
-              
-              ! For any string <> "", create the appropriate Dirichlet boundary
-              ! condition and add it to the list of boundary conditions.
-              !
-              ! The IquickAccess array is set up as follows:
-              !  IquickAccess(1) = Type of boundary condition
-              !  IquickAccess(2) = component under consideration (1=x-vel, 2=y-vel,...)
-              !  IquickAccess(3) = expression type
-              !  IquickAccess(4) = expression identifier
-              !  IquickAccess(5) = imovingFrame = 0/1
-              !
-              ! The SquickAccess array is set up as follows:
-              !  SquickAccess(1) = Name of the expression
-              !
-              ! The DquickAccess array is set up as follows:
-              !  DquickAccess(5) = X-velocity of the moving frame
-              !  DquickAccess(6) = Y-velocity of the moving frame
-              !  DquickAccess(7) = X-acceleration of the moving frame
-              !  DquickAccess(8) = Y-acceleration of the moving frame
-              
-              ! Is the moving-frame formulatino active?
-              call parlst_getvalue_int (rproblem%rparamList,"CC-DISCRETISATION",&
-                  "imovingFrame",imovingFrame,0)
-                  
-              rcoll%IquickAccess(5) = imovingFrame
-                  
-              if (imovingFrame .ne. 0) then
-              
-                ! Get the velocity and acceleration from the callback routine.
-                call getMovingFrameVelocity (&
-                    rcoll%DquickAccess(5:6),rcoll%DquickAccess(7:8),rcollection)
-                   
-              else
-                rcoll%DquickAccess(5:8) = 0.0_DP
-              end if
-              
-              rcoll%IquickAccess(1) = ibctyp
-              
-              ! If the type is a double precision value, set the DquickAccess(4)
-              ! to that value so it can quickly be accessed.
-              if (sbdex1 .ne. "") then
-                ! X-velocity
-                !
-                ! The 2nd element in IquickAccess saves the component number.
-                rcoll%IquickAccess(2) = 1
-                
-                ! IquickAccess(3) saves the type of the expression
-                iexptyp = collct_getvalue_int (rcoll, sbdex1)
-                rcoll%IquickAccess(3) = iexptyp
-                
-                ! The 1st element in the sting quick access array is
-                ! the name of the expression to evaluate.
-                rcoll%SquickAccess(1) = sbdex1
-                
-                ! Dquickaccess(4) / IquickAccess(4) saves information
-                ! about the expression.
-                select case (iexptyp)
-                case (BDC_VALDOUBLE,BDC_VALPARPROFILE)
-                  ! Constant or parabolic profile
-                  rcoll%Dquickaccess(4) = &
-                      collct_getvalue_real (rcoll, sbdex1, 0, SEC_SBDEXPRESSIONS)
-                case (BDC_EXPRESSION)
-                  ! Expression. Write the identifier for the expression
-                  ! as itag into the boundary condition structure.
-                  rcoll%IquickAccess(4) = &
-                      collct_getvalue_int (rcoll, sbdex1, 0, SEC_SBDEXPRESSIONS)
-                end select
-              
-                ! Assemble the BC`s.
-                call bcasm_newDirichletBConRealBD (&
-                    rdiscretisation,1,rboundaryRegion,rdynamicLevelInfo%rdiscreteBC,&
-                    cc_getBDconditions,rcoll,casmComplexity)
-                    
-              end if
-              
-              if (sbdex2 .ne. "") then
-              
-                ! Y-velocity
-                !
-                ! The 1st element in IquickAccess saves the component number.
-                rcoll%IquickAccess(2) = 2
-                
-                ! IquickAccess(3) saves the type of the expression
-                iexptyp = collct_getvalue_int (rcoll, sbdex2)
-                rcoll%IquickAccess(3) = iexptyp
-                
-                ! The 1st element in the sting quick access array is
-                ! the name of the expression to evaluate.
-                rcoll%SquickAccess(1) = sbdex2
-                
-                ! Dquickaccess(4) / IquickAccess(4) saves information
-                ! about the expression.
-                select case (iexptyp)
-                case (BDC_VALDOUBLE,BDC_VALPARPROFILE)
-                  ! Constant or parabolic profile
-                  rcoll%Dquickaccess(4) = &
-                      collct_getvalue_real (rcoll,sbdex2, 0, SEC_SBDEXPRESSIONS)
-                case (BDC_EXPRESSION)
-                  ! Expression. Write the identifier for the expression
-                  ! as itag into the boundary condition structure.
-                  rcoll%IquickAccess(4) = &
-                      collct_getvalue_int (rcoll,sbdex2, 0, SEC_SBDEXPRESSIONS)
-                end select
-              
-                ! Assemble the BC`s.
-                call bcasm_newDirichletBConRealBD (&
-                    rdiscretisation,2,rboundaryRegion,rdynamicLevelInfo%rdiscreteBC,&
-                    cc_getBDconditions,rcoll,casmComplexity)
-
-              end if
-              
-            case (2)
-            
-              ! Pressure drop boundary conditions.
-              ! Read the line again to get the actual parameters
-              read(cstr,*) dvalue,iintervalEnds,ibctyp,sbdex1
-              
-              ! For any string <> "", create the appropriate pressure drop boundary
-              ! condition and add it to the list of boundary conditions.
-              !
-              ! The IquickAccess array is set up as follows:
-              !  IquickAccess(1) = Type of boundary condition
-              !  IquickAccess(2) = 0 (undefined)
-              !  IquickAccess(3) = expression type
-              !  IquickAccess(4) = expression identifier
-              !  IquickAccess(5) = imovingFrame = 0/1
-              !
-              ! The SquickAccess array is set up as follows:
-              !  SquickAccess(1) = Name of the expression
-              !
-              ! The DquickAccess array is set up as follows:
-              !  DquickAccess(5) = X-velocity of the moving frame
-              !  DquickAccess(6) = Y-velocity of the moving frame
-              !  DquickAccess(7) = X-acceleration of the moving frame
-              !  DquickAccess(8) = Y-acceleration of the moving frame
-              
-              ! Is the moving-frame formulatino active?
-              call parlst_getvalue_int (rproblem%rparamList,"CC-DISCRETISATION",&
-                  "imovingFrame",imovingFrame,0)
-                  
-              rcoll%IquickAccess(5) = imovingFrame
-                  
-              if (imovingFrame .ne. 0) then
-              
-                ! Get the velocity and acceleration from the callback routine.
-                call getMovingFrameVelocity (&
-                    rcoll%DquickAccess(5:6),rcoll%DquickAccess(7:8),rcollection)
-                   
-              else
-                rcoll%DquickAccess(5:8) = 0.0_DP
-              end if
-
-              if (sbdex1 .ne. "") then
-              
-                ! PDrop BCs are a type of Neumann BCs since there is no Dirichlet value
-                ! prescribed for the velocity. Check if there are edges in the region.
-                ! If yes, create the BC and remember that we have Neumann BCs.
-                
-                call bcasm_getEdgesInBCregion (p_rtriangulation,p_rboundary,&
-                                              rboundaryRegion, &
-                                              IminIndex,ImaxIndex,icount)
-                if (icount .gt. 0) then
-                
-                  bNeumann = .true.
-                  
-                  ! IquickAccess(3) saves the type of the expression
-                  iexptyp = collct_getvalue_int (rcoll, sbdex1)
-                  rcoll%IquickAccess(3) = iexptyp
-
-                  ! The first element in the sting quick access array is
-                  ! the name of the expression to evaluate.
-                  rcoll%SquickAccess(1) = sbdex1
-                  
-                  ! Dquickaccess(4) / IquickAccess(4) saves information
-                  ! about the expression.
-                  select case (iexptyp)
-                  case (BDC_VALDOUBLE,BDC_VALPARPROFILE)
-                    ! Constant or parabolic profile
-                    rcoll%Dquickaccess(4) = &
-                        collct_getvalue_real (rcoll,sbdex1, 0, SEC_SBDEXPRESSIONS)
-                  case (BDC_EXPRESSION)
-                    ! Expression. Write the identifier for the expression
-                    ! as itag into the boundary condition structure.
-                    rcoll%IquickAccess(4) = &
-                        collct_getvalue_int (rcoll,sbdex1, 0, SEC_SBDEXPRESSIONS)
-                  end select
-                
-                  IvelEqns = (/1,2/)
-                  call bcasm_newPdropBConRealBd (&
-                      rdiscretisation,IvelEqns,rboundaryRegion,rdynamicLevelInfo%rdiscreteBC,&
-                      cc_getBDconditions,rcoll,casmComplexity)
-                      
-                end if
-
-              end if
-              
-              
-            case (3)
-              
-              ! Nonlinear slip boundary conditions.
-              IvelEqns = (/1,2/)
-              call bcasm_newSlipBConRealBd (&
-                  rdiscretisation,IvelEqns(1:NDIM2D),rboundaryRegion,&
-                  rdynamicLevelInfo%rdiscreteBC,casmComplexity)
-            
-            case DEFAULT
-              call output_line ("Unknown boundary condition!", &
-                  OU_CLASS_ERROR,OU_MODE_STD,"cc_parseBDconditions")
-              call sys_halt()
-            end select
-            
-            ! Move on to the next parameter value
-            dpar1 = dpar2
-            
-          end if
-                                            
-        end do
-      
-      else
+      if (iindex .eq. 0) then
         ! There is no parameter configuring the boundary condition on that
         ! component - so we have Neumann boundary there.
         bNeumann = .true.
       end if
       
+      ! Parameter exists. Get the values in there.
+      do isegment = 1,nsegments
+        
+        ! Get information about the next segment
+        call cc_getSegmentInfo (rbcAssemblyData%ranalyticBC,&
+            iindex,isegment,dpar2,iintervalEnds,ibctype,sparams)
+        
+        ! Form a boundary condition segment that covers that boundary part
+        if (dpar2 .ge. dpar1) then
+          
+          rbcAssemblyData%rboundaryRegion%dminParam = dpar1
+          rbcAssemblyData%rboundaryRegion%dmaxParam = dpar2
+          rbcAssemblyData%rboundaryRegion%iboundCompIdx = ibdComponent
+          rbcAssemblyData%rboundaryRegion%dmaxParamBC = &
+              boundary_dgetMaxParVal(rbcAssemblyData%p_rboundary, ibdComponent)
+          rbcAssemblyData%rboundaryRegion%iproperties = iintervalEnds
+          
+          ! Now, which type of BC is to be created?
+          select case (ibctype)
+          
+          ! -----------------------------------------------
+          ! Homogeneous / Inhomogeneous Neumann BC
+          ! -----------------------------------------------
+          case (0,4)
+            ! Usually there is Neumann boundary in this region, but we can not be
+            ! sure. Check if, on the highest level, there is at least one edge
+            ! of the triangulation belonging to the boundary. If yes, we
+            ! have found Neumann boundary. If no, the segment is just too
+            ! small to be considered as Neumann boundary.
+            
+            call bcasm_getElementsInBdRegion (&
+                p_rtriangulation,rbcAssemblyData%rboundaryRegion, icount)
+            if (icount .gt. 0) bNeumann = .true.
+          
+          ! -----------------------------------------------
+          ! Dirichlet BC
+          ! -----------------------------------------------
+          case (1)
+            ! Simple Dirichlet boundary
+            ! Read the line again, get the expressions for X- and Y-velocity
+            read(sparams,*) sbdex1,sbdex2
+            
+            ! For any string <> "", create the appropriate Dirichlet boundary
+            ! condition and add it to the list of boundary conditions.
+            !
+            ! If the type is a double precision value, set the DquickAccess(4)
+            ! to that value so it can quickly be accessed.
+            if (sbdex1 .ne. "") then
+              ! X-velocity
+              !
+              ! Component number, expression data
+              rbcAssemblyData%icomponent = 1
+              call cc_prepareExpressionEval (rbcAssemblyData,sbdex1)
+            
+              ! Assemble the BC`s.
+              call bcasm_newDirichletBConRealBD (&
+                  rdiscretisation,rbcAssemblyData%icomponent,&
+                  rbcAssemblyData%rboundaryRegion,&
+                  rdynamicLevelInfo%rdiscreteBC,&
+                  cc_fcoeff_bdConditions,rlocalCollection,casmComplexity)
+                  
+            end if
+            
+            if (sbdex2 .ne. "") then
+            
+              ! Y-velocity
+              !
+              ! Component number, expression data
+              rbcAssemblyData%icomponent = 2
+              call cc_prepareExpressionEval (rbcAssemblyData,sbdex2)
+            
+              ! Assemble the BC`s.
+              call bcasm_newDirichletBConRealBD (&
+                  rdiscretisation,rbcAssemblyData%icomponent,&
+                  rbcAssemblyData%rboundaryRegion,&
+                  rdynamicLevelInfo%rdiscreteBC,&
+                  cc_fcoeff_bdConditions,rlocalCollection,casmComplexity)
+
+            end if
+            
+          ! -----------------------------------------------
+          ! Pressure drop BC
+          ! -----------------------------------------------
+          case (2)
+          
+            ! Pressure drop boundary conditions.
+            ! Read the line again to get the actual parameters
+            read(sparams,*) sbdex1
+            
+            if (sbdex1 .ne. "") then
+            
+              ! PDrop BCs are a type of Neumann BCs since there is no Dirichlet value
+              ! prescribed for the velocity. Check if there are edges in the region.
+              ! If yes, create the BC and remember that we have Neumann BCs.
+              
+              call bcasm_getEdgesInBCregion (p_rtriangulation,rbcAssemblyData%p_rboundary,&
+                  rbcAssemblyData%rboundaryRegion, IminIndex,ImaxIndex,icount)
+              if (icount .gt. 0) then
+              
+                ! There is Neumann boundary
+                bNeumann = .true.
+                
+                ! Component number, expression data
+                rbcAssemblyData%icomponent = 0
+                call cc_prepareExpressionEval (rbcAssemblyData,sbdex1)
+                
+                IvelEqns = (/1,2/)
+                call bcasm_newPdropBConRealBd (&
+                    rdiscretisation,IvelEqns,rbcAssemblyData%rboundaryRegion,&
+                    rdynamicLevelInfo%rdiscreteBC,&
+                    cc_fcoeff_bdConditions,rlocalCollection,casmComplexity)
+                    
+              end if
+
+            end if
+            
+          ! -----------------------------------------------
+          ! Slip BC
+          ! -----------------------------------------------
+          case (3)
+            
+            ! Nonlinear slip boundary conditions.
+            IvelEqns = (/1,2/)
+            call bcasm_newSlipBConRealBd (&
+                rdiscretisation,IvelEqns(1:NDIM2D),rbcAssemblyData%rboundaryRegion,&
+                rdynamicLevelInfo%rdiscreteBC,casmComplexity)
+          
+          case default
+            call output_line ("Unknown boundary condition!", &
+                OU_CLASS_ERROR,OU_MODE_STD,"cc_parseBDconditions")
+            call sys_halt()
+          end select
+          
+          ! Move on to the next parameter value
+          dpar1 = dpar2
+          
+        end if
+                                          
+      end do
+      
     end do
 
-    ! Assembly finished, callback routine interface may now clean up.
-    call cc_doneCollectForAssembly (rproblem,rcoll)
-
-    ! Release the parser object with all the expressions to be evaluated
-    ! on the boundary.
-    call fparser_release (rparser)
-
-    ! Remove the boundary value parser from the collection
-    call collct_deletevalue (rcoll, BDC_BDPARSER)
-    
-    ! Remove the boundary-expression section we added earlier,
-    ! with all their content.
-    call collct_deletesection(rcoll,SEC_SBDEXPRESSIONS)
-
-    ! Remove the temporary collection from memory.
-    call collct_done (rcoll)
-
     ! The setting in the DAT file may overwrite our guess about Neumann boundaries.
-    call parlst_getvalue_int (p_rbdcond, "ineumannBoundary", i, -1)
+    call parlst_getvalue_int (rbcAssemblyData%ranalyticBC%p_rbdcond, &
+        "ineumannBoundary", i, -1)
     select case (i)
     case (0)
       bNeumann = .false.
@@ -613,16 +988,19 @@ contains
     if (rdynamicLevelInfo%hedgesDirichletBC .ne. ST_NOHANDLE) then
       call storage_free (rdynamicLevelInfo%hedgesDirichletBC)
     end if
-    call cc_getDirichletEdges (rproblem,p_rtriangulation,0,&
+    call cc_getDirichletEdges (rbcAssemblyData,p_rtriangulation,0,&
         rdynamicLevelInfo%hedgesDirichletBC,rdynamicLevelInfo%nedgesDirichletBC)
         
+    ! Release the boundary condition assembly structure, finish.
+    call cc_doneBCassembly (rbcAssemblyData)
+
   end subroutine
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine cc_getDirichletEdges (rproblem,rtriangulation,icomponent,hedges,ncount)
+  subroutine cc_getDirichletEdges (rbcAssemblyData,rtriangulation,icomponent,hedges,ncount)
 
 !<description>
   ! Calculates all edges in equation icomponent which are marked as Dirichlet
@@ -630,8 +1008,8 @@ contains
 !</description>
   
 !<input>
-  ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(inout), target :: rproblem
+  ! Boudary condition assembly data
+  type(t_bcassemblyData), intent(inout) :: rbcAssemblyData
   
   ! Underlying triangulation.
   type(t_triangulation), intent(in), target :: rtriangulation
@@ -655,23 +1033,13 @@ contains
     ! local variables
     integer, dimension(:), pointer :: p_Iedges, p_IedgesLocal
     integer, dimension(:,:), pointer :: p_IedgesAtElement
-    integer :: i, j, icount, hedgeslocal
-    integer :: ibdComponent,isegment,iintervalEnds
-    integer :: ibctyp
-    real(DP) :: dvalue,dpar1,dpar2
-    character(LEN=PARLST_MLDATA) :: cstr,cexpr,sbdex1,sbdex2
+    integer :: iindex, j, icount, hedgeslocal, isegment, nsegments
+    integer :: ibdComponent,iintervalEnds,ibctype
+    real(DP) :: dpar1,dpar2
+    character(LEN=PARLST_MLDATA) :: sparams,sbdex1,sbdex2
     
     ! A set of variables describing the analytic boundary conditions.
     type(t_boundaryRegion) :: rboundaryRegion
-    
-    ! A pointer to the domain
-    type(t_boundary), pointer :: p_rboundary
-    
-    ! A pointer to the section with the expressions and the boundary conditions
-    type(t_parlstSection), pointer :: p_rbdcond
-    
-    ! Get the domain from the problem structure
-    p_rboundary => rproblem%rboundary
     
     call storage_getbase_int2d(rtriangulation%h_IedgesAtElement,p_IedgesAtElement)
 
@@ -688,77 +1056,69 @@ contains
     ncount = 0
     call storage_getbase_int (hedgeslocal, p_Iedgeslocal)
     
-    ! Get the section describing the BCs.
-    call parlst_querysection(rproblem%rparamList, "BDCONDITIONS", p_rbdcond)
-    
     ! Loop through all boundary components we have.
-    do ibdComponent = 1,boundary_igetNBoundComp(p_rboundary)
+    do ibdComponent = 1,boundary_igetNBoundComp(rbcAssemblyData%p_rboundary)
       
-      ! Parse the parameter "bdComponentX"
-      write (cexpr,"(I10)") ibdComponent
-      cstr = "bdComponent" // adjustl(cexpr)
+      ! Get information about that component: Number of segments,...
+      call cc_getBDCinfo (rbcAssemblyData%ranalyticBC,ibdComponent,iindex,nsegments)
       
+      ! Parse the segments.
       ! We start at parameter value 0.0.
       dpar1 = 0.0_DP
       
-      i = parlst_queryvalue (p_rbdcond, cstr)
-      if (i .ne. 0) then
-        ! Parameter exists. Get the values in there.
-        do isegment = 1,parlst_querysubstrings (p_rbdcond, cstr)
-          
-          call parlst_getvalue_string (p_rbdcond, i, cstr, isubstring=isegment)
-          
-          ! Read the segment parameters
-          read(cstr,*) dpar2,iintervalEnds,ibctyp
-          
-          ! Form a boundary condition segment that covers that boundary part
-          if (dpar2 .ge. dpar1) then
-            
-            ! Now, which type of BC is to be created?
-            select case (ibctyp)
-            
-            case (1)
-              ! Simple Dirichlet boundary
-              ! Read the line again, get the expressions for X- and Y-velocity
-              read(cstr,*) dvalue,iintervalEnds,ibctyp,sbdex1,sbdex2
-              
-              ! If the type is a double precision value, set the DquickAccess(4)
-              ! to that value so it can quickly be accessed.
-              if (((icomponent .eq. 0) .and. ((sbdex1 .ne. "") .or. (sbdex2 .ne. ""))) .or. &
-                  ((icomponent .eq. 1) .and. (sbdex1 .ne. "")) .or. &
-                  ((icomponent .eq. 2) .and. (sbdex2 .ne. ""))) then
-              
-                ! Add the edges.
-                !
-                ! Get the element numbers + the local edge numbers and compute the
-                ! actual edge numbers.
-                rboundaryRegion%dminParam = dpar1
-                rboundaryRegion%dmaxParam = dpar2
-                rboundaryRegion%iboundCompIdx = ibdComponent
-                rboundaryRegion%dmaxParamBC = &
-                  boundary_dgetMaxParVal(p_rboundary, ibdComponent)
-                rboundaryRegion%iproperties = iintervalEnds
-                
-                call bcasm_getElementsInBCregion (rtriangulation,rboundaryRegion, icount, &
-                    IelList=p_Iedges(ncount+1:),IedgeLocal=p_Iedgeslocal)
-                do j=1,icount
-                  p_Iedges(ncount+j) = p_IedgesAtElement(p_Iedgeslocal(j),p_Iedges(ncount+j))
-                end do
-                ncount = ncount + icount
-                
-              end if
+      ! Parameter exists. Get the values in there.
+      do isegment = 1,nsegments
+        
+        ! Get information about the next segment
+        call cc_getSegmentInfo (&
+            rbcAssemblyData%ranalyticBC,iindex,isegment,dpar2,iintervalEnds,ibctype,sparams)
 
-            end select
+        ! Form a boundary condition segment that covers that boundary part
+        if (dpar2 .ge. dpar1) then
+          
+          ! Now, which type of BC is to be created?
+          select case (ibctype)
+          
+          case (1)
+            ! Simple Dirichlet boundary
+            ! Read the line again, get the expressions for X- and Y-velocity
+            read(sparams,*) sbdex1,sbdex2
             
-            ! Move on to the next parameter value
-            dpar1 = dpar2
+            ! If the type is a double precision value, set the DquickAccess(4)
+            ! to that value so it can quickly be accessed.
+            if (((icomponent .eq. 0) .and. ((sbdex1 .ne. "") .or. (sbdex2 .ne. ""))) .or. &
+                ((icomponent .eq. 1) .and. (sbdex1 .ne. "")) .or. &
+                ((icomponent .eq. 2) .and. (sbdex2 .ne. ""))) then
             
-          end if
-                                            
-        end do
-      
-      end if
-      
+              ! Add the edges.
+              !
+              ! Get the element numbers + the local edge numbers and compute the
+              ! actual edge numbers.
+              rboundaryRegion%dminParam = dpar1
+              rboundaryRegion%dmaxParam = dpar2
+              rboundaryRegion%iboundCompIdx = ibdComponent
+              rboundaryRegion%dmaxParamBC = &
+                boundary_dgetMaxParVal(rbcAssemblyData%p_rboundary, ibdComponent)
+              rboundaryRegion%iproperties = iintervalEnds
+              
+              call bcasm_getElementsInBCregion (rtriangulation,rboundaryRegion, icount, &
+                  IelList=p_Iedges(ncount+1:),IedgeLocal=p_Iedgeslocal)
+              do j=1,icount
+                p_Iedges(ncount+j) = p_IedgesAtElement(p_Iedgeslocal(j),p_Iedges(ncount+j))
+              end do
+              ncount = ncount + icount
+              
+            end if
+
+          end select
+          
+          ! Move on to the next parameter value
+          dpar1 = dpar2
+          
+        end if
+                                          
+      end do
+    
     end do
     
     ! Release unused memory
@@ -775,8 +1135,8 @@ contains
 
 !<subroutine>
 
-  subroutine cc_getBDconditions (Icomponents,rdiscretisation,rboundaryRegion,ielement, &
-                                 cinfoNeeded,iwhere,dwhere, Dvalues, rcollection)
+  subroutine cc_fcoeff_bdConditions (Icomponents,rdiscretisation,rboundaryRegion,ielement, &
+      cinfoNeeded,iwhere,dwhere, Dvalues, rcollection)
   
   use collection
   use spatialdiscretisation
@@ -869,14 +1229,11 @@ contains
   
 !</subroutine>
 
-    integer :: icomponent,iexprtyp,imovingFrame
-    
-    real(DP) :: dtime
-    
-    ! In a nonstationary simulation, one can get the simulation time
-    ! with the quick-access array of the collection.
-    dtime = rcollection%Dquickaccess(1)
-    imovingFrame = rcollection%Iquickaccess(5)
+    ! local variables
+    type(t_bcassemblyData), pointer :: p_rbcAssemblyData
+
+    ! Get a pointer to the boundary assembly data from the collection.
+    call cc_getBCassemblyPointer (rcollection,p_rbcAssemblyData)
 
     ! Use boundary conditions from DAT files.
     select case (cinfoNeeded)
@@ -886,227 +1243,472 @@ contains
       
       ! Dirichlet boundary conditions
     
-      ! The IquickAccess array is set up as follows:
-      !  IquickAccess(1) = Type of boundary condition
-      !  IquickAccess(2) = component under consideration (1=x-vel, 2=y-vel,...)
-      !  IquickAccess(3) = expression type
-      !  IquickAccess(4) = expression identifier
-      !  IquickAccess(5) = imovingFrame = 0/1
-      !
-      ! The DquickAccess array is set up as follows:
-      !  DquickAccess(5) = X-velocity of the moving frame
-      !  DquickAccess(6) = Y-velocity of the moving frame
-      !  DquickAccess(7) = X-acceleration of the moving frame
-      !  DquickAccess(8) = Y-acceleration of the moving frame
-      !
-      ! Get from the current component of the PDE we are discretising:
-      icomponent = rcollection%IquickAccess(2)
-      
       ! -> 1=X-velocity, 2=Y-velocity.
       
       ! Return zero Dirichlet boundary values for all situations by default.
       Dvalues(1) = 0.0_DP
 
       ! Now, depending on the problem, calculate the return value.
-      
-      ! The IquickAccess array is set up as follows:
-      !  IquickAccess(1) = Type of boundary condition
-      !  IquickAccess(2) = component under consideration (1=x-vel, 2=y-vel,...)
-      !  IquickAccess(3) = expression type
-      !  IquickAccess(4) = expression identifier
-      !  IquickAccess(5) = imovingFrame = 0/1
-      !
-      ! Get the type of the expression to evaluate from the
-      ! integer tag of the BC-region - if there is an expression to evaluate
-      ! at all.
-      iexprtyp = rcollection%IquickAccess(3)
-            
-      ! Now, which boundary condition do we have here?
+      ! Which boundary condition do we have here?
       !
       ! Get the information from evalBoundary.
       ! Note: The information about the BC`s can be retrieved from the
       ! quick-access arrays in the collection as initialised above.
-      select case (rcollection%IquickAccess(1))
+      select case (p_rbcAssemblyData%cbcType)
       case (1)
-        ! Simple Dirichlet BC`s. Evaluate the expression iexprtyp.
-        Dvalues(1) = evalBoundary (icomponent,rdiscretisation, rboundaryRegion, &
-            iexprtyp, rcollection%IquickAccess(4), rcollection%DquickAccess(4), &
-            dwhere, rcollection%SquickAccess(1),dtime,&
-            rcollection%DquickAccess(5:6),rcollection%DquickAccess(7:8),&
-            rcollection)
+        ! Simple Dirichlet BCs.
+        call cc_evalBoundaryValue (p_rbcAssemblyData,dwhere,Dvalues(1))
             
-        if (imovingFrame .ne. 0) then
+        if (p_rbcAssemblyData%imovingFrame .ne. 0) then
           ! Moving frame formulation active. Add the frame velocity to the
           ! Dirichlet boundary conditions.
-          Dvalues(1) = Dvalues(1) + rcollection%DquickAccess(5+icomponent-1)
+          Dvalues(1) = Dvalues(1) + p_rbcAssemblyData%DmframeVel(p_rbcAssemblyData%icomponent)
         end if
     
       case (2)
         ! Normal stress / pressure drop. Evaluate the  expression iexprtyp.
-        Dvalues(1) = evalBoundary (icomponent,rdiscretisation, rboundaryRegion, &
-            iexprtyp, rcollection%IquickAccess(4), rcollection%DquickAccess(4), &
-            dwhere, rcollection%SquickAccess(1),dtime,&
-            rcollection%DquickAccess(5:6),rcollection%DquickAccess(7:8),&
-            rcollection)
+        call cc_evalBoundaryValue (p_rbcAssemblyData,dwhere,Dvalues(1))
             
       end select
       
     end select
   
-  contains
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine cc_assembleInhomNeumann (rproblem,rcollection,rrhs)
+
+!<description>
+  ! Assembles inhomogeneous Neumann boundary conditions into the RHS vector
+  ! of the system.
+!</description>
   
-    ! Auxiliary function: Evaluate a scalar expression on the boundary.
+!<input>
+  ! A problem structure saving problem-dependent information.
+  type(t_problem), intent(inout), target :: rproblem
+  
+  ! Collection structure to be passed to callback routines
+  type(t_collection), intent(inout), target :: rcollection
+!</input>
+
+!<inputoutput>
+  ! RHS vector to be modified.
+  type(t_vectorBlock), intent(inout) :: rrhs
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    character(LEN=PARLST_MLDATA) :: sparams,sbdex1
+    type(t_bcassemblyData) :: rbcAssemblyData
+    type(t_collection) :: rlocalCollection
+    real(DP) :: dpar1,dpar2
+    integer :: iindex,nsegments,ibdComponent,isegment,iintervalEnds
+    integer :: ibctype
+    type(t_linearForm) :: rform
     
-    real(DP) function evalBoundary (icomponent,rdiscretisation, rboundaryRegion, &
-                                    ityp, ivalue, dvalue, dpar, stag, dtime, &
-                                    DmframeVel,DmframeAcc,rcollection)
+    ! For implementing boundary conditions, we use a `filter technique with
+    ! discretised boundary conditions`. This means, we first have to calculate
+    ! a discrete version of the analytic BC, which we can implement into the
+    ! solution/RHS vectors using the corresponding filter.
+    !
+    ! At first, initialise the assembly.
+    call cc_initBCassembly (rproblem,rrhs%p_rblockDiscr,&
+        rcollection,rbcAssemblyData,rlocalCollection)
     
-    ! Solution component for which the expression is evaluated.
-    ! 1 = X-velocity, 2 = y-velocity,...
-    integer, intent(in) :: icomponent
-    
-    ! Discretisation structure of the underlying discretisation
+    ! Loop through all boundary components we have.
+    do ibdComponent = 1,boundary_igetNBoundComp(rbcAssemblyData%p_rboundary)
+      
+      ! Get information about that component: Number of segments,...
+      call cc_getBDCinfo (rbcAssemblyData%ranalyticBC,ibdComponent,iindex,nsegments)
+      
+      ! Parse the segments.
+      ! We start at parameter value 0.0.
+      dpar1 = 0.0_DP
+      
+      ! Parameter exists. Get the values in there.
+      do isegment = 1,nsegments
+        
+        ! Get information about the next segment
+        call cc_getSegmentInfo (rbcAssemblyData%ranalyticBC,&
+            iindex,isegment,dpar2,iintervalEnds,ibctype,sparams)
+        
+        ! Form a boundary condition segment that covers that boundary part
+        if (dpar2 .ge. dpar1) then
+          
+          rbcAssemblyData%rboundaryRegion%dminParam = dpar1
+          rbcAssemblyData%rboundaryRegion%dmaxParam = dpar2
+          rbcAssemblyData%rboundaryRegion%iboundCompIdx = ibdComponent
+          rbcAssemblyData%rboundaryRegion%dmaxParamBC = &
+              boundary_dgetMaxParVal(rbcAssemblyData%p_rboundary, ibdComponent)
+          rbcAssemblyData%rboundaryRegion%iproperties = iintervalEnds
+          
+          ! Now, which type of BC is to be created?
+          select case (ibctype)
+
+          ! -----------------------------------------------
+          ! Inhomogeneous Neumann BC
+          ! -----------------------------------------------
+          case (4)
+            
+            ! Invoke the assembly of the inhomogeneous Neumann BCs.
+            ! This is just an integration on the boundary.
+            
+            ! Get the buondary expression
+            read (sparams,*) sbdex1
+            
+            ! Use the 4x4 Gauss formula (hardcoded). Should be
+            ! enough for most situations.
+            rform%itermCount = 1
+            rform%Dcoefficients(1) = 1.0_DP
+            rform%Idescriptors(1) = DER_FUNC
+            
+            ! Component data
+            call cc_prepareExpressionEval (rbcAssemblyData,sbdex1)
+            
+            rbcAssemblyData%icomponent = 1
+            call linf_buildVectorScalarBdr2D (rform, CUB_G4_1D, .false., &
+                rrhs%RvectorBlock(1),cc2d_fcoeff_inhomNeumann,&
+                rbcAssemblyData%rboundaryRegion, rlocalCollection)
+
+            rbcAssemblyData%icomponent = 2
+            call linf_buildVectorScalarBdr2D (rform, CUB_G4_1D, .false., &
+                rrhs%RvectorBlock(2),cc2d_fcoeff_inhomNeumann,&
+                rbcAssemblyData%rboundaryRegion, rlocalCollection)
+          
+          end select
+          
+          ! Move on to the next parameter value
+          dpar1 = dpar2
+          
+        end if
+                                          
+      end do
+      
+    end do
+
+    ! Release the boundary condition assembly structure, finish.
+    call cc_doneBCassembly (rbcAssemblyData)
+
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine cc2d_fcoeff_inhomNeumann (rdiscretisation, rform, &
+                  nelements, npointsPerElement, Dpoints, ibct, DpointPar, &
+                  IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
+
+    use basicgeometry
+    use collection
+    use domainintegration
+    use fsystem
+    use scalarpde
+    use spatialdiscretisation
+    use triangulation
+
+  !<description>
+    ! This subroutine is called during the calculation of boundary
+    ! integrals. It calculates the inhomogeneous Neumann boundary conditions
+    ! which are implemented into the RHS vector.
+  !</description>
+
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
     type(t_spatialDiscretisation), intent(in) :: rdiscretisation
-    
-    ! Current boundary region
-    type(t_boundaryRegion), intent(in) :: rboundaryRegion
-    
-    ! Type of expression to evaluate.
-    ! One of the BDC_xxxx constants from ccboundaryconditionparser.f90.
-    integer, intent(in) :: ityp
-    
-    ! Integer tag. If ityp=BDC_EXPRESSION, this must specify the number of
-    ! the expression in the expression object to evaluate.
-    ! Otherwise unused.
-    integer, intent(in) :: ivalue
-    
-    ! Double precision parameter for simple expressions
-    real(DP), intent(in) :: dvalue
-    
-    ! Current parameter value of the point on the boundary.
-    ! 0-1-parametrisation.
-    real(DP), intent(in) :: dpar
 
-    ! String tag that defines more complicated BC`s.
-    character(LEN=*), intent(in) :: stag
-    
-    ! For nonstationary simulation: Simulation time.
-    ! =0 for stationary simulations.
-    real(DP), intent(in) :: dtime
-    
-    ! A compiled expression for evaluation at runtime
-    type(t_fparser), pointer :: p_rparser
-    
-    ! Velocity of the moving frame (if the moving frame formulation is active)
-    real(DP), dimension(:), intent(in) :: DmframeVel
-    
-    ! Acceleration of the moving frame (if the moving frame formulation is active)
-    real(DP), dimension(:), intent(in) :: DmframeAcc
-    
-    ! A pointer to a collection structure to provide additional
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(in) :: rform
+
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in) :: nelements
+
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in) :: npointsPerElement
+
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
+
+    ! This is the number of the boundary component that contains the
+    ! points in Dpoint. All points are on the same boundary component.
+    integer, intent(in) :: ibct
+
+    ! For every point under consideration, this specifies the parameter
+    ! value of the point on the boundary component. The parameter value
+    ! is calculated in LENGTH PARAMETRISATION!
+    ! DIMENSION(npointsPerElement,nelements)
+    real(DP), dimension(:,:), intent(in) :: DpointPar
+
+    ! An array accepting the DOF`s on all elements in the test space.
+    ! DIMENSION(\#local DOF`s in test space,Number of elements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+  !</input>
+
+  !<inputoutput>
+    ! Optional: A collection structure to provide additional
     ! information to the coefficient routine.
-    type(t_collection), optional                  :: rcollection
+    type(t_collection), intent(inout), optional :: rcollection
+  !</inputoutput>
 
-      ! local variables
-      real(DP) :: d,dx,dy
-      character(LEN=PARLST_MLDATA) :: sexpr
-      real(DP), dimension(size(SEC_EXPRVARIABLES)) :: Rval
+  !<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
+  !</output>
+
+  !</subroutine>
+
+    ! local variables
+    integer :: ipt,iel,cnormalmean
+    real(DP) :: dpar,dval
+    real(DP), dimension(NDIM2D) :: Dnormal
+    type(t_bcassemblyData), pointer :: p_rbcAssemblyData
+
+    ! Get a pointer to the boundary assembly data from the collection.
+    call cc_getBCassemblyPointer (rcollection,p_rbcAssemblyData)
+
+    do iel = 1,nelements
+      do ipt = 1,npointsPerElement
       
-      select case (ityp)
-      case (BDC_USERDEF)
-        ! This is a hardcoded, user-defined identifier.
-        ! In stag, the name of the identifier is noted.
-        ! Get the identifier itself from the collection.
-        call collct_getvalue_string (rcollection, stag, sexpr, &
-                                     0, SEC_SBDEXPRESSIONS)
-                                
-        ! Call the user defined callback routine to evaluate the expression.
-        !
-        ! As collection, we pass rcollection%p_rcollection here; this is a pointer
-        ! to the application specific, global collection that may be of interest for
-        ! callback routines. rcollection itself is actually a "local" collection,
-        ! a "wrapper" for the rcollection of the application!
-        call getBoundaryValues (&
-            stag,icomponent,rdiscretisation,rboundaryRegion,&
-            dpar, d, rcollection%p_rnextCollection)
+        ! Get the parameter value in 0-1 parametrisation
+        dpar = boundary_convertParameter(p_rbcAssemblyData%p_rboundary, ibct, &
+            DpointPar(ipt,iel), BDR_PAR_LENGTH, BDR_PAR_01)
         
-        evalBoundary = d
+        ! The normal vector is a bit tricky. Normally, we take the "mean"
+        ! setting.
+        cnormalMean = BDR_NORMAL_MEAN
+        
+        ! Exception: If the parameter value corresponds to the beginning
+        ! of the interval, we take the setting 'left'. On the right end,
+        ! we take the setting 'right'.
+        ! Reason: If this happens, the left/right point belongs to the interval,
+        ! so it is more likely that the normal vector should be guided by
+        ! the interval.
+        if (dpar .eq. p_rbcAssemblyData%rboundaryRegion%dminParam) then
+          cnormalMean = BDR_NORMAL_LEFT
+        else if (dpar .eq. p_rbcAssemblyData%rboundaryRegion%dmaxParam) then
+          cnormalMean = BDR_NORMAL_RIGHT
+        end if
+        
+        ! Get the normal vector in that point
+        call boundary_getNormalVec2D(p_rbcAssemblyData%p_rboundary, &
+            p_rbcAssemblyData%rboundaryRegion%iboundCompIdx, &
+            dpar, Dnormal(1), Dnormal(2), cnormalMean)
       
-      case (BDC_VALDOUBLE)
-        ! A simple constant, given by dvalue
-        evalBoundary = dvalue
+        ! Calculate the expression in the current point.
+        call cc_evalBoundaryValue (p_rbcAssemblyData,dpar,dval)
+        
+        ! Multiply with them component of the normal vector
+        Dcoefficients(1,ipt,iel) = dval * Dnormal(p_rbcAssemblyData%icomponent)
+      end do
+    end do
+            
+  end subroutine
 
-      case (BDC_EXPRESSION)
-        ! A complex expression.
-        ! Get the expression object from the collection.
-        
-        p_rparser => collct_getvalue_pars (rcollection, BDC_BDPARSER, &
-                                   0, SEC_SBDEXPRESSIONS)
-                                   
-        ! Set up an array with variables for evaluating the expression.
-        ! Give the values in exactly the same order as specified
-        ! by SEC_EXPRVARIABLES!
-        Rval = 0.0_DP
-        
-        call boundary_getCoords(rdiscretisation%p_rboundary, &
-                                rboundaryRegion%iboundCompIdx, &
-                                dpar, dx, dy)
-        
-        ! Get the local parameter value 0 <= d <= 1 in the boundary region.
-        ! Note that if dpar < rboundaryRegion%dminParam, we have to add the maximum
-        ! parameter value on the boundary to dpar as normally 0 <= dpar < max.par.
-        ! although 0 <= dminpar <= max.par
-        !      and 0 <= dmaxpar <= max.par!
-        d = dpar
-        if (d .lt. rboundaryRegion%dminParam) &
-          d = d + boundary_dgetMaxParVal(rdiscretisation%p_rboundary,&
-                                         rboundaryRegion%iboundCompIdx)
-        d = d - rboundaryRegion%dminParam
+  ! **************************************************************************
 
-        ! Normalise to 0..1 using the length of the parameter region.
-        ! Necessary if a parabolic profile occurs in the inner of an edge e.g.
-        d = d / (rboundaryRegion%dmaxParam - rboundaryRegion%dminParam)
-        
-        Rval(1) = dx
-        Rval(2) = dy
-        ! Rval(3) = .
-        Rval(4) = d
-        Rval(5) = dpar
-        Rval(6) = boundary_convertParameter(rdiscretisation%p_rboundary, &
-                                            rboundaryRegion%iboundCompIdx, dpar, &
-                                            BDR_PAR_01, BDR_PAR_LENGTH)
-        Rval(7) = dtime
-        Rval(8:9) = DmframeVel(1:NDIM2D)
-        Rval(10:11) = DmframeAcc(1:NDIM2D)
-        
-        ! Evaluate the expression. ivalue is the number of
-        ! the expression to evaluate.
-        call fparser_evalFunction (p_rparser, ivalue, Rval, evalBoundary)
-        
-      case (BDC_VALPARPROFILE)
-        ! A parabolic profile. dvalue expresses the
-        ! maximum value of the profile.
-        !
-        ! Get the local parameter value 0 <= d <= 1.
-        ! Note that if dpar < rboundaryRegion%dminParam, we have to add the maximum
-        ! parameter value on the boundary to dpar as normally 0 <= dpar < max.par.
-        ! although 0 <= dminpar <= max.par
-        !      and 0 <= dmaxpar <= max.par!
-        d = dpar
-        if (d .lt. rboundaryRegion%dminParam) &
-          d = d + boundary_dgetMaxParVal(rdiscretisation%p_rboundary,&
-                                         rboundaryRegion%iboundCompIdx)
-        d = d - rboundaryRegion%dminParam
-        
-        ! Normalise to 0..1 using the length of the parameter region.
-        ! Necessary if a parabolic profile occurs in the inner of an edge e.g.
-        d = d / (rboundaryRegion%dmaxParam - rboundaryRegion%dminParam)
+!<subroutine>
+
+  subroutine cc_prepareExpressionEval (rbcAssemblyData,sexpression)
+
+!<description>
+  ! Fetches information about an expression into the rbcAssemblyData structure
+  ! such that the structure can be used for cc_evalBoundaryValue.
+!</description>
+  
+!<input>
+  ! Name of the expression
+  character(len=*), intent(in) :: sexpression
+!</input>
+
+!<inputoutput>
+  ! Boundary condition assembly data, to be prepared
+  type(t_bcassemblyData), intent(inout) :: rbcAssemblyData
+!</inputoutput>
+
+!</subroutine>
+
+    ! Expression name and type
+    rbcAssemblyData%sexprName = sexpression
     
-        evalBoundary = mprim_getParabolicProfile (d,1.0_DP,dvalue)
-      end select
+    call cc_getExprType (rbcAssemblyData%ranalyticBC,&
+        rbcAssemblyData%sexprName,rbcAssemblyData%cexprType)
     
-    end function
+    ! Dquickaccess(4) / IquickAccess(4) saves information
+    ! about the expression.
+    select case (rbcAssemblyData%cexprType)
+    case (BDC_VALDOUBLE,BDC_VALPARPROFILE)
+      ! Constant or parabolic profile
+      call cc_getDvalue (rbcAssemblyData%ranalyticBC,&
+          rbcAssemblyData%sexprName,rbcAssemblyData%dvalue)
+          
+    case (BDC_EXPRESSION)
+      ! Expression. Write the identifier for the expression
+      ! as ivalue into the boundary condition structure.
+      call cc_getIvalue (rbcAssemblyData%ranalyticBC,&
+          rbcAssemblyData%sexprName,rbcAssemblyData%ivalue)
 
+    end select
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine cc_evalBoundaryValue (rbcAssemblyData,dpar,dresult)
+  
+!<description>
+  ! Evaluates an expression in a point on the boundary.
+!</description>
+  
+!<input>
+  ! Boudary condition assembly data
+  type(t_bcassemblyData), intent(inout) :: rbcAssemblyData
+
+  ! Current parameter value of the point on the boundary.
+  ! 0-1-parametrisation.
+  real(DP), intent(in) :: dpar
+!</input>
+
+!<output>
+  ! Value of the expression in the point.
+  real(DP), intent(out) :: dresult
+!</output>
+
+!</function>
+
+    ! local variables
+    real(DP) :: d,dx,dy
+    character(LEN=PARLST_MLDATA) :: stag
+    real(DP), dimension(size(SEC_EXPRVARIABLES)) :: Rval
+    integer :: cnormalMean
+    
+    dresult = 0.0_DP
+    
+    select case (rbcAssemblyData%cexprType)
+    case (BDC_USERDEF)
+      ! This is a hardcoded, user-defined identifier.
+      ! Get the expression identifier from the collection, it is a string.
+      call cc_getSvalue (rbcAssemblyData%ranalyticBC,rbcAssemblyData%sexprName,stag)
+                              
+      ! Call the user defined callback routine to evaluate the expression.
+      ! Pass the user defined collection.
+      call getBoundaryValues (stag,rbcAssemblyData%icomponent,&
+          rbcAssemblyData%p_rdiscretisation%RspatialDiscr(rbcAssemblyData%icomponent),&
+          rbcAssemblyData%rboundaryRegion,&
+          dpar, dresult, rbcAssemblyData%p_ruserCollection)
+      
+    case (BDC_VALDOUBLE)
+      ! A simple constant, given by dvalue
+      dresult = rbcAssemblyData%dvalue
+
+    case (BDC_EXPRESSION)
+      ! A complex expression.
+      !
+      ! Set up an array with variables for evaluating the expression.
+      ! Give the values in exactly the same order as specified
+      ! by SEC_EXPRVARIABLES!
+      Rval = 0.0_DP
+      
+      call boundary_getCoords(rbcAssemblyData%p_rboundary, &
+          rbcAssemblyData%rboundaryRegion%iboundCompIdx, dpar, dx, dy)
+      
+      ! Get the local parameter value 0 <= d <= 1 in the boundary region.
+      ! Note that if dpar < rboundaryRegion%dminParam, we have to add the maximum
+      ! parameter value on the boundary to dpar as normally 0 <= dpar < max.par.
+      ! although 0 <= dminpar <= max.par
+      !      and 0 <= dmaxpar <= max.par!
+      d = dpar
+      if (d .lt. rbcAssemblyData%rboundaryRegion%dminParam) then
+        d = d + boundary_dgetMaxParVal(rbcAssemblyData%p_rboundary,&
+            rbcAssemblyData%rboundaryRegion%iboundCompIdx)
+      end if
+      d = d - rbcAssemblyData%rboundaryRegion%dminParam
+
+      ! Normalise to 0..1 using the length of the parameter region.
+      ! Necessary if a parabolic profile occurs in the inner of an edge e.g.
+      d = d / (rbcAssemblyData%rboundaryRegion%dmaxParam &
+               - rbcAssemblyData%rboundaryRegion%dminParam)
+      
+      Rval(1) = dx
+      Rval(2) = dy
+      Rval(3) = 0.0_DP ! Not used.
+      Rval(4) = d
+      Rval(5) = dpar
+      Rval(6) = boundary_convertParameter(rbcAssemblyData%p_rboundary, &
+          rbcAssemblyData%rboundaryRegion%iboundCompIdx, dpar, &
+          BDR_PAR_01, BDR_PAR_LENGTH)
+      Rval(7) = rbcAssemblyData%dtime
+      Rval(8:9) = rbcAssemblyData%DmframeVel(1:NDIM2D)
+      Rval(10:11) = rbcAssemblyData%DmframeAcc(1:NDIM2D)
+      
+      ! The normal vector is a bit tricky. Normally, we take the "mean"
+      ! setting.
+      cnormalMean = BDR_NORMAL_MEAN
+      
+      ! Exception: If the parameter value corresponds to the beginning
+      ! of the interval, we take the setting 'left'. On the right end,
+      ! we take the setting 'right'.
+      ! Reason: If this happens, the left/right point belongs to the interval,
+      ! so it is more likely that the normal vector should be guided by
+      ! the interval.
+      if (dpar .eq. rbcAssemblyData%rboundaryRegion%dminParam) then
+        cnormalMean = BDR_NORMAL_LEFT
+      else if (dpar .eq. rbcAssemblyData%rboundaryRegion%dmaxParam) then
+        cnormalMean = BDR_NORMAL_RIGHT
+      end if
+      
+      ! Get the normal vector in that point
+      call boundary_getNormalVec2D(rbcAssemblyData%p_rboundary, &
+          rbcAssemblyData%rboundaryRegion%iboundCompIdx, dpar, Rval(12), Rval(13), &
+          cnormalMean)
+      
+      ! Evaluate the expression. ivalue is the number of
+      ! the expression to evaluate.
+      call fparser_evalFunction (rbcAssemblyData%ranalyticBC%rparser, &
+          rbcAssemblyData%ivalue, Rval, dresult)
+      
+    case (BDC_VALPARPROFILE)
+      ! A parabolic profile. dvalue expresses the
+      ! maximum value of the profile.
+      !
+      ! Get the local parameter value 0 <= d <= 1.
+      ! Note that if dpar < rboundaryRegion%dminParam, we have to add the maximum
+      ! parameter value on the boundary to dpar as normally 0 <= dpar < max.par.
+      ! although 0 <= dminpar <= max.par
+      !      and 0 <= dmaxpar <= max.par!
+      d = dpar
+      if (d .lt. rbcAssemblyData%rboundaryRegion%dminParam) then
+        d = d + boundary_dgetMaxParVal(rbcAssemblyData%p_rboundary,&
+            rbcAssemblyData%rboundaryRegion%iboundCompIdx)
+      end if
+      d = d - rbcAssemblyData%rboundaryRegion%dminParam
+      
+      ! Normalise to 0..1 using the length of the parameter region.
+      ! Necessary if a parabolic profile occurs in the inner of an edge e.g.
+      d = d / (rbcAssemblyData%rboundaryRegion%dmaxParam &
+               - rbcAssemblyData%rboundaryRegion%dminParam)
+  
+      dresult = mprim_getParabolicProfile (d,1.0_DP,rbcAssemblyData%dvalue)
+    end select
+  
   end subroutine
 
   ! ***************************************************************************

@@ -223,6 +223,9 @@ contains
       ! if there are any.
       call vecfil_discreteNLPDropBCrhs (rrhs)
       
+      ! Implement inhomogeneous Neumann BCs.
+      call cc_assembleInhomNeumann (rproblem,rproblem%rcollection,rrhs)
+
       ! Implement discrete boundary conditions into RHS vector by
       ! filtering the vector.
       call vecfil_discreteBCrhs (rrhs,rproblem%RlevelInfo(ilvmax)%rdynamicInfo%rdiscreteBC)
@@ -230,7 +233,6 @@ contains
       ! Implement discrete boundary conditions of fictitious boundary components
       ! into RHS vector by filtering the vector.
       call vecfil_discreteFBCrhs (rrhs,rproblem%RlevelInfo(ilvmax)%rdynamicInfo%rdiscreteFBC)
-
     end if
     
     ! Implementation of boundary conditions into matrices deactivated.

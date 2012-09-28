@@ -32,6 +32,8 @@
 #    MFVELY = y-velocity of the moving frame (if imovingFrame=1)
 #    MFACCX = x-acceleration of the moving frame (if imovingFrame=1)
 #    MFACCY = y-acceleration of the moving frame (if imovingFrame=1)
+#    NX     = x-component of the normal vector on the boundary.
+#    NY     = Y-component of the normal vector on the boundary.
 #
 # The following constants are defined:
 #
@@ -109,6 +111,8 @@ ineumannBoundary = -1
 #                Example:  1.0  3  2  'PressValue1'
 #          = 3 : Slip boundary conditions. Like Neumann BC's this
 #                does not use an expression.
+#          = 4 : Inhomogeneous Neumann boundary.
+#                Example:  1.0  0  4  'NeumannBdValue'
 #
 # Note: In the default configuration, the expression name 'AnalyticBC'
 #  (as defined above with expression type -2) serves as a trigger for 
