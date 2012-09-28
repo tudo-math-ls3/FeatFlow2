@@ -108,6 +108,9 @@
 !# 27.) sys_stringToHash / sys_stringToHashI64
 !#      -> Converts a string to a hash function
 !#
+!# 28.) sys_countTokens / sys_getNextToken
+!#      -> Splits a string into several tokens and returns them one by one.
+!#
 !# </purpose>
 !##############################################################################
 
@@ -199,6 +202,8 @@ module fsystem
   public :: t_intPointer
   public :: t_int2DPointer
   public :: t_sysconfig
+  public :: sys_getNextToken
+  public :: sys_countTokens
 
 !<constants>
 
@@ -2648,5 +2653,259 @@ contains
     ivalue = mod(ihash,ifold)
     
   end function
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sys_getNextToken (sstring,stoken,istart,cseparator,bquoting)
+  
+!<description>
+  ! Splits a string into several tokens and returns them one by one.
+  ! For the first call, istart=1 must be set. The routine returns
+  ! every token found in stoken. The optional parameter cseperator
+  ! defines the seperator character between the tokens; by default,
+  ! a whitespace is used. Whitespaces surrounding the tokens are ignored.
+  ! Seperators in quotation marks are ignored except if bquoting is
+  ! set to FALSE.
+  !
+  ! Example:
+  ! <verb>
+  !    istart = 1
+  !    call sys_getToken (sstring,stoken1,istart)
+  !    call sys_getToken (sstring,stoken2,istart)
+  !    call sys_getToken (sstring,stoken3,istart)
+  ! </verb>
+!</description>
+
+!<input>
+  ! A string with parameters, e.g. "0.1 0.2 0.3",...
+  character(len=*), intent(in) :: sstring
+  
+  ! String that receives the parameter.
+  character(len=*), intent(out) :: stoken
+  
+  ! OPTIONAL: Character used to separate the tokens.
+  ! By default, this is a space.
+  character, intent(in), optional :: cseparator
+  
+  ! OPTIONAL: Ignore whitespaces surrounded by quotation
+  ! marks. Default is TRUE.
+  logical, intent(in), optional :: bquoting
+!</input>
+
+!<inputoutput>
+  ! On input: Must be set to =1 for the first call.
+  !   Position from where to search for the next parameter
+  ! On output:
+  !   =0, if this was the last parameter
+  !   Otherwise: position in sstring where the next parameter starts.
+  integer, intent(inout) :: istart
+!</inputoutput>
+
+!</subroutine>
+
+    integer :: i,slen
+    logical :: bquot
+    character :: csep, ccurrentquote
+    
+    ! Get optional parameters
+    csep = " "
+    bquot = .true.
+    ccurrentquote = " "
+    
+    if (present(cseparator)) csep = cseparator
+    if (present(bquoting)) bquot = bquoting
+    
+    ! If istart=0, do not do anything. There is nothing in the string
+    stoken = ""
+    if (istart .le. 0) return
+    
+    ! If the string length is =0, finish.
+    slen = len_trim(sstring)
+    if (slen .eq. 0) return
+    
+    ! Skip whitespaces.
+    do while (istart .le. slen)
+      if (sstring(istart:istart) .eq. " ") then
+        istart = istart + 1
+      else
+        exit
+      end if
+    end do
+    
+    ! End of the string?
+    i = istart
+    do while (i .le. slen)
+    
+      ! Process quotation marks.
+      if (bquot) then
+      
+        ! Is this a quotation mark?
+        if ((sstring(i:i) .eq. """") .or. (sstring(i:i) .eq. "'")) then
+          ! If quoting is inactive, activate it.
+          if (ccurrentquote .eq. " ") then
+            ccurrentquote = sstring(i:i)
+          else
+            ! If the quotation character matches the currently
+            ! found one, deactivate quoting. Otherwise ignore.
+            if (ccurrentquote .eq. sstring(i:i)) then
+              ccurrentquote = " "
+            end if
+          end if
+        end if
+
+        ! Process until the next separator.
+        ! Ignore separators in quotation marks.
+        if ((ccurrentquote .ne. " ") .or. (sstring(i:i) .ne. csep)) then
+          i = i + 1
+        else
+          exit
+        end if
+
+      else
+    
+        ! Process until the next separator
+        if (sstring(i:i) .ne. csep) then
+          i = i + 1
+        else
+          exit
+        end if
+        
+      end if
+      
+    end do
+    
+    ! Copy
+    if (istart .le. slen) then
+      stoken = sstring(istart:i)
+    end if
+    
+    ! Put istart behind the parameter or set it to 0.
+    if (i .ge. slen) then
+      ! No more parameters
+      istart = 0
+    else
+      ! Put istart behind the parameter -- on the whitespace which
+      ! is skipped in the next loop.
+      istart = i+1
+    end if
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sys_countTokens (sstring,ntokens,cseparator,bquoting)
+  
+!<description>
+  ! Returns the number of tokens in sstring
+!</description>
+
+!<input>
+  ! A string with parameters, e.g. "0.1 0.2 0.3",...
+  character(len=*), intent(in) :: sstring
+
+  ! OPTIONAL: Character used to separate the tokens.
+  ! By default, this is a space.
+  character, intent(in), optional :: cseparator
+  
+  ! OPTIONAL: Ignore whitespaces surrounded by quotation
+  ! marks. Default is TRUE.
+  logical, intent(in), optional :: bquoting
+!</input>
+
+!<output>
+  ! Number of parameters in sstring
+  integer, intent(out) :: ntokens
+!</output>
+
+!</subroutine>
+
+    integer :: slen, istart
+    logical :: bquot
+    character :: csep, ccurrentquote
+    
+    ! Get optional parameters
+    csep = " "
+    bquot = .true.
+    ccurrentquote = " "
+    
+    if (present(cseparator)) csep = cseparator
+    if (present(bquoting)) bquot = bquoting
+    
+    ! If the string length is =0, finish.
+    ntokens = 0
+    
+    slen = len_trim(sstring)
+    if (slen .eq. 0) return
+    
+    ! Find all substrings  
+    istart = 1
+    
+    do
+      ! Cancel if nothing left.
+      if (istart .gt. slen) exit
+
+      ! Skip whitespaces.
+      do while (istart .le. slen)
+        if (sstring(istart:istart) .eq. " ") then
+          istart = istart + 1
+        else
+          exit
+        end if
+      end do
+      
+      ! Cancel if we reached the string end
+      if (istart .gt. slen) exit
+      
+      ! End of the string?
+      do while (istart .le. slen)
+      
+        ! Process quotation marks.
+        if (bquot) then
+        
+          ! Is this a quotation mark?
+          if ((sstring(istart:istart) .eq. """") .or. &
+              (sstring(istart:istart) .eq. "'")) then
+            ! If quoting is inactive, activate it.
+            if (ccurrentquote .eq. " ") then
+              ccurrentquote = sstring(istart:istart)
+            else
+              ! If the quotation character matches the currently
+              ! found one, deactivate quoting. Otherwise ignore.
+              if (ccurrentquote .eq. sstring(istart:istart)) then
+                ccurrentquote = " "
+              end if
+            end if
+          end if
+
+          ! Process until the next separator.
+          ! Ignore separators in quotation marks.
+          if ((ccurrentquote .ne. " ") .or. (sstring(istart:istart) .ne. csep)) then
+            istart = istart + 1
+          else
+            exit
+          end if
+      
+        else
+
+          if (sstring(istart:istart) .ne. " ") then
+            istart = istart + 1
+          else
+            exit
+          end if
+          
+        end if
+      
+      end do
+      
+      ! One more
+      ntokens = ntokens + 1
+      
+    end do
+    
+  end subroutine
 
 end module fsystem
