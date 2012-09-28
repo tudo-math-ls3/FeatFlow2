@@ -1302,7 +1302,7 @@ contains
 !</subroutine>
 
     ! local variables
-    character(LEN=PARLST_MLDATA) :: sparams,sbdex1
+    character(LEN=PARLST_MLDATA) :: sparams,sbdex1,sbdex2
     type(t_bcassemblyData) :: rbcAssemblyData
     type(t_collection) :: rlocalCollection
     real(DP) :: dpar1,dpar2
@@ -1358,7 +1358,7 @@ contains
             ! This is just an integration on the boundary.
             
             ! Get the buondary expression
-            read (sparams,*) sbdex1
+            read (sparams,*) sbdex1,sbdex2
             
             ! Use the 4x4 Gauss formula (hardcoded). Should be
             ! enough for most situations.
@@ -1366,18 +1366,24 @@ contains
             rform%Dcoefficients(1) = 1.0_DP
             rform%Idescriptors(1) = DER_FUNC
             
-            ! Component data
-            call cc_prepareExpressionEval (rbcAssemblyData,sbdex1)
-            
-            rbcAssemblyData%icomponent = 1
-            call linf_buildVectorScalarBdr2D (rform, CUB_G4_1D, .false., &
-                rrhs%RvectorBlock(1),cc2d_fcoeff_inhomNeumann,&
-                rbcAssemblyData%rboundaryRegion, rlocalCollection)
+            ! Assemble
+            if (sbdex1 .ne. "") then
+              rbcAssemblyData%icomponent = 1
+              call cc_prepareExpressionEval (rbcAssemblyData,sbdex1)
+              
+              call linf_buildVectorScalarBdr2D (rform, CUB_G4_1D, .false., &
+                  rrhs%RvectorBlock(1),cc2d_fcoeff_inhomNeumann,&
+                  rbcAssemblyData%rboundaryRegion, rlocalCollection)
+            end if
 
-            rbcAssemblyData%icomponent = 2
-            call linf_buildVectorScalarBdr2D (rform, CUB_G4_1D, .false., &
-                rrhs%RvectorBlock(2),cc2d_fcoeff_inhomNeumann,&
-                rbcAssemblyData%rboundaryRegion, rlocalCollection)
+            if (sbdex2 .ne. "") then
+              rbcAssemblyData%icomponent = 2
+              call cc_prepareExpressionEval (rbcAssemblyData,sbdex2)
+              
+              call linf_buildVectorScalarBdr2D (rform, CUB_G4_1D, .false., &
+                  rrhs%RvectorBlock(2),cc2d_fcoeff_inhomNeumann,&
+                  rbcAssemblyData%rboundaryRegion, rlocalCollection)
+            end if
           
           end select
           
@@ -1476,7 +1482,7 @@ contains
 
     ! local variables
     integer :: ipt,iel,cnormalmean
-    real(DP) :: dpar,dval
+    real(DP) :: dpar
     real(DP), dimension(NDIM2D) :: Dnormal
     type(t_bcassemblyData), pointer :: p_rbcAssemblyData
 
@@ -1512,10 +1518,7 @@ contains
             dpar, Dnormal(1), Dnormal(2), cnormalMean)
       
         ! Calculate the expression in the current point.
-        call cc_evalBoundaryValue (p_rbcAssemblyData,dpar,dval)
-        
-        ! Multiply with them component of the normal vector
-        Dcoefficients(1,ipt,iel) = dval * Dnormal(p_rbcAssemblyData%icomponent)
+        call cc_evalBoundaryValue (p_rbcAssemblyData,dpar,Dcoefficients(1,ipt,iel))
       end do
     end do
             

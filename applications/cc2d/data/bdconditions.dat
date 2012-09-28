@@ -112,7 +112,7 @@ ineumannBoundary = -1
 #          = 3 : Slip boundary conditions. Like Neumann BC's this
 #                does not use an expression.
 #          = 4 : Inhomogeneous Neumann boundary.
-#                Example:  1.0  0  4  'NeumannBdValue'
+#                Example:  1.0  0  4  'NeumannBdValueX' 'NeumannBdValueY'
 #
 # Note: In the default configuration, the expression name 'AnalyticBC'
 #  (as defined above with expression type -2) serves as a trigger for 
