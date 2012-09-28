@@ -21,6 +21,7 @@
 program cc2d
 
   use ccmainproblem
+  use fparser
   
   implicit none
   
