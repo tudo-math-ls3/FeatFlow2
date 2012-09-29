@@ -1275,7 +1275,7 @@ contains
         if (rlinsolParam%rprecparameters%ioutputLevel .ge. 2) then
           call output_line ("Space-time BiCGStab: Iteration "// &
               trim(sys_siL(rlinsolParam%riter%niterations,10))//&
-              ",  !!RES!! = "//trim(sys_sdEL(dres,10)) )
+              ",  ||res(u)|| = "//trim(sys_sdEL(dres,10)) )
         end if
 
         ! If this already stops the iteration, cancel here.
@@ -1295,7 +1295,7 @@ contains
         if (rlinsolParam%rprecparameters%ioutputLevel .ge. 2) then
           call output_line ("Space-time BiCGStab: Iteration "// &
               trim(sys_siL(rlinsolParam%riter%niterations,10))//&
-              ",  !!RES!! = "//trim(sys_sdEL(dres,10)) )
+              ",  ||res(u)|| = "//trim(sys_sdEL(dres,10)) )
         end if
 
         ! -------------------------------------------------------------
