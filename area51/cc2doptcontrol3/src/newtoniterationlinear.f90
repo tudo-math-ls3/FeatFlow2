@@ -75,6 +75,9 @@ module newtoniterationlinear
   ! CG iteration
   integer, parameter, public :: NLIN_SOLVER_CG = 3
 
+  ! BiCGStab iteration
+  integer, parameter, public :: NLIN_SOLVER_BICGSTAB = 4
+
 !</constantblock>
 
 !<constantblock description = "Solver types; used for statistics.">
@@ -183,11 +186,15 @@ module newtoniterationlinear
     integer :: ccycle = 0
 
     ! Specifies the smoother.
-    ! =0: Damped Richardson iteration
+    ! =1: Damped Richardson iteration
+    ! =2: CG
+    ! =3: BiCGStab
     integer :: csmoother = 0
 
     ! Specifies the coarse grid solver.
-    ! =0: Damped Richardson iteration
+    ! =1: Damped Richardson iteration
+    ! =2: CG
+    ! =3: BiCGStab
     integer :: ccoarseGridSolver = 0
 
     ! Number of presmoothing steps
@@ -252,6 +259,30 @@ module newtoniterationlinear
   !</typeblock>
   
   public :: t_linsolCG
+
+! *****************************************************************************
+
+!<typeblock>
+  
+  ! BiCGSTab parameters and substructures
+  type t_linsolBiCGStab
+  
+    ! Temporary vectors to use during the solution process
+    type(t_controlSpace), dimension(3) :: RtempVectors
+
+    ! More temporary memory
+    type(t_kktsystemDirDeriv) :: rp
+
+    ! More temporary memory
+    type(t_kktsystemDirDeriv) :: rr
+    
+  end type
+
+!</typeblock>
+  
+  public :: t_linsolBiCGStab
+  
+! *****************************************************************************
   
   !<typeblock>
   
@@ -266,6 +297,8 @@ module newtoniterationlinear
   !</typeblock>
   
   public :: t_linsolRichardson
+
+! *****************************************************************************
   
   !<typeblock>
   
@@ -331,6 +364,9 @@ module newtoniterationlinear
 
     ! Parameters for the CG solver
     type(t_linsolCG), pointer :: p_rsubnodeCG => null()
+    
+    ! Parameters for the BiCGStab solver
+    type(t_linsolBiCGStab), pointer :: p_rsubnodeBiCGStab => null()
     
     ! <!-- -------------- -->
     ! <!-- TEMPORARY DATA -->
@@ -710,6 +746,14 @@ contains
       call newtonlin_cg (rsmootherParams,rkktsystemDirDeriv,rrhs,rstatistics)
 
     ! --------------------------------------
+    ! BiCGSTab iteration
+    ! --------------------------------------
+    case (NLIN_SOLVER_BICGSTAB)
+      ! Call the Richardson iteration to calculate an update
+      ! for the control.
+      call newtonlin_bicgstab (rsmootherParams,rkktsystemDirDeriv,rrhs,rstatistics)
+
+    ! --------------------------------------
     ! unknown iteration
     ! --------------------------------------
     case default
@@ -841,7 +885,7 @@ contains
   subroutine newtonlin_cg (rlinsolParam,rkktsystemDirDeriv,rrhs,rstatistics)
   
 !<description>
-  ! Applies a Richardson iteration in the control space
+  ! Applies a CG iteration in the control space
   ! for the linearised KKT system.
 !</description>
 
@@ -874,7 +918,7 @@ contains
     type(t_iterationControl) :: rlocaliter
     logical :: brealres
 
-    ! Measure total time
+    ! Measure the total time
     call stat_startTimer (rstatistics%rtotalTime)
 
     ! Get some temp memoty
@@ -1001,14 +1045,15 @@ contains
         end if
 
         if (rlocaliter%cstatus .eq. ITC_STATUS_CONTINUE) then
+          ! Restart, continue the iteration
+          call output_line ("Space-time CG: Not converged. Continuing...")
+
           ! Restart
           dalpha = 1.0_DP
           dbeta  = 1.0_DP
           dgamma = 1.0_DP
           dgammaOld = 1.0_DP
           
-          ! Now calculate using the real residual.
-          call output_line ("Space-time CG: Not converged. Continuing...")
           !brealres = .true.
           
           call kktsp_controlCopy (p_rr,p_rp%p_rcontrolLin)
@@ -1123,6 +1168,287 @@ contains
 !          trim(sys_sdEL(dres,10)))
 !    end if
 
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine newtonlin_bicgstab (rlinsolParam,rkktsystemDirDeriv,rrhs,rstatistics)
+  
+!<description>
+  ! Applies a BiCGStab iteration in the control space
+  ! for the linearised KKT system.
+!</description>
+
+!<inputoutput>
+  ! Parameters for the iteration.
+  ! The output parameters are changed according to the iteration.
+  type(t_linsolParameters), intent(inout), target :: rlinsolParam
+
+  ! Structure defining the linearised KKT system.
+  ! The linearised control in this structure is used as
+  ! initial and target vector.
+  ! The control on the maximum level receives the result.
+  type(t_kktsystemDirDeriv), intent(inout), target :: rkktsystemDirDeriv
+  
+  ! Right-hand side of the linearised control equation
+  type(t_controlSpace), intent(inout), target :: rrhs
+!</inputoutput>
+
+!<ouptut>
+  ! Solver statistics. 
+  type(t_newtonlinSolverStat), intent(out) :: rstatistics
+!</ouptut>
+
+!</subroutine>
+
+  ! local variables
+  real(DP) :: dalpha,dbeta,domega0,domega1,domega2,dres
+  real(DP) :: drho1,drho0
+  type(t_newtonlinSolverStat) :: rlocalStat
+  type(t_iterationControl) :: rlocaliter
+
+  ! Our structure
+  type(t_linsolBiCGStab), pointer :: p_rsubnode
+  
+  ! Pointers to temporary vectors - named for easier access
+  type(t_controlSpace), pointer :: p_rr0,p_rpA,p_rsA
+  type(t_kktsystemDirDeriv), pointer :: p_rp,p_rr
+  
+    ! Getch some information
+    p_rsubnode => rlinsolParam%p_rsubnodeBiCGStab
+
+    ! Set pointers to the temporary vectors
+    p_rr   => p_rsubnode%rp
+    p_rp   => p_rsubnode%rr
+
+    p_rr0  => p_rsubnode%RtempVectors(1)
+    p_rpA  => p_rsubnode%RtempVectors(2)
+    p_rsA  => p_rsubnode%RtempVectors(3)
+    
+    ! Measure the total time
+    call stat_startTimer (rstatistics%rtotalTime)
+
+    ! rrhs is our RHS. rkktsystemDirDeriv%p_rcontrolLin points to a new vector which will be our
+    ! iteration vector. 
+      
+    ! Initialise used vectors with zero
+    call kktsp_clearControl(p_rp%p_rcontrolLin)
+    call kktsp_clearControl(p_rpA)
+    
+    ! Initialise the iteration vector with zero.
+
+    ! Initialization
+    drho0  = 1.0_DP
+    dalpha = 1.0_DP
+    domega0 = 1.0_DP
+
+    ! Start the iteration
+    call itc_initIteration(rlinsolParam%riter)
+
+    do
+
+      ! -------------------------------------------------------------
+      ! Get/Save the norm of the current residual
+      ! -------------------------------------------------------------
+      if (rlinsolParam%riter%cstatus .eq. ITC_STATUS_UNDEFINED) then
+
+        ! Create the initial defect in rd
+        output_iautoOutputIndent = output_iautoOutputIndent + 2
+        call newtonlin_getResidual (rlinsolParam,&
+            rkktsystemDirDeriv,rrhs,p_rr%p_rcontrolLin,rlocalStat)
+        output_iautoOutputIndent = output_iautoOutputIndent - 2
+            
+        call newtonlin_sumStatistics(rlocalStat,rstatistics,NLIN_STYPE_RESCALC)
+
+        ! Get the norm of the residuum
+        dres = kktsp_getNormControl ( &
+            p_rr%p_rcontrolLin,rlinsolParam%rprecParameters%iresnorm)
+            
+        if (.not.((dres .ge. 1E-99_DP) .and. &
+                  (dres .le. 1E99_DP))) dres = 0.0_DP
+
+        ! Remember the initial residual
+        call itc_initResidual(rlinsolParam%riter,dres)
+
+        if (rlinsolParam%rprecparameters%ioutputLevel .ge. 2) then
+          call output_line ("Space-time BiCGStab: Iteration "// &
+              trim(sys_siL(rlinsolParam%riter%niterations,10))//&
+              ",  !!RES!! = "//trim(sys_sdEL(dres,10)) )
+        end if
+
+        ! If this already stops the iteration, cancel here.
+        if (rlinsolParam%riter%cstatus .ne. ITC_STATUS_CONTINUE) exit
+
+        ! -------------------------------------------------------------
+        ! Initialisation of the actual iteration
+        ! -------------------------------------------------------------
+
+        call kktsp_controlCopy(p_rr%p_rcontrolLin,p_rr0)
+
+      else
+
+        ! Push the residual, increase the iteration counter
+        call itc_pushResidual(rlinsolParam%riter,dres)
+
+        if (rlinsolParam%rprecparameters%ioutputLevel .ge. 2) then
+          call output_line ("Space-time BiCGStab: Iteration "// &
+              trim(sys_siL(rlinsolParam%riter%niterations,10))//&
+              ",  !!RES!! = "//trim(sys_sdEL(dres,10)) )
+        end if
+
+        ! -------------------------------------------------------------
+        ! Check for convergence / divergence / ...
+        ! -------------------------------------------------------------
+        if (rlinsolParam%riter%cstatus .eq. ITC_STATUS_CONVERGED) then
+          
+          ! Apply a restart to check if we really reached the residual
+
+          ! Create the defect in rd
+          call output_line ("Space-time BiCGStab: Restart for final residual check.")
+              
+          output_iautoOutputIndent = output_iautoOutputIndent + 2
+          call newtonlin_getResidual (rlinsolParam,&
+              rkktsystemDirDeriv,rrhs,p_rr%p_rcontrolLin,rlocalStat)
+          output_iautoOutputIndent = output_iautoOutputIndent - 2
+              
+          call newtonlin_sumStatistics(rlocalStat,rstatistics,NLIN_STYPE_RESCALC)
+          
+          dres = kktsp_getNormControl ( &
+              p_rr%p_rcontrolLin,rlinsolParam%rprecParameters%iresnorm)
+
+          rlocaliter = rlinsolParam%riter
+          call itc_resetResidualQueue (rlocaliter)
+          call itc_repushResidual(rlocaliter,dres)
+
+          if (rlinsolParam%rprecParameters%ioutputLevel .ge. 2) then
+            call output_line ("Space-time BiCGStab: Iteration "// &
+                trim(sys_siL(rlinsolParam%riter%niterations,10))// &
+                ", ||res(u)|| = "// &
+                trim(sys_sdEL(dres,10)))
+          end if
+
+          if (rlocaliter%cstatus .eq. ITC_STATUS_CONTINUE) then
+            ! Restart, continue the iteration
+            call output_line ("Space-time BiCGStab: Not converged. Continuing...")
+
+            ! Initialise the iteration vector with zero.
+            call kktsp_clearControl(p_rp%p_rcontrolLin)
+            call kktsp_clearControl(p_rpA)
+            
+            ! Reinitialization
+            drho0  = 1.0_DP
+            dalpha = 1.0_DP
+            domega0 = 1.0_DP
+
+            call kktsp_controlCopy(p_rr%p_rcontrolLin,p_rr0)
+            
+            ! Reset the statistics
+            rlinsolParam%riter = rlocaliter
+            
+          end if
+
+        end if
+        
+        if (rlinsolParam%riter%cstatus .ne. ITC_STATUS_CONTINUE) exit
+              
+      end if
+
+      ! -------------------------------------------------------------
+      ! BiCGStab iteration
+      ! -------------------------------------------------------------
+
+      drho1 = kktsp_scalarProductControl (p_rr0,p_rr%p_rcontrolLin)
+
+      if (drho0*domega0 .eq. 0.0_DP) then
+        ! Should not happen
+        if (rlinsolParam%rprecparameters%ioutputLevel .ge. 2) then
+          call output_line ("Space-time BiCGStab: Iteration prematurely stopped! "//&
+                "Correction vector is zero!")
+        end if
+
+        ! Some tuning for the output, then cancel.
+        rlinsolParam%riter%cstatus = ITC_STATUS_STAGNATED
+        exit
+        
+      end if
+
+      dbeta=(drho1*dalpha)/(drho0*domega0)
+      drho0 = drho1
+
+      call kktsp_controlLinearComb (p_rr%p_rcontrolLin  ,1.0_DP,p_rp%p_rcontrolLin,dbeta)
+      call kktsp_controlLinearComb (p_rpA ,-dbeta*domega0,p_rp%p_rcontrolLin,1.0_DP)
+
+      output_iautoOutputIndent = output_iautoOutputIndent + 2
+      call newtonlin_applyOperator (rlinsolParam,p_rp,p_rpA,rlocalStat)
+      output_iautoOutputIndent = output_iautoOutputIndent - 2
+      
+      call newtonlin_sumStatistics(rlocalStat,rstatistics,NLIN_STYPE_RESCALC)
+
+      dalpha = kktsp_scalarProductControl (p_rr0,p_rpA)
+      
+      if (abs(dalpha) .eq. 0.0_DP) then
+        ! We are below machine exactness - we can not do anything more...
+        ! May happen with very small problems with very few unknowns!
+        if (rlinsolParam%rprecparameters%ioutputLevel .ge. 2) then
+          call output_line ("Space-time BiCGStab: Convergence failed, ALPHA=0!")
+        end if
+        rlinsolParam%riter%cstatus = ITC_STATUS_STAGNATED
+        exit
+      end if
+        
+      dalpha = drho1/dalpha
+
+      call kktsp_controlLinearComb (p_rpA,-dalpha,p_rr%p_rcontrolLin,1.0_DP)
+
+      output_iautoOutputIndent = output_iautoOutputIndent + 2
+      call newtonlin_applyOperator (rlinsolParam,p_rr,p_rsA,rlocalStat)
+      output_iautoOutputIndent = output_iautoOutputIndent - 2
+      
+      call newtonlin_sumStatistics(rlocalStat,rstatistics,NLIN_STYPE_RESCALC)
+
+      domega1 = kktsp_scalarProductControl (p_rsA,p_rr%p_rcontrolLin)
+      domega2 = kktsp_scalarProductControl (p_rsA,p_rsA)
+      
+      if (domega1 .eq. 0.0_DP) then
+        domega0 = 0.0_DP
+      else
+        if (domega2 .eq. 0.0_DP) then
+          if (rlinsolParam%rprecparameters%ioutputLevel .ge. 2) then
+            call output_line ("Space-time BiCGStab: Convergence failed: omega=0!")
+          end if
+          rlinsolParam%riter%cstatus = ITC_STATUS_STAGNATED
+          exit
+        end if
+        domega0 = domega1/domega2
+      end if
+
+      call kktsp_controlLinearComb (&
+          p_rp%p_rcontrolLin ,dalpha, rkktsystemDirDeriv%p_rcontrolLin,1.0_DP)
+      call kktsp_controlLinearComb (&
+          p_rr%p_rcontrolLin ,domega0,rkktsystemDirDeriv%p_rcontrolLin,1.0_DP)
+
+      call kktsp_controlLinearComb (p_rsA,-domega0,p_rr%p_rcontrolLin,1.0_DP)
+
+      ! Get the norm of the new residuum
+      dres = kktsp_getNormControl (p_rr%p_rcontrolLin,rlinsolParam%rprecParameters%iresnorm)
+     
+      ! That is it - next iteration!
+    end do
+
+    call stat_stopTimer (rstatistics%rtotalTime)
+
+    ! Statistics
+    rstatistics%niterations = rstatistics%niterations + rlinsolParam%riter%niterations
+
+    if (rlinsolParam%rprecparameters%ioutputLevel .ge. 2) then
+      call output_lbrk()
+      call output_line ("Space-time BiCGStab statistics:")
+      call output_lbrk()
+      call itc_printStatistics(rlinsolParam%riter)
+    end if
+    
   end subroutine
 
   ! ***************************************************************************
@@ -1294,7 +1620,7 @@ contains
     ! -------------------------------
     ! Richardson solver
     ! -------------------------------
-    case (NLIN_SOLVER_RICHARDSON)
+    case (1)
     
       ! Partial initialisation of the corresponding linear solver structure
       allocate(rlinsolMultigrid%p_rsubSolvers(1)%p_rsubnodeRichardson)
@@ -1311,12 +1637,29 @@ contains
     ! -------------------------------
     ! CG solver
     ! -------------------------------
-    case (NLIN_SOLVER_CG)
+    case (2)
     
       ! Partial initialisation of the corresponding linear solver structure
       allocate(rlinsolMultigrid%p_rsubSolvers(1)%p_rsubnodeCG)
 
       rlinsolMultigrid%p_rsubSolvers(1)%csolverType = NLIN_SOLVER_CG
+      call newtonlin_initBasicParams (&
+          rlinsolMultigrid%p_rsubSolvers(1)%rprecParameters,&
+          rlinsolMultigrid%p_rsubSolvers(1)%riter,&
+          rlinsolMultigrid%ssectionCoarseGridSolver,rlinsolMultigrid%p_rparList)
+      call newtonlin_initExtParams (&
+          rlinsolMultigrid%p_rsubSolvers(1),&
+          rlinsolMultigrid%ssectionCoarseGridSolver,rlinsolMultigrid%p_rparList,rsolver)
+
+    ! -------------------------------
+    ! BiCGStab solver
+    ! -------------------------------
+    case (3)
+    
+      ! Partial initialisation of the corresponding linear solver structure
+      allocate(rlinsolMultigrid%p_rsubSolvers(1)%p_rsubnodeBiCGStab)
+
+      rlinsolMultigrid%p_rsubSolvers(1)%csolverType = NLIN_SOLVER_BICGSTAB
       call newtonlin_initBasicParams (&
           rlinsolMultigrid%p_rsubSolvers(1)%rprecParameters,&
           rlinsolMultigrid%p_rsubSolvers(1)%riter,&
@@ -1341,7 +1684,7 @@ contains
       ! -------------------------------
       ! Richardson smoother
       ! -------------------------------
-      case (NLIN_SOLVER_RICHARDSON)
+      case (1)
 
         ! Partial initialisation of the corresponding linear solver structure
         allocate(rlinsolMultigrid%p_rsubSolvers(ilevel)%p_rsubnodeRichardson)
@@ -1358,12 +1701,29 @@ contains
       ! -------------------------------
       ! CG smoother
       ! -------------------------------
-      case (NLIN_SOLVER_CG)
+      case (2)
 
         ! Partial initialisation of the corresponding linear solver structure
         allocate(rlinsolMultigrid%p_rsubSolvers(ilevel)%p_rsubnodeCG)
 
         rlinsolMultigrid%p_rsubSolvers(ilevel)%csolverType = NLIN_SOLVER_CG
+        call newtonlin_initBasicParams (&
+            rlinsolMultigrid%p_rsubSolvers(ilevel)%rprecParameters,&
+            rlinsolMultigrid%p_rsubSolvers(ilevel)%riter,&
+            rlinsolMultigrid%ssectionSmoother,rlinsolMultigrid%p_rparList)
+        call newtonlin_initExtParams (&
+            rlinsolMultigrid%p_rsubSolvers(ilevel),&
+            rlinsolMultigrid%ssectionSmoother,rlinsolMultigrid%p_rparList,rsolver)
+
+      ! -------------------------------
+      ! BiCGStab smoother
+      ! -------------------------------
+      case (3)
+
+        ! Partial initialisation of the corresponding linear solver structure
+        allocate(rlinsolMultigrid%p_rsubSolvers(ilevel)%p_rsubnodeBiCGStab)
+
+        rlinsolMultigrid%p_rsubSolvers(ilevel)%csolverType = NLIN_SOLVER_BICGSTAB
         call newtonlin_initBasicParams (&
             rlinsolMultigrid%p_rsubSolvers(ilevel)%rprecParameters,&
             rlinsolMultigrid%p_rsubSolvers(ilevel)%riter,&
@@ -1517,6 +1877,13 @@ contains
 
         deallocate(rlinsolMultigrid%p_rsubSolvers(ilevel)%p_rsubnodeCG)
             
+      ! -------------------------------
+      ! BICGSTAB smoother
+      ! -------------------------------
+      case (NLIN_SOLVER_BICGSTAB)
+
+        deallocate(rlinsolMultigrid%p_rsubSolvers(ilevel)%p_rsubnodeBiCGStab)
+
       end select
     
     end do
@@ -2423,6 +2790,14 @@ contains
       call newtonlin_cg (rlinsolParam,p_rkktsysDirDeriv,rnewtonDir,rstatistics)
           
     ! --------------------------------------
+    ! BiCGStab iteration
+    ! --------------------------------------
+    case (NLIN_SOLVER_BICGSTAB)
+      ! Call the Richardson iteration to calculate an update
+      ! for the control.
+      call newtonlin_bicgstab (rlinsolParam,p_rkktsysDirDeriv,rnewtonDir,rstatistics)
+          
+    ! --------------------------------------
     ! Multigrid iteration
     ! --------------------------------------
     case (NLIN_SOLVER_MULTIGRID)
@@ -2535,6 +2910,14 @@ contains
       ! Initialise the MG parameters
       allocate(rlinsolParam%p_rsubnodeCG)
     
+    ! -----------------------------------------------------
+    ! BiCGStab inítialisation
+    ! -----------------------------------------------------
+    case (NLIN_SOLVER_BICGSTAB)
+    
+      ! Initialise the MG parameters
+      allocate(rlinsolParam%p_rsubnodeBiCGStab)
+    
     end select
 
   end subroutine
@@ -2576,7 +2959,7 @@ contains
 
 !</subroutine>
 
-    integer :: ilev
+    integer :: ilev,i
    
     ilev = rkktsystemHierarchy%nlevels
     if (present(ilevel)) ilev = ilevel
@@ -2618,6 +3001,16 @@ contains
           rlinsolParam%p_rsubnodeCG%rr,rkktsystemHierarchy,ilev)
       call kkth_initControl (&
           rlinsolParam%p_rsubnodeCG%rAp,rkktsystemHierarchy,ilev)
+
+    ! -----------------------------------------------------
+    ! BiCGStab inítialisation
+    ! -----------------------------------------------------
+    case (NLIN_SOLVER_BICGSTAB)
+    
+      do i=1,size(rlinsolParam%p_rsubnodeBiCGStab%RtempVectors)
+        call kkth_initControl (&
+            rlinsolParam%p_rsubnodeBiCGStab%RtempVectors(i),rkktsystemHierarchy,ilev)
+      end do
 
     end select
     
@@ -2729,6 +3122,21 @@ contains
       call kkt_initKKTsystemDirDeriv (&
           rlinsolParam%p_rsubnodeCG%rp,p_rkktsystem)
 
+    ! -------------------------------
+    ! BiCGStab smoother/solver
+    ! -------------------------------
+    case (NLIN_SOLVER_BICGSTAB)
+
+      ! Get the KKT system solution on that level
+      call kkth_getKKTsystem (&
+          rsolutionHierarchy,ilev,p_rkktsystem)
+
+      ! Initialise the derivative in that point
+      call kkt_initKKTsystemDirDeriv (&
+          rlinsolParam%p_rsubnodeBiCGStab%rp,p_rkktsystem)
+      call kkt_initKKTsystemDirDeriv (&
+          rlinsolParam%p_rsubnodeBiCGStab%rr,p_rkktsystem)
+      
     end select
     
   end subroutine
@@ -2749,7 +3157,7 @@ contains
 !</inputoutput>
 
 !</subroutine>
-   
+
     ! Clean up subsolvers
     select case (rlinsolParam%csolverType)
     
@@ -2767,6 +3175,15 @@ contains
 
       ! Initialise the derivative in that point
       call kkt_doneKKTsystemDirDeriv (rlinsolParam%p_rsubnodeCG%rp)
+
+    ! -------------------------------
+    ! BiCGStab smoother/solver
+    ! -------------------------------
+    case (NLIN_SOLVER_BICGSTAB)
+
+      ! Initialise the derivative in that point
+      call kkt_doneKKTsystemDirDeriv (rlinsolParam%p_rsubnodeBiCGStab%rr)
+      call kkt_doneKKTsystemDirDeriv (rlinsolParam%p_rsubnodeBiCGStab%rp)
 
     end select
 
@@ -2788,6 +3205,8 @@ contains
 !</inputoutput>
 
 !</subroutine>
+
+    integer :: i
 
     ! Clean up subsolvers
     select case (rlinsolParam%csolverType)
@@ -2813,6 +3232,15 @@ contains
     
       call kktsp_doneControlVector (rlinsolParam%p_rsubnodeCG%rAp)
       call kktsp_doneControlVector (rlinsolParam%p_rsubnodeCG%rr)
+
+    ! -----------------------------------------------------
+    ! BiCGStab inítialisation
+    ! -----------------------------------------------------
+    case (NLIN_SOLVER_BICGSTAB)
+    
+      do i=1,size(rlinsolParam%p_rsubnodeBiCGStab%RtempVectors)
+        call kktsp_doneControlVector (rlinsolParam%p_rsubnodeBiCGStab%RtempVectors(i))
+      end do
 
     end select
 
@@ -2861,6 +3289,14 @@ contains
       ! Initialise the MG parameters
       deallocate(rlinsolParam%p_rsubnodeCG)
 
+    ! -----------------------------------------------------
+    ! BiCGSTab inítialisation
+    ! -----------------------------------------------------
+    case (NLIN_SOLVER_BICGSTAB)
+    
+      ! Initialise the MG parameters
+      deallocate(rlinsolParam%p_rsubnodeBiCGStab)
+
     end select
    
   end subroutine
@@ -2879,7 +3315,7 @@ contains
   ! WARNING!!! THIS ROUTINE HAS A SIDE EFFECT!
   ! IT SETS THE STOPPING CRITERION OF ALL SOLVERS IN SPACE TO AN APPROPRIATE
   ! VALUE! IF THE SPACE SOVLERS AE USED SOMEWHERE ELSE, THE STOPPING CRITERION
-  ! IS LOST AND THUS, THEY MAY BEHAVE NOT AS EXPECTED!!!
+  ! IS LOST AND THUS, THEY MAY NOT BEHAVE AS EXPECTED!!!
 !</description>
 
 !<inputoutput>
@@ -2928,6 +3364,15 @@ contains
         else
           rlinsolParam%p_rsubnodeMultigrid%p_RsubSolvers(1)%riter%ctolMode = ITC_STOP_MODE_ABS
         end if
+        
+      else
+        
+        ! Tweak the coarse grid solver. Gain two digits, but not more than
+        ! Specified in the absolute stopping criterion (plus one digit).
+        rlinsolParam%p_rsubnodeMultigrid%p_RsubSolvers(1)%riter%ctolMode = ITC_STOP_MODE_ONE_OF
+        rlinsolParam%p_rsubnodeMultigrid%p_RsubSolvers(1)%riter%dtolRel = 0.01_DP
+        rlinsolParam%p_rsubnodeMultigrid%p_RsubSolvers(1)%riter%dtolAbs = depsAbs * 0.1_DP
+        
       end if
     
     end select

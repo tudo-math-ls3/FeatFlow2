@@ -219,9 +219,9 @@ domega = 1.0
 nsmPre = 0
 nsmPost = 2
 ccycle = 1 # 0
-csmoother = 3
+csmoother = 2
 #csmoother = 1
-ccoarseGridSolver = 3
+ccoarseGridSolver = 2
 #ccoarseGridSolver = 1
 
 [SPACETIME-SMOOTHER]

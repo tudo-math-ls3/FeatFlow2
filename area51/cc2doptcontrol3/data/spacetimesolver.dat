@@ -240,11 +240,13 @@ ccycle = 0
 # Specifies the smoother.
 # =1: Damped Richardson iteration
 # =2: CG
+# =3: BiCGStab
 csmoother = 1
 
 # Specifies the coarse grid solver.
 # =1: Damped Richardson iteration
 # =2: CG
+# =3: BiCGStab
 ccoarseGridSolver = 1
 
 # Section configuring the smoother
