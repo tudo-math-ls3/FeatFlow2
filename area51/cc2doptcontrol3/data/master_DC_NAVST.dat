@@ -212,8 +212,8 @@ cspatialInitCondPolicy = 0
 
 [SPACETIME-ADAPTIVENEWTON]
 cpartialNewton = 2
-nminPartialNewtonIterations = 0 # 3
-nmaxPartialNewtonIterations = 0 # 3
+nminPartialNewtonIterations = 1 # 3
+nmaxPartialNewtonIterations = 1 # 3
 dinexactNewtonTolRel = 1.0E-2
 dinexactNewtonTolAbs = 1E-12
 
@@ -229,7 +229,7 @@ domega = 1.0
 
 [SPACETIME-MULTIGRID]
 nsmPre = 0
-nsmPost = 4
+nsmPost = 2
 ccycle = 1 # 0
 csmoother = 3
 ccoarseGridSolver = 3
