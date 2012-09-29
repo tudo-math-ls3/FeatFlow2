@@ -205,13 +205,24 @@ module ccboundaryconditionparser
     ! Maximum time
     real(DP) :: dtimeMax = 0.0_DP
     
-    !<!-- Boudnary condition specific parameters -->
+    !<!-- Boundary condition specific parameters -->
     
     ! Type of boundary condition
     integer :: cbcType = 0
     
     ! component under consideration (1=x-vel, 2=y-vel,...)
     integer :: icomponent = 0
+
+    ! Whether or not the moving frame formulation is active.
+    integer :: imovingFrame = 0
+    
+    !  X/Y-velocity of the moving frame
+    real(DP), dimension(NDIM2D) :: DmframeVel = 0.0_DP
+    
+    !  X/Y-acceleration of the moving frame
+    real(DP), dimension(NDIM2D) :: DmframeAcc = 0.0_DP
+    
+    !<!-- Parameters vor the evaluation of expressions -->
     
     ! expression type
     integer :: cexprType = 0
@@ -222,17 +233,8 @@ module ccboundaryconditionparser
     ! Real value for the expression
     real(DP) :: dvalue = 0.0_DP
     
-    ! Whether or not the moving frame formulation is active.
-    integer :: imovingFrame = 0
-    
     ! Name of the expression
     character(len=PARLST_MLNAME) :: sexprName = ""
-    
-    !  X/Y-velocity of the moving frame
-    real(DP), dimension(NDIM2D) :: DmframeVel = 0.0_DP
-    
-    !  X/Y-acceleration of the moving frame
-    real(DP), dimension(NDIM2D) :: DmframeAcc = 0.0_DP
     
   end type
 
@@ -807,7 +809,7 @@ contains
     real(DP) :: dpar1,dpar2
     integer, dimension(2) :: IminIndex,ImaxIndex
     integer :: iindex,nsegments,ibdComponent,isegment,iintervalEnds
-    integer :: ibctype,icount
+    integer :: cbctype,icount
     integer, dimension(NDIM2D) :: IvelEqns
     integer(I32) :: casmComplexity
     
@@ -875,7 +877,9 @@ contains
         
         ! Get information about the next segment
         call cc_getSegmentInfo (rbcAssemblyData%ranalyticBC,&
-            iindex,isegment,dpar2,iintervalEnds,ibctype,sparams)
+            iindex,isegment,dpar2,iintervalEnds,cbctype,sparams)
+            
+        rbcAssemblyData%cbctype = cbctype
         
         ! Form a boundary condition segment that covers that boundary part
         if (dpar2 .ge. dpar1) then
@@ -888,7 +892,7 @@ contains
           rbcAssemblyData%rboundaryRegion%iproperties = iintervalEnds
           
           ! Now, which type of BC is to be created?
-          select case (ibctype)
+          select case (cbctype)
           
           ! -----------------------------------------------
           ! Homogeneous / Inhomogeneous Neumann BC
@@ -1084,7 +1088,7 @@ contains
     integer, dimension(:), pointer :: p_Iedges, p_IedgesLocal
     integer, dimension(:,:), pointer :: p_IedgesAtElement
     integer :: iindex, j, icount, hedgeslocal, isegment, nsegments
-    integer :: ibdComponent,iintervalEnds,ibctype
+    integer :: ibdComponent,iintervalEnds,cbctype
     real(DP) :: dpar1,dpar2
     character(LEN=PARLST_MLDATA) :: sparams,sbdex1,sbdex2
     
@@ -1121,13 +1125,13 @@ contains
         
         ! Get information about the next segment
         call cc_getSegmentInfo (&
-            rbcAssemblyData%ranalyticBC,iindex,isegment,dpar2,iintervalEnds,ibctype,sparams)
+            rbcAssemblyData%ranalyticBC,iindex,isegment,dpar2,iintervalEnds,cbctype,sparams)
 
         ! Form a boundary condition segment that covers that boundary part
         if (dpar2 .ge. dpar1) then
           
           ! Now, which type of BC is to be created?
-          select case (ibctype)
+          select case (cbctype)
           
           case (1)
             ! Simple Dirichlet boundary
@@ -1357,7 +1361,7 @@ contains
     type(t_collection) :: rlocalCollection
     real(DP) :: dpar1,dpar2
     integer :: iindex,nsegments,ibdComponent,isegment,iintervalEnds
-    integer :: ibctype
+    integer :: cbctype
     type(t_linearForm) :: rform
     
     ! For implementing boundary conditions, we use a `filter technique with
@@ -1384,7 +1388,7 @@ contains
         
         ! Get information about the next segment
         call cc_getSegmentInfo (rbcAssemblyData%ranalyticBC,&
-            iindex,isegment,dpar2,iintervalEnds,ibctype,sparams)
+            iindex,isegment,dpar2,iintervalEnds,cbctype,sparams)
         
         ! Form a boundary condition segment that covers that boundary part
         if (dpar2 .ge. dpar1) then
@@ -1397,7 +1401,7 @@ contains
           rbcAssemblyData%rboundaryRegion%iproperties = iintervalEnds
           
           ! Now, which type of BC is to be created?
-          select case (ibctype)
+          select case (cbctype)
 
           ! -----------------------------------------------
           ! Inhomogeneous Neumann BC
