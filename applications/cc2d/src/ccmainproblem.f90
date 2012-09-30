@@ -251,6 +251,10 @@ contains
       call cc_generateBasicRHS (p_rproblem,&
           p_rproblem%RlevelInfo(p_rproblem%NLMAX)%rasmTempl,&
           p_rproblem%rrhsAssembly,rrhs)
+
+      ! Implement inhomogeneous Neumann BCs.
+      call cc_assembleInhomNeumann (p_rproblem,p_rproblem%rcollection,rrhs)
+
       call stat_stopTimer(rtimerRHSgeneration)
       p_rproblem%rstatistics%dtimeRHSAssembly = &
           p_rproblem%rstatistics%dtimeRHSAssembly + rtimerRHSgeneration%delapsedReal
@@ -295,6 +299,10 @@ contains
       call cc_generateBasicRHS (p_rproblem,&
           p_rproblem%RlevelInfo(p_rproblem%NLMAX)%rasmTempl,&
           p_rproblem%rrhsAssembly,rrhs)
+
+      ! Implement inhomogeneous Neumann BCs.
+      call cc_assembleInhomNeumann (p_rproblem,p_rproblem%rcollection,rrhs)
+
       call stat_stopTimer(rtimerRHSgeneration)
       p_rproblem%rstatistics%dtimeRHSAssembly = &
           p_rproblem%rstatistics%dtimeRHSAssembly + rtimerRHSgeneration%delapsedReal
