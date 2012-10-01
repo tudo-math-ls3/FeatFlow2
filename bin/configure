@@ -5052,7 +5052,7 @@ sub print_statistics_about_feastAppMakefile {
 	( ($string eq "YES") ? "relinked every time make is invoked" : "linked only when missing" ) . "\n";
 
     $string = (defined($cl{'AGMG'})) ? $cl{'AGMG'} : $defaults{'AGMG'};
-    print "  AGMG support                   : " .
+    print "  AGMG support                     : " .
         ( ($string eq "YES") ? "yes" : "no" ) . "\n";
 
     print "  Application binary type          : ";
