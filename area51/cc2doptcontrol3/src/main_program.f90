@@ -459,6 +459,19 @@ contains
     call kkth_initKKTSystem (rsolution,rkktsystemHierarchy,&
         rkktsystemHierarchy%nlevels,p_rsettingsSolver%roperatorAsmHier,&
         p_rsettingsSolver%roptcBDC)
+
+    if (rsettings%routput%ioutputInit .ge. 1) then
+      call output_lbrk()
+      call output_line ("Initialising initial iterate.")
+    end if
+
+    ! Initialise the initial iterate
+    call init_initInitialIterate (rparlist,rsettings%ssectionOptControl,&
+        p_rsettingsSolver%rphysics,p_rsettingsSolver%rsettingsSpaceDiscr,&
+        p_rsettingsSolver%rtriaCoarse,p_rsettingsSolver%rrefinementSpace,&
+        p_rsettingsSolver%rfeHierarchyControl,p_rsettingsSolver%rtimeHierarchy,&
+        p_rsettingsSolver%rboundary,rsolution%p_rcontrol%p_rvector)
+    call sptivec_invalidateVecInPool (rsolution%p_rcontrol%p_rvectorAccess)
     
     if (rsettings%routput%ioutputInit .ge. 1) then
       call output_lbrk()

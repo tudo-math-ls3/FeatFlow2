@@ -847,7 +847,7 @@ contains
           
     case default
       call output_line ("Invalid output type.", &
-          OU_CLASS_ERROR,OU_MODE_STD,"optcpp_singleVectorDumP")
+          OU_CLASS_ERROR,OU_MODE_STD,"optcpp_singleVectorDump")
       call sys_halt()
     end select
     

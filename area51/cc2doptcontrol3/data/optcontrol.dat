@@ -23,6 +23,9 @@ stargetFunction = OPTCTARGETFUNCTION
 # Name of the section that defines the initial condition.
 sinitialCondition = INITIALCONDITION
 
+# Name of the section that defines the initial solution of the iteration
+sinitialIterate = INITIALITERATE
+
 # Name of the section that defines the primal RHS of the (Navier-)Stokes equation
 srhsPrimal = RIGHTHANDSIDE_PRIMAL
 

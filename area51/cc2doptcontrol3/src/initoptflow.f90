@@ -47,6 +47,7 @@ module initoptflow
   
   use spacematvecassembly
   use initmatrices
+  use spacetimevectors
   use spacetimeinterlevelprj
   use postprocessing
   
@@ -61,6 +62,9 @@ module initoptflow
   
   ! Clean up the OptFlow solver
   public :: init_doneOptFlow
+  
+  ! Initialise the initial iterate
+  public :: init_initInitialIterate
   
 contains
 
@@ -641,6 +645,102 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,"init_initOptControlTargetFunc2D")
       call sys_halt()
     end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine init_initInitialIterate (rparlist,ssectionOptC,&
+      rphysics,rsettingsSpaceDiscr,&
+      rtriaCoarse,rrefinementSpace,rfeHierPrimal,rtimeHierarchy,rboundary,rinitialIterate)
+  
+!<description>
+  ! Initialises the initial iterate of the nonlinear iteration
+  ! in space and time.
+!</description>
+
+!<input>
+  ! Parameter list
+  type(t_parlist), intent(in) :: rparlist
+  
+  ! Section where the parameters of the optimal control can be found.
+  character(len=*), intent(in) :: ssectionOptC
+
+  ! Physics of the problem
+  type(t_settings_physics), intent(in), target :: rphysics
+
+  ! Structure with space discretisation settings
+  type(t_settings_spacediscr), intent(in) :: rsettingsSpaceDiscr
+
+  ! Underlying spatial coarse mesh of the problem.
+  type(t_triangulation), intent(in) :: rtriaCoarse
+  
+  ! Definition of the underlying domain.
+  type(t_boundary), intent(in) :: rboundary
+
+  ! Description of the refinement of rtriaCoarse.
+  type(t_settings_refinement), intent(in) :: rrefinementSpace
+
+  ! A hierarchy of space levels for velocity+pressure (primal/dual space).
+  ! If the element of the target function matches the one of the primary
+  ! function, this hierarchy is used to save memory.
+  type(t_feHierarchy), intent(in) :: rfeHierPrimal
+  
+  ! Underlying hierarchy of the time discretisation
+  type(t_timescaleHierarchy), intent(in) :: rtimeHierarchy
+!</input>
+
+!<inputoutput>
+  ! The vector which receives the initial iterate
+  type(t_spaceTimeVector), intent(inout) :: rinitialIterate
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    character(len=SYS_STRLEN) :: sinitialIterate
+    integer :: isuccess
+    type(t_anSolution) :: rinitialIterateAnalytic
+    
+    ! Initialise the target function.
+    call parlst_getvalue_string (rparlist,ssectionOptC,&
+        "sinitialIterate",sinitialIterate,bdequote=.true.)
+        
+    ! Read in the solution
+    call init_initFunction (rparlist,sinitialIterate,rinitialIterateAnalytic,&
+        rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,rfeHierPrimal,rboundary,&
+        rphysics,isuccess)
+    
+    if (isuccess .eq. 1) then
+      ! Read a nonstationary simulation
+      call output_line ("Function created by simulation not yet supported!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"init_initInitialIterate")
+      call sys_halt()
+    end if
+    
+    ! Project to the space-time vector
+    select case (rinitialIterateAnalytic%ctype)
+    case (ANSOL_TP_ZERO)
+      call sptivec_clearVector (rinitialIterate)
+    case (ANSOL_TP_MBNONSTATIONARYFILE) 
+      if ((rinitialIterateAnalytic%rnonstationary%NEQ .eq. rinitialIterate%NEQ) .and. &
+          (rinitialIterateAnalytic%rnonstationary%NEQtime .eq. rinitialIterate%NEQtime)) then
+        ! We just steal the space-tine vector
+        call sptivec_copyVector(rinitialIterateAnalytic%rnonstationary,rinitialIterate)
+      else
+        call sys_halt()
+        !call ansol_prjToSpaceTimeVector (rinitialIterateAnalytic,rinitialIterate,&
+        !    0,0,rmassmatrix)
+      end if
+    case default
+      !call ansol_prjToSpaceTimeVector (rinitialIterateAnalytic,rinitialIterate,&
+      !    0,0,rmassmatrix)
+    end select
+    
+    ! Release the analytic solution
+    call ansol_done (rinitialIterateAnalytic)
 
   end subroutine
 

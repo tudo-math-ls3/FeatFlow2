@@ -1945,16 +1945,17 @@ contains
   real(dp), intent(in) :: dtime
   
   ! First dimension to evaluate.
-  ! =0: First dimension
-  integer, intent(in) :: idimstart
+  ! =0: First dimension (default)
+  integer, intent(in), optional :: idimstart
 
   ! Last dimension to evaluate.
-  ! =0: Last dimension
-  integer, intent(in) :: idimend
+  ! =0: Last dimension (default)
+  integer, intent(in), optional :: idimend
   
-  ! Block matrix with mass matrices on the diagonal for all components,
+  ! OPTIONAL: Block matrix with mass matrices on the diagonal for all components,
   ! corresponding to the destination vector.
-  type(t_matrixBlock), intent(in) :: rmassMatrix
+  ! Must be specified for imethod=1.
+  type(t_matrixBlock), intent(in), optional :: rmassMatrix
   
   ! Target dimension in rvector where to write the evaluated solution
   ! to. Only valid for idim > 0. If not specified, this defaults to idim.
@@ -1986,12 +1987,19 @@ contains
     
     ! Prepare the collection for evaluation.
     call ansol_prepareEvalCollection (rsolution,rcollection,"SOL",dtime)
+    
     istart = 1
     iend = max(rsolution%ncomponents,rvector%nblocks)
-    if (idimstart .ne. 0) istart = idimstart
-    if (idimend .ne. 0) iend = idimend
-
     imeth = 0
+    
+    if (present(idimstart)) then
+      if (idimstart .ne. 0) istart = idimstart
+    end if
+    
+    if (present(idimend)) then
+      if (idimend .ne. 0) iend = idimend
+    end if
+
     if (present(imethod)) imeth = imethod
     
     select case (imeth)
@@ -2013,18 +2021,35 @@ contains
         call lsyssc_getbase_double (rvector%RvectorBlock(idim2),p_Ddata)
         
         ! Evaluate
-        !call anprj_discrDirect (rvector%RvectorBlock(idim2),ffunctionPrj,rcollection)
+        call anprj_discrDirect (rvector%RvectorBlock(idim2),ffunctionPrj,rcollection)
+        
+      end do
+    
+    case (1)
+      ! Projection via a mass matrix
+      !
+      ! Loop through the dimensions to evaluate
+      do i = istart,iend
+        
+        ! Set up destination dimension relative to idest
+        idim2 = i
+        if (present(idimdest)) &
+          idim2 = idimdest + i - istart
+        
+        ! Prepare the collection
+        rcollection%IquickAccess(1) = i
+        
+        ! DEBUG!!!
+        call lsyssc_getbase_double (rvector%RvectorBlock(idim2),p_Ddata)
+        
+        ! Evaluate
         rL2ProjectionConfig%depsRel = 1E-20_DP
         call anprj_analytL2projectionByMass (rvector%RvectorBlock(idim2),&
             rmassMatrix%RmatrixBlock(idim2,idim2),ffunctionPrj2,rcollection,&
             rL2ProjectionConfig)
         
       end do
-    
-    case (1)
-      call output_line("L2 projection currently not supported!",&
-          OU_CLASS_ERROR, OU_MODE_STD,"ansol_prjToVector")
-      call sys_halt()
+
     end select
     
     ! Release data
@@ -2058,7 +2083,7 @@ contains
 
   ! Block matrix with mass matrices on the diagonal for all components,
   ! corresponding to the destination vector.
-  type(t_matrixBlock), intent(in) :: rmassMatrix
+  type(t_matrixBlock), intent(in), optional :: rmassMatrix
   
   ! OPTIONAL: Method how to project.
   ! =0: simple evaluation (default)
