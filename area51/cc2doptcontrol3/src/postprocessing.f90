@@ -821,6 +821,9 @@ contains
       cwrite = rpostproc%cwriteControl
     end select
     
+    ! Cancel if no filename is given.
+    if (sfile .eq. "") return
+    
     ! Create a filename for the visualisation output
     if (present(itag)) then
       sfile = trim(sfile)//"."//trim(sys_siL(itag,10))//"."//trim(sys_si0L(ifileid,5))
