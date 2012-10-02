@@ -1257,6 +1257,9 @@ fb_compileBenchmark() {
 	test $DEBUG -gt 0 && echo "# Compiling benchmark applications failed"
 	MAILSUBJECT="$MAILPREFIX Compiling benchmark applications failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
 	cat $GLOBALLOG $AUXILIARYLOG | $MAILX -s "$MAILSUBJECT" $RECIPIENT
+	# The combined log message may be too big to send. Save a
+	# file copy.
+	cat $GLOBALLOG $AUXILIARYLOG > ${GLOBALLOG}.compilation_failure
 	# Do not exit here! Even if one application fails to build,
 	# others might not and can be regression tested.
     fi
