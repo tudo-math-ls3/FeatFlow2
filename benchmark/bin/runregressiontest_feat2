@@ -1180,7 +1180,7 @@ fb_configureBenchmark() {
      echo "") >> $GLOBALLOG
 
     if [ "$USEMODULES""x" = "yesx" ]; then
-	module list 1>> $GLOBALLOG  2>&1
+	(module -t list 2>&1 | tr '\n' ' ' | sed 's/Currently Loaded Modulefiles:/Currently Loaded Modulefiles:\n/'; echo) 1>> $GLOBALLOG
     else
 	echo "Environment set up without modules on this machine." >> $GLOBALLOG
     fi
