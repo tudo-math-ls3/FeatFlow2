@@ -1043,6 +1043,7 @@ contains
     ! Copy statistics data
     riterDest%cstatus       = riterSource%cstatus      
     riterDest%niterations   = riterSource%niterations  
+    riterDest%nconseciterations = riterSource%nconseciterations
     riterDest%dresInitial   = riterSource%dresInitial  
     riterDest%dresFinal     = riterSource%dresFinal    
     riterDest%Dresiduals(:) = riterSource%Dresiduals(:)
