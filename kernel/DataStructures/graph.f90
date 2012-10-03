@@ -110,12 +110,8 @@ module graph
   ! Identifier for directed graph with ordered entries
   integer, parameter, public :: GRPH_GRAPHORDERED_DIRECTED = 2
 
-  ! Identifier for undirected graph with ordered entries in CSR format 9
-  integer, parameter, public :: GRPH_GRAPH9 = 9
-
-  ! Identifier for undirected graph with ordered entries in CSR format 7,
-  ! that is, CSR with diagonal element in front
-  integer, parameter, public :: GRPH_GRAPH7 = 7
+  ! Identifier for undirected graph wuth (un)ordered entries
+  integer, parameter, public :: GRPH_UNDIRECTED = 3
 
 !</constantblock>
 !</constants>
@@ -209,67 +205,18 @@ contains
     rgraph%NEDGE  = 0
 
     if (present(bisDense)) rgraph%bisDense=bisDense
-
-    ! What graph format are we?
-    select case(cgraphFormat)
-
-    case(GRPH_GRAPHORDERED_DIRECTED)
-      rgraph%cgraphFormat = GRPH_GRAPHORDERED_DIRECTED
-
-      ! Create map for the list of vertices
-      if (rgraph%bisDense) then
-        call map_create(rgraph%rVertices,rgraph%NVT+1,0)
-      else
-        call map_create(rgraph%rVertices,rgraph%NVT+1,1)
-      end if
-
-      ! Create array of lists for edges
-      call alst_create(rgraph%rEdges,nvtMax,nedgeMax)
-
-    case(GRPH_GRAPHUNORDERED_DIRECTED)
-      rgraph%cgraphFormat = GRPH_GRAPHUNORDERED_DIRECTED
-
-      ! Create map for the list of vertices
-      if (rgraph%bisDense) then
-        call map_create(rgraph%rVertices,rgraph%NVT+1,0)
-      else
-        call map_create(rgraph%rVertices,rgraph%NVT+1,1)
-      end if
-
-      ! Create array of lists for edges
-      call alst_create(rgraph%rEdges,nvtMax,nedgeMax)
-
-    case(GRPH_GRAPH7)
-      rgraph%cgraphFormat = GRPH_GRAPH7
-
-      ! Create map for the list of vertices
-      if (rgraph%bisDense) then
-        call map_create(rgraph%rVertices,rgraph%NVT+1,0)
-      else
-        call map_create(rgraph%rVertices,rgraph%NVT+1,1)
-      end if
-
-      ! Create array of lists for edges
-      call alst_create(rgraph%rEdges,nvtMax,nedgeMax)
-
-    case(GRPH_GRAPH9)
-      rgraph%cgraphFormat = GRPH_GRAPH9
-
-      ! Create map for the list of vertices
-      if (rgraph%bisDense) then
-        call map_create(rgraph%rVertices,rgraph%NVT+1,0)
-      else
-        call map_create(rgraph%rVertices,rgraph%NVT+1,1)
-      end if
-
-      ! Create array of lists for edges
-      call alst_create(rgraph%rEdges,nvtMax,nedgeMax)
-
-    case DEFAULT
-      call output_line('Invalid matrix format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'grph_createGraph')
-      call sys_halt()
-    end select
+    rgraph%cgraphFormat = cgraphFormat
+    
+    ! Create map for the list of vertices
+    if (rgraph%bisDense) then
+      call map_create(rgraph%rVertices,rgraph%NVT+1,0)
+    else
+      call map_create(rgraph%rVertices,rgraph%NVT+1,1)
+    end if
+    
+    ! Create array of lists for edges
+    call alst_create(rgraph%rEdges,nvtMax,nedgeMax)
+    
   end subroutine grph_createGraph
 
   ! ***************************************************************************
@@ -299,6 +246,7 @@ contains
     rgraph%NVT          = 0
     rgraph%NEDGE        = 0
     rgraph%bisDense     = .true.
+
   end subroutine grph_releaseGraph
 
   ! ***************************************************************************
@@ -405,11 +353,7 @@ contains
 
 !<description>
     ! This subroutine inserts the vertex with number iVertex into the
-    ! graph.  In addition, the trivial edge (iVertex,iVertex) is
-    ! inserted.  If the optional parameter iVertexPosition is present,
-    ! then the position of vertex iVertex is returned.  If the optional
-    ! parameter iEdgePosition is present, then the position of the
-    ! trivial edge (iVertex,iVertex) is returned
+    ! graph. In addition, the trivial edge (iVertex,iVertex) is inserted.
 !</description>
 
 !<input>
@@ -444,20 +388,8 @@ contains
     rgraph%NVT = rgraph%NVT+1
 
     ! Add trivial edge (iVertex,iVertex) to the list of edges
-    select case(rgraph%cgraphFormat)
-
-    case(GRPH_GRAPH7,&
-         GRPH_GRAPH9,&
-         GRPH_GRAPHORDERED_DIRECTED,&
-         GRPH_GRAPHUNORDERED_DIRECTED)
-      call alst_push_front(rgraph%rEdges,itable,iVertex)
-
-    case DEFAULT
-      call output_line('Unsupported graph format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'grph_insertVertex')
-      call sys_halt()
-    end select
-
+    call alst_push_front(rgraph%rEdges,itable,iVertex)
+    
     ! Increase number of edges by one
     rgraph%NEDGE = rgraph%NEDGE+1
 
@@ -471,8 +403,8 @@ contains
 
 !<description>
     ! This subroutine removes the vertex with number iVertex from the
-    ! graph and eliminates all of its incoming and outgoing edges.  If
-    ! the optional parameter ireplacemantVertex is true, then vertex
+    ! graph and eliminates all of its incoming and outgoing edges. If
+    ! the optional parameter ireplacemantVertex is present, then vertex
     ! iVertex is removed and the vertex with number ireplacementVertex
     ! is moved at its former position. This can be useful, if one
     ! needs a complete set of vertices, e.g., 1..NVT without "holes"
@@ -528,8 +460,7 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
         call sys_halt()
 
-      case(GRPH_GRAPH7,&
-           GRPH_GRAPH9)
+      case(GRPH_UNDIRECTED)
         ! We are in the lucky position, that the graph is undirected,
         ! that is, there exits an edge (i,j) if and only if there
         ! exists the edge (j,i).  Hence, we do not have to loop
@@ -702,8 +633,7 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
         call sys_halt()
 
-      case(GRPH_GRAPH7,&
-           GRPH_GRAPH9)
+      case(GRPH_UNDIRECTED)
         ! We are in the lucky position, that the graph is undirected,
         ! that is, there exits an edge (i,j) if and only if there
         ! exists the edge (j,i).  Hence, we do not have to loop
@@ -907,6 +837,7 @@ contains
         call sys_halt()
       end select
     end if
+
   end subroutine grph_removeVertex
 
   ! ***************************************************************************
@@ -1069,8 +1000,7 @@ contains
       end if
 
 
-    case(GRPH_GRAPH7,&
-         GRPH_GRAPH9)
+    case(GRPH_UNDIRECTED)
 
       if (rgraph%bisDense) then
 
@@ -1134,6 +1064,7 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'grph_insertEdge')
       call sys_halt()
     end select
+
   end subroutine grph_insertEdge
 
   ! ***************************************************************************
@@ -1206,8 +1137,7 @@ contains
       end if
 
 
-    case(GRPH_GRAPH7,&
-         GRPH_GRAPH9)
+    case(GRPH_UNDIRECTED)
 
       if (rgraph%bisDense) then
 
@@ -1270,6 +1200,7 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'grph_removeEdge')
       call sys_halt()
     end select
+
   end subroutine grph_removeEdge
 
   ! ***************************************************************************
@@ -1295,6 +1226,7 @@ contains
     call output_line('NVT:          '//trim(sys_siL(rgraph%NVT,15)))
     call output_line('NEDGE:        '//trim(sys_siL(rgraph%NEDGE,15)))
     call output_lbrk()
+
   end subroutine grph_infoGraph
 
   ! ***************************************************************************
@@ -1329,6 +1261,7 @@ contains
 
     call map_duplicate(rgraph%rVertices,rgraphBackup%rVertices)
     call alst_duplicate(rgraph%rEdges,rgraphBackup%rEdges)
+
   end subroutine grph_duplicateGraph
 
   ! ***************************************************************************
@@ -1367,4 +1300,5 @@ contains
     ! Duplicate the backup
     call grph_duplicateGraph(rgraphBackup,rgraph)
   end subroutine grph_restoreGraph
+
 end module graph
