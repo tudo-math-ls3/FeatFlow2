@@ -252,6 +252,10 @@
 !#
 !# 75.) lsysbl_getScalarTempVector
 !#      -> Creates a scalar temp vector.
+!#
+!# 76.) lsysbl_getBlockVectorOverlay
+!#      -> Creates an array of block vectors overlaying a dense scalar matrix
+!#
 !# </purpose>
 !##############################################################################
 
@@ -619,7 +623,7 @@ module linearsystemblock
   public :: lsysbl_copyD2H_Vector
   public :: lsysbl_copyH2D_Matrix
   public :: lsysbl_copyD2H_Matrix
-
+  public :: lsysbl_getBlockVectorOverlay
 
 contains
 
@@ -9144,5 +9148,89 @@ contains
     end if
 
   end subroutine lsysbl_copyD2H_Matrix
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine lsysbl_getBlockVectorOverlay(rmatrix, rtemplateVector, Rvector)
+
+!<description>
+    ! This subroutine assumes rmatrix to be a dense scalar matrix. It
+    ! creates an array of block vectors based in the given template
+    ! rtemplateVector. Each block vector is associated with the data
+    ! of single column of matrix rmatrix.
+    ! Thus, matrix rmatrix is interpreted as a simply memory container
+    ! for an array of uniform block vectors.
+!</description>
+
+!<input>
+    ! Scalar matrix
+    type(t_matrixScalar), intent(in) :: rmatrix
+
+    ! Template block vector
+    type(t_vectorBlock), intent(in) :: rtemplateVector
+!</input>
+
+!<inputoutput>
+    ! Array of block vectors
+    type(t_vectorBlock), dimension(:), intent(inout) :: Rvector
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_vectorBlock) :: rtempVector
+    integer :: i,j
+
+    ! Check if matrix is dense has associated data
+    if ((rmatrix%cmatrixFormat .ne. LSYSSC_MATRIX1) .or.&
+        (.not.lsyssc_hasMatrixStructure(rmatrix))) then
+      call output_line("Matrix must be dense with data array associated!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"lsysbl_getBlockVectorOverlay")
+      call sys_halt()
+    end if
+
+    ! Check if matrix data array is too small
+    if (rmatrix%NEQ*rmatrix%NCOLS .lt. size(Rvector)*rtemplateVector%NEQ) then
+      call output_line("Matrix data array is too small!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"lsysbl_getBlockVectorOverlay")
+      call sys_halt()
+    end if
+
+    ! Make a copy of the template vector
+    call lsysbl_duplicateVector(rtemplateVector, rtempVector,&
+        LSYSSC_DUP_TEMPLATE, LSYSSC_DUP_DISMISS)
+
+    ! Attach handle from scalar matrix to temporal block vector
+    rtempVector%h_Ddata = rmatrix%h_Da
+    rtempVector%cdataType = rmatrix%cdataType
+    rtempVector%bisCopy = .true.
+    
+    ! ... and to its scalar subvectors
+    do i = 1, rtempVector%nblocks
+      rtempVector%RvectorBlock(i)%h_Ddata = rtempVector%h_Ddata
+      rtempVector%RvectorBlock(i)%cdataType = rtempVector%cdataType
+      rtempVector%RvectorBlock(i)%bisCopy = .true.
+    end do
+    
+    ! Smart-duplicate temporal block vectors with adjusted starting
+    ! position of scalar subvectors
+    do i = 1,size(Rvector)
+      call lsysbl_duplicateVector(rtempVector, Rvector(i),&
+          LSYSSC_DUP_TEMPLATE, LSYSSC_DUP_SHARE)
+
+      ! Update starting position in temporal block vector and its
+      ! scalar subvectors for the next duplication step
+      rtempVector%iidxFirstEntry = rtempVector%iidxFirstEntry + rtempVector%NEQ
+      do j = 1, rtempVector%nblocks
+        rtempVector%RvectorBlock(j)%iidxFirstEntry =&
+            rtempVector%RvectorBlock(j)%iidxFirstEntry + rtempVector%NEQ
+      end do
+    end do
+    
+    ! Release temporal block vector
+    call lsysbl_releaseVector(rtempVector)    
+
+  end subroutine lsysbl_getBlockVectorOverlay
 
 end module
