@@ -6,6 +6,15 @@
 # providing both an implementation of the BLAS and LAPACK libraries
 ##############################################################################
 
+# Specify Intel MKL-support
+CFLAGSF77     := -DUSE_INTEL_MKL $(CFLAGSF77)
+CFLAGSF90     := -DUSE_INTEL_MKL $(CFLAGSF90)
+CFLAGSC       := -DUSE_INTEL_MKL $(CFLAGSC)
+CFLAGSCXX     := -DUSE_INTEL_MKL $(CFLAGSCXX)
+LDFLAGS       := -DUSE_INTEL_MKL $(LDFLAGS)
+
+
+
 ifneq ($(strip $(INTEL_MKL_LIB)),)
 # Split up string if multiple directories are given
 # Note: Do not put whitespace between comma and the environment variable, because
@@ -55,6 +64,7 @@ endif
 endif
 
 
+
 ##############################################################################
 # BLAS and LAPACK also needed by the Sparse Banded Blas benchmark
 ##############################################################################
@@ -98,6 +108,7 @@ endif
 endif
 
 endif
+
 
 
 # The settings needed to compile a FEAT2 application are "wildly" distributed

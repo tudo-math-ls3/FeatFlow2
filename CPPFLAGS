@@ -36,6 +36,7 @@ USE_C_PTR_STORAGE : storage manager uses C_PTR mechanism instead of standard
                     if ENABLE_COPROCESSOR_SUPPORT is turned on
 USE_LARGEINT      : use 64-bit Integers by default
 USE_OPENMP        : use Open-MP parallelisation
+USE_INTEL_MKL     : use sparse BLAS routines from Intel MKL library
 
 
 5) Flags to active warning messages which are turned off be default

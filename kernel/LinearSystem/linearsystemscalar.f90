@@ -4059,7 +4059,7 @@ contains
     integer, dimension(:), pointer :: p_Kld
     integer, dimension(:), pointer :: p_Kcol
     integer, dimension(:), pointer :: p_KrowIdx
-    integer :: NEQ
+    integer :: NEQ,NCOLS
     logical :: bvirt_trans
     logical :: btrans
 
@@ -4127,9 +4127,11 @@ contains
       if(bvirt_trans) then
         ! Yes, so exchange NEQ with NCOLS
         NEQ = rmatrix%NCOLS
+        NCOLS = rmatrix%NEQ
       else
         ! No, so simply copy NEQ
         NEQ = rmatrix%NEQ
+        NCOLS = rmatrix%NCOLS
       end if
 
       ! Select the right MV multiplication routine from the matrix format
@@ -4154,8 +4156,13 @@ contains
             call lsyssc_getbase_double (ry,p_Dy)
 
             ! double precision matrix, double precision vectors
+#ifdef USE_INTEL_MKL
+            call mkl_dcsrmv('N',NEQ, NCOLS,cx*rmatrix%dscaleFactor,&
+                'GxxF',p_Da,p_Kcol,p_Kld,p_Kld(2),p_Dx,cy,p_Dy)
+#else
             call lsyssc_LAX79DbleDble (p_Kld,p_Kcol,p_Da,p_Dx,p_Dy,&
                 cx*rmatrix%dscaleFactor,cy,NEQ,rx%NVAR,p_rperfconfig)
+#endif
 
           case (ST_SINGLE)
             ! Set pointers
@@ -4194,8 +4201,13 @@ contains
             call lsyssc_getbase_single (ry,p_Fy)
 
             ! single precision matrix, single precision vectors
+#ifdef USE_INTEL_MKL
+            call mkl_scsrmv('N',NEQ, NCOLS,real(cx*rmatrix%dscaleFactor,SP),&
+                'GxxF',p_Fa,p_Kcol,p_Kld,p_Kld(2),p_Fx,real(cy,SP),p_Fy)
+#else
             call lsyssc_LAX79SnglSngl (p_Kld,p_Kcol,p_Fa,p_Fx,p_Fy,&
                 real(cx*rmatrix%dscaleFactor,SP),real(cy,SP),NEQ,rx%NVAR,p_rperfconfig)
+#endif
 
           case default
             call output_line('Invalid combination of matrix/vector precision!',&
@@ -4300,8 +4312,13 @@ contains
             ! double precision matrix, double precision vectors
             select case (rmatrix%cinterleavematrixFormat)
             case (LSYSSC_MATRIX1)
+#ifdef USE_INTEL_MKL
+            call mkl_dbsrmv('N',NEQ, NCOLS,rx%NVAR,cx*rmatrix%dscaleFactor,&
+                'GxxF',p_Da,p_Kcol,p_Kld,p_Kld(2),p_Dx,cy,p_Dy)
+#else
               call lsyssc_LAX79INTL1DbleDble (p_Kld,p_Kcol,p_Da,p_Dx,p_Dy,&
                   cx*rmatrix%dscaleFactor,cy,NEQ,rx%NVAR,p_rperfconfig)
+#endif
 
             case (LSYSSC_MATRIXD)
               call lsyssc_LAX79INTLDDbleDble (p_Kld,p_Kcol,p_Da,p_Dx,p_Dy,&
@@ -4375,9 +4392,14 @@ contains
             ! single precision matrix, single precision vectors
             select case (rmatrix%cinterleavematrixFormat)
             case (LSYSSC_MATRIX1)
+#ifdef USE_INTEL_MKL
+            call mkl_sbsrmv('N',NEQ, NCOLS,rx%NVAR,real(cx*rmatrix%dscaleFactor,SP),&
+                'GxxF',p_Fa,p_Kcol,p_Kld,p_Kld(2),p_Fx,real(cy,SP),p_Fy)
+#else
               call lsyssc_LAX79INTL1SnglSngl (p_Kld,p_Kcol,p_Fa,p_Fx,p_Fy,&
                   real(cx*rmatrix%dscaleFactor,SP),real(cy,SP),NEQ,rx%NVAR,&
                   p_rperfconfig)
+#endif
 
             case (LSYSSC_MATRIXD)
               call lsyssc_LAX79INTLDSnglSngl (p_Kld,p_Kcol,p_Fa,p_Fx,p_Fy,&
@@ -4512,8 +4534,13 @@ contains
             call lsyssc_getbase_double (ry,p_Dy)
 
             ! double precision matrix, double precision vectors
+#ifdef USE_INTEL_MKL
+            call mkl_dcsrmv('T',NEQ, NCOLS,cx*rmatrix%dscaleFactor,&
+                'GxxF',p_Da,p_Kcol,p_Kld,p_Kld(2),p_Dx,cy,p_Dy)
+#else
             call lsyssc_LTX79DbleDble (p_Kld,p_Kcol,p_Da,p_Dx,p_Dy,&
                 cx*rmatrix%dscaleFactor,cy,NEQ,rx%NVAR,p_rperfconfig)
+#endif
 
           case (ST_SINGLE)
             ! Set pointers
@@ -4551,9 +4578,14 @@ contains
             call lsyssc_getbase_single (ry,p_Fy)
 
             ! single precision matrix, single precision vectors
+#ifdef USE_INTEL_MKL
+            call mkl_scsrmv('T',NEQ, NCOLS,real(cx*rmatrix%dscaleFactor,SP),&
+                'GxxF',p_Fa,p_Kcol,p_Kld,p_Kld(2),p_Fx,real(cy,SP),p_Fy)
+#else
             call lsyssc_LTX79SnglSngl (p_Kld,p_Kcol,p_Fa,p_Fx,p_Fy,&
                 real(cx*rmatrix%dscaleFactor,SP),real(cy,SP),NEQ,rx%NVAR,&
                 p_rperfconfig)
+#endif
 
           case default
             call output_line('Invalid combination of matrix/vector precision!',&
