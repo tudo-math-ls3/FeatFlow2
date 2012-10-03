@@ -254,6 +254,9 @@ module newtoniterationlinear
     
     ! Use real residual in the iteration.
     logical :: brealres = .true.
+    
+    ! Apply a restart for checking the final residual.
+    logical :: bfinalResRestart = .true.
   end type
 
   !</typeblock>
@@ -276,6 +279,9 @@ module newtoniterationlinear
     ! More temporary memory
     type(t_kktsystemDirDeriv) :: rr
     
+    ! Apply a restart for checking the final residual.
+    logical :: bfinalResRestart = .true.
+
   end type
 
 !</typeblock>
@@ -916,7 +922,7 @@ contains
     type(t_kktsystemDirDeriv), pointer :: p_rp
     type(t_newtonlinSolverStat) :: rlocalStat
     type(t_iterationControl) :: rlocaliter
-    logical :: brealres
+    logical :: brealres,bfinalResRestart
 
     ! Measure the total time
     call stat_startTimer (rstatistics%rtotalTime)
@@ -938,6 +944,7 @@ contains
     dgammaOld = 1.0_DP
     
     brealres = rlinsolParam%p_rsubnodeCG%brealRes
+    bfinalResRestart = rlinsolParam%p_rsubnodeCG%bfinalResRestart
 
     ! Create the initial defect in rd
     output_iautoOutputIndent = output_iautoOutputIndent + 2
@@ -1017,7 +1024,7 @@ contains
       ! -------------------------------------------------------------
       ! Check for convergence / divergence / ...
       ! -------------------------------------------------------------
-      if ((.not. brealres) .and. (rlinsolParam%riter%cstatus .eq. ITC_STATUS_CONVERGED)) then
+      if ((.not. brealres) .and. bfinalResRestart .and. (rlinsolParam%riter%cstatus .eq. ITC_STATUS_CONVERGED)) then
         
         ! Apply a restart to check if we really reached the residual
 
@@ -1208,6 +1215,7 @@ contains
   real(DP) :: drho1,drho0
   type(t_newtonlinSolverStat) :: rlocalStat
   type(t_iterationControl) :: rlocaliter
+  logical :: bfinalResRestart
 
   ! Our structure
   type(t_linsolBiCGStab), pointer :: p_rsubnode
@@ -1218,6 +1226,8 @@ contains
   
     ! Getch some information
     p_rsubnode => rlinsolParam%p_rsubnodeBiCGStab
+    
+    bfinalResRestart = p_rsubnode%bfinalResRestart
 
     ! Set pointers to the temporary vectors
     p_rr   => p_rsubnode%rp
@@ -1301,7 +1311,7 @@ contains
         ! -------------------------------------------------------------
         ! Check for convergence / divergence / ...
         ! -------------------------------------------------------------
-        if (rlinsolParam%riter%cstatus .eq. ITC_STATUS_CONVERGED) then
+        if (bfinalResRestart .and. (rlinsolParam%riter%cstatus .eq. ITC_STATUS_CONVERGED)) then
           
           ! Apply a restart to check if we really reached the residual
 
@@ -1351,10 +1361,10 @@ contains
 
         end if
         
-        if (rlinsolParam%riter%cstatus .ne. ITC_STATUS_CONTINUE) exit
-              
       end if
 
+      if (rlinsolParam%riter%cstatus .ne. ITC_STATUS_CONTINUE) exit
+              
       ! -------------------------------------------------------------
       ! BiCGStab iteration
       ! -------------------------------------------------------------
@@ -1543,7 +1553,7 @@ contains
 
     ! local variables
     type(t_parlstSection), pointer :: p_rsection
-    integer :: irealres
+    integer :: i
 
     call parlst_querysection(rparamList, ssection, p_rsection)
 
@@ -1566,8 +1576,22 @@ contains
     if (rsolver%csolverType .eq. NLIN_SOLVER_CG) then
       ! CG parameters
       call parlst_getvalue_int (p_rsection, "brealres", &  
-          irealres, 0)
-      rsolver%p_rsubnodeCG%brealres = irealres .ne. 0
+          i, 0)
+      rsolver%p_rsubnodeCG%brealres = i .ne. 0
+    end if
+
+    if (rsolver%csolverType .eq. NLIN_SOLVER_CG) then
+      ! CG parameters
+      call parlst_getvalue_int (p_rsection, "bfinalResRestart", &  
+          i, 0)
+      rsolver%p_rsubnodeCG%bfinalResRestart = i .ne. 0
+    end if
+
+    if (rsolver%csolverType .eq. NLIN_SOLVER_BICGSTAB) then
+      ! CG parameters
+      call parlst_getvalue_int (p_rsection, "bfinalResRestart", &  
+          i, 0)
+      rsolver%p_rsubnodeBiCGStab%bfinalResRestart = i .ne. 0
     end if
 
   end subroutine

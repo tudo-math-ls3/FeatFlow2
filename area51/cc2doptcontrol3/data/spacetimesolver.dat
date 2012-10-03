@@ -306,6 +306,9 @@ domega             = 1.0
 # Output level of the solver
 ioutputLevel       = 2
 
+# Automatic restart for final residual check (BiCGSTab and CG)
+bfinalResRestart = 1
+
 
 # ========================================================================
 # Parameters configuring the solver in space.
