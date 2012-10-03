@@ -139,8 +139,8 @@ cequation = 0
 RE = 400
 
 [CC-DISCRETISATION]
-NLMIN              = 5
-NLMAX              = 5
+NLMIN              = 4
+NLMAX              = 4
 iElementType       = 4
 scubMass           = G4X4
 scubStokes         = G4X4
@@ -151,7 +151,7 @@ csupportIntMeanConstr = 1
 [TIME-DISCRETISATION]
 dtimeInit = 0.0
 dtimeMax = 1.0
-niterations = 1
+niterations = 20
 TIMENLMIN = 1
 TIMENLMAX = 1
 dtimeStepTheta = 1.0
@@ -179,7 +179,8 @@ cwriteUmfpackMatrix = 0
 
 [OPTIMALCONTROL]
 dalphaDistC = -0.01
-dalphaL2BdC = 0.01
+dalphaL2BdC =  0.01
+dalphaH12BdC =-0.01
 dobservationArea =
 
 [CONSTRAINTS_DISTCTRL]
@@ -190,6 +191,13 @@ dmin2 = -0.5
 dmax2 = 0.5
 
 [CONSTRAINTS_L2BDC]
+cconstraints = 1
+dmin1 = -1E10
+dmax1 = 1E10
+dmin2 = 0.0
+dmax2 = 0.0
+
+[CONSTRAINTS_H12BDC]
 cconstraints = 1
 dmin1 = -1E10
 dmax1 = 1E10
