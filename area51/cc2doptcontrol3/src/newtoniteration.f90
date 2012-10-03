@@ -137,60 +137,9 @@ module newtoniteration
     ! Parameters for the linear space-time subsolver.
     type(t_linsolParameters) :: rlinsolParam
     
-    ! Hierarchy of linear solvers in space for all levels.
-    ! Nonlinear primal equation.
-    type(t_linsolHierarchySpace), pointer :: p_rlinsolHierPrimal => null()
-
-    ! Hierarchy of linear solvers in space for all levels.
-    ! Dual equation.
-    type(t_linsolHierarchySpace), pointer :: p_rlinsolHierDual => null()
-
-    ! Hierarchy of linear solvers in space for all levels.
-    ! Linearised primal equation.
-    type(t_linsolHierarchySpace), pointer :: p_rlinsolHierPrimalLin => null()
-
-    ! Hierarchy of linear solvers in space for all levels.
-    ! Linearised dual equation.
-    type(t_linsolHierarchySpace), pointer :: p_rlinsolHierDualLin => null()
-
-
-    ! Hierarchy of linear solvers in space for all levels.
-    ! Fallback solver if the standard solver fails.
-    ! Nonlinear primal equation.
-    type(t_linsolHierarchySpace), pointer :: p_rlinsolHierPrimal2 => null()
-
-    ! Hierarchy of linear solvers in space for all levels.
-    ! Fallback solver if the standard solver fails.
-    ! Dual equation.
-    type(t_linsolHierarchySpace), pointer :: p_rlinsolHierDual2 => null()
-
-    ! Hierarchy of linear solvers in space for all levels.
-    ! Fallback solver if the standard solver fails.
-    ! Linearised primal equation.
-    type(t_linsolHierarchySpace), pointer :: p_rlinsolHierPrimalLin2 => null()
-
-    ! Hierarchy of linear solvers in space for all levels.
-    ! Fallback solver if the standard solver fails.
-    ! Linearised dual equation.
-    type(t_linsolHierarchySpace), pointer :: p_rlinsolHierDualLin2 => null()
-
-
-
-    ! Hierarchy of solvers in space for all levels.
-    ! Nonlinear primal equation.
-    type(t_spaceSolverHierarchy), pointer :: p_rsolverHierPrimal => null()
-
-    ! Hierarchy of solvers in space for all levels.
-    ! Dual equation.
-    type(t_spaceSolverHierarchy), pointer :: p_rsolverHierDual => null()
-
-    ! Hierarchy of solvers in space for all levels.
-    ! Linearised primal equation.
-    type(t_spaceSolverHierarchy), pointer :: p_rsolverHierPrimalLin => null()
-
-    ! Hierarchy of solvers in space for all levels.
-    ! Linearised dual equation.
-    type(t_spaceSolverHierarchy), pointer :: p_rsolverHierDualLin => null()
+    ! KKT subsolver hierarchy which encapsules all subsolvers used
+    ! by the KKT system solvers.
+    type(t_kktSubsolverSet) :: rkktSubsolvers
     
     ! <!-- -------------- -->
     ! <!-- TEMPORARY DATA -->
@@ -262,13 +211,8 @@ contains
 
 !</subroutine>
 
-    character(LEN=SYS_STRLEN) :: ssolverNonlin,ssolverLin
-
-    character(LEN=SYS_STRLEN) :: ssolverSpaceForward,ssolverSpaceBackward
-    character(LEN=SYS_STRLEN) :: ssolverSpaceForwardLin,ssolverSpaceBackwardLin
-
-    character(LEN=SYS_STRLEN) :: ssolverSpaceForward2,ssolverSpaceBackward2
-    character(LEN=SYS_STRLEN) :: ssolverSpaceForwardLin2,ssolverSpaceBackwardLin2
+    ! local variables
+    character(LEN=SYS_STRLEN) :: ssolverLin
 
     ! Remember the solver settings for later use
     rsolver%p_rsettingsSolver => rsettingsSolver
@@ -283,121 +227,12 @@ contains
 
     call parlst_getvalue_int (rparamList, ssection, "cpostprocessIterates", &
         rsolver%cpostprocessIterates, rsolver%cpostprocessIterates)
-
-    call parlst_getvalue_string (rparamList, ssection, &
-        "ssectionNonlinSolverSpace", ssolverNonlin, "CC-NONLINEARSOLVER",bdequote=.true.)
-
-    call parlst_getvalue_string (rparamList, ssection, &
-        "ssectionLinSolverSpace", ssolverLin, "CC-LINEARSOLVER",bdequote=.true.)
         
     call parlst_getvalue_string (rparamList, ssection, &
-        "ssectionLinSlvSpaceForw", ssolverSpaceForward, "CC-LINEARSOLVER",bdequote=.true.)
+        "ssectionLinSolverSpaceTime", ssolverLin, "SPACETIME-LINSOLVER",bdequote=.true.)
 
-    call parlst_getvalue_string (rparamList, ssection, &
-        "ssectionLinSlvSpaceBack", ssolverSpaceBackward, "CC-LINEARSOLVER",bdequote=.true.)
-
-    call parlst_getvalue_string (rparamList, ssection, &
-        "ssectionLinSlvSpaceForwLin", ssolverSpaceForwardlin, "CC-LINEARSOLVER",bdequote=.true.)
-
-    call parlst_getvalue_string (rparamList, ssection, &
-        "ssectionLinSlvSpaceBackLin", ssolverSpaceBackwardLin, "CC-LINEARSOLVER",bdequote=.true.)
-
-    ! Fallback solvers if the standard solvers fail.
-    call parlst_getvalue_string (rparamList, ssection, &
-        "ssectionLinSlvSpaceForw2", ssolverSpaceForward2, "CC-LINEARSOLVER",bdequote=.true.)
-
-    call parlst_getvalue_string (rparamList, ssection, &
-        "ssectionLinSlvSpaceBack2", ssolverSpaceBackward2, "CC-LINEARSOLVER",bdequote=.true.)
-
-    call parlst_getvalue_string (rparamList, ssection, &
-        "ssectionLinSlvSpaceForwLin2", ssolverSpaceForwardlin2, "CC-LINEARSOLVER",bdequote=.true.)
-
-    call parlst_getvalue_string (rparamList, ssection, &
-        "ssectionLinSlvSpaceBackLin2", ssolverSpaceBackwardLin2, "CC-LINEARSOLVER",bdequote=.true.)
-
-    ! Create linear solvers in space for linera subproblems in the
-    ! primal/dual space.
-
-    allocate(rsolver%p_rlinsolHierPrimal)
-    allocate(rsolver%p_rlinsolHierDual)
-    allocate(rsolver%p_rlinsolHierPrimalLin)
-    allocate(rsolver%p_rlinsolHierDualLin)
-
-    allocate(rsolver%p_rlinsolHierPrimal2)
-    allocate(rsolver%p_rlinsolHierDual2)
-    allocate(rsolver%p_rlinsolHierPrimalLin2)
-    allocate(rsolver%p_rlinsolHierDualLin2)
-
-    ! Create solver structures for the same levels.
-
-    ! Forward equation on all levels
-    call lssh_createLinsolHierarchy (rsolver%p_rlinsolHierPrimal,&
-        rsettingsSolver%rfeHierarchyPrimal,rsettingsSolver%rprjHierSpacePrimal,&
-        1,0,rsettingsSolver%rphysics%cequation,rsettingsSolver%p_rparlist,&
-        ssolverSpaceForward,rsettingsSolver%rdebugFlags)
-
-    ! Backward equation on all levels
-    call lssh_createLinsolHierarchy (rsolver%p_rlinsolHierDual,&
-        rsettingsSolver%rfeHierarchyDual,rsettingsSolver%rprjHierSpaceDual,&
-        1,0,rsettingsSolver%rphysics%cequation,rsettingsSolver%p_rparlist,&
-        ssolverSpaceBackward,rsettingsSolver%rdebugFlags)
-
-    ! Linearised forward equation on all levels
-    call lssh_createLinsolHierarchy (rsolver%p_rlinsolHierPrimalLin,&
-        rsettingsSolver%rfeHierarchyPrimal,rsettingsSolver%rprjHierSpacePrimal,&
-        1,0,rsettingsSolver%rphysics%cequation,rsettingsSolver%p_rparlist,&
-        ssolverSpaceForwardLin,rsettingsSolver%rdebugFlags)
-
-    ! Linearised backward equation on all levels
-    call lssh_createLinsolHierarchy (rsolver%p_rlinsolHierDualLin,&
-        rsettingsSolver%rfeHierarchyDual,rsettingsSolver%rprjHierSpaceDual,&
-        1,0,rsettingsSolver%rphysics%cequation,rsettingsSolver%p_rparlist,&
-        ssolverSpaceBackwardLin,rsettingsSolver%rdebugFlags)
-
-    ! Create fallback solvers
-    
-    ! Forward equation on all levels
-    call lssh_createLinsolHierarchy (rsolver%p_rlinsolHierPrimal2,&
-        rsettingsSolver%rfeHierarchyPrimal,rsettingsSolver%rprjHierSpacePrimal,&
-        1,0,rsettingsSolver%rphysics%cequation,rsettingsSolver%p_rparlist,&
-        ssolverSpaceForward2,rsettingsSolver%rdebugFlags)
-
-    ! Backward equation on all levels
-    call lssh_createLinsolHierarchy (rsolver%p_rlinsolHierDual2,&
-        rsettingsSolver%rfeHierarchyDual,rsettingsSolver%rprjHierSpaceDual,&
-        1,0,rsettingsSolver%rphysics%cequation,rsettingsSolver%p_rparlist,&
-        ssolverSpaceBackward2,rsettingsSolver%rdebugFlags)
-
-    ! Linearised forward equation on all levels
-    call lssh_createLinsolHierarchy (rsolver%p_rlinsolHierPrimalLin2,&
-        rsettingsSolver%rfeHierarchyPrimal,rsettingsSolver%rprjHierSpacePrimal,&
-        1,0,rsettingsSolver%rphysics%cequation,rsettingsSolver%p_rparlist,&
-        ssolverSpaceForwardLin2,rsettingsSolver%rdebugFlags)
-
-    ! Linearised backward equation on all levels
-    call lssh_createLinsolHierarchy (rsolver%p_rlinsolHierDualLin2,&
-        rsettingsSolver%rfeHierarchyDual,rsettingsSolver%rprjHierSpaceDual,&
-        1,0,rsettingsSolver%rphysics%cequation,rsettingsSolver%p_rparlist,&
-        ssolverSpaceBackwardLin2,rsettingsSolver%rdebugFlags)
-    
-    ! Create the corresponding solver hierarchies.
-    allocate(rsolver%p_rsolverHierPrimal)
-    allocate(rsolver%p_rsolverHierDual)
-    allocate(rsolver%p_rsolverHierPrimalLin)
-    allocate(rsolver%p_rsolverHierDualLin)
-
-    ! Forward equation. Created on all levels but only used on the highest one.
-    caLL spaceslh_init (rsolver%p_rsolverHierPrimal,&
-        OPTP_PRIMAL,rsolver%p_rlinsolHierPrimal,rsolver%p_rlinsolHierPrimal2,&
-        ssolverNonlin,rparamList)
-
-    ! Backward equation, only linear. Created on all levels but only used on the highest one.
-    ! Also fetch parameters of the nonlinear solver from the data file.
-    ! The parameter are not used except for the output level, which determins
-    ! the amoount of output of the solver.
-    caLL spaceslh_init (rsolver%p_rsolverHierDual,&
-        OPTP_DUAL,rsolver%p_rlinsolHierDual,rsolver%p_rlinsolHierDual2,ssolverNonlin,rparamList)
-
+    ! Initialise the KKT system subsolvers.
+    !
     ! The definition of the lineraised forward/backward equation depends upon
     ! whether we use the full Newton approach or not.
     select case (rsolver%rnewtonParams%ctypeIteration)
@@ -406,33 +241,15 @@ contains
     ! Partial Newton
     ! --------------
     case (1)
-      ! Linearised forward equation, only linear. Used on all levels.
-      ! Uses the same linear solver as the forward solver.
-      caLL spaceslh_init (rsolver%p_rsolverHierPrimalLin,&
-          OPTP_PRIMALLIN_SIMPLE,rsolver%p_rlinsolHierPrimalLin,&
-          rsolver%p_rlinsolHierPrimalLin2,ssolverNonlin,rparamList)
-
-      ! Linearised forward equation, only linear. Used on all levels.
-      ! Uses the same linear solver as the backward solver.#
-      caLL spaceslh_init (rsolver%p_rsolverHierDualLin,&
-          OPTP_DUALLIN_SIMPLE,rsolver%p_rlinsolHierDualLin,&
-          rsolver%p_rlinsolHierDualLin2,ssolverNonlin,rparamList)
+      call kkt_initSubsolvers (rsolver%rkktSubsolvers,&
+          rsettingsSolver,ssection,rparamList,0)
     
     ! ----------------------------
     ! Full Newton, adaptive Newton
     ! ----------------------------
     case (2,3)
-      ! Linearised forward equation, only linear. Used on all levels.
-      ! Uses the same linear solver as the forward solver.
-      caLL spaceslh_init (rsolver%p_rsolverHierPrimalLin,&
-          OPTP_PRIMALLIN,rsolver%p_rlinsolHierPrimalLin,&
-          rsolver%p_rlinsolHierPrimalLin2,ssolverNonlin,rparamList)
-
-      ! Linearised forward equation, only linear. Used on all levels.
-      ! Uses the same linear solver as the backward solver.
-      caLL spaceslh_init (rsolver%p_rsolverHierDualLin,&
-          OPTP_DUALLIN,rsolver%p_rlinsolHierDualLin,&
-          rsolver%p_rlinsolHierDualLin2,ssolverNonlin,rparamList)
+      call kkt_initSubsolvers (rsolver%rkktSubsolvers,&
+          rsettingsSolver,ssection,rparamList,1)
           
     case default
       call output_line ("Invalid nonlinear iteration",&
@@ -443,8 +260,7 @@ contains
 
     ! Initialise the linear subsolver
     call newtonlin_init (rsolver%rlinsolParam,rsettingsSolver,&
-        rsolver%p_rsolverHierPrimalLin,rsolver%p_rsolverHierDualLin,&
-        rparamList,ssolverLin)
+        rsolver%rkktSubsolvers,rparamList,ssolverLin)
 
   end subroutine
 
@@ -510,8 +326,8 @@ contains
     ! Solve the primal equation, update the primal solution.
     output_iautoOutputIndent = output_iautoOutputIndent + 2
 
-    call kkt_solvePrimal (rkktsystem,rsolver%p_rsolverHierPrimal,&
-        rsolver%cspatialInitCondPolicy,rlocalStat)
+    call kkt_solvePrimal (rkktsystem,&
+        rsolver%cspatialInitCondPolicy,rsolver%rkktSubsolvers,rlocalStat)
 
     output_iautoOutputIndent = output_iautoOutputIndent - 2
     
@@ -548,8 +364,8 @@ contains
     ! Solve the dual equation, update the dual solution.
     output_iautoOutputIndent = output_iautoOutputIndent + 2
 
-    call kkt_solveDual (rkktsystem,rsolver%p_rsolverHierDual,&
-        rsolver%cspatialInitCondPolicy,rlocalStat)
+    call kkt_solveDual (rkktsystem,&
+        rsolver%cspatialInitCondPolicy,rsolver%rkktSubsolvers,rlocalStat)
 
     output_iautoOutputIndent = output_iautoOutputIndent - 2
     
@@ -580,7 +396,9 @@ contains
     ! -------------------------------------------------------------
 
     ! The search direction is just the residual in the control equation.
-    call kkt_calcControlRes (rkktsystem,rresidual,dres,iresnorm)
+    call kkt_calcControlRes (rkktsystem,rresidual,dres,iresnorm,&
+        rsolver%rkktSubsolvers,rlocalStat)
+    call spacesl_sumStatistics(rlocalStat,rstatistics%rspaceslSolverStat)
 
     call stat_stopTimer (rstatistics%rtotalTime)
 
@@ -1175,37 +993,9 @@ contains
 
     ! Release the linear subsolver.
     call newtonlin_done (rsolver%rlinsolParam)
-
-    ! Release the linear solvers in space.
-    call spaceslh_done (rsolver%p_rsolverHierDualLin)
-    call spaceslh_done (rsolver%p_rsolverHierPrimalLin)
-    call spaceslh_done (rsolver%p_rsolverHierDual)
-    call spaceslh_done (rsolver%p_rsolverHierPrimal)
-
-    call lssh_releaseLinsolHierarchy (rsolver%p_rlinsolHierDualLin)
-    call lssh_releaseLinsolHierarchy (rsolver%p_rlinsolHierPrimalLin)
-    call lssh_releaseLinsolHierarchy (rsolver%p_rlinsolHierDual)
-    call lssh_releaseLinsolHierarchy (rsolver%p_rlinsolHierPrimal)
-
-    call lssh_releaseLinsolHierarchy (rsolver%p_rlinsolHierDualLin2)
-    call lssh_releaseLinsolHierarchy (rsolver%p_rlinsolHierPrimalLin2)
-    call lssh_releaseLinsolHierarchy (rsolver%p_rlinsolHierDual2)
-    call lssh_releaseLinsolHierarchy (rsolver%p_rlinsolHierPrimal2)
-
-    deallocate (rsolver%p_rsolverHierDualLin)
-    deallocate (rsolver%p_rsolverHierPrimalLin)
-    deallocate (rsolver%p_rsolverHierDual)
-    deallocate (rsolver%p_rsolverHierPrimal)
-
-    deallocate (rsolver%p_rlinsolHierDualLin2)
-    deallocate (rsolver%p_rlinsolHierPrimalLin2)
-    deallocate (rsolver%p_rlinsolHierDual2)
-    deallocate (rsolver%p_rlinsolHierPrimal2)
     
-    deallocate (rsolver%p_rlinsolHierDualLin)
-    deallocate (rsolver%p_rlinsolHierPrimalLin)
-    deallocate (rsolver%p_rlinsolHierDual)
-    deallocate (rsolver%p_rlinsolHierPrimal)
+    ! Release the KKT subsolvers.
+    call kkt_doneSubsolvers (rsolver%rkktSubsolvers)
 
   end subroutine
 

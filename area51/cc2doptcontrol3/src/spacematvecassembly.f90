@@ -145,6 +145,9 @@ public :: t_assemblyTempDataSpace
   
   ! Assemble the matrices of the operator of the linearised dual equation
   public :: smva_assembleMatrix_dual
+
+  ! Assemble the matrices of the Poincare-Steklov operator
+  public :: smva_assembleMatrix_PCSteklov
   
   ! Creates a hierarchy of operator assembly structures.
   public :: smva_createOpAsmHier
@@ -6153,7 +6156,8 @@ contains
             ! the lumped mass matrix in the first row.
             if (rasmFlags%bumfpackSolver .and. &
                 (roptcBDCSpace%rdirichletBoundary%nregions .eq. 0) .and. &
-                (roptcBDCSpace%rdirichletControlBoundary%nregions .eq. 0)) then
+                (roptcBDCSpace%rdirichletControlBoundaryL2%nregions .eq. 0) .and. &
+                (roptcBDCspace%rdirichletControlBoundaryH12%nregions .eq. 0)) then
                 
               ! Replace the first row by the lumped mass matrix.
               Irows = (/1/)
@@ -6375,7 +6379,8 @@ contains
             ! the lumped mass matrix in the first row.
             if (rasmFlags%bumfpackSolver .and. &
                 (roptcBDCSpace%rdirichletBoundary%nregions .eq. 0) .and. &
-                (roptcBDCSpace%rdirichletControlBoundary%nregions .eq. 0)) then
+                (roptcBDCSpace%rdirichletControlBoundaryL2%nregions .eq. 0) .and. &
+                (roptcBDCspace%rdirichletControlBoundaryH12%nregions .eq. 0)) then
                 
               if (p_ranalyticData%p_rsettingsSpaceDiscr%csupportIntMeanConstr .eq. 1) then
                 ! Replace the first row by the lumped mass matrix.
@@ -6417,6 +6422,148 @@ contains
       
     end select ! Timestep scheme
   
+  end subroutine
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine smva_assembleMatrix_PCSteklov (rmatrix,ispacelevel,&
+      roperatorAsmHier,isollevelspace,isolleveltime,&
+      roptcBDCSpace,rasmFlags,rtempdata)
+
+!<description>
+  ! Assembles the Poincare-Steklow operator, which ist just a Poisson
+  ! or Stokes equation.
+!</description>
+
+!<input>
+  ! A space-time operator assembly hierarchy.
+  type(t_spacetimeOpAsmHierarchy), intent(inout), target :: roperatorAsmHier
+  
+  ! Space level where the operator should be evaluated
+  integer, intent(in) :: ispacelevel
+
+  ! Space-level corresponding to the solution
+  integer, intent(in) :: isollevelSpace
+
+  ! Time-level corresponding to the solution
+  integer, intent(in) :: isollevelTime
+
+  ! Assembly flags
+  type(t_assemblyFlags), intent(in) :: rasmFlags
+
+  ! Boundary condition structure
+  type(t_optcBDCSpace), intent(in) :: roptcBDCSpace
+!</input>
+
+!<inputoutput>
+  ! Structure containing temporary data.
+  type(t_assemblyTempDataSpace), intent(inout) :: rtempData
+
+  ! Block matrix receiving the result.
+  type(t_matrixBlock), intent(inout) :: rmatrix
+!</inputoutput>
+
+!</subroutine>
+    
+    ! local variables
+    real(DP) :: dtheta, dtstep, dtimeend, dtimestart
+    type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
+    type(t_spacetimeOperatorAsm) :: roperatorAsm
+    type(t_matrixBlock), pointer :: p_rmatrix
+    integer, dimension(1) :: Irows
+    
+    ! Get the corresponding operator assembly structure
+    call stoh_getOpAsm_slvtlv (&
+        roperatorAsm,roperatorAsmHier,ispacelevel,isollevelTime)
+        
+    p_ranalyticData => roperatorAsm%p_ranalyticData
+
+    ! Output temp matrix
+    p_rmatrix => rtempdata%p_Rmatrices(ispacelevel)
+
+    ! Clear the output matrix
+    call lsysbl_clearMatrix (rmatrix)
+
+    ! Which equation do we have?    
+    select case (p_ranalyticData%p_rphysics%cequation)
+
+    ! *************************************************************
+    ! Heat/Stokes/Navier Stokes.
+    ! *************************************************************
+    case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D,CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+
+      ! -----------------------------------------
+      ! Laplace
+      if (p_ranalyticData%p_rphysics%cviscoModel .eq. 0) then
+        call smva_getLaplaceMatrix (roperatorAsm,rmatrix,1.0_DP)
+      else
+        call output_line("Nonconstant viscosity not supported.",&
+            OU_CLASS_ERROR,OU_MODE_STD,"smva_assembleMatrix_primal")
+        call sys_halt()
+      end if
+      
+      ! -----------------------------------------
+      ! B-matrices
+      call smva_getBMatrix (roperatorAsm,rmatrix,1.0_DP)
+      
+      ! -----------------------------------------
+      ! D-matrices
+      call smva_getDMatrix (roperatorAsm,rmatrix,1.0_DP)
+
+      ! -----------------------------------------
+      ! EOJ-stabilisation
+      !if (rspaceTimeOperatorAsm%p_rsettingsSpaceDiscr%rstabilConvecPrimal%cupwind .eq. 4) then
+      !  call smva_getEOJMatrix (rspaceTimeOperatorAsm,rtempData%rmatrix,1.0_DP)
+      !end if
+        
+      ! ===============================================
+      ! Implement restrictions in the space
+      ! ===============================================
+
+      select case (p_ranalyticData%p_rphysics%cequation)
+    
+      case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
+
+        ! If this is an UMFPACK solver, and if this is the heat equation
+        ! equations and pure Neumann boundary conditions, implement
+        ! the lumped mass matrix in the first row.
+        if (rasmFlags%bumfpackSolver .and. &
+            (roptcBDCSpace%rdirichletBoundary%nregions .eq. 0) .and. &
+            (roptcBDCSpace%rdirichletControlBoundaryL2%nregions .eq. 0) .and. &
+            (roptcBDCspace%rdirichletControlBoundaryH12%nregions .eq. 0)) then
+            
+          ! Replace the first row by the lumped mass matrix.
+          Irows = (/1/)
+          call mmod_replaceLineByLumpedMass (rmatrix%RmatrixBlock(1,1),1,&
+              roperatorAsm%p_rasmTemplates%rmatrixMassLumpInt)
+
+        end if
+
+      case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+      
+        ! If this is an UMFPACK solver, and if this is the Stokes/Navier--Stokes
+        ! equations and pure Dirichlet boundary conditions, implement
+        ! the lumped mass matrix in the first row.
+        if (rasmFlags%bumfpackSolver .and. &
+            (roptcBDCSpace%rneumannBoundary%nregions .eq. 0)) then
+          Irows = (/1/)
+          call mmod_replaceLinesByZero (rmatrix%RmatrixBlock(3,1),Irows)
+          call mmod_replaceLinesByZero (rmatrix%RmatrixBlock(3,2),Irows)
+          call mmod_replaceLineByLumpedMass (rmatrix%RmatrixBlock(3,3),1,&
+              roperatorAsm%p_rasmTemplates%rmatrixMassPressureLumpInt)
+        end if
+      end select
+    
+    end select ! Equation
+
+    ! -----------------------------------------------
+    ! Implement Dirichlet/Neumann boundary conditions
+    ! -----------------------------------------------
+    
+    call matfil_discreteBC (rmatrix,roptcBDCSpace%rdiscreteBC)
+        
   end subroutine
 
   ! ***************************************************************************
@@ -6693,7 +6840,28 @@ contains
         
       end select ! Timestep scheme
 
+    ! ***********************************************************
+    ! Poincare-Steklov operator
+    ! ***********************************************************
+    case (OPTP_PCSTEKLOV)
 
+      ! Which equation do we have?    
+      select case (p_ranalyticData%p_rphysics%cequation)
+
+      ! *************************************************************
+      ! Heat/Stokes/Navier Stokes.
+      ! *************************************************************
+      case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D,CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+    
+        ! Assemble
+        call sbc_assembleBDconditions (roptcBDC,roptcBDCSpace,0.0_DP,&
+            p_ranalyticData%p_rphysics%cequation,copType,&
+            SBC_DISCRETEBC+SBC_DIRICHLETBC+SBC_DIRICHLETBCC+SBC_NEUMANN,&
+            roperatorAsm%p_rspaceDiscrDual,rglobalData,&
+            rvectorControl)
+
+      end select ! Equation
+        
     case default
         
       call output_line("Invalid space",&

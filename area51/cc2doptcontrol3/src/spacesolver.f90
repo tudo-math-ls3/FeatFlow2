@@ -228,6 +228,9 @@ module spacesolver
   ! Solves the spatial system
   public :: spaceslh_solve
   
+  ! Solves for the spatial Poincare-Steklov operator.
+  public :: spaceslh_solve_PCSteklov
+  
   ! Cleanup of structures
   public :: spaceslh_doneStructure
 
@@ -271,7 +274,7 @@ contains
   ! auxiliary linear subproblems. The solver on level ispacelevel
   ! will be used to solve linear subproblems.
   ! THese sovlers are used as fallback if the standard solver fails.
-  type(t_linsolHierarchySpace), intent(in), target :: rlssHierarchy2
+  type(t_linsolHierarchySpace), intent(in), optional, target :: rlssHierarchy2
 
   ! OPTIONAL: Name of the section in the parameter list containing the parameters
   ! of the nonlinear solver.
@@ -292,7 +295,9 @@ contains
 
     ! Remember the solver settings for later use
     rsolver%p_rlssHierarchy => rlssHierarchy
-    rsolver%p_rlssHierarchy2 => rlssHierarchy2
+    if (present(rlssHierarchy2)) then
+      rsolver%p_rlssHierarchy2 => rlssHierarchy2
+    end if
     rsolver%copType = copType
 
     if (present(ssection) .and. present(rparamList)) then
@@ -378,7 +383,7 @@ contains
         p_rdiscretisation => &
             roperatorAsmHier%p_rfeHierarchyPrimal%p_rfeSpaces(ilev)%p_rdiscretisation
 
-      case (OPTP_DUAL,OPTP_DUALLIN,OPTP_DUALLIN_SIMPLE)
+      case (OPTP_DUAL,OPTP_DUALLIN,OPTP_DUALLIN_SIMPLE,OPTP_PCSTEKLOV)
         p_rdiscretisation => &
             roperatorAsmHier%p_rfeHierarchyDual%p_rfeSpaces(ilev)%p_rdiscretisation
       
@@ -412,28 +417,31 @@ contains
       end select
 
       ! Take a look at the solver type to configure the assembly flags.
-      select case (rsolver%p_rlssHierarchy2%p_RlinearSolvers(ilev)%isolverType)
-      
-      ! -------------------------------
-      ! UMFPACK
-      ! -------------------------------
-      case (LSS_LINSOL_UMFPACK)
-      
-        rsolver%p_RassemblyFlags(ilev)%bumfpackSolver = .true.
-
-      ! -------------------------------
-      ! MULTIGRID
-      ! -------------------------------
-      case (LSS_LINSOL_MG)
-      
-        ! Check if UMFPACK is the coarse grid solver.
-        if ((ilev .eq. 1) .and. &
-            (rsolver%p_rlssHierarchy2%p_RlinearSolvers(ilev)%icoarseGridSolverType .eq. 0)) then
+      if (associated(rsolver%p_rlssHierarchy2)) then
+        select case (rsolver%p_rlssHierarchy2%p_RlinearSolvers(ilev)%isolverType)
+        
+        ! -------------------------------
+        ! UMFPACK
+        ! -------------------------------
+        case (LSS_LINSOL_UMFPACK)
+        
           rsolver%p_RassemblyFlags(ilev)%bumfpackSolver = .true.
-        end if
-      
-      end select
-      
+
+        ! -------------------------------
+        ! MULTIGRID
+        ! -------------------------------
+        case (LSS_LINSOL_MG)
+        
+          ! Check if UMFPACK is the coarse grid solver.
+          if ((ilev .eq. 1) .and. &
+              (rsolver%p_rlssHierarchy2%p_RlinearSolvers(ilev)%icoarseGridSolverType .eq. 0)) then
+            rsolver%p_RassemblyFlags(ilev)%bumfpackSolver = .true.
+          end if
+        
+        end select
+        
+      end if
+         
       ! Get the corresponding operator assembly structure and
       ! initialise a system matrix
       call stoh_getOpAsm_slvtlv (&
@@ -448,7 +456,10 @@ contains
           
       ! Provide the matrix to the linear solver
       call lssh_setMatrix(rsolver%p_rlsshierarchy,ilev,rsolver%p_Rmatrices(ilev))
-      call lssh_setMatrix(rsolver%p_rlsshierarchy2,ilev,rsolver%p_Rmatrices(ilev))
+      
+      if (associated(rsolver%p_rlssHierarchy2)) then
+        call lssh_setMatrix(rsolver%p_rlsshierarchy2,ilev,rsolver%p_Rmatrices(ilev))
+      end if
       
       if (ilev .eq. rsolver%ispaceLevel) then
       
@@ -468,7 +479,7 @@ contains
               roperatorAsmHier%ranalyticData%p_rsettingsSpaceDiscr,&
               ilev,roperatorAsmHier,rsolver%p_RassemblyFlags(ilev))
 
-        case (OPTP_DUAL,OPTP_DUALLIN,OPTP_DUALLIN_SIMPLE)
+        case (OPTP_DUAL,OPTP_DUALLIN,OPTP_DUALLIN_SIMPLE,OPTP_PCSTEKLOV)
           call smva_allocTempData (rsolver%rtempData,&
               roperatorAsmHier%ranalyticData%p_rphysics,&
               roperatorAsmHier%ranalyticData%p_rsettingsOptControl,&
@@ -482,11 +493,15 @@ contains
 
         ! Initialise the structures of the associated linear subsolver
         call lssh_initStructure (rsolver%p_rlsshierarchy,ilev,rlocalStatLss,ierror)
-        call lssh_initStructure (rsolver%p_rlsshierarchy2,ilev,rlocalStatLss,ierror)
+        
+        if (associated(rsolver%p_rlssHierarchy2)) then
+          call lssh_initStructure (rsolver%p_rlsshierarchy2,ilev,rlocalStatLss,ierror)
+        end if
         
         call lss_sumStatistics(rlocalStatLss,rstatistics%rlssSolverStat)
 
       end if
+     
     end do
     
   end subroutine
@@ -549,6 +564,54 @@ contains
             rsolver%p_roperatorAsmHier,ilev,rsolver%itimelevel,idoftime,&
             rsolver%p_roperatorAsmHier%ranalyticData%p_rglobalData,p_rcontrolVec)
       end if
+    
+    end do
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine spaceslh_initData_bdc_PCSteklov (rsolver, idofTime, rcontrol)
+  
+!<description>
+  ! Initialises the boundary condition structures for time DOF idofTime
+  ! for the Poincare-Steklov operator.
+!</description>
+
+!<input>
+  ! Number of the DOF in time.
+  integer, intent(in) :: idofTime
+
+  ! Structure that defines the current control at time idofTime
+  type(t_vectorBlock), intent(inout), optional :: rcontrol
+!</input>
+
+!<inputoutput>
+  ! Structure to be initialised.
+  type(t_spaceSolverHierarchy), intent(inout) :: rsolver
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    integer :: ilev
+    
+    ! Clean up the boundary conditions.
+    call sbch_resetBCstructure (rsolver%p_roptcBDCSpaceHierarchy)
+    
+    ! Loop over all levels, from the highest to the lowest,
+    ! and set up the boundary conditions.
+    do ilev = rsolver%ispacelevel,rsolver%p_rlssHierarchy%nlmin,-1
+    
+      ! Assemble Dirichlet/Neumann boundary conditions
+      call smva_initDirichletNeumannBC (&
+          rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(ilev),&
+          rsolver%p_roperatorAsmHier%ranalyticData%p_roptcBDC,&
+          rsolver%copType,&
+          rsolver%p_roperatorAsmHier,ilev,rsolver%itimelevel,idoftime,&
+          rsolver%p_roperatorAsmHier%ranalyticData%p_rglobalData,rcontrol)
     
     end do
 
@@ -630,7 +693,8 @@ contains
         ! Integral-mean-value-zero filter for the vector
         ! -----------------------------------------------
         if ((p_roptcBDCspace%rdirichletBoundary%nregions .eq. 0) .and. &
-            (p_roptcBDCspace%rdirichletControlBoundary%nregions .eq. 0)) then
+            (p_roptcBDCspace%rdirichletControlBoundaryL2%nregions .eq. 0) .and. &
+            (p_roptcBDCspace%rdirichletControlBoundaryH12%nregions .eq. 0)) then
           call vecfil_solL1To0byLmass (rvector%Rvectorblock(1),rasmTemplates%rmatrixMassLumpInt)
         end if
 
@@ -671,7 +735,8 @@ contains
         ! Integral-mean-value-zero filter for the vector
         ! -----------------------------------------------
         if ((p_roptcBDCspace%rdirichletBoundary%nregions .eq. 0) .and. &
-            (p_roptcBDCspace%rdirichletControlBoundary%nregions .eq. 0)) then
+            (p_roptcBDCspace%rdirichletControlBoundaryL2%nregions .eq. 0) .and. &
+            (p_roptcBDCspace%rdirichletControlBoundaryH12%nregions .eq. 0)) then
           call vecfil_rhsL1To0ByLmass (rvector%RvectorBlock(1),rasmTemplates%rmatrixMassLumpInt)
         end if
 
@@ -712,7 +777,8 @@ contains
         ! Integral-mean-value-zero filter for the vector
         ! -----------------------------------------------
         if ((p_roptcBDCspace%rdirichletBoundary%nregions .eq. 0) .and. &
-            (p_roptcBDCspace%rdirichletControlBoundary%nregions .eq. 0)) then
+            (p_roptcBDCspace%rdirichletControlBoundaryL2%nregions .eq. 0) .and. &
+            (p_roptcBDCspace%rdirichletControlBoundaryH12%nregions .eq. 0)) then
           call vecfil_rhsL1To0ByLmass (rvector%Rvectorblock(1),rasmTemplates%rmatrixMassLumpInt)
         end if
 
@@ -754,9 +820,7 @@ contains
     type(t_optcBDCSpace), pointer :: p_roptcBDCspace
     type(t_spacetimeOpAsmAnalyticData), pointer :: p_ranalyticData
     type(t_staticSpaceAsmTemplates), pointer :: p_rasmTemplates
-    real(DP), dimension(:), pointer :: p_Ddata, p_Da
-    real(DP) :: dint
-    integer :: i
+    real(DP), dimension(:), pointer :: p_Ddata
 
     ! DEBUG!!!
     call lsysbl_getbase_double  (rvector,p_Ddata)
@@ -786,7 +850,8 @@ contains
     
       if (p_rasmFlags%bumfpackSolver .and. &
           (p_roptcBDCSpace%rdirichletBoundary%nregions .eq. 0) .and. &
-          (p_roptcBDCSpace%rdirichletControlBoundary%nregions .eq. 0)) then
+          (p_roptcBDCSpace%rdirichletControlBoundaryL2%nregions .eq. 0) .and. &
+          (p_roptcBDCspace%rdirichletControlBoundaryH12%nregions .eq. 0)) then
           
         if (p_ranalyticData%p_rsettingsSpaceDiscr%csupportIntMeanConstr .eq. 1) then
 
@@ -1249,6 +1314,75 @@ contains
 
 !<subroutine>
 
+  subroutine spaceslh_initData_PCSteklov (rsolver, ierror, idofTime, &
+      isollevelSpace, rstatistics)
+  
+!<description>
+  ! Final preparation of the space solver for the Poincare-Steklov operator.
+!</description>
+
+!<input>
+  ! Number of the DOF in time. Used for debug purposes.
+  integer, intent(in) :: idofTime
+
+  ! Space level corresponding to rprimalSol.
+  integer, intent(in) :: isollevelSpace
+!</input>
+
+!<inputoutput>
+  ! Structure to be initialised.
+  type(t_spaceSolverHierarchy), intent(inout) :: rsolver
+!</inputoutput>
+
+!<output>
+  ! Statistics structure
+  type(t_spaceslSolverStat), intent(out) :: rstatistics
+
+  ! One of the LINSOL_ERR_XXXX constants. A value different to
+  ! LINSOL_ERR_NOERROR indicates that an error happened during the
+  ! initialisation phase.
+  integer, intent(out) :: ierror
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer :: ilev
+    type(t_lssSolverStat) :: rlocalStatLss
+    
+    ! Loop over all levels, from the highest to the lowest,
+    ! and set up the system matrices.
+    call stat_startTimer (rstatistics%rtimeMatrixAssembly)
+    
+    do ilev = rsolver%ispacelevel,rsolver%p_rlssHierarchy%nlmin,-1
+    
+      ! Assemble the matrix
+      call smva_assembleMatrix_PCSteklov (rsolver%p_Rmatrices(ilev),ilev,&
+          rsolver%p_roperatorAsmHier,&
+          isollevelSpace,rsolver%itimelevel,&
+          rsolver%p_roptcBDCSpaceHierarchy%p_RoptcBDCspace(ilev),&
+          rsolver%p_RassemblyFlags(ilev),rsolver%rtempData)
+          
+    end do
+    
+    call stat_stopTimer (rstatistics%rtimeMatrixAssembly)
+
+    ! Initialise the structures of the associated linear subsolver
+    rsolver%p_rlsshierarchy%p_rdebugFlags%sstringTag = &
+        "pcstekl_"//trim(sys_siL(idofTime,10))//"_"//trim(sys_siL(isollevelSpace,10))
+
+    call lssh_initData (&
+        rsolver%p_rlsshierarchy,rsolver%p_roptcBDCSpaceHierarchy,&
+        rsolver%ispacelevel,rlocalStatLss,ierror)
+    
+    call lss_sumStatistics(rlocalStatLss,rstatistics%rlssSolverStat)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
   subroutine spaceslh_doneData (rsolver,bfallbackSolver)
   
 !<description>
@@ -1271,7 +1405,9 @@ contains
     if (.not. bfallbackSolver) then
       call lssh_doneData (rsolver%p_rlsshierarchy,rsolver%ispacelevel)
     else
-      call lssh_doneData (rsolver%p_rlsshierarchy2,rsolver%ispacelevel)
+      if (associated(rsolver%p_rlsshierarchy2)) then
+        call lssh_doneData (rsolver%p_rlsshierarchy2,rsolver%ispacelevel)
+      end if
     end if
 
   end subroutine
@@ -1300,8 +1436,13 @@ contains
     deallocate(rsolver%p_roptcBDCSpaceHierarchy)
 
     ! Clean up the structures of the associated linear subsolver
-    call lssh_doneStructure (rsolver%p_rlsshierarchy2,rsolver%ispacelevel)
-    call lssh_doneStructure (rsolver%p_rlsshierarchy,rsolver%ispacelevel)
+    if (associated(rsolver%p_rlsshierarchy2)) then
+      call lssh_doneStructure (rsolver%p_rlsshierarchy2,rsolver%ispacelevel)
+    end if
+    
+    if (associated(rsolver%p_rlsshierarchy)) then
+      call lssh_doneStructure (rsolver%p_rlsshierarchy,rsolver%ispacelevel)
+    end if
    
    ! Release assembly data
     call smva_releaseTempData (rsolver%rtempData)
@@ -2170,6 +2311,190 @@ contains
       rstatistics%niterations = 1
 
     end select
+
+    ! Measure the total time
+    call stat_stopTimer (rstatistics%rtotalTime)
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine spaceslh_solve_PCSteklov (rsolver,idofTime,rcontrol,rprjControl,rstatistics)
+  
+!<description>
+  ! Solves for the Poincare-Steklov operator. This is just
+  ! a Laplace/Stokes equation.
+!</description>
+
+!<inputoutput>
+  ! Parameters for the iteration.
+  ! The output parameters are changed according to the iteration.
+  type(t_spaceSolverHierarchy), intent(inout) :: rsolver
+
+  ! Number of the DOF in time which should be calculated into rdest.
+  integer, intent(in) :: idofTime
+
+  ! Current solution of the control equation
+  type(t_vectorBlock), intent(inout), target :: rcontrol
+
+  ! Projected control vector. Element of the dual space.
+  type(t_vectorBlock), intent(inout), target :: rprjControl
+!</inputoutput>
+
+!<output>
+  ! Statistics structure
+  type(t_spaceslSolverStat), intent(out) :: rstatistics
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    type(t_vectorBlock), pointer :: p_rd
+    integer :: ierror
+    real(DP) :: dres
+    type(t_linsolNode), pointer :: p_rsolverNode
+    real(DP), dimension(:), pointer :: p_Dd, p_Dx
+    type(t_lssSolverStat) :: rlocalStatLss
+    type(t_spaceslSolverStat) :: rlocalStat
+    type(t_timer) :: rtimer
+    type(t_spacetimeOperatorAsm) :: roperatorAsm
+   
+    ! Clear statistics
+    call stat_startTimer (rstatistics%rtotalTime)
+   
+    ! At first, get a temp vector we can use for creating defects,
+    p_rd => rsolver%p_rd
+    
+    call stoh_getOpAsm_slvtlv (&
+        roperatorAsm,rsolver%p_roperatorAsmHier,&
+        rsolver%ispacelevel,rsolver%itimelevel)
+    
+    ! DEBUG!!!
+    call lsysbl_getbase_double (p_rd,p_Dd)
+
+    ! We apply one defect correction, so to pass a defect to the 
+    ! linear solver.
+
+    ! -------------------------------------------------------------
+    ! Initialise boundary conditions
+    ! -------------------------------------------------------------
+    call spaceslh_initData_bdc_PCSteklov (rsolver, idofTime, rcontrol)
+
+    ! -------------------------------------------------------------
+    ! Prepare the Poincare-Steklov operator
+    ! -------------------------------------------------------------
+    call spaceslh_initData_PCSteklov (rsolver, ierror, idofTime, &
+        rsolver%ispacelevel,rlocalStat)
+        
+    call spacesl_sumStatistics (rlocalStat,rstatistics,.false.)
+
+    ! -------------------------------------------------------------
+    ! Create a defect
+    ! -------------------------------------------------------------
+    call stat_startTimer (rstatistics%rtimeDefect)
+    
+    call lsysbl_clearVector (rprjControl)
+    call lsysbl_clearVector (p_rd)
+
+    call spaceslh_implementBDC (rprjControl, SPACESLH_VEC_SOLUTION, &
+        rsolver%ispacelevel, rsolver, roperatorAsm%p_rasmTemplates)
+
+    call spaceslh_implementBDC (p_rd, SPACESLH_VEC_RHS, &
+        rsolver%ispacelevel, rsolver, roperatorAsm%p_rasmTemplates)
+        
+    call lsysbl_blockMatVec (rsolver%p_Rmatrices(rsolver%ispacelevel),&
+        rprjControl,p_rd,-1.0_DP,1.0_DP)
+
+    call spaceslh_implementBDC (p_rd, SPACESLH_VEC_DEFECT, &
+        rsolver%ispacelevel, rsolver, roperatorAsm%p_rasmTemplates)
+    
+    call stat_stopTimer (rstatistics%rtimeDefect)
+    call stat_addTimers (rtimer,rstatistics%rtimeRHS)
+    
+    ! Get the residual
+    dres = lsysbl_vectorNorm(p_rd,rsolver%rnewtonParams%iresNorm)
+    call itc_initResidual (rsolver%riter,dres)
+    
+    ! Print the initial residual
+    if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
+      call output_line (&
+          trim(sys_si(idofTime-1,8)) // &
+          " " // trim(sys_si(0,4)) // &
+          " " // trim(sys_sdEL(dres,8)) )
+    end if
+
+    ! Cancel if the defect is zero.
+    if (dres .gt. 10.0_DP*SYS_EPSREAL_DP) then
+
+      ! -------------------------------------------------------------
+      ! Assemble the matrices/boundary conditions on all levels.
+      ! -------------------------------------------------------------
+      ! Final modifications of the RHS of the linear system
+      call spaceslh_initData_rhs (p_rd, SPACESLH_VEC_RHS, rsolver)
+
+      ! -------------------------------------------------------------
+      ! Call the linear solver, it does the job for us.
+      ! -------------------------------------------------------------
+      call lssh_precondDefect (&
+          rsolver%p_rlsshierarchy,rsolver%ispacelevel,p_rd,rlocalStatLss,p_rsolverNode)
+      
+      call lss_sumStatistics (rlocalStatLss,rstatistics%rlssSolverStat)
+
+      ! Ignore the solution if everything fails.
+      if (p_rsolverNode%iresult .ne. 0) then
+        call output_line ("Linear solver in space failed. Solution ignored.", &
+            OU_CLASS_WARNING,OU_MODE_STD,"spaceslh_solve_PCSteklov")
+        call lsysbl_clearVector (p_rd)
+      end if
+
+      ! -------------------------------------------------------------
+      ! Statistics
+      ! -------------------------------------------------------------
+
+      ! Get the final residual
+      dres = p_rsolverNode%dfinalDefect
+      call itc_pushResidual (rsolver%riter,dres)
+    
+      ! Print the final residual
+      if (rsolver%rnewtonParams%ioutputLevel .ge. 2) then
+        call output_line (&
+            trim(sys_si(idofTime-1,8)) // &
+            " " // trim(sys_si(1,4)) // &
+            " " // trim(sys_sdEL(dres,8)) )
+      end if
+
+      ! -------------------------------------------------------------
+      ! Update the control according to the defect:
+      !
+      !    u_new  =  u_old  +  g_n
+      ! -------------------------------------------------------------
+
+      ! DEBUG!!!
+      call lsysbl_getbase_double (rprjControl,p_Dx)
+      
+      call lsysbl_vectorLinearComb (p_rd,rprjControl,1.0_DP,1.0_DP)
+
+      ! Implement boundary conditions
+      !call spaceslh_implementBDC (rprjControl, SPACESLH_VEC_SOLUTION, &
+      !    rsolver%ispacelevel, rsolver, roperatorAsm%p_rasmTemplates)
+
+    end if
+  
+    ! -------------------------------------------------------------
+    ! Solver-Cleanup
+    ! -------------------------------------------------------------
+    call spaceslh_doneData (rsolver,.false.)
+    
+    ! -------------------------------------------------------------
+    ! Clean up boundary conditions
+    ! -------------------------------------------------------------
+    call sbch_resetBCstructure (rsolver%p_roptcBDCSpaceHierarchy)
+    
+    ! Only one iteration
+    rsolver%riter%niterations = 1
+    rstatistics%niterations = 1
 
     ! Measure the total time
     call stat_stopTimer (rstatistics%rtotalTime)

@@ -45,11 +45,13 @@ module kktsystem
   use structuresoptcontrol
   use structuresboundaryconditions
   use structuresgeneral
+  use structuresoptflow
   use assemblytemplates
   
   use structuresoperatorasm
   use spacematvecassembly
   use spatialbc
+  use spacelinearsolver
   
   use kktsystemspaces
   use spacesolver
@@ -61,6 +63,92 @@ module kktsystem
   private
 
 !<types>
+
+!<typeblock>
+
+  ! This type encapsules a set of solvers (linear and nonlinear solver hierarchies)
+  ! in space which are  used by the KKT subroutines to solve linear 
+  ! subproblems during for forward and backward iterations.
+  type t_kktSubsolverSet
+  
+    !<!-- Linear solvers used for creating the defect -->
+  
+    ! Hierarchy of linear solvers in space for all levels.
+    ! Nonlinear primal equation.
+    type(t_linsolHierarchySpace), pointer :: p_rlinsolHierPrimal => null()
+
+    ! Hierarchy of linear solvers in space for all levels.
+    ! Dual equation.
+    type(t_linsolHierarchySpace), pointer :: p_rlinsolHierDual => null()
+
+    ! Hierarchy of linear solvers in space for all levels.
+    ! Fallback solver if the standard solver fails.
+    ! Nonlinear primal equation.
+    type(t_linsolHierarchySpace), pointer :: p_rlinsolHierPrimal2 => null()
+
+    ! Hierarchy of linear solvers in space for all levels.
+    ! Fallback solver if the standard solver fails.
+    ! Dual equation.
+    type(t_linsolHierarchySpace), pointer :: p_rlinsolHierDual2 => null()
+
+
+    !<!-- Linear solvers for creating the defect of teh linearised equation -->
+
+
+    ! Hierarchy of linear solvers in space for all levels.
+    ! Linearised primal equation.
+    type(t_linsolHierarchySpace), pointer :: p_rlinsolHierPrimalLin => null()
+
+    ! Hierarchy of linear solvers in space for all levels.
+    ! Linearised dual equation.
+    type(t_linsolHierarchySpace), pointer :: p_rlinsolHierDualLin => null()
+
+    ! Hierarchy of linear solvers in space for all levels.
+    ! Fallback solver if the standard solver fails.
+    ! Linearised primal equation.
+    type(t_linsolHierarchySpace), pointer :: p_rlinsolHierPrimalLin2 => null()
+
+    ! Hierarchy of linear solvers in space for all levels.
+    ! Fallback solver if the standard solver fails.
+    ! Linearised dual equation.
+    type(t_linsolHierarchySpace), pointer :: p_rlinsolHierDualLin2 => null()
+
+
+    ! <!-- Nonlinear solvers -->
+
+
+    ! Hierarchy of solvers in space for all levels.
+    ! Nonlinear primal equation.
+    type(t_spaceSolverHierarchy), pointer :: p_rsolverHierPrimal => null()
+
+    ! Hierarchy of solvers in space for all levels.
+    ! Dual equation.
+    type(t_spaceSolverHierarchy), pointer :: p_rsolverHierDual => null()
+
+    ! Hierarchy of solvers in space for all levels.
+    ! Linearised primal equation.
+    type(t_spaceSolverHierarchy), pointer :: p_rsolverHierPrimalLin => null()
+
+    ! Hierarchy of solvers in space for all levels.
+    ! Linearised dual equation.
+    type(t_spaceSolverHierarchy), pointer :: p_rsolverHierDualLin => null()
+    
+    
+    !<!-- Other solvers -->
+
+    ! Hierarchy of linear solvers in space for all levels.
+    ! Poincare-Steklov operator
+    type(t_linsolHierarchySpace), pointer :: p_rlinsolHierPCSteklov => null()
+
+    ! Hierarchy of solvers in space for all levels.
+    ! Poincare-Steklov operator
+    type(t_spaceSolverHierarchy), pointer :: p_rsolverPCSteklov => null()
+
+  end type
+
+!</typeblock>
+
+  public :: t_kktSubsolverSet
 
 !<typeblock>
 
@@ -135,6 +223,12 @@ module kktsystem
 
 !</types>
 
+  ! Initialise a KKT subsolver structure
+  public :: kkt_initSubsolvers
+
+  ! Release a KKT subsolver structure
+  public :: kkt_doneSubsolvers
+
   ! Initialises a KKT system.
   public :: kkt_initKKTsystem
 
@@ -197,6 +291,285 @@ module kktsystem
   public :: kkt_saveDirDerivToFiles
 
 contains
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine kkt_initSubsolvers (rkktSubsolvers,&
+      rsettingsSolver,ssection,rparamList,cdualEqnComplexity)
+  
+!<description>
+  ! Initialises a KKT subsolver set based on the settings in a parameter list
+!</description>
+  
+!<input>
+  ! Parameters of the OptFlow solver
+  type(t_settings_optflow), intent(in), target :: rsettingsSolver
+
+  ! Parameter list with the parameters.
+  type(t_parlist), intent(in) :: rparamList
+
+  ! Name of the section in the parameter list configuring the entry point
+  ! of the subsolvers. IN this section, a set of string parameters is 
+  ! searched for which configures the sections of the subsolvers.
+  character(LEN=*), intent(in) :: ssection
+  
+  ! Complexity of the dual equation to be supported by the subsolvers.
+  ! =0: Only support the 'simple' linearised dual equations
+  ! =1: Support the 'full' linearised equations, thus allowing to apply
+  ! a Newton iteration.
+  integer, intent(in) :: cdualEqnComplexity
+!</input>
+
+!<output>
+  ! KKT subsolver structure to initialise.
+  type(t_kktSubsolverSet), intent(inout) :: rkktSubsolvers
+!</output>
+
+!</subroutine>
+
+    character(LEN=SYS_STRLEN) :: ssolverNonlin,ssolverLin
+
+    character(LEN=SYS_STRLEN) :: ssolverSpaceForward,ssolverSpaceBackward
+    character(LEN=SYS_STRLEN) :: ssolverSpaceForwardLin,ssolverSpaceBackwardLin
+
+    character(LEN=SYS_STRLEN) :: ssolverSpaceForward2,ssolverSpaceBackward2
+    character(LEN=SYS_STRLEN) :: ssolverSpaceForwardLin2,ssolverSpaceBackwardLin2
+
+    ! Get the sections with the parameters for the nonlinear / linear
+    ! solver in space
+    call parlst_getvalue_string (rparamList, ssection, &
+        "ssectionNonlinSolverSpace", ssolverNonlin, "CC-NONLINEARSOLVER",bdequote=.true.)
+
+    call parlst_getvalue_string (rparamList, ssection, &
+        "ssectionLinSolverSpace", ssolverLin, "CC-LINEARSOLVER",bdequote=.true.)
+        
+    call parlst_getvalue_string (rparamList, ssection, &
+        "ssectionLinSlvSpaceForw", ssolverSpaceForward, "CC-LINEARSOLVER",bdequote=.true.)
+
+    call parlst_getvalue_string (rparamList, ssection, &
+        "ssectionLinSlvSpaceBack", ssolverSpaceBackward, "CC-LINEARSOLVER",bdequote=.true.)
+
+    call parlst_getvalue_string (rparamList, ssection, &
+        "ssectionLinSlvSpaceForwLin", ssolverSpaceForwardlin, "CC-LINEARSOLVER",bdequote=.true.)
+
+    call parlst_getvalue_string (rparamList, ssection, &
+        "ssectionLinSlvSpaceBackLin", ssolverSpaceBackwardLin, "CC-LINEARSOLVER",bdequote=.true.)
+
+    ! Fallback solvers if the standard solvers fail.
+    call parlst_getvalue_string (rparamList, ssection, &
+        "ssectionLinSlvSpaceForw2", ssolverSpaceForward2, "CC-LINEARSOLVER",bdequote=.true.)
+
+    call parlst_getvalue_string (rparamList, ssection, &
+        "ssectionLinSlvSpaceBack2", ssolverSpaceBackward2, "CC-LINEARSOLVER",bdequote=.true.)
+
+    call parlst_getvalue_string (rparamList, ssection, &
+        "ssectionLinSlvSpaceForwLin2", ssolverSpaceForwardlin2, "CC-LINEARSOLVER",bdequote=.true.)
+
+    call parlst_getvalue_string (rparamList, ssection, &
+        "ssectionLinSlvSpaceBackLin2", ssolverSpaceBackwardLin2, "CC-LINEARSOLVER",bdequote=.true.)
+
+    ! Create linear solvers in space for linera subproblems in the
+    ! primal/dual space.
+
+    allocate(rkktSubsolvers%p_rlinsolHierPrimal)
+    allocate(rkktSubsolvers%p_rlinsolHierDual)
+    allocate(rkktSubsolvers%p_rlinsolHierPrimalLin)
+    allocate(rkktSubsolvers%p_rlinsolHierDualLin)
+
+    allocate(rkktSubsolvers%p_rlinsolHierPrimal2)
+    allocate(rkktSubsolvers%p_rlinsolHierDual2)
+    allocate(rkktSubsolvers%p_rlinsolHierPrimalLin2)
+    allocate(rkktSubsolvers%p_rlinsolHierDualLin2)
+    
+    allocate(rkktSubsolvers%p_rlinsolHierPCSteklov)
+
+    ! Create solver structures for the same levels.
+
+    ! Forward equation on all levels
+    call lssh_createLinsolHierarchy (rkktSubsolvers%p_rlinsolHierPrimal,&
+        rsettingsSolver%rfeHierarchyPrimal,rsettingsSolver%rprjHierSpacePrimal,&
+        1,0,rsettingsSolver%rphysics%cequation,rsettingsSolver%p_rparlist,&
+        ssolverSpaceForward,rsettingsSolver%rdebugFlags)
+
+    ! Backward equation on all levels
+    call lssh_createLinsolHierarchy (rkktSubsolvers%p_rlinsolHierDual,&
+        rsettingsSolver%rfeHierarchyDual,rsettingsSolver%rprjHierSpaceDual,&
+        1,0,rsettingsSolver%rphysics%cequation,rsettingsSolver%p_rparlist,&
+        ssolverSpaceBackward,rsettingsSolver%rdebugFlags)
+
+    ! Linearised forward equation on all levels
+    call lssh_createLinsolHierarchy (rkktSubsolvers%p_rlinsolHierPrimalLin,&
+        rsettingsSolver%rfeHierarchyPrimal,rsettingsSolver%rprjHierSpacePrimal,&
+        1,0,rsettingsSolver%rphysics%cequation,rsettingsSolver%p_rparlist,&
+        ssolverSpaceForwardLin,rsettingsSolver%rdebugFlags)
+
+    ! Linearised backward equation on all levels
+    call lssh_createLinsolHierarchy (rkktSubsolvers%p_rlinsolHierDualLin,&
+        rsettingsSolver%rfeHierarchyDual,rsettingsSolver%rprjHierSpaceDual,&
+        1,0,rsettingsSolver%rphysics%cequation,rsettingsSolver%p_rparlist,&
+        ssolverSpaceBackwardLin,rsettingsSolver%rdebugFlags)
+
+    ! Poincare-Steklov operator. Based on the dual equation.
+    call lssh_createLinsolHierarchy (rkktSubsolvers%p_rlinsolHierPCSteklov,&
+        rsettingsSolver%rfeHierarchyDual,rsettingsSolver%rprjHierSpaceDual,&
+        1,0,rsettingsSolver%rphysics%cequation,rsettingsSolver%p_rparlist,&
+        ssolverSpaceBackward,rsettingsSolver%rdebugFlags)
+
+    ! Create fallback solvers
+    
+    ! Forward equation on all levels
+    call lssh_createLinsolHierarchy (rkktSubsolvers%p_rlinsolHierPrimal2,&
+        rsettingsSolver%rfeHierarchyPrimal,rsettingsSolver%rprjHierSpacePrimal,&
+        1,0,rsettingsSolver%rphysics%cequation,rsettingsSolver%p_rparlist,&
+        ssolverSpaceForward2,rsettingsSolver%rdebugFlags)
+
+    ! Backward equation on all levels
+    call lssh_createLinsolHierarchy (rkktSubsolvers%p_rlinsolHierDual2,&
+        rsettingsSolver%rfeHierarchyDual,rsettingsSolver%rprjHierSpaceDual,&
+        1,0,rsettingsSolver%rphysics%cequation,rsettingsSolver%p_rparlist,&
+        ssolverSpaceBackward2,rsettingsSolver%rdebugFlags)
+
+    ! Linearised forward equation on all levels
+    call lssh_createLinsolHierarchy (rkktSubsolvers%p_rlinsolHierPrimalLin2,&
+        rsettingsSolver%rfeHierarchyPrimal,rsettingsSolver%rprjHierSpacePrimal,&
+        1,0,rsettingsSolver%rphysics%cequation,rsettingsSolver%p_rparlist,&
+        ssolverSpaceForwardLin2,rsettingsSolver%rdebugFlags)
+
+    ! Linearised backward equation on all levels
+    call lssh_createLinsolHierarchy (rkktSubsolvers%p_rlinsolHierDualLin2,&
+        rsettingsSolver%rfeHierarchyDual,rsettingsSolver%rprjHierSpaceDual,&
+        1,0,rsettingsSolver%rphysics%cequation,rsettingsSolver%p_rparlist,&
+        ssolverSpaceBackwardLin2,rsettingsSolver%rdebugFlags)
+    
+    ! Create the corresponding solver hierarchies.
+    allocate(rkktSubsolvers%p_rsolverHierPrimal)
+    allocate(rkktSubsolvers%p_rsolverHierDual)
+    allocate(rkktSubsolvers%p_rsolverHierPrimalLin)
+    allocate(rkktSubsolvers%p_rsolverHierDualLin)
+
+    ! Forward equation. Created on all levels but only used on the highest one.
+    caLL spaceslh_init (rkktSubsolvers%p_rsolverHierPrimal,&
+        OPTP_PRIMAL,rkktSubsolvers%p_rlinsolHierPrimal,rkktSubsolvers%p_rlinsolHierPrimal2,&
+        ssolverNonlin,rparamList)
+
+    ! Backward equation, only linear. Created on all levels but only used on the highest one.
+    ! Also fetch parameters of the nonlinear solver from the data file.
+    ! The parameter are not used except for the output level, which determins
+    ! the amoount of output of the solver.
+    caLL spaceslh_init (rkktSubsolvers%p_rsolverHierDual,&
+        OPTP_DUAL,rkktSubsolvers%p_rlinsolHierDual,rkktSubsolvers%p_rlinsolHierDual2,&
+        ssolverNonlin,rparamList)
+
+    ! The definition of the lineraised forward/backward equation depends upon
+    ! whether we use the full Newton approach or not.
+    select case (cdualEqnComplexity)
+
+    ! --------------
+    ! Partial Equation
+    ! --------------
+    case (0)
+      ! Linearised forward equation, only linear. Used on all levels.
+      ! Uses the same linear solver as the forward solver.
+      caLL spaceslh_init (rkktSubsolvers%p_rsolverHierPrimalLin,&
+          OPTP_PRIMALLIN_SIMPLE,rkktSubsolvers%p_rlinsolHierPrimalLin,&
+          rkktSubsolvers%p_rlinsolHierPrimalLin2,ssolverNonlin,rparamList)
+
+      ! Linearised forward equation, only linear. Used on all levels.
+      ! Uses the same linear solver as the backward solver.#
+      caLL spaceslh_init (rkktSubsolvers%p_rsolverHierDualLin,&
+          OPTP_DUALLIN_SIMPLE,rkktSubsolvers%p_rlinsolHierDualLin,&
+          rkktSubsolvers%p_rlinsolHierDualLin2,ssolverNonlin,rparamList)
+    
+    ! ----------------------------
+    ! Full Equation
+    ! ----------------------------
+    case (1)
+      ! Linearised forward equation, only linear. Used on all levels.
+      ! Uses the same linear solver as the forward solver.
+      caLL spaceslh_init (rkktSubsolvers%p_rsolverHierPrimalLin,&
+          OPTP_PRIMALLIN,rkktSubsolvers%p_rlinsolHierPrimalLin,&
+          rkktSubsolvers%p_rlinsolHierPrimalLin2,ssolverNonlin,rparamList)
+
+      ! Linearised forward equation, only linear. Used on all levels.
+      ! Uses the same linear solver as the backward solver.
+      caLL spaceslh_init (rkktSubsolvers%p_rsolverHierDualLin,&
+          OPTP_DUALLIN,rkktSubsolvers%p_rlinsolHierDualLin,&
+          rkktSubsolvers%p_rlinsolHierDualLin2,ssolverNonlin,rparamList)
+          
+    case default
+      call output_line ("Invalid nonlinear iteration",&
+          OU_CLASS_ERROR,OU_MODE_STD,"kkt_initSubsolvers")
+      call sys_halt()
+      
+    end select
+
+    ! Poincare-Steklov solver
+    allocate (rkktSubsolvers%p_rsolverPCSteklov)
+    caLL spaceslh_init (rkktSubsolvers%p_rsolverPCSteklov,&
+        OPTP_PCSTEKLOV,rkktSubsolvers%p_rlinsolHierPCSteklov,&
+        ssection=ssolverNonlin,rparamList=rparamList)
+
+end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine kkt_doneSubsolvers (rkktSubsolvers)
+  
+!<description>
+  ! Clean up a subsolver structure.
+!</description>
+
+!<inputoutput>
+  ! Structure to be cleaned up.
+  type(t_kktSubsolverSet), intent(inout) :: rkktSubsolvers
+!</inputoutput>
+
+!</subroutine>
+
+    ! Release the linear solvers in space.
+    call spaceslh_done (rkktSubsolvers%p_rsolverHierDualLin)
+    call spaceslh_done (rkktSubsolvers%p_rsolverHierPrimalLin)
+    call spaceslh_done (rkktSubsolvers%p_rsolverHierDual)
+    call spaceslh_done (rkktSubsolvers%p_rsolverHierPrimal)
+    
+    call spaceslh_done (rkktSubsolvers%p_rsolverPCSteklov)
+
+    call lssh_releaseLinsolHierarchy (rkktSubsolvers%p_rlinsolHierDualLin)
+    call lssh_releaseLinsolHierarchy (rkktSubsolvers%p_rlinsolHierPrimalLin)
+    call lssh_releaseLinsolHierarchy (rkktSubsolvers%p_rlinsolHierDual)
+    call lssh_releaseLinsolHierarchy (rkktSubsolvers%p_rlinsolHierPrimal)
+
+    call lssh_releaseLinsolHierarchy (rkktSubsolvers%p_rlinsolHierPCSteklov)
+
+    call lssh_releaseLinsolHierarchy (rkktSubsolvers%p_rlinsolHierDualLin2)
+    call lssh_releaseLinsolHierarchy (rkktSubsolvers%p_rlinsolHierPrimalLin2)
+    call lssh_releaseLinsolHierarchy (rkktSubsolvers%p_rlinsolHierDual2)
+    call lssh_releaseLinsolHierarchy (rkktSubsolvers%p_rlinsolHierPrimal2)
+
+    deallocate (rkktSubsolvers%p_rsolverHierDualLin)
+    deallocate (rkktSubsolvers%p_rsolverHierPrimalLin)
+    deallocate (rkktSubsolvers%p_rsolverHierDual)
+    deallocate (rkktSubsolvers%p_rsolverHierPrimal)
+    
+    deallocate (rkktSubsolvers%p_rsolverPCSteklov)
+
+    deallocate (rkktSubsolvers%p_rlinsolHierDualLin2)
+    deallocate (rkktSubsolvers%p_rlinsolHierPrimalLin2)
+    deallocate (rkktSubsolvers%p_rlinsolHierDual2)
+    deallocate (rkktSubsolvers%p_rlinsolHierPrimal2)
+    
+    deallocate (rkktSubsolvers%p_rlinsolHierPCSteklov)
+    
+    deallocate (rkktSubsolvers%p_rlinsolHierDualLin)
+    deallocate (rkktSubsolvers%p_rlinsolHierPrimalLin)
+    deallocate (rkktSubsolvers%p_rlinsolHierDual)
+    deallocate (rkktSubsolvers%p_rlinsolHierPrimal)
+
+  end subroutine
 
   ! ***************************************************************************
 
@@ -377,7 +750,7 @@ contains
 
 !<subroutine>
 
-  subroutine kkt_solvePrimal (rkktsystem,rspaceSolver,cspatialInitCondPolicy,rstatistics)
+  subroutine kkt_solvePrimal (rkktsystem,cspatialInitCondPolicy,rkktSubsolvers,rstatistics)
   
 !<description>
   ! Solves the primal equation in the KKT system based on the control in the
@@ -399,8 +772,8 @@ contains
   ! values. On exit, the structure contains improved solutions.
   type(t_kktsystem), intent(inout) :: rkktsystem
   
-  ! Space solver structure used for solving subequations in space
-  type(t_spaceSolverHierarchy), intent(inout) :: rspaceSolver
+  ! KKT subsolver structure.
+  type(t_kktSubsolverSet), intent(inout) :: rkktSubsolvers
 !</inputoutput>
 
 !<output>
@@ -438,7 +811,7 @@ contains
     ! -------------------------------------------------------------------------
     
     ! Initialise basic solver structures
-    call spaceslh_initStructure (rspaceSolver, &
+    call spaceslh_initStructure (rkktSubsolvers%p_rsolverHierPrimal, &
         rkktsystem%ispacelevel, rkktsystem%itimelevel, &
         rkktsystem%p_roperatorAsmHier,rstatLocal,ierror)
 
@@ -466,7 +839,8 @@ contains
     
       ! Apply the solver to update the solution in timestep idofTime.
       output_iautoOutputIndent = output_iautoOutputIndent + 2
-      call spaceslh_solve (rspaceSolver,idofTime,cspatialInitCondPolicy,SPACESLH_EQNF_DEFAULT,&
+      call spaceslh_solve (rkktSubsolvers%p_rsolverHierPrimal,&
+          idofTime,cspatialInitCondPolicy,SPACESLH_EQNF_DEFAULT,&
           rstatLocal,rkktsystem%ispacelevel,rkktsystem%p_rprimalSol,rcontrol=rkktsystem%p_rcontrol)
       output_iautoOutputIndent = output_iautoOutputIndent - 2
       
@@ -475,7 +849,7 @@ contains
       
     end do ! step
    
-    call spaceslh_doneStructure (rspaceSolver)
+    call spaceslh_doneStructure (rkktSubsolvers%p_rsolverHierPrimal)
     
     call stat_stopTimer (rstatistics%rtotalTime)
     
@@ -485,7 +859,7 @@ contains
 
 !<subroutine>
 
-  subroutine kkt_solveDual (rkktsystem,rspaceSolver,cspatialInitCondPolicy,rstatistics)
+  subroutine kkt_solveDual (rkktsystem,cspatialInitCondPolicy,rkktSubsolvers,rstatistics)
   
 !<description>
   ! Solves the dual equation in the KKT system based on the control and the
@@ -507,8 +881,8 @@ contains
   ! values. On exit, the structure contains improved solutions.
   type(t_kktsystem), intent(inout) :: rkktsystem
 
-  ! Space solver structure used for solving subequations in space
-  type(t_spaceSolverHierarchy), intent(inout) :: rspaceSolver
+  ! KKT subsolver structure.
+  type(t_kktSubsolverSet), intent(inout) :: rkktSubsolvers
 !</inputoutput>
 
 !<output>
@@ -531,7 +905,7 @@ contains
     ! -------------------------------------------------------------------------
     
     ! Initialise basic solver structures
-    call spaceslh_initStructure (rspaceSolver, &
+    call spaceslh_initStructure (rkktSubsolvers%p_rsolverHierDual, &
         rkktsystem%ispacelevel, rkktsystem%itimelevel, &
         rkktsystem%p_roperatorAsmHier,rstatLocal,ierror)
 
@@ -551,7 +925,8 @@ contains
     
       ! Apply the solver to update the solution in timestep idofTime.
       output_iautoOutputIndent = output_iautoOutputIndent + 2
-      call spaceslh_solve (rspaceSolver,idofTime,cspatialInitCondPolicy,SPACESLH_EQNF_DEFAULT,&
+      call spaceslh_solve (rkktSubsolvers%p_rsolverHierDual,&
+          idofTime,cspatialInitCondPolicy,SPACESLH_EQNF_DEFAULT,&
           rstatLocal,rkktsystem%ispacelevel,rkktsystem%p_rprimalSol,rdualSol=rkktsystem%p_rdualSol)
       output_iautoOutputIndent = output_iautoOutputIndent - 2
       
@@ -560,7 +935,7 @@ contains
 
     end do ! step
    
-    call spaceslh_doneStructure (rspaceSolver)
+    call spaceslh_doneStructure (rkktSubsolvers%p_rsolverHierDual)
     
     call stat_stopTimer (rstatistics%rtotalTime)
 
@@ -570,7 +945,7 @@ contains
 
 !<subroutine>
 
-  subroutine kkt_dualToControl (rkktsystem,rcontrol)
+  subroutine kkt_dualToControl (rkktsystem,rcontrol,rkktSubsolvers,rstatistics)
   
 !<description>
   ! Calculates the intermediate control
@@ -591,17 +966,26 @@ contains
 
   ! Control vector that receives the new control.
   type(t_controlSpace), intent(inout) :: rcontrol
+  
+  ! KKT subsolver structure.
+  type(t_kktSubsolverSet), intent(inout) :: rkktSubsolvers
 !</inputoutput>
+
+!<output>
+  ! Statistics structure
+  type(t_spaceslSolverStat), intent(out) :: rstatistics
+!<output>
 
 !</subroutine>
 
     ! local variables
-    integer :: icomp,istep
+    integer :: icomp,istep,ierror
     real(DP) :: dtheta,dwmin,dwmax,dtime
     type(t_vectorBlock), pointer :: p_rdualSpace, p_rcontrolSpace, p_rintermedControl
     type(t_vectorBlock), pointer :: p_rcontrolSpaceOutput
     type(t_spaceTimeVector), pointer :: p_rdualSol
     type(t_optcBDCSpace) :: roptcBDCspace
+    type(t_spaceslSolverStat) :: rstatLocal
 
     type(t_settings_physics), pointer :: p_rphysics
     type(t_settings_optcontrol), pointer :: p_rsettingsOptControl
@@ -869,6 +1253,156 @@ contains
 
             end if ! alphaL2BdC
 
+            ! -----------------------------------------------------------
+            ! H^1/2 Boundary control
+            ! -----------------------------------------------------------
+            if (p_rsettingsOptControl%dalphaH12BdC .ge. 0.0_DP) then
+
+              ! No control in the initial solution
+              if (istep .gt. 1) then
+
+                ! Characteristics of the current timestep.
+                call tdiscr_getTimestep(roperatorasm%p_rtimeDiscrPrimal,istep-1,dtime)
+
+                ! Calculate the region where boundary control is applied
+                call sbc_assembleBDconditions (rkktSystem%p_roptcBDC,roptcBDCSpace,dtime,&
+                    p_rphysics%cequation,OPTP_PCSTEKLOV,SBC_DIRICHLETBCC,&
+                    p_rintermedControl%p_rblockDiscr)
+
+                ! H^1/2 boundary control is slightly more complicated than
+                ! L2 boudnary control. The intermediate control reads
+                !
+                !    u_intermed  =  u - alpha (nu dn w - zeta n) + (nu dn lambda - xi n)
+                !
+                ! with (w, zeta) being the solution of the Poincare-Steklov operator
+                ! S: u -> (w,zeta)  with
+                !
+                !    - Laplace(w) + grad(zeta) = 0
+                !                        div w = 0
+                !                            w = u  on the control boundary.
+                !
+                ! Thus, we have to solve a Stokes system with homogeneous boundary conditions
+                ! on the Dirichlet boundary and u being the boundary conditions on the
+                ! control boundary.
+                !
+                ! Calculate "nu dn lambda - xi n"
+                call kkt_calcH12BdCNavSt (roperatorAsm%p_rasmTemplates,p_rphysics,&
+                    p_rdualSpace,p_rintermedControl,icomp+1,roptcBDCSpace,0.0_DP,1.0_DP)
+                
+                ! Initialise basic solver structures
+                call spaceslh_initStructure (rkktSubsolvers%p_rsolverPCSteklov, &
+                    rkktsystem%ispacelevel, rkktsystem%itimelevel, &
+                    rkktsystem%p_roperatorAsmHier,rstatLocal,ierror)
+
+                ! Sum up statistics
+                call spacesl_sumStatistics(rstatLocal,rstatistics,.false.)
+
+                if (ierror .ne. 0) then
+                  call output_line("Error initialising the solver structures.",&
+                      OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControl")
+                  call sys_halt()
+                end if
+
+                ! Apply the solver to update the solution in timestep idofTime.
+                output_iautoOutputIndent = output_iautoOutputIndent + 2
+
+                ! Calculate (w, zeta). Temporarily overwrite p_rdualSpace for that
+                ! task. We reconstruct it later.
+                call spaceslh_solve_PCSteklov (rkktSubsolvers%p_rsolverPCSteklov,istep,&
+                    p_rcontrolSpace,p_rdualSpace,rstatLocal)
+
+                output_iautoOutputIndent = output_iautoOutputIndent - 2
+                
+                ! Sum up statistics
+                call spacesl_sumStatistics(rstatLocal,rstatistics,.false.)
+
+                ! Cleanup
+                call spaceslh_doneStructure (rkktSubsolvers%p_rsolverPCSteklov)
+                
+                ! Sum up "nu dn w - zeta n"
+                call kkt_calcH12BdCNavSt (roperatorAsm%p_rasmTemplates,p_rphysics,&
+                    p_rdualSpace,p_rintermedControl,icomp+1,roptcBDCSpace,&
+                    1.0_DP,-p_rsettingsOptControl%dalphaH12BdC)
+
+                call sptivec_invalidateVecInPool (&
+                    rkktsystem%p_rdualSol%p_rvectorAccess,istep)
+                              
+                ! Calculate
+                !    u_intermed = u + u_intermed
+                icomp = icomp + 1
+                call lsyssc_vectorLinearComb ( &
+                    p_rcontrolSpace%RvectorBlock(icomp),p_rintermedControl%RvectorBlock(icomp),&
+                    1.0_DP,1.0_DP,&
+                    p_rintermedControl%RvectorBlock(icomp))
+
+                icomp = icomp + 1
+                call lsyssc_vectorLinearComb ( &
+                    p_rcontrolSpace%RvectorBlock(icomp),p_rintermedControl%RvectorBlock(icomp),&
+                    1.0_DP,1.0_DP,&
+                    p_rintermedControl%RvectorBlock(icomp))
+                    
+                ! Do we have constraints?
+                select case (p_rsettingsOptControl%rconstraints%rconstraintsH12BdC%cconstraints)
+
+                ! ----------------------------------------------------------
+                ! No constraints
+                ! ----------------------------------------------------------
+                case (0)
+
+                  if (p_rsettingsOptControl%dalphaH12BdC .eq. 0.0_DP) then
+                    call output_line("Alpha=0 not possible without contraints",&
+                        OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControl")
+                    call sys_halt()
+                  end if
+                  
+                  icomp = icomp - 2                
+
+                  icomp = icomp + 1
+                  call lsyssc_copyVector (&
+                      p_rintermedControl%RvectorBlock(icomp),p_rcontrolSpaceOutput%RvectorBlock(icomp))
+
+                  icomp = icomp + 1
+                  call lsyssc_copyVector (&
+                      p_rintermedControl%RvectorBlock(icomp),p_rcontrolSpaceOutput%RvectorBlock(icomp))
+
+                ! ----------------------------------------------------------
+                ! Box constraints, implemented by DOF
+                ! ----------------------------------------------------------
+                case (1)
+                
+                  ! Applying the projection to the intermediate control gives the control:
+                  !
+                  !   u = P(u_intermed)
+                  
+                  icomp = icomp - 2
+                  
+                  dwmin = p_rsettingsOptControl%rconstraints%rconstraintsH12BdC%dmin1
+                  dwmax = p_rsettingsOptControl%rconstraints%rconstraintsH12BdC%dmax1
+                  icomp = icomp + 1
+                  call nwder_applyMinMaxProjByDof (&
+                      p_rcontrolSpaceOutput%RvectorBlock(icomp),1.0_DP,&
+                      1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax,&
+                      1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax)
+
+                  dwmin = p_rsettingsOptControl%rconstraints%rconstraintsH12BdC%dmin2
+                  dwmax = p_rsettingsOptControl%rconstraints%rconstraintsH12BdC%dmax2
+                  icomp = icomp + 1
+                  call nwder_applyMinMaxProjByDof (&
+                      p_rcontrolSpaceOutput%RvectorBlock(icomp),1.0_DP,&
+                      1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax,&
+                      1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax)
+
+                case default          
+                  call output_line("Unknown constraints",&
+                      OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControl")
+                  call sys_halt()
+
+                end select ! constraints
+                
+              end if
+
+            end if ! alphaH12BdC
+
           ! -------------------------------------------------------------
           ! Heat equation
           ! -------------------------------------------------------------
@@ -946,7 +1480,18 @@ contains
             ! -----------------------------------------------------------
             if (p_rsettingsOptControl%dalphaL2BdC .ge. 0.0_DP) then
 
-              call output_line("Boundary control not available.",&
+              call output_line("L2 Boundary control not available.",&
+                  OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControl")
+              call sys_halt()
+
+            end if
+            
+            ! -----------------------------------------------------------
+            ! H^1/2 Boundary control
+            ! -----------------------------------------------------------
+            if (p_rsettingsOptControl%dalphaH12BdC .ge. 0.0_DP) then
+
+              call output_line("H^1/2 Boundary control not available.",&
                   OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControl")
               call sys_halt()
 
@@ -1182,14 +1727,250 @@ contains
       
       ! Restrict the computed control to the L2 boundary control region
       call kkt_restrictControlToBDRegion (&
-          rcontrol,icomp,p_rdiscr,roptcBDCspace%rdirichletControlBoundary)
+          rcontrol,icomp,p_rdiscr,roptcBDCspace%rdirichletControlBoundaryL2)
       call kkt_restrictControlToBDRegion (&
-          rcontrol,icomp+1,p_rdiscr,roptcBDCspace%rdirichletControlBoundary)
+          rcontrol,icomp+1,p_rdiscr,roptcBDCspace%rdirichletControlBoundaryL2)
         
     case default
     
       call output_line("Unsupported discretisation.",&
-          OU_CLASS_ERROR,OU_MODE_STD,"kkt_solvePrimal")
+          OU_CLASS_ERROR,OU_MODE_STD,"kkt_calcL2BdCNavSt")
+      call sys_halt()
+    end select
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine kkt_calcH12BdCNavSt (rasmTemplates,rphysics,rdualSol,rcontrol,&
+      icomp,roptcBDCspace,dweight1,dweight2)
+  
+!<description>
+  ! Calculates the H^1/2 boundary control term
+  !      u  = dweight1*u  +  dweight2 * ( nu dn lambda - xi n )
+  ! from the dual solution.
+!</description>
+  
+!<input>
+  ! Assembly template structure
+  type (t_staticSpaceAsmTemplates), intent(in) :: rasmTemplates
+  
+  ! The physics of the problem.
+  type(t_settings_physics), intent(in), target :: rphysics
+  
+  ! Dual solution
+  type(t_vectorBlock), intent(in) :: rdualSol
+  
+  ! Component in the control from which on the boundary control term
+  ! should be saved to.
+  integer, intent(in) :: icomp
+  
+  ! Structure defining boundary conditions
+  type(t_optcBDCSpace), intent(in) :: roptcBDCspace
+  
+  ! Weight for the existing control
+  real(DP), intent(in) :: dweight1
+
+  ! Weight for the new control
+  real(DP), intent(in) :: dweight2
+!</input>
+
+!<inputoutput>
+  ! Control vector. The boundary control term is saved to component
+  ! icomp, icomp+1,...
+  type(t_vectorBlock), intent(inout) :: rcontrol
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    type(t_spatialDiscretisation), pointer :: p_rdiscr
+    real(DP), dimension(:), allocatable :: p_DparValues
+    real(DP), dimension(:), allocatable :: p_DnormalX,p_DnormalY
+    real(DP), dimension(:), allocatable :: p_DlambdaX,p_DlambdaY,p_Dxi
+    real(DP), dimension(:), pointer :: p_DvertexParameterValue
+    real(DP), dimension(:), pointer :: p_DedgeParameterValue
+    real(DP), dimension(:), pointer :: p_Ddata
+    integer, dimension(:), pointer :: p_IboundaryCpIdx
+    integer :: ibct,iseg,iidx1,iidx2,i,NEQ,nvbd,NEQlocal
+    real(DP) :: dnu
+    
+    p_rdiscr => rdualSol%p_rblockDiscr%RspatialDiscr(1)
+    
+    select case (rphysics%cequation)
+    case (CCEQ_NAVIERSTOKES2D,CCEQ_STOKES2D)
+      select case (rphysics%cviscoModel)
+        case (0)
+          ! This is ok.
+          dnu = rphysics%dnuConst
+        case default
+          call output_line("Unsupported equation.",&
+              OU_CLASS_ERROR,OU_MODE_STD,"kkt_calcL2BdCNavSt")
+          call sys_halt()
+      end select
+    case default
+      call output_line("Unsupported equation.",&
+          OU_CLASS_ERROR,OU_MODE_STD,"kkt_calcL2BdCNavSt")
+      call sys_halt()
+    end select
+
+    ! Unfortunately, this is element dependent...
+    
+    if (p_rdiscr%inumFESpaces .ne. 1) then
+      call output_line("Unsupported discretisation.",&
+          OU_CLASS_ERROR,OU_MODE_STD,"kkt_calcL2BdCNavSt")
+      call sys_halt()
+    end if
+
+    select case (p_rdiscr%RelementDistr(1)%celement)
+    case (EL_Q2)
+    
+      ! Set up a list of points where to evaluate on the boundary.
+      ! All vertices and edge midpoints on the boundary.
+      
+      call storage_getbase_double (&
+          p_rdiscr%p_rtriangulation%h_DvertexParameterValue,p_DvertexParameterValue)
+      call storage_getbase_double (&
+          p_rdiscr%p_rtriangulation%h_DedgeParameterValue,p_DedgeParameterValue)
+      call storage_getbase_int (&
+          p_rdiscr%p_rtriangulation%h_IboundaryCpIdx,p_IboundaryCpIdx)
+          
+      ! Length of the destination vector
+      NEQ = rcontrol%Rvectorblock(icomp)%NEQ
+      
+      ! Number of vertices/edges on the boundary
+      nvbd = p_rdiscr%p_rtriangulation%NVBD
+
+      ! Temp memory          
+      allocate (p_DparValues(NEQ))
+      allocate (p_DnormalX(NEQ))
+      allocate (p_DnormalY(NEQ))
+          
+      ! Loop over the boundary components
+      do ibct = 1,p_rdiscr%p_rtriangulation%nbct
+      
+        ! Loop over the segments
+        iidx1 = p_IboundaryCpIdx(ibct)
+        iidx2 = p_IboundaryCpIdx(ibct+1)-1
+        do iseg = iidx1,iidx2
+        
+          ! Get the parameter values
+          p_DparValues(iseg) = p_DvertexParameterValue(iseg)
+          p_DparValues(iseg+nvbd) = p_DedgeParameterValue(iseg)
+          
+        end do
+      
+        ! Get he normal vectors in these points.
+        call boundary_getNormalVec2D (p_rdiscr%p_rboundary, ibct, &
+            p_DparValues(iidx1:iidx2),p_DnormalX(iidx1:iidx2), p_DnormalY(iidx1:iidx2))
+
+        call boundary_getNormalVec2D (p_rdiscr%p_rboundary, ibct, &
+            p_DparValues(iidx1+nvbd:iidx2+nvbd),p_DnormalX(iidx1+nvbd:iidx2+nvbd), &
+            p_DnormalY(iidx1+nvbd:iidx2+nvbd))
+
+      end do
+      
+      ! Temp memory for intermediate calculations
+      allocate (p_DlambdaX(NEQ))
+      allocate (p_DlambdaY(NEQ))
+      allocate (p_Dxi(NEQ))
+      
+      ! Loop over the boundary components
+      do ibct = 1,p_rdiscr%p_rtriangulation%nbct
+      
+        ! Get the position of the boundary segment
+        iidx1 = p_IboundaryCpIdx(ibct)
+        iidx2 = p_IboundaryCpIdx(ibct+1)-1
+        NEQlocal = iidx2-iidx1
+
+        ! Evaluare XI
+        call fevl_evaluateBdr2d (DER_FUNC, p_Dxi(iidx1:iidx2), rdualSol%RvectorBlock(3), &
+            p_DparValues(iidx1:iidx2),ibct,BDR_PAR_01)
+
+        call fevl_evaluateBdr2d (DER_FUNC, p_Dxi(iidx1+nvbd:iidx2+nvbd), rdualSol%RvectorBlock(3), &
+            p_DparValues(iidx1+nvbd:iidx2+nvbd),ibct,BDR_PAR_01)
+
+        ! Evaluare D(lambda1)
+        call fevl_evaluateBdr2d (DER_DERIV2D_X, p_DlambdaX(iidx1:iidx2), rdualSol%RvectorBlock(1), &
+            p_DparValues(iidx1:iidx2),ibct,BDR_PAR_01)
+
+        call fevl_evaluateBdr2d (DER_DERIV2D_Y, p_DlambdaY(iidx1:iidx2), rdualSol%RvectorBlock(1), &
+            p_DparValues(iidx1:iidx2),ibct,BDR_PAR_01)
+
+        call fevl_evaluateBdr2d (DER_DERIV2D_X, p_DlambdaX(iidx1+nvbd:iidx2+nvbd), rdualSol%RvectorBlock(1), &
+            p_DparValues(iidx1+nvbd:iidx2+nvbd),ibct,BDR_PAR_01)
+
+        call fevl_evaluateBdr2d (DER_DERIV2D_Y, p_DlambdaY(iidx1+nvbd:iidx2+nvbd), rdualSol%RvectorBlock(1), &
+            p_DparValues(iidx1+nvbd:iidx2+nvbd),ibct,BDR_PAR_01)
+            
+        call lsyssc_getbase_double (rcontrol%RvectorBlock(icomp),p_Ddata)
+            
+        ! Calculate the control in X-direction
+        do i=1,NEQlocal
+          ! vertices
+          p_Ddata(iidx1-1+i) = dweight1 * p_Ddata(iidx1-1+i) + &
+              dweight2 * ( dnu * p_DlambdaX(i)*p_DnormalX(i)  +  dnu * p_DlambdaY(i)*p_DnormalY(i) - &
+                           p_Dxi(i)*p_DnormalX(i) )
+        end do
+
+        do i=nvbd+1,nvbd+NEQlocal
+          ! edges
+          p_Ddata(iidx1-1+i) = dweight1 * p_Ddata(iidx1-1+i) + &
+              dweight2 * ( dnu * p_DlambdaX(i)*p_DnormalX(i)  +  dnu * p_DlambdaY(i)*p_DnormalY(i) - &
+                           p_Dxi(i)*p_DnormalX(i) )
+        end do
+            
+        ! Evaluare D(lambda2)
+        call fevl_evaluateBdr2d (DER_DERIV2D_X, p_DlambdaX(iidx1:iidx2), rdualSol%RvectorBlock(2), &
+            p_DparValues(iidx1:iidx2),ibct,BDR_PAR_01)
+
+        call fevl_evaluateBdr2d (DER_DERIV2D_Y, p_DlambdaY(iidx1:iidx2), rdualSol%RvectorBlock(2), &
+            p_DparValues(iidx1:iidx2),ibct,BDR_PAR_01)
+
+        call fevl_evaluateBdr2d (DER_DERIV2D_X, p_DlambdaX(iidx1+nvbd:iidx2+nvbd), rdualSol%RvectorBlock(2), &
+            p_DparValues(iidx1+nvbd:iidx2+nvbd),ibct,BDR_PAR_01)
+
+        call fevl_evaluateBdr2d (DER_DERIV2D_Y, p_DlambdaY(iidx1+nvbd:iidx2+nvbd), rdualSol%RvectorBlock(2), &
+            p_DparValues(iidx1+nvbd:iidx2+nvbd),ibct,BDR_PAR_01)
+            
+        call lsyssc_getbase_double (rcontrol%RvectorBlock(icomp+1),p_Ddata)
+            
+        ! Calculate the control in Y-direction
+        do i=1,NEQlocal
+          ! vertices
+          p_Ddata(iidx1-1+i) = dweight1* p_Ddata(iidx1-1+i) + &
+              dweight2 * ( dnu * p_DlambdaX(i)*p_DnormalX(i)  +  dnu * p_DlambdaY(i)*p_DnormalY(i) - &
+                           p_Dxi(i)*p_DnormalY(i) )
+        end do
+
+        do i=nvbd+1,nvbd+NEQlocal
+          ! edges
+          p_Ddata(iidx1-1+i) = dweight1 * p_Ddata(iidx1-1+i) + &
+              dweight2 * ( dnu * p_DlambdaX(i)*p_DnormalX(i)  +  dnu * p_DlambdaY(i)*p_DnormalY(i) - &
+                           p_Dxi(i)*p_DnormalY(i) )
+        end do
+      
+      end do
+        
+      deallocate (p_DparValues)
+      deallocate (p_DnormalX)
+      deallocate (p_DnormalY)
+      deallocate (p_DlambdaX)
+      deallocate (p_DlambdaY)
+      deallocate (p_Dxi)
+      
+      ! Restrict the computed control to the L2 boundary control region
+      call kkt_restrictControlToBDRegion (&
+          rcontrol,icomp,p_rdiscr,roptcBDCspace%rdirichletControlBoundaryH12)
+      call kkt_restrictControlToBDRegion (&
+          rcontrol,icomp+1,p_rdiscr,roptcBDCspace%rdirichletControlBoundaryH12)
+        
+    case default
+    
+      call output_line("Unsupported discretisation.",&
+          OU_CLASS_ERROR,OU_MODE_STD,"kkt_calcH12BdCNavSt")
       call sys_halt()
     end select
 
@@ -1382,7 +2163,7 @@ contains
 
 !<subroutine>
 
-  subroutine kkt_calcControlRes (rkktsystem,rresidual,dres,iresnorm)
+  subroutine kkt_calcControlRes (rkktsystem,rresidual,dres,iresnorm,rkktSubsolvers,rstatistics)
   
 !<description>
   ! Calculates the residual of the control equation
@@ -1401,11 +2182,17 @@ contains
 !<inputoutput>
   ! Receives the residual in the control space.
   type(t_controlSpace), intent(inout) :: rresidual
+
+  ! KKT subsolver structure.
+  type(t_kktSubsolverSet), intent(inout) :: rkktSubsolvers
 !</inputoutput>
 
 !<output>
   ! L2-Norm of the residual
   real(DP), intent(out) :: dres
+
+  ! Statistics structure
+  type(t_spaceslSolverStat), intent(out) :: rstatistics
 !</output>
 
 !</subroutine>
@@ -1429,7 +2216,7 @@ contains
     !
     ! is already present as in rkktsystem.
     ! Transfer it to rresidual and apply the projection.
-    call kkt_dualToControl (rkktsystem,rresidual)
+    call kkt_dualToControl (rkktsystem,rresidual,rkktSubsolvers,rstatistics)
     
     ! Add -u:   rresidual = rresidual - u
     ! Calculate the norm of the residual.
@@ -1446,8 +2233,8 @@ contains
   
 !<subroutine>
 
-  subroutine kkt_solvePrimalDirDeriv (rkktsystemDirDeriv,rspaceSolver,&
-      cspatialInitCondPolicy,ceqnflags,rstatistics)
+  subroutine kkt_solvePrimalDirDeriv (rkktsystemDirDeriv,&
+      cspatialInitCondPolicy,ceqnflags,rkktSubsolvers,rstatistics)
   
 !<description>
   ! Solves the linearised primal equation in the KKT system.
@@ -1472,8 +2259,8 @@ contains
   ! values. On exit, the structure contains improved solutions.
   type(t_kktsystemDirDeriv), intent(inout), target :: rkktsystemDirDeriv
 
-  ! Space solver structure used for solving subequations in space
-  type(t_spaceSolverHierarchy), intent(inout) :: rspaceSolver
+  ! KKT subsolver structure.
+  type(t_kktSubsolverSet), intent(inout) :: rkktSubsolvers
 !</inputoutput>
 
 !<output>
@@ -1495,7 +2282,7 @@ contains
    
     ! Initialise basic solver structures
     call stat_startTimer (rtimer)
-    call spaceslh_initStructure (rspaceSolver, &
+    call spaceslh_initStructure (rkktSubsolvers%p_rsolverHierPrimalLin, &
         p_rkktsystem%ispacelevel, &
         p_rkktsystem%itimelevel, &
         p_rkktsystem%p_roperatorAsmHier,rstatLocal,ierror)
@@ -1517,7 +2304,8 @@ contains
     
       ! Apply the solver to update the solution in timestep idofTime.
       output_iautoOutputIndent = output_iautoOutputIndent + 2
-      call spaceslh_solve (rspaceSolver,idofTime,cspatialInitCondPolicy,&
+      call spaceslh_solve (rkktSubsolvers%p_rsolverHierPrimalLin,&
+          idofTime,cspatialInitCondPolicy,&
           ceqnflags,rstatLocal,p_rkktsystem%ispacelevel,&
           p_rkktsystem%p_rprimalSol,&
           rprimalSolLin=rkktsystemDirDeriv%p_rprimalSolLin,&
@@ -1529,7 +2317,7 @@ contains
       
     end do ! step
    
-    call spaceslh_doneStructure (rspaceSolver)
+    call spaceslh_doneStructure (rkktSubsolvers%p_rsolverHierPrimalLin)
 
     call stat_stopTimer (rstatistics%rtotalTime)
 
@@ -1539,8 +2327,8 @@ contains
 
 !<subroutine>
 
-  subroutine kkt_solveDualDirDeriv (rkktsystemDirDeriv,rspaceSolver,&
-      cspatialInitCondPolicy,ceqnflags,rstatistics)
+  subroutine kkt_solveDualDirDeriv (rkktsystemDirDeriv,&
+      cspatialInitCondPolicy,ceqnflags,rkktSubsolvers,rstatistics)
   
 !<description>
   ! Solves the linearised dual equation in the KKT system.
@@ -1565,8 +2353,8 @@ contains
   ! values. On exit, the structure contains improved solutions.
   type(t_kktsystemDirDeriv), intent(inout) :: rkktsystemDirDeriv
 
-  ! Space solver structure used for solving subequations in space
-  type(t_spaceSolverHierarchy), intent(inout) :: rspaceSolver
+  ! KKT subsolver structure.
+  type(t_kktSubsolverSet), intent(inout) :: rkktSubsolvers
 !</inputoutput>
 
 !<output>
@@ -1586,7 +2374,7 @@ contains
     p_rkktSystem => rkktsystemDirDeriv%p_rkktsystem
    
     ! Initialise basic solver structures
-    call spaceslh_initStructure (rspaceSolver, &
+    call spaceslh_initStructure (rkktSubsolvers%p_rsolverHierDualLin, &
         p_rkktsystem%ispacelevel, &
         p_rkktsystem%itimelevel, &
         p_rkktsystem%p_roperatorAsmHier,rstatLocal,ierror)
@@ -1607,7 +2395,8 @@ contains
     
       ! Apply the solver to update the solution in timestep idofTime.
       output_iautoOutputIndent = output_iautoOutputIndent + 2
-      call spaceslh_solve (rspaceSolver,idofTime,cspatialInitCondPolicy,&
+      call spaceslh_solve (rkktSubsolvers%p_rsolverHierDualLin,&
+          idofTime,cspatialInitCondPolicy,&
           ceqnflags,rstatLocal,p_rkktsystem%ispacelevel,&
           p_rkktsystem%p_rprimalSol,&
           rdualSol=p_rkktsystem%p_rdualSol,&
@@ -1620,7 +2409,7 @@ contains
       
     end do ! step
    
-    call spaceslh_doneStructure (rspaceSolver)
+    call spaceslh_doneStructure (rkktSubsolvers%p_rsolverHierDualLin)
 
     call stat_stopTimer (rstatistics%rtotalTime)
 
@@ -1630,7 +2419,8 @@ contains
 
 !<subroutine>
 
-  subroutine kkt_dualToControlDirDeriv (rkktsystemDirDeriv,rcontrolLin)
+  subroutine kkt_dualToControlDirDeriv (rkktsystemDirDeriv,rcontrolLin,&
+      rkktSubsolvers,rstatistics)
   
 !<description>
   ! From the solution of the linearised primal and dual problem, this routine
@@ -1643,22 +2433,29 @@ contains
   ! The solutions in this structure are taken as initial
   ! values. On exit, the structure contains improved solutions.
   type(t_kktsystemDirDeriv), intent(inout) :: rkktsystemDirDeriv
-!</inputoutput>
 
-!<inputoutput>
   ! This receives the control of the linearised control equation.
   type(t_controlSpace), intent(inout) :: rcontrolLin
+
+  ! KKT subsolver structure.
+  type(t_kktSubsolverSet), intent(inout) :: rkktSubsolvers
 !</inputoutput>
+
+!<output>
+  ! Statistics structure
+  type(t_spaceslSolverStat), intent(out) :: rstatistics
+!<output>
 
 !</subroutine>
    
     ! local variables
-    integer :: icomp,istep
+    integer :: icomp,istep,ierror
     real(DP) :: dtheta,dwmin,dwmax,dtime
     type(t_vectorBlock), pointer :: p_rdualSpaceLin, p_rcontrolSpaceLin
     type(t_vectorBlock), pointer :: p_rcontrolSpaceLinOutput, p_rintermedControl
     type(t_spaceTimeVector), pointer :: p_rdualSolLin
     type(t_optcBDCSpace) :: roptcBDCspace
+    type(t_spaceslSolverStat) :: rstatLocal
 
     type(t_settings_physics), pointer :: p_rphysics
     type(t_settings_optcontrol), pointer :: p_rsettingsOptControl
@@ -1927,6 +2724,144 @@ contains
 
             end if ! alphaL2BdC
 
+            ! -----------------------------------------------------------
+            ! H^1/2 Boundary control
+            ! -----------------------------------------------------------
+            if (p_rsettingsOptControl%dalphaH12BdC .ge. 0.0_DP) then
+
+              ! No control in the initial solution
+              if (istep .gt. 1) then
+
+                ! Characteristics of the current timestep.
+                call tdiscr_getTimestep(roperatorasm%p_rtimeDiscrPrimal,istep-1,dtime)
+
+                ! Calculate the region where boundary control is applied
+                call sbc_assembleBDconditions (rkktsystemDirDeriv%p_rkktSystem%p_roptcBDC,&
+                    roptcBDCSpace,dtime,p_rphysics%cequation,OPTP_PCSTEKLOV,SBC_DIRICHLETBCC,&
+                    p_rintermedControl%p_rblockDiscr)
+
+                ! H^1/2 boundary control is slightly more complicated than
+                ! L2 boudnary control. The intermediate control reads
+                !
+                !    u_intermed~  =  u~ - alpha (nu dn w~ - zeta~ n) + (nu dn lambda~ - xi~ n)
+                !
+                ! with (w, zeta) being the solution of the Poincare-Steklov operator
+                ! S: u -> (w,zeta)  with
+                !
+                !    - Laplace(w~) + grad(zeta~) = 0
+                !                         div w~ = 0
+                !                             w~ = u~  on the control boundary.
+                !
+                ! Thus, we have to solve a Stokes system with homogeneous boundary conditions
+                ! on the Dirichlet boundary and u being the boundary conditions on the
+                ! control boundary.
+                !
+                ! Calculate "nu dn lambda~ - xi~ n"
+                call kkt_calcH12BdCNavSt (roperatorAsm%p_rasmTemplates,p_rphysics,&
+                    p_rdualSpaceLin,p_rcontrolSpaceLinOutput,icomp+1,roptcBDCSpace,0.0_DP,1.0_DP)
+                
+                ! Initialise basic solver structures
+                call spaceslh_initStructure (rkktSubsolvers%p_rsolverPCSteklov, &
+                    rkktsystemDirDeriv%p_rkktsystem%ispacelevel, &
+                    rkktsystemDirDeriv%p_rkktsystem%itimelevel, &
+                    rkktsystemDirDeriv%p_rkktsystem%p_roperatorAsmHier,rstatLocal,ierror)
+
+                ! Sum up statistics
+                call spacesl_sumStatistics(rstatLocal,rstatistics,.false.)
+
+                if (ierror .ne. 0) then
+                  call output_line("Error initialising the solver structures.",&
+                      OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControl")
+                  call sys_halt()
+                end if
+
+                ! Apply the solver to update the solution in timestep idofTime.
+                output_iautoOutputIndent = output_iautoOutputIndent + 2
+
+                ! Calculate (w, zeta). Temporarily overwrite p_rdualSpace for that
+                ! task. We reconstruct it later.
+                call spaceslh_solve_PCSteklov (rkktSubsolvers%p_rsolverPCSteklov,istep,&
+                    p_rcontrolSpaceLin,p_rdualSpaceLin,rstatLocal)
+
+                output_iautoOutputIndent = output_iautoOutputIndent - 2
+                
+                ! Sum up statistics
+                call spacesl_sumStatistics(rstatLocal,rstatistics,.false.)
+
+                ! Cleanup
+                call spaceslh_doneStructure (rkktSubsolvers%p_rsolverPCSteklov)
+                
+                ! Sum up "nu dn w~ - zeta~ n"
+                call kkt_calcH12BdCNavSt (roperatorAsm%p_rasmTemplates,p_rphysics,&
+                    p_rdualSpaceLin,p_rcontrolSpaceLinOutput,icomp+1,roptcBDCSpace,&
+                    1.0_DP,-p_rsettingsOptControl%dalphaH12BdC)
+
+                call sptivec_invalidateVecInPool (&
+                    rkktsystemDirDeriv%p_rdualSolLin%p_rvectorAccess,istep)
+                    
+                ! Calculate
+                !    u_intermed~ = u~ + u_intermed~
+                icomp = icomp + 1
+                call lsyssc_vectorLinearComb ( &
+                    p_rcontrolSpaceLin%RvectorBlock(icomp),p_rcontrolSpaceLinOutput%RvectorBlock(icomp),&
+                    1.0_DP,1.0_DP,&
+                    p_rcontrolSpaceLinOutput%RvectorBlock(icomp))
+
+                icomp = icomp + 1
+                call lsyssc_vectorLinearComb ( &
+                    p_rcontrolSpaceLin%RvectorBlock(icomp),p_rcontrolSpaceLinOutput%RvectorBlock(icomp),&
+                    1.0_DP,1.0_DP,&
+                    p_rcontrolSpaceLinOutput%RvectorBlock(icomp))
+                    
+                ! Do we have constraints?
+                select case (p_rsettingsOptControl%rconstraints%rconstraintsH12BdC%cconstraints)
+
+                ! ----------------------------------------------------------
+                ! No constraints
+                ! ----------------------------------------------------------
+                case (0)
+
+                  if (p_rsettingsOptControl%dalphaH12BdC .eq. 0.0_DP) then
+                    call output_line("Alpha=0 not possible without contraints",&
+                        OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControlDirDeriv")
+                    call sys_halt()
+                  end if
+                
+                ! ----------------------------------------------------------
+                ! Box constraints, implemented by DOF.
+                ! ----------------------------------------------------------
+                case (1)
+                
+                  icomp = icomp - 2
+
+                  ! Create the "restricted" control.
+                  dwmin = p_rsettingsOptControl%rconstraints%rconstraintsH12BdC%dmin1
+                  dwmax = p_rsettingsOptControl%rconstraints%rconstraintsH12BdC%dmax1
+                  icomp = icomp + 1
+                  call nwder_applyMinMaxProjByDof (&
+                      p_rcontrolSpaceLinOutput%RvectorBlock(icomp),1.0_DP,&
+                      1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax,&
+                      1.0_DP,p_rcontrolSpaceLinOutput%RvectorBlock(icomp),0.0_DP,0.0_DP)
+
+                  dwmin = p_rsettingsOptControl%rconstraints%rconstraintsH12BdC%dmin2
+                  dwmax = p_rsettingsOptControl%rconstraints%rconstraintsH12BdC%dmax2
+                  icomp = icomp + 1
+                  call nwder_applyMinMaxProjByDof (&
+                      p_rcontrolSpaceLinOutput%RvectorBlock(icomp),1.0_DP,&
+                      1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax,&
+                      1.0_DP,p_rcontrolSpaceLinOutput%RvectorBlock(icomp),0.0_DP,0.0_DP)
+
+                case default          
+                  call output_line("Unknown constraints",&
+                      OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControlDirDeriv")
+                  call sys_halt()
+
+                end select ! constraints
+                
+              end if
+
+            end if ! alphaH12BdC
+
           ! -------------------------------------------------------------
           ! Heat equation
           ! -------------------------------------------------------------
@@ -1998,8 +2933,19 @@ contains
             ! -----------------------------------------------------------
             if (p_rsettingsOptControl%dalphaL2BdC .ge. 0.0_DP) then
 
-              call output_line("Boundary control not available.",&
-                  OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControl")
+              call output_line("L2 Boundary control not available.",&
+                  OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControlDirDeriv")
+              call sys_halt()
+
+            end if
+
+            ! -----------------------------------------------------------
+            ! H^1/2 Boundary control
+            ! -----------------------------------------------------------
+            if (p_rsettingsOptControl%dalphaH12BdC .ge. 0.0_DP) then
+
+              call output_line("H^1/2 Boundary control not available.",&
+                  OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControlDirDeriv")
               call sys_halt()
 
             end if
@@ -2022,7 +2968,7 @@ contains
 !<subroutine>
 
   subroutine kkt_calcControlResDirDeriv (rkktsystemDirDeriv,rrhs,rresidual,&
-      dres,iresnorm)
+      dres,iresnorm,rkktSubsolvers,rstatistics)
   
 !<description>
   ! Calculates the residual of the control equation of the linearised
@@ -2044,6 +2990,9 @@ contains
 !</input>
 
 !<inputoutput>
+  ! KKT subsolver structure.
+  type(t_kktSubsolverSet), intent(inout) :: rkktSubsolvers
+
   ! Receives the residual in the control space.
   type(t_controlSpace), intent(inout) :: rresidual
 !</inputoutput>
@@ -2051,6 +3000,9 @@ contains
 !<output>
   ! L2-Norm of the residual
   real(DP), intent(out), optional :: dres
+
+  ! Statistics structure
+  type(t_spaceslSolverStat), intent(out) :: rstatistics
 !</output>
 
 !</subroutine>
@@ -2073,7 +3025,8 @@ contains
     !
     ! a) rresidual = P'(u_intermed) ( u~ - ( lambda~ + alpha u~ ) )
     ! We expect rkktsystemDirDeriv to represent u, u_intermed, u~ and lambda~.
-    call kkt_dualToControlDirDeriv (rkktsystemDirDeriv,rresidual)
+    call kkt_dualToControlDirDeriv (rkktsystemDirDeriv,rresidual,&
+        rkktSubsolvers,rstatistics)
 
     ! b) rresidual = rresidual + rhs - u~
     call kktsp_controlLinearComb (&
@@ -2287,6 +3240,40 @@ contains
 
         end if ! alpha
       
+        ! -----------------------------------------------------------
+        ! H^1/2 boundary control
+        ! -----------------------------------------------------------
+        if (p_rsettingsOptControl%dalphaH12BdC .ge. 0.0_DP) then
+
+          ! ----------------------------------------------------------
+          ! No constraints
+          ! ----------------------------------------------------------
+
+          if (p_rsettingsOptControl%dalphaH12BdC .eq. 0.0_DP) then
+            call output_line("Alpha=0 not possible without contraints",&
+                OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControlDirDeriv")
+            call sys_halt()
+          end if
+        
+          ! The first two components of the control read
+          !
+          !    d = alpha u lambda
+          !
+          ! so we get the norm
+          !
+          !   || alpha d || = || alpha u + lambda ||
+          icomp = icomp + 1
+          dres = dres + (& !p_rsettingsOptControl%dalphaH12BdC * &
+              lsyssc_vectorNorm(p_rcontrolSpace%RvectorBlock(icomp),iresnorm))**2
+
+          icomp = icomp + 1
+          dres = dres + (& !p_rsettingsOptControl%dalphaH12BdC * &
+              lsyssc_vectorNorm(p_rcontrolSpace%RvectorBlock(icomp),iresnorm))**2
+              
+          itotalcomp = itotalcomp + 2
+
+        end if ! alpha
+      
       ! -------------------------------------------------------------
       ! Heat equation
       ! -------------------------------------------------------------
@@ -2348,7 +3335,8 @@ contains
 
 !<subroutine>
 
-  subroutine kkt_applyControlDirDeriv (rkktsystemDirDeriv,rrhs)
+  subroutine kkt_applyControlDirDeriv (rkktsystemDirDeriv,rrhs,&
+      rkktSubsolvers,rstatistics)
   
 !<description>
   ! Applies the control equation of the linearised
@@ -2363,9 +3351,17 @@ contains
 !</input>
 
 !<inputoutput>
+  ! KKT subsolver structure.
+  type(t_kktSubsolverSet), intent(inout) :: rkktSubsolvers
+
   ! Receives the result "d" in the control space.
   type(t_controlSpace), intent(inout) :: rrhs
 !</inputoutput>
+
+!<output>
+  ! Statistics structure
+  type(t_spaceslSolverStat), intent(out) :: rstatistics
+!<output>
 
 !</subroutine>
 
@@ -2378,7 +3374,8 @@ contains
     !
     ! a) rrhs = P'(u_intermed) ( u~ - (lambda~ + alpha u~ ) )
     ! We expect rkktsystemDirDeriv to represent u, u_intermed, u~ and lambda~.
-    call kkt_dualToControlDirDeriv (rkktsystemDirDeriv,rrhs)
+    call kkt_dualToControlDirDeriv (rkktsystemDirDeriv,rrhs,&
+        rkktSubsolvers,rstatistics)
 
     ! b) rrhs = -rrhs + u~
     call kktsp_controlLinearComb (&

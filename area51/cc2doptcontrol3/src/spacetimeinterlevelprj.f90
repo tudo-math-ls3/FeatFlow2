@@ -255,6 +255,7 @@ contains
       cforwardbackward = -1
       if (roptcontrol%dalphaDistC .ge. 0.0_DP) ncount = ncount + 1
       if (roptcontrol%dalphaL2BdC .ge. 0.0_DP) ncount = ncount + 1
+      if (roptcontrol%dalphaH12BdC .ge. 0.0_DP) ncount = ncount + 1
     end select
     
     rprojHierBlock%ncount = ncount
@@ -573,6 +574,24 @@ contains
                 ispace = ispace + 1
               end if
 
+              if (roptcontrol%dalphaH12BdC .ge. 0.0_DP) then
+                if (isubspace .eq. ispace) then
+                  ! Boundary conditions correspond to the time primal space.
+                  
+                  call sptipr_getProlMatrixPrimal(rspaceTimeHierarchy,i,rprojHier%ctimeProjectionProl,&
+                      rprojHier%p_RprolongationMat(i),cforwardbackward .gt. 0)
+
+                  call sptipr_getProlMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjectionRest,&
+                      rprolmat2,cforwardbackward .gt. 0)
+
+                  call sptipr_getInterpMatrixprimal(rspaceTimeHierarchy,i,rprojHier%ctimeProjectionInterp,&
+                      rprojHier%p_RinterpolationMat(i))
+                end if
+
+                ! Next control
+                ispace = ispace + 1
+              end if
+
             ! -------------------------------------------------------------
             ! Heat equation
             ! -------------------------------------------------------------
@@ -599,6 +618,24 @@ contains
               end if
 
               if (roptcontrol%dalphaL2BdC .ge. 0.0_DP) then
+                if (isubspace .eq. ispace) then
+                  ! Boundary conditions correspond to the time primal space.
+
+                  call sptipr_getProlMatrixPrimal(rspaceTimeHierarchy,i,rprojHier%ctimeProjectionProl,&
+                      rprojHier%p_RprolongationMat(i),cforwardbackward .le. 0)
+
+                  call sptipr_getProlMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjectionRest,&
+                      rprolmat2,cforwardbackward .le. 0)
+
+                  call sptipr_getInterpMatrixPrimal(rspaceTimeHierarchy,i,rprojHier%ctimeProjectionInterp,&
+                      rprojHier%p_RinterpolationMat(i))
+                end if
+
+                ! Next control
+                ispace = ispace + 1
+              end if
+                  
+              if (roptcontrol%dalphaH12BdC .ge. 0.0_DP) then
                 if (isubspace .eq. ispace) then
                   ! Boundary conditions correspond to the time primal space.
 

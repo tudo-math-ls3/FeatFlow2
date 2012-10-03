@@ -325,14 +325,10 @@ module newtoniterationlinear
     ! <!-- ----------------------------- -->
     ! <!-- SUBSOLVERS AND OTHER SETTINGS -->
     ! <!-- ----------------------------- -->
-
-    ! Hierarchy of solvers in space for all levels.
-    ! Linearised primal equation.
-    type(t_spaceSolverHierarchy), pointer :: p_rsolverHierPrimalLin => null()
-
-    ! Hierarchy of solvers in space for all levels.
-    ! Linearised dual equation.
-    type(t_spaceSolverHierarchy), pointer :: p_rsolverHierDualLin => null()
+    
+    ! KKT subsolver hierarchy which encapsules all subsolvers used
+    ! by the KKT system solvers.
+    type(t_kktSubsolverSet), pointer :: p_rkktSubsolvers => null()
 
     ! Defines a policy how to generate the initial condition of a timestep.
     ! =0: Always take zero
@@ -487,8 +483,8 @@ contains
     output_iautoOutputIndent = output_iautoOutputIndent + 2
 
     call kkt_solvePrimalDirDeriv (rkktsystemDirDeriv,&
-        rlinsolParam%p_rsolverHierPrimalLin,rlinsolParam%cspatialInitCondPolicy,&
-        rlinsolParam%ceqnflags,rlocalStat)
+        rlinsolParam%cspatialInitCondPolicy,&
+        rlinsolParam%ceqnflags,rlinsolParam%p_rkktSubsolvers,rlocalStat)
 
     output_iautoOutputIndent = output_iautoOutputIndent - 2
     
@@ -524,8 +520,8 @@ contains
     output_iautoOutputIndent = output_iautoOutputIndent + 2
 
     call kkt_solveDualDirDeriv (rkktsystemDirDeriv,&
-        rlinsolParam%p_rsolverHierDualLin,rlinsolParam%cspatialInitCondPolicy,&
-        rlinsolParam%ceqnflags,rlocalStat)
+        rlinsolParam%cspatialInitCondPolicy,&
+        rlinsolParam%ceqnflags,rlinsolParam%p_rkktSubsolvers,rlocalStat)
 
     output_iautoOutputIndent = output_iautoOutputIndent - 2
     
@@ -555,7 +551,9 @@ contains
 
     ! Take the solution of the linearised primal/dual system and
     ! calculate the residual in the control space.
-    call kkt_calcControlResDirDeriv (rkktsystemDirDeriv,rrhs,rresidual,dres,iresnorm)
+    call kkt_calcControlResDirDeriv (rkktsystemDirDeriv,rrhs,rresidual,dres,iresnorm,&
+        rlinsolParam%p_rkktSubsolvers,rlocalStat)
+    call spacesl_sumStatistics(rlocalStat,rstatistics%rspaceslSolverStat)
 
     call stat_stopTimer (rstatistics%rtotalTime)
     
@@ -610,8 +608,8 @@ contains
     output_iautoOutputIndent = output_iautoOutputIndent + 2
 
     call kkt_solvePrimalDirDeriv (rkktsystemDirDeriv,&
-        rlinsolParam%p_rsolverHierPrimalLin,rlinsolParam%cspatialInitCondPolicy,&
-        rlinsolParam%ceqnflags,rlocalStat)
+        rlinsolParam%cspatialInitCondPolicy,&
+        rlinsolParam%ceqnflags,rlinsolParam%p_rkktSubsolvers,rlocalStat)
     
     output_iautoOutputIndent = output_iautoOutputIndent - 2
 
@@ -647,8 +645,8 @@ contains
     output_iautoOutputIndent = output_iautoOutputIndent + 2
 
     call kkt_solveDualDirDeriv (rkktsystemDirDeriv,&
-        rlinsolParam%p_rsolverHierDualLin,rlinsolParam%cspatialInitCondPolicy,&
-        rlinsolParam%ceqnflags,rlocalStat)
+        rlinsolParam%cspatialInitCondPolicy,&
+        rlinsolParam%ceqnflags,rlinsolParam%p_rkktSubsolvers,rlocalStat)
 
     output_iautoOutputIndent = output_iautoOutputIndent - 2
 
@@ -678,7 +676,9 @@ contains
 
     ! Take the solution of the linearised primal/dual system and
     ! calculate the residual in the control space.
-    call kkt_applyControlDirDeriv (rkktsystemDirDeriv,rrhs)
+    call kkt_applyControlDirDeriv (rkktsystemDirDeriv,rrhs,&
+        rlinsolParam%p_rkktSubsolvers,rlocalStat)
+    call spacesl_sumStatistics(rlocalStat,rstatistics%rspaceslSolverStat)
 
     call stat_stopTimer (rstatistics%rtotalTime)
 
@@ -1609,9 +1609,7 @@ contains
     
     ! Propagate structures
     do ilevel = 1,nlevels
-      rlinsolMultigrid%p_rsubSolvers(ilevel)%p_rsolverHierPrimalLin => rsolver%p_rsolverHierPrimalLin
-      rlinsolMultigrid%p_rsubSolvers(ilevel)%p_rsolverHierDualLin => rsolver%p_rsolverHierDualLin
-      rlinsolMultigrid%p_rsubSolvers(ilevel)%p_rkktsystemHierarchy => rsolver%p_rkktsystemHierarchy
+      rlinsolMultigrid%p_rsubSolvers(ilevel)%p_rkktSubsolvers => rsolver%p_rkktSubsolvers
     end do
     
     ! Level 1 is the coarse grid solver
@@ -2830,7 +2828,7 @@ contains
 !<subroutine>
 
   subroutine newtonlin_init (rlinsolParam,rsettingsSolver,&
-      rsolverHierPrimalLin,rsolverHierDualLin,rparlist,ssection)
+      rkktSubsolverSet,rparlist,ssection)
   
 !<description>
   ! Basic initialisation of the preconditioner.
@@ -2840,13 +2838,9 @@ contains
   ! Parameters of the OptFlow solver
   type(t_settings_optflow), intent(in), target :: rsettingsSolver
 
-  ! Hierarchy of solvers in space for all levels.
-  ! Linearised primal equation.
-  type(t_spaceSolverHierarchy), target :: rsolverHierPrimalLin
-  
-  ! Hierarchy of solvers in space for all levels.
-  ! Linearised dual equation.
-  type(t_spaceSolverHierarchy), target :: rsolverHierDualLin
+  ! KKT subsolver hierarchy which encapsules all subsolvers used
+  ! by the KKT system solvers.
+  type(t_kktSubsolverSet), target :: rkktSubsolverSet
 
   ! Parameter list that contains the data for the preconditioning.
   type(t_parlist), intent(in) :: rparlist
@@ -2867,8 +2861,7 @@ contains
    
     ! Remember the settings for later use
     rlinsolParam%p_rsettingsSolver => rsettingsSolver
-    rlinsolParam%p_rsolverHierPrimalLin => rsolverHierPrimalLin
-    rlinsolParam%p_rsolverHierDualLin => rsolverHierDualLin
+    rlinsolParam%p_rkktSubsolvers => rkktSubsolverSet
    
     ! Get the corresponding parameters from the parameter list.
     call newtonlin_initBasicParams (&

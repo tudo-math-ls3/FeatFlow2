@@ -97,7 +97,7 @@ contains
 
 !</subroutine>
 
-    character(len=SYS_STRLEN) :: sstr,sstr2,sstr3,sstr4,sstr5
+    character(len=SYS_STRLEN) :: sstr,sstr2,sstr3,sstr4,sstr5,sstr6
     type(t_timeDiscretisation), pointer :: p_rtimeDiscr
     type(t_feSpaceLevel), pointer :: p_rfeSpacePrimal,p_rfeSpaceDual,p_rfeSpaceControl
     integer :: isuccess
@@ -319,10 +319,13 @@ contains
         
     call parlst_getvalue_string (rparlist,rsettings%ssectionOptControl,&
         "ssectionBoundaryCondDualLin",sstr5,bdequote=.true.)
+
+    call parlst_getvalue_string (rparlist,rsettings%ssectionOptControl,&
+        "ssectionBoundaryCondPCSteklov",sstr6,bdequote=.true.)
     
     call struc_initBDC (rsettingsSolver%roptcBDC,rparlist,&
         rsettingsSolver%rphysics,rsettingsSolver%rsettingsOptControl,sstr,&
-        sstr2,sstr3,sstr4,sstr5)
+        sstr2,sstr3,sstr4,sstr5,sstr6)
 
     ! Ok, now we can initialise the Optimal-Control settings, read in the
     ! target function etc.

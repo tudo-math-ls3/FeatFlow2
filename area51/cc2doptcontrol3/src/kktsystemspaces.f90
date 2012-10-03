@@ -301,9 +301,35 @@ contains
         
       end if
       
+      ! -----------------------------------------------------------
+      ! L2 boundary control
+      ! -----------------------------------------------------------
       if (roptControl%dalphaL2BdC .ge. 0.0_DP) then
       
         ! L2 Dirichlet boundary control. This is a bit harder.
+        !
+        ! Create a discretisation of the boundary based on the current
+        ! discretisation. It should be compatible to the current discretisation.
+        
+        call spdiscr_initBlockDiscr (rspaceDiscr,2,rtriaBoundary,&
+            rspaceDiscrPrimal%p_rboundary)
+        
+        call spdiscr_createCompDiscrManif1D(rspaceDiscr%RspatialDiscr(1),&
+            rspaceDiscrPrimal%RspatialDiscr(1),rtriaBoundary)
+
+        call spdiscr_duplicateDiscrSc (rspaceDiscr%RspatialDiscr(1), &
+            rspaceDiscr%RspatialDiscr(2), .true.)
+        
+        return
+      
+      end if
+    
+      ! -----------------------------------------------------------
+      ! H^1/2 boundary control
+      ! -----------------------------------------------------------
+      if (roptControl%dalphaH12BdC .ge. 0.0_DP) then
+      
+        ! H^1/2 Dirichlet boundary control. This is a bit harder.
         !
         ! Create a discretisation of the boundary based on the current
         ! discretisation. It should be compatible to the current discretisation.
@@ -339,9 +365,33 @@ contains
         
       end if
 
+      ! -----------------------------------------------------------
+      ! L2 boundary control
+      ! -----------------------------------------------------------
       if (roptControl%dalphaL2BdC .ge. 0.0_DP) then
       
         ! L2 Dirichlet boundary control. This is a bit harder.
+        ! 
+        !
+        ! Create a discretisation of the boundary based on the current
+        ! discretisation. It should be compatible to the current discretisation.
+        
+        call spdiscr_initBlockDiscr (rspaceDiscr,2,rtriaBoundary,&
+            rspaceDiscrPrimal%p_rboundary)
+        
+        call spdiscr_createCompDiscrManif1D(rspaceDiscr%RspatialDiscr(1),&
+            rspaceDiscrPrimal%RspatialDiscr(1),rtriaBoundary)
+            
+        return
+      
+      end if
+    
+      ! -----------------------------------------------------------
+      ! H^1/2 boundary control
+      ! -----------------------------------------------------------
+      if (roptControl%dalphaH12BdC .ge. 0.0_DP) then
+      
+        ! H^1/2 Dirichlet boundary control. This is a bit harder.
         ! 
         !
         ! Create a discretisation of the boundary based on the current

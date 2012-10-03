@@ -121,12 +121,15 @@ ineumannBoundary = -1
 #                0-boundary conditions are assumed.
 #          = 5 : Dirichlet-conditions for primal equation, do-nothing conditions for dual eqn.
 #          = 6 : Dirichlet-conditions for dual equation, do-nothing conditions for primal eqn.
-#          = 7 : Dirichlet boundary control boundary conditions, relative to a
+#          = 7 : L2 Dirichlet boundary control boundary conditions, relative to a
 #                given inflow.
-#                Example:  1.0  7  1  "Dirichlet0"  "Dirichlet0"  
-#          = 8 : Inhomogeneous Neumann boudary conditions. The inhomogenity has to be
+#                Example:  1.0  0  7  "Dirichlet0"  "Dirichlet0"  
+#          = 8 : H^1/2 Dirichlet boundary control boundary conditions, relative to a
+#                given inflow.
+#                Example:  1.0  0  7  "Dirichlet0"  "Dirichlet0"  
+#          = 9 : Inhomogeneous Neumann boudary conditions. The inhomogenity has to be
 #                specified with expressions.
-#                Example:  1.0  8  3  "Dirichlet1"  "Dirichlet1"  
+#                Example:  1.0  3  8  "Dirichlet1"  "Dirichlet1"  
 
 
 #bdComponent1(3)=
@@ -198,6 +201,27 @@ bdComponent2(1)=
 ######################
 
 # Boundary conditions for the linearised dual equation.
+
+#bdComponent1(4)=
+#  1.0  3  -1
+#  2.0  0  -1
+#  3.0  3  -1
+#  4.0  3  -1
+
+bdComponent1(4)=
+  1.0  3  -1
+  2.0  0  -1
+  3.0  2  -1
+  4.0  3  -1
+
+bdComponent2(1)=
+  4.0  3  -1
+
+########################
+[BDCONDITIONS_PCSTEKLOV]
+########################
+
+# Boundary conditions for the Poincare-Steklov projection
 
 #bdComponent1(4)=
 #  1.0  3  -1

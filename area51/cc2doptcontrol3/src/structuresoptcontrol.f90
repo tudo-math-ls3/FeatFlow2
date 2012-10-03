@@ -214,6 +214,9 @@ module structuresoptcontrol
     
     ! Constraints in the L2 boundary control
     type(t_optcConstraintsDef) :: rconstraintsL2BdC
+
+    ! Constraints in the $H^{1/2}$ boundary control
+    type(t_optcConstraintsDef) :: rconstraintsH12BdC
     
     ! Constraints in the state
     type(t_optcConstraintsDef) :: rconstraintsState
@@ -231,15 +234,23 @@ module structuresoptcontrol
   ! adapted from nonlinear to nonlinear step.
   type t_optcpathfollowingdata
     
-    ! List of $\alpha$ parameter of the optimal control functional parameters. 
+    ! List of $\alpha$ parameter of the optimal control functional parameters.
+    ! Distributed control.
     ! If this is not =>NULL, a path following algorithm will be applied. 
     ! Every nonlinear step, the next value is taken.
     real(DP), dimension(:), pointer :: p_dalphaDistC => null()
     
-    ! List of $\beta$ parameter of the optimal control functional parameters. 
+    ! List of $\alpha$ parameter of the optimal control functional parameters. 
+    ! $L_2$ boundary control.
     ! If this is not =>NULL, a path following algorithm will be applied. 
     ! Every nonlinear step, the next value is taken.
     real(DP), dimension(:), pointer :: p_dalphaL2BdC => null()
+
+    ! List of $\alpha$ parameter of the optimal control functional parameters. 
+    ! $H^{1/2}$ boundary control.
+    ! If this is not =>NULL, a path following algorithm will be applied. 
+    ! Every nonlinear step, the next value is taken.
+    real(DP), dimension(:), pointer :: p_dalphaH12BdC => null()
     
     ! List of $\gamma$ parameter of the optimal control functional parameters. 
     ! If this is not =>NULL, a path following algorithm will be applied. 
@@ -260,8 +271,11 @@ module structuresoptcontrol
     ! $\alpha$ parameter of the optimal control functional
     real(DP) :: dalphaDistC = 1.0_DP
     
-    ! $\beta$ parameter of the optimal control functional via boundary control
+    ! $\alpha$ parameter of the optimal control functional via L2 boundary control
     real(DP) :: dalphaL2BdC = 1.0_DP
+
+    ! $\alpha$ parameter of the optimal control functional via $H^{1/2}$ boundary control
+    real(DP) :: dalphaH12BdC = 1.0_DP
     
     ! Penalty parameter for the dirichlet boundary control
     real(DP) :: ddirichletBCPenalty = 100.0_DP
@@ -554,6 +568,29 @@ contains
     end if
 
     call parlst_getvalue_string (rparlist,ssectionOptC,&
+        "dalphaH12BdC",sstring,"-1.0",bdequote=.true.)
+
+    ! Is this a list?
+    call sys_countParameters (sstring,ntokens)
+
+    if (ntokens .eq. 1) then
+    
+      read(sstring,*) roptcontrol%dalphaH12BdC
+      
+    else if (ntokens .gt. 1) then
+      ! Read the list
+      roptcontrol%dalphaH12BdC = 0.0_DP
+      allocate(roptcontrol%rpathfollowingdata%p_dalphaH12BdC(ntokens))
+      
+      ! Loop through all tokens and save them
+      istart = 1
+      do itoken = 1,ntokens
+        call sys_getParameter (sstring,stoken,istart)
+        read(stoken,*) roptcontrol%rpathfollowingdata%p_dalphaH12BdC(itoken)
+      end do
+    end if
+
+    call parlst_getvalue_string (rparlist,ssectionOptC,&
         "dalphaEndTimeC",sstring,"0.0",bdequote=.true.)
 
     ! Is this a list?
@@ -619,6 +656,13 @@ contains
         
     call soptc_getConstraints (rparlist,sstring,&
         roptcontrol%rconstraints%rconstraintsL2BdC)
+
+    ! H^^1/2 boundary control
+    call parlst_getvalue_string (rparlist,ssectionOptC,&
+        "ssectionConstrH12BdC",sstring,"",bdequote=.true.)
+        
+    call soptc_getConstraints (rparlist,sstring,&
+        roptcontrol%rconstraints%rconstraintsH12BdC)
 
     ! State
     call parlst_getvalue_string (rparlist,ssectionOptC,&
@@ -718,6 +762,10 @@ contains
       deallocate(roptcontrol%rpathfollowingdata%p_dalphaDistC)
     end if
 
+    if (associated(roptcontrol%rpathfollowingdata%p_dalphaH12BdC)) then
+      deallocate(roptcontrol%rpathfollowingdata%p_dalphaH12BdC)
+    end if
+
     if (associated(roptcontrol%rpathfollowingdata%p_dalphaL2BdC)) then
       deallocate(roptcontrol%rpathfollowingdata%p_dalphaL2BdC)
     end if
@@ -765,17 +813,26 @@ contains
       roptControl%dalphaDistC = roptControl%rpathfollowingdata%p_dalphaDistC(&
               min(size(roptcontrol%rpathfollowingdata%p_dalphaDistC),istep))
       if (bprint) then
-        call output_line ("Path-Follower: Parameter ALPHA = "//&
+        call output_line ("Path-Follower: Parameter ALPHA_DIST = "//&
             trim(sys_sdEL(roptcontrol%dalphaDistC,10)))
       end if
     end if
 
-    if (associated(roptcontrol%rpathfollowingdata%p_dalphaL2BdC)) then
-      roptcontrol%dalphaL2BdC = roptControl%rpathfollowingdata%p_dalphaL2BdC(&
-              min(size(roptcontrol%rpathfollowingdata%p_dalphaL2BdC),istep))
+    if (associated(roptcontrol%rpathfollowingdata%p_dalphaH12BdC)) then
+      roptcontrol%dalphaL2BdC = roptControl%rpathfollowingdata%p_dalphaH12BdC(&
+              min(size(roptcontrol%rpathfollowingdata%p_dalphaH12BdC),istep))
       if (bprint) then
-        call output_line ("Path-Follower: Parameter BETA  = "//&
+        call output_line ("Path-Follower: Parameter ALPHA_L2BDC  = "//&
             trim(sys_sdEL(roptcontrol%dalphaL2BdC,10)))
+      end if
+    end if
+
+    if (associated(roptcontrol%rpathfollowingdata%p_dalphaH12BdC)) then
+      roptcontrol%dalphaH12BdC = roptControl%rpathfollowingdata%p_dalphaH12BdC(&
+              min(size(roptcontrol%rpathfollowingdata%p_dalphaH12BdC),istep))
+      if (bprint) then
+        call output_line ("Path-Follower: Parameter ALPHA_H12BDC  = "//&
+            trim(sys_sdEL(roptcontrol%dalphaH12BdC,10)))
       end if
     end if
 

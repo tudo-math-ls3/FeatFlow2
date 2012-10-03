@@ -17,6 +17,10 @@ ssectionBoundaryCondPrimalLin = BDCONDITIONS_PRIMALLIN
 # Section defining the boundary conditions of the linearised dual equation
 ssectionBoundaryCondDualLin = BDCONDITIONS_DUALLIN
 
+# Section defining the boundary conditions of the Poincare-Steklov operator
+# for H^1/2 Dirichlet boundary control
+ssectionBoundaryCondPCSteklov = BDCONDITIONS_PCSTEKLOV
+
 # Name of the section that defines the target flow.
 stargetFunction = OPTCTARGETFUNCTION
 
@@ -41,6 +45,9 @@ ssectionConstrDistCtrl = CONSTRAINTS_DISTCTRL
 # Name of the section defining the constraints in the L2 boundary control
 ssectionConstrL2BdC = CONSTRAINTS_L2BDC
 
+# Name of the section defining the constraints in the H^1/2 boundary control
+ssectionConstrH12BdC = CONSTRAINTS_H12BDC
+
 # Name of the section defining the constraints in the state control
 ssectionConstrState = CONSTRAINTS_STATE
 
@@ -49,15 +56,33 @@ ssectionConstrState = CONSTRAINTS_STATE
 # It is possible to specify multiple parameters here, e.g. "0.1 0.05 0.25".
 # In this case, a path following algorithm will be applied, i.e.,
 # the parameter is reduced with every nonlinear step.
-dalphaDistC = 0.1 # 1.0
+#
+# Note: The section CONSTRAINTS_DISTCTRL allows to specify constraints.
+dalphaDistC = 0.1
 
 # Regularisation parameter ALPHA for the ||u||-term in the optimal-control problem
-# on the boundary (Dirichlet boundary control).
+# on the boundary (L2 Dirichlet boundary control).
 # -1.0 = no boudary control control
 # It is possible to specify multiple parameters here, e.g. "0.1 0.05 0.25".
 # In this case, a path following algorithm will be applied, i.e.,
 # the parameter is reduced with every nonlinear step.
-dalphaL2BdC = 0.01 # 1.0
+#
+# Note: Boundary parts with L2 boundary control (type 7) must be
+# specified in the boundaryconditions.dat if dalphaL2BdC >= 0!
+# The section CONSTRAINTS_L2BDC allows to specify constraints.
+dalphaL2BdC = -1.0
+
+# Regularisation parameter ALPHA for the <Su,u>-term in the optimal-control problem
+# on the boundary (H^1/2 Dirichlet boundary control).
+# -1.0 = no boudary control control
+# It is possible to specify multiple parameters here, e.g. "0.1 0.05 0.25".
+# In this case, a path following algorithm will be applied, i.e.,
+# the parameter is reduced with every nonlinear step.
+#
+# Note: Boundary parts with L2 boundary control (type 7) must be
+# specified in the boundaryconditions.dat if dalphaH12BdC >= 0!
+# The section CONSTRAINTS_H12BDC allows to specify constraints.
+dalphaH12BdC = -1.0
 
 # Regularisation parameter for the terminal condition ||y(T)-z(T)|| in the
 # nonstationary optimal control problem.
@@ -130,6 +155,35 @@ ssectionmax2 =
 ###################
 [CONSTRAINTS_L2BDC]
 ###################
+
+# Type of constraints to apply to the control u.
+# =0: No constraints.
+# =1: Constant constraints on u active: dmin1 <= u_1 <= dmax1, dmin2 <= u_2 <= dmax2.
+#     Implemented by DOF.
+cconstraints = 0
+
+# Type of definition of the constraints if cdistVelConstraints <> 0.
+# =0: constants specified in dmin1/2, dmax1/2.
+# =1: functions defined in the sections ssectionmin1/2, ssectionmax1/2.
+constrType = 0
+
+# Constraints on u_1
+dmin1 = -1E10
+dmax1 = 1E10
+
+ssectionmin1 = 
+ssectionmax1 = 
+
+# Constraints in u_2
+dmin2 = 0.0
+dmax2 = 0.0
+
+ssectionmin2 = 
+ssectionmax2 = 
+
+####################
+[CONSTRAINTS_H12BDC]
+####################
 
 # Type of constraints to apply to the control u.
 # =0: No constraints.

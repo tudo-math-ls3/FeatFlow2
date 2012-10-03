@@ -64,6 +64,9 @@ module structuresoperatorasm
   ! Right-hand side for the L2-projection of the initial condition
   integer, parameter, public :: OPTP_INITCONDL2PRJ = 7
 
+  ! Poincare-Steklov operator, used for $H^{1/2}$ boundary control
+  integer, parameter, public :: OPTP_PCSTEKLOV = 8
+
 !</constantblock>
 
 !<constantblock description = "Policy how to get the initial condition in a timestep">

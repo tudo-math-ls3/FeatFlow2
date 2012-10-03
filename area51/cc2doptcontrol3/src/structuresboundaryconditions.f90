@@ -146,6 +146,10 @@ module structuresboundaryconditions
     ! in the linearised equation
     character(len=SYS_STRLEN) :: ssectionBdCondPrimLin = ""
     character(len=SYS_STRLEN) :: ssectionBdCondDualLin = ""
+    
+    ! Name of the section in rparamList describing the boundary conditions
+    ! in the Poincare-Steklov operator
+    character(len=SYS_STRLEN) :: ssectionBdCondPCSteklov = ""
 
   end type
 
@@ -221,8 +225,11 @@ module structuresboundaryconditions
     ! Boundary regions with Dirichlet boundary conditions.
     type(t_boundaryRegionList) :: rdirichletBoundary
   
-    ! Boundary regions with Dirichlet control boundary
-    type(t_boundaryRegionList) :: rdirichletControlBoundary
+    ! Boundary regions with L2 Dirichlet control boundary
+    type(t_boundaryRegionList) :: rdirichletControlBoundaryL2
+
+    ! Boundary regions with $H^{1/2}$ Dirichlet control boundary
+    type(t_boundaryRegionList) :: rdirichletControlBoundaryH12
     
   end type
   
@@ -288,7 +295,7 @@ contains
 
   subroutine struc_initBDC (roptcBDC,rparlist,rphysics,rsettingsOptControl,&
       ssectionBdExpr,ssectionBdCondPrim,ssectionBdCondDual,&
-      ssectionBdCondPrimLin,ssectionBdCondDualLin)
+      ssectionBdCondPrimLin,ssectionBdCondDualLin,ssectionBoundaryCondPCSteklov)
   
 !<description>
   ! Initialises a boundary condition structure.
@@ -319,6 +326,9 @@ contains
   
   ! Section defining the boundary conditions for the linearised dual equations
   character(len=*), intent(in) :: ssectionBdCondDualLin
+
+  ! Section defining the boundary conditions for the Poincare-Srteklov operator
+  character(len=*), intent(in) :: ssectionBoundaryCondPCSteklov
 !</input>
 
 !<inputoutput>
@@ -342,6 +352,7 @@ contains
     roptcBDC%ssectionBdCondDual = ssectionBdCondDual
     roptcBDC%ssectionBdCondPrimLin = ssectionBdCondPrimLin
     roptcBDC%ssectionBdCondDualLin = ssectionBdCondDualLin
+    roptcBDC%ssectionBdCondPCSteklov = ssectionBoundaryCondPCSteklov
 
     ! Create a parser structure for as many expressions as configured
     call parlst_querysection(rparlist, ssectionBdExpr, p_rsection)

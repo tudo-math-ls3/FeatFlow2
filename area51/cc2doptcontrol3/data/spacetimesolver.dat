@@ -64,7 +64,7 @@ ioutputLevel       = 2
 ssectionAdaptiveNewton = SPACETIME-ADAPTIVENEWTON
 
 # Section configuring the solver for the linear space-time problems
-ssectionLinSolverSpace = SPACETIME-LINSOLVER
+ssectionLinSolverSpaceTime = SPACETIME-LINSOLVER
 
 # Section defining the nonlinear solver in space
 ssectionNonlinSolverSpace = CC-NONLINEARSOLVER
