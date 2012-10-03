@@ -4157,8 +4157,8 @@ contains
 
             ! double precision matrix, double precision vectors
 #ifdef USE_INTEL_MKL
-            call mkl_dcsrmv('N',NEQ, NCOLS,cx*rmatrix%dscaleFactor,&
-                'GxxF',p_Da,p_Kcol,p_Kld,p_Kld(2),p_Dx,cy,p_Dy)
+            call mkl_dcsrmv('N',NEQ,NCOLS,cx*rmatrix%dscaleFactor,&
+                'G__F',p_Da,p_Kcol,p_Kld,p_Kld(2),p_Dx,cy,p_Dy)
 #else
             call lsyssc_LAX79DbleDble (p_Kld,p_Kcol,p_Da,p_Dx,p_Dy,&
                 cx*rmatrix%dscaleFactor,cy,NEQ,rx%NVAR,p_rperfconfig)
@@ -4202,8 +4202,8 @@ contains
 
             ! single precision matrix, single precision vectors
 #ifdef USE_INTEL_MKL
-            call mkl_scsrmv('N',NEQ, NCOLS,real(cx*rmatrix%dscaleFactor,SP),&
-                'GxxF',p_Fa,p_Kcol,p_Kld,p_Kld(2),p_Fx,real(cy,SP),p_Fy)
+            call mkl_scsrmv('N',NEQ,NCOLS,real(cx*rmatrix%dscaleFactor,SP),&
+                'G__F',p_Fa,p_Kcol,p_Kld,p_Kld(2),p_Fx,real(cy,SP),p_Fy)
 #else
             call lsyssc_LAX79SnglSngl (p_Kld,p_Kcol,p_Fa,p_Fx,p_Fy,&
                 real(cx*rmatrix%dscaleFactor,SP),real(cy,SP),NEQ,rx%NVAR,p_rperfconfig)
@@ -4313,13 +4313,13 @@ contains
             select case (rmatrix%cinterleavematrixFormat)
             case (LSYSSC_MATRIX1)
 #ifdef USE_INTEL_MKL
-            call mkl_dbsrmv('N',NEQ, NCOLS,rx%NVAR,cx*rmatrix%dscaleFactor,&
-                'GxxF',p_Da,p_Kcol,p_Kld,p_Kld(2),p_Dx,cy,p_Dy)
+              call mkl_dbsrmv('N',NEQ,NCOLS,rx%NVAR,cx*rmatrix%dscaleFactor,&
+                  'G__F',p_Da,p_Kcol,p_Kld,p_Kld(2),p_Dx,cy,p_Dy)
 #else
               call lsyssc_LAX79INTL1DbleDble (p_Kld,p_Kcol,p_Da,p_Dx,p_Dy,&
                   cx*rmatrix%dscaleFactor,cy,NEQ,rx%NVAR,p_rperfconfig)
 #endif
-
+              
             case (LSYSSC_MATRIXD)
               call lsyssc_LAX79INTLDDbleDble (p_Kld,p_Kcol,p_Da,p_Dx,p_Dy,&
                   cx*rmatrix%dscaleFactor,cy,NEQ,rx%NVAR,p_rperfconfig)
@@ -4393,8 +4393,8 @@ contains
             select case (rmatrix%cinterleavematrixFormat)
             case (LSYSSC_MATRIX1)
 #ifdef USE_INTEL_MKL
-            call mkl_sbsrmv('N',NEQ, NCOLS,rx%NVAR,real(cx*rmatrix%dscaleFactor,SP),&
-                'GxxF',p_Fa,p_Kcol,p_Kld,p_Kld(2),p_Fx,real(cy,SP),p_Fy)
+              call mkl_sbsrmv('N',NEQ,NCOLS,rx%NVAR,real(cx*rmatrix%dscaleFactor,SP),&
+                  'G__F',p_Fa,p_Kcol,p_Kld,p_Kld(2),p_Fx,real(cy,SP),p_Fy)
 #else
               call lsyssc_LAX79INTL1SnglSngl (p_Kld,p_Kcol,p_Fa,p_Fx,p_Fy,&
                   real(cx*rmatrix%dscaleFactor,SP),real(cy,SP),NEQ,rx%NVAR,&
@@ -4535,8 +4535,8 @@ contains
 
             ! double precision matrix, double precision vectors
 #ifdef USE_INTEL_MKL
-            call mkl_dcsrmv('T',NEQ, NCOLS,cx*rmatrix%dscaleFactor,&
-                'GxxF',p_Da,p_Kcol,p_Kld,p_Kld(2),p_Dx,cy,p_Dy)
+            call mkl_dcsrmv('T',NEQ,NCOLS,cx*rmatrix%dscaleFactor,&
+                'G__F',p_Da,p_Kcol,p_Kld,p_Kld(2),p_Dx,cy,p_Dy)
 #else
             call lsyssc_LTX79DbleDble (p_Kld,p_Kcol,p_Da,p_Dx,p_Dy,&
                 cx*rmatrix%dscaleFactor,cy,NEQ,rx%NVAR,p_rperfconfig)
@@ -4579,8 +4579,8 @@ contains
 
             ! single precision matrix, single precision vectors
 #ifdef USE_INTEL_MKL
-            call mkl_scsrmv('T',NEQ, NCOLS,real(cx*rmatrix%dscaleFactor,SP),&
-                'GxxF',p_Fa,p_Kcol,p_Kld,p_Kld(2),p_Fx,real(cy,SP),p_Fy)
+            call mkl_scsrmv('T',NEQ,NCOLS,real(cx*rmatrix%dscaleFactor,SP),&
+                'G__F',p_Fa,p_Kcol,p_Kld,p_Kld(2),p_Fx,real(cy,SP),p_Fy)
 #else
             call lsyssc_LTX79SnglSngl (p_Kld,p_Kcol,p_Fa,p_Fx,p_Fy,&
                 real(cx*rmatrix%dscaleFactor,SP),real(cy,SP),NEQ,rx%NVAR,&
@@ -6482,7 +6482,8 @@ contains
   integer, dimension(:), pointer :: p_Kld,p_Kld2
   integer, dimension(:), pointer :: p_Kdiagonal,p_Kdiagonal2
   logical :: bentries,bstrucOwner,bentryOwner
-  integer :: NA,iA,iA2,iA3,iEQ
+  integer, dimension(6) :: Ijob
+  integer :: NA,iA,iA2,iA3,iEQ,info
   integer :: i,j,nrows,ncols,ivar,jvar
   integer :: h_Da,h_Kcol,h_Kld,h_Kdiagonal
 
@@ -6752,21 +6753,33 @@ contains
           call lsyssc_getbase_double(rmatrix, p_Ddata)
           call storage_getbase_double(ihandle, p_Ddata2)
 
+#ifdef USE_INTEL_MKL
+          Ijob = (/1,1,1,2,rmatrix%NA,1/)
+          call mkl_ddnscsr(Ijob,rmatrix%NEQ,rmatrix%NCOLS,p_Ddata,&
+              rmatrix%NEQ,p_Ddata2,p_Kcol,p_Kld,info)
+#else
           do iEQ = 1,rmatrix%NEQ
             do iA = p_Kld(ieq), p_Kld(ieq+1)-1
               p_Ddata2(rmatrix%NEQ*(p_Kcol(iA)-1)+iEQ) = p_Ddata(iA)
             end do
           end do
+#endif
 
         case (ST_SINGLE)
           call lsyssc_getbase_single(rmatrix, p_Fdata)
           call storage_getbase_single(ihandle, p_Fdata2)
 
+#ifdef USE_INTEL_MKL
+          Ijob = (/1,1,1,2,rmatrix%NA,1/)
+          call mkl_sdnscsr(Ijob,rmatrix%NEQ,rmatrix%NCOLS,p_Ddata,&
+              rmatrix%NEQ,p_Ddata2,p_Kcol,p_Kld,info)
+#else
           do iEQ = 1,rmatrix%NEQ
             do iA = p_Kld(ieq), p_Kld(ieq+1)
               p_Fdata2(rmatrix%NEQ*(p_Kcol(iA)-1)+iEQ) = p_Fdata(iA)
             end do
           end do
+#endif
 
         case default
           call output_line('Unsupported data type!',&
@@ -7034,21 +7047,33 @@ contains
           call lsyssc_getbase_double(rmatrix, p_Ddata)
           call storage_getbase_double(ihandle, p_Ddata2)
 
+#ifdef USE_INTEL_MKL
+          Ijob = (/1,1,1,2,rmatrix%NA,1/)
+          call mkl_ddnscsr(Ijob,rmatrix%NEQ,rmatrix%NCOLS,p_Ddata,&
+              rmatrix%NEQ,p_Ddata2,p_Kcol,p_Kld,info)
+#else
           do iEQ = 1,rmatrix%NEQ
             do iA = p_Kld(ieq), p_Kld(ieq+1)-1
               p_Ddata2(rmatrix%NCOLS*(iEQ-1)+p_Kcol(iA)) = p_Ddata(iA)
             end do
           end do
+#endif
 
         case (ST_SINGLE)
           call lsyssc_getbase_single(rmatrix, p_Fdata)
           call storage_getbase_single(ihandle, p_Fdata2)
 
+#ifdef USE_INTEL_MKL
+          Ijob = (/1,1,1,2,rmatrix%NA,1/)
+          call mkl_sdnscsr(Ijob,rmatrix%NEQ,rmatrix%NCOLS,p_Ddata,&
+              rmatrix%NEQ,p_Ddata2,p_Kcol,p_Kld,info)
+#else
           do iEQ = 1,rmatrix%NEQ
             do iA = p_Kld(ieq), p_Kld(ieq+1)
               p_Fdata2(rmatrix%NCOLS*(iEQ-1)+p_Kcol(iA)) = p_Fdata(iA)
             end do
           end do
+#endif
 
         case default
           call output_line('Unsupported data type!',&
@@ -8348,6 +8373,11 @@ contains
             p_Kld(rmatrix%NEQ*rmatrix%NVAR+1) = NA+1
             
           case (LSYSSC_MATRIX1)
+#ifdef USE_INTEL_MKL
+            Ijob = (/1,1,1,0,0,1/)
+            call mkl_dcsrbsr(Ijob,nrows,rmatrix%NVAR,rmatrix%NVAR*rmatrix%NVAR,&
+                p_Ddata,p_Kcol,p_Kld,p_Ddata2,p_Kcol2,p_Kld2,info)
+#else
             iA = 0
             do i = 1,rmatrix%NEQ
               do ivar = 1,rmatrix%NVAR
@@ -8366,6 +8396,7 @@ contains
               end do
             end do
             p_Kld(rmatrix%NEQ*rmatrix%NVAR+1) = NA+1
+#endif
             
           case default
             call output_line('Unsupported interleaved matrix format!',&
@@ -8395,6 +8426,11 @@ contains
             p_Kld(rmatrix%NEQ*rmatrix%NVAR+1) = NA+1
             
           case (LSYSSC_MATRIX1)
+#ifdef USE_INTEL_MKL
+            Ijob = (/1,1,1,0,0,1/)
+            call mkl_scsrbsr(Ijob,nrows,rmatrix%NVAR,rmatrix%NVAR*rmatrix%NVAR,&
+                p_Fdata,p_Kcol,p_Kld,p_Fdata2,p_Kcol2,p_Kld2,info)
+#else
             iA = 0
             do i = 1,rmatrix%NEQ
               do ivar = 1,rmatrix%NVAR
@@ -8413,6 +8449,7 @@ contains
               end do
             end do
             p_Kld(rmatrix%NEQ*rmatrix%NVAR+1) = NA+1
+#endif
             
           case default
             call output_line('Unsupported interleaved matrix format!',&
@@ -8455,6 +8492,11 @@ contains
           p_Kld(rmatrix%NEQ*rmatrix%NVAR+1) = NA+1
           
         case (LSYSSC_MATRIX1)
+#ifdef USE_INTEL_MKL
+          Ijob = (/1,1,1,0,0,0/)
+          call mkl_dcsrbsr(Ijob,nrows,rmatrix%NVAR,rmatrix%NVAR*rmatrix%NVAR,&
+              p_Ddata,p_Kcol,p_Kld,p_Ddata2,p_Kcol2,p_Kld2,info)
+#else
           iA = 0
           do i = 1,rmatrix%NEQ
             do ivar = 1,rmatrix%NVAR
@@ -8471,6 +8513,7 @@ contains
             end do
           end do
           p_Kld(rmatrix%NEQ*rmatrix%NVAR+1) = NA+1
+#endif
           
         case default
           call output_line('Unsupported interleaved matrix format!',&
@@ -12009,7 +12052,7 @@ contains
 
 !<description>
   ! Internal auxiliary routine.
-  ! Unorts the entries in each row of the matrix in ascending order.
+  ! Unsorts the entries in each row of the matrix in ascending order.
   ! This searches in each row of a matrix for the diagonal element
   ! and shifts it to the front.
   !
@@ -12056,7 +12099,7 @@ contains
     if (present(nintl)) then
 
       ! Allocate memory for auxiliary vector
-      call storage_new ('lsyssc_sortCSRdouble', 'Daux', nintl, &
+      call storage_new ('lsyssc_unsortCSRdouble', 'Daux', nintl, &
           ST_DOUBLE, h_Daux,ST_NEWBLOCK_NOINIT)
       call storage_getbase_double(h_Daux,Daux)
 
@@ -12181,7 +12224,7 @@ contains
     if (present(nintl)) then
 
       ! Allocate memory for auxiliary vector
-      call storage_new ('lsyssc_sortCSRsingle', 'Faux', nintl, &
+      call storage_new ('lsyssc_unsortCSRsingle', 'Faux', nintl, &
           ST_SINGLE, h_Faux,ST_NEWBLOCK_NOINIT)
       call storage_getbase_single(h_Faux,Faux)
 
@@ -29745,9 +29788,9 @@ contains
     ! What matrix format are we?
     select case(rmatrix%cmatrixFormat)
 
-    case(LSYSSC_MATRIX7,&
-         LSYSSC_MATRIX7INTL)
-      rgraph%cgraphFormat = GRPH_GRAPH7
+    case(LSYSSC_MATRIX7,LSYSSC_MATRIX7INTL,&
+         LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL)
+      rgraph%cgraphFormat = GRPH_UNDIRECTED
 
       ! Create map for the list of vertices
       call map_create(rgraph%rVertices,rgraph%NVT+1,0)
@@ -29762,30 +29805,14 @@ contains
       ! Fill list of edges
       call alst_copy(p_Kld,p_Kcol,rgraph%rEdges)
 
-      ! Generate p_Key = array [1,2,3,...,NVT]
-      call storage_new('lsyssc_createGraphFromMatrix','p_Key',&
-          rgraph%NVT,ST_INT, h_Key,ST_NEWBLOCK_ORDERED)
-      call storage_getbase_int(h_Key,p_Key)
-      call map_copy(p_Key,rgraph%rVertices)
-      call storage_free(h_Key)
-
-
-    case(LSYSSC_MATRIX9,&
-         LSYSSC_MATRIX9INTL)
-      rgraph%cgraphFormat = GRPH_GRAPH9
-
-      ! Create map for the list of vertices
-      call map_create(rgraph%rVertices,rgraph%NVT+1,0)
-
-      ! Create array of lists for edges
-      call alst_create(rgraph%rEdges,nvt,nedge)
-
-      ! Set pointers
-      call lsyssc_getbase_Kld(rmatrix,p_Kld)
-      call lsyssc_getbase_Kcol(rmatrix,p_Kcol)
-
-      ! Fill list of edges
-      call alst_copy(p_Kld,p_Kcol,rgraph%rEdges)
+      ! Due to the exotic leading diagonal entry of matrix format 7,
+      ! we need to sort the connectivity lists of the graph. This is
+      ! actually not need by the graph structure but it makes the
+      ! recreation of matrices more efficient if sorting is done once.
+      if ((rmatrix%cmatrixFormat .eq. LSYSSC_MATRIX7) .or.&
+          (rmatrix%cmatrixFormat .eq. LSYSSC_MATRIX7INTL)) then
+        call alst_sort(rgraph%rEdges)
+      end if
 
       ! Generate p_Key = array [1,2,3,...,NVT]
       call storage_new('lsyssc_createGraphFromMatrix','p_Key',&
@@ -29793,7 +29820,6 @@ contains
       call storage_getbase_int(h_Key,p_Key)
       call map_copy(p_Key,rgraph%rVertices)
       call storage_free(h_Key)
-
 
     case DEFAULT
       call output_line('Invalid matrix format!',&
@@ -29814,12 +29840,10 @@ contains
     ! sparsity pattern given by the adjacency graph rgraph.
 !</description>
 
-!<input>
+!<inputoutput>
     ! The adjacency graph
     type(t_graph), intent(inout) :: rgraph
-!</input>
 
-!<inputoutput>
     ! The matrix
     type(t_matrixScalar), intent(inout) :: rmatrix
 !</inputoutput>
@@ -29828,22 +29852,16 @@ contains
     ! local variables
     type(it_mapInt_Int) :: rmapIter
     integer, dimension(:), pointer :: p_Idata,p_Kcol,p_Kdiagonal,p_Kld
-    integer :: ia,ieq,isize,itable,ncols
+    integer :: ia0,ia,icol0,icol,ieq,isize,itable,ncols
 
-    ! Check that matrix and graph have the same format
+    ! Perform some pre-processing steps
     select case(rmatrix%cmatrixFormat)
-
-    case(LSYSSC_MATRIX7,&
-         LSYSSC_MATRIX7INTL)
-      if (rgraph%cgraphFormat .ne. GRPH_GRAPH7) then
-        call output_line('Matrix/graph have incompatible format!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_createMatrixFromGraph')
-        call sys_halt()
-      end if
-
-    case(LSYSSC_MATRIX9,&
-         LSYSSC_MATRIX9INTL)
-      if (rgraph%cgraphFormat .ne. GRPH_GRAPH9) then
+      
+    case(LSYSSC_MATRIX7,LSYSSC_MATRIX7INTL,&
+         LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL)
+      
+      ! Check that matrix and graph have the same format
+      if (rgraph%cgraphFormat .ne. GRPH_UNDIRECTED) then
         call output_line('Matrix/graph have incompatible format!',&
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_createMatrixFromGraph')
         call sys_halt()
@@ -29876,7 +29894,7 @@ contains
       call alst_copy(rgraph%rEdges,rmatrix%h_Kld,rmatrix%h_Kcol)
 
     else
-
+      
       ! Check if matrix is empty
       if ((rmatrix%NEQ .eq. 0) .or. rmatrix%NA .eq. 0) return
 
@@ -29932,10 +29950,33 @@ contains
       p_Kld(rmatrix%NEQ+1)=ia
     end if
 
-    ! Do we have to rebuild the diagonal?
-    if (rmatrix%cmatrixFormat .eq. LSYSSC_MATRIX9 .or.&
-        rmatrix%cmatrixFormat .eq. LSYSSC_MATRIX9INTL) then
+    ! Perform some post-processing steps
+    select case(rmatrix%cmatrixFormat)
+      
+    case(LSYSSC_MATRIX7,LSYSSC_MATRIX7INTL)
+      ! Set pointers
+      call lsyssc_getbase_Kld(rmatrix,p_Kld)
+      call lsyssc_getbase_Kcol(rmatrix,p_Kcol)
 
+      ! Resort matrix so that diagonal entry is the first in row
+      row: do ieq=2,rmatrix%NEQ
+        icol0 = p_Kcol(p_Kld(ieq))
+        if (icol0 .eq. ieq) cycle row
+        do ia = p_Kld(ieq)+1, p_Kld(ieq+1)-1
+          icol = p_Kcol(ia)
+          if (icol .ge. ieq) then
+            p_Kcol(p_Kld(ieq)) = icol
+            p_Kcol(ia) = icol0
+            cycle row
+          else
+            p_Kcol(ia) = icol0
+            icol0 = icol
+          end if
+        end do
+      end do row
+      
+    case(LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL)
+      
       ! Create new memory or resize existing memory
       if (rmatrix%h_Kdiagonal .eq. ST_NOHANDLE) then
         call storage_new('lsyssc_createMatrixFromGraph','p_Kdiagonal',&
@@ -29953,10 +29994,11 @@ contains
       call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
       call lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
 
-      ! Rebuild array
+      ! Rebuild the diagonal array Kdiagonal
       call lsyssc_rebuildKdiagonal(p_Kcol, p_Kld, p_Kdiagonal, rmatrix%NEQ)
-    end if
 
+    end select
+    
   end subroutine lsyssc_createMatrixFromGraph
 
   ! ***************************************************************************
