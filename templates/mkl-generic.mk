@@ -32,15 +32,15 @@ ifeq ($(strip $(OPENMP)), YES)
 
 # 32 bit
 ifeq ($(call match,$(ID),pc-.*-linux-.*-mkl.*),yes)
-LIBS := $(LIBS) -lmkl_intel -lmkl_intel_thread -lmkl_core
+LIBS := $(LIBS) -lmkl_intel -lmkl_intel_thread -lmkl_core -lpthread
 endif
 
 # 64 bit
 ifeq ($(call match,$(ID),pc64-.*-linux-.*-mkl.*),yes)
 ifeq ($(strip $(INTSIZE)), LARGE)
-LIBS := $(LIBS) -lmkl_intel_ilp64 -lmkl_intel_thread -lmkl_core
+LIBS := $(LIBS) -lmkl_intel_ilp64 -lmkl_intel_thread -lmkl_core -lpthread
 else
-LIBS := $(LIBS) -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core
+LIBS := $(LIBS) -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -lpthread
 endif
 endif
 
@@ -49,15 +49,15 @@ else
 
 # 32 bit
 ifeq ($(call match,$(ID),pc-.*-linux-.*-mkl.*),yes)
-LIBS := $(LIBS) -lmkl_intel -lmkl_sequential -lmkl_core
+LIBS := $(LIBS) -lmkl_intel -lmkl_sequential -lmkl_core -lpthread
 endif
 
 # 64 bit
 ifeq ($(call match,$(ID),pc64-.*-linux-.*-mkl.*),yes)
 ifeq ($(strip $(INTSIZE)), LARGE)
-LIBS := $(LIBS) -lmkl_intel_ilp64 -lmkl_sequential -lmkl_core
+LIBS := $(LIBS) -lmkl_intel_ilp64 -lmkl_sequential -lmkl_core -lpthread
 else
-LIBS := $(LIBS) -lmkl_intel_lp64 -lmkl_sequential -lmkl_core
+LIBS := $(LIBS) -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread
 endif
 endif
 
