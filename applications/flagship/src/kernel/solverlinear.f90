@@ -1858,8 +1858,8 @@ contains
     p_rsolver => rsolver%p_rsolverAGMG
     p_rmatrix => p_rsolver%rmatrix
     p_rr      => p_rsolver%rtempVector
-    call lsyssc_getbase_Kld(p_rsolver%rmatrixScalar, p_Kld)
-    call lsyssc_getbase_Kcol(p_rsolver%rmatrixScalar, p_Kcol)
+    call lsyssc_getbase_Kld(p_rsolver%rtempMatrix, p_Kld)
+    call lsyssc_getbase_Kcol(p_rsolver%rtempMatrix, p_Kcol)
     
     ! Check compatibility
     call lsysbl_isVectorCompatible(ru, rf)
@@ -1882,32 +1882,32 @@ contains
     call lsysbl_copyVector(rf, p_rr)
 
     ! What data type are we
-    select case(p_rsolver%rmatrixScalar%cdataType)
+    select case(p_rsolver%rtempMatrix%cdataType)
     case (ST_DOUBLE)
       call lsysbl_getbase_double(ru, p_Du)
       call lsysbl_getbase_double(p_rr, p_Df)
-      call lsyssc_getbase_double(p_rsolver%rmatrixScalar, p_Da)
+      call lsyssc_getbase_double(p_rsolver%rtempMatrix, p_Da)
       
       ! Call external subroutine from AGMG library
       if (rsolver%coutputModeInfo .gt. 0) then
-        call dagmg(p_rsolver%rmatrixScalar%NEQ, p_Da, p_Kcol, p_Kld, p_Df, p_Du,&
+        call dagmg(p_rsolver%rtempMatrix%NEQ, p_Da, p_Kcol, p_Kld, p_Df, p_Du,&
             2, OU_TERMINAL, p_rsolver%nrest, iterations, dtolerance)
       else
-        call dagmg(p_rsolver%rmatrixScalar%NEQ, p_Da, p_Kcol, p_Kld, p_Df, p_Du,&
+        call dagmg(p_rsolver%rtempMatrix%NEQ, p_Da, p_Kcol, p_Kld, p_Df, p_Du,&
             2, OU_LOG, p_rsolver%nrest, iterations, dtolerance)
       end if
 
     case(ST_SINGLE)
       call lsysbl_getbase_single(ru, p_Fu)
       call lsysbl_getbase_single(rf, p_Ff)
-      call lsyssc_getbase_single(p_rsolver%rmatrixScalar, p_Fa)
+      call lsyssc_getbase_single(p_rsolver%rtempMatrix, p_Fa)
 
       ! Call external subroutine from AGMG library
       if (rsolver%coutputModeInfo .gt. 0) then
-        call sagmg(p_rsolver%rmatrixScalar%NEQ, p_Fa, p_Kcol, p_Kld, p_Ff, p_Fu,&
+        call sagmg(p_rsolver%rtempMatrix%NEQ, p_Fa, p_Kcol, p_Kld, p_Ff, p_Fu,&
             2, OU_TERMINAL, p_rsolver%nrest, iterations, real(dtolerance,SP))
       else
-        call sagmg(p_rsolver%rmatrixScalar%NEQ, p_Fa, p_Kcol, p_Kld, p_Ff, p_Fu,&
+        call sagmg(p_rsolver%rtempMatrix%NEQ, p_Fa, p_Kcol, p_Kld, p_Ff, p_Fu,&
             2, OU_LOG, p_rsolver%nrest, iterations, real(dtolerance,SP))
       end if
 

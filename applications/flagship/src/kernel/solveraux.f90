@@ -408,7 +408,7 @@ module solveraux
   integer, parameter, public :: LINSOL_SOLVER_UMFPACK4 = 11
 
   ! Identifier for AGMG
-  integer, parameter, public :: LINSOL_SOLVER_AGMG     = 12
+  integer, parameter, public :: LINSOL_SOLVER_AGMG     = 13
 
   ! MILU(s) solver (scalar system)
   integer, parameter, public :: LINSOL_SOLVER_ILU      = 50
@@ -937,11 +937,8 @@ module solveraux
     ! suggested by the authors of AGMG is 10.
     integer :: nrest = 10
 
-    ! INTERNAL PARAMETER FOR AGMG SOLVER
-    integer :: cdataType = ST_DOUBLE
-
     ! INTERNAL MEMORY FOR AGMG SOLVER
-    type(t_matrixScalar) :: rmatrixScalar
+    type(t_matrixScalar) :: rtempMatrix
 
     ! INTERNAL: temporal vectors
     type(t_vectorBlock) :: rtempVector
@@ -2355,27 +2352,27 @@ contains
       real(SP), dimension(:), pointer :: p_Fa
 
       ! Set pointers
-      call lsyssc_getbase_Kld(rsolverAGMG%rmatrixScalar, p_Kld)
-      call lsyssc_getbase_Kcol(rsolverAGMG%rmatrixScalar, p_Kcol)
+      call lsyssc_getbase_Kld(rsolverAGMG%rtempMatrix, p_Kld)
+      call lsyssc_getbase_Kcol(rsolverAGMG%rtempMatrix, p_Kcol)
 
       ! Erase setup and release internal memory
-      select case(rsolverAGMG%cdataType)
+      select case(rsolverAGMG%rtempMatrix%cdatatype)
       case (ST_DOUBLE)
-        call lsyssc_getbase_double(rsolverAGMG%rmatrixScalar, p_Da)
+        call lsyssc_getbase_double(rsolverAGMG%rtempMatrix, p_Da)
         if (rsolver%coutputModeInfo .gt. 0) then
-          call dagmg(rsolverAGMG%rmatrixScalar%NEQ, p_Da, p_Kcol, p_Kld,&
+          call dagmg(rsolverAGMG%rtempMatrix%NEQ, p_Da, p_Kcol, p_Kld,&
               p_Da, p_Da, -1, OU_TERMINAL, rsolverAGMG%nrest, 0, 0.0_DP)
         else
-          call dagmg(rsolverAGMG%rmatrixScalar%NEQ, p_Da, p_Kcol, p_Kld,&
+          call dagmg(rsolverAGMG%rtempMatrix%NEQ, p_Da, p_Kcol, p_Kld,&
               p_Da, p_Da, -1, OU_LOG, rsolverAGMG%nrest, 0, 0.0_DP)
         end if
       case (ST_SINGLE)
-        call lsyssc_getbase_single(rsolverAGMG%rmatrixScalar, p_Fa)
+        call lsyssc_getbase_single(rsolverAGMG%rtempMatrix, p_Fa)
         if (rsolver%coutputModeInfo .gt. 0) then
-          call sagmg(rsolverAGMG%rmatrixScalar%NEQ, p_Fa, p_Kcol, p_Kld,&
+          call sagmg(rsolverAGMG%rtempMatrix%NEQ, p_Fa, p_Kcol, p_Kld,&
               p_Fa, p_Fa, -1, OU_TERMINAL, rsolverAGMG%nrest, 0, 0.0_SP)
         else
-          call sagmg(rsolverAGMG%rmatrixScalar%NEQ, p_Fa, p_Kcol, p_Kld,&
+          call sagmg(rsolverAGMG%rtempMatrix%NEQ, p_Fa, p_Kcol, p_Kld,&
               p_Fa, p_Fa, -1, OU_LOG, rsolverAGMG%nrest, 0, 0.0_SP)
         end if
       case default
@@ -2385,7 +2382,7 @@ contains
 
        ! Release matrix (and its temporal copy)
       call lsysbl_releaseMatrix(rsolverAGMG%rmatrix)
-      call lsyssc_releaseMatrix(rsolverAGMG%rmatrixScalar)
+      call lsyssc_releaseMatrix(rsolverAGMG%rtempMatrix)
 
       ! Release temporal vector
       call lsysbl_releaseVector(rsolverAGMG%rtempVector)
@@ -3286,27 +3283,27 @@ contains
       real(SP), dimension(:), pointer :: p_Fa
 
       ! Set pointers
-      call lsyssc_getbase_Kld(rsolverAGMG%rmatrixScalar, p_Kld)
-      call lsyssc_getbase_Kcol(rsolverAGMG%rmatrixScalar, p_Kcol)
+      call lsyssc_getbase_Kld(rsolverAGMG%rtempMatrix, p_Kld)
+      call lsyssc_getbase_Kcol(rsolverAGMG%rtempMatrix, p_Kcol)
 
       ! Erase setup and release internal memory
-      select case(rsolverAGMG%cdataType)
+      select case(rsolverAGMG%rtempMatrix%cdatatype)
       case (ST_DOUBLE)
-        call lsyssc_getbase_double(rsolverAGMG%rmatrixScalar, p_Da)
+        call lsyssc_getbase_double(rsolverAGMG%rtempMatrix, p_Da)
         if (rsolver%coutputModeInfo .gt. 0) then
-          call dagmg(rsolverAGMG%rmatrixScalar%NEQ, p_Da, p_Kcol, p_Kld,&
+          call dagmg(rsolverAGMG%rtempMatrix%NEQ, p_Da, p_Kcol, p_Kld,&
               p_Da, p_Da, -1, OU_TERMINAL, rsolverAGMG%nrest, 0, 0.0_DP)
         else
-          call dagmg(rsolverAGMG%rmatrixScalar%NEQ, p_Da, p_Kcol, p_Kld,&
+          call dagmg(rsolverAGMG%rtempMatrix%NEQ, p_Da, p_Kcol, p_Kld,&
               p_Da, p_Da, -1, OU_LOG, rsolverAGMG%nrest, 0, 0.0_DP)
         end if
       case (ST_SINGLE)
-        call lsyssc_getbase_single(rsolverAGMG%rmatrixScalar, p_Fa)
+        call lsyssc_getbase_single(rsolverAGMG%rtempMatrix, p_Fa)
         if (rsolver%coutputModeInfo .gt. 0) then
-          call sagmg(rsolverAGMG%rmatrixScalar%NEQ, p_Fa, p_Kcol, p_Kld,&
+          call sagmg(rsolverAGMG%rtempMatrix%NEQ, p_Fa, p_Kcol, p_Kld,&
               p_Fa, p_Fa, -1, OU_TERMINAL, rsolverAGMG%nrest, 0, 0.0_SP)
         else
-          call sagmg(rsolverAGMG%rmatrixScalar%NEQ, p_Fa, p_Kcol, p_Kld,&
+          call sagmg(rsolverAGMG%rtempMatrix%NEQ, p_Fa, p_Kcol, p_Kld,&
               p_Fa, p_Fa, -1, OU_LOG, rsolverAGMG%nrest, 0, 0.0_SP)
         end if
       case default
@@ -3316,7 +3313,7 @@ contains
        
        ! Release matrix (and its temporal copy)
       call lsysbl_releaseMatrix(rsolverAGMG%rmatrix)
-      call lsyssc_releaseMatrix(rsolverAGMG%rmatrixScalar)
+      call lsyssc_releaseMatrix(rsolverAGMG%rtempMatrix)
 
       ! Release temporal vector
       call lsysbl_releaseVector(rsolverAGMG%rtempVector)
@@ -7365,7 +7362,7 @@ contains
     ! Here, the real working routine follows
 
     !*************************************************************
-    ! Prepare the matrix for UMFACK
+    ! Prepare the matrix for UMFPACK
 
     subroutine initPrepareMatrix(rmatrixSrc, rmatrixDest)
       type(t_matrixBlock), intent(in) :: rmatrixSrc
@@ -7444,22 +7441,22 @@ contains
       call sys_halt()
     end if
 
-    ! Prepare the system matrix for UMFPACK and convert it into a scalar matrix
-    call initPrepareMatrix(rsolver%rmatrix, rsolver%rmatrixScalar)
+    ! Prepare the system matrix for AGMG and convert it into a scalar matrix
+    call initPrepareMatrix(rsolver%rmatrix, rsolver%rtempMatrix)
 
     ! Set pointers to row- and column indices and data array
-    call lsyssc_getbase_Kld(rsolver%rmatrixScalar, p_Kld)
-    call lsyssc_getbase_Kcol(rsolver%rmatrixScalar, p_Kcol)
+    call lsyssc_getbase_Kld(rsolver%rtempMatrix, p_Kld)
+    call lsyssc_getbase_Kcol(rsolver%rtempMatrix, p_Kcol)
 
     ! Perform internal setup of AGMG solver
-    select case(rsolver%rmatrixScalar%cdataType)
+    select case(rsolver%rtempMatrix%cdataType)
     case(ST_DOUBLE)
-      call lsyssc_getbase_double(rsolver%rmatrixScalar, p_Da)
-      call dagmg(rsolver%rmatrixScalar%NEQ, p_Da, p_Kcol, p_Kld,&
+      call lsyssc_getbase_double(rsolver%rtempMatrix, p_Da)
+      call dagmg(rsolver%rtempMatrix%NEQ, p_Da, p_Kcol, p_Kld,&
           p_Df, p_Dx, 1, OU_TERMINAL, rsolver%nrest, 0, 0.0_DP)
     case(ST_SINGLE)
-      call lsyssc_getbase_single(rsolver%rmatrixScalar, p_Fa)
-      call sagmg(rsolver%rmatrixScalar%NEQ, p_Fa, p_Kcol, p_Kld,&
+      call lsyssc_getbase_single(rsolver%rtempMatrix, p_Fa)
+      call sagmg(rsolver%rtempMatrix%NEQ, p_Fa, p_Kcol, p_Kld,&
           p_Ff, p_Fx, 1, OU_TERMINAL, rsolver%nrest, 0, 0.0_SP)
     case default
       call output_line('Unsupported data type!',&
@@ -7472,7 +7469,7 @@ contains
     ! Here, the real working routine follows
 
     !*************************************************************
-    ! Prepare the matrix for UMFACK
+    ! Prepare the matrix for AGMG
 
     subroutine initPrepareMatrix(rmatrixSrc, rmatrixDest)
       type(t_matrixBlock), intent(in) :: rmatrixSrc
