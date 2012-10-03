@@ -651,24 +651,27 @@
 module linearsolver
 
 !$use omp_lib
-  use fsystem
-  use storage
-  use spatialdiscretisation
-  use linearalgebra
-  use linearsystemscalar
-  use linearsystemblock
-  use multilevelprojection
-  use filtersupport
+#ifndef ENABLE_AGMG
+  use agmgdummy
+#endif
   use coarsegridcorrection
-  use vanka
-  use globalsystem
+  use filtersupport
+  use fsystem
   use genoutput
+  use globalsystem
   use iluk
-  use spsor
-  use mprimitives
-  use triangulation
-  use statistics
+  use linearalgebra
+  use linearsystemblock
+  use linearsystemscalar
   use matrixio
+  use mprimitives
+  use multilevelprojection
+  use spatialdiscretisation
+  use spsor
+  use statistics
+  use storage
+  use triangulation
+  use vanka
   
   implicit none
   
@@ -706,6 +709,7 @@ module linearsolver
   public :: linsol_initGMRES
   public :: linsol_initMultigrid
   public :: linsol_initMultigrid2
+  public :: linsol_initAGMG
   public :: linsol_initSchur
   public :: linsol_initSPSOR
   public :: linsol_initBlockJac
@@ -785,6 +789,9 @@ module linearsolver
   
   ! Multigrid iteration
   integer, parameter, public :: LINSOL_ALG_MULTIGRID2    = 12
+
+  ! Algebraic AGMG multigrid iteration
+  integer, parameter, public :: LINSOL_ALG_AGMG          = 13
 
   ! ILU(0) iteration
   integer, parameter, public :: LINSOL_ALG_ILU0          = 50
@@ -1382,6 +1389,9 @@ module linearsolver
 
     ! Pointer to a structure for the Multigrid solver; NULL() if not set
     type (t_linsolSubnodeMultigrid2), pointer     :: p_rsubnodeMultigrid2  => null()
+
+    ! Pointer to a structure for the AGMG solver; NULL() if not set
+    type (t_linsolSubnodeAGMG), pointer           :: p_rsubnodeAGMG        => null()
 
     ! Pointer to a structure for the ILU0 solver; NULL() if not set
     type (t_linsolSubnodeILU0), pointer           :: p_rsubnodeILU0        => null()
@@ -2238,6 +2248,31 @@ module linearsolver
   ! ***************************************************************************
 
 !<typeblock>
+  
+  ! This structure realises the subnode for the AGMG solver.
+  ! It is based on the AGMG library by Y. Notay. Due to license issues
+  ! this library must be requested individually by each user and
+  ! copied to the correct position in the external library directory.
+
+  type t_linsolSubnodeAGMG
+
+    ! INPUT: restart parameter for GCR iteration method; if nrest=1,
+    ! then flexible CG is used instead of GCR (in this case the matrix
+    ! must be symmetric nd positive definite). The default value
+    ! suggested by the authors of AGMG is 10.
+    integer :: nrest = 10
+
+    ! INTERNAL MEMORY FOR AGMG SOLVER
+    type(t_matrixScalar) :: rtempMatrix
+
+    ! INTERNAL: temporal vectors
+    type(t_vectorBlock) :: rtempVector
+
+  end type
+  
+  ! ***************************************************************************
+
+!<typeblock>
 
   ! This structure realises a configuration block that can be passed to the
   ! function linsol_alterSolver to allow in-computation change of
@@ -2555,6 +2590,8 @@ contains
       call linsol_setMatrixMultigrid (rsolverNode, Rmatrices)
     case (LINSOL_ALG_MULTIGRID2)
       call linsol_setMatrixMultigrid2 (rsolverNode, Rmatrices)
+    case (LINSOL_ALG_AGMG)
+      ! AGMG needs no matrix initialisation routine.
     case (LINSOL_ALG_SCHUR)
       call linsol_setMatrixSchur (rsolverNode, Rmatrices)
     case (LINSOL_ALG_SPECDEFL)
@@ -2698,7 +2735,7 @@ contains
       call linsol_matCompatDefCorr (rsolverNode,Rmatrices,ccompatible,CcompatibleDetail)
       
     case (LINSOL_ALG_UMFPACK4)
-      ! Ask VANKA if the matrices are ok.
+      ! Ask UMFPACK if the matrices are ok.
       call linsol_matCompatUMFPACK4 (rsolverNode,Rmatrices,ccompatible,CcompatibleDetail)
     
     case (LINSOL_ALG_CG)
@@ -2720,6 +2757,10 @@ contains
     case (LINSOL_ALG_MULTIGRID2)
       ! Ask Multigrid and its subsolvers if the matrices are ok.
       call linsol_matCompatMultigrid2 (rsolverNode,Rmatrices,ccompatible,CcompatibleDetail)
+
+    case (LINSOL_ALG_AGMG)
+      ! Ask AGMG and its subsolvers if the matrices are ok.
+      call linsol_matCompatAGMG (rsolverNode,Rmatrices,ccompatible,CcompatibleDetail)
       
     case (LINSOL_ALG_SCHUR)
       ! Ask Schur and its subsolvers if the matrices are ok.
@@ -2854,6 +2895,8 @@ contains
       call linsol_initStructureMultigrid (rsolverNode,ierror,isubgroup)
     case (LINSOL_ALG_MULTIGRID2)
       call linsol_initStructureMultigrid2 (rsolverNode,ierror,isubgroup)
+    case (LINSOL_ALG_AGMG)
+      call linsol_initStructureAGMG (rsolverNode,ierror,isubgroup)
     case (LINSOL_ALG_SCHUR)
       call linsol_initStructureSchur (rsolverNode,ierror,isubgroup)
     case (LINSOL_ALG_SPECDEFL)
@@ -2951,6 +2994,8 @@ contains
       call linsol_initDataMultigrid (rsolverNode,ierror,isubgroup)
     case (LINSOL_ALG_MULTIGRID2)
       call linsol_initDataMultigrid2 (rsolverNode,ierror,isubgroup)
+    case (LINSOL_ALG_AGMG)
+      call linsol_initDataAGMG (rsolverNode,ierror,isubgroup)
     case (LINSOL_ALG_SCHUR)
       call linsol_initDataSchur (rsolverNode,ierror,isubgroup)
     case (LINSOL_ALG_SPECDEFL)
@@ -3135,6 +3180,8 @@ contains
       call linsol_doneDataMultigrid (rsolverNode,isubgroup)
     case (LINSOL_ALG_MULTIGRID2)
       call linsol_doneDataMultigrid2 (rsolverNode,isubgroup)
+    case (LINSOL_ALG_AGMG)
+      call linsol_doneDataAGMG (rsolverNode,isubgroup)
     case (LINSOL_ALG_SCHUR)
       call linsol_doneDataSchur (rsolverNode,isubgroup)
     case (LINSOL_ALG_SPECDEFL)
@@ -3207,6 +3254,8 @@ contains
       call linsol_doneStructureMultigrid (rsolverNode,isubgroup)
     case (LINSOL_ALG_MULTIGRID2)
       call linsol_doneStructureMultigrid2 (rsolverNode,isubgroup)
+    case (LINSOL_ALG_AGMG)
+      call linsol_doneStructureAGMG (rsolverNode,isubgroup)
     case (LINSOL_ALG_SCHUR)
       call linsol_doneStructureSchur (rsolverNode,isubgroup)
     case (LINSOL_ALG_SPECDEFL)
@@ -3289,6 +3338,8 @@ contains
       call linsol_doneMultigrid (p_rsolverNode)
     case (LINSOL_ALG_MULTIGRID2)
       call linsol_doneMultigrid2 (p_rsolverNode)
+    case (LINSOL_ALG_AGMG)
+      call linsol_doneAGMG (p_rsolverNode)
     case (LINSOL_ALG_SCHUR)
       call linsol_doneSchur (p_rsolverNode)
     case (LINSOL_ALG_SPECDEFL)
@@ -3375,6 +3426,8 @@ contains
       call linsol_alterMultigrid (rsolverNode, ralterConfig)
     case (LINSOL_ALG_MULTIGRID2)
       call linsol_alterMultigrid2 (rsolverNode, ralterConfig)
+    case (LINSOL_ALG_AGMG)
+      ! No alter routine for AGMG
     end select
   
   end subroutine
@@ -3632,6 +3685,8 @@ contains
       call linsol_precMultigrid (rsolverNode,rd)
     case (LINSOL_ALG_MULTIGRID2)
       call linsol_precMultigrid2 (rsolverNode,rd)
+    case (LINSOL_ALG_AGMG)
+      call linsol_precAGMG (rsolverNode,rd)
     case (LINSOL_ALG_SCHUR)
       call linsol_precSchur (rsolverNode,rd)
     case (LINSOL_ALG_BLOCKJAC)
@@ -4014,7 +4069,7 @@ contains
 !</input>
   
 !<inputoutput>
-  ! The t_linsolNode structure of the UMFPACK4 solver
+  ! The t_linsolNode structure of the defect correction solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
@@ -4041,7 +4096,7 @@ contains
 !</description>
   
 !<inputoutput>
-  ! The t_linsolNode structure of the UMFPACK4 solver
+  ! The t_linsolNode structure of the defect correction solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
@@ -4117,7 +4172,7 @@ contains
 !</description>
   
 !<inputoutput>
-  ! The t_linsolNode structure of the UMFPACK4 solver
+  ! The t_linsolNode structure of the defect correction solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
@@ -4180,7 +4235,7 @@ contains
 !</description>
   
 !<inputoutput>
-  ! The t_linsolNode structure of the UMFPACK4 solver
+  ! The t_linsolNode structure of the defect correction solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
@@ -4233,7 +4288,7 @@ contains
 !</description>
   
 !<inputoutput>
-  ! The t_linsolNode structure of the UMFPACK4 solver
+  ! The t_linsolNode structure of the defect correction solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
@@ -8192,7 +8247,7 @@ contains
 !</description>
   
 !<inputoutput>
-  ! The t_linsolNode structure of the UMFPACK4 solver
+  ! The t_linsolNode structure of the (M)ILU solver for 1x1-matrices
   type(t_linsolNode), intent(inout),target  :: rsolverNode
 !</inputoutput>
   
@@ -8334,7 +8389,7 @@ contains
 !</description>
   
 !<inputoutput>
-  ! The t_linsolNode structure of the UMFPACK4 solver
+  ! The t_linsolNode structure of the (M)ILU solver for 1x1-matrices
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
@@ -8646,7 +8701,7 @@ contains
 !</input>
   
 !<inputoutput>
-  ! The t_linsolNode structure of the UMFPACK4 solver
+  ! The t_linsolNode structure of the CG solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
@@ -8675,7 +8730,7 @@ contains
 !</description>
   
 !<inputoutput>
-  ! The t_linsolNode structure of the UMFPACK4 solver
+  ! The t_linsolNode structure of the CG solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
@@ -8750,7 +8805,7 @@ contains
 !</description>
   
 !<inputoutput>
-  ! The t_linsolNode structure of the UMFPACK4 solver
+  ! The t_linsolNode structure of the CG solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
@@ -8811,7 +8866,7 @@ contains
 !</description>
   
 !<inputoutput>
-  ! The t_linsolNode structure of the UMFPACK4 solver
+  ! The t_linsolNode structure of the CG solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
@@ -8862,7 +8917,7 @@ contains
 !</description>
   
 !<inputoutput>
-  ! The t_linsolNode structure of the UMFPACK4 solver
+  ! The t_linsolNode structure of the CG solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
@@ -9550,7 +9605,7 @@ contains
 !</input>
   
 !<inputoutput>
-  ! The t_linsolNode structure of the UMFPACK4 solver
+  ! The t_linsolNode structure of the BiCGStab solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
@@ -9579,7 +9634,7 @@ contains
 !</description>
   
 !<inputoutput>
-  ! The t_linsolNode structure of the UMFPACK4 solver
+  ! The t_linsolNode structure of the AGMG solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
@@ -9653,7 +9708,7 @@ contains
 !</description>
   
 !<inputoutput>
-  ! The t_linsolNode structure of the UMFPACK4 solver
+  ! The t_linsolNode structure of the AGMG solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
@@ -9714,7 +9769,7 @@ contains
 !</description>
   
 !<inputoutput>
-  ! The t_linsolNode structure of the UMFPACK4 solver
+  ! The t_linsolNode structure of the BiCGStab solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
@@ -9765,7 +9820,7 @@ contains
 !</description>
   
 !<inputoutput>
-  ! The t_linsolNode structure of the UMFPACK4 solver
+  ! The t_linsolNode structure of the BiCGStab solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
@@ -16838,6 +16893,545 @@ contains
   end subroutine
 
 ! *****************************************************************************
+! Routines for the AGMG solver
+! *****************************************************************************
+
+!<subroutine>
+  
+  subroutine linsol_initAGMG (rsolverNode)
+  
+!<description>
+  
+  ! Creates a t_linsolNode solver structure for the AGMG solver. The node
+  ! can be used to directly solve a problem or to be attached as solver
+  ! or preconditioner to another solver structure. The node can be deleted
+  ! by linsol_releaseSolver.
+  
+!</description>
+  
+!<output>
+  
+  ! A pointer to a t_linsolNode structure. Is set by the routine, any previous
+  ! value of the pointer is destroyed.
+  type(t_linsolNode), pointer :: rsolverNode
+   
+!</output>
+  
+!</subroutine>
+
+    ! Create a default solver structure
+    call linsol_initSolverGeneral(rsolverNode)
+    
+    ! Initialise the type of the solver
+    rsolverNode%calgorithm = LINSOL_ALG_AGMG
+    
+    ! Initialise the ability bitfield with the ability of this solver:
+    rsolverNode%ccapability = LINSOL_ABIL_SCALAR + LINSOL_ABIL_DIRECT
+    
+    ! Allocate the subnode for AGMG.
+    ! This initialises most of the variables with default values appropriate
+    ! to this solver.
+    allocate(rsolverNode%p_rsubnodeAGMG)
+      
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine linsol_matCompatAGMG (rsolverNode,Rmatrices,&
+      ccompatible,CcompatibleDetail)
+  
+!<description>
+  ! This routine is called to check if the matrices in Rmatrices are
+  ! compatible to the solver. Calls linsol_matricesCompatible for possible
+  ! subsolvers to check the compatibility.
+!</description>
+  
+!<input>
+  ! The solver node which should be checked against the matrices
+  type(t_linsolNode), intent(in)             :: rsolverNode
+
+  ! An array of system matrices which is simply passed to the initialisation
+  ! routine of the preconditioner.
+  type(t_matrixBlock), dimension(:), intent(in)   :: Rmatrices
+!</input>
+  
+!<output>
+  ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
+  ! compatible (which is the case if LINSOL_COMP_OK is returned).
+  integer, intent(out) :: ccompatible
+
+  ! OPTIONAL: An array of LINSOL_COMP_xxxx that tell for every level if
+  ! the matrices on that level are ok or not. Must have the same size
+  ! as Rmatrices!
+  integer, dimension(:), intent(inout), optional :: CcompatibleDetail
+!</output>
+  
+!</subroutine>
+
+    ! Normally, we can handle the matrix.
+    ccompatible = LINSOL_COMP_OK
+
+    ! Set the compatibility flag only for the maximum level -- this is a
+    ! one-level solver acting only there!
+    if (present(CcompatibleDetail)) &
+        CcompatibleDetail (ubound(CcompatibleDetail,1)) = ccompatible
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  recursive subroutine linsol_initStructureAGMG (rsolverNode, ierror, isolverSubgroup)
+  
+!<description>
+  ! Calls the initStructure subroutine of the subsolver.
+  ! Maybe the subsolver needs that...
+  ! The routine is declared RECURSIVE to get a clean interaction
+  ! with linsol_initStructure.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the AGMG  solver
+  type(t_linsolNode), intent(inout) :: rsolverNode
+!</inputoutput>
+  
+!<output>
+  ! One of the LINSOL_ERR_XXXX constants. A value different to
+  ! LINSOL_ERR_NOERROR indicates that an error happened during the
+  ! initialisation phase.
+  integer, intent(out) :: ierror
+!</output>
+
+!<input>
+  ! Optional parameter. isolverSubgroup allows to specify a specific
+  ! subgroup of solvers in the solver tree to be processed. By default,
+  ! all solvers in subgroup 0 (the default solver group) are processed,
+  ! solvers in other solver subgroups are ignored.
+  ! If isolverSubgroup != 0, only the solvers belonging to subgroup
+  ! isolverSubgroup are processed.
+  integer, optional, intent(in) :: isolverSubgroup
+!</input>
+
+!</subroutine>
+
+  ! local variables
+  integer :: isubgroup
+  type(t_linsolSubnodeAGMG), pointer :: p_rsubnode
+    
+    ! A-priori we have no error...
+    ierror = LINSOL_ERR_NOERROR
+
+    ! by default, initialise solver subroup 0
+    isubgroup = 0
+    if (present(isolversubgroup)) isubgroup = isolverSubgroup
+    
+    ! Cancel here, if we do not belong to the subgroup to be initialised
+    if (isubgroup .ne. rsolverNode%isolverSubgroup) return
+
+    ! AGMG needs 1 temporary vector!
+    ! Allocate that here! Use the default data type prescribed in the solver
+    ! structure for allocating the temp vectors.
+    p_rsubnode => rsolverNode%p_rsubnodeAGMG
+    call lsysbl_createVectorBlock (rsolverNode%rsystemMatrix, &
+        p_rsubnode%rtempVector,.false.,.false.,rsolverNode%cdefaultDataType)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine linsol_initDataAGMG (rsolverNode, ierror,isolverSubgroup)
+  
+!<description>
+  ! Initialises the algebraic AGMG multigrid solver
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the AGMG solver
+  type(t_linsolNode), intent(inout), target :: rsolverNode
+!</inputoutput>
+
+!<output>
+  ! One of the LINSOL_ERR_XXXX constants. A value different to
+  ! LINSOL_ERR_NOERROR indicates that an error happened during the
+  ! initialisation phase.
+  integer, intent(out) :: ierror
+!</output>
+  
+  
+!<input>
+  ! Optional parameter. isolverSubgroup allows to specify a specific
+  ! subgroup of solvers in the solver tree to be processed. By default,
+  ! all solvers in subgroup 0 (the default solver group) are processed,
+  ! solvers in other solver subgroups are ignored.
+  ! If isolverSubgroup != 0, only the solvers belonging to subgroup
+  ! isolverSubgroup are processed.
+  integer, optional, intent(in) :: isolverSubgroup
+!</input>
+
+!</subroutine>
+
+  ! local variables
+  integer :: isubgroup
+  type(t_matrixScalar), pointer :: p_rmatrix,p_rtempMatrix
+  type(t_matrixBlock), target :: rmatrixLocal
+  integer, dimension(:), pointer :: p_Kcol
+  integer, dimension(:), pointer :: p_Kld
+  real(DP), dimension(:), pointer :: p_Da, p_Dx, p_Df
+  real(SP), dimension(:), pointer :: p_Fa, p_Fx, p_Ff
+
+    ! A-priori we have no error...
+    ierror = LINSOL_ERR_NOERROR
+
+    ! by default, initialise solver subroup 0
+    isubgroup = 0
+    if (present(isolversubgroup)) isubgroup = isolverSubgroup
+
+    ! Stop if there is no matrix assigned
+    
+    if (rsolverNode%rsystemMatrix%NEQ .eq. 0) then
+      call output_line ("No matrix associated!", &
+          OU_CLASS_ERROR, OU_MODE_STD, "linsol_initDataAGMG")
+      call sys_halt()
+    end if
+
+    ! If isubgroup does not coincide with isolverSubgroup from the solver
+    ! structure, skip the rest here.
+    if (isubgroup .ne. rsolverNode%isolverSubgroup) return
+    
+    ! Check out that we can handle the matrix.
+    if ((rsolverNode%rsystemMatrix%nblocksPerCol .ne. 1) .or. &
+        (rsolverNode%rsystemMatrix%nblocksPerRow .ne. 1)) then
+      ! We have to create a global matrix first!
+      call glsys_assembleGlobal (rsolverNode%rsystemMatrix,rmatrixLocal, &
+                                 .true.,.true.)
+      p_rmatrix => rmatrixLocal%RmatrixBlock(1,1)
+    else
+      p_rmatrix => rsolverNode%rsystemMatrix%RmatrixBlock (1,1)
+    end if
+
+    ! Set pointer to internal matrix
+    p_rtempMatrix => rsolverNode%p_rsubnodeAGMG%rtempMatrix
+
+    select case (p_rmatrix%cmatrixFormat)
+    case (LSYSSC_MATRIX9)
+      ! Format 9 is exactly the CSR matrix.
+      if (p_rmatrix%dScaleFactor .eq. 1.0_DP) then
+        ! Make a copy of the matrix structure, but use the same matrix entries.
+        call lsyssc_duplicateMatrix (p_rmatrix,p_rtempMatrix,&
+                                     LSYSSC_DUP_COPY,LSYSSC_DUP_SHARE)
+      else
+        ! Make a copy of the whole matrix. We will resolve the scaling factor later,
+        ! which changes the entries!
+        call lsyssc_duplicateMatrix (p_rmatrix,p_rtempMatrix,&
+                                     LSYSSC_DUP_COPY,LSYSSC_DUP_COPY)
+      end if
+    case (LSYSSC_MATRIX7)
+      ! For format 7, we have to modify the matrix slightly.
+      ! Make a copy of the whole matrix:
+      call lsyssc_duplicateMatrix (p_rmatrix,p_rtempMatrix,&
+                                   LSYSSC_DUP_COPY,LSYSSC_DUP_COPY)
+      ! Resort the entries to put the diagonal entry to the correct position.
+      ! This means: Convert the structure-7 matrix to a structure-9 matrix:
+      call lsyssc_convertMatrix (p_rmatrix,LSYSSC_MATRIX9)
+    end select
+
+    if (p_rtempMatrix%dscaleFactor .ne. 1.0_DP) then
+      ! The matrix entries have been duplicated above in this case, so we are
+      ! allowed to change the entries of p_rtempMatrix without changing the
+      ! original entries. So, "un"-scale the matrix.
+      call lsyssc_scaleMatrix (p_rtempMatrix,p_rtempMatrix%dscaleFactor)
+      p_rtempMatrix%dscaleFactor = 1.0_DP
+    end if
+
+    ! Set pointers to row- and column indices and data array
+    call lsyssc_getbase_Kld(p_rtempMatrix, p_Kld)
+    call lsyssc_getbase_Kcol(p_rtempMatrix, p_Kcol)
+
+    ! Perform internal setup of AGMG solver
+    select case(p_rtempMatrix%cdataType)
+    case(ST_DOUBLE)
+      call lsyssc_getbase_double(p_rtempMatrix, p_Da)
+      call dagmg(p_rtempMatrix%NEQ, p_Da, p_Kcol, p_Kld,&
+          p_Df, p_Dx, 1, OU_TERMINAL, rsolverNode%p_rsubnodeAGMG%nrest, 0, 0.0_DP)
+    case(ST_SINGLE)
+      call lsyssc_getbase_single(p_rtempMatrix, p_Fa)
+      call sagmg(p_rtempMatrix%NEQ, p_Fa, p_Kcol, p_Kld,&
+          p_Ff, p_Fx, 1, OU_TERMINAL, rsolverNode%p_rsubnodeAGMG%nrest, 0, 0.0_SP)
+    case default
+      call output_line('Unsupported data type!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'linsol_initDataAGMG')
+      call sys_halt()
+    end select
+    
+    ! Throw away the temporary matrix/matrices
+    if ((rsolverNode%rsystemMatrix%nblocksPerCol .ne. 1) .or. &
+        (rsolverNode%rsystemMatrix%nblocksPerRow .ne. 1)) then
+      call lsysbl_releaseMatrix (rmatrixLocal)
+    end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  recursive subroutine linsol_doneStructureAGMG (rsolverNode, isolverSubgroup)
+  
+!<description>
+  ! Calls the doneStructure subroutine of the subsolver.
+  ! Maybe the subsolver needs that...
+  ! The routine is declared RECURSIVE to get a clean interaction
+  ! with linsol_doneStructure.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the AGMG solver
+  type(t_linsolNode), intent(inout) :: rsolverNode
+!</inputoutput>
+  
+!<input>
+  ! Optional parameter. isolverSubgroup allows to specify a specific
+  ! subgroup of solvers in the solver tree to be processed. By default,
+  ! all solvers in subgroup 0 (the default solver group) are processed,
+  ! solvers in other solver subgroups are ignored.
+  ! If isolverSubgroup != 0, only the solvers belonging to subgroup
+  ! isolverSubgroup are processed.
+  integer, optional, intent(in) :: isolverSubgroup
+!</input>
+
+!</subroutine>
+
+  ! local variables
+  integer :: isubgroup
+  type(t_linsolSubnodeAGMG), pointer :: p_rsubnode
+    
+    ! by default, initialise solver subroup 0
+    isubgroup = 0
+    if (present(isolversubgroup)) isubgroup = isolverSubgroup
+
+    ! Cancel here, if we do not belong to the subgroup to be released
+    if (isubgroup .ne. rsolverNode%isolverSubgroup) return
+
+    ! Release temporary data if associated
+    p_rsubnode => rsolverNode%p_rsubnodeAGMG
+    if (p_rsubnode%rtempVector%NEQ .ne. 0) then
+      call lsysbl_releaseVector (p_rsubnode%rtempVector)
+    end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine linsol_doneDataAGMG (rsolverNode,isolverSubgroup)
+  
+!<description>
+  ! Releases the algebraic AGMG multigrid solver
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the AGMG solver
+  type(t_linsolNode), intent(inout) :: rsolverNode
+!</inputoutput>
+  
+!<input>
+  ! Optional parameter. isolverSubgroup allows to specify a specific
+  ! subgroup of solvers in the solver tree to be processed. By default,
+  ! all solvers in subgroup 0 (the default solver group) are processed,
+  ! solvers in other solver subgroups are ignored.
+  ! If isolverSubgroup != 0, only the solvers belonging to subgroup
+  ! isolverSubgroup are processed.
+  integer, optional, intent(in) :: isolverSubgroup
+!</input>
+
+!</subroutine>
+
+  ! local variables
+  integer :: isubgroup
+  type(t_matrixScalar), pointer :: p_rtempMatrix
+  integer, dimension(:), pointer :: p_Kld, p_Kcol
+  real(DP), dimension(:), pointer :: p_Da
+  real(SP), dimension(:), pointer :: p_Fa
+  
+    ! by default, initialise solver subroup 0
+    isubgroup = 0
+    if (present(isolversubgroup)) isubgroup = isolverSubgroup
+
+    ! If isubgroup does not coincide with isolverSubgroup from the solver
+    ! structure, skip the rest here.
+    if (isubgroup .ne. rsolverNode%isolverSubgroup) return
+
+    ! Set pointer to internal matrix
+    p_rtempMatrix => rsolverNode%p_rsubnodeAGMG%rtempMatrix
+    
+    ! Set pointers
+    call lsyssc_getbase_Kld(p_rtempMatrix, p_Kld)
+    call lsyssc_getbase_Kcol(p_rtempMatrix, p_Kcol)
+    
+    ! Erase setup and release internal memory
+    select case(p_rtempMatrix%cdataType)
+    case (ST_DOUBLE)
+      call lsyssc_getbase_double(p_rtempMatrix, p_Da)
+      call dagmg(p_rtempMatrix%NEQ, p_Da, p_Kcol, p_Kld,&
+          p_Da, p_Da, -1, OU_TERMINAL, rsolverNode%p_rsubnodeAGMG%nrest, 0, 0.0_DP)
+    case (ST_SINGLE)
+      call lsyssc_getbase_single(p_rtempMatrix, p_Fa)
+      call sagmg(p_rtempMatrix%NEQ, p_Fa, p_Kcol, p_Kld,&
+          p_Fa, p_Fa, -1, OU_TERMINAL, rsolverNode%p_rsubnodeAGMG%nrest, 0, 0.0_SP)
+    case default
+      call output_line('Unsupported data type!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'linsol_doneDataAGMG')
+    end select
+    
+    ! Release temporal matrix
+    call lsyssc_releaseMatrix(rsolverNode%p_rsubnodeAGMG%rtempMatrix)
+    
+    ! Release temporal vector
+    call lsysbl_releaseVector(rsolverNode%p_rsubnodeAGMG%rtempVector)
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine linsol_doneAGMG (rsolverNode)
+  
+!<description>
+  ! This routine releases all temporary memory for the AGMG solver from
+  ! the heap.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of AGMG which is to be cleaned up.
+  type(t_linsolNode), intent(inout) :: rsolverNode
+!</inputoutput>
+  
+!</subroutine>
+  
+  ! local variables
+  integer :: isubgroup
+  
+    ! The done routine always releases everything.
+    isubgroup = rsolverNode%isolverSubgroup
+
+    ! Release symbolical and numerical factorisation if still associated...
+    call linsol_doneDataAGMG (rsolverNode, isubgroup)
+    call linsol_doneStructureAGMG (rsolverNode, isubgroup)
+    
+    deallocate(rsolverNode%p_rsubnodeAGMG)
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine linsol_precAGMG (rsolverNode,rd)
+  
+!<description>
+  ! Applies UMFPACK preconditioner <tex>$ P \approx A $</tex> to the defect
+  ! vector rd and solves <tex>$ Pd_{new} = d $</tex>.
+  ! rd will be overwritten by the preconditioned defect.
+  !
+  ! The matrix must have been attached to the system before calling
+  ! this routine, and the initStructure/initData routines
+  ! must have been called to prepare the solver for solving
+  ! the problem.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the UMFPACK4 solver
+  type(t_linsolNode), intent(inout)         :: rsolverNode
+
+  ! On call to this routine: The defect vector to be preconditioned.
+  ! Will be overwritten by the preconditioned defect.
+  type(t_vectorBlock), intent(inout)        :: rd
+!</inputoutput>
+  
+!</subroutine>
+ 
+  ! local variables
+  real(DP) :: dres,dtol
+  real(DP), dimension(:), pointer :: p_Da,p_Dx,p_Db
+  real(SP), dimension(:), pointer :: p_Fa,p_Fx,p_Fb
+  type(t_vectorBlock), pointer :: p_rb
+  integer, dimension(:), pointer :: p_Kld,p_Kcol
+  type(t_linsolSubnodeAGMG), pointer :: p_rsubnode
+  type(t_matrixScalar), pointer :: p_rtempMatrix
+  integer :: iter
+
+ 
+    ! Status reset
+    rsolverNode%iresult = 0
+    
+    ! Getch some information
+    p_rsubnode => rsolverNode%p_rsubnodeAGMG
+    p_rtempMatrix => p_rsubnode%rtempMatrix
+    p_rb       => p_rsubnode%rtempVector
+
+    ! Set pointers
+    call lsyssc_getbase_Kld(p_rtempMatrix, p_Kld)
+    call lsyssc_getbase_Kcol(p_rtempMatrix, p_Kcol)
+
+    if (rsolverNode%ioutputLevel .ge. 2) then
+      dres = lsysbl_vectorNorm (rd,rsolverNode%iresNorm)
+      if (.not.((dres .ge. 1E-99_DP) .and. &
+                (dres .le. 1E99_DP))) dres = 0.0_DP
+
+      call output_line ("AGMG: !!Initial RES!! = "//trim(sys_sdEL(dres,15)) )
+    end if
+
+    ! Initialise the maximum number of iterations
+    iter = rsolverNode%nmaxIterations
+    
+    ! Initialise relative tolerance
+    dtol = min(rsolverNode%depsRel,&
+        rsolverNode%depsAbs*lsysbl_vectorNorm(rd,LINALG_NORML2))
+
+    ! Solve the system
+    select case(p_rtempMatrix%cdataType)
+    case (ST_DOUBLE)
+      call lsysbl_getbase_double(rd,p_Dx)
+      call lsysbl_getbase_double(p_rb,p_Db)
+      call lsyssc_getbase_double(p_rtempMatrix, p_Da)
+      
+      ! Call external subroutine from AGMG library
+      call dagmg(p_rtempMatrix%NEQ, p_Da, p_Kcol, p_Kld, p_Db, p_Dx,&
+          2, OU_TERMINAL, p_rsubnode%nrest, iter, dtol)
+
+    case(ST_SINGLE)
+      call lsysbl_getbase_single(rd,p_Fx)
+      call lsysbl_getbase_single(p_rb,p_Fb)
+      call lsyssc_getbase_single(p_rtempMatrix, p_Fa)
+
+      ! Call external subroutine from AGMG library
+      call sagmg(p_rtempMatrix%NEQ, p_Fa, p_Kcol, p_Kld, p_Fb, p_Fx,&
+          2, OU_TERMINAL, p_rsubnode%nrest, iter, real(dtol,SP))
+      
+    case default
+      call output_line('Unsupported data type!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'linsol_precAGMG')
+      call sys_halt()
+    end select
+    
+    if (rsolverNode%ioutputLevel .ge. 1) then
+      dres = lsysbl_vectorNorm (rd,rsolverNode%iresNorm)
+      if (.not.((dres .ge. 1E-99_DP) .and. &
+                (dres .le. 1E99_DP))) dres = 0.0_DP
+      
+      call output_line ("AGMG: !!solution!!    = "//trim(sys_sdEL(dres,15)) )
+    end if
+  
+  end subroutine
+
+! *****************************************************************************
 ! Routines for the Block-Jacobi solver (for DG discretisations)
 ! *****************************************************************************
 
@@ -17463,7 +18057,7 @@ contains
 !</description>
   
 !<inputoutput>
-  ! The t_linsolNode structure of the UMFPACK4 solver
+  ! The t_linsolNode structure of the spectral deflation solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
@@ -21127,7 +21721,7 @@ contains
 !</description>
   
 !<inputoutput>
-  ! The t_linsolNode structure of the UMFPACK4 solver
+  ! The t_linsolNode structure of the block upwind GS solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
@@ -21191,7 +21785,7 @@ contains
 !</description>
   
 !<inputoutput>
-  ! The t_linsolNode structure of the UMFPACK4 solver
+  ! The t_linsolNode structure of the block upwind GS solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
@@ -21420,7 +22014,7 @@ contains
 !</description>
   
 !<inputoutput>
-  ! The t_linsolNode structure of the UMFPACK4 solver
+  ! The t_linsolNode structure of the block upwind GS solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
@@ -21465,7 +22059,7 @@ contains
 !</description>
   
 !<inputoutput>
-  ! The t_linsolNode structure of the UMFPACK4 solver
+  ! The t_linsolNode structure of the block upwind GS solver
   type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
