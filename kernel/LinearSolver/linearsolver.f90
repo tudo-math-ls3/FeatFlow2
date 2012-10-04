@@ -2269,6 +2269,8 @@ module linearsolver
     type(t_vectorBlock) :: rtempVector
 
   end type
+
+  public :: t_linsolSubnodeAGMG
   
   ! ***************************************************************************
 
