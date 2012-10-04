@@ -976,11 +976,19 @@ ifeq ($(call match,$(ID),(pc|pc64)-(opteron4100|opteron6100)-.*-gcc-.*),yes)
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(call optimise), YES)
+ifeq ($(call gccminversion_4_2),yes)
+CFLAGSF77     := -march=barcelona $(CFLAGSF77)
+CFLAGSF90     := -march=barcelona $(CFLAGSF90)
+CFLAGSC       := -march=barcelona $(CFLAGSC)
+CFLAGSCXX     := -march=barcelona $(CFLAGSCXX)
+LDFLAGS       := -march=barcelona $(LDFLAGS)
+else
 CFLAGSF77     := -march=amdfam10 $(CFLAGSF77)
 CFLAGSF90     := -march=amdfam10 $(CFLAGSF90)
 CFLAGSC       := -march=amdfam10 $(CFLAGSC)
 CFLAGSCXX     := -march=amdfam10 $(CFLAGSCXX)
 LDFLAGS       := -march=amdfam10 $(LDFLAGS)
+endif
 endif
 endif
 
@@ -990,11 +998,11 @@ include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
 ifeq ($(call intelminversion_11_0),yes)
-CFLAGSF77     := -xSSE4.1 $(CFLAGSF77)
-CFLAGSF90     := -xSSE4.1 $(CFLAGSF90)
-CFLAGSC       := -xSSE4.1 $(CFLAGSC)
-CFLAGSCXX     := -xSSE4.1 $(CFLAGSCXX)
-LDFLAGS       := -xSSE4.1 $(LDFLAGS)
+CFLAGSF77     := -xSSE3 $(CFLAGSF77)
+CFLAGSF90     := -xSSE3 $(CFLAGSF90)
+CFLAGSC       := -xSSE3 $(CFLAGSC)
+CFLAGSCXX     := -xSSE3 $(CFLAGSCXX)
+LDFLAGS       := -xSSE3 $(LDFLAGS)
 else
 CFLAGSF77     := -xT $(CFLAGSF77)
 CFLAGSF90     := -xT $(CFLAGSF90)
@@ -1031,7 +1039,7 @@ LDFLAGS       := -tp istanbul-64 $(LDFLAGS)
 endif
 endif
 
-ifeq ($(call match,$(ID),pc-phenomII-.*-psc-.*),yes)
+ifeq ($(call match,$(ID),pc64-(opteron4100|opteron6100)-.*-psc-.*),yes)
 # invokes the PathScale Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/pathscale-generic.mk
