@@ -19,6 +19,10 @@
 !# 3.) cc_assembleInhomNeumann
 !#     -> Assembles inhomogeneous Neumann BCs into a RHS vector.
 !#
+!# 4.) cc_normalDerivInhomNeumann
+!#     -> Assembles the term ( du/dn, phi ) on inhomogeneous Neumann
+!#        boundary segments
+!#
 !# Internal subroutines:
 !#
 !# 1.) cc_initAnalyticBC / cc_doneAnalyticBC
@@ -58,6 +62,10 @@
 !#
 !# 12.) cc2d_fcoeff_inhomNeumann
 !#      -> Callback routine for inhomogeneous Neumann BCs
+!#
+!# 13.) cc2d_fcoeff_inhNeum_nderiv
+!#      -> Callback routine for ( du/dn, phi )
+!#
 !# </purpose>
 !##############################################################################
 
@@ -88,6 +96,7 @@ module ccboundaryconditionparser
   use bcassembly
   use scalarpde
   use derivatives
+  use feevaluation
   
   use collection
   use convection
@@ -205,6 +214,9 @@ module ccboundaryconditionparser
     ! Maximum time
     real(DP) :: dtimeMax = 0.0_DP
     
+    ! Weighting factor for the values on the boundary.
+    real(DP) :: dweight = 1.0_DP
+    
     !<!-- Boundary condition specific parameters -->
     
     ! Type of boundary condition
@@ -221,6 +233,9 @@ module ccboundaryconditionparser
     
     !  X/Y-acceleration of the moving frame
     real(DP), dimension(NDIM2D) :: DmframeAcc = 0.0_DP
+    
+    ! Pointer to a block vector.
+    type(t_vectorBlock), pointer :: p_rvectorBlock => null()
     
     !<!-- Parameters vor the evaluation of expressions -->
     
@@ -253,6 +268,7 @@ module ccboundaryconditionparser
   public :: cc_assembleBDconditions
   public :: cc_assembleFBDconditions
   public :: cc_assembleInhomNeumann
+  public :: cc_normalDerivInhomNeumann
 
 contains
 
@@ -344,6 +360,7 @@ contains
         read(cstr,*) cname,ityp,dvalue
         call collct_setvalue_real (ranalyticBC%rbcCollection, &
             cname, dvalue, .true., 0, SEC_SBDEXPRESSIONS)
+
       case (BDC_VALINT)
         ! Integer-value
         read(cstr,*) cname,ityp,ivalue
@@ -1333,7 +1350,7 @@ contains
 
 !<subroutine>
 
-  subroutine cc_assembleInhomNeumann (rproblem,rcollection,rrhs)
+  subroutine cc_assembleInhomNeumann (rproblem,rcollection,rrhs,dweight)
 
 !<description>
   ! Assembles inhomogeneous Neumann boundary conditions into the RHS vector
@@ -1346,6 +1363,9 @@ contains
   
   ! Collection structure to be passed to callback routines
   type(t_collection), intent(inout), target :: rcollection
+  
+  ! Weight for the inhomogeneous Neumann part.
+  real(DP), intent(in) :: dweight
 !</input>
 
 !<inputoutput>
@@ -1372,6 +1392,9 @@ contains
     ! At first, initialise the assembly.
     call cc_initBCassembly (rproblem,rrhs%p_rblockDiscr,&
         rcollection,rbcAssemblyData,rlocalCollection)
+        
+    ! Weight the result by the weighting factor.
+    rbcAssemblyData%dweight = dweight
     
     ! Loop through all boundary components we have.
     do ibdComponent = 1,boundary_igetNBoundComp(rbcAssemblyData%p_rboundary)
@@ -1437,6 +1460,144 @@ contains
               call linf_buildVectorScalarBdr2D (rform, CUB_G4_1D, .false., &
                   rrhs%RvectorBlock(2),cc2d_fcoeff_inhomNeumann,&
                   rbcAssemblyData%rboundaryRegion, rlocalCollection)
+            end if
+          
+          end select
+          
+          ! Move on to the next parameter value
+          dpar1 = dpar2
+          
+        end if
+                                          
+      end do
+      
+    end do
+
+    ! Release the boundary condition assembly structure, finish.
+    call cc_doneBCassembly (rbcAssemblyData)
+
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine cc_normalDerivInhomNeumann (rproblem,rvelocity,rrhs,dweight)
+
+!<description>
+  ! Assembles 
+  !      rrhs = rrhs + dweight ( du/dn, phi )_Gamma
+  ! on inhomogeneous Neumann boundary segments Gamma.
+  ! Used as in higher order timestepping techniques to
+  ! correct the RHS.
+!</description>
+  
+!<input>
+  ! A problem structure saving problem-dependent information.
+  type(t_problem), intent(inout), target :: rproblem
+  
+  ! Weight for the inhomogeneous Neumann part.
+  real(DP), intent(in) :: dweight
+
+  ! Velocity vector u.
+  type(t_vectorBlock), intent(inout), target :: rvelocity
+!</input>
+
+!<inputoutput>
+  ! RHS vector to be modified.
+  type(t_vectorBlock), intent(inout) :: rrhs
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    character(LEN=PARLST_MLDATA) :: sparams,sbdex1,sbdex2
+    type(t_bcassemblyData) :: rbcAssemblyData
+    type(t_collection) :: rlocalCollection
+    real(DP) :: dpar1,dpar2
+    integer :: iindex,nsegments,ibdComponent,isegment,iintervalEnds
+    integer :: cbctype
+    type(t_linearForm) :: rform
+    
+    ! For implementing boundary conditions, we use a `filter technique with
+    ! discretised boundary conditions`. This means, we first have to calculate
+    ! a discrete version of the analytic BC, which we can implement into the
+    ! solution/RHS vectors using the corresponding filter.
+    !
+    ! At first, initialise the assembly.
+    call cc_initBCassembly (rproblem,rrhs%p_rblockDiscr,&
+        rproblem%rcollection,rbcAssemblyData,rlocalCollection)
+        
+    ! Weight the result by the weighting factor.
+    rbcAssemblyData%dweight = dweight
+    
+    ! Loop through all boundary components we have.
+    do ibdComponent = 1,boundary_igetNBoundComp(rbcAssemblyData%p_rboundary)
+      
+      ! Get information about that component: Number of segments,...
+      call cc_getBDCinfo (rbcAssemblyData%ranalyticBC,ibdComponent,iindex,nsegments)
+      
+      ! Parse the segments.
+      ! We start at parameter value 0.0.
+      dpar1 = 0.0_DP
+      
+      ! Parameter exists. Get the values in there.
+      do isegment = 1,nsegments
+        
+        ! Get information about the next segment
+        call cc_getSegmentInfo (rbcAssemblyData%ranalyticBC,&
+            iindex,isegment,dpar2,iintervalEnds,cbctype,sparams)
+        
+        ! Form a boundary condition segment that covers that boundary part
+        if (dpar2 .ge. dpar1) then
+          
+          rbcAssemblyData%rboundaryRegion%dminParam = dpar1
+          rbcAssemblyData%rboundaryRegion%dmaxParam = dpar2
+          rbcAssemblyData%rboundaryRegion%iboundCompIdx = ibdComponent
+          rbcAssemblyData%rboundaryRegion%dmaxParamBC = &
+              boundary_dgetMaxParVal(rbcAssemblyData%p_rboundary, ibdComponent)
+          rbcAssemblyData%rboundaryRegion%iproperties = iintervalEnds
+          
+          ! Pass the velocity
+          rbcAssemblyData%p_rvectorBlock => rvelocity
+          
+          ! Now, which type of BC is to be created?
+          select case (cbctype)
+
+          ! -----------------------------------------------
+          ! Inhomogeneous Neumann BC
+          ! -----------------------------------------------
+          case (4)
+            
+            ! Invoke the assembly of the inhomogeneous Neumann BCs.
+            ! This is just an integration on the boundary.
+            
+            ! Get the buondary expression
+            read (sparams,*) sbdex1,sbdex2
+            
+            ! Use the 4x4 Gauss formula (hardcoded). Should be
+            ! enough for most situations.
+            rform%itermCount = 1
+            rform%Dcoefficients(1) = 1.0_DP
+            rform%Idescriptors(1) = DER_FUNC
+            
+            ! Assemble
+            if (sbdex1 .ne. "") then
+              rbcAssemblyData%icomponent = 1
+              
+              call linf_buildVectorScalarBdr2D (rform, CUB_G4_1D, .false., &
+                  rrhs%RvectorBlock(1),cc2d_fcoeff_inhNeum_nderiv,&
+                  rbcAssemblyData%rboundaryRegion, rlocalCollection,&
+                  ntempArrays = 2)
+            end if
+
+            if (sbdex2 .ne. "") then
+              rbcAssemblyData%icomponent = 2
+              
+              call linf_buildVectorScalarBdr2D (rform, CUB_G4_1D, .false., &
+                  rrhs%RvectorBlock(2),cc2d_fcoeff_inhNeum_nderiv,&
+                  rbcAssemblyData%rboundaryRegion, rlocalCollection,&
+                  ntempArrays = 2)
             end if
           
           end select
@@ -1551,6 +1712,151 @@ contains
         
         ! Calculate the expression in the current point.
         call cc_evalBoundaryValue (p_rbcAssemblyData,dpar,Dcoefficients(1,ipt,iel))
+      end do
+    end do
+            
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine cc2d_fcoeff_inhNeum_nderiv (rdiscretisation, rform, &
+                  nelements, npointsPerElement, Dpoints, ibct, DpointPar, &
+                  IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
+
+    use basicgeometry
+    use collection
+    use domainintegration
+    use fsystem
+    use scalarpde
+    use spatialdiscretisation
+    use triangulation
+
+  !<description>
+    ! This subroutine is called during the calculation of boundary
+    ! integrals. It calculates the term "( du/dn, phi )" into a RHS vector.
+  !</description>
+
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(in) :: rform
+
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in) :: nelements
+
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in) :: npointsPerElement
+
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
+
+    ! This is the number of the boundary component that contains the
+    ! points in Dpoint. All points are on the same boundary component.
+    integer, intent(in) :: ibct
+
+    ! For every point under consideration, this specifies the parameter
+    ! value of the point on the boundary component. The parameter value
+    ! is calculated in LENGTH PARAMETRISATION!
+    ! DIMENSION(npointsPerElement,nelements)
+    real(DP), dimension(:,:), intent(in) :: DpointPar
+
+    ! An array accepting the DOF`s on all elements in the test space.
+    ! DIMENSION(\#local DOF`s in test space,Number of elements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+  !</input>
+
+  !<inputoutput>
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
+  !</inputoutput>
+
+  !<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
+  !</output>
+
+  !</subroutine>
+
+    ! local variables
+    integer :: ipt,iel,cnormalmean
+    real(DP) :: dpar
+    type(t_bcassemblyData), pointer :: p_rbcAssemblyData
+    real(DP) :: dnx,dny,dux,duy
+    integer, dimension(1) :: Ielements
+    integer, dimension(:), pointer :: p_Ielements
+    real(DP), dimension(NDIM2D) :: Dvalues
+
+    ! Get the element list.
+    p_Ielements => rdomainIntSubset%p_Ielements
+
+    ! Get a pointer to the boundary assembly data from the collection.
+    call cc_getBCassemblyPointer (rcollection,p_rbcAssemblyData)
+
+    do iel = 1,nelements
+
+      Ielements = (/p_Ielements(iel)/)
+
+      do ipt = 1,npointsPerElement
+      
+        ! Get the parameter value in 0-1 parametrisation
+        dpar = boundary_convertParameter(p_rbcAssemblyData%p_rboundary, ibct, &
+            DpointPar(ipt,iel), BDR_PAR_LENGTH, BDR_PAR_01)
+        
+        ! Evaluate either du1*n or du2*n in all given points.
+        !
+        ! At first, evaluate du1 or du2, respectively.
+        call fevl_evaluate (DER_DERIV2D_X, Dvalues(1:1), &
+            p_rbcAssemblyData%p_rvectorBlock%RvectorBlock(p_rbcAssemblyData%icomponent), &
+            Dpoints(:,ipt:ipt,iel),Ielements=Ielements, &
+            cnonmeshPoints=FEVL_NONMESHPTS_NEARBY)
+
+        call fevl_evaluate (DER_DERIV2D_Y, Dvalues(2:2), &
+            p_rbcAssemblyData%p_rvectorBlock%RvectorBlock(p_rbcAssemblyData%icomponent), &
+            Dpoints(:,ipt:ipt,iel),Ielements=Ielements, &
+            cnonmeshPoints=FEVL_NONMESHPTS_NEARBY)
+
+        ! The normal vector is a bit tricky. Normally, we take the "mean"
+        ! setting.
+        cnormalMean = BDR_NORMAL_MEAN
+        
+        ! Exception: If the parameter value corresponds to the beginning
+        ! of the interval, we take the setting 'left'. On the right end,
+        ! we take the setting 'right'.
+        ! Reason: If this happens, the left/right point belongs to the interval,
+        ! so it is more likely that the normal vector should be guided by
+        ! the interval.
+        if (dpar .eq. p_rbcAssemblyData%rboundaryRegion%dminParam) then
+          cnormalMean = BDR_NORMAL_LEFT
+        else if (dpar .eq. p_rbcAssemblyData%rboundaryRegion%dmaxParam) then
+          cnormalMean = BDR_NORMAL_RIGHT
+        end if
+        
+        ! Get the normal vector in that point
+        call boundary_getNormalVec2D(p_rbcAssemblyData%p_rboundary, &
+            p_rbcAssemblyData%rboundaryRegion%iboundCompIdx, dpar, dnx, dny, &
+            cnormalMean)
+
+        ! Calculate the value
+        Dcoefficients(1,ipt,iel) = &
+            p_rbcAssemblyData%dweight * (Dvalues(1)*dnx + Dvalues(2)*dny)
       end do
     end do
             
@@ -1743,6 +2049,9 @@ contains
   
       dresult = mprim_getParabolicProfile (d,1.0_DP,rbcAssemblyData%dvalue)
     end select
+    
+    ! Weight the result by the weighting factor.
+    dresult = dresult * rbcAssemblyData%dweight
   
   end subroutine
 

@@ -407,6 +407,29 @@ contains
     ! Set up w_4*f_n.
     call lsysbl_vectorLinearComb(rrhs,rtempVectorRhs,&
          rtimestepping%dweightOldRHS,0.0_DP)
+         
+    ! If we have inhomogeneous Neumann boundary conditions, the situation
+    ! is slightly more complicated. The weak formulation of, e.g., the
+    ! Stokes equations read:
+    !
+    !            ( u_n+1, phi )  +  w_1 (grad u_n+1, grad phi)
+    !
+    !         =  ( u_n, phi )    +  w_2 (grad u_n, grad phi )
+    !                            +  w_1 ( du_n+1/dn - p n, phi )_Gamma
+    !                            -  w_2 ( du_n/dn        , phi )_Gamma
+    !
+    !         =  ( u_n, phi )    +  w_2 (grad u_n, grad phi)
+    !                            +  w_1 ( g_n+1          , phi )_Gamma
+    !                            -  w_2 ( du_n/dn        , phi )_Gamma
+    !
+    ! with g_n+1 the inhomogeneous Neumann bonudary conditions of the
+    ! boundary edge Gamma, which is set up by boundary integration.
+    ! Thus, we need to add the correction term "w_2 ( du_n/dn, phi )_Gamma"
+    ! to the RHS of the last timestep as correction term.
+    ! Note that there is no element "-p n" in this term since tehre
+    ! is no partial integration of p applied to the RHS!
+    call cc_normalDerivInhomNeumann (rproblem,rvector,rtempVectorRhs,&
+        -rtimestepping%dweightMatrixRHS)
     
     ! For setting up M(u_n) + w_2*N(u_n), switch the sign of w_2 and call the method
     ! to calculate the Convection/Diffusion part of the nonlinear defect. This builds
@@ -459,17 +482,18 @@ contains
         rproblem%RlevelInfo(rproblem%NLMAX)%rasmTempl,&
         rproblem%rrhsassembly,rrhs)
 
-    ! Implement inhomogeneous Neumann BCs.
-    call cc_assembleInhomNeumann (rproblem,rproblem%rcollection,rrhs)
+    ! Add w_3*f_{n+1} to the current RHS.
+    call lsysbl_vectorLinearComb(rrhs,rtempVectorRhs,&
+         rtimestepping%dweightNewRHS,1.0_DP)
+
+    ! Add the inhomogeneous Neumann BCs to the RHS
+    call cc_assembleInhomNeumann (rproblem,&
+        rproblem%rcollection,rtempVectorRhs,rtimestepping%dweightMatrixLHS)
 
     call stat_stopTimer(rtimerRHSgeneration)
     rproblem%rstatistics%dtimeRHSAssembly = &
         rproblem%rstatistics%dtimeRHSAssembly + rtimerRHSgeneration%delapsedReal
     
-    ! Add w_3*f_{n+1} to the current RHS.
-    call lsysbl_vectorLinearComb(rrhs,rtempVectorRhs,&
-         rtimestepping%dweightNewRHS,1.0_DP)
-
     ! Implement boundary conditions into the RHS and solution vector, not
     ! into the matrices; the latter is done during the nonlinear iteration.
     call cc_implementBC (rproblem,rvector,rtempVectorRhs,.true.,.true.)
