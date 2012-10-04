@@ -403,35 +403,74 @@ contains
     ! u_n, of the old RHS f_n and the new RHS f_{n+1}. At first, we make
     ! a weighted copy of the current RHS f_n to the "global" RHS vector
     ! according to the time stepping scheme.
-    
-    ! Set up w_4*f_n.
-    call lsysbl_vectorLinearComb(rrhs,rtempVectorRhs,&
-         rtimestepping%dweightOldRHS,0.0_DP)
-         
+    !
+    !    
     ! If we have inhomogeneous Neumann boundary conditions, the situation
     ! is slightly more complicated. The weak formulation of, e.g., the
     ! Stokes equations read:
     !
-    !            ( u_n+1, phi )  +  w_1 (grad u_n+1, grad phi)
+    !    ( (u_n+1 - u_n)/k , phi )  +  nu w_1/dt (grad u_n+1, grad phi)  -  nu w_2/dt (grad u_n, grad phi)
+    !                               -  nu w_1/dt (du_n+1/dn , phi     )  +  nu w2/dt  (du_n/dn , phi     )
+    !                               -            (p         , grad phi)
+    !                               +            (p n       , phi     )
+    !  =   w_3/k ( f_n+1, phi)
+    !    + w_4/k ( f_n  , phi)
     !
-    !         =  ( u_n, phi )    +  w_2 (grad u_n, grad phi )
-    !                            +  w_1 ( nu du_n+1/dn - p n, phi )_Gamma
-    !                            -  w_2 ( nu du_n/dn        , phi )_Gamma
+    ! The pressure is used fully implicitely, so the meaning of the presszre
+    ! depends on the timestepping scheme used. For the CN scheme, e.g.,
+    ! the above formula reads
     !
-    !         =  ( u_n, phi )    +  w_2 (grad u_n, grad phi)
-    !                            +  w_1 ( g_n+1          , phi )_Gamma
-    !                            -  w_2 ( nu du_n/dn     , phi )_Gamma
+    !    ( (u_n+1 - u_n)/k , phi )  +  nu/2   (grad u_n+1, grad phi)  +  nu/2 (grad u_n, grad phi)
+    !                               -  nu/2   (du_n+1/dn , phi     )  -  nu/2 (du_n/dn , phi     )
+    !                               -  1/dt   (p_n+1/2         , grad phi)
+    !                               +  1/dt   (p_n+1/2 n       , phi     )
+    !  =   1/2 ( f_n+1  , phi)  +  1/2 ( f_n  , phi)
     !
-    ! with g_n+1 the inhomogeneous Neumann boundary conditions of the
-    ! boundary edge Gamma, which is set up by boundary integration.
-    ! Thus, we need to add the correction term "w_2 ( du_n/dn, phi )_Gamma"
-    ! to the RHS of the last timestep as correction term.
-    ! Note that there is no element "-p n" in this term since there
-    ! is no partial integration of p applied to the RHS!
-!    call cc_assembleInhomNeumann (rproblem,&
-!        rproblem%rcollection,rtempVectorRhs,-rtimestepping%dweightMatrixRHS)
-    call cc_normalDerivInhomNeumann (rproblem,rproblem%rcollection,&
-        rvector,rtempVectorRhs,-rtimestepping%dweightMatrixRHS)
+    ! Some terms can be combined. For example, in the CN method, one could wrote
+    !
+    !    ( (u_n+1 - u_n)/k , phi )  +  nu/2   (grad u_n+1, grad phi)  +  nu/2 (grad u_n, grad phi)
+    !                               -  nu     (du_n+1/2 / dn , phi ) 
+    !                               -         (p_n+1/2       , grad phi)_Gamma
+    !                               +         (p_n+1/2 n     , phi     )_Gamma
+    !  =  ( f_n+1/2, phi)
+    !
+    ! which gives
+    !
+    !    ( (u_n+1 - u_n)/k , phi )  +  nu/2   (grad u_n+1, grad phi)  +  nu/2 (grad u_n, grad phi)
+    !                               +  1/dt   (p_n+1/2, grad phi)
+    !  =  ( f_n+1/2, phi )          +         (nu du_n+1/2 / dn - p_n+1/2 n, phi)_Gamma
+    !
+    ! To implement inhomogeneous Neumann boundary conditions, one replaces
+    ! the inhomogenity on the RHS by the data, which results in
+    !
+    !  =  ( f_n+1/2  , phi           +         (g_n+1/2 , phi)_Gamma
+    !
+    ! so one has "g_n+1/2  =  nu du_n+1/2 / dn - p_n+1/2 n", and as a consequence, the
+    ! inhomogenity has to be evaluated at the midpoint in time. Alternatively, both
+    ! parts can be calculated with the trapezoidal rule (approximating the midpoint rule),
+    ! so one ends up with
+    !
+    !  =  ( (f_n+1 + f_n)/2  , phi)  +  ( (g_n+1 + g_n)/2 , phi)_Gamma
+    !
+    ! Similar argiments can also be used in the general case. Here, one has to assemble
+    !
+    !  =  ( w_3 f_n+1 + w_4 f_n  , phi)  +  ( w_1 g_n+1 - w_2 g_n , phi)_Gamma
+    !
+    ! where "w_1 g_n+1 - w_2 g_n" approximates "( du/dn - p n, phi)" at the
+    ! point in time corresponding to p.
+    !
+    !
+    ! So what to do? We have "(f_n,phi)" from the last timestep and calculate
+    ! "( w_3 f_n+1 + w_4 f_n  , phi )  +  ( w_1 g_n+1 - w_2 g_n , phi )_Gamma"
+    ! in the following.
+
+    ! Set up w_4*f_n.
+    call lsysbl_vectorLinearComb(rrhs,rtempVectorRhs,&
+         rtimestepping%dweightOldRHS,0.0_DP)
+  
+    ! Inhomogeneous Neumann part: "( -w_2 g_n, phi )_Gamma"
+    call cc_assembleInhomNeumann (rproblem,&
+        rproblem%rcollection,rtempVectorRhs,-rtimestepping%dweightMatrixRHS)
     
     ! For setting up M(u_n) + w_2*N(u_n), switch the sign of w_2 and call the method
     ! to calculate the Convection/Diffusion part of the nonlinear defect. This builds
@@ -476,7 +515,7 @@ contains
 
     ! -------------------------------------------
 
-    ! generate f_n+1 into the rrhs overwriting the previous rhs.
+    ! Generate (f_n+1, phi) into the rrhs overwriting the previous rhs.
     ! Do not implement any BC`s! We need the "raw" RHS for the next timestep.
     call stat_clearTimer(rtimerRHSgeneration)
     call stat_startTimer(rtimerRHSgeneration)
@@ -484,11 +523,11 @@ contains
         rproblem%RlevelInfo(rproblem%NLMAX)%rasmTempl,&
         rproblem%rrhsassembly,rrhs)
 
-    ! Add w_3*f_{n+1} to the current RHS.
+    ! Add (w_3 * f_{n+1}, phi) to the current RHS.
     call lsysbl_vectorLinearComb(rrhs,rtempVectorRhs,&
          rtimestepping%dweightNewRHS,1.0_DP)
 
-    ! Add the inhomogeneous Neumann BCs to the RHS
+    ! Add the inhomogeneous Neumann BCs to the RHS: "(w_1 g_n , phi)_Gamma"
     call cc_assembleInhomNeumann (rproblem,&
         rproblem%rcollection,rtempVectorRhs,rtimestepping%dweightMatrixLHS)
 
