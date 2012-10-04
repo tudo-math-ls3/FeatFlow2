@@ -422,11 +422,11 @@ contains
     !                            +  w_1 ( g_n+1          , phi )_Gamma
     !                            -  w_2 ( du_n/dn        , phi )_Gamma
     !
-    ! with g_n+1 the inhomogeneous Neumann bonudary conditions of the
+    ! with g_n+1 the inhomogeneous Neumann boundary conditions of the
     ! boundary edge Gamma, which is set up by boundary integration.
     ! Thus, we need to add the correction term "w_2 ( du_n/dn, phi )_Gamma"
     ! to the RHS of the last timestep as correction term.
-    ! Note that there is no element "-p n" in this term since tehre
+    ! Note that there is no element "-p n" in this term since there
     ! is no partial integration of p applied to the RHS!
     call cc_normalDerivInhomNeumann (rproblem,rvector,rtempVectorRhs,&
         -rtimestepping%dweightMatrixRHS)

@@ -17,7 +17,7 @@
 !#     -> Releases a boundary structure from the heap
 !#
 !# 3.) boundary_igetNBoundComp
-!#     -> Get the number of bonudary components
+!#     -> Get the number of boundary components
 !#
 !# 4.) boundary_igetNsegments
 !#     -> Get the number of boundary segments in a boundary component

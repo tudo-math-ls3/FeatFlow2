@@ -106,11 +106,11 @@ contains
 
 !<output>
   ! The index of the first vertex in IverticesAtBoundary belonging to the
-  ! bonudary region rregion. = 0, if no vertices belong to the given region.
+  ! boundary region rregion. = 0, if no vertices belong to the given region.
   integer, dimension(2), intent(out) :: IminIndex
 
   ! The index of the last vertex in IverticesAtBoundary belonging to the
-  ! bonudary region rregion. = -1, if no vertices belong to the given region.
+  ! boundary region rregion. = -1, if no vertices belong to the given region.
   integer, dimension(2), intent(out) :: ImaxIndex
 
   ! Number of index sets in IverticesAtBoundary belonging
@@ -300,11 +300,11 @@ contains
 
 !<output>
   ! The index of the first edge in IedgesAtBoundary belonging to the
-  ! bonudary region rregion. = 0, if no edges belong to the given region.
+  ! boundary region rregion. = 0, if no edges belong to the given region.
   integer, dimension(2), intent(out) :: IminIndex
 
   ! The index of the last edges in IedgesAtBoundary belonging to the
-  ! bonudary region rregion. = -1, if no edges belong to the given region.
+  ! boundary region rregion. = -1, if no edges belong to the given region.
   integer, dimension(2), intent(out) :: ImaxIndex
 
   ! Number of index sets in IedgesAtBoundary belonging

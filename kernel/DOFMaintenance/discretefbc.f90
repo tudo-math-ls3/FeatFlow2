@@ -97,7 +97,7 @@ module discretefbc
   ! DOF`s that refer do Dirichlet nodes. The second array refers to the value
   ! that must be imposed in this DOF.
   ! The variable Icomponents receives a list of all components in the solution
-  ! vector that are affected by this bonudary condition.
+  ! vector that are affected by this boundary condition.
 
   type t_discreteFBCDirichlet
 

@@ -423,7 +423,7 @@ module structuresoptc
     
     ! Defines whether or not the EOJ stabilisation is applied to the boundary.
     ! =0: Stabilisation is not applied to the boundary.
-    ! =1: Stabilisation is applied to all bonudary edges (default).
+    ! =1: Stabilisation is applied to all boundary edges (default).
     integer :: ceojStabilOnBoundary = 1
     
     ! Definbes whether the convection operator of the dual equation is included

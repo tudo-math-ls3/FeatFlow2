@@ -4090,7 +4090,7 @@ contains
 
       ! Form a t_spatialMatrixNonlinearData structure that encapsules the nonlinearity
       ! of the spatial matrix.
-      ! Pass an empty Neumann bonudary structure. The initial condition does not
+      ! Pass an empty Neumann boundary structure. The initial condition does not
       ! care about the Neumann boundary as it just cares about the initial condition
       ! in the primal equation. Neumann BC is only necessary for the dual eqn!
       call smva_initNonlinearData (rnonlinearity,rx,rx,rx,&

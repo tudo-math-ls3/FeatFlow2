@@ -612,7 +612,7 @@ contains
 
 !<description>
   ! The tupel (iboundCompIdx,dparam) specifies a point on the real 2D boundary.
-  ! The routine tries to find the index of the first bonudary condition region
+  ! The routine tries to find the index of the first boundary condition region
   ! that contains this point. This index is returned in iindex.
   ! Afterwards, the caller can access that boundary condition region
   ! using rboundaryConditions%p_Rregions(iindexBC).

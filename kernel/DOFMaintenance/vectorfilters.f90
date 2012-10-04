@@ -1169,7 +1169,7 @@ contains
 
     ! Calculate the integral of the function by a multiplication
     ! with the mass matrix plus summation. For a lumped
-    ! mass matrix, tehre is:
+    ! mass matrix, there is:
     !
     !  ( u, 1 )  = ( sum u_j phi_j, 1 )
     !            = sum_j u_j ( phi_j, sum_i phi_i )

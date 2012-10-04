@@ -347,7 +347,7 @@ contains
   
   ! OPTIONAL: A discretisation structure defining the space discretisation
   ! of the current level.
-  ! Can be omitted if only Neumann bonudary is to be created.
+  ! Can be omitted if only Neumann boundary is to be created.
   type(t_blockDiscretisation), intent(in) :: rspaceDiscr
   
   ! OPTIONAL: A t_discreteBC structure that receives a discretised version

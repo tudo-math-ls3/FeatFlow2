@@ -647,7 +647,7 @@ contains
       rbcAssemblyData,rcollection)
 
 !<description>
-  ! Prepares the assembly of bonudary conditions.
+  ! Prepares the assembly of boundary conditions.
 !</description>
 
 !<input>

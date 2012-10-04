@@ -6133,7 +6133,7 @@ contains
   ! This routine assembles the term
   !    $$ int_gamma dc1 y + dc1 n grad(lambda) + dc2 n xi $$
   ! on all boundary edges.
-  ! This term is crucial for the Dirichlet bonudary control.
+  ! This term is crucial for the Dirichlet boundary control.
 !</description>
 
 !<input>
