@@ -103,6 +103,7 @@ module ccboundaryconditionparser
     
   use ccbasic
   use cccallback
+  use ccmatvecassembly
   
   implicit none
   
@@ -1482,7 +1483,7 @@ contains
 
 !<subroutine>
 
-  subroutine cc_normalDerivInhomNeumann (rproblem,rvelocity,rrhs,dweight)
+  subroutine cc_normalDerivInhomNeumann (rproblem,rcollection,rvelocity,rrhs,dweight)
 
 !<description>
   ! Assembles 
@@ -1495,6 +1496,9 @@ contains
 !<input>
   ! A problem structure saving problem-dependent information.
   type(t_problem), intent(inout), target :: rproblem
+  
+  ! the user-defined collection passed to callback routines
+  type(t_collection) :: rcollection
   
   ! Weight for the inhomogeneous Neumann part.
   real(DP), intent(in) :: dweight
@@ -1525,8 +1529,9 @@ contains
     ! solution/RHS vectors using the corresponding filter.
     !
     ! At first, initialise the assembly.
+    call cc_initCollectForAssembly (rproblem,rcollection)
     call cc_initBCassembly (rproblem,rrhs%p_rblockDiscr,&
-        rproblem%rcollection,rbcAssemblyData,rlocalCollection)
+        rcollection,rbcAssemblyData,rlocalCollection)
         
     ! Weight the result by the weighting factor.
     rbcAssemblyData%dweight = dweight
@@ -1585,19 +1590,21 @@ contains
             if (sbdex1 .ne. "") then
               rbcAssemblyData%icomponent = 1
               
+              ! The temp arrays are used for nonconstant viscosities
               call linf_buildVectorScalarBdr2D (rform, CUB_G4_1D, .false., &
                   rrhs%RvectorBlock(1),cc2d_fcoeff_inhNeum_nderiv,&
                   rbcAssemblyData%rboundaryRegion, rlocalCollection,&
-                  ntempArrays = 2)
+                  ntempArrays = 5)
             end if
 
             if (sbdex2 .ne. "") then
               rbcAssemblyData%icomponent = 2
               
+              ! The temp arrays are used for nonconstant viscosities
               call linf_buildVectorScalarBdr2D (rform, CUB_G4_1D, .false., &
                   rrhs%RvectorBlock(2),cc2d_fcoeff_inhNeum_nderiv,&
                   rbcAssemblyData%rboundaryRegion, rlocalCollection,&
-                  ntempArrays = 2)
+                  ntempArrays = 5)
             end if
           
           end select
@@ -1613,6 +1620,7 @@ contains
 
     ! Release the boundary condition assembly structure, finish.
     call cc_doneBCassembly (rbcAssemblyData)
+    call cc_doneCollectForAssembly (rproblem,rcollection)
 
   end subroutine
   
@@ -1696,7 +1704,7 @@ contains
   !</subroutine>
 
     ! local variables
-    integer :: ipt,iel,cnormalmean
+    integer :: ipt,iel
     real(DP) :: dpar
     type(t_bcassemblyData), pointer :: p_rbcAssemblyData
 
@@ -1799,16 +1807,39 @@ contains
     integer :: ipt,iel,cnormalmean
     real(DP) :: dpar
     type(t_bcassemblyData), pointer :: p_rbcAssemblyData
-    real(DP) :: dnx,dny,dux,duy
+    real(DP) :: dnx,dny,dnu
     integer, dimension(1) :: Ielements
     integer, dimension(:), pointer :: p_Ielements
-    real(DP), dimension(NDIM2D) :: Dvalues
+    real(DP), dimension(NDIM2D+1) :: Dvalues
+    type(t_collection) :: rlocalcollection
+    real(DP), dimension(:,:), pointer :: p_Dnu
 
     ! Get the element list.
     p_Ielements => rdomainIntSubset%p_Ielements
 
     ! Get a pointer to the boundary assembly data from the collection.
     call cc_getBCassemblyPointer (rcollection,p_rbcAssemblyData)
+    
+    ! Assemble the viscosity.
+    nullify(p_Dnu)
+    dnu = p_rbcAssemblyData%p_rproblem%rphysics%dnu
+
+    if (p_rbcAssemblyData%p_rproblem%rphysics%cviscoModel .ne. 0) then
+      ! Nonconstant viscosity; this is a bit more complicated.
+      !
+      ! Prepare a collection. The "next" collection points to the user defined
+      ! collection.
+      call ccmva_prepareViscoAssembly (p_rbcAssemblyData%p_rproblem,&
+          p_rbcAssemblyData%p_rproblem%rphysics,&
+          rlocalcollection,p_rbcAssemblyData%p_rvectorBlock,rcollection)
+    
+      ! Get the viscosity.
+      allocate(p_Dnu(npointsperElement,nelements))
+      call ffunctionViscoModel (0,rdiscretisation, &
+          nelements,npointsPerElement,Dpoints, &
+          IdofsTest,rdomainIntSubset,p_Dnu,rlocalcollection)
+    
+    end if
 
     do iel = 1,nelements
 
@@ -1833,6 +1864,11 @@ contains
             Dpoints(:,ipt:ipt,iel),Ielements=Ielements, &
             cnonmeshPoints=FEVL_NONMESHPTS_NEARBY)
 
+        call fevl_evaluate (DER_FUNC, Dvalues(3:3), &
+            p_rbcAssemblyData%p_rvectorBlock%RvectorBlock(3), &
+            Dpoints(:,ipt:ipt,iel),Ielements=Ielements, &
+            cnonmeshPoints=FEVL_NONMESHPTS_NEARBY)
+
         ! The normal vector is a bit tricky. Normally, we take the "mean"
         ! setting.
         cnormalMean = BDR_NORMAL_MEAN
@@ -1853,12 +1889,30 @@ contains
         call boundary_getNormalVec2D(p_rbcAssemblyData%p_rboundary, &
             p_rbcAssemblyData%rboundaryRegion%iboundCompIdx, dpar, dnx, dny, &
             cnormalMean)
+            
+        ! Get the viscosity
+        if (associated(p_Dnu)) then
+          dnu = p_Dnu(ipt,iel)
+        end if
 
         ! Calculate the value
         Dcoefficients(1,ipt,iel) = &
-            p_rbcAssemblyData%dweight * (Dvalues(1)*dnx + Dvalues(2)*dny)
+            p_rbcAssemblyData%dweight * dnu * (Dvalues(1)*dnx + Dvalues(2)*dny)
+
+        if (p_rbcAssemblyData%icomponent .eq. 1) then
+          Dcoefficients(1,ipt,iel) = Dcoefficients(1,ipt,iel) - &
+            p_rbcAssemblyData%dweight * (Dvalues(3)*dnx)
+        else
+          Dcoefficients(1,ipt,iel) = Dcoefficients(1,ipt,iel) - &
+            p_rbcAssemblyData%dweight * (Dvalues(3)*dny)
+        end if
       end do
     end do
+
+    ! Cleanup
+    if (associated(p_Dnu)) then
+      deallocate(p_Dnu)
+    end if
             
   end subroutine
 

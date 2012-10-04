@@ -886,9 +886,8 @@ contains
           
         ! Prepare the collection. The "next" collection points to the user defined
         ! collection.
-        rcollection%p_rnextCollection => rproblem%rcollection
         call ccmva_prepareViscoAssembly (rproblem,rproblem%rphysics,&
-            rcollection,rsolution)
+            rcollection,rsolution,rproblem%rcollection)
           
         if (rproblem%rphysics%cviscoModel .eq. 0) then
           call ppns2D_bdforces_line (rsolution,rregion,Dforces,CUB_G1_1D,&
@@ -935,9 +934,8 @@ contains
         !
         ! Prepare the collection. The "next" collection points to the user defined
         ! collection.
-        rcollection%p_rnextCollection => rproblem%rcollection
         call ccmva_prepareViscoAssembly (rproblem,rproblem%rphysics,&
-            rcollection,rsolution)
+            rcollection,rsolution,rproblem%rcollection)
           
         if (rproblem%rphysics%cviscoModel .eq. 0) then
           call ppns2D_bdforces_vol(rsolution,rcharfct,Dforces,&
@@ -1564,8 +1562,7 @@ contains
       ! Prepare the collection. The "next" collection points to the user defined 
       ! collection.
       call ccmva_prepareViscoAssembly (rproblem,rproblem%rphysics,&
-          rcollection,rvector)
-      rcollection%p_rnextCollection => rproblem%rcollection
+          rcollection,rvector,rproblem%rcollection)
 
       ! Project the viscosity to the Q1 space.
       call anprj_discrDirect(rprjVector%RvectorBlock(1), ffunctionViscoModel,&

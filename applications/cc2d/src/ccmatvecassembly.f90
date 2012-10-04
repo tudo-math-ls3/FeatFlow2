@@ -237,7 +237,8 @@ contains
 
 !<subroutine>
 
-  subroutine ccmva_prepareViscoAssembly (rproblem,rphysics,rcollection,rvelocityvector)
+  subroutine ccmva_prepareViscoAssembly (&
+      rproblem,rphysics,rcollection,rvelocityvector,ruserCollection)
   
   use basicgeometry
   use triangulation
@@ -270,6 +271,9 @@ contains
   
   ! OPTIONAL: The current velocity/pressure vector. May not be present.
   type(t_vectorBlock), intent(in), target, optional :: rvelocityvector
+
+  ! OPTIONAL: User defined collection structure
+  type(t_collection), intent(inout), target, optional :: ruserCollection
 !</input>
 
 !<inputoutput>
@@ -300,6 +304,9 @@ contains
     nullify(rcollection%p_rvectorQuickAccess1)
     if (present(rvelocityvector)) &
         rcollection%p_rvectorQuickAccess1 => rvelocityvector
+
+    if (present(ruserCollection)) &
+        rcollection%p_rnextCollection => ruserCollection
 
   end subroutine
     
@@ -506,9 +513,6 @@ contains
 
       end select
       
-      ! Deallocate needed memory.
-      deallocate(p_Ddata)
-
     case default
     
       ! Viscosity specified by the callback function getNonconstantViscosity.
@@ -1143,9 +1147,8 @@ contains
             
             ! Prepare the collection. The "next" collection points to the user defined
             ! collection.
-            rcollection%p_rnextCollection => rproblem%rcollection
             call ccmva_prepareViscoAssembly (rproblem,rnonlinearCCMatrix%p_rphysics,&
-                rcollection,rvelocityVector)
+                rcollection,rvelocityVector,rproblem%rcollection)
             
           end if
           
@@ -1409,9 +1412,8 @@ contains
 
             ! Prepare the collection. The "next" collection points to the user defined
             ! collection.
-            rcollection%p_rnextCollection => rproblem%rcollection
             call ccmva_prepareViscoAssembly (rproblem,rnonlinearCCMatrix%p_rphysics,&
-                rcollection,rvelocityVector)
+                rcollection,rvelocityVector,rproblem%rcollection)
 
           end if
           
@@ -2083,12 +2085,8 @@ contains
 
             ! Prepare the collection. The "next" collection points to the user defined
             ! collection.
-            rcollection%p_rnextCollection => rproblem%rcollection
             call ccmva_prepareViscoAssembly (rproblem,rnonlinearCCMatrix%p_rphysics,&
-                rcollection,rvelocityVector)
-
-            ! The "next" collection points to the user defined collection.
-            rcollection%p_rnextCollection => rproblem%rcollection
+                rcollection,rvelocityVector,rproblem%rcollection)
 
           end if
           
@@ -2285,9 +2283,8 @@ contains
 
             ! Prepare the collection. The "next" collection points to the user defined
             ! collection.
-            rcollection%p_rnextCollection => rproblem%rcollection
             call ccmva_prepareViscoAssembly (rproblem,rnonlinearCCMatrix%p_rphysics,&
-                rcollection,rvelocityvector)
+                rcollection,rvelocityvector,rproblem%rcollection)
 
           end if
           

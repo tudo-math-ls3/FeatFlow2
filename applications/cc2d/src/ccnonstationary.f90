@@ -415,12 +415,12 @@ contains
     !            ( u_n+1, phi )  +  w_1 (grad u_n+1, grad phi)
     !
     !         =  ( u_n, phi )    +  w_2 (grad u_n, grad phi )
-    !                            +  w_1 ( du_n+1/dn - p n, phi )_Gamma
-    !                            -  w_2 ( du_n/dn        , phi )_Gamma
+    !                            +  w_1 ( nu du_n+1/dn - p n, phi )_Gamma
+    !                            -  w_2 ( nu du_n/dn        , phi )_Gamma
     !
     !         =  ( u_n, phi )    +  w_2 (grad u_n, grad phi)
     !                            +  w_1 ( g_n+1          , phi )_Gamma
-    !                            -  w_2 ( du_n/dn        , phi )_Gamma
+    !                            -  w_2 ( nu du_n/dn     , phi )_Gamma
     !
     ! with g_n+1 the inhomogeneous Neumann boundary conditions of the
     ! boundary edge Gamma, which is set up by boundary integration.
@@ -428,8 +428,10 @@ contains
     ! to the RHS of the last timestep as correction term.
     ! Note that there is no element "-p n" in this term since there
     ! is no partial integration of p applied to the RHS!
-    call cc_normalDerivInhomNeumann (rproblem,rvector,rtempVectorRhs,&
-        -rtimestepping%dweightMatrixRHS)
+!    call cc_assembleInhomNeumann (rproblem,&
+!        rproblem%rcollection,rtempVectorRhs,-rtimestepping%dweightMatrixRHS)
+    call cc_normalDerivInhomNeumann (rproblem,rproblem%rcollection,&
+        rvector,rtempVectorRhs,-rtimestepping%dweightMatrixRHS)
     
     ! For setting up M(u_n) + w_2*N(u_n), switch the sign of w_2 and call the method
     ! to calculate the Convection/Diffusion part of the nonlinear defect. This builds
