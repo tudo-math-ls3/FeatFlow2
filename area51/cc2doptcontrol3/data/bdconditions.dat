@@ -158,21 +158,12 @@ bdComponent2(1)=
 #  [bdcid] = -1: automatic boundary condition.
 #                This holds only for the dual equation. Chooses the boundary
 #                condition according to the primal equation.
+# Alternatively, specifying a "-1" as only value determines the complete
+# boundary condition automatically.
 
-#bdComponent1(4)=
-#  1.0  3  -1
-#  2.0  0  -1
-#  3.0  3  -1
-#  4.0  3  -1
+bdComponent1 = -1
 
-bdComponent1(4)=
-  1.0  3  -1
-  2.0  0  -1
-  3.0  2  -1
-  4.0  3  -1
-
-bdComponent2(1)=
-  4.0  3  -1
+bdComponent2 = -1
 
 
 ########################
@@ -181,20 +172,9 @@ bdComponent2(1)=
 
 # Boundary conditions for the linearised primal equation
 
+bdComponent1 = -1
 
-#bdComponent1(3)=
-#  2.0  3  -1
-#  3.0  3  -1
-#  4.0  2  -1
-
-bdComponent1(4)=
-  1.0  3  -1
-  2.0  0  -1
-  3.0  2  -1
-  4.0  3  -1
-
-bdComponent2(1)=
-  4.0  3  -1
+bdComponent2 = -1
 
 ######################
 [BDCONDITIONS_DUALLIN]
@@ -202,20 +182,9 @@ bdComponent2(1)=
 
 # Boundary conditions for the linearised dual equation.
 
-#bdComponent1(4)=
-#  1.0  3  -1
-#  2.0  0  -1
-#  3.0  3  -1
-#  4.0  3  -1
+bdComponent1 = -1
 
-bdComponent1(4)=
-  1.0  3  -1
-  2.0  0  -1
-  3.0  2  -1
-  4.0  3  -1
-
-bdComponent2(1)=
-  4.0  3  -1
+bdComponent2 = -1
 
 ########################
 [BDCONDITIONS_PCSTEKLOV]
@@ -223,17 +192,6 @@ bdComponent2(1)=
 
 # Boundary conditions for the Poincare-Steklov projection
 
-#bdComponent1(4)=
-#  1.0  3  -1
-#  2.0  0  -1
-#  3.0  3  -1
-#  4.0  3  -1
+bdComponent1 = -1
 
-bdComponent1(4)=
-  1.0  3  -1
-  2.0  0  -1
-  3.0  2  -1
-  4.0  3  -1
-
-bdComponent2(1)=
-  4.0  3  -1
+bdComponent2 = -1
