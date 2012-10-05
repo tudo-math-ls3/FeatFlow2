@@ -58,6 +58,7 @@
 !#
 !# 12.) cc2d_fcoeff_inhomNeumann
 !#      -> Callback routine for inhomogeneous Neumann BCs
+!#
 !# </purpose>
 !##############################################################################
 
@@ -88,12 +89,14 @@ module ccboundaryconditionparser
   use bcassembly
   use scalarpde
   use derivatives
+  use feevaluation
   
   use collection
   use convection
     
   use ccbasic
   use cccallback
+  use ccmatvecassembly
   
   implicit none
   
@@ -204,6 +207,9 @@ module ccboundaryconditionparser
 
     ! Maximum time
     real(DP) :: dtimeMax = 0.0_DP
+    
+    ! Weighting factor for the values on the boundary.
+    real(DP) :: dweight = 1.0_DP
     
     !<!-- Boundary condition specific parameters -->
     
@@ -344,6 +350,7 @@ contains
         read(cstr,*) cname,ityp,dvalue
         call collct_setvalue_real (ranalyticBC%rbcCollection, &
             cname, dvalue, .true., 0, SEC_SBDEXPRESSIONS)
+
       case (BDC_VALINT)
         ! Integer-value
         read(cstr,*) cname,ityp,ivalue
@@ -1333,7 +1340,7 @@ contains
 
 !<subroutine>
 
-  subroutine cc_assembleInhomNeumann (rproblem,rcollection,rrhs)
+  subroutine cc_assembleInhomNeumann (rproblem,rcollection,rrhs,dweight)
 
 !<description>
   ! Assembles inhomogeneous Neumann boundary conditions into the RHS vector
@@ -1346,6 +1353,9 @@ contains
   
   ! Collection structure to be passed to callback routines
   type(t_collection), intent(inout), target :: rcollection
+  
+  ! Weight for the inhomogeneous Neumann part.
+  real(DP), intent(in) :: dweight
 !</input>
 
 !<inputoutput>
@@ -1372,6 +1382,9 @@ contains
     ! At first, initialise the assembly.
     call cc_initBCassembly (rproblem,rrhs%p_rblockDiscr,&
         rcollection,rbcAssemblyData,rlocalCollection)
+        
+    ! Weight the result by the weighting factor.
+    rbcAssemblyData%dweight = dweight
     
     ! Loop through all boundary components we have.
     do ibdComponent = 1,boundary_igetNBoundComp(rbcAssemblyData%p_rboundary)
@@ -1535,7 +1548,7 @@ contains
   !</subroutine>
 
     ! local variables
-    integer :: ipt,iel,cnormalmean
+    integer :: ipt,iel
     real(DP) :: dpar
     type(t_bcassemblyData), pointer :: p_rbcAssemblyData
 
@@ -1743,6 +1756,9 @@ contains
   
       dresult = mprim_getParabolicProfile (d,1.0_DP,rbcAssemblyData%dvalue)
     end select
+    
+    ! Weight the result by the weighting factor.
+    dresult = dresult * rbcAssemblyData%dweight
   
   end subroutine
 
@@ -1790,6 +1806,6 @@ contains
     call bcasm_newDirichletBConFBD (rdiscretisation,Iequations,&
         rdynamicLevelInfo%rdiscreteFBC,getBoundaryValuesFBC,rcollection)
 
-  end subroutine  
+  end subroutine
 
 end module
