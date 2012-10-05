@@ -228,9 +228,6 @@ module ccboundaryconditionparser
     !  X/Y-acceleration of the moving frame
     real(DP), dimension(NDIM2D) :: DmframeAcc = 0.0_DP
     
-    ! Pointer to a block vector.
-    type(t_vectorBlock), pointer :: p_rvectorBlock => null()
-    
     !<!-- Parameters vor the evaluation of expressions -->
     
     ! expression type
