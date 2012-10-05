@@ -3331,6 +3331,14 @@ contains
           call ansol_doneEvalCollection (rcollection,"RHS")
           call user_doneCollectForVecAssembly (p_ranalyticData%p_rglobalData,rusercollection)
 
+          ! -----------------------------------------
+          ! Inhomogeneous Neumann boundary conditions
+          ! -----------------------------------------
+          call sbc_assembleInhomNeumannRHS (rrhs,p_ranalyticData%p_roptcBDC,&
+              rspaceTimeOperatorAsm%p_rspaceDiscrPrimal,rspaceTimeOperatorAsm%p_rtimeDiscrPrimal,&
+              dtime,p_ranalyticData%p_rphysics%cequation,OPTP_PRIMAL,&
+              p_ranalyticData%p_rglobalData)
+
         ! ***********************************************************
         ! Heat equation
         ! ***********************************************************
@@ -3379,8 +3387,10 @@ contains
           ! -----------------------------------------
           ! Inhomogeneous Neumann boundary conditions
           ! -----------------------------------------
-          call sbc_assembleInhomNeumannRHS (p_ranalyticData%p_roptcBDC,rrhs,dtime,&
-              p_ranalyticData%p_rphysics%cequation,OPTP_PRIMAL,p_ranalyticData%p_rglobalData)
+          call sbc_assembleInhomNeumannRHS (rrhs,p_ranalyticData%p_roptcBDC,&
+              rspaceTimeOperatorAsm%p_rspaceDiscrPrimal,rspaceTimeOperatorAsm%p_rtimeDiscrPrimal,&
+              dtime,p_ranalyticData%p_rphysics%cequation,OPTP_PRIMAL,&
+              p_ranalyticData%p_rglobalData)
 
         end select ! Equation
 
@@ -6772,8 +6782,8 @@ contains
             call sbc_assembleBDconditions (roptcBDC,roptcBDCSpace,dtimeend,&
                 p_ranalyticData%p_rphysics%cequation,copType,&
                 SBC_DISCRETEBC+SBC_DIRICHLETBC+SBC_DIRICHLETBCC+SBC_NEUMANN,&
-                roperatorAsm%p_rspaceDiscrPrimal,rglobalData,&
-                rvectorControl)
+                roperatorAsm%p_rspaceDiscrPrimal,roperatorAsm%p_rtimeDiscrPrimal,&
+                rglobalData,rvectorControl)
 
           end select ! Equation
         
@@ -6831,8 +6841,8 @@ contains
             call sbc_assembleBDconditions (roptcBDC,roptcBDCSpace,dtimestart,&
                 p_ranalyticData%p_rphysics%cequation,copType,&
                 SBC_DISCRETEBC+SBC_DIRICHLETBC+SBC_DIRICHLETBCC+SBC_NEUMANN,&
-                roperatorAsm%p_rspaceDiscrDual,rglobalData,&
-                rvectorControl)
+                roperatorAsm%p_rspaceDiscrDual,roperatorAsm%p_rtimeDiscrDual,&
+                rglobalData,rvectorControl)
 
           end select ! Equation
         
@@ -6857,8 +6867,8 @@ contains
         call sbc_assembleBDconditions (roptcBDC,roptcBDCSpace,0.0_DP,&
             p_ranalyticData%p_rphysics%cequation,copType,&
             SBC_DISCRETEBC+SBC_DIRICHLETBC+SBC_DIRICHLETBCC+SBC_NEUMANN,&
-            roperatorAsm%p_rspaceDiscrDual,rglobalData,&
-            rvectorControl)
+            roperatorAsm%p_rspaceDiscrDual,roperatorAsm%p_rtimeDiscrDual,&
+            rglobalData,rvectorControl)
 
       end select ! Equation
         

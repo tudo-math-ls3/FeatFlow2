@@ -70,11 +70,86 @@ module spatialbc
   
 !<types>
 
+!<typeblock>
+
+  ! A structure which is passed to the callback routine for assembly.
+  type t_bcassemblyData
+    
+    ! Boundary conditions in the problem.
+    type(t_optcBDC), pointer :: p_roptcBDC => null()
+    
+    ! Definition of the underlying boundary
+    type(t_boundary), pointer :: p_rboundary => null()
+    
+    ! Discretisation structure currently under investigation.
+    type(t_blockDiscretisation), pointer :: p_rspaceDiscr => null()
+
+    ! Underlying time discretisation
+    type(t_timeDiscretisation), pointer :: p_rtimeDiscr => null()
+
+    ! Current boundary region in process.
+    type(t_boundaryRegion) :: rboundaryRegion
+    
+    ! Pointer to a user defined collection structure
+    type(t_collection), pointer :: p_ruserCollection => null()
+    
+    ! Current time where to set up the BCs
+    real(DP) :: dtime = 0.0_DP
+    
+    ! Weighting factor for the values on the boundary.
+    real(DP) :: dweight = 1.0_DP
+
+    !<!-- Boundary condition specific parameters -->
+    
+    ! Type of boundary condition. A BDC_xxxx constant.
+    integer :: cbcType = 0
+    
+    ! component under consideration (1=x-vel, 2=y-vel,...)
+    integer :: icomponent = 0
+    
+    ! Type of boundary control currently in assembly.
+    ! =0: No boundary control.
+    ! =1: L2 Dirichlet boundary control.
+    ! =2: $H^{1/2}$ Dirichlet boundary control.
+    ! If the value is <> 0, the control must be specified in p_rcontrol.
+    integer :: cboundaryControl = 0
+    
+    ! Pointer to a control vector on the boundary.
+    type(t_vectorBlock), pointer :: p_rcontrol => null()
+
+    !<!-- Parameters vor the evaluation of expressions -->
+    
+    ! Expression type. One of the BDC_xxxx constants.
+    integer :: cexprType = 0
+    
+    ! expression id
+    integer :: iid = 0
+    
+    ! Integer tag for the expression
+    integer :: ivalue = 0
+    
+    ! Real value for the expression
+    real(DP) :: dvalue = 0.0_DP
+    
+    ! Name of the expression
+    character(len=PARLST_MLNAME) :: sexprName = ""
+    
+  end type
+
+!</typeblock>
+
+!<typeblock>
+  ! Structure encapsuling a pointer to t_bcassemblyData, for being passed
+  ! to callback routines.
+  type t_p_bcassemblyData
+    type(t_bcassemblyData), pointer :: p_rbcAssemblyData => null()
+  end type
+!</typeblock>
+
 !</types>
 
+  ! Assemble boundary conditions
   public :: sbc_assembleBDconditions
-  public :: sbc_releaseBdRegionList
-  !public :: sbc_implementDirichletBC
   
   ! Resets the structure for discrete boundary conditions.
   public :: sbc_resetBCstructure
@@ -98,8 +173,183 @@ contains
 
 !<subroutine>
 
+  subroutine sbc_initBCassembly (roptcBDC,rspaceDiscr,rtimeDiscr,dtime,&
+      rbcAssemblyData,ruserCollection,rcollection)
+
+!<description>
+  ! Prepares the assembly of bonudary conditions.
+!</description>
+
+!<input>
+  ! Boundary conditions in the problem.
+  type(t_optcBDC), intent(inout), target :: roptcBDC
+  
+  ! User defined collection structure to be passed to callback routines
+  type(t_collection), intent(in), target :: ruserCollection
+  
+  ! Underlying space discretisation
+  type(t_blockDiscretisation), intent(in), target :: rspaceDiscr
+  
+  ! Underlying time discretisation
+  type(t_timeDiscretisation), intent(in), target :: rtimeDiscr
+  
+  ! Point im time, the BC should be assembled according to.
+  real(DP), intent(in) :: dtime
+!</input>
+  
+!<output>
+  ! Boundary condition assembly data, to be set up
+  type(t_bcassemblyData), intent(out), target :: rbcAssemblyData
+!</output>
+
+!<inputoutput>
+  ! Collection structure where a pointer to rbcAssemblyData is saved to.
+  type(t_collection), intent(inout) :: rcollection
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    type(t_p_bcassemblyData) :: rp_bcassemblyData
+    
+    ! Create rbcAssemblyData based on the given data.
+    rbcAssemblyData%p_roptcBDC => roptcBDC
+    rbcAssemblyData%p_rboundary => rspaceDiscr%p_rboundary
+    rbcAssemblyData%p_ruserCollection => ruserCollection
+    rbcAssemblyData%p_rspaceDiscr => rspaceDiscr
+    rbcAssemblyData%p_rtimeDiscr => rtimeDiscr
+    rbcAssemblyData%dtime = dtime
+
+    ! Create a pointer to this, encapsuled in a structure.
+    rp_bcassemblyData%p_rbcAssemblyData => rbcAssemblyData
+    
+    ! Transfer this pointer into the IquickAccess array of the collection.
+    ! We can get it from there later.
+    rcollection%IquickAccess(:) = &
+        transfer(rp_bcassemblyData,rcollection%IquickAccess(:),size(rcollection%IquickAccess(:)))
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sbc_getBCassemblyPointer (rcollection,p_rbcAssemblyData)
+
+!<description>
+  ! Returns a pointer to the BC assembly data. The pointer is obtained
+  ! from the given collection
+!</description>
+
+!<input>
+  ! Collection structure. Must have been prepared with cc_initBCassembly.
+  type(t_collection), intent(in) :: rcollection
+!</input>
+
+!<inputoutput>
+  ! Pointer to be obtained.
+  type(t_bcassemblyData), pointer :: p_rbcAssemblyData
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    type(t_p_bcassemblyData) :: rp_bcassemblyData
+
+    ! Get back the pointer
+    rp_bcassemblyData = transfer(rcollection%IquickAccess(:),rp_bcassemblyData)
+    
+    ! Return the pointer
+    p_rbcAssemblyData => rp_bcassemblyData%p_rbcAssemblyData
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sbc_defineBdComponent (rbcAssemblyData,dpar1,dpar2,ibct,iintervalsEnd)
+
+!<description>
+  ! Initialises the boundary component structure in rbcAssemblyData.
+!</description>
+
+!<input>
+  ! Start parameter value
+  real(DP), intent(in) :: dpar1
+
+  ! End parameter value
+  real(DP), intent(in) :: dpar2
+
+  ! Boundary component
+  integer, intent(in) :: ibct
+  
+  ! Specifier that defines if the interval ends belong to the
+  ! boundary region.
+  ! =0: no
+  ! =1: start belongs to the region
+  ! =2: end belongs to the region
+  ! =3: start and end belongs to the region
+  integer, intent(in) :: iintervalsEnd
+
+!</input>
+  
+!<inputoutput>
+  ! Boundary condition assembly data, to be set up
+  type(t_bcassemblyData), intent(inout) :: rbcAssemblyData
+!</inputoutput>
+
+!</subroutine>
+
+    rbcAssemblyData%rboundaryRegion%dminParam = dpar1
+    rbcAssemblyData%rboundaryRegion%dmaxParam = dpar2
+    rbcAssemblyData%rboundaryRegion%iboundCompIdx = ibct
+    rbcAssemblyData%rboundaryRegion%dmaxParamBC = &
+        boundary_dgetMaxParVal(rbcAssemblyData%p_rboundary, ibct)
+    rbcAssemblyData%rboundaryRegion%iproperties = iintervalsEnd
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sbc_defineConstValue (rbcAssemblyData,dvalue)
+
+!<description>
+  ! Initialises an expression in rbcAssemblyData which returns a constant
+  ! value dvalue.
+!</description>
+
+!<input>
+  ! Value to be returned
+  real(DP), intent(in) :: dvalue
+!</input>
+  
+!<inputoutput>
+  ! Boundary condition assembly data, to be set up
+  type(t_bcassemblyData), intent(inout) :: rbcAssemblyData
+!</inputoutput>
+
+!</subroutine>
+
+    rbcAssemblyData%cexprType = BDC_VALDOUBLE
+    rbcAssemblyData%iid = 0
+    rbcAssemblyData%ivalue = 0
+    rbcAssemblyData%dvalue = dvalue
+    rbcAssemblyData%sexprName = ""
+    
+    rbcAssemblyData%cboundaryControl = 0
+    nullify(rbcAssemblyData%p_rcontrol)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
   subroutine sbc_assembleBDconditions (roptcBDC,roptcBDCSpace,dtime,cequation,&
-      copType,casmFlags,rspaceDiscr,rglobalData,rvectorControl)
+      copType,casmFlags,rspaceDiscr,rtimeDiscr,rglobalData,rvectorControl)
 
 !<description>
   ! This initialises the analytic boundary conditions of the problem
@@ -132,6 +382,9 @@ contains
   ! of the current level.
   type(t_blockDiscretisation), intent(in) :: rspaceDiscr
 
+  ! Time discretisation structure, dtime refers to.
+  type(t_timeDiscretisation), intent(in) :: rtimeDiscr
+
   ! OPTIONAL; Global data, passed to callback routines
   ! Must be specified if casmFlags contains SBC_DISCRETEBC.
   type(t_globalData), intent(inout), optional :: rglobalData
@@ -152,372 +405,152 @@ contains
 !</subroutine>
 
     ! local variables
-    
-    integer :: ibdComponent, isegment, i, iprimal, iintervalEnds
-    character(LEN=PARLST_LENLINEBUF) :: sstr,sexpr,svalue,sbdex1,sbdex2,sbdcomp
+    integer :: ibct, isegment, nsegments, nsegmentsParent, i, iintervalsEnd
+    character(LEN=PARLST_LENLINEBUF) :: sbdex1,sbdex2,sbcsection,sparentSection
+    character(LEN=SYS_STRLEN) :: sparams
     real(DP) :: dpar1, dpar2
-    integer :: ctype, ivalue, iid, ibctyp
-    real(DP) :: dvalue
-    logical :: bneedsParams
+    integer :: iindex,iindexParent
+    logical :: bautomatic, bautomaticParent, bautomaticSegment
     type(t_collection), target :: rcollection, ruserCollection
     type(t_boundary), pointer :: p_rboundary
-    type(t_p_optcBDC) :: r_t_p_optcBDC
-
-    ! A boundary region defining where the boundary conditionis applied
-    type(t_boundaryRegion), target :: rboundaryRegion
+    type(t_bcassemblyData) :: rbcAssemblyData
 
     ! A pointer to the section with the expressions and the boundary conditions
-    type(t_parlstSection), pointer :: p_rsection,p_rbdcond,p_rbdcondPrimal
+    type(t_parlstSection), pointer :: p_rsection
 
     ! Fetch some parameters
     p_rboundary => rspaceDiscr%p_rboundary
     
-    ! Save a pointer to roptBDC ti r_t_p_optcBDC for later use.
-    r_t_p_optcBDC%p_roptcBDC => roptcBDC
-
     ! Get the expression/bc sections from the bondary condition block
     call parlst_querysection(roptcBDC%p_rparList, &
         roptcBDC%ssectionBdExpr, p_rsection)
         
     ! Get the section defining the primal or dual boundary conditions
+    sbcsection = ""
+    sparentSection = ""
     select case (copType)
     case (OPTP_PRIMAL)
 
       ! Primal boundary conditions
-      call parlst_querysection(roptcBDC%p_rparList, &
-          roptcBDC%ssectionBdCondPrim, p_rbdcond)
+      sbcsection = roptcBDC%ssectionBdCondPrim
 
     case (OPTP_PRIMALLIN,OPTP_PRIMALLIN_SIMPLE)
 
       ! Primal boundary conditions, linearised eqn.
-      call parlst_querysection(roptcBDC%p_rparList, &
-          roptcBDC%ssectionBdCondPrimLin, p_rbdcond)
+      sbcsection = roptcBDC%ssectionBdCondPrimLin
 
       ! Primal boundary conditions
-      call parlst_querysection(roptcBDC%p_rparList, &
-          roptcBDC%ssectionBdCondPrim, p_rbdcondPrimal)
+      sparentSection = roptcBDC%ssectionBdCondPrim
 
     case (OPTP_DUAL)
     
       ! Dual boundary conditions
-      call parlst_querysection(roptcBDC%p_rparList, &
-          roptcBDC%ssectionBdCondDual, p_rbdcond)
+      sbcsection = roptcBDC%ssectionBdCondDual
 
       ! Primal boundary conditions
-      call parlst_querysection(roptcBDC%p_rparList, &
-          roptcBDC%ssectionBdCondPrim, p_rbdcondPrimal)
+      sparentSection = roptcBDC%ssectionBdCondPrim
 
     case (OPTP_DUALLIN,OPTP_DUALLIN_SIMPLE)
     
       ! Dual boundary conditions, linearised equation
-      call parlst_querysection(roptcBDC%p_rparList, &
-          roptcBDC%ssectionBdCondDualLin, p_rbdcond)
+      sbcsection = roptcBDC%ssectionBdCondDualLin
 
       ! Primal boundary conditions
-      call parlst_querysection(roptcBDC%p_rparList, &
-          roptcBDC%ssectionBdCondPrim, p_rbdcondPrimal)
+      sparentSection = roptcBDC%ssectionBdCondPrim
 
     case (OPTP_PCSTEKLOV)
     
       ! Dual boundary conditions, linearised equation
-      call parlst_querysection(roptcBDC%p_rparList, &
-          roptcBDC%ssectionBdCondPCSteklov, p_rbdcond)
+      sbcsection = roptcBDC%ssectionBdCondPCSteklov
 
       ! Primal boundary conditions
-      call parlst_querysection(roptcBDC%p_rparList, &
-          roptcBDC%ssectionBdCondPrim, p_rbdcondPrimal)
+      sparentSection = roptcBDC%ssectionBdCondPrim
 
     end select
         
     ! Initialise the user-defined assembly
     call collct_init (rusercollection)
+    
+    ! Basic initialisation of the BC assembly structure
+    call sbc_initBCassembly (roptcBDC,rspaceDiscr,rtimeDiscr,dtime,&
+        rbcAssemblyData,ruserCollection,rcollection)
 
     ! Loop through all boundary components we have.
-    do ibdComponent = 1,boundary_igetNBoundComp(p_rboundary)
+    do ibct = 1,boundary_igetNBoundComp(p_rboundary)
 
-      ! Parse the parameter "bdComponentX"
-      write (sexpr,"(I10)") ibdComponent
-      sbdcomp = "bdComponent" // adjustl(sexpr)
-      
+      ! Get information about that component: Number of segments,...
+      call struc_getBDCinfo (roptcBDC,sbcsection,&
+          ibct,iindex,nsegments,bautomatic)
+          
+      if (bautomatic) then
+        if (sparentSection .eq. "") then
+          call output_line ("Automatic boundary conditions only allowed.", &
+              OU_CLASS_ERROR,OU_MODE_STD,"cc_parseBDconditions")
+          call sys_halt()
+        end if
+      end if
+
+      if (sparentSection .ne. "") then
+        ! Structure of the parent node        
+        call struc_getBDCinfo (roptcBDC,sparentSection,&
+            ibct,iindexParent,nsegmentsParent,bautomaticParent)
+      end if
+
       ! We start at parameter value 0.0.
       dpar1 = 0.0_DP
       
-      i = parlst_queryvalue (p_rbdcond, sbdcomp)
-
-      if (i .ne. 0) then
-      
-        ! get the corresponding index in the "primal" dection
-        if (copType .ne. OPTP_PRIMAL) then
-          iprimal = parlst_queryvalue (p_rbdcondPrimal, sbdcomp)
+      ! Parameter exists. Get the values in there.
+      do isegment = 1,nsegments
+        
+        ! Get information about the segment.
+        !
+        ! Is the component fully automatic? Is the segment automatic?
+        bautomaticSegment = .false.
+        
+        if (bautomatic) then
+          ! Get the info directly from the parent
+          call struc_getSegmentInfo (&
+                roptcBDC,sparentSection,iindexParent,isegment,dpar2,iintervalsEnd,&
+                rbcAssemblyData%cbcType,sparams)
+        else
+          ! Get the information from the section
+          call struc_getSegmentInfo (&
+                roptcBDC,sbcSection,iindex,isegment,dpar2,iintervalsEnd,&
+                rbcAssemblyData%cbcType,sparams)
+          
+          ! If the type of this segment is "automatic", get it from the parent
+          if (rbcAssemblyData%cbcType .eq. -1) then
+            bautomaticSegment = .true.
+            call struc_getSegmentInfo (&
+                  roptcBDC,sparentSection,iindexParent,isegment,dpar2,iintervalsEnd,&
+                  rbcAssemblyData%cbcType,sparams)
+          end if
         end if
-      
-        ! Parameter exists. Get the values in there.
-        do isegment = 1,parlst_querysubstrings (p_rbdcond, sbdcomp)
+
+        ! Form a boundary condition segment that covers that boundary part
+        if (dpar2 .ge. dpar1) then
+
+          ! Define the corresponding boundary region
+          call sbc_defineBdComponent (rbcAssemblyData,dpar1,dpar2,ibct,iintervalsEnd)
           
-          call parlst_getvalue_string (p_rbdcond, i, sstr, isubstring=isegment)
+          ! Type of equation?
+          select case (cequation)
           
-          ! Read the segment parameters
-          read(sstr,*) dpar2,iintervalEnds,ibctyp
+          ! ----------------------
+          ! Stokes / Navier-Stokes
+          ! ----------------------
+          case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
           
-          ! Form a boundary condition segment that covers that boundary part
-          if (dpar2 .ge. dpar1) then
+            ! Do we have 'automatic' boundary conditions?
+            if (.not. bautomatic .and. .not. bautomaticSegment) then
             
-            rboundaryRegion%dminParam = dpar1
-            rboundaryRegion%dmaxParam = dpar2
-            rboundaryRegion%iboundCompIdx = ibdComponent
-            rboundaryRegion%dmaxParamBC = &
-              boundary_dgetMaxParVal(p_rboundary, ibdComponent)
-            rboundaryRegion%iproperties = iintervalEnds
-            
-            ! Type of equation?
-            select case (cequation)
-            
-            ! ----------------------
-            ! Stokes / Navier-Stokes
-            ! ----------------------
-            case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
-            
+              ! -----------------------------------------
+              ! Boundary conditions by definition
+              ! -----------------------------------------
+
               ! Now, which type of BC is to be created?
-              select case (ibctyp)
+              select case (rbcAssemblyData%cbcType)
               
-              ! ------------------------------------------------------------------
-              ! Automatic boundary conditions. Dual and linearised equations only.
-              ! ------------------------------------------------------------------
-              case (-1)
-                if (copType .eq. OPTP_PRIMAL) then
-                  call output_line (&
-                      "Automatic boundary conditions only allowed.", &
-                      OU_CLASS_ERROR,OU_MODE_STD,"cc_parseBDconditions")
-                  call sys_halt()
-                end if
-                
-                ! The rule is:
-                !  * Primal Neumann = Dual Neumann,
-                !  * Primal Dirichlet = Dual Dirichlet-0
-
-                ! Get the boundary conditions of the primal equation
-                call parlst_getvalue_string (&
-                    p_rbdcondPrimal, iprimal, sstr, isubstring=isegment)
-                
-                ! Read the segment parameters
-                read(sstr,*) dpar2,iintervalEnds,ibctyp
-                
-                select case (ibctyp)
-                
-                ! --------------------------------------------------
-                ! Neumann boundary conditions
-                ! --------------------------------------------------
-                case (0)
-                  if (iand(casmFlags,SBC_NEUMANN) .ne. 0) then
-                    ! Add the bondary region to the Neumann boundary regions.
-                    call sbc_addBoundaryRegion(&
-                        rboundaryRegion,roptcBDCSpace%rneumannBoundary)
-                  end if
-                  
-                ! --------------------------------------------------
-                ! Dirichlet boundary conditions
-                ! --------------------------------------------------
-                case (1)
-                  if (iand(casmFlags,SBC_DIRICHLETBC) .ne. 0) then
-                  
-                    ! Add the bondary region to the Dirichlet boundary regions.
-                    call sbc_addBoundaryRegion(&
-                        rboundaryRegion,roptcBDCSpace%rdirichletBoundary)
-
-                    if (iand(casmFlags,SBC_DISCRETEBC) .ne. 0) then
-                      ! Impose Dirichlet-0 boundary conditions in the dual equation
-                    
-                      rcollection%IquickAccess(2) = BDC_VALDOUBLE
-                      rcollection%IquickAccess(3) = 0
-                      rcollection%IquickAccess(4) = 0
-                      rcollection%IquickAccess(5) = 0
-                      rcollection%DquickAccess(1) = dtime
-                      rcollection%DquickAccess(2) = 0.0_DP
-                      rcollection%SquickAccess(1) = ""
-                      rcollection%p_rnextCollection => ruserCollection
-                      rcollection%IquickAccess(6) = 0
-                      rcollection%IquickAccess(7:) = &
-                          transfer(r_t_p_optcBDC,rcollection%IquickAccess(7:),&
-                                        size(rcollection%IquickAccess(7:)))
-
-                      ! X-velocity
-                      rcollection%IquickAccess(1) = 1
-                      
-                      call user_initCollectForVecAssembly (&
-                          rglobalData,0,rcollection%IquickAccess(1),dtime,rusercollection)
-                      
-                      ! Assemble the BCs.
-                      call bcasm_newDirichletBConRealBD (&
-                          rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
-                          roptcBDCSpace%rdiscreteBC,&
-                          cc_getDirBCNavSt2D,rcollection)
-                          
-                      call user_doneCollectForVecAssembly (rglobalData,rusercollection)
-
-                      ! Y-velocity
-                      rcollection%IquickAccess(1) = 2
-                      
-                      call user_initCollectForVecAssembly (&
-                          rglobalData,0,rcollection%IquickAccess(1),dtime,rusercollection)
-                      
-                      ! Assemble the BCs.
-                      call bcasm_newDirichletBConRealBD (&
-                          rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
-                          roptcBDCSpace%rdiscreteBC,&
-                          cc_getDirBCNavSt2D,rcollection)
-                          
-                      call user_doneCollectForVecAssembly (rglobalData,rusercollection)
-                      
-                    end if
-                    
-                  end if
-                  
-                ! --------------------------------------------------
-                ! L2 Dirichlet boundary control
-                ! --------------------------------------------------
-                case (7)
-                  if (iand(casmFlags,SBC_DIRICHLETBCC) .ne. 0) then
-                    ! Add the bondary region to the Dirichlet boundary regions.
-                    call sbc_addBoundaryRegion(&
-                        rboundaryRegion,roptcBDCSpace%rdirichletControlBoundaryL2)
-                        
-                    if (iand(casmFlags,SBC_DISCRETEBC) .ne. 0) then
-
-                      ! Impose Dirichlet-0 boundary conditions 
-                      ! plus boundary control
-                    
-                      rcollection%IquickAccess(2) = BDC_VALDOUBLE
-                      rcollection%IquickAccess(3) = 0
-                      rcollection%IquickAccess(4) = 0
-                      rcollection%IquickAccess(5) = 0
-                      rcollection%DquickAccess(1) = dtime
-                      rcollection%DquickAccess(2) = 0.0_DP
-                      rcollection%SquickAccess(1) = ""
-                      rcollection%p_rnextCollection => ruserCollection
-                      rcollection%IquickAccess(6) = 0
-                      rcollection%IquickAccess(7:) = &
-                          transfer(r_t_p_optcBDC,rcollection%IquickAccess(7:),&
-                                        size(rcollection%IquickAccess(7:)))
-
-                      if ((copType .eq. OPTP_PRIMALLIN) .or. (copType .eq. OPTP_PRIMALLIN_SIMPLE)) then
-                        ! Prescribed boundary conditions
-                        rcollection%IquickAccess(6) = 1
-                        rcollection%p_rvectorQuickAccess1 => rvectorControl
-                      end if
-
-                      ! X-velocity
-                      rcollection%IquickAccess(1) = 1
-                      
-                      call user_initCollectForVecAssembly (&
-                          rglobalData,0,rcollection%IquickAccess(1),dtime,rusercollection)
-                      
-                      ! Assemble the BCs.
-                      call bcasm_newDirichletBConRealBD (&
-                          rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
-                          roptcBDCSpace%rdiscreteBC,&
-                          cc_getDirBCNavSt2D,rcollection)
-                          
-                      call user_doneCollectForVecAssembly (rglobalData,rusercollection)
-
-                      ! Y-velocity
-                      rcollection%IquickAccess(1) = 2
-                      
-                      call user_initCollectForVecAssembly (&
-                          rglobalData,0,rcollection%IquickAccess(1),dtime,rusercollection)
-                      
-                      ! Assemble the BCs.
-                      call bcasm_newDirichletBConRealBD (&
-                          rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
-                          roptcBDCSpace%rdiscreteBC,&
-                          cc_getDirBCNavSt2D,rcollection)
-                          
-                      call user_doneCollectForVecAssembly (rglobalData,rusercollection)
-                    
-                    end if
-                  
-                  end if
-                  
-                ! --------------------------------------------------
-                ! H^1/2 Dirichlet boundary control
-                ! --------------------------------------------------
-                case (8)
-                  if (iand(casmFlags,SBC_DIRICHLETBCC) .ne. 0) then
-                    ! Add the bondary region to the Dirichlet boundary regions.
-                    call sbc_addBoundaryRegion(&
-                        rboundaryRegion,roptcBDCSpace%rdirichletControlBoundaryH12)
-                        
-                    if (iand(casmFlags,SBC_DISCRETEBC) .ne. 0) then
-
-                      ! Impose Dirichlet-0 boundary conditions 
-                      ! plus boundary control
-                    
-                      rcollection%IquickAccess(2) = BDC_VALDOUBLE
-                      rcollection%IquickAccess(3) = 0
-                      rcollection%IquickAccess(4) = 0
-                      rcollection%IquickAccess(5) = 0
-                      rcollection%DquickAccess(1) = dtime
-                      rcollection%DquickAccess(2) = 0.0_DP
-                      rcollection%SquickAccess(1) = ""
-                      rcollection%p_rnextCollection => ruserCollection
-                      rcollection%IquickAccess(6) = 0
-                      rcollection%IquickAccess(7:) = &
-                          transfer(r_t_p_optcBDC,rcollection%IquickAccess(7:),&
-                                        size(rcollection%IquickAccess(7:)))
-
-                      if ((copType .eq. OPTP_PRIMALLIN) .or. (copType .eq. OPTP_PRIMALLIN_SIMPLE)) then
-                        ! Prescribed boundary conditions
-                        rcollection%IquickAccess(6) = 2
-                        rcollection%p_rvectorQuickAccess1 => rvectorControl
-                      end if
-
-                      if (copType .eq. OPTP_PCSTEKLOV)then
-                        ! Prescribed boundary conditions
-                        rcollection%IquickAccess(6) = 2
-                        rcollection%p_rvectorQuickAccess1 => rvectorControl
-                      end if
-
-                      ! X-velocity
-                      rcollection%IquickAccess(1) = 1
-                      
-                      call user_initCollectForVecAssembly (&
-                          rglobalData,0,rcollection%IquickAccess(1),dtime,rusercollection)
-                      
-                      ! Assemble the BCs.
-                      call bcasm_newDirichletBConRealBD (&
-                          rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
-                          roptcBDCSpace%rdiscreteBC,&
-                          cc_getDirBCNavSt2D,rcollection)
-                          
-                      call user_doneCollectForVecAssembly (rglobalData,rusercollection)
-
-                      ! Y-velocity
-                      rcollection%IquickAccess(1) = 2
-                      
-                      call user_initCollectForVecAssembly (&
-                          rglobalData,0,rcollection%IquickAccess(1),dtime,rusercollection)
-                      
-                      ! Assemble the BCs.
-                      call bcasm_newDirichletBConRealBD (&
-                          rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
-                          roptcBDCSpace%rdiscreteBC,&
-                          cc_getDirBCNavSt2D,rcollection)
-                          
-                      call user_doneCollectForVecAssembly (rglobalData,rusercollection)
-                    
-                    end if
-                  
-                  end if
-
-                case (9)
-                  ! Nothing to do here
-                  
-                case default
-                  call output_line ("Cannot set up automatic boundary conditions", &
-                      OU_CLASS_ERROR,OU_MODE_STD,"cc_parseBDconditions")
-                  call sys_halt()
-                  
-                end select
-                
               ! --------------------------------------------------
               ! Homogeneous/Inhomogeneous Neumann boundary conditions
               ! --------------------------------------------------
@@ -525,7 +558,7 @@ contains
                 if (iand(casmFlags,SBC_NEUMANN) .ne. 0) then
                   ! Add the bondary region to the Neumann boundary regions.
                   call sbc_addBoundaryRegion(&
-                      rboundaryRegion,roptcBDCSpace%rneumannBoundary)
+                      rbcAssemblyData%rboundaryRegion,roptcBDCSpace%rneumannBoundary)
                 end if
               
               ! --------------------------------------------------
@@ -537,34 +570,17 @@ contains
 
                   ! Add the bondary region to the Dirichlet boundary regions.
                   call sbc_addBoundaryRegion(&
-                      rboundaryRegion,roptcBDCSpace%rdirichletBoundary)
+                      rbcAssemblyData%rboundaryRegion,roptcBDCSpace%rdirichletBoundary)
 
                   if (iand(casmFlags,SBC_DISCRETEBC) .ne. 0) then
                   
                     ! Simple Dirichlet boundary.
                     ! Get the definition of the boundary condition.
                     ! Read the line again, get the expressions for X- and Y-velocity
-                    read(sstr,*) dvalue,iintervalEnds,ibctyp,sbdex1,sbdex2
+                    read(sparams,*) sbdex1,sbdex2
                   
                     ! For any string <> "", create the appropriate Dirichlet boundary
                     ! condition and add it to the list of boundary conditions.
-                    !
-                    ! The IquickAccess array is set up as follows:
-                    !  IquickAccess(1) = component under consideration (1=x-vel, 2=y-vel,...)
-                    !  IquickAccess(2) = expression type
-                    !  IquickAccess(3) = iid
-                    !  IquickAccess(4) = ivalue
-                    !  IquickAccess(5) = 1, if parameters (x,y) are needed, =0 otherwise
-                    !  IquickAccess(6) = type of boundary control to impose.
-                    !                    (=0: none, =1: Dirichlet L2)
-                    !  IquickAccess(7:...) = The binary content of r_t_p_optcBDC.
-                    !
-                    ! The DquickAccess array is set up as follows:
-                    !  DquickAccess(1) = dtime
-                    !  DquickAccess(2) = dvalue
-                    !
-                    ! The SquickAccess array is set up as follows:
-                    !  SquickAccess(1) = Name of the expression
                     
                     if (sbdex1 .ne. "") then
                       
@@ -572,33 +588,13 @@ contains
                       !
                       ! Get the expression information
                       call struc_getBdExprInfo (roptcBDC,sbdex1,&
-                          ctype,iid,ivalue,dvalue,svalue,bneedsParams)
+                          rbcAssemblyData%cexprType,rbcAssemblyData%iid,rbcAssemblyData%ivalue,&
+                          rbcAssemblyData%dvalue,rbcAssemblyData%sexprName)
                           
-                      rcollection%IquickAccess(1) = 1
-                      rcollection%IquickAccess(2) = ctype
-                      rcollection%IquickAccess(3) = iid
-                      rcollection%IquickAccess(4) = ivalue
-                      rcollection%IquickAccess(5) = 0
-                      if (bneedsParams) rcollection%IquickAccess(5) = 1
-                      rcollection%DquickAccess(1) = dtime
-                      rcollection%DquickAccess(2) = dvalue
-                      rcollection%SquickAccess(1) = svalue
-                      rcollection%p_rnextCollection => ruserCollection
-                      rcollection%IquickAccess(6) = 0
-                      rcollection%IquickAccess(7:) = &
-                          transfer(r_t_p_optcBDC,rcollection%IquickAccess(7:),&
-                                        size(rcollection%IquickAccess(7:)))
-                      
-                      call user_initCollectForVecAssembly (&
-                          rglobalData,iid,rcollection%IquickAccess(1),dtime,rusercollection)
-                      
                       ! Assemble the BCs.
-                      call bcasm_newDirichletBConRealBD (&
-                          rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
-                          roptcBDCSpace%rdiscreteBC,&
-                          cc_getDirBCNavSt2D,rcollection)
-                          
-                      call user_doneCollectForVecAssembly (rglobalData,rusercollection)
+                      rbcAssemblyData%icomponent = 1
+                      call sbc_assembleDirichletBC (roptcBDCSpace%rdiscreteBC,&
+                          rbcAssemblyData,rcollection,rglobalData)
                       
                     end if
                         
@@ -608,33 +604,13 @@ contains
                       !
                       ! Get the expression information
                       call struc_getBdExprInfo (roptcBDC,sbdex2,&
-                          ctype,iid,ivalue,dvalue,svalue,bneedsParams)
+                          rbcAssemblyData%cexprType,rbcAssemblyData%iid,rbcAssemblyData%ivalue,&
+                          rbcAssemblyData%dvalue,rbcAssemblyData%sexprName)
                           
-                      rcollection%IquickAccess(1) = 2
-                      rcollection%IquickAccess(2) = ctype
-                      rcollection%IquickAccess(3) = iid
-                      rcollection%IquickAccess(4) = ivalue
-                      rcollection%IquickAccess(5) = 0
-                      if (bneedsParams) rcollection%IquickAccess(5) = 1
-                      rcollection%DquickAccess(1) = dtime
-                      rcollection%DquickAccess(2) = dvalue
-                      rcollection%SquickAccess(1) = svalue
-                      rcollection%p_rnextCollection => ruserCollection
-                      rcollection%IquickAccess(6) = 0
-                      rcollection%IquickAccess(7:) = &
-                          transfer(r_t_p_optcBDC,rcollection%IquickAccess(7:),&
-                                        size(rcollection%IquickAccess(7:)))
-                      
-                      call user_initCollectForVecAssembly (&
-                          rglobalData,iid,rcollection%IquickAccess(1),dtime,rusercollection)
-                      
                       ! Assemble the BCs.
-                      call bcasm_newDirichletBConRealBD (&
-                          rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
-                          roptcBDCSpace%rdiscreteBC,&
-                          cc_getDirBCNavSt2D,rcollection)
-                          
-                      call user_doneCollectForVecAssembly (rglobalData,rusercollection)
+                      rbcAssemblyData%icomponent = 2
+                      call sbc_assembleDirichletBC (roptcBDCSpace%rdiscreteBC,&
+                          rbcAssemblyData,rcollection,rglobalData)
                       
                     end if
                     
@@ -651,35 +627,19 @@ contains
 
                   ! Add the bondary region to the Dirichlet boundary regions.
                   call sbc_addBoundaryRegion(&
-                      rboundaryRegion,roptcBDCSpace%rdirichletControlBoundaryL2)
+                      rbcAssemblyData%rboundaryRegion,roptcBDCSpace%rdirichletControlBoundaryL2)
 
                   if (iand(casmFlags,SBC_DISCRETEBC) .ne. 0) then
+                    ! Init boundary control
+                    rbcAssemblyData%cboundaryControl = 1
+                    rbcAssemblyData%p_rcontrol => rvectorControl
+
                     ! Get the definition of the boundary condition.
                     ! Read the line again, get the expressions for X- and Y-velocity
-                    read(sstr,*) dvalue,iintervalEnds,ibctyp,sbdex1,sbdex2
+                    read(sparams,*) sbdex1,sbdex2
                   
                     ! For any string <> "", create the appropriate Dirichlet boundary
                     ! condition and add it to the list of boundary conditions.
-                    !
-                    ! The IquickAccess array is set up as follows:
-                    !  IquickAccess(1) = component under consideration (1=x-vel, 2=y-vel,...)
-                    !  IquickAccess(2) = expression type
-                    !  IquickAccess(3) = iid
-                    !  IquickAccess(4) = ivalue
-                    !  IquickAccess(5) = 1, if parameters (x,y) are needed, =0 otherwise
-                    !  IquickAccess(6) = type of boundary control to impose.
-                    !                    (=0: none, =1: Dirichlet L2)
-                    !  IquickAccess(7:...) = The binary content of r_t_p_optcBDC.
-                    !
-                    ! The DquickAccess array is set up as follows:
-                    !  DquickAccess(1) = dtime
-                    !  DquickAccess(2) = dvalue
-                    !
-                    ! The SquickAccess array is set up as follows:
-                    !  SquickAccess(1) = Name of the expression
-                    !
-                    ! The Quickvectors array is set up as follows:
-                    !  p_rvectorQuickAccess1 => rvectorControl
                     
                     if (sbdex1 .ne. "") then
                       
@@ -687,34 +647,13 @@ contains
                       !
                       ! Get the expression information
                       call struc_getBdExprInfo (roptcBDC,sbdex1,&
-                          ctype,iid,ivalue,dvalue,svalue,bneedsParams)
+                          rbcAssemblyData%cexprType,rbcAssemblyData%iid,rbcAssemblyData%ivalue,&
+                          rbcAssemblyData%dvalue,rbcAssemblyData%sexprName)
                           
-                      rcollection%IquickAccess(1) = 1
-                      rcollection%IquickAccess(2) = ctype
-                      rcollection%IquickAccess(3) = iid
-                      rcollection%IquickAccess(4) = ivalue
-                      rcollection%IquickAccess(5) = 0
-                      if (bneedsParams) rcollection%IquickAccess(5) = 1
-                      rcollection%DquickAccess(1) = dtime
-                      rcollection%DquickAccess(2) = dvalue
-                      rcollection%SquickAccess(1) = svalue
-                      rcollection%p_rnextCollection => ruserCollection
-                      rcollection%IquickAccess(6) = 1
-                      rcollection%IquickAccess(7:) = &
-                          transfer(r_t_p_optcBDC,rcollection%IquickAccess(7:),&
-                                        size(rcollection%IquickAccess(7:)))
-                      rcollection%p_rvectorQuickAccess1 => rvectorControl
-                      
-                      call user_initCollectForVecAssembly (&
-                          rglobalData,iid,rcollection%IquickAccess(1),dtime,rusercollection)
-                      
                       ! Assemble the BCs.
-                      call bcasm_newDirichletBConRealBD (&
-                          rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
-                          roptcBDCSpace%rdiscreteBC,&
-                          cc_getDirBCNavSt2D,rcollection)
-                          
-                      call user_doneCollectForVecAssembly (rglobalData,rusercollection)
+                      rbcAssemblyData%icomponent = 1
+                      call sbc_assembleDirichletBC (roptcBDCSpace%rdiscreteBC,&
+                          rbcAssemblyData,rcollection,rglobalData)
                       
                     end if
                         
@@ -724,38 +663,17 @@ contains
                       !
                       ! Get the expression information
                       call struc_getBdExprInfo (roptcBDC,sbdex2,&
-                          ctype,iid,ivalue,dvalue,svalue,bneedsParams)
+                          rbcAssemblyData%cexprType,rbcAssemblyData%iid,rbcAssemblyData%ivalue,&
+                          rbcAssemblyData%dvalue,rbcAssemblyData%sexprName)
                           
-                      rcollection%IquickAccess(1) = 2
-                      rcollection%IquickAccess(2) = ctype
-                      rcollection%IquickAccess(3) = iid
-                      rcollection%IquickAccess(4) = ivalue
-                      rcollection%IquickAccess(5) = 0
-                      if (bneedsParams) rcollection%IquickAccess(5) = 1
-                      rcollection%DquickAccess(1) = dtime
-                      rcollection%DquickAccess(2) = dvalue
-                      rcollection%SquickAccess(1) = svalue
-                      rcollection%p_rnextCollection => ruserCollection
-                      rcollection%IquickAccess(6) = 1
-                      rcollection%IquickAccess(7:) = &
-                          transfer(r_t_p_optcBDC,rcollection%IquickAccess(7:),&
-                                        size(rcollection%IquickAccess(7:)))
-                      rcollection%p_rvectorQuickAccess1 => rvectorControl
-                      
-                      call user_initCollectForVecAssembly (&
-                          rglobalData,iid,rcollection%IquickAccess(1),dtime,rusercollection)
-                      
                       ! Assemble the BCs.
-                      call bcasm_newDirichletBConRealBD (&
-                          rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
-                          roptcBDCSpace%rdiscreteBC,&
-                          cc_getDirBCNavSt2D,rcollection)
-                          
-                      call user_doneCollectForVecAssembly (rglobalData,rusercollection)
-                      
+                      rbcAssemblyData%icomponent = 2
+                      call sbc_assembleDirichletBC (roptcBDCSpace%rdiscreteBC,&
+                          rbcAssemblyData,rcollection,rglobalData)
+
                     end if
                     
-                   end if ! SBC_DISCRETEBC
+                  end if ! SBC_DISCRETEBC
 
                 end if
 
@@ -768,70 +686,33 @@ contains
 
                   ! Add the bondary region to the Dirichlet boundary regions.
                   call sbc_addBoundaryRegion(&
-                      rboundaryRegion,roptcBDCSpace%rdirichletControlBoundaryH12)
+                      rbcAssemblyData%rboundaryRegion,roptcBDCSpace%rdirichletControlBoundaryH12)
 
                   if (iand(casmFlags,SBC_DISCRETEBC) .ne. 0) then
+                    ! Init boundary control
+                    rbcAssemblyData%cboundaryControl = 2
+                    rbcAssemblyData%p_rcontrol => rvectorControl
+
                     ! Get the definition of the boundary condition.
                     ! Read the line again, get the expressions for X- and Y-velocity
-                    read(sstr,*) dvalue,iintervalEnds,ibctyp,sbdex1,sbdex2
+                    read(sparams,*) sbdex1,sbdex2
                   
                     ! For any string <> "", create the appropriate Dirichlet boundary
                     ! condition and add it to the list of boundary conditions.
-                    !
-                    ! The IquickAccess array is set up as follows:
-                    !  IquickAccess(1) = component under consideration (1=x-vel, 2=y-vel,...)
-                    !  IquickAccess(2) = expression type
-                    !  IquickAccess(3) = iid
-                    !  IquickAccess(4) = ivalue
-                    !  IquickAccess(5) = 1, if parameters (x,y) are needed, =0 otherwise
-                    !  IquickAccess(6) = type of boundary control to impose.
-                    !                    (=0: none, =1: Dirichlet L2)
-                    !  IquickAccess(7:...) = The binary content of r_t_p_optcBDC.
-                    !
-                    ! The DquickAccess array is set up as follows:
-                    !  DquickAccess(1) = dtime
-                    !  DquickAccess(2) = dvalue
-                    !
-                    ! The SquickAccess array is set up as follows:
-                    !  SquickAccess(1) = Name of the expression
-                    !
-                    ! The Quickvectors array is set up as follows:
-                    !  p_rvectorQuickAccess1 => rvectorControl
-                    
+
                     if (sbdex1 .ne. "") then
                       
                       ! X-velocity
                       !
                       ! Get the expression information
                       call struc_getBdExprInfo (roptcBDC,sbdex1,&
-                          ctype,iid,ivalue,dvalue,svalue,bneedsParams)
+                          rbcAssemblyData%cexprType,rbcAssemblyData%iid,rbcAssemblyData%ivalue,&
+                          rbcAssemblyData%dvalue,rbcAssemblyData%sexprName)
                           
-                      rcollection%IquickAccess(1) = 1
-                      rcollection%IquickAccess(2) = ctype
-                      rcollection%IquickAccess(3) = iid
-                      rcollection%IquickAccess(4) = ivalue
-                      rcollection%IquickAccess(5) = 0
-                      if (bneedsParams) rcollection%IquickAccess(5) = 1
-                      rcollection%DquickAccess(1) = dtime
-                      rcollection%DquickAccess(2) = dvalue
-                      rcollection%SquickAccess(1) = svalue
-                      rcollection%p_rnextCollection => ruserCollection
-                      rcollection%IquickAccess(6) = 2
-                      rcollection%IquickAccess(7:) = &
-                          transfer(r_t_p_optcBDC,rcollection%IquickAccess(7:),&
-                                        size(rcollection%IquickAccess(7:)))
-                      rcollection%p_rvectorQuickAccess1 => rvectorControl
-                      
-                      call user_initCollectForVecAssembly (&
-                          rglobalData,iid,rcollection%IquickAccess(1),dtime,rusercollection)
-                      
                       ! Assemble the BCs.
-                      call bcasm_newDirichletBConRealBD (&
-                          rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
-                          roptcBDCSpace%rdiscreteBC,&
-                          cc_getDirBCNavSt2D,rcollection)
-                          
-                      call user_doneCollectForVecAssembly (rglobalData,rusercollection)
+                      rbcAssemblyData%icomponent = 1
+                      call sbc_assembleDirichletBC (roptcBDCSpace%rdiscreteBC,&
+                          rbcAssemblyData,rcollection,rglobalData)
                       
                     end if
                         
@@ -841,38 +722,17 @@ contains
                       !
                       ! Get the expression information
                       call struc_getBdExprInfo (roptcBDC,sbdex2,&
-                          ctype,iid,ivalue,dvalue,svalue,bneedsParams)
+                          rbcAssemblyData%cexprType,rbcAssemblyData%iid,rbcAssemblyData%ivalue,&
+                          rbcAssemblyData%dvalue,rbcAssemblyData%sexprName)
                           
-                      rcollection%IquickAccess(1) = 2
-                      rcollection%IquickAccess(2) = ctype
-                      rcollection%IquickAccess(3) = iid
-                      rcollection%IquickAccess(4) = ivalue
-                      rcollection%IquickAccess(5) = 0
-                      if (bneedsParams) rcollection%IquickAccess(5) = 1
-                      rcollection%DquickAccess(1) = dtime
-                      rcollection%DquickAccess(2) = dvalue
-                      rcollection%SquickAccess(1) = svalue
-                      rcollection%p_rnextCollection => ruserCollection
-                      rcollection%IquickAccess(6) = 2
-                      rcollection%IquickAccess(7:) = &
-                          transfer(r_t_p_optcBDC,rcollection%IquickAccess(7:),&
-                                        size(rcollection%IquickAccess(7:)))
-                      rcollection%p_rvectorQuickAccess1 => rvectorControl
-                      
-                      call user_initCollectForVecAssembly (&
-                          rglobalData,iid,rcollection%IquickAccess(1),dtime,rusercollection)
-                      
                       ! Assemble the BCs.
-                      call bcasm_newDirichletBConRealBD (&
-                          rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
-                          roptcBDCSpace%rdiscreteBC,&
-                          cc_getDirBCNavSt2D,rcollection)
-                          
-                      call user_doneCollectForVecAssembly (rglobalData,rusercollection)
-                      
+                      rbcAssemblyData%icomponent = 2
+                      call sbc_assembleDirichletBC (roptcBDCSpace%rdiscreteBC,&
+                          rbcAssemblyData,rcollection,rglobalData)
+
                     end if
                     
-                   end if ! SBC_DISCRETEBC
+                  end if ! SBC_DISCRETEBC
 
                 end if
 
@@ -880,107 +740,160 @@ contains
                 call output_line ("Unknown boundary condition!", &
                     OU_CLASS_ERROR,OU_MODE_STD,"cc_parseBDconditions")
                 call sys_halt()
-              end select ! ibctyp
-
-            ! ----------------------
-            ! Heat equation
-            ! ----------------------
-            case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
-            
-              ! Now, which type of BC is to be created?
-              select case (ibctyp)
+              end select ! cbctyp
               
-              ! ------------------------------------------------------------------
-              ! Automatic boundary conditions. Dual and linearised equations only.
-              ! ------------------------------------------------------------------
-              case (-1)
-                if (copType .eq. OPTP_PRIMAL) then
-                  call output_line (&
-                      "Automatic boundary conditions only allowed.", &
-                      OU_CLASS_ERROR,OU_MODE_STD,"cc_parseBDconditions")
-                  call sys_halt()
+            else
+
+              ! -----------------------------------------
+              ! Automatic boundary conditions
+              ! -----------------------------------------
+
+              ! The rule is:
+              !  * Primal Neumann = Dual Neumann,
+              !  * Primal Dirichlet = Dual Dirichlet-0
+
+              select case (rbcAssemblyData%cbcType)
+              
+              ! --------------------------------------------------
+              ! Neumann boundary conditions
+              ! --------------------------------------------------
+              case (0)
+                if (iand(casmFlags,SBC_NEUMANN) .ne. 0) then
+                  ! Add the bondary region to the Neumann boundary regions.
+                  call sbc_addBoundaryRegion(&
+                      rbcAssemblyData%rboundaryRegion,roptcBDCSpace%rneumannBoundary)
                 end if
                 
-                ! The rule is:
-                !  * Primal Neumann = Dual Neumann,
-                !  * Primal Dirichlet = Dual Dirichlet-0
+              ! --------------------------------------------------
+              ! Dirichlet boundary conditions
+              ! --------------------------------------------------
+              case (1)
+                if (iand(casmFlags,SBC_DIRICHLETBC) .ne. 0) then
+                
+                  ! Add the bondary region to the Dirichlet boundary regions.
+                  call sbc_addBoundaryRegion(&
+                      rbcAssemblyData%rboundaryRegion,roptcBDCSpace%rdirichletBoundary)
 
-                ! Get the boundary conditions of the primal equation
-                call parlst_getvalue_string (&
-                    p_rbdcondPrimal, iprimal, sstr, isubstring=isegment)
-                
-                ! Read the segment parameters
-                read(sstr,*) dpar2,iintervalEnds,ibctyp
-                
-                select case (ibctyp)
-                
-                ! --------------------------------------------------
-                ! Neumann boundary conditions
-                ! --------------------------------------------------
-                case (0)
-                
-                  if (iand(casmFlags,SBC_NEUMANN) .ne. 0) then
-                    ! Add the bondary region to the Neumann boundary regions.
-                    call sbc_addBoundaryRegion(&
-                        rboundaryRegion,roptcBDCSpace%rneumannBoundary)
-                  end if
+                  if (iand(casmFlags,SBC_DISCRETEBC) .ne. 0) then
+                    
+                    ! Impose Dirichlet-0 boundary conditions in the dual equation
+                    call sbc_defineConstValue (rbcAssemblyData,0.0_DP)
                   
-                ! --------------------------------------------------
-                ! Dirichlet boundary conditions
-                ! --------------------------------------------------
-                case (1)
-                
-                  if (iand(casmFlags,SBC_DIRICHLETBC) .ne. 0) then
+                    ! X/Y-velocity
+                    do i = 1,2
                     
-                    ! Add the bondary region to the Dirichlet boundary regions.
-                    call sbc_addBoundaryRegion(&
-                        rboundaryRegion,roptcBDCSpace%rdirichletBoundary)
-                        
-                    if (iand(casmFlags,SBC_DISCRETEBC) .ne. 0) then
-                    
-                      ! Impose Dirichlet-0 boundary conditions in the dual equation
-                    
-                      rcollection%IquickAccess(2) = BDC_VALDOUBLE
-                      rcollection%IquickAccess(3) = 0
-                      rcollection%IquickAccess(4) = 0
-                      rcollection%IquickAccess(5) = 0
-                      rcollection%DquickAccess(1) = dtime
-                      rcollection%DquickAccess(2) = 0.0_DP
-                      rcollection%SquickAccess(1) = ""
-                      rcollection%p_rnextCollection => ruserCollection
-                      rcollection%IquickAccess(6) = 0
-                      rcollection%IquickAccess(7:) = &
-                          transfer(r_t_p_optcBDC,rcollection%IquickAccess(7:),&
-                                        size(rcollection%IquickAccess(7:)))
-
-                      ! Solution
-                      rcollection%IquickAccess(1) = 1
-                      
-                      call user_initCollectForVecAssembly (&
-                          rglobalData,0,rcollection%IquickAccess(1),dtime,rusercollection)
-                      
                       ! Assemble the BCs.
-                      call bcasm_newDirichletBConRealBD (&
-                          rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
-                          roptcBDCSpace%rdiscreteBC,&
-                          cc_getDirBCNavSt2D,rcollection)
-                          
-                      call user_doneCollectForVecAssembly (rglobalData,rusercollection)
-                      
-                    end if
-                  
+                      rbcAssemblyData%icomponent = i
+                      call sbc_assembleDirichletBC (roptcBDCSpace%rdiscreteBC,&
+                          rbcAssemblyData,rcollection,rglobalData)
+
+                    end do
+                    
                   end if
                   
-                case (9)
-                  ! Nothing to do here
-
-                case default
-                  call output_line ("Cannot set up automatic boundary conditions", &
-                      OU_CLASS_ERROR,OU_MODE_STD,"cc_parseBDconditions")
-                  call sys_halt()
-                  
-                end select
+                end if
                 
+              ! --------------------------------------------------
+              ! L2 Dirichlet boundary control
+              ! --------------------------------------------------
+              case (7)
+              
+                if (iand(casmFlags,SBC_DIRICHLETBCC) .ne. 0) then
+                  ! Add the bondary region to the Dirichlet boundary regions.
+                  call sbc_addBoundaryRegion(&
+                      rbcAssemblyData%rboundaryRegion,roptcBDCSpace%rdirichletControlBoundaryL2)
+                      
+                  if (iand(casmFlags,SBC_DISCRETEBC) .ne. 0) then
+
+                    ! Impose Dirichlet-0 boundary conditions 
+                    ! plus boundary control
+                    call sbc_defineConstValue (rbcAssemblyData,0.0_DP)
+
+                    if ((copType .eq. OPTP_PRIMALLIN) .or. (copType .eq. OPTP_PRIMALLIN_SIMPLE) &
+                        .or. (copType .eq. OPTP_PCSTEKLOV)) then
+                      ! Boundary control
+                      rbcAssemblyData%cboundaryControl = 1
+                      rbcAssemblyData%p_rcontrol => rvectorControl
+                    end if
+
+                    ! X/Y-velocity
+                    do i = 1,2
+                    
+                      ! Assemble the BCs.
+                      rbcAssemblyData%icomponent = i
+                      call sbc_assembleDirichletBC (roptcBDCSpace%rdiscreteBC,&
+                          rbcAssemblyData,rcollection,rglobalData)
+                      
+                    end do
+                    
+                  end if
+
+                end if
+                
+              ! --------------------------------------------------
+              ! H^1/2 Dirichlet boundary control
+              ! --------------------------------------------------
+              case (8)
+              
+                if (iand(casmFlags,SBC_DIRICHLETBCC) .ne. 0) then
+                  ! Add the bondary region to the Dirichlet boundary regions.
+                  call sbc_addBoundaryRegion(&
+                      rbcAssemblyData%rboundaryRegion,roptcBDCSpace%rdirichletControlBoundaryH12)
+                      
+                  if (iand(casmFlags,SBC_DISCRETEBC) .ne. 0) then
+
+                    ! Impose Dirichlet-0 boundary conditions 
+                    ! plus boundary control
+                    call sbc_defineConstValue (rbcAssemblyData,0.0_DP)
+
+                    if ((copType .eq. OPTP_PRIMALLIN) .or. (copType .eq. OPTP_PRIMALLIN_SIMPLE) &
+                        .or. (copType .eq. OPTP_PCSTEKLOV)) then
+                      ! Boundary control
+                      rbcAssemblyData%cboundaryControl = 2
+                      rbcAssemblyData%p_rcontrol => rvectorControl
+                    end if
+
+                    ! X/Y-velocity
+                    do i = 1,2
+                    
+                      ! Assemble the BCs.
+                      rbcAssemblyData%icomponent = i
+                      call sbc_assembleDirichletBC (roptcBDCSpace%rdiscreteBC,&
+                          rbcAssemblyData,rcollection,rglobalData)
+
+                    end do
+                  
+                  end if
+                
+                end if
+
+              case (9)
+                ! Nothing to do here
+                
+              case default
+                call output_line ("Cannot set up automatic boundary conditions", &
+                    OU_CLASS_ERROR,OU_MODE_STD,"cc_parseBDconditions")
+                call sys_halt()
+                
+              end select
+              
+            end if
+            
+          ! ----------------------
+          ! Heat equation
+          ! ----------------------
+          case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
+          
+            ! Do we have 'automatic' boundary conditions?
+            if (.not. bautomatic .and. .not. bautomaticSegment) then
+            
+              ! -----------------------------------------
+              ! Boundary conditions by definition
+              ! -----------------------------------------
+              
+              ! Now, which type of BC is to be created?
+              select case (rbcAssemblyData%cbcType)
+              
               ! --------------------------------------------------
               ! Homogeneous/Inhomogeneous Neumann boundary conditions
               ! --------------------------------------------------
@@ -990,7 +903,7 @@ contains
                   ! Add the bondary region to the Neumann boundary regions
                   ! if there is a structure present.
                   call sbc_addBoundaryRegion(&
-                      rboundaryRegion,roptcBDCSpace%rneumannBoundary)
+                      rbcAssemblyData%rboundaryRegion,roptcBDCSpace%rneumannBoundary)
                 end if
               
               ! --------------------------------------------------
@@ -1002,67 +915,30 @@ contains
 
                   ! Add the bondary region to the Dirichlet boundary regions.
                   call sbc_addBoundaryRegion(&
-                      rboundaryRegion,roptcBDCSpace%rdirichletBoundary)
+                      rbcAssemblyData%rboundaryRegion,roptcBDCSpace%rdirichletBoundary)
 
                   if (iand(casmFlags,SBC_DISCRETEBC) .ne. 0) then
                   
                     ! Simple Dirichlet boundary.
                     ! Get the definition of the boundary condition.
                     ! Read the line again, get the expressions for the data field
-                    read(sstr,*) dvalue,iintervalEnds,ibctyp,sbdex1
+                    read(sparams,*) sbdex1
                   
                     ! For any string <> "", create the appropriate Dirichlet boundary
                     ! condition and add it to the list of boundary conditions.
-                    !
-                    ! The IquickAccess array is set up as follows:
-                    !  IquickAccess(1) = component under consideration (1=x-vel, 2=y-vel,...)
-                    !  IquickAccess(2) = expression type
-                    !  IquickAccess(3) = iid
-                    !  IquickAccess(4) = ivalue
-                    !  IquickAccess(5) = 1, if parameters (x,y) are needed, =0 otherwise
-                    !  IquickAccess(7:...) = The binary content of r_t_p_optcBDC.
-                    !
-                    ! The DquickAccess array is set up as follows:
-                    !  DquickAccess(1) = dtime
-                    !  DquickAccess(2) = dvalue
-                    !
-                    ! The SquickAccess array is set up as follows:
-                    !  SquickAccess(1) = Name of the expression
                     
                     if (sbdex1 .ne. "") then
                       
-                      ! X-velocity
-                      !
                       ! Get the expression information
                       call struc_getBdExprInfo (roptcBDC,sbdex1,&
-                          ctype,iid,ivalue,dvalue,svalue,bneedsParams)
+                          rbcAssemblyData%cexprType,rbcAssemblyData%iid,rbcAssemblyData%ivalue,&
+                          rbcAssemblyData%dvalue,rbcAssemblyData%sexprName)
                           
-                      rcollection%IquickAccess(1) = 1
-                      rcollection%IquickAccess(2) = ctype
-                      rcollection%IquickAccess(3) = iid
-                      rcollection%IquickAccess(4) = ivalue
-                      rcollection%IquickAccess(5) = 0
-                      if (bneedsParams) rcollection%IquickAccess(5) = 1
-                      rcollection%DquickAccess(1) = dtime
-                      rcollection%DquickAccess(2) = dvalue
-                      rcollection%SquickAccess(1) = svalue
-                      rcollection%p_rnextCollection => ruserCollection
-                      rcollection%IquickAccess(6) = 0
-                      rcollection%IquickAccess(7:) = &
-                          transfer(r_t_p_optcBDC,rcollection%IquickAccess(7:),&
-                                        size(rcollection%IquickAccess(7:)))
-                      
-                      call user_initCollectForVecAssembly (&
-                          rglobalData,iid,rcollection%IquickAccess(1),dtime,rusercollection)
-                      
                       ! Assemble the BCs.
-                      call bcasm_newDirichletBConRealBD (&
-                          rspaceDiscr,rcollection%IquickAccess(1),rboundaryRegion,&
-                          roptcBDCSpace%rdiscreteBC,&
-                          cc_getDirBCNavSt2D,rcollection)
-                          
-                      call user_doneCollectForVecAssembly (rglobalData,rusercollection)
-                      
+                      rbcAssemblyData%icomponent = 1
+                      call sbc_assembleDirichletBC (roptcBDCSpace%rdiscreteBC,&
+                          rbcAssemblyData,rcollection,rglobalData)
+
                     end if
                     
                   end if ! SBC_DISCRETEBC
@@ -1073,1287 +949,291 @@ contains
                 call output_line ("Unknown boundary condition!", &
                     OU_CLASS_ERROR,OU_MODE_STD,"cc_parseBDconditions")
                 call sys_halt()
-              end select ! ibctyp
+              end select ! cbctyp
 
-            case default
+            else
+
+              ! -----------------------------------------
+              ! Automatic boundary conditions
+              ! -----------------------------------------
+
+              ! The rule is:
+              !  * Primal Neumann = Dual Neumann,
+              !  * Primal Dirichlet = Dual Dirichlet-0
+
+              select case (rbcAssemblyData%cbcType)
               
-              call output_line ("Unknown equation", &
-                  OU_CLASS_ERROR,OU_MODE_STD,"cc_parseBDconditions")
-              call sys_halt()
+              ! --------------------------------------------------
+              ! Neumann boundary conditions
+              ! --------------------------------------------------
+              case (0)
               
-            end select ! equation
+                if (iand(casmFlags,SBC_NEUMANN) .ne. 0) then
+                  ! Add the bondary region to the Neumann boundary regions.
+                  call sbc_addBoundaryRegion(&
+                      rbcAssemblyData%rboundaryRegion,roptcBDCSpace%rneumannBoundary)
+                end if
+                
+              ! --------------------------------------------------
+              ! Dirichlet boundary conditions
+              ! --------------------------------------------------
+              case (1)
+              
+                if (iand(casmFlags,SBC_DIRICHLETBC) .ne. 0) then
+                  
+                  ! Add the bondary region to the Dirichlet boundary regions.
+                  call sbc_addBoundaryRegion(&
+                      rbcAssemblyData%rboundaryRegion,roptcBDCSpace%rdirichletBoundary)
+                      
+                  if (iand(casmFlags,SBC_DISCRETEBC) .ne. 0) then
+                  
+                    ! Impose Dirichlet-0 boundary conditions in the dual equation
+                    call sbc_defineConstValue (rbcAssemblyData,0.0_DP)
+                  
+                    ! Assemble the BCs.
+                    rbcAssemblyData%icomponent = 1
+                    call sbc_assembleDirichletBC (roptcBDCSpace%rdiscreteBC,&
+                        rbcAssemblyData,rcollection,rglobalData)
+                    
+                  end if
+                
+                end if
+                
+              case (9)
+                ! Nothing to do here
+
+              case default
+                call output_line ("Cannot set up automatic boundary conditions", &
+                    OU_CLASS_ERROR,OU_MODE_STD,"cc_parseBDconditions")
+                call sys_halt()
+                
+              end select
+
+            end if            
+          
+          case default
             
-            ! Move on to the next parameter value
-            dpar1 = dpar2
+            call output_line ("Unknown equation", &
+                OU_CLASS_ERROR,OU_MODE_STD,"cc_parseBDconditions")
+            call sys_halt()
             
-          end if
-                                            
-        end do ! isegment
+          end select ! equation
+          
+          ! Move on to the next parameter value
+          dpar1 = dpar2
+          
+        end if
+                                          
+      end do ! isegment
       
-      end if
-      
-    end do ! ibdComponent
+    end do ! ibct
 
     call collct_done (rusercollection)
-
-
-!    ! local variables
-!    integer :: i,ityp,ivalue,ibdComponent,isegment,iintervalEnds,iprimaldual
-!    integer :: ibctyp,icount,iexptyp,iid
-!    integer, dimension(2) :: IminIndex,imaxIndex
-!    integer, dimension(NDIM2D) :: IvelComp
-!    real(DP) :: dvalue,dpar1,dpar2
-!    character(LEN=PARLST_LENLINEBUF) :: cstr,cexpr,sbdex1,sbdex2,sbdex3,sbdex4
-!    character(LEN=PARLST_MLNAME) :: cname
-!    type(t_collection) :: rlocalCollection
-!    type(t_boundary), pointer :: p_rboundary
-!    type(t_linearForm) :: rlinformRhs
-!    
-!    ! A local collection we use for storing named parameters during the
-!    ! parsing process.
-!    type(t_collection) :: rcoll
-!    
-!    ! A collection structure passed to callback routines.
-!    type(t_collection), target :: rcallbackcollection
-!    
-!    ! Triangulation on currently highest level.
-!    type(t_triangulation), pointer :: p_rtriangulation
-!
-!    ! A set of variables describing the analytic boundary conditions.
-!    type(t_boundaryRegion), target :: rboundaryRegion
-!    
-!    ! A pointer to the section with the expressions and the boundary conditions
-!    type(t_parlstSection), pointer :: p_rsection,p_rbdcond
-!    
-!    ! A compiled expression for evaluation at runtime
-!    type(t_fparser), target :: rparser
-!    
-!    select case (roptcBDC%p_rphysics%cequation)
-!    case (0,1)
-!      ! Stokes, Navier-Stokes, 2D
-!    
-!      ! For implementing boundary conditions, we use a "filter technique with
-!      ! discretised boundary conditions". This means, we first have to calculate
-!      ! a discrete version of the analytic BC, which we can implement into the
-!      ! solution/RHS vectors using the corresponding filter.
-!      !
-!      ! At first, we need the analytic description of the boundary conditions.
-!      ! Initialise a structure for boundary conditions, which accepts this,
-!      ! on the heap.
-!      !
-!      ! We first set up the boundary conditions for the X-velocity, then those
-!      ! of the Y-velocity.
-!      !
-!      ! Get the expression/bc sections from the bondary condition block
-!      call parlst_querysection(roptcBDC%p_rparamListBDC, &
-!          roptcBDC%ssectionBdExpressions, p_rsection)
-!      call parlst_querysection(roptcBDC%p_rparamListBDC, &
-!          roptcBDC%ssectionBdConditions, p_rbdcond)
-!      
-!      ! For intermediate storing of expression types, we use a local collection
-!      call collct_init (rcoll)
-!      
-!      ! Add a section to the collection that accepts the boundary expressions
-!      call collct_addsection (rcoll, roptcBDC%ssectionBdExpressions)
-!      
-!      ! Create a parser structure for as many expressions as configured
-!      call fparser_create (rparser,&
-!          parlst_querysubstrings (p_rsection, "bdExpressions"))
-!      
-!      ! Add the parser to the collection
-!      call collct_setvalue_pars (rcoll, BDC_BDPARSER, rparser, &
-!                                  .true., 0, SEC_SBDEXPRESSIONS)
-!      
-!      ! Add the boundary expressions to the collection into the
-!      ! specified section.
-!      do i=1,parlst_querysubstrings (p_rsection, "bdExpressions")
-!      
-!        call parlst_getvalue_string (p_rsection, "bdExpressions", cstr, "", i)
-!        
-!        ! Get the type and decide on the identifier how to save the expression.
-!        read(cstr,*) cname,ityp
-!        
-!        select case (ityp)
-!        case (BDC_USERDEFID)
-!          ! Id of a hardcoded expression realised in the callback routines
-!          read(cstr,*) cname,ityp,ivalue
-!          call collct_setvalue_int (rcoll, cname, ivalue, .true., &
-!                                    0, SEC_SBDEXPRESSIONS)
-!        case (BDC_USERDEF)
-!          ! Name of a hardcoded expression realised in the callback routines
-!          read(cstr,*) cname,ityp,cexpr
-!          call collct_setvalue_string (rcoll, cname, cexpr, .true., &
-!                                      0, SEC_SBDEXPRESSIONS)
-!
-!        case (BDC_EXPRESSION)
-!          ! General expression; not implemented yet
-!          read(cstr,*) cname,ityp,cexpr
-!          
-!          ! Compile the expression; the expression gets number i
-!          call fparser_parseFunction (rparser, i, cexpr, SEC_EXPRVARIABLES)
-!          
-!          ! Add the number of the function in the parser object to
-!          ! the collection with the name of the expression
-!          call collct_setvalue_int (rcoll, cname, i, .true., &
-!                                    0, SEC_SBDEXPRESSIONS)
-!          
-!        case (BDC_VALDOUBLE)
-!          ! Real-value
-!          read(cstr,*) cname,ityp,dvalue
-!          call collct_setvalue_real (rcoll, cname, dvalue, .true., &
-!                                    0, SEC_SBDEXPRESSIONS)
-!        case (BDC_VALINT)
-!          ! Integer-value
-!          read(cstr,*) cname,ityp,ivalue
-!          call collct_setvalue_int (rcoll, cname, ivalue, .true., &
-!                                    0, SEC_SBDEXPRESSIONS)
-!                  
-!        case (BDC_VALPARPROFILE)
-!          ! Parabolic profile with specified maximum velocity
-!          read(cstr,*) cname,ityp,dvalue
-!          call collct_setvalue_real (rcoll, cname, dvalue, .true., &
-!                                    0, SEC_SBDEXPRESSIONS)
-!                                     
-!        case default
-!          call output_line ("Expressions not implemented!", &
-!              OU_CLASS_ERROR,OU_MODE_STD,"cc_parseBDconditions")
-!          call sys_halt()
-!
-!        end select
-!        
-!        ! Put the type of the expression to the temporary collection section
-!        call collct_setvalue_int (rcoll, cname, ityp, .true.)
-!        
-!      end do
-!      
-!      ! Get the triangulation on the highest level
-!      p_rtriangulation => rspaceDiscr%p_rtriangulation
-!      p_rboundary => rspaceDiscr%p_rboundary
-!      
-!      ! Put some information to the quick access arrays for access
-!      ! in the callback routine.
-!      call collct_init(rcallbackcollection)
-!
-!      rcoll%Iquickaccess(1) = 1 ! time-dependent
-!      rcoll%Dquickaccess(2) = rtimeDiscr%dtimeInit
-!      rcoll%Dquickaccess(3) = rtimeDiscr%dtimeMax
-!      
-!      rcoll%p_rnextCollection => rcallbackcollection
-!      
-!      ! Now to the actual boundary conditions.
-!      ! First primal (iprimaldual=1) then dual (iprimaldual=2)
-!      do iprimaldual = 1,2
-!        
-!        ! DquickAccess(4:) is reserved for BC specific information.
-!        !
-!        ! Put a link to a user defined collection into that local collection.
-!        ! That allows us to access it or to pass it to user defined callback
-!        ! functions.
-!
-!        ! Loop through all boundary components we have.
-!        do ibdComponent = 1,boundary_igetNBoundComp(p_rboundary)
-!
-!          ! Parse the parameter "bdComponentX"
-!          write (cexpr,"(I10)") ibdComponent
-!          cstr = "bdComponent" // adjustl(cexpr)
-!          
-!          ! We start at parameter value 0.0.
-!          dpar1 = 0.0_DP
-!          
-!          i = parlst_queryvalue (p_rbdcond, cstr)
-!          if (i .ne. 0) then
-!            ! Parameter exists. Get the values in there.
-!            do isegment = 1,parlst_querysubstrings (p_rbdcond, cstr)
-!              
-!              call parlst_getvalue_string (p_rbdcond, i, cstr, isubstring=isegment)
-!              ! Read the segment parameters
-!              read(cstr,*) dpar2,iintervalEnds,ibctyp
-!              
-!              ! Form a boundary condition segment that covers that boundary part
-!              if (dpar2 .ge. dpar1) then
-!                
-!                rboundaryRegion%dminParam = dpar1
-!                rboundaryRegion%dmaxParam = dpar2
-!                rboundaryRegion%iboundCompIdx = ibdComponent
-!                rboundaryRegion%dmaxParamBC = &
-!                  boundary_dgetMaxParVal(p_rboundary, ibdComponent)
-!                rboundaryRegion%iproperties = iintervalEnds
-!                
-!                ! Now, which type of BC is to be created?
-!                select case (ibctyp)
-!                
-!                case (0)
-!                  if (iand(casmFlags,SBC_NEUMANN) .ne. 0) then
-!                    if (present(rneumannBoundary)) then
-!                      ! Add the bondary region to the Neumann boundary regions
-!                      ! if there is a structure present.
-!                      call sbc_addBoundaryRegion(&
-!                          rboundaryRegion,rneumannBoundary,iprimaldual)
-!                    end if
-!                  end if
-!                
-!                case (1)
-!                  if (iand(casmFlags,SBC_DIRICHLETBC) .ne. 0) then
-!                    ! Simple Dirichlet boundary.
-!                    ! Prescribed primal velocity; dual velocity os always zero.
-!                    ! Read the line again, get the expressions for X- and Y-velocity
-!                    read(cstr,*) dvalue,iintervalEnds,ibctyp,sbdex1,sbdex2
-!                    
-!                    ! For any string <> "", create the appropriate Dirichlet boundary
-!                    ! condition and add it to the list of boundary conditions.
-!                    !
-!                    ! The IquickAccess array is set up as follows:
-!                    !  IquickAccess(1) = Type of boundary condition
-!                    !  IquickAccess(2) = component under consideration (1=x-vel, 2=y-vel,...)
-!                    !  IquickAccess(3) = expression type
-!                    !  IquickAccess(4) = expression identifier
-!                    !
-!                    ! The SquickAccess array is set up as follows:
-!                    !  SquickAccess(1) = Name of the expression
-!                    !
-!                    rcoll%IquickAccess(1) = ibctyp
-!                    
-!                    if (iprimaldual .eq. 1) then
-!                      ! Primal BCs
-!                      if (cbctype .eq. CCSPACE_PRIMAL) then
-!                      
-!                        ! If the type is a double precision value, set the DquickAccess(4)
-!                        ! to that value so it can quickly be accessed.
-!                        if (sbdex1 .ne. "") then
-!                          ! X-velocity
-!                          !
-!                          ! The 2nd element in IquickAccess saves the component number.
-!                          rcoll%IquickAccess(2) = 1
-!                          
-!                          ! IquickAccess(3) saves the type of the expression
-!                          iexptyp = collct_getvalue_int (rcoll, sbdex1)
-!                          rcoll%IquickAccess(3) = iexptyp
-!                          
-!                          ! The 1st element in the sting quick access array is
-!                          ! the name of the expression to evaluate.
-!                          rcoll%SquickAccess(1) = sbdex1
-!                          
-!                          ! Dquickaccess(3) / IquickAccess(3) saves information
-!                          ! about the expression.
-!                          select case (iexptyp)
-!                          case (BDC_USERDEFID)
-!                            iid = collct_getvalue_int (rcoll, sbdex1, 0, roptcBDC%ssectionBdExpressions)
-!                          case (BDC_VALDOUBLE,BDC_VALPARPROFILE)
-!                            ! Constant or parabolic profile
-!                            rcoll%Dquickaccess(4) = &
-!                                collct_getvalue_real (rcoll, sbdex1, 0, roptcBDC%ssectionBdExpressions)
-!                          case (BDC_EXPRESSION)
-!                            ! Expression. Write the identifier for the expression
-!                            ! as itag into the boundary condition structure.
-!                            rcoll%IquickAccess(4) = &
-!                                collct_getvalue_int (rcoll, sbdex1, 0, roptcBDC%ssectionBdExpressions)
-!                          end select
-!                        
-!                          rcoll%Dquickaccess(1) = dtime
-!                          call user_initCollectForVecAssembly (&
-!                              rglobalData,iid,1,dtime,rcallbackcollection)
-!                          
-!                          ! Assemble the BCs.
-!                          call bcasm_newDirichletBConRealBD (&
-!                              rspaceDiscr,1,rboundaryRegion,rdiscreteBC,&
-!                              cc_getBDconditionsNavSt2D,rcoll)
-!                              
-!                          call user_doneCollectForVecAssembly (rglobalData,rcallbackcollection)
-!                              
-!                        end if
-!                        
-!                        if (sbdex2 .ne. "") then
-!                        
-!                          ! Y-velocity
-!                          !
-!                          ! The 1st element in IquickAccess saves the component number.
-!                          rcoll%IquickAccess(2) = 2
-!                          
-!                          ! IquickAccess(3) saves the type of the expression
-!                          iexptyp = collct_getvalue_int (rcoll, sbdex2)
-!                          rcoll%IquickAccess(3) = iexptyp
-!                          
-!                          ! The 1st element in the sting quick access array is
-!                          ! the name of the expression to evaluate.
-!                          rcoll%SquickAccess(1) = sbdex2
-!                          
-!                          ! Dquickaccess(4) / IquickAccess(4) saves information
-!                          ! about the expression.
-!                          select case (iexptyp)
-!                          case (BDC_USERDEFID)
-!                            iid = collct_getvalue_int (rcoll, sbdex2, 0, roptcBDC%ssectionBdExpressions)
-!                          case (BDC_VALDOUBLE,BDC_VALPARPROFILE)
-!                            ! Constant or parabolic profile
-!                            rcoll%Dquickaccess(4) = &
-!                                collct_getvalue_real (rcoll,sbdex2, 0, roptcBDC%ssectionBdExpressions)
-!                          case (BDC_EXPRESSION)
-!                            ! Expression. Write the identifier for the expression
-!                            ! as itag into the boundary condition structure.
-!                            rcoll%IquickAccess(4) = &
-!                                collct_getvalue_int (rcoll,sbdex2, 0, roptcBDC%ssectionBdExpressions)
-!                          end select
-!                        
-!                          rcoll%Dquickaccess(1) = dtime
-!                          call user_initCollectForVecAssembly (&
-!                              rglobalData,iid,2,dtime,rcallbackcollection)
-!
-!                          ! Assemble the BCs.
-!                          call bcasm_newDirichletBConRealBD (&
-!                              rspaceDiscr,2,rboundaryRegion,rdiscreteBC,&
-!                              cc_getBDconditionsNavSt2D,rcoll)
-!
-!                          call user_doneCollectForVecAssembly (rglobalData,rcallbackcollection)
-!
-!                        end if
-!                        
-!                      end if
-!                      
-!                    end if
-!                    
-!                    if (iprimaldual .eq. 2) then
-!                    
-!                      ! Dual BCs
-!                      if (cbctype .eq. CCSPACE_DUAL) then
-!
-!                        ! Now the same thing again, this time separately for primal and dual
-!                        ! variables.
-!                        ! If a primal velocity is specified, Dirichlet-0-boundary conditions are
-!                        ! assumed for the corresponding dual.
-!                        if (sbdex1 .ne. "") then
-!                        
-!                          ! dual X-velocity if primal X-velocity exists
-!                          !
-!                          ! The 2nd element in IquickAccess saves the component number.
-!                          rcoll%IquickAccess(2) = 1
-!                          
-!                          ! Ditichlet-0 boundary
-!                          iexptyp = BDC_VALDOUBLE
-!                          rcoll%Dquickaccess(4) = 0.0_DP
-!                          rcoll%IquickAccess(3) = iexptyp
-!                          rcoll%SquickAccess(1) = ""
-!                          iid = 0
-!                          
-!                          rcoll%Dquickaccess(1) = dtime
-!                          call user_initCollectForVecAssembly (rglobalData,iid,4,dtime,rcallbackcollection)
-!
-!                          ! Assemble the BCs.
-!                          ! If we only assemble dual BCs and there are 3 solution components,
-!                          ! we assume the vector to specify exactly the dual solution.
-!                          call bcasm_newDirichletBConRealBD (&
-!                              rspaceDiscr,1+rspaceDiscr%ncomponents-3,rboundaryRegion,rdiscreteBC,&
-!                              cc_getBDconditionsNavSt2D,rcoll)
-!                              
-!                          call user_doneCollectForVecAssembly (rglobalData,rcallbackcollection)
-!                              
-!                        end if
-!                        
-!                        if (sbdex2 .ne. "") then
-!                        
-!                          ! dual Y-velocity if primal Y-velocity exists
-!                          !
-!                          ! The 2nd element in IquickAccess saves the component number.
-!                          rcoll%IquickAccess(2) = 2
-!                          
-!                          ! Ditichlet-0 boundary
-!                          iexptyp = BDC_VALDOUBLE
-!                          rcoll%Dquickaccess(4) = 0.0_DP
-!                          rcoll%IquickAccess(3) = iexptyp
-!                          rcoll%SquickAccess(1) = ""
-!                          iid = 0
-!                          
-!                          rcoll%Dquickaccess(1) = dtime
-!                          call user_initCollectForVecAssembly (rglobalData,iid,5,dtime,rcallbackcollection)
-!
-!                          ! Assemble the BCs.
-!                          ! If we only assemble dual BCs and there are 3 solution components,
-!                          ! we assume the vector to specify exactly the dual solution.
-!                          call bcasm_newDirichletBConRealBD (&
-!                              rspaceDiscr,2+rspaceDiscr%ncomponents-3,rboundaryRegion,rdiscreteBC,&
-!                              cc_getBDconditionsNavSt2D,rcoll)
-!
-!                          call user_doneCollectForVecAssembly (rglobalData,rcallbackcollection)
-!                              
-!                        end if
-!                        
-!                      end if
-!                      
-!                    end if
-!                    
-!                  end if
-!                  
-!                case (4)
-!                  if (iand(casmFlags,SBC_DIRICHLETBC) .ne. 0) then
-!                    ! Simple Dirichlet boundary, separate definition for all
-!                    ! solution components.
-!                    ! Read the line again, get the expressions for X- and Y-velocity
-!                    read(cstr,*) dvalue,iintervalEnds,ibctyp,sbdex1,sbdex2,sbdex3,sbdex4
-!                    
-!                    ! For any string <> "", create the appropriate Dirichlet boundary
-!                    ! condition and add it to the list of boundary conditions.
-!                    !
-!                    ! The IquickAccess array is set up as follows:
-!                    !  IquickAccess(1) = Type of boundary condition
-!                    !  IquickAccess(2) = component under consideration (1=x-vel, 2=y-vel,...)
-!                    !  IquickAccess(3) = expression type
-!                    !  IquickAccess(4) = expression identifier
-!                    !
-!                    ! The SquickAccess array is set up as follows:
-!                    !  SquickAccess(1) = Name of the expression
-!                    !
-!                    rcoll%IquickAccess(1) = ibctyp
-!                    
-!                    if (iprimaldual .eq. 1) then
-!                    
-!                      ! Primal BCs
-!                      if (cbctype .eq. CCSPACE_PRIMAL) then
-!                        ! If the type is a double precision value, set the DquickAccess(4)
-!                        ! to that value so it can quickly be accessed.
-!                        if (sbdex1 .ne. "") then
-!                          ! X-velocity
-!                          !
-!                          ! The 2nd element in IquickAccess saves the component number.
-!                          rcoll%IquickAccess(2) = 1
-!                          
-!                          ! IquickAccess(3) saves the type of the expression
-!                          iexptyp = collct_getvalue_int (rcoll, sbdex1)
-!                          rcoll%IquickAccess(3) = iexptyp
-!                          
-!                          ! The 1st element in the sting quick access array is
-!                          ! the name of the expression to evaluate.
-!                          rcoll%SquickAccess(1) = sbdex1
-!                          
-!                          ! Dquickaccess(3) / IquickAccess(3) saves information
-!                          ! about the expression.
-!                          select case (iexptyp)
-!                          case (BDC_USERDEFID)
-!                            iid = collct_getvalue_int (rcoll, sbdex1, 0, roptcBDC%ssectionBdExpressions)
-!                          case (BDC_VALDOUBLE,BDC_VALPARPROFILE)
-!                            ! Constant or parabolic profile
-!                            rcoll%Dquickaccess(4) = &
-!                                collct_getvalue_real (rcoll, sbdex1, 0, roptcBDC%ssectionBdExpressions)
-!                          case (BDC_EXPRESSION)
-!                            ! Expression. Write the identifier for the expression
-!                            ! as itag into the boundary condition structure.
-!                            rcoll%IquickAccess(4) = &
-!                                collct_getvalue_int (rcoll, sbdex1, 0, roptcBDC%ssectionBdExpressions)
-!                          end select
-!                        
-!                          rcoll%Dquickaccess(1) = dtime
-!                          call user_initCollectForVecAssembly (&
-!                              rglobalData,iid,1,dtime,rcallbackcollection)
-!
-!                          ! Assemble the BCs.
-!                          call bcasm_newDirichletBConRealBD (&
-!                              rspaceDiscr,1,rboundaryRegion,rdiscreteBC,&
-!                              cc_getBDconditionsNavSt2D,rcoll)
-!
-!                          call user_doneCollectForVecAssembly (rglobalData,rcallbackcollection)
-!                              
-!                        end if
-!                        
-!                        if (sbdex2 .ne. "") then
-!                        
-!                          ! Y-velocity
-!                          !
-!                          ! The 1st element in IquickAccess saves the component number.
-!                          rcoll%IquickAccess(2) = 2
-!                          
-!                          ! IquickAccess(3) saves the type of the expression
-!                          iexptyp = collct_getvalue_int (rcoll, sbdex2)
-!                          rcoll%IquickAccess(3) = iexptyp
-!                          
-!                          ! The 1st element in the sting quick access array is
-!                          ! the name of the expression to evaluate.
-!                          rcoll%SquickAccess(1) = sbdex2
-!                          
-!                          ! Dquickaccess(4) / IquickAccess(4) saves information
-!                          ! about the expression.
-!                          select case (iexptyp)
-!                          case (BDC_USERDEFID)
-!                            iid = collct_getvalue_int (rcoll, sbdex2, 0, roptcBDC%ssectionBdExpressions)
-!                          case (BDC_VALDOUBLE,BDC_VALPARPROFILE)
-!                            ! Constant or parabolic profile
-!                            rcoll%Dquickaccess(4) = &
-!                                collct_getvalue_real (rcoll,sbdex2, 0, roptcBDC%ssectionBdExpressions)
-!                          case (BDC_EXPRESSION)
-!                            ! Expression. Write the identifier for the expression
-!                            ! as itag into the boundary condition structure.
-!                            rcoll%IquickAccess(4) = &
-!                                collct_getvalue_int (rcoll,sbdex2, 0, roptcBDC%ssectionBdExpressions)
-!                          end select
-!                        
-!                          rcoll%Dquickaccess(1) = dtime
-!                          call user_initCollectForVecAssembly (&
-!                              rglobalData,iid,2,dtime,rcallbackcollection)
-!
-!                          ! Assemble the BCs.
-!                          call bcasm_newDirichletBConRealBD (&
-!                              rspaceDiscr,2,rboundaryRegion,rdiscreteBC,&
-!                              cc_getBDconditionsNavSt2D,rcoll)
-!
-!                          call user_doneCollectForVecAssembly (rglobalData,rcallbackcollection)
-!
-!                        end if
-!                      end if
-!                      
-!                    end if
-!                    
-!                    if (iprimaldual .eq. 2) then
-!                    
-!                      ! Dual BCs
-!                      if (cbctype .eq. CCSPACE_DUAL) then
-!                      
-!                        ! Now the same thing again, this time separately for primal and dual
-!                        ! variables.
-!                        ! If a velocity is not specified, Dirichlet-0-boundary conditions are
-!                        ! assumed.
-!                        
-!                        if (sbdex3 .ne. "") then
-!                          ! X-velocity
-!                          !
-!                          ! The 2nd element in IquickAccess saves the component number.
-!                          rcoll%IquickAccess(2) = 1
-!                          
-!                          ! IquickAccess(3) saves the type of the expression
-!                          iexptyp = collct_getvalue_int (rcoll, sbdex3)
-!                          rcoll%IquickAccess(3) = iexptyp
-!                          
-!                          ! The 1st element in the sting quick access array is
-!                          ! the name of the expression to evaluate.
-!                          rcoll%SquickAccess(1) = sbdex3
-!                          
-!                          ! Dquickaccess(3) / IquickAccess(3) saves information
-!                          ! about the expression.
-!                          select case (iexptyp)
-!                          case (BDC_USERDEFID)
-!                            iid = collct_getvalue_int (rcoll, sbdex3, 0, roptcBDC%ssectionBdExpressions)
-!                          case (BDC_VALDOUBLE,BDC_VALPARPROFILE)
-!                            ! Constant or parabolic profile
-!                            rcoll%Dquickaccess(4) = &
-!                                collct_getvalue_real (rcoll, sbdex3, 0, roptcBDC%ssectionBdExpressions)
-!                          case (BDC_EXPRESSION)
-!                            ! Expression. Write the identifier for the expression
-!                            ! as itag into the boundary condition structure.
-!                            rcoll%IquickAccess(4) = &
-!                                collct_getvalue_int (rcoll, sbdex3, 0, roptcBDC%ssectionBdExpressions)
-!                          end select
-!                        
-!                          rcoll%Dquickaccess(1) = dtime
-!                          call user_initCollectForVecAssembly (rglobalData,iid,4,dtime,rcallbackcollection)
-!
-!                          ! Assemble the BCs.
-!                          ! If we only assemble dual BCs and there are 3 solution components,
-!                          ! we assume the vector to specify exactly the dual solution.
-!                          call bcasm_newDirichletBConRealBD (&
-!                              rspaceDiscr,1+rspaceDiscr%ncomponents-3,rboundaryRegion,rdiscreteBC,&
-!                              cc_getBDconditionsNavSt2D,rcoll)
-!                              
-!                          call user_doneCollectForVecAssembly (rglobalData,rcallbackcollection)
-!
-!                        end if
-!                        
-!                        if (sbdex4 .ne. "") then
-!                        
-!                          ! Y-velocity
-!                          !
-!                          ! The 1st element in IquickAccess saves the component number.
-!                          rcoll%IquickAccess(2) = 2
-!                          
-!                          ! IquickAccess(3) saves the type of the expression
-!                          iexptyp = collct_getvalue_int (rcoll, sbdex4)
-!                          rcoll%IquickAccess(3) = iexptyp
-!                          
-!                          ! The 1st element in the sting quick access array is
-!                          ! the name of the expression to evaluate.
-!                          rcoll%SquickAccess(1) = sbdex4
-!                          
-!                          ! Dquickaccess(4) / IquickAccess(4) saves information
-!                          ! about the expression.
-!                          select case (iexptyp)
-!                          case (BDC_USERDEFID)
-!                            iid = collct_getvalue_int (rcoll, sbdex4, 0, roptcBDC%ssectionBdExpressions)
-!                          case (BDC_VALDOUBLE,BDC_VALPARPROFILE)
-!                            ! Constant or parabolic profile
-!                            rcoll%Dquickaccess(4) = &
-!                                collct_getvalue_real (rcoll,sbdex4, 0, roptcBDC%ssectionBdExpressions)
-!                          case (BDC_EXPRESSION)
-!                            ! Expression. Write the identifier for the expression
-!                            ! as itag into the boundary condition structure.
-!                            rcoll%IquickAccess(4) = &
-!                                collct_getvalue_int (rcoll,sbdex4, 0, roptcBDC%ssectionBdExpressions)
-!                          end select
-!                        
-!                          rcoll%Dquickaccess(1) = dtime
-!                          call user_initCollectForVecAssembly (rglobalData,iid,5,dtime,rcallbackcollection)
-!
-!                          ! Assemble the BCs.
-!                          ! If we only assemble dual BCs and there are 3 solution components,
-!                          ! we assume the vector to specify exactly the dual solution.
-!                          call bcasm_newDirichletBConRealBD (&
-!                              rspaceDiscr,2+rspaceDiscr%ncomponents-3,rboundaryRegion,rdiscreteBC,&
-!                              cc_getBDconditionsNavSt2D,rcoll)
-!                              
-!                          call user_doneCollectForVecAssembly (rglobalData,rcallbackcollection)
-!
-!                        end if
-!                        
-!                      end if
-!                      
-!                    end if
-!                    
-!                  end if
-!
-!                case (5)
-!                  ! Simple Dirichlet boundary for the primal equation.
-!                  ! Read the line again, get the expressions for X- and Y-velocity
-!                  read(cstr,*) dvalue,iintervalEnds,ibctyp,sbdex1,sbdex2
-!                 
-!                  ! For any string <> "", create the appropriate Dirichlet boundary
-!                  ! condition and add it to the list of boundary conditions.
-!                  !
-!                  ! The IquickAccess array is set up as follows:
-!                  !  IquickAccess(1) = Type of boundary condition
-!                  !  IquickAccess(2) = component under consideration (1=x-vel, 2=y-vel,...)
-!                  !  IquickAccess(3) = expression type
-!                  !  IquickAccess(4) = expression identifier
-!                  !
-!                  ! The SquickAccess array is set up as follows:
-!                  !  SquickAccess(1) = Name of the expression
-!                  !
-!                  rcoll%IquickAccess(1) = ibctyp
-!                  
-!                  if (iand(casmFlags,SBC_DIRICHLETBC) .ne. 0) then
-!                    
-!                    if (iprimaldual .eq. 1) then
-!                    
-!                      ! Primal BCs
-!                      if (cbctype .eq. CCSPACE_PRIMAL) then
-!                        ! If the type is a double precision value, set the DquickAccess(4)
-!                        ! to that value so it can quickly be accessed.
-!                        if (sbdex1 .ne. "") then
-!                          ! X-velocity
-!                          !
-!                          ! The 2nd element in IquickAccess saves the component number.
-!                          rcoll%IquickAccess(2) = 1
-!                          
-!                          ! IquickAccess(3) saves the type of the expression
-!                          iexptyp = collct_getvalue_int (rcoll, sbdex1)
-!                          rcoll%IquickAccess(3) = iexptyp
-!                          
-!                          ! The 1st element in the sting quick access array is
-!                          ! the name of the expression to evaluate.
-!                          rcoll%SquickAccess(1) = sbdex1
-!                          
-!                          ! Dquickaccess(3) / IquickAccess(3) saves information
-!                          ! about the expression.
-!                          select case (iexptyp)
-!                          case (BDC_USERDEFID)
-!                            iid = collct_getvalue_int (rcoll, sbdex1, 0, roptcBDC%ssectionBdExpressions)
-!                          case (BDC_VALDOUBLE,BDC_VALPARPROFILE)
-!                            ! Constant or parabolic profile
-!                            rcoll%Dquickaccess(4) = &
-!                                collct_getvalue_real (rcoll, sbdex1, 0, roptcBDC%ssectionBdExpressions)
-!                          case (BDC_EXPRESSION)
-!                            ! Expression. Write the identifier for the expression
-!                            ! as itag into the boundary condition structure.
-!                            rcoll%IquickAccess(4) = &
-!                                collct_getvalue_int (rcoll, sbdex1, 0, roptcBDC%ssectionBdExpressions)
-!                          end select
-!                        
-!                          rcoll%Dquickaccess(1) = dtime
-!                          call user_initCollectForVecAssembly (&
-!                              rglobalData,iid,1,dtime,rcallbackcollection)
-!
-!                          ! Assemble the BCs.
-!                          call bcasm_newDirichletBConRealBD (&
-!                              rspaceDiscr,1,rboundaryRegion,rdiscreteBC,&
-!                              cc_getBDconditionsNavSt2D,rcoll)
-!
-!                          call user_doneCollectForVecAssembly (rglobalData,rcallbackcollection)
-!                              
-!                        end if
-!                        
-!                        if (sbdex2 .ne. "") then
-!                        
-!                          ! Y-velocity
-!                          !
-!                          ! The 1st element in IquickAccess saves the component number.
-!                          rcoll%IquickAccess(2) = 2
-!                          
-!                          ! IquickAccess(3) saves the type of the expression
-!                          iexptyp = collct_getvalue_int (rcoll, sbdex2)
-!                          rcoll%IquickAccess(3) = iexptyp
-!                          
-!                          ! The 1st element in the sting quick access array is
-!                          ! the name of the expression to evaluate.
-!                          rcoll%SquickAccess(1) = sbdex2
-!                          
-!                          ! Dquickaccess(4) / IquickAccess(4) saves information
-!                          ! about the expression.
-!                          select case (iexptyp)
-!                          case (BDC_USERDEFID)
-!                            iid = collct_getvalue_int (rcoll, sbdex2, 0, roptcBDC%ssectionBdExpressions)
-!                          case (BDC_VALDOUBLE,BDC_VALPARPROFILE)
-!                            ! Constant or parabolic profile
-!                            rcoll%Dquickaccess(4) = &
-!                                collct_getvalue_real (rcoll,sbdex2, 0, roptcBDC%ssectionBdExpressions)
-!                          case (BDC_EXPRESSION)
-!                            ! Expression. Write the identifier for the expression
-!                            ! as itag into the boundary condition structure.
-!                            rcoll%IquickAccess(4) = &
-!                                collct_getvalue_int (rcoll,sbdex2, 0, roptcBDC%ssectionBdExpressions)
-!                          end select
-!                        
-!                          rcoll%Dquickaccess(1) = dtime
-!                          call user_initCollectForVecAssembly (&
-!                              rglobalData,iid,2,dtime,rcallbackcollection)
-!
-!                          ! Assemble the BCs.
-!                          call bcasm_newDirichletBConRealBD (&
-!                              rspaceDiscr,2,rboundaryRegion,rdiscreteBC,&
-!                              cc_getBDconditionsNavSt2D,rcoll)
-!
-!                          call user_doneCollectForVecAssembly (rglobalData,rcallbackcollection)
-!
-!                        end if
-!                      end if
-!                      
-!                    end if
-!                  
-!                  end if
-!                                 
-!                  if (iand(casmFlags,SBC_NEUMANN) .ne. 0) then
-!                    ! Neumann boundary for the dual.
-!                    if (iprimaldual .eq. 2) then
-!                      !call bcasm_getEdgesInBCregion (p_rtriangulation,p_rboundary,&
-!                      !                              rboundaryRegion, &
-!                      !                              IminIndex,ImaxIndex,icount)
-!                      !if ((icount .gt. 0) .and. present(rneumannBoundary)) then
-!                      if (present(rneumannBoundary)) then
-!                        ! Add the bondary region to the Neumann boundary regions
-!                        ! if there is a structure present.
-!                        call sbc_addBoundaryRegion(&
-!                            rboundaryRegion,rneumannBoundary,iprimaldual)
-!                      end if
-!                    end if
-!                  end if
-!                                    
-!                case (6)
-!                  ! Simple Dirichlet boundary for the dual equation
-!                  ! Read the line again, get the expressions for X- and Y-velocity
-!                  read(cstr,*) dvalue,iintervalEnds,ibctyp,sbdex3,sbdex4
-!                  
-!                  ! For any string <> "", create the appropriate Dirichlet boundary
-!                  ! condition and add it to the list of boundary conditions.
-!                  !
-!                  ! The IquickAccess array is set up as follows:
-!                  !  IquickAccess(1) = Type of boundary condition
-!                  !  IquickAccess(2) = component under consideration (1=x-vel, 2=y-vel,...)
-!                  !  IquickAccess(3) = expression type
-!                  !  IquickAccess(4) = expression identifier
-!                  !
-!                  ! The SquickAccess array is set up as follows:
-!                  !  SquickAccess(1) = Name of the expression
-!                  !
-!                  rcoll%IquickAccess(1) = ibctyp
-!                  
-!                  if (iand(casmFlags,SBC_NEUMANN) .ne. 0) then
-!                    ! Neumann boundary for the primal.
-!                    if (iprimaldual .eq. 1) then
-!                      !call bcasm_getEdgesInBCregion (p_rtriangulation,rboundary,&
-!                      !                              rboundaryRegion, &
-!                      !                              IminIndex,ImaxIndex,icount)
-!                      !if ((icount .gt. 0) .and. present(rneumannBoundary)) then
-!                      if (present(rneumannBoundary)) then
-!                        ! Add the bondary region to the Neumann boundary regions
-!                        ! if there is a structure present.
-!                        call sbc_addBoundaryRegion(&
-!                            rboundaryRegion,rneumannBoundary,iprimaldual)
-!                      end if
-!                    end if
-!                  end if
-!
-!                  if (iand(casmFlags,SBC_DIRICHLETBC) .ne. 0) then
-!                    if (iprimaldual .eq. 2) then
-!                    
-!                      ! Dual BCs
-!                      if (cbctype .eq. CCSPACE_DUAL) then
-!                      
-!                        ! Now the same thing again, this time separately for primal and dual
-!                        ! variables.
-!                        ! If a velocity is not specified, Dirichlet-0-boundary conditions are
-!                        ! assumed.
-!                        
-!                        if (sbdex3 .ne. "") then
-!                          ! X-velocity
-!                          !
-!                          ! The 2nd element in IquickAccess saves the component number.
-!                          rcoll%IquickAccess(2) = 1
-!                          
-!                          ! IquickAccess(3) saves the type of the expression
-!                          iexptyp = collct_getvalue_int (rcoll, sbdex3)
-!                          rcoll%IquickAccess(3) = iexptyp
-!                          
-!                          ! The 1st element in the sting quick access array is
-!                          ! the name of the expression to evaluate.
-!                          rcoll%SquickAccess(1) = sbdex3
-!                          
-!                          ! Dquickaccess(3) / IquickAccess(3) saves information
-!                          ! about the expression.
-!                          select case (iexptyp)
-!                          case (BDC_USERDEFID)
-!                            iid = collct_getvalue_int (rcoll, sbdex3, 0, roptcBDC%ssectionBdExpressions)
-!                          case (BDC_VALDOUBLE,BDC_VALPARPROFILE)
-!                            ! Constant or parabolic profile
-!                            rcoll%Dquickaccess(4) = &
-!                                collct_getvalue_real (rcoll, sbdex3, 0, roptcBDC%ssectionBdExpressions)
-!                          case (BDC_EXPRESSION)
-!                            ! Expression. Write the identifier for the expression
-!                            ! as itag into the boundary condition structure.
-!                            rcoll%IquickAccess(4) = &
-!                                collct_getvalue_int (rcoll, sbdex3, 0, roptcBDC%ssectionBdExpressions)
-!                          end select
-!                        
-!                          rcoll%Dquickaccess(1) = dtime
-!                          call user_initCollectForVecAssembly (rglobalData,iid,4,dtime,rcallbackcollection)
-!
-!                          ! Assemble the BCs.
-!                          ! If we only assemble dual BCs and there are 3 solution components,
-!                          ! we assume the vector to specify exactly the dual solution.
-!                          call bcasm_newDirichletBConRealBD (&
-!                              rspaceDiscr,1+rspaceDiscr%ncomponents-3,rboundaryRegion,rdiscreteBC,&
-!                              cc_getBDconditionsNavSt2D,rcoll)
-!                              
-!                          call user_doneCollectForVecAssembly (rglobalData,rcallbackcollection)
-!
-!                        end if
-!                        
-!                        if (sbdex4 .ne. "") then
-!                        
-!                          ! Y-velocity
-!                          !
-!                          ! The 1st element in IquickAccess saves the component number.
-!                          rcoll%IquickAccess(2) = 2
-!                          
-!                          ! IquickAccess(3) saves the type of the expression
-!                          iexptyp = collct_getvalue_int (rcoll, sbdex4)
-!                          rcoll%IquickAccess(3) = iexptyp
-!                          
-!                          ! The 1st element in the sting quick access array is
-!                          ! the name of the expression to evaluate.
-!                          rcoll%SquickAccess(1) = sbdex4
-!                          
-!                          ! Dquickaccess(4) / IquickAccess(4) saves information
-!                          ! about the expression.
-!                          select case (iexptyp)
-!                          case (BDC_USERDEFID)
-!                            iid = collct_getvalue_int (rcoll, sbdex4, 0, roptcBDC%ssectionBdExpressions)
-!                          case (BDC_VALDOUBLE,BDC_VALPARPROFILE)
-!                            ! Constant or parabolic profile
-!                            rcoll%Dquickaccess(4) = &
-!                                collct_getvalue_real (rcoll,sbdex4, 0, roptcBDC%ssectionBdExpressions)
-!                          case (BDC_EXPRESSION)
-!                            ! Expression. Write the identifier for the expression
-!                            ! as itag into the boundary condition structure.
-!                            rcoll%IquickAccess(4) = &
-!                                collct_getvalue_int (rcoll,sbdex4, 0, roptcBDC%ssectionBdExpressions)
-!                          end select
-!                        
-!                          rcoll%Dquickaccess(1) = dtime
-!                          call user_initCollectForVecAssembly (rglobalData,iid,5,dtime,rcallbackcollection)
-!
-!                          ! Assemble the BCs.
-!                          ! If we only assemble dual BCs and there are 3 solution components,
-!                          ! we assume the vector to specify exactly the dual solution.
-!                          call bcasm_newDirichletBConRealBD (&
-!                              rspaceDiscr,2+rspaceDiscr%ncomponents-3,rboundaryRegion,rdiscreteBC,&
-!                              cc_getBDconditionsNavSt2D,rcoll)
-!                              
-!                          call user_doneCollectForVecAssembly (rglobalData,rcallbackcollection)
-!
-!                        end if
-!                        
-!                      end if
-!                      
-!                    end if
-!                    
-!                  end if
-!                  
-!                case (7)
-!                  
-!                  ! Dirichlet boundary control.
-!                  !
-!                  ! This is treated like Neumann boundary conditions here
-!                  ! but leads to a different implementation.
-!                  ! The corresponding region is added to the Neumann boundary
-!                  ! structure as well as to the Dirichlet boundary control
-!                  ! structure.
-!                  ! Adding it to the Neumann boundary conditions structure
-!                  ! is important, otherwise the components detect the problem
-!                  ! as pure Dirichlet and start filtering the pressure... 
-!!                  if (iand(casmFlags,SBC_NEUMANN) .ne. 0) then
-!!                    if (present(rneumannBoundary)) then
-!!                      call sbc_addBoundaryRegion(&
-!!                          rboundaryRegion,rneumannBoundary,iprimaldual)
-!!                    end if
-!!                  end if
-!
-!                  ! For the primal equation, there is a special coupling
-!                  ! to the dual equation.
-!                  !
-!                  ! For the dual equation, we have Dirichlet-0 boundary conditions here.
-!
-!                  if (iand(casmFlags,SBC_DIRICHLETBCC) .ne. 0) then
-!                  
-!                    if (iprimaldual .eq. 1) then
-!                      if (present(rdirichletControlBoundaryL2)) then
-!                        ! Add the bondary region to the Dirichlet BCC boundary regions
-!                        ! if there is a structure present.
-!                        call sbc_addBoundaryRegion(&
-!                            rboundaryRegion,rdirichletControlBoundaryL2,iprimaldual)
-!                      end if
-!                      
-!                      if (present(rvectorDirichletBCCRHS)) then
-!                        ! Modify the RHS according to the Dirichlet boundary control
-!                        ! conditions. Use a penalty approach to implement the Dirichlet
-!                        ! values. A linear form has to be applied to the RHS vector
-!                        ! in each component which incorporates the basic Dirichlet value.
-!                        ! The control then acts relative to the incoroprated value.
-!                        
-!                        ! Prepare the linear form.
-!                        rlinformRhs%itermCount = 1
-!                        rlinformRhs%Idescriptors(1) = DER_FUNC2D
-!                        rlinformRhs%Dcoefficients(1:rlinformRhs%itermCount)  = 1.0_DP
-!                        
-!                        ! Read the boundary data specification and prepare the callback routine
-!                        read(cstr,*) dvalue,iintervalEnds,ibctyp,sbdex1,sbdex2
-!                        
-!                        ! For any string <> "", create the appropriate Dirichlet boundary
-!                        ! condition and add it to the list of boundary conditions.
-!                        !
-!                        ! The IquickAccess array is set up as follows:
-!                        !  IquickAccess(1) = Type of boundary condition
-!                        !  IquickAccess(2) = component under consideration (1=x-vel, 2=y-vel,...)
-!                        !  IquickAccess(3) = expression type
-!                        !  IquickAccess(4) = expression identifier
-!                        !
-!                        ! The SquickAccess array is set up as follows:
-!                        !  SquickAccess(1) = Name of the expression
-!                        !
-!                        rcoll%IquickAccess(1) = ibctyp
-!                        
-!                        ! The current boundary region is put to the collection
-!                        call collct_setvalue_bdreg (rcoll, "BDREG", rboundaryRegion, .true.)
-!                        
-!                        ! Primal BCs
-!                        if (cbctype .eq. CCSPACE_PRIMAL) then
-!                        
-!                          ! If the type is a double precision value, set the DquickAccess(4)
-!                          ! to that value so it can quickly be accessed.
-!                          if (sbdex1 .ne. "") then
-!                            ! X-velocity
-!                            !
-!                            ! The 2nd element in IquickAccess saves the component number.
-!                            rcoll%IquickAccess(2) = 1
-!                            
-!                            ! IquickAccess(3) saves the type of the expression
-!                            iexptyp = collct_getvalue_int (rcoll, sbdex1)
-!                            rcoll%IquickAccess(3) = iexptyp
-!                            
-!                            ! The 1st element in the sting quick access array is
-!                            ! the name of the expression to evaluate.
-!                            rcoll%SquickAccess(1) = sbdex1
-!                            
-!                            ! Dquickaccess(3) / IquickAccess(3) saves information
-!                            ! about the expression.
-!                            select case (iexptyp)
-!                            case (BDC_USERDEFID)
-!                              iid = collct_getvalue_int (rcoll, sbdex1, 0, roptcBDC%ssectionBdExpressions)
-!                            case (BDC_VALDOUBLE,BDC_VALPARPROFILE)
-!                              ! Constant or parabolic profile
-!                              rcoll%Dquickaccess(4) = rglobalData%p_rsettingsOptControl%ddirichletBCPenalty * &
-!                                  collct_getvalue_real (rcoll, sbdex1, 0, roptcBDC%ssectionBdExpressions)
-!                            case (BDC_EXPRESSION)
-!                              ! Expression. Write the identifier for the expression
-!                              ! as itag into the boundary condition structure.
-!                              rcoll%Dquickaccess(4) = rglobalData%p_rsettingsOptControl%ddirichletBCPenalty
-!                              rcoll%IquickAccess(4) = &
-!                                  collct_getvalue_int (rcoll, sbdex1, 0, roptcBDC%ssectionBdExpressions)
-!                            end select
-!                          
-!                            rcoll%Dquickaccess(1) = dtime
-!                            call user_initCollectForVecAssembly (&
-!                                rglobalData,iid,1,dtime,rcallbackcollection)
-!                            
-!                            call linf_buildVectorScalarBdr2D (rlinformRhs, CUB_G4_1D, .false., &
-!                                rvectorDirichletBCCRHS%RvectorBlock(1),&
-!                                fcoeff_buildBCCRHS,rboundaryRegion, rcoll)
-!                                
-!                            call user_doneCollectForVecAssembly (rglobalData,rcallbackcollection)
-!                                
-!                          end if
-!                          
-!                          if (sbdex2 .ne. "") then
-!                          
-!                            ! Y-velocity
-!                            !
-!                            ! The 1st element in IquickAccess saves the component number.
-!                            rcoll%IquickAccess(2) = 2
-!                            
-!                            ! IquickAccess(3) saves the type of the expression
-!                            iexptyp = collct_getvalue_int (rcoll, sbdex2)
-!                            rcoll%IquickAccess(3) = iexptyp
-!                            
-!                            ! The 1st element in the sting quick access array is
-!                            ! the name of the expression to evaluate.
-!                            rcoll%SquickAccess(1) = sbdex2
-!                            
-!                            ! Dquickaccess(4) / IquickAccess(4) saves information
-!                            ! about the expression.
-!                            select case (iexptyp)
-!                            case (BDC_USERDEFID)
-!                              iid = collct_getvalue_int (rcoll, sbdex2, 0, roptcBDC%ssectionBdExpressions)
-!                            case (BDC_VALDOUBLE,BDC_VALPARPROFILE)
-!                              ! Constant or parabolic profile
-!                              rcoll%Dquickaccess(4) = rglobalData%p_rsettingsOptControl%ddirichletBCPenalty * &
-!                                  collct_getvalue_real (rcoll,sbdex2, 0, roptcBDC%ssectionBdExpressions)
-!                            case (BDC_EXPRESSION)
-!                              ! Expression. Write the identifier for the expression
-!                              ! as itag into the boundary condition structure.
-!                              rcoll%IquickAccess(4) = &
-!                                  collct_getvalue_int (rcoll,sbdex2, 0, roptcBDC%ssectionBdExpressions)
-!                            end select
-!                          
-!                            rcoll%Dquickaccess(1) = dtime
-!                            call user_initCollectForVecAssembly (&
-!                                rglobalData,iid,2,dtime,rcallbackcollection)
-!
-!                            ! Assemble the BCs.
-!                            call linf_buildVectorScalarBdr2D (rlinformRhs, CUB_G4_1D, .false., &
-!                                rvectorDirichletBCCRHS%RvectorBlock(1),&
-!                                fcoeff_buildBCCRHS,rboundaryRegion, rcoll)
-!
-!                            call user_doneCollectForVecAssembly (rglobalData,rcallbackcollection)
-!
-!                          end if
-!                          
-!                        end if
-!                        
-!                        ! Delete the boundary region again
-!                        call collct_deletevalue (rcoll,"BDREG")
-!                        
-!                      end if
-!
-!                    end if
-!                    
-!                  end if
-!                  
-!                  if (iand(casmFlags,SBC_DIRICHLETBC) .ne. 0) then
-!                    if (iprimaldual .eq. 2) then
-!                    
-!                      ! Dual BCs
-!                      if (cbctype .eq. CCSPACE_DUAL) then
-!
-!                        ! dual X-velocity if primal X-velocity exists
-!                        
-!                        ! Ditichlet-0 boundary
-!                        iexptyp = BDC_VALDOUBLE
-!                        rcoll%Dquickaccess(4) = 0.0_DP
-!                        rcoll%IquickAccess(3) = iexptyp
-!                        rcoll%SquickAccess(1) = ""
-!                        iid = 0
-!                        
-!                        rcoll%Dquickaccess(1) = dtime
-!                        call user_initCollectForVecAssembly (rglobalData,iid,4,dtime,rcallbackcollection)
-!
-!                        ! Assemble the BCs.
-!                        ! The 2nd element in IquickAccess saves the component number.
-!                        ! If we only assemble dual BCs and there are 3 solution components,
-!                        ! we assume the vector to specify exactly the dual solution.
-!
-!                        rcoll%IquickAccess(2) = 1
-!                        call bcasm_newDirichletBConRealBD (&
-!                            rspaceDiscr,1+rspaceDiscr%ncomponents-3,rboundaryRegion,rdiscreteBC,&
-!                            cc_getBDconditionsNavSt2D,rcoll)
-!
-!                        call user_doneCollectForVecAssembly (rglobalData,rcallbackcollection)
-!
-!                        call user_initCollectForVecAssembly (rglobalData,iid,5,dtime,rcallbackcollection)
-!
-!                        rcoll%IquickAccess(2) = 2
-!                        call bcasm_newDirichletBConRealBD (&
-!                            rspaceDiscr,2+rspaceDiscr%ncomponents-3,rboundaryRegion,rdiscreteBC,&
-!                            cc_getBDconditionsNavSt2D,rcoll)
-!                            
-!                        call user_doneCollectForVecAssembly (rglobalData,rcallbackcollection)
-!                            
-!                      end if
-!                      
-!                    end if
-!                  
-!                  end if
-!
-!                case default
-!                  call output_line ("Unknown boundary condition!", &
-!                      OU_CLASS_ERROR,OU_MODE_STD,"cc_parseBDconditions")
-!                  call sys_halt()
-!                end select
-!                
-!                ! Move on to the next parameter value
-!                dpar1 = dpar2
-!                
-!              end if
-!                                                
-!            end do
-!          
-!          end if
-!          
-!        end do
-!
-!      end do
-!
-!      ! Release the parser object with all the expressions to be evaluated
-!      ! on the boundary.
-!      call fparser_release (rparser)
-!
-!      ! Remove the boundary value parser from the collection
-!      call collct_deletevalue (rcoll, BDC_BDPARSER)
-!      
-!      ! Remove the boundary-expression section we added earlier,
-!      ! with all their content.
-!      call collct_deletesection(rcoll,roptcBDC%ssectionBdExpressions)
-!
-!      ! Remove the temporary collection from memory.
-!      call collct_done(rcallbackcollection)
-!      call collct_done(rcoll)
-!
-!    end select
         
   end subroutine
 
-!  ! ***************************************************************************
-!
-!!<subroutine>
-!
-!  subroutine fcoeff_buildBCCRHS (rdiscretisation, rform, &
-!                nelements, npointsPerElement, Dpoints, ibct, DpointPar, &
-!                IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
-!  
-!  use basicgeometry
-!  use collection
-!  use domainintegration
-!  use fsystem
-!  use scalarpde
-!  use spatialdiscretisation
-!  use triangulation
-!  
-!!<description>
-!  ! This subroutine is called during the vector assembly. It has to compute
-!  ! the coefficients in front of the terms of the linear form.
-!  !
-!  ! The routine accepts a set of elements and a set of points on these
-!  ! elements (cubature points) in in real coordinates.
-!  ! According to the terms in the linear form, the routine has to compute
-!  ! simultaneously for all these points and all the terms in the linear form
-!  ! the corresponding coefficients in front of the terms.
-!!</description>
-!  
-!!<input>
-!  ! The discretisation structure that defines the basic shape of the
-!  ! triangulation with references to the underlying triangulation,
-!  ! analytic boundary boundary description etc.
-!  type(t_spatialDiscretisation), intent(in) :: rdiscretisation
-!  
-!  ! The linear form which is currently to be evaluated:
-!  type(t_linearForm), intent(in) :: rform
-!  
-!  ! Number of elements, where the coefficients must be computed.
-!  integer, intent(in) :: nelements
-!  
-!  ! Number of points per element, where the coefficients must be computed
-!  integer, intent(in) :: npointsPerElement
-!  
-!  ! This is an array of all points on all the elements where coefficients
-!  ! are needed.
-!  ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-!  ! DIMENSION(dimension,npointsPerElement,nelements)
-!  real(DP), dimension(:,:,:), intent(in) :: Dpoints
-!
-!  ! This is the number of the boundary component that contains the
-!  ! points in Dpoint. All points are on the same boundary component.
-!  integer, intent(in) :: ibct
-!
-!  ! For every point under consideration, this specifies the parameter
-!  ! value of the point on the boundary component. The parameter value
-!  ! is calculated in LENGTH PARAMETRISATION!
-!  ! DIMENSION(npointsPerElement,nelements)
-!  real(DP), dimension(:,:), intent(in) :: DpointPar
-!
-!  ! An array accepting the DOF`s on all elements in the test space.
-!  ! DIMENSION(\#local DOF`s in test space,Number of elements)
-!  integer, dimension(:,:), intent(in) :: IdofsTest
-!
-!  ! This is a t_domainIntSubset structure specifying more detailed information
-!  ! about the element set that is currently being integrated.
-!  ! It is usually used in more complex situations (e.g. nonlinear matrices).
-!  type(t_domainIntSubset), intent(in) :: rdomainIntSubset
-!!</input>
-!
-!!<inputoutput>
-!  ! Optional: A collection structure to provide additional
-!  ! information to the coefficient routine.
-!  type(t_collection), intent(inout), optional :: rcollection
-!!</inputoutput>
-!
-!!<output>
-!  ! A list of all coefficients in front of all terms in the linear form -
-!  ! for all given points on all given elements.
-!  !   DIMENSION(itermCount,npointsPerElement,nelements)
-!  ! with itermCount the number of terms in the linear form.
-!  real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
-!!</output>
-!  
-!!</subroutine>
-!  
-!!    ! local variables
-!!    integer, dimension(1) :: Icomponents
-!!    real(DP), dimension(1) :: Dvalues
-!!    integer :: i,j
-!!    type(t_boundaryRegion), pointer :: p_rboundaryRegion
-!!    real(DP) :: dpar, ddirichletBCPenalty
-!!
-!!    ! Penalty parameter
-!!    ddirichletBCPenalty = rcollection%Dquickaccess(4)
-!!
-!!    ! Get the boundary region from the collection
-!!    p_rboundaryRegion => collct_getvalue_bdreg (rcollection, "BDREG")
-!!
-!!    ! Loop through all points and calculate the values.
-!!    do i=1,nelements
-!!      do j=1,npointsPerElement
-!!        ! Current component
-!!        Icomponents(1) = rcollection%IquickAccess(2)
-!!        
-!!        ! Calculate the parameter value in 0-1 parametrisation
-!!        dpar = boundary_convertParameter(rdiscretisation%p_rboundary, ibct, &
-!!            DpointPar(j,i), BDR_PAR_LENGTH, BDR_PAR_01)
-!!        
-!!        call cc_getBDconditionsNavSt2D(Icomponents,rdiscretisation,&
-!!            p_rboundaryRegion,0,DISCBC_NEEDFUNC,ibct,dpar,&
-!!            Dvalues,rcollection)
-!!            
-!!        ! Value must be mutiplied by the penalty parameter
-!!        Dcoefficients(1,j,i) = ddirichletBCPenalty*Dvalues(1)
-!!      end do
-!!    end do
-!
-!  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine sbc_assembleDirichletBC (rdiscreteBC,rbcAssemblyData,rcollection,rglobalData)
+  
+!<description>
+  ! Assembles Dirichlet boundary conditions
+  ! using the settings in the rbcAssemblyData structure.
+!</description>
+  
+!<input>
+  ! Boundary condition assembly data.
+  type(t_bcassemblyData), intent(inout), target :: rbcAssemblyData
+
+  ! Collection structure prepared by sbc_initBCassembly.
+  type(t_collection), intent(inout) :: rcollection
+
+  ! OPTIONAL; Global data, passed to callback routines
+  ! Must be specified if casmFlags contains SBC_DISCRETEBC.
+  type(t_globalData), intent(inout), optional :: rglobalData
+!</input>
+
+!<output>
+  ! Boundary condition structure that receives the discrete BC
+  type(t_discreteBC), intent(inout) :: rdiscreteBC
+!</output>
+
+!</subroutine>
+
+    ! Assemble the BCs.
+    call user_initCollectForVecAssembly (&
+        rglobalData,rbcAssemblyData%iid,rbcAssemblyData%icomponent,&
+        rbcAssemblyData%dtime,rbcAssemblyData%p_ruserCollection)
+    
+    call bcasm_newDirichletBConRealBD (&
+        rbcAssemblyData%p_rspaceDiscr,rbcAssemblyData%icomponent,&
+        rbcAssemblyData%rboundaryRegion,&
+        rdiscreteBC,cc_getDirBC,rcollection)
+        
+    call user_doneCollectForVecAssembly (rglobalData,rbcAssemblyData%p_ruserCollection)
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine sbc_evalBoundaryValue (rbcAssemblyData,dpar,dresult)
+  
+!<description>
+  ! Evaluates an expression in a point on the boundary.
+!</description>
+  
+!<input>
+  ! Boundary condition assembly data.
+  type(t_bcassemblyData), intent(in), target :: rbcAssemblyData
+
+  ! Current parameter value of the point on the boundary.
+  ! 0-1-parametrisation.
+  real(DP), intent(in) :: dpar
+!</input>
+
+!<output>
+  ! Value of the expression in the point.
+  real(DP), intent(out) :: dresult
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    real(DP) :: d,dx,dy
+    real(DP), dimension(size(SEC_EXPRVARIABLES)) :: Rval
+    integer :: cnormalMean
+    
+    dresult = 0.0_DP
+    
+    select case (rbcAssemblyData%cexprType)
+        
+    case (BDC_USERDEFID)
+      ! Defined via analytic reference solution, identified by an id.
+      ! The id is already specified in the collection.
+      
+      ! Call the user defined callback routine to evaluate the boudary value.
+      ! No string tag is given which indicates that a reference function is to be
+      ! evaluated.
+      call user_getBoundaryValues ("",rbcAssemblyData%icomponent,&
+          rbcAssemblyData%p_rspaceDiscr%RspatialDiscr(rbcAssemblyData%icomponent),&
+          rbcAssemblyData%rboundaryRegion,dpar,dresult,&
+          rbcAssemblyData%p_ruserCollection)
+      
+    case (BDC_USERDEF)
+      ! This is a hardcoded, user-defined identifier.
+      ! Call the user defined callback routine to evaluate the expression.
+      call user_getBoundaryValues (rbcAssemblyData%sexprName,rbcAssemblyData%icomponent,&
+          rbcAssemblyData%p_rspaceDiscr%RspatialDiscr(rbcAssemblyData%icomponent),&
+          rbcAssemblyData%rboundaryRegion,dpar,dresult,&
+          rbcAssemblyData%p_ruserCollection)
+      
+    case (BDC_VALDOUBLE)
+      ! A simple constant, given by dvalue
+      dresult = rbcAssemblyData%dvalue
+
+    case (BDC_EXPRESSION)
+      ! A complex expression.
+      !
+      ! Set up an array with variables for evaluating the expression.
+      ! Give the values in exactly the same order as specified
+      ! by SEC_EXPRVARIABLES!
+      Rval = 0.0_DP
+      
+      call boundary_getCoords(rbcAssemblyData%p_rboundary, &
+          rbcAssemblyData%rboundaryRegion%iboundCompIdx, dpar, dx, dy)
+      
+      ! Get the local parameter value 0 <= d <= 1 in the boundary region.
+      ! Note that if dpar < rboundaryRegion%dminParam, we have to add the maximum
+      ! parameter value on the boundary to dpar as normally 0 <= dpar < max.par.
+      ! although 0 <= dminpar <= max.par
+      !      and 0 <= dmaxpar <= max.par!
+      d = dpar
+      if (d .lt. rbcAssemblyData%rboundaryRegion%dminParam) then
+        d = d + boundary_dgetMaxParVal(rbcAssemblyData%p_rboundary,&
+            rbcAssemblyData%rboundaryRegion%iboundCompIdx)
+      end if
+      d = d - rbcAssemblyData%rboundaryRegion%dminParam
+
+      ! Normalise to 0..1 using the length of the parameter region.
+      ! Necessary if a parabolic profile occurs in the inner of an edge e.g.
+      d = d / (rbcAssemblyData%rboundaryRegion%dmaxParam &
+               - rbcAssemblyData%rboundaryRegion%dminParam)
+      
+      Rval(1) = dx
+      Rval(2) = dy
+      Rval(3) = 0.0_DP ! Not used.
+      Rval(4) = d
+      Rval(5) = dpar
+      Rval(6) = boundary_convertParameter(rbcAssemblyData%p_rboundary, &
+          rbcAssemblyData%rboundaryRegion%iboundCompIdx, dpar, &
+          BDR_PAR_01, BDR_PAR_LENGTH)
+      Rval(7) = rbcAssemblyData%dtime
+      
+      ! The normal vector is a bit tricky. Normally, we take the "mean"
+      ! setting.
+      cnormalMean = BDR_NORMAL_MEAN
+      
+      ! Exception: If the parameter value corresponds to the beginning
+      ! of the interval, we take the setting 'left'. On the right end,
+      ! we take the setting 'right'.
+      ! Reason: If this happens, the left/right point belongs to the interval,
+      ! so it is more likely that the normal vector should be guided by
+      ! the interval.
+      if (dpar .eq. rbcAssemblyData%rboundaryRegion%dminParam) then
+        cnormalMean = BDR_NORMAL_LEFT
+      else if (dpar .eq. rbcAssemblyData%rboundaryRegion%dmaxParam) then
+        cnormalMean = BDR_NORMAL_RIGHT
+      end if
+      
+      ! Get the normal vector in that point
+      call boundary_getNormalVec2D(rbcAssemblyData%p_rboundary, &
+          rbcAssemblyData%rboundaryRegion%iboundCompIdx, dpar, Rval(8), Rval(9), &
+          cnormalMean)
+      
+      ! Evaluate the expression. ivalue is the number of
+      ! the expression to evaluate.
+      call fparser_evalFunction (rbcAssemblyData%p_roptcBDC%rparser, &
+          rbcAssemblyData%iid, Rval, dresult)
+      
+    case (BDC_VALPARPROFILE)
+      ! A parabolic profile. dvalue expresses the
+      ! maximum value of the profile.
+      !
+      ! Get the local parameter value 0 <= d <= 1.
+      ! Note that if dpar < rboundaryRegion%dminParam, we have to add the maximum
+      ! parameter value on the boundary to dpar as normally 0 <= dpar < max.par.
+      ! although 0 <= dminpar <= max.par
+      !      and 0 <= dmaxpar <= max.par!
+      d = dpar
+      if (d .lt. rbcAssemblyData%rboundaryRegion%dminParam) then
+        d = d + boundary_dgetMaxParVal(rbcAssemblyData%p_rboundary,&
+            rbcAssemblyData%rboundaryRegion%iboundCompIdx)
+      end if
+      d = d - rbcAssemblyData%rboundaryRegion%dminParam
+      
+      ! Normalise to 0..1 using the length of the parameter region.
+      ! Necessary if a parabolic profile occurs in the inner of an edge e.g.
+      d = d / (rbcAssemblyData%rboundaryRegion%dmaxParam &
+               - rbcAssemblyData%rboundaryRegion%dminParam)
+  
+      dresult = mprim_getParabolicProfile (d,1.0_DP,rbcAssemblyData%dvalue)
+    end select
+    
+    ! Weight the result by the weighting factor.
+    dresult = dresult * rbcAssemblyData%dweight
+  
+  end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine cc_getDirBCNavSt2D (Icomponents,rspaceDiscr,rboundaryRegion,ielement, &
+  subroutine cc_getDirBC (Icomponents,rspaceDiscr,rboundaryRegion,ielement, &
       cinfoNeeded, iwhere, dwhere, Dvalues, rcollection)
   
   use collection
@@ -2447,14 +1327,7 @@ contains
   
 !</subroutine>
 
-    integer :: icomponent,cexprtype,iid,ivalue,ccontrolType,icontrolcomp
-    real(DP) :: dvalue
-    logical :: bneedsParams
-    real(DP), dimension(size(SEC_EXPRVARIABLES)) :: Dparams
-    real(DP) :: d, dx, dy
-    character(LEN=PARLST_LENLINEBUF) :: svalue
-    type(t_p_optcBDC) :: r_t_p_optcBDC
-    type(t_vectorBlock), pointer :: p_rcontrol
+    integer :: icontrolcomp
     type(t_settings_optcontrol), pointer :: p_roptControl
     type(t_settings_physics), pointer :: p_rphysics
     real(DP), dimension(:), pointer :: p_Ddata
@@ -2462,139 +1335,30 @@ contains
     real(DP) :: dpar1, dpar2, dpar, dval
     integer, dimension(:), pointer :: p_IboundaryCpIdx
     real(DP), dimension(:), pointer :: p_DvertexParameterValue
+    type(t_vectorBlock), pointer :: p_rcontrol
+    type(t_bcassemblyData), pointer :: p_rbcAssemblyData
     
-    real(DP) :: dtime
-
-    ! The IquickAccess array is set up as follows:
-    !  IquickAccess(1) = component under consideration (1=x-vel, 2=y-vel,...)
-    !  IquickAccess(2) = expression type
-    !  IquickAccess(3) = iid
-    !  IquickAccess(4) = ivalue
-    !  IquickAccess(5) = 1, if parameters (x,y) are needed, =0 otherwise
-    !  IquickAccess(6) = Type of boundary control. =0: none, =1: Dirichlet L2
-    !  IquickAccess(7) = Pointer to the t_optcBDC structure
-    !
-    ! The DquickAccess array is set up as follows:
-    !  DquickAccess(1) = dvalue
-    !  DquickAccess(2) = dtime
-    !
-    ! The SquickAccess array is set up as follows:
-    !  SquickAccess(1) = Name of the expression
+    ! Get the assembly information structure.
+    call sbc_getBCassemblyPointer (rcollection,p_rbcAssemblyData)
     
-    ! In a nonstationary simulation, one can get the simulation time
-    ! with the quick-access array of the collection.
-    dtime        = rcollection%Dquickaccess(1)
-    icomponent   = rcollection%Iquickaccess(1)
-    cexprType    = rcollection%Iquickaccess(2)
-    iid          = rcollection%Iquickaccess(3)
-    ivalue       = rcollection%Iquickaccess(4)
-    bneedsParams = rcollection%Iquickaccess(5) .ne. 0
-    ccontrolType = rcollection%Iquickaccess(6)
-    r_t_p_optcBDC   = transfer(rcollection%IquickAccess(7:),r_t_p_optcBDC)
-    dvalue       = rcollection%Dquickaccess(2)
-    p_rcontrol   => rcollection%p_rvectorQuickAccess1
+    p_roptControl => p_rbcAssemblyData%p_roptcBDC%p_rsettingsOptControl
+    p_rphysics => p_rbcAssemblyData%p_roptcBDC%p_rphysics
+    p_rcontrol => p_rbcAssemblyData%p_rcontrol
     
-    p_roptControl => r_t_p_optcBDC%p_roptcBDC%p_rsettingsOptControl
-    p_rphysics => r_t_p_optcBDC%p_roptcBDC%p_rphysics
-    
-    if (bneedsParams) then
-      ! Calculate the parameter array
-      Dparams(:) = 0.0_DP
-      
-      call boundary_getCoords(rspaceDiscr%p_rboundary, &
-                              rboundaryRegion%iboundCompIdx, &
-                              dwhere, dx, dy)
-      
-      ! Get the local parameter value 0 <= d <= 1.
-      ! Note that if dwhere < rboundaryRegion%dminParam, we have to add the maximum
-      ! parameter value on the boundary to dpar as normally 0 <= dwhere < max.par.
-      ! although 0 <= dminpar <= max.par
-      !      and 0 <= dmaxpar <= max.par!
-      d = dwhere
-      if (d .lt. rboundaryRegion%dminParam) &
-        d = d + boundary_dgetMaxParVal(rspaceDiscr%p_rboundary,&
-                                        rboundaryRegion%iboundCompIdx)
-      d = d - rboundaryRegion%dminParam
-      
-      ! Normalise to 0..1 using the length of the parameter region.
-      ! Necessary if a parabolic profile occurs in the inner of an edge e.g.
-      d = d / (rboundaryRegion%dmaxParam - rboundaryRegion%dminParam)
-      
-      Dparams(1) = dx
-      Dparams(2) = dy
-      Dparams(3) = 0.0_DP ! does not exist, z-direction
-      Dparams(4) = d
-      Dparams(5) = dwhere
-      Dparams(6) = boundary_convertParameter(rspaceDiscr%p_rboundary, &
-                                          rboundaryRegion%iboundCompIdx, dwhere, &
-                                          BDR_PAR_01, BDR_PAR_LENGTH)
-      Dparams(7) = dtime
-      
-    end if
-
     ! Use boundary conditions from DAT files.
     select case (cinfoNeeded)
     
     case (DISCBC_NEEDFUNC,DISCBC_NEEDFUNCMID,DISCBC_NEEDDERIV, &
           DISCBC_NEEDINTMEAN,DISCBC_NEEDNORMALSTRESS)
       
-      ! Dirichlet boundary conditions
-    
-      ! The IquickAccess array is set up as follows:
-      !  IquickAccess(1) = Type of boundary condition
-      !  IquickAccess(2) = component under consideration (1=x-vel, 2=y-vel,...)
-      !  IquickAccess(3) = expression type
-      !  IquickAccess(4) = expression identifier
+      ! Dirichlet boundary conditions.
       !
-      ! Get from the current component of the PDE we are discretising:
-      icomponent = rcollection%IquickAccess(1)
-      
-      ! -> 1=X-velocity, 2=Y-velocity.
-      
-      ! Return zero Dirichlet boundary values for all situations by default.
-      Dvalues(1) = 0.0_DP
-      
-      ! Type of expression?
-      select case (cexprType)
-      
-      case (BDC_USERDEFID)
-        ! Defined via analytic reference solution, identified by an id.
-        ! The id is already specified in the collection.
-        
-        ! Call the user defined callback routine to evaluate the boudary value.
-        ! No string tag is given which indicates that a reference function is to be
-        ! evaluated.
-        !
-        ! As collection, we pass rcollection%p_rcollection here; this is a pointer
-        ! to the application specific, global collection that may be of interest for
-        ! callback routines. rcollection itself is actually a "local" collection,
-        ! a "wrapper" for the rcollection of the application!
-        call user_getBoundaryValues (&
-            "",icomponent,rspaceDiscr,rboundaryRegion,&
-            dwhere, Dvalues(1), rcollection%p_rnextCollection)
-        
-      case (BDC_USERDEF)
-        ! This is a hardcoded, user-defined identifier.
-        ! Call the user defined callback routine to evaluate the expression.
-        !
-        ! As collection, we pass rcollection%p_rcollection here; this is a pointer
-        ! to the application specific, global collection that may be of interest for
-        ! callback routines. rcollection itself is actually a "local" collection,
-        ! a "wrapper" for the rcollection of the application!
-        call user_getBoundaryValues (&
-            svalue,icomponent,rspaceDiscr,rboundaryRegion,&
-            dwhere, Dvalues(1), rcollection%p_rnextCollection)
-      
-      case default
-        ! Default handling. Evaluate the expression.
-        Dvalues(1) = struc_evalExpression (r_t_p_optcBDC%p_roptcBDC,cexprType,&
-            iid,ivalue,dvalue,Dparams)
-      
-      end select
+      ! Evaluate...
+      call sbc_evalBoundaryValue (p_rbcAssemblyData,dwhere,Dvalues(1))
       
     end select
     
-    select case (ccontrolType)
+    select case (p_rbcAssemblyData%cboundaryControl)
     
     ! ---------------------------------
     ! L2 Dirichlet boudary control
@@ -2604,7 +1368,7 @@ contains
       if (p_roptControl%dalphaL2BdC .ge. 0.0_DP) then
         if (.not. associated(p_rcontrol)) then
           call output_line ("Control not specified.", &
-              OU_CLASS_ERROR,OU_MODE_STD,"cc_getDirBCNavSt2D")
+              OU_CLASS_ERROR,OU_MODE_STD,"cc_getDirBC")
           call sys_halt()
         end if
         
@@ -2612,7 +1376,7 @@ contains
         case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
         
           ! Where is the boundary control?
-          icontrolcomp = icomponent
+          icontrolcomp = p_rbcAssemblyData%icomponent
           if (p_roptControl%dalphaDistC .ge. 0.0_DP) icontrolcomp = icontrolcomp + 2
 
           ! Quick and dirty implementation...
@@ -2665,7 +1429,7 @@ contains
                   
               ! Quadratic interpolation over [-1,1]
               call mprim_quadraticInterpolation (2*dpar-1.0_DP,&
-                  p_Ddata(iv1),p_Ddata(iedge+rspaceDiscr%p_rtriangulation%NVBD),p_Ddata(iv2),dval)
+                  p_Ddata(iv1),p_Ddata(iedge+rspaceDiscr%p_rtriangulation%nvbd),p_Ddata(iv2),dval)
               
               Dvalues(1) = Dvalues(1) + dval
 
@@ -2673,14 +1437,14 @@ contains
           
           case default
             call output_line ("Unsupported element.", &
-                OU_CLASS_ERROR,OU_MODE_STD,"cc_getDirBCNavSt2D")
+                OU_CLASS_ERROR,OU_MODE_STD,"cc_getDirBC")
             call sys_halt()
           end select
         
         
         case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
           call output_line ("Equation not supported.", &
-              OU_CLASS_ERROR,OU_MODE_STD,"cc_getDirBCNavSt2D")
+              OU_CLASS_ERROR,OU_MODE_STD,"cc_getDirBC")
           call sys_halt()
         end select
         
@@ -2694,7 +1458,7 @@ contains
       if (p_roptControl%dalphaH12BdC .ge. 0.0_DP) then
         if (.not. associated(p_rcontrol)) then
           call output_line ("Control not specified.", &
-              OU_CLASS_ERROR,OU_MODE_STD,"cc_getDirBCNavSt2D")
+              OU_CLASS_ERROR,OU_MODE_STD,"cc_getDirBC")
           call sys_halt()
         end if
         
@@ -2702,7 +1466,7 @@ contains
         case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
         
           ! Where is the boundary control?
-          icontrolcomp = icomponent
+          icontrolcomp = p_rbcAssemblyData%icomponent
           if (p_roptControl%dalphaDistC .ge. 0.0_DP) icontrolcomp = icontrolcomp + 2
           if (p_roptControl%dalphaL2BdC .ge. 0.0_DP) icontrolcomp = icontrolcomp + 2
 
@@ -2756,7 +1520,7 @@ contains
                   
               ! Quadratic interpolation over [-1,1]
               call mprim_quadraticInterpolation (2*dpar-1.0_DP,&
-                  p_Ddata(iv1),p_Ddata(iedge+rspaceDiscr%p_rtriangulation%NVBD),p_Ddata(iv2),dval)
+                  p_Ddata(iv1),p_Ddata(iedge+rspaceDiscr%p_rtriangulation%nvbd),p_Ddata(iv2),dval)
               
               Dvalues(1) = Dvalues(1) + dval
 
@@ -2764,14 +1528,14 @@ contains
           
           case default
             call output_line ("Unsupported element.", &
-                OU_CLASS_ERROR,OU_MODE_STD,"cc_getDirBCNavSt2D")
+                OU_CLASS_ERROR,OU_MODE_STD,"cc_getDirBC")
             call sys_halt()
           end select
         
         
         case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
           call output_line ("Equation not supported.", &
-              OU_CLASS_ERROR,OU_MODE_STD,"cc_getDirBCNavSt2D")
+              OU_CLASS_ERROR,OU_MODE_STD,"cc_getDirBC")
           call sys_halt()
         end select
         
@@ -2780,120 +1544,6 @@ contains
     end select
   
   end subroutine
-
-!  ! ***************************************************************************
-!  
-!!<subroutine>
-!
-!  subroutine sbc_implementDirichletBC (roptcBDC,dtime,cspace,&
-!      rtimeDiscr,rspaceDiscr,rglobalData,&
-!      rx,rb,rd,rdiscretebc)
-!
-!!<description>
-!  ! Implements the boundary conditions at time dtime, for a solution
-!  ! vector rx, a rhs vector rb and/or a defect vector rb.
-!!</description>
-!
-!!<input>
-!  ! Boundary conditions in the problem.
-!  type(t_optcBDC), intent(inout) :: roptcBDC
-!
-!  ! Time where the BCs should be implemented.
-!  real(DP), intent(IN) :: dtime
-!
-!  ! Type of solution space. CCSPACE_PRIMAL or CCSPACE_DUAL.
-!  integer, intent(in) :: cspace
-!
-!  ! Time discretisation, dtime refers to.
-!  type(t_timeDiscretisation), intent(in) :: rtimeDiscr
-!
-!  ! Space discretisation
-!  type(t_blockDiscretisation), intent(in) :: rspaceDiscr
-!
-!  ! Global settings for callback routines.
-!  type(t_globalData), intent(inout), target :: rglobalData
-!!</input>
-!
-!!<inputoutput>
-!  ! OPTIONAL: Solution vector
-!  type(t_vectorBlock), intent(inout), optional :: rx
-!
-!  ! OPTIONAL: RHS vector
-!  type(t_vectorBlock), intent(inout), optional :: rb
-!
-!  ! OPTIONAL: Defect vector
-!  type(t_vectorBlock), intent(inout), optional :: rd
-!
-!  ! OPTIONAL: Boundary condition structure which receives the boudary
-!  ! conditions. If present, it must have been initialised
-!  ! by the caller. If present, it will be attached to the vectors.
-!  type(t_discreteBC), intent(inout), optional :: rdiscreteBC
-!!</inputoutput>
-!
-!!</subroutine>
-!
-!    ! Boundary condition structure which receives the boudary
-!    ! conditions. 
-!    type(t_discreteBC) :: rdiscreteBClocal
-!
-!    ! DEBUG!!!
-!    real(DP), dimension(:), pointer :: p_Ddata
-!  
-!    ! DEBUG!!!
-!    call lsysbl_getbase_double (rd,p_Ddata)
-!
-!    if (.not. present(rdiscreteBC)) then
-!      ! Initialise the boundary conditions
-!      call bcasm_initDiscreteBC(rdiscreteBClocal)
-!
-!      ! Assemble the BCs.
-!      call sbc_assembleBDconditions (roptcBDC,dtime,cspace,&
-!          rglobalData,SBC_DIRICHLETBC,&
-!          rtimeDiscr,rspaceDiscr,rdiscreteBClocal)
-!
-!      ! Implement the boundary conditions into the vector(s).
-!      if (present(rx)) then
-!        call vecfil_discreteBCsol (rx,rdiscreteBClocal)
-!      end if
-!      
-!      if (present(rb)) then
-!        call vecfil_discreteBCrhs (rb,rdiscreteBClocal)
-!      end if
-!      
-!      if (present(rd)) then
-!        call vecfil_discreteBCdef (rd,rdiscreteBClocal)
-!      end if
-!
-!      ! Release the BCs again.
-!      call bcasm_releaseDiscreteBC(rdiscreteBClocal)
-!
-!    else
-!
-!      ! Assemble the BCs.
-!      call sbc_assembleBDconditions (roptcBDC,dtime,cspace,&
-!          rglobalData,SBC_DIRICHLETBC,&
-!          rtimeDiscr,rspaceDiscr,rdiscreteBC)
-!
-!      ! Implement the boundary conditions into the vector(s).
-!      ! Attach the structure.
-!      if (present(rx)) then
-!        call vecfil_discreteBCsol (rx,rdiscreteBC)
-!        call lsysbl_assignDiscreteBC (rx,rdiscreteBC)
-!      end if
-!      
-!      if (present(rb)) then
-!        call vecfil_discreteBCrhs (rb,rdiscreteBC)
-!        call lsysbl_assignDiscreteBC (rb,rdiscreteBC)
-!      end if
-!      
-!      if (present(rd)) then
-!        call vecfil_discreteBCdef (rd,rdiscreteBC)
-!        call lsysbl_assignDiscreteBC (rd,rdiscreteBC)
-!      end if
-!
-!    end if
-!    
-!  end subroutine
 
   ! ***************************************************************************
 
@@ -3103,242 +1753,23 @@ contains
 !</subroutine>
 
     integer :: ipt,iel
-    integer :: icomponent,cexprtype,iid,ivalue,ccontrolType,icontrolcomp
-    real(DP) :: dvalue,dwhere
-    logical :: bneedsParams
-    real(DP), dimension(size(SEC_EXPRVARIABLES)) :: Dparams
-    real(DP) :: d, dx, dy
-    character(LEN=PARLST_LENLINEBUF) :: svalue
-    type(t_p_optcBDC) :: r_t_p_optcBDC
-    type(t_vectorBlock), pointer :: p_rcontrol
-    type(t_settings_optcontrol), pointer :: p_roptControl
-    type(t_settings_physics), pointer :: p_rphysics
-    real(DP), dimension(:), pointer :: p_Ddata
-    integer :: iedge,iptpos,iv1,iv2
-    real(DP) :: dpar1, dpar2, dpar, dval
-    integer, dimension(:), pointer :: p_IboundaryCpIdx
-    real(DP), dimension(:), pointer :: p_DvertexParameterValue
-    type(t_boundaryRegion), pointer :: p_rboundaryRegion
+    real(DP) :: dwhere
+    type(t_bcassemblyData), pointer :: p_rbcAssemblyData
     
-    real(DP) :: dtime
+    ! Get the assembly information structure.
+    call sbc_getBCassemblyPointer (rcollection,p_rbcAssemblyData)
 
-    ! The IquickAccess array is set up as follows:
-    !  IquickAccess(1) = component under consideration (1=x-vel, 2=y-vel,...)
-    !  IquickAccess(2) = expression type
-    !  IquickAccess(3) = iid
-    !  IquickAccess(4) = ivalue
-    !  IquickAccess(5) = 1, if parameters (x,y) are needed, =0 otherwise
-    !  IquickAccess(6) = Type of boundary control. =0: none, =1: Dirichlet L2
-    !  IquickAccess(7) = Pointer to the t_optcBDC structure
-    !
-    ! The DquickAccess array is set up as follows:
-    !  DquickAccess(1) = dvalue
-    !  DquickAccess(2) = dtime
-    !
-    ! The SquickAccess array is set up as follows:
-    !  SquickAccess(1) = Name of the expression
-    
-    ! In a nonstationary simulation, one can get the simulation time
-    ! with the quick-access array of the collection.
-    dtime        = rcollection%Dquickaccess(1)
-    icomponent   = rcollection%Iquickaccess(1)
-    cexprType    = rcollection%Iquickaccess(2)
-    iid          = rcollection%Iquickaccess(3)
-    ivalue       = rcollection%Iquickaccess(4)
-    bneedsParams = rcollection%Iquickaccess(5) .ne. 0
-    ccontrolType = rcollection%Iquickaccess(6)
-    r_t_p_optcBDC   = transfer(rcollection%IquickAccess(7:),r_t_p_optcBDC)
-    dvalue       = rcollection%Dquickaccess(2)
-    p_rcontrol   => rcollection%p_rvectorQuickAccess1
-    p_rboundaryRegion => r_t_p_optcBDC%p_rboundaryRegion
-    
-    p_roptControl => r_t_p_optcBDC%p_roptcBDC%p_rsettingsOptControl
-    p_rphysics => r_t_p_optcBDC%p_roptcBDC%p_rphysics
-    
     do iel = 1,nelements
       do ipt = 1,npointsPerElement
 
-        dwhere = DpointPar(ipt,iel)
+        ! Get the parameter value of the point in 0-1 parametrisation
+        dwhere = boundary_convertParameter(p_rbcAssemblyData%p_rboundary, &
+            p_rbcAssemblyData%rboundaryRegion%iboundCompIdx, DpointPar(ipt,iel), &
+            BDR_PAR_LENGTH, BDR_PAR_01)
+                  
+        ! Evaluate the expression.
+        call sbc_evalBoundaryValue (p_rbcAssemblyData,dwhere,Dcoefficients(1,ipt,iel))
 
-        if (bneedsParams) then
-          ! Calculate the parameter array
-          Dparams(:) = 0.0_DP
-          
-          call boundary_getCoords(rdiscretisation%p_rboundary, ibct, &
-                                  dwhere, dx, dy)
-          
-          ! Get the local parameter value 0 <= d <= 1.
-          ! Note that if dwhere < rboundaryRegion%dminParam, we have to add the maximum
-          ! parameter value on the boundary to dpar as normally 0 <= dwhere < max.par.
-          ! although 0 <= dminpar <= max.par
-          !      and 0 <= dmaxpar <= max.par!
-          d = boundary_convertParameter(rdiscretisation%p_rboundary, &
-                  ibct, dwhere, BDR_PAR_LENGTH, BDR_PAR_01)
-          if (d .lt. p_rboundaryRegion%dminParam) &
-            d = d + boundary_dgetMaxParVal(rdiscretisation%p_rboundary,ibct)
-          d = d - p_rboundaryRegion%dminParam
-          
-          ! Normalise to 0..1 using the length of the parameter region.
-          ! Necessary if a parabolic profile occurs in the inner of an edge e.g.
-          d = d / (p_rboundaryRegion%dmaxParam - p_rboundaryRegion%dminParam)
-
-          Dparams(1) = dx
-          Dparams(2) = dy
-          Dparams(3) = 0.0_DP ! does not exist, z-direction
-          Dparams(4) = -1.0_DP
-          Dparams(5) = boundary_convertParameter(rdiscretisation%p_rboundary, &
-                         ibct, dwhere, BDR_PAR_LENGTH, BDR_PAR_01)
-          Dparams(6) = dwhere
-          Dparams(7) = dtime
-          
-        end if
-
-        ! The IquickAccess array is set up as follows:
-        !  IquickAccess(1) = Type of boundary condition
-        !  IquickAccess(2) = component under consideration (1=x-vel, 2=y-vel,...)
-        !  IquickAccess(3) = expression type
-        !  IquickAccess(4) = expression identifier
-        !
-        ! Get from the current component of the PDE we are discretising:
-        icomponent = rcollection%IquickAccess(1)
-        
-        ! -> 1=X-velocity, 2=Y-velocity.
-        
-        ! Return zero Dirichlet boundary values for all situations by default.
-        Dcoefficients(1,ipt,iel) = 0.0_DP
-        
-        ! Type of expression?
-        select case (cexprType)
-        
-        case (BDC_USERDEFID)
-          ! Defined via analytic reference solution, identified by an id.
-          ! The id is already specified in the collection.
-          
-          ! Call the user defined callback routine to evaluate the boudary value.
-          ! No string tag is given which indicates that a reference function is to be
-          ! evaluated.
-          !
-          ! As collection, we pass rcollection%p_rcollection here; this is a pointer
-          ! to the application specific, global collection that may be of interest for
-          ! callback routines. rcollection itself is actually a "local" collection,
-          ! a "wrapper" for the rcollection of the application!
-          call user_getBoundaryValues (&
-              "",icomponent,rdiscretisation,p_rboundaryRegion,&
-              dwhere, Dcoefficients(1,ipt,iel), rcollection%p_rnextCollection)
-          
-        case (BDC_USERDEF)
-          ! This is a hardcoded, user-defined identifier.
-          ! Call the user defined callback routine to evaluate the expression.
-          !
-          ! As collection, we pass rcollection%p_rcollection here; this is a pointer
-          ! to the application specific, global collection that may be of interest for
-          ! callback routines. rcollection itself is actually a "local" collection,
-          ! a "wrapper" for the rcollection of the application!
-          call user_getBoundaryValues (&
-              svalue,icomponent,rdiscretisation,p_rboundaryRegion,&
-              dwhere, Dcoefficients(1,ipt,iel), rcollection%p_rnextCollection)
-        
-        case default
-          ! Default handling. Evaluate the expression.
-          Dcoefficients(1,ipt,iel) = struc_evalExpression (r_t_p_optcBDC%p_roptcBDC,cexprType,&
-              iid,ivalue,dvalue,Dparams)
-        
-        end select
-        
-!        select case (ccontrolType)
-!        
-!        ! ---------------------------------
-!        ! L2 Dirichlet boudary control
-!        ! ---------------------------------
-!        case (1)
-!        
-!          if (p_roptControl%dalphaL2BdC .ge. 0.0_DP) then
-!            if (.not. associated(p_rcontrol)) then
-!              call output_line ("Control not specified.", &
-!                  OU_CLASS_ERROR,OU_MODE_STD,"cc_getDirBCNavSt2D")
-!              call sys_halt()
-!            end if
-!            
-!            select case (p_rphysics%cequation)
-!            case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
-!            
-!              ! Where is the boundary control?
-!              icontrolcomp = icomponent
-!              if (p_roptControl%dalphaDistC .ge. 0.0_DP) icontrolcomp = icontrolcomp + 2
-!
-!              ! Quick and dirty implementation...
-!              
-!              ! Element type?
-!              select case (p_rcontrol%p_rblockDiscr%RspatialDiscr(icontrolcomp)%RelementDistr(1)%celement)
-!              case (EL_P2_1D)
-!                
-!                ! Type of info?
-!                select case (cinfoNeeded)
-!                case (DISCBC_NEEDFUNC,DISCBC_NEEDFUNCMID,DISCBC_NEEDDERIV, &
-!                      DISCBC_NEEDINTMEAN,DISCBC_NEEDNORMALSTRESS)
-!                  
-!                  ! Search the boundary edge that contains the parameter value
-!                  call tria_searchBoundaryEdgePar2D(p_rboundaryRegion%iboundCompIdx, dwhere, &
-!                      rspaceDiscr%p_rtriangulation, rspaceDiscr%p_rboundary, iedge,&
-!                      BDR_PAR_LENGTH)
-!                  !print *,"Richtig?"
-!                  
-!                  ! Get the vector data
-!                  call lsyssc_getbase_double (p_rcontrol%RvectorBlock(icontrolcomp),p_Ddata)
-!                  
-!                  ! Get the "relative" parameter value of dwhere.
-!                  call storage_getbase_int (&
-!                      rspaceDiscr%p_rtriangulation%h_IboundaryCpIdx,p_IboundaryCpIdx)
-!                  call storage_getbase_double (&
-!                      rspaceDiscr%p_rtriangulation%h_DvertexParameterValue,p_DvertexParameterValue)
-!                      
-!                  iptpos = p_IboundaryCpIdx(p_rboundaryRegion%iboundCompIdx)
-!                  
-!                  ! First vertex number = edge number
-!                  dpar1 = p_DvertexParameterValue(iptpos-1+iedge)
-!                  iv1 = iedge
-!                  
-!                  ! Second vertex number = first vertex + 1 or overall first
-!                  if (iedge .lt. p_IboundaryCpIdx(p_rboundaryRegion%iboundCompIdx+1) &
-!                                -p_IboundaryCpIdx(p_rboundaryRegion%iboundCompIdx)) then
-!                    dpar2 = p_DvertexParameterValue(iptpos-1+iedge+1)
-!                    iv2 = iedge+1
-!                  else
-!                    dpar2 = boundary_dgetMaxParVal(rspaceDiscr%p_rboundary, &
-!                        p_rboundaryRegion%iboundCompIdx)
-!                    iv2 = p_IboundaryCpIdx(p_rboundaryRegion%iboundCompIdx)
-!                  end if
-!                  
-!                  ! Relative parameter value
-!                  dpar = (boundary_convertParameter(rspaceDiscr%p_rboundary, &
-!                      p_rboundaryRegion%iboundCompIdx, dwhere, &
-!                      BDR_PAR_LENGTH, BDR_PAR_01)-dpar1)/(dpar2-dpar1)
-!                      
-!                  ! Quadratic interpolation over [-1,1]
-!                  call mprim_quadraticInterpolation (2*dpar-1.0_DP,&
-!                      p_Ddata(iv1),p_Ddata(iedge+rspaceDiscr%p_rtriangulation%NVBD),p_Ddata(iv2),dval)
-!                  
-!                  Dvalues(1) = Dvalues(1) + dval
-!
-!                end select          
-!              
-!              case default
-!                call output_line ("Unsupported element.", &
-!                    OU_CLASS_ERROR,OU_MODE_STD,"cc_getDirBCNavSt2D")
-!                call sys_halt()
-!              end select
-!            
-!            
-!            case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
-!              call output_line ("Equation not supported.", &
-!                  OU_CLASS_ERROR,OU_MODE_STD,"cc_getDirBCNavSt2D")
-!              call sys_halt()
-!            end select
-!            
-!          end if
-!        
-!        end select
-        
       end do  
       
     end do
@@ -3349,8 +1780,8 @@ contains
 
 !<subroutine>
 
-  subroutine sbc_assembleInhomNeumannRHS (roptcBDC,rrhs,dtime,cequation,&
-      copType,rglobalData)
+  subroutine sbc_assembleInhomNeumannRHS (rrhs,roptcBDC,rspaceDiscr,rtimeDiscr,&
+      dtime,cequation,copType,rglobalData)
 
 !<description>
   ! Assembles inhomogeneous Neumann boundary data into a RHS vector.
@@ -3359,6 +1790,12 @@ contains
 !<input>
   ! Boundary conditions in the problem.
   type(t_optcBDC), intent(inout), target :: roptcBDC
+
+  ! Underlying space discretisation
+  type(t_blockDiscretisation), intent(in), target :: rspaceDiscr
+  
+  ! Underlying time discretisation
+  type(t_timeDiscretisation), intent(in), target :: rtimeDiscr
 
   ! Current simulation time where to assemble the boundary conditions.
   real(dp), intent(in) :: dtime
@@ -3384,273 +1821,250 @@ contains
 !</subroutine>
 
     ! local variables
-    
-    integer :: ibdComponent, isegment, i, iprimal, iintervalEnds
-    character(LEN=PARLST_LENLINEBUF) :: sstr,sexpr,svalue,sbdex1,sbdex2,sbdcomp
+    integer :: ibct, isegment, nsegments, nsegmentsParent, iintervalsEnd
+    character(LEN=PARLST_LENLINEBUF) :: sbdex1,sbdex2,sbcsection,sparentSection
+    character(LEN=SYS_STRLEN) :: sparams
     real(DP) :: dpar1, dpar2
-    integer :: ctype, ivalue, iid, ibctyp
-    real(DP) :: dvalue
-    logical :: bneedsParams
-    type(t_linearForm) :: rlinform
+    integer :: iindex,iindexParent
+    logical :: bautomatic, bautomaticParent, bautomaticSegment
     type(t_collection), target :: rcollection, ruserCollection
     type(t_boundary), pointer :: p_rboundary
-    type(t_p_optcBDC) :: r_t_p_optcBDC
-
-    ! A boundary region defining where the boundary conditionis applied
-    type(t_boundaryRegion), target :: rboundaryRegion
+    type(t_bcassemblyData) :: rbcAssemblyData
+    type(t_linearform) :: rlinform
 
     ! A pointer to the section with the expressions and the boundary conditions
-    type(t_parlstSection), pointer :: p_rsection,p_rbdcond,p_rbdcondPrimal
+    type(t_parlstSection), pointer :: p_rsection
 
     ! Fetch some parameters
-    p_rboundary => rrhs%p_rblockDiscr%p_rboundary
+    p_rboundary => rspaceDiscr%p_rboundary
     
-    ! Save a pointer to roptBDC ti r_t_p_optcBDC for later use.
-    r_t_p_optcBDC%p_roptcBDC => roptcBDC
-    r_t_p_optcBDC%p_rboundaryRegion => rboundaryRegion
-
     ! Get the expression/bc sections from the bondary condition block
     call parlst_querysection(roptcBDC%p_rparList, &
         roptcBDC%ssectionBdExpr, p_rsection)
         
     ! Get the section defining the primal or dual boundary conditions
+    sbcsection = ""
+    sparentSection = ""
     select case (copType)
     case (OPTP_PRIMAL)
 
       ! Primal boundary conditions
-      call parlst_querysection(roptcBDC%p_rparList, &
-          roptcBDC%ssectionBdCondPrim, p_rbdcond)
+      sbcsection = roptcBDC%ssectionBdCondPrim
 
     case (OPTP_PRIMALLIN,OPTP_PRIMALLIN_SIMPLE)
 
       ! Primal boundary conditions, linearised eqn.
-      call parlst_querysection(roptcBDC%p_rparList, &
-          roptcBDC%ssectionBdCondPrimLin, p_rbdcond)
+      sbcsection = roptcBDC%ssectionBdCondPrimLin
 
       ! Primal boundary conditions
-      call parlst_querysection(roptcBDC%p_rparList, &
-          roptcBDC%ssectionBdCondPrim, p_rbdcondPrimal)
+      sparentSection = roptcBDC%ssectionBdCondPrim
 
     case (OPTP_DUAL)
     
       ! Dual boundary conditions
-      call parlst_querysection(roptcBDC%p_rparList, &
-          roptcBDC%ssectionBdCondDual, p_rbdcond)
+      sbcsection = roptcBDC%ssectionBdCondDual
 
       ! Primal boundary conditions
-      call parlst_querysection(roptcBDC%p_rparList, &
-          roptcBDC%ssectionBdCondPrim, p_rbdcondPrimal)
+      sparentSection = roptcBDC%ssectionBdCondPrim
 
     case (OPTP_DUALLIN,OPTP_DUALLIN_SIMPLE)
     
       ! Dual boundary conditions, linearised equation
-      call parlst_querysection(roptcBDC%p_rparList, &
-          roptcBDC%ssectionBdCondDualLin, p_rbdcond)
+      sbcsection = roptcBDC%ssectionBdCondDualLin
 
       ! Primal boundary conditions
-      call parlst_querysection(roptcBDC%p_rparList, &
-          roptcBDC%ssectionBdCondPrim, p_rbdcondPrimal)
+      sparentSection = roptcBDC%ssectionBdCondPrim
+
+    case (OPTP_PCSTEKLOV)
+    
+      ! Dual boundary conditions, linearised equation
+      sbcsection = roptcBDC%ssectionBdCondPCSteklov
+
+      ! Primal boundary conditions
+      sparentSection = roptcBDC%ssectionBdCondPrim
 
     end select
         
     ! Initialise the user-defined assembly
     call collct_init (rusercollection)
+    
+    ! Basic initialisation of the BC assembly structure
+    call sbc_initBCassembly (roptcBDC,rspaceDiscr,rtimeDiscr,dtime,&
+        rbcAssemblyData,ruserCollection,rcollection)
 
     ! Loop through all boundary components we have.
-    do ibdComponent = 1,boundary_igetNBoundComp(p_rboundary)
+    do ibct = 1,boundary_igetNBoundComp(p_rboundary)
 
-      ! Parse the parameter "bdComponentX"
-      write (sexpr,"(I10)") ibdComponent
-      sbdcomp = "bdComponent" // adjustl(sexpr)
-      
+      ! Get information about that component: Number of segments,...
+      call struc_getBDCinfo (rbcAssemblyData%p_roptcBDC,sbcsection,&
+          ibct,iindex,nsegments,bautomatic)
+          
+      if (bautomatic) then
+        if (sparentSection .eq. "") then
+          call output_line (&
+              "Automatic boundary conditions only allowed.", &
+              OU_CLASS_ERROR,OU_MODE_STD,"sbc_assembleInhomNeumannRHS")
+          call sys_halt()
+        end if
+      end if
+
+      if (sparentSection .ne. "") then
+        ! Structure of the parent node        
+        call struc_getBDCinfo (rbcAssemblyData%p_roptcBDC,sparentSection,&
+            ibct,iindexParent,nsegmentsParent,bautomaticParent)
+      end if
+
       ! We start at parameter value 0.0.
       dpar1 = 0.0_DP
       
-      i = parlst_queryvalue (p_rbdcond, sbdcomp)
-
-      if (i .ne. 0) then
-      
-        ! get the corresponding index in the "primal" dection
-        if (copType .ne. OPTP_PRIMAL) then
-          iprimal = parlst_queryvalue (p_rbdcondPrimal, sbdcomp)
+      ! Parameter exists. Get the values in there.
+      do isegment = 1,nsegments
+        
+        ! Get information about the segment.
+        !
+        ! Is the component fully automatic? Is the segment automatic?
+        bautomaticSegment = .false.
+        
+        if (bautomatic) then
+          ! Get the info directly from the parent
+          call struc_getSegmentInfo (&
+                roptcBDC,sparentSection,iindexParent,isegment,dpar2,iintervalsEnd,&
+                rbcAssemblyData%cbcType,sparams)
+        else
+          ! Get the information from the section
+          call struc_getSegmentInfo (&
+                roptcBDC,sbcSection,iindex,isegment,dpar2,iintervalsEnd,&
+                rbcAssemblyData%cbcType,sparams)
+          
+          ! If the type of this segment is "automatic", get it from the parent
+          if (rbcAssemblyData%cbcType .eq. -1) then
+            bautomaticSegment = .true.
+            call struc_getSegmentInfo (&
+                  roptcBDC,sparentSection,iindexParent,isegment,dpar2,iintervalsEnd,&
+                  rbcAssemblyData%cbcType,sparams)
+          end if
         end if
-      
-        ! Parameter exists. Get the values in there.
-        do isegment = 1,parlst_querysubstrings (p_rbdcond, sbdcomp)
+        
+        ! Form a boundary condition segment that covers that boundary part
+        if (dpar2 .ge. dpar1) then
           
-          call parlst_getvalue_string (p_rbdcond, i, sstr, isubstring=isegment)
+          ! Define the corresponding boundary region
+          call sbc_defineBdComponent (rbcAssemblyData,dpar1,dpar2,ibct,iintervalsEnd)
           
-          ! Read the segment parameters
-          read(sstr,*) dpar2,iintervalEnds,ibctyp
+          ! Type of equation?
+          select case (cequation)
           
-          ! Form a boundary condition segment that covers that boundary part
-          if (dpar2 .ge. dpar1) then
+          ! ----------------------
+          ! Stokes / Navier-Stokes
+          ! ----------------------
+          case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+          
+            ! Do we have 'automatic' boundary conditions?
+            ! We only have to assemble something for non-automatic BCs!
+            if (.not. bautomatic .and. .not. bautomaticSegment) then
             
-            rboundaryRegion%dminParam = dpar1
-            rboundaryRegion%dmaxParam = dpar2
-            rboundaryRegion%iboundCompIdx = ibdComponent
-            rboundaryRegion%dmaxParamBC = &
-              boundary_dgetMaxParVal(p_rboundary, ibdComponent)
-            rboundaryRegion%iproperties = iintervalEnds
-            
-            ! Type of equation?
-            select case (cequation)
-            
-            ! ----------------------
-            ! Stokes / Navier-Stokes
-            ! ----------------------
-            case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
-            
+              ! -----------------------------------------
+              ! Boundary conditions by definition
+              ! -----------------------------------------
+
               ! Now, which type of BC is to be created?
-              select case (ibctyp)
+              select case (rbcAssemblyData%cbctype)
+            
+              ! --------------------------------------------------
+              ! Other boundary conditions
+              ! --------------------------------------------------
+              case (0,1,7,8)
               
-              ! ------------------------------------------------------------------
-              ! Automatic boundary conditions. Dual and linearised equations only.
-              ! ------------------------------------------------------------------
-              case (-1)
-                if (copType .eq. OPTP_PRIMAL) then
-                  call output_line (&
-                      "Automatic boundary conditions only allowed.", &
-                      OU_CLASS_ERROR,OU_MODE_STD,"cc_parseBDconditions")
-                  call sys_halt()
-                end if
-                
-                ! The rule is:
-                !  * Primal Neumann = Dual Neumann,
-                !  * Primal Dirichlet = Dual Dirichlet-0
-
-                ! Get the boundary conditions of the primal equation
-                call parlst_getvalue_string (&
-                    p_rbdcondPrimal, iprimal, sstr, isubstring=isegment)
-                
-                ! Read the segment parameters
-                read(sstr,*) dpar2,iintervalEnds,ibctyp
-                
-                select case (ibctyp)
-                
-                ! --------------------------------------------------
-                ! Neumann boundary conditions
-                ! --------------------------------------------------
-                case (0)
-                  
-                ! --------------------------------------------------
-                ! Dirichlet boundary conditions
-                ! --------------------------------------------------
-                case (1)
-                  
-                ! --------------------------------------------------
-                ! Dirichlet boundary control
-                ! --------------------------------------------------
-                case (7,8)
-                  
-                ! --------------------------------------------------
-                ! Inhomogeneous Neumann boundary conditions
-                ! --------------------------------------------------
-                case (9)
-                  ! Nothing to do here
-                  
-                case default
-                  call output_line ("Cannot set up automatic boundary conditions", &
-                      OU_CLASS_ERROR,OU_MODE_STD,"cc_parseBDconditions")
-                  call sys_halt()
-                  
-                end select
-                
-              ! --------------------------------------------------
-              ! Neumann boundary conditions
-              ! --------------------------------------------------
-              case (0)
-              
-              ! --------------------------------------------------
-              ! Dirichlet boundary conditions
-              ! --------------------------------------------------
-              case (1)
-
-              ! --------------------------------------------------
-              ! Dirichlet boundary control
-              ! --------------------------------------------------
-              case (7,8)
-
               ! --------------------------------------------------
               ! Inhomogeneous Neumann boundary conditions
               ! --------------------------------------------------
               case (9)
-                ! Nothing to do here
+
+                ! Prepare the assembly
+                !    
+                ! Get the definition of the boundary condition.
+                ! Read the line again, get the expressions for the data field
+                read(sparams,*) sbdex1,sbdex2
+              
+                ! For any string <> "", create the appropriate Dirichlet boundary
+                ! condition and add it to the list of boundary conditions.
+                
+                ! X-velocity
+                if (sbdex1 .ne. "") then
+                  
+                  ! Get the expression information
+                  call struc_getBdExprInfo (roptcBDC,sbdex1,&
+                      rbcAssemblyData%cexprType,rbcAssemblyData%iid,rbcAssemblyData%ivalue,&
+                      rbcAssemblyData%dvalue,rbcAssemblyData%sexprName)
+                  
+                  ! Assemble
+                  rbcAssemblyData%icomponent = 1
+                  call user_initCollectForVecAssembly (&
+                      rglobalData,rbcAssemblyData%iid,rbcAssemblyData%icomponent,dtime,&
+                      rusercollection)
+                  
+                  rlinform%itermCount = 1
+                  rlinform%Idescriptors(1) = DER_FUNC
+                  call linf_buildVectorScalarBdr2D (rlinform, CUB_G4_1D, .false., &
+                      rrhs%RvectorBlock(rbcAssemblyData%icomponent),cc_getNeumannBdData,&
+                      rbcAssemblyData%rboundaryRegion,rcollection)
+                      
+                  call user_doneCollectForVecAssembly (rglobalData,rusercollection)
+                
+                end if
+
+                ! Y-velocity
+                if (sbdex1 .ne. "") then
+                  
+                  ! Get the expression information
+                  call struc_getBdExprInfo (roptcBDC,sbdex1,&
+                      rbcAssemblyData%cexprType,rbcAssemblyData%iid,rbcAssemblyData%ivalue,&
+                      rbcAssemblyData%dvalue,rbcAssemblyData%sexprName)
+                  
+                  ! Assemble
+                  rbcAssemblyData%icomponent = 2
+                  call user_initCollectForVecAssembly (&
+                      rglobalData,rbcAssemblyData%iid,rbcAssemblyData%icomponent,dtime,&
+                      rusercollection)
+                  
+                  rlinform%itermCount = 1
+                  rlinform%Idescriptors(1) = DER_FUNC
+                  call linf_buildVectorScalarBdr2D (rlinform, CUB_G4_1D, .false., &
+                      rrhs%RvectorBlock(rbcAssemblyData%icomponent),cc_getNeumannBdData,&
+                      rbcAssemblyData%rboundaryRegion,rcollection)
+                      
+                  call user_doneCollectForVecAssembly (rglobalData,rusercollection)
+                
+                end if
 
               case default
                 call output_line ("Unknown boundary condition!", &
-                    OU_CLASS_ERROR,OU_MODE_STD,"cc_parseBDconditions")
+                    OU_CLASS_ERROR,OU_MODE_STD,"sbc_assembleInhomNeumannRHS")
                 call sys_halt()
-              end select ! ibctyp
-
-            ! ----------------------
-            ! Heat equation
-            ! ----------------------
-            case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
+              end select ! cbctyp
+              
+            end if ! bautomatic
+          
+          ! ----------------------
+          ! Heat equation
+          ! ----------------------
+          case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
+          
+            ! Do we have 'automatic' boundary conditions?
+            ! We only have to assemble something for non-automatic BCs!
+            if (.not. bautomatic .and. .not. bautomaticSegment) then
             
+              ! -----------------------------------------
+              ! Boundary conditions by definition
+              ! -----------------------------------------
+
               ! Now, which type of BC is to be created?
-              select case (ibctyp)
-              
-              ! ------------------------------------------------------------------
-              ! Automatic boundary conditions. Dual and linearised equations only.
-              ! ------------------------------------------------------------------
-              case (-1)
-                if (copType .eq. OPTP_PRIMAL) then
-                  call output_line (&
-                      "Automatic boundary conditions only allowed.", &
-                      OU_CLASS_ERROR,OU_MODE_STD,"cc_parseBDconditions")
-                  call sys_halt()
-                end if
-                
-                ! The rule is:
-                !  * Primal Neumann = Dual Neumann,
-                !  * Primal Dirichlet = Dual Dirichlet-0
-
-                ! Get the boundary conditions of the primal equation
-                call parlst_getvalue_string (&
-                    p_rbdcondPrimal, iprimal, sstr, isubstring=isegment)
-                
-                ! Read the segment parameters
-                read(sstr,*) dpar2,iintervalEnds,ibctyp
-                
-                select case (ibctyp)
-                
-                ! --------------------------------------------------
-                ! Neumann boundary conditions
-                ! --------------------------------------------------
-                case (0)
-                
-                ! --------------------------------------------------
-                ! Dirichlet boundary conditions
-                ! --------------------------------------------------
-                case (1)
-                
-                ! --------------------------------------------------
-                ! Dirichlet boundary control
-                ! --------------------------------------------------
-                case (7,8)
-
-                ! --------------------------------------------------
-                ! Inhomogeneous Neumann boundary conditions
-                ! --------------------------------------------------
-                case (9)
-                  ! Nothibg to do here
-
-                case default
-                  call output_line ("Cannot set up automatic boundary conditions", &
-                      OU_CLASS_ERROR,OU_MODE_STD,"cc_parseBDconditions")
-                  call sys_halt()
-                end select ! ibctyp
-
+              select case (rbcAssemblyData%cbctype)
+            
               ! --------------------------------------------------
-              ! Neumann boundary conditions
+              ! Other boundary conditions
               ! --------------------------------------------------
-              case (0)
-              
-              ! --------------------------------------------------
-              ! Dirichlet boundary conditions
-              ! --------------------------------------------------
-              case (1)
+              case (0,1,7,8)
                 
               ! --------------------------------------------------
               ! Inhomogeneous Neumann boundary conditions
@@ -3661,58 +2075,29 @@ contains
                 !    
                 ! Get the definition of the boundary condition.
                 ! Read the line again, get the expressions for the data field
-                read(sstr,*) dvalue,iintervalEnds,ibctyp,sbdex1
+                read(sparams,*) sbdex1
               
                 ! For any string <> "", create the appropriate Dirichlet boundary
                 ! condition and add it to the list of boundary conditions.
-                !
-                ! The IquickAccess array is set up as follows:
-                !  IquickAccess(1) = component under consideration (1=x-vel, 2=y-vel,...)
-                !  IquickAccess(2) = expression type
-                !  IquickAccess(3) = iid
-                !  IquickAccess(4) = ivalue
-                !  IquickAccess(5) = 1, if parameters (x,y) are needed, =0 otherwise
-                !  IquickAccess(7:...) = The binary content of r_t_p_optcBDC.
-                !
-                ! The DquickAccess array is set up as follows:
-                !  DquickAccess(1) = dtime
-                !  DquickAccess(2) = dvalue
-                !
-                ! The SquickAccess array is set up as follows:
-                !  SquickAccess(1) = Name of the expression
                 
                 if (sbdex1 .ne. "") then
                   
-                  ! X-velocity
-                  !
                   ! Get the expression information
                   call struc_getBdExprInfo (roptcBDC,sbdex1,&
-                      ctype,iid,ivalue,dvalue,svalue,bneedsParams)
-                      
-                  rcollection%IquickAccess(1) = 1
-                  rcollection%IquickAccess(2) = ctype
-                  rcollection%IquickAccess(3) = iid
-                  rcollection%IquickAccess(4) = ivalue
-                  rcollection%IquickAccess(5) = 0
-                  if (bneedsParams) rcollection%IquickAccess(5) = 1
-                  rcollection%DquickAccess(1) = dtime
-                  rcollection%DquickAccess(2) = dvalue
-                  rcollection%SquickAccess(1) = svalue
-                  rcollection%p_rnextCollection => ruserCollection
-                  rcollection%IquickAccess(6) = 0
-                  rcollection%IquickAccess(7:) = &
-                      transfer(r_t_p_optcBDC,rcollection%IquickAccess(7:),&
-                                    size(rcollection%IquickAccess(7:)))
+                      rbcAssemblyData%cexprType,rbcAssemblyData%iid,rbcAssemblyData%ivalue,&
+                      rbcAssemblyData%dvalue,rbcAssemblyData%sexprName)
                   
+                  ! Assemble
+                  rbcAssemblyData%icomponent = 1
                   call user_initCollectForVecAssembly (&
-                      rglobalData,iid,rcollection%IquickAccess(1),dtime,rusercollection)
+                      rglobalData,rbcAssemblyData%iid,rbcAssemblyData%icomponent,dtime,&
+                      rusercollection)
                   
-                  ! Assemble the BCs.
                   rlinform%itermCount = 1
                   rlinform%Idescriptors(1) = DER_FUNC
                   call linf_buildVectorScalarBdr2D (rlinform, CUB_G4_1D, .false., &
-                      rrhs%RvectorBlock(1),cc_getNeumannBdData,&
-                      rboundaryRegion,rcollection)
+                      rrhs%RvectorBlock(rbcAssemblyData%icomponent),cc_getNeumannBdData,&
+                      rbcAssemblyData%rboundaryRegion,rcollection)
                       
                   call user_doneCollectForVecAssembly (rglobalData,rusercollection)
                 
@@ -3720,28 +2105,28 @@ contains
 
               case default
                 call output_line ("Unknown boundary condition!", &
-                    OU_CLASS_ERROR,OU_MODE_STD,"cc_parseBDconditions")
+                    OU_CLASS_ERROR,OU_MODE_STD,"sbc_assembleInhomNeumannRHS")
                 call sys_halt()
-              end select ! ibctyp
+              end select ! cbctyp
+              
+            end if ! bautomatic
 
-            case default
-              
-              call output_line ("Unknown equation", &
-                  OU_CLASS_ERROR,OU_MODE_STD,"cc_parseBDconditions")
-              call sys_halt()
-              
-            end select ! equation
+          case default
             
-            ! Move on to the next parameter value
-            dpar1 = dpar2
+            call output_line ("Unknown equation", &
+                OU_CLASS_ERROR,OU_MODE_STD,"sbc_assembleInhomNeumannRHS")
+            call sys_halt()
             
-          end if
-                                            
-        end do ! isegment
+          end select ! equation
+          
+          ! Move on to the next parameter value
+          dpar1 = dpar2
+          
+        end if
+                                          
+      end do ! isegment
       
-      end if
-      
-    end do ! ibdComponent
+    end do ! ibct
 
     call collct_done (rusercollection)
 

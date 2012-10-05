@@ -87,8 +87,9 @@ module structuresboundaryconditions
   !
   ! Depending on the situation, this list may be extended by situation
   ! specific variables or variables that are only available at runtime.
-  character(LEN=10), dimension(7), parameter, public :: SEC_EXPRVARIABLES = &
-    (/"X    ","Y    ","Z    ","L    ","R    ","S    ","TIME "/)
+  character(LEN=10), dimension(9), parameter, public :: SEC_EXPRVARIABLES = &
+    (/"X    ","Y    ","Z    ","L    ","R    ","S    ","TIME ", &
+      "NX   ","NY   "/)
 
 !</constantblock>
 
@@ -267,9 +268,6 @@ module structuresboundaryconditions
   ! Returns the type and information of a boundary expression.
   public :: struc_getBdExprInfo
 
-  ! Evaluates an expression on the boundary.
-  public :: struc_evalExpression
-
   ! Cleans up information in the optimal control structure.
   public :: struc_doneBDC
 
@@ -286,6 +284,12 @@ module structuresboundaryconditions
   ! Obtains a pointer to the discrete boundary condition structure
   ! on level ilevel.
   public :: sbch_getDiscreteBC
+
+  ! Obtain information about a bonudary condition definition
+  public :: struc_getBDCinfo
+  
+  ! Obtain information about a boundary segment
+  public :: struc_getSegmentInfo
   
 contains
 
@@ -438,7 +442,7 @@ contains
 !<subroutine>
 
   subroutine struc_getBdExprInfo (roptcBDC,sexpression,&
-      ctype,iid,ivalue,dvalue,svalue,bneedsParams)
+      ctype,iid,ivalue,dvalue,svalue)
   
 !<description>
   ! Returns the type and information of a boundary expression.
@@ -467,13 +471,6 @@ contains
   
   ! The associated svalue or "" if no svalue is associated.
   character(len=*), intent(out) :: svalue
-  
-  ! Defines whether or not a set of parameters is necessary for the
-  ! evaluation of the expression.
-  ! If this is set to FALSE, the expression can be evaluated without
-  ! the need for parameters.
-  ! If set to TRUE, the parameters must be specified.
-  logical, intent(out) :: bneedsParams
 !</output>
 
 !</subroutine>
@@ -483,12 +480,6 @@ contains
     ! Get the type from the collection
     ctype = collct_getvalue_int (roptcBDC%rcollExprTypes, sexpression)
     
-    ! Most types do not need parameters
-    bneedsParams = .false.
-    if ((ctype .eq. BDC_EXPRESSION) .or. (ctype .eq. BDC_VALPARPROFILE)) then
-      bneedsParams = .true.
-    end if
-      
     ! Get the associated values.
     ivalue = 0
     ivalue = collct_getvalue_int (roptcBDC%rcollExprTypes, &
@@ -510,87 +501,157 @@ contains
 
   end subroutine
 
- ! ***************************************************************************
+  ! **************************************************************************
 
 !<subroutine>
 
-  real(DP) function struc_evalExpression (roptcBDC,cexprType,iexprid,&
-      ivalue,dvalue,Dparams)
-  
-!<description>
-  ! Evaluates an expression on the boundary.
-  !
-  ! This evaluates all expressions except for cexprtype=BDC_USERDEFID and
-  ! BDC_USERDEF.
-!</description>
+  subroutine struc_getBDCinfo (roptcBDC,ssection,ibct,iindex,nsegments,bautomatic)
 
+!<description>
+  ! Returns information about the boundary condition definition on a boundary
+  ! component.
+!</description>
+  
 !<input>
   ! Boundary condition structure
-  type(t_optcBDC), intent(in) :: roptcBDC
+  type(t_optcBDC), intent(inout) :: roptcBDC
   
-  ! Type of the expression
-  integer, intent(in) :: cexprType
+  ! Name of the section with the boundary conditions.
+  character(len=*), intent(in) :: ssection
   
-  ! id of the expression
-  integer, intent(in) :: iexprid
-  
-  ! Integer information value. Standard=0.
-  ! For cexpr=BDC_EXPRESSION: Id of the expression.
-  integer, intent(in) :: ivalue
-
-  ! Double precision information value. Standard=0.0.
-  ! For cexpr=BDC_VALDOUBLE/BDC_VALPARPROFILE: maximum velocity.
-  real(DP), intent(in) :: dvalue
-  
-  ! An array with parameters corresponding to the possible expression
-  ! variables defined by SEC_EXPRVARIABLES.
-  ! This array only needs to be passed if bneedsparams was set to TRUE
-  ! in the call to struc_getBdExprType.
-  real(DP), dimension(:), intent(in), optional :: Dparams
+  ! Number of the boundary component
+  integer, intent(in) :: ibct
 !</input>
+
+!<output>
+  ! Index of the boundary component. =0 if there is no definition for this 
+  ! boundary component.
+  integer, intent(out) :: iindex
+
+  ! Number of segments that define the BCs on this bondary component.
+  ! =0, if if there is no definition for this boundary component.
+  integer, intent(out) :: nsegments
+  
+  ! Returns TRUE if the boundary component has 'automatic'
+  ! bundary values. This is defined by a "-1" as the value
+  ! of the boundary component identifier.
+  logical, intent(out) :: bautomatic
+!</output>
 
 !</subroutine>
 
-    select case (cexprType)
-    case (BDC_USERDEFID,BDC_USERDEF)
-      call output_line ("This expression must be evaluated manually!", &
-          OU_CLASS_ERROR,OU_MODE_STD,"struc_evalExpression")
-      call sys_halt()
+    ! local variables
+    character(LEN=PARLST_MLDATA) :: cstr,cexpr
+    type(t_parlstSection), pointer :: p_rsection
+    integer :: i
+
+    nsegments = 0
+    bautomatic = .false.
+
+    ! Parse the parameter "bdComponentX"
+    write (cexpr,"(I10)") ibct
+    cstr = "bdComponent" // adjustl(cexpr)
     
-    case (BDC_VALDOUBLE)
-      ! A simple constant
-      struc_evalExpression = dvalue
-
-    case (BDC_EXPRESSION)
-      ! A complex expression.
-
-      ! Evaluate the expression. ivalue is the number of
-      ! the expression to evaluate.
-      if (.not. present(Dparams)) then
-        call output_line ("Dparams not available!", &
-            OU_CLASS_ERROR,OU_MODE_STD,"struc_evalExpression")
-        call sys_halt()
+    ! Get the index of the parameter (in the parameter list)
+    call parlst_querysection(roptcBDC%p_rparList, ssection, p_rsection)
+    iindex = parlst_queryvalue (p_rsection, cstr)
+    if (iindex .ne. 0) then
+      ! Number of segments that define the BCs there.
+      nsegments = parlst_querysubstrings (p_rsection, cstr)
+      
+      if (nsegments .eq. 0) then
+        ! Ask the value. If it is =1, the entry if of type "automatic".
+        call parlst_getvalue_int (p_rsection,iindex,i)
+        bautomatic = i .eq. -1
       end if
-      
-      call fparser_evalFunction (roptcBDC%rparser, iexprid, Dparams, struc_evalExpression)
-      
-    case (BDC_VALPARPROFILE)
-      ! A parabolic profile. dvalue expresses the
-      ! maximum value of the profile.
-      !
-      ! Get the maximum of the profile.
-      ! The evaluation point is L=Dparams(4) in [0,1], the
-      ! local parameter value.
-      struc_evalExpression = mprim_getParabolicProfile (Dparams(4),1.0_DP,dvalue)
-      
-    case default
-      call output_line ("Invalid boundary condition type!", &
-          OU_CLASS_ERROR,OU_MODE_STD,"struc_evalExpression")
+    end if
+
+  end subroutine
+
+  ! **************************************************************************
+
+!<subroutine>
+
+  subroutine struc_getSegmentInfo (&
+      roptcBDC,ssection,iindex,isegment,dpar,iintervalsEnd,cbcType,sparams)
+
+!<description>
+  ! Returns information about a boundary condition segment on a boundary
+  ! component.
+!</description>
+  
+!<input>
+  ! Boundary condition structure
+  type(t_optcBDC), intent(inout) :: roptcBDC
+  
+  ! Name of the section with the boundary conditions.
+  character(len=*), intent(in) :: ssection
+
+  ! Index of the boundary component, returned by cc_getBDCinfo.
+  integer, intent(in) :: iindex
+
+  ! Number of the segment where to return information for.
+  integer, intent(in) :: isegment
+!</input>
+
+!<output>
+  ! End parameter value of the segment
+  real(DP), intent(out) :: dpar
+  
+  ! Definition of the endpoint inclusion.
+  ! =0: NO endpoints included.
+  ! =1: start point included
+  ! =2: Ending point included
+  ! =3: Start and ending point included into the segment.
+  integer, intent(out) :: iintervalsEnd
+  
+  ! Type of the boundary conditions here.
+  integer, intent(out) :: cbcType
+  
+  ! Additional parameters, boundary condition type dependent.
+  ! Must be evaluated by the caller.
+  character(LEN=*), intent(out) :: sparams
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    character(LEN=PARLST_MLDATA) :: sstr,sstr2
+    integer :: ntokens,istart
+    type(t_parlstSection), pointer :: p_rsection
+
+    ! Get the section
+    call parlst_querysection(roptcBDC%p_rparlist, ssection, p_rsection)
+
+    ! Get information about that segment.
+    call parlst_getvalue_string (p_rsection, iindex, sstr, isubstring=isegment)
+    
+    call sys_counttokens (sstr,ntokens)
+    if (ntokens .lt. 3) then
+      call output_line ("Invalid definition of boundary conditions!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"sbc_getSegmentInfo")
+      call output_line (""""//trim(sstr)//"""", &
+          OU_CLASS_ERROR,OU_MODE_STD,"sbc_getSegmentInfo")
       call sys_halt()
+    end if
+    
+    ! Read the segment parameters
+    read(sstr,*) dpar,iintervalsEnd,cbcType
 
-    end select
+    ! Get the position of the parameters
+    istart = 1
+    call sys_getNextToken (sstr,sstr2,istart)
+    call sys_getNextToken (sstr,sstr2,istart)
+    call sys_getNextToken (sstr,sstr2,istart)
+    
+    ! Get the remaining parameters (if there are any)
+    if (istart .ne. 0) then
+      sparams = trim(sstr(istart:))
+    else
+      sparams = ""
+    end if
 
-  end function
+  end subroutine
 
   ! ***************************************************************************
 

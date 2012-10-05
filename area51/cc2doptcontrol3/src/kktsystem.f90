@@ -1166,7 +1166,7 @@ end subroutine
                 ! Calculate the region where boundary control is applied
                 call sbc_assembleBDconditions (rkktSystem%p_roptcBDC,roptcBDCSpace,dtime,&
                     p_rphysics%cequation,OPTP_PRIMAL,SBC_DIRICHLETBCC,&
-                    p_rintermedControl%p_rblockDiscr)
+                    p_rintermedControl%p_rblockDiscr,roperatorasm%p_rtimeDiscrPrimal)
 
                 ! The first two components of the control read
                 !
@@ -1267,7 +1267,7 @@ end subroutine
                 ! Calculate the region where boundary control is applied
                 call sbc_assembleBDconditions (rkktSystem%p_roptcBDC,roptcBDCSpace,dtime,&
                     p_rphysics%cequation,OPTP_PCSTEKLOV,SBC_DIRICHLETBCC,&
-                    p_rintermedControl%p_rblockDiscr)
+                    p_rintermedControl%p_rblockDiscr,roperatorasm%p_rtimeDiscrPrimal)
 
                 ! H^1/2 boundary control is slightly more complicated than
                 ! L2 boudnary control. The intermediate control reads
@@ -2072,7 +2072,7 @@ end subroutine
     
     case default
       call output_line ("Unsupported element.", &
-          OU_CLASS_ERROR,OU_MODE_STD,"cc_getDirBCNavSt2D")
+          OU_CLASS_ERROR,OU_MODE_STD,"cc_getDirBC")
       call sys_halt()
     end select
     
@@ -2650,7 +2650,7 @@ end subroutine
                 ! Calculate the region where boundary control is applied
                 call sbc_assembleBDconditions (rkktsystemDirDeriv%p_rkktSystem%p_roptcBDC,&
                     roptcBDCSpace,dtime,p_rphysics%cequation,OPTP_PRIMAL,SBC_DIRICHLETBCC,&
-                    p_rintermedControl%p_rblockDiscr)
+                    p_rintermedControl%p_rblockDiscr,roperatorasm%p_rtimeDiscrPrimal)
 
                 ! The first two components of the control read
                 !
@@ -2738,7 +2738,7 @@ end subroutine
                 ! Calculate the region where boundary control is applied
                 call sbc_assembleBDconditions (rkktsystemDirDeriv%p_rkktSystem%p_roptcBDC,&
                     roptcBDCSpace,dtime,p_rphysics%cequation,OPTP_PCSTEKLOV,SBC_DIRICHLETBCC,&
-                    p_rintermedControl%p_rblockDiscr)
+                    p_rintermedControl%p_rblockDiscr,roperatorasm%p_rtimeDiscrPrimal)
 
                 ! H^1/2 boundary control is slightly more complicated than
                 ! L2 boudnary control. The intermediate control reads
