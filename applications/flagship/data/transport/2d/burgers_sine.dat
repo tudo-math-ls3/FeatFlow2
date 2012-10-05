@@ -357,7 +357,7 @@ nmaxIterations = 100
 #  7 = BiCGSTAB
 #  8 = FGMRES
 # 11 = UMFPACK4
-# 12 = AGMG
+# 13 = AGMG
 isolver = 11
 
 # absolute tolerance for residual
