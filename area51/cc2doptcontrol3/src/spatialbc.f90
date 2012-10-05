@@ -494,6 +494,20 @@ contains
         ! Structure of the parent node        
         call struc_getBDCinfo (roptcBDC,sparentSection,&
             ibct,iindexParent,nsegmentsParent,bautomaticParent)
+
+        ! Synchronise the number of segments.            
+        if (nsegments .eq. 0) then
+        
+          nsegments = nsegmentsParent
+        
+        else if (bautomatic .and. (nsegments .ne. nsegmentsParent)) then
+
+          call output_line ("Automatic boundary conditions invalid.", &
+              OU_CLASS_ERROR,OU_MODE_STD,"cc_parseBDconditions")
+          call sys_halt()
+
+        end if
+            
       end if
 
       ! We start at parameter value 0.0.
@@ -1912,6 +1926,20 @@ contains
         ! Structure of the parent node        
         call struc_getBDCinfo (rbcAssemblyData%p_roptcBDC,sparentSection,&
             ibct,iindexParent,nsegmentsParent,bautomaticParent)
+
+        ! Synchronise the number of segments.            
+        if (nsegments .eq. 0) then
+        
+          nsegments = nsegmentsParent
+        
+        else if (bautomatic .and. (nsegments .ne. nsegmentsParent)) then
+
+          call output_line ("Automatic boundary conditions invalid.", &
+              OU_CLASS_ERROR,OU_MODE_STD,"cc_parseBDconditions")
+          call sys_halt()
+
+        end if
+
       end if
 
       ! We start at parameter value 0.0.
