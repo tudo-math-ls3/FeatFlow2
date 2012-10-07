@@ -1048,7 +1048,7 @@ fb_checkWhetherToRun() {
 		UMFPACK codefragments docs_* documentation incoming \
 		lapack-3.4.2 splib \
 		AGMG_3.1.2.tar.gz AMD-2.3.1.tar.gz SuiteSparse_config-4.0.2.tar.gz \
-		UMFPACK-5.6.1.tar.gz splib.tar.gz
+		UMFPACK-5.6.1.tar.gz lapack-3.4.2.tgz splib.tar.gz
 	    do
 		ignore="${ignore} -x ${string}"
 	    done
