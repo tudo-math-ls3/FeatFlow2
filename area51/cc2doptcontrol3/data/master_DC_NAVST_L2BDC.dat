@@ -63,22 +63,17 @@ bdComponent1(3)=
   4.0  3  1  "Dirichlet0"  "Dirichlet0"
 
 [BDCONDITIONS_DUAL]
-bdComponent1(3)=
-  2.0  3  -1
-  3.0  0  -1
-  4.0  3  -1
+bdComponent1 = -1
 
 [BDCONDITIONS_PRIMALLIN]
-bdComponent1(3)=
-  2.0  3  -1
-  3.0  0  -1
-  4.0  3  -1
+bdComponent1 = -1
 
 [BDCONDITIONS_DUALLIN]
-bdComponent1(3)=
-  2.0  3  -1
-  3.0  0  -1
-  4.0  3  -1
+bdComponent1 = -1
+  
+[BDCONDITIONS_PCSTEKLOV]
+bdComponent1 = -1
+  
 
 #[BDCONDITIONS_PRIMAL]
 #bdComponent1(1)=
@@ -179,8 +174,8 @@ cwriteUmfpackMatrix = 0
 
 [OPTIMALCONTROL]
 dalphaDistC = -0.01
-dalphaL2BdC =  0.01
-dalphaH12BdC =-0.01
+dalphaL2BdC = 0.01
+dalphaH12BdC = -0.01
 dobservationArea =
 
 [CONSTRAINTS_DISTCTRL]

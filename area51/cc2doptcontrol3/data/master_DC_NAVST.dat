@@ -65,32 +65,13 @@ bdComponent1(3)=
 #  3.0  3  1  "Dirichlet1"  "Dirichlet0"
 
 [BDCONDITIONS_DUAL]
-bdComponent1(3)=
-  2.0  1  -1
-  3.0  3  -1
-  4.0  2  -1
+bdComponent1=-1
 
 [BDCONDITIONS_PRIMALLIN]
-bdComponent1(3)=
-  2.0  1  -1
-  3.0  3  -1
-  4.0  2  -1
+bdComponent1=-1
 
 [BDCONDITIONS_DUALLIN]
-bdComponent1(3)=
-  2.0  1  -1
-  3.0  3  -1
-  4.0  2  -1
-
-#[BDCONDITIONS_PRIMAL]
-#bdComponent1(1)=
-#  4  1  1  "DirichletXP"  "DirichletYP"
-#  4      1  0
-
-#[BDCONDITIONS_DUAL]
-#bdComponent1(1)=
-#  4  1  1  "DirichletXD"  "DirichletYD"
-#  4      1  0
+bdComponent1=-1
 
 [RIGHTHANDSIDE_PRIMAL]
 ctype = 0
