@@ -36,6 +36,7 @@ program poisson
   use poisson2d_method0_smart
   use poisson2d_method0_cmsort
   use poisson2d_method1_mg
+  use poisson2d_method0_agmg
   use poisson2d_method1_em30
   use poisson2d_method1_robin
   use poisson2d_method1_fbc
@@ -47,6 +48,7 @@ program poisson
   use poisson2d_method2_cmsort
   use poisson2d_method2_mg
   use poisson3d_method0_simple
+  use poisson3d_method0_agmg
   use poisson3d_method1_mg
   use poisson3d_method1_em30
   use poisson2d_method1_ncc
@@ -120,6 +122,14 @@ program poisson
   call output_line ("Calculating Poisson-2D-Problem with method 0 - block")
   call output_line ("-----------------------------------------------------")
   call poisson2d_0_block
+
+#ifdef ENABLE_AGMG
+  ! Call the problem to solve. Poisson 2D method 1 - algebraic multigrid:
+  call output_lbrk ()
+  call output_line ("Calculating Poisson-2D-Problem with method 0 - AGMG")
+  call output_line ("--------------------------------------------------------")
+  call poisson2d_0_agmg
+#endif
 
   ! Call the problem to solve. Poisson 2D method 1 - nonconstant coefficients:
   call output_lbrk ()
@@ -198,6 +208,14 @@ program poisson
   call output_line ("Calculating Poisson-3D-Problem with method 0 - simple")
   call output_line ("-----------------------------------------------------")
   call poisson3d_0_simple
+
+#ifdef ENABLE_AGMG
+  ! Call the problem to solve. Poisson3D-1:
+  call output_lbrk ()
+  call output_line ("Calculating Poisson-3D-Problem with method 0 - AGMG")
+  call output_line ("-----------------------------------------------------")
+  call poisson3d_0_agmg
+#endif
 
   ! Call the problem to solve. Poisson3D-1:
   call output_lbrk ()
