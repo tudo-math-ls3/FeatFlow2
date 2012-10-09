@@ -233,6 +233,7 @@
 		<Filter Name="LinearAlgebra">
 		<File RelativePath=".\LinearAlgebra\linearalgebra.f90"/></Filter>
 		<Filter Name="LinearSolver">
+		<File RelativePath=".\LinearSolver\agmgdummy.f90"/>
 		<File RelativePath=".\LinearSolver\coarsegridcorrection.f90"/>
 		<File RelativePath=".\LinearSolver\filtersupport.f90"/>
 		<File RelativePath=".\LinearSolver\iluk.f90"/>
