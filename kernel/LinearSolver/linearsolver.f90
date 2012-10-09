@@ -17272,31 +17272,31 @@ contains
     ! Set pointer to internal matrix
     p_rtempMatrix => rsolverNode%p_rsubnodeAGMG%rtempMatrix
     
-    ! Set pointers
-    call lsyssc_getbase_Kld(p_rtempMatrix, p_Kld)
-    call lsyssc_getbase_Kcol(p_rtempMatrix, p_Kcol)
-    
-    ! Erase setup and release internal memory
-    select case(p_rtempMatrix%cdataType)
-    case (ST_DOUBLE)
-      call lsyssc_getbase_double(p_rtempMatrix, p_Da)
-      call dagmg(p_rtempMatrix%NEQ, p_Da, p_Kcol, p_Kld,&
-          p_Da, p_Da, -1, OU_TERMINAL, rsolverNode%p_rsubnodeAGMG%nrest, 0, 0.0_DP)
-    case (ST_SINGLE)
-      call lsyssc_getbase_single(p_rtempMatrix, p_Fa)
-      call sagmg(p_rtempMatrix%NEQ, p_Fa, p_Kcol, p_Kld,&
-          p_Fa, p_Fa, -1, OU_TERMINAL, rsolverNode%p_rsubnodeAGMG%nrest, 0, 0.0_SP)
-    case default
-      call output_line('Unsupported data type!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'linsol_doneDataAGMG')
-    end select
-    
-    ! Release temporal matrix
-    call lsyssc_releaseMatrix(rsolverNode%p_rsubnodeAGMG%rtempMatrix)
-    
-    ! Release temporal vector
-    call lsysbl_releaseVector(rsolverNode%p_rsubnodeAGMG%rtempVector)
-  
+    if (p_rtempMatrix%NA .ne. 0) then
+
+      ! Set pointers
+      call lsyssc_getbase_Kld(p_rtempMatrix, p_Kld)
+      call lsyssc_getbase_Kcol(p_rtempMatrix, p_Kcol)
+      
+      ! Erase setup and release internal memory
+      select case(p_rtempMatrix%cdataType)
+      case (ST_DOUBLE)
+        call lsyssc_getbase_double(p_rtempMatrix, p_Da)
+        call dagmg(p_rtempMatrix%NEQ, p_Da, p_Kcol, p_Kld,&
+            p_Da, p_Da, -1, OU_TERMINAL, rsolverNode%p_rsubnodeAGMG%nrest, 0, 0.0_DP)
+      case (ST_SINGLE)
+        call lsyssc_getbase_single(p_rtempMatrix, p_Fa)
+        call sagmg(p_rtempMatrix%NEQ, p_Fa, p_Kcol, p_Kld,&
+            p_Fa, p_Fa, -1, OU_TERMINAL, rsolverNode%p_rsubnodeAGMG%nrest, 0, 0.0_SP)
+      case default
+        call output_line('Unsupported data type!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'linsol_doneDataAGMG')
+      end select
+      
+      ! Release temporal matrix
+      call lsyssc_releaseMatrix(rsolverNode%p_rsubnodeAGMG%rtempMatrix)
+    end if
+      
   end subroutine
 
   ! ***************************************************************************
@@ -17377,6 +17377,10 @@ contains
     p_rsubnode => rsolverNode%p_rsubnodeAGMG
     p_rtempMatrix => p_rsubnode%rtempMatrix
     p_rb       => p_rsubnode%rtempVector
+
+    ! Copy the RHS rd to the temp vector; it will be overwritten
+    ! by the solution vector
+    call lsysbl_copyVector (rd,p_rb)
 
     ! Set pointers
     call lsyssc_getbase_Kld(p_rtempMatrix, p_Kld)
