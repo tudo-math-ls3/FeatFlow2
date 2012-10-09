@@ -3326,8 +3326,13 @@ end subroutine
       
     end do ! istep
 
-    ! Calculate the total l2-norm
-    dres = sqrt(dres/real(itotalcomp,DP))
+    select case (iresnorm)
+    case (LINALG_NORML2)
+      ! Calculate the total l2-norm
+      dres = sqrt(dres/real(itotalcomp,DP))
+    case default
+      dres = sqrt(dres)
+    end select
     
   end subroutine
 

@@ -158,6 +158,9 @@ module kktsystemspaces
 
   ! Scalar product in the control space
   public :: kktsp_scalarProductControl
+
+  ! Scale the control by a value
+  public :: kktsp_scaleControl
   
   ! Calculates the norm of a control vector
   public :: kktsp_getNormControl
@@ -1061,6 +1064,39 @@ contains
     end if
     
   end function
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine kktsp_scaleControl(rx,dscale)
+  
+!<description>
+  ! Scales a vector by a value. rx=dscale*rx
+!</description>
+
+!<input>
+  ! The value
+  real(DP), intent(in) :: dscale
+!</input>
+
+!<inputoutput>
+  ! Vector to be scaled.
+  type(t_controlSpace), intent(inout) :: rx
+!</inputoutput>
+
+!</subroutine>
+
+    real(DP) :: dtemp
+
+    if (associated (rx%p_rvector)) then
+      ! Scale the vector
+      call sptivec_scaleVector (rx%p_rvector,dscale)
+      call sptivec_invalidateVecInPool (rx%p_rvectorAccess)
+
+    end if
+    
+  end subroutine
 
   ! ***************************************************************************
 

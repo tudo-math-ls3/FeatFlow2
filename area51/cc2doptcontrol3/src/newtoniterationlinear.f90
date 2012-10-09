@@ -15,6 +15,7 @@ module newtoniterationlinear
   use genoutput
   use paramlist
   use statistics
+  use mprimitives
   
   use spatialdiscretisation
   use timediscretisation
@@ -25,6 +26,7 @@ module newtoniterationlinear
   use linearformevaluation
   use bilinearformevaluation
   use feevaluation2
+  use linearalgebra
   use blockmatassemblybase
   use blockmatassembly
   use collection
@@ -78,6 +80,8 @@ module newtoniterationlinear
   ! BiCGStab iteration
   integer, parameter, public :: NLIN_SOLVER_BICGSTAB = 4
 
+  ! GMRES iteration
+  integer, parameter, public :: NLIN_SOLVER_GMRES = 5
 !</constantblock>
 
 !<constantblock description = "Solver types; used for statistics.">
@@ -263,6 +267,37 @@ module newtoniterationlinear
   
   public :: t_linsolCG
 
+  !<typeblock>
+  
+  ! CG parameters and structures
+  type t_linsolGMRES
+
+    ! Dimension of Krylov Subspace
+    integer :: ikrylovDim = 0
+    
+    ! Maybe we should apply Gram-Schmidt twice?
+    logical :: btwiceGS = .false.
+    
+    ! Scale factor for pseudo-residuals
+    real(DP) :: dpseudoResScale = 0.0_DP
+    
+    ! Some temporary 1D/2D arrays
+    real(DP), dimension(:),   pointer :: Dc, Ds, Dq
+    real(DP), dimension(:,:), pointer :: Dh
+
+    ! The handles of the arrays
+    integer :: hDc, hDs, hDq, hDh
+    
+    ! Some temporary vectors
+    type(t_controlSpace), dimension(:), pointer :: p_Rv => null()
+    type(t_kktsystemDirDeriv), dimension(:), pointer :: p_Rz => null()
+  
+  end type
+
+  !</typeblock>
+  
+  public :: t_linsolGMRES
+
 ! *****************************************************************************
 
 !<typeblock>
@@ -369,6 +404,9 @@ module newtoniterationlinear
     
     ! Parameters for the BiCGStab solver
     type(t_linsolBiCGStab), pointer :: p_rsubnodeBiCGStab => null()
+
+    ! Parameters for the GMRES solver
+    type(t_linsolGMRES), pointer :: p_rsubnodeGMRES => null()
     
     ! <!-- -------------- -->
     ! <!-- TEMPORARY DATA -->
@@ -758,6 +796,14 @@ contains
       ! Call the Richardson iteration to calculate an update
       ! for the control.
       call newtonlin_bicgstab (rsmootherParams,rkktsystemDirDeriv,rrhs,rstatistics)
+
+    ! --------------------------------------
+    ! GMRES iteration
+    ! --------------------------------------
+    case (NLIN_SOLVER_GMRES)
+      ! Call the Richardson iteration to calculate an update
+      ! for the control.
+      call newtonlin_gmres (rsmootherParams,rkktsystemDirDeriv,rrhs,rstatistics)
 
     ! --------------------------------------
     ! unknown iteration
@@ -1462,6 +1508,597 @@ contains
   end subroutine
 
   ! ***************************************************************************
+  
+!<subroutine>
+  
+  recursive subroutine newtonlin_initStrucGMRES (rsolver,rlinsolGMRES,rkktsystemHierarchy,ilev)
+  
+!<description>
+  ! Initialises a GMRES substructure.
+!</description>
+
+!<input>
+  ! Solver structure of the main solver.
+  type(t_linsolParameters), intent(in) :: rsolver
+
+  ! Defines the basic hierarchy of the solutions of the KKT system.
+  ! This can be a "template" structure, i.e., memory for the solutions
+  ! in rkktsystemHierarchy does not have to be allocated.
+  type(t_kktsystemHierarchy), intent(in), target :: rkktsystemHierarchy
+
+  ! Level in the hierarchy
+  integer, intent(in) :: ilev
+!</input>
+
+!<inputoutput>
+  ! Structure to be initialised.
+  type(t_linsolGMRES), intent(inout) :: rlinsolGMRES
+!</inputoutput>
+
+!</subroutine>
+
+  ! local variables
+  integer :: i
+  integer :: idim
+  integer , dimension(2) :: idim2
+  type(t_kktsystem), pointer :: p_rkktSystem
+    
+    ! We now need to check if the dimension of the Krylov subspace is
+    ! positive. If it is not, we need to cancel the initialization here.
+    if (rlinsolGMRES%ikrylovDim .le. 0) then
+      call output_line ("Dimension of Krylov subspace for GMRES(m) is <= 0 !", &
+          OU_CLASS_ERROR, OU_MODE_STD, "newtonlin_initStrucGMRES")
+      call sys_halt()
+    end if
+    
+    ! Get the stuff out of our solver node
+    idim = rlinsolGMRES%ikrylovDim
+    idim2(1) = idim
+    idim2(2) = idim
+
+    ! Now comes the intersting part - we need to allocate a lot of arrays
+    ! and vectors for the Krylov subspace for GMRES here.
+    
+    ! Call our storage to allocate the 1D/2D arrays
+    call storage_new("newtonlin_initStrucGMRES", "Dh", idim2, &
+        ST_DOUBLE, rlinsolGMRES%hDh, ST_NEWBLOCK_NOINIT)
+    call storage_new("newtonlin_initStrucGMRES", "Dc", idim, &
+        ST_DOUBLE, rlinsolGMRES%hDs, ST_NEWBLOCK_NOINIT)
+    call storage_new("newtonlin_initStrucGMRES", "Ds", idim, &
+        ST_DOUBLE, rlinsolGMRES%hDc, ST_NEWBLOCK_NOINIT)
+    call storage_new("newtonlin_initStrucGMRES", "Dq", idim+1, &
+        ST_DOUBLE,  rlinsolGMRES%hDq, ST_NEWBLOCK_NOINIT)
+    
+    ! Get the pointers
+    call storage_getbase_double2D(rlinsolGMRES%hDh, rlinsolGMRES%Dh)
+    call storage_getbase_double(rlinsolGMRES%hDc, rlinsolGMRES%Dc)
+    call storage_getbase_double(rlinsolGMRES%hDs, rlinsolGMRES%Ds)
+    call storage_getbase_double(rlinsolGMRES%hDq, rlinsolGMRES%Dq)
+    
+    ! Allocate space for our auxiliary vectors
+    allocate(rlinsolGMRES%p_rv(idim+1))
+    
+    ! Create them
+    do i=1, idim+1
+      call kkth_initControl (&
+          rlinsolGMRES%p_rv(i),rkktsystemHierarchy,ilev)
+    end do
+
+    ! Okay, that is all!
+      
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine newtonlin_initDataGMRES (rsolver,rlinsolGMRES,rsolutionHierarchy,ilev)
+  
+!<description>
+  ! Initialises a multigrid substructure.
+!</description>
+
+!<input>
+  ! Solver structure of the main solver.
+  type(t_linsolParameters), intent(in) :: rsolver
+
+  ! Defines a hierarchy of the solutions of the KKT system.
+  type(t_kktsystemHierarchy), intent(inout), target :: rsolutionHierarchy
+
+  ! Level in the hierarchy
+  integer, intent(in) :: ilev
+!</input>
+
+!<inputoutput>
+  ! Structure to be initialised.
+  type(t_linsolGMRES), intent(inout) :: rlinsolGMRES
+!</inputoutput>
+
+!</subroutine>
+
+    ! Local variables
+    type(t_kktsystem), pointer :: p_rkktSystem
+    integer :: i
+
+    ! Get the KKT system solution on that level
+    allocate(rlinsolGMRES%p_rz(rlinsolGMRES%ikrylovDim))
+
+    call kkth_getKKTsystem (rsolutionHierarchy,ilev,p_rkktsystem)
+    
+    do i=1, rlinsolGMRES%ikrylovDim
+      call kkt_initKKTsystemDirDeriv (rlinsolGMRES%p_rz(i),p_rkktsystem)
+    end do
+   
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine newtonlin_doneDataGMRES (rlinsolGMRES)
+  
+!<description>
+  ! Cleanup of the data initalised in newtonlin_initStructure.
+!</description>
+
+!<inputoutput>
+  ! Structure to be cleaned up.
+  type(t_linsolGMRES), intent(inout) :: rlinsolGMRES
+!</inputoutput>
+
+!</subroutine>
+
+    integer :: i
+
+    ! Release auxiliary vectors
+    if (associated(rlinsolGMRES%p_rv)) then
+      do i=1, size(rlinsolGMRES%p_rz)
+        call kkt_doneKKTsystemDirDeriv (rlinsolGMRES%p_rz(i))
+      end do
+      deallocate(rlinsolGMRES%p_rz)
+    end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  recursive subroutine newtonlin_doneStrucGMRES (rlinsolGMRES)
+  
+!<description>
+  ! Calls the doneStructure subroutine of the subsolver.
+  ! Maybe the subsolver needs that...
+  ! The routine is declared RECURSIVE to get a clean interaction
+  ! with linsl2_doneStructure.
+!</description>
+  
+!<inputoutput>
+  ! Parameters for the iteration.
+  type(t_linsolGMRES), intent(inout), target :: rlinsolGMRES
+!</inputoutput>
+  
+!</subroutine>
+
+  ! local variables
+  integer :: i
+    
+    ! Release auxiliary vectors
+    if (associated(rlinsolGMRES%p_rv)) then
+      do i=1, size(rlinsolGMRES%p_rv)
+        call kktsp_doneControlVector (rlinsolGMRES%p_rv(i))
+      end do
+    
+      ! Destroy them
+      deallocate(rlinsolGMRES%p_rv)
+    endif
+
+    ! Destroy our 1D/2D arrays
+    if (rlinsolGMRES%hDq .ne. ST_NOHANDLE) then
+      call storage_free(rlinsolGMRES%hDq)
+      call storage_free(rlinsolGMRES%hDs)
+      call storage_free(rlinsolGMRES%hDc)
+      call storage_free(rlinsolGMRES%hDh)
+    end if
+    
+    ! That is all!
+      
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  recursive subroutine newtonlin_gmres (rlinsolParam,rkktsystemDirDeriv,rrhs,rstatistics)
+  
+!<description>
+  ! Applies a BiCGStab iteration in the control space
+  ! for the linearised KKT system.
+!</description>
+
+!<inputoutput>
+  ! Parameters for the iteration.
+  ! The output parameters are changed according to the iteration.
+  type(t_linsolParameters), intent(inout), target :: rlinsolParam
+
+  ! Structure defining the linearised KKT system.
+  ! The linearised control in this structure is used as
+  ! initial and target vector.
+  ! The control on the maximum level receives the result.
+  type(t_kktsystemDirDeriv), intent(inout), target :: rkktsystemDirDeriv
+  
+  ! Right-hand side of the linearised control equation
+  type(t_controlSpace), intent(inout), target :: rrhs
+!</inputoutput>
+
+!<ouptut>
+  ! Solver statistics. 
+  type(t_newtonlinSolverStat), intent(out) :: rstatistics
+!</ouptut>
+
+!</subroutine>
+
+  ! local variables
+  real(DP) :: dalpha,dbeta,dres,dfr,dtmp,dpseudores,dprnsf,dlastres,dnewres
+  integer :: i,k,ilastinner
+  type(t_newtonlinSolverStat) :: rlocalStat
+  
+  ! Here come our 1D/2D arrays
+  real(DP), dimension(:), pointer :: p_Dc, p_Ds, p_Dq
+  real(DP), dimension(:,:), pointer :: p_Dh
+
+  ! Minimum number of iterations, print-sequence for residuals, dimension
+  ! of krylov subspace
+  integer :: idim, hDq
+  
+  ! Whether to filter/precondition, apply Gram-Schmidt twice
+  logical btwiceGS
+  
+  ! Our structure
+  type(t_linsolGMRES), pointer :: p_rsubnode
+  
+  ! Pointers to temporary vectors - named for easier access
+  type(t_kktsystemDirDeriv), pointer :: p_rx
+  type(t_kktsystemDirDeriv), dimension(:), pointer :: p_rz
+  type(t_controlSpace), dimension(:), pointer :: p_rv
+  type(t_iterationControl) :: riterLocal
+  
+    ! Solve the system!
+  
+    ! Get some information
+    p_rsubnode => rlinsolParam%p_rsubnodeGMRES
+
+    ! Apply Gram-Schmidt twice?
+    btwiceGS = p_rsubnode%btwiceGS
+    
+    ! Get the dimension of Krylov subspace
+    idim = p_rsubnode%ikrylovdim
+    
+    ! Get our pseudo-residual-norm scale factor
+    dprnsf = p_rsubnode%dpseudoResScale
+    
+    ! Now we need to check the pseudo-residual scale factor.
+    ! If it is non-positive, we set it to 0.
+    if (dprnsf .le. 0.0_DP) then
+      dprnsf = 0.0_DP
+    end if
+
+    ! Set pointers to the temporary vectors
+    ! defect vectors
+    p_rz => p_rsubnode%p_rz
+    ! basis vectors
+    p_rv => p_rsubnode%p_rv
+    ! solution vector
+    p_rx => rkktsystemDirDeriv
+
+    ! Set pointers to the 1D/2D arrays
+    p_Dh => p_rsubnode%Dh
+    p_Dc => p_rsubnode%Dc
+    p_Ds => p_rsubnode%Ds
+    p_Dq => p_rsubnode%Dq
+    
+    ! And get the handle of Dq, since we need to call
+    ! storage_clear during the iteration
+    hDq = p_rsubnode%hDq
+    
+    ! Start the iteration
+    !
+    ! riterLocal logs the iteration without stagnation test.
+    ! rlinsolParam%riter logs only the outer iteration, with stagnation
+    ! test. At the end, riterLocal replaces riter.
+    call itc_initIteration(rlinsolParam%riter)
+    riterLocal = rlinsolParam%riter
+    riterLocal%nstagIter = 0
+    
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+    ! -= Outer Loop
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+    do
+
+      ! -------------------------------------------------------------
+      ! Get/Save the norm of the current residual
+      ! -------------------------------------------------------------
+      if (rlinsolParam%riter%cstatus .eq. ITC_STATUS_UNDEFINED) then
+        
+        ! -------------------------------------------------------------
+        ! Calculate the norm of the initial residual
+        ! -------------------------------------------------------------
+
+        ! Get the initial defect to rv(1) as well as its norm
+        output_iautoOutputIndent = output_iautoOutputIndent + 2
+        call newtonlin_getResidual (rlinsolParam,p_rx,rrhs,p_rv(1),rlocalStat)
+        output_iautoOutputIndent = output_iautoOutputIndent - 2
+
+        ! Add time to the time of the forward equation
+        call newtonlin_sumStatistics(rlocalStat,rstatistics,NLIN_STYPE_RESCALC)
+
+        ! Get the norm of the residuum
+        ! We need to calculate the norm twice, since we need one for
+        ! the stopping criterion (selected by the user) and the
+        ! euclidian norm for the internal GMRES algorithm
+        call kkt_controlResidualNorm (&
+            p_rx%p_rkktsystem%p_roperatorAsmHier%ranalyticData,&
+            p_rv(1),dfr,rlinsolParam%rprecParameters%iresnorm)
+
+        call kkt_controlResidualNorm (&
+            p_rx%p_rkktsystem%p_roperatorAsmHier%ranalyticData,&
+            p_rv(1),dres,LINALG_NORMEUCLID)
+        
+        ! Remember the initial residual
+        call itc_initResidual(rlinsolParam%riter,dfr)
+        call itc_initResidual(riterLocal,dfr)
+        
+      else
+
+        ! Push the residual, increase the iteration counter
+        !
+        ! Interpolate the residuals between the last and the current for
+        ! all the substeps.
+        call itc_pushResidual(riterLocal,dfr)
+
+        dlastres = rlinsolParam%riter%dresFinal
+        do i=0,ilastinner
+          call mprim_linearRescale(real(i,DP),0.0_DP,real(ilastinner,DP),dlastres,dfr,dnewres)
+          call itc_pushResidual(rlinsolParam%riter,dnewres)
+        end do
+      
+      end if
+
+      if (rlinsolParam%rprecParameters%ioutputLevel .ge. 2) then
+        call output_line ("Space-time GMRES("//&
+            trim(sys_siL(idim,10))//"): Iteration "// &
+            trim(sys_siL(riterLocal%niterations,10))//&
+            ",  !!RES!! = "//trim(sys_sdEL(dfr,15)) )
+      end if
+
+      ! -------------------------------------------------------------
+      ! Check for convergence / divergence / ...
+      ! -------------------------------------------------------------
+      if (rlinsolParam%riter%cstatus .ne. ITC_STATUS_CONTINUE) exit
+
+      ! -------------------------------------------------------------
+      ! GMRES outer loop iteration
+      ! -------------------------------------------------------------
+      
+      ! Step O.1:
+      ! Create elementary vector e_1 scaled by the euclid norm of the
+      ! defect, i.e.: q = ( ||v(1)||_2, 0, ..., 0 )
+      call storage_clear (hDq)
+      p_Dq(1) = dres
+      
+      ! Step O.2:
+      ! Now scale the defect by the inverse of its norm
+      call kktsp_scaleControl (p_rv(1), 1.0_DP / dres)
+      
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+      ! -= Inner Loop (GMRES iterations)
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+      ilastinner = 0
+      do i = 1, idim
+      
+        ilastinner = ilastinner + 1
+        
+        ! Step I.1:
+        ! Solve P * z(i) = v(i), where P is the preconditioner matrix
+        call kktsp_controlCopy (p_rv(i), p_rz(i)%p_rcontrolLin)
+        
+        ! Step I.2:
+        ! Calculate v(i+1) = A * z(i)
+        output_iautoOutputIndent = output_iautoOutputIndent + 2
+        call newtonlin_applyOperator (rlinsolParam,p_rz(i), p_rv(i+1),rlocalStat)
+        output_iautoOutputIndent = output_iautoOutputIndent - 2
+        
+        call newtonlin_sumStatistics(rlocalStat,rstatistics,NLIN_STYPE_RESCALC)
+        
+        ! Step I.3:
+        ! Perfom Gram-Schmidt process (1st time)
+        do k = 1, i
+          p_Dh(k,i) = kktsp_scalarProductControl(p_rv(i+1), p_rv(k))
+          call kktsp_controlLinearComb(p_rv(k), -p_Dh(k,i), p_rv(i+1), 1.0_DP)
+        end do
+        
+        ! If the user wishes, perform Gram-Schmidt one more time
+        ! to improve numerical stability.
+        if (btwiceGS) then
+          do k = 1, i
+            dtmp = kktsp_scalarProductControl(p_rv(i+1), p_rv(k))
+            p_Dh(k,i) = p_Dh(k,i) + dtmp
+            call kktsp_controlLinearComb(p_rv(k), -dtmp, p_rv(i+1), 1.0_DP)
+          end do
+        end if
+        
+        ! Step I.4:
+        ! Calculate alpha = ||v(i+1)||_2
+        call kkt_controlResidualNorm (&
+          p_rx%p_rkktsystem%p_roperatorAsmHier%ranalyticData,&
+          p_rv(i+1),dalpha,LINALG_NORMEUCLID)
+        
+        ! Step I.5:
+        ! Scale v(i+1) by the inverse of its euclid norm
+        if (dalpha .gt. SYS_EPSREAL_DP) then
+          call kktsp_scaleControl (p_rv(i+1), 1.0_DP / dalpha)
+        else
+          ! Well, let us just print a warning here...
+          if(rlinsolParam%rprecParameters%ioutputLevel .ge. 2) then
+            call output_line ("Space-time GMRES("// trim(sys_siL(idim,10))//&
+              "): Warning: !!v(i+1)!! < EPS !")
+          end if
+        end if
+        
+        
+        ! Step I.6:
+        ! Apply Givens rotations to the i-th column of h which
+        ! renders the Householder matrix an upper triangular matrix
+        do k = 1, i-1
+          dtmp = p_Dh(k,i)
+          p_Dh(k,i)   = p_Dc(k) * dtmp + p_Ds(k) * p_Dh(k+1,i)
+          p_Dh(k+1,i) = p_Ds(k) * dtmp - p_Dc(k) * p_Dh(k+1,i)
+        end do
+        
+        
+        ! Step I.7:
+        ! Calculate Beta
+        ! Beta = (h(i,i)^2 + alpha^2) ^ (1/2)
+        dbeta = sqrt(p_Dh(i,i)**2 + dalpha**2)
+        if (dbeta < SYS_EPSREAL_DP) then
+          dbeta = SYS_EPSREAL_DP
+          if(rlinsolParam%rprecParameters%ioutputLevel .ge. 2) then
+            call output_line ("Space-time GMRES("// trim(sys_siL(idim,10))//&
+              "): Warning: beta < EPS !")
+          end if
+        end if
+        
+        ! Step I.8:
+        ! Calculate next plane rotation
+        p_Ds(i) = dalpha / dbeta
+        p_Dc(i) = p_Dh(i,i) / dbeta
+        
+        ! Step I.9
+        ! Set h(i,i) = beta
+        p_Dh(i,i) = dbeta
+        
+        ! Step I.10:
+        ! Update q(i) and calculate q(i+1)
+        p_Dq(i+1) = p_Ds(i) * p_Dq(i)
+        p_Dq(i)   = p_Dc(i) * p_Dq(i)
+        
+        ! Step I.11
+        ! Check pseudo-residual-norm and do all the other stuff we
+        ! need to do before starting a new GMRES iteration
+        
+        ! Get pseudo-residual-norm
+        dpseudores = abs(p_Dq(i+1))
+        
+        ! The euclid norm of our current defect is implicitly given by
+        ! |q(i+1)|, however, it may be inaccurate, therefore, checking if
+        ! |q(i+1)| fulfills the stopping criterion would not be very wise,
+        ! as it may result in a lot of unnecessary restarts.
+        ! We will therefore check (|q(i+1)| * dprnsf) against the tolerances
+        ! instead, that should *hopefully* be okay.
+        ! If dprnsf is 0, we will check |q(i+1)| against EPS to avoid NaNs
+        ! or Infs during the next GMRES iteration.
+        dtmp = dpseudores * dprnsf
+        
+        ! Push the residual, increase the iteration counter
+        call itc_pushResidual(riterLocal,dtmp)
+        
+        ! Print our current pseudo-residual-norm
+        if (rlinsolParam%rprecParameters%ioutputLevel .ge. 2) then
+          call output_line ("Space-time GMRES("//trim(sys_siL(idim,10))//&
+              "): Iteration "//trim(sys_siL(riterLocal%niterations,10))//&
+              ",  !q(i+1)! = "//trim(sys_sdEL(dpseudores,15)) )
+        end if
+
+        ! Is |q(i+1)| smaller than our machine`s exactness?
+        ! If yes, then exit the inner GMRES loop.
+        if (dpseudores .le. SYS_EPSREAL_DP) exit
+        
+        ! Check if (|q(i+1)| * dprnsf) is greater than the machine`s
+        ! exactness (this can only happen if dprnsf is positive).
+        ! If yes, test against the stopping criteria.
+        if (dtmp .gt. SYS_EPSREAL_DP) then
+          
+          select case (riterLocal%cstatus)
+          
+          case (ITC_STATUS_DIVERGED) 
+
+            ! We also want to check if our solution is diverging.
+            if(rlinsolParam%rprecParameters%ioutputLevel .ge. 2) then
+              call output_line ("Space-time GMRES("// trim(sys_siL(idim,10))//&
+                "): Warning: Pseudo-residuals diverging!")
+            end if
+            
+            ! Instead of exiting the subroutine, we just exit the inner loop
+            exit
+            
+          case (ITC_STATUS_CONVERGED)
+            ! If (|q(i+1)| * dprnsf) fulfills the stopping criterion
+            ! then exit the inner GMRES loop
+            exit
+
+          end select
+
+          ! Otherwise continue...
+        
+        end if
+        
+        ! Okay, next inner loop iteration, please
+      end do
+      
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+      ! -= End of Inner Loop
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+      
+      ! Step O.3:
+      ! Get the dimension of the current basis of the krylov subspace
+      i = min(i, idim)
+      
+      ! Step O.4:
+      ! Solve H" * q = q , where H" is the upper triangular matrix of
+      ! the upper left (i x i)-block of H.
+      ! We use the BLAS Level 2 subroutine "dtrsv" to do the work for us
+      call dtrsv("U", "N", "N", i, p_Dh, idim, p_Dq, 1)
+      
+      ! Step O.5:
+      ! Update our solution vector
+      ! x = x + q(1)*z(1) + q(2)*z(2) + ... + q(i)*z(i)
+      do k = 1, i
+        call kktsp_controlLinearComb(p_rz(k)%p_rcontrolLin, p_Dq(k), p_rx%p_rcontrolLin, 1.0_DP)
+      end do
+      
+      ! Step O.6:
+      ! Calculate "real" residual
+      ! v(1) = b - (A * x)
+      output_iautoOutputIndent = output_iautoOutputIndent + 2
+      call newtonlin_getResidual (rlinsolParam,p_rx,rrhs,p_rv(1),rlocalStat)
+      output_iautoOutputIndent = output_iautoOutputIndent - 2
+      
+      call newtonlin_sumStatistics(rlocalStat,rstatistics,NLIN_STYPE_RESCALC)
+      
+      ! Step O.8:
+      ! Calculate euclid norm of the residual (needed for next q)
+      call kkt_controlResidualNorm (&
+          p_rx%p_rkktsystem%p_roperatorAsmHier%ranalyticData,&
+          p_rv(1),dres,LINALG_NORMEUCLID)
+      
+      ! Calculate residual norm for stopping criterion
+      ! TODO: try to avoid calculating the norm twice
+      call kkt_controlResidualNorm (&
+          p_rx%p_rkktsystem%p_roperatorAsmHier%ranalyticData,&
+          p_rv(1),dfr,rlinsolParam%rprecParameters%iresnorm)
+          
+    end do
+    
+    if (rlinsolParam%rprecParameters%ioutputLevel .ge. 2) then
+      call output_lbrk()
+      call output_line ("Space-time GMRES statistics:")
+      call output_lbrk()
+      call itc_printStatistics(rlinsolParam%riter)
+    end if
+    
+  end subroutine
+  
+  ! ***************************************************************************
 
 !<subroutine>
 
@@ -1578,10 +2215,7 @@ contains
       call parlst_getvalue_int (p_rsection, "brealres", &  
           i, 0)
       rsolver%p_rsubnodeCG%brealres = i .ne. 0
-    end if
 
-    if (rsolver%csolverType .eq. NLIN_SOLVER_CG) then
-      ! CG parameters
       call parlst_getvalue_int (p_rsection, "bfinalResRestart", &  
           i, 0)
       rsolver%p_rsubnodeCG%bfinalResRestart = i .ne. 0
@@ -1592,6 +2226,19 @@ contains
       call parlst_getvalue_int (p_rsection, "bfinalResRestart", &  
           i, 0)
       rsolver%p_rsubnodeBiCGStab%bfinalResRestart = i .ne. 0
+    end if
+
+    if (rsolver%csolverType .eq. NLIN_SOLVER_GMRES) then
+      ! CG parameters
+      call parlst_getvalue_int (p_rsection, "ikrylovDim", &  
+          rsolver%p_rsubnodeGMRES%ikrylovDim, 5)
+
+      call parlst_getvalue_int (p_rsection, "btwiceGS", &  
+          i, 0)
+      rsolver%p_rsubnodeGMRES%btwiceGS = i .ne. 0
+
+      call parlst_getvalue_double (p_rsection, "dpseudoResScale", &  
+          rsolver%p_rsubnodeGMRES%dpseudoResScale,0.0_DP)
     end if
 
   end subroutine
@@ -1690,6 +2337,23 @@ contains
           rlinsolMultigrid%p_rsubSolvers(1),&
           rlinsolMultigrid%ssectionCoarseGridSolver,rlinsolMultigrid%p_rparList,rsolver)
 
+    ! -------------------------------
+    ! CG solver
+    ! -------------------------------
+    case (4)
+    
+      ! Partial initialisation of the corresponding linear solver structure
+      allocate(rlinsolMultigrid%p_rsubSolvers(1)%p_rsubnodeGMRES)
+
+      rlinsolMultigrid%p_rsubSolvers(1)%csolverType = NLIN_SOLVER_GMRES
+      call newtonlin_initBasicParams (&
+          rlinsolMultigrid%p_rsubSolvers(1)%rprecParameters,&
+          rlinsolMultigrid%p_rsubSolvers(1)%riter,&
+          rlinsolMultigrid%ssectionCoarseGridSolver,rlinsolMultigrid%p_rparList)
+      call newtonlin_initExtParams (&
+          rlinsolMultigrid%p_rsubSolvers(1),&
+          rlinsolMultigrid%ssectionCoarseGridSolver,rlinsolMultigrid%p_rparList,rsolver)
+
     case default
       call output_line ("Invalid coarse grid solver.", &
           OU_CLASS_ERROR,OU_MODE_STD,"newtonlin_initStrucMultigrid")
@@ -1754,6 +2418,23 @@ contains
             rlinsolMultigrid%p_rsubSolvers(ilevel),&
             rlinsolMultigrid%ssectionSmoother,rlinsolMultigrid%p_rparList,rsolver)
         
+      ! -------------------------------
+      ! CG smoother
+      ! -------------------------------
+      case (4)
+
+        ! Partial initialisation of the corresponding linear solver structure
+        allocate(rlinsolMultigrid%p_rsubSolvers(ilevel)%p_rsubnodeGMRES)
+
+        rlinsolMultigrid%p_rsubSolvers(ilevel)%csolverType = NLIN_SOLVER_GMRES
+        call newtonlin_initBasicParams (&
+            rlinsolMultigrid%p_rsubSolvers(ilevel)%rprecParameters,&
+            rlinsolMultigrid%p_rsubSolvers(ilevel)%riter,&
+            rlinsolMultigrid%ssectionSmoother,rlinsolMultigrid%p_rparList)
+        call newtonlin_initExtParams (&
+            rlinsolMultigrid%p_rsubSolvers(ilevel),&
+            rlinsolMultigrid%ssectionSmoother,rlinsolMultigrid%p_rparList,rsolver)
+
       case default
         call output_line ("Invalid smoother.", &
             OU_CLASS_ERROR,OU_MODE_STD,"newtonlin_initStrucMultigrid")
@@ -1906,6 +2587,13 @@ contains
 
         deallocate(rlinsolMultigrid%p_rsubSolvers(ilevel)%p_rsubnodeBiCGStab)
 
+      ! -------------------------------
+      ! CG smoother
+      ! -------------------------------
+      case (NLIN_SOLVER_GMRES)
+
+        deallocate(rlinsolMultigrid%p_rsubSolvers(ilevel)%p_rsubnodeGMRES)
+            
       end select
     
     end do
@@ -2820,6 +3508,14 @@ contains
       call newtonlin_bicgstab (rlinsolParam,p_rkktsysDirDeriv,rnewtonDir,rstatistics)
           
     ! --------------------------------------
+    ! GMRES iteration
+    ! --------------------------------------
+    case (NLIN_SOLVER_GMRES)
+      ! Call the Richardson iteration to calculate an update
+      ! for the control.
+      call newtonlin_gmres (rlinsolParam,p_rkktsysDirDeriv,rnewtonDir,rstatistics)
+          
+    ! --------------------------------------
     ! Multigrid iteration
     ! --------------------------------------
     case (NLIN_SOLVER_MULTIGRID)
@@ -2928,6 +3624,14 @@ contains
       allocate(rlinsolParam%p_rsubnodeCG)
     
     ! -----------------------------------------------------
+    ! GMRES inítialisation
+    ! -----------------------------------------------------
+    case (NLIN_SOLVER_GMRES)
+    
+      ! Initialise the MG parameters
+      allocate(rlinsolParam%p_rsubnodeGMRES)
+    
+    ! -----------------------------------------------------
     ! BiCGStab inítialisation
     ! -----------------------------------------------------
     case (NLIN_SOLVER_BICGSTAB)
@@ -3018,6 +3722,14 @@ contains
           rlinsolParam%p_rsubnodeCG%rr,rkktsystemHierarchy,ilev)
       call kkth_initControl (&
           rlinsolParam%p_rsubnodeCG%rAp,rkktsystemHierarchy,ilev)
+
+    ! -----------------------------------------------------
+    ! GMRES inítialisation
+    ! -----------------------------------------------------
+    case (NLIN_SOLVER_GMRES)
+    
+      call newtonlin_initStrucGMRES (&
+          rlinsolParam,rlinsolParam%p_rsubnodeGMRES,rkktsystemHierarchy,ilev)
 
     ! -----------------------------------------------------
     ! BiCGStab inítialisation
@@ -3139,6 +3851,14 @@ contains
       call kkt_initKKTsystemDirDeriv (&
           rlinsolParam%p_rsubnodeCG%rp,p_rkktsystem)
 
+    ! -----------------------------------------------------
+    ! GMRES inítialisation
+    ! -----------------------------------------------------
+    case (NLIN_SOLVER_GMRES)
+    
+      call newtonlin_initDataGMRES (&
+          rlinsolParam,rlinsolParam%p_rsubnodeGMRES,rsolutionHierarchy,ilev)
+
     ! -------------------------------
     ! BiCGStab smoother/solver
     ! -------------------------------
@@ -3182,7 +3902,8 @@ contains
     ! Multigrid
     ! -----------------------------------------------------
     case (NLIN_SOLVER_MULTIGRID)
-
+      
+      ! Cleanup
       call newtonlin_doneDataMultigrid (rlinsolParam%p_rsubnodeMultigrid)
       
     ! -------------------------------
@@ -3190,8 +3911,16 @@ contains
     ! -------------------------------
     case (NLIN_SOLVER_CG)
 
-      ! Initialise the derivative in that point
+      ! Cleanup
       call kkt_doneKKTsystemDirDeriv (rlinsolParam%p_rsubnodeCG%rp)
+
+    ! -------------------------------
+    ! GMRES smoother/solver
+    ! -------------------------------
+    case (NLIN_SOLVER_GMRES)
+
+      ! Cleanup
+      call newtonlin_doneDataGMRES (rlinsolParam%p_rsubnodeGMRES)
 
     ! -------------------------------
     ! BiCGStab smoother/solver
@@ -3251,6 +3980,13 @@ contains
       call kktsp_doneControlVector (rlinsolParam%p_rsubnodeCG%rr)
 
     ! -----------------------------------------------------
+    ! GMRES inítialisation
+    ! -----------------------------------------------------
+    case (NLIN_SOLVER_GMRES)
+
+      call newtonlin_doneStrucGMRES (rlinsolParam%p_rsubnodeGMRES)
+
+    ! -----------------------------------------------------
     ! BiCGStab inítialisation
     ! -----------------------------------------------------
     case (NLIN_SOLVER_BICGSTAB)
@@ -3305,6 +4041,14 @@ contains
     
       ! Initialise the MG parameters
       deallocate(rlinsolParam%p_rsubnodeCG)
+
+    ! -----------------------------------------------------
+    ! GMRES inítialisation
+    ! -----------------------------------------------------
+    case (NLIN_SOLVER_GMRES)
+    
+      ! Initialise the MG parameters
+      deallocate(rlinsolParam%p_rsubnodeGMRES)
 
     ! -----------------------------------------------------
     ! BiCGSTab inítialisation
