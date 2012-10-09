@@ -382,7 +382,7 @@ contains
 
 !<subroutine>
 
-  subroutine optcana_controlNorm(dintvalue,dtime,rkktsystem,&
+  subroutine optcana_controlNormDistL2(dintvalue,dtime,rkktsystem,&
       icompstart,ncomponents,rcubatureInfo)
 
 !<description>  
@@ -574,6 +574,7 @@ contains
   ! Derror(3) = ||y(T)-z(T)||_{L^2}.
   ! Derror(4) = ||u||_{L^2}.
   ! Derror(5) = ||u||_{L^2(Gamma_C)}.
+  ! Derror(6) = (Su,u)                   (with S the Steklov-Poincare operator)
   real(DP), dimension(:), intent(out) :: Derror
 !</output>
   
@@ -710,7 +711,7 @@ contains
             ! Note that we pass dtimeend here as time. This is correct!
             ! dtimeend on the time scale of rcontrol corresponds to the time dtime
             ! as rcontrol is shifted by a half timestep!
-            call optcana_controlNorm(dval,dtimeend,&
+            call optcana_controlNormDistL2(dval,dtimeend,&
                 rkktsystem,icomp,ncomp,&
                 roperatorAsm%p_rasmTemplates%rcubatureInfoRHS)
 
@@ -878,7 +879,8 @@ contains
     ! Calculate J(.)
     Derror(1) = 0.5_DP*Derror(2)  &
               + 0.5_DP*roperatorAsmHier%ranalyticData%p_rsettingsOptControl%dalphaEndTimeC * Derror(3)  &
-              + 0.5_DP*roperatorAsmHier%ranalyticData%p_rsettingsOptControl%dalphaDistC * Derror(4)
+              + 0.5_DP*roperatorAsmHier%ranalyticData%p_rsettingsOptControl%dalphaDistC * Derror(4) &
+              + 0.5_DP*roperatorAsmHier%ranalyticData%p_rsettingsOptControl%dalphaL2BdC * Derror(5)
               
     ! Take some square roots to calculate the actual values.
     Derror(2:) = sqrt(Derror(2:))
@@ -1040,7 +1042,7 @@ contains
       ! Note that we pass dtimeend here as time. This is correct!
       ! dtimeend on the time scale of rcontrol corresponds to the time dtime
       ! as rcontrol is shifted by a half timestep!
-      call optcana_controlNorm(dval,dtime,&
+      call optcana_controlNormDistL2(dval,dtime,&
           rkktsystem,icomp,ncomp,&
           roperatorAsm%p_rasmTemplates%rcubatureInfoRHS)
 
@@ -1056,7 +1058,8 @@ contains
     ! Calculate J(.)
     Derror(1) = 0.5_DP*Derror(2)  &
               + 0.5_DP*roperatorAsmHier%ranalyticData%p_rsettingsOptControl%dalphaEndTimeC * Derror(3)  &
-              + 0.5_DP*roperatorAsmHier%ranalyticData%p_rsettingsOptControl%dalphaDistC * Derror(4)
+              + 0.5_DP*roperatorAsmHier%ranalyticData%p_rsettingsOptControl%dalphaDistC * Derror(4) &
+              + 0.5_DP*roperatorAsmHier%ranalyticData%p_rsettingsOptControl%dalphaL2BdC * Derror(5)
               
     ! Take some square roots to calculate the actual values.
     Derror(2:) = sqrt(Derror(2:))

@@ -57,7 +57,6 @@ module hierarchies
   use fespacehierarchybase
   use fespacehierarchy
   use spacetimehierarchy
-  use subdomainfem
   
   use constantsdiscretisation
   use structuresdiscretisation
