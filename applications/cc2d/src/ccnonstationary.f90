@@ -407,26 +407,27 @@ contains
     !    
     ! If we have inhomogeneous Neumann boundary conditions, the situation
     ! is slightly more complicated. The weak formulation of, e.g., the
-    ! Stokes equations read:
+    ! Stokes equations read (note that there is a "k" included in the
+    ! coefficients w_i, so w_i/k ist constant !!!!!):
     !
-    !    ( (u_n+1 - u_n)/k , phi )  +  nu w_1/dt (grad u_n+1, grad phi)  -  nu w_2/dt (grad u_n, grad phi)
-    !                               -  nu w_1/dt (du_n+1/dn , phi     )  +  nu w2/dt  (du_n/dn , phi     )
-    !                               -            (p         , grad phi)
-    !                               +            (p n       , phi     )
+    !    ( (u_n+1 - u_n)/k , phi )  +  nu w_1/k (grad u_n+1, grad phi)  -  nu w_2/k (grad u_n, grad phi)
+    !                               -  nu w_1/k (du_n+1/dn , phi     )  +  nu w2/k  (du_n/dn , phi     )
+    !                               -           (p         , grad phi)
+    !                               +           (p n       , phi     )
     !  =   w_3/k ( f_n+1, phi)
     !    + w_4/k ( f_n  , phi)
     !
-    ! The pressure is used fully implicitely, so the meaning of the presszre
+    ! The pressure is used fully implicitely, so the meaning of the pressure
     ! depends on the timestepping scheme used. For the CN scheme, e.g.,
     ! the above formula reads
     !
-    !    ( (u_n+1 - u_n)/k , phi )  +  nu/2   (grad u_n+1, grad phi)  +  nu/2 (grad u_n, grad phi)
-    !                               -  nu/2   (du_n+1/dn , phi     )  -  nu/2 (du_n/dn , phi     )
-    !                               -  1/dt   (p_n+1/2         , grad phi)
-    !                               +  1/dt   (p_n+1/2 n       , phi     )
+    !    ( (u_n+1 - u_n)/k , phi )  +  nu/2  (grad u_n+1, grad phi)  +  nu/2 (grad u_n, grad phi)
+    !                               -  nu/2  (du_n+1/dn , phi     )  -  nu/2 (du_n/dn , phi     )
+    !                               -  1/k   (p_n+1/2         , grad phi)
+    !                               +  1/k   (p_n+1/2 n       , phi     )
     !  =   1/2 ( f_n+1  , phi)  +  1/2 ( f_n  , phi)
     !
-    ! Some terms can be combined. For example, in the CN method, one could wrote
+    ! Some terms can be combined. For example, in the CN method, one could write
     !
     !    ( (u_n+1 - u_n)/k , phi )  +  nu/2   (grad u_n+1, grad phi)  +  nu/2 (grad u_n, grad phi)
     !                               -  nu     (du_n+1/2 / dn , phi ) 
@@ -436,23 +437,23 @@ contains
     !
     ! which gives
     !
-    !    ( (u_n+1 - u_n)/k , phi )  +  nu/2   (grad u_n+1, grad phi)  +  nu/2 (grad u_n, grad phi)
-    !                               +  1/dt   (p_n+1/2, grad phi)
-    !  =  ( f_n+1/2, phi )          +         (nu du_n+1/2 / dn - p_n+1/2 n, phi)_Gamma
+    !    ( (u_n+1 - u_n)/k , phi )  +  nu/2  (grad u_n+1, grad phi)  +  nu/2 (grad u_n, grad phi)
+    !                               +  1/k   (p_n+1/2, grad phi)
+    !  =  ( f_n+1/2, phi )          +        (nu du_n+1/2 / dn - p_n+1/2 n, phi)_Gamma
     !
     ! To implement inhomogeneous Neumann boundary conditions, one replaces
-    ! the inhomogenity on the RHS by the data, which results in
+    ! the inhomogeneity on the RHS by the data, which results in
     !
     !  =  ( f_n+1/2  , phi           +         (g_n+1/2 , phi)_Gamma
     !
     ! so one has "g_n+1/2  =  nu du_n+1/2 / dn - p_n+1/2 n", and as a consequence, the
-    ! inhomogenity has to be evaluated at the midpoint in time. Alternatively, both
+    ! inhomogeneity has to be evaluated at the midpoint in time. Alternatively, both
     ! parts can be calculated with the trapezoidal rule (approximating the midpoint rule),
     ! so one ends up with
     !
     !  =  ( (f_n+1 + f_n)/2  , phi)  +  ( (g_n+1 + g_n)/2 , phi)_Gamma
     !
-    ! Similar argiments can also be used in the general case. Here, one has to assemble
+    ! Similar arguments can also be used in the general case. Here, one has to assemble
     !
     !  =  ( w_3 f_n+1 + w_4 f_n  , phi)  +  ( w_1 g_n+1 - w_2 g_n , phi)_Gamma
     !
