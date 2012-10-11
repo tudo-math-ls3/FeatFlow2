@@ -222,7 +222,7 @@ contains
     ! Calculates the Mass operator in all diagonal matrices.
     !
     ! Note: If rcollection is not specified, the matrix is calculated
-    ! in all diagonal blocks with a multiplier of 1.
+    ! at position (1,1) with a multiplier of 1.
     ! If rcollection is specified, the following parameters are expected:
     ! rcollection%DquickAccess(1) = multiplier in front of the mass matrix.
     ! rcollection%IquickAccess(1) = x-position in the destination matrix
@@ -409,7 +409,7 @@ contains
     ! Note: If rcollection is not specified, the matrix is calculated
     ! in all diagonal blocks with a multiplier of 1.
     ! If rcollection is specified, the following parameters are expected:
-    ! rcollection%DquickAccess(1) = multiplier in front of the mass matrix.
+    ! rcollection%DquickAccess(1) = multiplier in front of the matrix.
     ! rcollection%IquickAccess(1) = First diagonal block or =0 to 
     !                               start from block 1.
     ! rcollection%IquickAccess(2) = Last diagonal block or =0 to calculate 
@@ -492,9 +492,9 @@ contains
     ! Calculates the Laplace operator at position (x,y) in a block matrix.
     !
     ! Note: If rcollection is not specified, the matrix is calculated
-    ! in all diagonal blocks with a multiplier of 1.
+    ! at matrix position (1,1) with a multiplier of 1.
     ! If rcollection is specified, the following parameters are expected:
-    ! rcollection%DquickAccess(1) = multiplier in front of the mass matrix.
+    ! rcollection%DquickAccess(1) = multiplier in front of the matrix.
     ! rcollection%IquickAccess(1) = x-coordinate in the block matrix
     ! rcollection%IquickAccess(2) = y-coordinate in the block matrix
 !</description>
