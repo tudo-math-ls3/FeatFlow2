@@ -1393,7 +1393,7 @@ contains
         ! icoldiff must be added to the entry of row irow+1,... end,
         ! and the entry of row irow has to be calculated appropriately.
         call lsyssc_getbase_Kdiagonal (rmatrix,p_Kdiagonal)
-        call lalg_vectorAddScalar(p_Kdiagonal(irow+1:rmatrix%NEQ+1),icoldiff)
+        call lalg_vectorAddScalar(p_Kdiagonal(irow+1:rmatrix%NEQ),icoldiff)
         p_Kdiagonal(irow) = p_Kld(irow) + irow - 1
 
         ! Take care of the column structure (p_Kcol) of the row number 'irow'
