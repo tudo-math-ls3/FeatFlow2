@@ -276,6 +276,7 @@
       <AdditionalIncludeDirectories>$(ProjectDir)..\UMFPACK\Include;$(ProjectDir)..\AMD\Include;$(ProjectDir)..\SuiteSparse_config</AdditionalIncludeDirectories>
       <MinimalRebuild>false</MinimalRebuild>
       <ProgramDataBaseFileName>$(OutDir)$(TargetName).pdb</ProgramDataBaseFileName>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
