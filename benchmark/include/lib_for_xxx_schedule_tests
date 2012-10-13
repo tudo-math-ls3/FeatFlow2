@@ -115,6 +115,7 @@ fb_readargs() {
 	      COMPILERVERSION="$2"
 	      echo "$0: Assuming compiler version $COMPILERVERSION"
 	      shift
+	      shift
 	      ;;
 
 	  --compiler-version=*)  # major and minor revision of compiler, used to determine path to reference solution
