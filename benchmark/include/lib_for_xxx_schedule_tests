@@ -111,15 +111,15 @@ fb_readargs() {
 	      shift
 	      ;;
 
-	  --compiler-version)  # major and minor revision of compiler, used to determine path to reference solution
+	  --compilerversion|--compiler-version)  # major and minor revision of compiler, used to determine path to reference solution
 	      COMPILERVERSION="$2"
 	      echo "$0: Assuming compiler version $COMPILERVERSION"
 	      shift
 	      shift
 	      ;;
 
-	  --compiler-version=*)  # major and minor revision of compiler, used to determine path to reference solution
-	      COMPILERVERSION="`echo $1 | sed 's/^--compiler-version=//'`"
+	  --compilerversion=*|--compiler-version=*)  # major and minor revision of compiler, used to determine path to reference solution
+	      COMPILERVERSION="`echo $1 | sed 's/^--compiler[-]*version=//'`"
 	      echo "$0: Assuming compiler version $COMPILERVERSION"
 	      shift
 	      ;;
