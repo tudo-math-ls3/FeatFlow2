@@ -28,6 +28,11 @@ cDumpColor = 0
 # 2: assemble Laplace matrix
 cAsmMatrix = 2
 
+# Specifies the assembly to be used (default: 0)
+# 0: use standard assembly
+# 1: use block assembly
+cAsmType = 0
+
 # Specifies the finite element to be used for matrix assembly
 # EL_Q1: Q1 element
 # EL_Q2: Q2 element
@@ -36,6 +41,9 @@ sElement = EL_Q1
 # Cubature rule to be used for matrix assembly
 # AUTO_Gn: n x n Gauss rule (1 <= n <= 5)
 sCubature = AUTO_G3
+
+# Number of cubature refines (default: 0)
+nCubRefines = 0
 
 # Specifies whether to dump the assembled matrix (ignored for cAsmMatrix=0)
 # 0: no

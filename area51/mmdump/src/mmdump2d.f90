@@ -6,6 +6,7 @@ module mmdump2d
   use boundary
   use cubature
   use linearsystemscalar
+  use linearsystemblock
   use bilinearformevaluation
   use triangulation
   use spatialdiscretisation
@@ -17,6 +18,9 @@ module mmdump2d
   use io
   use statistics
   use adjacency
+  use blockmatassembly
+  use blockmatassemblybase
+  use blockmatassemblystdop
   
   implicit none
 
@@ -31,10 +35,13 @@ contains
   type(t_boundary) :: rbnd
   type(t_triangulation) :: rtria
   type(t_spatialDiscretisation) :: rdisc
+  type(t_blockDiscretisation) :: rdiscBlock
   type(t_scalarCubatureInfo) :: rcub
   type(t_matrixScalar) :: rmat
+  type(t_matrixBlock) :: rmatBlock
   type(t_timer) :: rtimer
-  integer :: i, nlevel, casmMatrix, cdumpMesh, cdumpMatrix, cdumpColor, ndigVertex, ndigMatrix
+  integer :: i, nlevel, casmMatrix, cdumpMesh, cdumpMatrix, cdumpColor, ndigVertex, &
+    ndigMatrix, casmType, ncubRefines
   integer :: h_Icpt, h_Iprm
   integer(I32) :: celement, ccubature
   character(LEN=64) :: smesh, selement, scubature, sopName, selName, scuName
@@ -46,7 +53,9 @@ contains
     call parlst_getvalue_int(rparam, '', 'NLEVEL', nlevel, 0)
     call parlst_getvalue_string(rparam, '', 'SELEMENT', selement, 'EL_Q1_2D')
     call parlst_getvalue_string(rparam, '', 'SCUBATURE', scubature, 'AUTO_G3')
+    call parlst_getvalue_int(rparam, '', 'NCUBREFINES', ncubRefines, 0)
     call parlst_getvalue_int(rparam, '', 'CASMMATRIX', casmMatrix, 0)
+    call parlst_getvalue_int(rparam, '', 'CASMTYPE', casmType, 0)
     call parlst_getvalue_int(rparam, '', 'CDUMPMESH', cdumpMesh, 0)
     call parlst_getvalue_int(rparam, '', 'CDUMPMATRIX', cdumpMatrix, 0)
     call parlst_getvalue_int(rparam, '', 'CDUMPCOLOR', cdumpColor, 0)
@@ -82,20 +91,37 @@ contains
     end select
 
     ! build cubature rule name
-    select case(ccubature)
-    case (CUB_GEN_AUTO_G1, CUB_G1_2D)
-      scuName = 'g1'
-    case (CUB_GEN_AUTO_G2, CUB_G2_2D)
-      scuName = 'g2'
-    case (CUB_GEN_AUTO_G3, CUB_G3_2D)
-      scuName = 'g3'
-    case (CUB_GEN_AUTO_G4, CUB_G4_2D)
-      scuName = 'g4'
-    case (CUB_GEN_AUTO_G5, CUB_G5_2D)
-      scuName = 'g5'
-    case default
-      scuName = cub_getName(ccubature)
-    end select
+    if(ncubRefines .gt. 0) then
+      select case(ccubature)
+      case (CUB_GEN_AUTO_G1, CUB_G1_2D)
+        scuName = 'g1-r' // trim(sys_sil(ncubRefines,4))
+      case (CUB_GEN_AUTO_G2, CUB_G2_2D)
+        scuName = 'g2-r' // trim(sys_sil(ncubRefines,4))
+      case (CUB_GEN_AUTO_G3, CUB_G3_2D)
+        scuName = 'g3-r' // trim(sys_sil(ncubRefines,4))
+      case (CUB_GEN_AUTO_G4, CUB_G4_2D)
+        scuName = 'g4-r' // trim(sys_sil(ncubRefines,4))
+      case (CUB_GEN_AUTO_G5, CUB_G5_2D)
+        scuName = 'g5-r' // trim(sys_sil(ncubRefines,4))
+      case default
+        scuName = cub_getName(ccubature) // '-r' // trim(sys_sil(ncubRefines,4))
+      end select
+    else
+      select case(ccubature)
+      case (CUB_GEN_AUTO_G1, CUB_G1_2D)
+        scuName = 'g1'
+      case (CUB_GEN_AUTO_G2, CUB_G2_2D)
+        scuName = 'g2'
+      case (CUB_GEN_AUTO_G3, CUB_G3_2D)
+        scuName = 'g3'
+      case (CUB_GEN_AUTO_G4, CUB_G4_2D)
+        scuName = 'g4'
+      case (CUB_GEN_AUTO_G5, CUB_G5_2D)
+        scuName = 'g5'
+      case default
+        scuName = cub_getName(ccubature)
+      end select
+    end if
 
     ! build dumping filenames
     smeshName = trim(smesh) // '_lvl' // trim(sys_sil(nlevel,4)) // '_mesh'
@@ -110,7 +136,9 @@ contains
     call output_line('nLevel      = ' // trim(sys_sil(nlevel,4)))
     call output_line('sElement    = ' // trim(elem_getName(celement)))
     call output_line('sCubature   = ' // trim(cub_getName(ccubature)))
-    call output_line('cAmsMatrix  = ' // trim(sys_sil(casmMatrix,4)))
+    call output_line('nCubRefines = ' // trim(sys_sil(ncubRefines,4)))
+    call output_line('cAsmMatrix  = ' // trim(sys_sil(casmMatrix,4)))
+    call output_line('cAsmType    = ' // trim(sys_sil(casmType,4)))
     call output_line('cDumpMesh   = ' // trim(sys_sil(cdumpMesh,4)))
     call output_line('cDumpMatrix = ' // trim(sys_sil(cdumpMatrix,4)))
     call output_line('cDumpColor  = ' // trim(sys_sil(cdumpColor,4)))
@@ -186,13 +214,15 @@ contains
 
       ! Set up cubature
       call output_line('Setting up cubature rule...')
-      call spdiscr_createDefCubStructure(rdisc, rcub, ccubature)
+      call spdiscr_createDefCubStructure(rdisc, rcub, ccubature, ncubRefines)
 
       ! Assemble matrix structure
       call output_line('Assembling matrix structure...')
       call bilf_createMatrixStructure (rdisc, LSYSSC_MATRIX9, rmat)
       call output_line('NEQ : ' // trim(sys_sil(rmat%NEQ,16)))
       call output_line('NNZE: ' // trim(sys_sil(rmat%NA,16)))
+
+      call lsyssc_allocEmptyMatrix(rmat, LSYSSC_SETM_ZERO)
 
       ! start timer
       call stat_clearTimer(rtimer)
@@ -203,12 +233,26 @@ contains
       case (1)
         ! Assemble Mass matrix
         call output_line('Assembling Mass matrix...')
-        call stdop_assembleSimpleMatrix (rmat, DER_FUNC, DER_FUNC, 1.0_DP, .true., rcub)
+        select case(casmType)
+        case (0)
+          call stdop_assembleSimpleMatrix (rmat, DER_FUNC, DER_FUNC, 1.0_DP, .true., rcub)
+        case (1)
+          call spdiscr_createBlockDiscrInd(rdisc, rdiscBlock)
+          call lsysbl_createMatFromScalar(rmat, rmatBlock, rdiscBlock)
+          call bma_buildMatrix (rmatBlock, BMA_CALC_STANDARD, bma_fcalc_mass, rcubatureInfo=rcub)
+        end select
 
       case (2)
         ! Assemble Laplace matrix
         call output_line('Assembling Laplace matrix...')
-        call stdop_assembleLaplaceMatrix (rmat, .true., 1.0_DP, rcub)
+        select case(casmType)
+        case (0)
+          call stdop_assembleLaplaceMatrix (rmat, .true., 1.0_DP, rcub)
+        case (1)
+          call spdiscr_createBlockDiscrInd(rdisc, rdiscBlock)
+          call lsysbl_createMatFromScalar(rmat, rmatBlock, rdiscBlock)
+          call bma_buildMatrix (rmatBlock, BMA_CALC_STANDARD, bma_fcalc_laplace, rcubatureInfo=rcub)
+        end select
 
       end select
 
