@@ -306,8 +306,20 @@ domega             = 1.0
 # Output level of the solver
 ioutputLevel       = 2
 
+# For CG: Check the real residual
+brealres = 0
+
 # Automatic restart for final residual check (BiCGSTab and CG)
-bfinalResRestart = 1
+bfinalResRestart = 0
+
+# Dimension of the Krylov space (for GMRES)
+ikrylovDim = 5
+
+# GMRES: Apply orthogonalisation twice
+btwiceGS = 0
+
+# GMRES: Pseudo-rescaling of the residual
+dpseudoResScale = 0.0
 
 
 # ========================================================================
