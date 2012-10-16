@@ -1801,6 +1801,9 @@ contains
     ! storage_clear during the iteration
     hDq = p_rsubnode%hDq
     
+    ! Measure the total time
+    call stat_startTimer (rstatistics%rtotalTime)
+
     ! Start the iteration
     !
     ! riterLocal logs the iteration without stagnation test.
@@ -1809,7 +1812,7 @@ contains
     call itc_initIteration(rlinsolParam%riter)
     riterLocal = rlinsolParam%riter
     riterLocal%nstagIter = 0
-    
+
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
     ! -= Outer Loop
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
@@ -2089,6 +2092,11 @@ contains
           
     end do
     
+    call stat_stopTimer (rstatistics%rtotalTime)
+
+    ! Statistics
+    rstatistics%niterations = rstatistics%niterations + rlinsolParam%riter%niterations
+
     if (rlinsolParam%rprecParameters%ioutputLevel .ge. 2) then
       call output_lbrk()
       call output_line ("Space-time GMRES statistics:")
