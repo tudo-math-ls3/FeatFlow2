@@ -1774,7 +1774,7 @@ contains
     ! Apply Gram-Schmidt twice?
     btwiceGS = p_rsubnode%btwiceGS
     
-    ! Get the dimension of Krylov subspace
+    ! Get the dimension of Krylov subspace.
     idim = p_rsubnode%ikrylovdim
     
     ! Get our pseudo-residual-norm scale factor
@@ -1899,8 +1899,11 @@ contains
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
       ! -= Inner Loop (GMRES iterations)
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+      ! Only at most nmaxIterations inner iterations, so we have
+      ! at most nmaxIterations in total.
+
       ilastinner = 0
-      do i = 1, idim
+      do i = 1, min(idim,rlinsolParam%riter%nmaxIterations-rlinsolParam%riter%niterations-1)
       
         ilastinner = ilastinner + 1
         
