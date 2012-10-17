@@ -281,6 +281,9 @@ module newtoniterationlinear
     ! Scale factor for pseudo-residuals
     real(DP) :: dpseudoResScale = 0.0_DP
     
+    ! Automatic pseudo-residual rescaling
+    logical :: bautoPseudoResScale = .true.
+    
     ! Some temporary 1D/2D arrays
     real(DP), dimension(:),   pointer :: Dc, Ds, Dq
     real(DP), dimension(:,:), pointer :: Dh
@@ -1776,7 +1779,7 @@ contains
     
     ! Get our pseudo-residual-norm scale factor
     dprnsf = p_rsubnode%dpseudoResScale
-    
+
     ! Now we need to check the pseudo-residual scale factor.
     ! If it is non-positive, we set it to 0.
     if (dprnsf .le. 0.0_DP) then
@@ -1992,6 +1995,17 @@ contains
         ! Get pseudo-residual-norm
         dpseudores = abs(p_Dq(i+1))
         
+        if ((i .eq. 1) .and. (p_rsubnode%bautoPseudoResScale) .and.&
+            (dpseudores .gt. SYS_EPSREAL_DP)) then
+          ! Determine the scaling factor automatically.
+          ! It is determined in such a way that the first |q(i+1)| has
+          ! the same norm of the pseudo-residual as of the original
+          ! residual. If the norm of the pseudo-residual is below the
+          ! stopping criterion, the real residual should be better by at
+          ! least one iteration.
+          dprnsf = dfr / dpseudores
+        end if
+        
         ! The euclid norm of our current defect is implicitly given by
         ! |q(i+1)|, however, it may be inaccurate, therefore, checking if
         ! |q(i+1)| fulfills the stopping criterion would not be very wise,
@@ -2009,7 +2023,8 @@ contains
         if (rlinsolParam%rprecParameters%ioutputLevel .ge. 2) then
           call output_line ("Space-time GMRES("//trim(sys_siL(idim,10))//&
               "): Iteration "//trim(sys_siL(riterLocal%niterations,10))//&
-              ",  !q(i+1)! = "//trim(sys_sdEL(dpseudores,15)) )
+              ",  !q(i+1)! = "//trim(sys_sdEL(dpseudores,15))//&
+              " ("//trim(sys_sdEL(dtmp,15))//")" )
         end if
 
         ! Is |q(i+1)| smaller than our machine`s exactness?
@@ -2247,6 +2262,11 @@ contains
 
       call parlst_getvalue_double (p_rsection, "dpseudoResScale", &  
           rsolver%p_rsubnodeGMRES%dpseudoResScale,0.0_DP)
+
+      call parlst_getvalue_int (p_rsection, "bautoPseudoResScale", &  
+          i, 0)
+      rsolver%p_rsubnodeGMRES%bautoPseudoResScale = i .ne. 0
+          
     end if
 
   end subroutine

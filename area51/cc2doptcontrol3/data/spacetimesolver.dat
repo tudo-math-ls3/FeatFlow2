@@ -321,6 +321,9 @@ btwiceGS = 0
 # GMRES: Pseudo-rescaling of the residual
 dpseudoResScale = 0.0
 
+# GMRES: Automatic pseuto-rescaling
+bautoPseudoResScale = 1
+
 
 # ========================================================================
 # Parameters configuring the solver in space.
