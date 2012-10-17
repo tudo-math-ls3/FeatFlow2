@@ -26,6 +26,7 @@
 module optcanalysis
 
   use fsystem
+  use storage
   use genoutput
   
   use mprimitives
@@ -34,6 +35,7 @@ module optcanalysis
   use linearalgebra
   use linearsystemscalar
   use linearsystemblock
+  use pprocerror
   
   use scalarpde
   use linearformevaluation
@@ -423,7 +425,7 @@ contains
     
     dintvalue = 0.0_DP
     
-    ! Calculate y(t).
+    ! Calculate u(t).
     call kkt_getControlAtTime (rkktsystem, dtime, p_rvector)
 
     ! Append u to the set of functions to be evaluated.
@@ -438,6 +440,265 @@ contains
     ! Cleanup
     call fev2_releaseVectorList(revalVectors)
     
+  end subroutine
+
+!******************************************************************************
+
+!<subroutine>
+
+  subroutine optcana_getBDControlValues (Dvalues,ibct,DpointPar,rbdControlVec,&
+      rtriangulation,rboundary)
+  
+!<description>
+  ! Calculates the values of a FEM function in a couple of points on
+  ! the boundary, given by a boundary component and a set of parameter values.
+  !
+  ! WORKS ONLY FOR P2 ELEMENTS ON THE BOUNDARY !!!
+!</description>
+
+!<input>
+  ! Boundary component
+  integer, intent(in) :: ibct
+  
+  ! Parameter values of the points, in length parametrisation
+  !   DIMENSION(npointsPerElement,nelements)
+  real(DP), dimension(:,:), intent(in) :: DpointPar
+  
+  ! Underlying 2D Triangulation.
+  type(t_triangulation), intent(in) :: rtriangulation
+
+  ! Underlying boundary definition
+  type(t_boundary), intent(in) :: rboundary
+  
+  ! Control vector on the boundary
+  type(t_vectorScalar), intent(in) :: rbdControlVec
+!</input>
+
+!<output>
+  ! Values of the boudary control vector in the points
+  !   DIMENSION(npointsPerElement,nelements)
+  real(DP), dimension(:,:), intent(out) :: Dvalues
+!</output>
+  
+!</subroutine>
+
+    ! local variables
+    integer :: npointsPerElement,nelements,iel,ipt,iindex,ivt1,ivt2,nvtbd
+    real(DP) :: d1,d2,d3,dpar,dstartpar,dendpar,dparrel
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
+    integer, dimension(:), pointer :: p_IboundaryCpIdx
+    real(DP), dimension(:), pointer :: p_Ddata,p_DvertexParameterValue
+    
+    ! Getch some data.
+    call storage_getbase_int2d(&
+        rbdControlVec%p_rspatialDiscr%p_rtriangulation%h_IverticesAtElement,&
+        p_IverticesAtElement)
+    call storage_getbase_int(&
+        rtriangulation%h_IboundaryCpIdx,&
+        p_IboundaryCpIdx)
+    call storage_getbase_double(&
+        rtriangulation%h_DvertexParameterValue,&
+        p_DvertexParameterValue)
+    call lsyssc_getbase_double (rbdControlVec,p_Ddata)
+    nvtbd = rbdControlVec%p_rspatialDiscr%p_rtriangulation%nvt
+    
+    npointsPerElement = ubound(Dvalues,1)
+    nelements = ubound(Dvalues,2)
+
+    ! Loop over all points    
+    do iel = 1,nelements
+      do ipt = 1,npointsPerElement
+      
+        ! Get the index of the edge in the 2D parametrisation
+        call tria_searchBoundaryEdgePar2D(ibct, DpointPar(ipt,iel), &
+            rtriangulation, rboundary, iindex, BDR_PAR_LENGTH)
+            
+        ! The edge index in 2D is the element index in the
+        ! 1D parametrisation. Get the associated points.
+        ivt1 = p_IverticesAtElement(1,iindex)
+        ivt2 = p_IverticesAtElement(2,iindex)
+        
+        ! Get the start and end parameter value of the current edge.
+        dpar = DpointPar(ipt,iel)
+        dstartpar = p_DvertexParameterValue(iindex)
+        if (iindex .lt. p_IboundaryCpIdx(ibct+1)-1) then
+          dendpar = p_DvertexParameterValue(iindex+1)
+        else
+          dendpar = boundary_dgetMaxParVal(rboundary,ibct)
+        end if
+        
+        ! Calculate the "relative" parameter value. Scale dpar to [-1,1]
+        call mprim_linearRescale(dpar,dstartpar,dendpar,-1.0_DP,1.0_DP,dparrel)
+        
+        ! Get the values of the P2 element on the boundary.
+        d1 = p_Ddata(ivt1)
+        d2 = p_Ddata(iindex+nvtbd)
+        d3 = p_Ddata(ivt2)
+        
+        ! Quadratic interpolation, calculate the value at dpar.
+        call mprim_quadraticInterpolation (dparrel,d1,d2,d3,Dvalues(ipt,iel))
+      
+      end do
+    end do  
+
+  end subroutine
+
+!!******************************************************************************
+
+  !<subroutine>
+
+    subroutine ffunction_dirichletBdC (cderivative, rdiscretisation, &
+                                   DpointsRef, Dpoints, ibct, DpointPar,&
+                                   Ielements, Dvalues, rcollection)
+
+    use fsystem
+    use basicgeometry
+    use triangulation
+    use scalarpde
+    use domainintegration
+    use spatialdiscretisation
+    use collection
+
+  !<description>
+    ! Routine to calculate the values of a 1D function on the boundary.
+  !</description>
+
+  !<input>
+    ! This is a DER_xxxx derivative identifier (from derivative.f90) that
+    ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
+    ! The result must be written to the Dvalue-array below.
+    integer, intent(in) :: cderivative
+
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed. It specifies the coordinates of the points where
+    ! information is needed. These coordinates correspond to the reference
+    ! element.
+    ! DIMENSION(NDIM2D,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in) :: DpointsRef
+
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed. It specifies the coordinates of the points where
+    ! information is needed. These coordinates are world coordinates,
+    ! i.e. on the real element.
+    ! DIMENSION(NDIM2D,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
+
+    ! This is the number of the boundary component that contains the
+    ! points in Dpoint. All points are on the same boundary component.
+    integer, intent(in) :: ibct
+
+    ! For every point under consideration, this specifies the parameter
+    ! value of the point on the boundary component. The parameter value
+    ! is calculated in LENGTH PARAMETRISATION!
+    ! DIMENSION(npointsPerElement,nelements)
+    real(DP), dimension(:,:), intent(in) :: DpointPar
+
+    ! This is a list of elements (corresponding to Dpoints) where information
+    ! is needed. To an element iel=Ielements(i), the array Dpoints(:,:,i)
+    ! specifies the points where information is needed.
+    ! DIMENSION(nelements)
+    integer, dimension(:), intent(in) :: Ielements
+
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
+  !</input>
+
+  !<output>
+    ! This array has to receive the values of the (analytical) function
+    ! in all the points specified in Dpoints, or the appropriate derivative
+    ! of the function, respectively, according to cderivative.
+    !   DIMENSION(npointsPerElement,nelements)
+    real(DP), dimension(:,:), intent(out) :: Dvalues
+  !</output>
+
+  !</subroutine>
+  
+      ! local variables
+      type(t_vectorBlock), pointer :: p_rvector
+      integer :: icomponent
+      
+      p_rvector => rcollection%p_rvectorQuickAccess1
+      icomponent = rcollection%IquickAccess(1)
+      
+      ! Calculate the values of the boundary function in the points.
+      call optcana_getBDControlValues (Dvalues,ibct,DpointPar,&
+          p_rvector%RvectorBlock(icomponent),&
+          rdiscretisation%p_rtriangulation,rdiscretisation%p_rboundary)
+
+    end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine optcana_controlNormBdCL2(dintvalue,dtime,rkktsystem,&
+      icompstart,ncomponents)
+
+!<description>  
+    ! Calculates the term ||u(t)||^2_L2 at a point t in time.
+    ! u(.) is a boundary control variable.
+!</description>
+
+!<input>
+  ! Point in time where to evaluate.
+  real(DP), intent(in) :: dtime
+  
+  ! Number of the first component in the control defining u
+  integer, intent(in) :: icompstart
+
+  ! Number of components in u
+  integer, intent(in) :: ncomponents
+!</input>
+
+!<inputoutput>
+  ! Structure defining the KKT system.
+  type(t_kktsystem), intent(inout) :: rkktsystem
+!</inputoutput>
+
+!<output>
+  ! Integral value
+  real(DP), intent(out) :: dintvalue
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    type(t_fev2Vectors) :: revalVectors
+    type(t_vectorBlock), pointer :: p_rvector
+    integer :: i
+    type(t_collection) :: rcollection
+    real(DP) :: derror
+    type(t_spatialDiscretisation), pointer :: p_rdiscretisation
+    
+    p_rdiscretisation => rkktsystem%p_rprimalSol%p_rvector%p_rspaceDiscr%RspatialDiscr(1)
+    
+    dintvalue = 0.0_DP
+    
+    ! Calculate u(t).
+    call kkt_getControlAtTime (rkktsystem, dtime, p_rvector)
+
+    ! Loop over the vector components to calculate
+    do i=icompstart,icompstart+ncomponents-1
+    
+      ! Prepare the collection
+      rcollection%p_rvectorQuickAccess1 => p_rvector
+      rcollection%IquickAccess(1) = i
+      
+      ! Calculate the integral
+      call pperr_scalarBoundary2D (PPERR_L2ERROR, CUB_G4_1D, derror,&
+          ffunctionReference=ffunction_dirichletBdC, rcollection=rcollection, &
+          rdiscretisation=p_rdiscretisation)
+          
+      dintvalue = dintvalue + derror**2
+    
+    end do
+
   end subroutine
 
 !!******************************************************************************
@@ -585,7 +846,7 @@ contains
     
     real(DP) :: dtime,dtimestart,dtimeend,dtstep,dval,dtheta
     
-    integer :: istep,i,idoftime,icomp,ncomp
+    integer :: istep,idoftime,icomp,ncomp
     real(DP),dimension(2) :: Derr
     type(t_collection), target :: rcollection,rlocalcoll
     type(t_vectorBlock), target :: rtempVector, rzeroVector
@@ -679,6 +940,9 @@ contains
         ! ---------------------------------------------------------
         icomp = 1
 
+        ! ---------------------------------------------------------
+        ! Distributed control
+        ! ---------------------------------------------------------
         if (roperatorAsmHier%ranalyticData%p_rsettingsOptControl%dalphaDistC .ge. 0.0_DP) then
 
           ! Type of equation?
@@ -717,6 +981,52 @@ contains
 
             ! Sum up according to the rectangular rule
             Derror(4) = Derror(4) + dval * dtstep
+          
+          end do
+          
+          icomp = icomp + ncomp
+          
+        end if
+
+        ! ---------------------------------------------------------
+        ! L2 boudary control
+        ! ---------------------------------------------------------
+        if (roperatorAsmHier%ranalyticData%p_rsettingsOptControl%dalphaL2BdC .ge. 0.0_DP) then
+
+          ! Type of equation?
+          select case (roperatorAsmHier%ranalyticData%p_rphysics%cequation)
+
+          ! *************************************************************
+          ! Stokes/Navier Stokes.
+          ! *************************************************************
+          case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+            ncomp = 2
+
+          ! *************************************************************
+          ! Heat equation
+          ! *************************************************************
+          case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
+            ncomp = 1
+
+          end select
+
+          do idoftime = 1,rkktsystem%p_rcontrol%p_rvector%NEQtime
+          
+            ! Characteristics of the current timestep.
+            call tdiscr_getTimestep(roperatorAsm%p_rtimeDiscrPrimal,idofTime-1,&
+                dtimeend,dtstep,dtimestart)
+                
+            ! The control lives at the point dtime in time.
+            dtime = (1.0_DP-dtheta)*dtimestart + dtheta*dtimeend
+
+            ! Calculate ||u||^2 at the point in time where u lives.
+            ! Note that we pass dtimeend here as time. This is correct!
+            ! dtimeend on the time scale of rcontrol corresponds to the time dtime
+            ! as rcontrol is shifted by a half timestep!
+            call optcana_controlNormBdCL2(dval,dtimeend,rkktsystem,icomp,ncomp)
+
+            ! Sum up according to the rectangular rule
+            Derror(5) = Derror(5) + dval * dtstep
           
           end do
           
@@ -975,7 +1285,7 @@ contains
     
     real(DP) :: dval
     
-    integer :: istep,i,icomp,ncomp
+    integer :: istep,icomp,ncomp
     real(DP),dimension(2) :: Derr
     type(t_collection), target :: rcollection,rlocalcoll
     type(t_vectorBlock), target :: rtempVector, rzeroVector
@@ -1019,6 +1329,9 @@ contains
     ! ---------------------------------------------------------
     icomp = 1
 
+    ! ---------------------------------------------------------
+    ! Distributed control
+    ! ---------------------------------------------------------
     if (roperatorAsmHier%ranalyticData%p_rsettingsOptControl%dalphaDistC .ge. 0.0_DP) then
 
       ! Type of equation?
@@ -1047,6 +1360,40 @@ contains
           roperatorAsm%p_rasmTemplates%rcubatureInfoRHS)
 
       Derror(4) = dval
+      
+      icomp = icomp + ncomp
+      
+    end if
+
+    ! ---------------------------------------------------------
+    ! L2 boundary control
+    ! ---------------------------------------------------------
+    if (roperatorAsmHier%ranalyticData%p_rsettingsOptControl%dalphaL2BdC .ge. 0.0_DP) then
+
+      ! Type of equation?
+      select case (roperatorAsmHier%ranalyticData%p_rphysics%cequation)
+
+      ! *************************************************************
+      ! Stokes/Navier Stokes.
+      ! *************************************************************
+      case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+        ncomp = 2
+
+      ! *************************************************************
+      ! Heat equation
+      ! *************************************************************
+      case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
+        ncomp = 1
+
+      end select
+
+      ! Calculate ||u||^2 at the point in time where u lives.
+      ! Note that we pass dtimeend here as time. This is correct!
+      ! dtimeend on the time scale of rcontrol corresponds to the time dtime
+      ! as rcontrol is shifted by a half timestep!
+      call optcana_controlNormBdCL2(dval,dtime,rkktsystem,icomp,ncomp)
+
+      Derror(5) = dval
       
       icomp = icomp + ncomp
       
