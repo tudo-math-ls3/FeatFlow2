@@ -260,7 +260,11 @@ module newtoniterationlinear
     logical :: brealres = .true.
     
     ! Apply a restart for checking the final residual.
-    logical :: bfinalResRestart = .true.
+    ! =0: no restart.
+    ! =1: restart at the end if residual is not ok.
+    ! =2: restart at the end if residual is not ok,
+    !     continue with the real residual.
+    integer :: ifinalResRestart = 0
   end type
 
   !</typeblock>
@@ -318,7 +322,7 @@ module newtoniterationlinear
     type(t_kktsystemDirDeriv) :: rr
     
     ! Apply a restart for checking the final residual.
-    logical :: bfinalResRestart = .true.
+    integer :: ifinalResRestart = 0
 
   end type
 
@@ -971,7 +975,8 @@ contains
     type(t_kktsystemDirDeriv), pointer :: p_rp
     type(t_newtonlinSolverStat) :: rlocalStat
     type(t_iterationControl) :: rlocaliter
-    logical :: brealres,bfinalResRestart
+    logical :: brealres
+    integer :: ifinalResRestart
 
     ! Measure the total time
     call stat_startTimer (rstatistics%rtotalTime)
@@ -993,7 +998,7 @@ contains
     dgammaOld = 1.0_DP
     
     brealres = rlinsolParam%p_rsubnodeCG%brealRes
-    bfinalResRestart = rlinsolParam%p_rsubnodeCG%bfinalResRestart
+    ifinalResRestart = rlinsolParam%p_rsubnodeCG%ifinalResRestart
 
     ! Create the initial defect in rd
     output_iautoOutputIndent = output_iautoOutputIndent + 2
@@ -1073,7 +1078,8 @@ contains
       ! -------------------------------------------------------------
       ! Check for convergence / divergence / ...
       ! -------------------------------------------------------------
-      if ((.not. brealres) .and. bfinalResRestart .and. (rlinsolParam%riter%cstatus .eq. ITC_STATUS_CONVERGED)) then
+      if ((.not. brealres) .and. (ifinalResRestart .ne. 0) .and. &
+          (rlinsolParam%riter%cstatus .eq. ITC_STATUS_CONVERGED)) then
         
         ! Apply a restart to check if we really reached the residual
 
@@ -1110,7 +1116,10 @@ contains
           dgamma = 1.0_DP
           dgammaOld = 1.0_DP
           
-          !brealres = .true.
+          if (ifinalResRestart .eq. 2) then
+            ! Continue with the real residual.
+            brealres = .true.
+          end if
           
           call kktsp_controlCopy (p_rr,p_rp%p_rcontrolLin)
 
@@ -1264,7 +1273,7 @@ contains
   real(DP) :: drho1,drho0
   type(t_newtonlinSolverStat) :: rlocalStat
   type(t_iterationControl) :: rlocaliter
-  logical :: bfinalResRestart
+  logical :: ifinalResRestart
 
   ! Our structure
   type(t_linsolBiCGStab), pointer :: p_rsubnode
@@ -1276,7 +1285,7 @@ contains
     ! Getch some information
     p_rsubnode => rlinsolParam%p_rsubnodeBiCGStab
     
-    bfinalResRestart = p_rsubnode%bfinalResRestart
+    ifinalResRestart = p_rsubnode%ifinalResRestart
 
     ! Set pointers to the temporary vectors
     p_rr   => p_rsubnode%rp
@@ -1360,7 +1369,8 @@ contains
         ! -------------------------------------------------------------
         ! Check for convergence / divergence / ...
         ! -------------------------------------------------------------
-        if (bfinalResRestart .and. (rlinsolParam%riter%cstatus .eq. ITC_STATUS_CONVERGED)) then
+        if ((ifinalResRestart .ne. 0) .and. &
+            (rlinsolParam%riter%cstatus .eq. ITC_STATUS_CONVERGED)) then
           
           ! Apply a restart to check if we really reached the residual
 
@@ -2244,20 +2254,14 @@ contains
           i, i)
       rsolver%p_rsubnodeCG%brealres = i .ne. 0
 
-      i = 0
-      if (rsolver%p_rsubnodeCG%bfinalResRestart) i = 1
-      call parlst_getvalue_int (p_rsection, "bfinalResRestart", &  
-          i, i)
-      rsolver%p_rsubnodeCG%bfinalResRestart = i .ne. 0
+      call parlst_getvalue_int (p_rsection, "ifinalResRestart", &  
+          rsolver%p_rsubnodeCG%ifinalResRestart,rsolver%p_rsubnodeCG%ifinalResRestart)
     end if
 
     if (rsolver%csolverType .eq. NLIN_SOLVER_BICGSTAB) then
       ! CG parameters
-      i = 0
-      if (rsolver%p_rsubnodeBiCGStab%bfinalResRestart) i = 1
-      call parlst_getvalue_int (p_rsection, "bfinalResRestart", &  
-          i, i)
-      rsolver%p_rsubnodeBiCGStab%bfinalResRestart = i .ne. 0
+      call parlst_getvalue_int (p_rsection, "ifinalResRestart", &  
+          rsolver%p_rsubnodeBiCGStab%ifinalResRestart, rsolver%p_rsubnodeBiCGStab%ifinalResRestart)
     end if
 
     if (rsolver%csolverType .eq. NLIN_SOLVER_GMRES) then

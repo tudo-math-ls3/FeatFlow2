@@ -309,8 +309,12 @@ ioutputLevel       = 2
 # For CG: Check the real residual
 brealres = 0
 
-# Automatic restart for final residual check (BiCGSTab and CG)
-bfinalResRestart = 0
+# Automatic restart for final residual check (BiCGSTab and CG).
+# =0: no restart.
+# =1: restart if the residual is not ok.
+# =2: restart if the residual is not ok. Continue with the real
+#     residual if possible.
+ifinalResRestart = 0
 
 # Dimension of the Krylov space (for GMRES)
 ikrylovDim = 5
