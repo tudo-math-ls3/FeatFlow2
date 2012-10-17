@@ -2235,36 +2235,46 @@ contains
 
     if (rsolver%csolverType .eq. NLIN_SOLVER_CG) then
       ! CG parameters
+      i = 0
+      if (rsolver%p_rsubnodeCG%brealres) i = 1
       call parlst_getvalue_int (p_rsection, "brealres", &  
-          i, 0)
+          i, i)
       rsolver%p_rsubnodeCG%brealres = i .ne. 0
 
+      i = 0
+      if (rsolver%p_rsubnodeCG%bfinalResRestart) i = 1
       call parlst_getvalue_int (p_rsection, "bfinalResRestart", &  
-          i, 0)
+          i, i)
       rsolver%p_rsubnodeCG%bfinalResRestart = i .ne. 0
     end if
 
     if (rsolver%csolverType .eq. NLIN_SOLVER_BICGSTAB) then
       ! CG parameters
+      i = 0
+      if (rsolver%p_rsubnodeBiCGStab%bfinalResRestart) i = 1
       call parlst_getvalue_int (p_rsection, "bfinalResRestart", &  
-          i, 0)
+          i, i)
       rsolver%p_rsubnodeBiCGStab%bfinalResRestart = i .ne. 0
     end if
 
     if (rsolver%csolverType .eq. NLIN_SOLVER_GMRES) then
       ! CG parameters
       call parlst_getvalue_int (p_rsection, "ikrylovDim", &  
-          rsolver%p_rsubnodeGMRES%ikrylovDim, 5)
+          rsolver%p_rsubnodeGMRES%ikrylovDim, rsolver%p_rsubnodeGMRES%ikrylovDim)
 
+      i = 0
+      if (rsolver%p_rsubnodeGMRES%btwiceGS) i = 1
       call parlst_getvalue_int (p_rsection, "btwiceGS", &  
-          i, 0)
+          i, i)
       rsolver%p_rsubnodeGMRES%btwiceGS = i .ne. 0
 
       call parlst_getvalue_double (p_rsection, "dpseudoResScale", &  
           rsolver%p_rsubnodeGMRES%dpseudoResScale,0.0_DP)
 
+      i = 0
+      if (rsolver%p_rsubnodeGMRES%bautoPseudoResScale) i = 1
       call parlst_getvalue_int (p_rsection, "bautoPseudoResScale", &  
-          i, 0)
+          i, i)
       rsolver%p_rsubnodeGMRES%bautoPseudoResScale = i .ne. 0
           
     end if
