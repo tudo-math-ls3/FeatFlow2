@@ -446,7 +446,7 @@ contains
 
 !<subroutine>
 
-  subroutine optcana_getBDControlValues (Dvalues,ibct,DpointPar,rbdControlVec,&
+  subroutine optcana_getL2BDControlValues (Dvalues,ibct,DpointPar,rbdControlVec,&
       rtriangulation,rboundary)
   
 !<description>
@@ -547,7 +547,7 @@ contains
 
   !<subroutine>
 
-    subroutine ffunction_dirichletBdC (cderivative, rdiscretisation, &
+    subroutine ffunction_dirichletL2BdC (cderivative, rdiscretisation, &
                                    DpointsRef, Dpoints, ibct, DpointPar,&
                                    Ielements, Dvalues, rcollection)
 
@@ -627,7 +627,7 @@ contains
       icomponent = rcollection%IquickAccess(1)
       
       ! Calculate the values of the boundary function in the points.
-      call optcana_getBDControlValues (Dvalues,ibct,DpointPar,&
+      call optcana_getL2BDControlValues (Dvalues,ibct,DpointPar,&
           p_rvector%RvectorBlock(icomponent),&
           rdiscretisation%p_rtriangulation,rdiscretisation%p_rboundary)
 
@@ -692,7 +692,7 @@ contains
       
       ! Calculate the integral
       call pperr_scalarBoundary2D (PPERR_L2ERROR, CUB_G4_1D, derror,&
-          ffunctionReference=ffunction_dirichletBdC, rcollection=rcollection, &
+          ffunctionReference=ffunction_dirichletL2BdC, rcollection=rcollection, &
           rdiscretisation=p_rdiscretisation)
           
       dintvalue = dintvalue + derror**2

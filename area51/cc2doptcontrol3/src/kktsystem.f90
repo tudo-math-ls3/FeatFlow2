@@ -1177,6 +1177,9 @@ end subroutine
                 call kkt_calcL2BdCNavSt (roperatorAsm%p_rasmTemplates,p_rphysics,&
                     p_rdualSpace,p_rintermedControl,icomp+1,roptcBDCSpace)
                 
+                ! Release local boundary conditions
+                call sbc_resetBCstructure(roptcBDCSpace)
+                
                 ! Calculate
                 !    u_intermed = (1-alpha) u + u_intermed
                 icomp = icomp + 1
@@ -1326,6 +1329,9 @@ end subroutine
 
                 call sptivec_invalidateVecInPool (&
                     rkktsystem%p_rdualSol%p_rvectorAccess,istep)
+
+                ! Release local boundary conditions
+                call sbc_resetBCstructure(roptcBDCSpace)
                               
                 ! Calculate
                 !    u_intermed = u + u_intermed
@@ -2661,6 +2667,9 @@ end subroutine
                 call kkt_calcL2BdCNavSt (roperatorAsm%p_rasmTemplates,p_rphysics,&
                     p_rdualSpaceLin,p_rcontrolSpaceLinOutput,icomp+1,roptcBDCSpace)
                     
+                ! Release local boundary conditions
+                call sbc_resetBCstructure(roptcBDCSpace)
+
                 ! Calculate
                 !    u_intermed~ = (1-alpha) u~ + u_intermed
                 icomp = icomp + 1
@@ -2799,6 +2808,9 @@ end subroutine
                 call sptivec_invalidateVecInPool (&
                     rkktsystemDirDeriv%p_rdualSolLin%p_rvectorAccess,istep)
                     
+                ! Release local boundary conditions
+                call sbc_resetBCstructure(roptcBDCSpace)
+
                 ! Calculate
                 !    u_intermed~ = u~ + u_intermed~
                 icomp = icomp + 1
