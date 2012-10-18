@@ -24,9 +24,8 @@ gridgenlaval2d \
     -a2 0.674785758658841 \
     -l  50.0 \
     -o nozzle1 \
-    -Q -q -F -a 2
+    -Q -a 2
 
-#    -a 25.0 \
-#    -d 0.5 \
+#    -Q -q -F -a 2
 
 showme nozzle1.1

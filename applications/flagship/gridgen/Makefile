@@ -122,4 +122,4 @@ $(BIN)showme: $(SRC)showme.c
 	$(CC) $(CSWITCHES) -o $(BIN)showme $(SRC)showme.c -lX11
 
 clean:
-	rm -f $(BIN)triangle $(BIN)showme $(BIN)gridgen1d $(BIN)gridgencirc2d
+	rm -f $(BIN)triangle $(BIN)showme $(BIN)gridgen1d $(BIN)gridgencirc2d $(BIN)gridgenlaval2d
