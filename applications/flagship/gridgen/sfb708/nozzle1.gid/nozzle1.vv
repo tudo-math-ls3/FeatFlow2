@@ -1,0 +1,19 @@
+BeginZE /data/peppone/mmoelle1/Featflow2/applications/flagship/gridgen/sfb708/nozzle1.gid/nozzle1.vv
+   x 33.5283 122.145
+   y 24.5764 -23.9248
+   z -331.662 331.662
+   e 110.554
+   v 0 0 0
+   r 1
+   m 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1
+   c 90 0 0
+   pd 0
+   pno 0
+   pfo 0
+   pf 4
+   pv 0
+   NowUse 1
+   DrawingType 0
+   LightVector 90 90 150 0
+EndZE /data/peppone/mmoelle1/Featflow2/applications/flagship/gridgen/sfb708/nozzle1.gid/nozzle1.vv
+
