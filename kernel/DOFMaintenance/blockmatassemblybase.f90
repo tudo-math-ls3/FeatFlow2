@@ -119,6 +119,11 @@ module blockmatassemblybase
     ! Number of variables per matrix entry. Only for interleaved
     ! matrices. =1 for non-interleaved matrices.
     integer :: nvar = 1
+    
+    ! Dimension of the underlying FEM spaces. Usually =1 except
+    ! for vector valued FEM spaces.
+    integer :: ndimfeTrial = 1
+    integer :: ndimfeTest = 1
 
     !<!--
     ! ##############################################
@@ -310,6 +315,10 @@ module blockmatassemblybase
     ! Number of variables per vector entry. Only for interleaved
     ! vectors. =1 for non-interleaved vectors.
     integer :: nvar = 1
+
+    ! Dimension of the underlying FEM space. Usually =1 except
+    ! for vector valued FEM spaces.
+    integer :: ndimfe = 1
 
     !<!--
     ! ##############################################

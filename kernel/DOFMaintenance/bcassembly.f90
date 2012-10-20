@@ -1615,7 +1615,7 @@ contains
           Idofs(1:3,ielidx) = -abs(Idofs(1:3,ielidx))
         end if
 
-      case (EL_P1T,EL_QPW4P1T_2D)
+      case (EL_P1T,EL_QPW4P1T_2D,EL_RT0_2D)
 
         ! Edge midpoint based element.
         !

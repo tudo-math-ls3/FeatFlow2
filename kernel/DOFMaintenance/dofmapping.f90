@@ -296,7 +296,7 @@ contains
     case (EL_QPW4P1T_2D)
       ! 1 DOF per edge and 4 in the element
       NDFG_uniform2D = rtriangulation%NMT + 4*rtriangulation%NEL
-    case (EL_P1T, EL_Q1T)
+    case (EL_P1T, EL_Q1T, EL_RT0_2D)
       ! 1 DOF per edge
       NDFG_uniform2D = rtriangulation%NMT
     case (EL_Q1TB)
@@ -724,7 +724,7 @@ contains
           ! DOF`s for Q1
           call dof_locGlobUniMult_QP1(p_rtriangulation%NEL,IelIdx, IdofGlob)
           return
-        case (EL_P1T)
+        case (EL_P1T,EL_RT0_2D)
           ! DOF`s in the edges
           call storage_getbase_int2D (p_rtriangulation%h_IedgesAtElement,p_2darray)
           call dof_locGlobUniMult_P1T(p_2darray, IelIdx, IdofGlob)

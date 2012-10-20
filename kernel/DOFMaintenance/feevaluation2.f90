@@ -116,6 +116,9 @@ module feevaluation2
     ! Number of local DOF`s in the trial/test space
     integer :: ndof = 0
     
+    ! Dimension of the FE space.
+    integer :: ndimfe = 0
+    
     ! Maximum derivative to be computed.
     ! =-1: Automatic, evaluate all up to the highest possible derivative.
     integer :: nmaxDerivative = -1
@@ -129,7 +132,13 @@ module feevaluation2
     ! Array to tell the element which derivatives to calculate
     logical, dimension(EL_MAXNDER) :: Bder = .false.
 
-    ! Arrays for the basis function values in the cubature points
+    ! Arrays for the basis function values in the cubature points.
+    !   Dbas(ndof*ndimfe,ideriv,ipt,iel)
+    ! For vector valued basis functions of dimension d, there is
+    !   Dbas(1..ndof,ideriv,ipt,iel) = first dimension
+    !   Dbas((1..ndof) + ndof,ideriv,ipt,iel) = 2nd dimension
+    !   ...
+    !   Dbas((1..ndof) + ndimfe*ndof,ideriv,ipt,iel) = d'th dimension
     real(DP), dimension(:,:,:,:), pointer :: p_Dbas => null()
     
     ! Arrays saving the DOF`s in the elements
@@ -186,6 +195,9 @@ module feevaluation2
     !
     ! NOTE: Only for non-Interleaved vectors, there is p_Ddata=>null for
     ! interleaved vectors. In this case, p_DentryIntl defines the vector data.
+    !
+    ! NOTE: For vector valued FE spaces, there is p_Ddata=>null(),
+    ! p_DdataIntl=>null() and p_DdataVec specifying the values.
     real(DP), dimension(:,:,:), pointer :: p_Ddata => null()
 
     ! Pointer to an array with values in all cubature points.
@@ -198,7 +210,18 @@ module feevaluation2
     !
     ! NOTE: Only for interleaved vectors, there is p_DdataIntl=>null for
     ! non-interleaved vectors. In this case, p_Dentry defines the vector data.
+    !
+    ! NOTE: For vector valued FE spaces, there is p_Ddata=>null(),
     real(DP), dimension(:,:,:,:), pointer :: p_DdataIntl => null()
+    
+    ! Pointer to an array with values in all cubature points.
+    !   DdataVec(ndimfe,npointsPerElement,nelements,nmaxDerivativeIdx).
+    !
+    ! The last index specifies the type of the derivative,
+    ! so Ddata(:,:,DER_DERIV2D_X) specifies the first X-derivative.
+    !
+    ! This only applies for vector valued FE spaces of dimension ndimfe.
+    real(DP), dimension(:,:,:,:), pointer :: p_DdataVec => null()
     
     ! Reference to the vector or NULL, if there is no vector
     ! associated. The latter case appears for `dummy` vectors.
@@ -219,6 +242,10 @@ module feevaluation2
     ! Last index of the corresponding Bder array which is set to TRUE.
     ! Specifies the last dimension in p_Ddata.
     integer :: nmaxDerivativeIdx = 0
+    
+    ! Dimension of the underlying FEM space (for vector valued FEM spaces.
+    ! =1 for standard FEM spaces)
+    integer :: ndimfe = 1
     
     ! Index of the corresponding FEM data structure for the discretisation
     ! in a corresponding arrays of FEM data structures.
@@ -668,6 +695,8 @@ contains
           p_RfemData(rfemDataBlocks%ncount)%p_rdiscr%RelementDistr(ielementDistr)%ctrafoType
       p_RfemData(rfemDataBlocks%ncount)%ndof = &
           elem_igetNDofLoc(p_RfemData(rfemDataBlocks%ncount)%celement)
+      p_RfemData(rfemDataBlocks%ncount)%ndimfe = &
+          elem_igetFeDimension(p_RfemData(rfemDataBlocks%ncount)%celement)
 
       ivecDiscrTest = rfemDataBlocks%ncount
     else
@@ -767,6 +796,8 @@ contains
             p_RfemData(rfemDataBlocks%ncount)%p_rdiscr%RelementDistr(ielementDistr)%ctrafoType
         p_RfemData(rfemDataBlocks%ncount)%ndof = &
             elem_igetNDofLoc(p_RfemData(rfemDataBlocks%ncount)%celement)
+        p_RfemData(rfemDataBlocks%ncount)%ndimfe = &
+            elem_igetFeDimension(p_RfemData(rfemDataBlocks%ncount)%celement)
 
         ivecDiscrTest = rfemDataBlocks%ncount
       else
@@ -808,6 +839,8 @@ contains
             p_RfemData(rfemDataBlocks%ncount)%p_rdiscr%RelementDistr(ielementDistr)%ctrafoType
         p_RfemData(rfemDataBlocks%ncount)%ndof = &
             elem_igetNDofLoc(p_RfemData(rfemDataBlocks%ncount)%celement)
+        p_RfemData(rfemDataBlocks%ncount)%ndimfe = &
+            elem_igetFeDimension(p_RfemData(rfemDataBlocks%ncount)%celement)
 
         ivecDiscrTrial = rfemDataBlocks%ncount
       else
@@ -868,7 +901,7 @@ contains
       p_rfemData => rfemDataBlocks%p_RfemData(i)
 
       ! Allocate memory for the values of the basis functions    
-      allocate(p_rfemData%p_Dbas(p_rfemData%ndof,&
+      allocate(p_rfemData%p_Dbas(p_rfemData%ndof*p_rfemData%ndimfe,&
           p_rfemData%nmaxDerivativeIdx,npointsperelement,nelements))
       
       ! Allocate memory for the degrees of freedoms on the
@@ -1264,6 +1297,9 @@ contains
         p_rvectorData%iidxFemData = &
             containsDiscr (rfemDataBlocks,&
                            p_rvectorData%p_rvector%p_rspatialDiscr)
+                           
+        ! Get the dimension of the underlying FEM space
+        p_rvectorData%ndimfe = rfemDataBlocks%p_RfemData(p_rvectorData%iidxFemData)%ndimfe
       else
         ! Dummy vector, just allocate memory in advance.
         ! nmaxDerivativeIdx specifies the number of subarrays to allocate.
@@ -1325,12 +1361,21 @@ contains
         ! Deallocate memory if memory is allocated.
         if (associated(p_rvectorData%p_Ddata)) deallocate (p_rvectorData%p_Ddata)
         if (associated(p_rvectorData%p_DdataIntl)) deallocate (p_rvectorData%p_DdataIntl)
+        if (associated(p_rvectorData%p_DdataVec)) deallocate (p_rvectorData%p_DdataVec)
 
         ! Allocate memory for the point values.
         if ((npointsPerElement .ne. 0) .and. (nelements .ne. 0)) then
           if (.not. p_rvectorData%bisInterleaved) then
-            ! Non-interleaved data
-            allocate (p_rvectorData%p_Ddata(npointsPerElement,nelements,nmaxDerivativeIdx))
+          
+            ! Get the dimension of the underlying FEM space.
+            if (p_rvectorData%ndimfe .eq. 1) then
+              ! Non-interleaved data
+              allocate (p_rvectorData%p_Ddata(npointsPerElement,nelements,nmaxDerivativeIdx))
+            else
+              ! Non-interleaved data, vector valued basis functions.
+              allocate (p_rvectorData%p_DdataVec(p_rvectorData%ndimfe,&
+                  npointsPerElement,nelements,nmaxDerivativeIdx))
+            end if
           else
             ! Interleaved data
             allocate (p_rvectorData%p_DdataIntl(&
@@ -1406,8 +1451,8 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: ibas, ivector, npoints, nelements, iel, ipt
-    integer :: ndof, ideriv, nderiv, nvar, ivar
+    integer :: ibas, ivector, npoints, nelements, iel, ipt, idimfe
+    integer :: ndof, ideriv, nderiv, nvar, ivar, ndimfe
     real(DP), dimension(:,:,:,:), pointer :: p_Dbas
     real(DP) :: dval
     type(t_fev2FemData), pointer :: p_rfemData
@@ -1415,7 +1460,7 @@ contains
     integer, dimension(:,:), pointer :: p_Idofs
     real(DP), dimension(:), pointer :: p_DvecData
     real(DP), dimension(:,:,:), pointer :: p_Ddata
-    real(DP), dimension(:,:,:,:), pointer :: p_DdataIntl
+    real(DP), dimension(:,:,:,:), pointer :: p_DdataIntl,p_DdataVec
     
     npoints = revalVectors%npointsPerElement
     nelements = revalVectors%nelements
@@ -1435,6 +1480,7 @@ contains
         
         ! Get data arrays and array size
         ndof = p_rfemData%ndof
+        ndimfe = p_rfemData%ndimfe
         p_Dbas => p_rfemData%p_Dbas
         p_Idofs => p_rfemData%p_Idofs
         nderiv = p_rvectorData%nmaxDerivativeIdx
@@ -1442,27 +1488,54 @@ contains
         
         if (.not. p_rvectorData%bisInterleaved) then
 
-          p_Ddata => p_rvectorData%p_Ddata
+          if (ndimfe .eq. 1) then
+          
+            p_Ddata => p_rvectorData%p_Ddata
         
-          ! Loop over the derivatives, basis functions, sum up to the point value
-          ! in every cubature point.
-          do iel = 1,nelements
-            do ideriv = 1,nderiv
-              do ipt = 1,npoints
-              
-                dval = 0.0_DP
-                do ibas = 1,ndof
-                  dval = dval + &
-                      p_DvecData(p_Idofs(ibas,iel))*p_Dbas(ibas,ideriv,ipt,iel)
-                end do
+            ! Loop over the derivatives, basis functions, sum up to the point value
+            ! in every cubature point.
+            do iel = 1,nelements
+              do ideriv = 1,nderiv
+                do ipt = 1,npoints
                 
-                ! Save the value
-                p_Ddata(ipt,iel,ideriv) = dval
-              
+                  dval = 0.0_DP
+                  do ibas = 1,ndof
+                    dval = dval + &
+                        p_DvecData(p_Idofs(ibas,iel))*p_Dbas(ibas,ideriv,ipt,iel)
+                  end do
+                  
+                  ! Save the value
+                  p_Ddata(ipt,iel,ideriv) = dval
+                
+                end do
               end do
             end do
-          end do
+            
+          else
           
+            p_DdataVec => p_rvectorData%p_DdataVec
+          
+            ! Loop over the derivatives, basis functions, sum up to the point value
+            ! in every cubature point.
+            do iel = 1,nelements
+              do ideriv = 1,nderiv
+                do ipt = 1,npoints
+                
+                  do idimfe = 0,ndimfe-1
+                    dval = 0.0_DP
+                    do ibas = 1,ndof
+                      dval = dval + &
+                          p_DvecData(p_Idofs(ibas,iel))*p_Dbas(ibas+idimfe*ndof,ideriv,ipt,iel)
+                    end do
+                    
+                    ! Save the value
+                    p_DdataVec(1+idimfe,ipt,iel,ideriv) = dval
+                  end do
+                
+                end do
+              end do
+            end do
+          end if            
         else
           
           ! Interleaved specification

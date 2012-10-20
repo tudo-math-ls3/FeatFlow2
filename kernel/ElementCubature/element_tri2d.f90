@@ -16,6 +16,7 @@ module element_tri2d
   use elementbase
   use derivatives
   use perfconfig
+  use mprimitives
 
   implicit none
 
@@ -33,6 +34,8 @@ module element_tri2d
   public :: elem_P1T
   public :: elem_P1T_mult
   public :: elem_P1T_sim
+  
+  public :: elem_eval_RT1_2D
 
 contains
 
@@ -1590,18 +1593,18 @@ contains
       !x-derivatives on current element
 !      IF (Bder(DER_DERIV_X)) THEN
         do i=1,npoints
-          Dbas(1,DER_DERIV_X,i,j) =  2E0_DP*Djac(2,i,j)*dxj(i)
-          Dbas(2,DER_DERIV_X,i,j) =  2E0_DP*(Djac(4,i,j)-Djac(2,i,j))*dxj(i)
-          Dbas(3,DER_DERIV_X,i,j) = -2E0_DP*Djac(4,i,j)*dxj(i)
+          Dbas(1,DER_DERIV_X,i,j) =  2E0_DP*Djac(2,i,j)*Dxj(i)
+          Dbas(2,DER_DERIV_X,i,j) =  2E0_DP*(Djac(4,i,j)-Djac(2,i,j))*Dxj(i)
+          Dbas(3,DER_DERIV_X,i,j) = -2E0_DP*Djac(4,i,j)*Dxj(i)
 !        end do
 !      ENDIF
 
       !y-derivatives on current element
 !      IF (Bder(DER_DERIV_Y)) THEN
 !        do i=1,npoints
-          Dbas(1,DER_DERIV_Y,i,j) = -2E0_DP*Djac(1,i,j)*dxj(i)
-          Dbas(2,DER_DERIV_Y,i,j) = -2E0_DP*(Djac(3,i,j)- Djac(1,i,j))*dxj(i)
-          Dbas(3,DER_DERIV_Y,i,j) =  2E0_DP*Djac(3,i,j)*dxj(i)
+          Dbas(1,DER_DERIV_Y,i,j) = -2E0_DP*Djac(1,i,j)*Dxj(i)
+          Dbas(2,DER_DERIV_Y,i,j) = -2E0_DP*(Djac(3,i,j)- Djac(1,i,j))*Dxj(i)
+          Dbas(3,DER_DERIV_Y,i,j) =  2E0_DP*Djac(3,i,j)*Dxj(i)
         end do
 !      ENDIF
 
@@ -1609,6 +1612,458 @@ contains
     !$omp end parallel do
 
   end if
+
+  end subroutine
+
+  !****************************************************************************
+  !****************************************************************************
+
+  ! -------------- NEW ELEMENT INTERFACE IMPLEMENTATIONS FOLLOW --------------
+
+  !****************************************************************************
+  !****************************************************************************
+
+
+
+  !************************************************************************
+  ! Lowest order Raviart-Thomas element
+  !************************************************************************
+
+!<subroutine>
+
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+ subroutine elem_eval_RT1_2D (celement, reval, Bder, Dbas)
+
+!<description>
+  ! This subroutine simultaneously calculates the values of the basic
+  ! functions of the finite element at multiple given points on the
+  ! reference element for multiple given elements.
+!</description>
+
+!<input>
+  ! The element specifier.
+  integer(I32), intent(in)                       :: celement
+
+  ! t_evalElementSet-structure that contains cell-specific information and
+  ! coordinates of the evaluation points. revalElementSet must be prepared
+  ! for the evaluation.
+  type(t_evalElementSet), intent(in)             :: reval
+
+  ! Derivative quantifier array. array [1..DER_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  logical, dimension(:), intent(in)              :: Bder
+!</input>
+
+!<output>
+  ! Value/derivatives of basis functions.
+  ! array [1..EL_MAXNBAS,1..DER_MAXNDER,1..npointsPerElement,nelements] of double
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th
+  !   basis function of the finite element in the point Dcoords(j) on the
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
+  !
+  ! Due to the fact that this is a vector valued basis function, the
+  ! meaning of Dbas is extended. There is
+  !  Dbas(i        ,:,:,:) = values of the first basis function
+  !  Dbas(i+ndofloc,:,:,:) = values of the 2nd basis function, 
+  ! with ndofloc the number of local DOFs per element.
+  real(DP), dimension(:,:,:,:), intent(out)      :: Dbas
+!</output>
+
+! </subroutine>
+
+  ! Element Description
+  ! -------------------
+  ! The lowest order Raviart-Thomas element is a vector-valued finite element.
+  ! On each cell, one has two P1 polynoms defined as follows:
+  !
+  !   v = ( v_1 ) = ( a + c x )
+  !       ( v_2 )   ( b + c y )
+  !
+  ! with a,b,c three coefficients. The element has three degrees of
+  ! freedom per element which are, however, not a,b,c but the normal
+  ! flux through each edge of the triangle:
+  !
+  !      x3
+  !      |\
+  !      | \  _
+  !      |  \ /|
+  !    <-3   2
+  !      |    \
+  !      |     \
+  !      |      \
+  !     x1---1---x2
+  !          |
+  !          v
+  !
+  ! The three DOFs are 
+  !    d1=<v,n1>, 
+  !    d2=<v,n2> and 
+  !    d3=<v,n3> with
+  ! ni the three normal vectors.
+  !
+  ! We apply a nonparametric approach here...
+  
+  ! Local variables
+  real(DP), dimension(3,3) :: Da,Dcoeff
+  real(DP) :: dlen1,dlen2,dlen3
+  real(DP) :: dx1,dy1,dx2,dy2,dx3,dy3, dx,dy
+  real(DP) :: dnx1,dny1,dnx2,dny2,dnx3,dny3
+  real(DP) :: dmx1,dmy1,dmx2,dmy2,dmx3,dmy3
+  real(DP) :: da1,da2,da3,db1,db2,db3,dc1,dc2,dc3
+  integer :: itwist,i,iel
+  real(DP) :: dtwist1,dtwist2,dtwist3
+  logical :: bsuccess
+
+    ! Calculate function values?
+    if(Bder(DER_FUNC2D)) then
+
+      ! If function values are desired, calculate them.
+
+      ! Loop through all elements
+      !$omp parallel do default(shared) private(i,dxi1,dxi2,itwist,dtwist1,dtwist2,dtwist3)&
+      !$omp if(reval%nelements > reval%p_rperfconfig%NELEMMIN_OMP)
+      do iel = 1, reval%nelements
+
+        ! Get the twist indices that define the orientation of our edges.
+        ! A value of 1 is standard, a value of -1 results in a change of the
+        ! sign in the basis functions.
+        ! itwistIndex is a bitfield. Each bit specifies the orientation of an edge.
+        ! We use the bit to calculate a "1.0" if the edge has positive orientation
+        ! and "-1.0" if it has negative orientation.
+        itwist = reval%p_ItwistIndex(iel)
+        dtwist1 = real(1-iand(int(ishft(itwist, 1)),2),DP)
+        dtwist2 = real(1-iand(int(ishft(itwist, 0)),2),DP)
+        dtwist3 = real(1-iand(int(ishft(itwist,-1)),2),DP)
+
+        ! Calculate the three normal vectors...
+        !
+        ! Element corners
+        dx1 = reval%p_Dcoords(1,1,iel)
+        dy1 = reval%p_Dcoords(2,1,iel)
+        dx2 = reval%p_Dcoords(1,2,iel)
+        dy2 = reval%p_Dcoords(2,2,iel)
+        dx3 = reval%p_Dcoords(1,3,iel)
+        dy3 = reval%p_Dcoords(2,3,iel)
+        
+        ! Inverse of the edge length
+        dlen1 = 1.0_DP/sqrt( (dx2-dx1)**2 + (dy2-dy1)**2 )
+        dlen2 = 1.0_DP/sqrt( (dx3-dx2)**2 + (dy3-dy2)**2 )
+        dlen3 = 1.0_DP/sqrt( (dx1-dx3)**2 + (dy1-dy3)**2 )
+        
+        ! Calculate the normal vectors to the edges from the corners.
+        ! The tangential vectors of the edges are
+        !
+        !    t1 = (x2-x1) / ||x2-x1||
+        !    t2 = (x3-x2) / ||x3-x2||
+        !    t3 = (x1-x3) / ||x1-x3||
+        !
+        ! The corresponding normals are calculated from
+        !
+        !    ni = ( ti2, -ti1 )
+        !
+        dnx1 = (dy2-dy1)  *dlen1*dtwist1
+        dny1 = -(dx2-dx1) *dlen1*dtwist1
+
+        dnx2 = (dy3-dy2)  *dlen2*dtwist2
+        dny2 = -(dx3-dx2) *dlen2*dtwist2
+
+        dnx3 = (dy1-dy3)  *dlen3*dtwist3
+        dny3 = -(dx1-dx3) *dlen3*dtwist3
+        
+        ! Midpoints of the edges
+        dmx1 = 0.5_DP*(dx1+dx2)
+        dmx2 = 0.5_DP*(dx2+dx3)
+        dmx3 = 0.5_DP*(dx3+dx1)
+
+        dmy1 = 0.5_DP*(dy1+dy2)
+        dmy2 = 0.5_DP*(dy2+dy3)
+        dmy3 = 0.5_DP*(dy3+dy1)
+        
+        ! Set up a transformation matrix to calculate the a,b and c.
+        !
+        ! The conditions to be solved for one basis function read:
+        !
+        !   < v,ni > = di
+        !
+        ! or more exactly
+        !
+        !   n1x (a+cx)  +  n1y (b+cy)  =  d1
+        !   n2x (a+cx)  +  n2y (b+cy)  =  d2
+        !   n3x (a+cx)  +  n3y (b+cy)  =  d3
+        !
+        ! or equivalently
+        !
+        !  ( n1x  n1y  (n1x x + n1y y) )  ( a )  =  ( d1 )
+        !  ( n2x  n2y  (n2x x + n2y y) )  ( b )     ( d2 )
+        !  ( n3x  n3y  (n3x x + n3y y) )  ( c )     ( d3 )
+        !
+        ! Set up this matrix. For (x,y), insert the midpoint of the edge
+        ! corresponding to the normal.
+        
+        Da(1,1) = dnx1
+        Da(2,1) = dnx2
+        Da(3,1) = dnx3
+
+        Da(1,2) = dny1
+        Da(2,2) = dny2
+        Da(3,2) = dny3
+
+        Da(1,3) = dnx1*dmx1 + dny1*dmy1
+        Da(2,3) = dnx2*dmx2 + dny2*dmy2
+        Da(3,3) = dnx3*dmx3 + dny3*dmy3
+        
+        ! Taking the inverse will give us all a,b and c of
+        ! the three basis functions:
+        !
+        !  ( n1x  n1y  (n1x x + n1y y) )  ( a1  a2  a3 )  =  ( 1  0  0 )
+        !  ( n2x  n2y  (n2x x + n2y y) )  ( b1  b2  b3 )     ( 0  1  0 )
+        !  ( n3x  n3y  (n3x x + n3y y) )  ( c1  c2  c3 )     ( 0  0  1 )
+        !
+        !                                 --------------
+        !                                 Inverse of the matrix
+        call mprim_invert3x3MatrixDirectDble(Da,Dcoeff,bsuccess)
+        
+        da1 = Dcoeff(1,1)
+        db1 = Dcoeff(2,1)
+        dc1 = Dcoeff(3,1)
+
+        da2 = Dcoeff(1,2)
+        db2 = Dcoeff(2,2)
+        dc2 = Dcoeff(3,2)
+
+        da3 = Dcoeff(1,3)
+        db3 = Dcoeff(2,3)
+        dc3 = Dcoeff(3,3)
+
+        ! Loop through all points on the current element
+        do i = 1, reval%npointsPerElement
+
+          ! Get the point coordinates
+          dx = reval%p_DpointsReal(1,i,iel)
+          dy = reval%p_DpointsReal(2,i,iel)
+
+          ! Evaluate basis functions.
+          !
+          !   v = ( a + c*x )
+          !       ( b + c*y )
+          Dbas(1,DER_FUNC2D,i,iel) = da1 + dc1*dx
+          Dbas(2,DER_FUNC2D,i,iel) = da2 + dc2*dx
+          Dbas(3,DER_FUNC2D,i,iel) = da3 + dc3*dx
+
+          Dbas(4,DER_FUNC2D,i,iel) = db1 + dc1*dy
+          Dbas(5,DER_FUNC2D,i,iel) = db2 + dc2*dy
+          Dbas(6,DER_FUNC2D,i,iel) = db3 + dc3*dy
+
+        end do ! i
+
+      end do ! j
+      !$omp end parallel do
+     
+    end if
+
+    if ((Bder(DER_DERIV_X)) .or. (Bder(DER_DERIV_Y))) then
+      ! Not yet supported
+      Dbas(:,DER_DERIV2D_X:,:,:) = 0.0_DP
+    end if
+  
+  ! From these three DOFs, one can extract the three coefficients
+  ! a,b,c that define the polynoms of the x- and y-velocity as
+  ! follows. One takes into account that the d_i are constant
+  ! along the complete edge, including the corner.
+  ! So there is for the reference element
+  !
+  !    d1 = <v,n1> = -(b+cy)
+  !    d2 = <v,n2> = 1/sqrt(2) ( a + b + cx + cy )
+  !    d3 = <v,n3> = -(a+cx)
+  ! 
+  ! On the reference triangle, this implies
+  !
+  !    d1 = -b                        due to y=0
+  !    d2 = 1/sqrt(2) ( a + b + c )   for x=y=1/2 on the edge
+  !    d3 = -a                        due to x=0
+  !
+  ! and thus,
+  !
+  !    b = -d1
+  !    a = -d3
+  !    c = sqrt(2)*d2 + d1 + d3
+  !
+  ! The coefficients of the three local basis functions per element 
+  ! therefore read
+  !
+  !   d1=1:  a1 = 0 ,  b1 = -1,  c1 = 1
+  !   d2=1:  a2 = 0 ,  b2 = 0 ,  c2 = sqrt(2)
+  !   d3=1:  s3 = -1,  b3 = 0 ,  c3 = 1
+  !
+  ! However, one problem remains - the coordinates are given in
+  ! barycentric coordinates. However, this is not really a
+  ! problem since
+  !
+  !    xi1 = 1-x-y
+  !    xi2 = x
+  !    xi3 = y
+  !
+  ! so we can just work with xi1 and xi2 instead of x and y.
+  !
+  ! WARNING: The DOF corresponds to the amount of flow in normal
+  ! direction of the edge. However, "normal direction" refers
+  ! to the *global* orientation of the edge. Hence, we have to take
+  ! this global orientation into account, which is realised by
+  ! the "twist indices". If the bit in the twist index corresponding
+  ! to the edge is =0, the basis function to this edge is defined as
+  ! above. if it is =-1, the orientation is negative and we have
+  ! to switch the sign in the basis functions appropriately!
+  !
+  ! The construction that takes the twist indices into account
+  ! reads as follows. For the reference element, there is
+  !
+  !    d1 = <v,d1 n1> = -(b+cy) * t1
+  !    d2 = <v,d2 n2> = 1/sqrt(2) ( a + b + cx + cy ) * t2
+  !    d3 = <v,d3 n3> = -(a+cx) * t3
+  !
+  ! with ti=1 or =-1 depending on the orientation of edge i.
+  ! 
+  ! On the reference triangle, this implies
+  !
+  !    d1 = -b * t1                       due to y=0
+  !    d2 = 1/sqrt(2) ( a + b + c ) * t2  for x=y=1/2 on the edge
+  !    d3 = -a * t3                       due to x=0
+  !
+  ! and thus,
+  !
+  !    b = -d1 * t1
+  !    a = -d3 * t3
+  !    c = sqrt(2)*d2*t2 + d1*t1 + d3*t3
+  !
+  ! The coefficients of the three local basis functions per element 
+  ! therefore read
+  !
+  !   d1=1:  a1 = 0  ,  b1 = -t1,  c1 = t1
+  !   d2=1:  a2 = 0  ,  b2 = 0  ,  c2 = sqrt(2)*t2
+  !   d3=1:  a3 = -t3,  b3 = 0  ,  c3 = t3
+  !
+
+!  ! Local variables
+!  real(DP) :: dxi1,dxi2,dxj,dtwist1,dtwist2,dtwist3
+!  integer :: i,j
+!  integer :: itwist
+!
+!    ! Calculate function values?
+!    if(Bder(DER_FUNC2D)) then
+!
+!      ! If function values are desired, calculate them.
+!
+!      ! Loop through all elements
+!      !$omp parallel do default(shared) private(i,dxi1,dxi2,itwist,dtwist1,dtwist2,dtwist3)&
+!      !$omp if(reval%nelements > reval%p_rperfconfig%NELEMMIN_OMP)
+!      do j = 1, reval%nelements
+!
+!        ! Get the twist indices that define the orientation of our edges.
+!        ! A value of 1 is standard, a value of -1 results in a change of the
+!        ! sign in the basis functions.
+!        ! itwistIndex is a bitfield. Each bit specifies the orientation of an edge.
+!        ! We use the bit to calculate a "1.0" if the edge has positive orientation
+!        ! and "-1.0" if it has negative orientation.
+!        itwist = reval%p_ItwistIndex(j)
+!        dtwist1 = real(1-iand(int(ishft(itwist, 1)),2),DP)
+!        dtwist2 = real(1-iand(int(ishft(itwist, 0)),2),DP)
+!        dtwist3 = real(1-iand(int(ishft(itwist,-1)),2),DP)
+!
+!        ! Loop through all points on the current element
+!        do i = 1, reval%npointsPerElement
+!
+!          ! Get the point coordinates
+!          dxi1 = reval%p_DpointsRef(2,i,j)
+!          dxi2 = reval%p_DpointsRef(3,i,j)
+!
+!          ! Evaluate basis functions
+!          !
+!          !   v1 = (       t1 x )
+!          !        ( -t1 + t1 y )
+!          !
+!          !   v2 = ( sqrt(2) t2 x )
+!          !        ( sqrt(2) t2 y )
+!          !
+!          !   v3 = ( -t3 + t3 x )
+!          !        (       t3 y )
+!          Dbas(1,DER_FUNC2D,i,j) = dtwist1*dxi1
+!          Dbas(2,DER_FUNC2D,i,j) = dtwist2*sqrt(2.0_DP)*dxi1
+!          Dbas(3,DER_FUNC2D,i,j) = dtwist3*(-1.0_DP + dxi1)
+!
+!          Dbas(4,DER_FUNC2D,i,j) = dtwist1*(-1.0_DP + dxi2)
+!          Dbas(5,DER_FUNC2D,i,j) = dtwist2*sqrt(2.0_DP)*dxi2
+!          Dbas(6,DER_FUNC2D,i,j) = dtwist3*dxi2
+!
+!        end do ! i
+!
+!      end do ! j
+!      !$omp end parallel do
+!     
+!    end if
+!
+!    ! Calculate derivatives?
+!    if ((Bder(DER_DERIV_X)) .or. (Bder(DER_DERIV_Y))) then
+!
+!      ! If function values are desired, calculate them.
+!
+!      ! Loop through all elements
+!      !$omp parallel do default(shared) private(i,dxi1,dxi2,dxj)&
+!      !$omp if(reval%nelements > reval%p_rperfconfig%NELEMMIN_OMP)
+!      do j = 1, reval%nelements
+!
+!        ! Loop through all points on the current element
+!        do i = 1, reval%npointsPerElement
+!
+!          ! Get the point coordinates
+!          dxi1 = reval%p_DpointsRef(1,i,j)
+!          dxi2 = reval%p_DpointsRef(2,i,j)
+!          
+!          ! Multiplier for the inverse of the mapping
+!          dxj = 1.0_DP / reval%p_Ddetj(i,j)
+!
+!          ! Evaluate basis functions
+!          !
+!          ! v1 = (0,-1) + (x,y)
+!          ! v2 = sqrt(2)* (x,y)
+!          ! v3 = (-1,0) + (x,y)
+!          !
+!          ! => Dv1 = Dv3 = (1 0) , Dv2 = ( sqrt(2)          )
+!          !                (0 1)         (          sqrt(2) )
+!          !
+!          ! Dvi is multiplied to the mapping matrix which gives the
+!          ! actual derivative:
+!          !    (1 0) * (e f) = (e f) = 1/(ad-bc) (  d -b )
+!          !    (0 1)   (g h)   (g h)             ( -c  a )
+!          Dbas(1,DER_DERIV_X,i,j) =  dtwist1*reval%p_Djac(4,i,j)*dxj
+!          Dbas(2,DER_DERIV_X,i,j) =  dtwist2*sqrt(2.0_DP)*reval%p_Djac(4,i,j)*dxj
+!          Dbas(3,DER_DERIV_X,i,j) =  dtwist3*reval%p_Djac(4,i,j)*dxj
+!
+!          Dbas(4,DER_DERIV_X,i,j) = -dtwist1*reval%p_Djac(2,i,j)*dxj
+!          Dbas(5,DER_DERIV_X,i,j) = -dtwist2*sqrt(2.0_DP)*reval%p_Djac(2,i,j)*dxj
+!          Dbas(6,DER_DERIV_X,i,j) = -dtwist3*reval%p_Djac(2,i,j)*dxj
+!
+!          Dbas(1,DER_DERIV_Y,i,j) = -dtwist1*reval%p_Djac(3,i,j)*dxj
+!          Dbas(2,DER_DERIV_Y,i,j) = -dtwist2*sqrt(2.0_DP)*reval%p_Djac(3,i,j)*dxj
+!          Dbas(3,DER_DERIV_Y,i,j) = -dtwist3*reval%p_Djac(3,i,j)*dxj
+!
+!          Dbas(4,DER_DERIV_Y,i,j) =  dtwist1*reval%p_Djac(1,i,j)*dxj
+!          Dbas(5,DER_DERIV_Y,i,j) =  dtwist2*sqrt(2.0_DP)*reval%p_Djac(1,i,j)*dxj
+!          Dbas(6,DER_DERIV_Y,i,j) =  dtwist3*reval%p_Djac(1,i,j)*dxj
+!
+!        end do ! i
+!
+!      end do ! j
+!      !$omp end parallel do
+
 
   end subroutine
 

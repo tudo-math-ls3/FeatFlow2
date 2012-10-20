@@ -293,6 +293,7 @@ module element
   public :: elem_igetID
   public :: elem_igetNDofLoc
   public :: elem_igetNDofLocAssignment
+  public :: elem_igetFeDimension
   public :: elem_igetNVE
   public :: elem_igetCoordSystem
   public :: elem_igetTrafoType
@@ -401,10 +402,13 @@ module element
   integer(I32), parameter, public :: EL_P3_2D   = EL_P3
   integer(I32), parameter, public :: EL_E003_2D = EL_P3
 
+  ! ID of the lowest order Raviart-Thomas element
+  integer(I32), parameter, public :: EL_RT0_2D  = EL_2D + 5
+
   ! ID for rotated linear <tex>$\tilde P_1$</tex> element (Crouzeix-Raviart)
   integer(I32), parameter, public :: EL_P1T     = EL_2D + 20
   integer(I32), parameter, public :: EL_P1T_2D  = EL_P1T
-
+  
   ! ID of constant discontinous quadrilateral FE, Q0
   integer(I32), parameter, public :: EL_Q0      = EL_2D + 10
   integer(I32), parameter, public :: EL_E010    = EL_Q0
@@ -1301,6 +1305,10 @@ contains
     case (EL_P1T)
       ! local DOFs for P1~
       ndofAtEdges    = 3
+    
+    case (EL_RT0_2D)
+      ! local DOFs for the Raviart-thomas.
+      ndofAtEdges    = 3
 
     case (EL_DG_P1_2D,EL_DCTP1_2D)
       ! local DOFs for P1
@@ -1669,6 +1677,41 @@ contains
 
 !<function>
 
+  elemental integer function elem_igetFeDimension(celement)
+
+!<description>
+  ! Returns for every element the dimension of the underlying basis function
+  ! space. For most FEM spaces, this is =1. For vector valued FEM spaces,
+  ! this is the dimension of the basis functions.
+!</description>
+
+!<input>
+  ! The element type identifier.
+  integer(I32), intent(in) :: celement
+!</input>
+
+!<result>
+  ! A constant that specifies the dimension of an element. NDIM2 for 2D,
+  ! NDIM3D for 3D,...
+!</result>
+
+!</function>
+
+    ! The dimension is encoded in two bits in the element quantifier!
+    elem_igetFeDimension = 1
+    
+    select case (celement)
+    case (EL_RT0_2D)
+      ! Raviart-Thomas element. Vector valued element with dimension 2.
+      elem_igetFeDimension = 2
+    end select
+
+  end function
+
+  ! ***************************************************************************
+
+!<function>
+
   elemental integer function elem_getMaxDerivative(celement)
 
 !<description>
@@ -1735,6 +1778,10 @@ contains
     case (EL_P1T)
       ! Function + 1st derivative
       elem_getMaxDerivative = 3
+    case (EL_RT0_2D)
+      ! Function + 1st derivative
+      elem_getMaxDerivative = 3
+    
     case (EL_Q1,EL_DG_Q1_2D)
       ! Function + 1st derivative
       elem_getMaxDerivative = 3
@@ -1853,7 +1900,7 @@ contains
 !!$    case (EL_P0_1D, EL_P0, EL_P0_3D)
 !!$      ! No information about Jacobian necessary
 !!$      elem_getEvaluationTag = 0
-    case (EL_Q2T, EL_Q2TB, EL_Q2T_3D, EL_Q3T_2D)
+    case (EL_Q2T, EL_Q2TB, EL_Q2T_3D, EL_Q3T_2D, EL_RT0_2D)
       ! We need the twist indices.
       elem_getEvaluationTag = EL_EVLTAG_REFPOINTS + &
         EL_EVLTAG_JAC + EL_EVLTAG_DETJ + EL_EVLTAG_TWISTIDX
@@ -1908,7 +1955,7 @@ contains
 !</function>
 
     select case(celement)
-    case (EL_DCQP1_2D, EL_DCQP2_2D)
+    case (EL_DCQP1_2D, EL_DCQP2_2D, EL_RT0_2D)
       ! There exists no parametric counterpart to these elements, so these do
       ! not have the EL_NONPARAMETRIC flag set although the are nonparametric.
       inonpar = .true.
@@ -1993,7 +2040,8 @@ contains
       ishp = BGEOM_SHAPE_LINE
 
     case (EL_P0, EL_P1, EL_P2, EL_P3, EL_P1T, EL_DG_P1_2D,&
-          EL_DCTP1_2D, EL_DCTP2_2D)
+          EL_DCTP1_2D, EL_DCTP2_2D,&
+          EL_RT0_2D)
       ! 2D Triangle
       ishp = BGEOM_SHAPE_TRIA
 
@@ -2900,6 +2948,9 @@ contains
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef, revalElementSet%p_rperfconfig)
+
+    case (EL_RT0_2D)
+      call elem_eval_RT1_2D(celement, revalElementSet, Bder, Dbas)
 
     ! *****************************************************
     ! 2D quadrilateral elements

@@ -551,9 +551,13 @@ contains
           RmatrixData(i,j)%celementTest = &
               p_rdiscrTest%RelementDistr(ielementDistr)%celement
 
-          ! Get the number of local DOF`s for trial and test functions
+          ! Get the number of local DOFs for trial and test functions
           RmatrixData(i,j)%ndofTrial = elem_igetNDofLoc(RmatrixData(i,j)%celementTrial)
           RmatrixData(i,j)%ndofTest = elem_igetNDofLoc(RmatrixData(i,j)%celementTest)
+          
+          ! Dimension of the underlying FE spaces.
+          RmatrixData(i,j)%ndimfeTrial = elem_igetFeDimension(RmatrixData(i,j)%celementTrial)
+          RmatrixData(i,j)%ndimfeTest = elem_igetFeDimension(RmatrixData(i,j)%celementTest)
 
         end if
 
@@ -1700,6 +1704,8 @@ contains
       ! Get the number of local DOF`s for trial and test functions
       RvectorData(i)%ndofTest = elem_igetNDofLoc(RvectorData(i)%celementTest)
 
+      ! Dimension of the underlying FE space
+      RvectorData(i)%ndimfe = elem_igetFeDimension(RvectorData(i)%celementTest)
     end do
 
   end subroutine
