@@ -86,6 +86,8 @@ contains
       selName = 'q1'
     case (EL_Q2_2D)
       selName = 'q2'
+    case (EL_EN30_2D)
+      selName = 'q1t'
     case default
       selName = elem_getName(celement)
     end select

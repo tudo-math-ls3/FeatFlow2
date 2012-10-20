@@ -34,8 +34,9 @@ cAsmMatrix = 2
 cAsmType = 0
 
 # Specifies the finite element to be used for matrix assembly
-# EL_Q1: Q1 element
-# EL_Q2: Q2 element
+# EL_Q1      : Q1 element
+# EL_Q2      : Q2 element
+# EL_EN30_2D : Q1~ element
 sElement = EL_Q1
 
 # Cubature rule to be used for matrix assembly
