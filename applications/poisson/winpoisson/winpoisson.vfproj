@@ -54,6 +54,7 @@
 		<File RelativePath="..\src\poisson2d_method0_block.f90"/>
 		<File RelativePath="..\src\poisson2d_method0_cmsort.f90"/>
 		<File RelativePath="..\src\poisson2d_method0_neumann.f90"/>
+		<File RelativePath="..\src\poisson2d_method0_ravthomas.f90"/>
 		<File RelativePath="..\src\poisson2d_method0_simple.f90">
 			<FileConfiguration Name="Debug|Win32">
 				<Tool Name="VFFortranCompilerTool" Preprocess="preprocessYes" PreprocessorDefinitions=""/></FileConfiguration></File>

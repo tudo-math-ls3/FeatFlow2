@@ -33,6 +33,7 @@ program poisson
   use poisson2d_method0_simple
   use poisson2d_method0_neumann
   use poisson2d_method0_block
+  use poisson2d_method0_ravthomas
   use poisson2d_method0_smart
   use poisson2d_method0_cmsort
   use poisson2d_method1_mg
@@ -120,6 +121,12 @@ program poisson
   call output_line ("Calculating Poisson-2D-Problem with method 0 - block")
   call output_line ("-----------------------------------------------------")
   call poisson2d_0_block
+
+  ! Call the problem to solve. Poisson 2D method 0 - Raviart-Thomas variant:
+  call output_lbrk ()
+  call output_line ("Calculating Poisson-2D-Problem with method 0 - RavThomas")
+  call output_line ("--------------------------------------------------------")
+  call poisson2d_0_ravthomas
 
   ! Call the problem to solve. Poisson 2D method 1 - nonconstant coefficients:
   call output_lbrk ()
