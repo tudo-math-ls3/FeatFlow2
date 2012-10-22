@@ -1712,169 +1712,175 @@ contains
   !
   ! We apply a nonparametric approach here...
   
-  ! Local variables
-  real(DP), dimension(3,3) :: Da,Dcoeff
-  real(DP) :: dlen1,dlen2,dlen3
-  real(DP) :: dx1,dy1,dx2,dy2,dx3,dy3, dx,dy
-  real(DP) :: dnx1,dny1,dnx2,dny2,dnx3,dny3
-  real(DP) :: dmx1,dmy1,dmx2,dmy2,dmx3,dmy3
-  real(DP) :: da1,da2,da3,db1,db2,db3,dc1,dc2,dc3
-  integer :: itwist,i,iel
-  real(DP) :: dtwist1,dtwist2,dtwist3
-  logical :: bsuccess
+    ! Local variables
+    real(DP), dimension(3,3) :: Da,Dcoeff
+    real(DP) :: dlen1,dlen2,dlen3
+    real(DP) :: dx1,dy1,dx2,dy2,dx3,dy3, dx,dy
+    real(DP) :: dnx1,dny1,dnx2,dny2,dnx3,dny3
+    real(DP) :: dmx1,dmy1,dmx2,dmy2,dmx3,dmy3
+    real(DP) :: da1,da2,da3,db1,db2,db3,dc1,dc2,dc3
+    integer :: itwist,i,iel
+    real(DP) :: dtwist1,dtwist2,dtwist3
+    logical :: bsuccess
 
-    ! Calculate function values?
-    if(Bder(DER_FUNC2D)) then
+    ! Loop through all elements
+    !$omp parallel do default(shared) private(i,dxi1,dxi2,itwist,dtwist1,dtwist2,dtwist3)&
+    !$omp if(reval%nelements > reval%p_rperfconfig%NELEMMIN_OMP)
+    do iel = 1, reval%nelements
 
-      ! If function values are desired, calculate them.
+      ! Get the twist indices that define the orientation of our edges.
+      ! A value of 1 is standard, a value of -1 results in a change of the
+      ! sign in the basis functions.
+      ! itwistIndex is a bitfield. Each bit specifies the orientation of an edge.
+      ! We use the bit to calculate a "1.0" if the edge has positive orientation
+      ! and "-1.0" if it has negative orientation.
+      itwist = reval%p_ItwistIndex(iel)
+      dtwist1 = real(1-iand(int(ishft(itwist, 1)),2),DP)
+      dtwist2 = real(1-iand(int(ishft(itwist, 0)),2),DP)
+      dtwist3 = real(1-iand(int(ishft(itwist,-1)),2),DP)
 
-      ! Loop through all elements
-      !$omp parallel do default(shared) private(i,dxi1,dxi2,itwist,dtwist1,dtwist2,dtwist3)&
-      !$omp if(reval%nelements > reval%p_rperfconfig%NELEMMIN_OMP)
-      do iel = 1, reval%nelements
+      ! Calculate the three normal vectors...
+      !
+      ! Element corners
+      dx1 = reval%p_Dcoords(1,1,iel)
+      dy1 = reval%p_Dcoords(2,1,iel)
+      dx2 = reval%p_Dcoords(1,2,iel)
+      dy2 = reval%p_Dcoords(2,2,iel)
+      dx3 = reval%p_Dcoords(1,3,iel)
+      dy3 = reval%p_Dcoords(2,3,iel)
+      
+      ! Inverse of the edge length
+      dlen1 = 1.0_DP/sqrt( (dx2-dx1)**2 + (dy2-dy1)**2 )
+      dlen2 = 1.0_DP/sqrt( (dx3-dx2)**2 + (dy3-dy2)**2 )
+      dlen3 = 1.0_DP/sqrt( (dx1-dx3)**2 + (dy1-dy3)**2 )
+      
+      ! Calculate the normal vectors to the edges from the corners.
+      ! The tangential vectors of the edges are
+      !
+      !    t1 = (x2-x1) / ||x2-x1||
+      !    t2 = (x3-x2) / ||x3-x2||
+      !    t3 = (x1-x3) / ||x1-x3||
+      !
+      ! The corresponding normals are calculated from
+      !
+      !    ni = ( ti2, -ti1 )
+      !
+      dnx1 = (dy2-dy1)  *dlen1*dtwist1
+      dny1 = -(dx2-dx1) *dlen1*dtwist1
 
-        ! Get the twist indices that define the orientation of our edges.
-        ! A value of 1 is standard, a value of -1 results in a change of the
-        ! sign in the basis functions.
-        ! itwistIndex is a bitfield. Each bit specifies the orientation of an edge.
-        ! We use the bit to calculate a "1.0" if the edge has positive orientation
-        ! and "-1.0" if it has negative orientation.
-        itwist = reval%p_ItwistIndex(iel)
-        dtwist1 = real(1-iand(int(ishft(itwist, 1)),2),DP)
-        dtwist2 = real(1-iand(int(ishft(itwist, 0)),2),DP)
-        dtwist3 = real(1-iand(int(ishft(itwist,-1)),2),DP)
+      dnx2 = (dy3-dy2)  *dlen2*dtwist2
+      dny2 = -(dx3-dx2) *dlen2*dtwist2
 
-        ! Calculate the three normal vectors...
+      dnx3 = (dy1-dy3)  *dlen3*dtwist3
+      dny3 = -(dx1-dx3) *dlen3*dtwist3
+      
+      ! Midpoints of the edges
+      dmx1 = 0.5_DP*(dx1+dx2)
+      dmx2 = 0.5_DP*(dx2+dx3)
+      dmx3 = 0.5_DP*(dx3+dx1)
+
+      dmy1 = 0.5_DP*(dy1+dy2)
+      dmy2 = 0.5_DP*(dy2+dy3)
+      dmy3 = 0.5_DP*(dy3+dy1)
+      
+      ! Set up a transformation matrix to calculate the a,b and c.
+      !
+      ! The conditions to be solved for one basis function read:
+      !
+      !   < v,ni > = di
+      !
+      ! or more exactly
+      !
+      !   n1x (a+cx)  +  n1y (b+cy)  =  d1
+      !   n2x (a+cx)  +  n2y (b+cy)  =  d2
+      !   n3x (a+cx)  +  n3y (b+cy)  =  d3
+      !
+      ! or equivalently
+      !
+      !  ( n1x  n1y  (n1x x + n1y y) )  ( a )  =  ( d1 )
+      !  ( n2x  n2y  (n2x x + n2y y) )  ( b )     ( d2 )
+      !  ( n3x  n3y  (n3x x + n3y y) )  ( c )     ( d3 )
+      !
+      ! Set up this matrix. For (x,y), insert the midpoint of the edge
+      ! corresponding to the normal.
+      
+      Da(1,1) = dnx1
+      Da(2,1) = dnx2
+      Da(3,1) = dnx3
+
+      Da(1,2) = dny1
+      Da(2,2) = dny2
+      Da(3,2) = dny3
+
+      Da(1,3) = dnx1*dmx1 + dny1*dmy1
+      Da(2,3) = dnx2*dmx2 + dny2*dmy2
+      Da(3,3) = dnx3*dmx3 + dny3*dmy3
+      
+      ! Taking the inverse will give us all a,b and c of
+      ! the three basis functions:
+      !
+      !  ( n1x  n1y  (n1x x + n1y y) )  ( a1  a2  a3 )  =  ( 1  0  0 )
+      !  ( n2x  n2y  (n2x x + n2y y) )  ( b1  b2  b3 )     ( 0  1  0 )
+      !  ( n3x  n3y  (n3x x + n3y y) )  ( c1  c2  c3 )     ( 0  0  1 )
+      !
+      !                                 --------------
+      !                                 Inverse of the matrix
+      call mprim_invert3x3MatrixDirectDble(Da,Dcoeff,bsuccess)
+      
+      da1 = Dcoeff(1,1)
+      db1 = Dcoeff(2,1)
+      dc1 = Dcoeff(3,1)
+
+      da2 = Dcoeff(1,2)
+      db2 = Dcoeff(2,2)
+      dc2 = Dcoeff(3,2)
+
+      da3 = Dcoeff(1,3)
+      db3 = Dcoeff(2,3)
+      dc3 = Dcoeff(3,3)
+
+      ! Loop through all points on the current element
+      do i = 1, reval%npointsPerElement
+
+        ! Get the point coordinates
+        dx = reval%p_DpointsReal(1,i,iel)
+        dy = reval%p_DpointsReal(2,i,iel)
+
+        ! Evaluate basis functions.
         !
-        ! Element corners
-        dx1 = reval%p_Dcoords(1,1,iel)
-        dy1 = reval%p_Dcoords(2,1,iel)
-        dx2 = reval%p_Dcoords(1,2,iel)
-        dy2 = reval%p_Dcoords(2,2,iel)
-        dx3 = reval%p_Dcoords(1,3,iel)
-        dy3 = reval%p_Dcoords(2,3,iel)
+        !   v = ( a + c*x )
+        !       ( b + c*y )
+        Dbas(1,DER_FUNC2D,i,iel) = da1 + dc1*dx
+        Dbas(2,DER_FUNC2D,i,iel) = da2 + dc2*dx
+        Dbas(3,DER_FUNC2D,i,iel) = da3 + dc3*dx
+
+        Dbas(4,DER_FUNC2D,i,iel) = db1 + dc1*dy
+        Dbas(5,DER_FUNC2D,i,iel) = db2 + dc2*dy
+        Dbas(6,DER_FUNC2D,i,iel) = db3 + dc3*dy
         
-        ! Inverse of the edge length
-        dlen1 = 1.0_DP/sqrt( (dx2-dx1)**2 + (dy2-dy1)**2 )
-        dlen2 = 1.0_DP/sqrt( (dx3-dx2)**2 + (dy3-dy2)**2 )
-        dlen3 = 1.0_DP/sqrt( (dx1-dx3)**2 + (dy1-dy3)**2 )
-        
-        ! Calculate the normal vectors to the edges from the corners.
-        ! The tangential vectors of the edges are
-        !
-        !    t1 = (x2-x1) / ||x2-x1||
-        !    t2 = (x3-x2) / ||x3-x2||
-        !    t3 = (x1-x3) / ||x1-x3||
-        !
-        ! The corresponding normals are calculated from
-        !
-        !    ni = ( ti2, -ti1 )
-        !
-        dnx1 = (dy2-dy1)  *dlen1*dtwist1
-        dny1 = -(dx2-dx1) *dlen1*dtwist1
+        ! 1st derivative is also directly available and
+        ! costs no additional time to be computed.
+        Dbas(1,DER_DERIV2D_X,i,iel) = dc1
+        Dbas(2,DER_DERIV2D_X,i,iel) = dc2
+        Dbas(3,DER_DERIV2D_X,i,iel) = dc3
 
-        dnx2 = (dy3-dy2)  *dlen2*dtwist2
-        dny2 = -(dx3-dx2) *dlen2*dtwist2
+        Dbas(4,DER_DERIV2D_X,i,iel) = 0.0_DP
+        Dbas(5,DER_DERIV2D_X,i,iel) = 0.0_DP
+        Dbas(6,DER_DERIV2D_X,i,iel) = 0.0_DP
 
-        dnx3 = (dy1-dy3)  *dlen3*dtwist3
-        dny3 = -(dx1-dx3) *dlen3*dtwist3
-        
-        ! Midpoints of the edges
-        dmx1 = 0.5_DP*(dx1+dx2)
-        dmx2 = 0.5_DP*(dx2+dx3)
-        dmx3 = 0.5_DP*(dx3+dx1)
+        Dbas(1,DER_DERIV2D_Y,i,iel) = 0.0_DP
+        Dbas(2,DER_DERIV2D_Y,i,iel) = 0.0_DP
+        Dbas(3,DER_DERIV2D_Y,i,iel) = 0.0_DP
 
-        dmy1 = 0.5_DP*(dy1+dy2)
-        dmy2 = 0.5_DP*(dy2+dy3)
-        dmy3 = 0.5_DP*(dy3+dy1)
-        
-        ! Set up a transformation matrix to calculate the a,b and c.
-        !
-        ! The conditions to be solved for one basis function read:
-        !
-        !   < v,ni > = di
-        !
-        ! or more exactly
-        !
-        !   n1x (a+cx)  +  n1y (b+cy)  =  d1
-        !   n2x (a+cx)  +  n2y (b+cy)  =  d2
-        !   n3x (a+cx)  +  n3y (b+cy)  =  d3
-        !
-        ! or equivalently
-        !
-        !  ( n1x  n1y  (n1x x + n1y y) )  ( a )  =  ( d1 )
-        !  ( n2x  n2y  (n2x x + n2y y) )  ( b )     ( d2 )
-        !  ( n3x  n3y  (n3x x + n3y y) )  ( c )     ( d3 )
-        !
-        ! Set up this matrix. For (x,y), insert the midpoint of the edge
-        ! corresponding to the normal.
-        
-        Da(1,1) = dnx1
-        Da(2,1) = dnx2
-        Da(3,1) = dnx3
+        Dbas(4,DER_DERIV2D_Y,i,iel) = dc1
+        Dbas(5,DER_DERIV2D_Y,i,iel) = dc2
+        Dbas(6,DER_DERIV2D_Y,i,iel) = dc3
 
-        Da(1,2) = dny1
-        Da(2,2) = dny2
-        Da(3,2) = dny3
+      end do ! i
 
-        Da(1,3) = dnx1*dmx1 + dny1*dmy1
-        Da(2,3) = dnx2*dmx2 + dny2*dmy2
-        Da(3,3) = dnx3*dmx3 + dny3*dmy3
-        
-        ! Taking the inverse will give us all a,b and c of
-        ! the three basis functions:
-        !
-        !  ( n1x  n1y  (n1x x + n1y y) )  ( a1  a2  a3 )  =  ( 1  0  0 )
-        !  ( n2x  n2y  (n2x x + n2y y) )  ( b1  b2  b3 )     ( 0  1  0 )
-        !  ( n3x  n3y  (n3x x + n3y y) )  ( c1  c2  c3 )     ( 0  0  1 )
-        !
-        !                                 --------------
-        !                                 Inverse of the matrix
-        call mprim_invert3x3MatrixDirectDble(Da,Dcoeff,bsuccess)
-        
-        da1 = Dcoeff(1,1)
-        db1 = Dcoeff(2,1)
-        dc1 = Dcoeff(3,1)
-
-        da2 = Dcoeff(1,2)
-        db2 = Dcoeff(2,2)
-        dc2 = Dcoeff(3,2)
-
-        da3 = Dcoeff(1,3)
-        db3 = Dcoeff(2,3)
-        dc3 = Dcoeff(3,3)
-
-        ! Loop through all points on the current element
-        do i = 1, reval%npointsPerElement
-
-          ! Get the point coordinates
-          dx = reval%p_DpointsReal(1,i,iel)
-          dy = reval%p_DpointsReal(2,i,iel)
-
-          ! Evaluate basis functions.
-          !
-          !   v = ( a + c*x )
-          !       ( b + c*y )
-          Dbas(1,DER_FUNC2D,i,iel) = da1 + dc1*dx
-          Dbas(2,DER_FUNC2D,i,iel) = da2 + dc2*dx
-          Dbas(3,DER_FUNC2D,i,iel) = da3 + dc3*dx
-
-          Dbas(4,DER_FUNC2D,i,iel) = db1 + dc1*dy
-          Dbas(5,DER_FUNC2D,i,iel) = db2 + dc2*dy
-          Dbas(6,DER_FUNC2D,i,iel) = db3 + dc3*dy
-
-        end do ! i
-
-      end do ! j
-      !$omp end parallel do
+    end do ! iel
+    !$omp end parallel do
      
-    end if
-
-    if ((Bder(DER_DERIV_X)) .or. (Bder(DER_DERIV_Y))) then
-      ! Not yet supported
-      Dbas(:,DER_DERIV2D_X:,:,:) = 0.0_DP
-    end if
-  
   ! From these three DOFs, one can extract the three coefficients
   ! a,b,c that define the polynoms of the x- and y-velocity as
   ! follows. One takes into account that the d_i are constant

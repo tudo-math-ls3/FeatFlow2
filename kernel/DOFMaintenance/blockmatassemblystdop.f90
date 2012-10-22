@@ -268,7 +268,7 @@ contains
     real(DP), dimension(:,:), pointer :: p_DcubWeight
     type(t_bmaMatrixData), pointer :: p_rmatrixData
 
-    integer :: ix, iy
+    integer :: ix, iy, ndimfe, idimfe
     real(DP) :: dscale
 
     ! Get parameters
@@ -300,6 +300,16 @@ contains
     p_rmatrixData => RmatrixData(iy,ix)
     p_DbasTrial => RmatrixData(iy,ix)%p_DbasTrial
     p_DbasTest => RmatrixData(iy,ix)%p_DbasTest
+    
+    ! FE space dimension
+    ndimfe = RmatrixData(iy,ix)%ndimfeTrial
+    
+    if (ndimfe .ne. RmatrixData(iy,ix)%ndimfeTest) then
+      ! This does not make sense.
+      call output_line ("Dimension of trial and test FE space different.",&
+          OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_mass")
+      call sys_halt()
+    end if
 
     ! Interleaved matrix?
     if (.not. p_rmatrixData%bisInterleaved) then
@@ -307,41 +317,100 @@ contains
       ! Get the matrix data      
       p_DlocalMatrix => RmatrixData(iy,ix)%p_Dentry
 
-      ! Loop over the elements in the current set.
-      do iel = 1,nelements
+      if (ndimfe .eq. 1) then
 
-        ! Loop over all cubature points on the current element
-        do icubp = 1,npointsPerElement
+        ! -----------------------
+        ! Scalar-valued FE space. 
+        ! -----------------------
+        ! This IF command prevents an inner IF command and speeds 
+        ! up the computation for all scalar standard FE spaces.
+      
+        ! Loop over the elements in the current set.
+        do iel = 1,nelements
 
-          ! Outer loop over the DOF's i=1..ndof on our current element,
-          ! which corresponds to the (test) basis functions Phi_i:
-          do idofe=1,p_rmatrixData%ndofTest
+          ! Loop over all cubature points on the current element
+          do icubp = 1,npointsPerElement
 
-            ! Fetch the contributions of the (test) basis functions Phi_i
-            ! into dbasI
-            dbasI = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+            ! Outer loop over the DOF's i=1..ndof on our current element,
+            ! which corresponds to the (test) basis functions Phi_i:
+            do idofe=1,p_rmatrixData%ndofTest
 
-            ! Inner loop over the DOF's j=1..ndof, which corresponds to
-            ! the basis function Phi_j:
-            do jdofe=1,p_rmatrixData%ndofTrial
+              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! into dbasI
+              dbasI = p_DbasTest(idofe,DER_FUNC,icubp,iel)
 
-              ! Fetch the contributions of the (trial) basis function Phi_j
-              ! into dbasJ
-              dbasJ = p_DbasTrial(jdofe,DER_FUNC,icubp,iel)
+              ! Inner loop over the DOF's j=1..ndof, which corresponds to
+              ! the basis function Phi_j:
+              do jdofe=1,p_rmatrixData%ndofTrial
 
-              ! Multiply the values of the basis functions
-              ! (1st derivatives) by the cubature weight and sum up
-              ! into the local matrices.
-              p_DlocalMatrix(jdofe,idofe,iel) = p_DlocalMatrix(jdofe,idofe,iel) + &
-                  dscale * p_DcubWeight(icubp,iel) * dbasJ*dbasI
+                ! Fetch the contributions of the (trial) basis function Phi_j
+                ! into dbasJ
+                dbasJ = p_DbasTrial(jdofe,DER_FUNC,icubp,iel)
+
+                ! Multiply the values of the basis functions
+                ! (1st derivatives) by the cubature weight and sum up
+                ! into the local matrices.
+                p_DlocalMatrix(jdofe,idofe,iel) = p_DlocalMatrix(jdofe,idofe,iel) + &
+                    dscale * p_DcubWeight(icubp,iel) * dbasJ*dbasI
+
+              end do ! jdofe
 
             end do ! idofe
 
-          end do ! jdofe
+          end do ! icubp
 
-        end do ! icubp
+        end do ! iel
+        
+      else
+      
+        ! -----------------------
+        ! Vector-valued FE space.
+        ! -----------------------
+        ! This implementation works for all types of finite elements, but it
+        ! is slightly slower for scalar FE spaces due to an additional inner loop.
 
-      end do ! iel
+        ! Loop over the elements in the current set.
+        do iel = 1,nelements
+
+          ! Loop over all cubature points on the current element
+          do icubp = 1,npointsPerElement
+
+            ! Loop over the dimensions of the FE space
+            do idimfe = 0,ndimfe-1
+
+              ! Outer loop over the DOF's i=1..ndof on our current element,
+              ! which corresponds to the (test) basis functions Phi_i:
+              do idofe=1,p_rmatrixData%ndofTest
+
+                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! into dbasI
+                dbasI = p_DbasTest(idofe+idimfe*p_rmatrixData%ndofTest,DER_FUNC,icubp,iel)
+
+                ! Inner loop over the DOF's j=1..ndof, which corresponds to
+                ! the basis function Phi_j:
+                do jdofe=1,p_rmatrixData%ndofTrial
+
+                  ! Fetch the contributions of the (trial) basis function Phi_j
+                  ! into dbasJ
+                  dbasJ = p_DbasTrial(jdofe+idimfe*p_rmatrixData%ndofTrial,DER_FUNC,icubp,iel)
+
+                  ! Multiply the values of the basis functions
+                  ! (1st derivatives) by the cubature weight and sum up
+                  ! into the local matrices.
+                  p_DlocalMatrix(jdofe,idofe,iel) = p_DlocalMatrix(jdofe,idofe,iel) + &
+                      dscale * p_DcubWeight(icubp,iel) * dbasJ*dbasI
+
+                end do ! jdofe
+
+              end do ! idofe
+              
+            end do ! idimfe
+
+          end do ! icubp
+
+        end do ! iel
+        
+      end if ! ndimfe = 1
 
     else
 
@@ -351,46 +420,110 @@ contains
       ! Interleave-data
       nvar = RmatrixData(iy,ix)%nvar
 
-      ! Loop over the elements in the current set.
-      do iel = 1,nelements
+      if (ndimfe .eq. 1) then
+        
+        ! -----------------------
+        ! Scalar-valued FE space. 
+        ! -----------------------
+        ! This IF command prevents an inner IF command and speeds 
+        ! up the computation for all scalar standard FE spaces.
 
-        ! Loop over all cubature points on the current element
-        do icubp = 1,npointsPerElement
+        ! Loop over the elements in the current set.
+        do iel = 1,nelements
 
-          ! Outer loop over the DOF's i=1..ndof on our current element,
-          ! which corresponds to the (test) basis functions Phi_i:
-          do idofe=1,p_rmatrixData%ndofTest
+          ! Loop over all cubature points on the current element
+          do icubp = 1,npointsPerElement
 
-            ! Fetch the contributions of the (test) basis functions Phi_i
-            ! into dbasI
-            dbasI = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+            ! Outer loop over the DOF's i=1..ndof on our current element,
+            ! which corresponds to the (test) basis functions Phi_i:
+            do idofe=1,p_rmatrixData%ndofTest
 
-            ! Inner loop over the DOF's j=1..ndof, which corresponds to
-            ! the basis function Phi_j:
-            do jdofe=1,p_rmatrixData%ndofTrial
+              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! into dbasI
+              dbasI = p_DbasTest(idofe,DER_FUNC,icubp,iel)
 
-              ! Fetch the contributions of the (trial) basis function Phi_j
-              ! into dbasJ
-              dbasJ = p_DbasTrial(jdofe,DER_FUNC,icubp,iel)
+              ! Inner loop over the DOF's j=1..ndof, which corresponds to
+              ! the basis function Phi_j:
+              do jdofe=1,p_rmatrixData%ndofTrial
 
-              do ivar = 1,nvar
+                ! Fetch the contributions of the (trial) basis function Phi_j
+                ! into dbasJ
+                dbasJ = p_DbasTrial(jdofe,DER_FUNC,icubp,iel)
 
-                ! Multiply the values of the basis functions
-                ! (1st derivatives) by the cubature weight and sum up
-                ! into the local matrices.
-                p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) = &
-                    p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) + &
-                        dscale * p_DcubWeight(icubp,iel) * dbasJ*dbasI
+                do ivar = 1,nvar
 
-              end do ! ivar
+                  ! Multiply the values of the basis functions
+                  ! (1st derivatives) by the cubature weight and sum up
+                  ! into the local matrices.
+                  p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) = &
+                      p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) + &
+                          dscale * p_DcubWeight(icubp,iel) * dbasJ*dbasI
+
+                end do ! ivar
+
+              end do ! jdofe
 
             end do ! idofe
 
-          end do ! jdofe
+          end do ! icubp
 
-        end do ! icubp
+        end do ! iel
+        
+      else
 
-      end do ! iel
+        ! -----------------------
+        ! Vector-valued FE space.
+        ! -----------------------
+        ! This implementation works for all types of finite elements, but it
+        ! is slightly slower for scalar FE spaces due to an additional inner loop.
+
+        ! Loop over the elements in the current set.
+        do iel = 1,nelements
+
+          ! Loop over all cubature points on the current element
+          do icubp = 1,npointsPerElement
+
+            ! Loop over the dimensions of the FE space
+            do idimfe = 0,ndimfe-1
+
+              ! Outer loop over the DOF's i=1..ndof on our current element,
+              ! which corresponds to the (test) basis functions Phi_i:
+              do idofe=1,p_rmatrixData%ndofTest
+
+                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! into dbasI
+                dbasI = p_DbasTest(idofe+idimfe*p_rmatrixData%ndofTest,DER_FUNC,icubp,iel)
+
+                ! Inner loop over the DOF's j=1..ndof, which corresponds to
+                ! the basis function Phi_j:
+                do jdofe=1,p_rmatrixData%ndofTrial
+
+                  ! Fetch the contributions of the (trial) basis function Phi_j
+                  ! into dbasJ
+                  dbasJ = p_DbasTrial(jdofe+idimfe*p_rmatrixData%ndofTrial,DER_FUNC,icubp,iel)
+
+                  do ivar = 1,nvar
+
+                    ! Multiply the values of the basis functions
+                    ! (1st derivatives) by the cubature weight and sum up
+                    ! into the local matrices.
+                    p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) = &
+                        p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) + &
+                            dscale * p_DcubWeight(icubp,iel) * dbasJ*dbasI
+
+                  end do ! ivar
+
+                end do ! jdofe
+
+              end do ! idofe
+              
+            end do ! idimfe
+
+          end do ! icubp
+
+        end do ! iel
+
+      end if
 
     end if
 
@@ -537,7 +670,7 @@ contains
     real(DP), dimension(:,:), pointer :: p_DcubWeight
     type(t_bmaMatrixData), pointer :: p_rmatrixData
 
-    integer :: ix,iy
+    integer :: ix, iy, ndimfe, idimfe
     real(DP) :: dscale
 
     ! Get parameters
@@ -570,143 +703,342 @@ contains
     p_DbasTrial => RmatrixData(iy,ix)%p_DbasTrial
     p_DbasTest => RmatrixData(iy,ix)%p_DbasTest
 
+    ! FE space dimension
+    ndimfe = RmatrixData(iy,ix)%ndimfeTrial
+    
+    if (ndimfe .ne. RmatrixData(iy,ix)%ndimfeTest) then
+      ! This does not make sense.
+      call output_line ("Dimension of trial and test FE space different.",&
+          OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_laplace")
+      call sys_halt()
+    end if
+
     ! Interleaved matrix?
     if (.not. p_rmatrixData%bisInterleaved) then
 
       ! Get the matrix data
       p_DlocalMatrix => RmatrixData(iy,ix)%p_Dentry
 
-      ! What's the dimension?
-      select case (rmatrixAssembly%p_rtriangulation%ndim)
+      if (ndimfe .eq. 1) then
 
-      case (NDIM1D)
+        ! -----------------------
+        ! Scalar-valued FE space. 
+        ! -----------------------
+        ! This IF command prevents an inner IF command and speeds 
+        ! up the computation for all scalar standard FE spaces.
 
-        ! 1D Laplace matrix
+        ! What's the dimension?
+        select case (rmatrixAssembly%p_rtriangulation%ndim)
 
-        ! Loop over the elements in the current set.
-        do iel = 1,nelements
+        case (NDIM1D)
 
-          ! Loop over all cubature points on the current element
-          do icubp = 1,npointsPerElement
+          ! *****************
+          ! 1D Laplace matrix
+          ! *****************
 
-            ! Outer loop over the DOF's i=1..ndof on our current element,
-            ! which corresponds to the (test) basis functions Phi_i:
-            do idofe=1,p_rmatrixData%ndofTest
+          ! Loop over the elements in the current set.
+          do iel = 1,nelements
 
-              ! Fetch the contributions of the (test) basis functions Phi_i
-              ! into dbasI
-              dbasIx = p_DbasTest(idofe,DER_DERIV1D_X,icubp,iel)
+            ! Loop over all cubature points on the current element
+            do icubp = 1,npointsPerElement
 
-              ! Inner loop over the DOF's j=1..ndof, which corresponds to
-              ! the basis function Phi_j:
-              do jdofe=1,p_rmatrixData%ndofTrial
+              ! Outer loop over the DOF's i=1..ndof on our current element,
+              ! which corresponds to the (test) basis functions Phi_i:
+              do idofe=1,p_rmatrixData%ndofTest
 
-                ! Fetch the contributions of the (trial) basis function Phi_j
-                ! into dbasJ
-                dbasJx = p_DbasTrial(jdofe,DER_DERIV1D_X,icubp,iel)
+                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! into dbasI
+                dbasIx = p_DbasTest(idofe,DER_DERIV1D_X,icubp,iel)
 
-                ! Multiply the values of the basis functions
-                ! (1st derivatives) by the cubature weight and sum up
-                ! into the local matrices.
-                p_DlocalMatrix(jdofe,idofe,iel) = p_DlocalMatrix(jdofe,idofe,iel) + &
-                    dscale * p_DcubWeight(icubp,iel) * dbasJx*dbasIx
+                ! Inner loop over the DOF's j=1..ndof, which corresponds to
+                ! the basis function Phi_j:
+                do jdofe=1,p_rmatrixData%ndofTrial
 
-              end do ! idofe
+                  ! Fetch the contributions of the (trial) basis function Phi_j
+                  ! into dbasJ
+                  dbasJx = p_DbasTrial(jdofe,DER_DERIV1D_X,icubp,iel)
 
-            end do ! jdofe
+                  ! Multiply the values of the basis functions
+                  ! (1st derivatives) by the cubature weight and sum up
+                  ! into the local matrices.
+                  p_DlocalMatrix(jdofe,idofe,iel) = p_DlocalMatrix(jdofe,idofe,iel) + &
+                      dscale * p_DcubWeight(icubp,iel) * dbasJx*dbasIx
 
-          end do ! icubp
-
-        end do ! iel
-
-      case (NDIM2D)
-
-        ! 2D Laplace matrix
-
-        ! Loop over the elements in the current set.
-        do iel = 1,nelements
-
-          ! Loop over all cubature points on the current element
-          do icubp = 1,npointsPerElement
-
-            ! Outer loop over the DOF's i=1..ndof on our current element,
-            ! which corresponds to the (test) basis functions Phi_i:
-            do idofe=1,p_rmatrixData%ndofTest
-
-              ! Fetch the contributions of the (test) basis functions Phi_i
-              ! into dbasI
-              dbasIx = p_DbasTest(idofe,DER_DERIV2D_X,icubp,iel)
-              dbasIy = p_DbasTest(idofe,DER_DERIV2D_Y,icubp,iel)
-
-              ! Inner loop over the DOF's j=1..ndof, which corresponds to
-              ! the basis function Phi_j:
-              do jdofe=1,p_rmatrixData%ndofTrial
-
-                ! Fetch the contributions of the (trial) basis function Phi_j
-                ! into dbasJ
-                dbasJx = p_DbasTrial(jdofe,DER_DERIV2D_X,icubp,iel)
-                dbasJy = p_DbasTrial(jdofe,DER_DERIV2D_Y,icubp,iel)
-
-                ! Multiply the values of the basis functions
-                ! (1st derivatives) by the cubature weight and sum up
-                ! into the local matrices.
-                p_DlocalMatrix(jdofe,idofe,iel) = p_DlocalMatrix(jdofe,idofe,iel) + &
-                    dscale * p_DcubWeight(icubp,iel) * ( dbasJx*dbasIx + dbasJy*dbasIy )
+                end do ! jdofe
 
               end do ! idofe
 
-            end do ! jdofe
+            end do ! icubp
 
-          end do ! icubp
+          end do ! iel
 
-        end do ! iel
+        case (NDIM2D)
 
-      case (NDIM3D)
+          ! *****************
+          ! 2D Laplace matrix
+          ! *****************
 
-        ! 3D Laplace matrix
+          ! Loop over the elements in the current set.
+          do iel = 1,nelements
 
-        ! Loop over the elements in the current set.
-        do iel = 1,nelements
+            ! Loop over all cubature points on the current element
+            do icubp = 1,npointsPerElement
 
-          ! Loop over all cubature points on the current element
-          do icubp = 1,npointsPerElement
+              ! Outer loop over the DOF's i=1..ndof on our current element,
+              ! which corresponds to the (test) basis functions Phi_i:
+              do idofe=1,p_rmatrixData%ndofTest
 
-            ! Outer loop over the DOF's i=1..ndof on our current element,
-            ! which corresponds to the (test) basis functions Phi_i:
-            do idofe=1,p_rmatrixData%ndofTest
+                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! into dbasI
+                dbasIx = p_DbasTest(idofe,DER_DERIV2D_X,icubp,iel)
+                dbasIy = p_DbasTest(idofe,DER_DERIV2D_Y,icubp,iel)
 
-              ! Fetch the contributions of the (test) basis functions Phi_i
-              ! into dbasI
-              dbasIx = p_DbasTest(idofe,DER_DERIV3D_X,icubp,iel)
-              dbasIy = p_DbasTest(idofe,DER_DERIV3D_Y,icubp,iel)
-              dbasIz = p_DbasTest(idofe,DER_DERIV3D_Z,icubp,iel)
+                ! Inner loop over the DOF's j=1..ndof, which corresponds to
+                ! the basis function Phi_j:
+                do jdofe=1,p_rmatrixData%ndofTrial
 
-              ! Inner loop over the DOF's j=1..ndof, which corresponds to
-              ! the basis function Phi_j:
-              do jdofe=1,p_rmatrixData%ndofTrial
+                  ! Fetch the contributions of the (trial) basis function Phi_j
+                  ! into dbasJ
+                  dbasJx = p_DbasTrial(jdofe,DER_DERIV2D_X,icubp,iel)
+                  dbasJy = p_DbasTrial(jdofe,DER_DERIV2D_Y,icubp,iel)
 
-                ! Fetch the contributions of the (trial) basis function Phi_j
-                ! into dbasJ
-                dbasJx = p_DbasTrial(jdofe,DER_DERIV3D_X,icubp,iel)
-                dbasJy = p_DbasTrial(jdofe,DER_DERIV3D_Y,icubp,iel)
-                dbasJz = p_DbasTrial(jdofe,DER_DERIV3D_Z,icubp,iel)
+                  ! Multiply the values of the basis functions
+                  ! (1st derivatives) by the cubature weight and sum up
+                  ! into the local matrices.
+                  p_DlocalMatrix(jdofe,idofe,iel) = p_DlocalMatrix(jdofe,idofe,iel) + &
+                      dscale * p_DcubWeight(icubp,iel) * ( dbasJx*dbasIx + dbasJy*dbasIy )
 
-                ! Multiply the values of the basis functions
-                ! (1st derivatives) by the cubature weight and sum up
-                ! into the local matrices.
-                p_DlocalMatrix(jdofe,idofe,iel) = p_DlocalMatrix(jdofe,idofe,iel) + &
-                    dscale * p_DcubWeight(icubp,iel) * &
-                            ( dbasJx*dbasIx + dbasJy*dbasIy + dbasJz*dbasIz )
+                end do ! jdofe
 
               end do ! idofe
 
-            end do ! jdofe
+            end do ! icubp
 
-          end do ! icubp
+          end do ! iel
 
-        end do ! iel
+        case (NDIM3D)
 
-      end select
+          ! *****************
+          ! 3D Laplace matrix
+          ! *****************
+
+          ! Loop over the elements in the current set.
+          do iel = 1,nelements
+
+            ! Loop over all cubature points on the current element
+            do icubp = 1,npointsPerElement
+
+              ! Outer loop over the DOF's i=1..ndof on our current element,
+              ! which corresponds to the (test) basis functions Phi_i:
+              do idofe=1,p_rmatrixData%ndofTest
+
+                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! into dbasI
+                dbasIx = p_DbasTest(idofe,DER_DERIV3D_X,icubp,iel)
+                dbasIy = p_DbasTest(idofe,DER_DERIV3D_Y,icubp,iel)
+                dbasIz = p_DbasTest(idofe,DER_DERIV3D_Z,icubp,iel)
+
+                ! Inner loop over the DOF's j=1..ndof, which corresponds to
+                ! the basis function Phi_j:
+                do jdofe=1,p_rmatrixData%ndofTrial
+
+                  ! Fetch the contributions of the (trial) basis function Phi_j
+                  ! into dbasJ
+                  dbasJx = p_DbasTrial(jdofe,DER_DERIV3D_X,icubp,iel)
+                  dbasJy = p_DbasTrial(jdofe,DER_DERIV3D_Y,icubp,iel)
+                  dbasJz = p_DbasTrial(jdofe,DER_DERIV3D_Z,icubp,iel)
+
+                  ! Multiply the values of the basis functions
+                  ! (1st derivatives) by the cubature weight and sum up
+                  ! into the local matrices.
+                  p_DlocalMatrix(jdofe,idofe,iel) = p_DlocalMatrix(jdofe,idofe,iel) + &
+                      dscale * p_DcubWeight(icubp,iel) * &
+                              ( dbasJx*dbasIx + dbasJy*dbasIy + dbasJz*dbasIz )
+
+                end do ! jdofe
+
+              end do ! idofe
+
+            end do ! icubp
+
+          end do ! iel
+
+        end select
+        
+      else
+
+        ! -----------------------
+        ! Vector-valued FE space.
+        ! -----------------------
+        ! This implementation works for all types of finite elements, but it
+        ! is slightly slower for scalar FE spaces due to an additional inner loop.
+
+        ! What's the dimension?
+        select case (rmatrixAssembly%p_rtriangulation%ndim)
+
+        case (NDIM1D)
+
+          ! *****************
+          ! 1D Laplace matrix
+          ! *****************
+
+          ! Loop over the elements in the current set.
+          do iel = 1,nelements
+
+            ! Loop over all cubature points on the current element
+            do icubp = 1,npointsPerElement
+
+              ! Loop over the dimensions of the FE space
+              do idimfe = 0,ndimfe-1
+                
+                ! Outer loop over the DOF's i=1..ndof on our current element,
+                ! which corresponds to the (test) basis functions Phi_i:
+                do idofe=1,p_rmatrixData%ndofTest
+
+                  ! Fetch the contributions of the (test) basis functions Phi_i
+                  ! into dbasI
+                  dbasIx = p_DbasTest(&
+                      idofe+idimfe*p_rmatrixData%ndofTest,DER_DERIV1D_X,icubp,iel)
+
+                  ! Inner loop over the DOF's j=1..ndof, which corresponds to
+                  ! the basis function Phi_j:
+                  do jdofe=1,p_rmatrixData%ndofTrial
+
+                    ! Fetch the contributions of the (trial) basis function Phi_j
+                    ! into dbasJ
+                    dbasJx = p_DbasTrial(&
+                        jdofe+idimfe*p_rmatrixData%ndofTrial,DER_DERIV1D_X,icubp,iel)
+
+                    ! Multiply the values of the basis functions
+                    ! (1st derivatives) by the cubature weight and sum up
+                    ! into the local matrices.
+                    p_DlocalMatrix(jdofe,idofe,iel) = p_DlocalMatrix(jdofe,idofe,iel) + &
+                        dscale * p_DcubWeight(icubp,iel) * dbasJx*dbasIx
+
+                  end do ! jdofe
+
+                end do ! idofe
+                
+              end do ! idimfe
+
+            end do ! icubp
+
+          end do ! iel
+
+        case (NDIM2D)
+
+          ! *****************
+          ! 2D Laplace matrix
+          ! *****************
+
+          ! Loop over the elements in the current set.
+          do iel = 1,nelements
+
+            ! Loop over all cubature points on the current element
+            do icubp = 1,npointsPerElement
+
+              ! Loop over the dimensions of the FE space
+              do idimfe = 0,ndimfe-1
+              
+                ! Outer loop over the DOF's i=1..ndof on our current element,
+                ! which corresponds to the (test) basis functions Phi_i:
+                do idofe=1,p_rmatrixData%ndofTest
+
+                  ! Fetch the contributions of the (test) basis functions Phi_i
+                  ! into dbasI
+                  dbasIx = p_DbasTest(&
+                      idofe+idimfe*p_rmatrixData%ndofTest,DER_DERIV2D_X,icubp,iel)
+                  dbasIy = p_DbasTest(&
+                      idofe+idimfe*p_rmatrixData%ndofTest,DER_DERIV2D_Y,icubp,iel)
+
+                  ! Inner loop over the DOF's j=1..ndof, which corresponds to
+                  ! the basis function Phi_j:
+                  do jdofe=1,p_rmatrixData%ndofTrial
+
+                    ! Fetch the contributions of the (trial) basis function Phi_j
+                    ! into dbasJ
+                    dbasJx = p_DbasTrial(&
+                        jdofe+idimfe*p_rmatrixData%ndofTrial,DER_DERIV2D_X,icubp,iel)
+                    dbasJy = p_DbasTrial(&
+                        jdofe+idimfe*p_rmatrixData%ndofTrial,DER_DERIV2D_Y,icubp,iel)
+
+                    ! Multiply the values of the basis functions
+                    ! (1st derivatives) by the cubature weight and sum up
+                    ! into the local matrices.
+                    p_DlocalMatrix(jdofe,idofe,iel) = p_DlocalMatrix(jdofe,idofe,iel) + &
+                        dscale * p_DcubWeight(icubp,iel) * ( dbasJx*dbasIx + dbasJy*dbasIy )
+
+                  end do ! jdofe
+
+                end do ! idofe
+                
+              end do ! idimfe
+
+            end do ! icubp
+
+          end do ! iel
+
+        case (NDIM3D)
+
+          ! *****************
+          ! 3D Laplace matrix
+          ! *****************
+
+          ! Loop over the elements in the current set.
+          do iel = 1,nelements
+
+            ! Loop over all cubature points on the current element
+            do icubp = 1,npointsPerElement
+
+              ! Loop over the dimensions of the FE space
+              do idimfe = 0,ndimfe-1
+              
+                ! Outer loop over the DOF's i=1..ndof on our current element,
+                ! which corresponds to the (test) basis functions Phi_i:
+                do idofe=1,p_rmatrixData%ndofTest
+
+                  ! Fetch the contributions of the (test) basis functions Phi_i
+                  ! into dbasI
+                  dbasIx = p_DbasTest(&
+                      idofe+idimfe*p_rmatrixData%ndofTest,DER_DERIV3D_X,icubp,iel)
+                  dbasIy = p_DbasTest(&
+                      idofe+idimfe*p_rmatrixData%ndofTest,DER_DERIV3D_Y,icubp,iel)
+                  dbasIz = p_DbasTest(&
+                      idofe+idimfe*p_rmatrixData%ndofTest,DER_DERIV3D_Z,icubp,iel)
+
+                  ! Inner loop over the DOF's j=1..ndof, which corresponds to
+                  ! the basis function Phi_j:
+                  do jdofe=1,p_rmatrixData%ndofTrial
+
+                    ! Fetch the contributions of the (trial) basis function Phi_j
+                    ! into dbasJ
+                    dbasJx = p_DbasTrial(&
+                        jdofe+idimfe*p_rmatrixData%ndofTrial,DER_DERIV3D_X,icubp,iel)
+                    dbasJy = p_DbasTrial(&
+                        jdofe+idimfe*p_rmatrixData%ndofTrial,DER_DERIV3D_Y,icubp,iel)
+                    dbasJz = p_DbasTrial(&
+                        jdofe+idimfe*p_rmatrixData%ndofTrial,DER_DERIV3D_Z,icubp,iel)
+
+                    ! Multiply the values of the basis functions
+                    ! (1st derivatives) by the cubature weight and sum up
+                    ! into the local matrices.
+                    p_DlocalMatrix(jdofe,idofe,iel) = p_DlocalMatrix(jdofe,idofe,iel) + &
+                        dscale * p_DcubWeight(icubp,iel) * &
+                                ( dbasJx*dbasIx + dbasJy*dbasIy + dbasJz*dbasIz )
+
+                  end do ! jdofe
+
+                end do ! idofe
+                
+              end do ! idimfe
+
+            end do ! icubp
+
+          end do ! iel
+
+        end select
+
+      end if
 
     else
 
@@ -716,152 +1048,356 @@ contains
       ! Interleave-data
       nvar = RmatrixData(iy,ix)%nvar
 
-      ! What's the dimension?
-      select case (rmatrixAssembly%p_rtriangulation%ndim)
+      if (ndimfe .eq. 1) then
 
-      case (NDIM1D)
+        ! -----------------------
+        ! Scalar-valued FE space. 
+        ! -----------------------
+        ! This IF command prevents an inner IF command and speeds 
+        ! up the computation for all scalar standard FE spaces.
 
-        ! 1D Laplace matrix
+        ! What's the dimension?
+        select case (rmatrixAssembly%p_rtriangulation%ndim)
 
-        ! Loop over the elements in the current set.
-        do iel = 1,nelements
+        case (NDIM1D)
 
-          ! Loop over all cubature points on the current element
-          do icubp = 1,npointsPerElement
+          ! *****************
+          ! 1D Laplace matrix
+          ! *****************
 
-            ! Outer loop over the DOF's i=1..ndof on our current element,
-            ! which corresponds to the (test) basis functions Phi_i:
-            do idofe=1,p_rmatrixData%ndofTest
+          ! Loop over the elements in the current set.
+          do iel = 1,nelements
 
-              ! Fetch the contributions of the (test) basis functions Phi_i
-              ! into dbasI
-              dbasIx = p_DbasTest(idofe,DER_DERIV1D_X,icubp,iel)
+            ! Loop over all cubature points on the current element
+            do icubp = 1,npointsPerElement
 
-              ! Inner loop over the DOF's j=1..ndof, which corresponds to
-              ! the basis function Phi_j:
-              do jdofe=1,p_rmatrixData%ndofTrial
+              ! Outer loop over the DOF's i=1..ndof on our current element,
+              ! which corresponds to the (test) basis functions Phi_i:
+              do idofe=1,p_rmatrixData%ndofTest
 
-                ! Fetch the contributions of the (trial) basis function Phi_j
-                ! into dbasJ
-                dbasJx = p_DbasTrial(jdofe,DER_DERIV1D_X,icubp,iel)
+                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! into dbasI
+                dbasIx = p_DbasTest(idofe,DER_DERIV1D_X,icubp,iel)
 
-                do ivar = 1,nvar
+                ! Inner loop over the DOF's j=1..ndof, which corresponds to
+                ! the basis function Phi_j:
+                do jdofe=1,p_rmatrixData%ndofTrial
 
-                  ! Multiply the values of the basis functions
-                  ! (1st derivatives) by the cubature weight and sum up
-                  ! into the local matrices.
-                  p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) = &
-                      p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) + &
-                        dscale * p_DcubWeight(icubp,iel) * dbasJx*dbasIx
+                  ! Fetch the contributions of the (trial) basis function Phi_j
+                  ! into dbasJ
+                  dbasJx = p_DbasTrial(jdofe,DER_DERIV1D_X,icubp,iel)
 
-                end do ! ivar
+                  do ivar = 1,nvar
 
-              end do ! idofe
+                    ! Multiply the values of the basis functions
+                    ! (1st derivatives) by the cubature weight and sum up
+                    ! into the local matrices.
+                    p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) = &
+                        p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) + &
+                          dscale * p_DcubWeight(icubp,iel) * dbasJx*dbasIx
 
-            end do ! jdofe
+                  end do ! ivar
 
-          end do ! icubp
-
-        end do ! iel
-
-      case (NDIM2D)
-
-        ! 2D Laplace matrix
-
-        ! Loop over the elements in the current set.
-        do iel = 1,nelements
-
-          ! Loop over all cubature points on the current element
-          do icubp = 1,npointsPerElement
-
-            ! Outer loop over the DOF's i=1..ndof on our current element,
-            ! which corresponds to the (test) basis functions Phi_i:
-            do idofe=1,p_rmatrixData%ndofTest
-
-              ! Fetch the contributions of the (test) basis functions Phi_i
-              ! into dbasI
-              dbasIx = p_DbasTest(idofe,DER_DERIV2D_X,icubp,iel)
-              dbasIy = p_DbasTest(idofe,DER_DERIV2D_Y,icubp,iel)
-
-              ! Inner loop over the DOF's j=1..ndof, which corresponds to
-              ! the basis function Phi_j:
-              do jdofe=1,p_rmatrixData%ndofTrial
-
-                ! Fetch the contributions of the (trial) basis function Phi_j
-                ! into dbasJ
-                dbasJx = p_DbasTrial(jdofe,DER_DERIV2D_X,icubp,iel)
-                dbasJy = p_DbasTrial(jdofe,DER_DERIV2D_Y,icubp,iel)
-
-                do ivar = 1,nvar
-
-                  ! Multiply the values of the basis functions
-                  ! (1st derivatives) by the cubature weight and sum up
-                  ! into the local matrices.
-                  p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) = &
-                      p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) + &
-                          dscale * p_DcubWeight(icubp,iel) * ( dbasJx*dbasIx + dbasJy*dbasIy )
-
-                end do ! ivar
+                end do ! jdofe
 
               end do ! idofe
 
-            end do ! jdofe
+            end do ! icubp
 
-          end do ! icubp
+          end do ! iel
 
-        end do ! iel
+        case (NDIM2D)
 
-      case (NDIM3D)
+          ! *****************
+          ! 2D Laplace matrix
+          ! *****************
 
-        ! 3D Laplace matrix
+          ! Loop over the elements in the current set.
+          do iel = 1,nelements
 
-        ! Loop over the elements in the current set.
-        do iel = 1,nelements
+            ! Loop over all cubature points on the current element
+            do icubp = 1,npointsPerElement
 
-          ! Loop over all cubature points on the current element
-          do icubp = 1,npointsPerElement
+              ! Outer loop over the DOF's i=1..ndof on our current element,
+              ! which corresponds to the (test) basis functions Phi_i:
+              do idofe=1,p_rmatrixData%ndofTest
 
-            ! Outer loop over the DOF's i=1..ndof on our current element,
-            ! which corresponds to the (test) basis functions Phi_i:
-            do idofe=1,p_rmatrixData%ndofTest
+                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! into dbasI
+                dbasIx = p_DbasTest(idofe,DER_DERIV2D_X,icubp,iel)
+                dbasIy = p_DbasTest(idofe,DER_DERIV2D_Y,icubp,iel)
 
-              ! Fetch the contributions of the (test) basis functions Phi_i
-              ! into dbasI
-              dbasIx = p_DbasTest(idofe,DER_DERIV3D_X,icubp,iel)
-              dbasIy = p_DbasTest(idofe,DER_DERIV3D_Y,icubp,iel)
-              dbasIz = p_DbasTest(idofe,DER_DERIV3D_Z,icubp,iel)
+                ! Inner loop over the DOF's j=1..ndof, which corresponds to
+                ! the basis function Phi_j:
+                do jdofe=1,p_rmatrixData%ndofTrial
 
-              ! Inner loop over the DOF's j=1..ndof, which corresponds to
-              ! the basis function Phi_j:
-              do jdofe=1,p_rmatrixData%ndofTrial
+                  ! Fetch the contributions of the (trial) basis function Phi_j
+                  ! into dbasJ
+                  dbasJx = p_DbasTrial(jdofe,DER_DERIV2D_X,icubp,iel)
+                  dbasJy = p_DbasTrial(jdofe,DER_DERIV2D_Y,icubp,iel)
 
-                ! Fetch the contributions of the (trial) basis function Phi_j
-                ! into dbasJ
-                dbasJx = p_DbasTrial(jdofe,DER_DERIV3D_X,icubp,iel)
-                dbasJy = p_DbasTrial(jdofe,DER_DERIV3D_Y,icubp,iel)
-                dbasJz = p_DbasTrial(jdofe,DER_DERIV3D_Z,icubp,iel)
+                  do ivar = 1,nvar
 
-                do ivar = 1,nvar
+                    ! Multiply the values of the basis functions
+                    ! (1st derivatives) by the cubature weight and sum up
+                    ! into the local matrices.
+                    p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) = &
+                        p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) + &
+                            dscale * p_DcubWeight(icubp,iel) * ( dbasJx*dbasIx + dbasJy*dbasIy )
 
-                  ! Multiply the values of the basis functions
-                  ! (1st derivatives) by the cubature weight and sum up
-                  ! into the local matrices.
-                  p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) = &
-                      p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) + &
-                          dscale * p_DcubWeight(icubp,iel) * &
-                                  ( dbasJx*dbasIx + dbasJy*dbasIy + dbasJz*dbasIz )
+                  end do ! ivar
 
-                end do ! ivar
+                end do ! jdofe
 
               end do ! idofe
 
-            end do ! jdofe
+            end do ! icubp
 
-          end do ! icubp
+          end do ! iel
 
-        end do ! iel
+        case (NDIM3D)
 
-      end select
+          ! *****************
+          ! 3D Laplace matrix
+          ! *****************
+
+          ! Loop over the elements in the current set.
+          do iel = 1,nelements
+
+            ! Loop over all cubature points on the current element
+            do icubp = 1,npointsPerElement
+
+              ! Outer loop over the DOF's i=1..ndof on our current element,
+              ! which corresponds to the (test) basis functions Phi_i:
+              do idofe=1,p_rmatrixData%ndofTest
+
+                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! into dbasI
+                dbasIx = p_DbasTest(idofe,DER_DERIV3D_X,icubp,iel)
+                dbasIy = p_DbasTest(idofe,DER_DERIV3D_Y,icubp,iel)
+                dbasIz = p_DbasTest(idofe,DER_DERIV3D_Z,icubp,iel)
+
+                ! Inner loop over the DOF's j=1..ndof, which corresponds to
+                ! the basis function Phi_j:
+                do jdofe=1,p_rmatrixData%ndofTrial
+
+                  ! Fetch the contributions of the (trial) basis function Phi_j
+                  ! into dbasJ
+                  dbasJx = p_DbasTrial(jdofe,DER_DERIV3D_X,icubp,iel)
+                  dbasJy = p_DbasTrial(jdofe,DER_DERIV3D_Y,icubp,iel)
+                  dbasJz = p_DbasTrial(jdofe,DER_DERIV3D_Z,icubp,iel)
+
+                  do ivar = 1,nvar
+
+                    ! Multiply the values of the basis functions
+                    ! (1st derivatives) by the cubature weight and sum up
+                    ! into the local matrices.
+                    p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) = &
+                        p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) + &
+                            dscale * p_DcubWeight(icubp,iel) * &
+                                    ( dbasJx*dbasIx + dbasJy*dbasIy + dbasJz*dbasIz )
+
+                  end do ! ivar
+
+                end do ! jdofe
+
+              end do ! idofe
+
+            end do ! icubp
+
+          end do ! iel
+
+        end select
+
+      else
+      
+        ! -----------------------
+        ! Vector-valued FE space.
+        ! -----------------------
+        ! This implementation works for all types of finite elements, but it
+        ! is slightly slower for scalar FE spaces due to an additional inner loop.
+      
+        ! What's the dimension?
+        select case (rmatrixAssembly%p_rtriangulation%ndim)
+
+        case (NDIM1D)
+
+          ! *****************
+          ! 1D Laplace matrix
+          ! *****************
+
+          ! Loop over the elements in the current set.
+          do iel = 1,nelements
+
+            ! Loop over all cubature points on the current element
+            do icubp = 1,npointsPerElement
+
+              ! Loop over the dimensions of the FE space
+              do idimfe = 0,ndimfe-1
+
+                ! Outer loop over the DOF's i=1..ndof on our current element,
+                ! which corresponds to the (test) basis functions Phi_i:
+                do idofe=1,p_rmatrixData%ndofTest
+
+                  ! Fetch the contributions of the (test) basis functions Phi_i
+                  ! into dbasI
+                  dbasIx = p_DbasTest(&
+                      idofe+idimfe*p_rmatrixData%ndofTest,DER_DERIV1D_X,icubp,iel)
+
+                  ! Inner loop over the DOF's j=1..ndof, which corresponds to
+                  ! the basis function Phi_j:
+                  do jdofe=1,p_rmatrixData%ndofTrial
+
+                    ! Fetch the contributions of the (trial) basis function Phi_j
+                    ! into dbasJ
+                    dbasJx = p_DbasTrial(&
+                        jdofe+idimfe*p_rmatrixData%ndofTrial,DER_DERIV1D_X,icubp,iel)
+
+                    do ivar = 1,nvar
+
+                      ! Multiply the values of the basis functions
+                      ! (1st derivatives) by the cubature weight and sum up
+                      ! into the local matrices.
+                      p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) = &
+                          p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) + &
+                            dscale * p_DcubWeight(icubp,iel) * dbasJx*dbasIx
+
+                    end do ! ivar
+
+                  end do ! jdofe
+
+                end do ! idofe
+                
+              end do ! idimfe
+
+            end do ! icubp
+
+          end do ! iel
+
+        case (NDIM2D)
+
+          ! *****************
+          ! 2D Laplace matrix
+          ! *****************
+
+          ! Loop over the elements in the current set.
+          do iel = 1,nelements
+
+            ! Loop over all cubature points on the current element
+            do icubp = 1,npointsPerElement
+
+              ! Loop over the dimensions of the FE space
+              do idimfe = 0,ndimfe-1
+
+                ! Outer loop over the DOF's i=1..ndof on our current element,
+                ! which corresponds to the (test) basis functions Phi_i:
+                do idofe=1,p_rmatrixData%ndofTest
+
+                  ! Fetch the contributions of the (test) basis functions Phi_i
+                  ! into dbasI
+                  dbasIx = p_DbasTest(&
+                      idofe+idimfe*p_rmatrixData%ndofTest,DER_DERIV2D_X,icubp,iel)
+                  dbasIy = p_DbasTest(&
+                      idofe+idimfe*p_rmatrixData%ndofTest,DER_DERIV2D_Y,icubp,iel)
+
+                  ! Inner loop over the DOF's j=1..ndof, which corresponds to
+                  ! the basis function Phi_j:
+                  do jdofe=1,p_rmatrixData%ndofTrial
+
+                    ! Fetch the contributions of the (trial) basis function Phi_j
+                    ! into dbasJ
+                    dbasJx = p_DbasTrial(&
+                        jdofe+idimfe*p_rmatrixData%ndofTrial,DER_DERIV2D_X,icubp,iel)
+                    dbasJy = p_DbasTrial(&
+                        jdofe+idimfe*p_rmatrixData%ndofTrial,DER_DERIV2D_Y,icubp,iel)
+
+                    do ivar = 1,nvar
+
+                      ! Multiply the values of the basis functions
+                      ! (1st derivatives) by the cubature weight and sum up
+                      ! into the local matrices.
+                      p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) = &
+                          p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) + &
+                              dscale * p_DcubWeight(icubp,iel) * ( dbasJx*dbasIx + dbasJy*dbasIy )
+
+                    end do ! ivar
+
+                  end do ! jdofe
+
+                end do ! idofe
+                
+              end do ! idimfe
+
+            end do ! icubp
+
+          end do ! iel
+
+        case (NDIM3D)
+
+          ! *****************
+          ! 3D Laplace matrix
+          ! *****************
+
+          ! Loop over the elements in the current set.
+          do iel = 1,nelements
+
+            ! Loop over all cubature points on the current element
+            do icubp = 1,npointsPerElement
+
+              ! Loop over the dimensions of the FE space
+              do idimfe = 0,ndimfe-1
+
+                ! Outer loop over the DOF's i=1..ndof on our current element,
+                ! which corresponds to the (test) basis functions Phi_i:
+                do idofe=1,p_rmatrixData%ndofTest
+
+                  ! Fetch the contributions of the (test) basis functions Phi_i
+                  ! into dbasI
+                  dbasIx = p_DbasTest(&
+                      idofe+idimfe*p_rmatrixData%ndofTest,DER_DERIV3D_X,icubp,iel)
+                  dbasIy = p_DbasTest(&
+                      idofe+idimfe*p_rmatrixData%ndofTest,DER_DERIV3D_Y,icubp,iel)
+                  dbasIz = p_DbasTest(&
+                      idofe+idimfe*p_rmatrixData%ndofTest,DER_DERIV3D_Z,icubp,iel)
+
+                  ! Inner loop over the DOF's j=1..ndof, which corresponds to
+                  ! the basis function Phi_j:
+                  do jdofe=1,p_rmatrixData%ndofTrial
+
+                    ! Fetch the contributions of the (trial) basis function Phi_j
+                    ! into dbasJ
+                    dbasJx = p_DbasTrial(&
+                        jdofe+idimfe*p_rmatrixData%ndofTrial,DER_DERIV3D_X,icubp,iel)
+                    dbasJy = p_DbasTrial(&
+                        jdofe+idimfe*p_rmatrixData%ndofTrial,DER_DERIV3D_Y,icubp,iel)
+                    dbasJz = p_DbasTrial(&
+                        jdofe+idimfe*p_rmatrixData%ndofTrial,DER_DERIV3D_Z,icubp,iel)
+
+                    do ivar = 1,nvar
+
+                      ! Multiply the values of the basis functions
+                      ! (1st derivatives) by the cubature weight and sum up
+                      ! into the local matrices.
+                      p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) = &
+                          p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) + &
+                              dscale * p_DcubWeight(icubp,iel) * &
+                                      ( dbasJx*dbasIx + dbasJy*dbasIy + dbasJz*dbasIz )
+
+                    end do ! ivar
+
+                  end do ! jdofe
+
+                end do ! idofe
+                
+              end do ! idimfe
+
+            end do ! icubp
+
+          end do ! iel
+
+        end select
+
+      end if      
 
     end if
 
@@ -1091,6 +1627,14 @@ contains
         call sys_halt()
       end if
 
+      if ((p_rmatrixData11%ndimfeTrial .ne. 1) .or. &
+          (p_rmatrixData11%ndimfeTest .ne. 1)) then
+        ! This does not make sense.
+        call output_line ("Only scalar-valued FE spaces supported.",&
+            OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_ugradvw")
+        call sys_halt()
+      end if
+
       if (bvelConst) then
       
         ! Set up the matrix for constant velocity.
@@ -1124,9 +1668,9 @@ contains
                     dscale * p_DcubWeight(icubp,iel) * &
                     ( dvelX * dbasJx * dbasI )            ! ( u1 phi_x , psi )
 
-              end do ! idofe
+              end do ! jdofe
 
-            end do ! jdofe
+            end do ! idofe
 
           end do ! icubp
 
@@ -1177,9 +1721,9 @@ contains
                     dscale * p_DcubWeight(icubp,iel) * &
                     ( dvelX * dbasJx * dbasI )            ! ( u1 phi_x , psi )
 
-              end do ! idofe
+              end do ! jdofe
 
-            end do ! jdofe
+            end do ! idofe
 
           end do ! icubp
 
@@ -1197,8 +1741,16 @@ contains
       p_DlocalMatrix22 => RmatrixData(iy+1,ix+1)%p_Dentry
 
       ! Currently, interleaved matrices are not supported
-      if (p_rmatrixData11%bisInterleaved) then
+      if (p_rmatrixData11%bisInterleaved .or. p_rmatrixData22%bisInterleaved) then
         call output_line ("Interleaved matrices not supported",&
+            OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_ugradvw")
+        call sys_halt()
+      end if
+
+      if ((p_rmatrixData11%ndimfeTrial .ne. 1) .or. &
+          (p_rmatrixData11%ndimfeTest .ne. 1)) then
+        ! This does not make sense.
+        call output_line ("Only scalar-valued FE spaces supported.",&
             OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_ugradvw")
         call sys_halt()
       end if
@@ -1243,9 +1795,9 @@ contains
                     ( dvelX * dbasJx * dbasI + &          ! ( u1 phi_x , psi )
                       dvelY * dbasJy * dbasI )            ! ( u2 phi_y , psi )
 
-              end do ! idofe
+              end do ! jdofe
 
-            end do ! jdofe
+            end do ! idofe
 
           end do ! icubp
 
@@ -1305,9 +1857,9 @@ contains
                     ( dvelX * dbasJx * dbasI + &          ! ( u1 phi_x , psi )
                       dvelY * dbasJy * dbasI )            ! ( u2 phi_y , psi )
 
-              end do ! idofe
+              end do ! jdofe
 
-            end do ! jdofe
+            end do ! idofe
 
           end do ! icubp
 
@@ -1327,8 +1879,18 @@ contains
       p_DlocalMatrix33 => RmatrixData(iy+2,ix+2)%p_Dentry
 
       ! Currently, interleaved matrices are not supported
-      if (p_rmatrixData11%bisInterleaved) then
+      if (p_rmatrixData11%bisInterleaved .or. &
+          p_rmatrixData22%bisInterleaved .or. &
+          p_rmatrixData33%bisInterleaved) then
         call output_line ("Interleaved matrices not supported",&
+            OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_ugradvw")
+        call sys_halt()
+      end if
+
+      if ((p_rmatrixData11%ndimfeTrial .ne. 1) .or. &
+          (p_rmatrixData11%ndimfeTest .ne. 1)) then
+        ! This does not make sense.
+        call output_line ("Only scalar-valued FE spaces supported.",&
             OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_ugradvw")
         call sys_halt()
       end if
@@ -1382,9 +1944,9 @@ contains
                       dvelY * dbasJy * dbasI + &          ! ( u2 phi_y , psi )
                       dvelZ * dbasJz * dbasI )            ! ( u3 phi_z , psi )
 
-              end do ! idofe
+              end do ! jdofe
 
-            end do ! jdofe
+            end do ! idofe
 
           end do ! icubp
 
@@ -1455,9 +2017,9 @@ contains
                       dvelY * dbasJy * dbasI + &          ! ( u2 phi_y , psi )
                       dvelZ * dbasJz * dbasI )            ! ( u3 phi_z , psi )
 
-              end do ! idofe
+              end do ! jdofe
 
-            end do ! jdofe
+            end do ! idofe
 
           end do ! icubp
 
@@ -1654,7 +2216,15 @@ contains
       ! Currently, interleaved matrices are not supported
       if (p_rmatrixData11%bisInterleaved) then
         call output_line ("Interleaved matrices not supported",&
-            OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_ugradvw")
+            OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_vugradw")
+        call sys_halt()
+      end if
+
+      if ((p_rmatrixData11%ndimfeTrial .ne. 1) .or. &
+          (p_rmatrixData11%ndimfeTest .ne. 1)) then
+        ! This does not make sense.
+        call output_line ("Only scalar-valued FE spaces supported.",&
+            OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_vugradw")
         call sys_halt()
       end if
 
@@ -1691,9 +2261,9 @@ contains
                     dscale * p_DcubWeight(icubp,iel) * &
                     ( dbasJ * dvelX * dbasIx )            ! ( phi , u1 psi_x )
 
-              end do ! idofe
+              end do ! jdofe
 
-            end do ! jdofe
+            end do ! idofe
 
           end do ! icubp
 
@@ -1703,7 +2273,7 @@ contains
 
         if (revalVectors%ncount .lt. 1) then
           call output_line ("FEM function missing.",&
-              OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_ugradvw")
+              OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_vugradw")
           call sys_halt()
         end if
 
@@ -1744,9 +2314,9 @@ contains
                     dscale * p_DcubWeight(icubp,iel) * &
                     ( dbasJ * dvelX * dbasIx )            ! ( phi , u1 psi_x )
 
-              end do ! idofe
+              end do ! jdofe
 
-            end do ! jdofe
+            end do ! idofe
 
           end do ! icubp
 
@@ -1764,9 +2334,17 @@ contains
       p_DlocalMatrix22 => RmatrixData(iy+1,ix+1)%p_Dentry
 
       ! Currently, interleaved matrices are not supported
-      if (p_rmatrixData11%bisInterleaved) then
+      if (p_rmatrixData11%bisInterleaved .or. p_rmatrixData22%bisInterleaved) then
         call output_line ("Interleaved matrices not supported",&
-            OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_ugradvw")
+            OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_vugradw")
+        call sys_halt()
+      end if
+
+      if ((p_rmatrixData11%ndimfeTrial .ne. 1) .or. &
+          (p_rmatrixData11%ndimfeTest .ne. 1)) then
+        ! This does not make sense.
+        call output_line ("Only scalar-valued FE spaces supported.",&
+            OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_vugradw")
         call sys_halt()
       end if
 
@@ -1810,9 +2388,9 @@ contains
                     ( dbasJ * dvelX * dbasIx + &          ! ( phi , u1 psi_x )
                       dbasJ * dvelY * dbasIy )            ! ( phi , u2 psi_y )
 
-              end do ! idofe
+              end do ! jdofe
 
-            end do ! jdofe
+            end do ! idofe
 
           end do ! icubp
 
@@ -1822,7 +2400,7 @@ contains
 
         if (revalVectors%ncount .lt. 2) then
           call output_line ("FEM function missing.",&
-              OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_ugradvw")
+              OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_vugradw")
           call sys_halt()
         end if
 
@@ -1872,9 +2450,9 @@ contains
                     ( dbasJ * dvelX * dbasIx + &          ! ( phi , u1 psi_x )
                       dbasJ * dvelY * dbasIy )            ! ( phi , u2 psi_y )
 
-              end do ! idofe
+              end do ! jdofe
 
-            end do ! jdofe
+            end do ! idofe
 
           end do ! icubp
 
@@ -1894,9 +2472,19 @@ contains
       p_DlocalMatrix33 => RmatrixData(iy+2,ix+2)%p_Dentry
 
       ! Currently, interleaved matrices are not supported
-      if (p_rmatrixData11%bisInterleaved) then
+      if (p_rmatrixData11%bisInterleaved .or. &
+          p_rmatrixData22%bisInterleaved .or. &
+          p_rmatrixData33%bisInterleaved) then
         call output_line ("Interleaved matrices not supported",&
-            OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_ugradvw")
+            OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_vugradw")
+        call sys_halt()
+      end if
+
+      if ((p_rmatrixData11%ndimfeTrial .ne. 1) .or. &
+          (p_rmatrixData11%ndimfeTest .ne. 1)) then
+        ! This does not make sense.
+        call output_line ("Only scalar-valued FE spaces supported.",&
+            OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_vugradw")
         call sys_halt()
       end if
 
@@ -1949,9 +2537,9 @@ contains
                       dbasJ * dvelY * dbasIy + &          ! ( phi , u2 psi_y )
                       dbasJ * dvelZ * dbasIz )            ! ( phi , u3 psi_z )
 
-              end do ! idofe
+              end do ! jdofe
 
-            end do ! jdofe
+            end do ! idofe
 
           end do ! icubp
 
@@ -1961,7 +2549,7 @@ contains
 
         if (revalVectors%ncount .lt. 3) then
           call output_line ("FEM function missing.",&
-              OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_ugradvw")
+              OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_vugradw")
           call sys_halt()
         end if
 
@@ -2022,9 +2610,9 @@ contains
                       dbasJ * dvelY * dbasIy + &          ! ( phi , u2 psi_y )
                       dbasJ * dvelZ * dbasIz )            ! ( phi , u3 psi_z )
 
-              end do ! idofe
+              end do ! jdofe
 
-            end do ! jdofe
+            end do ! idofe
 
           end do ! icubp
 
@@ -2259,6 +2847,14 @@ contains
         call sys_halt()
       end if
 
+      if ((p_rmatrixData11%ndimfeTrial .ne. 1) .or. &
+          (p_rmatrixData11%ndimfeTest .ne. 1)) then
+        ! This does not make sense.
+        call output_line ("Only scalar-valued FE spaces supported.",&
+            OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_graduvw")
+        call sys_halt()
+      end if
+
       if (bvelConst) then
       
         ! Set up the matrix for constant velocity.
@@ -2292,9 +2888,9 @@ contains
                     dscale * p_DcubWeight(icubp,iel) * &
                     ( dvelX1 * dbasJ * dbasI )            ! ( u1_x phi , psi )
 
-              end do ! idofe
+              end do ! jdofe
 
-            end do ! jdofe
+            end do ! idofe
 
           end do ! icubp
 
@@ -2345,9 +2941,9 @@ contains
                     dscale * p_DcubWeight(icubp,iel) * &
                     ( dvelX1 * dbasJ * dbasI )            ! ( u1_x phi , psi )
 
-              end do ! idofe
+              end do ! jdofe
 
-            end do ! jdofe
+            end do ! idofe
 
           end do ! icubp
 
@@ -2369,8 +2965,19 @@ contains
       p_DlocalMatrix22 => RmatrixData(iy+1,ix+1)%p_Dentry
 
       ! Currently, interleaved matrices are not supported
-      if (p_rmatrixData11%bisInterleaved) then
+      if (p_rmatrixData11%bisInterleaved .or. &
+          p_rmatrixData12%bisInterleaved .or. &
+          p_rmatrixData21%bisInterleaved .or. &
+          p_rmatrixData22%bisInterleaved) then
         call output_line ("Interleaved matrices not supported",&
+            OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_graduvw")
+        call sys_halt()
+      end if
+
+      if ((p_rmatrixData11%ndimfeTrial .ne. 1) .or. &
+          (p_rmatrixData11%ndimfeTest .ne. 1)) then
+        ! This does not make sense.
+        call output_line ("Only scalar-valued FE spaces supported.",&
             OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_graduvw")
         call sys_halt()
       end if
@@ -2420,9 +3027,9 @@ contains
                     dscale * p_DcubWeight(icubp,iel) * &
                     ( dvelY2 * dbasJ * dbasI )            ! ( u2_y phi , psi )
 
-              end do ! idofe
+              end do ! jdofe
 
-            end do ! jdofe
+            end do ! idofe
 
           end do ! icubp
 
@@ -2489,9 +3096,9 @@ contains
                     dscale * p_DcubWeight(icubp,iel) * &
                     ( dvelY2 * dbasJ * dbasI )            ! ( u2_y phi , psi )
 
-              end do ! idofe
+              end do ! jdofe
 
-            end do ! jdofe
+            end do ! idofe
 
           end do ! icubp
 
@@ -2523,8 +3130,24 @@ contains
       p_DlocalMatrix33 => RmatrixData(iy+2,ix+3)%p_Dentry
 
       ! Currently, interleaved matrices are not supported
-      if (p_rmatrixData11%bisInterleaved) then
+      if ( p_rmatrixData11%bisInterleaved .or. &
+           p_rmatrixData12%bisInterleaved .or. &
+           p_rmatrixData13%bisInterleaved .or. &
+           p_rmatrixData21%bisInterleaved .or. &
+           p_rmatrixData22%bisInterleaved .or. &
+           p_rmatrixData23%bisInterleaved .or. &
+           p_rmatrixData31%bisInterleaved .or. &
+           p_rmatrixData32%bisInterleaved .or. &
+           p_rmatrixData33%bisInterleaved) then
         call output_line ("Interleaved matrices not supported",&
+            OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_graduvw")
+        call sys_halt()
+      end if
+
+      if ((p_rmatrixData11%ndimfeTrial .ne. 1) .or. &
+          (p_rmatrixData11%ndimfeTest .ne. 1)) then
+        ! This does not make sense.
+        call output_line ("Only scalar-valued FE spaces supported.",&
             OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_graduvw")
         call sys_halt()
       end if
@@ -2594,9 +3217,9 @@ contains
                     dscale * p_DcubWeight(icubp,iel) * &
                     ( dvelZ3 * dbasJ * dbasI )            ! ( u3_y phi , psi )
 
-              end do ! idofe
+              end do ! jdofe
 
-            end do ! jdofe
+            end do ! idofe
 
           end do ! icubp
 
@@ -2691,9 +3314,9 @@ contains
                     dscale * p_DcubWeight(icubp,iel) * &
                     ( dvelZ3 * dbasJ * dbasI )            ! ( u3_y phi , psi )
 
-              end do ! idofe
+              end do ! jdofe
 
-            end do ! jdofe
+            end do ! idofe
 
           end do ! icubp
 
@@ -2924,7 +3547,15 @@ contains
       ! Currently, interleaved matrices are not supported
       if (p_rmatrixData11%bisInterleaved) then
         call output_line ("Interleaved matrices not supported",&
-            OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_graduvw")
+            OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_vgraduw")
+        call sys_halt()
+      end if
+
+      if ((p_rmatrixData11%ndimfeTrial .ne. 1) .or. &
+          (p_rmatrixData11%ndimfeTest .ne. 1)) then
+        ! This does not make sense.
+        call output_line ("Only scalar-valued FE spaces supported.",&
+            OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_vgraduw")
         call sys_halt()
       end if
 
@@ -2961,9 +3592,9 @@ contains
                     dscale * p_DcubWeight(icubp,iel) * &
                     ( dbasJ * dvelX1 * dbasI )            ! ( phi , u1_x psi )
 
-              end do ! idofe
+              end do ! jdofe
 
-            end do ! jdofe
+            end do ! idofe
 
           end do ! icubp
 
@@ -2973,7 +3604,7 @@ contains
 
         if (revalVectors%ncount .lt. 1) then
           call output_line ("FEM function missing.",&
-              OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_graduvw")
+              OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_vgraduw")
           call sys_halt()
         end if
 
@@ -3014,9 +3645,9 @@ contains
                     dscale * p_DcubWeight(icubp,iel) * &
                     ( dbasJ * dvelX1 * dbasI )            ! ( phi , u1_x psi )
 
-              end do ! idofe
+              end do ! jdofe
 
-            end do ! jdofe
+            end do ! idofe
 
           end do ! icubp
 
@@ -3038,9 +3669,20 @@ contains
       p_DlocalMatrix22 => RmatrixData(iy+1,ix+1)%p_Dentry
 
       ! Currently, interleaved matrices are not supported
-      if (p_rmatrixData11%bisInterleaved) then
+      if (p_rmatrixData11%bisInterleaved .or. &
+          p_rmatrixData12%bisInterleaved .or. &
+          p_rmatrixData21%bisInterleaved .or. &
+          p_rmatrixData22%bisInterleaved) then
         call output_line ("Interleaved matrices not supported",&
-            OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_graduvw")
+            OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_vgraduw")
+        call sys_halt()
+      end if
+
+      if ((p_rmatrixData11%ndimfeTrial .ne. 1) .or. &
+          (p_rmatrixData11%ndimfeTest .ne. 1)) then
+        ! This does not make sense.
+        call output_line ("Only scalar-valued FE spaces supported.",&
+            OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_vgraduw")
         call sys_halt()
       end if
 
@@ -3089,9 +3731,9 @@ contains
                     dscale * p_DcubWeight(icubp,iel) * &
                     ( dbasJ * dvelY2 * dbasI )            ! ( phi , u2_y psi )
 
-              end do ! idofe
+              end do ! jdofe
 
-            end do ! jdofe
+            end do ! idofe
 
           end do ! icubp
 
@@ -3101,7 +3743,7 @@ contains
 
         if (revalVectors%ncount .lt. 2) then
           call output_line ("FEM function missing.",&
-              OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_graduvw")
+              OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_vgraduw")
           call sys_halt()
         end if
 
@@ -3158,9 +3800,9 @@ contains
                     dscale * p_DcubWeight(icubp,iel) * &
                     ( dbasJ * dvelY2 * dbasI )            ! ( phi , u2_y psi )
 
-              end do ! idofe
+              end do ! jdofe
 
-            end do ! jdofe
+            end do ! idofe
 
           end do ! icubp
 
@@ -3192,9 +3834,25 @@ contains
       p_DlocalMatrix33 => RmatrixData(iy+2,ix+3)%p_Dentry
 
       ! Currently, interleaved matrices are not supported
-      if (p_rmatrixData11%bisInterleaved) then
+      if (p_rmatrixData11%bisInterleaved .or. &
+          p_rmatrixData12%bisInterleaved .or. &
+          p_rmatrixData13%bisInterleaved .or. &
+          p_rmatrixData21%bisInterleaved .or. &
+          p_rmatrixData22%bisInterleaved .or. &
+          p_rmatrixData23%bisInterleaved .or. &
+          p_rmatrixData31%bisInterleaved .or. &
+          p_rmatrixData32%bisInterleaved .or. &
+          p_rmatrixData33%bisInterleaved) then
         call output_line ("Interleaved matrices not supported",&
-            OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_graduvw")
+            OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_vgraduw")
+        call sys_halt()
+      end if
+
+      if ((p_rmatrixData11%ndimfeTrial .ne. 1) .or. &
+          (p_rmatrixData11%ndimfeTest .ne. 1)) then
+        ! This does not make sense.
+        call output_line ("Only scalar-valued FE spaces supported.",&
+            OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_vgraduw")
         call sys_halt()
       end if
 
@@ -3263,9 +3921,9 @@ contains
                     dscale * p_DcubWeight(icubp,iel) * &
                     ( dbasJ * dvelZ3 * dbasI )            ! ( phi , u3_z psi )
 
-              end do ! idofe
+              end do ! jdofe
 
-            end do ! jdofe
+            end do ! idofe
 
           end do ! icubp
 
@@ -3275,7 +3933,7 @@ contains
 
         if (revalVectors%ncount .lt. 3) then
           call output_line ("FEM function missing.",&
-              OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_graduvw")
+              OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_convection_vgraduw")
           call sys_halt()
         end if
 
@@ -3360,9 +4018,9 @@ contains
                     dscale * p_DcubWeight(icubp,iel) * &
                     ( dbasJ * dvelZ3 * dbasI )            ! ( phi , u3_z psi )
 
-              end do ! idofe
+              end do ! jdofe
 
-            end do ! jdofe
+            end do ! idofe
 
           end do ! icubp
 
@@ -3421,7 +4079,7 @@ contains
     ! Local variables
     real(DP) :: dbasI, dval
     integer :: icomp
-    integer :: iel, icubp, idofe
+    integer :: iel, icubp, idofe, idimfe, ndimfe
     real(DP), dimension(:,:), pointer :: p_DlocalVector
     real(DP), dimension(:,:,:,:), pointer :: p_DbasTest
     real(DP), dimension(:,:), pointer :: p_DcubWeight
@@ -3435,9 +4093,12 @@ contains
 
       ! Get the data arrays of the subvector
       p_rvectorData => RvectorData(icomp)
-      p_DlocalVector => RvectorData(icomp)%p_Dentry
-      p_DbasTest => RvectorData(icomp)%p_DbasTest
+      p_DlocalVector => p_rvectorData%p_Dentry
+      p_DbasTest => p_rvectorData%p_DbasTest
     
+      ! FE space dimension
+      ndimfe = p_rvectorData%ndimfe
+
       ! Loop over the elements in the current set.
       do iel = 1,nelements
 
@@ -3446,22 +4107,27 @@ contains
 
           ! The value of the RHS is just the 1.0-function here
           dval = 1.0_DP
-          
-          ! Outer loop over the DOF's i=1..ndof on our current element,
-          ! which corresponds to the (test) basis functions Phi_i:
-          do idofe=1,p_rvectorData%ndofTest
-          
-            ! Fetch the contributions of the (test) basis functions Phi_i
-            ! into dbasI
-            dbasI = p_DbasTest(idofe,DER_FUNC,icubp,iel)
             
-            ! Multiply the values of the basis functions
-            ! (1st derivatives) by the cubature weight and sum up
-            ! into the local vectors.
-            p_DlocalVector(idofe,iel) = p_DlocalVector(idofe,iel) + &
-                p_DcubWeight(icubp,iel) * dval * dbasI
+          ! Loop over the dimensions of the FE space
+          do idimfe = 0,ndimfe-1
+          
+            ! Outer loop over the DOF's i=1..ndof on our current element,
+            ! which corresponds to the (test) basis functions Phi_i:
+            do idofe=1,p_rvectorData%ndofTest
             
-          end do ! jdofe
+              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! into dbasI
+              dbasI = p_DbasTest(idofe+idimfe*p_rvectorData%ndofTest,DER_FUNC,icubp,iel)
+              
+              ! Multiply the values of the basis functions
+              ! (1st derivatives) by the cubature weight and sum up
+              ! into the local vectors.
+              p_DlocalVector(idofe,iel) = p_DlocalVector(idofe,iel) + &
+                  p_DcubWeight(icubp,iel) * dval * dbasI
+              
+            end do ! jdofe
+            
+          end do ! idimfe
 
         end do ! icubp
       
@@ -3516,7 +4182,7 @@ contains
     ! Local variables
     real(DP) :: dbasI, dval, dx, dy
     integer :: icomp
-    integer :: iel, icubp, idofe
+    integer :: iel, icubp, idofe, idimfe, ndimfe
     real(DP), dimension(:,:), pointer :: p_DlocalVector
     real(DP), dimension(:,:,:,:), pointer :: p_DbasTest
     real(DP), dimension(:,:), pointer :: p_DcubWeight
@@ -3534,9 +4200,12 @@ contains
 
       ! Get the data arrays of the subvector
       p_rvectorData => RvectorData(icomp)
-      p_DlocalVector => RvectorData(icomp)%p_Dentry
-      p_DbasTest => RvectorData(icomp)%p_DbasTest
+      p_DlocalVector => p_rvectorData%p_Dentry
+      p_DbasTest => p_rvectorData%p_DbasTest
     
+      ! FE space dimension
+      ndimfe = p_rvectorData%ndimfe
+
       ! Loop over the elements in the current set.
       do iel = 1,nelements
 
@@ -3551,21 +4220,26 @@ contains
           ! of the cubature points.
           dval = 32.0_DP*dy*(1.0_DP-dy) + 32_DP*dx*(1.0_DP-dx)
           
-          ! Outer loop over the DOF's i=1..ndof on our current element,
-          ! which corresponds to the (test) basis functions Phi_i:
-          do idofe=1,p_rvectorData%ndofTest
-          
-            ! Fetch the contributions of the (test) basis functions Phi_i
-            ! into dbasI
-            dbasI = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+          ! Loop over the dimensions of the FE space
+          do idimfe = 0,ndimfe-1
+
+            ! Outer loop over the DOF's i=1..ndof on our current element,
+            ! which corresponds to the (test) basis functions Phi_i:
+            do idofe=1,p_rvectorData%ndofTest
             
-            ! Multiply the values of the basis functions
-            ! (1st derivatives) by the cubature weight and sum up
-            ! into the local vectors.
-            p_DlocalVector(idofe,iel) = p_DlocalVector(idofe,iel) + &
-                p_DcubWeight(icubp,iel) * dval * dbasI
+              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! into dbasI
+              dbasI = p_DbasTest(idofe+idimfe*p_rvectorData%ndofTest,DER_FUNC,icubp,iel)
+              
+              ! Multiply the values of the basis functions
+              ! (1st derivatives) by the cubature weight and sum up
+              ! into the local vectors.
+              p_DlocalVector(idofe,iel) = p_DlocalVector(idofe,iel) + &
+                  p_DcubWeight(icubp,iel) * dval * dbasI
+              
+            end do ! idofe
             
-          end do ! jdofe
+          end do ! idimfe
 
         end do ! icubp
       
@@ -3624,7 +4298,7 @@ contains
     ! Local variables
     real(DP) :: dbasI, dval, dx, dy
     integer :: icomp
-    integer :: iel, icubp, idofe
+    integer :: iel, icubp, idofe, idimfe, ndimfe
     real(DP), dimension(:,:), pointer :: p_DlocalVector
     real(DP), dimension(:,:,:,:), pointer :: p_DbasTest
     real(DP), dimension(:,:), pointer :: p_DcubWeight
@@ -3653,8 +4327,11 @@ contains
 
       ! Get the data arrays of the subvector
       p_rvectorData => RvectorData(icomp)
-      p_DlocalVector => RvectorData(icomp)%p_Dentry
-      p_DbasTest => RvectorData(icomp)%p_DbasTest
+      p_DlocalVector => p_rvectorData%p_Dentry
+      p_DbasTest => p_rvectorData%p_DbasTest
+
+      ! FE space dimension
+      ndimfe = p_rvectorData%ndimfe
     
       ! Loop over the elements in the current set.
       do iel = 1,nelements
@@ -3670,21 +4347,26 @@ contains
           !     f = 32*y*(1-y)+32*x*(1-x) + v(x,y)
           dval = 32.0_DP*dy*(1.0_DP-dy) + 32_DP*dx*(1.0_DP-dx) + p_Dfunc(icubp,iel)
           
-          ! Outer loop over the DOF's i=1..ndof on our current element,
-          ! which corresponds to the (test) basis functions Phi_i:
-          do idofe=1,p_rvectorData%ndofTest
-          
-            ! Fetch the contributions of the (test) basis functions Phi_i
-            ! into dbasI
-            dbasI = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+          ! Loop over the dimensions of the FE space
+          do idimfe = 0,ndimfe-1
+
+            ! Outer loop over the DOF's i=1..ndof on our current element,
+            ! which corresponds to the (test) basis functions Phi_i:
+            do idofe=1,p_rvectorData%ndofTest
             
-            ! Multiply the values of the basis functions
-            ! (1st derivatives) by the cubature weight and sum up
-            ! into the local vectors.
-            p_DlocalVector(idofe,iel) = p_DlocalVector(idofe,iel) + &
-                p_DcubWeight(icubp,iel) * dval * dbasI
+              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! into dbasI
+              dbasI = p_DbasTest(idofe+idimfe*p_rvectorData%ndofTest,DER_FUNC,icubp,iel)
+              
+              ! Multiply the values of the basis functions
+              ! (1st derivatives) by the cubature weight and sum up
+              ! into the local vectors.
+              p_DlocalVector(idofe,iel) = p_DlocalVector(idofe,iel) + &
+                  p_DcubWeight(icubp,iel) * dval * dbasI
+              
+            end do ! idofe
             
-          end do ! jdofe
+          end do ! idimfe
 
         end do ! icubp
       
@@ -3748,13 +4430,14 @@ contains
 
     ! Local variables
     real(DP) :: dbasI, dval
-    integer :: icomp
+    integer :: icomp, ndimfe, idimfe
     integer :: iel, icubp, idofe
     real(DP), dimension(:,:), pointer :: p_DlocalVector
     real(DP), dimension(:,:,:,:), pointer :: p_DbasTest
     real(DP), dimension(:,:), pointer :: p_DcubWeight
     type(t_bmaVectorData), pointer :: p_rvectorData
     real(DP), dimension(:,:), pointer :: p_Dfunc
+    real(DP), dimension(:,:,:), pointer :: p_DfuncVec
   
     ! Get cubature weights data
     p_DcubWeight => rassemblyData%p_DcubWeight
@@ -3770,42 +4453,106 @@ contains
 
       ! Get the data arrays of the subvector
       p_rvectorData => RvectorData(icomp)
-      p_DlocalVector => RvectorData(icomp)%p_Dentry
-      p_DbasTest => RvectorData(icomp)%p_DbasTest
+      p_DlocalVector => p_rvectorData%p_Dentry
+      p_DbasTest => p_rvectorData%p_DbasTest
+      
+      ! FE space dimension
+      ndimfe = p_rvectorData%ndimfe
     
-      ! Get the data array with the values of the FEM function v_i
-      ! in the cubature points.
-      p_Dfunc => revalVectors%p_RvectorData(icomp)%p_Ddata(:,:,DER_FUNC2D)
-      
-      ! Loop over the elements in the current set.
-      do iel = 1,nelements
+      if (revalVectors%p_RvectorData(icomp)%ndimfe .ne. ndimfe) then
+        ! This does not make sense
+        call output_line ("FE spaces incompatible.",&
+            OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_rhsFE")
+        call sys_halt()
+      end if
 
-        ! Loop over all cubature points on the current element
-        do icubp = 1,npointsPerElement
+      if (ndimfe .eq. 1) then
+
+        ! -----------------------
+        ! Scalar-valued FE space.
+        ! -----------------------
+
+        ! Get the data array with the values of the FEM function v_i
+        ! in the cubature points.
+        p_Dfunc => revalVectors%p_RvectorData(icomp)%p_Ddata(:,:,DER_FUNC2D)
         
-          ! Calculate the values of the RHS in the cubature point:
-          !     f_i = v_i(x,y)
-          dval = p_Dfunc(icubp,iel)
-          
-          ! Outer loop over the DOF's i=1..ndof on our current element,
-          ! which corresponds to the (test) basis functions Phi_i:
-          do idofe=1,p_rvectorData%ndofTest
-          
-            ! Fetch the contributions of the (test) basis functions Phi_i
-            ! into dbasI
-            dbasI = p_DbasTest(idofe,DER_FUNC,icubp,iel)
-            
-            ! Multiply the values of the basis functions
-            ! (1st derivatives) by the cubature weight and sum up
-            ! into the local vectors.
-            p_DlocalVector(idofe,iel) = p_DlocalVector(idofe,iel) + &
-                p_DcubWeight(icubp,iel) * dval * dbasI
-            
-          end do ! jdofe
+        ! Loop over the elements in the current set.
+        do iel = 1,nelements
 
-        end do ! icubp
+          ! Loop over all cubature points on the current element
+          do icubp = 1,npointsPerElement
+          
+            ! Calculate the values of the RHS in the cubature point:
+            !     f_i = v_i(x,y)
+            dval = p_Dfunc(icubp,iel)
+            
+            ! Outer loop over the DOF's i=1..ndof on our current element,
+            ! which corresponds to the (test) basis functions Phi_i:
+            do idofe=1,p_rvectorData%ndofTest
+            
+              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! into dbasI
+              dbasI = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+              
+              ! Multiply the values of the basis functions
+              ! (1st derivatives) by the cubature weight and sum up
+              ! into the local vectors.
+              p_DlocalVector(idofe,iel) = p_DlocalVector(idofe,iel) + &
+                  p_DcubWeight(icubp,iel) * dval * dbasI
+              
+            end do ! jdofe
+
+          end do ! icubp
+        
+        end do ! iel
+        
+      else
+
+        ! -----------------------
+        ! Vector-valued FE space.
+        ! -----------------------
       
-      end do ! iel
+        ! Get the data array with the values of the FEM function v_i
+        ! in the cubature points.
+        p_DfuncVec => revalVectors%p_RvectorData(icomp)%p_DdataVec(:,:,:,DER_FUNC2D)
+        
+        ! Loop over the elements in the current set.
+        do iel = 1,nelements
+
+          ! Loop over all cubature points on the current element
+          do icubp = 1,npointsPerElement
+          
+            ! Loop over the dimensions of the FE space
+            do idimfe = 0,ndimfe-1
+
+              ! Calculate the values of the RHS in the cubature point
+              ! for component (1+idimfe):
+              !     f_i = v_i(x,y)
+              dval = p_DfuncVec(1+idimfe,icubp,iel)
+              
+              ! Outer loop over the DOF's i=1..ndof on our current element,
+              ! which corresponds to the (test) basis functions Phi_i:
+              do idofe=1,p_rvectorData%ndofTest
+              
+                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! into dbasI
+                dbasI = p_DbasTest(idofe+idimfe*p_rvectorData%ndofTest,DER_FUNC,icubp,iel)
+                
+                ! Multiply the values of the basis functions
+                ! (1st derivatives) by the cubature weight and sum up
+                ! into the local vectors.
+                p_DlocalVector(idofe,iel) = p_DlocalVector(idofe,iel) + &
+                    p_DcubWeight(icubp,iel) * dval * dbasI
+                
+              end do ! idofe
+            
+            end do ! idimfe
+
+          end do ! icubp
+        
+        end do ! iel
+      
+      end if
       
     end do ! icomp
     
@@ -3944,6 +4691,9 @@ contains
     
       ! Skip interleaved vectors.
       if (revalVectors%p_RvectorData(ivec)%bisInterleaved) cycle
+      
+      ! Skip vector-valued FE functions
+      if (revalVectors%p_RvectorData(ivec)%ndimfe .ne. 1) cycle
 
       ! Get the data array with the values of the FEM function
       ! in the cubature points
@@ -4041,9 +4791,10 @@ contains
 
     ! Local variables
     real(DP) :: dval
-    integer :: iel, icubp, ivec
+    integer :: iel, icubp, ivec, idimfe, ndimfe
     real(DP), dimension(:,:), pointer :: p_DcubWeight
     real(DP), dimension(:,:), pointer :: p_Dfunc
+    real(DP), dimension(:,:,:), pointer :: p_DfuncVec
   
     ! Get cubature weights data
     p_DcubWeight => rassemblyData%p_DcubWeight
@@ -4056,26 +4807,68 @@ contains
       ! Skip interleaved vectors.
       if (revalVectors%p_RvectorData(ivec)%bisInterleaved) cycle
 
-      ! Get the data array with the values of the FEM function
-      ! in the cubature points
-      p_Dfunc => revalVectors%p_RvectorData(ivec)%p_Ddata(:,:,DER_FUNC)
-
-      ! Loop over the elements in the current set.
-      do iel = 1,nelements
-
-        ! Loop over all cubature points on the current element
-        do icubp = 1,npointsPerElement
-
-          ! Get the value of the FEM function
-          dval = p_Dfunc(icubp,iel)
-          
-          ! Multiply the values by the cubature weight and sum up
-          ! into the integral value
-          dintvalue = dintvalue + p_DcubWeight(icubp,iel) * dval**2
-            
-        end do ! icubp
+      ! FE space dimension
+      ndimfe = revalVectors%p_RvectorData(ivec)%ndimfe
       
-      end do ! iel
+      if (ndimfe .eq. 1) then
+      
+        ! -----------------------
+        ! Scalar-valued FE space. 
+        ! -----------------------
+      
+        ! Get the data array with the values of the FEM function
+        ! in the cubature points
+        p_Dfunc => revalVectors%p_RvectorData(ivec)%p_Ddata(:,:,DER_FUNC)
+
+        ! Loop over the elements in the current set.
+        do iel = 1,nelements
+
+          ! Loop over all cubature points on the current element
+          do icubp = 1,npointsPerElement
+
+            ! Get the value of the FEM function
+            dval = p_Dfunc(icubp,iel)
+            
+            ! Multiply the values by the cubature weight and sum up
+            ! into the integral value
+            dintvalue = dintvalue + p_DcubWeight(icubp,iel) * dval**2
+              
+          end do ! icubp
+        
+        end do ! iel
+        
+      else
+      
+        ! -----------------------
+        ! Vector-valued FE space.
+        ! -----------------------
+        ! Get the data array with the values of the FEM function
+        ! in the cubature points
+        p_DfuncVec => revalVectors%p_RvectorData(ivec)%p_DdataVec(:,:,:,DER_FUNC)
+
+        ! Loop over the elements in the current set.
+        do iel = 1,nelements
+
+          ! Loop over all cubature points on the current element
+          do icubp = 1,npointsPerElement
+
+            ! Loop over the dimensions of the FE space
+            do idimfe = 1,ndimfe
+
+              ! Get the value of the FEM function
+              dval = p_DfuncVec(idimfe,icubp,iel)
+              
+              ! Multiply the values by the cubature weight and sum up
+              ! into the integral value
+              dintvalue = dintvalue + p_DcubWeight(icubp,iel) * dval**2
+              
+            end do
+              
+          end do ! icubp
+        
+        end do ! iel
+        
+      end if
       
     end do ! ivec
     
@@ -4129,9 +4922,10 @@ contains
 
     ! Local variables
     real(DP) :: dderivX,dderivY,dderivZ
-    integer :: iel, icubp, ivec,ndim
+    integer :: iel, icubp, ivec, ndim, idimfe, ndimfe
     real(DP), dimension(:,:), pointer :: p_DcubWeight
     real(DP), dimension(:,:), pointer :: p_DderivX,p_DderivY,p_DderivZ
+    real(DP), dimension(:,:,:), pointer :: p_DderivXVec,p_DderivYVec,p_DderivZVec
   
     ! Get cubature weights data
     p_DcubWeight => rassemblyData%p_DcubWeight
@@ -4144,97 +4938,220 @@ contains
       ! Skip interleaved vectors.
       if (revalVectors%p_RvectorData(ivec)%bisInterleaved) cycle
 
+      ! FE space dimension
+      ndimfe = revalVectors%p_RvectorData(ivec)%ndimfe
+      
       ! Dimension?
       ndim = revalVectors%p_RvectorData(ivec)%p_rvector%p_rspatialDiscr%p_rtriangulation%ndim
-      select case (ndim)
+
+      if (ndimfe .eq. 1) then
       
-      ! ----------------
-      ! 1D
-      ! ----------------
-      case (NDIM1D)
-      
-        ! Get the data array with the values of the FEM function
-        ! in the cubature points
-        p_DderivX => revalVectors%p_RvectorData(ivec)%p_Ddata(:,:,DER_DERIV1D_X)
+        ! -----------------------
+        ! Scalar-valued FE space. 
+        ! -----------------------
 
-        ! Loop over the elements in the current set.
-        do iel = 1,nelements
+        select case (ndim)
+        
+        ! ----------------
+        ! 1D
+        ! ----------------
+        case (NDIM1D)
+        
+          ! Get the data array with the values of the FEM function
+          ! in the cubature points
+          p_DderivX => revalVectors%p_RvectorData(ivec)%p_Ddata(:,:,DER_DERIV1D_X)
 
-          ! Loop over all cubature points on the current element
-          do icubp = 1,npointsPerElement
+          ! Loop over the elements in the current set.
+          do iel = 1,nelements
 
-            ! Get the value of the FEM function
-            dderivX = p_DderivX(icubp,iel)
-            
-            ! Multiply the values by the cubature weight and sum up
-            ! into the integral value
-            dintvalue = dintvalue + p_DcubWeight(icubp,iel) * dderivX**2
+            ! Loop over all cubature points on the current element
+            do icubp = 1,npointsPerElement
+
+              ! Get the value of the FEM function
+              dderivX = p_DderivX(icubp,iel)
               
-          end do ! icubp
+              ! Multiply the values by the cubature weight and sum up
+              ! into the integral value
+              dintvalue = dintvalue + p_DcubWeight(icubp,iel) * dderivX**2
+                
+            end do ! icubp
+          
+          end do ! iel
+
+        ! ----------------
+        ! 2D
+        ! ----------------
+        case (NDIM2D)
         
-        end do ! iel
+          ! Get the data array with the values of the FEM function
+          ! in the cubature points
+          p_DderivX => revalVectors%p_RvectorData(ivec)%p_Ddata(:,:,DER_DERIV2D_X)
+          p_DderivY => revalVectors%p_RvectorData(ivec)%p_Ddata(:,:,DER_DERIV2D_Y)
 
-      ! ----------------
-      ! 2D
-      ! ----------------
-      case (NDIM2D)
-      
-        ! Get the data array with the values of the FEM function
-        ! in the cubature points
-        p_DderivX => revalVectors%p_RvectorData(ivec)%p_Ddata(:,:,DER_DERIV2D_X)
-        p_DderivY => revalVectors%p_RvectorData(ivec)%p_Ddata(:,:,DER_DERIV2D_Y)
+          ! Loop over the elements in the current set.
+          do iel = 1,nelements
 
-        ! Loop over the elements in the current set.
-        do iel = 1,nelements
+            ! Loop over all cubature points on the current element
+            do icubp = 1,npointsPerElement
 
-          ! Loop over all cubature points on the current element
-          do icubp = 1,npointsPerElement
-
-            ! Get the value of the FEM function
-            dderivX = p_DderivX(icubp,iel)
-            dderivY = p_DderivY(icubp,iel)
-            
-            ! Multiply the values by the cubature weight and sum up
-            ! into the integral value
-            dintvalue = dintvalue + p_DcubWeight(icubp,iel) * &
-                ( dderivX**2 + dderivY**2 )
+              ! Get the value of the FEM function
+              dderivX = p_DderivX(icubp,iel)
+              dderivY = p_DderivY(icubp,iel)
               
-          end do ! icubp
+              ! Multiply the values by the cubature weight and sum up
+              ! into the integral value
+              dintvalue = dintvalue + p_DcubWeight(icubp,iel) * &
+                  ( dderivX**2 + dderivY**2 )
+                
+            end do ! icubp
+          
+          end do ! iel
+
+        ! ----------------
+        ! 3D
+        ! ----------------
+        case (NDIM3D)
         
-        end do ! iel
+          ! Get the data array with the values of the FEM function
+          ! in the cubature points
+          p_DderivX => revalVectors%p_RvectorData(ivec)%p_Ddata(:,:,DER_DERIV3D_X)
+          p_DderivY => revalVectors%p_RvectorData(ivec)%p_Ddata(:,:,DER_DERIV3D_Y)
+          p_DderivZ => revalVectors%p_RvectorData(ivec)%p_Ddata(:,:,DER_DERIV3D_Z)
 
-      ! ----------------
-      ! 3D
-      ! ----------------
-      case (NDIM3D)
-      
-        ! Get the data array with the values of the FEM function
-        ! in the cubature points
-        p_DderivX => revalVectors%p_RvectorData(ivec)%p_Ddata(:,:,DER_DERIV3D_X)
-        p_DderivY => revalVectors%p_RvectorData(ivec)%p_Ddata(:,:,DER_DERIV3D_Y)
-        p_DderivZ => revalVectors%p_RvectorData(ivec)%p_Ddata(:,:,DER_DERIV3D_Z)
+          ! Loop over the elements in the current set.
+          do iel = 1,nelements
 
-        ! Loop over the elements in the current set.
-        do iel = 1,nelements
+            ! Loop over all cubature points on the current element
+            do icubp = 1,npointsPerElement
 
-          ! Loop over all cubature points on the current element
-          do icubp = 1,npointsPerElement
-
-            ! Get the value of the FEM function
-            dderivX = p_DderivX(icubp,iel)
-            dderivY = p_DderivY(icubp,iel)
-            dderivZ = p_DderivZ(icubp,iel)
-            
-            ! Multiply the values by the cubature weight and sum up
-            ! into the integral value
-            dintvalue = dintvalue + p_DcubWeight(icubp,iel) * &
-                ( dderivX**2 + dderivY**2 + dderivZ**2 )
+              ! Get the value of the FEM function
+              dderivX = p_DderivX(icubp,iel)
+              dderivY = p_DderivY(icubp,iel)
+              dderivZ = p_DderivZ(icubp,iel)
               
-          end do ! icubp
+              ! Multiply the values by the cubature weight and sum up
+              ! into the integral value
+              dintvalue = dintvalue + p_DcubWeight(icubp,iel) * &
+                  ( dderivX**2 + dderivY**2 + dderivZ**2 )
+                
+            end do ! icubp
+          
+          end do ! iel
+          
+        end select
+
+      else
+      
+        ! -----------------------
+        ! Vector-valued FE space. 
+        ! -----------------------
+
+        select case (ndim)
         
-        end do ! iel
+        ! ----------------
+        ! 1D
+        ! ----------------
+        case (NDIM1D)
         
-      end select
+          ! Get the data array with the values of the FEM function
+          ! in the cubature points
+          p_DderivXVec => revalVectors%p_RvectorData(ivec)%p_DdataVec(:,:,:,DER_DERIV1D_X)
+
+          ! Loop over the elements in the current set.
+          do iel = 1,nelements
+
+            ! Loop over all cubature points on the current element
+            do icubp = 1,npointsPerElement
+
+              ! Loop over the dimensions of the FE space
+              do idimfe = 1,ndimfe
+                
+                ! Get the value of the FEM function
+                dderivX = p_DderivXVec(idimfe,icubp,iel)
+                
+                ! Multiply the values by the cubature weight and sum up
+                ! into the integral value
+                dintvalue = dintvalue + p_DcubWeight(icubp,iel) * dderivX**2
+                
+              end do ! idimfe
+                
+            end do ! icubp
+          
+          end do ! iel
+
+        ! ----------------
+        ! 2D
+        ! ----------------
+        case (NDIM2D)
+        
+          ! Get the data array with the values of the FEM function
+          ! in the cubature points
+          p_DderivXVec => revalVectors%p_RvectorData(ivec)%p_DdataVec(:,:,:,DER_DERIV2D_X)
+          p_DderivYVec => revalVectors%p_RvectorData(ivec)%p_DdataVec(:,:,:,DER_DERIV2D_Y)
+
+          ! Loop over the elements in the current set.
+          do iel = 1,nelements
+
+            ! Loop over all cubature points on the current element
+            do icubp = 1,npointsPerElement
+
+              ! Loop over the dimensions of the FE space
+              do idimfe = 1,ndimfe
+                
+                ! Get the value of the FEM function
+                dderivX = p_DderivXVec(idimfe,icubp,iel)
+                dderivY = p_DderivYVec(idimfe,icubp,iel)
+                
+                ! Multiply the values by the cubature weight and sum up
+                ! into the integral value
+                dintvalue = dintvalue + p_DcubWeight(icubp,iel) * &
+                    ( dderivX**2 + dderivY**2 )
+                    
+              end do ! idimfe
+                
+            end do ! icubp
+          
+          end do ! iel
+
+        ! ----------------
+        ! 3D
+        ! ----------------
+        case (NDIM3D)
+        
+          ! Get the data array with the values of the FEM function
+          ! in the cubature points
+          p_DderivXVec => revalVectors%p_RvectorData(ivec)%p_DdataVec(:,:,:,DER_DERIV3D_X)
+          p_DderivYVec => revalVectors%p_RvectorData(ivec)%p_DdataVec(:,:,:,DER_DERIV3D_Y)
+          p_DderivZVec => revalVectors%p_RvectorData(ivec)%p_DdataVec(:,:,:,DER_DERIV3D_Z)
+
+          ! Loop over the elements in the current set.
+          do iel = 1,nelements
+
+            ! Loop over all cubature points on the current element
+            do icubp = 1,npointsPerElement
+
+              ! Loop over the dimensions of the FE space
+              do idimfe = 1,ndimfe
+              
+                ! Get the value of the FEM function
+                dderivX = p_DderivXVec(idimfe,icubp,iel)
+                dderivY = p_DderivYVec(idimfe,icubp,iel)
+                dderivZ = p_DderivZVec(idimfe,icubp,iel)
+                
+                ! Multiply the values by the cubature weight and sum up
+                ! into the integral value
+                dintvalue = dintvalue + p_DcubWeight(icubp,iel) * &
+                    ( dderivX**2 + dderivY**2 + dderivZ**2 )
+              
+              end do
+                
+            end do ! icubp
+          
+          end do ! iel
+          
+        end select
+
+      end if ! ndimfe = 1
       
     end do ! ivec
     
@@ -4302,6 +5219,9 @@ contains
 
     ! Skip interleaved vectors.
     if (revalVectors%p_RvectorData(1)%bisInterleaved) return
+
+    ! Skip vector-valued FE functions
+    if (revalVectors%p_RvectorData(1)%ndimfe .ne. 1) return
 
     ! Get cubature weights data
     p_DcubWeight => rassemblyData%p_DcubWeight
@@ -4404,6 +5324,9 @@ contains
 
     ! Skip interleaved vectors.
     if (revalVectors%p_RvectorData(1)%bisInterleaved) return
+
+    ! Skip vector-valued FE functions
+    if (revalVectors%p_RvectorData(1)%ndimfe .ne. 1) return
 
     ! Get cubature weights data
     p_DcubWeight => rassemblyData%p_DcubWeight
