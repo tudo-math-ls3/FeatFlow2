@@ -5026,7 +5026,7 @@ contains
             
               ! Coordinates of the cubature point
               dx = rassemblyData%revalElementSet%p_DpointsReal(1,icubp,iel)
-              dy = rassemblyData%revalElementSet%p_DpointsReal(1,icubp,iel)
+              dy = rassemblyData%revalElementSet%p_DpointsReal(2,icubp,iel)
 
               ! Calculate the entries in the RHS inside of the observation area
               if ((dx .ge. p_DobservationArea(1)) .and. (dy .ge. p_DobservationArea(2)) .and. &
