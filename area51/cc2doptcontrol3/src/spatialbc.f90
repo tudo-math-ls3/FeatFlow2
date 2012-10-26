@@ -1437,9 +1437,7 @@ contains
               end if
               
               ! Relative parameter value
-              dpar = (boundary_convertParameter(rspaceDiscr%p_rboundary, &
-                  rboundaryRegion%iboundCompIdx, dwhere, &
-                  BDR_PAR_LENGTH, BDR_PAR_01)-dpar1)/(dpar2-dpar1)
+              dpar = (dwhere-dpar1)/(dpar2-dpar1)
                   
               ! Quadratic interpolation over [-1,1]
               call mprim_quadraticInterpolation (2*dpar-1.0_DP,&
@@ -1528,9 +1526,7 @@ contains
               end if
               
               ! Relative parameter value
-              dpar = (boundary_convertParameter(rspaceDiscr%p_rboundary, &
-                  rboundaryRegion%iboundCompIdx, dwhere, &
-                  BDR_PAR_LENGTH, BDR_PAR_01)-dpar1)/(dpar2-dpar1)
+              dpar = (dwhere-dpar1)/(dpar2-dpar1)
                   
               ! Quadratic interpolation over [-1,1]
               call mprim_quadraticInterpolation (2*dpar-1.0_DP,&
