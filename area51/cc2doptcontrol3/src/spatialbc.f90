@@ -1407,7 +1407,7 @@ contains
               ! Search the boundary edge that contains the parameter value
               call tria_searchBoundaryEdgePar2D(rboundaryRegion%iboundCompIdx, dwhere, &
                   rspaceDiscr%p_rtriangulation, rspaceDiscr%p_rboundary, iedge,&
-                  BDR_PAR_LENGTH)
+                  BDR_PAR_01)
               !print *,"Richtig?"
               
               ! Get the vector data
@@ -1498,7 +1498,7 @@ contains
               ! Search the boundary edge that contains the parameter value
               call tria_searchBoundaryEdgePar2D(rboundaryRegion%iboundCompIdx, dwhere, &
                   rspaceDiscr%p_rtriangulation, rspaceDiscr%p_rboundary, iedge,&
-                  BDR_PAR_LENGTH)
+                  BDR_PAR_01)
               !print *,"Richtig?"
               
               ! Get the vector data
