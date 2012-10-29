@@ -1290,7 +1290,7 @@ end subroutine
                 !
                 ! Calculate "nu dn lambda - xi n"
                 call kkt_calcH12BdCNavSt (roperatorAsm%p_rasmTemplates,p_rphysics,&
-                    p_rdualSpace,p_rintermedControl,icomp+1,roptcBDCSpace,0.0_DP,1.0_DP)
+                    p_rdualSpace,p_rintermedControl,icomp+1,roptcBDCSpace,1.0_DP,0.0_DP)
                 
                 ! Initialise basic solver structures
                 call spaceslh_initStructure (rkktSubsolvers%p_rsolverPCSteklov, &
@@ -1322,10 +1322,10 @@ end subroutine
                 ! Cleanup
                 call spaceslh_doneStructure (rkktSubsolvers%p_rsolverPCSteklov)
                 
-                ! Sum up "nu dn w - zeta n"
+                ! Sum up "- alpha (nu dn w - zeta n)"
                 call kkt_calcH12BdCNavSt (roperatorAsm%p_rasmTemplates,p_rphysics,&
                     p_rdualSpace,p_rintermedControl,icomp+1,roptcBDCSpace,&
-                    1.0_DP,-p_rsettingsOptControl%dalphaH12BdC)
+                    -p_rsettingsOptControl%dalphaH12BdC,1.0_DP)
 
                 call sptivec_invalidateVecInPool (&
                     rkktsystem%p_rdualSol%p_rvectorAccess,istep)
@@ -1755,7 +1755,7 @@ end subroutine
   
 !<description>
   ! Calculates the H^1/2 boundary control term
-  !      u  = dweight1*u  +  dweight2 * ( nu dn lambda - xi n )
+  !      u  =  dweight1 * ( nu dn lambda - xi n ) + dweight2*u
   ! from the dual solution.
 !</description>
   
@@ -1776,10 +1776,10 @@ end subroutine
   ! Structure defining boundary conditions
   type(t_optcBDCSpace), intent(in) :: roptcBDCspace
   
-  ! Weight for the existing control
+  ! Weight for the new control
   real(DP), intent(in) :: dweight1
 
-  ! Weight for the new control
+  ! Weight for the existing control
   real(DP), intent(in) :: dweight2
 !</input>
 
@@ -1916,15 +1916,15 @@ end subroutine
         ! Calculate the control in X-direction
         do i=1,NEQlocal
           ! vertices
-          p_Ddata(iidx1-1+i) = dweight1 * p_Ddata(iidx1-1+i) + &
-              dweight2 * ( dnu * p_DlambdaX(i)*p_DnormalX(i)  +  dnu * p_DlambdaY(i)*p_DnormalY(i) - &
+          p_Ddata(iidx1-1+i) = dweight2 * p_Ddata(iidx1-1+i) + &
+              dweight1 * ( dnu * p_DlambdaX(i)*p_DnormalX(i)  +  dnu * p_DlambdaY(i)*p_DnormalY(i) - &
                            p_Dxi(i)*p_DnormalX(i) )
         end do
 
         do i=nvbd+1,nvbd+NEQlocal
           ! edges
-          p_Ddata(iidx1-1+i) = dweight1 * p_Ddata(iidx1-1+i) + &
-              dweight2 * ( dnu * p_DlambdaX(i)*p_DnormalX(i)  +  dnu * p_DlambdaY(i)*p_DnormalY(i) - &
+          p_Ddata(iidx1-1+i) = dweight2 * p_Ddata(iidx1-1+i) + &
+              dweight1 * ( dnu * p_DlambdaX(i)*p_DnormalX(i)  +  dnu * p_DlambdaY(i)*p_DnormalY(i) - &
                            p_Dxi(i)*p_DnormalX(i) )
         end do
             
@@ -1946,15 +1946,15 @@ end subroutine
         ! Calculate the control in Y-direction
         do i=1,NEQlocal
           ! vertices
-          p_Ddata(iidx1-1+i) = dweight1* p_Ddata(iidx1-1+i) + &
-              dweight2 * ( dnu * p_DlambdaX(i)*p_DnormalX(i)  +  dnu * p_DlambdaY(i)*p_DnormalY(i) - &
+          p_Ddata(iidx1-1+i) = dweight2* p_Ddata(iidx1-1+i) + &
+              dweight1 * ( dnu * p_DlambdaX(i)*p_DnormalX(i)  +  dnu * p_DlambdaY(i)*p_DnormalY(i) - &
                            p_Dxi(i)*p_DnormalY(i) )
         end do
 
         do i=nvbd+1,nvbd+NEQlocal
           ! edges
-          p_Ddata(iidx1-1+i) = dweight1 * p_Ddata(iidx1-1+i) + &
-              dweight2 * ( dnu * p_DlambdaX(i)*p_DnormalX(i)  +  dnu * p_DlambdaY(i)*p_DnormalY(i) - &
+          p_Ddata(iidx1-1+i) = dweight2 * p_Ddata(iidx1-1+i) + &
+              dweight1 * ( dnu * p_DlambdaX(i)*p_DnormalX(i)  +  dnu * p_DlambdaY(i)*p_DnormalY(i) - &
                            p_Dxi(i)*p_DnormalY(i) )
         end do
       
@@ -2767,7 +2767,7 @@ end subroutine
                 !
                 ! Calculate "nu dn lambda~ - xi~ n"
                 call kkt_calcH12BdCNavSt (roperatorAsm%p_rasmTemplates,p_rphysics,&
-                    p_rdualSpaceLin,p_rcontrolSpaceLinOutput,icomp+1,roptcBDCSpace,0.0_DP,1.0_DP)
+                    p_rdualSpaceLin,p_rcontrolSpaceLinOutput,icomp+1,roptcBDCSpace,1.0_DP,0.0_DP)
                 
                 ! Initialise basic solver structures
                 call spaceslh_initStructure (rkktSubsolvers%p_rsolverPCSteklov, &
@@ -2800,10 +2800,20 @@ end subroutine
                 ! Cleanup
                 call spaceslh_doneStructure (rkktSubsolvers%p_rsolverPCSteklov)
                 
-                ! Sum up "nu dn w~ - zeta~ n"
+                ! Sum up "- alpha (nu dn w~ - zeta~ n)"
                 call kkt_calcH12BdCNavSt (roperatorAsm%p_rasmTemplates,p_rphysics,&
                     p_rdualSpaceLin,p_rcontrolSpaceLinOutput,icomp+1,roptcBDCSpace,&
-                    1.0_DP,-p_rsettingsOptControl%dalphaH12BdC)
+                    -p_rsettingsOptControl%dalphaH12BdC,1.0_DP)
+                    
+                ! L2 boundary control would be:
+                !call lsyssc_vectorLinearComb ( &
+                !    p_rcontrolSpaceLin%RvectorBlock(icomp+1),p_rcontrolSpaceLinOutput%RvectorBlock(icomp+1),&
+                !    -p_rsettingsOptControl%dalphaH12BdC,1.0_DP,&
+                !    p_rcontrolSpaceLinOutput%RvectorBlock(icomp+1))
+                !call lsyssc_vectorLinearComb ( &
+                !    p_rcontrolSpaceLin%RvectorBlock(icomp+2),p_rcontrolSpaceLinOutput%RvectorBlock(icomp+2),&
+                !    -p_rsettingsOptControl%dalphaH12BdC,1.0_DP,&
+                !    p_rcontrolSpaceLinOutput%RvectorBlock(icomp+2))
 
                 call sptivec_invalidateVecInPool (&
                     rkktsystemDirDeriv%p_rdualSolLin%p_rvectorAccess,istep)
