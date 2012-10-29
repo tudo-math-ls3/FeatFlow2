@@ -35,6 +35,9 @@ module constantsdiscretisation
   ! Intermediate control, control computed from the dual solution
   integer, parameter, public :: CCSPACE_INTERMEDCONTROL = 5
 
+  ! Solution of the Steklov-Poincare-System
+  integer, parameter, public :: CCSPACE_SPSOLUTION = 6
+
 !</constantblock>
 
 !<constantblock description = "Supported equations">

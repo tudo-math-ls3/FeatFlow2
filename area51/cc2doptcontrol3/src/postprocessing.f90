@@ -416,6 +416,8 @@ contains
       sfile = trim(rpostproc%sfilenameUCD)//"_control"
     case (CCSPACE_INTERMEDCONTROL)
       sfile = trim(rpostproc%sfilenameUCD)//"_intermedcontrol"
+    case (CCSPACE_SPSOLUTION)
+      sfile = trim(rpostproc%sfilenameUCD)//"_spsolution"
     end select
     
     ! Create a filename for the visualisation output
@@ -528,7 +530,7 @@ contains
       ! -------------------------------------------
       ! Dual equation
       ! -------------------------------------------
-      case (CCSPACE_DUAL)
+      case (CCSPACE_DUAL,CCSPACE_SPSOLUTION)
 
         select case (rpostproc%p_rsettingsDiscr%ielementType)
         
@@ -672,7 +674,7 @@ contains
       ! -------------------------------------------
       ! Dual equation
       ! -------------------------------------------
-      case (CCSPACE_DUAL)
+      case (CCSPACE_DUAL,CCSPACE_SPSOLUTION)
 
         select case (rpostproc%p_rsettingsDiscr%ielementType)
         
@@ -1501,7 +1503,7 @@ contains
             rsolution%p_rspaceTimeVector%p_rspaceDiscr%p_rtriangulation,&
             rphysics,roptcontrol,i-1,dtime,itag)
 
-      case (CCSPACE_DUAL,CCSPACE_CONTROL,CCSPACE_INTERMEDCONTROL)
+      case (CCSPACE_DUAL,CCSPACE_CONTROL,CCSPACE_INTERMEDCONTROL,CCSPACE_SPSOLUTION)
       
         ! Current time
         call tdiscr_getTimestep(rsolution%p_rspaceTimeVector%p_rtimediscr,i,dtimeStart=dtime)

@@ -57,6 +57,9 @@ module kktsystem
   use spacesolver
   
   use newtonderivative
+  use ucd
+  
+  use spdiscprojection
   
   implicit none
   
@@ -291,6 +294,89 @@ module kktsystem
   public :: kkt_saveDirDerivToFiles
 
 contains
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine optcpp_quickVisDual (rvector,sfilename,ifileid)
+  
+!<description>
+  ! Quick visualisation of a dual solution vector in space.
+!</description>
+
+!<input>
+  ! Basic filename
+  character(len=*), intent(in) :: sfilename
+
+  ! File id to be appended to the filename.
+  integer, intent(in) :: ifileid
+  
+  ! Vector data to write into the file.
+  type(t_vectorBlock), intent(in) :: rvector
+!</input>
+
+!</subroutine>
+
+    ! local variables
+    character(len=SYS_STRLEN) :: sfile,ssuffix
+    real(DP), dimension(:), pointer :: p_Ddata1,p_Ddata2,p_Ddata3
+    integer :: nvt,nmt,nel
+    type(t_ucdExport) :: rexport    
+    
+    ! Create a filename for the visualisation output
+    ssuffix = "."//trim(sys_si0L(ifileid,5))
+
+    sfile = trim(sfilename)//".vtk"//trim(ssuffix)
+    call ucd_startVTK (rexport,&
+        UCD_FLAG_STANDARD+UCD_FLAG_IGNOREDEADNODES+&
+        UCD_FLAG_ONCEREFINED+UCD_FLAG_AUTOINTERPOLATE,&
+        rvector%p_rblockDiscr%p_rtriangulation,&
+        sfile)
+
+    ! Data arrays
+    call lsyssc_getbase_double (Rvector%RvectorBlock(1),p_Ddata1)
+    call lsyssc_getbase_double (Rvector%RvectorBlock(2),p_Ddata2)
+    
+    ! Size of the arrays
+    nvt = Rvector%p_rblockDiscr%p_rtriangulation%nvt
+    nmt = Rvector%p_rblockDiscr%p_rtriangulation%nmt
+    nel = Rvector%p_rblockDiscr%p_rtriangulation%nel
+    
+    ! Write the velocity field
+    call ucd_addVarVertBasedVec(rexport, "velocity_d", UCD_VAR_STANDARD,&
+        p_Ddata1(1:nvt), p_Ddata2(1:nvt), &
+        DdataMid_X=p_Ddata1(nvt+1:nvt+nmt), &
+        DdataMid_Y=p_Ddata2(nvt+1:nvt+nmt), &
+        DdataElem_X=p_Ddata1(nvt+nmt+1:nvt+nmt+nel), &
+        DdataElem_Y=p_Ddata2(nvt+nmt+1:nvt+nmt+nel))
+
+    ! Data arrays
+    call lsyssc_getbase_double (Rvector%RvectorBlock(1),p_Ddata1)
+    call lsyssc_getbase_double (Rvector%RvectorBlock(2),p_Ddata2)
+    
+    ! Size of the arrays
+    nvt = Rvector%p_rblockDiscr%p_rtriangulation%nvt
+    nmt = Rvector%p_rblockDiscr%p_rtriangulation%nmt
+    nel = Rvector%p_rblockDiscr%p_rtriangulation%nel
+    
+    ! Write the velocity field
+    call ucd_addVarVertBasedVec(rexport, "velocity_d", UCD_VAR_STANDARD,&
+        p_Ddata1(1:nvt), p_Ddata2(1:nvt), &
+        DdataMid_X=p_Ddata1(nvt+1:nvt+nmt), &
+        DdataMid_Y=p_Ddata2(nvt+1:nvt+nmt), &
+        DdataElem_X=p_Ddata1(nvt+nmt+1:nvt+nmt+nel), &
+        DdataElem_Y=p_Ddata2(nvt+nmt+1:nvt+nmt+nel))
+
+    ! Write the pressure data
+    call ucd_addVectorByVertex (rexport, &
+        "pressure_d", UCD_VAR_STANDARD, Rvector%RvectorBlock(3))
+        
+    ! Write the file to disc, that is it.
+    call ucd_write (rexport)
+    call ucd_release (rexport)
+
+  end subroutine
 
   ! ***************************************************************************
 
@@ -1290,7 +1376,7 @@ end subroutine
                 !
                 ! Calculate "nu dn lambda - xi n"
                 call kkt_calcH12BdCNavSt (roperatorAsm%p_rasmTemplates,p_rphysics,&
-                    p_rdualSpace,p_rintermedControl,icomp+1,roptcBDCSpace,1.0_DP,0.0_DP)
+                    p_rdualSpace,p_rintermedControl,icomp+1,roptcBDCSpace,1.0_DP,1.0_DP,0.0_DP)
                 
                 ! Initialise basic solver structures
                 call spaceslh_initStructure (rkktSubsolvers%p_rsolverPCSteklov, &
@@ -1325,7 +1411,7 @@ end subroutine
                 ! Sum up "- alpha (nu dn w - zeta n)"
                 call kkt_calcH12BdCNavSt (roperatorAsm%p_rasmTemplates,p_rphysics,&
                     p_rdualSpace,p_rintermedControl,icomp+1,roptcBDCSpace,&
-                    -p_rsettingsOptControl%dalphaH12BdC,1.0_DP)
+                    -p_rsettingsOptControl%dalphaH12BdC,-p_rsettingsOptControl%dalphaH12BdC,1.0_DP)
 
                 call sptivec_invalidateVecInPool (&
                     rkktsystem%p_rdualSol%p_rvectorAccess,istep)
@@ -1751,11 +1837,11 @@ end subroutine
 !<subroutine>
 
   subroutine kkt_calcH12BdCNavSt (rasmTemplates,rphysics,rdualSol,rcontrol,&
-      icomp,roptcBDCspace,dweight1,dweight2)
+      icomp,roptcBDCspace,dweight1,dweight2,dweight3)
   
 !<description>
   ! Calculates the H^1/2 boundary control term
-  !      u  =  dweight1 * ( nu dn lambda - xi n ) + dweight2*u
+  !      u  =  dweight1 * ( nu dn lambda ) - dweight2 * ( xi n ) + dweight2*u
   ! from the dual solution.
 !</description>
   
@@ -1778,9 +1864,10 @@ end subroutine
   
   ! Weight for the new control
   real(DP), intent(in) :: dweight1
+  real(DP), intent(in) :: dweight2
 
   ! Weight for the existing control
-  real(DP), intent(in) :: dweight2
+  real(DP), intent(in) :: dweight3
 !</input>
 
 !<inputoutput>
@@ -1802,6 +1889,10 @@ end subroutine
     integer, dimension(:), pointer :: p_IboundaryCpIdx
     integer :: ibct,iseg,iidx1,iidx2,i,NEQ,nvbd,NEQlocal
     real(DP) :: dnu
+    
+    type(t_vectorScalar) :: rvecQ1
+    type(t_spatialDiscretisation) :: rdiscrQ1
+    real(DP), dimension(:), pointer :: p_DdataQ1
     
     p_rdiscr => rdualSol%p_rblockDiscr%RspatialDiscr(1)
     
@@ -1883,6 +1974,10 @@ end subroutine
       allocate (p_DlambdaY(NEQ))
       allocate (p_Dxi(NEQ))
       
+      ! Q1 discretisation and -vector
+      call spdiscr_deriveSimpleDiscrSc (p_rdiscr, EL_Q1, rdiscrQ1)
+      call lsyssc_createVector (rdiscrQ1,rvecQ1,.false.)
+      
       ! Loop over the boundary components
       do ibct = 1,p_rdiscr%p_rtriangulation%nbct
       
@@ -1892,10 +1987,20 @@ end subroutine
         NEQlocal = iidx2-iidx1
 
         ! Evaluare XI
-        call fevl_evaluateBdr2d (DER_FUNC, p_Dxi(iidx1:iidx2), rdualSol%RvectorBlock(3), &
+!        call fevl_evaluateBdr2d (DER_FUNC, p_Dxi(iidx1:iidx2), rdualSol%RvectorBlock(3), &
+!            p_DparValues(iidx1:iidx2),ibct,BDR_PAR_01)
+!
+!        call fevl_evaluateBdr2d (DER_FUNC, p_Dxi(iidx1+nvbd:iidx2+nvbd), rdualSol%RvectorBlock(3), &
+!            p_DparValues(iidx1+nvbd:iidx2+nvbd),ibct,BDR_PAR_01)
+
+        call lsyssc_clearvector (rvecQ1)
+        call lsyssc_getbase_double (rvecQ1,p_DdataQ1)
+        call spdp_projectToVertices (rdualSol%RvectorBlock(3), p_DdataQ1)
+        
+        call fevl_evaluateBdr2d (DER_FUNC, p_Dxi(iidx1:iidx2), rvecQ1, &
             p_DparValues(iidx1:iidx2),ibct,BDR_PAR_01)
 
-        call fevl_evaluateBdr2d (DER_FUNC, p_Dxi(iidx1+nvbd:iidx2+nvbd), rdualSol%RvectorBlock(3), &
+        call fevl_evaluateBdr2d (DER_FUNC, p_Dxi(iidx1+nvbd:iidx2+nvbd), rvecQ1, &
             p_DparValues(iidx1+nvbd:iidx2+nvbd),ibct,BDR_PAR_01)
 
         ! Evaluare D(lambda1)
@@ -1916,16 +2021,16 @@ end subroutine
         ! Calculate the control in X-direction
         do i=1,NEQlocal
           ! vertices
-          p_Ddata(iidx1-1+i) = dweight2 * p_Ddata(iidx1-1+i) + &
-              dweight1 * ( dnu * p_DlambdaX(i)*p_DnormalX(i)  +  dnu * p_DlambdaY(i)*p_DnormalY(i) - &
-                           p_Dxi(i)*p_DnormalX(i) )
+          p_Ddata(iidx1-1+i) = dweight3 * p_Ddata(iidx1-1+i) + &
+              dweight1 * ( dnu * p_DlambdaX(i)*p_DnormalX(i)  +  dnu * p_DlambdaY(i)*p_DnormalY(i) ) &
+            - dweight2 * ( p_Dxi(i)*p_DnormalX(i) )
         end do
 
         do i=nvbd+1,nvbd+NEQlocal
           ! edges
-          p_Ddata(iidx1-1+i) = dweight2 * p_Ddata(iidx1-1+i) + &
-              dweight1 * ( dnu * p_DlambdaX(i)*p_DnormalX(i)  +  dnu * p_DlambdaY(i)*p_DnormalY(i) - &
-                           p_Dxi(i)*p_DnormalX(i) )
+          p_Ddata(iidx1-1+i) = dweight3 * p_Ddata(iidx1-1+i) + &
+              dweight1 * ( dnu * p_DlambdaX(i)*p_DnormalX(i)  +  dnu * p_DlambdaY(i)*p_DnormalY(i) ) &
+            - dweight2 * ( p_Dxi(i)*p_DnormalX(i) )
         end do
             
         ! Evaluare D(lambda2)
@@ -1946,19 +2051,22 @@ end subroutine
         ! Calculate the control in Y-direction
         do i=1,NEQlocal
           ! vertices
-          p_Ddata(iidx1-1+i) = dweight2* p_Ddata(iidx1-1+i) + &
-              dweight1 * ( dnu * p_DlambdaX(i)*p_DnormalX(i)  +  dnu * p_DlambdaY(i)*p_DnormalY(i) - &
-                           p_Dxi(i)*p_DnormalY(i) )
+          p_Ddata(iidx1-1+i) = dweight3* p_Ddata(iidx1-1+i) + &
+              dweight1 * ( dnu * p_DlambdaX(i)*p_DnormalX(i)  +  dnu * p_DlambdaY(i)*p_DnormalY(i) )&
+            - dweight2 * ( p_Dxi(i)*p_DnormalY(i) )
         end do
 
         do i=nvbd+1,nvbd+NEQlocal
           ! edges
-          p_Ddata(iidx1-1+i) = dweight2 * p_Ddata(iidx1-1+i) + &
-              dweight1 * ( dnu * p_DlambdaX(i)*p_DnormalX(i)  +  dnu * p_DlambdaY(i)*p_DnormalY(i) - &
-                           p_Dxi(i)*p_DnormalY(i) )
+          p_Ddata(iidx1-1+i) = dweight3 * p_Ddata(iidx1-1+i) + &
+              dweight1 * ( dnu * p_DlambdaX(i)*p_DnormalX(i)  +  dnu * p_DlambdaY(i)*p_DnormalY(i) )&
+            - dweight2 * ( p_Dxi(i)*p_DnormalY(i) )
         end do
       
       end do
+      
+      call lsyssc_releaseVector (rvecQ1)
+      call spdiscr_releaseDiscr (rdiscrQ1)
         
       deallocate (p_DparValues)
       deallocate (p_DnormalX)
@@ -2767,7 +2875,7 @@ end subroutine
                 !
                 ! Calculate "nu dn lambda~ - xi~ n"
                 call kkt_calcH12BdCNavSt (roperatorAsm%p_rasmTemplates,p_rphysics,&
-                    p_rdualSpaceLin,p_rcontrolSpaceLinOutput,icomp+1,roptcBDCSpace,1.0_DP,0.0_DP)
+                    p_rdualSpaceLin,p_rcontrolSpaceLinOutput,icomp+1,roptcBDCSpace,1.0_DP,1.0_DP,0.0_DP)
                 
                 ! Initialise basic solver structures
                 call spaceslh_initStructure (rkktSubsolvers%p_rsolverPCSteklov, &
@@ -2800,10 +2908,12 @@ end subroutine
                 ! Cleanup
                 call spaceslh_doneStructure (rkktSubsolvers%p_rsolverPCSteklov)
                 
+                ! call optcpp_quickVisDual (p_rdualSpaceLin,"./pcsteklov",istep)
+                
                 ! Sum up "- alpha (nu dn w~ - zeta~ n)"
                 call kkt_calcH12BdCNavSt (roperatorAsm%p_rasmTemplates,p_rphysics,&
                     p_rdualSpaceLin,p_rcontrolSpaceLinOutput,icomp+1,roptcBDCSpace,&
-                    -p_rsettingsOptControl%dalphaH12BdC,1.0_DP)
+                    -p_rsettingsOptControl%dalphaH12BdC,-p_rsettingsOptControl%dalphaH12BdC,1.0_DP)
                     
                 ! L2 boundary control would be:
                 !call lsyssc_vectorLinearComb ( &
