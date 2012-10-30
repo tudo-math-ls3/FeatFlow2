@@ -292,6 +292,12 @@ Rate of convergence     : 7.630810553755107E-01
 L2-error: 1.4803232180E-04
 H1-error: 3.7269151831E-02
 
+Calculating Poisson-2D-Problem with method 0 - RavThomas
+--------------------------------------------------------
+UMFPACK: !!Initial RES!! = 2.071382593779398E-02
+UMFPACK: !!solution!!    = 1.522000834423644E+00 Status = 0
+L2-error: 3.5105732389E-03
+
 Calculating Poisson-2D-Problem with method 1 - ncc
 --------------------------------------------------
 BiCGStab: Iteration 0,  !!RES!! = 2.485418745327014E-02
