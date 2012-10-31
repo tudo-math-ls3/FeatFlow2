@@ -1975,8 +1975,8 @@ end subroutine
       allocate (p_Dxi(NEQ))
       
       ! Q1 discretisation and -vector
-      call spdiscr_deriveSimpleDiscrSc (p_rdiscr, EL_Q1, rdiscrQ1)
-      call lsyssc_createVector (rdiscrQ1,rvecQ1,.false.)
+!      call spdiscr_deriveSimpleDiscrSc (p_rdiscr, EL_Q1, rdiscrQ1)
+!      call lsyssc_createVector (rdiscrQ1,rvecQ1,.false.)
       
       ! Loop over the boundary components
       do ibct = 1,p_rdiscr%p_rtriangulation%nbct
