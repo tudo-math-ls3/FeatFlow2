@@ -10,14 +10,42 @@ module fmecore
 
 contains
 
+  ! virtually identical to sys_sdl, but trims away trailing zeroes
+  character(len=32) function fmtCoord(dv) result(scoord)
+  real(DP), intent(in) :: dv
+  
+  integer :: i,n1,n2
+  
+    write (unit = scoord, fmt='(F32.16)') dv
+    
+    ! find first non-whitespace character
+    n1 = 1
+    do n1=1, 32
+      if(scoord(n1:n1) .ne. ' ') exit
+    end do
+    
+    ! find last non-zero character
+    n2 = n1
+    do i=n1, 32
+      if(scoord(i:i) .ne. '0') n2 = i
+    end do
+    
+    ! build left-aligned trimmed string; trim away period if possible
+    if(scoord(n2:n2) .eq. '.') n2 = n2 - 1
+    do i = 0, n2-n1
+      scoord(i+1:i+1) = scoord(n1+i:n1+i)
+    end do
+    scoord(n2-n1+2:32) = ' '
+    
+  end function
+
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine fme_writeCoordsChunk(iunit, rtria, ndigits)
+  subroutine fme_writeCoordsChunk(iunit, rtria)
   integer, intent(IN) :: iunit
   type(t_triangulation), intent(INOUT) :: rtria
-  integer, intent(in) :: ndigits
 
 !</subroutine>
 
@@ -35,22 +63,22 @@ contains
     case (1)
       do i = 1, rtria%NVT
         write(iunit, '(A)') '  ' // &
-          trim(sys_sdel(p_Dvtx(1,i), ndigits))
+          trim(fmtCoord(p_Dvtx(1,i)))
       end do
       
     case (2)
       do i = 1, rtria%NVT
         write(iunit, '(A)') '  ' // &
-          trim(sys_sdel(p_Dvtx(1,i), ndigits)) // ' ' // &
-          trim(sys_sdel(p_Dvtx(2,i), ndigits))
+          trim(fmtCoord(p_Dvtx(1,i))) // ' ' // &
+          trim(fmtCoord(p_Dvtx(2,i)))
       end do
 
     case (3)
       do i = 1, rtria%NVT
         write(iunit, '(A)') '  ' // &
-          trim(sys_sdel(p_Dvtx(1,i), ndigits)) // ' ' // &
-          trim(sys_sdel(p_Dvtx(2,i), ndigits)) // ' ' // &
-          trim(sys_sdel(p_Dvtx(3,i), ndigits))
+          trim(fmtCoord(p_Dvtx(1,i))) // ' ' // &
+          trim(fmtCoord(p_Dvtx(2,i))) // ' ' // &
+          trim(fmtCoord(p_Dvtx(3,i)))
       end do
 
     end select

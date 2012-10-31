@@ -106,7 +106,7 @@ contains
     write(iunit,'(A)') ' </counts>'
     
     ! write coords
-    call fme_writeCoordsChunk(iunit, rtria, 8)
+    call fme_writeCoordsChunk(iunit, rtria)
     
     ! write adjacencies
     call fma_writeAdjacencyChunkEdge(iunit, rtria%h_IverticesAtEdge, rtria%NMT)
@@ -123,7 +123,7 @@ contains
     
     ! write submeshes
     do ibct = 1, rtria%NBCT
-      call fma2d_writeSubmeshChunk(iunit, rtria, rbnd, ibct, 8)
+      call fma2d_writeSubmeshChunk(iunit, rtria, rbnd, ibct)
     end do
     
     ! write file terminator
@@ -138,12 +138,11 @@ contains
 
   end subroutine
 
-  subroutine fma2d_writeSubmeshChunk(iunit, rtria, rbnd, ibct, ndigits)
+  subroutine fma2d_writeSubmeshChunk(iunit, rtria, rbnd, ibct)
   integer, intent(in) :: iunit
   type(t_triangulation), intent(inout) :: rtria
   type(t_boundary), intent(inout) :: rbnd
   integer, intent(in) :: ibct
-  integer, intent(in) :: ndigits
   
   integer :: i, n0, n1
   integer, dimension(:), pointer :: p_IbdCptIdx, p_Ivtx, p_Iedge
@@ -180,10 +179,10 @@ contains
     ! write coords
     write(iunit, '(A)') ' <coords>'
     do i=n0, n1-1
-      write(iunit, '(A)') '  ' // trim(sys_sdel(p_Dvtx(i), ndigits))
+      write(iunit, '(A)') '  ' // trim(fmtCoord(p_Dvtx(i)))
     end do
     ! add a last vertex containing the maximum parameter value
-    write(iunit, '(A)') '  ' // trim(sys_sdel(boundary_dgetMaxParVal(rbnd, ibct), ndigits))
+    write(iunit, '(A)') '  ' // trim(fmtCoord(boundary_dgetMaxParVal(rbnd, ibct)))
     write(iunit, '(A)') ' </coords>'
     
     ! write vert@edge
