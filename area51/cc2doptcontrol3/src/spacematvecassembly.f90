@@ -6507,7 +6507,7 @@ contains
       ! -----------------------------------------
       ! Laplace
       if (p_ranalyticData%p_rphysics%cviscoModel .eq. 0) then
-        call smva_getLaplaceMatrix (roperatorAsm,rmatrix,1.0_DP)
+        call smva_getLaplaceMatrix (roperatorAsm,rmatrix,p_ranalyticData%p_rphysics%dnuConst)
       else
         call output_line("Nonconstant viscosity not supported.",&
             OU_CLASS_ERROR,OU_MODE_STD,"smva_assembleMatrix_primal")
