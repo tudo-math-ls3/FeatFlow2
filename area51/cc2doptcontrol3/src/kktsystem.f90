@@ -1739,7 +1739,7 @@ end subroutine
         ! Get the position of the boundary segment
         iidx1 = p_IboundaryCpIdx(ibct)
         iidx2 = p_IboundaryCpIdx(ibct+1)-1
-        NEQlocal = iidx2-iidx1
+        NEQlocal = iidx2-iidx1+1
 
         ! Evaluare XI
         call fevl_evaluateBdr2d (DER_FUNC, p_Dxi(iidx1:iidx2), rdualSol%RvectorBlock(3), &
@@ -1984,24 +1984,24 @@ end subroutine
         ! Get the position of the boundary segment
         iidx1 = p_IboundaryCpIdx(ibct)
         iidx2 = p_IboundaryCpIdx(ibct+1)-1
-        NEQlocal = iidx2-iidx1
+        NEQlocal = iidx2-iidx1+1
 
         ! Evaluare XI
-!        call fevl_evaluateBdr2d (DER_FUNC, p_Dxi(iidx1:iidx2), rdualSol%RvectorBlock(3), &
-!            p_DparValues(iidx1:iidx2),ibct,BDR_PAR_01)
-!
-!        call fevl_evaluateBdr2d (DER_FUNC, p_Dxi(iidx1+nvbd:iidx2+nvbd), rdualSol%RvectorBlock(3), &
-!            p_DparValues(iidx1+nvbd:iidx2+nvbd),ibct,BDR_PAR_01)
-
-        call lsyssc_clearvector (rvecQ1)
-        call lsyssc_getbase_double (rvecQ1,p_DdataQ1)
-        call spdp_projectToVertices (rdualSol%RvectorBlock(3), p_DdataQ1)
-        
-        call fevl_evaluateBdr2d (DER_FUNC, p_Dxi(iidx1:iidx2), rvecQ1, &
+        call fevl_evaluateBdr2d (DER_FUNC, p_Dxi(iidx1:iidx2), rdualSol%RvectorBlock(3), &
             p_DparValues(iidx1:iidx2),ibct,BDR_PAR_01)
 
-        call fevl_evaluateBdr2d (DER_FUNC, p_Dxi(iidx1+nvbd:iidx2+nvbd), rvecQ1, &
+        call fevl_evaluateBdr2d (DER_FUNC, p_Dxi(iidx1+nvbd:iidx2+nvbd), rdualSol%RvectorBlock(3), &
             p_DparValues(iidx1+nvbd:iidx2+nvbd),ibct,BDR_PAR_01)
+
+!        call lsyssc_clearvector (rvecQ1)
+!        call lsyssc_getbase_double (rvecQ1,p_DdataQ1)
+!        call spdp_projectToVertices (rdualSol%RvectorBlock(3), p_DdataQ1)
+!        
+!        call fevl_evaluateBdr2d (DER_FUNC, p_Dxi(iidx1:iidx2), rvecQ1, &
+!            p_DparValues(iidx1:iidx2),ibct,BDR_PAR_01)
+!
+!        call fevl_evaluateBdr2d (DER_FUNC, p_Dxi(iidx1+nvbd:iidx2+nvbd), rvecQ1, &
+!            p_DparValues(iidx1+nvbd:iidx2+nvbd),ibct,BDR_PAR_01)
 
         ! Evaluare D(lambda1)
         call fevl_evaluateBdr2d (DER_DERIV2D_X, p_DlambdaX(iidx1:iidx2), rdualSol%RvectorBlock(1), &
@@ -2065,8 +2065,8 @@ end subroutine
       
       end do
       
-      call lsyssc_releaseVector (rvecQ1)
-      call spdiscr_releaseDiscr (rdiscrQ1)
+!      call lsyssc_releaseVector (rvecQ1)
+!      call spdiscr_releaseDiscr (rdiscrQ1)
         
       deallocate (p_DparValues)
       deallocate (p_DnormalX)
@@ -2138,13 +2138,15 @@ end subroutine
       ! Figure out the DOFs there.
       h_Idofs = ST_NOHANDLE
       call bcasm_getDOFsInBDRegion (rspatialDiscr,p_rbdEntry%rboundaryRegion, h_Idofs)
-      call storage_getbase_int (h_Idofs,p_Idofs)
-      
-      ! Mark these DOFs.
-      call nsets_putElements (rset,p_Idofs)
-      
-      ! Release the DOF-list
-      call storage_free (h_Idofs)
+      if (h_Idofs .ne. ST_NOHANDLE) then
+        call storage_getbase_int (h_Idofs,p_Idofs)
+        
+        ! Mark these DOFs.
+        call nsets_putElements (rset,p_Idofs)
+        
+        ! Release the DOF-list
+        call storage_free (h_Idofs)
+      end if
       
       ! Next
       p_rbdEntry => p_rbdEntry%p_nextBdRegion
