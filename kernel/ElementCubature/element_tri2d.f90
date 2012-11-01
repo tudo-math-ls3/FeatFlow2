@@ -1724,7 +1724,10 @@ contains
     logical :: bsuccess
 
     ! Loop through all elements
-    !$omp parallel do default(shared) private(i,dxi1,dxi2,itwist,dtwist1,dtwist2,dtwist3)&
+    !$omp parallel do default(shared)&
+    !$omp private(dx1,dx2,dx3,dy1,dy2,dy3,dlen1,dlen2,dlen3,&
+    !$omp         dnx1,dnx2,dnx3,dny1,dny2,dny3,dmx1,dmx2,dmx3,&
+    !$omp         dmy1,dmy2,dmy3,itwist,dtwist1,dtwist2,dtwist3)&
     !$omp if(reval%nelements > reval%p_rperfconfig%NELEMMIN_OMP)
     do iel = 1, reval%nelements
 
