@@ -190,7 +190,7 @@ contains
         do icubp = 1,npointsPerElement
 
           dx = p_Dpoints(1,icubp,iel)
-          dy = p_Dpoints(1,icubp,iel)
+          dy = p_Dpoints(2,icubp,iel)
           
           ! Calculate the error only in the observation area
           if ( (dx .ge. dminx) .and. &
@@ -233,7 +233,7 @@ contains
         do icubp = 1,npointsPerElement
 
           dx = p_Dpoints(1,icubp,iel)
-          dy = p_Dpoints(1,icubp,iel)
+          dy = p_Dpoints(2,icubp,iel)
 
           ! Calculate the error only in the observation area
           if ( (dx .ge. dminx) .and. &
