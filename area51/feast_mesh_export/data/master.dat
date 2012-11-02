@@ -3,20 +3,24 @@
 nDim = 2
 
 # Name of the input PRM file
-sPrmFile = QUAD
+sPrmFile = quad
 
 # Name of the input TRI file
-sTriFile = QUAD
+sTriFile = quad
 
 # Number of mesh refinement steps
 nLevel = 0
 
-# Name of the output chart file (currently ignored)
-sChartFile = unit-square-chart
+# Name of the output chart file
+sChartFile = unit-square-chart.txt
 
 # Name of the output mesh file
-sMeshFile = unit-square-mesh
+sMeshFile = unit-square-mesh.txt
 
-# File Info string array
-sFileInfo(1) =
+# Chart-File Info string array
+sChartFileInfo(1) =
+  This is the unit-square chart.
+
+# MeshFile Info string array
+sMeshFileInfo(1) =
   This is the unit-square mesh.
