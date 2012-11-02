@@ -839,9 +839,6 @@ contains
 
     integer :: i,j,k
 
-      ! Return if there is nothing to do here...
-      if(m .le. n) return
-
       ! Bubble-sort - replace with something faster later...
 
       ! Remark:
@@ -866,9 +863,6 @@ contains
     integer, dimension(:), intent(inout) :: Iperm, Iaux
 
     integer :: i,j,k
-
-      ! Return if there is nothing to do here...
-      if(m .le. n) return
 
       ! Bubble-sort - replace with something faster later...
       do i = m, n
