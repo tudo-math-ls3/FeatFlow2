@@ -2494,7 +2494,7 @@ sub create_feastAppMakefile {
         "# But ensure that no kernel module that is - wrongfully - missing from\n" .
         "# SRCLIST_KERNEL etc. is reported as being listed in \$(SRCEXTRA) or\n" .
         "# \$(SRCEXTRA_APP). This would baffle the user completely.\n" .
-        "\$(OBJDIR)/%.o:\n" .
+        "#\n" .
         "# File from SRCEXTRA and SRCEXTRA_APP that can not be found?\n" .
         "define srcextra_file_not_found\n" .
         "    echo;\n" .
@@ -2520,6 +2520,7 @@ sub create_feastAppMakefile {
         "    echo;\n" .
         "    exit 1\n" .
         "endef\n" .
+        "\$(OBJDIR)/%.o:\n" .
         "\t\@\$(if \$(strip \$(filter \$*.%, \$(SRCEXTRA) \$(SRCEXTRA_APP))), \\\n" .
         "\t\t\$(srcextra_file_not_found), \$(kernel_file_not_on_the_list))\n\n" .
         "\n\n";
