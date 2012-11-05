@@ -2468,32 +2468,26 @@ sub create_feastAppMakefile {
 	"\$(patsubst %.cu, \$(OBJDIR)/%.o, \$(filter %.cu, \$(notdir \$(SRCEXTRA) \$(SRCEXTRA_APP)))): \$(SRCEXTRA) \$(SRCEXTRA_APP)\n" .
 	"\t\$(PRECUDA) \$(CUDA) \$(APPONLYFLAGS) \$(CFLAGSCUDA) \$(INC) -c \$(filter %/\$(notdir \$(basename \$\@)).cu, \$(SRCEXTRA) \$(SRCEXTRA_APP)) -o \$\@\n\n" .
 
-    # All files listed in $(SRCEXTRA) and $(SRCEXTRA_APP) should be
-    # compiled, but depending on its extension with a separate
-    # rule. Fortran, Fortran90, C, C++ and CUDA source files have been
-    # dealt with above. If, however, a file is listed in $(SRCEXTRA)
-    # or $(SRCEXTRA_APP) that does not exist in $(SRCDIR_ARCH) none of
-    # the above rules matched. The following rule is a catch-all for
-    # any remaining object file to be compiled - be it because its
-    # source file is written in another language or be it because its
-    # source file simply does not exist.
-
-    # But ensure that no kernel module that is - wrongfully - missing
-    # from SRCLIST_KERNEL etc. is reported as being listed in
-    # $(SRCEXTRA) and $(SRCEXTRA_APP). This would baffle the user
-    # completely.
-        "# All files listed in \$(SRCEXTRA) and \$(SRCEXTRA_APP) should be\n" .
-        "# compiled, but depending on its extension with a separate rule.\n" .
-        "# Fortran, Fortran90, C, C++ and CUDA source files have been dealt\n" .
-        "# with above. If, however, a file is listed in \$(SRCEXTRA) or\n" .
-	"# \$(SRCEXTRA_APP )that does not exist in \$(SRCDIR_ARCH) none\n" .
-        "# of the above rules matched. The following rule is a catch-all for\n" .
-        "# any remaining object file to be compiled - be it because its\n" .
-        "# source file is written in another language or be it because its\n" .
-        "# source file simply does not exist.\n" .
-        "# But ensure that no kernel module that is - wrongfully - missing from\n" .
-        "# SRCLIST_KERNEL etc. is reported as being listed in \$(SRCEXTRA) or\n" .
-        "# \$(SRCEXTRA_APP). This would baffle the user completely.\n" .
+    # All files listed in $(SRCEXTRA) should be compiled, but depending on
+    # their extension with a separate rule. Fortran, Fortran90, C, C++ and
+    # CUDA source files have been dealt with above. Due to all object files in
+    # $(OBJEXTRA) depending on all source files in $(SRCEXTRA) and
+    # $(SRCEXTRA_APP), an error will get raised by GNU Make if one of the
+    # source files listed in $(SRCEXTRA) or $(SRCEXTRA_APP) does not
+    # exist. But it might be that e.g. some Fortran module, referenced by a
+    # 'use' statement in a kernel or application source file, was neither
+    # included in $(SRCLIST_KERNEL) nor $(SRCLIST_APP). Try to catch these
+    # cases and raise a meaningful error message:
+        "# All files listed in \$(SRCEXTRA) should be compiled, but depending on\n" .
+        "# their extension with a separate rule. Fortran, Fortran90, C, C++ and\n" .
+        "# CUDA source files have been dealt with above. Due to all object files in\n" .
+        "# \$(OBJEXTRA) depending on all source files in \$(SRCEXTRA) and\n" .
+        "# \$(SRCEXTRA_APP), an error will get raised by GNU Make if one of the\n" .
+        "# source files listed in \$(SRCEXTRA) or \$(SRCEXTRA_APP) does not\n" .
+        "# exist. But it might be that e.g. some Fortran module, referenced by a\n" .
+        "# 'use' statement in a kernel or application source file, was neither\n" .
+        "# included in \$(SRCLIST_KERNEL) nor \$(SRCLIST_APP). Try to catch these\n" .
+        "# cases and raise a meaningful error message:\n" .
         "#\n" .
         "# File from SRCEXTRA and SRCEXTRA_APP that can not be found?\n" .
         "define srcextra_file_not_found\n" .
@@ -2522,7 +2516,7 @@ sub create_feastAppMakefile {
         "endef\n" .
         "\$(OBJDIR)/%.o:\n" .
         "\t\@\$(if \$(strip \$(filter \$*.%, \$(SRCEXTRA) \$(SRCEXTRA_APP))), \\\n" .
-        "\t\t\$(srcextra_file_not_found), \$(kernel_file_not_on_the_list))\n\n" .
+        "\t\t\$(srcextra_file_not_found), \$(kernel_file_not_on_the_list))\n" .
         "\n\n";
 
 
