@@ -1609,7 +1609,7 @@ contains
         call stat_startTimer (rstatistics%rtimeDefect)
         
         ! Compute the basic (unpreconditioned) search direction in rd.
-        if (rsolver%riter%niterations .eq. 0) then
+        if (rsolver%riter%cstatus .eq. ITC_STATUS_UNDEFINED) then
           call smva_getDef_primal (p_rd,&
               rsolver%ispacelevel,rsolver%itimelevel,idofTime,&
               rsolver%p_roperatorAsmHier,rprimalSol,rcontrol,&
