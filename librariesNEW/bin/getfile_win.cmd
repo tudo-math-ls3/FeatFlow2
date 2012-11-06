@@ -25,6 +25,8 @@ goto unpack
 
 :unpack
 
-echo Unpacking '%~nx1'...
+rem Unpacking is currently disabled due to problems with file access rights
+rem when using gzip to unpack the archives. Unpack the archives by hand.
+rem echo Unpacking '%~nx1'...
 
-.\bin\gzip -f --stdout -d %~nx1 | .\bin\tar -xf -
+rem .\bin\gzip -f --stdout -d %~nx1 | .\bin\tar -xf -
