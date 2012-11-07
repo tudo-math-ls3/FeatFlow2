@@ -25,8 +25,5 @@ goto unpack
 
 :unpack
 
-rem Unpacking is currently disabled due to problems with file access rights
-rem when using gzip to unpack the archives. Unpack the archives by hand.
-rem echo Unpacking '%~nx1'...
-
-rem .\bin\gzip -f --stdout -d %~nx1 | .\bin\tar -xf -
+echo Unpacking '%~nx1'...
+.\bin\7za x -so %~nx1 2>&3 | .\bin\7za x -si -ttar -aos > nul
