@@ -2500,6 +2500,9 @@ module linearsolver
     ! List of elements upwind to one element
     integer, dimension(:,:), pointer :: p_IupwElems
     
+    ! List of elements downwind to one element
+    integer, dimension(:,:), pointer :: p_IdownwElems
+    
     
   end type
   
@@ -3854,6 +3857,7 @@ contains
 
     ! Allocate the node - the default initialisation will set most of the
     ! parameters in the structure.
+    !if ( .not.associated(p_rsolverNode))
     allocate(p_rsolverNode)
 
   end subroutine
@@ -21622,6 +21626,49 @@ contains
                   
                   end do ! iblock
                   
+                  
+                  ! Loop over all blocks right of the blockdiagonal
+                  ! That is loop over all downwind elements
+                  do iblock = 1, 3
+                    
+                    ! Get downwind element
+                    ielRef = rsolverNode%p_rsubnodeBlockUpwGS%p_IdownwElems(iblock,iel)
+                    
+                    ! If it exists
+                    if (ielRef.ne.0) then
+
+                      ! Get global DOFs of downwind element
+                      call dof_locGlobMapping(p_rspatialDiscr, ielRef, IdofGlobRef)
+                      
+!                      ! Loop over all local lines
+!                      do i = 1, indof
+                          ig = IdofGlob(i)
+                        ! Loop over all (downwind) columns
+                        do j = 1, indof
+                          jg = IdofGlobRef(j)
+                          
+                          do iloc = p_KLD(ig), p_KLD(ig+1)-1
+                             if (jg.eq.p_KCOL(iloc)) then
+                               exit
+                             endif  
+!                             if ((iloc.eq.p_KLD(ig+1)-1).and.(jg.ne.p_KCOL(iloc))) then
+!                               write(*,*) "nicht gefunden, iel, ielREF", iel, ielREF
+!                             endif
+                          end do
+
+!                          Dtemp(i) = Dtemp(i)+p_DA(iloc)*p_Dsol(jg)
+                          DlocVec(i) = DlocVec(i) - p_Dmatrix(iloc)*p_Dvector(jg)
+                      
+!                        end do ! i lines in element
+                           
+                      end do ! j columns in RefElement
+                     
+                    endif ! check if upwind element exists
+                  
+                  end do ! iblock
+                  
+                  
+                  
 !                  ! Substract product with lower diagonal
 !                  do jg = p_KLD(ig), p_KLD(ig+1)-1
 !                    if (p_KCOL(jg).ge.IdofGlob(1)) exit
@@ -21773,6 +21820,8 @@ contains
     ! Allocate list of upwind elements to one element
     allocate(rsolverNode%p_rsubNodeBlockUpwGS%p_IupwElems(3, &
               rsolverNode%p_rsubNodeBlockUpwGS%p_rtriangulation%NEL))
+    allocate(rsolverNode%p_rsubNodeBlockUpwGS%p_IdownwElems(3, &
+              rsolverNode%p_rsubNodeBlockUpwGS%p_rtriangulation%NEL))
     
   
   end subroutine
@@ -21826,7 +21875,7 @@ contains
   integer, dimension(:,:), allocatable :: IdownwElems
   integer, dimension(:), allocatable :: Ioutdeg
 
-  integer, dimension(:,:), pointer :: p_IupwElems
+  integer, dimension(:,:), pointer :: p_IupwElems, p_IdownwElems
   integer, dimension(:), pointer :: p_Iqueue
   type(t_triangulation), pointer :: p_rtriangulation
 
@@ -21851,6 +21900,7 @@ contains
     
     ! Get pointer to upwind array
     p_IupwElems => rsolverNode%p_rsubNodeBlockUpwGS%p_IupwElems
+    p_IdownwElems => rsolverNode%p_rsubNodeBlockUpwGS%p_IdownwElems
     
     ! Get pointer to (soon to be sorted) element list
     p_Iqueue => rsolverNode%p_rsubNodeBlockUpwGS%p_Iqueue
@@ -21860,7 +21910,7 @@ contains
     
     ! Allocate space for array with information which elements are
     ! located downwind and their degree
-    allocate(IdownwElems(3,NEL))
+    !allocate(IdownwElems(3,NEL))
     allocate(Ioutdeg(NEL))
     
     ! Get pointer to elements at edge
@@ -21869,7 +21919,7 @@ contains
     
     ! Initialize arrays
     Ioutdeg(:)       = 0
-    IdownwElems(:,:) = 0
+    p_IdownwElems(:,:) = 0
     p_IupwElems(:,:) = 0
     p_Iqueue(:)      = 0
 
@@ -21915,12 +21965,12 @@ contains
           Ioutdeg(idownwind) = Ioutdeg(idownwind) + 1
         
           ! Write downwind information to free space
-          if (IdownwElems(1,iupwind).eq.0) then
-            IdownwElems(1,iupwind) = idownwind
-          elseif (IdownwElems(2,iupwind).eq.0) then
-            IdownwElems(2,iupwind) = idownwind
+          if (p_IdownwElems(1,iupwind).eq.0) then
+            p_IdownwElems(1,iupwind) = idownwind
+          elseif (p_IdownwElems(2,iupwind).eq.0) then
+            p_IdownwElems(2,iupwind) = idownwind
           else
-            IdownwElems(3,iupwind) = idownwind
+            p_IdownwElems(3,iupwind) = idownwind
           endif
           
           ! Write upwind information to free space
@@ -21947,7 +21997,7 @@ contains
         p_Iqueue(NELinqueue) = i
       endif
     end do
-    
+
     ! Now we do the Resorting, go through the Elements starting at the Boundary
     ! NELinqueue is NOT reset
     do i = 1, NEL
@@ -21965,9 +22015,9 @@ contains
       endif
       
       ! Get all downwind neighbours
-      iv1 = IdownwElems(1,Iv)
-      iv2 = IdownwElems(2,Iv)
-      iv3 = IdownwElems(3,Iv)
+      iv1 = p_IdownwElems(1,Iv)
+      iv2 = p_IdownwElems(2,Iv)
+      iv3 = p_IdownwElems(3,Iv)
       
       ! Now - for all downwind neighbours:
       ! 1. Decrease their degree
@@ -22001,7 +22051,7 @@ contains
     end do
     
     ! Deallocate arrays
-    deallocate(IdownwElems,Ioutdeg)
+    deallocate(Ioutdeg)!,IdownwElems)
     
   
   end subroutine
@@ -22105,7 +22155,14 @@ contains
       deallocate(rsolverNode%p_rsubNodeBlockUpwGS%p_IupwElems)
       nullify(rsolverNode%p_rsubNodeBlockUpwGS%p_IupwElems)
     end if
+    
+    if (associated(rsolverNode%p_rsubNodeBlockUpwGS%p_IdownwElems)) then
+      deallocate(rsolverNode%p_rsubNodeBlockUpwGS%p_IdownwElems)
+      nullify(rsolverNode%p_rsubNodeBlockUpwGS%p_IdownwElems)
+    end if
       
   end subroutine
+  
+  
 
 end module
