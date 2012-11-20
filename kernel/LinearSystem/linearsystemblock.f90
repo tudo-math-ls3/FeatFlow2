@@ -5017,7 +5017,7 @@ contains
   ! If not specified, the vector is left uninitialised.
   logical, intent(in), optional :: bclear
 
-  ! OPTIONAL: Data tyüe
+  ! OPTIONAL: Data type
   integer, intent(in), optional :: cdataType
 !</input>
 
@@ -5061,7 +5061,7 @@ contains
   ! If not specified, the vector is left uninitialised.
   logical, intent(in), optional :: bclear
 
-  ! OPTIONAL: Data tyüe
+  ! OPTIONAL: Data type
   integer, intent(in), optional :: cdataType
 !</input>
 

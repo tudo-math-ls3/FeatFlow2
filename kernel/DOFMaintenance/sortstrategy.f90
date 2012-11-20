@@ -804,7 +804,7 @@ contains
   !
   ! The used algorithm is Knuth shuffle.
   ! (See e.g. [Knuth, 1969, 1998, The Art of Computer Programming vol. 2, 3rd ed.,
-  !  145–146. ISBN 0-201-89684-2] or http://en.wikipedia.org/wiki/Knuth_shuffle])
+  !  145-146. ISBN 0-201-89684-2] or http://en.wikipedia.org/wiki/Knuth_shuffle])
 !</description>
 
 !<output>

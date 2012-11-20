@@ -38,7 +38,7 @@
 !# 3.) ppgrd_calcGradLimAvgP1Q1cnf
 !#     -> Calculate the reconstructed gradient as ~P1 or ~Q1 vector
 !#        for an arbitrary conformal discretisation.
-!#        Uses the limited gradient averaging technique by M. Möller
+!#        Uses the limited gradient averaging technique by M. Moeller
 !#        and D. Kuzmin.
 !# </purpose>
 !#########################################################################
@@ -4233,7 +4233,7 @@ contains
 !<description>
     ! Calculates the recovered gradient of a scalar finite element function
     ! by means of the limited gradient averaging technique suggested by
-    ! M. Möller and D. Kuzmin. Supports conformal discretisations in arbitrary
+    ! M. Moeller and D. Kuzmin. Supports conformal discretisations in arbitrary
     ! spatial dimensions with <tex>$P_1$ and $Q_1$</tex> finite elements mixed in the
     ! source and destination vectors.
 !</description>

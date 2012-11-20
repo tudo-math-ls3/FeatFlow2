@@ -24,7 +24,7 @@
 !#         by unit vectors for all scalar submatrices where configured.
 !#
 !#  2.) matfil_discreteFBC
-!#      -> Apply the "discrete fictitious boundary conditions for matríces"
+!#      -> Apply the "discrete fictitious boundary conditions for matrices"
 !#         filter onto a given (block) matrix.
 !#         This e.g. replaces lines of a matrix corresponding to Dirichlet DOF`s
 !#         by unit vectors for all scalar submatrices where configured.

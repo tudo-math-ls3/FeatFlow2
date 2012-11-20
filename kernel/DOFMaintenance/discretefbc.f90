@@ -210,7 +210,7 @@ module discretefbc
     integer :: nvalues = 0
 
     ! An integer array specifying the location of points/edges/elements where
-    ! to evaluate. The content is depending on the situation, specifíed by the
+    ! to evaluate. The content is depending on the situation, specified by the
     ! cinfoNeeded parameter: \\
     !
     ! cinfoNeeded = DISCFBC_NEEDFUNCGENERAL: \\
@@ -239,7 +239,7 @@ module discretefbc
     integer, dimension(:), pointer :: p_Iwhere => null()
 
     ! Coordinate array that specifies the coordinate where to evaluate
-    ! (if available). The content is depending on the situation, specifíed by the
+    ! (if available). The content is depending on the situation, specified by the
     ! cinfoNeeded parameter: \\
     !
     ! cinfoNeeded = DISCFBC_NEEDFUNCGENERAL,

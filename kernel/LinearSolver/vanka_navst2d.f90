@@ -284,7 +284,7 @@ contains
       call sys_halt()
     end if
 
-    ! Sorted matríces not supported.
+    ! Sorted matrices not supported.
     if ((rmatrix%RmatrixBlock(1,1)%bcolumnsSorted .or. rmatrix%RmatrixBlock(1,1)%browsSorted) .or. &
         (rmatrix%RmatrixBlock(2,2)%bcolumnsSorted .or. rmatrix%RmatrixBlock(2,2)%browsSorted)) then
       call output_line ("Sorted matrices not supported!",&

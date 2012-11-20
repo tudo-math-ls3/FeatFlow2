@@ -3153,7 +3153,7 @@ contains
     !
     ! D. Kuzmin, Linearity-preserving flux correction and convergence
     ! acceleration for constrained Galerkin schemes, Ergebnisberichte
-    ! Angew. Math. 430, Technische Universität Dortmund, 2011.
+    ! Angew. Math. 430, Technische Universitaet Dortmund, 2011.
 !</description>
 
 !<input>

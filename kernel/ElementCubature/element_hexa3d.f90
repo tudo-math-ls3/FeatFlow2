@@ -4942,7 +4942,7 @@ contains
   ! see:
   ! J.-P. Hennart, J. Jaffre, and J. E. Roberts;
   ! "A Constructive Method for Deriving Finite Elements of Nodal Type";
-  ! Numer. Math., 53 (1988), pp. 701–738.
+  ! Numer. Math., 53 (1988), pp. 701-738.
   ! (The basis monomial set above is presented in example 10, pp. 728-730)
   !
   ! The basis polynomials Pi are constructed such that they fulfill the
@@ -5306,7 +5306,7 @@ contains
   ! see:
   ! J.-P. Hennart, J. Jaffre, and J. E. Roberts;
   ! "A Constructive Method for Deriving Finite Elements of Nodal Type";
-  ! Numer. Math., 53 (1988), pp. 701–738.
+  ! Numer. Math., 53 (1988), pp. 701-738.
   ! (The basis monomial set above is presented in example 10, pp. 728-730)
   !
   ! The basis polynomials Pi are constructed such that they fulfill the
@@ -5710,7 +5710,7 @@ contains
   ! see:
   ! J.-P. Hennart, J. Jaffre, and J. E. Roberts;
   ! "A Constructive Method for Deriving Finite Elements of Nodal Type";
-  ! Numer. Math., 53 (1988), pp. 701–738.
+  ! Numer. Math., 53 (1988), pp. 701-738.
   ! (The basis monomial set above is presented in example 10, pp. 728-730)
   !
   ! The basis polynomials Pi are constructed such that they fulfill the

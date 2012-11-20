@@ -5,7 +5,7 @@
 !#
 !# <purpose>
 !#
-!# <todo> Mal andere Elementtypen ausprobieren, eine Callbackfunction für
+!# <todo> Mal andere Elementtypen ausprobieren, eine Callbackfunction fuer
 !#        die Monitorfunktion
 !#
 !# 1.) griddef_deformationInit
@@ -4290,7 +4290,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
     Dpoint(:),rvecMon%p_rspatialDiscr%p_rtriangulation,iel,&
     iresult,ilastElement,ilastEdge,200)
   ! Fehler, wenn die Iterationen ausgehen wird
-  ! das letzte Element zurückgegeben... verkehrt...
+  ! das letzte Element zurueckgegeben... verkehrt...
   ! Ok, not found... Brute force search
 
   if((iel .eq. 0) .or. (iresult .le. 0))then
@@ -4491,7 +4491,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
     Dpoint(:),rvecMon%p_rspatialDiscr%p_rtriangulation,iel,&
     iresult,ilastElement,ilastEdge,200)
   ! Fehler, wenn die Iterationen ausgehen wird
-  ! das letzte Element zurückgegeben... verkehrt...
+  ! das letzte Element zurueckgegeben... verkehrt...
   ! Ok, not found... Brute force search
 
   if((iel .eq. 0) .or. (iresult .le. 0))then

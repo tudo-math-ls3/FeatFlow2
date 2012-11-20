@@ -2471,7 +2471,7 @@ end subroutine
     !
     ! These are the steps we are going to make:
     ! 1. Transform the point into the square's local coordinate system.
-    ! 2. "Rotating" the whole coordinate system by a multiple of 90Ý, such
+    ! 2. "Rotating" the whole coordinate system by a multiple of 90deg, such
     !    that the resulting point has non-negative coordinates.
     !   (In fact, we will not "rotate" the point, but simply get the
     !    absolute values of its coordinates, since the square is symmetrical

@@ -614,7 +614,7 @@ contains
 
       case (EL_Q2)
         ! Get the coordinates of that points.
-        ! Here, we have to follow the order of the local DOF´s of Q2!
+        ! Here, we have to follow the order of the local DOFs of Q2!
         allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
 
         p_DcubPtsRef(1,1) = -1.0_DP

@@ -20819,7 +20819,7 @@ contains
 !</description>
   
 !<input>
-  ! Relaxation parameter (=1 for block Gauﬂ Seidel)
+  ! Relaxation parameter (=1 for block Gauss Seidel)
   real(dp), intent(in), optional :: drelax
 !</input>
   

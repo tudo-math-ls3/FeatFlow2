@@ -1456,7 +1456,7 @@ module meshregion
     ! the edges in a 2D mesh.
     ! As we know that all edges on the boundary are oriented in mathematically
     ! positive direction, the only thing that we have to do is rotate the
-    ! edge vector by 90° counter-clock-wise (and normalise, of course)
+    ! edge vector by 90deg counter-clock-wise (and normalise, of course)
     ! to get the inner normal vector of a boundary edge...
 
     ! Get a pointer to the vertices-at-edge array

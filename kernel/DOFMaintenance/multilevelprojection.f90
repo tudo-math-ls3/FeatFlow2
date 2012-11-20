@@ -70,7 +70,7 @@
 !#      -> Performs a restriction using a projection hierarchy
 !#
 !# 15.) mlprj_performInterpolationHier
-!#      -> Performs an interpolöation using a projection hierarchy
+!#      -> Performs an interpolation using a projection hierarchy
 !#
 !# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- \\
 !#  Some notes on the L2-Projection grid transfer  \\
@@ -311,7 +311,7 @@ module multilevelprojection
     ! Upper bound aspect ratio; for all elements with higher AR
     ! the prolongation is switched to constant prolongation .
     ! This is set to 20.0 by default according to the analysis in
-    ! [Michael Köster, Robuste Mehrgitter-Krylowraum-Techniken für FEM-Verfahren,
+    ! [Michael Koester, Robuste Mehrgitter-Krylowraum-Techniken fuer FEM-Verfahren,
     !  2004, Diploma-Theses, Chair of Mathematics, University of Dortmund]
     real(DP)                    :: dprolARboundEX3Y = 20.0_DP
 
@@ -366,7 +366,7 @@ module multilevelprojection
     ! Upper bound aspect ratio; for all elements with higher AR
     ! the prolongation is switched to constant prolongation .
     ! This is set to 20.0 by default according to the analysis in
-    ! [Michael Köster, Robuste Mehrgitter-Krylowraum-Techniken für FEM-Verfahren,
+    ! [Michael Koester, Robuste Mehrgitter-Krylowraum-Techniken fuer FEM-Verfahren,
     !  2004, Diploma-Theses, Chair of Mathematics, University of Dortmund]
     real(DP)                    :: drestARboundEX3Y = 20.0_DP
 

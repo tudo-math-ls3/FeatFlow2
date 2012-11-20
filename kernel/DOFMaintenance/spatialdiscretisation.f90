@@ -3218,7 +3218,7 @@ contains
 
     ! Put the edge number to coordinate 1.
     ! Put the id if the first FE space to coordinate 2.
-    ! Put the íd of the 2nd FE space to coordinate 3.
+    ! Put the id of the 2nd FE space to coordinate 3.
     do i=1,p_rtria%NMT
       IsortArray(1,i) = i
       j = p_IelementDistr(p_IelementsAtEdge(1,i))
