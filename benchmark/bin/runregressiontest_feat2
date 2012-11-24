@@ -1204,6 +1204,14 @@ fb_configureBenchmark() {
 	echo "" | $MAILX -s "$MAILSUBJECT" $RECIPIENT
 	fb_exit 1
     fi
+
+    # Prevent that the object directory for third party libraries gets
+    # re-used for different compiler versions. Make it unique by
+    # infixing the compiler version number (done in master.configure)
+    if [ -n "$COMPILERVERSION" ]; then
+	export FEAT2COMPILERVERSION=$COMPILERVERSION
+    fi
+
     cd $BENCHMARKDIR
     fb_startTimer
     ./configure --no-monitor-compile-env --$mpi $CONFIGUREOPTIONS > $AUXILIARYLOG 2>&1

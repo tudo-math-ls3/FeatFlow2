@@ -90,12 +90,12 @@ test -z "$USER" && USER="$LOGNAME"
 FEAT2INSTDIR=`echo ${FEAT2INSTDIR} | sed "s|^.*/$USER/|/|;"`;
 
 # Step 2: 
-#   remove "feast/feast/"
+#   remove "featflow2/"
 FEAT2INSTDIR=`echo ${FEAT2INSTDIR} | tr 'A-Z' 'a-z' | sed "s|/featflow2/|/|;"`;
 
 
 # Concatenate directory strings to come up with a directory name
-# for FEAST application object files
+# for FEAT2 application object files
 OBJDIRPREFIX=${BASEDIR_OBJFILES}${FEAT2INSTDIR}
 
 # Create a likewise directory for all libraries which should
@@ -103,6 +103,22 @@ OBJDIRPREFIX=${BASEDIR_OBJFILES}${FEAT2INSTDIR}
 # they have no dependency on the FEAT2 kernel or a FEAT2 application
 # and are all compiled with identical settings.
 OBJDIRLIBPREFIX=`dirname \`dirname ${OBJDIRPREFIX}\``
+
+# Append a directory level if an environment variable named
+# FEAT2COMPILERVERSION is set.
+# Motivation: When testing several compiler versions, the build ID is
+# identical for all runs. As a result, the object directory for libraries is
+# shared among these compiler versions. This can lead to linker errors when
+# the object files get created by a compiler version that employs symbols not
+# present in other versions. So, when compiling the libraries with a more
+# recent compiler version and trying to link later using an older compiler
+# release, this may fail. Also, when compiling with an older compiler version
+# first and later with a newer, potential performance gains of the new
+# compiler are squandered by still re-using the object files created by the
+# older compiler version.
+if test -n "${FEAT2COMPILERVERSION}"; then
+    OBJDIRLIBPREFIX=${OBJDIRLIBPREFIX}/${FEAT2COMPILERVERSION}
+fi
 
 
 ######################################################
