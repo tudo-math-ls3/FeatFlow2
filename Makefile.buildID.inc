@@ -261,6 +261,12 @@ ifeq ($(strip $(REALID)), sx8-none-superux)
 REALID:=$(strip $(REALID))-f90-keisan
 endif
 
+# Default build id extenstion if no match in the previous definitions
+# gcc compiler with non-optimised BLAS, only standard optimisation.
+ifeq ($(call match,$(REALID),[^-]*-[^-]*-[^-]*),yes)
+REALID:=$(strip $(REALID))-gcc-blas
+endif
+
 
 # Set default target platforms for compilation of parallel applications.
 # i.e. refine the machine REALID even more by specifying the MPI environment.
