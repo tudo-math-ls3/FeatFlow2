@@ -78,7 +78,7 @@ bdComponent1=-1
 bdComponent1=-1
 
 [BDCONDITIONS_DUALLIN]
-bdComponent1(4)=-1
+bdComponent1=-1
 
 [RIGHTHANDSIDE_PRIMAL]
 ctype = 0
