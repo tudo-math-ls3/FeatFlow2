@@ -113,6 +113,7 @@ case ${id} in
 			                                         #       and Xeon (Bloomfield / Gainestown / Westmere-EP / Beckton /
                                                                  #       Jasper Forest / Clarkdale) as well as mobile versions
 			42) cpu="sandybridge";;                  # Core i3-{2125,2140} + i5-2467M + i7-2600
+			58) cpu="ivybridge";;       # Core i5-{3210M,3320M,3360M,3470T} + i7-3770K
 			28,38) cpu="atom" core=cpu;;             # Intel Atom
 		    esac
 		    ;;

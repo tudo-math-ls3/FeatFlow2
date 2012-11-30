@@ -129,6 +129,11 @@ ifeq ($(strip $(REALID)), pc-sandybridge-linux)
 REALID:=$(strip $(REALID))-gcc-blas
 endif
 
+ifeq ($(strip $(REALID)), pc-ivybridge-linux)
+# REALID:=$(strip $(REALID))-intel-goto2
+REALID:=$(strip $(REALID))-gcc-blas
+endif
+
 ifeq ($(strip $(REALID)), pc-opteron-linux)
 # REALID:=$(strip $(REALID))-g95-goto
 REALID:=$(strip $(REALID))-gcc-blas
