@@ -324,6 +324,7 @@ my $HEADER_FILES_TO_COPY =
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/DataStructures/stack.h " .
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/LinearSystem/lsyssc_scalarMatVec_latxd.h " .
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/LinearSystem/lsyssc_scalarMatVec_lax79.h " .
+    "$FEAT2BASEDIR/$SRCDIR_KERNEL/LinearSystem/lsyssc_scalarMatVec_lax79_padded.h " .
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/LinearSystem/lsyssc_scalarMatVec_lax79intl1.h " .
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/LinearSystem/lsyssc_scalarMatVec_lax79intld.h " .
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/LinearSystem/lsyssc_scalarMatVec_lax9rowc.h " .
