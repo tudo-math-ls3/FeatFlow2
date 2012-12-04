@@ -204,6 +204,8 @@ module fsystem
   public :: t_sysconfig
   public :: sys_getNextToken
   public :: sys_countTokens
+  public :: sys_triml
+  public :: sys_trimr
 
 !<constants>
 
@@ -2907,5 +2909,53 @@ contains
     end do
     
   end subroutine
+
+  ! ***************************************************************************
+
+!<function>
+
+  character (len=nchar) function sys_triml (sstring,nchar) result(sout)
+  
+!<description>
+  ! This function return nchar characters of the given string sstring
+!</description>
+
+!<input>
+  ! A string
+  character(len=*), intent(in) :: sstring
+
+  ! Number of characters to return
+  integer, intent(in) :: nchar
+!</input>
+
+    sout = sstring(1:nchar)
+
+  end function
+
+  ! ***************************************************************************
+
+!<function>
+
+  character (len=nchar) function sys_trimr (sstring,nchar) result(sout)
+  
+!<description>
+  ! This function return nchar characters of the given string sstring
+!</description>
+
+!<input>
+  ! A string
+  character(len=*), intent(in) :: sstring
+
+  ! Number of characters to return
+  integer, intent(in) :: nchar
+!</input>
+
+    ! local variable
+    integer :: nlen
+
+    nlen = len(sstring)
+    sout = sstring(nlen-nchar+1:nlen)
+
+  end function
 
 end module fsystem
