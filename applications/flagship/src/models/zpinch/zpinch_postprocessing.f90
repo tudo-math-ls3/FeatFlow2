@@ -407,7 +407,7 @@ contains
     type(t_timer), pointer :: p_rtimerAssemblyMatrix
     type(t_timer), pointer :: p_rtimerAssemblyVector
     type(t_timer), pointer :: p_rtimerPrePostprocess
-    real(DP) :: dtotalTime, dfraction
+    real(DP) :: dfraction
 
 
     ! Get timer objects from collection
@@ -436,36 +436,72 @@ contains
     call stat_subTimers(p_rtimerAssemblyMatrix, p_rtimerSolution)
     call stat_subTimers(p_rtimerAssemblyVector, p_rtimerSolution)
 
-    dtotalTime = max(rtimerTotal%delapsedCPU, rtimerTotal%delapsedReal)
-    dfraction  = 100.0_DP/dtotalTime
+    dfraction = 100.0_DP/rtimerTotal%delapsedReal
 
+    call output_line('                                Real time (seconds) CPU time (seconds)       Frac')
     call output_line('Time for computing solution   : '//&
-                     trim(adjustl(sys_sdE(p_rtimerSolution%delapsedCPU, 5)))//'  '//&
-                     trim(adjustl(sys_sdE(dfraction*p_rtimerSolution%delapsedCPU, 5)))//' %')
+                     trim(sys_sdEL(p_rtimerSolution%delapsedReal,3))//'  '//&
+                     sys_trimr(sys_sd(dfraction*p_rtimerSolution%delapsedReal,2),5)//' %  '//&
+                     trim(sys_sdEL(p_rtimerSolution%delapsedCPU,5))//'  '//&
+                     sys_trimr(sys_sd(dfraction*p_rtimerSolution%delapsedCPU,2),7)//' %  '//&
+                     sys_trimr(sys_sd(p_rtimerSolution%delapsedCPU/&
+                     (p_rtimerSolution%delapsedReal+SYS_EPSREAL_DP),2),5))
     call output_line('Time for mesh adaptivity      : '//&
-                     trim(adjustl(sys_sdE(p_rtimerAdaptation%delapsedCPU, 5)))//'  '//&
-                     trim(adjustl(sys_sdE(dfraction*p_rtimerAdaptation%delapsedCPU, 5)))//' %')
+                     trim(sys_sdEL(p_rtimerAdaptation%delapsedReal,3))//'  '//&
+                     sys_trimr(sys_sd(dfraction*p_rtimerAdaptation%delapsedReal,2),5)//' %  '//&
+                     trim(sys_sdEL(p_rtimerAdaptation%delapsedCPU,5))//'  '//&
+                     sys_trimr(sys_sd(dfraction*p_rtimerAdaptation%delapsedCPU,2),7)//' %  '//&
+                     sys_trimr(sys_sd(p_rtimerAdaptation%delapsedCPU/&
+                     (p_rtimerAdaptation%delapsedReal+SYS_EPSREAL_DP),2),5))
     call output_line('Time for error estimation     : '//&
-                     trim(adjustl(sys_sdE(p_rtimerErrorEstimation%delapsedCPU, 5)))//'  '//&
-                     trim(adjustl(sys_sdE(dfraction*p_rtimerErrorEstimation%delapsedCPU, 5)))//' %')
+                     trim(sys_sdEL(p_rtimerErrorEstimation%delapsedReal,3))//'  '//&
+                     sys_trimr(sys_sd(dfraction*p_rtimerErrorEstimation%delapsedReal,2),5)//' %  '//&
+                     trim(sys_sdEL(p_rtimerErrorEstimation%delapsedCPU,5))//'  '//&
+                     sys_trimr(sys_sd(dfraction*p_rtimerErrorEstimation%delapsedCPU,2),7)//' %  '//&
+                     sys_trimr(sys_sd(p_rtimerErrorEstimation%delapsedCPU/&
+                     (p_rtimerErrorEstimation%delapsedReal+SYS_EPSREAL_DP),2),5))
     call output_line('Time for triangulation        : '//&
-                     trim(adjustl(sys_sdE(p_rtimerTriangulation%delapsedCPU, 5)))//'  '//&
-                     trim(adjustl(sys_sdE(dfraction*p_rtimerTriangulation%delapsedCPU, 5)))//' %')
+                     trim(sys_sdEL(p_rtimerTriangulation%delapsedReal,3))//'  '//&
+                     sys_trimr(sys_sd(dfraction*p_rtimerTriangulation%delapsedReal,2),5)//' %  '//&
+                     trim(sys_sdEL(p_rtimerTriangulation%delapsedCPU,5))//'  '//&
+                     sys_trimr(sys_sd(dfraction*p_rtimerTriangulation%delapsedCPU,2),7)//' %  '//&
+                     sys_trimr(sys_sd(p_rtimerTriangulation%delapsedCPU/&
+                     (p_rtimerTriangulation%delapsedReal+SYS_EPSREAL_DP),2),5))
     call output_line('Time for coefficient assembly : '//&
-                     trim(adjustl(sys_sdE(p_rtimerAssemblyCoeff%delapsedCPU, 5)))//'  '//&
-                     trim(adjustl(sys_sdE(dfraction*p_rtimerAssemblyCoeff%delapsedCPU, 5)))//' %')
+                     trim(sys_sdEL(p_rtimerAssemblyCoeff%delapsedReal,3))//'  '//&
+                     sys_trimr(sys_sd(dfraction*p_rtimerAssemblyCoeff%delapsedReal,2),5)//' %  '//&
+                     trim(sys_sdEL(p_rtimerAssemblyCoeff%delapsedCPU,5))//'  '//&
+                     sys_trimr(sys_sd(dfraction*p_rtimerAssemblyCoeff%delapsedCPU,2),7)//' %  '//&
+                     sys_trimr(sys_sd(p_rtimerAssemblyCoeff%delapsedCPU/&
+                     (p_rtimerAssemblyCoeff%delapsedReal+SYS_EPSREAL_DP),2),5))
     call output_line('Time for matrix assembly      : '//&
-                     trim(adjustl(sys_sdE(p_rtimerAssemblyMatrix%delapsedCPU, 5)))//'  '//&
-                     trim(adjustl(sys_sdE(dfraction*p_rtimerAssemblyMatrix%delapsedCPU, 5)))//' %')
+                     trim(sys_sdEL(p_rtimerAssemblyMatrix%delapsedReal,3))//'  '//&
+                     sys_trimr(sys_sd(dfraction*p_rtimerAssemblyMatrix%delapsedReal,2),5)//' %  '//&
+                     trim(sys_sdEL(p_rtimerAssemblyMatrix%delapsedCPU,5))//'  '//&
+                     sys_trimr(sys_sd(dfraction*p_rtimerAssemblyMatrix%delapsedCPU,2),7)//' %  '//&
+                     sys_trimr(sys_sd(p_rtimerAssemblyMatrix%delapsedCPU/&
+                     (p_rtimerAssemblyMatrix%delapsedReal+SYS_EPSREAL_DP),2),5))
     call output_line('Time for vector assembly      : '//&
-                     trim(adjustl(sys_sdE(p_rtimerAssemblyVector%delapsedCPU, 5)))//'  '//&
-                     trim(adjustl(sys_sdE(dfraction*p_rtimerAssemblyVector%delapsedCPU, 5)))//' %')
+                     trim(sys_sdEL(p_rtimerAssemblyVector%delapsedReal,3))//'  '//&
+                     sys_trimr(sys_sd(dfraction*p_rtimerAssemblyVector%delapsedReal,2),5)//' %  '//&
+                     trim(sys_sdEL(p_rtimerAssemblyVector%delapsedCPU,5))//'  '//&
+                     sys_trimr(sys_sd(dfraction*p_rtimerAssemblyVector%delapsedCPU,2),7)//' %  '//&
+                     sys_trimr(sys_sd(p_rtimerAssemblyVector%delapsedCPU/&
+                     (p_rtimerAssemblyVector%delapsedReal+SYS_EPSREAL_DP),2),5))
     call output_line('Time for pre-/post-processing : '//&
-                     trim(adjustl(sys_sdE(p_rtimerPrePostprocess%delapsedCPU, 5)))//'  '//&
-                     trim(adjustl(sys_sdE(dfraction*p_rtimerPrePostprocess%delapsedCPU, 5)))//' %')
+                     trim(sys_sdEL(p_rtimerPrePostprocess%delapsedReal,3))//'  '//&
+                     sys_trimr(sys_sd(dfraction*p_rtimerPrePostprocess%delapsedReal,2),5)//' %  '//&
+                     trim(sys_sdEL(p_rtimerPrePostprocess%delapsedCPU,5))//'  '//&
+                     sys_trimr(sys_sd(dfraction*p_rtimerPrePostprocess%delapsedCPU,2),7)//' %  '//&
+                     sys_trimr(sys_sd(p_rtimerPrePostprocess%delapsedCPU/&
+                     (p_rtimerPrePostprocess%delapsedReal+SYS_EPSREAL_DP),2),5))
     call output_lbrk()
     call output_line('Time for total simulation     : '//&
-                     trim(adjustl(sys_sdE(dtotalTime, 5))))
+                     trim(sys_sdEL(rtimerTotal%delapsedReal,3))//'           '//&
+                     trim(sys_sdEL(rtimerTotal%delapsedCPU,5))//'  '//&
+                     sys_trimr(sys_sd(dfraction*rtimerTotal%delapsedCPU,2),7)//' %  '//&
+                     sys_trimr(sys_sd(rtimerTotal%delapsedCPU/&
+                     (rtimerTotal%delapsedReal+SYS_EPSREAL_DP),2),5))
     call output_lbrk()
 
   end subroutine zpinch_outputStatistics
