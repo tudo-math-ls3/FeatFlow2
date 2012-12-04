@@ -592,8 +592,8 @@ module linearsystemscalar
 
 !<constantblock description="Constants for defining the algorithm for edge coloring">
 
-  ! Greedy edge-coloring algorithm
-  integer, parameter, public :: LSYSSC_EDGECOLORING_GREEDY  = 0
+  ! First-fit greedy edge-coloring algorithm
+  integer, parameter, public :: LSYSSC_EDGECOLORING_FIRSTFIT  = 0
 
   ! Edge-coloring algorithm due to Nishizeki, Terada, Leven
   integer, parameter, public :: LSYSSC_EDGECOLORING_NTL     = 1
@@ -12710,7 +12710,7 @@ contains
   ! Matrix sorting. Sorts the entries and/or structure of a given
   ! matrix or unsorts them according to a permutation.
   !
-  ! The sorting strategy must have been attached to the vector in advance
+  ! The sorting strategy must have been attached to the matrix in advance
   ! by lsyssc_setSortStrategy.
   !
   ! WARNING: This routine does NOT change any information (structure or content)
@@ -28699,7 +28699,7 @@ contains
     integer, dimension(:), pointer :: p_IedgeListIdx
     integer :: nmaxColor,isize,ccoloring
 
-    ccoloring = LSYSSC_EDGECOLORING_GREEDY
+    ccoloring = LSYSSC_EDGECOLORING_FIRSTFIT
     if (present(ccoloringType)) ccoloring = ccoloringType
 
     if (present(ncolor)) then
@@ -28735,11 +28735,11 @@ contains
     
     ! What type of coloring algorithm are we?
     select case(ccoloring)
-    case (LSYSSC_EDGECOLORING_GREEDY)
+    case (LSYSSC_EDGECOLORING_FIRSTFIT)
       if (nmaxColor .le. 64) then
-        call genEdgeListIdx_greedy64(ndof, nmaxColor, p_IedgeListIdx, IedgeList)
+        call genEdgeListIdx_firstfit64(ndof, nmaxColor, p_IedgeListIdx, IedgeList)
       else
-        call output_line('Greedy edge-coloring algorithm for more than '//&
+        call output_line('First-fit greedy edge-coloring algorithm for more than '//&
             '64 colors is not implemented yet!',&
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_regroupEdgeList')
         call sys_halt()
@@ -28808,7 +28808,7 @@ contains
 
       ! What type of coloring algorithm are we?
       select case(ccoloringType)
-      case (LSYSSC_EDGECOLORING_GREEDY)
+      case (LSYSSC_EDGECOLORING_FIRSTFIT)
         ncolor = 2*ncolor
         
       case (LSYSSC_EDGECOLORING_NTL)
@@ -28821,11 +28821,11 @@ contains
     end function compMaxEdgeColors
 
     !**************************************************************
-    ! Generate index for edge data structure based on greedy
-    ! edge-coloring algorithm which may require 2*ncolor colors
-    ! Note that this implementation works for 64 colors at most
+    ! Generate index for edge data structure based on first-fit greedy
+    ! edge-coloring algorithm which may require 2*ncolor colors Note
+    ! that this implementation works for 64 colors at most
 
-    subroutine genEdgeListIdx_greedy64(neq, nmaxColor, IedgeListIdx, IedgeList)
+    subroutine genEdgeListIdx_firstfit64(neq, nmaxColor, IedgeListIdx, IedgeList)
 
       integer, intent(in) :: neq,nmaxColor
 
@@ -28840,7 +28840,7 @@ contains
 
       if (nmaxColor .gt. 64) then
         call output_line('Current implementation does not support more than 64 colors!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'genEdgeListIdx_greedy')
+          OU_CLASS_ERROR,OU_MODE_STD,'genEdgeListIdx_firstfit')
       call sys_halt()
       end if
 
@@ -28938,7 +28938,7 @@ contains
       call storage_free(h_IdofColor)
       call storage_free(h_IedgeListTemp)
 
-    end subroutine genEdgeListIdx_greedy64
+    end subroutine genEdgeListIdx_firstfit64
 
 
     !**************************************************************
