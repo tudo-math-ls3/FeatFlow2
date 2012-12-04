@@ -331,6 +331,9 @@
 !#
 !# 15.) lsyssc_createMatrixFromGraph
 !#      -> Creates a matrix from a graph data structure
+!#
+!# 16.) lsyssc_genMatrixZeroPadding
+!#      -> Converts a sparse matrix in CSR format into the ELL format.
 !# </purpose>
 !##############################################################################
 
@@ -982,6 +985,7 @@ module linearsystemscalar
   public :: lsyssc_calcDimsFromMatrix
   public :: lsyssc_createGraphFromMatrix
   public :: lsyssc_createMatrixFromGraph
+  public :: lsyssc_genMatrixZeroPadding
 
 contains
 
@@ -30156,5 +30160,178 @@ contains
     end select      
 
   end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine lsyssc_genMatrixZeroPadding (rmatrix,centries)
+
+!<description>
+  ! This subroutine tries to convert a sparse matrix in CSR format
+  ! into the ELL format which uses stores a constant number of matrix
+  ! entries per row. The number of entries stored per row can be
+  ! specified by the optional parameter centries. If not present then
+  ! the maximum number of coefficients within all rows is computed.
+!</description>
+
+!<input>
+  ! OPTIONAL: constant number of entries to be stored per row
+  integer, intent(in), optional :: centries
+!</input>
+
+!<inputoutput>
+  ! Matrix to convert.
+  type(t_matrixScalar), intent(inout) :: rmatrix
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(:), pointer :: p_Da,p_Da1
+    real(SP), dimension(:), pointer :: p_Fa,p_Fa1
+    integer, dimension(:), pointer :: p_Kld,p_Kcol,p_Kld1,p_Kcol1,p_Kdiagonal
+    integer :: ia,ieq,ipos,nnzPerRow
+    integer :: h_Kld1,h_Kcol1,h_Da1
+
+
+    ! Check if matrix is stored in CSR format
+    if ((rmatrix%cmatrixFormat .ne. LSYSSC_MATRIX7) .and.&
+        (rmatrix%cmatrixFormat .ne. LSYSSC_MATRIX9)) then
+      call output_line ("Matrix must be stored in format 7 or 9", &
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_genMatrixZeroPadding")
+      call sys_halt()
+    end if
+
+    ! Check if matrix owns its content and data
+    if ((iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .ne. 0) .or.&
+        (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY)   .ne. 0)) then
+      call output_line ("Matrix must be owner of content and structure", &
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_genMatrixZeroPadding")
+      call sys_halt()
+    end if
+
+    ! Make a copy of the structure
+    h_Kld1 = ST_NOHANDLE
+    h_Kcol1 = ST_NOHANDLE
+    call storage_copy(rmatrix%h_Kld, h_Kld1)
+    call storage_copy(rmatrix%h_Kcol, h_Kcol1)
+    call storage_getbase_int(h_Kld1, p_Kld1)
+    call storage_getbase_int(h_Kcol1, p_Kcol1)
+    
+    ! Make a copy of the content (if any)
+    if (rmatrix%h_Da .ne. ST_NOHANDLE) then
+      h_Da1 = ST_NOHANDLE
+      call storage_copy(rmatrix%h_Da, h_Da1)
+    end if
+    
+    ! Get number of nonzero entries per row
+    if (present(centries)) then
+      nnzPerRow = centries
+    else
+      nnzPerRow = 0
+      do ieq = 1,rmatrix%NEQ
+        nnzPerRow = max(nnzPerRow, p_Kld1(ieq+1)-p_Kld1(ieq))
+      end do
+    end if
+
+    ! Set number of nonzero matrix entries
+    rmatrix%NA = nnzPerRow*rmatrix%NEQ
+    
+    ! Reallocate memory for matrix structure
+    call storage_realloc ("lsyssc_genMatrixZeroPadding", &
+        rmatrix%NA, rmatrix%h_Kcol, ST_NEWBLOCK_NOINIT, .false.)
+    call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
+    call lsyssc_getbase_Kld(rmatrix, p_Kld)
+
+    ! Apply zero padding
+    if (rmatrix%h_Da .eq. ST_NOHANDLE) then
+      
+      ! Process only matrix structure
+      p_Kld(1) = 1
+      do ieq = 1,rmatrix%NEQ
+        ipos = nnzPerRow*(ieq-1)+1
+        do ia = p_Kld1(ieq),p_Kld1(ieq+1)-1
+          p_Kcol(ipos) = p_Kcol1(ia)
+          ipos = ipos+1
+        end do
+        p_Kcol(ipos:nnzPerRow*ieq) = p_Kcol1(ia-1)
+        p_Kld(ieq+1) = nnzPerRow*ieq+1
+      end do
+      p_Kld(rmatrix%NEQ+1) = rmatrix%NA+1
+      
+    else
+      
+      ! Reallocate memory for matrix content
+      call storage_realloc ("lsyssc_genMatrixZeroPadding", &
+          rmatrix%NA, rmatrix%h_Da, ST_NEWBLOCK_NOINIT, .false.)
+      
+      ! Process matrix structure and its content
+      select case(rmatrix%cdatatype)
+      case (ST_DOUBLE)
+        call lsyssc_getbase_double(rmatrix, p_Da)
+        call storage_getbase_double(h_Da1, p_Da1)
+
+        p_Kld(1) = 1
+        do ieq = 1,rmatrix%NEQ
+          ipos = nnzPerRow*(ieq-1)+1
+          do ia = p_Kld1(ieq),p_Kld1(ieq+1)-1
+            p_Kcol(ipos) = p_Kcol1(ia)
+            p_Da(ipos)   = p_Da1(ia)
+            ipos = ipos+1
+          end do
+          p_Kcol(ipos:nnzPerRow*ieq) = p_Kcol1(ia-1)
+          p_Da(ipos:nnzPerRow*ieq)   = 0.0_DP
+          p_Kld(ieq+1) = nnzPerRow*ieq+1
+        end do
+        p_Kld(rmatrix%NEQ+1) = rmatrix%NA+1
+        
+      case (ST_SINGLE)
+        call lsyssc_getbase_single(rmatrix, p_Fa)
+        call storage_getbase_single(h_Da1, p_Fa1)
+        
+        p_Kld(1) = 1
+        do ieq = 1,rmatrix%NEQ
+          ipos = nnzPerRow*(ieq-1)+1
+          do ia = p_Kld1(ieq),p_Kld1(ieq+1)-1
+            p_Kcol(ipos) = p_Kcol1(ia)
+            p_Fa(ipos)   = p_Fa1(ia)
+            ipos = ipos+1
+          end do
+          p_Kcol(ipos:nnzPerRow*ieq) = p_Kcol1(ia-1)
+          p_Fa(ipos:nnzPerRow*ieq)   = 0.0_DP
+          p_Kld(ieq+1) = nnzPerRow*ieq+1
+        end do
+        p_Kld(rmatrix%NEQ+1) = rmatrix%NA+1
+        
+      case default
+        call output_line('Unsupported data type!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_genMatrixZeroPadding')
+        call sys_halt()
+      end select
+    
+      ! Free temporal memory
+      call storage_free(h_Da1)
+  
+    end if
+    
+    ! Regenerate diagonal
+    if (rmatrix%h_Kdiagonal .ne. ST_NOHANDLE) then
+      call lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
+      do ieq = 1,rmatrix%NEQ
+        do ia = p_Kld(ieq),p_Kld(ieq+1)-1
+          if (p_Kcol(ia) .ge. ieq) then
+            p_Kdiagonal(ieq) = ia
+            exit
+          end if
+        end do
+      end do
+    end if
+    
+    ! Free temporal memory
+    call storage_free(h_Kld1)
+    call storage_free(h_Kcol1)
+    
+ end subroutine
 
 end module
