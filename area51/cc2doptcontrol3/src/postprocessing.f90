@@ -1592,8 +1592,7 @@ contains
 !<subroutine>
 
   subroutine optcpp_spaceTimeFunctionals (rpostproc,&
-      ispacelevel, itimelevel, roperatorAsmHier, &
-      rkktsystem)
+      ispacelevel, itimelevel, roperatorAsmHier, rnonstFuncData)
   
 !<description>
   ! Calculates values of the space-time functionals.
@@ -1615,27 +1614,28 @@ contains
   ! This is a central discretisation structure passed to all assembly routines.
   type(t_spacetimeOpAsmHierarchy), intent(in) :: roperatorAsmHier
 
-  ! Structure defining the KKT system.
-  type(t_kktsystem), intent(inout) :: rkktsystem
+  ! Intermediate data that encapsules all information for the
+  ! computation of J(.).
+  type(t_nonstFuncData), intent(inout) :: rnonstFuncData
 !</input>
 
 !</subroutine>
 
     ! local variables
-    real(DP), dimension(5) :: Derror
+    real(DP), dimension(6) :: Derror
 
     ! Should we calculate the functional?
     if (rpostproc%icalcFunctionalValues .ne. 0) then
       ! Subdomain is the observation area
       call optcana_nonstatFunctional (Derror,&
-          ispacelevel, itimelevel, roperatorAsmHier, &
-          rkktsystem)
+          ispacelevel, itimelevel, roperatorAsmHier, rnonstFuncData)
 
-      call output_line ("||y-z||       = "//trim(sys_sdEL(Derror(2),10)))
-      call output_line ("||y(T)-z(T)|| = "//trim(sys_sdEL(Derror(3),10)))
-      call output_line ("||u||         = "//trim(sys_sdEL(Derror(4),10)))
-      call output_line ("||u_Gamma||   = "//trim(sys_sdEL(Derror(5),10)))
-      call output_line ("J(y,u)        = "//trim(sys_sdEL(Derror(1),10)))
+      call output_line ("||y-z||                = "//trim(sys_sdEL(Derror(2),10)))
+      call output_line ("||y(T)-z(T)||          = "//trim(sys_sdEL(Derror(3),10)))
+      call output_line ("||u||_{L^2}            = "//trim(sys_sdEL(Derror(4),10)))
+      call output_line ("||u||_{L^2(Gamma_C)}   = "//trim(sys_sdEL(Derror(5),10)))
+      call output_line ("||u||_{H^1/2(Gamma_C)} = "//trim(sys_sdEL(Derror(6),10)))
+      call output_line ("J(y,u)                 = "//trim(sys_sdEL(Derror(1),10)))
     end if
 
   end subroutine
@@ -1646,7 +1646,7 @@ contains
 
   subroutine optcpp_writeSpaceTimeFct (rpostproc,&
       ispacelevel, itimelevel, roperatorAsmHier, &
-      rkktsystem,itag)
+      rnonstFuncData,itag)
   
 !<description>
   ! Calculates values of the space-time functionals
@@ -1669,8 +1669,9 @@ contains
   ! This is a central discretisation structure passed to all assembly routines.
   type(t_spacetimeOpAsmHierarchy), intent(in) :: roperatorAsmHier
 
-  ! Structure defining the KKT system.
-  type(t_kktsystem), intent(inout) :: rkktsystem
+  ! Intermediate data that encapsules all information for the
+  ! computation of J(.).
+  type(t_nonstFuncData), intent(inout) :: rnonstFuncData
 
   ! OPTIONAL: An integer tag which is included into filenames of
   ! output files. If not specified, the tag is not included.
@@ -1680,7 +1681,7 @@ contains
 !</subroutine>
 
     ! local variables
-    real(DP), dimension(5) :: Derror
+    real(DP), dimension(6) :: Derror
     character(len=SYS_STRLEN) :: sfile
     real(DP) :: dtimeend,dtstep,dtimestart
     integer :: iunit
@@ -1703,11 +1704,11 @@ contains
       ! Calculate the value in the endpoint of every time interval
       ! as well as in the midpoint. Write them into the file.
       !
-      ! Loop over all timesteps (+ 1 for the final solution)
-      do idoftime = 1,rkktsystem%p_rprimalSol%p_rvector%NEQtime+1
+      ! Loop over all time intervals
+      do idoftime = 1,rnonstFuncData%p_rkktsystem%p_rprimalSol%p_rvector%NEQtime
       
         ! Get the corresponding time interval
-        call tdiscr_getTimestep(roperatorAsm%p_rtimeDiscrPrimal,idofTime-1,&
+        call tdiscr_getTimestep(roperatorAsm%p_rtimeDiscrPrimal,idofTime,&
             dtimeend,dtstep,dtimestart)
             
         ! Calculate the values for the beginning and the timestep midpoint.
@@ -1716,7 +1717,7 @@ contains
         !
         ! Get the values
         call optcana_nonstatFunctionalAtTime (Derror,dtimestart,&
-            ispacelevel, itimelevel, roperatorAsmHier, rkktsystem)
+            ispacelevel, itimelevel, roperatorAsmHier, rnonstFuncData)
             
         ! Write
         call optcpp_appendLineToDatafile (&
@@ -1725,27 +1726,30 @@ contains
             sys_adjustl(sys_sdE(Derror(2),10),22)//&
             sys_adjustl(sys_sdE(Derror(3),10),22)//&
             sys_adjustl(sys_sdE(Derror(4),10),22)//&
-            sys_adjustl(sys_sdE(Derror(5),10),22),&
-            "# time                "//&
-            "J(y,u)                "//&
-            "||y-z||_{L^2}         "//&
-            "||y(T)-z(T)||_{L^2}   "//&
-            "||u||_{L^2}           "//&
-            "||u||_{L^2(Gamma_C)}  ",&
+            sys_adjustl(sys_sdE(Derror(5),10),22)//&
+            sys_adjustl(sys_sdE(Derror(6),10),22),&
+            "# time                 "//&
+            "J(y,u)                 "//&
+            "||y-z||_{L^2}          "//&
+            "||y(T)-z(T)||_{L^2}    "//&
+            "||u||_{L^2}            "//&
+            "||u||_{L^2(Gamma_C)}   "//&
+            "||u||_{H^1/2(Gamma_C)} ",&
             sfile,idoftime .eq. 1,&
             itag,iunit)
         ! Centre
-        if (idoftime .ne. rkktsystem%p_rprimalSol%p_rvector%NEQtime+1) then
+        if (idoftime .ne. rnonstFuncData%p_rkktsystem%p_rprimalSol%p_rvector%NEQtime) then
           ! Get the values
           call optcana_nonstatFunctionalAtTime (Derror,0.5_DP*dtimestart + 0.5_DP*dtimeend,&
-              ispacelevel, itimelevel, roperatorAsmHier, rkktsystem)
+              ispacelevel, itimelevel, roperatorAsmHier, rnonstFuncData)
           call optcpp_appendLineToDatafile (&
               sys_adjustl(sys_sdE(0.5_DP*dtimestart + 0.5_DP*dtimeend,10),22)//&
               sys_adjustl(sys_sdE(Derror(1),10),22)//&
               sys_adjustl(sys_sdE(Derror(2),10),22)//&
               sys_adjustl(sys_sdE(Derror(3),10),22)//&
               sys_adjustl(sys_sdE(Derror(4),10),22)//&
-              sys_adjustl(sys_sdE(Derror(5),10),22),&
+              sys_adjustl(sys_sdE(Derror(5),10),22)//&
+              sys_adjustl(sys_sdE(Derror(6),10),22),&
               "",&
               sfile,.false.,&
               itag,iunit)
@@ -1765,7 +1769,7 @@ contains
 !<subroutine>
 
   subroutine optcpp_postprocessing (rpostproc,&
-      ispacelevel,itimelevel,rkktsystem,&
+      ispacelevel,itimelevel,rkktsystem,rkktSubsolverSet,&
       rsettings,itag)
   
 !<description>
@@ -1791,6 +1795,9 @@ contains
   ! Structure defining the KKT system.
   type(t_kktsystem), intent(inout) :: rkktsystem
 
+  ! Subsolver set used for solving subproblems in the KKT system.
+  type(t_kktSubsolverSet), intent(inout) :: rkktSubsolverSet
+
   ! OPTIONAL: An integer tag which is included into filenames of
   ! output files. If not specified, the tag is not included.
   integer, intent(in), optional :: itag
@@ -1799,15 +1806,20 @@ contains
 !</subroutine>
 
     ! local variables
+    type(t_nonstFuncData) :: rnonstFuncData
+    
+    ! Prepare the evaluation of the functional
+    call optcana_prepareEval (rnonstFuncData,rkktSystem,rkktSubsolverSet)
     
     ! Global postprocessing: Function values.
     call optcpp_spaceTimeFunctionals (rpostproc,&
-        ispacelevel, itimelevel, rsettings%roperatorAsmHier, &
-        rkktsystem)
+        ispacelevel, itimelevel, rsettings%roperatorAsmHier, rnonstFuncData)
         
     call optcpp_writeSpaceTimeFct (rpostproc,&
-        ispacelevel, itimelevel, rsettings%roperatorAsmHier, &
-        rkktsystem)
+        ispacelevel, itimelevel, rsettings%roperatorAsmHier, rnonstFuncData)
+        
+    ! Cleanup
+    call optcana_doneEval (rnonstFuncData)
         
     call output_lbrk()
     
@@ -1900,7 +1912,7 @@ contains
 !<subroutine>
 
   subroutine optcpp_postprocessSubstep (rpostproc,&
-      ispacelevel,itimelevel,rkktsystem,&
+      ispacelevel,itimelevel,rkktsystem,rkktSubsolverSet,&
       rsettings,cpostprocessFlags,itag)
   
 !<description>
@@ -1930,6 +1942,9 @@ contains
   ! Structure defining the KKT system.
   type(t_kktsystem), intent(inout) :: rkktsystem
   
+  ! Subsolver set used for solving subproblems in the KKT system.
+  type(t_kktSubsolverSet), intent(inout) :: rkktSubsolverSet
+
   ! Defines how to apply the postprocessing.
   ! Whether to postprocess intermediate solutions.
   ! =1: Calculate functional values, errors,...
@@ -1946,15 +1961,22 @@ contains
 !</subroutine>
 
     ! local variables
-    
+    type(t_nonstFuncData) :: rnonstFuncData
+        
     ! Global postprocessing: Function values.
     if (iand(cpostprocessFlags,1) .ne. 0) then
+      ! Prepare the evaluation of the functional
+      call optcana_prepareEval (rnonstFuncData,rkktSystem,rkktSubsolverSet)
+
       call optcpp_spaceTimeFunctionals (rpostproc,&
-          ispacelevel, itimelevel, rsettings%roperatorAsmHier, &
-          rkktsystem)
+          ispacelevel, itimelevel, rsettings%roperatorAsmHier, rnonstFuncData)
+
       call optcpp_writeSpaceTimeFct (rpostproc,&
           ispacelevel, itimelevel, rsettings%roperatorAsmHier, &
-          rkktsystem,itag)
+          rnonstFuncData,itag)
+
+      ! Cleanup
+      call optcana_doneEval (rnonstFuncData)
     end if
     
     if (iand(cpostprocessFlags,2) .ne. 0) then

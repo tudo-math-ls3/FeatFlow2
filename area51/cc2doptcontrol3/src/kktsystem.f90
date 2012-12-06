@@ -292,6 +292,12 @@ module kktsystem
 
   ! Saves the solutions of a KKT system to file sequences
   public :: kkt_saveDirDerivToFiles
+  
+  ! Calculate the H1/2 control from a dual solution
+  public :: kkt_calcH12BdCNavSt
+  
+  ! Applies the Poincare-Steklow operator to all control DOFs in time.
+  public :: kkt_controlApplyPCSteklow
 
 contains
 
@@ -1067,7 +1073,7 @@ end subroutine
     ! local variables
     integer :: icomp,istep,ierror
     real(DP) :: dtheta,dwmin,dwmax,dtime
-    type(t_vectorBlock), pointer :: p_rdualSpace, p_rcontrolSpace, p_rintermedControl
+    type(t_vectorBlock), pointer :: p_rdualSpace, p_rcontrolSpace, p_rintermedControlSpace
     type(t_vectorBlock), pointer :: p_rcontrolSpaceOutput
     type(t_spaceTimeVector), pointer :: p_rdualSol
     type(t_optcBDCSpace) :: roptcBDCspace
@@ -1138,7 +1144,7 @@ end subroutine
               rkktsystem%p_rcontrol%p_rvectorAccess,istep,p_rcontrolSpace)
 
           call sptivec_getVectorFromPool (&
-              rkktsystem%p_rintermedControl%p_rvectorAccess,istep,p_rintermedControl)
+              rkktsystem%p_rintermedControl%p_rvectorAccess,istep,p_rintermedControlSpace)
 
           call sptivec_getVectorFromPool (&
               rcontrol%p_rvectorAccess,istep,p_rcontrolSpaceOutput)
@@ -1170,13 +1176,13 @@ end subroutine
               call lsyssc_vectorLinearComb ( &
                   p_rcontrolSpace%RvectorBlock(icomp),p_rdualSpace%RvectorBlock(icomp),&
                   1.0_DP-p_rsettingsOptControl%dalphaDistC,-1.0_DP,&
-                  p_rintermedControl%RvectorBlock(icomp))
+                  p_rintermedControlSpace%RvectorBlock(icomp))
 
               icomp = icomp + 1
               call lsyssc_vectorLinearComb ( &
                   p_rcontrolSpace%RvectorBlock(icomp),p_rdualSpace%RvectorBlock(icomp),&
                   1.0_DP-p_rsettingsOptControl%dalphaDistC,-1.0_DP,&
-                  p_rintermedControl%RvectorBlock(icomp))
+                  p_rintermedControlSpace%RvectorBlock(icomp))
                   
               ! Do we have constraints?
               select case (p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%cconstraints)
@@ -1196,11 +1202,11 @@ end subroutine
 
                 icomp = icomp + 1
                 call lsyssc_copyVector (&
-                    p_rintermedControl%RvectorBlock(icomp),p_rcontrolSpaceOutput%RvectorBlock(icomp))
+                    p_rintermedControlSpace%RvectorBlock(icomp),p_rcontrolSpaceOutput%RvectorBlock(icomp))
 
                 icomp = icomp + 1
                 call lsyssc_copyVector (&
-                    p_rintermedControl%RvectorBlock(icomp),p_rcontrolSpaceOutput%RvectorBlock(icomp))
+                    p_rintermedControlSpace%RvectorBlock(icomp),p_rcontrolSpaceOutput%RvectorBlock(icomp))
 
               ! ----------------------------------------------------------
               ! Box constraints, implemented by DOF
@@ -1218,16 +1224,16 @@ end subroutine
                 icomp = icomp + 1
                 call nwder_applyMinMaxProjByDof (&
                     p_rcontrolSpaceOutput%RvectorBlock(icomp),1.0_DP,&
-                    1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax,&
-                    1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax)
+                    1.0_DP,p_rintermedControlSpace%RvectorBlock(icomp),dwmin,dwmax,&
+                    1.0_DP,p_rintermedControlSpace%RvectorBlock(icomp),dwmin,dwmax)
 
                 dwmin = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmin2
                 dwmax = p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%dmax2
                 icomp = icomp + 1
                 call nwder_applyMinMaxProjByDof (&
                     p_rcontrolSpaceOutput%RvectorBlock(icomp),1.0_DP,&
-                    1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax,&
-                    1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax)
+                    1.0_DP,p_rintermedControlSpace%RvectorBlock(icomp),dwmin,dwmax,&
+                    1.0_DP,p_rintermedControlSpace%RvectorBlock(icomp),dwmin,dwmax)
 
               case default          
                 call output_line("Unknown constraints",&
@@ -1252,7 +1258,7 @@ end subroutine
                 ! Calculate the region where boundary control is applied
                 call sbc_assembleBDconditions (rkktSystem%p_roptcBDC,roptcBDCSpace,dtime,&
                     p_rphysics%cequation,OPTP_PRIMAL,SBC_DIRICHLETBCC,&
-                    p_rintermedControl%p_rblockDiscr,roperatorasm%p_rtimeDiscrPrimal)
+                    p_rintermedControlSpace%p_rblockDiscr,roperatorasm%p_rtimeDiscrPrimal)
 
                 ! The first two components of the control read
                 !
@@ -1261,7 +1267,7 @@ end subroutine
                 !
                 ! Calculate "nu dn lambda - xi n"
                 call kkt_calcL2BdCNavSt (roperatorAsm%p_rasmTemplates,p_rphysics,&
-                    p_rdualSpace,p_rintermedControl,icomp+1,roptcBDCSpace)
+                    p_rdualSpace,p_rintermedControlSpace,icomp+1,roptcBDCSpace)
                 
                 ! Release local boundary conditions
                 call sbc_resetBCstructure(roptcBDCSpace)
@@ -1270,15 +1276,15 @@ end subroutine
                 !    u_intermed = (1-alpha) u + u_intermed
                 icomp = icomp + 1
                 call lsyssc_vectorLinearComb ( &
-                    p_rcontrolSpace%RvectorBlock(icomp),p_rintermedControl%RvectorBlock(icomp),&
+                    p_rcontrolSpace%RvectorBlock(icomp),p_rintermedControlSpace%RvectorBlock(icomp),&
                     1.0_DP-p_rsettingsOptControl%dalphaL2BdC,1.0_DP,&
-                    p_rintermedControl%RvectorBlock(icomp))
+                    p_rintermedControlSpace%RvectorBlock(icomp))
 
                 icomp = icomp + 1
                 call lsyssc_vectorLinearComb ( &
-                    p_rcontrolSpace%RvectorBlock(icomp),p_rintermedControl%RvectorBlock(icomp),&
+                    p_rcontrolSpace%RvectorBlock(icomp),p_rintermedControlSpace%RvectorBlock(icomp),&
                     1.0_DP-p_rsettingsOptControl%dalphaL2BdC,1.0_DP,&
-                    p_rintermedControl%RvectorBlock(icomp))
+                    p_rintermedControlSpace%RvectorBlock(icomp))
                     
                 ! Do we have constraints?
                 select case (p_rsettingsOptControl%rconstraints%rconstraintsL2BdC%cconstraints)
@@ -1298,11 +1304,11 @@ end subroutine
 
                   icomp = icomp + 1
                   call lsyssc_copyVector (&
-                      p_rintermedControl%RvectorBlock(icomp),p_rcontrolSpaceOutput%RvectorBlock(icomp))
+                      p_rintermedControlSpace%RvectorBlock(icomp),p_rcontrolSpaceOutput%RvectorBlock(icomp))
 
                   icomp = icomp + 1
                   call lsyssc_copyVector (&
-                      p_rintermedControl%RvectorBlock(icomp),p_rcontrolSpaceOutput%RvectorBlock(icomp))
+                      p_rintermedControlSpace%RvectorBlock(icomp),p_rcontrolSpaceOutput%RvectorBlock(icomp))
 
                 ! ----------------------------------------------------------
                 ! Box constraints, implemented by DOF
@@ -1320,16 +1326,16 @@ end subroutine
                   icomp = icomp + 1
                   call nwder_applyMinMaxProjByDof (&
                       p_rcontrolSpaceOutput%RvectorBlock(icomp),1.0_DP,&
-                      1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax,&
-                      1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax)
+                      1.0_DP,p_rintermedControlSpace%RvectorBlock(icomp),dwmin,dwmax,&
+                      1.0_DP,p_rintermedControlSpace%RvectorBlock(icomp),dwmin,dwmax)
 
                   dwmin = p_rsettingsOptControl%rconstraints%rconstraintsL2BdC%dmin2
                   dwmax = p_rsettingsOptControl%rconstraints%rconstraintsL2BdC%dmax2
                   icomp = icomp + 1
                   call nwder_applyMinMaxProjByDof (&
                       p_rcontrolSpaceOutput%RvectorBlock(icomp),1.0_DP,&
-                      1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax,&
-                      1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax)
+                      1.0_DP,p_rintermedControlSpace%RvectorBlock(icomp),dwmin,dwmax,&
+                      1.0_DP,p_rintermedControlSpace%RvectorBlock(icomp),dwmin,dwmax)
 
                 case default          
                   call output_line("Unknown constraints",&
@@ -1356,10 +1362,10 @@ end subroutine
                 ! Calculate the region where boundary control is applied
                 call sbc_assembleBDconditions (rkktSystem%p_roptcBDC,roptcBDCSpace,dtime,&
                     p_rphysics%cequation,OPTP_PCSTEKLOV,SBC_DIRICHLETBCC,&
-                    p_rintermedControl%p_rblockDiscr,roperatorasm%p_rtimeDiscrPrimal)
+                    p_rintermedControlSpace%p_rblockDiscr,roperatorasm%p_rtimeDiscrPrimal)
 
                 ! H^1/2 boundary control is slightly more complicated than
-                ! L2 boudnary control. The intermediate control reads
+                ! L2 boundary control. The intermediate control reads
                 !
                 !    u_intermed  =  u - alpha (nu dn w - zeta n) + (nu dn lambda - xi n)
                 !
@@ -1376,7 +1382,7 @@ end subroutine
                 !
                 ! Calculate "nu dn lambda - xi n"
                 call kkt_calcH12BdCNavSt (roperatorAsm%p_rasmTemplates,p_rphysics,&
-                    p_rdualSpace,p_rintermedControl,icomp+1,roptcBDCSpace,1.0_DP,1.0_DP,0.0_DP)
+                    p_rdualSpace,p_rintermedControlSpace,icomp+1,roptcBDCSpace,1.0_DP,1.0_DP,0.0_DP)
                 
                 ! Initialise basic solver structures
                 call spaceslh_initStructure (rkktSubsolvers%p_rsolverPCSteklov, &
@@ -1410,7 +1416,7 @@ end subroutine
                 
                 ! Sum up "- alpha (nu dn w - zeta n)"
                 call kkt_calcH12BdCNavSt (roperatorAsm%p_rasmTemplates,p_rphysics,&
-                    p_rdualSpace,p_rintermedControl,icomp+1,roptcBDCSpace,&
+                    p_rdualSpace,p_rintermedControlSpace,icomp+1,roptcBDCSpace,&
                     -p_rsettingsOptControl%dalphaH12BdC,-p_rsettingsOptControl%dalphaH12BdC,1.0_DP)
 
                 call sptivec_invalidateVecInPool (&
@@ -1423,15 +1429,15 @@ end subroutine
                 !    u_intermed = u + u_intermed
                 icomp = icomp + 1
                 call lsyssc_vectorLinearComb ( &
-                    p_rcontrolSpace%RvectorBlock(icomp),p_rintermedControl%RvectorBlock(icomp),&
+                    p_rcontrolSpace%RvectorBlock(icomp),p_rintermedControlSpace%RvectorBlock(icomp),&
                     1.0_DP,1.0_DP,&
-                    p_rintermedControl%RvectorBlock(icomp))
+                    p_rintermedControlSpace%RvectorBlock(icomp))
 
                 icomp = icomp + 1
                 call lsyssc_vectorLinearComb ( &
-                    p_rcontrolSpace%RvectorBlock(icomp),p_rintermedControl%RvectorBlock(icomp),&
+                    p_rcontrolSpace%RvectorBlock(icomp),p_rintermedControlSpace%RvectorBlock(icomp),&
                     1.0_DP,1.0_DP,&
-                    p_rintermedControl%RvectorBlock(icomp))
+                    p_rintermedControlSpace%RvectorBlock(icomp))
                     
                 ! Do we have constraints?
                 select case (p_rsettingsOptControl%rconstraints%rconstraintsH12BdC%cconstraints)
@@ -1451,11 +1457,11 @@ end subroutine
 
                   icomp = icomp + 1
                   call lsyssc_copyVector (&
-                      p_rintermedControl%RvectorBlock(icomp),p_rcontrolSpaceOutput%RvectorBlock(icomp))
+                      p_rintermedControlSpace%RvectorBlock(icomp),p_rcontrolSpaceOutput%RvectorBlock(icomp))
 
                   icomp = icomp + 1
                   call lsyssc_copyVector (&
-                      p_rintermedControl%RvectorBlock(icomp),p_rcontrolSpaceOutput%RvectorBlock(icomp))
+                      p_rintermedControlSpace%RvectorBlock(icomp),p_rcontrolSpaceOutput%RvectorBlock(icomp))
 
                 ! ----------------------------------------------------------
                 ! Box constraints, implemented by DOF
@@ -1473,16 +1479,16 @@ end subroutine
                   icomp = icomp + 1
                   call nwder_applyMinMaxProjByDof (&
                       p_rcontrolSpaceOutput%RvectorBlock(icomp),1.0_DP,&
-                      1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax,&
-                      1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax)
+                      1.0_DP,p_rintermedControlSpace%RvectorBlock(icomp),dwmin,dwmax,&
+                      1.0_DP,p_rintermedControlSpace%RvectorBlock(icomp),dwmin,dwmax)
 
                   dwmin = p_rsettingsOptControl%rconstraints%rconstraintsH12BdC%dmin2
                   dwmax = p_rsettingsOptControl%rconstraints%rconstraintsH12BdC%dmax2
                   icomp = icomp + 1
                   call nwder_applyMinMaxProjByDof (&
                       p_rcontrolSpaceOutput%RvectorBlock(icomp),1.0_DP,&
-                      1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax,&
-                      1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax)
+                      1.0_DP,p_rintermedControlSpace%RvectorBlock(icomp),dwmin,dwmax,&
+                      1.0_DP,p_rintermedControlSpace%RvectorBlock(icomp),dwmin,dwmax)
 
                 case default          
                   call output_line("Unknown constraints",&
@@ -1516,7 +1522,7 @@ end subroutine
               call lsyssc_vectorLinearComb ( &
                   p_rcontrolSpace%RvectorBlock(icomp),p_rdualSpace%RvectorBlock(icomp),&
                   1.0_DP-p_rsettingsOptControl%dalphaDistC,-1.0_DP,&
-                  p_rintermedControl%RvectorBlock(icomp))
+                  p_rintermedControlSpace%RvectorBlock(icomp))
 
               ! Do we have constraints?
               select case (p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%cconstraints)
@@ -1536,7 +1542,7 @@ end subroutine
 
                 icomp = icomp + 1
                 call lsyssc_copyVector (&
-                    p_rintermedControl%RvectorBlock(icomp),p_rcontrolSpaceOutput%RvectorBlock(icomp))
+                    p_rintermedControlSpace%RvectorBlock(icomp),p_rcontrolSpaceOutput%RvectorBlock(icomp))
 
               ! ----------------------------------------------------------
               ! Box constraints, implemented by DOF
@@ -1555,8 +1561,8 @@ end subroutine
                 icomp = icomp + 1
                 call nwder_applyMinMaxProjByDof (&
                     p_rcontrolSpaceOutput%RvectorBlock(icomp),1.0_DP,&
-                    1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax,&
-                    1.0_DP,p_rintermedControl%RvectorBlock(icomp),dwmin,dwmax)
+                    1.0_DP,p_rintermedControlSpace%RvectorBlock(icomp),dwmin,dwmax,&
+                    1.0_DP,p_rintermedControlSpace%RvectorBlock(icomp),dwmin,dwmax)
 
               case default          
                 call output_line("Unknown constraints",&
@@ -1594,6 +1600,263 @@ end subroutine
           ! Save the new control
           call sptivec_commitVecInPool (rkktsystem%p_rintermedControl%p_rvectorAccess,istep)
           call sptivec_commitVecInPool (rcontrol%p_rvectorAccess,istep)
+        
+        end do ! istep
+
+      end select
+    
+    end select    
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine kkt_controlApplyPCSteklow (rkktsystem,rcontrolPC,rkktSubsolvers,&
+      rstatistics)
+  
+!<description>
+  ! Applies the Poincare-Steklow operator to the H1/2 part of the control 
+  ! and saves the result in the H1/2 part of the control in rcontrolPC:
+  !    rcontrolPC = S rcontrol
+!</description>
+  
+!<inputoutput>
+  ! Structure defining the KKT system.
+  ! The control, primal and dual variable in this structure are used to
+  ! calculate the residual.
+  type(t_kktsystem), intent(inout), target :: rkktsystem
+
+  ! Control vector that receives the control after applying the 
+  ! Poincare-Steklow operator.
+  type(t_controlSpace), intent(inout) :: rcontrolPC
+  
+  ! KKT subsolver structure.
+  type(t_kktSubsolverSet), intent(inout) :: rkktSubsolvers
+!</inputoutput>
+
+!<output>
+  ! Statistics structure
+  type(t_spaceslSolverStat), intent(out) :: rstatistics
+!<output>
+
+!</subroutine>
+
+    ! local variables
+    integer :: icomp,istep,ierror,iindex
+    real(DP) :: dtheta,dwmin,dwmax,dtime
+    type(t_vectorBlock), pointer :: p_rtempVec, p_rcontrolSpace
+    type(t_vectorBlock), pointer :: p_rcontrolSpaceOutput
+    type(t_spaceTimeVector), pointer :: p_rdualSol
+    type(t_optcBDCSpace) :: roptcBDCspace
+    type(t_spaceslSolverStat) :: rstatLocal
+
+    type(t_settings_physics), pointer :: p_rphysics
+    type(t_settings_optcontrol), pointer :: p_rsettingsOptControl
+
+    type(t_spacetimeOperatorAsm) :: roperatorAsm
+
+    ! Fetch some structures
+    p_rphysics => &
+        rkktsystem%p_roperatorAsmHier%ranalyticData%p_rphysics
+    p_rsettingsOptControl => &
+        rkktsystem%p_roperatorAsmHier%ranalyticData%p_rsettingsOptControl
+
+    ! Get the underlying space and time discretisation structures.
+    call stoh_getOpAsm_slvtlv (roperatorAsm,&
+        rkktsystem%p_roperatorAsmHier,rkktsystem%ispacelevel,rkktsystem%itimelevel)
+
+    ! This is strongly equation and problem dependent
+    ! and may imply a projection to the admissible set.
+    !
+    ! We apply a loop over all steps and construct the
+    ! control depending on the timestep scheme.
+    !
+    ! Which timestep scheme do we have?
+    
+    p_rdualSol => rkktsystem%p_rdualSol%p_rvector
+    
+    ! Timestepping technique?
+    select case (p_rdualSol%p_rtimeDiscr%ctype)
+    
+    ! ***********************************************************
+    ! Standard Theta one-step scheme.
+    ! ***********************************************************
+    case (TDISCR_ONESTEPTHETA)
+    
+      ! Theta-scheme identifier
+      dtheta = p_rdualSol%p_rtimeDiscr%dtheta
+      
+      ! itag=0: old 1-step scheme.
+      ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
+      select case (p_rdualSol%p_rtimeDiscr%itag)
+      
+      ! ***********************************************************
+      ! itag=0: old/standard 1-step scheme.
+      ! ***********************************************************
+      case (0)
+
+        call output_line("Old 1-step-scheme not implemented",&
+            OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControl")
+        call sys_halt()
+
+      ! ***********************************************************
+      ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
+      ! ***********************************************************
+      case (1)
+      
+        ! Create temporary memory in the shape of the dual space vectors.
+        iindex = -1
+        call sptivec_getFreeBufferFromPool (&
+            rkktsystem%p_rdualSol%p_rvectorAccess,iindex,p_rtempVec)
+      
+        ! Loop over all timesteps.
+        do istep = 1,p_rdualSol%p_rtimeDiscr%nintervals+1
+        
+          ! Fetch the control vectors.
+          call sptivec_getVectorFromPool (&
+              rkktsystem%p_rcontrol%p_rvectorAccess,istep,p_rcontrolSpace)
+
+          call sptivec_getVectorFromPool (&
+              rcontrolPC%p_rvectorAccess,istep,p_rcontrolSpaceOutput)
+
+          ! icomp counts the component in the control
+          icomp = 0
+          
+          ! Which equation do we have?
+          select case (p_rphysics%cequation)
+          
+          ! -------------------------------------------------------------
+          ! Stokes/Navier Stokes.
+          ! -------------------------------------------------------------
+          case (CCEQ_STOKES2D,CCEQ_NAVIERSTOKES2D)
+            
+            ! Which type of control is applied?
+            
+            ! -----------------------------------------------------------
+            ! Distributed control
+            ! -----------------------------------------------------------
+            if (p_rsettingsOptControl%dalphaDistC .ge. 0.0_DP) then
+              icomp = icomp + 2
+            end if ! alphaDistC
+          
+            ! -----------------------------------------------------------
+            ! L2 Boundary control
+            ! -----------------------------------------------------------
+            if (p_rsettingsOptControl%dalphaL2BdC .ge. 0.0_DP) then
+              icomp = icomp + 2
+            end if ! alphaL2BdC
+
+            ! -----------------------------------------------------------
+            ! H^1/2 Boundary control
+            ! -----------------------------------------------------------
+            if (p_rsettingsOptControl%dalphaH12BdC .ge. 0.0_DP) then
+
+              ! No control in the initial solution
+              if (istep .gt. 1) then
+
+                ! Characteristics of the current timestep.
+                call tdiscr_getTimestep(roperatorasm%p_rtimeDiscrPrimal,istep-1,dtime)
+
+                ! Calculate the region where boundary control is applied
+                call sbc_assembleBDconditions (rkktSystem%p_roptcBDC,roptcBDCSpace,dtime,&
+                    p_rphysics%cequation,OPTP_PCSTEKLOV,SBC_DIRICHLETBCC,&
+                    p_rtempVec%p_rblockDiscr,roperatorasm%p_rtimeDiscrPrimal)
+
+                ! H^1/2 boundary control. We want to apply the PCS-pperator
+                ! to the control u in rkktsystem:
+                !
+                !    u_new  =  nu dn w - zeta n
+                !
+                ! with (w, zeta) being the solution of the Poincare-Steklov operator
+                ! S: u -> (w,zeta)  with
+                !
+                !    - Laplace(w) + grad(zeta) = 0
+                !                        div w = 0
+                !                            w = u  on the control boundary.
+                !
+                ! Thus, we have to solve a Stokes system with homogeneous boundary conditions
+                ! on the Dirichlet boundary and u being the boundary conditions on the
+                ! control boundary.
+                
+                ! Initialise basic solver structures
+                call spaceslh_initStructure (rkktSubsolvers%p_rsolverPCSteklov, &
+                    rkktsystem%ispacelevel, rkktsystem%itimelevel, &
+                    rkktsystem%p_roperatorAsmHier,rstatLocal,ierror)
+
+                ! Sum up statistics
+                call spacesl_sumStatistics(rstatLocal,rstatistics,.false.)
+
+                if (ierror .ne. 0) then
+                  call output_line("Error initialising the solver structures.",&
+                      OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControl")
+                  call sys_halt()
+                end if
+
+                ! Apply the solver to update the solution in timestep idofTime.
+                output_iautoOutputIndent = output_iautoOutputIndent + 2
+
+                ! Calculate (w, zeta). This is distributed data.
+                call spaceslh_solve_PCSteklov (rkktSubsolvers%p_rsolverPCSteklov,istep,&
+                    p_rcontrolSpace,p_rtempVec,rstatLocal)
+
+                output_iautoOutputIndent = output_iautoOutputIndent - 2
+                
+                ! Sum up statistics
+                call spacesl_sumStatistics(rstatLocal,rstatistics,.false.)
+
+                ! Cleanup
+                call spaceslh_doneStructure (rkktSubsolvers%p_rsolverPCSteklov)
+                
+                ! Extract "(nu dn w - zeta n)" on the boundary
+                call kkt_calcH12BdCNavSt (roperatorAsm%p_rasmTemplates,p_rphysics,&
+                    p_rtempVec,p_rcontrolSpaceOutput,icomp+1,roptcBDCSpace,&
+                    1.0_DP,1.0_DP,0.0_DP)
+
+                ! Release local boundary conditions
+                call sbc_resetBCstructure(roptcBDCSpace)
+                              
+              end if
+
+            end if ! alphaH12BdC
+
+          ! -------------------------------------------------------------
+          ! Heat equation
+          ! -------------------------------------------------------------
+          case (CCEQ_HEAT2D,CCEQ_NL1HEAT2D)
+            
+            ! Which type of control is applied?
+            
+            ! -----------------------------------------------------------
+            ! Distributed control
+            ! -----------------------------------------------------------
+            if (p_rsettingsOptControl%dalphaDistC .ge. 0.0_DP) then
+              icomp = icomp + 1
+            end if ! alpha
+
+            ! -----------------------------------------------------------
+            ! L2 Boundary control
+            ! -----------------------------------------------------------
+            if (p_rsettingsOptControl%dalphaL2BdC .ge. 0.0_DP) then
+              icomp = icomp + 1
+            end if
+            
+            ! -----------------------------------------------------------
+            ! H^1/2 Boundary control
+            ! -----------------------------------------------------------
+            if (p_rsettingsOptControl%dalphaH12BdC .ge. 0.0_DP) then
+
+              call output_line("H^1/2 Boundary control not available.",&
+                  OU_CLASS_ERROR,OU_MODE_STD,"kkt_dualToControl")
+              call sys_halt()
+
+            end if
+            
+          end select ! equation
+          
+          ! Save the new control
+          call sptivec_commitVecInPool (rcontrolPC%p_rvectorAccess,istep)
         
         end do ! istep
 
@@ -3572,7 +3835,7 @@ end subroutine
 
 !<subroutine>
 
-  subroutine kkt_getControlAtTime (rkktsystem,dtime,p_rvector)
+  subroutine kkt_getControlAtTime (rkktsystem,dtime,p_rvector,rcontrol)
   
 !<description>
   ! Calculates the control at a given point in time.
@@ -3584,6 +3847,11 @@ end subroutine
   
   ! Point in time where the control should be evaluated
   real(DP), intent(in) :: dtime
+  
+  ! OPTIONAL: Space-time control vector which should be evaluated at time
+  ! dtime. If not specified, the default control rkktsystem%rcontrol
+  ! is used.
+  type(t_controlSpace), intent(in), target, optional :: rcontrol
 !</input>
 
 !<inputoutput>
@@ -3601,6 +3869,7 @@ end subroutine
     type(t_timeDiscretisation), pointer :: p_rtimeDiscr
     type(t_settings_physics), pointer :: p_rphysics
     type(t_settings_optcontrol), pointer :: p_rsettingsOptControl
+    type(t_controlSpace), pointer :: p_rcontrol
 
     ! Fetch some structures
     p_rphysics => &
@@ -3608,17 +3877,21 @@ end subroutine
     p_rsettingsOptControl => &
         rkktsystem%p_roperatorAsmHier%ranalyticData%p_rsettingsOptControl
 
+    ! Get the control
+    p_rcontrol => rkktsystem%p_rcontrol
+    if (present(rcontrol)) p_rcontrol => rcontrol
+
     ! Ok, this is a bit tedious. At first allocate and reserve
     ! a vector in the buffer we can use for output.
     iindex = -1
     call sptivec_getFreeBufferFromPool (&
-        rkktsystem%p_rcontrol%p_rvectorAccess,iindex,p_rvector)
+        p_rcontrol%p_rvectorAccess,iindex,p_rvector)
         
     call sptivec_lockVecInPool (&
-        rkktsystem%p_rcontrol%p_rvectorAccess,iindex)
+        p_rcontrol%p_rvectorAccess,iindex)
     
     ! Get the time discretisation
-    p_rtimeDiscr => rkktsystem%p_rcontrol%p_rvector%p_rtimeDiscr
+    p_rtimeDiscr => p_rcontrol%p_rvector%p_rtimeDiscr
     
     ! Timestepping technique?
     select case (p_rtimeDiscr%ctype)
@@ -3664,7 +3937,7 @@ end subroutine
         
         ! Get the control at that time.
         call sptivec_getTimestepDataByTime (&
-            rkktsystem%p_rcontrol%p_rvectorAccess, dacttime, p_rvecSource)
+            p_rcontrol%p_rvectorAccess, dacttime, p_rvecSource)
 
 
         ! icomp counts the component in the control
@@ -3685,8 +3958,75 @@ end subroutine
           ! -----------------------------------------------------------
           if (p_rsettingsOptControl%dalphaDistC .ge. 0.0_DP) then
 
-            ! Get the source vector with the discributed control.
+            ! Do we have constraints?
+            select case (p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%cconstraints)
+
+            ! ----------------------------------------------------------
+            ! No constraints, Box constraints
+            ! ----------------------------------------------------------
+            case (0,1)
+
+              if (p_rsettingsOptControl%dalphaDistC .eq. 0.0_DP) then
+                call output_line("Alpha=0 not possible without contraints",&
+                    OU_CLASS_ERROR,OU_MODE_STD,"kkt_getControlAtTime")
+                call sys_halt()
+              end if
             
+              ! Copy the distributed control        
+              icomp = icomp + 1
+              call lsyssc_copyVector (p_rvecSource%RvectorBlock(icomp),p_rvector%RvectorBlock(icomp))
+
+              icomp = icomp + 1
+              call lsyssc_copyVector (p_rvecSource%RvectorBlock(icomp),p_rvector%RvectorBlock(icomp))
+                  
+            case default          
+              call output_line("Unknown constraints",&
+                  OU_CLASS_ERROR,OU_MODE_STD,"kkt_getControlAtTime")
+              call sys_halt()
+                  
+            end select ! constraints
+
+          end if ! alpha
+
+          ! -----------------------------------------------------------
+          ! L2 boundary control
+          ! -----------------------------------------------------------
+          if (p_rsettingsOptControl%dalphaL2BdC .ge. 0.0_DP) then
+
+            ! Do we have constraints?
+            select case (p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%cconstraints)
+
+            ! ----------------------------------------------------------
+            ! No constraints, Box constraints
+            ! ----------------------------------------------------------
+            case (0,1)
+
+              if (p_rsettingsOptControl%dalphaDistC .eq. 0.0_DP) then
+                call output_line("Alpha=0 not possible without contraints",&
+                    OU_CLASS_ERROR,OU_MODE_STD,"kkt_getControlAtTime")
+                call sys_halt()
+              end if
+            
+              ! Copy the distributed control        
+              icomp = icomp + 1
+              call lsyssc_copyVector (p_rvecSource%RvectorBlock(icomp),p_rvector%RvectorBlock(icomp))
+
+              icomp = icomp + 1
+              call lsyssc_copyVector (p_rvecSource%RvectorBlock(icomp),p_rvector%RvectorBlock(icomp))
+                  
+            case default          
+              call output_line("Unknown constraints",&
+                  OU_CLASS_ERROR,OU_MODE_STD,"kkt_getControlAtTime")
+              call sys_halt()
+                  
+            end select ! constraints
+
+          end if ! alpha
+
+          ! -----------------------------------------------------------
+          ! H^1/2 boundary control
+          ! -----------------------------------------------------------
+          if (p_rsettingsOptControl%dalphaH12BdC .ge. 0.0_DP) then
 
             ! Do we have constraints?
             select case (p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%cconstraints)
@@ -3730,8 +4070,69 @@ end subroutine
           ! -----------------------------------------------------------
           if (p_rsettingsOptControl%dalphaDistC .ge. 0.0_DP) then
 
-            ! Get the source vector with the discributed control.
+            ! Do we have constraints?
+            select case (p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%cconstraints)
+
+            ! ----------------------------------------------------------
+            ! No constraints, Box constraints
+            ! ----------------------------------------------------------
+            case (0,1)
+
+              if (p_rsettingsOptControl%dalphaDistC .eq. 0.0_DP) then
+                call output_line("Alpha=0 not possible without contraints",&
+                    OU_CLASS_ERROR,OU_MODE_STD,"kkt_getControlAtTime")
+                call sys_halt()
+              end if
             
+              ! Copy the distributed control        
+              icomp = icomp + 1
+              call lsyssc_copyVector (p_rvecSource%RvectorBlock(icomp),p_rvector%RvectorBlock(icomp))
+
+            case default          
+              call output_line("Unknown constraints",&
+                  OU_CLASS_ERROR,OU_MODE_STD,"kkt_getControlAtTime")
+              call sys_halt()
+                  
+            end select ! constraints
+
+          end if ! alpha
+
+          ! -----------------------------------------------------------
+          ! L2 boundary control
+          ! -----------------------------------------------------------
+          if (p_rsettingsOptControl%dalphaL2BdC .ge. 0.0_DP) then
+
+            ! Do we have constraints?
+            select case (p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%cconstraints)
+
+            ! ----------------------------------------------------------
+            ! No constraints, Box constraints
+            ! ----------------------------------------------------------
+            case (0,1)
+
+              if (p_rsettingsOptControl%dalphaDistC .eq. 0.0_DP) then
+                call output_line("Alpha=0 not possible without contraints",&
+                    OU_CLASS_ERROR,OU_MODE_STD,"kkt_getControlAtTime")
+                call sys_halt()
+              end if
+            
+              ! Copy the distributed control        
+              icomp = icomp + 1
+              call lsyssc_copyVector (p_rvecSource%RvectorBlock(icomp),p_rvector%RvectorBlock(icomp))
+
+            case default          
+              call output_line("Unknown constraints",&
+                  OU_CLASS_ERROR,OU_MODE_STD,"kkt_getControlAtTime")
+              call sys_halt()
+                  
+            end select ! constraints
+
+          end if ! alpha
+
+          ! -----------------------------------------------------------
+          ! H^1/2 boundary control
+          ! -----------------------------------------------------------
+          if (p_rsettingsOptControl%dalphaH12BdC .ge. 0.0_DP) then
 
             ! Do we have constraints?
             select case (p_rsettingsOptControl%rconstraints%rconstraintsDistCtrl%cconstraints)
@@ -3782,7 +4183,7 @@ end subroutine
     end select ! Timstep scheme    
 
     ! Unlock the vector, finish
-    call sptivec_unlockVecInPool (rkktsystem%p_rcontrol%p_rvectorAccess,iindex)
+    call sptivec_unlockVecInPool (p_rcontrol%p_rvectorAccess,iindex)
     
   end subroutine
 

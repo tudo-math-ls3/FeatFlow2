@@ -512,7 +512,7 @@ contains
     call optcpp_postprocessing (p_rsettingsSolver%rpostproc,&
         p_rsettingsSolver%rspaceTimeHierPrimal%p_rfeHierarchy%nlevels,&
         p_rsettingsSolver%rspaceTimeHierPrimal%p_rtimeHierarchy%nlevels,&
-        rsolution,p_rsettingsSolver)
+        rsolution,rsolver%rkktSubsolvers,p_rsettingsSolver)
 !    call optcpp_postprocessSpaceTimeVec (rpostproc,rsolution,rrhsDiscrete,&
 !        p_rsettingsSolver%rsettingsOptControl,p_rsettingsSolver)
     call stat_stopTimer (rtimePostProc)
