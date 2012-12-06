@@ -2914,7 +2914,7 @@ contains
 
 !<function>
 
-  character (len=nchar) function sys_triml (sstring,nchar) result(sout)
+  function sys_triml (sstring,nchar) result(sout)
   
 !<description>
   ! This function return nchar characters of the given string sstring
@@ -2927,6 +2927,13 @@ contains
   ! Number of characters to return
   integer, intent(in) :: nchar
 !</input>
+
+!<returns>
+  ! The trimmed string
+  character (len=nchar) :: sout
+!</returns>
+
+!</function>
 
     sout = sstring(1:nchar)
 
@@ -2936,7 +2943,7 @@ contains
 
 !<function>
 
-  character (len=nchar) function sys_trimr (sstring,nchar) result(sout)
+  function sys_trimr (sstring,nchar) result(sout)
   
 !<description>
   ! This function return nchar characters of the given string sstring
@@ -2949,6 +2956,13 @@ contains
   ! Number of characters to return
   integer, intent(in) :: nchar
 !</input>
+
+!<returns>
+  ! The trimmed string
+  character (len=nchar) :: sout
+!</returns>
+
+!</function>
 
     ! local variable
     integer :: nlen
