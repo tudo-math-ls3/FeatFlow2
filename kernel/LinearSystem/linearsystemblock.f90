@@ -409,10 +409,10 @@ module linearsystemblock
     ! at least one block column in the block matrix is completely zero.
     integer :: NCOLS       = 0
 
-    ! Number of blocks per row.
+    ! Number of blocks per row, aka block columns
     integer :: nblocksPerRow = 0
 
-    ! Number of blocks per column.
+    ! Number of blocks per column, aka block rows
     integer :: nblocksPerCol = 0
 
     ! Matrix specification tag. This is a bitfield coming from an OR
@@ -2257,7 +2257,7 @@ contains
     rmatrix%nblocksPerCol = rmatrix%nblocksPerRow
   end if
 
-  ! Check if number of diagonal blocks is nonzeri, otherwise exit
+  ! Check if number of diagonal blocks is nonzero, otherwise exit
   if ((rmatrix%nblocksPerCol <= 0) .or. (rmatrix%nblocksPerCol <= 0)) return
 
   allocate(rmatrix%RmatrixBlock(rmatrix%nblocksPerCol,rmatrix%nblocksPerRow))
