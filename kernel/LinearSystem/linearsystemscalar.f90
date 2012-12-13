@@ -883,10 +883,17 @@ module linearsystemscalar
   public :: lsyssc_isMatrixVectorCompatible
   public :: lsyssc_isMatrixMatrixCompatible
 
+  interface lsyssc_vectorLinearComb
+    module procedure lsyssc_vectorLinearComb1
+    module procedure lsyssc_vectorLinearComb2
+  end interface
+
+  public :: lsyssc_vectorLinearComb
+
   interface lsyssc_matrixLinearComb
-    module procedure lsyssc_matrixLinearComb
+    module procedure lsyssc_matrixLinearComb1
     module procedure lsyssc_matrixLinearComb2
-  end interface lsyssc_matrixLinearComb
+  end interface
   
   public :: lsyssc_matrixLinearComb
 
@@ -920,7 +927,6 @@ module linearsystemscalar
   public :: lsyssc_copyVector
   public :: lsyssc_scaleVector
   public :: lsyssc_clearVector
-  public :: lsyssc_vectorLinearComb
   public :: lsyssc_copyMatrix
   public :: lsyssc_transposeMatrix
   public :: lsyssc_transposeMatrixInSitu
@@ -15918,7 +15924,7 @@ contains
 
 !<subroutine>
 
-  subroutine lsyssc_vectorLinearComb (rx,ry,cx,cy,rdest)
+  subroutine lsyssc_vectorLinearComb1 (rx,ry,cx,cy)
 
 !<description>
   ! Performs a linear combination: rdest or ry = cx * rx  +  cy * ry
@@ -15938,11 +15944,8 @@ contains
 !</input>
 
 !<inputoutput>
-  ! Second source vector; also receives the result if rdest is not specified.
+  ! Second source vector; also receives the result
   type(t_vectorScalar), intent(inout), target :: ry
-
-  ! OPTIONAL: Destination vector. If not specified, ry will be overwritten.
-  type(t_vectorScalar), intent(inout), optional, target :: rdest
 !</inputoutput>
 
 !</subroutine>
@@ -15957,31 +15960,98 @@ contains
 
   if (rx%cdataType .ne. ry%cdataType) then
     call output_line('Different data types not supported!',&
-        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_vectorLinearComb')
+        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_vectorLinearComb1')
     call sys_halt()
   end if
 
   p_rdest => ry
-  if (present(rdest)) then
+  
+  select case (rx%cdataType)
+  case (ST_DOUBLE)
+    ! Get the pointers and copy the whole data array.
+    call lsyssc_getbase_double(rx,p_Dsource)
+    call lsyssc_getbase_double(p_rdest,p_Ddest)
 
-    p_rdest => rdest
+    call lalg_vectorLinearCombDble (p_Dsource,p_Ddest,cx,cy)
 
-    ! The vectors must be compatible to each other or rdest must be a clean
-    ! vector.
-    if (rdest%NEQ .ne. 0) then
-      call lsyssc_isVectorCompatible (rx,rdest)
+  case (ST_SINGLE)
+    ! Get the pointers and copy the whole data array.
+    call lsyssc_getbase_single(rx,p_Ssource)
+    call lsyssc_getbase_single(p_rdest,p_Sdest)
 
-      if (rx%cdataType .ne. rdest%cdataType) then
-        call output_line('Different data types not supported!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_vectorLinearComb')
-        call sys_halt()
-      end if
-    end if
+    call lalg_vectorLinearCombSngl (p_Ssource,p_Sdest,real(cx,SP),real(cy,SP))
 
-    ! Copy ry to rdest. Change rdest afterwards.
-    call lsyssc_copyVector (ry,rdest)
+  case default
+    call output_line('Unsupported data type!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_vectorLinearComb1')
+    call sys_halt()
+  end select
 
+  end subroutine
+
+! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lsyssc_vectorLinearComb2 (rx,ry,cx,cy,rdest)
+
+!<description>
+  ! Performs a linear combination: rdest or rdest = cx * rx  +  cy * ry
+  ! All vectors must be compatible to each other (same size, sorting
+  ! strategy,...).
+!</description>
+
+!<input>
+  ! First source vector
+  type(t_vectorScalar), intent(in) :: rx
+
+  ! Second source vector
+  type(t_vectorScalar), intent(in) :: ry
+
+  ! Scaling factor for Dx
+  real(DP), intent(in) :: cx
+
+  ! Scaling factor for Dy
+  real(DP), intent(in) :: cy
+!</input>
+
+!<inputoutput>
+  ! OPTIONAL: Destination vector
+  type(t_vectorScalar), intent(inout), target :: rdest
+!</inputoutput>
+
+!</subroutine>
+
+  ! local variables
+  real(DP), dimension(:), pointer :: p_Dsource, p_Ddest
+  real(SP), dimension(:), pointer :: p_Ssource, p_Sdest
+  type(t_vectorScalar), pointer :: p_rdest
+
+  ! The vectors must be compatible to each other.
+  call lsyssc_isVectorCompatible (rx,ry)
+
+  if (rx%cdataType .ne. ry%cdataType) then
+    call output_line('Different data types not supported!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_vectorLinearComb2')
+    call sys_halt()
   end if
+
+  p_rdest => rdest
+  
+  ! The vectors must be compatible to each other or rdest must be a clean
+  ! vector.
+  if (rdest%NEQ .ne. 0) then
+    call lsyssc_isVectorCompatible (rx,rdest)
+    
+    if (rx%cdataType .ne. rdest%cdataType) then
+      call output_line('Different data types not supported!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_vectorLinearComb2')
+      call sys_halt()
+    end if
+  end if
+  
+  ! Copy ry to rdest. Change rdest afterwards.
+  call lsyssc_copyVector (ry,rdest)
 
   select case (rx%cdataType)
   case (ST_DOUBLE)
@@ -16000,7 +16070,7 @@ contains
 
   case default
     call output_line('Unsupported data type!',&
-        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_vectorLinearComb')
+        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_vectorLinearComb2')
     call sys_halt()
   end select
 
@@ -20597,7 +20667,7 @@ contains
 
 !<subroutine>
 
-  subroutine lsyssc_matrixLinearComb (rmatrixA,rmatrixB,ca,cb,&
+  subroutine lsyssc_matrixLinearComb1 (rmatrixA,rmatrixB,ca,cb,&
       bmemory,bsymb,bnumb,bisExactStructure,rdest,rperfconfig)
 
     !<description>
@@ -20722,7 +20792,7 @@ contains
         rdest%p_rsortStrategyRows => rmatrixA%p_rsortStrategyRows
       else
         call output_line('Destination matrix must be given if BMEMORY=TRUE!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
         call sys_halt()
       end if
     end if
@@ -20733,7 +20803,7 @@ contains
         (rmatrixA%NCOLS .ne. rmatrixB%NCOLS) .or.&
         (rmatrixA%NCOLS .ne. p_rdest%NCOLS)) then
       call output_line('Number of rows/columns is not compatible!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
       call sys_halt()
     end if
 
@@ -20791,7 +20861,7 @@ contains
          (rmatrixB%cdatatype .eq. ST_DOUBLE)) .and.&
          (p_rdest%cdatatype .ne. ST_DOUBLE)) then
       call output_line('Data type of destination matrix is not compatible!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
       call sys_halt()
     end if
 
@@ -20808,14 +20878,14 @@ contains
         if (bmem .and. present(rdest)) then
           rdest%cmatrixFormat = LSYSSC_MATRIX1
           rdest%NA            = rmatrixA%NEQ*rmatrixA%NCOLS
-          call storage_new('lsyssc_matrixLinearComb','h_Da',&
+          call storage_new('lsyssc_matrixLinearComb1','h_Da',&
               rdest%NA,rdest%cdataType,rdest%h_Da,ST_NEWBLOCK_NOINIT)
         end if
 
         ! Check if matrix is given in the correct format
         if (p_rdest%cmatrixFormat .ne. LSYSSC_MATRIX1) then
           call output_line('Destination matrix has incompatible format!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
           call sys_halt()
         end if
 
@@ -20861,13 +20931,13 @@ contains
               else
                 call output_line('Destination matrix must not be single precision if'//&
                     'one of the source matrices is in double precision!',&
-                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
                 call sys_halt()
               end if
 
             case default
               call output_line('Unsupported combination of data types!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
               call sys_halt()
             end select
 
@@ -20901,13 +20971,13 @@ contains
 
             case default
               call output_line('Unsupported combination of data types!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
               call sys_halt()
             end select
 
           case default
             call output_line('Unsupported data type of source matrix!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
             call sys_halt()
           end select
         end if
@@ -20918,14 +20988,14 @@ contains
         if (bmem .and. present(rdest)) then
           rdest%cmatrixFormat = LSYSSC_MATRIX1
           rdest%NA            = rmatrixA%NEQ*rmatrixA%NCOLS
-          call storage_new('lsyssc_matrixLinearComb','h_Da',&
+          call storage_new('lsyssc_matrixLinearComb1','h_Da',&
               rdest%NA,rdest%cdataType,rdest%h_Da,ST_NEWBLOCK_NOINIT)
         end if
 
         ! Check if matrix is given in the correct format
         if (p_rdest%cmatrixFormat .ne. LSYSSC_MATRIX1) then
           call output_line('Destination matrix has incompatible format!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
           call sys_halt()
         end if
 
@@ -20960,7 +21030,7 @@ contains
               else
                 call output_line('Destination matrix must not be diagonal matrix if'//&
                     'one of the source matrices is a full matrix!',&
-                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
                 call sys_halt()
               end if
 
@@ -20976,13 +21046,13 @@ contains
               else
                 call output_line('Destination matrix must not be diagonal matrix if'//&
                     'one of the source matrices is a full matrix!',&
-                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
                 call sys_halt()
               end if
 
             case default
               call output_line('Unsupported combination of data types!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
               call sys_halt()
             end select
 
@@ -21002,7 +21072,7 @@ contains
               else
                 call output_line('Destination matrix must not be diagonal matrix if'//&
                     'one of the source matrices is a full matrix!',&
-                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
                 call sys_halt()
               end if
 
@@ -21018,19 +21088,19 @@ contains
               else
                 call output_line('Destination matrix must not be diagonal matrix if'//&
                     'one of the source matrices is a full matrix!',&
-                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
                 call sys_halt()
               end if
 
             case default
               call output_line('Unsupported combination of data types!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
               call sys_halt()
             end select
 
           case default
             call output_line('Unsupported data type of source matrix!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
             call sys_halt()
           end select
         end if
@@ -21041,14 +21111,14 @@ contains
         if (bmem .and. present(rdest)) then
           rdest%cmatrixFormat = LSYSSC_MATRIX1
           rdest%NA            = rmatrixA%NEQ*rmatrixA%NCOLS
-          call storage_new('lsyssc_matrixLinearComb','h_Da',rdest%NA,&
+          call storage_new('lsyssc_matrixLinearComb1','h_Da',rdest%NA,&
               rdest%cdataType,rdest%h_Da,ST_NEWBLOCK_NOINIT)
         end if
 
         ! Check if matrix is given in the correct format
         if (p_rdest%cmatrixFormat .ne. LSYSSC_MATRIX1) then
           call output_line('Destination matrix has incompatible format!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
           call sys_halt()
         end if
 
@@ -21085,7 +21155,7 @@ contains
               else
                 call output_line('Destination matrix must not be CSR matrix if'//&
                     'one of the source matrices is a full matrix!',&
-                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
                 call sys_halt()
               end if
 
@@ -21103,13 +21173,13 @@ contains
               else
                 call output_line('Destination matrix must not be CSR matrix if'//&
                     'one of the source matrices is a full matrix!',&
-                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
                 call sys_halt()
               end if
 
             case default
               call output_line('Unsupported combination of data types!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
               call sys_halt()
             end select
 
@@ -21131,7 +21201,7 @@ contains
               else
                 call output_line('Destination matrix must not be CSR matrix if'//&
                     'one of the source matrices is a full matrix!',&
-                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
                 call sys_halt()
               end if
 
@@ -21149,26 +21219,26 @@ contains
               else
                 call output_line('Destination matrix must not be CSR matrix if'//&
                     'one of the source matrices is a full matrix!',&
-                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
                 call sys_halt()
               end if
 
             case default
               call output_line('Unsupported combination of data types!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
               call sys_halt()
             end select
 
           case default
             call output_line('Unsupported data type of source matrix!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
             call sys_halt()
           end select
         end if
 
       case default
         call output_line('Unsupported combination of matrix formats!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
         call sys_halt()
       end select
 
@@ -21184,14 +21254,14 @@ contains
         if (bmem .and. present(rdest)) then
           rdest%cmatrixFormat = LSYSSC_MATRIXD
           rdest%NA            = rmatrixA%NA
-          call storage_new('lsyssc_matrixLinearComb','h_Da',&
+          call storage_new('lsyssc_matrixLinearComb1','h_Da',&
               rdest%NA,rdest%cdataType,rdest%h_Da,ST_NEWBLOCK_NOINIT)
         end if
 
         ! Check if matrix is given in the correct format
         if (p_rdest%cmatrixFormat .ne. LSYSSC_MATRIXD) then
           call output_line('Destination matrix has incompatible format!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
           call sys_halt()
         end if
 
@@ -21237,13 +21307,13 @@ contains
               else
                 call output_line('Destination matrix must not be single precision if'//&
                     'one of the source matrices is in double precision!',&
-                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
                 call sys_halt()
               end if
 
             case default
               call output_line('Unsupported combination of data types!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
               call sys_halt()
             end select
 
@@ -21277,13 +21347,13 @@ contains
 
             case default
               call output_line('Unsupported combination of data types!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
               call sys_halt()
             end select
 
           case default
             call output_line('Unsupported data type of source matrix!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
             call sys_halt()
           end select
         end if
@@ -21294,14 +21364,14 @@ contains
         if (bmem .and. present(rdest)) then
           rdest%cmatrixFormat = LSYSSC_MATRIX1
           rdest%NA            = rmatrixB%NEQ*rmatrixB%NCOLS
-          call storage_new('lsyssc_matrixLinearComb','h_Da',&
+          call storage_new('lsyssc_matrixLinearComb1','h_Da',&
               rdest%NA,rdest%cdataType,rdest%h_Da,ST_NEWBLOCK_NOINIT)
         end if
 
         ! Check if matrix is given in the correct format
         if (p_rdest%cmatrixFormat .ne. LSYSSC_MATRIX1) then
           call output_line('Destination matrix has incompatible format!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
           call sys_halt()
         end if
 
@@ -21350,13 +21420,13 @@ contains
               else
                 call output_line('Destination matrix must not be single precision if'//&
                     'one of the source matrices is in double precision!',&
-                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
                 call sys_halt()
               end if
 
             case default
               call output_line('Unsupported combination of data types!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
               call sys_halt()
             end select
 
@@ -21394,13 +21464,13 @@ contains
 
             case default
               call output_line('Unsupported combination of data types!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
               call sys_halt()
             end select
 
           case default
             call output_line('Unsupported data type of source matrix!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
             call sys_halt()
           end select
         end if
@@ -21411,14 +21481,14 @@ contains
         if (bmem .and. present(rdest)) then
           rdest%cmatrixFormat = rmatrixB%cmatrixFormat
           rdest%NA            = rmatrixB%NA
-          call storage_new('lsyssc_matrixLinearComb','h_Da',&
+          call storage_new('lsyssc_matrixLinearComb1','h_Da',&
               rdest%NA,rdest%cdataType,rdest%h_Da,ST_NEWBLOCK_NOINIT)
         end if
 
         ! Check if matrix is given in the correct format
         if (p_rdest%cmatrixFormat .ne. rmatrixB%cmatrixFormat) then
           call output_line('Destination matrix has incompatible format!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
           call sys_halt()
         end if
 
@@ -21534,13 +21604,13 @@ contains
               else
                 call output_line('Destination matrix must not be single precision if'//&
                     'one of the source matrices is in double precision!',&
-                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
                 call sys_halt()
               end if
 
             case default
               call output_line('Unsupported combination of data types!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
               call sys_halt()
             end select
 
@@ -21656,13 +21726,13 @@ contains
 
             case default
               call output_line('Unsupported combination of data types!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
               call sys_halt()
             end select
 
           case default
             call output_line('Unsupported data type of source matrix!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
             call sys_halt()
           end select
         end if
@@ -21679,7 +21749,7 @@ contains
           rdest%cinterleavematrixFormat = rmatrixB%cinterleavematrixFormat
           rdest%NA                      = rmatrixB%NA
           rdest%NVAR                    = rmatrixB%NVAR
-          call storage_new('lsyssc_matrixLinearComb','h_Da',isizeIntl*rdest%NA,&
+          call storage_new('lsyssc_matrixLinearComb1','h_Da',isizeIntl*rdest%NA,&
               rdest%cdataType,rdest%h_Da,ST_NEWBLOCK_NOINIT)
         end if
 
@@ -21687,7 +21757,7 @@ contains
         if (p_rdest%cmatrixFormat           .ne. rmatrixB%cmatrixFormat .or. &
             p_rdest%cinterleavematrixFormat .ne. rmatrixB%cinterleavematrixFormat) then
           call output_line('Destination matrix has incompatible format!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
           call sys_halt()
         end if
 
@@ -21820,13 +21890,13 @@ contains
               else
                 call output_line('Destination matrix must not be single precision if'//&
                     'one of the source matrices is in double precision!',&
-                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
                 call sys_halt()
               end if
 
             case default
               call output_line('Unsupported combination of data types!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
               call sys_halt()
             end select
 
@@ -21962,20 +22032,20 @@ contains
 
             case default
               call output_line('Unsupported combination of data types!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
               call sys_halt()
             end select
 
           case default
             call output_line('Unsupported data type of source matrix!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
             call sys_halt()
           end select
         end if
 
       case default
         call output_line('Unsupported combination of matrix formats!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
         call sys_halt()
       end select
 
@@ -21991,14 +22061,14 @@ contains
         if (bmem .and. present(rdest)) then
           rdest%cmatrixFormat = LSYSSC_MATRIX1
           rdest%NA            = rmatrixB%NEQ*rmatrixB%NCOLS
-          call storage_new('lsyssc_matrixLinearComb','h_Da',&
+          call storage_new('lsyssc_matrixLinearComb1','h_Da',&
               rdest%NA,rdest%cdataType,rdest%h_Da,ST_NEWBLOCK_NOINIT)
         end if
 
         ! Check if matrix is given in the correct format
         if (p_rdest%cmatrixFormat .ne. LSYSSC_MATRIX1) then
           call output_line('Destination matrix has incompatible format!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
           call sys_halt()
         end if
 
@@ -22051,13 +22121,13 @@ contains
               else
                 call output_line('Destination matrix must not be single precision if'//&
                     'one of the source matrices is in double precision!',&
-                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
                 call sys_halt()
               end if
 
             case default
               call output_line('Unsupported combination of data types!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
               call sys_halt()
             end select
 
@@ -22099,13 +22169,13 @@ contains
 
             case default
               call output_line('Unsupported combination of data types!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
               call sys_halt()
             end select
 
           case default
             call output_line('Unsupported data type of source matrix!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
             call sys_halt()
           end select
         end if
@@ -22116,14 +22186,14 @@ contains
         if (bmem .and. present(rdest)) then
           rdest%cmatrixFormat = rmatrixA%cmatrixFormat
           rdest%NA            = rmatrixA%NA
-          call storage_new('lsyssc_matrixLinearComb','h_Da',&
+          call storage_new('lsyssc_matrixLinearComb1','h_Da',&
               rdest%NA,rdest%cdataType,rdest%h_Da,ST_NEWBLOCK_NOINIT)
         end if
 
         ! Check if matrix is given in the correct format
         if (p_rdest%cmatrixFormat .ne. rmatrixA%cmatrixFormat) then
           call output_line('Destination matrix has incompatible format!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
           call sys_halt()
         end if
 
@@ -22188,7 +22258,7 @@ contains
               else
                 call output_line('Destination matrix must not be diagonal matrix if'//&
                     'one of the source matrices is a CSR matrix!',&
-                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
                 call sys_halt()
               end if
 
@@ -22235,13 +22305,13 @@ contains
               else
                 call output_line('Destination matrix must not be diagonal matrix if'//&
                     'one of the source matrices is a CSR matrix!',&
-                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
                 call sys_halt()
               end if
 
             case default
               call output_line('Unsupported combination of data types!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
               call sys_halt()
             end select
 
@@ -22292,7 +22362,7 @@ contains
               else
                 call output_line('Destination matrix must not be diagonal matrix if'//&
                     'one of the source matrices is a CSR matrix!',&
-                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
                 call sys_halt()
               end if
 
@@ -22339,19 +22409,19 @@ contains
               else
                 call output_line('Destination matrix must not be diagonal matrix if'//&
                     'one of the source matrices is CSR matrix!',&
-                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
                 call sys_halt()
               end if
 
             case default
               call output_line('Unsupported combination of data types!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
               call sys_halt()
             end select
 
           case default
             call output_line('Unsupported data type of source matrix!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
             call sys_halt()
           end select
         end if
@@ -22376,15 +22446,15 @@ contains
 
           ! Set auxiliary pointers
           h_Kaux = ST_NOHANDLE
-          call storage_new('lsyssc_matrixLinearComb','h_Kaux',&
+          call storage_new('lsyssc_matrixLinearComb1','h_Kaux',&
               rmatrixB%NCOLS,ST_INT,h_Kaux,ST_NEWBLOCK_NOINIT)
           call storage_getbase_int(h_Kaux,p_Kaux)
 
           ! Compute number of nonzero matrix entries: NA
           rdest%NA=do_mat79mat79add_computeNA(rmatrixA%NEQ,p_KldA,p_KcolA,p_KldB,p_KcolB,p_Kaux)
-          call storage_new('lsyssc_matrixLinearComb','h_Da',&
+          call storage_new('lsyssc_matrixLinearComb1','h_Da',&
               rdest%NA,rdest%cdataType,rdest%h_Da,ST_NEWBLOCK_NOINIT)
-          call storage_new('lsyssc_matrixLinearComb','h_Kcol',&
+          call storage_new('lsyssc_matrixLinearComb1','h_Kcol',&
               rdest%NA,ST_INT,rdest%h_Kcol,ST_NEWBLOCK_NOINIT)
 
           ! Free temporal memory
@@ -22395,7 +22465,7 @@ contains
         if (p_rdest%cmatrixFormat .ne.&
             max(rmatrixA%cmatrixFormat,rmatrixB%cmatrixFormat)) then
           call output_line('Destination matrix has incompatible format!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
           call sys_halt()
         end if
 
@@ -22529,13 +22599,13 @@ contains
               else
                 call output_line('Destination matrix must not be single precision if'//&
                     'one of the source matrices is in double precision!',&
-                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
                 call sys_halt()
               end if
 
             case default
               call output_line('Unsupported combination of data types!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
               call sys_halt()
             end select
 
@@ -22659,20 +22729,20 @@ contains
 
             case default
               call output_line('Unsupported combination of data types!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
               call sys_halt()
             end select
 
           case default
             call output_line('Unsupported data type of source matrix!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
             call sys_halt()
           end select
         end if
 
       case default
         call output_line('Unsupported combination of matrix formats!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
         call sys_halt()
       end select
 
@@ -22693,7 +22763,7 @@ contains
         ! memory allocation?
         if (bmem .and. present(rdest)) then
           call output_line('Not supported!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
           call sys_halt()
         end if
 
@@ -22701,7 +22771,7 @@ contains
         if (bsym .and. present(rdest)) then
 
           call output_line('Not supported!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
           call sys_halt()
 
         end if
@@ -22729,7 +22799,7 @@ contains
               ! Only 'fast' mode possible at the moment!
               if (.not. bfast) then
                 call output_line('Not supported!',&
-                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
                 call sys_halt()
               end if
 
@@ -22760,20 +22830,20 @@ contains
 
             case default
               call output_line('Unsupported combination of data types!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
               call sys_halt()
             end select
 
           case default
             call output_line('Unsupported data type of source matrix!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
             call sys_halt()
           end select
         end if
 
       case default
         call output_line('Unsupported combination of matrix formats!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
         call sys_halt()
       end select
 
@@ -22795,7 +22865,7 @@ contains
           rdest%cinterleavematrixFormat = rmatrixA%cinterleavematrixFormat
           rdest%NA                      = rmatrixA%NA
           rdest%NVAR                    = rmatrixA%NVAR
-          call storage_new('lsyssc_matrixLinearComb','h_Da',isizeIntl*rdest%NA,&
+          call storage_new('lsyssc_matrixLinearComb1','h_Da',isizeIntl*rdest%NA,&
               rdest%cdataType,rdest%h_Da,ST_NEWBLOCK_NOINIT)
         end if
 
@@ -22803,7 +22873,7 @@ contains
         if ((p_rdest%cmatrixFormat .ne. rmatrixA%cmatrixFormat) .or. &
             (p_rdest%cinterleavematrixFormat .ne. rmatrixA%cinterleavematrixFormat)) then
           call output_line('Destination matrix has incompatible format!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
           call sys_halt()
         end if
 
@@ -22873,7 +22943,7 @@ contains
               else
                 call output_line('Destination matrix must not be diagonal matrix if'//&
                     'one of the source matrices is a CSR matrix!',&
-                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
                 call sys_halt()
               end if
 
@@ -22925,13 +22995,13 @@ contains
               else
                 call output_line('Destination matrix must not be diagonal matrix if'//&
                     'one of the source matrices is a CSR matrix!',&
-                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
                 call sys_halt()
               end if
 
             case default
               call output_line('Unsupported combination of data types!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
               call sys_halt()
             end select
 
@@ -22987,7 +23057,7 @@ contains
               else
                 call output_line('Destination matrix must not be diagonal matrix if'//&
                     'one of the source matrices is a CSR matrix!',&
-                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
                 call sys_halt()
               end if
 
@@ -23039,19 +23109,19 @@ contains
               else
                 call output_line('Destination matrix must not be diagonal matrix if'//&
                     'one of the source matrices is CSR matrix!',&
-                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
                 call sys_halt()
               end if
 
             case default
               call output_line('Unsupported combination of data types!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
               call sys_halt()
             end select
 
           case default
             call output_line('Unsupported data type of source matrix!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
             call sys_halt()
           end select
         end if
@@ -23062,7 +23132,7 @@ contains
         if (rmatrixA%NVAR .ne. rmatrixB% NVAR .or. &
             rmatrixA%cinterleavematrixFormat .ne. rmatrixB%cinterleavematrixFormat) then
           call output_line('Source matrices have incompatible interleave format!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
           call sys_halt()
         end if
 
@@ -23088,15 +23158,15 @@ contains
 
           ! Set auxiliary pointers
           h_Kaux = ST_NOHANDLE
-          call storage_new('lsyssc_matrixLinearComb','h_Kaux',&
+          call storage_new('lsyssc_matrixLinearComb1','h_Kaux',&
               rmatrixB%NCOLS,ST_INT,h_Kaux,ST_NEWBLOCK_NOINIT)
           call storage_getbase_int(h_Kaux,p_Kaux)
 
           ! Compute number of nonzero matrix entries: NA
           rdest%NA=do_mat79mat79add_computeNA(rmatrixA%NEQ,p_KldA,p_KcolA,p_KldB,p_KcolB,p_Kaux)
-          call storage_new('lsyssc_matrixLinearComb','h_Da',isizeIntl*rdest%NA,&
+          call storage_new('lsyssc_matrixLinearComb1','h_Da',isizeIntl*rdest%NA,&
               rdest%cdataType,rdest%h_Da,ST_NEWBLOCK_NOINIT)
-          call storage_realloc('lsyssc_matrixLinearComb',rdest%NA,&
+          call storage_realloc('lsyssc_matrixLinearComb1',rdest%NA,&
               rdest%h_Kcol,ST_NEWBLOCK_NOINIT,.false.)
 
           ! Free temporal memory
@@ -23110,7 +23180,7 @@ contains
               rmatrixA%cinterleavematrixFormat .or. &
             p_rdest%NA .ne. rmatrixA%NVAR) then
           call output_line('Destination matrix has incompatible format!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
           call sys_halt()
         end if
 
@@ -23244,13 +23314,13 @@ contains
               else
                 call output_line('Destination matrix must not be single precision if'//&
                     'one of the source matrices is in double precision!',&
-                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                    OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
                 call sys_halt()
               end if
 
             case default
               call output_line('Unsupported combination of data types!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
               call sys_halt()
             end select
 
@@ -23374,20 +23444,20 @@ contains
 
             case default
               call output_line('Unsupported combination of data types!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
               call sys_halt()
             end select
 
           case default
             call output_line('Unsupported data type of source matrix!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
             call sys_halt()
           end select
         end if
 
       case default
         call output_line('Unsupported combination of matrix formats!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
         call sys_halt()
       end select
 
@@ -23395,7 +23465,7 @@ contains
 
     case default
       call output_line('Unsupported matrix format of source matrix!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb')
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matrixLinearComb1')
       call sys_halt()
     end select
 

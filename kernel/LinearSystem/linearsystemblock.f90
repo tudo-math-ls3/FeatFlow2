@@ -560,6 +560,13 @@ module linearsystemblock
   
   public :: lsysbl_synchroniseSort
 
+  interface lsysbl_vectorLinearComb
+    module procedure lsysbl_vectorLinearComb1
+    module procedure lsysbl_vectorLinearComb2
+  end interface lsysbl_vectorLinearComb
+
+  public :: lsysbl_vectorLinearComb
+
   public :: lsysbl_invertedDiagMatVec
   public :: lsysbl_createMatFromScalar
   public :: lsysbl_createVecFromScalar
@@ -582,7 +589,6 @@ module linearsystemblock
   public :: lsysbl_copyMatrix
   public :: lsysbl_scaleVector
   public :: lsysbl_clearVector
-  public :: lsysbl_vectorLinearComb
   public :: lsysbl_scalarProduct
   public :: lsysbl_sortVector
   public :: lsysbl_sortMatrix
@@ -3564,12 +3570,10 @@ contains
 
 !<subroutine>
 
-  subroutine lsysbl_vectorLinearComb (rx,ry,cx,cy,rdest)
+  subroutine lsysbl_vectorLinearComb1 (rx,ry,cx,cy)
 
 !<description>
   ! Performs a linear combination: ry = cx * rx  +  cy * ry
-  ! If rdest is given, the routine calculates rdest = cx * rx  +  cy * ry
-  ! without overwriting ry.
   ! All vectors must be compatible to each other (same size, sorting
   ! strategy,...).
 !</description>
@@ -3586,25 +3590,18 @@ contains
 !</input>
 
 !<inputoutput>
-  ! Second source vector; also receives the result if rdest is not given.
+  ! Second source vector; also receives the result
   type(t_vectorBlock), intent(inout) :: ry
-
-  ! OPTIONAL: Destination vector. If not given, ry is overwritten.
-  type(t_vectorBlock), intent(inout), optional :: rdest
 !</inputoutput>
 
 !</subroutine>
 
   ! local variables
-  real(DP), dimension(:), pointer :: p_Dsource, p_Ddest, p_Ddest2
-  real(SP), dimension(:), pointer :: p_Ssource, p_Sdest, p_Sdest2
+  real(DP), dimension(:), pointer :: p_Dsource, p_Ddest
+  real(SP), dimension(:), pointer :: p_Ssource, p_Sdest
 
   ! The vectors must be compatible to each other.
   call lsysbl_isVectorCompatible (rx,ry)
-
-  if (present(rdest)) then
-    call lsysbl_isVectorCompatible (rx,rdest)
-  end if
 
   if (rx%cdataType .ne. ry%cdataType) then
     call output_line('Different data types not supported!',&
@@ -3616,32 +3613,94 @@ contains
   case (ST_DOUBLE)
     ! Get the pointers and copy the whole data array.
     call lsysbl_getbase_double(rx,p_Dsource)
-    if (.not. present(rdest)) then
-      call lsysbl_getbase_double(ry,p_Ddest)
-    else
-      call lsysbl_getbase_double(rdest,p_Ddest)
-      call lsysbl_getbase_double(ry,p_Ddest2)
-      call lalg_copyVectorDble (p_Ddest2,p_Ddest)
-    end if
+    call lsysbl_getbase_double(ry,p_Ddest)
+    
+    call lalg_vectorLinearCombDble (p_Dsource,p_Ddest,cx,cy)
+
+  case (ST_SINGLE)
+    ! Get the pointers and copy the whole data array.
+    call lsysbl_getbase_single(rx,p_Ssource)
+    call lsysbl_getbase_single(ry,p_Sdest)
+
+    call lalg_vectorLinearCombSngl (p_Ssource,p_Sdest,real(cx,SP),real(cy,SP))
+
+  case DEFAULT
+    call output_line('Unsupported data type!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_vectorLinearComb1')
+    call sys_halt()
+  end select
+
+  end subroutine
+
+! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lsysbl_vectorLinearComb2 (rx,ry,cx,cy,rdest)
+
+!<description>
+  ! Performs a linear combination: rdesy = cx * rx  +  cy * ry
+  ! All vectors must be compatible to each other (same size, sorting
+  ! strategy,...).
+!</description>
+
+!<input>
+  ! First source vector
+  type(t_vectorBlock), intent(in) :: rx
+
+  ! Second source vector
+  type(t_vectorBlock), intent(in) :: ry
+
+  ! Scaling factor for Dx
+  real(DP), intent(in) :: cx
+
+  ! Scaling factor for Dy
+  real(DP), intent(in) :: cy
+!</input>
+
+!<inputoutput>
+  ! Destination vector.
+  type(t_vectorBlock), intent(inout) :: rdest
+!</inputoutput>
+
+!</subroutine>
+
+  ! local variables
+  real(DP), dimension(:), pointer :: p_Dsource, p_Ddest, p_Ddest2
+  real(SP), dimension(:), pointer :: p_Ssource, p_Sdest, p_Sdest2
+
+  ! The vectors must be compatible to each other.
+  call lsysbl_isVectorCompatible (rx,ry)
+  call lsysbl_isVectorCompatible (rx,rdest)
+
+  if (rx%cdataType .ne. ry%cdataType) then
+    call output_line('Different data types not supported!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_vectorLinearComb2')
+    call sys_halt()
+  end if
+
+  select case (rx%cdataType)
+  case (ST_DOUBLE)
+    ! Get the pointers and copy the whole data array.
+    call lsysbl_getbase_double(rx,p_Dsource)
+    call lsysbl_getbase_double(rdest,p_Ddest)
+    call lsysbl_getbase_double(ry,p_Ddest2)
+    call lalg_copyVectorDble (p_Ddest2,p_Ddest)
 
     call lalg_vectorLinearCombDble (p_Dsource,p_Ddest,cx,cy)
 
   case (ST_SINGLE)
     ! Get the pointers and copy the whole data array.
     call lsysbl_getbase_single(rx,p_Ssource)
-    if (.not. present(rdest)) then
-      call lsysbl_getbase_single(ry,p_Sdest)
-    else
-      call lsysbl_getbase_single(rdest,p_Sdest)
-      call lsysbl_getbase_single(ry,p_Sdest2)
-      call lalg_copyVectorSngl (p_Sdest2,p_Sdest)
-    end if
+    call lsysbl_getbase_single(rdest,p_Sdest)
+    call lsysbl_getbase_single(ry,p_Sdest2)
+    call lalg_copyVectorSngl (p_Sdest2,p_Sdest)
 
     call lalg_vectorLinearCombSngl (p_Ssource,p_Sdest,real(cx,SP),real(cy,SP))
 
   case DEFAULT
     call output_line('Unsupported data type!',&
-        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_vectorLinearComb')
+        OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_vectorLinearComb2')
     call sys_halt()
   end select
 
@@ -9182,9 +9241,9 @@ contains
     type(t_vectorBlock) :: rtempVector
     integer :: i,j
 
-    ! Check if matrix is dense has associated data
+    ! Check if matrix is dense and has data array associated
     if ((rmatrix%cmatrixFormat .ne. LSYSSC_MATRIX1) .or.&
-        (.not.lsyssc_hasMatrixStructure(rmatrix))) then
+        (rmatrix%h_Da .eq. ST_NOHANDLE)) then
       call output_line("Matrix must be dense with data array associated!",&
           OU_CLASS_ERROR,OU_MODE_STD,"lsysbl_getBlockVectorOverlay")
       call sys_halt()
