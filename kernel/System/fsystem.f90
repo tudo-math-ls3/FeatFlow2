@@ -2674,9 +2674,9 @@ contains
   ! Example:
   ! <verb>
   !    istart = 1
-  !    call sys_getToken (sstring,stoken1,istart)
-  !    call sys_getToken (sstring,stoken2,istart)
-  !    call sys_getToken (sstring,stoken3,istart)
+  !    call sys_getNextToken (sstring,stoken1,istart)
+  !    call sys_getNextToken (sstring,stoken2,istart)
+  !    call sys_getNextToken (sstring,stoken3,istart)
   ! </verb>
 !</description>
 
@@ -2780,7 +2780,7 @@ contains
     
     ! Copy
     if (istart .le. slen) then
-      stoken = sstring(istart:i)
+      stoken = sstring(istart:i-1)
     end if
     
     ! Put istart behind the parameter or set it to 0.
@@ -2792,7 +2792,7 @@ contains
       ! is skipped in the next loop.
       istart = i+1
     end if
-    
+
   end subroutine
 
   ! ***************************************************************************
@@ -2893,9 +2893,11 @@ contains
       
         else
 
-          if (sstring(istart:istart) .ne. " ") then
+          ! Process until the next separator
+          if (sstring(istart:istart) .ne. csep) then
             istart = istart + 1
           else
+            istart = istart + 1
             exit
           end if
           
