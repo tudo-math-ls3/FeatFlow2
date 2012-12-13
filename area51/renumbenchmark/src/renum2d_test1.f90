@@ -399,6 +399,7 @@ contains
               select case (isortStrategy)
               case (0)
                 ! Nothing to be done. 2-level ordering
+
               case (1)
                 ! Cuthill McKee
                 call sstrat_initCuthillMcKee (Rlevels(i)%rsortStrategy%p_Rstrategies(1),&
@@ -417,6 +418,7 @@ contains
                   call lsysbl_synchroniseSort (Rlevels(i)%rmatrix,rvectorBlock,rtempBlock2%RvectorBlock(1))
                   call lsysbl_synchroniseSort (Rlevels(i)%rmatrix,rtempBlock,rtempBlock2%RvectorBlock(1))
                 end if
+
               case (2)
                 ! XYZ-Sorting
                 call sstrat_initXYZsorting (Rlevels(i)%rsortStrategy%p_Rstrategies(1),&
@@ -458,6 +460,25 @@ contains
                 ! Hierarchical resorting
                 call sstrat_initHierarchical (Rlevels(i)%rsortStrategy%p_Rstrategies(1),&
                     Rdiscretisation(NLMIN:i))
+
+                ! Attach the sorting strategy to the matrix. The matrix is not yet sorted.
+                call lsysbl_setSortStrategy (Rlevels(i)%rmatrix,&
+                    Rlevels(i)%rsortStrategy,Rlevels(i)%rsortStrategy)
+                
+                ! Sort the matrix
+                call lsysbl_sortMatrix (Rlevels(i)%rmatrix,.true.)
+                
+                ! Sort the vectors on the maximum level.
+                if (i .eq. NLMAX) then
+                  call lsysbl_synchroniseSort (Rlevels(i)%rmatrix,rrhsBlock,rtempBlock2%RvectorBlock(1))
+                  call lsysbl_synchroniseSort (Rlevels(i)%rmatrix,rvectorBlock,rtempBlock2%RvectorBlock(1))
+                  call lsysbl_synchroniseSort (Rlevels(i)%rmatrix,rtempBlock,rtempBlock2%RvectorBlock(1))
+                end if
+
+              case (5)
+                ! Reverse Cuthill McKee
+                call sstrat_initRevCuthillMcKee (Rlevels(i)%rsortStrategy%p_Rstrategies(1),&
+                    Rlevels(i)%rmatrix%RmatrixBlock(1,1))
 
                 ! Attach the sorting strategy to the matrix. The matrix is not yet sorted.
                 call lsysbl_setSortStrategy (Rlevels(i)%rmatrix,&

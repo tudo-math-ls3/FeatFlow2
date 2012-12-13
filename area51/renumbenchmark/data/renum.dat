@@ -23,13 +23,14 @@ imesh(1) =
 # 1
 
 # Sort strategies to test.
-# 0=none (2-level), 1=CM, 2=XYZ, 3=stochastical, 4=hierarchical
-isortStrategy(5)=
+# 0=none (2-level), 1=CM, 2=XYZ, 3=stochastical, 4=hierarchical, 5=reverse CM
+isortStrategy(6)=
  0
  1
  2
  3
  4
+ 5
 
 [PERFORMANCETESTS]
 
