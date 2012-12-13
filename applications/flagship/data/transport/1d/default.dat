@@ -31,7 +31,7 @@ serrorfile =
 sbenchlogfile =
 
 # Performance configurations
-sperfconfigfile = %{sdatadirectory}/perfconfig/default.pcfg
+sperfconfigfile = %{sdatadirectory}/defaults/perfconfig.dat
 
 ################################################################################
 [Transport]
