@@ -780,6 +780,22 @@ module collection
     type(t_parlist), pointer :: p_rparlistQuickAccess4 => null()
 
     ! USER DEFINED:
+    ! A quick acces pointer to a function parser
+    type(t_fparser), pointer :: p_rfparserQuickAccess1 => null()
+
+    ! USER DEFINED:
+    ! A quick acces pointer to a function parser
+    type(t_fparser), pointer :: p_rfparserQuickAccess2 => null()
+
+    ! USER DEFINED:
+    ! A quick acces pointer to a function parser
+    type(t_fparser), pointer :: p_rfparserQuickAccess3 => null()
+
+    ! USER DEFINED:
+    ! A quick acces pointer to a function parser
+    type(t_fparser), pointer :: p_rfparserQuickAccess4 => null()
+
+    ! USER DEFINED:
     ! A quick access pointer to another collection structure.
     ! Can be used to link collection structures.
     type(t_collection), pointer :: p_rnextCollection => null()
