@@ -988,8 +988,8 @@ contains
     bfirst = .true.
 
     ! Spy all other scalar submatrices
-    do j = 1, rmatrix%nblocksPerCol
-      do i = 1, rmatrix%nblocksPerRow
+    do j = 1, rmatrix%nblocksPerRow
+      do i = 1, rmatrix%nblocksPerCol
         if (bfirst) then
           call matio_spyMatrix(sfilename,&
               smatrixName//"_"//trim(adjustl(sys_si(i,8)))//&
@@ -1016,8 +1016,8 @@ contains
     ! Initialisation
     bfirst = .true.
     
-    do j = 1, rmatrix%nblocksPerCol
-      do i = 1, rmatrix%nblocksPerRow
+    do j = 1, rmatrix%nblocksPerRow
+      do i = 1, rmatrix%nblocksPerCol
         
         if (.not.bfirst) write(UNIT=iunit,FMT='(A)',ADVANCE="NO") ","
         write(UNIT=iunit,FMT='(A)',ADVANCE="NO")&
