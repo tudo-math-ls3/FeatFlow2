@@ -111,6 +111,9 @@
 !# 28.) sys_countTokens / sys_getNextToken
 !#      -> Splits a string into several tokens and returns them one by one.
 !#
+!# 29.) sys_inumberic
+!#      -> Checks if a string represents a numeric value
+!#
 !# </purpose>
 !##############################################################################
 
@@ -206,6 +209,7 @@ module fsystem
   public :: sys_countTokens
   public :: sys_triml
   public :: sys_trimr
+  public :: sys_isNumeric
 
 !<constants>
 
@@ -2973,5 +2977,35 @@ contains
     sout = sstring(nlen-nchar+1:nlen)
 
   end function
+
+  ! ***************************************************************************
+
+!<function>
+
+  function sys_isNumeric(sstring)
+
+!<description>
+  ! This function checks if the given string represents a numeric value
+!</description>
+    
+!<intput>
+  ! String representation
+  character(len=*), intent(in) :: sstring
+!</intput>
+
+!<result>
+  ! True if sstring represents a numeric value
+  logical :: sys_isNumeric
+!</result>
+!</function>
+
+    ! local variables
+    real(DP) :: x
+    integer :: e
+    
+    read(sstring, *, iostat=e) x
+    sys_isNumeric = (e .eq. 0)
+    
+  end function sys_isNumeric
 
 end module fsystem
