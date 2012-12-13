@@ -67,7 +67,7 @@
 !#     -> Allocate "local" memory, needed for assembling matrix entries.
 !#
 !# 6.) bilf_releaseAssemblyData
-!#     > Release "local" memory, needed for assembling matrix entries.
+!#     -> Release "local" memory, needed for assembling matrix entries.
 !#
 !# NOTE:
 !#   In Windows if OpenMP is activated, this source file must not be processed
@@ -528,7 +528,7 @@ contains
 
 !<output>
   ! The structure of a scalar matrix, fitting to the given discretisation.
-  ! Memory fo the structure is allocated dynamically on the heap.
+  ! Memory for the structure is allocated dynamically on the heap.
   type(t_matrixScalar), intent(out) :: rmatrix
 !</output>
 
@@ -553,7 +553,8 @@ contains
     ! Which matrix structure do we have to create?
     select case (iformat)
 
-    case (LSYSSC_MATRIX9)
+    case (LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL,&
+          LSYSSC_MATRIX7,LSYSSC_MATRIX7INTL)
 
       select case (ccType)
 
@@ -583,45 +584,15 @@ contains
                 OU_CLASS_ERROR,OU_MODE_STD,"bilf_createMatrixStructure")
         call sys_halt()
       end select
-
-    case (LSYSSC_MATRIX7)
-
-      select case (ccType)
-
-      case (BILF_MATC_ELEMENTBASED)
-
-        ! Call the creation routine for structure 9:
-        call bilf_createMatStructure9_conf (rdiscretisationTrial,rmatrix,&
-            rdiscretisationTest,imem,rperfconfig)
-
-      case (BILF_MATC_EDGEBASED)
-
-        if (present(rdiscretisationTest)) then
-          if (rdiscretisationTest%ccomplexity .eq. SPDISC_UNIFORM) then
-            call output_line ("Edge-based matrix constrution only for"//&
-                    " uniform discr., supported.", &
-                    OU_CLASS_ERROR,OU_MODE_STD,"bilf_createMatrixStructure")
-            call sys_halt()
-          end if
-        end if
-
-        call bilf_createMatStructure9eb_uni (rdiscretisationTrial,rmatrix,&
-          rdiscretisationTest,imem,rperfconfig)
-
-      case DEFAULT
-        call output_line ("Invalid matrix construction method.", &
-            OU_CLASS_ERROR,OU_MODE_STD,"bilf_createMatrixStructure")
-        call sys_halt()
-      end select
-
-      ! Translate to matrix structure 7:
-      call lsyssc_convertMatrix (rmatrix,LSYSSC_MATRIX7)
-
+      
     case DEFAULT
       call output_line ("Not supported matrix structure!", &
           OU_CLASS_ERROR,OU_MODE_STD,"bilf_createMatrixStructure")
       call sys_halt()
     end select
+    
+    ! Convert matrix to desired format if necessary
+    call lsyssc_convertMatrix (rmatrix,iformat)
 
   else
     call output_line ("General discretisation not implemented!", &
@@ -7341,7 +7312,7 @@ contains
   !
   ! IMPLEMENTATIONAL REMARK:
   ! This is a new implementation of the matrix assembly using element subsets.
-  ! In contrast to bilf_buildMatrixScalar, this routine loops itself about
+  ! In contrast to bilf_buildMatrixScalar, this routine loops itself about!
   ! the element subsets and calls bilf_initAssembly/
   ! bilf_assembleSubmeshMatrix9/bilf_doneAssembly to assemble matrix
   ! contributions of a submesh.
