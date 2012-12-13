@@ -6337,14 +6337,14 @@ contains
     real(DP), dimension(:), pointer :: p_Ddata
     real(SP), dimension(:), pointer :: p_Fdata
     integer, dimension(:), pointer :: p_Kdiagonal
-    integer :: i
+    integer :: i,ivar
 
     if (rmatrix%NEQ .le. 0) return ! Empty matrix
 
     ! Which matrix type do we have?
     select case (rmatrix%cmatrixFormat)
     case (LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL,LSYSSC_MATRIX7,&
-        LSYSSC_MATRIXD,LSYSSC_MATRIX1)
+          LSYSSC_MATRIX7INTL,LSYSSC_MATRIXD,LSYSSC_MATRIX1)
       ! If necessary, allocate memory.
       if (rmatrix%h_Da .eq. ST_NOHANDLE) then
         call lsyssc_allocEmptyMatrix (rmatrix,LSYSSC_SETM_UNDEFINED)
@@ -6354,6 +6354,67 @@ contains
     ! Now choose -- depending on the matrix format -- how to initialise the
     ! matrix data.
     select case (rmatrix%cmatrixFormat)
+    case (LSYSSC_MATRIX9INTL)
+      ! Clear the old content
+      call lsyssc_clearMatrix (rmatrix)
+
+      ! Get the structure and the data.
+      ! Put the diagonal elements to 1.
+      call lsyssc_getbase_Kdiagonal (rmatrix,p_Kdiagonal)
+
+      select case(rmatrix%cinterleavematrixFormat)
+      case (LSYSSC_MATRIX1)
+        select case (rmatrix%cdataType)
+        case (ST_DOUBLE)
+          call lsyssc_getbase_double (rmatrix,p_Ddata)
+          do i=1,rmatrix%NEQ
+            do ivar=1,rmatrix%NVAR
+              p_Ddata((p_Kdiagonal(i)-1)*rmatrix%NVAR*rmatrix%NVAR+&
+                                (ivar-1)*rmatrix%NVAR+ivar) = 1.0_DP
+            end do
+          end do
+        case (ST_SINGLE)
+          call lsyssc_getbase_single (rmatrix,p_Fdata)
+          do i=1,rmatrix%NEQ
+            do ivar=1,rmatrix%NVAR
+              p_Fdata((p_Kdiagonal(i)-1)*rmatrix%NVAR*rmatrix%NVAR+&
+                                (ivar-1)*rmatrix%NVAR+ivar) = 1.0_SP
+            end do
+          end do
+        case default
+          call output_line('Unsupported data type!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_initialiseIdentityMatrix')
+          call sys_halt()
+        end select
+
+      case (LSYSSC_MATRIXD)
+        select case (rmatrix%cdataType)
+        case (ST_DOUBLE)
+          call lsyssc_getbase_double (rmatrix,p_Ddata)
+          do i=1,rmatrix%NEQ
+            do ivar=1,rmatrix%NVAR
+              p_Ddata((p_Kdiagonal(i)-1)*rmatrix%NVAR+ivar) = 1.0_DP
+            end do
+          end do
+        case (ST_SINGLE)
+          call lsyssc_getbase_single (rmatrix,p_Fdata)
+          do i=1,rmatrix%NEQ
+            do ivar=1,rmatrix%NVAR
+              p_Fdata((p_Kdiagonal(i)-1)*rmatrix%NVAR+ivar) = 1.0_SP
+            end do
+          end do
+        case default
+          call output_line('Unsupported data type!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_initialiseIdentityMatrix')
+          call sys_halt()
+        end select
+
+      case default
+        call output_line('Unsupported interleaved matrix format!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_initialiseIdentityMatrix')
+        call sys_halt()
+      end select
+        
     case (LSYSSC_MATRIX9)
       ! Clear the old content
       call lsyssc_clearMatrix (rmatrix)
@@ -6375,6 +6436,67 @@ contains
         end do
       case default
         call output_line('Unsupported data type!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_initialiseIdentityMatrix')
+        call sys_halt()
+      end select
+
+    case (LSYSSC_MATRIX7INTL)
+      ! Clear the old content
+      call lsyssc_clearMatrix (rmatrix)
+
+      ! Get the structure and the data.
+      ! Put the diagonal elements to 1.
+      call lsyssc_getbase_Kld (rmatrix,p_Kdiagonal)
+
+      select case(rmatrix%cinterleavematrixFormat)
+      case (LSYSSC_MATRIX1)
+        select case (rmatrix%cdataType)
+        case (ST_DOUBLE)
+          call lsyssc_getbase_double (rmatrix,p_Ddata)
+          do i=1,rmatrix%NEQ
+            do ivar=1,rmatrix%NVAR
+              p_Ddata((p_Kdiagonal(i)-1)*rmatrix%NVAR*rmatrix%NVAR+&
+                                (ivar-1)*rmatrix%NVAR+ivar) = 1.0_DP
+            end do
+          end do
+        case (ST_SINGLE)
+          call lsyssc_getbase_single (rmatrix,p_Fdata)
+          do i=1,rmatrix%NEQ
+            do ivar=1,rmatrix%NVAR
+              p_Fdata((p_Kdiagonal(i)-1)*rmatrix%NVAR*rmatrix%NVAR+&
+                                (ivar-1)*rmatrix%NVAR+ivar) = 1.0_SP
+            end do
+          end do
+        case default
+          call output_line('Unsupported data type!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_initialiseIdentityMatrix')
+          call sys_halt()
+        end select
+
+      case (LSYSSC_MATRIXD)
+        select case (rmatrix%cdataType)
+        case (ST_DOUBLE)
+          call lsyssc_getbase_double (rmatrix,p_Ddata)
+          do i=1,rmatrix%NEQ
+            do ivar=1,rmatrix%NVAR
+              p_Ddata((p_Kdiagonal(i)-1)*rmatrix%NVAR+ivar) = 1.0_DP
+            end do
+          end do
+        case (ST_SINGLE)
+          call lsyssc_getbase_single (rmatrix,p_Fdata)
+          do i=1,rmatrix%NEQ
+            do ivar=1,rmatrix%NVAR
+              p_Fdata((p_Kdiagonal(i)-1)*rmatrix%NVAR+ivar) = 1.0_SP
+            end do
+          end do
+        case default
+          call output_line('Unsupported data type!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_initialiseIdentityMatrix')
+          call sys_halt()
+        end select
+
+      case default
+        call output_line('Unsupported interleaved matrix format!',&
             OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_initialiseIdentityMatrix')
         call sys_halt()
       end select
@@ -29926,7 +30048,7 @@ contains
     ! local variables
     type(it_mapInt_Int) :: rmapIter
     integer, dimension(:), pointer :: p_Idata,p_Kcol,p_Kdiagonal,p_Kld
-    integer :: ia0,ia,icol0,icol,ieq,isize,itable,ncols
+    integer :: ia,icol0,icol,ieq,isize,itable,ncols
 
     ! Perform some pre-processing steps
     select case(rmatrix%cmatrixFormat)
