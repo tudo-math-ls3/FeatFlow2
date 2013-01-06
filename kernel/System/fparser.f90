@@ -2009,7 +2009,7 @@ contains
 
 !<function>
 
-  function fparser_getFunctionNumber (rfparser, scompName) result(icomp)
+  function fparser_getFunctionNumber (rfparser, scompName, bquiet) result(icomp)
 
 !<description>
     ! This function returns the internal number of the component which
@@ -2022,6 +2022,11 @@ contains
 
     ! Function name
     character(len=*), intent(in) :: scompName
+
+    ! OPTIONAL: Specifies whether a warning should be printed when released an
+    ! empty vector (bquiet = .false.) or whether to remain silent in this case.
+    ! If not specified, bquiet = .false. is used.
+    logical, optional, intent(in) :: bquiet
 !</input>
 
 !<result>
@@ -2031,6 +2036,7 @@ contains
 !</function>
 
     ! local variable
+    logical :: bwarn
     character(len=len(scompName)) :: sname
 
     ! Convert to lower case
@@ -2044,7 +2050,11 @@ contains
     ! If we end up here, then the function is not available
     icomp = 0
 
-    call output_line('Function is not available',&
+    ! Shout or shut up?
+    bwarn = .true.
+    if(present(bquiet)) bwarn = .not. bquiet
+
+    if (bwarn) call output_line('Function is not available',&
         OU_CLASS_WARNING, OU_MODE_STD,'fparser_getFunctionNumber')
 
   end function fparser_getFunctionNumber
