@@ -3291,7 +3291,7 @@ contains
 
 !<subroutine>
 
-  subroutine afcstab_genExtSparsity(rmatrixSrc, rmatrixExtended)
+  subroutine afcstab_genExtSparsity(rmatrix, rmatrixDest)
 
 !<description>
     ! This subroutine generates the extended sparsity pattern
@@ -3307,28 +3307,37 @@ contains
     !   z_ij=sum_k(a_ik*a_kj)>0 <=> ex. k : a_ik=1 and a_kj=1.
 !</description>
 
-!<input>
-    ! scalar source matrix with standard sparsity pattern
-    type(t_matrixScalar), intent(in)    :: rmatrixSrc
-!</input>
-
 !<inputoutput>
-    ! scalar destination matrix with extended sparsity pattern
-    type(t_matrixScalar), intent(inout) :: rmatrixExtended
+    ! scalar matrix with standard sparsity pattern
+    type(t_matrixScalar), intent(inout)    :: rmatrix
+
+    ! OPTIONAL: scalar matrix with extended sparsity pattern
+    ! If not present, then the source matrix will be overwritten
+    type(t_matrixScalar), intent(inout), optional :: rmatrixDest
 !</inputoutput>
 !</subroutine>
 
-    ! Clear output matrix
-    if (lsyssc_hasMatrixStructure(rmatrixExtended) .or.&
-        lsyssc_hasMatrixContent(rmatrixExtended)) then
-      call lsyssc_releaseMatrix(rmatrixExtended)
-    end if
+    ! local variable
+    type(t_matrixScalar) :: rmatrixTmp
+
+!!$    ! Clear output matrix
+!!$    if (lsyssc_hasMatrixStructure(rmatrixExtended) .or.&
+!!$        lsyssc_hasMatrixContent(rmatrixExtended)) then
+!!$      call lsyssc_releaseMatrix(rmatrixExtended)
+!!$    end if
 
     ! Compute Z=A*A and let the connectivity graph of Z be the
     ! extended sparsity pattern of the Jacobian matrix
-    call lsyssc_multMatMat(rmatrixSrc, rmatrixSrc, rmatrixExtended,&
+    call lsyssc_multMatMat(rmatrix, rmatrix, rmatrixTmp,&
                            .true., .true., .false.)
 
+    if (present(rmatrixDest)) then
+      call lsyssc_moveMatrix(rmatrixTmp, rmatrixDest)
+    else
+      call lsyssc_moveMatrix(rmatrixTmp, rmatrix)
+    end if
+    call lsyssc_releaseMatrix(rmatrixTmp)
+    
   end subroutine afcstab_genExtSparsity
 
   !*****************************************************************************
