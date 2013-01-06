@@ -135,6 +135,8 @@
 
 module statistics
 
+#include "../feat2macros.h"
+
 !$use omp_lib
   use fsystem
   use genoutput
@@ -144,7 +146,7 @@ module statistics
   private
 
   ! Check for high-resolution clock; supported on Windows and Unix
-#if defined(_WIN32) || defined(unix) || defined(__unix) || defined(__unix__)
+#if FEAT2_PP_OS_IS_WIN() || FEAT2_PP_OS_IS_UNIX()
 #define HAS_HIGH_RES_CLOCK 1
 #endif
 

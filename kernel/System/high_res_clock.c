@@ -27,7 +27,9 @@
  *   end subroutine
  */
 
-#if defined(_WIN32)
+#include "../feat2macros.h"
+
+#if FEAT2_PP_OS_IS_WIN()
 
 /* Windows API */
 
@@ -52,7 +54,7 @@ void hrc_diff(double* _elapsed, long long int* _time1, long long int* _time2)
     *_elapsed = 0.0; /* no high-resolution clock available */
 }
 
-#elif defined(unix) || defined (__unix) || defined(__unix__)
+#elif FEAT2_PP_OS_IS_UNIX()
 
 /* Unix API */
 

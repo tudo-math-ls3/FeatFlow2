@@ -13,6 +13,8 @@
 !##############################################################################
 module signals
 
+#include "../feat2macros.h"
+
 !$use omp_lib
   use genoutput
 
@@ -95,7 +97,7 @@ contains
 !</input>
 !</subroutine>
 
-#if defined(unix) || defined(__unix) || defined(__unix__)
+#if FEAT2_PP_OS_IS_UNIX()
 
     ! external subroutines written in C
     external :: signal_register

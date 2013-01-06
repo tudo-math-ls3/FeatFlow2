@@ -1,14 +1,9 @@
 List of preprocessor flags:
 ---------------------------
 
-1) System identification flags
+1) Flags to indicate special compilation features
 
-_WIN32               : Defined for both 32-bit and 64-bit Windows environments
-_WIN64               : Defined for 64-bit Windows environments
-unix,__unix__,__unix : Defined on most UNIX environments
-_ILD32               : Defined on most 32-bit environments
-_LP64,__LP64__       : Defined on most 32-bit environments
-DEBUG, _DEBUG        : Defined of compiled in debug mode
+DEBUG, _DEBUG : Defined of compiled in debug mode
 
 
 3) Flags to enable special features which are disabled by default
@@ -43,3 +38,21 @@ USE_INTEL_MKL     : use sparse BLAS routines from Intel MKL library
 
 WARN_DEPREC       : print warning message if depreceaded code is used
 
+
+List of preprocessor macros:
+----------------------------
+
+1) Operating system identification macros
+
+FEAT2_PP_OS_IS_WIN     : operating system is 32-/64-bit Microsoft Windows
+FEAT2_PP_OS_IS_WIN32   : operating system is 32-bit Microsoft Windows
+FEAT2_PP_OS_IS_WIN64   : operating system is 64-bit Microsoft Windows
+FEAT2_PP_OS_IS_UNIX    : operating system is UNIX-style OS, including BSD, Linux, OSX, and Solaris
+FEAT2_PP_OS_IS_AIX     : operating system is IBM AIX running on POWER processor
+FEAT2_PP_OS_IS_CYGWIN  : operating system is Cygwin POSIX under Microsoft Windows
+FEAT2_PP_OS_IS_HPUX    : operating system is Hewlett-Packard HP-UX
+FEAT2_PP_OS_IS_LINUX   : operating system is Linux
+FEAT2_PP_OS_IS_OSX     : operating system is Apple OSX and iOS (Darwin)
+FEAT2_PP_OS_IS_SOLARIS : operating system is Solaris
+FEAT2_PP_OS_IS_32BIT   : operating system is 32-bit
+FEAT2_PP_OS_IS_64BIT   : operating system is 64-bit

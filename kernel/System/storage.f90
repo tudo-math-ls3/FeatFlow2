@@ -173,11 +173,11 @@ module storage
   ! C_PTR and C_NULL_PTR by hand so that they can be exported below
   type C_PTR
     private
-#if defined(_WIN64) || defined(_LP64) || defined(__LP64__)
+#if FEAT2_PP_OS_IS_64BIT()
     ! LP64 machine, OS X or Linux or Unix or
     ! LLP64 machine, Windows
     integer(I64) :: imemAddress = 0_I64
-#elif defined(_WIN32) || defined(_ILD32)
+#elif FEAT2_PP_OS_IS_32BIT()
     ! 32-bit machine, Windows or Linux or OS X or Unix
     integer(I32) :: imemAddress = 0_I32
 #else
