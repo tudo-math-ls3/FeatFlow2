@@ -818,7 +818,7 @@ contains
       ! Create group finite element structures and AFC-stabilisations
       !-------------------------------------------------------------------------
       
-      ! Initialise/resize template group finite elment structure and
+      ! Initialise/resize template group finite element structure and
       ! generate the edge structure derived from the template matrix
       if (templateGFEM > 0) then
         ! Check if structure has been initialised
