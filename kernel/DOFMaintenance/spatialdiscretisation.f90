@@ -147,6 +147,23 @@
 !#
 !# 37.) spdiscr_getStdTrafoInfo
 !#      -> Returns basic information of a transformation structure
+!#
+!# 38.) spdiscr_infoCubatureInfo
+!#      -> Outputs information about the cubature info structure
+!#         (mostly for debugging)
+!#
+!# 39.) spdiscr_infoCubatureInfoBlock
+!#      -> Outputs information about the block of a cubature info structure
+!#         (mostly for debugging)
+!#
+!# 40.) spdiscr_infoTrafoInfo
+!#      -> Outputs information about the trafo info structure
+!#         (mostly for debugging)
+!#
+!# 41.) spdiscr_infoTrafoInfoBlock
+!#      -> Outputs information about the block of a trafo info structure
+!#         (mostly for debugging)
+!#
 !# 
 !#   The cubature information structure \\
 !# -------------------------------------- \\
@@ -669,6 +686,8 @@ module spatialdiscretisation
   public :: spdiscr_releaseCubStructure
   public :: spdiscr_defineCubature
   public :: spdiscr_getElementCubMapping
+  public :: spdiscr_infoCubatureInfo
+  public :: spdiscr_infoCubatureInfoBlock
 
   public :: spdiscr_getStdDiscrInfo
   
@@ -680,6 +699,8 @@ module spatialdiscretisation
   public :: spdiscr_releaseTrafoStructure
   public :: spdiscr_getElementTrafoMapping
   public :: spdiscr_getStdTrafoInfo
+  public :: spdiscr_infoTrafoInfo
+  public :: spdiscr_infoTrafoInfoBlock
   
   interface spdiscr_initDiscr_simple
     module procedure spdiscr_initDiscr_simple_old
@@ -4351,4 +4372,124 @@ contains
 
   end subroutine
 
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine spdiscr_infoCubatureInfo (rcubatureInfo)
+
+!<description>
+    ! This subroutine outputs information about the cubature info structure
+!</description>
+
+!<input>
+    ! cubature info structure
+    type(t_scalarCubatureInfo), intent(in) :: rcubatureInfo
+!</input>
+!</subroutine>
+
+    ! local variables
+    integer :: iblock
+
+    call output_lbrk()
+    call output_line ('CubatureInfo:')
+    call output_line ('-------------')
+    call output_line ('ninfoBlockCount:  '//trim(sys_siL(rcubatureInfo%ninfoBlockCount,3)))
+
+    if (associated(rcubatureInfo%p_RinfoBlocks)) then
+      do iblock = 1, rcubatureInfo%ninfoBlockCount
+        call spdiscr_infoCubatureInfoBlock(rcubatureInfo%p_RinfoBlocks(iblock))
+      end do
+    end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine spdiscr_infoCubatureInfoBlock (rcubatureInfoBlock)
+
+!<description>
+    ! This subroutine outputs information about the block of the
+    ! cubature info structure
+!</description>
+
+!<input>
+    ! block of the cubature info structure
+    type(t_scalarCubatureInfoBlock), intent(in) :: rcubatureInfoBlock
+!</input>
+!</subroutine>
+
+    call output_lbrk()
+    call output_line ('CubatureInfoBlock:')
+    call output_line ('------------------')
+    call output_line ('blocalElementList: '//trim(sys_sl(rcubatureInfoBlock%blocalElementList)))
+    call output_line ('ccubature:         '//trim(sys_siL(rcubatureInfoBlock%ccubature,15)))
+    call output_line ('ielementDistr:     '//trim(sys_siL(rcubatureInfoBlock%ielementDistr,15)))
+    call output_line ('itrafoBlock:       '//trim(sys_siL(rcubatureInfoBlock%itrafoBlock,15)))
+    call output_line ('NEL:               '//trim(sys_siL(rcubatureInfoBlock%NEL,15)))
+    call output_line ('h_IelementList:    '//trim(sys_siL(rcubatureInfoBlock%h_IelementList,15)))
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine spdiscr_infoTrafoInfo (rtrafoInfo)
+
+!<description>
+    ! This subroutine outputs information about the trafo info structure
+!</description>
+
+!<input>
+    ! trafo info structure
+    type(t_scalarTrafoInfo), intent(in) :: rtrafoInfo
+!</input>
+!</subroutine>
+
+    ! local variables
+    integer :: iblock
+
+    call output_lbrk()
+    call output_line ('TrafoInfo:')
+    call output_line ('----------')
+    call output_line ('ninfoBlockCount:  '//trim(sys_siL(rtrafoInfo%ninfoBlockCount,3)))
+
+    if (associated(rtrafoInfo%p_RinfoBlocks)) then
+      do iblock = 1, rtrafoInfo%ninfoBlockCount
+        call spdiscr_infoTrafoInfoBlock(rtrafoInfo%p_RinfoBlocks(iblock))
+      end do
+    end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine spdiscr_infoTrafoInfoBlock (rtrafoInfoBlock)
+
+!<description>
+    ! This subroutine outputs information about the block of the
+    ! trafo info structure
+!</description>
+
+!<input>
+    ! block of the trafo info structure
+    type(t_scalarTrafoInfoBlock), intent(in) :: rtrafoInfoBlock
+!</input>
+!</subroutine>
+
+    call output_lbrk()
+    call output_line ('TrafoInfoBlock:')
+    call output_line ('---------------')
+    call output_line ('blocalElementList: '//trim(sys_sl(rtrafoInfoBlock%blocalElementList)))
+    call output_line ('ctrafoType:        '//trim(sys_siL(rtrafoInfoBlock%ctrafoType,15)))
+    call output_line ('ielementDistr:     '//trim(sys_siL(rtrafoInfoBlock%ielementDistr,15)))
+    call output_line ('NEL:               '//trim(sys_siL(rtrafoInfoBlock%NEL,15)))
+    call output_line ('h_IelementList:    '//trim(sys_siL(rtrafoInfoBlock%h_IelementList,15)))
+
+  end subroutine
 end module
