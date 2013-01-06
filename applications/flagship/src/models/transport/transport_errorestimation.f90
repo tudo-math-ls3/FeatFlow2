@@ -261,7 +261,7 @@ contains
     do ieq = 1, NEQ
       dtargetError     = dtargetError + p_Dresidual(ieq)*p_DsolutionDual(ieq)
       p_Dresidual(ieq) = abs(p_Dresidual(ieq)*p_DsolutionDual(ieq))/&
-                     p_DlumpedMassMatrix(ieq)
+                         p_DlumpedMassMatrix(ieq)
     end do
     dtargetError = abs(dtargetError)
 
@@ -311,8 +311,6 @@ contains
       ! Get global configuration from parameter list
       call parlst_getvalue_int(rparlist, ssectionName,&
           'itargetfunctype', itargetfuncType)
-      call parlst_getvalue_string(rparlist, ssectionName,&
-          'sexactsolutionname', sexactsolutionname, '')
       
       select case(itargetfunctype)
       case (TFUNC_ZERO)
@@ -325,6 +323,8 @@ contains
         ! Get global configuration from parameter list
         call parlst_getvalue_string(rparlist, ssectionName,&
             'stargetfuncname', stargetfuncName)
+        call parlst_getvalue_string(rparlist, ssectionName,&
+            'sexactsolutionname', sexactsolutionname, '')
         
         ! Get function parser from collection structure
         p_rfparser => collct_getvalue_pars(rcollection,&
@@ -337,8 +337,8 @@ contains
         rcollectionTmp%SquickAccess(1) = ''
         rcollectionTmp%SquickAccess(2) = 'rfparser'
         rcollectionTmp%DquickAccess(1) = rtimestep%dTime
-        rcollectionTmp%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, sexactsolutionName)
-        rcollectionTmp%IquickAccess(2) = fparser_getFunctionNumber(p_rfparser, stargetfuncName)
+        rcollectionTmp%IquickAccess(1) = -1
+        rcollectionTmp%IquickAccess(2) = -1
 
         ! Attach user-defined collection structure to temporal collection
         ! structure (may be required by the callback function)
@@ -354,6 +354,10 @@ contains
           call fparser_evalFunction(p_rfparser, sexacttargetfuncName,&
               (/rtimestep%dTime/), dexactTargetFunc)
 
+          ! Prepare quick access arrays of the temporal collection structure
+          rcollectionTmp%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, '@null')
+          rcollectionTmp%IquickAccess(2) = fparser_getFunctionNumber(p_rfparser, stargetfuncName)
+
           ! Compute the approximate value of the quantity of interest
           call pperr_scalar(PPERR_MEANERROR, dtargetFunc,&
               rsolutionPrimal%RvectorBlock(1), rcollection=rcollectionTmp,&
@@ -365,7 +369,11 @@ contains
           dexactTargetError = dexactTargetFunc+dtargetFunc
           
         else
-          
+
+          ! Prepare quick access arrays of the temporal collection structure
+          rcollectionTmp%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, sexactsolutionName)
+          rcollectionTmp%IquickAccess(2) = fparser_getFunctionNumber(p_rfparser, stargetfuncName)
+
           ! Compute the exact error of the quantity of interest
           call pperr_scalar(PPERR_MEANERROR, dexactTargetError,&
               rsolutionPrimal%RvectorBlock(1), transp_refFuncAnalytic,&
@@ -392,9 +400,11 @@ contains
       case (TFUNC_SURFINTG)
         ! Get global configuration from parameter list
         call parlst_getvalue_int(rparlist, ssectionName,&
-            'velocityfield', velocityfield)
+            'velocityfield', velocityfield)       
         call parlst_getvalue_string(rparlist, ssectionName,&
             'stargetfuncname', stargetfuncName)
+        call parlst_getvalue_string(rparlist, ssectionName,&
+            'sexactsolutionname', sexactsolutionname, '')
 
         ! Get function parser from collection structure
         p_rfparser => collct_getvalue_pars(rcollection,&
@@ -407,10 +417,9 @@ contains
         rcollectionTmp%SquickAccess(1) = ''
         rcollectionTmp%SquickAccess(2) = 'rfparser'
         rcollectionTmp%DquickAccess(1) = rtimestep%dTime
-        rcollectionTmp%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, sexactsolutionName)
-        rcollectionTmp%IquickAccess(2) = fparser_getFunctionNumber(p_rfparser, stargetfuncName)
-
-        ! ... and also the numbers of the exact velocity function
+        rcollectionTmp%IquickAccess(1) = -1
+        rcollectionTmp%IquickAccess(2) = -1
+        
         do idim = 1, rproblemLevel%rtriangulation%ndim
           call parlst_getvalue_string(rparlist, ssectionName,&
               'svelocityname', svelocityname, isubString=idim)
@@ -439,6 +448,7 @@ contains
           
           ! Prepare quick access arrays of the temporal collection structure
           rcollectionTmp%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, '@null')
+          rcollectionTmp%IquickAccess(2) = fparser_getFunctionNumber(p_rfparser, stargetfuncName)
           
           ! Compute the approximate value of the quantity of interest
           call pperr_scalarBoundary2D(0, CUB_G3_1D, dtargetFunc,&
@@ -453,6 +463,10 @@ contains
           dexactTargetError = dexactTargetFunc+dtargetFunc
 
         else
+
+          ! Prepare quick access arrays of the temporal collection structure
+          rcollectionTmp%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, sexactsolutionName)
+          rcollectionTmp%IquickAccess(2) = fparser_getFunctionNumber(p_rfparser, stargetfuncName)
 
           ! Compute the exact error of the quantity of interest
           call pperr_scalarBoundary2D(0, CUB_G3_1D, dexactTargetError,&
@@ -477,6 +491,8 @@ contains
         ! Get global configuration from parameter list
         call parlst_getvalue_int(rparlist, ssectionName,&
             'velocityfield', velocityfield)
+        call parlst_getvalue_string(rparlist, ssectionName,&
+            'sexactsolutionname', sexactsolutionname, '')
 
         ! Get the name of the function used for evaluating the
         ! volume integral part of the target functional
@@ -499,10 +515,9 @@ contains
         rcollectionTmp%SquickAccess(1) = ''
         rcollectionTmp%SquickAccess(2) = 'rfparser'
         rcollectionTmp%DquickAccess(1) = rtimestep%dTime
-        rcollectionTmp%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, sexactsolutionName)
-        rcollectionTmp%IquickAccess(2) = fparser_getFunctionNumber(p_rfparser, stargetfuncName)
-        
-        ! ... and also the numbers of the exact velocity function
+        rcollectionTmp%IquickAccess(1) = -1
+        rcollectionTmp%IquickAccess(2) = -1
+
         do idim = 1, rproblemLevel%rtriangulation%ndim
           call parlst_getvalue_string(rparlist, ssectionName,&
               'svelocityname', svelocityname, isubString=idim)
@@ -531,6 +546,7 @@ contains
 
           ! Prepare quick access arrays of the collection
           rcollectionTmp%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, '@null')
+          rcollectionTmp%IquickAccess(2) = fparser_getFunctionNumber(p_rfparser, stargetfuncName)
 
           ! Compute the approximate value of the quantity of interest
           call pperr_scalar(PPERR_MEANERROR, dtargetFunc,&
@@ -548,6 +564,7 @@ contains
           end if
 
           ! Prepare quick access arrays of the collection
+          rcollectionTmp%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, '@null')
           rcollectionTmp%IquickAccess(2) = fparser_getFunctionNumber(p_rfparser, stargetfuncName)
 
           ! Compute the approximate value of the quantity of interest
@@ -566,6 +583,10 @@ contains
           dexactTargetError = dexactTargetFunc+dtargetFunc
 
         else
+
+          ! Prepare quick access arrays of the temporal collection structure
+          rcollectionTmp%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, sexactsolutionName)
+          rcollectionTmp%IquickAccess(2) = fparser_getFunctionNumber(p_rfparser, stargetfuncName)
 
           ! Compute the exact error of the quantity of interest
           call pperr_scalar(PPERR_MEANERROR, dexactTargetError,&
@@ -596,7 +617,7 @@ contains
           end if
 
           ! Prepare quick access arrays of the collection
-          rcollectionTmp%DquickAccess(1) = rtimestep%dTime
+          rcollectionTmp%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, sexactsolutionName)
           rcollectionTmp%IquickAccess(2) = fparser_getFunctionNumber(p_rfparser, stargetfuncName)
 
           ! Compute the exact error of the quantity of interest at the boundary
