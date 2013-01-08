@@ -47,8 +47,11 @@
 !-------------------------------------------------------------------------------
 #endif
 
-#define FEAT2_PP_OS_IS_UNIX()    (!defined(_WIN32) && (defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__))))
-
+#if (!defined(_WIN32) && (defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__))))
+#define FEAT2_PP_OS_IS_UNIX() 1
+#else
+#define FEAT2_PP_OS_IS_UNIX() 0
+#endif
 
 #if 0
 !-------------------------------------------------------------------------------
