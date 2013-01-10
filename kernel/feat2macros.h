@@ -30,16 +30,59 @@
 !-------------------------------------------------------------------------------
 #endif
 
-#define FEAT2_PP_OS_IS_AIX()     (defined(_AIX))
-#define FEAT2_PP_OS_IS_CYGWIN()  (defined(__CYGWIN__) && !defined(_WIN32))
-#define FEAT2_PP_OS_IS_HPUX()    (defined(__hpux))
-#define FEAT2_PP_OS_IS_LINUX()   (defined(__linux__))
-#define FEAT2_PP_OS_IS_OSX()     (defined(__APPLE__) && defined(__MACH__))
-#define FEAT2_PP_OS_IS_SOLARIS() (defined(__sun) && defined(__SVR4))
+#if (defined(_AIX))
+#define FEAT2_PP_OS_IS_AIX()     1
+#else
+#define FEAT2_PP_OS_IS_AIX()     0
+#endif
 
-#define FEAT2_PP_OS_IS_WIN()     (defined(_WIN32))
-#define FEAT2_PP_OS_IS_WIN32()   (defined(_WIN32) && !defined(_WIN64))
-#define FEAT2_PP_OS_IS_WIN64()   (defined(_WIN64))
+#if (defined(__CYGWIN__) && !defined(_WIN32))
+#define FEAT2_PP_OS_IS_CYGWIN()  1
+#else
+#define FEAT2_PP_OS_IS_CYGWIN()  0
+#endif
+
+#if (defined(__hpux))
+#define FEAT2_PP_OS_IS_HPUX()    1
+#else
+#define FEAT2_PP_OS_IS_HPUX()    0
+#endif
+
+#if (defined(__linux__))
+#define FEAT2_PP_OS_IS_LINUX()   1
+#else
+#define FEAT2_PP_OS_IS_LINUX()   0
+#endif
+
+#if (defined(__APPLE__) && defined(__MACH__))
+#define FEAT2_PP_OS_IS_OSX()     1
+#else
+#define FEAT2_PP_OS_IS_OSX()     0
+#endif
+
+#if (defined(__sun) && defined(__SVR4))
+#define FEAT2_PP_OS_IS_SOLARIS() 1
+#else
+#define FEAT2_PP_OS_IS_SOLARIS() 0
+#endif
+
+#if (defined(_WIN32))
+#define FEAT2_PP_OS_IS_WIN()     1
+#else
+#define FEAT2_PP_OS_IS_WIN()     0
+#endif
+
+#if (defined(_WIN32) && !defined(_WIN64))
+#define FEAT2_PP_OS_IS_WIN32()   1
+#else
+#define FEAT2_PP_OS_IS_WIN32()   0
+#endif
+
+#if (defined(_WIN64))
+#define FEAT2_PP_OS_IS_WIN64()   1
+#else
+#define FEAT2_PP_OS_IS_WIN64()   0
+#endif
 
 #if 0
 !-------------------------------------------------------------------------------
@@ -64,12 +107,25 @@
 ! LP64 machine, OS X or Linux or Unix or LLP64 machine, Windows
 !-------------------------------------------------------------------------------
 #endif
-#define FEAT2_PP_OS_IS_64BIT()   (defined(_WIN64) || defined(_LP64) || defined(__LP64__))
+
+#if (defined(_WIN64) || defined(_LP64) || defined(__LP64__))
+#define FEAT2_PP_OS_IS_64BIT()   1
+#else
+#define FEAT2_PP_OS_IS_64BIT()   0
+#endif
 
 #if 0
 !-------------------------------------------------------------------------------
 ! 32-bit machine, Windows or Linux or OS X or Unix
 !-------------------------------------------------------------------------------
 #endif
-#define FEAT2_PP_OS_IS_32BIT()   (!FEAT2_PP_OS_IS_64BIT() && (defined(_WIN32) || defined(_ILD32)))
+
+#define FEAT2_PP_OS_IS_32BIT() 0
+#if !FEAT2_PP_OS_IS_64BIT()
+#if (defined(_WIN32) || defined(_ILD32))
+#undef FEAT2_PP_OS_IS_32BIT()
+#define FEAT2_PP_OS_IS_32BIT() 1
+#endif
+#endif
+
 #endif
