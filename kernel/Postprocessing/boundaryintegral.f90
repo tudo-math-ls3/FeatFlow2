@@ -7,7 +7,7 @@
 !# This module allows to calculate integral values over the boundary of
 !# a domain. The following routines can be found here:
 !#
-!# 1.) bdint_integral2D
+!# 1.) bdint_integral2D / bdint_integral2D_conf
 !#     -> Calculates the boundary integral
 !#            <tex> $$ \int_{\Gamma} f(x) dx $$ </tex>
 !#        for an arbitrary function <tex>$ f(x) $</tex>.
@@ -21,6 +21,12 @@
 !#     -> Calculates the integral of the normal derivative
 !#            <tex> $$ \int_{\Gamma} \partial_n f_h(x) dx $$ </tex>
 !#        for an arbitrary scalar FE function <tex>$ f_h(x) $</tex>.
+!#
+!# 4.) bdint_normalFlux2D
+!#     -> Calculates the flux through a boundary segment:
+!#            <tex> $$ int_{\Gamma} f_h^1(x)*n_1 + f_h^2(x)*n_2 dx $$ </tex>
+!#        for an arbitrary scalar FE function <tex>$ f_h(x) $</tex>.
+!#        given in two separate components.
 !# </purpose>
 !#########################################################################
 
@@ -51,6 +57,7 @@ module boundaryintegral
   public :: bdint_integral2D_conf
   public :: bdint_scalarBoundaryInt2D
   public :: bdint_normalDerivativeInt2D
+  public :: bdint_normalFlux2D
 
 contains
 
@@ -85,7 +92,7 @@ contains
   ! A callback function that provides the analytical reference
   ! function to which the error should be computed.
   ! If not specified, the reference function is assumed to be zero!
-  include 'intf_functionScBdr2D.inc'
+  include "intf_functionScBdr2D.inc"
 
   ! OPTIONAL: A t_boundaryRegion specifying the boundary region where
   ! to calculate. If not specified, the computation is done over
@@ -119,8 +126,8 @@ contains
     end if
 
     if (rtriangulation%ndim .ne. NDIM2D) then
-      call output_line('Only 2D discretisations allowed!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'bdint_integral2D')
+      call output_line("Only 2D discretisations allowed!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"bdint_integral2D")
       call sys_halt()
     end if
 
@@ -174,7 +181,7 @@ contains
   ! A callback function that provides the analytical reference
   ! function to which the error should be computed.
   ! If not specified, the reference function is assumed to be zero!
-  include 'intf_functionScBdr2D.inc'
+  include "intf_functionScBdr2D.inc"
 
   ! Optional: A collection structure to provide additional
   ! information to the coefficient routine.
@@ -485,8 +492,8 @@ contains
     p_rdiscr => rvectorScalar%p_rspatialDiscr
 
     if (p_rdiscr%ndimension .ne. NDIM2D) then
-      call output_line('Only 2D discretisations allowed!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'bdint_scalarBoundaryInt2D')
+      call output_line("Only 2D discretisations allowed!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"bdint_scalarBoundaryInt2D")
       call sys_halt()
     end if
 
@@ -496,13 +503,13 @@ contains
 
     ! Save the vector to the collection, so we can restore it in
     ! the callback routine
-    call collct_setvalue_vecsca (rcollection, 'vector', rvectorScalar, .true.)
+    call collct_setvalue_vecsca (rcollection, "vector", rvectorScalar, .true.)
 
     call bdint_integral2D (p_rdiscr%p_rboundary, p_rdiscr%p_rtriangulation,&
       ccubType, ffunctionFEevaluation2D, dvalue, rboundaryRegion, rcollection)
 
     ! Release the collection
-    call collct_deletevalue (rcollection,'vector')
+    call collct_deletevalue (rcollection,"vector")
     call collct_done(rcollection)
 
   end subroutine
@@ -583,7 +590,7 @@ contains
     integer :: iel
 
     ! Get the vector with the FE function from the collection
-    p_rvector => collct_getvalue_vecsca (rcollection, 'vector')
+    p_rvector => collct_getvalue_vecsca (rcollection, "vector")
 
     ! Evaluate the FE function in the given points.
     do iel=1,size(Ielements)
@@ -637,8 +644,8 @@ contains
     p_rdiscr => rvectorScalar%p_rspatialDiscr
 
     if (p_rdiscr%ndimension .ne. NDIM2D) then
-      call output_line('Only 2D discretisations allowed!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'bdint_normalDerivativeInt2D')
+      call output_line("Only 2D discretisations allowed!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"bdint_normalDerivativeInt2D")
       call sys_halt()
     end if
 
@@ -648,13 +655,13 @@ contains
 
     ! Save the vector to the collection, so we can restore it in
     ! the callback routine
-    call collct_setvalue_vecsca (rcollection, 'vector', rvectorScalar, .true.)
+    call collct_setvalue_vecsca (rcollection, "vector", rvectorScalar, .true.)
 
     call bdint_integral2D (p_rdiscr%p_rboundary, p_rdiscr%p_rtriangulation,&
       ccubType, ffunctionNormalDeriv2D, dvalue, rboundaryRegion, rcollection)
 
     ! Release the collection
-    call collct_deletevalue (rcollection,'vector')
+    call collct_deletevalue (rcollection,"vector")
     call collct_done(rcollection)
 
   end subroutine
@@ -738,7 +745,7 @@ contains
     real(DP) :: dnx,dny,dminPar,dmaxPar,dt
 
     ! Get the vector with the FE function from the collection
-    p_rvector => collct_getvalue_vecsca (rcollection, 'vector')
+    p_rvector => collct_getvalue_vecsca (rcollection, "vector")
 
     ! Allocate memory for the values of the derivative
     allocate(DderivX(ubound(Dvalues,1),ubound(Dvalues,2)))
@@ -791,6 +798,226 @@ contains
         else
           ! Inner point
           call boundary_getNormalVec2D(p_rvector%p_rspatialDiscr%p_rboundary, ibct, &
+              dt, dnx, dny,cparType=BDR_PAR_LENGTH)
+        end if
+
+        ! Calculate the normal derivative
+        Dvalues(ipoint,iel) = DderivX(ipoint,iel)*dnx + DderivY(ipoint,iel)*dny
+
+      end do
+    end do
+
+    ! Release memory
+    deallocate(DderivX,DderivY)
+
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine bdint_normalFlux2D (rvectorScalar1,rvectorScalar2,ccubType,&
+      dvalue, rboundaryRegion)
+
+!<description>
+  ! This function calculates the boundary integral
+  !    <tex> $$ int_{\Gamma} f_h^1(x)*n_1 + f_h^2(x)*n_2 dx $$ </tex>
+  ! for the block FE function $f_h$ specified in rvectorScalar1/2.
+  ! rboundaryRegion allows to specify a region on the boundary where
+  ! the integral is computed; if not specified, the integral is
+  ! computed over the whole boundary.
+!</description>
+
+!<input>
+  ! A scalar FE function to compute a boundary integral of.
+  ! Used for the X-component.
+  type(t_vectorScalar), intent(in) :: rvectorScalar1
+
+  ! A scalar FE function to compute a boundary integral of.
+  ! Used for the Y-component.
+  type(t_vectorScalar), intent(in) :: rvectorScalar2
+
+  ! A line cubature formula CUB_xxxx_1D to be used for line integration.
+  integer(I32), intent(in) :: ccubType
+
+  ! OPTIONAL: A t_boundaryRegion specifying the boundary region where
+  ! to calculate. If not specified, the computation is done over
+  ! the whole boundary.
+  type(t_boundaryRegion), intent(in), optional :: rboundaryRegion
+!</input>
+
+!<output>
+  ! The calculated value of the integral.
+  real(DP), intent(out) :: dvalue
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    type(t_spatialDiscretisation), pointer :: p_rdiscr
+    type(t_collection) :: rcollection
+
+    ! Get the underlying discretisation
+    p_rdiscr => rvectorScalar1%p_rspatialDiscr
+
+    if (p_rdiscr%ndimension .ne. NDIM2D) then
+      call output_line("Only 2D discretisations allowed!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"bdint_normalDerivativeInt2D")
+      call sys_halt()
+    end if
+
+    ! Create a collection that allows us to pass the vector to
+    ! the callback routine
+    call collct_init(rcollection)
+
+    ! Save the vector to the collection, so we can restore it in
+    ! the callback routine
+    call collct_setvalue_vecsca (rcollection, "vector1", rvectorScalar1, .true.)
+    call collct_setvalue_vecsca (rcollection, "vector2", rvectorScalar2, .true.)
+
+    call bdint_integral2D (p_rdiscr%p_rboundary, p_rdiscr%p_rtriangulation,&
+      ccubType, ffunctionFlux2D, dvalue, rboundaryRegion, rcollection)
+
+    ! Release the collection
+    call collct_deletevalue (rcollection,"vector2")
+    call collct_deletevalue (rcollection,"vector1")
+    call collct_done(rcollection)
+
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine ffunctionFlux2D (DpointsRef, Dpoints, ibct, DpointPar, Ielements, &
+        Dvalues, rcollection)
+
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
+
+  !<description>
+    ! This subroutine is called during the calculation of boundary
+    ! integrals. It has to compute the (analytical) values of a
+    ! function in a couple of points Dpoints on a couple of elements
+    ! Ielements. The integral evaluation function uses these values
+    ! to compute integrals.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in in real and reference coordinates.
+    ! It has to to simultaneously compute the desired values for all these points.
+  !</description>
+
+  !<input>
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed. It specifies the coordinates of the points where
+    ! information is needed. These coordinates correspond to the reference
+    ! element.
+    ! DIMENSION(NDIM2D,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in) :: DpointsRef
+
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed. It specifies the coordinates of the points where
+    ! information is needed. These coordinates are world coordinates,
+    ! i.e. on the real element.
+    ! DIMENSION(NDIM2D,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
+
+    ! This is the number of the boundary component that contains the
+    ! points in Dpoint. All points are on the same boundary component.
+    integer, intent(in) :: ibct
+
+    ! For every point under consideration, this specifies the parameter
+    ! value of the point on the boundary component. The parameter value
+    ! is calculated in LENGTH PARAMETRISATION!
+    ! DIMENSION(npointsPerElement,nelements)
+    real(DP), dimension(:,:), intent(in) :: DpointPar
+
+    ! This is a list of elements (corresponding to Dpoints) where information
+    ! is needed. To an element iel=Ielements(i), the array Dpoints(:,:,i)
+    ! specifies the points where information is needed.
+    ! DIMENSION(nelements)
+    integer, dimension(:), intent(in) :: Ielements
+
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
+  !</input>
+
+  !<output>
+    ! This array has to receive the values of the (analytical) function
+    ! in all the points specified in Dpoints, or the appropriate derivative
+    ! of the function, respectively, according to cderivative.
+    !   DIMENSION(npointsPerElement,nelements)
+    real(DP), dimension(:,:), intent(out) :: Dvalues
+  !</output>
+
+  !</subroutine>
+
+    ! local variables
+    type(t_vectorScalar), pointer :: p_rvector1,p_rvector2
+    integer :: iel
+    integer :: ipoint
+    real(DP), dimension(:,:), allocatable :: DderivX,DderivY
+    real(DP) :: dnx,dny,dminPar,dmaxPar,dt
+
+    ! Get the vector with the FE function from the collection
+    p_rvector1 => collct_getvalue_vecsca (rcollection, "vector1")
+    p_rvector2 => collct_getvalue_vecsca (rcollection, "vector2")
+
+    ! Allocate memory for the values of the derivative
+    allocate(DderivX(ubound(Dvalues,1),ubound(Dvalues,2)))
+    allocate(DderivY(ubound(Dvalues,1),ubound(Dvalues,2)))
+
+    ! Evaluate the derivative of the FE function in the given points.
+    do iel=1,size(Ielements)
+      call fevl_evaluate_mult (DER_FUNC2D, DderivX(:,iel), p_rvector1, &
+          Ielements(iel), DpointsRef(:,:,iel), Dpoints(:,:,iel))
+      call fevl_evaluate_mult (DER_FUNC2D, DderivY(:,iel), p_rvector2, &
+          Ielements(iel), DpointsRef(:,:,iel), Dpoints(:,:,iel))
+    end do
+
+    ! Get the minimum and maximum parameter value. The point with the minimal
+    ! parameter value is the start point of the interval, the point with the
+    ! maximum parameter value the endpoint.
+    dminPar = DpointPar(1,1)
+    dmaxPar = DpointPar(1,1)
+    do iel=1,size(Ielements)
+      do ipoint = 1,ubound(Dpoints,1)
+        dminPar = min(DpointPar(ipoint,iel),dminPar)
+        dmaxPar = max(DpointPar(ipoint,iel),dmaxPar)
+      end do
+    end do
+
+    ! Multiply the derivative with the normal in each point to get the
+    ! normal derivative.
+    do iel=1,size(Ielements)
+      do ipoint = 1,ubound(Dpoints,1)
+
+        dt = DpointPar(ipoint,iel)
+
+        ! Get the normal vector in the point from the boundary.
+        ! Note that the parameter value is in length parametrisation!
+        ! When we are at the left or right endpoint of the interval, we
+        ! calculate the normal vector based on the current edge.
+        ! Without that, the behaviour of the routine may lead to some
+        ! confusion if the endpoints of the interval coincide with
+        ! the endpoints of a boundary edge. In such a case, the routine
+        ! would normally compute the normal vector as a mean on the
+        ! normal vectors of the edges adjacent to such a point!
+        if (DpointPar(ipoint,iel) .eq. dminPar) then
+          ! Start point
+          call boundary_getNormalVec2D(p_rvector1%p_rspatialDiscr%p_rboundary, ibct, &
+              dt, dnx, dny,BDR_NORMAL_RIGHT,BDR_PAR_LENGTH)
+        else if (DpointPar(ipoint,iel) .eq. dmaxPar) then
+          ! End point
+          call boundary_getNormalVec2D(p_rvector1%p_rspatialDiscr%p_rboundary, ibct, &
+              dt, dnx, dny,BDR_NORMAL_LEFT,BDR_PAR_LENGTH)
+        else
+          ! Inner point
+          call boundary_getNormalVec2D(p_rvector1%p_rspatialDiscr%p_rboundary, ibct, &
               dt, dnx, dny,cparType=BDR_PAR_LENGTH)
         end if
 
