@@ -411,12 +411,9 @@ contains
         DpointPar,Ielements(1:NEL), Dvalues(:,:),rcollection)
 
     ! Now, Dvalues1 contains in Dvalues1(:,:,1) the term
-    ! "u(x,y)-u_h(x,y)" -- in every cubature point on every
+    ! "u_h(x,y)" -- in every cubature point on every
     ! element. We are finally able to calculate the integral!
     ! That means, run over all the edges and sum up...
-    ! (ok, if rvectorScalar is not specified, we have
-    !  -u_h(x,y) in Dvalues1(:,:,1), but as we take the square,
-    !  it does not matter if we have u_h or -u_h there!)
 
     dvalue = 0.0_DP
     do iel = 1,NEL
@@ -432,7 +429,7 @@ contains
       dlen = 0.5_DP*(DedgePosition(2,iel)-DedgePosition(1,iel))
 
       do ipoint = 1,ncubp
-        dvalue = dvalue + dlen * Domega1D(ipoint) * (Dvalues(ipoint,iel)**2)
+        dvalue = dvalue + dlen * Domega1D(ipoint) * Dvalues(ipoint,iel)
       end do
     end do
 
@@ -960,7 +957,7 @@ contains
     type(t_vectorScalar), pointer :: p_rvector1,p_rvector2
     integer :: iel
     integer :: ipoint
-    real(DP), dimension(:,:), allocatable :: DderivX,DderivY
+    real(DP), dimension(:,:), allocatable :: DfuncX,DfuncY
     real(DP) :: dnx,dny,dminPar,dmaxPar,dt
 
     ! Get the vector with the FE function from the collection
@@ -968,14 +965,14 @@ contains
     p_rvector2 => collct_getvalue_vecsca (rcollection, "vector2")
 
     ! Allocate memory for the values of the derivative
-    allocate(DderivX(ubound(Dvalues,1),ubound(Dvalues,2)))
-    allocate(DderivY(ubound(Dvalues,1),ubound(Dvalues,2)))
+    allocate(DfuncX(ubound(Dvalues,1),ubound(Dvalues,2)))
+    allocate(DfuncY(ubound(Dvalues,1),ubound(Dvalues,2)))
 
     ! Evaluate the derivative of the FE function in the given points.
     do iel=1,size(Ielements)
-      call fevl_evaluate_mult (DER_FUNC2D, DderivX(:,iel), p_rvector1, &
+      call fevl_evaluate_mult (DER_FUNC2D, DfuncX(:,iel), p_rvector1, &
           Ielements(iel), DpointsRef(:,:,iel), Dpoints(:,:,iel))
-      call fevl_evaluate_mult (DER_FUNC2D, DderivY(:,iel), p_rvector2, &
+      call fevl_evaluate_mult (DER_FUNC2D, DfuncY(:,iel), p_rvector2, &
           Ielements(iel), DpointsRef(:,:,iel), Dpoints(:,:,iel))
     end do
 
@@ -1022,13 +1019,13 @@ contains
         end if
 
         ! Calculate the normal derivative
-        Dvalues(ipoint,iel) = DderivX(ipoint,iel)*dnx + DderivY(ipoint,iel)*dny
+        Dvalues(ipoint,iel) = DfuncX(ipoint,iel)*dnx + DfuncY(ipoint,iel)*dny
 
       end do
     end do
 
     ! Release memory
-    deallocate(DderivX,DderivY)
+    deallocate(DfuncX,DfuncY)
 
   end subroutine
 
