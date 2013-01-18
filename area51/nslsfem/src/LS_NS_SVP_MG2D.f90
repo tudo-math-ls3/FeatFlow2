@@ -332,10 +332,10 @@ contains
   call stat_stopTimer(rtimerTotal)
   ! Print some statistics
   call output_lbrk ()
-  call output_line ("Time for Total Solution: "//&
-  trim(sys_sdL(rtimerTotal%delapsedReal,10)))  
-  
   call output_lbrk ()
+  call output_line ("Time for Total Solution: "//&
+  trim(sys_sdL(rtimerTotal%delapsedReal,10)))
+  
   call output_line ("Time for Nonlinear Solver: "//&
   trim(sys_sdL(rtimerSolver%delapsedReal,10)))
   
@@ -1244,6 +1244,14 @@ contains
     call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
                      rboundaryRegion,rdiscreteBC,&
               getBoundaryValues_2D,rcollection=rcollection)
+
+
+!    ! Edge 2 of boundary component 1. That is it.
+!    call boundary_createRegion(rboundary,1,2,rboundaryRegion)
+!    rboundaryRegion%iproperties = 2**1-2**1
+!    call bcasm_newDirichletBConRealBD (rdiscretisation,4,&
+!                     rboundaryRegion,rdiscreteBC,&
+!              getBoundaryValues_2D,rcollection=rcollection) 
   
   case (2)
     ! FAC, Dirichlet velocity outflow
@@ -3811,223 +3819,223 @@ contains
     call parlst_getvalue_int (rparams, 'POST', 'nlevels',nlevels,0)
     
     if (nlevels == 0) then
-    ! Calculate the number of elements automatically
-    
-    ! Input line coordinates
-    call parlst_getvalue_string (rparams, 'POST', 'inputGMC',sstring)
-    read (sstring,*)   Dcoords(1,1), Dcoords(2,1), &
-               Dcoords(1,2), Dcoords(2,2)
-    ! Input line flux
-    call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
-                           Dcoords(1:2,2),Dfluxi)
-    call output_lbrk()
-    call output_line ('flux input(%)-0.1666667')
-    call output_line ('-----------------------')
-    call output_line (trim(sys_sdEP(Dfluxi,17,10)))
-    
-    ! Better to use the exact value of the inflow fluxes, rather than
-    !  calculating it numerically
-    ! Flow Around Cylinder
-    ! Dfluxi = -0.082_DP
-    ! Poiseuelle Flow
-    ! Dfluxi = -1.0_DP/6.0_DP
-    Dfluxi = -0.082_DP
-    Dfluxi = abs(Dfluxi)
-    
-    ! Output line coordinates
-    call parlst_getvalue_string (rparams, 'POST', 'outputGMC',sstring)
-    read (sstring,*)   Dcoords(1,1), Dcoords(2,1), &
-               Dcoords(1,2), Dcoords(2,2)
-    ! Output line flux
-    call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
-                           Dcoords(1:2,2),Dfluxo)
-    
-    Dfluxo = abs(Dfluxo)
-    
-    ! The GMC is then calculated as
-    Dgmc = 100.0_DP*(Dfluxi - Dfluxo) / Dfluxi                           
-    
-    ! Print the GMC value
-    call output_lbrk()
-    call output_line ('Global Mass Conservation(%)')
-    call output_line (&
-    '--------at x='//trim(sys_sdp(Dcoords(1,1),5,2))//'-------------')
-    call output_line (trim(sys_sdEP(Dgmc,16,6)))     
-    
+      ! Calculate the number of elements automatically
+      
+      ! Input line coordinates
+      call parlst_getvalue_string (rparams, 'POST', 'inputGMC',sstring)
+      read (sstring,*)   Dcoords(1,1), Dcoords(2,1), &
+                 Dcoords(1,2), Dcoords(2,2)
+      ! Input line flux
+      call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
+                             Dcoords(1:2,2),Dfluxi)
+      call output_lbrk()
+      call output_line ('flux input(%)-0.1666667')
+      call output_line ('-----------------------')
+      call output_line (trim(sys_sdEP(Dfluxi,17,10)))
+      
+      ! Better to use the exact value of the inflow fluxes, rather than
+      !  calculating it numerically
+      ! Flow Around Cylinder
+      ! Dfluxi = -0.082_DP
+      ! Poiseuelle Flow
+      ! Dfluxi = -1.0_DP/6.0_DP
+      Dfluxi = -0.082_DP
+      Dfluxi = abs(Dfluxi)
+      
+      ! Output line coordinates
+      call parlst_getvalue_string (rparams, 'POST', 'outputGMC',sstring)
+      read (sstring,*)   Dcoords(1,1), Dcoords(2,1), &
+                 Dcoords(1,2), Dcoords(2,2)
+      ! Output line flux
+      call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
+                             Dcoords(1:2,2),Dfluxo)
+      
+      Dfluxo = abs(Dfluxo)
+      
+      ! The GMC is then calculated as
+      Dgmc = 100.0_DP*(Dfluxi - Dfluxo) / Dfluxi                           
+      
+      ! Print the GMC value
+      call output_lbrk()
+      call output_line ('Global Mass Conservation(%)')
+      call output_line (&
+      '--------at x='//trim(sys_sdp(Dcoords(1,1),5,2))//'-------------')
+      call output_line (trim(sys_sdEP(Dgmc,16,6)))     
+      
 
-    ! Output line flux
-    Dcoords(1,1) = Dcoords(1,1) + 0.5_DP
-    Dcoords(1,2) = Dcoords(1,2) + 0.5_DP
-    call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
-                           Dcoords(1:2,2),Dfluxo5)
-    
-    Dfluxo5 = abs(Dfluxo5)
-    
-    ! The GMC is then calculated as
-    Dgmc = 100.0_DP*(Dfluxi - Dfluxo5) / Dfluxi                           
-    
-    ! Print the GMC value
-    call output_lbrk()
-    call output_line ('Global Mass Conservation(%)')
-    call output_line (&
-    '--------at x='//trim(sys_sdp(Dcoords(1,1),5,2))//'-------------')
-    call output_line (trim(sys_sdEP(Dgmc,16,6)))    
+      ! Output line flux
+      Dcoords(1,1) = Dcoords(1,1) + 0.5_DP
+      Dcoords(1,2) = Dcoords(1,2) + 0.5_DP
+      call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
+                             Dcoords(1:2,2),Dfluxo5)
+      
+      Dfluxo5 = abs(Dfluxo5)
+      
+      ! The GMC is then calculated as
+      Dgmc = 100.0_DP*(Dfluxi - Dfluxo5) / Dfluxi                           
+      
+      ! Print the GMC value
+      call output_lbrk()
+      call output_line ('Global Mass Conservation(%)')
+      call output_line (&
+      '--------at x='//trim(sys_sdp(Dcoords(1,1),5,2))//'-------------')
+      call output_line (trim(sys_sdEP(Dgmc,16,6)))    
 
 
-    ! Output line flux
-    Dcoords(1,1) = Dcoords(1,1) + 0.5_DP
-    Dcoords(1,2) = Dcoords(1,2) + 0.5_DP
-    call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
-                           Dcoords(1:2,2),Dfluxo5)
-    
-    Dfluxo5 = abs(Dfluxo5)
-    
-    ! The GMC is then calculated as
-    Dgmc = 100.0_DP*(Dfluxi - Dfluxo5) / Dfluxi                           
-    
-    ! Print the GMC value
-    call output_lbrk()
-    call output_line ('Global Mass Conservation(%)')
-    call output_line (&
-    '--------at x='//trim(sys_sdp(Dcoords(1,1),5,2))//'-------------')
-    call output_line (trim(sys_sdEP(Dgmc,16,6)))
+      ! Output line flux
+      Dcoords(1,1) = Dcoords(1,1) + 0.5_DP
+      Dcoords(1,2) = Dcoords(1,2) + 0.5_DP
+      call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
+                             Dcoords(1:2,2),Dfluxo5)
+      
+      Dfluxo5 = abs(Dfluxo5)
+      
+      ! The GMC is then calculated as
+      Dgmc = 100.0_DP*(Dfluxi - Dfluxo5) / Dfluxi                           
+      
+      ! Print the GMC value
+      call output_lbrk()
+      call output_line ('Global Mass Conservation(%)')
+      call output_line (&
+      '--------at x='//trim(sys_sdp(Dcoords(1,1),5,2))//'-------------')
+      call output_line (trim(sys_sdEP(Dgmc,16,6)))
     
     else
-    ! Calculate the number of elements from nlevels
-    
-    ! Input line coordinates
-    call parlst_getvalue_string (rparams, 'POST', 'inputGMC',sstring)
-    read (sstring,*)   Dcoords(1,1), Dcoords(2,1), &
-               Dcoords(1,2), Dcoords(2,2)
-    ! Input line flux
-    call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
-                   Dcoords(1:2,2),Dfluxi,nlevels=nlevels)
-    call output_lbrk()
-    call output_line ('flux input(%)-0.082')
-    call output_line ('-------------------')
-    call output_line (trim(sys_sdEP(Dfluxi,17,10)))
-    
-    ! Better to use the exact value of the inflow fluxes, rather than
-    !  calculating it numerically
-    ! Flow Around Cylinder
-!    Dfluxi = -0.082_DP
-    ! Poiseuelle Flow
-!    Dfluxi = -1.0_DP/6.0_DP
-    
-    Dfluxi = abs(Dfluxi)
-    
-    ! Output line coordinates
-    call parlst_getvalue_string (rparams, 'POST', 'outputGMC',sstring)
-    read (sstring,*)   Dcoords(1,1), Dcoords(2,1), &
-               Dcoords(1,2), Dcoords(2,2)
-    ! Output line flux
-    call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
-                  Dcoords(1:2,2),Dfluxo,nlevels=nlevels)
-    
-    Dfluxo = abs(Dfluxo)
-    
-    ! The GMC is then calculated as
-    Dgmc = 100.0_DP*(Dfluxi - Dfluxo) / Dfluxi                           
-    
-    ! Print the GMC value
-    call output_lbrk()
-    call output_line ('Global Mass Conservation(%)')
-    call output_line (&
-    '--------at x='//trim(sys_sdp(Dcoords(1,1),5,2))//'-------------')
-    call output_line (trim(sys_sdEP(Dgmc,16,6)))     
-    
+      ! Calculate the number of elements from nlevels
+      
+      ! Input line coordinates
+      call parlst_getvalue_string (rparams, 'POST', 'inputGMC',sstring)
+      read (sstring,*)   Dcoords(1,1), Dcoords(2,1), &
+                 Dcoords(1,2), Dcoords(2,2)
+      ! Input line flux
+      call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
+                     Dcoords(1:2,2),Dfluxi,nlevels=nlevels)
+      call output_lbrk()
+      call output_line ('flux input(%)-0.082')
+      call output_line ('-------------------')
+      call output_line (trim(sys_sdEP(Dfluxi,17,10)))
+      
+      ! Better to use the exact value of the inflow fluxes, rather than
+      !  calculating it numerically
+      ! Flow Around Cylinder
+  !    Dfluxi = -0.082_DP
+      ! Poiseuelle Flow
+  !    Dfluxi = -1.0_DP/6.0_DP
+      
+      Dfluxi = abs(Dfluxi)
+      
+      ! Output line coordinates
+      call parlst_getvalue_string (rparams, 'POST', 'outputGMC',sstring)
+      read (sstring,*)   Dcoords(1,1), Dcoords(2,1), &
+                 Dcoords(1,2), Dcoords(2,2)
+      ! Output line flux
+      call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
+                    Dcoords(1:2,2),Dfluxo,nlevels=nlevels)
+      
+      Dfluxo = abs(Dfluxo)
+      
+      ! The GMC is then calculated as
+      Dgmc = 100.0_DP*(Dfluxi - Dfluxo) / Dfluxi                           
+      
+      ! Print the GMC value
+      call output_lbrk()
+      call output_line ('Global Mass Conservation(%)')
+      call output_line (&
+      '--------at x='//trim(sys_sdp(Dcoords(1,1),5,2))//'-------------')
+      call output_line (trim(sys_sdEP(Dgmc,16,6)))     
+      
 
-    ! Output line flux
-    Dcoords(1,1) = Dcoords(1,1) + 0.45_DP
-    Dcoords(1,2) = Dcoords(1,2) + 0.45_DP
-    
-    call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
-                   Dcoords(1:2,2),Dfluxo5,nlevels=nlevels)
-    
-    Dfluxo5 = abs(Dfluxo5)
-    
-    ! The GMC is then calculated as
-    Dgmc = 100.0_DP*(Dfluxi - Dfluxo5) / Dfluxi                           
-    
-    ! Print the GMC value
-    call output_lbrk()
-    call output_line ('Global Mass Conservation(%)')
-    call output_line (&
-    '--------at x='//trim(sys_sdp(Dcoords(1,1),5,2))//'-------------')
-    call output_line (trim(sys_sdEP(Dgmc,16,6)))
-    
-    ! Output line flux
-    Dcoords(1,1) = Dcoords(1,1) + 0.5_DP
-    Dcoords(1,2) = Dcoords(1,2) + 0.5_DP
-    call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
-                   Dcoords(1:2,2),Dfluxo5,nlevels=nlevels)
-    
-    Dfluxo5 = abs(Dfluxo5)
-    
-    ! The GMC is then calculated as
-    Dgmc = 100.0_DP*(Dfluxi - Dfluxo5) / Dfluxi                           
-    
-    ! Print the GMC value
-    call output_lbrk()
-    call output_line ('Global Mass Conservation(%)')
-    call output_line (&
-    '--------at x='//trim(sys_sdp(Dcoords(1,1),5,2))//'-------------')
-    call output_line (trim(sys_sdEP(Dgmc,16,6)))
+      ! Output line flux
+      Dcoords(1,1) = Dcoords(1,1) + 0.45_DP
+      Dcoords(1,2) = Dcoords(1,2) + 0.45_DP
+      
+      call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
+                     Dcoords(1:2,2),Dfluxo5,nlevels=nlevels)
+      
+      Dfluxo5 = abs(Dfluxo5)
+      
+      ! The GMC is then calculated as
+      Dgmc = 100.0_DP*(Dfluxi - Dfluxo5) / Dfluxi                           
+      
+      ! Print the GMC value
+      call output_lbrk()
+      call output_line ('Global Mass Conservation(%)')
+      call output_line (&
+      '--------at x='//trim(sys_sdp(Dcoords(1,1),5,2))//'-------------')
+      call output_line (trim(sys_sdEP(Dgmc,16,6)))
+      
+      ! Output line flux
+      Dcoords(1,1) = Dcoords(1,1) + 0.5_DP
+      Dcoords(1,2) = Dcoords(1,2) + 0.5_DP
+      call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
+                     Dcoords(1:2,2),Dfluxo5,nlevels=nlevels)
+      
+      Dfluxo5 = abs(Dfluxo5)
+      
+      ! The GMC is then calculated as
+      Dgmc = 100.0_DP*(Dfluxi - Dfluxo5) / Dfluxi                           
+      
+      ! Print the GMC value
+      call output_lbrk()
+      call output_line ('Global Mass Conservation(%)')
+      call output_line (&
+      '--------at x='//trim(sys_sdp(Dcoords(1,1),5,2))//'-------------')
+      call output_line (trim(sys_sdEP(Dgmc,16,6)))
 
-    ! Output line flux
-    Dcoords(1,1) = Dcoords(1,1) + 0.5_DP
-    Dcoords(1,2) = Dcoords(1,2) + 0.5_DP
-    call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
-                   Dcoords(1:2,2),Dfluxo5,nlevels=nlevels)
-    
-    Dfluxo5 = abs(Dfluxo5)
-    
-    ! The GMC is then calculated as
-    Dgmc = 100.0_DP*(Dfluxi - Dfluxo5) / Dfluxi                           
-    
-    ! Print the GMC value
-    call output_lbrk()
-    call output_line ('Global Mass Conservation(%)')
-    call output_line (&
-    '--------at x='//trim(sys_sdp(Dcoords(1,1),5,2))//'-------------')
-    call output_line (trim(sys_sdEP(Dgmc,16,6)))
-    
-    
-    ! Output line flux
-    Dcoords(1,1) = Dcoords(1,1) + 0.5_DP
-    Dcoords(1,2) = Dcoords(1,2) + 0.5_DP
-    call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
-                   Dcoords(1:2,2),Dfluxo5,nlevels=nlevels)
-    
-    Dfluxo5 = abs(Dfluxo5)
-    
-    ! The GMC is then calculated as
-    Dgmc = 100.0_DP*(Dfluxi - Dfluxo5) / Dfluxi                           
-    
-    ! Print the GMC value
-    call output_lbrk()
-    call output_line ('Global Mass Conservation(%)')
-    call output_line (&
-    '--------at x='//trim(sys_sdp(Dcoords(1,1),5,2))//'-------------')
-    call output_line (trim(sys_sdEP(Dgmc,16,6)))
-    
-    ! Output line flux
-    Dcoords(1,1) = Dcoords(1,1) + 0.1_DP
-    Dcoords(1,2) = Dcoords(1,2) + 0.1_DP
-    call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
-                   Dcoords(1:2,2),Dfluxo5,nlevels=nlevels)
-    
-    Dfluxo5 = abs(Dfluxo5)
-    
-    ! The GMC is then calculated as
-    Dgmc = 100.0_DP*(Dfluxi - Dfluxo5) / Dfluxi                           
-    
-    ! Print the GMC value
-    call output_lbrk()
-    call output_line ('Global Mass Conservation(%)')
-    call output_line (&
-    '--------at x='//trim(sys_sdp(Dcoords(1,1),5,2))//'-------------')
-    call output_line (trim(sys_sdEP(Dgmc,16,6)))        
+      ! Output line flux
+      Dcoords(1,1) = Dcoords(1,1) + 0.5_DP
+      Dcoords(1,2) = Dcoords(1,2) + 0.5_DP
+      call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
+                     Dcoords(1:2,2),Dfluxo5,nlevels=nlevels)
+      
+      Dfluxo5 = abs(Dfluxo5)
+      
+      ! The GMC is then calculated as
+      Dgmc = 100.0_DP*(Dfluxi - Dfluxo5) / Dfluxi                           
+      
+      ! Print the GMC value
+      call output_lbrk()
+      call output_line ('Global Mass Conservation(%)')
+      call output_line (&
+      '--------at x='//trim(sys_sdp(Dcoords(1,1),5,2))//'-------------')
+      call output_line (trim(sys_sdEP(Dgmc,16,6)))
+      
+      
+      ! Output line flux
+      Dcoords(1,1) = Dcoords(1,1) + 0.5_DP
+      Dcoords(1,2) = Dcoords(1,2) + 0.5_DP
+      call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
+                     Dcoords(1:2,2),Dfluxo5,nlevels=nlevels)
+      
+      Dfluxo5 = abs(Dfluxo5)
+      
+      ! The GMC is then calculated as
+      Dgmc = 100.0_DP*(Dfluxi - Dfluxo5) / Dfluxi                           
+      
+      ! Print the GMC value
+      call output_lbrk()
+      call output_line ('Global Mass Conservation(%)')
+      call output_line (&
+      '--------at x='//trim(sys_sdp(Dcoords(1,1),5,2))//'-------------')
+      call output_line (trim(sys_sdEP(Dgmc,16,6)))
+      
+      ! Output line flux
+      Dcoords(1,1) = Dcoords(1,1) + 0.1_DP
+      Dcoords(1,2) = Dcoords(1,2) + 0.1_DP
+      call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
+                     Dcoords(1:2,2),Dfluxo5,nlevels=nlevels)
+      
+      Dfluxo5 = abs(Dfluxo5)
+      
+      ! The GMC is then calculated as
+      Dgmc = 100.0_DP*(Dfluxi - Dfluxo5) / Dfluxi                           
+      
+      ! Print the GMC value
+      call output_lbrk()
+      call output_line ('Global Mass Conservation(%)')
+      call output_line (&
+      '--------at x='//trim(sys_sdp(Dcoords(1,1),5,2))//'-------------')
+      call output_line (trim(sys_sdEP(Dgmc,16,6)))        
 
     end if   
   
