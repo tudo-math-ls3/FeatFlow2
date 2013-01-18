@@ -200,7 +200,7 @@ contains
     integer, dimension(:), allocatable :: Ielements
     real(DP), dimension(:,:), allocatable :: DedgePosition
 
-    integer :: ibdc,ibdcoffset,iedge,ilocaledge,nve
+    integer :: ibdc,ibdcoffset,iedgeidx,iedgeglobalidx,ilocaledge,nve
     integer :: NEL,NELbdc,iel,i,k
     integer(I32) :: ctrafoType
 
@@ -268,32 +268,33 @@ contains
     ! the orientation of the edge.
     ! NEL counts the total number of elements in the region.
     NEL = 0
-    do iedge = 1,NELbdc
+    do iedgeidx = 1,NELbdc
+      iedgeglobalidx = ibdcoffset+iedgeidx-1
       if (boundary_isInRegion(rboundaryRegion,ibdc,&
-          p_DedgeParameterValue(iedge))) then
+          p_DedgeParameterValue(iedgeglobalidx))) then
         NEL = NEL + 1
 
         ! Element number
-        Ielements(NEL) = p_IelementsAtBoundary(iedge)
+        Ielements(NEL) = p_IelementsAtBoundary(iedgeglobalidx)
 
         ! Element orientation; i.e. the local number of the boundary edge
         do ilocaledge = 1,ubound(p_IedgesAtElement,1)
-          if (p_IedgesAtElement(ilocaledge,p_IelementsAtBoundary(iedge)) .eq. &
-              p_IedgesAtBoundary(iedge)) exit
+          if (p_IedgesAtElement(ilocaledge,p_IelementsAtBoundary(iedgeglobalidx)) .eq. &
+              p_IedgesAtBoundary(iedgeglobalidx)) exit
         end do
         IelementOrientation(NEL) = ilocaledge
 
         ! Save the start parameter value of the edge -- in length
         ! parametrisation.
         dpar1 = boundary_convertParameter(rboundary, &
-            ibdc, p_DvertexParameterValue(iedge), rboundaryRegion%cparType, &
+            ibdc, p_DvertexParameterValue(iedgeglobalidx), rboundaryRegion%cparType, &
             BDR_PAR_LENGTH)
 
         ! Save the end parameter value. Be careful: The last edge
         ! must be treated differently!
-        if (iedge .ne. NELbdc) then
+        if (iedgeidx .ne. NELbdc) then
           dpar2 = boundary_convertParameter(rboundary, &
-              ibdc, p_DvertexParameterValue(iedge+1), rboundaryRegion%cparType, &
+              ibdc, p_DvertexParameterValue(iedgeglobalidx+1), rboundaryRegion%cparType, &
               BDR_PAR_LENGTH)
 
         else
@@ -611,6 +612,8 @@ contains
   ! rboundaryRegion allows to specify a region on the boundary where
   ! the integral is computed; if not specified, the integral is
   ! computed over the whole boundary.
+  !
+  ! Note: By convention, n is the OUTER normal vector of the domain.
 !</description>
 
 !<input>
@@ -823,6 +826,8 @@ contains
   ! rboundaryRegion allows to specify a region on the boundary where
   ! the integral is computed; if not specified, the integral is
   ! computed over the whole boundary.
+  !
+  ! Note: By convention, n is the OUTER normal vector of the domain.
 !</description>
 
 !<input>
