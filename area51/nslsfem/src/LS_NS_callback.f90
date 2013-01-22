@@ -241,7 +241,7 @@ contains
           ! Nothing to do here.
        end select      
     
-    case (6)
+    case (6,7)
       ! Anlytic polynomial function
        select case (rboundaryRegion%IBOUNDCOMPIDX)
        case (1)

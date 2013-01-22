@@ -26,7 +26,7 @@
 !#
 !# Author:    Masoud Nickaeen
 !# First Version: May  14, 2013
-!# Last Update:   Jan. 17, 2013
+!# Last Update:   Jan. 21, 2013
 !# 
 !##############################################################################
 
@@ -451,6 +451,8 @@ contains
     rcollection%IquickAccess(8), 0) 
   
   ! The constant parameter in the pressure analytic polynomial
+  !     OR
+  ! the coefficient of surface tension, sigma  
   call parlst_getvalue_double (rparams, 'RHS', 'dC', &
     rcollection%DquickAccess(9), 1.0_DP)
   
@@ -1602,6 +1604,67 @@ contains
     call bcasm_newDirichletBConRealBD (rdiscretisation,3,&
                      rboundaryRegion,rdiscreteBC,&
               getBoundaryValues_2D,rcollection=rcollection)
+              
+
+  case (7)
+    ! Analytic polynomial solution
+    ! edge 1 of boundary component 1.
+    call boundary_createRegion(rboundary,1,1,rboundaryRegion)
+    rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+                     
+    ! edge 2 of boundary component 1.
+    call boundary_createregion(rboundary,1,2,rboundaryregion)
+    rboundaryRegion%iproperties = 2**1-2**1
+    call bcasm_newdirichletbconrealbd (rdiscretisation,1,&
+                     rboundaryregion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+                 
+    ! Edge 3 of boundary component 1.
+    call boundary_createRegion(rboundary,1,3,rboundaryRegion)
+    rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+    
+    ! Edge 4 of boundary component 1. That is it.
+    call boundary_createRegion(rboundary,1,4,rboundaryRegion)
+    rboundaryRegion%iproperties = 2**1-2**1
+    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+                     
+
+    ! Edge 1 of boundary component 1.
+    call boundary_createRegion(rboundary,1,1,rboundaryRegion)
+    ! As we define the Y-velocity, we now set icomponent=2 in the following call.
+    rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+                 
+    ! Edge 2 of boundary component 1.
+    call boundary_createRegion(rboundary,1,2,rboundaryRegion)
+    rboundaryRegion%iproperties = 2**1-2**1
+    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+                 
+    ! Edge 3 of boundary component 1.
+    call boundary_createRegion(rboundary,1,3,rboundaryRegion)
+    rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+    
+    ! Edge 4 of boundary component 1. That is it.
+    call boundary_createRegion(rboundary,1,4,rboundaryRegion)
+    rboundaryRegion%iproperties = 2**1-2**1
+    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
 
   case default
     ! Un-known problem
@@ -2028,9 +2091,16 @@ contains
        
   else
   
-    call bma_buildVector (rrhs,BMA_CALC_STANDARD,ls_svp2D_rhs_anal,&
-       rcubatureInfo=rcubatureInfo,rcollection=rcollection, &
-       revalVectors=revalVectors)           
+    if (rcollection%IquickAccess(9) == 6) then
+      call bma_buildVector (rrhs,BMA_CALC_STANDARD,ls_svp2D_rhs_anal,&
+         rcubatureInfo=rcubatureInfo,rcollection=rcollection, &
+         revalVectors=revalVectors)
+    else
+      call bma_buildVector (rrhs,BMA_CALC_STANDARD,ls_svp2D_rhs_stbb,&
+         rcubatureInfo=rcubatureInfo,rcollection=rcollection, &
+         revalVectors=revalVectors)
+    end if
+    
   end if
   
   ! Release the vector structure used in linearization
@@ -2918,15 +2988,15 @@ contains
   
   ! Jump stabiliztion parameters
   integer :: detVJump
-  integer :: detWJump
+  integer :: detSJump
   integer :: detPJump
   real(DP) :: dJumpV, dJumpStarV, deojEdgeExpV
-  real(DP) :: dJumpW, dJumpStarW, deojEdgeExpW
-  real(DP) :: dJumpP
+  real(DP) :: dJumpS, dJumpStarS, deojEdgeExpS
+  real(DP) :: dJumpP, dJumpStarP, deojEdgeExpP
   
   ! Let's check if we realy have to set up jump stabilization
   call parlst_getvalue_int (rparams, 'JUMP', 'detVJump', detVJump, 0)
-  call parlst_getvalue_int (rparams, 'JUMP', 'detWJump', detWJump, 0)  
+  call parlst_getvalue_int (rparams, 'JUMP', 'detSJump', detSJump, 0)  
   call parlst_getvalue_int (rparams, 'JUMP', 'detPJump', detPJump, 0) 
   
   ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -2968,24 +3038,24 @@ contains
   
   
   ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-  ! Vorticity jump stabilization
+  ! Stress jump stabilization
   ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-  if (detWJump .eq. 1) then
-    call parlst_getvalue_double (rparams, 'JUMP', 'dJumpW', &
-                          dJumpW, 0.01_DP)  
-    call parlst_getvalue_double (rparams, 'JUMP', 'dJumpStarW',&
-                        dJumpStarW, 0.0_DP)  
-    call parlst_getvalue_double (rparams, 'JUMP', 'deojEdgeExpW',&
-                        deojEdgeExpW, 2.0_DP)                            
+  if (detSJump .eq. 1) then
+    call parlst_getvalue_double (rparams, 'JUMP', 'dJumpS', &
+                          dJumpS, 0.01_DP)  
+    call parlst_getvalue_double (rparams, 'JUMP', 'dJumpStarS',&
+                        dJumpStarS, 0.0_DP)  
+    call parlst_getvalue_double (rparams, 'JUMP', 'deojEdgeExpS',&
+                        deojEdgeExpS, 2.0_DP)                            
 
     ! Set up the jump stabilisation structure.
     ! The kinematic viscosity 1/Re
     rjumpStabil%dnu = rcollection%DquickAccess(1)
 
     ! Set stabilisation parameter
-    rjumpStabil%dgamma = dJumpW
-    rjumpStabil%dgammastar = dJumpStarW
-    rjumpStabil%deojEdgeExp = deojEdgeExpW
+    rjumpStabil%dgamma = dJumpS
+    rjumpStabil%dgammastar = dJumpStarS
+    rjumpStabil%deojEdgeExp = deojEdgeExpS
 
     ! Matrix weight, =0 no jump stabilization will be added
     rjumpStabil%dtheta = 1.0_DP
@@ -2994,22 +3064,47 @@ contains
     ! over the edges
     rjumpStabil%ccubType = CUB_G3_1D
 
-    ! Call the jump stabilisation technique for the vorticity.
+    ! Call the jump stabilisation technique for the stresses.
     call conv_jumpStabilisation2d (rjumpStabil, CONV_MODMATRIX, &
                       rmatrix%RmatrixBlock(4,4)) 
-    
+
+    call conv_jumpStabilisation2d (rjumpStabil, CONV_MODMATRIX, &
+                      rmatrix%RmatrixBlock(5,5)) 
+
+    call conv_jumpStabilisation2d (rjumpStabil, CONV_MODMATRIX, &
+                      rmatrix%RmatrixBlock(6,6))                           
   end if  
   
   ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-  ! Vorticity jump stabilization
+  ! Pressure jump stabilization
   ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   if (detPJump .eq. 1) then
     call parlst_getvalue_double (rparams, 'JUMP', 'dJumpP', &
-                          dJumpP, 0.01_DP)
-                          
-    ! Call the jump stabilisation technique for the pressure.
-    call jstab_calcReacJumpStabilisation (rmatrix%RmatrixBlock(3,3),&
-          dJumpP,1.0_DP,CUB_G3_1D,1.0_DP)    
+                          dJumpP, 0.01_DP)  
+    call parlst_getvalue_double (rparams, 'JUMP', 'dJumpStarP',&
+                        dJumpStarP, 0.0_DP)  
+    call parlst_getvalue_double (rparams, 'JUMP', 'deojEdgeExpP',&
+                        deojEdgeExpP, 2.0_DP)                            
+
+    ! Set up the jump stabilisation structure.
+    ! The kinematic viscosity 1/Re
+    rjumpStabil%dnu = 1.0_DP !rcollection%DquickAccess(1)
+
+    ! Set stabilisation parameter
+    rjumpStabil%dgamma = dJumpP
+    rjumpStabil%dgammastar = dJumpStarP
+    rjumpStabil%deojEdgeExp = deojEdgeExpP
+
+    ! Matrix weight, =0 no jump stabilization will be added
+    rjumpStabil%dtheta = 1.0_DP
+
+    ! Cubature formula to be used in jump term calculations
+    ! over the edges
+    rjumpStabil%ccubType = CUB_G3_1D
+
+    ! Call the jump stabilisation technique for the stresses.
+    call conv_jumpStabilisation2d (rjumpStabil, CONV_MODMATRIX, &
+                      rmatrix%RmatrixBlock(3,3))  
   end if  
   
   end subroutine
@@ -3264,7 +3359,7 @@ contains
   !   to calculate the Kinetic energy
   !   to write the real/projected data
   integer :: detWriteResult, LiftDragASO, ExporType
-  integer :: KEnergy, detKEnergy, Ensto, detEnsto
+  integer :: KEnergy, detKEnergy
   integer :: Vtild, Ptild, Stild
   
   ! Kinematic viscosity noo = 1/Re  
@@ -3714,93 +3809,6 @@ contains
 
 
   ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-  ! Calculating the Enstophy.
-  !   Z = 1/2 \int{w^2}  see: http://en.wikipedia.org/wiki/Enstrophy
-  !   using the definition of the vorticity based on FEM we end up with:
-  !   Z = 1/2*[w^T][M][w]
-  ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- 
-  ! Determine whether to calculate flow around cylinder parameters or not
-  call parlst_getvalue_int (rparams, 'POST', 'Ensto', Ensto, 0)  
-  
-  if (Ensto .eq. 1) then
-
-    ! Determine how to calculate Kinetic energy
-    call parlst_getvalue_int (rparams, 'POST', 'detEnsto', detEnsto, 0) 
-    select case (detEnsto)
-
-    case (0)
-      ! detKEnergy =0  use the FEM definition
-      ! E = 1/2 [w]^T[M][w]
-      
-      ! Build up a one block mass matrix. Get the structure and data from
-      ! the system matrix A11. BUT, first clear the system matrix data.
-      call lsysbl_clearMatrix (rmatrix)
-      
-      ! Create the mass matrix discretization structure
-      call spdiscr_createBlockDiscrInd (&
-           rmatrix%p_rblockDiscrTrial%rspatialDiscr(4),rblockDiscr)  
-      call lsysbl_createMatFromScalar (rmatrix%RmatrixBlock(4,4),&
-                   rmass_matrix, rblockDiscr,rblockDiscr)
-                  
-      ! Bulid the mass matrix
-      call bma_buildMatrix (rmass_matrix,BMA_CALC_STANDARD,ls_Mass,&
-                      rcubatureInfo=rcubatureInfo)
-       
-      ! Extract the first block of the solution matrix, X-velocity block
-      call lsysbl_createVecFromScalar(rvector%RvectorBlock(4),&
-                       rvort_vector, rblockDiscr)
-      ! Create a temporary vector  
-      call lsysbl_createVecBlockIndirect (rvort_vector,ru1,.true.)
-      
-      ! Do the matrix-vector multiplication
-      ! ru1   =   cx * rmass_matrix * rvort_vector   +   cy * ru1
-      call lsysbl_blockMatVec(rmass_matrix, rvort_vector, &
-                       ru1, cx=1.0_DP, cy=0.0_DP)
-      
-      ! Do the vector-vector multiplication
-      dU1 = lsysbl_scalarProduct(ru1,rvort_vector)
-      
-      ! Enstrophy
-      dE = 0.5_DP*dU1
-      
-      ! Print the Enstrophy value
-      call output_lbrk()
-      call output_line ('Enstophy - based on mass matrix')
-      call output_line ('-------------------------------')
-      call output_line (trim(sys_sdEP(dE,15,6)))  
-
-      ! Release the discretisation structure and all 
-      ! spatial discretisation structures in it.
-      call spdiscr_releaseBlockDiscr(rblockDiscr)
-        
-      ! Release the temporary vectors and matrix  
-      call lsysbl_releaseVector (ru1)
-      call lsysbl_releaseVector (rvort_vector)
-      call lsysbl_releaseMatrix (rmass_matrix)  
-        
-    case (1)
-      ! detEnsto = 1  simply take the L^2 norm of vorticity
-      !  Z = 1/2||w||^2_{L^2} 
-          
-      ! Call the error analysis subroutine without an analytical function
-      ! to calculate the L^2 norms: ||w||_{L^2}
-      call pperr_scalar (PPERR_L2ERROR,dU1,rvector%RvectorBlock(4),&
-                         rcubatureInfo=rcubatureInfo)
-      
-      ! Kinetic energy       
-      dE = 0.5_DP*(dU1**2)
-
-      ! Print the Enstrophy value
-      call output_lbrk()
-      call output_line ('Enstophy - based on L^2 norms')
-      call output_line ('---------')
-      call output_line (trim(sys_sdEP(dE,15,6)))   
-
-    end select
-
-  end if 
-
-  ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   ! Calculate Global Mass Conservation (GMC)
   !  This applies to the channel flows ONLY. The GMC is the normalised 
   !  difference between the input and output velocity fluxes (mass flow rate)
@@ -3829,8 +3837,8 @@ contains
       call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
                              Dcoords(1:2,2),Dfluxi)
       call output_lbrk()
-      call output_line ('flux input(%)-0.1666667')
-      call output_line ('-----------------------')
+      call output_line ('flux input(%)-0.082')
+      call output_line ('-------------------')
       call output_line (trim(sys_sdEP(Dfluxi,17,10)))
       
       ! Better to use the exact value of the inflow fluxes, rather than
@@ -3918,7 +3926,7 @@ contains
       ! Better to use the exact value of the inflow fluxes, rather than
       !  calculating it numerically
       ! Flow Around Cylinder
-  !    Dfluxi = -0.082_DP
+!      Dfluxi = -0.082_DP
       ! Poiseuelle Flow
   !    Dfluxi = -1.0_DP/6.0_DP
       
@@ -4019,9 +4027,10 @@ contains
       '--------at x='//trim(sys_sdp(Dcoords(1,1),5,2))//'-------------')
       call output_line (trim(sys_sdEP(Dgmc,16,6)))
       
+      
       ! Output line flux
-      Dcoords(1,1) = Dcoords(1,1) + 0.1_DP
-      Dcoords(1,2) = Dcoords(1,2) + 0.1_DP
+      Dcoords(1,1) = Dcoords(1,1) + 0.2_DP
+      Dcoords(1,2) = Dcoords(1,2) + 0.2_DP
       call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
                      Dcoords(1:2,2),Dfluxo5,nlevels=nlevels)
       
@@ -4035,8 +4044,8 @@ contains
       call output_line ('Global Mass Conservation(%)')
       call output_line (&
       '--------at x='//trim(sys_sdp(Dcoords(1,1),5,2))//'-------------')
-      call output_line (trim(sys_sdEP(Dgmc,16,6)))        
-
+      call output_line (trim(sys_sdEP(Dgmc,16,6)))
+      
     end if   
   
   end if
@@ -5277,7 +5286,7 @@ contains
     dy = p_Dpoints(2,icubp,iel)
 
     ! Calculate the values of the RHS using the coordinates
-    ! of the cubature points.
+    ! of the cubature points.   
     dfx = -dnu*(12.0_DP*dx**2*(dx-1.0_DP)**2*(2.0_DP*dy-1.0_DP)+&
     4.0_DP*dy*(2.0_DP*dy-1.0_DP)*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP)*(dy-1.0_DP)) + 3.0_DP*dC*dx**2 - &
         4.0_DP*dx**2*dy**2*(dx*(dx-1.0_DP)**2+dx**2*(dx-1.0_DP))*&
@@ -5291,6 +5300,284 @@ contains
         (dx-1.0_DP)**2*(dy-1.0_DP)**2*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP) + &
         8.0_DP*dy**3*dx*(2.0_DP*dx-1.0_DP)*(2.0_DP*dy-1.0_DP)*(dx*(dx-1.0_DP)**2+&
         dx**2*(dx-1.0_DP))*(dy-1.0_DP)**3*(dx-1.0_DP)   
+    
+    ! Outer loop over the DOF's i=1..ndof on our current element,
+    ! which corresponds to the (test) basis functions Phi_i:
+    do idofe=1,p_rvectorData4%ndofTest
+    
+      ! Fetch the contributions of the (test) basis functions Phi_i
+      ! into dbasI
+      dbasIx = p_DbasTest4(idofe,DER_DERIV2D_X,icubp,iel)
+      dbasIy = p_DbasTest4(idofe,DER_DERIV2D_Y,icubp,iel)
+                
+      ! Values of the velocity RHS for Stress1
+      dval4 = - (dfx+beta*(dU*dUx + dV*dUy)) * dbasIx
+          
+      ! Multiply the values of the basis functions by
+      ! the cubature weight and sum up into the local vectors.
+      p_DlocalVector4(idofe,iel) = p_DlocalVector4(idofe,iel) + &
+        p_DcubWeight(icubp,iel) * dval4
+
+
+      ! Values of the velocity RHS for Stress2
+      dval4 = -(  (dfx+beta*(dU*dUx + dV*dUy)) * dbasIy + &
+            (dfy+beta*(dU*dVx + dV*dVy)) * dbasIx  )
+          
+      ! Multiply the values of the basis functions by
+      ! the cubature weight and sum up into the local vectors.
+      p_DlocalVector5(idofe,iel) = p_DlocalVector5(idofe,iel) + &
+        p_DcubWeight(icubp,iel) * dval4
+
+
+      ! Values of the velocity RHS for Stress3
+      dval4 = - (dfy+beta*(dU*dVx + dV*dVy)) * dbasIy
+          
+      ! Multiply the values of the basis functions by
+      ! the cubature weight and sum up into the local vectors.
+      p_DlocalVector6(idofe,iel) = p_DlocalVector6(idofe,iel) + &
+        p_DcubWeight(icubp,iel) * dval4
+      
+    end do ! jdofe
+
+    end do ! icubp
+  
+  end do ! iel
+  
+  end subroutine
+
+
+  !****************************************************************************
+
+!<subroutine>
+  subroutine ls_svp2D_rhs_stbb(rvectorData,rassemblyData,rvectorAssembly,&
+    npointsPerElement,nelements,revalVectors,rcollection)
+
+!<description>  
+  ! Assemble the RHS vector in a block-by-block procedures.
+  ! The rest of the BIG-BANG happens to occure here :D
+!</description>
+
+!<inputoutput>
+  ! Vector data of all subvectors. The arrays p_Dentry of all subvectors
+  ! have to be filled with data.
+  type(t_bmaVectorData), dimension(:), intent(inout), target :: rvectorData
+!</inputoutput>
+
+!<input>
+  ! Data necessary for the assembly. Contains determinants and
+  ! cubature weights for the cubature,...
+  type(t_bmaVectorAssemblyData), intent(in) :: rassemblyData
+
+  ! Structure with all data about the assembly
+  type(t_bmaVectorAssembly), intent(in) :: rvectorAssembly
+  
+  ! Number of points per element
+  integer, intent(in) :: npointsPerElement
+  
+  ! Number of elements
+  integer, intent(in) :: nelements
+  
+  ! Values of FEM functions automatically evaluated in the
+  ! cubature points.
+  type(t_fev2Vectors), intent(in) :: revalVectors
+
+  ! User defined collection structure
+  type(t_collection), intent(inout), target, optional :: rcollection
+!</input>
+  
+!<subroutine>
+
+  ! Local variables
+  real(DP) :: dbasI,dbasIx,dbasIy, dval1, dval2, dval3, dval4, dnu
+  real(DP) :: dfx, dfy, dx, dy, dC, dval
+  integer :: iel, icubp, idofe
+  real(DP), dimension(:,:), pointer :: p_DlocalVector1,p_DlocalVector2
+  real(DP), dimension(:,:), pointer :: p_DlocalVector3, p_DlocalVector4
+  real(DP), dimension(:,:), pointer :: p_DlocalVector5, p_DlocalVector6
+  real(DP), dimension(:,:,:,:), pointer :: p_DbasTest1,p_DbasTest3,p_DbasTest4
+  real(DP), dimension(:,:), pointer :: p_DcubWeight
+  real(DP), dimension(:,:,:), pointer :: p_Dpoints
+  type(t_bmaVectorData), pointer :: p_rvectorData1,p_rvectorData3
+  type(t_bmaVectorData), pointer :: p_rvectorData4
+
+
+  ! Known velocity data
+  real(DP), dimension(:,:,:), pointer :: p_Du1,p_Du2
+
+  ! Velocity values/derivatives in cubature points 
+  real(DP) :: dU, dV, dUx, dUy, dVx, dVy
+
+  real(DP) :: beta
+  
+  real(DP) :: h, r0, r, l, w, nx, ny, sigma, delta, k
+    
+  ! Viscosity
+  dnu = rcollection%DquickAccess(1)
+  
+  ! Linearization Scheme
+  beta = rcollection%DquickAccess(4)
+  
+  ! The coefficient of surface tension
+  sigma = rcollection%DquickAccess(9)
+  
+  ! Get cubature weights data
+  p_DcubWeight => rassemblyData%p_DcubWeight
+  p_rvectorData1 => RvectorData(1)
+  p_rvectorData3 => RvectorData(3)
+  p_rvectorData4 => RvectorData(4)
+
+  p_DlocalVector1 => RvectorData(1)%p_Dentry
+  p_DlocalVector2 => RvectorData(2)%p_Dentry
+  p_DlocalVector3 => RvectorData(3)%p_Dentry
+  p_DlocalVector4 => RvectorData(4)%p_Dentry
+  p_DlocalVector5 => RvectorData(5)%p_Dentry
+  p_DlocalVector6 => RvectorData(6)%p_Dentry
+
+  p_DbasTest1 => RvectorData(1)%p_DbasTest
+  p_DbasTest3 => RvectorData(3)%p_DbasTest
+  p_DbasTest4 => RvectorData(4)%p_DbasTest  
+  
+  
+  ! Get the velocity field from the parameters
+  p_Du1 => revalVectors%p_RvectorData(1)%p_Ddata
+  p_Du2 => revalVectors%p_RvectorData(2)%p_Ddata
+    
+  ! Calculate the RHS of the velocities
+
+  ! Get the real coordinates of the cubature points
+  p_Dpoints => rassemblyData%revalElementSet%p_DpointsReal
+    
+  ! Loop over the elements in the current set.
+  do iel = 1,nelements
+
+    ! Loop over all cubature points on the current element
+    do icubp = 1,npointsPerElement
+
+    ! Velocity/derivatives field in this cubature point
+    dU = p_Du1(icubp,iel,DER_FUNC)
+    dV = p_Du2(icubp,iel,DER_FUNC)
+    
+    dUx = p_Du1(icubp,iel,DER_DERIV2D_X)
+    dVx = p_Du2(icubp,iel,DER_DERIV2D_X)
+
+    dUy = p_Du1(icubp,iel,DER_DERIV2D_Y)
+    dVy = p_Du2(icubp,iel,DER_DERIV2D_Y)
+    
+    ! Get the coordinates of the cubature point.
+    dx = p_Dpoints(1,icubp,iel)
+    dy = p_Dpoints(2,icubp,iel)
+
+    ! Calculate the values of the RHS using the coordinates
+    ! of the cubature points.
+    h = 0.05
+    r0 = 0.25_DP
+    r = sqrt((dx)**2 + (dy)**2)
+    l = r-r0
+    w = l/h
+    
+    if (abs(w) .lt. 1.0_DP) then
+      k = -1.0_DP/r
+      nx = dx/r
+      ny = dy/r
+      delta = 35.0_DP/32.0_DP*(1.0_DP - 3.0_DP*w**2 + 3.0_DP*w**4 - w**6)/h
+      dfx = sigma*k*nx*delta
+      dfy = sigma*k*ny*delta
+    else
+      dfx = 0.0_DP
+      dfy = 0.0_DP
+    end if    
+    ! Outer loop over the DOF's i=1..ndof on our current element,
+    ! which corresponds to the (test) basis functions Phi_i:
+    do idofe=1,p_rvectorData1%ndofTest
+    
+      ! Fetch the contributions of the (test) basis functions Phi_i
+      ! into dbasI
+      dbasI = p_DbasTest1(idofe,DER_FUNC,icubp,iel)
+      dbasIx = p_DbasTest1(idofe,DER_DERIV2D_X,icubp,iel)
+      dbasIy = p_DbasTest1(idofe,DER_DERIV2D_Y,icubp,iel)
+                
+      ! Values of the velocity RHS for the X1 and X2 component
+      dval1 = (dfx + beta*(dU*dUx + dV*dUy))*(dU*dbasIx+dV*dbasIy) + &
+            beta*(  (dfx + beta*(dU*dUx + dV*dUy))*dUx*dbasI + &
+            (dfy + beta*(dU*dVx + dV*dVy))*dVx*dbasI  )
+          
+      dval2 = (dfy + beta*(dU*dVx + dV*dVy))*(dU*dbasIx+dV*dbasIy) + &
+            beta*(  (dfx + beta*(dU*dUx + dV*dUy))*dUy*dbasI + &
+            (dfy + beta*(dU*dVx + dV*dVy))*dVy*dbasI  )
+          
+      ! Multiply the values of the basis functions by
+      ! the cubature weight and sum up into the local vectors.
+      p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
+        p_DcubWeight(icubp,iel) * dval1
+      p_DlocalVector2(idofe,iel) = p_DlocalVector2(idofe,iel) + &
+        p_DcubWeight(icubp,iel) * dval2
+      
+    end do ! jdofe
+
+    end do ! icubp
+  
+  end do ! iel
+  
+
+
+  ! Calculate the RHS of the pressure
+  
+  ! Loop over the elements in the current set.
+  do iel = 1,nelements
+    ! Outer loop over the DOF's i=1..ndof on our current element,
+    ! which corresponds to the (test) basis functions Phi_i:
+    do idofe=1,p_rvectorData3%ndofTest
+    
+      p_DlocalVector3(idofe,iel) =  0.0_DP
+      
+    end do ! jdofe
+  
+  end do ! iel
+
+
+   ! Calculate the RHS of the Stresses
+  
+  ! Loop over the elements in the current set.
+  do iel = 1,nelements
+
+    ! Loop over all cubature points on the current element
+    do icubp = 1,npointsPerElement
+
+    ! Velocity/derivatives field in this cubature point
+    dU = p_Du1(icubp,iel,DER_FUNC)
+    dV = p_Du2(icubp,iel,DER_FUNC)
+    
+    dUx = p_Du1(icubp,iel,DER_DERIV2D_X)
+    dVx = p_Du2(icubp,iel,DER_DERIV2D_X)
+
+    dUy = p_Du1(icubp,iel,DER_DERIV2D_Y)
+    dVy = p_Du2(icubp,iel,DER_DERIV2D_Y)
+    
+    
+    ! Get the coordinates of the cubature point.
+    dx = p_Dpoints(1,icubp,iel)
+    dy = p_Dpoints(2,icubp,iel)
+
+    ! Calculate the values of the RHS using the coordinates
+    ! of the cubature points.
+    
+    h = 0.05
+    r0 = 0.25_DP
+    r = sqrt((dx)**2 + (dy)**2)
+    l = r-r0
+    w = l/h
+    
+    if (abs(w) .lt. 1.0_DP) then
+      k = -1.0_DP/r
+      nx = dx/r
+      ny = dy/r
+      delta = 35.0_DP/32.0_DP*(1.0_DP - 3.0_DP*w**2 + 3.0_DP*w**4 - w**6)/h
+      dfx = sigma*k*nx*delta
+      dfy = sigma*k*ny*delta
+    else
+      dfx = 0.0_DP
+      dfy = 0.0_DP
+    end if
     
     ! Outer loop over the DOF's i=1..ndof on our current element,
     ! which corresponds to the (test) basis functions Phi_i:
