@@ -416,7 +416,7 @@ contains
   
   ! Physical scaling
   if (scPhysic .eq. 1) then
-    rcollection%DquickAccess(2) =  1.0_DP/(dnu) !20.0_DP
+    rcollection%DquickAccess(2) = 20.0_DP !1.0_DP/(dnu)
   else
     rcollection%DquickAccess(2) = 1.0_DP
   end if
@@ -2115,21 +2115,7 @@ contains
   
   case (2)
     ! L^2_0 shifting technique
-    ! read the Zero Mean pressure row
-    call parlst_getvalue_int (rparams, 'ZMV', 'irow', irow, 1)
-    Irows = (/irow/)
-    
-    ! Modify the RHS here
-    ! Bringing the RHS of the pressure block to L^2_0 space
-     call vecfil_subvectorToL20 (rrhs,3)
-   
-    ! Modify the pressure matrix here
-    do i=NLMIN,NLMAX   
-     ! Set a '1' on the main diagonal of the row number 'irow' 
-     !  of pressure block of the rmatrix on all levels
-     !  and zero elsewhere on that row.
-     call mmod_replaceLinesByUnitBlk (Rlevels(i)%rmatrix,3,Irows)
-    end do  
+    ! Do nothing!!
    
   case (3)
     ! One pressure DOF = 0

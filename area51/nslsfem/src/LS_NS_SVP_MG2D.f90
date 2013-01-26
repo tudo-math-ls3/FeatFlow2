@@ -26,7 +26,7 @@
 !#
 !# Author:    Masoud Nickaeen
 !# First Version: May  14, 2013
-!# Last Update:   Jan. 21, 2013
+!# Last Update:   Jan. 26, 2013
 !# 
 !##############################################################################
 
@@ -2218,9 +2218,9 @@ contains
     !  then make lumped mass matrix on all levels
     if (inl .eq. 1) then
     
-    ! Read the finite element for the Pressure
-    call parlst_getvalue_string (rparams, 'MESH', 'Pelm', sstring)
-    Pelm = elem_igetID(sstring)
+     ! Read the finite element for the Pressure
+     call parlst_getvalue_string (rparams, 'MESH', 'Pelm', sstring)
+     Pelm = elem_igetID(sstring)
     
      do i=NLMIN,NLMAX
      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
@@ -2250,8 +2250,8 @@ contains
             ls_Mass,rcubatureInfo=Rlevels(i)%rcubatureInfo)
      
      ! Making the mass matrix lumped with,
-     !  old structure  .false.
-     !  diagonal matrix  .true.
+     !  keep the old structure  .false.
+     !  change the structure to a diagonal matrix  .true.
      call lsyssc_lumpMatrixScalar (&
       Rlevels(i)%rmatrixMass%RmatrixBlock(1,1), LSYSSC_LUMP_DIAG,.true.)
     
@@ -2276,21 +2276,7 @@ contains
   
   case (2)
     ! L^2_0 shifting technique
-    ! read the Zero Mean pressure row
-    call parlst_getvalue_int (rparams, 'ZMV', 'irow', irow, 1)
-    Irows = (/irow/)
-    
-    ! Modify the RHS here
-    ! Bringing the RHS of the pressure block to L^2_0 space
-     call vecfil_subvectorToL20 (rrhs,3)
-   
-    ! Modify the pressure matrix here
-    do i=NLMIN,NLMAX   
-     ! Set a '1' on the main diagonal of the row number 'irow' 
-     !  of pressure block of the rmatrix on all levels
-     !  and zero elsewhere on that row.
-     call mmod_replaceLinesByUnitBlk (Rlevels(i)%rmatrix,3,Irows)
-    end do  
+    ! Do nothing!!
    
   case (3)
     ! One pressure DOF = 0
@@ -2309,6 +2295,64 @@ contains
      !  and zero elsewhere on that row.
      call mmod_replaceLinesByUnitBlk (Rlevels(i)%rmatrix,3,Irows)
     end do 
+
+  case (4)
+    ! Combined technique 
+    ! Check if this is the first nonlinear iteration,
+    !  then make lumped mass matrix ONLY on coarse grid NLMIN
+    if (inl .eq. 1) then
+    
+     ! Read the finite element for the Pressure
+     call parlst_getvalue_string (rparams, 'MESH', 'Pelm', sstring)
+     Pelm = elem_igetID(sstring)
+    
+     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+     ! Setup the Mass matrix on NLMIN
+     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+     ! Set up a block discretisation structure that has 1 block.
+     call spdiscr_initBlockDiscr (Rlevels(NLMIN)%rdiscMass,1,&
+                     Rlevels(NLMIN)%rtriangulation, rboundary)
+
+     ! For the pressure mass matrix, we set up a discretisation
+     call spdiscr_initDiscr_simple (&
+          Rlevels(NLMIN)%rdiscMass%RspatialDiscr(1),Pelm, &
+                     Rlevels(NLMIN)%rtriangulation, rboundary)
+     
+     call lsysbl_createMatBlockByDiscr (Rlevels(NLMIN)%rdiscMass,&
+                           Rlevels(NLMIN)%rmatrixMass)  
+     call bilf_createMatrixStructure (&
+        Rlevels(NLMIN)%rdiscMass%RspatialDiscr(1),LSYSSC_MATRIX9, &
+                   Rlevels(NLMIN)%rmatrixMass%RmatrixBlock(1,1))   
+     
+     ! Allocate memory for the matrix
+     call lsysbl_allocEmptyMatrix (Rlevels(NLMIN)%rmatrixMass,&
+                               LSYSSC_SETM_ZERO)
+
+     ! Build up the mass matrix
+     call bma_buildMatrix (Rlevels(NLMIN)%rmatrixMass,BMA_CALC_STANDARD,&
+            ls_Mass,rcubatureInfo=Rlevels(NLMIN)%rcubatureInfo)
+     
+     ! Making the mass matrix lumped with,
+     !  keep the old structure  .false.
+     !  change the structure to a diagonal matrix  .true.
+     call lsyssc_lumpMatrixScalar (&
+      Rlevels(NLMIN)%rmatrixMass%RmatrixBlock(1,1), LSYSSC_LUMP_DIAG,.true.)
+    
+    end if
+  
+    ! read the Zero Mean pressure row
+    call parlst_getvalue_int (rparams, 'ZMV', 'irow', irow, 1)
+  
+    ! Dooshvari darim Dooshvari :(
+    ! Modify the RHS here
+    ! Setting a zero on the row number 'irow' of the pressure RHS vector  
+    call vecfil_OneEntryZero(rrhs,3,irow)  
+  
+    ! Modify the pressure matrix here
+    ! Set the values of the row number 'irow' of the system matrix
+    !  to the diagonal values of the lumped mass matrix
+    call mmod_replaceLineByLumpedMass (Rlevels(NLMIN)%rmatrix%RmatrixBlock(3,3),&
+                irow,Rlevels(NLMIN)%rmatrixMass%RmatrixBlock(1,1))
 
   case default
     ! No zero mean pressure constraint required
@@ -2636,7 +2680,7 @@ contains
     RfilterChain(nfilter)%ifilterType = FILTER_ONEENTRY0
     RfilterChain(nfilter)%iblock = 3  ! pressure block
     RfilterChain(nfilter)%irow = irow
-  case (2)
+  case (2,4)
     ! L^2_0 shifting technique
     nfilter = nfilter + 1
     RfilterChain(nfilter)%ifilterType = FILTER_TOL20
@@ -2670,25 +2714,25 @@ contains
     
     select case (PrecSmoothMG)
     case (1)
-    ! Vanka preconditioner.
-    call linsol_initVANKA (p_rpreconditionerC,DampPrecSmoothMG)    
+      ! Vanka preconditioner.
+      call linsol_initVANKA (p_rpreconditionerC,DampPrecSmoothMG)    
     case (2)
-    ! SSOR preconditioner.
-    call linsol_initSSOR (p_rpreconditionerC, DampPrecSmoothMG, .true.)
+      ! SSOR preconditioner.
+      call linsol_initSSOR (p_rpreconditionerC, DampPrecSmoothMG, .true.)
     case (3)
-    ! Jacobi preconditioner  
-    call linsol_initJacobi (p_rpreconditionerC,DampPrecSmoothMG)
+      ! Jacobi preconditioner  
+      call linsol_initJacobi (p_rpreconditionerC,DampPrecSmoothMG)
     case default
-    ! No preconditioner is required.
+      ! No preconditioner is required.
     end select
     
     !!! Coarse grid solver
     call parlst_getvalue_int (rparams, 'MULTI', 'smoothMG', smoothMG, 1)
     select case (smoothMG)
     case (1)
-    call linsol_initCG (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditionerC,RfilterChain)
+      call linsol_initCG (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditionerC,RfilterChain)
     case (2)
-    call linsol_initBiCGStab (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditionerC,RfilterChain)
+      call linsol_initBiCGStab (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditionerC,RfilterChain)
     case (3,4)
     ! The Jacobi-type coarse grid solvers!!
     end select
@@ -2711,7 +2755,8 @@ contains
   ! Now set up the other levels...  
   !+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
   call parlst_getvalue_int (rparams, 'MULTI', 'PrecSmoothMG', PrecSmoothMG, 1)
-  call parlst_getvalue_double (rparams, 'MULTI', 'DampPrecSmoothMG', DampPrecSmoothMG, 1.0_DP)  
+  call parlst_getvalue_double (rparams, 'MULTI', 'DampPrecSmoothMG', &
+  DampPrecSmoothMG, 1.0_DP)  
   call parlst_getvalue_int (rparams, 'MULTI', 'smoothMG', smoothMG, 1)
   
   do i = NLMIN+1, NLMAX
@@ -2724,27 +2769,29 @@ contains
     ! Vanka preconditioner.
     call linsol_initVANKA (p_rpreconditioner,DampPrecSmoothMG)    
     case (2)
-    ! SSOR preconditioner.
-    call linsol_initSSOR (p_rpreconditioner, DampPrecSmoothMG, .true.)
+      ! SSOR preconditioner.
+      call linsol_initSSOR (p_rpreconditioner, DampPrecSmoothMG, .true.)
     case (3)
-    ! Jacobi preconditioner.
-    call linsol_initJacobi (p_rpreconditioner, DampPrecSmoothMG)
+      ! Jacobi preconditioner.
+      call linsol_initJacobi (p_rpreconditioner, DampPrecSmoothMG)
     case default
-    ! No preconditioner is required.
+      ! No preconditioner is required.
     end select
     
     !!! Smoother
     select case (smoothMG)
     case (1)
-    call linsol_initCG (p_rsmoother,p_rpreconditioner,RfilterChain)
+      call linsol_initCG (p_rsmoother,p_rpreconditioner,RfilterChain)
     case (2)
-    call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner,RfilterChain)
+      call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner,RfilterChain)
     case (3)
-    call parlst_getvalue_double (rparams, 'MULTI', 'DampSmoothMG', DampSmoothMG, 1.0_DP)  
-    call linsol_initSSOR (p_rsmoother, DampSmoothMG, .true.)
+      call parlst_getvalue_double (rparams, 'MULTI', 'DampSmoothMG', &
+        DampSmoothMG, 1.0_DP)  
+      call linsol_initSSOR (p_rsmoother, DampSmoothMG, .true.)
     case (4)
-    call parlst_getvalue_double (rparams, 'MULTI', 'DampSmoothMG', DampSmoothMG, 1.0_DP)  
-    call linsol_initJacobi (p_rsmoother, DampSmoothMG)
+      call parlst_getvalue_double (rparams, 'MULTI', 'DampSmoothMG', &
+        DampSmoothMG, 1.0_DP)  
+      call linsol_initJacobi (p_rsmoother, DampSmoothMG)
     end select  
 
     call linsol_convertToSmoother(p_rsmoother, nsmMG, 1.0_DP)
@@ -2884,9 +2931,11 @@ contains
     ! Max. number of iterations
     call parlst_getvalue_int (rparams, 'LINSOL', 'nmaxItsLS', nmaxItsLS, 10)
     ! Output level
-    call parlst_getvalue_int (rparams, 'LINSOL', 'ioutputLevelLS',ioutputLevelLS, 0)
+    call parlst_getvalue_int (rparams, 'LINSOL', 'ioutputLevelLS',&
+        ioutputLevelLS, 0)
     ! Relative error
-    call parlst_getvalue_double (rparams, 'LINSOL', 'depsRelLS', depsRelLS, 0.001_DP)     
+    call parlst_getvalue_double (rparams, 'LINSOL', 'depsRelLS', &
+        depsRelLS, 0.001_DP)     
     
     p_rsolverNodeM%nmaxIterations = nmaxItsLS
     p_rsolverNodeM%depsRel = depsRelLS
@@ -2914,8 +2963,7 @@ contains
     
     ! Release temporary vector
     call lsysbl_releaseVector (rtempBlock)
-     
-    
+         
   end if
      
   end subroutine
@@ -3926,7 +3974,7 @@ contains
       ! Better to use the exact value of the inflow fluxes, rather than
       !  calculating it numerically
       ! Flow Around Cylinder
-!      Dfluxi = -0.082_DP
+      Dfluxi = -0.082_DP
       ! Poiseuelle Flow
   !    Dfluxi = -1.0_DP/6.0_DP
       
@@ -4254,7 +4302,8 @@ contains
       call lsysbl_releaseVector (Rlevels(i)%rtempVector)
     end if
   end do
-
+  if (detZMV .eq. 4) call lsysbl_releaseMatrix (Rlevels(NLMIN)%rmatrixMass)
+  
   ! Release temporary scalar vector
   if (p_rtempVectorSc%NEQ .ne. 0) call lsyssc_releaseVector(p_rtempVectorSc)
 

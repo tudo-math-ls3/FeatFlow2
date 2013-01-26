@@ -68,10 +68,10 @@ alpha = 1.0
 sFilenamePathMesh = './pre/QUAD'
 
 # Final mesh level to solve the problem:
-NLMAX = 6
+NLMAX = 7
 
 # Coarse mesh level, used in multigrid:
-NLMIN = 6
+NLMIN = 5
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Change Quadrilaterals to triangles
@@ -114,10 +114,10 @@ dPert = 0.0
 ccubType = G3_2D
 
 # Print mesh statistics or not
-detPMesh = 1
+detPMesh = 0
 
 # Print discretization statistics or not
-detPDisc = 1
+detPDisc = 0
 
 
 #-----------------------------------------------------
@@ -146,7 +146,7 @@ LinTyp = 2
 FPIter = 10
 
 # Nonlinear loop Max number of iterations
-NLN_MAX = 40
+NLN_MAX = 50
 
 # Nonlinear loop stopping criteria
 #  Serves as a measure of relative residual
@@ -317,7 +317,7 @@ deojEdgeExpP = 2.0
 #    =1  Stand-alone Multigrid solver
 #    =2  Multigrid-preconditioned (CG\BiCGStab) solver
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-LINsolverType = 1
+LINsolverType = 2
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # If we have a Multigrid-preconditioned solver, then,
@@ -362,11 +362,11 @@ ctMG = 0
 #    =1  UMFPACK
 #    =2  Smoother as coarse grid solver
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-CGsolverMG = 1
+CGsolverMG = 2
 
 # Number of iteration of the coarse grid solver,
 #  if it is the same as our smoother
-NItCGsolverMG = 50
+NItCGsolverMG = 150
 
 # Rlative coarse grid error,
 #  if it is the same as our smoother
@@ -427,7 +427,7 @@ depsRelMG = 1e-3
 depsAbsMG = 1E-5
 
 # Max. number of iterations
-nmaxItsMG = 2
+nmaxItsMG = 4
 
 # Min. number of iterations
 nminItsMG = 1
@@ -446,7 +446,8 @@ ioutputLevelMG = -1
 
 
 #-------------------------------------------------------
-# Interlevel projection
+# Interlevel projection to obtain deferred velocities
+# on all levels during a multigrid solver.
 # Velocity Projection is "hard-coded projection"
 #-------------------------------------------------------
 [PROLREST]
@@ -505,12 +506,17 @@ dintARboundEX3YVel       = 20.0
 #      ONLY applicable to special elements
 #       like QP1, P1, P0... :(
 #  =3  active (One pressure DOF = 0)
+#  =4  active (Combined technique) |NOT YET AVAILABLE|
+#      this applies detZMV=1 
+#      on coarse grid (UMFPACK) and
+#      detZMV =2 on other levels  
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 detZMV = 2
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Which row of the pressure matrix do you want to 
 #  implement these changes
+#  ONLY required for detZMV =1,3,4
 #  FAC =33 outflow, =1 leading face of cylinder
 #  =42 inflow, =102 symmetric line
 #  StepFlow =131 outflow
@@ -537,7 +543,7 @@ ExporType = 0
 # Determine to write the final solution to a file.
 #   =0 don't write  :(
 #   =1 please write :)
-detWriteResult = 0
+detWriteResult = 1
 
 # The file name and path to write the solution
 #  ONLY applicable if detWriteResult = 1
@@ -546,7 +552,7 @@ sFilenamePathResult = './files/ali.dat'
 # The level to write the final solution, and
 #   for the moment it is only the NLMAX
 #   ONLY applicable if detWriteResult = 1
-iinitialSolutionLevel = 3
+iinitialSolutionLevel = 6
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Calculate the benchmark parameters in
