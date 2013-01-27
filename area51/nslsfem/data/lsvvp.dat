@@ -153,7 +153,7 @@ NLN_MAX = 200
 
 # Nonlinear loop stopping criteria
 #  Serves as a measure of relative residual
-dNLEpsi = 1.0e-6
+dNLEpsi = 1.0e-5
 
 
 #-----------------------------------------------------
@@ -242,6 +242,14 @@ initValues = 0.0e0 0.0e0 0.0e0 0.0e0
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 sFilenamePathResult = './files/ali.dat'
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# The data file solution level
+#  ONLY applicable if nlinit = 1
+#         .AND.
+#  detWriteResult=1 (in section [POST]) must 
+#  have been set in the previous solution. 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+iinitialSolutionLevel = 2
 
 #-----------------------------------------------------
 # Jump Stabilization (Velocity, Vorticity)
@@ -524,19 +532,17 @@ irow = 1
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ExporType = 0
 
-# Determine to write the final solution to a file.
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Determine to write the final solution on level NLMAX
+#  to a file.
 #   =0 don't write  :(
-#   =1 please write :)
-detWriteResult = 0
+#   =1 please write 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+detWriteResult = 1
 
 # The file name and path to write the solution
 #  ONLY applicable if detWriteResult = 1
 sFilenamePathResult = './files/ali.dat'
-
-# The level to write the final solution, and
-#   for the moment it is only the NLMAX
-#   ONLY applicable if detWriteResult = 1
-iinitialSolutionLevel = 3
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Calculate the benchmark parameters in

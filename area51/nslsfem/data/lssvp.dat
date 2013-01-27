@@ -68,10 +68,10 @@ alpha = 1.0
 sFilenamePathMesh = './pre/QUAD'
 
 # Final mesh level to solve the problem:
-NLMAX = 7
+NLMAX = 5
 
 # Coarse mesh level, used in multigrid:
-NLMIN = 5
+NLMIN = 4
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Change Quadrilaterals to triangles
@@ -89,15 +89,15 @@ detTri = 0
 #  EL_P2
 #  EL_RT0_2D
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Velm = EL_Q2
+Velm = EL_Q1
 Vtild = 0
 
 # Type of Pressure finite element:
-Pelm = EL_QP1
-Ptild = 1
+Pelm = EL_Q1
+Ptild = 0
 
 # Type of Stress finite element:
-Selm = EL_Q2
+Selm = EL_Q1
 Stild = 0
 
 # Perturbed grid percentage
@@ -150,7 +150,7 @@ NLN_MAX = 50
 
 # Nonlinear loop stopping criteria
 #  Serves as a measure of relative residual
-dNLEpsi = 1.0e-6
+dNLEpsi = 1.0e-5
 
 
 #-----------------------------------------------------
@@ -242,6 +242,15 @@ initValues = 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0
 #  have been set in the previous solution. 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 sFilenamePathResult = './files/ali.dat'
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# The data file solution level
+#  ONLY applicable if nlinit = 1
+#         .AND.
+#  detWriteResult=1 (in section [POST]) must 
+#  have been set in the previous solution. 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+iinitialSolutionLevel = 5
 
 
 #-----------------------------------------------------
@@ -362,7 +371,7 @@ ctMG = 0
 #    =1  UMFPACK
 #    =2  Smoother as coarse grid solver
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-CGsolverMG = 2
+CGsolverMG = 1
 
 # Number of iteration of the coarse grid solver,
 #  if it is the same as our smoother
@@ -427,7 +436,7 @@ depsRelMG = 1e-3
 depsAbsMG = 1E-5
 
 # Max. number of iterations
-nmaxItsMG = 4
+nmaxItsMG = 2
 
 # Min. number of iterations
 nminItsMG = 1
@@ -511,7 +520,7 @@ dintARboundEX3YVel       = 20.0
 #      on coarse grid (UMFPACK) and
 #      detZMV =2 on other levels  
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-detZMV = 2
+detZMV = 3
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Which row of the pressure matrix do you want to 
@@ -524,7 +533,7 @@ detZMV = 2
 #  Poiesuelle flow, outflow =6
 #  Bolton step flow, outflow = 30
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-irow = 1
+irow = 5
 
 
 #-----------------------------------------------------
@@ -540,19 +549,17 @@ irow = 1
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ExporType = 0
 
-# Determine to write the final solution to a file.
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Determine to write the final solution on level NLMAX
+#  to a file.
 #   =0 don't write  :(
 #   =1 please write :)
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 detWriteResult = 1
 
 # The file name and path to write the solution
 #  ONLY applicable if detWriteResult = 1
 sFilenamePathResult = './files/ali.dat'
-
-# The level to write the final solution, and
-#   for the moment it is only the NLMAX
-#   ONLY applicable if detWriteResult = 1
-iinitialSolutionLevel = 6
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Calculate the benchmark parameters in

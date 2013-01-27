@@ -28,7 +28,7 @@
 !#
 !# Author:        Masoud Nickaeen
 !# First Version: July 18, 2012
-!# Last Update:   Jan. 14, 2013
+!# Last Update:   Jan. 27, 2013
 !##############################################################################
 
 module LS_NS_VVP_Time_MG2D
@@ -1301,7 +1301,7 @@ contains
     ! Ignor the initial values, read from file
     !
     ! Read from data file the initial solution level
-    call parlst_getvalue_int (rparams,'POST',&
+    call parlst_getvalue_int (rparams,'ISOLUTION',&
                                        'iinitialSolutionLevel',ilev,0)
 
     ! First creat a block vector structure and zero-valued it
@@ -3121,8 +3121,8 @@ contains
       call parlst_getvalue_int (rparams, 'POST', 'detWriteResult', detWriteResult, 0)   
       if (detWriteResult .eq. 1) then
       
-          ! Write the final solution to a data file
-          call parlst_getvalue_string (rparams, 'ISOLUTION', &
+          ! Write the final solution on level NLMAX to a data file
+          call parlst_getvalue_string (rparams, 'POST', &
                  'sFilenamePathResult',sfile, "", bdequote=.true.)
             
           call vecio_writeBlockVectorHR (rvector, 'SOLUTION', .true.,&

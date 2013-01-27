@@ -26,7 +26,7 @@
 !#
 !# Author:    Masoud Nickaeen
 !# First Version: May  14, 2013
-!# Last Update:   Jan. 26, 2013
+!# Last Update:   Jan. 27, 2013
 !# 
 !##############################################################################
 
@@ -1782,7 +1782,7 @@ contains
     call parlst_getvalue_string (rparams, 'ISOLUTION', 'initValues',&
                    sstring, '0.0_DP 0.0_DP 0.0_DP 0.0_DP 0.0_DP 0.0_DP')
     read (sstring,*) dinit_vect(1), dinit_vect(2), dinit_vect(3), & 
-                               dinit_vect(4)
+                               dinit_vect(4),dinit_vect(5),dinit_vect(6)
     
     ! Scale the sub-vectors to initialize the nonlineaer iteration loop
     call lsyssc_clearVector (rvector_old%RvectorBlock(1),dinit_vect(1))
@@ -1796,7 +1796,7 @@ contains
     ! Ignor the initial values, read from file
     !
     ! Read from data file the initial solution level
-    call parlst_getvalue_int (rparams,'POST',&
+    call parlst_getvalue_int (rparams,'ISOLUTION',&
                        'iinitialSolutionLevel',ilev,0)
 
     ! First creat a block vector structure and zero-valued it
@@ -3472,8 +3472,8 @@ contains
   call parlst_getvalue_int (rparams, 'POST', 'detWriteResult', detWriteResult, 0)   
   if (detWriteResult .eq. 1) then
   
-    ! Write the final solution to a data file
-    call parlst_getvalue_string (rparams, 'ISOLUTION', &
+    ! Write the final solution on level NLMAX to a data file
+    call parlst_getvalue_string (rparams, 'POST', &
          'sFilenamePathResult',sfile, "", bdequote=.true.)
       
     call vecio_writeBlockVectorHR (rvector, 'SOLUTION', .true.,&
