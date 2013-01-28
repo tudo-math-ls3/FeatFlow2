@@ -28,7 +28,7 @@
 !#
 !# Author:    Masoud Nickaeen
 !# First Version: May  28, 2012
-!# Last Update:   Jan. 27, 2013
+!# Last Update:   Jan. 28, 2013
 !##############################################################################
 
 module LS_NS_VVP_MG2D
@@ -416,7 +416,7 @@ contains
   
   ! Physical scaling
   if (scPhysic .eq. 1) then
-    rcollection%DquickAccess(2) = 20.0_DP !1.0_DP/(dnu)
+    rcollection%DquickAccess(2) = 1.0_DP/(dnu) !20.0_DP
   else
     rcollection%DquickAccess(2) = 1.0_DP
   end if
@@ -3976,7 +3976,7 @@ contains
 
 
     ! L^2 Norm vorticity
-    ! Add pressure vector
+    ! Add vorticity vector
     rcollection%IquickAccess(7) = 3
     call fev2_addVectorToEvalList(revalVectors,&
        rvector%RvectorBlock(4),0)   ! w
@@ -3992,8 +3992,26 @@ contains
     call fev2_releaseVectorList(revalVectors)
 
 
+    ! L^2 Norm vorticity-<<Based on the velocity>>
+    ! Add velocity vectors
+    rcollection%IquickAccess(7) = 4
+    call fev2_addVectorToEvalList(revalVectors,&
+       rvector%RvectorBlock(1),1)   ! u1,x,y
+    call fev2_addVectorToEvalList(revalVectors,&
+       rvector%RvectorBlock(2),1)   ! u2,x,y                
+    call bma_buildIntegral (dintvalue,BMA_CALC_STANDARD,&
+    ls_L2_Norm,rcollection=rcollection, &
+    revalVectors=revalVectors,rcubatureInfo=rcubatureInfo)
+
+    ! Print the Norm value
+    call output_lbrk()
+    call output_line ('L^2 Error vorticity<<Based on the velocity>>')
+    call output_line ('--------------------------------------------')
+    call output_line (trim(sys_sdEP(sqrt(dintvalue),15,6)))  
+    call fev2_releaseVectorList(revalVectors)
+
     ! H^1 Norm vorticity
-    ! Add pressure vector
+    ! Add vorticity vector
     rcollection%IquickAccess(7) = 3
     call fev2_addVectorToEvalList(revalVectors,&
        rvector%RvectorBlock(4),1)   ! w,x,y
@@ -5313,7 +5331,7 @@ contains
   real(DP) :: dval1,dval2,dx,dy, dC
   integer :: iel, icubp
   real(DP), dimension(:,:), pointer :: p_DcubWeight
-  real(DP), dimension(:,:), pointer :: p_Dfunc
+  real(DP), dimension(:,:), pointer :: p_Dfunc,p_DderivX,p_DderivY
   real(DP), dimension(:,:,:), pointer :: p_Dpoints
   
   ! Cancel if no FEM function is given.
@@ -5334,10 +5352,6 @@ contains
   
   ! Get the coordinates of the cubature points
   p_Dpoints => rassemblyData%revalElementSet%p_DpointsReal
-  
-  ! Get the data array with the values of the FEM function
-  ! in the cubature points
-  p_Dfunc => revalVectors%p_RvectorData(1)%p_Ddata(:,:,DER_FUNC2D)
 
   dintvalue = 0.0_DP
 
@@ -5346,6 +5360,10 @@ contains
   case (0)
     !X-Velocity
     ! Loop over the elements in the current set.
+    ! Get the data array with the values of the FEM function
+    ! in the cubature points
+    p_Dfunc => revalVectors%p_RvectorData(1)%p_Ddata(:,:,DER_FUNC2D)   
+     
     do iel = 1,nelements
 
     ! Loop over all cubature points on the current element
@@ -5372,6 +5390,10 @@ contains
   case (1)
     ! Y-Velocity
     ! Loop over the elements in the current set.
+    ! Get the data array with the values of the FEM function
+    ! in the cubature points
+    p_Dfunc => revalVectors%p_RvectorData(1)%p_Ddata(:,:,DER_FUNC2D)   
+        
     do iel = 1,nelements
 
     ! Loop over all cubature points on the current element
@@ -5398,6 +5420,10 @@ contains
   case (2)
     ! Pressure
     ! Loop over the elements in the current set.
+    ! Get the data array with the values of the FEM function
+    ! in the cubature points
+    p_Dfunc => revalVectors%p_RvectorData(1)%p_Ddata(:,:,DER_FUNC2D)   
+        
     do iel = 1,nelements
 
     ! Loop over all cubature points on the current element
@@ -5424,6 +5450,10 @@ contains
   case (3)
     ! Vorticity
     ! Loop over the elements in the current set.
+    ! Get the data array with the values of the FEM function
+    ! in the cubature points
+    p_Dfunc => revalVectors%p_RvectorData(1)%p_Ddata(:,:,DER_FUNC2D)   
+        
     do iel = 1,nelements
 
     ! Loop over all cubature points on the current element
@@ -5447,6 +5477,38 @@ contains
     end do ! icubp
     
     end do ! iel    
+
+  case (4)
+    ! Vorticity<<Based on the velocity>>
+    ! Loop over the elements in the current set.
+    ! Get the data array with the values of the FEM function
+    ! in the cubature points
+    p_DderivX => revalVectors%p_RvectorData(2)%p_Ddata(:,:,DER_DERIV2D_X)
+    p_DderivY => revalVectors%p_RvectorData(1)%p_Ddata(:,:,DER_DERIV2D_Y)
+    
+    do iel = 1,nelements
+
+    ! Loop over all cubature points on the current element
+    do icubp = 1,npointsPerElement
+
+      ! Get the value of the bubble function
+      dx = p_Dpoints(1,icubp,iel)
+      dy = p_Dpoints(2,icubp,iel)
+      
+      dval1 = -2.0_DP*dx**2*(dx-1.0_DP)**2*(6.0_DP*dy**2-6.0_DP*dy+1.0_DP) - &
+          2.0_DP*dy**2*(dy-1.0_DP)**2*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP)
+
+      ! Get the error of the FEM function to the analytic function
+      dval2 = p_DderivX(icubp,iel) - p_DderivY(icubp,iel)
+      
+      ! Multiply the values by the cubature weight and sum up
+      ! into the (squared) L2 error:
+      dintvalue = dintvalue + &
+        p_DcubWeight(icubp,iel) * (dval1 - dval2)**2
+      
+    end do ! icubp
+    
+    end do ! iel 
   
   end select   
     
