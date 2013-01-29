@@ -4311,6 +4311,7 @@ contains
 
   ! Local variables
   real(DP) :: dbasI, dbasJ, dval, dbasIx, dbasIy, dbasJx, dbasJy, dnu
+  real(DP) :: dbasJxx, dbasJyy, dbasIxx, dbasIyy
   integer :: iel, icubp, idofe, jdofe
   real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA11,p_DlocalMatrixA12
   real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA13,p_DlocalMatrixA14
