@@ -688,8 +688,8 @@ contains
   ! And for the Stresse, a separate discretisation structure as well.
   ! Read the finite element for the Stresses
   call parlst_getvalue_string (rparams, 'MESH', 'Selm', sstring)
-  Selm = elem_igetID(sstring)  
-
+   Selm = elem_igetID(sstring)
+  
   do i = NLMIN, NLMAX
     call spdiscr_initDiscr_simple (&
       Rlevels(i)%rdiscretisation%RspatialDiscr(4),&
@@ -3121,8 +3121,8 @@ contains
 !</subroutine>
  
    ! Local variables
-  real(DP) :: Dres(6),Dresv(6),Dres_rel(6)
-  integer, dimension(6) :: Cnorms
+  real(DP) :: Dres(5),Dresv(5),Dres_rel(5)
+  integer, dimension(5) :: Cnorms
   integer :: i,isum
   
   ! Scaling factors
@@ -3158,7 +3158,6 @@ contains
   Dres_rel(3) = Dres(3)/Dresv(3)
   Dres_rel(4) = Dres(4)/Dresv(4)
   Dres_rel(5) = Dres(5)/Dresv(5)
-  Dres_rel(6) = Dres(6)/Dresv(6)
   
   ! Convergence check
   converged = .false.
@@ -3168,12 +3167,12 @@ contains
     converged = .true.
   else
     ! Norm control
-    do i=1,6
+    do i=1,5
       if (Dres_rel(i) .lt. dNLEpsi) then
          isum = isum + 1
       end if
     end do
-    if (isum .eq. 6) then
+    if (isum .eq. 5) then
       converged = .true.
     end if
   end if  
@@ -3182,7 +3181,7 @@ contains
   diverged = .false.
   diverged = .not.( Dres_rel(1) .lt. 1E8 .and. Dres_rel(2) .lt. 1E8 &
              .and. Dres_rel(3) .lt. 1E8 .and. Dres_rel(4) .lt. 1E8  &
-             .and. Dres_rel(5) .lt. 1E8 .and. Dres_rel(6) .lt. 1E8  )
+             .and. Dres_rel(5) .lt. 1E8 )
 
   
   ! Release the block vector
@@ -3193,32 +3192,30 @@ contains
   if (inl .eq. 1) then
       call output_line ('Iter. ' &
       //' U1 Rel. Err. ' //' U2 Rel. Err. ' //' P  Rel. Err. ' &
-      //' S1 Rel. Err. ' //' S2 Rel. Err. ' //' S3 Rel. Err. ' )
+      //' S1 Rel. Err. ' //' S2 Rel. Err. ' )
       call output_line ('--------------------------------------&
-      ----------------------------------------------------')
+      --------------------------------------')
     call output_line (sys_siL(inl, 5) //'  '&
     //trim(sys_sdEL(Dres_rel(1),6))//'  '&
     //trim(sys_sdEL(Dres_rel(2),6))//'  '&
     //trim(sys_sdEL(Dres_rel(3),6))//'  '&
     //trim(sys_sdEL(Dres_rel(4),6))//'  '&
-    //trim(sys_sdEL(Dres_rel(5),6))//'  '&
-    //trim(sys_sdEL(Dres_rel(6),6)))   
+    //trim(sys_sdEL(Dres_rel(5),6)))   
   else
     call output_line (sys_siL(inl, 5) //'  '&
     //trim(sys_sdEL(Dres_rel(1),6))//'  '&
     //trim(sys_sdEL(Dres_rel(2),6))//'  '&
     //trim(sys_sdEL(Dres_rel(3),6))//'  '&
     //trim(sys_sdEL(Dres_rel(4),6))//'  '&
-    //trim(sys_sdEL(Dres_rel(5),6))//'  '&
-    //trim(sys_sdEL(Dres_rel(6),6)))
+    //trim(sys_sdEL(Dres_rel(5),6)))
     if ( (mod(inl,10) .eq. 0) .and. (inl .ne. NLN_Max) &
       .and. (.not. converged) .and. (.not. diverged)) then
       call output_lbrk()
       call output_line ('Iter. ' &
       //' U1 Rel. Err. ' //' U2 Rel. Err. ' //' P  Rel. Err. ' &
-      //' S1 Rel. Err. ' //' S2 Rel. Err. ' //' S3 Rel. Err. ' )
+      //' S1 Rel. Err. ' //' S2 Rel. Err. ' )
       call output_line ('--------------------------------------&
-      ----------------------------------------------------')
+      --------------------------------------')
     end if
   end if
 
@@ -3469,24 +3466,24 @@ contains
     call output_line (trim(sys_sdEP(Dvalues(1)-Dvalues(2),15,6)))
 
     
-    !!!!!!!!!!!!!!!!
-    ! Test new idea
-    !!!!!!!!!!!!!!!!
-    ! Print out the negatives of the values computed in the
-    ! following routines as the routines work with the normal
-    ! vector pointing into the opposite direction as needed.
-    call bdint_normalFlux2D (rvector%RvectorBlock(4),&
-        rvector%RvectorBlock(5),CUB_G3_1D,Dforces(1), rboundaryRegion)
-    call bdint_normalFlux2D (rvector%RvectorBlock(5),&
-        rvector%RvectorBlock(6),CUB_G3_1D,Dforces(2), rboundaryRegion)
-        
-    call output_lbrk()
-    call output_line ('Coefficients (Direct calculation)')
-    call output_line ('--------------------------------')
-    call output_line ('Drag/Lift')
-    call output_line (trim(sys_sdEP(-Dforces(1)*500.0_DP,15,6)) // ' / '&
-      //trim(sys_sdEP(-Dforces(2)*500.0_DP,15,6)))        
-    call output_lbrk()
+!    !!!!!!!!!!!!!!!!
+!    ! Test new idea
+!    !!!!!!!!!!!!!!!!
+!    ! Print out the negatives of the values computed in the
+!    ! following routines as the routines work with the normal
+!    ! vector pointing into the opposite direction as needed.
+!    call bdint_normalFlux2D (rvector%RvectorBlock(4),&
+!        rvector%RvectorBlock(5),CUB_G3_1D,Dforces(1), rboundaryRegion)
+!    call bdint_normalFlux2D (rvector%RvectorBlock(5),&
+!        rvector%RvectorBlock(6),CUB_G3_1D,Dforces(2), rboundaryRegion)
+!        
+!    call output_lbrk()
+!    call output_line ('Coefficients (Direct calculation)')
+!    call output_line ('--------------------------------')
+!    call output_line ('Drag/Lift')
+!    call output_line (trim(sys_sdEP(-Dforces(1)*500.0_DP,15,6)) // ' / '&
+!      //trim(sys_sdEP(-Dforces(2)*500.0_DP,15,6)))        
+!    call output_lbrk()
   end if
   
   
@@ -3526,14 +3523,14 @@ contains
       EL_Q1, CUB_G3_2D, rprjDiscretisation%RspatialDiscr(3))         
     endif    
 
-    if (Stild .eq. 1) then
-      call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(4), &
-      EL_Q1, CUB_G3_2D, rprjDiscretisation%RspatialDiscr(4))         
-      call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(5), &
-      EL_Q1, CUB_G3_2D, rprjDiscretisation%RspatialDiscr(5))
-      call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(6), &
-      EL_Q1, CUB_G3_2D, rprjDiscretisation%RspatialDiscr(6))
-    endif 
+!    if (Stild .eq. 1) then
+!      call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(4), &
+!      EL_Q1, CUB_G3_2D, rprjDiscretisation%RspatialDiscr(4))         
+!      call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(5), &
+!      EL_Q1, CUB_G3_2D, rprjDiscretisation%RspatialDiscr(5))
+!      call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(6), &
+!      EL_Q1, CUB_G3_2D, rprjDiscretisation%RspatialDiscr(6))
+!    endif 
    
     ! Now set up a new solution vector based on this discretisation,
     ! allocate memory.
@@ -3575,15 +3572,15 @@ contains
       call lsyssc_getbase_double (rprjVector%RvectorBlock(2),p_Ddata2)
       call ucd_addVarVertBasedVec(rexport,'velocity',p_Ddata,p_Ddata2)
 
-      ! Write Stresses
-      call lsyssc_getbase_double (rprjVector%RvectorBlock(4),p_Ddata)
-      call ucd_addVariableVertexBased (rexport,'Sx',UCD_VAR_STANDARD,p_Ddata)
-
-      call lsyssc_getbase_double (rprjVector%RvectorBlock(5),p_Ddata)
-      call ucd_addVariableVertexBased (rexport,'Sxy',UCD_VAR_STANDARD,p_Ddata)
-
-      call lsyssc_getbase_double (rprjVector%RvectorBlock(6),p_Ddata)
-      call ucd_addVariableVertexBased (rexport,'Sy',UCD_VAR_STANDARD,p_Ddata)      
+!      ! Write Stresses
+!      call lsyssc_getbase_double (rprjVector%RvectorBlock(4),p_Ddata)
+!      call ucd_addVariableVertexBased (rexport,'Sx',UCD_VAR_STANDARD,p_Ddata)
+!
+!      call lsyssc_getbase_double (rprjVector%RvectorBlock(5),p_Ddata)
+!      call ucd_addVariableVertexBased (rexport,'Sxy',UCD_VAR_STANDARD,p_Ddata)
+!
+!      call lsyssc_getbase_double (rprjVector%RvectorBlock(6),p_Ddata)
+!      call ucd_addVariableVertexBased (rexport,'Sy',UCD_VAR_STANDARD,p_Ddata)      
     
     else
       ! Start UCD export to GMV file:
@@ -3599,15 +3596,15 @@ contains
       call lsyssc_getbase_double (rprjVector%RvectorBlock(2),p_Ddata2)
       call ucd_addVarVertBasedVec(rexport,'velocity',p_Ddata,p_Ddata2)
       
-      ! Write Stresses
-      call lsyssc_getbase_double (rprjVector%RvectorBlock(4),p_Ddata)
-      call ucd_addVariableVertexBased (rexport,'Sx',UCD_VAR_STANDARD,p_Ddata)     
-
-      call lsyssc_getbase_double (rprjVector%RvectorBlock(5),p_Ddata)
-      call ucd_addVariableVertexBased (rexport,'Sxy',UCD_VAR_STANDARD,p_Ddata) 
-      
-      call lsyssc_getbase_double (rprjVector%RvectorBlock(6),p_Ddata)
-      call ucd_addVariableVertexBased (rexport,'Sy',UCD_VAR_STANDARD,p_Ddata)       
+!      ! Write Stresses
+!      call lsyssc_getbase_double (rprjVector%RvectorBlock(4),p_Ddata)
+!      call ucd_addVariableVertexBased (rexport,'Sx',UCD_VAR_STANDARD,p_Ddata)     
+!
+!      call lsyssc_getbase_double (rprjVector%RvectorBlock(5),p_Ddata)
+!      call ucd_addVariableVertexBased (rexport,'Sxy',UCD_VAR_STANDARD,p_Ddata) 
+!      
+!      call lsyssc_getbase_double (rprjVector%RvectorBlock(6),p_Ddata)
+!      call ucd_addVariableVertexBased (rexport,'Sy',UCD_VAR_STANDARD,p_Ddata)       
     
     end if
     
@@ -3637,15 +3634,15 @@ contains
       call lsyssc_getbase_double (rvector%RvectorBlock(2),p_Ddata2)
       call ucd_addVarVertBasedVec(rexport,'velocity',p_Ddata,p_Ddata2)
 
-      ! Write Stresses
-      call lsyssc_getbase_double (rvector%RvectorBlock(4),p_Ddata)
-      call ucd_addVariableVertexBased (rexport,'Sx',UCD_VAR_STANDARD,p_Ddata)
-      
-      call lsyssc_getbase_double (rvector%RvectorBlock(5),p_Ddata)
-      call ucd_addVariableVertexBased (rexport,'Sxy',UCD_VAR_STANDARD,p_Ddata)
-      
-      call lsyssc_getbase_double (rvector%RvectorBlock(6),p_Ddata)
-      call ucd_addVariableVertexBased (rexport,'Sy',UCD_VAR_STANDARD,p_Ddata)            
+!      ! Write Stresses
+!      call lsyssc_getbase_double (rvector%RvectorBlock(4),p_Ddata)
+!      call ucd_addVariableVertexBased (rexport,'Sx',UCD_VAR_STANDARD,p_Ddata)
+!      
+!      call lsyssc_getbase_double (rvector%RvectorBlock(5),p_Ddata)
+!      call ucd_addVariableVertexBased (rexport,'Sxy',UCD_VAR_STANDARD,p_Ddata)
+!      
+!      call lsyssc_getbase_double (rvector%RvectorBlock(6),p_Ddata)
+!      call ucd_addVariableVertexBased (rexport,'Sy',UCD_VAR_STANDARD,p_Ddata)            
     
     else
       ! Start UCD export to GMV file:
@@ -3661,15 +3658,15 @@ contains
       call lsyssc_getbase_double (rvector%RvectorBlock(2),p_Ddata2)
       call ucd_addVarVertBasedVec(rexport,'velocity',p_Ddata,p_Ddata2)
       
-      ! Write Stresses
-      call lsyssc_getbase_double (rvector%RvectorBlock(4),p_Ddata)
-      call ucd_addVariableVertexBased (rexport,'Sx',UCD_VAR_STANDARD,p_Ddata)     
-
-      call lsyssc_getbase_double (rvector%RvectorBlock(5),p_Ddata)
-      call ucd_addVariableVertexBased (rexport,'Sxy',UCD_VAR_STANDARD,p_Ddata)
-    
-      call lsyssc_getbase_double (rvector%RvectorBlock(6),p_Ddata)
-      call ucd_addVariableVertexBased (rexport,'Sy',UCD_VAR_STANDARD,p_Ddata)    
+!      ! Write Stresses
+!      call lsyssc_getbase_double (rvector%RvectorBlock(4),p_Ddata)
+!      call ucd_addVariableVertexBased (rexport,'Sx',UCD_VAR_STANDARD,p_Ddata)     
+!
+!      call lsyssc_getbase_double (rvector%RvectorBlock(5),p_Ddata)
+!      call ucd_addVariableVertexBased (rexport,'Sxy',UCD_VAR_STANDARD,p_Ddata)
+!    
+!      call lsyssc_getbase_double (rvector%RvectorBlock(6),p_Ddata)
+!      call ucd_addVariableVertexBased (rexport,'Sy',UCD_VAR_STANDARD,p_Ddata)    
     
     end if
   
@@ -4009,24 +4006,24 @@ contains
       call output_line (trim(sys_sdEP(Dgmc,16,6)))
       
       
-      ! Output line flux
-      Dcoords(1,1) = Dcoords(1,1) + 0.2_DP
-      Dcoords(1,2) = Dcoords(1,2) + 0.2_DP
-      call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
-                     Dcoords(1:2,2),Dfluxo5,nlevels=nlevels)
-      
-      Dfluxo5 = abs(Dfluxo5)
-      
-      ! The GMC is then calculated as
-      Dgmc = 100.0_DP*(Dfluxi - Dfluxo5) / Dfluxi                           
-      
-      ! Print the GMC value
-      call output_lbrk()
-      call output_line ('Global Mass Conservation(%)')
-      call output_line (&
-      '--------at x='//trim(sys_sdp(Dcoords(1,1),5,2))//'-------------')
-      call output_line (trim(sys_sdEP(Dgmc,16,6)))
-      
+!      ! Output line flux
+!      Dcoords(1,1) = Dcoords(1,1) + 0.2_DP
+!      Dcoords(1,2) = Dcoords(1,2) + 0.2_DP
+!      call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
+!                     Dcoords(1:2,2),Dfluxo5,nlevels=nlevels)
+!      
+!      Dfluxo5 = abs(Dfluxo5)
+!      
+!      ! The GMC is then calculated as
+!      Dgmc = 100.0_DP*(Dfluxi - Dfluxo5) / Dfluxi                           
+!      
+!      ! Print the GMC value
+!      call output_lbrk()
+!      call output_line ('Global Mass Conservation(%)')
+!      call output_line (&
+!      '--------at x='//trim(sys_sdp(Dcoords(1,1),5,2))//'-------------')
+!      call output_line (trim(sys_sdEP(Dgmc,16,6)))
+!      
     end if   
   
   end if
@@ -4123,57 +4120,57 @@ contains
     call output_line (trim(sys_sdEP(sqrt(dintvalue),15,6)))  
     call fev2_releaseVectorList(revalVectors)
 
-
-    ! L^2 Norm Sxx
-    ! Add the vector
-    rcollection%IquickAccess(7) = 3
-    call fev2_addVectorToEvalList(revalVectors,&
-       rvector%RvectorBlock(4),0)   ! sxx
-    call bma_buildIntegral (dintvalue,BMA_CALC_STANDARD,&
-    ls_L2_Norm,rcollection=rcollection, &
-    revalVectors=revalVectors,rcubatureInfo=rcubatureInfo)
-
-    ! Print the Norm value
-    call output_lbrk()
-    call output_line ('L^2 Error Sxx')
-    call output_line ('-------------')
-    call output_line (trim(sys_sdEP(sqrt(dintvalue),15,6)))  
-    call fev2_releaseVectorList(revalVectors)
-
-
-    ! L^2 Norm Sxy
-    ! Add the vector
-    rcollection%IquickAccess(7) = 4
-    call fev2_addVectorToEvalList(revalVectors,&
-       rvector%RvectorBlock(5),0)   ! sxy
-    call bma_buildIntegral (dintvalue,BMA_CALC_STANDARD,&
-    ls_L2_Norm,rcollection=rcollection, &
-    revalVectors=revalVectors,rcubatureInfo=rcubatureInfo)
-
-    ! Print the Norm value
-    call output_lbrk()
-    call output_line ('L^2 Error Sxy')
-    call output_line ('-------------')
-    call output_line (trim(sys_sdEP(sqrt(dintvalue),15,6)))  
-    call fev2_releaseVectorList(revalVectors)
-    
-  
-    ! L^2 Norm Syy
-    ! Add the vector
-    rcollection%IquickAccess(7) = 5
-    call fev2_addVectorToEvalList(revalVectors,&
-       rvector%RvectorBlock(6),0)   ! syy
-    call bma_buildIntegral (dintvalue,BMA_CALC_STANDARD,&
-    ls_L2_Norm,rcollection=rcollection, &
-    revalVectors=revalVectors,rcubatureInfo=rcubatureInfo)
-
-    ! Print the Norm value
-    call output_lbrk()
-    call output_line ('L^2 Error Syy')
-    call output_line ('-------------')
-    call output_line (trim(sys_sdEP(sqrt(dintvalue),15,6)))  
-    call fev2_releaseVectorList(revalVectors)  
-  
+!
+!    ! L^2 Norm Sxx
+!    ! Add the vector
+!    rcollection%IquickAccess(7) = 3
+!    call fev2_addVectorToEvalList(revalVectors,&
+!       rvector%RvectorBlock(4),0)   ! sxx
+!    call bma_buildIntegral (dintvalue,BMA_CALC_STANDARD,&
+!    ls_L2_Norm,rcollection=rcollection, &
+!    revalVectors=revalVectors,rcubatureInfo=rcubatureInfo)
+!
+!    ! Print the Norm value
+!    call output_lbrk()
+!    call output_line ('L^2 Error Sxx')
+!    call output_line ('-------------')
+!    call output_line (trim(sys_sdEP(sqrt(dintvalue),15,6)))  
+!    call fev2_releaseVectorList(revalVectors)
+!
+!
+!    ! L^2 Norm Sxy
+!    ! Add the vector
+!    rcollection%IquickAccess(7) = 4
+!    call fev2_addVectorToEvalList(revalVectors,&
+!       rvector%RvectorBlock(5),0)   ! sxy
+!    call bma_buildIntegral (dintvalue,BMA_CALC_STANDARD,&
+!    ls_L2_Norm,rcollection=rcollection, &
+!    revalVectors=revalVectors,rcubatureInfo=rcubatureInfo)
+!
+!    ! Print the Norm value
+!    call output_lbrk()
+!    call output_line ('L^2 Error Sxy')
+!    call output_line ('-------------')
+!    call output_line (trim(sys_sdEP(sqrt(dintvalue),15,6)))  
+!    call fev2_releaseVectorList(revalVectors)
+!    
+!  
+!    ! L^2 Norm Syy
+!    ! Add the vector
+!    rcollection%IquickAccess(7) = 5
+!    call fev2_addVectorToEvalList(revalVectors,&
+!       rvector%RvectorBlock(6),0)   ! syy
+!    call bma_buildIntegral (dintvalue,BMA_CALC_STANDARD,&
+!    ls_L2_Norm,rcollection=rcollection, &
+!    revalVectors=revalVectors,rcubatureInfo=rcubatureInfo)
+!
+!    ! Print the Norm value
+!    call output_lbrk()
+!    call output_line ('L^2 Error Syy')
+!    call output_line ('-------------')
+!    call output_line (trim(sys_sdEP(sqrt(dintvalue),15,6)))  
+!    call fev2_releaseVectorList(revalVectors)  
+!  
   end if
      
   end subroutine
@@ -4742,10 +4739,10 @@ contains
     do idofe=1,p_rmatrixDataA44%ndofTest
     
       ! Fetch the contributions of the (test) basis functions Phi_i
-      dbasIx = p_DbasTestA44(jdofe+0*p_rmatrixDataA44%ndofTest,DER_FUNC,icubp,iel)
-      dbasIy = p_DbasTestA44(jdofe+1*p_rmatrixDataA44%ndofTest,DER_FUNC,icubp,iel)       
-      dbasIxx = p_DbasTestA44(jdofe+0*p_rmatrixDataA44%ndofTest,DER_DERIV2D_X,icubp,iel)
-      dbasIyy = p_DbasTestA44(jdofe+1*p_rmatrixDataA44%ndofTest,DER_DERIV2D_Y,icubp,iel)
+      dbasIx = p_DbasTestA44(idofe+0*p_rmatrixDataA44%ndofTest,DER_FUNC,icubp,iel)
+      dbasIy = p_DbasTestA44(idofe+1*p_rmatrixDataA44%ndofTest,DER_FUNC,icubp,iel)       
+      dbasIxx = p_DbasTestA44(idofe+0*p_rmatrixDataA44%ndofTest,DER_DERIV2D_X,icubp,iel)
+      dbasIyy = p_DbasTestA44(idofe+1*p_rmatrixDataA44%ndofTest,DER_DERIV2D_Y,icubp,iel)
       
       ! Inner loop over the DOF's j=1..ndof, which corresponds to
       ! the basis function Phi_j:
@@ -4829,11 +4826,11 @@ contains
 !<subroutine>
 
   ! Local variables
-  real(DP) :: dbasI,dbasIx,dbasIy, dval1, dval2, dval4
+  real(DP) :: dbasI,dbasIx,dbasIy, dval1, dval2, dval4,dbasIxx,dbasIyy
   integer :: iel, icubp, idofe
   real(DP), dimension(:,:), pointer :: p_DlocalVector1,p_DlocalVector2
   real(DP), dimension(:,:), pointer :: p_DlocalVector3, p_DlocalVector4
-  real(DP), dimension(:,:), pointer :: p_DlocalVector5, p_DlocalVector6
+  real(DP), dimension(:,:), pointer :: p_DlocalVector5
   real(DP), dimension(:,:,:,:), pointer :: p_DbasTest1,p_DbasTest3,p_DbasTest4
   real(DP), dimension(:,:), pointer :: p_DcubWeight
   type(t_bmaVectorData), pointer :: p_rvectorData1,p_rvectorData3
@@ -4867,7 +4864,6 @@ contains
   p_DlocalVector3 => RvectorData(3)%p_Dentry
   p_DlocalVector4 => RvectorData(4)%p_Dentry
   p_DlocalVector5 => RvectorData(5)%p_Dentry
-  p_DlocalVector6 => RvectorData(6)%p_Dentry
 
   p_DbasTest1 => RvectorData(1)%p_DbasTest
   p_DbasTest3 => RvectorData(3)%p_DbasTest
@@ -4976,11 +4972,12 @@ contains
     
       ! Fetch the contributions of the (test) basis functions Phi_i
       ! into dbasI
-      dbasIx = p_DbasTest4(idofe,DER_DERIV2D_X,icubp,iel)
-      dbasIy = p_DbasTest4(idofe,DER_DERIV2D_Y,icubp,iel)
+      dbasIxx = p_DbasTest4(idofe+0*p_rvectorData4%ndofTest,DER_DERIV2D_X,icubp,iel)
+      dbasIyy = p_DbasTest4(idofe+1*p_rvectorData4%ndofTest,DER_DERIV2D_Y,icubp,iel)
+
                 
       ! Values of the velocity RHS for Stress1
-      dval4 = 0.0_DP - beta * ( (dU*dUx + dV*dUy) * dbasIx )
+      dval4 = 0.0_DP - beta * (dU*dUx + dV*dUy) * (dbasIxx+dbasIyy)
           
       ! Multiply the values of the basis functions by
       ! the cubature weight and sum up into the local vectors.
@@ -4989,21 +4986,11 @@ contains
 
 
       ! Values of the velocity RHS for Stress2
-      dval4 = 0.0_DP - beta * (  (dU*dUx + dV*dUy) * dbasIy + &
-            (dU*dVx + dV*dVy) * dbasIx  )
+      dval4 = 0.0_DP - beta*(dU*dVx + dV*dVy)*(dbasIxx+dbasIyy) 
           
       ! Multiply the values of the basis functions by
       ! the cubature weight and sum up into the local vectors.
       p_DlocalVector5(idofe,iel) = p_DlocalVector5(idofe,iel) + &
-        p_DcubWeight(icubp,iel) * dval4
-
-
-      ! Values of the velocity RHS for Stress3
-      dval4 = 0.0_DP - beta * ( (dU*dVx + dV*dVy) * dbasIy )
-          
-      ! Multiply the values of the basis functions by
-      ! the cubature weight and sum up into the local vectors.
-      p_DlocalVector6(idofe,iel) = p_DlocalVector6(idofe,iel) + &
         p_DcubWeight(icubp,iel) * dval4
       
     end do ! jdofe
@@ -5013,7 +5000,6 @@ contains
   end do ! iel
   
   end subroutine
-
 
 
   !****************************************************************************
@@ -5060,11 +5046,11 @@ contains
 
   ! Local variables
   real(DP) :: dbasI,dbasIx,dbasIy, dval1, dval2, dval3, dval4, dnu
-  real(DP) :: dfx, dfy, dx, dy, dC, dval
+  real(DP) :: dfx, dfy, dx, dy, dC, dval ,dbasIxx, dbasIyy
   integer :: iel, icubp, idofe
   real(DP), dimension(:,:), pointer :: p_DlocalVector1,p_DlocalVector2
   real(DP), dimension(:,:), pointer :: p_DlocalVector3, p_DlocalVector4
-  real(DP), dimension(:,:), pointer :: p_DlocalVector5, p_DlocalVector6
+  real(DP), dimension(:,:), pointer :: p_DlocalVector5
   real(DP), dimension(:,:,:,:), pointer :: p_DbasTest1,p_DbasTest3,p_DbasTest4
   real(DP), dimension(:,:), pointer :: p_DcubWeight
   real(DP), dimension(:,:,:), pointer :: p_Dpoints
@@ -5100,7 +5086,6 @@ contains
   p_DlocalVector3 => RvectorData(3)%p_Dentry
   p_DlocalVector4 => RvectorData(4)%p_Dentry
   p_DlocalVector5 => RvectorData(5)%p_Dentry
-  p_DlocalVector6 => RvectorData(6)%p_Dentry
 
   p_DbasTest1 => RvectorData(1)%p_DbasTest
   p_DbasTest3 => RvectorData(3)%p_DbasTest
@@ -5246,11 +5231,11 @@ contains
     
       ! Fetch the contributions of the (test) basis functions Phi_i
       ! into dbasI
-      dbasIx = p_DbasTest4(idofe,DER_DERIV2D_X,icubp,iel)
-      dbasIy = p_DbasTest4(idofe,DER_DERIV2D_Y,icubp,iel)
+      dbasIxx = p_DbasTest4(idofe+0*p_rvectorData4%ndofTest,DER_DERIV2D_X,icubp,iel)
+      dbasIyy = p_DbasTest4(idofe+1*p_rvectorData4%ndofTest,DER_DERIV2D_Y,icubp,iel)
                 
       ! Values of the velocity RHS for Stress1
-      dval4 = - (dfx+beta*(dU*dUx + dV*dUy)) * dbasIx
+      dval4 = - (dfx+beta*(dU*dUx + dV*dUy)) * (dbasIxx+dbasIyy)
           
       ! Multiply the values of the basis functions by
       ! the cubature weight and sum up into the local vectors.
@@ -5259,21 +5244,11 @@ contains
 
 
       ! Values of the velocity RHS for Stress2
-      dval4 = -(  (dfx+beta*(dU*dUx + dV*dUy)) * dbasIy + &
-            (dfy+beta*(dU*dVx + dV*dVy)) * dbasIx  )
+      dval4 = -(dfy+beta*(dU*dVx + dV*dVy)) * (dbasIxx+dbasIyy)
           
       ! Multiply the values of the basis functions by
       ! the cubature weight and sum up into the local vectors.
       p_DlocalVector5(idofe,iel) = p_DlocalVector5(idofe,iel) + &
-        p_DcubWeight(icubp,iel) * dval4
-
-
-      ! Values of the velocity RHS for Stress3
-      dval4 = - (dfy+beta*(dU*dVx + dV*dVy)) * dbasIy
-          
-      ! Multiply the values of the basis functions by
-      ! the cubature weight and sum up into the local vectors.
-      p_DlocalVector6(idofe,iel) = p_DlocalVector6(idofe,iel) + &
         p_DcubWeight(icubp,iel) * dval4
       
     end do ! jdofe
@@ -5328,11 +5303,11 @@ contains
 
   ! Local variables
   real(DP) :: dbasI,dbasIx,dbasIy, dval1, dval2, dval3, dval4, dnu
-  real(DP) :: dfx, dfy, dx, dy, dC, dval
+  real(DP) :: dfx, dfy, dx, dy, dC, dval, dbasIxx, dbasIyy
   integer :: iel, icubp, idofe
   real(DP), dimension(:,:), pointer :: p_DlocalVector1,p_DlocalVector2
   real(DP), dimension(:,:), pointer :: p_DlocalVector3, p_DlocalVector4
-  real(DP), dimension(:,:), pointer :: p_DlocalVector5, p_DlocalVector6
+  real(DP), dimension(:,:), pointer :: p_DlocalVector5
   real(DP), dimension(:,:,:,:), pointer :: p_DbasTest1,p_DbasTest3,p_DbasTest4
   real(DP), dimension(:,:), pointer :: p_DcubWeight
   real(DP), dimension(:,:,:), pointer :: p_Dpoints
@@ -5370,7 +5345,6 @@ contains
   p_DlocalVector3 => RvectorData(3)%p_Dentry
   p_DlocalVector4 => RvectorData(4)%p_Dentry
   p_DlocalVector5 => RvectorData(5)%p_Dentry
-  p_DlocalVector6 => RvectorData(6)%p_Dentry
 
   p_DbasTest1 => RvectorData(1)%p_DbasTest
   p_DbasTest3 => RvectorData(3)%p_DbasTest
@@ -5524,11 +5498,11 @@ contains
     
       ! Fetch the contributions of the (test) basis functions Phi_i
       ! into dbasI
-      dbasIx = p_DbasTest4(idofe,DER_DERIV2D_X,icubp,iel)
-      dbasIy = p_DbasTest4(idofe,DER_DERIV2D_Y,icubp,iel)
+      dbasIxx = p_DbasTest4(idofe+0*p_rvectorData4%ndofTest,DER_DERIV2D_X,icubp,iel)
+      dbasIyy = p_DbasTest4(idofe+1*p_rvectorData4%ndofTest,DER_DERIV2D_Y,icubp,iel)
                 
       ! Values of the velocity RHS for Stress1
-      dval4 = - (dfx+beta*(dU*dUx + dV*dUy)) * dbasIx
+      dval4 = - (dfx+beta*(dU*dUx + dV*dUy)) * (dbasIxx+dbasIyy)
           
       ! Multiply the values of the basis functions by
       ! the cubature weight and sum up into the local vectors.
@@ -5537,21 +5511,11 @@ contains
 
 
       ! Values of the velocity RHS for Stress2
-      dval4 = -(  (dfx+beta*(dU*dUx + dV*dUy)) * dbasIy + &
-            (dfy+beta*(dU*dVx + dV*dVy)) * dbasIx  )
-          
+      dval4 = -(dfy+beta*(dU*dVx + dV*dVy)) * (dbasIxx+dbasIyy)
+                
       ! Multiply the values of the basis functions by
       ! the cubature weight and sum up into the local vectors.
       p_DlocalVector5(idofe,iel) = p_DlocalVector5(idofe,iel) + &
-        p_DcubWeight(icubp,iel) * dval4
-
-
-      ! Values of the velocity RHS for Stress3
-      dval4 = - (dfy+beta*(dU*dVx + dV*dVy)) * dbasIy
-          
-      ! Multiply the values of the basis functions by
-      ! the cubature weight and sum up into the local vectors.
-      p_DlocalVector6(idofe,iel) = p_DlocalVector6(idofe,iel) + &
         p_DcubWeight(icubp,iel) * dval4
       
     end do ! jdofe
