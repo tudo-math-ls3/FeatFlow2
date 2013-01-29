@@ -26,7 +26,7 @@
 #   = 6  Analytic polynomial function
 #   = 7  Static Bubble
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Problem = 0
+Problem = 1
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Kinematic viscosity noo = muu/rho = 1/Re
@@ -36,7 +36,7 @@ Problem = 0
 #  Step flow        0.000752419383795  --> Re = 800
 #  Proot 2006       0.00375            --> Re = 100
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-dnu = 1
+dnu = 1E-3
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Scaling factors or whighting parameters
@@ -65,10 +65,10 @@ alpha = 1.0
 [MESH]
 
 # Mesh file name and path:
-sFilenamePathMesh = './pre/QUAD'
+sFilenamePathMesh = './pre/bench1'
 
 # Final mesh level to solve the problem:
-NLMAX = 5
+NLMAX = 4
 
 # Coarse mesh level, used in multigrid:
 NLMIN = 4
@@ -78,7 +78,7 @@ NLMIN = 4
 #  0 =  No please don't touch it x-(
 #  1 =  Yes, we need to check new ideas :)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-detTri = 0
+detTri = 1
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Type of Velocity finite elements:
@@ -89,15 +89,15 @@ detTri = 0
 #  EL_P2
 #  EL_RT0_2D
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Velm = EL_Q1
+Velm = EL_P2
 Vtild = 0
 
 # Type of Pressure finite element:
-Pelm = EL_Q1
+Pelm = EL_P1
 Ptild = 0
 
 # Type of Stress finite element:
-Selm = EL_Q1
+Selm = EL_RT0
 Stild = 0
 
 # Perturbed grid percentage
@@ -111,13 +111,13 @@ dPert = 0.0
 #   PG2X2            2-by-2 Piecewise Gauss quadrature rule
 #   Standard(exact): G3_2D    G3_T   CUB_G3MP_T
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-ccubType = G3_2D
+ccubType = G3MP_T
 
 # Print mesh statistics or not
-detPMesh = 0
+detPMesh = 1
 
 # Print discretization statistics or not
-detPDisc = 0
+detPDisc = 1
 
 
 #-----------------------------------------------------
@@ -193,7 +193,7 @@ dC = 1.0
 #  is implemented. This condition is implemented in a
 #  weak manner, using the L^2 norm of the equations.
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-detOFlow = 0
+detOFlow = 1
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Which edge of the triangulation do we apply the
@@ -250,7 +250,7 @@ sFilenamePathResult = './files/ali.dat'
 #  detWriteResult=1 (in section [POST]) must 
 #  have been set in the previous solution. 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-iinitialSolutionLevel = 5
+iinitialSolutionLevel = 6
 
 
 #-----------------------------------------------------
@@ -326,7 +326,7 @@ deojEdgeExpP = 2.0
 #    =1  Stand-alone Multigrid solver
 #    =2  Multigrid-preconditioned (CG\BiCGStab) solver
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-LINsolverType = 2
+LINsolverType = 1
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # If we have a Multigrid-preconditioned solver, then,
@@ -520,7 +520,7 @@ dintARboundEX3YVel       = 20.0
 #      on coarse grid (UMFPACK) and
 #      detZMV =2 on other levels  
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-detZMV = 3
+detZMV = 0
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Which row of the pressure matrix do you want to 
@@ -567,7 +567,7 @@ sFilenamePathResult = './files/ali.dat'
 #   =0  don't calculate
 #   =1  yes, calculate
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-LiftDragASO = 0
+LiftDragASO = 1
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Calculate the Kinetic Energy
@@ -576,7 +576,7 @@ LiftDragASO = 0
 #   =0  don't calculate
 #   =1  yes calculate
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-KEnergy = 1
+KEnergy = 0
 
 # How to calculate the Kinetic energy
 #   =0  use the FEM definition and the Matrix-vector
@@ -598,7 +598,7 @@ detKEnergy = 1
 #   =0 don't calculate
 #   =1 pls calculate :)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-detGMC = 0
+detGMC = 1
 
 # Input line coordinates
 #  the line defined by the two endpoints:
