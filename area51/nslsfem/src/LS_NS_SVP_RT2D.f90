@@ -1,9 +1,10 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> LS_NS_SVP_MG2D </name>
+!# <name> LS_NS_SVP_RT2D </name>
 !# ****************************************************************************
 !# <purpose>   
 !# This module solves the 2D Navier-Stokes (NS) eq. using LSFEM.
+!# The Raviart-Thomas elements are used for the stresses.
 !#
 !# The second-order elliptic NS equations are reformulated into first-order
 !# system of equations using the the definition of the stresses:
@@ -19,18 +20,18 @@
 !# The nonlinear term is first linearized using Newton/Fixed-point method.
 !# The LSFEM formulation then applied which yiedls a symmetric-
 !# positive definite linear system of equations.
-!# This routine uses the Multigrid as linear solver.
+!# This routine uses a SIMPLE linear solver.
 !# The discretisation uses the block assembly method to evaluate the
 !# mattrix all-in-one.
 !# </purpose>
 !#
 !# Author:    Masoud Nickaeen
-!# First Version: May  14, 2013
-!# Last Update:   Jan. 27, 2013
+!# First Version: May  29, 2013
+!# Last Update:   Jan. 29, 2013
 !# 
 !##############################################################################
 
-module LS_NS_SVP_MG2D
+module LS_NS_SVP_RT2D
 
   use fsystem
   use storage
@@ -123,7 +124,7 @@ contains
   !****************************************************************************
 
 !<subroutine>
-  subroutine ls_svp_mg2d
+  subroutine ls_svp_rt2d
   
 !<description>
   ! This is a compact LSFEM navier-stokes solver.
@@ -182,15 +183,11 @@ contains
 
   ! Timer objects for stopping time
   type(t_timer) :: rtimerTotal
-!  type(t_timer) :: rtimerGridGeneration
-!  type(t_timer) :: rtimerMatrixGeneration,rtimerRHSgeneration
   type(t_timer) :: rtimerSolver
   
   ! Ok, let's start.
   ! Initialise the timers by zero:
   call stat_clearTimer(rtimerTotal)
-!  call stat_clearTimer(rtimerGridGeneration)
-!  call stat_clearTimer(rtimerMatrixGeneration)
   call stat_clearTimer(rtimerSolver)
 
   ! Start the total-time Timer
@@ -211,7 +208,7 @@ contains
   ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   ! b)- Set up a discretisation and cubature info structure which tells 
   ! the code which finite element to use.
-  ! Also, create a 6*6 block matrix structure.
+  ! Also, create a 5*5 block matrix structure.
   ! Initialize the structure of the deferred velocities to be use in the
   !  nonlinear matrix assembly routine. This is done for all grid levels.
   ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -245,16 +242,14 @@ contains
   !   1- System matrix assembly (requires the evaluation of 
   !        nonlinear deferred velocities)
   !   1-1 And, jump stabilization set up if required
-  !   2- RHS assembly (nonlinear deferred velocities must be released 
-  !      right after this step!!)
+  !   2- RHS assembly
   !   3- Boundary conditions implementation, excluding the one time
-  !   calculation of descretized Dirichlet boundary conditions which is
-  !   done earlier in 'ls_BCs_Dirichlet_One' subroutine
+  !        calculation of descretized Dirichlet boundary conditions which is
+  !        done earlier in 'ls_BCs_Dirichlet_One' subroutine
   !   4- Solver setup, solution of the final system, solver release
   !   5- Check for the non-linear loop convergence/divergence
-  !   6- Update initial guess 'if (.not. converged) .and. (.not. diverged)'
-  !  (all matrix and RHS vectors must be cleaned, 
-  !   zero-valued, after this!!)
+  !   6- Update initial guess (all matrix and RHS vectors must be cleaned, 
+  !        zero-valued, after this!!)
   ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   ! Start Nonlinear Solver Timer
   call stat_startTimer(rtimerSolver)
@@ -277,7 +272,7 @@ contains
   
   ! ++++++++++++++++++++++++++++++++
   ! 3- Implement Boundary Conditions
-  ! ++++++++++++++++++++++++++++++++   
+  ! ++++++++++++++++++++++++++++++++
   ! 3-1 Dirichlet BCs.
   call ls_BCs_Dirichlet(Rlevels,rrhs,rvector,rvector_old,&
             NLMAX,NLMIN,rcollection)
@@ -441,7 +436,7 @@ contains
     rcollection%IquickAccess(3) = FPIter
    else
     rcollection%IquickAccess(3) = NLN_MAX
-   end if 
+   end if
    
   end select
   
@@ -640,23 +635,23 @@ contains
   call parlst_getvalue_int (rparams, 'MESH', 'NLMIN', NLMIN, 3)
   
   ! Now we can start to initialise the discretisation. At first, set up
-  ! a block discretisation structure that specifies 6 blocks in the
+  ! a block discretisation structure that specifies 5 blocks in the
   ! solution vector. Do this for all levels
   do i = NLMIN, NLMAX
-    call spdiscr_initBlockDiscr (Rlevels(i)%rdiscretisation,6,&
+    call spdiscr_initBlockDiscr (Rlevels(i)%rdiscretisation,5,&
                  Rlevels(i)%rtriangulation, rboundary)
   end do
 
   ! rdiscretisation%RspatialDiscr is a list of scalar
   ! discretisation structures for every component of the solution vector.
-  ! We have a solution vector with 6 components:
+  ! We have a solution vector with 5 components:
   !  Component 1 = X-velocity
   !  Component 2 = Y-velocity
   !  Component 3 = Pressure
-  !  Component 4 = Stress1 --> \sigma_{xx}
-  !  Component 5 = Stress2 --> \sigma_{xy}
-  !  Component 6 = Stress3 --> \sigma_{yy}
-  
+  !  Component 4 = Stress1 --> [\sigma_{xx} , \sigma_{xy}]^T
+  !  Component 5 = Stress2 --> [\sigma_{xy} , \sigma_{yy}]^T
+  ! That's because we use RT elements for the stresses. Every 
+  ! row of the stress tensor requires one RT variable. 
   ! We set up one discretisation structure for the velocity...
   ! Read the finite element for velocities
   call parlst_getvalue_string (rparams, 'MESH', 'Velm', sstring)
@@ -695,22 +690,18 @@ contains
   call parlst_getvalue_string (rparams, 'MESH', 'Selm', sstring)
   Selm = elem_igetID(sstring)  
 
-  do i = NLMIN, NLMAX  
-    call spdiscr_deriveSimpleDiscrSc (&
-        Rlevels(i)%rdiscretisation%RspatialDiscr(1), &
-          Selm, Rlevels(i)%rdiscretisation%RspatialDiscr(4))
+  do i = NLMIN, NLMAX
+    call spdiscr_initDiscr_simple (&
+      Rlevels(i)%rdiscretisation%RspatialDiscr(4),&
+        Selm, Rlevels(i)%rtriangulation, rboundary)
   end do
   
   ! ...and copy this structure also to the discretisation structure
-  ! of the 5th and 6th components.
+  ! of the 5th component.
   do i = NLMIN, NLMAX
     call spdiscr_duplicateDiscrSc(&
          Rlevels(i)%rdiscretisation%RspatialDiscr(4),&
            Rlevels(i)%rdiscretisation%RspatialDiscr(5))
-
-    call spdiscr_duplicateDiscrSc(&
-         Rlevels(i)%rdiscretisation%RspatialDiscr(4),&
-           Rlevels(i)%rdiscretisation%RspatialDiscr(6))
   end do  
   
   ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -741,15 +732,15 @@ contains
     ! Now as the discretisation is set up, we can start to generate
     ! the structure of the system matrix which is to solve.
     !
-    ! The global system looks like this, a full 6*6 block matrix
+    ! The global system looks like this, a full 5*5 block matrix
     ! which is symmetric and positive definite.
     !
-    !  ( A11 A12 A13 A14 A15 A16 )
-    !  ( A21 A22 A23 A24 A25 A26 )
-    !  ( A31 A32 A33 A34 A35 A36 )
-    !  ( A41 A42 A43 A44 A45 A46 )
-    !  ( A51 A52 A53 A54 A55 A56 )
-    !  ( A61 A62 A63 A64 A65 A66 )
+    !  ( A11 A12 A13 A14 A15 )
+    !  ( A21 A22 A23 A24 A25 )
+    !  ( A31 A32 A33 A34 A35 )
+    !  ( A41 A42 A43 A44 A45 )
+    !  ( A51 A52 A53 A54 A55 )
+    !  ( A61 A62 A63 A64 A65 )
     !  
     ! Create the matrix structure of the X-velocity. Block A11,
     !
@@ -786,12 +777,7 @@ contains
     call bilf_createMatrixStructure (&
         Rlevels(i)%rdiscretisation%RspatialDiscr(5), LSYSSC_MATRIX9, &
         Rlevels(i)%rmatrix%RmatrixBlock(1,5),&
-        Rlevels(i)%rdiscretisation%RspatialDiscr(1)) 
-    ! Block A16
-    call bilf_createMatrixStructure (&
-        Rlevels(i)%rdiscretisation%RspatialDiscr(6), LSYSSC_MATRIX9, &
-        Rlevels(i)%rmatrix%RmatrixBlock(1,6),&
-        Rlevels(i)%rdiscretisation%RspatialDiscr(1))          
+        Rlevels(i)%rdiscretisation%RspatialDiscr(1))       
          
     ! Use X-velocity structure for the Y-velocity. Block A22,
     call lsyssc_duplicateMatrix (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
@@ -805,9 +791,6 @@ contains
     ! Block A25,
     call lsyssc_duplicateMatrix (Rlevels(i)%rmatrix%RmatrixBlock(1,5),&
       Rlevels(i)%rmatrix%RmatrixBlock(2,5),LSYSSC_DUP_SHARE,LSYSSC_DUP_IGNORE)
-    ! Block A26,
-    call lsyssc_duplicateMatrix (Rlevels(i)%rmatrix%RmatrixBlock(1,6),&
-      Rlevels(i)%rmatrix%RmatrixBlock(2,6),LSYSSC_DUP_SHARE,LSYSSC_DUP_IGNORE)
 
     ! Create the matrix structure of the Pressure. Block A33,
     ! Let's check if we have to set up jump stabilization
@@ -835,46 +818,20 @@ contains
       Rlevels(i)%rdiscretisation%RspatialDiscr(5), LSYSSC_MATRIX9, &
        Rlevels(i)%rmatrix%RmatrixBlock(3,5), &
         Rlevels(i)%rdiscretisation%RspatialDiscr(3))
-    ! Block A36,
-    call bilf_createMatrixStructure (&
-      Rlevels(i)%rdiscretisation%RspatialDiscr(6), LSYSSC_MATRIX9, &
-       Rlevels(i)%rmatrix%RmatrixBlock(3,6), &
-        Rlevels(i)%rdiscretisation%RspatialDiscr(3))
 
     ! Create the matrix structure of the Stress1.
     ! Block A44,
-    ! Let's check if we have to set up jump stabilization
-    ! If so, we need to define the matrix structure accordingly
-    call parlst_getvalue_int (rparams, 'JUMP', 'detSJump', detSJump, 0)  
-
-    ! Velocity jump stabilization
-    if (detSJump .eq. 1) then   
-      call bilf_createMatrixStructure (&
-      Rlevels(i)%rdiscretisation%RspatialDiscr(4), LSYSSC_MATRIX9, &
-      Rlevels(i)%rmatrix%RmatrixBlock(4,4),cconstrType=BILF_MATC_EDGEBASED)
-    else 
-      call bilf_createMatrixStructure (&
-      Rlevels(i)%rdiscretisation%RspatialDiscr(4), LSYSSC_MATRIX9, &
-      Rlevels(i)%rmatrix%RmatrixBlock(4,4))  
-    end if
+    call bilf_createMatrixStructure (&
+    Rlevels(i)%rdiscretisation%RspatialDiscr(4), LSYSSC_MATRIX9, &
+    Rlevels(i)%rmatrix%RmatrixBlock(4,4))
 
     ! Block A55,
     call lsyssc_duplicateMatrix (Rlevels(i)%rmatrix%RmatrixBlock(4,4),&
       Rlevels(i)%rmatrix%RmatrixBlock(5,5),LSYSSC_DUP_SHARE,LSYSSC_DUP_IGNORE)
-    ! Block A66,
-    call lsyssc_duplicateMatrix (Rlevels(i)%rmatrix%RmatrixBlock(4,4),&
-      Rlevels(i)%rmatrix%RmatrixBlock(6,6),LSYSSC_DUP_SHARE,LSYSSC_DUP_IGNORE) 
       
     ! Block A45,
     call bilf_createMatrixStructure (Rlevels(i)%rdiscretisation%RspatialDiscr(4),&
-      LSYSSC_MATRIX9,Rlevels(i)%rmatrix%RmatrixBlock(4,5))   
-    ! Block A46,
-    call lsyssc_duplicateMatrix (Rlevels(i)%rmatrix%RmatrixBlock(4,5),&
-      Rlevels(i)%rmatrix%RmatrixBlock(4,6),LSYSSC_DUP_SHARE,LSYSSC_DUP_IGNORE)       
-                
-    ! Block A56,
-    call lsyssc_duplicateMatrix (Rlevels(i)%rmatrix%RmatrixBlock(4,5),&
-      Rlevels(i)%rmatrix%RmatrixBlock(5,6),LSYSSC_DUP_SHARE,LSYSSC_DUP_IGNORE)         
+      LSYSSC_MATRIX9,Rlevels(i)%rmatrix%RmatrixBlock(4,5))    
          
     
     ! Create the structure for the transpoed matrices by transposing the structre
@@ -924,28 +881,6 @@ contains
     call lsyssc_transposeMatrix (&
       Rlevels(i)%rmatrix%RmatrixBlock(4,5), &
       Rlevels(i)%rmatrix%RmatrixBlock(5,4),LSYSSC_TR_STRUCTURE)
-
-
-    ! Block A61,
-    call lsyssc_transposeMatrix (&
-      Rlevels(i)%rmatrix%RmatrixBlock(1,6), &
-      Rlevels(i)%rmatrix%RmatrixBlock(6,1),LSYSSC_TR_STRUCTURE)
-    ! Block A62,
-    call lsyssc_duplicateMatrix (&
-    Rlevels(i)%rmatrix%RmatrixBlock(6,1),&
-    Rlevels(i)%rmatrix%RmatrixBlock(6,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_IGNORE)
-    ! Block A63  
-    call lsyssc_transposeMatrix (&
-      Rlevels(i)%rmatrix%RmatrixBlock(3,6), &
-      Rlevels(i)%rmatrix%RmatrixBlock(6,3),LSYSSC_TR_STRUCTURE)
-    ! Block A64  
-    call lsyssc_transposeMatrix (&
-      Rlevels(i)%rmatrix%RmatrixBlock(4,6), &
-      Rlevels(i)%rmatrix%RmatrixBlock(6,4),LSYSSC_TR_STRUCTURE)
-    ! Block A65,
-    call lsyssc_duplicateMatrix (&
-    Rlevels(i)%rmatrix%RmatrixBlock(6,4),&
-    Rlevels(i)%rmatrix%RmatrixBlock(6,5),LSYSSC_DUP_SHARE,LSYSSC_DUP_IGNORE)
     
     ! Now re-assign the block discretisation structure to all matrices
     call lsysbl_assignDiscrDirectMat (Rlevels(i)%rmatrix, &
@@ -1752,7 +1687,7 @@ contains
   integer :: nlinit, ilev, NEQ
 
   ! Initial value for the 1st step of nonliner loop
-  real(DP) :: dinit_vect(6)
+  real(DP) :: dinit_vect(5)
 
   ! Path to the data file which has the initial solution
   character(LEN=SYS_STRLEN) :: sfile, sstring, sarray
@@ -1782,17 +1717,16 @@ contains
     
     ! Initialize the solution vector(s) with constant values
     call parlst_getvalue_string (rparams, 'ISOLUTION', 'initValues',&
-                   sstring, '0.0_DP 0.0_DP 0.0_DP 0.0_DP 0.0_DP 0.0_DP')
+                   sstring, '0.0_DP 0.0_DP 0.0_DP 0.0_DP 0.0_DP')
     read (sstring,*) dinit_vect(1), dinit_vect(2), dinit_vect(3), & 
-                               dinit_vect(4),dinit_vect(5),dinit_vect(6)
+                               dinit_vect(4),dinit_vect(5)
     
     ! Scale the sub-vectors to initialize the nonlineaer iteration loop
     call lsyssc_clearVector (rvector_old%RvectorBlock(1),dinit_vect(1))
     call lsyssc_clearVector (rvector_old%RvectorBlock(2),dinit_vect(2))
     call lsyssc_clearVector (rvector_old%RvectorBlock(3),dinit_vect(3))
     call lsyssc_clearVector (rvector_old%RvectorBlock(4),dinit_vect(4))    
-    call lsyssc_clearVector (rvector_old%RvectorBlock(5),dinit_vect(5))
-    call lsyssc_clearVector (rvector_old%RvectorBlock(6),dinit_vect(6))     
+    call lsyssc_clearVector (rvector_old%RvectorBlock(5),dinit_vect(5))    
   else      
   
     ! Ignor the initial values, read from file
@@ -1998,31 +1932,31 @@ contains
     ! it to build the matrix!
     if (ilev .eq. NLMAX) then
     
-    p_rvectorCoarse => rvector_old
+      p_rvectorCoarse => rvector_old
     
     else
-    ! We have to discretise a level hierarchy and are on a level < NLMAX.
-    
-    ! Get the projection structure for this level.
-    p_rprojection => Rlevels(ilev+1)%p_rprojection
+      ! We have to discretise a level hierarchy and are on a level < NLMAX.
+      
+      ! Get the projection structure for this level.
+      p_rprojection => Rlevels(ilev+1)%p_rprojection
 
-    ! Get the temporary vector on level i. Will receive the solution
-    ! vector on that level.
-    p_rvectorCoarse => Rlevels(ilev)%rtempVector
-    
-    ! Get the solution vector on level i+1. This is either the temporary
-    ! vector on that level, or the solution vector on the maximum level.
-    if (ilev .lt. NLMAX-1) then
-      p_rvectorFine => Rlevels(ilev+1)%rtempVector
-    else
-      p_rvectorFine => rvector_old
-    end if
+      ! Get the temporary vector on level i. Will receive the solution
+      ! vector on that level.
+      p_rvectorCoarse => Rlevels(ilev)%rtempVector
+      
+      ! Get the solution vector on level i+1. This is either the temporary
+      ! vector on that level, or the solution vector on the maximum level.
+      if (ilev .lt. NLMAX-1) then
+        p_rvectorFine => Rlevels(ilev+1)%rtempVector
+      else
+        p_rvectorFine => rvector_old
+      end if
 
-    ! Interpolate the solution from the finer grid to the coarser grid.
-    ! The interpolation is configured in the interlevel projection
-    ! structure which is setup earlier.
-    call mlprj_performInterpolation (p_rprojection,p_rvectorCoarse, &
-                     p_rvectorFine,p_rvectorTemp)
+      ! Interpolate the solution from the finer grid to the coarser grid.
+      ! The interpolation is configured in the interlevel projection
+      ! structure which is setup earlier.
+      call mlprj_performInterpolation (p_rprojection,p_rvectorCoarse, &
+                       p_rvectorFine,p_rvectorTemp)
 
     end if
   
@@ -2034,16 +1968,13 @@ contains
        rcubatureInfo=Rlevels(ilev)%rcubatureInfo,rcollection=rcollection, &
        revalVectors=revalVectors)
 
-    ! Set up jump stabilization if there is
+    ! Set up jump stabilization if there is any!
     call ls_jump(p_rmatrix,rparams,rcollection)
      
     ! Release the vector structure used in linearization
     call fev2_releaseVectorList(revalVectors)
     
   end do
-  
-  
-  ! call matio_spyBlockMatrix('dofourre','A2',Rlevels(NLMAX)%rmatrix,.true.,dthreshold=0.0_DP)
   
   end subroutine
 
@@ -4383,22 +4314,19 @@ contains
   integer :: iel, icubp, idofe, jdofe
   real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA11,p_DlocalMatrixA12
   real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA13,p_DlocalMatrixA14
-  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA15,p_DlocalMatrixA16
+  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA15
   real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA21,p_DlocalMatrixA22
   real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA23,p_DlocalMatrixA24
-  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA25,p_DlocalMatrixA26  
+  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA25  
   real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA31,p_DlocalMatrixA32
   real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA33,p_DlocalMatrixA34  
-  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA35,p_DlocalMatrixA36  
+  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA35 
   real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA41,p_DlocalMatrixA42
   real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA43,p_DlocalMatrixA44  
-  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA45,p_DlocalMatrixA46
+  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA45
   real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA51,p_DlocalMatrixA52
   real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA53,p_DlocalMatrixA54  
-  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA55,p_DlocalMatrixA56
-  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA61,p_DlocalMatrixA62
-  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA63,p_DlocalMatrixA64  
-  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA65,p_DlocalMatrixA66  
+  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA55
   
   real(DP), dimension(:,:,:,:), pointer :: p_DbasTrialA11,p_DbasTestA11
   real(DP), dimension(:,:,:,:), pointer :: p_DbasTrialA33,p_DbasTestA33
@@ -4466,42 +4394,30 @@ contains
   p_DlocalMatrixA13 => RmatrixData(1,3)%p_Dentry
   p_DlocalMatrixA14 => RmatrixData(1,4)%p_Dentry
   p_DlocalMatrixA15 => RmatrixData(1,5)%p_Dentry
-  p_DlocalMatrixA16 => RmatrixData(1,6)%p_Dentry
 
   p_DlocalMatrixA21 => RmatrixData(2,1)%p_Dentry
   p_DlocalMatrixA22 => RmatrixData(2,2)%p_Dentry
   p_DlocalMatrixA23 => RmatrixData(2,3)%p_Dentry
   p_DlocalMatrixA24 => RmatrixData(2,4)%p_Dentry
   p_DlocalMatrixA25 => RmatrixData(2,5)%p_Dentry
-  p_DlocalMatrixA26 => RmatrixData(2,6)%p_Dentry
   
   p_DlocalMatrixA31 => RmatrixData(3,1)%p_Dentry
   p_DlocalMatrixA32 => RmatrixData(3,2)%p_Dentry
   p_DlocalMatrixA33 => RmatrixData(3,3)%p_Dentry
   p_DlocalMatrixA34 => RmatrixData(3,4)%p_Dentry
-  p_DlocalMatrixA35 => RmatrixData(3,5)%p_Dentry
-  p_DlocalMatrixA36 => RmatrixData(3,6)%p_Dentry  
+  p_DlocalMatrixA35 => RmatrixData(3,5)%p_Dentry 
 
   p_DlocalMatrixA41 => RmatrixData(4,1)%p_Dentry
   p_DlocalMatrixA42 => RmatrixData(4,2)%p_Dentry
   p_DlocalMatrixA43 => RmatrixData(4,3)%p_Dentry
   p_DlocalMatrixA44 => RmatrixData(4,4)%p_Dentry
   p_DlocalMatrixA45 => RmatrixData(4,5)%p_Dentry
-  p_DlocalMatrixA46 => RmatrixData(4,6)%p_Dentry  
   
   p_DlocalMatrixA51 => RmatrixData(5,1)%p_Dentry
   p_DlocalMatrixA52 => RmatrixData(5,2)%p_Dentry
   p_DlocalMatrixA53 => RmatrixData(5,3)%p_Dentry
   p_DlocalMatrixA54 => RmatrixData(5,4)%p_Dentry
-  p_DlocalMatrixA55 => RmatrixData(5,5)%p_Dentry
-  p_DlocalMatrixA56 => RmatrixData(5,6)%p_Dentry  
-  
-  p_DlocalMatrixA61 => RmatrixData(6,1)%p_Dentry
-  p_DlocalMatrixA62 => RmatrixData(6,2)%p_Dentry
-  p_DlocalMatrixA63 => RmatrixData(6,3)%p_Dentry
-  p_DlocalMatrixA64 => RmatrixData(6,4)%p_Dentry
-  p_DlocalMatrixA65 => RmatrixData(6,5)%p_Dentry
-  p_DlocalMatrixA66 => RmatrixData(6,6)%p_Dentry
+  p_DlocalMatrixA55 => RmatrixData(5,5)%p_Dentry 
   
   ! Get the velocity field from the parameters
   p_Du1 => revalVectors%p_RvectorData(1)%p_Ddata
@@ -4640,7 +4556,7 @@ contains
   
   ! ++++++++++++++++++++++++++++++++++++++
   ! Calculate blocks:   A14, A24, A41, A42
-  ! A15, A25, A51, A52, A16, A26, A61, A62
+  !                     A15, A25, A51, A52
   ! ++++++++++++++++++++++++++++++++++++++
   ! Loop over the elements in the current set.
   do iel = 1,nelements
@@ -4672,57 +4588,47 @@ contains
       do jdofe=1,p_rmatrixDataA14%ndofTrial
       
       ! Fetch the contributions of the (trial) basis function Phi_j
-      dbasJ = p_DbasTrialA14(jdofe,DER_FUNC,icubp,iel)
-      dbasJx = p_DbasTrialA14(jdofe,DER_DERIV2D_X,icubp,iel)
-      dbasJy = p_DbasTrialA14(jdofe,DER_DERIV2D_Y,icubp,iel)
+      dbasJx = p_DbasTrialA14(jdofe+0*p_rmatrixDataA14%ndofTrial,DER_FUNC,icubp,iel)
+      dbasJy = p_DbasTrialA14(jdofe+1*p_rmatrixDataA14%ndofTrial,DER_FUNC,icubp,iel)      
+      dbasJxx = p_DbasTrialA14(jdofe+0*p_rmatrixDataA14%ndofTrial,DER_DERIV2D_X,icubp,iel)
+      dbasJyy = p_DbasTrialA14(jdofe+1*p_rmatrixDataA14%ndofTrial,DER_DERIV2D_Y,icubp,iel)
 
       ! Multiply the values of the basis functions by
       ! the cubature weight and sum up into the local matrices.
       ! A14
-      dval = p_DcubWeight(icubp,iel) * (   -beta*dUx*dbasJx*dbasI - &
-            2.0_DP*gama*dnu*dbasJ*dbasIx - ( dbasJx*dbasIx*dU+dbasJx*dbasIy*dV )   )
+      dval = p_DcubWeight(icubp,iel) * ( -beta*dUx*(dbasJxx*dbasI+dbasJyy*dbasI)-&
+                                 (dbasJxx+dbasJyy)*(dU*dbasIx+dV*dbasIy)- &
+                                 gama*dnu*(2.0_DP*dbasJx*dbasIx+dbasJy*dbasIy) )
       p_DlocalMatrixA14(jdofe,idofe,iel) = p_DlocalMatrixA14(jdofe,idofe,iel) + dval
 
       ! A41
       p_DlocalMatrixA41(idofe,jdofe,iel) = p_DlocalMatrixA41(idofe,jdofe,iel) + dval
 
       ! A24
-      dval = p_DcubWeight(icubp,iel) * (   -beta*dUy*dbasJx*dbasI   )
+      dval = p_DcubWeight(icubp,iel) * (   -gama*dnu*(dbasJy*dbasIx) - &
+                                        beta*dbasI*dUy*(dbasJxx+dbasJyy)  )
       p_DlocalMatrixA24(jdofe,idofe,iel) = p_DlocalMatrixA24(jdofe,idofe,iel) + dval
       
       ! A42
       p_DlocalMatrixA42(idofe,jdofe,iel) = p_DlocalMatrixA42(idofe,jdofe,iel) + dval
 
       ! A15
-      dval = p_DcubWeight(icubp,iel)*(  -beta*(dUx*dbasJy*dbasI+dVx*dbasJx*dbasI) -&
-            2.0_DP*gama*dnu*dbasJ*dbasIy - ( dbasJy*dbasIx*dU+dbasJy*dbasIy*dV )   )
+      dval = p_DcubWeight(icubp,iel)* (   -gama*dnu*(dbasJx*dbasIy) - &
+                                        beta*dbasI*dVx*(dbasJxx+dbasJyy)  )
       p_DlocalMatrixA15(jdofe,idofe,iel) = p_DlocalMatrixA15(jdofe,idofe,iel) + dval
       
       ! A51
       p_DlocalMatrixA51(idofe,jdofe,iel) = p_DlocalMatrixA51(idofe,jdofe,iel) + dval
                       
       ! A25
-      dval = p_DcubWeight(icubp,iel)*(  -beta*(dUy*dbasJy*dbasI+dVy*dbasJx*dbasI) -&
-            2.0_DP*gama*dnu*dbasJ*dbasIx - ( dbasJx*dbasIx*dU+dbasJx*dbasIy*dV )   )
+      dval = p_DcubWeight(icubp,iel) * ( -beta*dVy*(dbasJxx*dbasI+dbasJyy*dbasI)-&
+                                 (dbasJxx+dbasJyy)*(dU*dbasIx+dV*dbasIy)- &
+                                 gama*dnu*(dbasJx*dbasIx+2.0_DP*dbasJy*dbasIy) )
       p_DlocalMatrixA25(jdofe,idofe,iel) = p_DlocalMatrixA25(jdofe,idofe,iel) + dval
       
       ! A52
       p_DlocalMatrixA52(idofe,jdofe,iel) = p_DlocalMatrixA52(idofe,jdofe,iel) + dval
-      
-      ! A16
-      dval = p_DcubWeight(icubp,iel) * (   -beta*dVx*dbasJy*dbasI   )
-      p_DlocalMatrixA16(jdofe,idofe,iel) = p_DlocalMatrixA16(jdofe,idofe,iel) + dval
-      
-      ! A61
-      p_DlocalMatrixA61(idofe,jdofe,iel) = p_DlocalMatrixA61(idofe,jdofe,iel) + dval      
-      
-      ! A26
-      dval = p_DcubWeight(icubp,iel)*(  -beta*dVy*dbasJy*dbasI - &
-            2.0_DP*gama*dnu*dbasJ*dbasIy - ( dbasJy*dbasIx*dU+dbasJy*dbasIy*dV )   )
-      p_DlocalMatrixA26(jdofe,idofe,iel) = p_DlocalMatrixA26(jdofe,idofe,iel) + dval
-      
-      ! A62
-      p_DlocalMatrixA62(idofe,jdofe,iel) = p_DlocalMatrixA62(idofe,jdofe,iel) + dval      
+           
       end do ! idofe
       
     end do ! jdofe
@@ -4772,7 +4678,7 @@ contains
 
   ! +++++++++++++++++++++++++
   ! Calculate blocks A34, A43
-  ! A35, A53, A36, A63 
+  !                  A35, A53
   ! +++++++++++++++++++++++++
   ! Loop over the elements in the current set.
   do iel = 1,nelements
@@ -4792,29 +4698,24 @@ contains
       do jdofe=1,p_rmatrixDataA34%ndofTrial
       
       ! Fetch the contributions of the (trial) basis function Phi_j
-      dbasJ = p_DbasTrialA34(jdofe,DER_FUNC,icubp,iel)
+      dbasJx = p_DbasTrialA34(jdofe+0*p_rmatrixDataA34%ndofTrial,DER_FUNC,icubp,iel)
+      dbasJy = p_DbasTrialA34(jdofe+1*p_rmatrixDataA34%ndofTrial,DER_FUNC,icubp,iel)
 
       ! Multiply the values of the basis functions by
       ! the cubature weight and sum up into the local matrices.
       ! A34
-      dval = p_DcubWeight(icubp,iel) * gama*dbasJ*dbasI
+      dval = p_DcubWeight(icubp,iel) * gama*dbasJx*dbasI
       p_DlocalMatrixA34(jdofe,idofe,iel) = p_DlocalMatrixA34(jdofe,idofe,iel) + dval
 
       ! A43
       p_DlocalMatrixA43(idofe,jdofe,iel) = p_DlocalMatrixA43(idofe,jdofe,iel) + dval
 
       ! A35
-      p_DlocalMatrixA35(jdofe,idofe,iel) = 0.0_DP
+      dval = p_DcubWeight(icubp,iel) * gama*dbasJy*dbasI
+      p_DlocalMatrixA35(jdofe,idofe,iel) = p_DlocalMatrixA35(jdofe,idofe,iel) + dval
 
       ! A53
-      p_DlocalMatrixA53(idofe,jdofe,iel) = 0.0_DP
-
-      ! A36
-      dval = p_DcubWeight(icubp,iel) * gama*dbasJ*dbasI
-      p_DlocalMatrixA36(jdofe,idofe,iel) = p_DlocalMatrixA36(jdofe,idofe,iel) + dval
-
-      ! A63
-      p_DlocalMatrixA63(idofe,jdofe,iel) = p_DlocalMatrixA63(idofe,jdofe,iel) + dval
+      p_DlocalMatrixA53(idofe,jdofe,iel) = p_DlocalMatrixA53(idofe,jdofe,iel) + dval
       
       end do ! idofe
       
@@ -4825,10 +4726,10 @@ contains
   end do ! iel  
   
   
-  ! +++++++++++++++++++++++++++++
-  ! Calculate block A44, A55, A66
-  !  A45, A54, A46, A64, A56, A65
-  ! +++++++++++++++++++++++++++++
+  ! ++++++++++++++++++++++++
+  ! Calculate block A44, A55
+  !                 A45, A54
+  ! ++++++++++++++++++++++++
   ! Loop over the elements in the current set.
   do iel = 1,nelements
 
@@ -4840,53 +4741,39 @@ contains
     do idofe=1,p_rmatrixDataA44%ndofTest
     
       ! Fetch the contributions of the (test) basis functions Phi_i
-      dbasI = p_DbasTestA44(idofe,DER_FUNC,icubp,iel)      
-      dbasIx = p_DbasTestA44(idofe,DER_DERIV2D_X,icubp,iel)
-      dbasIy = p_DbasTestA44(idofe,DER_DERIV2D_Y,icubp,iel)
+      dbasIx = p_DbasTestA44(jdofe+0*p_rmatrixDataA44%ndofTest,DER_FUNC,icubp,iel)
+      dbasIy = p_DbasTestA44(jdofe+1*p_rmatrixDataA44%ndofTest,DER_FUNC,icubp,iel)       
+      dbasIxx = p_DbasTestA44(jdofe+0*p_rmatrixDataA44%ndofTest,DER_DERIV2D_X,icubp,iel)
+      dbasIyy = p_DbasTestA44(jdofe+1*p_rmatrixDataA44%ndofTest,DER_DERIV2D_Y,icubp,iel)
       
       ! Inner loop over the DOF's j=1..ndof, which corresponds to
       ! the basis function Phi_j:
       do jdofe=1,p_rmatrixDataA44%ndofTrial
       
       ! Fetch the contributions of the (trial) basis function Phi_j
-      dbasJ = p_DbasTrialA44(jdofe,DER_FUNC,icubp,iel)      
-      dbasJx = p_DbasTrialA44(jdofe,DER_DERIV2D_X,icubp,iel)
-      dbasJy = p_DbasTrialA44(jdofe,DER_DERIV2D_Y,icubp,iel)
+      dbasJx = p_DbasTrialA44(jdofe+0*p_rmatrixDataA44%ndofTrial,DER_FUNC,icubp,iel)
+      dbasJy = p_DbasTrialA44(jdofe+1*p_rmatrixDataA44%ndofTrial,DER_FUNC,icubp,iel)          
+      dbasJxx = p_DbasTrialA44(jdofe+0*p_rmatrixDataA44%ndofTrial,DER_DERIV2D_X,icubp,iel)
+      dbasJyy = p_DbasTrialA44(jdofe+1*p_rmatrixDataA44%ndofTrial,DER_DERIV2D_Y,icubp,iel)
 
       ! Multiply the values of the basis functions by
       ! the cubature weight and sum up into the local matrices.
       ! A44
-      dval = p_DcubWeight(icubp,iel) * (  dbasJx*dbasIx + gama*dbasJ*dbasI  )
+      dval = p_DcubWeight(icubp,iel) * (  dbasJxx*dbasIxx+dbasJxx*dbasIyy + &
+             dbasJyy*dbasIxx+dbasJyy*dbasIyy + gama*(dbasJx*dbasIx+dbasJy*dbasIy)  )
       p_DlocalMatrixA44(jdofe,idofe,iel) = p_DlocalMatrixA44(jdofe,idofe,iel) + dval
 
       ! A55
-      dval = p_DcubWeight(icubp,iel) * (  dbasJy*dbasIy + dbasJx*dbasIx + &
-            2.0_DP*gama*dbasJ*dbasI  )
+      dval = p_DcubWeight(icubp,iel) * (  dbasJxx*dbasIxx+dbasJxx*dbasIyy + &
+             dbasJyy*dbasIxx+dbasJyy*dbasIyy + gama*(dbasJx*dbasIx+dbasJy*dbasIy)  )
       p_DlocalMatrixA55(jdofe,idofe,iel) = p_DlocalMatrixA55(jdofe,idofe,iel) + dval
 
-      ! A66
-      dval = p_DcubWeight(icubp,iel) * (  dbasJy*dbasIy + gama*dbasJ*dbasI  )
-      p_DlocalMatrixA66(jdofe,idofe,iel) = p_DlocalMatrixA66(jdofe,idofe,iel) + dval
       
       ! A45
-      dval = p_DcubWeight(icubp,iel) * (  dbasJy*dbasIx  )
-      p_DlocalMatrixA45(jdofe,idofe,iel) = p_DlocalMatrixA45(jdofe,idofe,iel) + dval  
+      p_DlocalMatrixA45(jdofe,idofe,iel) = 0.0_DP 
 
       ! A54
-      p_DlocalMatrixA54(idofe,jdofe,iel) = p_DlocalMatrixA54(idofe,jdofe,iel) + dval
-
-      ! A46
-      p_DlocalMatrixA46(jdofe,idofe,iel) = 0.0_DP  
-
-      ! A64
-      p_DlocalMatrixA64(idofe,jdofe,iel) = 0.0_DP  
-
-      ! A56
-      dval = p_DcubWeight(icubp,iel) * (  dbasJy*dbasIx  )
-      p_DlocalMatrixA56(jdofe,idofe,iel) = p_DlocalMatrixA56(jdofe,idofe,iel) + dval  
-
-      ! A65
-      p_DlocalMatrixA65(idofe,jdofe,iel) = p_DlocalMatrixA65(idofe,jdofe,iel) + dval
+      p_DlocalMatrixA54(idofe,jdofe,iel) = 0.0_DP
 
       end do ! idofe
       
