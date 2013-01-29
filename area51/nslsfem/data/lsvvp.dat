@@ -25,7 +25,7 @@
 #   = 5  Bolton, step flow
 #   = 6  Analytic polynomial function
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Problem = 1
+Problem = 6
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Kinematic viscosity noo = muu/rho = 1/Re
@@ -35,7 +35,7 @@ Problem = 1
 #  Step flow        0.000752419383795  --> Re = 800
 #  Proot 2006       0.00375            --> Re = 100
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-dnu = 1E-3
+dnu = 1
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Scaling factors or whighting parameters
@@ -71,13 +71,13 @@ alpha = 1.0
 [MESH]
 
 # Mesh file name and path:
-sFilenamePathMesh = './pre/bench1'
+sFilenamePathMesh = './pre/QUAD'
 
 # Final mesh level to solve the problem:
-NLMAX = 2
+NLMAX = 9
 
 # Coarse mesh level, used in multigrid:
-NLMIN = 1
+NLMIN = 7
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Change Quadrilaterals to triangles
@@ -94,15 +94,15 @@ detTri = 0
 #  EL_EB50
 #  EL_P2
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Velm = EL_Q1
+Velm = EL_Q2
 Vtild = 0
 
 # Type of Pressure finite element:
-Pelm = EL_Q1
+Pelm = EL_Q2
 Ptild = 0
 
 # Type of Vorticity finite element:
-Welm = EL_Q1
+Welm = EL_Q2
 Wtild = 0
 
 # Perturbed grid percentage
@@ -153,7 +153,7 @@ NLN_MAX = 200
 
 # Nonlinear loop stopping criteria
 #  Serves as a measure of relative residual
-dNLEpsi = 1.0e-5
+dNLEpsi = 1.0e-8
 
 
 #-----------------------------------------------------
@@ -170,11 +170,11 @@ dNLEpsi = 1.0e-5
 #           p(x,y) = C*(x^3 - y^3 - 0.5)
 #           which leads to crazy f_x and f_y.
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-detRHS = 0
+detRHS = 1
 
 # The constant in the analytic pressure filed
 #  Applicable ONLY if detRHS = 1
-dC = 1.0
+dC = 1E5
 
 
 #-----------------------------------------------------
@@ -192,7 +192,7 @@ dC = 1.0
 #  is implemented. This condition is implemented in a
 #  weak manner, using the L^2 norm of the equations.
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-detOFlow = 1
+detOFlow = 0
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Which edge of the triangulation do we apply the
@@ -249,7 +249,8 @@ sFilenamePathResult = './files/ali.dat'
 #  detWriteResult=1 (in section [POST]) must 
 #  have been set in the previous solution. 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-iinitialSolutionLevel = 2
+iinitialSolutionLevel = 7
+
 
 #-----------------------------------------------------
 # Jump Stabilization (Velocity, Vorticity)
@@ -343,7 +344,7 @@ nmaxItsLS = 5
 # = 0:no output except for warning messages 
 # =-1:no output (standard)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-ioutputLevelLS = 1
+ioutputLevelLS = -1
 
 
 #-----------------------------------------------------
@@ -628,7 +629,7 @@ nlevels = 19
 #  =0 Don't do it
 #  =1 Please calculate
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-detNorms = 0
+detNorms = 1
 
 
 #-----------------------------------------------------
