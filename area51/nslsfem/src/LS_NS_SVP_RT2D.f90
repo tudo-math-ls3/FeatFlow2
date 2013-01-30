@@ -3350,6 +3350,13 @@ contains
   type(t_ucdExport) :: rexport
   character(len=SYS_STRLEN) :: sucddir
   real(DP), dimension(:), pointer :: p_Ddata,p_Ddata2
+  real(DP), dimension(:), pointer :: p_DdataXX, p_DdataXY, p_DdataYY
+  
+  ! Error of FE function to reference function
+  real(DP) :: derror
+  
+  ! Cubature information structure for RT elements re-evaluation.
+  type(t_scalarCubatureInfo) :: rcubatureInfo2
   
   ! An object specifying the discretisation.
   type(t_blockDiscretisation) :: rprjDiscretisation
@@ -3388,7 +3395,6 @@ contains
   real(DP), dimension(2,2) :: Dcoords
   character(len=SYS_STRLEN) :: sstring
 
-
   ! Norm Calculations
   integer :: detNorms
   real(DP) :: dintvalue, dintvalue1
@@ -3409,6 +3415,46 @@ contains
     call vecio_writeBlockVectorHR (rvector, 'SOLUTION', .true.,&
                        0, sfile, '(E22.15)')
   end if
+
+
+  ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  ! Preparing the stresses to be used elsewhere in post-processing
+  ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  
+  ! Create new handles for the stresses. These handles will be passed, using
+  !  the rcollection, to the integration subroutine
+  call storage_new ("ls_postprocess", "Sxx", rtriangulation%NEL, ST_DOUBLE, &
+    rcollection%IquickAccess(11), ST_NEWBLOCK_ZERO)
+  call storage_new ("ls_postprocess", "Sxy", rtriangulation%NEL, ST_DOUBLE, &
+    rcollection%IquickAccess(12), ST_NEWBLOCK_ZERO)
+  call storage_new ("ls_postprocess", "Syy", rtriangulation%NEL, ST_DOUBLE, &
+    rcollection%IquickAccess(13), ST_NEWBLOCK_ZERO)
+  
+  ! Prepare the RT variables for the evaluation on the center of elements
+  call fev2_addVectorToEvalList(revalVectors,rvector%RvectorBlock(4),0)
+  call fev2_addVectorToEvalList(revalVectors,rvector%RvectorBlock(5),0)
+  
+  ! Gauss 1-pt rule = 1 Point per element in the center.
+  call spdiscr_createDefCubStructure(&  
+    rdiscretisation%RspatialDiscr(4),rcubatureInfo2,CUB_G1_T)
+    
+  ! Calculate the midpoint values.
+  call bma_buildIntegral(derror,BMA_CALC_STANDARD,fcalc_midpValues,&
+    rcollection=rcollection,revalVectors=revalVectors,&
+    rcubatureInfo=rcubatureInfo2)
+
+  ! Get the values of the stresses from their respective handles
+  call storage_getbase_double (rcollection%IquickAccess(11),p_DdataXX) ! Sxx
+  call storage_getbase_double (rcollection%IquickAccess(12),p_DdataXY) ! Sxy
+  call storage_getbase_double (rcollection%IquickAccess(13),p_DdataYY) ! Syy
+
+  ! release the extras
+  call spdiscr_releaseCubStructure(rcubatureInfo2)
+  call fev2_releaseVectorList(revalVectors)
+  call storage_free(rcollection%IquickAccess(11))
+  call storage_free(rcollection%IquickAccess(12))
+  call storage_free(rcollection%IquickAccess(13))
+
 
   ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   ! Calculate drag-/lift coefficients on the 2nd boundary component.
@@ -3502,9 +3548,8 @@ contains
   ! type.
   call parlst_getvalue_int (rparams, 'MESH', 'Vtild', Vtild, 0)
   call parlst_getvalue_int (rparams, 'MESH', 'Ptild', Ptild, 0)
-  call parlst_getvalue_int (rparams, 'MESH', 'Stild', Stild, 0)
 
-  if ( (Vtild .eq. 1) .or. (Ptild .eq. 1) .or. (Stild .eq. 1)) then
+  if ( (Vtild .eq. 1) .or. (Ptild .eq. 1)) then
       
     ! make a new discretization structure for the projected data
     ! and modify its sub-structures if required
@@ -3512,25 +3557,16 @@ contains
     
     if (Vtild .eq. 1) then
       call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(1), &
-      EL_Q1, CUB_G3_2D, rprjDiscretisation%RspatialDiscr(1))
+      EL_P1, CUB_G3MP_T, rprjDiscretisation%RspatialDiscr(1))
 
       call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(2), &
-      EL_Q1, CUB_G3_2D, rprjDiscretisation%RspatialDiscr(2))
+      EL_P1, CUB_G3MP_T, rprjDiscretisation%RspatialDiscr(2))
     endif
 
     if (Ptild .eq. 1) then
       call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(3), &
-      EL_Q1, CUB_G3_2D, rprjDiscretisation%RspatialDiscr(3))         
-    endif    
-
-!    if (Stild .eq. 1) then
-!      call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(4), &
-!      EL_Q1, CUB_G3_2D, rprjDiscretisation%RspatialDiscr(4))         
-!      call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(5), &
-!      EL_Q1, CUB_G3_2D, rprjDiscretisation%RspatialDiscr(5))
-!      call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(6), &
-!      EL_Q1, CUB_G3_2D, rprjDiscretisation%RspatialDiscr(6))
-!    endif 
+      EL_P1, CUB_G3MP_T, rprjDiscretisation%RspatialDiscr(3))         
+    endif
    
     ! Now set up a new solution vector based on this discretisation,
     ! allocate memory.
@@ -3572,15 +3608,10 @@ contains
       call lsyssc_getbase_double (rprjVector%RvectorBlock(2),p_Ddata2)
       call ucd_addVarVertBasedVec(rexport,'velocity',p_Ddata,p_Ddata2)
 
-!      ! Write Stresses
-!      call lsyssc_getbase_double (rprjVector%RvectorBlock(4),p_Ddata)
-!      call ucd_addVariableVertexBased (rexport,'Sx',UCD_VAR_STANDARD,p_Ddata)
-!
-!      call lsyssc_getbase_double (rprjVector%RvectorBlock(5),p_Ddata)
-!      call ucd_addVariableVertexBased (rexport,'Sxy',UCD_VAR_STANDARD,p_Ddata)
-!
-!      call lsyssc_getbase_double (rprjVector%RvectorBlock(6),p_Ddata)
-!      call ucd_addVariableVertexBased (rexport,'Sy',UCD_VAR_STANDARD,p_Ddata)      
+      ! Write Stresses
+      call ucd_addVariableElementBased (rexport,'Sxx',UCD_VAR_STANDARD,p_DdataXX)
+      call ucd_addVariableElementBased (rexport,'Sxy',UCD_VAR_STANDARD,p_DdataXY)
+      call ucd_addVariableElementBased (rexport,'Syy',UCD_VAR_STANDARD,p_DdataYY)      
     
     else
       ! Start UCD export to GMV file:
@@ -3596,15 +3627,10 @@ contains
       call lsyssc_getbase_double (rprjVector%RvectorBlock(2),p_Ddata2)
       call ucd_addVarVertBasedVec(rexport,'velocity',p_Ddata,p_Ddata2)
       
-!      ! Write Stresses
-!      call lsyssc_getbase_double (rprjVector%RvectorBlock(4),p_Ddata)
-!      call ucd_addVariableVertexBased (rexport,'Sx',UCD_VAR_STANDARD,p_Ddata)     
-!
-!      call lsyssc_getbase_double (rprjVector%RvectorBlock(5),p_Ddata)
-!      call ucd_addVariableVertexBased (rexport,'Sxy',UCD_VAR_STANDARD,p_Ddata) 
-!      
-!      call lsyssc_getbase_double (rprjVector%RvectorBlock(6),p_Ddata)
-!      call ucd_addVariableVertexBased (rexport,'Sy',UCD_VAR_STANDARD,p_Ddata)       
+      ! Write Stresses
+      call ucd_addVariableElementBased (rexport,'Sxx',UCD_VAR_STANDARD,p_DdataXX)
+      call ucd_addVariableElementBased (rexport,'Sxy',UCD_VAR_STANDARD,p_DdataXY)
+      call ucd_addVariableElementBased (rexport,'Syy',UCD_VAR_STANDARD,p_DdataYY)       
     
     end if
     
@@ -3634,15 +3660,10 @@ contains
       call lsyssc_getbase_double (rvector%RvectorBlock(2),p_Ddata2)
       call ucd_addVarVertBasedVec(rexport,'velocity',p_Ddata,p_Ddata2)
 
-!      ! Write Stresses
-!      call lsyssc_getbase_double (rvector%RvectorBlock(4),p_Ddata)
-!      call ucd_addVariableVertexBased (rexport,'Sx',UCD_VAR_STANDARD,p_Ddata)
-!      
-!      call lsyssc_getbase_double (rvector%RvectorBlock(5),p_Ddata)
-!      call ucd_addVariableVertexBased (rexport,'Sxy',UCD_VAR_STANDARD,p_Ddata)
-!      
-!      call lsyssc_getbase_double (rvector%RvectorBlock(6),p_Ddata)
-!      call ucd_addVariableVertexBased (rexport,'Sy',UCD_VAR_STANDARD,p_Ddata)            
+      ! Write Stresses 
+      call ucd_addVariableElementBased (rexport,'Sxx',UCD_VAR_STANDARD,p_DdataXX)
+      call ucd_addVariableElementBased (rexport,'Sxy',UCD_VAR_STANDARD,p_DdataXY)
+      call ucd_addVariableElementBased (rexport,'Syy',UCD_VAR_STANDARD,p_DdataYY)  
     
     else
       ! Start UCD export to GMV file:
@@ -3658,15 +3679,10 @@ contains
       call lsyssc_getbase_double (rvector%RvectorBlock(2),p_Ddata2)
       call ucd_addVarVertBasedVec(rexport,'velocity',p_Ddata,p_Ddata2)
       
-!      ! Write Stresses
-!      call lsyssc_getbase_double (rvector%RvectorBlock(4),p_Ddata)
-!      call ucd_addVariableVertexBased (rexport,'Sx',UCD_VAR_STANDARD,p_Ddata)     
-!
-!      call lsyssc_getbase_double (rvector%RvectorBlock(5),p_Ddata)
-!      call ucd_addVariableVertexBased (rexport,'Sxy',UCD_VAR_STANDARD,p_Ddata)
-!    
-!      call lsyssc_getbase_double (rvector%RvectorBlock(6),p_Ddata)
-!      call ucd_addVariableVertexBased (rexport,'Sy',UCD_VAR_STANDARD,p_Ddata)    
+      ! Write Stresses
+      call ucd_addVariableElementBased (rexport,'Sxx',UCD_VAR_STANDARD,p_DdataXX)
+      call ucd_addVariableElementBased (rexport,'Sxy',UCD_VAR_STANDARD,p_DdataXY)
+      call ucd_addVariableElementBased (rexport,'Syy',UCD_VAR_STANDARD,p_DdataYY)   
     
     end if
   
@@ -4006,24 +4022,24 @@ contains
       call output_line (trim(sys_sdEP(Dgmc,16,6)))
       
       
-!      ! Output line flux
-!      Dcoords(1,1) = Dcoords(1,1) + 0.2_DP
-!      Dcoords(1,2) = Dcoords(1,2) + 0.2_DP
-!      call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
-!                     Dcoords(1:2,2),Dfluxo5,nlevels=nlevels)
-!      
-!      Dfluxo5 = abs(Dfluxo5)
-!      
-!      ! The GMC is then calculated as
-!      Dgmc = 100.0_DP*(Dfluxi - Dfluxo5) / Dfluxi                           
-!      
-!      ! Print the GMC value
-!      call output_lbrk()
-!      call output_line ('Global Mass Conservation(%)')
-!      call output_line (&
-!      '--------at x='//trim(sys_sdp(Dcoords(1,1),5,2))//'-------------')
-!      call output_line (trim(sys_sdEP(Dgmc,16,6)))
-!      
+      ! Output line flux
+      Dcoords(1,1) = Dcoords(1,1) + 0.2_DP
+      Dcoords(1,2) = Dcoords(1,2) + 0.2_DP
+      call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
+                     Dcoords(1:2,2),Dfluxo5,nlevels=nlevels)
+      
+      Dfluxo5 = abs(Dfluxo5)
+      
+      ! The GMC is then calculated as
+      Dgmc = 100.0_DP*(Dfluxi - Dfluxo5) / Dfluxi                           
+      
+      ! Print the GMC value
+      call output_lbrk()
+      call output_line ('Global Mass Conservation(%)')
+      call output_line (&
+      '--------at x='//trim(sys_sdp(Dcoords(1,1),5,2))//'-------------')
+      call output_line (trim(sys_sdEP(Dgmc,16,6)))
+      
     end if   
   
   end if
@@ -6084,6 +6100,79 @@ contains
       
   end select    
     
+  end subroutine
+
+
+  !****************************************************************************
+
+  !<subroutine>
+
+  subroutine fcalc_midpValues(dintvalue,rassemblyData,rvectorAssembly,&
+      npointsPerElement,nelements,revalVectors,rcollection)
+
+  !<description>  
+  ! Calculates the integral of a FEM function.
+  !
+  ! The FEM function(s) must be provided in revalVectors.
+  ! The routine only supports non-interleaved vectors.
+  !</description>
+
+  !<input>
+  ! Data necessary for the assembly. Contains determinants and
+  ! cubature weights for the cubature,...
+  type(t_bmaIntegralAssemblyData), intent(in) :: rassemblyData
+
+  ! Structure with all data about the assembly
+  type(t_bmaIntegralAssembly), intent(in) :: rvectorAssembly
+
+  ! Number of points per element
+  integer, intent(in) :: npointsPerElement
+
+  ! Number of elements
+  integer, intent(in) :: nelements
+
+  ! Values of FEM functions automatically evaluated in the
+  ! cubature points.
+  type(t_fev2Vectors), intent(in) :: revalVectors
+
+  ! User defined collection structure
+  type(t_collection), intent(inout), target, optional :: rcollection
+  !</input>
+
+  !<output>
+  ! Returns the value of the integral
+  real(DP), intent(out) :: dintvalue
+  !</output>  
+
+  !<subroutine>
+
+  ! Local variables
+  integer :: iel
+  real(DP), dimension(:,:,:), pointer :: p_Dfunc1, p_Dfunc2
+  real(DP), dimension(:), pointer :: p_DdataXX, p_DdataXY, p_DdataYY
+  integer, dimension(:), pointer :: p_Ielements
+  
+  dintvalue = 0.0_DP
+  call storage_getbase_double (rcollection%IquickAccess(11),p_DdataXX)
+  call storage_getbase_double (rcollection%IquickAccess(12),p_DdataXY)
+  call storage_getbase_double (rcollection%IquickAccess(13),p_DdataYY)
+
+  ! Get the data array with the values of the FEM function
+  ! in the cubature points
+  p_Dfunc1 => revalVectors%p_RvectorData(1)%p_DdataVec(:,:,:,DER_FUNC)
+  p_Dfunc2 => revalVectors%p_RvectorData(2)%p_DdataVec(:,:,:,DER_FUNC)
+  
+  p_Ielements => rassemblyData%p_IelementList
+
+  ! Loop over the elements in the current set.
+  do iel = 1,nelements
+  
+    p_DdataXX(p_Ielements(iel)) = p_Dfunc1(1,1,iel)
+    p_DdataXY(p_Ielements(iel)) = p_Dfunc1(2,1,iel)
+    p_DdataYY(p_Ielements(iel)) = p_Dfunc2(2,1,iel)
+  
+  end do ! iel
+  
   end subroutine
 
 end 

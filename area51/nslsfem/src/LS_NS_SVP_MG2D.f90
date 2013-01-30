@@ -5520,7 +5520,7 @@ contains
 
     ! Calculate the values of the RHS using the coordinates
     ! of the cubature points.
-    h = 0.05
+    h = 0.05_DP
     r0 = 0.25_DP
     r = sqrt((dx)**2 + (dy)**2)
     l = r-r0
@@ -5536,7 +5536,7 @@ contains
     else
       dfx = 0.0_DP
       dfy = 0.0_DP
-    end if    
+    end if   
     ! Outer loop over the DOF's i=1..ndof on our current element,
     ! which corresponds to the (test) basis functions Phi_i:
     do idofe=1,p_rvectorData1%ndofTest
@@ -5612,7 +5612,7 @@ contains
     ! Calculate the values of the RHS using the coordinates
     ! of the cubature points.
     
-    h = 0.05
+    h = 0.05_DP
     r0 = 0.25_DP
     r = sqrt((dx)**2 + (dy)**2)
     l = r-r0

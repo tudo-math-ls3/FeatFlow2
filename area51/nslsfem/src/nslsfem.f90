@@ -86,21 +86,21 @@ program nslsfem
 !  call ls_vvp_time_mg2d
 
 
-!  ! Call the problem to solve 2D Navier-stokes:
-!  call output_lbrk()
-!  call output_line('Calculating 2D Navier-Stokes-LSFEM')
-!  call output_lbrk()
-!  call output_line('Stress-Velocity-Pressure-Multigrid')  
-!  call output_line('----------------------------------')
-!  call ls_svp_mg2d
-
   ! Call the problem to solve 2D Navier-stokes:
   call output_lbrk()
   call output_line('Calculating 2D Navier-Stokes-LSFEM')
   call output_lbrk()
-  call output_line('Stress-Velocity-Pressure-Raviart-Thomas')  
-  call output_line('---------------------------------------')
-  call ls_svp_rt2d
+  call output_line('Stress-Velocity-Pressure-Multigrid')  
+  call output_line('----------------------------------')
+  call ls_svp_mg2d
+
+!  ! Call the problem to solve 2D Navier-stokes:
+!  call output_lbrk()
+!  call output_line('Calculating 2D Navier-Stokes-LSFEM')
+!  call output_lbrk()
+!  call output_line('Stress-Velocity-Pressure-Raviart-Thomas')  
+!  call output_line('---------------------------------------')
+!  call ls_svp_rt2d
 
 
 !  ! Call the problem to solve 2D Navier-stokes:
