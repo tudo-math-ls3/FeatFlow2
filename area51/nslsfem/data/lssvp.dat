@@ -26,7 +26,7 @@
 #   = 6  Analytic polynomial function
 #   = 7  Static Bubble
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Problem = 1
+Problem = 7
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Kinematic viscosity noo = muu/rho = 1/Re
@@ -36,7 +36,7 @@ Problem = 1
 #  Step flow        0.000752419383795  --> Re = 800
 #  Proot 2006       0.00375            --> Re = 100
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-dnu = 1E-3
+dnu = 1
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Scaling factors or whighting parameters
@@ -65,20 +65,20 @@ alpha = 1.0
 [MESH]
 
 # Mesh file name and path:
-sFilenamePathMesh = './pre/bench1'
+sFilenamePathMesh = './pre/star'
 
 # Final mesh level to solve the problem:
-NLMAX = 4
+NLMAX = 7
 
 # Coarse mesh level, used in multigrid:
-NLMIN = 4
+NLMIN = 7
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Change Quadrilaterals to triangles
 #  0 =  No please don't touch it x-(
 #  1 =  Yes, we need to check new ideas :)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-detTri = 1
+detTri = 0
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Type of Velocity finite elements:
@@ -89,15 +89,15 @@ detTri = 1
 #  EL_P2
 #  EL_RT0_2D
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Velm = EL_P2
+Velm = EL_Q2
 Vtild = 0
 
 # Type of Pressure finite element:
-Pelm = EL_P1
-Ptild = 0
+Pelm = EL_QP1
+Ptild = 1
 
 # Type of Stress finite element:
-Selm = EL_RT0
+Selm = EL_Q2
 Stild = 0
 
 # Perturbed grid percentage
@@ -111,13 +111,13 @@ dPert = 0.0
 #   PG2X2            2-by-2 Piecewise Gauss quadrature rule
 #   Standard(exact): G3_2D    G3_T   CUB_G3MP_T
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-ccubType = G3MP_T
+ccubType = G3_2D
 
 # Print mesh statistics or not
-detPMesh = 1
+detPMesh = 0
 
 # Print discretization statistics or not
-detPDisc = 1
+detPDisc = 0
 
 
 #-----------------------------------------------------
@@ -169,7 +169,7 @@ dNLEpsi = 1.0e-5
 #        OR
 #           The static bubble problem.
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-detRHS = 0
+detRHS = 1
 
 # The constant in the analytic pressure filed
 #   OR
@@ -193,7 +193,7 @@ dC = 1.0
 #  is implemented. This condition is implemented in a
 #  weak manner, using the L^2 norm of the equations.
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-detOFlow = 1
+detOFlow = 0
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Which edge of the triangulation do we apply the
@@ -520,7 +520,7 @@ dintARboundEX3YVel       = 20.0
 #      on coarse grid (UMFPACK) and
 #      detZMV =2 on other levels  
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-detZMV = 0
+detZMV = 1
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Which row of the pressure matrix do you want to 
@@ -567,7 +567,7 @@ sFilenamePathResult = './files/ali.dat'
 #   =0  don't calculate
 #   =1  yes, calculate
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-LiftDragASO = 1
+LiftDragASO = 0
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Calculate the Kinetic Energy
@@ -576,7 +576,7 @@ LiftDragASO = 1
 #   =0  don't calculate
 #   =1  yes calculate
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-KEnergy = 0
+KEnergy = 1
 
 # How to calculate the Kinetic energy
 #   =0  use the FEM definition and the Matrix-vector
@@ -598,7 +598,7 @@ detKEnergy = 1
 #   =0 don't calculate
 #   =1 pls calculate :)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-detGMC = 1
+detGMC = 0
 
 # Input line coordinates
 #  the line defined by the two endpoints:
