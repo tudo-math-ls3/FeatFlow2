@@ -5522,7 +5522,7 @@ contains
     ! of the cubature points.
     h = 0.05_DP
     r0 = 0.25_DP
-    r = sqrt((dx)**2 + (dy)**2)
+    r = sqrt((dx-0.0_DP)**2 + (dy-0.0_DP)**2)
     l = r-r0
     w = l/h
     
@@ -5614,7 +5614,7 @@ contains
     
     h = 0.05_DP
     r0 = 0.25_DP
-    r = sqrt((dx)**2 + (dy)**2)
+    r = sqrt((dx-0.0_DP)**2 + (dy-0.0_DP)**2)
     l = r-r0
     w = l/h
     
