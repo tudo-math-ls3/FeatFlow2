@@ -17,6 +17,14 @@ set DEVENV=""
 
 rem Test for Visual Studio 2010
 if "%VS100COMNTOOLS%" neq "" set DEVENV="%VS100COMNTOOLS%..\IDE\devenv.exe"
+if "%VS110COMNTOOLS%" neq "" set DEVENV="%VS110COMNTOOLS%..\IDE\devenv.exe"
+if "%VS120COMNTOOLS%" neq "" set DEVENV="%VS120COMNTOOLS%..\IDE\devenv.exe"
+if "%VS130COMNTOOLS%" neq "" set DEVENV="%VS130COMNTOOLS%..\IDE\devenv.exe"
+if "%VS140COMNTOOLS%" neq "" set DEVENV="%VS140COMNTOOLS%..\IDE\devenv.exe"
+if "%VS150COMNTOOLS%" neq "" set DEVENV="%VS150COMNTOOLS%..\IDE\devenv.exe"
+
+if "%VS200COMNTOOLS%" neq "" set DEVENV="%VS200COMNTOOLS%..\IDE\devenv.exe"
+if "%VS210COMNTOOLS%" neq "" set DEVENV="%VS210COMNTOOLS%..\IDE\devenv.exe"
 
 rem Ensure that we have a path to devenv.exe
 if %DEVENV% == "" goto novs
