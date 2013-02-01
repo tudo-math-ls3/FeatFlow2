@@ -17,6 +17,8 @@ module poisson2d_method0_cmsort
   use genoutput
   use storage
   use boundary
+  use derivatives
+  use element
   use bilinearformevaluation
   use linearformevaluation
   use cubature
@@ -25,6 +27,7 @@ module poisson2d_method0_cmsort
   use linearsystemblock
   use matrixfilters
   use vectorfilters
+  use linearsolver
   use discretebc
   use bcassembly
   use triangulation

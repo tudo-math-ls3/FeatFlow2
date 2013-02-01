@@ -26,6 +26,8 @@ module poisson2d_method1_fbc
   use storage
   use linearsolver
   use boundary
+  use derivatives
+  use element
   use bilinearformevaluation
   use linearformevaluation
   use cubature

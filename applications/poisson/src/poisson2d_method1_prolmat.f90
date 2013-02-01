@@ -21,6 +21,8 @@ module poisson2d_method1_prolmat
   use storage
   use linearsolver
   use boundary
+  use derivatives
+  use element
   use bilinearformevaluation
   use linearformevaluation
   use cubature
@@ -64,7 +66,7 @@ module poisson2d_method1_prolmat
     type(t_matrixBlock) :: rmatrix
     
     ! A scalar matrix that will recieve the prolongation matrix for this level.
-    type(t_matrixScalar) :: rmatProl
+    type(t_matrixScalar) :: rmatProl,rmatRest
     
     ! An interlevel projection structure for changing levels
     type(t_interlevelProjectionBlock) :: rprojection
@@ -407,10 +409,12 @@ contains
       ! based on the Laplace matrix on this level.
       call mlprj_initProjectionMat (Rlevels(i)%rprojection,&
                                     Rlevels(i)%rmatrix)
+      call lsyssc_transposeMatrix (Rlevels(i)%rmatProl, Rlevels(i)%rmatRest,LSYSSC_TR_ALL)
       
       ! And initialise the matrix-based projection
       call mlprj_initMatrixProjection(&
-          Rlevels(i)%rprojection%RscalarProjection(1,1),Rlevels(i)%rmatProl)
+          Rlevels(i)%rprojection%RscalarProjection(1,1),Rlevels(i)%rmatProl,&
+          rmatrixRest=Rlevels(i)%rmatRest)
       
     end do
 

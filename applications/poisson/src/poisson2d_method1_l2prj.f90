@@ -23,6 +23,8 @@ module poisson2d_method1_l2prj
   use linearalgebra
   use linearsolver
   use boundary
+  use derivatives
+  use element
   use bilinearformevaluation
   use linearformevaluation
   use cubature

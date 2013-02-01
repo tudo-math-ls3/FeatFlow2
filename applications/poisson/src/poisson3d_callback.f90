@@ -50,21 +50,18 @@
 module poisson3d_callback
 
   use fsystem
-  use storage
-  use linearsolver
-  use boundary
   use derivatives
   use spatialdiscretisation
-  use linearsystemscalar
-  use linearsystemblock
-  use bilinearformevaluation
-  use linearformevaluation
-  use cubature
-  use matrixfilters
-  use vectorfilters
-  use bcassembly
   
   implicit none
+  
+  private
+  
+  public :: coeff_RHS_3D
+  public :: getReferenceFunction_3D
+  public :: coeff_RHS_Sin3D
+  public :: getReferenceFunction_Sin3D
+  public :: getBoundaryValuesMR_3D
 
 contains
 

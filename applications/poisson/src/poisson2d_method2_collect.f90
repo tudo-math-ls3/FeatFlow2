@@ -21,6 +21,8 @@ module poisson2d_method2_collect
   use storage
   use linearsolver
   use boundary
+  use derivatives
+  use element
   use bilinearformevaluation
   use linearformevaluation
   use cubature

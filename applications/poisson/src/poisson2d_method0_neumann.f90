@@ -22,6 +22,8 @@ module poisson2d_method0_neumann
   use storage
   use linearsolver
   use boundary
+  use derivatives
+  use element
   use bilinearformevaluation
   use linearformevaluation
   use cubature

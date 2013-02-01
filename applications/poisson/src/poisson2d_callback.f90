@@ -67,22 +67,26 @@ module poisson2d_callback
   use fsystem
   use storage
   use genoutput
-  use linearsolver
-  use boundary
-  use triangulation
-  use bilinearformevaluation
-  use linearformevaluation
-  use cubature
   use derivatives
-  use spatialdiscretisation
+  use triangulation
   use linearsystemscalar
   use linearsystemblock
-  use matrixfilters
-  use vectorfilters
-  use bcassembly
   use element
+  use cubature
+  use spatialdiscretisation
   
   implicit none
+  
+  private
+
+  public :: coeff_RHS_2D
+  public :: getReferenceFunction_2D
+  public :: coeff_RHS_Sin2D
+  public :: getReferenceFunction_Sin2D
+  public :: getBoundaryValues_2D
+  public :: getBoundaryValuesFBC_2D
+  public :: getBoundaryValuesMR_2D
+  public :: gethadaptMonitorFunction_2D
 
 contains
 

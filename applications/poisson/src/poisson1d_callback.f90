@@ -38,21 +38,16 @@
 module poisson1d_callback
 
   use fsystem
-  use storage
-  use linearsolver
-  use boundary
-  use bilinearformevaluation
-  use linearformevaluation
-  use cubature
   use derivatives
   use spatialdiscretisation
-  use linearsystemscalar
-  use linearsystemblock
-  use matrixfilters
-  use vectorfilters
-  use bcassembly
   
   implicit none
+
+  private
+
+  public :: coeff_RHS_1D
+  public :: getReferenceFunction_1D
+  public :: getBoundaryValuesMR_1D
 
 contains
 

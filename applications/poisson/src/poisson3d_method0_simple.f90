@@ -18,6 +18,8 @@ module poisson3d_method0_simple
   use storage
   use linearsolver
   use boundary
+  use derivatives
+  use element
   use bilinearformevaluation
   use linearformevaluation
   use cubature

@@ -20,6 +20,8 @@ module poisson2d_method0_smart
   use storage
   use linearsolver
   use boundary
+  use derivatives
+  use element
   use bilinearformevaluation
   use linearformevaluation
   use cubature
