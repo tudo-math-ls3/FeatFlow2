@@ -2346,10 +2346,6 @@ contains
     call parlst_getvalue_int (rparams, 'ZMV', 'irow', irow, 1)
   
     ! Dooshvari darim Dooshvari :(
-    ! Modify the RHS here
-    ! Setting a zero on the row number 'irow' of the pressure RHS vector  
-    call vecfil_OneEntryZero(rrhs,3,irow)  
-  
     ! Modify the pressure matrix here
     ! Set the values of the row number 'irow' of the system matrix
     !  to the diagonal values of the lumped mass matrix
@@ -2614,7 +2610,7 @@ contains
   ! A filter chain that describes how to filter the matrix/vector
   ! before/during the solution process. The filters usually implement
   ! boundary conditions.
-  type(t_filterChain), dimension(2), target :: RfilterChain
+  type(t_filterChain), dimension(3), target :: RfilterChain, RfilterChainC
   
   ! Level info.
   integer :: NLMAX,NLMIN
@@ -2682,11 +2678,37 @@ contains
     RfilterChain(nfilter)%ifilterType = FILTER_ONEENTRY0
     RfilterChain(nfilter)%iblock = 3  ! pressure block
     RfilterChain(nfilter)%irow = irow
-  case (2,4)
+
+  case (2)
     ! L^2_0 shifting technique
     nfilter = nfilter + 1
     RfilterChain(nfilter)%ifilterType = FILTER_TOL20
     RfilterChain(nfilter)%itoL20component = 3  ! pressure block
+
+  case (4)
+    ! L^2_0 shifting technique
+    ! For every level except the coarse grid
+    nfilter = nfilter + 1
+    RfilterChain(nfilter)%ifilterType = FILTER_TOL20
+    RfilterChain(nfilter)%itoL20component = 3  ! pressure block
+    
+    ! For coarse grid
+    ! Lumped mass matrix technique
+    nfilter = 1
+    call parlst_getvalue_int (rparams, 'ZMV', 'irow', irow, 1)
+    RfilterChainC(nfilter)%ifilterType = FILTER_ONEENTRY0
+    RfilterChainC(nfilter)%iblock = 3  ! pressure block
+    RfilterChainC(nfilter)%irow = irow
+    
+    ! Dirichlet BCs
+    nfilter = nfilter + 1
+    RfilterChainC(nfilter)%ifilterType = FILTER_DISCBCDEFREAL
+    
+    ! L^2_0 shifting technique
+    nfilter = nfilter + 1
+    RfilterChainC(nfilter)%ifilterType = FILTER_TOL20
+    RfilterChainC(nfilter)%itoL20component = 3  ! pressure block
+     
   end select
   
   call linsol_initMultigrid2 (p_rsolverNode,NLMAX-NLMIN+1,RfilterChain)
@@ -2702,8 +2724,10 @@ contains
   
   if (CGsolverMG .eq. 1) then
     ! We set up UMFPACK as coarse grid solver
-    call linsol_initUMFPACK4 (p_rlevelInfo%p_rcoarseGridSolver)
-    
+    call linsol_initUMFPACK4 (p_rpreconditionerC)
+    call linsol_initDefCorr (p_rlevelInfo%p_rcoarseGridSolver,&
+              p_rpreconditionerC,RfilterChainC)
+    p_rlevelInfo%p_rcoarseGridSolver%nmaxIterations = 1
   else
   
     ! We set up an iterative solver (The same as smoother)
@@ -2712,7 +2736,8 @@ contains
     
     !!! Preconditioner
     call parlst_getvalue_int (rparams, 'MULTI', 'PrecSmoothMG', PrecSmoothMG, 1)
-    call parlst_getvalue_double (rparams, 'MULTI', 'DampPrecSmoothMG', DampPrecSmoothMG, 1.0_DP)
+    call parlst_getvalue_double (rparams, 'MULTI', 'DampPrecSmoothMG', &
+         DampPrecSmoothMG, 1.0_DP)
     
     select case (PrecSmoothMG)
     case (1)
@@ -2732,17 +2757,22 @@ contains
     call parlst_getvalue_int (rparams, 'MULTI', 'smoothMG', smoothMG, 1)
     select case (smoothMG)
     case (1)
-      call linsol_initCG (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditionerC,RfilterChain)
+      call linsol_initCG (p_rlevelInfo%p_rcoarseGridSolver,&
+           p_rpreconditionerC,RfilterChain)
     case (2)
-      call linsol_initBiCGStab (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditionerC,RfilterChain)
+      call linsol_initBiCGStab (p_rlevelInfo%p_rcoarseGridSolver,&
+           p_rpreconditionerC,RfilterChain)
     case (3,4)
     ! The Jacobi-type coarse grid solvers!!
     end select
     
     ! Some other coarse grid properties
-    call parlst_getvalue_int (rparams, 'MULTI', 'NItCGsolverMG', NItCGsolverMG, 5)
-    call parlst_getvalue_double (rparams, 'MULTI', 'depsRelCGsolverMG', depsRelCGsolverMG, 0.00001_DP)  
-    call parlst_getvalue_int (rparams, 'MULTI', 'ioutputLevelCG', ioutputLevelCG, -1)
+    call parlst_getvalue_int (rparams, 'MULTI', 'NItCGsolverMG', &
+            NItCGsolverMG, 5)
+    call parlst_getvalue_double (rparams, 'MULTI', 'depsRelCGsolverMG', &
+            depsRelCGsolverMG, 0.00001_DP)
+    call parlst_getvalue_int (rparams, 'MULTI', 'ioutputLevelCG', &
+            ioutputLevelCG, -1)
     
     ! Number of iteration of the coarse grid solver
     p_rlevelInfo%p_rcoarseGridSolver%nmaxIterations = NItCGsolverMG
