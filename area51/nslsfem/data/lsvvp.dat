@@ -74,10 +74,10 @@ alpha = 1.0
 sFilenamePathMesh = './pre/QUAD'
 
 # Final mesh level to solve the problem:
-NLMAX = 9
+NLMAX = 5
 
 # Coarse mesh level, used in multigrid:
-NLMIN = 7
+NLMIN = 4
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Change Quadrilaterals to triangles
@@ -174,7 +174,7 @@ detRHS = 1
 
 # The constant in the analytic pressure filed
 #  Applicable ONLY if detRHS = 1
-dC = 1E5
+dC = 1
 
 
 #-----------------------------------------------------
