@@ -3913,8 +3913,10 @@ contains
     call output_line ('L^2 Error velocity')
     call output_line ('--------------------')
     call output_line (trim(sys_sdEP(sqrt(dintvalue+dintvalue1),15,6)))  
-
-
+    
+    call output_line ('L2velocity:'//&
+    trim(sys_sdEP(sqrt(dintvalue+dintvalue1),15,6)), coutputMode=OU_MODE_BENCHLOG)
+    
     ! H^1 Norm velocity
     ! Add x-velocity vector
     rcollection%IquickAccess(7) = 0
@@ -3940,6 +3942,8 @@ contains
     call output_line ('------------------')
     call output_line (trim(sys_sdEP(sqrt(dintvalue+dintvalue1),15,6)))  
 
+    call output_line ('H1velocity:'//&
+    trim(sys_sdEP(sqrt(dintvalue+dintvalue1),15,6)), coutputMode=OU_MODE_BENCHLOG)
 
     ! L^2 Norm pressure
     ! Add pressure vector
@@ -3957,6 +3961,8 @@ contains
     call output_line (trim(sys_sdEP(sqrt(dintvalue),15,6)))  
     call fev2_releaseVectorList(revalVectors)
 
+    call output_line ('L2pressure:'//&
+    trim(sys_sdEP(sqrt(dintvalue),15,6)), coutputMode=OU_MODE_BENCHLOG)
 
     ! H^1 Norm pressure
     ! Add pressure vector
@@ -3974,6 +3980,8 @@ contains
     call output_line (trim(sys_sdEP(sqrt(dintvalue),15,6)))  
     call fev2_releaseVectorList(revalVectors)
 
+    call output_line ('H1pressure:'//&
+    trim(sys_sdEP(sqrt(dintvalue),15,6)), coutputMode=OU_MODE_BENCHLOG)
 
     ! L^2 Norm vorticity
     ! Add vorticity vector
@@ -3991,6 +3999,8 @@ contains
     call output_line (trim(sys_sdEP(sqrt(dintvalue),15,6)))  
     call fev2_releaseVectorList(revalVectors)
 
+    call output_line ('L2vorticity:'//&
+    trim(sys_sdEP(sqrt(dintvalue),15,6)), coutputMode=OU_MODE_BENCHLOG)
 
     ! L^2 Norm vorticity-<<Based on the velocity>>
     ! Add velocity vectors
@@ -4010,6 +4020,9 @@ contains
     call output_line (trim(sys_sdEP(sqrt(dintvalue),15,6)))  
     call fev2_releaseVectorList(revalVectors)
 
+    call output_line ('L2vorticityu:'//&
+    trim(sys_sdEP(sqrt(dintvalue),15,6)), coutputMode=OU_MODE_BENCHLOG)
+
     ! H^1 Norm vorticity
     ! Add vorticity vector
     rcollection%IquickAccess(7) = 3
@@ -4026,15 +4039,9 @@ contains
     call output_line (trim(sys_sdEP(sqrt(dintvalue),15,6)))  
     call fev2_releaseVectorList(revalVectors)
     
-!    call pperr_scalar (PPERR_L2ERROR,dintvalue,rvector%RvectorBlock(3),&
-!        getReferenceFunction_2D,rcubatureInfo=rcubatureInfo)
-!          ! Print the Norm value
-!    call output_lbrk()
-!    call output_line ('L^2 Error pressure!!')
-!    call output_line ('--------------------')
-!    call output_line (trim(sys_sdEP(dintvalue,15,6)))
+    call output_line ('H1vorticity:'//&
+    trim(sys_sdEP(sqrt(dintvalue),15,6)), coutputMode=OU_MODE_BENCHLOG)
     
-  
   end if
      
   end subroutine

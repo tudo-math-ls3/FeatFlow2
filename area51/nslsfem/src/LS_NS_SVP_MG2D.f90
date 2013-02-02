@@ -4136,7 +4136,7 @@ contains
   ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-  
   call parlst_getvalue_int (rparams, 'POST', 'detNorms', detNorms, 0)
   if (detNorms == 1) then
-    
+
     ! L^2 Norm velocity
     ! Add x-velocity vector
     rcollection%IquickAccess(7) = 0
@@ -4161,8 +4161,10 @@ contains
     call output_line ('L^2 Error velocity')
     call output_line ('--------------------')
     call output_line (trim(sys_sdEP(sqrt(dintvalue+dintvalue1),15,6)))  
-
-
+    
+    call output_line ('L2velocity:'//&
+    trim(sys_sdEP(sqrt(dintvalue+dintvalue1),15,6)), coutputMode=OU_MODE_BENCHLOG)
+    
     ! H^1 Norm velocity
     ! Add x-velocity vector
     rcollection%IquickAccess(7) = 0
@@ -4188,6 +4190,8 @@ contains
     call output_line ('------------------')
     call output_line (trim(sys_sdEP(sqrt(dintvalue+dintvalue1),15,6)))  
 
+    call output_line ('H1velocity:'//&
+    trim(sys_sdEP(sqrt(dintvalue+dintvalue1),15,6)), coutputMode=OU_MODE_BENCHLOG)
 
     ! L^2 Norm pressure
     ! Add pressure vector
@@ -4205,6 +4209,8 @@ contains
     call output_line (trim(sys_sdEP(sqrt(dintvalue),15,6)))  
     call fev2_releaseVectorList(revalVectors)
 
+    call output_line ('L2pressure:'//&
+    trim(sys_sdEP(sqrt(dintvalue),15,6)), coutputMode=OU_MODE_BENCHLOG)
 
     ! H^1 Norm pressure
     ! Add pressure vector
@@ -4222,6 +4228,8 @@ contains
     call output_line (trim(sys_sdEP(sqrt(dintvalue),15,6)))  
     call fev2_releaseVectorList(revalVectors)
 
+    call output_line ('H1pressure:'//&
+    trim(sys_sdEP(sqrt(dintvalue),15,6)), coutputMode=OU_MODE_BENCHLOG)    
 
     ! L^2 Norm Sxx
     ! Add the vector
@@ -4239,6 +4247,9 @@ contains
     call output_line (trim(sys_sdEP(sqrt(dintvalue),15,6)))  
     call fev2_releaseVectorList(revalVectors)
 
+    call output_line ('L2Sxx:'//&
+    trim(sys_sdEP(sqrt(dintvalue),15,6)), coutputMode=OU_MODE_BENCHLOG) 
+
 
     ! L^2 Norm Sxy
     ! Add the vector
@@ -4255,7 +4266,9 @@ contains
     call output_line ('-------------')
     call output_line (trim(sys_sdEP(sqrt(dintvalue),15,6)))  
     call fev2_releaseVectorList(revalVectors)
-    
+
+    call output_line ('L2Sxy:'//&
+    trim(sys_sdEP(sqrt(dintvalue),15,6)), coutputMode=OU_MODE_BENCHLOG)     
   
     ! L^2 Norm Syy
     ! Add the vector
@@ -4272,6 +4285,9 @@ contains
     call output_line ('-------------')
     call output_line (trim(sys_sdEP(sqrt(dintvalue),15,6)))  
     call fev2_releaseVectorList(revalVectors)  
+
+    call output_line ('L2Syy:'//&
+    trim(sys_sdEP(sqrt(dintvalue),15,6)), coutputMode=OU_MODE_BENCHLOG) 
   
   end if
      

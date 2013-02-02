@@ -61,7 +61,7 @@ program nslsfem
       sys_getenv_string('RESULTFILE',slogfile)) then
     call output_init (trim(slogdir)//'/'//trim(slogfile))
   else
-    call output_init ('./log/output.txt')
+    call output_init ('./log/output.txt','','./log/error.txt')
   end if
 
   ! The very second thing in every program:
