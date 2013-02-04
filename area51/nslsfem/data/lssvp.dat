@@ -26,7 +26,7 @@
 #   = 6  Analytic polynomial function
 #   = 7  Static Bubble
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Problem = 6
+Problem = 0
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Kinematic viscosity noo = muu/rho = 1/Re
@@ -68,10 +68,10 @@ alpha = 1.0
 sFilenamePathMesh = './pre/QUAD'
 
 # Final mesh level to solve the problem:
-NLMAX = 5
+NLMAX = 7
 
 # Coarse mesh level, used in multigrid:
-NLMIN = 4
+NLMIN = 5
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Change Quadrilaterals to triangles
@@ -93,8 +93,8 @@ Velm = EL_Q2
 Vtild = 0
 
 # Type of Pressure finite element:
-Pelm = EL_Q2
-Ptild = 0
+Pelm = EL_QP1
+Ptild = 1
 
 # Type of Stress finite element:
 Selm = EL_Q2
@@ -201,7 +201,7 @@ detOFlow = 0
 #  Warning: We assume that this edge is on the 
 #    first boundary component!
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-edge = 2
+edge = 1
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Type of 1D cubature rule for line integration over
@@ -343,7 +343,7 @@ depsRelLS = 1e-5
 # If we have a Multigrid-preconditioned solver, then,
 #  what is the Krylov subspace linear solver Max. number of iterations
 #  "=10 for flow around cylinder"
-nmaxItsLS = 10
+nmaxItsLS = 15
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # If we have a Multigrid-preconditioned solver, then,
@@ -387,7 +387,7 @@ depsRelCGsolverMG = 1e-5
 # = 1:minimal output
 # = 0:no output except for warning messages 
 # =-1:no output (standard)
-ioutputLevelCG = -1
+ioutputLevelCG = 1
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #            Smoother
@@ -576,7 +576,7 @@ LiftDragASO = 0
 #   =0  don't calculate
 #   =1  yes calculate
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-KEnergy = 0
+KEnergy = 1
 
 # How to calculate the Kinetic energy
 #   =0  use the FEM definition and the Matrix-vector
@@ -629,7 +629,7 @@ nlevels = 15
 #  =0 Don't do it
 #  =1 Please calculate
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-detNorms = 1
+detNorms = 0
 
 
 #-----------------------------------------------------

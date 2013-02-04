@@ -74,10 +74,10 @@ alpha = 1.0
 sFilenamePathMesh = './pre/QUAD'
 
 # Final mesh level to solve the problem:
-NLMAX = 5
+NLMAX = 8
 
 # Coarse mesh level, used in multigrid:
-NLMIN = 4
+NLMIN = 7
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Change Quadrilaterals to triangles
@@ -149,11 +149,11 @@ LinTyp = 2
 FPIter = 10
 
 # Nonlinear loop Max number of iterations
-NLN_MAX = 200
+NLN_MAX = 100
 
 # Nonlinear loop stopping criteria
 #  Serves as a measure of relative residual
-dNLEpsi = 1.0e-8
+dNLEpsi = 1E-10
 
 
 #-----------------------------------------------------
@@ -334,7 +334,7 @@ depsRelLS = 1e-5
 # If we have a Multigrid-preconditioned solver, then,
 #  what is the Krylov subspace linear solver Max. number of iterations
 #  "=10 for flow around cylinder"
-nmaxItsLS = 5
+nmaxItsLS = 10
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # If we have a Multigrid-preconditioned solver, then,
@@ -586,6 +586,14 @@ Ensto = 0
 detEnsto = 0
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Calculate the velocity divergence L^2-error
+#  Div = \int{ (u_x + v_y)^2 dX}
+#   =0  don't calculate
+#   =1  yes calculate
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Div = 1
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Calculate Global Mass Conservation (GMC)
 #  This applies to the channel flows ONLY. The GMC
 #  is the normalised difference between the input
@@ -607,7 +615,7 @@ detGMC = 0
 #       0.0 0.0 0.0 0.41 
 #       0.0 0.0 0.0 1.0
 #       -2.0 0.0 -2.0 1.0
-inputGMC = 0.0 0.0 0.0 0.41
+inputGMC = 0.0 0.5 1.0 0.5
 
 # Output line coordinates
 #  the line defined by the two endpoints:
@@ -616,7 +624,7 @@ inputGMC = 0.0 0.0 0.0 0.41
 #       2.2 0.0 2.2 0.41
 #       0.5 0.0 0.5 1.0
 #       0.0 0.0 0.0 1.0
-outputGMC = 0.05 0.0 0.05 0.41 
+outputGMC = 0.5 0.0 0.5 1.0 
 
 # The number of elements (#elem) associated with the line
 #  =0 Calculate the #elem automatically
@@ -660,3 +668,4 @@ NMaxTime = 1
 #   =1  on, please scale
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 detTimeScale = 1
+
