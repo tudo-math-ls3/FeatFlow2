@@ -28,7 +28,7 @@
 !#
 !# Author:    Masoud Nickaeen
 !# First Version: May  28, 2012
-!# Last Update:   Jan. 28, 2013
+!# Last Update:   Feb. 04, 2013
 !##############################################################################
 
 module LS_NS_VVP_MG2D
@@ -3151,7 +3151,7 @@ contains
   !   to calculate the Kinetic energy
   !   to write the real/projected data
   integer :: detWriteResult, LiftDragASO, ExporType
-  integer :: KEnergy, detKEnergy, Ensto, detEnsto
+  integer :: KEnergy, detKEnergy, Ensto, detEnsto, Div
   integer :: Vtild, Ptild, Wtild
   
   ! Kinematic viscosity noo = 1/Re  
@@ -3641,6 +3641,37 @@ contains
 
   end if 
 
+
+  ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  ! Calculating the velocity divergence L^2-error.
+  !   Div = \int{ (u_x + v_y)^2 dX}
+  ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- 
+  ! Determine whether to calculate the Divergence L^2-Error
+  call parlst_getvalue_int (rparams, 'POST', 'Div', Div, 0)  
+    
+  if (Div .eq. 1) then
+    ! Add velocity vectors
+    rcollection%IquickAccess(7) = 5
+    call fev2_addVectorToEvalList(revalVectors,&
+       rvector%RvectorBlock(1),1)   ! u1,x,y
+    call fev2_addVectorToEvalList(revalVectors,&
+       rvector%RvectorBlock(2),1)   ! u2,x,y                
+    call bma_buildIntegral (dintvalue,BMA_CALC_STANDARD,&
+    ls_L2_Norm,rcollection=rcollection, &
+    revalVectors=revalVectors,rcubatureInfo=rcubatureInfo)
+
+    ! Print the Norm value
+    call output_lbrk()
+    call output_line ('L^2 Error Div(u)')
+    call output_line ('----------------')
+    call output_line (trim(sys_sdEP(sqrt(dintvalue),15,6)))  
+    call fev2_releaseVectorList(revalVectors)
+
+    call output_line ('L2divu:'//&
+    trim(sys_sdEP(sqrt(dintvalue),15,6)), coutputMode=OU_MODE_BENCHLOG) 
+  end if
+
+
   ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   ! Calculate Global Mass Conservation (GMC)
   !  This applies to the channel flows ONLY. The GMC is the normalised 
@@ -3752,20 +3783,11 @@ contains
     call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
                    Dcoords(1:2,2),Dfluxi,nlevels=nlevels)
     call output_lbrk()
-    call output_line ('flux input(%)-0.166666667')
-    call output_line ('-------------------------')
+    call output_line ('flux input(%)')
+    call output_line ('-------------')
     call output_line (trim(sys_sdEP(Dfluxi,17,10)))
     
-    ! Better to use the exact value of the inflow fluxes, rather than
-    !  calculating it numerically
-    ! Flow Around Cylinder
-    Dfluxi = -0.082_DP
-    ! Poiseuelle Flow
-!    Dfluxi = -1.0_DP/6.0_DP
-    
-    Dfluxi = abs(Dfluxi)
-    
-    ! Output line coordinates
+      ! Output line coordinates
     call parlst_getvalue_string (rparams, 'POST', 'outputGMC',sstring)
     read (sstring,*)   Dcoords(1,1), Dcoords(2,1), &
                Dcoords(1,2), Dcoords(2,2)
@@ -3773,6 +3795,14 @@ contains
     call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
                   Dcoords(1:2,2),Dfluxo,nlevels=nlevels)
     
+    ! Better to use the exact value of the inflow fluxes, rather than
+    !  calculating it numerically
+    ! Flow Around Cylinder
+!    Dfluxi = -0.082_DP
+    ! Poiseuelle Flow
+!    Dfluxi = -1.0_DP/6.0_DP
+
+    Dfluxi = abs(Dfluxi)
     Dfluxo = abs(Dfluxo)
     
     ! The GMC is then calculated as
@@ -3917,33 +3947,33 @@ contains
     call output_line ('L2velocity:'//&
     trim(sys_sdEP(sqrt(dintvalue+dintvalue1),15,6)), coutputMode=OU_MODE_BENCHLOG)
     
-    ! H^1 Norm velocity
-    ! Add x-velocity vector
-    rcollection%IquickAccess(7) = 0
-    call fev2_addVectorToEvalList(revalVectors,&
-       rvector%RvectorBlock(1),1)   ! u1,x,y
-    call bma_buildIntegral (dintvalue,BMA_CALC_STANDARD,&
-    ls_H1_Norm,rcollection=rcollection, &
-    revalVectors=revalVectors,rcubatureInfo=rcubatureInfo)
-    call fev2_releaseVectorList(revalVectors)    
-    
-    ! Add y-velocity vector
-    rcollection%IquickAccess(7) = 1      
-    call fev2_addVectorToEvalList(revalVectors,&
-       rvector%RvectorBlock(2),1)   ! u2,x,y
-    call bma_buildIntegral (dintvalue1,BMA_CALC_STANDARD,&
-    ls_H1_Norm,rcollection=rcollection, &
-    revalVectors=revalVectors,rcubatureInfo=rcubatureInfo)
-    call fev2_releaseVectorList(revalVectors)
-    
-    ! Print the Norm value
-    call output_lbrk()
-    call output_line ('H^1 Error velocity')
-    call output_line ('------------------')
-    call output_line (trim(sys_sdEP(sqrt(dintvalue+dintvalue1),15,6)))  
-
-    call output_line ('H1velocity:'//&
-    trim(sys_sdEP(sqrt(dintvalue+dintvalue1),15,6)), coutputMode=OU_MODE_BENCHLOG)
+!    ! H^1 Norm velocity
+!    ! Add x-velocity vector
+!    rcollection%IquickAccess(7) = 0
+!    call fev2_addVectorToEvalList(revalVectors,&
+!       rvector%RvectorBlock(1),1)   ! u1,x,y
+!    call bma_buildIntegral (dintvalue,BMA_CALC_STANDARD,&
+!    ls_H1_Norm,rcollection=rcollection, &
+!    revalVectors=revalVectors,rcubatureInfo=rcubatureInfo)
+!    call fev2_releaseVectorList(revalVectors)    
+!    
+!    ! Add y-velocity vector
+!    rcollection%IquickAccess(7) = 1      
+!    call fev2_addVectorToEvalList(revalVectors,&
+!       rvector%RvectorBlock(2),1)   ! u2,x,y
+!    call bma_buildIntegral (dintvalue1,BMA_CALC_STANDARD,&
+!    ls_H1_Norm,rcollection=rcollection, &
+!    revalVectors=revalVectors,rcubatureInfo=rcubatureInfo)
+!    call fev2_releaseVectorList(revalVectors)
+!    
+!    ! Print the Norm value
+!    call output_lbrk()
+!    call output_line ('H^1 Error velocity')
+!    call output_line ('------------------')
+!    call output_line (trim(sys_sdEP(sqrt(dintvalue+dintvalue1),15,6)))  
+!
+!    call output_line ('H1velocity:'//&
+!    trim(sys_sdEP(sqrt(dintvalue+dintvalue1),15,6)), coutputMode=OU_MODE_BENCHLOG)
 
     ! L^2 Norm pressure
     ! Add pressure vector
@@ -3964,24 +3994,24 @@ contains
     call output_line ('L2pressure:'//&
     trim(sys_sdEP(sqrt(dintvalue),15,6)), coutputMode=OU_MODE_BENCHLOG)
 
-    ! H^1 Norm pressure
-    ! Add pressure vector
-    rcollection%IquickAccess(7) = 2
-    call fev2_addVectorToEvalList(revalVectors,&
-       rvector%RvectorBlock(3),1)   ! p,x,y
-    call bma_buildIntegral (dintvalue,BMA_CALC_STANDARD,&
-    ls_H1_Norm,rcollection=rcollection, &
-    revalVectors=revalVectors,rcubatureInfo=rcubatureInfo)
-
-    ! Print the Norm value
-    call output_lbrk()
-    call output_line ('H^1 Error pressure')
-    call output_line ('------------------')
-    call output_line (trim(sys_sdEP(sqrt(dintvalue),15,6)))  
-    call fev2_releaseVectorList(revalVectors)
-
-    call output_line ('H1pressure:'//&
-    trim(sys_sdEP(sqrt(dintvalue),15,6)), coutputMode=OU_MODE_BENCHLOG)
+!    ! H^1 Norm pressure
+!    ! Add pressure vector
+!    rcollection%IquickAccess(7) = 2
+!    call fev2_addVectorToEvalList(revalVectors,&
+!       rvector%RvectorBlock(3),1)   ! p,x,y
+!    call bma_buildIntegral (dintvalue,BMA_CALC_STANDARD,&
+!    ls_H1_Norm,rcollection=rcollection, &
+!    revalVectors=revalVectors,rcubatureInfo=rcubatureInfo)
+!
+!    ! Print the Norm value
+!    call output_lbrk()
+!    call output_line ('H^1 Error pressure')
+!    call output_line ('------------------')
+!    call output_line (trim(sys_sdEP(sqrt(dintvalue),15,6)))  
+!    call fev2_releaseVectorList(revalVectors)
+!
+!    call output_line ('H1pressure:'//&
+!    trim(sys_sdEP(sqrt(dintvalue),15,6)), coutputMode=OU_MODE_BENCHLOG)
 
     ! L^2 Norm vorticity
     ! Add vorticity vector
@@ -4023,24 +4053,24 @@ contains
     call output_line ('L2vorticityu:'//&
     trim(sys_sdEP(sqrt(dintvalue),15,6)), coutputMode=OU_MODE_BENCHLOG)
 
-    ! H^1 Norm vorticity
-    ! Add vorticity vector
-    rcollection%IquickAccess(7) = 3
-    call fev2_addVectorToEvalList(revalVectors,&
-       rvector%RvectorBlock(4),1)   ! w,x,y
-    call bma_buildIntegral (dintvalue,BMA_CALC_STANDARD,&
-    ls_H1_Norm,rcollection=rcollection, &
-    revalVectors=revalVectors,rcubatureInfo=rcubatureInfo)
-
-    ! Print the Norm value
-    call output_lbrk()
-    call output_line ('H^1 Error vorticity')
-    call output_line ('-------------------')
-    call output_line (trim(sys_sdEP(sqrt(dintvalue),15,6)))  
-    call fev2_releaseVectorList(revalVectors)
-    
-    call output_line ('H1vorticity:'//&
-    trim(sys_sdEP(sqrt(dintvalue),15,6)), coutputMode=OU_MODE_BENCHLOG)
+!    ! H^1 Norm vorticity
+!    ! Add vorticity vector
+!    rcollection%IquickAccess(7) = 3
+!    call fev2_addVectorToEvalList(revalVectors,&
+!       rvector%RvectorBlock(4),1)   ! w,x,y
+!    call bma_buildIntegral (dintvalue,BMA_CALC_STANDARD,&
+!    ls_H1_Norm,rcollection=rcollection, &
+!    revalVectors=revalVectors,rcubatureInfo=rcubatureInfo)
+!
+!    ! Print the Norm value
+!    call output_lbrk()
+!    call output_line ('H^1 Error vorticity')
+!    call output_line ('-------------------')
+!    call output_line (trim(sys_sdEP(sqrt(dintvalue),15,6)))  
+!    call fev2_releaseVectorList(revalVectors)
+!    
+!    call output_line ('H1vorticity:'//&
+!    trim(sys_sdEP(sqrt(dintvalue),15,6)), coutputMode=OU_MODE_BENCHLOG)
     
   end if
      
@@ -4917,7 +4947,7 @@ contains
 
   ! Local variables
   real(DP) :: dbasI,dbasIx,dbasIy, dval1, dval2, dval3, dval4, dnu
-  real(DP) :: dfx, dfy, dx, dy, dC, dval
+  real(DP) :: dfx, dfy, dx, dy, dC, dval, cu, pi
   integer :: iel, icubp, idofe
   real(DP), dimension(:,:), pointer :: p_DlocalVector1,p_DlocalVector2
   real(DP), dimension(:,:), pointer :: p_DlocalVector3, p_DlocalVector4
@@ -4998,20 +5028,34 @@ contains
 
     ! Calculate the values of the RHS using the coordinates
     ! of the cubature points.
-    dfx = -dnu*(12.0_DP*dx**2*(dx-1.0_DP)**2*(2.0_DP*dy-1.0_DP)+&
-    4.0_DP*dy*(2.0_DP*dy-1.0_DP)*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP)*(dy-1.0_DP)) + 3.0_DP*dC*dx**2 - &
-        4.0_DP*dx**2*dy**2*(dx*(dx-1.0_DP)**2+dx**2*(dx-1.0_DP))*&
-        (dx-1.0_DP)**2*(dy-1.0_DP)**2*(6.0_DP*dy**2-6.0_DP*dy+1.0_DP) + &
-        8.0_DP*dx**3*dy*(2.0_DP*dx-1.0_DP)*(2.0_DP*dy-1.0_DP)*(dy*(dy-1.0_DP)**2+&
-        dy**2*(dy-1.0_DP))*(dx-1.0_DP)**3*(dy-1.0_DP)
-
-    dfy = dnu*(12.0_DP*dy**2*(dy-1.0_DP)**2*(2.0_DP*dx-1.0_DP)+&
-    4.0_DP*dx*(2.0_DP*dx-1.0_DP)*(6.0_DP*dy**2-6.0_DP*dy+1.0_DP)*(dx-1.0_DP)) - 3.0_DP*dC*dy**2 - &
-        4.0_DP*dx**2*dy**2*(dy*(dy-1.0_DP)**2+dy**2*(dy-1.0_DP))*&
-        (dx-1.0_DP)**2*(dy-1.0_DP)**2*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP) + &
-        8.0_DP*dy**3*dx*(2.0_DP*dx-1.0_DP)*(2.0_DP*dy-1.0_DP)*(dx*(dx-1.0_DP)**2+&
-        dx**2*(dx-1.0_DP))*(dy-1.0_DP)**3*(dx-1.0_DP)
+!    dfx = -dnu*(12.0_DP*dx**2*(dx-1.0_DP)**2*(2.0_DP*dy-1.0_DP)+&
+!    4.0_DP*dy*(2.0_DP*dy-1.0_DP)*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP)*(dy-1.0_DP)) + 3.0_DP*dC*dx**2 - &
+!        4.0_DP*dx**2*dy**2*(dx*(dx-1.0_DP)**2+dx**2*(dx-1.0_DP))*&
+!        (dx-1.0_DP)**2*(dy-1.0_DP)**2*(6.0_DP*dy**2-6.0_DP*dy+1.0_DP) + &
+!        8.0_DP*dx**3*dy*(2.0_DP*dx-1.0_DP)*(2.0_DP*dy-1.0_DP)*(dy*(dy-1.0_DP)**2+&
+!        dy**2*(dy-1.0_DP))*(dx-1.0_DP)**3*(dy-1.0_DP)
+!
+!    dfy = dnu*(12.0_DP*dy**2*(dy-1.0_DP)**2*(2.0_DP*dx-1.0_DP)+&
+!    4.0_DP*dx*(2.0_DP*dx-1.0_DP)*(6.0_DP*dy**2-6.0_DP*dy+1.0_DP)*(dx-1.0_DP)) - 3.0_DP*dC*dy**2 - &
+!        4.0_DP*dx**2*dy**2*(dy*(dy-1.0_DP)**2+dy**2*(dy-1.0_DP))*&
+!        (dx-1.0_DP)**2*(dy-1.0_DP)**2*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP) + &
+!        8.0_DP*dy**3*dx*(2.0_DP*dx-1.0_DP)*(2.0_DP*dy-1.0_DP)*(dx*(dx-1.0_DP)**2+&
+!        dx**2*(dx-1.0_DP))*(dy-1.0_DP)**3*(dx-1.0_DP)
     
+    cu = 1.0_DP
+    pi = 3.1415926535897932_DP
+!    dfx = cu**2*exp(2.0_DP*dx)*(cos(cu*dy))**2  - &
+!        dnu*(cu*exp(dx)*cos(cu*dy) - cu**3*exp(dx)*cos(cu*dy) ) + &
+!        cu**2*exp(2.0_DP*dx)*(sin(cu*dy))**2 + dC*exp(-dC*dx)*sin(2.0_DP*dy*pi) 
+! 
+!    dfy = dnu*(exp(dx)*sin(cu*dy) - cu**2*exp(dx)*sin(cu*dy)) - &
+!          2.0_DP*pi*cos(2.0_DP*pi*dy)*(exp(-dC*dx) - 1.0_DP)
+    
+    dfx = pi*dC*cos(pi*dc*dx) - pi*cu*cos(pi*cu*dx)*sin(pi*cu*dy) + &
+          (pi*cu)**2*dnu*cos(pi*cu*dy)
+          
+    dfy = (pi*cu)**2*dnu*cos(pi*cu*dx) - pi*cu*cos(pi*cu*dy)*sin(pi*cu*dx)
+ 
     ! Outer loop over the DOF's i=1..ndof on our current element,
     ! which corresponds to the (test) basis functions Phi_i:
     do idofe=1,p_rvectorData1%ndofTest
@@ -5075,20 +5119,33 @@ contains
 
     ! Calculate the values of the RHS using the coordinates
     ! of the cubature points.
-    dfx = -dnu*(12.0_DP*dx**2*(dx-1.0_DP)**2*(2.0_DP*dy-1.0_DP)+&
-    4.0_DP*dy*(2.0_DP*dy-1.0_DP)*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP)*(dy-1.0_DP)) + 3.0_DP*dC*dx**2 - &
-        4.0_DP*dx**2*dy**2*(dx*(dx-1.0_DP)**2+dx**2*(dx-1.0_DP))*&
-        (dx-1.0_DP)**2*(dy-1.0_DP)**2*(6.0_DP*dy**2-6.0_DP*dy+1.0_DP) + &
-        8.0_DP*dx**3*dy*(2.0_DP*dx-1.0_DP)*(2.0_DP*dy-1.0_DP)*(dy*(dy-1.0_DP)**2+&
-        dy**2*(dy-1.0_DP))*(dx-1.0_DP)**3*(dy-1.0_DP)
-
-    dfy = dnu*(12.0_DP*dy**2*(dy-1.0_DP)**2*(2.0_DP*dx-1.0_DP)+&
-    4.0_DP*dx*(2.0_DP*dx-1.0_DP)*(6.0_DP*dy**2-6.0_DP*dy+1.0_DP)*(dx-1.0_DP)) - 3.0_DP*dC*dy**2 - &
-        4.0_DP*dx**2*dy**2*(dy*(dy-1.0_DP)**2+dy**2*(dy-1.0_DP))*&
-        (dx-1.0_DP)**2*(dy-1.0_DP)**2*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP) + &
-        8.0_DP*dy**3*dx*(2.0_DP*dx-1.0_DP)*(2.0_DP*dy-1.0_DP)*(dx*(dx-1.0_DP)**2+&
-        dx**2*(dx-1.0_DP))*(dy-1.0_DP)**3*(dx-1.0_DP)
+!    dfx = -dnu*(12.0_DP*dx**2*(dx-1.0_DP)**2*(2.0_DP*dy-1.0_DP)+&
+!    4.0_DP*dy*(2.0_DP*dy-1.0_DP)*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP)*(dy-1.0_DP)) + 3.0_DP*dC*dx**2 - &
+!        4.0_DP*dx**2*dy**2*(dx*(dx-1.0_DP)**2+dx**2*(dx-1.0_DP))*&
+!        (dx-1.0_DP)**2*(dy-1.0_DP)**2*(6.0_DP*dy**2-6.0_DP*dy+1.0_DP) + &
+!        8.0_DP*dx**3*dy*(2.0_DP*dx-1.0_DP)*(2.0_DP*dy-1.0_DP)*(dy*(dy-1.0_DP)**2+&
+!        dy**2*(dy-1.0_DP))*(dx-1.0_DP)**3*(dy-1.0_DP)
+!
+!    dfy = dnu*(12.0_DP*dy**2*(dy-1.0_DP)**2*(2.0_DP*dx-1.0_DP)+&
+!    4.0_DP*dx*(2.0_DP*dx-1.0_DP)*(6.0_DP*dy**2-6.0_DP*dy+1.0_DP)*(dx-1.0_DP)) - 3.0_DP*dC*dy**2 - &
+!        4.0_DP*dx**2*dy**2*(dy*(dy-1.0_DP)**2+dy**2*(dy-1.0_DP))*&
+!        (dx-1.0_DP)**2*(dy-1.0_DP)**2*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP) + &
+!        8.0_DP*dy**3*dx*(2.0_DP*dx-1.0_DP)*(2.0_DP*dy-1.0_DP)*(dx*(dx-1.0_DP)**2+&
+!        dx**2*(dx-1.0_DP))*(dy-1.0_DP)**3*(dx-1.0_DP)
     
+    cu = 1.0_DP
+    pi = 3.1415926535897932_DP
+!    dfx = cu**2*exp(2.0_DP*dx)*(cos(cu*dy))**2  - &
+!        dnu*(cu*exp(dx)*cos(cu*dy) - cu**3*exp(dx)*cos(cu*dy) ) + &
+!        cu**2*exp(2.0_DP*dx)*(sin(cu*dy))**2 + dC*exp(-dC*dx)*sin(2.0_DP*dy*pi) 
+! 
+!    dfy = dnu*(exp(dx)*sin(cu*dy) - cu**2*exp(dx)*sin(cu*dy)) - &
+!          2.0_DP*pi*cos(2.0_DP*pi*dy)*(exp(-dC*dx) - 1.0_DP)
+ 
+    dfx = pi*dC*cos(pi*dc*dx) - pi*cu*cos(pi*cu*dx)*sin(pi*cu*dy) + &
+          (pi*cu)**2*dnu*cos(pi*cu*dy)
+          
+    dfy = (pi*cu)**2*dnu*cos(pi*cu*dx) - pi*cu*cos(pi*cu*dy)*sin(pi*cu*dx) 
     
     ! Outer loop over the DOF's i=1..ndof on our current element,
     ! which corresponds to the (test) basis functions Phi_i:
@@ -5141,20 +5198,34 @@ contains
 
     ! Calculate the values of the RHS using the coordinates
     ! of the cubature points.
-    dfx = -dnu*(12.0_DP*dx**2*(dx-1.0_DP)**2*(2.0_DP*dy-1.0_DP)+&
-    4.0_DP*dy*(2.0_DP*dy-1.0_DP)*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP)*(dy-1.0_DP)) + 3.0_DP*dC*dx**2 - &
-        4.0_DP*dx**2*dy**2*(dx*(dx-1.0_DP)**2+dx**2*(dx-1.0_DP))*&
-        (dx-1.0_DP)**2*(dy-1.0_DP)**2*(6.0_DP*dy**2-6.0_DP*dy+1.0_DP) + &
-        8.0_DP*dx**3*dy*(2.0_DP*dx-1.0_DP)*(2.0_DP*dy-1.0_DP)*(dy*(dy-1.0_DP)**2+&
-        dy**2*(dy-1.0_DP))*(dx-1.0_DP)**3*(dy-1.0_DP)
+!    dfx = -dnu*(12.0_DP*dx**2*(dx-1.0_DP)**2*(2.0_DP*dy-1.0_DP)+&
+!    4.0_DP*dy*(2.0_DP*dy-1.0_DP)*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP)*(dy-1.0_DP)) + 3.0_DP*dC*dx**2 - &
+!        4.0_DP*dx**2*dy**2*(dx*(dx-1.0_DP)**2+dx**2*(dx-1.0_DP))*&
+!        (dx-1.0_DP)**2*(dy-1.0_DP)**2*(6.0_DP*dy**2-6.0_DP*dy+1.0_DP) + &
+!        8.0_DP*dx**3*dy*(2.0_DP*dx-1.0_DP)*(2.0_DP*dy-1.0_DP)*(dy*(dy-1.0_DP)**2+&
+!        dy**2*(dy-1.0_DP))*(dx-1.0_DP)**3*(dy-1.0_DP)
+!
+!    dfy = dnu*(12.0_DP*dy**2*(dy-1.0_DP)**2*(2.0_DP*dx-1.0_DP)+&
+!    4.0_DP*dx*(2.0_DP*dx-1.0_DP)*(6.0_DP*dy**2-6.0_DP*dy+1.0_DP)*(dx-1.0_DP)) - 3.0_DP*dC*dy**2 - &
+!        4.0_DP*dx**2*dy**2*(dy*(dy-1.0_DP)**2+dy**2*(dy-1.0_DP))*&
+!        (dx-1.0_DP)**2*(dy-1.0_DP)**2*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP) + &
+!        8.0_DP*dy**3*dx*(2.0_DP*dx-1.0_DP)*(2.0_DP*dy-1.0_DP)*(dx*(dx-1.0_DP)**2+&
+!        dx**2*(dx-1.0_DP))*(dy-1.0_DP)**3*(dx-1.0_DP)   
 
-    dfy = dnu*(12.0_DP*dy**2*(dy-1.0_DP)**2*(2.0_DP*dx-1.0_DP)+&
-    4.0_DP*dx*(2.0_DP*dx-1.0_DP)*(6.0_DP*dy**2-6.0_DP*dy+1.0_DP)*(dx-1.0_DP)) - 3.0_DP*dC*dy**2 - &
-        4.0_DP*dx**2*dy**2*(dy*(dy-1.0_DP)**2+dy**2*(dy-1.0_DP))*&
-        (dx-1.0_DP)**2*(dy-1.0_DP)**2*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP) + &
-        8.0_DP*dy**3*dx*(2.0_DP*dx-1.0_DP)*(2.0_DP*dy-1.0_DP)*(dx*(dx-1.0_DP)**2+&
-        dx**2*(dx-1.0_DP))*(dy-1.0_DP)**3*(dx-1.0_DP)   
-    
+    cu = 1.0_DP
+    pi = 3.1415926535897932_DP
+!    dfx = cu**2*exp(2.0_DP*dx)*(cos(cu*dy))**2  - &
+!        dnu*(cu*exp(dx)*cos(cu*dy) - cu**3*exp(dx)*cos(cu*dy) ) + &
+!        cu**2*exp(2.0_DP*dx)*(sin(cu*dy))**2 + dC*exp(-dC*dx)*sin(2.0_DP*dy*pi) 
+! 
+!    dfy = dnu*(exp(dx)*sin(cu*dy) - cu**2*exp(dx)*sin(cu*dy)) - &
+!          2.0_DP*pi*cos(2.0_DP*pi*dy)*(exp(-dC*dx) - 1.0_DP)
+
+    dfx = pi*dC*cos(pi*dc*dx) - pi*cu*cos(pi*cu*dx)*sin(pi*cu*dy) + &
+          (pi*cu)**2*dnu*cos(pi*cu*dy)
+          
+    dfy = (pi*cu)**2*dnu*cos(pi*cu*dx) - pi*cu*cos(pi*cu*dy)*sin(pi*cu*dx)
+   
     ! Outer loop over the DOF's i=1..ndof on our current element,
     ! which corresponds to the (test) basis functions Phi_i:
     do idofe=1,p_rvectorData4%ndofTest
@@ -5335,7 +5406,7 @@ contains
 !<subroutine>
 
   ! Local variables
-  real(DP) :: dval1,dval2,dx,dy, dC
+  real(DP) :: dval1,dval2,dx,dy, dC, cu, pi
   integer :: iel, icubp
   real(DP), dimension(:,:), pointer :: p_DcubWeight
   real(DP), dimension(:,:), pointer :: p_Dfunc,p_DderivX,p_DderivY
@@ -5380,8 +5451,12 @@ contains
       dx = p_Dpoints(1,icubp,iel)
       dy = p_Dpoints(2,icubp,iel)
       
-      dval1 = 2.0_DP*dx**2*(1.0_DP-dx)**2*(dy*(1.0_DP-dy)**2 - dy**2*(1.0_DP-dy))
-
+!      dval1 = 2.0_DP*dx**2*(1.0_DP-dx)**2*(dy*(1.0_DP-dy)**2 - dy**2*(1.0_DP-dy))
+      cu = 1.0_DP
+      pi = 3.1415926535897932_DP
+!      dval1 = cu*exp(dx)*cos(cu*dy)
+      dval1 = cos(cu*pi*dy)
+       
       ! Get the error of the FEM function to the analytic function
       dval2 = p_Dfunc(icubp,iel)
       
@@ -5410,8 +5485,13 @@ contains
       dx = p_Dpoints(1,icubp,iel)
       dy = p_Dpoints(2,icubp,iel)
       
-      dval1 = -2.0_DP*dy**2*(1.0_DP-dy)**2*(dx*(1.0_DP-dx)**2 - dx**2*(1.0_DP-dx))
-
+!      dval1 = -2.0_DP*dy**2*(1.0_DP-dy)**2*(dx*(1.0_DP-dx)**2 - dx**2*(1.0_DP-dx))
+      
+      cu = 1.0_DP
+      pi = 3.1415926535897932_DP
+!      dval1 = -exp(dx)*sin(cu*dy)
+      dval1 = cos(cu*pi*dx)
+      
       ! Get the error of the FEM function to the bubble function
       dval2 = p_Dfunc(icubp,iel)
       
@@ -5440,8 +5520,12 @@ contains
       dx = p_Dpoints(1,icubp,iel)
       dy = p_Dpoints(2,icubp,iel)
       
-      dval1 = dC*(dx**3 - dy**3 - 0.5_DP)
-
+!      dval1 = dC*(dx**3 - dy**3 - 0.5_DP)
+      
+      pi = 3.1415926535897932_DP
+!      dval1 = ( 1.0_DP-exp(-dC*dx) ) * sin(2*pi*dy)
+      dval1 = sin(dC*pi*dx)
+      
       ! Get the error of the FEM function to the bubble function
       dval2 = p_Dfunc(icubp,iel)
       
@@ -5470,9 +5554,14 @@ contains
       dx = p_Dpoints(1,icubp,iel)
       dy = p_Dpoints(2,icubp,iel)
       
-      dval1 = -2.0_DP*dx**2*(dx-1.0_DP)**2*(6.0_DP*dy**2-6.0_DP*dy+1.0_DP) - &
-          2.0_DP*dy**2*(dy-1.0_DP)**2*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP)
+!      dval1 = -2.0_DP*dx**2*(dx-1.0_DP)**2*(6.0_DP*dy**2-6.0_DP*dy+1.0_DP) - &
+!          2.0_DP*dy**2*(dy-1.0_DP)**2*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP)
 
+      cu = 1.0_DP
+      pi = 3.1415926535897932_DP
+!      dval1 = (cu**2 - 1.0_DP)*exp(dx)*sin(cu*dy)
+      dval1 = pi*cu*sin(pi*cu*dy) - pi*cu*sin(pi*cu*dx)
+      
       ! Get the error of the FEM function to the bubble function
       dval2 = p_Dfunc(icubp,iel)
       
@@ -5502,11 +5591,44 @@ contains
       dx = p_Dpoints(1,icubp,iel)
       dy = p_Dpoints(2,icubp,iel)
       
-      dval1 = -2.0_DP*dx**2*(dx-1.0_DP)**2*(6.0_DP*dy**2-6.0_DP*dy+1.0_DP) - &
-          2.0_DP*dy**2*(dy-1.0_DP)**2*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP)
+!      dval1 = -2.0_DP*dx**2*(dx-1.0_DP)**2*(6.0_DP*dy**2-6.0_DP*dy+1.0_DP) - &
+!          2.0_DP*dy**2*(dy-1.0_DP)**2*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP)
+
+      cu = 1.0_DP
+      pi = 3.1415926535897932_DP
+!      dval1 = (cu**2 - 1.0_DP)*exp(dx)*sin(cu*dy)
+      dval1 = pi*cu*sin(pi*cu*dy) - pi*cu*sin(pi*cu*dx)
 
       ! Get the error of the FEM function to the analytic function
       dval2 = p_DderivX(icubp,iel) - p_DderivY(icubp,iel)
+      
+      ! Multiply the values by the cubature weight and sum up
+      ! into the (squared) L2 error:
+      dintvalue = dintvalue + &
+        p_DcubWeight(icubp,iel) * (dval1 - dval2)**2
+      
+    end do ! icubp
+    
+    end do ! iel 
+
+  case (5)
+    ! Velocity divergence L^2-error
+    ! Loop over the elements in the current set.
+    ! Get the data array with the values of the FEM function
+    ! in the cubature points
+    p_DderivX => revalVectors%p_RvectorData(1)%p_Ddata(:,:,DER_DERIV2D_X)
+    p_DderivY => revalVectors%p_RvectorData(2)%p_Ddata(:,:,DER_DERIV2D_Y)
+    
+    do iel = 1,nelements
+
+    ! Loop over all cubature points on the current element
+    do icubp = 1,npointsPerElement
+
+      ! The analytic function is not required here
+      dval1 = 0.0_DP
+
+      ! Get the error of the FEM function to the analytic function
+      dval2 = p_DderivX(icubp,iel) + p_DderivY(icubp,iel)
       
       ! Multiply the values by the cubature weight and sum up
       ! into the (squared) L2 error:

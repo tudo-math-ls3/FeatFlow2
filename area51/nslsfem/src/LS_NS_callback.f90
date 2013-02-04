@@ -128,7 +128,7 @@ contains
 !</subroutine>
 
     ! To get the X/Y-coordinates of the boundary point, use:
-    real(DP) :: dx,dy, dC
+    real(DP) :: dx,dy, dC, cu, pi
     
     integer :: icomponent
     real(DP) :: y
@@ -247,12 +247,20 @@ contains
        case (1)
           select case (icomponent)
           case (1) ! X-velocity
-            Dvalues(1) = 0.0_DP
+            cu = 1.0_DP
+            pi = 3.1415926535897932_DP
+!            Dvalues(1) = cu*exp(dx)*cos(cu*dy) !0.0_DP
+            Dvalues(1) = cos(cu*pi*dy)
           case (2) ! Y-velocity
-            Dvalues(1) = 0.0_DP
+            cu = 1.0_DP
+            pi = 3.1415926535897932_DP
+!            Dvalues(1) = -exp(dx)*sin(cu*dy) !0.0_DP
+            Dvalues(1) = cos(cu*pi*dx)
           case (3) ! Pressure
              dC = rcollection%DquickAccess(9)
-             Dvalues(1) = dC*(dx**3 - dy**3 - 0.5_DP)
+             pi = 3.1415926535897932_DP
+!             Dvalues(1) = ( 1.0_DP-exp(-dC*dx) ) * sin(2*pi*dy) !dC*(dx**3 - dy**3 - 0.5_DP)
+             Dvalues(1) = sin(dC*pi*dx)
           end select
        
        case (2)
