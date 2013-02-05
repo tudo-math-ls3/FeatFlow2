@@ -243,29 +243,29 @@ contains
     
     case (6,7)
       ! Anlytic polynomial function
-       select case (rboundaryRegion%IBOUNDCOMPIDX)
-       case (1)
+      cu = rcollection%DquickAccess(10)
+      pi = 3.1415926535897932_DP
+      dC = rcollection%DquickAccess(9)      
+      select case (rboundaryRegion%IBOUNDCOMPIDX)
+      case (1)
           select case (icomponent)
           case (1) ! X-velocity
-            cu = 1.0_DP
-            pi = 3.1415926535897932_DP
-!            Dvalues(1) = cu*exp(dx)*cos(cu*dy) !0.0_DP
+!            Dvalues(1) = cu*exp(dx)*cos(cu*dy)
+!            Dvalues(1) = 0.0_DP
             Dvalues(1) = cos(cu*pi*dy)
           case (2) ! Y-velocity
-            cu = 1.0_DP
-            pi = 3.1415926535897932_DP
-!            Dvalues(1) = -exp(dx)*sin(cu*dy) !0.0_DP
+!            Dvalues(1) = -exp(dx)*sin(cu*dy)
+!            Dvalues(1) = 0.0_DP
             Dvalues(1) = cos(cu*pi*dx)
           case (3) ! Pressure
-             dC = rcollection%DquickAccess(9)
-             pi = 3.1415926535897932_DP
-!             Dvalues(1) = ( 1.0_DP-exp(-dC*dx) ) * sin(2*pi*dy) !dC*(dx**3 - dy**3 - 0.5_DP)
-             Dvalues(1) = sin(dC*pi*dx)
+!             Dvalues(1) = ( 1.0_DP-exp(-dC*dx) ) * sin(2*pi*dy)
+!             Dvalues(1) = dC*(dx**3 - dy**3)
+             Dvalues(1) = cos(dC*pi*dx)
           end select
        
-       case (2)
+      case (2)
           ! Nothing to do here.
-       end select   
+      end select   
     
     case default
       ! Un-known problem

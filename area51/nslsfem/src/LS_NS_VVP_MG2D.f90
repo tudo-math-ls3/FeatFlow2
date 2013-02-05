@@ -28,7 +28,7 @@
 !#
 !# Author:    Masoud Nickaeen
 !# First Version: May  28, 2012
-!# Last Update:   Feb. 04, 2013
+!# Last Update:   Feb. 05, 2013
 !##############################################################################
 
 module LS_NS_VVP_MG2D
@@ -454,9 +454,14 @@ contains
   call parlst_getvalue_int (rparams, 'RHS', 'detRHS', &
   rcollection%IquickAccess(8), 0) 
   
-  ! The constant parameter in the pressure analytic polynomial
-  call parlst_getvalue_double (rparams, 'RHS', 'dC', &
-  rcollection%DquickAccess(9), 1.0_DP)
+  if (rcollection%IquickAccess(8) == 1) then 
+    ! The constant parameters in the pressure analytic polynomial
+    call parlst_getvalue_double (rparams, 'RHS', 'cp', &
+      rcollection%DquickAccess(9), 1.0_DP)
+
+    call parlst_getvalue_double (rparams, 'RHS', 'cu', &
+      rcollection%DquickAccess(10), 1.0_DP)
+  end if
   
   end subroutine
   
@@ -4979,6 +4984,10 @@ contains
   
   ! The constant in the pressure filed
   dC = rcollection%DquickAccess(9)
+
+  ! The constant in the velocity filed
+  cu = rcollection%DquickAccess(10)
+  pi = 3.1415926535897932_DP
   
   ! Get cubature weights data
   p_DcubWeight => rassemblyData%p_DcubWeight
@@ -5041,9 +5050,7 @@ contains
 !        (dx-1.0_DP)**2*(dy-1.0_DP)**2*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP) + &
 !        8.0_DP*dy**3*dx*(2.0_DP*dx-1.0_DP)*(2.0_DP*dy-1.0_DP)*(dx*(dx-1.0_DP)**2+&
 !        dx**2*(dx-1.0_DP))*(dy-1.0_DP)**3*(dx-1.0_DP)
-    
-    cu = 1.0_DP
-    pi = 3.1415926535897932_DP
+
 !    dfx = cu**2*exp(2.0_DP*dx)*(cos(cu*dy))**2  - &
 !        dnu*(cu*exp(dx)*cos(cu*dy) - cu**3*exp(dx)*cos(cu*dy) ) + &
 !        cu**2*exp(2.0_DP*dx)*(sin(cu*dy))**2 + dC*exp(-dC*dx)*sin(2.0_DP*dy*pi) 
@@ -5051,7 +5058,7 @@ contains
 !    dfy = dnu*(exp(dx)*sin(cu*dy) - cu**2*exp(dx)*sin(cu*dy)) - &
 !          2.0_DP*pi*cos(2.0_DP*pi*dy)*(exp(-dC*dx) - 1.0_DP)
     
-    dfx = pi*dC*cos(pi*dc*dx) - pi*cu*cos(pi*cu*dx)*sin(pi*cu*dy) + &
+    dfx = -pi*dC*sin(pi*dC*dx) - pi*cu*cos(pi*cu*dx)*sin(pi*cu*dy) + &
           (pi*cu)**2*dnu*cos(pi*cu*dy)
           
     dfy = (pi*cu)**2*dnu*cos(pi*cu*dx) - pi*cu*cos(pi*cu*dy)*sin(pi*cu*dx)
@@ -5132,20 +5139,18 @@ contains
 !        (dx-1.0_DP)**2*(dy-1.0_DP)**2*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP) + &
 !        8.0_DP*dy**3*dx*(2.0_DP*dx-1.0_DP)*(2.0_DP*dy-1.0_DP)*(dx*(dx-1.0_DP)**2+&
 !        dx**2*(dx-1.0_DP))*(dy-1.0_DP)**3*(dx-1.0_DP)
-    
-    cu = 1.0_DP
-    pi = 3.1415926535897932_DP
+
 !    dfx = cu**2*exp(2.0_DP*dx)*(cos(cu*dy))**2  - &
 !        dnu*(cu*exp(dx)*cos(cu*dy) - cu**3*exp(dx)*cos(cu*dy) ) + &
 !        cu**2*exp(2.0_DP*dx)*(sin(cu*dy))**2 + dC*exp(-dC*dx)*sin(2.0_DP*dy*pi) 
 ! 
 !    dfy = dnu*(exp(dx)*sin(cu*dy) - cu**2*exp(dx)*sin(cu*dy)) - &
 !          2.0_DP*pi*cos(2.0_DP*pi*dy)*(exp(-dC*dx) - 1.0_DP)
- 
-    dfx = pi*dC*cos(pi*dc*dx) - pi*cu*cos(pi*cu*dx)*sin(pi*cu*dy) + &
+! 
+    dfx = -pi*dC*sin(pi*dC*dx) - pi*cu*cos(pi*cu*dx)*sin(pi*cu*dy) + &
           (pi*cu)**2*dnu*cos(pi*cu*dy)
           
-    dfy = (pi*cu)**2*dnu*cos(pi*cu*dx) - pi*cu*cos(pi*cu*dy)*sin(pi*cu*dx) 
+    dfy = (pi*cu)**2*dnu*cos(pi*cu*dx) - pi*cu*cos(pi*cu*dy)*sin(pi*cu*dx)
     
     ! Outer loop over the DOF's i=1..ndof on our current element,
     ! which corresponds to the (test) basis functions Phi_i:
@@ -5210,10 +5215,8 @@ contains
 !        4.0_DP*dx**2*dy**2*(dy*(dy-1.0_DP)**2+dy**2*(dy-1.0_DP))*&
 !        (dx-1.0_DP)**2*(dy-1.0_DP)**2*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP) + &
 !        8.0_DP*dy**3*dx*(2.0_DP*dx-1.0_DP)*(2.0_DP*dy-1.0_DP)*(dx*(dx-1.0_DP)**2+&
-!        dx**2*(dx-1.0_DP))*(dy-1.0_DP)**3*(dx-1.0_DP)   
+!        dx**2*(dx-1.0_DP))*(dy-1.0_DP)**3*(dx-1.0_DP)
 
-    cu = 1.0_DP
-    pi = 3.1415926535897932_DP
 !    dfx = cu**2*exp(2.0_DP*dx)*(cos(cu*dy))**2  - &
 !        dnu*(cu*exp(dx)*cos(cu*dy) - cu**3*exp(dx)*cos(cu*dy) ) + &
 !        cu**2*exp(2.0_DP*dx)*(sin(cu*dy))**2 + dC*exp(-dC*dx)*sin(2.0_DP*dy*pi) 
@@ -5221,7 +5224,7 @@ contains
 !    dfy = dnu*(exp(dx)*sin(cu*dy) - cu**2*exp(dx)*sin(cu*dy)) - &
 !          2.0_DP*pi*cos(2.0_DP*pi*dy)*(exp(-dC*dx) - 1.0_DP)
 
-    dfx = pi*dC*cos(pi*dc*dx) - pi*cu*cos(pi*cu*dx)*sin(pi*cu*dy) + &
+    dfx = -pi*dC*sin(pi*dC*dx) - pi*cu*cos(pi*cu*dx)*sin(pi*cu*dy) + &
           (pi*cu)**2*dnu*cos(pi*cu*dy)
           
     dfy = (pi*cu)**2*dnu*cos(pi*cu*dx) - pi*cu*cos(pi*cu*dy)*sin(pi*cu*dx)
@@ -5424,6 +5427,9 @@ contains
 
   ! The constant in the pressure filed
   dC = rcollection%DquickAccess(9)
+  
+  ! The constant in velocity field
+  cu = rcollection%DquickAccess(10)
 
   ! Get cubature weights data
   p_DcubWeight => rassemblyData%p_DcubWeight
@@ -5431,6 +5437,7 @@ contains
   ! Get the coordinates of the cubature points
   p_Dpoints => rassemblyData%revalElementSet%p_DpointsReal
 
+  pi = 3.1415926535897932_DP
   dintvalue = 0.0_DP
 
   select case (rcollection%IquickAccess(7))
@@ -5452,8 +5459,6 @@ contains
       dy = p_Dpoints(2,icubp,iel)
       
 !      dval1 = 2.0_DP*dx**2*(1.0_DP-dx)**2*(dy*(1.0_DP-dy)**2 - dy**2*(1.0_DP-dy))
-      cu = 1.0_DP
-      pi = 3.1415926535897932_DP
 !      dval1 = cu*exp(dx)*cos(cu*dy)
       dval1 = cos(cu*pi*dy)
        
@@ -5486,9 +5491,6 @@ contains
       dy = p_Dpoints(2,icubp,iel)
       
 !      dval1 = -2.0_DP*dy**2*(1.0_DP-dy)**2*(dx*(1.0_DP-dx)**2 - dx**2*(1.0_DP-dx))
-      
-      cu = 1.0_DP
-      pi = 3.1415926535897932_DP
 !      dval1 = -exp(dx)*sin(cu*dy)
       dval1 = cos(cu*pi*dx)
       
@@ -5520,11 +5522,9 @@ contains
       dx = p_Dpoints(1,icubp,iel)
       dy = p_Dpoints(2,icubp,iel)
       
-!      dval1 = dC*(dx**3 - dy**3 - 0.5_DP)
-      
-      pi = 3.1415926535897932_DP
+!      dval1 = dC*(dx**3 - dy**3)
 !      dval1 = ( 1.0_DP-exp(-dC*dx) ) * sin(2*pi*dy)
-      dval1 = sin(dC*pi*dx)
+      dval1 = cos(dC*pi*dx)
       
       ! Get the error of the FEM function to the bubble function
       dval2 = p_Dfunc(icubp,iel)
@@ -5556,9 +5556,6 @@ contains
       
 !      dval1 = -2.0_DP*dx**2*(dx-1.0_DP)**2*(6.0_DP*dy**2-6.0_DP*dy+1.0_DP) - &
 !          2.0_DP*dy**2*(dy-1.0_DP)**2*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP)
-
-      cu = 1.0_DP
-      pi = 3.1415926535897932_DP
 !      dval1 = (cu**2 - 1.0_DP)*exp(dx)*sin(cu*dy)
       dval1 = pi*cu*sin(pi*cu*dy) - pi*cu*sin(pi*cu*dx)
       
@@ -5593,9 +5590,6 @@ contains
       
 !      dval1 = -2.0_DP*dx**2*(dx-1.0_DP)**2*(6.0_DP*dy**2-6.0_DP*dy+1.0_DP) - &
 !          2.0_DP*dy**2*(dy-1.0_DP)**2*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP)
-
-      cu = 1.0_DP
-      pi = 3.1415926535897932_DP
 !      dval1 = (cu**2 - 1.0_DP)*exp(dx)*sin(cu*dy)
       dval1 = pi*cu*sin(pi*cu*dy) - pi*cu*sin(pi*cu*dx)
 
