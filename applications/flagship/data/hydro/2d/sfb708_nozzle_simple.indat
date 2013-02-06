@@ -1,0 +1,28 @@
+# -*- mode: any-ini; -*-
+#
+################################################################################
+#                     Input parameters for the FEM-AFC solver                  #
+#                                                                              #
+################################################################################
+
+# Specify the initial solution
+deffunc: @initsol_rho   = 1.0 ; x,y,t
+deffunc: @initsol_vel_x = 0.0 ; x,y,t
+deffunc: @initsol_vel_y = 0.0 ; x,y,t
+deffunc: @initsol_Etot  = 2.5e0 ; x,y,t
+
+# Specify the boundary conditions
+[bdrcond_primal]
+NBCT
+1
+NEXPR
+3
+IBCT
+1
+NCOMP
+4
+PARAMETERS
+0.5 T  'SUBINLET_WEAK'  1.0  4.1  0.0
+3.0 T  'FREESLIP_WEAK'
+4.0 F  'SUPEROUTLET_WEAK'
+5.0 F  'FREESLIP_WEAK'
