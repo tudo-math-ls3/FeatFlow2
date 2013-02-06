@@ -599,11 +599,11 @@ contains
     integer, dimension(:), pointer :: p_IdbleSegInfo_handles,p_IintSegInfo_handles
     integer, dimension(:), pointer :: p_IintSegInfo_fparser
     real(DP), dimension(:), pointer :: p_DsegInfo, p_DmaxPar
-    integer :: ityp, nspline, npar
-    integer :: isegrel,isegabs
+    integer :: ityp,nspline,npar
+    integer :: i,isegrel,icomp,nurbsdegree,ncntrlpnts,nknots
     integer :: idblemem  ! Counts the memory we need
     integer :: iexpression  ! Counts the number of expressions
-    real(DP) :: dl
+    real(DP) :: dl,dtemp
     character(len=1024) :: cbuffer
 
     ! Current parameter value in length-parametrisation
@@ -749,6 +749,66 @@ contains
           ! So we need 3*2+2 doubles.
           idblemem = idblemem + 8
 
+        case (BOUNDARY_TYPE_OPENNURBS)
+          ! Type 3: Open NURBS
+          ! Save the segment type into the first element of each
+          ! 2-tuple in the integer array:
+
+          p_IsegInfo (BOUNDARY_SEGHEADER_LENGTH*isegment+&
+                      BOUNDARY_SEGHEADER_TYPE) = BOUNDARY_TYPE_OPENNURBS
+
+          ! Save the start position of this segment to the segment-start array.
+          
+          p_IsegInfo (BOUNDARY_SEGHEADER_LENGTH*isegment+&
+                      BOUNDARY_SEGHEADER_OFFSET) = idblemem
+
+          ! An open NURBS consists of
+          ! - coordinates (x,y) of control points and weights w
+          ! - knot parameter values
+          ! Furthermore, in the first element of the segment we save the
+          ! minimum parameter value and in the second one the length.
+          !
+          ! nspline = degree of NURBS
+          ! npar    = number of control points
+          !
+          ! length of open NURBS segment:
+          ! three values per control point (x,y,weight) 
+          ! + 2 values for parameter value and length 
+          ! + length of (uncompressed) node vector = nspline + npar + 1
+          !
+          ! So we need 3*npar  + (npar+1 + nspline) + 2 doubles
+          idblemem = idblemem + 3*npar + (npar+1 + nspline) + 2
+
+        case (BOUNDARY_TYPE_CLOSEDNURBS)
+          ! Type 4: Closed NURBS
+          ! Save the segment type into the first element of each
+          ! 2-tuple in the integer array:
+
+          p_IsegInfo (BOUNDARY_SEGHEADER_LENGTH*isegment+&
+                      BOUNDARY_SEGHEADER_TYPE) = BOUNDARY_TYPE_CLOSEDNURBS
+
+          ! Save the start position of this segment to the segment-start array.
+          
+          p_IsegInfo (BOUNDARY_SEGHEADER_LENGTH*isegment+&
+                      BOUNDARY_SEGHEADER_OFFSET) = idblemem
+
+          ! A closed NURBS consists of
+          ! - coordinates (x,y) of control points and weights w
+          ! - knot parameter values
+          ! Furthermore, in the first element of the segment we save the
+          ! minimum parameter value and in the second one the length.
+          !
+          ! nspline = degree of NURBS
+          ! npar    = number of control points
+          !
+          ! length of closed NURBS segment:
+          ! three values per control point (x,y,weight) 
+          ! + 2 values for parameter value and length 
+          ! + length of (uncompressed) node vector = nspline + npar + 1
+          !
+          ! So we need  3*npar + (npar+1) + 2 doubles
+          idblemem = idblemem + 3*npar + (npar+1) + 2
+
         case (BOUNDARY_TYPE_EXPRESSION)
           ! Type 6: Analytic expression 
           ! Save the segment type into the first element of each
@@ -864,7 +924,6 @@ contains
           dmaxPar = dmaxPar + dl
 
         case (BOUNDARY_TYPE_CIRCLE)
-
           ! Type 2: Circle / arc. Consists of
           ! - Center
           ! - Radius
@@ -897,7 +956,63 @@ contains
           ! Increase the maximum parameter value
           dmaxPar = dmaxPar + dl
 
-        case(BOUNDARY_TYPE_EXPRESSION)
+        case (BOUNDARY_TYPE_OPENNURBS)
+          ! Type 3: Open NURBS Consists of
+          ! - coordinates (x,y) of control points and weights w
+          ! - knot parameter values
+          !
+          ! nspline = number of control points
+          ! npar    = number of lines in parameter section
+          !           structure of PARAMETERS
+          !           degree   #control pts   #knots
+          !           x(i)     y(i)           w(i)      i=1..#control pts
+          !           p(j)                              j=1..#knots
+          !
+          ! The first entry in the segment information array is again
+          ! the length of the NURBS - to be computed later.
+          read (iunit,*) nurbsdegree,ncntrlpnts,nknot
+
+          ! First save the degree of the open NURBS
+          p_IsegInfo (BOUNDARY_SEGHEADER_LENGTH*isegment+&
+                      BOUNDARY_SEGHEADER_NURBSDEGREE) = nurbsdegree
+
+          ! Then save the number of control points
+          p_IsegInfo (BOUNDARY_SEGHEADER_LENGTH*isegment+&
+                      BOUNDARY_SEGHEADER_NCNTRLPNTS) = ncntrlpnts
+
+          ! Then save ncntrlpnts triples (x,y,w)
+          do i = 0, ncntrlpnts-1
+            read (iunit,*) p_DsegInfo(isegrel+3*i+1),&
+                           p_DsegInfo(isegrel+3*i+2),&
+                           p_DsegInfo(isegrel+3*i+3)
+          end do
+
+          ! The first entry of the node vector comes up ndegree+1
+          ! times, therefore we have to repeat the writing ndegree times
+          read(iunit,*) dtemp
+          do i = 1, nurbsdegree + 1
+            p_DsegInfo(isegrel+3*ncntrlpnts+i) = dtemp
+          end do
+
+          ! Read the interior entries of the node vector. The node
+          ! vector has the (uncompressed) length ndegree + itemp
+          ! +1. We have to subtract the start and end point, which
+          ! both occur (ndegree+1) times.
+          do i = 1, ncntrlpnts + nurbsdegree + 1 - 2*(nurbsdegree+1)
+            read(iunit,*) p_DsegInfo(isegrel + 3*ncntrlpnts + i + nurbsdegree +1)
+          end do
+
+          ! Also the last control point parameter comes up (ndegree+1) times
+          read(iunit,*) dtemp
+          do i = 1, nurbsdegree + 1
+            p_DsegInfo(isegrel+4*ncntrlpnts+i) = dtemp
+          end do
+
+          ! Save the initial parameter value (in length-parametrisation)
+          ! to the first entry
+          p_DsegInfo(isegrel+1) = dmaxpar
+
+        case (BOUNDARY_TYPE_EXPRESSION)
           ! Type 6: Analytic expression. Consists of
           ! - Expression for x-coordinate
           ! - Expression for y-coordinate
@@ -907,16 +1022,16 @@ contains
 
           ! Get the absolute position of the analytic expression in the
           ! function parser object
-          isegabs = p_IsegInfo(BOUNDARY_SEGHEADER_LENGTH*isegment+BOUNDARY_SEGHEADER_EXPRESSION)
+          icomp = p_IsegInfo(BOUNDARY_SEGHEADER_LENGTH*isegment+BOUNDARY_SEGHEADER_EXPRESSION)
           
           read(iunit,*) cbuffer ! x-coordinate
-          call fparser_parseFunction(rboundary%p_rfparser, isegabs+1, cbuffer, (/'p'/))
+          call fparser_parseFunction(rboundary%p_rfparser, icomp+1, cbuffer, (/'p'/))
           read(iunit,*) cbuffer ! y-coordinate
-          call fparser_parseFunction(rboundary%p_rfparser, isegabs+2, cbuffer, (/'p'/))
+          call fparser_parseFunction(rboundary%p_rfparser, icomp+2, cbuffer, (/'p'/))
           read(iunit,*) cbuffer ! x-coordinate of normal direction
-          call fparser_parseFunction(rboundary%p_rfparser, isegabs+3, cbuffer, (/'p'/))
+          call fparser_parseFunction(rboundary%p_rfparser, icomp+3, cbuffer, (/'p'/))
           read(iunit,*) cbuffer ! y-coordinate of normal direction
-          call fparser_parseFunction(rboundary%p_rfparser, isegabs+4, cbuffer, (/'p'/))
+          call fparser_parseFunction(rboundary%p_rfparser, icomp+4, cbuffer, (/'p'/))
           
           ! Save the initial parameter value (in length-parametrisation)
           ! to the first entry
@@ -924,7 +1039,7 @@ contains
 
 
           ! Calculate the real length of the analytically given path
-          dl = adaptiveSimpson(rboundary%p_rfparser, isegabs+3, isegabs+4,&
+          dl = adaptiveSimpson(rboundary%p_rfparser, icomp+3, icomp+4,&
               real(isegment,DP), real(isegment+1,DP), 1e-8_DP, 10)
           p_DsegInfo(isegrel+2) = dl
           
