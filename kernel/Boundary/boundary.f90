@@ -82,15 +82,16 @@ module boundary
   use error
   use io
   use genoutput
+  use fparser
 
   implicit none
 
   private
 
 !<constants>
-!<constantblock>
+!<constantblock description="Global constants for boundary">
   ! maximal degree of NURBS
-  integer, parameter, public :: PAR_MAXNURBSDEGREE=35
+  integer, parameter, public :: PAR_MAXNURBSDEGREE = 35
 !</constantblock>
 
 !<constantblock description="types of boundary segments">
@@ -108,6 +109,9 @@ module boundary
 
   ! boundary segment analytic
   integer, parameter, public :: BOUNDARY_TYPE_ANALYTIC = 5
+  
+  ! boundary segment by expression
+  integer, parameter, public :: BOUNDARY_TYPE_EXPRESSION = 6
 !</constantblock>
 
 !<constantblock description="kinds of boundary segments">
@@ -128,6 +132,9 @@ module boundary
 
   ! boundary segment header offset for nurbs degree
   integer, parameter, public :: BOUNDARY_SEGHEADER_NURBSDEGREE = 3
+
+  ! boundary segment header offset for analytic expression
+  integer, parameter, public :: BOUNDARY_SEGHEADER_EXPRESSION = 3
 
   ! boundary segment header offset for number of control points
   integer, parameter, public :: BOUNDARY_SEGHEADER_NCNTRLPNTS = 4
@@ -261,6 +268,12 @@ module boundary
 
     ! contains handles for offset vectors of boundary components
     integer :: h_Iintdatavec_handles = ST_NOHANDLE
+
+    ! contains offsets in function parser object
+    integer :: h_Iintdatavec_fparser = ST_NOHANDLE
+
+    ! Function parser storing analytic expressions
+    type(t_fparser), pointer :: p_rfparser => null()
 
   end type t_boundary
 
@@ -584,11 +597,14 @@ contains
     integer :: ibcomponent, isegment, ibct,ihandle
     integer, dimension(:), pointer :: p_IsegInfo, p_IsegCount
     integer, dimension(:), pointer :: p_IdbleSegInfo_handles,p_IintSegInfo_handles
+    integer, dimension(:), pointer :: p_IintSegInfo_fparser
     real(DP), dimension(:), pointer :: p_DsegInfo, p_DmaxPar
     integer :: ityp, nspline, npar
-    integer :: isegrel
+    integer :: isegrel,isegabs
     integer :: idblemem  ! Counts the memory we need
+    integer :: iexpression  ! Counts the number of expressions
     real(DP) :: dl
+    character(len=1024) :: cbuffer
 
     ! Current parameter value in length-parametrisation
     real(DP) :: dmaxpar
@@ -632,10 +648,20 @@ contains
                      rboundary%h_IsegCount, ST_NEWBLOCK_ZERO)
     call storage_getbase_int(rboundary%h_IsegCount, p_IsegCount)
 
+    ! Allocate an array containing the offsets of boundary segments in
+    ! the global function parser object
+    call storage_new("boundary_read_prm", "h_Iintdatavec_fparser", &
+                     rboundary%iboundarycount, ST_INT, &
+                     rboundary%h_Iintdatavec_fparser, ST_NEWBLOCK_ZERO)
+    call storage_getbase_int(rboundary%h_Iintdatavec_fparser, p_IintSegInfo_fparser)
+
     ! No we have to gather information about boundary segments.
     ! This makes it necessary to read the boundary definition file
     ! multiple times, but who cares :)
 
+    ! iexpression counts how many analytic expressions we need in total
+    iexpression = 0
+    
     ! Initialise the boundary components, loop through them
 
     do ibcomponent = 1,rboundary%iboundarycount_g
@@ -651,13 +677,13 @@ contains
       ! Read NCOMP = number of boundary segments in this boundary component
       read (iunit,*) p_IsegCount(ibct)
 
-      ! Allocate an integer-array which saves the segtment type and
+      ! Allocate an integer-array which saves the segment type and
       ! the start positions (0-based!) of each segment information
       ! block in the segment-array. It is as long as the number
       ! of segments indicates * 2.
 
       call storage_new("boundary_read_prm", "h_Isegcount", &
-                       2*p_IsegCount(ibct), ST_INT, &
+                       BOUNDARY_SEGHEADER_LENGTH*p_IsegCount(ibct), ST_INT, &
                        ihandle, ST_NEWBLOCK_ZERO)
       p_IintSegInfo_handles(ibct) = ihandle
       call storage_getbase_int(ihandle, p_IsegInfo)
@@ -677,16 +703,18 @@ contains
 
         ! What do we have here?
         select case (ityp)
-        case (1)
+        case (BOUNDARY_TYPE_LINE)
           ! Type 1: Line.
           ! Save the segment type into the first element of each
           ! 2-tuple in the integer array:
 
-          p_IsegInfo (1+2*isegment) = BOUNDARY_TYPE_LINE
+          p_IsegInfo (BOUNDARY_SEGHEADER_LENGTH*isegment+&
+                      BOUNDARY_SEGHEADER_TYPE) = BOUNDARY_TYPE_LINE
 
           ! Save the start position of this segment to the segment-start array.
 
-          p_IsegInfo (1+2*isegment+1) = idblemem
+          p_IsegInfo (BOUNDARY_SEGHEADER_LENGTH*isegment+&
+                      BOUNDARY_SEGHEADER_OFFSET) = idblemem
 
           ! A line consists of
           ! - Startpoint
@@ -696,16 +724,18 @@ contains
           ! So we need 2*2+2 doubles.
           idblemem = idblemem + 6
 
-        case (2)
+        case (BOUNDARY_TYPE_CIRCLE)
           ! Type 2: Circle / arc.
           ! Save the segment type into the first element of each
           ! 2-tuple in the integer array:
 
-          p_IsegInfo (1+2*isegment) = BOUNDARY_TYPE_CIRCLE
+          p_IsegInfo (BOUNDARY_SEGHEADER_LENGTH*isegment+&
+                      BOUNDARY_SEGHEADER_TYPE) = BOUNDARY_TYPE_CIRCLE
 
           ! Save the start position of this segment to the segment-start array.
 
-          p_IsegInfo (1+2*isegment+1) = idblemem
+          p_IsegInfo (BOUNDARY_SEGHEADER_LENGTH*isegment+&
+                      BOUNDARY_SEGHEADER_OFFSET) = idblemem
 
           ! A circle/arc consists of
           ! - Center
@@ -718,18 +748,53 @@ contains
           ! minimum parameter value and in the second one the length.
           ! So we need 3*2+2 doubles.
           idblemem = idblemem + 8
+
+        case (BOUNDARY_TYPE_EXPRESSION)
+          ! Type 6: Analytic expression 
+          ! Save the segment type into the first element of each
+          ! 2-tuple in the integer array:
+
+          p_IsegInfo (BOUNDARY_SEGHEADER_LENGTH*isegment+&
+                      BOUNDARY_SEGHEADER_TYPE) = BOUNDARY_TYPE_EXPRESSION
+
+          ! Save the start position of this segment to the segment-start array.
+
+          p_IsegInfo (BOUNDARY_SEGHEADER_LENGTH*isegment+&
+                      BOUNDARY_SEGHEADER_OFFSET) = idblemem
+
+          ! Save the start position of this segment in the function parser.
+          p_IsegInfo (BOUNDARY_SEGHEADER_LENGTH*isegment+&
+                      BOUNDARY_SEGHEADER_EXPRESSION) = iexpression
+
+          ! An analytic expression consists of
+          ! - Expression for x-coordinate
+          ! - Expression for y-coordinate
+          ! - Expression for x-coordinate of norval vector
+          ! - Expression for y-coordinate of norval vector
+          ! So we need 4 expressions
+          iexpression = iexpression + 4
+
+          ! Furthermore, in the first element of the segment we save the
+          ! minimum parmeter value and in the second one the length.
+          ! So we need 2 doubles.
+          idblemem = idblemem + 2
         end select
       end do
 
       ! Allocate memory for all the information that defines our
       ! boundary segments:
-
       call storage_new("boundary_read_prm", "h_IdbleSegInfo_handles", &
                        idblemem, ST_DOUBLE, &
                        ihandle, ST_NEWBLOCK_ZERO)
       p_IdbleSegInfo_handles(ibct) = ihandle
 
     end do
+
+    ! Do we need to allocate a funciton parser?
+    if (iexpression .gt. 0) then
+      allocate(rboundary%p_rfparser)
+      call fparser_create(rboundary%p_rfparser, iexpression)
+    end if
 
     ! Now we build the segment information.
 
@@ -759,11 +824,11 @@ contains
 
         ! Get the relative position of the segment information in the
         ! segment information array.
-        isegrel = p_IsegInfo(1+2*isegment+1)
+        isegrel = p_IsegInfo(BOUNDARY_SEGHEADER_LENGTH*isegment+BOUNDARY_SEGHEADER_OFFSET)
 
         ! What do we have here? The type identifier is in the
         ! first entry of the 2-tupel in the integer-array:
-        select case (p_IsegInfo(1+2*isegment))
+        select case (p_IsegInfo(BOUNDARY_SEGHEADER_LENGTH*isegment+BOUNDARY_SEGHEADER_TYPE))
         case (BOUNDARY_TYPE_LINE)
           ! Type 1: Line. Consists of
           ! - Startpoint
@@ -832,6 +897,40 @@ contains
           ! Increase the maximum parameter value
           dmaxPar = dmaxPar + dl
 
+        case(BOUNDARY_TYPE_EXPRESSION)
+          ! Type 6: Analytic expression. Consists of
+          ! - Expression for x-coordinate
+          ! - Expression for y-coordinate
+          ! - Expression for x-coordinate of norval vector
+          ! - Expression for y-coordinate of norval vector
+          ! We read these four expressions into the function parser object
+
+          ! Get the absolute position of the analytic expression in the
+          ! function parser object
+          isegabs = p_IsegInfo(BOUNDARY_SEGHEADER_LENGTH*isegment+BOUNDARY_SEGHEADER_EXPRESSION)
+          
+          read(iunit,*) cbuffer ! x-coordinate
+          call fparser_parseFunction(rboundary%p_rfparser, isegabs+1, cbuffer, (/'p'/))
+          read(iunit,*) cbuffer ! y-coordinate
+          call fparser_parseFunction(rboundary%p_rfparser, isegabs+2, cbuffer, (/'p'/))
+          read(iunit,*) cbuffer ! x-coordinate of normal direction
+          call fparser_parseFunction(rboundary%p_rfparser, isegabs+3, cbuffer, (/'p'/))
+          read(iunit,*) cbuffer ! y-coordinate of normal direction
+          call fparser_parseFunction(rboundary%p_rfparser, isegabs+4, cbuffer, (/'p'/))
+          
+          ! Save the initial parameter value (in length-parametrisation)
+          ! to the first entry
+          p_DsegInfo(isegrel+1) = dmaxpar
+
+
+          ! Calculate the real length of the analytically given path
+          dl = adaptiveSimpson(rboundary%p_rfparser, isegabs+3, isegabs+4,&
+              real(isegment,DP), real(isegment+1,DP), 1e-8_DP, 10)
+          p_DsegInfo(isegrel+2) = dl
+          
+          ! Increase the maximum parameter value
+          dmaxPar = dmaxPar + dl
+
         end select
       end do
 
@@ -842,6 +941,93 @@ contains
 
     ! Close the file, finish
     close(iunit)
+
+  contains
+
+    ! Here, some auxiliary functions follow
+
+    ! Compute the length of the analytically given parameter curve
+    ! by the adaptive Simpson quadrature rule
+    function adaptiveSimpson(rfparser, icompx, icompy,&
+        dparmin, dparmax, dtolerance, nrecursion) result(dlength)
+
+      ! input parameters
+      type(t_fparser), intent(in) :: rfparser
+      integer, intent(in) :: icompx,icompy,nrecursion
+      real(DP), intent(in) :: dparmin,dparmax,dtolerance
+      
+      ! result
+      real(DP) :: dlength
+      
+      ! local variables
+      real(DP) :: dparmid,dfmin,dfmax,dfmid,dl
+      real(DP) :: daux1,daux2,daux3,daux4,daux5,daux6
+
+      dparmid = (dparmin+dparmax)*0.5_DP
+      
+      call fparser_evalFunction(rfparser, icompx, (/dparmin/), daux1)
+      call fparser_evalFunction(rfparser, icompx, (/dparmid/), daux2)
+      call fparser_evalFunction(rfparser, icompx, (/dparmax/), daux3)
+
+      call fparser_evalFunction(rfparser, icompy, (/dparmin/), daux4)
+      call fparser_evalFunction(rfparser, icompy, (/dparmid/), daux5)
+      call fparser_evalFunction(rfparser, icompy, (/dparmax/), daux6)
+
+      dfmin = sqrt(daux1*daux1 + daux4*daux4)
+      dfmid = sqrt(daux2*daux2 + daux5*daux5)
+      dfmax = sqrt(daux3*daux3 + daux6*daux6)
+
+      dl = (dparmax-dparmin)*(dfmin+4.0_DP*dfmid+dfmax)/6.0_DP
+
+      dlength = adaptiveSimpsonAux(rfparser, icompx, icompy,&
+          dparmin, dparmax, dtolerance, dl, dfmin, dfmid, dfmax, nrecursion)
+    end function adaptiveSimpson
+
+    ! Auxiliary routine for adaptive Simpson rule
+    recursive function adaptiveSimpsonAux(rfparser, icompx, icompy, dparmin, dparmax,&
+        dtolerance, dl, dfmin, dfmid, dfmax, nrecursion) result(dlength)
+
+      ! input parameters
+      type(t_fparser), intent(in) :: rfparser
+      integer, intent(in) :: icompx,icompy,nrecursion
+      real(DP), intent(in) :: dparmin,dparmax,dtolerance
+      real(DP), intent(in) :: dl,dfmin,dfmid,dfmax
+      
+      ! result
+      real(DP) :: dlength
+
+      ! local variables
+      real(DP) :: dparmid,dparleft,dparright,dfleft,dfright,dlleft,dlright
+      real(DP) :: daux1,daux2,daux3,daux4
+
+      dparmid   = (dparmin+dparmax)*0.5_DP
+      dparleft  = (dparmin+dparmid)*0.5_DP
+      dparright = (dparmid+dparmax)*0.5_DP
+
+      call fparser_evalFunction(rfparser, icompx, (/dparleft/), daux1)
+      call fparser_evalFunction(rfparser, icompx, (/dparright/), daux2)
+
+      call fparser_evalFunction(rfparser, icompy, (/dparleft/), daux3)
+      call fparser_evalFunction(rfparser, icompy, (/dparright/), daux4)
+
+      dfleft  = sqrt(daux1*daux1 + daux3*daux3)
+      dfright = sqrt(daux2*daux2 + daux4*daux4)
+
+      dlleft  = (dparmax-dparmin)*(dfmin+4.0_DP*dfleft+dfmid)/12.0_DP
+      dlright = (dparmax-dparmin)*(dfmid+4.0_DP*dfright+dfmax)/12.0_DP
+
+      dlength = dlleft + dlright
+
+      if ((nrecursion .le. 0) .or. (abs(dlength -dl) .le. 15*dtolerance)) then
+        dlength = dlength + (dlength-dl)/15.0_DP
+      else
+        dlength = adaptiveSimpsonAux(rfparser, icompx, icompy, dparmin, dparmid,&
+            0.5_DP*dtolerance, dlleft, dfmin, dfleft, dfmid, nrecursion-1) +&
+                  adaptiveSimpsonAux(rfparser, icompx, icompy, dparmid, dparmax,&
+            0.5_DP*dtolerance, dlright, dfmid, dfright, dfmax, nrecursion-1)
+      end if
+
+    end function adaptiveSimpsonAux
 
   end subroutine boundary_read_prm
 
@@ -897,6 +1083,15 @@ contains
         call storage_free (rboundary%h_IsegCount)
     if (rboundary%h_DmaxPar .ne. ST_NOHANDLE)&
         call storage_free (rboundary%h_DmaxPar)
+    if (rboundary%h_Iintdatavec_fparser .ne. ST_NOHANDLE)&
+        call storage_free (rboundary%h_Iintdatavec_fparser)
+
+    ! Release function parser if required
+    if (associated(rboundary%p_rfparser)) then
+      call fparser_release(rboundary%p_rfparser)
+      deallocate(rboundary%p_rfparser)
+      rboundary%p_rfparser => null()
+    end if
 
     rboundary%iboundarycount_g = 0
     rboundary%iboundarycount = 0
@@ -1060,7 +1255,7 @@ contains
       end if
 
       ! Determine Start index of the segment in the double-prec. block
-      istartidx = IsegInfo(1+2*iseg+1)
+      istartidx = IsegInfo(BOUNDARY_SEGHEADER_LENGTH*iseg+BOUNDARY_SEGHEADER_OFFSET)
 
       dendpar     = iseg + 1.0_DP
       dseglength  = DsegInfo(2+istartidx)
@@ -1074,7 +1269,7 @@ contains
         do iseg = 0,IsegCount(iboundCompIdx)-1
 
           ! Determine Start index of the segment in the double-prec. block
-          istartidx = IsegInfo(1+2*iseg+1)
+          istartidx = IsegInfo(BOUNDARY_SEGHEADER_LENGTH*iseg+BOUNDARY_SEGHEADER_OFFSET)
 
           ! Get the start and end parameter value
           dcurrentpar = DsegInfo(1+istartidx)
@@ -1090,7 +1285,7 @@ contains
         do iseg = 0,IsegCount(iboundCompIdx)-1
 
           ! Determine Start index of the segment in the double-prec. block
-          istartidx = IsegInfo(1+2*iseg+1)
+          istartidx = IsegInfo(BOUNDARY_SEGHEADER_LENGTH*iseg+BOUNDARY_SEGHEADER_OFFSET)
 
           ! Get the start and end parameter value
           dcurrentpar = DsegInfo(1+istartidx)
@@ -1123,7 +1318,7 @@ contains
     ! Use the segment type to determine how to calculate
     ! the coordinate. Remember that the segment type is noted
     ! in the first element of the integer block of each segment!
-    isegtype = IsegInfo(1+2*iseg)
+    isegtype = IsegInfo(BOUNDARY_SEGHEADER_LENGTH*iseg+BOUNDARY_SEGHEADER_TYPE)
 
   end subroutine boundary_getSegmentInfo2D
 
@@ -1175,7 +1370,7 @@ contains
     integer :: cpar ! local copy of cparType
 
     real(DP) :: dpar, dcurrentpar, dparloc, dphi, dendpar, dseglength
-    integer :: iseg,isegtype,istartidx
+    integer :: iseg,isegtype,istartidx,icomp
 
     cpar = BDR_PAR_01
     if (present(cparType)) cpar = cparType
@@ -1219,11 +1414,11 @@ contains
     ! the coordinate. Remember that the segment type is noted
     ! in the first element of the integer block of each segment!
 
-    isegtype = p_IsegInfo(1+2*iseg)
+    isegtype = p_IsegInfo(BOUNDARY_SEGHEADER_LENGTH*iseg+BOUNDARY_SEGHEADER_TYPE)
 
     select case (isegType)
 
-    ! case of line
+      ! case of line
     case (BOUNDARY_TYPE_LINE)
 
       ! As we save the parametrisation in 0-1 parametrisation,
@@ -1236,7 +1431,7 @@ contains
       dx = p_DsegInfo(istartidx+3) + dparloc*p_DsegInfo(istartidx+5)
       dy = p_DsegInfo(istartidx+4) + dparloc*p_DsegInfo(istartidx+6)
 
-    ! case of circle segment
+      ! case of circle segment
     case (BOUNDARY_TYPE_CIRCLE)
 
       ! Rescale dparloc with the length of the arc to get a value
@@ -1255,6 +1450,21 @@ contains
       ! The center of the circle is at position 3/4.
       dx = p_DsegInfo(istartidx+3) + p_DsegInfo(istartidx+5)*cos(dphi)
       dy = p_DsegInfo(istartidx+4) + p_DsegInfo(istartidx+5)*sin(dphi)
+
+      ! case of analytic expression
+    case (BOUNDARY_TYPE_EXPRESSION)
+
+      ! Rescale dparloc with the length of the arc to get a value
+      ! between 0 and 1; important for sin/cos functions later.
+      ! In the 0-1 parametrisation, this is already the case.
+      if (cpar .eq. BDR_PAR_LENGTH) dparloc = dparloc / dseglength
+
+      ! Get absolute position of segment
+      icomp = p_IsegInfo(BOUNDARY_SEGHEADER_LENGTH*iseg+BOUNDARY_SEGHEADER_EXPRESSION)
+
+      ! Calculate the x/y coordinates from the function parser.
+      call fparser_evalFunction(rboundary%p_rfparser, icomp+1, (/dparloc/), dx)
+      call fparser_evalFunction(rboundary%p_rfparser, icomp+2, (/dparloc/), dy)
 
     case DEFAULT
       call output_line ('Wrong segment type: isegType='//sys_siL(isegType,10), &
@@ -1313,7 +1523,7 @@ contains
     integer :: cpar ! local copy of cparType
 
     real(DP) :: dpar, dcurrentpar, dparloc, dphi, dendpar, dseglength
-    integer :: iseg,isegtype,istartidx,ipoint
+    integer :: iseg,isegtype,istartidx,ipoint,icomp
 
     if ((size(Dx) .ne. size(Dt)) .or. (size(Dy) .ne. size(Dt))) then
       call output_line ('size(Dt) /= size(Dnx) /= size(Dny)!', &
@@ -1366,7 +1576,7 @@ contains
       ! the coordinate. Remember that the segment type is noted
       ! in the first element of the integer block of each segment!
 
-      isegtype = p_IsegInfo(1+2*iseg)
+      isegtype = p_IsegInfo(BOUNDARY_SEGHEADER_LENGTH*iseg+BOUNDARY_SEGHEADER_TYPE)
 
       select case (isegType)
 
@@ -1402,6 +1612,21 @@ contains
         ! The center of the circle is at position 3/4.
         Dx(ipoint) = p_DsegInfo(istartidx+3) + p_DsegInfo(istartidx+5)*cos(dphi)
         Dy(ipoint) = p_DsegInfo(istartidx+4) + p_DsegInfo(istartidx+5)*sin(dphi)
+
+        ! case of analytic expression
+      case (BOUNDARY_TYPE_EXPRESSION)
+
+        ! Rescale dparloc with the length of the arc to get a value
+        ! between 0 and 1; important for sin/cos functions later.
+        ! In the 0-1 parametrisation, this is already the case.
+        if (cpar .eq. BDR_PAR_LENGTH) dparloc = dparloc / dseglength
+        
+        ! Get absolute position of segment
+        icomp = p_IsegInfo(BOUNDARY_SEGHEADER_LENGTH*iseg+BOUNDARY_SEGHEADER_EXPRESSION)
+        
+        ! Calculate the x/y coordinates from the function parser.
+        call fparser_evalFunction(rboundary%p_rfparser, icomp+1, (/dparloc/), Dx(ipoint))
+        call fparser_evalFunction(rboundary%p_rfparser, icomp+2, (/dparloc/), Dy(ipoint))
 
       case DEFAULT
         call output_line ('Wrong segment type: isegType='//sys_siL(isegType,10), &
@@ -1461,7 +1686,7 @@ contains
     integer :: cpar ! local copy of cparType
 
     real(DP) :: dpar, dcurrentpar, dparloc, dphi, dendpar, dseglength
-    integer :: iseg,isegtype,istartidx,ipoint,iel
+    integer :: iseg,isegtype,istartidx,ipoint,iel,icomp
 
     if (any(shape(Dx) .ne. shape(Dt)) .or. any(shape(Dy) .ne. shape(Dt))) then
       call output_line ('size(Dt) /= size(Dnx) /= size(Dny)!', &
@@ -1515,7 +1740,7 @@ contains
         ! the coordinate. Remember that the segment type is noted
         ! in the first element of the integer block of each segment!
 
-        isegtype = p_IsegInfo(1+2*iseg)
+        isegtype = p_IsegInfo(BOUNDARY_SEGHEADER_LENGTH*iseg+BOUNDARY_SEGHEADER_TYPE)
 
         select case (isegType)
 
@@ -1552,6 +1777,21 @@ contains
           Dx(ipoint,iel) = p_DsegInfo(istartidx+3) + p_DsegInfo(istartidx+5)*cos(dphi)
           Dy(ipoint,iel) = p_DsegInfo(istartidx+4) + p_DsegInfo(istartidx+5)*sin(dphi)
 
+          ! case of analytic expression
+        case (BOUNDARY_TYPE_EXPRESSION)
+          
+          ! Rescale dparloc with the length of the arc to get a value
+          ! between 0 and 1; important for sin/cos functions later.
+          ! In the 0-1 parametrisation, this is already the case.
+          if (cpar .eq. BDR_PAR_LENGTH) dparloc = dparloc / dseglength
+          
+          ! Get absolute position of segment
+          icomp = p_IsegInfo(BOUNDARY_SEGHEADER_LENGTH*iseg+BOUNDARY_SEGHEADER_EXPRESSION)
+          
+          ! Calculate the x/y coordinates from the function parser.
+          call fparser_evalFunction(rboundary%p_rfparser, icomp+1, (/dparloc/), Dx(ipoint,iel))
+          call fparser_evalFunction(rboundary%p_rfparser, icomp+2, (/dparloc/), Dy(ipoint,iel))
+          
         case DEFAULT
           call output_line ('Wrong segment type: isegType='//sys_siL(isegType,10), &
                             OU_CLASS_ERROR,OU_MODE_STD,'boundary_getCoords_sim')
@@ -1662,7 +1902,7 @@ contains
       iseg = aint(dpar)
 
       ! Determine Start index of the segment in the double-prec. block
-      istartidx = p_IsegInfo(1+2*iseg+1)
+      istartidx = p_IsegInfo(BOUNDARY_SEGHEADER_LENGTH*iseg+BOUNDARY_SEGHEADER_OFFSET)
 
       ! Get the segment length for later use
       dseglength  = p_DsegInfo(2+istartidx)
@@ -1681,7 +1921,7 @@ contains
       do iseg = 0,p_IsegCount(iboundCompIdx)-1
 
         ! Determine Start index of the segment in the double-prec. block
-        istartidx = p_IsegInfo(1+2*iseg+1)
+        istartidx = p_IsegInfo(BOUNDARY_SEGHEADER_LENGTH*iseg+BOUNDARY_SEGHEADER_OFFSET)
 
         ! Get the start and end parameter value
         dcurrentpar = p_DsegInfo(1+istartidx)
@@ -1836,7 +2076,7 @@ contains
           iseg = aint(dpar)
 
           ! Determine Start index of the segment in the double-prec. block
-          istartidx = p_IsegInfo(1+2*iseg+1)
+          istartidx = p_IsegInfo(BOUNDARY_SEGHEADER_LENGTH*iseg+BOUNDARY_SEGHEADER_OFFSET)
 
           ! Get the segment length for later use
           dseglength  = p_DsegInfo(2+istartidx)
@@ -1855,7 +2095,7 @@ contains
           do iseg = 0,p_IsegCount(iboundCompIdx)-1
 
             ! Determine Start index of the segment in the double-prec. block
-            istartidx = p_IsegInfo(1+2*iseg+1)
+            istartidx = p_IsegInfo(BOUNDARY_SEGHEADER_LENGTH*iseg+BOUNDARY_SEGHEADER_OFFSET)
 
             ! Get the start and end parameter value
             dcurrentpar = p_DsegInfo(1+istartidx)
@@ -2015,7 +2255,7 @@ contains
             iseg = aint(dpar)
 
             ! Determine Start index of the segment in the double-prec. block
-            istartidx = p_IsegInfo(1+2*iseg+1)
+            istartidx = p_IsegInfo(BOUNDARY_SEGHEADER_LENGTH*iseg+BOUNDARY_SEGHEADER_OFFSET)
 
             ! Get the segment length for later use
             dseglength  = p_DsegInfo(2+istartidx)
@@ -2034,7 +2274,7 @@ contains
             do iseg = 0,p_IsegCount(iboundCompIdx)-1
 
               ! Determine Start index of the segment in the double-prec. block
-              istartidx = p_IsegInfo(1+2*iseg+1)
+              istartidx = p_IsegInfo(BOUNDARY_SEGHEADER_LENGTH*iseg+BOUNDARY_SEGHEADER_OFFSET)
 
               ! Get the start and end parameter value
               dcurrentpar = p_DsegInfo(1+istartidx)
@@ -2172,11 +2412,11 @@ contains
       ! Remember that in the first element in the double precision block of
       ! each segment, the length of the segment is noted!
 
-      istartidx = p_IsegInfo(1+2*0+1)
+      istartidx = p_IsegInfo(BOUNDARY_SEGHEADER_LENGTH*0+BOUNDARY_SEGHEADER_OFFSET)
       dcurrentpar = 0.0_DP
 
       ! Determine Start index of the segment in the double-prec. block
-      istartidx = p_IsegInfo(1+2*(iboundSegIdx-1)+1)
+      istartidx = p_IsegInfo(BOUNDARY_SEGHEADER_LENGTH*(iboundSegIdx-1)+BOUNDARY_SEGHEADER_OFFSET)
 
       ! Get the start and end parameter value - depending on the parametrisation
       select case (cpar)
@@ -2191,7 +2431,7 @@ contains
       end select
 
       ! Set the segment type in the boundary region structure
-      rregion%isegmentType = p_IsegInfo(1+2*(iboundSegIdx-1))
+      rregion%isegmentType = p_IsegInfo(BOUNDARY_SEGHEADER_LENGTH*(iboundSegIdx-1)+BOUNDARY_SEGHEADER_TYPE)
 
     else
 
@@ -2570,7 +2810,8 @@ contains
     ! boundary components. Check if we are in the simple case.
     if (dparloc .ne. 0.0_DP) then
 
-      call boundary_getNormal2D (isegType,cpar,dparLoc,dseglength,istartidx,p_DsegInfo,dnx,dny)
+      call boundary_getNormal2D (rboundary%p_rfparser,iseg,isegType,cpar,&
+          dparLoc,dseglength,istartidx,p_IsegInfo,p_DsegInfo,dnx,dny)
 
     else
 
@@ -2586,7 +2827,8 @@ contains
         ! We already have the segment 'right' to the point.
         ! Get the corresponding normal vector.
 
-        call boundary_getNormal2D (isegType,cpar,dparLoc,dseglength,istartidx,p_DsegInfo,dnx,dny)
+        call boundary_getNormal2D (rboundary%p_rfparser,iseg,isegType,cpar,&
+            dparLoc,dseglength,istartidx,p_IsegInfo,p_DsegInfo,dnx,dny)
 
       end if
 
@@ -2604,7 +2846,8 @@ contains
           iseg,istartidx,dcurrentpar,dendpar,dseglength,dparloc,isegtype)
 
         ! Calculate the normal into dnx0/dny0
-        call boundary_getNormal2D (isegType,cpar,dparLoc,dseglength,istartidx,p_DsegInfo,dnx0,dny0)
+        call boundary_getNormal2D (rboundary%p_rfparser,iseg,isegType,cpar,&
+            dparLoc,dseglength,istartidx,p_IsegInfo,p_DsegInfo,dnx0,dny0)
 
         ! and add it to dnx/dny
         dnx = dnx+dnx0
@@ -2741,8 +2984,8 @@ contains
       ! boundary components. Check if we are in the simple case.
       if (dparloc .ne. 0.0_DP) then
 
-        call boundary_getNormal2D (isegType,cpar,dparLoc,dseglength,istartidx,&
-            p_DsegInfo,Dnx(ipoint),Dny(ipoint))
+        call boundary_getNormal2D (rboundary%p_rfparser,iseg, isegType,cpar,&
+            dparLoc,dseglength,istartidx,p_IsegInfo,p_DsegInfo,Dnx(ipoint),Dny(ipoint))
 
       else
 
@@ -2758,8 +3001,8 @@ contains
           ! We already have the segment 'right' to the point.
           ! Get the corresponding normal vector.
 
-          call boundary_getNormal2D (isegType,cpar,dparLoc,dseglength,istartidx,&
-              p_DsegInfo,Dnx(ipoint),Dny(ipoint))
+          call boundary_getNormal2D (rboundary%p_rfparser,iseg,isegType,cpar,&
+              dparLoc,dseglength,istartidx,p_IsegInfo,p_DsegInfo,Dnx(ipoint),Dny(ipoint))
 
         end if
 
@@ -2777,8 +3020,8 @@ contains
               iseg,istartidx,dcurrentpar,dendpar,dseglength,dparloc,isegtype)
 
           ! Calculate the normal into dnx0/dny0
-          call boundary_getNormal2D (isegType,cpar,dparLoc,dseglength,istartidx,&
-              p_DsegInfo,dnx0,dny0)
+          call boundary_getNormal2D (rboundary%p_rfparser,iseg,isegType,cpar,&
+              dparLoc,dseglength,istartidx,p_IsegInfo,p_DsegInfo,dnx0,dny0)
 
           ! and add it to dnx/dny
           Dnx(ipoint) = Dnx(ipoint)+dnx0
@@ -2918,8 +3161,8 @@ contains
         ! boundary components. Check if we are in the simple case.
         if (dparloc .ne. 0.0_DP) then
 
-          call boundary_getNormal2D (isegType,cpar,dparLoc,dseglength,istartidx,&
-              p_DsegInfo,Dnx(ipoint,iel),Dny(ipoint,iel))
+          call boundary_getNormal2D (rboundary%p_rfparser,iseg,isegType,cpar,&
+              dparLoc,dseglength,istartidx,p_IsegInfo,p_DsegInfo,Dnx(ipoint,iel),Dny(ipoint,iel))
 
         else
 
@@ -2935,8 +3178,8 @@ contains
             ! We already have the segment 'right' to the point.
             ! Get the corresponding normal vector.
 
-            call boundary_getNormal2D (isegType,cpar,dparLoc,dseglength,istartidx,&
-                p_DsegInfo,Dnx(ipoint,iel),Dny(ipoint,iel))
+            call boundary_getNormal2D (rboundary%p_rfparser,iseg,isegType,cpar,&
+                dparLoc,dseglength,istartidx,p_IsegInfo,p_DsegInfo,Dnx(ipoint,iel),Dny(ipoint,iel))
 
           end if
 
@@ -2954,8 +3197,8 @@ contains
                 iseg,istartidx,dcurrentpar,dendpar,dseglength,dparloc,isegtype)
 
             ! Calculate the normal into dnx0/dny0
-            call boundary_getNormal2D (isegType,cpar,dparLoc,dseglength,istartidx,&
-                p_DsegInfo,dnx0,dny0)
+            call boundary_getNormal2D (rboundary%p_rfparser,iseg,isegType,cpar,&
+                dparLoc,dseglength,istartidx,p_IsegInfo,p_DsegInfo,dnx0,dny0)
 
             ! and add it to dnx/dny
             Dnx(ipoint,iel) = Dnx(ipoint,iel)+dnx0
@@ -2978,13 +3221,20 @@ contains
 
 !<subroutine>
 
-  subroutine boundary_getNormal2D (isegType,cpar,dparLoc,dseglength,istartidx,DsegInfo,dnx,dny)
+  subroutine boundary_getNormal2D (rfparser,iseg,isegType,cpar,&
+      dparLoc,dseglength,istartidx,IsegInfo,DsegInfo,dnx,dny)
 
 !<description>
     ! Calculates the normal of a point on a specific boundary segment.
 !</description>
 
     !<input>
+
+    ! Funciton parser
+    type(t_fparser), intent(in) :: rfparser
+
+    ! Segment number (0,1,2,...) of the segment
+    integer, intent(in) :: iseg
 
     ! Segment type
     integer, intent(in) :: isegType
@@ -3001,6 +3251,9 @@ contains
     ! Start index of the segment in DsegInfo
     integer, intent(in) :: istartIdx
 
+    ! Integer segment info array
+    integer, dimension(:), intent(in) :: IsegInfo
+
     ! Double precision segment info array
     real(DP), dimension(:), intent(in) :: DsegInfo
 
@@ -3016,6 +3269,7 @@ contains
 
     ! local variables
     real(DP) :: dploc,dphi,dnorm,dnx0,dny0
+    integer :: icomp
 
     dploc = dparloc
 
@@ -3052,6 +3306,21 @@ contains
         dnx0 = -dnx0
         dny0 = -dny0
       end if
+
+      ! case of analytic expression
+    case (BOUNDARY_TYPE_EXPRESSION)
+      
+      ! Rescale dparloc with the length of the arc to get a value
+      ! between 0 and 1; important for sin/cos functions later.
+      ! In the 0-1 parametrisation, this is already the case.
+      if (cpar .eq. BDR_PAR_LENGTH) dploc = dploc / dseglength
+      
+      ! Get absolute position of segment
+      icomp = IsegInfo(BOUNDARY_SEGHEADER_LENGTH*iseg+BOUNDARY_SEGHEADER_EXPRESSION)
+
+      ! Calculate the x/y coordinates from the function parser.
+      call fparser_evalFunction(rfparser, icomp+3, (/dploc/), dny0); dny0=-dny0
+      call fparser_evalFunction(rfparser, icomp+4, (/dploc/), dnx0)
 
     case DEFAULT
       call output_line ('Wrong segment type: isegType='//sys_siL(isegType,10), &
