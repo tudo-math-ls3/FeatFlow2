@@ -421,7 +421,7 @@ contains
         solver_getMinimumMultigridlevel(rsolver),&
         solver_getMaximumMultigridlevel(rsolver),&
         rproblemDescriptor)
-    call problem_initProblem(rproblemDescriptor, rproblem)
+    call problem_initProblem(rproblem, rproblemDescriptor)
 
     ! Initialise the individual problem levels
     call hydro_initAllProblemLevels(rparlist,&
@@ -790,7 +790,7 @@ contains
         call parlst_getvalue_int(rparlist,&
             ssectionNameHydro, 'templateMatrix', templateMatrix)
         call lsyssc_createGraphFromMatrix(&
-            p_rproblemLevel%Rmatrix(templateMatrix), rgraph)
+            p_rproblemLevel%RmatrixScalar(templateMatrix), rgraph)
         call collct_setvalue_graph(rcollection, 'sparsitypattern',&
             rgraph, .true., ssectionName=ssectionName)
 
@@ -825,7 +825,7 @@ contains
 
             ! Update the template matrix according to the sparsity pattern
             call lsyssc_createMatrixFromGraph(rgraph,&
-                p_rproblemLevel%Rmatrix(templateMatrix))
+                p_rproblemLevel%RmatrixScalar(templateMatrix))
 
             ! Re-initialise all constant coefficient matrices
             call hydro_initProblemLevel(rparlist,&
@@ -842,7 +842,7 @@ contains
 
             ! Resize the solution vector for the transport model accordingly
             call lsysbl_resizeVectorBlock(p_rsolutionTransport, &
-                p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
+                p_rproblemLevel%RmatrixScalar(templateMatrix)%NEQ, .false.)
 
             ! Re-generate the initial solution vector for the hydrodynamic model
             call hydro_initSolution(rparlist, ssectionnameHydro,&
@@ -1127,7 +1127,7 @@ contains
 
         ! Update the template matrix according to the sparsity pattern
         call lsyssc_createMatrixFromGraph(rgraph,&
-            p_rproblemLevel%Rmatrix(templateMatrix))
+            p_rproblemLevel%RmatrixScalar(templateMatrix))
 
         ! Stop time measurement for mesh adaptation
         call stat_stopTimer(p_rtimerAdaptation)
@@ -1166,7 +1166,7 @@ contains
 
         ! Resize the solution vector for the transport model accordingly
         call lsysbl_resizeVectorBlock(p_rsolutionTransport, &
-            p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
+            p_rproblemLevel%RmatrixScalar(templateMatrix)%NEQ, .false.)
 
         ! Prepare internal data arrays of the solver structure
         call parlst_getvalue_int(rparlist,&

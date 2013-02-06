@@ -164,7 +164,7 @@ program flagship
 
   ! Switch to application module
   call parlst_getvalue_string(rparlist, '', "application", application, '')
-  call sys_tolower(application)
+  call sys_toupper(application)
   call output_line('  Application:     '//trim(application))
   call output_line('  Parameterfile:   '//trim(sparameterfile))
   call output_separator(OU_SEP_STAR)
@@ -175,17 +175,17 @@ program flagship
   call output_separator(OU_SEP_MINUS)
 
   ! Switch to application module
-  if (trim(application) .eq. 'transport') then
-    call transp_app(rparlist, 'transport')
+  if (trim(application) .eq. 'TRANSPORT') then
+    call transp_app(rparlist, 'TRANSPORT')
 
-  elseif (trim(application) .eq. 'hydro') then
-    call hydro_app(rparlist, 'hydro')
+  elseif (trim(application) .eq. 'HYDRO') then
+    call hydro_app(rparlist, 'HYDRO')
 
-  elseif (trim(application) .eq. 'zpinch') then
-    call zpinch_app(rparlist, 'zpinch')
+  elseif (trim(application) .eq. 'ZPINCH') then
+    call zpinch_app(rparlist, 'ZPINCH')
 
-  elseif (trim(application) .eq. 'mhd') then
-    call mhd_app(rparlist, 'mhd')
+  elseif (trim(application) .eq. 'MHD') then
+    call mhd_app(rparlist, 'MHD')
     
   else
     call output_line('Invalid application name!',&

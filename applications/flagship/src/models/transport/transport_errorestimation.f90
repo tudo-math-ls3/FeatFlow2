@@ -236,14 +236,14 @@ contains
     if (lumpedMassMatrix > 0) then
       ! Set pointer to the lumped mass matrix
       call lsyssc_getbase_double(&
-          rproblemLevel%Rmatrix(lumpedMassMatrix), p_DlumpedMassMatrix)
-      NEQ = rproblemLevel%Rmatrix(lumpedMassMatrix)%NEQ
+          rproblemLevel%RmatrixScalar(lumpedMassMatrix), p_DlumpedMassMatrix)
+      NEQ = rproblemLevel%RmatrixScalar(lumpedMassMatrix)%NEQ
 
     else
       ! Compute the lumped mass matrix explicitly
       call parlst_getvalue_int(rparlist, ssectionName,&
           'templatematrix', templateMatrix)
-      call lsyssc_duplicateMatrix(rproblemLevel%Rmatrix(templateMatrix),&
+      call lsyssc_duplicateMatrix(rproblemLevel%RmatrixScalar(templateMatrix),&
           rmatrix, LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
       call stdop_assembleSimpleMatrix(rmatrix, DER_FUNC, DER_FUNC)
       call lsyssc_lumpMatrixScalar(rmatrix, LSYSSC_LUMP_DIAG)

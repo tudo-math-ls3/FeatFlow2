@@ -79,6 +79,13 @@ module boundarycondaux
   ! *****************************************************************************
 
 !<constants>
+
+!<constantblock>
+
+  ! Maximum length of a section name.
+  integer, parameter, public :: BDRC_MLSECTION = 64
+!</constantblock>
+
 !<constantblock description="Flags for boundary condition specification bitfield">
 
   ! Impose boundary condition in strong sense by filtering the system
@@ -232,8 +239,8 @@ contains
     logical, dimension(:), pointer :: p_BisSegClosed
     character(FPAR_VARLEN), dimension(:), allocatable :: Svariables
     character(FPAR_STRLEN), dimension(:), allocatable :: Sexpressions
-    character(FPAR_STRLEN) :: skeyword
-    character(FPAR_STRLEN) :: sdata,svalue,svariable
+    character(FPAR_STRLEN) :: skeyword,sdata,svalue,svariable
+    character(BDRC_MLSECTION) :: sectionname
     integer :: ibct,ibct1,icomp,idatalen,iexpr,ios,ipos,iunit,ivar,jpos,kpos,nexpr,nncomp
 
     ! Set spatial dimension
@@ -249,6 +256,9 @@ contains
       call sys_halt()
     end if
     
+    sectionname = adjustl(ssectionname)
+    call sys_toupper(sectionname)
+
     ! Read through the complete file and look for the specified
     ! boundary section section
     ios = 0
@@ -265,12 +275,12 @@ contains
       jpos = scan(sdata(ipos:idatalen), "]")
       if (jpos .le. ipos) cycle
 
-      ! Check for "[ssectionName]"
-      call sys_tolower(sdata(ipos+1:jpos-1), skeyword)
-      if (trim(adjustl(skeyword)) .eq. trim(adjustl(ssectionName))) then
+      ! Check for "[SECTIONNAME]"
+      call sys_toupper(sdata(ipos+1:jpos-1), skeyword)
+      if (trim(adjustl(skeyword)) .eq. trim(adjustl(sectionName))) then
 
         !-----------------------------------------------------------------------
-        ! Read in boundary conditions from section [ssectionName]
+        ! Read in boundary conditions from section [SECTIONNAME]
         !-----------------------------------------------------------------------
 
         ! (1) Read number of boundary components 'NBCT'
@@ -281,8 +291,8 @@ contains
           call sys_halt()
         end if
 
-        call sys_tolower(sdata(1:idatalen), skeyword)        
-        if (trim(adjustl(skeyword)) .ne. 'nbct') then
+        call sys_toupper(sdata(1:idatalen), skeyword)        
+        if (trim(adjustl(skeyword)) .ne. 'NBCT') then
           call output_line('NBCT missing!',&
               OU_CLASS_ERROR,OU_MODE_STD,'bdrc_readBoundaryCondition')
           call sys_halt()
@@ -306,8 +316,8 @@ contains
           call sys_halt()
         end if
 
-        call sys_tolower(sdata(1:idatalen), skeyword)        
-        if (trim(adjustl(skeyword)) .ne. 'nexpr') then
+        call sys_toupper(sdata(1:idatalen), skeyword)        
+        if (trim(adjustl(skeyword)) .ne. 'NEXPR') then
           call output_line('NEXPR missing!',&
               OU_CLASS_ERROR,OU_MODE_STD,'bdrc_readBoundaryCondition')
           call sys_halt()
@@ -353,8 +363,8 @@ contains
             call sys_halt()
           end if
           
-          call sys_tolower(sdata(1:idatalen), skeyword)        
-          if (trim(adjustl(skeyword)) .ne. 'ibct') then
+          call sys_toupper(sdata(1:idatalen), skeyword)        
+          if (trim(adjustl(skeyword)) .ne. 'IBCT') then
             call output_line('IBCT missing!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'bdrc_readBoundaryCondition')
             call sys_halt()
@@ -383,8 +393,8 @@ contains
             call sys_halt()
           end if
           
-          call sys_tolower(sdata(1:idatalen), skeyword)        
-          if (trim(adjustl(skeyword)) .ne. 'ncomp') then
+          call sys_toupper(sdata(1:idatalen), skeyword)        
+          if (trim(adjustl(skeyword)) .ne. 'NCOMP') then
             call output_line('NCOMP missing!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'bdrc_readBoundaryCondition')
             call sys_halt()
@@ -447,8 +457,8 @@ contains
           call sys_halt()
         end if
         
-        call sys_tolower(sdata(1:idatalen), skeyword)        
-        if (trim(adjustl(skeyword)) .ne. 'parameters') then
+        call sys_toupper(sdata(1:idatalen), skeyword)        
+        if (trim(adjustl(skeyword)) .ne. 'PARAMETERS') then
           call output_line('PARAMETERS missing!',&
               OU_CLASS_ERROR,OU_MODE_STD,'bdrc_readBoundaryCondition')
           call sys_halt()

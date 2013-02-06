@@ -33,6 +33,12 @@ sbenchlogfile =
 # Performance configurations
 sperfconfigfile = %{sdatadirectory}/defaults/perfconfig.dat
 
+# Default data type
+sdatatype = DOUBLE
+
+# Default matrix format
+smatrixformat = MATRIX9
+
 ################################################################################
 [Transport]
 ################################################################################
@@ -41,20 +47,15 @@ sperfconfigfile = %{sdatadirectory}/defaults/perfconfig.dat
 version = %{version}
 
 # Position of the discretisation in the array of discretisations
-Discretisation = 1
+#Discretisation = 1
+
+#-------------------------------------------------------------------------------
 
 # Position of the DOF coordinates in the block vector structure
 DofCoords = 1
 
 # Position of the velocity field data in the block vector structure
 VelocityField = 2
-
-# Cubature info sections
-CubatureInfo(4) =
-    CubFuncFunc
-    CubFuncDeriv
-    CubDerivDeriv
-    CubFunc
 
 #-------------------------------------------------------------------------------
 
@@ -68,10 +69,12 @@ DiffusionGFEM = 2
 TemplateGFEM = 3
 
 # Position of the group finite element block for the primal boundary
-PrimalBdrGFEM = 0 #4
+PrimalBdrGFEM = 0
+#4
 
 # Position of the group finite element block for the dual boundary
-DualBdrGFEM = 0 #5
+DualBdrGFEM = 0
+#5
 
 #-------------------------------------------------------------------------------
 
@@ -100,41 +103,277 @@ TransportMatrix = 4
 
 # Position of the consistent mass matrix in the scalar matrix structure
 ConsistentMassMatrix(1) = 5
-                          CubFuncFunc
+                          Cubinfo_Transport_FuncFunc
 
 # Position of the lumped mass matrix in the scalar matrix structure
 LumpedMassMatrix = 6
 
 # Position of the constant coefficient matrix S in the scalar matrix structure
 CoeffMatrix_S(1) = 7
-                  CubDerivDeriv
+                   Cubinfo_Transport_DerivDeriv
 
 # Position of the constant coefficient matrix CX in the scalar matrix structure
 CoeffMatrix_CX(1) = 8
-                    CubFuncDeriv
+                    Cubinfo_Transport_FuncDeriv
 
 #-------------------------------------------------------------------------------
 
-[CubFuncFunc]
-ccubType = AUTO_G3
-nlevel   = 0
+# Discretisation sections
+Discretisation(1) = 1
+                    Discr_Transport
 
 #-------------------------------------------------------------------------------
 
-[CubFuncDeriv]
-ccubType = AUTO_G3
-nlevel   = 0
+# Cubature info sections
+CubatureInfo(4) =
+                  Cubinfo_Transport_FuncFunc
+                  Cubinfo_Transport_FuncDeriv
+                  Cubinfo_Transport_DerivDeriv
+                  Cubinfo_Transport_Func
 
 #-------------------------------------------------------------------------------
 
-[CubDerivDeriv]
-ccubType = AUTO_G3
-nlevel   = 0
+# Scalar matrix sections
+matrixscalar(8) =
+                  TemplateMatrix_Transport
+                  SystemMatrix_Transport
+                  JacobianMatrix_Transport
+                  TransportMatrix_Transport
+                  ConsistentMatrix_Transport
+                  LumpedMatrix_Transport
+                  CoeffMatrix_S_Transport
+                  CoeffMatrix_CX_Transport
 
 #-------------------------------------------------------------------------------
 
-[CubFunc]
-ccubType = AUTO_G3
-nlevel   = 0
+# Block matrix sections
 
 #-------------------------------------------------------------------------------
+
+# Scalar vector sections
+
+#-------------------------------------------------------------------------------
+
+# Block vector sections
+vectorblock(2) =
+                 DofCoordVector_Transport
+                 VelocityVector_Transport
+
+#-------------------------------------------------------------------------------
+
+# Group finite element sections
+groupfemblock(4) =
+                   TemplateGFEMBlock_Transport
+                   ConvectionGFEMBlock_Transport
+                   DiffusionGFEMBlock_Transport
+                   MassGFEMBlock_Transport
+
+#-------------------------------------------------------------------------------
+
+# Stabilisation of AFC-type
+afcstab(3) =
+             ConvectionAFC_Transport
+             DiffusionAFC_Transport
+             MassAFC_Transport
+
+################################################################################
+[Discr_Transport]
+################################################################################
+saction        = create
+sperform       = always
+discretisation = spatialdiscretisation:SpatialDiscr_Transport
+
+################################################################################
+[SpatialDiscr_Transport]
+################################################################################
+
+celement = %{Transport.celement}
+
+################################################################################
+[Cubinfo_Transport_FuncFunc]
+################################################################################
+saction        = create
+sperform       = always
+scubType       = AUTO_G3
+nlevels        = 0
+discretisation = problem:Transport,idiscr:1,iblock:1
+
+################################################################################
+[Cubinfo_Transport_FuncDeriv]
+################################################################################
+saction        = create
+sperform       = always
+scubType       = AUTO_G3
+nlevels        = 0
+discretisation = problem:Transport,idiscr:1,iblock:1
+
+################################################################################
+[Cubinfo_Transport_DerivDeriv]
+################################################################################
+saction        = create
+sperform       = always
+scubType       = AUTO_G3
+nlevels        = 0
+discretisation = problem:Transport,idiscr:1,iblock:1
+
+################################################################################
+[Cubinfo_Transport_Func]
+################################################################################
+saction        = create
+sperform       = always
+scubType       = AUTO_G3
+nlevels        = 0
+discretisation = problem:Transport,idiscr:1,iblock:1
+
+################################################################################
+[TemplateMatrix_Transport]
+################################################################################
+saction        = create
+sperform       = init
+smethod        = virtual
+sdatatype      = %{sdatatype}
+smatrixformat  = %{smatrixformat}
+discretisation = problem:Transport,iblock:1
+
+################################################################################
+[SystemMatrix_Transport]
+################################################################################
+saction      = duplicate
+sperform     = always
+smethod      = empty
+matrixscalar = problem:Transport,imatrix:1
+
+################################################################################
+[JacobianMatrix_Transport]
+################################################################################
+saction      = duplicate
+sperform     = always
+smethod(1)   = empty
+               extendsparsity
+matrixscalar = problem:Transport,imatrix:1
+
+################################################################################
+[TransportMatrix_Transport]
+################################################################################
+saction      = duplicate
+sperform     = always
+smethod      = empty
+matrixscalar = problem:Transport,imatrix:1
+
+################################################################################
+[ConsistentMatrix_Transport]
+################################################################################
+saction        = duplicate
+sperform       = always
+smethod        = bilf
+matrixscalar   = problem:Transport,imatrix:1
+cubatureinfo   = problem:Transport,icubinfo:1
+strialfunction = DER_FUNC1D
+stestfunction  = DER_FUNC1D
+scoefficient   = 1
+
+################################################################################
+[LumpedMatrix_Transport]
+################################################################################
+saction      = duplicate
+sperform     = always
+smethod      = lump_diag
+matrixscalar = problem:Transport,imatrix:5
+
+################################################################################
+[CoeffMatrix_CX_Transport]
+################################################################################
+saction        = duplicate
+sperform       = always
+smethod        = bilf
+matrixscalar   = problem:Transport,imatrix:1
+cubatureinfo   = problem:Transport,icubinfo:2
+stestfunction  = DER_FUNC1D
+strialfunction = DER_DERIV1D_X
+scoefficient   = 1
+
+################################################################################
+[CoeffMatrix_S_Transport]
+################################################################################
+saction        = duplicate
+sperform       = always
+smethod        = bilf
+matrixscalar   = problem:Transport,imatrix:1
+cubatureinfo   = problem:Transport,icubinfo:3
+stestfunction  = DER_DERIV1D_X
+strialfunction = DER_DERIV1D_X
+scoefficient   = -1e-2
+
+################################################################################
+[DofCoordVector_Transport]
+################################################################################
+saction        = create
+sperform       = always
+smethod        = dof
+discretisation = problem:Transport
+
+################################################################################
+[VelocityVector_Transport]
+################################################################################
+saction        = none
+sperform       = always
+smethod        = virtual
+discretisation = problem:Transport
+
+################################################################################
+[TemplateGFEMBlock_Transport]
+################################################################################
+saction        = create
+sperform       = always
+smethod        = virtual
+groupfemset(1) =
+                 TemplateGFEMSet_Transport
+
+################################################################################
+[TemplateGFEMSet_Transport]
+################################################################################
+saction        = none
+sperform       = always
+smethod        = virtual
+
+################################################################################
+[ConvectionGFEMBlock_Transport]
+################################################################################
+saction        = none
+sperform       = always
+smethod        = virtual
+
+################################################################################
+[DiffusionGFEMBlock_Transport]
+################################################################################
+saction        = none
+sperform       = always
+smethod        = virtual
+
+################################################################################
+[MassGFEMBlock_Transport]
+################################################################################
+saction        = none
+sperform       = always
+smethod        = virtual
+
+################################################################################
+[ConvectionAFC_Transport]
+################################################################################
+saction        = none
+sperform       = always
+smethod        = virtual
+
+################################################################################
+[DiffusionAFC_Transport]
+################################################################################
+saction        = none
+sperform       = always
+smethod        = virtual
+
+################################################################################
+[MassAFC_Transport]
+################################################################################
+saction        = none
+sperform       = always
+smethod        = virtual

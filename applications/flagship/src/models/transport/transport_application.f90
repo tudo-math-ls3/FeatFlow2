@@ -380,7 +380,7 @@ contains
         solver_getMinimumMultigridlevel(rsolver),&
         solver_getMaximumMultigridlevel(rsolver),&
         rproblemDescriptor)
-    call problem_initProblem(rproblemDescriptor, rproblem)
+    call problem_initProblem(rproblem, rproblemDescriptor)
 
     ! Initialise all individual problem levels with primal and dual
     ! boundary conditions (if available)
@@ -778,7 +778,7 @@ contains
         call parlst_getvalue_int(rparlist,&
             ssectionName, 'systemMatrix', systemMatrix)
         call lsyssc_createGraphFromMatrix(&
-            p_rproblemLevel%Rmatrix(templateMatrix), rgraph)
+            p_rproblemLevel%RmatrixScalar(templateMatrix), rgraph)
         call collct_setvalue_graph(rcollection, 'sparsitypattern',&
             rgraph, .true., ssectionName=ssectionName)
 
@@ -813,7 +813,7 @@ contains
 
             ! Update the template matrix according to the sparsity pattern
             call lsyssc_createMatrixFromGraph(rgraph,&
-                p_rproblemLevel%Rmatrix(templateMatrix))
+                p_rproblemLevel%RmatrixScalar(templateMatrix))
             
             ! Re-initialise all constant coefficient matrices
             call transp_initProblemLevel(rparlist, ssectionName,&
@@ -1043,7 +1043,7 @@ contains
 
         ! Update the template matrix according to the sparsity pattern
         call lsyssc_createMatrixFromGraph(rgraph,&
-            p_rproblemLevel%Rmatrix(templateMatrix))
+            p_rproblemLevel%RmatrixScalar(templateMatrix))
 
         ! Resize the solution vector accordingly
         call lsysbl_resizeVectorBlock(p_rdiscretisation,&
@@ -1345,7 +1345,7 @@ contains
         call parlst_getvalue_int(rparlist,&
             ssectionName, 'systemMatrix', systemMatrix)
         call lsyssc_createGraphFromMatrix(&
-            p_rproblemLevel%Rmatrix(templateMatrix), rgraph)
+            p_rproblemLevel%RmatrixScalar(templateMatrix), rgraph)
         call collct_setvalue_graph(rcollection, 'sparsitypattern',&
             rgraph, .true., ssectionName=ssectionName)
 
@@ -1467,7 +1467,7 @@ contains
 
       ! Update the template matrix according to the sparsity pattern
       call lsyssc_createMatrixFromGraph(rgraph,&
-          p_rproblemLevel%Rmatrix(templateMatrix))
+          p_rproblemLevel%RmatrixScalar(templateMatrix))
 
       ! Resize the solution vector accordingly
       call lsysbl_resizeVectorBlock(p_rdiscretisation,&
@@ -1676,7 +1676,7 @@ contains
         call parlst_getvalue_int(rparlist,&
             ssectionName, 'systemMatrix', systemMatrix)
         call lsyssc_createGraphFromMatrix(&
-            p_rproblemLevel%Rmatrix(templateMatrix), rgraph)
+            p_rproblemLevel%RmatrixScalar(templateMatrix), rgraph)
         call collct_setvalue_graph(rcollection, 'sparsitypattern',&
             rgraph, .true., ssectionName=ssectionName)
 
@@ -1889,7 +1889,7 @@ contains
 
       ! Update the template matrix according to the sparsity pattern
       call lsyssc_createMatrixFromGraph(rgraph,&
-          p_rproblemLevel%Rmatrix(templateMatrix))
+          p_rproblemLevel%RmatrixScalar(templateMatrix))
 
       ! Resize the solution vector accordingly
       call lsysbl_resizeVectorBlock(p_rdiscretisation,&
@@ -2096,7 +2096,7 @@ contains
         call parlst_getvalue_int(rparlist,&
             ssectionName, 'systemMatrix', systemMatrix)
         call lsyssc_createGraphFromMatrix(&
-            p_rproblemLevel%Rmatrix(templateMatrix), rgraph)
+            p_rproblemLevel%RmatrixScalar(templateMatrix), rgraph)
         call collct_setvalue_graph(rcollection, 'sparsitypattern',&
             rgraph, .true., ssectionName=ssectionName)
 
@@ -2219,7 +2219,7 @@ contains
 
       ! Update the template matrix according to the sparsity pattern
       call lsyssc_createMatrixFromGraph(rgraph,&
-          p_rproblemLevel%Rmatrix(templateMatrix))
+          p_rproblemLevel%RmatrixScalar(templateMatrix))
 
       ! Resize the solution vector accordingly
       call lsysbl_resizeVectorBlock(p_rdiscretisation,&
@@ -2437,7 +2437,7 @@ contains
         call parlst_getvalue_int(rparlist,&
             ssectionName, 'systemMatrix', systemMatrix)
         call lsyssc_createGraphFromMatrix(&
-            p_rproblemLevel%Rmatrix(templateMatrix), rgraph)
+            p_rproblemLevel%RmatrixScalar(templateMatrix), rgraph)
         call collct_setvalue_graph(rcollection, 'sparsitypattern',&
             rgraph, .true., ssectionName=ssectionName)
 
@@ -2655,7 +2655,7 @@ contains
           relementError, rcollection)
 
       ! Update the template matrix according to the sparsity pattern
-      call lsyssc_createMatrixFromGraph(rgraph, p_rproblemLevel%Rmatrix(templateMatrix))
+      call lsyssc_createMatrixFromGraph(rgraph, p_rproblemLevel%RmatrixScalar(templateMatrix))
 
       ! Resize the solution vector accordingly
       call lsysbl_resizeVectorBlock(p_rdiscretisation,&

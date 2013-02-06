@@ -24,6 +24,9 @@ application = transport
 [Transport]
 ################################################################################
 
+# type of problem
+problemtype = 'standalone'
+
 # file which contains the application specific data
 indatfile = %{sdatadirectory}/transport/1d/bucklev.indat
 
@@ -35,6 +38,10 @@ sdualbdrcondname =
 
 # number of spatial dimensions
 ndimension = 1
+
+# minimum/maximum number of problem levels
+nlmin = %{FullMultigridSolver.nlmin}
+nlmax = %{FullMultigridSolver.nlmax}
 
 # solution algorithm
 algorithm = transient_primal

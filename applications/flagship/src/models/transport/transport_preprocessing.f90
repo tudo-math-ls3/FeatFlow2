@@ -512,9 +512,9 @@ contains
         
         ! Read cubatureinfo from parameter file
         call parlst_getvalue_string(rparlist,&
-            scubatureInfo, 'ccubType', scubType)
+            scubatureInfo, 'scubType', scubType)
         call parlst_getvalue_int(rparlist,&
-            scubatureInfo, 'nlevel', nlevel)
+            scubatureInfo, 'nlevels', nlevel)
         
         ! Create cubatureinfo structure
         call spdiscr_createDefCubStructure(&  
@@ -551,23 +551,23 @@ contains
       ! finite element matrix sparsity structure based on the spatial
       ! descretisation and store it as the template matrix. Otherwise we
       ! assume that the template matrix has been generated externally.
-      if (.not.lsyssc_hasMatrixStructure(rproblemLevel%Rmatrix(templateMatrix))) then
+      if (.not.lsyssc_hasMatrixStructure(rproblemLevel%RmatrixScalar(templateMatrix))) then
         call parlst_getvalue_int(rparlist, ssectionName, 'imatrixFormat', imatrixFormat)
         call bilf_createMatrixStructure(p_rdiscretisation%RspatialDiscr(1),&
-            imatrixFormat, rproblemLevel%Rmatrix(templateMatrix))
+            imatrixFormat, rproblemLevel%RmatrixScalar(templateMatrix))
       end if
       
       !-------------------------------------------------------------------------
       ! Create system matrix as duplicate of the template matrix
       if (systemMatrix > 0)&
-          call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
-                                   rproblemLevel%Rmatrix(systemMatrix))
+          call initMatrixStructure(rproblemLevel%RmatrixScalar(templateMatrix),&
+                                   rproblemLevel%RmatrixScalar(systemMatrix))
 
       !-------------------------------------------------------------------------
       ! Create transport matrix as duplicate of the template matrix
       if (transportMatrix > 0)&
-          call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
-                                   rproblemLevel%Rmatrix(transportMatrix))
+          call initMatrixStructure(rproblemLevel%RmatrixScalar(templateMatrix),&
+                                   rproblemLevel%RmatrixScalar(transportMatrix))
 
       !-------------------------------------------------------------------------
       ! Create Jacobian matrix. This is a little bit tricky. If the
@@ -581,27 +581,27 @@ contains
         call parlst_getvalue_int(rparlist, ssectionName,&
             'ijacobianFormat', ijacobianFormat)
         
-        if (lsyssc_hasMatrixStructure(rproblemLevel%Rmatrix(jacobianMatrix))) then
+        if (lsyssc_hasMatrixStructure(rproblemLevel%RmatrixScalar(jacobianMatrix))) then
           if (ijacobianFormat .eq. 0) then
             call lsyssc_resizeMatrix(&
-                rproblemLevel%Rmatrix(jacobianMatrix),&
-                rproblemLevel%Rmatrix(templateMatrix),&
+                rproblemLevel%RmatrixScalar(jacobianMatrix),&
+                rproblemLevel%RmatrixScalar(templateMatrix),&
                 .false., .false., bforce=.true.)
           else
             call afcstab_genExtSparsity(&
-                rproblemLevel%Rmatrix(templateMatrix),&
-                rproblemLevel%Rmatrix(jacobianMatrix))
+                rproblemLevel%RmatrixScalar(templateMatrix),&
+                rproblemLevel%RmatrixScalar(jacobianMatrix))
           end if
         else
           if (ijacobianFormat .eq. 0) then
             call lsyssc_duplicateMatrix(&
-                rproblemLevel%Rmatrix(templateMatrix),&
-                rproblemLevel%Rmatrix(jacobianMatrix),&
+                rproblemLevel%RmatrixScalar(templateMatrix),&
+                rproblemLevel%RmatrixScalar(jacobianMatrix),&
                 LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
           else
             call afcstab_genExtSparsity(&
-                rproblemLevel%Rmatrix(templateMatrix),&
-                rproblemLevel%Rmatrix(jacobianMatrix))
+                rproblemLevel%RmatrixScalar(templateMatrix),&
+                rproblemLevel%RmatrixScalar(jacobianMatrix))
           end if
         end if
       end if
@@ -609,8 +609,8 @@ contains
       !-------------------------------------------------------------------------
       ! Create consistent mass matrix as duplicate of the template matrix
       if (consistentMassMatrix > 0) then
-        call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
-                                 rproblemLevel%Rmatrix(consistentMassMatrix))
+        call initMatrixStructure(rproblemLevel%RmatrixScalar(templateMatrix),&
+                                 rproblemLevel%RmatrixScalar(consistentMassMatrix))
         ! Do we have a precomputed cubatureinfo structure?
         i = -1; nsubstrings =&
             parlst_querysubstrings(rparlist,&
@@ -624,28 +624,28 @@ contains
 
         if (i .eq. -1) then
           call stdop_assembleSimpleMatrix(&
-              rproblemLevel%Rmatrix(consistentMassMatrix),&
+              rproblemLevel%RmatrixScalar(consistentMassMatrix),&
               DER_FUNC, DER_FUNC)
         else
           call stdop_assembleSimpleMatrix(&
-              rproblemLevel%Rmatrix(consistentMassMatrix),&
+              rproblemLevel%RmatrixScalar(consistentMassMatrix),&
               DER_FUNC, DER_FUNC, rcubatureInfo=rproblemLevel%RcubatureInfo(i))
         end if
                 
         ! Create lumped mass matrix
         if (lumpedMassMatrix > 0) then
           call lsyssc_duplicateMatrix(&
-              rproblemLevel%Rmatrix(consistentMassMatrix),&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%RmatrixScalar(consistentMassMatrix),&
+              rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
               LSYSSC_DUP_SHARE, LSYSSC_DUP_COPY)
           call lsyssc_lumpMatrixScalar(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), LSYSSC_LUMP_DIAG)
+              rproblemLevel%RmatrixScalar(lumpedMassMatrix), LSYSSC_LUMP_DIAG)
         end if
       elseif (lumpedMassMatrix > 0) then
         ! Create lumped mass matrix
         call lsyssc_duplicateMatrix(&
-            rproblemLevel%Rmatrix(templateMatrix),&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%RmatrixScalar(templateMatrix),&
+            rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
             LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
 
         ! Do we have a precomputed cubatureinfo structure?
@@ -661,23 +661,23 @@ contains
 
         if (i .eq. -1) then
           call stdop_assembleSimpleMatrix(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
               DER_FUNC, DER_FUNC)
         else
           call stdop_assembleSimpleMatrix(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
               DER_FUNC, DER_FUNC, rcubatureInfo=rproblemLevel%RcubatureInfo(i))
         end if
 
         call lsyssc_lumpMatrixScalar(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix), LSYSSC_LUMP_DIAG)
+            rproblemLevel%RmatrixScalar(lumpedMassMatrix), LSYSSC_LUMP_DIAG)
       end if
       
       !-------------------------------------------------------------------------
       ! Create diffusion matrix as duplicate of the template matrix
       if (coeffMatrix_S > 0) then
-        call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
-                                 rproblemLevel%Rmatrix(coeffMatrix_S))
+        call initMatrixStructure(rproblemLevel%RmatrixScalar(templateMatrix),&
+                                 rproblemLevel%RmatrixScalar(coeffMatrix_S))
         
         ! Get function parser from collection
         p_rfparser => collct_getvalue_pars(rcollection,&
@@ -699,33 +699,33 @@ contains
           select case(p_rtriangulation%ndim)
           case (NDIM1D)
             call initDiffusionMatrix1D(p_rfparser,&
-                rproblemLevel%Rmatrix(coeffMatrix_S))
+                rproblemLevel%RmatrixScalar(coeffMatrix_S))
           case (NDIM2D)
             call initDiffusionMatrix2D(p_rfparser,&
-                rproblemLevel%Rmatrix(coeffMatrix_S))
+                rproblemLevel%RmatrixScalar(coeffMatrix_S))
           case (NDIM3D)
             call initDiffusionMatrix3D(p_rfparser,&
-                rproblemLevel%Rmatrix(coeffMatrix_S))
+                rproblemLevel%RmatrixScalar(coeffMatrix_S))
           case default
-            call lsyssc_releaseMatrix(rproblemLevel%Rmatrix(coeffMatrix_S))
+            call lsyssc_releaseMatrix(rproblemLevel%RmatrixScalar(coeffMatrix_S))
           end select
         else
           ! Assemble diffusion matrix with precomputed cubatureinfo
           select case(p_rtriangulation%ndim)
           case (NDIM1D)
             call initDiffusionMatrix1D(p_rfparser,&
-                rproblemLevel%Rmatrix(coeffMatrix_S),&
+                rproblemLevel%RmatrixScalar(coeffMatrix_S),&
                 rproblemLevel%RcubatureInfo(i))
           case (NDIM2D)
             call initDiffusionMatrix2D(p_rfparser,&
-                rproblemLevel%Rmatrix(coeffMatrix_S),&
+                rproblemLevel%RmatrixScalar(coeffMatrix_S),&
                 rproblemLevel%RcubatureInfo(i))
           case (NDIM3D)
             call initDiffusionMatrix3D(p_rfparser,&
-                rproblemLevel%Rmatrix(coeffMatrix_S),&
+                rproblemLevel%RmatrixScalar(coeffMatrix_S),&
                 rproblemLevel%RcubatureInfo(i))
           case default
-            call lsyssc_releaseMatrix(rproblemLevel%Rmatrix(coeffMatrix_S))
+            call lsyssc_releaseMatrix(rproblemLevel%RmatrixScalar(coeffMatrix_S))
           end select
         end if
       end if
@@ -734,8 +734,8 @@ contains
       ! Create coefficient matrix (phi, dphi/dx) as duplicate of the
       ! template matrix
       if (coeffMatrix_CX > 0) then
-        call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
-                                 rproblemLevel%Rmatrix(coeffMatrix_CX))
+        call initMatrixStructure(rproblemLevel%RmatrixScalar(templateMatrix),&
+                                 rproblemLevel%RmatrixScalar(coeffMatrix_CX))
         ! Do we have a precomputed cubatureinfo structure?
         i = -1; nsubstrings =&
             parlst_querysubstrings(rparlist,&
@@ -749,11 +749,11 @@ contains
 
         if (i .eq. -1) then
           call stdop_assembleSimpleMatrix(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX),&
+              rproblemLevel%RmatrixScalar(coeffMatrix_CX),&
               DER_DERIV3D_X, DER_FUNC)
         else
           call stdop_assembleSimpleMatrix(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX),&
+              rproblemLevel%RmatrixScalar(coeffMatrix_CX),&
               DER_DERIV3D_X, DER_FUNC, rcubatureInfo=rproblemLevel%RcubatureInfo(i))
         end if
       end if
@@ -762,8 +762,8 @@ contains
       ! Create coefficient matrix (phi, dphi/dy) as duplicate of the
       ! template matrix
       if (coeffMatrix_CY > 0) then
-        call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
-                                 rproblemLevel%Rmatrix(coeffMatrix_CY))
+        call initMatrixStructure(rproblemLevel%RmatrixScalar(templateMatrix),&
+                                 rproblemLevel%RmatrixScalar(coeffMatrix_CY))
         ! Do we have a precomputed cubatureinfo structure?
         i = -1; nsubstrings =&
             parlst_querysubstrings(rparlist,&
@@ -777,11 +777,11 @@ contains
 
         if (i .eq. -1) then
           call stdop_assembleSimpleMatrix(&
-              rproblemLevel%Rmatrix(coeffMatrix_CY),&
+              rproblemLevel%RmatrixScalar(coeffMatrix_CY),&
               DER_DERIV3D_Y, DER_FUNC)
         else
           call stdop_assembleSimpleMatrix(&
-              rproblemLevel%Rmatrix(coeffMatrix_CY),&
+              rproblemLevel%RmatrixScalar(coeffMatrix_CY),&
               DER_DERIV3D_Y, DER_FUNC, rcubatureInfo=rproblemLevel%RcubatureInfo(i))
         end if
       end if
@@ -790,8 +790,8 @@ contains
       ! Create coefficient matrix (phi, dphi/dz) as duplicate of the
       ! template matrix
       if (coeffMatrix_CZ > 0) then
-        call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
-                                 rproblemLevel%Rmatrix(coeffMatrix_CZ))
+        call initMatrixStructure(rproblemLevel%RmatrixScalar(templateMatrix),&
+                                 rproblemLevel%RmatrixScalar(coeffMatrix_CZ))
         ! Do we have a precomputed cubatureinfo structure?
         i = -1; nsubstrings =&
             parlst_querysubstrings(rparlist,&
@@ -805,11 +805,11 @@ contains
 
         if (i .eq. -1) then
           call stdop_assembleSimpleMatrix(&
-              rproblemLevel%Rmatrix(coeffMatrix_CZ),&
+              rproblemLevel%RmatrixScalar(coeffMatrix_CZ),&
               DER_DERIV3D_Z, DER_FUNC)
         else
           call stdop_assembleSimpleMatrix(&
-              rproblemLevel%Rmatrix(coeffMatrix_CZ),&
+              rproblemLevel%RmatrixScalar(coeffMatrix_CZ),&
               DER_DERIV3D_Z, DER_FUNC, rcubatureInfo=rproblemLevel%RcubatureInfo(i))
         end if
       end if
@@ -832,17 +832,17 @@ contains
         if (p_rgroupFEMSet%isetSpec .eq. GFEM_UNDEFINED) then
           ! Initialise first group finite element set for edge-based assembly
           call gfem_initGroupFEMSet(p_rgroupFEMSet,&
-              rproblemLevel%Rmatrix(templateMatrix), 0, 0, 0, GFEM_EDGEBASED)
+              rproblemLevel%RmatrixScalar(templateMatrix), 0, 0, 0, GFEM_EDGEBASED)
         else
           ! Resize first group finite element set
           call gfem_resizeGroupFEMSet(p_rgroupFEMSet,&
-              rproblemLevel%Rmatrix(templateMatrix))
+              rproblemLevel%RmatrixScalar(templateMatrix))
         end if
         
         ! Generate diagonal and edge structure derived from template matrix
-        call gfem_genDiagList(rproblemLevel%Rmatrix(templateMatrix),&
+        call gfem_genDiagList(rproblemLevel%RmatrixScalar(templateMatrix),&
             p_rgroupFEMSet)
-        call gfem_genEdgeList(rproblemLevel%Rmatrix(templateMatrix),&
+        call gfem_genEdgeList(rproblemLevel%RmatrixScalar(templateMatrix),&
             p_rgroupFEMSet)
       else
         convectionGFEM = 0
@@ -882,7 +882,7 @@ contains
         else
           ! Resize first group finite element set
           call gfem_resizeGroupFEMSet(p_rgroupFEMSet,&
-              rproblemLevel%Rmatrix(templateMatrix))
+              rproblemLevel%RmatrixScalar(templateMatrix))
         end if
         
         ! Duplicate edge-based structure from template
@@ -895,17 +895,17 @@ contains
         if (coeffMatrix_CX > 0) then
           nmatrices = nmatrices+1
           call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
-              rproblemLevel%Rmatrix(coeffMatrix_CX), nmatrices)
+              rproblemLevel%RmatrixScalar(coeffMatrix_CX), nmatrices)
         end if
         if (coeffMatrix_CY > 0) then
           nmatrices = nmatrices+1
           call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
-              rproblemLevel%Rmatrix(coeffMatrix_CY), nmatrices)
+              rproblemLevel%RmatrixScalar(coeffMatrix_CY), nmatrices)
         end if
         if (coeffMatrix_CZ > 0) then
           nmatrices = nmatrices+1
           call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
-              rproblemLevel%Rmatrix(coeffMatrix_CZ), nmatrices)
+              rproblemLevel%RmatrixScalar(coeffMatrix_CZ), nmatrices)
         end if
       end if
       
@@ -955,7 +955,7 @@ contains
         else
           ! Resize first group finite element set
           call gfem_resizeGroupFEMSet(p_rgroupFEMSet,&
-              rproblemLevel%Rmatrix(templateMatrix))
+              rproblemLevel%RmatrixScalar(templateMatrix))
         end if
         
         ! Duplicate edge-based structure from template
@@ -968,7 +968,7 @@ contains
         if (coeffMatrix_S > 0) then
           nmatrices = nmatrices+1
           call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
-              rproblemLevel%Rmatrix(coeffMatrix_S), nmatrices)
+              rproblemLevel%RmatrixScalar(coeffMatrix_S), nmatrices)
         end if
       end if
       
@@ -1015,21 +1015,21 @@ contains
         
         if (coeffMatrix_CX > 0) then
           call lsyssc_duplicateMatrix(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX), rmatrixBdrSx,&
+              rproblemLevel%RmatrixScalar(coeffMatrix_CX), rmatrixBdrSx,&
               LSYSSC_DUP_SHARE, LSYSSC_DUP_COPYOVERWRITE)
           call lsyssc_createMatrixSymmPart(rmatrixBdrSx, 1.0_DP)
         end if
         
         if (coeffMatrix_CY > 0) then
           call lsyssc_duplicateMatrix(&
-              rproblemLevel%Rmatrix(coeffMatrix_CY), rmatrixBdrSy,&
+              rproblemLevel%RmatrixScalar(coeffMatrix_CY), rmatrixBdrSy,&
               LSYSSC_DUP_SHARE, LSYSSC_DUP_COPYOVERWRITE)
           call lsyssc_createMatrixSymmPart(rmatrixBdrSy, 1.0_DP)
         end if
 
         if (coeffMatrix_CZ > 0) then
           call lsyssc_duplicateMatrix(&
-              rproblemLevel%Rmatrix(coeffMatrix_CZ), rmatrixBdrSz,&
+              rproblemLevel%RmatrixScalar(coeffMatrix_CZ), rmatrixBdrSz,&
               LSYSSC_DUP_SHARE, LSYSSC_DUP_COPYOVERWRITE)
           call lsyssc_createMatrixSymmPart(rmatrixBdrSz, 1.0_DP)
         end if
@@ -1071,7 +1071,7 @@ contains
             
             ! Initialise group finite element
             call initGroupFEMSetBoundary(rboundaryRegion,&
-                rproblemLevel%Rmatrix(templateMatrix), nmatrices, p_rgroupFEMSet)
+                rproblemLevel%RmatrixScalar(templateMatrix), nmatrices, p_rgroupFEMSet)
             
             ! Copy constant coefficient matrices to group finite element set
             if (coeffMatrix_CX > 0) then
@@ -1124,7 +1124,7 @@ contains
             
             ! Initialise group finite element
             call initGroupFEMSetBoundary(rboundaryRegion,&
-                rproblemLevel%Rmatrix(templateMatrix), nmatrices, p_rgroupFEMSet)
+                rproblemLevel%RmatrixScalar(templateMatrix), nmatrices, p_rgroupFEMSet)
             
             ! Copy constant coefficient matrices to group finite element set
             if (coeffMatrix_CX > 0) then
@@ -1624,7 +1624,7 @@ contains
           ssectionName, 'consistentMassMatrix', consistentMassMatrix)
       
       if (consistentMassMatrix .gt. 0) then
-        p_rconsistentMassMatrix => rproblemLevel%Rmatrix(consistentMassMatrix)
+        p_rconsistentMassMatrix => rproblemLevel%RmatrixScalar(consistentMassMatrix)
       else
         call bilf_createMatrixStructure(&
             rvector%p_rblockDiscr%RspatialDiscr(1),&
@@ -1638,7 +1638,7 @@ contains
           ssectionName, 'lumpedmassmatrix', lumpedMassMatrix)
       
       if (lumpedMassMatrix .gt. 0) then
-        p_rlumpedMassMatrix => rproblemLevel%Rmatrix(lumpedMassMatrix)
+        p_rlumpedMassMatrix => rproblemLevel%RmatrixScalar(lumpedMassMatrix)
       else
         call lsyssc_duplicateMatrix(p_rconsistentMassMatrix,&
             rlumpedMassMatrix, LSYSSC_DUP_TEMPLATE, LSYSSC_DUP_TEMPLATE)
@@ -1731,7 +1731,7 @@ contains
         rafcstab%istabilisationSpec = AFCSTAB_UNDEFINED
         rafcstab%cprelimitingType   = AFCSTAB_PRELIMITING_NONE
         rafcstab%cafcstabType = AFCSTAB_LINFCT_MASS
-        call afcsc_initStabilisation(rproblemLevel%Rmatrix(systemMatrix), rafcstab)
+        call afcsc_initStabilisation(rproblemLevel%RmatrixScalar(systemMatrix), rafcstab)
 
         ! Compute the raw antidiffusive mass fluxes
         call afcsc_buildFluxFCT(rafcstab, rvectorHigh,&

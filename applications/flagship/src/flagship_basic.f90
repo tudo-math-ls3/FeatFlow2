@@ -179,7 +179,7 @@ contains
       end if
 
       ! Check for keyword
-      call sys_tolower(sdata(1:idatalen), skeyword)
+      call sys_toupper(sdata(1:idatalen), skeyword)
       if (trim(adjustl(skeyword)) .eq. trim(adjustl(ssectionname))) exit
     end do
 
@@ -192,8 +192,8 @@ contains
     end if
 
     ! Check for keyword NCOMP
-    call sys_tolower(sdata(1:idatalen), skeyword)
-    if (trim(adjustl(skeyword)) .ne. 'ncomp') then
+    call sys_toupper(sdata(1:idatalen), skeyword)
+    if (trim(adjustl(skeyword)) .ne. 'NCOMP') then
       call output_line('Syntax error in input file!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'flagship_readParserFromFile')
       call sys_halt()
@@ -514,7 +514,7 @@ contains
                                  UPDMAT_LINEARMG_SOLVER) then
                 ! Set the system matrix for the linear solver
                 call solver_setSolverMatrix(rsolver,&
-                    p_rproblemLevelTmp%Rmatrix(imatrix),&
+                    p_rproblemLevelTmp%RmatrixScalar(imatrix),&
                     p_rproblemLevelTmp%ilev)
               end if
 
@@ -524,7 +524,7 @@ contains
                 ! Note that the smoother is not required in the coarsest level
                 if (p_rproblemLevelTmp%ilev > nlmin) then
                   call solver_setSmootherMatrix(rsolver,&
-                      p_rproblemLevelTmp%Rmatrix(imatrix),&
+                      p_rproblemLevelTmp%RmatrixScalar(imatrix),&
                       p_rproblemLevelTmp%ilev)
                 end if
               end if
@@ -587,14 +587,14 @@ contains
                                UPDMAT_LINEAR_SOLVER) then
               ! Set the system matrix of the single-grid solver
               call solver_setSolverMatrix(rsolver,&
-                  rproblemLevel%Rmatrix(imatrix))
+                  rproblemLevel%RmatrixScalar(imatrix))
             end if
 
             if (iand(iupdflag, UPDMAT_LINEAR_PRECOND) .eq.&
                                UPDMAT_LINEAR_PRECOND) then
               ! Set the system matrix of the preconditioner
               call solver_setPrecondMatrix(rsolver,&
-                  rproblemLevel%Rmatrix(imatrix))
+                  rproblemLevel%RmatrixScalar(imatrix))
             end if
 
           case (SYSTEM_BLOCKFORMAT)
@@ -645,14 +645,14 @@ contains
                                UPDMAT_LINEAR_SOLVER) then
               ! Set the system matrix of the single-grid solver
               call solver_setSolverMatrix(rsolver,&
-                  p_rproblemLevelTmp%Rmatrix(imatrix))
+                  p_rproblemLevelTmp%RmatrixScalar(imatrix))
             end if
 
             if (iand(iupdflag, UPDMAT_LINEAR_PRECOND) .eq.&
                                UPDMAT_LINEAR_PRECOND) then
               ! Set the system matrix of the preconditioner
               call solver_setPrecondMatrix(rsolver,&
-                  p_rproblemLevelTmp%Rmatrix(imatrix))
+                  p_rproblemLevelTmp%RmatrixScalar(imatrix))
             end if
 
           case (SYSTEM_BLOCKFORMAT)

@@ -656,10 +656,10 @@ contains
       ! finite element matrix sparsity structure based on the spatial
       ! descretisation and store it as the template matrix. Otherwise we
       ! assume that the template matrix has been generated externally.
-      if (.not.lsyssc_hasMatrixStructure(rproblemLevel%Rmatrix(templateMatrix))) then
+      if (.not.lsyssc_hasMatrixStructure(rproblemLevel%RmatrixScalar(templateMatrix))) then
         call bilf_createMatrixStructure(&
             p_rdiscretisation%RspatialDiscr(1), imatrixFormat,&
-            rproblemLevel%Rmatrix(templateMatrix))
+            rproblemLevel%RmatrixScalar(templateMatrix))
       end if
       
       !-------------------------------------------------------------------------
@@ -671,36 +671,36 @@ contains
           ! The global operator is stored as an interleave matrix with
           ! NVAR components. However, the row and column structure of
           ! the template matrix can be adopted without modification
-          if (lsyssc_hasMatrixStructure(rproblemLevel%Rmatrix(systemMatrix))) then
+          if (lsyssc_hasMatrixStructure(rproblemLevel%RmatrixScalar(systemMatrix))) then
             
             ! Release pseudo block matrix
             call lsysbl_releaseMatrix(rproblemLevel%RmatrixBlock(systemMatrix))
             
             ! Resize scalar matrix
             call lsyssc_resizeMatrix(&
-                rproblemLevel%Rmatrix(systemMatrix),&
-                rproblemLevel%Rmatrix(templateMatrix)%NEQ,&
-                rproblemLevel%Rmatrix(templateMatrix)%NCOLS,&
-                rproblemLevel%rmatrix(templateMatrix)%NA,&
+                rproblemLevel%RmatrixScalar(systemMatrix),&
+                rproblemLevel%RmatrixScalar(templateMatrix)%NEQ,&
+                rproblemLevel%RmatrixScalar(templateMatrix)%NCOLS,&
+                rproblemLevel%RmatrixScalar(templateMatrix)%NA,&
                 .false., .false., bforce=.true.)
             
           else   ! System matrix has no structure
             
             call lsyssc_duplicateMatrix(&
-                rproblemLevel%Rmatrix(templateMatrix),&
-                rproblemLevel%Rmatrix(systemMatrix),&
+                rproblemLevel%RmatrixScalar(templateMatrix),&
+                rproblemLevel%RmatrixScalar(systemMatrix),&
                 LSYSSC_DUP_SHARE, LSYSSC_DUP_REMOVE)
             
             ! Set number of variables per node
-            rproblemLevel%Rmatrix(systemMatrix)%NVAR = mhd_getNVAR(rproblemLevel)
+            rproblemLevel%RmatrixScalar(systemMatrix)%NVAR = mhd_getNVAR(rproblemLevel)
             
             ! What matrix format should be used?
             select case(imatrixFormat)
             case (LSYSSC_MATRIX7)
-              rproblemLevel%Rmatrix(systemMatrix)%cmatrixFormat = LSYSSC_MATRIX7INTL
+              rproblemLevel%RmatrixScalar(systemMatrix)%cmatrixFormat = LSYSSC_MATRIX7INTL
               
             case (LSYSSC_MATRIX9)
-              rproblemLevel%Rmatrix(systemMatrix)%cmatrixFormat = LSYSSC_MATRIX9INTL
+              rproblemLevel%RmatrixScalar(systemMatrix)%cmatrixFormat = LSYSSC_MATRIX9INTL
               
             case default
               call output_line('Unsupported matrix format!',&
@@ -711,10 +711,10 @@ contains
             ! What kind of global operator should be adopted?
             select case(isystemCoupling)
             case (SYSTEM_SEGREGATED)
-              rproblemLevel%Rmatrix(systemMatrix)%cinterleavematrixFormat = LSYSSC_MATRIXD
+              rproblemLevel%RmatrixScalar(systemMatrix)%cinterleavematrixFormat = LSYSSC_MATRIXD
               
             case (SYSTEM_ALLCOUPLED)
-              rproblemLevel%Rmatrix(systemMatrix)%cinterleavematrixFormat = LSYSSC_MATRIX1
+              rproblemLevel%RmatrixScalar(systemMatrix)%cinterleavematrixFormat = LSYSSC_MATRIX1
               
             case default
               call output_line('Unsupported interleave matrix format!',&
@@ -724,13 +724,13 @@ contains
             
             ! Create global operator physically
             call lsyssc_allocEmptyMatrix(&
-                rproblemLevel%Rmatrix(systemMatrix), LSYSSC_SETM_UNDEFINED)
+                rproblemLevel%RmatrixScalar(systemMatrix), LSYSSC_SETM_UNDEFINED)
             
           end if
           
           ! Create pseudo block matrix from global operator
           call lsysbl_createMatFromScalar(&
-              rproblemLevel%Rmatrix(systemMatrix),&
+              rproblemLevel%RmatrixScalar(systemMatrix),&
               rproblemLevel%RmatrixBlock(systemMatrix), p_rdiscretisation)
           
           
@@ -749,7 +749,7 @@ contains
               do ivar = 1, mhd_getNVAR(rproblemLevel)
                 call lsyssc_resizeMatrix(&
                     rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar),&
-                    rproblemLevel%Rmatrix(templateMatrix), .false., .false., bforce=.true.)
+                    rproblemLevel%RmatrixScalar(templateMatrix), .false., .false., bforce=.true.)
               end do
               
             case (SYSTEM_ALLCOUPLED)
@@ -758,7 +758,7 @@ contains
                 do jvar = 1, mhd_getNVAR(rproblemLevel)
                   call lsyssc_resizeMatrix(&
                       rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar ,jvar),&
-                      rproblemLevel%Rmatrix(templateMatrix), .false., .false., bforce=.true.)
+                      rproblemLevel%RmatrixScalar(templateMatrix), .false., .false., bforce=.true.)
                 end do
               end do
               
@@ -786,7 +786,7 @@ contains
               ! Create only NVAR diagonal blocks
               do ivar = 1, mhd_getNVAR(rproblemLevel)
                 call lsyssc_duplicateMatrix(&
-                    rproblemLevel%Rmatrix(templateMatrix),&
+                    rproblemLevel%RmatrixScalar(templateMatrix),&
                     rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar),&
                     LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
               end do
@@ -796,7 +796,7 @@ contains
               do ivar = 1, mhd_getNVAR(rproblemLevel)
                 do jvar = 1, mhd_getNVAR(rproblemLevel)
                   call lsyssc_duplicateMatrix(&
-                      rproblemLevel%Rmatrix(templateMatrix),&
+                      rproblemLevel%RmatrixScalar(templateMatrix),&
                       rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,jvar),&
                       LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
                 end do
@@ -823,39 +823,39 @@ contains
       !-------------------------------------------------------------------------
       ! Create consistent (and lumped) mass matrix as duplicate of the template matrix
       if (consistentMassMatrix > 0) then
-        call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
-            rproblemLevel%Rmatrix(consistentMassMatrix))
+        call initMatrixStructure(rproblemLevel%RmatrixScalar(templateMatrix),&
+            rproblemLevel%RmatrixScalar(consistentMassMatrix))
         call stdop_assembleSimpleMatrix(&
-            rproblemLevel%Rmatrix(consistentMassMatrix), DER_FUNC, DER_FUNC)
+            rproblemLevel%RmatrixScalar(consistentMassMatrix), DER_FUNC, DER_FUNC)
         
         ! Create lumped mass matrix
         if (lumpedMassMatrix > 0) then
           call lsyssc_duplicateMatrix(&
-              rproblemLevel%Rmatrix(consistentMassMatrix),&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%RmatrixScalar(consistentMassMatrix),&
+              rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
               LSYSSC_DUP_SHARE, LSYSSC_DUP_COPY)
           call lsyssc_lumpMatrixScalar(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix), LSYSSC_LUMP_DIAG)
+              rproblemLevel%RmatrixScalar(lumpedMassMatrix), LSYSSC_LUMP_DIAG)
         end if
       elseif (lumpedMassMatrix > 0) then
         ! Create lumped mass matrix
         call lsyssc_duplicateMatrix(&
-            rproblemLevel%Rmatrix(templateMatrix),&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%RmatrixScalar(templateMatrix),&
+            rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
             LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
         call stdop_assembleSimpleMatrix(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix), DER_FUNC, DER_FUNC)
+            rproblemLevel%RmatrixScalar(lumpedMassMatrix), DER_FUNC, DER_FUNC)
         call lsyssc_lumpMatrixScalar(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix), LSYSSC_LUMP_DIAG)
+            rproblemLevel%RmatrixScalar(lumpedMassMatrix), LSYSSC_LUMP_DIAG)
       end if
       
       !-------------------------------------------------------------------------
       ! Create coefficient matrix (phi, dphi/dx) as duplicate of the
       ! template matrix
       if (coeffMatrix_CX > 0) then
-        call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
-                                 rproblemLevel%Rmatrix(coeffMatrix_CX))
-        call stdop_assembleSimpleMatrix(rproblemLevel%Rmatrix(coeffMatrix_CX),&
+        call initMatrixStructure(rproblemLevel%RmatrixScalar(templateMatrix),&
+                                 rproblemLevel%RmatrixScalar(coeffMatrix_CX))
+        call stdop_assembleSimpleMatrix(rproblemLevel%RmatrixScalar(coeffMatrix_CX),&
                                         DER_DERIV3D_X, DER_FUNC)
       end if
       
@@ -863,9 +863,9 @@ contains
       ! Create coefficient matrix (phi, dphi/dy) as duplicate of the
       ! template matrix
       if (coeffMatrix_CY > 0) then
-        call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
-                                 rproblemLevel%Rmatrix(coeffMatrix_CY))
-        call stdop_assembleSimpleMatrix(rproblemLevel%Rmatrix(coeffMatrix_CY),&
+        call initMatrixStructure(rproblemLevel%RmatrixScalar(templateMatrix),&
+                                 rproblemLevel%RmatrixScalar(coeffMatrix_CY))
+        call stdop_assembleSimpleMatrix(rproblemLevel%RmatrixScalar(coeffMatrix_CY),&
                                         DER_DERIV3D_Y, DER_FUNC)
       end if
       
@@ -873,9 +873,9 @@ contains
       ! Create coefficient matrix (phi, dphi/dz) as duplicate of the
       ! template matrix
       if (coeffMatrix_CZ > 0) then
-        call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
-                                 rproblemLevel%Rmatrix(coeffMatrix_CZ))
-        call stdop_assembleSimpleMatrix(rproblemLevel%Rmatrix(coeffMatrix_CZ),&
+        call initMatrixStructure(rproblemLevel%RmatrixScalar(templateMatrix),&
+                                 rproblemLevel%RmatrixScalar(coeffMatrix_CZ))
+        call stdop_assembleSimpleMatrix(rproblemLevel%RmatrixScalar(coeffMatrix_CZ),&
                                         DER_DERIV3D_Z, DER_FUNC)
       end if
     
@@ -883,9 +883,9 @@ contains
       ! Create coefficient matrix (dphi/dx, dphi/dx) as duplicate of the
       ! template matrix
       if (coeffMatrix_CXX > 0) then
-        call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
-                                 rproblemLevel%Rmatrix(coeffMatrix_CXX))
-        call stdop_assembleSimpleMatrix(rproblemLevel%Rmatrix(coeffMatrix_CXX),&
+        call initMatrixStructure(rproblemLevel%RmatrixScalar(templateMatrix),&
+                                 rproblemLevel%RmatrixScalar(coeffMatrix_CXX))
+        call stdop_assembleSimpleMatrix(rproblemLevel%RmatrixScalar(coeffMatrix_CXX),&
                                         DER_DERIV3D_X, DER_DERIV3D_X)
       end if
       
@@ -893,9 +893,9 @@ contains
       ! Create coefficient matrix (dphi/dy, dphi/dy) as duplicate of the
       ! template matrix
       if (coeffMatrix_CYY > 0) then
-        call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
-                                 rproblemLevel%Rmatrix(coeffMatrix_CYY))
-        call stdop_assembleSimpleMatrix(rproblemLevel%Rmatrix(coeffMatrix_CYY),&
+        call initMatrixStructure(rproblemLevel%RmatrixScalar(templateMatrix),&
+                                 rproblemLevel%RmatrixScalar(coeffMatrix_CYY))
+        call stdop_assembleSimpleMatrix(rproblemLevel%RmatrixScalar(coeffMatrix_CYY),&
                                         DER_DERIV3D_Y, DER_DERIV3D_Y)
       end if
     
@@ -903,9 +903,9 @@ contains
       ! Create coefficient matrix (dphi/dz, dphi/dz) as duplicate of the
       ! template matrix
       if (coeffMatrix_CZZ > 0) then
-        call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
-                                 rproblemLevel%Rmatrix(coeffMatrix_CZZ))
-        call stdop_assembleSimpleMatrix(rproblemLevel%Rmatrix(coeffMatrix_CZZ),&
+        call initMatrixStructure(rproblemLevel%RmatrixScalar(templateMatrix),&
+                                 rproblemLevel%RmatrixScalar(coeffMatrix_CZZ))
+        call stdop_assembleSimpleMatrix(rproblemLevel%RmatrixScalar(coeffMatrix_CZZ),&
                                         DER_DERIV3D_Z, DER_DERIV3D_Z)
       end if
       
@@ -913,9 +913,9 @@ contains
       ! Create coefficient matrix (dphi/dx, dphi/dy) as duplicate of the
       ! template matrix
       if (coeffMatrix_CXY > 0) then
-        call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
-                                 rproblemLevel%Rmatrix(coeffMatrix_CXY))
-        call stdop_assembleSimpleMatrix(rproblemLevel%Rmatrix(coeffMatrix_CXY),&
+        call initMatrixStructure(rproblemLevel%RmatrixScalar(templateMatrix),&
+                                 rproblemLevel%RmatrixScalar(coeffMatrix_CXY))
+        call stdop_assembleSimpleMatrix(rproblemLevel%RmatrixScalar(coeffMatrix_CXY),&
                                         DER_DERIV3D_X, DER_DERIV3D_Y)
       end if
       
@@ -923,9 +923,9 @@ contains
       ! Create coefficient matrix (dphi/dx, dphi/dz) as duplicate of the
       ! template matrix
       if (coeffMatrix_CXZ > 0) then
-        call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
-                                 rproblemLevel%Rmatrix(coeffMatrix_CXZ))
-        call stdop_assembleSimpleMatrix(rproblemLevel%Rmatrix(coeffMatrix_CXZ),&
+        call initMatrixStructure(rproblemLevel%RmatrixScalar(templateMatrix),&
+                                 rproblemLevel%RmatrixScalar(coeffMatrix_CXZ))
+        call stdop_assembleSimpleMatrix(rproblemLevel%RmatrixScalar(coeffMatrix_CXZ),&
                                         DER_DERIV3D_X, DER_DERIV3D_Z)
       end if
       
@@ -933,9 +933,9 @@ contains
       ! Create coefficient matrix (dphi/dy, dphi/dz) as duplicate of the
       ! template matrix
       if (coeffMatrix_CYZ > 0) then
-        call initMatrixStructure(rproblemLevel%Rmatrix(templateMatrix),&
-                                 rproblemLevel%Rmatrix(coeffMatrix_CYZ))
-        call stdop_assembleSimpleMatrix(rproblemLevel%Rmatrix(coeffMatrix_CYZ),&
+        call initMatrixStructure(rproblemLevel%RmatrixScalar(templateMatrix),&
+                                 rproblemLevel%RmatrixScalar(coeffMatrix_CYZ))
+        call stdop_assembleSimpleMatrix(rproblemLevel%RmatrixScalar(coeffMatrix_CYZ),&
                                         DER_DERIV3D_Y, DER_DERIV3D_Z)
       end if
 
@@ -957,17 +957,17 @@ contains
         if (p_rgroupFEMSet%isetSpec .eq. GFEM_UNDEFINED) then
           ! Initialise first group finite element set for edge-based assembly
           call gfem_initGroupFEMSet(p_rgroupFEMSet,&
-              rproblemLevel%Rmatrix(templateMatrix), 0, 0, 0, GFEM_EDGEBASED)
+              rproblemLevel%RmatrixScalar(templateMatrix), 0, 0, 0, GFEM_EDGEBASED)
         else
           ! Resize first group finite element set
           call gfem_resizeGroupFEMSet(p_rgroupFEMSet,&
-              rproblemLevel%Rmatrix(templateMatrix))
+              rproblemLevel%RmatrixScalar(templateMatrix))
         end if
         
         ! Generate diagonal and edge structure derived from template matrix
-        call gfem_genDiagList(rproblemLevel%Rmatrix(templateMatrix),&
+        call gfem_genDiagList(rproblemLevel%RmatrixScalar(templateMatrix),&
             p_rgroupFEMSet)
-        call gfem_genEdgeList(rproblemLevel%Rmatrix(templateMatrix),&
+        call gfem_genEdgeList(rproblemLevel%RmatrixScalar(templateMatrix),&
             p_rgroupFEMSet)
       else
         inviscidGFEM = 0
@@ -1010,7 +1010,7 @@ contains
         else
           ! Resize first group finite element set
           call gfem_resizeGroupFEMSet(p_rgroupFEMSet,&
-              rproblemLevel%Rmatrix(templateMatrix))
+              rproblemLevel%RmatrixScalar(templateMatrix))
         end if
         
         ! Duplicate edge-based structure from template
@@ -1023,17 +1023,17 @@ contains
         if (coeffMatrix_CX > 0) then
           nmatrices = nmatrices+1
           call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
-              rproblemLevel%Rmatrix(coeffMatrix_CX), nmatrices)
+              rproblemLevel%RmatrixScalar(coeffMatrix_CX), nmatrices)
         end if
         if (coeffMatrix_CY > 0) then
           nmatrices = nmatrices+1
           call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
-              rproblemLevel%Rmatrix(coeffMatrix_CY), nmatrices)
+              rproblemLevel%RmatrixScalar(coeffMatrix_CY), nmatrices)
         end if
         if (coeffMatrix_CZ > 0) then
           nmatrices = nmatrices+1
           call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
-              rproblemLevel%Rmatrix(coeffMatrix_CZ), nmatrices)
+              rproblemLevel%RmatrixScalar(coeffMatrix_CZ), nmatrices)
         end if
       end if
 
@@ -1124,7 +1124,7 @@ contains
         else
           ! Resize first group finite element set
           call gfem_resizeGroupFEMSet(p_rgroupFEMSet,&
-              rproblemLevel%Rmatrix(templateMatrix))
+              rproblemLevel%RmatrixScalar(templateMatrix))
         end if
         
         ! Duplicate edge-based structure from template
@@ -1137,32 +1137,32 @@ contains
         if (coeffMatrix_CXX > 0) then
           nmatrices = nmatrices+1
           call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
-              rproblemLevel%Rmatrix(coeffMatrix_CXX), nmatrices)
+              rproblemLevel%RmatrixScalar(coeffMatrix_CXX), nmatrices)
         end if
         if (coeffMatrix_CYY > 0) then
           nmatrices = nmatrices+1
           call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
-              rproblemLevel%Rmatrix(coeffMatrix_CYY), nmatrices)
+              rproblemLevel%RmatrixScalar(coeffMatrix_CYY), nmatrices)
         end if
         if (coeffMatrix_CZZ > 0) then
           nmatrices = nmatrices+1
           call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
-              rproblemLevel%Rmatrix(coeffMatrix_CZZ), nmatrices)
+              rproblemLevel%RmatrixScalar(coeffMatrix_CZZ), nmatrices)
         end if
         if (coeffMatrix_CXY > 0) then
           nmatrices = nmatrices+1
           call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
-              rproblemLevel%Rmatrix(coeffMatrix_CXY), nmatrices)
+              rproblemLevel%RmatrixScalar(coeffMatrix_CXY), nmatrices)
         end if
         if (coeffMatrix_CXZ > 0) then
           nmatrices = nmatrices+1
           call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
-              rproblemLevel%Rmatrix(coeffMatrix_CXZ), nmatrices)
+              rproblemLevel%RmatrixScalar(coeffMatrix_CXZ), nmatrices)
         end if
         if (coeffMatrix_CYZ > 0) then
           nmatrices = nmatrices+1
           call gfem_initCoeffsFromMatrix(p_rgroupFEMSet,&
-              rproblemLevel%Rmatrix(coeffMatrix_CYZ), nmatrices)
+              rproblemLevel%RmatrixScalar(coeffMatrix_CYZ), nmatrices)
         end if
       end if
       
@@ -1565,7 +1565,7 @@ contains
           ssectionName, 'consistentMassMatrix', consistentMassMatrix)
       
       if (consistentMassMatrix .gt. 0) then
-        p_rconsistentMassMatrix => rproblemLevel%Rmatrix(consistentMassMatrix)
+        p_rconsistentMassMatrix => rproblemLevel%RmatrixScalar(consistentMassMatrix)
       else
         call bilf_createMatrixStructure(&
             rvector%p_rblockDiscr%RspatialDiscr(1),&
@@ -1579,7 +1579,7 @@ contains
           ssectionName, 'lumpedmassmatrix', lumpedMassMatrix)
       
       if (lumpedMassMatrix .gt. 0) then
-        p_rlumpedMassMatrix => rproblemLevel%Rmatrix(lumpedMassMatrix)
+        p_rlumpedMassMatrix => rproblemLevel%RmatrixScalar(lumpedMassMatrix)
       else
         call lsyssc_duplicateMatrix(p_rconsistentMassMatrix,&
             rlumpedMassMatrix, LSYSSC_DUP_TEMPLATE, LSYSSC_DUP_TEMPLATE)

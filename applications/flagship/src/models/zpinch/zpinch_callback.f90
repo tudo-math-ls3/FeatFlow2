@@ -571,7 +571,7 @@ contains
 
         ! Apply Jacobian matrix
         call lsyssc_scalarMatVec(&
-            rproblemLevel%Rmatrix(jacobianMatrix),&
+            rproblemLevel%RmatrixScalar(jacobianMatrix),&
             rsolution%RvectorBlock(1), rres%RvectorBlock(1),&
             1.0_DP, 1.0_DP)
       end if
@@ -777,7 +777,7 @@ contains
           ssectionNameHydro, 'lumpedmassmatrix', massmatrix)
       if (massMatrix .gt. 0) then
         call lsyssc_getbase_double(&
-            rproblemLevel%Rmatrix(massMatrix), p_DmassMatrix)
+            rproblemLevel%RmatrixScalar(massMatrix), p_DmassMatrix)
       else
         call output_line('Lumped mass matrix is not available!',&
             OU_CLASS_ERROR, OU_MODE_STD, 'zpinch_calcLorentzforceTerm')
@@ -789,9 +789,9 @@ contains
           ssectionNameHydro, 'consistentmassmatrix', massmatrix)
       if (massMatrix .gt. 0) then
         call lsyssc_getbase_double(&
-            rproblemLevel%Rmatrix(massMatrix), p_DmassMatrix)
-        call lsyssc_getbase_Kld(rproblemLevel%Rmatrix(massmatrix), p_Kld)
-        call lsyssc_getbase_Kcol(rproblemLevel%Rmatrix(massmatrix), p_Kcol)
+            rproblemLevel%RmatrixScalar(massMatrix), p_DmassMatrix)
+        call lsyssc_getbase_Kld(rproblemLevel%RmatrixScalar(massmatrix), p_Kld)
+        call lsyssc_getbase_Kcol(rproblemLevel%RmatrixScalar(massmatrix), p_Kcol)
       else
         call output_line('Consistent mass matrix is not available!',&
             OU_CLASS_ERROR, OU_MODE_STD, 'zpinch_calcLorentzforceTerm')
@@ -2025,7 +2025,7 @@ contains
         ! Scale rvector2 by the inverse of the lumped mass matrix and store
         ! the result in rvector1; this is the solution of the lumped version
         call lsysbl_invertedDiagMatVec(&
-            rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
+            rproblemLevel%RmatrixScalar(lumpedMassMatrixHydro),&
             p_Rvector2(1), 1.0_DP, p_Rvector1(1))
         
         ! Store norm of the initial guess from the lumped version
@@ -2038,7 +2038,7 @@ contains
           ! Compute the residual $rhs-M_C*u$ and store the result in rvector3
           do iblock = 1,Rsolution(1)%nblocks
             call lsyssc_scalarMatVec(&
-                rproblemLevel%Rmatrix(consistentMassMatrixHydro),&
+                rproblemLevel%RmatrixScalar(consistentMassMatrixHydro),&
                 p_Rvector1(1)%RvectorBlock(iblock),&
                 p_Rvector3(1)%RvectorBlock(iblock),&
                 -1.0_DP, 1.0_DP)
@@ -2046,7 +2046,7 @@ contains
           
           ! Scale rvector3 by the inverse of the lumped mass matrix
           call lsysbl_invertedDiagMatVec(&
-              rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
+              rproblemLevel%RmatrixScalar(lumpedMassMatrixHydro),&
               p_Rvector3(1), 1.0_DP, p_Rvector3(1))
 
           ! Apply solution increment (rvector3) to the previous solution iterate
@@ -2099,7 +2099,7 @@ contains
         rproblemLevel%Rafcstab(inviscidAFC)%istabilisationSpec    = istabilisationSpecInviscid
 
         ! Scale it by the inverse of the lumped mass matrix
-        call lsysbl_invertedDiagMatVec(rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
+        call lsysbl_invertedDiagMatVec(rproblemLevel%RmatrixScalar(lumpedMassMatrixHydro),&
             p_Rvector1(1), 1.0_DP, p_Rvector1(1))
 
       case default
@@ -2151,10 +2151,10 @@ contains
       ! Check if matrix is compatible to consistent mass matrix; otherwise
       ! create matrix as a duplicate of the consistent mass matrix
       call lsyssc_isMatrixCompatible(p_rmatrix,&
-          rproblemLevel%Rmatrix(consistentMassMatrixTransport), bcompatible)
+          rproblemLevel%RmatrixScalar(consistentMassMatrixTransport), bcompatible)
       if (.not.bcompatible)&
           call lsyssc_duplicateMatrix(&
-          rproblemLevel%Rmatrix(consistentMassMatrixTransport),&
+          rproblemLevel%RmatrixScalar(consistentMassMatrixTransport),&
           p_rmatrix, LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
       
       ! Set up vector1 for computing the approximate time derivative
@@ -2283,7 +2283,7 @@ contains
         ! Scale rvector2(2) by the inverse of the lumped mass matrix and store
         ! the result in rvector1(2); this is the solution of the lumped version
         call lsysbl_invertedDiagMatVec(&
-            rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
+            rproblemLevel%RmatrixScalar(lumpedMassMatrixTransport),&
             p_Rvector2(2), 1.0_DP, p_Rvector1(2))
         
         ! Store norm of the initial guess from the lumped version
@@ -2295,13 +2295,13 @@ contains
           
           ! Compute the residual $rhs-M_C*u$ and store the result in rvector3
           call lsyssc_scalarMatVec(&
-              rproblemLevel%Rmatrix(consistentMassMatrixTransport),&
+              rproblemLevel%RmatrixScalar(consistentMassMatrixTransport),&
               p_Rvector1(2)%RvectorBlock(1), p_Rvector3(2)%RvectorBlock(1),&
               -1.0_DP, 1.0_DP)
           
           ! Scale rvector3 by the inverse of the lumped mass matrix
           call lsysbl_invertedDiagMatVec(&
-              rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
+              rproblemLevel%RmatrixScalar(lumpedMassMatrixTransport),&
               p_Rvector3(2), 1.0_DP, p_Rvector3(2))
           
           ! Apply solution increment (rvector3) to the previous solution iterate
@@ -2383,7 +2383,7 @@ contains
 
         ! Scale it by the inverse of the lumped mass matrix
         call lsysbl_invertedDiagMatVec(&
-            rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
+            rproblemLevel%RmatrixScalar(lumpedMassMatrixTransport),&
             p_Rvector1(2), 1.0_DP, p_Rvector1(2))
         
       case default
@@ -2399,7 +2399,7 @@ contains
 !!$      call gfsc_buildADFlux(&
 !!$          rproblemLevel%Rafcstab(convectionAFC),&
 !!$          Rsolution(2), 0.0_DP, 1.0_DP, 1.0_DP, .true.,&
-!!$          rmatrix=rproblemLevel%Rmatrix(consistentMassMatrixTransport),&
+!!$          rmatrix=rproblemLevel%RmatrixScalar(consistentMassMatrixTransport),&
 !!$          rxTimeDeriv=p_Rvector1(2))
 
       ! Release temporal memory
@@ -2457,14 +2457,14 @@ contains
 !!$
 !!$      ! Compute low-order predictor
 !!$      call lsysbl_invertedDiagMatVec(&
-!!$          rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
+!!$          rproblemLevel%RmatrixScalar(lumpedMassMatrixTransport),&
 !!$          p_rpredictorTransport, 1.0_DP, p_rpredictorTransport)
 !!$
 !!$      ! Build the raw antidiffusive fluxes with contribution from
 !!$      ! consistent mass matrix
 !!$      call gfsc_buildADFlux(rproblemLevel%Rafcstab(convectionAFC),&
 !!$          Rsolution(2), 0.0_DP, 1.0_DP, 1.0_DP, .true.,&
-!!$          rproblemLevel%Rmatrix(consistentMassMatrixTransport),&
+!!$          rproblemLevel%RmatrixScalar(consistentMassMatrixTransport),&
 !!$          p_rpredictorTransport)
 !!$    else
 !!$      ! Build the raw antidiffusive fluxes without contribution from
@@ -2520,7 +2520,7 @@ contains
         ! Apply failsafe flux correction for the hydrodynamic model
         call afcsys_failsafeFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
+              rproblemLevel%RmatrixScalar(lumpedMassMatrixHydro),&
               Rsolution(1), rtimestep%dStep, 1e-8_DP,&
               AFCSTAB_FAILSAFEALGO_STANDARD, bisAccepted,&
               nsteps=nfailsafe, CvariableNames=SfailsafeVariables,&
@@ -2531,7 +2531,7 @@ contains
         ! transport model
         call afcsc_buildVectorFCT(&
             rproblemLevel%Rafcstab(convectionAFC),&
-            rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
+            rproblemLevel%RmatrixScalar(lumpedMassMatrixTransport),&
             Rsolution(2), rtimestep%dStep, .false.,&
             AFCSTAB_FCTALGO_STANDARD+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
@@ -2559,7 +2559,7 @@ contains
         ! transport model
         call afcsc_buildVectorFCT(&
             rproblemLevel%Rafcstab(convectionAFC),&
-            rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
+            rproblemLevel%RmatrixScalar(lumpedMassMatrixTransport),&
             Rsolution(2), rtimestep%dStep, .false.,&
             AFCSTAB_FCTALGO_STANDARD+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
@@ -2578,7 +2578,7 @@ contains
       ! Compute linearised FEM-FCT correction for the transport model
       call afcsc_buildVectorFCT(&
           rproblemLevel%Rafcstab(convectionAFC),&
-          rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
+          rproblemLevel%RmatrixScalar(lumpedMassMatrixTransport),&
           Rsolution(2), rtimestep%dStep, .false.,&
           AFCSTAB_FCTALGO_STANDARD-&
           AFCSTAB_FCTALGO_CORRECT, Rsolution(2))
@@ -2598,7 +2598,7 @@ contains
         ! Apply failsafe flux correction for both models
 !!$        call afcstab_failsafeLimiting(&
 !!$            rproblemLevel%Rafcstab(IposAFC),&
-!!$            rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
+!!$            rproblemLevel%RmatrixScalar(lumpedMassMatrixHydro),&
 !!$            SfailsafeVariables, rtimestep%dStep, nfailsafe,&
 !!$            zpinch_getVariable, Rsolution, p_Rvector1)
         
@@ -2619,7 +2619,7 @@ contains
         ! Apply linearised FEM-FCT correction for the transportmodel
         call afcsc_buildVectorFCT(&
             rproblemLevel%Rafcstab(convectionAFC),&
-            rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
+            rproblemLevel%RmatrixScalar(lumpedMassMatrixTransport),&
             Rsolution(2), rtimestep%dStep, .false.,&
             AFCSTAB_FCTALGO_CORRECT+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
@@ -2644,7 +2644,7 @@ contains
       ! (without initialisation)
       call afcsc_buildVectorFCT(&
           rproblemLevel%Rafcstab(convectionAFC),&
-          rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
+          rproblemLevel%RmatrixScalar(lumpedMassMatrixTransport),&
           Rsolution(2), rtimestep%dStep, .false.,&
           AFCSTAB_FCTALGO_STANDARD-&
           AFCSTAB_FCTALGO_INITALPHA-&
@@ -2659,7 +2659,7 @@ contains
 
         ! Apply failsafe flux correction for both models
 !!$        call afcstab_failsafeLimiting(rproblemLevel%Rafcstab(IposAFC),&
-!!$            rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
+!!$            rproblemLevel%RmatrixScalar(lumpedMassMatrixHydro),&
 !!$            SfailsafeVariables, rtimestep%dStep, nfailsafe,&
 !!$            zpinch_getVariable, Rsolution, p_Rvector1)
         
@@ -2680,7 +2680,7 @@ contains
         ! Apply linearised FEM-FCT correction for the transport model
         call afcsc_buildVectorFCT(&
             rproblemLevel%Rafcstab(convectionAFC),&
-            rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
+            rproblemLevel%RmatrixScalar(lumpedMassMatrixTransport),&
             Rsolution(2), rtimestep%dStep, .false.,&
             AFCSTAB_FCTALGO_CORRECT+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
@@ -2692,7 +2692,7 @@ contains
       ! Compute linearised FEM-FCT correction for the transport model
       call afcsc_buildVectorFCT(&
           rproblemLevel%Rafcstab(convectionAFC),&
-          rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
+          rproblemLevel%RmatrixScalar(lumpedMassMatrixTransport),&
           Rsolution(2), rtimestep%dStep, .false.,&
           AFCSTAB_FCTALGO_STANDARD-&
           AFCSTAB_FCTALGO_CORRECT, Rsolution(2))
@@ -2720,7 +2720,7 @@ contains
 
         ! Apply failsafe flux correction for both models
 !!$        call afcstab_failsafeLimiting(rproblemLevel%Rafcstab(IposAFC),&
-!!$            rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
+!!$            rproblemLevel%RmatrixScalar(lumpedMassMatrixHydro),&
 !!$            SfailsafeVariables, rtimestep%dStep, nfailsafe,&
 !!$            zpinch_getVariable, Rsolution, p_Rvector1)
         
@@ -2741,7 +2741,7 @@ contains
         ! Apply linearised FEM-FCT correction for the transport model
         call afcsc_buildVectorFCT(&
             rproblemLevel%Rafcstab(convectionAFC),&
-            rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
+            rproblemLevel%RmatrixScalar(lumpedMassMatrixTransport),&
             Rsolution(2), rtimestep%dStep, .false.,&
             AFCSTAB_FCTALGO_CORRECT+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
@@ -2767,7 +2767,7 @@ contains
 
         ! Apply failsafe flux correction for both models
 !!$        call afcstab_failsafeLimiting(rproblemLevel%Rafcstab(IposAFC),&
-!!$            rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
+!!$            rproblemLevel%RmatrixScalar(lumpedMassMatrixHydro),&
 !!$            SfailsafeVariables, rtimestep%dStep, nfailsafe,&
 !!$            zpinch_getVariable, Rsolution, p_Rvector1)
         
@@ -2794,7 +2794,7 @@ contains
         ! Apply linearised FEM-FCT correction for transport model
         call afcsc_buildVectorFCT(&
             rproblemLevel%Rafcstab(convectionAFC),&
-            rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
+            rproblemLevel%RmatrixScalar(lumpedMassMatrixTransport),&
             Rsolution(2), rtimestep%dStep, .false.,&
             AFCSTAB_FCTALGO_CORRECT+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
@@ -2809,7 +2809,7 @@ contains
         ! transport model
         call afcsc_buildVectorFCT(&
             rproblemLevel%Rafcstab(convectionAFC),&
-            rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
+            rproblemLevel%RmatrixScalar(lumpedMassMatrixTransport),&
             Rsolution(2), rtimestep%dStep, .false.,&
             AFCSTAB_FCTALGO_STANDARD-&
             AFCSTAB_FCTALGO_CORRECT, Rsolution(2))
@@ -2821,7 +2821,7 @@ contains
 
 !!$        ! Apply failsafe flux correction for both models
 !!$        call afcstab_failsafeLimiting(rproblemLevel%Rafcstab(IposAFC),&
-!!$            rproblemLevel%Rmatrix(lumpedMassMatrixHydro),&
+!!$            rproblemLevel%RmatrixScalar(lumpedMassMatrixHydro),&
 !!$            SfailsafeVariables, rtimestep%dStep, nfailsafe,&
 !!$            zpinch_getVariable, Rsolution, p_Rvector1)
         
@@ -2836,7 +2836,7 @@ contains
         ! hydrodynamic model
         call afcsc_buildVectorFCT(&
             rproblemLevel%Rafcstab(convectionAFC),&
-            rproblemLevel%Rmatrix(lumpedMassMatrixTransport),&
+            rproblemLevel%RmatrixScalar(lumpedMassMatrixTransport),&
             Rsolution(2), rtimestep%dStep, .false.,&
             AFCSTAB_FCTALGO_STANDARD+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))

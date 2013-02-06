@@ -392,12 +392,12 @@ contains
         select case(imasstype)
         case (MASS_LUMPED)
           call lsyssc_spreadMatrix(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rmatrix(systemMatrix))
+              rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
+              rproblemLevel%RmatrixScalar(systemMatrix))
         case (MASS_CONSISTENT)
           call lsyssc_spreadMatrix(&
-              rproblemLevel%Rmatrix(consistentMassMatrix),&
-              rproblemLevel%Rmatrix(systemMatrix))
+              rproblemLevel%RmatrixScalar(consistentMassMatrix),&
+              rproblemLevel%RmatrixScalar(systemMatrix))
         case default
           call output_line('Empty system matrix is invalid!',&
               OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcPrecondThetaScheme')
@@ -411,7 +411,7 @@ contains
           call lsysbl_clearMatrix(rproblemLevel%RmatrixBlock(systemMatrix))
           do ivar = 1, hydro_getNVAR(rproblemLevel)
             call lsyssc_matrixLinearComb(&
-                rproblemLevel%Rmatrix(lumpedMassMatrix),&
+                rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
                 rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar),&
                 1.0_DP, 1.0_DP, .false., .false., .true., .true.)
           end do
@@ -420,7 +420,7 @@ contains
           call lsysbl_clearMatrix(rproblemLevel%RmatrixBlock(systemMatrix))
           do ivar = 1, hydro_getNVAR(rproblemLevel)
             call lsyssc_matrixLinearComb(&
-                rproblemLevel%Rmatrix(consistentMassMatrix),&
+                rproblemLevel%RmatrixScalar(consistentMassMatrix),&
                 rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar),&
                 1.0_DP, 1.0_DP, .false., .false., .true., .true.)
           end do
@@ -856,8 +856,8 @@ contains
             ssectionName, 'lumpedmassmatrix', lumpedMassMatrix)
 
         call lsyssc_MatrixLinearComb(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            rproblemLevel%Rmatrix(systemMatrix),&
+            rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
+            rproblemLevel%RmatrixScalar(systemMatrix),&
             1.0_DP, 1.0_DP, .false., .false., .true., .true.)
 
       case (MASS_CONSISTENT)
@@ -875,8 +875,8 @@ contains
             ssectionName, 'consistentmassmatrix', consistentMassMatrix)
 
         call lsyssc_MatrixLinearComb(&
-            rproblemLevel%Rmatrix(consistentMassMatrix),&
-            rproblemLevel%Rmatrix(systemMatrix),&
+            rproblemLevel%RmatrixScalar(consistentMassMatrix),&
+            rproblemLevel%RmatrixScalar(systemMatrix),&
             1.0_DP, 1.0_DP, .false., .false., .true., .true.)
 
       case default
@@ -915,7 +915,7 @@ contains
 
         do ivar = 1, hydro_getNVAR(rproblemLevel)
           call lsyssc_MatrixLinearComb(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
               rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar),&
               1.0_DP, 1.0_DP, .false., .false., .true., .true.)
         end do
@@ -937,7 +937,7 @@ contains
 
         do ivar = 1, hydro_getNVAR(rproblemLevel)
           call lsyssc_MatrixLinearComb(&
-              rproblemLevel%Rmatrix(consistentMassMatrix),&
+              rproblemLevel%RmatrixScalar(consistentMassMatrix),&
               rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar),&
               1.0_DP, 1.0_DP, .false., .false., .true., .true.)
         end do
@@ -1131,7 +1131,7 @@ contains
         ! Apply mass matrix to solution vector
         do iblock = 1, rsolution%nblocks
           call lsyssc_scalarMatVec(&
-              rproblemLevel%Rmatrix(massMatrix),&
+              rproblemLevel%RmatrixScalar(massMatrix),&
               rsolution%RvectorBlock(iblock),&
               rrhs%RvectorBlock(iblock), 1.0_DP , 1.0_DP)
         end do
@@ -1161,7 +1161,7 @@ contains
 
             ! Compute $\tilde u = (M_L)^{-1}*b^n$
             call lsysbl_invertedDiagMatVec(&
-                rproblemLevel%Rmatrix(lumpedMassMatrix),&
+                rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
                 rrhs, 1.0_DP, p_rpredictor)
             
             ! Set specifier
@@ -1192,7 +1192,7 @@ contains
         ! Apply mass matrix to solution vector
         do iblock = 1, rsolution%nblocks
           call lsyssc_scalarMatVec(&
-              rproblemLevel%Rmatrix(massMatrix),&
+              rproblemLevel%RmatrixScalar(massMatrix),&
               rsolution%RvectorBlock(iblock),&
               rrhs%RvectorBlock(iblock), 1.0_DP , 0.0_DP)
         end do
@@ -1378,7 +1378,7 @@ contains
       ! Apply mass matrix to solution vector
       do iblock = 1, rsolution%nblocks
         call lsyssc_scalarMatVec(&
-            rproblemLevel%Rmatrix(massMatrix),&
+            rproblemLevel%RmatrixScalar(massMatrix),&
             rsolution%RvectorBlock(iblock),&
             rres%RvectorBlock(iblock), -1._DP, 1.0_DP)
       end do
@@ -1495,14 +1495,14 @@ contains
         ! Subtract corrected antidiffusion from right-hand side
         call afcsys_buildVectorFCT(&
             rproblemLevel%Rafcstab(inviscidAFC),&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
             p_rpredictor, rtimestep%dStep, .false.,&
             AFCSTAB_FCTALGO_CORRECT, rrhs,&
             rcollection=rcollection)
 
         ! Recompute the low-order predictor for the next limiting step
         call lsysbl_invertedDiagMatVec(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
             rrhs, 1.0_DP, p_rpredictor)
       end if
 
@@ -1662,7 +1662,7 @@ contains
       ! Apply mass matrix to solution vector
       do iblock = 1, rsolution%nblocks
         call lsyssc_scalarMatVec(&
-            rproblemLevel%Rmatrix(massMatrix),&
+            rproblemLevel%RmatrixScalar(massMatrix),&
             rsolution%RvectorBlock(iblock),&
             rrhs%RvectorBlock(iblock), 1.0_DP , 1.0_DP)
       end do
@@ -1711,7 +1711,7 @@ contains
         
         ! Compute $\tilde u = (M_L)^{-1}*b^n$
         call lsysbl_invertedDiagMatVec(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
             rrhs, 1.0_DP, p_rpredictor)
         
         ! Set specifier
@@ -2012,7 +2012,7 @@ contains
           ! Apply failsafe flux correction
           call afcsys_failsafeFCT(&
               rproblemLevel%Rafcstab(inviscidAFC),&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
               rsolution, rtimestep%dStep, 1e-8_DP,&
               AFCSTAB_FAILSAFEALGO_STANDARD, bisAccepted,&
               nsteps=nfailsafe, CvariableNames=SfailsafeVariables,&
@@ -2155,7 +2155,7 @@ contains
               theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
               hydro_calcFluxFCTScDiss1d_sim,&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-              rmatrix=rproblemLevel%Rmatrix(consistentMassMatrix),&
+              rmatrix=rproblemLevel%RmatrixScalar(consistentMassMatrix),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rxPredictor=rsolutionPredictor,&
               rcollection=rcollection)
@@ -2177,7 +2177,7 @@ contains
               theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
               hydro_calcFluxFCTScDiss2d_sim,&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-              rmatrix=rproblemLevel%Rmatrix(consistentMassMatrix),&
+              rmatrix=rproblemLevel%RmatrixScalar(consistentMassMatrix),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rxPredictor=rsolutionPredictor,&
               rcollection=rcollection)
@@ -2199,7 +2199,7 @@ contains
               theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
               hydro_calcFluxFCTScDiss3d_sim,&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-              rmatrix=rproblemLevel%Rmatrix(consistentMassMatrix),&
+              rmatrix=rproblemLevel%RmatrixScalar(consistentMassMatrix),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rxPredictor=rsolutionPredictor,&
               rcollection=rcollection)
@@ -2228,7 +2228,7 @@ contains
               theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
               hydro_calcFluxFCTRoeDiss1d_sim,&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-              rmatrix=rproblemLevel%Rmatrix(consistentMassMatrix),&
+              rmatrix=rproblemLevel%RmatrixScalar(consistentMassMatrix),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rxPredictor=rsolutionPredictor,&
               rcollection=rcollection)
@@ -2250,7 +2250,7 @@ contains
               theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
               hydro_calcFluxFCTRoeDiss2d_sim,&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-              rproblemLevel%Rmatrix(consistentMassMatrix),&
+              rproblemLevel%RmatrixScalar(consistentMassMatrix),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rxPredictor=rsolutionPredictor,&
               rcollection=rcollection)
@@ -2272,7 +2272,7 @@ contains
               theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
               hydro_calcFluxFCTRoeDiss3d_sim,&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-              rproblemLevel%Rmatrix(consistentMassMatrix),&
+              rproblemLevel%RmatrixScalar(consistentMassMatrix),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rxPredictor=rsolutionPredictor,&
               rcollection=rcollection)
@@ -2301,7 +2301,7 @@ contains
               theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
               hydro_calcFluxFCTRusDiss1d_sim,&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-              rproblemLevel%Rmatrix(consistentMassMatrix),&
+              rproblemLevel%RmatrixScalar(consistentMassMatrix),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rxPredictor=rsolutionPredictor,&
               rcollection=rcollection)
@@ -2323,7 +2323,7 @@ contains
               theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
               hydro_calcFluxFCTRusDiss2d_sim,&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-              rproblemLevel%Rmatrix(consistentMassMatrix),&
+              rproblemLevel%RmatrixScalar(consistentMassMatrix),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rxPredictor=rsolutionPredictor,&
               rcollection=rcollection)
@@ -2345,7 +2345,7 @@ contains
               theta, tstep, dscale, bclear, bquickAssembly, ioperationSpec,&
               hydro_calcFluxFCTRusDiss3d_sim,&
               rproblemLevel%RgroupFEMBlock(inviscidGFEM)%RgroupFEMBlock(1),&
-              rproblemLevel%Rmatrix(consistentMassMatrix),&
+              rproblemLevel%RmatrixScalar(consistentMassMatrix),&
               rxTimeDeriv=rsolutionTimeDeriv,&
               rxPredictor=rsolutionPredictor,&
               rcollection=rcollection)
@@ -2490,19 +2490,19 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call afcsys_buildVectorFCT(&
-              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix), &
+              p_rafcstab, rproblemLevel%RmatrixScalar(lumpedMassMatrix), &
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxDensity1d_sim, hydro_trafoDiffDensity1d_sim,&
               rcollection=rcollection)
         case (NDIM2D)
           call afcsys_buildVectorFCT(&
-              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              p_rafcstab, rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxDensity2d_sim, hydro_trafoDiffDensity2d_sim,&
               rcollection=rcollection)
         case (NDIM3D)
           call afcsys_buildVectorFCT(&
-              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              p_rafcstab, rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxDensity3d_sim, hydro_trafoDiffDensity3d_sim,&
               rcollection=rcollection)
@@ -2514,19 +2514,19 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call afcsys_buildVectorFCT(&
-              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              p_rafcstab, rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxEnergy1d_sim, hydro_trafoDiffEnergy1d_sim,&
               rcollection=rcollection)
         case (NDIM2D)
           call afcsys_buildVectorFCT(&
-              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              p_rafcstab, rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxEnergy2d_sim, hydro_trafoDiffEnergy2d_sim,&
               rcollection=rcollection)
         case (NDIM3D)
           call afcsys_buildVectorFCT(&
-              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              p_rafcstab, rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxEnergy3d_sim, hydro_trafoDiffEnergy3d_sim,&
               rcollection=rcollection)
@@ -2538,19 +2538,19 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call afcsys_buildVectorFCT(&
-              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              p_rafcstab, rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxPressure1d_sim, hydro_trafoDiffPressure1d_sim,&
               rcollection=rcollection)
         case (NDIM2D)
           call afcsys_buildVectorFCT(&
-              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              p_rafcstab, rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxPressure2d_sim, hydro_trafoDiffPressure2d_sim,&
               rcollection=rcollection)
         case (NDIM3D)
           call afcsys_buildVectorFCT(&
-              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              p_rafcstab, rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxPressure3d_sim, hydro_trafoDiffPressure3d_sim,&
               rcollection=rcollection)
@@ -2562,20 +2562,20 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call afcsys_buildVectorFCT(&
-              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              p_rafcstab, rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxVelocity1d_sim, hydro_trafoDiffVelocity1d_sim,&
               rcollection=rcollection)
         case (NDIM2D)
           call afcsys_buildVectorFCT(&
-              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              p_rafcstab, rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxVelocity2d_sim, hydro_trafoDiffVelocity2d_sim,&
               rcollection=rcollection,&
               fcb_limitEdgewise=hydro_limitEdgewiseVelocity)
         case (NDIM3D)
           call afcsys_buildVectorFCT(&
-              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              p_rafcstab, rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxVelocity3d_sim, hydro_trafoDiffVelocity3d_sim,&
               rcollection=rcollection,&
@@ -2588,20 +2588,20 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call afcsys_buildVectorFCT(&
-              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              p_rafcstab, rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxMomentum1d_sim, hydro_trafoDiffMomentum1d_sim,&
               rcollection=rcollection)
         case (NDIM2D)
           call afcsys_buildVectorFCT(&
-              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              p_rafcstab, rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxMomentum2d_sim, hydro_trafoDiffMomentum2d_sim,&
               rcollection=rcollection,&
               fcb_limitEdgewise=hydro_limitEdgewiseMomentum)
         case (NDIM3D)
           call afcsys_buildVectorFCT(&
-              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              p_rafcstab, rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxMomentum3d_sim, hydro_trafoDiffMomentum3d_sim,&
               rcollection=rcollection,&
@@ -2614,19 +2614,19 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call afcsys_buildVectorFCT(&
-              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              p_rafcstab, rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxDenEng1d_sim, hydro_trafoDiffDenEng1d_sim,&
               rcollection=rcollection)
         case (NDIM2D)
           call afcsys_buildVectorFCT(&
-              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              p_rafcstab, rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxDenEng2d_sim, hydro_trafoDiffDenEng2d_sim,&
               rcollection=rcollection)
         case (NDIM3D)
           call afcsys_buildVectorFCT(&
-              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              p_rafcstab, rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxDenEng3d_sim, hydro_trafoDiffDenEng3d_sim,&
               rcollection=rcollection)
@@ -2638,19 +2638,19 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call afcsys_buildVectorFCT(&
-              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              p_rafcstab, rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxDenPre1d_sim, hydro_trafoDiffDenPre1d_sim,&
               rcollection=rcollection)
         case (NDIM2D)
           call afcsys_buildVectorFCT(&
-              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              p_rafcstab, rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxDenPre2d_sim, hydro_trafoDiffDenPre2d_sim,&
               rcollection=rcollection)
         case (NDIM3D)
           call afcsys_buildVectorFCT(&
-              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              p_rafcstab, rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxDenPre3d_sim, hydro_trafoDiffDenPre3d_sim,&
               rcollection=rcollection)
@@ -2662,7 +2662,7 @@ contains
 
         ! Apply FEM-FCT algorithm for full conservative fluxes
         call afcsys_buildVectorFCT(&
-            p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            p_rafcstab, rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
             rsolution, dscale, bclear, iopSpec, rresidual, rcollection=rcollection)
 
       elseif (trim(slimitingvariable) .eq. 'density,pressure,velocity') then
@@ -2673,19 +2673,19 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call afcsys_buildVectorFCT(&
-              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              p_rafcstab, rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxDenPreVel1d_sim, hydro_trafoDiffDenPreVel1d_sim,&
               rcollection=rcollection)
         case (NDIM2D)
           call afcsys_buildVectorFCT(&
-              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              p_rafcstab, rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxDenPreVel2d_sim, hydro_trafoDiffDenPreVel2d_sim,&
               rcollection=rcollection)
         case (NDIM3D)
           call afcsys_buildVectorFCT(&
-              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              p_rafcstab, rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               hydro_trafoFluxDenPreVel3d_sim, hydro_trafoDiffDenPreVel3d_sim,&
               rcollection=rcollection)
@@ -2706,7 +2706,7 @@ contains
               ior(p_rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGELIMITER)
           
           call afcsys_buildVectorFCT(&
-              p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              p_rafcstab, rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
               rsolution, dscale, bclear, iopSpec, rresidual,&
               rcollection=rcollection)
           
@@ -2741,7 +2741,7 @@ contains
       iopSpec = iand(iopSpec, not(AFCSTAB_FCTALGO_LIMITEDGE))
       
       call afcsys_buildVectorFCT(&
-          p_rafcstab, rproblemLevel%Rmatrix(lumpedMassMatrix),&
+          p_rafcstab, rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
           rsolution, dscale, bclear, iopSpec, rresidual,&
           rcollection=rcollection)
     end if
@@ -3750,7 +3750,7 @@ contains
           call parlst_getvalue_int(rparlist,&
               ssectionName, 'lumpedmassmatrix', massmatrix)
           call lsyssc_getbase_double(&
-              rproblemLevel%Rmatrix(massmatrix), p_DdataMassMatrix)
+              rproblemLevel%RmatrixScalar(massmatrix), p_DdataMassMatrix)
 
           select case(isystemFormat)
           case (SYSTEM_INTERLEAVEFORMAT)
@@ -3776,9 +3776,9 @@ contains
           call parlst_getvalue_int(rparlist,&
               ssectionName, 'consistentmassmatrix', massmatrix)
           call lsyssc_getbase_double(&
-              rproblemLevel%Rmatrix(massmatrix), p_DdataMassMatrix)
-          call lsyssc_getbase_Kld(rproblemLevel%Rmatrix(massmatrix), p_Kld)
-          call lsyssc_getbase_Kcol(rproblemLevel%Rmatrix(massmatrix), p_Kcol)
+              rproblemLevel%RmatrixScalar(massmatrix), p_DdataMassMatrix)
+          call lsyssc_getbase_Kld(rproblemLevel%RmatrixScalar(massmatrix), p_Kld)
+          call lsyssc_getbase_Kcol(rproblemLevel%RmatrixScalar(massmatrix), p_Kcol)
           
           select case(isystemFormat)
           case (SYSTEM_INTERLEAVEFORMAT)
@@ -3817,7 +3817,7 @@ contains
           call parlst_getvalue_int(rparlist,&
               ssectionName, 'lumpedmassmatrix', massmatrix)
           call lsyssc_getbase_double(&
-              rproblemLevel%Rmatrix(massmatrix), p_DdataMassMatrix)
+              rproblemLevel%RmatrixScalar(massmatrix), p_DdataMassMatrix)
           
           select case(isystemFormat)
           case (SYSTEM_INTERLEAVEFORMAT)
@@ -3843,9 +3843,9 @@ contains
           call parlst_getvalue_int(rparlist,&
               ssectionName, 'consistentmassmatrix', massmatrix)
           call lsyssc_getbase_double(&
-              rproblemLevel%Rmatrix(massmatrix), p_DdataMassMatrix)
-          call lsyssc_getbase_Kld(rproblemLevel%Rmatrix(massmatrix), p_Kld)
-          call lsyssc_getbase_Kcol(rproblemLevel%Rmatrix(massmatrix), p_Kcol)
+              rproblemLevel%RmatrixScalar(massmatrix), p_DdataMassMatrix)
+          call lsyssc_getbase_Kld(rproblemLevel%RmatrixScalar(massmatrix), p_Kld)
+          call lsyssc_getbase_Kcol(rproblemLevel%RmatrixScalar(massmatrix), p_Kcol)
 
           select case(isystemFormat)
           case (SYSTEM_INTERLEAVEFORMAT)
@@ -3884,7 +3884,7 @@ contains
           call parlst_getvalue_int(rparlist,&
               ssectionName, 'lumpedmassmatrix', massmatrix)
           call lsyssc_getbase_double(&
-              rproblemLevel%Rmatrix(massmatrix), p_DdataMassMatrix)
+              rproblemLevel%RmatrixScalar(massmatrix), p_DdataMassMatrix)
 
           select case(isystemFormat)
           case (SYSTEM_INTERLEAVEFORMAT)
@@ -3910,9 +3910,9 @@ contains
           call parlst_getvalue_int(rparlist,&
               ssectionName, 'consistentmassmatrix', massmatrix)
           call lsyssc_getbase_double(&
-              rproblemLevel%Rmatrix(massmatrix), p_DdataMassMatrix)
-          call lsyssc_getbase_Kld(rproblemLevel%Rmatrix(massmatrix), p_Kld)
-          call lsyssc_getbase_Kcol(rproblemLevel%Rmatrix(massmatrix), p_Kcol)
+              rproblemLevel%RmatrixScalar(massmatrix), p_DdataMassMatrix)
+          call lsyssc_getbase_Kld(rproblemLevel%RmatrixScalar(massmatrix), p_Kld)
+          call lsyssc_getbase_Kcol(rproblemLevel%RmatrixScalar(massmatrix), p_Kcol)
 
           select case(isystemFormat)
           case (SYSTEM_INTERLEAVEFORMAT)
@@ -5568,7 +5568,7 @@ contains
 
       ! Scale rvector1 by the inverse of the lumped mass matrix and store
       ! the result in rvector; this is the solution of the lumped version
-      call lsysbl_invertedDiagMatVec(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+      call lsysbl_invertedDiagMatVec(rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
           p_rvector1, 1.0_DP, rvector)
 
       ! Store norm of the initial guess from the lumped version
@@ -5580,13 +5580,13 @@ contains
         
         ! Compute the residual $rhs-M_C*u$ and store the result in rvector3
         do iblock = 1,rsolution%nblocks
-          call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(consistentMassMatrix),&
+          call lsyssc_scalarMatVec(rproblemLevel%RmatrixScalar(consistentMassMatrix),&
               rvector%RvectorBlock(iblock), p_rvector2%RvectorBlock(iblock),&
               -1.0_DP, 1.0_DP)
         end do
           
         ! Scale rvector2 by the inverse of the lumped mass matrix
-        call lsysbl_invertedDiagMatVec(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+        call lsysbl_invertedDiagMatVec(rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
             p_rvector2, 1.0_DP, p_rvector2)
         
         ! Apply solution increment (rvector2) to the previous solution iterate
@@ -5665,7 +5665,7 @@ contains
       end if
 
       ! Scale it by the inverse of the lumped mass matrix
-      call lsysbl_invertedDiagMatVec(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+      call lsysbl_invertedDiagMatVec(rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
           rvector, 1.0_DP, rvector)
 
     case default
