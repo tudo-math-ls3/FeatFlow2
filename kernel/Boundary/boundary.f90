@@ -970,7 +970,7 @@ contains
           !
           ! The first entry in the segment information array is again
           ! the length of the NURBS - to be computed later.
-          read (iunit,*) nurbsdegree,ncntrlpnts,nknot
+          read (iunit,*) nurbsdegree,ncntrlpnts,nknots
 
           ! First save the degree of the open NURBS
           p_IsegInfo (BOUNDARY_SEGHEADER_LENGTH*isegment+&
