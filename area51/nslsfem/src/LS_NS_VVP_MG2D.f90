@@ -3660,7 +3660,11 @@ contains
     call fev2_addVectorToEvalList(revalVectors,&
        rvector%RvectorBlock(1),1)   ! u1,x,y
     call fev2_addVectorToEvalList(revalVectors,&
-       rvector%RvectorBlock(2),1)   ! u2,x,y                
+       rvector%RvectorBlock(2),1)   ! u2,x,y       
+       
+    ! initializing the maximum norm value
+    rcollection%DquickAccess(11) = 1.0E-16_DP
+    
     call bma_buildIntegral (dintvalue,BMA_CALC_STANDARD,&
     ls_L2_Norm,rcollection=rcollection, &
     revalVectors=revalVectors,rcubatureInfo=rcubatureInfo)
@@ -3674,6 +3678,18 @@ contains
 
     call output_line ('L2divu:'//&
     trim(sys_sdEP(sqrt(dintvalue),15,6)), coutputMode=OU_MODE_BENCHLOG) 
+ 
+    ! Print the Norm value
+    call output_lbrk()
+    call output_line ('L^inf Error Div(u)')
+    call output_line ('------------------')
+    call output_line (trim(sys_sdEP(rcollection%DquickAccess(11),15,6)))  
+    call fev2_releaseVectorList(revalVectors)
+
+    call output_line ('Linfdivu:'//&
+    trim(sys_sdEP(rcollection%DquickAccess(11),15,6)), & 
+    coutputMode=OU_MODE_BENCHLOG) 
+ 
   end if
 
 
@@ -5623,6 +5639,11 @@ contains
 
       ! Get the error of the FEM function to the analytic function
       dval2 = p_DderivX(icubp,iel) + p_DderivY(icubp,iel)
+      
+      ! Maximum norm of the divergence
+      if (dval2 .gt. rcollection%DquickAccess(11)) then
+        rcollection%DquickAccess(11) = dval2
+      end if  
       
       ! Multiply the values by the cubature weight and sum up
       ! into the (squared) L2 error:
