@@ -829,8 +829,8 @@ contains
           ! An analytic expression consists of
           ! - Expression for x-coordinate
           ! - Expression for y-coordinate
-          ! - Expression for x-coordinate of norval vector
-          ! - Expression for y-coordinate of norval vector
+          ! - Expression for x-coordinate of normal vector
+          ! - Expression for y-coordinate of normal vector
           ! So we need 4 expressions
           iexpression = iexpression + 4
 
@@ -1024,23 +1024,26 @@ contains
           ! function parser object
           icomp = p_IsegInfo(BOUNDARY_SEGHEADER_LENGTH*isegment+BOUNDARY_SEGHEADER_EXPRESSION)
           
-          read(iunit,*) cbuffer ! x-coordinate
+          read(iunit,fmt='(A)') cbuffer ! x-coordinate
+          call sys_dequote(cbuffer)
           call fparser_parseFunction(rboundary%p_rfparser, icomp+1, cbuffer, (/'p'/))
-          read(iunit,*) cbuffer ! y-coordinate
+          read(iunit,fmt='(A)') cbuffer ! y-coordinate
+          call sys_dequote(cbuffer)
           call fparser_parseFunction(rboundary%p_rfparser, icomp+2, cbuffer, (/'p'/))
-          read(iunit,*) cbuffer ! x-coordinate of normal direction
+          read(iunit,fmt='(A)') cbuffer ! x-coordinate of normal direction
+          call sys_dequote(cbuffer)
           call fparser_parseFunction(rboundary%p_rfparser, icomp+3, cbuffer, (/'p'/))
-          read(iunit,*) cbuffer ! y-coordinate of normal direction
+          read(iunit,fmt='(A)') cbuffer ! y-coordinate of normal direction
+          call sys_dequote(cbuffer)
           call fparser_parseFunction(rboundary%p_rfparser, icomp+4, cbuffer, (/'p'/))
-          
+
           ! Save the initial parameter value (in length-parametrisation)
           ! to the first entry
           p_DsegInfo(isegrel+1) = dmaxpar
 
 
           ! Calculate the real length of the analytically given path
-          dl = adaptiveSimpson(rboundary%p_rfparser, icomp+3, icomp+4,&
-              real(isegment,DP), real(isegment+1,DP), 1e-8_DP, 10)
+          dl = adaptiveSimpson(rboundary%p_rfparser, icomp+3, icomp+4, 0.0_DP, 1.0_DP, 1e-8_DP, 10)
           p_DsegInfo(isegrel+2) = dl
           
           ! Increase the maximum parameter value
