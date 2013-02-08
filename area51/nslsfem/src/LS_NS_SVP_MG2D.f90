@@ -26,7 +26,7 @@
 !#
 !# Author:    Masoud Nickaeen
 !# First Version: May  14, 2013
-!# Last Update:   Jan. 27, 2013
+!# Last Update:   Feb. 08, 2013
 !# 
 !##############################################################################
 
@@ -1609,7 +1609,7 @@ contains
               
 
   case (7)
-    ! Analytic polynomial solution
+    ! Static Bubble
     ! edge 1 of boundary component 1.
     call boundary_createRegion(rboundary,1,1,rboundaryRegion)
     rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
@@ -3123,36 +3123,47 @@ contains
   if (detSJump .eq. 1) then
     call parlst_getvalue_double (rparams, 'JUMP', 'dJumpS', &
                           dJumpS, 0.01_DP)  
-    call parlst_getvalue_double (rparams, 'JUMP', 'dJumpStarS',&
-                        dJumpStarS, 0.0_DP)  
-    call parlst_getvalue_double (rparams, 'JUMP', 'deojEdgeExpS',&
-                        deojEdgeExpS, 2.0_DP)                            
+!    call parlst_getvalue_double (rparams, 'JUMP', 'dJumpStarS',&
+!                        dJumpStarS, 0.0_DP)  
+!    call parlst_getvalue_double (rparams, 'JUMP', 'deojEdgeExpS',&
+!                        deojEdgeExpS, 2.0_DP)                            
+!
+!    ! Set up the jump stabilisation structure.
+!    ! The kinematic viscosity 1/Re
+!    rjumpStabil%dnu = rcollection%DquickAccess(1)
+!
+!    ! Set stabilisation parameter
+!    rjumpStabil%dgamma = dJumpS
+!    rjumpStabil%dgammastar = dJumpStarS
+!    rjumpStabil%deojEdgeExp = deojEdgeExpS
+!
+!    ! Matrix weight, =0 no jump stabilization will be added
+!    rjumpStabil%dtheta = 1.0_DP
+!
+!    ! Cubature formula to be used in jump term calculations
+!    ! over the edges
+!    rjumpStabil%ccubType = CUB_G3_1D
+!
+!    ! Call the jump stabilisation technique for the stresses.
+!    call conv_jumpStabilisation2d (rjumpStabil, CONV_MODMATRIX, &
+!                      rmatrix%RmatrixBlock(4,4)) 
+!
+!    call conv_jumpStabilisation2d (rjumpStabil, CONV_MODMATRIX, &
+!                      rmatrix%RmatrixBlock(5,5)) 
+!
+!    call conv_jumpStabilisation2d (rjumpStabil, CONV_MODMATRIX, &
+!                      rmatrix%RmatrixBlock(6,6))    
+                      
+                      
+    call jstab_calcReacJumpStabilisation (&
+        rmatrix%RmatrixBlock(4,4),dJumpS,1.0_DP,CUB_G3_1D,1.0_DP)                      
 
-    ! Set up the jump stabilisation structure.
-    ! The kinematic viscosity 1/Re
-    rjumpStabil%dnu = rcollection%DquickAccess(1)
-
-    ! Set stabilisation parameter
-    rjumpStabil%dgamma = dJumpS
-    rjumpStabil%dgammastar = dJumpStarS
-    rjumpStabil%deojEdgeExp = deojEdgeExpS
-
-    ! Matrix weight, =0 no jump stabilization will be added
-    rjumpStabil%dtheta = 1.0_DP
-
-    ! Cubature formula to be used in jump term calculations
-    ! over the edges
-    rjumpStabil%ccubType = CUB_G3_1D
-
-    ! Call the jump stabilisation technique for the stresses.
-    call conv_jumpStabilisation2d (rjumpStabil, CONV_MODMATRIX, &
-                      rmatrix%RmatrixBlock(4,4)) 
-
-    call conv_jumpStabilisation2d (rjumpStabil, CONV_MODMATRIX, &
-                      rmatrix%RmatrixBlock(5,5)) 
-
-    call conv_jumpStabilisation2d (rjumpStabil, CONV_MODMATRIX, &
-                      rmatrix%RmatrixBlock(6,6))                           
+    call jstab_calcReacJumpStabilisation (&
+        rmatrix%RmatrixBlock(5,5),dJumpS,1.0_DP,CUB_G3_1D,1.0_DP) 
+        
+    call jstab_calcReacJumpStabilisation (&
+        rmatrix%RmatrixBlock(6,6),dJumpS,1.0_DP,CUB_G3_1D,1.0_DP)         
+                                             
   end if  
   
   ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
