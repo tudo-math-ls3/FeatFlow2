@@ -26,7 +26,7 @@
 #   = 6  Analytic polynomial function
 #   = 7  Static Bubble
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Problem = 0
+Problem = 7
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Kinematic viscosity noo = muu/rho = 1/Re
@@ -65,13 +65,13 @@ alpha = 1.0
 [MESH]
 
 # Mesh file name and path:
-sFilenamePathMesh = './pre/QUAD'
+sFilenamePathMesh = './pre/star'
 
 # Final mesh level to solve the problem:
 NLMAX = 7
 
 # Coarse mesh level, used in multigrid:
-NLMIN = 5
+NLMIN = 7
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Change Quadrilaterals to triangles
@@ -89,7 +89,7 @@ detTri = 0
 #  EL_P2
 #  EL_RT0_2D
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Velm = EL_Q2
+Velm = EL_Q1
 Vtild = 0
 
 # Type of Pressure finite element:
@@ -97,8 +97,8 @@ Pelm = EL_QP1
 Ptild = 1
 
 # Type of Stress finite element:
-Selm = EL_Q2
-Stild = 0
+Selm = EL_QP1
+Stild = 1
 
 # Perturbed grid percentage
 #  =0.0 by default (No purturbation)
@@ -143,14 +143,14 @@ LinTyp = 2
 #    FPIter must be .le. NLN_MAX otherwise, it'll
 #    be replaced with NLN_MAX.
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-FPIter = 10
+FPIter = 100
 
 # Nonlinear loop Max number of iterations
-NLN_MAX = 50
+NLN_MAX = 100
 
 # Nonlinear loop stopping criteria
 #  Serves as a measure of relative residual
-dNLEpsi = 1.0e-5
+dNLEpsi = 1E-8
 
 
 #-----------------------------------------------------
@@ -175,7 +175,7 @@ detRHS = 1
 #   OR
 # the coefficient of surface tension, sigma
 #  Applicable ONLY if detRHS = 1
-dC = 1.0
+dC = 1
 
 
 #-----------------------------------------------------
@@ -262,11 +262,11 @@ iinitialSolutionLevel = 6
 #  First, we go to the velocities
 #   detVJump =1 on, =0 off
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-detVJump = 0
+detVJump = 1
 
 # Relaxation parameter for Jump stabilisation.
 # Standard value: 0.01
-dJumpV = 0.005
+dJumpV = 10.0
 
 # 2nd Relaxation parameter in the jump stabilisation. Standard = 0.0
 dJumpStarV = 0.0
@@ -280,11 +280,11 @@ deojEdgeExpV = 2.0
 # Second, we go to the stress
 #  detSJump =1 on, =0 off
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-detSJump = 0
+detSJump = 1
 
 # Relaxation parameter for Jump stabilisation.
-# Standard value: 0.01
-dJumpS = 0.01
+# Standard value: 0.1
+dJumpS = 0.0003
 
 # 2nd Relaxation parameter in the jump stabilisation. Standard = 0.
 dJumpStarS = 0.0
@@ -326,7 +326,7 @@ deojEdgeExpP = 2.0
 #    =1  Stand-alone Multigrid solver
 #    =2  Multigrid-preconditioned (CG\BiCGStab) solver
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-LINsolverType = 2
+LINsolverType = 1
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # If we have a Multigrid-preconditioned solver, then,
@@ -371,11 +371,11 @@ ctMG = 0
 #    =1  UMFPACK
 #    =2  Smoother as coarse grid solver
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-CGsolverMG = 1
+CGsolverMG = 2
 
 # Number of iteration of the coarse grid solver,
 #  if it is the same as our smoother
-NItCGsolverMG = 150
+NItCGsolverMG = 1000
 
 # Rlative coarse grid error,
 #  if it is the same as our smoother
@@ -520,7 +520,7 @@ dintARboundEX3YVel       = 20.0
 #      on coarse grid (UMFPACK) and
 #      detZMV =2 on other levels  
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-detZMV = 0
+detZMV = 2
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Which row of the pressure matrix do you want to 
@@ -533,7 +533,7 @@ detZMV = 0
 #  Poiesuelle flow, outflow =6
 #  Bolton step flow, outflow = 30
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-irow = 1
+irow = 5
 
 
 #-----------------------------------------------------
@@ -660,3 +660,4 @@ NMaxTime = 1
 #   =1  on, please scale
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 detTimeScale = 1
+
