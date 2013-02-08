@@ -40,6 +40,22 @@ algorithm = transient_primal
 
 #-------------------------------------------------------------------------------
 
+# minimum effective radius
+deffectiveradius = 1e-4
+
+# type of coordinate system
+#  0 = Cartesian coodinate system (x,y,z) 1D, 2D, 3D
+#  1 = axi-symmetric coordinate system (r,z) 2D
+#  2 = cylindrically symmetric coordinate system (r) 1D
+#  3 = spherically symmetric coordinate system (r) 1D
+icoordsystem = 2
+
+# type of geometric source term
+# 0 = evaluate linear form by numerical integration
+# 1 = group formulation with consistent mass matrix
+# 2 = group formulation with lumped mass matrix
+igeometricsourcetype = 2
+
 # type of mass matrix
 # 0 = no mass matrix
 # 1 = consistent mass matrix
@@ -114,8 +130,8 @@ isolutiontype = 3
 # section name of initial solution
 ssolutionname(4) = 
   @initsol_rho
-  @initsol_vel_x
-  @initsol_vel_y
+  @initsol_v_x
+  @initsol_v_y
   @initsol_Etot
 
 # type of exact solution profile
@@ -147,10 +163,10 @@ ssolutionfailsafevariable(5) =
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
-prmfile = %{sgriddirectory}/2d/sfb708_nozzle_41bar_simple.prm
+prmfile = %{sgriddirectory}/2d/sfb708_nozzle_41bar_complex.prm
 
 # file which contains the triangulation
-trifile = %{sgriddirectory}/2d/sfb708_nozzle_41bar_simple.tri
+trifile = %{sgriddirectory}/2d/sfb708_nozzle_41bar_complex.tri
 
 # type of finite element space(s)
 #
@@ -174,9 +190,7 @@ trifile = %{sgriddirectory}/2d/sfb708_nozzle_41bar_simple.tri
 #              Q1~ non-parametric, edge-midpoint based
 # EL_EN31_2D   rotated bilinear nonconforming quadrilateral FE,
 #              Q1~ non-parametric, edge-midpoint based, new interface implementations
-celement(2) =
-  EL_P1_2D
-  EL_Q1_2D
+celement = EL_Q1_2D
 
 # convert mesh to triangular mesh?
 iconvToTria = 0
@@ -290,7 +304,7 @@ theta = 1.0
 multisteps = 0
 
 # final time for the simulation.
-dfinalTime = 1e-3
+dfinalTime = 3e-2
 
 # initial time step size
 dinitialStep = 1e-3
@@ -301,7 +315,7 @@ dinitialStep = 1e-3
 ################################################################################
 
 # multigrid level number
-nlev = 1
+nlev = 4
 
 
 ################################################################################
