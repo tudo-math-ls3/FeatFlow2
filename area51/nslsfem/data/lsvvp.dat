@@ -77,7 +77,7 @@ sFilenamePathMesh = './pre/QUAD'
 NLMAX = 7
 
 # Coarse mesh level, used in multigrid:
-NLMIN = 5
+NLMIN = 6
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Change Quadrilaterals to triangles
@@ -175,7 +175,7 @@ detRHS = 1
 # The constant in the analytic
 # pressure/velocity filed
 #  Applicable ONLY if detRHS = 1
-cp = 10
+cp = 1
 cu = 1
 
 
@@ -590,6 +590,7 @@ detEnsto = 0
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Calculate the velocity divergence L^2-error
 #  Div = \int{ (u_x + v_y)^2 dX}
+#  And, the maximum norm of the divergence
 #   =0  don't calculate
 #   =1  yes calculate
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
