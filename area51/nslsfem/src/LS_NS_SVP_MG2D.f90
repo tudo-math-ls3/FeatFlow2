@@ -25,8 +25,8 @@
 !# </purpose>
 !#
 !# Author:    Masoud Nickaeen
-!# First Version: May  14, 2013
-!# Last Update:   Feb. 08, 2013
+!# First Version: Jan  14, 2013
+!# Last Update:   Feb  09, 2013
 !# 
 !##############################################################################
 
@@ -3071,7 +3071,7 @@ contains
   integer :: detSJump
   integer :: detPJump
   real(DP) :: dJumpV, dJumpStarV, deojEdgeExpV
-  real(DP) :: dJumpS, dJumpStarS, deojEdgeExpS
+  real(DP) :: dJumpS
   real(DP) :: dJumpP, dJumpStarP, deojEdgeExpP
   
   ! Let's check if we realy have to set up jump stabilization
@@ -3122,39 +3122,7 @@ contains
   ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   if (detSJump .eq. 1) then
     call parlst_getvalue_double (rparams, 'JUMP', 'dJumpS', &
-                          dJumpS, 0.01_DP)  
-!    call parlst_getvalue_double (rparams, 'JUMP', 'dJumpStarS',&
-!                        dJumpStarS, 0.0_DP)  
-!    call parlst_getvalue_double (rparams, 'JUMP', 'deojEdgeExpS',&
-!                        deojEdgeExpS, 2.0_DP)                            
-!
-!    ! Set up the jump stabilisation structure.
-!    ! The kinematic viscosity 1/Re
-!    rjumpStabil%dnu = rcollection%DquickAccess(1)
-!
-!    ! Set stabilisation parameter
-!    rjumpStabil%dgamma = dJumpS
-!    rjumpStabil%dgammastar = dJumpStarS
-!    rjumpStabil%deojEdgeExp = deojEdgeExpS
-!
-!    ! Matrix weight, =0 no jump stabilization will be added
-!    rjumpStabil%dtheta = 1.0_DP
-!
-!    ! Cubature formula to be used in jump term calculations
-!    ! over the edges
-!    rjumpStabil%ccubType = CUB_G3_1D
-!
-!    ! Call the jump stabilisation technique for the stresses.
-!    call conv_jumpStabilisation2d (rjumpStabil, CONV_MODMATRIX, &
-!                      rmatrix%RmatrixBlock(4,4)) 
-!
-!    call conv_jumpStabilisation2d (rjumpStabil, CONV_MODMATRIX, &
-!                      rmatrix%RmatrixBlock(5,5)) 
-!
-!    call conv_jumpStabilisation2d (rjumpStabil, CONV_MODMATRIX, &
-!                      rmatrix%RmatrixBlock(6,6))    
-                      
-                      
+                          dJumpS, 0.01_DP)                      
     call jstab_calcReacJumpStabilisation (&
         rmatrix%RmatrixBlock(4,4),dJumpS,1.0_DP,CUB_G3_1D,1.0_DP)                      
 
@@ -3176,26 +3144,6 @@ contains
                         dJumpStarP, 0.0_DP)  
     call parlst_getvalue_double (rparams, 'JUMP', 'deojEdgeExpP',&
                         deojEdgeExpP, 2.0_DP)                            
-
-    ! Set up the jump stabilisation structure.
-    ! The kinematic viscosity 1/Re
-    rjumpStabil%dnu = 1.0_DP !rcollection%DquickAccess(1)
-
-    ! Set stabilisation parameter
-    rjumpStabil%dgamma = dJumpP
-    rjumpStabil%dgammastar = dJumpStarP
-    rjumpStabil%deojEdgeExp = deojEdgeExpP
-
-    ! Matrix weight, =0 no jump stabilization will be added
-    rjumpStabil%dtheta = 1.0_DP
-
-    ! Cubature formula to be used in jump term calculations
-    ! over the edges
-    rjumpStabil%ccubType = CUB_G3_1D
-
-    ! Call the jump stabilisation technique for the stresses.
-    call conv_jumpStabilisation2d (rjumpStabil, CONV_MODMATRIX, &
-                      rmatrix%RmatrixBlock(3,3))  
   end if  
   
   end subroutine
@@ -3503,10 +3451,15 @@ contains
 
 
   ! Norm Calculations
-  integer :: detNorms
-  real(DP) :: dintvalue, dintvalue1
-  type(t_fev2Vectors) :: revalVectors 
-  
+  integer :: L2U,L2P,L2S,H1U,H1P,StbblError
+  real(DP) :: dintvalue, dintvalue1, dpmin
+  type(t_fev2Vectors) :: revalVectors
+  integer :: iel, nel
+  type(t_vectorBlock) :: rtemp
+  real(DP), dimension(:), pointer :: p_Ddatap  
+  ! Cubature information structure for static bubble
+  type(t_scalarCubatureInfo) :: rcubatureInfo2
+   
   ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   ! Write the final result in a data file. This can be later read as an
   !  initial solution for the non-linear loop.
@@ -4145,8 +4098,14 @@ contains
   ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   ! Calculate The L^2 and H^1 norms for analytical solutions
   ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-  
-  call parlst_getvalue_int (rparams, 'POST', 'detNorms', detNorms, 0)
-  if (detNorms == 1) then
+  call parlst_getvalue_int (rparams, 'POST', 'L2U', L2U, 0)
+  call parlst_getvalue_int (rparams, 'POST', 'L2P', L2P, 0)
+  call parlst_getvalue_int (rparams, 'POST', 'L2S', L2S, 0)
+  call parlst_getvalue_int (rparams, 'POST', 'H1U', H1U, 0)
+  call parlst_getvalue_int (rparams, 'POST', 'H1P', H1P, 0)
+  call parlst_getvalue_int (rparams, 'POST', 'StbblError', StbblError, 0)
+  
+  if (L2U == 1) then
 
     ! L^2 Norm velocity
     ! Add x-velocity vector
@@ -4175,7 +4134,10 @@ contains
     
     call output_line ('L2velocity:'//&
     trim(sys_sdEP(sqrt(dintvalue+dintvalue1),15,6)), coutputMode=OU_MODE_BENCHLOG)
-    
+
+  end if
+
+  if (H1U == 1) then    
     ! H^1 Norm velocity
     ! Add x-velocity vector
     rcollection%IquickAccess(7) = 0
@@ -4204,6 +4166,9 @@ contains
     call output_line ('H1velocity:'//&
     trim(sys_sdEP(sqrt(dintvalue+dintvalue1),15,6)), coutputMode=OU_MODE_BENCHLOG)
 
+  end if
+  
+  if (L2P == 1) then  
     ! L^2 Norm pressure
     ! Add pressure vector
     rcollection%IquickAccess(7) = 2
@@ -4232,6 +4197,10 @@ contains
     ls_H1_Norm,rcollection=rcollection, &
     revalVectors=revalVectors,rcubatureInfo=rcubatureInfo)
 
+  end if
+
+
+  if (H1P == 1) then
     ! Print the Norm value
     call output_lbrk()
     call output_line ('H^1 Error pressure')
@@ -4242,6 +4211,10 @@ contains
     call output_line ('H1pressure:'//&
     trim(sys_sdEP(sqrt(dintvalue),15,6)), coutputMode=OU_MODE_BENCHLOG)    
 
+  end if
+
+    
+  if (L2S == 1) then    
     ! L^2 Norm Sxx
     ! Add the vector
     rcollection%IquickAccess(7) = 3
@@ -4299,8 +4272,91 @@ contains
 
     call output_line ('L2Syy:'//&
     trim(sys_sdEP(sqrt(dintvalue),15,6)), coutputMode=OU_MODE_BENCHLOG) 
-  
+
   end if
+     
+  if (StbblError == 1) then
+    !!!! Copy the solution vector to a temporary vector rtemp
+    ! Create a new vector rtemp filled with zero
+    call lsysbl_createVecBlockIndirect (rvector,rtemp,.true.)
+    ! Copy the solution vector to rtemp
+    call lsysbl_copyVector (rvector,rtemp)
+    
+    !!!! Bring the minimum of the pressure values to zero
+    ! Get the pressure values
+    call lsyssc_getbase_double (rtemp%RvectorBlock(3),p_Ddatap)
+    nel = rtemp%RvectorBlock(3)%P_RSPATIALDISCR%P_RTRIANGULATION%NEL
+
+    ! Initialize the min pressure
+    dpmin = 1.0E12_DP
+    
+    ! Find the min pressure
+    do iel=1,nel
+      dpmin = min(dpmin,p_Ddatap(iel))
+    end do
+    ! Substract the pressure values from the min value
+    !  so that we get the pressure field >= 0
+    do iel=1,nel
+      p_Ddatap(iel) = p_Ddatap(iel) - dpmin
+    end do
+    
+    !!!! Calculate the errors 
+    ! Add the pressure vector
+    rcollection%IquickAccess(7) = 6
+    call fev2_addVectorToEvalList(revalVectors,&
+       rtemp%RvectorBlock(3),0)   ! p
+       
+    ! Gauss 1-pt rule = 1 Point per element in the center.
+    call spdiscr_createDefCubStructure(&  
+    rdiscretisation%RspatialDiscr(3),rcubatureInfo2,CUB_G1_2D)
+           
+    call bma_buildIntegral (dintvalue,BMA_CALC_STANDARD,&
+    ls_L2_Norm,rcollection=rcollection, &
+    revalVectors=revalVectors,rcubatureInfo=rcubatureInfo2)
+
+    !!!! Print the errors to standard output and the log file
+    call output_lbrk()
+    call output_line ('Mean pressure inside bubble')
+    call output_line ('---------------------------')
+    call output_line (trim(sys_sdEP(&
+              rcollection%DquickAccess(13)/0.1963495408493621_DP,15,6)))  
+!    call output_lbrk()
+!    call output_line ('Numerical area inside bubble')
+!    call output_line ('----------------------------')
+!    call output_line (trim(sys_sdEP(rcollection%DquickAccess(12),15,6)))
+
+    call output_lbrk()
+    call output_line ('Mean pressure outside bubble')
+    call output_line ('----------------------------')
+    call output_line (trim(sys_sdEP(&
+              rcollection%DquickAccess(15)/3.8036504591506379_DP,15,6)))  
+!    call output_lbrk()
+!    call output_line ('Numerical area outside bubble')
+!    call output_line ('-----------------------------')
+!    call output_line (trim(sys_sdEP(rcollection%DquickAccess(14),15,6)))
+
+    call output_lbrk()
+    call output_line ('Abs. Error Young-Laplace Eq.')
+    call output_line ('----------------------------')
+    call output_line ( trim( sys_sdEP(abs(&
+              rcollection%DquickAccess(13)/0.1963495408493621_DP-&
+              rcollection%DquickAccess(15)/3.8036504591506379_DP-&
+              4.0_DP),15,6)))
+    call output_lbrk()
+    call output_line ('Percent Error(%) Young-Laplace Eq.')
+    call output_line ('----------------------------------')
+    call output_line (trim(sys_sdEP(abs(&
+              (rcollection%DquickAccess(13)/0.1963495408493621_DP-&
+              rcollection%DquickAccess(15)/3.8036504591506379_DP-&
+              4.0_DP)*25.0_DP),15,6)))
+    
+    !!!! Release the temp vector and the cubature structure
+    call lsysbl_releaseVector (rtemp)
+    call fev2_releaseVectorList(revalVectors)
+    call spdiscr_releaseCubStructure(rcubatureInfo2)
+    
+  end if      
+     
      
   end subroutine
 
@@ -5889,6 +5945,8 @@ contains
   real(DP), dimension(:,:), pointer :: p_DcubWeight
   real(DP), dimension(:,:), pointer :: p_Dfunc
   real(DP), dimension(:,:,:), pointer :: p_Dpoints
+  real(DP), dimension(:), pointer :: p_DelementArea
+  real(DP) :: dpressure_in, darea_in, dpressure_o, darea_o,r
   
   ! Cancel if no FEM function is given.
   if (revalVectors%ncount .eq. 0) then
@@ -5929,8 +5987,9 @@ contains
       dx = p_Dpoints(1,icubp,iel)
       dy = p_Dpoints(2,icubp,iel)
       
-      dval1 = 2.0_DP*dx**2*(1.0_DP-dx)**2*(dy*(1.0_DP-dy)**2 - dy**2*(1.0_DP-dy))
-
+!      dval1 = 2.0_DP*dx**2*(1.0_DP-dx)**2*(dy*(1.0_DP-dy)**2 - dy**2*(1.0_DP-dy))
+      dval1 = 0.0_DP
+      
       ! Get the error of the FEM function to the analytic function
       dval2 = p_Dfunc(icubp,iel)
       
@@ -5955,7 +6014,8 @@ contains
       dx = p_Dpoints(1,icubp,iel)
       dy = p_Dpoints(2,icubp,iel)
       
-      dval1 = -2.0_DP*dy**2*(1.0_DP-dy)**2*(dx*(1.0_DP-dx)**2 - dx**2*(1.0_DP-dx))
+!      dval1 = -2.0_DP*dy**2*(1.0_DP-dy)**2*(dx*(1.0_DP-dx)**2 - dx**2*(1.0_DP-dx))
+      dval1 = 0.0_DP
 
       ! Get the error of the FEM function to the bubble function
       dval2 = p_Dfunc(icubp,iel)
@@ -6075,6 +6135,54 @@ contains
     end do ! icubp
     
     end do ! iel  
+
+  case (6)
+    ! Static bubble error analysis
+    call storage_getbase_double (&
+     rintegralAssembly%p_rtriangulation%h_DelementVolume, p_DelementArea)
+      
+    ! Loop over the elements in the current set.
+    do iel = 1,nelements
+
+    ! Loop over all cubature points on the current element
+    do icubp = 1,npointsPerElement
+      
+      ! Get the real coordinate of the cubarure points
+      dx = p_Dpoints(1,icubp,iel)
+      dy = p_Dpoints(2,icubp,iel)
+      
+      ! Calculate the distance of the cubator point to origin at (0,0)
+      r = sqrt(dx**2 + dy**2)
+      
+      ! Check if the cubature point lies inside of the bubble
+      if (r .le. 0.3_DP) then
+        ! Area of each element inside of the bubble
+        darea_in = p_DelementArea(rassemblyData%P_IelementList(iel))
+        ! Total area of the bubble (numerical)
+        ! The exact value is: 0.1963495408493621_DP
+        rcollection%DquickAccess(12) = rcollection%DquickAccess(12) + darea_in
+        ! Pressure value of each element inside of the bubble
+        dpressure_in = p_Dfunc(icubp,iel)
+        ! Pressure mutiplied by the area of each element inside of the bubble
+        rcollection%DquickAccess(13) = rcollection%DquickAccess(13) + &
+                                                     darea_in*dpressure_in
+     else 
+        ! outside the bubble 
+        ! Area of each element inside of the bubble
+        darea_o = p_DelementArea(rassemblyData%P_IelementList(iel))
+        ! Total area of the bubble (numerical)
+        ! The exact value is: 0.1963495408493621_DP
+        rcollection%DquickAccess(14) = rcollection%DquickAccess(14) + darea_o
+        ! Pressure value of each element inside of the bubble
+        dpressure_o = p_Dfunc(icubp,iel)
+        ! Pressure mutiplied by the area of each element inside of the bubble
+        rcollection%DquickAccess(15) = rcollection%DquickAccess(15) + &
+                                                     darea_o*dpressure_o           
+     end if
+      
+    end do ! icubp
+    
+    end do ! iel 
   
   end select   
     
@@ -6179,9 +6287,10 @@ contains
       dx = p_Dpoints(1,icubp,iel)
       dy = p_Dpoints(2,icubp,iel)
       
-      dderivX1 = 4.0_DP*dx*dy*(2*dx-1.0_DP)*(2.0_DP*dy-1.0_DP)*(dx-1.0_DP)*(dy-1.0_DP)
-      dderivY1 = 2.0_DP*dx**2*(dx-1.0_DP)**2*(6.0_DP*dy**2-6.0_DP*dy+1.0_DP)
-
+!      dderivX1 = 4.0_DP*dx*dy*(2*dx-1.0_DP)*(2.0_DP*dy-1.0_DP)*(dx-1.0_DP)*(dy-1.0_DP)
+!      dderivY1 = 2.0_DP*dx**2*(dx-1.0_DP)**2*(6.0_DP*dy**2-6.0_DP*dy+1.0_DP)
+      dderivX1 = 0.0_DP
+      dderivY1 = 0.0_DP
       ! Get the error of the FEM function derivatives of the bubble function
       ! in the cubature point
       dderivX2 = p_DderivX(icubp,iel)
@@ -6208,9 +6317,11 @@ contains
       dx = p_Dpoints(1,icubp,iel)
       dy = p_Dpoints(2,icubp,iel)
       
-      dderivX1 = -2.0_DP*dy**2*(dy-1.0_DP)**2*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP)
-      dderivY1 = -4.0_DP*dx*dy*(2*dx-1.0_DP)*(2.0_DP*dy-1.0_DP)*(dx-1.0_DP)*(dy-1.0_DP)
-
+!      dderivX1 = -2.0_DP*dy**2*(dy-1.0_DP)**2*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP)
+!      dderivY1 = -4.0_DP*dx*dy*(2*dx-1.0_DP)*(2.0_DP*dy-1.0_DP)*(dx-1.0_DP)*(dy-1.0_DP)
+      dderivX1 = 0.0_DP
+      dderivY1 = 0.0_DP
+      
       ! Get the error of the FEM function derivatives of the bubble function
       ! in the cubature point
       dderivX2 = p_DderivX(icubp,iel)
