@@ -478,19 +478,27 @@ fb_customise() {
 		    ;;
 
 		# PGI compiler suite
-		pc64-penryn-linux-pgi-*12.3)
-		    modules=""
-		    modules="$modules pgi/12.3-0"
-		    LIDOJOBNAMEPREFIX=ff2-pgi12
-		    COMPILERNAME="PGI 12.3"
-		    ;;
-
-		# PGI compiler suite
-		pc64-penryn-linux-pgi-*|pc64-penryn-linux-pgi-*11*)
+		pc64-penryn-linux-pgi-*11*)
 		    modules=""
 		    modules="$modules pgi/11.10-0"
 		    LIDOJOBNAMEPREFIX=ff2-pgi
 		    COMPILERNAME="PGI 11.10"
+		    ;;
+
+		# PGI compiler suite
+		pc64-penryn-linux-pgi-*12.10)
+		    modules=""
+		    modules="$modules pgi/12.10-0"
+		    LIDOJOBNAMEPREFIX=ff2-pgi12
+		    COMPILERNAME="PGI 12.10"
+		    ;;
+
+		# PGI compiler suite
+		pc64-penryn-linux-pgi-*|pc64-penryn-linux-pgi-*13*)
+		    modules=""
+		    modules="$modules pgi/13.1-0"
+		    LIDOJOBNAMEPREFIX=ff2-pgi
+		    COMPILERNAME="PGI 13.1"
 		    ;;
 
 		# Sun Studio compiler suite 12.1
