@@ -68,10 +68,10 @@ alpha = 1.0
 sFilenamePathMesh = './pre/star'
 
 # Final mesh level to solve the problem:
-NLMAX = 7
+NLMAX = 5
 
 # Coarse mesh level, used in multigrid:
-NLMIN = 7
+NLMIN = 5
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Change Quadrilaterals to triangles
@@ -133,7 +133,7 @@ detPDisc = 0
 #     (start with fixed-point and after 'FPIter',
 #      continue with Newton's method)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-LinTyp = 2
+LinTyp = 1
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Number of Fixed-point irerations
@@ -150,7 +150,7 @@ NLN_MAX = 100
 
 # Nonlinear loop stopping criteria
 #  Serves as a measure of relative residual
-dNLEpsi = 1E-8
+dNLEpsi = 1E-6
 
 
 #-----------------------------------------------------
@@ -201,7 +201,7 @@ detOFlow = 0
 #  Warning: We assume that this edge is on the 
 #    first boundary component!
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-edge = 1
+edge = 2
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Type of 1D cubature rule for line integration over
@@ -254,7 +254,7 @@ iinitialSolutionLevel = 6
 
 
 #-----------------------------------------------------
-# Jump Stabilization (Velocity, Vorticity)
+# Jump Stabilization (Velocity, Stress)
 #-----------------------------------------------------
 [JUMP]
 
@@ -266,7 +266,7 @@ detVJump = 1
 
 # Relaxation parameter for Jump stabilisation.
 # Standard value: 0.01
-dJumpV = 10.0
+dJumpV = 1E4
 
 # 2nd Relaxation parameter in the jump stabilisation. Standard = 0.0
 dJumpStarV = 0.0
@@ -278,21 +278,14 @@ deojEdgeExpV = 2.0
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Second, we go to the stress
+# Jump of the function itself.
 #  detSJump =1 on, =0 off
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 detSJump = 1
 
 # Relaxation parameter for Jump stabilisation.
 # Standard value: 0.1
-dJumpS = 0.0003
-
-# 2nd Relaxation parameter in the jump stabilisation. Standard = 0.
-dJumpStarS = 0.0
-
-# Exponent for edge length weight in the jump stabilisation. Standard = 2
-# (corresponds to a weight dJump*h^2).
-
-deojEdgeExpS = 2.0
+dJumpS = 1E-5
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Third, we go to the pressure
@@ -371,7 +364,7 @@ ctMG = 0
 #    =1  UMFPACK
 #    =2  Smoother as coarse grid solver
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-CGsolverMG = 2
+CGsolverMG = 1
 
 # Number of iteration of the coarse grid solver,
 #  if it is the same as our smoother
@@ -520,7 +513,7 @@ dintARboundEX3YVel       = 20.0
 #      on coarse grid (UMFPACK) and
 #      detZMV =2 on other levels  
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-detZMV = 2
+detZMV = 1
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Which row of the pressure matrix do you want to 
@@ -533,7 +526,7 @@ detZMV = 2
 #  Poiesuelle flow, outflow =6
 #  Bolton step flow, outflow = 30
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-irow = 5
+irow = 1
 
 
 #-----------------------------------------------------
@@ -576,7 +569,7 @@ LiftDragASO = 0
 #   =0  don't calculate
 #   =1  yes calculate
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-KEnergy = 1
+KEnergy = 0
 
 # How to calculate the Kinetic energy
 #   =0  use the FEM definition and the Matrix-vector
@@ -607,7 +600,7 @@ detGMC = 0
 #       0.0 0.0 0.0 0.41 
 #       0.0 0.0 0.0 1.0
 #       -2.0 0.0 -2.0 1.0
-inputGMC = 0.0 0.0 0.0 0.41
+inputGMC = 0.0 0.0 0.0 1.0
 
 # Output line coordinates
 #  the line defined by the two endpoints:
@@ -616,7 +609,7 @@ inputGMC = 0.0 0.0 0.0 0.41
 #       2.2 0.0 2.2 0.41
 #       0.5 0.0 0.5 1.0
 #       0.0 0.0 0.0 1.0
-outputGMC = 0.05 0.0 0.05 0.41 
+outputGMC = 0.5 0.0 0.5 1.0 
 
 # The number of elements (#elem) associated with the line
 #  =0 Calculate the #elem automatically
@@ -624,12 +617,19 @@ outputGMC = 0.05 0.0 0.05 0.41
 nlevels = 15
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# Calculate L^2 and L^1 norms for the analytical
+# Calculate L^2 and H^1 norms for the analytical
 #  solution.
 #  =0 Don't do it
 #  =1 Please calculate
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-detNorms = 0
+L2U = 1
+H1U = 1
+
+L2P = 0
+H1P = 0
+
+L2S = 0
+StbblError = 1
 
 
 #-----------------------------------------------------
