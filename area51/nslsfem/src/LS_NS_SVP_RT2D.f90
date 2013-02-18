@@ -410,7 +410,7 @@ contains
   
   ! Physical scaling
   if (scPhysic .eq. 1) then
-    rcollection%DquickAccess(2) = 1.0_DP/(dnu) !20.0_DP
+    rcollection%DquickAccess(2) = 1.0_DP/(dnu) !200.0_DP
   else
     rcollection%DquickAccess(2) = 1.0_DP
   end if
@@ -436,7 +436,7 @@ contains
     rcollection%IquickAccess(3) = FPIter
    else
     rcollection%IquickAccess(3) = NLN_MAX
-   end if
+   end if 
    
   end select
   
@@ -452,7 +452,7 @@ contains
     call parlst_getvalue_double (rparams, 'RHS', 'dC', &
       rcollection%DquickAccess(9), 1.0_DP)
   end if
-  
+    
   end subroutine
   
 
@@ -688,7 +688,7 @@ contains
   ! And for the Stresse, a separate discretisation structure as well.
   ! Read the finite element for the Stresses
   call parlst_getvalue_string (rparams, 'MESH', 'Selm', sstring)
-   Selm = elem_igetID(sstring)
+  Selm = elem_igetID_Local(sstring)
   
   do i = NLMIN, NLMAX
     call spdiscr_initDiscr_simple (&
@@ -3396,9 +3396,12 @@ contains
   character(len=SYS_STRLEN) :: sstring
 
   ! Norm Calculations
-  integer :: detNorms
-  real(DP) :: dintvalue, dintvalue1
-  type(t_fev2Vectors) :: revalVectors 
+  integer :: L2U,L2P,L2S,H1U,H1P,StbblError
+  real(DP) :: dintvalue, dintvalue1, dpmin
+  type(t_fev2Vectors) :: revalVectors
+  integer :: iel, nel
+  type(t_vectorBlock) :: rtemp
+  real(DP), dimension(:), pointer :: p_Ddatap
   
   ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   ! Write the final result in a data file. This can be later read as an
@@ -3451,10 +3454,6 @@ contains
   ! release the extras
   call spdiscr_releaseCubStructure(rcubatureInfo2)
   call fev2_releaseVectorList(revalVectors)
-  call storage_free(rcollection%IquickAccess(11))
-  call storage_free(rcollection%IquickAccess(12))
-  call storage_free(rcollection%IquickAccess(13))
-
 
   ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   ! Calculate drag-/lift coefficients on the 2nd boundary component.
@@ -3611,7 +3610,12 @@ contains
       ! Write Stresses
       call ucd_addVariableElementBased (rexport,'Sxx',UCD_VAR_STANDARD,p_DdataXX)
       call ucd_addVariableElementBased (rexport,'Sxy',UCD_VAR_STANDARD,p_DdataXY)
-      call ucd_addVariableElementBased (rexport,'Syy',UCD_VAR_STANDARD,p_DdataYY)      
+      call ucd_addVariableElementBased (rexport,'Syy',UCD_VAR_STANDARD,p_DdataYY) 
+      
+      ! Release temporary storage
+      call storage_free(rcollection%IquickAccess(11))
+      call storage_free(rcollection%IquickAccess(12))
+      call storage_free(rcollection%IquickAccess(13))           
     
     else
       ! Start UCD export to GMV file:
@@ -3631,6 +3635,11 @@ contains
       call ucd_addVariableElementBased (rexport,'Sxx',UCD_VAR_STANDARD,p_DdataXX)
       call ucd_addVariableElementBased (rexport,'Sxy',UCD_VAR_STANDARD,p_DdataXY)
       call ucd_addVariableElementBased (rexport,'Syy',UCD_VAR_STANDARD,p_DdataYY)       
+      
+      ! Release temporary storage
+      call storage_free(rcollection%IquickAccess(11))
+      call storage_free(rcollection%IquickAccess(12))
+      call storage_free(rcollection%IquickAccess(13))
     
     end if
     
@@ -3664,6 +3673,11 @@ contains
       call ucd_addVariableElementBased (rexport,'Sxx',UCD_VAR_STANDARD,p_DdataXX)
       call ucd_addVariableElementBased (rexport,'Sxy',UCD_VAR_STANDARD,p_DdataXY)
       call ucd_addVariableElementBased (rexport,'Syy',UCD_VAR_STANDARD,p_DdataYY)  
+      
+      ! Release temporary storage
+      call storage_free(rcollection%IquickAccess(11))
+      call storage_free(rcollection%IquickAccess(12))
+      call storage_free(rcollection%IquickAccess(13))      
     
     else
       ! Start UCD export to GMV file:
@@ -3682,7 +3696,12 @@ contains
       ! Write Stresses
       call ucd_addVariableElementBased (rexport,'Sxx',UCD_VAR_STANDARD,p_DdataXX)
       call ucd_addVariableElementBased (rexport,'Sxy',UCD_VAR_STANDARD,p_DdataXY)
-      call ucd_addVariableElementBased (rexport,'Syy',UCD_VAR_STANDARD,p_DdataYY)   
+      call ucd_addVariableElementBased (rexport,'Syy',UCD_VAR_STANDARD,p_DdataYY)  
+      
+      ! Release temporary storage
+      call storage_free(rcollection%IquickAccess(11))
+      call storage_free(rcollection%IquickAccess(12))
+      call storage_free(rcollection%IquickAccess(13))       
     
     end if
   
@@ -4048,9 +4067,15 @@ contains
   ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   ! Calculate The L^2 and H^1 norms for analytical solutions
   ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-  
-  call parlst_getvalue_int (rparams, 'POST', 'detNorms', detNorms, 0)
-  if (detNorms == 1) then
-    
+  call parlst_getvalue_int (rparams, 'POST', 'L2U', L2U, 0)
+  call parlst_getvalue_int (rparams, 'POST', 'L2P', L2P, 0)
+  call parlst_getvalue_int (rparams, 'POST', 'L2S', L2S, 0)
+  call parlst_getvalue_int (rparams, 'POST', 'H1U', H1U, 0)
+  call parlst_getvalue_int (rparams, 'POST', 'H1P', H1P, 0)
+  call parlst_getvalue_int (rparams, 'POST', 'StbblError', StbblError, 0)
+  
+  if (L2U == 1) then
+
     ! L^2 Norm velocity
     ! Add x-velocity vector
     rcollection%IquickAccess(7) = 0
@@ -4075,8 +4100,13 @@ contains
     call output_line ('L^2 Error velocity')
     call output_line ('--------------------')
     call output_line (trim(sys_sdEP(sqrt(dintvalue+dintvalue1),15,6)))  
+    
+    call output_line ('L2velocity:'//&
+    trim(sys_sdEP(sqrt(dintvalue+dintvalue1),15,6)), coutputMode=OU_MODE_BENCHLOG)
 
+  end if
 
+  if (H1U == 1) then    
     ! H^1 Norm velocity
     ! Add x-velocity vector
     rcollection%IquickAccess(7) = 0
@@ -4102,7 +4132,12 @@ contains
     call output_line ('------------------')
     call output_line (trim(sys_sdEP(sqrt(dintvalue+dintvalue1),15,6)))  
 
+    call output_line ('H1velocity:'//&
+    trim(sys_sdEP(sqrt(dintvalue+dintvalue1),15,6)), coutputMode=OU_MODE_BENCHLOG)
 
+  end if
+  
+  if (L2P == 1) then  
     ! L^2 Norm pressure
     ! Add pressure vector
     rcollection%IquickAccess(7) = 2
@@ -4119,6 +4154,8 @@ contains
     call output_line (trim(sys_sdEP(sqrt(dintvalue),15,6)))  
     call fev2_releaseVectorList(revalVectors)
 
+    call output_line ('L2pressure:'//&
+    trim(sys_sdEP(sqrt(dintvalue),15,6)), coutputMode=OU_MODE_BENCHLOG)
 
     ! H^1 Norm pressure
     ! Add pressure vector
@@ -4129,6 +4166,10 @@ contains
     ls_H1_Norm,rcollection=rcollection, &
     revalVectors=revalVectors,rcubatureInfo=rcubatureInfo)
 
+  end if
+
+
+  if (H1P == 1) then
     ! Print the Norm value
     call output_lbrk()
     call output_line ('H^1 Error pressure')
@@ -4136,57 +4177,153 @@ contains
     call output_line (trim(sys_sdEP(sqrt(dintvalue),15,6)))  
     call fev2_releaseVectorList(revalVectors)
 
-!
-!    ! L^2 Norm Sxx
-!    ! Add the vector
-!    rcollection%IquickAccess(7) = 3
-!    call fev2_addVectorToEvalList(revalVectors,&
-!       rvector%RvectorBlock(4),0)   ! sxx
-!    call bma_buildIntegral (dintvalue,BMA_CALC_STANDARD,&
-!    ls_L2_Norm,rcollection=rcollection, &
-!    revalVectors=revalVectors,rcubatureInfo=rcubatureInfo)
-!
-!    ! Print the Norm value
+    call output_line ('H1pressure:'//&
+    trim(sys_sdEP(sqrt(dintvalue),15,6)), coutputMode=OU_MODE_BENCHLOG)    
+
+  end if
+
+    
+  if (L2S == 1) then    
+    ! L^2 Norm Sxx
+    ! Add the vector
+    rcollection%IquickAccess(7) = 3
+    call fev2_addVectorToEvalList(revalVectors,&
+       rvector%RvectorBlock(4),0)   ! sxx
+    call bma_buildIntegral (dintvalue,BMA_CALC_STANDARD,&
+    ls_L2_Norm,rcollection=rcollection, &
+    revalVectors=revalVectors,rcubatureInfo=rcubatureInfo)
+
+    ! Print the Norm value
+    call output_lbrk()
+    call output_line ('L^2 Error Sxx')
+    call output_line ('-------------')
+    call output_line (trim(sys_sdEP(sqrt(dintvalue),15,6)))  
+    call fev2_releaseVectorList(revalVectors)
+
+    call output_line ('L2Sxx:'//&
+    trim(sys_sdEP(sqrt(dintvalue),15,6)), coutputMode=OU_MODE_BENCHLOG) 
+
+
+    ! L^2 Norm Sxy
+    ! Add the vector
+    rcollection%IquickAccess(7) = 4
+    call fev2_addVectorToEvalList(revalVectors,&
+       rvector%RvectorBlock(5),0)   ! sxy
+    call bma_buildIntegral (dintvalue,BMA_CALC_STANDARD,&
+    ls_L2_Norm,rcollection=rcollection, &
+    revalVectors=revalVectors,rcubatureInfo=rcubatureInfo)
+
+    ! Print the Norm value
+    call output_lbrk()
+    call output_line ('L^2 Error Sxy')
+    call output_line ('-------------')
+    call output_line (trim(sys_sdEP(sqrt(dintvalue),15,6)))  
+    call fev2_releaseVectorList(revalVectors)
+
+    call output_line ('L2Sxy:'//&
+    trim(sys_sdEP(sqrt(dintvalue),15,6)), coutputMode=OU_MODE_BENCHLOG)     
+  
+    ! L^2 Norm Syy
+    ! Add the vector
+    rcollection%IquickAccess(7) = 5
+    call fev2_addVectorToEvalList(revalVectors,&
+       rvector%RvectorBlock(6),0)   ! syy
+    call bma_buildIntegral (dintvalue,BMA_CALC_STANDARD,&
+    ls_L2_Norm,rcollection=rcollection, &
+    revalVectors=revalVectors,rcubatureInfo=rcubatureInfo)
+
+    ! Print the Norm value
+    call output_lbrk()
+    call output_line ('L^2 Error Syy')
+    call output_line ('-------------')
+    call output_line (trim(sys_sdEP(sqrt(dintvalue),15,6)))  
+    call fev2_releaseVectorList(revalVectors)  
+
+    call output_line ('L2Syy:'//&
+    trim(sys_sdEP(sqrt(dintvalue),15,6)), coutputMode=OU_MODE_BENCHLOG) 
+
+  end if
+     
+  if (StbblError == 1) then
+    !!!! Copy the solution vector to a temporary vector rtemp
+    ! Create a new vector rtemp filled with zero
+    call lsysbl_createVecBlockIndirect (rvector,rtemp,.true.)
+    ! Copy the solution vector to rtemp
+    call lsysbl_copyVector (rvector,rtemp)
+    
+    !!!! Bring the minimum of the pressure values to zero
+    ! Get the pressure values
+    call lsyssc_getbase_double (rtemp%RvectorBlock(3),p_Ddatap)
+    nel = rtemp%RvectorBlock(3)%P_RSPATIALDISCR%P_RTRIANGULATION%NEL
+
+    ! Initialize the min pressure
+    dpmin = 1.0E12_DP
+    
+    ! Find the min pressure
+    do iel=1,nel
+      dpmin = min(dpmin,p_Ddatap(iel))
+    end do
+    ! Substract the pressure values from the min value
+    !  so that we get the pressure field >= 0
+    do iel=1,nel
+      p_Ddatap(iel) = p_Ddatap(iel) - dpmin
+    end do
+    
+    !!!! Calculate the errors 
+    ! Add the pressure vector
+    rcollection%IquickAccess(7) = 6
+    call fev2_addVectorToEvalList(revalVectors,&
+       rtemp%RvectorBlock(3),0)   ! p
+       
+    ! Gauss 1-pt rule = 1 Point per element in the center.
+    call spdiscr_createDefCubStructure(&  
+    rdiscretisation%RspatialDiscr(3),rcubatureInfo2,CUB_G1_T)
+           
+    call bma_buildIntegral (dintvalue,BMA_CALC_STANDARD,&
+    ls_L2_Norm,rcollection=rcollection, &
+    revalVectors=revalVectors,rcubatureInfo=rcubatureInfo2)
+
+    !!!! Print the errors to standard output and the log file
+    call output_lbrk()
+    call output_line ('Mean pressure inside bubble')
+    call output_line ('---------------------------')
+    call output_line (trim(sys_sdEP(&
+              rcollection%DquickAccess(13)/0.1963495408493621_DP,15,6)))  
 !    call output_lbrk()
-!    call output_line ('L^2 Error Sxx')
-!    call output_line ('-------------')
-!    call output_line (trim(sys_sdEP(sqrt(dintvalue),15,6)))  
-!    call fev2_releaseVectorList(revalVectors)
-!
-!
-!    ! L^2 Norm Sxy
-!    ! Add the vector
-!    rcollection%IquickAccess(7) = 4
-!    call fev2_addVectorToEvalList(revalVectors,&
-!       rvector%RvectorBlock(5),0)   ! sxy
-!    call bma_buildIntegral (dintvalue,BMA_CALC_STANDARD,&
-!    ls_L2_Norm,rcollection=rcollection, &
-!    revalVectors=revalVectors,rcubatureInfo=rcubatureInfo)
-!
-!    ! Print the Norm value
+!    call output_line ('Numerical area inside bubble')
+!    call output_line ('----------------------------')
+!    call output_line (trim(sys_sdEP(rcollection%DquickAccess(12),15,6)))
+
+    call output_lbrk()
+    call output_line ('Mean pressure outside bubble')
+    call output_line ('----------------------------')
+    call output_line (trim(sys_sdEP(&
+              rcollection%DquickAccess(15)/3.8036504591506379_DP,15,6)))  
 !    call output_lbrk()
-!    call output_line ('L^2 Error Sxy')
-!    call output_line ('-------------')
-!    call output_line (trim(sys_sdEP(sqrt(dintvalue),15,6)))  
-!    call fev2_releaseVectorList(revalVectors)
-!    
-!  
-!    ! L^2 Norm Syy
-!    ! Add the vector
-!    rcollection%IquickAccess(7) = 5
-!    call fev2_addVectorToEvalList(revalVectors,&
-!       rvector%RvectorBlock(6),0)   ! syy
-!    call bma_buildIntegral (dintvalue,BMA_CALC_STANDARD,&
-!    ls_L2_Norm,rcollection=rcollection, &
-!    revalVectors=revalVectors,rcubatureInfo=rcubatureInfo)
-!
-!    ! Print the Norm value
-!    call output_lbrk()
-!    call output_line ('L^2 Error Syy')
-!    call output_line ('-------------')
-!    call output_line (trim(sys_sdEP(sqrt(dintvalue),15,6)))  
-!    call fev2_releaseVectorList(revalVectors)  
-!  
+!    call output_line ('Numerical area outside bubble')
+!    call output_line ('-----------------------------')
+!    call output_line (trim(sys_sdEP(rcollection%DquickAccess(14),15,6)))
+
+    call output_lbrk()
+    call output_line ('Abs. Error Young-Laplace Eq.')
+    call output_line ('----------------------------')
+    call output_line ( trim( sys_sdEP(abs(&
+              rcollection%DquickAccess(13)/0.1963495408493621_DP-&
+              rcollection%DquickAccess(15)/3.8036504591506379_DP-&
+              4.0_DP),15,6)))
+    call output_lbrk()
+    call output_line ('Percent Error(%) Young-Laplace Eq.')
+    call output_line ('----------------------------------')
+    call output_line (trim(sys_sdEP(abs(&
+              (rcollection%DquickAccess(13)/0.1963495408493621_DP-&
+              rcollection%DquickAccess(15)/3.8036504591506379_DP-&
+              4.0_DP)*25.0_DP),15,6)))
+    
+    !!!! Release the temp vector and the cubature structure
+    call lsysbl_releaseVector (rtemp)
+    call fev2_releaseVectorList(revalVectors)
+    call spdiscr_releaseCubStructure(rcubatureInfo2)
+    
   end if
      
   end subroutine
@@ -5700,6 +5837,8 @@ contains
   real(DP), dimension(:,:), pointer :: p_DcubWeight
   real(DP), dimension(:,:), pointer :: p_Dfunc
   real(DP), dimension(:,:,:), pointer :: p_Dpoints
+  real(DP), dimension(:), pointer :: p_DelementArea
+  real(DP) :: dpressure_in, darea_in, dpressure_o, darea_o,r  
   
   ! Cancel if no FEM function is given.
   if (revalVectors%ncount .eq. 0) then
@@ -5727,7 +5866,7 @@ contains
   dintvalue = 0.0_DP
 
   select case (rcollection%IquickAccess(7))
-  
+
   case (0)
     !X-Velocity
     ! Loop over the elements in the current set.
@@ -5740,8 +5879,9 @@ contains
       dx = p_Dpoints(1,icubp,iel)
       dy = p_Dpoints(2,icubp,iel)
       
-      dval1 = 2.0_DP*dx**2*(1.0_DP-dx)**2*(dy*(1.0_DP-dy)**2 - dy**2*(1.0_DP-dy))
-
+!      dval1 = 2.0_DP*dx**2*(1.0_DP-dx)**2*(dy*(1.0_DP-dy)**2 - dy**2*(1.0_DP-dy))
+      dval1 = 0.0_DP
+      
       ! Get the error of the FEM function to the analytic function
       dval2 = p_Dfunc(icubp,iel)
       
@@ -5766,7 +5906,8 @@ contains
       dx = p_Dpoints(1,icubp,iel)
       dy = p_Dpoints(2,icubp,iel)
       
-      dval1 = -2.0_DP*dy**2*(1.0_DP-dy)**2*(dx*(1.0_DP-dx)**2 - dx**2*(1.0_DP-dx))
+!      dval1 = -2.0_DP*dy**2*(1.0_DP-dy)**2*(dx*(1.0_DP-dx)**2 - dx**2*(1.0_DP-dx))
+      dval1 = 0.0_DP
 
       ! Get the error of the FEM function to the bubble function
       dval2 = p_Dfunc(icubp,iel)
@@ -5792,7 +5933,7 @@ contains
       dx = p_Dpoints(1,icubp,iel)
       dy = p_Dpoints(2,icubp,iel)
       
-      dval1 = dC*(dx**3 - dy**3 - 0.5_DP)
+      dval1 = dC*(dx**3 - dy**3)
 
       ! Get the error of the FEM function to the bubble function
       dval2 = p_Dfunc(icubp,iel)
@@ -5886,6 +6027,54 @@ contains
     end do ! icubp
     
     end do ! iel  
+
+  case (6)
+    ! Static bubble error analysis
+    call storage_getbase_double (&
+     rintegralAssembly%p_rtriangulation%h_DelementVolume, p_DelementArea)
+      
+    ! Loop over the elements in the current set.
+    do iel = 1,nelements
+
+    ! Loop over all cubature points on the current element
+    do icubp = 1,npointsPerElement
+      
+      ! Get the real coordinate of the cubarure points
+      dx = p_Dpoints(1,icubp,iel)
+      dy = p_Dpoints(2,icubp,iel)
+      
+      ! Calculate the distance of the cubator point to origin at (0,0)
+      r = sqrt(dx**2 + dy**2)
+      
+      ! Check if the cubature point lies inside of the bubble
+      if (r .le. 0.3_DP) then
+        ! Area of each element inside of the bubble
+        darea_in = p_DelementArea(rassemblyData%P_IelementList(iel))
+        ! Total area of the bubble (numerical)
+        ! The exact value is: 0.1963495408493621_DP
+        rcollection%DquickAccess(12) = rcollection%DquickAccess(12) + darea_in
+        ! Pressure value of each element inside of the bubble
+        dpressure_in = p_Dfunc(icubp,iel)
+        ! Pressure mutiplied by the area of each element inside of the bubble
+        rcollection%DquickAccess(13) = rcollection%DquickAccess(13) + &
+                                                     darea_in*dpressure_in
+     else 
+        ! outside the bubble 
+        ! Area of each element inside of the bubble
+        darea_o = p_DelementArea(rassemblyData%P_IelementList(iel))
+        ! Total area of the bubble (numerical)
+        ! The exact value is: 0.1963495408493621_DP
+        rcollection%DquickAccess(14) = rcollection%DquickAccess(14) + darea_o
+        ! Pressure value of each element inside of the bubble
+        dpressure_o = p_Dfunc(icubp,iel)
+        ! Pressure mutiplied by the area of each element inside of the bubble
+        rcollection%DquickAccess(15) = rcollection%DquickAccess(15) + &
+                                                     darea_o*dpressure_o           
+     end if
+      
+    end do ! icubp
+    
+    end do ! iel 
   
   end select   
     
@@ -5993,6 +6182,9 @@ contains
       dderivX1 = 4.0_DP*dx*dy*(2*dx-1.0_DP)*(2.0_DP*dy-1.0_DP)*(dx-1.0_DP)*(dy-1.0_DP)
       dderivY1 = 2.0_DP*dx**2*(dx-1.0_DP)**2*(6.0_DP*dy**2-6.0_DP*dy+1.0_DP)
 
+      dderivX1 = 0.0_DP
+      dderivY1 = 0.0_DP
+      
       ! Get the error of the FEM function derivatives of the bubble function
       ! in the cubature point
       dderivX2 = p_DderivX(icubp,iel)
@@ -6021,6 +6213,9 @@ contains
       
       dderivX1 = -2.0_DP*dy**2*(dy-1.0_DP)**2*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP)
       dderivY1 = -4.0_DP*dx*dy*(2*dx-1.0_DP)*(2.0_DP*dy-1.0_DP)*(dx-1.0_DP)*(dy-1.0_DP)
+
+      dderivX1 = 0.0_DP
+      dderivY1 = 0.0_DP
 
       ! Get the error of the FEM function derivatives of the bubble function
       ! in the cubature point
@@ -6168,11 +6363,57 @@ contains
   do iel = 1,nelements
   
     p_DdataXX(p_Ielements(iel)) = p_Dfunc1(1,1,iel)
-    p_DdataXY(p_Ielements(iel)) = p_Dfunc1(2,1,iel)
+    p_DdataXY(p_Ielements(iel)) = p_Dfunc2(1,1,iel)
     p_DdataYY(p_Ielements(iel)) = p_Dfunc2(2,1,iel)
   
   end do ! iel
   
   end subroutine
+
+!****************************************************************************
+
+!<function>
+
+  integer(I32) function elem_igetID_Local(selemName, bcheck)
+
+!<description>
+  ! This routine returns the element id to a given element name.
+  ! It is  case-insensitive.
+!</description>
+
+!<result>
+  ! id of the element
+!</result>
+
+  !<input>
+
+  ! Element name - one of the EL_xxxx constants.
+  character (LEN=*) :: selemName
+
+  ! Check the element type. If set to TRUE and the element
+  ! name is invalid, the program is not stopped, but 0 is returned.
+  logical, intent(in), optional :: bcheck
+
+  !</input>
+
+!</function>
+
+    character(len=len(selemName)+1) :: selem
+    logical :: bchk
+
+    ! SELECT CASE is not allowed for strings (although supported by a majority
+    ! of compilers), therefore we have to use a couple of if-commands :(
+    ! select case(trim(sys_upcase(scubName)))
+
+    selem = trim(sys_upcase(selemName))
+
+    ! -= 1D Line Elements =-
+
+    ! -= 2D Triangle Elements =-
+    if (selem .eq. "EL_RT0" .or. selem .eq. "EL_RT0_2D" ) then
+      elem_igetID_Local = EL_RT0_2D
+    end if
+
+  end function
 
 end 
