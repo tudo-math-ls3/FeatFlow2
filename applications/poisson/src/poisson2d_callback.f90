@@ -68,6 +68,7 @@ module poisson2d_callback
   use storage
   use genoutput
   use derivatives
+  use boundary
   use triangulation
   use linearsystemscalar
   use linearsystemblock
