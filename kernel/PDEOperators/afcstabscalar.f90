@@ -11885,7 +11885,17 @@ contains
 
         ! Set state of stabilisation
         rafcstab%istabilisationSpec =&
-            ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES)       
+            ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES)
+
+        ! Do we need edge orientation?
+        if (rafcstab%climitingType .eq. AFCSTAB_LIMITING_UPWINDBIASED) then
+          call afcstab_upwindOrientation(p_Dcoefficients, p_IedgeList, 2, 3)
+          rafcstab%istabilisationSpec =&
+              ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION)
+        else
+          rafcstab%istabilisationSpec =&
+              iand(rafcstab%istabilisationSpec, not(AFCSTAB_HAS_EDGEORIENTATION))
+        end if
       else
 
         !-----------------------------------------------------------------------
@@ -11920,6 +11930,16 @@ contains
         ! Set state of stabilisation
         rafcstab%istabilisationSpec =&
             ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEVALUES)       
+
+        ! Do we need edge orientation?
+        if (rafcstab%climitingType .eq. AFCSTAB_LIMITING_UPWINDBIASED) then
+          call afcstab_upwindOrientation(p_Fcoefficients, p_IedgeList, 2, 3)
+          rafcstab%istabilisationSpec =&
+              ior(rafcstab%istabilisationSpec, AFCSTAB_HAS_EDGEORIENTATION)
+        else
+          rafcstab%istabilisationSpec =&
+              iand(rafcstab%istabilisationSpec, not(AFCSTAB_HAS_EDGEORIENTATION))
+        end if
       else
 
         !-----------------------------------------------------------------------
@@ -12084,8 +12104,8 @@ contains
 
             ! Non-symmetric artificial diffusion coefficient
             d_ij = max(0.0_DP, -Ddata(ij), -Ddata(ji))
-            k_ij = max(0.0_DP,  Ddata(ij))
-            k_ji = max(0.0_DP,  Ddata(ji))
+            k_ij = Ddata(ij) + d_ij
+            k_ji = Ddata(ji) + d_ij
 
             ! Non-symmetric AFC w/o edge orientation
             Dcoefficients(1:3,iedge) = (/d_ij, k_ij, k_ji/)
@@ -12255,8 +12275,8 @@ contains
 
             ! Non-symmetric artificial diffusion coefficient
             d_ij = max(0.0_SP, -Fdata(ij), -Fdata(ji))
-            k_ij = max(0.0_SP,  Fdata(ij))
-            k_ji = max(0.0_SP,  Fdata(ji))
+            k_ij = Fdata(ij) + d_ij
+            k_ji = Fdata(ji) + d_ij
 
             ! Non-symmetric AFC w/o edge orientation
             Fcoefficients(1:3,iedge) = (/d_ij, k_ij, k_ji/)
