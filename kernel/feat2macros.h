@@ -123,7 +123,7 @@
 #define FEAT2_PP_OS_IS_32BIT() 0
 #if !FEAT2_PP_OS_IS_64BIT()
 #if (defined(_WIN32) || defined(_ILD32))
-#undef FEAT2_PP_OS_IS_32BIT()
+#undef FEAT2_PP_OS_IS_32BIT
 #define FEAT2_PP_OS_IS_32BIT() 1
 #endif
 #endif

@@ -13229,14 +13229,14 @@ contains
 !</subroutine>
 
     ! Local variables
-    real(DP), dimension(:), pointer :: p_DvertexParameterValue
-    real(DP), dimension(:), pointer :: p_DedgeParameterValue
+    real(DP), dimension(:), pointer :: p_DvertexParameterValue,p_DvertexParameterVal01
+    real(DP), dimension(:), pointer :: p_DedgeParameterValue,p_DedgeParameterVal01
     integer, dimension(:), pointer :: p_IverticesAtBoundary
     integer, dimension(:), pointer :: p_IedgesAtBoundary
     integer, dimension(:), pointer :: p_IboundaryCpIdx
     integer, dimension(:), pointer :: p_InodalProperty
 
-    integer :: ibct, ivbd, hvertAtBd
+    integer :: ibct, ivbd, hvertAtBd, hedgeAtBd
     integer :: isize,NVT
     real(DP) :: dpar1,dpar2,dmaxPar
 
@@ -13273,6 +13273,7 @@ contains
     hvertAtBd = ST_NOHANDLE
     call storage_copy (rtriangulation%h_DvertexParameterValue,hvertAtBd)
     call storage_getbase_double (hvertAtBd,p_DvertexParameterValue)
+    call storage_getbase_double (rtriangulation%h_DvertexParameterValue,p_DvertexParameterVal01)
 
     ! Convert the parameter values of the vertices from 0-1 into length
     ! parametrisation. We need this later to get the correct parameter
@@ -13281,9 +13282,12 @@ contains
     ! Note that parameter values -1 are not converted in this routine!
     ! That allows to later detect points that are not on the physical boundary,
     ! as these have parameter value -1.
+    !
+    ! Note that we cannot pass p_DvertexParameterValue as source and destination array
+    ! here -- overlapping arrays are not allowed in FORTRAN!!!
     do ibct=1,rtriangulation%NBCT
       call boundary_convertParameterList (rboundary,ibct,&
-          p_DvertexParameterValue(p_IboundaryCpIdx(ibct):p_IboundaryCpIdx(ibct+1)-1),&
+          p_DvertexParameterVal01(p_IboundaryCpIdx(ibct):p_IboundaryCpIdx(ibct+1)-1),&
           p_DvertexParameterValue(p_IboundaryCpIdx(ibct):p_IboundaryCpIdx(ibct+1)-1),&
           BDR_PAR_01,BDR_PAR_LENGTH)
     end do
@@ -13307,8 +13311,12 @@ contains
     call storage_getbase_int (rtriangulation%h_IedgesAtBoundary,&
         p_IedgesAtBoundary)
 
+    hedgeAtBd = ST_NOHANDLE
+    call storage_copy (rtriangulation%h_DedgeParameterValue,hedgeAtBd)
+    call storage_getbase_double (hedgeAtBd,p_DedgeParameterValue)
+    
     call storage_getbase_double (rtriangulation%h_DedgeParameterValue,&
-        p_DedgeParameterValue)
+        p_DedgeParameterVal01)
 
     NVT = rtriangulation%NVT
 
@@ -13382,7 +13390,7 @@ contains
           ! This automatically "rounds down" parameter values that are > dmaxPar!
           call boundary_convertParameterList (rboundary,ibct,&
             p_DedgeParameterValue(p_IboundaryCpIdx(ibct):p_IboundaryCpIdx(ibct+1)-1),&
-            p_DedgeParameterValue(p_IboundaryCpIdx(ibct):p_IboundaryCpIdx(ibct+1)-1),&
+            p_DedgeParameterVal01(p_IboundaryCpIdx(ibct):p_IboundaryCpIdx(ibct+1)-1),&
             BDR_PAR_LENGTH,BDR_PAR_01)
         end if
 
@@ -13392,6 +13400,7 @@ contains
 
     ! Release temporary array, finish.
     call storage_free(hvertAtBd)
+    call storage_free(hedgeAtBd)
 
   end subroutine tria_genEdgeParameterValue2D
 
