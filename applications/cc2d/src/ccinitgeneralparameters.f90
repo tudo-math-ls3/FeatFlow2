@@ -47,6 +47,7 @@ module ccinitgeneralparameters
   use nonlinearsolver
   use paramlist
   use vectorio
+  use fparser
   
   use collection
   use convection
@@ -265,7 +266,22 @@ contains
 
 !</subroutine>
 
-    integer :: ilvmin,ilvmax
+    integer :: ilvmin,ilvmax,i
+    character(LEN=PARLST_LENLINEBUF) :: cstr,sname,sexpr
+    
+    ! Read global expressions
+    ! Add the boundary expressions to the collection into the
+    ! specified section.
+    do i=1,parlst_querysubstrings (rproblem%rparamList, "", "globalExpressions")
+    
+      call parlst_getvalue_string (rproblem%rparamList, "", "globalExpressions", cstr, "", i)
+      
+      ! Get the type and decide on the identifier how to save the expression.
+      read(cstr,*) sname,sexpr
+      
+      ! Save it.
+      call fparser_defineExpression (sname,sexpr)
+    end do    
 
     ! Get the output level for the whole application -- during the
     ! initialisation phase and during the rest of the program.

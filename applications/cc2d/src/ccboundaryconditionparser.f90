@@ -290,7 +290,7 @@ contains
     ! local variables
     integer :: i,ityp,ivalue
     real(DP) :: dvalue
-    character(LEN=PARLST_MLDATA) :: cstr,cexpr
+    character(LEN=PARLST_LENLINEBUF) :: cstr,cexpr
     character(LEN=PARLST_MLNAME) :: cname
     
     ! A pointer to the section with the expressions and the boundary conditions

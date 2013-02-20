@@ -53,6 +53,16 @@ simportdatafiles(8) =
   "%{sdatadirectory}/timediscr.dat"
   "%{sdatadirectory}/postprocessing.dat"
   
+# The following paragraph allows to define some global expressions
+# which can be used as subexpressions in function parser definitions.
+# For bein used, an "@" must be added to the variable name. So, e.g.,
+# an expression "One" can be accessed via "@One".
+
+globalExpressions(3) =
+  'Zero'  '0.0'
+  'One'   '1.0'
+  'Two'   '2 * @One'
+
 # From this point on, it's possible to additionally define 'alternative'
 # parameter settings that overwrite settings in the DAT files. The
 # parameters here must be introduced by the corresponding section
@@ -65,3 +75,55 @@ simportdatafiles(8) =
 #
 # which will overwrite the three parameters NLMIN, NLMAX and RE
 # from the original set of DAT files read in simportdatafiles.
+
+[CC-DISCRETISATION]
+NLMIN = 1
+NLMAX = 2
+RE = 1000
+ielementType = 4
+iequation    = 0
+dupsam = 0.0
+
+ctypeInitialSolution = 2
+iinitialSolutionlevel = 2
+sinitialSolutionFilename = "bench1_lv2_q2_prjcorr_re1000_nonst.dat"
+
+[TIME-DISCRETISATION]
+itimedependence = 1
+dtimeMax = 10.0
+dtimeStep = 0.0175
+niterations = 1
+
+[BDEXPRESSIONS]
+bdExpressions(6) =
+  'AnalyticBC'    -2    ''
+  'Umax'           0    0.3
+  'Dirichlet0'     0    0.0
+  'Dirichlet1'     0    1.0
+  'ParProfile'     2    1.5 # 'Umax * 4.0*r*(1-r)'
+  'ParProfExpr'   -1    '4.0*1.5*L*(1.0-L)'
+
+[CC-POSTPROCESSING]
+ioutputUCD = 3
+sfilenameUCD = '%{spostdirectory}/u.vtk'
+
+[CC-LINEARSOLVER]
+ismootherType = 101
+icoarseGridSolverType = 0
+
+[CC2D-NONLINEAR]
+nminIterations     = 1
+nmaxIterations     = 1
+
+[CC-MULTIGRIDSOLVER]
+nminIterations     = 1
+nmaxIterations     = 1
+
+[CC-SMOOTHER]
+nsmoothingSteps    = 1
+domega             = 1.0
+
+[CC-COARSEGRIDSOLVER]
+
+[CC-COARSEGRID-PRECONDITIONER]
+domega             = 1.0
