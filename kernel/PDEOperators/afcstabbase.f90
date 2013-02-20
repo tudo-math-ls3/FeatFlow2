@@ -112,8 +112,10 @@
 !# 30.) afcstab_combineFluxesDble / afcstab_combineFluxesSngl
 !#      -> Linear combination of the vectors of fluxes
 !#
-!# 31.) afcstab_upwindOrientation = afcstab_upwindOrientationDble /
-!#                                  afcstab_upwindOrientationSngl
+!# 31.) afcstab_upwindOrientation = afcstab_upwindOrientationDble1 /
+!#                                  afcstab_upwindOrientationDble2 /
+!#                                  afcstab_upwindOrientationSngl1 /
+!#                                  afcstab_upwindOrientationSngl2
 !#      -> Swap edge orientation so that the starting edge is located upwind
 !#
 !# 32.) afcstab_infoStabilisation
@@ -830,8 +832,10 @@ module afcstabbase
   end interface
 
   interface afcstab_upwindOrientation
-    module procedure afcstab_upwindOrientationDble
-    module procedure afcstab_upwindOrientationSngl
+    module procedure afcstab_upwindOrientationDble1
+    module procedure afcstab_upwindOrientationDble2
+    module procedure afcstab_upwindOrientationSngl1
+    module procedure afcstab_upwindOrientationSngl2
   end interface
 
 contains
@@ -5920,8 +5924,8 @@ contains
 
 !<subroutine>
 
-  subroutine afcstab_upwindOrientationDble(Dcoefficients, IedgeList,&
-      DcoeffsAtEdge, ipos, jpos, rperfconfig)
+  subroutine afcstab_upwindOrientationDble1(Dcoefficients, IedgeList,&
+      DcoefficientsAux, ipos, jpos, rperfconfig)
 
 !<description>
     ! This subroutine orients the edges so that the starting node of
@@ -5952,7 +5956,7 @@ contains
 
     ! Additional coefficients at the edges
     ! DIMENSION(1:N2,1:2,1:NEDGE)
-    real(DP), dimension(:,:,:), intent(inout) :: DcoeffsAtEdge
+    real(DP), dimension(:,:,:), intent(inout) :: DcoefficientsAux
 
     ! List of edges
     ! DIMENSION(1:N3,1:NEDGE)
@@ -5974,7 +5978,7 @@ contains
     end if
 
     nedge = size(IedgeList,2)
-    naux  = size(DcoeffsAtEdge,1)
+    naux  = size(DcoefficientsAux,1)
 
     select case(size(IedgeList,1))
     case (2)
@@ -5994,9 +5998,9 @@ contains
 
           ! Swap edgewise coefficients Data_ij <-> Data_ji
           do iaux = 1, naux
-            daux = DcoeffsAtEdge(iaux,1,iedge)
-            DcoeffsAtEdge(iaux,1,iedge) = DcoeffsAtEdge(iaux,2,iedge)
-            DcoeffsAtEdge(iaux,2,iedge) = daux
+            daux = DcoefficientsAux(iaux,1,iedge)
+            DcoefficientsAux(iaux,1,iedge) = DcoefficientsAux(iaux,2,iedge)
+            DcoefficientsAux(iaux,2,iedge) = daux
           end do
         end if
       end do
@@ -6029,9 +6033,9 @@ contains
 
           ! Swap edgewise coefficients Data_ij <-> Data_ji
           do iaux = 1, naux
-            daux = DcoeffsAtEdge(iaux,1,iedge)
-            DcoeffsAtEdge(iaux,1,iedge) = DcoeffsAtEdge(iaux,2,iedge)
-            DcoeffsAtEdge(iaux,2,iedge) = daux
+            daux = DcoefficientsAux(iaux,1,iedge)
+            DcoefficientsAux(iaux,1,iedge) = DcoefficientsAux(iaux,2,iedge)
+            DcoefficientsAux(iaux,2,iedge) = daux
           end do
         end if
       end do
@@ -6039,18 +6043,128 @@ contains
 
     case default
       call output_line('SIZE(IedgeList,2) is not compatible!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_upwindOrientationDble')
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_upwindOrientationDble1')
       call sys_halt()
     end select
 
-  end subroutine afcstab_upwindOrientationDble
+  end subroutine afcstab_upwindOrientationDble1
+
+!*****************************************************************************
+
+!<subroutine>
+
+  subroutine afcstab_upwindOrientationDble2(Dcoefficients, IedgeList,&
+      ipos, jpos, rperfconfig)
+
+!<description>
+    ! This subroutine orients the edges so that the starting node of
+    ! each edge is located upwind. This orientation convention is
+    ! introduced in the paper:
+    !
+    ! D. Kuzmin and M. Moeller, Algebraic flux correction I. Scalar
+    ! conservation laws, In: D. Kuzmin et al. (eds), Flux-Corrected
+    ! Transport: Principles, Algorithms, and Applications, Springer,
+    ! 2005, 155-206.
+!</description>
+
+!<input>
+    ! Positions of node I and J
+    integer, intent(in) :: ipos,jpos
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
+!</input>
+
+!<inputoutput>
+    ! Coefficients used to determine the upwind direction
+    ! DIMENSION(1:IPOS:JPOS:NPOS,1:NEDGE),
+    ! where IPOS and JPOS are the positions where the data
+    ! for node I and J is stored, respectively
+    real(DP), dimension(:,:), intent(inout) :: Dcoefficients
+
+    ! List of edges
+    ! DIMENSION(1:N3,1:NEDGE)
+    integer, dimension(:,:), intent(inout) :: IedgeList
+!</inputoutput>
+!</subroutine
+
+    ! local variables
+    real(DP) :: daux
+    integer :: iedge,iaux,nedge
+
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => afcstab_perfconfig
+    end if
+
+    nedge = size(IedgeList,2)
+
+    select case(size(IedgeList,1))
+    case (2)
+      !$omp parallel do default(shared) private(iaux,daux)&
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
+      do iedge = 1, nedge
+        if (Dcoefficients(ipos,iedge) .gt. Dcoefficients(jpos,iedge)) then
+          ! Swap nodes i <-> j
+          iaux = IedgeList(1,iedge)
+          IedgeList(1,iedge) = IedgeList(2,iedge)
+          IedgeList(2,iedge) = iaux
+
+          ! Swap edge data data_ij <-> data_ji
+          daux = Dcoefficients(ipos,iedge)
+          Dcoefficients(ipos,iedge) = Dcoefficients(jpos,iedge)
+          Dcoefficients(jpos,iedge) = daux
+        end if
+      end do
+      !$omp end parallel do
+
+    case (6)
+      !$omp parallel do default(shared) private(iaux,daux)&
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
+      do iedge = 1, nedge
+        if (Dcoefficients(ipos,iedge) .gt. Dcoefficients(jpos,iedge)) then
+          ! Swap nodes i <-> j
+          iaux = IedgeList(1,iedge)
+          IedgeList(1,iedge) = IedgeList(2,iedge)
+          IedgeList(2,iedge) = iaux
+
+          ! Swap edges ij <-> ji
+          iaux = IedgeList(3,iedge)
+          IedgeList(3,iedge) = IedgeList(4,iedge)
+          IedgeList(4,iedge) = iaux
+
+          ! Swap edges ii <-> jj
+          iaux = IedgeList(5,iedge)
+          IedgeList(5,iedge) = IedgeList(6,iedge)
+          IedgeList(6,iedge) = iaux
+
+          ! Swap edge data data_ij <-> data_ji
+          daux = Dcoefficients(ipos,iedge)
+          Dcoefficients(ipos,iedge) = Dcoefficients(jpos,iedge)
+          Dcoefficients(jpos,iedge) = daux
+        end if
+      end do
+      !$omp end parallel do
+
+    case default
+      call output_line('SIZE(IedgeList,2) is not compatible!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_upwindOrientationDble2')
+      call sys_halt()
+    end select
+
+  end subroutine afcstab_upwindOrientationDble2
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine afcstab_upwindOrientationSngl(Fcoefficients, IedgeList,&
-      FcoeffsAtEdge, ipos, jpos, rperfconfig)
+  subroutine afcstab_upwindOrientationSngl1(Fcoefficients, IedgeList,&
+      FcoefficientsAux, ipos, jpos, rperfconfig)
 
 !<description>
     ! This subroutine orients the edges so that the starting node of
@@ -6081,7 +6195,7 @@ contains
 
     ! Additional coefficients at the edges
     ! DIMENSION(1:N2,1:2,1:NEDGE)
-    real(SP), dimension(:,:,:), intent(inout) :: FcoeffsAtEdge
+    real(SP), dimension(:,:,:), intent(inout) :: FcoefficientsAux
 
     ! List of edges
     ! DIMENSION(1:N3,1:NEDGE)
@@ -6103,7 +6217,7 @@ contains
     end if
 
     nedge = size(IedgeList,2)
-    naux  = size(FcoeffsAtEdge,1)
+    naux  = size(FcoefficientsAux,1)
 
     select case(size(IedgeList,1))
     case (2)
@@ -6123,9 +6237,9 @@ contains
 
           ! Swap edgewise coefficients Data_ij <-> Data_ji
           do iaux = 1, naux
-            faux = FcoeffsAtEdge(iaux,1,iedge)
-            FcoeffsAtEdge(iaux,1,iedge) = FcoeffsAtEdge(iaux,2,iedge)
-            FcoeffsAtEdge(iaux,2,iedge) = faux
+            faux = FcoefficientsAux(iaux,1,iedge)
+            FcoefficientsAux(iaux,1,iedge) = FcoefficientsAux(iaux,2,iedge)
+            FcoefficientsAux(iaux,2,iedge) = faux
           end do
         end if
       end do
@@ -6158,9 +6272,9 @@ contains
 
           ! Swap edgewise coefficients Data_ij <-> Data_ji
           do iaux = 1, naux
-            faux = FcoeffsAtEdge(iaux,1,iedge)
-            FcoeffsAtEdge(iaux,1,iedge) = FcoeffsAtEdge(iaux,2,iedge)
-            FcoeffsAtEdge(iaux,2,iedge) = faux
+            faux = FcoefficientsAux(iaux,1,iedge)
+            FcoefficientsAux(iaux,1,iedge) = FcoefficientsAux(iaux,2,iedge)
+            FcoefficientsAux(iaux,2,iedge) = faux
           end do
         end if
       end do
@@ -6168,11 +6282,121 @@ contains
 
     case default
       call output_line('SIZE(IedgeList,2) is not compatible!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_upwindOrientationSngl')
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_upwindOrientationSngl1')
       call sys_halt()
     end select
 
-  end subroutine afcstab_upwindOrientationSngl
+  end subroutine afcstab_upwindOrientationSngl1
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine afcstab_upwindOrientationSngl2(Fcoefficients, IedgeList,&
+      ipos, jpos, rperfconfig)
+
+!<description>
+    ! This subroutine orients the edges so that the starting node of
+    ! each edge is located upwind. This orientation convention is
+    ! introduced in the paper:
+    !
+    ! D. Kuzmin and M. Moeller, Algebraic flux correction I. Scalar
+    ! conservation laws, In: D. Kuzmin et al. (eds), Flux-Corrected
+    ! Transport: Principles, Algorithms, and Applications, Springer,
+    ! 2005, 155-206.
+!</description>
+
+!<input>
+    ! Positions of node I and J
+    integer, intent(in) :: ipos,jpos
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
+!</input>
+
+!<inputoutput>
+    ! Coefficients used to determine the upwind direction
+    ! DIMENSION(1:IPOS:JPOS:NPOS,1:NEDGE),
+    ! where IPOS and JPOS are the positions where the data
+    ! for node I and J is stored, respectively
+    real(SP), dimension(:,:), intent(inout) :: Fcoefficients
+
+    ! List of edges
+    ! DIMENSION(1:N3,1:NEDGE)
+    integer, dimension(:,:), intent(inout) :: IedgeList
+!</inputoutput>
+!</subroutine
+
+    ! local variables
+    real(SP) :: faux
+    integer :: iedge,iaux,nedge
+
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => afcstab_perfconfig
+    end if
+
+    nedge = size(IedgeList,2)
+
+    select case(size(IedgeList,1))
+    case (2)
+      !$omp parallel do default(shared) private(iaux,faux)&
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
+      do iedge = 1, nedge
+        if (Fcoefficients(ipos,iedge) .gt. Fcoefficients(jpos,iedge)) then
+          ! Swap nodes i <-> j
+          iaux = IedgeList(1,iedge)
+          IedgeList(1,iedge) = IedgeList(2,iedge)
+          IedgeList(2,iedge) = iaux
+
+          ! Swap edge data data_ij <-> data_ji
+          faux = Fcoefficients(ipos,iedge)
+          Fcoefficients(ipos,iedge) = Fcoefficients(jpos,iedge)
+          Fcoefficients(jpos,iedge) = faux
+        end if
+      end do
+      !$omp end parallel do
+
+    case (6)
+      !$omp parallel do default(shared) private(iaux,faux)&
+      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
+      do iedge = 1, nedge
+        if (Fcoefficients(ipos,iedge) .gt. Fcoefficients(jpos,iedge)) then
+          ! Swap nodes i <-> j
+          iaux = IedgeList(1,iedge)
+          IedgeList(1,iedge) = IedgeList(2,iedge)
+          IedgeList(2,iedge) = iaux
+
+          ! Swap edges ij <-> ji
+          iaux = IedgeList(3,iedge)
+          IedgeList(3,iedge) = IedgeList(4,iedge)
+          IedgeList(4,iedge) = iaux
+
+          ! Swap edges ii <-> jj
+          iaux = IedgeList(5,iedge)
+          IedgeList(5,iedge) = IedgeList(6,iedge)
+          IedgeList(6,iedge) = iaux
+
+          ! Swap edge data data_ij <-> data_ji
+          faux = Fcoefficients(ipos,iedge)
+          Fcoefficients(ipos,iedge) = Fcoefficients(jpos,iedge)
+          Fcoefficients(jpos,iedge) = faux
+        end if
+      end do
+      !$omp end parallel do
+
+    case default
+      call output_line('SIZE(IedgeList,2) is not compatible!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_upwindOrientationSngl2')
+      call sys_halt()
+    end select
+
+  end subroutine afcstab_upwindOrientationSngl2
 
   !*****************************************************************************
 
