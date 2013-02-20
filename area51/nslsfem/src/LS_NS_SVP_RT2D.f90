@@ -26,8 +26,8 @@
 !# </purpose>
 !#
 !# Author:    Masoud Nickaeen
-!# First Version: May  29, 2013
-!# Last Update:   Jan. 29, 2013
+!# First Version: Jan  29, 2012
+!# Last Update:   Feb. 20, 2013
 !# 
 !##############################################################################
 
@@ -379,7 +379,7 @@ contains
   
   ! reading data from the *.dat file 
   call parlst_init(rparams)
-  call parlst_readfromfile (rparams, "./data/lssvp.dat") 
+  call parlst_readfromfile (rparams, "./data/lsrt.dat") 
 
   ! The problem to solve, by default cavity
   call parlst_getvalue_int (rparams, 'GFPROPER', 'Problem', &
@@ -3397,11 +3397,8 @@ contains
 
   ! Norm Calculations
   integer :: L2U,L2P,L2S,H1U,H1P,StbblError
-  real(DP) :: dintvalue, dintvalue1, dpmin
+  real(DP) :: dintvalue, dintvalue1
   type(t_fev2Vectors) :: revalVectors
-  integer :: iel, nel
-  type(t_vectorBlock) :: rtemp
-  real(DP), dimension(:), pointer :: p_Ddatap
   
   ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   ! Write the final result in a data file. This can be later read as an
@@ -4245,40 +4242,25 @@ contains
   end if
      
   if (StbblError == 1) then
-    !!!! Copy the solution vector to a temporary vector rtemp
-    ! Create a new vector rtemp filled with zero
-    call lsysbl_createVecBlockIndirect (rvector,rtemp,.true.)
-    ! Copy the solution vector to rtemp
-    call lsysbl_copyVector (rvector,rtemp)
-    
-    !!!! Bring the minimum of the pressure values to zero
-    ! Get the pressure values
-    call lsyssc_getbase_double (rtemp%RvectorBlock(3),p_Ddatap)
-    nel = rtemp%RvectorBlock(3)%P_RSPATIALDISCR%P_RTRIANGULATION%NEL
 
-    ! Initialize the min pressure
-    dpmin = 1.0E12_DP
-    
-    ! Find the min pressure
-    do iel=1,nel
-      dpmin = min(dpmin,p_Ddatap(iel))
-    end do
-    ! Substract the pressure values from the min value
-    !  so that we get the pressure field >= 0
-    do iel=1,nel
-      p_Ddatap(iel) = p_Ddatap(iel) - dpmin
-    end do
-    
     !!!! Calculate the errors 
     ! Add the pressure vector
-    rcollection%IquickAccess(7) = 6
     call fev2_addVectorToEvalList(revalVectors,&
-       rtemp%RvectorBlock(3),0)   ! p
+       rvector%RvectorBlock(3),0)   ! p
        
     ! Gauss 1-pt rule = 1 Point per element in the center.
     call spdiscr_createDefCubStructure(&  
     rdiscretisation%RspatialDiscr(3),rcubatureInfo2,CUB_G1_T)
-           
+
+    ! Initialize the minimum pressure
+    rcollection%DquickAccess(16) = 1.0E12_DP
+    ! Calculate the real minimum of the pressure field
+    call bma_buildIntegral (dintvalue,BMA_CALC_STANDARD,&
+    ls_calc_min,rcollection=rcollection, &
+    revalVectors=revalVectors,rcubatureInfo=rcubatureInfo2)
+    
+    ! Tell that we want to calculate the static bubble errors
+    rcollection%IquickAccess(7) = 6
     call bma_buildIntegral (dintvalue,BMA_CALC_STANDARD,&
     ls_L2_Norm,rcollection=rcollection, &
     revalVectors=revalVectors,rcubatureInfo=rcubatureInfo2)
@@ -4320,7 +4302,6 @@ contains
               4.0_DP)*25.0_DP),15,6)))
     
     !!!! Release the temp vector and the cubature structure
-    call lsysbl_releaseVector (rtemp)
     call fev2_releaseVectorList(revalVectors)
     call spdiscr_releaseCubStructure(rcubatureInfo2)
     
@@ -6048,28 +6029,34 @@ contains
       
       ! Check if the cubature point lies inside of the bubble
       if (r .le. 0.3_DP) then
+      
         ! Area of each element inside of the bubble
         darea_in = p_DelementArea(rassemblyData%P_IelementList(iel))
         ! Total area of the bubble (numerical)
         ! The exact value is: 0.1963495408493621_DP
         rcollection%DquickAccess(12) = rcollection%DquickAccess(12) + darea_in
         ! Pressure value of each element inside of the bubble
-        dpressure_in = p_Dfunc(icubp,iel)
-        ! Pressure mutiplied by the area of each element inside of the bubble
+        !    (normalized with the min value)          
+        dpressure_in = p_Dfunc(icubp,iel) - rcollection%DquickAccess(16)
+        ! Pressure mutiplied by the area of each element inside of the bubble      
         rcollection%DquickAccess(13) = rcollection%DquickAccess(13) + &
                                                      darea_in*dpressure_in
-     else 
+                                                     
+     else
+     
         ! outside the bubble 
-        ! Area of each element inside of the bubble
+        ! Area of each element outside of the bubble
         darea_o = p_DelementArea(rassemblyData%P_IelementList(iel))
         ! Total area of the bubble (numerical)
         ! The exact value is: 0.1963495408493621_DP
         rcollection%DquickAccess(14) = rcollection%DquickAccess(14) + darea_o
-        ! Pressure value of each element inside of the bubble
-        dpressure_o = p_Dfunc(icubp,iel)
-        ! Pressure mutiplied by the area of each element inside of the bubble
+        ! Pressure value of each element outside of the bubble
+        !    (normalized with the min value)
+        dpressure_o = p_Dfunc(icubp,iel) - rcollection%DquickAccess(16)
+        ! Pressure mutiplied by the area of each element outside of the bubble
         rcollection%DquickAccess(15) = rcollection%DquickAccess(15) + &
-                                                     darea_o*dpressure_o           
+                                                     darea_o*dpressure_o     
+                                                           
      end if
       
     end do ! icubp
@@ -6415,5 +6402,82 @@ contains
     end if
 
   end function
+
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine ls_calc_min(dintvalue,rassemblyData,rintegralAssembly,&
+    npointsPerElement,nelements,revalVectors,rcollection)
+
+!<description>  
+  ! Calculates the minimum value of a FEM function.
+  ! The rcollection%DquickAccess(16) must be initiaized (high value)
+  !  before calling this function. The final minimum value will 
+  !  be stored in rcollection%DquickAccess(16) too.
+  ! The FEM function must be provided in revalVectors.
+!</description>
+
+!<input>
+  ! Data necessary for the assembly. Contains determinants and
+  ! cubature weights for the cubature,...
+  type(t_bmaIntegralAssemblyData), intent(in) :: rassemblyData
+
+  ! Structure with all data about the assembly
+  type(t_bmaIntegralAssembly), intent(in) :: rintegralAssembly
+
+  ! Number of points per element
+  integer, intent(in) :: npointsPerElement
+
+  ! Number of elements
+  integer, intent(in) :: nelements
+
+  ! Values of FEM functions automatically evaluated in the
+  ! cubature points.
+  type(t_fev2Vectors), intent(in) :: revalVectors
+
+  ! User defined collection structure
+  type(t_collection), intent(inout), target, optional :: rcollection
+!</input>
+
+!<output>
+  ! Returns the value of the integral
+  real(DP), intent(out) :: dintvalue
+!</output>  
+
+!<subroutine>
+
+  ! Local variables
+  integer :: iel, icubp
+  real(DP), dimension(:,:), pointer :: p_Dfunc
+  
+  ! Cancel if no FEM function is given.
+  if (revalVectors%ncount .eq. 0) then
+    call output_line ("FEM function missing.",&
+      OU_CLASS_ERROR,OU_MODE_STD,"ls_L2_Norm")
+    call sys_halt()
+  end if
+  
+  ! Get the data array with the values of the FEM function
+  ! in the cubature points
+  p_Dfunc => revalVectors%p_RvectorData(1)%p_Ddata(:,:,DER_FUNC2D)
+
+  dintvalue = 0.0_DP
+
+  ! Static bubble minimum pressure calculation
+  ! Loop over the elements in the current set.
+  do iel = 1,nelements
+
+    ! Loop over all cubature points on the current element
+    do icubp = 1,npointsPerElement
+        rcollection%DquickAccess(16) = &
+               min(rcollection%DquickAccess(16),p_Dfunc(icubp,iel))
+    end do ! icubp
+  
+  end do ! iel  
+    
+  end subroutine
+
 
 end 
