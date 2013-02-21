@@ -605,6 +605,8 @@ contains
     integer :: iexpression  ! Counts the number of expressions
     real(DP) :: dl,dtemp
     character(len=1024) :: cbuffer
+    character(len=1), dimension(1) :: Cpar
+    real(DP), dimension(1) :: D1,D2,D3
 
     ! Current parameter value in length-parametrisation
     real(DP) :: dmaxpar
@@ -827,10 +829,10 @@ contains
                       BOUNDARY_SEGHEADER_EXPRESSION) = iexpression
 
           ! An analytic expression consists of
-          ! - Expression for x-coordinate
-          ! - Expression for y-coordinate
-          ! - Expression for x-coordinate of normal vector
-          ! - Expression for y-coordinate of normal vector
+          ! - Expression for x(t)
+          ! - Expression for y(t)
+          ! - Expression for x'(t)
+          ! - Expression for y'(t)
           ! So we need 4 expressions
           iexpression = iexpression + 4
 
@@ -1014,35 +1016,39 @@ contains
 
         case (BOUNDARY_TYPE_EXPRESSION)
           ! Type 6: Analytic expression. Consists of
-          ! - Expression for x-coordinate
-          ! - Expression for y-coordinate
-          ! - Expression for x-coordinate of norval vector
-          ! - Expression for y-coordinate of norval vector
-          ! We read these four expressions into the function parser object
+          ! - Expression for x(t)
+          ! - Expression for y(t)
+          ! - Expression for x'(t)
+          ! - Expression for y'(t)
+          ! The four expressions must be 0-1 parametrised, with a parameter
+          ! value t in [0,1].
+          ! We read these four expressions into the function parser object.
 
           ! Get the absolute position of the analytic expression in the
           ! function parser object
           icomp = p_IsegInfo(BOUNDARY_SEGHEADER_LENGTH*isegment+BOUNDARY_SEGHEADER_EXPRESSION)
           
-          read(iunit,fmt='(A)') cbuffer ! x-coordinate
+          Cpar = (/"t"/)
+          
+          read(iunit,fmt='(A)') cbuffer ! x(t)
           call sys_dequote(cbuffer)
-          call fparser_parseFunction(rboundary%p_rfparser, icomp+1, cbuffer, (/'p'/))
-          read(iunit,fmt='(A)') cbuffer ! y-coordinate
+          call fparser_parseFunction(rboundary%p_rfparser, icomp+1, cbuffer, cpar)
+          read(iunit,fmt='(A)') cbuffer ! y(t)
           call sys_dequote(cbuffer)
-          call fparser_parseFunction(rboundary%p_rfparser, icomp+2, cbuffer, (/'p'/))
-          read(iunit,fmt='(A)') cbuffer ! x-coordinate of normal direction
+          call fparser_parseFunction(rboundary%p_rfparser, icomp+2, cbuffer, cpar)
+          read(iunit,fmt='(A)') cbuffer ! x'(t)
           call sys_dequote(cbuffer)
-          call fparser_parseFunction(rboundary%p_rfparser, icomp+3, cbuffer, (/'p'/))
-          read(iunit,fmt='(A)') cbuffer ! y-coordinate of normal direction
+          call fparser_parseFunction(rboundary%p_rfparser, icomp+3, cbuffer, cpar)
+          read(iunit,fmt='(A)') cbuffer ! y'(t)
           call sys_dequote(cbuffer)
-          call fparser_parseFunction(rboundary%p_rfparser, icomp+4, cbuffer, (/'p'/))
+          call fparser_parseFunction(rboundary%p_rfparser, icomp+4, cbuffer, cpar)
 
           ! Save the initial parameter value (in length-parametrisation)
           ! to the first entry
           p_DsegInfo(isegrel+1) = dmaxpar
 
-
           ! Calculate the real length of the analytically given path
+          ! by adaptive simpson, applied to the derivative of the path.
           dl = adaptiveSimpson(rboundary%p_rfparser, icomp+3, icomp+4, 0.0_DP, 1.0_DP, 1e-8_DP, 10)
           p_DsegInfo(isegrel+2) = dl
           
@@ -1083,13 +1089,17 @@ contains
 
       dparmid = (dparmin+dparmax)*0.5_DP
       
-      call fparser_evalFunction(rfparser, icompx, (/dparmin/), daux1)
-      call fparser_evalFunction(rfparser, icompx, (/dparmid/), daux2)
-      call fparser_evalFunction(rfparser, icompx, (/dparmax/), daux3)
+      D1 = (/dparmin/)
+      D2 = (/dparmid/)
+      D3 = (/dparmax/)
+      
+      call fparser_evalFunction(rfparser, icompx, D1, daux1)
+      call fparser_evalFunction(rfparser, icompx, D2, daux2)
+      call fparser_evalFunction(rfparser, icompx, D3, daux3)
 
-      call fparser_evalFunction(rfparser, icompy, (/dparmin/), daux4)
-      call fparser_evalFunction(rfparser, icompy, (/dparmid/), daux5)
-      call fparser_evalFunction(rfparser, icompy, (/dparmax/), daux6)
+      call fparser_evalFunction(rfparser, icompy, D1, daux4)
+      call fparser_evalFunction(rfparser, icompy, D2, daux5)
+      call fparser_evalFunction(rfparser, icompy, D3, daux6)
 
       dfmin = sqrt(daux1*daux1 + daux4*daux4)
       dfmid = sqrt(daux2*daux2 + daux5*daux5)
@@ -1121,12 +1131,15 @@ contains
       dparmid   = (dparmin+dparmax)*0.5_DP
       dparleft  = (dparmin+dparmid)*0.5_DP
       dparright = (dparmid+dparmax)*0.5_DP
+      
+      D1 = (/dparleft/) 
+      D2 = (/dparright/)
 
-      call fparser_evalFunction(rfparser, icompx, (/dparleft/), daux1)
-      call fparser_evalFunction(rfparser, icompx, (/dparright/), daux2)
+      call fparser_evalFunction(rfparser, icompx, D1, daux1)
+      call fparser_evalFunction(rfparser, icompx, D2, daux2)
 
-      call fparser_evalFunction(rfparser, icompy, (/dparleft/), daux3)
-      call fparser_evalFunction(rfparser, icompy, (/dparright/), daux4)
+      call fparser_evalFunction(rfparser, icompy, D1, daux3)
+      call fparser_evalFunction(rfparser, icompy, D2, daux4)
 
       dfleft  = sqrt(daux1*daux1 + daux3*daux3)
       dfright = sqrt(daux2*daux2 + daux4*daux4)
@@ -1486,6 +1499,7 @@ contains
     integer, dimension(:), pointer :: p_IsegInfo, p_IsegCount
     real(DP), dimension(:), pointer     :: p_DsegInfo, p_DmaxPar
     integer :: cpar ! local copy of cparType
+    real(DP), dimension(1) :: D1
 
     real(DP) :: dpar, dcurrentpar, dparloc, dphi, dendpar, dseglength
     integer :: iseg,isegtype,istartidx,icomp
@@ -1581,8 +1595,9 @@ contains
       icomp = p_IsegInfo(BOUNDARY_SEGHEADER_LENGTH*iseg+BOUNDARY_SEGHEADER_EXPRESSION)
 
       ! Calculate the x/y coordinates from the function parser.
-      call fparser_evalFunction(rboundary%p_rfparser, icomp+1, (/dparloc/), dx)
-      call fparser_evalFunction(rboundary%p_rfparser, icomp+2, (/dparloc/), dy)
+      D1 = (/dparloc/)
+      call fparser_evalFunction(rboundary%p_rfparser, icomp+1, D1, dx)
+      call fparser_evalFunction(rboundary%p_rfparser, icomp+2, D1, dy)
 
     case DEFAULT
       call output_line ('Wrong segment type: isegType='//sys_siL(isegType,10), &
@@ -1639,6 +1654,7 @@ contains
     integer, dimension(:), pointer :: p_IsegInfo, p_IsegCount
     real(DP), dimension(:), pointer     :: p_DsegInfo, p_DmaxPar
     integer :: cpar ! local copy of cparType
+    real(DP), dimension(1) :: D1
 
     real(DP) :: dpar, dcurrentpar, dparloc, dphi, dendpar, dseglength
     integer :: iseg,isegtype,istartidx,ipoint,icomp
@@ -1743,8 +1759,9 @@ contains
         icomp = p_IsegInfo(BOUNDARY_SEGHEADER_LENGTH*iseg+BOUNDARY_SEGHEADER_EXPRESSION)
         
         ! Calculate the x/y coordinates from the function parser.
-        call fparser_evalFunction(rboundary%p_rfparser, icomp+1, (/dparloc/), Dx(ipoint))
-        call fparser_evalFunction(rboundary%p_rfparser, icomp+2, (/dparloc/), Dy(ipoint))
+        D1 = (/dparloc/)
+        call fparser_evalFunction(rboundary%p_rfparser, icomp+1, D1, Dx(ipoint))
+        call fparser_evalFunction(rboundary%p_rfparser, icomp+2, D1, Dy(ipoint))
 
       case DEFAULT
         call output_line ('Wrong segment type: isegType='//sys_siL(isegType,10), &
@@ -1802,6 +1819,7 @@ contains
     integer, dimension(:), pointer :: p_IsegInfo, p_IsegCount
     real(DP), dimension(:), pointer     :: p_DsegInfo, p_DmaxPar
     integer :: cpar ! local copy of cparType
+    real(DP), dimension(1) :: D1
 
     real(DP) :: dpar, dcurrentpar, dparloc, dphi, dendpar, dseglength
     integer :: iseg,isegtype,istartidx,ipoint,iel,icomp
@@ -1907,8 +1925,9 @@ contains
           icomp = p_IsegInfo(BOUNDARY_SEGHEADER_LENGTH*iseg+BOUNDARY_SEGHEADER_EXPRESSION)
           
           ! Calculate the x/y coordinates from the function parser.
-          call fparser_evalFunction(rboundary%p_rfparser, icomp+1, (/dparloc/), Dx(ipoint,iel))
-          call fparser_evalFunction(rboundary%p_rfparser, icomp+2, (/dparloc/), Dy(ipoint,iel))
+          D1 = (/dparloc/)
+          call fparser_evalFunction(rboundary%p_rfparser, icomp+1, D1, Dx(ipoint,iel))
+          call fparser_evalFunction(rboundary%p_rfparser, icomp+2, D1, Dy(ipoint,iel))
           
         case DEFAULT
           call output_line ('Wrong segment type: isegType='//sys_siL(isegType,10), &
@@ -3388,6 +3407,7 @@ contains
     ! local variables
     real(DP) :: dploc,dphi,dnorm,dnx0,dny0
     integer :: icomp
+    real(DP), dimension(1) :: D1
 
     dploc = dparloc
 
@@ -3437,8 +3457,10 @@ contains
       icomp = IsegInfo(BOUNDARY_SEGHEADER_LENGTH*iseg+BOUNDARY_SEGHEADER_EXPRESSION)
 
       ! Calculate the x/y coordinates from the function parser.
-      call fparser_evalFunction(rfparser, icomp+3, (/dploc/), dny0); dny0=-dny0
-      call fparser_evalFunction(rfparser, icomp+4, (/dploc/), dnx0)
+      D1 = (/dploc/)
+      call fparser_evalFunction(rfparser, icomp+3, D1, dny0)
+      dny0 = -dny0
+      call fparser_evalFunction(rfparser, icomp+4, D1, dnx0)
 
     case DEFAULT
       call output_line ('Wrong segment type: isegType='//sys_siL(isegType,10), &
