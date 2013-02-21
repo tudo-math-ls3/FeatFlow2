@@ -4185,7 +4185,7 @@ contains
     ! Add the vector
     rcollection%IquickAccess(7) = 3
     call fev2_addVectorToEvalList(revalVectors,&
-       rvector%RvectorBlock(4),0)   ! sxx
+       rvector%RvectorBlock(4),0)   ! sxx sxy
     call bma_buildIntegral (dintvalue,BMA_CALC_STANDARD,&
     ls_L2_Norm,rcollection=rcollection, &
     revalVectors=revalVectors,rcubatureInfo=rcubatureInfo)
@@ -4205,7 +4205,7 @@ contains
     ! Add the vector
     rcollection%IquickAccess(7) = 4
     call fev2_addVectorToEvalList(revalVectors,&
-       rvector%RvectorBlock(5),0)   ! sxy
+       rvector%RvectorBlock(4),0)   ! sxx sxy
     call bma_buildIntegral (dintvalue,BMA_CALC_STANDARD,&
     ls_L2_Norm,rcollection=rcollection, &
     revalVectors=revalVectors,rcubatureInfo=rcubatureInfo)
@@ -4224,7 +4224,7 @@ contains
     ! Add the vector
     rcollection%IquickAccess(7) = 5
     call fev2_addVectorToEvalList(revalVectors,&
-       rvector%RvectorBlock(6),0)   ! syy
+       rvector%RvectorBlock(5),0)   ! sxy syy
     call bma_buildIntegral (dintvalue,BMA_CALC_STANDARD,&
     ls_L2_Norm,rcollection=rcollection, &
     revalVectors=revalVectors,rcubatureInfo=rcubatureInfo)
@@ -5817,6 +5817,7 @@ contains
   integer :: iel, icubp
   real(DP), dimension(:,:), pointer :: p_DcubWeight
   real(DP), dimension(:,:), pointer :: p_Dfunc
+  real(DP), dimension(:,:,:), pointer :: p_Dfunc1  ! Used for RT elements
   real(DP), dimension(:,:,:), pointer :: p_Dpoints
   real(DP), dimension(:), pointer :: p_DelementArea
   real(DP) :: dpressure_in, darea_in, dpressure_o, darea_o,r  
@@ -5840,16 +5841,16 @@ contains
   ! Get the coordinates of the cubature points
   p_Dpoints => rassemblyData%revalElementSet%p_DpointsReal
   
-  ! Get the data array with the values of the FEM function
-  ! in the cubature points
-  p_Dfunc => revalVectors%p_RvectorData(1)%p_Ddata(:,:,DER_FUNC2D)
-
   dintvalue = 0.0_DP
 
   select case (rcollection%IquickAccess(7))
 
   case (0)
     !X-Velocity
+    ! Get the data array with the values of the FEM function
+    ! in the cubature points
+    p_Dfunc => revalVectors%p_RvectorData(1)%p_Ddata(:,:,DER_FUNC2D)
+       
     ! Loop over the elements in the current set.
     do iel = 1,nelements
 
@@ -5860,8 +5861,8 @@ contains
       dx = p_Dpoints(1,icubp,iel)
       dy = p_Dpoints(2,icubp,iel)
       
-!      dval1 = 2.0_DP*dx**2*(1.0_DP-dx)**2*(dy*(1.0_DP-dy)**2 - dy**2*(1.0_DP-dy))
-      dval1 = 0.0_DP
+      dval1 = 2.0_DP*dx**2*(1.0_DP-dx)**2*(dy*(1.0_DP-dy)**2 - dy**2*(1.0_DP-dy))
+!      dval1 = 0.0_DP
       
       ! Get the error of the FEM function to the analytic function
       dval2 = p_Dfunc(icubp,iel)
@@ -5877,6 +5878,10 @@ contains
     
   case (1)
     ! Y-Velocity
+    ! Get the data array with the values of the FEM function
+    ! in the cubature points
+    p_Dfunc => revalVectors%p_RvectorData(1)%p_Ddata(:,:,DER_FUNC2D)
+        
     ! Loop over the elements in the current set.
     do iel = 1,nelements
 
@@ -5887,8 +5892,8 @@ contains
       dx = p_Dpoints(1,icubp,iel)
       dy = p_Dpoints(2,icubp,iel)
       
-!      dval1 = -2.0_DP*dy**2*(1.0_DP-dy)**2*(dx*(1.0_DP-dx)**2 - dx**2*(1.0_DP-dx))
-      dval1 = 0.0_DP
+      dval1 = -2.0_DP*dy**2*(1.0_DP-dy)**2*(dx*(1.0_DP-dx)**2 - dx**2*(1.0_DP-dx))
+!      dval1 = 0.0_DP
 
       ! Get the error of the FEM function to the bubble function
       dval2 = p_Dfunc(icubp,iel)
@@ -5904,6 +5909,10 @@ contains
   
   case (2)
     ! Pressure
+    ! Get the data array with the values of the FEM function
+    ! in the cubature points
+    p_Dfunc => revalVectors%p_RvectorData(1)%p_Ddata(:,:,DER_FUNC2D)
+        
     ! Loop over the elements in the current set.
     do iel = 1,nelements
 
@@ -5930,6 +5939,10 @@ contains
 
   case (3)
     ! Sxx
+    ! Get the data array with the values of the FEM function
+    ! in the cubature points   
+    p_Dfunc1 => revalVectors%p_RvectorData(1)%p_DdataVec(:,:,:,DER_FUNC) 
+       
     ! Loop over the elements in the current set.
     do iel = 1,nelements
 
@@ -5940,11 +5953,11 @@ contains
       dx = p_Dpoints(1,icubp,iel)
       dy = p_Dpoints(2,icubp,iel)
       
-      dval1 = -dC*(dx**3 - dy**3 - 0.5_DP) + 8.0_DP*dx*dy*(2.0_DP*dx - 1.0_DP) &
+      dval1 = -dC*(dx**3 - dy**3) + 8.0_DP*dx*dy*(2.0_DP*dx - 1.0_DP) &
              *(2.0_DP*dy - 1.0_DP)*(dx - 1.0_DP)*(dy - 1.0_DP)
 
       ! Get the error of the FEM function to the bubble function
-      dval2 = p_Dfunc(icubp,iel)
+      dval2 = p_Dfunc1(1,icubp,iel)
       
       ! Multiply the values by the cubature weight and sum up
       ! into the (squared) L2 error:
@@ -5957,6 +5970,10 @@ contains
 
   case (4)
     ! Sxy
+    ! Get the data array with the values of the FEM function
+    ! in the cubature points   
+    p_Dfunc1 => revalVectors%p_RvectorData(1)%p_DdataVec(:,:,:,DER_FUNC)
+        
     ! Loop over the elements in the current set.
     do iel = 1,nelements
 
@@ -5971,7 +5988,7 @@ contains
           2.0_DP*dy**2*(dy-1.0_DP)**2*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP)
 
       ! Get the error of the FEM function to the bubble function
-      dval2 = p_Dfunc(icubp,iel)
+      dval2 = p_Dfunc1(2,icubp,iel)
       
       ! Multiply the values by the cubature weight and sum up
       ! into the (squared) L2 error:
@@ -5984,6 +6001,10 @@ contains
 
   case (5)
     ! Syy
+    ! Get the data array with the values of the FEM function
+    ! in the cubature points   
+    p_Dfunc1 => revalVectors%p_RvectorData(1)%p_DdataVec(:,:,:,DER_FUNC)
+        
     ! Loop over the elements in the current set.
     do iel = 1,nelements
 
@@ -5994,11 +6015,11 @@ contains
       dx = p_Dpoints(1,icubp,iel)
       dy = p_Dpoints(2,icubp,iel)
       
-      dval1 = -dC*(dx**3 - dy**3 - 0.5_DP) - 8.0_DP*dx*dy*(2.0_DP*dx - 1.0_DP) &
+      dval1 = -dC*(dx**3 - dy**3) - 8.0_DP*dx*dy*(2.0_DP*dx - 1.0_DP) &
              *(2.0_DP*dy - 1.0_DP)*(dx - 1.0_DP)*(dy - 1.0_DP)
 
       ! Get the error of the FEM function to the bubble function
-      dval2 = p_Dfunc(icubp,iel)
+      dval2 = p_Dfunc1(2,icubp,iel)
       
       ! Multiply the values by the cubature weight and sum up
       ! into the (squared) L2 error:
@@ -6011,6 +6032,11 @@ contains
 
   case (6)
     ! Static bubble error analysis
+    ! Get the data array with the values of the FEM function
+    ! in the cubature points
+    p_Dfunc => revalVectors%p_RvectorData(1)%p_Ddata(:,:,DER_FUNC2D)
+    
+    ! Get the data array with the area of elements in the list    
     call storage_getbase_double (&
      rintegralAssembly%p_rtriangulation%h_DelementVolume, p_DelementArea)
       
@@ -6169,8 +6195,8 @@ contains
       dderivX1 = 4.0_DP*dx*dy*(2*dx-1.0_DP)*(2.0_DP*dy-1.0_DP)*(dx-1.0_DP)*(dy-1.0_DP)
       dderivY1 = 2.0_DP*dx**2*(dx-1.0_DP)**2*(6.0_DP*dy**2-6.0_DP*dy+1.0_DP)
 
-      dderivX1 = 0.0_DP
-      dderivY1 = 0.0_DP
+!      dderivX1 = 0.0_DP
+!      dderivY1 = 0.0_DP
       
       ! Get the error of the FEM function derivatives of the bubble function
       ! in the cubature point
@@ -6201,8 +6227,8 @@ contains
       dderivX1 = -2.0_DP*dy**2*(dy-1.0_DP)**2*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP)
       dderivY1 = -4.0_DP*dx*dy*(2*dx-1.0_DP)*(2.0_DP*dy-1.0_DP)*(dx-1.0_DP)*(dy-1.0_DP)
 
-      dderivX1 = 0.0_DP
-      dderivY1 = 0.0_DP
+!      dderivX1 = 0.0_DP
+!      dderivY1 = 0.0_DP
 
       ! Get the error of the FEM function derivatives of the bubble function
       ! in the cubature point
