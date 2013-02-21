@@ -575,6 +575,9 @@ contains
       ! Release the prolongation matrix
       call lsyssc_releaseMatrix (Rlevels(i)%rmatProl)
 
+      ! Release the restriction matrix
+      call lsyssc_releaseMatrix (Rlevels(i)%rmatRest)
+
     end do
 
     ! Release the projection structure on the coarse mesh
