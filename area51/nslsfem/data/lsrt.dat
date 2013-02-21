@@ -26,7 +26,7 @@
 #   = 6  Analytic polynomial function
 #   = 7  Static Bubble
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Problem = 7
+Problem = 6
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Kinematic viscosity noo = muu/rho = 1/Re
@@ -65,7 +65,7 @@ alpha = 1.0
 [MESH]
 
 # Mesh file name and path:
-sFilenamePathMesh = './pre/star'
+sFilenamePathMesh = './pre/QUAD'
 
 # Final mesh level to solve the problem:
 NLMAX = 6
@@ -89,12 +89,12 @@ detTri = 1
 #  EL_P2
 #  EL_RT0, EL_RT0_2D, EL_DCTP0_2D
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Velm = EL_P1
+Velm = EL_P2
 Vtild = 0
 
 # Type of Pressure finite element:
-Pelm = EL_DCTP0_2D
-Ptild = 1
+Pelm = EL_P1
+Ptild = 0
 
 # Type of Stress finite element:
 Selm = EL_RT0_2D
@@ -513,7 +513,7 @@ dintARboundEX3YVel       = 20.0
 #      on coarse grid (UMFPACK) and
 #      detZMV =2 on other levels  
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-detZMV = 1
+detZMV = 0
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Which row of the pressure matrix do you want to 
@@ -625,11 +625,12 @@ nlevels = 15
 L2U = 1
 H1U = 1
 
-L2P = 0
-H1P = 0
+L2P = 1
+H1P = 1
 
-L2S = 0
-StbblError = 1
+L2S = 1
+
+StbblError = 0
 
 
 #-----------------------------------------------------
