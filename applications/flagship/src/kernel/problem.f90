@@ -1479,6 +1479,9 @@ contains
 
       type(t_problemLevel), intent(inout) :: rproblemLevel
       type(t_problemDescriptor), intent(in) :: rproblemDescriptor
+#ifdef ENABLE_COPROCESSOR_SUPPORT
+      integer :: istream
+#endif
 
       ! Allocate matrices, vectors, stabilisations, etc.
       if (rproblemDescriptor%ndiscretisation .gt. 0)&
@@ -1518,8 +1521,8 @@ contains
       if (rproblemDescriptor%nstream .gt. 0) then
         allocate(rproblemLevel%Istream(&
             rproblemDescriptor%nstream))
-        do i = 1, rproblemDescriptor%nstream
-          call coproc_createStream(rproblemLevel%Istream(i))
+        do istream = 1, rproblemDescriptor%nstream
+          call coproc_createStream(rproblemLevel%Istream(istream))
         end do
       end if
 #endif
