@@ -260,7 +260,7 @@ contains
           case (3) ! Pressure
 !             Dvalues(1) = ( 1.0_DP-exp(-dC*dx) ) * sin(2*pi*dy)
              Dvalues(1) = dC*(dx**3 - dy**3)
-             Dvalues(1) = cos(dC*pi*dx)
+!             Dvalues(1) = cos(dC*pi*dx)
           end select
        
       case (2)
