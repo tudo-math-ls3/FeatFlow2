@@ -4153,16 +4153,7 @@ contains
 
     call output_line ('L2pressure:'//&
     trim(sys_sdEP(sqrt(dintvalue),15,6)), coutputMode=OU_MODE_BENCHLOG)
-
-    ! H^1 Norm pressure
-    ! Add pressure vector
-    rcollection%IquickAccess(7) = 2
-    call fev2_addVectorToEvalList(revalVectors,&
-       rvector%RvectorBlock(3),1)   ! p,x,y
-    call bma_buildIntegral (dintvalue,BMA_CALC_STANDARD,&
-    ls_H1_Norm,rcollection=rcollection, &
-    revalVectors=revalVectors,rcubatureInfo=rcubatureInfo)
-
+    
   end if
 
 
