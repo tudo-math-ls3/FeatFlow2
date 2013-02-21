@@ -36,6 +36,7 @@ module element_tri2d
   public :: elem_P1T_sim
   
   public :: elem_eval_RT1_2D
+  public :: elem_eval_DCP1_2D
 
 contains
 
@@ -2073,6 +2074,126 @@ contains
 !      end do ! j
 !      !$omp end parallel do
 
+
+  end subroutine
+
+  !************************************************************************
+  ! Discontinuous P1 element
+  !************************************************************************
+
+!<subroutine>
+
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+ subroutine elem_eval_DCP1_2D (celement, reval, Bder, Dbas)
+
+!<description>
+  ! This subroutine simultaneously calculates the values of the basic
+  ! functions of the finite element at multiple given points on the
+  ! reference element for multiple given elements.
+!</description>
+
+!<input>
+  ! The element specifier.
+  integer(I32), intent(in)                       :: celement
+
+  ! t_evalElementSet-structure that contains cell-specific information and
+  ! coordinates of the evaluation points. revalElementSet must be prepared
+  ! for the evaluation.
+  type(t_evalElementSet), intent(in)             :: reval
+
+  ! Derivative quantifier array. array [1..DER_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  logical, dimension(:), intent(in)              :: Bder
+!</input>
+
+!<output>
+  ! Value/derivatives of basis functions.
+  ! array [1..EL_MAXNBAS,1..DER_MAXNDER,1..npointsPerElement,nelements] of double
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th
+  !   basis function of the finite element in the point Dcoords(j) on the
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
+  !
+  ! Due to the fact that this is a vector valued basis function, the
+  ! meaning of Dbas is extended. There is
+  !  Dbas(i        ,:,:,:) = values of the first basis function
+  !  Dbas(i+ndofloc,:,:,:) = values of the 2nd basis function, 
+  ! with ndofloc the number of local DOFs per element.
+  real(DP), dimension(:,:,:,:), intent(out)      :: Dbas
+!</output>
+
+! </subroutine>
+
+    real(DP), dimension(reval%npointsPerElement) :: dxj !auxiliary variable
+
+    integer :: i   ! point counter
+    integer :: j   ! element counter
+
+    ! Clear the output array
+    !Dbas = 0.0_DP
+
+    !if function values are desired
+    if (Bder(DER_FUNC)) then
+
+      !$omp parallel do default(shared) private(i) &
+      !$omp if(nelements > rperfconfig%NELEMMIN_OMP)
+      do j=1,reval%nelements
+      
+        ! There are three basis functions on the reference element:
+        !   phi_1 = 1
+        !   phi_2 = xi   = lambda_2 (in barycentric coordinates)
+        !   phi_3 = eta  = lambda_3 (in barycentric coordinates)
+
+        do i=1,reval%npointsPerElement
+          Dbas(1,DER_FUNC,i,j) = 1.0_DP
+          Dbas(2,DER_FUNC,i,j) = reval%p_DpointsRef(2,i,j)
+          Dbas(3,DER_FUNC,i,j) = reval%p_DpointsRef(3,i,j)
+        end do
+
+      end do
+      !$omp end parallel do
+
+    end if
+
+    !if x-or y-derivatives are desired
+    if ((Bder(DER_DERIV_X)) .or. (Bder(DER_DERIV_Y))) then
+
+      !$omp parallel do default(shared) private(i,dxj) &
+      !$omp if(nelements > rperfconfig%NELEMMIN_OMP)
+      do j=1,reval%nelements
+        Dxj(:) = 1E0_DP / reval%p_Ddetj(1:reval%npointsPerElement,j)
+
+        !x-derivatives on current element
+  !      IF (Bder(DER_DERIV_X)) THEN
+          do i=1,reval%npointsPerElement
+            Dbas(1,DER_DERIV_X,i,j) = 0.0_DP
+            Dbas(2,DER_DERIV_X,i,j) =  reval%p_Djac(4,i,j)*dxj(i)
+            Dbas(3,DER_DERIV_X,i,j) = -reval%p_Djac(2,i,j)*dxj(i)
+  !        end do
+  !      ENDIF
+
+        !y-derivatives on current element
+  !      IF (Bder(DER_DERIV_Y)) THEN
+  !        do i=1,npoints
+            Dbas(1,DER_DERIV_Y,i,j) = 0.0_DP
+            Dbas(2,DER_DERIV_Y,i,j) = -reval%p_Djac(3,i,j)*dxj(i)
+            Dbas(3,DER_DERIV_Y,i,j) =  reval%p_Djac(1,i,j)*dxj(i)
+          end do
+  !      ENDIF
+
+      end do
+      !$omp end parallel do
+
+    end if
+     
 
   end subroutine
 

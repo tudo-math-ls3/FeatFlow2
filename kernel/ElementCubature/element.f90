@@ -504,13 +504,13 @@ module element
   integer(I32), parameter, public :: EL_DG_T2_2D   = EL_2D + 62
 
   ! Discontinuous constant triangle element, P0dc
-  integer(I32), parameter, public :: EL_DCTP0_2D = EL_P0_2D
+  integer(I32), parameter, public :: EL_DCP0_2D = EL_P0_2D
 
   ! Discontinous linear triangle element, P1dc
-  integer(I32), parameter, public :: EL_DCTP1_2D = EL_2D + 71
+  integer(I32), parameter, public :: EL_DCP1_2D = EL_2D + 71
 
   ! Discontinous quadratic triangle element, P2dc
-  integer(I32), parameter, public :: EL_DCTP2_2D = EL_2D + 72
+  integer(I32), parameter, public :: EL_DCP2_2D = EL_2D + 72
 
   ! Discontinous constant quadrilateral element, P0dc
   integer(I32), parameter, public :: EL_DCQP0_2D = EL_Q0_2D
@@ -836,12 +836,12 @@ contains
     else if (selem .eq. "EL_P1T" .or. selem .eq. "EL_P1T_2D" .or. &
              selem .eq. "EL_E020" .or. selem .eq. "EL_E020_2D") then
       elem_igetID = EL_P1T_2D
-    else if (selem .eq. "EL_DCTP0_2D") then
-      elem_igetID = EL_DCTP0_2D ! coincides with EL_P0_2D
-    else if (selem .eq. "EL_DCTP1_2D") then
-      elem_igetID = EL_DCTP1_2D
-    else if (selem .eq. "EL_DCTP2_2D") then
-      elem_igetID = EL_DCTP2_2D
+    else if (selem .eq. "EL_DCP0_2D") then
+      elem_igetID = EL_DCP0_2D ! coincides with EL_P0_2D
+    else if (selem .eq. "EL_DCP1_2D") then
+      elem_igetID = EL_DCP1_2D
+    else if (selem .eq. "EL_DCP2_2D") then
+      elem_igetID = EL_DCP2_2D
 
     ! -= 2D Quadrilateral Elements =-
     else if (selem .eq. "EL_Q0" .or. selem .eq. "EL_Q0_2D" .or. &
@@ -1037,7 +1037,7 @@ contains
       sname = 'EL_DG_T2_1D'
 
     ! -= 2D Triangle Elements =-
-    case (EL_P0_2D)   ! alias: EL_DCTP0_2D
+    case (EL_P0_2D)   ! alias: EL_DCP0_2D
       sname = 'EL_P0_2D'
     case (EL_P1_2D)
       sname = 'EL_P1_2D'
@@ -1047,10 +1047,10 @@ contains
       sname = 'EL_P3_2D'
     case (EL_P1T_2D)
       sname = 'EL_P1T_2D'
-    case (EL_DCTP1_2D)
-      sname = 'EL_DCTP1_2D'
-    case (EL_DCTP2_2D)
-      sname = 'EL_DCTP2_2D'
+    case (EL_DCP1_2D)
+      sname = 'EL_DCP1_2D'
+    case (EL_DCP2_2D)
+      sname = 'EL_DCP2_2D'
 
     ! -= 2D Quadrilateral Elements =-
     ! H1-conforming elements
@@ -1310,10 +1310,10 @@ contains
       ! local DOFs for the Raviart-thomas.
       ndofAtEdges    = 3
 
-    case (EL_DG_P1_2D,EL_DCTP1_2D)
+    case (EL_DG_P1_2D,EL_DCP1_2D)
       ! local DOFs for P1
       ndofAtElement = 3
-    case (EL_DCTP2_2D)
+    case (EL_DCP2_2D)
       ndofAtElement = 6
 
     ! -= 2D Quadrilateral Elements =-
@@ -1818,7 +1818,7 @@ contains
     case (EL_DG_T2_2D)
       ! Function + 1st derivative + 2nd derivative
       elem_getMaxDerivative = 6
-    case (EL_DCTP1_2D, EL_DCTP2_2D, EL_DCQP1_2D, EL_DCQP2_2D)
+    case (EL_DCP1_2D, EL_DCP2_2D, EL_DCQP1_2D, EL_DCQP2_2D)
       ! Function + 1st derivative
       elem_getMaxDerivative = 3
     case (EL_QPW4DCP1_2D)
@@ -2040,7 +2040,7 @@ contains
       ishp = BGEOM_SHAPE_LINE
 
     case (EL_P0, EL_P1, EL_P2, EL_P3, EL_P1T, EL_DG_P1_2D,&
-          EL_DCTP1_2D, EL_DCTP2_2D,&
+          EL_DCP1_2D, EL_DCP2_2D,&
           EL_RT0_2D)
       ! 2D Triangle
       ishp = BGEOM_SHAPE_TRIA
@@ -2264,7 +2264,7 @@ contains
         call elem_DG_T1_2D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_DG_T2_2D)
         call elem_DG_T2_2D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-      case (EL_DCTP1_2D, EL_DCTP2_2D, EL_DCQP1_2D, EL_DCQP2_2D)
+      case (EL_DCP1_2D, EL_DCP2_2D, EL_DCQP1_2D, EL_DCQP2_2D)
         bwrapSim2 = .true.
       case (EL_QPW4DCP1_2D)
         bwrapSim2 = .true.
@@ -2931,13 +2931,13 @@ contains
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef)
 
-    case (EL_P1,EL_DG_P1_2D, EL_DCTP1_2D)
+    case (EL_P1)
       call elem_P1_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef, revalElementSet%p_rperfconfig)
 
-    case (EL_P2, EL_DCTP2_2D)
+    case (EL_P2)
       call elem_P2_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
@@ -2951,6 +2951,9 @@ contains
 
     case (EL_RT0_2D)
       call elem_eval_RT1_2D(celement, revalElementSet, Bder, Dbas)
+
+    case (EL_DCP1_2D)
+      call elem_eval_DCP1_2D(celement, revalElementSet, Bder, Dbas)
 
     ! *****************************************************
     ! 2D quadrilateral elements
