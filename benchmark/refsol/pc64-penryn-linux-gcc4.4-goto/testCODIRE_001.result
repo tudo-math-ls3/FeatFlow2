@@ -88,5 +88,5 @@ Heap statistics:
 Number of handles in use:        0
 Memory in use:                   0 Bytes
 Current total number of handles: 999
-Maximum number of handles used:  314
+Maximum number of handles used:  315
 Maximum used memory:             2.45 MB
