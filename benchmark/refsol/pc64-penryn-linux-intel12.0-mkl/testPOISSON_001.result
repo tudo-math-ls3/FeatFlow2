@@ -588,35 +588,20 @@ L2prj: Iteration 8,  !!RES!! = 8.358738981476985E-08
 Calculating Poisson-2D-Problem with method 1 - Prol.-Matrix
 -----------------------------------------------------------
 Multigrid: Iteration 0,  !!RES!! = 2.676838528903989E-03
-Multigrid: Iteration 1,  !!RES!! = 3.020235819608466E+00
-Multigrid: Iteration 2,  !!RES!! = 1.137408623761869E+00
-Multigrid: Iteration 3,  !!RES!! = 7.767733474053425E+00
-Multigrid: Iteration 4,  !!RES!! = 4.255501294645467E+00
-Multigrid: Iteration 5,  !!RES!! = 1.687258739550661E+01
-Multigrid: Iteration 6,  !!RES!! = 2.382419733836068E+01
-Multigrid: Iteration 7,  !!RES!! = 2.506958640767479E+01
-Multigrid: Iteration 8,  !!RES!! = 8.161521357182046E+01
-Multigrid: Iteration 9,  !!RES!! = 2.240739158485247E+00
-Multigrid: Iteration 10,  !!RES!! = 2.125685456506858E+02
-Multigrid: Iteration 11,  !!RES!! = 1.669467552725561E+02
-Multigrid: Iteration 12,  !!RES!! = 4.206555794916396E+02
-Multigrid: Iteration 13,  !!RES!! = 7.667866573291291E+02
-Multigrid: Iteration 14,  !!RES!! = 4.874050867135708E+02
-Multigrid: Iteration 15,  !!RES!! = 2.378989710026817E+03
-Multigrid: Iteration 16,  !!RES!! = 6.175635048189919E+02
-Multigrid: Solution diverging!
-Multigrid: Iteration 17,  !!RES!! = 5.698733514133283E+03
+Multigrid: Iteration 1,  !!RES!! = 5.577552805755576E-05
+Multigrid: Iteration 2,  !!RES!! = 7.138149147953889E-07
+Multigrid: Iteration 3,  !!RES!! = 1.689449848813237E-08
 
 Multigrid statistics:
 
-Iterations              : 17
+Iterations              : 3
 !!INITIAL RES!!         : 2.676838528903989E-03
-!!RES!!                 : 5.698733514133283E+03
-!!RES!!/!!INITIAL RES!! : 2.128904471674123E+06
+!!RES!!                 : 1.689449848813237E-08
+!!RES!!/!!INITIAL RES!! : 6.311362566590707E-06
 
-Rate of convergence     : 2.356375403680328E+00
-L2-error: 9.2183651802E+05
-H1-error: 4.1049391904E+06
+Rate of convergence     : 1.848024437643268E-02
+L2-error: 3.0758720660E-04
+H1-error: 5.6542124815E-02
 
 Calculating Poisson-2D-Problem with method 2
 --------------------------------------------
@@ -871,5 +856,5 @@ Heap statistics:
 Number of handles in use:        0
 Memory in use:                   0 Bytes
 Current total number of handles: 999
-Maximum number of handles used:  314
+Maximum number of handles used:  323
 Maximum used memory:             3.96 MB
