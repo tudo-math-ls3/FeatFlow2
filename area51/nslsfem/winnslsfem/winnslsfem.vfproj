@@ -36,12 +36,14 @@
 	<Files>
 		<Filter Name="Resource Files">
 		<File RelativePath="..\data\levelset.dat"/>
+		<File RelativePath="..\data\lsrt.dat"/>
 		<File RelativePath="..\data\lssvp.dat"/>
 		<File RelativePath="..\data\lsvvp.dat"/></Filter>
 		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
 		<Filter Name="2D">
 		<File RelativePath="..\src\LS_LS.f90"/>
 		<File RelativePath="..\src\LS_NS_callback.f90"/>
+		<File RelativePath="..\src\LS_NS_SVP.f90"/>
 		<File RelativePath="..\src\LS_NS_SVP_MG2D.f90"/>
 		<File RelativePath="..\src\LS_NS_SVP_RT2D.f90"/>
 		<File RelativePath="..\src\LS_NS_VVP_MG2D.f90"/>
