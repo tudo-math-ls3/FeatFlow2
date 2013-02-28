@@ -26,7 +26,7 @@
 #   = 6  Analytic polynomial function
 #   = 7  Static Bubble
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Problem = 6
+Problem = 7
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Kinematic viscosity noo = muu/rho = 1/Re
@@ -65,13 +65,13 @@ alpha = 1.0
 [MESH]
 
 # Mesh file name and path:
-sFilenamePathMesh = './pre/QUAD'
+sFilenamePathMesh = './pre/star'
 
 # Final mesh level to solve the problem:
-NLMAX = 6
+NLMAX = 5
 
 # Coarse mesh level, used in multigrid:
-NLMIN = 6
+NLMIN = 5
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Change Quadrilaterals to triangles
@@ -87,13 +87,13 @@ detTri = 1
 #  EL_EM30
 #  EL_EB50
 #  EL_P2
-#  EL_RT0, EL_RT0_2D, EL_DCTP0_2D
+#  EL_RT0, EL_RT0_2D, EL_DCP1_2D
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Velm = EL_P2
+Velm = EL_P1
 Vtild = 0
 
 # Type of Pressure finite element:
-Pelm = EL_P1
+Pelm = EL_P0
 Ptild = 0
 
 # Type of Stress finite element:
@@ -150,7 +150,7 @@ NLN_MAX = 100
 
 # Nonlinear loop stopping criteria
 #  Serves as a measure of relative residual
-dNLEpsi = 1E-6
+dNLEpsi = 1E-8
 
 
 #-----------------------------------------------------
@@ -513,7 +513,7 @@ dintARboundEX3YVel       = 20.0
 #      on coarse grid (UMFPACK) and
 #      detZMV =2 on other levels  
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-detZMV = 0
+detZMV = 3
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Which row of the pressure matrix do you want to 
@@ -526,7 +526,7 @@ detZMV = 0
 #  Poiesuelle flow, outflow =6
 #  Bolton step flow, outflow = 30
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-irow = 1
+irow = 5
 
 
 #-----------------------------------------------------
@@ -625,12 +625,12 @@ nlevels = 15
 L2U = 1
 H1U = 1
 
-L2P = 1
-H1P = 1
+L2P = 0
+H1P = 0
 
-L2S = 1
+L2S = 0
 
-StbblError = 0
+StbblError = 1
 
 
 #-----------------------------------------------------

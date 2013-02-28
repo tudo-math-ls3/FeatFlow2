@@ -36,7 +36,7 @@ Problem = 7
 #  Step flow        0.000752419383795  --> Re = 800
 #  Proot 2006       0.00375            --> Re = 100
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-dnu = 1
+dnu = 1.0
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Scaling factors or whighting parameters
@@ -47,6 +47,7 @@ dnu = 1
 #  obtain more balanced terms.
 #   ~ 1/noo * ||R||^2_{L^2}
 #    scPhysic = 1 lets this happens :)
+#  See this pls: rcollection%DquickAccess(2)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 scPhysic = 1
 
@@ -57,7 +58,6 @@ scPhysic = 1
 #   default value = 1.0   no scaling
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 alpha = 1.0
-
 
 #-----------------------------------------------------
 # Mesh Parameters and Finite Element Types
@@ -82,12 +82,10 @@ detTri = 0
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Type of Velocity finite elements:
-#  EL_Q1
-#  EL_Q2
-#  EL_EM30
-#  EL_EB50
-#  EL_P2
-#  EL_RT0_2D
+#  EL_Q1, EL_Q2
+#  EL_EM30, EL_EB50
+#  EL_P1, EL_P2
+#  EL_RT0_2D, EL_DCTP0_2D, EL_QP1
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Velm = EL_Q1
 Vtild = 0
@@ -109,7 +107,7 @@ dPert = 0.0
 #   G3_2D            3-by-3 Gauss quadrature rule
 #   G2_2D            2-by-2 Gauss quadrature rule
 #   PG2X2            2-by-2 Piecewise Gauss quadrature rule
-#   Standard(exact): G3_2D    G3_T   CUB_G3MP_T
+#   Standard(exact): G3_2D    G3_T   G3MP_T
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ccubType = G3_2D
 
@@ -262,7 +260,7 @@ iinitialSolutionLevel = 6
 #  First, we go to the velocities
 #   detVJump =1 on, =0 off
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-detVJump = 1
+detVJump = 0
 
 # Relaxation parameter for Jump stabilisation.
 # Standard value: 0.01
@@ -285,7 +283,10 @@ detSJump = 1
 
 # Relaxation parameter for Jump stabilisation.
 # Standard value: 0.1
-dJumpS = 1E-5
+dJumpS = 0.5
+
+dJumpS_matrix = 0.5
+dJumpS_defect = 0.5
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Third, we go to the pressure
@@ -364,7 +365,7 @@ ctMG = 0
 #    =1  UMFPACK
 #    =2  Smoother as coarse grid solver
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-CGsolverMG = 1
+CGsolverMG = 2
 
 # Number of iteration of the coarse grid solver,
 #  if it is the same as our smoother
@@ -380,7 +381,7 @@ depsRelCGsolverMG = 1e-5
 # = 1:minimal output
 # = 0:no output except for warning messages 
 # =-1:no output (standard)
-ioutputLevelCG = 1
+ioutputLevelCG = -1
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #            Smoother
@@ -513,7 +514,7 @@ dintARboundEX3YVel       = 20.0
 #      on coarse grid (UMFPACK) and
 #      detZMV =2 on other levels  
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-detZMV = 1
+detZMV = 2
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Which row of the pressure matrix do you want to 
