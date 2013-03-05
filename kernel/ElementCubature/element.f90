@@ -503,6 +503,9 @@ module element
   ! Discontinuous Galerkin taylor basis element - quadratic.
   integer(I32), parameter, public :: EL_DG_T2_2D   = EL_2D + 62
 
+  ! Discontinuous Galerkin taylor basis element - quadratic.
+  integer(I32), parameter, public :: EL_DG_T3_2D   = EL_2D + 63
+
   ! Discontinuous constant triangle element, P0dc
   integer(I32), parameter, public :: EL_DCP0_2D = EL_P0_2D
 
@@ -914,6 +917,8 @@ contains
       elem_igetID = EL_DG_T1_2D
     else if (selem .eq. "EL_DG_T2_2D") then
       elem_igetID = EL_DG_T2_2D
+    else if (selem .eq. "EL_DG_T3_2D") then
+      elem_igetID = EL_DG_T3_2D
     else if (selem .eq. "EL_DCQP0_2D") then
       elem_igetID = EL_DCQP0_2D ! coincides with EL_Q0_2D
     else if (selem .eq. "EL_DCQP1_2D") then
@@ -1123,6 +1128,8 @@ contains
       sname = 'EL_DG_T1_2D'
     case (EL_DG_T2_2D)
       sname = 'EL_DG_T2_2D'
+    case (EL_DG_T3_2D)
+      sname = 'EL_DG_T3_2D'
     case (EL_QPW4DCP1_2D)
       sname = 'EL_QPW4DCP1_2D'
 
@@ -1377,6 +1384,9 @@ contains
     case (EL_DG_T2_2D,EL_DCQP2_2D)
       ! local DOFs for 2D DG Taylor quadratic
       ndofAtElement = 6
+    case (EL_DG_T3_2D)
+      ! local DOFs for 2D DG Taylor quadratic
+      ndofAtElement = 10
     case (EL_DG_Q1_2D)
       ! local DOFs for DG Q1
       ndofAtElement = 4
@@ -1815,7 +1825,7 @@ contains
     case (EL_DG_T1_2D)
       ! Function + 1st derivative
       elem_getMaxDerivative = 3
-    case (EL_DG_T2_2D)
+    case (EL_DG_T2_2D,EL_DG_T3_2D)
       ! Function + 1st derivative + 2nd derivative
       elem_getMaxDerivative = 6
     case (EL_DCP1_2D, EL_DCP2_2D, EL_DCQP1_2D, EL_DCQP2_2D)
@@ -2048,7 +2058,7 @@ contains
     case (EL_Q0, EL_Q1, EL_Q2, EL_Q3, EL_QP1,&
           EL_Q1T, EL_Q1TB, EL_Q2T, EL_Q2TB, EL_Q3T_2D,&
           EL_DG_T0_2D, EL_DG_T1_2D, EL_DG_T2_2D,&
-          EL_DG_Q1_2D, EL_DG_Q2_2D,&
+          EL_DG_T3_2D, EL_DG_Q1_2D, EL_DG_Q2_2D,&
           EL_QPW4P1_2D, EL_QPW4P1T_2D, EL_QPW4P2_2D, &
           EL_DCQP1_2D, EL_DCQP2_2D, EL_QPW4DCP1_2D)
       ! 2D Quadrilateral
@@ -2264,6 +2274,8 @@ contains
         call elem_DG_T1_2D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_DG_T2_2D)
         call elem_DG_T2_2D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+      case (EL_DG_T3_2D)
+        call elem_DG_T3_2D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_DCP1_2D, EL_DCP2_2D, EL_DCQP1_2D, EL_DCQP2_2D)
         bwrapSim2 = .true.
       case (EL_QPW4DCP1_2D)
@@ -2553,6 +2565,9 @@ contains
     case (EL_DG_T2_2D)
       call elem_DG_T2_2D_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, &
                                npoints, Dpoints)
+    case (EL_DG_T3_2D)
+      call elem_DG_T3_2D_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, &
+                               npoints, Dpoints)
 
     ! 3D elements
     case (EL_P0_3D)
@@ -2768,6 +2783,9 @@ contains
                               Bder, Dbas, npoints, nelements, Dpoints, rperfconfig)
     case (EL_DG_T2_2D)
       call elem_DG_T2_2D_sim (celement, Dcoords, Djac, Ddetj, &
+                              Bder, Dbas, npoints, nelements, Dpoints, rperfconfig)
+    case (EL_DG_T3_2D)
+      call elem_DG_T3_2D_sim (celement, Dcoords, Djac, Ddetj, &
                               Bder, Dbas, npoints, nelements, Dpoints, rperfconfig)
 
     ! 3D elements
@@ -3081,6 +3099,12 @@ contains
 
     case (EL_DG_T2_2D)
       call elem_DG_T2_2D_sim (celement, revalElementSet%p_Dcoords, &
+        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+        revalElementSet%p_DpointsRef, revalElementSet%p_rperfconfig)
+   
+    case (EL_DG_T3_2D)
+      call elem_DG_T3_2D_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef, revalElementSet%p_rperfconfig)

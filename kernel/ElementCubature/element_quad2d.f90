@@ -87,6 +87,9 @@ module element_quad2d
   public :: elem_DG_T2_2D
   public :: elem_DG_T2_2D_mult
   public :: elem_DG_T2_2D_sim
+  public :: elem_DG_T3_2D
+  public :: elem_DG_T3_2D_mult
+  public :: elem_DG_T3_2D_sim
 
 contains
 
@@ -9081,6 +9084,1010 @@ contains
 
         do i=1,npoints
           do idof = 1,6
+            Dbas(idof,DER_DERIV_YY,i,j) = &
+                Dc1(i) * Dhelp(idof,3,i) + Dc2(i) * Dhelp(idof,4,i) + Dc3(i) * Dhelp(idof,5,i)
+          end do
+        end do
+      !endif
+
+    end do
+    !$omp end parallel do
+
+  end if
+
+  end subroutine
+
+
+!**************************************************************************
+! Element subroutines for parametric DG_T3_2D element.
+! The routines are defines with the F95 PURE statement as they work
+! only on the parameters; helps some compilers in optimisation.
+
+!<subroutine>
+
+  pure subroutine elem_DG_T3_2D (celement, Dcoords, Djac, ddetj, Bder, &
+                                 Dpoint, Dbas)
+
+  !<description>
+  ! This subroutine calculates the values of the basic functions of the
+  ! finite element at the given point on the reference element.
+  !</description>
+
+  !<input>
+
+  ! Element type identifier. Must be =EL_DG_T3_2D.
+  integer(I32), intent(in)  :: celement
+
+  ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE)
+  ! Dcoords(1,.)=x-coordinates,
+  ! Dcoords(2,.)=y-coordinates.
+  real(DP), dimension(:,:), intent(in) :: Dcoords
+
+  ! Values of the Jacobian matrix that defines the mapping between the
+  ! reference element and the real element.
+  !  Djac(1) = J(1,1)
+  !  Djac(2) = J(2,1)
+  !  Djac(3) = J(1,2)
+  !  Djac(4) = J(2,2)
+  ! Remark: Only used for calculating derivatives; can be set to 0.0
+  ! when derivatives are not used.
+  real(DP), dimension(:), intent(in) :: Djac
+
+  ! Determinant of the mapping from the reference element to the real
+  ! element.
+  ! Remark: Only used for calculating derivatives; can be set to 1.0
+  ! when derivatives are not needed. Must not be set to 0.0!
+  real(DP), intent(in) :: ddetj
+
+  ! Derivative quantifier array. array [1..DER_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  logical, dimension(:), intent(in) :: Bder
+
+  ! Cartesian coordinates of the evaluation point on reference element.
+  ! Dpoint(1) = x-coordinate,
+  ! Dpoint(2) = y-coordinate
+  real(DP), dimension(2), intent(in) :: Dpoint
+!</input>
+
+!<output>
+  ! Value/derivatives of basis functions.
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC) defines the value of the i-th
+  !   basis function of the finite element in the point (dx,dy) on the
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx) is undefined.
+  real(DP), dimension(:,:), intent(out) :: Dbas
+!</output>
+
+! </subroutine>
+
+  !auxiliary vector containing the first derivatives on the reference element
+  real(DP), dimension(10,5) :: Dhelp
+  real(DP) :: dx,dy
+
+  integer :: idof
+  real(DP) :: dxj,dxjs,dc1,dc2,dc3 !auxiliary variable
+
+  real(DP), parameter :: Q2 = 0.5_DP
+  real(DP), parameter :: Q3 = 1.0_DP/3.0_DP
+  real(DP), parameter :: Q4 = 0.25_DP
+  real(DP), parameter :: Q6 = 1.0_DP/6.0_DP
+  real(DP), parameter :: Q48 = 1.0_DP/48.0_DP
+
+  ! The DG_T2_2D element is specified by six polynomials on the reference element.
+  ! These six polynomials are:
+  !
+  !  P1(X,Y) = 1
+  !  P2(X,Y) = x
+  !  P3(X,Y) = y
+  !  P4(X,Y) = 1/2 (x^2 - 1/3)
+  !  P5(X,Y) = 1/2 (y^2 - 1/3)
+  !  P6(X,Y) = xy
+  !  P7(X,Y) = 1/48 x^3
+  !  P8(X,Y) = 1/48 x^2 y
+  !  P9(X,Y) = 1/48 x y^2
+  !  P10(X,Y) = 1/48 y^3
+  !
+  ! The first one is the constant function, which can be used to set the value of
+  ! the solution in the centroid of the element and the second and third have
+  ! vanishing mean-values on the reference element and can be used to set the
+  ! x and y derivatives in the centroid of the element while not changing the
+  ! mean-value in the element.
+  ! Analogous the fourth to sixth polynomial can be used to set the second
+  ! derivative in xx, xy and yy direction in the centroid without affecting the
+  ! first derivatives or mean-values.
+  ! So slope limiting is possible without affecting the conservation laws.
+
+  ! Clear the output array
+  !Dbas = 0.0_DP
+
+  dx = Dpoint(1)
+  dy = Dpoint(2)
+
+  !if function values are desired
+  if (Bder(DER_FUNC)) then
+    Dbas(1,DER_FUNC)= 1.0_DP
+    Dbas(2,DER_FUNC)= dx
+    Dbas(3,DER_FUNC)= dy
+    Dbas(4,DER_FUNC)= Q2*dx*dx-Q6
+    Dbas(5,DER_FUNC)= Q2*dy*dy-Q6
+    Dbas(6,DER_FUNC)= dx*dy
+    Dbas(7,DER_FUNC)= Q48*dx*dx*dx
+    Dbas(8,DER_FUNC)= Q48*dx*dx*dy
+    Dbas(9,DER_FUNC)= Q48*dx*dy*dy
+    Dbas(10,DER_FUNC)= Q48*dy*dy*dy
+  endif
+
+  ! if x-or y-derivatives are desired
+  if ((Bder(DER_DERIV_X)) .or. (Bder(DER_DERIV_Y))) then
+    dxj = 1.0E0_DP / ddetj
+
+    !x- and y-derivatives on reference element
+    Dhelp(1,1)= 0.0_DP
+    Dhelp(2,1)= 1.0_DP
+    Dhelp(3,1)= 0.0_DP
+    Dhelp(4,1)= dx
+    Dhelp(5,1)= 0.0_DP
+    Dhelp(6,1)= dy
+    Dhelp(7,1)= 1.0_dp/16.0_dp*dx*dx
+    Dhelp(8,1)= 1.0_dp/24.0_dp*dx*dy
+    Dhelp(9,1)= 1.0_dp/48.0_dp*dy*dy
+    Dhelp(10,1)= 0.0_dp
+
+    Dhelp(1,2)= 0.0_DP
+    Dhelp(2,2)= 0.0_DP
+    Dhelp(3,2)= 1.0_DP
+    Dhelp(4,2)= 0.0_DP
+    Dhelp(5,2)= dy
+    Dhelp(6,2)= dx
+    Dhelp(7,2)= 0.0_dp
+    Dhelp(8,2)= 1.0_dp/48.0_dp*dx*dx
+    Dhelp(9,2)= 1.0_dp/24.0_dp*dx*dy
+    Dhelp(10,2)= 1.0_dp/16.0_dp*dy*dy
+
+    ! x-derivatives on current element
+    if (Bder(DER_DERIV_X)) then
+      do idof = 1,10
+        Dbas(idof,DER_DERIV_X) = &
+            dxj * (Djac(4) * Dhelp(idof,1) - Djac(2) * Dhelp(idof,2))
+      end do
+    endif
+
+    ! y-derivatives on current element
+    if (Bder(DER_DERIV_Y)) then
+      do idof = 1,10
+        Dbas(idof,DER_DERIV_Y) = &
+            -dxj * (Djac(3) * Dhelp(idof,1) - Djac(1) * Dhelp(idof,2))
+      end do
+    endif
+  endif
+
+  ! if xx-, xy or yy-derivatives are desired
+  if (Bder(DER_DERIV_XX) .or. Bder(DER_DERIV_XY) .or. Bder(DER_DERIV_YY)) then
+    dxj = 1.0_DP / ddetj
+
+    !x- and y-derivatives on reference element
+
+    ! Now we have to compute the derivatives on the real element by those on
+    ! the reference element. This is a little bit tricky!
+    !
+    ! Let us assume, our finite element function on the real element is
+    ! f(x) and the corresponding function on the reference element g(y),
+    ! so x is the real coordinate and y the reference coordinate.
+    ! There is a mapping s:[-1,1]->R2 that maps to the real element.
+    ! It is inverse s^{-1} maps to the reference element.
+    ! We have:
+    !
+    !   f(x) = g(y) = g(s^{-1}(x))
+    !
+    ! We want to compute the hessian
+    !
+    !   Hf(x) = [ f11 f12 ]
+    !           [ f21 f22 ]
+    !
+    ! with fij = di dj f. By the chain rule, we have:
+    !
+    !  Hf(x)  =  H [ g(s^{-1}(x)) ]
+    !         =  D [ D ( g(s^{-1}(x)) ) ]
+    !         =  D [ Dg (s^{-1}(x)) Ds^{-1}(x) ]
+    !         =  D [ Dg (s^{-1}(x)) ] Ds^{-1}(x)  +  Dg (s^{-1}(x)) Hs^{-1}(x)
+    !
+    ! Now the big assumption: We assume that out mapping s is bilinear!
+    ! From this assumption we derive that Hs^{-1}(x), so the 2nd term
+    ! vanishes. We clearly point out that this is of course not true for
+    ! isoparametric mappings!
+    !
+    ! With this assumption, we continue:
+    !
+    !         =  D [ Dg (s^{-1}(x)) ] Ds^{-1}(x)
+    !         =  Ds^{-1}(x)^T  Hg(s^{-1}(x))  Ds^{-1}(x)
+    !         =  Ds^{-1}(x)^T  Hg(y)  Ds^{-1}(x)
+    !
+    ! This is computable now. Let us write:
+    !
+    !  Ds = [ s11 s12 ] , Ds^{-1} = 1/det [  s22 -s12 ] , Hg(y) = [ g11 g12 ]
+    !       [ s21 s22 ]                   [ -s21  s11 ]           [ g21 g22 ]
+    !
+    ! then we get:
+    !
+    !  Hf(x) = 1/det^2
+    !  [(s22*g11-s21*g21)*s22-(s22*g12-s21*g22)*s21, -(s22*g11-s21*g21)*s12+(s22*g12-s21*g22)*s11],
+    !  [(-s12*g11+s11*g21)*s22-(-s12*g12+s11*g22)*s21, -(-s12*g11+s11*g21)*s12+(-s12*g12+s11*g22)*s11]])
+    !
+    ! This can be simplified by the fact that g12=g21 (as (gij) is a Hessian):
+    !
+    !  = 1/det^2
+    !    [s22^2*g11-2*s22*s21*g21+s21^2*g22, -s22*s12*g11+s22*s11*g21+s12*s21*g21-s21*s11*g22]
+    !    [-s22*s12*g11+s22*s11*g21+s12*s21*g21-s21*s11*g22, s12^2*g11-2*s12*s11*g21+s11^2*g22]])
+    !
+    ! so we have
+    !
+    !  f11       = 1/det^2 * [ s22^2*g11    - 2*s22*s21*g21               + s21^2*g22 ]
+    !  f12 = f21 = 1/det^2 * [ -s22*s12*g11 + ( s22*s11 + s12*s21 ) * g21 - s21*s11*g22 ]
+    !  f22       = 1/det^2 * [ s12^2*g11    - 2*s12*s11*g21               + s11^2*g22 ]
+    !
+
+    dxjs = dxj*dxj
+
+    !xx-, xy and yy-derivatives on reference element
+    Dhelp(1,3) = 0.0_DP
+    Dhelp(2,3) = 0.0_DP
+    Dhelp(3,3) = 0.0_DP
+    Dhelp(4,3) = 1.0_DP
+    Dhelp(5,3) = 0.0_DP
+    Dhelp(6,3) = 0.0_DP
+    Dhelp(7,3) = 1.0_DP/8.0_dp*dx
+    Dhelp(8,3) = 1.0_DP/24.0_dp*dy
+    Dhelp(9,3) = 0.0_DP
+    Dhelp(10,3) = 0.0_DP
+
+    Dhelp(1,4) = 0.0_DP
+    Dhelp(2,4) = 0.0_DP
+    Dhelp(3,4) = 0.0_DP
+    Dhelp(4,4) = 0.0_DP
+    Dhelp(5,4) = 0.0_DP
+    Dhelp(6,4) = 1.0_DP
+    Dhelp(7,4) = 0.0_dp
+    Dhelp(8,4) = 1.0_DP/24.0_dp*dx
+    Dhelp(9,4) = 1.0_DP/24.0_dp*dy
+    Dhelp(10,4) = 0.0_DP
+
+    Dhelp(1,5) = 0.0_DP
+    Dhelp(2,5) = 0.0_DP
+    Dhelp(3,5) = 0.0_DP
+    Dhelp(4,5) = 0.0_DP
+    Dhelp(5,5) = 1.0_DP
+    Dhelp(6,5) = 0.0_DP
+    Dhelp(7,5) = 0.0_dp
+    Dhelp(8,5) = 0.0_dp
+    Dhelp(9,5) = 1.0_DP/24.0_dp*dx
+    Dhelp(10,5) = 1.0_DP/8.0_dp*dy
+    
+    ! WARNING: NOT TESTED!!!
+
+    ! xx-derivatives on current element
+    if (Bder(DER_DERIV2D_XX)) then
+      dc1 = dxjs * Djac(4)**2
+      dc2 = dxjs * ( -2.0_DP * Djac(4) * Djac(2) )
+      dc3 = dxjs * Djac(2)**2
+      do idof = 1,10
+        Dbas(idof,DER_DERIV2D_XX) = &
+            dc1 * Dhelp(idof,3) + dc2 * Dhelp(idof,4) + dc3 * Dhelp(idof,5)
+      end do
+    endif
+
+    ! xy-derivatives on current element
+    if (Bder(DER_DERIV2D_XY)) then
+      dc1 = - dxjs * Djac(4) * Djac(3)
+      dc2 = dxjs * ( Djac(4) * Djac(1) + Djac(3) * Djac(2) )
+      dc3 = - dxjs * Djac(1) * Djac(4)
+      do idof = 1,10
+        Dbas(idof,DER_DERIV2D_XY) = &
+            dc1 * Dhelp(idof,3) + dc2 * Dhelp(idof,4) + dc3 * Dhelp(idof,5)
+      end do
+    endif
+
+    ! yy-derivatives on current element
+    if (Bder(DER_DERIV2D_YY)) then
+      dc1 = dxjs * Djac(3)**2
+      dc2 = dxjs * ( -2.0_DP * Djac(3) * Djac(1) )
+      dc3 = dxjs * Djac(1)**2
+      do idof = 1,10
+        Dbas(idof,DER_DERIV2D_YY) = &
+            dc1 * Dhelp(idof,3) + dc2 * Dhelp(idof,4) + dc3 * Dhelp(idof,5)
+      end do
+    endif
+  endif
+
+  end subroutine
+
+  !************************************************************************
+
+!<subroutine>
+
+  pure subroutine elem_DG_T3_2D_mult (celement, Dcoords, Djac, Ddetj, &
+                                      Bder, Dbas, npoints, Dpoints)
+
+!<description>
+  ! This subroutine calculates the values of the basic functions of the
+  ! finite element at multiple given points on the reference element.
+!</description>
+
+!<input>
+  ! Element type identifier. Must be =EL_DG_T3_2D.
+  integer(I32), intent(in)  :: celement
+
+  ! Number of points on every element where to evalate the basis functions.
+  integer, intent(in) :: npoints
+
+  ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE)
+  ! Dcoords(1,.)=x-coordinates,
+  ! Dcoords(2,.)=y-coordinates.
+  real(DP), dimension(:,:), intent(in) :: Dcoords
+
+  ! Values of the Jacobian matrix that defines the mapping between the
+  ! reference element and the real element. For every point i:
+  !  Djac(1,i) = J_i(1,1)
+  !  Djac(2,i) = J_i(2,1)
+  !  Djac(3,i) = J_i(1,2)
+  !  Djac(4,i) = J_i(2,2)
+  ! Remark: Only used for calculating derivatives; can be set to 0.0
+  ! when derivatives are not used.
+  real(DP), dimension(:,:), intent(in) :: Djac
+
+  ! Determinant of the mapping from the reference element to the real
+  ! element for every of the npoints points.
+  ! Remark: Only used for calculating derivatives; can be set to 1.0
+  ! when derivatives are not needed. Must not be set to 0.0!
+  real(DP), dimension(:), intent(in) :: Ddetj
+
+  ! Derivative quantifier array. array [1..DER_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  logical, dimension(:), intent(in) :: Bder
+
+  ! Array with coordinates of the points where to evaluate.
+  ! The coordinates are expected on the reference element.
+  ! DIMENSION(#space dimensions,npoints).
+  !  Dpoints(1,.)=x-coordinates,
+  !  Dpoints(2,.)=y-coordinates.
+  real(DP), dimension(:,:), intent(in) :: Dpoints
+!</input>
+
+!<output>
+  ! Value/derivatives of basis functions.
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th
+  !   basis function of the finite element in the point Dcoords(j) on the
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
+  real(DP), dimension(:,:,:), intent(out) :: Dbas
+!</output>
+
+! </subroutine>
+
+  ! auxiliary vector containing the first derivatives on the reference element
+  real(DP), dimension(10,5,npoints) :: Dhelp
+  real(DP) :: dx,dy
+  real(DP),dimension(npoints) :: Dxj,Dxjs,Dc1,Dc2,Dc3 !auxiliary variable
+
+  integer :: i,idof   ! point counter
+
+  real(DP), parameter :: Q2 = 0.5_DP
+  real(DP), parameter :: Q3 = 1.0_DP/3.0_DP
+  real(DP), parameter :: Q4 = 0.25_DP
+  real(DP), parameter :: Q6 = 1.0_DP/6.0_DP
+  real(DP), parameter :: Q48 = 1.0_DP/48.0_DP
+
+  ! Clear the output array
+  !Dbas = 0.0_DP
+
+  ! Remark: The DG_T1_2D-element always computes function value and 1st derivatives.
+  ! That is even faster than when using three IF commands for preventing
+  ! the computation of one of the values!
+
+  !if function values are desired
+  !IF (Bder(DER_FUNC)) THEN
+    do i=1,npoints
+      dx = Dpoints(1,i)
+      dy = Dpoints(2,i)
+      Dbas(1,DER_FUNC,i)= 1.0_DP
+      Dbas(2,DER_FUNC,i)= dx
+      Dbas(3,DER_FUNC,i)= dy
+      Dbas(4,DER_FUNC,i)= Q2*dx*dx-Q6
+      Dbas(5,DER_FUNC,i)= Q2*dy*dy-Q6
+      Dbas(6,DER_FUNC,i)= dx*dy
+      Dbas(7,DER_FUNC,i)= Q48*dx*dx*dx
+      Dbas(8,DER_FUNC,i)= Q48*dx*dx*dy
+      Dbas(9,DER_FUNC,i)= Q48*dx*dy*dy
+      Dbas(10,DER_FUNC,i)= Q48*dy*dy*dy
+    end do
+  !ENDIF
+
+  !if x-or y-derivatives are desired
+  if ((Bder(DER_DERIV_X)) .or. (Bder(DER_DERIV_Y))) then
+    Dxj(:) = 1.0_DP / Ddetj(1:npoints)
+
+    !x- and y-derivatives on reference element
+    do i=1,npoints
+      dx = Dpoints(1,i)
+      dy = Dpoints(2,i)
+
+      !x- and y-derivatives on reference element
+      Dhelp(1,1,i)= 0.0_DP
+      Dhelp(2,1,i)= 1.0_DP
+      Dhelp(3,1,i)= 0.0_DP
+      Dhelp(4,1,i)= dx
+      Dhelp(5,1,i)= 0.0_DP
+      Dhelp(6,1,i)= dy
+      Dhelp(7,1,i)= 1.0_dp/16.0_dp*dx*dx
+      Dhelp(8,1,i)= 1.0_dp/24.0_dp*dx*dy
+      Dhelp(9,1,i)= 1.0_dp/48.0_dp*dy*dy
+      Dhelp(10,1,i)= 0.0_dp
+
+      Dhelp(1,2,i)= 0.0_DP
+      Dhelp(2,2,i)= 0.0_DP
+      Dhelp(3,2,i)= 1.0_DP
+      Dhelp(4,2,i)= 0.0_DP
+      Dhelp(5,2,i)= dy
+      Dhelp(6,2,i)= dx
+      Dhelp(7,2,i)= 0.0_dp
+      Dhelp(8,2,i)= 1.0_dp/48.0_dp*dx*dx
+      Dhelp(9,2,i)= 1.0_dp/24.0_dp*dx*dy
+      Dhelp(10,2,i)= 1.0_dp/16.0_dp*dy*dy
+      
+    end do
+
+    ! x-derivatives on current element
+!    IF (Bder(DER_DERIV_X)) THEN
+      do i=1,npoints
+        do idof = 1,10
+          Dbas(idof,DER_DERIV_X,i) = &
+              Dxj(i) * (Djac(4,i) * Dhelp(idof,1,i) - Djac(2,i) * Dhelp(idof,2,i))
+        end do
+!      END DO
+!    ENDIF
+
+    ! y-derivatives on current element
+!    IF (Bder(DER_DERIV_Y)) THEN
+!      DO i=1,npoints
+        do idof = 1,10
+          Dbas(idof,DER_DERIV_Y,i) = &
+              -Dxj(i) * (Djac(3,i) * Dhelp(idof,1,i) - Djac(1,i) * Dhelp(idof,2,i))
+        end do
+      end do
+!    ENDIF
+  endif
+
+  ! if xx-, xy or yy-derivatives are desired
+  if (Bder(DER_DERIV_XX) .or. Bder(DER_DERIV_XY) .or. Bder(DER_DERIV_YY)) then
+
+    !x- and y-derivatives on reference element
+
+    ! Now we have to compute the derivatives on the real element by those on
+    ! the reference element. This is a little bit tricky!
+    !
+    ! Let us assume, out finite element function on the real element is
+    ! f(x) and the corresponding function on the reference element g(y),
+    ! so x is the real coordinate and y the reference coordinate.
+    ! There is a mapping s:[-1,1]->R2 that maps to the real element.
+    ! It is inverse s^{-1} maps to the reference element.
+    ! We have:
+    !
+    !   f(x) = g(y) = g(s^{-1}(x))
+    !
+    ! We want to compute the hessian
+    !
+    !   Hf(x) = [ f11 f12 ]
+    !           [ f21 f22 ]
+    !
+    ! with fij = di dj f. By the chain rule, we have:
+    !
+    !  Hf(x)  =  H [ g(s^{-1}(x)) ]
+    !         =  D [ D ( g(s^{-1}(x)) ) ]
+    !         =  D [ Dg (s^{-1}(x)) Ds^{-1}(x) ]
+    !         =  D [ Dg (s^{-1}(x)) ] Ds^{-1}(x)  +  Dg (s^{-1}(x)) Hs^{-1}(x)
+    !
+    ! Now the big assumption: We assume that out mapping s is bilinear!
+    ! From this assumption we derive that Hs^{-1}(x), so the 2nd term
+    ! vanishes. We clearly point out that this is of course not true for
+    ! isoparametric mappings!
+    !
+    ! With this assumption, we continue:
+    !
+    !         =  D [ Dg (s^{-1}(x)) ] Ds^{-1}(x)
+    !         =  Ds^{-1}(x)^T  Hg(s^{-1}(x))  Ds^{-1}(x)
+    !         =  Ds^{-1}(x)^T  Hg(y)  Ds^{-1}(x)
+    !
+    ! This is computable now. Let us write:
+    !
+    !  Ds = [ s11 s12 ] , Ds^{-1} = 1/det [  s22 -s12 ] , Hg(y) = [ g11 g12 ]
+    !       [ s21 s22 ]                   [ -s21  s11 ]           [ g21 g22 ]
+    !
+    ! then we get:
+    !
+    !  Hf(x) = 1/det^2
+    !  [(s22*g11-s21*g21)*s22-(s22*g12-s21*g22)*s21, -(s22*g11-s21*g21)*s12+(s22*g12-s21*g22)*s11],
+    !  [(-s12*g11+s11*g21)*s22-(-s12*g12+s11*g22)*s21, -(-s12*g11+s11*g21)*s12+(-s12*g12+s11*g22)*s11]])
+    !
+    ! This can be simplified by the fact that g12=g21 (as (gij) is a Hessian):
+    !
+    !  = 1/det^2
+    !    [s22^2*g11-2*s22*s21*g21+s21^2*g22, -s22*s12*g11+s22*s11*g21+s12*s21*g21-s21*s11*g22]
+    !    [-s22*s12*g11+s22*s11*g21+s12*s21*g21-s21*s11*g22, s12^2*g11-2*s12*s11*g21+s11^2*g22]])
+    !
+    ! so we have
+    !
+    !  f11       = 1/det^2 * [ s22^2*g11    - 2*s22*s21*g21               + s21^2*g22 ]
+    !  f12 = f21 = 1/det^2 * [ -s22*s12*g11 + ( s22*s11 + s12*s21 ) * g21 - s21*s11*g22 ]
+    !  f22       = 1/det^2 * [ s12^2*g11    - 2*s12*s11*g21               + s11^2*g22 ]
+
+    !x- and y-derivatives on reference element
+    Dxj(:) = 1.0E0_DP / Ddetj(1:npoints)
+    Dxjs = Dxj*Dxj
+
+    do i=1,npoints
+      dx = Dpoints(1,i)
+      dy = Dpoints(2,i)
+
+      !xx-, xy and yy-derivatives on reference element
+          Dhelp(1,3,i) = 0.0_DP
+          Dhelp(2,3,i) = 0.0_DP
+          Dhelp(3,3,i) = 0.0_DP
+          Dhelp(4,3,i) = 1.0_DP
+          Dhelp(5,3,i) = 0.0_DP
+          Dhelp(6,3,i) = 0.0_DP
+          Dhelp(7,3,i) = 1.0_DP/8.0_dp*dx
+          Dhelp(8,3,i) = 1.0_DP/24.0_dp*dy
+          Dhelp(9,3,i) = 0.0_DP
+          Dhelp(10,3,i) = 0.0_DP
+
+          Dhelp(1,4,i) = 0.0_DP
+          Dhelp(2,4,i) = 0.0_DP
+          Dhelp(3,4,i) = 0.0_DP
+          Dhelp(4,4,i) = 0.0_DP
+          Dhelp(5,4,i) = 0.0_DP
+          Dhelp(6,4,i) = 1.0_DP
+          Dhelp(7,4,i) = 0.0_dp
+          Dhelp(8,4,i) = 1.0_DP/24.0_dp*dx
+          Dhelp(9,4,i) = 1.0_DP/24.0_dp*dy
+          Dhelp(10,4,i) = 0.0_DP
+
+          Dhelp(1,5,i) = 0.0_DP
+          Dhelp(2,5,i) = 0.0_DP
+          Dhelp(3,5,i) = 0.0_DP
+          Dhelp(4,5,i) = 0.0_DP
+          Dhelp(5,5,i) = 1.0_DP
+          Dhelp(6,5,i) = 0.0_DP
+          Dhelp(7,5,i) = 0.0_dp
+          Dhelp(8,5,i) = 0.0_dp
+          Dhelp(9,5,i) = 1.0_DP/24.0_dp*dx
+          Dhelp(10,5,i) = 1.0_DP/8.0_dp*dy
+
+    end do
+
+    ! WARNING: NOT TESTED!!!
+
+    ! xx-derivatives on current element
+    !if (Bder(DER_DERIV_XX)) then
+      do i=1,npoints
+        Dc1(i) = Dxjs(i) * Djac(4,i)**2
+        Dc2(i) = Dxjs(i) * ( -2.0_DP * Djac(4,i) * Djac(2,i) )
+        Dc3(i) = Dxjs(i) * Djac(2,i)**2
+      end do
+
+      do i=1,npoints
+        do idof = 1,10
+          Dbas(idof,DER_DERIV_XX,i) = &
+              Dc1(i) * Dhelp(idof,3,i) + Dc2(i) * Dhelp(idof,4,i) + Dc3(i) * Dhelp(idof,5,i)
+        end do
+      end do
+    !endif
+
+    ! xy-derivatives on current element
+    !if (Bder(DER_DERIV_XY)) then
+      do i=1,npoints
+        Dc1(i) = - Dxjs(i) * Djac(4,i) * Djac(3,i)
+        Dc2(i) = Dxjs(i) * ( Djac(4,i) * Djac(1,i) + Djac(3,i) * Djac(2,i) )
+        Dc3(i) = - Dxjs(i) * Djac(1,i) * Djac(4,i)
+      end do
+
+      do i=1,npoints
+        do idof = 1,10
+          Dbas(idof,DER_DERIV_XY,i) = &
+              Dc1(i) * Dhelp(idof,3,i) + Dc2(i) * Dhelp(idof,4,i) + Dc3(i) * Dhelp(idof,5,i)
+        end do
+      end do
+    !endif
+
+    ! yy-derivatives on current element
+    !if (Bder(DER_DERIV_YY)) then
+      do i=1,npoints
+        Dc1(i) = Dxjs(i) * Djac(3,i)**2
+        Dc2(i) = Dxjs(i) * ( -2.0_DP * Djac(3,i) * Djac(1,i) )
+        Dc3(i) = Dxjs(i) * Djac(1,i)**2
+      end do
+
+      do idof = 1,10
+        Dbas(idof,DER_DERIV_YY,i) = &
+            Dc1(i) * Dhelp(idof,3,i) + Dc2(i) * Dhelp(idof,4,i) + Dc3(i) * Dhelp(idof,5,i)
+      end do
+    !endif
+  endif
+
+  end subroutine
+
+  !************************************************************************
+
+!<subroutine>
+
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+  subroutine elem_DG_T3_2D_sim (celement, Dcoords, Djac, Ddetj, &
+                                Bder, Dbas, npoints, nelements, &
+                                Dpoints, rperfconfig)
+
+!<description>
+  ! This subroutine simultaneously calculates the values of the basic
+  ! functions of the finite element at multiple given points on the reference
+  ! element for multiple given elements.
+!</description>
+
+!<input>
+  ! Element type identifier. Must be =EL_DG_T3_2D.
+  integer(I32), intent(in)  :: celement
+
+  ! Number of points on every element where to evalate the basis functions.
+  integer, intent(in) :: npoints
+
+  ! Number of elements, the basis functions are evaluated at
+  integer, intent(in)  :: nelements
+
+  ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE,nelements)
+  !  Dcoords(1,.,.)=x-coordinates,
+  !  Dcoords(2,.,.)=y-coordinates.
+  ! furthermore:
+  !  Dcoords(:,i,.) = Coordinates of vertex i
+  ! furthermore:
+  !  Dcoords(:,:,j) = Coordinates of all corner vertices of element j
+  real(DP), dimension(:,:,:), intent(in) :: Dcoords
+
+  ! Values of the Jacobian matrix that defines the mapping between the
+  ! reference element and the real elements. For every point i:
+  !  Djac(1,i,.) = J_i(1,1,.)
+  !  Djac(2,i,.) = J_i(2,1,.)
+  !  Djac(3,i,.) = J_i(1,2,.)
+  !  Djac(4,i,.) = J_i(2,2,.)
+  ! Remark: Only used for calculating derivatives; can be set to 0.0
+  ! when derivatives are not used.
+  !  Djac(:,:,j) refers to the determinants of the points of element j.
+  real(DP), dimension(:,:,:), intent(in) :: Djac
+
+  ! Determinant of the mapping from the reference element to the real
+  ! elements for every of the npoints points on all the elements.
+  !  Ddetj(i,.) = Determinant of point i
+  !  Ddetj(:,j) = determinants of all points on element j
+  ! Remark: Only used for calculating derivatives; can be set to 1.0
+  ! when derivatives are not needed. Must not be set to 0.0!
+  real(DP), dimension(:,:), intent(in) :: Ddetj
+
+  ! Derivative quantifier array. array [1..DER_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  logical, dimension(:), intent(in) :: Bder
+
+  ! Array with coordinates of the points where to evaluate.
+  ! The coordinates are expected on the reference element.
+  ! DIMENSION(#space dimensions,npoints,nelements).
+  !  Dpoints(1,.)=x-coordinates,
+  !  Dpoints(2,.)=y-coordinates.
+  ! furthermore:
+  !  Dpoints(:,i,.) = Coordinates of point i
+  ! furthermore:
+  !  Dpoints(:,:,j) = Coordinates of all points on element j
+  real(DP), dimension(:,:,:), intent(in) :: Dpoints
+
+  ! Local performance configuration.
+  type(t_perfconfig), intent(in) :: rperfconfig
+!</input>
+
+!<output>
+  ! Value/derivatives of basis functions.
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j,k) defines the value of the i-th
+  !   basis function of the finite element k in the point Dcoords(j) on the
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.,.) is undefined.
+  !REAL(DP), DIMENSION(EL_MAXNBAS,DER_MAXNDER,npoints,nelements), INTENT(out) :: Dbas
+  real(DP), dimension(:,:,:,:), intent(out) :: Dbas
+!</output>
+
+! </subroutine>
+
+  ! auxiliary vector containing the first derivatives on the reference element
+  real(DP), dimension(10,5,npoints) :: Dhelp
+  real(DP) :: dx,dy
+  real(DP),dimension(npoints) :: Dxj,Dxjs,Dc1,Dc2,Dc3 !auxiliary variables
+
+  integer :: i   ! point counter
+  integer :: j   ! element counter
+  integer :: idof
+
+  real(DP), parameter :: Q2 = 0.5_DP
+  real(DP), parameter :: Q3 = 1.0_DP/3.0_DP
+  real(DP), parameter :: Q4 = 0.25_DP
+  real(DP), parameter :: Q6 = 1.0_DP/6.0_DP
+  real(DP), parameter :: Q48 = 1.0_DP/48.0_DP
+
+  ! Clear the output array
+  !Dbas = 0.0_DP
+
+  ! Remark: The DG_T3_2D-element always computes function value and 1st derivatives.
+  ! That is even faster than when using three IF commands for preventing
+  ! the computation of one of the values!
+
+  !if function values are desired
+  if (Bder(DER_FUNC)) then
+
+    !$omp parallel do default(shared) private(i,dx,dy) &
+    !$omp if(nelements > rperfconfig%NELEMMIN_OMP)
+    do j=1,nelements
+
+      do i=1,npoints
+        dx = Dpoints(1,i,j)
+        dy = Dpoints(2,i,j)
+        Dbas(1,DER_FUNC,i,j)= 1.0_DP
+        Dbas(2,DER_FUNC,i,j)= dx
+        Dbas(3,DER_FUNC,i,j)= dy
+        Dbas(4,DER_FUNC,i,j)= Q2*dx*dx-Q6
+        Dbas(5,DER_FUNC,i,j)= Q2*dy*dy-Q6
+        Dbas(6,DER_FUNC,i,j)= dx*dy
+        Dbas(7,DER_FUNC,i,j)= Q48*dx*dx*dx
+        Dbas(8,DER_FUNC,i,j)= Q48*dx*dx*dy
+        Dbas(9,DER_FUNC,i,j)= Q48*dx*dy*dy
+        Dbas(10,DER_FUNC,i,j)= Q48*dy*dy*dy
+      end do
+
+    end do
+    !$omp end parallel do
+
+  end if
+
+  !if x-or y-derivatives are desired
+  if ((Bder(DER_DERIV_X)) .or. (Bder(DER_DERIV_Y))) then
+
+    !$omp parallel do default(shared) private(i,Dxj,dx,dy,Dhelp,idof) &
+    !$omp if(nelements > rperfconfig%NELEMMIN_OMP)
+    do j=1,nelements
+      Dxj(:) = 1.0E0_DP / Ddetj(1:npoints,j)
+
+      !x- and y-derivatives on reference element
+      do i=1,npoints
+        dx = Dpoints(1,i,j)
+        dy = Dpoints(2,i,j)
+
+        !x- and y-derivatives on reference element
+        Dhelp(1,1,i)= 0.0_DP
+        Dhelp(2,1,i)= 1.0_DP
+        Dhelp(3,1,i)= 0.0_DP
+        Dhelp(4,1,i)= dx
+        Dhelp(5,1,i)= 0.0_DP
+        Dhelp(6,1,i)= dy
+        Dhelp(7,1,i)= 1.0_dp/16.0_dp*dx*dx
+        Dhelp(8,1,i)= 1.0_dp/24.0_dp*dx*dy
+        Dhelp(9,1,i)= 1.0_dp/48.0_dp*dy*dy
+        Dhelp(10,1,i)= 0.0_dp
+
+        Dhelp(1,2,i)= 0.0_DP
+        Dhelp(2,2,i)= 0.0_DP
+        Dhelp(3,2,i)= 1.0_DP
+        Dhelp(4,2,i)= 0.0_DP
+        Dhelp(5,2,i)= dy
+        Dhelp(6,2,i)= dx
+        Dhelp(7,2,i)= 0.0_dp
+        Dhelp(8,2,i)= 1.0_dp/48.0_dp*dx*dx
+        Dhelp(9,2,i)= 1.0_dp/24.0_dp*dx*dy
+        Dhelp(10,2,i)= 1.0_dp/16.0_dp*dy*dy
+
+      end do
+
+      !x-derivatives on current element
+!      IF (Bder(DER_DERIV_X)) THEN
+        do i=1,npoints
+          do idof = 1,10
+            Dbas(idof,DER_DERIV_X,i,j) = &
+                Dxj(i) * (Djac(4,i,j) * Dhelp(idof,1,i) &
+                          - Djac(2,i,j) * Dhelp(idof,2,i))
+!          end do
+!        end do
+!      ENDIF
+
+      !y-derivatives on current element
+!      IF (Bder(DER_DERIV_Y)) THEN
+!        do i=1,npoints
+!          do idof = 1,6
+            Dbas(idof,DER_DERIV_Y,i,j) = &
+                -Dxj(i) * (Djac(3,i,j) * Dhelp(idof,1,i) &
+                - Djac(1,i,j) * Dhelp(idof,2,i))
+          end do
+        end do
+!      ENDIF
+
+    end do
+    !$omp end parallel do
+
+  end if
+
+  ! if xx-, xy or yy-derivatives are desired
+  if (Bder(DER_DERIV_XX) .or. Bder(DER_DERIV_XY) .or. Bder(DER_DERIV_YY)) then
+
+    !x- and y-derivatives on reference element
+
+    ! Now we have to compute the derivatives on the real element by those on
+    ! the reference element. This is a little bit tricky!
+    !
+    ! Let us assume, out finite element function on the real element is
+    ! f(x) and the corresponding function on the reference element g(y),
+    ! so x is the real coordinate and y the reference coordinate.
+    ! There is a mapping s:[-1,1]->R2 that maps to the real element.
+    ! It is inverse s^{-1} maps to the reference element.
+    ! We have:
+    !
+    !   f(x) = g(y) = g(s^{-1}(x))
+    !
+    ! We want to compute the hessian
+    !
+    !   Hf(x) = [ f11 f12 ]
+    !           [ f21 f22 ]
+    !
+    ! with fij = di dj f. By the chain rule, we have:
+    !
+    !  Hf(x)  =  H [ g(s^{-1}(x)) ]
+    !         =  D [ D ( g(s^{-1}(x)) ) ]
+    !         =  D [ Dg (s^{-1}(x)) Ds^{-1}(x) ]
+    !         =  D [ Dg (s^{-1}(x)) ] Ds^{-1}(x)  +  Dg (s^{-1}(x)) Hs^{-1}(x)
+    !
+    ! Now the big assumption: We assume that out mapping s is bilinear!
+    ! From this assumption we derive that Hs^{-1}(x), so the 2nd term
+    ! vanishes. We clearly point out that this is of course not true for
+    ! isoparametric mappings!
+    !
+    ! With this assumption, we continue:
+    !
+    !         =  D [ Dg (s^{-1}(x)) ] Ds^{-1}(x)
+    !         =  Ds^{-1}(x)^T  Hg(s^{-1}(x))  Ds^{-1}(x)
+    !         =  Ds^{-1}(x)^T  Hg(y)  Ds^{-1}(x)
+    !
+    ! This is computable now. Let us write:
+    !
+    !  Ds = [ s11 s12 ] , Ds^{-1} = 1/det [  s22 -s12 ] , Hg(y) = [ g11 g12 ]
+    !       [ s21 s22 ]                   [ -s21  s11 ]           [ g21 g22 ]
+    !
+    ! then we get:
+    !
+    !  Hf(x) = 1/det^2
+    !  [(s22*g11-s21*g21)*s22-(s22*g12-s21*g22)*s21, -(s22*g11-s21*g21)*s12+(s22*g12-s21*g22)*s11],
+    !  [(-s12*g11+s11*g21)*s22-(-s12*g12+s11*g22)*s21, -(-s12*g11+s11*g21)*s12+(-s12*g12+s11*g22)*s11]])
+    !
+    ! This can be simplified by the fact that g12=g21 (as (gij) is a Hessian):
+    !
+    !  = 1/det^2
+    !    [s22^2*g11-2*s22*s21*g21+s21^2*g22, -s22*s12*g11+s22*s11*g21+s12*s21*g21-s21*s11*g22]
+    !    [-s22*s12*g11+s22*s11*g21+s12*s21*g21-s21*s11*g22, s12^2*g11-2*s12*s11*g21+s11^2*g22]])
+    !
+    ! so we have
+    !
+    !  f11       = 1/det^2 * [ s22^2*g11    - 2*s22*s21*g21               + s21^2*g22 ]
+    !  f12 = f21 = 1/det^2 * [ -s22*s12*g11 + ( s22*s11 + s12*s21 ) * g21 - s21*s11*g22 ]
+    !  f22       = 1/det^2 * [ s12^2*g11    - 2*s12*s11*g21               + s11^2*g22 ]
+
+    !x- and y-derivatives on reference element
+    !$omp parallel do default(shared)&
+    !$omp private(Dc1,Dc2,Dc3,Dhelp,Dxj,Dxjs,dx,dy,i,idof)&
+    !$omp if(nelements > rperfconfig%NELEMMIN_OMP)
+    do j=1,nelements
+      Dxj(:) = 1.0E0_DP / Ddetj(1:npoints,j)
+      Dxjs = Dxj*Dxj
+
+      do i=1,npoints
+        dx = Dpoints(1,i,j)
+        dy = Dpoints(2,i,j)
+
+        !xx-, xy and yy-derivatives on reference element
+        Dhelp(1,3,i) = 0.0_DP
+        Dhelp(2,3,i) = 0.0_DP
+        Dhelp(3,3,i) = 0.0_DP
+        Dhelp(4,3,i) = 1.0_DP
+        Dhelp(5,3,i) = 0.0_DP
+        Dhelp(6,3,i) = 0.0_DP
+        Dhelp(7,3,i) = 1.0_DP/8.0_dp*dx
+        Dhelp(8,3,i) = 1.0_DP/24.0_dp*dy
+        Dhelp(9,3,i) = 0.0_DP
+        Dhelp(10,3,i) = 0.0_DP
+
+        Dhelp(1,4,i) = 0.0_DP
+        Dhelp(2,4,i) = 0.0_DP
+        Dhelp(3,4,i) = 0.0_DP
+        Dhelp(4,4,i) = 0.0_DP
+        Dhelp(5,4,i) = 0.0_DP
+        Dhelp(6,4,i) = 1.0_DP
+        Dhelp(7,4,i) = 0.0_dp
+        Dhelp(8,4,i) = 1.0_DP/24.0_dp*dx
+        Dhelp(9,4,i) = 1.0_DP/24.0_dp*dy
+        Dhelp(10,4,i) = 0.0_DP
+
+        Dhelp(1,5,i) = 0.0_DP
+        Dhelp(2,5,i) = 0.0_DP
+        Dhelp(3,5,i) = 0.0_DP
+        Dhelp(4,5,i) = 0.0_DP
+        Dhelp(5,5,i) = 1.0_DP
+        Dhelp(6,5,i) = 0.0_DP
+        Dhelp(7,5,i) = 0.0_dp
+        Dhelp(8,5,i) = 0.0_dp
+        Dhelp(9,5,i) = 1.0_DP/24.0_dp*dx
+        Dhelp(10,5,i) = 1.0_DP/8.0_dp*dy
+
+      end do
+
+      ! WARNING: NOT TESTED!!!
+
+      ! xx-derivatives on current element
+      !if (Bder(DER_DERIV_XX)) then
+        do i=1,npoints
+          Dc1(i) = Dxjs(i) * Djac(4,i,j)**2
+          Dc2(i) = Dxjs(i) * ( -2.0_DP * Djac(4,i,j) * Djac(2,i,j) )
+          Dc3(i) = Dxjs(i) * Djac(2,i,j)**2
+        end do
+
+        do i=1,npoints
+          do idof = 1,10
+            Dbas(idof,DER_DERIV_XX,i,j) = &
+                Dc1(i) * Dhelp(idof,3,i) + Dc2(i) * Dhelp(idof,4,i) + Dc3(i) * Dhelp(idof,5,i)
+          end do
+        end do
+      !endif
+
+      ! xy-derivatives on current element
+      !if (Bder(DER_DERIV_XY)) then
+        do i=1,npoints
+          Dc1(i) = - Dxjs(i) * Djac(4,i,j) * Djac(3,i,j)
+          Dc2(i) = Dxjs(i) * ( Djac(4,i,j) * Djac(1,i,j) + Djac(3,i,j) * Djac(2,i,j) )
+          Dc3(i) = - Dxjs(i) * Djac(1,i,j) * Djac(4,i,j)
+        end do
+
+        do i=1,npoints
+          do idof = 1,10
+            Dbas(idof,DER_DERIV_XY,i,j) = &
+                Dc1(i) * Dhelp(idof,3,i) + Dc2(i) * Dhelp(idof,4,i) + Dc3(i) * Dhelp(idof,5,i)
+          end do
+        end do
+      !endif
+
+      ! yy-derivatives on current element
+      !if (Bder(DER_DERIV_YY)) then
+        do i=1,npoints
+          Dc1(i) = Dxjs(i) * Djac(3,i,j)**2
+          Dc2(i) = Dxjs(i) * ( -2.0_DP * Djac(3,i,j) * Djac(1,i,j) )
+          Dc3(i) = Dxjs(i) * Djac(1,i,j)**2
+        end do
+
+        do i=1,npoints
+          do idof = 1,10
             Dbas(idof,DER_DERIV_YY,i,j) = &
                 Dc1(i) * Dhelp(idof,3,i) + Dc2(i) * Dhelp(idof,4,i) + Dc3(i) * Dhelp(idof,5,i)
           end do
