@@ -122,50 +122,67 @@ module mprimitives
 
   interface mprim_invertMatrix
     module procedure mprim_invertMatrixDP
+    module procedure mprim_invertMatrixSP
   end interface
 
   interface mprim_invertMatrixPivot
     module procedure mprim_invertMatrixPivotDP
+    module procedure mprim_invertMatrixPivotSP
   end interface
 
   interface mprim_invert2x2MatrixDirect
     module procedure mprim_invert2x2MatrixDirectDP
+    module procedure mprim_invert2x2MatrixDirectSP
   end interface
 
   interface mprim_invert3x3MatrixDirect
     module procedure mprim_invert3x3MatrixDirectDP
+    module procedure mprim_invert3x3MatrixDirectSP
   end interface
 
   interface mprim_invert4x4MatrixDirect
     module procedure mprim_invert4x4MatrixDirectDP
+    module procedure mprim_invert4x4MatrixDirectSP
   end interface
 
   interface mprim_invert5x5MatrixDirect
     module procedure mprim_invert5x5MatrixDirectDP
+    module procedure mprim_invert5x5MatrixDirectSP
   end interface
 
   interface mprim_invert6x6MatrixDirect
     module procedure mprim_invert6x6MatrixDirectDP
+    module procedure mprim_invert6x6MatrixDirectSP
   end interface
 
   interface mprim_stdDeviation
     module procedure mprim_stdDeviationDP
+    module procedure mprim_stdDeviationSP
   end interface
 
   interface mprim_meanDeviation
     module procedure mprim_meanDeviationDP
+    module procedure mprim_meanDeviationSP
   end interface
 
   interface mprim_meanValue
     module procedure mprim_meanValueDP
+    module procedure mprim_meanValueSP
   end interface
 
   interface mprim_solve2x2Direct
     module procedure mprim_solve2x2DirectDP
+    module procedure mprim_solve2x2DirectSP
   end interface
 
   interface mprim_solve3x3Direct
     module procedure mprim_solve3x3DirectDP
+    module procedure mprim_solve3x3DirectSP
+  end interface
+
+  interface mprim_solve2x2BandDiag
+    module procedure mprim_solve2x2BandDiagDP
+    module procedure mprim_solve2x2BandDiagSP
   end interface
 
   interface mprim_minmod2
@@ -609,6 +626,262 @@ contains
 
 !<subroutine>
 
+  pure subroutine mprim_invertMatrixSP(Fa,Ff,Fx,ndim,ipar,bsuccess)
+
+!<description>
+    ! This subroutine performs the direct inversion of a NxN system.
+    !
+    ! If the parameter ipar=0, then only factorization of matrix A is performed.
+    ! For ipar=1, the vector x is calculated using the factorised matrix A.
+    ! For ipar=2, LAPACK routine DGESV is used to solve the dense linear system Ax=f.
+    ! In addition, for NDIM=2,3,4 explicit formulas are employed to replace the
+    ! more expensive LAPACK routine.
+!</description>
+
+!<input>
+    ! dimension of the matrix
+    integer, intent(in) :: ndim
+
+    ! source right-hand side vector
+    real(SP), dimension(ndim), intent(in) :: Ff
+
+    ! What to do?
+    ! IPAR = 0 : invert matrix by means of Gaussian elimination with
+    !            full pivoting and return the inverted matrix inv(A)
+    ! IPAR = 1 : apply inverted matrix to the right-hand side vector
+    !            and return x = inv(A)*f
+    ! IPAR = 2 : invert matrix and apply it to the right-hand side
+    !            vector. Return x = inv(A)*f
+    integer, intent(in) :: ipar
+!</input>
+
+!<inputoutput>
+    ! source square matrix to be inverted
+    real(SP), dimension(ndim,ndim), intent(inout) :: Fa
+!</inputoutput>
+
+!<output>
+    ! destination vector containing inverted matrix times right-hand
+    ! side vector
+    real(SP), dimension(ndim), intent(out) :: Fx
+
+    ! TRUE, if successful. FALSE if the system is indefinite.
+    ! If FALSE, Fb is undefined.
+    logical, intent(out) :: bsuccess
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    real(SP), dimension(ndim,ndim) :: Fb
+    integer, dimension(ndim) :: Ipiv
+    integer, dimension(ndim) :: Kindx,Kindy
+
+    real(SP) :: fpivot,faux
+    integer :: idim1,idim2,ix,iy,indx,indy,info
+
+    interface
+      pure subroutine SGESV( N, NRHS, A, LDA, IPIV, B, LDB, INFO )
+      use fsystem
+      integer, intent(in) :: N,LDA,LDB,NRHS
+      integer, intent(inout) :: INFO
+      integer, dimension(*), intent(inout) :: IPIV
+      real(sp), dimension( LDA, * ), intent(inout) :: A
+      real(sp), dimension( LDB, * ), intent(inout) :: B
+      end subroutine
+    end interface
+
+    bsuccess = .false.
+
+    select case (ipar)
+    case (0)
+      ! Perform factorization of matrix Fa
+
+      ! Initialization
+      Kindx=0;  Kindy=0
+
+      do idim1=1,ndim
+
+        ! Determine pivotal element
+        fpivot=0
+
+        do iy=1,ndim
+          if (Kindy(iy) /= 0) cycle
+
+          do ix=1,ndim
+            if (Kindx(ix) /= 0) cycle
+
+            if (abs(Fa(ix,iy)) .le. abs(fpivot)) cycle
+            fpivot=Fa(ix,iy);  indx=ix;  indy=iy
+          end do
+        end do
+
+        ! Return if pivotal element is zero
+        if (abs(fpivot) .le. 0._SP) return
+
+        Kindx(indx)=indy;  Kindy(indy)=indx;  Fa(indx,indy)=1._SP&
+            &/fpivot
+
+        do idim2=1,ndim
+          if (idim2 == indy) cycle
+          Fa(1:indx-1,idim2)=Fa(1:indx-1,idim2)-Fa(1:indx-1,  &
+              & indy)*Fa(indx,idim2)/fpivot
+          Fa(indx+1:ndim,idim2)=Fa(indx+1:ndim,idim2)-Fa(indx+1:ndim&
+              &,indy)*Fa(indx,idim2)/fpivot
+        end do
+
+        do ix=1,ndim
+          if (ix /= indx) Fa(ix,indy)=Fa(ix,indy)/fpivot
+        end do
+
+        do iy=1,ndim
+          if (iy /= indy) Fa(indx,iy)=-Fa(indx,iy)/fpivot
+        end do
+      end do
+
+      do ix=1,ndim
+        if (Kindx(ix) == ix) cycle
+
+        do iy=1,ndim
+          if (Kindx(iy) == ix) exit
+        end do
+
+        do idim1=1,ndim
+          faux=Fa(ix,idim1)
+          Fa(ix,idim1)=Fa(iy,idim1)
+          Fa(iy,idim1)=faux
+        end do
+
+        Kindx(iy)=Kindx(ix);  Kindx(ix)=ix
+      end do
+
+      do ix=1,ndim
+        if (Kindy(ix) == ix) cycle
+
+        do iy=1,ndim
+          if (Kindy(iy) == ix) exit
+        end do
+
+        do idim1=1,ndim
+          faux=Fa(idim1,ix)
+          Fa(idim1,ix)=Fa(idim1,iy)
+          Fa(idim1,iy)=faux
+        end do
+
+        Kindy(iy)=Kindy(ix);  Kindy(ix)=ix
+      end do
+
+
+    case (1)
+      ! Perform inversion of Fa to solve the system Fa * Fx = Ff
+      do idim1=1,ndim
+        Fx(idim1)=0
+        do idim2=1,ndim
+          Fx(idim1)=Fx(idim1)+Fa(idim1,idim2)*Ff(idim2)
+        end do
+      end do
+
+    case (2)
+      ! Solve the dense linear system Ax=f calling LAPACK routine
+
+      select case(ndim)
+      case (1)
+        if (Fa(1,1) .ne. 0.0_SP) then
+          Fx(1) = Ff(1) / Fa(1,1)
+        else
+          return
+        end if
+
+      case (2)
+        call mprim_invert2x2MatrixDirectSP(Fa,Fb,bsuccess)
+        if (.not. bsuccess) return
+        ! Fx=matmul(Fb,Ff)
+        Fx(1) = Fb(1,1)*Ff(1) + Fb(1,2)*Ff(2)
+        Fx(2) = Fb(2,1)*Ff(1) + Fb(2,2)*Ff(2)
+
+      case (3)
+        call mprim_invert3x3MatrixDirectSP(Fa,Fb, bsuccess)
+        if (.not. bsuccess) return
+        ! Fx=matmul(Fb,Ff)
+        Fx(1) = Fb(1,1)*Ff(1) + Fb(1,2)*Ff(2) + Fb(1,3)*Ff(3)
+        Fx(2) = Fb(2,1)*Ff(1) + Fb(2,2)*Ff(2) + Fb(2,3)*Ff(3)
+        Fx(3) = Fb(3,1)*Ff(1) + Fb(3,2)*Ff(2) + Fb(3,3)*Ff(3)
+
+      case (4)
+        call mprim_invert4x4MatrixDirectSP(Fa,Fb,bsuccess)
+        if (.not. bsuccess) return
+        ! Fx=matmul(Fb,Ff)
+        Fx(1) = Fb(1,1)*Ff(1) + Fb(1,2)*Ff(2) &
+              + Fb(1,3)*Ff(3) + Fb(1,4)*Ff(4)
+        Fx(2) = Fb(2,1)*Ff(1) + Fb(2,2)*Ff(2) &
+              + Fb(2,3)*Ff(3) + Fb(2,4)*Ff(4)
+        Fx(3) = Fb(3,1)*Ff(1) + Fb(3,2)*Ff(2) &
+              + Fb(3,3)*Ff(3) + Fb(3,4)*Ff(4)
+        Fx(4) = Fb(4,1)*Ff(1) + Fb(4,2)*Ff(2) &
+              + Fb(4,3)*Ff(3) + Fb(4,4)*Ff(4)
+
+      case (5)
+        call mprim_invert5x5MatrixDirectSP(Fa,Fb,bsuccess)
+        if (.not. bsuccess) return
+        ! Fx=matmul(Fb,Ff)
+        Fx(1) = Fb(1,1)*Ff(1) + Fb(1,2)*Ff(2) &
+              + Fb(1,3)*Ff(3) + Fb(1,4)*Ff(4) &
+              + Fb(1,5)*Ff(5)
+        Fx(2) = Fb(2,1)*Ff(1) + Fb(2,2)*Ff(2) &
+              + Fb(2,3)*Ff(3) + Fb(2,4)*Ff(4) &
+              + Fb(2,5)*Ff(5)
+        Fx(3) = Fb(3,1)*Ff(1) + Fb(3,2)*Ff(2) &
+              + Fb(3,3)*Ff(3) + Fb(3,4)*Ff(4) &
+              + Fb(3,5)*Ff(5)
+        Fx(4) = Fb(4,1)*Ff(1) + Fb(4,2)*Ff(2) &
+              + Fb(4,3)*Ff(3) + Fb(4,4)*Ff(4) &
+              + Fb(4,5)*Ff(5)
+        Fx(5) = Fb(5,1)*Ff(1) + Fb(5,2)*Ff(2) &
+              + Fb(5,3)*Ff(3) + Fb(5,4)*Ff(4) &
+              + Fb(5,5)*Ff(5)
+
+      case (6)
+        call mprim_invert6x6MatrixDirectSP(Fa,Fb,bsuccess)
+        if (.not. bsuccess) return
+        ! Fx=matmul(Fb,Ff)
+        Fx(1) = Fb(1,1)*Ff(1) + Fb(1,2)*Ff(2) &
+              + Fb(1,3)*Ff(3) + Fb(1,4)*Ff(4) &
+              + Fb(1,5)*Ff(5) + Fb(1,6)*Ff(6)
+        Fx(2) = Fb(2,1)*Ff(1) + Fb(2,2)*Ff(2) &
+              + Fb(2,3)*Ff(3) + Fb(2,4)*Ff(4) &
+              + Fb(2,5)*Ff(5) + Fb(2,6)*Ff(6)
+        Fx(3) = Fb(3,1)*Ff(1) + Fb(3,2)*Ff(2) &
+              + Fb(3,3)*Ff(3) + Fb(3,4)*Ff(4) &
+              + Fb(3,5)*Ff(5) + Fb(3,6)*Ff(6)
+        Fx(4) = Fb(4,1)*Ff(1) + Fb(4,2)*Ff(2) &
+              + Fb(4,3)*Ff(3) + Fb(4,4)*Ff(4) &
+              + Fb(4,5)*Ff(5) + Fb(4,6)*Ff(6)
+        Fx(5) = Fb(5,1)*Ff(1) + Fb(5,2)*Ff(2) &
+              + Fb(5,3)*Ff(3) + Fb(5,4)*Ff(4) &
+              + Fb(5,5)*Ff(5) + Fb(5,6)*Ff(6)
+        Fx(6) = Fb(6,1)*Ff(1) + Fb(6,2)*Ff(2) &
+              + Fb(6,3)*Ff(3) + Fb(6,4)*Ff(4) &
+              + Fb(6,5)*Ff(5) + Fb(6,6)*Ff(6)
+
+      case default
+        ! Use LAPACK routine for general NxN system, where N > 6
+        Ipiv=0; Fx=Ff
+        call SGESV(ndim,1,Fa,ndim,Ipiv,Fx,ndim,info)
+
+        if (info .ne. 0) return
+
+      end select
+
+    end select
+
+    bsuccess = .true.
+
+  end subroutine mprim_invertMatrixSP
+
+  ! ***************************************************************************
+
+!<subroutine>
+
   pure subroutine mprim_invert2x2MatrixDirectDP(Da,Db,bsuccess)
 
 !<description>
@@ -653,7 +926,55 @@ contains
 
   end subroutine mprim_invert2x2MatrixDirectDP
 
-    ! ***************************************************************************
+  ! ***************************************************************************
+
+!<subroutine>
+
+  pure subroutine mprim_invert2x2MatrixDirectSP(Fa,Fb,bsuccess)
+
+!<description>
+  ! This subroutine directly inverts a 2x2 system without any pivoting.
+  ! 'Fa' is a 2-dimensional 2x2 m matrix. The inverse of Fa is written
+  ! to the 2-dimensional 2x2 matrix Fb.
+  !
+  ! Warning: For speed reasons, there is no array bounds checking
+  ! activated in this routine! Fa and Fb are assumed to be 2x2 arrays!
+!</description>
+
+!<input>
+  ! source square matrix to be inverted
+  real(SP), dimension(2,2), intent(in) :: Fa
+!</input>
+
+!<output>
+  ! destination square matrix; receives <tex>$ A^{-1} $</tex>.
+  real(SP), dimension(2,2), intent(out) :: Fb
+
+  ! TRUE, if successful. FALSE if the system is indefinite.
+  ! If FALSE, Fb is undefined.
+  logical, intent(out) :: bsuccess
+!</output>
+
+!</subroutine>
+
+  real(SP) :: faux
+
+    ! Explicit formula for 2x2 system
+    Fb(1,1)= Fa(2,2)
+    Fb(2,1)=-Fa(2,1)
+    Fb(1,2)=-Fa(1,2)
+    Fb(2,2)= Fa(1,1)
+    faux=Fa(1,1)*Fa(2,2)-Fa(1,2)*Fa(2,1)
+    if (faux .ne. 0.0_SP) then
+      Fb=Fb*(1.0_SP/faux)
+      bsuccess = .true.
+    else
+      bsuccess = .false.
+    end if
+
+  end subroutine mprim_invert2x2MatrixDirectSP
+
+  ! ***************************************************************************
 
 !<subroutine>
 
@@ -708,6 +1029,62 @@ contains
     end if
 
   end subroutine mprim_invert3x3MatrixDirectDP
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  pure subroutine mprim_invert3x3MatrixDirectSP(Fa,Fb,bsuccess)
+
+!<description>
+  ! This subroutine directly inverts a 3x3 system without any pivoting.
+  ! 'Fa' is a 2-dimensional 3x3 m matrix. The inverse of Fa is written
+  ! to the 2-dimensional 3x3 matrix Fb.
+  !
+  ! Warning: For speed reasons, there is no array bounds checking
+  ! activated in this routine! Fa and Fb are assumed to be 3x3 arrays!
+!</description>
+
+!<input>
+  ! source square matrix to be inverted
+  real(SP), dimension(3,3), intent(in) :: Fa
+!</input>
+
+!<output>
+  ! destination square matrix; receives <tex>$ A^{-1} $</tex>.
+  real(SP), dimension(3,3), intent(out) :: Fb
+
+  ! TRUE, if successful. FALSE if the system is indefinite.
+  ! If FALSE, Fb is undefined.
+  logical, intent(out) :: bsuccess
+!</output>
+
+!</subroutine>
+
+  real(SP) :: faux
+
+    ! Explicit formula for 3x3 system
+    Fb(1,1)=Fa(2,2)*Fa(3,3)-Fa(2,3)*Fa(3,2)
+    Fb(2,1)=Fa(2,3)*Fa(3,1)-Fa(2,1)*Fa(3,3)
+    Fb(3,1)=Fa(2,1)*Fa(3,2)-Fa(2,2)*Fa(3,1)
+    Fb(1,2)=Fa(1,3)*Fa(3,2)-Fa(1,2)*Fa(3,3)
+    Fb(2,2)=Fa(1,1)*Fa(3,3)-Fa(1,3)*Fa(3,1)
+    Fb(3,2)=Fa(1,2)*Fa(3,1)-Fa(1,1)*Fa(3,2)
+    Fb(1,3)=Fa(1,2)*Fa(2,3)-Fa(1,3)*Fa(2,2)
+    Fb(2,3)=Fa(1,3)*Fa(2,1)-Fa(1,1)*Fa(2,3)
+    Fb(3,3)=Fa(1,1)*Fa(2,2)-Fa(1,2)*Fa(2,1)
+    faux = Fa(1,1)*Fb(1,1)+Fa(1,2)*Fb(2,1)+Fa(1,3)*Fb(3,1)
+    if (faux .ne. 0.0_SP) then
+      !faux=Fa(1,1)*Fa(2,2)*Fa(3,3)+Fa(2,1)*Fa(3,2)*Fa(1,3)+ Fa(3,1)&
+      !    &*Fa(1,2)*Fa(2,3)-Fa(1,1)*Fa(3,2)*Fa(2,3)- Fa(3,1)*Fa(2&
+      !    &,2)*Fa(1,3)-Fa(2,1)*Fa(1,2)*Fa(3,3)
+      Fb=Fb*(1.0_SP/faux)
+      bsuccess = .true.
+    else
+      bsuccess = .false.
+    end if
+
+  end subroutine mprim_invert3x3MatrixDirectSP
 
   ! ***************************************************************************
 
@@ -871,6 +1248,164 @@ contains
 
 !<subroutine>
 
+  pure subroutine mprim_invert4x4MatrixDirectSP(Fa,Fb,bsuccess)
+
+!<description>
+  ! This subroutine directly inverts a 4x4 system without any pivoting.
+  ! 'Fa' is a 2-dimensional 4x4 m matrix. The inverse of Fa is written
+  ! to the 2-dimensional 4x4 matrix Fb.
+  !
+  ! Warning: For speed reasons, there is no array bounds checking
+  ! activated in this routine! Fa and Fb are assumed to be 4x4 arrays!
+!</description>
+
+!<input>
+  ! source square matrix to be inverted
+  real(SP), dimension(4,4), intent(in) :: Fa
+!</input>
+
+!<output>
+  ! destination square matrix; receives <tex>$ A^{-1} $</tex>.
+  real(SP), dimension(4,4), intent(out) :: Fb
+
+  ! TRUE, if successful. FALSE if the system is indefinite.
+  ! If FALSE, Fb is undefined.
+  logical, intent(out) :: bsuccess
+!</output>
+
+!</subroutine>
+
+  ! auxiliary variables
+  real(SP) :: det,faux
+  real(SP), dimension(6) :: W
+
+    ! 2x2 determinants of rows 3-4
+    W(1)=Fa(3,1)*Fa(4,2)-Fa(3,2)*Fa(4,1)
+    W(2)=Fa(3,1)*Fa(4,3)-Fa(3,3)*Fa(4,1)
+    W(3)=Fa(3,1)*Fa(4,4)-Fa(3,4)*Fa(4,1)
+    W(4)=Fa(3,2)*Fa(4,3)-Fa(3,3)*Fa(4,2)
+    W(5)=Fa(3,2)*Fa(4,4)-Fa(3,4)*Fa(4,2)
+    W(6)=Fa(3,3)*Fa(4,4)-Fa(3,4)*Fa(4,3)
+    ! pre-calculate first column of inverse
+    Fb(1,1)= Fa(2,2)*W(6)-Fa(2,3)*W(5)+Fa(2,4)*W(4)
+    Fb(2,1)=-Fa(2,1)*W(6)+Fa(2,3)*W(3)-Fa(2,4)*W(2)
+    Fb(3,1)= Fa(2,1)*W(5)-Fa(2,2)*W(3)+Fa(2,4)*W(1)
+    Fb(4,1)=-Fa(2,1)*W(4)+Fa(2,2)*W(2)-Fa(2,3)*W(1)
+    faux = (Fa(1,1)*Fb(1,1)+Fa(1,2)*Fb(2,1)&
+            +Fa(1,3)*Fb(3,1)+Fa(1,4)*Fb(4,1))
+    if (faux .ne. 0.0_SP) then
+      ! calculate determinant of A
+      det = 1.0_SP / faux
+      ! update first column of inverse
+      Fb(1,1)=Fb(1,1)*det
+      Fb(2,1)=Fb(2,1)*det
+      Fb(3,1)=Fb(3,1)*det
+      Fb(4,1)=Fb(4,1)*det
+      ! calculate second column of inverse
+      Fb(1,2)=det*(-Fa(1,2)*W(6)+Fa(1,3)*W(5)-Fa(1,4)*W(4))
+      Fb(2,2)=det*( Fa(1,1)*W(6)-Fa(1,3)*W(3)+Fa(1,4)*W(2))
+      Fb(3,2)=det*(-Fa(1,1)*W(5)+Fa(1,2)*W(3)-Fa(1,4)*W(1))
+      Fb(4,2)=det*( Fa(1,1)*W(4)-Fa(1,2)*W(2)+Fa(1,3)*W(1))
+      ! 2x2 determinants of rows 1-2
+      W(1)=Fa(1,1)*Fa(2,2)-Fa(1,2)*Fa(2,1)
+      W(2)=Fa(1,1)*Fa(2,3)-Fa(1,3)*Fa(2,1)
+      W(3)=Fa(1,1)*Fa(2,4)-Fa(1,4)*Fa(2,1)
+      W(4)=Fa(1,2)*Fa(2,3)-Fa(1,3)*Fa(2,2)
+      W(5)=Fa(1,2)*Fa(2,4)-Fa(1,4)*Fa(2,2)
+      W(6)=Fa(1,3)*Fa(2,4)-Fa(1,4)*Fa(2,3)
+      ! calculate third column of inverse
+      Fb(1,3)=det*( Fa(4,2)*W(6)-Fa(4,3)*W(5)+Fa(4,4)*W(4))
+      Fb(2,3)=det*(-Fa(4,1)*W(6)+Fa(4,3)*W(3)-Fa(4,4)*W(2))
+      Fb(3,3)=det*( Fa(4,1)*W(5)-Fa(4,2)*W(3)+Fa(4,4)*W(1))
+      Fb(4,3)=det*(-Fa(4,1)*W(4)+Fa(4,2)*W(2)-Fa(4,3)*W(1))
+      ! calculate fourth column of inverse
+      Fb(1,4)=det*(-Fa(3,2)*W(6)+Fa(3,3)*W(5)-Fa(3,4)*W(4))
+      Fb(2,4)=det*( Fa(3,1)*W(6)-Fa(3,3)*W(3)+Fa(3,4)*W(2))
+      Fb(3,4)=det*(-Fa(3,1)*W(5)+Fa(3,2)*W(3)-Fa(3,4)*W(1))
+      Fb(4,4)=det*( Fa(3,1)*W(4)-Fa(3,2)*W(2)+Fa(3,3)*W(1))
+
+      ! 'old' implementation follows
+
+!      real(SP) :: faux
+!
+!        ! Explicit formula for 4x4 system
+!        Fb(1,1)=Fa(2,2)*Fa(3,3)*Fa(4,4)+Fa(2,3)*Fa(3,4)*Fa(4,2)+Fa(2&
+!            &,4)*Fa(3,2)*Fa(4,3)- Fa(2,2)*Fa(3,4)*Fa(4,3)-Fa(2,3)&
+!            &*Fa(3,2)*Fa(4,4)-Fa(2,4)*Fa(3,3)*Fa(4,2)
+!        Fb(2,1)=Fa(2,1)*Fa(3,4)*Fa(4,3)+Fa(2,3)*Fa(3,1)*Fa(4,4)+Fa(2&
+!            &,4)*Fa(3,3)*Fa(4,1)- Fa(2,1)*Fa(3,3)*Fa(4,4)-Fa(2,3)&
+!            &*Fa(3,4)*Fa(4,1)-Fa(2,4)*Fa(3,1)*Fa(4,3)
+!        Fb(3,1)=Fa(2,1)*Fa(3,2)*Fa(4,4)+Fa(2,2)*Fa(3,4)*Fa(4,1)+Fa(2&
+!            &,4)*Fa(3,1)*Fa(4,2)- Fa(2,1)*Fa(3,4)*Fa(4,2)-Fa(2,2)&
+!            &*Fa(3,1)*Fa(4,4)-Fa(2,4)*Fa(3,2)*Fa(4,1)
+!        Fb(4,1)=Fa(2,1)*Fa(3,3)*Fa(4,2)+Fa(2,2)*Fa(3,1)*Fa(4,3)+Fa(2&
+!            &,3)*Fa(3,2)*Fa(4,1)- Fa(2,1)*Fa(3,2)*Fa(4,3)-Fa(2,2)&
+!            &*Fa(3,3)*Fa(4,1)-Fa(2,3)*Fa(3,1)*Fa(4,2)
+!        Fb(1,2)=Fa(1,2)*Fa(3,4)*Fa(4,3)+Fa(1,3)*Fa(3,2)*Fa(4,4)+Fa(1&
+!            &,4)*Fa(3,3)*Fa(4,2)- Fa(1,2)*Fa(3,3)*Fa(4,4)-Fa(1,3)&
+!            &*Fa(3,4)*Fa(4,2)-Fa(1,4)*Fa(3,2)*Fa(4,3)
+!        Fb(2,2)=Fa(1,1)*Fa(3,3)*Fa(4,4)+Fa(1,3)*Fa(3,4)*Fa(4,1)+Fa(1&
+!            &,4)*Fa(3,1)*Fa(4,3)- Fa(1,1)*Fa(3,4)*Fa(4,3)-Fa(1,3)&
+!            &*Fa(3,1)*Fa(4,4)-Fa(1,4)*Fa(3,3)*Fa(4,1)
+!        Fb(3,2)=Fa(1,1)*Fa(3,4)*Fa(4,2)+Fa(1,2)*Fa(3,1)*Fa(4,4)+Fa(1&
+!            &,4)*Fa(3,2)*Fa(4,1)- Fa(1,1)*Fa(3,2)*Fa(4,4)-Fa(1,2)&
+!            &*Fa(3,4)*Fa(4,1)-Fa(1,4)*Fa(3,1)*Fa(4,2)
+!        Fb(4,2)=Fa(1,1)*Fa(3,2)*Fa(4,3)+Fa(1,2)*Fa(3,3)*Fa(4,1)+Fa(1&
+!            &,3)*Fa(3,1)*Fa(4,2)- Fa(1,1)*Fa(3,3)*Fa(4,2)-Fa(1,2)&
+!            &*Fa(3,1)*Fa(4,3)-Fa(1,3)*Fa(3,2)*Fa(4,1)
+!        Fb(1,3)=Fa(1,2)*Fa(2,3)*Fa(4,4)+Fa(1,3)*Fa(2,4)*Fa(4,2)+Fa(1&
+!            &,4)*Fa(2,2)*Fa(4,3)- Fa(1,2)*Fa(2,4)*Fa(4,3)-Fa(1,3)&
+!            &*Fa(2,2)*Fa(4,4)-Fa(1,4)*Fa(2,3)*Fa(4,2)
+!        Fb(2,3)=Fa(1,1)*Fa(2,4)*Fa(4,3)+Fa(1,3)*Fa(2,1)*Fa(4,4)+Fa(1&
+!            &,4)*Fa(2,3)*Fa(4,1)- Fa(1,1)*Fa(2,3)*Fa(4,4)-Fa(1,3)&
+!            &*Fa(2,4)*Fa(4,1)-Fa(1,4)*Fa(2,1)*Fa(4,3)
+!        Fb(3,3)=Fa(1,1)*Fa(2,2)*Fa(4,4)+Fa(1,2)*Fa(2,4)*Fa(4,1)+Fa(1&
+!            &,4)*Fa(2,1)*Fa(4,2)- Fa(1,1)*Fa(2,4)*Fa(4,2)-Fa(1,2)&
+!            &*Fa(2,1)*Fa(4,4)-Fa(1,4)*Fa(2,2)*Fa(4,1)
+!        Fb(4,3)=Fa(1,1)*Fa(2,3)*Fa(4,2)+Fa(1,2)*Fa(2,1)*Fa(4,3)+Fa(1&
+!            &,3)*Fa(2,2)*Fa(4,1)- Fa(1,1)*Fa(2,2)*Fa(4,3)-Fa(1,2)&
+!            &*Fa(2,3)*Fa(4,1)-Fa(1,3)*Fa(2,1)*Fa(4,2)
+!        Fb(1,4)=Fa(1,2)*Fa(2,4)*Fa(3,3)+Fa(1,3)*Fa(2,2)*Fa(3,4)+Fa(1&
+!            &,4)*Fa(2,3)*Fa(3,2)- Fa(1,2)*Fa(2,3)*Fa(3,4)-Fa(1,3)&
+!            &*Fa(2,4)*Fa(3,2)-Fa(1,4)*Fa(2,2)*Fa(3,3)
+!        Fb(2,4)=Fa(1,1)*Fa(2,3)*Fa(3,4)+Fa(1,3)*Fa(2,4)*Fa(3,1)+Fa(1&
+!            &,4)*Fa(2,1)*Fa(3,3)- Fa(1,1)*Fa(2,4)*Fa(3,3)-Fa(1,3)&
+!            &*Fa(2,1)*Fa(3,4)-Fa(1,4)*Fa(2,3)*Fa(3,1)
+!        Fb(3,4)=Fa(1,1)*Fa(2,4)*Fa(3,2)+Fa(1,2)*Fa(2,1)*Fa(3,4)+Fa(1&
+!            &,4)*Fa(2,2)*Fa(3,1)- Fa(1,1)*Fa(2,2)*Fa(3,4)-Fa(1,2)&
+!            &*Fa(2,4)*Fa(3,1)-Fa(1,4)*Fa(2,1)*Fa(3,2)
+!        Fb(4,4)=Fa(1,1)*Fa(2,2)*Fa(3,3)+Fa(1,2)*Fa(2,3)*Fa(3,1)+Fa(1&
+!            &,3)*Fa(2,1)*Fa(3,2)- Fa(1,1)*Fa(2,3)*Fa(3,2)-Fa(1,2)&
+!            &*Fa(2,1)*Fa(3,3)-Fa(1,3)*Fa(2,2)*Fa(3,1)
+!        faux=Fa(1,1)*Fa(2,2)*Fa(3,3)*Fa(4,4)+Fa(1,1)*Fa(2,3)*Fa(3,4)&
+!            &*Fa(4,2)+Fa(1,1)*Fa(2,4)*Fa(3,2)*Fa(4,3)+ Fa(1,2)*Fa(2&
+!            &,1)*Fa(3,4)*Fa(4,3)+Fa(1,2)*Fa(2,3)*Fa(3,1)*Fa(4,4)+Fa(1&
+!            &,2)*Fa(2,4)*Fa(3,3)*Fa(4,1)+ Fa(1,3)*Fa(2,1)*Fa(3,2)&
+!            &*Fa(4,4)+Fa(1,3)*Fa(2,2)*Fa(3,4)*Fa(4,1)+Fa(1,3)*Fa(2,4)&
+!            &*Fa(3,1)*Fa(4,2)+ Fa(1,4)*Fa(2,1)*Fa(3,3)*Fa(4,2)+Fa(1&
+!            &,4)*Fa(2,2)*Fa(3,1)*Fa(4,3)+Fa(1,4)*Fa(2,3)*Fa(3,2)*Fa(4&
+!            &,1)- Fa(1,1)*Fa(2,2)*Fa(3,4)*Fa(4,3)-Fa(1,1)*Fa(2,3)&
+!            &*Fa(3,2)*Fa(4,4)-Fa(1,1)*Fa(2,4)*Fa(3,3)*Fa(4,2)- Fa(1&
+!            &,2)*Fa(2,1)*Fa(3,3)*Fa(4,4)-Fa(1,2)*Fa(2,3)*Fa(3,4)*Fa(4&
+!            &,1)-Fa(1,2)*Fa(2,4)*Fa(3,1)*Fa(4,3)- Fa(1,3)*Fa(2,1)&
+!            &*Fa(3,4)*Fa(4,2)-Fa(1,3)*Fa(2,2)*Fa(3,1)*Fa(4,4)-Fa(1,3)&
+!            &*Fa(2,4)*Fa(3,2)*Fa(4,1)- Fa(1,4)*Fa(2,1)*Fa(3,2)*Fa(4&
+!            &,3)-Fa(1,4)*Fa(2,2)*Fa(3,3)*Fa(4,1)-Fa(1,4)*Fa(2,3)*Fa(3&
+!            &,1)*Fa(4,2)
+!        Fb=Fb*(1.0_SP/faux)
+
+        bsuccess = .true.
+
+      else
+        bsuccess = .false.
+      end if
+
+  end subroutine mprim_invert4x4MatrixDirectSP
+
+  ! ***************************************************************************
+
+!<subroutine>
+
   pure subroutine mprim_invert5x5MatrixDirectDP(Da,Db,bsuccess)
 
 !<description>
@@ -1005,6 +1540,145 @@ contains
     end if
 
   end subroutine mprim_invert5x5MatrixDirectDP
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  pure subroutine mprim_invert5x5MatrixDirectSP(Fa,Fb,bsuccess)
+
+!<description>
+  ! This subroutine directly inverts a 5x5 system without any pivoting.
+  ! 'Fa' is a 2-dimensional 5x5 matrix. The inverse of Fa is written
+  ! to the 2-dimensional 5x5 matrix Fb.
+  !
+  ! Warning: For speed reasons, there is no array bounds checking
+  ! activated in this routine! Fa and Fb are assumed to be 5x5 arrays!
+!</description>
+
+!<input>
+  ! source square matrix to be inverted
+  real(SP), dimension(5,5), intent(in) :: Fa
+!</input>
+
+!<output>
+  ! destination square matrix; receives <tex>$ A^{-1} $</tex>.
+  real(SP), dimension(5,5), intent(out) :: Fb
+
+  ! TRUE, if successful. FALSE if the system is indefinite.
+  ! If FALSE, Fb is undefined.
+  logical, intent(out) :: bsuccess
+!</output>
+
+!</subroutine>
+
+  ! auxiliary variables
+  real(SP) :: det,faux
+  real(SP), dimension(10) :: V,W
+
+    ! 2x2 determinants of rows 4-5
+    V( 1) = Fa(4,1)*Fa(5,2)-Fa(4,2)*Fa(5,1)
+    V( 2) = Fa(4,1)*Fa(5,3)-Fa(4,3)*Fa(5,1)
+    V( 3) = Fa(4,1)*Fa(5,4)-Fa(4,4)*Fa(5,1)
+    V( 4) = Fa(4,1)*Fa(5,5)-Fa(4,5)*Fa(5,1)
+    V( 5) = Fa(4,2)*Fa(5,3)-Fa(4,3)*Fa(5,2)
+    V( 6) = Fa(4,2)*Fa(5,4)-Fa(4,4)*Fa(5,2)
+    V( 7) = Fa(4,2)*Fa(5,5)-Fa(4,5)*Fa(5,2)
+    V( 8) = Fa(4,3)*Fa(5,4)-Fa(4,4)*Fa(5,3)
+    V( 9) = Fa(4,3)*Fa(5,5)-Fa(4,5)*Fa(5,3)
+    V(10) = Fa(4,4)*Fa(5,5)-Fa(4,5)*Fa(5,4)
+    ! 3x3 determinants of rows 3-4-5
+    W( 1) = Fa(3,1)*V( 5)-Fa(3,2)*V( 2)+Fa(3,3)*V( 1)
+    W( 2) = Fa(3,1)*V( 6)-Fa(3,2)*V( 3)+Fa(3,4)*V( 1)
+    W( 3) = Fa(3,1)*V( 7)-Fa(3,2)*V( 4)+Fa(3,5)*V( 1)
+    W( 4) = Fa(3,1)*V( 8)-Fa(3,3)*V( 3)+Fa(3,4)*V( 2)
+    W( 5) = Fa(3,1)*V( 9)-Fa(3,3)*V( 4)+Fa(3,5)*V( 2)
+    W( 6) = Fa(3,1)*V(10)-Fa(3,4)*V( 4)+Fa(3,5)*V( 3)
+    W( 7) = Fa(3,2)*V( 8)-Fa(3,3)*V( 6)+Fa(3,4)*V( 5)
+    W( 8) = Fa(3,2)*V( 9)-Fa(3,3)*V( 7)+Fa(3,5)*V( 5)
+    W( 9) = Fa(3,2)*V(10)-Fa(3,4)*V( 7)+Fa(3,5)*V( 6)
+    W(10) = Fa(3,3)*V(10)-Fa(3,4)*V( 9)+Fa(3,5)*V( 8)
+    ! pre-calculate first column of inverse
+    Fb(1,1) = Fa(2,2)*W(10)-Fa(2,3)*W( 9)+Fa(2,4)*W( 8)-Fa(2,5)*W( 7)
+    Fb(2,1) =-Fa(2,1)*W(10)+Fa(2,3)*W( 6)-Fa(2,4)*W( 5)+Fa(2,5)*W( 4)
+    Fb(3,1) = Fa(2,1)*W( 9)-Fa(2,2)*W( 6)+Fa(2,4)*W( 3)-Fa(2,5)*W( 2)
+    Fb(4,1) =-Fa(2,1)*W( 8)+Fa(2,2)*W( 5)-Fa(2,3)*W( 3)+Fa(2,5)*W( 1)
+    Fb(5,1) = Fa(2,1)*W( 7)-Fa(2,2)*W( 4)+Fa(2,3)*W( 2)-Fa(2,4)*W( 1)
+    faux = (Fa(1,1)*Fb(1,1)+Fa(1,2)*Fb(2,1)&
+            +Fa(1,3)*Fb(3,1)+Fa(1,4)*Fb(4,1)+Fa(1,5)*Fb(5,1))
+    if (faux .ne. 0.0_SP) then
+      ! calculate determinant of A
+      det = 1.0_SP / faux
+      ! update first column of inverse
+      Fb(1,1)=Fb(1,1)*det
+      Fb(2,1)=Fb(2,1)*det
+      Fb(3,1)=Fb(3,1)*det
+      Fb(4,1)=Fb(4,1)*det
+      Fb(5,1)=Fb(5,1)*det
+      ! calculate second column of inverse
+      Fb(1,2) = det*(-Fa(1,2)*W(10)+Fa(1,3)*W( 9)-Fa(1,4)*W( 8)+Fa(1,5)*W( 7))
+      Fb(2,2) = det*( Fa(1,1)*W(10)-Fa(1,3)*W( 6)+Fa(1,4)*W( 5)-Fa(1,5)*W( 4))
+      Fb(3,2) = det*(-Fa(1,1)*W( 9)+Fa(1,2)*W( 6)-Fa(1,4)*W( 3)+Fa(1,5)*W( 2))
+      Fb(4,2) = det*( Fa(1,1)*W( 8)-Fa(1,2)*W( 5)+Fa(1,3)*W( 3)-Fa(1,5)*W( 1))
+      Fb(5,2) = det*(-Fa(1,1)*W( 7)+Fa(1,2)*W( 4)-Fa(1,3)*W( 2)+Fa(1,4)*W( 1))
+      ! 3x3 determinants of rows 2-4-5
+      W( 1) = Fa(2,1)*V( 5)-Fa(2,2)*V( 2)+Fa(2,3)*V( 1)
+      W( 2) = Fa(2,1)*V( 6)-Fa(2,2)*V( 3)+Fa(2,4)*V( 1)
+      W( 3) = Fa(2,1)*V( 7)-Fa(2,2)*V( 4)+Fa(2,5)*V( 1)
+      W( 4) = Fa(2,1)*V( 8)-Fa(2,3)*V( 3)+Fa(2,4)*V( 2)
+      W( 5) = Fa(2,1)*V( 9)-Fa(2,3)*V( 4)+Fa(2,5)*V( 2)
+      W( 6) = Fa(2,1)*V(10)-Fa(2,4)*V( 4)+Fa(2,5)*V( 3)
+      W( 7) = Fa(2,2)*V( 8)-Fa(2,3)*V( 6)+Fa(2,4)*V( 5)
+      W( 8) = Fa(2,2)*V( 9)-Fa(2,3)*V( 7)+Fa(2,5)*V( 5)
+      W( 9) = Fa(2,2)*V(10)-Fa(2,4)*V( 7)+Fa(2,5)*V( 6)
+      W(10) = Fa(2,3)*V(10)-Fa(2,4)*V( 9)+Fa(2,5)*V( 8)
+      ! calculate third column of inverse
+      Fb(1,3) = det*( Fa(1,2)*W(10)-Fa(1,3)*W( 9)+Fa(1,4)*W( 8)-Fa(1,5)*W( 7))
+      Fb(2,3) = det*(-Fa(1,1)*W(10)+Fa(1,3)*W( 6)-Fa(1,4)*W( 5)+Fa(1,5)*W( 4))
+      Fb(3,3) = det*( Fa(1,1)*W( 9)-Fa(1,2)*W( 6)+Fa(1,4)*W( 3)-Fa(1,5)*W( 2))
+      Fb(4,3) = det*(-Fa(1,1)*W( 8)+Fa(1,2)*W( 5)-Fa(1,3)*W( 3)+Fa(1,5)*W( 1))
+      Fb(5,3) = det*( Fa(1,1)*W( 7)-Fa(1,2)*W( 4)+Fa(1,3)*W( 2)-Fa(1,4)*W( 1))
+      ! 2x2 determinants of rows 1-2
+      V( 1) = Fa(1,1)*Fa(2,2)-Fa(1,2)*Fa(2,1)
+      V( 2) = Fa(1,1)*Fa(2,3)-Fa(1,3)*Fa(2,1)
+      V( 3) = Fa(1,1)*Fa(2,4)-Fa(1,4)*Fa(2,1)
+      V( 4) = Fa(1,1)*Fa(2,5)-Fa(1,5)*Fa(2,1)
+      V( 5) = Fa(1,2)*Fa(2,3)-Fa(1,3)*Fa(2,2)
+      V( 6) = Fa(1,2)*Fa(2,4)-Fa(1,4)*Fa(2,2)
+      V( 7) = Fa(1,2)*Fa(2,5)-Fa(1,5)*Fa(2,2)
+      V( 8) = Fa(1,3)*Fa(2,4)-Fa(1,4)*Fa(2,3)
+      V( 9) = Fa(1,3)*Fa(2,5)-Fa(1,5)*Fa(2,3)
+      V(10) = Fa(1,4)*Fa(2,5)-Fa(1,5)*Fa(2,4)
+      ! 3x3 determinants of rows 1-2-3
+      W( 1) = Fa(3,1)*V( 5)-Fa(3,2)*V( 2)+Fa(3,3)*V( 1)
+      W( 2) = Fa(3,1)*V( 6)-Fa(3,2)*V( 3)+Fa(3,4)*V( 1)
+      W( 3) = Fa(3,1)*V( 7)-Fa(3,2)*V( 4)+Fa(3,5)*V( 1)
+      W( 4) = Fa(3,1)*V( 8)-Fa(3,3)*V( 3)+Fa(3,4)*V( 2)
+      W( 5) = Fa(3,1)*V( 9)-Fa(3,3)*V( 4)+Fa(3,5)*V( 2)
+      W( 6) = Fa(3,1)*V(10)-Fa(3,4)*V( 4)+Fa(3,5)*V( 3)
+      W( 7) = Fa(3,2)*V( 8)-Fa(3,3)*V( 6)+Fa(3,4)*V( 5)
+      W( 8) = Fa(3,2)*V( 9)-Fa(3,3)*V( 7)+Fa(3,5)*V( 5)
+      W( 9) = Fa(3,2)*V(10)-Fa(3,4)*V( 7)+Fa(3,5)*V( 6)
+      W(10) = Fa(3,3)*V(10)-Fa(3,4)*V( 9)+Fa(3,5)*V( 8)
+      ! calculate fourth column of inverse
+      Fb(1,4) = det*( Fa(5,2)*W(10)-Fa(5,3)*W( 9)+Fa(5,4)*W( 8)-Fa(5,5)*W( 7))
+      Fb(2,4) = det*(-Fa(5,1)*W(10)+Fa(5,3)*W( 6)-Fa(5,4)*W( 5)+Fa(5,5)*W( 4))
+      Fb(3,4) = det*( Fa(5,1)*W( 9)-Fa(5,2)*W( 6)+Fa(5,4)*W( 3)-Fa(5,5)*W( 2))
+      Fb(4,4) = det*(-Fa(5,1)*W( 8)+Fa(5,2)*W( 5)-Fa(5,3)*W( 3)+Fa(5,5)*W( 1))
+      Fb(5,4) = det*( Fa(5,1)*W( 7)-Fa(5,2)*W( 4)+Fa(5,3)*W( 2)-Fa(5,4)*W( 1))
+      ! calculate fifth column of inverse
+      Fb(1,5) = det*(-Fa(4,2)*W(10)+Fa(4,3)*W( 9)-Fa(4,4)*W( 8)+Fa(4,5)*W( 7))
+      Fb(2,5) = det*( Fa(4,1)*W(10)-Fa(4,3)*W( 6)+Fa(4,4)*W( 5)-Fa(4,5)*W( 4))
+      Fb(3,5) = det*(-Fa(4,1)*W( 9)+Fa(4,2)*W( 6)-Fa(4,4)*W( 3)+Fa(4,5)*W( 2))
+      Fb(4,5) = det*( Fa(4,1)*W( 8)-Fa(4,2)*W( 5)+Fa(4,3)*W( 3)-Fa(4,5)*W( 1))
+      Fb(5,5) = det*(-Fa(4,1)*W( 7)+Fa(4,2)*W( 4)-Fa(4,3)*W( 2)+Fa(4,4)*W( 1))
+
+      bsuccess = .true.
+    else
+      bsuccess = .false.
+    end if
+
+  end subroutine mprim_invert5x5MatrixDirectSP
 
   ! ***************************************************************************
 
@@ -1257,6 +1931,253 @@ contains
 
 !<subroutine>
 
+  pure subroutine mprim_invert6x6MatrixDirectSP(Fa,Fb,bsuccess)
+
+!<description>
+  ! This subroutine directly inverts a 6x6 system without any pivoting.
+  ! 'Fa' is a 2-dimensional 6x6 m matrix. The inverse of Fa is written
+  ! to the 2-dimensional 6x6 matrix Fb.
+  !
+  ! Warning: For speed reasons, there is no array bounds checking
+  ! activated in this routine! Fa and Fb are assumed to be 6x6 arrays!
+!</description>
+
+!<input>
+  ! source square matrix to be inverted
+  real(SP), dimension(6,6), intent(in) :: Fa
+!</input>
+
+!<output>
+  ! destination square matrix; receives <tex>$ A^{-1} $</tex>.
+  real(SP), dimension(6,6), intent(out) :: Fb
+
+  ! TRUE, if successful. FALSE if the system is indefinite.
+  ! If FALSE, Fb is undefined.
+  logical, intent(out) :: bsuccess
+!</output>
+
+!</subroutine>
+
+  ! auxiliary variables
+  real(SP) :: det,faux
+  real(SP), dimension(15) :: U, W
+  real(SP), dimension(20) :: V
+
+    ! 2x2 determinants of rows 5-6
+    U(1) = Fa(5,1)*Fa(6,2)-Fa(5,2)*Fa(6,1)
+    U(2) = Fa(5,1)*Fa(6,3)-Fa(5,3)*Fa(6,1)
+    U(3) = Fa(5,1)*Fa(6,4)-Fa(5,4)*Fa(6,1)
+    U(4) = Fa(5,1)*Fa(6,5)-Fa(5,5)*Fa(6,1)
+    U(5) = Fa(5,1)*Fa(6,6)-Fa(5,6)*Fa(6,1)
+    U(6) = Fa(5,2)*Fa(6,3)-Fa(5,3)*Fa(6,2)
+    U(7) = Fa(5,2)*Fa(6,4)-Fa(5,4)*Fa(6,2)
+    U(8) = Fa(5,2)*Fa(6,5)-Fa(5,5)*Fa(6,2)
+    U(9) = Fa(5,2)*Fa(6,6)-Fa(5,6)*Fa(6,2)
+    U(10) = Fa(5,3)*Fa(6,4)-Fa(5,4)*Fa(6,3)
+    U(11) = Fa(5,3)*Fa(6,5)-Fa(5,5)*Fa(6,3)
+    U(12) = Fa(5,3)*Fa(6,6)-Fa(5,6)*Fa(6,3)
+    U(13) = Fa(5,4)*Fa(6,5)-Fa(5,5)*Fa(6,4)
+    U(14) = Fa(5,4)*Fa(6,6)-Fa(5,6)*Fa(6,4)
+    U(15) = Fa(5,5)*Fa(6,6)-Fa(5,6)*Fa(6,5)
+    ! 3x3 determinants of rows 4-5-6
+    V(1) = Fa(4,1)*U(6)-Fa(4,2)*U(2)+Fa(4,3)*U(1)
+    V(2) = Fa(4,1)*U(7)-Fa(4,2)*U(3)+Fa(4,4)*U(1)
+    V(3) = Fa(4,1)*U(8)-Fa(4,2)*U(4)+Fa(4,5)*U(1)
+    V(4) = Fa(4,1)*U(9)-Fa(4,2)*U(5)+Fa(4,6)*U(1)
+    V(5) = Fa(4,1)*U(10)-Fa(4,3)*U(3)+Fa(4,4)*U(2)
+    V(6) = Fa(4,1)*U(11)-Fa(4,3)*U(4)+Fa(4,5)*U(2)
+    V(7) = Fa(4,1)*U(12)-Fa(4,3)*U(5)+Fa(4,6)*U(2)
+    V(8) = Fa(4,1)*U(13)-Fa(4,4)*U(4)+Fa(4,5)*U(3)
+    V(9) = Fa(4,1)*U(14)-Fa(4,4)*U(5)+Fa(4,6)*U(3)
+    V(10) = Fa(4,1)*U(15)-Fa(4,5)*U(5)+Fa(4,6)*U(4)
+    V(11) = Fa(4,2)*U(10)-Fa(4,3)*U(7)+Fa(4,4)*U(6)
+    V(12) = Fa(4,2)*U(11)-Fa(4,3)*U(8)+Fa(4,5)*U(6)
+    V(13) = Fa(4,2)*U(12)-Fa(4,3)*U(9)+Fa(4,6)*U(6)
+    V(14) = Fa(4,2)*U(13)-Fa(4,4)*U(8)+Fa(4,5)*U(7)
+    V(15) = Fa(4,2)*U(14)-Fa(4,4)*U(9)+Fa(4,6)*U(7)
+    V(16) = Fa(4,2)*U(15)-Fa(4,5)*U(9)+Fa(4,6)*U(8)
+    V(17) = Fa(4,3)*U(13)-Fa(4,4)*U(11)+Fa(4,5)*U(10)
+    V(18) = Fa(4,3)*U(14)-Fa(4,4)*U(12)+Fa(4,6)*U(10)
+    V(19) = Fa(4,3)*U(15)-Fa(4,5)*U(12)+Fa(4,6)*U(11)
+    V(20) = Fa(4,4)*U(15)-Fa(4,5)*U(14)+Fa(4,6)*U(13)
+    ! 4x4 determinants of rows 3-4-5-6
+    W(1) = Fa(3,1)*V(11)-Fa(3,2)*V(5)+Fa(3,3)*V(2)-Fa(3,4)*V(1)
+    W(2) = Fa(3,1)*V(12)-Fa(3,2)*V(6)+Fa(3,3)*V(3)-Fa(3,5)*V(1)
+    W(3) = Fa(3,1)*V(13)-Fa(3,2)*V(7)+Fa(3,3)*V(4)-Fa(3,6)*V(1)
+    W(4) = Fa(3,1)*V(14)-Fa(3,2)*V(8)+Fa(3,4)*V(3)-Fa(3,5)*V(2)
+    W(5) = Fa(3,1)*V(15)-Fa(3,2)*V(9)+Fa(3,4)*V(4)-Fa(3,6)*V(2)
+    W(6) = Fa(3,1)*V(16)-Fa(3,2)*V(10)+Fa(3,5)*V(4)-Fa(3,6)*V(3)
+    W(7) = Fa(3,1)*V(17)-Fa(3,3)*V(8)+Fa(3,4)*V(6)-Fa(3,5)*V(5)
+    W(8) = Fa(3,1)*V(18)-Fa(3,3)*V(9)+Fa(3,4)*V(7)-Fa(3,6)*V(5)
+    W(9) = Fa(3,1)*V(19)-Fa(3,3)*V(10)+Fa(3,5)*V(7)-Fa(3,6)*V(6)
+    W(10) = Fa(3,1)*V(20)-Fa(3,4)*V(10)+Fa(3,5)*V(9)-Fa(3,6)*V(8)
+    W(11) = Fa(3,2)*V(17)-Fa(3,3)*V(14)+Fa(3,4)*V(12)-Fa(3,5)*V(11)
+    W(12) = Fa(3,2)*V(18)-Fa(3,3)*V(15)+Fa(3,4)*V(13)-Fa(3,6)*V(11)
+    W(13) = Fa(3,2)*V(19)-Fa(3,3)*V(16)+Fa(3,5)*V(13)-Fa(3,6)*V(12)
+    W(14) = Fa(3,2)*V(20)-Fa(3,4)*V(16)+Fa(3,5)*V(15)-Fa(3,6)*V(14)
+    W(15) = Fa(3,3)*V(20)-Fa(3,4)*V(19)+Fa(3,5)*V(18)-Fa(3,6)*V(17)
+    ! pre-calculate first column of inverse
+    Fb(1,1) = Fa(2,2)*W(15)-Fa(2,3)*W(14)+Fa(2,4)*W(13)-Fa(2,5)*W(12)+Fa(2,6)*W(11)
+    Fb(2,1) =-Fa(2,1)*W(15)+Fa(2,3)*W(10)-Fa(2,4)*W(9)+Fa(2,5)*W(8)-Fa(2,6)*W(7)
+    Fb(3,1) = Fa(2,1)*W(14)-Fa(2,2)*W(10)+Fa(2,4)*W(6)-Fa(2,5)*W(5)+Fa(2,6)*W(4)
+    Fb(4,1) =-Fa(2,1)*W(13)+Fa(2,2)*W(9)-Fa(2,3)*W(6)+Fa(2,5)*W(3)-Fa(2,6)*W(2)
+    Fb(5,1) = Fa(2,1)*W(12)-Fa(2,2)*W(8)+Fa(2,3)*W(5)-Fa(2,4)*W(3)+Fa(2,6)*W(1)
+    Fb(6,1) =-Fa(2,1)*W(11)+Fa(2,2)*W(7)-Fa(2,3)*W(4)+Fa(2,4)*W(2)-Fa(2,5)*W(1)
+
+    faux = (Fa(1,1)*Fb(1,1)+Fa(1,2)*Fb(2,1)+Fa(1,3)*Fb(3,1)+&
+            Fa(1,4)*Fb(4,1)+Fa(1,5)*Fb(5,1)+Fa(1,6)*Fb(6,1))
+
+    if (faux .ne. 0.0_SP) then
+
+      ! calculate determinant of A
+      det = 1.0_SP / faux
+      ! update first column of inverse
+      Fb(1,1) = det*Fb(1,1)
+      Fb(2,1) = det*Fb(2,1)
+      Fb(3,1) = det*Fb(3,1)
+      Fb(4,1) = det*Fb(4,1)
+      Fb(5,1) = det*Fb(5,1)
+      Fb(6,1) = det*Fb(6,1)
+      ! calculate second column of inverse
+      Fb(1,2) = det*(-Fa(1,2)*W(15)+Fa(1,3)*W(14)-Fa(1,4)*W(13)+Fa(1,5)*W(12)-Fa(1,6)*W(11))
+      Fb(2,2) = det*( Fa(1,1)*W(15)-Fa(1,3)*W(10)+Fa(1,4)*W(9)-Fa(1,5)*W(8)+Fa(1,6)*W(7))
+      Fb(3,2) = det*(-Fa(1,1)*W(14)+Fa(1,2)*W(10)-Fa(1,4)*W(6)+Fa(1,5)*W(5)-Fa(1,6)*W(4))
+      Fb(4,2) = det*( Fa(1,1)*W(13)-Fa(1,2)*W(9)+Fa(1,3)*W(6)-Fa(1,5)*W(3)+Fa(1,6)*W(2))
+      Fb(5,2) = det*(-Fa(1,1)*W(12)+Fa(1,2)*W(8)-Fa(1,3)*W(5)+Fa(1,4)*W(3)-Fa(1,6)*W(1))
+      Fb(6,2) = det*( Fa(1,1)*W(11)-Fa(1,2)*W(7)+Fa(1,3)*W(4)-Fa(1,4)*W(2)+Fa(1,5)*W(1))
+      ! 3x3 determinants of rows 2-5-6
+      V(1) = Fa(2,1)*U(6)-Fa(2,2)*U(2)+Fa(2,3)*U(1)
+      V(2) = Fa(2,1)*U(7)-Fa(2,2)*U(3)+Fa(2,4)*U(1)
+      V(3) = Fa(2,1)*U(8)-Fa(2,2)*U(4)+Fa(2,5)*U(1)
+      V(4) = Fa(2,1)*U(9)-Fa(2,2)*U(5)+Fa(2,6)*U(1)
+      V(5) = Fa(2,1)*U(10)-Fa(2,3)*U(3)+Fa(2,4)*U(2)
+      V(6) = Fa(2,1)*U(11)-Fa(2,3)*U(4)+Fa(2,5)*U(2)
+      V(7) = Fa(2,1)*U(12)-Fa(2,3)*U(5)+Fa(2,6)*U(2)
+      V(8) = Fa(2,1)*U(13)-Fa(2,4)*U(4)+Fa(2,5)*U(3)
+      V(9) = Fa(2,1)*U(14)-Fa(2,4)*U(5)+Fa(2,6)*U(3)
+      V(10) = Fa(2,1)*U(15)-Fa(2,5)*U(5)+Fa(2,6)*U(4)
+      V(11) = Fa(2,2)*U(10)-Fa(2,3)*U(7)+Fa(2,4)*U(6)
+      V(12) = Fa(2,2)*U(11)-Fa(2,3)*U(8)+Fa(2,5)*U(6)
+      V(13) = Fa(2,2)*U(12)-Fa(2,3)*U(9)+Fa(2,6)*U(6)
+      V(14) = Fa(2,2)*U(13)-Fa(2,4)*U(8)+Fa(2,5)*U(7)
+      V(15) = Fa(2,2)*U(14)-Fa(2,4)*U(9)+Fa(2,6)*U(7)
+      V(16) = Fa(2,2)*U(15)-Fa(2,5)*U(9)+Fa(2,6)*U(8)
+      V(17) = Fa(2,3)*U(13)-Fa(2,4)*U(11)+Fa(2,5)*U(10)
+      V(18) = Fa(2,3)*U(14)-Fa(2,4)*U(12)+Fa(2,6)*U(10)
+      V(19) = Fa(2,3)*U(15)-Fa(2,5)*U(12)+Fa(2,6)*U(11)
+      V(20) = Fa(2,4)*U(15)-Fa(2,5)*U(14)+Fa(2,6)*U(13)
+      ! 4x4 determinants of rows 1-2-5-6
+      W(1) = Fa(1,1)*V(11)-Fa(1,2)*V(5)+Fa(1,3)*V(2)-Fa(1,4)*V(1)
+      W(2) = Fa(1,1)*V(12)-Fa(1,2)*V(6)+Fa(1,3)*V(3)-Fa(1,5)*V(1)
+      W(3) = Fa(1,1)*V(13)-Fa(1,2)*V(7)+Fa(1,3)*V(4)-Fa(1,6)*V(1)
+      W(4) = Fa(1,1)*V(14)-Fa(1,2)*V(8)+Fa(1,4)*V(3)-Fa(1,5)*V(2)
+      W(5) = Fa(1,1)*V(15)-Fa(1,2)*V(9)+Fa(1,4)*V(4)-Fa(1,6)*V(2)
+      W(6) = Fa(1,1)*V(16)-Fa(1,2)*V(10)+Fa(1,5)*V(4)-Fa(1,6)*V(3)
+      W(7) = Fa(1,1)*V(17)-Fa(1,3)*V(8)+Fa(1,4)*V(6)-Fa(1,5)*V(5)
+      W(8) = Fa(1,1)*V(18)-Fa(1,3)*V(9)+Fa(1,4)*V(7)-Fa(1,6)*V(5)
+      W(9) = Fa(1,1)*V(19)-Fa(1,3)*V(10)+Fa(1,5)*V(7)-Fa(1,6)*V(6)
+      W(10) = Fa(1,1)*V(20)-Fa(1,4)*V(10)+Fa(1,5)*V(9)-Fa(1,6)*V(8)
+      W(11) = Fa(1,2)*V(17)-Fa(1,3)*V(14)+Fa(1,4)*V(12)-Fa(1,5)*V(11)
+      W(12) = Fa(1,2)*V(18)-Fa(1,3)*V(15)+Fa(1,4)*V(13)-Fa(1,6)*V(11)
+      W(13) = Fa(1,2)*V(19)-Fa(1,3)*V(16)+Fa(1,5)*V(13)-Fa(1,6)*V(12)
+      W(14) = Fa(1,2)*V(20)-Fa(1,4)*V(16)+Fa(1,5)*V(15)-Fa(1,6)*V(14)
+      W(15) = Fa(1,3)*V(20)-Fa(1,4)*V(19)+Fa(1,5)*V(18)-Fa(1,6)*V(17)
+      ! calculate third column of inverse
+      Fb(1,3) = det*( Fa(4,2)*W(15)-Fa(4,3)*W(14)+Fa(4,4)*W(13)-Fa(4,5)*W(12)+Fa(4,6)*W(11))
+      Fb(2,3) = det*(-Fa(4,1)*W(15)+Fa(4,3)*W(10)-Fa(4,4)*W(9)+Fa(4,5)*W(8)-Fa(4,6)*W(7))
+      Fb(3,3) = det*( Fa(4,1)*W(14)-Fa(4,2)*W(10)+Fa(4,4)*W(6)-Fa(4,5)*W(5)+Fa(4,6)*W(4))
+      Fb(4,3) = det*(-Fa(4,1)*W(13)+Fa(4,2)*W(9)-Fa(4,3)*W(6)+Fa(4,5)*W(3)-Fa(4,6)*W(2))
+      Fb(5,3) = det*( Fa(4,1)*W(12)-Fa(4,2)*W(8)+Fa(4,3)*W(5)-Fa(4,4)*W(3)+Fa(4,6)*W(1))
+      Fb(6,3) = det*(-Fa(4,1)*W(11)+Fa(4,2)*W(7)-Fa(4,3)*W(4)+Fa(4,4)*W(2)-Fa(4,5)*W(1))
+      ! calculate fourth column of inverse
+      Fb(1,4) = det*(-Fa(3,2)*W(15)+Fa(3,3)*W(14)-Fa(3,4)*W(13)+Fa(3,5)*W(12)-Fa(3,6)*W(11))
+      Fb(2,4) = det*( Fa(3,1)*W(15)-Fa(3,3)*W(10)+Fa(3,4)*W(9)-Fa(3,5)*W(8)+Fa(3,6)*W(7))
+      Fb(3,4) = det*(-Fa(3,1)*W(14)+Fa(3,2)*W(10)-Fa(3,4)*W(6)+Fa(3,5)*W(5)-Fa(3,6)*W(4))
+      Fb(4,4) = det*( Fa(3,1)*W(13)-Fa(3,2)*W(9)+Fa(3,3)*W(6)-Fa(3,5)*W(3)+Fa(3,6)*W(2))
+      Fb(5,4) = det*(-Fa(3,1)*W(12)+Fa(3,2)*W(8)-Fa(3,3)*W(5)+Fa(3,4)*W(3)-Fa(3,6)*W(1))
+      Fb(6,4) = det*( Fa(3,1)*W(11)-Fa(3,2)*W(7)+Fa(3,3)*W(4)-Fa(3,4)*W(2)+Fa(3,5)*W(1))
+      ! 2x2 determinants of rows 3-4
+      U(1) = Fa(3,1)*Fa(4,2)-Fa(3,2)*Fa(4,1)
+      U(2) = Fa(3,1)*Fa(4,3)-Fa(3,3)*Fa(4,1)
+      U(3) = Fa(3,1)*Fa(4,4)-Fa(3,4)*Fa(4,1)
+      U(4) = Fa(3,1)*Fa(4,5)-Fa(3,5)*Fa(4,1)
+      U(5) = Fa(3,1)*Fa(4,6)-Fa(3,6)*Fa(4,1)
+      U(6) = Fa(3,2)*Fa(4,3)-Fa(3,3)*Fa(4,2)
+      U(7) = Fa(3,2)*Fa(4,4)-Fa(3,4)*Fa(4,2)
+      U(8) = Fa(3,2)*Fa(4,5)-Fa(3,5)*Fa(4,2)
+      U(9) = Fa(3,2)*Fa(4,6)-Fa(3,6)*Fa(4,2)
+      U(10) = Fa(3,3)*Fa(4,4)-Fa(3,4)*Fa(4,3)
+      U(11) = Fa(3,3)*Fa(4,5)-Fa(3,5)*Fa(4,3)
+      U(12) = Fa(3,3)*Fa(4,6)-Fa(3,6)*Fa(4,3)
+      U(13) = Fa(3,4)*Fa(4,5)-Fa(3,5)*Fa(4,4)
+      U(14) = Fa(3,4)*Fa(4,6)-Fa(3,6)*Fa(4,4)
+      U(15) = Fa(3,5)*Fa(4,6)-Fa(3,6)*Fa(4,5)
+      ! 3x3 determinants of rows 2-3-4
+      V(1) = Fa(2,1)*U(6)-Fa(2,2)*U(2)+Fa(2,3)*U(1)
+      V(2) = Fa(2,1)*U(7)-Fa(2,2)*U(3)+Fa(2,4)*U(1)
+      V(3) = Fa(2,1)*U(8)-Fa(2,2)*U(4)+Fa(2,5)*U(1)
+      V(4) = Fa(2,1)*U(9)-Fa(2,2)*U(5)+Fa(2,6)*U(1)
+      V(5) = Fa(2,1)*U(10)-Fa(2,3)*U(3)+Fa(2,4)*U(2)
+      V(6) = Fa(2,1)*U(11)-Fa(2,3)*U(4)+Fa(2,5)*U(2)
+      V(7) = Fa(2,1)*U(12)-Fa(2,3)*U(5)+Fa(2,6)*U(2)
+      V(8) = Fa(2,1)*U(13)-Fa(2,4)*U(4)+Fa(2,5)*U(3)
+      V(9) = Fa(2,1)*U(14)-Fa(2,4)*U(5)+Fa(2,6)*U(3)
+      V(10) = Fa(2,1)*U(15)-Fa(2,5)*U(5)+Fa(2,6)*U(4)
+      V(11) = Fa(2,2)*U(10)-Fa(2,3)*U(7)+Fa(2,4)*U(6)
+      V(12) = Fa(2,2)*U(11)-Fa(2,3)*U(8)+Fa(2,5)*U(6)
+      V(13) = Fa(2,2)*U(12)-Fa(2,3)*U(9)+Fa(2,6)*U(6)
+      V(14) = Fa(2,2)*U(13)-Fa(2,4)*U(8)+Fa(2,5)*U(7)
+      V(15) = Fa(2,2)*U(14)-Fa(2,4)*U(9)+Fa(2,6)*U(7)
+      V(16) = Fa(2,2)*U(15)-Fa(2,5)*U(9)+Fa(2,6)*U(8)
+      V(17) = Fa(2,3)*U(13)-Fa(2,4)*U(11)+Fa(2,5)*U(10)
+      V(18) = Fa(2,3)*U(14)-Fa(2,4)*U(12)+Fa(2,6)*U(10)
+      V(19) = Fa(2,3)*U(15)-Fa(2,5)*U(12)+Fa(2,6)*U(11)
+      V(20) = Fa(2,4)*U(15)-Fa(2,5)*U(14)+Fa(2,6)*U(13)
+      ! 4x4 determinants of rows 1-2-3-4
+      W(1) = Fa(1,1)*V(11)-Fa(1,2)*V(5)+Fa(1,3)*V(2)-Fa(1,4)*V(1)
+      W(2) = Fa(1,1)*V(12)-Fa(1,2)*V(6)+Fa(1,3)*V(3)-Fa(1,5)*V(1)
+      W(3) = Fa(1,1)*V(13)-Fa(1,2)*V(7)+Fa(1,3)*V(4)-Fa(1,6)*V(1)
+      W(4) = Fa(1,1)*V(14)-Fa(1,2)*V(8)+Fa(1,4)*V(3)-Fa(1,5)*V(2)
+      W(5) = Fa(1,1)*V(15)-Fa(1,2)*V(9)+Fa(1,4)*V(4)-Fa(1,6)*V(2)
+      W(6) = Fa(1,1)*V(16)-Fa(1,2)*V(10)+Fa(1,5)*V(4)-Fa(1,6)*V(3)
+      W(7) = Fa(1,1)*V(17)-Fa(1,3)*V(8)+Fa(1,4)*V(6)-Fa(1,5)*V(5)
+      W(8) = Fa(1,1)*V(18)-Fa(1,3)*V(9)+Fa(1,4)*V(7)-Fa(1,6)*V(5)
+      W(9) = Fa(1,1)*V(19)-Fa(1,3)*V(10)+Fa(1,5)*V(7)-Fa(1,6)*V(6)
+      W(10) = Fa(1,1)*V(20)-Fa(1,4)*V(10)+Fa(1,5)*V(9)-Fa(1,6)*V(8)
+      W(11) = Fa(1,2)*V(17)-Fa(1,3)*V(14)+Fa(1,4)*V(12)-Fa(1,5)*V(11)
+      W(12) = Fa(1,2)*V(18)-Fa(1,3)*V(15)+Fa(1,4)*V(13)-Fa(1,6)*V(11)
+      W(13) = Fa(1,2)*V(19)-Fa(1,3)*V(16)+Fa(1,5)*V(13)-Fa(1,6)*V(12)
+      W(14) = Fa(1,2)*V(20)-Fa(1,4)*V(16)+Fa(1,5)*V(15)-Fa(1,6)*V(14)
+      W(15) = Fa(1,3)*V(20)-Fa(1,4)*V(19)+Fa(1,5)*V(18)-Fa(1,6)*V(17)
+      ! calculate fifth column of inverse
+      Fb(1,5) = det*( Fa(6,2)*W(15)-Fa(6,3)*W(14)+Fa(6,4)*W(13)-Fa(6,5)*W(12)+Fa(6,6)*W(11))
+      Fb(2,5) = det*(-Fa(6,1)*W(15)+Fa(6,3)*W(10)-Fa(6,4)*W(9)+Fa(6,5)*W(8)-Fa(6,6)*W(7))
+      Fb(3,5) = det*( Fa(6,1)*W(14)-Fa(6,2)*W(10)+Fa(6,4)*W(6)-Fa(6,5)*W(5)+Fa(6,6)*W(4))
+      Fb(4,5) = det*(-Fa(6,1)*W(13)+Fa(6,2)*W(9)-Fa(6,3)*W(6)+Fa(6,5)*W(3)-Fa(6,6)*W(2))
+      Fb(5,5) = det*( Fa(6,1)*W(12)-Fa(6,2)*W(8)+Fa(6,3)*W(5)-Fa(6,4)*W(3)+Fa(6,6)*W(1))
+      Fb(6,5) = det*(-Fa(6,1)*W(11)+Fa(6,2)*W(7)-Fa(6,3)*W(4)+Fa(6,4)*W(2)-Fa(6,5)*W(1))
+      ! calculate sixth column of inverse
+      Fb(1,6) = det*(-Fa(5,2)*W(15)+Fa(5,3)*W(14)-Fa(5,4)*W(13)+Fa(5,5)*W(12)-Fa(5,6)*W(11))
+      Fb(2,6) = det*( Fa(5,1)*W(15)-Fa(5,3)*W(10)+Fa(5,4)*W(9)-Fa(5,5)*W(8)+Fa(5,6)*W(7))
+      Fb(3,6) = det*(-Fa(5,1)*W(14)+Fa(5,2)*W(10)-Fa(5,4)*W(6)+Fa(5,5)*W(5)-Fa(5,6)*W(4))
+      Fb(4,6) = det*( Fa(5,1)*W(13)-Fa(5,2)*W(9)+Fa(5,3)*W(6)-Fa(5,5)*W(3)+Fa(5,6)*W(2))
+      Fb(5,6) = det*(-Fa(5,1)*W(12)+Fa(5,2)*W(8)-Fa(5,3)*W(5)+Fa(5,4)*W(3)-Fa(5,6)*W(1))
+      Fb(6,6) = det*( Fa(5,1)*W(11)-Fa(5,2)*W(7)+Fa(5,3)*W(4)-Fa(5,4)*W(2)+Fa(5,5)*W(1))
+
+      bsuccess = .true.
+
+    else
+
+      bsuccess = .false.
+
+    end if
+
+  end subroutine mprim_invert6x6MatrixDirectSP
+
+  ! ***************************************************************************
+
+!<subroutine>
+
   pure subroutine mprim_invertMatrixPivotDP(Da,ndim,bsuccess)
 
 !<description>
@@ -1374,267 +2295,118 @@ contains
 
 !<subroutine>
 
-  subroutine mprim_invertMatrixSP(Fa,Ff,Fx,ndim,ipar,bsuccess)
+  pure subroutine mprim_invertMatrixPivotSP(Fa,ndim,bsuccess)
 
 !<description>
-    ! This subroutine performs the direct inversion of a NxN system.
-    !
-    ! If the parameter ipar=0, then only factorization of matrix A is performed.
-    ! For ipar=1, the vector x is calculated using the factorised matrix A.
-    ! For ipar=2, LAPACK routine DGESV is used to solve the dense linear system Ax=f.
-    ! In addition, for NDIM=2,3,4 explicit formulas are employed to replace the
-    ! more expensive LAPACK routine.
+  ! This subroutine directly inverts a (ndim x ndim) system with pivoting.
+  ! 'Fa' is a 2-dimensional (ndim x ndim) matrix and will be replaced
+  ! by its inverse.
 !</description>
 
 !<input>
-    ! dimension of the matrix
-    integer, intent(in) :: ndim
-
-    ! source right-hand side vector
-    real(SP), dimension(ndim), intent(in) :: Ff
-
-    ! What to do?
-    ! IPAR = 0 : invert matrix by means of Gaussian elimination with
-    !            full pivoting and return the inverted matrix inv(A)
-    ! IPAR = 1 : apply inverted matrix to the right-hand side vector
-    !            and return x = inv(A)*f
-    ! IPAR = 2 : invert matrix and apply it to the right-hand side
-    !            vector. Return x = inv(A)*f
-    integer, intent(in) :: ipar
+  ! Dimension of the matrix Fa.
+  integer, intent(in) :: ndim
 !</input>
 
 !<inputoutput>
-    ! source square matrix to be inverted
-    real(SP), dimension(ndim,ndim), intent(inout) :: Fa
+  ! source square matrix to be inverted
+  real(SP), dimension(ndim,ndim), intent(inout) :: Fa
+
+  ! TRUE, if successful. FALSE if the system is indefinite.
+  ! If FALSE, Db is undefined.
+  logical, intent(out) :: bsuccess
 !</inputoutput>
 
-!<output>
-    ! destination vector containing inverted matrix times right-hand
-    ! side vector
-    real(SP), dimension(ndim), intent(out) :: Fx
-
-    ! TRUE, if successful. FALSE if the system is indefinite.
-    ! If FALSE, Db is undefined.
-    logical, intent(out) :: bsuccess
-!</output>
 !</subroutine>
 
     ! local variables
-    real(SP), dimension(ndim,ndim) :: Fb
-    real(SP), dimension(ndim) :: Fpiv
     integer, dimension(ndim) :: Kindx,Kindy
 
     real(SP) :: fpivot,faux
-    integer :: idim1,idim2,ix,iy,indx,indy,info
+    integer :: idim1,idim2,ix,iy,indx,indy
+
+    ! Perform factorization of matrix Fa
 
     bsuccess = .false.
 
-    select case (ipar)
-    case (0)
-      ! Perform factorization of matrix Da
+    ! Initialization
+    Kindx=0
+    Kindy=0
 
-      ! Initialization
-      Kindx=0;  Kindy=0
+    do idim1=1,ndim
 
-      do idim1=1,ndim
+      ! Determine pivotal element
+      fpivot=0
 
-        ! Determine pivotal element
-        fpivot=0
-
-        do iy=1,ndim
-          if (Kindy(iy) /= 0) cycle
-
-          do ix=1,ndim
-            if (Kindx(ix) /= 0) cycle
-
-            if (abs(Fa(ix,iy)) .le. abs(fpivot)) cycle
-            fpivot=Fa(ix,iy);  indx=ix;  indy=iy
-          end do
-        end do
-
-        ! Return if pivotal element is zero
-        if (fpivot .eq. 0.0_DP) return
-
-        Kindx(indx)=indy;  Kindy(indy)=indx;  Fa(indx,indy)=1._SP&
-            &/fpivot
-
-        do idim2=1,ndim
-          if (idim2 == indy) cycle
-          Fa(1:indx-1,idim2)=Fa(1:indx-1,idim2)-Fa(1:indx-1,  &
-              & indy)*Fa(indx,idim2)/fpivot
-          Fa(indx+1:ndim,idim2)=Fa(indx+1:ndim,idim2)-Fa(indx+1:ndim&
-              &,indy)*Fa(indx,idim2)/fpivot
-        end do
+      do iy=1,ndim
+        if (Kindy(iy) /= 0) cycle
 
         do ix=1,ndim
-          if (ix /= indx) Fa(ix,indy)=Fa(ix,indy)/fpivot
-        end do
+          if (Kindx(ix) /= 0) cycle
 
-        do iy=1,ndim
-          if (iy /= indy) Fa(indx,iy)=-Fa(indx,iy)/fpivot
+          if (abs(Fa(ix,iy)) .le. abs(fpivot)) cycle
+          fpivot=Fa(ix,iy);  indx=ix;  indy=iy
         end do
+      end do
+
+      ! Return if pivotal element is zero
+      if (fpivot .eq. 0.0_SP) return
+
+      Kindx(indx)=indy;  Kindy(indy)=indx;  Fa(indx,indy)=1._SP&
+          &/fpivot
+
+      do idim2=1,ndim
+        if (idim2 == indy) cycle
+        Fa(1:indx-1,idim2)=Fa(1:indx-1,idim2)-Fa(1:indx-1,  &
+            & indy)*Fa(indx,idim2)/fpivot
+        Fa(indx+1:ndim,idim2)=Fa(indx+1:ndim,idim2)-Fa(indx+1:ndim&
+            &,indy)*Fa(indx,idim2)/fpivot
       end do
 
       do ix=1,ndim
-        if (Kindx(ix) == ix) cycle
-
-        do iy=1,ndim
-          if (Kindx(iy) == ix) exit
-        end do
-
-        do idim1=1,ndim
-          faux=Fa(ix,idim1)
-          Fa(ix,idim1)=Fa(iy,idim1)
-          Fa(iy,idim1)=faux
-        end do
-
-        Kindx(iy)=Kindx(ix);  Kindx(ix)=ix
+        if (ix /= indx) Fa(ix,indy)=Fa(ix,indy)/fpivot
       end do
 
-      do ix=1,ndim
-        if (Kindy(ix) == ix) cycle
+      do iy=1,ndim
+        if (iy /= indy) Fa(indx,iy)=-Fa(indx,iy)/fpivot
+      end do
+    end do
 
-        do iy=1,ndim
-          if (Kindy(iy) == ix) exit
-        end do
+    do ix=1,ndim
+      if (Kindx(ix) == ix) cycle
 
-        do idim1=1,ndim
-          faux=Fa(idim1,ix)
-          Fa(idim1,ix)=Fa(idim1,iy)
-          Fa(idim1,iy)=faux
-        end do
-
-        Kindy(iy)=Kindy(ix);  Kindy(ix)=ix
+      do iy=1,ndim
+        if (Kindx(iy) == ix) exit
       end do
 
-
-    case (1)
-      ! Perform inversion of Da to solve the system Da * Dx = Df
       do idim1=1,ndim
-        Fx(idim1)=0
-        do idim2=1,ndim
-          Fx(idim1)=Fx(idim1)+Fa(idim1,idim2)*Ff(idim2)
-        end do
+        faux=Fa(ix,idim1)
+        Fa(ix,idim1)=Fa(iy,idim1)
+        Fa(iy,idim1)=faux
       end do
 
-    case (2)
-      ! Solve the dense linear system Ax=f calling LAPACK routine
+      Kindx(iy)=Kindx(ix);  Kindx(ix)=ix
+    end do
 
-      select case(ndim)
-      case (2)
-        ! Explicit formula for 2x2 system
-        Fb(1,1)= Fa(2,2)
-        Fb(2,1)=-Fa(2,1)
-        Fb(1,2)=-Fa(1,2)
-        Fb(2,2)= Fa(1,1)
-        faux=Fa(1,1)*Fa(2,2)-Fa(1,2)*Fa(2,1)
+    do ix=1,ndim
+      if (Kindy(ix) == ix) cycle
 
-        if (faux .eq. 0.0_SP) return
+      do iy=1,ndim
+        if (Kindy(iy) == ix) exit
+      end do
 
-        Fx=matmul(Fb,Ff)/faux
+      do idim1=1,ndim
+        faux=Fa(idim1,ix)
+        Fa(idim1,ix)=Fa(idim1,iy)
+        Fa(idim1,iy)=faux
+      end do
 
-      case (3)
-        ! Explicit formula for 3x3 system
-        Fb(1,1)=Fa(2,2)*Fa(3,3)-Fa(2,3)*Fa(3,2)
-        Fb(2,1)=Fa(2,3)*Fa(3,1)-Fa(2,1)*Fa(3,3)
-        Fb(3,1)=Fa(2,1)*Fa(3,2)-Fa(2,2)*Fa(3,1)
-        Fb(1,2)=Fa(1,3)*Fa(3,2)-Fa(1,2)*Fa(3,3)
-        Fb(2,2)=Fa(1,1)*Fa(3,3)-Fa(1,3)*Fa(3,1)
-        Fb(3,2)=Fa(1,2)*Fa(3,1)-Fa(1,1)*Fa(3,2)
-        Fb(1,3)=Fa(1,2)*Fa(2,3)-Fa(1,3)*Fa(2,2)
-        Fb(2,3)=Fa(1,3)*Fa(2,1)-Fa(1,1)*Fa(2,3)
-        Fb(3,3)=Fa(1,1)*Fa(2,2)-Fa(1,2)*Fa(2,1)
-        faux=Fa(1,1)*Fa(2,2)*Fa(3,3)+Fa(2,1)*Fa(3,2)*Fa(1,3)+ Fa(3,1)&
-            &*Fa(1,2)*Fa(2,3)-Fa(1,1)*Fa(3,2)*Fa(2,3)- Fa(3,1)*Fa(2&
-            &,2)*Fa(1,3)-Fa(2,1)*Fa(1,2)*Fa(3,3)
-
-        if (faux .eq. 0.0_SP) return
-
-        Fx=matmul(Fb,Ff)/faux
-
-      case (4)
-        ! Explicit formula for 4x4 system
-        Fb(1,1)=Fa(2,2)*Fa(3,3)*Fa(4,4)+Fa(2,3)*Fa(3,4)*Fa(4,2)+Fa(2&
-            &,4)*Fa(3,2)*Fa(4,3)- Fa(2,2)*Fa(3,4)*Fa(4,3)-Fa(2,3)&
-            &*Fa(3,2)*Fa(4,4)-Fa(2,4)*Fa(3,3)*Fa(4,2)
-        Fb(2,1)=Fa(2,1)*Fa(3,4)*Fa(4,3)+Fa(2,3)*Fa(3,1)*Fa(4,4)+Fa(2&
-            &,4)*Fa(3,3)*Fa(4,1)- Fa(2,1)*Fa(3,3)*Fa(4,4)-Fa(2,3)&
-            &*Fa(3,4)*Fa(4,1)-Fa(2,4)*Fa(3,1)*Fa(4,3)
-        Fb(3,1)=Fa(2,1)*Fa(3,2)*Fa(4,4)+Fa(2,2)*Fa(3,4)*Fa(4,1)+Fa(2&
-            &,4)*Fa(3,1)*Fa(4,2)- Fa(2,1)*Fa(3,4)*Fa(4,2)-Fa(2,2)&
-            &*Fa(3,1)*Fa(4,4)-Fa(2,4)*Fa(3,2)*Fa(4,1)
-        Fb(4,1)=Fa(2,1)*Fa(3,3)*Fa(4,2)+Fa(2,2)*Fa(3,1)*Fa(4,3)+Fa(2&
-            &,3)*Fa(3,2)*Fa(4,1)- Fa(2,1)*Fa(3,2)*Fa(4,3)-Fa(2,2)&
-            &*Fa(3,3)*Fa(4,1)-Fa(2,3)*Fa(3,1)*Fa(4,2)
-        Fb(1,2)=Fa(1,2)*Fa(3,4)*Fa(4,3)+Fa(1,3)*Fa(3,2)*Fa(4,4)+Fa(1&
-            &,4)*Fa(3,3)*Fa(4,2)- Fa(1,2)*Fa(3,3)*Fa(4,4)-Fa(1,3)&
-            &*Fa(3,4)*Fa(4,2)-Fa(1,4)*Fa(3,2)*Fa(4,3)
-        Fb(2,2)=Fa(1,1)*Fa(3,3)*Fa(4,4)+Fa(1,3)*Fa(3,4)*Fa(4,1)+Fa(1&
-            &,4)*Fa(3,1)*Fa(4,3)- Fa(1,1)*Fa(3,4)*Fa(4,3)-Fa(1,3)&
-            &*Fa(3,1)*Fa(4,4)-Fa(1,4)*Fa(3,3)*Fa(4,1)
-        Fb(3,2)=Fa(1,1)*Fa(3,4)*Fa(4,2)+Fa(1,2)*Fa(3,1)*Fa(4,4)+Fa(1&
-            &,4)*Fa(3,2)*Fa(4,1)- Fa(1,1)*Fa(3,2)*Fa(4,4)-Fa(1,2)&
-            &*Fa(3,4)*Fa(4,1)-Fa(1,4)*Fa(3,1)*Fa(4,2)
-        Fb(4,2)=Fa(1,1)*Fa(3,2)*Fa(4,3)+Fa(1,2)*Fa(3,3)*Fa(4,1)+Fa(1&
-            &,3)*Fa(3,1)*Fa(4,2)- Fa(1,1)*Fa(3,3)*Fa(4,2)-Fa(1,2)&
-            &*Fa(3,1)*Fa(4,3)-Fa(1,3)*Fa(3,2)*Fa(4,1)
-        Fb(1,3)=Fa(1,2)*Fa(2,3)*Fa(4,4)+Fa(1,3)*Fa(2,4)*Fa(4,2)+Fa(1&
-            &,4)*Fa(2,2)*Fa(4,3)- Fa(1,2)*Fa(2,4)*Fa(4,3)-Fa(1,3)&
-            &*Fa(2,2)*Fa(4,4)-Fa(1,4)*Fa(2,3)*Fa(4,2)
-        Fb(2,3)=Fa(1,1)*Fa(2,4)*Fa(4,3)+Fa(1,3)*Fa(2,1)*Fa(4,4)+Fa(1&
-            &,4)*Fa(2,3)*Fa(4,1)- Fa(1,1)*Fa(2,3)*Fa(4,4)-Fa(1,3)&
-            &*Fa(2,4)*Fa(4,1)-Fa(1,4)*Fa(2,1)*Fa(4,3)
-        Fb(3,3)=Fa(1,1)*Fa(2,2)*Fa(4,4)+Fa(1,2)*Fa(2,4)*Fa(4,1)+Fa(1&
-            &,4)*Fa(2,1)*Fa(4,2)- Fa(1,1)*Fa(2,4)*Fa(4,2)-Fa(1,2)&
-            &*Fa(2,1)*Fa(4,4)-Fa(1,4)*Fa(2,2)*Fa(4,1)
-        Fb(4,3)=Fa(1,1)*Fa(2,3)*Fa(4,2)+Fa(1,2)*Fa(2,1)*Fa(4,3)+Fa(1&
-            &,3)*Fa(2,2)*Fa(4,1)- Fa(1,1)*Fa(2,2)*Fa(4,3)-Fa(1,2)&
-            &*Fa(2,3)*Fa(4,1)-Fa(1,3)*Fa(2,1)*Fa(4,2)
-        Fb(1,4)=Fa(1,2)*Fa(2,4)*Fa(3,3)+Fa(1,3)*Fa(2,2)*Fa(3,4)+Fa(1&
-            &,4)*Fa(2,3)*Fa(3,2)- Fa(1,2)*Fa(2,3)*Fa(3,4)-Fa(1,3)&
-            &*Fa(2,4)*Fa(3,2)-Fa(1,4)*Fa(2,2)*Fa(3,3)
-        Fb(2,4)=Fa(1,1)*Fa(2,3)*Fa(3,4)+Fa(1,3)*Fa(2,4)*Fa(3,1)+Fa(1&
-            &,4)*Fa(2,1)*Fa(3,3)- Fa(1,1)*Fa(2,4)*Fa(3,3)-Fa(1,3)&
-            &*Fa(2,1)*Fa(3,4)-Fa(1,4)*Fa(2,3)*Fa(3,1)
-        Fb(3,4)=Fa(1,1)*Fa(2,4)*Fa(3,2)+Fa(1,2)*Fa(2,1)*Fa(3,4)+Fa(1&
-            &,4)*Fa(2,2)*Fa(3,1)- Fa(1,1)*Fa(2,2)*Fa(3,4)-Fa(1,2)&
-            &*Fa(2,4)*Fa(3,1)-Fa(1,4)*Fa(2,1)*Fa(3,2)
-        Fb(4,4)=Fa(1,1)*Fa(2,2)*Fa(3,3)+Fa(1,2)*Fa(2,3)*Fa(3,1)+Fa(1&
-            &,3)*Fa(2,1)*Fa(3,2)- Fa(1,1)*Fa(2,3)*Fa(3,2)-Fa(1,2)&
-            &*Fa(2,1)*Fa(3,3)-Fa(1,3)*Fa(2,2)*Fa(3,1)
-        faux=Fa(1,1)*Fa(2,2)*Fa(3,3)*Fa(4,4)+Fa(1,1)*Fa(2,3)*Fa(3,4)&
-            &*Fa(4,2)+Fa(1,1)*Fa(2,4)*Fa(3,2)*Fa(4,3)+ Fa(1,2)*Fa(2&
-            &,1)*Fa(3,4)*Fa(4,3)+Fa(1,2)*Fa(2,3)*Fa(3,1)*Fa(4,4)+Fa(1&
-            &,2)*Fa(2,4)*Fa(3,3)*Fa(4,1)+ Fa(1,3)*Fa(2,1)*Fa(3,2)&
-            &*Fa(4,4)+Fa(1,3)*Fa(2,2)*Fa(3,4)*Fa(4,1)+Fa(1,3)*Fa(2,4)&
-            &*Fa(3,1)*Fa(4,2)+ Fa(1,4)*Fa(2,1)*Fa(3,3)*Fa(4,2)+Fa(1&
-            &,4)*Fa(2,2)*Fa(3,1)*Fa(4,3)+Fa(1,4)*Fa(2,3)*Fa(3,2)*Fa(4&
-            &,1)- Fa(1,1)*Fa(2,2)*Fa(3,4)*Fa(4,3)-Fa(1,1)*Fa(2,3)&
-            &*Fa(3,2)*Fa(4,4)-Fa(1,1)*Fa(2,4)*Fa(3,3)*Fa(4,2)- Fa(1&
-            &,2)*Fa(2,1)*Fa(3,3)*Fa(4,4)-Fa(1,2)*Fa(2,3)*Fa(3,4)*Fa(4&
-            &,1)-Fa(1,2)*Fa(2,4)*Fa(3,1)*Fa(4,3)- Fa(1,3)*Fa(2,1)&
-            &*Fa(3,4)*Fa(4,2)-Fa(1,3)*Fa(2,2)*Fa(3,1)*Fa(4,4)-Fa(1,3)&
-            &*Fa(2,4)*Fa(3,2)*Fa(4,1)- Fa(1,4)*Fa(2,1)*Fa(3,2)*Fa(4&
-            &,3)-Fa(1,4)*Fa(2,2)*Fa(3,3)*Fa(4,1)-Fa(1,4)*Fa(2,3)*Fa(3&
-            &,1)*Fa(4,2)
-
-        if (faux .eq. 0.0_SP) return
-
-        Fx=matmul(Fb,Ff)/faux
-
-      case default
-        ! Use LAPACK routine for general NxN system, where N>4
-        Fpiv=0; Fx=Ff
-        call SGESV(ndim,1,Fa,ndim,Fpiv,Fx,ndim,info)
-
-        if (info .ne. 0) return
-
-      end select
-    end select
+      Kindy(iy)=Kindy(ix);  Kindy(ix)=ix
+    end do
 
     bsuccess = .true.
 
-  end subroutine mprim_invertMatrixSP
+  end subroutine mprim_invertMatrixPivotSP
 
   ! ***************************************************************************
 
@@ -2968,6 +3740,46 @@ contains
 
 !<subroutine>
 
+  pure subroutine mprim_solve2x2DirectSP(Fa,Fb)
+
+!<description>
+  ! This subroutine directly solves a 2x2 system without any pivoting.
+  ! 'Fa' is a 2x2 matrix, Fb a 2-tupel with the right hand
+  ! side which is replaced by the solution.
+  !
+  ! Warning: For speed reasons, there is no array bounds checking
+  ! activated in this routine! Fa and Fb are assumed to be 2x2 arrays!
+!</description>
+
+!<input>
+  ! Matrix A.
+  real(SP), dimension(2,2), intent(in) :: Fa
+!</input>
+
+!<inputoutput>
+  ! On entry: RHS vector b.
+  ! On exit: Solution x with Ax=b.
+  real(SP), dimension(2), intent(out) :: Fb
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    real(SP) :: fdet,x1,x2
+
+    ! Explicit formula for 2x2 systems, computed with Maple.
+    fdet = 1.0_SP / (Fa(1,1)*Fa(2,2)-Fa(1,2)*Fa(2,1))
+    x1 = Fb(1)
+    x2 = Fb(2)
+    Fb(1) = -(Fa(1,2)*x2 - Fa(2,2)*x1) * fdet
+    Fb(2) =  (Fa(1,1)*x2 - Fa(2,1)*x1) * fdet
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
   pure subroutine mprim_solve3x3DirectDP(Da,Db)
 
 !<description>
@@ -3030,11 +3842,77 @@ contains
 
   end subroutine
 
+  ! ***************************************************************************
+
+!<subroutine>
+
+  pure subroutine mprim_solve3x3DirectSP(Fa,Fb)
+
+!<description>
+  ! This subroutine directly solves a 3x3 system without any pivoting.
+  ! 'Fa' is a 3x3 matrix, Fb a 3-tupel with the right hand
+  ! side which is replaced by the solution.
+  !
+  ! Warning: For speed reasons, there is no array bounds checking
+  ! activated in this routine! Fa and Fb are assumed to be 2x2 arrays!
+!</description>
+
+!<input>
+  ! Matrix A.
+  real(SP), dimension(3,3), intent(in) :: Fa
+!</input>
+
+!<inputoutput>
+  ! On entry: RHS vector b.
+  ! On exit: Solution x with Ax=b.
+  real(SP), dimension(3), intent(inout) :: Fb
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    real(SP) :: fdet,x1,x2,x3
+
+    ! Explicit formula for 3x3 systems, computed with Maple.
+    fdet = 1.0_SP / &
+        (Fa(1,1)*Fa(2,2)*Fa(3,3) &
+        -Fa(1,1)*Fa(3,2)*Fa(2,3) &
+        -Fa(2,1)*Fa(1,2)*Fa(3,3) &
+        +Fa(3,2)*Fa(2,1)*Fa(1,3) &
+        -Fa(2,2)*Fa(3,1)*Fa(1,3) &
+        +Fa(3,1)*Fa(1,2)*Fa(2,3))
+    x1 = Fb(1)
+    x2 = Fb(2)
+    x3 = Fb(3)
+    Fb(1) = fdet * &
+        (Fa(1,2)*Fa(2,3)*x3 &
+        -Fa(1,2)*x2*Fa(3,3) &
+        +Fa(1,3)*Fa(3,2)*x2 &
+        -Fa(1,3)*Fa(2,2)*x3 &
+        +x1*Fa(2,2)*Fa(3,3) &
+        -x1*Fa(3,2)*Fa(2,3))
+    Fb(2) = - fdet * &
+        (Fa(1,1)*Fa(2,3)*x3 &
+        -Fa(1,1)*x2*Fa(3,3) &
+        -Fa(2,1)*Fa(1,3)*x3 &
+        -Fa(2,3)*Fa(3,1)*x1 &
+        +x2*Fa(3,1)*Fa(1,3) &
+        +Fa(2,1)*x1*Fa(3,3))
+    Fb(3) = fdet * &
+        (Fa(3,2)*Fa(2,1)*x1 &
+        -Fa(1,1)*Fa(3,2)*x2 &
+        +Fa(1,1)*Fa(2,2)*x3 &
+        -Fa(2,2)*Fa(3,1)*x1 &
+        -Fa(2,1)*Fa(1,2)*x3 &
+        +Fa(3,1)*Fa(1,2)*x2)
+
+  end subroutine
+
   ! ************************************************************************
 
 !<subroutine>
 
-  pure subroutine mprim_solve2x2BandDiag (neqA,Da,Db,Dd,Dc,Dvec1,Dvec2)
+  pure subroutine mprim_solve2x2BandDiagDP (neqA,Da,Db,Dd,Dc,Dvec1,Dvec2)
 
 !<description>
   ! This routine solves to a 2x2 block matrix with all blocks consisting
@@ -3112,6 +3990,93 @@ contains
       ddet = 1.0_DP / (a11*a22 - a12*a21)
       Dvec1(i) = -(a12*x2 - a22*x1) * ddet
       Dvec2(i) =  (a11*x2 - a21*x1) * ddet
+
+    end do
+
+  end subroutine
+
+  ! ************************************************************************
+
+!<subroutine>
+
+  pure subroutine mprim_solve2x2BandDiagSP (neqA,Fa,Fb,Dd,Fc,Fvec1,Fvec2)
+
+!<description>
+  ! This routine solves to a 2x2 block matrix with all blocks consisting
+  ! of only diagonal bands.
+  !
+  ! <!--
+  !
+  ! The system that is to be solved here is assumed to have the following shape:
+  !
+  !   (  A             B             ) ( U1 ) = ( F1 )
+  !   (       ..            ..       ) ( U1 )   ( F1 )
+  !   (             A             B  ) ( U1 )   ( F1 )
+  !   (  D             C             ) ( U2 )   ( F2 )
+  !   (       ..            ..       ) ( U2 )   ( F2 )
+  !   (             D             C  ) ( U2 )   ( F2 )
+  !
+  ! or in short:
+  !
+  !   ( A B ) = (U) = (F)
+  !   ( D C )   (U)   (F)
+  !
+  ! with all matrices diagonal matrices.
+  !
+  ! -->
+!</description>
+
+!<input>
+  ! Dimension of the matrix blocks
+  integer, intent(in) :: neqA
+
+  ! Submatrix A, only diagonal entries.
+  real(SP), dimension(*), intent(in) :: Fa
+
+  ! Diagonal entries in the submatrix B.
+  real(SP), dimension(*), intent(in) :: Fb
+
+  ! Diagonal entries in the submatrix D.
+  real(SP), dimension(*), intent(in) :: Dd
+
+  ! Diagonal elements of the local system matrix C
+  real(SP), dimension(*), intent(in) :: Fc
+!</input>
+
+!<inputoutput>
+  ! On entry: Right hand side F1.
+  ! On exit: Solution vector U1.
+  real(SP), dimension(*), intent(inout) :: Fvec1
+
+  ! On entry: Right hand side F2.
+  ! On exit: Solution vector U2.
+  real(SP), dimension(*), intent(inout) :: Fvec2
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    integer :: i
+    real(SP) :: fdet,a11,a12,a21,a22,x1,x2
+
+    ! Such a system can be solved by reducing it to neqA*neqA 2x2 systems
+    ! as there is only minimal coupling present between the entries.
+    !
+    ! Loop over the entries of the A matrix.
+    do i=1,neqA
+
+      ! Fetch a 2x2 system from the big matrix
+      a11 = Fa(i)
+      a21 = Dd(i)
+      a12 = Fb(i)
+      a22 = Fc(i)
+      x1 = Fvec1(i)
+      x2 = Fvec2(i)
+
+      ! Solve the system, overwrite the input vector.
+      fdet = 1.0_SP / (a11*a22 - a12*a21)
+      Fvec1(i) = -(a12*x2 - a22*x1) * fdet
+      Fvec2(i) =  (a11*x2 - a21*x1) * fdet
 
     end do
 
