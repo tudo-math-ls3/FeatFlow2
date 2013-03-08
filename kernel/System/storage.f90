@@ -10454,11 +10454,11 @@ contains
       case (ST_SINGLE)
         select case (p_rdest%idataType)
         case (ST_SINGLE)
-          call lalg_copyVectorSngl (p_rsource%p_Fsingle1D,p_rdest%p_Fsingle1D)
+          call lalg_copyVector (p_rsource%p_Fsingle1D,p_rdest%p_Fsingle1D)
         case (ST_DOUBLE)
-          call lalg_copyVectorSnglDbl (p_rsource%p_Fsingle1D,p_rdest%p_Ddouble1D)
+          call lalg_copyVector (p_rsource%p_Fsingle1D,p_rdest%p_Ddouble1D)
         case (ST_QUAD)
-          call lalg_copyVectorSnglQuad (p_rsource%p_Fsingle1D,p_rdest%p_Qquad1D)
+          call lalg_copyVector (p_rsource%p_Fsingle1D,p_rdest%p_Qquad1D)
         case default
           call output_line ('Unsupported data type combination!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copyDefault')
@@ -10468,11 +10468,11 @@ contains
       case (ST_DOUBLE)
         select case (p_rdest%idataType)
         case (ST_SINGLE)
-          call lalg_copyVectorDblSngl (p_rsource%p_Ddouble1D,p_rdest%p_Fsingle1D)
+          call lalg_copyVector (p_rsource%p_Ddouble1D,p_rdest%p_Fsingle1D)
         case (ST_DOUBLE)
-          call lalg_copyVectorDble (p_rsource%p_Ddouble1D,p_rdest%p_Ddouble1D)
+          call lalg_copyVector (p_rsource%p_Ddouble1D,p_rdest%p_Ddouble1D)
         case (ST_QUAD)
-          call lalg_copyVectorDblQuad (p_rsource%p_Ddouble1D,p_rdest%p_Qquad1D)
+          call lalg_copyVector (p_rsource%p_Ddouble1D,p_rdest%p_Qquad1D)
         case default
           call output_line ('Unsupported data type combination!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copyDefault')
@@ -10482,11 +10482,11 @@ contains
       case (ST_QUAD)
         select case (p_rdest%idataType)
         case (ST_SINGLE)
-          call lalg_copyVectorQuadSngl (p_rsource%p_Qquad1D,p_rdest%p_Fsingle1D)
+          call lalg_copyVector (p_rsource%p_Qquad1D,p_rdest%p_Fsingle1D)
         case (ST_DOUBLE)
-          call lalg_copyVectorQuadDbl (p_rsource%p_Qquad1D,p_rdest%p_Ddouble1D)
+          call lalg_copyVector (p_rsource%p_Qquad1D,p_rdest%p_Ddouble1D)
         case (ST_QUAD)
-          call lalg_copyVectorQuad (p_rsource%p_Qquad1D,p_rdest%p_Qquad1D)
+          call lalg_copyVector (p_rsource%p_Qquad1D,p_rdest%p_Qquad1D)
         case default
           call output_line ('Unsupported data type combination!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copyDefault')
@@ -10496,15 +10496,15 @@ contains
       case (ST_INT)
         select case (p_rdest%idataType)
         case (ST_INT)
-          call lalg_copyVectorInt (p_rsource%p_Iinteger1D,p_rdest%p_Iinteger1D)
+          call lalg_copyVector (p_rsource%p_Iinteger1D,p_rdest%p_Iinteger1D)
         case (ST_INT8)
-          call lalg_copyVectorInt (p_rsource%p_Iinteger1D,p_rdest%p_Iint8_1D)
+          call lalg_copyVector (p_rsource%p_Iinteger1D,p_rdest%p_Iint8_1D)
         case (ST_INT16)
-          call lalg_copyVectorInt (p_rsource%p_Iinteger1D,p_rdest%p_Iint16_1D)
+          call lalg_copyVector (p_rsource%p_Iinteger1D,p_rdest%p_Iint16_1D)
         case (ST_INT32)
-          call lalg_copyVectorInt (p_rsource%p_Iinteger1D,p_rdest%p_Iint32_1D)
+          call lalg_copyVector (p_rsource%p_Iinteger1D,p_rdest%p_Iint32_1D)
         case (ST_INT64)
-          call lalg_copyVectorInt (p_rsource%p_Iinteger1D,p_rdest%p_Iint64_1D)
+          call lalg_copyVector (p_rsource%p_Iinteger1D,p_rdest%p_Iint64_1D)
         case default
           call output_line ('Unsupported data type combination!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copyDefault')
@@ -10514,15 +10514,15 @@ contains
       case (ST_INT8)
         select case (p_rdest%idataType)
         case (ST_INT)
-          call lalg_copyVectorInt (p_rsource%p_Iint8_1D,p_rdest%p_Iinteger1D)
+          call lalg_copyVector (p_rsource%p_Iint8_1D,p_rdest%p_Iinteger1D)
         case (ST_INT8)
-          call lalg_copyVectorInt (p_rsource%p_Iint8_1D,p_rdest%p_Iint8_1D)
+          call lalg_copyVector (p_rsource%p_Iint8_1D,p_rdest%p_Iint8_1D)
         case (ST_INT16)
-          call lalg_copyVectorInt (p_rsource%p_Iint8_1D,p_rdest%p_Iint16_1D)
+          call lalg_copyVector (p_rsource%p_Iint8_1D,p_rdest%p_Iint16_1D)
         case (ST_INT32)
-          call lalg_copyVectorInt (p_rsource%p_Iint8_1D,p_rdest%p_Iint32_1D)
+          call lalg_copyVector (p_rsource%p_Iint8_1D,p_rdest%p_Iint32_1D)
         case (ST_INT64)
-          call lalg_copyVectorInt (p_rsource%p_Iint8_1D,p_rdest%p_Iint64_1D)
+          call lalg_copyVector (p_rsource%p_Iint8_1D,p_rdest%p_Iint64_1D)
         case default
           call output_line ('Unsupported data type combination!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copyDefault')
@@ -10532,15 +10532,15 @@ contains
       case (ST_INT16)
         select case (p_rdest%idataType)
         case (ST_INT)
-          call lalg_copyVectorInt (p_rsource%p_Iint16_1D,p_rdest%p_Iinteger1D)
+          call lalg_copyVector (p_rsource%p_Iint16_1D,p_rdest%p_Iinteger1D)
         case (ST_INT8)
-          call lalg_copyVectorInt (p_rsource%p_Iint16_1D,p_rdest%p_Iint8_1D)
+          call lalg_copyVector (p_rsource%p_Iint16_1D,p_rdest%p_Iint8_1D)
         case (ST_INT16)
-          call lalg_copyVectorInt (p_rsource%p_Iint16_1D,p_rdest%p_Iint16_1D)
+          call lalg_copyVector (p_rsource%p_Iint16_1D,p_rdest%p_Iint16_1D)
         case (ST_INT32)
-          call lalg_copyVectorInt (p_rsource%p_Iint16_1D,p_rdest%p_Iint32_1D)
+          call lalg_copyVector (p_rsource%p_Iint16_1D,p_rdest%p_Iint32_1D)
         case (ST_INT64)
-          call lalg_copyVectorInt (p_rsource%p_Iint16_1D,p_rdest%p_Iint64_1D)
+          call lalg_copyVector (p_rsource%p_Iint16_1D,p_rdest%p_Iint64_1D)
         case default
           call output_line ('Unsupported data type combination!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copyDefault')
@@ -10550,15 +10550,15 @@ contains
       case (ST_INT32)
         select case (p_rdest%idataType)
         case (ST_INT)
-          call lalg_copyVectorInt (p_rsource%p_Iint32_1D,p_rdest%p_Iinteger1D)
+          call lalg_copyVector (p_rsource%p_Iint32_1D,p_rdest%p_Iinteger1D)
         case (ST_INT8)
-          call lalg_copyVectorInt (p_rsource%p_Iint32_1D,p_rdest%p_Iint8_1D)
+          call lalg_copyVector (p_rsource%p_Iint32_1D,p_rdest%p_Iint8_1D)
         case (ST_INT16)
-          call lalg_copyVectorInt (p_rsource%p_Iint32_1D,p_rdest%p_Iint16_1D)
+          call lalg_copyVector (p_rsource%p_Iint32_1D,p_rdest%p_Iint16_1D)
         case (ST_INT32)
-          call lalg_copyVectorInt (p_rsource%p_Iint32_1D,p_rdest%p_Iint32_1D)
+          call lalg_copyVector (p_rsource%p_Iint32_1D,p_rdest%p_Iint32_1D)
         case (ST_INT64)
-          call lalg_copyVectorInt (p_rsource%p_Iint32_1D,p_rdest%p_Iint64_1D)
+          call lalg_copyVector (p_rsource%p_Iint32_1D,p_rdest%p_Iint64_1D)
         case default
           call output_line ('Unsupported data type combination!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copyDefault')
@@ -10568,15 +10568,15 @@ contains
       case (ST_INT64)
         select case (p_rdest%idataType)
         case (ST_INT)
-          call lalg_copyVectorInt (p_rsource%p_Iint64_1D,p_rdest%p_Iinteger1D)
+          call lalg_copyVector (p_rsource%p_Iint64_1D,p_rdest%p_Iinteger1D)
         case (ST_INT8)
-          call lalg_copyVectorInt (p_rsource%p_Iint64_1D,p_rdest%p_Iint8_1D)
+          call lalg_copyVector (p_rsource%p_Iint64_1D,p_rdest%p_Iint8_1D)
         case (ST_INT16)
-          call lalg_copyVectorInt (p_rsource%p_Iint64_1D,p_rdest%p_Iint16_1D)
+          call lalg_copyVector (p_rsource%p_Iint64_1D,p_rdest%p_Iint16_1D)
         case (ST_INT32)
-          call lalg_copyVectorInt (p_rsource%p_Iint64_1D,p_rdest%p_Iint32_1D)
+          call lalg_copyVector (p_rsource%p_Iint64_1D,p_rdest%p_Iint32_1D)
         case (ST_INT64)
-          call lalg_copyVectorInt (p_rsource%p_Iint64_1D,p_rdest%p_Iint64_1D)
+          call lalg_copyVector (p_rsource%p_Iint64_1D,p_rdest%p_Iint64_1D)
         case default
           call output_line ('Unsupported data type combination!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copyDefault')
@@ -10585,7 +10585,7 @@ contains
 
       case (ST_LOGICAL)
         if (p_rdest%idataType .eq. ST_LOGICAL) then
-          call lalg_copyVectorLogical(p_rsource%p_Blogical1D,p_rdest%p_Blogical1D)
+          call lalg_copyVector(p_rsource%p_Blogical1D,p_rdest%p_Blogical1D)
         else
           call output_line ('Unsupported data type combination!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copyDefault')
@@ -10594,7 +10594,7 @@ contains
 
       case (ST_CHAR)
         if (p_rdest%idataType .eq. ST_CHAR) then
-          call lalg_copyVectorChar(p_rsource%p_Schar1D,p_rdest%p_Schar1D)
+          call lalg_copyVector(p_rsource%p_Schar1D,p_rdest%p_Schar1D)
         else
           call output_line ('Unsupported data type combination!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copyDefault')
@@ -10612,11 +10612,11 @@ contains
       case (ST_SINGLE)
         select case (p_rdest%idataType)
         case (ST_SINGLE)
-          call lalg_copyVectorSngl2D (p_rsource%p_Fsingle2D,p_rdest%p_Fsingle2D)
+          call lalg_copyVector (p_rsource%p_Fsingle2D,p_rdest%p_Fsingle2D)
         case (ST_DOUBLE)
-          call lalg_copyVectorSnglDbl2D (p_rsource%p_Fsingle2D,p_rdest%p_Ddouble2D)
+          call lalg_copyVector (p_rsource%p_Fsingle2D,p_rdest%p_Ddouble2D)
         case (ST_QUAD)
-          call lalg_copyVectorSnglQuad2D (p_rsource%p_Fsingle2D,p_rdest%p_Qquad2D)
+          call lalg_copyVector (p_rsource%p_Fsingle2D,p_rdest%p_Qquad2D)
         case default
           call output_line ('Unsupported data type combination!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copyDefault')
@@ -10626,11 +10626,11 @@ contains
       case (ST_DOUBLE)
         select case (p_rdest%idataType)
         case (ST_SINGLE)
-          call lalg_copyVectorDblSngl2D (p_rsource%p_Ddouble2D,p_rdest%p_Fsingle2D)
+          call lalg_copyVector (p_rsource%p_Ddouble2D,p_rdest%p_Fsingle2D)
         case (ST_DOUBLE)
-          call lalg_copyVectorDble2D (p_rsource%p_Ddouble2D,p_rdest%p_Ddouble2D)
+          call lalg_copyVector (p_rsource%p_Ddouble2D,p_rdest%p_Ddouble2D)
         case (ST_QUAD)
-          call lalg_copyVectorDblQuad2D (p_rsource%p_Ddouble2D,p_rdest%p_Qquad2D)
+          call lalg_copyVector (p_rsource%p_Ddouble2D,p_rdest%p_Qquad2D)
         case default
           call output_line ('Unsupported data type combination!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copyDefault')
@@ -10640,11 +10640,11 @@ contains
       case (ST_QUAD)
         select case (p_rdest%idataType)
         case (ST_SINGLE)
-          call lalg_copyVectorQuadSngl2D (p_rsource%p_Qquad2D,p_rdest%p_Fsingle2D)
+          call lalg_copyVector (p_rsource%p_Qquad2D,p_rdest%p_Fsingle2D)
         case (ST_DOUBLE)
-          call lalg_copyVectorQuadDbl2D (p_rsource%p_Qquad2D,p_rdest%p_Ddouble2D)
+          call lalg_copyVector (p_rsource%p_Qquad2D,p_rdest%p_Ddouble2D)
         case (ST_QUAD)
-          call lalg_copyVectorQuad2D (p_rsource%p_Qquad2D,p_rdest%p_Qquad2D)
+          call lalg_copyVector (p_rsource%p_Qquad2D,p_rdest%p_Qquad2D)
         case default
           call output_line ('Unsupported data type combination!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copyDefault')
@@ -10654,15 +10654,15 @@ contains
       case (ST_INT)
         select case (p_rdest%idataType)
         case (ST_INT)
-          call lalg_copyVectorInt2D (p_rsource%p_Iinteger2D, p_rdest%p_Iinteger2D)
+          call lalg_copyVector (p_rsource%p_Iinteger2D, p_rdest%p_Iinteger2D)
         case (ST_INT8)
-          call lalg_copyVectorInt2D (p_rsource%p_Iinteger2D, p_rdest%p_Iint8_2D)
+          call lalg_copyVector (p_rsource%p_Iinteger2D, p_rdest%p_Iint8_2D)
         case (ST_INT16)
-          call lalg_copyVectorInt2D (p_rsource%p_Iinteger2D, p_rdest%p_Iint16_2D)
+          call lalg_copyVector (p_rsource%p_Iinteger2D, p_rdest%p_Iint16_2D)
         case (ST_INT32)
-          call lalg_copyVectorInt2D (p_rsource%p_Iinteger2D, p_rdest%p_Iint32_2D)
+          call lalg_copyVector (p_rsource%p_Iinteger2D, p_rdest%p_Iint32_2D)
         case (ST_INT64)
-          call lalg_copyVectorInt2D (p_rsource%p_Iinteger2D, p_rdest%p_Iint64_2D)
+          call lalg_copyVector (p_rsource%p_Iinteger2D, p_rdest%p_Iint64_2D)
         case default
           call output_line ('Unsupported data type combination!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copyDefault')
@@ -10672,15 +10672,15 @@ contains
       case (ST_INT8)
         select case (p_rdest%idataType)
         case (ST_INT)
-          call lalg_copyVectorInt2D (p_rsource%p_Iint8_2D, p_rdest%p_Iinteger2D)
+          call lalg_copyVector (p_rsource%p_Iint8_2D, p_rdest%p_Iinteger2D)
         case (ST_INT8)
-          call lalg_copyVectorInt2D (p_rsource%p_Iint8_2D, p_rdest%p_Iint8_2D)
+          call lalg_copyVector (p_rsource%p_Iint8_2D, p_rdest%p_Iint8_2D)
         case (ST_INT16)
-          call lalg_copyVectorInt2D (p_rsource%p_Iint8_2D, p_rdest%p_Iint16_2D)
+          call lalg_copyVector (p_rsource%p_Iint8_2D, p_rdest%p_Iint16_2D)
         case (ST_INT32)
-          call lalg_copyVectorInt2D (p_rsource%p_Iint8_2D, p_rdest%p_Iint32_2D)
+          call lalg_copyVector (p_rsource%p_Iint8_2D, p_rdest%p_Iint32_2D)
         case (ST_INT64)
-          call lalg_copyVectorInt2D (p_rsource%p_Iint8_2D, p_rdest%p_Iint64_2D)
+          call lalg_copyVector (p_rsource%p_Iint8_2D, p_rdest%p_Iint64_2D)
         case default
           call output_line ('Unsupported data type combination!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copyDefault')
@@ -10690,15 +10690,15 @@ contains
       case (ST_INT16)
         select case (p_rdest%idataType)
         case (ST_INT)
-          call lalg_copyVectorInt2D (p_rsource%p_Iint16_2D, p_rdest%p_Iinteger2D)
+          call lalg_copyVector (p_rsource%p_Iint16_2D, p_rdest%p_Iinteger2D)
         case (ST_INT8)
-          call lalg_copyVectorInt2D (p_rsource%p_Iint16_2D, p_rdest%p_Iint8_2D)
+          call lalg_copyVector (p_rsource%p_Iint16_2D, p_rdest%p_Iint8_2D)
         case (ST_INT16)
-          call lalg_copyVectorInt2D (p_rsource%p_Iint16_2D, p_rdest%p_Iint16_2D)
+          call lalg_copyVector (p_rsource%p_Iint16_2D, p_rdest%p_Iint16_2D)
         case (ST_INT32)
-          call lalg_copyVectorInt2D (p_rsource%p_Iint16_2D, p_rdest%p_Iint32_2D)
+          call lalg_copyVector (p_rsource%p_Iint16_2D, p_rdest%p_Iint32_2D)
         case (ST_INT64)
-          call lalg_copyVectorInt2D (p_rsource%p_Iint16_2D, p_rdest%p_Iint64_2D)
+          call lalg_copyVector (p_rsource%p_Iint16_2D, p_rdest%p_Iint64_2D)
         case default
           call output_line ('Unsupported data type combination!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copyDefault')
@@ -10708,15 +10708,15 @@ contains
       case (ST_INT32)
         select case (p_rdest%idataType)
         case (ST_INT)
-          call lalg_copyVectorInt2D (p_rsource%p_Iint32_2D, p_rdest%p_Iinteger2D)
+          call lalg_copyVector (p_rsource%p_Iint32_2D, p_rdest%p_Iinteger2D)
         case (ST_INT8)
-          call lalg_copyVectorInt2D (p_rsource%p_Iint32_2D, p_rdest%p_Iint8_2D)
+          call lalg_copyVector (p_rsource%p_Iint32_2D, p_rdest%p_Iint8_2D)
         case (ST_INT16)
-          call lalg_copyVectorInt2D (p_rsource%p_Iint32_2D, p_rdest%p_Iint16_2D)
+          call lalg_copyVector (p_rsource%p_Iint32_2D, p_rdest%p_Iint16_2D)
         case (ST_INT32)
-          call lalg_copyVectorInt2D (p_rsource%p_Iint32_2D, p_rdest%p_Iint32_2D)
+          call lalg_copyVector (p_rsource%p_Iint32_2D, p_rdest%p_Iint32_2D)
         case (ST_INT64)
-          call lalg_copyVectorInt2D (p_rsource%p_Iint32_2D, p_rdest%p_Iint64_2D)
+          call lalg_copyVector (p_rsource%p_Iint32_2D, p_rdest%p_Iint64_2D)
         case default
           call output_line ('Unsupported data type combination!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copyDefault')
@@ -10726,15 +10726,15 @@ contains
       case (ST_INT64)
         select case (p_rdest%idataType)
         case (ST_INT)
-          call lalg_copyVectorInt2D (p_rsource%p_Iint64_2D, p_rdest%p_Iinteger2D)
+          call lalg_copyVector (p_rsource%p_Iint64_2D, p_rdest%p_Iinteger2D)
         case (ST_INT8)
-          call lalg_copyVectorInt2D (p_rsource%p_Iint64_2D, p_rdest%p_Iint8_2D)
+          call lalg_copyVector (p_rsource%p_Iint64_2D, p_rdest%p_Iint8_2D)
         case (ST_INT16)
-          call lalg_copyVectorInt2D (p_rsource%p_Iint64_2D, p_rdest%p_Iint16_2D)
+          call lalg_copyVector (p_rsource%p_Iint64_2D, p_rdest%p_Iint16_2D)
         case (ST_INT32)
-          call lalg_copyVectorInt2D (p_rsource%p_Iint64_2D, p_rdest%p_Iint32_2D)
+          call lalg_copyVector (p_rsource%p_Iint64_2D, p_rdest%p_Iint32_2D)
         case (ST_INT64)
-          call lalg_copyVectorInt2D (p_rsource%p_Iint64_2D, p_rdest%p_Iint64_2D)
+          call lalg_copyVector (p_rsource%p_Iint64_2D, p_rdest%p_Iint64_2D)
         case default
           call output_line ('Unsupported data type combination!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copyDefault')
@@ -10743,7 +10743,7 @@ contains
 
       case (ST_LOGICAL)
         if (p_rdest%idataType .eq. ST_LOGICAL) then
-          call lalg_copyVectorLogical2D (p_rsource%p_Blogical2D, p_rdest%p_Blogical2D)
+          call lalg_copyVector (p_rsource%p_Blogical2D, p_rdest%p_Blogical2D)
         else
           call output_line ('Unsupported data type combination!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copyDefault')
@@ -10752,7 +10752,7 @@ contains
 
       case (ST_CHAR)
         if (p_rdest%idataType .eq. ST_CHAR) then
-          call lalg_copyVectorChar2D (p_rsource%p_Schar2D, p_rdest%p_Schar2D)
+          call lalg_copyVector (p_rsource%p_Schar2D, p_rdest%p_Schar2D)
         else
           call output_line ('Unsupported data type combination!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copyDefault')
@@ -10770,11 +10770,11 @@ contains
       case (ST_SINGLE)
         select case (p_rdest%idataType)
         case (ST_SINGLE)
-          call lalg_copyVectorSngl3D (p_rsource%p_Fsingle3D,p_rdest%p_Fsingle3D)
+          call lalg_copyVector (p_rsource%p_Fsingle3D,p_rdest%p_Fsingle3D)
         case (ST_DOUBLE)
-          call lalg_copyVectorSnglDbl3D (p_rsource%p_Fsingle3D,p_rdest%p_Ddouble3D)
+          call lalg_copyVector (p_rsource%p_Fsingle3D,p_rdest%p_Ddouble3D)
         case (ST_QUAD)
-          call lalg_copyVectorSnglQuad3D (p_rsource%p_Fsingle3D,p_rdest%p_Qquad3D)
+          call lalg_copyVector (p_rsource%p_Fsingle3D,p_rdest%p_Qquad3D)
         case default
           call output_line ('Unsupported data type combination!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copyDefault')
@@ -10784,11 +10784,11 @@ contains
       case (ST_DOUBLE)
         select case (p_rdest%idataType)
         case (ST_SINGLE)
-          call lalg_copyVectorDblSngl3D (p_rsource%p_Ddouble3D,p_rdest%p_Fsingle3D)
+          call lalg_copyVector (p_rsource%p_Ddouble3D,p_rdest%p_Fsingle3D)
         case (ST_DOUBLE)
-          call lalg_copyVectorDble3D (p_rsource%p_Ddouble3D,p_rdest%p_Ddouble3D)
+          call lalg_copyVector (p_rsource%p_Ddouble3D,p_rdest%p_Ddouble3D)
         case (ST_QUAD)
-          call lalg_copyVectorDblQuad3D (p_rsource%p_Ddouble3D,p_rdest%p_Qquad3D)
+          call lalg_copyVector (p_rsource%p_Ddouble3D,p_rdest%p_Qquad3D)
         case default
           call output_line ('Unsupported data type combination!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copyDefault')
@@ -10798,11 +10798,11 @@ contains
       case (ST_QUAD)
         select case (p_rdest%idataType)
         case (ST_SINGLE)
-          call lalg_copyVectorQuadSngl3D (p_rsource%p_Qquad3D,p_rdest%p_Fsingle3D)
+          call lalg_copyVector (p_rsource%p_Qquad3D,p_rdest%p_Fsingle3D)
         case (ST_DOUBLE)
-          call lalg_copyVectorQuadDbl3D (p_rsource%p_Qquad3D,p_rdest%p_Ddouble3D)
+          call lalg_copyVector (p_rsource%p_Qquad3D,p_rdest%p_Ddouble3D)
         case (ST_QUAD)
-          call lalg_copyVectorQuad3D (p_rsource%p_Qquad3D,p_rdest%p_Qquad3D)
+          call lalg_copyVector (p_rsource%p_Qquad3D,p_rdest%p_Qquad3D)
         case default
           call output_line ('Unsupported data type combination!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copyDefault')
@@ -10812,15 +10812,15 @@ contains
       case (ST_INT)
         select case (p_rdest%idataType)
         case (ST_INT)
-          call lalg_copyVectorInt3D (p_rsource%p_Iinteger3D, p_rdest%p_Iinteger3D)
+          call lalg_copyVector (p_rsource%p_Iinteger3D, p_rdest%p_Iinteger3D)
         case (ST_INT8)
-          call lalg_copyVectorInt3D (p_rsource%p_Iinteger3D, p_rdest%p_Iint8_3D)
+          call lalg_copyVector (p_rsource%p_Iinteger3D, p_rdest%p_Iint8_3D)
         case (ST_INT16)
-          call lalg_copyVectorInt3D (p_rsource%p_Iinteger3D, p_rdest%p_Iint16_3D)
+          call lalg_copyVector (p_rsource%p_Iinteger3D, p_rdest%p_Iint16_3D)
         case (ST_INT32)
-          call lalg_copyVectorInt3D (p_rsource%p_Iinteger3D, p_rdest%p_Iint32_3D)
+          call lalg_copyVector (p_rsource%p_Iinteger3D, p_rdest%p_Iint32_3D)
         case (ST_INT64)
-          call lalg_copyVectorInt3D (p_rsource%p_Iinteger3D, p_rdest%p_Iint64_3D)
+          call lalg_copyVector (p_rsource%p_Iinteger3D, p_rdest%p_Iint64_3D)
         case default
           call output_line ('Unsupported data type combination!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copyDefault')
@@ -10830,15 +10830,15 @@ contains
       case (ST_INT8)
         select case (p_rdest%idataType)
         case (ST_INT)
-          call lalg_copyVectorInt3D (p_rsource%p_Iint8_3D, p_rdest%p_Iinteger3D)
+          call lalg_copyVector (p_rsource%p_Iint8_3D, p_rdest%p_Iinteger3D)
         case (ST_INT8)
-          call lalg_copyVectorInt3D (p_rsource%p_Iint8_3D, p_rdest%p_Iint8_3D)
+          call lalg_copyVector (p_rsource%p_Iint8_3D, p_rdest%p_Iint8_3D)
         case (ST_INT16)
-          call lalg_copyVectorInt3D (p_rsource%p_Iint8_3D, p_rdest%p_Iint16_3D)
+          call lalg_copyVector (p_rsource%p_Iint8_3D, p_rdest%p_Iint16_3D)
         case (ST_INT32)
-          call lalg_copyVectorInt3D (p_rsource%p_Iint8_3D, p_rdest%p_Iint32_3D)
+          call lalg_copyVector (p_rsource%p_Iint8_3D, p_rdest%p_Iint32_3D)
         case (ST_INT64)
-          call lalg_copyVectorInt3D (p_rsource%p_Iint8_3D, p_rdest%p_Iint64_3D)
+          call lalg_copyVector (p_rsource%p_Iint8_3D, p_rdest%p_Iint64_3D)
         case default
           call output_line ('Unsupported data type combination!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copyDefault')
@@ -10848,15 +10848,15 @@ contains
       case (ST_INT16)
         select case (p_rdest%idataType)
         case (ST_INT)
-          call lalg_copyVectorInt3D (p_rsource%p_Iint16_3D, p_rdest%p_Iinteger3D)
+          call lalg_copyVector (p_rsource%p_Iint16_3D, p_rdest%p_Iinteger3D)
         case (ST_INT8)
-          call lalg_copyVectorInt3D (p_rsource%p_Iint16_3D, p_rdest%p_Iint8_3D)
+          call lalg_copyVector (p_rsource%p_Iint16_3D, p_rdest%p_Iint8_3D)
         case (ST_INT16)
-          call lalg_copyVectorInt3D (p_rsource%p_Iint16_3D, p_rdest%p_Iint16_3D)
+          call lalg_copyVector (p_rsource%p_Iint16_3D, p_rdest%p_Iint16_3D)
         case (ST_INT32)
-          call lalg_copyVectorInt3D (p_rsource%p_Iint16_3D, p_rdest%p_Iint32_3D)
+          call lalg_copyVector (p_rsource%p_Iint16_3D, p_rdest%p_Iint32_3D)
         case (ST_INT64)
-          call lalg_copyVectorInt3D (p_rsource%p_Iint16_3D, p_rdest%p_Iint64_3D)
+          call lalg_copyVector (p_rsource%p_Iint16_3D, p_rdest%p_Iint64_3D)
         case default
           call output_line ('Unsupported data type combination!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copyDefault')
@@ -10866,15 +10866,15 @@ contains
       case (ST_INT32)
         select case (p_rdest%idataType)
         case (ST_INT)
-          call lalg_copyVectorInt3D (p_rsource%p_Iint32_3D, p_rdest%p_Iinteger3D)
+          call lalg_copyVector (p_rsource%p_Iint32_3D, p_rdest%p_Iinteger3D)
         case (ST_INT8)
-          call lalg_copyVectorInt3D (p_rsource%p_Iint32_3D, p_rdest%p_Iint8_3D)
+          call lalg_copyVector (p_rsource%p_Iint32_3D, p_rdest%p_Iint8_3D)
         case (ST_INT16)
-          call lalg_copyVectorInt3D (p_rsource%p_Iint32_3D, p_rdest%p_Iint16_3D)
+          call lalg_copyVector (p_rsource%p_Iint32_3D, p_rdest%p_Iint16_3D)
         case (ST_INT32)
-          call lalg_copyVectorInt3D (p_rsource%p_Iint32_3D, p_rdest%p_Iint32_3D)
+          call lalg_copyVector (p_rsource%p_Iint32_3D, p_rdest%p_Iint32_3D)
         case (ST_INT64)
-          call lalg_copyVectorInt3D (p_rsource%p_Iint32_3D, p_rdest%p_Iint64_3D)
+          call lalg_copyVector (p_rsource%p_Iint32_3D, p_rdest%p_Iint64_3D)
         case default
           call output_line ('Unsupported data type combination!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copyDefault')
@@ -10884,15 +10884,15 @@ contains
       case (ST_INT64)
         select case (p_rdest%idataType)
         case (ST_INT)
-          call lalg_copyVectorInt3D (p_rsource%p_Iint64_3D, p_rdest%p_Iinteger3D)
+          call lalg_copyVector (p_rsource%p_Iint64_3D, p_rdest%p_Iinteger3D)
         case (ST_INT8)
-          call lalg_copyVectorInt3D (p_rsource%p_Iint64_3D, p_rdest%p_Iint8_3D)
+          call lalg_copyVector (p_rsource%p_Iint64_3D, p_rdest%p_Iint8_3D)
         case (ST_INT16)
-          call lalg_copyVectorInt3D (p_rsource%p_Iint64_3D, p_rdest%p_Iint16_3D)
+          call lalg_copyVector (p_rsource%p_Iint64_3D, p_rdest%p_Iint16_3D)
         case (ST_INT32)
-          call lalg_copyVectorInt3D (p_rsource%p_Iint64_3D, p_rdest%p_Iint32_3D)
+          call lalg_copyVector (p_rsource%p_Iint64_3D, p_rdest%p_Iint32_3D)
         case (ST_INT64)
-          call lalg_copyVectorInt3D (p_rsource%p_Iint64_3D, p_rdest%p_Iint64_3D)
+          call lalg_copyVector (p_rsource%p_Iint64_3D, p_rdest%p_Iint64_3D)
         case default
           call output_line ('Unsupported data type combination!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copyDefault')
@@ -10901,7 +10901,7 @@ contains
 
       case (ST_LOGICAL)
         if (p_rdest%idataType .eq. ST_LOGICAL) then
-          call lalg_copyVectorLogical3D (p_rsource%p_Blogical3D, p_rdest%p_Blogical3D)
+          call lalg_copyVector (p_rsource%p_Blogical3D, p_rdest%p_Blogical3D)
         else
           call output_line ('Unsupported data type combination!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copyDefault')
@@ -10910,7 +10910,7 @@ contains
 
       case (ST_CHAR)
         if (p_rdest%idataType .eq. ST_CHAR) then
-          call lalg_copyVectorChar3D (p_rsource%p_Schar3D, p_rdest%p_Schar3D)
+          call lalg_copyVector (p_rsource%p_Schar3D, p_rdest%p_Schar3D)
         else
           call output_line ('Unsupported data type combination!', &
                             OU_CLASS_ERROR,OU_MODE_STD,'storage_copyDefault')
@@ -15199,34 +15199,34 @@ contains
       if (bcopyData) then
         select case (rstorageNode%idataType)
         case (ST_SINGLE)
-          call lalg_copyVectorSngl (p_rnode%p_Fsingle1D(ilbound:iubound),&
+          call lalg_copyVector (p_rnode%p_Fsingle1D(ilbound:iubound),&
                                     rstorageNode%p_Fsingle1D(ilbound:iubound))
         case (ST_DOUBLE)
-          call lalg_copyVectorDble (p_rnode%p_Ddouble1D(ilbound:iubound),&
+          call lalg_copyVector (p_rnode%p_Ddouble1D(ilbound:iubound),&
                                     rstorageNode%p_Ddouble1D(ilbound:iubound))
         case (ST_QUAD)
-          call lalg_copyVectorQuad (p_rnode%p_Qquad1D(ilbound:iubound),&
+          call lalg_copyVector (p_rnode%p_Qquad1D(ilbound:iubound),&
                                     rstorageNode%p_Qquad1D(ilbound:iubound))
         case (ST_INT)
-          call lalg_copyVectorInt (p_rnode%p_Iinteger1D(ilbound:iubound),&
+          call lalg_copyVector (p_rnode%p_Iinteger1D(ilbound:iubound),&
                                    rstorageNode%p_Iinteger1D(ilbound:iubound))
         case (ST_INT8)
-          call lalg_copyVectorInt (p_rnode%p_Iint8_1D(ilbound:iubound),&
+          call lalg_copyVector (p_rnode%p_Iint8_1D(ilbound:iubound),&
                                    rstorageNode%p_Iint8_1D(ilbound:iubound))
         case (ST_INT16)
-          call lalg_copyVectorInt (p_rnode%p_Iint16_1D(ilbound:iubound),&
+          call lalg_copyVector (p_rnode%p_Iint16_1D(ilbound:iubound),&
                                    rstorageNode%p_Iint16_1D(ilbound:iubound))
         case (ST_INT32)
-          call lalg_copyVectorInt (p_rnode%p_Iint32_1D(ilbound:iubound),&
+          call lalg_copyVector (p_rnode%p_Iint32_1D(ilbound:iubound),&
                                    rstorageNode%p_Iint32_1D(ilbound:iubound))
         case (ST_INT64)
-          call lalg_copyVectorInt (p_rnode%p_Iint64_1D(ilbound:iubound),&
+          call lalg_copyVector (p_rnode%p_Iint64_1D(ilbound:iubound),&
                                    rstorageNode%p_Iint64_1D(ilbound:iubound))
         case (ST_LOGICAL)
-          call lalg_copyVectorLogical (p_rnode%p_Blogical1D(ilbound:iubound),&
+          call lalg_copyVector (p_rnode%p_Blogical1D(ilbound:iubound),&
                                        rstorageNode%p_Blogical1D(ilbound:iubound))
         case (ST_CHAR)
-          call lalg_copyVectorChar (p_rnode%p_Schar1D(ilbound:iubound),&
+          call lalg_copyVector (p_rnode%p_Schar1D(ilbound:iubound),&
                                     rstorageNode%p_Schar1D(ilbound:iubound))
         end select
       end if
@@ -15420,43 +15420,43 @@ contains
         ! destination array have the same type!
         select case (rstorageNode%idataType)
         case (ST_SINGLE)
-          call lalg_copyVectorSngl2D(p_rnode%p_Fsingle2D(:,:Iubound2D(2)),&
+          call lalg_copyVector(p_rnode%p_Fsingle2D(:,:Iubound2D(2)),&
                                      rstorageNode%p_Fsingle2D(:,:Iubound2D(2)))
 
         case (ST_DOUBLE)
-          call lalg_copyVectorDble2D(p_rnode%p_Ddouble2D(:,:Iubound2D(2)),&
+          call lalg_copyVector(p_rnode%p_Ddouble2D(:,:Iubound2D(2)),&
                                      rstorageNode%p_Ddouble2D(:,:Iubound2D(2)))
 
         case (ST_QUAD)
-          call lalg_copyVectorQuad2D(p_rnode%p_Qquad2D(:,:Iubound2D(2)),&
+          call lalg_copyVector(p_rnode%p_Qquad2D(:,:Iubound2D(2)),&
                                      rstorageNode%p_Qquad2D(:,:Iubound2D(2)))
 
         case (ST_INT)
-          call lalg_copyVectorInt2D(p_rnode%p_Iinteger2D(:,:Iubound2D(2)),&
+          call lalg_copyVector(p_rnode%p_Iinteger2D(:,:Iubound2D(2)),&
                                     rstorageNode%p_Iinteger2D(:,:Iubound2D(2)))
 
         case (ST_INT8)
-          call lalg_copyVectorInt2D(p_rnode%p_Iint8_2D(:,:Iubound2D(2)),&
+          call lalg_copyVector(p_rnode%p_Iint8_2D(:,:Iubound2D(2)),&
                                     rstorageNode%p_Iint8_2D(:,:Iubound2D(2)))
 
         case (ST_INT16)
-          call lalg_copyVectorInt2D(p_rnode%p_Iint16_2D(:,:Iubound2D(2)),&
+          call lalg_copyVector(p_rnode%p_Iint16_2D(:,:Iubound2D(2)),&
                                     rstorageNode%p_Iint16_2D(:,:Iubound2D(2)))
 
         case (ST_INT32)
-          call lalg_copyVectorInt2D(p_rnode%p_Iint32_2D(:,:Iubound2D(2)),&
+          call lalg_copyVector(p_rnode%p_Iint32_2D(:,:Iubound2D(2)),&
                                     rstorageNode%p_Iint32_2D(:,:Iubound2D(2)))
 
         case (ST_INT64)
-          call lalg_copyVectorInt2D(p_rnode%p_Iint64_2D(:,:Iubound2D(2)),&
+          call lalg_copyVector(p_rnode%p_Iint64_2D(:,:Iubound2D(2)),&
                                     rstorageNode%p_Iint64_2D(:,:Iubound2D(2)))
 
         case (ST_LOGICAL)
-          call lalg_copyVectorLogical2D(p_rnode%p_Blogical2D(:,:Iubound2D(2)),&
+          call lalg_copyVector(p_rnode%p_Blogical2D(:,:Iubound2D(2)),&
                                         rstorageNode%p_Blogical2D(:,:Iubound2D(2)))
 
         case (ST_CHAR)
-          call lalg_copyVectorChar2D(p_rnode%p_Schar2D(:,:Iubound2D(2)),&
+          call lalg_copyVector(p_rnode%p_Schar2D(:,:Iubound2D(2)),&
                                      rstorageNode%p_Schar2D(:,:Iubound2D(2)))
         end select
 
@@ -15681,43 +15681,43 @@ contains
         ! destination array have the same type!
         select case (rstorageNode%idataType)
         case (ST_SINGLE)
-          call lalg_copyVectorSngl3D(p_rnode%p_Fsingle3D(:,:,:Iubound3D(3)),&
+          call lalg_copyVector(p_rnode%p_Fsingle3D(:,:,:Iubound3D(3)),&
                                      rstorageNode%p_Fsingle3D(:,:,:Iubound3D(3)))
 
         case (ST_DOUBLE)
-          call lalg_copyVectorDble3D(p_rnode%p_Ddouble3D(:,:,:Iubound3D(3)),&
+          call lalg_copyVector(p_rnode%p_Ddouble3D(:,:,:Iubound3D(3)),&
                                      rstorageNode%p_Ddouble3D(:,:,:Iubound3D(3)))
 
         case (ST_QUAD)
-          call lalg_copyVectorQuad3D(p_rnode%p_Qquad3D(:,:,:Iubound3D(3)),&
+          call lalg_copyVector(p_rnode%p_Qquad3D(:,:,:Iubound3D(3)),&
                                      rstorageNode%p_Qquad3D(:,:,:Iubound3D(3)))
 
         case (ST_INT)
-          call lalg_copyVectorInt3D(p_rnode%p_Iinteger3D(:,:,:Iubound3D(3)),&
+          call lalg_copyVector(p_rnode%p_Iinteger3D(:,:,:Iubound3D(3)),&
                                     rstorageNode%p_Iinteger3D(:,:,:Iubound3D(3)))
 
         case (ST_INT8)
-          call lalg_copyVectorInt3D(p_rnode%p_Iint8_3D(:,:,:Iubound3D(3)),&
+          call lalg_copyVector(p_rnode%p_Iint8_3D(:,:,:Iubound3D(3)),&
                                     rstorageNode%p_Iint8_3D(:,:,:Iubound3D(3)))
 
         case (ST_INT16)
-          call lalg_copyVectorInt3D(p_rnode%p_Iint16_3D(:,:,:Iubound3D(3)),&
+          call lalg_copyVector(p_rnode%p_Iint16_3D(:,:,:Iubound3D(3)),&
                                     rstorageNode%p_Iint16_3D(:,:,:Iubound3D(3)))
 
         case (ST_INT32)
-          call lalg_copyVectorInt3D(p_rnode%p_Iint32_3D(:,:,:Iubound3D(3)),&
+          call lalg_copyVector(p_rnode%p_Iint32_3D(:,:,:Iubound3D(3)),&
                                     rstorageNode%p_Iint32_3D(:,:,:Iubound3D(3)))
 
         case (ST_INT64)
-          call lalg_copyVectorInt3D(p_rnode%p_Iint64_3D(:,:,:Iubound3D(3)),&
+          call lalg_copyVector(p_rnode%p_Iint64_3D(:,:,:Iubound3D(3)),&
                                     rstorageNode%p_Iint64_3D(:,:,:Iubound3D(3)))
 
         case (ST_LOGICAL)
-          call lalg_copyVectorLogical3D(p_rnode%p_Blogical3D(:,:,:Iubound3D(3)),&
+          call lalg_copyVector(p_rnode%p_Blogical3D(:,:,:Iubound3D(3)),&
                                         rstorageNode%p_Blogical3D(:,:,:Iubound3D(3)))
 
         case (ST_CHAR)
-          call lalg_copyVectorChar3D(p_rnode%p_Schar3D(:,:,:Iubound3D(3)),&
+          call lalg_copyVector(p_rnode%p_Schar3D(:,:,:Iubound3D(3)),&
                                      rstorageNode%p_Schar3D(:,:,:Iubound3D(3)))
         end select
 
@@ -18113,7 +18113,7 @@ contains
           call coproc_combineDoubleOnDevice(p_rnode%CdeviceMemPtr(idev), cdeviceMemPtr,&
               cdeviceMemPtr, p_rnode%imemBytes/ST_DOUBLE_BYTES, istreamTmp)
         case (ST_QUAD)
-          call coproc_combineQuadOnDevice(p_rnode%CdeviceMemPtr(idev), cdeviceMemPtr,&
+          call coproc_combineQPOnDevice(p_rnode%CdeviceMemPtr(idev), cdeviceMemPtr,&
               cdeviceMemPtr, p_rnode%imemBytes/ST_QUAD_BYTES, istreamTmp)
         case (ST_INT)
           call coproc_combineIntegerOnDevice(p_rnode%CdeviceMemPtr(idev), cdeviceMemPtr,&
@@ -18194,13 +18194,13 @@ contains
         ! What data type are we?
         select case(p_rnode%idataType)
         case (ST_SINGLE)
-          call lalg_vectorLinearCombSngl (p_rnodeTmp%p_Fsingle1D,&
+          call lalg_vectorLinearComb (p_rnodeTmp%p_Fsingle1D,&
               p_rnode%p_Fsingle1D, 1.0_SP, 1.0_SP)
         case (ST_DOUBLE)
-          call lalg_vectorLinearCombDble (p_rnodeTmp%p_Ddouble1D,&
+          call lalg_vectorLinearComb (p_rnodeTmp%p_Ddouble1D,&
               p_rnode%p_Ddouble1D, 1.0_DP, 1.0_DP)
         case (ST_QUAD)
-          call lalg_vectorLinearCombQuad (p_rnodeTmp%p_Qquad1D,&
+          call lalg_vectorLinearComb (p_rnodeTmp%p_Qquad1D,&
               p_rnode%p_Qquad1D, 1.0_QP, 1.0_QP)
         case (ST_INT)
           p_rnode%p_Iinteger1D = p_rnode%p_Iinteger1D + p_rnodeTmp%p_Iinteger1D
@@ -18225,13 +18225,13 @@ contains
         ! What data type are we?
         select case(p_rnode%idataType)
         case (ST_SINGLE)
-          call lalg_vectorLinearCombSngl2D (p_rnodeTmp%p_Fsingle2D,&
+          call lalg_vectorLinearComb (p_rnodeTmp%p_Fsingle2D,&
               p_rnode%p_Fsingle2D, 1.0_SP, 1.0_SP)
         case (ST_DOUBLE)
-          call lalg_vectorLinearCombDble2D (p_rnodeTmp%p_Ddouble2D,&
+          call lalg_vectorLinearComb (p_rnodeTmp%p_Ddouble2D,&
               p_rnode%p_Ddouble2D, 1.0_DP, 1.0_DP)
         case (ST_QUAD)
-          call lalg_vectorLinearCombQuad2D (p_rnodeTmp%p_Qquad2D,&
+          call lalg_vectorLinearComb (p_rnodeTmp%p_Qquad2D,&
               p_rnode%p_Qquad2D, 1.0_QP, 1.0_QP)
         case (ST_INT)
           p_rnode%p_Iinteger2D = p_rnode%p_Iinteger2D + p_rnodeTmp%p_Iinteger2D
@@ -18256,13 +18256,13 @@ contains
         ! What data type are we?
         select case(p_rnode%idataType)
         case (ST_SINGLE)
-          call lalg_vectorLinearCombSngl3D (p_rnodeTmp%p_Fsingle3D,&
+          call lalg_vectorLinearComb (p_rnodeTmp%p_Fsingle3D,&
               p_rnode%p_Fsingle3D, 1.0_SP, 1.0_SP)
         case (ST_DOUBLE)
-          call lalg_vectorLinearCombDble3D (p_rnodeTmp%p_Ddouble3D,&
+          call lalg_vectorLinearComb (p_rnodeTmp%p_Ddouble3D,&
               p_rnode%p_Ddouble3D, 1.0_DP, 1.0_DP)
         case (ST_QUAD)
-          call lalg_vectorLinearCombQuad3D (p_rnodeTmp%p_Qquad3D,&
+          call lalg_vectorLinearComb (p_rnodeTmp%p_Qquad3D,&
               p_rnode%p_Qquad3D, 1.0_QP, 1.0_QP)
         case (ST_INT)
           p_rnode%p_Iinteger3D = p_rnode%p_Iinteger3D + p_rnodeTmp%p_Iinteger3D

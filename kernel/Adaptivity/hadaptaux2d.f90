@@ -290,8 +290,8 @@ module hadaptaux2d
   use hadaptaux
   use io
   use linearsystemscalar
-  use mapInt_Dble
-  use quadtreeDble
+  use mapInt_DP
+  use quadtreeDP
   use quadtreebase
   use sort
   use storage
@@ -4174,7 +4174,7 @@ contains
 !</subroutine>
 
     ! local variables
-    type(it_mapInt_Dble) :: rmapIter
+    type(it_mapInt_DP) :: rmapIter
     real(DP), dimension(:), pointer :: p_Ddata
     real(DP), dimension(NDIM2D) :: Dcoord
     real(DP), dimension(3) :: Ddata
@@ -4395,7 +4395,7 @@ contains
 !</subroutine>
 
     ! local variables
-    type(it_mapInt_Dble) :: rmapIter
+    type(it_mapInt_DP) :: rmapIter
     real(DP), dimension(:), pointer :: p_Ddata
     integer :: i1,i2,ibct
 

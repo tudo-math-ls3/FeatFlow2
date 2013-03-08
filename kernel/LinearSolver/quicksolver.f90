@@ -268,13 +268,13 @@ contains
     p_Dtmp => Dwork(2*n+1 : 3*n)  ! temporary vector
 
     ! First of all, copy Dx to Ddef
-    call lalg_copyVectorDble(Dx,p_Ddef,n)
+    call lalg_copyVector(Dx,p_Ddef,n)
 
     ! And clear the solution vector
-    call lalg_clearVectorDble(Dx,n)
+    call lalg_clearVector(Dx,n)
 
     ! copy Ddef to Ddir
-    call lalg_copyVectorDble(p_Ddef,p_Ddir,n)
+    call lalg_copyVector(p_Ddef,p_Ddir,n)
 
     ! Calculate initial gamma
     dgamma = lalg_scalarProduct(p_Ddef,p_Ddef,n)
@@ -352,7 +352,7 @@ contains
       end if
 
       ! Calculate Ddir = Ddef + beta*Ddir
-      call lalg_vectorLinearCombDble(p_Ddef,p_Ddir,1.0_DP,dbeta,n)
+      call lalg_vectorLinearComb(p_Ddef,p_Ddir,1.0_DP,dbeta,n)
 
     end do
 
@@ -519,13 +519,13 @@ contains
     p_Dtmp => Dwork(2*n+1 : 3*n)  ! temporary vector
 
     ! First of all, copy Dx to Ddef
-    call lalg_copyVectorDble(Dx,p_Ddef,n)
+    call lalg_copyVector(Dx,p_Ddef,n)
 
     ! And clear the solution vector
-    call lalg_clearVectorDble(Dx,n)
+    call lalg_clearVector(Dx,n)
 
     ! copy Ddef to Ddir
-    call lalg_copyVectorDble(p_Ddef,p_Ddir,n)
+    call lalg_copyVector(p_Ddef,p_Ddir,n)
 
     ! Check defect?
     if(dtol .gt. 0.0_DP) then
@@ -604,10 +604,10 @@ contains
       dalpha = dgamma / dalpha
 
       ! Calculate Dx = Dx + alpha*Ddir
-      call lalg_vectorLinearCombDble(p_Ddir,Dx,dalpha,1.0_DP,n)
+      call lalg_vectorLinearComb(p_Ddir,Dx,dalpha,1.0_DP,n)
 
       ! Calculate Ddef = Ddef - alpha*Dtmp
-      call lalg_vectorLinearCombDble(p_Dtmp,p_Ddef,-dalpha,1.0_DP,n)
+      call lalg_vectorLinearComb(p_Dtmp,p_Ddef,-dalpha,1.0_DP,n)
 
       ! Check defect?
       if(dtol .gt. 0.0_DP) then
@@ -635,7 +635,7 @@ contains
       end if
 
       ! Copy Ddef to Dtmp
-      call lalg_copyVectorDble(p_Ddef,p_Dtmp,n)
+      call lalg_copyVector(p_Ddef,p_Dtmp,n)
 
       ! Apply preconditioner onto Dtmp
       call qsol_precSSOR(n,Kld,Kcol,Kdiag,Da,p_Dtmp,drlx)
@@ -1387,7 +1387,7 @@ contains
 
     ! Invert S and compute p.
     !
-    ! call mprim_invertMatrixDble(Ds, &
+    ! call mprim_invertMatrix(Ds, &
     !     Dftemp2,Du(ndimA+1:ndimA+ndimC),ndimC,2)
 
     select case(ndimC)
@@ -1396,20 +1396,20 @@ contains
       Du(ndimA+1) = Dftemp2(1) / Ds(1,1)
 
     case (2)
-      call mprim_invert2x2MatrixDirectDble(Ds,Dsinv,bsuccess)
+      call mprim_invert2x2MatrixDirect(Ds,Dsinv,bsuccess)
       if (.not. bsuccess) return
       Du(ndimA+1) = Dsinv(1,1)*Dftemp2(1) + Dsinv(1,2)*Dftemp2(2)
       Du(ndimA+2) = Dsinv(2,1)*Dftemp2(1) + Dsinv(2,2)*Dftemp2(2)
 
     case (3)
-      call mprim_invert3x3MatrixDirectDble(Ds,Dsinv,bsuccess)
+      call mprim_invert3x3MatrixDirect(Ds,Dsinv,bsuccess)
       if (.not. bsuccess) return
       Du(ndimA+1) = Dsinv(1,1)*Dftemp2(1) + Dsinv(1,2)*Dftemp2(2) + Dsinv(1,3)*Dftemp2(3)
       Du(ndimA+2) = Dsinv(2,1)*Dftemp2(1) + Dsinv(2,2)*Dftemp2(2) + Dsinv(2,3)*Dftemp2(3)
       Du(ndimA+3) = Dsinv(3,1)*Dftemp2(1) + Dsinv(3,2)*Dftemp2(2) + Dsinv(3,3)*Dftemp2(3)
 
     case (4)
-      call mprim_invert4x4MatrixDirectDble(Ds,Dsinv,bsuccess)
+      call mprim_invert4x4MatrixDirect(Ds,Dsinv,bsuccess)
       if (.not. bsuccess) return
       Du(ndimA+1) = Dsinv(1,1)*Dftemp2(1) + Dsinv(1,2)*Dftemp2(2) &
                   + Dsinv(1,3)*Dftemp2(3) + Dsinv(1,4)*Dftemp2(4)
@@ -1421,7 +1421,7 @@ contains
                   + Dsinv(4,3)*Dftemp2(3) + Dsinv(4,4)*Dftemp2(4)
 
     case (5)
-      call mprim_invert5x5MatrixDirectDble(Ds,Dsinv,bsuccess)
+      call mprim_invert5x5MatrixDirect(Ds,Dsinv,bsuccess)
       if (.not. bsuccess) return
       Du(ndimA+1) = Dsinv(1,1)*Dftemp2(1) + Dsinv(1,2)*Dftemp2(2) &
                   + Dsinv(1,3)*Dftemp2(3) + Dsinv(1,4)*Dftemp2(4) &
@@ -1440,7 +1440,7 @@ contains
                   + Dsinv(5,5)*Dftemp2(5)
 
     case (6)
-      call mprim_invert6x6MatrixDirectDble(Ds,Dsinv,bsuccess)
+      call mprim_invert6x6MatrixDirect(Ds,Dsinv,bsuccess)
       if (.not. bsuccess) return
       Du(ndimA+1) = Dsinv(1,1)*Dftemp2(1) + Dsinv(1,2)*Dftemp2(2) &
                   + Dsinv(1,3)*Dftemp2(3) + Dsinv(1,4)*Dftemp2(4) &

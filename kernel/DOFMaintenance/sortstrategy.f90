@@ -1060,7 +1060,7 @@ contains
     ! Use p_IcolTmp to calculate the actual resorting permutation
     ! and its inverse. Clear the target vector before calling the
     ! calculation routine, as we are creating a new permutation!
-    call lalg_clearVectorInt(Ipermutation(1:NEQ*2))
+    call lalg_clearVector(Ipermutation(1:NEQ*2))
     call sstrat_calcPermutationCM (p_Kld, p_IcolTmp, NEQ, &
                                    Ipermutation(1:NEQ), Ipermutation(NEQ+1:NEQ*2))
 
@@ -1085,7 +1085,7 @@ contains
     ! Use p_IcolTmp to calculate the actual resorting permutation
     ! and its inverse. Clear the target vector before calling the
     ! calculation routine, as we are creating a new permutation!
-    call lalg_clearVectorInt(Ipermutation(1:NEQ*2))
+    call lalg_clearVector(Ipermutation(1:NEQ*2))
     call sstrat_calcPermutationCM (p_Kld, p_IcolTmp, NEQ, &
                                    Ipermutation(1:NEQ), Ipermutation(NEQ+1:NEQ*2))
 

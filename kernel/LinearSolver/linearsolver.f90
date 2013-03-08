@@ -7126,7 +7126,7 @@ contains
 
     ! Fill the matrix content by 1.0. That way, UMFPACK will treat
     ! all entries as nonzero.
-    call lalg_setVectorDble (p_Da,1.0_DP)
+    call lalg_setVector (p_Da,1.0_DP)
     
     ! Currently, we support only 32 bit integers in UMFPACK;
     ! if necessary, convert!
@@ -7913,7 +7913,7 @@ contains
     allocate(p_Iaux(n))
     
     ! clear the auxiliary array
-    call lalg_clearVectorInt(p_Iaux,n)
+    call lalg_clearVector(p_Iaux,n)
     
     ! Loop over all rows of the matrix
     do k = 1, n
@@ -17726,8 +17726,8 @@ contains
                   end do
 
                   !!! Now solve local linear system
-                  call mprim_invertMatrixDble(DlocMat, DlocVec, DlocSol, &
-                                              indof, 2, bsuccess)
+                  call mprim_invertMatrix(DlocMat, DlocVec, DlocSol, &
+                                          indof, 2, bsuccess)
 
                   ! Test if local system could be solved
                   if (.not.bsuccess) then
@@ -21117,8 +21117,8 @@ contains
                   end do
 
                   !!! Now solve local linear system
-                  call mprim_invertMatrixDble(DlocMat, DlocVec, DlocSol, &
-                                              indof, 2, bsuccess)
+                  call mprim_invertMatrix(DlocMat, DlocVec, DlocSol, &
+                                          indof, 2, bsuccess)
 
                   ! Test if local system could be solved
                   if (.not.bsuccess) then
@@ -21211,8 +21211,8 @@ contains
                   end do
 
                   !!! Now solve local linear system
-                  call mprim_invertMatrixDble(DlocMat, DlocVec, DlocSol, &
-                                              indof, 2, bsuccess)
+                  call mprim_invertMatrix(DlocMat, DlocVec, DlocSol, &
+                                          indof, 2, bsuccess)
 
                   ! Test if local system could be solved
                   if (.not.bsuccess) then
@@ -21678,8 +21678,8 @@ contains
                 end do
 
                 !!! Now solve local linear system
-                call mprim_invertMatrixDble(DlocMat, DlocVec, DlocSol, &
-                                            indof, 2, bsuccess)
+                call mprim_invertMatrix(DlocMat, DlocVec, DlocSol, &
+                                        indof, 2, bsuccess)
 
                 ! Test if local system could be solved
                 if (.not.bsuccess) then

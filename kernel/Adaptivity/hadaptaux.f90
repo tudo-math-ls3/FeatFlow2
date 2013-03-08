@@ -78,9 +78,9 @@ module hadaptaux
   use fsystem
   use genoutput
   use linearalgebra
-  use mapInt_Dble
-  use octreeDble
-  use quadtreeDble
+  use mapInt_DP
+  use octreeDP
+  use quadtreeDP
   use sort
   use storage
   use triangulation
@@ -499,14 +499,14 @@ module hadaptaux
     real(DP), dimension(:,:), pointer :: p_DvertexCoords1D => null()
 
     ! Quadtree storing the nodal coordinates in 2D
-    type(t_quadtreeDble) :: rVertexCoordinates2D
+    type(t_quadtreeDP) :: rVertexCoordinates2D
 
     ! Octree storing the nodal coordinates in 2D
-    type(t_octreeDble) :: rVertexCoordinates3D
+    type(t_octreeDP) :: rVertexCoordinates3D
 
     ! Array of maps storing the boundary data
     ! p_IboundaryCpIdx and p_IverticesAtBoundary
-    type(t_mapInt_Dble), dimension(:), pointer :: rBoundary => null()
+    type(t_mapInt_DP), dimension(:), pointer :: rBoundary => null()
 
     ! Arraylist for elements-meeting-at-vertex structure
     type(t_arraylistInt) :: rElementsAtVertex
@@ -709,7 +709,7 @@ contains
     call storage_getbase_double2D(h_DvertexCoords, p_DvertexCoords)
 
     ! Copy data
-    call lalg_copyVectorDble2D(p_Ddata, p_DvertexCoords, 1, rhadapt%NVT)
+    call lalg_copyVector(p_Ddata, p_DvertexCoords, 1, rhadapt%NVT)
 
     ! Set dimension
     if (present(ndim)) ndim = rhadapt%ndim
@@ -1264,7 +1264,7 @@ contains
 !</subroutine>
 
     ! local variables
-    type(it_mapInt_Dble) :: rmapIter
+    type(it_mapInt_DP) :: rmapIter
     real(DP), dimension(:), pointer   :: p_DvertexParameterValue
     integer, dimension(:), pointer    :: p_IboundaryCpIdx
     integer, dimension(:), pointer    :: p_IverticesAtBoundary
@@ -1388,7 +1388,7 @@ contains
 !</subroutine>
 
     ! local variables
-    type(it_mapInt_Dble) :: rmapIter
+    type(it_mapInt_DP) :: rmapIter
     real(DP), dimension(:), pointer :: p_DvertexParameterValue, p_Ddata
     integer, dimension(:), pointer  :: p_IboundaryCpIdx
     integer, dimension(:), pointer  :: p_IverticesAtBoundary

@@ -314,12 +314,12 @@ contains
 
           select case(ccType)
           case (GFEM_MATC_CONSISTENT)
-            call doOperatorNodeConsistDble(p_DcoeffsAtNode,&
+            call doOperatorNodeConsistDP(p_DcoeffsAtNode,&
                 dscale, bclear, p_Ddata)
 
           case (GFEM_MATC_LUMPED)
             call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx1D)
-            call doOperatorNodeLumpedDble(p_InodeListIdx1D,&
+            call doOperatorNodeLumpedDP(p_InodeListIdx1D,&
                 p_DcoeffsAtNode, dscale, bclear, p_Ddata)
           end select
 
@@ -328,13 +328,13 @@ contains
           select case(ccType)
           case (GFEM_MATC_CONSISTENT)
             call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList)
-            call doOperatorNodeConsistDbleSel(p_InodeList,&
+            call doOperatorNodeConsistDPSel(p_InodeList,&
                 p_DcoeffsAtNode, dscale, bclear, p_Ddata)
 
           case (GFEM_MATC_LUMPED)
             call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx2D)
             call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList)
-            call doOperatorNodeLumpedDbleSel(p_InodeListIdx2D, p_InodeList,&
+            call doOperatorNodeLumpedDPSel(p_InodeListIdx2D, p_InodeList,&
                 p_DcoeffsAtNode, dscale, bclear, p_Ddata)
           end select
 
@@ -350,12 +350,12 @@ contains
 
           select case(ccType)
           case (GFEM_MATC_CONSISTENT)
-            call doOperatorNodeConsistSngl(p_FcoeffsAtNode,&
+            call doOperatorNodeConsistSP(p_FcoeffsAtNode,&
                 real(dscale,SP), bclear, p_Fdata)
 
           case (GFEM_MATC_LUMPED)
             call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx1D)
-            call doOperatorNodeLumpedSngl(p_InodeListIdx1D,&
+            call doOperatorNodeLumpedSP(p_InodeListIdx1D,&
                 p_FcoeffsAtNode, real(dscale,SP), bclear, p_Fdata)
           end select
 
@@ -364,13 +364,13 @@ contains
           select case(ccType)
           case (GFEM_MATC_CONSISTENT)
             call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList)
-            call doOperatorNodeConsistSnglSel(p_InodeList,&
+            call doOperatorNodeConsistSPSel(p_InodeList,&
                 p_FcoeffsAtNode, real(dscale,SP), bclear, p_Fdata)
 
           case (GFEM_MATC_LUMPED)
             call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx2D)
             call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList)
-            call doOperatorNodeLumpedSnglSel(p_InodeListIdx2D, p_InodeList,&
+            call doOperatorNodeLumpedSPSel(p_InodeListIdx2D, p_InodeList,&
                 p_FcoeffsAtNode, real(dscale,SP), bclear, p_Fdata)
           end select
 
@@ -412,7 +412,7 @@ contains
         call lsyssc_getbase_double(rmatrix, p_Ddata)
 
         ! Assemble matrix diagonal
-        call doOperatorDiagDble(p_IdiagList, p_DcoeffsAtDiag,&
+        call doOperatorDiagDP(p_IdiagList, p_DcoeffsAtDiag,&
             dscale, bclear, p_Ddata)
 
         ! Do we have to build the stabilisation?
@@ -444,7 +444,7 @@ contains
             !-------------------------------------------------------------------
             ! Assemble operator with stabilisation and generate coefficients
             !-------------------------------------------------------------------
-            call doOperatorEdgeAFCDble(p_IedgeListIdx, p_IedgeList,&
+            call doOperatorEdgeAFCDP(p_IedgeListIdx, p_IedgeList,&
                 p_DcoeffsAtEdge, dscale, bclear, bsymm, p_Ddata, p_Dcoefficients)
 
             ! Set state of stabilisation
@@ -467,7 +467,7 @@ contains
             !-------------------------------------------------------------------
             ! Assemble operator with stabilisation but do not generate coeffs
             !-------------------------------------------------------------------
-            call doOperatorEdgeStabDble(p_IedgeListIdx, p_IedgeList,&
+            call doOperatorEdgeStabDP(p_IedgeListIdx, p_IedgeList,&
                 p_DcoeffsAtEdge, dscale, bclear, bsymm, p_Ddata)
           end if
 
@@ -476,7 +476,7 @@ contains
           !---------------------------------------------------------------------
           ! Assemble operator without stabilisation
           !---------------------------------------------------------------------
-          call doOperatorEdgeDble(p_IedgeListIdx, p_IedgeList,&
+          call doOperatorEdgeDP(p_IedgeListIdx, p_IedgeList,&
               p_DcoeffsAtEdge, dscale, bclear, p_Ddata)
         end if
 
@@ -487,7 +487,7 @@ contains
         call lsyssc_getbase_single(rmatrix, p_Fdata)
 
         ! Assemble matrix diagonal
-        call doOperatorDiagSngl(p_IdiagList, p_FcoeffsAtDiag,&
+        call doOperatorDiagSP(p_IdiagList, p_FcoeffsAtDiag,&
             real(dscale,SP), bclear, p_Fdata)
 
         ! Do we have to build the stabilisation?
@@ -519,7 +519,7 @@ contains
             !-------------------------------------------------------------------
             ! Assemble operator with stabilisation
             !-------------------------------------------------------------------
-            call doOperatorEdgeAFCSngl(p_IedgeListIdx, p_IedgeList,&
+            call doOperatorEdgeAFCSP(p_IedgeListIdx, p_IedgeList,&
                 p_FcoeffsAtEdge, real(dscale,SP), bclear, bsymm, p_Fdata, p_Fcoefficients)
 
             ! Set state of stabilisation
@@ -542,7 +542,7 @@ contains
             !-------------------------------------------------------------------
             ! Assemble operator with stabilisation but do not generate coeffs
             !-------------------------------------------------------------------
-            call doOperatorEdgeStabSngl(p_IedgeListIdx, p_IedgeList,&
+            call doOperatorEdgeStabSP(p_IedgeListIdx, p_IedgeList,&
                 p_FcoeffsAtEdge, real(dscale,SP), bclear, bsymm, p_Fdata)
           end if
 
@@ -551,7 +551,7 @@ contains
           !---------------------------------------------------------------------
           ! Assemble operator without stabilisation
           !---------------------------------------------------------------------
-          call doOperatorEdgeSngl(p_IedgeListIdx, p_IedgeList,&
+          call doOperatorEdgeSP(p_IedgeListIdx, p_IedgeList,&
               p_FcoeffsAtEdge, real(dscale,SP), bclear, p_Fdata)
         end if
 
@@ -574,7 +574,7 @@ contains
     !**************************************************************
     ! Assemble operator node-by-node in consistent manner
 
-    subroutine doOperatorNodeConsistDble(DcoeffsAtNode, dscale, bclear, Ddata)
+    subroutine doOperatorNodeConsistDP(DcoeffsAtNode, dscale, bclear, Ddata)
 
       ! input parameters
       real(DP), dimension(:,:), intent(in) :: DcoeffsAtNode
@@ -617,12 +617,12 @@ contains
 
       end if
 
-    end subroutine doOperatorNodeConsistDble
+    end subroutine doOperatorNodeConsistDP
 
     !**************************************************************
     ! Assemble operator node-by-node in lumped manner
 
-    subroutine doOperatorNodeLumpedDble(InodeListIdx,&
+    subroutine doOperatorNodeLumpedDP(InodeListIdx,&
         DcoeffsAtNode, dscale, bclear, Ddata)
 
       ! input parameters
@@ -688,12 +688,12 @@ contains
 
       end if
 
-    end subroutine doOperatorNodeLumpedDble
+    end subroutine doOperatorNodeLumpedDP
 
     !**************************************************************
     ! Assemble operator node-by-node in consistent manner
 
-    subroutine doOperatorNodeConsistDbleSel(InodeList,&
+    subroutine doOperatorNodeConsistDPSel(InodeList,&
         DcoeffsAtNode, dscale, bclear, Ddata)
 
       ! input parameters
@@ -744,12 +744,12 @@ contains
 
       end if
 
-    end subroutine doOperatorNodeConsistDbleSel
+    end subroutine doOperatorNodeConsistDPSel
 
     !**************************************************************
     ! Assemble operator node-by-node in lumped manner
 
-    subroutine doOperatorNodeLumpedDbleSel(InodeListIdx, InodeList,&
+    subroutine doOperatorNodeLumpedDPSel(InodeListIdx, InodeList,&
         DcoeffsAtNode, dscale, bclear, Ddata)
 
       ! input parameters
@@ -815,12 +815,12 @@ contains
 
       end if
 
-    end subroutine doOperatorNodeLumpedDbleSel
+    end subroutine doOperatorNodeLumpedDPSel
 
     !**************************************************************
     ! Assemble operator node-by-node in consistent manner
 
-    subroutine doOperatorNodeConsistSngl(FcoeffsAtNode, fscale, bclear, Fdata)
+    subroutine doOperatorNodeConsistSP(FcoeffsAtNode, fscale, bclear, Fdata)
 
       ! input parameters
       real(SP), dimension(:,:), intent(in) :: FcoeffsAtNode
@@ -863,12 +863,12 @@ contains
 
       end if
 
-    end subroutine doOperatorNodeConsistSngl
+    end subroutine doOperatorNodeConsistSP
 
     !**************************************************************
     ! Assemble operator node-by-node in lumped manner
 
-    subroutine doOperatorNodeLumpedSngl(InodeListIdx,&
+    subroutine doOperatorNodeLumpedSP(InodeListIdx,&
         FcoeffsAtNode, fscale, bclear, Fdata)
 
       ! input parameters
@@ -934,12 +934,12 @@ contains
 
       end if
 
-    end subroutine doOperatorNodeLumpedSngl
+    end subroutine doOperatorNodeLumpedSP
 
     !**************************************************************
     ! Assemble operator node-by-node in consistent manner
 
-    subroutine doOperatorNodeConsistSnglSel(InodeList,&
+    subroutine doOperatorNodeConsistSPSel(InodeList,&
         FcoeffsAtNode, fscale, bclear, Fdata)
 
       ! input parameters
@@ -990,12 +990,12 @@ contains
 
       end if
 
-    end subroutine doOperatorNodeConsistSnglSel
+    end subroutine doOperatorNodeConsistSPSel
 
     !**************************************************************
     ! Assemble operator node-by-node in lumped manner
 
-    subroutine doOperatorNodeLumpedSnglSel(InodeListIdx, InodeList,&
+    subroutine doOperatorNodeLumpedSPSel(InodeListIdx, InodeList,&
         FcoeffsAtNode, fscale, bclear, Fdata)
 
       ! input parameters
@@ -1061,12 +1061,12 @@ contains
 
       end if
 
-    end subroutine doOperatorNodeLumpedSnglSel
+    end subroutine doOperatorNodeLumpedSPSel
 
     !**************************************************************
     ! Assemble diagonal part of the operator
 
-    subroutine doOperatorDiagDble(IdiagList, DcoeffsAtDiag,&
+    subroutine doOperatorDiagDP(IdiagList, DcoeffsAtDiag,&
         dscale, bclear, Ddata)
 
       ! input parameters
@@ -1117,12 +1117,12 @@ contains
 
       end if
 
-    end subroutine doOperatorDiagDble
+    end subroutine doOperatorDiagDP
 
     !**************************************************************
     ! Assemble diagonal part of the operator
 
-    subroutine doOperatorDiagSngl(IdiagList, FcoeffsAtDiag,&
+    subroutine doOperatorDiagSP(IdiagList, FcoeffsAtDiag,&
         fscale, bclear, Fdata)
 
       ! input parameters
@@ -1173,12 +1173,12 @@ contains
 
       end if
 
-    end subroutine doOperatorDiagSngl
+    end subroutine doOperatorDiagSP
 
     !**************************************************************
     ! Assemble operator edge-by-edge without stabilisation
 
-    subroutine doOperatorEdgeDble(IedgeListIdx, IedgeList,&
+    subroutine doOperatorEdgeDP(IedgeListIdx, IedgeList,&
         DcoeffsAtEdge, dscale, bclear, Ddata)
 
       ! input parameters
@@ -1242,12 +1242,12 @@ contains
       end if
       !$omp end parallel
 
-    end subroutine doOperatorEdgeDble
+    end subroutine doOperatorEdgeDP
 
     !**************************************************************
     ! Assemble operator edge-by-edge without stabilisation
 
-    subroutine doOperatorEdgeSngl(IedgeListIdx, IedgeList,&
+    subroutine doOperatorEdgeSP(IedgeListIdx, IedgeList,&
         FcoeffsAtEdge, fscale, bclear, Fdata)
 
       ! input parameters
@@ -1311,12 +1311,12 @@ contains
       end if
       !$omp end parallel
 
-    end subroutine doOperatorEdgeSngl
+    end subroutine doOperatorEdgeSP
 
     !**************************************************************
     ! Assemble edge-by-edge operator with stabilisation
 
-    subroutine doOperatorEdgeStabDble(IedgeListIdx, IedgeList,&
+    subroutine doOperatorEdgeStabDP(IedgeListIdx, IedgeList,&
         DcoeffsAtEdge, dscale, bclear, bsymm, Ddata)
 
       ! input parameters
@@ -1457,12 +1457,12 @@ contains
       end if
       !$omp end parallel
 
-    end subroutine doOperatorEdgeStabDble
+    end subroutine doOperatorEdgeStabDP
 
     !**************************************************************
     ! Assemble operator edge-by-edge with stabilisation
 
-    subroutine doOperatorEdgeStabSngl(IedgeListIdx, IedgeList,&
+    subroutine doOperatorEdgeStabSP(IedgeListIdx, IedgeList,&
         FcoeffsAtEdge, fscale, bclear, bsymm, Fdata)
 
       ! input parameters
@@ -1603,12 +1603,12 @@ contains
       end if
       !$omp end parallel
 
-    end subroutine doOperatorEdgeStabSngl
+    end subroutine doOperatorEdgeStabSP
 
     !**************************************************************
     ! Assemble operator edge-by-edge with stabilisation and AFC data.
 
-    subroutine doOperatorEdgeAFCDble(IedgeListIdx, IedgeList,&
+    subroutine doOperatorEdgeAFCDP(IedgeListIdx, IedgeList,&
         DcoeffsAtEdge, dscale, bclear, bsymm, Ddata, Dcoefficients)
 
       ! input parameters
@@ -1770,12 +1770,12 @@ contains
       end if
       !$omp end parallel
 
-    end subroutine doOperatorEdgeAFCDble
+    end subroutine doOperatorEdgeAFCDP
 
     !**************************************************************
     ! Assemble operator edge-by-edge with stabilisation and AFC data.
 
-    subroutine doOperatorEdgeAFCSngl(IedgeListIdx, IedgeList,&
+    subroutine doOperatorEdgeAFCSP(IedgeListIdx, IedgeList,&
         FcoeffsAtEdge, fscale, bclear, bsymm, Fdata, Fcoefficients)
 
       ! input parameters
@@ -1937,7 +1937,7 @@ contains
       end if
       !$omp end parallel
 
-    end subroutine doOperatorEdgeAFCSngl
+    end subroutine doOperatorEdgeAFCSP
 
   end subroutine gfsc_buildOperatorConst
 
@@ -2364,13 +2364,13 @@ contains
           select case(ccType)
           case (GFEM_MATC_CONSISTENT)
             call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList1D)
-            call doOperatorConsistDble(p_InodeList1D,&
+            call doOperatorConsistDP(p_InodeList1D,&
                 p_DcoeffsAtNode, p_Dx, dscale, bclear, p_Ddata)
 
           case (GFEM_MATC_LUMPED)
             call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList1D)
             call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx1D)
-            call doOperatorLumpedDble(p_InodeListIdx1D, p_InodeList1D,&
+            call doOperatorLumpedDP(p_InodeListIdx1D, p_InodeList1D,&
                 p_DcoeffsAtNode, p_Dx, dscale, bclear, p_Ddata)
           end select
 
@@ -2379,13 +2379,13 @@ contains
           select case(ccType)
           case (GFEM_MATC_CONSISTENT)
             call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList2D)
-            call doOperatorConsistDbleSel(p_InodeList2D,&
+            call doOperatorConsistDPSel(p_InodeList2D,&
                 p_DcoeffsAtNode, p_Dx, dscale, bclear, p_Ddata)
 
           case (GFEM_MATC_LUMPED)
             call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList2D)
             call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx2D)
-            call doOperatorLumpedDbleSel(p_InodeListIdx2D, p_InodeList2D,&
+            call doOperatorLumpedDPSel(p_InodeListIdx2D, p_InodeList2D,&
                 p_DcoeffsAtNode, p_Dx, dscale, bclear, p_Ddata)
           end select
 
@@ -2410,7 +2410,7 @@ contains
     !**************************************************************
     ! Assemble operator node-by-node in consistent manner
 
-    subroutine doOperatorConsistDble(InodeList,&
+    subroutine doOperatorConsistDP(InodeList,&
         DcoeffsAtNode, Dx, dscale, bclear, Ddata)
 
       ! input parameters
@@ -2513,12 +2513,12 @@ contains
       deallocate(Dcoefficients)
       !$omp end parallel
 
-    end subroutine doOperatorConsistDble
+    end subroutine doOperatorConsistDP
 
     !**************************************************************
     ! Assemble operator node-by-node in lumped manner
 
-    subroutine doOperatorLumpedDble(InodeListIdx, InodeList,&
+    subroutine doOperatorLumpedDP(InodeListIdx, InodeList,&
         DcoeffsAtNode, Dx, dscale, bclear, Ddata)
 
       ! input parameters
@@ -2675,12 +2675,12 @@ contains
       deallocate(Dcoefficients)
       !$omp end parallel
 
-    end subroutine doOperatorLumpedDble
+    end subroutine doOperatorLumpedDP
 
     !**************************************************************
     ! Assemble operator node-by-node in consistent manner
 
-    subroutine doOperatorConsistDbleSel(InodeList,&
+    subroutine doOperatorConsistDPSel(InodeList,&
         DcoeffsAtNode, Dx, dscale, bclear, Ddata)
 
       ! input parameters
@@ -2772,12 +2772,12 @@ contains
       deallocate(Dcoefficients)
       !$omp end parallel
 
-    end subroutine doOperatorConsistDbleSel
+    end subroutine doOperatorConsistDPSel
 
     !**************************************************************
     ! Assemble operator node-by-node in lumped manner
 
-    subroutine doOperatorLumpedDbleSel(InodeListIdx, InodeList,&
+    subroutine doOperatorLumpedDPSel(InodeListIdx, InodeList,&
         DcoeffsAtNode, Dx, dscale, bclear, Ddata)
 
       ! input parameters
@@ -2926,7 +2926,7 @@ contains
       deallocate(Dcoefficients)
       !$omp end parallel
 
-    end subroutine doOperatorLumpedDbleSel
+    end subroutine doOperatorLumpedDPSel
 
   end subroutine gfsc_buildOperatorNodeScalar
 
@@ -3428,7 +3428,7 @@ contains
           ! Assemble diagonal entries
           call gfem_getbase_IdiagList(rgroupFEMSet, p_IdiagList)
           call gfem_getbase_DcoeffsAtDiag(rgroupFEMSet, p_DcoeffsAtDiag)
-          call doOperatorDiagDble(p_IdiagList, p_DcoeffsAtDiag,&
+          call doOperatorDiagDP(p_IdiagList, p_DcoeffsAtDiag,&
               p_Dx, dscale, bclear, p_Ddata)
         end if
 
@@ -3458,7 +3458,7 @@ contains
             !-------------------------------------------------------------------
             ! Assemble operator with stabilisation and generate coefficients
             !-------------------------------------------------------------------
-            call doOperatorAFCDble(p_IedgeListIdx, p_IedgeList,&
+            call doOperatorAFCDP(p_IedgeListIdx, p_IedgeList,&
                 p_DcoeffsAtEdge, p_Dx, dscale, bclear, ccType,&
                 p_Ddata, p_Dcoefficients)
 
@@ -3482,7 +3482,7 @@ contains
             !-------------------------------------------------------------------
             ! Assemble operator with stabilisation but do not generate coeffs
             !-------------------------------------------------------------------
-            call doOperatorStabDble(p_IedgeListIdx, p_IedgeList,&
+            call doOperatorStabDP(p_IedgeListIdx, p_IedgeList,&
                   p_DcoeffsAtEdge, p_Dx, dscale, bclear, ccType, p_Ddata)
           end if
 
@@ -3491,7 +3491,7 @@ contains
           !---------------------------------------------------------------------
           ! Assemble operator without stabilisation
           !---------------------------------------------------------------------
-          call doOperatorDble(p_IedgeListIdx, p_IedgeList,&
+          call doOperatorDP(p_IedgeListIdx, p_IedgeList,&
               p_DcoeffsAtEdge, p_Dx, dscale, bclear, ccType, p_Ddata)
         end if
 
@@ -3514,7 +3514,7 @@ contains
     !**************************************************************
     ! Assemble diagonal part of the operator
 
-    subroutine doOperatorDiagDble(IdiagList, DcoeffsAtDiag, Dx,&
+    subroutine doOperatorDiagDP(IdiagList, DcoeffsAtDiag, Dx,&
         dscale, bclear, Ddata)
 
       ! input parameters
@@ -3609,12 +3609,12 @@ contains
       deallocate(Dcoefficients)
       !$omp end parallel
 
-    end subroutine doOperatorDiagDble
+    end subroutine doOperatorDiagDP
 
     !**************************************************************
     ! Assemble operator edge-by-edge without stabilisation
 
-    subroutine doOperatorDble(IedgeListIdx, IedgeList,&
+    subroutine doOperatorDP(IedgeListIdx, IedgeList,&
         DcoeffsAtEdge, Dx, dscale, bclear, ccType, Ddata)
 
       ! input parameters
@@ -3754,12 +3754,12 @@ contains
       deallocate(Dcoefficients)
       !$omp end parallel
 
-    end subroutine doOperatorDble
+    end subroutine doOperatorDP
 
     !**************************************************************
     ! Assemble operator edge-by-edge with stabilisation.
 
-    subroutine doOperatorStabDble(IedgeListIdx, IedgeList,&
+    subroutine doOperatorStabDP(IedgeListIdx, IedgeList,&
         DcoeffsAtEdge, Dx, dscale, bclear, ccType, Ddata)
 
       ! input parameters
@@ -3915,12 +3915,12 @@ contains
       deallocate(Dcoefficients)
       !$omp end parallel
 
-    end subroutine doOperatorStabDble
+    end subroutine doOperatorStabDP
 
     !**************************************************************
     ! Assemble operator edge-by-edge with stabilisation and AFC data.
 
-    subroutine doOperatorAFCDble(IedgeListIdx, IedgeList,&
+    subroutine doOperatorAFCDP(IedgeListIdx, IedgeList,&
         DcoeffsAtEdge, Dx, dscale, bclear, ccType, Ddata, Dcoefficients)
 
       ! input parameters
@@ -4088,7 +4088,7 @@ contains
       deallocate(DdataAtEdge)
       !$omp end parallel
 
-    end subroutine doOperatorAFCDble
+    end subroutine doOperatorAFCDP
 
   end subroutine gfsc_buildOperatorEdgeScalar
 
@@ -4303,7 +4303,7 @@ contains
           call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList1D)
 
           ! Assemble vector node-by-node
-          call doVectorDble(p_InodeListIdx1D, p_InodeList1D,&
+          call doVectorDP(p_InodeListIdx1D, p_InodeList1D,&
               p_DcoeffsAtNode, p_Dx, dscale, bclear, p_Ddata)
         else
           ! Set pointers
@@ -4311,7 +4311,7 @@ contains
           call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList2D)
 
           ! Assemble selected part of the vector node-by-node
-          call doVectorDbleSel(p_InodeListIdx2D, p_InodeList2D,&
+          call doVectorDPSel(p_InodeListIdx2D, p_InodeList2D,&
               p_DcoeffsAtNode, p_Dx, dscale, bclear, p_Ddata)
         end if
 
@@ -4332,7 +4332,7 @@ contains
     !**************************************************************
     ! Assemble vector node-by-node without stabilisation
 
-    subroutine doVectorDble(InodeListIdx, InodeList,&
+    subroutine doVectorDP(InodeListIdx, InodeList,&
         DcoeffsAtNode, Dx, dscale, bclear, Ddata)
 
       ! input parameters
@@ -4485,12 +4485,12 @@ contains
       deallocate(Dcoefficients)
       !$omp end parallel
 
-    end subroutine doVectorDble
+    end subroutine doVectorDP
 
     !**************************************************************
     ! Assemble vector node-by-node without stabilisation
 
-    subroutine doVectorDbleSel(InodeListIdx, InodeList,&
+    subroutine doVectorDPSel(InodeListIdx, InodeList,&
         DcoeffsAtNode, Dx, dscale, bclear, Ddata)
 
       ! input parameters
@@ -4641,7 +4641,7 @@ contains
       deallocate(Dcoefficients)
       !$omp end parallel
 
-    end subroutine doVectorDbleSel
+    end subroutine doVectorDPSel
 
   end subroutine gfsc_buildVectorNodeScalar
 
@@ -4896,7 +4896,7 @@ contains
             !-------------------------------------------------------------------
             ! Assemble vector with stabilisation and generate coefficients
             !-------------------------------------------------------------------
-            call doVectorDble(p_IedgeListIdx, p_IedgeList, p_DcoeffsAtEdge,&
+            call doVectorDP(p_IedgeListIdx, p_IedgeList, p_DcoeffsAtEdge,&
                 p_Dx, dscale, bclear, p_Ddata, p_Dcoefficients)
 
             ! Set state of stabilisation
@@ -4919,7 +4919,7 @@ contains
             !-------------------------------------------------------------------
             ! Assemble vector without stabilisation
             !-------------------------------------------------------------------
-            call doVectorDble(p_IedgeListIdx, p_IedgeList, p_DcoeffsAtEdge,&
+            call doVectorDP(p_IedgeListIdx, p_IedgeList, p_DcoeffsAtEdge,&
                 p_Dx, dscale, bclear, p_Ddata)
           end if
 
@@ -4928,7 +4928,7 @@ contains
           !---------------------------------------------------------------------
           ! Assemble vector without stabilisation
           !---------------------------------------------------------------------
-          call doVectorDble(p_IedgeListIdx, p_IedgeList, p_DcoeffsAtEdge,&
+          call doVectorDP(p_IedgeListIdx, p_IedgeList, p_DcoeffsAtEdge,&
               p_Dx, dscale, bclear, p_Ddata)
 
         end if
@@ -4952,7 +4952,7 @@ contains
     !**************************************************************
     ! Assemble vector edge-by-edge without stabilisation
 
-    subroutine doVectorDble(IedgeListIdx, IedgeList, DcoeffsAtEdge,&
+    subroutine doVectorDP(IedgeListIdx, IedgeList, DcoeffsAtEdge,&
         Dx, dscale, bclear, Ddata, Dcoefficients)
 
       ! input parameters
@@ -5061,7 +5061,7 @@ contains
       deallocate(DfluxesAtEdge)
       !$omp end parallel
 
-    end subroutine doVectorDble
+    end subroutine doVectorDP
 
   end subroutine gfsc_buildVectorEdgeScalar
 

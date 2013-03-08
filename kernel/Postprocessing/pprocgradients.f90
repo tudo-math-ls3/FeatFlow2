@@ -767,14 +767,14 @@ contains
     select case(p_rtriangulation%ndim)
     case (NDIM1D)
       call lsyssc_getbase_double (rvectorGradient%RvectorBlock(1),p_DxDeriv)
-      call lalg_clearVectorDble (p_DxDeriv)
+      call lalg_clearVector (p_DxDeriv)
       Bder(DER_DERIV1D_X) = .true.
 
     case (NDIM2D)
       call lsyssc_getbase_double (rvectorGradient%RvectorBlock(1),p_DxDeriv)
       call lsyssc_getbase_double (rvectorGradient%RvectorBlock(2),p_DyDeriv)
-      call lalg_clearVectorDble (p_DxDeriv)
-      call lalg_clearVectorDble (p_DyDeriv)
+      call lalg_clearVector (p_DxDeriv)
+      call lalg_clearVector (p_DyDeriv)
       Bder(DER_DERIV2D_X) = .true.
       Bder(DER_DERIV2D_Y) = .true.
 
@@ -782,9 +782,9 @@ contains
       call lsyssc_getbase_double (rvectorGradient%RvectorBlock(1),p_DxDeriv)
       call lsyssc_getbase_double (rvectorGradient%RvectorBlock(2),p_DyDeriv)
       call lsyssc_getbase_double (rvectorGradient%RvectorBlock(3),p_DzDeriv)
-      call lalg_clearVectorDble (p_DxDeriv)
-      call lalg_clearVectorDble (p_DyDeriv)
-      call lalg_clearVectorDble (p_DzDeriv)
+      call lalg_clearVector (p_DxDeriv)
+      call lalg_clearVector (p_DyDeriv)
+      call lalg_clearVector (p_DzDeriv)
       Bder(DER_DERIV3D_X) = .true.
       Bder(DER_DERIV3D_Y) = .true.
       Bder(DER_DERIV3D_Z) = .true.
@@ -1571,14 +1571,14 @@ contains
     select case(p_rtriangulation%ndim)
     case (NDIM1D)
       call lsyssc_getbase_double (rvectorGradient%RvectorBlock(1),p_DxDeriv)
-      call lalg_clearVectorDble (p_DxDeriv)
+      call lalg_clearVector (p_DxDeriv)
       Bder(DER_DERIV1D_X) = .true.
 
     case (NDIM2D)
       call lsyssc_getbase_double (rvectorGradient%RvectorBlock(1),p_DxDeriv)
       call lsyssc_getbase_double (rvectorGradient%RvectorBlock(2),p_DyDeriv)
-      call lalg_clearVectorDble (p_DxDeriv)
-      call lalg_clearVectorDble (p_DyDeriv)
+      call lalg_clearVector (p_DxDeriv)
+      call lalg_clearVector (p_DyDeriv)
       Bder(DER_DERIV2D_X) = .true.
       Bder(DER_DERIV2D_Y) = .true.
 
@@ -1586,9 +1586,9 @@ contains
       call lsyssc_getbase_double (rvectorGradient%RvectorBlock(1),p_DxDeriv)
       call lsyssc_getbase_double (rvectorGradient%RvectorBlock(2),p_DyDeriv)
       call lsyssc_getbase_double (rvectorGradient%RvectorBlock(3),p_DzDeriv)
-      call lalg_clearVectorDble (p_DxDeriv)
-      call lalg_clearVectorDble (p_DyDeriv)
-      call lalg_clearVectorDble (p_DzDeriv)
+      call lalg_clearVector (p_DxDeriv)
+      call lalg_clearVector (p_DyDeriv)
+      call lalg_clearVector (p_DzDeriv)
       Bder(DER_DERIV3D_X) = .true.
       Bder(DER_DERIV3D_Y) = .true.
       Bder(DER_DERIV3D_Z) = .true.
@@ -4446,21 +4446,21 @@ contains
     select case(p_rtriangulation%ndim)
     case (NDIM1D)
       call lsyssc_getbase_double (rvectorGradient%RvectorBlock(1),p_DxDeriv)
-      call lalg_clearVectorDble (p_DxDeriv)
+      call lalg_clearVector (p_DxDeriv)
 
     case (NDIM2D)
       call lsyssc_getbase_double (rvectorGradient%RvectorBlock(1),p_DxDeriv)
       call lsyssc_getbase_double (rvectorGradient%RvectorBlock(2),p_DyDeriv)
-      call lalg_clearVectorDble (p_DxDeriv)
-      call lalg_clearVectorDble (p_DyDeriv)
+      call lalg_clearVector (p_DxDeriv)
+      call lalg_clearVector (p_DyDeriv)
 
     case (NDIM3D)
       call lsyssc_getbase_double (rvectorGradient%RvectorBlock(1),p_DxDeriv)
       call lsyssc_getbase_double (rvectorGradient%RvectorBlock(2),p_DyDeriv)
       call lsyssc_getbase_double (rvectorGradient%RvectorBlock(3),p_DzDeriv)
-      call lalg_clearVectorDble (p_DxDeriv)
-      call lalg_clearVectorDble (p_DyDeriv)
-      call lalg_clearVectorDble (p_DzDeriv)
+      call lalg_clearVector (p_DxDeriv)
+      call lalg_clearVector (p_DyDeriv)
+      call lalg_clearVector (p_DzDeriv)
 
     case DEFAULT
       call output_line('Invalid spatial dimension!',&

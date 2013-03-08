@@ -2722,7 +2722,7 @@ contains
     ! Get a pointer to the element error (if required)
     if (present(relementError)) then
       call lsyssc_getbase_double(relementError,p_DelementError)
-      call lalg_clearVectorDble (p_DelementError)
+      call lalg_clearVector (p_DelementError)
     end if
 
     ! Check that both discretisations have the same number of element distributions
@@ -3405,7 +3405,7 @@ contains
     ! Get a pointer to the element deviation (if required)
     if (present(relementDeviation)) then
       call lsyssc_getbase_double(relementDeviation,p_DelementDeviation)
-      call lalg_clearVectorDble (p_DelementDeviation)
+      call lalg_clearVector (p_DelementDeviation)
     end if
 
     ! Get the element evaluation tag of all FE spaces. We need it to evaluate

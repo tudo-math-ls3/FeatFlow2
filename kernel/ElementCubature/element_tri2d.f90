@@ -1829,7 +1829,7 @@ contains
       !
       !                                 --------------
       !                                 Inverse of the matrix
-      call mprim_invert3x3MatrixDirectDble(Da,Dcoeff,bsuccess)
+      call mprim_invert3x3MatrixDirect(Da,Dcoeff,bsuccess)
       
       da1 = Dcoeff(1,1)
       db1 = Dcoeff(2,1)

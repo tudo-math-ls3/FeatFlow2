@@ -1596,7 +1596,7 @@ contains
 
       ! If desired, clear the matrix before assembling.
       if (bclear) then
-        call lalg_clearVectorDble (p_DA)
+        call lalg_clearVector (p_DA)
       end if
 
     end if
@@ -2241,7 +2241,7 @@ contains
 
       ! If desired, clear the matrix before assembling.
       if (bclear) then
-        call lalg_clearVectorDble (p_DA)
+        call lalg_clearVector (p_DA)
       end if
 
     end if
@@ -2380,10 +2380,10 @@ contains
     allocate(DlocWeights(inmaxdofFine,nmaxelementsFine))
 
     ! And format the global weights array
-    call lalg_clearVectorDble(DglobWeights,NEQ)
+    call lalg_clearVector(DglobWeights,NEQ)
 
     ! Format the local weights array to 1
-    call lalg_setVectorDble2D(DlocWeights,1.0_DP)
+    call lalg_setVector(DlocWeights,1.0_DP)
 
     ! Let us run through the info blocks specifying the cubature
     do icubatureBlock = 1,p_rcubatureInfoCoarse%ninfoBlockCount
@@ -2960,7 +2960,7 @@ contains
 
       ! If desired, clear the matrix before assembling.
       if (bclear) then
-        call lalg_clearVectorDble (p_DA)
+        call lalg_clearVector (p_DA)
       end if
 
     end if
@@ -3096,10 +3096,10 @@ contains
     allocate(DlocWeights(inmaxdofCoarse,nmaxelementsCoarse))
 
     ! And format the global weights array
-    call lalg_clearVectorDble(DglobWeights,NCOLS)
+    call lalg_clearVector(DglobWeights,NCOLS)
 
     ! Format the local weights array to 1
-    call lalg_setVectorDble2D(DlocWeights,1.0_DP)
+    call lalg_setVector(DlocWeights,1.0_DP)
 
     ! Let us run through the info blocks specifying the cubature
     do icubatureBlock = 1,p_rcubatureInfoCoarse%ninfoBlockCount

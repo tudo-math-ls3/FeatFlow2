@@ -26,19 +26,19 @@
 !#
 !# Some auxiliary routines:
 !#
-!# 1.) jstab_ueoJumpStabil2d_m_unidble
+!# 1.) jstab_ueoJumpStabil2d_m_uniDP
 !#     -> The actual matrix computation routine for 2D domains.
 !#
 !# 2.) jstab_reacJumpStabil2d_m_unidbl
 !#     -> The actual matrix computation routine for 2D domains.
 !#
-!# 3.) jstab_ueoJumpStabil3d_m_unidble
+!# 3.) jstab_ueoJumpStabil3d_m_uniDP
 !#     -> The actual matrix computation routine for 3D domains.
 !#
-!# 4.) jstab_reacJumpStabil3d_m_unidble
+!# 4.) jstab_reacJumpStabil3d_m_uniDP
 !#     -> The actual matrix computation routine for 3D domains.
 !#
-!# 5.) jstab_ueoJumpStabil1d_m_unidble
+!# 5.) jstab_ueoJumpStabil1d_m_uniDP
 !#     -> The actual matrix computation routine for 1D domains.
 !#
 !# </purpose>
@@ -153,18 +153,18 @@ contains
     select case(elem_igetShape(rmatrix%p_rspatialDiscrTest%RelementDistr(1)%celement))
     case (BGEOM_SHAPE_LINE)
       ! 1D line element
-      call jstab_ueoJumpStabil1d_m_unidble (&
+      call jstab_ueoJumpStabil1d_m_uniDP (&
           rmatrix,dgamma,dgammastar,dtheta,dnu,rdiscretisation,rperfconfig)
 
     case (BGEOM_SHAPE_QUAD)
       ! 2D quadrilateral element
-      call jstab_ueoJumpStabil2d_m_unidble (&
+      call jstab_ueoJumpStabil2d_m_uniDP (&
           rmatrix,dgamma,dgammastar,deojEdgeExp,dtheta,ccubType,dnu,rdiscretisation,&
           InodeList,rperfconfig)
 
     case (BGEOM_SHAPE_HEXA)
       ! 3D hexahedron element
-      call jstab_ueoJumpStabil3d_m_unidble (&
+      call jstab_ueoJumpStabil3d_m_uniDP (&
           rmatrix,dgamma,dgammastar,dtheta,ccubType,dnu,rdiscretisation,rperfconfig)
 
     case default
@@ -180,7 +180,7 @@ contains
 
 !<subroutine>
 
-  subroutine jstab_ueoJumpStabil2d_m_unidble ( &
+  subroutine jstab_ueoJumpStabil2d_m_uniDP ( &
       rmatrixScalar,dgamma,dgammastar,deojEdgeExp,dtheta,ccubType,dnu,&
       rdiscretisation,InodeList,rperfconfig)
 
@@ -386,7 +386,7 @@ contains
     if (elem_igetShape(p_relementDistribution%celement) .ne. &
         elem_igetShape(rmatrixScalar%p_rspatialDiscrTrial%RelementDistr(1)%celement)) then
       call output_line ('Element spaces incompatible!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'jstab_ueoJumpStabil2d_m_unidble')
+                        OU_CLASS_ERROR,OU_MODE_STD,'jstab_ueoJumpStabil2d_m_uniDP')
       call sys_halt()
     end if
 
@@ -620,7 +620,7 @@ contains
           end do
 
           call output_line ('Matrix invalid! Trial-DOF not found!', &
-              OU_CLASS_ERROR,OU_MODE_STD,'jstab_ueoJumpStabil2d_m_unidble')
+              OU_CLASS_ERROR,OU_MODE_STD,'jstab_ueoJumpStabil2d_m_uniDP')
           call sys_halt()
 
         end do trialspaceloop
@@ -994,7 +994,7 @@ contains
 
 !<subroutine>
 
-  subroutine jstab_ueoJumpStabil3d_m_unidble ( &
+  subroutine jstab_ueoJumpStabil3d_m_uniDP ( &
       rmatrixScalar,dgamma,dgammastar,dtheta,ccubType,dnu,rdiscretisation,rperfconfig)
 
 !<description>
@@ -1393,7 +1393,7 @@ contains
 
 !<subroutine>
 
-  subroutine jstab_ueoJumpStabil1d_m_unidble ( &
+  subroutine jstab_ueoJumpStabil1d_m_uniDP ( &
       rmatrixScalar,dgamma,dgammastar,dtheta,dnu,rdiscretisation,rperfconfig)
 
 !<description>
@@ -1712,7 +1712,7 @@ contains
 
     ! That is it
 
-  end subroutine jstab_ueoJumpStabil1d_m_unidble
+  end subroutine jstab_ueoJumpStabil1d_m_uniDP
 
 ! ***************************************************************************
 
@@ -2661,7 +2661,7 @@ contains
     if (elem_igetShape(p_relementDistribution%celement) .ne. &
         elem_igetShape(rmatrixScalar%p_rspatialDiscrTrial%RelementDistr(1)%celement)) then
       call output_line ('Element spaces incompatible!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'jstab_ueoJumpStabil2d_m_unidble')
+                        OU_CLASS_ERROR,OU_MODE_STD,'jstab_ueoJumpStabil2d_m_uniDP')
       call sys_halt()
     end if
 
@@ -2866,7 +2866,7 @@ contains
           end do
 
           call output_line ('Matrix invalid! Trial-DOF not found!', &
-              OU_CLASS_ERROR,OU_MODE_STD,'jstab_ueoJumpStabil2d_m_unidble')
+              OU_CLASS_ERROR,OU_MODE_STD,'jstab_ueoJumpStabil2d_m_uniDP')
           call sys_halt()
 
         end do trialspaceloop

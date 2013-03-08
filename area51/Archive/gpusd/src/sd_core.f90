@@ -273,7 +273,7 @@ contains
     ! If dupsam=0, we neglect the stabilisation term (central difference like
     ! discretisation), so we set DlocalDelta=0 as well.
     if ((ddelta .eq. 0.0_DP) .or. (dupsam .eq. 0.0_DP)) then
-      call lalg_clearVectorDble (DlocalDelta)
+      call lalg_clearVector (DlocalDelta)
     end if
     
     ! Calculate the maximum norm of the actual velocity field

@@ -129,8 +129,8 @@
       call lsysbl_copyVector(rforces, raux1)
       call lsysbl_blockMatVec(Rmatrix(1), rincrement, raux2, 1.0_DP, 0.0_DP)
 
-      g0  =  lalg_scalarProductDble(p_Daux1, p_Daux1)
-      dg0 = -lalg_scalarProductDble(p_Daux1, p_Daux2)
+      g0  =  lalg_scalarProduct(p_Daux1, p_Daux1)
+      dg0 = -lalg_scalarProduct(p_Daux1, p_Daux2)
       
       dscale = 1.0_DP
       do ibacktrack = 1, 5
@@ -167,7 +167,7 @@
         if (dpred .ge. daux .and. dared .ge. 0.01*daux) exit
 
         ! Perform line search
-        g1   = lalg_scalarProductDble(p_Dforces, p_Dforces)
+        g1   = lalg_scalarProduct(p_Dforces, p_Dforces)
         daux = -dg0 / (g1-g0-2*dg0)
 
         ! Scale solution and reduction criterion

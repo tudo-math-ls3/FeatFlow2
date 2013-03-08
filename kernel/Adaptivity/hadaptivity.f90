@@ -78,10 +78,10 @@ module hadaptivity
 !!$  use hadaptaux3d
   use io
   use linearsystemscalar
-  use mapInt_Dble
-  use octreeDble
+  use mapInt_DP
+  use octreeDP
   use paramlist
-  use quadtreeDble
+  use quadtreeDP
   use sort
   use storage
   use triangulation

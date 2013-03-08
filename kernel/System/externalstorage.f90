@@ -1736,7 +1736,7 @@ contains
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
-      call lalg_clearVectorInt (Iarray)
+      call lalg_clearVector (Iarray)
 
     case (ST_NEWBLOCK_ORDERED)
       ! Fill the destination array by increasing numbers
@@ -1788,7 +1788,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_int (rnode%istoragehandle,p_data)
-      call lalg_copyVectorInt (p_data,dataarray)
+      call lalg_copyVector (p_data,dataarray)
 
     end subroutine getdata_ramdrive
 
@@ -1898,7 +1898,7 @@ contains
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
-      call lalg_clearVectorInt2D (Iarray)
+      call lalg_clearVector (Iarray)
 
     case (ST_NEWBLOCK_ORDERED)
       call output_line ('Ordering not available for multidimensional array!', &
@@ -1949,7 +1949,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_int2D (rnode%istoragehandle,p_data)
-      call lalg_copyVectorInt2D (p_data,dataarray)
+      call lalg_copyVector (p_data,dataarray)
 
     end subroutine getdata_ramdrive
 
@@ -2060,7 +2060,7 @@ contains
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
-      call lalg_clearVectorInt3D (Iarray)
+      call lalg_clearVector (Iarray)
 
     case (ST_NEWBLOCK_ORDERED)
       call output_line ('Ordering not available for multidimensional array!', &
@@ -2111,7 +2111,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_int3D (rnode%istoragehandle,p_data)
-      call lalg_copyVectorInt3D (p_data,dataarray)
+      call lalg_copyVector (p_data,dataarray)
 
     end subroutine getdata_ramdrive
 
@@ -2254,7 +2254,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_int (rnode%istoragehandle,p_data)
-      call lalg_copyVectorInt (dataarray,p_data)
+      call lalg_copyVector (dataarray,p_data)
 
     end subroutine setdata_ramdrive
 
@@ -2398,7 +2398,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_int2D (rnode%istoragehandle,p_data)
-      call lalg_copyVectorInt2D (dataarray,p_data)
+      call lalg_copyVector (dataarray,p_data)
 
     end subroutine setdata_ramdrive
 
@@ -2543,7 +2543,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_int3D (rnode%istoragehandle,p_data)
-      call lalg_copyVectorInt3D (dataarray,p_data)
+      call lalg_copyVector (dataarray,p_data)
 
     end subroutine setdata_ramdrive
 
@@ -2655,7 +2655,7 @@ contains
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
-      call lalg_clearVectorInt (Iarray)
+      call lalg_clearVector (Iarray)
 
     case (ST_NEWBLOCK_ORDERED)
       ! Fill the destination array by increasing numbers
@@ -2707,7 +2707,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_int8 (rnode%istoragehandle,p_data)
-      call lalg_copyVectorInt (p_data,dataarray)
+      call lalg_copyVector (p_data,dataarray)
 
     end subroutine getdata_ramdrive
 
@@ -2817,7 +2817,7 @@ contains
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
-      call lalg_clearVectorInt2D (Iarray)
+      call lalg_clearVector (Iarray)
 
     case (ST_NEWBLOCK_ORDERED)
       call output_line ('Ordering not available for multidimensional array!', &
@@ -2868,7 +2868,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_int8_2D (rnode%istoragehandle,p_data)
-      call lalg_copyVectorInt2D (p_data,dataarray)
+      call lalg_copyVector (p_data,dataarray)
 
     end subroutine getdata_ramdrive
 
@@ -2979,7 +2979,7 @@ contains
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
-      call lalg_clearVectorInt3D (Iarray)
+      call lalg_clearVector (Iarray)
 
     case (ST_NEWBLOCK_ORDERED)
       call output_line ('Ordering not available for multidimensional array!', &
@@ -3030,7 +3030,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_int8_3D (rnode%istoragehandle,p_data)
-      call lalg_copyVectorInt3D (p_data,dataarray)
+      call lalg_copyVector (p_data,dataarray)
 
     end subroutine getdata_ramdrive
 
@@ -3173,7 +3173,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_int8 (rnode%istoragehandle,p_data)
-      call lalg_copyVectorInt (dataarray,p_data)
+      call lalg_copyVector (dataarray,p_data)
 
     end subroutine setdata_ramdrive
 
@@ -3317,7 +3317,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_int8_2D (rnode%istoragehandle,p_data)
-      call lalg_copyVectorInt2D (dataarray,p_data)
+      call lalg_copyVector (dataarray,p_data)
 
     end subroutine setdata_ramdrive
 
@@ -3462,7 +3462,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_int8_3D (rnode%istoragehandle,p_data)
-      call lalg_copyVectorInt3D (dataarray,p_data)
+      call lalg_copyVector (dataarray,p_data)
 
     end subroutine setdata_ramdrive
 
@@ -3574,7 +3574,7 @@ contains
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
-      call lalg_clearVectorInt (Iarray)
+      call lalg_clearVector (Iarray)
 
     case (ST_NEWBLOCK_ORDERED)
       ! Fill the destination array by increasing numbers
@@ -3626,7 +3626,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_int16 (rnode%istoragehandle,p_data)
-      call lalg_copyVectorInt (p_data,dataarray)
+      call lalg_copyVector (p_data,dataarray)
 
     end subroutine getdata_ramdrive
 
@@ -3736,7 +3736,7 @@ contains
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
-      call lalg_clearVectorInt2D (Iarray)
+      call lalg_clearVector (Iarray)
 
     case (ST_NEWBLOCK_ORDERED)
       call output_line ('Ordering not available for multidimensional array!', &
@@ -3787,7 +3787,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_int16_2D (rnode%istoragehandle,p_data)
-      call lalg_copyVectorInt2D (p_data,dataarray)
+      call lalg_copyVector (p_data,dataarray)
 
     end subroutine getdata_ramdrive
 
@@ -3898,7 +3898,7 @@ contains
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
-      call lalg_clearVectorInt3D (Iarray)
+      call lalg_clearVector (Iarray)
 
     case (ST_NEWBLOCK_ORDERED)
       call output_line ('Ordering not available for multidimensional array!', &
@@ -3949,7 +3949,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_int16_3D (rnode%istoragehandle,p_data)
-      call lalg_copyVectorInt3D (p_data,dataarray)
+      call lalg_copyVector (p_data,dataarray)
 
     end subroutine getdata_ramdrive
 
@@ -4092,7 +4092,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_int16 (rnode%istoragehandle,p_data)
-      call lalg_copyVectorInt (dataarray,p_data)
+      call lalg_copyVector (dataarray,p_data)
 
     end subroutine setdata_ramdrive
 
@@ -4236,7 +4236,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_int16_2D (rnode%istoragehandle,p_data)
-      call lalg_copyVectorInt2D (dataarray,p_data)
+      call lalg_copyVector (dataarray,p_data)
 
     end subroutine setdata_ramdrive
 
@@ -4381,7 +4381,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_int16_3D (rnode%istoragehandle,p_data)
-      call lalg_copyVectorInt3D (dataarray,p_data)
+      call lalg_copyVector (dataarray,p_data)
 
     end subroutine setdata_ramdrive
 
@@ -4493,7 +4493,7 @@ contains
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
-      call lalg_clearVectorInt (Iarray)
+      call lalg_clearVector (Iarray)
 
     case (ST_NEWBLOCK_ORDERED)
       ! Fill the destination array by increasing numbers
@@ -4545,7 +4545,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_int32 (rnode%istoragehandle,p_data)
-      call lalg_copyVectorInt (p_data,dataarray)
+      call lalg_copyVector (p_data,dataarray)
 
     end subroutine getdata_ramdrive
 
@@ -4655,7 +4655,7 @@ contains
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
-      call lalg_clearVectorInt2D (Iarray)
+      call lalg_clearVector (Iarray)
 
     case (ST_NEWBLOCK_ORDERED)
       call output_line ('Ordering not available for multidimensional array!', &
@@ -4706,7 +4706,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_int32_2D (rnode%istoragehandle,p_data)
-      call lalg_copyVectorInt2D (p_data,dataarray)
+      call lalg_copyVector (p_data,dataarray)
 
     end subroutine getdata_ramdrive
 
@@ -4817,7 +4817,7 @@ contains
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
-      call lalg_clearVectorInt3D (Iarray)
+      call lalg_clearVector (Iarray)
 
     case (ST_NEWBLOCK_ORDERED)
       call output_line ('Ordering not available for multidimensional array!', &
@@ -4868,7 +4868,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_int32_3D (rnode%istoragehandle,p_data)
-      call lalg_copyVectorInt3D (p_data,dataarray)
+      call lalg_copyVector (p_data,dataarray)
 
     end subroutine getdata_ramdrive
 
@@ -5011,7 +5011,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_int32 (rnode%istoragehandle,p_data)
-      call lalg_copyVectorInt (dataarray,p_data)
+      call lalg_copyVector (dataarray,p_data)
 
     end subroutine setdata_ramdrive
 
@@ -5155,7 +5155,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_int32_2D (rnode%istoragehandle,p_data)
-      call lalg_copyVectorInt2D (dataarray,p_data)
+      call lalg_copyVector (dataarray,p_data)
 
     end subroutine setdata_ramdrive
 
@@ -5300,7 +5300,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_int32_3D (rnode%istoragehandle,p_data)
-      call lalg_copyVectorInt3D (dataarray,p_data)
+      call lalg_copyVector (dataarray,p_data)
 
     end subroutine setdata_ramdrive
 
@@ -5412,7 +5412,7 @@ contains
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
-      call lalg_clearVectorInt (Iarray)
+      call lalg_clearVector (Iarray)
 
     case (ST_NEWBLOCK_ORDERED)
       ! Fill the destination array by increasing numbers
@@ -5464,7 +5464,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_int64 (rnode%istoragehandle,p_data)
-      call lalg_copyVectorInt (p_data,dataarray)
+      call lalg_copyVector (p_data,dataarray)
 
     end subroutine getdata_ramdrive
 
@@ -5574,7 +5574,7 @@ contains
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
-      call lalg_clearVectorInt2D (Iarray)
+      call lalg_clearVector (Iarray)
 
     case (ST_NEWBLOCK_ORDERED)
       call output_line ('Ordering not available for multidimensional array!', &
@@ -5625,7 +5625,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_int64_2D (rnode%istoragehandle,p_data)
-      call lalg_copyVectorInt2D (p_data,dataarray)
+      call lalg_copyVector (p_data,dataarray)
 
     end subroutine getdata_ramdrive
 
@@ -5736,7 +5736,7 @@ contains
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
-      call lalg_clearVectorInt3D (Iarray)
+      call lalg_clearVector (Iarray)
 
     case (ST_NEWBLOCK_ORDERED)
       call output_line ('Ordering not available for multidimensional array!', &
@@ -5787,7 +5787,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_int64_3D (rnode%istoragehandle,p_data)
-      call lalg_copyVectorInt3D (p_data,dataarray)
+      call lalg_copyVector (p_data,dataarray)
 
     end subroutine getdata_ramdrive
 
@@ -5930,7 +5930,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_int64 (rnode%istoragehandle,p_data)
-      call lalg_copyVectorInt (dataarray,p_data)
+      call lalg_copyVector (dataarray,p_data)
 
     end subroutine setdata_ramdrive
 
@@ -6074,7 +6074,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_int64_2D (rnode%istoragehandle,p_data)
-      call lalg_copyVectorInt2D (dataarray,p_data)
+      call lalg_copyVector (dataarray,p_data)
 
     end subroutine setdata_ramdrive
 
@@ -6219,7 +6219,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_int64_3D (rnode%istoragehandle,p_data)
-      call lalg_copyVectorInt3D (dataarray,p_data)
+      call lalg_copyVector (dataarray,p_data)
 
     end subroutine setdata_ramdrive
 
@@ -6331,7 +6331,7 @@ contains
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
-      call lalg_clearVectorSngl (Farray)
+      call lalg_clearVector (Farray)
 
     case (ST_NEWBLOCK_ORDERED)
       ! Fill the destination array by increasing numbers
@@ -6383,7 +6383,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_single (rnode%istoragehandle,p_data)
-      call lalg_copyVectorSngl (p_data,dataarray)
+      call lalg_copyVector (p_data,dataarray)
 
     end subroutine getdata_ramdrive
 
@@ -6493,7 +6493,7 @@ contains
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
-      call lalg_clearVectorSngl2D (Farray)
+      call lalg_clearVector (Farray)
 
     case (ST_NEWBLOCK_ORDERED)
       call output_line ('Ordering not available for multidimensional array!', &
@@ -6544,7 +6544,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_single2D (rnode%istoragehandle,p_data)
-      call lalg_copyVectorSngl2D (p_data,dataarray)
+      call lalg_copyVector (p_data,dataarray)
 
     end subroutine getdata_ramdrive
 
@@ -6655,7 +6655,7 @@ contains
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
-      call lalg_clearVectorSngl3D (Farray)
+      call lalg_clearVector (Farray)
 
     case (ST_NEWBLOCK_ORDERED)
       call output_line ('Ordering not available for multidimensional array!', &
@@ -6706,7 +6706,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_single3D (rnode%istoragehandle,p_data)
-      call lalg_copyVectorSngl3D (p_data,dataarray)
+      call lalg_copyVector (p_data,dataarray)
 
     end subroutine getdata_ramdrive
 
@@ -6849,7 +6849,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_single (rnode%istoragehandle,p_data)
-      call lalg_copyVectorSngl (dataarray,p_data)
+      call lalg_copyVector (dataarray,p_data)
 
     end subroutine setdata_ramdrive
 
@@ -6993,7 +6993,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_single2D (rnode%istoragehandle,p_data)
-      call lalg_copyVectorSngl2D (dataarray,p_data)
+      call lalg_copyVector (dataarray,p_data)
 
     end subroutine setdata_ramdrive
 
@@ -7138,7 +7138,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_single3D (rnode%istoragehandle,p_data)
-      call lalg_copyVectorSngl3D (dataarray,p_data)
+      call lalg_copyVector (dataarray,p_data)
 
     end subroutine setdata_ramdrive
 
@@ -7250,7 +7250,7 @@ contains
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
-      call lalg_clearVectorDble (Darray)
+      call lalg_clearVector (Darray)
 
     case (ST_NEWBLOCK_ORDERED)
       ! Fill the destination array by increasing numbers
@@ -7302,7 +7302,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_double (rnode%istoragehandle,p_data)
-      call lalg_copyVectorDble (p_data,dataarray)
+      call lalg_copyVector (p_data,dataarray)
 
     end subroutine getdata_ramdrive
 
@@ -7412,7 +7412,7 @@ contains
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
-      call lalg_clearVectorDble2D (Darray)
+      call lalg_clearVector (Darray)
 
     case (ST_NEWBLOCK_ORDERED)
       call output_line ('Ordering not available for multidimensional array!', &
@@ -7463,7 +7463,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_double2D (rnode%istoragehandle,p_data)
-      call lalg_copyVectorDble2D (p_data,dataarray)
+      call lalg_copyVector (p_data,dataarray)
 
     end subroutine getdata_ramdrive
 
@@ -7574,7 +7574,7 @@ contains
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
-      call lalg_clearVectorDble3D (Darray)
+      call lalg_clearVector (Darray)
 
     case (ST_NEWBLOCK_ORDERED)
       call output_line ('Ordering not available for multidimensional array!', &
@@ -7625,7 +7625,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_double3D (rnode%istoragehandle,p_data)
-      call lalg_copyVectorDble3D (p_data,dataarray)
+      call lalg_copyVector (p_data,dataarray)
 
     end subroutine getdata_ramdrive
 
@@ -7768,7 +7768,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_double (rnode%istoragehandle,p_data)
-      call lalg_copyVectorDble (dataarray,p_data)
+      call lalg_copyVector (dataarray,p_data)
 
     end subroutine setdata_ramdrive
 
@@ -7912,7 +7912,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_double2D (rnode%istoragehandle,p_data)
-      call lalg_copyVectorDble2D (dataarray,p_data)
+      call lalg_copyVector (dataarray,p_data)
 
     end subroutine setdata_ramdrive
 
@@ -8057,7 +8057,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_double3D (rnode%istoragehandle,p_data)
-      call lalg_copyVectorDble3D (dataarray,p_data)
+      call lalg_copyVector (dataarray,p_data)
 
     end subroutine setdata_ramdrive
 
@@ -8169,7 +8169,7 @@ contains
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
-      call lalg_clearVectorQuad (Qarray)
+      call lalg_clearVector (Qarray)
 
     case (ST_NEWBLOCK_ORDERED)
       ! Fill the destination array by increasing numbers
@@ -8221,7 +8221,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_quad (rnode%istoragehandle,p_data)
-      call lalg_copyVectorQuad (p_data,dataarray)
+      call lalg_copyVector (p_data,dataarray)
 
     end subroutine getdata_ramdrive
 
@@ -8331,7 +8331,7 @@ contains
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
-      call lalg_clearVectorQuad2D (Qarray)
+      call lalg_clearVector (Qarray)
 
     case (ST_NEWBLOCK_ORDERED)
       call output_line ('Ordering not available for multidimensional array!', &
@@ -8382,7 +8382,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_quad2D (rnode%istoragehandle,p_data)
-      call lalg_copyVectorQuad2D (p_data,dataarray)
+      call lalg_copyVector (p_data,dataarray)
 
     end subroutine getdata_ramdrive
 
@@ -8493,7 +8493,7 @@ contains
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that is all
-      call lalg_clearVectorQuad3D (Qarray)
+      call lalg_clearVector (Qarray)
 
     case (ST_NEWBLOCK_ORDERED)
       call output_line ('Ordering not available for multidimensional array!', &
@@ -8544,7 +8544,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_quad3D (rnode%istoragehandle,p_data)
-      call lalg_copyVectorQuad3D (p_data,dataarray)
+      call lalg_copyVector (p_data,dataarray)
 
     end subroutine getdata_ramdrive
 
@@ -8687,7 +8687,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_quad (rnode%istoragehandle,p_data)
-      call lalg_copyVectorQuad (dataarray,p_data)
+      call lalg_copyVector (dataarray,p_data)
 
     end subroutine setdata_ramdrive
 
@@ -8831,7 +8831,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_quad2D (rnode%istoragehandle,p_data)
-      call lalg_copyVectorQuad2D (dataarray,p_data)
+      call lalg_copyVector (dataarray,p_data)
 
     end subroutine setdata_ramdrive
 
@@ -8976,7 +8976,7 @@ contains
 
       ! Get the memory block and copy it.
       call storage_getbase_quad3D (rnode%istoragehandle,p_data)
-      call lalg_copyVectorQuad3D (dataarray,p_data)
+      call lalg_copyVector (dataarray,p_data)
 
     end subroutine setdata_ramdrive
 

@@ -26,8 +26,8 @@ module quadtree
 !$use omp_lib
   use fsystem
   use genoutput
-  use quadtreeDble, only : t_quadtreeDble,qtree_release
-  use quadtreeSngl, only : t_quadtreeSngl,qtree_release
+  use quadtreeDP, only : t_quadtreeDP,qtree_release
+  use quadtreeSP, only : t_quadtreeSP,qtree_release
   use storage
 
   implicit none
@@ -39,8 +39,8 @@ module quadtree
   public :: quadtree_getbase
 
   interface quadtree_getbase
-    module procedure quadtree_getbase_dble
-    module procedure quadtree_getbase_sngl
+    module procedure quadtree_getbase_DP
+    module procedure quadtree_getbase_SP
   end interface
 
 !<constants>
@@ -63,10 +63,10 @@ module quadtree
     private
 
     ! Pointer to double-valued quadtree implementations
-    type(t_quadtreeDble), pointer :: p_quadtreeDble => null()
+    type(t_quadtreeDP), pointer :: p_quadtreeDP => null()
 
     ! Pointer to single-valued quadtree implementations
-    type(t_quadtreeSngl), pointer :: p_quadtreeSngl => null()
+    type(t_quadtreeSP), pointer :: p_quadtreeSP => null()
 
   end type t_quadtree
 
@@ -98,10 +98,10 @@ contains
 
     select case (cquadtreeType)    
     case (QUADTREE_DOUBLE)
-      allocate(rquadtree%p_quadtreeDble)
+      allocate(rquadtree%p_quadtreeDP)
 
     case (QUADTREE_SINGLE)
-      allocate(rquadtree%p_quadtreeSngl)
+      allocate(rquadtree%p_quadtreeSP)
 
     case DEFAULT
       call output_line('Invalid quadtree type!',&
@@ -127,14 +127,14 @@ contains
 !</inputoutput>
 !</subroutine>
 
-    if (associated(rquadtree%p_quadtreeDble)) then
-      call qtree_release(rquadtree%p_quadtreeDble)
-      deallocate(rquadtree%p_quadtreeDble)
+    if (associated(rquadtree%p_quadtreeDP)) then
+      call qtree_release(rquadtree%p_quadtreeDP)
+      deallocate(rquadtree%p_quadtreeDP)
     end if
 
-    if (associated(rquadtree%p_quadtreeSngl)) then
-      call qtree_release(rquadtree%p_quadtreeSngl)
-      deallocate(rquadtree%p_quadtreeSngl)
+    if (associated(rquadtree%p_quadtreeSP)) then
+      call qtree_release(rquadtree%p_quadtreeSP)
+      deallocate(rquadtree%p_quadtreeSP)
     end if
 
   end subroutine quadtree_done
@@ -143,7 +143,7 @@ contains
 
 !<subroutine>
 
-  subroutine quadtree_getbase_dble(rquadtree, p_rquadtree)
+  subroutine quadtree_getbase_DP(rquadtree, p_rquadtree)
 
 !<description>
     ! Returns a pointer to the double-valued quadtree implementation
@@ -157,23 +157,23 @@ contains
 
 !<output>
     ! Pointer to the quadtree implementation
-    type(t_quadtreeDble), pointer :: p_rquadtree
+    type(t_quadtreeDP), pointer :: p_rquadtree
 !</output>
 !</subroutine>
 
-    if (associated(rquadtree%p_quadtreeDble)) then
-      p_rquadtree => rquadtree%p_quadtreeDble
+    if (associated(rquadtree%p_quadtreeDP)) then
+      p_rquadtree => rquadtree%p_quadtreeDP
     else
       nullify(p_rquadtree)
     end if
 
-  end subroutine quadtree_getbase_dble
+  end subroutine quadtree_getbase_DP
 
   !************************************************************************
 
 !<subroutine>
 
-  subroutine quadtree_getbase_sngl(rquadtree, p_rquadtree)
+  subroutine quadtree_getbase_SP(rquadtree, p_rquadtree)
 
 !<description>
     ! Returns a pointer to the single-valued quadtree implementation
@@ -187,16 +187,16 @@ contains
 
 !<output>
     ! Pointer to the quadtree implementation
-    type(t_quadtreeSngl), pointer :: p_rquadtree
+    type(t_quadtreeSP), pointer :: p_rquadtree
 !</output>
 !</subroutine>
 
-    if (associated(rquadtree%p_quadtreeSngl)) then
-      p_rquadtree => rquadtree%p_quadtreeSngl
+    if (associated(rquadtree%p_quadtreeSP)) then
+      p_rquadtree => rquadtree%p_quadtreeSP
     else
       nullify(p_rquadtree)
     end if
 
-  end subroutine quadtree_getbase_sngl
+  end subroutine quadtree_getbase_SP
 
 end module quadtree

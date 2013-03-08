@@ -91,7 +91,7 @@
 !#
 !# It contains the following set of auxiliary routines:
 !#
-!# 1.) linf_buildVectorDble_conf
+!# 1.) linf_buildVector_confDP
 !#     -> Assembles the entries of a vector according to a linear form
 !#        defined in terms of a volume integral for conforming discretisations.
 !#
@@ -592,8 +592,8 @@ contains
 !    select case(rvector%cdataType)
 !      
 !    case(ST_DOUBLE)
-!      call linf_buildVectorDble_conf (rdiscretisation, rform, bclear, rvector,&
-!                                      fcoeff_buildVectorSc_sim, rcollection, rperfconfig)
+!      call linf_buildVector_confDP (rdiscretisation, rform, bclear, rvector,&
+!                                    fcoeff_buildVectorSc_sim, rcollection, rperfconfig)
 !
 !    case DEFAULT
 !      call output_line("Single precision vectors currently not supported!",&
@@ -613,9 +613,9 @@ contains
 !
 !!<subroutine>
 !
-!  subroutine linf_buildVectorDble_conf (rdiscretisation, rform, bclear, rvector,&
-!                                        fcoeff_buildVectorSc_sim, rcollection,&
-!                                        rperfconfig)
+!  subroutine linf_buildVector_confDP (rdiscretisation, rform, bclear, rvector,&
+!                                      fcoeff_buildVectorSc_sim, rcollection,&
+!                                      rperfconfig)
 !
 !!<description>
 !  ! This routine calculates the entries of a discretised finite element vector.
@@ -760,7 +760,7 @@ contains
 !    
 !    if ((I1 .le.0) .or. (I1 .gt. DER_MAXNDER)) then
 !      call output_line("Invalid descriptor",&
-!          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorDble_conf")
+!          OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVector_confDP")
 !      call sys_halt()
 !    endif
 !    
@@ -780,7 +780,7 @@ contains
 !
 !    ! Clear the entries in the vector - we need to start with zero
 !    ! when assembling a new vector.
-!    call storage_new ("linf_buildVectorDble_conf", "vector", &
+!    call storage_new ("linf_buildVector_confDP", "vector", &
 !                        NEQ, ST_DOUBLE, rvector%h_Ddata, &
 !                        ST_NEWBLOCK_ZERO)
 !    call lsyssc_getbase_double (rvector,p_Ddata)
@@ -795,7 +795,7 @@ contains
 !    
 !    ! If desired, clear the vector before assembling.
 !    if (bclear) then
-!      call lalg_clearVectorDble (p_Ddata)
+!      call lalg_clearVector (p_Ddata)
 !    end if
 !    
 !  end if
@@ -847,7 +847,7 @@ contains
 !      if ((IA.lt.0) .or. &
 !          (IA .gt. elem_getMaxDerivative(p_relementDistribution%celement))) then
 !        call output_line("Specified test-derivative "//trim(sys_siL(IA,3))//" not available!",&
-!            OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVectorDble_conf")
+!            OU_CLASS_ERROR,OU_MODE_STD,"linf_buildVector_confDP")
 !        call sys_halt()
 !      end if
 !    end do

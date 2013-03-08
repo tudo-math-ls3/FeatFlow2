@@ -1350,7 +1350,7 @@ contains
         allocate(Col(ncol))
       
         call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
-        call lalg_copyVectorInt (p_Kcol(p_Kld(irow):p_Kld(irow+1)-1),Col)
+        call lalg_copyVector (p_Kcol(p_Kld(irow):p_Kld(irow+1)-1),Col)
         
         call storage_realloc ("mmod_expandToFullRow",&
             rmatrix%NA+icoldiff,rmatrix%h_Kcol,ST_NEWBLOCK_NOINIT)
@@ -1372,7 +1372,7 @@ contains
           end if
 
           call lsyssc_getbase_double (rmatrix,p_Da)
-          call lalg_copyVectorDble (p_Da(p_Kld(irow):p_Kld(irow+1)-1),Da)
+          call lalg_copyVector (p_Da(p_Kld(irow):p_Kld(irow+1)-1),Da)
 
           call storage_realloc ("mmod_expandToFullRow",&
               rmatrix%NA+icoldiff,rmatrix%h_Da,ST_NEWBLOCK_NOINIT)
@@ -1381,7 +1381,7 @@ contains
           ! We *on-purpose* use storage_getbase here since lsyssc_getbase
           ! does not work -- it would take rmatrix%NA into account!
           call storage_getbase_double (rmatrix%h_Da,p_Da)
-          call copyVectorDble (p_Da,&
+          call copyVectorDP (p_Da,&
               p_Kld(irow+1),p_Kld(rmatrix%NEQ+1)-1,p_Kld(irow+1)+icoldiff)
 
         end if
@@ -1477,7 +1477,7 @@ contains
 
   ! ***************************************************************************
 
-    subroutine copyVectorDble (Dx,istartpos,iendpos,inewpos)
+    subroutine copyVectorDP (Dx,istartpos,iendpos,inewpos)
 
     ! Copies an real vector Dx(inewpos:) = Dx(istartpos,iendpos).
     ! Copies backwards; used to copy parts in a vector

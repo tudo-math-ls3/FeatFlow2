@@ -2224,7 +2224,7 @@ contains
       ! Compute norm of solution changes
       call lsysbl_getbase_double(rsolution1, p_Ddata1)
       call lsysbl_getbase_double(rsolution2, p_Ddata2)
-      dChange = lalg_errorNormDble(p_Ddata1, p_Ddata2, rtimestep%isolNorm)
+      dChange = lalg_errorNorm(p_Ddata1, p_Ddata2, rtimestep%isolNorm)
 
       ! Calculate the 'optimal' time step size
       dStepOpt = sqrt(3.0_DP*p_rautoController%depsRel*rtimestep%dStep/dChange)
@@ -2251,7 +2251,7 @@ contains
 
         ! Calculate the relative changes for statistical information
         rtimestep%drelChange = dChange/max(SYS_EPSREAL_DP,&
-                                           lalg_normDble(p_Ddata1, rtimestep%isolNorm))
+                                           lalg_norm(p_Ddata1, rtimestep%isolNorm))
 
       end if
 
@@ -2284,8 +2284,8 @@ contains
       ! Compute norm of solution changes
       call lsysbl_getbase_double(rsolution1, p_Ddata1)
       call lsysbl_getbase_double(rsolution2, p_Ddata2)
-      dChange = lalg_errorNormDble(p_Ddata1, p_Ddata2, rtimestep%isolNorm) /&
-                     lalg_NormDble(p_Ddata1, rtimestep%isolNorm)
+      dChange = lalg_errorNorm(p_Ddata1, p_Ddata2, rtimestep%isolNorm) /&
+                     lalg_norm(p_Ddata1, rtimestep%isolNorm)
       rtimestep%drelChange = dChange
 
       ! Check if solver did not converge, that is, the convergence rate equals
@@ -2372,9 +2372,9 @@ contains
       ! Calculate the relative changes for statistical information
       call lsysbl_getbase_double(rsolution1, p_Ddata1)
       call lsysbl_getbase_double(rsolution2, p_Ddata2)
-      dChange = lalg_errorNormDble(p_Ddata1, p_Ddata2, rtimestep%isolNorm)
+      dChange = lalg_errorNorm(p_Ddata1, p_Ddata2, rtimestep%isolNorm)
       rtimestep%drelChange = dChange/max(SYS_EPSREAL_DP,&
-                                     lalg_normDble(p_Ddata1, rtimestep%isolNorm))
+                                     lalg_norm(p_Ddata1, rtimestep%isolNorm))
 
 
     case default
@@ -2384,9 +2384,9 @@ contains
       ! Calculate the relative changes for statistical information
       call lsysbl_getbase_double(rsolution1, p_Ddata1)
       call lsysbl_getbase_double(rsolution2, p_Ddata2)
-      dChange = lalg_errorNormDble(p_Ddata1, p_Ddata2, rtimestep%isolNorm)
+      dChange = lalg_errorNorm(p_Ddata1, p_Ddata2, rtimestep%isolNorm)
       rtimestep%drelChange = dChange/max(SYS_EPSREAL_DP,&
-                                         lalg_normDble(p_Ddata1, rtimestep%isolNorm))
+                                         lalg_norm(p_Ddata1, rtimestep%isolNorm))
 
     end select
 

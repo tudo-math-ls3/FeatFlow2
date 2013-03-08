@@ -9,10 +9,10 @@
 !#
 !# The following routines can be found in this module:
 !#
-!# 1.) vecio_writeArray_Dble
+!# 1.) vecio_writeArray_DP
 !#     -> Writes an array into a (text or binary) file
 !#
-!# 2.) vecio_readArray_Dble
+!# 2.) vecio_readArray_DP
 !#     -> Reads an array from a (text or binary) file
 !#
 !# 3.) vecio_writeBlockVectorHR
@@ -58,8 +58,8 @@ module vectorio
 
   private
 
-  public :: vecio_writeArray_Dble
-  public :: vecio_readArray_Dble
+  public :: vecio_writeArray_DP
+  public :: vecio_readArray_DP
   public :: vecio_writeBlockVectorHR
   public :: vecio_writeVectorHR
   public :: vecio_readBlockVectorHR
@@ -74,7 +74,7 @@ contains
   ! ***************************************************************************
 
 !<subroutine>
-  subroutine vecio_writeArray_Dble (Ddata, ifile, sfile, sformat, Ipermutation)
+  subroutine vecio_writeArray_DP (Ddata, ifile, sfile, sformat, Ipermutation)
 
   !<description>
     ! Write double precision vector into a text file.
@@ -116,7 +116,7 @@ contains
       call io_openFileForWriting(sfile, cf, SYS_REPLACE, bformatted=present(sformat))
       if (cf .eq. -1) then
         call output_line ('Could not open file '//trim(sfile), &
-                          OU_CLASS_ERROR,OU_MODE_STD,'vecio_writeArray_Dble')
+                          OU_CLASS_ERROR,OU_MODE_STD,'vecio_writeArray_DP')
         call sys_halt()
       end if
     else
@@ -161,7 +161,7 @@ contains
     ! ***************************************************************************
 
 !<subroutine>
-  subroutine vecio_writeArray_Sngl (Fdata, ifile, sfile, sformat, Ipermutation)
+  subroutine vecio_writeArray_SP (Fdata, ifile, sfile, sformat, Ipermutation)
 
   !<description>
     ! Write single precision vector into a text file.
@@ -203,7 +203,7 @@ contains
       call io_openFileForWriting(sfile, cf, SYS_REPLACE, bformatted=present(sformat))
       if (cf .eq. -1) then
         call output_line ('Could not open file '//trim(sfile), &
-                          OU_CLASS_ERROR,OU_MODE_STD,'vecio_writeArray_Sngl')
+                          OU_CLASS_ERROR,OU_MODE_STD,'vecio_writeArray_SP')
         call sys_halt()
       end if
     else
@@ -248,7 +248,7 @@ contains
   ! ***************************************************************************
 
 !<subroutine>
-  subroutine vecio_readArray_Dble (Ddata, ifile, sfile, sformat, Ipermutation)
+  subroutine vecio_readArray_DP (Ddata, ifile, sfile, sformat, Ipermutation)
 
   !<description>
     ! Reads a double precision vector from a file.
@@ -269,7 +269,7 @@ contains
     ! OPTIONAL: Format string to use for the input; e.g. '(E20.10)'.
     ! If not specified, data is read from the file unformatted
     ! (i.e. in a computer dependent, not human readable form).
-    ! When reading an array written out by vecio_writeArray_Dble,
+    ! When reading an array written out by vecio_writeArray_DP,
     ! the format string shall match the setting of the
     ! format string used there.
     character(len=*), intent(in), optional :: sformat
@@ -295,7 +295,7 @@ contains
       call io_openFileForReading(sfile, cf, bformatted=present(sformat))
       if (cf .eq. -1) then
         call output_line ('Could not open file '//trim(sfile), &
-                          OU_CLASS_ERROR,OU_MODE_STD,'vecio_readArray_Dble')
+                          OU_CLASS_ERROR,OU_MODE_STD,'vecio_readArray_DP')
         call sys_halt()
       end if
     else
@@ -338,7 +338,7 @@ contains
   ! ***************************************************************************
 
 !<subroutine>
-  subroutine vecio_readArray_Sngl (Fdata, ifile, sfile, sformat, Ipermutation)
+  subroutine vecio_readArray_SP (Fdata, ifile, sfile, sformat, Ipermutation)
 
   !<description>
     ! Reads a single precision vector from a file.
@@ -359,7 +359,7 @@ contains
     ! OPTIONAL: Format string to use for the input; e.g. '(E20.10)'.
     ! If not specified, data is read from the file unformatted
     ! (i.e. in a computer dependent, not human readable form).
-    ! When reading an array written out by vecio_writeArray_Dble,
+    ! When reading an array written out by vecio_writeArray_DP,
     ! the format string shall match the setting of the
     ! format string used there.
     character(len=*), intent(in), optional :: sformat
@@ -385,7 +385,7 @@ contains
       call io_openFileForReading(sfile, cf, bformatted=present(sformat))
       if (cf .eq. -1) then
         call output_line ('Could not open file '//trim(sfile), &
-                          OU_CLASS_ERROR,OU_MODE_STD,'vecio_readArray_Sngl')
+                          OU_CLASS_ERROR,OU_MODE_STD,'vecio_readArray_SP')
         call sys_halt()
       end if
     else
@@ -527,15 +527,15 @@ contains
 
       if (present(sformat)) then
         if (.not. associated(p_Ipermutation)) then
-          call vecio_writeArray_Dble (p_Ddata, cf, sfile, sformat)
+          call vecio_writeArray_DP (p_Ddata, cf, sfile, sformat)
         else
-          call vecio_writeArray_Dble (p_Ddata, cf, sfile, sformat, p_Ipermutation)
+          call vecio_writeArray_DP (p_Ddata, cf, sfile, sformat, p_Ipermutation)
         end if
       else
         if (.not. associated(p_Ipermutation)) then
-          call vecio_writeArray_Dble (p_Ddata, cf, sfile)
+          call vecio_writeArray_DP (p_Ddata, cf, sfile)
         else
-          call vecio_writeArray_Dble (p_Ddata, cf, sfile, Ipermutation=p_Ipermutation)
+          call vecio_writeArray_DP (p_Ddata, cf, sfile, Ipermutation=p_Ipermutation)
         end if
       end if
     case DEFAULT
@@ -672,15 +672,15 @@ contains
 
       if (bformatted) then
         if (.not. associated(p_Ipermutation)) then
-          call vecio_readArray_Dble (p_Ddata, cf, sfile, sformat)
+          call vecio_readArray_DP (p_Ddata, cf, sfile, sformat)
         else
-          call vecio_readArray_Dble (p_Ddata, cf, sfile, sformat, p_Ipermutation)
+          call vecio_readArray_DP (p_Ddata, cf, sfile, sformat, p_Ipermutation)
         end if
       else
         if (.not. associated(p_Ipermutation)) then
-          call vecio_readArray_Dble (p_Ddata, cf, sfile)
+          call vecio_readArray_DP (p_Ddata, cf, sfile)
         else
-          call vecio_readArray_Dble (p_Ddata, cf, sfile, Ipermutation=p_Ipermutation)
+          call vecio_readArray_DP (p_Ddata, cf, sfile, Ipermutation=p_Ipermutation)
         end if
       end if
     case DEFAULT
@@ -809,15 +809,15 @@ contains
 
         if (present(sformat)) then
           if (.not. associated(p_Ipermutation)) then
-            call vecio_writeArray_Dble (p_Ddata, cf, sfile, sformat)
+            call vecio_writeArray_DP (p_Ddata, cf, sfile, sformat)
           else
-            call vecio_writeArray_Dble (p_Ddata, cf, sfile, sformat, p_Ipermutation)
+            call vecio_writeArray_DP (p_Ddata, cf, sfile, sformat, p_Ipermutation)
           end if
         else
           if (.not. associated(p_Ipermutation)) then
-            call vecio_writeArray_Dble (p_Ddata, cf, sfile)
+            call vecio_writeArray_DP (p_Ddata, cf, sfile)
           else
-            call vecio_writeArray_Dble (p_Ddata, cf, sfile, Ipermutation=p_Ipermutation)
+            call vecio_writeArray_DP (p_Ddata, cf, sfile, Ipermutation=p_Ipermutation)
           end if
         end if
       end do
@@ -995,15 +995,15 @@ contains
 
         if (bformatted) then
           if (.not. associated(p_Ipermutation)) then
-            call vecio_readArray_Dble (p_Ddata, cf, sfile, sformat)
+            call vecio_readArray_DP (p_Ddata, cf, sfile, sformat)
           else
-            call vecio_readArray_Dble (p_Ddata, cf, sfile, sformat, p_Ipermutation)
+            call vecio_readArray_DP (p_Ddata, cf, sfile, sformat, p_Ipermutation)
           end if
         else
           if (.not. associated(p_Ipermutation)) then
-            call vecio_readArray_Dble (p_Ddata, cf, sfile)
+            call vecio_readArray_DP (p_Ddata, cf, sfile)
           else
-            call vecio_readArray_Dble (p_Ddata, cf, sfile, Ipermutation=p_Ipermutation)
+            call vecio_readArray_DP (p_Ddata, cf, sfile, Ipermutation=p_Ipermutation)
           end if
         end if
       end do
@@ -1103,9 +1103,9 @@ contains
       call lsyssc_getbase_double (rvector,p_Ddata)
 
       if (.not. associated(p_Ipermutation)) then
-        call vecio_writeMapleArray_Dble (p_Ddata, cf, sformat)
+        call vecio_writeMapleArray_DP (p_Ddata, cf, sformat)
       else
-        call vecio_writeMapleArray_Dble (p_Ddata, cf, sformat, p_Ipermutation)
+        call vecio_writeMapleArray_DP (p_Ddata, cf, sformat, p_Ipermutation)
       end if
 
       ! Footer
@@ -1209,9 +1209,9 @@ contains
         call lsyssc_getbase_double (rvector%RvectorBlock(iblock),p_Ddata)
 
         if (.not. associated(p_Ipermutation)) then
-          call vecio_writeMapleArray_Dble (p_Ddata, cf, sformat)
+          call vecio_writeMapleArray_DP (p_Ddata, cf, sformat)
         else
-          call vecio_writeMapleArray_Dble (p_Ddata, cf, sformat, p_Ipermutation)
+          call vecio_writeMapleArray_DP (p_Ddata, cf, sformat, p_Ipermutation)
         end if
 
         ! If this is not the last block, attach more data
@@ -1238,7 +1238,7 @@ contains
 
 !<subroutine>
 
-  subroutine vecio_writeMapleArray_Dble (Ddata, ifile, sformat, Ipermutation)
+  subroutine vecio_writeMapleArray_DP (Ddata, ifile, sformat, Ipermutation)
 
 !<description>
   ! INTERNAL SUBROUTINE.

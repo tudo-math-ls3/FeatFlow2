@@ -3113,8 +3113,8 @@ contains
 !    end if
 
     ! Initialise the array with the local Delta values for the stabilisation
-    call lalg_clearVectorDble (roptcassemblyinfo%DlocalDeltaPrimal)
-    call lalg_clearVectorDble (roptcassemblyinfo%DlocalDeltaDual)
+    call lalg_clearVector (roptcassemblyinfo%DlocalDeltaPrimal)
+    call lalg_clearVector (roptcassemblyinfo%DlocalDeltaDual)
 
     ! Loop over the elements - blockwise.
     !
@@ -3522,8 +3522,8 @@ contains
 !    end if
 
     ! Initialise the array with the local Delta values for the stabilisation
-    call lalg_clearVectorDble (roptcassemblyinfo%DlocalDeltaPrimal)
-    call lalg_clearVectorDble (roptcassemblyinfo%DlocalDeltaDual)
+    call lalg_clearVector (roptcassemblyinfo%DlocalDeltaPrimal)
+    call lalg_clearVector (roptcassemblyinfo%DlocalDeltaDual)
 
     ! Loop over the elements - blockwise.
     !
@@ -4857,8 +4857,8 @@ contains
     allocate(DentryA15(roptcassemblyinfo%indof,roptcassemblyinfo%indof,roptcassemblyinfo%nelementsPerBlock))
   
     ! Initialise the array with the local Delta values for the stabilisation
-    call lalg_clearVectorDble (roptcassemblyinfo%DlocalDeltaPrimal)
-    call lalg_clearVectorDble (roptcassemblyinfo%DlocalDeltaDual)
+    call lalg_clearVector (roptcassemblyinfo%DlocalDeltaPrimal)
+    call lalg_clearVector (roptcassemblyinfo%DlocalDeltaDual)
     
     ! Get pointers to the subvectors
     call lsyssc_getbase_double (rx%RvectorBlock(1),p_Dx1)

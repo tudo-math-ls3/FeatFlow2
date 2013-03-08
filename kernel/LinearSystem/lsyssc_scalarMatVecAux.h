@@ -9,17 +9,17 @@
 #error "Definition of MatDT is missing!"
 #else
 #if   MatDT == SINGLE_PREC
-#define __MatName__ Sngl
+#define __MatName__ SP
 #define __MatType__ SP
 #define __MatOne__  1.0_SP
 #define __MatZero__ 0.0_SP
 #elif MatDT == DOUBLE_PREC
-#define __MatName__ Dble
+#define __MatName__ DP
 #define __MatType__ DP
 #define __MatOne__  1.0_DP
 #define __MatZero__ 0.0_DP
 #elif MatDT == QUAD_PREC
-#define __MatName__ Quad
+#define __MatName__ QP
 #define __MatType__ QP
 #define __MatOne__  1.0_DP
 #define __MatZero__ 0.0_QP
@@ -32,17 +32,17 @@
 #error "Definition of VecDT is missing!"
 #else
 #if   VecDT == SINGLE_PREC
-#define __VecName__ Sngl
+#define __VecName__ SP
 #define __VecType__ SP
 #define __VecOne__  1.0_SP
 #define __VecZero__ 0.0_SP
 #elif VecDT == DOUBLE_PREC
-#define __VecName__ Dble
+#define __VecName__ DP
 #define __VecType__ DP
 #define __VecOne__  1.0_DP
 #define __VecZero__ 0.0_DP
-#elif VecDT == quad
-#define __VecName__ QUAD_PREC
+#elif VecDT == QUAD_PREC
+#define __VecName__ QP
 #define __VecType__ QP
 #define __VecOne__  1.0_QP
 #define __VecZero__ 0.0_QP

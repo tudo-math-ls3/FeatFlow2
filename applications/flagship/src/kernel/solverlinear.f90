@@ -1634,7 +1634,7 @@ contains
       if (rsolver%dfinalDefect .lt. rsolver%depsAbs) exit outer
 
       ! Construct the elementary vector e1 scaled be residual norm
-      call lalg_clearVectorDble(p_Dq)
+      call lalg_clearVector(p_Dq)
       p_Dq(1) = rsolver%dfinalDefect
 
       ! Compute the first column of v(1)=r/!!r!!

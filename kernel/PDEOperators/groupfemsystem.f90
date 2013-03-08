@@ -320,14 +320,14 @@ contains
           select case(ccType)
           case (GFEM_MATC_CONSISTENT)
             call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList1D)
-            call doOperatorConsistDble(rx%RvectorBlock(1)%NEQ, rx%nblocks,&
+            call doOperatorConsistDP(rx%RvectorBlock(1)%NEQ, rx%nblocks,&
                 p_InodeList1D, p_DcoeffsAtNode, p_Dx, dscale, bclear,&
                 bisFullMatrix, rarray)
 
           case (GFEM_MATC_LUMPED)
             call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList1D)
             call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx1D)
-            call doOperatorLumpedDble(rx%RvectorBlock(1)%NEQ, rx%nblocks,&
+            call doOperatorLumpedDP(rx%RvectorBlock(1)%NEQ, rx%nblocks,&
                 p_InodeListIdx1D, p_InodeList1D, p_DcoeffsAtNode, p_Dx,&
                 dscale, bclear, bisFullMatrix, rarray)
           end select
@@ -337,14 +337,14 @@ contains
           select case(ccType)
           case (GFEM_MATC_CONSISTENT)
             call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList2D)
-            call doOperatorConsistDbleSel(rx%RvectorBlock(1)%NEQ, rx%nblocks,&
+            call doOperatorConsistDPSel(rx%RvectorBlock(1)%NEQ, rx%nblocks,&
                 p_InodeList2D, p_DcoeffsAtNode, p_Dx, dscale, bclear,&
                 bisFullMatrix, rarray)
 
           case (GFEM_MATC_LUMPED)
             call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList2D)
             call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx2D)
-            call doOperatorLumpedDbleSel(rx%RvectorBlock(1)%NEQ, rx%nblocks,&
+            call doOperatorLumpedDPSel(rx%RvectorBlock(1)%NEQ, rx%nblocks,&
                 p_InodeListIdx2D, p_InodeList2D, p_DcoeffsAtNode, p_Dx,&
                 dscale, bclear, bisFullMatrix, rarray)
           end select
@@ -371,7 +371,7 @@ contains
     !**************************************************************
     ! Assemble operator node-by-node in consistent manner
 
-    subroutine doOperatorConsistDble(NEQ, NVAR, InodeList,&
+    subroutine doOperatorConsistDP(NEQ, NVAR, InodeList,&
         DcoeffsAtNode, Dx, dscale, bclear, bisFullMatrix, rarray)
 
       ! input parameters
@@ -527,12 +527,12 @@ contains
       deallocate(Dcoefficients)
       !$omp end parallel
 
-    end subroutine doOperatorConsistDble
+    end subroutine doOperatorConsistDP
 
     !**************************************************************
     ! Assemble operator node-by-node in lumped manner
 
-    subroutine doOperatorLumpedDble(NEQ, NVAR, InodeListIdx, InodeList,&
+    subroutine doOperatorLumpedDP(NEQ, NVAR, InodeListIdx, InodeList,&
         DcoeffsAtNode, Dx, dscale, bclear, bisFullMatrix, rarray)
 
        ! input parameters
@@ -740,12 +740,12 @@ contains
       deallocate(Dtemp)
       !$omp end parallel
 
-    end subroutine doOperatorLumpedDble
+    end subroutine doOperatorLumpedDP
 
     !**************************************************************
     ! Assemble operator node-by-node in consistent manner
 
-    subroutine doOperatorConsistDbleSel(NEQ, NVAR, InodeList,&
+    subroutine doOperatorConsistDPSel(NEQ, NVAR, InodeList,&
         DcoeffsAtNode, Dx, dscale, bclear, bisFullMatrix, rarray)
 
       ! input parameters
@@ -889,12 +889,12 @@ contains
       deallocate(Dcoefficients)
       !$omp end parallel
 
-    end subroutine doOperatorConsistDbleSel
+    end subroutine doOperatorConsistDPSel
 
     !**************************************************************
     ! Assemble operator node-by-node in lumped manner
 
-    subroutine doOperatorLumpedDbleSel(NEQ, NVAR, InodeListIdx, InodeList,&
+    subroutine doOperatorLumpedDPSel(NEQ, NVAR, InodeListIdx, InodeList,&
         DcoeffsAtNode, Dx, dscale, bclear, bisFullMatrix, rarray)
 
       ! input parameters
@@ -1090,7 +1090,7 @@ contains
       deallocate(Dtemp)
       !$omp end parallel
 
-    end subroutine doOperatorLumpedDbleSel
+    end subroutine doOperatorLumpedDPSel
 
   end subroutine gfsys_buildOperatorNodeBlock1
 
@@ -1438,14 +1438,14 @@ contains
             select case(ccType)
             case (GFEM_MATC_CONSISTENT)
               call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList1D)
-              call doOperatorConsistDble(rx%NEQ, rmatrix%NA, rx%NVAR,&
+              call doOperatorConsistDP(rx%NEQ, rmatrix%NA, rx%NVAR,&
                   rx%NVAR*rx%NVAR, p_InodeList1D, p_DcoeffsAtNode,&
                   p_Dx, dscale, bclear, p_Ddata)
 
             case (GFEM_MATC_LUMPED)
               call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList1D)
               call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx1D)
-              call doOperatorLumpedDble(rx%NEQ, rmatrix%NA, rx%NVAR,&
+              call doOperatorLumpedDP(rx%NEQ, rmatrix%NA, rx%NVAR,&
                   rx%NVAR*rx%NVAR, p_InodeListIdx1D, p_InodeList1D,&
                   p_DcoeffsAtNode, p_Dx, dscale, bclear, p_Ddata)
             end select
@@ -1455,14 +1455,14 @@ contains
             select case(ccType)
             case (GFEM_MATC_CONSISTENT)
               call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList2D)
-              call doOperatorConsistDbleSel(rx%NEQ, rmatrix%NA, rx%NVAR,&
+              call doOperatorConsistDPSel(rx%NEQ, rmatrix%NA, rx%NVAR,&
                   rx%NVAR*rx%NVAR, p_InodeList2D, p_DcoeffsAtNode,&
                   p_Dx, dscale, bclear, p_Ddata)
 
             case (GFEM_MATC_LUMPED)
               call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList2D)
               call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx2D)
-              call doOperatorLumpedDbleSel(rx%NEQ, rmatrix%NA, rx%NVAR,&
+              call doOperatorLumpedDPSel(rx%NEQ, rmatrix%NA, rx%NVAR,&
                   rx%NVAR*rx%NVAR, p_InodeListIdx2D, p_InodeList2D,&
                   p_DcoeffsAtNode, p_Dx, dscale, bclear, p_Ddata)
             end select
@@ -1477,13 +1477,13 @@ contains
             select case(ccType)
             case (GFEM_MATC_CONSISTENT)
               call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList1D)
-              call doOperatorConsistDble(rx%NEQ, rmatrix%NA, rx%NVAR, rx%NVAR,&
+              call doOperatorConsistDP(rx%NEQ, rmatrix%NA, rx%NVAR, rx%NVAR,&
                   p_InodeList1D, p_DcoeffsAtNode, p_Dx, dscale, bclear, p_Ddata)
 
             case (GFEM_MATC_LUMPED)
               call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList1D)
               call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx1D)
-              call doOperatorLumpedDble(rx%NEQ, rmatrix%NA, rx%NVAR, rx%NVAR,&
+              call doOperatorLumpedDP(rx%NEQ, rmatrix%NA, rx%NVAR, rx%NVAR,&
                   p_InodeListIdx1D, p_InodeList1D, p_DcoeffsAtNode, p_Dx,&
                   dscale, bclear, p_Ddata)
             end select
@@ -1493,13 +1493,13 @@ contains
             select case(ccType)
             case (GFEM_MATC_CONSISTENT)
               call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList2D)
-              call doOperatorConsistDbleSel(rx%NEQ, rmatrix%NA, rx%NVAR, rx%NVAR,&
+              call doOperatorConsistDPSel(rx%NEQ, rmatrix%NA, rx%NVAR, rx%NVAR,&
                   p_InodeList2D, p_DcoeffsAtNode, p_Dx, dscale, bclear, p_Ddata)
 
             case (GFEM_MATC_LUMPED)
               call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList2D)
               call gfem_getbase_InodeListIdx(rgroupFEMSet, p_InodeListIdx2D)
-              call doOperatorLumpedDbleSel(rx%NEQ, rmatrix%NA, rx%NVAR, rx%NVAR,&
+              call doOperatorLumpedDPSel(rx%NEQ, rmatrix%NA, rx%NVAR, rx%NVAR,&
                   p_InodeListIdx2D, p_InodeList2D, p_DcoeffsAtNode, p_Dx,&
                   dscale, bclear, p_Ddata)
             end select
@@ -1531,7 +1531,7 @@ contains
     !**************************************************************
     ! Assemble operator node-by-node in consistent manner
 
-    subroutine doOperatorConsistDble(NEQ, NA, NVAR, MVAR,&
+    subroutine doOperatorConsistDP(NEQ, NA, NVAR, MVAR,&
         InodeList, DcoeffsAtNode, Dx, dscale, bclear, Ddata)
 
       ! input parameters
@@ -1634,12 +1634,12 @@ contains
       deallocate(Dcoefficients)
       !$omp end parallel
 
-    end subroutine doOperatorConsistDble
+    end subroutine doOperatorConsistDP
 
     !**************************************************************
     ! Assemble operator node-by-node in lumped manner
 
-    subroutine doOperatorLumpedDble(NEQ, NA, NVAR, MVAR,&
+    subroutine doOperatorLumpedDP(NEQ, NA, NVAR, MVAR,&
         InodeListIdx, InodeList, DcoeffsAtNode, Dx, dscale, bclear, Ddata)
 
        ! input parameters
@@ -1797,12 +1797,12 @@ contains
       deallocate(Dcoefficients)
       !$omp end parallel
 
-    end subroutine doOperatorLumpedDble
+    end subroutine doOperatorLumpedDP
 
     !**************************************************************
     ! Assemble operator node-by-node in consistent manner
 
-    subroutine doOperatorConsistDbleSel(NEQ, NA, NVAR, MVAR,&
+    subroutine doOperatorConsistDPSel(NEQ, NA, NVAR, MVAR,&
         InodeList, DcoeffsAtNode, Dx, dscale, bclear, Ddata)
 
       ! input parameters
@@ -1894,12 +1894,12 @@ contains
       deallocate(Dcoefficients)
       !$omp end parallel
 
-    end subroutine doOperatorConsistDbleSel
+    end subroutine doOperatorConsistDPSel
 
     !**************************************************************
     ! Assemble operator node-by-node in lumped manner
 
-    subroutine doOperatorLumpedDbleSel(NEQ, NA, NVAR, MVAR,&
+    subroutine doOperatorLumpedDPSel(NEQ, NA, NVAR, MVAR,&
         InodeListIdx, InodeList, DcoeffsAtNode, Dx, dscale, bclear, Ddata)
 
       ! input parameters
@@ -2048,7 +2048,7 @@ contains
       deallocate(Dcoefficients)
       !$omp end parallel
 
-    end subroutine doOperatorLumpedDbleSel
+    end subroutine doOperatorLumpedDPSel
 
   end subroutine gfsys_buildOperatorNodeScalar
 
@@ -2240,7 +2240,7 @@ contains
           ! Assemble diagonal entries
           call gfem_getbase_IdiagList(rgroupFEMSet, p_IdiagList)
           call gfem_getbase_DcoeffsAtDiag(rgroupFEMSet, p_DcoeffsAtDiag)
-          call doOperatorDiagDble(rx%RvectorBlock(1)%NEQ, rx%nblocks,&
+          call doOperatorDiagDP(rx%RvectorBlock(1)%NEQ, rx%nblocks,&
               p_IdiagList, p_DcoeffsAtDiag, p_Dx, dscale, bclear,&
               bisFullMatrix, rarray)
         end if
@@ -2258,7 +2258,7 @@ contains
           !-------------------------------------------------------------------
           ! Assemble operator with stabilisation
           !-------------------------------------------------------------------
-          call doOperatorStabDble(rx%RvectorBlock(1)%NEQ, rx%nblocks,&
+          call doOperatorStabDP(rx%RvectorBlock(1)%NEQ, rx%nblocks,&
               p_IedgeListIdx, p_IedgeList, p_DcoeffsAtEdge, p_Dx,&
               dscale, bclear, bisFullMatrix, ccType, rarray)
 
@@ -2267,7 +2267,7 @@ contains
           !-------------------------------------------------------------------
           ! Assemble operator without stabilisation
           !-------------------------------------------------------------------
-          call doOperatorDble(rx%RvectorBlock(1)%NEQ, rx%nblocks,&
+          call doOperatorDP(rx%RvectorBlock(1)%NEQ, rx%nblocks,&
               p_IedgeListIdx, p_IedgeList, p_DcoeffsAtEdge, p_Dx,&
               dscale, bclear, bisFullMatrix, ccType, rarray)
         end if
@@ -2294,7 +2294,7 @@ contains
     !**************************************************************
     ! Assemble diagonal part of the operator
 
-    subroutine doOperatorDiagDble(NEQ, NVAR, IdiagList, DcoeffsAtDiag,&
+    subroutine doOperatorDiagDP(NEQ, NVAR, IdiagList, DcoeffsAtDiag,&
         Dx, dscale, bclear, bisFullMatrix, rarray)
 
       ! input parameters
@@ -2439,12 +2439,12 @@ contains
       deallocate(Dcoefficients)
       !$omp end parallel
 
-    end subroutine doOperatorDiagDble
+    end subroutine doOperatorDiagDP
 
     !**************************************************************
     ! Assemble operator edge-by-edge without stabilisation
 
-    subroutine doOperatorDble(NEQ, NVAR, IedgeListIdx, IedgeList,&
+    subroutine doOperatorDP(NEQ, NVAR, IedgeListIdx, IedgeList,&
         DcoeffsAtEdge, Dx, dscale, bclear, bisFullMatrix, ccType, rarray)
 
       ! input parameters
@@ -2677,12 +2677,12 @@ contains
       deallocate(Dcoefficients)
       !$omp end parallel
 
-    end subroutine doOperatorDble
+    end subroutine doOperatorDP
 
     !**************************************************************
     ! Assemble operator edge-by-edge with stabilisation
 
-    subroutine doOperatorStabDble(NEQ, NVAR, IedgeListIdx, IedgeList,&
+    subroutine doOperatorStabDP(NEQ, NVAR, IedgeListIdx, IedgeList,&
         DcoeffsAtEdge, Dx, dscale, bclear, bisFullMatrix, ccType, rarray)
 
       ! input parameters
@@ -2956,7 +2956,7 @@ contains
       deallocate(Dcoefficients)
       !$omp end parallel
 
-    end subroutine doOperatorStabDble
+    end subroutine doOperatorStabDP
 
   end subroutine gfsys_buildOperatorEdgeBlock1
 
@@ -3360,7 +3360,7 @@ contains
             ! Assemble diagonal entries
             call gfem_getbase_IdiagList(rgroupFEMSet, p_IdiagList)
             call gfem_getbase_DcoeffsAtDiag(rgroupFEMSet, p_DcoeffsAtDiag)
-            call doOperatorDiagDble(rx%NEQ, rmatrix%NA, rx%NVAR, rx%NVAR*rx%NVAR,&
+            call doOperatorDiagDP(rx%NEQ, rmatrix%NA, rx%NVAR, rx%NVAR*rx%NVAR,&
                 p_IdiagList, p_DcoeffsAtDiag, p_Dx, dscale, bclear, p_Ddata)
           end if
 
@@ -3377,7 +3377,7 @@ contains
             !-------------------------------------------------------------------
             ! Assemble operator with stabilisation
             !-------------------------------------------------------------------
-            call doOperatorStabDble(rx%NEQ, rmatrix%NA, rx%NVAR, rx%NVAR*rx%NVAR,&
+            call doOperatorStabDP(rx%NEQ, rmatrix%NA, rx%NVAR, rx%NVAR*rx%NVAR,&
                 p_IedgeListIdx, p_IedgeList, p_DcoeffsAtEdge, p_Dx,&
                 dscale, bclear, ccType, p_Ddata)
 
@@ -3386,7 +3386,7 @@ contains
             !-------------------------------------------------------------------
             ! Assemble operator without stabilisation
             !-------------------------------------------------------------------
-            call doOperatorDble(rx%NEQ, rmatrix%NA, rx%NVAR, rx%NVAR*rx%NVAR,&
+            call doOperatorDP(rx%NEQ, rmatrix%NA, rx%NVAR, rx%NVAR*rx%NVAR,&
                 p_IedgeListIdx, p_IedgeList, p_DcoeffsAtEdge, p_Dx,&
                 dscale, bclear, ccType, p_Ddata)
           end if
@@ -3406,7 +3406,7 @@ contains
             ! Assemble diagonal entries
             call gfem_getbase_IdiagList(rgroupFEMSet, p_IdiagList)
             call gfem_getbase_DcoeffsAtDiag(rgroupFEMSet, p_DcoeffsAtDiag)
-            call doOperatorDiagDble(rx%NEQ, rmatrix%NA, rx%NVAR, rx%NVAR,&
+            call doOperatorDiagDP(rx%NEQ, rmatrix%NA, rx%NVAR, rx%NVAR,&
                 p_IdiagList, p_DcoeffsAtDiag, p_Dx, dscale, bclear, p_Ddata)
           end if
 
@@ -3423,7 +3423,7 @@ contains
             !-------------------------------------------------------------------
             ! Assemble operator with stabilisation
             !-------------------------------------------------------------------
-            call doOperatorStabDble(rx%NEQ, rmatrix%NA, rx%NVAR, rx%NVAR,&
+            call doOperatorStabDP(rx%NEQ, rmatrix%NA, rx%NVAR, rx%NVAR,&
                 p_IedgeListIdx, p_IedgeList, p_DcoeffsAtEdge, p_Dx,&
                 dscale, bclear, ccType, p_Ddata)
 
@@ -3432,7 +3432,7 @@ contains
             !-------------------------------------------------------------------
             ! Assemble operator without stabilisation
             !-------------------------------------------------------------------
-            call doOperatorDble(rx%NEQ, rmatrix%NA, rx%NVAR, rx%NVAR,&
+            call doOperatorDP(rx%NEQ, rmatrix%NA, rx%NVAR, rx%NVAR,&
                 p_IedgeListIdx, p_IedgeList, p_DcoeffsAtEdge, p_Dx,&
                 dscale, bclear, ccType, p_Ddata)
           end if
@@ -3462,7 +3462,7 @@ contains
     !**************************************************************
     ! Assemble diagonal part of the operator
 
-    subroutine doOperatorDiagDble(NEQ, NA, NVAR, MVAR, IdiagList,&
+    subroutine doOperatorDiagDP(NEQ, NA, NVAR, MVAR, IdiagList,&
         DcoeffsAtDiag, Dx, dscale, bclear, Ddata)
 
       ! input parameters
@@ -3558,12 +3558,12 @@ contains
       deallocate(Dcoefficients)
       !$omp end parallel
 
-    end subroutine doOperatorDiagDble
+    end subroutine doOperatorDiagDP
 
     !**************************************************************
     ! Assemble operator edge-by-edge without stabilisation
 
-    subroutine doOperatorDble(NEQ, NA, NVAR, MVAR, IedgeListIdx,&
+    subroutine doOperatorDP(NEQ, NA, NVAR, MVAR, IedgeListIdx,&
         IedgeList, DcoeffsAtEdge, Dx, dscale, bclear, ccType, Ddata)
 
       ! input parameters
@@ -3704,12 +3704,12 @@ contains
       deallocate(Dcoefficients)
       !$omp end parallel
 
-    end subroutine doOperatorDble
+    end subroutine doOperatorDP
 
     !**************************************************************
     ! Assemble operator edge-by-edge with stabilisation
 
-    subroutine doOperatorStabDble(NEQ, NA, NVAR, MVAR, IedgeListIdx,&
+    subroutine doOperatorStabDP(NEQ, NA, NVAR, MVAR, IedgeListIdx,&
         IedgeList, DcoeffsAtEdge, Dx, dscale, bclear, ccType, Ddata)
 
       ! input parameters
@@ -3864,7 +3864,7 @@ contains
       deallocate(Dcoefficients)
       !$omp end parallel
 
-    end subroutine doOperatorStabDble
+    end subroutine doOperatorStabDP
 
   end subroutine gfsys_buildOperatorEdgeScalar
 
@@ -4000,7 +4000,7 @@ contains
           call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList1D)
 
           ! Assemble vector node-by-node
-          call doVectorDble(rx%RvectorBlock(1)%NEQ, rx%nblocks,&
+          call doVectorDP(rx%RvectorBlock(1)%NEQ, rx%nblocks,&
               p_InodeListIdx1D, p_InodeList1D, p_DcoeffsAtNode, p_Dx,&
               dscale, bclear, p_Ddata)
         else
@@ -4009,7 +4009,7 @@ contains
           call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList2D)
 
           ! Assemble selected part of the vector node-by-node
-          call doVectorDbleSel(rx%RvectorBlock(1)%NEQ, rx%nblocks,&
+          call doVectorDPSel(rx%RvectorBlock(1)%NEQ, rx%nblocks,&
               p_InodeListIdx2D, p_InodeList2D, p_DcoeffsAtNode, p_Dx,&
               dscale, bclear, p_Ddata)
         end if
@@ -4031,7 +4031,7 @@ contains
     !**************************************************************
     ! Assemble vector node-by-node without stabilisation
 
-    subroutine doVectorDble(NEQ, NVAR, InodeListIdx, InodeList,&
+    subroutine doVectorDP(NEQ, NVAR, InodeListIdx, InodeList,&
         DcoeffsAtNode, Dx, dscale, bclear, Ddata)
 
       ! input parameters
@@ -4177,12 +4177,12 @@ contains
       deallocate(Dcoefficients)
       !$omp end parallel
 
-    end subroutine doVectorDble
+    end subroutine doVectorDP
 
     !**************************************************************
     ! Assemble vector node-by-node without stabilisation
 
-    subroutine doVectorDbleSel(NEQ, NVAR, InodeListIdx, InodeList,&
+    subroutine doVectorDPSel(NEQ, NVAR, InodeListIdx, InodeList,&
         DcoeffsAtNode, Dx, dscale, bclear, Ddata)
 
       ! input parameters
@@ -4326,7 +4326,7 @@ contains
       deallocate(Dcoefficients)
       !$omp end parallel
 
-    end subroutine doVectorDbleSel
+    end subroutine doVectorDPSel
 
   end subroutine gfsys_buildVectorNodeBlock
 
@@ -4460,7 +4460,7 @@ contains
           call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList1D)
 
           ! Assemble vector node-by-node
-          call doVectorDble(rx%NEQ, rx%NVAR, p_InodeListIdx1D, p_InodeList1D,&
+          call doVectorDP(rx%NEQ, rx%NVAR, p_InodeListIdx1D, p_InodeList1D,&
               p_DcoeffsAtNode, p_Dx, dscale, bclear, p_Ddata)
         else
           ! Set pointers
@@ -4468,7 +4468,7 @@ contains
           call gfem_getbase_InodeList(rgroupFEMSet, p_InodeList2D)
 
           ! Assemble selected part of the vector node-by-node
-          call doVectorDbleSel(rx%NEQ, rx%NVAR, p_InodeListIdx2D, p_InodeList2D,&
+          call doVectorDPSel(rx%NEQ, rx%NVAR, p_InodeListIdx2D, p_InodeList2D,&
               p_DcoeffsAtNode, p_Dx, dscale, bclear, p_Ddata)
         end if
 
@@ -4489,7 +4489,7 @@ contains
     !**************************************************************
     ! Assemble vector node-by-node without stabilisation
 
-    subroutine doVectorDble(NEQ, NVAR, InodeListIdx, InodeList,&
+    subroutine doVectorDP(NEQ, NVAR, InodeListIdx, InodeList,&
         DcoeffsAtNode, Dx, dscale, bclear, Ddata)
 
       ! input parameters
@@ -4635,12 +4635,12 @@ contains
       deallocate(Dcoefficients)
       !$omp end parallel
 
-    end subroutine doVectorDble
+    end subroutine doVectorDP
 
     !**************************************************************
     ! Assemble vector node-by-node without stabilisation
 
-    subroutine doVectorDbleSel(NEQ, NVAR, InodeListIdx, InodeList,&
+    subroutine doVectorDPSel(NEQ, NVAR, InodeListIdx, InodeList,&
         DcoeffsAtNode, Dx, dscale, bclear, Ddata)
 
       ! input parameters
@@ -4785,7 +4785,7 @@ contains
       deallocate(Dcoefficients)
       !$omp end parallel
 
-    end subroutine doVectorDbleSel
+    end subroutine doVectorDPSel
 
   end subroutine gfsys_buildVectorNodeScalar
 
@@ -4918,7 +4918,7 @@ contains
         call lsysbl_getbase_double(rvector, p_Ddata)
 
         ! Assemble vector
-        call doVectorDble(rx%RvectorBlock(1)%NEQ, rx%nblocks, p_IedgeListIdx,&
+        call doVectorDP(rx%RvectorBlock(1)%NEQ, rx%nblocks, p_IedgeListIdx,&
             p_IedgeList, p_DcoeffsAtEdge, p_Dx, dscale, bclear, p_Ddata)
 
       case default
@@ -4940,7 +4940,7 @@ contains
     !**************************************************************
     ! Assemble vector edge-by-edge
 
-    subroutine doVectorDble(NEQ, NVAR, IedgeListIdx, IedgeList,&
+    subroutine doVectorDP(NEQ, NVAR, IedgeListIdx, IedgeList,&
         DcoeffsAtEdge, Dx, dscale, bclear, Ddata)
 
       ! input parameters
@@ -5035,7 +5035,7 @@ contains
       deallocate(DfluxesAtEdge)
       !$omp end parallel
 
-    end subroutine doVectorDble
+    end subroutine doVectorDP
 
   end subroutine gfsys_buildVectorEdgeBlock
 
@@ -5170,7 +5170,7 @@ contains
         call lsyssc_getbase_double(rvector, p_Ddata)
 
         ! Assemble vector
-        call doVectorDble(rx%NEQ, rx%NVAR, p_IedgeListIdx, p_IedgeList,&
+        call doVectorDP(rx%NEQ, rx%NVAR, p_IedgeListIdx, p_IedgeList,&
             p_DcoeffsAtEdge, p_Dx, dscale, bclear, p_Ddata)
 
       case default
@@ -5192,7 +5192,7 @@ contains
     !**************************************************************
     ! Assemble vector edge-by-edge
 
-    subroutine doVectorDble(NEQ, NVAR, IedgeListIdx, IedgeList,&
+    subroutine doVectorDP(NEQ, NVAR, IedgeListIdx, IedgeList,&
         DcoeffsAtEdge, Dx, dscale, bclear, Ddata)
 
       ! input parameters
@@ -5288,7 +5288,7 @@ contains
       deallocate(DfluxesAtEdge)
       !$omp end parallel
 
-    end subroutine doVectorDble
+    end subroutine doVectorDP
 
   end subroutine gfsys_buildVectorEdgeScalar
 

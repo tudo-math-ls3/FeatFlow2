@@ -122,10 +122,10 @@ module linearalgebra
   public :: lalg_copyVectorInt3D
 
   interface lalg_copyVector
-    module procedure lalg_copyVectorSngl
-    module procedure lalg_copyVectorDble
-    module procedure lalg_copyVectorSnglDbl
-    module procedure lalg_copyVectorDblSngl
+    module procedure lalg_copyVectorSP
+    module procedure lalg_copyVectorDP
+    module procedure lalg_copyVectorSPDP
+    module procedure lalg_copyVectorDPSP
     module procedure lalg_copyVectorI8
     module procedure lalg_copyVectorI8I16
     module procedure lalg_copyVectorI8I32
@@ -144,10 +144,10 @@ module linearalgebra
     module procedure lalg_copyVectorI64I32
     module procedure lalg_copyVectorLogical
     module procedure lalg_copyVectorChar
-    module procedure lalg_copyVectorSngl2D
-    module procedure lalg_copyVectorDble2D
-    module procedure lalg_copyVectorSnglDbl2D
-    module procedure lalg_copyVectorDblSngl2D
+    module procedure lalg_copyVectorSP2D
+    module procedure lalg_copyVectorDP2D
+    module procedure lalg_copyVectorSPDP2D
+    module procedure lalg_copyVectorDPSP2D
     module procedure lalg_copyVectorI8_2D
     module procedure lalg_copyVectorI8I16_2D
     module procedure lalg_copyVectorI8I32_2D
@@ -166,10 +166,10 @@ module linearalgebra
     module procedure lalg_copyVectorI64I32_2D
     module procedure lalg_copyVectorLogical2D
     module procedure lalg_copyVectorChar2D
-    module procedure lalg_copyVectorSngl3D
-    module procedure lalg_copyVectorDble3D
-    module procedure lalg_copyVectorSnglDbl3D
-    module procedure lalg_copyVectorDblSngl3D
+    module procedure lalg_copyVectorSP3D
+    module procedure lalg_copyVectorDP3D
+    module procedure lalg_copyVectorSPDP3D
+    module procedure lalg_copyVectorDPSP3D
     module procedure lalg_copyVectorI8_3D
     module procedure lalg_copyVectorI8I16_3D
     module procedure lalg_copyVectorI8I32_3D
@@ -189,21 +189,21 @@ module linearalgebra
     module procedure lalg_copyVectorLogical3D
     module procedure lalg_copyVectorChar3D
 #ifdef ENABLE_QUADPREC
-    module procedure lalg_copyVectorQuad
-    module procedure lalg_copyVectorSnglQuad
-    module procedure lalg_copyVectorDblQuad
-    module procedure lalg_copyVectorQuadSngl
-    module procedure lalg_copyVectorQuadDbl
-    module procedure lalg_copyVectorQuad2D
-    module procedure lalg_copyVectorSnglQuad2D
-    module procedure lalg_copyVectorDblQuad2D
-    module procedure lalg_copyVectorQuadSngl2D
-    module procedure lalg_copyVectorQuadDbl2D
-    module procedure lalg_copyVectorQuad3D
-    module procedure lalg_copyVectorSnglQuad3D
-    module procedure lalg_copyVectorDblQuad3D
-    module procedure lalg_copyVectorQuadSngl3D
-    module procedure lalg_copyVectorQuadDbl3D
+    module procedure lalg_copyVectorQP
+    module procedure lalg_copyVectorSPQP
+    module procedure lalg_copyVectorDPQP
+    module procedure lalg_copyVectorQPSP
+    module procedure lalg_copyVectorQPDP
+    module procedure lalg_copyVectorQP2D
+    module procedure lalg_copyVectorSPQP2D
+    module procedure lalg_copyVectorDPQP2D
+    module procedure lalg_copyVectorQPSP2D
+    module procedure lalg_copyVectorQPDP2D
+    module procedure lalg_copyVectorQP3D
+    module procedure lalg_copyVectorSPQP3D
+    module procedure lalg_copyVectorDPQP3D
+    module procedure lalg_copyVectorQPSP3D
+    module procedure lalg_copyVectorQPDP3D
 #endif
   end interface
 
@@ -211,66 +211,66 @@ module linearalgebra
 
   public :: lalg_copyVector
 
-  public :: lalg_copyVectorSngl
-  public :: lalg_copyVectorDble
-  public :: lalg_copyVectorQuad
-  public :: lalg_copyVectorSnglDbl
-  public :: lalg_copyVectorSnglQuad
-  public :: lalg_copyVectorDblSngl
-  public :: lalg_copyVectorDblQuad
-  public :: lalg_copyVectorQuadSngl
-  public :: lalg_copyVectorQuadDbl
+  public :: lalg_copyVectorSP
+  public :: lalg_copyVectorDP
+  public :: lalg_copyVectorQP
+  public :: lalg_copyVectorSPDP
+  public :: lalg_copyVectorSPQP
+  public :: lalg_copyVectorDPSP
+  public :: lalg_copyVectorDPQP
+  public :: lalg_copyVectorQPSP
+  public :: lalg_copyVectorQPDP
   public :: lalg_copyVectorLogical
   public :: lalg_copyVectorChar
 
-  public :: lalg_copyVectorSngl2D
-  public :: lalg_copyVectorDble2D
-  public :: lalg_copyVectorQuad2D
-  public :: lalg_copyVectorSnglDbl2D
-  public :: lalg_copyVectorSnglQuad2D
-  public :: lalg_copyVectorDblSngl2D
-  public :: lalg_copyVectorDblQuad2D
-  public :: lalg_copyVectorQuadSngl2D
-  public :: lalg_copyVectorQuadDbl2D
+  public :: lalg_copyVectorSP2D
+  public :: lalg_copyVectorDP2D
+  public :: lalg_copyVectorQP2D
+  public :: lalg_copyVectorSPDP2D
+  public :: lalg_copyVectorSPQP2D
+  public :: lalg_copyVectorDPSP2D
+  public :: lalg_copyVectorDPQP2D
+  public :: lalg_copyVectorQPSP2D
+  public :: lalg_copyVectorQPDP2D
   public :: lalg_copyVectorLogical2D
   public :: lalg_copyVectorChar2D
 
-  public :: lalg_copyVectorSngl3D
-  public :: lalg_copyVectorDble3D
-  public :: lalg_copyVectorQuad3D
-  public :: lalg_copyVectorSnglDbl3D
-  public :: lalg_copyVectorSnglQuad3D
-  public :: lalg_copyVectorDblSngl3D
-  public :: lalg_copyVectorDblQuad3D
-  public :: lalg_copyVectorQuadSngl3D
-  public :: lalg_copyVectorQuadDbl3D
+  public :: lalg_copyVectorSP3D
+  public :: lalg_copyVectorDP3D
+  public :: lalg_copyVectorQP3D
+  public :: lalg_copyVectorSPDP3D
+  public :: lalg_copyVectorSPQP3D
+  public :: lalg_copyVectorDPSP3D
+  public :: lalg_copyVectorDPQP3D
+  public :: lalg_copyVectorQPSP3D
+  public :: lalg_copyVectorQPDP3D
   public :: lalg_copyVectorLogical3D
   public :: lalg_copyVectorChar3D
 
   interface lalg_scaleVector
-    module procedure lalg_scaleVectorSngl
-    module procedure lalg_scaleVectorDble
-    module procedure lalg_scaleVectorSngl2D
-    module procedure lalg_scaleVectorDble2D
-    module procedure lalg_scaleVectorSngl3D
-    module procedure lalg_scaleVectorDble3D
+    module procedure lalg_scaleVectorSP
+    module procedure lalg_scaleVectorDP
+    module procedure lalg_scaleVectorSP2D
+    module procedure lalg_scaleVectorDP2D
+    module procedure lalg_scaleVectorSP3D
+    module procedure lalg_scaleVectorDP3D
 #ifdef ENABLE_QUADPREC
-    module procedure lalg_scaleVectorQuad
-    module procedure lalg_scaleVectorQuad2D
-    module procedure lalg_scaleVectorQuad3D
+    module procedure lalg_scaleVectorQP
+    module procedure lalg_scaleVectorQP2D
+    module procedure lalg_scaleVectorQP3D
 #endif
   end interface
 
   public :: lalg_scaleVector
-  public :: lalg_scaleVectorSngl
-  public :: lalg_scaleVectorDble
-  public :: lalg_scaleVectorQuad
-  public :: lalg_scaleVectorSngl2D
-  public :: lalg_scaleVectorDble2D
-  public :: lalg_scaleVectorQuad2D
-  public :: lalg_scaleVectorSngl3D
-  public :: lalg_scaleVectorDble3D
-  public :: lalg_scaleVectorQuad3D
+  public :: lalg_scaleVectorSP
+  public :: lalg_scaleVectorDP
+  public :: lalg_scaleVectorQP
+  public :: lalg_scaleVectorSP2D
+  public :: lalg_scaleVectorDP2D
+  public :: lalg_scaleVectorQP2D
+  public :: lalg_scaleVectorSP3D
+  public :: lalg_scaleVectorDP3D
+  public :: lalg_scaleVectorQP3D
 
   interface lalg_clearVectorInt
     module procedure lalg_clearVectorI8
@@ -300,41 +300,41 @@ module linearalgebra
   public :: lalg_clearVectorInt3D
 
   interface lalg_clearVector
-    module procedure lalg_clearVectorSngl
-    module procedure lalg_clearVectorDble
+    module procedure lalg_clearVectorSP
+    module procedure lalg_clearVectorDP
     module procedure lalg_clearVectorI8
     module procedure lalg_clearVectorI16
     module procedure lalg_clearVectorI32
     module procedure lalg_clearVectorI64
-    module procedure lalg_clearVectorSngl2D
-    module procedure lalg_clearVectorDble2D
+    module procedure lalg_clearVectorSP2D
+    module procedure lalg_clearVectorDP2D
     module procedure lalg_clearVectorI8_2D
     module procedure lalg_clearVectorI16_2D
     module procedure lalg_clearVectorI32_2D
     module procedure lalg_clearVectorI64_2D
-    module procedure lalg_clearVectorSngl3D
-    module procedure lalg_clearVectorDble3D
+    module procedure lalg_clearVectorSP3D
+    module procedure lalg_clearVectorDP3D
     module procedure lalg_clearVectorI8_3D
     module procedure lalg_clearVectorI16_3D
     module procedure lalg_clearVectorI32_3D
     module procedure lalg_clearVectorI64_3D
 #ifdef ENABLE_QUADPREC
-    module procedure lalg_clearVectorQuad
-    module procedure lalg_clearVectorQuad2D
-    module procedure lalg_clearVectorQuad3D
+    module procedure lalg_clearVectorQP
+    module procedure lalg_clearVectorQP2D
+    module procedure lalg_clearVectorQP3D
 #endif
   end interface
 
   public :: lalg_clearVector
-  public :: lalg_clearVectorSngl
-  public :: lalg_clearVectorDble
-  public :: lalg_clearVectorQuad
-  public :: lalg_clearVectorSngl2D
-  public :: lalg_clearVectorDble2D
-  public :: lalg_clearVectorQuad2D
-  public :: lalg_clearVectorSngl3D
-  public :: lalg_clearVectorDble3D
-  public :: lalg_clearVectorQuad3D
+  public :: lalg_clearVectorSP
+  public :: lalg_clearVectorDP
+  public :: lalg_clearVectorQP
+  public :: lalg_clearVectorSP2D
+  public :: lalg_clearVectorDP2D
+  public :: lalg_clearVectorQP2D
+  public :: lalg_clearVectorSP3D
+  public :: lalg_clearVectorDP3D
+  public :: lalg_clearVectorQP3D
 
   interface lalg_setVectorInt
     module procedure lalg_setVectorI8
@@ -364,24 +364,24 @@ module linearalgebra
   public :: lalg_setVectorInt3D
 
   interface lalg_setVector
-    module procedure lalg_setVectorSngl
-    module procedure lalg_setVectorDble
+    module procedure lalg_setVectorSP
+    module procedure lalg_setVectorDP
     module procedure lalg_setVectorI8
     module procedure lalg_setVectorI16
     module procedure lalg_setVectorI32
     module procedure lalg_setVectorI64
     module procedure lalg_setVectorLogical
     module procedure lalg_setVectorChar
-    module procedure lalg_setVectorSngl2D
-    module procedure lalg_setVectorDble2D
+    module procedure lalg_setVectorSP2D
+    module procedure lalg_setVectorDP2D
     module procedure lalg_setVectorI8_2D
     module procedure lalg_setVectorI16_2D
     module procedure lalg_setVectorI32_2D
     module procedure lalg_setVectorI64_2D
     module procedure lalg_setVectorLogical2D
     module procedure lalg_setVectorChar2D
-    module procedure lalg_setVectorSngl3D
-    module procedure lalg_setVectorDble3D
+    module procedure lalg_setVectorSP3D
+    module procedure lalg_setVectorDP3D
     module procedure lalg_setVectorI8_3D
     module procedure lalg_setVectorI16_3D
     module procedure lalg_setVectorI32_3D
@@ -389,23 +389,23 @@ module linearalgebra
     module procedure lalg_setVectorLogical3D
     module procedure lalg_setVectorChar3D
 #ifdef ENABLE_QUADPREC
-    module procedure lalg_setVectorQuad
-    module procedure lalg_setVectorQuad2D
-    module procedure lalg_setVectorQuad3D
+    module procedure lalg_setVectorQP
+    module procedure lalg_setVectorQP2D
+    module procedure lalg_setVectorQP3D
 #endif
   end interface
 
   public :: lalg_setVector
 
-  public :: lalg_setVectorQuad
-  public :: lalg_setVectorQuad2D
-  public :: lalg_setVectorQuad3D
-  public :: lalg_setVectorSngl
-  public :: lalg_setVectorSngl2D
-  public :: lalg_setVectorSngl3D
-  public :: lalg_setVectorDble
-  public :: lalg_setVectorDble2D
-  public :: lalg_setVectorDble3D
+  public :: lalg_setVectorQP
+  public :: lalg_setVectorQP2D
+  public :: lalg_setVectorQP3D
+  public :: lalg_setVectorSP
+  public :: lalg_setVectorSP2D
+  public :: lalg_setVectorSP3D
+  public :: lalg_setVectorDP
+  public :: lalg_setVectorDP2D
+  public :: lalg_setVectorDP3D
   public :: lalg_setVectorLogical
   public :: lalg_setVectorLogical2D
   public :: lalg_setVectorLogical3D
@@ -414,89 +414,89 @@ module linearalgebra
   public :: lalg_setVectorChar3D
 
   interface lalg_vectorLinearComb
-    module procedure lalg_vectorLinearCombSngl
-    module procedure lalg_vectorLinearCombDble
-    module procedure lalg_vectorLinearCombSnglDble
-    module procedure lalg_vectorLinearCombSngl2D
-    module procedure lalg_vectorLinearCombDble2D
-    module procedure lalg_vectorLinearCombSnglDble2D
-    module procedure lalg_vectorLinearCombSngl3D
-    module procedure lalg_vectorLinearCombDble3D
-    module procedure lalg_vectorLinearCombSnglDble3D
+    module procedure lalg_vectorLinearCombSP
+    module procedure lalg_vectorLinearCombDP
+    module procedure lalg_vectorLinearCombSPDP
+    module procedure lalg_vectorLinearCombSP2D
+    module procedure lalg_vectorLinearCombDP2D
+    module procedure lalg_vectorLinearCombSPDP2D
+    module procedure lalg_vectorLinearCombSP3D
+    module procedure lalg_vectorLinearCombDP3D
+    module procedure lalg_vectorLinearCombSPDP3D
 #ifdef ENABLE_QUADPREC
-    module procedure lalg_vectorLinearCombQuad
-    module procedure lalg_vectorLinearCombSnglQuad
-    module procedure lalg_vectorLinearCombDblQuad
-    module procedure lalg_vectorLinearCombQuad2D
-    module procedure lalg_vectorLinearCombSnglQuad2D
-    module procedure lalg_vectorLinearCombDblQuad2D
-    module procedure lalg_vectorLinearCombQuad3D
-    module procedure lalg_vectorLinearCombSnglQuad3D
-    module procedure lalg_vectorLinearCombDblQuad3D
+    module procedure lalg_vectorLinearCombQP
+    module procedure lalg_vectorLinearCombSPQP
+    module procedure lalg_vectorLinearCombDPQP
+    module procedure lalg_vectorLinearCombQP2D
+    module procedure lalg_vectorLinearCombSPQP2D
+    module procedure lalg_vectorLinearCombDPQP2D
+    module procedure lalg_vectorLinearCombQP3D
+    module procedure lalg_vectorLinearCombSPQP3D
+    module procedure lalg_vectorLinearCombDPQP3D
 #endif
   end interface
 
   public :: lalg_vectorLinearComb
-  public :: lalg_vectorLinearCombSngl
-  public :: lalg_vectorLinearCombDble
-  public :: lalg_vectorLinearCombQuad
-  public :: lalg_vectorLinearCombSnglDble
-  public :: lalg_vectorLinearCombSnglQuad
-  public :: lalg_vectorLinearCombDblQuad
-  public :: lalg_vectorLinearCombSngl2D
-  public :: lalg_vectorLinearCombDble2D
-  public :: lalg_vectorLinearCombQuad2D
-  public :: lalg_vectorLinearCombSnglDble2D
-  public :: lalg_vectorLinearCombSnglQuad2D
-  public :: lalg_vectorLinearCombDblQuad2D
-  public :: lalg_vectorLinearCombSngl3D
-  public :: lalg_vectorLinearCombDble3D
-  public :: lalg_vectorLinearCombQuad3D
-  public :: lalg_vectorLinearCombSnglDble3D
-  public :: lalg_vectorLinearCombSnglQuad3D
-  public :: lalg_vectorLinearCombDblQuad3D
+  public :: lalg_vectorLinearCombSP
+  public :: lalg_vectorLinearCombDP
+  public :: lalg_vectorLinearCombQP
+  public :: lalg_vectorLinearCombSPDP
+  public :: lalg_vectorLinearCombSPQP
+  public :: lalg_vectorLinearCombDPQP
+  public :: lalg_vectorLinearCombSP2D
+  public :: lalg_vectorLinearCombDP2D
+  public :: lalg_vectorLinearCombQP2D
+  public :: lalg_vectorLinearCombSPDP2D
+  public :: lalg_vectorLinearCombSPQP2D
+  public :: lalg_vectorLinearCombDPQP2D
+  public :: lalg_vectorLinearCombSP3D
+  public :: lalg_vectorLinearCombDP3D
+  public :: lalg_vectorLinearCombQP3D
+  public :: lalg_vectorLinearCombSPDP3D
+  public :: lalg_vectorLinearCombSPQP3D
+  public :: lalg_vectorLinearCombDPQP3D
 
   interface lalg_scalarProduct
-    module procedure lalg_scalarProductSngl
-    module procedure lalg_scalarProductDble
-    module procedure lalg_scalarProductSngl2D
-    module procedure lalg_scalarProductDble2D
+    module procedure lalg_scalarProductSP
+    module procedure lalg_scalarProductDP
+    module procedure lalg_scalarProductSP2D
+    module procedure lalg_scalarProductDP2D
 #ifdef ENABLE_QUADPREC
-    module procedure lalg_scalarProductQuad
-    module procedure lalg_scalarProductQuad2D
+    module procedure lalg_scalarProductQP
+    module procedure lalg_scalarProductQP2D
 #endif
   end interface
 
   public :: lalg_scalarProduct
-  public :: lalg_scalarProductSngl
-  public :: lalg_scalarProductDble
-  public :: lalg_scalarProductQuad
-  public :: lalg_scalarProductSngl2D
-  public :: lalg_scalarProductDble2D
-  public :: lalg_scalarProductQuad2D
+  public :: lalg_scalarProductSP
+  public :: lalg_scalarProductDP
+  public :: lalg_scalarProductQP
+  public :: lalg_scalarProductSP2D
+  public :: lalg_scalarProductDP2D
+  public :: lalg_scalarProductQP2D
 
   interface lalg_norm
-    module procedure lalg_normSngl
-    module procedure lalg_normDble
+    module procedure lalg_normSP
+    module procedure lalg_normDP
 #ifdef ENABLE_QUADPREC
-    module procedure lalg_normQuad
+    module procedure lalg_normQP
 #endif
   end interface
 
-  public :: lalg_norm,lalg_normSngl,lalg_normDble,lalg_normQuad
+  public :: lalg_norm,lalg_normSP,lalg_normDP,lalg_normQP
 
   interface lalg_errorNorm
-    module procedure lalg_errorNormSngl
-    module procedure lalg_errorNormDble
+    module procedure lalg_errorNormSP
+    module procedure lalg_errorNormDP
 #ifdef ENABLE_QUADPREC
-    module procedure lalg_errorNormQuad
+    module procedure lalg_errorNormQP
 #endif
   end interface
 
   public :: lalg_errorNorm
-  public :: lalg_errorNormSngl
-  public :: lalg_errorNormDble
-  public :: lalg_errorNormQuad
+  public :: lalg_errorNormSP
+  public :: lalg_errorNormDP
+  public :: lalg_errorNormQP
 
   interface lalg_vectorSortInt
     module procedure lalg_vectorSortI32
@@ -506,19 +506,19 @@ module linearalgebra
   public :: lalg_vectorSortInt
 
   interface lalg_vectorSort
-    module procedure lalg_vectorSortSngl
-    module procedure lalg_vectorSortDble
+    module procedure lalg_vectorSortSP
+    module procedure lalg_vectorSortDP
     module procedure lalg_vectorSortI32
     module procedure lalg_vectorSortI64
 #ifdef ENABLE_QUADPREC
-    module procedure lalg_vectorSortQuad
+    module procedure lalg_vectorSortQP
 #endif
   end interface
 
   public :: lalg_vectorSort
-  public :: lalg_vectorSortSngl
-  public :: lalg_vectorSortDble
-  public :: lalg_vectorSortQuad
+  public :: lalg_vectorSortSP
+  public :: lalg_vectorSortDP
+  public :: lalg_vectorSortQP
   public :: lalg_vectorSortI32
   public :: lalg_vectorSortI64
 
@@ -532,50 +532,50 @@ module linearalgebra
   public :: lalg_vectorAddScalarInt
 
   interface lalg_vectorAddScalar
-    module procedure lalg_vectorAddScalarSngl
-    module procedure lalg_vectorAddScalarDble
-    module procedure lalg_vectorAddScalarSngl2D
-    module procedure lalg_vectorAddScalarDble2D
+    module procedure lalg_vectorAddScalarSP
+    module procedure lalg_vectorAddScalarDP
+    module procedure lalg_vectorAddScalarSP2D
+    module procedure lalg_vectorAddScalarDP2D
     module procedure lalg_vectorAddScalarI8
     module procedure lalg_vectorAddScalarI16
     module procedure lalg_vectorAddScalarI32
     module procedure lalg_vectorAddScalarI64
 #ifdef ENABLE_QUADPREC
-    module procedure lalg_vectorAddScalarQuad
-    module procedure lalg_vectorAddScalarQuad2D
+    module procedure lalg_vectorAddScalarQP
+    module procedure lalg_vectorAddScalarQP2D
 #endif
   end interface
 
   public :: lalg_vectorAddScalar
-  public :: lalg_vectorAddScalarSngl
-  public :: lalg_vectorAddScalarDble
-  public :: lalg_vectorAddScalarQuad
-  public :: lalg_vectorAddScalarSngl2D
-  public :: lalg_vectorAddScalarDble2D
-  public :: lalg_vectorAddScalarQuad2D
+  public :: lalg_vectorAddScalarSP
+  public :: lalg_vectorAddScalarDP
+  public :: lalg_vectorAddScalarQP
+  public :: lalg_vectorAddScalarSP2D
+  public :: lalg_vectorAddScalarDP2D
+  public :: lalg_vectorAddScalarQP2D
   public :: lalg_vectorAddScalarI8
   public :: lalg_vectorAddScalarI16
   public :: lalg_vectorAddScalarI32
   public :: lalg_vectorAddScalarI64
 
   interface lalg_vectorCompMult
-    module procedure lalg_vectorCompMultSngl
-    module procedure lalg_vectorCompMultDble
-    module procedure lalg_vectorCompMultDbleSngl
+    module procedure lalg_vectorCompMultSP
+    module procedure lalg_vectorCompMultDP
+    module procedure lalg_vectorCompMultDPSP
 #ifdef ENABLE_QUADPREC
-    module procedure lalg_vectorCompMultQuad
-    module procedure lalg_vectorCompMultQuadSngl
-    module procedure lalg_vectorCompMultQuadDble
+    module procedure lalg_vectorCompMultQP
+    module procedure lalg_vectorCompMultQPSP
+    module procedure lalg_vectorCompMultQPDP
 #endif
   end interface
 
   public :: lalg_vectorCompMult
-  public :: lalg_vectorCompMultSngl
-  public :: lalg_vectorCompMultDble
-  public :: lalg_vectorCompMultQuad
-  public :: lalg_vectorCompMultDbleSngl
-  public :: lalg_vectorCompMultQuadSngl
-  public :: lalg_vectorCompMultQuadDble
+  public :: lalg_vectorCompMultSP
+  public :: lalg_vectorCompMultDP
+  public :: lalg_vectorCompMultQP
+  public :: lalg_vectorCompMultDPSP
+  public :: lalg_vectorCompMultQPSP
+  public :: lalg_vectorCompMultQPDP
 
 !<constants>
 
@@ -639,7 +639,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_copyVectorSngl (Fx,Fy,n)
+  subroutine lalg_copyVectorSP (Fx,Fy,n)
 
 !<description>
   ! Copies a single precision vector: Fy = Fx
@@ -676,7 +676,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_copyVectorDble (Dx,Dy,n)
+  subroutine lalg_copyVectorDP (Dx,Dy,n)
 
 !<description>
   ! Copies a double precision vector dx: Dy = Dx
@@ -712,7 +712,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_copyVectorQuad (Qx,Qy,n)
+  subroutine lalg_copyVectorQP (Qx,Qy,n)
 
 !<description>
   ! Copies a quad precision vector dx: Qy = Qx
@@ -748,7 +748,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_copyVectorSnglDbl (Fx,Dy,n)
+  subroutine lalg_copyVectorSPDP (Fx,Dy,n)
 
 !<description>
   ! Copies single precision vector to double precision vector: Dy = Fx
@@ -785,7 +785,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_copyVectorSnglQuad (Fx,Qy,n)
+  subroutine lalg_copyVectorSPQP (Fx,Qy,n)
 
 !<description>
   ! Copies single precision vector to quad precision vector: Qy = Fx
@@ -822,7 +822,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_copyVectorDblSngl (Dx,Fy,n)
+  subroutine lalg_copyVectorDPSP (Dx,Fy,n)
 
 !<description>
   ! Copies double precision vector to single precision vector: Fy = Dx
@@ -859,7 +859,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_copyVectorDblQuad (Dx,Qy,n)
+  subroutine lalg_copyVectorDPQP (Dx,Qy,n)
 
 !<description>
   ! Copies double precision vector to quad precision vector: Qy = Dx
@@ -896,7 +896,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_copyVectorQuadSngl (Qx,Fy,n)
+  subroutine lalg_copyVectorQPSP (Qx,Fy,n)
 
 !<description>
   ! Copies quad precision vector to single precision vector: Fy = Qx
@@ -933,7 +933,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_copyVectorQuadDbl (Qx,Dy,n)
+  subroutine lalg_copyVectorQPDP (Qx,Dy,n)
 
 !<description>
   ! Copies quad precision vector to double precision vector: Dy = Qx
@@ -1814,7 +1814,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_copyVectorSngl2D (Fx,Fy,n,m)
+  subroutine lalg_copyVectorSP2D (Fx,Fy,n,m)
 
 !<description>
   ! Copies a single precision vector: Fy = Fx
@@ -1851,7 +1851,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_copyVectorDble2D (Dx,Dy,n,m)
+  subroutine lalg_copyVectorDP2D (Dx,Dy,n,m)
 
 !<description>
   ! Copies a double precision vector: Dy = Dx
@@ -1888,7 +1888,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_copyVectorQuad2D (Qx,Qy,n,m)
+  subroutine lalg_copyVectorQP2D (Qx,Qy,n,m)
 
 !<description>
   ! Copies a quad precision vector: Qy = Qx
@@ -1925,7 +1925,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_copyVectorSnglDbl2D (Fx,Dy,n,m)
+  subroutine lalg_copyVectorSPDP2D (Fx,Dy,n,m)
 
 !<description>
   ! Copies single precision vector to double precision vector: Dy = Fx
@@ -1962,7 +1962,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_copyVectorSnglQuad2D (Fx,Qy,n,m)
+  subroutine lalg_copyVectorSPQP2D (Fx,Qy,n,m)
 
 !<description>
   ! Copies single precision vector to quad precision vector: Qy = Fx
@@ -1999,7 +1999,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_copyVectorDblSngl2D (Dx,Fy,n,m)
+  subroutine lalg_copyVectorDPSP2D (Dx,Fy,n,m)
 
 !<description>
   ! Copies double precision vector to single precision vector: Fy = Dx
@@ -2036,7 +2036,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_copyVectorDblQuad2D (Dx,Qy,n,m)
+  subroutine lalg_copyVectorDPQP2D (Dx,Qy,n,m)
 
 !<description>
   ! Copies double precision vector to quad precision vector: Qy = Dx
@@ -2073,7 +2073,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_copyVectorQuadSngl2D (Qx,Fy,n,m)
+  subroutine lalg_copyVectorQPSP2D (Qx,Fy,n,m)
 
 !<description>
   ! Copies quad precision vector to single precision vector: Fy = Qx
@@ -2110,7 +2110,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_copyVectorQuadDbl2D (Qx,Dy,n,m)
+  subroutine lalg_copyVectorQPDP2D (Qx,Dy,n,m)
 
 !<description>
   ! Copies quad precision vector to double precision vector: Dy = Qx
@@ -3065,7 +3065,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_copyVectorSngl3D (Fx,Fy,n,m,o)
+  subroutine lalg_copyVectorSP3D (Fx,Fy,n,m,o)
 
 !<description>
   ! Copies a single precision vector: Fy = Fx
@@ -3102,7 +3102,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_copyVectorDble3D (Dx,Dy,n,m,o)
+  subroutine lalg_copyVectorDP3D (Dx,Dy,n,m,o)
 
 !<description>
   ! Copies a double precision vector: Dy = Dx
@@ -3139,7 +3139,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_copyVectorQuad3D (Qx,Qy,n,m,o)
+  subroutine lalg_copyVectorQP3D (Qx,Qy,n,m,o)
 
 !<description>
   ! Copies a quad precision vector: Qy = Qx
@@ -3176,7 +3176,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_copyVectorSnglDbl3D (Fx,Dy,n,m,o)
+  subroutine lalg_copyVectorSPDP3D (Fx,Dy,n,m,o)
 
 !<description>
   ! Copies single precision vector to double precision vector: Dy = Fx
@@ -3213,7 +3213,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_copyVectorSnglQuad3D (Fx,Qy,n,m,o)
+  subroutine lalg_copyVectorSPQP3D (Fx,Qy,n,m,o)
 
 !<description>
   ! Copies single precision vector to quad precision vector: Qy = Fx
@@ -3250,7 +3250,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_copyVectorDblSngl3D (Dx,Fy,n,m,o)
+  subroutine lalg_copyVectorDPSP3D (Dx,Fy,n,m,o)
 
 !<description>
   ! Copies double precision vector to single precision vector: Fy = Dx
@@ -3287,7 +3287,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_copyVectorDblQuad3D (Dx,Qy,n,m,o)
+  subroutine lalg_copyVectorDPQP3D (Dx,Qy,n,m,o)
 
 !<description>
   ! Copies double precision vector to quad precision vector: Qy = Dx
@@ -3324,7 +3324,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_copyVectorQuadSngl3D (Qx,Fy,n,m,o)
+  subroutine lalg_copyVectorQPSP3D (Qx,Fy,n,m,o)
 
 !<description>
   ! Copies quad precision vector to single precision vector: Fy = Qx
@@ -3361,7 +3361,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_copyVectorQuadDbl3D (Qx,Dy,n,m,o)
+  subroutine lalg_copyVectorQPDP3D (Qx,Dy,n,m,o)
 
 !<description>
   ! Copies quad precision vector to double precision vector: Dy = Qx
@@ -4388,7 +4388,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_scaleVectorSngl (Fx,sc,n)
+  subroutine lalg_scaleVectorSP (Fx,sc,n)
 
 !<description>
   ! Scales a single precision vector: Dx = sc * Dx
@@ -4415,13 +4415,13 @@ contains
 
     if (.not. present(n)) then
       if(sc .eq. 0.0_SP) then
-        call lalg_clearVectorSngl(Fx)
+        call lalg_clearVectorSP(Fx)
       else if(sc .ne. 1.0_SP) then
         call SSCAL(size(Fx),sc,Fx,1)
       end if
     else
       if(sc .eq. 0.0_SP) then
-        call lalg_clearVectorSngl(Fx,n)
+        call lalg_clearVectorSP(Fx,n)
       else if(sc .ne. 1.0_SP) then
         call SSCAL(n,sc,Fx,1)
       end if
@@ -4433,7 +4433,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_scaleVectorDble (Dx,dc,n)
+  subroutine lalg_scaleVectorDP (Dx,dc,n)
 
 !<description>
   ! Scales a double precision vector: Dx = dc * Dx
@@ -4460,13 +4460,13 @@ contains
 
     if (.not. present(n)) then
       if(dc .eq. 0.0_DP) then
-        call lalg_clearVectorDble(Dx)
+        call lalg_clearVectorDP(Dx)
       else if(dc .ne. 1.0_DP) then
         call DSCAL(size(Dx),dc,Dx,1)
       end if
     else
       if(dc .eq. 0.0_DP) then
-        call lalg_clearVectorDble(Dx,n)
+        call lalg_clearVectorDP(Dx,n)
       else if(dc .ne. 1.0_DP) then
         call DSCAL(n,dc,Dx,1)
       end if
@@ -4478,7 +4478,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_scaleVectorQuad (Qx,qc,n)
+  subroutine lalg_scaleVectorQP (Qx,qc,n)
 
 !<description>
   ! Scales a quad precision vector: Qx = qc * Qx
@@ -4505,13 +4505,13 @@ contains
 
     if (.not. present(n)) then
       if(qc .eq. 0.0_QP) then
-        call lalg_clearVectorQuad(Qx)
+        call lalg_clearVectorQP(Qx)
       else if(qc .ne. 1.0_QP) then
         call QSCAL(size(Qx),qc,Qx,1)
       end if
     else
       if(qc .eq. 0.0_QP) then
-        call lalg_clearVectorQuad(Qx,n)
+        call lalg_clearVectorQP(Qx,n)
       else if(qc .ne. 1.0_QP) then
         call QSCAL(n,qc,Qx,1)
       end if
@@ -4523,7 +4523,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_scaleVectorSngl2D (Fx,sc)
+  subroutine lalg_scaleVectorSP2D (Fx,sc)
 
 !<description>
   ! Scales a single precision vector: Dx = sc * Dx
@@ -4546,7 +4546,7 @@ contains
 !</subroutine>
 
     if(sc .eq. 0.0_DP) then
-      call lalg_clearVectorSngl2D(Fx)
+      call lalg_clearVectorSP2D(Fx)
     else if(sc .ne. 1.0_SP) then
       call SSCAL(size(Fx,1)*size(Fx,2),sc,Fx,1)
     end if
@@ -4557,7 +4557,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_scaleVectorDble2D (Dx,dc)
+  subroutine lalg_scaleVectorDP2D (Dx,dc)
 
 !<description>
   ! Scales a double precision vector: Dx = dc * Dx
@@ -4580,7 +4580,7 @@ contains
 !</subroutine>
 
     if(dc .eq. 0.0_DP) then
-      call lalg_clearVectorDble2D(Dx)
+      call lalg_clearVectorDP2D(Dx)
     else if(dc .ne. 1.0_DP) then
       call DSCAL(size(Dx,1)*size(Dx,2),dc,Dx,1)
     end if
@@ -4591,7 +4591,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_scaleVectorQuad2D (Qx,qc)
+  subroutine lalg_scaleVectorQP2D (Qx,qc)
 
 !<description>
   ! Scales a quad precision vector: Qx = dc * Qx
@@ -4614,7 +4614,7 @@ contains
 !</subroutine>
 
     if(qc .eq. 0.0_QP) then
-      call lalg_clearVectorQuad2D(Qx)
+      call lalg_clearVectorQP2D(Qx)
     else if(qc .ne. 1.0_QP) then
       call QSCAL(size(Qx,1)*size(Qx,2),qc,Qx,1)
     end if
@@ -4625,7 +4625,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_scaleVectorSngl3D (Fx,sc)
+  subroutine lalg_scaleVectorSP3D (Fx,sc)
 
 !<description>
   ! Scales a single precision vector: Dx = sc * Dx
@@ -4648,7 +4648,7 @@ contains
 !</subroutine>
 
     if(sc .eq. 0.0_DP) then
-      call lalg_clearVectorSngl3D(Fx)
+      call lalg_clearVectorSP3D(Fx)
     else if(sc .ne. 1.0_SP) then
       call SSCAL(size(Fx,1)*size(Fx,2)*size(Fx,3),sc,Fx,1)
     end if
@@ -4659,7 +4659,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_scaleVectorDble3D (Dx,dc)
+  subroutine lalg_scaleVectorDP3D (Dx,dc)
 
 !<description>
   ! Scales a double precision vector: Dx = dc * Dx
@@ -4682,7 +4682,7 @@ contains
 !</subroutine>
 
     if(dc .eq. 0.0_DP) then
-      call lalg_clearVectorDble3D(Dx)
+      call lalg_clearVectorDP3D(Dx)
     else if(dc .ne. 1.0_DP) then
       call DSCAL(size(Dx,1)*size(Dx,2)*size(Dx,3),dc,Dx,1)
     end if
@@ -4693,7 +4693,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_scaleVectorQuad3D (Qx,qc)
+  subroutine lalg_scaleVectorQP3D (Qx,qc)
 
 !<description>
   ! Scales a quad precision vector: Qx = dc * Qx
@@ -4716,7 +4716,7 @@ contains
 !</subroutine>
 
     if(qc .eq. 0.0_QP) then
-      call lalg_clearVectorQuad3D(Qx)
+      call lalg_clearVectorQP3D(Qx)
     else if(qc .ne. 1.0_QP) then
       call QSCAL(size(Qx,1)*size(Qx,2)*size(Qx,3),qc,Qx,1)
     end if
@@ -4727,7 +4727,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_clearVectorSngl (Fx,n)
+  subroutine lalg_clearVectorSP (Fx,n)
 
 !<description>
   ! Clears a single precision vector: Fx = 0
@@ -4757,7 +4757,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_clearVectorDble (Dx,n)
+  subroutine lalg_clearVectorDP (Dx,n)
 
 !<description>
   ! Clears a double precision vector: Dx = 0
@@ -4787,7 +4787,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_clearVectorQuad (Qx,n)
+  subroutine lalg_clearVectorQP (Qx,n)
 
 !<description>
   ! Clears a quad precision vector: Qx = 0
@@ -4981,7 +4981,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_clearVectorSngl2D (Fx)
+  subroutine lalg_clearVectorSP2D (Fx)
 
 !<description>
   ! Clears a single precision vector: Fx = 0
@@ -5004,7 +5004,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_clearVectorDble2D (Dx)
+  subroutine lalg_clearVectorDP2D (Dx)
 
 !<description>
   ! Clears a double precision vector: Dx = 0
@@ -5025,7 +5025,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_clearVectorQuad2D (Qx)
+  subroutine lalg_clearVectorQP2D (Qx)
 
 !<description>
   ! Clears a quad precision vector: Qx = 0
@@ -5166,7 +5166,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_clearVectorSngl3D (Fx)
+  subroutine lalg_clearVectorSP3D (Fx)
 
 !<description>
   ! Clears a single precision vector: Fx = 0
@@ -5189,7 +5189,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_clearVectorDble3D (Dx)
+  subroutine lalg_clearVectorDP3D (Dx)
 
 !<description>
   ! Clears a double precision vector: Dx = 0
@@ -5210,7 +5210,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_clearVectorQuad3D (Qx)
+  subroutine lalg_clearVectorQP3D (Qx)
 
 !<description>
   ! Clears a quad precision vector: Qx = 0
@@ -5359,7 +5359,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_setVectorSngl (Fx,fvalue,n)
+  subroutine lalg_setVectorSP (Fx,fvalue,n)
 
 !<description>
   ! Sets the vector data to a defined value: Fx = fvalue
@@ -5392,7 +5392,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_setVectorDble (Dx,dvalue,n)
+  subroutine lalg_setVectorDP (Dx,dvalue,n)
 
 !<description>
   ! Sets the vector data to a defined value: Dx = dvalue
@@ -5425,7 +5425,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_setVectorQuad (Qx,qvalue,n)
+  subroutine lalg_setVectorQP (Qx,qvalue,n)
 
 !<description>
   ! Sets the vector data to a defined value: Qx = qvalue
@@ -5722,7 +5722,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_setVectorSngl2D (Fx,fvalue)
+  subroutine lalg_setVectorSP2D (Fx,fvalue)
 
 !<description>
   ! Sets the vector data to a defined value: Fx = fvalue
@@ -5748,7 +5748,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_setVectorDble2D (Dx,dvalue)
+  subroutine lalg_setVectorDP2D (Dx,dvalue)
 
 !<description>
   ! Sets the vector data to a defined value: Dx = dvalue
@@ -5774,7 +5774,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_setVectorQuad2D (Qx,qvalue)
+  subroutine lalg_setVectorQP2D (Qx,qvalue)
 
 !<description>
   ! Sets the vector data to a defined value: Qx = qvalue
@@ -5998,7 +5998,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_setVectorSngl3D (Fx,fvalue)
+  subroutine lalg_setVectorSP3D (Fx,fvalue)
 
 !<description>
   ! Sets the vector data to a defined value: Fx = fvalue
@@ -6024,7 +6024,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_setVectorDble3D (Dx,dvalue)
+  subroutine lalg_setVectorDP3D (Dx,dvalue)
 
 !<description>
   ! Sets the vector data to a defined value: Dx = dvalue
@@ -6050,7 +6050,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_setVectorQuad3D (Qx,qvalue)
+  subroutine lalg_setVectorQP3D (Qx,qvalue)
 
 !<description>
   ! Sets the vector data to a defined value: Qx = qvalue
@@ -6286,7 +6286,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_vectorLinearCombSngl (Fx,Fy,scx,scy,n)
+  subroutine lalg_vectorLinearCombSP (Fx,Fy,scx,scy,n)
 
 !<description>
   ! Performs a linear combination: Fy = scx * Fx  +  scy * Fy
@@ -6354,7 +6354,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_vectorLinearCombDble (Dx,Dy,dcx,dcy,n)
+  subroutine lalg_vectorLinearCombDP (Dx,Dy,dcx,dcy,n)
 
 !<description>
   ! Performs a linear combination: Dy = dcx * Dx  +  dcy * Dy
@@ -6422,7 +6422,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_vectorLinearCombQuad (Qx,Qy,qcx,qcy,n)
+  subroutine lalg_vectorLinearCombQP (Qx,Qy,qcx,qcy,n)
 
 !<description>
   ! Performs a linear combination: Qy = qcx * Qx  +  qcy * Qy
@@ -6490,7 +6490,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_vectorLinearCombSnglDble (Fx,Dy,scx,dcy,n)
+  subroutine lalg_vectorLinearCombSPDP (Fx,Dy,scx,dcy,n)
 
 !<description>
   ! Performs a linear combination: Dy = scx * Fx  +  dcy * Dy
@@ -6558,7 +6558,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_vectorLinearCombSnglQuad (Fx,Qy,scx,qcy,n)
+  subroutine lalg_vectorLinearCombSPQP (Fx,Qy,scx,qcy,n)
 
 !<description>
   ! Performs a linear combination: Qy = scx * Fx  +  qcy * Qy
@@ -6626,7 +6626,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_vectorLinearCombDblQuad (Dx,Qy,dcx,qcy,n)
+  subroutine lalg_vectorLinearCombDPQP (Dx,Qy,dcx,qcy,n)
 
 !<description>
   ! Performs a linear combination: Qy = dcx * Dx  +  qcy * Qy
@@ -6694,7 +6694,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_vectorLinearCombSngl2D (Fx,Fy,scx,scy)
+  subroutine lalg_vectorLinearCombSP2D (Fx,Fy,scx,scy)
 
 !<description>
   ! Performs a linear combination: Fy = scx * Fx  +  scy * Fy
@@ -6745,7 +6745,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_vectorLinearCombDble2D (Dx,Dy,dcx,dcy)
+  subroutine lalg_vectorLinearCombDP2D (Dx,Dy,dcx,dcy)
 
 !<description>
   ! Performs a linear combination: Dy = dcx * Dx  +  dcy * Dy
@@ -6796,7 +6796,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_vectorLinearCombQuad2D (Qx,Qy,qcx,qcy)
+  subroutine lalg_vectorLinearCombQP2D (Qx,Qy,qcx,qcy)
 
 !<description>
   ! Performs a linear combination: Qy = qcx * Qx  +  qcy * Qy
@@ -6847,7 +6847,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_vectorLinearCombSnglDble2D (Fx,Dy,scx,dcy)
+  subroutine lalg_vectorLinearCombSPDP2D (Fx,Dy,scx,dcy)
 
 !<description>
   ! Performs a linear combination: Dy = scx * Fx  +  dcy * Dy
@@ -6898,7 +6898,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_vectorLinearCombSnglQuad2D (Fx,Qy,scx,qcy)
+  subroutine lalg_vectorLinearCombSPQP2D (Fx,Qy,scx,qcy)
 
 !<description>
   ! Performs a linear combination: Qy = scx * Fx  +  qcy * Qy
@@ -6949,7 +6949,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_vectorLinearCombDblQuad2D (Dx,Qy,dcx,qcy)
+  subroutine lalg_vectorLinearCombDPQP2D (Dx,Qy,dcx,qcy)
 
 !<description>
   ! Performs a linear combination: Qy = dcx * Dx  +  qcy * Qy
@@ -7000,7 +7000,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_vectorLinearCombSngl3D (Fx,Fy,scx,scy)
+  subroutine lalg_vectorLinearCombSP3D (Fx,Fy,scx,scy)
 
 !<description>
   ! Performs a linear combination: Fy = scx * Fx  +  scy * Fy
@@ -7051,7 +7051,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_vectorLinearCombDble3D (Dx,Dy,dcx,dcy)
+  subroutine lalg_vectorLinearCombDP3D (Dx,Dy,dcx,dcy)
 
 !<description>
   ! Performs a linear combination: Dy = dcx * Dx  +  dcy * Dy
@@ -7102,7 +7102,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_vectorLinearCombQuad3D (Qx,Qy,qcx,qcy)
+  subroutine lalg_vectorLinearCombQP3D (Qx,Qy,qcx,qcy)
 
 !<description>
   ! Performs a linear combination: Qy = qcx * Qx  +  qcy * Qy
@@ -7153,7 +7153,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_vectorLinearCombSnglDble3D (Fx,Dy,scx,dcy)
+  subroutine lalg_vectorLinearCombSPDP3D (Fx,Dy,scx,dcy)
 
 !<description>
   ! Performs a linear combination: Dy = scx * Fx  +  dcy * Dy
@@ -7204,7 +7204,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_vectorLinearCombSnglQuad3D (Fx,Qy,scx,qcy)
+  subroutine lalg_vectorLinearCombSPQP3D (Fx,Qy,scx,qcy)
 
 !<description>
   ! Performs a linear combination: Qy = scx * Fx  +  qcy * Qy
@@ -7255,7 +7255,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_vectorLinearCombDblQuad3D (Dx,Qy,dcx,qcy)
+  subroutine lalg_vectorLinearCombDPQP3D (Dx,Qy,dcx,qcy)
 
 !<description>
   ! Performs a linear combination: Qy = dcx * Dx  +  qcy * Qy
@@ -7306,7 +7306,7 @@ contains
 
 !<function>
 
-  real(SP) function lalg_scalarProductSngl (Fx,Fy,n) result (res)
+  real(SP) function lalg_scalarProductSP (Fx,Fy,n) result (res)
 
 !<description>
   ! Calculates the scalar product of two single precision vectors:
@@ -7346,7 +7346,7 @@ contains
 
 !<function>
 
-  real(DP) function lalg_scalarProductDble (Dx,Dy,n) result (res)
+  real(DP) function lalg_scalarProductDP (Dx,Dy,n) result (res)
 
 !<description>
   ! Calculates the scalar product of two double precision vectors:
@@ -7386,7 +7386,7 @@ contains
 
 !<function>
 
-  real(QP) function lalg_scalarProductQuad (Qx,Qy,n) result (res)
+  real(QP) function lalg_scalarProductQP (Qx,Qy,n) result (res)
 
 !<description>
   ! Calculates the scalar product of two quad precision vectors:
@@ -7438,7 +7438,7 @@ contains
 
 !<function>
 
-  real(SP) function lalg_scalarProductSngl2D (Fx,Fy) result (res)
+  real(SP) function lalg_scalarProductSP2D (Fx,Fy) result (res)
 
 !<description>
   ! Calculates the scalar product of two single precision vectors:
@@ -7471,7 +7471,7 @@ contains
 
 !<function>
 
-  real(DP) function lalg_scalarProductDble2D (Dx,Dy) result (res)
+  real(DP) function lalg_scalarProductDP2D (Dx,Dy) result (res)
 
 !<description>
   ! Calculates the scalar product of two double precision vectors:
@@ -7504,7 +7504,7 @@ contains
 
 !<function>
 
-  real(DP) function lalg_scalarProductQuad2D (Qx,Qy) result (res)
+  real(DP) function lalg_scalarProductQP2D (Qx,Qy) result (res)
 
 !<description>
   ! Calculates the scalar product of two quad precision vectors:
@@ -7546,7 +7546,7 @@ contains
 
 !<function>
 
-  real(SP) function lalg_normSngl (Fx,cnorm,iposMax,n) result(resnorm)
+  real(SP) function lalg_normSP (Fx,cnorm,iposMax,n) result(resnorm)
 
 !<description>
   ! Calculates the norm of a single precision vector. cnorm identifies the
@@ -7628,7 +7628,7 @@ contains
 
 !<function>
 
-  real(DP) function lalg_normDble (Dx,cnorm,iposMax,n) result(resnorm)
+  real(DP) function lalg_normDP (Dx,cnorm,iposMax,n) result(resnorm)
 
 !<description>
   ! Calculates the norm of a double precision vector. cnorm identifies the
@@ -7711,7 +7711,7 @@ contains
 
 !<function>
 
-  real(QP) function lalg_normQuad (Qx,cnorm,iposMax,n) result(resnorm)
+  real(QP) function lalg_normQP (Qx,cnorm,iposMax,n) result(resnorm)
 
 !<description>
   ! Calculates the norm of a quad precision vector. cnorm identifies the
@@ -7794,7 +7794,7 @@ contains
 
 !<function>
 
-  real(SP) function lalg_errorNormSngl (Fx,Fy,cnorm,iposMax,n) result(resnorm)
+  real(SP) function lalg_errorNormSP (Fx,Fy,cnorm,iposMax,n) result(resnorm)
 
 !<description>
   ! Calculates the norm of two double precision vectors, !!Fx-Fy!!
@@ -7889,7 +7889,7 @@ contains
 
 !<function>
 
-  real(DP) function lalg_errorNormDble (Dx,Dy,cnorm,iposMax,n,Dw) result(resnorm)
+  real(DP) function lalg_errorNormDP (Dx,Dy,cnorm,iposMax,n,Dw) result(resnorm)
 
 !<description>
   ! Calculates the norm of two double precision vectors, !!Dx-Dy!!
@@ -8001,7 +8001,7 @@ contains
 
 !<function>
 
-  real(QP) function lalg_errorNormQuad (Qx,Qy,cnorm,iposMax,n,Qw) result(resnorm)
+  real(QP) function lalg_errorNormQP (Qx,Qy,cnorm,iposMax,n,Qw) result(resnorm)
 
 !<description>
   ! Calculates the norm of two quad precision vectors, !!Qx-Qy!!
@@ -8113,7 +8113,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_vectorSortSngl (Fx, Fd, Itr)
+  subroutine lalg_vectorSortSP (Fx, Fd, Itr)
 
 !<description>
   ! Resorts the entries in the vector Fx corresponding to Itr.
@@ -8149,7 +8149,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_vectorSortDble (Dx, Dd, Itr)
+  subroutine lalg_vectorSortDP (Dx, Dd, Itr)
 
 !<description>
   ! Resorts the entries in the vector Dx corresponding to Itr.
@@ -8187,7 +8187,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_vectorSortQuad (Qx, Qd, Itr)
+  subroutine lalg_vectorSortQP (Qx, Qd, Itr)
 
 !<description>
   ! Resorts the entries in the vector Qx corresponding to Itr.
@@ -8297,7 +8297,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_tensorProductSngl(Sx,Sy,Stensor)
+  subroutine lalg_tensorProductSP(Sx,Sy,Stensor)
 
 !<description>
   ! Calculates the tensor product of two single precision vectors:
@@ -8333,7 +8333,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_tensorProductDble(Dx,Dy,Dtensor)
+  subroutine lalg_tensorProductDP(Dx,Dy,Dtensor)
 
 !<description>
   ! Calculates the tensor product of two double precision vectors:
@@ -8369,7 +8369,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_tensorProductQuad(Qx,Qy,Qtensor)
+  subroutine lalg_tensorProductQP(Qx,Qy,Qtensor)
 
 !<description>
   ! Calculates the tensor product of two quad precision vectors:
@@ -8404,7 +8404,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_vectorAddScalarSngl (Fx,fvalue,n)
+  subroutine lalg_vectorAddScalarSP (Fx,fvalue,n)
 
 !<description>
   ! This routine adds the value dvalue to each entry of the vector Fx.
@@ -8450,7 +8450,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_vectorAddScalarDble (Dx,dvalue,n)
+  subroutine lalg_vectorAddScalarDP (Dx,dvalue,n)
 
 !<description>
   ! This routine adds the value dvalue to each entry of the vector Id.
@@ -8497,7 +8497,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_vectorAddScalarQuad (Qx,qvalue,n)
+  subroutine lalg_vectorAddScalarQP (Qx,qvalue,n)
 
 !<description>
   ! This routine adds the value qvalue to each entry of the vector Id.
@@ -8543,7 +8543,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_vectorAddScalarSngl2D (Fx,fvalue)
+  subroutine lalg_vectorAddScalarSP2D (Fx,fvalue)
 
 !<description>
   ! This routine adds the value dvalue to each entry of the vector Fx.
@@ -8578,7 +8578,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_vectorAddScalarDble2D (Dx,dvalue)
+  subroutine lalg_vectorAddScalarDP2D (Dx,dvalue)
 
 !<description>
   ! This routine adds the value dvalue to each entry of the vector Dx.
@@ -8613,7 +8613,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_vectorAddScalarQuad2D (Qx,qvalue)
+  subroutine lalg_vectorAddScalarQP2D (Qx,qvalue)
 
 !<description>
   ! This routine adds the value qvalue to each entry of the vector Qx.
@@ -8804,7 +8804,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_vectorCompMultSngl (Fx,Fy,sc,n)
+  subroutine lalg_vectorCompMultSP (Fx,Fy,sc,n)
 
 !<description>
   ! Performs componentwise multiplication: Fy = sc * Fx * Fy
@@ -8855,7 +8855,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_vectorCompMultDble (Dx,Dy,dc,n)
+  subroutine lalg_vectorCompMultDP (Dx,Dy,dc,n)
 
 !<description>
   ! Performs componentwise multiplication: Dy = dc * Dx * Dy
@@ -8906,7 +8906,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_vectorCompMultQuad (Qx,Qy,qc,n)
+  subroutine lalg_vectorCompMultQP (Qx,Qy,qc,n)
 
 !<description>
   ! Performs componentwise multiplication: Qy = qc * Qx * Qy
@@ -8957,7 +8957,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_vectorCompMultDbleSngl (Fx,Dy,dc,n)
+  subroutine lalg_vectorCompMultDPSP (Fx,Dy,dc,n)
 
 !<description>
   ! Performs componentwise multiplication: Dy = dc * Fx * Dy
@@ -9008,7 +9008,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_vectorCompMultQuadSngl (Fx,Qy,Qc,n)
+  subroutine lalg_vectorCompMultQPSP (Fx,Qy,Qc,n)
 
 !<description>
   ! Performs componentwise multiplication: Qy = qc * Fx * Qy
@@ -9059,7 +9059,7 @@ contains
 
 !<subroutine>
 
-  subroutine lalg_vectorCompMultQuadDble (Dx,Qy,Qc,n)
+  subroutine lalg_vectorCompMultQPDP (Dx,Qy,Qc,n)
 
 !<description>
   ! Performs componentwise multiplication: Qy = qc * Dx * Qy

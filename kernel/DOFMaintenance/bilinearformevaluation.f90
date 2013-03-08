@@ -2642,7 +2642,7 @@ contains
 !
 !    ! If desired, clear the matrix before assembling.
 !    IF (bclear) THEN
-!      CALL lalg_clearVectorDble (p_DA)
+!      CALL lalg_clearVector (p_DA)
 !    END IF
 !
 !  END IF
@@ -3465,7 +3465,7 @@ contains
 !
 !    ! If desired, clear the matrix before assembling.
 !    IF (bclear) THEN
-!      CALL lalg_clearVectorDble (p_DA)
+!      CALL lalg_clearVector (p_DA)
 !    END IF
 !
 !  END IF
@@ -4386,7 +4386,7 @@ contains
 !
 !    ! If desired, clear the matrix before assembling.
 !    if (bclear) then
-!      call lalg_clearVectorDble (p_DA)
+!      call lalg_clearVector (p_DA)
 !    end if
 !    
 !  end if

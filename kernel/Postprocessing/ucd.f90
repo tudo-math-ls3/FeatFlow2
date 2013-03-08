@@ -1479,7 +1479,7 @@ contains
     end if
 
     call storage_getbase_int (rexport%hIcellMaterial,p_Idata)
-    call lalg_copyVectorInt (Imaterials(1:NEL),p_Idata(1:NEL))
+    call lalg_copyVector (Imaterials(1:NEL),p_Idata(1:NEL))
 
   end subroutine
 
@@ -1577,14 +1577,14 @@ contains
     call storage_getbase_int (rexport%hIvertexMaterial,p_Idata)
 
     ! Copy that data and save it to the rexport structure.
-    call lalg_copyVectorInt (ImaterialsVert(1:NVT),p_Idata(1:NVT))
+    call lalg_copyVector (ImaterialsVert(1:NVT),p_Idata(1:NVT))
 
     ! Copy edge midpoint data if available
     if ((iand(rexport%cflags,UCD_FLAG_BULBQUADRATIC) .ne. 0) .or. &
         (iand(rexport%cflags,UCD_FLAG_USEEDGEMIDPOINTS) .ne. 0) .or. &
         (iand(rexport%cflags,UCD_FLAG_ONCEREFINED) .ne. 0)) then
       if (present(ImaterialsMid)) then
-        call lalg_copyVectorInt( &
+        call lalg_copyVector( &
             ImaterialsMid(1:NMT),p_Idata(NVT+1:NVT+NMT))
       end if
     end if
@@ -1593,7 +1593,7 @@ contains
     if ((iand(rexport%cflags,UCD_FLAG_USEELEMENTMIDPOINTS) .ne. 0) .or. &
         (iand(rexport%cflags,UCD_FLAG_ONCEREFINED) .ne. 0)) then
       if (present(ImaterialsElem)) then
-        call lalg_copyVectorInt( &
+        call lalg_copyVector( &
             ImaterialsElem(1:NEL),p_Idata(NVT+NMT+1:NVT+NMT+NEL))
       end if
     end if
@@ -4885,7 +4885,7 @@ contains
 
     ! Copy the vertex data into that vector
     call storage_getbase_double (rexport%p_Hvariables(rexport%nvariables),p_Ddata)
-    call lalg_copyVectorDble(DdataVert(1:rexport%p_rtriangulation%NVT), &
+    call lalg_copyVector(DdataVert(1:rexport%p_rtriangulation%NVT), &
         p_Ddata(1:rexport%p_rtriangulation%NVT))
 
     ! Copy edge midpoint data if available
@@ -4893,7 +4893,7 @@ contains
         (iand(rexport%cflags,UCD_FLAG_USEEDGEMIDPOINTS) .ne. 0) .or. &
         (iand(rexport%cflags,UCD_FLAG_ONCEREFINED) .ne. 0)) then
       if (present(DdataMid)) then
-        call lalg_copyVectorDble( &
+        call lalg_copyVector( &
             DdataMid(1:rexport%p_rtriangulation%NMT), &
             p_Ddata(rexport%p_rtriangulation%NVT+1:rexport%p_rtriangulation%NVT+ &
                                                    rexport%p_rtriangulation%NMT))
@@ -4919,7 +4919,7 @@ contains
     if ((iand(rexport%cflags,UCD_FLAG_USEELEMENTMIDPOINTS) .ne. 0) .or. &
         (iand(rexport%cflags,UCD_FLAG_ONCEREFINED) .ne. 0)) then
       if (present(DdataElem)) then
-        call lalg_copyVectorDble( &
+        call lalg_copyVector( &
             DdataElem(1:rexport%p_rtriangulation%NEL), &
             p_Ddata(rexport%p_rtriangulation%NVT+rexport%p_rtriangulation%NMT+1: &
                     rexport%p_rtriangulation%NVT+rexport%p_rtriangulation%NMT+ &
@@ -5460,7 +5460,7 @@ contains
 
     ! Copy the element data into that vector
     call storage_getbase_double (rexport%p_Hvariables(rexport%nvariables),p_Ddata)
-    call lalg_copyVectorDble(Ddata(1:rexport%p_rtriangulation%NEL), &
+    call lalg_copyVector(Ddata(1:rexport%p_rtriangulation%NEL), &
         p_Ddata(1:rexport%p_rtriangulation%NEL))
 
     ! On a once refined mesh, generate the data on the sub-cells by
@@ -6164,7 +6164,7 @@ contains
     ! Copy the element data into that vector
     call storage_getbase_double (&
         rexport%p_HtracerVariables(rexport%ntracerVariables),p_Ddata)
-    call lalg_copyVectorDble(Ddata(1:rexport%ntracers), &
+    call lalg_copyVector(Ddata(1:rexport%ntracers), &
         p_Ddata(1:rexport%ntracers))
 
   end subroutine
@@ -7584,7 +7584,7 @@ contains
           rtriangulation%h_DvertexParameterValue,p_DvertexParameterValue)
 
       ! Clear the array -- we have no parameter values!
-      call lalg_clearVectorDble (p_DvertexParameterValue)
+      call lalg_clearVector (p_DvertexParameterValue)
 
       ! InodalProperty is completely classified -- that is it.
 
@@ -7694,7 +7694,7 @@ contains
         if (present(nlength)) nlength = size(p_Ddata)
         if (present(itype)) itype = rexport%p_IvariableBase(i)
         if (present(Ddata)) then
-          call lalg_copyVectorDble (p_Ddata,Ddata(1:size(p_Ddata)))
+          call lalg_copyVector (p_Ddata,Ddata(1:size(p_Ddata)))
         end if
 
         ! That is it, return.

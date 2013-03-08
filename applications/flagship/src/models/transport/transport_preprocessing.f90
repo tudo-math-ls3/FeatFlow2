@@ -1558,7 +1558,7 @@ contains
         call ppsol_readPGM(0, ssolutionName, rpgm)
         
         ! Initialise the solution by the image data
-        call ppsol_initArrayPGMDble(rpgm, p_DdofCoords, p_Ddata)
+        call ppsol_initArrayPGMDP(rpgm, p_DdofCoords, p_Ddata)
         
         ! Release portable graymap image
         call ppsol_releasePGM(rpgm)

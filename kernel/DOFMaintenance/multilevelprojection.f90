@@ -2877,7 +2877,7 @@ contains
 
     ! Copy the first NVT entries - they belong to the coarse grid vertices
     ! that are fine grid vertices at the same time.
-    call lalg_copyVectorDble (DuCoarse,DuFine(1:size(DuCoarse)))
+    call lalg_copyVector (DuCoarse,DuFine(1:size(DuCoarse)))
 
     ! Loop over the elements
     do iel=1,NELCoarse
@@ -2939,7 +2939,7 @@ contains
     ! be "collected".
     !
     ! Copy the first NVT entries - this gives the first additive contribution.
-    call lalg_copyVectorDble (DuFine(1:size(DuCoarse)),DuCoarse)
+    call lalg_copyVector (DuFine(1:size(DuCoarse)),DuCoarse)
 
     ! Loop over the elements to collect the missing additive contributions:
     do iel=1,NELcoarse
@@ -2988,7 +2988,7 @@ contains
 
     ! The first coase.NVT entries of the fine grid vector define
     ! the values on the coarse grid - because of the two-level ordering!
-    call lalg_copyVectorDble(DUfine(1:NVTcoarse),DUcoarse(1:NVTCoarse))
+    call lalg_copyVector(DUfine(1:NVTcoarse),DUcoarse(1:NVTCoarse))
 
   end subroutine
 
@@ -3038,7 +3038,7 @@ contains
     ! Copy all DOFs from the coarse grid into the fine grid -
     ! the DOFs belonging to the "new" fine grid vertices get
     ! their values from the edge midpoints in the coarse grid.
-    call lalg_copyVectorDble (DuCoarse,DuFine(1:size(DuCoarse)))
+    call lalg_copyVector (DuCoarse,DuFine(1:size(DuCoarse)))
 
     ! Calculate number of vertices in fine grid
     NVTfine = NVTcoarse+NELcoarse
@@ -3108,7 +3108,7 @@ contains
     ! be "collected".
     !
     ! Copy the first NVT entries - this gives the first additive contribution.
-    call lalg_copyVectorDble (DuFine(1:size(DuCoarse)),DuCoarse)
+    call lalg_copyVector (DuFine(1:size(DuCoarse)),DuCoarse)
 
     ! Calculate number of vertices in fine grid
     NVTfine = NVTcoarse+NELcoarse
@@ -3169,7 +3169,7 @@ contains
 
     ! The first coase.NVT entries of the fine grid vector define
     ! the values on the coarse grid - because of the two-level ordering!
-    call lalg_copyVectorDble(DuFine(1:len),DuCoarse(1:len))
+    call lalg_copyVector(DuFine(1:len),DuCoarse(1:len))
 
   end subroutine
 
@@ -3227,13 +3227,13 @@ contains
 
     ! Copy the first NVTcoarse entries - these are the coefficients of the
     ! basis functions for the function values.
-    call lalg_copyVectorDble(DuCoarse(1:NVTcoarse),DuFine(1:NVTcoarse))
+    call lalg_copyVector(DuCoarse(1:NVTcoarse),DuFine(1:NVTcoarse))
 
     ! Copy NVTcoarse entries beginning at NVTcoarse+1 of the coarse
     ! vector into the fine vector beginning at NVTfine+1 - these are the
     ! coefficients for the function derivative values.
-    call lalg_copyVectorDble(DuCoarse(NVTcoarse + 1 : 2*NVTcoarse), &
-                  DuFine(NVTfine + 1 : NVTfine + NVTcoarse))
+    call lalg_copyVector(DuCoarse(NVTcoarse + 1 : 2*NVTcoarse), &
+                         DuFine(NVTfine + 1 : NVTfine + NVTcoarse))
 
     ! Loop over the elements
     do iel=1,NELCoarse
@@ -3320,13 +3320,13 @@ contains
 
     ! Copy the first NVTcoarse entries - these are the coefficients of the
     ! basis functions for the function values.
-    call lalg_copyVectorDble(DuFine(1:NVTcoarse),DuCoarse(1:NVTcoarse))
+    call lalg_copyVector(DuFine(1:NVTcoarse),DuCoarse(1:NVTcoarse))
 
     ! Copy NVTcoarse entries beginning at NVTfine+1 of the fine vector into
     ! the coarse vector beginning at NVTfine+1 - these are the
     ! coefficients for the function derivative values.
-    call lalg_copyVectorDble(DuFine(NVTfine + 1 : NVTfine + NVTcoarse),&
-                             DuCoarse(NVTcoarse + 1 : 2*NVTcoarse))
+    call lalg_copyVector(DuFine(NVTfine + 1 : NVTfine + NVTcoarse),&
+                         DuCoarse(NVTcoarse + 1 : 2*NVTcoarse))
 
     ! Loop over the elements to collect the missing additive contributions:
     do iel=1,NELcoarse
@@ -3390,9 +3390,9 @@ contains
 
     ! The first NVTcoarse entries of the fine grid vector define
     ! the values on the coarse grid - because of the two-level ordering!
-    call lalg_copyVectorDble(DUfine(1:NVTcoarse), DUcoarse(1:NVTCoarse))
-    call lalg_copyVectorDble(DUfine(NVTfine + 1 : NVTfine + NVTcoarse),&
-                             DUcoarse(NVTCoarse + 1 : 2*NVTCoarse))
+    call lalg_copyVector(DUfine(1:NVTcoarse), DUcoarse(1:NVTCoarse))
+    call lalg_copyVector(DUfine(NVTfine + 1 : NVTfine + NVTcoarse),&
+                         DUcoarse(NVTCoarse + 1 : 2*NVTCoarse))
 
   end subroutine
 
@@ -3611,7 +3611,7 @@ contains
 
     ! Copy the first NVT entries - they belong to the coarse grid vertices
     ! that are fine grid vertices at the same time.
-    call lalg_copyVectorDble (DuCoarse,DuFine(1:size(DuCoarse)))
+    call lalg_copyVector (DuCoarse,DuFine(1:size(DuCoarse)))
 
     ! Loop over the elements
     do iel=1,NELCoarse
@@ -3682,7 +3682,7 @@ contains
     ! be "collected".
     !
     ! Copy the first NVT entries - this gives the first additive contribution.
-    call lalg_copyVectorDble (DuFine(1:size(DuCoarse)),DuCoarse)
+    call lalg_copyVector (DuFine(1:size(DuCoarse)),DuCoarse)
 
     ! Loop over the elements to collect the missing additive contributions:
     do iel=NELcoarse+1,NELfine
@@ -3728,7 +3728,7 @@ contains
 
     ! The first coase.NVT entries of the fine grid vector define
     ! the values on the coarse grid - because of the two-level ordering!
-    call lalg_copyVectorDble(DUfine(1:NVTcoarse),DUcoarse(1:NVTCoarse))
+    call lalg_copyVector(DUfine(1:NVTcoarse),DUcoarse(1:NVTCoarse))
 
   end subroutine
 
@@ -3830,7 +3830,7 @@ contains
     !   Coarse grid midpoints 1..NMTC -> Fine grid vertices NVTC+1..NVTC+NMTC = NVTF
     ! Afterwards, we only have to create the missing midpoint values!
 
-    call lalg_copyVectorDble (DuCoarse,DuFine(1:size(DuCoarse)))
+    call lalg_copyVector (DuCoarse,DuFine(1:size(DuCoarse)))
 
     ! loop over the elements
 
@@ -4122,7 +4122,7 @@ contains
     ! Afterwards, we have to add only the contribution of the fine grid
     ! edge midpoints to the coarse grid vertices/midpoints.
 
-    call lalg_copyVectorDble (DuFine(1:size(DuCoarse)),DuCoarse)
+    call lalg_copyVector (DuFine(1:size(DuCoarse)),DuCoarse)
 
     ! loop over the elements
 
@@ -4324,8 +4324,8 @@ contains
 
     ! The first coase.NVT+NMT entries of the fine grid vector define
     ! the values on the coarse grid - because of the two-level ordering!
-    call lalg_copyVectorDble(DUfine(1:NVTcoarse+NMTcoarse),&
-                             DUcoarse(1:NVTCoarse+NMTcoarse))
+    call lalg_copyVector(DUfine(1:NVTcoarse+NMTcoarse),&
+                         DUcoarse(1:NVTCoarse+NMTcoarse))
 
   end subroutine
 
@@ -4382,7 +4382,7 @@ contains
   real(DP), parameter :: A1=0.125_DP, A2=0.0625_DP, A3=-0.0625_DP, A4=0.25_DP
 
     ! Clear the output vector
-    call lalg_clearVectorDble(DuFine)
+    call lalg_clearVector(DuFine)
 
     ! Loop over the coarse grid elements
     do iel=1,NELcoarse
@@ -4518,7 +4518,7 @@ contains
     real(DP), parameter :: A1=0.125_DP, A2=0.0625_DP, A3=-0.0625_DP
 
     ! Clear the output vector
-    call lalg_clearVectorDble(DuCoarse)
+    call lalg_clearVector(DuCoarse)
 
     ! Loop over the coarse grid elements
     do iel=1,NELcoarse
@@ -4662,7 +4662,7 @@ contains
     real(DP), parameter :: A1=0.125_DP, A2=0.0625_DP, A3=-0.0625_DP
 
     ! Clear the output vector
-    call lalg_clearVectorDble(DuCoarse)
+    call lalg_clearVector(DuCoarse)
 
     ! Loop over the coarse grid elements
     do iel=1,NELcoarse
@@ -4983,7 +4983,7 @@ contains
 
     ! Copy the first NVT entries - they belong to the coarse grid vertices
     ! that are fine grid vertices at the same time.
-    call lalg_copyVectorDble (DuCoarse,DuFine(1:NVTcoarse))
+    call lalg_copyVector (DuCoarse,DuFine(1:NVTcoarse))
 
     ! Loop over the edges
     do iedge = 1, NMTcoarse
@@ -5014,7 +5014,7 @@ contains
 !
 !    ! Copy the first NVT entries - they belong to the coarse grid vertices
 !    ! that are fine grid vertices at the same time.
-!    CALL lalg_copyVectorDble (DuCoarse,DuFine(1:SIZE(DuCoarse)))
+!    CALL lalg_copyVector (DuCoarse,DuFine(1:SIZE(DuCoarse)))
 !
 !    ! Loop over the elements
 !    DO iel=1,NELCoarse
@@ -5113,7 +5113,7 @@ contains
     ! be "collected".
     !
     ! Copy the first NVT entries - this gives the first additive contribution.
-    call lalg_copyVectorDble (DuFine(1:NVTcoarse),DuCoarse)
+    call lalg_copyVector (DuFine(1:NVTcoarse),DuCoarse)
 
     ! Loop over the edges
     do iedge = 1, NMTcoarse
@@ -5155,7 +5155,7 @@ contains
 !    ! be "collected".
 !    !
 !    ! Copy the first NVT entries - this gives the first additive contribution.
-!    CALL lalg_copyVectorDble (DuFine(1:SIZE(DuCoarse)),DuCoarse)
+!    CALL lalg_copyVector (DuFine(1:SIZE(DuCoarse)),DuCoarse)
 !
 !    ! Loop over the elements to collect the missing additive contributions:
 !    DO iel=1,NELfine
@@ -5231,7 +5231,7 @@ contains
 
     ! Copy the first NVT entries - they belong to the coarse grid vertices
     ! that are fine grid vertices at the same time.
-    call lalg_copyVectorDble (DuCoarse,DuFine(1:size(DuCoarse)))
+    call lalg_copyVector (DuCoarse,DuFine(1:size(DuCoarse)))
 
     ! Loop over the elements
     do iel=1,NELCoarse
@@ -5338,7 +5338,7 @@ contains
 
     ! The information that was "distributed" in the prolongation has to
     ! be "collected".
-    call lalg_clearVectorDble (DuCoarse)
+    call lalg_clearVector (DuCoarse)
 
     ! Loop over the elements to collect the missing additive contributions:
     do iel=1,NELfine
@@ -5420,7 +5420,7 @@ contains
     ! be "collected".
     !
     ! Copy the first NVT entries - this gives the first additive contribution.
-    call lalg_copyVectorDble (DuFine(1:size(DuCoarse)),DuCoarse)
+    call lalg_copyVector (DuFine(1:size(DuCoarse)),DuCoarse)
 
     ! Loop over the elements to collect the missing additive contributions:
     do iel=1,NELfine
@@ -5495,7 +5495,7 @@ contains
 
     ! The first coase.NVT entries of the fine grid vector define the values
     ! on the coarse grid - because of the two-level ordering!
-    call lalg_copyVectorDble(DUfine(1:NVTcoarse),DUcoarse(1:NVTCoarse))
+    call lalg_copyVector(DUfine(1:NVTcoarse),DUcoarse(1:NVTCoarse))
 
   end subroutine
 
@@ -5553,7 +5553,7 @@ contains
     ! Copy the first NVT+NMT+NEL entries - they belong to the coarse grid
     ! vertices/edge midpoints/element midpoints and
     ! are fine grid vertices at the same time.
-    call lalg_copyVectorDble (DuCoarse,DuFine(1:size(DuCoarse)))
+    call lalg_copyVector (DuCoarse,DuFine(1:size(DuCoarse)))
 
     ! Loop over the elements of the coarse grid
     do iel=1,NELcoarse
@@ -5671,7 +5671,7 @@ contains
     ! additive contribution: The values in the corners/edge midpoints/
     ! element midpoints of the coarse grid stem from with the values of the
     ! corners of the fine grid.
-    call lalg_copyVectorDble (DuFine(1:size(DuCoarse)),DuCoarse)
+    call lalg_copyVector (DuFine(1:size(DuCoarse)),DuCoarse)
 
     ! Loop over the elements to collect the missing additive contributions:
     do iel=1,NELcoarse
@@ -5802,8 +5802,8 @@ contains
 
     ! The first coase.NVT+NMT+NEL entries of the fine grid vector define
     ! the values on the coarse grid - because of the two-level ordering!
-    call lalg_copyVectorDble(DUfine(1:NVTcoarse+NMTcoarse+NELcoarse),&
-                             DUcoarse(1:NVTCoarse+NMTcoarse+NELcoarse))
+    call lalg_copyVector(DUfine(1:NVTcoarse+NMTcoarse+NELcoarse),&
+                         DUcoarse(1:NVTCoarse+NMTcoarse+NELcoarse))
 
   end subroutine
 
@@ -6114,7 +6114,7 @@ contains
   real(DP), parameter :: A5=0.625_DP, A6=0.125_DP, A7=0.125_DP, A8=0.125_DP
 
     ! Clear the output vector
-    call lalg_clearVectorDble(DuFine)
+    call lalg_clearVector(DuFine)
 
     ! Loop over the coarse grid elements
     do iel=1,NELcoarse
@@ -6314,7 +6314,7 @@ contains
                 1.0_DP, 0.0_DP, 0.0_DP, 0.0_DP/),(/8,2/))
 
     ! Clear the output vector
-    call lalg_clearVectorDble(DuFine)
+    call lalg_clearVector(DuFine)
 
     ! Loop over the coarse grid elements
     do iel=1,NELcoarse
@@ -6830,7 +6830,7 @@ contains
                   1.0_DP, 0.0_DP, 0.0_DP, 0.0_DP/),(/8,2/))
 
     ! Clear the output vector
-    call lalg_clearVectorDble(DuCoarse)
+    call lalg_clearVector(DuCoarse)
 
     ! Loop over the coarse grid elements
     do iel=1,NELcoarse
@@ -7269,7 +7269,7 @@ contains
   real(DP), parameter :: A5=0.5625_DP, A6=0.1875_DP, A7=0.0625_DP, A8=0.1875_DP
 
     ! Clear the output vector
-    call lalg_clearVectorDble(DuFine)
+    call lalg_clearVector(DuFine)
 
     ! Loop over the coarse grid elements
     do iel=1,NELcoarse
@@ -7469,7 +7469,7 @@ contains
                 1.0_DP, 0.0_DP, 0.0_DP, 0.0_DP/),(/8,2/))
 
     ! Clear the output vector
-    call lalg_clearVectorDble(DuFine)
+    call lalg_clearVector(DuFine)
 
     ! Loop over the coarse grid elements
     do iel=1,NELcoarse
@@ -7984,7 +7984,7 @@ contains
                   1.0_DP, 0.0_DP, 0.0_DP, 0.0_DP/),(/8,2/))
 
     ! Clear the output vector
-    call lalg_clearVectorDble(DuCoarse)
+    call lalg_clearVector(DuCoarse)
 
     ! Loop over the coarse grid elements
     do iel=1,NELcoarse
@@ -8431,7 +8431,7 @@ contains
 
     ! Copy the first NVT entries - they belong to the coarse grid vertices
     ! that are fine grid vertices at the same time.
-    call lalg_copyVectorDble (DuCoarse,DuFine(1:NVTcoarse))
+    call lalg_copyVector (DuCoarse,DuFine(1:NVTcoarse))
 
     ! Loop over the edges
     do iedge = 1, NMTcoarse
@@ -8524,7 +8524,7 @@ contains
     ! be "collected".
     !
     ! Copy the first NVT entries - this gives the first additive contribution.
-    call lalg_copyVectorDble (DuFine(1:NVTcoarse),DuCoarse)
+    call lalg_copyVector (DuFine(1:NVTcoarse),DuCoarse)
 
     ! Loop over the edges
     do iedge = 1, NMTcoarse
@@ -8607,7 +8607,7 @@ contains
 
     ! The first coase.NVT entries of the fine grid vector define the values
     ! on the coarse grid - because of the two-level ordering!
-    call lalg_copyVectorDble(DUfine(1:NVTcoarse),DUcoarse(1:NVTCoarse))
+    call lalg_copyVector(DUfine(1:NVTcoarse),DUcoarse(1:NVTCoarse))
 
   end subroutine
 
@@ -8689,7 +8689,7 @@ contains
     end if
 
     ! Clear the output vector
-    call lalg_clearVectorDble(DuFine)
+    call lalg_clearVector(DuFine)
 
     ! Loop over the coarse grid elements
     do iel = 1, NELcoarse
@@ -8944,7 +8944,7 @@ contains
     end if
 
     ! Clear the output vector
-    call lalg_clearVectorDble(DuCoarse)
+    call lalg_clearVector(DuCoarse)
 
     ! Loop over the coarse grid elements
     do iel = 1, NELcoarse
@@ -9164,7 +9164,7 @@ contains
 !    END IF
 
     ! Clear the output vector
-    call lalg_clearVectorDble(DuCoarse)
+    call lalg_clearVector(DuCoarse)
 
     ! Loop over the coarse grid elements
     do iel = 1, NELcoarse
@@ -9371,7 +9371,7 @@ contains
   real(DP), parameter :: R24 =  384.0_DP / 808.0_DP
 
     ! Clear the output vector
-    call lalg_clearVectorDble(DuFine)
+    call lalg_clearVector(DuFine)
 
     ! Loop over the coarse grid elements
     do iel = 1, NELcoarse
@@ -9574,7 +9574,7 @@ contains
   real(DP), parameter :: R24 =  384.0_DP / 808.0_DP
 
     ! Clear the output vector
-    call lalg_clearVectorDble(DuCoarse)
+    call lalg_clearVector(DuCoarse)
 
     ! Loop over the coarse grid elements
     do iel = 1, NELcoarse
@@ -9779,7 +9779,7 @@ contains
   real(DP), parameter :: Q32 =  3.0_DP /  32.0_DP
 
     ! Clear the output vector
-    call lalg_clearVectorDble(DuCoarse)
+    call lalg_clearVector(DuCoarse)
 
     ! Loop over the coarse grid elements
     do iel = 1, NELcoarse
@@ -9989,7 +9989,7 @@ contains
 !  real(DP), parameter :: R34 = 25.0_DP / 16.0_DP  ! 1.5625_DP
 
     ! Clear the output vector
-    call lalg_clearVectorDble(DuFine)
+    call lalg_clearVector(DuFine)
 
     ! Loop over the coarse grid elements
     do iel = 1, NELcoarse
@@ -10226,7 +10226,7 @@ contains
 !  real(DP), parameter :: R34 = 25.0_DP / 16.0_DP  ! 1.5625_DP
 
     ! Clear the output vector
-    call lalg_clearVectorDble(DuCoarse)
+    call lalg_clearVector(DuCoarse)
 
     ! Loop over the coarse grid elements
     do iel = 1, NELcoarse
@@ -10455,7 +10455,7 @@ contains
 
 
     ! Clear the output vector
-    call lalg_clearVectorDble(DuCoarse)
+    call lalg_clearVector(DuCoarse)
 
     ! Loop over the coarse grid elements
     do iel = 1, NELcoarse
@@ -11742,7 +11742,7 @@ contains
     ! Now copy the fine mesh vector into the temporary vector. We will not call
     ! the lsyssc_copyVector routine as the vectors have different length!
     call lsyssc_getbase_double(rfineVector, p_Dfine)
-    call lalg_copyVectorDble(p_Dfine,p_Dtmp,n)
+    call lalg_copyVector(p_Dfine,p_Dtmp,n)
 
     ! Okay, now the fine mesh vector has been copied into p_Dtmp(1:n).
     ! Now we need to assign the work array. As the length of p_Dtmp is
@@ -11777,7 +11777,7 @@ contains
     call lsyssc_getbase_Kld(rprojection%rmatrix2Lvl, p_Kld)
 
     ! Format the coarse mesh vector
-    call lalg_clearVectorDble(p_Dcoarse, rcoarseVector%NEQ)
+    call lalg_clearVector(p_Dcoarse, rcoarseVector%NEQ)
 
     ! And perform the transposed matrix-vector multiplication
     do i = 1, rfinevector%NEQ

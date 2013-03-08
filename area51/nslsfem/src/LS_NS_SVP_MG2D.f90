@@ -6667,7 +6667,7 @@ contains
     if (elem_igetShape(p_relementDistribution%celement) .ne. &
         elem_igetShape(rmatrixScalar%p_rspatialDiscrTrial%RelementDistr(1)%celement)) then
       call output_line ('Element spaces incompatible!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'jstab_ueoJumpStabil2d_m_unidble')
+                        OU_CLASS_ERROR,OU_MODE_STD,'jstab_ueoJumpStabil2d_m_uniDP')
       call sys_halt()
     end if
 
@@ -6872,7 +6872,7 @@ contains
           end do
 
           call output_line ('Matrix invalid! Trial-DOF not found!', &
-              OU_CLASS_ERROR,OU_MODE_STD,'jstab_ueoJumpStabil2d_m_unidble')
+              OU_CLASS_ERROR,OU_MODE_STD,'jstab_ueoJumpStabil2d_m_uniDP')
           call sys_halt()
 
         end do trialspaceloop

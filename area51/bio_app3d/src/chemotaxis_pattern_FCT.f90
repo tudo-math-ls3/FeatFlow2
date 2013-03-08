@@ -437,8 +437,8 @@ contains
       ! Store the old sols for the errorctrl
       call lsyssc_getbase_double ( rcell, p_vectordata )
       call lsyssc_getbase_double ( rchemoattract, p_chemodata)
-      call lalg_copyVectorDble ( p_vectordata, p_uold )
-      call lalg_copyVectorDble ( p_chemodata, p_cold )
+      call lalg_copyVector ( p_vectordata, p_uold )
+      call lalg_copyVector ( p_chemodata, p_cold )
                 
       ! STEP 1.1: Form the right hand side for c:
       ! It consists of M c_n +dt * ( u_{n} , phi )

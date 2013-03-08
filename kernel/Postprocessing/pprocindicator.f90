@@ -223,7 +223,7 @@ contains
 
 
       ! Clear array for coefficients
-      call lalg_clearVectorDble2D(Dcoefficients)
+      call lalg_clearVector(Dcoefficients)
 
       ! Loop over all elements in triangulation
       do iel = 1, NEL
@@ -544,7 +544,7 @@ contains
 
 
       ! Clear array
-      call lalg_clearVectorDble(Dindicator)
+      call lalg_clearVector(Dindicator)
 
       ! Loop over all elements in triangulation
       do iel = 1, NEL

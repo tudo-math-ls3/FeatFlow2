@@ -27,17 +27,17 @@ module list
   use fsystem
   use genoutput
   use listInt,       only : t_listInt, list_release
-  use listInt_Dble,  only : t_listInt_Dble, list_release
-  use listInt_Sngl,  only : t_listInt_Sngl, list_release
+  use listInt_DP,    only : t_listInt_DP, list_release
+  use listInt_SP,    only : t_listInt_SP, list_release
   use listInt_Int,   only : t_listInt_Int, list_release
-  use listDble,      only : t_listDble, list_release
-  use listDble_Dble, only : t_listDble_Dble, list_release
-  use listDble_Sngl, only : t_listDble_Sngl, list_release
-  use listDble_Int,  only : t_listDble_Int, list_release
-  use listSngl,      only : t_listSngl, list_release
-  use listSngl_Dble, only : t_listSngl_Dble, list_release
-  use listSngl_Sngl, only : t_listSngl_Sngl, list_release
-  use listSngl_Int,  only : t_listSngl_Int, list_release
+  use listDP,        only : t_listDP, list_release
+  use listDP_DP,     only : t_listDP_DP, list_release
+  use listDP_SP,     only : t_listDP_SP, list_release
+  use listDP_Int,    only : t_listDP_Int, list_release
+  use listSP,        only : t_listSP, list_release
+  use listSP_DP,     only : t_listSP_DP, list_release
+  use listSP_SP,     only : t_listSP_SP, list_release
+  use listSP_Int,    only : t_listSP_Int, list_release
   use storage
 
   implicit none
@@ -49,18 +49,18 @@ module list
   public :: list_getbase
 
   interface list_getbase
-    module procedure list_getbase_int
-    module procedure list_getbase_int_int
-    module procedure list_getbase_int_dble
-    module procedure list_getbase_int_sngl
-    module procedure list_getbase_dble
-    module procedure list_getbase_dble_int
-    module procedure list_getbase_dble_dble
-    module procedure list_getbase_dble_sngl
-    module procedure list_getbase_sngl
-    module procedure list_getbase_sngl_int
-    module procedure list_getbase_sngl_dble
-    module procedure list_getbase_sngl_sngl
+    module procedure list_getbase_Int
+    module procedure list_getbase_Int_Int
+    module procedure list_getbase_Int_DP
+    module procedure list_getbase_Int_SP
+    module procedure list_getbase_DP
+    module procedure list_getbase_DP_Int
+    module procedure list_getbase_DP_DP
+    module procedure list_getbase_DP_SP
+    module procedure list_getbase_SP
+    module procedure list_getbase_SP_Int
+    module procedure list_getbase_SP_DP
+    module procedure list_getbase_SP_SP
   end interface
 
 !<constants>
@@ -98,20 +98,20 @@ module list
     ! Pointer to integer-valued list implementations
     type(t_listInt),       pointer :: p_listInt       => null()
     type(t_listInt_Int),   pointer :: p_listInt_Int   => null()
-    type(t_listInt_Dble),  pointer :: p_listInt_Dble  => null()
-    type(t_listInt_Sngl),  pointer :: p_listInt_Sngl  => null()
+    type(t_listInt_DP),  pointer :: p_listInt_DP  => null()
+    type(t_listInt_SP),  pointer :: p_listInt_SP  => null()
 
     ! Pointer to double-valued list implementations
-    type(t_listDble),      pointer :: p_listDble      => null()
-    type(t_listDble_Int),  pointer :: p_listDble_Int  => null()
-    type(t_listDble_Dble), pointer :: p_listDble_Dble => null()
-    type(t_listDble_Sngl), pointer :: p_listDble_Sngl => null()
+    type(t_listDP),      pointer :: p_listDP      => null()
+    type(t_listDP_Int),  pointer :: p_listDP_Int  => null()
+    type(t_listDP_DP), pointer :: p_listDP_DP => null()
+    type(t_listDP_SP), pointer :: p_listDP_SP => null()
 
     ! Pointer to single-valued list implementations
-    type(t_listSngl),      pointer :: p_listSngl      => null()
-    type(t_listSngl_Int),  pointer :: p_listSngl_Int  => null()
-    type(t_listSngl_Dble), pointer :: p_listSngl_Dble => null()
-    type(t_listSngl_Sngl), pointer :: p_listSngl_Sngl => null()
+    type(t_listSP),      pointer :: p_listSP      => null()
+    type(t_listSP_Int),  pointer :: p_listSP_Int  => null()
+    type(t_listSP_DP), pointer :: p_listSP_DP => null()
+    type(t_listSP_SP), pointer :: p_listSP_SP => null()
 
   end type t_list
 
@@ -149,34 +149,34 @@ contains
       allocate(rlist%p_listInt_Int)
 
     case (LIST_INT_DOUBLE)
-      allocate(rlist%p_listInt_Dble)
+      allocate(rlist%p_listInt_DP)
 
     case (LIST_INT_SINGLE)
-      allocate(rlist%p_listInt_Sngl)
+      allocate(rlist%p_listInt_SP)
 
     case (LIST_DOUBLE)
-      allocate(rlist%p_listDble)
+      allocate(rlist%p_listDP)
 
     case (LIST_DOUBLE_INT)
-      allocate(rlist%p_listDble_Int)
+      allocate(rlist%p_listDP_Int)
 
     case (LIST_DOUBLE_DOUBLE)
-      allocate(rlist%p_listDble_Dble)
+      allocate(rlist%p_listDP_DP)
 
     case (LIST_DOUBLE_SINGLE)
-      allocate(rlist%p_listDble_Sngl)
+      allocate(rlist%p_listDP_SP)
 
     case (LIST_SINGLE)
-      allocate(rlist%p_listSngl)
+      allocate(rlist%p_listSP)
 
     case (LIST_SINGLE_INT)
-      allocate(rlist%p_listSngl_Int)
+      allocate(rlist%p_listSP_Int)
 
     case (LIST_SINGLE_DOUBLE)
-      allocate(rlist%p_listSngl_Dble)
+      allocate(rlist%p_listSP_DP)
 
     case (LIST_SINGLE_SINGLE)
-        allocate(rlist%p_listSngl_Sngl)
+        allocate(rlist%p_listSP_SP)
 
     case DEFAULT
       call output_line('Invalid list type!',&
@@ -212,56 +212,56 @@ contains
       deallocate(rlist%p_listInt_INT)
     end if
 
-    if (associated(rlist%p_listInt_Dble)) then
-      call list_release(rlist%p_listInt_Dble)
-      deallocate(rlist%p_listInt_Dble)
+    if (associated(rlist%p_listInt_DP)) then
+      call list_release(rlist%p_listInt_DP)
+      deallocate(rlist%p_listInt_DP)
     end if
 
-    if (associated(rlist%p_listInt_Sngl)) then
-      call list_release(rlist%p_listInt_Sngl)
-      deallocate(rlist%p_listInt_Sngl)
-    end if
-
-
-    if (associated(rlist%p_listDble)) then
-      call list_release(rlist%p_listDble)
-      deallocate(rlist%p_listDble)
-    end if
-
-    if (associated(rlist%p_listDble_Int)) then
-      call list_release(rlist%p_listDble_Int)
-      deallocate(rlist%p_listDble_Int)
-    end if
-
-    if (associated(rlist%p_listDble_Dble)) then
-      call list_release(rlist%p_listDble_Dble)
-      deallocate(rlist%p_listDble_Dble)
-    end if
-
-    if (associated(rlist%p_listDble_Sngl)) then
-      call list_release(rlist%p_listDble_Sngl)
-      deallocate(rlist%p_listDble_Sngl)
+    if (associated(rlist%p_listInt_SP)) then
+      call list_release(rlist%p_listInt_SP)
+      deallocate(rlist%p_listInt_SP)
     end if
 
 
-    if (associated(rlist%p_listSngl)) then
-      call list_release(rlist%p_listSngl)
-      deallocate(rlist%p_listSngl)
+    if (associated(rlist%p_listDP)) then
+      call list_release(rlist%p_listDP)
+      deallocate(rlist%p_listDP)
     end if
 
-    if (associated(rlist%p_listSngl_Int)) then
-      call list_release(rlist%p_listSngl_Int)
-      deallocate(rlist%p_listSngl_Int)
+    if (associated(rlist%p_listDP_Int)) then
+      call list_release(rlist%p_listDP_Int)
+      deallocate(rlist%p_listDP_Int)
     end if
 
-    if (associated(rlist%p_listSngl_Dble)) then
-      call list_release(rlist%p_listSngl_Dble)
-      deallocate(rlist%p_listSngl_Dble)
+    if (associated(rlist%p_listDP_DP)) then
+      call list_release(rlist%p_listDP_DP)
+      deallocate(rlist%p_listDP_DP)
     end if
 
-    if (associated(rlist%p_listSngl_Sngl)) then
-      call list_release(rlist%p_listSngl_Sngl)
-      deallocate(rlist%p_listSngl_Sngl)
+    if (associated(rlist%p_listDP_SP)) then
+      call list_release(rlist%p_listDP_SP)
+      deallocate(rlist%p_listDP_SP)
+    end if
+
+
+    if (associated(rlist%p_listSP)) then
+      call list_release(rlist%p_listSP)
+      deallocate(rlist%p_listSP)
+    end if
+
+    if (associated(rlist%p_listSP_Int)) then
+      call list_release(rlist%p_listSP_Int)
+      deallocate(rlist%p_listSP_Int)
+    end if
+
+    if (associated(rlist%p_listSP_DP)) then
+      call list_release(rlist%p_listSP_DP)
+      deallocate(rlist%p_listSP_DP)
+    end if
+
+    if (associated(rlist%p_listSP_SP)) then
+      call list_release(rlist%p_listSP_SP)
+      deallocate(rlist%p_listSP_SP)
     end if
 
   end subroutine list_done
@@ -270,7 +270,7 @@ contains
 
 !<subroutine>
 
-  subroutine list_getbase_int(rlist, p_rlist)
+  subroutine list_getbase_Int(rlist, p_rlist)
 
 !<description>
     ! Returns a pointer to the integer-valued list implementation
@@ -294,13 +294,13 @@ contains
       nullify(p_rlist)
     end if
 
-  end subroutine list_getbase_int
+  end subroutine list_getbase_Int
 
   !************************************************************************
 
 !<subroutine>
 
-  subroutine list_getbase_int_int(rlist, p_rlist)
+  subroutine list_getbase_Int_Int(rlist, p_rlist)
 
 !<description>
     ! Returns a pointer to the integer-valued list implementation
@@ -324,13 +324,13 @@ contains
       nullify(p_rlist)
     end if
 
-  end subroutine list_getbase_int_int
+  end subroutine list_getbase_Int_Int
 
   !************************************************************************
 
 !<subroutine>
 
-  subroutine list_getbase_int_dble(rlist, p_rlist)
+  subroutine list_getbase_Int_DP(rlist, p_rlist)
 
 !<description>
     ! Returns a pointer to the integer-valued list implementation
@@ -344,23 +344,23 @@ contains
 
 !<output>
     ! Pointer to the list implementation
-    type(t_listInt_Dble), pointer :: p_rlist
+    type(t_listInt_DP), pointer :: p_rlist
 !</output>
 !</subroutine>
 
-    if (associated(rlist%p_listInt_Dble)) then
-      p_rlist => rlist%p_listInt_Dble
+    if (associated(rlist%p_listInt_DP)) then
+      p_rlist => rlist%p_listInt_DP
     else
       nullify(p_rlist)
     end if
 
-  end subroutine list_getbase_int_dble
+  end subroutine list_getbase_Int_DP
 
   !************************************************************************
 
 !<subroutine>
 
-  subroutine list_getbase_int_sngl(rlist, p_rlist)
+  subroutine list_getbase_Int_SP(rlist, p_rlist)
 
 !<description>
     ! Returns a pointer to the integer-valued list implementation
@@ -374,23 +374,23 @@ contains
 
 !<output>
     ! Pointer to the list implementation
-    type(t_listInt_Sngl), pointer :: p_rlist
+    type(t_listInt_SP), pointer :: p_rlist
 !</output>
 !</subroutine>
 
-    if (associated(rlist%p_listInt_Sngl)) then
-      p_rlist => rlist%p_listInt_Sngl
+    if (associated(rlist%p_listInt_SP)) then
+      p_rlist => rlist%p_listInt_SP
     else
       nullify(p_rlist)
     end if
 
-  end subroutine list_getbase_int_sngl
+  end subroutine list_getbase_Int_SP
 
   !************************************************************************
 
 !<subroutine>
 
-  subroutine list_getbase_dble(rlist, p_rlist)
+  subroutine list_getbase_DP(rlist, p_rlist)
 
 !<description>
     ! Returns a pointer to the double-valued list implementation
@@ -404,23 +404,23 @@ contains
 
 !<output>
     ! Pointer to the list implementation
-    type(t_listDble), pointer :: p_rlist
+    type(t_listDP), pointer :: p_rlist
 !</output>
 !</subroutine>
 
-    if (associated(rlist%p_listDble)) then
-      p_rlist => rlist%p_listDble
+    if (associated(rlist%p_listDP)) then
+      p_rlist => rlist%p_listDP
     else
       nullify(p_rlist)
     end if
 
-  end subroutine list_getbase_dble
+  end subroutine list_getbase_DP
 
   !************************************************************************
 
 !<subroutine>
 
-  subroutine list_getbase_dble_int(rlist, p_rlist)
+  subroutine list_getbase_DP_Int(rlist, p_rlist)
 
 !<description>
     ! Returns a pointer to the double-valued list implementation
@@ -434,23 +434,23 @@ contains
 
 !<output>
     ! Pointer to the list implementation
-    type(t_listDble_Int), pointer :: p_rlist
+    type(t_listDP_Int), pointer :: p_rlist
 !</output>
 !</subroutine>
 
-    if (associated(rlist%p_listDble_Int)) then
-      p_rlist => rlist%p_listDble_Int
+    if (associated(rlist%p_listDP_Int)) then
+      p_rlist => rlist%p_listDP_Int
     else
       nullify(p_rlist)
     end if
 
-  end subroutine list_getbase_dble_int
+  end subroutine list_getbase_DP_Int
 
 !************************************************************************
 
 !<subroutine>
 
-  subroutine list_getbase_dble_dble(rlist, p_rlist)
+  subroutine list_getbase_DP_DP(rlist, p_rlist)
 
 !<description>
     ! Returns a pointer to the double-valued list implementation
@@ -464,23 +464,23 @@ contains
 
 !<output>
     ! Pointer to the list implementation
-    type(t_listDble_Dble), pointer :: p_rlist
+    type(t_listDP_DP), pointer :: p_rlist
 !</output>
 !</subroutine>
 
-    if (associated(rlist%p_listDble_Dble)) then
-      p_rlist => rlist%p_listDble_Dble
+    if (associated(rlist%p_listDP_DP)) then
+      p_rlist => rlist%p_listDP_DP
     else
       nullify(p_rlist)
     end if
 
-  end subroutine list_getbase_dble_dble
+  end subroutine list_getbase_DP_DP
 
   !************************************************************************
 
 !<subroutine>
 
-  subroutine list_getbase_dble_sngl(rlist, p_rlist)
+  subroutine list_getbase_DP_SP(rlist, p_rlist)
 
 !<description>
     ! Returns a pointer to the double-valued list implementation
@@ -494,23 +494,23 @@ contains
 
 !<output>
     ! Pointer to the list implementation
-    type(t_listDble_Sngl), pointer :: p_rlist
+    type(t_listDP_SP), pointer :: p_rlist
 !</output>
 !</subroutine>
 
-    if (associated(rlist%p_listDble_Sngl)) then
-      p_rlist => rlist%p_listDble_Sngl
+    if (associated(rlist%p_listDP_SP)) then
+      p_rlist => rlist%p_listDP_SP
     else
       nullify(p_rlist)
     end if
 
-  end subroutine list_getbase_dble_sngl
+  end subroutine list_getbase_DP_SP
 
   !************************************************************************
 
 !<subroutine>
 
-  subroutine list_getbase_sngl(rlist, p_rlist)
+  subroutine list_getbase_SP(rlist, p_rlist)
 
 !<description>
     ! Returns a pointer to the single-valued list implementation
@@ -524,23 +524,23 @@ contains
 
 !<output>
     ! Pointer to the list implementation
-    type(t_listSngl), pointer :: p_rlist
+    type(t_listSP), pointer :: p_rlist
 !</output>
 !</subroutine>
 
-    if (associated(rlist%p_listSngl)) then
-      p_rlist => rlist%p_listSngl
+    if (associated(rlist%p_listSP)) then
+      p_rlist => rlist%p_listSP
     else
       nullify(p_rlist)
     end if
 
-  end subroutine list_getbase_sngl
+  end subroutine list_getbase_SP
 
   !************************************************************************
 
 !<subroutine>
 
-  subroutine list_getbase_sngl_int(rlist, p_rlist)
+  subroutine list_getbase_SP_Int(rlist, p_rlist)
 
 !<description>
     ! Returns a pointer to the single-valued list implementation
@@ -554,23 +554,23 @@ contains
 
 !<output>
     ! Pointer to the list implementation
-    type(t_listSngl_Int), pointer :: p_rlist
+    type(t_listSP_Int), pointer :: p_rlist
 !</output>
 !</subroutine>
 
-    if (associated(rlist%p_listSngl_Int)) then
-      p_rlist => rlist%p_listSngl_Int
+    if (associated(rlist%p_listSP_Int)) then
+      p_rlist => rlist%p_listSP_Int
     else
       nullify(p_rlist)
     end if
 
-  end subroutine list_getbase_sngl_int
+  end subroutine list_getbase_SP_Int
 
   !************************************************************************
 
 !<subroutine>
 
-  subroutine list_getbase_sngl_dble(rlist, p_rlist)
+  subroutine list_getbase_SP_DP(rlist, p_rlist)
 
 !<description>
     ! Returns a pointer to the single-valued list implementation
@@ -584,23 +584,23 @@ contains
 
 !<output>
     ! Pointer to the list implementation
-    type(t_listSngl_Dble), pointer :: p_rlist
+    type(t_listSP_DP), pointer :: p_rlist
 !</output>
 !</subroutine>
 
-    if (associated(rlist%p_listSngl_Dble)) then
-      p_rlist => rlist%p_listSngl_Dble
+    if (associated(rlist%p_listSP_DP)) then
+      p_rlist => rlist%p_listSP_DP
     else
       nullify(p_rlist)
     end if
 
-  end subroutine list_getbase_sngl_dble
+  end subroutine list_getbase_SP_DP
 
   !************************************************************************
 
 !<subroutine>
 
-  subroutine list_getbase_sngl_sngl(rlist, p_rlist)
+  subroutine list_getbase_SP_SP(rlist, p_rlist)
 
 !<description>
     ! Returns a pointer to the single-valued list implementation
@@ -614,16 +614,16 @@ contains
 
 !<output>
     ! Pointer to the list implementation
-    type(t_listSngl_Sngl), pointer :: p_rlist
+    type(t_listSP_SP), pointer :: p_rlist
 !</output>
 !</subroutine>
 
-    if (associated(rlist%p_listSngl_Sngl)) then
-      p_rlist => rlist%p_listSngl_Sngl
+    if (associated(rlist%p_listSP_SP)) then
+      p_rlist => rlist%p_listSP_SP
     else
       nullify(p_rlist)
     end if
 
-  end subroutine list_getbase_sngl_sngl
+  end subroutine list_getbase_SP_SP
 
 end module list

@@ -624,9 +624,9 @@ contains
     !!! DEBUG:
     !WHERE (abs(p_DvelX1) .LT. 1E-12_DP) p_DvelX1 = 0.0_DP
     !WHERE (abs(p_DvelY1) .LT. 1E-12_DP) p_DvelY1 = 0.0_DP
-    !call vecio_writeArray_Dble (p_DvelX1, 'vecx1', &
+    !call vecio_writeArray_DP (p_DvelX1, 'vecx1', &
     !                               0, 'vectorx1.txt', '(D10.3)')
-    !call vecio_writeArray_Dble (p_DvelY1, 'vecx2', &
+    !call vecio_writeArray_DP (p_DvelY1, 'vecx2', &
     !                               0, 'vectorx2.txt', '(D10.3)')
 
     if (present(rdefect)) then
@@ -1549,9 +1549,9 @@ contains
     !!! DEBUG:
     !WHERE (abs(p_DvelX1) .LT. 1E-12_DP) p_DvelX1 = 0.0_DP
     !WHERE (abs(p_DvelY1) .LT. 1E-12_DP) p_DvelY1 = 0.0_DP
-    !call vecio_writeArray_Dble (p_DvelX1, 'vecx1', &
+    !call vecio_writeArray_DP (p_DvelX1, 'vecx1', &
     !                               0, 'vectorx1.txt', '(D10.3)')
-    !call vecio_writeArray_Dble (p_DvelY1, 'vecx2', &
+    !call vecio_writeArray_DP (p_DvelY1, 'vecx2', &
     !                               0, 'vectorx2.txt', '(D10.3)')
 
     if (present(rdefect)) then
@@ -2023,7 +2023,7 @@ contains
     ! If dupsam=0, we neglect the stabilisation term (central difference like
     ! discretisation), so we set DlocalDelta=0 as well.
     if ((ddelta .eq. 0.0_DP) .or. (dupsam .eq. 0.0_DP)) then
-      call lalg_clearVectorDble (DlocalDelta)
+      call lalg_clearVector (DlocalDelta)
     end if
 
     ! Calculate the maximum norm of the actual velocity field
@@ -3036,7 +3036,7 @@ contains
     ! If dupsam=0, we neglect the stabilisation term (central difference like
     ! discretisation), so we set DlocalDelta=0 as well.
     if ((ddelta .eq. 0.0_DP) .or. (dupsam .eq. 0.0_DP)) then
-      call lalg_clearVectorDble (DlocalDelta)
+      call lalg_clearVector (DlocalDelta)
     end if
 
     ! Calculate the maximum norm of the actual velocity field
@@ -3916,9 +3916,9 @@ contains
     !!! DEBUG:
     !WHERE (abs(p_DvelX1) .LT. 1E-12_DP) p_DvelX1 = 0.0_DP
     !WHERE (abs(p_DvelY1) .LT. 1E-12_DP) p_DvelY1 = 0.0_DP
-    !call vecio_writeArray_Dble (p_DvelX1, 'vecx1', &
+    !call vecio_writeArray_DP (p_DvelX1, 'vecx1', &
     !                               0, 'vectorx1.txt', '(D10.3)')
-    !call vecio_writeArray_Dble (p_DvelY1, 'vecx2', &
+    !call vecio_writeArray_DP (p_DvelY1, 'vecx2', &
     !                               0, 'vectorx2.txt', '(D10.3)')
 
     if (present(rdefect)) then
@@ -4482,7 +4482,7 @@ contains
     ! If dupsam=0, we neglect the stabilisation term (central difference like
     ! discretisation), so we set DlocalDelta=0 as well.
     if ((ddelta .eq. 0.0_DP) .or. (dupsam .eq. 0.0_DP)) then
-      call lalg_clearVectorDble (DlocalDelta)
+      call lalg_clearVector (DlocalDelta)
     end if
 
     ! Calculate the maximum norm of the actual velocity field
@@ -6984,7 +6984,7 @@ contains
     ! If dupsam=0, we neglect the stabilisation term (central difference like
     ! discretisation), so we set DlocalDelta=0 as well.
     if ((ddelta .eq. 0.0_DP) .or. (dupsam .eq. 0.0_DP)) then
-      call lalg_clearVectorDble (DlocalDelta)
+      call lalg_clearVector (DlocalDelta)
     end if
 
     ! Calculate the maximum norm of the actual velocity field
@@ -8465,7 +8465,7 @@ contains
     ! If dupsam=0, we neglect the stabilisation term (central difference like
     ! discretisation), so we set DlocalDelta=0 as well.
     if ((ddelta .eq. 0.0_DP) .or. (dupsam .eq. 0.0_DP)) then
-      call lalg_clearVectorDble (DlocalDelta)
+      call lalg_clearVector (DlocalDelta)
     end if
 
     ! Calculate the maximum norm of the actual velocity field
@@ -11284,7 +11284,7 @@ contains
 
       ! Allocate memory for array with local DELTA`s
       allocate(DlocalDelta(nelementsPerBlock))
-      call lalg_clearVectorDble (DlocalDelta,nelementsPerBlock)
+      call lalg_clearVector (DlocalDelta,nelementsPerBlock)
 
       ! Allocate memory for the coefficients.
       ! If the coefficient is constant, fill it with the value.

@@ -23,13 +23,13 @@
 !#     -> Sets the conservative variables from an UCD import
 !#
 !# 5.) hydro_convertVariableNondim = hydro_convertVariableNondim1 /
-!#                                   hydro_convertVariableNondimDble /
-!#                                   hydro_convertVariableNondimSngl /
+!#                                   hydro_convertVariableNondimDP /
+!#                                   hydro_convertVariableNondimSP /
 !#     -> Non-dimensionalizes a physical variable using reference values
 !#
 !# 6.) hydro_convertVariableDim = hydro_convertVariableDim1 /
-!#                                hydro_convertVariableDimDble /
-!#                                hydro_convertVariableDimSngl
+!#                                hydro_convertVariableDimDP /
+!#                                hydro_convertVariableDimSP
 !#     -> Convert a non-dimensionalized variable into its physical quantity
 !#
 !# </purpose>
@@ -71,14 +71,14 @@ module hydro_basic
 
   interface hydro_convertVariableNonDim
     module procedure hydro_convertVariableNonDim1
-    module procedure hydro_convertVariableNonDimDble
-    module procedure hydro_convertVariableNonDimSngl
+    module procedure hydro_convertVariableNonDimDP
+    module procedure hydro_convertVariableNonDimSP
   end interface hydro_convertVariableNonDim
 
   interface hydro_convertVariableDim
     module procedure hydro_convertVariableDim1
-    module procedure hydro_convertVariableDimDble
-    module procedure hydro_convertVariableDimSngl
+    module procedure hydro_convertVariableDimDP
+    module procedure hydro_convertVariableDimSP
   end interface hydro_convertVariableDim
 
 !<constants>
@@ -723,12 +723,12 @@ contains
     select case(rvectorScalar%cdataType)
     case (ST_DOUBLE)
       call lsyssc_getbase_double(rvectorScalar, p_Ddata)
-      call hydro_convertVariableNonDimDble(p_Ddata, cvariable,&
+      call hydro_convertVariableNonDimDP(p_Ddata, cvariable,&
           density_ref, velocity_ref, length_ref)
 
     case (ST_SINGLE)
       call lsyssc_getbase_single(rvectorScalar, p_Fdata)
-      call hydro_convertVariableNonDimSngl(p_Fdata, cvariable,&
+      call hydro_convertVariableNonDimSP(p_Fdata, cvariable,&
           real(density_ref,SP), real(velocity_ref,SP), real(length_ref,SP))
 
     case default
@@ -743,7 +743,7 @@ contains
 
 !<subroutine>
 
-  subroutine hydro_convertVariableNonDimDble(Ddata, cvariable,&
+  subroutine hydro_convertVariableNonDimDP(Ddata, cvariable,&
                                              density_ref, velocity_ref, length_ref)
 
 !<description>
@@ -842,18 +842,18 @@ contains
     else
       
       call output_line('Invalid variable name!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'hydro_convertVariableNonDimDble')
+          OU_CLASS_ERROR,OU_MODE_STD,'hydro_convertVariableNonDimDP')
       call sys_halt()
       
     end if
 
-  end subroutine hydro_convertVariableNonDimDble
+  end subroutine hydro_convertVariableNonDimDP
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine hydro_convertVariableNonDimSngl(Fdata, cvariable,&
+  subroutine hydro_convertVariableNonDimSP(Fdata, cvariable,&
                                              density_ref, velocity_ref, length_ref)
 
 !<description>
@@ -952,12 +952,12 @@ contains
     else
       
       call output_line('Invalid variable name!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'hydro_convertVariableNonDimSngl')
+          OU_CLASS_ERROR,OU_MODE_STD,'hydro_convertVariableNonDimSP')
       call sys_halt()
       
     end if
 
-  end subroutine hydro_convertVariableNonDimSngl
+  end subroutine hydro_convertVariableNonDimSP
 
   !*****************************************************************************
 
@@ -1001,12 +1001,12 @@ contains
     select case(rvectorScalar%cdataType)
     case (ST_DOUBLE)
       call lsyssc_getbase_double(rvectorScalar, p_Ddata)
-      call hydro_convertVariableDimDble(p_Ddata, cvariable,&
+      call hydro_convertVariableDimDP(p_Ddata, cvariable,&
           density_ref, velocity_ref, length_ref)
 
     case (ST_SINGLE)
       call lsyssc_getbase_single(rvectorScalar, p_Fdata)
-      call hydro_convertVariableDimSngl(p_Fdata, cvariable,&
+      call hydro_convertVariableDimSP(p_Fdata, cvariable,&
           real(density_ref,SP), real(velocity_ref,SP), real(length_ref,SP))
 
     case default
@@ -1021,7 +1021,7 @@ contains
 
 !<subroutine>
 
-  subroutine hydro_convertVariableDimDble(Ddata, cvariable,&
+  subroutine hydro_convertVariableDimDP(Ddata, cvariable,&
                                           density_ref, velocity_ref, length_ref)
 
 !<description>
@@ -1123,18 +1123,18 @@ contains
       print *, trim(cvariable)
 
       call output_line('Invalid variable name!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'hydro_convertVariableDimDble')
+          OU_CLASS_ERROR,OU_MODE_STD,'hydro_convertVariableDimDP')
       call sys_halt()
       
     end if
       
-  end subroutine hydro_convertVariableDimDble
+  end subroutine hydro_convertVariableDimDP
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine hydro_convertVariableDimSngl(Fdata, cvariable,&
+  subroutine hydro_convertVariableDimSP(Fdata, cvariable,&
                                           density_ref, velocity_ref, length_ref)
 
 !<description>
@@ -1234,11 +1234,11 @@ contains
     else
       
       call output_line('Invalid variable name!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'hydro_convertVariableDimSngl')
+          OU_CLASS_ERROR,OU_MODE_STD,'hydro_convertVariableDimSP')
       call sys_halt()
       
     end if
       
-  end subroutine hydro_convertVariableDimSngl
+  end subroutine hydro_convertVariableDimSP
 
 end module hydro_basic

@@ -586,7 +586,7 @@ contains
     ! behind the handle is longer than the vector!
     call lsysbl_getbase_double (rvector,p_Dsource)
     !CALL storage_getbase_double (rx%p_IdataHandleList(isubvector),p_Ddest)
-    !CALL lalg_copyVectorDble (p_Dsource,p_Ddest)
+    !CALL lalg_copyVector (p_Dsource,p_Ddest)
     call exstor_setdata_double (rx%p_IdataHandleList(isubvector),p_Dsource)
 
     ! After a setTimestepData, the scale factor is 1.0.
@@ -657,12 +657,12 @@ contains
     !CALL storage_getbase_double (rx%p_IdataHandleList(isubvector),&
     !    p_Dsource)
     call lsysbl_getbase_double (rvector,p_Ddest)
-    !CALL lalg_copyVectorDble (p_Dsource,p_Ddest)
+    !CALL lalg_copyVector (p_Dsource,p_Ddest)
     call exstor_getdata_double (rx%p_IdataHandleList(isubvector),p_Ddest)
     
     ! Scale the vector?
     if (rx%p_Dscale(isubvector) .ne. 1.0_DP) then
-      call lalg_scaleVectorDble (p_Ddest,rx%p_Dscale(isubvector))
+      call lalg_scaleVector (p_Ddest,rx%p_Dscale(isubvector))
     end if
 
   end subroutine
@@ -1212,7 +1212,7 @@ contains
     ! Simply set the "empty" flag to TRUE.
     ! When restoreing data with getTimestepData, that routine will return a zero vector.
     ! rx%p_Dscale(:) = 0.0_DP
-    call lalg_clearVectorDble (rx%p_Dscale(:))
+    call lalg_clearVector (rx%p_Dscale(:))
 
   end subroutine
 
@@ -1257,7 +1257,7 @@ contains
     ! Scale the scaling factors of all subvectors with dscale.
     ! rx%p_Dscale(:) = rx%p_Dscale(:) * dscale
     if (.not. present(isubstep)) then
-      call lalg_scaleVectorDble(rx%p_Dscale(:),dscale)
+      call lalg_scaleVector(rx%p_Dscale(:),dscale)
     else
       rx%p_Dscale(isubstep) = rx%p_Dscale(isubstep) * dscale
     end if
@@ -1311,7 +1311,7 @@ contains
       call sptivec_getTimestepData (rxsuper, i, rvectorTmp)
       
       call lsyssc_getbase_double (rx%RvectorBlock(i),p_Ddata2)
-      call lalg_copyVectorDble (p_Ddata1,p_Ddata2)
+      call lalg_copyVector (p_Ddata1,p_Ddata2)
     end do
     
     ! Release the temp vector
@@ -1357,7 +1357,7 @@ contains
     ! Load the subvectors and write them to the global vector.
     do i=rxsuper%istartidx,rxsuper%iendidx
       call lsyssc_getbase_double (rx%RvectorBlock(i),p_Ddata1)
-      call lalg_copyVectorDble (p_Ddata1,p_Ddata2)
+      call lalg_copyVector (p_Ddata1,p_Ddata2)
 
       call sptivec_setTimestepData (rxsuper, i, rvectorTmp)
     end do
@@ -1696,7 +1696,7 @@ contains
     
     ! The vector is scaled by 1.0.
     ! rx%p_Dscale(:) = 1.0_DP
-    call lalg_setVectorDble(rx%p_Dscale(:),1.0_DP)
+    call lalg_setVector(rx%p_Dscale(:),1.0_DP)
     
     ! Remove the temp vector
     call lsysbl_releaseVector (rvector)

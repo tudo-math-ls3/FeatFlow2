@@ -547,8 +547,8 @@ contains
     ! Store the old sols for the errorctrl
     call lsyssc_getbase_double( rcell , p_vectordata )
     call lsyssc_getbase_double( rchemoattract , p_chemodata)
-    call lalg_copyVectorDble (p_vectordata,p_uold)
-    call lalg_copyVectorDble (p_chemodata,p_cold)
+    call lalg_copyVector (p_vectordata,p_uold)
+    call lalg_copyVector (p_chemodata,p_cold)
                    
       ! STEP 1.1: Form the right hand side for c:
       ! It consists of M c_n +dt * ( u_{n} , phi )
@@ -617,7 +617,7 @@ contains
                
     !     We  compute the norm of the difference between two successive timesteps. This will be used as a basic error control, coming up below...
     !     The same will be done for the celldensity function
-    cerror =  lalg_errorNormDble (p_cold,p_chemodata, CTRLNORM)
+    cerror =  lalg_errorNorm (p_cold,p_chemodata, CTRLNORM)
 !     print*,"cerror/dtstep = ", cerror/dtstep
                 
       ! Release the block matrix/vectors
@@ -749,7 +749,7 @@ contains
            
     ! We  compute the norm of the difference between two successive timesteps
     ! (as mentioned above). This will be used as a basic error control, coming up below...
-    uerror = lalg_errorNormDble (p_uold,p_vectordata, CTRLNORM )
+    uerror = lalg_errorNorm (p_uold,p_vectordata, CTRLNORM )
 !   print*,"uerror/dtstep",uerror/dtstep
 
 

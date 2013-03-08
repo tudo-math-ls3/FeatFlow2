@@ -635,8 +635,8 @@ module chemotaxis_blowup
             ! Store the old sols for the errorctrl
             call lsyssc_getbase_double(rcell, p_vectordata)
             call lsyssc_getbase_double(rchemoattract, p_chemodata)
-            call lalg_copyVectorDble(p_vectordata, p_uold)
-            call lalg_copyVectorDble(p_chemodata, p_cold)
+            call lalg_copyVector(p_vectordata, p_uold)
+            call lalg_copyVector(p_chemodata, p_cold)
 
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             !!!!!!   STEP 1: we solve for c (chemoattractant)   !!!!!
@@ -780,7 +780,7 @@ module chemotaxis_blowup
 
 !                 ! We  compute the norm of the difference between two successive timesteps.
 !                 ! (a basic error control below...)
-!                 cerror =  lalg_errorNormDble (p_cold,p_chemodata, CTRLNORM)
+!                 cerror =  lalg_errorNorm (p_cold,p_chemodata, CTRLNORM)
 
                 ! Release the block matrix/vectors
                 call lsysbl_releaseVector (rtempBlock)
@@ -865,9 +865,9 @@ module chemotaxis_blowup
 
             ! We  compute the norm of the difference between two successive timesteps.
             ! (a basic error control below...)
-            cerror = lalg_errorNormDble (p_cold,p_chemodata, LINALG_NORML2 )
+            cerror = lalg_errorNorm (p_cold,p_chemodata, LINALG_NORML2 )
             cerror=cerror/dtstep
-            uerror = lalg_errorNormDble (p_uold,p_vectordata, LINALG_NORML2 )
+            uerror = lalg_errorNorm (p_uold,p_vectordata, LINALG_NORML2 )
             uerror=uerror/dtstep
             steady_state_array(1,itimestep) = uerror
             steady_state_array(2,itimestep) = cerror

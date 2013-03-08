@@ -3391,12 +3391,12 @@ contains
     case (ST_DOUBLE)
       call lsysbl_getbase_double (rx,p_Dsource)
       call lsysbl_getbase_double (ry,p_Ddest)
-      call lalg_copyVectorDble (p_Dsource(1:NEQ),p_Ddest(1:NEQ))
+      call lalg_copyVector (p_Dsource(1:NEQ),p_Ddest(1:NEQ))
 
     case (ST_SINGLE)
       call lsysbl_getbase_double (rx,p_Dsource)
       call lsysbl_getbase_single (ry,p_Fdest)
-      call lalg_copyVectorDblSngl (p_Dsource(1:NEQ),p_Fdest(1:NEQ))
+      call lalg_copyVector (p_Dsource(1:NEQ),p_Fdest(1:NEQ))
 
     case DEFAULT
       call output_line ('Unsupported data type!', &
@@ -3409,12 +3409,12 @@ contains
     case (ST_DOUBLE)
       call lsysbl_getbase_single (rx,p_Fsource)
       call lsysbl_getbase_double (ry,p_Ddest)
-      call lalg_copyVectorSnglDbl (p_Fsource(1:NEQ),p_Ddest(1:NEQ))
+      call lalg_copyVector (p_Fsource(1:NEQ),p_Ddest(1:NEQ))
 
     case (ST_SINGLE)
       call lsysbl_getbase_single (rx,p_Fsource)
       call lsysbl_getbase_single (ry,p_Fdest)
-      call lalg_copyVectorSngl (p_Fsource(1:NEQ),p_Fdest(1:NEQ))
+      call lalg_copyVector (p_Fsource(1:NEQ),p_Fdest(1:NEQ))
 
     case DEFAULT
       call output_line ('Unsupported data type!', &
@@ -3497,12 +3497,12 @@ contains
   case (ST_DOUBLE)
     ! Get the pointer and scale the whole data array.
     call lsysbl_getbase_double(rx,p_Ddata)
-    call lalg_scaleVectorDble (p_Ddata,c)
+    call lalg_scaleVector (p_Ddata,c)
 
   case (ST_SINGLE)
     ! Get the pointer and scale the whole data array.
     call lsysbl_getbase_single(rx,p_Fdata)
-    call lalg_scaleVectorSngl (p_Fdata,real(c,SP))
+    call lalg_scaleVector (p_Fdata,real(c,SP))
 
   case DEFAULT
     call output_line('Unsupported data type!',&
@@ -3544,18 +3544,18 @@ contains
     ! Get the pointer and scale the whole data array.
     call lsysbl_getbase_double(rx,p_Dsource)
     if (.not. present(dvalue)) then
-      call lalg_clearVectorDble (p_Dsource)
+      call lalg_clearVector (p_Dsource)
     else
-      call lalg_setVectorDble (p_Dsource,dvalue)
+      call lalg_setVector (p_Dsource,dvalue)
     end if
 
   case (ST_SINGLE)
     ! Get the pointer and scale the whole data array.
     call lsysbl_getbase_single(rx,p_Ssource)
     if (.not. present(dvalue)) then
-      call lalg_clearVectorSngl (p_Ssource)
+      call lalg_clearVector (p_Ssource)
     else
-      call lalg_setVectorSngl (p_Ssource,real(dvalue,SP))
+      call lalg_setVector (p_Ssource,real(dvalue,SP))
     end if
 
   case DEFAULT
@@ -3615,14 +3615,14 @@ contains
     call lsysbl_getbase_double(rx,p_Dsource)
     call lsysbl_getbase_double(ry,p_Ddest)
     
-    call lalg_vectorLinearCombDble (p_Dsource,p_Ddest,cx,cy)
+    call lalg_vectorLinearComb (p_Dsource,p_Ddest,cx,cy)
 
   case (ST_SINGLE)
     ! Get the pointers and copy the whole data array.
     call lsysbl_getbase_single(rx,p_Ssource)
     call lsysbl_getbase_single(ry,p_Sdest)
 
-    call lalg_vectorLinearCombSngl (p_Ssource,p_Sdest,real(cx,SP),real(cy,SP))
+    call lalg_vectorLinearComb (p_Ssource,p_Sdest,real(cx,SP),real(cy,SP))
 
   case DEFAULT
     call output_line('Unsupported data type!',&
@@ -3685,18 +3685,18 @@ contains
     call lsysbl_getbase_double(rx,p_Dsource)
     call lsysbl_getbase_double(rdest,p_Ddest)
     call lsysbl_getbase_double(ry,p_Ddest2)
-    call lalg_copyVectorDble (p_Ddest2,p_Ddest)
+    call lalg_copyVector (p_Ddest2,p_Ddest)
 
-    call lalg_vectorLinearCombDble (p_Dsource,p_Ddest,cx,cy)
+    call lalg_vectorLinearComb (p_Dsource,p_Ddest,cx,cy)
 
   case (ST_SINGLE)
     ! Get the pointers and copy the whole data array.
     call lsysbl_getbase_single(rx,p_Ssource)
     call lsysbl_getbase_single(rdest,p_Sdest)
     call lsysbl_getbase_single(ry,p_Sdest2)
-    call lalg_copyVectorSngl (p_Sdest2,p_Sdest)
+    call lalg_copyVector (p_Sdest2,p_Sdest)
 
-    call lalg_vectorLinearCombSngl (p_Ssource,p_Sdest,real(cx,SP),real(cy,SP))
+    call lalg_vectorLinearComb (p_Ssource,p_Sdest,real(cx,SP),real(cy,SP))
 
   case DEFAULT
     call output_line('Unsupported data type!',&
@@ -4137,12 +4137,12 @@ contains
         case (ST_DOUBLE)
           call lsyssc_getbase_double (rscalarVec,p_Ddest)
           call lsysbl_getbase_double (rvector,p_Dsource)
-          call lalg_copyVectorDble (p_Dsource(:),p_Ddest(:))
+          call lalg_copyVector (p_Dsource(:),p_Ddest(:))
 
         case (ST_SINGLE)
           call lsyssc_getbase_single (rscalarVec,p_Fdest)
           call lsysbl_getbase_single (rvector,p_Fsource)
-          call lalg_copyVectorSngl (p_Fsource(:),p_Fdest(:))
+          call lalg_copyVector (p_Fsource(:),p_Fdest(:))
 
         case DEFAULT
 
@@ -6527,7 +6527,7 @@ contains
           call lsyssc_getbase_double(rx%RvectorBlock(i), p_Ddata)
           call lsyssc_getbase_double(rxTmp%RvectorBlock(i), p_DdataTmp)
           n = min(size(p_Ddata), size(p_DdataTmp))
-          call lalg_copyVectorDble(p_DdataTmp(1:n), p_Ddata(1:n))
+          call lalg_copyVector(p_DdataTmp(1:n), p_Ddata(1:n))
         end do
 
       case (ST_SINGLE)
@@ -6535,7 +6535,7 @@ contains
           call lsyssc_getbase_single(rx%RvectorBlock(i), p_Fdata)
           call lsyssc_getbase_single(rxTmp%RvectorBlock(i), p_FdataTmp)
           n = min(size(p_Fdata), size(p_FdataTmp))
-          call lalg_copyVectorSngl(p_FdataTmp(1:n), p_Fdata(1:n))
+          call lalg_copyVector(p_FdataTmp(1:n), p_Fdata(1:n))
         end do
 
       case (ST_INT)
@@ -6543,7 +6543,7 @@ contains
           call lsyssc_getbase_int(rx%RvectorBlock(i), p_Idata)
           call lsyssc_getbase_int(rxTmp%RvectorBlock(i), p_IdataTmp)
           n = min(size(p_Idata), size(p_IdataTmp))
-          call lalg_copyVectorInt(p_IdataTmp(1:n), p_Idata(1:n))
+          call lalg_copyVector(p_IdataTmp(1:n), p_Idata(1:n))
         end do
 
       case DEFAULT
@@ -6986,7 +6986,7 @@ contains
           call lsyssc_getbase_double(rx%RvectorBlock(i), p_Ddata)
           call lsyssc_getbase_double(rxTmp%RvectorBlock(i), p_DdataTmp)
           n = min(size(p_Ddata), size(p_DdataTmp))
-          call lalg_copyVectorDble(p_DdataTmp(1:n), p_Ddata(1:n))
+          call lalg_copyVector(p_DdataTmp(1:n), p_Ddata(1:n))
         end do
 
       case (ST_SINGLE)
@@ -6994,7 +6994,7 @@ contains
           call lsyssc_getbase_single(rx%RvectorBlock(i), p_Fdata)
           call lsyssc_getbase_single(rxTmp%RvectorBlock(i), p_FdataTmp)
           n = min(size(p_Fdata), size(p_FdataTmp))
-          call lalg_copyVectorSngl(p_FdataTmp(1:n), p_Fdata(1:n))
+          call lalg_copyVector(p_FdataTmp(1:n), p_Fdata(1:n))
         end do
 
       case (ST_INT)
@@ -7002,7 +7002,7 @@ contains
           call lsyssc_getbase_int(rx%RvectorBlock(i), p_Idata)
           call lsyssc_getbase_int(rxTmp%RvectorBlock(i), p_IdataTmp)
           n = min(size(p_Idata), size(p_IdataTmp))
-          call lalg_copyVectorInt(p_IdataTmp(1:n), p_Idata(1:n))
+          call lalg_copyVector(p_IdataTmp(1:n), p_Idata(1:n))
         end do
 
       case DEFAULT
@@ -8810,13 +8810,13 @@ contains
     case(ST_DOUBLE)
       call lsyssc_getbase_double(rvectorScalar, p_DdataSrc)
       call lsysbl_getbase_double(rvectorBlock, p_DdataDest)
-      call do_convertDble(rvectorScalar%NEQ, rvectorScalar%NVAR,&
+      call do_convertDP(rvectorScalar%NEQ, rvectorScalar%NVAR,&
           p_DdataSrc, p_DdataDest)
 
     case(ST_SINGLE)
       call lsyssc_getbase_single(rvectorScalar, p_FdataSrc)
       call lsysbl_getbase_single(rvectorBlock, p_FdataDest)
-      call do_convertSngl(rvectorScalar%NEQ, rvectorScalar%NVAR,&
+      call do_convertSP(rvectorScalar%NEQ, rvectorScalar%NVAR,&
           p_FdataSrc, p_FdataDest)
 
     case default
@@ -8832,7 +8832,7 @@ contains
     !**************************************************************
     ! Conversion in double precision
 
-    subroutine do_convertDble(NEQ, NVAR, DdataSrc, DdataDest)
+    subroutine do_convertDP(NEQ, NVAR, DdataSrc, DdataDest)
 
       integer, intent(in) :: NEQ, NVAR
       real(DP), dimension(NVAR,NEQ), intent(in) :: DdataSrc
@@ -8847,12 +8847,12 @@ contains
         end do
       end do
 
-    end subroutine do_convertDble
+    end subroutine do_convertDP
 
     !**************************************************************
     ! Conversion in single precision
 
-    subroutine do_convertSngl(NEQ, NVAR, FdataSrc, FdataDest)
+    subroutine do_convertSP(NEQ, NVAR, FdataSrc, FdataDest)
 
       integer, intent(in) :: NEQ, NVAR
       real(SP), dimension(NVAR,NEQ), intent(in) :: FdataSrc
@@ -8867,7 +8867,7 @@ contains
         end do
       end do
 
-    end subroutine do_convertSngl
+    end subroutine do_convertSP
 
   end subroutine lsysbl_convertScalarBlockVector
 
@@ -8927,13 +8927,13 @@ contains
     case(ST_DOUBLE)
       call lsyssc_getbase_double(rvectorScalar, p_DdataDest)
       call lsysbl_getbase_double(rvectorBlock, p_DdataSrc)
-      call do_convertDble(rvectorScalar%NEQ, rvectorScalar%NVAR,&
+      call do_convertDP(rvectorScalar%NEQ, rvectorScalar%NVAR,&
           p_DdataSrc, p_DdataDest)
 
     case(ST_SINGLE)
       call lsyssc_getbase_single(rvectorScalar, p_FdataDest)
       call lsysbl_getbase_single(rvectorBlock, p_FdataSrc)
-      call do_convertSngl(rvectorScalar%NEQ, rvectorScalar%NVAR,&
+      call do_convertSP(rvectorScalar%NEQ, rvectorScalar%NVAR,&
           p_FdataSrc, p_FdataDest)
 
     case default
@@ -8949,7 +8949,7 @@ contains
     !**************************************************************
     ! Conversion in double precision
 
-    subroutine do_convertDble(NEQ, NVAR, DdataSrc, DdataDest)
+    subroutine do_convertDP(NEQ, NVAR, DdataSrc, DdataDest)
 
       integer, intent(in) :: NEQ, NVAR
       real(DP), dimension(NEQ,NVAR), intent(in) :: DdataSrc
@@ -8964,12 +8964,12 @@ contains
         end do
       end do
 
-    end subroutine do_convertDble
+    end subroutine do_convertDP
 
     !**************************************************************
     ! Conversion in single precision
 
-    subroutine do_convertSngl(NEQ, NVAR, FdataSrc, FdataDest)
+    subroutine do_convertSP(NEQ, NVAR, FdataSrc, FdataDest)
 
       integer, intent(in) :: NEQ, NVAR
       real(SP), dimension(NEQ,NVAR), intent(in) :: FdataSrc
@@ -8984,7 +8984,7 @@ contains
         end do
       end do
 
-    end subroutine do_convertSngl
+    end subroutine do_convertSP
 
   end subroutine lsysbl_convertBlockScalarVector
 

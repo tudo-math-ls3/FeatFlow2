@@ -2739,7 +2739,7 @@ contains
 
     ! Now we have the coeffienct matrix - so invert it to get the
     ! coefficients of our basis polynomials.
-    call mprim_invert6x6MatrixDirectDble(A,B,bsuccess)
+    call mprim_invert6x6MatrixDirect(A,B,bsuccess)
 
     ! Basically, we now have everything we need to start with the evaluation
     ! of the basis polynomial, however, our polynomials are currently given as:
@@ -3056,7 +3056,7 @@ contains
     end do
 
     ! Now we have the coeffienct matrix - so invert it
-    call mprim_invert6x6MatrixDirectDble(A,B,bsuccess)
+    call mprim_invert6x6MatrixDirect(A,B,bsuccess)
 
     ! Transform coefficiencts into monomial base
     do k=1,6
@@ -3398,7 +3398,7 @@ contains
     end do
 
     ! Now we have the coeffienct matrix - so invert it
-    call mprim_invert6x6MatrixDirectDble(A,B,bsuccess)
+    call mprim_invert6x6MatrixDirect(A,B,bsuccess)
 
     ! Transform coefficiencts into monomial base
     do k=1,6
@@ -5074,7 +5074,7 @@ contains
 !      ! !!! DEBUG !!!
 
       ! And invert it
-      call mprim_invert3x3MatrixDirectDble(Dat,Ds,bsuccess)
+      call mprim_invert3x3MatrixDirect(Dat,Ds,bsuccess)
 
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       ! Step 3: Map 2D cubature points onto the real faces
@@ -5169,7 +5169,7 @@ contains
       ! Step 6: Invert coefficient matrix
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       ! Call the 'direct' inversion routine for 6x6 systems
-      call mprim_invert6x6MatrixDirectDble(Da, Dc,bsuccess)
+      call mprim_invert6x6MatrixDirect(Da, Dc,bsuccess)
 
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       ! Step 8: Evaluate function values
@@ -5882,7 +5882,7 @@ contains
       Dat(:,3) = 0.25_DP * (Dvert(:,5)+Dvert(:,6)+Dvert(:,7)+Dvert(:,8))-Dr(:)
 
       ! And invert it
-      call mprim_invert3x3MatrixDirectDble(Dat,Ds,bsuccess)
+      call mprim_invert3x3MatrixDirect(Dat,Ds,bsuccess)
 
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       ! Step 3: Map 2D cubature points onto the real faces
@@ -6109,7 +6109,7 @@ contains
       ! Step 7: Invert coefficient matrix
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-      call mprim_invertMatrixPivotDble(Da, NBAS,bsuccess)
+      call mprim_invertMatrixPivot(Da, NBAS,bsuccess)
 
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       ! Step 8: Evaluate function values
@@ -6393,7 +6393,7 @@ contains
       Dat(:,3) = 0.25_DP * (Dvert(:,5)+Dvert(:,6)+Dvert(:,7)+Dvert(:,8))-Dr(:)
 
       ! And invert it
-      call mprim_invert3x3MatrixDirectDble(Dat,Ds,bsuccess)
+      call mprim_invert3x3MatrixDirect(Dat,Ds,bsuccess)
 
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       ! Step 3: Map 2D cubature points onto the real faces
@@ -6527,7 +6527,7 @@ contains
       ! Step 6: Invert coefficient matrix
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       ! Call the 'direct' inversion routine for 6x6 systems
-      call mprim_invertMatrixPivotDble(Da, NBAS,bsuccess)
+      call mprim_invertMatrixPivot(Da, NBAS,bsuccess)
 
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       ! Step 8: Evaluate function values

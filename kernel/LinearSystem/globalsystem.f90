@@ -336,8 +336,8 @@ contains
                                     ST_NEWBLOCK_NOINIT)
 
       ! Set up KCOL and the matrix entries
-      call glmatasm_KcolDa99dble (rlocalMatrix,rdestMatrix%RmatrixBlock(1,1),&
-                                  Icolumns, Irows)
+      call glmatasm_KcolDa99DP (rlocalMatrix,rdestMatrix%RmatrixBlock(1,1),&
+                                Icolumns, Irows)
 
       ! Allocate a Kdiagonal in the destination matrix if we do not have a previous
       ! array in the correct size.
@@ -426,8 +426,8 @@ contains
                                     ST_NEWBLOCK_NOINIT)
 
       ! Set up KCOL and the matrix entries
-      call glmatasm_Kcol99dble (rlocalMatrix,rdestMatrix%RmatrixBlock(1,1),&
-                                Icolumns, Irows)
+      call glmatasm_Kcol99DP (rlocalMatrix,rdestMatrix%RmatrixBlock(1,1),&
+                              Icolumns, Irows)
 
       ! Allocate a Kdiagonal in the destination matrix
       call storage_new ('glsys_assembleGlobalBlock', 'Kdiagonal', rlocalMatrix%NEQ, &
@@ -479,8 +479,8 @@ contains
                                     ST_NEWBLOCK_NOINIT)
 
       ! Set up KCOL and the matrix entries
-      call glmatasm_Da99dble (rlocalMatrix,rdestMatrix%RmatrixBlock(1,1),&
-                              Icolumns, Irows)
+      call glmatasm_Da99DP (rlocalMatrix,rdestMatrix%RmatrixBlock(1,1),&
+                            Icolumns, Irows)
 
       ! Allocate a Kdiagonal in the destination matrix if necessary
       if (rdestMatrix%RmatrixBlock(1,1)%h_Kdiagonal .ne. ST_NOHANDLE) then
@@ -700,8 +700,8 @@ contains
   ! The KLD/NA structure must already be present in rdestMatrix!
   !
   ! Matrix-structure-9 source -> Matrix-structure-9 destination,
-  subroutine glmatasm_Kcol99dble (rsourceMatrix,rdestMatrix,&
-                                  Icolumns, Irows)
+  subroutine glmatasm_Kcol99DP (rsourceMatrix,rdestMatrix,&
+                                Icolumns, Irows)
 
   ! The source block matrix
   type(t_matrixBlock), intent(in), target :: rsourceMatrix
@@ -785,7 +785,7 @@ contains
     ! Release the temp array
     call storage_free (h_KldTmp)
 
-  end subroutine glmatasm_Kcol99dble
+  end subroutine glmatasm_Kcol99DP
 
   !------------------------------------------------------------------
   ! Transfers the entries of the local matrices into the
@@ -794,8 +794,8 @@ contains
   !
   ! Matrix-structure-9 source -> Matrix-structure-9 destination,
   ! double precision vection
-  subroutine glmatasm_Da99dble (rsourceMatrix,rdestMatrix,&
-                                Icolumns, Irows)
+  subroutine glmatasm_Da99DP (rsourceMatrix,rdestMatrix,&
+                              Icolumns, Irows)
 
   ! The source block matrix
   type(t_matrixBlock), intent(in), target :: rsourceMatrix
@@ -878,7 +878,7 @@ contains
     ! Release the temp array
     call storage_free (h_KldTmp)
 
-  end subroutine glmatasm_Da99dble
+  end subroutine glmatasm_Da99DP
 
   !------------------------------------------------------------------
   ! Calculates the KCOL column structure of the global matrix
@@ -888,8 +888,8 @@ contains
   !
   ! Matrix-structure-9 source -> Matrix-structure-9 destination,
   ! double precision vection
-  subroutine glmatasm_KcolDa99dble (rsourceMatrix,rdestMatrix,&
-                                    Icolumns, Irows)
+  subroutine glmatasm_KcolDa99DP (rsourceMatrix,rdestMatrix,&
+                                  Icolumns, Irows)
 
   ! The source block matrix
   type(t_matrixBlock), intent(in), target :: rsourceMatrix
@@ -982,6 +982,6 @@ contains
     ! Release the temp array
     call storage_free (h_KldTmp)
 
-  end subroutine glmatasm_KcolDa99dble
+  end subroutine glmatasm_KcolDa99DP
 
 end module globalsystem

@@ -209,8 +209,8 @@ contains
         call lsyssc_getbase_double (rdestVector,p_Ddest)
 
         ! Call the conversion routine
-        call spdp_Q1P1toQ0P0_dble (p_Dsource, p_Ddest, p_rtriangulation%NEL, &
-                                   p_IverticesAtElement)
+        call spdp_Q1P1toQ0P0_DP (p_Dsource, p_Ddest, p_rtriangulation%NEL, &
+                                 p_IverticesAtElement)
       case default
         ! Fallback to projection into the cells.
         call lsyssc_getbase_double (rdestVector,p_Ddest)
@@ -238,8 +238,8 @@ contains
         call lsyssc_getbase_double (rdestVector,p_Ddest)
 
         ! Call the conversion routine
-        call spdp_Q0P0toQ1P1_dble (p_Dsource, p_Ddest, p_rtriangulation%NVT, &
-                                   p_IelementsAtVertexIdx,p_IelementsAtVertex)
+        call spdp_Q0P0toQ1P1_DP (p_Dsource, p_Ddest, p_rtriangulation%NVT, &
+                                 p_IelementsAtVertexIdx,p_IelementsAtVertex)
 
       case (EL_Q1T,EL_Q1TB,EL_Q2T,EL_Q2TB)
         ! That is a little bit harder. We have to convert an FE space with DOF`s
@@ -261,17 +261,17 @@ contains
         call lsyssc_getbase_double (rdestVector,p_Ddest)
 
         ! Call the conversion routine
-        call spdp_E030toQ1_dble (p_Dsource, p_Ddest, &
-                                 p_rtriangulation%NVT, p_rtriangulation%NEL, &
-                                 p_IverticesAtElement,p_IedgesAtElement,&
-                                 p_IelementsAtVertexIdx)
+        call spdp_E030toQ1_DP (p_Dsource, p_Ddest, &
+                               p_rtriangulation%NVT, p_rtriangulation%NEL, &
+                               p_IverticesAtElement,p_IedgesAtElement,&
+                               p_IelementsAtVertexIdx)
 
       case (EL_Q2)
         ! Rather easy. Take the first NVT elements of the Q2-vector
         ! as values in the corners of Q1.
         call lsyssc_getbase_double (rsourceVector,p_Dsource)
         call lsyssc_getbase_double (rdestVector,p_Ddest)
-        call lalg_copyVectorDble (p_Dsource(1:size(p_Ddest)),p_Ddest)
+        call lalg_copyVector (p_Dsource(1:size(p_Ddest)),p_Ddest)
 
       case (EL_QP1)
         ! Also not completely trivial. Interpolation of the values on the element
@@ -288,10 +288,10 @@ contains
         call lsyssc_getbase_double (rdestVector,p_Ddest)
 
         ! Call the conversion routine
-        call spdp_QP1toQ1_dble (p_Dsource, p_Ddest, &
-                                 p_rtriangulation%NVT, p_rtriangulation%NEL, &
-                                 p_IverticesAtElement,&
-                                 p_IelementsAtVertexIdx)
+        call spdp_QP1toQ1_DP (p_Dsource, p_Ddest, &
+                              p_rtriangulation%NVT, p_rtriangulation%NEL, &
+                              p_IverticesAtElement,&
+                              p_IelementsAtVertexIdx)
 
       case default
         ! Fallback to projection into the vertices.
@@ -320,8 +320,8 @@ contains
         call lsyssc_getbase_double (rdestVector,p_Ddest)
 
         ! Call the conversion routine
-        call spdp_Q0P0toQ1P1_dble (p_Dsource, p_Ddest, p_rtriangulation%NVT, &
-                                   p_IelementsAtVertexIdx,p_IelementsAtVertex)
+        call spdp_Q0P0toQ1P1_DP (p_Dsource, p_Ddest, p_rtriangulation%NVT, &
+                                 p_IelementsAtVertexIdx,p_IelementsAtVertex)
 
       case (EL_P1T)
         ! That is a little bit harder. We have to convert an FE space with DOF`s
@@ -343,10 +343,10 @@ contains
         call lsyssc_getbase_double (rdestVector,p_Ddest)
 
         ! Call the conversion routine
-        call spdp_E020toP1_dble (p_Dsource, p_Ddest, &
-                                 p_rtriangulation%NVT, p_rtriangulation%NEL, &
-                                 p_IverticesAtElement,p_IedgesAtElement,&
-                                 p_IelementsAtVertexIdx)
+        call spdp_E020toP1_DP (p_Dsource, p_Ddest, &
+                               p_rtriangulation%NVT, p_rtriangulation%NEL, &
+                               p_IverticesAtElement,p_IedgesAtElement,&
+                               p_IelementsAtVertexIdx)
 
       case default
         ! Fallback to projection into the vertices.
@@ -376,8 +376,8 @@ contains
         call lsyssc_getbase_double (rdestVector,p_Ddest)
 
         ! Call the conversion routine - we can use the 2D version here...
-        call spdp_Q0P0toQ1P1_dble (p_Dsource, p_Ddest, p_rtriangulation%NVT, &
-                                   p_IelementsAtVertexIdx,p_IelementsAtVertex)
+        call spdp_Q0P0toQ1P1_DP (p_Dsource, p_Ddest, p_rtriangulation%NVT, &
+                                 p_IelementsAtVertexIdx,p_IelementsAtVertex)
       case (EL_Q1T_3D)
         ! That is a little bit harder. We have to convert an FE space with DOF`s
         ! in the midpoints to Q1. (For simplicity, the integral mean value variant
@@ -398,10 +398,10 @@ contains
         call lsyssc_getbase_double (rdestVector,p_Ddest)
 
         ! Call the conversion routine
-        call spdp_E030toQ1_3D_dble (p_Dsource, p_Ddest, p_rtriangulation%NVT,&
-                                    p_rtriangulation%NMT, p_rtriangulation%NEL, &
-                                    p_IverticesAtElement,p_IfacesAtElement,&
-                                    p_IelementsAtVertexIdx)
+        call spdp_E030toQ1_3D_DP (p_Dsource, p_Ddest, p_rtriangulation%NVT,&
+                                  p_rtriangulation%NMT, p_rtriangulation%NEL, &
+                                  p_IverticesAtElement,p_IfacesAtElement,&
+                                  p_IelementsAtVertexIdx)
 
         case default
           call output_line ('Unsupported element in source space!', &
@@ -414,7 +414,7 @@ contains
         ! as values in the corners of Q1.
         call lsyssc_getbase_double (rsourceVector,p_Dsource)
         call lsyssc_getbase_double (rdestVector,p_Ddest)
-        call lalg_copyVectorDble (p_Dsource(1:size(p_Ddest)),p_Ddest)
+        call lalg_copyVector (p_Dsource(1:size(p_Ddest)),p_Ddest)
 
       end select
 
@@ -430,8 +430,8 @@ contains
   ! ***************************************************************************
 
 !<subroutine>
-  subroutine spdp_Q0P0toQ1P1_dble (Dsource, Ddest, NVT, &
-                                   IelementsAtVertexIdx,IelementsAtVertex)
+  subroutine spdp_Q0P0toQ1P1_DP (Dsource, Ddest, NVT, &
+                                 IelementsAtVertexIdx,IelementsAtVertex)
 
 !<description>
   ! AUXILIARY ROUTINE.
@@ -485,7 +485,7 @@ contains
   ! ***************************************************************************
 
 !<subroutine>
-  subroutine spdp_Q1P1toQ0P0_dble (Dsource, Ddest, NEL, IverticesAtElement)
+  subroutine spdp_Q1P1toQ0P0_DP (Dsource, Ddest, NEL, IverticesAtElement)
 
 !<description>
   ! AUXILIARY ROUTINE.
@@ -534,9 +534,9 @@ contains
   ! ***************************************************************************
 
 !<subroutine>
-  subroutine spdp_E030toQ1_dble (Dsource, Ddest, NVT, NEL, &
-                                 IverticesAtElement,IedgesAtElement,&
-                                 IelementsAtVertexIdx)
+  subroutine spdp_E030toQ1_DP (Dsource, Ddest, NVT, NEL, &
+                               IverticesAtElement,IedgesAtElement,&
+                               IelementsAtVertexIdx)
 
 !<description>
   ! AUXILIARY ROUTINE.
@@ -580,7 +580,7 @@ contains
     integer :: nadj
 
     ! Clear the output array
-    call lalg_clearVectorDble (Ddest)
+    call lalg_clearVector (Ddest)
 
     ! Loop through the elements
     do iel=1,NEL
@@ -625,9 +625,9 @@ contains
 
 !<subroutine>
 
-  subroutine spdp_E037toQ1_dble (Dsource, Ddest, NVT, NEL, &
-                                 IverticesAtElement,IedgesAtElement,&
-                                 IelementsAtVertexIdx,ItwistIndexEdges)
+  subroutine spdp_E037toQ1_DP (Dsource, Ddest, NVT, NEL, &
+                               IverticesAtElement,IedgesAtElement,&
+                               IelementsAtVertexIdx,ItwistIndexEdges)
 
 !<description>
   ! AUXILIARY ROUTINE.
@@ -674,7 +674,7 @@ contains
     integer :: nadj
 
     ! Clear the output array
-    call lalg_clearVectorDble (Ddest)
+    call lalg_clearVector (Ddest)
 
     ! Loop through the elements
     do iel=1,NEL
@@ -718,9 +718,9 @@ contains
   ! ***************************************************************************
 
 !<subroutine>
-  subroutine spdp_QP1toQ1_dble (Dsource, Ddest, NVT, NEL, &
-                                IverticesAtElement,&
-                                IelementsAtVertexIdx)
+  subroutine spdp_QP1toQ1_DP (Dsource, Ddest, NVT, NEL, &
+                              IverticesAtElement,&
+                              IelementsAtVertexIdx)
 
 !<description>
   ! AUXILIARY ROUTINE.
@@ -762,7 +762,7 @@ contains
     integer :: nadj
 
     ! Clear the output array
-    call lalg_clearVectorDble (Ddest)
+    call lalg_clearVector (Ddest)
 
     ! Loop through the elements
     do iel=1,NEL
@@ -794,9 +794,9 @@ contains
   ! ***************************************************************************
 
 !<subroutine>
-  subroutine spdp_E030toQ1_3D_dble (Dsource, Ddest, NVT, NMT, NEL, &
-                                 IverticesAtElement,IfacesAtElement,&
-                                 IelementsAtVertexIdx)
+  subroutine spdp_E030toQ1_3D_DP (Dsource, Ddest, NVT, NMT, NEL, &
+                                  IverticesAtElement,IfacesAtElement,&
+                                  IelementsAtVertexIdx)
 
 !<description>
   ! AUXILIARY ROUTINE.
@@ -845,7 +845,7 @@ contains
     integer :: nadj
 
     ! Clear the output array
-    call lalg_clearVectorDble (Ddest)
+    call lalg_clearVector (Ddest)
 
     ! Loop through the elements
     do iel=1,NEL
@@ -884,9 +884,9 @@ contains
   ! ***************************************************************************
 
 !<subroutine>
-  subroutine spdp_E020toP1_dble (Dsource, Ddest, NVT, NEL, &
-                                 IverticesAtElement,IedgesAtElement,&
-                                 IelementsAtVertexIdx)
+  subroutine spdp_E020toP1_DP (Dsource, Ddest, NVT, NEL, &
+                               IverticesAtElement,IedgesAtElement,&
+                               IelementsAtVertexIdx)
 
 !<description>
   ! AUXILIARY ROUTINE.
@@ -930,7 +930,7 @@ contains
     integer :: nadj
 
     ! Clear the output array
-    call lalg_clearVectorDble (Ddest)
+    call lalg_clearVector (Ddest)
 
     ! Loop through the elements
     do iel=1,NEL
@@ -1216,7 +1216,7 @@ contains
       if(bvertexDofs) then
 
         ! Then we only need to copy the first NVT DOFs from our vector
-        call lalg_copyVectorDble(p_Dx, p_Dvalues, NVT)
+        call lalg_copyVector(p_Dx, p_Dvalues, NVT)
         return
 
       end if
@@ -1232,7 +1232,7 @@ contains
     Bder(ider) = .true.
 
     ! Clear the output array
-    call lalg_clearVectorDble(p_Dvalues,NVT)
+    call lalg_clearVector(p_Dvalues,NVT)
 
     ! Okay, now loop through all element distributions
     do ied = 1, p_rdiscr%inumFESpaces
@@ -1470,7 +1470,7 @@ contains
       if(bcellDofs) then
 
         ! Then we only need to copy the first NVT DOFs from our vector
-        call lalg_copyVectorDble(p_Dx, p_Dvalues, NEL)
+        call lalg_copyVector(p_Dx, p_Dvalues, NEL)
         return
 
       end if
@@ -1482,7 +1482,7 @@ contains
     Bder(ider) = .true.
 
     ! Clear the output array
-    call lalg_clearVectorDble(p_Dvalues,NEL)
+    call lalg_clearVector(p_Dvalues,NEL)
 
     ! Okay, now loop through all element distributions
     do ied = 1, p_rdiscr%inumFESpaces

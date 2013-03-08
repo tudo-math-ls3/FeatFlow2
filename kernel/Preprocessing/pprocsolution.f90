@@ -14,7 +14,7 @@
 !# 2.) ppsol_releasePGM
 !#     -> Releases a Portable Graymap.
 !#
-!# 3.) ppsol_initArrayPGMDble / ppsol_initArrayPGMSngl
+!# 3.) ppsol_initArrayPGMDP / ppsol_initArrayPGMSP
 !#     -> Initialises a 2D double array from a Portable Graymap image
 !# </purpose>
 !#########################################################################
@@ -63,8 +63,8 @@ module pprocsolution
 
   public :: ppsol_readPGM
   public :: ppsol_releasePGM
-  public :: ppsol_initArrayPGMDble
-  public :: ppsol_initArrayPGMSngl
+  public :: ppsol_initArrayPGMDP
+  public :: ppsol_initArrayPGMSP
 
 contains
 
@@ -232,7 +232,7 @@ contains
 
 !<subroutine>
 
-  subroutine ppsol_initArrayPGMDble(rpgm, Dpoints, Ddata, Dbounds)
+  subroutine ppsol_initArrayPGMDP(rpgm, Dpoints, Ddata, Dbounds)
 
 !<description>
     ! Initialises a 2D double array by a Portable Graymap image
@@ -287,7 +287,7 @@ contains
     end if
 
     ! Clear array
-    call lalg_clearVectorDble(Ddata)
+    call lalg_clearVector(Ddata)
 
     ! Fill array with scaled image data
     do ipoint = 1, npoints
@@ -302,13 +302,13 @@ contains
 
       Ddata(ipoint) = real(p_Idata(ix,iy),DP)/real(rpgm%maxgray,DP)
     end do
-  end subroutine ppsol_initArrayPGMDble
+  end subroutine ppsol_initArrayPGMDP
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine ppsol_initArrayPGMSngl(rpgm, Dpoints, Fdata, Dbounds)
+  subroutine ppsol_initArrayPGMSP(rpgm, Dpoints, Fdata, Dbounds)
 
 !<description>
     ! Initialises a 2D single array by a Portable Graymap image
@@ -363,7 +363,7 @@ contains
     end if
 
     ! Clear array
-    call lalg_clearVectorSngl(Fdata)
+    call lalg_clearVector(Fdata)
 
     ! Fill array with scaled image data
     do ipoint = 1, npoints
@@ -378,6 +378,6 @@ contains
 
       Fdata(ipoint) = real(p_Idata(ix,iy),SP)/real(rpgm%maxgray,SP)
     end do
-  end subroutine ppsol_initArrayPGMSngl
+  end subroutine ppsol_initArrayPGMSP
 
 end module pprocsolution

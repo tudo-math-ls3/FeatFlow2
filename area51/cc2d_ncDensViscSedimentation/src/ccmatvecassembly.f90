@@ -2159,9 +2159,9 @@ contains
     !!! DEBUG:
     !WHERE (abs(p_DvelX1) .LT. 1E-12_DP) p_DvelX1 = 0.0_DP
     !WHERE (abs(p_DvelY1) .LT. 1E-12_DP) p_DvelY1 = 0.0_DP
-    !call vecio_writeArray_Dble (p_DvelX1, 'vecx1', &
+    !call vecio_writeArray (p_DvelX1, 'vecx1', &
     !                               0, 'vectorx1.txt', '(D10.3)')
-    !call vecio_writeArray_Dble (p_DvelY1, 'vecx2', &
+    !call vecio_writeArray (p_DvelY1, 'vecx2', &
     !                               0, 'vectorx2.txt', '(D10.3)')
     
     if (present(rdefect)) then

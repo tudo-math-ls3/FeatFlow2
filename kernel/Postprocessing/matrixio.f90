@@ -31,17 +31,17 @@
 !#
 !# The following auxiliary functions can be found here:
 !#
-!# 1.) matio_writeMatrix1_Dble
+!# 1.) matio_writeMatrix1_DP
 !#     -> writes a full double precision matrix into a text file
 !#
-!# 2.) matio_writeMatrix79_Dble
+!# 2.) matio_writeMatrix79_DP
 !#     -> writes a sparse double precision matrix (format 7/9)
 !#        into a text file
 !#
-!# 3.) matio_writeMatrix1_Sngl
+!# 3.) matio_writeMatrix1_SP
 !#     -> writes a full single precision matrix into a text file
 !#
-!# 4.) matio_writeMatrix79_Sngl
+!# 4.) matio_writeMatrix79_SP
 !#     -> writes a sparse single precision matrix (format 7/9)
 !#        into a text file
 !#
@@ -69,10 +69,10 @@ module matrixio
   public :: matio_spyBlockMatrix
   public :: matio_writeMatrixMaple
   public :: matio_writeBlockMatrixMaple
-  public :: matio_writeMatrix1_Dble
-  public :: matio_writeMatrix79_Dble
-  public :: matio_writeMatrix1_Sngl
-  public :: matio_writeMatrix79_Sngl
+  public :: matio_writeMatrix1_DP
+  public :: matio_writeMatrix79_DP
+  public :: matio_writeMatrix1_SP
+  public :: matio_writeMatrix79_SP
 
 contains
 
@@ -201,7 +201,7 @@ contains
       call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
       call lsyssc_getbase_Kld (rmatrix,p_Kld)
 
-      call matio_writeMatrix79_Dble (p_Da, p_Kcol, p_Kld, &
+      call matio_writeMatrix79_DP (p_Da, p_Kcol, p_Kld, &
                                       rmatrix%NEQ, rmatrix%NCOLS, sarray, &
                                       bnoZero, ifile, sfile, sformat,dthres)
     case DEFAULT
@@ -220,7 +220,7 @@ contains
   ! ***************************************************************************
 
 !<subroutine>
-  subroutine matio_writeMatrix1_Dble (Da, nrow, ncol, sarray, &
+  subroutine matio_writeMatrix1_DP (Da, nrow, ncol, sarray, &
                                       bnoZero, ifile, sfile, sformat,dthreshold)
 
   !<description>
@@ -276,7 +276,7 @@ contains
       call io_openFileForWriting(sfile, cf, SYS_REPLACE)
       if (cf .eq. -1) then
         call output_line ('Could not open file '//trim(sfile), &
-                          OU_CLASS_ERROR,OU_MODE_STD,'matio_writeMatrix1_Dble')
+                          OU_CLASS_ERROR,OU_MODE_STD,'matio_writeMatrix1_DP')
         call sys_halt()
       end if
     else
@@ -324,7 +324,7 @@ contains
   ! ***************************************************************************
 
 !<subroutine>
-  subroutine matio_writeMatrix79_Dble (Da, Icol, Irow, &
+  subroutine matio_writeMatrix79_DP (Da, Icol, Irow, &
                                        nrow, ncol, sarray, &
                                        bnoZero, ifile, sfile, sformat,dthreshold)
 
@@ -389,7 +389,7 @@ contains
       call io_openFileForWriting(sfile, cf, SYS_REPLACE)
       if (cf .eq. -1) then
         call output_line ('Could not open file '//trim(sfile), &
-                          OU_CLASS_ERROR,OU_MODE_STD,'matio_writeMatrix79_Dble')
+                          OU_CLASS_ERROR,OU_MODE_STD,'matio_writeMatrix79_DP')
         call sys_halt()
       end if
     else
@@ -412,7 +412,7 @@ contains
     if (ncol .le. 0) return
 
     ! Write the matrix
-    call storage_new('matio_writeMatrix79_Dble','DrowVec',ncol, &
+    call storage_new('matio_writeMatrix79_DP','DrowVec',ncol, &
                      ST_DOUBLE, h_DrowVec, ST_NEWBLOCK_NOINIT)
     call storage_getbase_double(h_DrowVec, p_DrowVec)
     do i=1, nrow
@@ -464,7 +464,7 @@ contains
   ! ***************************************************************************
 
 !<subroutine>
-  subroutine matio_writeMatrix1_Sngl (Fa, nrow, ncol, sarray, &
+  subroutine matio_writeMatrix1_SP (Fa, nrow, ncol, sarray, &
                                       bnoZero, ifile, sfile, sformat, fthreshold)
 
   !<description>
@@ -520,7 +520,7 @@ contains
       call io_openFileForWriting(sfile, cf, SYS_REPLACE)
       if (cf .eq. -1) then
         call output_line ('Could not open file '//trim(sfile), &
-                          OU_CLASS_ERROR,OU_MODE_STD,'matio_writeMatrix1_Sngl')
+                          OU_CLASS_ERROR,OU_MODE_STD,'matio_writeMatrix1_SP')
         call sys_halt()
       end if
     else
@@ -568,7 +568,7 @@ contains
   ! ***************************************************************************
 
 !<subroutine>
-  subroutine matio_writeMatrix79_Sngl (Fa, Icol, Irow, &
+  subroutine matio_writeMatrix79_SP (Fa, Icol, Irow, &
                                        nrow, ncol, sarray, &
                                        bnoZero, ifile, sfile, sformat, fthreshold)
 
@@ -633,7 +633,7 @@ contains
       call io_openFileForWriting(sfile, cf, SYS_REPLACE)
       if (cf .eq. -1) then
         call output_line ('Could not open file '//trim(sfile), &
-                          OU_CLASS_ERROR,OU_MODE_STD,'matio_writeMatrix79_Sngl')
+                          OU_CLASS_ERROR,OU_MODE_STD,'matio_writeMatrix79_SP')
         call sys_halt()
       end if
     else
@@ -656,7 +656,7 @@ contains
     if (ncol .le. 0) return
 
     ! Write the matrix
-    call storage_new('matio_writeMatrix79_Sngl','FrowVec',ncol, &
+    call storage_new('matio_writeMatrix79_SP','FrowVec',ncol, &
                      ST_SINGLE, h_FrowVec, ST_NEWBLOCK_NOINIT)
     call storage_getbase_single(h_FrowVec, p_FrowVec)
     do i=1, nrow

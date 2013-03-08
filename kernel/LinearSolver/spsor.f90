@@ -1284,8 +1284,8 @@ contains
       end do ! id1
 
       ! Invert the A matrices
-      call mprim_invert4x4MatrixDirectDble(DA1, DI1,bsuccess1)
-      call mprim_invert4x4MatrixDirectDble(DA2, DI2,bsuccess2)
+      call mprim_invert4x4MatrixDirect(DA1, DI1,bsuccess1)
+      call mprim_invert4x4MatrixDirect(DA2, DI2,bsuccess2)
 
       if (bsuccess1 .and. bsuccess2) then
 

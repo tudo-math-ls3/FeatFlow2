@@ -4170,7 +4170,7 @@ contains
             call mkl_dcsrmv('N',NEQ,NCOLS,cx*rmatrix%dscaleFactor,&
                 'G__F',p_Da,p_Kcol,p_Kld,p_Kld(2),p_Dx,cy,p_Dy)
 #else
-            call lsyssc_LAX79DbleDble (p_Kld,p_Kcol,p_Da,p_Dx,p_Dy,&
+            call lsyssc_LAX79DPDP (p_Kld,p_Kcol,p_Da,p_Dx,p_Dy,&
                 cx*rmatrix%dscaleFactor,cy,NEQ,rx%NVAR,p_rperfconfig)
 #endif
 
@@ -4180,7 +4180,7 @@ contains
             call lsyssc_getbase_single (ry,p_Fy)
 
             ! double precision matrix, single precision vectors
-            call lsyssc_LAX79DbleSngl (p_Kld,p_Kcol,p_Da,p_Fx,p_Fy,&
+            call lsyssc_LAX79DPSP (p_Kld,p_Kcol,p_Da,p_Fx,p_Fy,&
                 cx*rmatrix%dscaleFactor,real(cy,SP),NEQ,rx%NVAR,p_rperfconfig)
 
           case default
@@ -4202,7 +4202,7 @@ contains
             call lsyssc_getbase_double (ry,p_Dy)
 
             ! single precision matrix, double precision vectors
-            call lsyssc_LAX79SnglDble (p_Kld,p_Kcol,p_Fa,p_Dx,p_Dy,&
+            call lsyssc_LAX79SPDP (p_Kld,p_Kcol,p_Fa,p_Dx,p_Dy,&
                 real(cx*rmatrix%dscaleFactor,SP),cy,NEQ,rx%NVAR,p_rperfconfig)
 
           case (ST_SINGLE)
@@ -4215,7 +4215,7 @@ contains
             call mkl_scsrmv('N',NEQ,NCOLS,real(cx*rmatrix%dscaleFactor,SP),&
                 'G__F',p_Fa,p_Kcol,p_Kld,p_Kld(2),p_Fx,real(cy,SP),p_Fy)
 #else
-            call lsyssc_LAX79SnglSngl (p_Kld,p_Kcol,p_Fa,p_Fx,p_Fy,&
+            call lsyssc_LAX79SPSP (p_Kld,p_Kcol,p_Fa,p_Fx,p_Fy,&
                 real(cx*rmatrix%dscaleFactor,SP),real(cy,SP),NEQ,rx%NVAR,p_rperfconfig)
 #endif
 
@@ -4251,7 +4251,7 @@ contains
             call lsyssc_getbase_double (ry,p_Dy)
 
             ! double precision matrix, double precision vectors
-            call lsyssc_LAX9rowcDbleDble (p_Kld,p_Kcol,p_KrowIdx,p_Da,p_Dx,p_Dy,&
+            call lsyssc_LAX9rowcDPDP (p_Kld,p_Kcol,p_KrowIdx,p_Da,p_Dx,p_Dy,&
                 cx*rmatrix%dscaleFactor,cy,rmatrix%nnzrows,rx%NVAR,p_rperfconfig)
 
           case (ST_SINGLE)
@@ -4260,7 +4260,7 @@ contains
             call lsyssc_getbase_single (ry,p_Fy)
 
             ! double precision matrix, double precision vectors
-            call lsyssc_LAX9rowcDbleSngl (p_Kld,p_Kcol,p_KrowIdx,p_Da,p_Fx,p_Fy,&
+            call lsyssc_LAX9rowcDPSP (p_Kld,p_Kcol,p_KrowIdx,p_Da,p_Fx,p_Fy,&
                 cx*rmatrix%dscaleFactor,real(cy,SP),rmatrix%nnzrows,rx%NVAR,p_rperfconfig)
 
           case default
@@ -4281,7 +4281,7 @@ contains
             call lsyssc_getbase_double (ry,p_Dy)
 
             ! double precision matrix, double precision vectors
-            call lsyssc_LAX9rowcSnglDble (p_Kld,p_Kcol,p_KrowIdx,p_Fa,p_Dx,p_Dy,&
+            call lsyssc_LAX9rowcSPDP (p_Kld,p_Kcol,p_KrowIdx,p_Fa,p_Dx,p_Dy,&
                 real(cx*rmatrix%dscaleFactor,SP),cy,rmatrix%nnzrows,rx%NVAR,p_rperfconfig)
 
           case (ST_SINGLE)
@@ -4290,7 +4290,7 @@ contains
             call lsyssc_getbase_single (ry,p_Fy)
 
             ! double precision matrix, double precision vectors
-            call lsyssc_LAX9rowcSnglSngl (p_Kld,p_Kcol,p_KrowIdx,p_Fa,p_Fx,p_Fy,&
+            call lsyssc_LAX9rowcSPSP (p_Kld,p_Kcol,p_KrowIdx,p_Fa,p_Fx,p_Fy,&
                 real(cx*rmatrix%dscaleFactor,SP),real(cy,SP),rmatrix%nnzrows,rx%NVAR,&
                 p_rperfconfig)
 
@@ -4326,12 +4326,12 @@ contains
               call mkl_dbsrmv('N',NEQ,NCOLS,rx%NVAR,cx*rmatrix%dscaleFactor,&
                   'G__F',p_Da,p_Kcol,p_Kld,p_Kld(2),p_Dx,cy,p_Dy)
 #else
-              call lsyssc_LAX79INTL1DbleDble (p_Kld,p_Kcol,p_Da,p_Dx,p_Dy,&
+              call lsyssc_LAX79INTL1DPDP (p_Kld,p_Kcol,p_Da,p_Dx,p_Dy,&
                   cx*rmatrix%dscaleFactor,cy,NEQ,rx%NVAR,p_rperfconfig)
 #endif
               
             case (LSYSSC_MATRIXD)
-              call lsyssc_LAX79INTLDDbleDble (p_Kld,p_Kcol,p_Da,p_Dx,p_Dy,&
+              call lsyssc_LAX79INTLDDPDP (p_Kld,p_Kcol,p_Da,p_Dx,p_Dy,&
                   cx*rmatrix%dscaleFactor,cy,NEQ,rx%NVAR,p_rperfconfig)
 
             case default
@@ -4348,11 +4348,11 @@ contains
             ! double precision matrix, single precision vectors
             select case (rmatrix%cinterleavematrixFormat)
             case (LSYSSC_MATRIX1)
-              call lsyssc_LAX79INTL1DbleSngl (p_Kld,p_Kcol,p_Da,p_Fx,p_Fy,&
+              call lsyssc_LAX79INTL1DPSP (p_Kld,p_Kcol,p_Da,p_Fx,p_Fy,&
                   cx*rmatrix%dscaleFactor,real(cy,SP),NEQ,rx%NVAR,p_rperfconfig)
 
             case (LSYSSC_MATRIXD)
-              call lsyssc_LAX79INTLDDbleSngl (p_Kld,p_Kcol,p_Da,p_Fx,p_Fy,&
+              call lsyssc_LAX79INTLDDPSP (p_Kld,p_Kcol,p_Da,p_Fx,p_Fy,&
                   cx*rmatrix%dscaleFactor,real(cy,SP),NEQ,rx%NVAR,p_rperfconfig)
 
             case default
@@ -4381,11 +4381,11 @@ contains
             ! single precision matrix, double precision vectors
             select case (rmatrix%cinterleavematrixFormat)
             case (LSYSSC_MATRIX1)
-              call lsyssc_LAX79INTL1SnglDble (p_Kld,p_Kcol,p_Fa,p_Dx,p_Dy,&
+              call lsyssc_LAX79INTL1SPDP (p_Kld,p_Kcol,p_Fa,p_Dx,p_Dy,&
                   real(cx*rmatrix%dscaleFactor,SP),cy,NEQ,rx%NVAR,p_rperfconfig)
 
             case (LSYSSC_MATRIXD)
-              call lsyssc_LAX79INTLDSnglDble (p_Kld,p_Kcol,p_Fa,p_Dx,p_Dy,&
+              call lsyssc_LAX79INTLDSPDP (p_Kld,p_Kcol,p_Fa,p_Dx,p_Dy,&
                   real(cx*rmatrix%dscaleFactor,SP),cy,NEQ,rx%NVAR,p_rperfconfig)
 
             case default
@@ -4406,13 +4406,13 @@ contains
               call mkl_sbsrmv('N',NEQ,NCOLS,rx%NVAR,real(cx*rmatrix%dscaleFactor,SP),&
                   'G__F',p_Fa,p_Kcol,p_Kld,p_Kld(2),p_Fx,real(cy,SP),p_Fy)
 #else
-              call lsyssc_LAX79INTL1SnglSngl (p_Kld,p_Kcol,p_Fa,p_Fx,p_Fy,&
+              call lsyssc_LAX79INTL1SPSP (p_Kld,p_Kcol,p_Fa,p_Fx,p_Fy,&
                   real(cx*rmatrix%dscaleFactor,SP),real(cy,SP),NEQ,rx%NVAR,&
                   p_rperfconfig)
 #endif
 
             case (LSYSSC_MATRIXD)
-              call lsyssc_LAX79INTLDSnglSngl (p_Kld,p_Kcol,p_Fa,p_Fx,p_Fy,&
+              call lsyssc_LAX79INTLDSPSP (p_Kld,p_Kcol,p_Fa,p_Fx,p_Fy,&
                   real(cx*rmatrix%dscaleFactor,SP),real(cy,SP),NEQ,rx%NVAR,&
                   p_rperfconfig)
 
@@ -4450,7 +4450,7 @@ contains
             call lsyssc_getbase_double (ry,p_Dy)
 
             ! double precision matrix, double precision vectors
-            call lsyssc_LATXDDbleDble (p_Da,p_Dx,p_Dy,&
+            call lsyssc_LATXDDPDP (p_Da,p_Dx,p_Dy,&
                 cx*rmatrix%dscaleFactor,cy,NEQ,rx%NVAR,p_rperfconfig)
 
           case (ST_SINGLE)
@@ -4459,7 +4459,7 @@ contains
             call lsyssc_getbase_single (ry,p_Fy)
 
             ! double precision matrix, single precision vectors
-            call lsyssc_LATXDDbleSngl (p_Da,p_Fx,p_Fy,&
+            call lsyssc_LATXDDPSP (p_Da,p_Fx,p_Fy,&
                 cx*rmatrix%dscaleFactor,real(cy,SP),NEQ,rx%NVAR,p_rperfconfig)
 
           case default
@@ -4480,7 +4480,7 @@ contains
             call lsyssc_getbase_double (ry,p_Dy)
 
             ! single precision matrix, double precision vectors
-            call lsyssc_LATXDSnglDble (p_Fa,p_Dx,p_Dy,&
+            call lsyssc_LATXDSPDP (p_Fa,p_Dx,p_Dy,&
                 real(cx*rmatrix%dscaleFactor,SP),cy,NEQ,rx%NVAR,p_rperfconfig)
 
           case (ST_SINGLE)
@@ -4489,7 +4489,7 @@ contains
             call lsyssc_getbase_single (ry,p_Fy)
 
             ! single precision matrix, single precision vectors
-            call lsyssc_LATXDSnglSngl (p_Fa,p_Fx,p_Fy,&
+            call lsyssc_LATXDSPSP (p_Fa,p_Fx,p_Fy,&
                 real(cx*rmatrix%dscaleFactor,SP),real(cy,SP),NEQ,rx%NVAR,&
                 p_rperfconfig)
 
@@ -4548,7 +4548,7 @@ contains
             call mkl_dcsrmv('T',NEQ,NCOLS,cx*rmatrix%dscaleFactor,&
                 'G__F',p_Da,p_Kcol,p_Kld,p_Kld(2),p_Dx,cy,p_Dy)
 #else
-            call lsyssc_LTX79DbleDble (p_Kld,p_Kcol,p_Da,p_Dx,p_Dy,&
+            call lsyssc_LTX79DPDP (p_Kld,p_Kcol,p_Da,p_Dx,p_Dy,&
                 cx*rmatrix%dscaleFactor,cy,NEQ,rx%NVAR,p_rperfconfig)
 #endif
 
@@ -4558,7 +4558,7 @@ contains
             call lsyssc_getbase_single (ry,p_Fy)
 
             ! double precision matrix, single precision vectors
-            call lsyssc_LTX79DbleSngl (p_Kld,p_Kcol,p_Da,p_Fx,p_Fy,&
+            call lsyssc_LTX79DPSP (p_Kld,p_Kcol,p_Da,p_Fx,p_Fy,&
                 cx*rmatrix%dscaleFactor,real(cy,SP),NEQ,rx%NVAR,p_rperfconfig)
 
           case default
@@ -4579,7 +4579,7 @@ contains
             call lsyssc_getbase_double (ry,p_Dy)
 
             ! single precision matrix, double precision vectors
-            call lsyssc_LTX79SnglDble (p_Kld,p_Kcol,p_Fa,p_Dx,p_Dy,&
+            call lsyssc_LTX79SPDP (p_Kld,p_Kcol,p_Fa,p_Dx,p_Dy,&
                 real(cx*rmatrix%dscaleFactor,SP),cy,NEQ,rx%NVAR,p_rperfconfig)
 
           case (ST_SINGLE)
@@ -4592,7 +4592,7 @@ contains
             call mkl_scsrmv('T',NEQ,NCOLS,real(cx*rmatrix%dscaleFactor,SP),&
                 'G__F',p_Fa,p_Kcol,p_Kld,p_Kld(2),p_Fx,real(cy,SP),p_Fy)
 #else
-            call lsyssc_LTX79SnglSngl (p_Kld,p_Kcol,p_Fa,p_Fx,p_Fy,&
+            call lsyssc_LTX79SPSP (p_Kld,p_Kcol,p_Fa,p_Fx,p_Fy,&
                 real(cx*rmatrix%dscaleFactor,SP),real(cy,SP),NEQ,rx%NVAR,&
                 p_rperfconfig)
 #endif
@@ -4625,7 +4625,7 @@ contains
             call lsyssc_getbase_double (ry,p_Dy)
 
             ! double precision matrix, double precision vectors
-            call lsyssc_LATXDDbleDble (p_Da,p_Dx,p_Dy,&
+            call lsyssc_LATXDDPDP (p_Da,p_Dx,p_Dy,&
                 cx*rmatrix%dscaleFactor,cy,NEQ,rx%NVAR,p_rperfconfig)
 
           case (ST_SINGLE)
@@ -4634,7 +4634,7 @@ contains
             call lsyssc_getbase_single (ry,p_Fy)
 
             ! double precision matrix, single precision vectors
-            call lsyssc_LATXDDbleSngl (p_Da,p_Fx,p_Fy,&
+            call lsyssc_LATXDDPSP (p_Da,p_Fx,p_Fy,&
                 cx*rmatrix%dscaleFactor,real(cy,SP),NEQ,rx%NVAR,p_rperfconfig)
 
           case default
@@ -4655,7 +4655,7 @@ contains
             call lsyssc_getbase_double (ry,p_Dy)
 
             ! single precision matrix, double precision vectors
-            call lsyssc_LATXDSnglDble (p_Fa,p_Dx,p_Dy,&
+            call lsyssc_LATXDSPDP (p_Fa,p_Dx,p_Dy,&
                 real(cx*rmatrix%dscaleFactor,SP),cy,NEQ,rx%NVAR,p_rperfconfig)
 
           case (ST_SINGLE)
@@ -4664,7 +4664,7 @@ contains
             call lsyssc_getbase_single (ry,p_Fy)
 
             ! single precision matrix, single precision vectors
-            call lsyssc_LATXDSnglSngl (p_Fa,p_Fx,p_Fy,&
+            call lsyssc_LATXDSPSP (p_Fa,p_Fx,p_Fy,&
                 real(cx*rmatrix%dscaleFactor,SP),real(cy,SP),NEQ,rx%NVAR,&
                 p_rperfconfig)
 
@@ -4950,13 +4950,13 @@ contains
         ! Get the pointer and scale the whole data array.
         call lsyssc_getbase_double(rx,p_Dsource)
         call lsyssc_getbase_double(ry,p_Ddest)
-        call lalg_copyVectorDble (p_Dsource,p_Ddest)
+        call lalg_copyVector (p_Dsource,p_Ddest)
 
       case (ST_SINGLE)
         ! Get the pointer and scale the whole data array.
         call lsyssc_getbase_single(rx,p_Fsource)
         call lsyssc_getbase_single(ry,p_Fdest)
-        call lalg_copyVectorSngl (p_Fsource,p_Fdest)
+        call lalg_copyVector (p_Fsource,p_Fdest)
 
       case default
         call output_line('Unsupported data type!',&
@@ -6290,16 +6290,16 @@ contains
     case (ST_DOUBLE)
       call lsyssc_getbase_double (rmatrix,p_Ddata)
       if (.not. present(dvalue)) then
-        call lalg_clearVectorDble (p_Ddata)
+        call lalg_clearVector (p_Ddata)
       else
-        call lalg_setVectorDble (p_Ddata,dvalue)
+        call lalg_setVector (p_Ddata,dvalue)
       end if
     case (ST_SINGLE)
       call lsyssc_getbase_single (rmatrix,p_Fdata)
       if (.not. present(dvalue)) then
-        call lalg_clearVectorSngl (p_Fdata)
+        call lalg_clearVector (p_Fdata)
       else
-        call lalg_setVectorSngl (p_Fdata,real(dvalue,SP))
+        call lalg_setVector (p_Fdata,real(dvalue,SP))
       end if
     case default
       call output_line('Unsupported Data type!',&
@@ -10028,11 +10028,11 @@ contains
       case (ST_DOUBLE)
         call lsyssc_getbase_double(rmatrix, p_Da)
         call lsyssc_getbase_double(p_rmatrix, p_Db)
-        call calcSymmPartMat1Dble(rmatrix%NEQ, rmatrix%NCOLS, dscale, p_Da, p_Db)
+        call calcSymmPartMat1DP(rmatrix%NEQ, rmatrix%NCOLS, dscale, p_Da, p_Db)
       case (ST_SINGLE)
         call lsyssc_getbase_single(rmatrix, p_Fa)
         call lsyssc_getbase_single(p_rmatrix, p_Fb)
-        call calcSymmPartMat1Sngl(rmatrix%NEQ, rmatrix%NCOLS, real(dscale,SP), p_Fa, p_Fb)
+        call calcSymmPartMat1SP(rmatrix%NEQ, rmatrix%NCOLS, real(dscale,SP), p_Fa, p_Fb)
       end select
 
     case (LSYSSC_MATRIX7)
@@ -10047,11 +10047,11 @@ contains
       case (ST_DOUBLE)
         call lsyssc_getbase_double(rmatrix, p_Da)
         call lsyssc_getbase_double(p_rmatrix, p_Db)
-        call calcSymmPartMat7Dble(p_Kld, p_Kcol, p_Ksep, 1, dscale, p_Da, p_Db)
+        call calcSymmPartMat7DP(p_Kld, p_Kcol, p_Ksep, 1, dscale, p_Da, p_Db)
       case (ST_SINGLE)
         call lsyssc_getbase_single(rmatrix, p_Fa)
         call lsyssc_getbase_single(p_rmatrix, p_Fb)
-        call calcSymmPartMat7Sngl(p_Kld, p_Kcol, p_Ksep, 1, real(dscale,SP), p_Fa, p_Fb)
+        call calcSymmPartMat7SP(p_Kld, p_Kcol, p_Ksep, 1, real(dscale,SP), p_Fa, p_Fb)
       end select
 
       ! Release diagonal separator
@@ -10073,12 +10073,12 @@ contains
         case (ST_DOUBLE)
           call lsyssc_getbase_double(rmatrix, p_Da)
           call lsyssc_getbase_double(p_rmatrix, p_Db)
-          call calcSymmPartMat7Dble(p_Kld, p_Kcol, p_Ksep,&
+          call calcSymmPartMat7DP(p_Kld, p_Kcol, p_Ksep,&
                                     rmatrix%NVAR, dscale, p_Da, p_Db)
         case (ST_SINGLE)
           call lsyssc_getbase_single(rmatrix, p_Fa)
           call lsyssc_getbase_single(p_rmatrix, p_Fb)
-          call calcSymmPartMat7Sngl(p_Kld, p_Kcol, p_Ksep,&
+          call calcSymmPartMat7SP(p_Kld, p_Kcol, p_Ksep,&
                                     rmatrix%NVAR, real(dscale,SP), p_Fa, p_Fb)
         end select
 
@@ -10087,12 +10087,12 @@ contains
         case (ST_DOUBLE)
           call lsyssc_getbase_double(rmatrix, p_Da)
           call lsyssc_getbase_double(p_rmatrix, p_Db)
-          call calcSymmPartMat7Dble(p_Kld, p_Kcol, p_Ksep,&
+          call calcSymmPartMat7DP(p_Kld, p_Kcol, p_Ksep,&
                                     rmatrix%NVAR*rmatrix%NVAR, dscale, p_Da, p_Db)
         case (ST_SINGLE)
           call lsyssc_getbase_single(rmatrix, p_Fa)
           call lsyssc_getbase_single(p_rmatrix, p_Fb)
-          call calcSymmPartMat7Sngl(p_Kld, p_Kcol, p_Ksep,&
+          call calcSymmPartMat7SP(p_Kld, p_Kcol, p_Ksep,&
                                     rmatrix%NVAR*rmatrix%NVAR, real(dscale,SP), p_Fa, p_Fb)
         end select
 
@@ -10118,12 +10118,12 @@ contains
       case (ST_DOUBLE)
         call lsyssc_getbase_double(rmatrix, p_Da)
         call lsyssc_getbase_double(p_rmatrix, p_Db)
-        call calcSymmPartMat9Dble(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+        call calcSymmPartMat9DP(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                                   1, dscale, p_Da, p_Db)
       case (ST_SINGLE)
         call lsyssc_getbase_single(rmatrix, p_Fa)
         call lsyssc_getbase_single(p_rmatrix, p_Fb)
-        call calcSymmPartMat9Sngl(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+        call calcSymmPartMat9SP(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                                   1, real(dscale,SP), p_Fa, p_Fb)
       end select
 
@@ -10147,12 +10147,12 @@ contains
         case (ST_DOUBLE)
           call lsyssc_getbase_double(rmatrix, p_Da)
           call lsyssc_getbase_double(p_rmatrix, p_Db)
-          call calcSymmPartMat9Dble(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          call calcSymmPartMat9DP(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                                     rmatrix%NVAR, dscale, p_Da, p_Db)
         case (ST_SINGLE)
           call lsyssc_getbase_single(rmatrix, p_Fa)
           call lsyssc_getbase_single(p_rmatrix, p_Fb)
-          call calcSymmPartMat9Sngl(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          call calcSymmPartMat9SP(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                                     rmatrix%NVAR, real(dscale,SP), p_Fa, p_Fb)
         end select
 
@@ -10161,12 +10161,12 @@ contains
         case (ST_DOUBLE)
           call lsyssc_getbase_double(rmatrix, p_Da)
           call lsyssc_getbase_double(p_rmatrix, p_Db)
-          call calcSymmPartMat9Dble(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          call calcSymmPartMat9DP(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                                     rmatrix%NVAR*rmatrix%NVAR, dscale, p_Da, p_Db)
         case (ST_SINGLE)
           call lsyssc_getbase_single(rmatrix, p_Fa)
           call lsyssc_getbase_single(p_rmatrix, p_Fb)
-          call calcSymmPartMat9Sngl(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          call calcSymmPartMat9SP(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                                     rmatrix%NVAR*rmatrix%NVAR, real(dscale,SP), p_Fa, p_Fb)
         end select
 
@@ -10192,7 +10192,7 @@ contains
     !**************************************************************
     ! Compute symmetric part for dense matrix stored in matrix format 1
 
-    subroutine calcSymmPartMat1Dble(NEQ, NCOLS, dscale, Da, Db)
+    subroutine calcSymmPartMat1DP(NEQ, NCOLS, dscale, Da, Db)
 
       ! input parameters
       real(DP), intent(in) :: dscale
@@ -10213,12 +10213,12 @@ contains
         end do
       end do
 
-    end subroutine calcSymmPartMat1Dble
+    end subroutine calcSymmPartMat1DP
 
     !**************************************************************
     ! Compute symmetric part for dense matrix stored in matrix format 1
 
-    subroutine calcSymmPartMat1Sngl(NEQ, NCOLS, fscale, Fa, Fb)
+    subroutine calcSymmPartMat1SP(NEQ, NCOLS, fscale, Fa, Fb)
 
       ! input parameters
       real(SP), intent(in) :: fscale
@@ -10239,12 +10239,12 @@ contains
         end do
       end do
 
-    end subroutine calcSymmPartMat1Sngl
+    end subroutine calcSymmPartMat1SP
 
     !**************************************************************
     ! Compute symmetric part for CRS matrix stored in matrix format 7
 
-    subroutine calcSymmPartMat7Dble(Kld, Kcol, Ksep, NVAR, dscale, Da, Db)
+    subroutine calcSymmPartMat7DP(Kld, Kcol, Ksep, NVAR, dscale, Da, Db)
 
       ! input parameters
       integer, dimension(:), intent(in) :: Kld,Kcol
@@ -10279,12 +10279,12 @@ contains
         end do
       end do
 
-    end subroutine calcSymmPartMat7Dble
+    end subroutine calcSymmPartMat7DP
 
     !**************************************************************
     ! Compute symmetric part for CRS matrix stored in matrix format 7
 
-    subroutine calcSymmPartMat7Sngl(Kld, Kcol, Ksep, NVAR, fscale, Fa, Fb)
+    subroutine calcSymmPartMat7SP(Kld, Kcol, Ksep, NVAR, fscale, Fa, Fb)
 
       ! input parameters
       integer, dimension(:), intent(in) :: Kld,Kcol
@@ -10319,12 +10319,12 @@ contains
         end do
       end do
 
-    end subroutine calcSymmPartMat7Sngl
+    end subroutine calcSymmPartMat7SP
 
     !**************************************************************
     ! Compute symmetric part for CRS matrix stored in matrix format 9
 
-    subroutine calcSymmPartMat9Dble(Kld, Kcol, Kdiagonal, Ksep, NVAR, dscale, Da, Db)
+    subroutine calcSymmPartMat9DP(Kld, Kcol, Kdiagonal, Ksep, NVAR, dscale, Da, Db)
 
       ! input parameters
       integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
@@ -10359,12 +10359,12 @@ contains
         end do
       end do
 
-    end subroutine calcSymmPartMat9Dble
+    end subroutine calcSymmPartMat9DP
 
     !**************************************************************
     ! Compute symmetric part for CRS matrix stored in matrix format 9
 
-    subroutine calcSymmPartMat9Sngl(Kld, Kcol, Kdiagonal, Ksep, NVAR, fscale, Fa, Fb)
+    subroutine calcSymmPartMat9SP(Kld, Kcol, Kdiagonal, Ksep, NVAR, fscale, Fa, Fb)
 
       ! input parameters
       integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
@@ -10399,7 +10399,7 @@ contains
         end do
       end do
 
-    end subroutine calcSymmPartMat9Sngl
+    end subroutine calcSymmPartMat9SP
 
   end subroutine lsyssc_createMatrixSymmPart
 
@@ -10469,11 +10469,11 @@ contains
       case (ST_DOUBLE)
         call lsyssc_getbase_double(rmatrix, p_Da)
         call lsyssc_getbase_double(p_rmatrix, p_Db)
-        call calcAsymmPartMat1Dble(rmatrix%NEQ, rmatrix%NCOLS, dscale, p_Da, p_Db)
+        call calcAsymmPartMat1DP(rmatrix%NEQ, rmatrix%NCOLS, dscale, p_Da, p_Db)
       case (ST_SINGLE)
         call lsyssc_getbase_single(rmatrix, p_Fa)
         call lsyssc_getbase_single(p_rmatrix, p_Fb)
-        call calcAsymmPartMat1Sngl(rmatrix%NEQ, rmatrix%NCOLS, real(dscale,SP), p_Fa, p_Fb)
+        call calcAsymmPartMat1SP(rmatrix%NEQ, rmatrix%NCOLS, real(dscale,SP), p_Fa, p_Fb)
       end select
 
     case (LSYSSC_MATRIX7)
@@ -10488,11 +10488,11 @@ contains
       case (ST_DOUBLE)
         call lsyssc_getbase_double(rmatrix, p_Da)
         call lsyssc_getbase_double(p_rmatrix, p_Db)
-        call calcAsymmPartMat7Dble(p_Kld, p_Kcol, p_Ksep, 1, dscale, p_Da, p_Db)
+        call calcAsymmPartMat7DP(p_Kld, p_Kcol, p_Ksep, 1, dscale, p_Da, p_Db)
       case (ST_SINGLE)
         call lsyssc_getbase_single(rmatrix, p_Fa)
         call lsyssc_getbase_single(p_rmatrix, p_Fb)
-        call calcAsymmPartMat7Sngl(p_Kld, p_Kcol, p_Ksep, 1, real(dscale,SP), p_Fa, p_Fb)
+        call calcAsymmPartMat7SP(p_Kld, p_Kcol, p_Ksep, 1, real(dscale,SP), p_Fa, p_Fb)
       end select
 
       ! Release diagonal separator
@@ -10514,12 +10514,12 @@ contains
         case (ST_DOUBLE)
           call lsyssc_getbase_double(rmatrix, p_Da)
           call lsyssc_getbase_double(p_rmatrix, p_Db)
-          call calcAsymmPartMat7Dble(p_Kld, p_Kcol, p_Ksep,&
+          call calcAsymmPartMat7DP(p_Kld, p_Kcol, p_Ksep,&
                                      rmatrix%NVAR, dscale, p_Da, p_Db)
         case (ST_SINGLE)
           call lsyssc_getbase_single(rmatrix, p_Fa)
           call lsyssc_getbase_single(p_rmatrix, p_Fb)
-          call calcAsymmPartMat7Sngl(p_Kld, p_Kcol, p_Ksep,&
+          call calcAsymmPartMat7SP(p_Kld, p_Kcol, p_Ksep,&
                                      rmatrix%NVAR, real(dscale,SP), p_Fa, p_Fb)
         end select
 
@@ -10528,12 +10528,12 @@ contains
         case (ST_DOUBLE)
           call lsyssc_getbase_double(rmatrix, p_Da)
           call lsyssc_getbase_double(p_rmatrix, p_Db)
-          call calcAsymmPartMat7Dble(p_Kld, p_Kcol, p_Ksep,&
+          call calcAsymmPartMat7DP(p_Kld, p_Kcol, p_Ksep,&
                                      rmatrix%NVAR*rmatrix%NVAR, dscale, p_Da, p_Db)
         case (ST_SINGLE)
           call lsyssc_getbase_single(rmatrix, p_Fa)
           call lsyssc_getbase_single(p_rmatrix, p_Fb)
-          call calcAsymmPartMat7Sngl(p_Kld, p_Kcol, p_Ksep,&
+          call calcAsymmPartMat7SP(p_Kld, p_Kcol, p_Ksep,&
                                      rmatrix%NVAR*rmatrix%NVAR, real(dscale,SP), p_Fa, p_Fb)
         end select
 
@@ -10559,12 +10559,12 @@ contains
       case (ST_DOUBLE)
         call lsyssc_getbase_double(rmatrix, p_Da)
         call lsyssc_getbase_double(p_rmatrix, p_Db)
-        call calcAsymmPartMat9Dble(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+        call calcAsymmPartMat9DP(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                                    1, dscale, p_Da, p_Db)
       case (ST_SINGLE)
         call lsyssc_getbase_single(rmatrix, p_Fa)
         call lsyssc_getbase_single(p_rmatrix, p_Fb)
-        call calcAsymmPartMat9Sngl(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+        call calcAsymmPartMat9SP(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                                    1, real(dscale,SP), p_Fa, p_Fb)
       end select
 
@@ -10588,12 +10588,12 @@ contains
         case (ST_DOUBLE)
           call lsyssc_getbase_double(rmatrix, p_Da)
           call lsyssc_getbase_double(p_rmatrix, p_Db)
-          call calcAsymmPartMat9Dble(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          call calcAsymmPartMat9DP(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                                      rmatrix%NVAR, dscale, p_Da, p_Db)
         case (ST_SINGLE)
           call lsyssc_getbase_single(rmatrix, p_Fa)
           call lsyssc_getbase_single(p_rmatrix, p_Fb)
-          call calcAsymmPartMat9Sngl(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          call calcAsymmPartMat9SP(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                                      rmatrix%NVAR, real(dscale,SP), p_Fa, p_Fb)
         end select
 
@@ -10602,12 +10602,12 @@ contains
         case (ST_DOUBLE)
           call lsyssc_getbase_double(rmatrix, p_Da)
           call lsyssc_getbase_double(p_rmatrix, p_Db)
-          call calcAsymmPartMat9Dble(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          call calcAsymmPartMat9DP(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                                      rmatrix%NVAR*rmatrix%NVAR, dscale, p_Da, p_Db)
         case (ST_SINGLE)
           call lsyssc_getbase_single(rmatrix, p_Fa)
           call lsyssc_getbase_single(p_rmatrix, p_Fb)
-          call calcAsymmPartMat9Sngl(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+          call calcAsymmPartMat9SP(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
                                      rmatrix%NVAR*rmatrix%NVAR, real(dscale,SP), p_Fa, p_Fb)
         end select
 
@@ -10633,7 +10633,7 @@ contains
     !**************************************************************
     ! Compute symmetric part for dense matrix stored in matrix format 1
 
-    subroutine calcAsymmPartMat1Dble(NEQ, NCOLS, dscale, Da, Db)
+    subroutine calcAsymmPartMat1DP(NEQ, NCOLS, dscale, Da, Db)
 
       ! input parameters
       real(DP), intent(in) :: dscale
@@ -10654,12 +10654,12 @@ contains
         end do
       end do
 
-    end subroutine calcAsymmPartMat1Dble
+    end subroutine calcAsymmPartMat1DP
 
     !**************************************************************
     ! Compute symmetric part for dense matrix stored in matrix format 1
 
-    subroutine calcAsymmPartMat1Sngl(NEQ, NCOLS, fscale, Fa, Fb)
+    subroutine calcAsymmPartMat1SP(NEQ, NCOLS, fscale, Fa, Fb)
 
       ! input parameters
       real(SP), intent(in) :: fscale
@@ -10680,12 +10680,12 @@ contains
         end do
       end do
 
-    end subroutine calcAsymmPartMat1Sngl
+    end subroutine calcAsymmPartMat1SP
 
     !**************************************************************
     ! Compute symmetric part for CRS matrix stored in matrix format 7
 
-    subroutine calcAsymmPartMat7Dble(Kld, Kcol, Ksep, NVAR, dscale, Da, Db)
+    subroutine calcAsymmPartMat7DP(Kld, Kcol, Ksep, NVAR, dscale, Da, Db)
 
       ! input parameters
       integer, dimension(:), intent(in) :: Kld,Kcol
@@ -10720,12 +10720,12 @@ contains
         end do
       end do
 
-    end subroutine calcAsymmPartMat7Dble
+    end subroutine calcAsymmPartMat7DP
 
     !**************************************************************
     ! Compute symmetric part for CRS matrix stored in matrix format 7
 
-    subroutine calcAsymmPartMat7Sngl(Kld, Kcol, Ksep, NVAR, fscale, Fa, Fb)
+    subroutine calcAsymmPartMat7SP(Kld, Kcol, Ksep, NVAR, fscale, Fa, Fb)
 
       ! input parameters
       integer, dimension(:), intent(in) :: Kld,Kcol
@@ -10760,12 +10760,12 @@ contains
         end do
       end do
 
-    end subroutine calcAsymmPartMat7Sngl
+    end subroutine calcAsymmPartMat7SP
 
     !**************************************************************
     ! Compute symmetric part for CRS matrix stored in matrix format 9
 
-    subroutine calcAsymmPartMat9Dble(Kld, Kcol, Kdiagonal, Ksep, NVAR, dscale, Da, Db)
+    subroutine calcAsymmPartMat9DP(Kld, Kcol, Kdiagonal, Ksep, NVAR, dscale, Da, Db)
 
       ! input parameters
       integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
@@ -10800,12 +10800,12 @@ contains
         end do
       end do
 
-    end subroutine calcAsymmPartMat9Dble
+    end subroutine calcAsymmPartMat9DP
 
     !**************************************************************
     ! Compute symmetric part for CRS matrix stored in matrix format 9
 
-    subroutine calcAsymmPartMat9Sngl(Kld, Kcol, Kdiagonal, Ksep, NVAR, fscale, Fa, Fb)
+    subroutine calcAsymmPartMat9SP(Kld, Kcol, Kdiagonal, Ksep, NVAR, fscale, Fa, Fb)
 
       ! input parameters
       integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
@@ -10840,7 +10840,7 @@ contains
         end do
       end do
 
-    end subroutine calcAsymmPartMat9Sngl
+    end subroutine calcAsymmPartMat9SP
 
   end subroutine lsyssc_createMatrixAsymmPart
 
@@ -10907,18 +10907,18 @@ contains
         if (present(Icol)) then
           if (present(Irow)) then
             ! Both row and column restrictions
-            call collectSubmatrixMat1Dble(rmatrix%NEQ, rmatrix%NCOLS, p_Da,&
+            call collectSubmatrixMat1DP(rmatrix%NEQ, rmatrix%NCOLS, p_Da,&
                                           Icol, Irow, NEQ, NCOLS, p_DaSub)
-            ddeterminant = calcDetMat1Dble(NEQ, NCOLS, p_DaSub)
+            ddeterminant = calcDetMat1DP(NEQ, NCOLS, p_DaSub)
             deallocate(p_DaSub)
           else
             ! Only column restrictions
             call storage_new('lsyssc_calcDeterminant', 'IrowIdx', rmatrix%NEQ,&
                 ST_INT, h_IrowIdx, ST_NEWBLOCK_ORDERED)
             call storage_getbase_int(h_IrowIdx, p_IrowIdx)
-            call collectSubmatrixMat1Dble(rmatrix%NEQ, rmatrix%NCOLS, p_Da,&
+            call collectSubmatrixMat1DP(rmatrix%NEQ, rmatrix%NCOLS, p_Da,&
                                           Icol, p_IrowIdx, NEQ, NCOLS, p_DaSub)
-            ddeterminant = calcDetMat1Dble(NEQ, NCOLS, p_DaSub)
+            ddeterminant = calcDetMat1DP(NEQ, NCOLS, p_DaSub)
             deallocate(p_DaSub)
             call storage_free(h_IrowIdx)
           end if
@@ -10928,14 +10928,14 @@ contains
             call storage_new('lsyssc_calcDeterminant', 'IcolIdx', rmatrix%NEQ,&
                 ST_INT, h_IcolIdx, ST_NEWBLOCK_ORDERED)
             call storage_getbase_int(h_IcolIdx, p_IcolIdx)
-            call collectSubmatrixMat1Dble(rmatrix%NEQ, rmatrix%NCOLS, p_Da,&
+            call collectSubmatrixMat1DP(rmatrix%NEQ, rmatrix%NCOLS, p_Da,&
                                           p_IcolIdx, Irow, NEQ, NCOLS, p_DaSub)
-            ddeterminant = calcDetMat1Dble(NEQ, NCOLS, p_DaSub)
+            ddeterminant = calcDetMat1DP(NEQ, NCOLS, p_DaSub)
             deallocate(p_DaSub)
             call storage_free(h_IcolIdx)
           else
             ! No restrictions at all
-            ddeterminant = calcDetMat1Dble(rmatrix%NEQ, rmatrix%NCOLS, p_Da)
+            ddeterminant = calcDetMat1DP(rmatrix%NEQ, rmatrix%NCOLS, p_Da)
           end if
         end if
 
@@ -10947,18 +10947,18 @@ contains
         if (present(Icol)) then
           if (present(Irow)) then
             ! Both row and column restrictions
-            call collectSubmatrixMat1Sngl(rmatrix%NEQ, rmatrix%NCOLS, p_Fa,&
+            call collectSubmatrixMat1SP(rmatrix%NEQ, rmatrix%NCOLS, p_Fa,&
                                           Icol, Irow, NEQ, NCOLS, p_FaSub)
-            ddeterminant = calcDetMat1Sngl(NEQ, NCOLS, p_FaSub)
+            ddeterminant = calcDetMat1SP(NEQ, NCOLS, p_FaSub)
             deallocate(p_FaSub)
           else
             ! Only column restrictions
             call storage_new('lsyssc_calcDeterminant', 'IrowIdx', rmatrix%NEQ,&
                 ST_INT, h_IrowIdx, ST_NEWBLOCK_ORDERED)
             call storage_getbase_int(h_IrowIdx, p_IrowIdx)
-            call collectSubmatrixMat1Sngl(rmatrix%NEQ, rmatrix%NCOLS, p_Fa,&
+            call collectSubmatrixMat1SP(rmatrix%NEQ, rmatrix%NCOLS, p_Fa,&
                                           Icol, p_IrowIdx, NEQ, NCOLS, p_FaSub)
-            ddeterminant = calcDetMat1Sngl(NEQ, NCOLS, p_FaSub)
+            ddeterminant = calcDetMat1SP(NEQ, NCOLS, p_FaSub)
             deallocate(p_FaSub)
             call storage_free(h_IrowIdx)
           end if
@@ -10968,14 +10968,14 @@ contains
             call storage_new('lsyssc_calcDeterminant', 'IcolIdx', rmatrix%NEQ,&
                 ST_INT, h_IcolIdx, ST_NEWBLOCK_ORDERED)
             call storage_getbase_int(h_IcolIdx, p_IcolIdx)
-            call collectSubmatrixMat1Sngl(rmatrix%NEQ, rmatrix%NCOLS, p_Fa,&
+            call collectSubmatrixMat1SP(rmatrix%NEQ, rmatrix%NCOLS, p_Fa,&
                                           p_IcolIdx, Irow, NEQ, NCOLS, p_FaSub)
-            ddeterminant = calcDetMat1Sngl(NEQ, NCOLS, p_FaSub)
+            ddeterminant = calcDetMat1SP(NEQ, NCOLS, p_FaSub)
             deallocate(p_FaSub)
             call storage_free(h_IcolIdx)
           else
             ! No restrictions at all
-            ddeterminant = calcDetMat1Sngl(rmatrix%NEQ, rmatrix%NCOLS, p_Fa)
+            ddeterminant = calcDetMat1SP(rmatrix%NEQ, rmatrix%NCOLS, p_Fa)
           end if
         end if
 
@@ -10998,13 +10998,13 @@ contains
         if (present(Icol)) then
           if (present(Irow)) then
             ! Both row and column restrictions
-            ddeterminant = calcDetMatDDble(p_Da, Icol, Irow)
+            ddeterminant = calcDetMatDDP(p_Da, Icol, Irow)
           else
             ! Only column restrictions
             call storage_new('lsyssc_calcDeterminant', 'IrowIdx', rmatrix%NEQ,&
                 ST_INT, h_IrowIdx, ST_NEWBLOCK_ORDERED)
             call storage_getbase_int(h_IrowIdx, p_IrowIdx)
-            ddeterminant = calcDetMatDDble(p_Da, Icol, p_IrowIdx)
+            ddeterminant = calcDetMatDDP(p_Da, Icol, p_IrowIdx)
             call storage_free(h_IrowIdx)
           end if
         else
@@ -11013,11 +11013,11 @@ contains
             call storage_new('lsyssc_calcDeterminant', 'IcolIdx', rmatrix%NEQ,&
                 ST_INT, h_IcolIdx, ST_NEWBLOCK_ORDERED)
             call storage_getbase_int(h_IcolIdx, p_IcolIdx)
-            ddeterminant = calcDetMatDDble(p_Da, p_IcolIdx, Irow)
+            ddeterminant = calcDetMatDDP(p_Da, p_IcolIdx, Irow)
             call storage_free(h_IcolIdx)
           else
             ! No restrictions at all
-            ddeterminant = calcDetQuickMatDDble(p_Da)
+            ddeterminant = calcDetQuickMatDDP(p_Da)
           end if
         end if
 
@@ -11028,13 +11028,13 @@ contains
         if (present(Icol)) then
           if (present(Irow)) then
             ! Both row and column restrictions
-            ddeterminant = calcDetMatDSngl(p_Fa, Icol, Irow)
+            ddeterminant = calcDetMatDSP(p_Fa, Icol, Irow)
           else
             ! Only column restrictions
             call storage_new('lsyssc_calcDeterminant', 'IrowIdx', rmatrix%NEQ,&
                 ST_INT, h_IrowIdx, ST_NEWBLOCK_ORDERED)
             call storage_getbase_int(h_IrowIdx, p_IrowIdx)
-            ddeterminant = calcDetMatDSngl(p_Fa, Icol, p_IrowIdx)
+            ddeterminant = calcDetMatDSP(p_Fa, Icol, p_IrowIdx)
             call storage_free(h_IrowIdx)
           end if
         else
@@ -11043,11 +11043,11 @@ contains
             call storage_new('lsyssc_calcDeterminant', 'IcolIdx', rmatrix%NEQ,&
                 ST_INT, h_IcolIdx, ST_NEWBLOCK_ORDERED)
             call storage_getbase_int(h_IcolIdx, p_IcolIdx)
-            ddeterminant = calcDetMatDSngl(p_Fa, p_IcolIdx, Irow)
+            ddeterminant = calcDetMatDSP(p_Fa, p_IcolIdx, Irow)
             call storage_free(h_IcolIdx)
           else
             ! No restrictions at all
-            ddeterminant = calcDetQuickMatDSngl(p_Fa)
+            ddeterminant = calcDetQuickMatDSP(p_Fa)
           end if
         end if
 
@@ -11074,18 +11074,18 @@ contains
         if (present(Icol)) then
           if (present(Irow)) then
             ! Both row and column restrictions
-            call collectSubmatrixMat79Dble(p_Kld, p_Kcol, p_Da,&
+            call collectSubmatrixMat79DP(p_Kld, p_Kcol, p_Da,&
                                            Icol, Irow, NEQ, NCOLS, p_DaSub)
-            ddeterminant = calcDetMat1Dble(NEQ, NCOLS, p_DaSub)
+            ddeterminant = calcDetMat1DP(NEQ, NCOLS, p_DaSub)
             deallocate(p_DaSub)
           else
             ! Only column restrictions
             call storage_new('lsyssc_calcDeterminant', 'IrowIdx', rmatrix%NEQ,&
                 ST_INT, h_IrowIdx, ST_NEWBLOCK_ORDERED)
             call storage_getbase_int(h_IrowIdx, p_IrowIdx)
-            call collectSubmatrixMat79Dble(p_Kld, p_Kcol, p_Da,&
+            call collectSubmatrixMat79DP(p_Kld, p_Kcol, p_Da,&
                                            Icol, p_IrowIdx, NEQ, NCOLS, p_DaSub)
-            ddeterminant = calcDetMat1Dble(NEQ, NCOLS, p_DaSub)
+            ddeterminant = calcDetMat1DP(NEQ, NCOLS, p_DaSub)
             deallocate(p_DaSub)
             call storage_free(h_IrowIdx)
           end if
@@ -11095,9 +11095,9 @@ contains
             call storage_new('lsyssc_calcDeterminant', 'IcolIdx', rmatrix%NEQ,&
                 ST_INT, h_IcolIdx, ST_NEWBLOCK_ORDERED)
             call storage_getbase_int(h_IcolIdx, p_IcolIdx)
-            call collectSubmatrixMat79Dble(p_Kld, p_Kcol, p_Da,&
+            call collectSubmatrixMat79DP(p_Kld, p_Kcol, p_Da,&
                                            p_IcolIdx, Irow, NEQ, NCOLS, p_DaSub)
-            ddeterminant = calcDetMat1Dble(NEQ, NCOLS, p_DaSub)
+            ddeterminant = calcDetMat1DP(NEQ, NCOLS, p_DaSub)
             deallocate(p_DaSub)
             call storage_free(h_IcolIdx)
           else
@@ -11105,9 +11105,9 @@ contains
             call storage_new('lsyssc_calcDeterminant', 'IcolIdx', rmatrix%NEQ,&
                 ST_INT, h_IcolIdx, ST_NEWBLOCK_ORDERED)
             call storage_getbase_int(h_IcolIdx, p_IcolIdx)
-            call collectSubmatrixMat79Dble(p_Kld, p_Kcol, p_Da,&
+            call collectSubmatrixMat79DP(p_Kld, p_Kcol, p_Da,&
                                            p_IcolIdx, p_IcolIdx, NEQ, NCOLS, p_DaSub)
-            ddeterminant = calcDetMat1Dble(rmatrix%NEQ, rmatrix%NCOLS, p_DaSub)
+            ddeterminant = calcDetMat1DP(rmatrix%NEQ, rmatrix%NCOLS, p_DaSub)
             deallocate(p_DaSub)
             call storage_free(h_IcolIdx)
           end if
@@ -11121,18 +11121,18 @@ contains
         if (present(Icol)) then
           if (present(Irow)) then
             ! Both row and column restrictions
-            call collectSubmatrixMat79Sngl(p_Kld, p_Kcol, p_Fa,&
+            call collectSubmatrixMat79SP(p_Kld, p_Kcol, p_Fa,&
                                            Icol, Irow, NEQ, NCOLS, p_FaSub)
-            ddeterminant = calcDetMat1Sngl(NEQ, NCOLS, p_FaSub)
+            ddeterminant = calcDetMat1SP(NEQ, NCOLS, p_FaSub)
             deallocate(p_FaSub)
           else
             ! Only column restrictions
             call storage_new('lsyssc_calcDeterminant', 'IrowIdx', rmatrix%NEQ,&
                 ST_INT, h_IrowIdx, ST_NEWBLOCK_ORDERED)
             call storage_getbase_int(h_IrowIdx, p_IrowIdx)
-            call collectSubmatrixMat79Sngl(p_Kld, p_Kcol, p_Fa,&
+            call collectSubmatrixMat79SP(p_Kld, p_Kcol, p_Fa,&
                                            Icol, p_IrowIdx, NEQ, NCOLS, p_FaSub)
-            ddeterminant = calcDetMat1Sngl(NEQ, NCOLS, p_FaSub)
+            ddeterminant = calcDetMat1SP(NEQ, NCOLS, p_FaSub)
             deallocate(p_FaSub)
             call storage_free(h_IrowIdx)
           end if
@@ -11142,9 +11142,9 @@ contains
             call storage_new('lsyssc_calcDeterminant', 'IcolIdx', rmatrix%NEQ,&
                 ST_INT, h_IcolIdx, ST_NEWBLOCK_ORDERED)
             call storage_getbase_int(h_IcolIdx, p_IcolIdx)
-            call collectSubmatrixMat79Sngl(p_Kld, p_Kcol, p_Fa,&
+            call collectSubmatrixMat79SP(p_Kld, p_Kcol, p_Fa,&
                                            p_IcolIdx, Irow, NEQ, NCOLS, p_FaSub)
-            ddeterminant = calcDetMat1Sngl(NEQ, NCOLS, p_FaSub)
+            ddeterminant = calcDetMat1SP(NEQ, NCOLS, p_FaSub)
             deallocate(p_FaSub)
             call storage_free(h_IcolIdx)
           else
@@ -11152,9 +11152,9 @@ contains
             call storage_new('lsyssc_calcDeterminant', 'IcolIdx', rmatrix%NEQ,&
                 ST_INT, h_IcolIdx, ST_NEWBLOCK_ORDERED)
             call storage_getbase_int(h_IcolIdx, p_IcolIdx)
-            call collectSubmatrixMat79Sngl(p_Kld, p_Kcol, p_Fa,&
+            call collectSubmatrixMat79SP(p_Kld, p_Kcol, p_Fa,&
                                            p_IcolIdx, p_IcolIdx, NEQ, NCOLS, p_FaSub)
-            ddeterminant = calcDetMat1Sngl(rmatrix%NEQ, rmatrix%NCOLS, p_FaSub)
+            ddeterminant = calcDetMat1SP(rmatrix%NEQ, rmatrix%NCOLS, p_FaSub)
             deallocate(p_FaSub)
             call storage_free(h_IcolIdx)
           end if
@@ -11179,7 +11179,7 @@ contains
     !**************************************************************
     ! Collect submatrix from full matrix with double-valued data
 
-    subroutine collectSubmatrixMat1Dble(NEQ, NCOLS, Da, IcolIdx, IrowIdx,&
+    subroutine collectSubmatrixMat1DP(NEQ, NCOLS, Da, IcolIdx, IrowIdx,&
                                         NEQSub, NCOLSSub, p_DaSub)
 
       real(DP), dimension(:), intent(in) :: Da
@@ -11243,12 +11243,12 @@ contains
         end do col
       end do row
 
-    end subroutine collectSubmatrixMat1Dble
+    end subroutine collectSubmatrixMat1DP
 
     !**************************************************************
     ! Collect submatrix from full matrix with single-valued data
 
-    subroutine collectSubmatrixMat1Sngl(NEQ, NCOLS, Fa, IcolIdx, IrowIdx,&
+    subroutine collectSubmatrixMat1SP(NEQ, NCOLS, Fa, IcolIdx, IrowIdx,&
                                         NEQSub, NCOLSSub, p_FaSub)
 
       real(SP), dimension(:), intent(in) :: Fa
@@ -11312,12 +11312,12 @@ contains
         end do col
       end do row
 
-    end subroutine collectSubmatrixMat1Sngl
+    end subroutine collectSubmatrixMat1SP
 
     !**************************************************************
     ! Collect submatrix from CSR matrix with double-valued data
 
-    subroutine collectSubmatrixMat79Dble(Kld, Kcol, Da, IcolIdx, IrowIdx,&
+    subroutine collectSubmatrixMat79DP(Kld, Kcol, Da, IcolIdx, IrowIdx,&
                                          NEQSub, NCOLSSub, p_DaSub)
 
       real(DP), dimension(:), intent(in) :: Da
@@ -11389,12 +11389,12 @@ contains
         end do col
       end do row
 
-    end subroutine collectSubmatrixMat79Dble
+    end subroutine collectSubmatrixMat79DP
 
     !**************************************************************
     ! Collect submatrix from CSR matrix with single-valued data
 
-    subroutine collectSubmatrixMat79Sngl(Kld, Kcol, Fa, IcolIdx, IrowIdx,&
+    subroutine collectSubmatrixMat79SP(Kld, Kcol, Fa, IcolIdx, IrowIdx,&
                                          NEQSub, NCOLSSub, p_FaSub)
 
       real(SP), dimension(:), intent(in) :: Fa
@@ -11466,12 +11466,12 @@ contains
         end do col
       end do row
 
-    end subroutine collectSubmatrixMat79Sngl
+    end subroutine collectSubmatrixMat79SP
 
     !**************************************************************
     ! Compute determinant of full matrix with double-valued data
 
-    function calcDetMat1Dble(NEQ, NCOLS, Da) result(ddeterminant)
+    function calcDetMat1DP(NEQ, NCOLS, Da) result(ddeterminant)
 
       integer, intent(in) :: NEQ,NCOLS
 
@@ -11547,12 +11547,12 @@ contains
       ! Deallocate temporal memory
       deallocate(Iperm)
 
-    end function calcDetMat1Dble
+    end function calcDetMat1DP
 
     !**************************************************************
     ! Compute determinant of full matrix with single-valued data
 
-    function calcDetMat1Sngl(NEQ, NCOLS, Fa) result(ddeterminant)
+    function calcDetMat1SP(NEQ, NCOLS, Fa) result(ddeterminant)
 
       integer, intent(in) :: NEQ,NCOLS
 
@@ -11628,13 +11628,13 @@ contains
       ! Deallocate temporal memory
       deallocate(Iperm)
 
-    end function calcDetMat1Sngl
+    end function calcDetMat1SP
 
     !**************************************************************
     ! Compute determinant of diagonal matrix with double-valued data
     ! without any restriction on the rows and/or columns
 
-    function calcDetQuickMatDDble(Da) result(ddeterminant)
+    function calcDetQuickMatDDP(Da) result(ddeterminant)
 
       real(DP), dimension(:), intent(in) :: Da
 
@@ -11651,13 +11651,13 @@ contains
         ddeterminant = ddeterminant*Da(idx)
       end do
 
-    end function calcDetQuickMatDDble
+    end function calcDetQuickMatDDP
 
     !**************************************************************
     ! Compute determinant of diagonal matrix with single-valued data
     ! without any restriction on the rows and/or columns
 
-    function calcDetQuickMatDSngl(Fa) result(ddeterminant)
+    function calcDetQuickMatDSP(Fa) result(ddeterminant)
 
       real(SP), dimension(:), intent(in) :: Fa
 
@@ -11674,12 +11674,12 @@ contains
         ddeterminant = ddeterminant*real(Fa(idx),DP)
       end do
 
-    end function calcDetQuickMatDSngl
+    end function calcDetQuickMatDSP
 
     !**************************************************************
     ! Compute determinant of diagonal matrix with double-valued data
 
-    function calcDetMatDDble(Da, IcolIdx, IrowIdx) result(ddeterminant)
+    function calcDetMatDDP(Da, IcolIdx, IrowIdx) result(ddeterminant)
 
       real(DP), dimension(:), intent(in) :: Da
       integer, dimension(:), intent(in) :: IcolIdx,IrowIdx
@@ -11734,12 +11734,12 @@ contains
         call sys_halt()
       end if
 
-    end function calcDetMatDDble
+    end function calcDetMatDDP
 
     !**************************************************************
     ! Compute determinant of diagonal matrix with single-valued data
 
-    function calcDetMatDSngl(Fa, IcolIdx, IrowIdx) result(ddeterminant)
+    function calcDetMatDSP(Fa, IcolIdx, IrowIdx) result(ddeterminant)
 
       real(SP), dimension(:), intent(in) :: Fa
       integer, dimension(:), intent(in) :: IcolIdx,IrowIdx
@@ -11795,7 +11795,7 @@ contains
         call sys_halt()
       end if
 
-    end function calcDetMatDSngl
+    end function calcDetMatDSP
 
   end function lsyssc_calcDeterminant
 
@@ -12784,11 +12784,11 @@ contains
     case (ST_DOUBLE)
       call lsyssc_getbase_double(rvector,p_Ddata)
       call lsyssc_getbase_double(p_rtemp,p_Ddata2)
-      call lalg_copyVectorDble(p_Ddata,p_Ddata2,size(p_Ddata))
+      call lalg_copyVector(p_Ddata,p_Ddata2,size(p_Ddata))
     case (ST_SINGLE)
       call lsyssc_getbase_single(rvector,p_Fdata)
       call lsyssc_getbase_single(p_rtemp,p_Fdata2)
-      call lalg_copyVectorSngl(p_Fdata,p_Fdata2,size(p_Fdata))
+      call lalg_copyVector(p_Fdata,p_Fdata2,size(p_Fdata))
     case default
       call output_line("Unsuppported data type!",&
           OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_sortVector")
@@ -12805,11 +12805,11 @@ contains
     select case (rvector%cdataType)
     case (ST_DOUBLE)
       ! Then do the sorting with the given permutation.
-      call lalg_vectorSortDble (p_Ddata2,p_Ddata,p_Iperm)
+      call lalg_vectorSort (p_Ddata2,p_Ddata,p_Iperm)
 
     case (ST_SINGLE)
       ! Then do the sorting with the given permutation.
-      call lalg_vectorSortSngl (p_Fdata2,p_Fdata,p_Iperm)
+      call lalg_vectorSort (p_Fdata2,p_Fdata,p_Iperm)
 
     case default
       call output_line("Unsuppported data type!",&
@@ -13294,12 +13294,12 @@ contains
             ! Double precision version
             call lsyssc_getbase_double (rmatrix,p_Ddata)
             call lsyssc_getbase_double (rtempMatrix,p_DdataTmp)
-            call lalg_vectorSortDble (p_DdataTmp, p_Ddata, Itr1)
+            call lalg_vectorSort (p_DdataTmp, p_Ddata, Itr1)
           case (ST_SINGLE)
             ! Single precision version
             call lsyssc_getbase_single (rmatrix,p_Fdata)
             call lsyssc_getbase_single (rtempMatrix,p_FdataTmp)
-            call lalg_vectorSortSngl (p_FdataTmp, p_Fdata, Itr1)
+            call lalg_vectorSort (p_FdataTmp, p_Fdata, Itr1)
           case default
             call output_line("Unsupported data type!",&
                 OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_sortVector")
@@ -15314,7 +15314,7 @@ contains
       call lsyssc_getbase_double (rvector,p_Dx)
 
       ! Increase by dvalue
-      call lalg_vectorAddScalarDble (p_Dx,dvalue,rvector%NEQ)
+      call lalg_vectorAddScalar (p_Dx,dvalue,rvector%NEQ)
 
     case default
       call output_line('Data type not implemented!',&
@@ -16020,18 +16020,18 @@ contains
     ! Get the pointer and scale the whole data array.
     call lsyssc_getbase_double(rx,p_Dsource)
     if (.not. present(dvalue)) then
-      call lalg_clearVectorDble (p_Dsource)
+      call lalg_clearVector (p_Dsource)
     else
-      call lalg_setVectorDble (p_Dsource,dvalue)
+      call lalg_setVector (p_Dsource,dvalue)
     end if
 
   case (ST_SINGLE)
     ! Get the pointer and scale the whole data array.
     call lsyssc_getbase_single(rx,p_Ssource)
     if (.not. present(dvalue)) then
-      call lalg_clearVectorSngl (p_Ssource)
+      call lalg_clearVector (p_Ssource)
     else
-      call lalg_setVectorSngl (p_Ssource,real(dvalue,SP))
+      call lalg_setVector (p_Ssource,real(dvalue,SP))
     end if
 
   case default
@@ -16094,14 +16094,14 @@ contains
     call lsyssc_getbase_double(rx,p_Dsource)
     call lsyssc_getbase_double(p_rdest,p_Ddest)
 
-    call lalg_vectorLinearCombDble (p_Dsource,p_Ddest,cx,cy)
+    call lalg_vectorLinearComb (p_Dsource,p_Ddest,cx,cy)
 
   case (ST_SINGLE)
     ! Get the pointers and copy the whole data array.
     call lsyssc_getbase_single(rx,p_Ssource)
     call lsyssc_getbase_single(p_rdest,p_Sdest)
 
-    call lalg_vectorLinearCombSngl (p_Ssource,p_Sdest,real(cx,SP),real(cy,SP))
+    call lalg_vectorLinearComb (p_Ssource,p_Sdest,real(cx,SP),real(cy,SP))
 
   case default
     call output_line('Unsupported data type!',&
@@ -16181,14 +16181,14 @@ contains
     call lsyssc_getbase_double(rx,p_Dsource)
     call lsyssc_getbase_double(p_rdest,p_Ddest)
 
-    call lalg_vectorLinearCombDble (p_Dsource,p_Ddest,cx,cy)
+    call lalg_vectorLinearComb (p_Dsource,p_Ddest,cx,cy)
 
   case (ST_SINGLE)
     ! Get the pointers and copy the whole data array.
     call lsyssc_getbase_single(rx,p_Ssource)
     call lsyssc_getbase_single(p_rdest,p_Sdest)
 
-    call lalg_vectorLinearCombSngl (p_Ssource,p_Sdest,real(cx,SP),real(cy,SP))
+    call lalg_vectorLinearComb (p_Ssource,p_Sdest,real(cx,SP),real(cy,SP))
 
   case default
     call output_line('Unsupported data type!',&
@@ -16288,12 +16288,12 @@ contains
 !    CASE (ST_DOUBLE)
 !      CALL lsyssc_getbase_double (rsourceMatrix,p_Dsource)
 !      CALL lsyssc_getbase_double (rdestMatrix,p_Ddest)
-!      CALL lalg_copyVectorDble (p_Dsource,p_Ddest)
+!      CALL lalg_copyVector (p_Dsource,p_Ddest)
 !
 !    CASE (ST_SINGLE)
 !      CALL lsyssc_getbase_single (rsourceMatrix,p_Fsource)
 !      CALL lsyssc_getbase_single (rdestMatrix,p_Fdest)
-!      CALL lalg_copyVectorSngl (p_Fsource,p_Fdest)
+!      CALL lalg_copyVector (p_Fsource,p_Fdest)
 !
 !    CASE default
 !      call output_line('Unsupported data type!',&
@@ -16303,15 +16303,15 @@ contains
 !
 !    CALL lsyssc_getbase_Kcol (rsourceMatrix,p_KcolSource)
 !    CALL lsyssc_getbase_Kcol (rdestMatrix,p_KcolDest)
-!    CALL lalg_copyVectorInt (p_KcolSource,p_KcolDest)
+!    CALL lalg_copyVector (p_KcolSource,p_KcolDest)
 !
 !    CALL lsyssc_getbase_Kld (rsourceMatrix,p_KldSource)
 !    CALL lsyssc_getbase_Kld (rdestMatrix,p_KldDest)
-!    CALL lalg_copyVectorInt (p_KldSource,p_KldDest)
+!    CALL lalg_copyVector (p_KldSource,p_KldDest)
 !
 !    CALL lsyssc_getbase_Kdiagonal (rsourceMatrix,p_KdiagonalSource)
 !    CALL lsyssc_getbase_Kdiagonal (rdestMatrix,p_KdiagonalDest)
-!    CALL lalg_copyVectorInt (p_KdiagonalSource,p_KdiagonalDest)
+!    CALL lalg_copyVector (p_KdiagonalSource,p_KdiagonalDest)
 !
 !  CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX7INTL)
 !
@@ -16325,12 +16325,12 @@ contains
 !    CASE (ST_DOUBLE)
 !      CALL lsyssc_getbase_double (rsourceMatrix,p_Dsource)
 !      CALL lsyssc_getbase_double (rdestMatrix,p_Ddest)
-!      CALL lalg_copyVectorDble (p_Dsource,p_Ddest)
+!      CALL lalg_copyVector (p_Dsource,p_Ddest)
 !
 !    CASE (ST_SINGLE)
 !      CALL lsyssc_getbase_single (rsourceMatrix,p_Fsource)
 !      CALL lsyssc_getbase_single (rdestMatrix,p_Fdest)
-!      CALL lalg_copyVectorSngl (p_Fsource,p_Fdest)
+!      CALL lalg_copyVector (p_Fsource,p_Fdest)
 !
 !    CASE default
 !      call output_line('Unsupported data type!',&
@@ -16340,11 +16340,11 @@ contains
 !
 !    CALL lsyssc_getbase_Kcol (rsourceMatrix,p_KcolSource)
 !    CALL lsyssc_getbase_Kcol (rdestMatrix,p_KcolDest)
-!    CALL lalg_copyVectorInt (p_KcolSource,p_KcolDest)
+!    CALL lalg_copyVector (p_KcolSource,p_KcolDest)
 !
 !    CALL lsyssc_getbase_Kld (rsourceMatrix,p_KldSource)
 !    CALL lsyssc_getbase_Kld (rdestMatrix,p_KldDest)
-!    CALL lalg_copyVectorInt (p_KldSource,p_KldDest)
+!    CALL lalg_copyVector (p_KldSource,p_KldDest)
 !
 !  CASE (LSYSSC_MATRIXD)
 !
@@ -16356,12 +16356,12 @@ contains
 !    CASE (ST_DOUBLE)
 !      CALL lsyssc_getbase_double (rsourceMatrix,p_Dsource)
 !      CALL lsyssc_getbase_double (rdestMatrix,p_Ddest)
-!      CALL lalg_copyVectorDble (p_Dsource,p_Ddest)
+!      CALL lalg_copyVector (p_Dsource,p_Ddest)
 !
 !    CASE (ST_SINGLE)
 !      CALL lsyssc_getbase_single (rsourceMatrix,p_Fsource)
 !      CALL lsyssc_getbase_single (rdestMatrix,p_Fdest)
-!      CALL lalg_copyVectorSngl (p_Fsource,p_Fdest)
+!      CALL lalg_copyVector (p_Fsource,p_Fdest)
 !
 !    CASE default
 !      call output_line('Unsupported data type!',&
@@ -17088,7 +17088,7 @@ contains
         call lsyssc_getbase_double(rdestMatrix,p_DaDest)
 
         ! Permute
-        call lalg_vectorSortDble (p_DaSource, p_DaDest, Ipermutation)
+        call lalg_vectorSort (p_DaSource, p_DaDest, Ipermutation)
 
       case default
         call output_line("Invalid data type!",&
@@ -17814,12 +17814,12 @@ contains
     case (ST_DOUBLE)
       call lsyssc_getbase_double(rsourceMatrix,p_Da1)
       call lsyssc_getbase_double(rdestMatrix,p_Da2)
-      call lalg_copyVectorDble (p_Da1,p_Da2)
+      call lalg_copyVector (p_Da1,p_Da2)
 
     case (ST_SINGLE)
       call lsyssc_getbase_single(rsourceMatrix,p_Fa1)
       call lsyssc_getbase_single(rdestMatrix,p_Fa2)
-      call lalg_copyVectorSngl (p_Fa1,p_Fa2)
+      call lalg_copyVector (p_Fa1,p_Fa2)
 
     case default
       call output_line('Unsupported data type!',&
@@ -17870,7 +17870,7 @@ contains
     end if
     call lsyssc_getbase_Kcol (rdestMatrix,p_Kcol2)
 
-    call lalg_copyVectorInt (p_Kcol1,p_Kcol2)
+    call lalg_copyVector (p_Kcol1,p_Kcol2)
 
   end subroutine
 
@@ -17924,7 +17924,7 @@ contains
     end if
     call lsyssc_getbase_Kld (rdestMatrix,p_Kld2)
 
-    call lalg_copyVectorInt (p_Kld1,p_Kld2)
+    call lalg_copyVector (p_Kld1,p_Kld2)
 
   end subroutine
 
@@ -17973,7 +17973,7 @@ contains
     end if
     call lsyssc_getbase_KrowIdx (rdestMatrix,p_Knz2)
 
-    call lalg_copyVectorInt (p_Knz1,p_Knz2)
+    call lalg_copyVector (p_Knz1,p_Knz2)
 
   end subroutine
 
@@ -18025,7 +18025,7 @@ contains
     end if
     call lsyssc_getbase_Kdiagonal (rdestMatrix,p_Kdiag2)
 
-    call lalg_copyVectorInt (p_Kdiag1,p_Kdiag2)
+    call lalg_copyVector (p_Kdiag1,p_Kdiag2)
 
   end subroutine
 
@@ -18124,10 +18124,10 @@ contains
         select case (cdType)
         case (ST_DOUBLE)
           call lsyssc_getbase_double (rmatrixScalar,p_Da)
-          call lalg_setVectorDble (p_Da,1.0_DP)
+          call lalg_setVector (p_Da,1.0_DP)
         case (ST_SINGLE)
           call lsyssc_getbase_single (rmatrixScalar,p_Fa)
-          call lalg_setVectorSngl (p_Fa,1.0_SP)
+          call lalg_setVector (p_Fa,1.0_SP)
         case default
           call output_line('Unknown data type!',&
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_allocEmptyMatrix')
@@ -18177,10 +18177,10 @@ contains
         select case (cdType)
         case (ST_DOUBLE)
           call lsyssc_getbase_double (rmatrixScalar,p_Da)
-          call lalg_setVectorDble (p_Da,1.0_DP)
+          call lalg_setVector (p_Da,1.0_DP)
         case (ST_SINGLE)
           call lsyssc_getbase_single (rmatrixScalar,p_Fa)
-          call lalg_setVectorSngl (p_Fa,1.0_SP)
+          call lalg_setVector (p_Fa,1.0_SP)
         case default
           call output_line('Unknown data type!',&
               OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_allocEmptyMatrix')
@@ -18917,14 +18917,14 @@ contains
               call lsyssc_getbase_double(rmatrixA,DaA)
               call lsyssc_getbase_double(rmatrixB,DaB)
               call lsyssc_getbase_double(rmatrixC,DaC)
-              call do_mat1mat1mulDbleDble(rmatrixA%NEQ,rmatrixA&
+              call do_mat1mat1mulDPDP(rmatrixA%NEQ,rmatrixA&
                   &%NCOLS,rmatrixB%NCOLS,DaA,DaB,DaC)
 
             case (ST_SINGLE)
               call lsyssc_getbase_double(rmatrixA,DaA)
               call lsyssc_getbase_single(rmatrixB,FaB)
               call lsyssc_getbase_double(rmatrixC,DaC)
-              call do_mat1mat1mulDbleSngl(rmatrixA%NEQ,rmatrixA&
+              call do_mat1mat1mulDPSP(rmatrixA%NEQ,rmatrixA&
                   &%NCOLS,rmatrixB%NCOLS,DaA,FaB,DaC)
 
             case default
@@ -18941,14 +18941,14 @@ contains
               call lsyssc_getbase_single(rmatrixA,FaA)
               call lsyssc_getbase_double(rmatrixB,DaB)
               call lsyssc_getbase_double(rmatrixC,DaC)
-              call do_mat1mat1mulSnglDble(rmatrixA%NEQ,rmatrixA&
+              call do_mat1mat1mulSPDP(rmatrixA%NEQ,rmatrixA&
                   &%NCOLS,rmatrixB%NCOLS,FaA,DaB,DaC)
 
             case (ST_SINGLE)
               call lsyssc_getbase_single(rmatrixA,FaA)
               call lsyssc_getbase_single(rmatrixB,FaB)
               call lsyssc_getbase_single(rmatrixC,FaC)
-              call do_mat1mat1mulSnglSngl(rmatrixA%NEQ,rmatrixA&
+              call do_mat1mat1mulSPSP(rmatrixA%NEQ,rmatrixA&
                   &%NCOLS,rmatrixB%NCOLS,FaA,FaB,FaC)
 
             case default
@@ -19004,14 +19004,14 @@ contains
               call lsyssc_getbase_double(rmatrixA,DaA)
               call lsyssc_getbase_double(rmatrixB,DaB)
               call lsyssc_getbase_double(rmatrixC,DaC)
-              call do_mat1matDmulDbleDble(rmatrixA%NEQ,rmatrixA&
+              call do_mat1matDmulDPDP(rmatrixA%NEQ,rmatrixA&
                   &%NCOLS,DaA,DaB,DaC)
 
             case (ST_SINGLE)
               call lsyssc_getbase_double(rmatrixA,DaA)
               call lsyssc_getbase_single(rmatrixB,FaB)
               call lsyssc_getbase_double(rmatrixC,DaC)
-              call do_mat1matDmulDbleSngl(rmatrixA%NEQ,rmatrixA&
+              call do_mat1matDmulDPSP(rmatrixA%NEQ,rmatrixA&
                   &%NCOLS,DaA,FaB,DaC)
 
             case default
@@ -19028,14 +19028,14 @@ contains
               call lsyssc_getbase_single(rmatrixA,FaA)
               call lsyssc_getbase_double(rmatrixB,DaB)
               call lsyssc_getbase_double(rmatrixC,DaC)
-              call do_mat1matDmulSnglDble(rmatrixA%NEQ,rmatrixA&
+              call do_mat1matDmulSPDP(rmatrixA%NEQ,rmatrixA&
                   &%NCOLS,FaA,DaB,DaC)
 
             case (ST_SINGLE)
               call lsyssc_getbase_single(rmatrixA,FaA)
               call lsyssc_getbase_single(rmatrixB,FaB)
               call lsyssc_getbase_single(rmatrixC,FaC)
-              call do_mat1matDmulSnglSngl(rmatrixA%NEQ,rmatrixA&
+              call do_mat1matDmulSPSP(rmatrixA%NEQ,rmatrixA&
                   &%NCOLS,FaA,FaB,FaC)
 
             case default
@@ -19186,14 +19186,14 @@ contains
               call lsyssc_getbase_double(rmatrixA,DaA)
               call lsyssc_getbase_double(rmatrixB,DaB)
               call lsyssc_getbase_double(rmatrixC,DaC)
-              call do_matDmat1mulDbleDble(rmatrixB%NEQ,rmatrixB&
+              call do_matDmat1mulDPDP(rmatrixB%NEQ,rmatrixB&
                   &%NCOLS,DaA,DaB,DaC)
 
             case (ST_SINGLE)
               call lsyssc_getbase_double(rmatrixA,DaA)
               call lsyssc_getbase_single(rmatrixB,FaB)
               call lsyssc_getbase_double(rmatrixC,DaC)
-              call do_matDmat1mulDbleSngl(rmatrixB%NEQ,rmatrixB&
+              call do_matDmat1mulDPSP(rmatrixB%NEQ,rmatrixB&
                   &%NCOLS,DaA,FaB,DaC)
 
             case default
@@ -19210,14 +19210,14 @@ contains
               call lsyssc_getbase_single(rmatrixA,FaA)
               call lsyssc_getbase_double(rmatrixB,DaB)
               call lsyssc_getbase_double(rmatrixC,DaC)
-              call do_matDmat1mulSnglDble(rmatrixB%NEQ,rmatrixB&
+              call do_matDmat1mulSPDP(rmatrixB%NEQ,rmatrixB&
                   &%NCOLS,FaA,DaB,DaC)
 
             case (ST_SINGLE)
               call lsyssc_getbase_single(rmatrixA,FaA)
               call lsyssc_getbase_single(rmatrixB,FaB)
               call lsyssc_getbase_single(rmatrixC,FaC)
-              call do_matDmat1mulSnglSngl(rmatrixB%NEQ,rmatrixB&
+              call do_matDmat1mulSPSP(rmatrixB%NEQ,rmatrixB&
                   &%NCOLS,FaA,FaB,FaC)
 
             case default
@@ -19281,12 +19281,12 @@ contains
               call lsyssc_getbase_Kld(rmatrixB,KldB)
               call lsyssc_getbase_Kcol(rmatrixB,KcolB)
               if (bfast) then
-                call do_matDmat79mulDbleDble(DaA,DaB,KldB,KcolB&
+                call do_matDmat79mulDPDP(DaA,DaB,KldB,KcolB&
                     &,rmatrixB%NEQ,DaC)
               else
                 call lsyssc_getbase_Kld(rmatrixC,KldC)
                 call lsyssc_getbase_Kcol(rmatrixC,KcolC)
-                call do_matDmat79mulDbleDble(DaA,DaB,KldB,KcolB&
+                call do_matDmat79mulDPDP(DaA,DaB,KldB,KcolB&
                     &,rmatrixB%NEQ,DaC,KldC,KcolC)
               end if
 
@@ -19297,12 +19297,12 @@ contains
               call lsyssc_getbase_Kld(rmatrixB,KldB)
               call lsyssc_getbase_Kld(rmatrixB,KcolB)
               if (bfast) then
-                call do_matDmat79mulDbleSngl(DaA,FaB,KldB,KcolB&
+                call do_matDmat79mulDPSP(DaA,FaB,KldB,KcolB&
                     &,rmatrixB%NEQ,DaC)
               else
                 call lsyssc_getbase_Kld(rmatrixC,KldC)
                 call lsyssc_getbase_Kcol(rmatrixC,KcolC)
-                call do_matDmat79mulDbleSngl(DaA,FaB,KldB,KcolB&
+                call do_matDmat79mulDPSP(DaA,FaB,KldB,KcolB&
                     &,rmatrixB%NEQ,DaC,KldC,KcolC)
               end if
 
@@ -19323,12 +19323,12 @@ contains
               call lsyssc_getbase_Kld(rmatrixB,KldB)
               call lsyssc_getbase_Kcol(rmatrixB,KcolB)
               if (bfast) then
-                call do_matDmat79mulSnglDble(FaA,DaB,KldB,KcolB&
+                call do_matDmat79mulSPDP(FaA,DaB,KldB,KcolB&
                     &,rmatrixB%NEQ,DaC)
               else
                 call lsyssc_getbase_Kld(rmatrixC,KldC)
                 call lsyssc_getbase_Kcol(rmatrixC,KcolC)
-                call do_matDmat79mulSnglDble(FaA,DaB,KldB,KcolB&
+                call do_matDmat79mulSPDP(FaA,DaB,KldB,KcolB&
                     &,rmatrixB%NEQ,DaC,KldC,KcolC)
               end if
 
@@ -19339,12 +19339,12 @@ contains
               call lsyssc_getbase_Kld(rmatrixB,KldB)
               call lsyssc_getbase_Kcol(rmatrixB,KcolB)
               if (bfast) then
-                call do_matDmat79mulSnglSngl(FaA,FaB,KldB,KcolB&
+                call do_matDmat79mulSPSP(FaA,FaB,KldB,KcolB&
                     &,rmatrixB%NEQ,FaC)
               else
                 call lsyssc_getbase_Kld(rmatrixC,KldC)
                 call lsyssc_getbase_Kcol(rmatrixC,KcolC)
-                call do_matDmat79mulSnglSngl(FaA,FaB,KldB,KcolB&
+                call do_matDmat79mulSPSP(FaA,FaB,KldB,KcolB&
                     &,rmatrixB%NEQ,FaC,KldC,KcolC)
               end if
 
@@ -19421,12 +19421,12 @@ contains
               call lsyssc_getbase_Kld(rmatrixA,KldA)
               call lsyssc_getbase_Kcol(rmatrixA,KcolA)
               if (bfast) then
-                call do_mat79matDmulDbleDble(DaA,KldA,KcolA&
+                call do_mat79matDmulDPDP(DaA,KldA,KcolA&
                     &,rmatrixA%NEQ,DaB,DaC)
               else
                 call lsyssc_getbase_Kld(rmatrixC,KldC)
                 call lsyssc_getbase_Kcol(rmatrixC,KcolC)
-                call do_mat79matDmulDbleDble(DaA,KldA,KcolA&
+                call do_mat79matDmulDPDP(DaA,KldA,KcolA&
                     &,rmatrixA%NEQ,DaB,DaC,KldC,KcolC)
               end if
 
@@ -19437,12 +19437,12 @@ contains
               call lsyssc_getbase_Kld(rmatrixA,KldA)
               call lsyssc_getbase_Kcol(rmatrixA,KcolA)
               if (bfast) then
-                call do_mat79matDmulDbleSngl(DaA,KldA,KcolA&
+                call do_mat79matDmulDPSP(DaA,KldA,KcolA&
                     &,rmatrixA%NEQ,FaB,DaC)
               else
                 call lsyssc_getbase_Kld(rmatrixC,KldC)
                 call lsyssc_getbase_Kcol(rmatrixC,KcolC)
-                call do_mat79matDmulDbleSngl(DaA,KldA,KcolA&
+                call do_mat79matDmulDPSP(DaA,KldA,KcolA&
                     &,rmatrixA%NEQ,FaB,DaC,KldC,KcolC)
               end if
 
@@ -19463,12 +19463,12 @@ contains
               call lsyssc_getbase_Kld(rmatrixA,KldA)
               call lsyssc_getbase_Kcol(rmatrixA,KcolA)
               if (bfast) then
-                call do_mat79matDmulSnglDble(FaA,KldA,KcolA&
+                call do_mat79matDmulSPDP(FaA,KldA,KcolA&
                     &,rmatrixA%NEQ,DaB,DaC)
               else
                 call lsyssc_getbase_Kld(rmatrixC,KldC)
                 call lsyssc_getbase_Kcol(rmatrixC,KcolC)
-                call do_mat79matDmulSnglDble(FaA,KldA,KcolA&
+                call do_mat79matDmulSPDP(FaA,KldA,KcolA&
                     &,rmatrixA%NEQ,DaB,DaC,KldC,KcolC)
               end if
 
@@ -19479,12 +19479,12 @@ contains
               call lsyssc_getbase_Kld(rmatrixA,KldA)
               call lsyssc_getbase_Kcol(rmatrixA,KcolA)
               if (bfast) then
-                call do_mat79matDmulSnglSngl(FaA,KldA,KcolA&
+                call do_mat79matDmulSPSP(FaA,KldA,KcolA&
                     &,rmatrixA%NEQ,FaB,FaC)
               else
                 call lsyssc_getbase_Kld(rmatrixC,KldC)
                 call lsyssc_getbase_Kcol(rmatrixC,KcolC)
-                call do_mat79matDmulSnglSngl(FaA,KldA,KcolA&
+                call do_mat79matDmulSPSP(FaA,KldA,KcolA&
                     &,rmatrixA%NEQ,FaB,FaC,KldC,KcolC)
               end if
 
@@ -19603,7 +19603,7 @@ contains
               call lsyssc_getbase_double(rmatrixA,DaA)
               call lsyssc_getbase_double(rmatrixB,DaB)
               call lsyssc_getbase_double(rmatrixC,DaC)
-              call do_mat79mat79mul_numb_dbledble(rmatrixA%NEQ&
+              call do_mat79mat79mul_numb_DPDP(rmatrixA%NEQ&
                   &,rmatrixA%NCOLS,rmatrixB%NCOLS,KldA,KcolA,DaA,KldB&
                   &,KcolB,DaB,KldC,KcolC,DaC,Daux)
 
@@ -19611,7 +19611,7 @@ contains
               call lsyssc_getbase_double(rmatrixA,DaA)
               call lsyssc_getbase_single(rmatrixB,FaB)
               call lsyssc_getbase_double(rmatrixC,DaC)
-              call do_mat79mat79mul_numb_dblesngl(rmatrixA%NEQ&
+              call do_mat79mat79mul_numb_DPSP(rmatrixA%NEQ&
                   &,rmatrixA%NCOLS,rmatrixB%NCOLS,KldA,KcolA,DaA,KldB&
                   &,KcolB,FaB,KldC,KcolC,DaC,Daux)
 
@@ -19629,7 +19629,7 @@ contains
               call lsyssc_getbase_single(rmatrixA,FaA)
               call lsyssc_getbase_double(rmatrixB,DaB)
               call lsyssc_getbase_double(rmatrixC,DaC)
-              call do_mat79mat79mul_numb_sngldble(rmatrixA%NEQ&
+              call do_mat79mat79mul_numb_SPDP(rmatrixA%NEQ&
                   &,rmatrixA%NCOLS,rmatrixB%NCOLS,KldA,KcolA,FaA,KldB&
                   &,KcolB,DaB,KldC,KcolC,DaC,Daux)
 
@@ -19643,7 +19643,7 @@ contains
               call lsyssc_getbase_single(rmatrixA,FaA)
               call lsyssc_getbase_single(rmatrixB,FaB)
               call lsyssc_getbase_single(rmatrixC,FaC)
-              call do_mat79mat79mul_numb_snglsngl(rmatrixA%NEQ&
+              call do_mat79mat79mul_numb_SPSP(rmatrixA%NEQ&
                   &,rmatrixA%NCOLS,rmatrixB%NCOLS,KldA,KcolA,FaA,KldB&
                   &,KcolB,FaB,KldC,KcolC,FaC,Faux)
 
@@ -19689,7 +19689,7 @@ contains
     ! double precision matrix B (format 1)
     ! double precision matrix C (format 1)
 
-    subroutine do_mat1mat1mulDbleDble(n,m,k,Da1,Da2,Da3)
+    subroutine do_mat1mat1mulDPDP(n,m,k,Da1,Da2,Da3)
 
       ! Remark: MATRIX1 is stored row-wise. The intrinsic function
       !         MATMUL requires the matrix to be stored columnwise
@@ -19713,7 +19713,7 @@ contains
     ! single precision matrix B (format 1)
     ! double precision matrix C (format 1)
 
-    subroutine do_mat1mat1mulDbleSngl(n,m,k,Da1,Fa2,Da3)
+    subroutine do_mat1mat1mulDPSP(n,m,k,Da1,Fa2,Da3)
 
       ! Remark: MATRIX1 is stored row-wise. The intrinsic function
       !         MATMUL requires the matrix to be stored columnwise
@@ -19734,7 +19734,7 @@ contains
     ! double precision matrix B (format 1)
     ! double precision matrix C (format 1)
 
-    subroutine do_mat1mat1mulSnglDble(n,m,k,Fa1,Da2,Da3)
+    subroutine do_mat1mat1mulSPDP(n,m,k,Fa1,Da2,Da3)
 
       ! Remark: MATRIX1 is stored row-wise. The intrinsic function
       !         MATMUL requires the matrix to be stored columnwise
@@ -19755,7 +19755,7 @@ contains
     ! single precision matrix B (format 1)
     ! single precision matrix C (format 1)
 
-    subroutine do_mat1mat1mulSnglSngl(n,m,k,Fa1,Fa2,Fa3)
+    subroutine do_mat1mat1mulSPSP(n,m,k,Fa1,Fa2,Fa3)
 
       ! Remark: MATRIX1 is stored row-wise. The intrinsic function
       !         MATMUL requires the matrix to be stored columnwise
@@ -19779,7 +19779,7 @@ contains
     ! double precision matrix B (format 1)
     ! double precision matrix C (format 1)
 
-    subroutine do_matDmat1mulDbleDble(n,m,Da1,Da2,Da3)
+    subroutine do_matDmat1mulDPDP(n,m,Da1,Da2,Da3)
 
       integer, intent(in) :: n,m
       real(DP), dimension(n), intent(in) :: Da1
@@ -19799,7 +19799,7 @@ contains
     ! double precision matrix B (format 1)
     ! double precision matrix C (format 1)
 
-    subroutine do_matDmat1mulSnglDble(n,m,Fa1,Da2,Da3)
+    subroutine do_matDmat1mulSPDP(n,m,Fa1,Da2,Da3)
 
       integer, intent(in) :: n,m
       real(SP), dimension(n), intent(in) :: Fa1
@@ -19819,7 +19819,7 @@ contains
     ! single precision matrix B (format 1)
     ! double precision matrix C (format 1)
 
-    subroutine do_matDmat1mulDbleSngl(n,m,Da1,Fa2,Da3)
+    subroutine do_matDmat1mulDPSP(n,m,Da1,Fa2,Da3)
 
       integer, intent(in) :: n,m
       real(DP), dimension(n), intent(in) :: Da1
@@ -19839,7 +19839,7 @@ contains
     ! single precision matrix B (format 1)
     ! single precision matrix C (format 1)
 
-    subroutine do_matDmat1mulSnglSngl(n,m,Fa1,Fa2,Fa3)
+    subroutine do_matDmat1mulSPSP(n,m,Fa1,Fa2,Fa3)
 
       integer, intent(in) :: n,m
       real(SP), dimension(n), intent(in) :: Fa1
@@ -19859,7 +19859,7 @@ contains
     ! double precision matrix B (format D)
     ! double precision matrix C (format 1)
 
-    subroutine do_mat1matDmulDbleDble(n,m,Da1,Da2,Da3)
+    subroutine do_mat1matDmulDPDP(n,m,Da1,Da2,Da3)
 
       integer, intent(in) :: n,m
       real(DP), dimension(m,n), intent(in) :: Da1
@@ -19879,7 +19879,7 @@ contains
     ! double precision matrix B (format D)
     ! double precision matrix C (format 1)
 
-    subroutine do_mat1matDmulSnglDble(n,m,Fa1,Da2,Da3)
+    subroutine do_mat1matDmulSPDP(n,m,Fa1,Da2,Da3)
 
       integer, intent(in) :: n,m
       real(SP), dimension(m,n), intent(in) :: Fa1
@@ -19899,7 +19899,7 @@ contains
     ! single precision matrix B (format D)
     ! double precision matrix C (format 1)
 
-    subroutine do_mat1matDmulDbleSngl(n,m,Da1,Fa2,Da3)
+    subroutine do_mat1matDmulDPSP(n,m,Da1,Fa2,Da3)
 
       integer, intent(in) :: n,m
       real(DP), dimension(m,n), intent(in) :: Da1
@@ -19919,7 +19919,7 @@ contains
     ! single precision matrix B (format D)
     ! single precision matrix C (format 1)
 
-    subroutine do_mat1matDmulSnglSngl(n,m,Fa1,Fa2,Fa3)
+    subroutine do_mat1matDmulSPSP(n,m,Fa1,Fa2,Fa3)
 
       integer, intent(in) :: n,m
       real(SP), dimension(m,n), intent(in) :: Fa1
@@ -19939,7 +19939,7 @@ contains
     ! double precision matrix B (format 7 or format 9)
     ! double precision matrix C (format 7 or format 9)
 
-    subroutine do_matDmat79mulDbleDble(Da1,Da2,Kld2,Kcol2&
+    subroutine do_matDmat79mulDPDP(Da1,Da2,Kld2,Kcol2&
         &,neq,Da3,Kld3,Kcol3)
 
       real(DP), dimension(:), intent(in) :: Da1
@@ -19984,7 +19984,7 @@ contains
     ! double precision matrix B (format 7 or format 9)
     ! double precision matrix C (format 7 or format 9)
 
-    subroutine do_matDmat79mulSnglDble(Fa1,Da2,Kld2,Kcol2&
+    subroutine do_matDmat79mulSPDP(Fa1,Da2,Kld2,Kcol2&
         &,neq,Da3,Kld3,Kcol3)
 
       real(SP), dimension(:), intent(in) :: Fa1
@@ -20029,7 +20029,7 @@ contains
     ! single precision matrix B (format 7 or format 9)
     ! double precision matrix C (format 7 or format 9)
 
-    subroutine do_matDmat79mulDbleSngl(Da1,Fa2,Kld2,Kcol2&
+    subroutine do_matDmat79mulDPSP(Da1,Fa2,Kld2,Kcol2&
         &,neq,Da3,Kld3,Kcol3)
 
       real(DP), dimension(:), intent(in) :: Da1
@@ -20074,7 +20074,7 @@ contains
     ! single precision matrix B (format 7 or format 9)
     ! single precision matrix C (format 7 or format 9)
 
-    subroutine do_matDmat79mulSnglSngl(Fa1,Fa2,Kld2,Kcol2&
+    subroutine do_matDmat79mulSPSP(Fa1,Fa2,Kld2,Kcol2&
         &,neq,Fa3,Kld3,Kcol3)
 
       real(SP), dimension(:), intent(in) :: Fa1
@@ -20119,7 +20119,7 @@ contains
     ! double precision matrix B (format D)
     ! double precision matrix C (format 7 or format 9)
 
-    subroutine do_mat79matDmulDbleDble(Da1,Kld1,Kcol1,neq,Da2&
+    subroutine do_mat79matDmulDPDP(Da1,Kld1,Kcol1,neq,Da2&
         &,Da3,Kld3,Kcol3)
 
       real(DP), dimension(:), intent(in) :: Da1
@@ -20164,7 +20164,7 @@ contains
     ! double precision matrix B (format D)
     ! double precision matrix C (format 7 or format 9)
 
-    subroutine do_mat79matDmulSnglDble(Fa1,Kld1,Kcol1,neq,Da2&
+    subroutine do_mat79matDmulSPDP(Fa1,Kld1,Kcol1,neq,Da2&
         &,Da3,Kld3,Kcol3)
 
       real(SP), dimension(:), intent(in) :: Fa1
@@ -20209,7 +20209,7 @@ contains
     ! single precision matrix B (format D)
     ! double precision matrix C (format 7 or format 9)
 
-    subroutine do_mat79matDmulDbleSngl(Da1,Kld1,Kcol1,neq,Fa2&
+    subroutine do_mat79matDmulDPSP(Da1,Kld1,Kcol1,neq,Fa2&
         &,Da3,Kld3,Kcol3)
 
       real(DP), dimension(:), intent(in) :: Da1
@@ -20254,7 +20254,7 @@ contains
     ! single precision matrix B (format D)
     ! single precision matrix C (format 7 or format 9)
 
-    subroutine do_mat79matDmulSnglSngl(Fa1,Kld1,Kcol1,neq,Fa2&
+    subroutine do_mat79matDmulSPSP(Fa1,Kld1,Kcol1,neq,Fa2&
         &,Fa3,Kld3,Kcol3)
 
       real(SP), dimension(:), intent(in) :: Fa1
@@ -20494,7 +20494,7 @@ contains
     ! R.E. Bank and C.C. Douglas which is freely available at:
     ! http://cs-www.cs.yale.edu/homes/douglas-craig/Codes/smmp.tgz
 
-    subroutine do_mat79mat79mul_numb_dbledble(n,m,l,KldA,KcolA&
+    subroutine do_mat79mat79mul_numb_DPDP(n,m,l,KldA,KcolA&
         &,DaA,KldB,KcolB,DaB,KldC,KcolC,DaC,Dtemp)
 
       integer, intent(in) :: n,m,l
@@ -20549,7 +20549,7 @@ contains
     ! R.E. Bank and C.C. Douglas which is freely available at:
     ! http://cs-www.cs.yale.edu/homes/douglas-craig/Codes/smmp.tgz
 
-    subroutine do_mat79mat79mul_numb_sngldble(n,m,l,KldA,KcolA&
+    subroutine do_mat79mat79mul_numb_SPDP(n,m,l,KldA,KcolA&
         &,FaA,KldB,KcolB,DaB,KldC,KcolC,DaC,Dtemp)
 
       integer, intent(in) :: n,m,l
@@ -20604,7 +20604,7 @@ contains
     ! R.E. Bank and C.C. Douglas which is freely available at:
     ! http://cs-www.cs.yale.edu/homes/douglas-craig/Codes/smmp.tgz
 
-    subroutine do_mat79mat79mul_numb_dblesngl(n,m,l,KldA,KcolA&
+    subroutine do_mat79mat79mul_numb_DPSP(n,m,l,KldA,KcolA&
         &,DaA,KldB,KcolB,FaB,KldC,KcolC,DaC,Dtemp)
 
       integer, intent(in) :: n,m,l
@@ -20659,7 +20659,7 @@ contains
     ! R.E. Bank and C.C. Douglas which is freely available at:
     ! http://cs-www.cs.yale.edu/homes/douglas-craig/Codes/smmp.tgz
 
-    subroutine do_mat79mat79mul_numb_snglsngl(n,m,l,KldA,KcolA&
+    subroutine do_mat79mat79mul_numb_SPSP(n,m,l,KldA,KcolA&
         &,FaA,KldB,KcolB,FaB,KldC,KcolC,FaC,Ftemp)
 
       integer, intent(in) :: n,m,l
@@ -21147,7 +21147,7 @@ contains
                 call lsyssc_getbase_double(rmatrixB,p_DaB)
                 call lsyssc_getbase_double(rdest,p_DaC)
                 call lalg_copyVector(p_DaA,p_DaC)
-                call do_matDmat1addDbleDble(rmatrixB%NEQ,rmatrixB%NCOLS,&
+                call do_matDmat1addDPDP(rmatrixB%NEQ,rmatrixB%NCOLS,&
                                              p_DaB,p_DaC,cb,ca)
               else
                 call output_line('Destination matrix must not be diagonal matrix if'//&
@@ -21163,7 +21163,7 @@ contains
                 call lsyssc_getbase_single(rmatrixB,p_FaB)
                 call lsyssc_getbase_double(rdest,p_DaC)
                 call lalg_copyVector(p_DaA,p_DaC)
-                call do_matDmat1addSnglDble(rmatrixB%NEQ,rmatrixB%NCOLS,&
+                call do_matDmat1addSPDP(rmatrixB%NEQ,rmatrixB%NCOLS,&
                                              p_FaB,p_DaC,real(cb,SP),ca)
               else
                 call output_line('Destination matrix must not be diagonal matrix if'//&
@@ -21189,7 +21189,7 @@ contains
                 call lsyssc_getbase_double(rmatrixB,p_DaB)
                 call lsyssc_getbase_double(rdest,p_DaC)
                 call lalg_copyVector(p_FaA,p_DaC)
-                call do_matDmat1addDbleDble(rmatrixB%NEQ,rmatrixB%NCOLS,&
+                call do_matDmat1addDPDP(rmatrixB%NEQ,rmatrixB%NCOLS,&
                                              p_DaB,p_DaC,cb,ca)
               else
                 call output_line('Destination matrix must not be diagonal matrix if'//&
@@ -21205,7 +21205,7 @@ contains
                 call lsyssc_getbase_single(rmatrixB,p_FaB)
                 call lsyssc_getbase_single(rdest,p_FaC)
                 call lalg_copyVector(p_FaA,p_FaC)
-                call do_matDmat1addSnglSngl(rmatrixB%NEQ,rmatrixB%NCOLS,&
+                call do_matDmat1addSPSP(rmatrixB%NEQ,rmatrixB%NCOLS,&
                                              p_FaB,p_FaC,real(cb,SP),real(ca,SP))
               else
                 call output_line('Destination matrix must not be diagonal matrix if'//&
@@ -21272,7 +21272,7 @@ contains
                 call lsyssc_getbase_Kld(rmatrixB,p_KldB)
                 call lsyssc_getbase_Kcol(rmatrixB,p_KcolB)
                 call lalg_copyVector(p_DaA,p_DaC)
-                call do_mat79mat1addDbleDble(rmatrixB%NEQ,rmatrixB%NCOLS,&
+                call do_mat79mat1addDPDP(rmatrixB%NEQ,rmatrixB%NCOLS,&
                                               p_KldB,p_KcolB,p_DaB,p_DaC,cb,ca)
               else
                 call output_line('Destination matrix must not be CSR matrix if'//&
@@ -21290,7 +21290,7 @@ contains
                 call lsyssc_getbase_Kld(rmatrixB,p_KldB)
                 call lsyssc_getbase_Kcol(rmatrixB,p_KcolB)
                 call lalg_copyVector(p_DaA,p_DaC)
-                call do_mat79mat1addSnglDble(rmatrixB%NEQ,rmatrixB%NCOLS,&
+                call do_mat79mat1addSPDP(rmatrixB%NEQ,rmatrixB%NCOLS,&
                                               p_KldB,p_KcolB,p_FaB,p_DaC,real(cb,SP),ca)
               else
                 call output_line('Destination matrix must not be CSR matrix if'//&
@@ -21318,7 +21318,7 @@ contains
                 call lsyssc_getbase_Kld(rmatrixB,p_KldB)
                 call lsyssc_getbase_Kcol(rmatrixB,p_KcolB)
                 call lalg_copyVector(p_FaA,p_DaC)
-                call do_mat79mat1addDbleDble(rmatrixB%NEQ,rmatrixB%NCOLS,&
+                call do_mat79mat1addDPDP(rmatrixB%NEQ,rmatrixB%NCOLS,&
                                               p_KldB,p_KcolB,p_DaB,p_DaC,cb,ca)
               else
                 call output_line('Destination matrix must not be CSR matrix if'//&
@@ -21336,7 +21336,7 @@ contains
                 call lsyssc_getbase_Kld(rmatrixB,p_KldB)
                 call lsyssc_getbase_Kcol(rmatrixB,p_KcolB)
                 call lalg_copyVector(p_FaA,p_FaC)
-                call do_mat79mat1addSnglSngl(rmatrixB%NEQ,rmatrixB%NCOLS,&
+                call do_mat79mat1addSPSP(rmatrixB%NEQ,rmatrixB%NCOLS,&
                                               p_KldB,p_KcolB,p_FaB,p_FaC,real(cb,SP),real(ca,SP))
               else
                 call output_line('Destination matrix must not be CSR matrix if'//&
@@ -21523,10 +21523,10 @@ contains
               if (present(rdest)) then
                 call lsyssc_getbase_double(rdest,p_DaC)
                 call lalg_copyVector(p_DaB,p_DaC)
-                call do_matDmat1addDbleDble(rmatrixA%NEQ,rmatrixA%NCOLS,&
+                call do_matDmat1addDPDP(rmatrixA%NEQ,rmatrixA%NCOLS,&
                                              p_DaA,p_DaC,ca,cb)
               else
-                call do_matDmat1addDbleDble(rmatrixA%NEQ,rmatrixA%NCOLS,&
+                call do_matDmat1addDPDP(rmatrixA%NEQ,rmatrixA%NCOLS,&
                                              p_DaA,p_DaB,ca,cb)
               end if
 
@@ -21537,7 +21537,7 @@ contains
                 call lsyssc_getbase_single(rmatrixB,p_FaB)
                 call lsyssc_getbase_double(rdest,p_DaC)
                 call lalg_copyVector(p_FaB,p_DaC)
-                call do_matDmat1addDbleDble(rmatrixA%NEQ,rmatrixA%NCOLS,&
+                call do_matDmat1addDPDP(rmatrixA%NEQ,rmatrixA%NCOLS,&
                                              p_DaA,p_DaC,ca,cb)
               else
                 call output_line('Destination matrix must not be single precision if'//&
@@ -21563,10 +21563,10 @@ contains
               if (present(rdest)) then
                 call lsyssc_getbase_double(rdest,p_DaC)
                 call lalg_copyVector(p_DaB,p_DaC)
-                call do_matDmat1addSnglDble(rmatrixA%NEQ,rmatrixA%NCOLS,&
+                call do_matDmat1addSPDP(rmatrixA%NEQ,rmatrixA%NCOLS,&
                                              p_FaA,p_DaC,real(ca,SP),cb)
               else
-                call do_matDmat1addSnglDble(rmatrixA%NEQ,rmatrixA%NCOLS,&
+                call do_matDmat1addSPDP(rmatrixA%NEQ,rmatrixA%NCOLS,&
                                              p_FaA,p_DaB,real(ca,SP),cb)
               end if
 
@@ -21577,10 +21577,10 @@ contains
               if (present(rdest)) then
                 call lsyssc_getbase_single(rdest,p_FaC)
                 call lalg_copyVector(p_FaB,p_FaC)
-                call do_matDmat1addSnglSngl(rmatrixA%NEQ,rmatrixA%NCOLS,&
+                call do_matDmat1addSPSP(rmatrixA%NEQ,rmatrixA%NCOLS,&
                                              p_FaA,p_FaC,real(ca,SP),real(cb,SP))
               else
-                call do_matDmat1addSnglSngl(rmatrixA%NEQ,rmatrixA%NCOLS,&
+                call do_matDmat1addSPSP(rmatrixA%NEQ,rmatrixA%NCOLS,&
                                              p_FaA,p_FaB,real(ca,SP),real(cb,SP))
               end if
 
@@ -21656,7 +21656,7 @@ contains
                   end if
 
                   ! Compute C := B + 0*C
-                  call do_mat79mat79addDbleDble(1,rmatrixB%NEQ,&
+                  call do_mat79mat79addDPDP(1,rmatrixB%NEQ,&
                                                  rmatrixB%NA,p_KldB,p_KcolB,&
                                                  rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
                                                  p_DaB,p_DaC,1.0_DP,0.0_DP)
@@ -21668,7 +21668,7 @@ contains
                 else
                   call lsyssc_getbase_Kdiagonal(rdest,p_KdiagonalC)
                 end if
-                call do_matDmat79addDbleDble(1,1,rdest%NEQ,rmatrixB%NA,&
+                call do_matDmat79addDPDP(1,1,rdest%NEQ,rmatrixB%NA,&
                                               p_KdiagonalC,p_DaA,p_DaC,ca,cb)
               else
                 ! Set diagonal pointer
@@ -21679,7 +21679,7 @@ contains
                 end if
 
                 ! We have to apply only the diagonal of matrix A
-                call do_matDmat79addDbleDble(1,1,rmatrixB%NEQ,rmatrixB%NA,&
+                call do_matDmat79addDPDP(1,1,rmatrixB%NEQ,rmatrixB%NA,&
                                               p_KdiagonalB,p_DaA,p_DaB,ca,cb)
               end if
 
@@ -21707,7 +21707,7 @@ contains
                   end if
 
                   ! Compute C := B + 0*C
-                  call do_mat79mat79addSnglDble(1,rmatrixB%NEQ,&
+                  call do_mat79mat79addSPDP(1,rmatrixB%NEQ,&
                                                  rmatrixB%NA,p_KldB,p_KcolB,&
                                                  rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
                                                  p_FaB,p_DaC,1.0_SP,0.0_DP)
@@ -21721,7 +21721,7 @@ contains
                 end if
 
                 ! We have to apply only the diagonal of matrix A
-                call do_matDmat79addDbleDble(1,1,rdest%NEQ,rdest%NA,&
+                call do_matDmat79addDPDP(1,1,rdest%NEQ,rdest%NA,&
                                               p_KdiagonalC,p_DaA,p_DaC,ca,cb)
               else
                 call output_line('Destination matrix must not be single precision if'//&
@@ -21764,7 +21764,7 @@ contains
                   end if
 
                   ! Compute C := B + 0*C
-                  call do_mat79mat79addDbleDble(1,rmatrixB%NEQ,&
+                  call do_mat79mat79addDPDP(1,rmatrixB%NEQ,&
                                                  rmatrixB%NA,p_KldB,p_KcolB,&
                                                  rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
                                                  p_DaB,p_DaC,1.0_DP,0.0_DP)
@@ -21778,7 +21778,7 @@ contains
                 end if
 
                 ! We have to apply only the diagonal of matrix A
-                call do_matDmat79addSnglDble(1,1,rdest%NEQ,rdest%NA,&
+                call do_matDmat79addSPDP(1,1,rdest%NEQ,rdest%NA,&
                                               p_KdiagonalC,p_FaA,p_DaC,real(ca,SP),cb)
               else
                 ! Set diagonal pointer
@@ -21789,7 +21789,7 @@ contains
                 end if
 
                 ! We have to apply only the diagonal of matrix A
-                call do_matDmat79addSnglDble(1,1,rmatrixB%NEQ,rmatrixB%NA,&
+                call do_matDmat79addSPDP(1,1,rmatrixB%NEQ,rmatrixB%NA,&
                                               p_KdiagonalB,p_FaA,p_DaB,real(ca,SP),cb)
               end if
 
@@ -21817,7 +21817,7 @@ contains
                   end if
 
                   ! Compute C := B + 0*C
-                  call do_mat79mat79addSnglSngl(1,rmatrixB%NEQ,&
+                  call do_mat79mat79addSPSP(1,rmatrixB%NEQ,&
                                                  rmatrixB%NA,p_KldB,p_KcolB,&
                                                  rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
                                                  p_FaB,p_FaC,1.0_SP,0.0_SP)
@@ -21831,7 +21831,7 @@ contains
                 end if
 
                 ! We have to apply only the diagonal of matrix A
-                call do_matDmat79addSnglSngl(1,1,rdest%NEQ,rdest%NA,&
+                call do_matDmat79addSPSP(1,1,rdest%NEQ,rdest%NA,&
                                               p_KdiagonalC,p_FaA,p_FaC,real(ca,SP),real(cb,SP))
               else
                 ! Set diagonal pointer
@@ -21842,7 +21842,7 @@ contains
                 end if
 
                 ! We have to apply only the diagonal of matrix A
-                call do_matDmat79addSnglSngl(1,1,rmatrixB%NEQ,rmatrixB%NA,&
+                call do_matDmat79addSPSP(1,1,rmatrixB%NEQ,rmatrixB%NA,&
                                               p_KdiagonalB,p_FaA,p_FaB,real(ca,SP),real(cb,SP))
               end if
 
@@ -21925,7 +21925,7 @@ contains
                   end if
 
                   ! Compute C := B + 0*C
-                  call do_mat79mat79addDbleDble(isizeIntl,rmatrixB%NEQ,&
+                  call do_mat79mat79addDPDP(isizeIntl,rmatrixB%NEQ,&
                                                  rmatrixB%NA,p_KldB,p_KcolB,&
                                                  rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
                                                  p_DaB,p_DaC,1.0_DP,0.0_DP)
@@ -21940,10 +21940,10 @@ contains
 
                 ! We have to apply only the diagonal of matrix A
                 if (rdest%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
-                  call do_matDmat79addDbleDble(rdest%NVAR,rdest%NVAR,rdest%NEQ,rdest%NA,&
+                  call do_matDmat79addDPDP(rdest%NVAR,rdest%NVAR,rdest%NEQ,rdest%NA,&
                                                 p_KdiagonalC,p_DaA,p_DaC,ca,cb)
                 else
-                  call do_matDmat79addDbleDble(rdest%NVAR,1,rdest%NEQ,rdest%NA,&
+                  call do_matDmat79addDPDP(rdest%NVAR,1,rdest%NEQ,rdest%NA,&
                                                 p_KdiagonalC,p_DaA,p_DaC,ca,cb)
                 end if
               else
@@ -21956,10 +21956,10 @@ contains
 
                 ! We have to apply only the diagonal of matrix A
                 if (rmatrixB%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
-                  call do_matDmat79addDbleDble(rmatrixB%NVAR,rmatrixB%NVAR,rmatrixB%NEQ,rmatrixB%NA,&
+                  call do_matDmat79addDPDP(rmatrixB%NVAR,rmatrixB%NVAR,rmatrixB%NEQ,rmatrixB%NA,&
                                                 p_KdiagonalB,p_DaA,p_DaB,ca,cb)
                 else
-                  call do_matDmat79addDbleDble(rmatrixB%NVAR,1,rmatrixB%NEQ,rmatrixB%NA,&
+                  call do_matDmat79addDPDP(rmatrixB%NVAR,1,rmatrixB%NEQ,rmatrixB%NA,&
                                                 p_KdiagonalB,p_DaA,p_DaB,ca,cb)
                 end if
               end if
@@ -21988,7 +21988,7 @@ contains
                   end if
 
                   ! Compute C := B + 0*C
-                  call do_mat79mat79addSnglDble(isizeIntl,rmatrixB%NEQ,&
+                  call do_mat79mat79addSPDP(isizeIntl,rmatrixB%NEQ,&
                                                  rmatrixB%NA,p_KldB,p_KcolB,&
                                                  rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
                                                  p_FaB,p_DaC,1.0_SP,0.0_DP)
@@ -22003,10 +22003,10 @@ contains
 
                 ! We have to apply only the diagonal of matrix A
                 if (rdest%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
-                  call do_matDmat79addDbleDble(rdest%NVAR,rdest%NVAR,rdest%NEQ,rdest%NA,&
+                  call do_matDmat79addDPDP(rdest%NVAR,rdest%NVAR,rdest%NEQ,rdest%NA,&
                                                 p_KdiagonalC,p_DaA,p_DaC,ca,cb)
                 else
-                  call do_matDmat79addDbleDble(rdest%NVAR,1,rdest%NEQ,rdest%NA,&
+                  call do_matDmat79addDPDP(rdest%NVAR,1,rdest%NEQ,rdest%NA,&
                                                 p_KdiagonalC,p_DaA,p_DaC,ca,cb)
                 end if
               else
@@ -22050,7 +22050,7 @@ contains
                   end if
 
                   ! Compute C := B + 0*C
-                  call do_mat79mat79addDbleDble(isizeIntl,rmatrixB%NEQ,&
+                  call do_mat79mat79addDPDP(isizeIntl,rmatrixB%NEQ,&
                                                  rmatrixB%NA,p_KldB,p_KcolB,&
                                                  rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
                                                  p_DaB,p_DaC,1.0_DP,0.0_DP)
@@ -22065,10 +22065,10 @@ contains
 
                 ! We have to apply only the diagonal of matrix A
                 if (rdest%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
-                  call do_matDmat79addSnglDble(rdest%NVAR,rdest%NVAR,rdest%NEQ,rdest%NA,&
+                  call do_matDmat79addSPDP(rdest%NVAR,rdest%NVAR,rdest%NEQ,rdest%NA,&
                                                 p_KdiagonalC,p_FaA,p_DaC,real(ca,SP),cb)
                 else
-                  call do_matDmat79addSnglDble(rdest%NVAR,1,rdest%NEQ,rdest%NA,&
+                  call do_matDmat79addSPDP(rdest%NVAR,1,rdest%NEQ,rdest%NA,&
                                                 p_KdiagonalC,p_FaA,p_DaC,real(ca,SP),cb)
                 end if
               else
@@ -22081,10 +22081,10 @@ contains
 
                 ! We have to apply only the diagonal of matrix A
                 if (rmatrixB%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
-                  call do_matDmat79addSnglDble(rmatrixB%NVAR,rmatrixB%NVAR,rmatrixB%NEQ,rmatrixB%NA,&
+                  call do_matDmat79addSPDP(rmatrixB%NVAR,rmatrixB%NVAR,rmatrixB%NEQ,rmatrixB%NA,&
                                                 p_KdiagonalB,p_FaA,p_DaB,real(ca,SP),cb)
                 else
-                  call do_matDmat79addSnglDble(rmatrixB%NVAR,1,rmatrixB%NEQ,rmatrixB%NA,&
+                  call do_matDmat79addSPDP(rmatrixB%NVAR,1,rmatrixB%NEQ,rmatrixB%NA,&
                                                 p_KdiagonalB,p_FaA,p_DaB,real(ca,SP),cb)
                 end if
               end if
@@ -22113,7 +22113,7 @@ contains
                   end if
 
                   ! Compute C := B + 0*C
-                  call do_mat79mat79addSnglSngl(isizeIntl,rmatrixB%NEQ,&
+                  call do_mat79mat79addSPSP(isizeIntl,rmatrixB%NEQ,&
                                                  rmatrixB%NA,p_KldB,p_KcolB,&
                                                  rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
                                                  p_FaB,p_FaC,1.0_SP,0.0_SP)
@@ -22128,10 +22128,10 @@ contains
 
                 ! We have to apply only the diagonal of matrix A
                 if (rdest%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
-                  call do_matDmat79addSnglSngl(rdest%NVAR,rdest%NVAR,rdest%NEQ,rdest%NA,&
+                  call do_matDmat79addSPSP(rdest%NVAR,rdest%NVAR,rdest%NEQ,rdest%NA,&
                                                 p_KdiagonalC,p_FaA,p_FaC,real(ca,SP),real(cb,SP))
                 else
-                  call do_matDmat79addSnglSngl(rdest%NVAR,1,rdest%NEQ,rdest%NA,&
+                  call do_matDmat79addSPSP(rdest%NVAR,1,rdest%NEQ,rdest%NA,&
                                                 p_KdiagonalC,p_FaA,p_FaC,real(ca,SP),real(cb,SP))
                 end if
               else
@@ -22144,10 +22144,10 @@ contains
 
                 ! We have to apply only the diagonal of matrix A
                 if (rmatrixB%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
-                  call do_matDmat79addSnglSngl(rmatrixB%NVAR,rmatrixB%NVAR,rmatrixB%NEQ,rmatrixB%NA,&
+                  call do_matDmat79addSPSP(rmatrixB%NVAR,rmatrixB%NVAR,rmatrixB%NEQ,rmatrixB%NA,&
                                                 p_KdiagonalB,p_FaA,p_FaB,real(ca,SP),real(cb,SP))
                 else
-                  call do_matDmat79addSnglSngl(rmatrixB%NVAR,1,rmatrixB%NEQ,rmatrixB%NA,&
+                  call do_matDmat79addSPSP(rmatrixB%NVAR,1,rmatrixB%NEQ,rmatrixB%NA,&
                                                 p_KdiagonalB,p_FaA,p_FaB,real(ca,SP),real(cb,SP))
                 end if
               end if
@@ -22222,10 +22222,10 @@ contains
               if (present(rdest)) then
                 call lsyssc_getbase_double(rdest,p_DaC)
                 call lalg_copyVector(p_DaB,p_DaC)
-                call do_mat79mat1addDbleDble(rmatrixA%NEQ,rmatrixA%NCOLS,&
+                call do_mat79mat1addDPDP(rmatrixA%NEQ,rmatrixA%NCOLS,&
                                               p_KldA,p_KcolA,p_DaA,p_DaC,ca,cb)
               else
-                call do_mat79mat1addDbleDble(rmatrixA%NEQ,rmatrixA%NCOLS,&
+                call do_mat79mat1addDPDP(rmatrixA%NEQ,rmatrixA%NCOLS,&
                                               p_KldA,p_KcolA,p_DaA,p_DaB,ca,cb)
               end if
 
@@ -22238,7 +22238,7 @@ contains
                 call lsyssc_getbase_Kld(rmatrixA,p_KldA)
                 call lsyssc_getbase_Kcol(rmatrixA,p_KcolA)
                 call lalg_copyVector(p_FaB,p_DaC)
-                call do_mat79mat1addDbleDble(rmatrixA%NEQ,rmatrixA%NCOLS,&
+                call do_mat79mat1addDPDP(rmatrixA%NEQ,rmatrixA%NCOLS,&
                                               p_KldA,p_KcolA,p_DaA,p_DaC,ca,cb)
               else
                 call output_line('Destination matrix must not be single precision if'//&
@@ -22266,10 +22266,10 @@ contains
               if (present(rdest)) then
                 call lsyssc_getbase_double(rdest,p_DaC)
                 call lalg_copyVector(p_DaB,p_DaC)
-                call do_mat79mat1addSnglDble(rmatrixA%NEQ,rmatrixA%NCOLS,&
+                call do_mat79mat1addSPDP(rmatrixA%NEQ,rmatrixA%NCOLS,&
                                               p_KldA,p_KcolA,p_FaA,p_DaC,real(ca,SP),cb)
               else
-                call do_mat79mat1addSnglDble(rmatrixA%NEQ,rmatrixA%NCOLS,&
+                call do_mat79mat1addSPDP(rmatrixA%NEQ,rmatrixA%NCOLS,&
                                               p_KldA,p_KcolA,p_FaA,p_DaB,real(ca,SP),cb)
               end if
 
@@ -22282,10 +22282,10 @@ contains
               if (present(rdest)) then
                 call lsyssc_getbase_single(rdest,p_FaC)
                 call lalg_copyVector(p_FaB,p_FaC)
-                call do_mat79mat1addSnglSngl(rmatrixA%NEQ,rmatrixA%NCOLS,&
+                call do_mat79mat1addSPSP(rmatrixA%NEQ,rmatrixA%NCOLS,&
                                               p_KldA,p_KcolA,p_FaA,p_FaC,real(ca,SP),real(cb,SP))
               else
-                call do_mat79mat1addSnglSngl(rmatrixA%NEQ,rmatrixA%NCOLS,&
+                call do_mat79mat1addSPSP(rmatrixA%NEQ,rmatrixA%NCOLS,&
                                               p_KldA,p_KcolA,p_FaA,p_FaB,real(ca,SP),real(cb,SP))
               end if
 
@@ -22361,7 +22361,7 @@ contains
                   end if
 
                   ! Compute C := A + 0*C
-                  call do_mat79mat79addDbleDble(1,rmatrixA%NEQ,&
+                  call do_mat79mat79addDPDP(1,rmatrixA%NEQ,&
                                                  rmatrixA%NA,p_KldA,p_KcolA,&
                                                  rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
                                                  p_DaA,p_DaC,1.0_DP,0.0_DP)
@@ -22375,7 +22375,7 @@ contains
                 end if
 
                 ! We have to apply only the diagonal of matrix B
-                call do_matDmat79addDbleDble(1,1,rdest%NEQ,rdest%NA,&
+                call do_matDmat79addDPDP(1,1,rdest%NEQ,rdest%NA,&
                                               p_KdiagonalC,p_DaB,p_DaC,cb,ca)
               else
                 call output_line('Destination matrix must not be diagonal matrix if'//&
@@ -22408,7 +22408,7 @@ contains
                   end if
 
                   ! Compute C := A + 0*C
-                  call do_mat79mat79addDbleDble(1,rmatrixA%NEQ,&
+                  call do_mat79mat79addDPDP(1,rmatrixA%NEQ,&
                                                  rmatrixA%NA,p_KldA,p_KcolA,&
                                                  rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
                                                  p_DaA,p_DaC,1.0_DP,0.0_DP)
@@ -22422,7 +22422,7 @@ contains
                 end if
 
                 ! We have to apply only the diagonal of matrix B
-                call do_matDmat79addSnglDble(1,1,rdest%NEQ,rdest%NA,&
+                call do_matDmat79addSPDP(1,1,rdest%NEQ,rdest%NA,&
                                               p_KdiagonalC,p_FaB,p_DaC,real(cb,SP),ca)
               else
                 call output_line('Destination matrix must not be diagonal matrix if'//&
@@ -22465,7 +22465,7 @@ contains
                   end if
 
                   ! Compute C := A + 0*C
-                  call do_mat79mat79addSnglDble(1,rmatrixA%NEQ,&
+                  call do_mat79mat79addSPDP(1,rmatrixA%NEQ,&
                                                  rmatrixA%NA,p_KldA,p_KcolA,&
                                                  rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
                                                  p_FaA,p_DaC,1.0_SP,0.0_DP)
@@ -22479,7 +22479,7 @@ contains
                 end if
 
                 ! We have to apply only the diagonal of matrix B
-                call do_matDmat79addDbleDble(1,1,rdest%NEQ,rdest%NA,&
+                call do_matDmat79addDPDP(1,1,rdest%NEQ,rdest%NA,&
                                               p_KdiagonalC,p_DaB,p_DaC,cb,ca)
               else
                 call output_line('Destination matrix must not be diagonal matrix if'//&
@@ -22512,7 +22512,7 @@ contains
                   end if
 
                   ! Compute C := A + 0*C
-                  call do_mat79mat79addSnglSngl(1,rmatrixA%NEQ,&
+                  call do_mat79mat79addSPSP(1,rmatrixA%NEQ,&
                                                  rmatrixA%NA,p_KldA,p_KcolA,&
                                                  rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
                                                  p_FaA,p_FaC,1.0_SP,0.0_SP)
@@ -22526,7 +22526,7 @@ contains
                 end if
 
                 ! We have to apply only the diagonal of matrix B
-                call do_matDmat79addSnglSngl(1,1,rdest%NEQ,rdest%NA,&
+                call do_matDmat79addSPSP(1,1,rdest%NEQ,rdest%NA,&
                                               p_KdiagonalC,p_FaB,p_FaC,real(cb,SP),real(ca,SP))
               else
                 call output_line('Destination matrix must not be diagonal matrix if'//&
@@ -22650,13 +22650,13 @@ contains
                   end if
 
                   ! Compute C := B + 0*C
-                  call do_mat79mat79addDbleDble(1,rmatrixB%NEQ,&
+                  call do_mat79mat79addDPDP(1,rmatrixB%NEQ,&
                                                  rmatrixB%NA,p_KldB,p_KcolB,&
                                                  rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
                                                  p_DaB,p_DaC,1.0_DP,0.0_DP)
 
                   ! Compute C := ca*A + cb*C
-                  call do_mat79mat79addDbleDble(1,rmatrixA%NEQ,&
+                  call do_mat79mat79addDPDP(1,rmatrixA%NEQ,&
                                                  rmatrixA%NA,p_KldA,p_KcolA,&
                                                  rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
                                                  p_DaA,p_DaC,ca,cb)
@@ -22675,7 +22675,7 @@ contains
                 end if
 
                   ! Compute B:= ca*A + cb*B
-                  call do_mat79mat79addDbleDble(1,rmatrixA%NEQ,&
+                  call do_mat79mat79addDPDP(1,rmatrixA%NEQ,&
                                                  rmatrixA%NA,p_KldA,p_KcolA,&
                                                  rmatrixB%NA,p_KldB,p_KcolB,p_KdiagonalB,&
                                                  p_DaA,p_DaB,ca,cb)
@@ -22707,13 +22707,13 @@ contains
                   end if
 
                   ! Compute C := B + 0*C
-                  call do_mat79mat79addSnglDble(1,rmatrixB%NEQ,&
+                  call do_mat79mat79addSPDP(1,rmatrixB%NEQ,&
                                                  rmatrixB%NA,p_KldB,p_KcolB,&
                                                  rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
                                                  p_FaB,p_DaC,1.0_SP,0.0_DP)
 
                   ! Compute C := ca*A + cb*C
-                  call do_mat79mat79addDbleDble(1,rmatrixA%NEQ,&
+                  call do_mat79mat79addDPDP(1,rmatrixA%NEQ,&
                                                  rmatrixA%NA,p_KldA,p_KcolA,&
                                                  rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
                                                  p_DaA,p_DaC,ca,cb)
@@ -22760,13 +22760,13 @@ contains
                   end if
 
                   ! Compute C := B + 0*C
-                  call do_mat79mat79addDbleDble(1,rmatrixB%NEQ,&
+                  call do_mat79mat79addDPDP(1,rmatrixB%NEQ,&
                                                  rmatrixB%NA,p_KldB,p_KcolB,&
                                                  rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
                                                  p_DaB,p_DaC,1.0_DP,0.0_DP)
 
                   ! Compute C := ca*A + cb*C
-                  call do_mat79mat79addSnglDble(1,rmatrixA%NEQ,&
+                  call do_mat79mat79addSPDP(1,rmatrixA%NEQ,&
                                                  rmatrixA%NA,p_KldA,p_KcolA,&
                                                  rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
                                                  p_FaA,p_DaC,real(ca,SP),cb)
@@ -22785,7 +22785,7 @@ contains
                   end if
 
                   ! Compute B:= ca*A + cb*B
-                  call do_mat79mat79addSnglDble(1,rmatrixA%NEQ,&
+                  call do_mat79mat79addSPDP(1,rmatrixA%NEQ,&
                                                  rmatrixA%NA,p_KldA,p_KcolA,&
                                                  rmatrixB%NA,p_KldB,p_KcolB,p_KdiagonalB,&
                                                  p_FaA,p_DaB,real(ca,SP),cb)
@@ -22817,13 +22817,13 @@ contains
                   end if
 
                   ! Compute C := B + 0*C
-                  call do_mat79mat79addSnglSngl(1,rmatrixB%NEQ,&
+                  call do_mat79mat79addSPSP(1,rmatrixB%NEQ,&
                                                  rmatrixB%NA,p_KldB,p_KcolB,&
                                                  rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
                                                  p_FaB,p_FaC,1.0_SP,0.0_SP)
 
                   ! Compute C := ca*A + cb*C
-                  call do_mat79mat79addSnglSngl(1,rmatrixA%NEQ,&
+                  call do_mat79mat79addSPSP(1,rmatrixA%NEQ,&
                                                  rmatrixA%NA,p_KldA,p_KcolA,&
                                                  rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
                                                  p_FaA,p_FaC,real(ca,SP),real(cb,SP))
@@ -22842,7 +22842,7 @@ contains
                   end if
 
                   ! Compute B:= ca*A + cb*B
-                  call do_mat79mat79addSnglSngl(1,rmatrixA%NEQ,&
+                  call do_mat79mat79addSPSP(1,rmatrixA%NEQ,&
                                                  rmatrixA%NA,p_KldA,p_KcolA,&
                                                  rmatrixB%NA,p_KldB,p_KcolB,p_KdiagonalB,&
                                                  p_FaA,p_FaB,real(ca,SP),real(cb,SP))
@@ -22936,14 +22936,14 @@ contains
                 call lalg_copyVector(p_DaB, p_DaC)
 
                 ! Compute C := ca*A + cb*C
-                call do_mat9rowcMat9addDbleDble(rmatrixA%NNZROWS,&
+                call do_mat9rowcMat9addDPDP(rmatrixA%NNZROWS,&
                     rmatrixA%NA,p_KldA,p_KcolA,p_KrowIdxA,&
                     rdest%NA,p_KldC,p_KcolC,&
                     p_DaA,p_DaC,ca,cb)
               else
 
                 ! Compute B:= ca*A + cb*B
-                call do_mat9rowcMat9addDbleDble(rmatrixA%NNZROWS,&
+                call do_mat9rowcMat9addDPDP(rmatrixA%NNZROWS,&
                     rmatrixA%NA,p_KldA,p_KcolA,p_KrowIdxA,&
                     rmatrixB%NA,p_KldB,p_KcolB,&
                     p_DaA,p_DaB,ca,cb)
@@ -23041,7 +23041,7 @@ contains
                   end if
 
                   ! Compute C := A + 0*C
-                  call do_mat79mat79addDbleDble(isizeIntl,rmatrixA%NEQ,&
+                  call do_mat79mat79addDPDP(isizeIntl,rmatrixA%NEQ,&
                                                  rmatrixA%NA,p_KldA,p_KcolA,&
                                                  rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
                                                  p_DaA,p_DaC,1.0_DP,0.0_DP)
@@ -23056,10 +23056,10 @@ contains
 
                 ! We have to apply only the diagonal of matrix B
                 if (rdest%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
-                  call do_matDmat79addDbleDble(rdest%NVAR,rdest%NVAR,rdest%NEQ,rdest%NA,&
+                  call do_matDmat79addDPDP(rdest%NVAR,rdest%NVAR,rdest%NEQ,rdest%NA,&
                                                 p_KdiagonalC,p_DaB,p_DaC,cb,ca)
                 else
-                  call do_matDmat79addDbleDble(rdest%NVAR,1,rdest%NEQ,rdest%NA,&
+                  call do_matDmat79addDPDP(rdest%NVAR,1,rdest%NEQ,rdest%NA,&
                                                 p_KdiagonalC,p_DaB,p_DaC,cb,ca)
                 end if
               else
@@ -23093,7 +23093,7 @@ contains
                   end if
 
                   ! Compute C := A + 0*C
-                  call do_mat79mat79addDbleDble(isizeIntl,rmatrixA%NEQ,&
+                  call do_mat79mat79addDPDP(isizeIntl,rmatrixA%NEQ,&
                                                  rmatrixA%NA,p_KldA,p_KcolA,&
                                                  rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
                                                  p_DaA,p_DaC,1.0_DP,0.0_DP)
@@ -23108,10 +23108,10 @@ contains
 
                 ! We have to apply only the diagonal of matrix B
                 if (rdest%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
-                  call do_matDmat79addSnglDble(rdest%NVAR,rdest%NVAR,rdest%NEQ,rdest%NA,&
+                  call do_matDmat79addSPDP(rdest%NVAR,rdest%NVAR,rdest%NEQ,rdest%NA,&
                                                 p_KdiagonalC,p_FaB,p_DaC,real(cb,SP),ca)
                 else
-                  call do_matDmat79addSnglDble(rdest%NVAR,1,rdest%NEQ,rdest%NA,&
+                  call do_matDmat79addSPDP(rdest%NVAR,1,rdest%NEQ,rdest%NA,&
                                                 p_KdiagonalC,p_FaB,p_DaC,real(cb,SP),ca)
                 end if
               else
@@ -23155,7 +23155,7 @@ contains
                   end if
 
                   ! Compute C := A + 0*C
-                  call do_mat79mat79addSnglDble(isizeIntl,rmatrixA%NEQ,&
+                  call do_mat79mat79addSPDP(isizeIntl,rmatrixA%NEQ,&
                                                  rmatrixA%NA,p_KldA,p_KcolA,&
                                                  rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
                                                  p_FaA,p_DaC,1.0_SP,0.0_DP)
@@ -23170,10 +23170,10 @@ contains
 
                 ! We have to apply only the diagonal of matrix B
                 if (rdest%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
-                  call do_matDmat79addDbleDble(rdest%NVAR,rdest%NVAR,rdest%NEQ,rdest%NA,&
+                  call do_matDmat79addDPDP(rdest%NVAR,rdest%NVAR,rdest%NEQ,rdest%NA,&
                                                 p_KdiagonalC,p_DaB,p_DaC,cb,ca)
                 else
-                  call do_matDmat79addDbleDble(rdest%NVAR,1,rdest%NEQ,rdest%NA,&
+                  call do_matDmat79addDPDP(rdest%NVAR,1,rdest%NEQ,rdest%NA,&
                                                 p_KdiagonalC,p_DaB,p_DaC,cb,ca)
                 end if
               else
@@ -23207,7 +23207,7 @@ contains
                   end if
 
                   ! Compute C := A + 0*C
-                  call do_mat79mat79addSnglSngl(isizeIntl,rmatrixA%NEQ,&
+                  call do_mat79mat79addSPSP(isizeIntl,rmatrixA%NEQ,&
                                                  rmatrixA%NA,p_KldA,p_KcolA,&
                                                  rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
                                                  p_FaA,p_FaC,1.0_SP,0.0_SP)
@@ -23222,10 +23222,10 @@ contains
 
                 ! We have to apply only the diagonal of matrix B
                 if (rdest%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
-                  call do_matDmat79addSnglSngl(rdest%NVAR,rdest%NVAR,rdest%NEQ,rdest%NA,&
+                  call do_matDmat79addSPSP(rdest%NVAR,rdest%NVAR,rdest%NEQ,rdest%NA,&
                                                 p_KdiagonalC,p_FaB,p_FaC,real(cb,SP),real(ca,SP))
                 else
-                  call do_matDmat79addSnglSngl(rdest%NVAR,1,rdest%NEQ,rdest%NA,&
+                  call do_matDmat79addSPSP(rdest%NVAR,1,rdest%NEQ,rdest%NA,&
                                                 p_KdiagonalC,p_FaB,p_FaC,real(cb,SP),real(ca,SP))
                 end if
               else
@@ -23365,13 +23365,13 @@ contains
                   end if
 
                   ! Compute C := B + 0*C
-                  call do_mat79mat79addDbleDble(isizeIntl,rmatrixB%NEQ,&
+                  call do_mat79mat79addDPDP(isizeIntl,rmatrixB%NEQ,&
                                                  rmatrixB%NA,p_KldB,p_KcolB,&
                                                  rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
                                                  p_DaB,p_DaC,1.0_DP,0.0_DP)
 
                   ! Compute C := ca*A + cb*C
-                  call do_mat79mat79addDbleDble(isizeIntl,rmatrixA%NEQ,&
+                  call do_mat79mat79addDPDP(isizeIntl,rmatrixA%NEQ,&
                                                  rmatrixA%NA,p_KldA,p_KcolA,&
                                                  rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
                                                  p_DaA,p_DaC,ca,cb)
@@ -23390,7 +23390,7 @@ contains
                   end if
 
                   ! Compute B:= ca*A + cb*B
-                  call do_mat79mat79addDbleDble(isizeIntl,rmatrixA%NEQ,&
+                  call do_mat79mat79addDPDP(isizeIntl,rmatrixA%NEQ,&
                                                  rmatrixA%NA,p_KldA,p_KcolA,&
                                                  rmatrixB%NA,p_KldB,p_KcolB,p_KdiagonalB,&
                                                  p_DaA,p_DaB,ca,cb)
@@ -23422,13 +23422,13 @@ contains
                   end if
 
                   ! Compute C := B + 0*C
-                  call do_mat79mat79addSnglDble(isizeIntl,rmatrixB%NEQ,&
+                  call do_mat79mat79addSPDP(isizeIntl,rmatrixB%NEQ,&
                                                  rmatrixB%NA,p_KldB,p_KcolB,&
                                                  rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
                                                  p_FaB,p_DaC,1.0_SP,0.0_DP)
 
                   ! Compute C := ca*A + cb*C
-                  call do_mat79mat79addDbleDble(1,rmatrixA%NEQ,&
+                  call do_mat79mat79addDPDP(1,rmatrixA%NEQ,&
                                                  rmatrixA%NA,p_KldA,p_KcolA,&
                                                  rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
                                                  p_DaA,p_DaC,ca,cb)
@@ -23475,13 +23475,13 @@ contains
                   end if
 
                   ! Compute C := B + 0*C
-                  call do_mat79mat79addDbleDble(isizeIntl,rmatrixB%NEQ,&
+                  call do_mat79mat79addDPDP(isizeIntl,rmatrixB%NEQ,&
                                                  rmatrixB%NA,p_KldB,p_KcolB,&
                                                  rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
                                                  p_DaB,p_DaC,1.0_DP,0.0_DP)
 
                   ! Compute C := ca*A + cb*C
-                  call do_mat79mat79addSnglDble(isizeIntl,rmatrixA%NEQ,&
+                  call do_mat79mat79addSPDP(isizeIntl,rmatrixA%NEQ,&
                                                  rmatrixA%NA,p_KldA,p_KcolA,&
                                                  rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
                                                  p_FaA,p_DaC,real(ca,SP),cb)
@@ -23500,7 +23500,7 @@ contains
                   end if
 
                   ! Compute B:= ca*A + cb*B
-                  call do_mat79mat79addSnglDble(isizeIntl,rmatrixA%NEQ,&
+                  call do_mat79mat79addSPDP(isizeIntl,rmatrixA%NEQ,&
                                                  rmatrixA%NA,p_KldA,p_KcolA,&
                                                  rmatrixB%NA,p_KldB,p_KcolB,p_KdiagonalB,&
                                                  p_FaA,p_DaB,real(ca,SP),cb)
@@ -23532,13 +23532,13 @@ contains
                   end if
 
                   ! Compute C := B + 0*C
-                  call do_mat79mat79addSnglSngl(isizeIntl,rmatrixB%NEQ,&
+                  call do_mat79mat79addSPSP(isizeIntl,rmatrixB%NEQ,&
                                                  rmatrixB%NA,p_KldB,p_KcolB,&
                                                  rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
                                                  p_FaB,p_FaC,1.0_SP,0.0_SP)
 
                   ! Compute C := ca*A + cb*C
-                  call do_mat79mat79addSnglSngl(isizeIntl,rmatrixA%NEQ,&
+                  call do_mat79mat79addSPSP(isizeIntl,rmatrixA%NEQ,&
                                                  rmatrixA%NA,p_KldA,p_KcolA,&
                                                  rdest%NA,p_KldC,p_KcolC,p_KdiagonalC,&
                                                  p_FaA,p_FaC,real(ca,SP),real(cb,SP))
@@ -23557,7 +23557,7 @@ contains
                   end if
 
                   ! Compute B:= ca*A + cb*B
-                  call do_mat79mat79addSnglSngl(isizeIntl,rmatrixA%NEQ,&
+                  call do_mat79mat79addSPSP(isizeIntl,rmatrixA%NEQ,&
                                                  rmatrixA%NA,p_KldA,p_KcolA,&
                                                  rmatrixB%NA,p_KldB,p_KcolB,p_KdiagonalB,&
                                                  p_FaA,p_FaB,real(ca,SP),real(cb,SP))
@@ -23600,7 +23600,7 @@ contains
     ! double precision matrix A (format D)
     ! double precision matrix B (format 1)
 
-    subroutine do_matDmat1addDbleDble(neq,ncols,DaA,DaB,da,db)
+    subroutine do_matDmat1addDPDP(neq,ncols,DaA,DaB,da,db)
 
       integer, intent(in) :: neq,ncols
       real(DP), intent(in) :: da,db
@@ -23624,7 +23624,7 @@ contains
     ! single precision matrix A (format D)
     ! single precision matrix B (format 1)
 
-    subroutine do_matDmat1addSnglSngl(neq,ncols,FaA,FaB,fa,fb)
+    subroutine do_matDmat1addSPSP(neq,ncols,FaA,FaB,fa,fb)
 
       integer, intent(in) :: neq,ncols
       real(SP), intent(in) :: fa,fb
@@ -23648,7 +23648,7 @@ contains
     ! single precision matrix A (format D)
     ! double precision matrix B (format 1)
 
-    subroutine do_matDmat1addSnglDble(neq,ncols,FaA,DaB,fa,db)
+    subroutine do_matDmat1addSPDP(neq,ncols,FaA,DaB,fa,db)
 
       integer, intent(in) :: neq,ncols
       real(SP), intent(in) :: fa
@@ -23672,7 +23672,7 @@ contains
     ! Format 7/9-1 addition:  B := ca*A + cb*B
     ! double precision matrix A (format 7 or format 9)
     ! double precision matrix B (format 1)
-    subroutine do_mat79mat1addDbleDble(neq,ncols,Kld,Kcol,DaA,DaB,da,db)
+    subroutine do_mat79mat1addDPDP(neq,ncols,Kld,Kcol,DaA,DaB,da,db)
 
       ! REMARK: The matrix B (format 1) is stored row-wise. Hence,
       ! this subroutine handles the transposed of matrix B. Therefore,
@@ -23708,7 +23708,7 @@ contains
     ! Format 7/9-1 addition:  B := ca*A + cb*B
     ! single precision matrix A (format 7 or format 9)
     ! single precision matrix B (format 1)
-    subroutine do_mat79mat1addSnglSngl(neq,ncols,Kld,Kcol,FaA,FaB,fa,fb)
+    subroutine do_mat79mat1addSPSP(neq,ncols,Kld,Kcol,FaA,FaB,fa,fb)
 
       ! REMARK: The matrix B (format 1) is stored row-wise. Hence,
       ! this subroutine handles the transposed of matrix B. Therefore,
@@ -23744,7 +23744,7 @@ contains
     ! Format 7/9-1 addition:  B := ca*A + cb*B
     ! single precision matrix A (format 7 or format 9)
     ! double precision matrix B (format 1)
-    subroutine do_mat79mat1addSnglDble(neq,ncols,Kld,Kcol,FaA,DaB,fa,db)
+    subroutine do_mat79mat1addSPDP(neq,ncols,Kld,Kcol,FaA,DaB,fa,db)
 
       ! REMARK: The matrix B (format 1) is stored row-wise. Hence,
       ! this subroutine handles the transposed of matrix B. Therefore,
@@ -23782,7 +23782,7 @@ contains
     ! double precision matrix A (format D)
     ! double precision matrix B (format 7 or format 9, interleave possible)
 
-    subroutine do_matDmat79addDbleDble(nvar,mvar,neq,na,Kdiagonal,DaA,DaB,da,db)
+    subroutine do_matDmat79addDPDP(nvar,mvar,neq,na,Kdiagonal,DaA,DaB,da,db)
 
       integer, intent(in) :: neq,na
       integer, intent(in) :: nvar,mvar
@@ -23834,7 +23834,7 @@ contains
       else   ! nvar /= mvar
 
         call output_line('Destination matrix must satisfy NVAR = MVAR!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'do_matDmat79DbleDble')
+            OU_CLASS_ERROR,OU_MODE_STD,'do_matDmat79DPDP')
         call sys_halt()
 
       end if
@@ -23846,7 +23846,7 @@ contains
     ! single precision matrix A (format D)
     ! single precision matrix B (format 7 or format 9, interleave possible)
 
-    subroutine do_matDmat79addSnglSngl(nvar,mvar,neq,na,Kdiagonal,FaA,FaB,fa,fb)
+    subroutine do_matDmat79addSPSP(nvar,mvar,neq,na,Kdiagonal,FaA,FaB,fa,fb)
 
       integer, intent(in) :: neq,na
       integer, intent(in) :: nvar,mvar
@@ -23898,7 +23898,7 @@ contains
       else   ! nvar /= mvar
 
         call output_line('Destination matrix must satisfy NVAR = MVAR!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'do_matDmat79SnglSngl')
+            OU_CLASS_ERROR,OU_MODE_STD,'do_matDmat79SPSP')
         call sys_halt()
 
       end if
@@ -23910,7 +23910,7 @@ contains
     ! single precision matrix A (format D)
     ! double precision matrix B (format 7 or format 9, interleave possible)
 
-    subroutine do_matDmat79addSnglDble(nvar,mvar,neq,na,Kdiagonal,FaA,DaB,fa,db)
+    subroutine do_matDmat79addSPDP(nvar,mvar,neq,na,Kdiagonal,FaA,DaB,fa,db)
 
       integer, intent(in) :: neq,na
       integer, intent(in) :: nvar,mvar
@@ -23963,7 +23963,7 @@ contains
       else   ! nvar /= mvar
 
         call output_line('Destination matrix must satisfy NVAR = MVAR!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'do_matDmat79SnglDble')
+            OU_CLASS_ERROR,OU_MODE_STD,'do_matDmat79SPDP')
         call sys_halt()
 
       end if
@@ -24159,7 +24159,7 @@ contains
     ! Format 7/9-7/9 addition:  B := ca*A + cb*B
     ! This routine perform numerical matrix-matrix-addition.
 
-    subroutine do_mat79mat79addDbleDble(isizeIntl,neq,&
+    subroutine do_mat79mat79addDPDP(isizeIntl,neq,&
         naA,KldA,KcolA,naB,KldB,KcolB,KdiagonalB,DaA,DaB,da,db)
 
       integer, intent(in) :: isizeIntl,neq
@@ -24214,7 +24214,7 @@ contains
             ! If we end up here, then the row/column number is not
             ! present in matrix B and we stop with an error
             call output_line('Destination matrix does not provide row/column number!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'do_mat79mat79addDbleDble')
+                OU_CLASS_ERROR,OU_MODE_STD,'do_mat79mat79addDPDP')
             call sys_halt()
           end if
 
@@ -24228,7 +24228,7 @@ contains
     ! Format 7/9-7/9 addition:  B := ca*A + cb*B
     ! This routine perform numerical matrix-matrix-addition.
 
-    subroutine do_mat79mat79addSnglSngl(isizeIntl,neq,&
+    subroutine do_mat79mat79addSPSP(isizeIntl,neq,&
         naA,KldA,KcolA,naB,KldB,KcolB,KdiagonalB,FaA,FaB,fa,fb)
 
       integer, intent(in) :: isizeIntl,neq
@@ -24283,7 +24283,7 @@ contains
             ! If we end up here, then the row/column number is not
             ! present in matrix B and we stop with an error
             call output_line('Destination matrix does not provide row/column number!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'do_mat79mat79addSnglSngl')
+                OU_CLASS_ERROR,OU_MODE_STD,'do_mat79mat79addSPSP')
             call sys_halt()
           end if
 
@@ -24296,7 +24296,7 @@ contains
     ! Format 7/9-7/9 addition:  B := ca*A + cb*B
     ! This routine perform numerical matrix-matrix-addition.
 
-    subroutine do_mat79mat79addSnglDble(isizeIntl,neq,&
+    subroutine do_mat79mat79addSPDP(isizeIntl,neq,&
         naA,KldA,KcolA,naB,KldB,KcolB,KdiagonalB,FaA,DaB,fa,db)
 
       integer, intent(in) :: isizeIntl,neq
@@ -24352,7 +24352,7 @@ contains
             ! If we end up here, then the row/column number is not
             ! present in matrix B and we stop with an error
             call output_line('Destination matrix does not provide row/column number!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'do_mat79mat79addSnglDble')
+                OU_CLASS_ERROR,OU_MODE_STD,'do_mat79mat79addSPDP')
             call sys_halt()
           end if
 
@@ -24365,7 +24365,7 @@ contains
     ! Format 9rowc-9 addition:  B := ca*A + cb*B
     ! This routine perform numerical matrix-matrix-addition.
 
-    subroutine do_mat9rowcMat9addDbleDble(nnzrows,&
+    subroutine do_mat9rowcMat9addDPDP(nnzrows,&
         naA,KldA,KcolA,KrowIdxA,naB,KldB,KcolB,DaA,DaB,da,db)
 
       integer, intent(in) :: nnzrows
@@ -24416,7 +24416,7 @@ contains
 !!$    ! format CSR7 then KDIAGC corresponds to KLDC(1:NEQ). If matrix C
 !!$    ! is stored in format CSR9 then KDIAGC corresponds to KDIAGONALC.
 !!$
-!!$    subroutine do_mat79mat79addDbleDble(isizeIntl,neq,ncols,&
+!!$    subroutine do_mat79mat79addDPDP(isizeIntl,neq,ncols,&
 !!$        KldA,KcolA,KldB,KcolB,DaA,DaB,ca,cb,KldC,KcolC,KdiagC,DaC)
 !!$
 !!$      integer, intent(in) :: neq,ncols
@@ -24590,7 +24590,7 @@ contains
 !!$    ! format CSR7 then KDIAGC corresponds to KLDC(1:NEQ). If matrix C
 !!$    ! is stored in format CSR9 then KDIAGC corresponds to KDIAGONALC.
 !!$
-!!$    subroutine do_mat79mat79addDbleSngl(isizeIntl,neq,ncols,&
+!!$    subroutine do_mat79mat79addDPSP(isizeIntl,neq,ncols,&
 !!$        KldA,KcolA,DaA,ca,KldB,KcolB,FaB,cb,KldC,KcolC,KdiagC,DaC)
 !!$
 !!$      integer, intent(in) :: neq,ncols
@@ -24764,7 +24764,7 @@ contains
 !!$    ! format CSR7 then KDIAGC corresponds to KLDC(1:NEQ). If matrix C
 !!$    ! is stored in format CSR9 then KDIAGC corresponds to KDIAGONALC.
 !!$
-!!$    subroutine do_mat79mat79addSnglSngl(isizeIntl,neq,ncols,&
+!!$    subroutine do_mat79mat79addSPSP(isizeIntl,neq,ncols,&
 !!$        KldA,KcolA,FaA,ca,KldB,KcolB,FaB,cb,KldC,KcolC,KdiagC,FaC)
 !!$
 !!$      integer, intent(in) :: neq,ncols
@@ -25476,12 +25476,12 @@ contains
     case (ST_DOUBLE)
       call lsyssc_getbase_double(rvector1, p_Ddata1)
       call lsyssc_getbase_double(rvector2, p_Ddata2)
-      call do_spreadDble(p_Ddata1, rvector2%NVAR, rvector2%NEQ, p_Ddata2)
+      call do_spreadDP(p_Ddata1, rvector2%NVAR, rvector2%NEQ, p_Ddata2)
 
     case (ST_SINGLE)
       call lsyssc_getbase_single(rvector1, p_Fdata1)
       call lsyssc_getbase_single(rvector2, p_Fdata2)
-      call do_spreadSngl(p_Fdata1, rvector2%NVAR, rvector2%NEQ, p_Fdata2)
+      call do_spreadSP(p_Fdata1, rvector2%NVAR, rvector2%NEQ, p_Fdata2)
 
     case (ST_INT)
       call lsyssc_getbase_int(rvector1, p_Idata1)
@@ -25500,7 +25500,7 @@ contains
 
     !**************************************************************
 
-    subroutine do_spreadDble(Ddata1, NVAR, NEQ, Ddata2)
+    subroutine do_spreadDP(Ddata1, NVAR, NEQ, Ddata2)
       real(DP), dimension(:), intent(in) :: Ddata1
       integer, intent(in) :: NVAR
       integer, intent(in) :: NEQ
@@ -25516,7 +25516,7 @@ contains
 
     !**************************************************************
 
-    subroutine do_spreadSngl(Fdata1, NVAR, NEQ, Fdata2)
+    subroutine do_spreadSP(Fdata1, NVAR, NEQ, Fdata2)
       real(SP), dimension(:), intent(in) :: Fdata1
       integer, intent(in) :: NVAR
       integer, intent(in) :: NEQ
@@ -25598,13 +25598,13 @@ contains
       case (ST_DOUBLE)
         call lsyssc_getbase_double(rmatrix1, p_Ddata1)
         call lsyssc_getbase_double(rmatrix2, p_Ddata2)
-        call do_spreadDble(p_Ddata1, rmatrix2%NVAR, rmatrix2%NVAR,&
+        call do_spreadDP(p_Ddata1, rmatrix2%NVAR, rmatrix2%NVAR,&
                            rmatrix2%NA, p_Ddata2)
 
       case (ST_SINGLE)
         call lsyssc_getbase_single(rmatrix1, p_Fdata1)
         call lsyssc_getbase_single(rmatrix2, p_Fdata2)
-        call do_spreadSngl(p_Fdata1, rmatrix2%NVAR, rmatrix2%NVAR,&
+        call do_spreadSP(p_Fdata1, rmatrix2%NVAR, rmatrix2%NVAR,&
                            rmatrix2%NA, p_Fdata2)
 
       case (ST_INT)
@@ -25624,13 +25624,13 @@ contains
       case (ST_DOUBLE)
         call lsyssc_getbase_double(rmatrix1, p_Ddata1)
         call lsyssc_getbase_double(rmatrix2, p_Ddata2)
-        call do_spreadDble(p_Ddata1, rmatrix2%NVAR, 1,&
+        call do_spreadDP(p_Ddata1, rmatrix2%NVAR, 1,&
                            rmatrix2%NA, p_Ddata2)
 
       case (ST_SINGLE)
         call lsyssc_getbase_single(rmatrix1, p_Fdata1)
         call lsyssc_getbase_single(rmatrix2, p_Fdata2)
-        call do_spreadSngl(p_Fdata1, rmatrix2%NVAR, 1,&
+        call do_spreadSP(p_Fdata1, rmatrix2%NVAR, 1,&
                            rmatrix2%NA, p_Fdata2)
 
       case (ST_INT)
@@ -25657,7 +25657,7 @@ contains
 
     !**************************************************************
 
-    subroutine do_spreadDble(Ddata1, NVAR, MVAR, NA, Ddata2)
+    subroutine do_spreadDP(Ddata1, NVAR, MVAR, NA, Ddata2)
       real(DP), dimension(:), intent(in) :: Ddata1
       integer, intent(in) :: NVAR,MVAR
       integer, intent(in) :: NA
@@ -25673,7 +25673,7 @@ contains
 
     !**************************************************************
 
-    subroutine do_spreadSngl(Fdata1, NVAR, MVAR, NA, Fdata2)
+    subroutine do_spreadSP(Fdata1, NVAR, MVAR, NA, Fdata2)
       real(SP), dimension(:), intent(in) :: Fdata1
       integer, intent(in) :: NVAR,MVAR
       integer, intent(in) :: NA
@@ -25784,12 +25784,12 @@ contains
     case (ST_DOUBLE)
       call lsyssc_getbase_double(rvector1, p_Ddata1)
       call lsyssc_getbase_double(rvector2, p_Ddata2)
-      call do_packDble(p_Ddata1, rvector1%NVAR, rvector1%NEQ, ivar, p_Ddata2)
+      call do_packDP(p_Ddata1, rvector1%NVAR, rvector1%NEQ, ivar, p_Ddata2)
 
     case (ST_SINGLE)
       call lsyssc_getbase_single(rvector1, p_Fdata1)
       call lsyssc_getbase_single(rvector2, p_Fdata2)
-      call do_packSngl(p_Fdata1, rvector1%NVAR, rvector1%NEQ, ivar, p_Fdata2)
+      call do_packSP(p_Fdata1, rvector1%NVAR, rvector1%NEQ, ivar, p_Fdata2)
 
     case (ST_INT)
       call lsyssc_getbase_int(rvector1, p_Idata1)
@@ -25808,7 +25808,7 @@ contains
 
     !**************************************************************
 
-    subroutine do_packDble(Ddata1, NVAR, NEQ, ivar, Ddata2)
+    subroutine do_packDP(Ddata1, NVAR, NEQ, ivar, Ddata2)
       real(DP), dimension(NVAR,NEQ), intent(in) :: Ddata1
       integer, intent(in) :: NVAR
       integer, intent(in) :: NEQ
@@ -25825,7 +25825,7 @@ contains
 
     !**************************************************************
 
-    subroutine do_packSngl(Fdata1, NVAR, NEQ, ivar, Fdata2)
+    subroutine do_packSP(Fdata1, NVAR, NEQ, ivar, Fdata2)
       real(SP), dimension(NVAR,NEQ), intent(in) :: Fdata1
       integer, intent(in) :: NVAR
       integer, intent(in) :: NEQ

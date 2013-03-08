@@ -5837,7 +5837,7 @@ contains
     call lsyssc_getbase_double(rxCoarse, p_DxCoarse)
 
     ! Explicitely adopt values from coarser level
-    call lalg_copyVectorDble(p_DxCoarse, p_DxFine)
+    call lalg_copyVector(p_DxCoarse, p_DxFine)
 
     ! Do the prolongation
     call do_prolongationP1Q1(nvar, rtriangulationCoarse%NEL,&
@@ -6026,7 +6026,7 @@ contains
     call lsyssc_getbase_double(rxCoarse, p_DxCoarse)
 
     ! Explicitely adopt values 1:NVT_Coarse from coarser level.
-    call lalg_copyVectorDble(p_DxFine(1:nvar*rtriangulationCoarse%NVT), p_DxCoarse)
+    call lalg_copyVector(p_DxFine(1:nvar*rtriangulationCoarse%NVT), p_DxCoarse)
 
     call do_restrictionP1Q1(nvar, rtriangulationFine%NEL, rtriangulationCoarse%NEL, &
                             p_IneighboursAtElementFine, p_IverticesAtElementFine,&
@@ -6534,7 +6534,7 @@ contains
 
           ! Copy matrix data
           call storage_getbase_double(rsolver%h_Ddata, p_Ddata, rmatrix%NA)
-          call lalg_copyVectorDble(p_DA, p_Ddata)
+          call lalg_copyVector(p_DA, p_Ddata)
 
           ! Set pointers
           call lsyssc_getbase_Kld (rmatrix, p_Kld)
@@ -6583,7 +6583,7 @@ contains
             ! Copy matrix data
             call storage_getbase_double(rsolver%h_Ddata, p_Ddata,&
                                         rmatrix%NA*rmatrix%NVAR)
-            call lalg_copyVectorDble(p_DA, p_Ddata)
+            call lalg_copyVector(p_DA, p_Ddata)
 
             ! Set pointers
             call lsyssc_getbase_Kld (rmatrix, p_Kld)

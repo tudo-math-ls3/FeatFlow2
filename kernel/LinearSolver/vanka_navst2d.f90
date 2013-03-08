@@ -2095,8 +2095,8 @@ contains
           end do
 
           ! Invert A1 and A2
-          call mprim_invert4x4MatrixDirectDble(Da1, Di1,bsuccess1)
-          call mprim_invert4x4MatrixDirectDble(Da2, Di2,bsuccess2)
+          call mprim_invert4x4MatrixDirect(Da1, Di1,bsuccess1)
+          call mprim_invert4x4MatrixDirect(Da2, Di2,bsuccess2)
 
           if (bsuccess1 .and. bsuccess2) then
 
@@ -2258,8 +2258,8 @@ contains
           end do
 
           ! Invert A1 and A2
-          call mprim_invert4x4MatrixDirectDble(Da1, Di1,bsuccess1)
-          call mprim_invert4x4MatrixDirectDble(Da2, Di2,bsuccess2)
+          call mprim_invert4x4MatrixDirect(Da1, Di1,bsuccess1)
+          call mprim_invert4x4MatrixDirect(Da2, Di2,bsuccess2)
 
           if (bsuccess1 .and. bsuccess2) then
 

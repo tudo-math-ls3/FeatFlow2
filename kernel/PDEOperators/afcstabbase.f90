@@ -98,24 +98,24 @@
 !#                               afcstab_buildBoundsLPT2D /
 !#                               afcstab_buildBoundsLPT3D
 !#
-!# 28.) afcstab_limit = afcstab_limitUnboundedDble /
-!#                      afcstab_limitUnboundedSngl /
-!#                      afcstab_limitBoundedDble /
-!#                      afcstab_limitBoundedSngl
+!# 28.) afcstab_limit = afcstab_limitUnboundedDP /
+!#                      afcstab_limitUnboundedSP /
+!#                      afcstab_limitBoundedDP /
+!#                      afcstab_limitBoundedSP
 !#      -> Compute the nodal correction factors, i.e., the ratio of
 !#         admissible solution increments and raw antidiffusion
 !#
-!# 29.) afcstab_combineFluxes = afcstab_combFluxesDble /
-!#                              afcstab_combFluxesSngl
+!# 29.) afcstab_combineFluxes = afcstab_combFluxesDP /
+!#                              afcstab_combFluxesSP
 !#      -> Linear combination of the vectors of fluxes
 !#
-!# 30.) afcstab_combineFluxesDble / afcstab_combineFluxesSngl
+!# 30.) afcstab_combineFluxesDP / afcstab_combineFluxesSP
 !#      -> Linear combination of the vectors of fluxes
 !#
-!# 31.) afcstab_upwindOrientation = afcstab_upwindOrientationDble1 /
-!#                                  afcstab_upwindOrientationDble2 /
-!#                                  afcstab_upwindOrientationSngl1 /
-!#                                  afcstab_upwindOrientationSngl2
+!# 31.) afcstab_upwindOrientation = afcstab_upwindOrientationDP1 /
+!#                                  afcstab_upwindOrientationDP2 /
+!#                                  afcstab_upwindOrientationSP1 /
+!#                                  afcstab_upwindOrientationSP2
 !#      -> Swap edge orientation so that the starting edge is located upwind
 !#
 !# 32.) afcstab_infoStabilisation
@@ -205,8 +205,8 @@ module afcstabbase
 
   public :: afcstab_limit
   public :: afcstab_combineFluxes
-  public :: afcstab_combineFluxesDble
-  public :: afcstab_combineFluxesSngl
+  public :: afcstab_combineFluxesDP
+  public :: afcstab_combineFluxesSP
   public :: afcstab_upwindOrientation
 
   public :: afcstab_copyD2H_IedgeListIdx
@@ -820,22 +820,22 @@ module afcstabbase
   end interface
 
   interface afcstab_limit
-    module procedure afcstab_limitUnboundedDble
-    module procedure afcstab_limitUnboundedSngl
-    module procedure afcstab_limitBoundedDble
-    module procedure afcstab_limitBoundedSngl
+    module procedure afcstab_limitUnboundedDP
+    module procedure afcstab_limitUnboundedSP
+    module procedure afcstab_limitBoundedDP
+    module procedure afcstab_limitBoundedSP
   end interface
 
   interface afcstab_combineFluxes
-    module procedure afcstab_combFluxesDble
-    module procedure afcstab_combFluxesSngl
+    module procedure afcstab_combFluxesDP
+    module procedure afcstab_combFluxesSP
   end interface
 
   interface afcstab_upwindOrientation
-    module procedure afcstab_upwindOrientationDble1
-    module procedure afcstab_upwindOrientationDble2
-    module procedure afcstab_upwindOrientationSngl1
-    module procedure afcstab_upwindOrientationSngl2
+    module procedure afcstab_upwindOrientationDP1
+    module procedure afcstab_upwindOrientationDP2
+    module procedure afcstab_upwindOrientationSP1
+    module procedure afcstab_upwindOrientationSP2
   end interface
 
 contains
@@ -4081,7 +4081,7 @@ contains
         call lsyssc_getbase_double (rmatrixCx, p_DdataCx)
         call afcstab_getbase_DboundsAtEdge(rafcstab, p_DboundsAtEdge)
 
-        call doBoundsMat7Dble(p_IedgeList, p_Kld,&
+        call doBoundsMat7DP(p_IedgeList, p_Kld,&
             p_DdataCx, p_DdataM, DdofCoords, dscale, p_DboundsAtEdge)
 
       case (ST_SINGLE)
@@ -4089,7 +4089,7 @@ contains
         call lsyssc_getbase_single (rmatrixCx, p_FdataCx)
         call afcstab_getbase_FboundsAtEdge(rafcstab, p_FboundsAtEdge)
 
-        call doBoundsMat7Sngl(p_IedgeList, p_Kld,&
+        call doBoundsMat7SP(p_IedgeList, p_Kld,&
             p_FdataCx, p_FdataM, DdofCoords, dscale, p_FboundsAtEdge)
 
       case default
@@ -4109,7 +4109,7 @@ contains
         call lsyssc_getbase_double (rmatrixCx, p_DdataCx)
         call afcstab_getbase_DboundsAtEdge(rafcstab, p_DboundsAtEdge)
 
-        call doBoundsMat9Dble(p_IedgeList, p_Kdiagonal, p_Kld,&
+        call doBoundsMat9DP(p_IedgeList, p_Kdiagonal, p_Kld,&
             p_DdataCx, p_DdataM, DdofCoords, dscale, p_DboundsAtEdge)
 
       case (ST_SINGLE)
@@ -4117,7 +4117,7 @@ contains
         call lsyssc_getbase_single (rmatrixCx, p_FdataCx)
         call afcstab_getbase_FboundsAtEdge(rafcstab, p_FboundsAtEdge)
 
-        call doBoundsMat9Sngl(p_IedgeList, p_Kdiagonal, p_Kld,&
+        call doBoundsMat9SP(p_IedgeList, p_Kdiagonal, p_Kld,&
             p_FdataCx, p_FdataM, DdofCoords, dscale, p_FboundsAtEdge)
 
       case default
@@ -4140,7 +4140,7 @@ contains
     ! Compute the bounds in double precision.
     ! All matrices are stored in matrix format 7.
 
-    subroutine doBoundsMat7Dble(IedgeList, Kld,&
+    subroutine doBoundsMat7DP(IedgeList, Kld,&
         DdataCx, DdataM, DdofCoords, dscale, DboundsAtEdge)
 
       integer, dimension(:,:), intent(in) :: IedgeList
@@ -4192,13 +4192,13 @@ contains
         DboundsAtEdge(2,iedge) = dscale*daux/DdataM(j)
       end do edges
 
-    end subroutine doBoundsMat7Dble
+    end subroutine doBoundsMat7DP
 
     !**************************************************************
     ! Compute the bounds in double precision.
     ! All matrices are stored in matrix format 9.
 
-    subroutine doBoundsMat9Dble(IedgeList, Kdiagonal, Kld,&
+    subroutine doBoundsMat9DP(IedgeList, Kdiagonal, Kld,&
         DdataCx, DdataM, DdofCoords, dscale, DboundsAtEdge)
 
       integer, dimension(:,:), intent(in) :: IedgeList
@@ -4258,13 +4258,13 @@ contains
         DboundsAtEdge(2,iedge) = dscale*daux/DdataM(j)
       end do edges
 
-    end subroutine doBoundsMat9Dble
+    end subroutine doBoundsMat9DP
 
     !**************************************************************
     ! Compute the bounds in single precision.
     ! All matrices are stored in matrix format 7.
 
-    subroutine doBoundsMat7Sngl(IedgeList, Kld,&
+    subroutine doBoundsMat7SP(IedgeList, Kld,&
         FdataCx, FdataM, DdofCoords, dscale, FboundsAtEdge)
 
       integer, dimension(:,:), intent(in) :: IedgeList
@@ -4316,13 +4316,13 @@ contains
         FboundsAtEdge(2,iedge) = real(dscale*daux,SP)/FdataM(j)
       end do edges
 
-    end subroutine doBoundsMat7Sngl
+    end subroutine doBoundsMat7SP
 
     !**************************************************************
     ! Compute the bounds in single precision.
     ! All matrices are stored in matrix format 9.
 
-    subroutine doBoundsMat9Sngl(IedgeList, Kdiagonal, Kld,&
+    subroutine doBoundsMat9SP(IedgeList, Kdiagonal, Kld,&
         FdataCx, FdataM, DdofCoords, dscale, FboundsAtEdge)
 
       integer, dimension(:,:), intent(in) :: IedgeList
@@ -4382,7 +4382,7 @@ contains
         FboundsAtEdge(2,iedge) = real(dscale*daux,SP)/FdataM(j)
       end do edges
 
-    end subroutine doBoundsMat9Sngl
+    end subroutine doBoundsMat9SP
 
   end subroutine afcstab_buildBoundsLPT1D
 
@@ -4488,7 +4488,7 @@ contains
         call lsyssc_getbase_double (rmatrixCy, p_DdataCy)
         call afcstab_getbase_DboundsAtEdge(rafcstab, p_DboundsAtEdge)
 
-        call doBoundsMat7Dble(p_IedgeList, p_Kld,&
+        call doBoundsMat7DP(p_IedgeList, p_Kld,&
             p_DdataCx, p_DdataCy, p_DdataM, DdofCoords,&
             dscale, p_DboundsAtEdge)
 
@@ -4498,7 +4498,7 @@ contains
         call lsyssc_getbase_single (rmatrixCy, p_FdataCy)
         call afcstab_getbase_FboundsAtEdge(rafcstab, p_FboundsAtEdge)
 
-        call doBoundsMat7Sngl(p_IedgeList, p_Kld,&
+        call doBoundsMat7SP(p_IedgeList, p_Kld,&
             p_FdataCx, p_FdataCy, p_FdataM, DdofCoords,&
             dscale, p_FboundsAtEdge)
 
@@ -4520,7 +4520,7 @@ contains
         call lsyssc_getbase_double (rmatrixCy, p_DdataCy)
         call afcstab_getbase_DboundsAtEdge(rafcstab, p_DboundsAtEdge)
 
-        call doBoundsMat9Dble(p_IedgeList, p_Kdiagonal, p_Kld,&
+        call doBoundsMat9DP(p_IedgeList, p_Kdiagonal, p_Kld,&
             p_DdataCx, p_DdataCy, p_DdataM, DdofCoords,&
             dscale, p_DboundsAtEdge)
 
@@ -4530,7 +4530,7 @@ contains
         call lsyssc_getbase_single (rmatrixCy, p_FdataCy)
         call afcstab_getbase_FboundsAtEdge(rafcstab, p_FboundsAtEdge)
 
-        call doBoundsMat9Sngl(p_IedgeList, p_Kdiagonal, p_Kld,&
+        call doBoundsMat9SP(p_IedgeList, p_Kdiagonal, p_Kld,&
             p_FdataCx, p_FdataCy, p_FdataM, DdofCoords,&
             dscale, p_FboundsAtEdge)
 
@@ -4554,7 +4554,7 @@ contains
     ! Compute the bounds in double precision.
     ! All matrices are stored in matrix format 7.
 
-    subroutine doBoundsMat7Dble(IedgeList, Kld,&
+    subroutine doBoundsMat7DP(IedgeList, Kld,&
         DdataCx, DdataCy, DdataM, DdofCoords, dscale, DboundsAtEdge)
 
       integer, dimension(:,:), intent(in) :: IedgeList
@@ -4609,13 +4609,13 @@ contains
         DboundsAtEdge(2,iedge) = dscale*daux/DdataM(j)
       end do edges
 
-    end subroutine doBoundsMat7Dble
+    end subroutine doBoundsMat7DP
 
     !**************************************************************
     ! Compute the bounds in double precision.
     ! All matrices are stored in matrix format 9.
 
-    subroutine doBoundsMat9Dble(IedgeList, Kdiagonal, Kld,&
+    subroutine doBoundsMat9DP(IedgeList, Kdiagonal, Kld,&
         DdataCx, DdataCy, DdataM, DdofCoords, dscale, DboundsAtEdge)
 
       integer, dimension(:,:), intent(in) :: IedgeList
@@ -4680,13 +4680,13 @@ contains
         DboundsAtEdge(2,iedge) = dscale*daux/DdataM(j)
       end do edges
 
-    end subroutine doBoundsMat9Dble
+    end subroutine doBoundsMat9DP
 
     !**************************************************************
     ! Compute the bounds in single precision.
     ! All matrices are stored in matrix format 7.
 
-    subroutine doBoundsMat7Sngl(IedgeList, Kld,&
+    subroutine doBoundsMat7SP(IedgeList, Kld,&
         FdataCx, FdataCy, FdataM, DdofCoords, dscale, FboundsAtEdge)
 
       integer, dimension(:,:), intent(in) :: IedgeList
@@ -4741,13 +4741,13 @@ contains
         FboundsAtEdge(2,iedge) = real(dscale*daux,SP)/FdataM(j)
       end do edges
 
-    end subroutine doBoundsMat7Sngl
+    end subroutine doBoundsMat7SP
 
     !**************************************************************
     ! Compute the bounds in single precision.
     ! All matrices are stored in matrix format 9.
 
-    subroutine doBoundsMat9Sngl(IedgeList, Kdiagonal, Kld,&
+    subroutine doBoundsMat9SP(IedgeList, Kdiagonal, Kld,&
         FdataCx, FdataCy, FdataM, DdofCoords, dscale, FboundsAtEdge)
 
       integer, dimension(:,:), intent(in) :: IedgeList
@@ -4812,7 +4812,7 @@ contains
         FboundsAtEdge(2,iedge) = real(dscale*daux,SP)/FdataM(j)
       end do edges
 
-    end subroutine doBoundsMat9Sngl
+    end subroutine doBoundsMat9SP
 
   end subroutine afcstab_buildBoundsLPT2D
 
@@ -4920,7 +4920,7 @@ contains
         call lsyssc_getbase_double (rmatrixCz, p_DdataCz)
         call afcstab_getbase_DboundsAtEdge(rafcstab, p_DboundsAtEdge)
 
-        call doBoundsMat7Dble(p_IedgeList, p_Kld,&
+        call doBoundsMat7DP(p_IedgeList, p_Kld,&
             p_DdataCx, p_DdataCy, p_DdataCz, p_DdataM,&
             DdofCoords, dscale, p_DboundsAtEdge)
 
@@ -4931,7 +4931,7 @@ contains
         call lsyssc_getbase_single (rmatrixCz, p_FdataCz)
         call afcstab_getbase_FboundsAtEdge(rafcstab, p_FboundsAtEdge)
 
-        call doBoundsMat7Sngl(p_IedgeList, p_Kld,&
+        call doBoundsMat7SP(p_IedgeList, p_Kld,&
             p_FdataCx, p_FdataCy, p_FdataCz, p_FdataM,&
             DdofCoords, dscale, p_FboundsAtEdge)
 
@@ -4954,7 +4954,7 @@ contains
         call lsyssc_getbase_double (rmatrixCz, p_DdataCz)
         call afcstab_getbase_DboundsAtEdge(rafcstab, p_DboundsAtEdge)
 
-        call doBoundsMat9Dble(p_IedgeList, p_Kdiagonal, p_Kld,&
+        call doBoundsMat9DP(p_IedgeList, p_Kdiagonal, p_Kld,&
             p_DdataCx, p_DdataCy, p_DdataCz, p_DdataM,&
             DdofCoords, dscale, p_DboundsAtEdge)
 
@@ -4965,7 +4965,7 @@ contains
         call lsyssc_getbase_single (rmatrixCz, p_FdataCz)
         call afcstab_getbase_FboundsAtEdge(rafcstab, p_FboundsAtEdge)
 
-        call doBoundsMat9Sngl(p_IedgeList, p_Kdiagonal, p_Kld,&
+        call doBoundsMat9SP(p_IedgeList, p_Kdiagonal, p_Kld,&
             p_FdataCx, p_FdataCy, p_FdataCz, p_FdataM,&
             DdofCoords, dscale, p_FboundsAtEdge)
 
@@ -4989,7 +4989,7 @@ contains
     ! Compute the bounds in double precision.
     ! All matrices are stored in matrix format 7.
 
-    subroutine doBoundsMat7Dble(IedgeList, Kld,&
+    subroutine doBoundsMat7DP(IedgeList, Kld,&
         DdataCx, DdataCy, DdataCz, DdataM, DdofCoords, dscale, DboundsAtEdge)
 
       integer, dimension(:,:), intent(in) :: IedgeList
@@ -5047,13 +5047,13 @@ contains
         DboundsAtEdge(2,iedge) = dscale*daux/DdataM(j)
       end do edges
 
-    end subroutine doBoundsMat7Dble
+    end subroutine doBoundsMat7DP
 
     !**************************************************************
     ! Compute the bounds in double precision.
     ! All matrices are stored in matrix format 9.
 
-    subroutine doBoundsMat9Dble(IedgeList, Kdiagonal, Kld,&
+    subroutine doBoundsMat9DP(IedgeList, Kdiagonal, Kld,&
         DdataCx, DdataCy, DdataCz, DdataM, DdofCoords, dscale, DboundsAtEdge)
 
       integer, dimension(:,:), intent(in) :: IedgeList
@@ -5123,13 +5123,13 @@ contains
         DboundsAtEdge(2,iedge) = dscale*daux/DdataM(j)
       end do edges
 
-    end subroutine doBoundsMat9Dble
+    end subroutine doBoundsMat9DP
 
     !**************************************************************
     ! Compute the bounds in single precision.
     ! All matrices are stored in matrix format 7.
 
-    subroutine doBoundsMat7Sngl(IedgeList, Kld,&
+    subroutine doBoundsMat7SP(IedgeList, Kld,&
         FdataCx, FdataCy, FdataCz, FdataM, DdofCoords, dscale, FboundsAtEdge)
 
       integer, dimension(:,:), intent(in) :: IedgeList
@@ -5187,13 +5187,13 @@ contains
         FboundsAtEdge(2,iedge) = real(dscale*daux,SP)/FdataM(j)
       end do edges
 
-    end subroutine doBoundsMat7Sngl
+    end subroutine doBoundsMat7SP
 
     !**************************************************************
     ! Compute the bounds in single precision.
     ! All matrices are stored in matrix format 9.
 
-    subroutine doBoundsMat9Sngl(IedgeList, Kdiagonal, Kld,&
+    subroutine doBoundsMat9SP(IedgeList, Kdiagonal, Kld,&
         FdataCx, FdataCy, FdataCz, FdataM, DdofCoords, dscale, FboundsAtEdge)
 
       integer, dimension(:,:), intent(in) :: IedgeList
@@ -5263,7 +5263,7 @@ contains
         FboundsAtEdge(2,iedge) = real(dscale*daux,SP)/FdataM(j)
       end do edges
 
-    end subroutine doBoundsMat9Sngl
+    end subroutine doBoundsMat9SP
 
   end subroutine afcstab_buildBoundsLPT3D
 
@@ -5271,7 +5271,7 @@ contains
 
 !<function>
 
-  elemental function afcstab_limitUnboundedDble(p, q, dval) result(r)
+  elemental function afcstab_limitUnboundedDP(p, q, dval) result(r)
 
 !<description>
     ! This function computes the ratio q/p. If the denominator is
@@ -5297,13 +5297,13 @@ contains
     else
       r = dval
     end if
-  end function afcstab_limitUnboundedDble
+  end function afcstab_limitUnboundedDP
 
   !*****************************************************************************
 
 !<function>
 
-  elemental function afcstab_limitUnboundedSngl(p, q, fval) result(r)
+  elemental function afcstab_limitUnboundedSP(p, q, fval) result(r)
 
 !<description>
     ! This function computes the ratio q/p. If the denominator is
@@ -5329,13 +5329,13 @@ contains
     else
       r = fval
     end if
-  end function afcstab_limitUnboundedSngl
+  end function afcstab_limitUnboundedSP
 
   !*****************************************************************************
 
 !<function>
 
-  elemental function afcstab_limitBoundedDble(p, q, dval, dbound) result(r)
+  elemental function afcstab_limitBoundedDP(p, q, dval, dbound) result(r)
 
 !<description>
     ! This function computes the limited ratio q/p and bounds the
@@ -5365,13 +5365,13 @@ contains
     else
       r = dval
     end if
-  end function afcstab_limitBoundedDble
+  end function afcstab_limitBoundedDP
 
   !*****************************************************************************
 
 !<function>
 
-  elemental function afcstab_limitBoundedSngl(p, q, fval, fbound) result(r)
+  elemental function afcstab_limitBoundedSP(p, q, fval, fbound) result(r)
 
 !<description>
     ! This function computes the limited ratio q/p and bounds the
@@ -5402,7 +5402,7 @@ contains
     else
       r = fval
     end if
-  end function afcstab_limitBoundedSngl
+  end function afcstab_limitBoundedSP
 
   !*****************************************************************************
 
@@ -5411,8 +5411,8 @@ contains
 #ifndef USE_OPENMP
   pure&
 #endif
-  subroutine afcstab_combFluxesDble(NEDGE, dscale, Dflux1, Dflux2, Dalpha,&
-                                    rperfconfig)
+  subroutine afcstab_combFluxesDP(NEDGE, dscale, Dflux1, Dflux2, Dalpha,&
+                                  rperfconfig)
 
 !<description>
     ! This subroutine combines the two fluxes:
@@ -5528,7 +5528,7 @@ contains
 
     end if
 
-  end subroutine afcstab_combFluxesDble
+  end subroutine afcstab_combFluxesDP
 
   ! ****************************************************************************
 
@@ -5537,8 +5537,8 @@ contains
 #ifndef USE_OPENMP
   pure&
 #endif
-  subroutine afcstab_combFluxesSngl(NEDGE, fscale, Fflux1, Fflux2, Falpha,&
-                                    rperfconfig)
+  subroutine afcstab_combFluxesSP(NEDGE, fscale, Fflux1, Fflux2, Falpha,&
+                                  rperfconfig)
 
 !<description>
     ! This subroutine combines the two fluxes:
@@ -5654,7 +5654,7 @@ contains
 
     end if
 
-  end subroutine afcstab_combFluxesSngl
+  end subroutine afcstab_combFluxesSP
 
   ! ****************************************************************************
 
@@ -5663,8 +5663,8 @@ contains
 #ifndef USE_OPENMP
     pure&
 #endif
-    subroutine afcstab_combineFluxesDble(NVAR, NEDGE, dscale, Dflux1, Dflux2,&
-                                         Dalpha, rperfconfig)
+    subroutine afcstab_combineFluxesDP(NVAR, NEDGE, dscale, Dflux1, Dflux2,&
+                                       Dalpha, rperfconfig)
 
 !<description>
     ! This subroutine combines the two fluxes:
@@ -5786,7 +5786,7 @@ contains
 
     end if
 
-  end subroutine afcstab_combineFluxesDble
+  end subroutine afcstab_combineFluxesDP
 
   ! ****************************************************************************
 
@@ -5795,8 +5795,8 @@ contains
 #ifndef USE_OPENMP
     pure&
 #endif
-    subroutine afcstab_combineFluxesSngl(NVAR, NEDGE, fscale, Fflux1, Fflux2,&
-                                         Falpha, rperfconfig)
+    subroutine afcstab_combineFluxesSP(NVAR, NEDGE, fscale, Fflux1, Fflux2,&
+                                       Falpha, rperfconfig)
 
 !<description>
     ! This subroutine combines the two fluxes:
@@ -5918,13 +5918,13 @@ contains
 
     end if
 
-  end subroutine afcstab_combineFluxesSngl
+  end subroutine afcstab_combineFluxesSP
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine afcstab_upwindOrientationDble1(Dcoefficients, IedgeList,&
+  subroutine afcstab_upwindOrientationDP1(Dcoefficients, IedgeList,&
       DcoefficientsAux, ipos, jpos, rperfconfig)
 
 !<description>
@@ -6043,17 +6043,17 @@ contains
 
     case default
       call output_line('SIZE(IedgeList,2) is not compatible!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_upwindOrientationDble1')
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_upwindOrientationDP1')
       call sys_halt()
     end select
 
-  end subroutine afcstab_upwindOrientationDble1
+  end subroutine afcstab_upwindOrientationDP1
 
 !*****************************************************************************
 
 !<subroutine>
 
-  subroutine afcstab_upwindOrientationDble2(Dcoefficients, IedgeList,&
+  subroutine afcstab_upwindOrientationDP2(Dcoefficients, IedgeList,&
       ipos, jpos, rperfconfig)
 
 !<description>
@@ -6153,17 +6153,17 @@ contains
 
     case default
       call output_line('SIZE(IedgeList,2) is not compatible!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_upwindOrientationDble2')
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_upwindOrientationDP2')
       call sys_halt()
     end select
 
-  end subroutine afcstab_upwindOrientationDble2
+  end subroutine afcstab_upwindOrientationDP2
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine afcstab_upwindOrientationSngl1(Fcoefficients, IedgeList,&
+  subroutine afcstab_upwindOrientationSP1(Fcoefficients, IedgeList,&
       FcoefficientsAux, ipos, jpos, rperfconfig)
 
 !<description>
@@ -6282,17 +6282,17 @@ contains
 
     case default
       call output_line('SIZE(IedgeList,2) is not compatible!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_upwindOrientationSngl1')
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_upwindOrientationSP1')
       call sys_halt()
     end select
 
-  end subroutine afcstab_upwindOrientationSngl1
+  end subroutine afcstab_upwindOrientationSP1
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine afcstab_upwindOrientationSngl2(Fcoefficients, IedgeList,&
+  subroutine afcstab_upwindOrientationSP2(Fcoefficients, IedgeList,&
       ipos, jpos, rperfconfig)
 
 !<description>
@@ -6392,11 +6392,11 @@ contains
 
     case default
       call output_line('SIZE(IedgeList,2) is not compatible!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_upwindOrientationSngl2')
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_upwindOrientationSP2')
       call sys_halt()
     end select
 
-  end subroutine afcstab_upwindOrientationSngl2
+  end subroutine afcstab_upwindOrientationSP2
 
   !*****************************************************************************
 

@@ -26,9 +26,9 @@ module stack
 !$use omp_lib
   use fsystem
   use genoutput
-  use stackDble
+  use stackDP
   use stackInt
-  use stackSngl
+  use stackSP
   use storage
 
   implicit none
@@ -40,9 +40,9 @@ module stack
   public :: stack_getbase
 
   interface stack_getbase
-    module procedure stack_getbase_int
-    module procedure stack_getbase_double
-    module procedure stack_getbase_single
+    module procedure stack_getbase_Int
+    module procedure stack_getbase_DP
+    module procedure stack_getbase_SP
   end interface
 
 !<constants>
@@ -71,10 +71,10 @@ module stack
     type(t_stackInt),  pointer :: p_StackInt => null()
 
     ! Pointer to double-valued stack implementations
-    type(t_stackDble), pointer :: p_StackDble => null()
+    type(t_stackDP), pointer :: p_StackDP => null()
 
     ! Pointer to single-valued stack implementations
-    type(t_stackSngl), pointer :: p_StackSngl => null()
+    type(t_stackSP), pointer :: p_StackSP => null()
 
   end type t_stack
 
@@ -109,10 +109,10 @@ contains
       allocate(rstack%p_StackInt)
 
     case (STACK_DOUBLE)
-      allocate(rstack%p_StackDble)
+      allocate(rstack%p_StackDP)
 
     case (STACK_SINGLE)
-      allocate(rstack%p_StackSngl)
+      allocate(rstack%p_StackSP)
 
     case DEFAULT
       call output_line('Invalid stack type!',&
@@ -143,14 +143,14 @@ contains
       deallocate(rstack%p_StackInt)
     end if
 
-    if (associated(rstack%p_StackDble)) then
-      call stack_release(rstack%p_StackDble)
-      deallocate(rstack%p_StackDble)
+    if (associated(rstack%p_StackDP)) then
+      call stack_release(rstack%p_StackDP)
+      deallocate(rstack%p_StackDP)
     end if
 
-    if (associated(rstack%p_StackSngl)) then
-      call stack_release(rstack%p_StackSngl)
-      deallocate(rstack%p_StackSngl)
+    if (associated(rstack%p_StackSP)) then
+      call stack_release(rstack%p_StackSP)
+      deallocate(rstack%p_StackSP)
     end if
 
   end subroutine stack_done
@@ -159,7 +159,7 @@ contains
 
 !<subroutine>
 
-  subroutine stack_getbase_int(rstack, p_rstack)
+  subroutine stack_getbase_Int(rstack, p_rstack)
 
 !<description>
     ! Returns a pointer to the integer-valued stack implementation
@@ -182,13 +182,13 @@ contains
       nullify(p_rstack)
     end if
 
-  end subroutine stack_getbase_int
+  end subroutine stack_getbase_Int
 
   !************************************************************************
 
 !<subroutine>
 
-  subroutine stack_getbase_double(rstack, p_rstack)
+  subroutine stack_getbase_DP(rstack, p_rstack)
 
 !<description>
     ! Returns a pointer to the double-valued stack implementation
@@ -201,23 +201,23 @@ contains
 
 !<output>
     ! Pointer to the stack implementation
-    type(t_stackDble), pointer :: p_rstack
+    type(t_stackDP), pointer :: p_rstack
 !</output>
 !</subroutine>
 
-    if (associated(rstack%p_StackDble)) then
-      p_rstack => rstack%p_StackDble
+    if (associated(rstack%p_StackDP)) then
+      p_rstack => rstack%p_StackDP
     else
       nullify(p_rstack)
     end if
 
-  end subroutine stack_getbase_double
+  end subroutine stack_getbase_DP
 
   !************************************************************************
 
 !<subroutine>
 
-  subroutine stack_getbase_single(rstack, p_rstack)
+  subroutine stack_getbase_SP(rstack, p_rstack)
 
 !<description>
     ! Returns a pointer to the single-valued stack implementation
@@ -230,16 +230,16 @@ contains
 
 !<output>
     ! Pointer to the stack implementation
-    type(t_stackSngl), pointer :: p_rstack
+    type(t_stackSP), pointer :: p_rstack
 !</output>
 !</subroutine>
 
-    if (associated(rstack%p_StackSngl)) then
-      p_rstack => rstack%p_StackSngl
+    if (associated(rstack%p_StackSP)) then
+      p_rstack => rstack%p_StackSP
     else
       nullify(p_rstack)
     end if
 
-  end subroutine stack_getbase_single
+  end subroutine stack_getbase_SP
 
 end module stack

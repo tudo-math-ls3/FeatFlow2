@@ -7,30 +7,30 @@ module lsyssc_scalarMatVecAux
   implicit none
 
   private
-  public :: lsyssc_lax79dbledble
-  public :: lsyssc_lax79sngldble
-  public :: lsyssc_lax79dblesngl
-  public :: lsyssc_lax79snglsngl
-  public :: lsyssc_lax9rowcdbledble
-  public :: lsyssc_lax9rowcsngldble
-  public :: lsyssc_lax9rowcdblesngl
-  public :: lsyssc_lax9rowcsnglsngl
-  public :: lsyssc_lax79intl1dbledble
-  public :: lsyssc_lax79intl1sngldble
-  public :: lsyssc_lax79intl1dblesngl
-  public :: lsyssc_lax79intl1snglsngl
-  public :: lsyssc_lax79intlddbledble
-  public :: lsyssc_lax79intldsngldble
-  public :: lsyssc_lax79intlddblesngl
-  public :: lsyssc_lax79intldsnglsngl
-  public :: lsyssc_latxddbledble
-  public :: lsyssc_latxdsngldble
-  public :: lsyssc_latxddblesngl
-  public :: lsyssc_latxdsnglsngl
-  public :: lsyssc_ltx79dbledble
-  public :: lsyssc_ltx79sngldble
-  public :: lsyssc_ltx79dblesngl
-  public :: lsyssc_ltx79snglsngl
+  public :: lsyssc_lax79DPDP
+  public :: lsyssc_lax79SPDP
+  public :: lsyssc_lax79DPSP
+  public :: lsyssc_lax79SPSP
+  public :: lsyssc_lax9rowcDPDP
+  public :: lsyssc_lax9rowcSPDP
+  public :: lsyssc_lax9rowcDPSP
+  public :: lsyssc_lax9rowcSPSP
+  public :: lsyssc_lax79intl1DPDP
+  public :: lsyssc_lax79intl1SPDP
+  public :: lsyssc_lax79intl1DPSP
+  public :: lsyssc_lax79intl1SPSP
+  public :: lsyssc_lax79intldDPDP
+  public :: lsyssc_lax79intldSPDP
+  public :: lsyssc_lax79intldDPSP
+  public :: lsyssc_lax79intldSPSP
+  public :: lsyssc_latxdDPDP
+  public :: lsyssc_latxdSPDP
+  public :: lsyssc_latxdDPSP
+  public :: lsyssc_latxdSPSP
+  public :: lsyssc_ltx79DPDP
+  public :: lsyssc_ltx79SPDP
+  public :: lsyssc_ltx79DPSP
+  public :: lsyssc_ltx79SPSP
 
 contains
 

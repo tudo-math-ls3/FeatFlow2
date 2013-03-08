@@ -27,17 +27,17 @@ module arraylist
   use fsystem
   use genoutput
   use arraylistInt,       only : t_arraylistInt, alst_release
-  use arraylistInt_Dble,  only : t_arraylistInt_Dble, alst_release
-  use arraylistInt_Sngl,  only : t_arraylistInt_Sngl, alst_release
+  use arraylistInt_DP,    only : t_arraylistInt_DP, alst_release
+  use arraylistInt_SP,    only : t_arraylistInt_SP, alst_release
   use arraylistInt_Int,   only : t_arraylistInt_Int, alst_release
-  use arraylistDble,      only : t_arraylistDble, alst_release
-  use arraylistDble_Dble, only : t_arraylistDble_Dble, alst_release
-  use arraylistDble_Sngl, only : t_arraylistDble_Sngl, alst_release
-  use arraylistDble_Int,  only : t_arraylistDble_Int, alst_release
-  use arraylistSngl,      only : t_arraylistSngl, alst_release
-  use arraylistSngl_Dble, only : t_arraylistSngl_Dble, alst_release
-  use arraylistSngl_Sngl, only : t_arraylistSngl_Sngl, alst_release
-  use arraylistSngl_Int,  only : t_arraylistSngl_Int, alst_release
+  use arraylistDP,        only : t_arraylistDP, alst_release
+  use arraylistDP_DP,     only : t_arraylistDP_DP, alst_release
+  use arraylistDP_SP,     only : t_arraylistDP_SP, alst_release
+  use arraylistDP_Int,    only : t_arraylistDP_Int, alst_release
+  use arraylistSP,        only : t_arraylistSP, alst_release
+  use arraylistSP_DP,     only : t_arraylistSP_DP, alst_release
+  use arraylistSP_SP,     only : t_arraylistSP_SP, alst_release
+  use arraylistSP_Int,    only : t_arraylistSP_Int, alst_release
   use storage
 
   implicit none
@@ -49,18 +49,18 @@ module arraylist
   public :: alst_getbase
 
   interface alst_getbase
-    module procedure alst_getbase_int
-    module procedure alst_getbase_int_int
-    module procedure alst_getbase_int_dble
-    module procedure alst_getbase_int_sngl
-    module procedure alst_getbase_dble
-    module procedure alst_getbase_dble_int
-    module procedure alst_getbase_dble_dble
-    module procedure alst_getbase_dble_sngl
-    module procedure alst_getbase_sngl
-    module procedure alst_getbase_sngl_int
-    module procedure alst_getbase_sngl_dble
-    module procedure alst_getbase_sngl_sngl
+    module procedure alst_getbase_Int
+    module procedure alst_getbase_Int_Int
+    module procedure alst_getbase_Int_DP
+    module procedure alst_getbase_Int_SP
+    module procedure alst_getbase_DP
+    module procedure alst_getbase_DP_Int
+    module procedure alst_getbase_DP_DP
+    module procedure alst_getbase_DP_SP
+    module procedure alst_getbase_SP
+    module procedure alst_getbase_SP_Int
+    module procedure alst_getbase_SP_DP
+    module procedure alst_getbase_SP_SP
   end interface
 
 !<constants>
@@ -98,20 +98,20 @@ module arraylist
     ! Pointer to integer-valued arraylist implementations
     type(t_arraylistInt),       pointer :: p_ArraylistInt       => null()
     type(t_arraylistInt_Int),   pointer :: p_ArraylistInt_Int   => null()
-    type(t_arraylistInt_Dble),  pointer :: p_ArraylistInt_Dble  => null()
-    type(t_arraylistInt_Sngl),  pointer :: p_ArraylistInt_Sngl  => null()
+    type(t_arraylistInt_DP),  pointer :: p_ArraylistInt_DP  => null()
+    type(t_arraylistInt_SP),  pointer :: p_ArraylistInt_SP  => null()
 
     ! Pointer to double-valued arraylist implementations
-    type(t_arraylistDble),      pointer :: p_ArraylistDble      => null()
-    type(t_arraylistDble_Int),  pointer :: p_ArraylistDble_Int  => null()
-    type(t_arraylistDble_Dble), pointer :: p_ArraylistDble_Dble => null()
-    type(t_arraylistDble_Sngl), pointer :: p_ArraylistDble_Sngl => null()
+    type(t_arraylistDP),      pointer :: p_ArraylistDP      => null()
+    type(t_arraylistDP_Int),  pointer :: p_ArraylistDP_Int  => null()
+    type(t_arraylistDP_DP), pointer :: p_ArraylistDP_DP => null()
+    type(t_arraylistDP_SP), pointer :: p_ArraylistDP_SP => null()
 
     ! Pointer to single-valued arraylist implementations
-    type(t_arraylistSngl),      pointer :: p_ArraylistSngl      => null()
-    type(t_arraylistSngl_Int),  pointer :: p_ArraylistSngl_Int  => null()
-    type(t_arraylistSngl_Dble), pointer :: p_ArraylistSngl_Dble => null()
-    type(t_arraylistSngl_Sngl), pointer :: p_ArraylistSngl_Sngl => null()
+    type(t_arraylistSP),      pointer :: p_ArraylistSP      => null()
+    type(t_arraylistSP_Int),  pointer :: p_ArraylistSP_Int  => null()
+    type(t_arraylistSP_DP), pointer :: p_ArraylistSP_DP => null()
+    type(t_arraylistSP_SP), pointer :: p_ArraylistSP_SP => null()
 
   end type t_arraylist
 
@@ -149,34 +149,34 @@ contains
       allocate(rarraylist%p_ArraylistInt_Int)
 
     case (ALST_INT_DOUBLE)
-      allocate(rarraylist%p_ArraylistInt_Dble)
+      allocate(rarraylist%p_ArraylistInt_DP)
 
     case (ALST_INT_SINGLE)
-      allocate(rarraylist%p_ArraylistInt_Sngl)
+      allocate(rarraylist%p_ArraylistInt_SP)
 
     case (ALST_DOUBLE)
-      allocate(rarraylist%p_ArraylistDble)
+      allocate(rarraylist%p_ArraylistDP)
 
     case (ALST_DOUBLE_INT)
-      allocate(rarraylist%p_ArraylistDble_Int)
+      allocate(rarraylist%p_ArraylistDP_Int)
 
     case (ALST_DOUBLE_DOUBLE)
-      allocate(rarraylist%p_ArraylistDble_Dble)
+      allocate(rarraylist%p_ArraylistDP_DP)
 
     case (ALST_DOUBLE_SINGLE)
-      allocate(rarraylist%p_ArraylistDble_Sngl)
+      allocate(rarraylist%p_ArraylistDP_SP)
 
     case (ALST_SINGLE)
-      allocate(rarraylist%p_ArraylistSngl)
+      allocate(rarraylist%p_ArraylistSP)
 
     case (ALST_SINGLE_INT)
-      allocate(rarraylist%p_ArraylistSngl_Int)
+      allocate(rarraylist%p_ArraylistSP_Int)
 
     case (ALST_SINGLE_DOUBLE)
-      allocate(rarraylist%p_ArraylistSngl_Dble)
+      allocate(rarraylist%p_ArraylistSP_DP)
 
     case (ALST_SINGLE_SINGLE)
-        allocate(rarraylist%p_ArraylistSngl_Sngl)
+        allocate(rarraylist%p_ArraylistSP_SP)
 
     case DEFAULT
       call output_line('Invalid arraylist type!',&
@@ -212,56 +212,56 @@ contains
       deallocate(rarraylist%p_ArraylistInt_INT)
     end if
 
-    if (associated(rarraylist%p_ArraylistInt_Dble)) then
-      call alst_release(rarraylist%p_ArraylistInt_Dble)
-      deallocate(rarraylist%p_ArraylistInt_Dble)
+    if (associated(rarraylist%p_ArraylistInt_DP)) then
+      call alst_release(rarraylist%p_ArraylistInt_DP)
+      deallocate(rarraylist%p_ArraylistInt_DP)
     end if
 
-    if (associated(rarraylist%p_ArraylistInt_Sngl)) then
-      call alst_release(rarraylist%p_ArraylistInt_Sngl)
-      deallocate(rarraylist%p_ArraylistInt_Sngl)
-    end if
-
-
-    if (associated(rarraylist%p_ArraylistDble)) then
-      call alst_release(rarraylist%p_ArraylistDble)
-      deallocate(rarraylist%p_ArraylistDble)
-    end if
-
-    if (associated(rarraylist%p_ArraylistDble_Int)) then
-      call alst_release(rarraylist%p_ArraylistDble_Int)
-      deallocate(rarraylist%p_ArraylistDble_Int)
-    end if
-
-    if (associated(rarraylist%p_ArraylistDble_Dble)) then
-      call alst_release(rarraylist%p_ArraylistDble_Dble)
-      deallocate(rarraylist%p_ArraylistDble_Dble)
-    end if
-
-    if (associated(rarraylist%p_ArraylistDble_Sngl)) then
-      call alst_release(rarraylist%p_ArraylistDble_Sngl)
-      deallocate(rarraylist%p_ArraylistDble_Sngl)
+    if (associated(rarraylist%p_ArraylistInt_SP)) then
+      call alst_release(rarraylist%p_ArraylistInt_SP)
+      deallocate(rarraylist%p_ArraylistInt_SP)
     end if
 
 
-    if (associated(rarraylist%p_ArraylistSngl)) then
-      call alst_release(rarraylist%p_ArraylistSngl)
-      deallocate(rarraylist%p_ArraylistSngl)
+    if (associated(rarraylist%p_ArraylistDP)) then
+      call alst_release(rarraylist%p_ArraylistDP)
+      deallocate(rarraylist%p_ArraylistDP)
     end if
 
-    if (associated(rarraylist%p_ArraylistSngl_Int)) then
-      call alst_release(rarraylist%p_ArraylistSngl_Int)
-      deallocate(rarraylist%p_ArraylistSngl_Int)
+    if (associated(rarraylist%p_ArraylistDP_Int)) then
+      call alst_release(rarraylist%p_ArraylistDP_Int)
+      deallocate(rarraylist%p_ArraylistDP_Int)
     end if
 
-    if (associated(rarraylist%p_ArraylistSngl_Dble)) then
-      call alst_release(rarraylist%p_ArraylistSngl_Dble)
-      deallocate(rarraylist%p_ArraylistSngl_Dble)
+    if (associated(rarraylist%p_ArraylistDP_DP)) then
+      call alst_release(rarraylist%p_ArraylistDP_DP)
+      deallocate(rarraylist%p_ArraylistDP_DP)
     end if
 
-    if (associated(rarraylist%p_ArraylistSngl_Sngl)) then
-      call alst_release(rarraylist%p_ArraylistSngl_Sngl)
-      deallocate(rarraylist%p_ArraylistSngl_Sngl)
+    if (associated(rarraylist%p_ArraylistDP_SP)) then
+      call alst_release(rarraylist%p_ArraylistDP_SP)
+      deallocate(rarraylist%p_ArraylistDP_SP)
+    end if
+
+
+    if (associated(rarraylist%p_ArraylistSP)) then
+      call alst_release(rarraylist%p_ArraylistSP)
+      deallocate(rarraylist%p_ArraylistSP)
+    end if
+
+    if (associated(rarraylist%p_ArraylistSP_Int)) then
+      call alst_release(rarraylist%p_ArraylistSP_Int)
+      deallocate(rarraylist%p_ArraylistSP_Int)
+    end if
+
+    if (associated(rarraylist%p_ArraylistSP_DP)) then
+      call alst_release(rarraylist%p_ArraylistSP_DP)
+      deallocate(rarraylist%p_ArraylistSP_DP)
+    end if
+
+    if (associated(rarraylist%p_ArraylistSP_SP)) then
+      call alst_release(rarraylist%p_ArraylistSP_SP)
+      deallocate(rarraylist%p_ArraylistSP_SP)
     end if
 
   end subroutine alst_done
@@ -270,7 +270,7 @@ contains
 
 !<subroutine>
 
-  subroutine alst_getbase_int(rarraylist, p_rarraylist)
+  subroutine alst_getbase_Int(rarraylist, p_rarraylist)
 
 !<description>
     ! Returns a pointer to the integer-valued arraylist implementation
@@ -294,13 +294,13 @@ contains
       nullify(p_rarraylist)
     end if
 
-  end subroutine alst_getbase_int
+  end subroutine alst_getbase_Int
 
   !************************************************************************
 
 !<subroutine>
 
-  subroutine alst_getbase_int_int(rarraylist, p_rarraylist)
+  subroutine alst_getbase_Int_Int(rarraylist, p_rarraylist)
 
 !<description>
     ! Returns a pointer to the integer-valued arraylist implementation
@@ -324,13 +324,13 @@ contains
       nullify(p_rarraylist)
     end if
 
-  end subroutine alst_getbase_int_int
+  end subroutine alst_getbase_Int_Int
 
   !************************************************************************
 
 !<subroutine>
 
-  subroutine alst_getbase_int_dble(rarraylist, p_rarraylist)
+  subroutine alst_getbase_Int_DP(rarraylist, p_rarraylist)
 
 !<description>
     ! Returns a pointer to the integer-valued arraylist implementation
@@ -344,23 +344,23 @@ contains
 
 !<output>
     ! Pointer to the arraylist implementation
-    type(t_arraylistInt_Dble), pointer :: p_rarraylist
+    type(t_arraylistInt_DP), pointer :: p_rarraylist
 !</output>
 !</subroutine>
 
-    if (associated(rarraylist%p_ArraylistInt_Dble)) then
-      p_rarraylist => rarraylist%p_ArraylistInt_Dble
+    if (associated(rarraylist%p_ArraylistInt_DP)) then
+      p_rarraylist => rarraylist%p_ArraylistInt_DP
     else
       nullify(p_rarraylist)
     end if
 
-  end subroutine alst_getbase_int_dble
+  end subroutine alst_getbase_Int_DP
 
   !************************************************************************
 
 !<subroutine>
 
-  subroutine alst_getbase_int_sngl(rarraylist, p_rarraylist)
+  subroutine alst_getbase_Int_SP(rarraylist, p_rarraylist)
 
 !<description>
     ! Returns a pointer to the integer-valued arraylist implementation
@@ -374,23 +374,23 @@ contains
 
 !<output>
     ! Pointer to the arraylist implementation
-    type(t_arraylistInt_Sngl), pointer :: p_rarraylist
+    type(t_arraylistInt_SP), pointer :: p_rarraylist
 !</output>
 !</subroutine>
 
-    if (associated(rarraylist%p_ArraylistInt_Sngl)) then
-      p_rarraylist => rarraylist%p_ArraylistInt_Sngl
+    if (associated(rarraylist%p_ArraylistInt_SP)) then
+      p_rarraylist => rarraylist%p_ArraylistInt_SP
     else
       nullify(p_rarraylist)
     end if
 
-  end subroutine alst_getbase_int_sngl
+  end subroutine alst_getbase_Int_SP
 
   !************************************************************************
 
 !<subroutine>
 
-  subroutine alst_getbase_dble(rarraylist, p_rarraylist)
+  subroutine alst_getbase_DP(rarraylist, p_rarraylist)
 
 !<description>
     ! Returns a pointer to the double-valued arraylist implementation
@@ -404,23 +404,23 @@ contains
 
 !<output>
     ! Pointer to the arraylist implementation
-    type(t_arraylistDble), pointer :: p_rarraylist
+    type(t_arraylistDP), pointer :: p_rarraylist
 !</output>
 !</subroutine>
 
-    if (associated(rarraylist%p_ArraylistDble)) then
-      p_rarraylist => rarraylist%p_ArraylistDble
+    if (associated(rarraylist%p_ArraylistDP)) then
+      p_rarraylist => rarraylist%p_ArraylistDP
     else
       nullify(p_rarraylist)
     end if
 
-  end subroutine alst_getbase_dble
+  end subroutine alst_getbase_DP
 
   !************************************************************************
 
 !<subroutine>
 
-  subroutine alst_getbase_dble_int(rarraylist, p_rarraylist)
+  subroutine alst_getbase_DP_Int(rarraylist, p_rarraylist)
 
 !<description>
     ! Returns a pointer to the double-valued arraylist implementation
@@ -434,23 +434,23 @@ contains
 
 !<output>
     ! Pointer to the arraylist implementation
-    type(t_arraylistDble_Int), pointer :: p_rarraylist
+    type(t_arraylistDP_Int), pointer :: p_rarraylist
 !</output>
 !</subroutine>
 
-    if (associated(rarraylist%p_ArraylistDble_Int)) then
-      p_rarraylist => rarraylist%p_ArraylistDble_Int
+    if (associated(rarraylist%p_ArraylistDP_Int)) then
+      p_rarraylist => rarraylist%p_ArraylistDP_Int
     else
       nullify(p_rarraylist)
     end if
 
-  end subroutine alst_getbase_dble_int
+  end subroutine alst_getbase_DP_Int
 
 !************************************************************************
 
 !<subroutine>
 
-  subroutine alst_getbase_dble_dble(rarraylist, p_rarraylist)
+  subroutine alst_getbase_DP_DP(rarraylist, p_rarraylist)
 
 !<description>
     ! Returns a pointer to the double-valued arraylist implementation
@@ -464,23 +464,23 @@ contains
 
 !<output>
     ! Pointer to the arraylist implementation
-    type(t_arraylistDble_Dble), pointer :: p_rarraylist
+    type(t_arraylistDP_DP), pointer :: p_rarraylist
 !</output>
 !</subroutine>
 
-    if (associated(rarraylist%p_ArraylistDble_Dble)) then
-      p_rarraylist => rarraylist%p_ArraylistDble_Dble
+    if (associated(rarraylist%p_ArraylistDP_DP)) then
+      p_rarraylist => rarraylist%p_ArraylistDP_DP
     else
       nullify(p_rarraylist)
     end if
 
-  end subroutine alst_getbase_dble_dble
+  end subroutine alst_getbase_DP_DP
 
   !************************************************************************
 
 !<subroutine>
 
-  subroutine alst_getbase_dble_sngl(rarraylist, p_rarraylist)
+  subroutine alst_getbase_DP_SP(rarraylist, p_rarraylist)
 
 !<description>
     ! Returns a pointer to the double-valued arraylist implementation
@@ -494,23 +494,23 @@ contains
 
 !<output>
     ! Pointer to the arraylist implementation
-    type(t_arraylistDble_Sngl), pointer :: p_rarraylist
+    type(t_arraylistDP_SP), pointer :: p_rarraylist
 !</output>
 !</subroutine>
 
-    if (associated(rarraylist%p_ArraylistDble_Sngl)) then
-      p_rarraylist => rarraylist%p_ArraylistDble_Sngl
+    if (associated(rarraylist%p_ArraylistDP_SP)) then
+      p_rarraylist => rarraylist%p_ArraylistDP_SP
     else
       nullify(p_rarraylist)
     end if
 
-  end subroutine alst_getbase_dble_sngl
+  end subroutine alst_getbase_DP_SP
 
   !************************************************************************
 
 !<subroutine>
 
-  subroutine alst_getbase_sngl(rarraylist, p_rarraylist)
+  subroutine alst_getbase_SP(rarraylist, p_rarraylist)
 
 !<description>
     ! Returns a pointer to the single-valued arraylist implementation
@@ -524,23 +524,23 @@ contains
 
 !<output>
     ! Pointer to the arraylist implementation
-    type(t_arraylistSngl), pointer :: p_rarraylist
+    type(t_arraylistSP), pointer :: p_rarraylist
 !</output>
 !</subroutine>
 
-    if (associated(rarraylist%p_ArraylistSngl)) then
-      p_rarraylist => rarraylist%p_ArraylistSngl
+    if (associated(rarraylist%p_ArraylistSP)) then
+      p_rarraylist => rarraylist%p_ArraylistSP
     else
       nullify(p_rarraylist)
     end if
 
-  end subroutine alst_getbase_sngl
+  end subroutine alst_getbase_SP
 
   !************************************************************************
 
 !<subroutine>
 
-  subroutine alst_getbase_sngl_int(rarraylist, p_rarraylist)
+  subroutine alst_getbase_SP_Int(rarraylist, p_rarraylist)
 
 !<description>
     ! Returns a pointer to the single-valued arraylist implementation
@@ -554,23 +554,23 @@ contains
 
 !<output>
     ! Pointer to the arraylist implementation
-    type(t_arraylistSngl_Int), pointer :: p_rarraylist
+    type(t_arraylistSP_Int), pointer :: p_rarraylist
 !</output>
 !</subroutine>
 
-    if (associated(rarraylist%p_ArraylistSngl_Int)) then
-      p_rarraylist => rarraylist%p_ArraylistSngl_Int
+    if (associated(rarraylist%p_ArraylistSP_Int)) then
+      p_rarraylist => rarraylist%p_ArraylistSP_Int
     else
       nullify(p_rarraylist)
     end if
 
-  end subroutine alst_getbase_sngl_int
+  end subroutine alst_getbase_SP_Int
 
   !************************************************************************
 
 !<subroutine>
 
-  subroutine alst_getbase_sngl_dble(rarraylist, p_rarraylist)
+  subroutine alst_getbase_SP_DP(rarraylist, p_rarraylist)
 
 !<description>
     ! Returns a pointer to the single-valued arraylist implementation
@@ -584,23 +584,23 @@ contains
 
 !<output>
     ! Pointer to the arraylist implementation
-    type(t_arraylistSngl_Dble), pointer :: p_rarraylist
+    type(t_arraylistSP_DP), pointer :: p_rarraylist
 !</output>
 !</subroutine>
 
-    if (associated(rarraylist%p_ArraylistSngl_Dble)) then
-      p_rarraylist => rarraylist%p_ArraylistSngl_Dble
+    if (associated(rarraylist%p_ArraylistSP_DP)) then
+      p_rarraylist => rarraylist%p_ArraylistSP_DP
     else
       nullify(p_rarraylist)
     end if
 
-  end subroutine alst_getbase_sngl_dble
+  end subroutine alst_getbase_SP_DP
 
   !************************************************************************
 
 !<subroutine>
 
-  subroutine alst_getbase_sngl_sngl(rarraylist, p_rarraylist)
+  subroutine alst_getbase_SP_SP(rarraylist, p_rarraylist)
 
 !<description>
     ! Returns a pointer to the single-valued arraylist implementation
@@ -614,16 +614,16 @@ contains
 
 !<output>
     ! Pointer to the arraylist implementation
-    type(t_arraylistSngl_Sngl), pointer :: p_rarraylist
+    type(t_arraylistSP_SP), pointer :: p_rarraylist
 !</output>
 !</subroutine>
 
-    if (associated(rarraylist%p_ArraylistSngl_Sngl)) then
-      p_rarraylist => rarraylist%p_ArraylistSngl_Sngl
+    if (associated(rarraylist%p_ArraylistSP_SP)) then
+      p_rarraylist => rarraylist%p_ArraylistSP_SP
     else
       nullify(p_rarraylist)
     end if
 
-  end subroutine alst_getbase_sngl_sngl
+  end subroutine alst_getbase_SP_SP
 
 end module arraylist

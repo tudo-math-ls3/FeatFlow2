@@ -313,7 +313,7 @@ contains
       call sys_halt()
     end if
 
-    call lalg_clearVectorDble (DlocalDelta)
+    call lalg_clearVector (DlocalDelta)
     
     ! Calculate the maximum norm of the actual velocity field
     ! U = A1*U1 + A2*U2 into DUMAX.

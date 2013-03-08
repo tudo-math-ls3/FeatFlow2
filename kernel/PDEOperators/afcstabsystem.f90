@@ -52,7 +52,7 @@
 !#
 !# The following auxiliary routines are available:
 !#
-!# 1.) minmodDble / minmodSngl
+!# 1.) minmodDP / minmodSP
 !#     -> Computes minmod(a,b)
 !#
 !# </purpose>
@@ -696,11 +696,11 @@ contains
 
         if (rafcstab%cprelimitingType .eq. AFCSTAB_PRELIMITING_STD) then
           ! Perform standard prelimiting
-          call doStdPrelimitDble(rafcstab%NEDGE, rafcstab%NVAR,&
+          call doStdPrelimitDP(rafcstab%NEDGE, rafcstab%NVAR,&
               p_Dflux, p_DfluxPrel, p_Dalpha)
         elseif (rafcstab%cprelimitingType .eq. AFCSTAB_PRELIMITING_MINMOD) then
           ! Perform minmod prelimiting
-          call doMinModPrelimitDble(rafcstab%NEDGE, rafcstab%NVAR,&
+          call doMinModPrelimitDP(rafcstab%NEDGE, rafcstab%NVAR,&
               p_Dflux, p_DfluxPrel, p_Dalpha)
         else
           call output_line('Invalid type of prelimiting!',&
@@ -748,12 +748,12 @@ contains
         else
           if (present(fcb_calcFluxTransformation_sim)) then
             ! Standard routine with flux transformation
-            call doADIncrementsTransformedDble(p_IedgeListIdx,&
+            call doADIncrementsTransformedDP(p_IedgeListIdx,&
                 p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
                 nvariable, p_Dx, p_DfluxPrel, p_Dalpha, p_Dpp, p_Dpm)
           else
             ! Standard routine without flux transformation
-            call doADIncrementsDble(p_IedgeListIdx, p_IedgeList,&
+            call doADIncrementsDP(p_IedgeListIdx, p_IedgeList,&
                 rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
                 p_DfluxPrel, p_Dalpha, p_Dpp, p_Dpm)
           end if
@@ -772,12 +772,12 @@ contains
         else
           if (present(fcb_calcFluxTransformation_sim)) then
             ! Compute antidiffusive incrementswith flux transformation
-            call doADIncrementsTransformedDble(p_IedgeListIdx,&
+            call doADIncrementsTransformedDP(p_IedgeListIdx,&
                 p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
                 nvariable, p_Dx, p_Dflux, p_Dalpha, p_Dpp, p_Dpm)
           else
             ! Compute antidiffusive increments without flux transformation
-            call doADIncrementsDble(p_IedgeListIdx, p_IedgeList,&
+            call doADIncrementsDP(p_IedgeListIdx, p_IedgeList,&
                 rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
                 p_Dflux, p_Dalpha, p_Dpp, p_Dpm)
           end if
@@ -813,12 +813,12 @@ contains
             fcb_calcDiffTransformation_sim, rcollection)
       elseif (present(fcb_calcDiffTransformation_sim)) then
         ! Standard routine with difference transformation
-        call doBoundsTransformedDble(p_IedgeListIdx, p_IedgeList,&
+        call doBoundsTransformedDP(p_IedgeListIdx, p_IedgeList,&
             rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
             nvariable, p_Dx, p_Dqp, p_Dqm)
       else
         ! Standard routine without difference transformation
-        call doBoundsDble(p_IedgeListIdx, p_IedgeList,&
+        call doBoundsDP(p_IedgeListIdx, p_IedgeList,&
             rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, p_Dx, p_Dqp, p_Dqm)
       end if
 
@@ -851,11 +851,11 @@ contains
             p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, rcollection)
       elseif (rafcstab%cafcstabType .eq. AFCSTAB_NLINFCT_IMPLICIT) then
         ! Standard routine without constraints
-        call doLimitNodalDble(rafcstab%NEQ, nvariable, dscale, p_ML,&
+        call doLimitNodalDP(rafcstab%NEQ, nvariable, dscale, p_ML,&
             p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm)
       else
         ! Standard routine with constraints
-        call doLimitNodalConstrainedDble(rafcstab%NEQ, nvariable, dscale, p_ML,&
+        call doLimitNodalConstrainedDP(rafcstab%NEQ, nvariable, dscale, p_ML,&
             p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm)
       end if
 
@@ -899,12 +899,12 @@ contains
               p_Drp, p_Drm, fcb_calcFluxTransformation_sim, p_DfluxPrel, rcollection)
         elseif (present(fcb_calcFluxTransformation_sim)) then
           ! Standard routine with flux transformation
-          call doLimitEdgewiseConstrTransfDble(p_IedgeList,&
+          call doLimitEdgewiseConstrTransfDP(p_IedgeList,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
               p_Dx, p_DfluxPrel, p_Dflux, p_Drp, p_Drm, p_Dalpha)
         else
           ! Standard routine without flux transformation
-          call doLimitEdgewiseConstrainedDble(p_IedgeList,&
+          call doLimitEdgewiseConstrainedDP(p_IedgeList,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
               p_DfluxPrel, p_Dflux, p_Drp, p_Drm, p_Dalpha)
         end if
@@ -919,12 +919,12 @@ contains
               p_Drp, p_Drm, fcb_calcFluxTransformation_sim, rcollection=rcollection)
         elseif (present(fcb_calcFluxTransformation_sim)) then
           ! Standard routine with flux transformation
-          call doLimitEdgewiseTransformedDble(p_IedgeList,&
+          call doLimitEdgewiseTransformedDP(p_IedgeList,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
               p_Dx, p_Dflux, p_Drp, p_Drm, p_Dalpha)
         else
           ! Standard routine without flux transformation
-          call doLimitEdgewiseDble(p_IedgeList,&
+          call doLimitEdgewiseDP(p_IedgeList,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
               p_Dflux, p_Drp, p_Drm, p_Dalpha)
         end if
@@ -976,7 +976,7 @@ contains
               rafcstab%NVAR, dscale, p_Dx, p_Dalpha, p_Dflux, p_Dy, p_ML, rcollection)
         else
           ! Standard routine
-          call doCorrectScaleByMassDble(p_IedgeListIdx, p_IedgeList,&
+          call doCorrectScaleByMassDP(p_IedgeListIdx, p_IedgeList,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, dscale,&
               p_ML, p_Dalpha, p_Dflux, p_Dy)
         end if
@@ -991,7 +991,7 @@ contains
               rcollection=rcollection)
         else
           ! Standard routine
-          call doCorrectDble(p_IedgeListIdx, p_IedgeList,&
+          call doCorrectDP(p_IedgeListIdx, p_IedgeList,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, dscale,&
               p_Dalpha, p_Dflux, p_Dy)
         end if
@@ -1009,7 +1009,7 @@ contains
 #ifndef USE_OPENMP
     pure&
 #endif
-    subroutine doStdPrelimitDble(NEDGE, NVAR, Dflux, DfluxPrel, Dalpha)
+    subroutine doStdPrelimitDP(NEDGE, NVAR, Dflux, DfluxPrel, Dalpha)
 
       real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux,DfluxPrel
       integer, intent(in) :: NEDGE,NVAR
@@ -1042,7 +1042,7 @@ contains
       end do edgeloop
       !$omp end parallel do
 
-    end subroutine doStdPrelimitDble
+    end subroutine doStdPrelimitDP
 
     !**************************************************************
     ! Prelimit the raw antidiffusive fluxes using minmod limiter
@@ -1050,7 +1050,7 @@ contains
 #ifndef USE_OPENMP
     pure&
 #endif
-    subroutine doMinModPrelimitDble(NEDGE, NVAR, Dflux, DfluxPrel, Dalpha)
+    subroutine doMinModPrelimitDP(NEDGE, NVAR, Dflux, DfluxPrel, Dalpha)
 
       real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux,DfluxPrel
       integer, intent(in) :: NEDGE,NVAR
@@ -1092,13 +1092,13 @@ contains
       end do edgeloop
       !$omp end parallel do
 
-    end subroutine doMinModPrelimitDble
+    end subroutine doMinModPrelimitDP
 
     !**************************************************************
     ! Assemble the sums of antidiffusive increments for the given
     ! antidiffusive fluxes without transformation and prelimiting
 
-    subroutine doADIncrementsDble(IedgeListIdx, IedgeList,&
+    subroutine doADIncrementsDP(IedgeListIdx, IedgeList,&
         NEDGE, NEQ, NVAR, Dflux, Dalpha, Dpp, Dpm)
 
       ! input parameters
@@ -1156,14 +1156,14 @@ contains
       end do ! igroup
       !$omp end parallel
 
-    end subroutine doADIncrementsDble
+    end subroutine doADIncrementsDP
 
     !**************************************************************
     ! Assemble the sums of antidiffusive increments for the given
     ! antidiffusive fluxes which are transformed to a user-defined
     ! set of variables prior to computing the sums
 
-    subroutine doADIncrementsTransformedDble(IedgeListIdx, IedgeList,&
+    subroutine doADIncrementsTransformedDP(IedgeListIdx, IedgeList,&
         NEDGE, NEQ, NVAR, NVARtransformed, Dx, Dflux, Dalpha, Dpp, Dpm)
 
       ! input parameters
@@ -1272,13 +1272,13 @@ contains
       deallocate(DtransformedFluxesAtEdge)
       !$omp end parallel
 
-    end subroutine doADIncrementsTransformedDble
+    end subroutine doADIncrementsTransformedDP
 
     !**************************************************************
     ! Assemble the local bounds from the predicted solution without
     ! transformation
 
-    subroutine doBoundsDble(IedgeListIdx, IedgeList,&
+    subroutine doBoundsDP(IedgeListIdx, IedgeList,&
         NEDGE, NEQ, NVAR, Dx, Dqp, Dqm)
 
       ! input parameters
@@ -1335,13 +1335,13 @@ contains
       end do ! igroup
       !$omp end parallel
 
-    end subroutine doBoundsDble
+    end subroutine doBoundsDP
 
     !**************************************************************
     ! Assemble the local bounds from the predicted solution which is
     ! transformed to a user-defined set of variables
 
-    subroutine doBoundsTransformedDble(IedgeListIdx, IedgeList,&
+    subroutine doBoundsTransformedDP(IedgeListIdx, IedgeList,&
         NEDGE, NEQ, NVAR, NVARtransformed, Dx, Dqp, Dqm)
 
       ! input parameters
@@ -1441,12 +1441,12 @@ contains
       deallocate(DtransformedDataAtEdge)
       !$omp end parallel
 
-    end subroutine doBoundsTransformedDble
+    end subroutine doBoundsTransformedDP
 
     !**************************************************************
     ! Compute the nodal correction factors without constraints
 
-    subroutine doLimitNodalDble(NEQ, NVAR, dscale,&
+    subroutine doLimitNodalDP(NEQ, NVAR, dscale,&
         ML, Dpp, Dpm, Dqp, Dqm, Drp, Drm)
 
       ! input parameters
@@ -1510,12 +1510,12 @@ contains
 
       end if
 
-    end subroutine doLimitNodalDble
+    end subroutine doLimitNodalDP
 
     !**************************************************************
     ! Compute nodal correction factors with constraints
 
-    subroutine doLimitNodalConstrainedDble(NEQ, NVAR, dscale,&
+    subroutine doLimitNodalConstrainedDP(NEQ, NVAR, dscale,&
         ML, Dpp, Dpm, Dqp, Dqm, Drp, Drm)
 
       ! input parameters
@@ -1579,13 +1579,13 @@ contains
 
       end if
 
-    end subroutine doLimitNodalConstrainedDble
+    end subroutine doLimitNodalConstrainedDP
 
     !**************************************************************
     ! Compute edgewise correction factors based on the precomputed
     ! nodal correction factors and the sign of antidiffusive fluxes
 
-    subroutine doLimitEdgewiseDble(IedgeList,&
+    subroutine doLimitEdgewiseDP(IedgeList,&
         NEDGE, NEQ, NVAR, Dflux, Drp, Drm, Dalpha)
 
       ! input parameters
@@ -1627,7 +1627,7 @@ contains
       end do
       !$omp end parallel do
 
-    end subroutine doLimitEdgewiseDble
+    end subroutine doLimitEdgewiseDP
 
     !**************************************************************
     ! Compute edgewise correction factors based on the precomputed
@@ -1635,7 +1635,7 @@ contains
     ! which are transformed to a user-defined set of variables
     ! priori to computing the correction factors
 
-    subroutine doLimitEdgewiseTransformedDble(IedgeList,&
+    subroutine doLimitEdgewiseTransformedDP(IedgeList,&
         NEDGE, NEQ, NVAR, NVARtransformed, Dx, Dflux, Drp, Drm, Dalpha)
 
       ! input  parameters
@@ -1735,14 +1735,14 @@ contains
       deallocate(DtransformedFluxesAtEdge)
       !$omp end parallel
 
-    end subroutine doLimitEdgewiseTransformedDble
+    end subroutine doLimitEdgewiseTransformedDP
 
     !**************************************************************
     ! Compute edgewise correction factors based on the precomputed
     ! nodal correction factors and the sign of a pair of explicit
     ! and implicit raw antidiffusive fluxes
 
-    subroutine doLimitEdgewiseConstrainedDble(IedgeList,&
+    subroutine doLimitEdgewiseConstrainedDP(IedgeList,&
         NEDGE, NEQ, NVAR, Dflux1, Dflux2, Drp, Drm, Dalpha)
 
       ! input parameters
@@ -1787,7 +1787,7 @@ contains
       end do
       !$omp end parallel do
 
-    end subroutine doLimitEdgewiseConstrainedDble
+    end subroutine doLimitEdgewiseConstrainedDP
 
     !**************************************************************
     ! Compute edgewise correction factors based on the precomputed
@@ -1796,7 +1796,7 @@ contains
     ! to a user-defined set of variables priori to computing the
     ! correction factors
 
-    subroutine doLimitEdgewiseConstrTransfDble(IedgeList,&
+    subroutine doLimitEdgewiseConstrTransfDP(IedgeList,&
         NEDGE, NEQ, NVAR, NVARtransformed, Dx, Dflux1, Dflux2, Drp, Drm, Dalpha)
 
       ! input parameters
@@ -1909,12 +1909,12 @@ contains
       deallocate(DtransformedFluxes2AtEdge)
       !$omp end parallel
 
-    end subroutine doLimitEdgewiseConstrTransfDble
+    end subroutine doLimitEdgewiseConstrTransfDP
 
     !**************************************************************
     ! Correct the antidiffusive fluxes and apply them
 
-    subroutine doCorrectDble(IedgeListIdx, IedgeList,&
+    subroutine doCorrectDP(IedgeListIdx, IedgeList,&
         NEDGE, NEQ, NVAR, dscale, Dalpha, Dflux, Dy)
 
       ! input parameters
@@ -1962,13 +1962,13 @@ contains
       end do ! igroup
       !$omp end parallel
 
-    end subroutine doCorrectDble
+    end subroutine doCorrectDP
 
     !**************************************************************
     ! Correct the antidiffusive fluxes and apply them
     ! scaled by the inverse of the lumped mass matrix
 
-    subroutine doCorrectScaleByMassDble(IedgeListIdx, IedgeList,&
+    subroutine doCorrectScaleByMassDP(IedgeListIdx, IedgeList,&
         NEDGE, NEQ, NVAR, dscale, ML, Dalpha, Dflux, Dy)
 
       ! input parameters
@@ -2016,7 +2016,7 @@ contains
       end do ! igroup
       !$omp end parallel
 
-    end subroutine doCorrectScaleByMassDble
+    end subroutine doCorrectScaleByMassDP
 
   end subroutine afcsys_buildVectorFCTBlock
 
@@ -2253,11 +2253,11 @@ contains
 
         if (rafcstab%cprelimitingType .eq. AFCSTAB_PRELIMITING_STD) then
           ! Perform standard prelimiting
-          call doStdPrelimitDble(rafcstab%NEDGE, rafcstab%NVAR,&
+          call doStdPrelimitDP(rafcstab%NEDGE, rafcstab%NVAR,&
               p_Dflux, p_DfluxPrel, p_Dalpha)
         elseif (rafcstab%cprelimitingType .eq. AFCSTAB_PRELIMITING_MINMOD) then
           ! Perform minmod prelimiting
-          call doMinModPrelimitDble(rafcstab%NEDGE, rafcstab%NVAR,&
+          call doMinModPrelimitDP(rafcstab%NEDGE, rafcstab%NVAR,&
               p_Dflux, p_DfluxPrel, p_Dalpha)
         else
           call output_line('Invalid type of prelimiting!',&
@@ -2305,12 +2305,12 @@ contains
         else
           if (present(fcb_calcFluxTransformation_sim)) then
             ! Standard routine with flux transformation
-            call doADIncrementsTransformedDble(p_IedgeListIdx,&
+            call doADIncrementsTransformedDP(p_IedgeListIdx,&
                 p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
                 nvariable, p_Dx, p_DfluxPrel, p_Dalpha, p_Dpp, p_Dpm)
           else
             ! Standard routine without flux transformation
-            call doADIncrementsDble(p_IedgeListIdx, p_IedgeList,&
+            call doADIncrementsDP(p_IedgeListIdx, p_IedgeList,&
                 rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
                 p_DfluxPrel, p_Dalpha, p_Dpp, p_Dpm)
           end if
@@ -2329,12 +2329,12 @@ contains
         else
           if (present(fcb_calcFluxTransformation_sim)) then
             ! Compute antidiffusive incrementswith flux transformation
-            call doADIncrementsTransformedDble(p_IedgeListIdx,&
+            call doADIncrementsTransformedDP(p_IedgeListIdx,&
                 p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
                 nvariable, p_Dx, p_Dflux, p_Dalpha, p_Dpp, p_Dpm)
           else
             ! Compute antidiffusive increments without flux transformation
-            call doADIncrementsDble(p_IedgeListIdx, p_IedgeList,&
+            call doADIncrementsDP(p_IedgeListIdx, p_IedgeList,&
                 rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
                 p_Dflux, p_Dalpha, p_Dpp, p_Dpm)
           end if
@@ -2370,12 +2370,12 @@ contains
             fcb_calcDiffTransformation_sim, rcollection)
       elseif (present(fcb_calcDiffTransformation_sim)) then
         ! Standard routine with difference transformation
-        call doBoundsTransformedDble(p_IedgeListIdx, p_IedgeList,&
+        call doBoundsTransformedDP(p_IedgeListIdx, p_IedgeList,&
             rafcstab%NEQ, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
             p_Dx, p_Dqp, p_Dqm)
       else
         ! Standard routine without difference transformation
-        call doBoundsDble(p_IedgeListIdx, p_IedgeList,&
+        call doBoundsDP(p_IedgeListIdx, p_IedgeList,&
             rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, p_Dx, p_Dqp, p_Dqm)
       end if
 
@@ -2408,11 +2408,11 @@ contains
             p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, rcollection)
       elseif (rafcstab%cafcstabType .eq. AFCSTAB_NLINFCT_IMPLICIT) then
         ! Standard routine without constraints
-        call doLimitNodalDble(rafcstab%NEQ, nvariable, dscale, p_ML,&
+        call doLimitNodalDP(rafcstab%NEQ, nvariable, dscale, p_ML,&
             p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm)
       else
         ! Standard routine with constraints
-        call doLimitNodalConstrainedDble(rafcstab%NEQ, nvariable, dscale, p_ML,&
+        call doLimitNodalConstrainedDP(rafcstab%NEQ, nvariable, dscale, p_ML,&
             p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm)
       end if
 
@@ -2456,12 +2456,12 @@ contains
               p_Drp, p_Drm, fcb_calcFluxTransformation_sim, p_DfluxPrel, rcollection)
         elseif (present(fcb_calcFluxTransformation_sim)) then
           ! Standard routine with flux transformation
-          call doLimitEdgewiseConstrTransfDble(p_IedgeList,&
+          call doLimitEdgewiseConstrTransfDP(p_IedgeList,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
               p_Dx, p_DfluxPrel, p_Dflux, p_Drp, p_Drm, p_Dalpha)
         else
           ! Standard routine without flux transformation
-          call doLimitEdgewiseConstrainedDble(p_IedgeList,&
+          call doLimitEdgewiseConstrainedDP(p_IedgeList,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
               p_DfluxPrel, p_Dflux, p_Drp, p_Drm, p_Dalpha)
         end if
@@ -2476,12 +2476,12 @@ contains
               p_Drp, p_Drm, fcb_calcFluxTransformation_sim, rcollection=rcollection)
         elseif (present(fcb_calcFluxTransformation_sim)) then
           ! Standard routine with flux transformation
-          call doLimitEdgewiseTransformedDble(p_IedgeList,&
+          call doLimitEdgewiseTransformedDP(p_IedgeList,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
               p_Dx, p_Dflux, p_Drp, p_Drm, p_Dalpha)
         else
           ! Standard routine without flux transformation
-          call doLimitEdgewiseDble(p_IedgeList,&
+          call doLimitEdgewiseDP(p_IedgeList,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
               p_Dflux, p_Drp, p_Drm, p_Dalpha)
         end if
@@ -2533,7 +2533,7 @@ contains
               rafcstab%NEQ, dscale, p_Dx, p_Dalpha, p_Dflux, p_Dy, p_ML, rcollection)
         else
           ! Standard routine
-          call doCorrectScaleByMassDble(p_IedgeListIdx, p_IedgeList,&
+          call doCorrectScaleByMassDP(p_IedgeListIdx, p_IedgeList,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, dscale,&
               p_ML, p_Dalpha, p_Dflux, p_Dy)
         end if
@@ -2548,7 +2548,7 @@ contains
               rcollection=rcollection)
         else
           ! Standard routine
-          call doCorrectDble(p_IedgeListIdx, p_IedgeList,&
+          call doCorrectDP(p_IedgeListIdx, p_IedgeList,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, dscale,&
               p_Dalpha, p_Dflux, p_Dy)
         end if
@@ -2566,7 +2566,7 @@ contains
 #ifndef USE_OPENMP
     pure&
 #endif
-    subroutine doStdPrelimitDble(NEDGE, NVAR, Dflux, DfluxPrel, Dalpha)
+    subroutine doStdPrelimitDP(NEDGE, NVAR, Dflux, DfluxPrel, Dalpha)
 
       real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux,DfluxPrel
       integer, intent(in) :: NEDGE,NVAR
@@ -2599,7 +2599,7 @@ contains
       end do edgeloop
       !$omp end parallel do
 
-    end subroutine doStdPrelimitDble
+    end subroutine doStdPrelimitDP
 
     !**************************************************************
     ! Prelimit the raw antidiffusive fluxes using minmod limiter
@@ -2607,7 +2607,7 @@ contains
 #ifndef USE_OPENMP
     pure&
 #endif
-    subroutine doMinModPrelimitDble(NEDGE, NVAR, Dflux, DfluxPrel, Dalpha)
+    subroutine doMinModPrelimitDP(NEDGE, NVAR, Dflux, DfluxPrel, Dalpha)
 
       real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux,DfluxPrel
       integer, intent(in) :: NEDGE,NVAR
@@ -2649,13 +2649,13 @@ contains
       end do edgeloop
       !$omp end parallel do
 
-    end subroutine doMinModPrelimitDble
+    end subroutine doMinModPrelimitDP
 
     !**************************************************************
     ! Assemble the sums of antidiffusive increments for the given
     ! antidiffusive fluxes without transformation and prelimiting
 
-    subroutine doADIncrementsDble(IedgeListIdx, IedgeList,&
+    subroutine doADIncrementsDP(IedgeListIdx, IedgeList,&
         NEDGE, NEQ, NVAR, Dflux, Dalpha, Dpp, Dpm)
 
       ! input parameters
@@ -2713,14 +2713,14 @@ contains
       end do ! igroup
       !$omp end parallel
 
-    end subroutine doADIncrementsDble
+    end subroutine doADIncrementsDP
 
     !**************************************************************
     ! Assemble the sums of antidiffusive increments for the given
     ! antidiffusive fluxes which are transformed to a user-defined
     ! set of variables prior to computing the sums
 
-    subroutine doADIncrementsTransformedDble(IedgeListIdx, IedgeList,&
+    subroutine doADIncrementsTransformedDP(IedgeListIdx, IedgeList,&
         NEDGE, NEQ, NVAR, NVARtransformed, Dx, Dflux, Dalpha, Dpp, Dpm)
 
       ! input parameters
@@ -2828,13 +2828,13 @@ contains
       deallocate(DtransformedFluxesAtEdge)
       !$omp end parallel
 
-    end subroutine doADIncrementsTransformedDble
+    end subroutine doADIncrementsTransformedDP
 
     !**************************************************************
     ! Assemble the local bounds from the predicted solution
     ! without transformation
 
-    subroutine doBoundsDble(IedgeListIdx, IedgeList,&
+    subroutine doBoundsDP(IedgeListIdx, IedgeList,&
         NEDGE, NEQ, NVAR, Dx, Dqp, Dqm)
 
       ! input parameters
@@ -2891,13 +2891,13 @@ contains
       end do ! igroup
       !$omp end parallel
 
-    end subroutine doBoundsDble
+    end subroutine doBoundsDP
 
     !**************************************************************
     ! Assemble local bounds from the predicted solution
     ! which is transformed to a user-defined set of variables
 
-    subroutine doBoundsTransformedDble(IedgeListIdx, IedgeList,&
+    subroutine doBoundsTransformedDP(IedgeListIdx, IedgeList,&
         NEDGE, NEQ, NVAR, NVARtransformed, Dx, Dqp, Dqm)
 
       ! input parameters
@@ -2997,12 +2997,12 @@ contains
       deallocate(DtransformedDataAtEdge)
       !$omp end parallel
 
-    end subroutine doBoundsTransformedDble
+    end subroutine doBoundsTransformedDP
 
     !**************************************************************
     ! Compute nodal correction factors without constraints
 
-    subroutine doLimitNodalDble(NEQ, NVAR, dscale,&
+    subroutine doLimitNodalDP(NEQ, NVAR, dscale,&
         ML, Dpp, Dpm, Dqp, Dqm, Drp, Drm)
 
       ! input parameters
@@ -3066,12 +3066,12 @@ contains
 
       end if
 
-    end subroutine doLimitNodalDble
+    end subroutine doLimitNodalDP
 
     !**************************************************************
     ! Compute nodal correction factors with constraints
 
-    subroutine doLimitNodalConstrainedDble(NEQ, NVAR, dscale,&
+    subroutine doLimitNodalConstrainedDP(NEQ, NVAR, dscale,&
         ML, Dpp, Dpm, Dqp, Dqm, Drp, Drm)
 
       ! input parameters
@@ -3135,13 +3135,13 @@ contains
 
       end if
 
-    end subroutine doLimitNodalConstrainedDble
+    end subroutine doLimitNodalConstrainedDP
 
     !**************************************************************
     ! Compute edgewise correction factors based on the precomputed
     ! nodal correction factors and the sign of antidiffusive fluxes
 
-    subroutine doLimitEdgewiseDble(IedgeList,&
+    subroutine doLimitEdgewiseDP(IedgeList,&
         NEDGE, NEQ, NVAR, Dflux, Drp, Drm, Dalpha)
 
       ! input parameters
@@ -3183,7 +3183,7 @@ contains
       end do
       !$omp end parallel do
 
-    end subroutine doLimitEdgewiseDble
+    end subroutine doLimitEdgewiseDP
 
     !**************************************************************
     ! Compute edgewise correction factors based on the precomputed
@@ -3191,7 +3191,7 @@ contains
     ! which are transformed to a user-defined set of variables
     ! priori to computing the correction factors
 
-    subroutine doLimitEdgewiseTransformedDble(IedgeList,&
+    subroutine doLimitEdgewiseTransformedDP(IedgeList,&
         NEDGE, NEQ, NVAR, NVARtransformed, Dx, Dflux, Drp, Drm, Dalpha)
 
       ! input parameters
@@ -3292,14 +3292,14 @@ contains
       deallocate(DtransformedFluxesAtEdge)
       !$omp end parallel
 
-    end subroutine doLimitEdgewiseTransformedDble
+    end subroutine doLimitEdgewiseTransformedDP
 
     !**************************************************************
     ! Compute edgewise correction factors based on the precomputed
     ! nodal correction factors and the sign of a pair of explicit
     ! and implicit raw antidiffusive fluxes
 
-    subroutine doLimitEdgewiseConstrainedDble(IedgeList,&
+    subroutine doLimitEdgewiseConstrainedDP(IedgeList,&
         NEDGE, NEQ, NVAR, Dflux1, Dflux2, Drp, Drm, Dalpha)
 
       ! input parameters
@@ -3344,7 +3344,7 @@ contains
       end do
       !$omp end parallel do
 
-    end subroutine doLimitEdgewiseConstrainedDble
+    end subroutine doLimitEdgewiseConstrainedDP
 
     !**************************************************************
     ! Compute edgewise correction factors based on the precomputed
@@ -3353,7 +3353,7 @@ contains
     ! to a user-defined set of variables priori to computing the
     ! correction factors
 
-    subroutine doLimitEdgewiseConstrTransfDble(IedgeList,&
+    subroutine doLimitEdgewiseConstrTransfDP(IedgeList,&
         NEDGE, NEQ, NVAR, NVARtransformed, Dx, Dflux1, Dflux2, Drp, Drm, Dalpha)
 
       ! input parameters
@@ -3466,12 +3466,12 @@ contains
       deallocate(DtransformedFluxes2AtEdge)
       !$omp end parallel
 
-    end subroutine doLimitEdgewiseConstrTransfDble
+    end subroutine doLimitEdgewiseConstrTransfDP
 
     !**************************************************************
     ! Correct the antidiffusive fluxes and apply them
 
-    subroutine doCorrectDble(IedgeListIdx, IedgeList,&
+    subroutine doCorrectDP(IedgeListIdx, IedgeList,&
         NEDGE, NEQ, NVAR, dscale, Dalpha, Dflux, Dy)
 
       ! input parameters
@@ -3519,13 +3519,13 @@ contains
       end do ! igroup
       !$omp end parallel
 
-    end subroutine doCorrectDble
+    end subroutine doCorrectDP
 
     !**************************************************************
     ! Correct the antidiffusive fluxes and apply them
     ! scaled by the inverse of the lumped mass matrix
 
-    subroutine doCorrectScaleByMassDble(IedgeListIdx, IedgeList,&
+    subroutine doCorrectScaleByMassDP(IedgeListIdx, IedgeList,&
         NEDGE, NEQ, NVAR, dscale, ML, Dalpha, Dflux, Dy)
 
       ! input parameters
@@ -3572,7 +3572,7 @@ contains
 
       end do ! igroup
       !$omp end parallel
-    end subroutine doCorrectScaleByMassDble
+    end subroutine doCorrectScaleByMassDP
 
   end subroutine afcsys_buildVectorFCTScalar
 
@@ -6217,11 +6217,11 @@ contains
           ! Assemble the explicit part of the raw-antidiffusive fluxes
           ! $$ F_{ij}^n = (1-\theta)\Delta t D_{ij}^n(U_i^n-U_j^n) $$
           if (buseCallback) then
-            call doFluxesByCallbackDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
+            call doFluxesByCallbackDP(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
                 rafcstab%NVAR, p_DcoeffsAtEdge, p_Dx, dscale*(1.0_DP-theta),&
                 bclear, p_Dflux0)
           else
-            call doFluxesByCoeffsDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
+            call doFluxesByCoeffsDP(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
                 rafcstab%NVAR, p_Dcoefficients, p_Dx, dscale*(1.0_DP-theta),&
                 bclear, p_Dflux0)
           end if
@@ -6245,10 +6245,10 @@ contains
           ! mass matrix and without scaling by the implicitness parameter
           ! $$ F_{ij} = \Delta t D_{ij}^n(U_i^n-U_j^n) $$
           if (buseCallback) then
-            call doFluxesByCallbackDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
+            call doFluxesByCallbackDP(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
                 rafcstab%NVAR, p_DcoeffsAtEdge, p_Dx, dscale, .true., p_DfluxPrel)
           else
-            call doFluxesByCoeffsDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
+            call doFluxesByCoeffsDP(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
                 rafcstab%NVAR, p_Dcoefficients, p_Dx, dscale, .true., p_DfluxPrel)
           end if
 
@@ -6264,16 +6264,16 @@ contains
 
             if (rafcstab%cprelimitingType .eq. AFCSTAB_PRELIMITING_STD) then
               ! Compute solution difference for standard prelimiting
-              call doDifferencesDble(p_IedgeList, rafcstab%NEDGE,&
+              call doDifferencesDP(p_IedgeList, rafcstab%NEDGE,&
                   rafcstab%NEQ, rafcstab%NVAR, p_DxPredictor, p_DfluxPrel)
             elseif (rafcstab%cprelimitingType .eq. AFCSTAB_PRELIMITING_MINMOD) then
               ! Compute fluxes for minmod prelimiting
               if (buseCallback) then
-                call doFluxesByCallbackDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
+                call doFluxesByCallbackDP(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
                     rafcstab%NVAR, p_DcoeffsAtEdge, p_DxPredictor, dscale,&
                     .true., p_DfluxPrel)
               else
-                call doFluxesByCoeffsDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
+                call doFluxesByCoeffsDP(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
                     rafcstab%NVAR, p_Dcoefficients, p_DxPredictor, dscale,&
                     .true., p_DfluxPrel)
               end if
@@ -6299,7 +6299,7 @@ contains
 
           ! Assemble the explicit part of the mass-antidiffusive fluxes
           ! $$ F_{ij}^n := F_{ij}^n - M_{ij}(U_i^n-U_j^n) $$
-          call doFluxesByMatrixDble(p_IedgeList, rafcstab%NEDGE,&
+          call doFluxesByMatrixDP(p_IedgeList, rafcstab%NEDGE,&
               rafcstab%NEQ, rafcstab%NVAR, p_Dmatrix, p_Dx, -dscale/tstep,&
               .false., p_Dflux0)
         end if
@@ -6337,7 +6337,7 @@ contains
           call lsyssc_getbase_double(rafcstab%p_rvectorAlpha, p_Dalpha)
 
           ! Subtract amount of rejected antidiffusion
-          call afcstab_combineFluxesDble(rafcstab%NVAR, rafcstab%NEDGE,&
+          call afcstab_combineFluxesDP(rafcstab%NVAR, rafcstab%NEDGE,&
               -1.0_DP, p_Dflux, p_Dflux0, p_Dalpha)
         end if
 
@@ -6347,11 +6347,11 @@ contains
           ! Assemble implicit part of the raw-antidiffusive fluxes
           ! $$ F_{ij} = \theta\Delta t D_{ij}(U_i-U_j) $$
           if (buseCallback) then
-            call doFluxesByCallbackDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
+            call doFluxesByCallbackDP(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
                 rafcstab%NVAR, p_DcoeffsAtEdge, p_Dx, dscale*theta,&
                 bclear, p_Dflux)
           else
-            call doFluxesByCoeffsDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
+            call doFluxesByCoeffsDP(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
                 rafcstab%NVAR, p_Dcoefficients, p_Dx, dscale*theta,&
                 bclear, p_Dflux)
           end if
@@ -6365,7 +6365,7 @@ contains
             if (theta .ne. 0.0_DP) then
               ! The implicit part of the raw-antidiffusive fluxes
               ! exists; so combine them both into common fluxes
-              call afcstab_combineFluxesDble(rafcstab%NVAR, rafcstab%NEDGE,&
+              call afcstab_combineFluxesDP(rafcstab%NVAR, rafcstab%NEDGE,&
                   1.0_DP, p_Dflux0, p_Dflux)
             else
               ! The implicit part of the raw-antidiffusive fluxes does
@@ -6377,7 +6377,7 @@ contains
           end if
         else
           ! Truely combine both parts of the raw-antidiffusive fluxes
-          call afcstab_combineFluxesDble(rafcstab%NVAR, rafcstab%NEDGE,&
+          call afcstab_combineFluxesDP(rafcstab%NVAR, rafcstab%NEDGE,&
               1.0_DP, p_Dflux0, p_Dflux)
         end if
 
@@ -6391,7 +6391,7 @@ contains
 
           ! Assemble the implicit part of the mass-antidiffusive fluxes
           ! $$ F_{ij}^m := F_{ij}^m + M_{ij}(U_i^m-U_j^m) $$
-          call doFluxesByMatrixDble(p_IedgeList, rafcstab%NEDGE,&
+          call doFluxesByMatrixDP(p_IedgeList, rafcstab%NEDGE,&
               rafcstab%NEQ, rafcstab%NVAR, p_Dmatrix, p_Dx, dscale/tstep,&
               .false., p_Dflux)
 
@@ -6440,10 +6440,10 @@ contains
 
       ! Assemble spatial part of raw-antidiffusive fluxes
       if (buseCallback) then
-        call doFluxesByCallbackDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
+        call doFluxesByCallbackDP(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
             rafcstab%NVAR, p_DcoeffsAtEdge, p_Dx, dscale, bclear, p_Dflux)
       else
-        call doFluxesByCoeffsDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
+        call doFluxesByCoeffsDP(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
             rafcstab%NVAR, p_Dcoefficients, p_Dx, dscale, bclear, p_Dflux)
       end if
 
@@ -6453,7 +6453,7 @@ contains
         ! Compute fluxes for standard prelimiting based on the
         ! low-order solution which serves as predictor
         call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_DfluxPrel)
-        call doDifferencesDble(p_IedgeList, rafcstab%NEDGE,&
+        call doDifferencesDP(p_IedgeList, rafcstab%NEDGE,&
             rafcstab%NEQ, rafcstab%NVAR, p_Dx, p_DfluxPrel)
 
       elseif (rafcstab%cprelimitingType .eq. AFCSTAB_PRELIMITING_MINMOD) then
@@ -6474,7 +6474,7 @@ contains
 
         ! Apply mass antidiffusion to antidiffusive fluxes based on
         ! the approximation to the time derivative
-        call doFluxesByMatrixDble(p_IedgeList, rafcstab%NEDGE,&
+        call doFluxesByMatrixDP(p_IedgeList, rafcstab%NEDGE,&
             rafcstab%NEQ, rafcstab%NVAR, p_Dmatrix, p_DxTimeDeriv,&
             dscale, .false., p_Dflux)
       end if
@@ -6497,7 +6497,7 @@ contains
         call lsyssc_getbase_double(rmatrix, p_Dmatrix)
 
         ! Assemble mass-antidiffusive fluxes based on the solution
-        call doFluxesByMatrixDble(p_IedgeList, rafcstab%NEDGE,&
+        call doFluxesByMatrixDP(p_IedgeList, rafcstab%NEDGE,&
             rafcstab%NEQ, rafcstab%NVAR, p_Dmatrix, p_Dx, dscale, .true., p_Dflux)
 
         ! Set specifiers for raw antidiffusive fluxes
@@ -6525,7 +6525,7 @@ contains
     ! Assemble raw antidiffusive fluxes using the coefficients
     ! supplied by the edge-by-edge array DcoefficientsAtEdge
 
-    subroutine doFluxesByCoeffsDble(IedgeList, NEDGE, NEQ, NVAR,&
+    subroutine doFluxesByCoeffsDP(IedgeList, NEDGE, NEQ, NVAR,&
         DcoefficientsAtEdge, Dx, dscale, bclear, Dflux)
 
       ! input parameters
@@ -6641,13 +6641,13 @@ contains
 
       end if
 
-    end subroutine doFluxesByCoeffsDble
+    end subroutine doFluxesByCoeffsDP
 
     !**************************************************************
     ! Assemble raw antidiffusive fluxes without
     ! contribution of the consistent mass matrix.
 
-    subroutine doFluxesByCallbackDble(IedgeList, NEDGE, NEQ, NVAR,&
+    subroutine doFluxesByCallbackDP(IedgeList, NEDGE, NEQ, NVAR,&
         DcoeffsAtEdge, Dx, dscale, bclear, Dflux)
 
       real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
@@ -6774,13 +6774,13 @@ contains
 
       end if
 
-    end subroutine doFluxesByCallbackDble
+    end subroutine doFluxesByCallbackDP
 
     !**************************************************************
     ! Assemble raw antidiffusive fluxes using the coefficients
     ! supplied by the CSR-matrix Dmatrix
 
-    subroutine doFluxesByMatrixDble(IedgeList, NEDGE, NEQ, NVAR,&
+    subroutine doFluxesByMatrixDP(IedgeList, NEDGE, NEQ, NVAR,&
         Dmatrix, Dx, dscale, bclear, Dflux)
 
       real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
@@ -6901,7 +6901,7 @@ contains
 
       end if
 
-    end subroutine doFluxesByMatrixDble
+    end subroutine doFluxesByMatrixDP
 
     !**************************************************************
     ! Assemble fluxes for classical prelimiting.
@@ -6909,7 +6909,7 @@ contains
 #ifndef USE_OPENMP
     pure&
 #endif
-    subroutine doDifferencesDble(IedgeList, NEDGE, NEQ, NVAR, Dx, Dflux)
+    subroutine doDifferencesDP(IedgeList, NEDGE, NEQ, NVAR, Dx, Dflux)
 
       real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
       integer, dimension(:,:), intent(in) :: IedgeList
@@ -6935,7 +6935,7 @@ contains
       end do
       !$omp end parallel do
 
-    end subroutine doDifferencesDble
+    end subroutine doDifferencesDP
 
   end subroutine afcsys_buildFluxFCTBlock
 
@@ -7118,11 +7118,11 @@ contains
           ! Assemble the explicit part of the raw-antidiffusive fluxes
           ! $$ F_{ij}^n = (1-\theta)\Delta t D_{ij}^n(U_i^n-U_j^n) $$
           if (buseCallback) then
-            call doFluxesByCallbackDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
+            call doFluxesByCallbackDP(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
                 rafcstab%NVAR, p_DcoeffsAtEdge, p_Dx, dscale*(1.0_DP-theta),&
                 bclear, p_Dflux0)
           else
-            call doFluxesByCoeffsDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
+            call doFluxesByCoeffsDP(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
                 rafcstab%NVAR, p_Dcoefficients, p_Dx, dscale*(1.0_DP-theta),&
                 bclear, p_Dflux0)
           end if
@@ -7146,10 +7146,10 @@ contains
           ! mass matrix and without scaling by the implicitness parameter
           ! $$ F_{ij} = \Delta t D_{ij}^n(U_i^n-U_j^n) $$
           if (buseCallback) then
-            call doFluxesByCallbackDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
+            call doFluxesByCallbackDP(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
                 rafcstab%NVAR, p_DcoeffsAtEdge, p_Dx, dscale, .true., p_DfluxPrel)
           else
-            call doFluxesByCoeffsDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
+            call doFluxesByCoeffsDP(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
                 rafcstab%NVAR, p_Dcoefficients, p_Dx, dscale, .true., p_DfluxPrel)
           end if
 
@@ -7165,16 +7165,16 @@ contains
 
             if (rafcstab%cprelimitingType .eq. AFCSTAB_PRELIMITING_STD) then
               ! Compute solution difference for standard prelimiting
-              call doDifferencesDble(p_IedgeList, rafcstab%NEDGE,&
+              call doDifferencesDP(p_IedgeList, rafcstab%NEDGE,&
                   rafcstab%NEQ, rafcstab%NVAR, p_DxPredictor, p_DfluxPrel)
             elseif (rafcstab%cprelimitingType .eq. AFCSTAB_PRELIMITING_MINMOD) then
               ! Compute fluxes for minmod prelimiting
               if (buseCallback) then
-                call doFluxesByCallbackDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
+                call doFluxesByCallbackDP(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
                     rafcstab%NVAR, p_DcoeffsAtEdge, p_DxPredictor, dscale,&
                     .true., p_DfluxPrel)
               else
-                call doFluxesByCoeffsDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
+                call doFluxesByCoeffsDP(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
                     rafcstab%NVAR, p_Dcoefficients, p_DxPredictor, dscale,&
                     .true., p_DfluxPrel)
               end if
@@ -7200,7 +7200,7 @@ contains
 
           ! Assemble the explicit part of the mass-antidiffusive fluxes
           ! $$ F_{ij}^n := F_{ij}^n - M_{ij}(U_i^n-U_j^n) $$
-          call doFluxesByMatrixDble(p_IedgeList, rafcstab%NEDGE,&
+          call doFluxesByMatrixDP(p_IedgeList, rafcstab%NEDGE,&
               rafcstab%NEQ, rafcstab%NVAR, p_Dmatrix, p_Dx, -dscale/tstep,&
               .false., p_Dflux0)
         end if
@@ -7238,7 +7238,7 @@ contains
           call lsyssc_getbase_double(rafcstab%p_rvectorAlpha, p_Dalpha)
 
           ! Subtract amount of rejected antidiffusion
-          call afcstab_combineFluxesDble(rafcstab%NVAR, rafcstab%NEDGE,&
+          call afcstab_combineFluxesDP(rafcstab%NVAR, rafcstab%NEDGE,&
               -1.0_DP, p_Dflux, p_Dflux0, p_Dalpha)
         end if
 
@@ -7248,11 +7248,11 @@ contains
           ! Assemble implicit part of the raw-antidiffusive fluxes
           ! $$ F_{ij} = \theta\Delta t D_{ij}(U_i-U_j) $$
           if (buseCallback) then
-            call doFluxesByCallbackDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
+            call doFluxesByCallbackDP(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
                 rafcstab%NVAR, p_DcoeffsAtEdge, p_Dx, dscale*theta,&
                 bclear, p_Dflux)
           else
-            call doFluxesByCoeffsDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
+            call doFluxesByCoeffsDP(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
                 rafcstab%NVAR, p_Dcoefficients, p_Dx, dscale*theta,&
                 bclear, p_Dflux)
           end if
@@ -7266,7 +7266,7 @@ contains
             if (theta .ne. 0.0_DP) then
               ! The implicit part of the raw-antidiffusive fluxes
               ! exists; so combine them both into common fluxes
-              call afcstab_combineFluxesDble(rafcstab%NVAR, rafcstab%NEDGE,&
+              call afcstab_combineFluxesDP(rafcstab%NVAR, rafcstab%NEDGE,&
                   1.0_DP, p_Dflux0, p_Dflux)
             else
               ! The implicit part of the raw-antidiffusive fluxes does
@@ -7278,7 +7278,7 @@ contains
           end if
         else
           ! Truely combine both parts of the raw-antidiffusive fluxes
-          call afcstab_combineFluxesDble(rafcstab%NVAR, rafcstab%NEDGE,&
+          call afcstab_combineFluxesDP(rafcstab%NVAR, rafcstab%NEDGE,&
               1.0_DP, p_Dflux0, p_Dflux)
         end if
 
@@ -7292,7 +7292,7 @@ contains
 
           ! Assemble the implicit part of the mass-antidiffusive fluxes
           ! $$ F_{ij}^m := F_{ij}^m + M_{ij}(U_i^m-U_j^m) $$
-          call doFluxesByMatrixDble(p_IedgeList, rafcstab%NEDGE,&
+          call doFluxesByMatrixDP(p_IedgeList, rafcstab%NEDGE,&
               rafcstab%NEQ, rafcstab%NVAR, p_Dmatrix, p_Dx, dscale/tstep,&
               .false., p_Dflux)
 
@@ -7341,10 +7341,10 @@ contains
 
       ! Assemble spatial part of raw-antidiffusive fluxes
       if (buseCallback) then
-        call doFluxesByCallbackDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
+        call doFluxesByCallbackDP(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
             rafcstab%NVAR, p_DcoeffsAtEdge, p_Dx, dscale, bclear, p_Dflux)
       else
-        call doFluxesByCoeffsDble(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
+        call doFluxesByCoeffsDP(p_IedgeList, rafcstab%NEDGE, rafcstab%NEQ,&
             rafcstab%NVAR, p_Dcoefficients, p_Dx, dscale, bclear, p_Dflux)
       end if
 
@@ -7354,7 +7354,7 @@ contains
         ! Compute fluxes for standard prelimiting based on the
         ! low-order solution which serves as predictor
         call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_DfluxPrel)
-        call doDifferencesDble(p_IedgeList, rafcstab%NEDGE,&
+        call doDifferencesDP(p_IedgeList, rafcstab%NEDGE,&
             rafcstab%NEQ, rafcstab%NVAR, p_Dx, p_DfluxPrel)
 
       elseif (rafcstab%cprelimitingType .eq. AFCSTAB_PRELIMITING_MINMOD) then
@@ -7375,7 +7375,7 @@ contains
 
         ! Apply mass antidiffusion to antidiffusive fluxes based on
         ! the approximation to the time derivative
-        call doFluxesByMatrixDble(p_IedgeList, rafcstab%NEDGE,&
+        call doFluxesByMatrixDP(p_IedgeList, rafcstab%NEDGE,&
             rafcstab%NEQ, rafcstab%NVAR, p_Dmatrix, p_DxTimeDeriv,&
             dscale, .false., p_Dflux)
       end if
@@ -7399,7 +7399,7 @@ contains
 
         ! Clear vector and assemble antidiffusive fluxes
         call lalg_clearVector(p_Dflux)
-        call doFluxesByMatrixDble(p_IedgeList, rafcstab%NEDGE,&
+        call doFluxesByMatrixDP(p_IedgeList, rafcstab%NEDGE,&
             rafcstab%NEQ, rafcstab%NVAR, p_Dmatrix, p_Dx, dscale, .true., p_Dflux)
 
         ! Set specifiers for raw antidiffusive fluxes
@@ -7427,7 +7427,7 @@ contains
     ! Assemble raw antidiffusive fluxes using the coefficients
     ! supplied by the edge-by-edge array DcoefficientsAtEdge
 
-    subroutine doFluxesByCoeffsDble(IedgeList, NEDGE, NEQ, NVAR,&
+    subroutine doFluxesByCoeffsDP(IedgeList, NEDGE, NEQ, NVAR,&
         DcoefficientsAtEdge, Dx, dscale, bclear, Dflux)
 
       ! input parameters
@@ -7543,13 +7543,13 @@ contains
 
       end if
 
-    end subroutine doFluxesByCoeffsDble
+    end subroutine doFluxesByCoeffsDP
 
     !**************************************************************
     ! Assemble raw antidiffusive fluxes using the coefficients
     ! supplied by the CSR-matrix stored in Dmatrix
 
-    subroutine doFluxesByMatrixDble(IedgeList, NEDGE, NEQ, NVAR,&
+    subroutine doFluxesByMatrixDP(IedgeList, NEDGE, NEQ, NVAR,&
         Dmatrix, Dx, dscale, bclear, Dflux)
 
       real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
@@ -7672,12 +7672,12 @@ contains
 
       end if
 
-    end subroutine doFluxesByMatrixDble
+    end subroutine doFluxesByMatrixDP
 
     !**************************************************************
     ! Assemble raw antidiffusive fluxes with aid of callback function
 
-    subroutine doFluxesByCallbackDble(IedgeList, NEDGE, NEQ, NVAR,&
+    subroutine doFluxesByCallbackDP(IedgeList, NEDGE, NEQ, NVAR,&
         DcoeffsAtEdge, Dx, dscale, bclear, Dflux)
 
       ! input parameters
@@ -7806,7 +7806,7 @@ contains
 
       end if
 
-    end subroutine doFluxesByCallbackDble
+    end subroutine doFluxesByCallbackDP
 
     !**************************************************************
     ! Assemble fluxes for classical prelimiting.
@@ -7814,7 +7814,7 @@ contains
 #ifndef USE_OPENMP
     pure&
 #endif
-    subroutine doDifferencesDble(IedgeList, NEDGE, NEQ, NVAR, Dx, Dflux)
+    subroutine doDifferencesDP(IedgeList, NEDGE, NEQ, NVAR, Dx, Dflux)
 
       real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
       integer, dimension(:,:), intent(in) :: IedgeList
@@ -7840,7 +7840,7 @@ contains
       end do
       !$omp end parallel do
 
-    end subroutine doDifferencesDble
+    end subroutine doDifferencesDP
 
   end subroutine afcsys_buildFluxFCTScalar
 
@@ -8131,7 +8131,7 @@ contains
       end if
 
       ! Compute the upper and lower solution bounds
-      call doBoundsDble(p_IedgeListIdx, p_IedgeList,&
+      call doBoundsDP(p_IedgeListIdx, p_IedgeList,&
           rafcstab%NEDGE, rafcstab%NEQ, nvariables,&
           p_Ddata, p_DdataLbound, p_DdataUbound)
     end if
@@ -8165,7 +8165,7 @@ contains
           end if
 
           ! Compute failsafe correction factors
-          call doFailsafeLimitDble(p_IedgeList, rafcstab%NEDGE,&
+          call doFailsafeLimitDP(p_IedgeList, rafcstab%NEDGE,&
               rafcstab%NEQ, nvariables, p_Ddata, p_DdataLbound,&
               p_DdataUbound, dcorr, dtol, p_Dbeta, bisAccepted)
 
@@ -8208,7 +8208,7 @@ contains
         end if
 
         ! Compute failsafe correction factor
-        call doFailsafeLimitDble(p_IedgeList, rafcstab%NEDGE,&
+        call doFailsafeLimitDP(p_IedgeList, rafcstab%NEDGE,&
             rafcstab%NEQ, rafcstab%NVAR, p_Ddata, p_DdataLbound,&
             p_DdataUbound, dcorr, dtol, p_Dbeta, bisAccepted)
       end if
@@ -8247,7 +8247,7 @@ contains
     ! Compute the local upper and lower bounds based on the double
     ! values array Dx evaluated at the neighbouring nodes
 
-    subroutine doBoundsDble(IedgeListIdx, IedgeList,&
+    subroutine doBoundsDP(IedgeListIdx, IedgeList,&
         NEDGE, NEQ, NVARfailsafe, Dx, Dlbound, Dubound)
 
       ! input parameters
@@ -8298,7 +8298,7 @@ contains
       end do ! igroup
       !$omp end parallel
 
-    end subroutine doBoundsDble
+    end subroutine doBoundsDP
 
     !**************************************************************
     ! Premultiply the correction factor Dalpha by the failsafe factor
@@ -8400,7 +8400,7 @@ contains
     !**************************************************************
     ! Compute the edgewise failsafe correction factors
 
-    subroutine doFailsafeLimitDble(IedgeList, NEDGE, NEQ, NVARfailsafe,&
+    subroutine doFailsafeLimitDP(IedgeList, NEDGE, NEQ, NVARfailsafe,&
         Dx, Dlbound, Dubound, dcorr, dtol, Dbeta, baccept)
 
       ! input parameters
@@ -8444,7 +8444,7 @@ contains
       end do
       !$omp end parallel do
 
-    end subroutine doFailsafeLimitDble
+    end subroutine doFailsafeLimitDP
 
   end subroutine afcsys_failsafeFCTBlock
 
@@ -8715,7 +8715,7 @@ contains
       end if
 
       ! Compute the upper and lower solution bounds
-      call doBoundsDble(p_IedgeListIdx, p_IedgeList,&
+      call doBoundsDP(p_IedgeListIdx, p_IedgeList,&
           rafcstab%NEDGE, rafcstab%NEQ, nvariables,&
           p_Ddata, p_DdataLbound, p_DdataUbound)
     end if
@@ -8749,7 +8749,7 @@ contains
           end if
 
           ! Compute failsafe correction factors
-          call doFailsafeLimitDble(p_IedgeList, rafcstab%NEDGE,&
+          call doFailsafeLimitDP(p_IedgeList, rafcstab%NEDGE,&
               rafcstab%NEQ, nvariables, p_Ddata, p_DdataLbound,&
               p_DdataUbound, dcorr, dtol, p_Dbeta, bisAccepted)
 
@@ -8792,7 +8792,7 @@ contains
         end if
 
         ! Compute failsafe correction factor
-        call doFailsafeLimitDble(p_IedgeList, rafcstab%NEDGE,&
+        call doFailsafeLimitDP(p_IedgeList, rafcstab%NEDGE,&
             rafcstab%NEQ, rafcstab%NVAR, p_Ddata, p_DdataLbound,&
             p_DdataUbound, dcorr, dtol, p_Dbeta, bisAccepted)
       end if
@@ -8836,7 +8836,7 @@ contains
     ! Compute the local upper and lower bounds based on the double
     ! values array Dx evaluated at the neighbouring nodes
 
-    subroutine doBoundsDble(IedgeListIdx, IedgeList,&
+    subroutine doBoundsDP(IedgeListIdx, IedgeList,&
         NEDGE, NEQ, NVARfailsafe, Dx, Dlbound, Dubound)
 
       ! input parameters
@@ -8887,7 +8887,7 @@ contains
       end do ! igroup
       !$omp end parallel
 
-    end subroutine doBoundsDble
+    end subroutine doBoundsDP
 
     !**************************************************************
     ! Premultiply the correction factor Dalpha by the failsafe factor
@@ -8989,7 +8989,7 @@ contains
     !**************************************************************
     ! Compute the edgewise failsafe correction factors
 
-    subroutine doFailsafeLimitDble(IedgeList, NEDGE, NEQ, NVARfailsafe,&
+    subroutine doFailsafeLimitDP(IedgeList, NEDGE, NEQ, NVARfailsafe,&
         Dx, Dlbound, Dubound, dcorr, dtol, Dbeta, baccept)
 
       ! input parameters
@@ -9033,7 +9033,7 @@ contains
       end do
       !$omp end parallel do
 
-    end subroutine doFailsafeLimitDble
+    end subroutine doFailsafeLimitDP
 
   end subroutine afcsys_failsafeFCTScalar
 
@@ -9041,7 +9041,7 @@ contains
 
 !<function>
 
-  elemental function minmodDble(da,db)
+  elemental function minmodDP(da,db)
 
 !<description>
     ! This function computes minmod(a,b) following the implementation
@@ -9055,7 +9055,7 @@ contains
 !</input>
 
 !<result>
-    real(DP) :: minmodDble
+    real(DP) :: minmodDP
 !</result>
 
     ! local variables
@@ -9064,15 +9064,15 @@ contains
     dsa = sign(1._DP,da)
     dsb = sign(1._DP,db)
 
-    minmodDble = 0.5_DP * (dsa+dsb) * min(da*dsa, db*dsb)
+    minmodDP = 0.5_DP * (dsa+dsb) * min(da*dsa, db*dsb)
 
-  end function minmodDble
+  end function minmodDP
 
   !*****************************************************************************
 
 !<function>
 
-  elemental function minmodSngl(fa,fb)
+  elemental function minmodSP(fa,fb)
 
 !<description>
     ! This function computes minmod(a,b) following the implementation
@@ -9086,7 +9086,7 @@ contains
 !</input>
 
 !<result>
-    real(SP) :: minmodSngl
+    real(SP) :: minmodSP
 !</result>
 
     ! local variables
@@ -9095,8 +9095,8 @@ contains
     fsa = sign(1._SP,fa)
     fsb = sign(1._SP,fb)
 
-    minmodSngl = 0.5_SP * (fsa+fsb) * min(fa*fsa, fb*fsb)
+    minmodSP = 0.5_SP * (fsa+fsb) * min(fa*fsa, fb*fsb)
 
-  end function minmodSngl
+  end function minmodSP
 
 end module afcstabsystem

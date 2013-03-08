@@ -26,8 +26,8 @@ module octree
 !$use omp_lib
   use fsystem
   use genoutput
-  use octreeDble, only : t_octreeDble, otree_release
-  use octreeSngl, only : t_octreeSngl, otree_release
+  use octreeDP, only : t_octreeDP, otree_release
+  use octreeSP, only : t_octreeSP, otree_release
   use storage
 
   implicit none
@@ -39,8 +39,8 @@ module octree
   public :: octree_getbase
 
   interface octree_getbase
-    module procedure octree_getbase_dble
-    module procedure octree_getbase_sngl
+    module procedure octree_getbase_DP
+    module procedure octree_getbase_SP
   end interface
 
 !<constants>
@@ -63,10 +63,10 @@ module octree
     private
 
     ! Pointer to double-valued octree implementations
-    type(t_octreeDble), pointer :: p_octreeDble => null()
+    type(t_octreeDP), pointer :: p_octreeDP => null()
 
     ! Pointer to single-valued octree implementations
-    type(t_octreeSngl), pointer :: p_octreeSngl => null()
+    type(t_octreeSP), pointer :: p_octreeSP => null()
 
   end type t_octree
 
@@ -98,10 +98,10 @@ contains
 
     select case (coctreeType)    
     case (OCTREE_DOUBLE)
-      allocate(roctree%p_octreeDble)
+      allocate(roctree%p_octreeDP)
 
     case (OCTREE_SINGLE)
-      allocate(roctree%p_octreeSngl)
+      allocate(roctree%p_octreeSP)
 
     case DEFAULT
       call output_line('Invalid octree type!',&
@@ -127,14 +127,14 @@ contains
 !</inputoutput>
 !</subroutine>
 
-    if (associated(roctree%p_octreeDble)) then
-      call otree_release(roctree%p_octreeDble)
-      deallocate(roctree%p_octreeDble)
+    if (associated(roctree%p_octreeDP)) then
+      call otree_release(roctree%p_octreeDP)
+      deallocate(roctree%p_octreeDP)
     end if
 
-    if (associated(roctree%p_octreeSngl)) then
-      call otree_release(roctree%p_octreeSngl)
-      deallocate(roctree%p_octreeSngl)
+    if (associated(roctree%p_octreeSP)) then
+      call otree_release(roctree%p_octreeSP)
+      deallocate(roctree%p_octreeSP)
     end if
 
   end subroutine octree_done
@@ -143,7 +143,7 @@ contains
 
 !<subroutine>
 
-  subroutine octree_getbase_dble(roctree, p_roctree)
+  subroutine octree_getbase_DP(roctree, p_roctree)
 
 !<description>
     ! Returns a pointer to the double-valued octree implementation
@@ -157,23 +157,23 @@ contains
 
 !<output>
     ! Pointer to the octree implementation
-    type(t_octreeDble), pointer :: p_roctree
+    type(t_octreeDP), pointer :: p_roctree
 !</output>
 !</subroutine>
 
-    if (associated(roctree%p_octreeDble)) then
-      p_roctree => roctree%p_octreeDble
+    if (associated(roctree%p_octreeDP)) then
+      p_roctree => roctree%p_octreeDP
     else
       nullify(p_roctree)
     end if
 
-  end subroutine octree_getbase_dble
+  end subroutine octree_getbase_DP
 
   !************************************************************************
 
 !<subroutine>
 
-  subroutine octree_getbase_sngl(roctree, p_roctree)
+  subroutine octree_getbase_SP(roctree, p_roctree)
 
 !<description>
     ! Returns a pointer to the single-valued octree implementation
@@ -187,16 +187,16 @@ contains
 
 !<output>
     ! Pointer to the octree implementation
-    type(t_octreeSngl), pointer :: p_roctree
+    type(t_octreeSP), pointer :: p_roctree
 !</output>
 !</subroutine>
 
-    if (associated(roctree%p_octreeSngl)) then
-      p_roctree => roctree%p_octreeSngl
+    if (associated(roctree%p_octreeSP)) then
+      p_roctree => roctree%p_octreeSP
     else
       nullify(p_roctree)
     end if
 
-  end subroutine octree_getbase_sngl
+  end subroutine octree_getbase_SP
 
 end module octree

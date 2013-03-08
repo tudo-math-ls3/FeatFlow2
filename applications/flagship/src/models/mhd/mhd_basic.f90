@@ -23,13 +23,13 @@
 !#     -> Sets the conservative variables from an UCD import
 !#
 !# 5.) mhd_convertVariableNondim = mhd_convertVariableNondim1 /
-!#                                 mhd_convertVariableNondimDble /
-!#                                 mhd_convertVariableNondimSngl /
+!#                                 mhd_convertVariableNondimDP /
+!#                                 mhd_convertVariableNondimSP /
 !#     -> Non-dimensionalizes a physical variable using reference values
 !#
 !# 6.) mhd_convertVariableDim = mhd_convertVariableDim1 /
-!#                              mhd_convertVariableDimDble /
-!#                              mhd_convertVariableDimSngl
+!#                              mhd_convertVariableDimDP /
+!#                              mhd_convertVariableDimSP
 !#     -> Convert a non-dimensionalized variable into its physical quantity
 !#
 !# </purpose>
@@ -71,14 +71,14 @@ module mhd_basic
 
   interface mhd_convertVariableNonDim
     module procedure mhd_convertVariableNonDim1
-    module procedure mhd_convertVariableNonDimDble
-    module procedure mhd_convertVariableNonDimSngl
+    module procedure mhd_convertVariableNonDimDP
+    module procedure mhd_convertVariableNonDimSP
   end interface mhd_convertVariableNonDim
 
   interface mhd_convertVariableDim
     module procedure mhd_convertVariableDim1
-    module procedure mhd_convertVariableDimDble
-    module procedure mhd_convertVariableDimSngl
+    module procedure mhd_convertVariableDimDP
+    module procedure mhd_convertVariableDimSP
   end interface mhd_convertVariableDim
 
 !<constants>
@@ -649,12 +649,12 @@ contains
     select case(rvectorScalar%cdataType)
     case (ST_DOUBLE)
       call lsyssc_getbase_double(rvectorScalar, p_Ddata)
-      call mhd_convertVariableNonDimDble(p_Ddata, cvariable,&
+      call mhd_convertVariableNonDimDP(p_Ddata, cvariable,&
           density_ref, velocity_ref, length_ref)
 
     case (ST_SINGLE)
       call lsyssc_getbase_single(rvectorScalar, p_Fdata)
-      call mhd_convertVariableNonDimSngl(p_Fdata, cvariable,&
+      call mhd_convertVariableNonDimSP(p_Fdata, cvariable,&
           real(density_ref,SP), real(velocity_ref,SP), real(length_ref,SP))
 
     case default
@@ -669,7 +669,7 @@ contains
 
 !<subroutine>
 
-  subroutine mhd_convertVariableNonDimDble(Ddata, cvariable,&
+  subroutine mhd_convertVariableNonDimDP(Ddata, cvariable,&
                                              density_ref, velocity_ref, length_ref)
 
 !<description>
@@ -768,18 +768,18 @@ contains
     else
       
       call output_line('Invalid variable name!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'mhd_convertVariableNonDimDble')
+          OU_CLASS_ERROR,OU_MODE_STD,'mhd_convertVariableNonDimDP')
       call sys_halt()
       
     end if
 
-  end subroutine mhd_convertVariableNonDimDble
+  end subroutine mhd_convertVariableNonDimDP
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine mhd_convertVariableNonDimSngl(Fdata, cvariable,&
+  subroutine mhd_convertVariableNonDimSP(Fdata, cvariable,&
                                              density_ref, velocity_ref, length_ref)
 
 !<description>
@@ -878,12 +878,12 @@ contains
     else
       
       call output_line('Invalid variable name!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'mhd_convertVariableNonDimSngl')
+          OU_CLASS_ERROR,OU_MODE_STD,'mhd_convertVariableNonDimSP')
       call sys_halt()
       
     end if
 
-  end subroutine mhd_convertVariableNonDimSngl
+  end subroutine mhd_convertVariableNonDimSP
 
   !*****************************************************************************
 
@@ -927,12 +927,12 @@ contains
     select case(rvectorScalar%cdataType)
     case (ST_DOUBLE)
       call lsyssc_getbase_double(rvectorScalar, p_Ddata)
-      call mhd_convertVariableDimDble(p_Ddata, cvariable,&
+      call mhd_convertVariableDimDP(p_Ddata, cvariable,&
           density_ref, velocity_ref, length_ref)
 
     case (ST_SINGLE)
       call lsyssc_getbase_single(rvectorScalar, p_Fdata)
-      call mhd_convertVariableDimSngl(p_Fdata, cvariable,&
+      call mhd_convertVariableDimSP(p_Fdata, cvariable,&
           real(density_ref,SP), real(velocity_ref,SP), real(length_ref,SP))
 
     case default
@@ -947,7 +947,7 @@ contains
 
 !<subroutine>
 
-  subroutine mhd_convertVariableDimDble(Ddata, cvariable,&
+  subroutine mhd_convertVariableDimDP(Ddata, cvariable,&
                                           density_ref, velocity_ref, length_ref)
 
 !<description>
@@ -1049,18 +1049,18 @@ contains
       print *, trim(cvariable)
 
       call output_line('Invalid variable name!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'mhd_convertVariableDimDble')
+          OU_CLASS_ERROR,OU_MODE_STD,'mhd_convertVariableDimDP')
       call sys_halt()
       
     end if
       
-  end subroutine mhd_convertVariableDimDble
+  end subroutine mhd_convertVariableDimDP
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine mhd_convertVariableDimSngl(Fdata, cvariable,&
+  subroutine mhd_convertVariableDimSP(Fdata, cvariable,&
                                           density_ref, velocity_ref, length_ref)
 
 !<description>
@@ -1160,11 +1160,11 @@ contains
     else
       
       call output_line('Invalid variable name!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'mhd_convertVariableDimSngl')
+          OU_CLASS_ERROR,OU_MODE_STD,'mhd_convertVariableDimSP')
       call sys_halt()
       
     end if
       
-  end subroutine mhd_convertVariableDimSngl
+  end subroutine mhd_convertVariableDimSP
 
 end module mhd_basic

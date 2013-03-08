@@ -125,12 +125,12 @@ contains
 
       case (ST_DOUBLE)
         call lsyssc_getbase_double(rmatrix, p_Da)
-        call check_ddMat79Dble(rmatrix%NEQ,&
+        call check_ddMat79DP(rmatrix%NEQ,&
             p_Kld, p_Kcol, p_Kld, p_Da, ccheckType, bresult1)
 
       case (ST_SINGLE)
         call lsyssc_getbase_single(rmatrix, p_Fa)
-        call check_ddMat79Sngl(rmatrix%NEQ,&
+        call check_ddMat79SP(rmatrix%NEQ,&
             p_Kld, p_Kcol, p_Kld, p_Fa, ccheckType, bresult1)
 
       case default
@@ -151,12 +151,12 @@ contains
 
       case (ST_DOUBLE)
         call lsyssc_getbase_double(rmatrix, p_Da)
-        call check_ddMat79Dble(rmatrix%NEQ,&
+        call check_ddMat79DP(rmatrix%NEQ,&
             p_Kld, p_Kcol, p_Kdiagonal, p_Da, ccheckType, bresult1)
 
       case (ST_SINGLE)
         call lsyssc_getbase_single(rmatrix, p_Fa)
-        call check_ddMat79Sngl(rmatrix%NEQ,&
+        call check_ddMat79SP(rmatrix%NEQ,&
             p_Kld, p_Kcol, p_Kdiagonal, p_Fa, ccheckType, bresult1)
 
       case default
@@ -215,8 +215,8 @@ contains
     !***************************************************************************
     ! Diagonal dominance check for double-valued matrix stored in format 7/9
 
-    pure subroutine check_ddMat79Dble(NEQ, Kld, Kcol, Kdiagonal, Da,&
-                                      ccheckType, bresult)
+    pure subroutine check_ddMat79DP(NEQ, Kld, Kcol, Kdiagonal, Da,&
+                                    ccheckType, bresult)
 
       real(DP), dimension(:), intent(in) :: Da
       integer, dimension(:), intent(in) :: Kld, Kcol, Kdiagonal
@@ -268,13 +268,13 @@ contains
       case (MCHK_DIAGDOMINANT_IRREDUCIBLE)
         bresult = ballDiagDominance .and. banyStrictDiagDominance
       end select
-    end subroutine check_ddMat79Dble
+    end subroutine check_ddMat79DP
 
     !***************************************************************************
     ! Diagonal dominance check for single-valued matrix stored in format 7/9
 
-    pure subroutine check_ddMat79Sngl(NEQ, Kld, Kcol, Kdiagonal, Fa,&
-                                      ccheckType, bresult)
+    pure subroutine check_ddMat79SP(NEQ, Kld, Kcol, Kdiagonal, Fa,&
+                                    ccheckType, bresult)
 
       real(SP), dimension(:), intent(in) :: Fa
       integer, dimension(:), intent(in) :: Kld, Kcol, Kdiagonal
@@ -326,7 +326,7 @@ contains
       case (MCHK_DIAGDOMINANT_IRREDUCIBLE)
         bresult = ballDiagDominance .and. banyStrictDiagDominance
       end select
-    end subroutine check_ddMat79Sngl  
+    end subroutine check_ddMat79SP  
 
   end subroutine mchk_isDiagDominant
 
@@ -425,12 +425,12 @@ contains
 
       case (ST_DOUBLE)
         call lsyssc_getbase_double(rmatrix, p_Da)
-        call check_signMat79Dble(rmatrix%NEQ, rmatrix%dscaleFactor,&
+        call check_signMat79DP(rmatrix%NEQ, rmatrix%dscaleFactor,&
             dtrhold, p_Kld, p_Kcol, p_Da, bresult1)
 
       case (ST_SINGLE)
         call lsyssc_getbase_single(rmatrix, p_Fa)
-        call check_signMat79Sngl(rmatrix%NEQ, real(rmatrix%dscaleFactor,SP),&
+        call check_signMat79SP(rmatrix%NEQ, real(rmatrix%dscaleFactor,SP),&
             real(dtrhold,SP), p_Kld, p_Kcol, p_Fa, bresult1)
 
       case default
@@ -450,12 +450,12 @@ contains
 
       case (ST_DOUBLE)
         call lsyssc_getbase_double(rmatrix, p_Da)
-        call check_signMat79Dble(rmatrix%NEQ, rmatrix%dscaleFactor,&
+        call check_signMat79DP(rmatrix%NEQ, rmatrix%dscaleFactor,&
             dtrhold, p_Kdiagonal, p_Kcol, p_Da, bresult1)
 
       case (ST_SINGLE)
         call lsyssc_getbase_single(rmatrix, p_Fa)
-        call check_signMat79Sngl(rmatrix%NEQ, real(rmatrix%dscaleFactor,SP),&
+        call check_signMat79SP(rmatrix%NEQ, real(rmatrix%dscaleFactor,SP),&
             real(dtrhold,SP), p_Kdiagonal, p_Kcol, p_Fa, bresult1)
 
       case default
@@ -524,12 +524,12 @@ contains
     select case(rmatrixDense%cdataType)
     case(ST_DOUBLE)
       call lsyssc_getbase_double(rmatrixDense, p_Da)
-      bresult1 = check_InverseMat1Dble(rmatrix%NEQ, rmatrix%NCOLS,&
+      bresult1 = check_InverseMat1DP(rmatrix%NEQ, rmatrix%NCOLS,&
           p_Da, Iperm, dtrhold)
 
     case(ST_SINGLE)
       call lsyssc_getbase_single(rmatrixDense, p_Fa)
-      bresult1 = check_InverseMat1Sngl(rmatrix%NEQ, rmatrix%NCOLS,&
+      bresult1 = check_InverseMat1SP(rmatrix%NEQ, rmatrix%NCOLS,&
           p_Fa, Iperm, real(dtrhold,SP))
 
     case default
@@ -564,8 +564,8 @@ contains
     !***************************************************************************
     ! Sign check for double-valued matrix stored in format 7/9
 
-    pure subroutine check_signMat79Dble(NEQ, dscale, dtreshold, Kdiagonal,&
-                                        Kcol, Da, bresult)
+    pure subroutine check_signMat79DP(NEQ, dscale, dtreshold, Kdiagonal,&
+                                      Kcol, Da, bresult)
 
       integer, intent(in) :: NEQ
       real(DP), intent(in) :: dscale,dtreshold
@@ -597,13 +597,13 @@ contains
         !$omp end parallel do
       end if
 
-    end subroutine check_signMat79Dble
+    end subroutine check_signMat79DP
 
     !***************************************************************************
     ! Sign check for single-valued matrix stored in format 7/9
 
-    pure subroutine check_signMat79Sngl(NEQ, fscale, ftreshold, Kdiagonal,&
-                                        Kcol, Fa, bresult)
+    pure subroutine check_signMat79SP(NEQ, fscale, ftreshold, Kdiagonal,&
+                                      Kcol, Fa, bresult)
 
       integer, intent(in) :: NEQ
       real(SP), intent(in) :: fscale,ftreshold
@@ -635,13 +635,13 @@ contains
         !$omp end parallel do
       end if
 
-    end subroutine check_signMat79Sngl
+    end subroutine check_signMat79SP
 
     !***************************************************************************
     ! Compute LU-factorisation of double-valued dense matrix and check
     ! if inverse matrix exists and all of its entries are non-negative
 
-    function check_InverseMat1Dble(NEQ, NCOLS, DA, Iperm, dtreshold)&
+    function check_InverseMat1DP(NEQ, NCOLS, DA, Iperm, dtreshold)&
         result(bresult)
 
       integer, intent(in) :: NEQ,NCOLS
@@ -748,13 +748,13 @@ contains
       ! Deallocate temporal memory
       deallocate(Db,Dx)
 
-    end function check_InverseMat1Dble
+    end function check_InverseMat1DP
 
     !***************************************************************************
     ! Compute LU-factorisation of single-valued dense matrix and check
     ! if inverse matrix exists and all of its entries are non-negative
 
-    function check_InverseMat1Sngl(NEQ, NCOLS, FA, Iperm, ftreshold)&
+    function check_InverseMat1SP(NEQ, NCOLS, FA, Iperm, ftreshold)&
         result(bresult)
 
       integer, intent(in) :: NEQ,NCOLS
@@ -861,7 +861,7 @@ contains
       ! Deallocate temporal memory
       deallocate(Fb,Fx)
 
-    end function check_InverseMat1Sngl
+    end function check_InverseMat1SP
 
   end subroutine mchk_isMMatrix
 
@@ -927,12 +927,12 @@ contains
 
       case (ST_DOUBLE)
         call lsyssc_getbase_double(rmatrix, p_Da)
-        call check_signMat7Dble(rmatrix%NEQ, rmatrix%dscaleFactor,&
+        call check_signMat7DP(rmatrix%NEQ, rmatrix%dscaleFactor,&
             dtrhold, p_Kld, p_Kcol, p_Da, bresult1)
 
       case (ST_SINGLE)
         call lsyssc_getbase_single(rmatrix, p_Fa)
-        call check_signMat7Sngl(rmatrix%NEQ, real(rmatrix%dscaleFactor,SP),&
+        call check_signMat7SP(rmatrix%NEQ, real(rmatrix%dscaleFactor,SP),&
             real(dtrhold,SP), p_Kld, p_Kcol, p_Fa, bresult1)
 
       case default
@@ -953,12 +953,12 @@ contains
 
       case (ST_DOUBLE)
         call lsyssc_getbase_double(rmatrix, p_Da)
-        call check_signMat9Dble(rmatrix%NEQ, rmatrix%dscaleFactor,&
+        call check_signMat9DP(rmatrix%NEQ, rmatrix%dscaleFactor,&
             dtrhold, p_Kld, p_Kcol, p_Kdiagonal, p_Da, bresult1)
 
       case (ST_SINGLE)
         call lsyssc_getbase_single(rmatrix, p_Fa)
-        call check_signMat9Sngl(rmatrix%NEQ, real(rmatrix%dscaleFactor,SP),&
+        call check_signMat9SP(rmatrix%NEQ, real(rmatrix%dscaleFactor,SP),&
             real(dtrhold,SP),p_Kld, p_Kcol, p_Kdiagonal, p_Fa, bresult1)
 
       case default
@@ -993,8 +993,8 @@ contains
     !***************************************************************************
     ! Sign check for double-valued matrix stored in format 7
 
-    pure subroutine check_signMat7Dble(NEQ, dscale, dtreshold, Kld, Kcol,&
-                                       Da, bresult)
+    pure subroutine check_signMat7DP(NEQ, dscale, dtreshold, Kld, Kcol,&
+                                     Da, bresult)
 
       integer, intent(in) :: NEQ
       real(DP), intent(in) :: dscale,dtreshold
@@ -1030,13 +1030,13 @@ contains
         !$omp end parallel do
       end if
 
-    end subroutine check_signMat7Dble
+    end subroutine check_signMat7DP
 
     !***************************************************************************
     ! Sign check for single-valued matrix stored in format 7
 
-    pure subroutine check_signMat7Sngl(NEQ, fscale, ftreshold, Kld, Kcol,&
-                                       Fa, bresult)
+    pure subroutine check_signMat7SP(NEQ, fscale, ftreshold, Kld, Kcol,&
+                                     Fa, bresult)
 
       integer, intent(in) :: NEQ
       real(SP), intent(in) :: fscale,ftreshold
@@ -1072,13 +1072,13 @@ contains
         !$omp end parallel do
       end if
 
-    end subroutine check_signMat7Sngl
+    end subroutine check_signMat7SP
 
     !***************************************************************************
     ! Sign check for double-valued matrix stored in format 9
 
-    pure subroutine check_signMat9Dble(NEQ, dscale, dtreshold, Kld, Kcol,&
-                                       Kdiagonal, Da, bresult)
+    pure subroutine check_signMat9DP(NEQ, dscale, dtreshold, Kld, Kcol,&
+                                     Kdiagonal, Da, bresult)
 
       integer, intent(in) :: NEQ
       real(DP), intent(in) :: dscale,dtreshold
@@ -1122,13 +1122,13 @@ contains
         !$omp end parallel do
       end if
 
-    end subroutine check_signMat9Dble
+    end subroutine check_signMat9DP
 
     !***************************************************************************
     ! Sign check for single-valued matrix stored in format 9
 
-    pure subroutine check_signMat9Sngl(NEQ, fscale, ftreshold, Kld, Kcol,&
-                                       Kdiagonal, Fa, bresult)
+    pure subroutine check_signMat9SP(NEQ, fscale, ftreshold, Kld, Kcol,&
+                                     Kdiagonal, Fa, bresult)
 
       integer, intent(in) :: NEQ
       real(SP), intent(in) :: fscale,ftreshold
@@ -1172,7 +1172,7 @@ contains
         !$omp end parallel do
       end if
 
-    end subroutine check_signMat9Sngl
+    end subroutine check_signMat9SP
 
   end subroutine mchk_isZMatrix
 
@@ -1254,8 +1254,8 @@ contains
           ! coefficients
           do ieq = 1, rmatrix%NEQ
             if (index(ieq) .eq. 0)&
-                call strongconnectMat79Dble(rstack, p_Kld, p_Kcol, p_Da, ieq,&
-                                            Index, LowLink, idx, nscc)
+                call strongconnectMat79DP(rstack, p_Kld, p_Kcol, p_Da, ieq,&
+                                          Index, LowLink, idx, nscc)
           end do
 
           ! Generate list of strongly connected components?
@@ -1272,9 +1272,9 @@ contains
             ! coefficients
             do ieq = 1, rmatrix%NEQ
               if (index(ieq) .eq. 0)&
-                  call strongconnectMat79Dble(rstack, p_Kld, p_Kcol, p_Da, ieq,&
-                                              Index, LowLink, idx, nscc,&
-                                              p_IsccIdx, p_Iscc)
+                  call strongconnectMat79DP(rstack, p_Kld, p_Kcol, p_Da, ieq,&
+                                            Index, LowLink, idx, nscc,&
+                                            p_IsccIdx, p_Iscc)
             end do
           end if
 
@@ -1285,8 +1285,8 @@ contains
           ! coefficients
           do ieq = 1, rmatrix%NEQ
             if (index(ieq) .eq. 0)&
-                call strongconnectMat79Sngl(rstack, p_Kld, p_Kcol, p_Fa, ieq,&
-                                            Index, LowLink, idx, nscc)
+                call strongconnectMat79SP(rstack, p_Kld, p_Kcol, p_Fa, ieq,&
+                                          Index, LowLink, idx, nscc)
           end do
 
           ! Generate list of strongly connected components?
@@ -1303,9 +1303,9 @@ contains
             ! coefficients
             do ieq = 1, rmatrix%NEQ
               if (index(ieq) .eq. 0)&
-                  call strongconnectMat79Sngl(rstack, p_Kld, p_Kcol, p_Fa, ieq,&
-                                              Index, LowLink, idx, nscc,&
-                                              p_IsccIdx, p_Iscc)
+                  call strongconnectMat79SP(rstack, p_Kld, p_Kcol, p_Fa, ieq,&
+                                            Index, LowLink, idx, nscc,&
+                                            p_IsccIdx, p_Iscc)
             end do
           end if
 
@@ -1434,8 +1434,8 @@ contains
     !***************************************************************************
     ! Compute SCC based on double-based data for matrix format 7 and 9
 
-    recursive subroutine strongconnectMat79Dble(rstack, Kld, Kcol, Da, ieq, Index,&
-                                                LowLink, idx, nscc, IsccIdx, Iscc)
+    recursive subroutine strongconnectMat79DP(rstack, Kld, Kcol, Da, ieq, Index,&
+                                              LowLink, idx, nscc, IsccIdx, Iscc)
 
       real(DP), dimension(:), intent(in) :: Da
       integer, dimension(:), intent(in) :: Kld,Kcol
@@ -1463,8 +1463,8 @@ contains
 
         if (index(jeq) .eq. 0) then
           ! Successor JEQ has not yet been visited; recurse on it
-          call strongconnectMat79Dble(rstack, Kld, Kcol, Da, jeq, Index,&
-                                      LowLink, idx, nscc, IsccIdx, Iscc)
+          call strongconnectMat79DP(rstack, Kld, Kcol, Da, jeq, Index,&
+                                    LowLink, idx, nscc, IsccIdx, Iscc)
 
           LowLink(ieq) = min(LowLink(ieq), LowLink(jeq))
         elseif (stack_contains(rstack, jeq)) then
@@ -1503,13 +1503,13 @@ contains
 
       end if
 
-    end subroutine strongconnectMat79Dble
+    end subroutine strongconnectMat79DP
 
     !***************************************************************************
     ! Compute SCC based on single-based data for matrix format 7 and 9
 
-    recursive subroutine strongconnectMat79Sngl(rstack, Kld, Kcol, Fa, ieq, Index,&
-                                                LowLink, idx, nscc, IsccIdx, Iscc)
+    recursive subroutine strongconnectMat79SP(rstack, Kld, Kcol, Fa, ieq, Index,&
+                                              LowLink, idx, nscc, IsccIdx, Iscc)
 
       real(SP), dimension(:), intent(in) :: Fa
       integer, dimension(:), intent(in) :: Kld,Kcol
@@ -1537,8 +1537,8 @@ contains
 
         if (index(jeq) .eq. 0) then
           ! Successor JEQ has not yet been visited; recurse on it
-          call strongconnectMat79Sngl(rstack, Kld, Kcol, Fa, jeq, Index,&
-                                      LowLink, idx, nscc, IsccIdx, Iscc)
+          call strongconnectMat79SP(rstack, Kld, Kcol, Fa, jeq, Index,&
+                                    LowLink, idx, nscc, IsccIdx, Iscc)
 
           LowLink(ieq) = min(LowLink(ieq), LowLink(jeq))
         elseif (stack_contains(rstack, jeq)) then
@@ -1577,7 +1577,7 @@ contains
 
       end if
 
-    end subroutine strongconnectMat79Sngl
+    end subroutine strongconnectMat79SP
 
   end subroutine mchk_calcStrongConnComp
 

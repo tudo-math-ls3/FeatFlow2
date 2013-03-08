@@ -176,7 +176,7 @@ contains
       call storage_clear (ihandle)
     end if
 
-    call storage_getbase_int(rset%ihandle,rset%p_Idata)
+    call storage_getbase_Int(rset%ihandle,rset%p_Idata)
     rset%nmaxEntries = nelements
 
   end subroutine

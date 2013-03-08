@@ -27,17 +27,17 @@ module map
   use fsystem
   use genoutput
   use mapInt
-  use mapInt_Dble,  only : t_mapInt_Dble, map_release
-  use mapInt_Sngl,  only : t_mapInt_Sngl, map_release
+  use mapInt_DP,    only : t_mapInt_DP, map_release
+  use mapInt_SP,    only : t_mapInt_SP, map_release
   use mapInt_Int,   only : t_mapInt_Int, map_release
-  use mapDble,      only : t_mapDble, map_release
-  use mapDble_Dble, only : t_mapDble_Dble, map_release
-  use mapDble_Sngl, only : t_mapDble_Sngl, map_release
-  use mapDble_Int,  only : t_mapDble_Int, map_release
-  use mapSngl,      only : t_mapSngl, map_release
-  use mapSngl_Dble, only : t_mapSngl_Dble, map_release
-  use mapSngl_Sngl, only : t_mapSngl_Sngl, map_release
-  use mapSngl_Int,  only : t_mapSngl_Int, map_release
+  use mapDP,        only : t_mapDP, map_release
+  use mapDP_DP,     only : t_mapDP_DP, map_release
+  use mapDP_SP,     only : t_mapDP_SP, map_release
+  use mapDP_Int,    only : t_mapDP_Int, map_release
+  use mapSP,        only : t_mapSP, map_release
+  use mapSP_DP,     only : t_mapSP_DP, map_release
+  use mapSP_SP,     only : t_mapSP_SP, map_release
+  use mapSP_Int,    only : t_mapSP_Int, map_release
   use storage
 
   implicit none
@@ -49,18 +49,18 @@ module map
   public :: map_getbase
 
   interface map_getbase
-    module procedure map_getbase_int
-    module procedure map_getbase_int_int
-    module procedure map_getbase_int_dble
-    module procedure map_getbase_int_sngl
-    module procedure map_getbase_dble
-    module procedure map_getbase_dble_int
-    module procedure map_getbase_dble_dble
-    module procedure map_getbase_dble_sngl
-    module procedure map_getbase_sngl
-    module procedure map_getbase_sngl_int
-    module procedure map_getbase_sngl_dble
-    module procedure map_getbase_sngl_sngl
+    module procedure map_getbase_Int
+    module procedure map_getbase_Int_Int
+    module procedure map_getbase_Int_DP
+    module procedure map_getbase_Int_SP
+    module procedure map_getbase_DP
+    module procedure map_getbase_DP_Int
+    module procedure map_getbase_DP_DP
+    module procedure map_getbase_DP_SP
+    module procedure map_getbase_SP
+    module procedure map_getbase_SP_Int
+    module procedure map_getbase_SP_DP
+    module procedure map_getbase_SP_SP
   end interface
 
 !<constants>
@@ -98,20 +98,20 @@ module map
     ! Pointer to integer-valued map implementations
     type(t_mapInt),       pointer :: p_mapInt       => null()
     type(t_mapInt_Int),   pointer :: p_mapInt_Int   => null()
-    type(t_mapInt_Dble),  pointer :: p_mapInt_Dble  => null()
-    type(t_mapInt_Sngl),  pointer :: p_mapInt_Sngl  => null()
+    type(t_mapInt_DP),  pointer :: p_mapInt_DP  => null()
+    type(t_mapInt_SP),  pointer :: p_mapInt_SP  => null()
 
     ! Pointer to double-valued map implementations
-    type(t_mapDble),      pointer :: p_mapDble      => null()
-    type(t_mapDble_Int),  pointer :: p_mapDble_Int  => null()
-    type(t_mapDble_Dble), pointer :: p_mapDble_Dble => null()
-    type(t_mapDble_Sngl), pointer :: p_mapDble_Sngl => null()
+    type(t_mapDP),      pointer :: p_mapDP      => null()
+    type(t_mapDP_Int),  pointer :: p_mapDP_Int  => null()
+    type(t_mapDP_DP), pointer :: p_mapDP_DP => null()
+    type(t_mapDP_SP), pointer :: p_mapDP_SP => null()
 
     ! Pointer to single-valued map implementations
-    type(t_mapSngl),      pointer :: p_mapSngl      => null()
-    type(t_mapSngl_Int),  pointer :: p_mapSngl_Int  => null()
-    type(t_mapSngl_Dble), pointer :: p_mapSngl_Dble => null()
-    type(t_mapSngl_Sngl), pointer :: p_mapSngl_Sngl => null()
+    type(t_mapSP),      pointer :: p_mapSP      => null()
+    type(t_mapSP_Int),  pointer :: p_mapSP_Int  => null()
+    type(t_mapSP_DP), pointer :: p_mapSP_DP => null()
+    type(t_mapSP_SP), pointer :: p_mapSP_SP => null()
 
   end type t_map
 
@@ -149,34 +149,34 @@ contains
       allocate(rmap%p_mapInt_Int)
 
     case (MAP_INT_DOUBLE)
-      allocate(rmap%p_mapInt_Dble)
+      allocate(rmap%p_mapInt_DP)
 
     case (MAP_INT_SINGLE)
-      allocate(rmap%p_mapInt_Sngl)
+      allocate(rmap%p_mapInt_SP)
 
     case (MAP_DOUBLE)
-      allocate(rmap%p_mapDble)
+      allocate(rmap%p_mapDP)
 
     case (MAP_DOUBLE_INT)
-      allocate(rmap%p_mapDble_Int)
+      allocate(rmap%p_mapDP_Int)
 
     case (MAP_DOUBLE_DOUBLE)
-      allocate(rmap%p_mapDble_Dble)
+      allocate(rmap%p_mapDP_DP)
 
     case (MAP_DOUBLE_SINGLE)
-      allocate(rmap%p_mapDble_Sngl)
+      allocate(rmap%p_mapDP_SP)
 
     case (MAP_SINGLE)
-      allocate(rmap%p_mapSngl)
+      allocate(rmap%p_mapSP)
 
     case (MAP_SINGLE_INT)
-      allocate(rmap%p_mapSngl_Int)
+      allocate(rmap%p_mapSP_Int)
 
     case (MAP_SINGLE_DOUBLE)
-      allocate(rmap%p_mapSngl_Dble)
+      allocate(rmap%p_mapSP_DP)
 
     case (MAP_SINGLE_SINGLE)
-        allocate(rmap%p_mapSngl_Sngl)
+        allocate(rmap%p_mapSP_SP)
 
     case DEFAULT
       call output_line('Invalid map type!',&
@@ -212,56 +212,56 @@ contains
       deallocate(rmap%p_mapInt_INT)
     end if
 
-    if (associated(rmap%p_mapInt_Dble)) then
-      call map_release(rmap%p_mapInt_Dble)
-      deallocate(rmap%p_mapInt_Dble)
+    if (associated(rmap%p_mapInt_DP)) then
+      call map_release(rmap%p_mapInt_DP)
+      deallocate(rmap%p_mapInt_DP)
     end if
 
-    if (associated(rmap%p_mapInt_Sngl)) then
-      call map_release(rmap%p_mapInt_Sngl)
-      deallocate(rmap%p_mapInt_Sngl)
-    end if
-
-
-    if (associated(rmap%p_mapDble)) then
-      call map_release(rmap%p_mapDble)
-      deallocate(rmap%p_mapDble)
-    end if
-
-    if (associated(rmap%p_mapDble_Int)) then
-      call map_release(rmap%p_mapDble_Int)
-      deallocate(rmap%p_mapDble_Int)
-    end if
-
-    if (associated(rmap%p_mapDble_Dble)) then
-      call map_release(rmap%p_mapDble_Dble)
-      deallocate(rmap%p_mapDble_Dble)
-    end if
-
-    if (associated(rmap%p_mapDble_Sngl)) then
-      call map_release(rmap%p_mapDble_Sngl)
-      deallocate(rmap%p_mapDble_Sngl)
+    if (associated(rmap%p_mapInt_SP)) then
+      call map_release(rmap%p_mapInt_SP)
+      deallocate(rmap%p_mapInt_SP)
     end if
 
 
-    if (associated(rmap%p_mapSngl)) then
-      call map_release(rmap%p_mapSngl)
-      deallocate(rmap%p_mapSngl)
+    if (associated(rmap%p_mapDP)) then
+      call map_release(rmap%p_mapDP)
+      deallocate(rmap%p_mapDP)
     end if
 
-    if (associated(rmap%p_mapSngl_Int)) then
-      call map_release(rmap%p_mapSngl_Int)
-      deallocate(rmap%p_mapSngl_Int)
+    if (associated(rmap%p_mapDP_Int)) then
+      call map_release(rmap%p_mapDP_Int)
+      deallocate(rmap%p_mapDP_Int)
     end if
 
-    if (associated(rmap%p_mapSngl_Dble)) then
-      call map_release(rmap%p_mapSngl_Dble)
-      deallocate(rmap%p_mapSngl_Dble)
+    if (associated(rmap%p_mapDP_DP)) then
+      call map_release(rmap%p_mapDP_DP)
+      deallocate(rmap%p_mapDP_DP)
     end if
 
-    if (associated(rmap%p_mapSngl_Sngl)) then
-      call map_release(rmap%p_mapSngl_Sngl)
-      deallocate(rmap%p_mapSngl_Sngl)
+    if (associated(rmap%p_mapDP_SP)) then
+      call map_release(rmap%p_mapDP_SP)
+      deallocate(rmap%p_mapDP_SP)
+    end if
+
+
+    if (associated(rmap%p_mapSP)) then
+      call map_release(rmap%p_mapSP)
+      deallocate(rmap%p_mapSP)
+    end if
+
+    if (associated(rmap%p_mapSP_Int)) then
+      call map_release(rmap%p_mapSP_Int)
+      deallocate(rmap%p_mapSP_Int)
+    end if
+
+    if (associated(rmap%p_mapSP_DP)) then
+      call map_release(rmap%p_mapSP_DP)
+      deallocate(rmap%p_mapSP_DP)
+    end if
+
+    if (associated(rmap%p_mapSP_SP)) then
+      call map_release(rmap%p_mapSP_SP)
+      deallocate(rmap%p_mapSP_SP)
     end if
 
   end subroutine map_done
@@ -270,7 +270,7 @@ contains
 
 !<subroutine>
 
-  subroutine map_getbase_int(rmap, p_rmap)
+  subroutine map_getbase_Int(rmap, p_rmap)
 
 !<description>
     ! Returns a pointer to the integer-valued map implementation
@@ -294,13 +294,13 @@ contains
       nullify(p_rmap)
     end if
 
-  end subroutine map_getbase_int
+  end subroutine map_getbase_Int
 
   !************************************************************************
 
 !<subroutine>
 
-  subroutine map_getbase_int_int(rmap, p_rmap)
+  subroutine map_getbase_Int_Int(rmap, p_rmap)
 
 !<description>
     ! Returns a pointer to the integer-valued map implementation
@@ -324,13 +324,13 @@ contains
       nullify(p_rmap)
     end if
 
-  end subroutine map_getbase_int_int
+  end subroutine map_getbase_Int_Int
 
   !************************************************************************
 
 !<subroutine>
 
-  subroutine map_getbase_int_dble(rmap, p_rmap)
+  subroutine map_getbase_Int_DP(rmap, p_rmap)
 
 !<description>
     ! Returns a pointer to the integer-valued map implementation
@@ -344,23 +344,23 @@ contains
 
 !<output>
     ! Pointer to the map implementation
-    type(t_mapInt_Dble), pointer :: p_rmap
+    type(t_mapInt_DP), pointer :: p_rmap
 !</output>
 !</subroutine>
 
-    if (associated(rmap%p_mapInt_Dble)) then
-      p_rmap => rmap%p_mapInt_Dble
+    if (associated(rmap%p_mapInt_DP)) then
+      p_rmap => rmap%p_mapInt_DP
     else
       nullify(p_rmap)
     end if
 
-  end subroutine map_getbase_int_dble
+  end subroutine map_getbase_Int_DP
 
   !************************************************************************
 
 !<subroutine>
 
-  subroutine map_getbase_int_sngl(rmap, p_rmap)
+  subroutine map_getbase_Int_SP(rmap, p_rmap)
 
 !<description>
     ! Returns a pointer to the integer-valued map implementation
@@ -374,23 +374,23 @@ contains
 
 !<output>
     ! Pointer to the map implementation
-    type(t_mapInt_Sngl), pointer :: p_rmap
+    type(t_mapInt_SP), pointer :: p_rmap
 !</output>
 !</subroutine>
 
-    if (associated(rmap%p_mapInt_Sngl)) then
-      p_rmap => rmap%p_mapInt_Sngl
+    if (associated(rmap%p_mapInt_SP)) then
+      p_rmap => rmap%p_mapInt_SP
     else
       nullify(p_rmap)
     end if
 
-  end subroutine map_getbase_int_sngl
+  end subroutine map_getbase_Int_SP
 
   !************************************************************************
 
 !<subroutine>
 
-  subroutine map_getbase_dble(rmap, p_rmap)
+  subroutine map_getbase_DP(rmap, p_rmap)
 
 !<description>
     ! Returns a pointer to the double-valued map implementation
@@ -404,23 +404,23 @@ contains
 
 !<output>
     ! Pointer to the map implementation
-    type(t_mapDble), pointer :: p_rmap
+    type(t_mapDP), pointer :: p_rmap
 !</output>
 !</subroutine>
 
-    if (associated(rmap%p_mapDble)) then
-      p_rmap => rmap%p_mapDble
+    if (associated(rmap%p_mapDP)) then
+      p_rmap => rmap%p_mapDP
     else
       nullify(p_rmap)
     end if
 
-  end subroutine map_getbase_dble
+  end subroutine map_getbase_DP
 
   !************************************************************************
 
 !<subroutine>
 
-  subroutine map_getbase_dble_int(rmap, p_rmap)
+  subroutine map_getbase_DP_Int(rmap, p_rmap)
 
 !<description>
     ! Returns a pointer to the double-valued map implementation
@@ -434,23 +434,23 @@ contains
 
 !<output>
     ! Pointer to the map implementation
-    type(t_mapDble_Int), pointer :: p_rmap
+    type(t_mapDP_Int), pointer :: p_rmap
 !</output>
 !</subroutine>
 
-    if (associated(rmap%p_mapDble_Int)) then
-      p_rmap => rmap%p_mapDble_Int
+    if (associated(rmap%p_mapDP_Int)) then
+      p_rmap => rmap%p_mapDP_Int
     else
       nullify(p_rmap)
     end if
 
-  end subroutine map_getbase_dble_int
+  end subroutine map_getbase_DP_Int
 
 !************************************************************************
 
 !<subroutine>
 
-  subroutine map_getbase_dble_dble(rmap, p_rmap)
+  subroutine map_getbase_DP_DP(rmap, p_rmap)
 
 !<description>
     ! Returns a pointer to the double-valued map implementation
@@ -464,23 +464,23 @@ contains
 
 !<output>
     ! Pointer to the map implementation
-    type(t_mapDble_Dble), pointer :: p_rmap
+    type(t_mapDP_DP), pointer :: p_rmap
 !</output>
 !</subroutine>
 
-    if (associated(rmap%p_mapDble_Dble)) then
-      p_rmap => rmap%p_mapDble_Dble
+    if (associated(rmap%p_mapDP_DP)) then
+      p_rmap => rmap%p_mapDP_DP
     else
       nullify(p_rmap)
     end if
 
-  end subroutine map_getbase_dble_dble
+  end subroutine map_getbase_DP_DP
 
   !************************************************************************
 
 !<subroutine>
 
-  subroutine map_getbase_dble_sngl(rmap, p_rmap)
+  subroutine map_getbase_DP_SP(rmap, p_rmap)
 
 !<description>
     ! Returns a pointer to the double-valued map implementation
@@ -494,23 +494,23 @@ contains
 
 !<output>
     ! Pointer to the map implementation
-    type(t_mapDble_Sngl), pointer :: p_rmap
+    type(t_mapDP_SP), pointer :: p_rmap
 !</output>
 !</subroutine>
 
-    if (associated(rmap%p_mapDble_Sngl)) then
-      p_rmap => rmap%p_mapDble_Sngl
+    if (associated(rmap%p_mapDP_SP)) then
+      p_rmap => rmap%p_mapDP_SP
     else
       nullify(p_rmap)
     end if
 
-  end subroutine map_getbase_dble_sngl
+  end subroutine map_getbase_DP_SP
 
   !************************************************************************
 
 !<subroutine>
 
-  subroutine map_getbase_sngl(rmap, p_rmap)
+  subroutine map_getbase_SP(rmap, p_rmap)
 
 !<description>
     ! Returns a pointer to the single-valued map implementation
@@ -524,23 +524,23 @@ contains
 
 !<output>
     ! Pointer to the map implementation
-    type(t_mapSngl), pointer :: p_rmap
+    type(t_mapSP), pointer :: p_rmap
 !</output>
 !</subroutine>
 
-    if (associated(rmap%p_mapSngl)) then
-      p_rmap => rmap%p_mapSngl
+    if (associated(rmap%p_mapSP)) then
+      p_rmap => rmap%p_mapSP
     else
       nullify(p_rmap)
     end if
 
-  end subroutine map_getbase_sngl
+  end subroutine map_getbase_SP
 
   !************************************************************************
 
 !<subroutine>
 
-  subroutine map_getbase_sngl_int(rmap, p_rmap)
+  subroutine map_getbase_SP_Int(rmap, p_rmap)
 
 !<description>
     ! Returns a pointer to the single-valued map implementation
@@ -554,23 +554,23 @@ contains
 
 !<output>
     ! Pointer to the map implementation
-    type(t_mapSngl_Int), pointer :: p_rmap
+    type(t_mapSP_Int), pointer :: p_rmap
 !</output>
 !</subroutine>
 
-    if (associated(rmap%p_mapSngl_Int)) then
-      p_rmap => rmap%p_mapSngl_Int
+    if (associated(rmap%p_mapSP_Int)) then
+      p_rmap => rmap%p_mapSP_Int
     else
       nullify(p_rmap)
     end if
 
-  end subroutine map_getbase_sngl_int
+  end subroutine map_getbase_SP_Int
 
   !************************************************************************
 
 !<subroutine>
 
-  subroutine map_getbase_sngl_dble(rmap, p_rmap)
+  subroutine map_getbase_SP_DP(rmap, p_rmap)
 
 !<description>
     ! Returns a pointer to the single-valued map implementation
@@ -584,23 +584,23 @@ contains
 
 !<output>
     ! Pointer to the map implementation
-    type(t_mapSngl_Dble), pointer :: p_rmap
+    type(t_mapSP_DP), pointer :: p_rmap
 !</output>
 !</subroutine>
 
-    if (associated(rmap%p_mapSngl_Dble)) then
-      p_rmap => rmap%p_mapSngl_Dble
+    if (associated(rmap%p_mapSP_DP)) then
+      p_rmap => rmap%p_mapSP_DP
     else
       nullify(p_rmap)
     end if
 
-  end subroutine map_getbase_sngl_dble
+  end subroutine map_getbase_SP_DP
 
   !************************************************************************
 
 !<subroutine>
 
-  subroutine map_getbase_sngl_sngl(rmap, p_rmap)
+  subroutine map_getbase_SP_SP(rmap, p_rmap)
 
 !<description>
     ! Returns a pointer to the single-valued map implementation
@@ -614,16 +614,16 @@ contains
 
 !<output>
     ! Pointer to the map implementation
-    type(t_mapSngl_Sngl), pointer :: p_rmap
+    type(t_mapSP_SP), pointer :: p_rmap
 !</output>
 !</subroutine>
 
-    if (associated(rmap%p_mapSngl_Sngl)) then
-      p_rmap => rmap%p_mapSngl_Sngl
+    if (associated(rmap%p_mapSP_SP)) then
+      p_rmap => rmap%p_mapSP_SP
     else
       nullify(p_rmap)
     end if
 
-  end subroutine map_getbase_sngl_sngl
+  end subroutine map_getbase_SP_SP
 
 end module map

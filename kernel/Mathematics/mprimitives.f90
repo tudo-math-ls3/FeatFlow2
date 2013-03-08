@@ -16,28 +16,28 @@
 !#  1.) mprim_getParabolicProfile
 !#      -> Calculates the value of a parabolic profile along a line.
 !#
-!#  2.) mprim_invertMatrixDble
+!#  2.) mprim_invertMatrix
 !#      -> Invert a full matrix
 !#
 !#  3.) mprim_kronecker
 !#      -> Compute Kronecker delta symbol
 !#
-!#  4.) mprim_invert2x2MatrixDirectDble
+!#  4.) mprim_invert2x2MatrixDirect
 !#      -> Inverts a 2x2 matrix directly without pivoting.
 !#
-!#  5.) mprim_invert3x3MatrixDirectDble
+!#  5.) mprim_invert3x3MatrixDirect
 !#      -> Inverts a 3x3 matrix directly without pivoting.
 !#
-!#  6.) mprim_invert4x4MatrixDirectDble
+!#  6.) mprim_invert4x4MatrixDirect
 !#      -> Inverts a 4x4 matrix directly without pivoting.
 !#
-!#  7.) mprim_invert5x5MatrixDirectDble
+!#  7.) mprim_invert5x5MatrixDirect
 !#      -> Inverts a 5x5 matrix directly without pivoting.
 !#
-!#  8.) mprim_invert6x6MatrixDirectDble
+!#  8.) mprim_invert6x6MatrixDirect
 !#      -> Inverts a 6x6 matrix directly without pivoting.
 !#
-!#  9.) mprim_invertMatrixPivotDble
+!#  9.) mprim_invertMatrixPivot
 !#      -> Inverts a n x n matrix directly with pivoting.
 !#
 !# 10.) mprim_signum
@@ -71,10 +71,10 @@
 !# 19.) mprim_radToDeg
 !#      -> Converts RAD to DEG
 !#
-!# 20.) mprim_solve2x2DirectDble
+!# 20.) mprim_solve2x2Direct
 !#      -> Solves a 2x2 matrix directly without pivoting.
 !#
-!# 21.) mprim_solve3x3DirectDble
+!# 21.) mprim_solve3x3Direct
 !#      -> Solves a 3x3 matrix directly without pivoting.
 !#
 !# 22.) mprim_solve2x2BandDiag
@@ -105,14 +105,14 @@ module mprimitives
   private
 
   interface mprim_signum
-    module procedure mprim_signum_dble
-    module procedure mprim_signum_real
-    module procedure mprim_signum_int
+    module procedure mprim_signumDP
+    module procedure mprim_signumSP
+    module procedure mprim_signumInt
   end interface
 
   interface mprim_SVD_backsubst
-    module procedure  mprim_SVD_backsubst1
-    module procedure  mprim_SVD_backsubst2
+    module procedure mprim_SVD_backsubst1
+    module procedure mprim_SVD_backsubst2
   end interface
 
   ! Alternative name for backward compatibility
@@ -121,65 +121,97 @@ module mprimitives
   end interface
 
   interface mprim_invertMatrix
-    module procedure mprim_invertMatrixDble
+    module procedure mprim_invertMatrixDP
+  end interface
+
+  interface mprim_invertMatrixPivot
+    module procedure mprim_invertMatrixPivotDP
+  end interface
+
+  interface mprim_invert2x2MatrixDirect
+    module procedure mprim_invert2x2MatrixDirectDP
+  end interface
+
+  interface mprim_invert3x3MatrixDirect
+    module procedure mprim_invert3x3MatrixDirectDP
+  end interface
+
+  interface mprim_invert4x4MatrixDirect
+    module procedure mprim_invert4x4MatrixDirectDP
+  end interface
+
+  interface mprim_invert5x5MatrixDirect
+    module procedure mprim_invert5x5MatrixDirectDP
+  end interface
+
+  interface mprim_invert6x6MatrixDirect
+    module procedure mprim_invert6x6MatrixDirectDP
   end interface
 
   interface mprim_stdDeviation
-    module procedure mprim_stdDeviationDble
+    module procedure mprim_stdDeviationDP
   end interface
 
   interface mprim_meanDeviation
-    module procedure mprim_meanDeviationDble
+    module procedure mprim_meanDeviationDP
   end interface
 
   interface mprim_meanValue
-    module procedure mprim_meanValueDble
+    module procedure mprim_meanValueDP
+  end interface
+
+  interface mprim_solve2x2Direct
+    module procedure mprim_solve2x2DirectDP
+  end interface
+
+  interface mprim_solve3x3Direct
+    module procedure mprim_solve3x3DirectDP
   end interface
 
   interface mprim_minmod2
-    module procedure mprim_minmod2Dble
-    module procedure mprim_minmod2Sngl
+    module procedure mprim_minmod2DP
+    module procedure mprim_minmod2SP
   end interface
 
   interface mprim_minmod3
-    module procedure mprim_minmod3Dble
-    module procedure mprim_minmod3Sngl
+    module procedure mprim_minmod3DP
+    module procedure mprim_minmod3SP
   end interface
 
   interface mprim_softmax
-    module procedure mprim_softmax2Dble
-    module procedure mprim_softmax3Dble
-    module procedure mprim_softmax2Sngl
-    module procedure mprim_softmax3Sngl
+    module procedure mprim_softmax2DP
+    module procedure mprim_softmax3DP
+    module procedure mprim_softmax2SP
+    module procedure mprim_softmax3SP
   end interface
 
   interface mprim_softmin
-    module procedure mprim_softmin2Dble
-    module procedure mprim_softmin3Dble
-    module procedure mprim_softmin2Sngl
-    module procedure mprim_softmin3Sngl
+    module procedure mprim_softmin2DP
+    module procedure mprim_softmin3DP
+    module procedure mprim_softmin2SP
+    module procedure mprim_softmin3SP
   end interface
 
   public :: mprim_getParabolicProfile
-  public :: mprim_invertMatrix,mprim_invertMatrixDble
+  public :: mprim_invertMatrix
   public :: mprim_kronecker
-  public :: mprim_invert2x2MatrixDirectDble
-  public :: mprim_invert3x3MatrixDirectDble
-  public :: mprim_invert4x4MatrixDirectDble
-  public :: mprim_invert5x5MatrixDirectDble
-  public :: mprim_invert6x6MatrixDirectDble
-  public :: mprim_invertMatrixPivotDble
+  public :: mprim_invert2x2MatrixDirect
+  public :: mprim_invert3x3MatrixDirect
+  public :: mprim_invert4x4MatrixDirect
+  public :: mprim_invert5x5MatrixDirect
+  public :: mprim_invert6x6MatrixDirect
+  public :: mprim_invertMatrixPivot
   public :: mprim_signum
   public :: mprim_linearRescale
   public :: mprim_quadraticInterpolation
   public :: mprim_SVD_factorise
   public :: mprim_SVD_backsubst,mprim_SVD_backsubst1,mprim_SVD_backsubst2
-  public :: mprim_stdDeviation,mprim_stdDeviationDble
-  public :: mprim_meanDeviation,mprim_meanDeviationDble
-  public :: mprim_meanValue,mprim_meanValueDble
+  public :: mprim_stdDeviation
+  public :: mprim_meanDeviation
+  public :: mprim_meanValue
   public :: mprim_degToRad,mprim_radToDeg
-  public :: mprim_solve2x2DirectDble
-  public :: mprim_solve3x3DirectDble
+  public :: mprim_solve2x2Direct
+  public :: mprim_solve3x3Direct
   public :: mprim_solve2x2BandDiag
   public :: mprim_minmod2
   public :: mprim_minmod3
@@ -227,7 +259,7 @@ contains
 
 !<function>
 
-  elemental real(DP) function mprim_signum_dble (dval)
+  elemental real(DP) function mprim_signumDP (dval)
 
 !<description>
   ! Signum function
@@ -245,11 +277,11 @@ contains
 
     ! Result: Value of the parbolic profile on position dpos on the line segment
     if (dval .lt. 0.0_DP) then
-      mprim_signum_dble = -1.0_DP
+      mprim_signumDP = -1.0_DP
     else if (dval .gt. 0.0_DP) then
-      mprim_signum_dble = 1.0_DP
+      mprim_signumDP = 1.0_DP
     else
-      mprim_signum_dble = 0.0_DP
+      mprim_signumDP = 0.0_DP
     end if
 
   end function
@@ -258,7 +290,7 @@ contains
 
 !<function>
 
-  elemental real(SP) function mprim_signum_real (fval)
+  elemental real(SP) function mprim_signumSP (fval)
 
 !<description>
   ! Signum function.
@@ -276,11 +308,11 @@ contains
 
     ! Result: Value of the parbolic profile on position dpos on the line segment
     if (fval .lt. 0.0_SP) then
-      mprim_signum_real = -1.0_SP
+      mprim_signumSP = -1.0_SP
     else if (fval .gt. 0.0_SP) then
-      mprim_signum_real = 1.0_SP
+      mprim_signumSP = 1.0_SP
     else
-      mprim_signum_real = 0.0_SP
+      mprim_signumSP = 0.0_SP
     end if
 
   end function
@@ -289,7 +321,7 @@ contains
 
 !<function>
 
-  elemental integer function mprim_signum_int (ival)
+  elemental integer function mprim_signumInt (ival)
 
 !<description>
   ! Signum function.
@@ -308,11 +340,11 @@ contains
     ! Result: Value of the parbolic profile on position dpos on the line segment
     select case (ival)
       case (:-1)
-        mprim_signum_int = -1
+        mprim_signumInt = -1
       case (0)
-        mprim_signum_int = 0
+        mprim_signumInt = 0
       case default
-        mprim_signum_int = 1
+        mprim_signumInt = 1
     end select
 
   end function
@@ -321,7 +353,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine mprim_invertMatrixDble(Da,Df,Dx,ndim,ipar,bsuccess)
+  pure subroutine mprim_invertMatrixDP(Da,Df,Dx,ndim,ipar,bsuccess)
 
 !<description>
     ! This subroutine performs the direct inversion of a NxN system.
@@ -488,14 +520,14 @@ contains
         end if
 
       case (2)
-        call mprim_invert2x2MatrixDirectDble(Da,Db,bsuccess)
+        call mprim_invert2x2MatrixDirectDP(Da,Db,bsuccess)
         if (.not. bsuccess) return
         ! Dx=matmul(Db,Df)
         Dx(1) = Db(1,1)*Df(1) + Db(1,2)*Df(2)
         Dx(2) = Db(2,1)*Df(1) + Db(2,2)*Df(2)
 
       case (3)
-        call mprim_invert3x3MatrixDirectDble(Da,Db, bsuccess)
+        call mprim_invert3x3MatrixDirectDP(Da,Db, bsuccess)
         if (.not. bsuccess) return
         ! Dx=matmul(Db,Df)
         Dx(1) = Db(1,1)*Df(1) + Db(1,2)*Df(2) + Db(1,3)*Df(3)
@@ -503,7 +535,7 @@ contains
         Dx(3) = Db(3,1)*Df(1) + Db(3,2)*Df(2) + Db(3,3)*Df(3)
 
       case (4)
-        call mprim_invert4x4MatrixDirectDble(Da,Db,bsuccess)
+        call mprim_invert4x4MatrixDirectDP(Da,Db,bsuccess)
         if (.not. bsuccess) return
         ! Dx=matmul(Db,Df)
         Dx(1) = Db(1,1)*Df(1) + Db(1,2)*Df(2) &
@@ -516,7 +548,7 @@ contains
               + Db(4,3)*Df(3) + Db(4,4)*Df(4)
 
       case (5)
-        call mprim_invert5x5MatrixDirectDble(Da,Db,bsuccess)
+        call mprim_invert5x5MatrixDirectDP(Da,Db,bsuccess)
         if (.not. bsuccess) return
         ! Dx=matmul(Db,Df)
         Dx(1) = Db(1,1)*Df(1) + Db(1,2)*Df(2) &
@@ -536,7 +568,7 @@ contains
               + Db(5,5)*Df(5)
 
       case (6)
-        call mprim_invert6x6MatrixDirectDble(Da,Db,bsuccess)
+        call mprim_invert6x6MatrixDirectDP(Da,Db,bsuccess)
         if (.not. bsuccess) return
         ! Dx=matmul(Db,Df)
         Dx(1) = Db(1,1)*Df(1) + Db(1,2)*Df(2) &
@@ -571,13 +603,13 @@ contains
 
     bsuccess = .true.
 
-  end subroutine mprim_invertMatrixDble
+  end subroutine mprim_invertMatrixDP
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  pure subroutine mprim_invert2x2MatrixDirectDble(Da,Db,bsuccess)
+  pure subroutine mprim_invert2x2MatrixDirectDP(Da,Db,bsuccess)
 
 !<description>
   ! This subroutine directly inverts a 2x2 system without any pivoting.
@@ -619,13 +651,13 @@ contains
       bsuccess = .false.
     end if
 
-  end subroutine mprim_invert2x2MatrixDirectDble
+  end subroutine mprim_invert2x2MatrixDirectDP
 
     ! ***************************************************************************
 
 !<subroutine>
 
-  pure subroutine mprim_invert3x3MatrixDirectDble(Da,Db,bsuccess)
+  pure subroutine mprim_invert3x3MatrixDirectDP(Da,Db,bsuccess)
 
 !<description>
   ! This subroutine directly inverts a 3x3 system without any pivoting.
@@ -675,13 +707,13 @@ contains
       bsuccess = .false.
     end if
 
-  end subroutine mprim_invert3x3MatrixDirectDble
+  end subroutine mprim_invert3x3MatrixDirectDP
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  pure subroutine mprim_invert4x4MatrixDirectDble(Da,Db,bsuccess)
+  pure subroutine mprim_invert4x4MatrixDirectDP(Da,Db,bsuccess)
 
 !<description>
   ! This subroutine directly inverts a 4x4 system without any pivoting.
@@ -833,13 +865,13 @@ contains
         bsuccess = .false.
       end if
 
-  end subroutine mprim_invert4x4MatrixDirectDble
+  end subroutine mprim_invert4x4MatrixDirectDP
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  pure subroutine mprim_invert5x5MatrixDirectDble(Da,Db,bsuccess)
+  pure subroutine mprim_invert5x5MatrixDirectDP(Da,Db,bsuccess)
 
 !<description>
   ! This subroutine directly inverts a 5x5 system without any pivoting.
@@ -972,13 +1004,13 @@ contains
       bsuccess = .false.
     end if
 
-  end subroutine mprim_invert5x5MatrixDirectDble
+  end subroutine mprim_invert5x5MatrixDirectDP
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  pure subroutine mprim_invert6x6MatrixDirectDble(Da,Db,bsuccess)
+  pure subroutine mprim_invert6x6MatrixDirectDP(Da,Db,bsuccess)
 
 !<description>
   ! This subroutine directly inverts a 6x6 system without any pivoting.
@@ -1219,13 +1251,13 @@ contains
 
     end if
 
-  end subroutine mprim_invert6x6MatrixDirectDble
+  end subroutine mprim_invert6x6MatrixDirectDP
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  pure subroutine mprim_invertMatrixPivotDble(Da,ndim,bsuccess)
+  pure subroutine mprim_invertMatrixPivotDP(Da,ndim,bsuccess)
 
 !<description>
   ! This subroutine directly inverts a (ndim x ndim) system with pivoting.
@@ -1336,13 +1368,13 @@ contains
 
     bsuccess = .true.
 
-  end subroutine mprim_invertMatrixPivotDble
+  end subroutine mprim_invertMatrixPivotDP
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine mprim_invertMatrixSngl(Fa,Ff,Fx,ndim,ipar,bsuccess)
+  subroutine mprim_invertMatrixSP(Fa,Ff,Fx,ndim,ipar,bsuccess)
 
 !<description>
     ! This subroutine performs the direct inversion of a NxN system.
@@ -1602,7 +1634,7 @@ contains
 
     bsuccess = .true.
 
-  end subroutine mprim_invertMatrixSngl
+  end subroutine mprim_invertMatrixSP
 
   ! ***************************************************************************
 
@@ -2475,7 +2507,7 @@ contains
 
 !<function>
 
-  pure function mprim_stdDeviationDble(Dval) result(stdDev)
+  pure function mprim_stdDeviationDP(Dval) result(stdDev)
 
 !<description>
     ! This function calculates the standard deviation of the given data
@@ -2514,13 +2546,13 @@ contains
 
     stdDev = sqrt(stdDev/real(size(Dval), DP))
 
-  end function mprim_stdDeviationDble
+  end function mprim_stdDeviationDP
 
   !************************************************************************
 
 !<function>
 
-  pure function mprim_stdDeviationSngl(Fval) result(stdDev)
+  pure function mprim_stdDeviationSP(Fval) result(stdDev)
 
 !<description>
     ! This function calculates the standard deviation of the given data
@@ -2559,7 +2591,7 @@ contains
 
     stdDev = sqrt(stdDev/real(size(Fval), SP))
 
-  end function mprim_stdDeviationSngl
+  end function mprim_stdDeviationSP
 
   !************************************************************************
 
@@ -2610,7 +2642,7 @@ contains
 
 !<function>
 
-  pure function mprim_meanDeviationDble(Dval) result(meanDev)
+  pure function mprim_meanDeviationDP(Dval) result(meanDev)
 
 !<description>
     ! This function calculates the mean deviation of the given data
@@ -2649,13 +2681,13 @@ contains
 
     meandev = meanDev/real(size(Dval), DP)
 
-  end function mprim_meanDeviationDble
+  end function mprim_meanDeviationDP
 
   !************************************************************************
 
 !<function>
 
-  pure function mprim_meanDeviationSngl(Fval) result(meanDev)
+  pure function mprim_meanDeviationSP(Fval) result(meanDev)
 
 !<description>
     ! This function calculates the mean deviation of the given data
@@ -2694,7 +2726,7 @@ contains
 
     meanDev = meanDev/real(size(Fval), SP)
 
-  end function mprim_meanDeviationSngl
+  end function mprim_meanDeviationSP
 
   !************************************************************************
 
@@ -2745,7 +2777,7 @@ contains
 
 !<function>
 
-  pure function mprim_meanValueDble(Dval) result(meanVal)
+  pure function mprim_meanValueDP(Dval) result(meanVal)
 
 !<description>
     ! This function calculates the mean value of the given data
@@ -2773,13 +2805,13 @@ contains
     end do
 
     meanVal = meanVal/real(size(Dval), DP)
-  end function mprim_meanValueDble
+  end function mprim_meanValueDP
 
   !************************************************************************
 
 !<function>
 
-  pure function mprim_meanValueSngl(Fval) result(meanVal)
+  pure function mprim_meanValueSP(Fval) result(meanVal)
 
 !<description>
     ! This function calculates the mean value of the given data
@@ -2807,7 +2839,7 @@ contains
     end do
 
     meanVal = meanVal/real(size(Fval), SP)
-  end function mprim_meanValueSngl
+  end function mprim_meanValueSP
 
   !************************************************************************
 
@@ -2896,7 +2928,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine mprim_solve2x2DirectDble(Da,Db)
+  pure subroutine mprim_solve2x2DirectDP(Da,Db)
 
 !<description>
   ! This subroutine directly solves a 2x2 system without any pivoting.
@@ -2936,7 +2968,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine mprim_solve3x3DirectDble(Da,Db)
+  pure subroutine mprim_solve3x3DirectDP(Da,Db)
 
 !<description>
   ! This subroutine directly solves a 3x3 system without any pivoting.
@@ -3089,7 +3121,7 @@ contains
 
 !<function>
 
-  elemental function mprim_minmod2Dble(a,b) result (c)
+  elemental function mprim_minmod2DP(a,b) result (c)
 
 !<description>
     ! The minmod functions returns zero if the two arguments a and b
@@ -3117,7 +3149,7 @@ contains
 
 !<function>
 
-  elemental function mprim_minmod2Sngl(a,b) result (c)
+  elemental function mprim_minmod2SP(a,b) result (c)
 
 !<description>
     ! The minmod functions returns zero if the two arguments a and b
@@ -3145,7 +3177,7 @@ contains
 
 !<function>
 
-  elemental function mprim_minmod3Dble(a,b,c) result (d)
+  elemental function mprim_minmod3DP(a,b,c) result (d)
 
 !<description>
     ! The minmod functions returns zero if the two arguments a and b
@@ -3175,7 +3207,7 @@ contains
 
 !<function>
 
-  elemental function mprim_minmod3Sngl(a,b,c) result (d)
+  elemental function mprim_minmod3SP(a,b,c) result (d)
 
 !<description>
     ! The minmod functions returns zero if the two arguments a and b
@@ -3205,7 +3237,7 @@ contains
 
 !<function>
 
-  elemental function mprim_softmax2Dble(a,b) result (c)
+  elemental function mprim_softmax2DP(a,b) result (c)
 
 !<description>
     ! The softmax function computes the maximum value of the given
@@ -3240,7 +3272,7 @@ contains
 
 !<function>
 
-  elemental function mprim_softmax3Dble(a,b,c) result (d)
+  elemental function mprim_softmax3DP(a,b,c) result (d)
 
 !<description>
     ! The softmax function computes the maximum value of the given
@@ -3276,7 +3308,7 @@ contains
 
 !<function>
 
-  elemental function mprim_softmax2Sngl(a,b) result (c)
+  elemental function mprim_softmax2SP(a,b) result (c)
 
 !<description>
     ! The softmax function computes the maximum value of the given
@@ -3311,7 +3343,7 @@ contains
 
 !<function>
 
-  elemental function mprim_softmax3Sngl(a,b,c) result (d)
+  elemental function mprim_softmax3SP(a,b,c) result (d)
 
 !<description>
     ! The softmax function computes the maximum value of the given
@@ -3347,7 +3379,7 @@ contains
 
 !<function>
 
-  elemental function mprim_softmin2Dble(a,b) result (c)
+  elemental function mprim_softmin2DP(a,b) result (c)
 
 !<description>
     ! The softmin function computes the minimum value of the given
@@ -3382,7 +3414,7 @@ contains
 
 !<function>
 
-  elemental function mprim_softmin3Dble(a,b,c) result (d)
+  elemental function mprim_softmin3DP(a,b,c) result (d)
 
 !<description>
     ! The softmin function computes the minimum value of the given
@@ -3418,7 +3450,7 @@ contains
 
 !<function>
 
-  elemental function mprim_softmin2Sngl(a,b) result (c)
+  elemental function mprim_softmin2SP(a,b) result (c)
 
 !<description>
     ! The softmin function computes the minimum value of the given
@@ -3453,7 +3485,7 @@ contains
 
 !<function>
 
-  elemental function mprim_softmin3Sngl(a,b,c) result (d)
+  elemental function mprim_softmin3SP(a,b,c) result (d)
 
 !<description>
     ! The softmin function computes the minimum value of the given

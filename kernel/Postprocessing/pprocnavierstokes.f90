@@ -1562,7 +1562,7 @@ contains
       ! all the elements we can handle simultaneously.
       if (p_rdiscr%h_IelementDistr .eq. ST_NOHANDLE) then
         nelements = nelementsInRegion
-        call lalg_copyVectorInt(IelementsInRegion,IcurrentElementSet)
+        call lalg_copyVector(IelementsInRegion,IcurrentElementSet)
         do iel=1,nelements
           IelementPointer(iel) = iel
         end do
@@ -1686,7 +1686,7 @@ contains
       ! all the elements we can handle simultaneously.
       if (p_rdiscr%h_IelementDistr .eq. ST_NOHANDLE) then
         nelements = nelementsInRegion
-        call lalg_copyVectorInt(IelementsInRegion,IcurrentElementSet)
+        call lalg_copyVector(IelementsInRegion,IcurrentElementSet)
         do iel=1,nelements
           IelementPointer(iel) = iel
         end do
@@ -2758,7 +2758,7 @@ contains
     ! to the first vertex of element 1, which is usually not
     ! vertex 1 of the triangulation!
 
-    call lalg_vectorAddScalarDble (p_Dx,-p_Dx(1))
+    call lalg_vectorAddScalar (p_Dx,-p_Dx(1))
 
     ! Release temp memory, finish
     call storage_free (haux)

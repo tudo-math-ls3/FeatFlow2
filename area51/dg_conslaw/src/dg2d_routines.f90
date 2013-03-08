@@ -9236,7 +9236,7 @@ contains
 !
 !             DilocMat = 1/ddet*DilocMat
 
-           call mprim_invert3x3MatrixDirectDble(DlocMat,DilocMat,bsuccess)
+           call mprim_invert3x3MatrixDirect(DlocMat,DilocMat,bsuccess)
 
 
           elseif (indof.eq.6) then
@@ -9248,7 +9248,7 @@ contains
 !                DilocMat(ii,ii) = 1.0_dp/DlocMat(ii,ii)
 !             end do
              
-             call mprim_invert6x6MatrixDirectDble(DlocMat,DilocMat,bsuccess)
+             call mprim_invert6x6MatrixDirect(DlocMat,DilocMat,bsuccess)
           
           elseif (indof.eq.1) then
 
@@ -9256,15 +9256,15 @@ contains
           
           elseif (indof.eq.2) then
              
-             call mprim_invert2x2MatrixDirectDble(DlocMat,DilocMat,bsuccess)
+             call mprim_invert2x2MatrixDirect(DlocMat,DilocMat,bsuccess)
              
           elseif (indof.eq.4) then
              
-             call mprim_invert4x4MatrixDirectDble(DlocMat,DilocMat,bsuccess)
+             call mprim_invert4x4MatrixDirect(DlocMat,DilocMat,bsuccess)
              
           elseif (indof.eq.5) then
              
-             call mprim_invert5x5MatrixDirectDble(DlocMat,DilocMat,bsuccess)
+             call mprim_invert5x5MatrixDirect(DlocMat,DilocMat,bsuccess)
              
           end if
 

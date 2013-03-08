@@ -562,7 +562,7 @@ contains
     do while (ios .eq. 0)
 
       ! Read a line from the file into sbuf
-      call preadlinefromfile (iunit, sdata, isbuflen, ios)
+      call io_readlinefromfile (iunit, sdata, isbuflen, ios)
       ilinenum = ilinenum + 1
 
       if (isbuflen .ne. 0) then

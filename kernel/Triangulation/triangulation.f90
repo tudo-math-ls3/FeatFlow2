@@ -5140,7 +5140,7 @@ contains
       ! Copy the nodal information of vertices and edges from the
       ! coarse mesh to the nodal information about the new vertices
       ! on the fine mesh!
-      call lalg_copyVectorInt(p_InodalPropertySource,&
+      call lalg_copyVector(p_InodalPropertySource,&
                               p_InodalPropertyDest, NVTsrc+NMTsrc)
 
       ! The treatment of faces is slightly more difficult. For pure
@@ -5566,7 +5566,7 @@ contains
           ! have to initialise that part of the array!
           call storage_getbase_int (&
               rtriangulation%h_InodalProperty,p_InodalProperty)
-          call lalg_clearVectorInt (&
+          call lalg_clearVector (&
               p_InodalProperty(nnodes-rtriangulation%InelOfType(TRIA_NVEQUAD2D)+1:))
         end if
 
@@ -7125,7 +7125,7 @@ contains
         rtriaDest%h_InodalProperty,p_InodalPropertyDest)
 
     ! Copy the first part of InodalProperty
-    call lalg_copyVectorInt(p_InodalPropertySrc(1:rtriangulation%NVT),&
+    call lalg_copyVector(p_InodalPropertySrc(1:rtriangulation%NVT),&
         p_InodalPropertyDest(1:rtriangulation%NVT))
 
     ! If new nodal property information tags are present, initialise the nodal property
@@ -7743,7 +7743,7 @@ contains
     end do
 
     ! Abuse the IelementQueue array as group pointer, it is large enough.
-    call lalg_copyVectorInt(IcellIndex,IelementQueue)
+    call lalg_copyVector(IcellIndex,IelementQueue)
 
     ! Loop through the elements and collect them.
     do iel = 1,rtriangulation%NEL
@@ -8239,7 +8239,7 @@ contains
     ! To compute the neighbours, we simply mark them and collect them later.
     ! First allocate a flag array for all elements in the mesh.
     allocate(IelementFlag(rtriangulation%NEL))
-    call lalg_clearVectorInt(IelementFlag,rtriangulation%NEL)
+    call lalg_clearVector(IelementFlag,rtriangulation%NEL)
 
     ! Mark all elements in the submesh with a -1. This prevents these elements
     ! from being added to the element list below.
@@ -9273,7 +9273,7 @@ contains
       ! Copy the refinement tags of the old edges to the new vertices.
       ! Copy the refinement tags of the old quad elements to the new vertices
       ! in the element.
-      call lalg_copyVectorInt (IrefTagsCoarse(1:),IrefTagsFine(1:),&
+      call lalg_copyVector (IrefTagsCoarse(1:),IrefTagsFine(1:),&
           NVT+NMT+rtriaCoarse%InelOfType(TRIA_NVEQUAD2D))
 
       ! Now to the refinement tags for the edges, this is more complicated.
@@ -9814,7 +9814,7 @@ contains
     call storage_getbase_int(&
         rtriaDest%h_InodalProperty,p_InodalPropertyDst)
 
-    call lalg_copyVectorInt(p_InodalPropertySrc,p_InodalPropertyDst,&
+    call lalg_copyVector(p_InodalPropertySrc,p_InodalPropertyDst,&
         rtriaSource%NVT)
 
     ! Old edges -> New vertices
@@ -13017,7 +13017,7 @@ contains
         p_IneighboursAtElement)
 
     ! Initialise the nodal property with 0 by default.
-    call lalg_clearVectorInt (&
+    call lalg_clearVector (&
         p_InodalProperty(rtriangulation%NVT+1:rtriangulation%NVT+rtriangulation%NMT))
 
     ! Get NVT
@@ -14077,7 +14077,7 @@ contains
     ! Fill the index array with zero.
     call storage_getbase_int(&
         rtriangulation%h_IelementsAtVertexIdx, p_IelementsAtVertexIdx)
-    call lalg_clearVectorInt (p_IelementsAtVertexIdx)
+    call lalg_clearVector (p_IelementsAtVertexIdx)
 
     ! first we calculate the number of elements at each vertex simply
     ! by counting; thus, loop over all elements
@@ -14216,7 +14216,7 @@ contains
         rtriangulation%h_IneighboursAtElement, p_IneighboursAtElement)
 
     ! fill vector with zeros
-    call lalg_clearVectorInt2D(p_IneighboursAtElement)
+    call lalg_clearVector(p_IneighboursAtElement)
 
     ! compute number of items for mixed triangulations
     iElements = rtriangulation%InelOfType(TRIA_NVETET3D)  * TRIA_NAETET3D  +&
@@ -15747,7 +15747,7 @@ contains
 
     ! the first index is one; the remaining indices are
     ! initialised with zeros and updated step-by-step
-    call lalg_clearVectorInt(p_IboundaryCpFacesIdx)
+    call lalg_clearVector(p_IboundaryCpFacesIdx)
     p_IboundaryCpFacesIdx(1) = 1
 
     ! loop over all faces to count the
