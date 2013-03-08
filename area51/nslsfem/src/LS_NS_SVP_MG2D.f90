@@ -418,7 +418,7 @@ contains
   
   ! Physical scaling
   if (scPhysic .eq. 1) then
-    rcollection%DquickAccess(2) = 200.0_DP !1.0_DP/(dnu) 
+    rcollection%DquickAccess(2) = 10.0_DP !1.0_DP/(dnu) !
   else
     rcollection%DquickAccess(2) = 1.0_DP
   end if
@@ -1581,34 +1581,34 @@ contains
               getBoundaryValues_2D,rcollection=rcollection)
               
    
-    ! Edge 1 of boundary component 1.
-    call boundary_createRegion(rboundary,1,1,rboundaryRegion)
-    ! As we define the Y-velocity, we now set icomponent=2 in the following call.
-    rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
-    call bcasm_newDirichletBConRealBD (rdiscretisation,3,&
-                     rboundaryRegion,rdiscreteBC,&
-              getBoundaryValues_2D,rcollection=rcollection)
-                 
-    ! Edge 2 of boundary component 1.
-    call boundary_createRegion(rboundary,1,2,rboundaryRegion)
-    rboundaryRegion%iproperties = 2**1-2**1
-    call bcasm_newDirichletBConRealBD (rdiscretisation,3,&
-                     rboundaryRegion,rdiscreteBC,&
-              getBoundaryValues_2D,rcollection=rcollection)
-                 
-    ! Edge 3 of boundary component 1.
-    call boundary_createRegion(rboundary,1,3,rboundaryRegion)
-    rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
-    call bcasm_newDirichletBConRealBD (rdiscretisation,3,&
-                     rboundaryRegion,rdiscreteBC,&
-              getBoundaryValues_2D,rcollection=rcollection)
-    
-    ! Edge 4 of boundary component 1. That is it.
-    call boundary_createRegion(rboundary,1,4,rboundaryRegion)
-    rboundaryRegion%iproperties = 2**1-2**1
-    call bcasm_newDirichletBConRealBD (rdiscretisation,3,&
-                     rboundaryRegion,rdiscreteBC,&
-              getBoundaryValues_2D,rcollection=rcollection)
+!    ! Edge 1 of boundary component 1.
+!    call boundary_createRegion(rboundary,1,1,rboundaryRegion)
+!    ! As we define the Y-velocity, we now set icomponent=2 in the following call.
+!    rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+!    call bcasm_newDirichletBConRealBD (rdiscretisation,3,&
+!                     rboundaryRegion,rdiscreteBC,&
+!              getBoundaryValues_2D,rcollection=rcollection)
+!                 
+!    ! Edge 2 of boundary component 1.
+!    call boundary_createRegion(rboundary,1,2,rboundaryRegion)
+!    rboundaryRegion%iproperties = 2**1-2**1
+!    call bcasm_newDirichletBConRealBD (rdiscretisation,3,&
+!                     rboundaryRegion,rdiscreteBC,&
+!              getBoundaryValues_2D,rcollection=rcollection)
+!                 
+!    ! Edge 3 of boundary component 1.
+!    call boundary_createRegion(rboundary,1,3,rboundaryRegion)
+!    rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+!    call bcasm_newDirichletBConRealBD (rdiscretisation,3,&
+!                     rboundaryRegion,rdiscreteBC,&
+!              getBoundaryValues_2D,rcollection=rcollection)
+!    
+!    ! Edge 4 of boundary component 1. That is it.
+!    call boundary_createRegion(rboundary,1,4,rboundaryRegion)
+!    rboundaryRegion%iproperties = 2**1-2**1
+!    call bcasm_newDirichletBConRealBD (rdiscretisation,3,&
+!                     rboundaryRegion,rdiscreteBC,&
+!              getBoundaryValues_2D,rcollection=rcollection)
               
 
   case (7)
@@ -4200,16 +4200,6 @@ contains
 
     call output_line ('L2pressure:'//&
     trim(sys_sdEP(sqrt(dintvalue),15,6)), coutputMode=OU_MODE_BENCHLOG)
-
-    ! H^1 Norm pressure
-    ! Add pressure vector
-    rcollection%IquickAccess(7) = 2
-    call fev2_addVectorToEvalList(revalVectors,&
-       rvector%RvectorBlock(3),1)   ! p,x,y
-    call bma_buildIntegral (dintvalue,BMA_CALC_STANDARD,&
-    ls_H1_Norm,rcollection=rcollection, &
-    revalVectors=revalVectors,rcubatureInfo=rcubatureInfo)
-
   end if
 
 
