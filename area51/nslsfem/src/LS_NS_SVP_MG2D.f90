@@ -5973,8 +5973,8 @@ contains
       dx = p_Dpoints(1,icubp,iel)
       dy = p_Dpoints(2,icubp,iel)
       
-!      dval1 = 2.0_DP*dx**2*(1.0_DP-dx)**2*(dy*(1.0_DP-dy)**2 - dy**2*(1.0_DP-dy))
-      dval1 = 0.0_DP
+      dval1 = 2.0_DP*dx**2*(1.0_DP-dx)**2*(dy*(1.0_DP-dy)**2 - dy**2*(1.0_DP-dy))
+!      dval1 = 0.0_DP
       
       ! Get the error of the FEM function to the analytic function
       dval2 = p_Dfunc(icubp,iel)
@@ -6000,8 +6000,8 @@ contains
       dx = p_Dpoints(1,icubp,iel)
       dy = p_Dpoints(2,icubp,iel)
       
-!      dval1 = -2.0_DP*dy**2*(1.0_DP-dy)**2*(dx*(1.0_DP-dx)**2 - dx**2*(1.0_DP-dx))
-      dval1 = 0.0_DP
+      dval1 = -2.0_DP*dy**2*(1.0_DP-dy)**2*(dx*(1.0_DP-dx)**2 - dx**2*(1.0_DP-dx))
+!      dval1 = 0.0_DP
 
       ! Get the error of the FEM function to the bubble function
       dval2 = p_Dfunc(icubp,iel)
@@ -6027,7 +6027,7 @@ contains
       dx = p_Dpoints(1,icubp,iel)
       dy = p_Dpoints(2,icubp,iel)
       
-      dval1 = dC*(dx**3 - dy**3 - 0.5_DP)
+      dval1 = dC*(dx**3 - dy**3)
 
       ! Get the error of the FEM function to the bubble function
       dval2 = p_Dfunc(icubp,iel)
@@ -6053,7 +6053,7 @@ contains
       dx = p_Dpoints(1,icubp,iel)
       dy = p_Dpoints(2,icubp,iel)
       
-      dval1 = -dC*(dx**3 - dy**3 - 0.5_DP) + 8.0_DP*dx*dy*(2.0_DP*dx - 1.0_DP) &
+      dval1 = -dC*(dx**3 - dy**3) + 8.0_DP*dx*dy*(2.0_DP*dx - 1.0_DP) &
              *(2.0_DP*dy - 1.0_DP)*(dx - 1.0_DP)*(dy - 1.0_DP)
 
       ! Get the error of the FEM function to the bubble function
@@ -6107,7 +6107,7 @@ contains
       dx = p_Dpoints(1,icubp,iel)
       dy = p_Dpoints(2,icubp,iel)
       
-      dval1 = -dC*(dx**3 - dy**3 - 0.5_DP) - 8.0_DP*dx*dy*(2.0_DP*dx - 1.0_DP) &
+      dval1 = -dC*(dx**3 - dy**3) - 8.0_DP*dx*dy*(2.0_DP*dx - 1.0_DP) &
              *(2.0_DP*dy - 1.0_DP)*(dx - 1.0_DP)*(dy - 1.0_DP)
 
       ! Get the error of the FEM function to the bubble function
