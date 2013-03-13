@@ -17,6 +17,7 @@
     use scalarpde
     use spatialdiscretisation
     use triangulation
+    use spatialdiscretisation, only: t_spatialDiscretisation
 
   !<description>
     ! This subroutine is called during the matrix assembly. It has to compute

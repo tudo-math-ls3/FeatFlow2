@@ -16,6 +16,7 @@
     use scalarpde
     use spatialdiscretisation
     use triangulation
+    use spatialdiscretisation, only: t_spatialDiscretisation
 
   !<description>
     ! This subroutine is called during the vector assembly. It has to compute
