@@ -4174,7 +4174,7 @@ contains
 !</result>
 !</function>
 
-    l = merge(.true., .false., abs(1-d) .le. 1e-12)
+    l = (abs(1-d) .le. 1e-12)
 
   end function DbleTOLogc
 
