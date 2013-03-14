@@ -418,7 +418,7 @@ contains
   
   ! Physical scaling
   if (scPhysic .eq. 1) then
-    rcollection%DquickAccess(2) = 10.0_DP !1.0_DP/(dnu) !
+    rcollection%DquickAccess(2) = 20.0_DP !1.0_DP/(dnu) !
   else
     rcollection%DquickAccess(2) = 1.0_DP
   end if
@@ -3894,8 +3894,8 @@ contains
       call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
                              Dcoords(1:2,2),Dfluxi)
       call output_lbrk()
-      call output_line ('flux input(%)-0.082')
-      call output_line ('-------------------')
+      call output_line ('flux input: -0.16666667')
+      call output_line ('-----------------------')
       call output_line (trim(sys_sdEP(Dfluxi,17,10)))
       
       ! Better to use the exact value of the inflow fluxes, rather than
@@ -3903,8 +3903,8 @@ contains
       ! Flow Around Cylinder
       ! Dfluxi = -0.082_DP
       ! Poiseuelle Flow
-      ! Dfluxi = -1.0_DP/6.0_DP
-      Dfluxi = -0.082_DP
+      Dfluxi = -1.0_DP/6.0_DP
+!      Dfluxi = -0.082_DP
       Dfluxi = abs(Dfluxi)
       
       ! Output line coordinates
@@ -3945,25 +3945,6 @@ contains
       call output_line (&
       '--------at x='//trim(sys_sdp(Dcoords(1,1),5,2))//'-------------')
       call output_line (trim(sys_sdEP(Dgmc,16,6)))    
-
-
-      ! Output line flux
-      Dcoords(1,1) = Dcoords(1,1) + 0.5_DP
-      Dcoords(1,2) = Dcoords(1,2) + 0.5_DP
-      call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
-                             Dcoords(1:2,2),Dfluxo5)
-      
-      Dfluxo5 = abs(Dfluxo5)
-      
-      ! The GMC is then calculated as
-      Dgmc = 100.0_DP*(Dfluxi - Dfluxo5) / Dfluxi                           
-      
-      ! Print the GMC value
-      call output_lbrk()
-      call output_line ('Global Mass Conservation(%)')
-      call output_line (&
-      '--------at x='//trim(sys_sdp(Dcoords(1,1),5,2))//'-------------')
-      call output_line (trim(sys_sdEP(Dgmc,16,6)))
     
     else
       ! Calculate the number of elements from nlevels
@@ -3976,8 +3957,8 @@ contains
       call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
                      Dcoords(1:2,2),Dfluxi,nlevels=nlevels)
       call output_lbrk()
-      call output_line ('flux input(%)-0.082')
-      call output_line ('-------------------')
+      call output_line ('flux input: -0.16666667')
+      call output_line ('-----------------------')
       call output_line (trim(sys_sdEP(Dfluxi,17,10)))
       
       ! Better to use the exact value of the inflow fluxes, rather than
@@ -4029,23 +4010,23 @@ contains
 !      '--------at x='//trim(sys_sdp(Dcoords(1,1),5,2))//'-------------')
 !      call output_line (trim(sys_sdEP(Dgmc,16,6)))
 !      
-!      ! Output line flux
-!      Dcoords(1,1) = Dcoords(1,1) + 0.5_DP
-!      Dcoords(1,2) = Dcoords(1,2) + 0.5_DP
-!      call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
-!                     Dcoords(1:2,2),Dfluxo5,nlevels=nlevels)
-!      
-!      Dfluxo5 = abs(Dfluxo5)
-!      
-!      ! The GMC is then calculated as
-!      Dgmc = 100.0_DP*(Dfluxi - Dfluxo5) / Dfluxi                           
-!      
-!      ! Print the GMC value
-!      call output_lbrk()
-!      call output_line ('Global Mass Conservation(%)')
-!      call output_line (&
-!      '--------at x='//trim(sys_sdp(Dcoords(1,1),5,2))//'-------------')
-!      call output_line (trim(sys_sdEP(Dgmc,16,6)))
+      ! Output line flux
+      Dcoords(1,1) = Dcoords(1,1) + 0.5_DP
+      Dcoords(1,2) = Dcoords(1,2) + 0.5_DP
+      call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
+                     Dcoords(1:2,2),Dfluxo5,nlevels=nlevels)
+      
+      Dfluxo5 = abs(Dfluxo5)
+      
+      ! The GMC is then calculated as
+      Dgmc = 100.0_DP*(Dfluxi - Dfluxo5) / Dfluxi                           
+      
+      ! Print the GMC value
+      call output_lbrk()
+      call output_line ('Global Mass Conservation(%)')
+      call output_line (&
+      '--------at x='//trim(sys_sdp(Dcoords(1,1),5,2))//'-------------')
+      call output_line (trim(sys_sdEP(Dgmc,16,6)))
 !
 !      ! Output line flux
 !      Dcoords(1,1) = Dcoords(1,1) + 0.5_DP
@@ -5974,7 +5955,7 @@ contains
       dy = p_Dpoints(2,icubp,iel)
       
       dval1 = 2.0_DP*dx**2*(1.0_DP-dx)**2*(dy*(1.0_DP-dy)**2 - dy**2*(1.0_DP-dy))
-!      dval1 = 0.0_DP
+      dval1 = 0.0_DP
       
       ! Get the error of the FEM function to the analytic function
       dval2 = p_Dfunc(icubp,iel)
@@ -6001,7 +5982,7 @@ contains
       dy = p_Dpoints(2,icubp,iel)
       
       dval1 = -2.0_DP*dy**2*(1.0_DP-dy)**2*(dx*(1.0_DP-dx)**2 - dx**2*(1.0_DP-dx))
-!      dval1 = 0.0_DP
+      dval1 = 0.0_DP
 
       ! Get the error of the FEM function to the bubble function
       dval2 = p_Dfunc(icubp,iel)
@@ -6976,8 +6957,8 @@ contains
 
       ! Compute the coefficient in front of the integral:
       ! < Ju,v > = sum_E gamma*nu/|E| int_E [u] [v] ds
-!      dcoeff = dgamma * dnu / dedgelength
-      dcoeff = dgamma * dnu * dedgelength
+      dcoeff = dgamma * dnu / dedgelength
+!      dcoeff = dgamma * dnu * dedgelength
       
       ! Now we have the values of the basis functions in all the cubature
       ! points.
