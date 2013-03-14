@@ -1376,7 +1376,7 @@ contains
 
 !<subroutine>
 
-  subroutine coeff_RHS_const (rdiscretisation,rform, &
+  subroutine coeff_RHS (rdiscretisation,rform, &
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTest,rdomainIntSubset,&
                   Dcoefficients,rcollection)
@@ -1388,8 +1388,15 @@ contains
     use domainintegration
     
   !<description>
-    ! Routine that returns a constant function for additional
-    ! assembly of RHS parts in the moving frame formulation.
+    ! This subroutine is called during the vector assembly. It has to compute
+    ! the coefficients in front of the terms of the linear form of the
+    ! right hand side vector.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the linear form
+    ! the corresponding coefficients in front of the terms.
   !</description>
     
   !<input>
@@ -1438,7 +1445,66 @@ contains
     
   !</subroutine>
   
-    Dcoefficients(:,:,:) = rcollection%DquickAccess(1)
+    integer :: ctype,icomponent
+    integer :: ielement,ipoint
+    real(DP), dimension(size(EXPRVARIABLES)) :: Rval
+    
+    icomponent = rcollection%IquickAccess(1)
+    ctype = rcollection%IquickAccess(2)
+  
+    ! Call the user-defined RHS generation routine
+    select case (icomponent)
+    case (1)
+      call coeff_RHS_x (rdiscretisation,rform, &
+          nelements,npointsPerElement,Dpoints,IdofsTest,rdomainIntSubset,&
+          Dcoefficients,rcollection%p_rnextCollection)
+
+      ! In case the moving frame formulation is active, we have to add
+      ! the accelleration to the coefficients.
+      if (rcollection%DquickAccess(4) .ne. 0.0_DP) then
+        Dcoefficients(:,:,:) = Dcoefficients(:,:,:) + rcollection%DquickAccess(4)
+      end if
+
+    case (2)
+      call coeff_RHS_y (rdiscretisation,rform, &
+          nelements,npointsPerElement,Dpoints,IdofsTest,rdomainIntSubset,&
+          Dcoefficients,rcollection%p_rnextCollection)
+    
+      ! In case the moving frame formulation is active, we have to add
+      ! the accelleration to the coefficients.
+      if (rcollection%DquickAccess(5) .ne. 0.0_DP) then
+        Dcoefficients(:,:,:) = Dcoefficients(:,:,:) + rcollection%DquickAccess(5)
+      end if
+
+    case (3)
+      call coeff_RHS_p (rdiscretisation,rform, &
+          nelements,npointsPerElement,Dpoints,IdofsTest,rdomainIntSubset,&
+          Dcoefficients,rcollection%p_rnextCollection)
+    
+    end select
+    
+    if (ctype .eq. 5) then
+    
+      ! The RHS is given as analytical expression. We have to evaluate
+      ! the expression in every point.
+      Rval(:) = 0.0_DP
+      Rval(7:11) = rcollection%DquickAccess(1:5)
+      
+      do ielement = 1,nelements
+        do ipoint = 1,npointsPerElement
+        
+          ! Get the point coordinates.
+          rcollection%DquickAccess(1) = Dpoints(1,ipoint,ielement)
+          rcollection%DquickAccess(2) = Dpoints(2,ipoint,ielement)
+          
+          ! Evaluate
+          call fparser_evalFunction (rcollection%p_rfparserQuickAccess1, &
+              icomponent, Rval, Dcoefficients(1,ipoint,ielement))
+        
+        end do
+      end do
+    
+    end if
 
   end subroutine
 
@@ -1463,7 +1529,7 @@ contains
   type(t_asmTemplates), intent(in) :: rasmTemplates
   
   ! RHS assembly structure that defines the RHS.
-  type(t_rhsAssembly), intent(inout) :: rrhsAssembly
+  type(t_rhsAssembly), intent(inout), target :: rrhsAssembly
   
   ! The RHS vector which is to be filled with data.
   type(t_vectorBlock), intent(inout) :: rrhs
@@ -1476,6 +1542,7 @@ contains
     integer :: iidx1,iidx2
     character(len=SYS_STRLEN) :: sfilename,sarray
     type(t_scalarCubatureInfo) :: rcubatureInfo
+    type(t_collection) :: rlocalCollection
   
     ! A linear form describing the analytic problem to solve
     type(t_linearForm) :: rlinform
@@ -1486,7 +1553,6 @@ contains
     ! Parameters used for the moving frame formulation
     integer :: imovingFrame
     real(DP), dimension(NDIM2D) :: Dvelocity,Dacceleration
-    type(t_collection) :: rlocalcoll
 
     ! Get a pointer to the RHS on the finest level as well as to the
     ! block discretisation structure:
@@ -1502,7 +1568,12 @@ contains
     
       ! In a first step, check what kind of RHS we have. Probably we have
       ! to read some files to generate it.
-      if (rrhsAssembly%ctype .eq. 3) then
+      select case (rrhsAssembly%ctype)
+      
+      ! *****************************************
+      ! Stationary RHS, given in a file
+      ! *****************************************
+      case (3)
         
         ! The basic RHS can be found in the rrhsassembly structure,
         ! it was read in at the beginning of the program.
@@ -1516,7 +1587,11 @@ contains
             rrhsAssembly%rrhsVector%RvectorBlock(2), &
             rrhs%RVectorBlock(2), rrhsAssembly%dmultiplyY, 0.0_DP, .false.)
         
-      else if (rrhsAssembly%ctype .eq. 4) then
+      ! *****************************************
+      ! Nonstationary RHS, given in a sequence
+      ! of files
+      ! *****************************************
+      case (4)
         ! Determine the file before and after the current simulation time.
         dreltime = (rproblem%rtimedependence%dtime - rrhsAssembly%dtimeInit) / &
                    (rrhsAssembly%dtimeMax - rrhsAssembly%dtimeInit) *&
@@ -1597,9 +1672,39 @@ contains
 !          call lsysbl_vectorLinearComb (rrhs,rrhsAssembly%rrhsVector2,&
 !              (1.0_DP-dtimeweight),dtimeweight)
 !        end if
-        
-      end if
       
+      end select
+      
+      ! Prepare a local collection with all parameters for the callback 
+      ! routine coeff_RHS above.
+      rlocalCollection%p_rnextCollection => rproblem%rcollection
+      rlocalCollection%p_rfparserQuickAccess1 => rrhsAssembly%rrhsParser
+      
+      ! The DquickAccess array is prepared according to the global
+      ! expression variables.
+
+      ! Is the moving-frame formulatino active?
+      call parlst_getvalue_int (rproblem%rparamList,"CC-DISCRETISATION",&
+          "imovingFrame",imovingFrame,0)
+          
+      rlocalCollection%IquickAccess(2) = rrhsAssembly%ctype
+
+      rlocalCollection%DquickAccess(1:5) = 0.0_DP
+      rlocalCollection%DquickAccess(1) = rproblem%rtimedependence%dtime
+      
+      ! Is the moving-frame formulation active?    
+      if (imovingFrame .ne. 0) then
+      
+        ! Get the velocity and acceleration from the callback routine.
+        call getMovingFrameVelocity (Dvelocity,Dacceleration,rproblem%rcollection)
+
+        rlocalCollection%DquickAccess(2) = Dvelocity(1)
+        rlocalCollection%DquickAccess(3) = Dvelocity(2)
+        rlocalCollection%DquickAccess(4) = Dacceleration(1)
+        rlocalCollection%DquickAccess(5) = Dacceleration(2)
+              
+      end if
+
       ! The vector structure is already prepared, but the entries are missing.
       !
       ! At first set up the corresponding linear form (f,Phi_j):
@@ -1620,52 +1725,25 @@ contains
       ! Basically, this stores the simulation time in the collection if the
       ! simulation is nonstationary.
       call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
-
+      
       call spdiscr_createDefCubStructure (p_rdiscretisation%RspatialDiscr(1),&
           rcubatureInfo,rproblem%rrhsAssembly%icubF)
 
       ! Discretise the X-velocity part:
+      rlocalCollection%IquickAccess(1) = 1
       call linf_buildVectorScalar (rlinform,.false.,&
-                rrhs%RvectorBlock(1),rcubatureInfo,coeff_RHS_x,&
-                rproblem%rcollection)
+          rrhs%RvectorBlock(1),rcubatureInfo,coeff_RHS,rlocalCollection)
 
       ! The Y-velocity part:
+      rlocalCollection%IquickAccess(1) = 2
       call linf_buildVectorScalar (rlinform,.false.,&
-                rrhs%RvectorBlock(2),rcubatureInfo,coeff_RHS_y,&
-                rproblem%rcollection)
+          rrhs%RvectorBlock(2),rcubatureInfo,coeff_RHS,rlocalCollection)
 
       ! The pressure/divergence part:
+      rlocalCollection%IquickAccess(1) = 3
       call linf_buildVectorScalar (rlinform,.false.,&
-                rrhs%RvectorBlock(3),rcubatureInfo,coeff_RHS_p,&
-                rproblem%rcollection)
+          rrhs%RvectorBlock(3),rcubatureInfo,coeff_RHS,rlocalCollection)
                              
-      ! Is the moving-frame formulatino active?
-      call parlst_getvalue_int (rproblem%rparamList,"CC-DISCRETISATION",&
-          "imovingFrame",imovingFrame,0)
-          
-      if (imovingFrame .ne. 0) then
-      
-        ! Get the velocity and acceleration from the callback routine.
-        call getMovingFrameVelocity (Dvelocity,Dacceleration,rproblem%rcollection)
-              
-        ! Assemble a constant RHS with the returned acceleration using the
-        ! above coeff_RHS_const, this realises the moving frame in the
-        ! inner of the domain. We pass the constant function in DquickAccess(1).
-        
-        ! Discretise the X-velocity part:
-        rlocalColl%DquickAccess(1) = Dacceleration(1)
-        call linf_buildVectorScalar (rlinform,.false.,&
-                  rrhs%RvectorBlock(1),rcubatureInfo,coeff_RHS_const,&
-                  rlocalcoll)
-
-        ! And the Y-velocity part:
-        rlocalColl%DquickAccess(1) = Dacceleration(2)
-        call linf_buildVectorScalar (rlinform,.false.,&
-                  rrhs%RvectorBlock(2),rcubatureInfo,coeff_RHS_const,&
-                  rlocalcoll)
-      
-      end if
-                                
       call spdiscr_releaseCubStructure (rcubatureInfo)
                             
     end if
@@ -2154,7 +2232,7 @@ contains
     integer :: iwriteSolutionLevel,cwriteFinalSolution
     type(t_vectorBlock) :: rvector1,rvector2
     type(t_vectorScalar) :: rvectorTemp
-    character(LEN=SYS_STRLEN) :: sfile,sfileString
+    character(LEN=SYS_STRLEN) :: sfile
     integer :: ilev
     integer :: NEQ
     type(t_interlevelProjectionBlock) :: rprojection

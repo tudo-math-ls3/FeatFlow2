@@ -130,24 +130,6 @@ module ccboundaryconditionparser
 
   ! Parabolic profile with prescribed maximum value
   integer, parameter :: BDC_VALPARPROFILE = 2
-!</constantblock>
-
-!<constantblock description="Variables in expressions">
-
-  ! Basic variables that are allowed in expressions.
-  ! Variables that are not defined in the actual situation are set to 0.
-  !
-  ! X,Y,Z - coordinate of a point (z=0 in 2D case),
-  ! L     - local parameter value in the range [0..1],
-  ! R     - parameter value of a boundary point, 0-1 parametrisation,
-  ! S     - parameter value of a boundary point, arc length parametrisation,
-  ! TIME  - current simulation time (=0 in stationary simulation)
-  !
-  ! Depending on the situation, this list may be extended by situation
-  ! specific variables or variables that are only available at runtime.
-  character(LEN=10), dimension(13), parameter :: SEC_EXPRVARIABLES = &
-    (/"X     ","Y     ","Z     ","L     ","R     ","S     ","TIME  ",&
-      "MFVELX","MFVELY","MFACCX","MFACCY","NX    ","NY    "/)
 
 !</constantblock>
 
@@ -338,7 +320,7 @@ contains
         read(cstr,*) cname,ityp,cexpr
         
         ! Compile the expression; the expression gets number i
-        call fparser_parseFunction (ranalyticBC%rparser, i, cexpr, SEC_EXPRVARIABLES)
+        call fparser_parseFunction (ranalyticBC%rparser, i, cexpr, EXPRVARIABLES)
         
         ! Add the number of the function in the parser object to
         ! the collection with the name of the expression
@@ -1645,7 +1627,7 @@ contains
     ! local variables
     real(DP) :: d,dx,dy
     character(LEN=PARLST_MLDATA) :: stag
-    real(DP), dimension(size(SEC_EXPRVARIABLES)) :: Rval
+    real(DP), dimension(size(EXPRVARIABLES)) :: Rval
     integer :: cnormalMean
     
     dresult = 0.0_DP
@@ -1672,7 +1654,7 @@ contains
       !
       ! Set up an array with variables for evaluating the expression.
       ! Give the values in exactly the same order as specified
-      ! by SEC_EXPRVARIABLES!
+      ! by EXPRVARIABLES!
       Rval = 0.0_DP
       
       call boundary_getCoords(rbcAssemblyData%p_rboundary, &

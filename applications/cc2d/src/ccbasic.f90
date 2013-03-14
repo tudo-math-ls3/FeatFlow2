@@ -16,6 +16,7 @@ module ccbasic
   use storage
   use linearsolver
   use boundary
+  use fparser
   use bilinearformevaluation
   use linearformevaluation
   use cubature
@@ -162,11 +163,24 @@ module ccbasic
     ! =4: Nonstationary RHS prescribed by a sequence of files.
     !     The files are linearly interpolated over the whole current
     !     space-time cylinder.
+    ! =5: Nonstationary RHS prescribed by expressions.
     integer :: ctype = 0
     
+    ! If ctype=5: RHS for the X-velocity.
+    character(len=PARLST_LENLINEBUF) :: srhsExpressionX = ""
+    
+    ! If ctype=5: RHS for the Y-velocity.
+    character(len=PARLST_LENLINEBUF) :: srhsExpressionY = ""
+
+    ! If ctype=5: RHS for the pressure.
+    character(len=PARLST_LENLINEBUF) :: srhsExpressionP = ""
+
+    ! If ctype=5: Parser structure that allows to evaluate the RHS components.
+    type(t_fparser) :: rrhsParser
+
     ! If ctype=3/4: Basic filename of the files configuring the RHS.
     character(len=SYS_STRLEN) :: sfilename = ""
-    
+
     ! If ctype=4: First index in the filename.
     ! The filename sfilename is extended by an index ".00001", ",.00002",...
     integer :: ifirstindex = 0
@@ -496,6 +510,29 @@ module ccbasic
 !</typeblock>
 
 !</types>
+
+!<constants>
+
+!<constantblock description="Variables in expressions">
+
+  ! Basic variables that are allowed in expressions.
+  ! Variables that are not defined in the actual situation are set to 0.
+  !
+  ! X,Y,Z - coordinate of a point (z=0 in 2D case),
+  ! L     - local parameter value in the range [0..1],
+  ! R     - parameter value of a boundary point, 0-1 parametrisation,
+  ! S     - parameter value of a boundary point, arc length parametrisation,
+  ! TIME  - current simulation time (=0 in stationary simulation)
+  !
+  ! Depending on the situation, this list may be extended by situation
+  ! specific variables or variables that are only available at runtime.
+  character(LEN=10), dimension(13), parameter, public :: EXPRVARIABLES = &
+    (/"X     ","Y     ","Z     ","L     ","R     ","S     ","TIME  ",&
+      "MFVELX","MFVELY","MFACCX","MFACCY","NX    ","NY    "/)
+
+!</constantblock>
+
+!</constants>
 
 !******************************************************************************
 ! Documentation

@@ -193,8 +193,32 @@ imovingFrame = 0
 #   The files are linearly interpolated in time if necessary.
 #   The parameters sfilenameRHS, drhsXXXX and irhsXXXX below
 #   define the file sequence.
+# 5=Nonstationary RHS prescribed by the expressions below.
 
 iRHS = 2
+
+# For iRHS=5: Expressions that define the RHS.
+# The following variables are valid in the expression:
+#
+#    X      = x-coordinate
+#    Y      = y-coordinate
+#    TIME   = current time
+#    MFVELX = x-velocity of the moving frame (if imovingFrame=1)
+#    MFVELY = y-velocity of the moving frame (if imovingFrame=1)
+#    MFACCX = x-acceleration of the moving frame (if imovingFrame=1)
+#    MFACCY = y-acceleration of the moving frame (if imovingFrame=1)
+#
+# The following constants are defined:
+#
+#    _PI    = The number Pi
+#    _EXP   = The natural number E
+#    _INFTY = infinity
+#
+# X-velocity, Y-velocity and pressure.
+ 
+srhsExpressionX = "0.0"
+srhsExpressionY = "0.0"
+srhsExpressionP = "0.0"
 
 # For irhs=4: Basic filename of the file sequence defining the right hand
 # side. An index ".00000", ".00001",... is appended to this filename.

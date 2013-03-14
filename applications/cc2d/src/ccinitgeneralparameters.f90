@@ -396,6 +396,15 @@ contains
     call parlst_getvalue_int (rparlist,"CC-DISCRETISATION",&
         "irhs",rrhsAssembly%ctype,0)
     
+    call parlst_getvalue_string (rparlist,"CC-DISCRETISATION",&
+        "srhsExpressionX",rrhsAssembly%srhsExpressionX,"",bdequote=.true.)
+
+    call parlst_getvalue_string (rparlist,"CC-DISCRETISATION",&
+        "srhsExpressionY",rrhsAssembly%srhsExpressionY,"",bdequote=.true.)
+
+    call parlst_getvalue_string (rparlist,"CC-DISCRETISATION",&
+        "srhsExpressionP",rrhsAssembly%srhsExpressionP,"",bdequote=.true.)
+
     call parlst_getvalue_int (rparlist,"CC-DISCRETISATION",&
         "irhsFirstIndex",rrhsAssembly%ifirstindex,0)
 
@@ -428,8 +437,9 @@ contains
       end if
     end if
 
+    select case (rrhsAssembly%ctype)
     ! Is this a stationary solution based on a file?
-    if ((rrhsAssembly%ctype .eq. 3) .or. (rrhsAssembly%ctype .eq. 4)) then
+    case (3,4)
     
       ! Create a RHS vector and read it from the file.
       call lsysbl_createVectorBlock (rdiscretisation,rrhsAssembly%rrhsVector)
@@ -445,8 +455,18 @@ contains
         ! when reading in the RHS during the simulation.
         call lsysbl_createVectorBlock (rdiscretisation,rrhsAssembly%rrhsVector2)
       end if
-        
-    end if
+
+    ! Is the RHS given analytically?
+    case (5)
+      ! Initialise a parser for the expressions.
+      call fparser_create (rrhsAssembly%rrhsParser,NDIM2D+1)
+      
+      ! Parse the expressions
+      call fparser_parseFunction (rrhsAssembly%rrhsParser, 1, rrhsAssembly%srhsExpressionX, EXPRVARIABLES)
+      call fparser_parseFunction (rrhsAssembly%rrhsParser, 2, rrhsAssembly%srhsExpressionY, EXPRVARIABLES)
+      call fparser_parseFunction (rrhsAssembly%rrhsParser, 3, rrhsAssembly%srhsExpressionX, EXPRVARIABLES)
+
+    end select
 
   end subroutine
 
@@ -467,13 +487,15 @@ contains
 
 !</subroutine>
 
-    ! Is this a stationary solution based on a file?
-    if (rrhsAssembly%ctype .eq. 3) then
+    select case (rrhsAssembly%ctype)
+    case (3)
       call lsysbl_releaseVector (rrhsAssembly%rrhsVector)
-    else if (rrhsAssembly%ctype .eq. 4) then
+    case (4)
       call lsysbl_releaseVector (rrhsAssembly%rrhsVector)
       call lsysbl_releaseVector (rrhsAssembly%rrhsVector2)
-    end if
+    case (5)
+      call fparser_release (rrhsAssembly%rrhsParser)
+    end select
 
     rrhsAssembly%ctype = 0
     rrhsAssembly%icurrentRhs = -1
