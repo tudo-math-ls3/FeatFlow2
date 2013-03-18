@@ -25,7 +25,7 @@
 #   = 5  Bolton, step flow
 #   = 6  Analytic polynomial function
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Problem = 6
+Problem = 1
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Kinematic viscosity noo = muu/rho = 1/Re
@@ -35,7 +35,7 @@ Problem = 6
 #  Step flow        0.000752419383795  --> Re = 800
 #  Proot 2006       0.00375            --> Re = 100
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-dnu = 1
+dnu = 1E-3
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Scaling factors or whighting parameters
@@ -53,7 +53,7 @@ dnu = 1
 #   ~ 1/h^2 * ||R||^2_{L^2}
 #    scADN = 1 lets this happens :)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-scPhysic = 1   #check "collection%DquickAccess(2)"
+scPhysic = 0   #check "collection%DquickAccess(2)"
 scADN = 0
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -71,13 +71,13 @@ alpha = 1.0
 [MESH]
 
 # Mesh file name and path:
-sFilenamePathMesh = './pre/QUAD'
+sFilenamePathMesh = './pre/bench1'
 
 # Final mesh level to solve the problem:
-NLMAX = 7
+NLMAX = 2
 
 # Coarse mesh level, used in multigrid:
-NLMIN = 6
+NLMIN = 2
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Change Quadrilaterals to triangles
@@ -88,22 +88,20 @@ detTri = 0
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Type of Velocity vector finite elements:
-#  EL_Q1
-#  EL_Q2
-#  EL_EM30
-#  EL_EB50
-#  EL_P2
+#  EL_Q1, EL_Q2
+#  EL_EM30, EL_EB50
+#  EL_P1, EL_P2
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Velm = EL_Q2
-Vtild = 0
-
-# Type of Pressure finite element:
-Pelm = EL_Q2
-Ptild = 0
+Velm = EL_EM30
+Vtild = 1
 
 # Type of Vorticity finite element:
-Welm = EL_Q2
-Wtild = 0
+Welm = EL_EM30
+Wtild = 1
+
+# Type of Pressure finite element:
+Pelm = EL_EM30
+Ptild = 1
 
 # Perturbed grid percentage
 #  =0.0 by default (No purturbation)
@@ -149,11 +147,11 @@ LinTyp = 2
 FPIter = 10
 
 # Nonlinear loop Max number of iterations
-NLN_MAX = 100
+NLN_MAX = 15
 
 # Nonlinear loop stopping criteria
 #  Serves as a measure of relative residual
-dNLEpsi = 1E-10
+dNLEpsi = 1E-6
 
 
 #-----------------------------------------------------
@@ -170,7 +168,7 @@ dNLEpsi = 1E-10
 #           p(x,y) = C*(x^3 - y^3 - 0.5)
 #           which leads to crazy f_x and f_y.
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-detRHS = 1
+detRHS = 0
 
 # The constant in the analytic
 # pressure/velocity filed
@@ -194,7 +192,7 @@ cu = 1
 #  is implemented. This condition is implemented in a
 #  weak manner, using the L^2 norm of the equations.
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-detOFlow = 0
+detOFlow = 1
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Which edge of the triangulation do we apply the
@@ -268,7 +266,7 @@ detVJump = 0
 
 # Relaxation parameter for Jump stabilisation.
 # Standard value: 0.01
-dJumpV = 0.005
+dJumpV = 0.05
 
 # 2nd Relaxation parameter in the jump stabilisation. Standard = 0.0
 dJumpStarV = 0.0
@@ -321,7 +319,7 @@ dJumpP = 1.0
 #    =1  Stand-alone Multigrid solver
 #    =2  Multigrid-preconditioned (CG\BiCGStab) solver
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-LINsolverType = 2
+LINsolverType = 1
 
 # If we have a Multigrid-preconditioned solver, then,
 #  what is the Krylov subspace linear solver?
@@ -594,7 +592,7 @@ detEnsto = 0
 #   =0  don't calculate
 #   =1  yes calculate
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Div = 1
+Div = 0
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Calculate Global Mass Conservation (GMC)
@@ -609,7 +607,7 @@ Div = 1
 #   =0 don't calculate
 #   =1 pls calculate :)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-detGMC = 0
+detGMC = 1
 
 # Input line coordinates
 #  the line defined by the two endpoints:
@@ -618,7 +616,7 @@ detGMC = 0
 #       0.0 0.0 0.0 0.41 
 #       0.0 0.0 0.0 1.0
 #       -2.0 0.0 -2.0 1.0
-inputGMC = 0.0 0.5 1.0 0.5
+inputGMC = 0.0 0.0 0.0 0.41
 
 # Output line coordinates
 #  the line defined by the two endpoints:
@@ -627,12 +625,12 @@ inputGMC = 0.0 0.5 1.0 0.5
 #       2.2 0.0 2.2 0.41
 #       0.5 0.0 0.5 1.0
 #       0.0 0.0 0.0 1.0
-outputGMC = 0.5 0.0 0.5 1.0 
+outputGMC = 1.7 0.0 1.7 0.41
 
 # The number of elements (#elem) associated with the line
 #  =0 Calculate the #elem automatically
 #  =1,2,3 ... --->  #elem = 2^(1,2,3...)
-nlevels = 19
+nlevels = 15
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Calculate L^2 and L^1 norms for the analytical
@@ -640,7 +638,7 @@ nlevels = 19
 #  =0 Don't do it
 #  =1 Please calculate
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-detNorms = 1
+detNorms = 0
 
 
 #-----------------------------------------------------

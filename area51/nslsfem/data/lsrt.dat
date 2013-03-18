@@ -26,7 +26,7 @@
 #   = 6  Analytic polynomial function
 #   = 7  Static Bubble
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Problem = 7
+Problem = 6
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Kinematic viscosity noo = muu/rho = 1/Re
@@ -65,13 +65,13 @@ alpha = 1.0
 [MESH]
 
 # Mesh file name and path:
-sFilenamePathMesh = './pre/star'
+sFilenamePathMesh = './pre/QUAD'
 
 # Final mesh level to solve the problem:
-NLMAX = 5
+NLMAX = 6
 
 # Coarse mesh level, used in multigrid:
-NLMIN = 5
+NLMIN = 6
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Change Quadrilaterals to triangles
@@ -81,7 +81,7 @@ NLMIN = 5
 detTri = 1
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# Type of Velocity finite elements:
+# Type of finite elements:
 #  EL_Q1
 #  EL_Q2
 #  EL_EM30
@@ -89,16 +89,17 @@ detTri = 1
 #  EL_P2
 #  EL_RT0, EL_RT0_2D, EL_DCP1_2D
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Velm = EL_P1
+# Type of Stress finite element:
+Selm = EL_RT0_2D
+Stild = 0
+
+# Type of Velocity finite elements:
+Velm = EL_P2
 Vtild = 0
 
 # Type of Pressure finite element:
 Pelm = EL_P0
-Ptild = 0
-
-# Type of Stress finite element:
-Selm = EL_RT0_2D
-Stild = 0
+Ptild = 1
 
 # Perturbed grid percentage
 #  =0.0 by default (No purturbation)
@@ -150,7 +151,7 @@ NLN_MAX = 100
 
 # Nonlinear loop stopping criteria
 #  Serves as a measure of relative residual
-dNLEpsi = 1E-8
+dNLEpsi = 1E-6
 
 
 #-----------------------------------------------------
@@ -513,7 +514,7 @@ dintARboundEX3YVel       = 20.0
 #      on coarse grid (UMFPACK) and
 #      detZMV =2 on other levels  
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-detZMV = 3
+detZMV = 1
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Which row of the pressure matrix do you want to 
@@ -526,7 +527,7 @@ detZMV = 3
 #  Poiesuelle flow, outflow =6
 #  Bolton step flow, outflow = 30
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-irow = 5
+irow = 1
 
 
 #-----------------------------------------------------
@@ -623,14 +624,14 @@ nlevels = 15
 #  =1 Please calculate
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 L2U = 1
-H1U = 1
+H1U = 0
 
-L2P = 0
+L2P = 1
 H1P = 0
 
-L2S = 0
+L2S = 1
 
-StbblError = 1
+StbblError = 0
 
 
 #-----------------------------------------------------

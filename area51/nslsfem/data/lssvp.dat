@@ -25,8 +25,9 @@
 #   = 5  Bolton, step flow
 #   = 6  Analytic polynomial function
 #   = 7  Static Bubble
+#   = 8  Split Channel
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Problem = 7
+Problem = 4
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Kinematic viscosity noo = muu/rho = 1/Re
@@ -36,7 +37,7 @@ Problem = 7
 #  Step flow        0.000752419383795  --> Re = 800
 #  Proot 2006       0.00375            --> Re = 100
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-dnu = 1.0
+dnu = 0.16666666666667
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Scaling factors or whighting parameters
@@ -49,7 +50,7 @@ dnu = 1.0
 #    scPhysic = 1 lets this happens :)
 #  See this pls: rcollection%DquickAccess(2)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-scPhysic = 1
+scPhysic = 0
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Another scaling is related to the continuity eq.
@@ -65,13 +66,13 @@ alpha = 1.0
 [MESH]
 
 # Mesh file name and path:
-sFilenamePathMesh = './pre/star'
+sFilenamePathMesh = './pre/QUAD'
 
 # Final mesh level to solve the problem:
-NLMAX = 5
+NLMAX = 6
 
 # Coarse mesh level, used in multigrid:
-NLMIN = 5
+NLMIN = 6
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Change Quadrilaterals to triangles
@@ -81,22 +82,24 @@ NLMIN = 5
 detTri = 0
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# Type of Velocity finite elements:
+# Type of finite elements:
 #  EL_Q1, EL_Q2
 #  EL_EM30, EL_EB50
+#  EL_EN51_2D, Q3~
 #  EL_P1, EL_P2
 #  EL_RT0_2D, EL_DCTP0_2D, EL_QP1
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Velm = EL_Q1
-Vtild = 0
+# Type of Stress finite element:
+Selm = EL_EM30
+Stild = 1
+
+# Type of Velocity finite element:
+Velm = EL_EM30
+Vtild = 1
 
 # Type of Pressure finite element:
-Pelm = EL_QP1
+Pelm = EL_EM30
 Ptild = 1
-
-# Type of Stress finite element:
-Selm = EL_QP1
-Stild = 1
 
 # Perturbed grid percentage
 #  =0.0 by default (No purturbation)
@@ -112,10 +115,10 @@ dPert = 0.0
 ccubType = G3_2D
 
 # Print mesh statistics or not
-detPMesh = 0
+detPMesh = 1
 
 # Print discretization statistics or not
-detPDisc = 0
+detPDisc = 1
 
 
 #-----------------------------------------------------
@@ -131,7 +134,7 @@ detPDisc = 0
 #     (start with fixed-point and after 'FPIter',
 #      continue with Newton's method)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-LinTyp = 1
+LinTyp = 2
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Number of Fixed-point irerations
@@ -144,7 +147,7 @@ LinTyp = 1
 FPIter = 100
 
 # Nonlinear loop Max number of iterations
-NLN_MAX = 100
+NLN_MAX = 15
 
 # Nonlinear loop stopping criteria
 #  Serves as a measure of relative residual
@@ -167,7 +170,7 @@ dNLEpsi = 1E-6
 #        OR
 #           The static bubble problem.
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-detRHS = 1
+detRHS = 0
 
 # The constant in the analytic pressure filed
 #   OR
@@ -279,11 +282,11 @@ deojEdgeExpV = 2.0
 # Jump of the function itself.
 #  detSJump =1 on, =0 off
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-detSJump = 1
+detSJump = 0
 
 # Relaxation parameter for Jump stabilisation.
 # Standard value: 0.1
-dJumpS = 0.5
+dJumpS = 5.0
 
 dJumpS_matrix = 0.5
 dJumpS_defect = 0.5
@@ -365,7 +368,7 @@ ctMG = 0
 #    =1  UMFPACK
 #    =2  Smoother as coarse grid solver
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-CGsolverMG = 2
+CGsolverMG = 1
 
 # Number of iteration of the coarse grid solver,
 #  if it is the same as our smoother
@@ -430,7 +433,7 @@ depsRelMG = 1e-3
 depsAbsMG = 1E-5
 
 # Max. number of iterations
-nmaxItsMG = 2
+nmaxItsMG = 10
 
 # Min. number of iterations
 nminItsMG = 1
@@ -514,7 +517,7 @@ dintARboundEX3YVel       = 20.0
 #      on coarse grid (UMFPACK) and
 #      detZMV =2 on other levels  
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-detZMV = 2
+detZMV = 1
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Which row of the pressure matrix do you want to 
@@ -592,7 +595,7 @@ detKEnergy = 1
 #   =0 don't calculate
 #   =1 pls calculate :)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-detGMC = 0
+detGMC = 1
 
 # Input line coordinates
 #  the line defined by the two endpoints:
@@ -610,7 +613,7 @@ inputGMC = 0.0 0.0 0.0 1.0
 #       2.2 0.0 2.2 0.41
 #       0.5 0.0 0.5 1.0
 #       0.0 0.0 0.0 1.0
-outputGMC = 0.5 0.0 0.5 1.0 
+outputGMC = 0.8 0.0 0.8 1.0 
 
 # The number of elements (#elem) associated with the line
 #  =0 Calculate the #elem automatically
@@ -623,14 +626,14 @@ nlevels = 15
 #  =0 Don't do it
 #  =1 Please calculate
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-L2U = 1
-H1U = 1
+L2U = 0
+H1U = 0
 
 L2P = 0
 H1P = 0
 
 L2S = 0
-StbblError = 1
+StbblError = 0
 
 
 #-----------------------------------------------------
@@ -661,4 +664,3 @@ NMaxTime = 1
 #   =1  on, please scale
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 detTimeScale = 1
-
