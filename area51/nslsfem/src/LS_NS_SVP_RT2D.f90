@@ -1512,36 +1512,36 @@ contains
                      rboundaryRegion,rdiscreteBC,&
               getBoundaryValues_2D,rcollection=rcollection)
               
-   
-    ! Edge 1 of boundary component 1.
-    call boundary_createRegion(rboundary,1,1,rboundaryRegion)
-    ! As we define the Y-velocity, we now set icomponent=2 in the following call.
-    rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
-    call bcasm_newDirichletBConRealBD (rdiscretisation,3,&
-                     rboundaryRegion,rdiscreteBC,&
-              getBoundaryValues_2D,rcollection=rcollection)
-                 
-    ! Edge 2 of boundary component 1.
-    call boundary_createRegion(rboundary,1,2,rboundaryRegion)
-    rboundaryRegion%iproperties = 2**1-2**1
-    call bcasm_newDirichletBConRealBD (rdiscretisation,3,&
-                     rboundaryRegion,rdiscreteBC,&
-              getBoundaryValues_2D,rcollection=rcollection)
-                 
-    ! Edge 3 of boundary component 1.
-    call boundary_createRegion(rboundary,1,3,rboundaryRegion)
-    rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
-    call bcasm_newDirichletBConRealBD (rdiscretisation,3,&
-                     rboundaryRegion,rdiscreteBC,&
-              getBoundaryValues_2D,rcollection=rcollection)
-    
-    ! Edge 4 of boundary component 1. That is it.
-    call boundary_createRegion(rboundary,1,4,rboundaryRegion)
-    rboundaryRegion%iproperties = 2**1-2**1
-    call bcasm_newDirichletBConRealBD (rdiscretisation,3,&
-                     rboundaryRegion,rdiscreteBC,&
-              getBoundaryValues_2D,rcollection=rcollection)
-              
+!   
+!    ! Edge 1 of boundary component 1.
+!    call boundary_createRegion(rboundary,1,1,rboundaryRegion)
+!    ! As we define the Y-velocity, we now set icomponent=2 in the following call.
+!    rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+!    call bcasm_newDirichletBConRealBD (rdiscretisation,3,&
+!                     rboundaryRegion,rdiscreteBC,&
+!              getBoundaryValues_2D,rcollection=rcollection)
+!                 
+!    ! Edge 2 of boundary component 1.
+!    call boundary_createRegion(rboundary,1,2,rboundaryRegion)
+!    rboundaryRegion%iproperties = 2**1-2**1
+!    call bcasm_newDirichletBConRealBD (rdiscretisation,3,&
+!                     rboundaryRegion,rdiscreteBC,&
+!              getBoundaryValues_2D,rcollection=rcollection)
+!                 
+!    ! Edge 3 of boundary component 1.
+!    call boundary_createRegion(rboundary,1,3,rboundaryRegion)
+!    rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+!    call bcasm_newDirichletBConRealBD (rdiscretisation,3,&
+!                     rboundaryRegion,rdiscreteBC,&
+!              getBoundaryValues_2D,rcollection=rcollection)
+!    
+!    ! Edge 4 of boundary component 1. That is it.
+!    call boundary_createRegion(rboundary,1,4,rboundaryRegion)
+!    rboundaryRegion%iproperties = 2**1-2**1
+!    call bcasm_newDirichletBConRealBD (rdiscretisation,3,&
+!                     rboundaryRegion,rdiscreteBC,&
+!              getBoundaryValues_2D,rcollection=rcollection)
+!              
 
   case (7)
     ! Analytic polynomial solution
@@ -5853,7 +5853,7 @@ contains
       dy = p_Dpoints(2,icubp,iel)
       
       dval1 = 2.0_DP*dx**2*(1.0_DP-dx)**2*(dy*(1.0_DP-dy)**2 - dy**2*(1.0_DP-dy))
-      dval1 = 0.0_DP
+!      dval1 = 0.0_DP
       
       ! Get the error of the FEM function to the analytic function
       dval2 = p_Dfunc(icubp,iel)
@@ -5884,7 +5884,7 @@ contains
       dy = p_Dpoints(2,icubp,iel)
       
       dval1 = -2.0_DP*dy**2*(1.0_DP-dy)**2*(dx*(1.0_DP-dx)**2 - dx**2*(1.0_DP-dx))
-      dval1 = 0.0_DP
+!      dval1 = 0.0_DP
 
       ! Get the error of the FEM function to the bubble function
       dval2 = p_Dfunc(icubp,iel)

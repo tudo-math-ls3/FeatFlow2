@@ -96,14 +96,14 @@ program nslsfem
   call ls_svp_mg2d
 
 
-  ! Call the problem to solve 2D Navier-stokes:
-  call output_lbrk()
-  call output_line('Calculating 2D Navier-Stokes-LSFEM')
-  call output_lbrk()
-  call output_line('Stress-Velocity-Pressure-Multigrid')  
-  call output_line('       Defect-based Version       ') 
-  call output_line('----------------------------------')
-  call ls_svp_2d
+!  ! Call the problem to solve 2D Navier-stokes:
+!  call output_lbrk()
+!  call output_line('Calculating 2D Navier-Stokes-LSFEM')
+!  call output_lbrk()
+!  call output_line('Stress-Velocity-Pressure-Multigrid')  
+!  call output_line('       Defect-based Version       ') 
+!  call output_line('----------------------------------')
+!  call ls_svp_2d
 
 !  ! Call the problem to solve 2D Navier-stokes:
 !  call output_lbrk()
@@ -112,7 +112,6 @@ program nslsfem
 !  call output_line('Stress-Velocity-Pressure-Raviart-Thomas')  
 !  call output_line('---------------------------------------')
 !  call ls_svp_rt2d
-
 
 !  ! Call the problem to solve 2D Navier-stokes:
 !  call output_lbrk()

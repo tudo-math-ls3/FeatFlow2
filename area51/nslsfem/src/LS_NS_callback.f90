@@ -266,6 +266,35 @@ contains
       case (2)
           ! Nothing to do here.
       end select   
+
+
+    case (8)
+      ! Split channel
+       select case (rboundaryregion%iboundcompidx)
+       case (1)
+          select case (icomponent)
+          case (1) ! x-velocity
+           ! Outflow
+            if ((dwhere .ge. 0.0_DP) .and. (dwhere .le. 1.0_DP)) then
+              dvalues(1) = (0.5_DP - dy)*(0.5_DP + dy)
+            end if
+           ! Inflow  
+            if ((dwhere .ge. 5.0_DP) .and. (dwhere .le. 6.0_DP)) then
+              dvalues(1) = (0.5_DP - dy)*(0.5_DP + dy)
+            end if
+
+          case (2) ! y-velocity
+            ! nothing to do here.
+
+          case (3) ! pressure
+            ! nothing to do here.
+          end select
+       
+       case (2)
+          ! nothing to do here.
+       end select
+
+
     
     case default
       ! Un-known problem
