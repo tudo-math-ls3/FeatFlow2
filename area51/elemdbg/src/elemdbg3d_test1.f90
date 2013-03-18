@@ -525,7 +525,7 @@ contains
       rerror%p_RvecCoeff => rvecSol%RvectorBlock(1:1)
       rerror%p_DerrorL2 => Derror(1:1,ilvl)
       rerror%p_DerrorH1 => Derror(2:2,ilvl)
-      call pperr_scalarVec(rerror, getReferenceFunction3D, rcollect)
+      call pperr_scalarVec(rerror, getReferenceFunction3D, rcollect, rcubatureInfo)
       
       ! Print the errors
       call output_line('Errors (L2/H1): ' // &
