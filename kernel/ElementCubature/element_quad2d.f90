@@ -58,6 +58,7 @@ module element_quad2d
   public :: elem_EB50_mult
   public :: elem_EB50_sim
   public :: elem_eval_Q1_2D
+  public :: elem_eval_Q1B_2D
   public :: elem_eval_EM11_2D
   public :: elem_eval_Q2_2D
   public :: elem_eval_Q2H_2D
@@ -10293,6 +10294,232 @@ contains
           DrefDer(2,2) = -0.25_DP*(1.0_DP+dx)
           DrefDer(3,2) =  0.25_DP*(1.0_DP+dx)
           DrefDer(4,2) =  0.25_DP*(1.0_DP-dx)
+
+          ! Remark: Please note that the following code is universal and does
+          ! not need to be modified for other parametric 2D quad elements!
+
+          ! Get jacobian determinant
+          ddet = 1.0_DP / reval%p_Ddetj(i,j)
+
+          ! X-derivatives on real element
+          dx = reval%p_Djac(4,i,j)*ddet
+          dy = reval%p_Djac(2,i,j)*ddet
+          Dbas(1:NBAS,DER_DERIV2D_X,i,j) = dx*DrefDer(1:NBAS,1) &
+                                         - dy*DrefDer(1:NBAS,2)
+
+          ! Y-derivatives on real element
+          dx = -reval%p_Djac(3,i,j)*ddet
+          dy = -reval%p_Djac(1,i,j)*ddet
+          Dbas(1:NBAS,DER_DERIV2D_Y,i,j) = dx*DrefDer(1:NBAS,1) &
+                                         - dy*DrefDer(1:NBAS,2)
+
+        end do ! i
+
+      end do ! j
+      !$omp end parallel do
+
+    end if
+
+  end subroutine
+
+  !************************************************************************
+
+!<subroutine>
+
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+ subroutine elem_eval_Q1B_2D (celement, reval, Bder, Dbas)
+
+!<description>
+  ! This subroutine simultaneously calculates the values of the basic
+  ! functions of the finite element at multiple given points on the
+  ! reference element for multiple given elements.
+!</description>
+
+!<input>
+  ! The element specifier.
+  integer(I32), intent(in)                       :: celement
+
+  ! t_evalElementSet-structure that contains cell-specific information and
+  ! coordinates of the evaluation points. revalElementSet must be prepared
+  ! for the evaluation.
+  type(t_evalElementSet), intent(in)             :: reval
+
+  ! Derivative quantifier array. array [1..DER_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  logical, dimension(:), intent(in)              :: Bder
+!</input>
+
+!<output>
+  ! Value/derivatives of basis functions.
+  ! array [1..EL_MAXNBAS,1..DER_MAXNDER,1..npointsPerElement,nelements] of double
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th
+  !   basis function of the finite element in the point Dcoords(j) on the
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
+  real(DP), dimension(:,:,:,:), intent(out)      :: Dbas
+!</output>
+
+! </subroutine>
+
+  ! Element Description
+  ! -------------------
+  ! The Q1B_2D element is specified by five polynomials per element.
+  !
+  ! The basis polynomials are constructed from the following set of monomials:
+  !
+  ! { 1, x, y, x*y , (1-x^2)*(1-y^2) }
+  !
+  ! The basis polynomials Pi are constructed such that they fulfill the
+  ! following conditions:
+  !
+  ! For all i = 1,...,4:
+  ! {
+  !   For all j = 1,...,4:
+  !   {
+  !     Pi(vj) = kronecker(i,j)
+  !   }
+  !   Pi(x) = kronecker(i,5)
+  ! }
+  !
+  ! With:
+  ! vj being the j-th local corner vertice of the quadrilateral
+  ! x beind the midpoint of the quadrilateral
+  !
+  ! On the reference element, the above combination of monomial set and
+  ! basis polynomial conditions leads to the following basis polynomials:
+  !
+  ! P1(x,y) = 1/4 * ((1 - x) * (1 - y) - (1 - x^2) * (1 - y^2))
+  ! P2(x,y) = 1/4 * ((1 + x) * (1 - y) - (1 - x^2) * (1 - y^2))
+  ! P3(x,y) = 1/4 * ((1 + x) * (1 + y) - (1 - x^2) * (1 - y^2))
+  ! P4(x,y) = 1/4 * ((1 - x) * (1 + y) - (1 - x^2) * (1 - y^2))
+  ! P5(x,y) = (1 - x^2) * (1 - y^2)
+
+  ! Parameter: number of local basis functions
+  integer, parameter :: NBAS = 5
+
+  ! Local variables
+  real(DP) :: ddet,dx,dy,db
+  integer :: i,j
+
+  ! derivatives on reference element
+  real(DP), dimension(NBAS,NDIM2D) :: DrefDer
+
+    ! Calculate function values?
+    if(Bder(DER_FUNC2D)) then
+
+      ! If function values are desired, calculate them.
+      !
+      ! We have to compute the basis functions in the points.
+      ! I.e., we have to evaluate
+      !
+      !    phi_k(x) = Pk(sigma^-1(x)) = Pk^(x^)
+      !
+      ! with x being the real world coordinates, x^ the coordinates
+      ! in the reference element and sigma: x^ -> x the mapping
+      ! between the reference and the real element.
+      ! So just evaluate the basis functions in the points x^ 
+      ! on the reference element
+
+      ! Loop through all elements
+      !$omp parallel do default(shared) private(i,dx,dy)&
+      !$omp if(reval%nelements > reval%p_rperfconfig%NELEMMIN_OMP)
+      do j = 1, reval%nelements
+
+        ! Loop through all points on the current element
+        do i = 1, reval%npointsPerElement
+
+          ! Get the point coordinates
+          dx = reval%p_DpointsRef(1,i,j)
+          dy = reval%p_DpointsRef(2,i,j)
+          
+          ! compute bubble
+          db = (1.0_DP - dx**2) * (1.0_DP - dy**2)
+
+          ! Evaluate basis functions
+          Dbas(1,DER_FUNC2D,i,j) = 0.25_DP*((1.0_DP-dx)*(1.0_DP-dy)-db)
+          Dbas(2,DER_FUNC2D,i,j) = 0.25_DP*((1.0_DP+dx)*(1.0_DP-dy)-db)
+          Dbas(3,DER_FUNC2D,i,j) = 0.25_DP*((1.0_DP+dx)*(1.0_DP+dy)-db)
+          Dbas(4,DER_FUNC2D,i,j) = 0.25_DP*((1.0_DP-dx)*(1.0_DP+dy)-db)
+          Dbas(5,DER_FUNC2D,i,j) = db
+
+        end do ! i
+
+      end do ! j
+      !$omp end parallel do
+
+    end if
+
+    ! Calculate derivatives?
+    if(Bder(DER_DERIV2D_X) .or. Bder(DER_DERIV2D_Y)) then
+
+      ! If x-or y-derivatives are desired, calculate them.
+      ! The values of the derivatives are calculated by taking the
+      ! derivative of the polynomials and multiplying them with the
+      ! inverse of the transformation matrix (in each point) as
+      ! stated above.
+      !
+      ! We have to evaluate "grad(phi(x))". This is done by
+      ! using the chain rule as follows:
+      !
+      !    grad(phi_k(x))^T = D phi_k(x)
+      !                     = D Pk(sigma^-1(x))
+      !                     = D Pk(x^) * D sigma^-1(x)
+      !
+      ! Now note that the Jacobian "D sigma(x^)" of the mapping
+      ! between the reference and the real element is given in Djac:
+      !
+      !    D sigma(x^) = ( Djac(1) Djac(3) )
+      !                  ( Djac(2) Djac(4) )
+      !
+      ! Its inverse then reads
+      !
+      !    D sigma^-1(x) = 1/det ( -Djac(4)  Djac(3) )
+      !                          (  Djac(2) -Djac(1) )
+      !
+      ! with det = Djac(1)*Djac(4) - Djac(2)*Djac(3).
+      ! So all in all, the derivative can be computed as follows:
+      !
+      !    grad(phi_k(x))^T = D Pk(x^) * D sigma^-1(x)
+      !                     = ( dx(Pk(x^)) dy(Pk(x^)) ) * 1/det ( -Djac(4)  Djac(3) )
+      !                                                         (  Djac(2) -Djac(1) )
+      ! i.e., we have
+      !
+      !   dx(phi_k(x)) = 1/det ( -dx(Pk(x^))*Djac(4) + dy(Pk(x^))*Djac(2) )
+      !   dy(phi_k(x)) = 1/det (  dx(Pk(x^))*Djac(3) - dy(Pk(x^))*Djac(1) )
+
+      ! Loop through all elements
+      !$omp parallel do default(shared) private(DrefDer,i,ddet,dx,dy)&
+      !$omp if(reval%nelements > reval%p_rperfconfig%NELEMMIN_OMP)
+      do j = 1, reval%nelements
+
+        ! Loop through all points on the current element
+        do i = 1, reval%npointsPerElement
+
+          ! Get the point coordinates
+          dx = reval%p_DpointsRef(1,i,j)
+          dy = reval%p_DpointsRef(2,i,j)
+
+          ! Calculate derivatives on reference element
+          ! X-derivatives
+          DrefDer(1,1) = -0.25_DP*(1.0_DP-dy)+0.5_DP*dx*(1.0_DP-dy**2)
+          DrefDer(2,1) =  0.25_DP*(1.0_DP-dy)+0.5_DP*dx*(1.0_DP-dy**2)
+          DrefDer(3,1) =  0.25_DP*(1.0_DP+dy)+0.5_DP*dx*(1.0_DP-dy**2)
+          DrefDer(4,1) = -0.25_DP*(1.0_DP+dy)+0.5_DP*dx*(1.0_DP-dy**2)
+          DrefDer(5,1) = -2.0_DP*dx*(1.0_DP-dy**2)
+          ! Y-derivatives
+          DrefDer(1,2) = -0.25_DP*(1.0_DP-dx)+0.5_DP*dy*(1.0_DP-dx**2)
+          DrefDer(2,2) = -0.25_DP*(1.0_DP+dx)+0.5_DP*dy*(1.0_DP-dx**2)
+          DrefDer(3,2) =  0.25_DP*(1.0_DP+dx)+0.5_DP*dy*(1.0_DP-dx**2)
+          DrefDer(4,2) =  0.25_DP*(1.0_DP-dx)+0.5_DP*dy*(1.0_DP-dx**2)
+          DrefDer(5,2) = -2.0_DP*dy*(1.0_DP-dx**2)
 
           ! Remark: Please note that the following code is universal and does
           ! not need to be modified for other parametric 2D quad elements!

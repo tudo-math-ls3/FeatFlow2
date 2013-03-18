@@ -444,6 +444,9 @@ module element
 
   ! ID of piecewise rotated linear nonconforming element, 4 triangles in a quad
   integer(I32), parameter, public :: EL_QPW4P1T_2D = EL_2D + 18
+  
+  ! ID of bilinear H1-conforming quadrilateral FE with bubble, Q1b
+  integer(I32), parameter, public :: EL_Q1B_2D = EL_2D + 19
 
   ! ID of nonconforming parametric linear P1 element on a quadrilareral
   ! element, given by function value in the midpoint and the two
@@ -853,6 +856,8 @@ contains
     else if (selem .eq. "EL_Q1" .or. selem .eq. "EL_Q1_2D" .or. &
              selem .eq. "EL_E011" .or. selem .eq. "EL_E011_2D") then
       elem_igetID = EL_Q1_2D
+    else if (selem .eq. "EL_Q1B_2D") then
+      elem_igetID = EL_Q1B_2D
     else if (selem .eq. "EL_QPW4P1_2D") then
       elem_igetID = EL_QPW4P1_2D
     else if (selem .eq. "EL_QPW4P2_2D") then
@@ -1061,6 +1066,8 @@ contains
     ! H1-conforming elements
     case (EL_Q1_2D)
       sname = 'EL_Q1_2D'
+    case (EL_Q1B_2D)
+      sname = 'EL_Q1B_2D'
     case (EL_EM11_2D)       ! non-parametric variant of EL_Q1_2D; does not work!
       sname = 'EL_EM11_2D'
     case (EL_Q2_2D)
@@ -1330,6 +1337,10 @@ contains
     case (EL_Q1)
       ! local DOFs for Q1
       ndofAtVertices = 4
+    case (EL_Q1B_2D)
+      ! local DOFs for Q1b
+      ndofAtVertices = 4
+      ndofAtElement  = 1
     case (EL_Q2,EL_DG_Q2_2D)
       ! local DOFs for Q2
       ndofAtVertices = 4
@@ -1792,7 +1803,7 @@ contains
       ! Function + 1st derivative
       elem_getMaxDerivative = 3
     
-    case (EL_Q1,EL_DG_Q1_2D)
+    case (EL_Q1,EL_DG_Q1_2D,EL_Q1B_2D)
       ! Function + 1st derivative
       elem_getMaxDerivative = 3
     case (EL_Q2, EL_DG_Q2_2D)
@@ -2055,7 +2066,7 @@ contains
       ! 2D Triangle
       ishp = BGEOM_SHAPE_TRIA
 
-    case (EL_Q0, EL_Q1, EL_Q2, EL_Q3, EL_QP1,&
+    case (EL_Q0, EL_Q1, EL_Q1B_2D, EL_Q2, EL_Q3, EL_QP1,&
           EL_Q1T, EL_Q1TB, EL_Q2T, EL_Q2TB, EL_Q3T_2D,&
           EL_DG_T0_2D, EL_DG_T1_2D, EL_DG_T2_2D,&
           EL_DG_T3_2D, EL_DG_Q1_2D, EL_DG_Q2_2D,&
@@ -2989,6 +3000,9 @@ contains
 
       ! New implementation
       !call elem_eval_Q1_2D(celement, revalElementSet, Bder, Dbas)
+
+    case (EL_Q1B_2D)
+      call elem_eval_Q1B_2D(celement, revalElementSet, Bder, Dbas)
 
     case (EL_EM11_2D)
       call elem_eval_EM11_2D(celement, revalElementSet, Bder, Dbas)
