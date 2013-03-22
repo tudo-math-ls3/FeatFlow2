@@ -58,6 +58,7 @@ module spdiscprojection
   public :: spdp_stdProjectionToP1Q1Scalar
   public :: spdp_projectToVertices
   public :: spdp_projectToCells
+  public :: spdp_aux_getCornerRefCoords
 
 contains
 
