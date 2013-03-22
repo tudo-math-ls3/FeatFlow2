@@ -1029,7 +1029,7 @@ contains
 
     real(DP), dimension(EL_MAXNDER)            :: Dvalues
 
-    real(DP) :: dpar,dpar1,dpar2,dval,dval1,dval2,dval3
+    real(DP) :: dpar,dpar1,dpar2,dval,dval1,dval2,dval3,q3l
     integer :: nve,nnve,nvbd
 
     integer ::iidx
@@ -1440,7 +1440,101 @@ contains
           ! The element midpoint does not have to be considered, as it cannot
           ! be on the boundary.
         end if
+        
+      case (EL_Q3_2D)
 
+        ! Left point inside? -> Corresponding DOF must be computed
+        if ( ipoint1 .ne. 0 ) then
+
+          ! If parameter values are available, get the parameter value.
+          ! Otherwise, take the standard value from above!
+          if (associated(p_DvertexParameterValue)) &
+            dpar = p_DvertexParameterValue(I)
+
+          call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
+                                  rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
+                                  ipoint1,dpar, Dvalues, rcollection)
+
+          if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
+            ! Save the computed function value of the corner.
+            DdofValue(ilocalEdge,ielidx) = Dvalues(1)
+          end if
+
+          ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
+          ! Dirichlet boundary.
+          if (Dvalues(1) .ne. SYS_INFINITY_DP) then
+            ! Set the DOF number < 0 to indicate that it is Dirichlet.
+            ! ilocalEdge is the number of the local edge - and at the same
+            ! time the number of the local DOF of Q1, as an edge always
+            ! follows a corner vertex!
+            Idofs(ilocalEdge,ielidx) = -abs(Idofs(ilocalEdge,ielidx))
+          end if
+        end if
+
+        ! The right point does not have to be checked! It comes later
+        ! with the next edge. The situation when an element crosses the
+        ! maximum parameter value with its boundary is handled by the
+        ! outer DO-LOOP:
+        ! A boundary region with parameter value e.g. [3.0,TMAX]
+        ! will produce two index sets: One index set for [0.0, 0.0]
+        ! and one for [3.0, TMAX).
+        !
+        ! Edge inside? -> Calculate point value on midpoint of edge iedge
+        if ( iedge .ne. 0 ) then
+        
+          q3l = sqrt(5.0_DP) / 5.0_DP
+          if (associated(p_DvertexParameterValue)) then
+
+            ! Number of vertices on the current boundary component?
+            nvbd = p_IboundaryCpIdx(rboundaryRegion%iboundCompIdx+1) - &
+                    p_IboundaryCpIdx(rboundaryRegion%iboundCompIdx)
+
+            ! Get the start- and end-parameter value of the vertices on the edge.
+            dpar1 = p_DvertexParameterValue(I)
+            if (I+1 .lt. p_IboundaryCpIdx(rboundaryRegion%iboundCompIdx+1)) then
+              dpar2 = p_DvertexParameterValue(I+1)
+            else
+              dpar2 = boundary_dgetMaxParVal(p_rspatialDiscr%p_rboundary,&
+                  rboundaryRegion%iboundCompIdx)
+            end if
+
+            ! Calculate the position of the first Gauss point on that edge.
+            call mprim_linearRescale(-q3l,-1.0_DP,1.0_DP,dpar1,dpar2,dval1)
+
+            ! Calculate the position of the 2nd Gauss point on that edge.
+            call mprim_linearRescale(+q3l,-1.0_DP,1.0_DP,dpar1,dpar2,dval2)
+          end if
+
+          ! Get the value in the first Lobatto point
+          call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
+                                  rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
+                                  iedge,dval1, Dvalues,rcollection)
+          
+          if(Dvalues(1) .ne. SYS_INFINITY_DP) then
+            if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
+              ! Save the computed function value
+              DdofValue(nve+2*ilocalEdge-1,ielidx) = Dvalues(1)
+            end if
+            ! Set the DOF number < 0 to indicate that it is Dirichlet
+            Idofs(nve+2*ilocalEdge-1,ielidx) = -abs(Idofs(nve+2*ilocalEdge-1,ielidx))
+          end if
+
+          ! Get the value in the second Lobatoo point
+          call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
+                                  rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
+                                  iedge,dval2, Dvalues,rcollection)
+          
+          if(Dvalues(1) .ne. SYS_INFINITY_DP) then
+            if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
+              ! Save the computed function value
+              DdofValue(nve+2*ilocalEdge,ielidx) = Dvalues(1)
+            end if
+            ! Set the DOF number < 0 to indicate that it is Dirichlet
+            Idofs(nve+2*ilocalEdge,ielidx) = -abs(Idofs(nve+2*ilocalEdge,ielidx))
+          end if
+
+        end if
+        
       case (EL_DG_Q2_2D)
 
         ! Left point inside? -> Corresponding DOF must be computed

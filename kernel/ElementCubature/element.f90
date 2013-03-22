@@ -1074,7 +1074,7 @@ contains
       sname = 'EL_Q2_2D'
     case (EL_Q2H_2D)
       sname = 'EL_Q2H_2D'
-    case (EL_Q3_2D)         ! not implemented
+    case (EL_Q3_2D)
       sname = 'EL_Q3_2D'
     case (EL_QPW4P1_2D)
       sname = 'EL_QPW4P1_2D'
@@ -2245,6 +2245,8 @@ contains
         call elem_Q2 (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_Q2H_2D)
         bwrapSim2 = .true.
+      case (EL_Q3_2D)
+        bwrapSim2 = .true.
       case (EL_QP1)
         call elem_QP1 (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_QPW4P1_2D,EL_QPW4P1T_2D,EL_QPW4P2_2D)
@@ -3015,6 +3017,9 @@ contains
 
     case (EL_Q2H_2D)
       call elem_eval_Q2H_2D(celement, revalElementSet, Bder, Dbas)
+
+    case (EL_Q3_2D)
+      call elem_eval_Q3_2D(celement, revalElementSet, Bder, Dbas)
 
     case (EL_EM30, EL_EM30_UNPIVOTED, EL_EM30_UNSCALED)
       call elem_EM30_sim (celement, revalElementSet%p_Dcoords, &

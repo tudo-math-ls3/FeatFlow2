@@ -62,6 +62,7 @@ module element_quad2d
   public :: elem_eval_EM11_2D
   public :: elem_eval_Q2_2D
   public :: elem_eval_Q2H_2D
+  public :: elem_eval_Q3_2D
   public :: elem_eval_QP1_2D
   public :: elem_eval_QPW4P1_2D
   public :: elem_eval_QPW4P1T_2D
@@ -11157,6 +11158,255 @@ contains
 
   end subroutine
 
+  !************************************************************************
+
+!<subroutine>
+
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+  subroutine elem_eval_Q3_2D (celement, reval, Bder, Dbas)
+
+!<description>
+  ! This subroutine simultaneously calculates the values of the basic
+  ! functions of the finite element at multiple given points on the
+  ! reference element for multiple given elements.
+!</description>
+
+!<input>
+  ! The element specifier.
+  integer(I32), intent(in)                       :: celement
+
+  ! t_evalElementSet-structure that contains cell-specific information and
+  ! coordinates of the evaluation points. revalElementSet must be prepared
+  ! for the evaluation.
+  type(t_evalElementSet), intent(in)             :: reval
+
+  ! Derivative quantifier array. array [1..DER_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  logical, dimension(:), intent(in)              :: Bder
+!</input>
+
+!<output>
+  ! Value/derivatives of basis functions.
+  ! array [1..EL_MAXNBAS,1..DER_MAXNDER,1..npointsPerElement,nelements] of double
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th
+  !   basis function of the finite element in the point Dcoords(j) on the
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
+  real(DP), dimension(:,:,:,:), intent(out)      :: Dbas
+!</output>
+
+! </subroutine>
+
+  ! Element Description
+  ! -------------------
+  ! The Q3_2D element is specified by sixteen polynomials per element.
+  !
+  ! The basis polynomials are constructed from the following set of monomials:
+  !
+  ! { 1, x, x^2, x^3 } * { 1, y, y^2, y^3 }
+  !
+  ! The basis polynomials Pi are constructed such that they fulfill the
+  ! following conditions:
+  !
+  ! For all i = 1,...,9:
+  ! {
+  !   For all j = 1,...,4:
+  !   {
+  !     Pi(vj)   = kronecker(i,j)
+  !     Pi(ej_1) = kronecker(4+(2*i)-1,j)
+  !     Pi(ej_2) = kronecker(4+(2*i)  ,j)
+  !     Pi(xj)   = kronecker(12+i, j)
+  !   }
+  ! }
+  !
+  ! With:
+  ! vj being the j-th local corner vertice of the quadrilateral
+  ! ej_1/2 being the first/second Lobatto-Point the j-th local edge of the quadrilateral
+  ! x_j being the j-th Lobatto-Point on the quadrilateral
+  !
+  ! The basis polynomials Pi are constructed as the product
+  !
+  !    P_{4*i+j} (x,y) := fi(x) * fj(y)
+  !
+  ! of the 1D Lagrange-Polynomials to the 4 Gauss-Lobatto points on the interval [-1,1],
+  ! namely:
+  !
+  !   f1(x) := 1/8 * (-1 + x*( 1 + x*5*(1 - x)))
+  !   f2(x) := 1/8 * (-1 + x*(-1 + x*5*(1 + x)))
+  !   f3(x) := 5/8 * (1 + x*(-sqrt(5) + x*(-1 + x*sqrt(5))))
+  !   f4(x) := 5/8 * (1 + x*( sqrt(5) + x*(-1 - x*sqrt(5))))
+
+  ! Parameter: number of local basis functions
+  integer, parameter :: NBAS = 16
+
+  ! Local variables
+  real(DP) :: ddet,dx,dy
+  integer :: i,j
+
+  ! derivatives on reference element
+  real(DP), dimension(NBAS,NDIM2D) :: DrefDer
+
+    ! Calculate function values?
+    if(Bder(DER_FUNC2D)) then
+
+      ! Loop through all elements
+      !$omp parallel do default(shared) private(i)&
+      !$omp if(reval%nelements > reval%p_rperfconfig%NELEMMIN_OMP)
+      do j = 1, reval%nelements
+
+        ! Loop through all points on the current element
+        do i = 1, reval%npointsPerElement
+
+          ! Evaluate basis functions
+          Dbas( 1,DER_FUNC2D,i,j) = f1(reval%p_DpointsRef(1,i,j)) * f1(reval%p_DpointsRef(2,i,j))
+          Dbas( 2,DER_FUNC2D,i,j) = f2(reval%p_DpointsRef(1,i,j)) * f1(reval%p_DpointsRef(2,i,j))
+          Dbas( 3,DER_FUNC2D,i,j) = f2(reval%p_DpointsRef(1,i,j)) * f2(reval%p_DpointsRef(2,i,j))
+          Dbas( 4,DER_FUNC2D,i,j) = f1(reval%p_DpointsRef(1,i,j)) * f2(reval%p_DpointsRef(2,i,j))
+          Dbas( 5,DER_FUNC2D,i,j) = f3(reval%p_DpointsRef(1,i,j)) * f1(reval%p_DpointsRef(2,i,j))
+          Dbas( 6,DER_FUNC2D,i,j) = f4(reval%p_DpointsRef(1,i,j)) * f1(reval%p_DpointsRef(2,i,j))
+          Dbas( 7,DER_FUNC2D,i,j) = f2(reval%p_DpointsRef(1,i,j)) * f3(reval%p_DpointsRef(2,i,j))
+          Dbas( 8,DER_FUNC2D,i,j) = f2(reval%p_DpointsRef(1,i,j)) * f4(reval%p_DpointsRef(2,i,j))
+          Dbas( 9,DER_FUNC2D,i,j) = f4(reval%p_DpointsRef(1,i,j)) * f2(reval%p_DpointsRef(2,i,j))
+          Dbas(10,DER_FUNC2D,i,j) = f3(reval%p_DpointsRef(1,i,j)) * f2(reval%p_DpointsRef(2,i,j))
+          Dbas(11,DER_FUNC2D,i,j) = f1(reval%p_DpointsRef(1,i,j)) * f4(reval%p_DpointsRef(2,i,j))
+          Dbas(12,DER_FUNC2D,i,j) = f1(reval%p_DpointsRef(1,i,j)) * f3(reval%p_DpointsRef(2,i,j))
+          Dbas(13,DER_FUNC2D,i,j) = f3(reval%p_DpointsRef(1,i,j)) * f3(reval%p_DpointsRef(2,i,j))
+          Dbas(14,DER_FUNC2D,i,j) = f4(reval%p_DpointsRef(1,i,j)) * f3(reval%p_DpointsRef(2,i,j))
+          Dbas(15,DER_FUNC2D,i,j) = f4(reval%p_DpointsRef(1,i,j)) * f4(reval%p_DpointsRef(2,i,j))
+          Dbas(16,DER_FUNC2D,i,j) = f3(reval%p_DpointsRef(1,i,j)) * f4(reval%p_DpointsRef(2,i,j))
+
+        end do ! i
+
+      end do ! j
+      !$omp end parallel do
+
+    end if
+
+    ! Calculate derivatives?
+    if(Bder(DER_DERIV2D_X) .or. Bder(DER_DERIV2D_Y)) then
+
+      ! Loop through all elements
+      !$omp parallel do default(shared) private(DrefDer,i,ddet,dx,dy)&
+      !$omp if(reval%nelements > reval%p_rperfconfig%NELEMMIN_OMP)
+      do j = 1, reval%nelements
+
+        ! Loop through all points on the current element
+        do i = 1, reval%npointsPerElement
+
+          ! Calculate derivatives on reference element
+          ! X-derivatives
+          DrefDer( 1,1) = df1(reval%p_DpointsRef(1,i,j)) * f1(reval%p_DpointsRef(2,i,j))
+          DrefDer( 2,1) = df2(reval%p_DpointsRef(1,i,j)) * f1(reval%p_DpointsRef(2,i,j))
+          DrefDer( 3,1) = df2(reval%p_DpointsRef(1,i,j)) * f2(reval%p_DpointsRef(2,i,j))
+          DrefDer( 4,1) = df1(reval%p_DpointsRef(1,i,j)) * f2(reval%p_DpointsRef(2,i,j))
+          DrefDer( 5,1) = df3(reval%p_DpointsRef(1,i,j)) * f1(reval%p_DpointsRef(2,i,j))
+          DrefDer( 6,1) = df4(reval%p_DpointsRef(1,i,j)) * f1(reval%p_DpointsRef(2,i,j))
+          DrefDer( 7,1) = df2(reval%p_DpointsRef(1,i,j)) * f3(reval%p_DpointsRef(2,i,j))
+          DrefDer( 8,1) = df2(reval%p_DpointsRef(1,i,j)) * f4(reval%p_DpointsRef(2,i,j))
+          DrefDer( 9,1) = df4(reval%p_DpointsRef(1,i,j)) * f2(reval%p_DpointsRef(2,i,j))
+          DrefDer(10,1) = df3(reval%p_DpointsRef(1,i,j)) * f2(reval%p_DpointsRef(2,i,j))
+          DrefDer(11,1) = df1(reval%p_DpointsRef(1,i,j)) * f4(reval%p_DpointsRef(2,i,j))
+          DrefDer(12,1) = df1(reval%p_DpointsRef(1,i,j)) * f3(reval%p_DpointsRef(2,i,j))
+          DrefDer(13,1) = df3(reval%p_DpointsRef(1,i,j)) * f3(reval%p_DpointsRef(2,i,j))
+          DrefDer(14,1) = df4(reval%p_DpointsRef(1,i,j)) * f3(reval%p_DpointsRef(2,i,j))
+          DrefDer(15,1) = df4(reval%p_DpointsRef(1,i,j)) * f4(reval%p_DpointsRef(2,i,j))
+          DrefDer(16,1) = df3(reval%p_DpointsRef(1,i,j)) * f4(reval%p_DpointsRef(2,i,j))
+
+          ! Y-derivatives
+          DrefDer( 1,2) = f1(reval%p_DpointsRef(1,i,j)) * df1(reval%p_DpointsRef(2,i,j))
+          DrefDer( 2,2) = f2(reval%p_DpointsRef(1,i,j)) * df1(reval%p_DpointsRef(2,i,j))
+          DrefDer( 3,2) = f2(reval%p_DpointsRef(1,i,j)) * df2(reval%p_DpointsRef(2,i,j))
+          DrefDer( 4,2) = f1(reval%p_DpointsRef(1,i,j)) * df2(reval%p_DpointsRef(2,i,j))
+          DrefDer( 5,2) = f3(reval%p_DpointsRef(1,i,j)) * df1(reval%p_DpointsRef(2,i,j))
+          DrefDer( 6,2) = f4(reval%p_DpointsRef(1,i,j)) * df1(reval%p_DpointsRef(2,i,j))
+          DrefDer( 7,2) = f2(reval%p_DpointsRef(1,i,j)) * df3(reval%p_DpointsRef(2,i,j))
+          DrefDer( 8,2) = f2(reval%p_DpointsRef(1,i,j)) * df4(reval%p_DpointsRef(2,i,j))
+          DrefDer( 9,2) = f4(reval%p_DpointsRef(1,i,j)) * df2(reval%p_DpointsRef(2,i,j))
+          DrefDer(10,2) = f3(reval%p_DpointsRef(1,i,j)) * df2(reval%p_DpointsRef(2,i,j))
+          DrefDer(11,2) = f1(reval%p_DpointsRef(1,i,j)) * df4(reval%p_DpointsRef(2,i,j))
+          DrefDer(12,2) = f1(reval%p_DpointsRef(1,i,j)) * df3(reval%p_DpointsRef(2,i,j))
+          DrefDer(13,2) = f3(reval%p_DpointsRef(1,i,j)) * df3(reval%p_DpointsRef(2,i,j))
+          DrefDer(14,2) = f4(reval%p_DpointsRef(1,i,j)) * df3(reval%p_DpointsRef(2,i,j))
+          DrefDer(15,2) = f4(reval%p_DpointsRef(1,i,j)) * df4(reval%p_DpointsRef(2,i,j))
+          DrefDer(16,2) = f3(reval%p_DpointsRef(1,i,j)) * df4(reval%p_DpointsRef(2,i,j))
+
+          ! Remark: Please note that the following code is universal and does
+          ! not need to be modified for other parametric 2D quad elements!
+
+          ! Get jacobian determinant
+          ddet = 1.0_DP / reval%p_Ddetj(i,j)
+
+          ! X-derivatives on real element
+          dx = reval%p_Djac(4,i,j)*ddet
+          dy = reval%p_Djac(2,i,j)*ddet
+          Dbas(1:NBAS,DER_DERIV2D_X,i,j) = dx*DrefDer(1:NBAS,1) &
+                                         - dy*DrefDer(1:NBAS,2)
+
+          ! Y-derivatives on real element
+          dx = -reval%p_Djac(3,i,j)*ddet
+          dy = -reval%p_Djac(1,i,j)*ddet
+          Dbas(1:NBAS,DER_DERIV2D_Y,i,j) = dx*DrefDer(1:NBAS,1) &
+                                         - dy*DrefDer(1:NBAS,2)
+
+        end do ! i
+
+      end do ! j
+      !$omp end parallel do
+
+    end if
+    
+    contains
+    
+      elemental real(DP) function f1(dx)
+      real(DP), intent(in) :: dx
+        f1 = 0.125_DP * (-1.0_DP + dx*( 1.0_DP + dx*5.0_DP*( 1.0_DP - dx)))
+      end function
+
+      elemental real(DP) function f2(dx)
+      real(DP), intent(in) :: dx
+        f2 = 0.125_DP * (-1.0_DP + dx*(-1.0_DP + dx*5.0_DP*( 1.0_DP + dx)))
+      end function
+
+      elemental real(DP) function f3(dx)
+      real(DP), intent(in) :: dx
+        f3 = 0.625_DP * ( 1.0_DP + dx*(-sqrt(5.0_DP) + dx*(-1.0_DP + dx*sqrt(5.0_DP))))
+      end function
+
+      elemental real(DP) function f4(dx)
+      real(DP), intent(in) :: dx
+        f4 = 0.625_DP * ( 1.0_DP + dx*( sqrt(5.0_DP) + dx*(-1.0_DP - dx*sqrt(5.0_DP))))
+      end function
+      
+      elemental real(DP) function df1(dx)
+      real(DP), intent(in) :: dx
+        df1 = 0.125_DP * ( 1.0_DP + dx*(10.0_DP - dx*15.0_DP))
+      end function
+
+      elemental real(DP) function df2(dx)
+      real(DP), intent(in) :: dx
+        df2 = 0.125_DP * (-1.0_DP + dx*(10.0_DP + dx*15.0_DP))
+      end function
+
+      elemental real(DP) function df3(dx)
+      real(DP), intent(in) :: dx
+        df3 = -0.625_DP * (sqrt(5.0_DP) + dx*( 2.0_DP - dx*sqrt(45.0_DP)))
+      end function
+
+      elemental real(DP) function df4(dx)
+      real(DP), intent(in) :: dx
+        df4 =  0.625_DP * (sqrt(5.0_DP) + dx*(-2.0_DP - dx*sqrt(45.0_DP)))
+      end function
+      
+    end subroutine
+  
   !************************************************************************
 
 !<subroutine>

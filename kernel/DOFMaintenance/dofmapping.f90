@@ -595,6 +595,7 @@ contains
     integer, dimension(:,:), pointer :: p_2darray,p_2darray2,p_2darray3
     integer, dimension(:), pointer :: p_IelementDofs,p_IelementDofIdx
     integer, dimension(:), pointer :: p_IelementCounter
+    integer(I32), dimension(:), pointer :: p_ItwistIndex
     type(t_triangulation), pointer :: p_rtriangulation
     integer(I32) :: celement
     integer(I32), dimension(2) :: Celements
@@ -727,6 +728,13 @@ contains
           return
         case (EL_P3)
         case (EL_Q3)
+          ! DOF`s in the vertices, egde midpoints and element midpoints
+          call storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement,p_2darray)
+          call storage_getbase_int2D (p_rtriangulation%h_IedgesAtElement,p_2darray2)
+          call storage_getbase_int32 (p_rtriangulation%h_ItwistIndex, p_ItwistIndex)
+          call dof_locGlobUniMult_Q3_2D(p_rtriangulation%NVT,p_rtriangulation%NMT,&
+                                        p_2darray, p_2darray2, p_ItwistIndex, IelIdx, IdofGlob)
+          return
 
         case (EL_QP1)
           ! DOF`s for Q1
@@ -1896,6 +1904,91 @@ contains
 
   end subroutine
 
+  ! ***************************************************************************
+
+!<subroutine>
+
+  pure subroutine dof_locGlobUniMult_Q3_2D(NVT,NMT,&
+      IverticesAtElement, IedgesAtElement, ItwistIndex, IelIdx, IdofGlob)
+
+!<description>
+  ! This subroutine calculates the global indices in the array IdofGlob
+  ! of the degrees of freedom of the elements in the list IelIdx.
+  ! all elements in the list are assumed to be Q3.
+  ! A uniform grid is assumed, i.e. a grid completely discretised the
+  ! same element.
+!</description>
+
+!<input>
+  ! An array with the number of vertices adjacent to each element of the
+  ! triangulation.
+  integer, dimension(:,:), intent(in) :: IverticesAtElement
+
+  ! An array with the number of edges adjacent to each element of the
+  ! triangulation.
+  integer, dimension(:,:), intent(in) :: IedgesAtElement
+  
+  ! An array containing the twist indices.
+  integer(I32), dimension(:), intent(in) :: ItwistIndex
+
+  ! Element indices, where the mapping should be computed.
+  integer, dimension(:), intent(in) :: IelIdx
+
+  ! Number of corner vertices in the triangulation
+  integer, intent(in) :: NVT
+
+  ! Number of edes in the triangulation
+  integer, intent(in) :: NMT
+!</input>
+
+!<output>
+
+  ! Array of global DOF numbers; for every element in IelIdx there is
+  ! a subarray in this list receiving the corresponding global DOF`s.
+  integer, dimension(:,:), intent(out) :: IdofGlob
+
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  integer :: i
+  integer(i32) :: itwist
+  integer, dimension(4) :: Itw
+
+    ! Loop through the elements to handle
+    do i=1,size(IelIdx)
+    
+      ! decode edge twist
+      itwist = ItwistIndex(IelIdx(i))
+      Itw(1) = iand(ishft(itwist, 0),1)
+      Itw(2) = iand(ishft(itwist,-1),1)
+      Itw(3) = iand(ishft(itwist,-2),1)
+      Itw(4) = iand(ishft(itwist,-3),1)
+
+      ! Corner Vertex DOFs
+      IdofGlob(1:4,i) = IverticesAtElement(1:4, IelIdx(i))
+
+      ! Edge Lobatto-Point DOFs
+      IdofGlob( 5,i) = NVT + 2*IedgesAtElement(1, IelIdx(i)) + Itw(1) - 1 
+      IdofGlob( 6,i) = NVT + 2*IedgesAtElement(1, IelIdx(i)) - Itw(1)
+      IdofGlob( 7,i) = NVT + 2*IedgesAtElement(2, IelIdx(i)) + Itw(2) - 1
+      IdofGlob( 8,i) = NVT + 2*IedgesAtElement(2, IelIdx(i)) - Itw(2)
+      IdofGlob( 9,i) = NVT + 2*IedgesAtElement(3, IelIdx(i)) + Itw(3) - 1
+      IdofGlob(10,i) = NVT + 2*IedgesAtElement(3, IelIdx(i)) - Itw(3)
+      IdofGlob(11,i) = NVT + 2*IedgesAtElement(4, IelIdx(i)) + Itw(4) - 1
+      IdofGlob(12,i) = NVT + 2*IedgesAtElement(4, IelIdx(i)) - Itw(4)
+      
+      ! Inner Quad DOFs
+      IdofGlob(13,i) = NVT + 2*NMT + 4*IelIdx(i) - 3
+      IdofGlob(14,i) = NVT + 2*NMT + 4*IelIdx(i) - 2
+      IdofGlob(15,i) = NVT + 2*NMT + 4*IelIdx(i) - 1
+      IdofGlob(16,i) = NVT + 2*NMT + 4*IelIdx(i)
+
+    end do
+
+  end subroutine
+  
   ! ***************************************************************************
 
 !<subroutine>
