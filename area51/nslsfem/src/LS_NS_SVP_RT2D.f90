@@ -27,7 +27,7 @@
 !#
 !# Author:    Masoud Nickaeen
 !# First Version: Jan  29, 2012
-!# Last Update:   Feb. 20, 2013
+!# Last Update:   Mar. 22, 2013
 !# 
 !##############################################################################
 
@@ -1602,6 +1602,209 @@ contains
     call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
                      rboundaryRegion,rdiscreteBC,&
               getBoundaryValues_2D,rcollection=rcollection)
+
+
+
+  case (8)
+    ! Split channel
+
+    ! edge 1 of boundary component 1.
+    call boundary_createRegion(rboundary,1,1,rboundaryRegion)
+    rboundaryRegion%iproperties = 2**1-2**1
+    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+
+    ! edge 1 of boundary component 1.
+    call boundary_createRegion(rboundary,1,2,rboundaryRegion)
+    rboundaryRegion%iproperties = BDR_PROP_WITHEND
+    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+                     
+    ! edge 2 of boundary component 1.
+    call boundary_createregion(rboundary,1,3,rboundaryregion)
+    rboundaryRegion%iproperties = 2**1-2**1
+    call bcasm_newdirichletbconrealbd (rdiscretisation,1,&
+                     rboundaryregion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+                 
+    ! Edge 3 of boundary component 1.
+    call boundary_createRegion(rboundary,1,4,rboundaryRegion)
+    rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+    
+    ! Edge 4 of boundary component 1. That is it.
+    call boundary_createRegion(rboundary,1,5,rboundaryRegion)
+    rboundaryRegion%iproperties = BDR_PROP_WITHEND
+    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+
+    call boundary_createRegion(rboundary,1,6,rboundaryRegion)
+    rboundaryRegion%iproperties = 2**1-2**1
+    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+
+    ! edge 1 of boundary component 1.
+    call boundary_createRegion(rboundary,1,7,rboundaryRegion)
+    rboundaryRegion%iproperties = BDR_PROP_WITHEND
+    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+                     
+    ! edge 2 of boundary component 1.
+    call boundary_createregion(rboundary,1,8,rboundaryregion)
+    rboundaryRegion%iproperties = 2**1-2**1
+    call bcasm_newdirichletbconrealbd (rdiscretisation,1,&
+                     rboundaryregion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+                 
+    ! Edge 3 of boundary component 1.
+    call boundary_createRegion(rboundary,1,9,rboundaryRegion)
+    rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+    
+    ! Edge 4 of boundary component 1. That is it.
+    call boundary_createRegion(rboundary,1,10,rboundaryRegion)
+    rboundaryRegion%iproperties = BDR_PROP_WITHEND
+    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+
+
+    ! edge 1 of boundary component 1.
+
+    call boundary_createRegion(rboundary,1,1,rboundaryRegion)
+    rboundaryRegion%iproperties = 2**1-2**1
+    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+              
+    call boundary_createRegion(rboundary,1,2,rboundaryRegion)
+    rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+                     
+    ! edge 2 of boundary component 1.
+    call boundary_createregion(rboundary,1,3,rboundaryregion)
+    rboundaryRegion%iproperties = 2**1-2**1
+    call bcasm_newdirichletbconrealbd (rdiscretisation,2,&
+                     rboundaryregion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+                 
+    ! Edge 3 of boundary component 1.
+    call boundary_createRegion(rboundary,1,4,rboundaryRegion)
+    rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+    
+    ! Edge 4 of boundary component 1. That is it.
+    call boundary_createRegion(rboundary,1,5,rboundaryRegion)
+    rboundaryRegion%iproperties = 2**1-2**1
+    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+
+    call boundary_createRegion(rboundary,1,6,rboundaryRegion)
+    rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+              
+    ! edge 1 of boundary component 1.
+    call boundary_createRegion(rboundary,1,7,rboundaryRegion)
+    rboundaryRegion%iproperties = BDR_PROP_WITHEND
+    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+                     
+    ! edge 2 of boundary component 1.
+    call boundary_createregion(rboundary,1,8,rboundaryregion)
+    rboundaryRegion%iproperties = 2**1-2**1
+    call bcasm_newdirichletbconrealbd (rdiscretisation,2,&
+                     rboundaryregion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+                 
+    ! Edge 3 of boundary component 1.
+    call boundary_createRegion(rboundary,1,9,rboundaryRegion)
+    rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+    
+    ! Edge 4 of boundary component 1. That is it.
+    call boundary_createRegion(rboundary,1,10,rboundaryRegion)
+    rboundaryRegion%iproperties = BDR_PROP_WITHEND
+    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+
+
+    ! edge 1 of boundary component 1.
+    call boundary_createRegion(rboundary,2,1,rboundaryRegion)
+    rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+                     
+    ! edge 2 of boundary component 1.
+    call boundary_createregion(rboundary,2,2,rboundaryregion)
+    rboundaryRegion%iproperties = 2**1-2**1
+    call bcasm_newdirichletbconrealbd (rdiscretisation,1,&
+                     rboundaryregion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+                 
+    ! Edge 3 of boundary component 1.
+    call boundary_createRegion(rboundary,2,3,rboundaryRegion)
+    rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+    
+    ! Edge 4 of boundary component 1. That is it.
+    call boundary_createRegion(rboundary,2,4,rboundaryRegion)
+    rboundaryRegion%iproperties = 2**1-2**1
+    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+                     
+
+    ! Edge 1 of boundary component 1.
+    call boundary_createRegion(rboundary,2,1,rboundaryRegion)
+    rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+                 
+    ! Edge 2 of boundary component 1.
+    call boundary_createRegion(rboundary,2,2,rboundaryRegion)
+    rboundaryRegion%iproperties = 2**1-2**1
+    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+                 
+    ! Edge 3 of boundary component 1.
+    call boundary_createRegion(rboundary,2,3,rboundaryRegion)
+    rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+    
+    ! Edge 4 of boundary component 1. That is it.
+    call boundary_createRegion(rboundary,2,4,rboundaryRegion)
+    rboundaryRegion%iproperties = 2**1-2**1
+    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+
 
   case default
     ! Un-known problem
@@ -3929,16 +4132,16 @@ contains
       call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
                      Dcoords(1:2,2),Dfluxi,nlevels=nlevels)
       call output_lbrk()
-      call output_line ('flux input(%)-0.082')
-      call output_line ('-------------------')
+      call output_line ('flux input: -0.1666667')
+      call output_line ('----------------------')
       call output_line (trim(sys_sdEP(Dfluxi,17,10)))
       
       ! Better to use the exact value of the inflow fluxes, rather than
       !  calculating it numerically
       ! Flow Around Cylinder
-      Dfluxi = -0.082_DP
+!      Dfluxi = -0.082_DP
       ! Poiseuelle Flow
-  !    Dfluxi = -1.0_DP/6.0_DP
+      Dfluxi = -1.0_DP/6.0_DP
       
       Dfluxi = abs(Dfluxi)
       
@@ -3949,7 +4152,7 @@ contains
       ! Output line flux
       call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
                     Dcoords(1:2,2),Dfluxo,nlevels=nlevels)
-      
+                          
       Dfluxo = abs(Dfluxo)
       
       ! The GMC is then calculated as
@@ -3961,100 +4164,6 @@ contains
       call output_line (&
       '--------at x='//trim(sys_sdp(Dcoords(1,1),5,2))//'-------------')
       call output_line (trim(sys_sdEP(Dgmc,16,6)))     
-      
-
-      ! Output line flux
-      Dcoords(1,1) = Dcoords(1,1) + 0.45_DP
-      Dcoords(1,2) = Dcoords(1,2) + 0.45_DP
-      
-      call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
-                     Dcoords(1:2,2),Dfluxo5,nlevels=nlevels)
-      
-      Dfluxo5 = abs(Dfluxo5)
-      
-      ! The GMC is then calculated as
-      Dgmc = 100.0_DP*(Dfluxi - Dfluxo5) / Dfluxi                           
-      
-      ! Print the GMC value
-      call output_lbrk()
-      call output_line ('Global Mass Conservation(%)')
-      call output_line (&
-      '--------at x='//trim(sys_sdp(Dcoords(1,1),5,2))//'-------------')
-      call output_line (trim(sys_sdEP(Dgmc,16,6)))
-      
-      ! Output line flux
-      Dcoords(1,1) = Dcoords(1,1) + 0.5_DP
-      Dcoords(1,2) = Dcoords(1,2) + 0.5_DP
-      call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
-                     Dcoords(1:2,2),Dfluxo5,nlevels=nlevels)
-      
-      Dfluxo5 = abs(Dfluxo5)
-      
-      ! The GMC is then calculated as
-      Dgmc = 100.0_DP*(Dfluxi - Dfluxo5) / Dfluxi                           
-      
-      ! Print the GMC value
-      call output_lbrk()
-      call output_line ('Global Mass Conservation(%)')
-      call output_line (&
-      '--------at x='//trim(sys_sdp(Dcoords(1,1),5,2))//'-------------')
-      call output_line (trim(sys_sdEP(Dgmc,16,6)))
-
-      ! Output line flux
-      Dcoords(1,1) = Dcoords(1,1) + 0.5_DP
-      Dcoords(1,2) = Dcoords(1,2) + 0.5_DP
-      call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
-                     Dcoords(1:2,2),Dfluxo5,nlevels=nlevels)
-      
-      Dfluxo5 = abs(Dfluxo5)
-      
-      ! The GMC is then calculated as
-      Dgmc = 100.0_DP*(Dfluxi - Dfluxo5) / Dfluxi                           
-      
-      ! Print the GMC value
-      call output_lbrk()
-      call output_line ('Global Mass Conservation(%)')
-      call output_line (&
-      '--------at x='//trim(sys_sdp(Dcoords(1,1),5,2))//'-------------')
-      call output_line (trim(sys_sdEP(Dgmc,16,6)))
-      
-      
-      ! Output line flux
-      Dcoords(1,1) = Dcoords(1,1) + 0.5_DP
-      Dcoords(1,2) = Dcoords(1,2) + 0.5_DP
-      call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
-                     Dcoords(1:2,2),Dfluxo5,nlevels=nlevels)
-      
-      Dfluxo5 = abs(Dfluxo5)
-      
-      ! The GMC is then calculated as
-      Dgmc = 100.0_DP*(Dfluxi - Dfluxo5) / Dfluxi                           
-      
-      ! Print the GMC value
-      call output_lbrk()
-      call output_line ('Global Mass Conservation(%)')
-      call output_line (&
-      '--------at x='//trim(sys_sdp(Dcoords(1,1),5,2))//'-------------')
-      call output_line (trim(sys_sdEP(Dgmc,16,6)))
-      
-      
-      ! Output line flux
-      Dcoords(1,1) = Dcoords(1,1) + 0.2_DP
-      Dcoords(1,2) = Dcoords(1,2) + 0.2_DP
-      call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
-                     Dcoords(1:2,2),Dfluxo5,nlevels=nlevels)
-      
-      Dfluxo5 = abs(Dfluxo5)
-      
-      ! The GMC is then calculated as
-      Dgmc = 100.0_DP*(Dfluxi - Dfluxo5) / Dfluxi                           
-      
-      ! Print the GMC value
-      call output_lbrk()
-      call output_line ('Global Mass Conservation(%)')
-      call output_line (&
-      '--------at x='//trim(sys_sdp(Dcoords(1,1),5,2))//'-------------')
-      call output_line (trim(sys_sdEP(Dgmc,16,6)))
       
     end if   
   

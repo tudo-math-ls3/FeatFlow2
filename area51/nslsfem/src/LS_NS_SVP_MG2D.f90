@@ -26,7 +26,7 @@
 !#
 !# Author:    Masoud Nickaeen
 !# First Version: Jan  14, 2013
-!# Last Update:   Feb  25, 2013
+!# Last Update:   Mar  24, 2013
 !# 
 !##############################################################################
 
@@ -4191,26 +4191,26 @@ contains
       '--------at x='//trim(sys_sdp(Dcoords(1,1),5,2))//'-------------')
       call output_line (trim(sys_sdEP(Dgmc,16,6)))     
       
-!
-!      ! Output line flux
-!      Dcoords(1,1) = Dcoords(1,1) + 0.45_DP
-!      Dcoords(1,2) = Dcoords(1,2) + 0.45_DP
-!      
-!      call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
-!                     Dcoords(1:2,2),Dfluxo5,nlevels=nlevels)
-!      
-!      Dfluxo5 = abs(Dfluxo5)
-!      
-!      ! The GMC is then calculated as
-!      Dgmc = 100.0_DP*(Dfluxi - Dfluxo5) / Dfluxi                           
-!      
-!      ! Print the GMC value
-!      call output_lbrk()
-!      call output_line ('Global Mass Conservation(%)')
-!      call output_line (&
-!      '--------at x='//trim(sys_sdp(Dcoords(1,1),5,2))//'-------------')
-!      call output_line (trim(sys_sdEP(Dgmc,16,6)))
-!      
+
+      ! Output line flux
+      Dcoords(1,1) = Dcoords(1,1) + 0.45_DP
+      Dcoords(1,2) = Dcoords(1,2) + 0.45_DP
+      
+      call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
+                     Dcoords(1:2,2),Dfluxo5,nlevels=nlevels)
+      
+      Dfluxo5 = abs(Dfluxo5)
+      
+      ! The GMC is then calculated as
+      Dgmc = 100.0_DP*(Dfluxi - Dfluxo5) / Dfluxi                           
+      
+      ! Print the GMC value
+      call output_lbrk()
+      call output_line ('Global Mass Conservation(%)')
+      call output_line (&
+      '--------at x='//trim(sys_sdp(Dcoords(1,1),5,2))//'-------------')
+      call output_line (trim(sys_sdEP(Dgmc,16,6)))
+      
 !      ! Output line flux
 !      Dcoords(1,1) = Dcoords(1,1) + 0.5_DP
 !      Dcoords(1,2) = Dcoords(1,2) + 0.5_DP
@@ -4386,6 +4386,15 @@ contains
 
 
   if (H1P == 1) then
+    ! H^1 Norm pressure
+    ! Add pressure vector
+    rcollection%IquickAccess(7) = 2
+    call fev2_addVectorToEvalList(revalVectors,&
+       rvector%RvectorBlock(3),1)   ! p,x,y
+    call bma_buildIntegral (dintvalue,BMA_CALC_STANDARD,&
+    ls_H1_Norm,rcollection=rcollection, &
+    revalVectors=revalVectors,rcubatureInfo=rcubatureInfo)    
+    
     ! Print the Norm value
     call output_lbrk()
     call output_line ('H^1 Error pressure')

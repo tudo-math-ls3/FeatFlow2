@@ -25,8 +25,9 @@
 #   = 5  Bolton, step flow
 #   = 6  Analytic polynomial function
 #   = 7  Static Bubble
+#   = 8  Split Channel
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Problem = 6
+Problem = 8
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Kinematic viscosity noo = muu/rho = 1/Re
@@ -36,7 +37,7 @@ Problem = 6
 #  Step flow        0.000752419383795  --> Re = 800
 #  Proot 2006       0.00375            --> Re = 100
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-dnu = 1.0
+dnu = 0.16666666666667
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Scaling factors or whighting parameters
@@ -49,7 +50,7 @@ dnu = 1.0
 #    scPhysic = 1 lets this happens :)
 #  See this pls: rcollection%DquickAccess(2)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-scPhysic = 1
+scPhysic = 0
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Another scaling is related to the continuity eq.
@@ -57,7 +58,7 @@ scPhysic = 1
 #        \alpha * || \nabla \cdot \bu ||^2
 #   default value = 1.0   no scaling
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-alpha = 1.0
+alpha = 10.0
 
 #-----------------------------------------------------
 # Mesh Parameters and Finite Element Types
@@ -65,13 +66,13 @@ alpha = 1.0
 [MESH]
 
 # Mesh file name and path:
-sFilenamePathMesh = './pre/QUAD'
+sFilenamePathMesh = './pre/2way'
 
 # Final mesh level to solve the problem:
-NLMAX = 6
+NLMAX = 4
 
 # Coarse mesh level, used in multigrid:
-NLMIN = 6
+NLMIN = 4
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Change Quadrilaterals to triangles
@@ -94,12 +95,12 @@ Selm = EL_RT0_2D
 Stild = 0
 
 # Type of Velocity finite elements:
-Velm = EL_P2
+Velm = EL_P1
 Vtild = 0
 
 # Type of Pressure finite element:
-Pelm = EL_P0
-Ptild = 1
+Pelm = EL_P1
+Ptild = 0
 
 # Perturbed grid percentage
 #  =0.0 by default (No purturbation)
@@ -115,10 +116,10 @@ dPert = 0.0
 ccubType = G3_T
 
 # Print mesh statistics or not
-detPMesh = 0
+detPMesh = 1
 
 # Print discretization statistics or not
-detPDisc = 0
+detPDisc = 1
 
 
 #-----------------------------------------------------
@@ -134,7 +135,7 @@ detPDisc = 0
 #     (start with fixed-point and after 'FPIter',
 #      continue with Newton's method)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-LinTyp = 1
+LinTyp = 2
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Number of Fixed-point irerations
@@ -170,7 +171,7 @@ dNLEpsi = 1E-6
 #        OR
 #           The static bubble problem.
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-detRHS = 1
+detRHS = 0
 
 # The constant in the analytic pressure filed
 #   OR
@@ -514,7 +515,7 @@ dintARboundEX3YVel       = 20.0
 #      on coarse grid (UMFPACK) and
 #      detZMV =2 on other levels  
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-detZMV = 1
+detZMV = 3
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Which row of the pressure matrix do you want to 
@@ -526,8 +527,9 @@ detZMV = 1
 #  Cavity, middle of lower edge = 5
 #  Poiesuelle flow, outflow =6
 #  Bolton step flow, outflow = 30
+#  Split channel, outflow = 7
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-irow = 1
+irow = 7
 
 
 #-----------------------------------------------------
@@ -592,7 +594,7 @@ detKEnergy = 1
 #   =0 don't calculate
 #   =1 pls calculate :)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-detGMC = 0
+detGMC = 1
 
 # Input line coordinates
 #  the line defined by the two endpoints:
@@ -601,7 +603,7 @@ detGMC = 0
 #       0.0 0.0 0.0 0.41 
 #       0.0 0.0 0.0 1.0
 #       -2.0 0.0 -2.0 1.0
-inputGMC = 0.0 0.0 0.0 1.0
+inputGMC = -4.5 -0.5 -4.5 0.5
 
 # Output line coordinates
 #  the line defined by the two endpoints:
@@ -610,7 +612,7 @@ inputGMC = 0.0 0.0 0.0 1.0
 #       2.2 0.0 2.2 0.41
 #       0.5 0.0 0.5 1.0
 #       0.0 0.0 0.0 1.0
-outputGMC = 0.5 0.0 0.5 1.0 
+outputGMC = 3.0 -0.5 3.0 0.5 
 
 # The number of elements (#elem) associated with the line
 #  =0 Calculate the #elem automatically
@@ -623,13 +625,13 @@ nlevels = 15
 #  =0 Don't do it
 #  =1 Please calculate
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-L2U = 1
+L2U = 0
 H1U = 0
 
-L2P = 1
+L2P = 0
 H1P = 0
 
-L2S = 1
+L2S = 0
 
 StbblError = 0
 

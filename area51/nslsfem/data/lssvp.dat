@@ -27,7 +27,7 @@
 #   = 7  Static Bubble
 #   = 8  Split Channel
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Problem = 4
+Problem = 8
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Kinematic viscosity noo = muu/rho = 1/Re
@@ -58,7 +58,7 @@ scPhysic = 0
 #        \alpha * || \nabla \cdot \bu ||^2
 #   default value = 1.0   no scaling
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-alpha = 1.0
+alpha = 10.0
 
 #-----------------------------------------------------
 # Mesh Parameters and Finite Element Types
@@ -66,13 +66,13 @@ alpha = 1.0
 [MESH]
 
 # Mesh file name and path:
-sFilenamePathMesh = './pre/QUAD'
+sFilenamePathMesh = './pre/2way'
 
 # Final mesh level to solve the problem:
-NLMAX = 6
+NLMAX = 4
 
 # Coarse mesh level, used in multigrid:
-NLMIN = 6
+NLMIN = 4
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Change Quadrilaterals to triangles
@@ -90,15 +90,15 @@ detTri = 0
 #  EL_RT0_2D, EL_DCTP0_2D, EL_QP1
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Type of Stress finite element:
-Selm = EL_EM30
+Selm = EL_EB30
 Stild = 1
 
 # Type of Velocity finite element:
-Velm = EL_EM30
+Velm = EL_EB30
 Vtild = 1
 
 # Type of Pressure finite element:
-Pelm = EL_EM30
+Pelm = EL_EB30
 Ptild = 1
 
 # Perturbed grid percentage
@@ -604,7 +604,7 @@ detGMC = 1
 #       0.0 0.0 0.0 0.41 
 #       0.0 0.0 0.0 1.0
 #       -2.0 0.0 -2.0 1.0
-inputGMC = 0.0 0.0 0.0 1.0
+inputGMC = -4.5 -0.5 -4.5 0.5
 
 # Output line coordinates
 #  the line defined by the two endpoints:
@@ -613,7 +613,7 @@ inputGMC = 0.0 0.0 0.0 1.0
 #       2.2 0.0 2.2 0.41
 #       0.5 0.0 0.5 1.0
 #       0.0 0.0 0.0 1.0
-outputGMC = 0.8 0.0 0.8 1.0 
+outputGMC = 3.0 -0.5 3.0 0.5  
 
 # The number of elements (#elem) associated with the line
 #  =0 Calculate the #elem automatically
