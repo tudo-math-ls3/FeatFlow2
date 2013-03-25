@@ -26,7 +26,7 @@
 !#
 !# Author:    Masoud Nickaeen
 !# First Version: Jan  14, 2013
-!# Last Update:   Mar  24, 2013
+!# Last Update:   Mar  25, 2013
 !# 
 !##############################################################################
 
@@ -418,7 +418,7 @@ contains
   
   ! Physical scaling
   if (scPhysic .eq. 1) then
-    rcollection%DquickAccess(2) = 20.0_DP !1.0_DP/(dnu) !
+    rcollection%DquickAccess(2) = 1.0_DP/(dnu)
   else
     rcollection%DquickAccess(2) = 1.0_DP
   end if
@@ -1381,8 +1381,7 @@ contains
     rboundaryRegion%iproperties = 2**1-2**1
     call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
                      rboundaryRegion,rdiscreteBC,&
-              getBoundaryValues_2D,rcollection=rcollection) 
-
+              getBoundaryValues_2D,rcollection=rcollection)
   
   case (4)
     ! Poiseuielle Flow, Dirichlet velocity outflow
@@ -3607,7 +3606,7 @@ contains
   !   to calculate the Kinetic energy
   !   to write the real/projected data
   integer :: detWriteResult, LiftDragASO, ExporType
-  integer :: KEnergy, detKEnergy
+  integer :: KEnergy, detKEnergy, Div
   integer :: Vtild, Ptild, Stild
   
   ! Kinematic viscosity noo = 1/Re  
@@ -4068,6 +4067,51 @@ contains
 
 
   ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  ! Calculating the velocity divergence L^2-error.
+  !   Div = \int{ (u_x + v_y)^2 dX}
+  ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- 
+  ! Determine whether to calculate the Divergence L^2-Error
+  call parlst_getvalue_int (rparams, 'POST', 'Div', Div, 0)  
+    
+  if (Div .eq. 1) then
+    ! Add velocity vectors
+    rcollection%IquickAccess(7) = 7
+    call fev2_addVectorToEvalList(revalVectors,&
+       rvector%RvectorBlock(1),1)   ! u1,x,y
+    call fev2_addVectorToEvalList(revalVectors,&
+       rvector%RvectorBlock(2),1)   ! u2,x,y       
+       
+    ! initializing the maximum norm value
+    rcollection%DquickAccess(11) = 1.0E-16_DP
+    
+    call bma_buildIntegral (dintvalue,BMA_CALC_STANDARD,&
+    ls_L2_Norm,rcollection=rcollection, &
+    revalVectors=revalVectors,rcubatureInfo=rcubatureInfo)
+
+    ! Print the Norm value
+    call output_lbrk()
+    call output_line ('L^2 Error Div(u)')
+    call output_line ('----------------')
+    call output_line (trim(sys_sdEP(sqrt(dintvalue),15,6)))  
+    call fev2_releaseVectorList(revalVectors)
+
+    call output_line ('L2divu:'//&
+    trim(sys_sdEP(sqrt(dintvalue),15,6)), coutputMode=OU_MODE_BENCHLOG) 
+ 
+    ! Print the Norm value
+    call output_lbrk()
+    call output_line ('L^inf Error Div(u)')
+    call output_line ('------------------')
+    call output_line (trim(sys_sdEP(rcollection%DquickAccess(11),15,6)))  
+    call fev2_releaseVectorList(revalVectors)
+
+    call output_line ('Linfdivu:'//&
+    trim(sys_sdEP(rcollection%DquickAccess(11),15,6)), & 
+    coutputMode=OU_MODE_BENCHLOG) 
+ 
+  end if
+
+  ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   ! Calculate Global Mass Conservation (GMC)
   !  This applies to the channel flows ONLY. The GMC is the normalised 
   !  difference between the input and output velocity fluxes (mass flow rate)
@@ -4157,19 +4201,6 @@ contains
       ! Input line flux
       call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
                      Dcoords(1:2,2),Dfluxi,nlevels=nlevels)
-      call output_lbrk()
-      call output_line ('flux input: -0.16666667')
-      call output_line ('-----------------------')
-      call output_line (trim(sys_sdEP(Dfluxi,17,10)))
-      
-      ! Better to use the exact value of the inflow fluxes, rather than
-      !  calculating it numerically
-      ! Flow Around Cylinder
-!      Dfluxi = -0.082_DP
-      ! Poiseuelle Flow
-      Dfluxi = -1.0_DP/6.0_DP
-      
-      Dfluxi = abs(Dfluxi)
       
       ! Output line coordinates
       call parlst_getvalue_string (rparams, 'POST', 'outputGMC',sstring)
@@ -4178,10 +4209,26 @@ contains
       ! Output line flux
       call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
                     Dcoords(1:2,2),Dfluxo,nlevels=nlevels)
+
+      ! Print out the calculated inflow flux
+      call output_lbrk()
+      call output_line ('flux input: -0.1666667')
+      call output_line ('----------------------')      
+!      call output_line ('flux input: -0.082')
+!      call output_line ('------------------')
+      call output_line (trim(sys_sdEP(Dfluxi,17,10)))
       
+      ! Exact value of the inflow flux
+      ! ***Flow Around Cylinder*** !
+      ! Dfluxi = -0.082_DP
+      ! ***Poiseuille Flow*** !
+      Dfluxi = -1.0_DP/6.0_DP
+      
+      ! Take the absolute flux values instead
+      Dfluxi = abs(Dfluxi)
       Dfluxo = abs(Dfluxo)
-      
-      ! The GMC is then calculated as
+            
+      ! The GMC is then calculated as the normalized flux value
       Dgmc = 100.0_DP*(Dfluxi - Dfluxo) / Dfluxi
       
       ! Print the GMC value
@@ -4190,15 +4237,16 @@ contains
       call output_line (&
       '--------at x='//trim(sys_sdp(Dcoords(1,1),5,2))//'-------------')
       call output_line (trim(sys_sdEP(Dgmc,16,6)))     
-      
 
-      ! Output line flux
-      Dcoords(1,1) = Dcoords(1,1) + 0.45_DP
-      Dcoords(1,2) = Dcoords(1,2) + 0.45_DP
-      
+
+      ! Modify the coordinates for a new cross-section
+      ! Output line flux will be calculated on:
+      Dcoords(1,1) = Dcoords(1,1) + 0.5_DP
+      Dcoords(1,2) = Dcoords(1,2) + 0.5_DP
       call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
                      Dcoords(1:2,2),Dfluxo5,nlevels=nlevels)
       
+      ! Take the absolute flux value instead
       Dfluxo5 = abs(Dfluxo5)
       
       ! The GMC is then calculated as
@@ -4210,82 +4258,8 @@ contains
       call output_line (&
       '--------at x='//trim(sys_sdp(Dcoords(1,1),5,2))//'-------------')
       call output_line (trim(sys_sdEP(Dgmc,16,6)))
-      
-!      ! Output line flux
-!      Dcoords(1,1) = Dcoords(1,1) + 0.5_DP
-!      Dcoords(1,2) = Dcoords(1,2) + 0.5_DP
-!      call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
-!                     Dcoords(1:2,2),Dfluxo5,nlevels=nlevels)
-!      
-!      Dfluxo5 = abs(Dfluxo5)
-!      
-!      ! The GMC is then calculated as
-!      Dgmc = 100.0_DP*(Dfluxi - Dfluxo5) / Dfluxi                           
-!      
-!      ! Print the GMC value
-!      call output_lbrk()
-!      call output_line ('Global Mass Conservation(%)')
-!      call output_line (&
-!      '--------at x='//trim(sys_sdp(Dcoords(1,1),5,2))//'-------------')
-!      call output_line (trim(sys_sdEP(Dgmc,16,6)))
-!
-!      ! Output line flux
-!      Dcoords(1,1) = Dcoords(1,1) + 0.5_DP
-!      Dcoords(1,2) = Dcoords(1,2) + 0.5_DP
-!      call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
-!                     Dcoords(1:2,2),Dfluxo5,nlevels=nlevels)
-!      
-!      Dfluxo5 = abs(Dfluxo5)
-!      
-!      ! The GMC is then calculated as
-!      Dgmc = 100.0_DP*(Dfluxi - Dfluxo5) / Dfluxi                           
-!      
-!      ! Print the GMC value
-!      call output_lbrk()
-!      call output_line ('Global Mass Conservation(%)')
-!      call output_line (&
-!      '--------at x='//trim(sys_sdp(Dcoords(1,1),5,2))//'-------------')
-!      call output_line (trim(sys_sdEP(Dgmc,16,6)))
-!      
-!      
-!      ! Output line flux
-!      Dcoords(1,1) = Dcoords(1,1) + 0.5_DP
-!      Dcoords(1,2) = Dcoords(1,2) + 0.5_DP
-!      call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
-!                     Dcoords(1:2,2),Dfluxo5,nlevels=nlevels)
-!      
-!      Dfluxo5 = abs(Dfluxo5)
-!      
-!      ! The GMC is then calculated as
-!      Dgmc = 100.0_DP*(Dfluxi - Dfluxo5) / Dfluxi                           
-!      
-!      ! Print the GMC value
-!      call output_lbrk()
-!      call output_line ('Global Mass Conservation(%)')
-!      call output_line (&
-!      '--------at x='//trim(sys_sdp(Dcoords(1,1),5,2))//'-------------')
-!      call output_line (trim(sys_sdEP(Dgmc,16,6)))
-!      
-!      
-!      ! Output line flux
-!      Dcoords(1,1) = Dcoords(1,1) + 0.2_DP
-!      Dcoords(1,2) = Dcoords(1,2) + 0.2_DP
-!      call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
-!                     Dcoords(1:2,2),Dfluxo5,nlevels=nlevels)
-!      
-!      Dfluxo5 = abs(Dfluxo5)
-!      
-!      ! The GMC is then calculated as
-!      Dgmc = 100.0_DP*(Dfluxi - Dfluxo5) / Dfluxi                           
-!      
-!      ! Print the GMC value
-!      call output_lbrk()
-!      call output_line ('Global Mass Conservation(%)')
-!      call output_line (&
-!      '--------at x='//trim(sys_sdp(Dcoords(1,1),5,2))//'-------------')
-!      call output_line (trim(sys_sdEP(Dgmc,16,6)))
-!      
-    end if   
+     
+   end if   
   
   end if
 
@@ -4382,8 +4356,8 @@ contains
 
     call output_line ('L2pressure:'//&
     trim(sys_sdEP(sqrt(dintvalue),15,6)), coutputMode=OU_MODE_BENCHLOG)
-  end if
 
+  end if
 
   if (H1P == 1) then
     ! H^1 Norm pressure
@@ -6120,7 +6094,7 @@ contains
   real(DP) :: dval1,dval2,dx,dy, dC
   integer :: iel, icubp
   real(DP), dimension(:,:), pointer :: p_DcubWeight
-  real(DP), dimension(:,:), pointer :: p_Dfunc
+  real(DP), dimension(:,:), pointer :: p_Dfunc,p_DderivX,p_DderivY
   real(DP), dimension(:,:,:), pointer :: p_Dpoints
   real(DP), dimension(:), pointer :: p_DelementArea
   real(DP) :: dpressure_in, darea_in, dpressure_o, darea_o,r
@@ -6362,6 +6336,39 @@ contains
                                                      darea_o*dpressure_o     
                                                            
      end if
+      
+    end do ! icubp
+    
+    end do ! iel 
+
+  case (7)
+    ! Velocity divergence L^2-error
+    ! Loop over the elements in the current set.
+    ! Get the data array with the values of the FEM function
+    ! in the cubature points
+    p_DderivX => revalVectors%p_RvectorData(1)%p_Ddata(:,:,DER_DERIV2D_X)
+    p_DderivY => revalVectors%p_RvectorData(2)%p_Ddata(:,:,DER_DERIV2D_Y)
+    
+    do iel = 1,nelements
+
+    ! Loop over all cubature points on the current element
+    do icubp = 1,npointsPerElement
+
+      ! The analytic function is not required here
+      dval1 = 0.0_DP
+
+      ! Get the error of the FEM function to the analytic function
+      dval2 = p_DderivX(icubp,iel) + p_DderivY(icubp,iel)
+      
+      ! Maximum norm of the divergence
+      if (dval2 .gt. rcollection%DquickAccess(11)) then
+        rcollection%DquickAccess(11) = dval2
+      end if  
+      
+      ! Multiply the values by the cubature weight and sum up
+      ! into the (squared) L2 error:
+      dintvalue = dintvalue + &
+        p_DcubWeight(icubp,iel) * (dval1 - dval2)**2
       
     end do ! icubp
     

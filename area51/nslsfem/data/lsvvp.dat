@@ -24,8 +24,10 @@
 #   = 4  Poiseuielle Flow, Dirichlet velocity outflow
 #   = 5  Bolton, step flow
 #   = 6  Analytic polynomial function
+#   = 7  Static Bubble
+#   = 8  Split Channel
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Problem = 1
+Problem = 3
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Kinematic viscosity noo = muu/rho = 1/Re
@@ -35,7 +37,7 @@ Problem = 1
 #  Step flow        0.000752419383795  --> Re = 800
 #  Proot 2006       0.00375            --> Re = 100
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-dnu = 1E-3
+dnu = 0.0016666666666667
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Scaling factors or whighting parameters
@@ -71,13 +73,13 @@ alpha = 1.0
 [MESH]
 
 # Mesh file name and path:
-sFilenamePathMesh = './pre/bench1'
+sFilenamePathMesh = './pre/QUAD'
 
 # Final mesh level to solve the problem:
-NLMAX = 2
+NLMAX = 5
 
 # Coarse mesh level, used in multigrid:
-NLMIN = 2
+NLMIN = 4
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Change Quadrilaterals to triangles
@@ -87,21 +89,22 @@ NLMIN = 2
 detTri = 0
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# Type of Velocity vector finite elements:
+# Type of finite elements:
 #  EL_Q1, EL_Q2
 #  EL_EM30, EL_EB50
 #  EL_P1, EL_P2
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Velm = EL_EM30
-Vtild = 1
-
 # Type of Vorticity finite element:
-Welm = EL_EM30
-Wtild = 1
+Welm = EL_Q1
+Wtild = 0
+
+# Type of Velocity vector finite elements:
+Velm = EL_Q1
+Vtild = 0
 
 # Type of Pressure finite element:
-Pelm = EL_EM30
-Ptild = 1
+Pelm = EL_Q1
+Ptild = 0
 
 # Perturbed grid percentage
 #  =0.0 by default (No purturbation)
@@ -117,10 +120,10 @@ dPert = 0.0
 ccubType = G3_2D
 
 # Print mesh statistics or not
-detPMesh = 0
+detPMesh = 1
 
 # Print discretization statistics or not
-detPDisc = 0
+detPDisc = 1
 
 
 #-----------------------------------------------------
@@ -167,12 +170,16 @@ dNLEpsi = 1E-6
 #           v(x,y) = 2*y^2 * (1-y^2) * (x*(1-x)^2 - x^2*(1-x))
 #           p(x,y) = C*(x^3 - y^3 - 0.5)
 #           which leads to crazy f_x and f_y.
+#        OR
+#           The static bubble problem.
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 detRHS = 0
 
-# The constant in the analytic
-# pressure/velocity filed
+# The constant in the analytic pressure/velocity filed
+#   OR
+# the coefficient of surface tension, sigma
 #  Applicable ONLY if detRHS = 1
+dC = 1
 cp = 1
 cu = 1
 
@@ -266,7 +273,7 @@ detVJump = 0
 
 # Relaxation parameter for Jump stabilisation.
 # Standard value: 0.01
-dJumpV = 0.05
+dJumpV = 1.0
 
 # 2nd Relaxation parameter in the jump stabilisation. Standard = 0.0
 dJumpStarV = 0.0
@@ -304,7 +311,7 @@ detPJump = 0
 
 # Relaxation parameter for Jump stabilisation.
 # Standard value: 1.0
-dJumpP = 1.0
+dJumpP = 0.1
 
 
 #-----------------------------------------------------
@@ -319,7 +326,7 @@ dJumpP = 1.0
 #    =1  Stand-alone Multigrid solver
 #    =2  Multigrid-preconditioned (CG\BiCGStab) solver
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-LINsolverType = 1
+LINsolverType = 2
 
 # If we have a Multigrid-preconditioned solver, then,
 #  what is the Krylov subspace linear solver?
@@ -516,6 +523,7 @@ detZMV = 0
 #  Cavity, middle of lower edge = 5
 #  Poiesuelle flow, outflow =6
 #  Bolton step flow, outflow = 30
+#  Split channel, outflow = 7
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 irow = 1
 
@@ -592,7 +600,7 @@ detEnsto = 0
 #   =0  don't calculate
 #   =1  yes calculate
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Div = 0
+Div = 1
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Calculate Global Mass Conservation (GMC)
@@ -616,7 +624,7 @@ detGMC = 1
 #       0.0 0.0 0.0 0.41 
 #       0.0 0.0 0.0 1.0
 #       -2.0 0.0 -2.0 1.0
-inputGMC = 0.0 0.0 0.0 0.41
+inputGMC = 0.0 0.0 0.0 1.0
 
 # Output line coordinates
 #  the line defined by the two endpoints:
@@ -625,20 +633,31 @@ inputGMC = 0.0 0.0 0.0 0.41
 #       2.2 0.0 2.2 0.41
 #       0.5 0.0 0.5 1.0
 #       0.0 0.0 0.0 1.0
-outputGMC = 1.7 0.0 1.7 0.41
+outputGMC = 0.3 0.0 0.3 1.0
 
 # The number of elements (#elem) associated with the line
 #  =0 Calculate the #elem automatically
 #  =1,2,3 ... --->  #elem = 2^(1,2,3...)
 nlevels = 15
 
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# Calculate L^2 and L^1 norms for the analytical
+# Calculate L^2 and H^1 norms for the analytical
 #  solution.
 #  =0 Don't do it
 #  =1 Please calculate
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-detNorms = 0
+L2U = 0
+H1U = 0
+
+L2P = 0
+H1P = 0
+
+L2W = 0
+L2WU = 0
+H1W = 0
+
+StbblError = 0
 
 
 #-----------------------------------------------------

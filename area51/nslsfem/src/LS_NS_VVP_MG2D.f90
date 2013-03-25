@@ -28,7 +28,7 @@
 !#
 !# Author:    Masoud Nickaeen
 !# First Version: May  28, 2012
-!# Last Update:   Mar  15, 2013
+!# Last Update:   Mar  25, 2013
 !##############################################################################
 
 module LS_NS_VVP_MG2D
@@ -416,7 +416,7 @@ contains
   
   ! Physical scaling
   if (scPhysic .eq. 1) then
-    rcollection%DquickAccess(2) = 1.0_DP/(dnu) !20.0_DP
+    rcollection%DquickAccess(2) = 100.0_DP !1.0_DP/(dnu)
   else
     rcollection%DquickAccess(2) = 1.0_DP
   end if
@@ -454,13 +454,18 @@ contains
   call parlst_getvalue_int (rparams, 'RHS', 'detRHS', &
   rcollection%IquickAccess(8), 0) 
   
-  if (rcollection%IquickAccess(8) == 1) then 
-    ! The constant parameters in the pressure analytic polynomial
+  if (rcollection%IquickAccess(9) == 6) then 
+    ! The constant parameters in the analytic polynomial solution
     call parlst_getvalue_double (rparams, 'RHS', 'cp', &
       rcollection%DquickAccess(9), 1.0_DP)
 
     call parlst_getvalue_double (rparams, 'RHS', 'cu', &
       rcollection%DquickAccess(10), 1.0_DP)
+
+  elseif (rcollection%IquickAccess(9) == 7) then 
+    ! The coefficient of surface tension, sigma  
+    call parlst_getvalue_double (rparams, 'RHS', 'dC', &
+      rcollection%DquickAccess(9), 1.0_DP)      
   end if
   
   end subroutine
@@ -1517,6 +1522,266 @@ contains
                      rboundaryRegion,rdiscreteBC,&
               getBoundaryValues_2D,rcollection=rcollection)
 
+  case (7)
+    ! Static Bubble
+    ! edge 1 of boundary component 1.
+    call boundary_createRegion(rboundary,1,1,rboundaryRegion)
+    rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+                     
+    ! edge 2 of boundary component 1.
+    call boundary_createregion(rboundary,1,2,rboundaryregion)
+    rboundaryRegion%iproperties = 2**1-2**1
+    call bcasm_newdirichletbconrealbd (rdiscretisation,1,&
+                     rboundaryregion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+                 
+    ! Edge 3 of boundary component 1.
+    call boundary_createRegion(rboundary,1,3,rboundaryRegion)
+    rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+    
+    ! Edge 4 of boundary component 1. That is it.
+    call boundary_createRegion(rboundary,1,4,rboundaryRegion)
+    rboundaryRegion%iproperties = 2**1-2**1
+    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+                     
+
+    ! Edge 1 of boundary component 1.
+    call boundary_createRegion(rboundary,1,1,rboundaryRegion)
+    ! As we define the Y-velocity, we now set icomponent=2 in the following call.
+    rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+                 
+    ! Edge 2 of boundary component 1.
+    call boundary_createRegion(rboundary,1,2,rboundaryRegion)
+    rboundaryRegion%iproperties = 2**1-2**1
+    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+                 
+    ! Edge 3 of boundary component 1.
+    call boundary_createRegion(rboundary,1,3,rboundaryRegion)
+    rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+    
+    ! Edge 4 of boundary component 1. That is it.
+    call boundary_createRegion(rboundary,1,4,rboundaryRegion)
+    rboundaryRegion%iproperties = 2**1-2**1
+    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+
+  case (8)
+    ! Split channel
+
+    ! edge 1 of boundary component 1.
+    call boundary_createRegion(rboundary,1,1,rboundaryRegion)
+    rboundaryRegion%iproperties = 2**1-2**1
+    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+
+    ! edge 1 of boundary component 1.
+    call boundary_createRegion(rboundary,1,2,rboundaryRegion)
+    rboundaryRegion%iproperties = BDR_PROP_WITHEND
+    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+                     
+    ! edge 2 of boundary component 1.
+    call boundary_createregion(rboundary,1,3,rboundaryregion)
+    rboundaryRegion%iproperties = 2**1-2**1
+    call bcasm_newdirichletbconrealbd (rdiscretisation,1,&
+                     rboundaryregion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+                 
+    ! Edge 3 of boundary component 1.
+    call boundary_createRegion(rboundary,1,4,rboundaryRegion)
+    rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+    
+    ! Edge 4 of boundary component 1. That is it.
+    call boundary_createRegion(rboundary,1,5,rboundaryRegion)
+    rboundaryRegion%iproperties = BDR_PROP_WITHEND
+    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+
+    call boundary_createRegion(rboundary,1,6,rboundaryRegion)
+    rboundaryRegion%iproperties = 2**1-2**1
+    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+
+    ! edge 1 of boundary component 1.
+    call boundary_createRegion(rboundary,1,7,rboundaryRegion)
+    rboundaryRegion%iproperties = BDR_PROP_WITHEND
+    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+                     
+    ! edge 2 of boundary component 1.
+    call boundary_createregion(rboundary,1,8,rboundaryregion)
+    rboundaryRegion%iproperties = 2**1-2**1
+    call bcasm_newdirichletbconrealbd (rdiscretisation,1,&
+                     rboundaryregion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+                 
+    ! Edge 3 of boundary component 1.
+    call boundary_createRegion(rboundary,1,9,rboundaryRegion)
+    rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+    
+    ! Edge 4 of boundary component 1. That is it.
+    call boundary_createRegion(rboundary,1,10,rboundaryRegion)
+    rboundaryRegion%iproperties = BDR_PROP_WITHEND
+    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+
+
+    ! edge 1 of boundary component 1.
+
+    call boundary_createRegion(rboundary,1,1,rboundaryRegion)
+    rboundaryRegion%iproperties = 2**1-2**1
+    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+              
+    call boundary_createRegion(rboundary,1,2,rboundaryRegion)
+    rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+                     
+    ! edge 2 of boundary component 1.
+    call boundary_createregion(rboundary,1,3,rboundaryregion)
+    rboundaryRegion%iproperties = 2**1-2**1
+    call bcasm_newdirichletbconrealbd (rdiscretisation,2,&
+                     rboundaryregion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+                 
+    ! Edge 3 of boundary component 1.
+    call boundary_createRegion(rboundary,1,4,rboundaryRegion)
+    rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+    
+    ! Edge 4 of boundary component 1. That is it.
+    call boundary_createRegion(rboundary,1,5,rboundaryRegion)
+    rboundaryRegion%iproperties = 2**1-2**1
+    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+
+    call boundary_createRegion(rboundary,1,6,rboundaryRegion)
+    rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+              
+    ! edge 1 of boundary component 1.
+    call boundary_createRegion(rboundary,1,7,rboundaryRegion)
+    rboundaryRegion%iproperties = BDR_PROP_WITHEND
+    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+                     
+    ! edge 2 of boundary component 1.
+    call boundary_createregion(rboundary,1,8,rboundaryregion)
+    rboundaryRegion%iproperties = 2**1-2**1
+    call bcasm_newdirichletbconrealbd (rdiscretisation,2,&
+                     rboundaryregion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+                 
+    ! Edge 3 of boundary component 1.
+    call boundary_createRegion(rboundary,1,9,rboundaryRegion)
+    rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+    
+    ! Edge 4 of boundary component 1. That is it.
+    call boundary_createRegion(rboundary,1,10,rboundaryRegion)
+    rboundaryRegion%iproperties = BDR_PROP_WITHEND
+    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+
+
+    ! edge 1 of boundary component 1.
+    call boundary_createRegion(rboundary,2,1,rboundaryRegion)
+    rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+                     
+    ! edge 2 of boundary component 1.
+    call boundary_createregion(rboundary,2,2,rboundaryregion)
+    rboundaryRegion%iproperties = 2**1-2**1
+    call bcasm_newdirichletbconrealbd (rdiscretisation,1,&
+                     rboundaryregion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+                 
+    ! Edge 3 of boundary component 1.
+    call boundary_createRegion(rboundary,2,3,rboundaryRegion)
+    rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+    
+    ! Edge 4 of boundary component 1. That is it.
+    call boundary_createRegion(rboundary,2,4,rboundaryRegion)
+    rboundaryRegion%iproperties = 2**1-2**1
+    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+                     
+
+    ! Edge 1 of boundary component 1.
+    call boundary_createRegion(rboundary,2,1,rboundaryRegion)
+    rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+                 
+    ! Edge 2 of boundary component 1.
+    call boundary_createRegion(rboundary,2,2,rboundaryRegion)
+    rboundaryRegion%iproperties = 2**1-2**1
+    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+                 
+    ! Edge 3 of boundary component 1.
+    call boundary_createRegion(rboundary,2,3,rboundaryRegion)
+    rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+    
+    ! Edge 4 of boundary component 1. That is it.
+    call boundary_createRegion(rboundary,2,4,rboundaryRegion)
+    rboundaryRegion%iproperties = 2**1-2**1
+    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
+
 
   case default
     ! Un-known problem
@@ -1941,12 +2206,19 @@ contains
        revalVectors=revalVectors)  
        
   else
-  
-    call bma_buildVector (rrhs,BMA_CALC_STANDARD,ls_ns2D_rhs_anal,&
-       rcubatureInfo=rcubatureInfo,rcollection=rcollection, &
-       revalVectors=revalVectors)           
+
+    if (rcollection%IquickAccess(9) == 6) then  
+      call bma_buildVector (rrhs,BMA_CALC_STANDARD,ls_ns2D_rhs_anal,&
+         rcubatureInfo=rcubatureInfo,rcollection=rcollection, &
+         revalVectors=revalVectors)
+    else
+      call bma_buildVector (rrhs,BMA_CALC_STANDARD,ls_ns2D_rhs_stbb,&
+         rcubatureInfo=rcubatureInfo,rcollection=rcollection, &
+         revalVectors=revalVectors)
+     end if
+                
   end if
-  
+
   ! Release the vector structure used in linearization
   call fev2_releaseVectorList(revalVectors)
   
@@ -3209,9 +3481,11 @@ contains
 
 
   ! Norm Calculations
-  integer :: detNorms
+  integer :: L2U,L2P,L2W,L2WU,H1U,H1P,H1W,StbblError
   real(DP) :: dintvalue, dintvalue1
-  type(t_fev2Vectors) :: revalVectors 
+  type(t_fev2Vectors) :: revalVectors
+  ! Cubature information structure for static bubble
+  type(t_scalarCubatureInfo) :: rcubatureInfo2
   
   ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   ! Write the final result in a data file. This can be later read as an
@@ -3797,25 +4071,25 @@ contains
       ! Output line flux
       call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
                     Dcoords(1:2,2),Dfluxo,nlevels=nlevels)
+
+      ! Print out the calculated inflow flux
+      call output_lbrk()
+      call output_line ('flux input: -0.1666667')
+      call output_line ('----------------------')      
+!      call output_line ('flux input: -0.082')
+!      call output_line ('------------------')
+      call output_line (trim(sys_sdEP(Dfluxi,17,10)))
       
       ! Exact value of the inflow flux
       ! ***Flow Around Cylinder*** !
-      Dfluxi = -0.082_DP
+      ! Dfluxi = -0.082_DP
       ! ***Poiseuille Flow*** !
-      ! Dfluxi = -1.0_DP/6.0_DP
+      Dfluxi = -1.0_DP/6.0_DP
       
       ! Take the absolute flux values instead
       Dfluxi = abs(Dfluxi)
       Dfluxo = abs(Dfluxo)
-      
-      ! Print out the calculated inflow flux
-      call output_lbrk()
-      ! call output_line ('flux input: -0.1666667')
-      ! call output_line ('----------------------')      
-      call output_line ('flux input: -0.082')
-      call output_line ('------------------')
-      call output_line (trim(sys_sdEP(Dfluxi,17,10)))       
-      
+            
       ! The GMC is then calculated as the normalized flux value
       Dgmc = 100.0_DP*(Dfluxi - Dfluxo) / Dfluxi
       
@@ -3855,8 +4129,16 @@ contains
   ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   ! Calculate The L^2 and H^1 norms for analytical solutions
   ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-  
-  call parlst_getvalue_int (rparams, 'POST', 'detNorms', detNorms, 0)
-  if (detNorms == 1) then
+  call parlst_getvalue_int (rparams, 'POST', 'L2U', L2U, 0)
+  call parlst_getvalue_int (rparams, 'POST', 'L2P', L2P, 0)
+  call parlst_getvalue_int (rparams, 'POST', 'L2W', L2W, 0)
+  call parlst_getvalue_int (rparams, 'POST', 'L2WU', L2WU, 0)  
+  call parlst_getvalue_int (rparams, 'POST', 'H1U', H1U, 0)
+  call parlst_getvalue_int (rparams, 'POST', 'H1P', H1P, 0)
+  call parlst_getvalue_int (rparams, 'POST', 'H1W', H1W, 0)
+  call parlst_getvalue_int (rparams, 'POST', 'StbblError', StbblError, 0)
+  
+  if (L2U == 1) then
     
     ! L^2 Norm velocity
     ! Add x-velocity vector
@@ -3885,35 +4167,41 @@ contains
     
     call output_line ('L2velocity:'//&
     trim(sys_sdEP(sqrt(dintvalue+dintvalue1),15,6)), coutputMode=OU_MODE_BENCHLOG)
-    
-!    ! H^1 Norm velocity
-!    ! Add x-velocity vector
-!    rcollection%IquickAccess(7) = 0
-!    call fev2_addVectorToEvalList(revalVectors,&
-!       rvector%RvectorBlock(1),1)   ! u1,x,y
-!    call bma_buildIntegral (dintvalue,BMA_CALC_STANDARD,&
-!    ls_H1_Norm,rcollection=rcollection, &
-!    revalVectors=revalVectors,rcubatureInfo=rcubatureInfo)
-!    call fev2_releaseVectorList(revalVectors)    
-!    
-!    ! Add y-velocity vector
-!    rcollection%IquickAccess(7) = 1      
-!    call fev2_addVectorToEvalList(revalVectors,&
-!       rvector%RvectorBlock(2),1)   ! u2,x,y
-!    call bma_buildIntegral (dintvalue1,BMA_CALC_STANDARD,&
-!    ls_H1_Norm,rcollection=rcollection, &
-!    revalVectors=revalVectors,rcubatureInfo=rcubatureInfo)
-!    call fev2_releaseVectorList(revalVectors)
-!    
-!    ! Print the Norm value
-!    call output_lbrk()
-!    call output_line ('H^1 Error velocity')
-!    call output_line ('------------------')
-!    call output_line (trim(sys_sdEP(sqrt(dintvalue+dintvalue1),15,6)))  
-!
-!    call output_line ('H1velocity:'//&
-!    trim(sys_sdEP(sqrt(dintvalue+dintvalue1),15,6)), coutputMode=OU_MODE_BENCHLOG)
 
+  end if
+
+  if (H1U == 1) then    
+    ! H^1 Norm velocity    
+    ! Add x-velocity vector
+    rcollection%IquickAccess(7) = 0
+    call fev2_addVectorToEvalList(revalVectors,&
+       rvector%RvectorBlock(1),1)   ! u1,x,y
+    call bma_buildIntegral (dintvalue,BMA_CALC_STANDARD,&
+    ls_H1_Norm,rcollection=rcollection, &
+    revalVectors=revalVectors,rcubatureInfo=rcubatureInfo)
+    call fev2_releaseVectorList(revalVectors)    
+    
+    ! Add y-velocity vector
+    rcollection%IquickAccess(7) = 1      
+    call fev2_addVectorToEvalList(revalVectors,&
+       rvector%RvectorBlock(2),1)   ! u2,x,y
+    call bma_buildIntegral (dintvalue1,BMA_CALC_STANDARD,&
+    ls_H1_Norm,rcollection=rcollection, &
+    revalVectors=revalVectors,rcubatureInfo=rcubatureInfo)
+    call fev2_releaseVectorList(revalVectors)
+    
+    ! Print the Norm value
+    call output_lbrk()
+    call output_line ('H^1 Error velocity')
+    call output_line ('------------------')
+    call output_line (trim(sys_sdEP(sqrt(dintvalue+dintvalue1),15,6)))  
+
+    call output_line ('H1velocity:'//&
+    trim(sys_sdEP(sqrt(dintvalue+dintvalue1),15,6)), coutputMode=OU_MODE_BENCHLOG)
+
+  end if
+  
+  if (L2P == 1) then
     ! L^2 Norm pressure
     ! Add pressure vector
     rcollection%IquickAccess(7) = 2
@@ -3933,25 +4221,34 @@ contains
     call output_line ('L2pressure:'//&
     trim(sys_sdEP(sqrt(dintvalue),15,6)), coutputMode=OU_MODE_BENCHLOG)
 
-!    ! H^1 Norm pressure
-!    ! Add pressure vector
-!    rcollection%IquickAccess(7) = 2
-!    call fev2_addVectorToEvalList(revalVectors,&
-!       rvector%RvectorBlock(3),1)   ! p,x,y
-!    call bma_buildIntegral (dintvalue,BMA_CALC_STANDARD,&
-!    ls_H1_Norm,rcollection=rcollection, &
-!    revalVectors=revalVectors,rcubatureInfo=rcubatureInfo)
-!
-!    ! Print the Norm value
-!    call output_lbrk()
-!    call output_line ('H^1 Error pressure')
-!    call output_line ('------------------')
-!    call output_line (trim(sys_sdEP(sqrt(dintvalue),15,6)))  
-!    call fev2_releaseVectorList(revalVectors)
-!
-!    call output_line ('H1pressure:'//&
-!    trim(sys_sdEP(sqrt(dintvalue),15,6)), coutputMode=OU_MODE_BENCHLOG)
+  end if
 
+
+  if (H1P == 1) then
+    ! H^1 Norm pressure
+    ! Add pressure vector
+    rcollection%IquickAccess(7) = 2
+    call fev2_addVectorToEvalList(revalVectors,&
+       rvector%RvectorBlock(3),1)   ! p,x,y
+    call bma_buildIntegral (dintvalue,BMA_CALC_STANDARD,&
+    ls_H1_Norm,rcollection=rcollection, &
+    revalVectors=revalVectors,rcubatureInfo=rcubatureInfo)
+
+    ! Print the Norm value
+    call output_lbrk()
+    call output_line ('H^1 Error pressure')
+    call output_line ('------------------')
+    call output_line (trim(sys_sdEP(sqrt(dintvalue),15,6)))  
+    call fev2_releaseVectorList(revalVectors)
+
+    call output_line ('H1pressure:'//&
+    trim(sys_sdEP(sqrt(dintvalue),15,6)), coutputMode=OU_MODE_BENCHLOG)
+
+
+  end if
+
+    
+  if (L2W == 1) then
     ! L^2 Norm vorticity
     ! Add vorticity vector
     rcollection%IquickAccess(7) = 3
@@ -3970,7 +4267,11 @@ contains
 
     call output_line ('L2vorticity:'//&
     trim(sys_sdEP(sqrt(dintvalue),15,6)), coutputMode=OU_MODE_BENCHLOG)
+    
+  end if
 
+    
+  if (L2WU == 1) then  
     ! L^2 Norm vorticity-<<Based on the velocity>>
     ! Add velocity vectors
     rcollection%IquickAccess(7) = 4
@@ -3992,26 +4293,97 @@ contains
     call output_line ('L2vorticityu:'//&
     trim(sys_sdEP(sqrt(dintvalue),15,6)), coutputMode=OU_MODE_BENCHLOG)
 
-!    ! H^1 Norm vorticity
-!    ! Add vorticity vector
-!    rcollection%IquickAccess(7) = 3
-!    call fev2_addVectorToEvalList(revalVectors,&
-!       rvector%RvectorBlock(4),1)   ! w,x,y
-!    call bma_buildIntegral (dintvalue,BMA_CALC_STANDARD,&
-!    ls_H1_Norm,rcollection=rcollection, &
-!    revalVectors=revalVectors,rcubatureInfo=rcubatureInfo)
-!
-!    ! Print the Norm value
-!    call output_lbrk()
-!    call output_line ('H^1 Error vorticity')
-!    call output_line ('-------------------')
-!    call output_line (trim(sys_sdEP(sqrt(dintvalue),15,6)))  
-!    call fev2_releaseVectorList(revalVectors)
-!    
-!    call output_line ('H1vorticity:'//&
-!    trim(sys_sdEP(sqrt(dintvalue),15,6)), coutputMode=OU_MODE_BENCHLOG)
-    
   end if
+
+    
+  if (H1W == 1) then  
+    ! H^1 Norm vorticity
+    ! Add vorticity vector
+    rcollection%IquickAccess(7) = 3
+    call fev2_addVectorToEvalList(revalVectors,&
+       rvector%RvectorBlock(4),1)   ! w,x,y
+    call bma_buildIntegral (dintvalue,BMA_CALC_STANDARD,&
+    ls_H1_Norm,rcollection=rcollection, &
+    revalVectors=revalVectors,rcubatureInfo=rcubatureInfo)
+
+    ! Print the Norm value
+    call output_lbrk()
+    call output_line ('H^1 Error vorticity')
+    call output_line ('-------------------')
+    call output_line (trim(sys_sdEP(sqrt(dintvalue),15,6)))  
+    call fev2_releaseVectorList(revalVectors)
+    
+    call output_line ('H1vorticity:'//&
+    trim(sys_sdEP(sqrt(dintvalue),15,6)), coutputMode=OU_MODE_BENCHLOG)
+
+  end if
+
+     
+  if (StbblError == 1) then
+    !!!! Calculate the errors 
+    ! Add the pressure vector
+    call fev2_addVectorToEvalList(revalVectors,&
+       rvector%RvectorBlock(3),0)   ! p
+       
+    ! Gauss 1-pt rule = 1 Point per element in the center.
+    call spdiscr_createDefCubStructure(&  
+    rdiscretisation%RspatialDiscr(3),rcubatureInfo2,CUB_G1_2D)
+
+    ! Initialize the minimum pressure
+    rcollection%DquickAccess(16) = 1.0E12_DP
+    ! Calculate the real minimum of the pressure field
+    call bma_buildIntegral (dintvalue,BMA_CALC_STANDARD,&
+    ls_calc_min,rcollection=rcollection, &
+    revalVectors=revalVectors,rcubatureInfo=rcubatureInfo2)
+    
+    ! Tell that we want to calculate the static bubble errors
+    rcollection%IquickAccess(7) = 6
+    call bma_buildIntegral (dintvalue,BMA_CALC_STANDARD,&
+    ls_L2_Norm,rcollection=rcollection, &
+    revalVectors=revalVectors,rcubatureInfo=rcubatureInfo2)
+
+    !!!! Print the errors to standard output and the log file
+    call output_lbrk()
+    call output_line ('Mean pressure inside bubble')
+    call output_line ('---------------------------')
+    call output_line (trim(sys_sdEP(&
+              rcollection%DquickAccess(13)/0.1963495408493621_DP,15,6)))  
+!    call output_lbrk()
+!    call output_line ('Numerical area inside bubble')
+!    call output_line ('----------------------------')
+!    call output_line (trim(sys_sdEP(rcollection%DquickAccess(12),15,6)))
+
+    call output_lbrk()
+    call output_line ('Mean pressure outside bubble')
+    call output_line ('----------------------------')
+    call output_line (trim(sys_sdEP(&
+              rcollection%DquickAccess(15)/3.8036504591506379_DP,15,6)))  
+!    call output_lbrk()
+!    call output_line ('Numerical area outside bubble')
+!    call output_line ('-----------------------------')
+!    call output_line (trim(sys_sdEP(rcollection%DquickAccess(14),15,6)))
+
+    call output_lbrk()
+    call output_line ('Abs. Error Young-Laplace Eq.')
+    call output_line ('----------------------------')
+    call output_line ( trim( sys_sdEP(abs(&
+              rcollection%DquickAccess(13)/0.1963495408493621_DP-&
+              rcollection%DquickAccess(15)/3.8036504591506379_DP-&
+              4.0_DP),15,6)))
+    call output_lbrk()
+    call output_line ('Percent Error(%) Young-Laplace Eq.')
+    call output_line ('----------------------------------')
+    call output_line (trim(sys_sdEP(abs(&
+              (rcollection%DquickAccess(13)/0.1963495408493621_DP-&
+              rcollection%DquickAccess(15)/3.8036504591506379_DP-&
+              4.0_DP)*25.0_DP),15,6)))
+    
+    !!!! Release the temp vector and the cubature structure
+    call fev2_releaseVectorList(revalVectors)
+    call spdiscr_releaseCubStructure(rcubatureInfo2)
+    
+  end if           
+
      
   end subroutine
 
@@ -5191,7 +5563,329 @@ contains
   end subroutine
 
 
+
   !****************************************************************************
+
+
+!<subroutine>
+  subroutine ls_ns2D_rhs_stbb(rvectorData,rassemblyData,rvectorAssembly,&
+    npointsPerElement,nelements,revalVectors,rcollection)
+
+!<description>  
+  ! Assemble the RHS vector in a block-by-block procedures.
+  ! The rest of the BIG-BANG happens to occure here :D
+!</description>
+
+!<inputoutput>
+  ! Vector data of all subvectors. The arrays p_Dentry of all subvectors
+  ! have to be filled with data.
+  type(t_bmaVectorData), dimension(:), intent(inout), target :: rvectorData
+!</inputoutput>
+
+!<input>
+  ! Data necessary for the assembly. Contains determinants and
+  ! cubature weights for the cubature,...
+  type(t_bmaVectorAssemblyData), intent(in) :: rassemblyData
+
+  ! Structure with all data about the assembly
+  type(t_bmaVectorAssembly), intent(in) :: rvectorAssembly
+  
+  ! Number of points per element
+  integer, intent(in) :: npointsPerElement
+  
+  ! Number of elements
+  integer, intent(in) :: nelements
+  
+  ! Values of FEM functions automatically evaluated in the
+  ! cubature points.
+  type(t_fev2Vectors), intent(in) :: revalVectors
+
+  ! User defined collection structure
+  type(t_collection), intent(inout), target, optional :: rcollection
+!</input>
+  
+!<subroutine>
+
+  ! Local variables
+  real(DP) :: dbasI,dbasIx,dbasIy, dval1, dval2, dval3, dval4, dnu
+  real(DP) :: dfx, dfy, dx, dy, dC, dval, cu, pi
+  integer :: iel, icubp, idofe
+  real(DP), dimension(:,:), pointer :: p_DlocalVector1,p_DlocalVector2
+  real(DP), dimension(:,:), pointer :: p_DlocalVector3, p_DlocalVector4
+  real(DP), dimension(:,:,:,:), pointer :: p_DbasTest1,p_DbasTest3,p_DbasTest4
+  real(DP), dimension(:,:), pointer :: p_DcubWeight
+  real(DP), dimension(:,:,:), pointer :: p_Dpoints
+  type(t_bmaVectorData), pointer :: p_rvectorData1,p_rvectorData3
+  type(t_bmaVectorData), pointer :: p_rvectorData4
+
+
+  ! Known velocity data
+  real(DP), dimension(:,:,:), pointer :: p_Du1,p_Du2
+
+  ! Velocity values/derivatives in cubature points 
+  real(DP) :: dU, dV, dUx, dUy, dVx, dVy
+  real(DP) :: Dphy, Dfpn
+  real(DP) :: h, r0, r, l, w, nx, ny, sigma, delta, k
+      
+  ! The coefficient of surface tension
+  sigma = rcollection%DquickAccess(9)
+    
+  ! Viscosity
+  dnu = rcollection%DquickAccess(1)
+
+  ! Assigne the value of the Physical scaling
+  ! This value is set in subroutine 'ls_initParams' 
+  ! If no scaling is required, this value is set to 1.0_DP
+  Dphy = rcollection%DquickAccess(2)
+  
+  ! Linearization Scheme
+  Dfpn = rcollection%DquickAccess(4)
+  
+  ! Get cubature weights data
+  p_DcubWeight => rassemblyData%p_DcubWeight
+  p_rvectorData1 => RvectorData(1)
+  p_rvectorData3 => RvectorData(3)
+  p_rvectorData4 => RvectorData(4)
+
+  p_DlocalVector1 => RvectorData(1)%p_Dentry
+  p_DlocalVector2 => RvectorData(2)%p_Dentry
+  p_DlocalVector3 => RvectorData(3)%p_Dentry
+  p_DlocalVector4 => RvectorData(4)%p_Dentry
+
+  p_DbasTest1 => RvectorData(1)%p_DbasTest
+  p_DbasTest3 => RvectorData(3)%p_DbasTest
+  p_DbasTest4 => RvectorData(4)%p_DbasTest  
+  
+  
+  ! Get the velocity field from the parameters
+  p_Du1 => revalVectors%p_RvectorData(1)%p_Ddata
+  p_Du2 => revalVectors%p_RvectorData(2)%p_Ddata  
+    
+  ! Calculate the RHS of the velocities
+
+  ! Get the real coordinates of the cubature points
+  p_Dpoints => rassemblyData%revalElementSet%p_DpointsReal
+    
+  ! Loop over the elements in the current set.
+  do iel = 1,nelements
+
+    ! Loop over all cubature points on the current element
+    do icubp = 1,npointsPerElement
+
+    ! Velocity/derivatives field in this cubature point
+    dU = p_Du1(icubp,iel,DER_FUNC)
+    dV = p_Du2(icubp,iel,DER_FUNC)
+    
+    dUx = p_Du1(icubp,iel,DER_DERIV2D_X)
+    dVx = p_Du2(icubp,iel,DER_DERIV2D_X)
+
+    dUy = p_Du1(icubp,iel,DER_DERIV2D_Y)
+    dVy = p_Du2(icubp,iel,DER_DERIV2D_Y)
+    
+    
+    ! Get the coordinates of the cubature point.
+    dx = p_Dpoints(1,icubp,iel)
+    dy = p_Dpoints(2,icubp,iel)
+
+    ! Calculate the values of the RHS using the coordinates
+    ! of the cubature points.
+    h = 0.05_DP
+    r0 = 0.25_DP
+    r = sqrt((dx-0.0_DP)**2 + (dy-0.0_DP)**2)
+    l = r-r0
+    w = l/h
+    
+    if (abs(w) .lt. 1.0_DP) then
+      k = -1.0_DP/r
+      nx = dx/r
+      ny = dy/r
+      delta = 35.0_DP/32.0_DP*(1.0_DP - 3.0_DP*w**2 + 3.0_DP*w**4 - w**6)/h
+      dfx = sigma*k*nx*delta
+      dfy = sigma*k*ny*delta
+    else
+      dfx = 0.0_DP
+      dfy = 0.0_DP
+    end if      
+ 
+    ! Outer loop over the DOF's i=1..ndof on our current element,
+    ! which corresponds to the (test) basis functions Phi_i:
+    do idofe=1,p_rvectorData1%ndofTest
+    
+      ! Fetch the contributions of the (test) basis functions Phi_i
+      ! into dbasI
+      dbasI = p_DbasTest1(idofe,DER_FUNC,icubp,iel)
+      dbasIx = p_DbasTest1(idofe,DER_DERIV2D_X,icubp,iel)
+      dbasIy = p_DbasTest1(idofe,DER_DERIV2D_Y,icubp,iel)
+                
+      ! Values of the velocity RHS for the X1 and X2 component
+      dval = dfx*(dU*dbasIx + dV*dbasIy) + dfx*dUx*dbasI + dfy*dVx*dbasI
+      dval1 = dval + Dfpn*(   (dU*dUx + dV*dUy) * dU * dbasIx + &
+          (dU*dUx + dV*dUy) * dV* dbasIy + &
+          (dU*dUx + dV*dUy) * dUx * dbasI + &
+          (dU*dVx + dV*dVy) * dVx * dbasI   )
+          
+          
+      dval = dfy*(dU*dbasIx + dV*dbasIy) + dfx*dUy*dbasI + dfy*dVy*dbasI
+      dval2 = dval + Dfpn*(   (dU*dVx + dV*dVy) * dU * dbasIx + &
+          (dU*dVx + dV*dVy) * dV * dbasIy + &
+          (dU*dUx + dV*dUy) * dUy * dbasI + &
+          (dU*dVx + dV*dVy) * dVy * dbasI   )
+          
+      ! Multiply the values of the basis functions by
+      ! the cubature weight and sum up into the local vectors.
+      p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
+        p_DcubWeight(icubp,iel) * dval1 * Dphy
+      p_DlocalVector2(idofe,iel) = p_DlocalVector2(idofe,iel) + &
+        p_DcubWeight(icubp,iel) * dval2 * Dphy
+      
+    end do ! jdofe
+
+    end do ! icubp
+  
+  end do ! iel
+  
+
+
+  ! Calculate the RHS of the pressure
+  
+  ! Loop over the elements in the current set.
+  do iel = 1,nelements
+
+    ! Loop over all cubature points on the current element
+    do icubp = 1,npointsPerElement
+
+    ! Velocity/derivatives field in this cubature point
+    dU = p_Du1(icubp,iel,DER_FUNC)
+    dV = p_Du2(icubp,iel,DER_FUNC)
+    
+    dUx = p_Du1(icubp,iel,DER_DERIV2D_X)
+    dVx = p_Du2(icubp,iel,DER_DERIV2D_X)
+
+    dUy = p_Du1(icubp,iel,DER_DERIV2D_Y)
+    dVy = p_Du2(icubp,iel,DER_DERIV2D_Y)
+    
+    ! Get the coordinates of the cubature point.
+    dx = p_Dpoints(1,icubp,iel)
+    dy = p_Dpoints(2,icubp,iel)
+    
+    ! Calculate the values of the RHS using the coordinates
+    ! of the cubature points.
+    h = 0.05_DP
+    r0 = 0.25_DP
+    r = sqrt((dx-0.0_DP)**2 + (dy-0.0_DP)**2)
+    l = r-r0
+    w = l/h
+    
+    if (abs(w) .lt. 1.0_DP) then
+      k = -1.0_DP/r
+      nx = dx/r
+      ny = dy/r
+      delta = 35.0_DP/32.0_DP*(1.0_DP - 3.0_DP*w**2 + 3.0_DP*w**4 - w**6)/h
+      dfx = sigma*k*nx*delta
+      dfy = sigma*k*ny*delta
+    else
+      dfx = 0.0_DP
+      dfy = 0.0_DP
+    end if  
+    
+    ! Outer loop over the DOF's i=1..ndof on our current element,
+    ! which corresponds to the (test) basis functions Phi_i:
+    do idofe=1,p_rvectorData3%ndofTest
+    
+      ! Fetch the contributions of the (test) basis functions Phi_i
+      ! into dbasI
+      dbasIx = p_DbasTest3(idofe,DER_DERIV2D_X,icubp,iel)
+      dbasIy = p_DbasTest3(idofe,DER_DERIV2D_Y,icubp,iel)
+                
+      ! Values of the velocity RHS for pressure
+      dval = dfx*dbasIx + dfy*dbasIy
+      dval3 = dval + Dfpn*(  (dU*dUx + dV*dUy) * dbasIx + &
+          (dU*dVx + dV*dVy) * dbasIy  )
+          
+      ! Multiply the values of the basis functions by
+      ! the cubature weight and sum up into the local vectors.
+      p_DlocalVector3(idofe,iel) = p_DlocalVector3(idofe,iel) + &
+        p_DcubWeight(icubp,iel) * dval3 * Dphy
+      
+    end do ! jdofe
+
+    end do ! icubp
+  
+  end do ! iel
+
+
+   ! Calculate the RHS of the vorticity
+  
+  ! Loop over the elements in the current set.
+  do iel = 1,nelements
+
+    ! Loop over all cubature points on the current element
+    do icubp = 1,npointsPerElement
+
+    ! Velocity/derivatives field in this cubature point
+    dU = p_Du1(icubp,iel,DER_FUNC)
+    dV = p_Du2(icubp,iel,DER_FUNC)
+    
+    dUx = p_Du1(icubp,iel,DER_DERIV2D_X)
+    dVx = p_Du2(icubp,iel,DER_DERIV2D_X)
+
+    dUy = p_Du1(icubp,iel,DER_DERIV2D_Y)
+    dVy = p_Du2(icubp,iel,DER_DERIV2D_Y)
+    
+    ! Get the coordinates of the cubature point.
+    dx = p_Dpoints(1,icubp,iel)
+    dy = p_Dpoints(2,icubp,iel)
+
+    ! Calculate the values of the RHS using the coordinates
+    ! of the cubature points.
+    h = 0.05_DP
+    r0 = 0.25_DP
+    r = sqrt((dx-0.0_DP)**2 + (dy-0.0_DP)**2)
+    l = r-r0
+    w = l/h
+    
+    if (abs(w) .lt. 1.0_DP) then
+      k = -1.0_DP/r
+      nx = dx/r
+      ny = dy/r
+      delta = 35.0_DP/32.0_DP*(1.0_DP - 3.0_DP*w**2 + 3.0_DP*w**4 - w**6)/h
+      dfx = sigma*k*nx*delta
+      dfy = sigma*k*ny*delta
+    else
+      dfx = 0.0_DP
+      dfy = 0.0_DP
+    end if
+       
+    ! Outer loop over the DOF's i=1..ndof on our current element,
+    ! which corresponds to the (test) basis functions Phi_i:
+    do idofe=1,p_rvectorData4%ndofTest
+    
+      ! Fetch the contributions of the (test) basis functions Phi_i
+      ! into dbasI
+      dbasIx = p_DbasTest4(idofe,DER_DERIV2D_X,icubp,iel)
+      dbasIy = p_DbasTest4(idofe,DER_DERIV2D_Y,icubp,iel)
+                
+      ! Values of the velocity RHS for vorticity
+      dval = dnu*(dfx*dbasIy - dfy*dbasIx)
+      dval4 = dval + Dfpn*dnu * (  (dU*dUx + dV*dUy) * dbasIy - &
+          (dU*dVx + dV*dVy) * dbasIx  )
+          
+      ! Multiply the values of the basis functions by
+      ! the cubature weight and sum up into the local vectors.
+      p_DlocalVector4(idofe,iel) = p_DlocalVector4(idofe,iel) + &
+        p_DcubWeight(icubp,iel) * dval4 * Dphy
+      
+    end do ! jdofe
+
+    end do ! icubp
+  
+  end do ! iel
+  
+  end subroutine
+
+
+  !****************************************************************************
+
 
 !<subroutine>
   subroutine ls_mass(RmatrixData,rassemblyData,rmatrixAssembly,&
@@ -5348,7 +6042,9 @@ contains
   real(DP), dimension(:,:), pointer :: p_DcubWeight
   real(DP), dimension(:,:), pointer :: p_Dfunc,p_DderivX,p_DderivY
   real(DP), dimension(:,:,:), pointer :: p_Dpoints
-  
+  real(DP), dimension(:), pointer :: p_DelementArea
+  real(DP) :: dpressure_in, darea_in, dpressure_o, darea_o,r
+    
   ! Cancel if no FEM function is given.
   if (revalVectors%ncount .eq. 0) then
     call output_line ("FEM function missing.",&
@@ -5394,7 +6090,8 @@ contains
       
 !      dval1 = 2.0_DP*dx**2*(1.0_DP-dx)**2*(dy*(1.0_DP-dy)**2 - dy**2*(1.0_DP-dy))
 !      dval1 = cu*exp(dx)*cos(cu*dy)
-      dval1 = cos(cu*pi*dy)
+!      dval1 = cos(cu*pi*dy)
+      dval1 = 0.0_DP
        
       ! Get the error of the FEM function to the analytic function
       dval2 = p_Dfunc(icubp,iel)
@@ -5426,8 +6123,9 @@ contains
       
 !      dval1 = -2.0_DP*dy**2*(1.0_DP-dy)**2*(dx*(1.0_DP-dx)**2 - dx**2*(1.0_DP-dx))
 !      dval1 = -exp(dx)*sin(cu*dy)
-      dval1 = cos(cu*pi*dx)
-      
+!      dval1 = cos(cu*pi*dx)
+      dval1 = 0.0_DP
+            
       ! Get the error of the FEM function to the bubble function
       dval2 = p_Dfunc(icubp,iel)
       
@@ -5571,6 +6269,66 @@ contains
     end do ! icubp
     
     end do ! iel 
+
+  case (6)
+    ! Static bubble error analysis
+    ! Get the data array with the values of the FEM function
+    ! in the cubature points
+    p_Dfunc => revalVectors%p_RvectorData(1)%p_Ddata(:,:,DER_FUNC2D)    
+    
+    ! Get the elements area array 
+    call storage_getbase_double (&
+     rintegralAssembly%p_rtriangulation%h_DelementVolume, p_DelementArea)
+      
+    ! Loop over the elements in the current set.
+    do iel = 1,nelements
+
+    ! Loop over all cubature points on the current element
+    do icubp = 1,npointsPerElement
+      
+      ! Get the real coordinate of the cubarure points
+      dx = p_Dpoints(1,icubp,iel)
+      dy = p_Dpoints(2,icubp,iel)
+      
+      ! Calculate the distance of the cubator point to origin at (0,0)
+      r = sqrt(dx**2 + dy**2)
+      
+      ! Check if the cubature point lies inside of the bubble
+      if (r .le. 0.3_DP) then
+      
+        ! Area of each element inside of the bubble
+        darea_in = p_DelementArea(rassemblyData%P_IelementList(iel))
+        ! Total area of the bubble (numerical)
+        ! The exact value is: 0.1963495408493621_DP
+        rcollection%DquickAccess(12) = rcollection%DquickAccess(12) + darea_in
+        ! Pressure value of each element inside of the bubble
+        !    (normalized with the min value)          
+        dpressure_in = p_Dfunc(icubp,iel) - rcollection%DquickAccess(16)
+        ! Pressure mutiplied by the area of each element inside of the bubble      
+        rcollection%DquickAccess(13) = rcollection%DquickAccess(13) + &
+                                                     darea_in*dpressure_in
+                                                     
+     else
+     
+        ! outside the bubble 
+        ! Area of each element outside of the bubble
+        darea_o = p_DelementArea(rassemblyData%P_IelementList(iel))
+        ! Total area of the bubble (numerical)
+        ! The exact value is: 0.1963495408493621_DP
+        rcollection%DquickAccess(14) = rcollection%DquickAccess(14) + darea_o
+        ! Pressure value of each element outside of the bubble
+        !    (normalized with the min value)
+        dpressure_o = p_Dfunc(icubp,iel) - rcollection%DquickAccess(16)
+        ! Pressure mutiplied by the area of each element outside of the bubble
+        rcollection%DquickAccess(15) = rcollection%DquickAccess(15) + &
+                                                     darea_o*dpressure_o     
+                                                           
+     end if
+      
+    end do ! icubp
+    
+    end do ! iel 
+  
   
   end select   
     
@@ -5675,9 +6433,12 @@ contains
       dx = p_Dpoints(1,icubp,iel)
       dy = p_Dpoints(2,icubp,iel)
       
-      dderivX1 = 4.0_DP*dx*dy*(2*dx-1.0_DP)*(2.0_DP*dy-1.0_DP)*(dx-1.0_DP)*(dy-1.0_DP)
-      dderivY1 = 2.0_DP*dx**2*(dx-1.0_DP)**2*(6.0_DP*dy**2-6.0_DP*dy+1.0_DP)
+!      dderivX1 = 4.0_DP*dx*dy*(2*dx-1.0_DP)*(2.0_DP*dy-1.0_DP)*(dx-1.0_DP)*(dy-1.0_DP)
+!      dderivY1 = 2.0_DP*dx**2*(dx-1.0_DP)**2*(6.0_DP*dy**2-6.0_DP*dy+1.0_DP)
 
+      dderivX1 = 0.0_DP
+      dderivY1 = 0.0_DP
+      
       ! Get the error of the FEM function derivatives of the bubble function
       ! in the cubature point
       dderivX2 = p_DderivX(icubp,iel)
@@ -5704,8 +6465,11 @@ contains
       dx = p_Dpoints(1,icubp,iel)
       dy = p_Dpoints(2,icubp,iel)
       
-      dderivX1 = -2.0_DP*dy**2*(dy-1.0_DP)**2*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP)
-      dderivY1 = -4.0_DP*dx*dy*(2*dx-1.0_DP)*(2.0_DP*dy-1.0_DP)*(dx-1.0_DP)*(dy-1.0_DP)
+!      dderivX1 = -2.0_DP*dy**2*(dy-1.0_DP)**2*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP)
+!      dderivY1 = -4.0_DP*dx*dy*(2*dx-1.0_DP)*(2.0_DP*dy-1.0_DP)*(dx-1.0_DP)*(dy-1.0_DP)
+
+      dderivX1 = 0.0_DP
+      dderivY1 = 0.0_DP
 
       ! Get the error of the FEM function derivatives of the bubble function
       ! in the cubature point
@@ -5784,6 +6548,82 @@ contains
     end do ! iel
       
   end select    
+    
+  end subroutine
+
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine ls_calc_min(dintvalue,rassemblyData,rintegralAssembly,&
+    npointsPerElement,nelements,revalVectors,rcollection)
+
+!<description>  
+  ! Calculates the minimum value of a FEM function.
+  ! The rcollection%DquickAccess(16) must be initiaized (high value)
+  !  before calling this function. The final minimum value will 
+  !  be stored in rcollection%DquickAccess(16) too.
+  ! The FEM function must be provided in revalVectors.
+!</description>
+
+!<input>
+  ! Data necessary for the assembly. Contains determinants and
+  ! cubature weights for the cubature,...
+  type(t_bmaIntegralAssemblyData), intent(in) :: rassemblyData
+
+  ! Structure with all data about the assembly
+  type(t_bmaIntegralAssembly), intent(in) :: rintegralAssembly
+
+  ! Number of points per element
+  integer, intent(in) :: npointsPerElement
+
+  ! Number of elements
+  integer, intent(in) :: nelements
+
+  ! Values of FEM functions automatically evaluated in the
+  ! cubature points.
+  type(t_fev2Vectors), intent(in) :: revalVectors
+
+  ! User defined collection structure
+  type(t_collection), intent(inout), target, optional :: rcollection
+!</input>
+
+!<output>
+  ! Returns the value of the integral
+  real(DP), intent(out) :: dintvalue
+!</output>  
+
+!<subroutine>
+
+  ! Local variables
+  integer :: iel, icubp
+  real(DP), dimension(:,:), pointer :: p_Dfunc
+  
+  ! Cancel if no FEM function is given.
+  if (revalVectors%ncount .eq. 0) then
+    call output_line ("FEM function missing.",&
+      OU_CLASS_ERROR,OU_MODE_STD,"ls_L2_Norm")
+    call sys_halt()
+  end if
+  
+  ! Get the data array with the values of the FEM function
+  ! in the cubature points
+  p_Dfunc => revalVectors%p_RvectorData(1)%p_Ddata(:,:,DER_FUNC2D)
+
+  dintvalue = 0.0_DP
+
+  ! Static bubble minimum pressure calculation
+  ! Loop over the elements in the current set.
+  do iel = 1,nelements
+
+    ! Loop over all cubature points on the current element
+    do icubp = 1,npointsPerElement
+        rcollection%DquickAccess(16) = &
+               min(rcollection%DquickAccess(16),p_Dfunc(icubp,iel))
+    end do ! icubp
+  
+  end do ! iel  
     
   end subroutine
 
