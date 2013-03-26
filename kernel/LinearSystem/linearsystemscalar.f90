@@ -6614,10 +6614,14 @@ contains
   integer, dimension(:), pointer :: p_Kld,p_Kld2
   integer, dimension(:), pointer :: p_Kdiagonal,p_Kdiagonal2
   logical :: bentries,bstrucOwner,bentryOwner
-  integer, dimension(6) :: Ijob
-  integer :: NA,iA,iA2,iA3,iEQ,info
+  integer :: NA,iA,iA2,iA3,iEQ
   integer :: i,j,nrows,ncols,ivar,jvar
   integer :: h_Da,h_Kcol,h_Kld,h_Kdiagonal
+
+#ifdef USE_INTEL_MKL
+  integer, dimension(6) :: Ijob
+  integer :: info
+#endif
 
   ! Matrix is already in that format.
   if (rmatrix%cmatrixFormat .eq. cmatrixFormat) return
