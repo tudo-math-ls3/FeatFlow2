@@ -45,6 +45,7 @@
 		<File RelativePath="..\src\LS_NS_callback.f90"/>
 		<File RelativePath="..\src\LS_NS_SVP.f90"/>
 		<File RelativePath="..\src\LS_NS_SVP_MG2D.f90"/>
+		<File RelativePath="..\src\LS_NS_SVP_MG_MAT2D.f90"/>
 		<File RelativePath="..\src\LS_NS_SVP_RT2D.f90"/>
 		<File RelativePath="..\src\LS_NS_VVP_MG2D.f90"/>
 		<File RelativePath="..\src\LS_NS_VVP_Time_MG2D.f90"/></Filter>
