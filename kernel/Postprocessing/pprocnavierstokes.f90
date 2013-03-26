@@ -1173,6 +1173,14 @@ contains
           ! Set the edge value to 1
           Dalpha(4+ilocaledge) = 1.0_DP
 
+        case(EL_Q3)
+          ! Set both vertices adjacent to the edge to 1
+          Dalpha(ilocaledge) = 1.0_DP
+          Dalpha(mod(ilocaledge,4)+1) = 1.0_DP
+          ! Set both edge values to 1
+          Dalpha(4+2*ilocaledge-1) = 1.0_DP
+          Dalpha(4+2*ilocaledge )  = 1.0_DP
+
         case(EL_P1T,EL_Q1T,EL_Q1TB,EL_Q2T,EL_Q2TB,EL_Q3T_2D)
           ! Set the first moment on the edge to 1
           Dalpha(ilocaledge) = 1.0_DP
