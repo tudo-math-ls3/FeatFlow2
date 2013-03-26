@@ -1,5 +1,7 @@
 #include <stdio.h>
+#if !defined(__APPLE__)
 #include <malloc.h>
+#endif
 
 void mmaux_dumpmesh(
   char *filename, /* filename (not null terminated!) */
