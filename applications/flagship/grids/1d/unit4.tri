@@ -1,0 +1,18 @@
+Gitterbeschreibung
+Parametrisierung PARCX, PARCY, TMAXC
+4  5  0  2  2   NEL NVT NMT NVE NBCT
+DCORVG
+0.25
+0.5
+0.75
+0.0
+1.0
+KVERT
+4 1
+1 2
+2 3
+3 5
+KNPR
+0 0 0 1 2
+KMM
+4 4 5 5 
