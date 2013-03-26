@@ -80,17 +80,20 @@
 !# 22.) mprim_solve2x2BandDiag
 !#      -> Solves a 2x2 block system containing only diagonal bands
 !#
-!# 23.) mprim_minmod2
-!#      -> Computes the minmod function for two parameters
+!# 23.) mprim_minmod
+!#      -> Computes the minmod function for two and three parameters
 !#
-!# 24.) mprim_minmod3
-!#      -> Computes the minmod function for three parameters
-!#
-!# 25.) mprim_softmax
+!# 24.) mprim_softmax
 !#      -> Computes the soft-maximum function for two parameter
 !#
-!# 26.) mprim_softmin
+!# 25.) mprim_softmin
 !#      -> Computes the soft-minimum function for two parameter
+!#
+!# 26.) mprim_leastSquaresMin
+!#      -> Solves a least-squares minimisation problem
+!#
+!# 27.) mprim_transposeMatrix
+!#      -> Computes the transpose of a matrix
 !# </purpose>
 !##############################################################################
 
@@ -99,6 +102,7 @@ module mprimitives
 !$use omp_lib
   use fsystem
   use genoutput
+  use linearalgebra
 
   implicit none
 
@@ -185,12 +189,9 @@ module mprimitives
     module procedure mprim_solve2x2BandDiagSP
   end interface
 
-  interface mprim_minmod2
+  interface mprim_minmod
     module procedure mprim_minmod2DP
     module procedure mprim_minmod2SP
-  end interface
-
-  interface mprim_minmod3
     module procedure mprim_minmod3DP
     module procedure mprim_minmod3SP
   end interface
@@ -208,6 +209,18 @@ module mprimitives
     module procedure mprim_softmin2SP
     module procedure mprim_softmin3SP
   end interface
+
+  interface mprim_leastSquaresMin
+    module procedure mprim_leastSquaresMinDP
+    module procedure mprim_leastSquaresMinSP
+  end interface mprim_leastSquaresMin
+
+  interface mprim_transposeMatrix
+    module procedure mprim_transposeMatrix1DP
+    module procedure mprim_transposeMatrix1SP
+    module procedure mprim_transposeMatrix2DP
+    module procedure mprim_transposeMatrix2SP
+  end interface mprim_transposeMatrix
 
   public :: mprim_getParabolicProfile
   public :: mprim_invertMatrix
@@ -230,10 +243,11 @@ module mprimitives
   public :: mprim_solve2x2Direct
   public :: mprim_solve3x3Direct
   public :: mprim_solve2x2BandDiag
-  public :: mprim_minmod2
-  public :: mprim_minmod3
+  public :: mprim_minmod
   public :: mprim_softmax
   public :: mprim_softmin
+  public :: mprim_leastSquaresMin
+  public :: mprim_transposeMatrix
 
 contains
 
@@ -4481,5 +4495,541 @@ contains
     d = fminval - log(1.0_SP+exp(c*(fminval-fmaxval)))/c
 
   end function
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine mprim_leastSquaresMinDP(Da,mdim,ndim,Db,Dx,btransposedOpt)
+
+!<description>
+    ! This subroutine solves the least-squares minimisation problem
+    ! $$ min_x \|Ax-b \|_2 $$
+    ! for given matrix $A$ and vector $b$. If matrix A has full rank
+    ! the least-squares minimisation problem is solved using QR or LQ
+    ! factorisation. If this approach fails then the least-squares
+    ! minimisation problem is solved using a complete orthorgonal
+    ! factorisation of matrix A which works also for rank-deficient
+    ! matrices.
+!</description>
+
+!<input>
+    ! Dimension of matrix and vectors
+    integer, intent(in) :: mdim,ndim
+
+    ! Matrix for the least-squares minimisation
+    real(DP), dimension(mdim,ndim), intent(in) :: Da
+
+    ! Vector for the least-squares minimisation
+    real(DP), dimension(:), intent(in) :: Db
+
+    ! OPTIONAL: Flag which indicates whether matrix A or its transpose
+    ! should be used in the least-squares minimisation problem
+    logical, intent(in), optional :: btransposedOpt
+!</input>
+
+!<output>
+    ! Solution vector from the least-squares minimisation
+    real(DP), dimension(:), intent(out) :: Dx
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(:,:), pointer :: p_Da
+    real(DP), dimension(:), pointer :: p_Db,p_Dwork
+    integer, dimension(:), pointer :: p_Ipvt
+    integer :: nwork,naux,info,irank,n,m
+    logical :: btransposed
+
+    ! Do we have an optional transposed flag?
+    if (present(btransposedOpt)) then
+      btransposed = btransposedOpt
+    else
+      btransposed = .false.
+    end if
+
+    ! Determine size of working memory
+    nwork = mdim+ndim
+
+    ! Allocate working memory
+    allocate(p_Dwork(nwork))
+
+    ! Make a copy of the input matrix A which will be overwritten,
+    ! e.g., be the QR or LQ factorization
+    allocate(p_Da(mdim,ndim))
+    call lalg_copyVector(Da,p_Da)
+
+    ! Determine size of source/destination vector
+    naux = max(mdim,ndim)
+
+    ! Make a copy of the input vector b which will be overwritten be
+    ! the solution vector
+    allocate(p_Db(naux))
+    call lalg_copyVector(Db,p_Db)
+    
+    ! Solve the least-squares minimisation problem using QR or LQ
+    ! factorisation. It is assumed that matrix A has full rank.
+
+    call dgels(merge('T','N',btransposed), mdim, ndim, 1, p_Da, mdim,&
+               p_Db, naux, p_Dwork, nwork, info)
+
+    ! Check if solution procedure terminated without errors
+    if (info .eq. 0) then
+
+      ! Copy solution vector to output array
+      call lalg_copyVector(p_Db,Dx)
+
+      ! Release internal memory
+      deallocate(p_Da,p_Db,p_Dwork)
+
+      ! That is it
+      return
+    end if
+    
+    ! Otherwise, ...
+    if (info .lt. 0) then
+      call output_line('Invalid parameter!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'mprim_leastSquareMinDP')
+      call sys_halt()
+    else
+      
+      ! Matrix A does not have full rank. In this case, we need to
+      ! solve the least-squares minimisation problem using SVD.
+
+      ! Release internal memory
+      deallocate(p_Dwork)
+
+      ! Again, make a copy of the input vector b which will be
+      ! overwritten be the solution vector
+      call lalg_copyVector(Db,p_Db)
+
+      ! Transposition of matrix A cannot be handled implicitly. In this
+      ! case, we must transpose matrix A by hand before performing SVD.
+      if (btransposed) then
+
+        n = mdim
+        m = ndim
+
+        ! Transpose matrix A by hand
+        deallocate(p_Da)
+        allocate(p_Da(m,n))
+        call mprim_transposeMatrix(Da,p_Da)
+
+      else
+
+        m = mdim
+        n = ndim
+
+        ! Make a copy of the input matrix A which will be overwritten.
+        call lalg_copyVector(Da,p_Da)
+
+      end if
+
+      ! Allocate internal memory
+      allocate(p_Ipvt(n))
+      call lalg_clearVector(p_Ipvt)
+      
+      ! Determine size of working memory
+      naux = min(m,n)
+      nwork = max( naux+3*n+1, 2*naux+1 )
+      allocate(p_Dwork(nwork))
+      
+      ! Solve the least-squares minimisation problem using SVD.
+      call dgelsy(m, n, 1, p_Da, m, p_Db, m, p_Ipvt,&
+                  1e-12_DP, irank, p_Dwork, nwork, info)
+
+      ! Check if solution procedure terminated without errors
+      if (info .eq. 0) then
+        
+        ! Copy solution vector to output array
+        call lalg_copyVector(p_Db,Dx)
+        
+        ! Release internal memory
+        deallocate(p_Da,p_Db,p_Dwork,p_Ipvt)
+        
+        ! That is it
+        return
+      else
+        call output_line('Unable to solve least-squares minimisation problem!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'mprim_leastSquareMinDP')
+        call sys_halt()       
+      end if
+      
+    end if
+
+  end subroutine
+
+!*****************************************************************************
+
+!<subroutine>
+
+  subroutine mprim_leastSquaresMinSP(Fa,mdim,ndim,Fb,Fx,btransposedOpt)
+
+!<description>
+    ! This subroutine solves the least-squares minimisation problem
+    ! $$ min_x \|Ax-b \|_2 $$
+    ! for given matrix $A$ and vector $b$. If matrix A has full rank
+    ! the least-squares minimisation problem is solved using QR or LQ
+    ! factorisation. If this approach fails then the least-squares
+    ! minimisation problem is solved using a complete orthorgonal
+    ! factorisation of matrix A which works also for rank-deficient
+    ! matrices.
+!</description>
+
+!<input>
+    ! Dimension of matrix and vectors
+    integer, intent(in) :: mdim,ndim
+
+    ! Matrix for the least-squares minimisation
+    real(SP), dimension(mdim,ndim), intent(in) :: Fa
+
+    ! Vector for the least-squares minimisation
+    real(SP), dimension(:), intent(in) :: Fb
+
+    ! OPTIONAL: Flag which indicates whether matrix A or its transpose
+    ! should be used in the least-squares minimisation problem
+    logical, intent(in), optional :: btransposedOpt
+!</input>
+
+!<output>
+    ! Solution vector from the least-squares minimisation
+    real(SP), dimension(:), intent(out) :: Fx
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    real(SP), dimension(:,:), pointer :: p_Fa
+    real(SP), dimension(:), pointer :: p_Fb,p_Fwork
+    integer, dimension(:), pointer :: p_Ipvt
+    integer :: nwork,naux,info,irank,n,m
+    logical :: btransposed
+
+    ! Do we have an optional transposed flag?
+    if (present(btransposedOpt)) then
+      btransposed = btransposedOpt
+    else
+      btransposed = .false.
+    end if
+
+    ! Determine size of working memory
+    nwork = mdim+ndim
+
+    ! Allocate working memory
+    allocate(p_Fwork(nwork))
+
+    ! Make a copy of the input matrix A which will be overwritten,
+    ! e.g., be the QR or LQ factorization
+    allocate(p_Fa(mdim,ndim))
+    call lalg_copyVector(Fa,p_Fa)
+
+    ! Determine size of source/destination vector
+    naux = max(mdim,ndim)
+
+    ! Make a copy of the input vector b which will be overwritten be
+    ! the solution vector
+    allocate(p_Fb(naux))
+    call lalg_copyVector(Fb,p_Fb)
+    
+    ! Solve the least-squares minimisation problem using QR or LQ
+    ! factorisation. It is assumed that matrix A has full rank.
+
+    call dgels(merge('T','N',btransposed), mdim, ndim, 1, p_Fa, mdim,&
+               p_Fb, naux, p_Fwork, nwork, info)
+
+    ! Check if solution procedure terminated without errors
+    if (info .eq. 0) then
+
+      ! Copy solution vector to output array
+      call lalg_copyVector(p_Fb,Fx)
+
+      ! Release internal memory
+      deallocate(p_Fa,p_Fb,p_Fwork)
+
+      ! That is it
+      return
+    end if
+    
+    ! Otherwise, ...
+    if (info .lt. 0) then
+      call output_line('Invalid parameter!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'mprim_leastSquareMinSP')
+      call sys_halt()
+    else
+      
+      ! Matrix A does not have full rank. In this case, we need to
+      ! solve the least-squares minimisation problem using SVD.
+
+      ! Release internal memory
+      deallocate(p_Fwork)
+
+      ! Again, make a copy of the input vector b which will be
+      ! overwritten be the solution vector
+      call lalg_copyVector(Fb,p_Fb)
+
+      ! Transposition of matrix A cannot be handled implicitly. In this
+      ! case, we must transpose matrix A by hand before performing SVD.
+      if (btransposed) then
+
+        n = mdim
+        m = ndim
+
+        ! Transpose matrix A by hand
+        deallocate(p_Fa)
+        allocate(p_Fa(m,n))
+        call mprim_transposeMatrix(Fa,p_Fa)
+
+      else
+
+        m = mdim
+        n = ndim
+
+        ! Make a copy of the input matrix A which will be overwritten.
+        call lalg_copyVector(Fa,p_Fa)
+
+      end if
+
+      ! Allocate internal memory
+      allocate(p_Ipvt(n))
+      call lalg_clearVector(p_Ipvt)
+      
+      ! Determine size of working memory
+      naux = min(m,n)
+      nwork = max( naux+3*n+1, 2*naux+1 )
+      allocate(p_Fwork(nwork))
+      
+      ! Solve the least-squares minimisation problem using SVD.
+      call dgelsy(m, n, 1, p_Fa, m, p_Fb, m, p_Ipvt,&
+                  1e-12_SP, irank, p_Fwork, nwork, info)
+
+      ! Check if solution procedure terminated without errors
+      if (info .eq. 0) then
+        
+        ! Copy solution vector to output array
+        call lalg_copyVector(p_Fb,Fx)
+        
+        ! Release internal memory
+        deallocate(p_Fa,p_Fb,p_Fwork,p_Ipvt)
+        
+        ! That is it
+        return
+      else
+        call output_line('Unable to solve least-squares minimisation problem!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'mprim_leastSquareMinSP')
+        call sys_halt()       
+      end if
+      
+    end if
+
+  end subroutine
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine mprim_transposeMatrix1DP(Da)
+
+!<description>
+    ! This subroutine computes the transpose of the source matrix A in-place.
+!</description>
+
+!<inputoutput>
+    ! On input: source matrix that should be transposed.
+    ! On output: transposed matrix.
+    real(DP), dimension(:,:), intent(inout) :: Da
+!</inputoutput>
+!</subroutine>
+
+#if !defined(USE_INTEL_MKL)
+    real(DP), dimension(:), allocatable :: Daux
+    integer :: i,j,n
+#endif
+
+    ! Check if matrix is square matrix
+    if (size(Da,1) .ne. size(Da,2)) then
+      call output_line('Matrix must be square matrix for in-place transposition!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'mprim_transposeMatrix1DP')
+      call sys_halt()
+    end if
+    
+#ifdef USE_INTEL_MKL
+    ! Call in-place transposition from Intel MKL library
+    call mkl_dimatcopy('C', 'T', size(Da,1), size(Da,2), 1.0_DP, Da, size(Da,1), size(Da,2))
+#else
+    n = size(Da,1)
+    allocate(Daux(n))
+
+    ! Loop over all columns of the square matrix
+    do i=1,n
+      ! Make a copy of the i-th column
+      Daux(i:n) = Da(i:n,i)
+      
+      ! Swap content of i-th row and column
+      do j=i,n
+        Da(j,i) = Da(i,j)
+        Da(i,j) = Daux(j)
+      end do
+    end do
+
+    deallocate(Daux)
+#endif
+
+  end subroutine
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine mprim_transposeMatrix1SP(Fa)
+
+!<description>
+    ! This subroutine computes the transpose of the source matrix A in-place.
+!</description>
+
+!<inputoutput>
+    ! On input: source matrix that should be transposed.
+    ! On output: transposed matrix.
+    real(SP), dimension(:,:), intent(inout) :: Fa
+!</inputoutput>
+!</subroutine>
+
+#if !defined(USE_INTEL_MKL)
+    real(SP), dimension(:), allocatable :: Faux
+    integer :: i,j,n
+#endif
+
+    ! Check if matrix is square matrix
+    if (size(Fa,1) .ne. size(Fa,2)) then
+      call output_line('Matrix must be square matrix for in-place transposition!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'mprim_transposeMatrix1SP')
+      call sys_halt()
+    end if
+    
+#ifdef USE_INTEL_MKL
+    ! Call in-place transposition from Intel MKL library
+    call mkl_simatcopy('C', 'T', size(Fa,1), size(Fa,2), 1.0_SP, Fa, size(Fa,1), size(Fa,2))
+#else
+    n = size(Fa,1)
+    allocate(Faux(n))
+
+    ! Loop over all columns of the square matrix
+    do i=1,n
+      ! Make a copy of the i-th column
+      Faux(i:n) = Fa(i:n,i)
+      
+      ! Swap content of i-th row and column
+      do j=i,n
+        Fa(j,i) = Fa(i,j)
+        Fa(i,j) = Faux(j)
+      end do
+    end do
+
+    deallocate(Faux)
+#endif
+
+  end subroutine
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine mprim_transposeMatrix2DP(DaSrc,DaDest)
+
+!<description>
+    ! This subroutine computes the transpose of the source matrix A out-of-place.
+!</description>
+
+!<input>
+    ! Source matrix that should be transposed.
+    real(DP), dimension(:,:), intent(in) :: DaSrc
+!</input>
+
+!<output>
+    ! Destination matrix containing the transposed of matrix A on output
+    real(DP), dimension(:,:), intent(out) :: DaDest
+!</output>
+!</subroutine>
+
+#if !defined(USE_INTEL_MKL)
+    integer :: i,j
+#endif
+
+    ! Check if matrix dimensions are compatible
+    if ((size(DaSrc,1) .ne. size(DaDest,2)) .or.&
+        (size(DaSrc,2) .ne. size(DaDest,1))) then
+      call output_line('Matrix dimensions mismatch!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'mprim_transposeMatrix2DP')
+      call sys_halt()
+    end if
+
+#ifdef USE_INTEL_MKL
+    ! Call out-of-place transposition from Intel MKL library
+    call mkl_domatcopy('C', 'T', size(DaSrc,1), size(DaSrc,2), 1.0_DP,&
+                       DaSrc, size(DaSrc,1), DaDest, size(DaDest,1))
+#else
+    ! Loop over all columns of the square matrix
+    !$omp parallel do private(j) default(shared)
+    do i=1,size(DaSrc,1)
+      ! Swap content of i-th row and column
+      do j=1,size(DaSrc,2)
+        DaDest(j,i) = DaSrc(i,j)
+      end do
+    end do
+    !$omp end parallel do
+#endif
+
+  end subroutine
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine mprim_transposeMatrix2SP(FaSrc,FaDest)
+
+!<description>
+    ! This subroutine computes the transpose of the source matrix A out-of-place.
+!</description>
+
+!<input>
+    ! Source matrix that should be transposed.
+    real(SP), dimension(:,:), intent(in) :: FaSrc
+!</input>
+
+!<output>
+    ! Destination matrix containing the transposed of matrix A on output
+    real(SP), dimension(:,:), intent(out) :: FaDest
+!</output>
+!</subroutine>
+
+#if !defined(USE_INTEL_MKL)
+    integer :: i,j
+#endif
+
+    ! Check if matrix dimensions are compatible
+    if ((size(FaSrc,1) .ne. size(FaDest,2)) .or.&
+        (size(FaSrc,2) .ne. size(FaDest,1))) then
+      call output_line('Matrix dimensions mismatch!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'mprim_transposeMatrix2SP')
+      call sys_halt()
+    end if
+
+#ifdef USE_INTEL_MKL
+    ! Call out-of-place transposition from Intel MKL library
+    call mkl_somatcopy('C', 'T', size(FaSrc,1), size(FaSrc,2), 1.0_SP,&
+                       FaSrc, size(FaSrc,1), FaDest, size(FaDest,1))
+#else
+    ! Loop over all columns of the square matrix
+    !$omp parallel do private(j) default(shared)
+    do i=1,size(FaSrc,1)
+      ! Swap content of i-th row and column
+      do j=1,size(FaSrc,2)
+        FaDest(j,i) = FaSrc(i,j)
+      end do
+    end do
+    !$omp end parallel do
+#endif
+
+  end subroutine
 
 end module mprimitives

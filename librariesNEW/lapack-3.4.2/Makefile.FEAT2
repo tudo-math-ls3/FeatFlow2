@@ -31,27 +31,65 @@ GOTOBLAS_PATCH_FOR_LAPACK=NOT_REQUIRED
 OBJDIR=object
 LAPACKLIB = $(OBJDIR)/liblapack.a
 
+# Auxiliary Lapack routines
+SRCLIST=INSTALL/dlamch.f \
+	SRC/ieeeck.f \
+	SRC/iladlc.f \
+	SRC/iladlr.f \
+	SRC/ilaenv.f \
+	SRC/iparmq.f
 
-SRCLIST=SRC/ilaenv.f SRC/ieeeck.f SRC/iparmq.f \
-	SRC/dgbtrs.f SRC/dgbtrf.f SRC/ SRC/dgels.f SRC/dgelsy.f SRC/dgelss.f SRC/dgelsd.f \
-	SRC/dtrtrs.f SRC/dgttrf.f SRC/dgttrs.f SRC/dgbtf2.f SRC/dlaset.f \
-	SRC/dormlq.f SRC/dlabad.f SRC/dlascl.f SRC/dlange.f SRC/dgelqf.f SRC/dormqr.f \
-	SRC/dorml2.f SRC/dgeqrf.f SRC/dlarft.f SRC/dlarfb.f SRC/dgeqr2.f SRC/dgelq2.f \
-	SRC/dorm2r.f SRC/dlassq.f SRC/dlarf.f SRC/dlarfg.f SRC/dlapy2.f \
-	INSTALL/dlamch.f
+# Double/single precision Lapack routines
+SRCLIST+=SRC/dgbtf2.f SRC/sgbtf2.f \
+	 SRC/dgbtrf.f SRC/sgbtrf.f \
+	 SRC/dgbtrs.f SRC/sgbtrs.f \
+	 SRC/dgelq2.f SRC/sgelq2.f \
+	 SRC/dgelqf.f SRC/sgelqf.f \
+	 SRC/dgels.f  SRC/sgels.f  \
+	 SRC/dgelsd.f SRC/sgelsd.f \
+	 SRC/dgelss.f SRC/sgelss.f \
+	 SRC/dgelsy.f SRC/sgelsy.f \
+	 SRC/dgeqp3.f SRC/sgeqp3.f \
+	 SRC/dgeqr2.f SRC/sgeqr2.f \
+	 SRC/dgeqrf.f SRC/sgeqrf.f \
+	 SRC/dgttrf.f SRC/sgttrf.f \
+	 SRC/dgttrs.f SRC/sgttrs.f \
+	 SRC/dlabad.f SRC/slabad.f \
+	 SRC/dlaic1.f SRC/slaic1.f \
+	 SRC/dlange.f SRC/slange.f \
+	 SRC/dlapy2.f SRC/slapy2.f \
+	 SRC/dlaqp2.f SRC/slaqp2.f \
+	 SRC/dlaqps.f SRC/slaqps.f \
+	 SRC/dlarf.f  SRC/slarf.f  \
+	 SRC/dlarfb.f SRC/slarfb.f \
+	 SRC/dlarfg.f SRC/slarfg.f \
+	 SRC/dlarft.f SRC/slarft.f \
+	 SRC/dlarz.f  SRC/slarz.f  \
+	 SRC/dlarzb.f SRC/slarzb.f \
+	 SRC/dlarzt.f SRC/slarzt.f \
+	 SRC/dlascl.f SRC/slascl.f \
+	 SRC/dlaset.f SRC/slaset.f \
+	 SRC/dlassq.f SRC/slassq.f \
+	 SRC/dlatrz.f SRC/slatrz.f \
+	 SRC/dorm2r.f SRC/sorm2r.f \
+	 SRC/dorml2.f SRC/sorml2.f \
+	 SRC/dormlq.f SRC/sormlq.f \
+	 SRC/dormqr.f SRC/sormqr.f \
+	 SRC/dormr3.f SRC/sormr3.f \
+	 SRC/dormrz.f SRC/sormrz.f \
+	 SRC/dtrtrs.f SRC/strtrs.f \
+	 SRC/dtzrzf.f SRC/stzrzf.f
 
 # Lapack routines required by AGMG library
-SRCLIST+=SRC/cgetf2.f SRC/cgetrf.f SRC/cgetrs.f \
-	 SRC/claswp.f SRC/ctptrs.f \
-	 SRC/disnan.f \
-	 SRC/dlaisnan.f SRC/dpotf2.f \
-	 SRC/dpotrf.f SRC/dtptrs.f SRC/ieeeck.f \
-	 SRC/ilaenv.f SRC/iparmq.f \
-	 SRC/sisnan.f \
-	 SRC/slaisnan.f SRC/spotf2.f \
-	 SRC/spotrf.f SRC/stptrs.f SRC/zgetf2.f \
-	 SRC/zgetrf.f SRC/zgetrs.f SRC/zlaswp.f \
-	 SRC/ztptrs.f
+SRCLIST+=SRC/cgetf2.f SRC/zgetf2.f \
+	 SRC/cgetrf.f SRC/zgetrf.f \
+	 SRC/cgetrs.f SRC/zgetrs.f \
+	 SRC/claswp.f SRC/zlaswp.f \
+	 SRC/ctptrs.f SRC/dtptrs.f SRC/stptrs.f SRC/ztptrs.f \
+	 SRC/disnan.f SRC/sisnan.f \
+	 SRC/dlaisnan.f SRC/slaisnan.f \
+	 SRC/dpotf2.f SRC/spotf2.f \
+	 SRC/dpotrf.f SRC/spotrf.f
 
 ifneq ($(GOTOBLAS_PATCH_FOR_LAPACK), REQUIRED)
 # Do compile the following LAPACK source files except when using
