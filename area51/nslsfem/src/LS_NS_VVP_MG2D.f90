@@ -5343,19 +5343,19 @@ contains
 
     ! Calculate the values of the RHS using the coordinates
     ! of the cubature points.
-!    dfx = -dnu*(12.0_DP*dx**2*(dx-1.0_DP)**2*(2.0_DP*dy-1.0_DP)+&
-!    4.0_DP*dy*(2.0_DP*dy-1.0_DP)*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP)*(dy-1.0_DP)) + 3.0_DP*dC*dx**2 - &
-!        4.0_DP*dx**2*dy**2*(dx*(dx-1.0_DP)**2+dx**2*(dx-1.0_DP))*&
-!        (dx-1.0_DP)**2*(dy-1.0_DP)**2*(6.0_DP*dy**2-6.0_DP*dy+1.0_DP) + &
-!        8.0_DP*dx**3*dy*(2.0_DP*dx-1.0_DP)*(2.0_DP*dy-1.0_DP)*(dy*(dy-1.0_DP)**2+&
-!        dy**2*(dy-1.0_DP))*(dx-1.0_DP)**3*(dy-1.0_DP)
-!
-!    dfy = dnu*(12.0_DP*dy**2*(dy-1.0_DP)**2*(2.0_DP*dx-1.0_DP)+&
-!    4.0_DP*dx*(2.0_DP*dx-1.0_DP)*(6.0_DP*dy**2-6.0_DP*dy+1.0_DP)*(dx-1.0_DP)) - 3.0_DP*dC*dy**2 - &
-!        4.0_DP*dx**2*dy**2*(dy*(dy-1.0_DP)**2+dy**2*(dy-1.0_DP))*&
-!        (dx-1.0_DP)**2*(dy-1.0_DP)**2*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP) + &
-!        8.0_DP*dy**3*dx*(2.0_DP*dx-1.0_DP)*(2.0_DP*dy-1.0_DP)*(dx*(dx-1.0_DP)**2+&
-!        dx**2*(dx-1.0_DP))*(dy-1.0_DP)**3*(dx-1.0_DP)
+    dfx = -dnu*(12.0_DP*dx**2*(dx-1.0_DP)**2*(2.0_DP*dy-1.0_DP)+&
+    4.0_DP*dy*(2.0_DP*dy-1.0_DP)*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP)*(dy-1.0_DP)) + 3.0_DP*dC*dx**2 - &
+        4.0_DP*dx**2*dy**2*(dx*(dx-1.0_DP)**2+dx**2*(dx-1.0_DP))*&
+        (dx-1.0_DP)**2*(dy-1.0_DP)**2*(6.0_DP*dy**2-6.0_DP*dy+1.0_DP) + &
+        8.0_DP*dx**3*dy*(2.0_DP*dx-1.0_DP)*(2.0_DP*dy-1.0_DP)*(dy*(dy-1.0_DP)**2+&
+        dy**2*(dy-1.0_DP))*(dx-1.0_DP)**3*(dy-1.0_DP)
+
+    dfy = dnu*(12.0_DP*dy**2*(dy-1.0_DP)**2*(2.0_DP*dx-1.0_DP)+&
+    4.0_DP*dx*(2.0_DP*dx-1.0_DP)*(6.0_DP*dy**2-6.0_DP*dy+1.0_DP)*(dx-1.0_DP)) - 3.0_DP*dC*dy**2 - &
+        4.0_DP*dx**2*dy**2*(dy*(dy-1.0_DP)**2+dy**2*(dy-1.0_DP))*&
+        (dx-1.0_DP)**2*(dy-1.0_DP)**2*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP) + &
+        8.0_DP*dy**3*dx*(2.0_DP*dx-1.0_DP)*(2.0_DP*dy-1.0_DP)*(dx*(dx-1.0_DP)**2+&
+        dx**2*(dx-1.0_DP))*(dy-1.0_DP)**3*(dx-1.0_DP)
 
 !    dfx = cu**2*exp(2.0_DP*dx)*(cos(cu*dy))**2  - &
 !        dnu*(cu*exp(dx)*cos(cu*dy) - cu**3*exp(dx)*cos(cu*dy) ) + &
@@ -5364,10 +5364,10 @@ contains
 !    dfy = dnu*(exp(dx)*sin(cu*dy) - cu**2*exp(dx)*sin(cu*dy)) - &
 !          2.0_DP*pi*cos(2.0_DP*pi*dy)*(exp(-dC*dx) - 1.0_DP)
     
-    dfx = -pi*dC*sin(pi*dC*dx) - pi*cu*cos(pi*cu*dx)*sin(pi*cu*dy) + &
-          (pi*cu)**2*dnu*cos(pi*cu*dy)
-          
-    dfy = (pi*cu)**2*dnu*cos(pi*cu*dx) - pi*cu*cos(pi*cu*dy)*sin(pi*cu*dx)
+!    dfx = -pi*dC*sin(pi*dC*dx) - pi*cu*cos(pi*cu*dx)*sin(pi*cu*dy) + &
+!          (pi*cu)**2*dnu*cos(pi*cu*dy)
+!          
+!    dfy = (pi*cu)**2*dnu*cos(pi*cu*dx) - pi*cu*cos(pi*cu*dy)*sin(pi*cu*dx)
  
     ! Outer loop over the DOF's i=1..ndof on our current element,
     ! which corresponds to the (test) basis functions Phi_i:
@@ -5432,19 +5432,19 @@ contains
 
     ! Calculate the values of the RHS using the coordinates
     ! of the cubature points.
-!    dfx = -dnu*(12.0_DP*dx**2*(dx-1.0_DP)**2*(2.0_DP*dy-1.0_DP)+&
-!    4.0_DP*dy*(2.0_DP*dy-1.0_DP)*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP)*(dy-1.0_DP)) + 3.0_DP*dC*dx**2 - &
-!        4.0_DP*dx**2*dy**2*(dx*(dx-1.0_DP)**2+dx**2*(dx-1.0_DP))*&
-!        (dx-1.0_DP)**2*(dy-1.0_DP)**2*(6.0_DP*dy**2-6.0_DP*dy+1.0_DP) + &
-!        8.0_DP*dx**3*dy*(2.0_DP*dx-1.0_DP)*(2.0_DP*dy-1.0_DP)*(dy*(dy-1.0_DP)**2+&
-!        dy**2*(dy-1.0_DP))*(dx-1.0_DP)**3*(dy-1.0_DP)
-!
-!    dfy = dnu*(12.0_DP*dy**2*(dy-1.0_DP)**2*(2.0_DP*dx-1.0_DP)+&
-!    4.0_DP*dx*(2.0_DP*dx-1.0_DP)*(6.0_DP*dy**2-6.0_DP*dy+1.0_DP)*(dx-1.0_DP)) - 3.0_DP*dC*dy**2 - &
-!        4.0_DP*dx**2*dy**2*(dy*(dy-1.0_DP)**2+dy**2*(dy-1.0_DP))*&
-!        (dx-1.0_DP)**2*(dy-1.0_DP)**2*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP) + &
-!        8.0_DP*dy**3*dx*(2.0_DP*dx-1.0_DP)*(2.0_DP*dy-1.0_DP)*(dx*(dx-1.0_DP)**2+&
-!        dx**2*(dx-1.0_DP))*(dy-1.0_DP)**3*(dx-1.0_DP)
+    dfx = -dnu*(12.0_DP*dx**2*(dx-1.0_DP)**2*(2.0_DP*dy-1.0_DP)+&
+    4.0_DP*dy*(2.0_DP*dy-1.0_DP)*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP)*(dy-1.0_DP)) + 3.0_DP*dC*dx**2 - &
+        4.0_DP*dx**2*dy**2*(dx*(dx-1.0_DP)**2+dx**2*(dx-1.0_DP))*&
+        (dx-1.0_DP)**2*(dy-1.0_DP)**2*(6.0_DP*dy**2-6.0_DP*dy+1.0_DP) + &
+        8.0_DP*dx**3*dy*(2.0_DP*dx-1.0_DP)*(2.0_DP*dy-1.0_DP)*(dy*(dy-1.0_DP)**2+&
+        dy**2*(dy-1.0_DP))*(dx-1.0_DP)**3*(dy-1.0_DP)
+
+    dfy = dnu*(12.0_DP*dy**2*(dy-1.0_DP)**2*(2.0_DP*dx-1.0_DP)+&
+    4.0_DP*dx*(2.0_DP*dx-1.0_DP)*(6.0_DP*dy**2-6.0_DP*dy+1.0_DP)*(dx-1.0_DP)) - 3.0_DP*dC*dy**2 - &
+        4.0_DP*dx**2*dy**2*(dy*(dy-1.0_DP)**2+dy**2*(dy-1.0_DP))*&
+        (dx-1.0_DP)**2*(dy-1.0_DP)**2*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP) + &
+        8.0_DP*dy**3*dx*(2.0_DP*dx-1.0_DP)*(2.0_DP*dy-1.0_DP)*(dx*(dx-1.0_DP)**2+&
+        dx**2*(dx-1.0_DP))*(dy-1.0_DP)**3*(dx-1.0_DP)
 
 !    dfx = cu**2*exp(2.0_DP*dx)*(cos(cu*dy))**2  - &
 !        dnu*(cu*exp(dx)*cos(cu*dy) - cu**3*exp(dx)*cos(cu*dy) ) + &
@@ -5453,10 +5453,10 @@ contains
 !    dfy = dnu*(exp(dx)*sin(cu*dy) - cu**2*exp(dx)*sin(cu*dy)) - &
 !          2.0_DP*pi*cos(2.0_DP*pi*dy)*(exp(-dC*dx) - 1.0_DP)
 ! 
-    dfx = -pi*dC*sin(pi*dC*dx) - pi*cu*cos(pi*cu*dx)*sin(pi*cu*dy) + &
-          (pi*cu)**2*dnu*cos(pi*cu*dy)
-          
-    dfy = (pi*cu)**2*dnu*cos(pi*cu*dx) - pi*cu*cos(pi*cu*dy)*sin(pi*cu*dx)
+!    dfx = -pi*dC*sin(pi*dC*dx) - pi*cu*cos(pi*cu*dx)*sin(pi*cu*dy) + &
+!          (pi*cu)**2*dnu*cos(pi*cu*dy)
+!          
+!    dfy = (pi*cu)**2*dnu*cos(pi*cu*dx) - pi*cu*cos(pi*cu*dy)*sin(pi*cu*dx)
     
     ! Outer loop over the DOF's i=1..ndof on our current element,
     ! which corresponds to the (test) basis functions Phi_i:
@@ -5509,19 +5509,19 @@ contains
 
     ! Calculate the values of the RHS using the coordinates
     ! of the cubature points.
-!    dfx = -dnu*(12.0_DP*dx**2*(dx-1.0_DP)**2*(2.0_DP*dy-1.0_DP)+&
-!    4.0_DP*dy*(2.0_DP*dy-1.0_DP)*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP)*(dy-1.0_DP)) + 3.0_DP*dC*dx**2 - &
-!        4.0_DP*dx**2*dy**2*(dx*(dx-1.0_DP)**2+dx**2*(dx-1.0_DP))*&
-!        (dx-1.0_DP)**2*(dy-1.0_DP)**2*(6.0_DP*dy**2-6.0_DP*dy+1.0_DP) + &
-!        8.0_DP*dx**3*dy*(2.0_DP*dx-1.0_DP)*(2.0_DP*dy-1.0_DP)*(dy*(dy-1.0_DP)**2+&
-!        dy**2*(dy-1.0_DP))*(dx-1.0_DP)**3*(dy-1.0_DP)
-!
-!    dfy = dnu*(12.0_DP*dy**2*(dy-1.0_DP)**2*(2.0_DP*dx-1.0_DP)+&
-!    4.0_DP*dx*(2.0_DP*dx-1.0_DP)*(6.0_DP*dy**2-6.0_DP*dy+1.0_DP)*(dx-1.0_DP)) - 3.0_DP*dC*dy**2 - &
-!        4.0_DP*dx**2*dy**2*(dy*(dy-1.0_DP)**2+dy**2*(dy-1.0_DP))*&
-!        (dx-1.0_DP)**2*(dy-1.0_DP)**2*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP) + &
-!        8.0_DP*dy**3*dx*(2.0_DP*dx-1.0_DP)*(2.0_DP*dy-1.0_DP)*(dx*(dx-1.0_DP)**2+&
-!        dx**2*(dx-1.0_DP))*(dy-1.0_DP)**3*(dx-1.0_DP)
+    dfx = -dnu*(12.0_DP*dx**2*(dx-1.0_DP)**2*(2.0_DP*dy-1.0_DP)+&
+    4.0_DP*dy*(2.0_DP*dy-1.0_DP)*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP)*(dy-1.0_DP)) + 3.0_DP*dC*dx**2 - &
+        4.0_DP*dx**2*dy**2*(dx*(dx-1.0_DP)**2+dx**2*(dx-1.0_DP))*&
+        (dx-1.0_DP)**2*(dy-1.0_DP)**2*(6.0_DP*dy**2-6.0_DP*dy+1.0_DP) + &
+        8.0_DP*dx**3*dy*(2.0_DP*dx-1.0_DP)*(2.0_DP*dy-1.0_DP)*(dy*(dy-1.0_DP)**2+&
+        dy**2*(dy-1.0_DP))*(dx-1.0_DP)**3*(dy-1.0_DP)
+
+    dfy = dnu*(12.0_DP*dy**2*(dy-1.0_DP)**2*(2.0_DP*dx-1.0_DP)+&
+    4.0_DP*dx*(2.0_DP*dx-1.0_DP)*(6.0_DP*dy**2-6.0_DP*dy+1.0_DP)*(dx-1.0_DP)) - 3.0_DP*dC*dy**2 - &
+        4.0_DP*dx**2*dy**2*(dy*(dy-1.0_DP)**2+dy**2*(dy-1.0_DP))*&
+        (dx-1.0_DP)**2*(dy-1.0_DP)**2*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP) + &
+        8.0_DP*dy**3*dx*(2.0_DP*dx-1.0_DP)*(2.0_DP*dy-1.0_DP)*(dx*(dx-1.0_DP)**2+&
+        dx**2*(dx-1.0_DP))*(dy-1.0_DP)**3*(dx-1.0_DP)
 
 !    dfx = cu**2*exp(2.0_DP*dx)*(cos(cu*dy))**2  - &
 !        dnu*(cu*exp(dx)*cos(cu*dy) - cu**3*exp(dx)*cos(cu*dy) ) + &
@@ -5530,10 +5530,10 @@ contains
 !    dfy = dnu*(exp(dx)*sin(cu*dy) - cu**2*exp(dx)*sin(cu*dy)) - &
 !          2.0_DP*pi*cos(2.0_DP*pi*dy)*(exp(-dC*dx) - 1.0_DP)
 
-    dfx = -pi*dC*sin(pi*dC*dx) - pi*cu*cos(pi*cu*dx)*sin(pi*cu*dy) + &
-          (pi*cu)**2*dnu*cos(pi*cu*dy)
-          
-    dfy = (pi*cu)**2*dnu*cos(pi*cu*dx) - pi*cu*cos(pi*cu*dy)*sin(pi*cu*dx)
+!    dfx = -pi*dC*sin(pi*dC*dx) - pi*cu*cos(pi*cu*dx)*sin(pi*cu*dy) + &
+!          (pi*cu)**2*dnu*cos(pi*cu*dy)
+!          
+!    dfy = (pi*cu)**2*dnu*cos(pi*cu*dx) - pi*cu*cos(pi*cu*dy)*sin(pi*cu*dx)
    
     ! Outer loop over the DOF's i=1..ndof on our current element,
     ! which corresponds to the (test) basis functions Phi_i:
@@ -6088,10 +6088,10 @@ contains
       dx = p_Dpoints(1,icubp,iel)
       dy = p_Dpoints(2,icubp,iel)
       
-!      dval1 = 2.0_DP*dx**2*(1.0_DP-dx)**2*(dy*(1.0_DP-dy)**2 - dy**2*(1.0_DP-dy))
+      dval1 = 2.0_DP*dx**2*(1.0_DP-dx)**2*(dy*(1.0_DP-dy)**2 - dy**2*(1.0_DP-dy))
 !      dval1 = cu*exp(dx)*cos(cu*dy)
 !      dval1 = cos(cu*pi*dy)
-      dval1 = 0.0_DP
+!      dval1 = 0.0_DP
        
       ! Get the error of the FEM function to the analytic function
       dval2 = p_Dfunc(icubp,iel)
@@ -6121,10 +6121,10 @@ contains
       dx = p_Dpoints(1,icubp,iel)
       dy = p_Dpoints(2,icubp,iel)
       
-!      dval1 = -2.0_DP*dy**2*(1.0_DP-dy)**2*(dx*(1.0_DP-dx)**2 - dx**2*(1.0_DP-dx))
+      dval1 = -2.0_DP*dy**2*(1.0_DP-dy)**2*(dx*(1.0_DP-dx)**2 - dx**2*(1.0_DP-dx))
 !      dval1 = -exp(dx)*sin(cu*dy)
 !      dval1 = cos(cu*pi*dx)
-      dval1 = 0.0_DP
+!      dval1 = 0.0_DP
             
       ! Get the error of the FEM function to the bubble function
       dval2 = p_Dfunc(icubp,iel)
@@ -6154,9 +6154,9 @@ contains
       dx = p_Dpoints(1,icubp,iel)
       dy = p_Dpoints(2,icubp,iel)
       
-!      dval1 = dC*(dx**3 - dy**3)
+      dval1 = dC*(dx**3 - dy**3)
 !      dval1 = ( 1.0_DP-exp(-dC*dx) ) * sin(2*pi*dy)
-      dval1 = cos(dC*pi*dx)
+!      dval1 = cos(dC*pi*dx)
       
       ! Get the error of the FEM function to the bubble function
       dval2 = p_Dfunc(icubp,iel)
@@ -6186,10 +6186,10 @@ contains
       dx = p_Dpoints(1,icubp,iel)
       dy = p_Dpoints(2,icubp,iel)
       
-!      dval1 = -2.0_DP*dx**2*(dx-1.0_DP)**2*(6.0_DP*dy**2-6.0_DP*dy+1.0_DP) - &
-!          2.0_DP*dy**2*(dy-1.0_DP)**2*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP)
+      dval1 = -2.0_DP*dx**2*(dx-1.0_DP)**2*(6.0_DP*dy**2-6.0_DP*dy+1.0_DP) - &
+          2.0_DP*dy**2*(dy-1.0_DP)**2*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP)
 !      dval1 = (cu**2 - 1.0_DP)*exp(dx)*sin(cu*dy)
-      dval1 = pi*cu*sin(pi*cu*dy) - pi*cu*sin(pi*cu*dx)
+!      dval1 = pi*cu*sin(pi*cu*dy) - pi*cu*sin(pi*cu*dx)
       
       ! Get the error of the FEM function to the bubble function
       dval2 = p_Dfunc(icubp,iel)
@@ -6220,10 +6220,10 @@ contains
       dx = p_Dpoints(1,icubp,iel)
       dy = p_Dpoints(2,icubp,iel)
       
-!      dval1 = -2.0_DP*dx**2*(dx-1.0_DP)**2*(6.0_DP*dy**2-6.0_DP*dy+1.0_DP) - &
-!          2.0_DP*dy**2*(dy-1.0_DP)**2*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP)
+      dval1 = -2.0_DP*dx**2*(dx-1.0_DP)**2*(6.0_DP*dy**2-6.0_DP*dy+1.0_DP) - &
+          2.0_DP*dy**2*(dy-1.0_DP)**2*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP)
 !      dval1 = (cu**2 - 1.0_DP)*exp(dx)*sin(cu*dy)
-      dval1 = pi*cu*sin(pi*cu*dy) - pi*cu*sin(pi*cu*dx)
+!      dval1 = pi*cu*sin(pi*cu*dy) - pi*cu*sin(pi*cu*dx)
 
       ! Get the error of the FEM function to the analytic function
       dval2 = p_DderivX(icubp,iel) - p_DderivY(icubp,iel)
@@ -6433,11 +6433,11 @@ contains
       dx = p_Dpoints(1,icubp,iel)
       dy = p_Dpoints(2,icubp,iel)
       
-!      dderivX1 = 4.0_DP*dx*dy*(2*dx-1.0_DP)*(2.0_DP*dy-1.0_DP)*(dx-1.0_DP)*(dy-1.0_DP)
-!      dderivY1 = 2.0_DP*dx**2*(dx-1.0_DP)**2*(6.0_DP*dy**2-6.0_DP*dy+1.0_DP)
+      dderivX1 = 4.0_DP*dx*dy*(2*dx-1.0_DP)*(2.0_DP*dy-1.0_DP)*(dx-1.0_DP)*(dy-1.0_DP)
+      dderivY1 = 2.0_DP*dx**2*(dx-1.0_DP)**2*(6.0_DP*dy**2-6.0_DP*dy+1.0_DP)
 
-      dderivX1 = 0.0_DP
-      dderivY1 = 0.0_DP
+!      dderivX1 = 0.0_DP
+!      dderivY1 = 0.0_DP
       
       ! Get the error of the FEM function derivatives of the bubble function
       ! in the cubature point
@@ -6465,11 +6465,11 @@ contains
       dx = p_Dpoints(1,icubp,iel)
       dy = p_Dpoints(2,icubp,iel)
       
-!      dderivX1 = -2.0_DP*dy**2*(dy-1.0_DP)**2*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP)
-!      dderivY1 = -4.0_DP*dx*dy*(2*dx-1.0_DP)*(2.0_DP*dy-1.0_DP)*(dx-1.0_DP)*(dy-1.0_DP)
+      dderivX1 = -2.0_DP*dy**2*(dy-1.0_DP)**2*(6.0_DP*dx**2-6.0_DP*dx+1.0_DP)
+      dderivY1 = -4.0_DP*dx*dy*(2*dx-1.0_DP)*(2.0_DP*dy-1.0_DP)*(dx-1.0_DP)*(dy-1.0_DP)
 
-      dderivX1 = 0.0_DP
-      dderivY1 = 0.0_DP
+!      dderivX1 = 0.0_DP
+!      dderivY1 = 0.0_DP
 
       ! Get the error of the FEM function derivatives of the bubble function
       ! in the cubature point

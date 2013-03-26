@@ -36,6 +36,7 @@ program nslsfem
   use LS_NS_VVP_Time_MG2D
   
   use LS_NS_SVP_MG2D
+  use LS_NS_SVP_MG_MAT2D
   use LS_NS_SVP_RT2D
   use LS_NS_SVP
   
@@ -71,13 +72,13 @@ program nslsfem
   ! 2.) Initialise FEAT 2.0 storage management:
   call storage_init(999, 100)
 
-  ! Call the problem to solve 2D Navier-stokes:
-  call output_lbrk()
-  call output_line('Calculating 2D Navier-Stokes-LSFEM')
-  call output_lbrk()
-  call output_line('Vorticity-Velocity-Pressure-Multigrid')  
-  call output_line('-------------------------------------')
-  call ls_vvp_mg2d
+!  ! Call the problem to solve 2D Navier-stokes:
+!  call output_lbrk()
+!  call output_line('Calculating 2D Navier-Stokes-LSFEM')
+!  call output_lbrk()
+!  call output_line('Vorticity-Velocity-Pressure-Multigrid')  
+!  call output_line('-------------------------------------')
+!  call ls_vvp_mg2d
 
 !  ! Call the problem to solve 2D transient Navier-stokes:
 !  call output_lbrk()
@@ -87,13 +88,24 @@ program nslsfem
 !  call ls_vvp_time_mg2d
 
 
+!  ! Call the problem to solve 2D Navier-stokes:
+!  call output_lbrk()
+!  call output_line('----------------------------------')  
+!  call output_line('Calculating 2D Navier-Stokes-LSFEM')
+!  call output_line('Stress-Velocity-Pressure-Multigrid')  
+!  call output_line('----------------------------------')
+!  call ls_svp_mg2d
+
+
   ! Call the problem to solve 2D Navier-stokes:
   call output_lbrk()
+  call output_line('----------------------------------')  
   call output_line('Calculating 2D Navier-Stokes-LSFEM')
-  call output_lbrk()
-  call output_line('Stress-Velocity-Pressure-Multigrid')  
+  call output_line('Stress-Velocity-Pressure-Multigrid') 
+  call output_line('     Matrix-Based Prol./Rest.     ') 
   call output_line('----------------------------------')
-  call ls_svp_mg2d
+  call ls_svp_mg_mat2d
+
 
 !  ! Call the problem to solve 2D Navier-stokes:
 !  call output_lbrk()
