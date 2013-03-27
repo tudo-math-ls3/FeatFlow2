@@ -441,6 +441,15 @@ fb_customise() {
 		    COMPILERNAME="GCC 4.4.6"
 		    ;;
 
+		# GNU compiler suite 4.5.3
+		pc64-penryn-linux-gcc-*4.5)
+		    modules=""
+		    modules="$modules gotoblas/shared/64"
+		    modules="$modules gcc/4.5.3"
+		    LIDOJOBNAMEPREFIX=ff2-gcc45
+		    COMPILERNAME="GCC 4.5.3"
+		    ;;
+
 		# GNU compiler suite 4.6.3
 		pc64-penryn-linux-gcc-*4.6)
 		    modules=""
@@ -459,8 +468,17 @@ fb_customise() {
 		    COMPILERNAME="GCC 4.7.2"
 		    ;;
 
-		# GNU compiler suite 4.5.3 and default GNU compiler
-		pc64-penryn-linux-gcc-*4.5|pc64-penryn-linux-gcc-*)
+		# GNU compiler suite 4.8.0
+		pc64-penryn-linux-gcc-*4.8)
+		    modules=""
+		    modules="$modules gotoblas/shared/64"
+		    modules="$modules gcc/4.8.0"
+		    LIDOJOBNAMEPREFIX=ff2-gcc48
+		    COMPILERNAME="GCC 4.8.0"
+		    ;;
+
+		# default GNU compiler suite
+		pc64-penryn-linux-gcc-*)
 		    modules=""
 		    modules="$modules gotoblas/shared/64"
 		    modules="$modules gcc/4.5.3"
@@ -468,7 +486,7 @@ fb_customise() {
 		    COMPILERNAME="GCC 4.5.3"
 		    ;;
 
-		# Pathscale compiler suite
+		# default Pathscale compiler suite
 		pc64-penryn-linux-psc-*)
 		    modules=""
 		    modules="$modules gotoblas/shared/64"
@@ -477,24 +495,40 @@ fb_customise() {
 		    COMPILERNAME="Pathscale 3.2.99"
 		    ;;
 
-		# PGI compiler suite
+		# PGI compiler suite 10.x
+		pc64-penryn-linux-pgi-*01*)
+		    modules=""
+		    modules="$modules pgi/10.9-0"
+		    LIDOJOBNAMEPREFIX=ff2-pgi10
+		    COMPILERNAME="PGI 10.9"
+		    ;;
+
+		# PGI compiler suite 11.x
 		pc64-penryn-linux-pgi-*11*)
 		    modules=""
 		    modules="$modules pgi/11.10-0"
-		    LIDOJOBNAMEPREFIX=ff2-pgi
+		    LIDOJOBNAMEPREFIX=ff2-pgi11
 		    COMPILERNAME="PGI 11.10"
 		    ;;
 
-		# PGI compiler suite
-		pc64-penryn-linux-pgi-*12.10)
+		# PGI compiler suite 12.x
+		pc64-penryn-linux-pgi-*12*)
 		    modules=""
 		    modules="$modules pgi/12.10-0"
 		    LIDOJOBNAMEPREFIX=ff2-pgi12
 		    COMPILERNAME="PGI 12.10"
 		    ;;
 
-		# PGI compiler suite
-		pc64-penryn-linux-pgi-*|pc64-penryn-linux-pgi-*13*)
+		# PGI compiler suite 13.x
+		pc64-penryn-linux-pgi-*13*)
+		    modules=""
+		    modules="$modules pgi/13.3-0"
+		    LIDOJOBNAMEPREFIX=ff2-pgi13
+		    COMPILERNAME="PGI 13.3"
+		    ;;
+
+		# default PGI compiler suite
+		pc64-penryn-linux-pgi-*)
 		    modules=""
 		    modules="$modules pgi/13.3-0"
 		    LIDOJOBNAMEPREFIX=ff2-pgi
@@ -528,6 +562,42 @@ fb_customise() {
 		    COMPILERNAME="OracleStudio 12.3"
 		    ;;
 
+		# default Oracle Studio compiler suite
+		pc64-penryn-linux-sunstudio-*)
+		    modules=""
+		    modules="$modules gotoblas/shared/64"
+		    modules="$modules oraclestudio/12.3"
+		    LIDOJOBNAMEPREFIX=ff2-sun123
+		    COMPILERNAME="OracleStudio 12.3"
+		    ;;
+
+		# Open64 compiler suite 4.5.2
+		pc64-penryn-linux-open64-*4.5)
+		    modules=""
+		    modules="$modules gotoblas/shared/64"
+		    modules="$modules open64/4.5.2"
+		    LIDOJOBNAMEPREFIX=ff2-open452
+		    COMPILERNAME="Open64 4.5.2"
+		    ;;
+
+		# Open64 compiler suite 5.0
+		pc64-penryn-linux-open64-*5.0)
+		    modules=""
+		    modules="$modules gotoblas/shared/64"
+		    modules="$modules open64/5.0"
+		    LIDOJOBNAMEPREFIX=ff2-open50
+		    COMPILERNAME="Open64 5.0"
+		    ;;
+
+		# default Open64 compiler suite
+		pc64-penryn-linux-open64-*)
+		    modules=""
+		    modules="$modules gotoblas/shared/64"
+		    modules="$modules open64/5.0"
+		    LIDOJOBNAMEPREFIX=ff2-open50
+		    COMPILERNAME="Open64 5.0"
+		    ;;
+
 		# Intel compiler suite 10.1.023
 		pc64-penryn-linux-intel-*10.1)
 		    modules=""
@@ -544,6 +614,15 @@ fb_customise() {
 		    modules="$modules intel/mkl intel/cce/11.0.084 intel/fce/11.0.084"
 		    LIDOJOBNAMEPREFIX=ff2-intel110
 		    COMPILERNAME="Intel 11.0"
+		    ;;
+
+		# Intel compiler suite 11.1.075
+		pc64-penryn-linux-intel-*11.1)
+		    modules=""
+		    modules="$modules gotoblas/shared/64"
+		    modules="$modules intel/mkl intel/cce/11.1.075 intel/fce/11.1.075"
+		    LIDOJOBNAMEPREFIX=ff2-intel111
+		    COMPILERNAME="Intel 11.1"
 		    ;;
 
 		# Intel compiler suite 12.0.5.220
@@ -564,8 +643,17 @@ fb_customise() {
 		    COMPILERNAME="Intel 12.1"
 		    ;;
 
-		# Intel compiler suite 11.1.075 and default build ID
-		pc64-penryn-linux-intel-*11.1|*)
+		# Intel compiler suite 13.0.2.146
+		pc64-penryn-linux-intel-*13.0)
+		    modules=""
+		    modules="$modules gotoblas/shared/64"
+		    modules="$modules intel/mkl intel/cce/13.0.2.146 intel/fce/13.0.2.146"
+		    LIDOJOBNAMEPREFIX=ff2-intel130
+		    COMPILERNAME="Intel 13.0"
+		    ;;
+
+		# default Intel compiler suite and default build ID
+		pc64-penryn-linux-intel-*|*)
 		    modules=""
 		    modules="$modules gotoblas/shared/64"
 		    modules="$modules intel/mkl intel/cce/11.1.075 intel/fce/11.1.075"
