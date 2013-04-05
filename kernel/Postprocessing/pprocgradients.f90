@@ -4039,14 +4039,15 @@ contains
         ipolyLast  = indofTrial*icoeffLast
 
         ! Compute factorisation for the singular value decomposition
-        call mprim_SVD_factorise(Dpolynomials(ipolyFirst:ipolyLast),&
-            indofTrial, Inpoints(ipatch), Dd, Dv, .true.)
+        call mprim_SVD_factoriseDP(Dpolynomials(ipolyFirst:ipolyLast),&
+            Dd, Dv, indofTrial, Inpoints(ipatch), indofTrial, .true.)
 
         ! Perform back substitution for all componenets
         do i = 1, size(Dderivatives,3)
-          call mprim_SVD_backsubst1(Dpolynomials(ipolyFirst:ipolyLast), &
-              indofTrial, Inpoints(ipatch), Dd, Dv, Dderivatives(:,ipatch,i), &
-              Dcoefficients(icoeffFirst:icoeffLast,i), .true.)
+          call mprim_SVD_backsubstDP(Dpolynomials(ipolyFirst:ipolyLast), &
+              Dd, Dv, Dderivatives(:,ipatch,i), &
+              Dcoefficients(icoeffFirst:icoeffLast,i),&
+              indofTrial, Inpoints(ipatch), indofTrial, .true.)
         end do
 
         ! Update position index
@@ -4115,14 +4116,15 @@ contains
         npoints  = ncubp*(idxLast-idxFirst+1)
 
         ! Compute factorisation for the singular value decomposition
-        call mprim_SVD_factorise(Dpolynomials(:,:,:,idxFirst:idxLast),&
-            indofTrial, npoints, Dd, Dv, .true.)
+        call mprim_SVD_factoriseDP(Dpolynomials(:,:,:,idxFirst:idxLast),&
+            Dd, Dv, indofTrial, npoints, indofTrial, .true.)
 
         ! Perform back substitution for all componenets
         do i = 1, size(Dderivatives,3)
-          call mprim_SVD_backsubst2(Dpolynomials(:,:,:,idxFirst:idxLast), &
-              indofTrial, npoints, Dd, Dv, Dderivatives(:,ipatch,i), &
-              Dcoefficients(:,idxFirst:idxLast,i), .true.)
+          call mprim_SVD_backsubstDP(Dpolynomials(:,:,:,idxFirst:idxLast), &
+              Dd, Dv, Dderivatives(:,ipatch,i), &
+              Dcoefficients(:,idxFirst:idxLast,i), &
+              indofTrial, npoints, indofTrial, .true.)
         end do
       end do
     end subroutine calc_patchAverages_sim

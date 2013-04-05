@@ -114,80 +114,151 @@ module mprimitives
     module procedure mprim_signumInt
   end interface
 
+  public :: mprim_signum
+
+  interface mprim_SVD_factorise
+    module procedure mprim_SVD_factoriseDP
+    module procedure mprim_SVD_factoriseSP
+  end interface mprim_SVD_factorise
+
+  public :: mprim_SVD_factorise
+  public :: mprim_SVD_factoriseDP
+  public :: mprim_SVD_factoriseSP
+
   interface mprim_SVD_backsubst
-    module procedure mprim_SVD_backsubst1
-    module procedure mprim_SVD_backsubst2
+    module procedure mprim_SVD_backsubstDP
+    module procedure mprim_SVD_backsubstSP
   end interface
+
+  public :: mprim_SVD_backsubst
+  public :: mprim_SVD_backsubstDP
+  public :: mprim_SVD_backsubstSP
 
   ! Alternative name for backward compatibility
   interface mprim_kronecker
     module procedure kronecker
   end interface
 
+  public :: mprim_kronecker
+
   interface mprim_invertMatrix
     module procedure mprim_invertMatrixDP
     module procedure mprim_invertMatrixSP
   end interface
 
+  public :: mprim_invertMatrix
+  public :: mprim_invertMatrixDP
+  public :: mprim_invertMatrixSP
+  
   interface mprim_invertMatrixPivot
     module procedure mprim_invertMatrixPivotDP
     module procedure mprim_invertMatrixPivotSP
   end interface
 
+  public :: mprim_invertMatrixPivot
+  public :: mprim_invertMatrixPivotDP
+  public :: mprim_invertMatrixPivotSP
+  
   interface mprim_invert2x2MatrixDirect
     module procedure mprim_invert2x2MatrixDirectDP
     module procedure mprim_invert2x2MatrixDirectSP
   end interface
+
+  public :: mprim_invert2x2MatrixDirect
+  public :: mprim_invert2x2MatrixDirectDP
+  public :: mprim_invert2x2MatrixDirectSP
 
   interface mprim_invert3x3MatrixDirect
     module procedure mprim_invert3x3MatrixDirectDP
     module procedure mprim_invert3x3MatrixDirectSP
   end interface
 
+  public :: mprim_invert3x3MatrixDirect
+  public :: mprim_invert3x3MatrixDirectDP
+  public :: mprim_invert3x3MatrixDirectSP
+
   interface mprim_invert4x4MatrixDirect
     module procedure mprim_invert4x4MatrixDirectDP
     module procedure mprim_invert4x4MatrixDirectSP
   end interface
+  
+  public :: mprim_invert4x4MatrixDirect
+  public :: mprim_invert4x4MatrixDirectDP
+  public :: mprim_invert4x4MatrixDirectSP
 
   interface mprim_invert5x5MatrixDirect
     module procedure mprim_invert5x5MatrixDirectDP
     module procedure mprim_invert5x5MatrixDirectSP
   end interface
 
+  public :: mprim_invert5x5MatrixDirect
+  public :: mprim_invert5x5MatrixDirectDP
+  public :: mprim_invert5x5MatrixDirectSP
+
   interface mprim_invert6x6MatrixDirect
     module procedure mprim_invert6x6MatrixDirectDP
     module procedure mprim_invert6x6MatrixDirectSP
   end interface
+
+  public :: mprim_invert6x6MatrixDirect
+  public :: mprim_invert6x6MatrixDirectDP
+  public :: mprim_invert6x6MatrixDirectSP
+
+  interface mprim_linearRescale
+    module procedure mprim_linearRescaleDP
+    module procedure mprim_linearRescaleSP
+  end interface mprim_linearRescale
+
+  public :: mprim_linearRescale
+
+  interface mprim_quadraticInterpolation
+    module procedure mprim_quadraticInterpolationDP
+    module procedure mprim_quadraticInterpolationSP
+  end interface mprim_quadraticInterpolation
+
+  public :: mprim_quadraticInterpolation  
 
   interface mprim_stdDeviation
     module procedure mprim_stdDeviationDP
     module procedure mprim_stdDeviationSP
   end interface
 
+  public :: mprim_stdDeviation
+  
   interface mprim_meanDeviation
     module procedure mprim_meanDeviationDP
     module procedure mprim_meanDeviationSP
   end interface
+
+  public :: mprim_meanDeviation
 
   interface mprim_meanValue
     module procedure mprim_meanValueDP
     module procedure mprim_meanValueSP
   end interface
 
+  public :: mprim_meanValue
+
   interface mprim_solve2x2Direct
     module procedure mprim_solve2x2DirectDP
     module procedure mprim_solve2x2DirectSP
   end interface
+
+  public :: mprim_solve2x2Direct
 
   interface mprim_solve3x3Direct
     module procedure mprim_solve3x3DirectDP
     module procedure mprim_solve3x3DirectSP
   end interface
 
+  public :: mprim_solve3x3Direct
+
   interface mprim_solve2x2BandDiag
     module procedure mprim_solve2x2BandDiagDP
     module procedure mprim_solve2x2BandDiagSP
   end interface
+
+  public :: mprim_solve2x2BandDiag
 
   interface mprim_minmod
     module procedure mprim_minmod2DP
@@ -196,12 +267,16 @@ module mprimitives
     module procedure mprim_minmod3SP
   end interface
 
+  public :: mprim_minmod
+
   interface mprim_softmax
     module procedure mprim_softmax2DP
     module procedure mprim_softmax3DP
     module procedure mprim_softmax2SP
     module procedure mprim_softmax3SP
   end interface
+
+  public :: mprim_softmax
 
   interface mprim_softmin
     module procedure mprim_softmin2DP
@@ -210,10 +285,16 @@ module mprimitives
     module procedure mprim_softmin3SP
   end interface
 
+  public :: mprim_softmin
+
   interface mprim_leastSquaresMin
     module procedure mprim_leastSquaresMinDP
     module procedure mprim_leastSquaresMinSP
   end interface mprim_leastSquaresMin
+
+  public :: mprim_leastSquaresMin
+  public :: mprim_leastSquaresMinDP
+  public :: mprim_leastSquaresMinSP
 
   interface mprim_transposeMatrix
     module procedure mprim_transposeMatrix1DP
@@ -222,32 +303,11 @@ module mprimitives
     module procedure mprim_transposeMatrix2SP
   end interface mprim_transposeMatrix
 
-  public :: mprim_getParabolicProfile
-  public :: mprim_invertMatrix
-  public :: mprim_kronecker
-  public :: mprim_invert2x2MatrixDirect
-  public :: mprim_invert3x3MatrixDirect
-  public :: mprim_invert4x4MatrixDirect
-  public :: mprim_invert5x5MatrixDirect
-  public :: mprim_invert6x6MatrixDirect
-  public :: mprim_invertMatrixPivot
-  public :: mprim_signum
-  public :: mprim_linearRescale
-  public :: mprim_quadraticInterpolation
-  public :: mprim_SVD_factorise
-  public :: mprim_SVD_backsubst,mprim_SVD_backsubst1,mprim_SVD_backsubst2
-  public :: mprim_stdDeviation
-  public :: mprim_meanDeviation
-  public :: mprim_meanValue
-  public :: mprim_degToRad,mprim_radToDeg
-  public :: mprim_solve2x2Direct
-  public :: mprim_solve3x3Direct
-  public :: mprim_solve2x2BandDiag
-  public :: mprim_minmod
-  public :: mprim_softmax
-  public :: mprim_softmin
-  public :: mprim_leastSquaresMin
   public :: mprim_transposeMatrix
+
+  public :: mprim_getParabolicProfile
+  public :: mprim_degToRad
+  public :: mprim_radToDeg
 
 contains
 
@@ -389,7 +449,7 @@ contains
 !<description>
     ! This subroutine performs the direct inversion of a NxN system.
     !
-    ! If the parameter ipar=0, then only factorization of matrix A is performed.
+    ! If the parameter ipar=0, then only factorisation of matrix A is performed.
     ! For ipar=1, the vector x is calculated using the factorised matrix A.
     ! For ipar=2, LAPACK routine DGESV is used to solve the dense linear system Ax=f.
     ! In addition, for NDIM=2,3,4 explicit formulas are employed to replace the
@@ -453,7 +513,7 @@ contains
 
     select case (ipar)
     case (0)
-      ! Perform factorization of matrix Da
+      ! Perform factorisation of matrix Da
 
       ! Initialization
       Kindx=0;  Kindy=0
@@ -645,7 +705,7 @@ contains
 !<description>
     ! This subroutine performs the direct inversion of a NxN system.
     !
-    ! If the parameter ipar=0, then only factorization of matrix A is performed.
+    ! If the parameter ipar=0, then only factorisation of matrix A is performed.
     ! For ipar=1, the vector x is calculated using the factorised matrix A.
     ! For ipar=2, LAPACK routine DGESV is used to solve the dense linear system Ax=f.
     ! In addition, for NDIM=2,3,4 explicit formulas are employed to replace the
@@ -709,7 +769,7 @@ contains
 
     select case (ipar)
     case (0)
-      ! Perform factorization of matrix Fa
+      ! Perform factorisation of matrix Fa
 
       ! Initialization
       Kindx=0;  Kindy=0
@@ -2222,11 +2282,11 @@ contains
     real(DP) :: dpivot,daux
     integer :: idim1,idim2,ix,iy,indx,indy
 
-    ! Perform factorization of matrix Da
+    ! Perform factorisation of matrix Da
 
     bsuccess = .false.
 
-    ! Initialization
+    ! Initialisation
     Kindx=0
     Kindy=0
 
@@ -2339,11 +2399,11 @@ contains
     real(SP) :: fpivot,faux
     integer :: idim1,idim2,ix,iy,indx,indy
 
-    ! Perform factorization of matrix Fa
+    ! Perform factorisation of matrix Fa
 
     bsuccess = .false.
 
-    ! Initialization
+    ! Initialisation
     Kindx=0
     Kindy=0
 
@@ -2455,7 +2515,7 @@ contains
 
 !<subroutine>
 
-  elemental subroutine mprim_linearRescale(dx,da,db,dc,dd,dy)
+  elemental subroutine mprim_linearRescaleDP(dx,da,db,dc,dd,dy)
 
 !<description>
   ! Scales a coordinate x linearly from the interval [a,b] to the
@@ -2497,13 +2557,61 @@ contains
 
     dy = d1*dx+d2
 
-  end subroutine mprim_linearRescale
+  end subroutine mprim_linearRescaleDP
+
+  !************************************************************************
+
+!<subroutine>
+
+  elemental subroutine mprim_linearRescaleSP(fx,fa,fb,fc,fd,fy)
+
+!<description>
+  ! Scales a coordinate x linearly from the interval [a,b] to the
+  ! interval [c,d].
+!</description>
+
+!<input>
+  ! coordinate to be rescaled
+  real(SP), intent(in) :: fx
+
+  ! [a,b] - source interval
+  real(SP), intent(in) :: fa,fb
+
+  ! [c,d] - destination interval
+  real(SP), intent(in) :: fc,fd
+!</input>
+
+!<output>
+  ! Rescaled coordinate
+  real(SP), intent(out) :: fy
+!</output>
+
+!</subroutine>
+
+    real(SP) :: f1,f2,f3
+
+    ! Calculate the coefficients of the transformation
+    !    F1*A+F2 = C, F1*B+F2 = D.
+    ! Use them to calculate Y=F1*X+F2.
+
+    if (fA .eq. fb) then
+      fy = fc
+      return
+    end if
+
+    f3 = 1.0_SP/(fa-fb)
+    f1 = (fc-fd)*f3
+    f2 = (-fb*fc+fa*fd)*f3
+
+    fy = f1*fx+f2
+
+  end subroutine mprim_linearRescaleSP
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  elemental subroutine mprim_quadraticInterpolation (dx,d1,d2,d3,dy)
+  elemental subroutine mprim_quadraticInterpolationDP (dx,d1,d2,d3,dy)
 
 !<description>
   ! <tex>
@@ -2545,18 +2653,66 @@ contains
 
     dy = 0.5_DP * ( (d3 - 2.0_DP*d2 + d1)*dx + (d3-d1) ) * dx + d2
 
-  end subroutine mprim_quadraticInterpolation
+  end subroutine mprim_quadraticInterpolationDP
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  elemental subroutine mprim_quadraticInterpolationSP (fx,f1,f2,f3,fy)
+
+!<description>
+  ! <tex>
+  ! Calculates a quadratic interpolation. fx is a value in the range $[-1,1]$.
+  ! The routine calculates the value $fy:=p(fx)$ with $p(.)$ being the quadratic
+  ! interpolation polynomial with $p(-1)=f1$, $p(0)=f2$ and $p(1)=f3$.
+  ! </tex>
+!</description>
+
+!<input>
+  ! The parameter value in the range <tex>$ [-1,1] $</tex> where the polynomial should be evaluated.
+  real(SP), intent(in) :: fx
+
+  ! The value <tex>$ p(-1) $</tex>.
+  real(SP), intent(in) :: f1
+
+  ! The value <tex>$ p(0) $</tex>.
+  real(SP), intent(in) :: f2
+
+  ! The value $ p(1) $</tex>.
+  real(SP), intent(in) :: f3
+!</input>
+
+!<output>
+  ! The value <tex>$ p(fx) $</tex>.
+  real(SP), intent(out) :: fy
+!</output>
+
+!</subroutine>
+
+    ! The polynomial p(t) = a + bt + ct^2 has to fulfill:
+    !   p(-1)=f1, p(0)=f2, p(1)=f3.
+    !
+    ! So the polynomial has the shape:
+    !   p(t) = f2  +  1/2(f3-f1)t  +  1/2(f3-2f2+f1)t^2
+    !
+    ! The Horner scheme gives us:
+    !   p(t) = 1/2 ( (f3-2f2+f1)t + (f3-f1) ) t + f2
+
+    fy = 0.5_SP * ( (f3 - 2.0_SP*f2 + f1)*fx + (f3-f1) ) * fx + f2
+
+  end subroutine mprim_quadraticInterpolationSP
 
   !************************************************************************
 
 !<subroutine>
 
-  subroutine mprim_SVD_factorise(Da,mdim,ndim,Dd,Db,btransposedOpt)
+  subroutine mprim_SVD_factoriseDP(Da,Dd,Db,ndim1,ndim2,ndim3,btransposedOpt)
 
 !<description>
     ! <tex>
     ! This subroutine computes the factorisation for a singular value
-    ! decomposition. Given an ndim-by-mdim matrix Da, the routine
+    ! decomposition. Given an ndim2-by-ndim1 matrix Da, the routine
     ! decomposes it into the product $ A = U * D * B^T $
     ! where $U$ overwrites the matrix A and is returned in its memory
     ! position, $D$ is a diagonal matrix returned as vector Dd and
@@ -2572,30 +2728,33 @@ contains
 !</description>
 
 !<input>
-    ! Dimensions of the rectangular matrix
-    integer, intent(in)                           :: ndim,mdim
+    ! Dimensions of the rectangular matrix Da
+    integer, intent(in) :: ndim1,ndim2
+
+    ! Dimension of the diagonal matrix Dd and the suare matrix Db
+    integer, intent(in) :: ndim3
 
     ! OPTIONAL: Flag to indicate if the matrix A is transposed
-    logical, intent(in), optional                 :: btransposedOpt
+    logical, intent(in), optional :: btransposedOpt
 !</input>
 
 !<inputoutput>
     ! Matrix that should be factorised on input.
     ! Matrix U on output.
-    real(DP), dimension(mdim,ndim), intent(inout) :: Da
+    real(DP), dimension(ndim1,ndim2), intent(inout) :: Da
 !</inputoutput>
 
 !<output>
     ! Diagonal matrix
-    real(DP), dimension(:), intent(out)           :: Dd
+    real(DP), dimension(ndim3), intent(out) :: Dd
 
     ! Square matrix
-    real(DP), dimension(:,:), intent(out)         :: Db
+    real(DP), dimension(ndim3,ndim3), intent(out) :: Db
 !</output>
 !</subroutine>
 
     ! local variables
-    real(DP), dimension(size(Dd)) :: rv1
+    real(DP), dimension(:), allocatable :: rv1
     real(DP) :: g, scale, anorm, s, f, h, c, x, y, z
     integer  :: its, i, j, jj, k, l, nm, n, m, idot
     integer, parameter :: MAX_ITS = 30
@@ -2610,18 +2769,20 @@ contains
 
     ! Is the matrix transposed?
     if (btransposed) then
-      n=mdim; m=ndim
+      n=ndim1; m=ndim2
     else
-      n=ndim; m=mdim
+      n=ndim2; m=ndim1
     end if
 
     ! Check if number of equations is larger than number of unknowns
     if (m < n) then
       call output_line('Fewer equations than unknowns!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'mprim_SVD_factorise')
+          OU_CLASS_ERROR,OU_MODE_STD,'mprim_SVD_factoriseDP')
       call sys_halt()
     end if
 
+    ! Allocate internal memory
+    allocate(rv1(ndim3))
 
     if (btransposed) then
 
@@ -2768,7 +2929,7 @@ contains
         Da(i,i) = Da(i,i)+1.0_DP
       end do
 
-      ! Diagonalization of the bidiagonal form
+      ! Diagonalisation of the bidiagonal form
       do k = n, 1, -1
         do its = 1, MAX_ITS
           do l = k, 1, -1
@@ -2809,7 +2970,7 @@ contains
           end if
           if (its .eq. MAX_ITS) then
             call output_line('Convergence failed!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'mprim_SVD_factorise')
+                OU_CLASS_ERROR,OU_MODE_STD,'mprim_SVD_factoriseDP')
             call sys_halt()
           end if
           x = Dd(l)
@@ -3012,7 +3173,7 @@ contains
         Da(i,i) = Da(i,i)+1.0_DP
       end do
 
-      ! Diagonalization of the bidiagonal form
+      ! Diagonalisation of the bidiagonal form
       do k = n, 1, -1
         do its = 1, MAX_ITS
           do l = k, 1, -1
@@ -3053,7 +3214,7 @@ contains
           end if
           if (its .eq. MAX_ITS) then
             call output_line('Convergence failed!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'mprim_SVD_factorise')
+                OU_CLASS_ERROR,OU_MODE_STD,'mprim_SVD_factoriseDP')
             call sys_halt()
           end if
           x = Dd(l)
@@ -3112,13 +3273,590 @@ contains
       end do
 
     end if
-  end subroutine mprim_SVD_factorise
+
+    ! Deallocate internal memory
+    deallocate(rv1)
+
+  end subroutine mprim_SVD_factoriseDP
 
   !************************************************************************
 
 !<subroutine>
 
-  subroutine mprim_SVD_backsubst1(Da,mdim,ndim,Dd,Db,Dx,Df,btransposedOpt)
+  subroutine mprim_SVD_factoriseSP(Fa,Fd,Fb,ndim1,ndim2,ndim3,btransposedOpt)
+
+!<description>
+    ! <tex>
+    ! This subroutine computes the factorisation for a singular value
+    ! decomposition. Given an ndim2-by-ndim1 matrix Fa, the routine
+    ! decomposes it into the product $ A = U * D * B^T $
+    ! where $U$ overwrites the matrix A and is returned in its memory
+    ! position, $D$ is a diagonal matrix returned as vector Fd and
+    ! $B$ is an n-by-n square matrix which is returned (instead
+    ! of its transpose) as matrix Fb.
+    !
+    ! The optional parameter btransposedOpt can be used to indicate
+    ! that matrix A is stored in transposed format. Note that
+    ! matrices D and B are not affected by this fact.
+    !
+    ! The details of this algorithm are given in numerical recipes in F90.
+    ! </tex>
+!</description>
+
+!<input>
+    ! Dimensions of the rectangular matrix
+    integer, intent(in) :: ndim1,ndim2,ndim3
+
+    ! OPTIONAL: Flag to indicate if the matrix A is transposed
+    logical, intent(in), optional :: btransposedOpt
+!</input>
+
+!<inputoutput>
+    ! Matrix that should be factorised on input.
+    ! Matrix U on output.
+    real(SP), dimension(ndim1,ndim2), intent(inout) :: Fa
+!</inputoutput>
+
+!<output>
+    ! Diagonal matrix
+    real(SP), dimension(ndim3), intent(out) :: Fd
+
+    ! Square matrix
+    real(SP), dimension(ndim3,ndim3), intent(out) :: Fb
+!</output>
+!</subroutine>
+
+    ! local variables
+    real(SP), dimension(:), allocatable :: rv1
+    real(SP) :: g, scale, anorm, s, f, h, c, x, y, z
+    integer  :: its, i, j, jj, k, l, nm, n, m, idot
+    integer, parameter :: MAX_ITS = 30
+    logical :: btransposed
+
+    ! Do we have an optional transposed flag?
+    if (present(btransposedOpt)) then
+      btransposed = btransposedOpt
+    else
+      btransposed = .false.
+    end if
+
+    ! Is the matrix transposed?
+    if (btransposed) then
+      n=ndim1; m=ndim2
+    else
+      n=ndim2; m=ndim1
+    end if
+
+    ! Check if number of equations is larger than number of unknowns
+    if (m < n) then
+      call output_line('Fewer equations than unknowns!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'mprim_SVD_factoriseSP')
+      call sys_halt()
+    end if
+
+    ! Allocate internal memory
+    allocate(rv1(ndim3))
+
+    if (btransposed) then
+
+      ! Householder reduction to bidiagonal form
+      g     = 0.0_SP
+      scale = 0.0_SP
+      anorm = 0.0_SP
+
+      do i = 1, n
+
+        l      = i+1
+        rv1(i) = scale*g
+        g      = 0.0_SP
+        scale  = 0.0_SP
+
+        if (i .le. m) then
+          scale = sum(abs(Fa(i,i:m)))
+          if (scale .ne. 0.0_SP) then
+            Fa(i,i:m) = Fa(i,i:m)/scale
+            s = 0.0_SP
+            do idot = i, m
+              s = s+Fa(i,idot)*Fa(i,idot)
+            end do
+            f = Fa(i,i)
+            g = -sign(sqrt(s),f)
+            h = f*g-s
+            Fa(i,i) = f-g
+            if (i .ne. n) then
+              do j = l, n
+                s = 0.0_SP
+                do k = i, m
+                  s = s+Fa(i,k)*Fa(j,k)
+                end do
+                f = s/h
+                do k = i, m
+                  Fa(j,k) = Fa(j,k)+f*Fa(i,k)
+                end do
+              end do
+            end if
+            do k = i, m
+              Fa(i,k) = scale*Fa(i,k)
+            end do
+          end if
+        end if
+
+        Fd(i) = scale*g
+        g     = 0.0_SP
+        s     = 0.0_SP
+        scale = 0.0_SP
+
+        if ((i .le. m) .and. (i .ne. n)) then
+          scale = sum(abs(Fa(l:n,i)))
+          if (scale .ne. 0.0_SP) then
+            do k = l, n
+              Fa(k,i) = Fa(k,i)/scale
+              s = s+Fa(k,i)*Fa(k,i)
+            end do
+            f = Fa(l,i)
+            g = -sign(sqrt(s),f)
+            h = f*g-s
+            Fa(l,i) = f-g
+            do k = l, n
+              rv1(k) = Fa(k,i)/h
+            end do
+
+            if (i .ne. m) then
+              do j = l, m
+                s = 0.0_SP
+                do k = l, n
+                  s = s+Fa(k,j)*Fa(k,i)
+                end do
+                do k = l, n
+                  Fa(k,j) = Fa(k,j)+s*rv1(k)
+                end do
+              end do
+            end if
+
+            do k = l, n
+              Fa(k,i) = scale*Fa(k,i)
+            end do
+          end if
+        end if
+        anorm = max(anorm,(abs(Fd(i))+abs(rv1(i))))
+      end do
+
+      ! Accumulation of right-hand transformations
+      do i = n, 1, -1
+        if (i .lt. n) then
+          if (g .ne. 0.0_SP) then
+            do j = l, n
+              Fb(j,i) = (Fa(j,i)/Fa(l,i))/g
+            end do
+            do j = l, n
+              s = 0.0_SP
+              do k = l, n
+                s = s+Fa(k,i)*Fb(k,j)
+              end do
+              do k = l, n
+                Fb(k,j) = Fb(k,j)+s*Fb(k,i)
+              end do
+            end do
+          end if
+          do j = l, n
+            Fb(i,j) = 0.0_SP
+            Fb(j,i) = 0.0_SP
+          end do
+        end if
+        Fb(i,i) = 1.0_SP
+        g = rv1(i)
+        l = i
+      end do
+
+      ! Accumulation of left-hand transformations
+      do i = n, 1, -1
+        l = i+1
+        g = Fd(i)
+        if (i .lt. n) then
+          do j = l, n
+            Fa(j,i) = 0.0_SP
+          end do
+        end if
+        if (g .ne. 0.0_SP) then
+          g = 1.0_SP/g
+          if (i .ne. n) then
+            do j = l, n
+              s = 0.0_SP
+              do k = l, m
+                s = s+Fa(i,k)*Fa(j,k)
+              end do
+              f = (s/Fa(i,i))*g
+              do k = i, m
+                Fa(j,k) = Fa(j,k)+f*Fa(i,k)
+              end do
+            end do
+          end if
+          do j = i, m
+            Fa(i,j) = Fa(i,j)*g
+          end do
+        else
+          do j = i, m
+            Fa(i,j) = 0.0_SP
+          end do
+        end if
+        Fa(i,i) = Fa(i,i)+1.0_SP
+      end do
+
+      ! Diagonalisation of the bidiagonal form
+      do k = n, 1, -1
+        do its = 1, MAX_ITS
+          do l = k, 1, -1
+            nm = l-1
+            if ((abs(rv1(l))+anorm) .eq. anorm) goto 5
+            if ((abs(Fd(nm))+anorm) .eq. anorm) goto 4
+          end do
+4         continue
+          c = 0.0_SP
+          s = 1.0_SP
+          do i = l, k
+            f = s*rv1(i)
+            rv1(i) = c*rv1(i)
+            if ((abs(f)+anorm) .eq. anorm) goto 5
+            g = Fd(i)
+            h = sqrt(f*f+g*g)
+            Fd(i) = h
+            h = 1.0_SP/h
+            c = g*h
+            s = -(f*h)
+            do j = 1, m
+              y = Fa(nm,j)
+              z = Fa(i,j)
+              Fa(nm,j) = (y*c)+(z*s)
+              Fa(i,j) = -(y*s)+(z*c)
+            end do
+          end do
+5         continue
+          z = Fd(k)
+          if (l .eq. k) then
+            if (z .lt. 0.0_SP) then
+              Fd(k) = -z
+              do j = 1, n
+                Fb(j,k) = -Fb(j,k)
+              end do
+            end if
+            goto 6
+          end if
+          if (its .eq. MAX_ITS) then
+            call output_line('Convergence failed!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'mprim_SVD_factoriseSP')
+            call sys_halt()
+          end if
+          x = Fd(l)
+          nm = k-1
+          y = Fd(nm)
+          g = rv1(nm)
+          h = rv1(k)
+          f = ((y-z)*(y+z)+(g-h)*(g+h))/(2.0_SP*h*y)
+          g = sqrt(f*f+1.0_SP)
+          f = ((x-z)*(x+z)+h*((y/(f+sign(g,f)))-h))/x
+
+          ! Next QR transformation
+          c = 1.0_SP
+          s = 1.0_SP
+          do j = l, nm
+            i = j+1
+            g = rv1(i)
+            y = Fd(i)
+            h = s*g
+            g = c*g
+            z = sqrt(f*f+h*h)
+            rv1(j) = z
+            c = f/z
+            s = h/z
+            f = (x*c)+(g*s)
+            g = -(x*s)+(g*c)
+            h = y*s
+            y = y*c
+            do jj = 1, n
+              x = Fb(jj,j)
+              z = Fb(jj,i)
+              Fb(jj,j) = (x*c)+(z*s)
+              Fb(jj,i) = -(x*s)+(z*c)
+            end do
+            z = sqrt(f*f+h*h)
+            Fd(j) = z
+            if (z .ne. 0.0_SP) then
+              z = 1.0_SP/z
+              c = f*z
+              s = h*z
+            end if
+            f = (c*g)+(s*y)
+            x = -(s*g)+(c*y)
+            do jj = 1, m
+              y = Fa(j,jj)
+              z = Fa(i,jj)
+              Fa(j,jj) = (y*c)+(z*s)
+              Fa(i,jj) = -(y*s)+(z*c)
+            end do
+          end do
+          rv1(l) = 0.0_SP
+          rv1(k) = f
+          Fd(k) = x
+        end do
+6       continue
+      end do
+
+    else
+
+      ! Householder reduction to bidiagonal form
+      g     = 0.0_SP
+      scale = 0.0_SP
+      anorm = 0.0_SP
+
+      do i = 1, n
+
+        l      = i+1
+        rv1(i) = scale*g
+        g      = 0.0_SP
+        scale  = 0.0_SP
+
+        if (i .le. m) then
+          scale = sum(abs(Fa(i:m,i)))
+          if (scale .ne. 0.0_SP) then
+            Fa(i:m,i) = Fa(i:m,i)/scale
+            s = 0.0_SP
+            do idot = i, m
+              s = s+Fa(idot,i)*Fa(idot,i)
+            end do
+            f = Fa(i,i)
+            g = -sign(sqrt(s),f)
+            h = f*g-s
+            Fa(i,i) = f-g
+            if (i .ne. n) then
+              do j = l, n
+                s = 0.0_SP
+                do k = i, m
+                  s = s+Fa(k,i)*Fa(k,j)
+                end do
+                f = s/h
+                do k = i, m
+                  Fa(k,j) = Fa(k,j)+f*Fa(k,i)
+                end do
+              end do
+            end if
+            do k = i, m
+              Fa(k,i) = scale*Fa(k,i)
+            end do
+          end if
+        end if
+
+        Fd(i) = scale*g
+        g     = 0.0_SP
+        s     = 0.0_SP
+        scale = 0.0_SP
+
+        if ((i .le. m) .and. (i .ne. n)) then
+          scale = sum(abs(Fa(i,l:n)))
+          if (scale .ne. 0.0_SP) then
+            do k = l, n
+              Fa(i,k) = Fa(i,k)/scale
+              s = s+Fa(i,k)*Fa(i,k)
+            end do
+            f = Fa(i,l)
+            g = -sign(sqrt(s),f)
+            h = f*g-s
+            Fa(i,l) = f-g
+            do k = l, n
+              rv1(k) = Fa(i,k)/h
+            end do
+
+            if (i .ne. m) then
+              do j = l, m
+                s = 0.0_SP
+                do k = l, n
+                  s = s+Fa(j,k)*Fa(i,k)
+                end do
+                do k = l, n
+                  Fa(j,k) = Fa(j,k)+s*rv1(k)
+                end do
+              end do
+            end if
+
+            do k = l, n
+              Fa(i,k) = scale*Fa(i,k)
+            end do
+          end if
+        end if
+        anorm = max(anorm,(abs(Fd(i))+abs(rv1(i))))
+      end do
+
+      ! Accumulation of right-hand transformations
+      do i = n, 1, -1
+        if (i .lt. n) then
+          if (g .ne. 0.0_SP) then
+            do j = l, n
+              Fb(j,i) = (Fa(i,j)/Fa(i,l))/g
+            end do
+            do j = l, n
+              s = 0.0_SP
+              do k = l, n
+                s = s+Fa(i,k)*Fb(k,j)
+              end do
+              do k = l, n
+                Fb(k,j) = Fb(k,j)+s*Fb(k,i)
+              end do
+            end do
+          end if
+          do j = l, n
+            Fb(i,j) = 0.0_SP
+            Fb(j,i) = 0.0_SP
+          end do
+        end if
+        Fb(i,i) = 1.0_SP
+        g = rv1(i)
+        l = i
+      end do
+
+      ! Accumulation of left-hand transformations
+      do i = n, 1, -1
+        l = i+1
+        g = Fd(i)
+        if (i .lt. n) then
+          do j = l, n
+            Fa(i,j) = 0.0_SP
+          end do
+        end if
+        if (g .ne. 0.0_SP) then
+          g = 1.0_SP/g
+          if (i .ne. n) then
+            do j = l, n
+              s = 0.0_SP
+              do k = l, m
+                s = s+Fa(k,i)*Fa(k,j)
+              end do
+              f = (s/Fa(i,i))*g
+              do k = i, m
+                Fa(k,j) = Fa(k,j)+f*Fa(k,i)
+              end do
+            end do
+          end if
+          do j = i, m
+            Fa(j,i) = Fa(j,i)*g
+          end do
+        else
+          do j = i, m
+            Fa(j,i) = 0.0_SP
+          end do
+        end if
+        Fa(i,i) = Fa(i,i)+1.0_SP
+      end do
+
+      ! Diagonalisation of the bidiagonal form
+      do k = n, 1, -1
+        do its = 1, MAX_ITS
+          do l = k, 1, -1
+            nm = l-1
+            if ((abs(rv1(l))+anorm) .eq. anorm) goto 2
+            if ((abs(Fd(nm))+anorm) .eq. anorm) goto 1
+          end do
+1         continue
+          c = 0.0_SP
+          s = 1.0_SP
+          do i = l, k
+            f = s*rv1(i)
+            rv1(i) = c*rv1(i)
+            if ((abs(f)+anorm) .eq. anorm) goto 2
+            g = Fd(i)
+            h = sqrt(f*f+g*g)
+            Fd(i) = h
+            h = 1.0_SP/h
+            c = g*h
+            s = -(f*h)
+            do j = 1, m
+              y = Fa(j,nm)
+              z = Fa(j,i)
+              Fa(j,nm) = (y*c)+(z*s)
+              Fa(j,i) = -(y*s)+(z*c)
+            end do
+          end do
+2         continue
+          z = Fd(k)
+          if (l .eq. k) then
+            if (z .lt. 0.0_SP) then
+              Fd(k) = -z
+              do j = 1, n
+                Fb(j,k) = -Fb(j,k)
+              end do
+            end if
+            goto 3
+          end if
+          if (its .eq. MAX_ITS) then
+            call output_line('Convergence failed!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'mprim_SVD_factoriseSP')
+            call sys_halt()
+          end if
+          x = Fd(l)
+          nm = k-1
+          y = Fd(nm)
+          g = rv1(nm)
+          h = rv1(k)
+          f = ((y-z)*(y+z)+(g-h)*(g+h))/(2.0_SP*h*y)
+          g = sqrt(f*f+1.0_SP)
+          f = ((x-z)*(x+z)+h*((y/(f+sign(g,f)))-h))/x
+
+          ! Next QR transformation
+          c = 1.0_SP
+          s = 1.0_SP
+          do j = l, nm
+            i = j+1
+            g = rv1(i)
+            y = Fd(i)
+            h = s*g
+            g = c*g
+            z = sqrt(f*f+h*h)
+            rv1(j) = z
+            c = f/z
+            s = h/z
+            f = (x*c)+(g*s)
+            g = -(x*s)+(g*c)
+            h = y*s
+            y = y*c
+            do jj = 1, n
+              x = Fb(jj,j)
+              z = Fb(jj,i)
+              Fb(jj,j) = (x*c)+(z*s)
+              Fb(jj,i) = -(x*s)+(z*c)
+            end do
+            z = sqrt(f*f+h*h)
+            Fd(j) = z
+            if (z .ne. 0.0_SP) then
+              z = 1.0_SP/z
+              c = f*z
+              s = h*z
+            end if
+            f = (c*g)+(s*y)
+            x = -(s*g)+(c*y)
+            do jj = 1, m
+              y = Fa(jj,j)
+              z = Fa(jj,i)
+              Fa(jj,j) = (y*c)+(z*s)
+              Fa(jj,i) = -(y*s)+(z*c)
+            end do
+          end do
+          rv1(l) = 0.0_SP
+          rv1(k) = f
+          Fd(k) = x
+        end do
+3       continue
+      end do
+
+    end if
+
+    ! Deallocate internal memory
+    deallocate(rv1)
+
+  end subroutine mprim_SVD_factoriseSP
+
+  !************************************************************************
+
+!<subroutine>
+
+  subroutine mprim_SVD_backsubstDP(Da,Dd,Db,Dx,Df,ndim1,ndim2,ndim3,btransposedOpt)
 
 !<description>
     ! This subroutine solves <tex>$ A * x = f $</tex> for vector <tex>$ x $</tex>,
@@ -3131,32 +3869,35 @@ contains
 
 !<input>
     ! Dimensions of the rectangular matrix
-    integer, intent(in)                           :: ndim,mdim
+    integer, intent(in) :: ndim1,ndim2
+
+    ! Dimension of the diagonal matrix Dd and the suare matrix Db
+    integer, intent(in) :: ndim3
 
     ! OPTIONAL: Flag to indicate if the matrix A is transposed
-    logical, intent(in), optional                 :: btransposedOpt
+    logical, intent(in), optional :: btransposedOpt
 
     ! Factorised matrix U
-    real(DP), dimension(mdim,ndim), intent(in)    :: Da
+    real(DP), dimension(ndim1,ndim2), intent(in) :: Da
 
     ! Diagonal matrix D
-    real(DP), dimension(:), intent(in)            :: Dd
+    real(DP), dimension(ndim3), intent(in) :: Dd
 
     ! Square matrix B
-    real(DP), dimension(:,:), intent(in)          :: Db
+    real(DP), dimension(ndim3,ndim3), intent(in) :: Db
 
     ! Right-hand side vector
-    real(DP), dimension(:), intent(in)            :: Df
+    real(DP), dimension(ndim3), intent(in) :: Df
 !</input>
 
 !<output>
     ! Solution vector
-    real(DP), dimension(:), intent(out)           :: Dx
+    real(DP), dimension(ndim3), intent(out) :: Dx
 !</output>
 !</subroutine>
 
     ! local variables
-    real(DP), dimension(size(Dd)) :: Daux
+    real(DP), dimension(:), allocatable :: Daux
     integer :: i,n,m
     logical :: btransposed
 
@@ -3169,23 +3910,26 @@ contains
 
     ! Is the matrix transposed?
     if (btransposed) then
-      n=mdim; m=ndim
+      n=ndim1; m=ndim2
     else
-      n=ndim; m=mdim
+      n=ndim2; m=ndim1
     end if
 
     ! Check if number of equations is larger than number of unknowns
     if (m < n) then
       call output_line('Fewer equations than unknowns!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'mprim_SVD_backsubst1')
+          OU_CLASS_ERROR,OU_MODE_STD,'mprim_SVD_backsubstDP')
       call sys_halt()
     end if
 
+    ! Allocate internal memory
+    allocate(Daux(ndim3))
+
     ! Compute aux = (U^T * f)/D where D_i /= 0
     if (btransposed) then
-      call DGEMV('n', mdim, ndim, 1.0_DP, Da, mdim, Df, 1, 0.0_DP, Daux, 1)
+      call DGEMV('n', ndim1, ndim2, 1.0_DP, Da, ndim1, Df, 1, 0.0_DP, Daux, 1)
     else
-      call DGEMV('t', mdim, ndim, 1.0_DP, Da, mdim, Df, 1, 0.0_DP, Daux, 1)
+      call DGEMV('t', ndim1, ndim2, 1.0_DP, Da, ndim1, Df, 1, 0.0_DP, Daux, 1)
     end if
 
     do i =1, size(Dd)
@@ -3198,54 +3942,57 @@ contains
 
     ! Compute x = B * aux
     call DGEMV('n', n, n, 1.0_DP, Db, n, Daux, 1, 0.0_DP, Dx, 1)
-  end subroutine mprim_SVD_backsubst1
+
+    ! Deallocate internal memory
+    deallocate(Daux)
+  end subroutine mprim_SVD_backsubstDP
 
   !************************************************************************
 
 !<subroutine>
 
-  subroutine mprim_SVD_backsubst2(Da,mdim,ndim,Dd,Db,Dx,Df,btransposedOpt)
+  subroutine mprim_SVD_backsubstSP(Fa,Fd,Fb,Fx,Ff,ndim1,ndim2,ndim3,btransposedOpt)
 
 !<description>
-    ! This subroutine solves <tex>$ A * x = f $</tex> for vector $x$, where the rectangular
-    ! matrix $A$ has been decomposed into <tex>$ Da $</tex>, $Dd$ and <tex>$ Db $</tex> by the routine
+    ! This subroutine solves <tex>$ A * x = f $</tex> for vector <tex>$ x $</tex>,
+    ! where the rectangular
+    ! matrix $A$ has been decomposed into <tex>$ Fa $</tex>, <tex>$ Fd $</tex>
+    ! and <tex>$ Fb $</tex> by the routine
     ! mprim_SVD_factorise. The optional parameter btransposedOpt can be used
     ! to indicate that matrix A is stored in transposed format.
-    !
-    ! Note that this routine does exactly the same as mprim_SVD_backsubst1.
-    ! The only difference is, that the right-hand side vector <tex>$ f $</tex> is given
-    ! as a 2D-array, whereby the product of both dimensions must agree with
-    ! the corresponding dimensions of the rectangular matrix $A$.
 !</description>
 
 !<input>
     ! Dimensions of the rectangular matrix
-    integer, intent(in)                           :: ndim,mdim
+    integer, intent(in) :: ndim1,ndim2
+
+    ! Dimension of the diagonal matrix Dd and the suare matrix Db
+    integer, intent(in) :: ndim3
 
     ! OPTIONAL: Flag to indicate if the matrix A is transposed
-    logical, intent(in), optional                 :: btransposedOpt
+    logical, intent(in), optional :: btransposedOpt
 
     ! Factorised matrix U
-    real(DP), dimension(mdim,ndim), intent(in)    :: Da
+    real(SP), dimension(ndim1,ndim2), intent(in) :: Fa
 
     ! Diagonal matrix D
-    real(DP), dimension(:), intent(in)            :: Dd
+    real(SP), dimension(ndim3), intent(in) :: Fd
 
     ! Square matrix B
-    real(DP), dimension(:,:), intent(in)          :: Db
+    real(SP), dimension(ndim3,ndim3), intent(in) :: Fb
 
     ! Right-hand side vector
-    real(DP), dimension(:,:), intent(in)          :: Df
+    real(SP), dimension(ndim3), intent(in) :: Ff
 !</input>
 
 !<output>
     ! Solution vector
-    real(DP), dimension(:), intent(out)           :: Dx
+    real(SP), dimension(ndim3), intent(out) :: Fx
 !</output>
 !</subroutine>
 
     ! local variables
-    real(DP), dimension(size(Dd)) :: Daux
+    real(SP), dimension(:), allocatable :: Faux
     integer :: i,n,m
     logical :: btransposed
 
@@ -3258,36 +4005,42 @@ contains
 
     ! Is the matrix transposed?
     if (btransposed) then
-      n=mdim; m=ndim
+      n=ndim1; m=ndim2
     else
-      n=ndim; m=mdim
+      n=ndim2; m=ndim1
     end if
 
     ! Check if number of equations is larger than number of unknowns
     if (m < n) then
       call output_line('Fewer equations than unknowns!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'mprim_SVD_backsubst2')
+          OU_CLASS_ERROR,OU_MODE_STD,'mprim_SVD_backsubstSP')
       call sys_halt()
     end if
 
+    ! Allocate internal memory
+    allocate(Faux(ndim3))
+
     ! Compute aux = (U^T * f)/D where D_i /= 0
     if (btransposed) then
-      call DGEMV('n', mdim, ndim, 1.0_DP, Da, mdim, Df, 1, 0.0_DP, Daux, 1)
+      call SGEMV('n', ndim1, ndim2, 1.0_SP, Fa, ndim1, Ff, 1, 0.0_SP, Faux, 1)
     else
-      call DGEMV('t', mdim, ndim, 1.0_DP, Da, mdim, Df, 1, 0.0_DP, Daux, 1)
+      call SGEMV('t', ndim1, ndim2, 1.0_SP, Fa, ndim1, Ff, 1, 0.0_SP, Faux, 1)
     end if
 
-    do i =1, size(Dd)
-      if (Dd(i) .ne. 0.0_DP) then
-        Daux(i) = Daux(i)/Dd(i)
+    do i =1, size(Fd)
+      if (Fd(i) .ne. 0.0_SP) then
+        Faux(i) = Faux(i)/Fd(i)
       else
-        Daux(i) = 0.0_DP
+        Faux(i) = 0.0_SP
       end if
     end do
 
     ! Compute x = B * aux
-    call DGEMV('n', n, n, 1.0_DP, Db, n, Daux, 1, 0.0_DP, Dx, 1)
-  end subroutine mprim_SVD_backsubst2
+    call SGEMV('n', n, n, 1.0_SP, Fb, n, Faux, 1, 0.0_SP, Fx, 1)
+
+    ! Deallocate internal memory
+    deallocate(Faux)
+  end subroutine mprim_SVD_backsubstSP
 
   !************************************************************************
 
@@ -3748,7 +4501,7 @@ contains
     Db(1) = -(Da(1,2)*x2 - Da(2,2)*x1) * ddet
     Db(2) =  (Da(1,1)*x2 - Da(2,1)*x1) * ddet
 
-  end subroutine
+  end subroutine mprim_solve2x2DirectDP
 
   ! ***************************************************************************
 
@@ -3788,7 +4541,7 @@ contains
     Fb(1) = -(Fa(1,2)*x2 - Fa(2,2)*x1) * fdet
     Fb(2) =  (Fa(1,1)*x2 - Fa(2,1)*x1) * fdet
 
-  end subroutine
+  end subroutine mprim_solve2x2DirectSP
 
   ! ***************************************************************************
 
@@ -3854,7 +4607,7 @@ contains
         -Da(2,1)*Da(1,2)*x3 &
         +Da(3,1)*Da(1,2)*x2)
 
-  end subroutine
+  end subroutine mprim_solve3x3DirectDP
 
   ! ***************************************************************************
 
@@ -3920,7 +4673,7 @@ contains
         -Fa(2,1)*Fa(1,2)*x3 &
         +Fa(3,1)*Fa(1,2)*x2)
 
-  end subroutine
+  end subroutine mprim_solve3x3DirectSP
 
   ! ************************************************************************
 
@@ -4007,7 +4760,7 @@ contains
 
     end do
 
-  end subroutine
+  end subroutine mprim_solve2x2BandDiagDP
 
   ! ************************************************************************
 
@@ -4094,7 +4847,7 @@ contains
 
     end do
 
-  end subroutine
+  end subroutine mprim_solve2x2BandDiagSP
 
   !*****************************************************************************
 
@@ -4500,7 +5253,8 @@ contains
 
 !<subroutine>
 
-  subroutine mprim_leastSquaresMinDP(Da,mdim,ndim,Db,Dx,btransposedOpt)
+  subroutine mprim_leastSquaresMinDP(Da,Db,Dx,ndim1,ndim2,ndim3,ndim4,&
+      btransposedOpt,drcondOpt)
 
 !<description>
     ! This subroutine solves the least-squares minimisation problem
@@ -4514,23 +5268,35 @@ contains
 !</description>
 
 !<input>
-    ! Dimension of matrix and vectors
-    integer, intent(in) :: mdim,ndim
+    ! Dimension of matrix
+    integer, intent(in) :: ndim1,ndim2
+
+    ! Dimension of right-hand side vector
+    integer, intent(in) :: ndim3
+
+    ! Dimension of solution vector
+    integer, intent(in) :: ndim4
 
     ! Matrix for the least-squares minimisation
-    real(DP), dimension(mdim,ndim), intent(in) :: Da
+    real(DP), dimension(ndim1,ndim2), intent(in) :: Da
 
     ! Vector for the least-squares minimisation
-    real(DP), dimension(:), intent(in) :: Db
+    real(DP), dimension(ndim3), intent(in) :: Db
 
     ! OPTIONAL: Flag which indicates whether matrix A or its transpose
     ! should be used in the least-squares minimisation problem
     logical, intent(in), optional :: btransposedOpt
+
+    ! OPTIONAL: Tolerance to determine the effective rank of matrix
+    ! Da, which is defined as the order of the largest leading
+    ! triangular submatrix in the QR factorisation with pivoting of A
+    ! whose estimated condition number < 1/drcondOpt.
+    real(DP), intent(in), optional :: drcondOpt
 !</input>
 
 !<output>
     ! Solution vector from the least-squares minimisation
-    real(DP), dimension(:), intent(out) :: Dx
+    real(DP), dimension(ndim4), intent(out) :: Dx
 !</output>
 
 !</subroutine>
@@ -4550,35 +5316,34 @@ contains
     end if
 
     ! Determine size of working memory
-    nwork = mdim+ndim
+    nwork = ndim1+ndim2
 
     ! Allocate working memory
     allocate(p_Dwork(nwork))
 
     ! Make a copy of the input matrix A which will be overwritten,
-    ! e.g., be the QR or LQ factorization
-    allocate(p_Da(mdim,ndim))
-    call lalg_copyVector(Da,p_Da)
+    ! e.g., be the QR or LQ factorisation
+    allocate(p_Da(ndim1,ndim2))
+    call lalg_copyVector(Da,p_Da,ndim1,ndim2)
 
     ! Determine size of source/destination vector
-    naux = max(mdim,ndim)
+    naux = max(ndim3,ndim4)
 
     ! Make a copy of the input vector b which will be overwritten be
     ! the solution vector
     allocate(p_Db(naux))
-    call lalg_copyVector(Db,p_Db)
+    call lalg_copyVector(Db,p_Db,ndim3)
     
     ! Solve the least-squares minimisation problem using QR or LQ
     ! factorisation. It is assumed that matrix A has full rank.
-
-    call dgels(merge('T','N',btransposed), mdim, ndim, 1, p_Da, mdim,&
+    call dgels(merge('T','N',btransposed), ndim1, ndim2, 1, p_Da, ndim1,&
                p_Db, naux, p_Dwork, nwork, info)
 
     ! Check if solution procedure terminated without errors
     if (info .eq. 0) then
 
       ! Copy solution vector to output array
-      call lalg_copyVector(p_Db,Dx)
+      call lalg_copyVector(p_Db,Dx,ndim4)
 
       ! Release internal memory
       deallocate(p_Da,p_Db,p_Dwork)
@@ -4602,14 +5367,14 @@ contains
 
       ! Again, make a copy of the input vector b which will be
       ! overwritten be the solution vector
-      call lalg_copyVector(Db,p_Db)
+      call lalg_copyVector(Db,p_Db,ndim3)
 
       ! Transposition of matrix A cannot be handled implicitly. In this
       ! case, we must transpose matrix A by hand before performing SVD.
       if (btransposed) then
 
-        n = mdim
-        m = ndim
+        n = ndim1
+        m = ndim2
 
         ! Transpose matrix A by hand
         deallocate(p_Da)
@@ -4618,11 +5383,11 @@ contains
 
       else
 
-        m = mdim
-        n = ndim
+        m = ndim1
+        n = ndim2
 
         ! Make a copy of the input matrix A which will be overwritten.
-        call lalg_copyVector(Da,p_Da)
+        call lalg_copyVector(Da,p_Da,ndim1,ndim2)
 
       end if
 
@@ -4631,19 +5396,26 @@ contains
       call lalg_clearVector(p_Ipvt)
       
       ! Determine size of working memory
-      naux = min(m,n)
+      naux  = min(m,n)
       nwork = max( naux+3*n+1, 2*naux+1 )
       allocate(p_Dwork(nwork))
       
-      ! Solve the least-squares minimisation problem using SVD.
-      call dgelsy(m, n, 1, p_Da, m, p_Db, m, p_Ipvt,&
-                  1e-12_DP, irank, p_Dwork, nwork, info)
+      ! Do we have an optional tolerance paramter?
+      if (present(drcondOpt)) then
+        ! Solve the least-squares minimisation problem using SVD.
+        call dgelsy(m, n, 1, p_Da, m, p_Db, m, p_Ipvt,&
+                    drcondOpt, irank, p_Dwork, nwork, info)
+      else
+        ! Solve the least-squares minimisation problem using SVD.
+        call dgelsy(m, n, 1, p_Da, m, p_Db, m, p_Ipvt,&
+                    1e-12_DP, irank, p_Dwork, nwork, info)
+      end if
 
       ! Check if solution procedure terminated without errors
       if (info .eq. 0) then
         
         ! Copy solution vector to output array
-        call lalg_copyVector(p_Db,Dx)
+        call lalg_copyVector(p_Db,Dx,ndim4)
         
         ! Release internal memory
         deallocate(p_Da,p_Db,p_Dwork,p_Ipvt)
@@ -4658,13 +5430,14 @@ contains
       
     end if
 
-  end subroutine
+  end subroutine mprim_leastSquaresMinDP
 
-!*****************************************************************************
+  !*****************************************************************************
 
 !<subroutine>
 
-  subroutine mprim_leastSquaresMinSP(Fa,mdim,ndim,Fb,Fx,btransposedOpt)
+  subroutine mprim_leastSquaresMinSP(Fa,Fb,Fx,ndim1,ndim2,ndim3,ndim4,&
+      btransposedOpt,frcondOpt)
 
 !<description>
     ! This subroutine solves the least-squares minimisation problem
@@ -4679,22 +5452,34 @@ contains
 
 !<input>
     ! Dimension of matrix and vectors
-    integer, intent(in) :: mdim,ndim
+    integer, intent(in) :: ndim1,ndim2
+
+    ! Dimension of right-hand side vector
+    integer, intent(in) :: ndim3
+
+    ! Dimension of solution vector
+    integer, intent(in) :: ndim4
 
     ! Matrix for the least-squares minimisation
-    real(SP), dimension(mdim,ndim), intent(in) :: Fa
+    real(SP), dimension(ndim1,ndim2), intent(in) :: Fa
 
     ! Vector for the least-squares minimisation
-    real(SP), dimension(:), intent(in) :: Fb
+    real(SP), dimension(ndim3), intent(in) :: Fb
 
     ! OPTIONAL: Flag which indicates whether matrix A or its transpose
     ! should be used in the least-squares minimisation problem
     logical, intent(in), optional :: btransposedOpt
+
+    ! OPTIONAL: Tolerance to determine the effective rank of matrix
+    ! Da, which is defined as the order of the largest leading
+    ! triangular submatrix in the QR factorisation with pivoting of A
+    ! whose estimated condition number < 1/frcondOpt.
+    real(SP), intent(in), optional :: frcondOpt
 !</input>
 
 !<output>
     ! Solution vector from the least-squares minimisation
-    real(SP), dimension(:), intent(out) :: Fx
+    real(SP), dimension(ndim4), intent(out) :: Fx
 !</output>
 
 !</subroutine>
@@ -4714,35 +5499,34 @@ contains
     end if
 
     ! Determine size of working memory
-    nwork = mdim+ndim
+    nwork = ndim1+ndim2
 
     ! Allocate working memory
     allocate(p_Fwork(nwork))
 
     ! Make a copy of the input matrix A which will be overwritten,
-    ! e.g., be the QR or LQ factorization
-    allocate(p_Fa(mdim,ndim))
-    call lalg_copyVector(Fa,p_Fa)
+    ! e.g., be the QR or LQ factorisation
+    allocate(p_Fa(ndim1,ndim2))
+    call lalg_copyVector(Fa,p_Fa,ndim1,ndim2)
 
     ! Determine size of source/destination vector
-    naux = max(mdim,ndim)
+    naux = max(ndim3,ndim4)
 
     ! Make a copy of the input vector b which will be overwritten be
     ! the solution vector
     allocate(p_Fb(naux))
-    call lalg_copyVector(Fb,p_Fb)
+    call lalg_copyVector(Fb,p_Fb,ndim3)
     
     ! Solve the least-squares minimisation problem using QR or LQ
     ! factorisation. It is assumed that matrix A has full rank.
-
-    call dgels(merge('T','N',btransposed), mdim, ndim, 1, p_Fa, mdim,&
+    call dgels(merge('T','N',btransposed), ndim1, ndim2, 1, p_Fa, ndim1,&
                p_Fb, naux, p_Fwork, nwork, info)
 
     ! Check if solution procedure terminated without errors
     if (info .eq. 0) then
 
       ! Copy solution vector to output array
-      call lalg_copyVector(p_Fb,Fx)
+      call lalg_copyVector(p_Fb,Fx,ndim4)
 
       ! Release internal memory
       deallocate(p_Fa,p_Fb,p_Fwork)
@@ -4766,14 +5550,14 @@ contains
 
       ! Again, make a copy of the input vector b which will be
       ! overwritten be the solution vector
-      call lalg_copyVector(Fb,p_Fb)
+      call lalg_copyVector(Fb,p_Fb,ndim3)
 
       ! Transposition of matrix A cannot be handled implicitly. In this
       ! case, we must transpose matrix A by hand before performing SVD.
       if (btransposed) then
 
-        n = mdim
-        m = ndim
+        n = ndim1
+        m = ndim2
 
         ! Transpose matrix A by hand
         deallocate(p_Fa)
@@ -4782,11 +5566,11 @@ contains
 
       else
 
-        m = mdim
-        n = ndim
+        m = ndim1
+        n = ndim2
 
         ! Make a copy of the input matrix A which will be overwritten.
-        call lalg_copyVector(Fa,p_Fa)
+        call lalg_copyVector(Fa,p_Fa,ndim1,ndim2)
 
       end if
 
@@ -4798,16 +5582,23 @@ contains
       naux = min(m,n)
       nwork = max( naux+3*n+1, 2*naux+1 )
       allocate(p_Fwork(nwork))
-      
-      ! Solve the least-squares minimisation problem using SVD.
-      call dgelsy(m, n, 1, p_Fa, m, p_Fb, m, p_Ipvt,&
-                  1e-12_SP, irank, p_Fwork, nwork, info)
+
+      ! Do we have an optional tolerance paramter?
+      if (present(frcondOpt)) then
+        ! Solve the least-squares minimisation problem using SVD.
+        call dgelsy(m, n, 1, p_Fa, m, p_Fb, m, p_Ipvt,&
+                    frcondOpt, irank, p_Fwork, nwork, info)
+      else
+        ! Solve the least-squares minimisation problem using SVD.
+        call dgelsy(m, n, 1, p_Fa, m, p_Fb, m, p_Ipvt,&
+                    1e-12_SP, irank, p_Fwork, nwork, info)
+      end if
 
       ! Check if solution procedure terminated without errors
       if (info .eq. 0) then
         
         ! Copy solution vector to output array
-        call lalg_copyVector(p_Fb,Fx)
+        call lalg_copyVector(p_Fb,Fx,ndim4)
         
         ! Release internal memory
         deallocate(p_Fa,p_Fb,p_Fwork,p_Ipvt)
@@ -4822,7 +5613,7 @@ contains
       
     end if
 
-  end subroutine
+  end subroutine mprim_leastSquaresMinSP
 
   !*****************************************************************************
 
@@ -4875,7 +5666,7 @@ contains
     deallocate(Daux)
 #endif
 
-  end subroutine
+  end subroutine mprim_transposeMatrix1DP
 
   !*****************************************************************************
 
@@ -4928,7 +5719,7 @@ contains
     deallocate(Faux)
 #endif
 
-  end subroutine
+  end subroutine mprim_transposeMatrix1SP
 
   !*****************************************************************************
 
@@ -4979,7 +5770,7 @@ contains
     !$omp end parallel do
 #endif
 
-  end subroutine
+  end subroutine mprim_transposeMatrix2DP
 
   !*****************************************************************************
 
@@ -5030,6 +5821,6 @@ contains
     !$omp end parallel do
 #endif
 
-  end subroutine
+  end subroutine mprim_transposeMatrix2SP
 
 end module mprimitives
