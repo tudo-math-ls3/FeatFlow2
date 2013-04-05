@@ -49,6 +49,7 @@ module element_hexa3d
   public :: elem_eval_EN30_3D
   public :: elem_eval_E050_3D
   public :: elem_eval_EN50_3D
+  public :: elem_eval_MSL2_3D
   public :: elem_eval_MSL2NP_3D
 
 contains
@@ -6206,6 +6207,312 @@ contains
 
   end subroutine
 
+  !************************************************************************
+
+!<subroutine>
+
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+  subroutine elem_eval_MSL2_3D (celement, reval, Bder, Dbas)
+
+!<description>
+  ! This subroutine simultaneously calculates the values of the basic
+  ! functions of the finite element at multiple given points on the
+  ! reference element for multiple given elements.
+!</description>
+
+!<input>
+  ! The element specifier.
+  integer(I32), intent(in)                       :: celement
+
+  ! t_evalElementSet-structure that contains cell-specific information and
+  ! coordinates of the evaluation points. revalElementSet must be prepared
+  ! for the evaluation.
+  type(t_evalElementSet), intent(in)             :: reval
+
+  ! Derivative quantifier array. array [1..DER_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  logical, dimension(:), intent(in)              :: Bder
+!</input>
+
+!<output>
+  ! Value/derivatives of basis functions.
+  ! array [1..EL_MAXNBAS,1..DER_MAXNDER,1..npointsPerElement,nelements] of double
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th
+  !   basis function of the finite element in the point Dcoords(j) on the
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
+  real(DP), dimension(:,:,:,:), intent(out)      :: Dbas
+!</output>
+
+!</subroutine>
+
+  ! Element Description
+  ! -------------------
+  ! The MSL2_3D element is specified by fourteen polynomials per element.
+  !
+  ! The basis polynomials are constructed from the following set of monomials:
+  ! { 1, x, y, z, x^2, y^2, z^2, xy, xz, yz, xyz, x*(x^2 - 3/5*(y^2 + z^2)),
+  !   y*(y^2 - 3/5*(x^2 + z^2)), z*(z^2 - 3/5*(x^2 + y^2)) }
+  !
+  ! see:
+  ! Z. Meng, D. Sheen, Z. Luo:
+  ! "Three-dimensional quadratic nonconforming brick element";
+  ! pre-print
+  !
+  ! The basis polynomials Pi are constructed such that they fulfill the
+  ! following conditions:
+  !
+  ! For all i = 1,...,14:
+  ! {
+  !   For all j = 1,...,8:
+  !   {
+  !     Pi(vj) = kronecker(i,j)
+  !   }
+  !   For all j = 1,...,6:
+  !   {
+  !     Int_[-1,1]^2 (|DFj(x,y)|*Pi(Fj(x,y))) d(x,y) = kronecker(i+8,j) * |fj|
+  !     <==>
+  !     Int_fj Pi(x,y) d(x,y) = kronecker(i+8,j) * |fj|
+  !   }
+  ! }
+  !
+  ! With:
+  ! vj being the j-th local vertex of the hexahedron
+  ! fj being the j-th local face of the hexahedron
+  ! |fj| being the area of the face fj
+  ! Fj: [-1,1]^2 -> fj being the parametrisation of the face fj
+  ! |DFj(x,y)| being the determinant of the Jacobi-Matrix of Fj in the point (x,y)
+  !
+  ! On the reference element, the above combination of monomial set and
+  ! basis polynomial conditions leads to the following basis polynomials:
+  ! ...
+
+  ! Parameter: number of local basis functions
+  integer, parameter :: NBAS = 14
+
+  ! derivatives on reference element
+  real(DP), dimension(NBAS,NDIM3D) :: DrefDer
+
+  ! Local variables
+  real(DP) :: ddet,dx,dy,dz
+  integer :: i,j
+
+    ! Calculate function values?
+    if(Bder(DER_FUNC3D)) then
+
+      ! Loop through all elements
+      !$omp parallel do defaulT(shared) private(i,dx,dy,dz,dxy,dyz) &
+      !$omp if(reval%nelements > reval%p_rperfconfig%NELEMMIN_OMP)
+      do j = 1, reval%nelements
+
+        ! Loop through all points on the current element
+        do i = 1, reval%npointsPerElement
+
+          ! Get the point coordinates
+          dx = reval%p_DpointsRef(1,i,j)
+          dy = reval%p_DpointsRef(2,i,j)
+          dz = reval%p_DpointsRef(3,i,j)
+
+          Dbas( 1,DER_FUNC3D,i,j) = (-5.0_DP + 3.0_DP*(-dx - dy - dz + dx**2 + dy**2 + dz**2) &
+            + 4.0_DP*( dx*dy + dx*dz + dy*dz - dx*dy*dz) &
+            + dx*(5.0_DP*dx**2 - 3.0_DP*(dy**2 + dz**2)) &
+            + dy*(5.0_DP*dy**2 - 3.0_DP*(dx**2 + dz**2)) &
+            + dz*(5.0_DP*dz**2 - 3.0_DP*(dx**2 + dy**2))) / 32.0_DP
+          Dbas( 2,DER_FUNC3D,i,j) = (-5.0_DP + 3.0_DP*( dx - dy - dz + dx**2 + dy**2 + dz**2) &
+            + 4.0_DP*(-dx*dy - dx*dz + dy*dz + dx*dy*dz) &
+            - dx*(5.0_DP*dx**2 - 3.0_DP*(dy**2 + dz**2)) &
+            + dy*(5.0_DP*dy**2 - 3.0_DP*(dx**2 + dz**2)) &
+            + dz*(5.0_DP*dz**2 - 3.0_DP*(dx**2 + dy**2))) / 32.0_DP
+          Dbas( 3,DER_FUNC3D,i,j) = (-5.0_DP + 3.0_DP*( dx + dy - dz + dx**2 + dy**2 + dz**2) &
+            + 4.0_DP*( dx*dy - dx*dz - dy*dz - dx*dy*dz) &
+            - dx*(5.0_DP*dx**2 - 3.0_DP*(dy**2 + dz**2)) &
+            - dy*(5.0_DP*dy**2 - 3.0_DP*(dx**2 + dz**2)) &
+            + dz*(5.0_DP*dz**2 - 3.0_DP*(dx**2 + dy**2))) / 32.0_DP
+          Dbas( 4,DER_FUNC3D,i,j) = (-5.0_DP + 3.0_DP*(-dx + dy - dz + dx**2 + dy**2 + dz**2) &
+            + 4.0_DP*(-dx*dy + dx*dz - dy*dz + dx*dy*dz) &
+            + dx*(5.0_DP*dx**2 - 3.0_DP*(dy**2 + dz**2)) &
+            - dy*(5.0_DP*dy**2 - 3.0_DP*(dx**2 + dz**2)) &
+            + dz*(5.0_DP*dz**2 - 3.0_DP*(dx**2 + dy**2))) / 32.0_DP
+          Dbas( 5,DER_FUNC3D,i,j) = (-5.0_DP + 3.0_DP*(-dx - dy + dz + dx**2 + dy**2 + dz**2) &
+            + 4.0_DP*( dx*dy - dx*dz - dy*dz + dx*dy*dz) &
+            + dx*(5.0_DP*dx**2 - 3.0_DP*(dy**2 + dz**2)) &
+            + dy*(5.0_DP*dy**2 - 3.0_DP*(dx**2 + dz**2)) &
+            - dz*(5.0_DP*dz**2 - 3.0_DP*(dx**2 + dy**2))) / 32.0_DP
+          Dbas( 6,DER_FUNC3D,i,j) = (-5.0_DP + 3.0_DP*( dx - dy + dz + dx**2 + dy**2 + dz**2) &
+            + 4.0_DP*(-dx*dy + dx*dz - dy*dz - dx*dy*dz) &
+            - dx*(5.0_DP*dx**2 - 3.0_DP*(dy**2 + dz**2)) &
+            + dy*(5.0_DP*dy**2 - 3.0_DP*(dx**2 + dz**2)) &
+            - dz*(5.0_DP*dz**2 - 3.0_DP*(dx**2 + dy**2))) / 32.0_DP
+          Dbas( 7,DER_FUNC3D,i,j) = (-5.0_DP + 3.0_DP*( dx + dy + dz + dx**2 + dy**2 + dz**2) &
+            + 4.0_DP*( dx*dy + dx*dz + dy*dz + dx*dy*dz) &
+            - dx*(5.0_DP*dx**2 - 3.0_DP*(dy**2 + dz**2)) &
+            - dy*(5.0_DP*dy**2 - 3.0_DP*(dx**2 + dz**2)) &
+            - dz*(5.0_DP*dz**2 - 3.0_DP*(dx**2 + dy**2))) / 32.0_DP
+          Dbas( 8,DER_FUNC3D,i,j) = (-5.0_DP + 3.0_DP*(-dx + dy + dz + dx**2 + dy**2 + dz**2) &
+            + 4.0_DP*(-dx*dy - dx*dz + dy*dz - dx*dy*dz) &
+            + dx*(5.0_DP*dx**2 - 3.0_DP*(dy**2 + dz**2)) &
+            - dy*(5.0_DP*dy**2 - 3.0_DP*(dx**2 + dz**2)) &
+            - dz*(5.0_DP*dz**2 - 3.0_DP*(dx**2 + dy**2))) / 32.0_DP
+          Dbas( 9,DER_FUNC3D,i,j) = (3.0_DP - dz + 3.0_DP*(-dx**2 - dy**2 + dz**2) &
+            - dz*(5.0_DP*dz**2 - 3.0_DP*(dx**2 + dy**2))) / 8.0_DP
+          Dbas(10,DER_FUNC3D,i,j) = (3.0_DP - dy + 3.0_DP*(-dx**2 + dy**2 - dz**2) &
+            - dy*(5.0_DP*dy**2 - 3.0_DP*(dx**2 + dz**2))) / 8.0_DP
+          Dbas(11,DER_FUNC3D,i,j) = (3.0_DP + dx + 3.0_DP*( dx**2 - dy**2 - dz**2) &
+            + dx*(5.0_DP*dx**2 - 3.0_DP*(dy**2 + dz**2))) / 8.0_DP
+          Dbas(12,DER_FUNC3D,i,j) = (3.0_DP + dy + 3.0_DP*(-dx**2 + dy**2 - dz**2) &
+            + dy*(5.0_DP*dy**2 - 3.0_DP*(dx**2 + dz**2))) / 8.0_DP
+          Dbas(13,DER_FUNC3D,i,j) = (3.0_DP - dx + 3.0_DP*( dx**2 - dy**2 - dz**2) &
+            - dx*(5.0_DP*dx**2 - 3.0_DP*(dy**2 + dz**2))) / 8.0_DP
+          Dbas(14,DER_FUNC3D,i,j) = (3.0_DP + dz + 3.0_DP*(-dx**2 - dy**2 + dz**2) &
+            + dz*(5.0_DP*dz**2 - 3.0_DP*(dx**2 + dy**2))) / 8.0_DP
+        end do ! i
+
+      end do ! j
+      !$omp end parallel do
+
+    end if
+
+    ! Calculate derivatives?
+    if(Bder(DER_DERIV3D_X) .or. Bder(DER_DERIV3D_Y) .or. Bder(DER_DERIV3D_Z)) then
+    
+      ! Loop through all elements
+      !$omp parallel do defaulT(shared) private(i,dx,dy,dz,ddet,DrefDer) &
+      !$omp if(reval%nelements > reval%p_rperfconfig%NELEMMIN_OMP)
+      do j = 1, reval%nelements
+    
+        ! Loop through all points on the current element
+        do i = 1, reval%npointsPerElement
+    
+          ! Get the point coordinates
+          dx = reval%p_DpointsRef(1,i,j)
+          dy = reval%p_DpointsRef(2,i,j)
+          dz = reval%p_DpointsRef(3,i,j)
+    
+          ! Remark: Please note that the following code is universal and does
+          ! not need to be modified for other parametric 3D hexahedron elements!
+
+          ! X-Derivatives
+          DrefDer( 1,1) = (-3.0_DP + 6.0_DP*dx + 4.0_DP*dy + 4.0_DP*dz - 4.0_DP*dy*dz + 15.0_DP*dx**2 &
+                        - 3.0_DP*dy**2 - 3.0_DP*dz**2 - 6.0_DP*dx*dy - 6.0_DP*dx*dz) / 32.0_DP
+          DrefDer( 2,1) = ( 3.0_DP + 6.0_DP*dx - 4.0_DP*dy - 4.0_DP*dz + 4.0_DP*dy*dz - 15.0_DP*dx**2 &
+                        + 3.0_DP*dy**2 + 3.0_DP*dz**2 - 6.0_DP*dx*dy - 6.0_DP*dx*dz) / 32.0_DP
+          DrefDer( 3,1) = ( 3.0_DP + 6.0_DP*dx + 4.0_DP*dy - 4.0_DP*dz - 4.0_DP*dy*dz - 15.0_DP*dx**2 &
+                        + 3.0_DP*dy**2 + 3.0_DP*dz**2 + 6.0_DP*dx*dy - 6.0_DP*dx*dz) / 32.0_DP
+          DrefDer( 4,1) = (-3.0_DP + 6.0_DP*dx - 4.0_DP*dy + 4.0_DP*dz + 4.0_DP*dy*dz + 15.0_DP*dx**2 &
+                        - 3.0_DP*dy**2 - 3.0_DP*dz**2 + 6.0_DP*dx*dy - 6.0_DP*dx*dz) / 32.0_DP
+          DrefDer( 5,1) = (-3.0_DP + 6.0_DP*dx + 4.0_DP*dy - 4.0_DP*dz + 4.0_DP*dy*dz + 15.0_DP*dx**2 &
+                        - 3.0_DP*dy**2 - 3.0_DP*dz**2 - 6.0_DP*dx*dy + 6.0_DP*dx*dz) / 32.0_DP
+          DrefDer( 6,1) = ( 3.0_DP + 6.0_DP*dx - 4.0_DP*dy + 4.0_DP*dz - 4.0_DP*dy*dz - 15.0_DP*dx**2 &
+                        + 3.0_DP*dy**2 + 3.0_DP*dz**2 - 6.0_DP*dx*dy + 6.0_DP*dx*dz) / 32.0_DP
+          DrefDer( 7,1) = ( 3.0_DP + 6.0_DP*dx + 4.0_DP*dy + 4.0_DP*dz + 4.0_DP*dy*dz - 15.0_DP*dx**2 &
+                        + 3.0_DP*dy**2 + 3.0_DP*dz**2 + 6.0_DP*dx*dy + 6.0_DP*dx*dz) / 32.0_DP
+          DrefDer( 8,1) = (-3.0_DP + 6.0_DP*dx - 4.0_DP*dy - 4.0_DP*dz - 4.0_DP*dy*dz + 15.0_DP*dx**2 &
+                        - 3.0_DP*dy**2 - 3.0_DP*dz**2 + 6.0_DP*dx*dy + 6.0_DP*dx*dz) / 32.0_DP
+          DrefDer( 9,1) = (-6.0_DP*dx + 6.0_DP*dx*dz) / 8.0_DP
+          DrefDer(10,1) = (-6.0_DP*dx + 6.0_DP*dx*dy) / 8.0_DP
+          DrefDer(11,1) = ( 1.0_DP + 6.0_DP*dx + 15.0_DP*dx**2 - 3.0_DP*dy**2 - 3.0_DP*dz**2) / 8.0_DP
+          DrefDer(12,1) = (-6.0_DP*dx - 6.0_DP*dx*dy) / 8.0_DP
+          DrefDer(13,1) = (-1.0_DP + 6.0_DP*dx - 15.0_DP*dx**2 + 3.0_DP*dy**2 + 3.0_DP*dz**2) / 8.0_DP
+          DrefDer(14,1) = (-6.0_DP*dx - 6.0_DP*dx*dz) / 8.0_DP
+
+          ! Y-Derivatives
+          DrefDer( 1,2) = (-3.0_DP + 6.0_DP*dy + 4.0_DP*dx + 4.0_DP*dz - 4.0_DP*dx*dz - 6.0_DP*dx*dy &
+                        + 15.0_DP*dy**2 - 3.0_DP*dx**2 - 3.0_DP*dz**2 - 6.0_DP*dy*dz) / 32.0_DP
+          DrefDer( 2,2) = (-3.0_DP + 6.0_DP*dy - 4.0_DP*dx + 4.0_DP*dz + 4.0_DP*dx*dz + 6.0_DP*dx*dy &
+                        + 15.0_DP*dy**2 - 3.0_DP*dx**2 - 3.0_DP*dz**2 - 6.0_DP*dy*dz) / 32.0_DP
+          DrefDer( 3,2) = ( 3.0_DP + 6.0_DP*dy + 4.0_DP*dx - 4.0_DP*dz - 4.0_DP*dx*dz + 6.0_DP*dx*dy &
+                        - 15.0_DP*dy**2 + 3.0_DP*dx**2 + 3.0_DP*dz**2 - 6.0_DP*dy*dz) / 32.0_DP
+          DrefDer( 4,2) = ( 3.0_DP + 6.0_DP*dy - 4.0_DP*dx - 4.0_DP*dz + 4.0_DP*dx*dz - 6.0_DP*dx*dy &
+                        - 15.0_DP*dy**2 + 3.0_DP*dx**2 + 3.0_DP*dz**2 - 6.0_DP*dy*dz) / 32.0_DP
+          DrefDer( 5,2) = (-3.0_DP + 6.0_DP*dy + 4.0_DP*dx - 4.0_DP*dz + 4.0_DP*dx*dz - 6.0_DP*dx*dy &
+                        + 15.0_DP*dy**2 - 3.0_DP*dx**2 - 3.0_DP*dz**2 + 6.0_DP*dy*dz) / 32.0_DP
+          DrefDer( 6,2) = (-3.0_DP + 6.0_DP*dy - 4.0_DP*dx - 4.0_DP*dz - 4.0_DP*dx*dz + 6.0_DP*dx*dy &
+                        + 15.0_DP*dy**2 - 3.0_DP*dx**2 - 3.0_DP*dz**2 + 6.0_DP*dy*dz) / 32.0_DP
+          DrefDer( 7,2) = ( 3.0_DP + 6.0_DP*dy + 4.0_DP*dx + 4.0_DP*dz + 4.0_DP*dx*dz + 6.0_DP*dx*dy &
+                        - 15.0_DP*dy**2 + 3.0_DP*dx**2 + 3.0_DP*dz**2 + 6.0_DP*dy*dz) / 32.0_DP
+          DrefDer( 8,2) = ( 3.0_DP + 6.0_DP*dy - 4.0_DP*dx + 4.0_DP*dz - 4.0_DP*dx*dz - 6.0_DP*dx*dy &
+                        - 15.0_DP*dy**2 + 3.0_DP*dx**2 + 3.0_DP*dz**2 + 6.0_DP*dy*dz) / 32.0_DP
+          DrefDer( 9,2) = (-6.0_DP*dy + 6.0_DP*dy*dz) / 8.0_DP
+          DrefDer(10,2) = (-1.0_DP + 6.0_DP*dy - 15.0_DP*dy**2 + 3.0_DP*dx**2 + 3.0_DP*dz**2) / 8.0_DP
+          DrefDer(11,2) = (-6.0_DP*dy - 6.0_DP*dx*dy) / 8.0_DP
+          DrefDer(12,2) = ( 1.0_DP + 6.0_DP*dy + 15.0_DP*dy**2 - 3.0_DP*dx**2 - 3.0_DP*dz**2) / 8.0_DP
+          DrefDer(13,2) = (-6.0_DP*dy + 6.0_DP*dx*dy) / 8.0_DP
+          DrefDer(14,2) = (-6.0_DP*dy - 6.0_DP*dy*dz) / 8.0_DP
+
+          ! Z-Derivatives
+          DrefDer( 1,3) = (-3.0_DP + 6.0_DP*dz + 4.0_DP*dx + 4.0_DP*dy - 4.0_DP*dx*dy - 6.0_DP*dx*dz &
+                        - 6.0_DP*dy*dz + 15.0_DP*dz**2 - 3.0_DP*dx**2 - 3.0_DP*dy**2) / 32.0_DP
+          DrefDer( 2,3) = (-3.0_DP + 6.0_DP*dz - 4.0_DP*dx + 4.0_DP*dy + 4.0_DP*dx*dy + 6.0_DP*dx*dz &
+                        - 6.0_DP*dy*dz + 15.0_DP*dz**2 - 3.0_DP*dx**2 - 3.0_DP*dy**2) / 32.0_DP
+          DrefDer( 3,3) = (-3.0_DP + 6.0_DP*dz - 4.0_DP*dx - 4.0_DP*dy - 4.0_DP*dx*dy + 6.0_DP*dx*dz &
+                        + 6.0_DP*dy*dz + 15.0_DP*dz**2 - 3.0_DP*dx**2 - 3.0_DP*dy**2) / 32.0_DP
+          DrefDer( 4,3) = (-3.0_DP + 6.0_DP*dz + 4.0_DP*dx - 4.0_DP*dy + 4.0_DP*dx*dy - 6.0_DP*dx*dz &
+                        + 6.0_DP*dy*dz + 15.0_DP*dz**2 - 3.0_DP*dx**2 - 3.0_DP*dy**2) / 32.0_DP
+          DrefDer( 5,3) = ( 3.0_DP + 6.0_DP*dz - 4.0_DP*dx - 4.0_DP*dy + 4.0_DP*dx*dy - 6.0_DP*dx*dz &
+                        - 6.0_DP*dy*dz - 15.0_DP*dz**2 + 3.0_DP*dx**2 + 3.0_DP*dy**2) / 32.0_DP
+          DrefDer( 6,3) = ( 3.0_DP + 6.0_DP*dz + 4.0_DP*dx - 4.0_DP*dy - 4.0_DP*dx*dy + 6.0_DP*dx*dz &
+                        - 6.0_DP*dy*dz - 15.0_DP*dz**2 + 3.0_DP*dx**2 + 3.0_DP*dy**2) / 32.0_DP
+          DrefDer( 7,3) = ( 3.0_DP + 6.0_DP*dz + 4.0_DP*dx + 4.0_DP*dy + 4.0_DP*dx*dy + 6.0_DP*dx*dz &
+                        + 6.0_DP*dy*dz - 15.0_DP*dz**2 + 3.0_DP*dx**2 + 3.0_DP*dy**2) / 32.0_DP
+          DrefDer( 8,3) = ( 3.0_DP + 6.0_DP*dz - 4.0_DP*dx + 4.0_DP*dy - 4.0_DP*dx*dy - 6.0_DP*dx*dz &
+                        + 6.0_DP*dy*dz - 15.0_DP*dz**2 + 3.0_DP*dx**2 + 3.0_DP*dy**2) / 32.0_DP
+          DrefDer( 9,3) = (-1.0_DP + 6.0_DP*dz - 15.0_DP*dz**2 + 3.0_DP*dx**2 + 3.0_DP*dy**2) / 8.0_DP
+          DrefDer(10,3) = (-6.0_DP*dz + 6.0_DP*dy*dz) / 8.0_DP
+          DrefDer(11,3) = (-6.0_DP*dz - 6.0_DP*dx*dz) / 8.0_DP
+          DrefDer(12,3) = (-6.0_DP*dz - 6.0_DP*dy*dz) / 8.0_DP
+          DrefDer(13,3) = (-6.0_DP*dz + 6.0_DP*dx*dz) / 8.0_DP
+          DrefDer(14,3) = ( 1.0_DP + 6.0_DP*dz + 15.0_DP*dz**2 - 3.0_DP*dx**2 - 3.0_DP*dy**2) / 8.0_DP
+
+          ! Get jacobian determinant
+          ddet = 1.0_DP / reval%p_Ddetj(i,j)
+    
+          ! X-derivatives on real element
+          dx = (reval%p_Djac(5,i,j)*reval%p_Djac(9,i,j)&
+               -reval%p_Djac(6,i,j)*reval%p_Djac(8,i,j))*ddet
+          dy = (reval%p_Djac(8,i,j)*reval%p_Djac(3,i,j)&
+               -reval%p_Djac(2,i,j)*reval%p_Djac(9,i,j))*ddet
+          dz = (reval%p_Djac(2,i,j)*reval%p_Djac(6,i,j)&
+               -reval%p_Djac(5,i,j)*reval%p_Djac(3,i,j))*ddet
+          Dbas(1:NBAS,DER_DERIV3D_X,i,j) = dx*DrefDer(1:NBAS,1) &
+                  + dy*DrefDer(1:NBAS,2) + dz*DrefDer(1:NBAS,3)
+    
+          ! Y-derivatives on real element
+          dx = (reval%p_Djac(7,i,j)*reval%p_Djac(6,i,j)&
+               -reval%p_Djac(4,i,j)*reval%p_Djac(9,i,j))*ddet
+          dy = (reval%p_Djac(1,i,j)*reval%p_Djac(9,i,j)&
+               -reval%p_Djac(7,i,j)*reval%p_Djac(3,i,j))*ddet
+          dz = (reval%p_Djac(4,i,j)*reval%p_Djac(3,i,j)&
+               -reval%p_Djac(1,i,j)*reval%p_Djac(6,i,j))*ddet
+          Dbas(1:NBAS,DER_DERIV3D_Y,i,j) = dx*DrefDer(1:NBAS,1) &
+                  + dy*DrefDer(1:NBAS,2) + dz*DrefDer(1:NBAS,3)
+    
+          ! Z-derivatives on real element
+          dx = (reval%p_Djac(4,i,j)*reval%p_Djac(8,i,j)&
+               -reval%p_Djac(7,i,j)*reval%p_Djac(5,i,j))*ddet
+          dy = (reval%p_Djac(7,i,j)*reval%p_Djac(2,i,j)&
+               -reval%p_Djac(1,i,j)*reval%p_Djac(8,i,j))*ddet
+          dz = (reval%p_Djac(1,i,j)*reval%p_Djac(5,i,j)&
+               -reval%p_Djac(4,i,j)*reval%p_Djac(2,i,j))*ddet
+          Dbas(1:NBAS,DER_DERIV3D_Z,i,j) = dx*DrefDer(1:NBAS,1) &
+                  + dy*DrefDer(1:NBAS,2) + dz*DrefDer(1:NBAS,3)
+    
+        end do ! i
+    
+      end do ! j
+      !$omp end parallel do
+    
+    end if
+
+  end subroutine
+  
   !************************************************************************
 
 !<subroutine>

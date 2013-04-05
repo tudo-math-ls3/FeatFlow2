@@ -962,6 +962,8 @@ contains
       elem_igetID = EL_E050_3D
     else if (selem .eq. "EL_EM50_3D" .or. selem .eq. "EL_EN50_3D") then
       elem_igetID = EL_EM50_3D
+    else if (selem .eq. "EL_MSL2_3D") then
+      elem_igetID = EL_MSL2_3D
     else if (selem .eq. "EL_MSL2NP_3D") then
       elem_igetID = EL_MSL2NP_3D
 
@@ -1169,6 +1171,8 @@ contains
       sname = 'EL_E050_3D'
     case (EL_EN50_3D)       ! non-parametric variant of EL_E050_3D
       sname = 'EL_EN50_3D'
+    case (EL_MSL2_3D)
+      sname = 'EL_MSL2_3D'
     case (EL_MSL2NP_3D)
       sname = 'EL_MSL2NP_3D'
 
@@ -2327,6 +2331,8 @@ contains
         bwrapSim2 = .true.
       case (EL_E050_3D)
         bwrapSim2 = .true.
+      case (EL_MSL2_3D)
+        bwrapSim2 = .true.
       case (EL_MSL2NP_3D)
         bwrapSim2 = .true.
 
@@ -3201,6 +3207,9 @@ contains
 
     case (EL_EN50_3D)
       call elem_eval_EN50_3D(celement, revalElementSet, Bder, Dbas)
+
+    case (EL_MSL2_3D)
+      call elem_eval_MSL2_3D(celement, revalElementSet, Bder, Dbas)
 
     case (EL_MSL2NP_3D)
       call elem_eval_MSL2NP_3D(celement, revalElementSet, Bder, Dbas)
