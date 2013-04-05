@@ -952,6 +952,7 @@ contains
     type(t_vectorBlock), pointer :: p_raux
     type(t_vectorBlock), pointer :: p_rufs
     type(t_vectorBlock), pointer :: p_rresfs
+    type(t_solverAndersonMixing), pointer :: p_rsolverAndersonMixing
     type(t_solver), pointer :: p_rsolver, p_rsolverLinear
     type(t_solver) :: rsolverTemp
     real(DP) :: eta, drtlm, drtjs, redfac, doldDefect
@@ -962,6 +963,13 @@ contains
 
     ! Set pointer to nonlinear solver
     p_rsolver => solver_getNextSolverByType(rsolver, SV_NONLINEAR)
+
+    ! Set pointer to Anderson-mixing and initialise it (if any)
+    p_rsolverAndersonMixing => p_rsolver%p_rsolverAndersonMixing
+    if (associated(p_rsolverAndersonMixing)) then
+      call solver_initAndersonMixing(p_rsolverAndersonMixing,&
+          rsolutionInitial)
+    end if
 
     if (.not. associated(p_rsolver)) then
       call output_line('Unsupported/invalid solver type!',&
@@ -997,7 +1005,7 @@ contains
     ! Initialisation
     !---------------------------------------------------------------------------
 
-    select case(p_rsolver%iprecond)
+    select case(p_rsolver%ipreconditioner)
 
     case(NLSOL_PRECOND_BLOCKD,&
          NLSOL_PRECOND_DEFCOR,&
@@ -1129,7 +1137,7 @@ contains
       doldDefect = p_rsolver%dfinalDefect
 
       ! Compute solution increment
-1     select case(p_rsolver%iprecond)
+1     select case(p_rsolver%ipreconditioner)
 
       case(NLSOL_PRECOND_BLOCKD)
 
@@ -1219,6 +1227,11 @@ contains
           call lsysbl_vectorLinearComb(p_raux, rsolution, 1.0_DP, 1.0_DP)
         else
           call lsysbl_vectorLinearComb(p_raux, rsolution, p_rsolver%domega, 1.0_DP)
+        end if
+
+        ! Perform Anderson-mixing (if required)
+        if (associated(p_rsolverAndersonMixing)) then
+          call solver_calcAndersonMixing(p_rsolverAndersonMixing, rsolution)
         end if
 
         ! Compute the residual and the preconditioner
@@ -1329,7 +1342,7 @@ contains
             return
           end if
 
-          p_rsolver%iprecond = NLSOL_PRECOND_NEWTON_FAILED
+          p_rsolver%ipreconditioner = NLSOL_PRECOND_NEWTON_FAILED
 
           goto 1  ! ugly but quickest way
 
@@ -1384,7 +1397,7 @@ contains
       end select
 
       ! Reset preconditioner from failed value (if required)
-      p_rsolver%iprecond = abs(p_rsolver%iprecond)
+      p_rsolver%ipreconditioner = abs(p_rsolver%ipreconditioner)
 
 
       !--------------------------------------------------------------

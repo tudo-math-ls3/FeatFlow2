@@ -402,7 +402,7 @@ ilmax = 1
 isolver = 1
 
 # name of the subsolver
-ssolvername = NonlinearSolver
+ssubsolvername = NonlinearSolver
 
 
 ################################################################################
@@ -451,7 +451,7 @@ icycle = 1
 isolver = 1
 
 # name of nonlinear coarse grid solver
-ssolvername = NonlinearSolver
+ssubsolvername = NonlinearSolver
 
 # smoother for the nonlinear multigrid solver
 # =1, nonlinear single-grid smoother, =3 nonlinear multigrid smoother
@@ -516,7 +516,7 @@ nmaxIterations = 100
 # 1 = block-diagonal preconditioner
 # 2 = defect-correction algorithm
 # 3 = algebraic Newton algorithm
-iprecond = 2
+ipreconditioner = 2
 
 # nonlinear solver
 # 101 = fixed-point iteration
@@ -561,7 +561,7 @@ depsRel = 0.0
 depsStag = 0.0
 
 # name of linear sub-solver
-ssolvername = LinearSolver
+ssubsolvername = LinearSolver
 
 
 ################################################################################
@@ -609,7 +609,7 @@ icycle = 1
 isolver = 2
 
 # name of linear coarse grid solver
-ssolvername = LinearSolver
+ssubsolvername = LinearSolver
 
 # smoother for the linear multigrid solver
 # 2 = linear single-grid solver

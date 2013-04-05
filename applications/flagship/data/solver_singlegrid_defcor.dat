@@ -26,7 +26,7 @@ nlmax = %{FullMultigridSolver.nlev}
 isolver = 1
 
 # name of the subsolver
-ssolvername = NonlinearSolver
+ssubsolvername = NonlinearSolver
 
 ################################################################################
 [NonlinearSolver]
@@ -36,7 +36,7 @@ ssolvername = NonlinearSolver
 # 1 = block-diagonal preconditioner
 # 2 = defect-correction algorithm
 # 3 = algebraic Newton algorithm
-iprecond = 2
+ipreconditioner = 2
 
 # nonlinear solver
 # 101 = fixed-point iteration
@@ -69,7 +69,14 @@ nmaxBacktrackingSteps = 0
 iupdateFrequency = 0
 
 # name of linear sub-solver
-ssolvername = LinearSolver
+ssubsolvername = LinearSolver
+
+# convergence accelerator
+# 1 = Anderson mixing
+iaccelerator = 1
+
+# maximum number of least-squares steps
+nmaxLeastsquaresSteps = 5
 
 ################################################################################
 [LinearSolver]

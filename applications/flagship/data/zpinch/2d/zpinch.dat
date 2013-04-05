@@ -763,7 +763,7 @@ depsRel = 1e-4
 depsStag = 0.0
 
 # names of the subsolvers
-ssolvername(2) = 
+ssubsolvername(2) = 
    FullMultigridSolverHydro
    FullMultigridSolverTransport
 
@@ -806,7 +806,7 @@ ilmax = 1
 isolver = 1
 
 # name of the subsolver
-ssolvername = NonlinearSolverHydro
+ssubsolvername = NonlinearSolverHydro
 
 
 ################################################################################
@@ -847,7 +847,7 @@ ilmax = %{FullMultigridSolverHydro.ilmax}
 isolver = %{FullMultigridSolverHydro.isolver}
 
 # name of the subsolver
-ssolvername = NonlinearSolverTransport
+ssubsolvername = NonlinearSolverTransport
 
 
 ################################################################################
@@ -880,7 +880,7 @@ nmaxIterations = 25
 # 1 = block-diagonal preconditioner
 # 2 = defect-correction algorithm
 # 3 = algebraic Newton algorithm
-iprecond = 2
+ipreconditioner = 2
 
 # nonlinear solver
 # 101 = fixed-point iteration
@@ -925,7 +925,7 @@ depsRel = 1e-8
 depsStag = 0.0
 
 # name of linear sub-solver
-ssolvername = LinearSolver
+ssubsolvername = LinearSolver
 
 
 ################################################################################
@@ -958,7 +958,7 @@ nmaxIterations = %{NonlinearSolverHydro.nmaxIterations}
 # 1 = block-diagonal preconditioner
 # 2 = defect-correction algorithm
 # 3 = algebraic Newton algorithm
-iprecond = %{NonlinearSolverHydro.iprecond}
+ipreconditioner = %{NonlinearSolverHydro.iprecond}
 
 # nonlinear solver
 # 101 = fixed-point iteration
@@ -1003,7 +1003,7 @@ depsRel = %{NonlinearSolverHydro.depsRel}
 depsStag = %{NonlinearSolverHydro.depsStag}
 
 # name of linear sub-solver
-ssolvername = LinearSolver
+ssubsolvername = LinearSolver
 
 
 ################################################################################

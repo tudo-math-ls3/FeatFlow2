@@ -3307,7 +3307,7 @@ contains
           'rparlist', ssectionName=ssectionName)
       
       ! What type of preconditioner are we?
-      select case(rsolver%iprecond)
+      select case(rsolver%ipreconditioner)
       case (NLSOL_PRECOND_BLOCKD,&
             NLSOL_PRECOND_DEFCOR,&
             NLSOL_PRECOND_NEWTON_FAILED)

@@ -120,7 +120,13 @@
 !# 3.) solver_initAGMG
 !#     -> Initialise the AGMG preconditioner
 !#
-!# 4.) solver_decodeOutputLevel
+!# 4.) solver_initAndersonMixing
+!#     -> Initialises the Anderson-mixing
+!#
+!# 5.) solver_calcAndersonMixing
+!#     -> Calculates improved solution based on Anderson-mixing
+!#
+!# 6.) solver_decodeOutputLevel
 !#     -> Decodes the output level information into bitfields
 !#
 !# </purpose>
@@ -142,6 +148,7 @@ module solveraux
   use linearalgebra
   use linearsystemblock
   use linearsystemscalar
+  use mprimitives
   use paramlist
   use storage
   use triangulation
@@ -192,6 +199,13 @@ module solveraux
   public :: solver_testConvergence
   public :: solver_testDivergence
   public :: solver_testStagnation
+
+  public :: solver_initUMFPACK
+  public :: solver_initILU
+  public :: solver_initAGMG
+  public :: solver_initAndersonMixing
+  public :: solver_calcAndersonMixing
+  public :: solver_decodeOutputLevel
 
   ! ****************************************************************************
 
@@ -384,6 +398,15 @@ module solveraux
 
   ! ****************************************************************************
 
+!<constantblock description="Global nonlinear convergence acceleration algorithms">
+
+  ! Anderson-mixing
+  integer, parameter, public :: NLSOL_ACCEL_ANDERSONMIXING  = 1
+!</constantblock>
+
+
+  ! ****************************************************************************
+
 !<constantblock description="Global linear solution algorithms">
 
   ! no solver
@@ -440,6 +463,14 @@ module solveraux
   integer, parameter, public :: LINSOL_SMOOTHER_ILU      = LINSOL_SOLVER_ILU
 !</constantblock>
 
+  ! ****************************************************************************
+
+!<constantblock description="Global nonlinear convergence acceleration algorithms">
+
+  ! Anderson-mixing
+  integer, parameter, public :: LINSOL_ACCEL_ANDERSONMIXING  = 1
+!</constantblock>
+
 !</constants>
 
   ! *****************************************************************************
@@ -483,7 +514,13 @@ module solveraux
     ! Type of preconditioner
     ! Valid values: SV_UNDEFINED, NLSOL_PRECOND_BLOCKD,
     !               NLSOL_PRECOND_DEFCOR, NLSOL_PRECOND_NEWTON
-    integer :: iprecond = SV_UNDEFINED
+    integer :: ipreconditioner = SV_UNDEFINED
+
+    ! INPUT PARAMETER FOR ITERATIVE SOLVERS
+    ! Type of convergence accelerator
+    ! Valid values: SV_UNDEFINED, NLSOL_ACCEL_ANDERSONMIXING,
+    !               LINSOL_ACCEL_ANDERSONMIXING
+    integer :: iaccelerator = SV_UNDEFINED
 
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS
     ! Information output level
@@ -905,17 +942,31 @@ module solveraux
 
   type t_solverAndersonMixing
 
-    ! INPUT: number of previous solutions to store?
+    ! INPUT: maximum number of previous solutions to store?
     integer :: nmaxLeastsquaresSteps = 0
 
-    ! Next position, where to store the solution
-    integer :: iposition = 1
+    ! Number of previous solution steps currently stored
+    integer :: nLeastsquaresSteps = 0
 
-    ! Solution vectors from previous steps
-    type(t_vectorBlock), dimension(:), pointer :: RsolutionVectors => null()
+    ! Indicator for the position of the latest solution
+    integer :: iposition = 0
 
-    ! Correction vectors from previous steps
-    type(t_vectorBlock), dimension(:), pointer :: RcorrectionVectors => null()
+    ! Solution vector from previous iteration
+    type(t_vectorBlock) :: rsolution
+
+    ! Difference vector between tentative solution and previous solution
+    type(t_vectorBlock) :: rincrement
+
+    ! Array of overlay vectors
+    type(t_vectorBlock), dimension(:), pointer :: RoverlayVectorsIncrement => null()
+    type(t_vectorBlock), dimension(:), pointer :: RoverlayVectorsDifference => null()
+
+    ! Working matrices for least-squares minimisation
+    type(t_matrixScalar) :: rmatrixIncrement
+    type(t_matrixScalar) :: rmatrixDifference
+
+    ! Handle to working array for storing the scling coefficients
+    integer :: h_Coefficients = ST_NOHANDLE
   end type t_solverAndersonMixing
 
 !</typeblock>
@@ -980,7 +1031,7 @@ contains
 !</subroutine>
 
     ! local variables
-    character(LEN=SYS_STRLEN) :: ssolverName,sprecondName,ssmootherName
+    character(LEN=SYS_STRLEN) :: ssubsolverName,sprecondName,ssmootherName
     integer, dimension(2) :: Isize
     integer :: csolverType,nKrylov,isolver,ismoother,nsolver
 
@@ -1004,12 +1055,12 @@ contains
       ! This type of solver has an array of p_rsolverSubnode subnodes, where each
       ! solver subnode represents the complete solver structure for an individual
       ! component of the coupled problem.
-      nsolver = parlst_querysubstrings(rparlist, ssectionName, "ssolvername")
+      nsolver = parlst_querysubstrings(rparlist, ssectionName, "ssubsolvername")
       allocate(rsolver%p_rsolverSubnode(nsolver))
       do isolver = 1, nsolver
-        call parlst_getvalue_string(rparlist, ssectionName, "ssolvername",&
-                                    ssolverName, isubstring=isolver)
-        call solver_createSolver(rparlist, ssolverName,&
+        call parlst_getvalue_string(rparlist, ssectionName, "ssubsolvername",&
+                                    ssubsolverName, isubstring=isolver)
+        call solver_createSolver(rparlist, ssubsolverName,&
                                  rsolver%p_rsolverSubnode(isolver))
       end do
 
@@ -1058,8 +1109,9 @@ contains
       select case(isolver)
 
       case (SV_NONLINEARMG, SV_NONLINEAR)
-        call parlst_getvalue_string(rparlist, ssectionName, "ssolvername", ssolverName)
-        call solver_createSolver(rparlist, ssolverName,&
+        call parlst_getvalue_string(rparlist, ssectionName, "ssubsolvername",&
+                                    ssubsolverName)
+        call solver_createSolver(rparlist, ssubsolverName,&
                                  rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid)
 
       case default
@@ -1110,8 +1162,9 @@ contains
       select case(isolver)
 
       case (SV_FMG, SV_NONLINEARMG, SV_NONLINEAR)
-        call parlst_getvalue_string(rparlist, ssectionName, "ssolvername", ssolverName)
-        call solver_createSolver(rparlist, ssolverName,&
+        call parlst_getvalue_string(rparlist, ssectionName, "ssubsolvername",&
+                                    ssubsolverName)
+        call solver_createSolver(rparlist, ssubsolverName,&
                                  rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid)
 
       case default
@@ -1160,6 +1213,11 @@ contains
           call sys_halt()
         end select
       end if
+
+      ! Convergence accelerator:
+      ! ~~~~~~~~~~~~~~~~~~~~~~~~
+      ! Optionally, we need a convergence accelerator
+      call create_accelerator(rparlist, ssectionName, rsolver)
       ! Now, we are done with the nonlinear multigrid solver !!!
 
 
@@ -1201,8 +1259,9 @@ contains
       select case(isolver)
 
       case (SV_LINEARMG, SV_LINEAR)
-        call parlst_getvalue_string(rparlist, ssectionName, "ssolverName", ssolverName)
-        call solver_createSolver(rparlist, ssolverName,&
+        call parlst_getvalue_string(rparlist, ssectionName, "ssubsolverName",&
+                                    ssubsolverName)
+        call solver_createSolver(rparlist, ssubsolverName,&
                                  rsolver%p_rsolverMultigrid%p_rsolverCoarsegrid)
 
       case default
@@ -1247,6 +1306,11 @@ contains
           call sys_halt()
         end select
       end if
+
+      ! Convergence accelerator:
+      ! ~~~~~~~~~~~~~~~~~~~~~~~~
+      ! Optionally, we need a convergence accelerator
+      call create_accelerator(rparlist, ssectionName, rsolver)
       ! Now, we are done with the linear multigrid solver !!!
 
 
@@ -1285,10 +1349,16 @@ contains
       ! we just get the name of the linear solver from the parameter list and
       ! create the linear solver recursively:
       allocate(rsolver%p_rsolverSubnode(1))
-      call parlst_getvalue_string(rparlist, ssectionName, "ssolverName", &
-                                  ssolverName)
-      call solver_createSolver(rparlist, ssolverName, rsolver%p_rsolverSubnode(1))
+      call parlst_getvalue_string(rparlist, ssectionName, "ssubsolverName", &
+                                  ssubsolverName)
+      call solver_createSolver(rparlist, ssubsolverName, rsolver%p_rsolverSubnode(1))
+
+      ! Convergence accelerator:
+      ! ~~~~~~~~~~~~~~~~~~~~~~~~
+      ! Optionally, we need a convergence accelerator
+      call create_accelerator(rparlist, ssectionName, rsolver)
       ! Now, we are done with the nonlinear singlegrid solver !!!
+
 
     case (SV_LINEAR)
       ! ----------------------------------------------------------------------------------
@@ -1383,6 +1453,13 @@ contains
         call sys_halt()
       end select
 
+      ! Convergence accelerator:
+      ! ~~~~~~~~~~~~~~~~~~~~~~~~
+      ! Optionally, we need a convergence accelerator
+      call create_accelerator(rparlist, ssectionName, rsolver)
+      ! Now, we are done with the linear singlegrid solver !!!
+
+
     case default
       if (rsolver%coutputModeError .gt. 0) then
         call output_line('Unsupported solver type!',&
@@ -1426,7 +1503,7 @@ contains
     ! This subroutine turns an structure of type t_solver into a
     ! preconditioner. Depending on the type of solver, various
     ! parameters are modified so as to meet the requirements of
-    ! a preconditioner of read in from parameter list
+    ! a preconditioner read in from parameter list
 
     subroutine create_preconditioner(rparlist, ssectionName, rsolver)
       ! Parameter list containing all data
@@ -1474,11 +1551,11 @@ contains
         ! ----------------------------------------------------------------------------------
         ! Create a nonlinear single-grid preconditioner:
         ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        call parlst_getvalue_int(rparlist, ssectionName, "iprecond", &
-                                 rsolver%iprecond)
+        call parlst_getvalue_int(rparlist, ssectionName, "ipreconditioner", &
+                                 rsolver%ipreconditioner)
 
         ! What kind of preconditioner should be created?
-        select case(rsolver%iprecond)
+        select case(rsolver%ipreconditioner)
         case (NLSOL_PRECOND_BLOCKD,&
               NLSOL_PRECOND_DEFCOR)
           allocate(rsolver%p_rsolverDefcor)
@@ -1638,6 +1715,49 @@ contains
       end select
 
     end subroutine create_smoother
+
+    !*************************************************************
+    ! This subroutine creates the accelerator subnode for a given
+    ! structure of type t_solver. Each accelerator subnode is created
+    ! individually from the parameter list.
+
+    subroutine create_accelerator(rparlist, ssectionName, rsolver)
+      ! Parameter list containing all data
+      type(t_parlist), intent(in) :: rparlist
+
+      ! Section name of the parameter list containing  data
+      character(LEN=*), intent(in) :: ssectionName
+
+      ! Solver structure
+      type(t_solver), intent(inout) :: rsolver
+
+      
+      ! Get type of convergence accelerator (if any)
+      call parlst_getvalue_int(rparlist, ssectionName, "iaccelerator", &
+                               rsolver%iaccelerator, SV_UNDEFINED)
+
+      ! Ok, now set up the individual accelerator structures
+      select case(rsolver%iaccelerator)
+      case (SV_UNDEFINED)
+        ! do nothing
+        
+      case (NLSOL_ACCEL_ANDERSONMIXING)
+        allocate(rsolver%p_rsolverAndersonMixing)
+        call parlst_getvalue_int(rparlist, ssectionName, "nmaxLeastsquaresSteps", &
+            rsolver%p_rsolverAndersonMixing%nmaxLeastsquaresSteps)
+        if (rsolver%p_rsolverAndersonMixing%nmaxLeastsquaresSteps .le. 0) then
+          deallocate(rsolver%p_rsolverAndersonMixing)
+        end if
+
+      case default
+        if (rsolver%coutputModeError .gt. 0) then
+          call output_line('Unsupported convergence accelerator!',&
+              OU_CLASS_ERROR,rsolver%coutputModeError,'solver_createSolverDirect')
+        end if
+        call sys_halt()
+      end select
+      
+    end subroutine create_accelerator
 
   end subroutine solver_createSolverDirect
 
@@ -1972,7 +2092,7 @@ contains
     end subroutine create_solverNewton
 
     !*************************************************************
-    ! Create a Newton algorithm
+    ! Create an Anderson`s mixing algorithm
 
     subroutine create_solverAndersonMixing(rsolver, rsolverTemplate)
       type(t_solverAndersonMixing), intent(in) :: rsolverTemplate
@@ -1981,22 +2101,23 @@ contains
       ! local variables
       integer :: ilbound,iubound
 
+      ! The INTENT(out) initialises the solver already. The rest is done now.
       rsolver%nmaxLeastsquaresSteps = rsolverTemplate%nmaxLeastsquaresSteps
 
-      if (associated(rsolverTemplate%RsolutionVectors)) then
-        ilbound = lbound(rsolverTemplate%RsolutionVectors,1)
-        iubound = ubound(rsolverTemplate%RsolutionVectors,1)
-        allocate(rsolver%RsolutionVectors(ilbound:iubound))
+      if (associated(rsolverTemplate%RoverlayVectorsIncrement)) then
+        ilbound = lbound(rsolverTemplate%RoverlayVectorsIncrement,1)
+        iubound = ubound(rsolverTemplate%RoverlayVectorsIncrement,1)
+        allocate(rsolver%RoverlayVectorsIncrement(ilbound:iubound))
       else
-        nullify(rsolver%RsolutionVectors)
+        nullify(rsolver%RoverlayVectorsIncrement)
       end if
 
-      if (associated(rsolverTemplate%RcorrectionVectors)) then
-        ilbound = lbound(rsolverTemplate%RcorrectionVectors,1)
-        iubound = ubound(rsolverTemplate%RcorrectionVectors,1)
-        allocate(rsolver%RcorrectionVectors(ilbound:iubound))
+      if (associated(rsolverTemplate%RoverlayVectorsDifference)) then
+        ilbound = lbound(rsolverTemplate%RoverlayVectorsDifference,1)
+        iubound = ubound(rsolverTemplate%RoverlayVectorsDifference,1)
+        allocate(rsolver%RoverlayVectorsDifference(ilbound:iubound))
       else
-        nullify(rsolver%RcorrectionVectors)
+        nullify(rsolver%RoverlayVectorsDifference)
       end if
 
     end subroutine create_solverAndersonMixing
@@ -2429,21 +2550,32 @@ contains
       ! local variables
       integer :: i
 
-      ! Release internal solution vectors
-      if (associated(rsolverAndersonMixing%RsolutionVectors)) then
-        do i = lbound(rsolverAndersonMixing%RsolutionVectors,1),&
-            ubound(rsolverAndersonMixing%RsolutionVectors,1)
-          call lsysbl_releaseVector(rsolverAndersonMixing%RsolutionVectors(i))
+      ! Release internal solution vector
+      call lsysbl_releaseVector(rsolverAndersonMixing%rsolution)
+      call lsysbl_releaseVector(rsolverAndersonMixing%rincrement)
+
+      ! Release internal overlay vectors for solution increments
+      if (associated(rsolverAndersonMixing%RoverlayVectorsIncrement)) then
+        do i = lbound(rsolverAndersonMixing%RoverlayVectorsIncrement,1),&
+               ubound(rsolverAndersonMixing%RoverlayVectorsIncrement,1)
+          call lsysbl_releaseVector(rsolverAndersonMixing%RoverlayVectorsIncrement(i))
         end do
       end if
 
-      ! Release internal correction vectors
-      if (associated(rsolverAndersonMixing%RcorrectionVectors)) then
-        do i = lbound(rsolverAndersonMixing%RcorrectionVectors,1),&
-            ubound(rsolverAndersonMixing%RcorrectionVectors,1)
-          call lsysbl_releaseVector(rsolverAndersonMixing%RcorrectionVectors(i))
+      ! Release internal overlay vectors for solution differences
+      if (associated(rsolverAndersonMixing%RoverlayVectorsDifference)) then
+        do i = lbound(rsolverAndersonMixing%RoverlayVectorsDifference,1),&
+               ubound(rsolverAndersonMixing%RoverlayVectorsDifference,1)
+          call lsysbl_releaseVector(rsolverAndersonMixing%RoverlayVectorsDifference(i))
         end do
       end if
+
+      ! Release internal working matrix
+      call lsyssc_releaseMatrix(rsolverAndersonMixing%rmatrixIncrement)
+      call lsyssc_releaseMatrix(rsolverAndersonMixing%rmatrixDifference)
+
+      ! Release coefficient array
+      call storage_free(rsolverAndersonMixing%h_Coefficients)
     end subroutine release_solverAndersonMixing
 
   end subroutine solver_releaseSolver
@@ -2543,7 +2675,7 @@ contains
     if (bprint) then
       call output_line('csolverType:                                  '//trim(sys_siL(rsolver%csolverType,3)))
       call output_line('isolver:                                      '//trim(sys_siL(rsolver%isolver,3)))
-      call output_line('iprecond:                                     '//trim(sys_siL(rsolver%iprecond,3)))
+      call output_line('ipreconditioner:                              '//trim(sys_siL(rsolver%ipreconditioner,3)))
       call output_line('ioutputlevel:                                 '//trim(sys_siL(rsolver%ioutputLevel,3)))
       call output_line('iresNorm:                                     '//trim(sys_siL(rsolver%iresNorm,3)))
       call output_line('istoppingCriterion:                           '//trim(sys_siL(rsolver%istoppingCriterion,3)))
@@ -2704,19 +2836,18 @@ contains
         call output_lbrk()
         call output_line('>>> Anderson mixing algorithm:')
         call output_line('nmaxLeastsquaresSteps: '//trim(sys_siL(rsolver%p_rsolverAndersonMixing%nmaxLeastsquaresSteps,3)))
-        call output_line('>>> Temporal solution vectors:')
-        call output_line('---------------------')
-        do i = lbound(rsolver%p_rsolverAndersonMixing%RsolutionVectors,1),&
-               ubound(rsolver%p_rsolverAndersonMixing%RsolutionVectors,1)
-          call lsysbl_infoVector(rsolver%p_rsolverAndersonMixing%RsolutionVectors(i))
-        end do
-        call output_line('>>> Temporal correction vectors:')
-        call output_line('---------------------')
-        do i = lbound(rsolver%p_rsolverAndersonMixing%RcorrectionVectors,1),&
-               ubound(rsolver%p_rsolverAndersonMixing%RcorrectionVectors,1)
-          call lsysbl_infoVector(rsolver%p_rsolverAndersonMixing%RcorrectionVectors(i))
-        end do
-        call output_line('------------------------------')
+        call output_line('>>> Temporal solution vector:')
+        call output_line('-----------------------------')
+        call lsysbl_infoVector(rsolver%p_rsolverAndersonMixing%rsolution)
+        call output_line('>>> Temporal solution increment vector:')
+        call output_line('---------------------------------------')
+        call lsysbl_infoVector(rsolver%p_rsolverAndersonMixing%rincrement)
+        call output_line('>>> Temporal matrix of solution increments:')
+        call output_line('-------------------------------------------')
+        call lsyssc_infoMatrix(rsolver%p_rsolverAndersonMixing%rmatrixIncrement)
+        call output_line('>>> Temporal matrix of solution differences:')
+        call output_line('--------------------------------------------')
+        call lsyssc_infoMatrix(rsolver%p_rsolverAndersonMixing%rmatrixDifference)
       end if
 
       ! Solver subnode
@@ -3007,7 +3138,8 @@ contains
 
     ! Reset Anderson`s mixing algorithm
     if (associated(rsolver%p_rsolverAndersonMixing)) then
-      rsolver%p_rsolverAndersonMixing%iposition = 1
+      rsolver%p_rsolverAndersonMixing%iposition = 0
+      rsolver%p_rsolverAndersonMixing%nLeastsquaresSteps = 0
     end if
 
   end subroutine solver_resetSolver
@@ -3360,17 +3492,32 @@ contains
       ! local variables
       integer :: i
 
-      ! Release temporal solution vectors
-      do i = lbound(rsolverAndersonMixing%RsolutionVectors,1),&
-             ubound(rsolverAndersonMixing%RsolutionVectors,1)
-        call lsysbl_releaseVector(rsolverAndersonMixing%RsolutionVectors(i))
-      end do
+      ! Release internal solution vector
+      call lsysbl_releaseVector(rsolverAndersonMixing%rsolution)
+      call lsysbl_releaseVector(rsolverAndersonMixing%rincrement)
 
-      ! Release temporal correction vectors
-      do i = lbound(rsolverAndersonMixing%RcorrectionVectors,1),&
-             ubound(rsolverAndersonMixing%RcorrectionVectors,1)
-        call lsysbl_releaseVector(rsolverAndersonMixing%RcorrectionVectors(i))
-      end do
+      ! Release internal overlay vectors for solution increments
+      if (associated(rsolverAndersonMixing%RoverlayVectorsIncrement)) then
+        do i = lbound(rsolverAndersonMixing%RoverlayVectorsIncrement,1),&
+               ubound(rsolverAndersonMixing%RoverlayVectorsIncrement,1)
+          call lsysbl_releaseVector(rsolverAndersonMixing%RoverlayVectorsIncrement(i))
+        end do
+      end if
+
+      ! Release internal overlay vectors for solution differences
+      if (associated(rsolverAndersonMixing%RoverlayVectorsDifference)) then
+        do i = lbound(rsolverAndersonMixing%RoverlayVectorsDifference,1),&
+               ubound(rsolverAndersonMixing%RoverlayVectorsDifference,1)
+          call lsysbl_releaseVector(rsolverAndersonMixing%RoverlayVectorsDifference(i))
+        end do
+      end if
+
+      ! Release internal working matrix
+      call lsyssc_releaseMatrix(rsolverAndersonMixing%rmatrixIncrement)
+      call lsyssc_releaseMatrix(rsolverAndersonMixing%rmatrixDifference)
+
+      ! Release coefficient array
+      call storage_free(rsolverAndersonMixing%h_Coefficients)
     end subroutine remove_solverAndersonMixing
 
   end subroutine solver_removeTempFromSolver
@@ -5302,19 +5449,17 @@ contains
               call lsysbl_createVecBlockIndMat(p_rsolverMultigrid%rmatrix(nlmax),&
                   p_rsolverMultigrid%RtempVectors(3*nlmax-2*nlmin), .false.)
             end if
-
-            ! Remove update marker from specification bitfields
-            rsolver%isolverSpec = iand(rsolver%isolverSpec,&
-                                       not(SV_SSPEC_STRUCTURENEEDSUPDATE))
           end if
-        end if
 
+          ! Remove update marker from specification bitfields
+          rsolver%isolverSpec = iand(rsolver%isolverSpec,&
+                                     not(SV_SSPEC_STRUCTURENEEDSUPDATE))
+        end if
 
         ! Update coarsegrid solver
         if (associated(p_rsolverMultigrid%p_rsolverCoarsegrid)) then
           call solver_updateStructure(p_rsolverMultigrid%p_rsolverCoarsegrid)
         end if
-
 
         ! Update smoother subnode
         if (associated(p_rsolverMultigrid%p_smoother)) then
@@ -5357,7 +5502,7 @@ contains
             if (rsolver%p_rsolverUMFPACK%rtempVector%NEQ > 0) then
               ! Resize existing vector
               call lsysbl_resizeVectorBlock(rsolver%p_rsolverUMFPACK%rmatrix,&
-                                               rsolver%p_rsolverUMFPACK%rtempVector, .false.)
+                                            rsolver%p_rsolverUMFPACK%rtempVector, .false.)
             else
               ! Create vector from matrix
               call lsysbl_createVecBlockIndMat(rsolver%p_rsolverUMFPACK%rmatrix,&
@@ -5378,7 +5523,7 @@ contains
             if (rsolver%p_rsolverJacobi%rtempVector%NEQ > 0) then
               ! Resize existing vector
               call lsysbl_resizeVectorBlock(rsolver%p_rsolverJacobi%rmatrix,&
-                                               rsolver%p_rsolverJacobi%rtempVector, .false.)
+                                            rsolver%p_rsolverJacobi%rtempVector, .false.)
             else
               ! Create vector from matrix
               call lsysbl_createVecBlockIndMat(rsolver%p_rsolverJacobi%rmatrix,&
@@ -5400,7 +5545,7 @@ contains
             if (rsolver%p_rsolverSSOR%rtempVector%NEQ > 0) then
               ! Resize existing vector
               call lsysbl_resizeVectorBlock(rsolver%p_rsolverSSOR%rmatrix,&
-                                               rsolver%p_rsolverSSOR%rtempVector, .false.)
+                                            rsolver%p_rsolverSSOR%rtempVector, .false.)
             else
               ! Create vector from matrix
               call lsysbl_createVecBlockIndMat(rsolver%p_rsolverSSOR%rmatrix,&
@@ -5516,7 +5661,6 @@ contains
         ! Remove update marker from specification bitfields
         rsolver%isolverSpec = iand(rsolver%isolverSpec,&
                                    not(SV_SSPEC_STRUCTURENEEDSUPDATE))
-
       end if
 
 
@@ -7430,8 +7574,8 @@ contains
     ! local variables
     integer, dimension(:), pointer :: p_Kcol
     integer, dimension(:), pointer :: p_Kld
-    real(DP), dimension(:), pointer :: p_Da, p_Dx, p_Df
-    real(SP), dimension(:), pointer :: p_Fa, p_Fx, p_Ff
+    real(DP), dimension(:), pointer :: p_Da,p_Dx,p_Df
+    real(SP), dimension(:), pointer :: p_Fa,p_Fx,p_Ff
 
     ! Check if matrix is associated
     if ((rsolver%rmatrix%nblocksPerCol .eq. 0) .or.&
@@ -7514,6 +7658,294 @@ contains
     end subroutine initPrepareMatrix
 
   end subroutine solver_initAGMG
+
+  ! *****************************************************************************
+
+!<subroutine>
+
+  subroutine solver_initAndersonMixing(rsolver, rsolution)
+
+!<description>
+    ! This subroutine initialises the Anderson-mixing subsystem
+!</description>
+
+!<input>
+    ! Initial solution vector
+    type(t_vectorBlock), intent(in) :: rsolution
+!</input>
+
+!<inputoutput>
+    ! Anderson-mixing structure
+    type(t_solverAndersonMixing), intent(inout) :: rsolver
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    integer :: ilbound,iubound,isize,idatatype
+
+    ! Check if auxiliary matrix for solution increments is available
+    if ((rsolver%rmatrixIncrement%NEQ   .ne. rsolution%NEQ) .or.&
+        (rsolver%rmatrixIncrement%NCOLS .ne. rsolver%nmaxLeastsquaresSteps)) then
+
+      ! Do we have to release an existing matrix?
+      if ((rsolver%rmatrixIncrement%h_Da .ne. ST_NOHANDLE) .and.&
+          (rsolver%rmatrixIncrement%NA   .lt. rsolution%NEQ*rsolver%nmaxLeastsquaresSteps)) then
+        call lsyssc_releaseMatrix(rsolver%rmatrixIncrement)
+      end if
+      
+      ! Initialise dense matrix
+      rsolver%rmatrixIncrement%NEQ   = rsolution%NEQ
+      rsolver%rmatrixIncrement%NCOLS = rsolver%nmaxLeastsquaresSteps
+      rsolver%rmatrixIncrement%NA    = rsolution%NEQ*rsolver%nmaxLeastsquaresSteps
+      rsolver%rmatrixIncrement%cmatrixFormat = LSYSSC_MATRIX1
+      call lsyssc_allocEmptyMatrix(rsolver%rmatrixIncrement,LSYSSC_SETM_UNDEFINED,&
+                                   .false., rsolution%cdataType)
+
+      ! ... and create overlay vectors for solution increments
+      if (associated(rsolver%RoverlayVectorsIncrement)) then
+        ilbound = lbound(rsolver%RoverlayVectorsIncrement,1)
+        iubound = ubound(rsolver%RoverlayVectorsIncrement,1)
+
+        if ((ilbound .gt. 1) .or.&
+            (iubound .lt. rsolver%nmaxLeastsquaresSteps)) then
+          deallocate(rsolver%RoverlayVectorsIncrement)
+          allocate(rsolver%RoverlayVectorsIncrement(rsolver%nmaxLeastsquaresSteps))
+        end if
+
+        call lsysbl_getBlockVectorOverlay(rsolver%rmatrixIncrement, rsolution,&
+                                          rsolver%RoverlayVectorsIncrement)
+      else
+        allocate(rsolver%RoverlayVectorsIncrement(rsolver%nmaxLeastsquaresSteps))
+        call lsysbl_getBlockVectorOverlay(rsolver%rmatrixIncrement, rsolution,&
+                                          rsolver%RoverlayVectorsIncrement)
+      end if
+    end if
+
+    ! Check if auxiliary matrix for solution differences is available
+    if ((rsolver%rmatrixDifference%NEQ   .ne. rsolution%NEQ) .or.&
+        (rsolver%rmatrixDifference%NCOLS .ne. rsolver%nmaxLeastsquaresSteps)) then
+
+      ! Do we have to release an existing matrix?
+      if ((rsolver%rmatrixDifference%h_Da .ne. ST_NOHANDLE) .and.&
+          (rsolver%rmatrixDifference%NA   .lt. rsolution%NEQ*rsolver%nmaxLeastsquaresSteps)) then
+        call lsyssc_releaseMatrix(rsolver%rmatrixDifference)
+      end if
+      
+      ! Initialise dense matrix
+      rsolver%rmatrixDifference%NEQ   = rsolution%NEQ
+      rsolver%rmatrixDifference%NCOLS = rsolver%nmaxLeastsquaresSteps
+      rsolver%rmatrixDifference%NA    = rsolution%NEQ*rsolver%nmaxLeastsquaresSteps
+      rsolver%rmatrixDifference%cmatrixFormat = LSYSSC_MATRIX1
+      call lsyssc_allocEmptyMatrix(rsolver%rmatrixDifference,LSYSSC_SETM_UNDEFINED,&
+                                   .false., rsolution%cdataType)
+
+      ! ... and create overlay vectors for solution increments
+      if (associated(rsolver%RoverlayVectorsDifference)) then
+        ilbound = lbound(rsolver%RoverlayVectorsDifference,1)
+        iubound = ubound(rsolver%RoverlayVectorsDifference,1)
+
+        if ((ilbound .gt. 1) .or.&
+            (iubound .lt. rsolver%nmaxLeastsquaresSteps)) then
+          deallocate(rsolver%RoverlayVectorsDifference)
+          allocate(rsolver%RoverlayVectorsDifference(rsolver%nmaxLeastsquaresSteps))
+        end if
+
+        call lsysbl_getBlockVectorOverlay(rsolver%rmatrixDifference, rsolution,&
+                                          rsolver%RoverlayVectorsDifference)
+      else
+        allocate(rsolver%RoverlayVectorsDifference(rsolver%nmaxLeastsquaresSteps))
+        call lsysbl_getBlockVectorOverlay(rsolver%rmatrixDifference, rsolution,&
+                                          rsolver%RoverlayVectorsDifference)
+      end if
+    end if
+
+    ! Do we have to reallocate the working array for scaling coefficients?
+    if (rsolver%h_Coefficients .ne. ST_NOHANDLE) then
+      ! Correct size?
+      call storage_getsize(rsolver%h_Coefficients, isize)
+      if (isize .lt. rsolver%nmaxLeastsquaresSteps) then
+        call storage_free(rsolver%h_Coefficients)
+        call storage_new('solver_initAndersonMixing', 'Dcoefficients',&
+            rsolver%nmaxLeastsquaresSteps, rsolution%cdataType,&
+            rsolver%h_Coefficients, ST_NEWBLOCK_NOINIT)
+      end if
+
+      ! Correct data type?
+      call storage_getdatatype(rsolver%h_Coefficients, idatatype)
+      if (idatatype .ne. rsolution%cdataType) then
+        call storage_free(rsolver%h_Coefficients)
+        call storage_new('solver_initAndersonMixing', 'Dcoefficients',&
+            rsolver%nmaxLeastsquaresSteps, rsolution%cdataType,&
+            rsolver%h_Coefficients, ST_NEWBLOCK_NOINIT)
+      end if
+    else
+      call storage_new('solver_initAndersonMixing', 'Dcoefficients',&
+          rsolver%nmaxLeastsquaresSteps, rsolution%cdataType,&
+          rsolver%h_Coefficients, ST_NEWBLOCK_NOINIT)
+    end if
+    
+    ! Reset solver position
+    rsolver%iposition = 0
+    rsolver%nLeastsquaresSteps = 0
+    
+    ! Store initial solution vector as previous solution vector
+    call lsysbl_duplicateVector(rsolution, rsolver%rsolution,&
+        LSYSSC_DUP_COPY, LSYSSC_DUP_COPY)
+    
+  end subroutine solver_initAndersonMixing
+
+  ! *****************************************************************************
+
+!<subroutine>
+
+  subroutine solver_calcAndersonMixing(rsolver, rsolution)
+
+!<description>
+    ! This subroutine calculates the improved solution vector
+    ! based on the Anderson-mixing acceleration technique.
+!</description>
+
+!<inputoutput>
+    ! Anderson-mixing structure
+    type(t_solverAndersonMixing), intent(inout) :: rsolver
+
+    ! On input: latest provisional solution vector
+    ! On output: optimised solution vector
+    type(t_vectorBlock), intent(inout) :: rsolution
+!</inputoutput>
+!</subroutine>
+    
+    ! local variables
+    real(DP), dimension(:), pointer :: p_Da,p_Db,p_Dcoeff
+    real(SP), dimension(:), pointer :: p_Fa,p_Fb,p_Fcoeff
+    integer :: iposition,i,ncoeff
+
+    ! Save previous position and increase position
+    iposition = rsolver%iposition
+    rsolver%iposition = mod(rsolver%iposition,&
+                            rsolver%nmaxLeastsquaresSteps)+1
+
+    ! Is this the very first mixing step?
+    if (rsolver%nLeastsquaresSteps .le. 0) then
+
+      ! A backup of the initial solution has been stored during
+      ! initialisation of Anderson`s mixing. Thus, we simply compute
+      ! the solution increment $\tilde u^{(0)}-u^{(0)}$ and store it.
+      call lsysbl_duplicateVector(rsolver%rsolution, rsolver%rincrement,&
+                                  LSYSSC_DUP_COPY, LSYSSC_DUP_COPY)
+      call lsysbl_vectorLinearComb(rsolution, rsolver%rincrement, 1.0_DP, -1.0_DP)
+
+      ! In the very first iteration, the solution is not
+      ! post-processed by computing weighting coefficients using
+      ! least-squares minimisation so that $u^{(1)}=\tilde u^{(0)}$
+      call lsysbl_duplicateVector(rsolution, rsolver%rsolution,&
+                                  LSYSSC_DUP_COPY, LSYSSC_DUP_COPY)
+      
+      ! Hence, the solution difference $u^{(1)}-u^{(0)}$ can be
+      ! computed directly. Note that due to the overlay structure of
+      ! this vector special duplication flags need to be set.
+      call lsysbl_duplicateVector(rsolver%rincrement,&
+                                  rsolver%RoverlayVectorsDifference(rsolver%iposition),&
+                                  LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPYOVERWRITE)
+
+      ! Increase number of least squares steps
+      rsolver%nLeastsquaresSteps = min(rsolver%nLeastsquaresSteps+1,&
+                                       rsolver%nmaxLeastsquaresSteps)
+
+      ! That`s it, there is no more to do in the very first step
+      return
+    else
+      ! Copy the previous increment $\tilde u^{(k-1)}-u^{(k-1)}$ into
+      ! the matrix of increments. Since the position has been
+      ! increased already, we use the previous position stored in
+      ! iposition. Note that the current column needs further
+      ! update. Note that due to the overlay structure of this vector
+      ! special duplication flags need to be set.
+      call lsysbl_duplicateVector(rsolver%rincrement,&
+                                  rsolver%RoverlayVectorsIncrement(iposition),&
+                                  LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPYOVERWRITE)
+
+      ! A backup of the previous solution has been stored during the
+      ! previous step of Anderson`s mixing. Thus, we simply compute
+      ! the solution increment $\tilde u^{(k)}-u^{(k)}$ and store it.
+      call lsysbl_duplicateVector(rsolver%rsolution, rsolver%rincrement,&
+                                  LSYSSC_DUP_COPY, LSYSSC_DUP_COPY)
+      call lsysbl_vectorLinearComb(rsolution, rsolver%rincrement, 1.0_DP, -1.0_DP)
+
+      ! Now we can compute the difference between the solution increments, i.e.
+      ! $(\tilde u^{(k)}-u^{(k)}) - (\tilde u^{(k-1)}-u^{(k-1)})$
+      call lsysbl_vectorLinearComb(rsolver%rincrement,&
+                                   rsolver%RoverlayVectorsIncrement(iposition),&
+                                   1.0_DP, -1.0_DP)
+
+      ! Compute number of weighting coefficients
+      ncoeff = min(rsolver%nLeastsquaresSteps, rsolver%nmaxLeastsquaresSteps)
+      
+      select case(rsolution%cdataType)
+      case (ST_DOUBLE)
+        ! Set pointers
+        call lsyssc_getbase_double(rsolver%rmatrixIncrement, p_Da)
+        call lsysbl_getbase_double(rsolver%rincrement, p_Db)
+        call storage_getbase_double(rsolver%h_Coefficients, p_Dcoeff)
+
+        ! Solve the unconstrained least-squares minimisation problem
+        ! for the weighting coefficients
+        call mprim_leastSquaresMinDP(p_Da, p_Db, p_Dcoeff,&
+            rsolver%rmatrixIncrement%NEQ, ncoeff,&
+            rsolver%rmatrixIncrement%NEQ, ncoeff, .false.)
+
+        ! Update the end-of-step solution
+        do i=1,ncoeff
+          call lsysbl_vectorLinearComb(rsolver%RoverlayVectorsIncrement(i),&
+                                       rsolution, -p_Dcoeff(i), 1.0_DP)
+          call lsysbl_vectorLinearComb(rsolver%RoverlayVectorsDifference(i),&
+                                       rsolution, -p_Dcoeff(i), 1.0_DP)
+        end do
+        
+      case (ST_SINGLE)
+        ! Set pointers
+        call lsyssc_getbase_single(rsolver%rmatrixIncrement, p_Fa)
+        call lsysbl_getbase_single(rsolver%rincrement, p_Fb)
+        call storage_getbase_single(rsolver%h_Coefficients, p_Fcoeff)
+
+        ! Solve the unconstrained least-squares minimisation problem
+        ! for the weighting coefficients
+        call mprim_leastSquaresMinSP(p_Fa, p_Fb, p_Fcoeff,&
+            rsolver%rmatrixIncrement%NEQ, ncoeff,&
+            rsolver%rmatrixIncrement%NEQ, ncoeff, .false.)
+
+        ! Update the end-of-step solution
+        do i=1,ncoeff
+          call lsysbl_vectorLinearComb(rsolver%RoverlayVectorsIncrement(i),&
+                                       rsolution, real(-p_Fcoeff(i),DP), 1.0_DP)
+          call lsysbl_vectorLinearComb(rsolver%RoverlayVectorsDifference(i),&
+                                       rsolution, real(-p_Fcoeff(i),DP), 1.0_DP)
+        end do
+
+      case default
+        call output_line('Unsupported data type!',&
+            OU_CLASS_ERROR, OU_MODE_STD, 'solver_calcAndersonMixing')
+        call sys_halt()
+      end select
+      
+      ! Compute the solution difference $u^{(k)}-u^{(k-1)}$
+      call lsysbl_duplicateVector(rsolver%rsolution,&
+                                  rsolver%RoverlayVectorsDifference(rsolver%iposition),&
+                                  LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPYOVERWRITE)
+      call lsysbl_vectorLinearComb(rsolution,&
+                                   rsolver%RoverlayVectorsDifference(rsolver%iposition),&
+                                   1.0_DP, -1.0_DP)
+      
+      ! Store the solution for the next iteration
+      call lsysbl_duplicateVector(rsolution, rsolver%rsolution,&
+                                  LSYSSC_DUP_COPY, LSYSSC_DUP_COPY)
+    end if
+
+    ! Increase number of least squares steps
+    rsolver%nLeastsquaresSteps = min(rsolver%nLeastsquaresSteps+1,&
+                                     rsolver%nmaxLeastsquaresSteps)
+
+  end subroutine solver_calcAndersonMixing
 
   ! *****************************************************************************
 
