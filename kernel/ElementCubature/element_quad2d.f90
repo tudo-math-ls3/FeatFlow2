@@ -16753,18 +16753,7 @@ contains
       ! of the vector-valued element.
 
       ! Derivatives values on the reference element
-!      dx_x = sum ( Da(:,i) * DbasisX_X(:) )
-!      dx_y = sum ( Da(:,i) * DbasisX_Y(:) )
-!
-!      dy_x = sum ( Da(:,i) * DbasisY_X(:) )
-!      dy_y = sum ( Da(:,i) * DbasisY_Y(:) )
-      
-      dx_x = sum ( Da(:,i) * ( DbasisX_X(:)*a22 - DbasisX_Y(:)*a21 ) )
-      dy_x = sum ( Da(:,i) * ( DbasisY_X(:)*a22 - DbasisY_Y(:)*a21 ) )
-
-      dx_y = sum ( Da(:,i) * (-DbasisX_X(:)*a12 + DbasisX_Y(:)*a11 ) )
-      dy_y = sum ( Da(:,i) * (-DbasisY_X(:)*a12 + DbasisY_Y(:)*a11 ) )
-
+      !
       ! Multiply by the inverse of the jacobian mapping from the
       ! reference triangle to the real triangle in order to
       ! calculate the actual derivative.
@@ -16791,11 +16780,11 @@ contains
       ! The above dx_x,...,dy_y define "D p^_j (x^)". Multiply this
       ! with [D sigma(x)]^-1 to get "D phi(x)".
 
-!      Dbas (Ildofs(i,ilocaltri)   ,DER_DERIV2D_X) = ddet*( dx_x*a22 - dx_y*a21 )
-!      Dbas (Ildofs(i,ilocaltri)+24,DER_DERIV2D_X) = ddet*( dy_x*a22 - dy_y*a21 )
-!
-!      Dbas (Ildofs(i,ilocaltri)   ,DER_DERIV2D_Y) = ddet*(-dx_x*a12 + dx_y*a11 )
-!      Dbas (Ildofs(i,ilocaltri)+24,DER_DERIV2D_Y) = ddet*(-dx_y*a12 + dy_y*a11 )
+      dx_x = sum ( Da(:,i) * ( DbasisX_X(:)*a22 - DbasisX_Y(:)*a21 ) )
+      dy_x = sum ( Da(:,i) * ( DbasisY_X(:)*a22 - DbasisY_Y(:)*a21 ) )
+
+      dx_y = sum ( Da(:,i) * (-DbasisX_X(:)*a12 + DbasisX_Y(:)*a11 ) )
+      dy_y = sum ( Da(:,i) * (-DbasisY_X(:)*a12 + DbasisY_Y(:)*a11 ) )
 
       Dbas (Ildofs(i,ilocaltri)   ,DER_DERIV2D_X) = ddet*dx_x
       Dbas (Ildofs(i,ilocaltri)+24,DER_DERIV2D_X) = ddet*dy_x
