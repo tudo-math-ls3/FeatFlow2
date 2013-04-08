@@ -99,6 +99,7 @@ module bcassembly
   use spatialdiscretisation
   use storage
   use triangulation
+  use cubature
 
   implicit none
 
@@ -950,6 +951,105 @@ contains
 
 !<subroutine>
 
+  subroutine bcasm_prepareLineIntegration2D (&
+      ccubType,rboundary,ibct,iedge,p_DvertexParameterValue,p_IboundaryCpIdx,&
+      dedgelen,ncubp,DpointsRef,Dpoints,Domega)
+  
+!<description>
+  ! Prepares a line integration over a part of a boundary segment.
+  ! Returns cubature weights and parameter values where to evaluate
+  ! the function to integrate.
+!</description>
+
+!<input>
+  ! Type of the cubature formula.
+  integer(I32), intent(in) :: ccubType
+
+  ! Boundary definition.
+  type(t_boundary), intent(in) :: rboundary
+  
+  ! Boundary component
+  integer, intent(in) :: ibct
+
+  ! Number of the edge on the boundary where to apply cubature to.
+  integer, intent(in) :: iedge
+  
+  ! Pointer to the parameter values of the points on the boundary.
+  real(DP), dimension(:), pointer :: p_DvertexParameterValue
+  
+  ! Index array of boundary components.
+  integer, dimension(:), pointer :: p_IboundaryCpIdx
+!</input>
+
+!<output>
+  ! Number of cubature points.
+  integer, intent(out) :: ncubp
+  
+  ! Parameter values of the points on the 1D reference interval
+  real(DP), dimension(:), intent(inout) :: DpointsRef
+
+  ! Parameter values of the points on the boundary where to evaluate.
+  ! 0-1 parametrisation.
+  real(DP), dimension(:), intent(inout) :: Dpoints
+  
+  ! Weights to use for cubature.
+  real(DP), dimension(:), intent(inout) :: Domega
+  
+  ! Length of the edge.
+  real(DP), intent(out) :: dedgelen
+!</output>
+
+!</subroutine>
+
+    real(DP) :: dpar1, dpar2
+    integer :: nvbd, i
+    real(DP), dimension(1,1+size(Dpoints)) :: DpointsTemp
+
+    ! Number of cubature points.
+    ncubp = cub_igetNumPts(ccubType)
+    
+    ! Basic weights on the reference interval.
+    call cub_getCubature(ccubType, DpointsTemp, Domega)
+    
+    dpar1 = 0.0_DP
+    dpar2 = 0.0_DP
+    dedgelen = 0.0_DP
+
+    if (associated(p_DvertexParameterValue)) then
+
+      ! Number of vertices on the current boundary component?
+      nvbd = p_IboundaryCpIdx(ibct+1) - p_IboundaryCpIdx(ibct)
+
+      ! Get the start- and end-parameter value of the vertices on the edge.
+      dpar1 = p_DvertexParameterValue(iedge)
+      if (iedge+1 .lt. p_IboundaryCpIdx(ibct+1)) then
+        dpar2 = p_DvertexParameterValue(iedge+1)
+      else
+        dpar2 = boundary_dgetMaxParVal(rboundary,ibct)
+      end if
+  
+      ! Get the length of the edge
+      dedgelen = &
+        boundary_convertParameter(rboundary, ibct, dpar2, BDR_PAR_01, BDR_PAR_LENGTH) - &
+        boundary_convertParameter(rboundary, ibct, dpar1, BDR_PAR_01, BDR_PAR_LENGTH)
+
+    end if
+    
+    do i=1,ncubp
+      ! Calculate the positions of the cubature points on that edge.
+      DpointsRef(i) = DpointsTemp(1,i)
+      call mprim_linearRescale(DpointsTemp(1,i),-1.0_DP,1.0_DP,dpar1,dpar2,Dpoints(i))
+      
+      ! Calculate the actual cubature weight
+      Domega(i) = Domega(i)*0.5_DP*dedgelen
+    end do
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
   subroutine bcasm_newDirichletBConRealBd (rblockDiscretisation, &
       iequation, rboundaryRegion, rdiscreteBC, &
       fgetBoundaryValues,rcollection, ccomplexity, coptions)
@@ -1030,24 +1130,17 @@ contains
     real(DP), dimension(EL_MAXNDER)            :: Dvalues
 
     real(DP) :: dpar,dpar1,dpar2,dval,dval1,dval2,dval3,q3l
+    real(DP) :: dval1x,dval1y,dval2x,dval2y, dnx1,dny1,dnx2,dny2
     integer :: nve,nnve,nvbd
 
-    integer ::iidx
+    integer :: iidx
     type(t_discreteBCEntry), pointer :: p_rdiscreteBCentry
-
-    ! Position of cubature points for 2-point Gauss formula on an edge.
-    ! Used for Q2T.
-    real(DP), parameter :: Q2G1 = -0.577350269189626_DP !-SQRT(1.0_DP/3.0_DP)
-    real(DP), parameter :: Q2G2 =  0.577350269189626_DP ! SQRT(1.0_DP/3.0_DP)
-
-    ! Position of cubature points for 3-point Gauss formula on an edge.
-    ! Used for Q3T
-    real(DP), parameter :: Q3G1 = -0.7745966692414834_DP !-SQRT(3.0_DP/5.0_DP)
-    real(DP), parameter :: Q3G2 =  0.0_DP
-    real(DP), parameter :: Q3G3 =  0.7745966692414834_DP ! SQRT(3.0_DP/5.0_DP)
-    real(DP), parameter :: Q3W1 =  0.5555555555555556_DP ! 5/9
-    real(DP), parameter :: Q3W2 =  0.8888888888888888_DP ! 8/9
-    real(DP), parameter :: Q3W3 =  0.5555555555555556_DP ! 5/9
+    
+    ! Information for line cubature.
+    integer :: ncubp
+    real(DP), dimension(16) :: Dpoints1D,DpointsRef1D
+    real(DP), dimension(16) :: Dweights
+    real(DP) :: dedgelen
 
     ! List of element distributions in the discretisation structure
     type(t_elementDistribution), dimension(:), pointer :: p_RelementDistribution
@@ -1791,50 +1884,20 @@ contains
               !
               ! Prepare the calculation of the parameter value of the point where
               ! we evaluate the boundary.
-              !
-              ! 1st Gauss point
-              if (associated(p_DvertexParameterValue)) then
-
-                ! Number of vertices on the current boundary component?
-                nvbd = p_IboundaryCpIdx(rboundaryRegion%iboundCompIdx+1) - &
-                        p_IboundaryCpIdx(rboundaryRegion%iboundCompIdx)
-
-                ! Get the start- and end-parameter value of the vertices on the edge.
-                dpar1 = p_DvertexParameterValue(I)
-                if (I+1 .lt. p_IboundaryCpIdx(rboundaryRegion%iboundCompIdx+1)) then
-                  dpar2 = p_DvertexParameterValue(I+1)
-                else
-                  dpar2 = boundary_dgetMaxParVal(p_rspatialDiscr%p_rboundary,&
-                      rboundaryRegion%iboundCompIdx)
-                end if
-
-                ! Calculate the position of the first Gauss point on that edge.
-                call mprim_linearRescale(Q2G1,-1.0_DP,1.0_DP,dpar1,dpar2,dpar)
-              else
-                ! Dummy; hopefully this is never used...
-                dpar = Q2G1
-              end if
-
-              ! Get the value in the Gauss point
+              call bcasm_prepareLineIntegration2D (&
+                  CUB_G2_1D,p_rspatialDiscr%p_rboundary,rboundaryRegion%iboundCompIdx,&
+                  I,p_DvertexParameterValue,p_IboundaryCpIdx,&
+                  dedgelen,ncubp,DpointsRef1D,Dpoints1D,Dweights)
+              
+              ! Get the value in the Gauss points
               call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
                                       rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
-                                      iedge,dpar, Dvalues,rcollection)
+                                      iedge,Dpoints1D(1),Dvalues,rcollection)
               dval1 = Dvalues(1)
-
-              ! 2nd Gauss point
-              if (associated(p_DvertexParameterValue)) then
-
-                ! Calculate the position of the 2nd Gauss point on that edge.
-                call mprim_linearRescale(Q2G2,-1.0_DP,1.0_DP,dpar1,dpar2,dpar)
-              else
-                ! Dummy; hopefully this is never used...
-                dpar = Q2G2
-              end if
-
-              ! Get the value in the Gauss point
+              
               call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
                                       rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
-                                      iedge,dpar, Dvalues,rcollection)
+                                      iedge,Dpoints1D(2),Dvalues,rcollection)
               dval2 = Dvalues(1)
 
               ! Calculate the integral.
@@ -1917,50 +1980,21 @@ contains
           !
           ! Prepare the calculation of the parameter value of the point where
           ! we evaluate the boundary.
-          !
-          ! 1st Gauss point
-          if (associated(p_DvertexParameterValue)) then
-
-            ! Number of vertices on the current boundary component?
-            nvbd = p_IboundaryCpIdx(rboundaryRegion%iboundCompIdx+1) - &
-                    p_IboundaryCpIdx(rboundaryRegion%iboundCompIdx)
-
-            ! Get the start- and end-parameter value of the vertices on the edge.
-            dpar1 = p_DvertexParameterValue(I)
-            if (I+1 .lt. p_IboundaryCpIdx(rboundaryRegion%iboundCompIdx+1)) then
-              dpar2 = p_DvertexParameterValue(I+1)
-            else
-              dpar2 = boundary_dgetMaxParVal(p_rspatialDiscr%p_rboundary,&
-                  rboundaryRegion%iboundCompIdx)
-            end if
-
-            ! Calculate the position of the first Gauss point on that edge.
-            call mprim_linearRescale(Q2G1,-1.0_DP,1.0_DP,dpar1,dpar2,dpar)
-          else
-            ! Dummy; hopefully this is never used...
-            dpar = Q2G1
-          end if
+          call bcasm_prepareLineIntegration2D (&
+              CUB_G2_1D,p_rspatialDiscr%p_rboundary,rboundaryRegion%iboundCompIdx,&
+              I,p_DvertexParameterValue,p_IboundaryCpIdx,&
+              dedgelen,ncubp,DpointsRef1D,Dpoints1D,Dweights)
 
           ! Get the value in the Gauss point
           call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
                                   rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
-                                  iedge,dpar, Dvalues,rcollection)
+                                  iedge,Dpoints1D(1), Dvalues,rcollection)
           dval1 = Dvalues(1)
 
-          ! 2nd Gauss point
-          if (associated(p_DvertexParameterValue)) then
-
-            ! Calculate the position of the 2nd Gauss point on that edge.
-            call mprim_linearRescale(Q2G2,-1.0_DP,1.0_DP,dpar1,dpar2,dpar)
-          else
-            ! Dummy; hopefully this is never used...
-            dpar = Q2G2
-          end if
-
           ! Get the value in the Gauss point
           call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
                                   rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
-                                  iedge,dpar, Dvalues,rcollection)
+                                  iedge,Dpoints1D(2), Dvalues,rcollection)
           dval2 = Dvalues(1)
 
           ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
@@ -1997,7 +2031,7 @@ contains
 
               ! Calculate the integral mean value of the 1st moment:
               !   1/|E| int_E v(x(t))*t dx ~ 1/2 * (v(x(g1))*g1+v(x(g2))*g2)
-              dval = ( (dval1*Q2G1) + (dval2*Q2G2) ) * 0.5_DP
+              dval = ( (dval1*DpointsRef1D(1)) + (dval2*DpointsRef1D(2)) ) * 0.5_DP
 
               ! Save the computed function value
               DdofValue(ilocalEdge+nve,ielidx) = dval
@@ -2035,64 +2069,27 @@ contains
           ! we evaluate the boundary.
           !
           ! 1st Gauss point
-          if (associated(p_DvertexParameterValue)) then
-
-            ! Number of vertices on the current boundary component?
-            nvbd = p_IboundaryCpIdx(rboundaryRegion%iboundCompIdx+1) - &
-                    p_IboundaryCpIdx(rboundaryRegion%iboundCompIdx)
-
-            ! Get the start- and end-parameter value of the vertices on the edge.
-            dpar1 = p_DvertexParameterValue(I)
-            if (I+1 .lt. p_IboundaryCpIdx(rboundaryRegion%iboundCompIdx+1)) then
-              dpar2 = p_DvertexParameterValue(I+1)
-            else
-              dpar2 = boundary_dgetMaxParVal(p_rspatialDiscr%p_rboundary,&
-                  rboundaryRegion%iboundCompIdx)
-            end if
-
-            ! Calculate the position of the first Gauss point on that edge.
-            call mprim_linearRescale(Q3G1,-1.0_DP,1.0_DP,dpar1,dpar2,dpar)
-          else
-            ! Dummy; hopefully this is never used...
-            dpar = Q3G1
-          end if
+          call bcasm_prepareLineIntegration2D (&
+              CUB_G3_1D,p_rspatialDiscr%p_rboundary,rboundaryRegion%iboundCompIdx,&
+              I,p_DvertexParameterValue,p_IboundaryCpIdx,&
+              dedgelen,ncubp,DpointsRef1D,Dpoints1D,Dweights)
 
           ! Get the value in the Gauss point
           call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
                                   rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
-                                  iedge,dpar, Dvalues,rcollection)
+                                  iedge,Dpoints1D(1), Dvalues,rcollection)
           dval1 = Dvalues(1)
 
-          ! 2nd Gauss point
-          if (associated(p_DvertexParameterValue)) then
-
-            ! Calculate the position of the 2nd Gauss point on that edge.
-            call mprim_linearRescale(Q3G2,-1.0_DP,1.0_DP,dpar1,dpar2,dpar)
-          else
-            ! Dummy; hopefully this is never used...
-            dpar = Q3G2
-          end if
-
           ! Get the value in the Gauss point
           call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
                                   rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
-                                  iedge,dpar, Dvalues,rcollection)
+                                  iedge,Dpoints1D(2), Dvalues,rcollection)
           dval2 = Dvalues(1)
 
-          ! 3rd Gauss point
-          if (associated(p_DvertexParameterValue)) then
-
-            ! Calculate the position of the 2nd Gauss point on that edge.
-            call mprim_linearRescale(Q3G3,-1.0_DP,1.0_DP,dpar1,dpar2,dpar)
-          else
-            ! Dummy; hopefully this is never used...
-            dpar = Q3G3
-          end if
-
           ! Get the value in the Gauss point
           call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
                                   rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
-                                  iedge,dpar, Dvalues,rcollection)
+                                  iedge,Dpoints1D(3), Dvalues,rcollection)
           dval3 = Dvalues(1)
 
           ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
@@ -2105,25 +2102,26 @@ contains
               ! is:  1/|E| int_E v dx ~ 1/2 * (v(g1)+v(g2))
               ! This is the same value as for Q1T, but we do the integration
               ! manually by using Gauss.
-              dval = Q3W1*dval1 + Q3W2*dval2 + Q3W3*dval3
+              dval = (Dweights(1)*dval1 + Dweights(2)*dval2 + Dweights(3)*dval3) / dedgelen
 
               ! Save the computed value
-              DdofValue(ilocalEdge,ielidx) = 0.5_DP * dval
+              DdofValue(ilocalEdge,ielidx) = dval
 
               ! Calculate the integral mean value of the 1st moment:
               !   1/|E| int_E v(x(t))*t dx ~ 1/2 * (v(x(g1))*g1+v(x(g2))*g2)
-              dval = Q3W1*dval1*Q3G1 + Q3W2*dval2*Q3G2 + Q3W3*dval3*Q3G3
+              dval = (Dweights(1)*dval1*DpointsRef1D(1) + Dweights(2)*dval2*DpointsRef1D(2) &
+                   +  Dweights(3)*dval3*DpointsRef1D(3) ) / dedgelen
 
               ! Save the computed value
-              DdofValue(ilocalEdge+nve,ielidx) = 0.5_DP * dval
+              DdofValue(ilocalEdge+nve,ielidx) = dval
 
               ! Calculate the integral mean value of the 2nd moment:
-              dval = (Q3W1*dval1*(3.0_DP*Q3G1**2 - 1.0_DP) &
-                   +  Q3W2*dval2*(3.0_DP*Q3G2**2 - 1.0_DP) &
-                   +  Q3W3*dval3*(3.0_DP*Q3G3**2 - 1.0_DP)) * 0.5_DP
+              dval = (Dweights(1)*dval1*(3.0_DP*DpointsRef1D(1)**2 - 1.0_DP) &
+                   +  Dweights(2)*dval2*(3.0_DP*DpointsRef1D(2)**2 - 1.0_DP) &
+                   +  Dweights(3)*dval3*(3.0_DP*DpointsRef1D(3)**2 - 1.0_DP)) * 0.5_DP / dedgelen
 
               ! Save the computed value
-              DdofValue(ilocalEdge+2*nve,ielidx) = 0.5_DP * dval
+              DdofValue(ilocalEdge+2*nve,ielidx) = dval
 
             end if
 
@@ -2135,7 +2133,93 @@ contains
 
         end if
 
-      case DEFAULT
+      case (EL_QPW4P1TVDF_2D)
+
+        ! The Q2T-element is only integral mean value based.
+        ! On the one hand, we have integral mean values over the edges.
+        ! On the other hand, we have integral mean values of function*parameter
+        ! value on the edge.
+        !
+        ! Edge inside?
+        if ( iedge .ne. 0 ) then
+
+          ! We need to set up three values by using cubature:
+          !    - Integral mean value of the normal flux
+          !             1/|E| int_E v n ds
+          !    - 1st moment of the normal flux
+          !             1/|E| int_E v n s ds
+          !    - Integral mean value of the tangential flux
+          !             1/|E| int_E v t s ds
+          ! We apply a 2-point Gauss formula for this task.
+          call bcasm_prepareLineIntegration2D (&
+              CUB_G2_1D,p_rspatialDiscr%p_rboundary,rboundaryRegion%iboundCompIdx,&
+              I,p_DvertexParameterValue,p_IboundaryCpIdx,&
+              dedgelen,ncubp,DpointsRef1D,Dpoints1D,Dweights)
+
+          ! Get the value in the Gauss points.
+          ! We expect 
+          !    Dvalues(1) = X-velocity
+          !    Dvalues(2) = Y-velocity
+          ! Partial Neumann BC are not allowed.
+          call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
+                                  rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
+                                  iedge,Dpoints1D(1), Dvalues,rcollection)
+          dval1x = Dvalues(1)
+          dval1y = Dvalues(2)
+
+          call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
+                                  rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
+                                  iedge,Dpoints1D(2), Dvalues,rcollection)
+          dval2x = Dvalues(1)
+          dval2y = Dvalues(2)
+          
+          ! Get the normal vectors in the points.
+          call boundary_getNormalVec2D(p_rspatialDiscr%p_rboundary, rboundaryRegion%iboundCompIdx, &
+              Dpoints1D(1), dnx1, dny1, cparType=BDR_PAR_01)
+
+          call boundary_getNormalVec2D(p_rspatialDiscr%p_rboundary, rboundaryRegion%iboundCompIdx, &
+              Dpoints1D(2), dnx2, dny2, cparType=BDR_PAR_01)
+
+          ! A value of SYS_INFINITY_DP indicates a do-nothing node inside of
+          ! Dirichlet boundary.
+          if ((dval1x .ne. SYS_INFINITY_DP) .and. (dval1y .ne. SYS_INFINITY_DP) .and. &
+              (dval2x .ne. SYS_INFINITY_DP) .and. (dval2y .ne. SYS_INFINITY_DP)) then
+
+            if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
+            
+              ! Compute the integral mean value of the 0th moment -- that
+              ! is:  1/|E| int_E v dx ~ 1/2 * (v(g1)+v(g2))
+              ! This is the same value as for Q1T, but we do the integration
+              ! manually by using Gauss.
+              dval = ( dval1x * dnx1 + dval1y * dny1 + dval2x * dnx2 + dval2y * dny2) * 0.5_DP
+
+              ! Save the computed value
+              DdofValue(ilocalEdge,ielidx) = dval
+
+              ! Calculate the integral mean value of the 1st moment:
+              dval = ( (dval1x*dnx1*DpointsRef1D(1)) + (dval1y*dny1*DpointsRef1D(1)) + &
+                       (dval2x*dnx2*DpointsRef1D(2)) + (dval2y*dny2*DpointsRef1D(2)) ) * 0.5_DP
+
+              ! Save the computed function value
+              DdofValue(ilocalEdge+nve,ielidx) = dval
+
+              ! Calculate the integral mean value of the tangential part
+              dval = ( (dval1x*(-dny1)) + (dval1y*dnx1) + &
+                       (dval2x*(-dny2)) + (dval2y*dnx2) ) * 0.5_DP
+
+              ! Save the computed function value
+              DdofValue(ilocalEdge+2*nve,ielidx) = dval
+            end if
+
+            ! Set the DOF number < 0 to indicate that it is Dirichlet
+            Idofs(ilocalEdge,ielidx) = -abs(Idofs(ilocalEdge,ielidx))
+            Idofs(ilocalEdge+nve,ielidx) = -abs(Idofs(ilocalEdge+nve,ielidx))
+            Idofs(ilocalEdge+2*nve,ielidx) = -abs(Idofs(ilocalEdge+2*nve,ielidx))
+          end if
+
+        end if
+
+      case default
 
         call output_line("Unsupported element!",&
             OU_CLASS_ERROR,OU_MODE_STD,"bcasm_newDirichletBC")

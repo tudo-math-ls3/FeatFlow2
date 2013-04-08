@@ -152,6 +152,9 @@ contains
     case (EL_Q1_2D,EL_Q1T_2D)
       IdofsLoc = (/1,2,3,4/)
 
+    case (EL_QPW4P0_2D)
+      IdofsLoc = (/1,2,3,4/)
+
     case (EL_QPW4P1_2D)
       IdofsLoc = (/1,2,3,4,5/)
 
@@ -545,7 +548,8 @@ contains
 
     ! What type of finite element are we?
     select case(elem_getPrimaryElement(rdofSubset%celement))
-    case (EL_P0_1D,EL_P0_2D,EL_P0_3D,EL_Q0_2D,EL_Q0_3D,EL_Y0_3D,EL_R0_3D)
+    case (EL_P0_1D,EL_P0_2D,EL_P0_3D,EL_Q0_2D,EL_Q0_3D,EL_Y0_3D,EL_R0_3D,&
+          EL_QPW4P0_2D)
       rdofSubset%ndofsPerElement = 0
 
       ! =-=-= 1D =-=-=

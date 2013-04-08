@@ -64,10 +64,12 @@ module element_quad2d
   public :: elem_eval_Q2H_2D
   public :: elem_eval_Q3_2D
   public :: elem_eval_QP1_2D
+  public :: elem_eval_QPW4P0_2D
   public :: elem_eval_QPW4P1_2D
   public :: elem_eval_QPW4P1T_2D
   public :: elem_eval_QPW4P2_2D
   public :: elem_eval_QPW4DCP1_2D
+  public :: elem_eval_QPW4P1TVDF_2D
   public :: elem_eval_E030_2D
   public :: elem_eval_EB30_2D
   public :: elem_eval_Q1TBNP_2D
@@ -1067,7 +1069,7 @@ contains
     ! Let us assume, out finite element function on the real element is
     ! f(x) and the corresponding function on the reference element g(y),
     ! so x is the real coordinate and y the reference coordinate.
-    ! There is a mapping s:[-1,1]->R2 that maps to the real element.
+    ! There is a mapping s:[-1,1]^2->R2 that maps to the real element.
     ! It is inverse s^{-1} maps to the reference element.
     ! We have:
     !
@@ -11536,6 +11538,149 @@ contains
   pure &
 #endif
 
+ subroutine elem_eval_QPW4P0_2D (celement, reval, Bder, Dbas)
+
+!<description>
+  ! This subroutine simultaneously calculates the values of the basic
+  ! functions of the finite element at multiple given points on the
+  ! reference element for multiple given elements.
+!</description>
+
+!<input>
+  ! The element specifier.
+  integer(I32), intent(in)                       :: celement
+
+  ! t_evalElementSet-structure that contains cell-specific information and
+  ! coordinates of the evaluation points. revalElementSet must be prepared
+  ! for the evaluation.
+  type(t_evalElementSet), intent(in)             :: reval
+
+  ! Derivative quantifier array. array [1..DER_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  logical, dimension(:), intent(in)              :: Bder
+!</input>
+
+!<output>
+  ! Value/derivatives of basis functions.
+  ! array [1..EL_MAXNBAS,1..DER_MAXNDER,1..npointsPerElement,nelements] of double
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th
+  !   basis function of the finite element in the point Dcoords(j) on the
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
+  real(DP), dimension(:,:,:,:), intent(out)      :: Dbas
+!</output>
+
+! </subroutine>
+
+  ! Element Description
+  ! -------------------
+  ! This element is piecewisely defined by 4 triangles in one
+  ! quad. There are 5 DOFs: the four corners plus the element
+  ! midpoint:
+  !
+  ! -1,1              1,1       a3                a2
+  !   +-------------+             +-------------+
+  !   | \    T3   / |             | \         / |
+  !   |   \     /   |             |   \     /   |
+  !   |     \ /     |             |     \ /     |
+  !   | T4   X   T2 |     ->      |      X MP   |
+  !   |     / \     |             |     / \     |
+  !   |   /     \   |             |   /     \   |
+  !   | /    T1   \ |             | /         \ |
+  !   +-------------+             +-------------+
+  ! -1,-1             1,-1      a0                a1
+  !
+  ! Therefore, for every point we have to decide in which
+  ! sub-triangle we are.
+  !
+  ! The point ia in one of the subtriangles T1, T2, T3 or T4.
+  ! Calculate the line a0->a2 and chech whether it is left
+  ! or right. Calculate the line a1->a3 and check whether it is
+  ! left or right. That way, we know in which subtriangle the
+  ! point is.
+
+  ! Local variables
+  real(DP) :: ddet,dx,dy
+  integer :: i,j
+
+    ! Calculate function values?
+    if(Bder(DER_FUNC2D)) then
+
+      ! Loop through all elements
+      !$omp parallel do default(shared) private(i,dx,dy)&
+      !$omp if(reval%nelements > reval%p_rperfconfig%NELEMMIN_OMP)
+      do j = 1, reval%nelements
+
+        ! Loop through all points on the current element
+        do i = 1, reval%npointsPerElement
+
+          ! Get the point coordinates
+          dx = reval%p_DpointsRef(1,i,j)
+          dy = reval%p_DpointsRef(2,i,j)
+
+          ! Figure out in which triangle we are
+          if (dy .le. dx) then
+            ! We are in T1 or T2.
+            if (dy .le. -dx) then
+              ! We are in T1.
+
+              Dbas(1,DER_FUNC2D,i,j) = 1.0_DP
+              Dbas(2,DER_FUNC2D,i,j) = 0.0_DP
+              Dbas(3,DER_FUNC2D,i,j) = 0.0_DP
+              Dbas(4,DER_FUNC2D,i,j) = 0.0_DP
+
+            else
+              ! We are in T2
+
+              Dbas(1,DER_FUNC2D,i,j) = 0.0_DP
+              Dbas(2,DER_FUNC2D,i,j) = 1.0_DP
+              Dbas(3,DER_FUNC2D,i,j) = 0.0_DP
+              Dbas(4,DER_FUNC2D,i,j) = 0.0_DP
+
+            end if
+          else
+            ! We are in T3 or T4
+            if (dy .gt. -dx) then
+              ! We are in T3
+
+              Dbas(1,DER_FUNC2D,i,j) = 0.0_DP
+              Dbas(2,DER_FUNC2D,i,j) = 0.0_DP
+              Dbas(3,DER_FUNC2D,i,j) = 1.0_DP
+              Dbas(4,DER_FUNC2D,i,j) = 0.0_DP
+
+            else
+              ! We are in T4
+
+              Dbas(1,DER_FUNC2D,i,j) = 0.0_DP
+              Dbas(2,DER_FUNC2D,i,j) = 0.0_DP
+              Dbas(3,DER_FUNC2D,i,j) = 0.0_DP
+              Dbas(4,DER_FUNC2D,i,j) = 1.0_DP
+
+            end if
+          end if
+
+        end do ! i
+
+      end do ! j
+      !$omp end parallel do
+
+    end if
+
+  end subroutine
+
+  !************************************************************************
+
+!<subroutine>
+
+#ifndef USE_OPENMP
+  pure &
+#endif
+
  subroutine elem_eval_QPW4P1_2D (celement, reval, Bder, Dbas)
 
 !<description>
@@ -15909,6 +16054,811 @@ contains
 
     ! That is it
 
+  end subroutine
+
+  !************************************************************************
+
+!<subroutine>
+
+ subroutine elem_eval_QPW4P1TVDF_2D (celement, reval, Bder, Dbas)
+
+!<description>
+  ! This subroutine simultaneously calculates the values of the basic
+  ! functions of the finite element at multiple given points on the
+  ! reference element for multiple given elements.
+!</description>
+
+!<input>
+  ! The element specifier.
+  integer(I32), intent(in)                       :: celement
+
+  ! t_evalElementSet-structure that contains cell-specific information and
+  ! coordinates of the evaluation points. revalElementSet must be prepared
+  ! for the evaluation.
+  type(t_evalElementSet), intent(in)             :: reval
+
+  ! Derivative quantifier array. array [1..DER_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  logical, dimension(:), intent(in)              :: Bder
+!</input>
+
+!<output>
+  ! Value/derivatives of basis functions.
+  ! array [1..EL_MAXNBAS,1..DER_MAXNDER,1..npointsPerElement,nelements] of double
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th
+  !   basis function of the finite element in the point Dcoords(j) on the
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
+  real(DP), dimension(:,:,:,:), intent(out)      :: Dbas
+!</output>
+
+! </subroutine>
+
+  ! Element Description
+  ! -------------------
+  ! This element is piecewisely defined by 4 triangles in one
+  ! quad. There are 24 DOFs: 3 DOFs on every edge of each triangle.
+  !
+  ! -1,1              1,1       a3                a2
+  !   +-------------+             +------3------+
+  !   | \    T3   / |             | \         / |
+  !   |   \     /   |             |   3     3   |
+  !   |     \ /     |             |     \ /     |
+  !   | T4   X   T2 |     ->      3      X      3
+  !   |     / \     |             |     / \     |
+  !   |   /     \   |             |   3     3   |
+  !   | /    T1   \ |             | /         \ |
+  !   +-------------+             +------3------+
+  ! -1,-1             1,-1      a0                a1
+  !
+  ! Therefore, for every point we have to decide in which
+  ! sub-triangle we are.
+  !
+  ! The point ia in one of the subtriangles T1, T2, T3 or T4.
+  ! Calculate the line a0->a2 and chech whether it is left
+  ! or right. Calculate the line a1->a3 and check whether it is
+  ! left or right. That way, we know in which subtriangle the
+  ! point is.
+
+  ! Local variables
+  real(DP) :: dx,dy
+  real(DP), dimension(9,9,4) :: Da
+  integer :: i,iel
+
+    ! Loop through all elements
+    do iel = 1, reval%nelements
+    
+      ! Precalculate coefficients of the basis functions
+      ! on this element.
+      call elem_QPW4P1TVDF_preparetria (reval%p_Dcoords(:,:,iel),reval%p_ItwistIndex(iel),&
+          1,Da(:,:,1))
+      call elem_QPW4P1TVDF_preparetria (reval%p_Dcoords(:,:,iel),reval%p_ItwistIndex(iel),&
+          2,Da(:,:,2))
+      call elem_QPW4P1TVDF_preparetria (reval%p_Dcoords(:,:,iel),reval%p_ItwistIndex(iel),&
+          3,Da(:,:,3))
+      call elem_QPW4P1TVDF_preparetria (reval%p_Dcoords(:,:,iel),reval%p_ItwistIndex(iel),&
+          4,Da(:,:,4))
+
+      ! Loop through all points on the current element
+      do i = 1, reval%npointsPerElement
+
+        ! Get the point coordinates
+        dx = reval%p_DpointsRef(1,i,iel)
+        dy = reval%p_DpointsRef(2,i,iel)
+
+        ! Figure out in which triangle we are.
+        if (dy .le. dx) then
+          ! We are in T1 or T2.
+          if (dy .le. -dx) then
+            ! We are in T1.
+            call elem_QPW4P1TVDF_calcFunc (reval%p_Dcoords(:,:,iel),&
+                reval%p_DpointsReal(:,i,iel),1,Da(:,:,1),Dbas(:,:,i,iel))
+          else
+            ! We are in T2
+            call elem_QPW4P1TVDF_calcFunc (reval%p_Dcoords(:,:,iel),&
+                reval%p_DpointsReal(:,i,iel),2,Da(:,:,2),Dbas(:,:,i,iel))
+          end if
+        else
+          ! We are in T3 or T4
+          if (dy .gt. -dx) then
+            ! We are in T3
+            call elem_QPW4P1TVDF_calcFunc (reval%p_Dcoords(:,:,iel),&
+                reval%p_DpointsReal(:,i,iel),3,Da(:,:,3),Dbas(:,:,i,iel))
+          else
+            ! We are in T4
+            call elem_QPW4P1TVDF_calcFunc (reval%p_Dcoords(:,:,iel),&
+                reval%p_DpointsReal(:,i,iel),4,Da(:,:,4),Dbas(:,:,i,iel))
+          end if
+        end if
+
+      end do ! i
+
+    end do ! j
+
+  end subroutine
+
+  !************************************************************************
+
+  subroutine elem_QPW4P1TVDF_preparetria (Dcoords,itwist,ilocaltri,Da)
+  
+  ! Prepares the coefficients of the basis functions on the local
+  ! triangle ilocaltria 
+  
+  ! Array with the coordinates of the element corners.
+  real(DP), dimension(:,:) :: Dcoords
+  
+  ! Twist index definition of the element.
+  integer, intent(in) :: itwist
+  
+  ! Number of the local triangle.
+  integer, intent(in) :: ilocaltri
+  
+  ! Returns the coefficients defining the local basis functions.
+  real(DP), dimension(9,9), intent(out) :: Da
+
+  ! Element Description
+  ! -------------------
+  ! On every sub-triangle of the quad cell, we have a set of 9 local basis 
+  ! functions. Each basis function is vector valued and has the form
+  !
+  !     v  =  sum_{k=1,...,9}  c_k  p_k
+  !
+  ! where c_k is the local DOF and p_k a vector-valued polynomial defined
+  ! as follows:
+  !
+  !    p_1 = (1,0),         p_2 = (x,0),         p_3 = (y,0)
+  !    p_4 = (0,1),         p_5 = (0,x),         p_6 = (0,y)
+  !    p_7 = curl(phi_1),   p_8 = curl(phi_2),   p_9 = curl(phi_3)
+  !
+  ! Here, the scalar-valued functions phi_i are defined by the bubble function
+  ! b_T which is quadratic and =0 on the edges of the triangle:
+  !
+  !    phi_1 = 1 b_T,       phi_2 = x b_T,       phi_3 = y b_T
+  !
+  ! E.g., for the reference triangle, there is
+  !
+  !    b_T = x y (1-x-y)
+  !
+  ! But for a non-reference triangle, this is different. Assume a mapping
+  !
+  !    sigma: T_ref -> T,
+  !
+  !    sigma(xi, eta) = ( x1 ) + ( x2-x1  x3-x1 ) ( xi  )
+  !                     ( y1 )   ( y2-y1  y3-y1 ) ( eta )
+  !
+  ! The corresponding node functionals of the element are defines using
+  ! an arbitrary function v as
+  !
+  !    N_1(v) = 1/|E1| int_E1 (v n_1) ds
+  !    N_2(v) = 1/|E2| int_E2 (v n_2) ds
+  !    N_3(v) = 1/|E3| int_E3 (v n_3) ds
+  !
+  !    N_4(v) = 1/|E1| int_E1 (v n_1 s) ds
+  !    N_5(v) = 1/|E2| int_E2 (v n_2 s) ds
+  !    N_6(v) = 1/|E3| int_E3 (v n_3 s) ds
+  !
+  !    N_7(v) = 1/|E1| int_E1 (v t_1) ds
+  !    N_8(v) = 1/|E2| int_E2 (v t_2) ds
+  !    N_9(v) = 1/|E3| int_E3 (v t_3) ds
+  !
+  ! with n_i the normal vector of edge i and t_i the tangential.
+  !
+  !      x3
+  !      |\
+  !      | \  _ n2
+  !      |  \ /|
+  ! n3 <-E3 E2
+  !      |    \
+  !      |     \
+  !      |      \
+  !     x1--E1---x2
+  !          |
+  !          v n1
+  !
+  ! So,
+  ! - local DOF 1..3 resemble the integral mean value of the flow through
+  !   edge E1,...,E3
+  ! - local DOF 4..6 resemble the 1st moment of the flow through E1,...,E3
+  ! - local DOF 7..9 resemble the integral mean value of the flow along the edges.
+  !
+  ! The local DOFs in the triangle are ordered as follows:
+  !
+  !         O                               
+  !         | \
+  !         |  \
+  !         |   \  
+  !         |    \                               |          \   /           |
+  !         |     \                              |            X             |
+  !         |      \                             |          /   \           |
+  !  3/6/9  E3~      E2~ 2/5/8                   |        /       \         |
+  !         |        \              sigma        |   /  /           \  \    |
+  !         |         \          ---------->     |  v / E3         E2 \ v   |
+  !         |   T~     \                         |  /         T         \   |
+  !         |           \                        |/                       \ |
+  !         |            \                       X--------- <-o-> ----------X
+  !         O-----E1~-----O                                  E1
+  !             1/4/7
+  !
+  ! with three-tuples i/j/k representing the local DOF numbers on 
+  ! edge E1,E2,E3, with
+  !
+  !  - i=DOF of integral mean value in normal direction
+  !  - j=DOF of first moment of integral mean value in normal direction
+  !  - k=DOF of integral mean value in tangential direction
+  !
+  ! Edge E1 corresponds to the outer edge of the triangle.
+  ! Edges E2 and E3 correspond to the inner edge.
+  ! By convention, the edges in the quad are oriented from the centre 
+  ! to the outer, so E2 is oriented clockwise while E3 is
+  ! oriented counterclockwise. The orientation of edge E1
+  ! depends on the orientation of the edge in the quad and thus
+  ! depends on itwistIndex.
+  !
+  ! The local basis functions v_1,...,v_9 corresponding to these DOFs are defined
+  ! by the usual relation
+  !
+  !    N_i (v_j) = delta_ij
+  !
+  ! Thus, we have to set up a linear system for the c_k and solve it
+  ! (by inverting the matrix).
+  !
+  ! We apply a locally nonparametric approach here, this is more easy than
+  ! a parametric approach...
+  
+  ! Length of the edges.
+  real(DP), dimension(3) :: Dlen
+  
+  ! X/Y coordinates of the corners of the triangle.
+  real(DP), dimension(3) :: Dx, Dy
+  
+  ! X/Y part of the tangential and normal vectors on the edges.
+  real(DP), dimension(3) :: Dtx, Dty, Dnx, Dny
+  
+  ! Parameter values and weights of cubature points on each edge.
+  ! We apply a 3-point Gauss formula on every edge for setting
+  ! up the N_i(p_j).
+  integer, parameter :: ncubp = 3
+  
+  real(DP), dimension(ncubp), parameter :: Dg = &
+    (/ -0.774596669241483_DP, 0.0_DP, 0.774596669241483_DP /)
+
+  real(DP), dimension(ncubp), parameter :: Dw = &
+    (/ 0.555555555555556_DP, 0.888888888888889_DP, 0.555555555555556_DP /)
+    
+  ! X/Y position of the cubature points on each edge
+  real(DP), dimension(ncubp,3) :: DcubpXref,DcubpYref
+  
+  ! Curl of the trial polynomial
+  real(DP),dimension(ncubp,3) :: Dcurlx1,Dcurly1
+  real(DP),dimension(ncubp,3) :: Dcurlx2,Dcurly2
+  real(DP),dimension(ncubp,3) :: Dcurlx3,Dcurly3
+  real(DP), dimension(ncubp) :: Dlambda
+  
+  real(DP) :: dtwist1,dtwist2,dtwist3
+  integer :: i,j
+  logical :: bsuccess
+
+    ! Get the twist indices that define the orientation of the four edges
+    ! A value of 1 is standard, a value of -1 results in a change of the
+    ! sign in the basis functions.
+    !
+    ! Edge 1 corresponds to the outer edge of the quad.
+    ! Edge 2/3 corresponds to the inner edges. By convention, the
+    ! edges in the quad are oriented from the centre to the outer, so
+    ! the twist index of the 2nd edge is always -1 and the twist index
+    ! of the 3rd edge always 1.
+    !
+    ! itwistIndex is a bitfield. Each bit specifies the orientation of an edge.
+    ! We use the bit to calculate a "1.0" if the edge has positive orientation
+    ! and "-1.0" if it has negative orientation.
+    dtwist1 = real(1-iand(int(ishft(itwist, 2-ilocaltri)),2),DP)
+    dtwist2 = -1.0_DP
+    dtwist3 = 1.0_DP
+
+    ! Local Element corners
+    Dx(1) = Dcoords(1,ilocaltri)
+    Dy(1) = Dcoords(2,ilocaltri)
+    Dx(2) = Dcoords(1,mod(ilocaltri,4)+1)
+    Dy(2) = Dcoords(2,mod(ilocaltri,4)+1)
+    Dx(3) = 0.25_DP*sum(Dcoords(1,1:4))
+    Dy(3) = 0.25_DP*sum(Dcoords(2,1:4))
+
+    ! Edge lengths
+    Dlen(1) = sqrt( (Dx(2)-Dx(1))**2 + (Dy(2)-Dy(1))**2 )
+    Dlen(2) = sqrt( (Dx(3)-Dx(2))**2 + (Dy(3)-Dy(2))**2 )
+    Dlen(3) = sqrt( (Dx(1)-Dx(3))**2 + (Dy(1)-Dy(3))**2 )
+    
+    ! Calculate the tangential and normal vectors to the edges from the corners.
+    ! The tangential vectors of the edges are
+    !
+    !    t1 = (x2-x1) / ||x2-x1||
+    !    t2 = (x3-x2) / ||x3-x2||
+    !    t3 = (x1-x3) / ||x1-x3||
+    !
+    ! The corresponding normals are calculated from
+    !
+    !    ni = ( ti2, -ti1 )
+    !
+    Dtx(1) = (Dx(2)-Dx(1)) / Dlen(1) * dtwist1
+    Dty(1) = (Dy(2)-Dy(1)) / Dlen(1) * dtwist1
+
+    Dtx(2) = (Dx(3)-Dx(2)) / Dlen(2) * dtwist2
+    Dty(2) = (Dy(3)-Dy(2)) / Dlen(2) * dtwist2
+
+    Dtx(3) = (Dx(1)-Dx(3)) / Dlen(3) * dtwist3
+    Dty(3) = (Dy(1)-Dy(3)) / Dlen(3) * dtwist3
+
+    Dnx(1) = Dty(1)
+    Dny(1) = -Dtx(1)
+
+    Dnx(2) = Dty(2)
+    Dny(2) = -Dtx(2)
+
+    Dnx(3) = Dty(3)
+    Dny(3) = -Dtx(3)
+    
+    ! Set up a transformation matrix to calculate the c_k.
+    !
+    ! The conditions to be solved for one basis function read:
+    !
+    !   N_i(phi_j) = delta_ij
+    !
+    ! For the calculation of the N_i, we apply a point Gauss
+    ! formula. The basic coordinates of the Gauss formula on
+    ! [-1,1] and the cubature weights are defined as
+    
+    ! Calculate the cubature points for the evaluation of the coefficients.
+    ! This is on the reference element.
+    do i=1,ncubp
+      ! Parameter value in [0,1]
+      Dlambda(i) = 0.5_DP * (Dg(i) + 1.0_DP)
+
+      ! Cubature points on the reference triangle
+      DcubpXref(i,1) = Dlambda(i) ! * 1.0 + (1.0_DP - Dlambda(i)) * 0.0_DP
+      DcubpYref(i,1) = 0.0_DP
+      
+      ! Orientation of the second edge must be inverted.
+      DcubpXref(i,2) = Dlambda(i) ! * 1.0_DP + (1.0_DP - Dlambda(i)) * 0.0_DP 
+      DcubpYref(i,2) = (1.0_DP - Dlambda(i)) ! * 1.0_DP + Dlambda(i) * 0.0_DP + 
+      
+      DcubpXref(i,3) = 0.0_DP
+      DcubpYref(i,3) = (1.0_DP - Dlambda(i)) ! * 1.0_DP + Dlambda(i) * 0.0
+    end do
+    
+
+    ! Calculate the matrix N=(n_ij) with
+    !
+    !    n_ij = N_i(p_j)
+    !
+    ! Note that the normal vector is constant along the complete edge,
+    ! which simplifies this a bit. Furthermore note that
+    ! the length of the edge (in the cubature weight) cancels out
+    ! against the normalisation factor in front of the integral,
+    ! which simplifies this even more.
+    
+    ! N_i(p_1)
+    Da(1,1) = 0.5_DP * sum ( Dnx(1) * Dw(:) )
+    Da(2,1) = 0.5_DP * sum ( Dnx(2) * Dw(:) )
+    Da(3,1) = 0.5_DP * sum ( Dnx(3) * Dw(:) )
+    Da(4,1) = 0.5_DP * sum ( Dnx(1) * Dg(:) * Dw(:) )
+    Da(5,1) = 0.5_DP * sum ( Dnx(2) * Dg(:) * Dw(:) )
+    Da(6,1) = 0.5_DP * sum ( Dnx(3) * Dg(:) * Dw(:) )
+    Da(7,1) = 0.5_DP * sum ( Dtx(1) * Dw(:) )
+    Da(8,1) = 0.5_DP * sum ( Dtx(2) * Dw(:) )
+    Da(9,1) = 0.5_DP * sum ( Dtx(3) * Dw(:) )
+    
+    ! N_i(p_2)
+    Da(1,2) = 0.5_DP * sum ( DcubpXref(:,1) * Dnx(1) * Dw(:) )
+    Da(2,2) = 0.5_DP * sum ( DcubpXref(:,2) * Dnx(2) * Dw(:) )
+    Da(3,2) = 0.5_DP * sum ( DcubpXref(:,3) * Dnx(3) * Dw(:) )
+    Da(4,2) = 0.5_DP * sum ( DcubpXref(:,1) * Dnx(1) * Dg(:) * Dw(:) )
+    Da(5,2) = 0.5_DP * sum ( DcubpXref(:,2) * Dnx(2) * Dg(:) * Dw(:) )
+    Da(6,2) = 0.5_DP * sum ( DcubpXref(:,3) * Dnx(3) * Dg(:) * Dw(:) )
+    Da(7,2) = 0.5_DP * sum ( DcubpXref(:,1) * Dtx(1) * Dw(:) )
+    Da(8,2) = 0.5_DP * sum ( DcubpXref(:,2) * Dtx(2) * Dw(:) )
+    Da(9,2) = 0.5_DP * sum ( DcubpXref(:,3) * Dtx(3) * Dw(:) )
+
+    ! N_i(p_3)
+    Da(1,3) = 0.5_DP * sum ( DcubpYref(:,1) * Dnx(1) * Dw(:) )
+    Da(2,3) = 0.5_DP * sum ( DcubpYref(:,2) * Dnx(2) * Dw(:) )
+    Da(3,3) = 0.5_DP * sum ( DcubpYref(:,3) * Dnx(3) * Dw(:) )
+    Da(4,3) = 0.5_DP * sum ( DcubpYref(:,1) * Dnx(1) * Dg(:) * Dw(:) )
+    Da(5,3) = 0.5_DP * sum ( DcubpYref(:,2) * Dnx(2) * Dg(:) * Dw(:) )
+    Da(6,3) = 0.5_DP * sum ( DcubpYref(:,3) * Dnx(3) * Dg(:) * Dw(:) )
+    Da(7,3) = 0.5_DP * sum ( DcubpYref(:,1) * Dtx(1) * Dw(:) )
+    Da(8,3) = 0.5_DP * sum ( DcubpYref(:,2) * Dtx(2) * Dw(:) )
+    Da(9,3) = 0.5_DP * sum ( DcubpYref(:,3) * Dtx(3) * Dw(:) )
+    
+    ! N_i(p_4)
+    Da(1,4) = 0.5_DP * sum ( Dny(1) * Dw(:) )
+    Da(2,4) = 0.5_DP * sum ( Dny(2) * Dw(:) )
+    Da(3,4) = 0.5_DP * sum ( Dny(3) * Dw(:) )
+    Da(4,4) = 0.5_DP * sum ( Dny(1) * Dg(:) * Dw(:) )
+    Da(5,4) = 0.5_DP * sum ( Dny(2) * Dg(:) * Dw(:) )
+    Da(6,4) = 0.5_DP * sum ( Dny(3) * Dg(:) * Dw(:) )
+    Da(7,4) = 0.5_DP * sum ( Dty(1) * Dw(:) )
+    Da(8,4) = 0.5_DP * sum ( Dty(2) * Dw(:) )
+    Da(9,4) = 0.5_DP * sum ( Dty(3) * Dw(:) )
+    
+    ! N_i(p_5)
+    Da(1,5) = 0.5_DP * sum ( DcubpXref(:,1) * Dny(1) * Dw(:) )
+    Da(2,5) = 0.5_DP * sum ( DcubpXref(:,2) * Dny(2) * Dw(:) )
+    Da(3,5) = 0.5_DP * sum ( DcubpXref(:,3) * Dny(3) * Dw(:) )
+    Da(4,5) = 0.5_DP * sum ( DcubpXref(:,1) * Dny(1) * Dg(:) * Dw(:) )
+    Da(5,5) = 0.5_DP * sum ( DcubpXref(:,2) * Dny(2) * Dg(:) * Dw(:) )
+    Da(6,5) = 0.5_DP * sum ( DcubpXref(:,3) * Dny(3) * Dg(:) * Dw(:) )
+    Da(7,5) = 0.5_DP * sum ( DcubpXref(:,1) * Dty(1) * Dw(:) )
+    Da(8,5) = 0.5_DP * sum ( DcubpXref(:,2) * Dty(2) * Dw(:) )
+    Da(9,5) = 0.5_DP * sum ( DcubpXref(:,3) * Dty(3) * Dw(:) )
+    
+    ! N_i(p_6)
+    Da(1,6) = 0.5_DP * sum ( DcubpYref(:,1) * Dny(1) * Dw(:) )
+    Da(2,6) = 0.5_DP * sum ( DcubpYref(:,2) * Dny(2) * Dw(:) )
+    Da(3,6) = 0.5_DP * sum ( DcubpYref(:,3) * Dny(3) * Dw(:) )
+    Da(4,6) = 0.5_DP * sum ( DcubpYref(:,1) * Dny(1) * Dg(:) * Dw(:) )
+    Da(5,6) = 0.5_DP * sum ( DcubpYref(:,2) * Dny(2) * Dg(:) * Dw(:) )
+    Da(6,6) = 0.5_DP * sum ( DcubpYref(:,3) * Dny(3) * Dg(:) * Dw(:) )
+    Da(7,6) = 0.5_DP * sum ( DcubpYref(:,1) * Dty(1) * Dw(:) )
+    Da(8,6) = 0.5_DP * sum ( DcubpYref(:,2) * Dty(2) * Dw(:) )
+    Da(9,6) = 0.5_DP * sum ( DcubpYref(:,3) * Dty(3) * Dw(:) )
+
+    ! Evaluate P7, P8, P9 in the cubature points.
+    do j=1,3
+      do i=1,ncubp
+        call QPW4P1TVDF_P1(DcubpXref(i,j), DcubpYref(i,j), Dcurlx1(i,j),Dcurly1(i,j))
+        call QPW4P1TVDF_P2(DcubpXref(i,j), DcubpYref(i,j), Dcurlx2(i,j),Dcurly2(i,j))
+        call QPW4P1TVDF_P3(DcubpXref(i,j), DcubpYref(i,j), Dcurlx3(i,j),Dcurly3(i,j))
+      end do
+    end do
+
+    ! N_i(p_7)
+    Da(1,7) = 0.5_DP * sum ( Dnx(1) * Dcurlx1(:,1) * Dw(:) &
+                           + Dny(1) * Dcurly1(:,1) * Dw(:) )
+    Da(2,7) = 0.5_DP * sum ( Dnx(2) * Dcurlx1(:,2) * Dw(:) &
+                           + Dny(2) * Dcurly1(:,2) * Dw(:) )
+    Da(3,7) = 0.5_DP * sum ( Dnx(3) * Dcurlx1(:,3) * Dw(:) &
+                           + Dny(3) * Dcurly1(:,3) * Dw(:) )
+    Da(4,7) = 0.5_DP * sum ( Dnx(1) * Dcurlx1(:,1) * Dg(:) * Dw(:) &
+                           + Dny(1) * Dcurly1(:,1) * Dg(:) * Dw(:) )
+    Da(5,7) = 0.5_DP * sum ( Dnx(2) * Dcurlx1(:,2) * Dg(:) * Dw(:) &
+                           + Dny(2) * Dcurly1(:,2) * Dg(:) * Dw(:) )
+    Da(6,7) = 0.5_DP * sum ( Dnx(3) * Dcurlx1(:,3) * Dg(:) * Dw(:) &
+                           + Dny(3) * Dcurly1(:,3) * Dg(:) * Dw(:) )
+    Da(7,7) = 0.5_DP * sum ( Dtx(1) * Dcurlx1(:,1) * Dw(:) &
+                           + Dty(1) * Dcurly1(:,1) * Dw(:) )
+    Da(8,7) = 0.5_DP * sum ( Dtx(2) * Dcurlx1(:,2) * Dw(:) &
+                           + Dty(2) * Dcurly1(:,2) * Dw(:) )
+    Da(9,7) = 0.5_DP * sum ( Dtx(3) * Dcurlx1(:,3) * Dw(:) &
+                           + Dty(3) * Dcurly1(:,3) * Dw(:) )
+
+    ! N_i(p_8)
+    Da(1,8) = 0.5_DP * sum ( Dnx(1) * Dcurlx2(:,1) * Dw(:) &
+                           + Dny(1) * Dcurly2(:,1) * Dw(:) )
+    Da(2,8) = 0.5_DP * sum ( Dnx(2) * Dcurlx2(:,2) * Dw(:) &
+                           + Dny(2) * Dcurly2(:,2) * Dw(:) )
+    Da(3,8) = 0.5_DP * sum ( Dnx(3) * Dcurlx2(:,3) * Dw(:) &
+                           + Dny(3) * Dcurly2(:,3) * Dw(:) )
+    Da(4,8) = 0.5_DP * sum ( Dnx(1) * Dcurlx2(:,1) * Dg(:) * Dw(:) &
+                           + Dny(1) * Dcurly2(:,1) * Dg(:) * Dw(:) )
+    Da(5,8) = 0.5_DP * sum ( Dnx(2) * Dcurlx2(:,2) * Dg(:) * Dw(:) &
+                           + Dny(2) * Dcurly2(:,2) * Dg(:) * Dw(:) )
+    Da(6,8) = 0.5_DP * sum ( Dnx(3) * Dcurlx2(:,3) * Dg(:) * Dw(:) &
+                           + Dny(3) * Dcurly2(:,3) * Dg(:) * Dw(:) )
+    Da(7,8) = 0.5_DP * sum ( Dtx(1) * Dcurlx2(:,1) * Dw(:) &
+                           + Dty(1) * Dcurly2(:,1) * Dw(:) )
+    Da(8,8) = 0.5_DP * sum ( Dtx(2) * Dcurlx2(:,2) * Dw(:) &
+                           + Dty(2) * Dcurly2(:,2) * Dw(:) )
+    Da(9,8) = 0.5_DP * sum ( Dtx(3) * Dcurlx2(:,3) * Dw(:) &
+                           + Dty(3) * Dcurly2(:,3) * Dw(:) )
+    
+    ! N_i(p_9)
+    Da(1,9) = 0.5_DP * sum ( Dnx(1) * Dcurlx3(:,1) * Dw(:) &
+                           + Dny(1) * Dcurly3(:,1) * Dw(:) )
+    Da(2,9) = 0.5_DP * sum ( Dnx(2) * Dcurlx3(:,2) * Dw(:) &
+                           + Dny(2) * Dcurly3(:,2) * Dw(:) )
+    Da(3,9) = 0.5_DP * sum ( Dnx(3) * Dcurlx3(:,3) * Dw(:) &
+                           + Dny(3) * Dcurly3(:,3) * Dw(:) )
+    Da(4,9) = 0.5_DP * sum ( Dnx(1) * Dcurlx3(:,1) * Dg(:) * Dw(:) &
+                           + Dny(1) * Dcurly3(:,1) * Dg(:) * Dw(:) )
+    Da(5,9) = 0.5_DP * sum ( Dnx(2) * Dcurlx3(:,2) * Dg(:) * Dw(:) &
+                           + Dny(2) * Dcurly3(:,2) * Dg(:) * Dw(:) )
+    Da(6,9) = 0.5_DP * sum ( Dnx(3) * Dcurlx3(:,3) * Dg(:) * Dw(:) &
+                           + Dny(3) * Dcurly3(:,3) * Dg(:) * Dw(:) )
+    Da(7,9) = 0.5_DP * sum ( Dtx(1) * Dcurlx3(:,1) * Dw(:) &
+                           + Dty(1) * Dcurly3(:,1) * Dw(:) )
+    Da(8,9) = 0.5_DP * sum ( Dtx(2) * Dcurlx3(:,2) * Dw(:) &
+                           + Dty(2) * Dcurly3(:,2) * Dw(:) )
+    Da(9,9) = 0.5_DP * sum ( Dtx(3) * Dcurlx3(:,3) * Dw(:) &
+                           + Dty(3) * Dcurly3(:,3) * Dw(:) )
+
+    ! Taking the inverse will give us the coefficients of all
+    ! basis functions:
+    !
+    !    A C = Id  =>  C=Inverse of the matrix
+    call mprim_invertMatrixPivot(Da,9,bsuccess)
+    
+  end subroutine
+    
+  !************************************************************************
+
+  subroutine elem_QPW4P1TVDF_calcFunc (Dcoords,Dpoint,ilocaltri,Da,Dbas)
+  
+  ! Calculates the values of the local basis functions in point Ipoint. 
+  
+  ! Corners of the element
+  real(DP), dimension(:,:), intent(in) :: Dcoords
+  
+  ! Coordinate of the point where to evaluate
+  real(DP), dimension(:), intent(in) :: Dpoint
+  
+  ! Number of the local triangle
+  integer, intent(in) :: ilocaltri
+  
+  ! Coefficients defining the local basis functions on triangle ilocaltria
+  real(DP), dimension(:,:), intent(in) :: Da
+  
+  ! Returns the values of the local basis functions in Dpoint.
+  real(DP), dimension(:,:), intent(out) :: Dbas
+  
+  ! Local variables
+  real(DP), dimension(3) :: Dx,Dy
+  real(DP), dimension(9) :: DbasisX, DbasisY
+  real(DP), dimension(9) :: DbasisX_X, DbasisY_X
+  real(DP), dimension(9) :: DbasisX_Y, DbasisY_Y
+  real(DP) :: dpx, dpy, ddet
+  real(DP) :: dx_x,dx_y,dy_x,dy_y, a11,a12,a21,a22
+  integer :: itwistoffset
+  integer :: i
+  
+  ! The following array defines the mapping of the DOFs from the
+  ! local triangle to the local quad. The DOFs in the quad are
+  ! ordered as follows:
+  !
+  !                        3/7/11
+  !      O-------------------X-------------------O
+  !      | \                                   / |
+  !      |   \                               /   |
+  !      |     \                           /     |
+  !      |       \  16/20/24             /       |
+  !      |         X                   X         |
+  !      |           \               /  15/19/23 |
+  !      |             \           /             |
+  !      |               \       /               |
+  !      |                 \   /                 |
+  !      X 4/8/12            O                   X 2/6/10
+  !      |                 /   \                 |
+  !      |               /       \               |
+  !      |             /           \             |
+  !      |           /               \  14/18/22 |
+  !      |         X                   X         |
+  !      |       /  13/17/21             \       |
+  !      |     /                           \     |
+  !      |   /                               \   |
+  !      | /                                   \ |
+  !      O-------------------X-------------------O
+  !                        1/5/9
+  !
+  ! Again, the three-tuples i/j/k representing the local DOF
+  !
+  !  - i=DOF of integral mean value in normal direction
+  !  - j=DOF of first moment of integral mean value in normal direction
+  !  - k=DOF of integral mean value in tangential direction
+  !
+  integer, dimension(9,4), parameter :: Ildofs = &
+    (/ (/ 1, 14, 13, 5, 18, 17,  9, 22, 21 /), &
+       (/ 2, 15, 14, 6, 19, 18, 10, 23, 22 /), &
+       (/ 3, 16, 15, 7, 20, 19, 11, 24, 23 /), &
+       (/ 4, 13, 16, 8, 17, 20, 12, 21, 24 /) /)
+
+    ! Clear the output array.
+    Dbas(:,DER_FUNC2D) = 0.0_DP
+    Dbas(:,DER_DERIV2D_X) = 0.0_DP
+    Dbas(:,DER_DERIV2D_Y) = 0.0_DP
+    
+    ! Local Element corners
+    Dx(1) = Dcoords(1,ilocaltri)
+    Dy(1) = Dcoords(2,ilocaltri)
+    Dx(2) = Dcoords(1,mod(ilocaltri,4)+1)
+    Dy(2) = Dcoords(2,mod(ilocaltri,4)+1)
+    Dx(3) = 0.25_DP*sum(Dcoords(1,1:4))
+    Dy(3) = 0.25_DP*sum(Dcoords(2,1:4))
+    
+    ! Transform the point to the reference triangle.
+    ddet = 1.0_DP/(Dx(2)*Dy(3)-Dx(2)*Dy(1)-Dx(1)*Dy(3)-Dx(3)*Dy(2)+Dx(3)*Dy(1)+Dx(1)*Dy(2))
+    a11 = Dx(2)-Dx(1)
+    a12 = Dx(3)-Dx(1)
+    a21 = Dy(2)-Dy(1)
+    a22 = Dy(3)-Dy(1)
+    dpx = ddet * ( ( a22) * (Dpoint(1)-Dx(1)) +  (-a12) * (Dpoint(2) - Dy(1)) )
+    dpy = ddet * ( (-a21) * (Dpoint(1)-Dx(1)) +  ( a11) * (Dpoint(2) - Dy(1)) )
+
+    ! Evaluate the in the point; function values.
+    DbasisX(1) = 1.0_DP
+    DbasisX(2) = dpx
+    DbasisX(3) = dpy
+    DbasisX(4) = 0.0_DP
+    DbasisX(5) = 0.0_DP
+    DbasisX(6) = 0.0_DP
+
+    DbasisY(1) = 0.0_DP
+    DbasisY(2) = 0.0_DP
+    DbasisY(3) = 0.0_DP
+    DbasisY(4) = 1.0_DP
+    DbasisY(5) = dpx
+    DbasisY(6) = dpy
+
+    call QPW4P1TVDF_P1(dpx, dpy, DbasisX(7), DbasisY(7))
+    call QPW4P1TVDF_P2(dpx, dpy, DbasisX(8), DbasisY(8))
+    call QPW4P1TVDF_P3(dpx, dpy, DbasisX(9), DbasisY(9))
+
+    ! Evaluate basis functions:
+    !
+    !   v = sum_{i=1,9} x_i p_i
+    
+    do i=1,9
+      ! Dofs 1..24 are the 1st coordinate, DOFs 25..48 the 2nd coordinate
+      ! of the vector-valued element.
+
+      ! Function value.
+      Dbas (Ildofs(i,ilocaltri)   ,DER_FUNC2D) = sum ( Da(:,i) * DbasisX(:) )
+      Dbas (Ildofs(i,ilocaltri)+24,DER_FUNC2D) = sum ( Da(:,i) * DbasisY(:) )
+
+    end do
+            
+    ! Evaluate the in the point; derivatives
+    DbasisX_X(1) = 0.0_DP
+    DbasisX_X(2) = 1.0_DP
+    DbasisX_X(3) = 0.0_DP
+    DbasisX_X(4) = 0.0_DP
+    DbasisX_X(5) = 0.0_DP
+    DbasisX_X(6) = 0.0_DP
+
+    DbasisY_X(1) = 0.0_DP
+    DbasisY_X(2) = 0.0_DP
+    DbasisY_X(3) = 0.0_DP
+    DbasisY_X(4) = 0.0_DP
+    DbasisY_X(5) = 1.0_DP
+    DbasisY_X(6) = 0.0_DP
+
+    DbasisX_Y(1) = 0.0_DP
+    DbasisX_Y(2) = 0.0_DP
+    DbasisX_Y(3) = 1.0_DP
+    DbasisX_Y(4) = 0.0_DP
+    DbasisX_Y(5) = 0.0_DP
+    DbasisX_Y(6) = 0.0_DP
+
+    DbasisY_Y(1) = 0.0_DP
+    DbasisY_Y(2) = 0.0_DP
+    DbasisY_Y(3) = 0.0_DP
+    DbasisY_Y(4) = 0.0_DP
+    DbasisY_Y(5) = 0.0_DP
+    DbasisY_Y(6) = 1.0_DP
+
+    call QPW4P1TVDF_P1_XY(dpx, dpy, DbasisX_X(7), DbasisY_X(7), DbasisX_Y(7), DbasisY_Y(7))
+    call QPW4P1TVDF_P2_XY(dpx, dpy, DbasisX_X(8), DbasisY_X(8), DbasisX_Y(8), DbasisY_Y(8))
+    call QPW4P1TVDF_P3_XY(dpx, dpy, DbasisX_X(9), DbasisY_X(9), DbasisX_Y(9), DbasisY_Y(9))
+
+    ! Evaluate first derivative.
+    !
+    !   v_x = d/dx sum_{i=1,9} x_i p_i
+    !   v_y = d/dy sum_{i=1,9} x_i p_i
+    
+    do i=1,9
+      ! Dofs 1..24 are the 1st coordinate, DOFs 25..48 the 2nd coordinate
+      ! of the vector-valued element.
+
+      ! Derivatives values on the reference element
+!      dx_x = sum ( Da(:,i) * DbasisX_X(:) )
+!      dx_y = sum ( Da(:,i) * DbasisX_Y(:) )
+!
+!      dy_x = sum ( Da(:,i) * DbasisY_X(:) )
+!      dy_y = sum ( Da(:,i) * DbasisY_Y(:) )
+      
+      dx_x = sum ( Da(:,i) * ( DbasisX_X(:)*a22 - DbasisX_Y(:)*a21 ) )
+      dy_x = sum ( Da(:,i) * ( DbasisY_X(:)*a22 - DbasisY_Y(:)*a21 ) )
+
+      dx_y = sum ( Da(:,i) * (-DbasisX_X(:)*a12 + DbasisX_Y(:)*a11 ) )
+      dy_y = sum ( Da(:,i) * (-DbasisY_X(:)*a12 + DbasisY_Y(:)*a11 ) )
+
+      ! Multiply by the inverse of the jacobian mapping from the
+      ! reference triangle to the real triangle in order to
+      ! calculate the actual derivative.
+      !
+      ! Every basis function is defined as
+      !
+      !    phi_i = sum_j c_ij p_j
+      !
+      ! with p_j the vector valued trial polynomials defined as
+      !
+      !    p_j(x) = p^_j ( sigma^-1 (x) )
+      !
+      ! and sigma the mapping from the reference triangle to the
+      ! local triangle ilocaltri in the quad, given as
+      !
+      !    sigma(x^) = ( a11 a12 ) x^ + ( x1 )
+      !                ( a21 a22 )      ( y1 )
+      !
+      ! Due to the chain rule, the derivative of phi_i is given by
+      !
+      !    D phi (x) = D (p^_j ( sigma^-1 (x) ) )
+      !              = D p^_j (x^) * [D sigma(x)]^-1
+      !
+      ! The above dx_x,...,dy_y define "D p^_j (x^)". Multiply this
+      ! with [D sigma(x)]^-1 to get "D phi(x)".
+
+!      Dbas (Ildofs(i,ilocaltri)   ,DER_DERIV2D_X) = ddet*( dx_x*a22 - dx_y*a21 )
+!      Dbas (Ildofs(i,ilocaltri)+24,DER_DERIV2D_X) = ddet*( dy_x*a22 - dy_y*a21 )
+!
+!      Dbas (Ildofs(i,ilocaltri)   ,DER_DERIV2D_Y) = ddet*(-dx_x*a12 + dx_y*a11 )
+!      Dbas (Ildofs(i,ilocaltri)+24,DER_DERIV2D_Y) = ddet*(-dx_y*a12 + dy_y*a11 )
+
+      Dbas (Ildofs(i,ilocaltri)   ,DER_DERIV2D_X) = ddet*dx_x
+      Dbas (Ildofs(i,ilocaltri)+24,DER_DERIV2D_X) = ddet*dy_x
+                                                         
+      Dbas (Ildofs(i,ilocaltri)   ,DER_DERIV2D_Y) = ddet*dx_y
+      Dbas (Ildofs(i,ilocaltri)+24,DER_DERIV2D_Y) = ddet*dy_y
+    end do
+    
+  end subroutine
+  
+  subroutine QPW4P1TVDF_P1 (dx,dy,dcurlx,dcurly)
+  real(DP), intent(in) :: dx,dy
+  real(DP), intent(out) :: dcurlx, dcurly
+    ! P1 = curl (b_T)
+    dcurlx = dx-dx**2-2*dx*dy
+    dcurly = -dy+2*dx*dy+dy**2
+  end subroutine
+  
+  subroutine QPW4P1TVDF_P2 (dx,dy,dcurlx,dcurly)
+  real(DP), intent(in) :: dx,dy
+  real(DP), intent(out) :: dcurlx, dcurly
+    ! P2 = curl (b_T x)
+    dcurlx = dx**2-dx**3-2*dx**2*dy
+    dcurly = -2*dx*dy+3*dx**2*dy+2*dx*dy**2
+  end subroutine
+
+  subroutine QPW4P1TVDF_P3 (dx,dy,dcurlx,dcurly)
+  real(DP), intent(in) :: dx,dy
+  real(DP), intent(out) :: dcurlx, dcurly
+    ! P3 = curl (b_T * y)
+    dcurlx = 2*dx*dy-2*dx**2*dy-3*dx*dy**2
+    dcurly = -dy**2+2*dx*dy**2+dy**3
+  end subroutine
+
+  ! 1st derivative of the curl functions
+  subroutine QPW4P1TVDF_P1_XY (dx,dy,dcurlx_x,dcurly_x,dcurlx_y,dcurly_y)
+  real(DP), intent(in) :: dx,dy
+  real(DP), intent(out) :: dcurlx_x, dcurly_x, dcurlx_y, dcurly_y
+    ! P1 = curl (b_T)
+    dcurlx_x = 1-2*dx-2*dy
+    dcurlx_y = -2*dx
+    dcurly_x = 2*dy
+    dcurly_y = -1+2*dx+2*dy
+  end subroutine
+  
+  subroutine QPW4P1TVDF_P2_XY (dx,dy,dcurlx_x,dcurly_x,dcurlx_y,dcurly_y)
+  real(DP), intent(in) :: dx,dy
+  real(DP), intent(out) :: dcurlx_x, dcurly_x, dcurlx_y, dcurly_y
+    ! P2 = curl (b_T x)
+    dcurlx_x = 2*dx-3*dx**2-4*dx*dy
+    dcurlx_y = -2*dx**2
+    dcurly_x = -2*dy+6*dx*dy+2*dy**2
+    dcurly_y = -2*dx+3*dx**2+4*dx*dy
+  end subroutine
+
+  subroutine QPW4P1TVDF_P3_XY (dx,dy,dcurlx_x,dcurly_x,dcurlx_y,dcurly_y)
+  real(DP), intent(in) :: dx,dy
+  real(DP), intent(out) :: dcurlx_x, dcurly_x, dcurlx_y, dcurly_y
+    ! P3 = curl (b_T * y)
+    dcurlx_x = 2*dy-4*dx*dy-3*dy**2
+    dcurlx_y = 2*dx-2*dx**2-6*dx*dy
+    dcurly_x = 2*dy**2
+    dcurly_y = -2*dy+4*dx*dy+3*dy**2
   end subroutine
 
 end module

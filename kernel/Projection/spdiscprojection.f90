@@ -1133,6 +1133,9 @@ contains
   ! An array that recieves the values of the FE function in the vertices of
   ! the mesh. If set to NULL on entry, an array of the correct size is
   ! allocated.
+  ! For vector-valued FEM spaces, the array will/must be of size n*NVT
+  ! with n the dimension of the FE space. At 1..NVT, the first coordinate
+  ! can be found, at NVT+1..2*NVT the 2nd coordinate etc.
   real(DP), dimension(:), pointer :: p_Dvalues
 !</inputoutput>
 
@@ -1154,8 +1157,8 @@ contains
   integer, dimension(:,:), allocatable :: Idofs
   real(DP), dimension(:), pointer :: p_Dx
   real(DP) :: dt
-  integer :: ider,nadj
-  logical :: bvertexDofs
+  integer :: ider,nadj,idimfe,ndimfe
+  logical :: bvertexDofs,ballocated
 
     ! Which derivative?
     ider = DER_FUNC
@@ -1179,14 +1182,6 @@ contains
     ! Get the dimension and the number of vertices
     NVT = p_rtria%NVT
     NDIM = p_rtria%ndim
-
-    ! Prepare the values array
-    if(.not. associated(p_Dvalues)) then
-      allocate(p_Dvalues(NVT))
-    else if(ubound(p_Dvalues,1) .lt. NVT) then
-      deallocate(p_Dvalues)
-      allocate(p_Dvalues(NVT))
-    end if
 
     ! Project function values?
     if(ider .eq. DER_FUNC) then
@@ -1216,6 +1211,14 @@ contains
       ! Vertex-DOF based FE space?
       if(bvertexDofs) then
 
+        ! Prepare the output array
+        if(.not. associated(p_Dvalues)) then
+          allocate(p_Dvalues(NVT))
+        else if(ubound(p_Dvalues,1) .lt. NVT) then
+          deallocate(p_Dvalues)
+          allocate(p_Dvalues(NVT))
+        end if
+
         ! Then we only need to copy the first NVT DOFs from our vector
         call lalg_copyVector(p_Dx, p_Dvalues, NVT)
         return
@@ -1231,9 +1234,9 @@ contains
     ! Set up Bder
     Bder = .false.
     Bder(ider) = .true.
-
-    ! Clear the output array
-    call lalg_clearVector(p_Dvalues,NVT)
+    
+    ballocated = .false.
+    ndimfe = 0
 
     ! Okay, now loop through all element distributions
     do ied = 1, p_rdiscr%inumFESpaces
@@ -1263,6 +1266,26 @@ contains
         call sys_halt()
       end if
 
+      if (.not. ballocated) then
+
+        ! Get the dimension of the FE space
+        ndimfe = elem_igetFeDimension(celement)
+
+        ! Prepare the output array
+        if(.not. associated(p_Dvalues)) then
+          allocate(p_Dvalues(NVT*ndimfe))
+        else if(ubound(p_Dvalues,1) .lt. NVT*ndimfe) then
+          deallocate(p_Dvalues)
+          allocate(p_Dvalues(NVT*ndimfe))
+        end if
+
+        ! Clear the output array
+        call lalg_clearVector(p_Dvalues,NVT*ndimfe)
+
+        ballocated = .true.
+      
+      end if
+
       ! Calculate the corner vertice reference coordinates
       call spdp_aux_getCornerRefCoords(Dcorners, NDIM, NVE)
 
@@ -1273,7 +1296,7 @@ contains
       NELpatch = min(1000, NEL)
 
       ! Allocate evaluation array
-      allocate(Dbas(NBAS,NDER,NVE,NELpatch))
+      allocate(Dbas(NBAS*ndimfe,NDER,NVE,NELpatch))
 
       ! Allocate DOF-mapping array
       allocate(Idofs(NBAS,NELpatch))
@@ -1311,14 +1334,17 @@ contains
             ivt = p_IvertAtElem(j,iel)
             if(ivt .le. 0) cycle
 
-            ! Okay, loop over all basis functions and calculate the value
-            dt = 0.0_DP
-            do k = 1, NBAS
-              dt = dt + Dbas(k,ider,j,i)*p_Dx(Idofs(k,i))
-            end do ! k
+            ! Loop over the dimension of the FE space
+            do idimfe = 0,ndimfe-1
+              ! Okay, loop over all basis functions and calculate the value
+              dt = 0.0_DP
+              do k = 1, NBAS
+                dt = dt + Dbas(k+idimfe*NBAS,ider,j,i)*p_Dx(Idofs(k,i))
+              end do ! k
 
-            ! Add the value onto the vertice
-            p_Dvalues(ivt) = p_Dvalues(ivt) + dt
+              ! Add the value onto the vertice
+              p_Dvalues(ivt+idimfe*NVT) = p_Dvalues(ivt+idimfe*NVT) + dt
+            end do
 
           end do ! j
 
@@ -1340,18 +1366,20 @@ contains
 
     end do ! ied
 
-    ! And loop through all vertices
-    do ivt = 1, NVT
+    do idimfe = 0,ndimfe-1
+      ! And loop through all vertices
+      do ivt = 1, NVT
 
-      ! Calculate the number of elements adjacent to this vertice
-      nadj = p_IelemAtVertIdx(ivt+1) - p_IelemAtVertIdx(ivt)
+        ! Calculate the number of elements adjacent to this vertice
+        nadj = p_IelemAtVertIdx(ivt+1) - p_IelemAtVertIdx(ivt)
 
-      ! And divide the value in this vertice by the number of elements adjacent
-      ! to this vertice.
-      if(nadj .gt. 1) then
-        p_Dvalues(ivt) = p_Dvalues(ivt) / real(nadj,DP)
-      end if
+        ! And divide the value in this vertice by the number of elements adjacent
+        ! to this vertice.
+        if(nadj .gt. 1) then
+          p_Dvalues(ivt+idimfe*NVT) = p_Dvalues(ivt+idimfe*NVT) / real(nadj,DP)
+        end if
 
+      end do
     end do
 
     ! That is it
@@ -1388,6 +1416,9 @@ contains
   ! An array that recieves the values of the FE function in the cells of
   ! the mesh. If set to NULL on entry, an array of the correct size is
   ! allocated.
+  ! For vector-valued FEM spaces, the array will/must be of size n*NEL
+  ! with n the dimension of the FE space. At 1..NEL, the first coordinate
+  ! can be found, at NEL+1..2*NEL the 2nd coordinate etc.
   real(DP), dimension(:), pointer :: p_Dvalues
 !</inputoutput>
 
@@ -1408,8 +1439,8 @@ contains
   integer, dimension(:,:), allocatable :: Idofs
   real(DP), dimension(:), pointer :: p_Dx
   real(DP) :: dt
-  integer :: ider
-  logical :: bcellDofs
+  integer :: ider,idimfe,ndimfe
+  logical :: bcellDofs,ballocated
 
     ! Which derivative?
     ider = DER_FUNC
@@ -1433,14 +1464,6 @@ contains
     ! Get the dimension
     NDIM = p_rtria%ndim
     NEL = p_rtria%NEL
-
-    ! Prepare the values array
-    if(.not. associated(p_Dvalues)) then
-      allocate(p_Dvalues(NEL))
-    else if(ubound(p_Dvalues,1) .lt. NEL) then
-      deallocate(p_Dvalues)
-      allocate(p_Dvalues(NEL))
-    end if
 
     ! Project function values?
     if(ider .eq. DER_FUNC) then
@@ -1470,6 +1493,14 @@ contains
       ! Cell-DOF based FE space?
       if(bcellDofs) then
 
+        ! Prepare the output array
+        if(.not. associated(p_Dvalues)) then
+          allocate(p_Dvalues(NEL))
+        else if(ubound(p_Dvalues,1) .lt. NEL) then
+          deallocate(p_Dvalues)
+          allocate(p_Dvalues(NEL))
+        end if
+
         ! Then we only need to copy the first NVT DOFs from our vector
         call lalg_copyVector(p_Dx, p_Dvalues, NEL)
         return
@@ -1481,9 +1512,9 @@ contains
     ! Set up Bder
     Bder = .false.
     Bder(ider) = .true.
-
-    ! Clear the output array
-    call lalg_clearVector(p_Dvalues,NEL)
+    
+    ballocated = .false.
+    ndimfe = 0
 
     ! Okay, now loop through all element distributions
     do ied = 1, p_rdiscr%inumFESpaces
@@ -1505,12 +1536,32 @@ contains
       ! Get the number of basis functions and derivatives
       NBAS = elem_igetNDofLoc(celement)
       NDER = elem_getMaxDerivative(celement)
-
+      
       ! Make sure ider is supported
       if(ider .gt. NDER) then
         call output_line ('Derivative not supported by element!', &
             OU_CLASS_ERROR,OU_MODE_STD, 'spdp_projectToCells')
         call sys_halt()
+      end if
+      
+      if (.not. ballocated) then
+
+        ! Get the Dimension of the FE space
+        ndimfe = elem_igetFeDimension(celement)
+
+        ! Prepare the output array
+        if(.not. associated(p_Dvalues)) then
+          allocate(p_Dvalues(NEL*ndimfe))
+        else if(ubound(p_Dvalues,1) .lt. NEL*ndimfe) then
+          deallocate(p_Dvalues)
+          allocate(p_Dvalues(NEL*ndimfe))
+        end if
+
+        ! Clear the output array
+        call lalg_clearVector(p_Dvalues,NEL*ndimfe)
+        
+        ballocated = .true.
+      
       end if
 
       ! Calculate the cell midpoint reference coordinates
@@ -1523,7 +1574,7 @@ contains
       NELpatch = min(1000, NELinList)
 
       ! Allocate evaluation array
-      allocate(Dbas(NBAS,NDER,1,NELpatch))
+      allocate(Dbas(NBAS*ndimfe,NDER,1,NELpatch))
 
       ! Allocate DOF-mapping array
       allocate(Idofs(NBAS,NELpatch))
@@ -1554,14 +1605,17 @@ contains
           ! Get the index of the current element
           iel = p_IcurEL(i)
 
-          ! Okay, loop over all basis functions and calculate the value
-          dt = 0.0_DP
-          do j = 1, NBAS
-            dt = dt + Dbas(j,ider,1,i)*p_Dx(Idofs(j,i))
-          end do ! k
+          ! Loop through the dimension of the FE space
+          do idimfe = 0,ndimfe-1
+            ! Okay, loop over all basis functions and calculate the value
+            dt = 0.0_DP
+            do j = 1, NBAS
+              dt = dt + Dbas(j+idimfe*NBAS,ider,1,i)*p_Dx(Idofs(j,i))
+            end do ! k
 
-          ! Add the value onto the cell
-          p_Dvalues(iel) = p_Dvalues(iel) + dt
+            ! Add the value onto the cell
+            p_Dvalues(iel + idimfe*NEL) = p_Dvalues(iel + idimfe*NEL) + dt
+          end do
 
         end do ! i
 

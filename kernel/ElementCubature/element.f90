@@ -406,7 +406,7 @@ module element
   integer(I32), parameter, public :: EL_RT0_2D  = EL_2D + 5
 
   ! ID for rotated linear <tex>$\tilde P_1$</tex> element (Crouzeix-Raviart)
-  integer(I32), parameter, public :: EL_P1T     = EL_2D + 20
+  integer(I32), parameter, public :: EL_P1T     = EL_2D + 6
   integer(I32), parameter, public :: EL_P1T_2D  = EL_P1T
   
   ! ID of constant discontinous quadrilateral FE, Q0
@@ -433,25 +433,32 @@ module element
   integer(I32), parameter, public :: EL_Q3_2D   = EL_Q3
   integer(I32), parameter, public :: EL_E014_2D = EL_Q3
 
+  ! ID of piecewise constant element, 4 triangles in a quad
+  integer(I32), parameter, public :: EL_QPW4P0_2D = EL_2D + 15
+
   ! ID of piecewise linear element, 4 triangles in a quad
-  integer(I32), parameter, public :: EL_QPW4P1_2D = EL_2D + 15
+  integer(I32), parameter, public :: EL_QPW4P1_2D = EL_2D + 16
 
   ! ID of piecewise quadratic element, 4 triangles in a quad
-  integer(I32), parameter, public :: EL_QPW4P2_2D = EL_2D + 16
+  integer(I32), parameter, public :: EL_QPW4P2_2D = EL_2D + 17
 
   ! ID of piecewise discontinous linear element, 4 triangles in a quad
-  integer(I32), parameter, public :: EL_QPW4DCP1_2D = EL_2D + 17
+  integer(I32), parameter, public :: EL_QPW4DCP1_2D = EL_2D + 18
 
-  ! ID of piecewise rotated linear nonconforming element, 4 triangles in a quad
-  integer(I32), parameter, public :: EL_QPW4P1T_2D = EL_2D + 18
+  ! ID of piecewise linear nonconforming element, 4 triangles in a quad
+  integer(I32), parameter, public :: EL_QPW4P1T_2D = EL_2D + 19
   
   ! ID of bilinear H1-conforming quadrilateral FE with bubble, Q1b
-  integer(I32), parameter, public :: EL_Q1B_2D = EL_2D + 19
+  integer(I32), parameter, public :: EL_Q1B_2D = EL_2D + 20
+
+  ! ID of piecewise linear nonconforming element, exactly divergence free, 
+  ! vector valued, 4 triangles in a quad
+  integer(I32), parameter, public :: EL_QPW4P1TVDF_2D = EL_2D + 21
 
   ! ID of nonconforming parametric linear P1 element on a quadrilareral
   ! element, given by function value in the midpoint and the two
   ! derivatives.
-  integer(I32), parameter, public :: EL_QP1     = EL_2D + 21
+  integer(I32), parameter, public :: EL_QP1     = EL_2D + 25
   integer(I32), parameter, public :: EL_QP1_2D  = EL_QP1
 
   ! QP1-element, nonparametric
@@ -858,12 +865,16 @@ contains
       elem_igetID = EL_Q1_2D
     else if (selem .eq. "EL_Q1B_2D") then
       elem_igetID = EL_Q1B_2D
+    else if (selem .eq. "EL_QPW4P0_2D") then
+      elem_igetID = EL_QPW4P0_2D
     else if (selem .eq. "EL_QPW4P1_2D") then
       elem_igetID = EL_QPW4P1_2D
     else if (selem .eq. "EL_QPW4P2_2D") then
       elem_igetID = EL_QPW4P2_2D
     else if (selem .eq. "EL_QPW4P1T_2D") then
       elem_igetID = EL_QPW4P1T_2D
+    else if (selem .eq. "EL_QPW4P1TVDF_2D") then
+      elem_igetID = EL_QPW4P1TVDF_2D
     else if (selem .eq. "EL_EM11" .or. selem .eq. "EL_EM11_2D") then
       elem_igetID = EL_EM11_2D
     else if (selem .eq. "EL_Q2" .or. selem .eq. "EL_Q2_2D" .or.&
@@ -1078,12 +1089,16 @@ contains
       sname = 'EL_Q2H_2D'
     case (EL_Q3_2D)
       sname = 'EL_Q3_2D'
+    case (EL_QPW4P0_2D)
+      sname = 'EL_QPW4P0_2D'
     case (EL_QPW4P1_2D)
       sname = 'EL_QPW4P1_2D'
     case (EL_QPW4P2_2D)
       sname = 'EL_QPW4P2_2D'
     case (EL_QPW4P1T_2D)
       sname = 'EL_QPW4P1T_2D'
+    case (EL_QPW4P1TVDF_2D)
+      sname = 'EL_QPW4P1TVDF_2D'
     ! discontinous elements
     case (EL_Q0_2D)         ! alias: EL_DCQP0_2D
       sname = 'EL_Q0_2D'
@@ -1358,6 +1373,9 @@ contains
     case (EL_QP1)
       ! local DOFs for QP1
       ndofAtElement  = 3
+    case (EL_QPW4P0_2D)
+      ! 4 DOFs in the element
+      ndofAtElement  = 4
     case (EL_QPW4P1_2D)
       ! 4 DOFs in the corners, one in the element (midpoint)
       ndofAtVertices = 4
@@ -1371,6 +1389,10 @@ contains
       ! 4 DOFs in the edges and 4 in the element
       ndofAtEdges    = 4
       ndofAtElement  = 4
+    case (EL_QPW4P1TVDF_2D)
+      ! 3 DOFs at each edge and 12 in the element (3 at each sub-edge)
+      ndofAtEdges    = 12
+      ndofAtElement  = 12
     case (EL_Q1T)
       ! local DOFs for Ex30
       ndofAtEdges    = 4
@@ -1654,8 +1676,10 @@ contains
     ! affine quadrilateral/hexahedral transformation, need to be handled
     ! specially here.
 
-    if ((celement .eq. EL_QPW4P1_2D) .or.&
+    if ((celement .eq. EL_QPW4P0_2D) .or.&
+        (celement .eq. EL_QPW4P1_2D) .or.&
         (celement .eq. EL_QPW4DCP1_2D) .or.&
+        (celement .eq. EL_QPW4P1TVDF_2D) .or.&
         (celement .eq. EL_QPW4P1T_2D)) then
       elem_igetTrafoType = TRAFO_ID_PWLINSIMCUBE + TRAFO_DIM_2D
       return
@@ -1728,6 +1752,10 @@ contains
     select case (celement)
     case (EL_RT0_2D)
       ! Raviart-Thomas element. Vector valued element with dimension 2.
+      elem_igetFeDimension = 2
+    case (EL_QPW4P1TVDF_2D)
+      ! Exaclty divergence free Quad element with four P1 subelements.
+      ! Vector valued element with dimension 2.
       elem_igetFeDimension = 2
     end select
 
@@ -1819,7 +1847,10 @@ contains
     case (EL_QP1)
       ! Function + 1st derivative
       elem_getMaxDerivative = 3
-    case (EL_QPW4P1_2D,EL_QPW4P1T_2D)
+    case (EL_QPW4P0_2D)
+      ! Function only
+      elem_getMaxDerivative = 1
+    case (EL_QPW4P1_2D,EL_QPW4P1T_2D,EL_QPW4P1TVDF_2D)
       ! Function + 1st derivative
       elem_getMaxDerivative = 3
     case (EL_QPW4P2_2D)
@@ -1925,7 +1956,7 @@ contains
 !!$    case (EL_P0_1D, EL_P0, EL_P0_3D)
 !!$      ! No information about Jacobian necessary
 !!$      elem_getEvaluationTag = 0
-    case (EL_Q2T, EL_Q2TB, EL_Q2T_3D, EL_Q3T_2D, EL_RT0_2D)
+    case (EL_Q2T, EL_Q2TB, EL_Q2T_3D, EL_Q3T_2D, EL_RT0_2D, EL_QPW4P1TVDF_2D)
       ! We need the twist indices.
       elem_getEvaluationTag = EL_EVLTAG_REFPOINTS + &
         EL_EVLTAG_JAC + EL_EVLTAG_DETJ + EL_EVLTAG_TWISTIDX
@@ -1980,7 +2011,7 @@ contains
 !</function>
 
     select case(celement)
-    case (EL_DCQP1_2D, EL_DCQP2_2D, EL_RT0_2D)
+    case (EL_DCQP1_2D, EL_DCQP2_2D, EL_RT0_2D, EL_QPW4P1TVDF_2D)
       ! There exists no parametric counterpart to these elements, so these do
       ! not have the EL_NONPARAMETRIC flag set although the are nonparametric.
       inonpar = .true.
@@ -2074,7 +2105,8 @@ contains
           EL_Q1T, EL_Q1TB, EL_Q2T, EL_Q2TB, EL_Q3T_2D,&
           EL_DG_T0_2D, EL_DG_T1_2D, EL_DG_T2_2D,&
           EL_DG_T3_2D, EL_DG_Q1_2D, EL_DG_Q2_2D,&
-          EL_QPW4P1_2D, EL_QPW4P1T_2D, EL_QPW4P2_2D, &
+          EL_QPW4P0_2D, EL_QPW4P1_2D, EL_QPW4P1T_2D, EL_QPW4P2_2D, &
+          EL_QPW4P1TVDF_2D, &
           EL_DCQP1_2D, EL_DCQP2_2D, EL_QPW4DCP1_2D)
       ! 2D Quadrilateral
       ishp = BGEOM_SHAPE_QUAD
@@ -2253,7 +2285,7 @@ contains
         bwrapSim2 = .true.
       case (EL_QP1)
         call elem_QP1 (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-      case (EL_QPW4P1_2D,EL_QPW4P1T_2D,EL_QPW4P2_2D)
+      case (EL_QPW4P0_2D,EL_QPW4P1_2D,EL_QPW4P1T_2D,EL_QPW4P2_2D,EL_QPW4P1TVDF_2D)
         bwrapSim2 = .true.
       case (EL_QP1NP,EL_QP1NPD)
         call elem_QP1NP (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
@@ -3033,6 +3065,10 @@ contains
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsReal, revalElementSet%p_rperfconfig)
 
+    case (EL_QPW4P0_2D)
+      ! New implementation
+      call elem_eval_QPW4P0_2D(celement, revalElementSet, Bder, Dbas)
+
     case (EL_QPW4P1_2D)
       ! New implementation
       call elem_eval_QPW4P1_2D(celement, revalElementSet, Bder, Dbas)
@@ -3040,6 +3076,10 @@ contains
     case (EL_QPW4P1T_2D)
       ! New implementation
       call elem_eval_QPW4P1T_2D(celement, revalElementSet, Bder, Dbas)
+
+    case (EL_QPW4P1TVDF_2D)
+      ! New implementation
+      call elem_eval_QPW4P1TVDF_2D(celement, revalElementSet, Bder, Dbas)
 
     case (EL_QPW4P2_2D)
       ! New implementation

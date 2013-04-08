@@ -287,6 +287,9 @@ contains
     case (EL_QP1)
       ! 3 DOF`s in the midpoint of the element.
       NDFG_uniform2D = 3*rtriangulation%NEL
+    case (EL_QPW4P0_2D)
+      ! 4 DOFs in the triangle midpoints
+      NDFG_uniform2D = 4*rtriangulation%NEL
     case (EL_QPW4P1_2D, EL_Q1B_2D)
       ! 1 DOF in each vertex and one in the element midpoint
       NDFG_uniform2D = rtriangulation%NVT + rtriangulation%NEL
@@ -296,6 +299,9 @@ contains
     case (EL_QPW4P1T_2D)
       ! 1 DOF per edge and 4 in the element
       NDFG_uniform2D = rtriangulation%NMT + 4*rtriangulation%NEL
+    case (EL_QPW4P1TVDF_2D)
+      ! 3 DOFs per edge, 3x4=12 DOFs per element
+      NDFG_uniform2D = 3*rtriangulation%NMT + 12*rtriangulation%NEL
     case (EL_P1T, EL_Q1T, EL_RT0_2D)
       ! 1 DOF per edge
       NDFG_uniform2D = rtriangulation%NMT
@@ -750,6 +756,11 @@ contains
           call storage_getbase_int2D (p_rtriangulation%h_IedgesAtElement,p_2darray)
           call dof_locGlobUniMult_Q1T(p_2darray, IelIdx, IdofGlob)
           return
+        case (EL_QPW4P0_2D)
+          ! DOF`s midpoints of the triangles
+          call storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement,p_2darray)
+          call dof_locGlobUniMult_QPW4P0(p_2darray, IelIdx, IdofGlob, p_rtriangulation%NVT)
+          return
         case (EL_QPW4P1_2D)
           ! DOF`s in the vertices and element midpoints
           call storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement,p_2darray)
@@ -766,6 +777,11 @@ contains
           ! DOF`s in the edges and along the diagonales within the element
           call storage_getbase_int2D (p_rtriangulation%h_IedgesAtElement,p_2darray)
           call dof_locGlobUniMult_QPW4P1T(p_2darray, IelIdx, IdofGlob, p_rtriangulation%NMT)
+          return
+        case (EL_QPW4P1TVDF_2D)
+          ! DOF`s in the edges and along the diagonales within the element
+          call storage_getbase_int2D (p_rtriangulation%h_IedgesAtElement,p_2darray)
+          call dof_locGlobUniMult_QPW4P1TVDF(p_2darray, IelIdx, IdofGlob, p_rtriangulation%NMT)
           return
         case (EL_Q1TB)
           ! DOF`s in the edges
@@ -1304,6 +1320,59 @@ contains
 
 !<subroutine>
 
+  pure subroutine dof_locGlobUniMult_QPW4P0(IverticesAtElement, IelIdx, IdofGlob, NVT)
+
+!<description>
+  ! This subroutine calculates the global indices in the array IdofGlob
+  ! of the degrees of freedom of the elements in the list IelIdx.
+  ! all elements in the list are assumed to be quadrilateral, piecewise linear
+  ! P0 elements.
+  ! A uniform grid is assumed, i.e. a grid completely discretised the
+  ! same element.
+!</description>
+
+!<input>
+
+  ! An array with the number of vertices adjacent to each element of the
+  ! triangulation.
+  integer, dimension(:,:), intent(in) :: IverticesAtElement
+
+  ! Element indices, where the mapping should be computed.
+  integer, dimension(:), intent(in) :: IelIdx
+
+  ! Total number of vertices
+  integer, intent(in) :: NVT
+
+!</input>
+
+!<output>
+
+  ! Array of global DOF numbers; for every element in IelIdx there is
+  ! a subarray in this list receiving the corresponding global DOF`s.
+  integer, dimension(:,:), intent(out) :: IdofGlob
+
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  integer :: i
+
+    ! Loop through the elements to handle
+    do i=1,size(IelIdx)
+      ! Calculate the global DOF`s.
+      IdofGlob(1,i) = 4*(IelIdx(i)-1)+1
+      IdofGlob(2,i) = 4*(IelIdx(i)-1)+2
+      IdofGlob(3,i) = 4*(IelIdx(i)-1)+3
+      IdofGlob(4,i) = 4*(IelIdx(i)-1)+4
+    end do
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
   pure subroutine dof_locGlobUniMult_Q1B(IverticesAtElement, IelIdx, IdofGlob, NVT)
 
 !<description>
@@ -1527,6 +1596,77 @@ contains
       IdofGlob(6,i) = NMT + 4*(IelIdx(i)-1) + 2
       IdofGlob(7,i) = NMT + 4*(IelIdx(i)-1) + 3
       IdofGlob(8,i) = NMT + 4*(IelIdx(i)-1) + 4
+    end do
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  pure subroutine dof_locGlobUniMult_QPW4P1TVDF(IedgesAtElement, IelIdx, IdofGlob, NMT)
+
+!<description>
+  ! This subroutine calculates the global indices in the array IdofGlob
+  ! of the degrees of freedom of the elements in the list IelIdx.
+  ! all elements in the list are assumed to be quadrilateral, piecewise
+  ! linear nonconforming P1 elements, vector valued, exactly divergence free.
+  ! A uniform grid is assumed, i.e. a grid completely discretised the
+  ! same element.
+!</description>
+
+!<input>
+
+  ! An array with the number of edges adjacent on each element of the
+  ! triangulation.
+  integer, dimension(:,:), intent(in) :: IedgesAtElement
+
+  ! Element indices, where the mapping should be computed.
+  integer, dimension(:), intent(in) :: IelIdx
+
+  ! Total number of edges
+  integer, intent(in) :: NMT
+
+!</input>
+
+!<output>
+
+  ! Array of global DOF numbers; for every element in IelIdx there is
+  ! a subarray in this list receiving the corresponding global DOF`s.
+  integer, dimension(:,:), intent(out) :: IdofGlob
+
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  integer :: i,j
+
+    ! Loop through the elements to handle
+    do i=1,size(IelIdx)
+      ! The first 4 DOFs are just the edge numbers.
+      ! These DOFs resemble the integral mean value of the flow through
+      ! the edge.
+      IdofGlob(1:4,i) = IedgesAtElement(1:4,IelIdx(i))
+      
+      ! The next 4 DOFs are again the edge number (shifted).
+      ! These DOFs resemble the 1st moment of the flow of the flow
+      ! through the edge.
+      IdofGlob(5:8,i) = NMT + IedgesAtElement(1:4,IelIdx(i))
+      
+      ! The third set of DOFs resemble the integral mean value
+      ! of the flow tangential to the edge.
+      IdofGlob(9:12,i) = 2*NMT + IedgesAtElement(1:4,IelIdx(i))
+      
+      ! Now the inner edges. The quad is divided into four subtriangles.
+      ! Every subtriangle gives us 3 DOFs on the edge to the element
+      ! centre, which is numberd the same way as above:
+      ! 0th moment (integral mean value), 1st moment, tangential
+      ! velocity.
+      do j=1,12
+        IdofGlob(12+j,i) = 3*NMT + 12*(IelIdx(i)-1) + j
+      end do
+
     end do
 
   end subroutine

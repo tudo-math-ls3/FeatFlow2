@@ -5541,18 +5541,29 @@ contains
 
   ! local variables
   real(DP), dimension(:), pointer :: p_Dvalues
+  integer :: ncomp,NVT
 
     nullify(p_Dvalues)
 
     ! Project solution to vertices
-    if(present(ideriv)) then
-      call spdp_projectToVertices(rvector, p_Dvalues, ideriv)
-    else
-      call spdp_projectToVertices(rvector, p_Dvalues)
-    end if
+    call spdp_projectToVertices(rvector, p_Dvalues, ideriv)
 
-    ! And add it to the export
-    call ucd_addVariableVertexBased2(rexport, sname, cvarSpec, p_Dvalues)
+    ! And add it to the export.
+    ! Note that the array may have multiple components in case of vector-valued
+    ! FE functions. So we have to determine their number at first.
+    NVT = rexport%p_rtriangulation%NVT
+    ncomp = ubound(p_Dvalues,1) / NVT
+    
+    select case (ncomp)
+    case (NDIM1D)
+      call ucd_addVariableVertexBased2(rexport, sname, cvarSpec, p_Dvalues)
+    case (NDIM2D)
+      call ucd_addVarVertBasedVec2 (rexport, sname, cvarSpec,&
+          p_Dvalues(1:NVT), p_Dvalues(NVT+1:2*NVT))
+    case (NDIM3D)
+      call ucd_addVarVertBasedVec2 (rexport, sname, cvarSpec,&
+          p_Dvalues(1:NVT), p_Dvalues(NVT+1:2*NVT), p_Dvalues(2*NVT+1:3*NVT))
+    end select
 
     ! And release the temporary array
     deallocate(p_Dvalues)
@@ -5596,18 +5607,29 @@ contains
 
   ! local variables
   real(DP), dimension(:), pointer :: p_Dvalues
+  integer :: ncomp,NEL
 
     nullify(p_Dvalues)
 
     ! Project solution to cells
-    if(present(ideriv)) then
-      call spdp_projectToCells(rvector, p_Dvalues, ideriv)
-    else
-      call spdp_projectToCells(rvector, p_Dvalues)
-    end if
+    call spdp_projectToCells(rvector, p_Dvalues, ideriv)
 
-    ! And add it to the export
-    call ucd_addVariableElementBased2(rexport, sname, cvarSpec, p_Dvalues)
+    ! And add it to the export.
+    ! Note that the array may have multiple components in case of vector-valued
+    ! FE functions. So we have to determine their number at first.
+    NEL = rexport%p_rtriangulation%NEL
+    ncomp = ubound(p_Dvalues,1) / NEL
+    
+    select case (ncomp)
+    case (NDIM1D)
+      call ucd_addVariableElementBased2(rexport, sname, cvarSpec, p_Dvalues)
+    case (NDIM2D)
+      call ucd_addVarElemBasedVec2 (rexport, sname, cvarSpec,&
+          p_Dvalues(1:NEL), p_Dvalues(NEL+1:2*NEL))
+    case (NDIM3D)
+      call ucd_addVarElemBasedVec2 (rexport, sname, cvarSpec,&
+          p_Dvalues(1:NEL), p_Dvalues(NEL+1:2*NEL), p_Dvalues(2*NEL+1:3*NEL))
+    end select
 
     ! And release the temporary array
     deallocate(p_Dvalues)

@@ -17,66 +17,75 @@
 !#        at a specified position / in all diagonal blocks of a block matrix.
 !#
 !# 2.) bma_fcalc_laplace / bma_fcalc_laplaceDiag
-!#     -> Used with bma_buildMatrix, this calculates Laplace matrices matrices
+!#     -> Used with bma_buildMatrix, this calculates Laplace matrices
 !#        at a specified position / in all diagonal blocks of a block matrix.
 !#
-!# 3.) bma_fcalc_convection_ugradvw
+!# 3.) bma_fcalc_gradientdiv
+!#     -> Used with bma_buildMatrix, this calculates a gradient matrix
+!#        at a specified position / in all diagonal blocks of a block matrix.
+!#        The gradient matrix is set up after a partial integration, ( -p, div u ).
+!#
+!# 4.) bma_fcalc_divergence
+!#     -> Used with bma_buildMatrix, this calculates a divergence matrix
+!#        at a specified position / in all diagonal blocks of a block matrix.
+!#
+!# 5.) bma_fcalc_convection_ugradvw
 !#     -> Used with bma_buildMatrix, this routine can be used to assemble
 !#        the convection operator ( (u grad) v, w) at a specified position in a block
 !#        matrix.
 !#
-!# 4.) bma_fcalc_convection_vugradw
+!# 6.) bma_fcalc_convection_vugradw
 !#     -> Used with bma_buildMatrix, this routine can be used to assemble
 !#        the convection operator ( v, (u grad) w) at a specified position in a block
 !#        matrix.
 !#
-!# 5.) bma_fcalc_convection_graduvw
+!# 7.) bma_fcalc_convection_graduvw
 !#     -> Used with bma_buildMatrix, this routine can be used to assemble
 !#        the convection operator ( (grad u) v, w) at a specified position in a block
 !#        matrix.
 !#
-!# 6.) bma_fcalc_convection_vgraduw
+!# 8.) bma_fcalc_convection_vgraduw
 !#     -> Used with bma_buildMatrix, this routine can be used to assemble
 !#        the convection operator ( v, (grad u) w) at a specified position in a block
 !#        matrix.
 !#
-!# 7.) bma_fcalc_rhsOne
+!# 9.) bma_fcalc_rhsOne
 !#     -> Calculates the RHS vector based on the function f=1.
 !#
-!# 8.) bma_fcalc_rhsBubble
-!#     -> Calculates the RHS vector based on the function f=32*y*(1-y)+32*x*(1-x)
-!#        which is the RHS for u=16*x*(1-x)*y*(1-y) in the Laplace
-!#        equation -Laplace(u)=f.
+!# 10.) bma_fcalc_rhsBubble
+!#      -> Calculates the RHS vector based on the function f=32*y*(1-y)+32*x*(1-x)
+!#         which is the RHS for u=16*x*(1-x)*y*(1-y) in the Laplace
+!#         equation -Laplace(u)=f.
 !#
-!# 9.) bma_fcalc_rhsBubblePlusFE
-!#     -> Calculates the RHS vector based on the function 
-!#        f=32*y*(1-y)+32*x*(1-x) + v(x,y)
-!#        with v(x,y) being a finite element function passed via parameters.
+!# 11.) bma_fcalc_rhsBubblePlusFE
+!#      -> Calculates the RHS vector based on the function 
+!#         f=32*y*(1-y)+32*x*(1-x) + v(x,y)
+!#         with v(x,y) being a finite element function passed via parameters.
 !#
-!# 10.) bma_fcalc_rhsFE
+!# 12.) bma_fcalc_rhsFE
 !#     -> Calculates the RHS vector based on the function 
 !#        f=v(x,y)
 !#        with v(x,y) being a finite element function passed via parameters.
 !#
-!# 11.) bma_fcalc_integralOne
+!# 13.) bma_fcalc_integralOne
 !#     -> Calculates the integral of the function v=1 (which results in the
 !#        size of the domain).
 !#
-!# 12.) bma_fcalc_integralFE
+!# 14.) bma_fcalc_integralFE
 !#     -> Calculates the integral of an arbitrary FEM function.
 !#
-!# 13.) bma_fcalc_bubbleL2error
+!# 15.) bma_fcalc_bubbleL2error
 !#      -> Calculates the squared L2 error of a FEM function to a 
 !#         bubble function
 !#        
-!# 14.) bma_fcalc_bubbleH1error
+!# 16.) bma_fcalc_bubbleH1error
 !#     -> Calculates the squared H1 error of a FEM function to a 
 !#        bubble function
 !#
-!# 15.) bma_fcalc_L2norm
+!# 17.) bma_fcalc_L2norm
 !#     -> Calculates the squared L2 norm of a FEM function
 !#        
-!# 16.) bma_fcalc_H1norm
+!# 18.) bma_fcalc_H1norm
 !#     -> Calculates the squared H1 (semi-)norm of a FEM function
 !# </purpose>
 !##############################################################################
@@ -107,6 +116,8 @@ module blockmatassemblystdop
   public :: bma_fcalc_mass
   public :: bma_fcalc_laplaceDiag
   public :: bma_fcalc_laplace
+  public :: bma_fcalc_gradientdiv
+  public :: bma_fcalc_divergence
   public :: bma_fcalc_convection_ugradvw
   public :: bma_fcalc_convection_vugradw
   public :: bma_fcalc_convection_graduvw
@@ -1390,6 +1401,1432 @@ contains
                 end do ! idofe
                 
               end do ! idimfe
+
+            end do ! icubp
+
+          end do ! iel
+
+        end select
+
+      end if      
+
+    end if
+
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine bma_fcalc_gradientdiv(RmatrixData,rassemblyData,rmatrixAssembly,&
+      npointsPerElement,nelements,revalVectors,rcollection)
+
+!<description>  
+    ! Calculates the gradient operator at position (x,y) in a block matrix.
+    ! Uses the "transposed divergence approach", i.e., not the actual
+    ! gradient is set up but the derivative is put to the test functions.
+    !
+    !   ( - p, div w )  ( =  ( grad(p), w )  after partial integration )
+    !
+    ! Note: If rcollection is not specified, the matrix is calculated
+    ! at matrix position (1,1) with a multiplier of 1.
+    ! If rcollection is specified, the following parameters are expected:
+    !   rcollection%DquickAccess(1) = multiplier in front of the matrix.
+    !   rcollection%IquickAccess(1) = x-coordinate in the block matrix
+    !   rcollection%IquickAccess(2) = y-coordinate in the block matrix
+    ! For scalar-valued v-spaces, the gradient operator is
+    ! imposed to the matrices (y,x), (y+1,x), (y+2,x). It is assumed that
+    ! the subspaces in v_i are all of the same FE type.
+    ! For vector-valued v-spaces, the gradient operator is imposed
+    ! to the matrix at position (x,y).
+!</description>
+
+!<inputoutput>
+    ! Matrix data of all matrices. The arrays p_Dentry of all submatrices
+    ! have to be filled with data.
+    type(t_bmaMatrixData), dimension(:,:), intent(inout), target :: RmatrixData
+!</inputoutput>
+
+!<input>
+    ! Data necessary for the assembly. Contains determinants and
+    ! cubature weights for the cubature,...
+    type(t_bmaMatrixAssemblyData), intent(in) :: rassemblyData
+
+    ! Structure with all data about the assembly
+    type(t_bmaMatrixAssembly), intent(in) :: rmatrixAssembly
+
+    ! Number of points per element
+    integer, intent(in) :: npointsPerElement
+
+    ! Number of elements
+    integer, intent(in) :: nelements
+
+    ! Values of FEM functions automatically evaluated in the
+    ! cubature points.
+    type(t_fev2Vectors), intent(in) :: revalVectors
+
+    ! User defined collection structure
+    type(t_collection), intent(inout), target, optional :: rcollection
+!</input>
+
+!<subroutine>
+
+    real(DP) :: dbasIx, dbasJ, dbasIy, dbasIz
+    integer :: iel, icubp, idofe, jdofe, ivar, nvar
+    real(DP), dimension(:,:,:), pointer :: p_DlocalMatrix,p_DlocalMatrix2,p_DlocalMatrix3
+    real(DP), dimension(:,:,:,:), pointer :: p_DlocalMatrixIntl,p_DlocalMatrixIntl2,p_DlocalMatrixIntl3
+    real(DP), dimension(:,:,:,:), pointer :: p_DbasTrial,p_DbasTest
+    real(DP), dimension(:,:), pointer :: p_DcubWeight
+    type(t_bmaMatrixData), pointer :: p_rmatrixData
+
+    integer :: ix, iy, ndimfe, idimfe
+    real(DP) :: dscale
+
+    ! Get parameters
+    dscale = 1.0_DP
+    iy = 1
+    ix = 1
+
+    if (present(rcollection)) then
+
+      dscale = rcollection%DquickAccess(1)
+      ix = rcollection%IquickAccess(1)
+      iy = rcollection%IquickAccess(2)
+
+      ! Cancel if nothing to do or parameters wrong
+      if (dscale .eq. 0.0_DP) return
+
+      if ((ix .lt. 1) .or. (iy .lt. 1) .or. &
+          (ix .gt. ubound(RmatrixData,2)) .or. (iy .gt. ubound(RmatrixData,1))) then
+        call output_line ("Parameters wrong.",&
+            OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_gradientdiv")
+        call sys_halt()
+      end if
+
+    end if
+    
+    ! Scaling factor is multiplied by -1 as we have the "divergence" formulation.
+    dscale = -dscale
+
+    ! Get cubature weights data
+    p_DcubWeight => rassemblyData%p_DcubWeight
+
+    ! Get local data
+    p_rmatrixData => RmatrixData(iy,ix)
+    p_DbasTrial => RmatrixData(iy,ix)%p_DbasTrial
+    p_DbasTest => RmatrixData(iy,ix)%p_DbasTest
+
+    ! FE space dimension
+    ndimfe = RmatrixData(iy,ix)%ndimfeTest
+    
+    if (RmatrixData(iy,ix)%ndimfeTrial .ne. 1) then
+      ! This does not make sense.
+      call output_line ("Trial-space must be scalar-valued.",&
+          OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_gradientdiv")
+      call sys_halt()
+    end if
+
+    ! Interleaved matrix?
+    if (.not. p_rmatrixData%bisInterleaved) then
+
+      if (ndimfe .eq. 1) then
+
+        ! -----------------------
+        ! Scalar-valued FE space. 
+        ! -----------------------
+        ! This IF command prevents an inner IF command and speeds 
+        ! up the computation for all scalar standard FE spaces.
+
+        ! What's the dimension?
+        select case (rmatrixAssembly%p_rtriangulation%ndim)
+
+        case (NDIM1D)
+
+          ! *****************
+          ! 1D gradient matrix
+          ! *****************
+
+          ! Get the matrix data
+          p_DlocalMatrix => RmatrixData(iy,ix)%p_Dentry
+
+          ! Loop over the elements in the current set.
+          do iel = 1,nelements
+
+            ! Loop over all cubature points on the current element
+            do icubp = 1,npointsPerElement
+
+              ! Outer loop over the DOF's i=1..ndof on our current element,
+              ! which corresponds to the (test) basis functions Phi_i:
+              do idofe=1,p_rmatrixData%ndofTest
+
+                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! into dbasI
+                dbasIx = p_DbasTest(idofe,DER_DERIV1D_X,icubp,iel)
+
+                ! Inner loop over the DOF's j=1..ndof, which corresponds to
+                ! the basis function Phi_j:
+                do jdofe=1,p_rmatrixData%ndofTrial
+
+                  ! Fetch the contributions of the (trial) basis function Phi_j
+                  ! into dbasJ
+                  dbasJ = p_DbasTrial(jdofe,DER_FUNC1D,icubp,iel)
+
+                  ! Multiply the values of the basis functions
+                  ! (1st derivatives) by the cubature weight and sum up
+                  ! into the local matrices.
+                  p_DlocalMatrix(jdofe,idofe,iel) = p_DlocalMatrix(jdofe,idofe,iel) + &
+                      dscale * p_DcubWeight(icubp,iel) * dbasJ*dbasIx
+
+                end do ! jdofe
+
+              end do ! idofe
+
+            end do ! icubp
+
+          end do ! iel
+
+        case (NDIM2D)
+
+          ! *****************
+          ! 2D gradient matrix
+          ! *****************
+
+          ! Get the matrix data
+          p_DlocalMatrix => RmatrixData(iy,ix)%p_Dentry
+          p_DlocalMatrix2 => RmatrixData(iy+1,ix)%p_Dentry
+
+          ! Loop over the elements in the current set.
+          do iel = 1,nelements
+
+            ! Loop over all cubature points on the current element
+            do icubp = 1,npointsPerElement
+
+              ! Outer loop over the DOF's i=1..ndof on our current element,
+              ! which corresponds to the (test) basis functions Phi_i:
+              do idofe=1,p_rmatrixData%ndofTest
+
+                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! into dbasI
+                dbasIx = p_DbasTest(idofe,DER_DERIV2D_X,icubp,iel)
+                dbasIy = p_DbasTest(idofe,DER_DERIV2D_Y,icubp,iel)
+
+                ! Inner loop over the DOF's j=1..ndof, which corresponds to
+                ! the basis function Phi_j:
+                do jdofe=1,p_rmatrixData%ndofTrial
+
+                  ! Fetch the contributions of the (trial) basis function Phi_j
+                  ! into dbasJ
+                  dbasJ = p_DbasTrial(jdofe,DER_FUNC2D,icubp,iel)
+
+                  ! Multiply the values of the basis functions
+                  ! (1st derivatives) by the cubature weight and sum up
+                  ! into the local matrices.
+                  p_DlocalMatrix(jdofe,idofe,iel) = p_DlocalMatrix(jdofe,idofe,iel) + &
+                      dscale * p_DcubWeight(icubp,iel) * dbasJ * dbasIx
+
+                  p_DlocalMatrix2(jdofe,idofe,iel) = p_DlocalMatrix2(jdofe,idofe,iel) + &
+                      dscale * p_DcubWeight(icubp,iel) * dbasJ * dbasIy
+
+                end do ! jdofe
+
+              end do ! idofe
+
+            end do ! icubp
+
+          end do ! iel
+
+        case (NDIM3D)
+
+          ! *****************
+          ! 3D gradient matrix
+          ! *****************
+
+          ! Get the matrix data
+          p_DlocalMatrix => RmatrixData(iy,ix)%p_Dentry
+          p_DlocalMatrix2 => RmatrixData(iy+1,ix)%p_Dentry
+          p_DlocalMatrix3 => RmatrixData(iy+2,ix)%p_Dentry
+
+          ! Loop over the elements in the current set.
+          do iel = 1,nelements
+
+            ! Loop over all cubature points on the current element
+            do icubp = 1,npointsPerElement
+
+              ! Outer loop over the DOF's i=1..ndof on our current element,
+              ! which corresponds to the (test) basis functions Phi_i:
+              do idofe=1,p_rmatrixData%ndofTest
+
+                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! into dbasI
+                dbasIx = p_DbasTest(idofe,DER_DERIV3D_X,icubp,iel)
+                dbasIy = p_DbasTest(idofe,DER_DERIV3D_Y,icubp,iel)
+                dbasIz = p_DbasTest(idofe,DER_DERIV3D_Z,icubp,iel)
+
+                ! Inner loop over the DOF's j=1..ndof, which corresponds to
+                ! the basis function Phi_j:
+                do jdofe=1,p_rmatrixData%ndofTrial
+
+                  ! Fetch the contributions of the (trial) basis function Phi_j
+                  ! into dbasJ
+                  dbasJ = p_DbasTrial(jdofe,DER_FUNC3D,icubp,iel)
+
+                  ! Multiply the values of the basis functions
+                  ! (1st derivatives) by the cubature weight and sum up
+                  ! into the local matrices.
+                  p_DlocalMatrix(jdofe,idofe,iel) = p_DlocalMatrix(jdofe,idofe,iel) + &
+                      dscale * p_DcubWeight(icubp,iel) * dbasJ * dbasIx
+                      
+                  p_DlocalMatrix2(jdofe,idofe,iel) = p_DlocalMatrix2(jdofe,idofe,iel) + &
+                      dscale * p_DcubWeight(icubp,iel) * dbasJ * dbasIy
+                      
+                  p_DlocalMatrix3(jdofe,idofe,iel) = p_DlocalMatrix3(jdofe,idofe,iel) + &
+                      dscale * p_DcubWeight(icubp,iel) * dbasJ * dbasIz
+
+                end do ! jdofe
+
+              end do ! idofe
+
+            end do ! icubp
+
+          end do ! iel
+
+        end select
+        
+      else
+
+        ! -----------------------
+        ! Vector-valued FE space.
+        ! -----------------------
+        ! This implementation works for all types of finite elements, but it
+        ! is slightly slower for scalar FE spaces due to an additional inner loop.
+
+        ! Get the matrix data
+        p_DlocalMatrix => RmatrixData(iy,ix)%p_Dentry
+
+        ! What's the dimension?
+        select case (rmatrixAssembly%p_rtriangulation%ndim)
+
+        case (NDIM1D)
+
+          ! *****************
+          ! 1D gradient matrix
+          ! *****************
+
+          ! Does not apply. A vector-valued FE-space in 1D is scalar-valued,
+          ! so this case will never be called.
+
+        case (NDIM2D)
+
+          ! *****************
+          ! 2D gradient matrix
+          ! *****************
+
+          ! Loop over the elements in the current set.
+          do iel = 1,nelements
+
+            ! Loop over all cubature points on the current element
+            do icubp = 1,npointsPerElement
+
+              ! Outer loop over the DOF's i=1..ndof on our current element,
+              ! which corresponds to the (test) basis functions Phi_i:
+              do idofe=1,p_rmatrixData%ndofTest
+
+                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! into dbasI
+                dbasIx = p_DbasTest(&
+                    idofe+0*p_rmatrixData%ndofTest,DER_DERIV2D_X,icubp,iel)
+                dbasIy = p_DbasTest(&
+                    idofe+1*p_rmatrixData%ndofTest,DER_DERIV2D_Y,icubp,iel)
+
+                ! Inner loop over the DOF's j=1..ndof, which corresponds to
+                ! the basis function Phi_j:
+                do jdofe=1,p_rmatrixData%ndofTrial
+
+                  ! Fetch the contributions of the (trial) basis function Phi_j
+                  ! into dbasJ
+                  dbasJ = p_DbasTrial(jdofe,DER_FUNC2D,icubp,iel)
+
+                  ! Multiply the values of the basis functions
+                  ! (1st derivatives) by the cubature weight and sum up
+                  ! into the local matrices.
+                  p_DlocalMatrix(jdofe,idofe,iel) = p_DlocalMatrix(jdofe,idofe,iel) + &
+                      dscale * p_DcubWeight(icubp,iel) * dbasJ * ( dbasIx + dbasIy )
+
+                end do ! jdofe
+
+              end do ! idofe
+                
+            end do ! icubp
+
+          end do ! iel
+
+        case (NDIM3D)
+
+          ! *****************
+          ! 3D gradient matrix
+          ! *****************
+
+          ! Loop over the elements in the current set.
+          do iel = 1,nelements
+
+            ! Loop over all cubature points on the current element
+            do icubp = 1,npointsPerElement
+
+              ! Outer loop over the DOF's i=1..ndof on our current element,
+              ! which corresponds to the (test) basis functions Phi_i:
+              do idofe=1,p_rmatrixData%ndofTest
+
+                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! into dbasI
+                dbasIx = p_DbasTest(&
+                    idofe+0*p_rmatrixData%ndofTest,DER_DERIV3D_X,icubp,iel)
+                dbasIy = p_DbasTest(&
+                    idofe+1*p_rmatrixData%ndofTest,DER_DERIV3D_Y,icubp,iel)
+                dbasIz = p_DbasTest(&
+                    idofe+2*p_rmatrixData%ndofTest,DER_DERIV3D_Z,icubp,iel)
+
+                ! Inner loop over the DOF's j=1..ndof, which corresponds to
+                ! the basis function Phi_j:
+                do jdofe=1,p_rmatrixData%ndofTrial
+
+                  ! Fetch the contributions of the (trial) basis function Phi_j
+                  ! into dbasJ
+                  dbasJ = p_DbasTrial(jdofe,DER_FUNC3D,icubp,iel)
+
+                  ! Multiply the values of the basis functions
+                  ! (1st derivatives) by the cubature weight and sum up
+                  ! into the local matrices.
+                  p_DlocalMatrix(jdofe,idofe,iel) = p_DlocalMatrix(jdofe,idofe,iel) + &
+                      dscale * p_DcubWeight(icubp,iel) * dbasJ * ( dbasIx + dbasIy + dbasIz )
+
+                end do ! jdofe
+
+              end do ! idofe
+                
+            end do ! icubp
+
+          end do ! iel
+
+        end select
+
+      end if
+
+    else
+
+      ! Interleave-data
+      nvar = RmatrixData(iy,ix)%nvar
+
+      if (ndimfe .eq. 1) then
+
+        ! -----------------------
+        ! Scalar-valued FE space. 
+        ! -----------------------
+        ! This IF command prevents an inner IF command and speeds 
+        ! up the computation for all scalar standard FE spaces.
+
+        ! What's the dimension?
+        select case (rmatrixAssembly%p_rtriangulation%ndim)
+
+        case (NDIM1D)
+
+          ! *****************
+          ! 1D gradient matrix
+          ! *****************
+
+          ! Get the matrix data      
+          p_DlocalMatrixIntl => RmatrixData(iy,ix)%p_DentryIntl
+
+          ! Loop over the elements in the current set.
+          do iel = 1,nelements
+
+            ! Loop over all cubature points on the current element
+            do icubp = 1,npointsPerElement
+
+              ! Outer loop over the DOF's i=1..ndof on our current element,
+              ! which corresponds to the (test) basis functions Phi_i:
+              do idofe=1,p_rmatrixData%ndofTest
+
+                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! into dbasI
+                dbasIx = p_DbasTest(idofe,DER_DERIV1D_X,icubp,iel)
+
+                ! Inner loop over the DOF's j=1..ndof, which corresponds to
+                ! the basis function Phi_j:
+                do jdofe=1,p_rmatrixData%ndofTrial
+
+                  ! Fetch the contributions of the (trial) basis function Phi_j
+                  ! into dbasJ
+                  dbasJ = p_DbasTrial(jdofe,DER_FUNC1D,icubp,iel)
+
+                  do ivar = 1,nvar
+
+                    ! Multiply the values of the basis functions
+                    ! (1st derivatives) by the cubature weight and sum up
+                    ! into the local matrices.
+                    p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) = &
+                        p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) + &
+                          dscale * p_DcubWeight(icubp,iel) * dbasJ*dbasIx
+
+                  end do ! ivar
+
+                end do ! jdofe
+
+              end do ! idofe
+
+            end do ! icubp
+
+          end do ! iel
+
+        case (NDIM2D)
+
+          ! *****************
+          ! 2D gradient matrix
+          ! *****************
+
+          ! Get the matrix data      
+          p_DlocalMatrixIntl => RmatrixData(iy,ix)%p_DentryIntl
+          p_DlocalMatrixIntl2 => RmatrixData(iy+1,ix)%p_DentryIntl
+
+          ! Loop over the elements in the current set.
+          do iel = 1,nelements
+
+            ! Loop over all cubature points on the current element
+            do icubp = 1,npointsPerElement
+
+              ! Outer loop over the DOF's i=1..ndof on our current element,
+              ! which corresponds to the (test) basis functions Phi_i:
+              do idofe=1,p_rmatrixData%ndofTest
+
+                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! into dbasI
+                dbasIx = p_DbasTest(idofe,DER_DERIV2D_X,icubp,iel)
+                dbasIy = p_DbasTest(idofe,DER_DERIV2D_Y,icubp,iel)
+
+                ! Inner loop over the DOF's j=1..ndof, which corresponds to
+                ! the basis function Phi_j:
+                do jdofe=1,p_rmatrixData%ndofTrial
+
+                  ! Fetch the contributions of the (trial) basis function Phi_j
+                  ! into dbasJ
+                  dbasJ = p_DbasTrial(jdofe,DER_FUNC2D,icubp,iel)
+
+                  do ivar = 1,nvar
+
+                    ! Multiply the values of the basis functions
+                    ! (1st derivatives) by the cubature weight and sum up
+                    ! into the local matrices.
+                    p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) = &
+                        p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) + &
+                            dscale * p_DcubWeight(icubp,iel) * dbasJ * dbasIx
+
+                    p_DlocalMatrixIntl2(ivar,jdofe,idofe,iel) = &
+                        p_DlocalMatrixIntl2(ivar,jdofe,idofe,iel) + &
+                            dscale * p_DcubWeight(icubp,iel) * dbasJ * dbasIy
+
+                  end do ! ivar
+
+                end do ! jdofe
+
+              end do ! idofe
+
+            end do ! icubp
+
+          end do ! iel
+
+        case (NDIM3D)
+
+          ! *****************
+          ! 3D gradient matrix
+          ! *****************
+
+          ! Get the matrix data      
+          p_DlocalMatrixIntl => RmatrixData(iy,ix)%p_DentryIntl
+          p_DlocalMatrixIntl2 => RmatrixData(iy+1,ix)%p_DentryIntl
+          p_DlocalMatrixIntl3 => RmatrixData(iy+2,ix)%p_DentryIntl
+
+          ! Loop over the elements in the current set.
+          do iel = 1,nelements
+
+            ! Loop over all cubature points on the current element
+            do icubp = 1,npointsPerElement
+
+              ! Outer loop over the DOF's i=1..ndof on our current element,
+              ! which corresponds to the (test) basis functions Phi_i:
+              do idofe=1,p_rmatrixData%ndofTest
+
+                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! into dbasI
+                dbasIx = p_DbasTest(idofe,DER_DERIV3D_X,icubp,iel)
+                dbasIy = p_DbasTest(idofe,DER_DERIV3D_Y,icubp,iel)
+                dbasIz = p_DbasTest(idofe,DER_DERIV3D_Z,icubp,iel)
+
+                ! Inner loop over the DOF's j=1..ndof, which corresponds to
+                ! the basis function Phi_j:
+                do jdofe=1,p_rmatrixData%ndofTrial
+
+                  ! Fetch the contributions of the (trial) basis function Phi_j
+                  ! into dbasJ
+                  dbasJ = p_DbasTrial(jdofe,DER_FUNC3D,icubp,iel)
+
+                  do ivar = 1,nvar
+
+                    ! Multiply the values of the basis functions
+                    ! (1st derivatives) by the cubature weight and sum up
+                    ! into the local matrices.
+                    p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) = &
+                        p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) + &
+                            dscale * p_DcubWeight(icubp,iel) * dbasJ * dbasIx
+
+                    p_DlocalMatrixIntl2(ivar,jdofe,idofe,iel) = &
+                        p_DlocalMatrixIntl2(ivar,jdofe,idofe,iel) + &
+                            dscale * p_DcubWeight(icubp,iel) * dbasJ * dbasIy
+
+                    p_DlocalMatrixIntl3(ivar,jdofe,idofe,iel) = &
+                        p_DlocalMatrixIntl3(ivar,jdofe,idofe,iel) + &
+                            dscale * p_DcubWeight(icubp,iel) * dbasJ * dbasIz
+                  end do ! ivar
+
+                end do ! jdofe
+
+              end do ! idofe
+
+            end do ! icubp
+
+          end do ! iel
+
+        end select
+
+      else
+      
+        ! -----------------------
+        ! Vector-valued FE space.
+        ! -----------------------
+        ! This implementation works for all types of finite elements, but it
+        ! is slightly slower for scalar FE spaces due to an additional inner loop.
+      
+        ! Get the matrix data      
+        p_DlocalMatrixIntl => RmatrixData(iy,ix)%p_DentryIntl
+
+        ! What's the dimension?
+        select case (rmatrixAssembly%p_rtriangulation%ndim)
+
+        case (NDIM1D)
+        
+          ! *****************
+          ! 1D gradient matrix
+          ! *****************
+          
+          ! Does not apply. A vector-valued FE-space in 1D is scalar-valued,
+          ! so this case will never be called.
+
+        case (NDIM2D)
+
+          ! *****************
+          ! 2D gradient matrix
+          ! *****************
+
+          ! Loop over the elements in the current set.
+          do iel = 1,nelements
+
+            ! Loop over all cubature points on the current element
+            do icubp = 1,npointsPerElement
+
+              ! Outer loop over the DOF's i=1..ndof on our current element,
+              ! which corresponds to the (test) basis functions Phi_i:
+              do idofe=1,p_rmatrixData%ndofTest
+
+                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! into dbasI
+                dbasIx = p_DbasTest(&
+                    idofe+0*p_rmatrixData%ndofTest,DER_DERIV2D_X,icubp,iel)
+                dbasIy = p_DbasTest(&
+                    idofe+1*p_rmatrixData%ndofTest,DER_DERIV2D_Y,icubp,iel)
+
+                ! Inner loop over the DOF's j=1..ndof, which corresponds to
+                ! the basis function Phi_j:
+                do jdofe=1,p_rmatrixData%ndofTrial
+
+                  ! Fetch the contributions of the (trial) basis function Phi_j
+                  ! into dbasJ
+                  dbasJ = p_DbasTrial(jdofe,DER_FUNC2D,icubp,iel)
+
+                  do ivar = 1,nvar
+
+                    ! Multiply the values of the basis functions
+                    ! (1st derivatives) by the cubature weight and sum up
+                    ! into the local matrices.
+                    p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) = &
+                        p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) + &
+                            dscale * p_DcubWeight(icubp,iel) * dbasJ * ( dbasIx + dbasIy )
+
+                  end do ! ivar
+
+                end do ! jdofe
+
+              end do ! idofe
+                
+            end do ! icubp
+
+          end do ! iel
+
+        case (NDIM3D)
+
+          ! *****************
+          ! 3D gradient matrix
+          ! *****************
+
+          ! Loop over the elements in the current set.
+          do iel = 1,nelements
+
+            ! Loop over all cubature points on the current element
+            do icubp = 1,npointsPerElement
+
+              ! Outer loop over the DOF's i=1..ndof on our current element,
+              ! which corresponds to the (test) basis functions Phi_i:
+              do idofe=1,p_rmatrixData%ndofTest
+
+                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! into dbasI
+                dbasIx = p_DbasTest(&
+                    idofe+0*p_rmatrixData%ndofTest,DER_DERIV3D_X,icubp,iel)
+                dbasIy = p_DbasTest(&
+                    idofe+1*p_rmatrixData%ndofTest,DER_DERIV3D_Y,icubp,iel)
+                dbasIz = p_DbasTest(&
+                    idofe+2*p_rmatrixData%ndofTest,DER_DERIV3D_Z,icubp,iel)
+
+                ! Inner loop over the DOF's j=1..ndof, which corresponds to
+                ! the basis function Phi_j:
+                do jdofe=1,p_rmatrixData%ndofTrial
+
+                  ! Fetch the contributions of the (trial) basis function Phi_j
+                  ! into dbasJ
+                  dbasJ = p_DbasTrial(jdofe,DER_FUNC3D,icubp,iel)
+
+                  do ivar = 1,nvar
+
+                    ! Multiply the values of the basis functions
+                    ! (1st derivatives) by the cubature weight and sum up
+                    ! into the local matrices.
+                    p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) = &
+                        p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) + &
+                            dscale * p_DcubWeight(icubp,iel) * dbasJ * ( dbasIx + dbasIy + dbasIz )
+
+                  end do ! ivar
+
+                end do ! jdofe
+
+              end do ! idimfe
+
+            end do ! icubp
+
+          end do ! iel
+
+        end select
+
+      end if      
+
+    end if
+
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine bma_fcalc_divergence(RmatrixData,rassemblyData,rmatrixAssembly,&
+      npointsPerElement,nelements,revalVectors,rcollection)
+
+!<description>  
+    ! Calculates the divergence operator at position (x,y) in a block matrix:
+    !
+    !    ( div v, q )
+    !
+    ! Note: If rcollection is not specified, the matrix is calculated
+    ! at matrix position (1,1) with a multiplier of 1.
+    ! If rcollection is specified, the following parameters are expected:
+    !   rcollection%DquickAccess(1) = multiplier in front of the matrix.
+    !   rcollection%IquickAccess(1) = x-coordinate in the block matrix
+    !   rcollection%IquickAccess(2) = y-coordinate in the block matrix
+    ! For scalar-valued v-spaces, the divergence operator is
+    ! imposed to the matrices (y,x), (y,x+1), (y,x+2). It is assumed that
+    ! the subspaces in v_i are all of the same FE type.
+    ! For vector-valued v-spaces, the divergence operator is imposed
+    ! to the matrix at position (x,y).
+!</description>
+
+!<inputoutput>
+    ! Matrix data of all matrices. The arrays p_Dentry of all submatrices
+    ! have to be filled with data.
+    type(t_bmaMatrixData), dimension(:,:), intent(inout), target :: RmatrixData
+!</inputoutput>
+
+!<input>
+    ! Data necessary for the assembly. Contains determinants and
+    ! cubature weights for the cubature,...
+    type(t_bmaMatrixAssemblyData), intent(in) :: rassemblyData
+
+    ! Structure with all data about the assembly
+    type(t_bmaMatrixAssembly), intent(in) :: rmatrixAssembly
+
+    ! Number of points per element
+    integer, intent(in) :: npointsPerElement
+
+    ! Number of elements
+    integer, intent(in) :: nelements
+
+    ! Values of FEM functions automatically evaluated in the
+    ! cubature points.
+    type(t_fev2Vectors), intent(in) :: revalVectors
+
+    ! User defined collection structure
+    type(t_collection), intent(inout), target, optional :: rcollection
+!</input>
+
+!<subroutine>
+
+    real(DP) :: dbasI, dbasJx, dbasJy, dbasJz
+    integer :: iel, icubp, idofe, jdofe, ivar, nvar
+    real(DP), dimension(:,:,:), pointer :: p_DlocalMatrix,p_DlocalMatrix2,p_DlocalMatrix3
+    real(DP), dimension(:,:,:,:), pointer :: p_DlocalMatrixIntl,p_DlocalMatrixIntl2,p_DlocalMatrixIntl3
+    real(DP), dimension(:,:,:,:), pointer :: p_DbasTrial,p_DbasTest
+    real(DP), dimension(:,:), pointer :: p_DcubWeight
+    type(t_bmaMatrixData), pointer :: p_rmatrixData
+
+    integer :: ix, iy, ndimfe, idimfe
+    real(DP) :: dscale
+
+    ! Get parameters
+    dscale = 1.0_DP
+    iy = 1
+    ix = 1
+
+    if (present(rcollection)) then
+      dscale = rcollection%DquickAccess(1)
+      ix = rcollection%IquickAccess(1)
+      iy = rcollection%IquickAccess(2)
+
+      ! Cancel if nothing to do or parameters wrong
+      if (dscale .eq. 0.0_DP) return
+
+      if ((ix .lt. 1) .or. (iy .lt. 1) .or. &
+          (ix .gt. ubound(RmatrixData,2)) .or. (iy .gt. ubound(RmatrixData,1))) then
+        call output_line ("Parameters wrong.",&
+            OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_divergence")
+        call sys_halt()
+      end if
+
+    end if
+
+    ! Get cubature weights data
+    p_DcubWeight => rassemblyData%p_DcubWeight
+
+    ! Get local data
+    p_rmatrixData => RmatrixData(iy,ix)
+    p_DbasTrial => RmatrixData(iy,ix)%p_DbasTrial
+    p_DbasTest => RmatrixData(iy,ix)%p_DbasTest
+
+    ! FE space dimension
+    ndimfe = RmatrixData(iy,ix)%ndimfeTrial
+    
+    if (RmatrixData(iy,ix)%ndimfeTest .ne. 1) then
+      ! This does not make sense.
+      call output_line ("Test-space must be scalar-valued.",&
+          OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_gradientdiv")
+      call sys_halt()
+    end if
+
+    ! Interleaved matrix?
+    if (.not. p_rmatrixData%bisInterleaved) then
+
+      if (ndimfe .eq. 1) then
+
+        ! -----------------------
+        ! Scalar-valued FE space. 
+        ! -----------------------
+        ! This IF command prevents an inner IF command and speeds 
+        ! up the computation for all scalar standard FE spaces.
+
+        ! What's the dimension?
+        select case (rmatrixAssembly%p_rtriangulation%ndim)
+
+        case (NDIM1D)
+
+          ! *****************
+          ! 1D divergence matrix
+          ! *****************
+
+          ! Get the matrix data
+          p_DlocalMatrix => RmatrixData(iy,ix)%p_Dentry
+
+          ! Loop over the elements in the current set.
+          do iel = 1,nelements
+
+            ! Loop over all cubature points on the current element
+            do icubp = 1,npointsPerElement
+
+              ! Outer loop over the DOF's i=1..ndof on our current element,
+              ! which corresponds to the (test) basis functions Phi_i:
+              do idofe=1,p_rmatrixData%ndofTest
+
+                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! into dbasI
+                dbasI = p_DbasTest(idofe,DER_FUNC1D,icubp,iel)
+
+                ! Inner loop over the DOF's j=1..ndof, which corresponds to
+                ! the basis function Phi_j:
+                do jdofe=1,p_rmatrixData%ndofTrial
+
+                  ! Fetch the contributions of the (trial) basis function Phi_j
+                  ! into dbasJ
+                  dbasJx = p_DbasTrial(jdofe,DER_DERIV1D_X,icubp,iel)
+
+                  ! Multiply the values of the basis functions
+                  ! (1st derivatives) by the cubature weight and sum up
+                  ! into the local matrices.
+                  p_DlocalMatrix(jdofe,idofe,iel) = p_DlocalMatrix(jdofe,idofe,iel) + &
+                      dscale * p_DcubWeight(icubp,iel) * dbasJx*dbasI
+
+                end do ! jdofe
+
+              end do ! idofe
+
+            end do ! icubp
+
+          end do ! iel
+
+        case (NDIM2D)
+
+          ! *****************
+          ! 2D divergence matrix
+          ! *****************
+
+          ! Get the matrix data
+          p_DlocalMatrix => RmatrixData(iy,ix)%p_Dentry
+          p_DlocalMatrix2 => RmatrixData(iy+1,ix)%p_Dentry
+
+          ! Loop over the elements in the current set.
+          do iel = 1,nelements
+
+            ! Loop over all cubature points on the current element
+            do icubp = 1,npointsPerElement
+
+              ! Outer loop over the DOF's i=1..ndof on our current element,
+              ! which corresponds to the (test) basis functions Phi_i:
+              do idofe=1,p_rmatrixData%ndofTest
+
+                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! into dbasI
+                dbasI = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
+
+                ! Inner loop over the DOF's j=1..ndof, which corresponds to
+                ! the basis function Phi_j:
+                do jdofe=1,p_rmatrixData%ndofTrial
+
+                  ! Fetch the contributions of the (trial) basis function Phi_j
+                  ! into dbasJ
+                  dbasJx = p_DbasTrial(jdofe,DER_DERIV2D_X,icubp,iel)
+                  dbasJy = p_DbasTrial(jdofe,DER_DERIV2D_Y,icubp,iel)
+
+                  ! Multiply the values of the basis functions
+                  ! (1st derivatives) by the cubature weight and sum up
+                  ! into the local matrices.
+                  p_DlocalMatrix(jdofe,idofe,iel) = p_DlocalMatrix(jdofe,idofe,iel) + &
+                      dscale * p_DcubWeight(icubp,iel) * dbasJx * dbasI
+
+                  p_DlocalMatrix2(jdofe,idofe,iel) = p_DlocalMatrix2(jdofe,idofe,iel) + &
+                      dscale * p_DcubWeight(icubp,iel) * dbasJy * dbasI
+
+                end do ! jdofe
+
+              end do ! idofe
+
+            end do ! icubp
+
+          end do ! iel
+
+        case (NDIM3D)
+
+          ! *****************
+          ! 3D divergence matrix
+          ! *****************
+
+          ! Get the matrix data
+          p_DlocalMatrix => RmatrixData(iy,ix)%p_Dentry
+          p_DlocalMatrix2 => RmatrixData(iy+1,ix)%p_Dentry
+          p_DlocalMatrix3 => RmatrixData(iy+2,ix)%p_Dentry
+
+          ! Loop over the elements in the current set.
+          do iel = 1,nelements
+
+            ! Loop over all cubature points on the current element
+            do icubp = 1,npointsPerElement
+
+              ! Outer loop over the DOF's i=1..ndof on our current element,
+              ! which corresponds to the (test) basis functions Phi_i:
+              do idofe=1,p_rmatrixData%ndofTest
+
+                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! into dbasI
+                dbasI = p_DbasTest(idofe,DER_FUNC3D,icubp,iel)
+
+                ! Inner loop over the DOF's j=1..ndof, which corresponds to
+                ! the basis function Phi_j:
+                do jdofe=1,p_rmatrixData%ndofTrial
+
+                  ! Fetch the contributions of the (trial) basis function Phi_j
+                  ! into dbasJ
+                  dbasJx = p_DbasTrial(jdofe,DER_DERIV3D_X,icubp,iel)
+                  dbasJy = p_DbasTrial(jdofe,DER_DERIV3D_Y,icubp,iel)
+                  dbasJz = p_DbasTrial(jdofe,DER_DERIV3D_Z,icubp,iel)
+
+                  ! Multiply the values of the basis functions
+                  ! (1st derivatives) by the cubature weight and sum up
+                  ! into the local matrices.
+                  p_DlocalMatrix(jdofe,idofe,iel) = p_DlocalMatrix(jdofe,idofe,iel) + &
+                      dscale * p_DcubWeight(icubp,iel) * dbasJx * dbasI
+
+                  p_DlocalMatrix2(jdofe,idofe,iel) = p_DlocalMatrix2(jdofe,idofe,iel) + &
+                      dscale * p_DcubWeight(icubp,iel) * dbasJy * dbasI
+
+                  p_DlocalMatrix3(jdofe,idofe,iel) = p_DlocalMatrix3(jdofe,idofe,iel) + &
+                      dscale * p_DcubWeight(icubp,iel) * dbasJz * dbasI
+                end do ! jdofe
+
+              end do ! idofe
+
+            end do ! icubp
+
+          end do ! iel
+
+        end select
+        
+      else
+
+        ! -----------------------
+        ! Vector-valued FE space.
+        ! -----------------------
+        ! This implementation works for all types of finite elements, but it
+        ! is slightly slower for scalar FE spaces due to an additional inner loop.
+
+        ! Get the matrix data
+        p_DlocalMatrix => RmatrixData(iy,ix)%p_Dentry
+
+        ! What's the dimension?
+        select case (rmatrixAssembly%p_rtriangulation%ndim)
+
+        case (NDIM1D)
+
+          ! *****************
+          ! 1D divergence matrix
+          ! *****************
+
+          ! Does not apply. A vector-valued FE-space in 1D is scalar-valued,
+          ! so this case will never be called.
+
+        case (NDIM2D)
+
+          ! *****************
+          ! 2D divergence matrix
+          ! *****************
+
+          ! Loop over the elements in the current set.
+          do iel = 1,nelements
+
+            ! Loop over all cubature points on the current element
+            do icubp = 1,npointsPerElement
+
+              ! Outer loop over the DOF's i=1..ndof on our current element,
+              ! which corresponds to the (test) basis functions Phi_i:
+              do idofe=1,p_rmatrixData%ndofTest
+
+                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! into dbasI
+                dbasI = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
+
+                ! Inner loop over the DOF's j=1..ndof, which corresponds to
+                ! the basis function Phi_j:
+                do jdofe=1,p_rmatrixData%ndofTrial
+
+                  ! Fetch the contributions of the (trial) basis function Phi_j
+                  ! into dbasJ
+                  dbasJx = p_DbasTrial(&
+                      jdofe+0*p_rmatrixData%ndofTrial,DER_DERIV2D_X,icubp,iel)
+                  dbasJy = p_DbasTrial(&
+                      jdofe+1*p_rmatrixData%ndofTrial,DER_DERIV2D_Y,icubp,iel)
+
+                  ! Multiply the values of the basis functions
+                  ! (1st derivatives) by the cubature weight and sum up
+                  ! into the local matrices.
+                  p_DlocalMatrix(jdofe,idofe,iel) = p_DlocalMatrix(jdofe,idofe,iel) + &
+                      dscale * p_DcubWeight(icubp,iel) * ( dbasJx + dbasJy ) * dbasI
+
+                end do ! jdofe
+
+              end do ! idofe
+                
+            end do ! icubp
+
+          end do ! iel
+
+        case (NDIM3D)
+
+          ! *****************
+          ! 3D divergence matrix
+          ! *****************
+
+          ! Loop over the elements in the current set.
+          do iel = 1,nelements
+
+            ! Loop over all cubature points on the current element
+            do icubp = 1,npointsPerElement
+
+              ! Outer loop over the DOF's i=1..ndof on our current element,
+              ! which corresponds to the (test) basis functions Phi_i:
+              do idofe=1,p_rmatrixData%ndofTest
+
+                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! into dbasI
+                dbasI = p_DbasTest(idofe,DER_FUNC3D,icubp,iel)
+
+                ! Inner loop over the DOF's j=1..ndof, which corresponds to
+                ! the basis function Phi_j:
+                do jdofe=1,p_rmatrixData%ndofTrial
+
+                  ! Fetch the contributions of the (trial) basis function Phi_j
+                  ! into dbasJ
+                  dbasJx = p_DbasTrial(&
+                      jdofe+0*p_rmatrixData%ndofTrial,DER_DERIV3D_X,icubp,iel)
+                  dbasJy = p_DbasTrial(&
+                      jdofe+1*p_rmatrixData%ndofTrial,DER_DERIV3D_Y,icubp,iel)
+                  dbasJz = p_DbasTrial(&
+                      jdofe+2*p_rmatrixData%ndofTrial,DER_DERIV3D_Z,icubp,iel)
+
+                  ! Multiply the values of the basis functions
+                  ! (1st derivatives) by the cubature weight and sum up
+                  ! into the local matrices.
+                  p_DlocalMatrix(jdofe,idofe,iel) = p_DlocalMatrix(jdofe,idofe,iel) + &
+                      dscale * p_DcubWeight(icubp,iel) * &
+                              ( dbasJx + dbasJy + dbasJz ) * dbasI
+
+                end do ! jdofe
+
+              end do ! idofe
+
+            end do ! icubp
+
+          end do ! iel
+
+        end select
+
+      end if
+
+    else
+
+      ! Interleave-data
+      nvar = RmatrixData(iy,ix)%nvar
+
+      if (ndimfe .eq. 1) then
+
+        ! -----------------------
+        ! Scalar-valued FE space. 
+        ! -----------------------
+        ! This IF command prevents an inner IF command and speeds 
+        ! up the computation for all scalar standard FE spaces.
+
+        ! What's the dimension?
+        select case (rmatrixAssembly%p_rtriangulation%ndim)
+
+        case (NDIM1D)
+
+          ! *****************
+          ! 1D divergence matrix
+          ! *****************
+
+          ! Get the matrix data      
+          p_DlocalMatrixIntl => RmatrixData(iy,ix)%p_DentryIntl
+
+          ! Loop over the elements in the current set.
+          do iel = 1,nelements
+
+            ! Loop over all cubature points on the current element
+            do icubp = 1,npointsPerElement
+
+              ! Outer loop over the DOF's i=1..ndof on our current element,
+              ! which corresponds to the (test) basis functions Phi_i:
+              do idofe=1,p_rmatrixData%ndofTest
+
+                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! into dbasI
+                dbasI = p_DbasTest(idofe,DER_FUNC1D,icubp,iel)
+
+                ! Inner loop over the DOF's j=1..ndof, which corresponds to
+                ! the basis function Phi_j:
+                do jdofe=1,p_rmatrixData%ndofTrial
+
+                  ! Fetch the contributions of the (trial) basis function Phi_j
+                  ! into dbasJ
+                  dbasJx = p_DbasTrial(jdofe,DER_DERIV1D_X,icubp,iel)
+
+                  do ivar = 1,nvar
+
+                    ! Multiply the values of the basis functions
+                    ! (1st derivatives) by the cubature weight and sum up
+                    ! into the local matrices.
+                    p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) = &
+                        p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) + &
+                          dscale * p_DcubWeight(icubp,iel) * dbasJx * dbasI
+
+                  end do ! ivar
+
+                end do ! jdofe
+
+              end do ! idofe
+
+            end do ! icubp
+
+          end do ! iel
+
+        case (NDIM2D)
+
+          ! *****************
+          ! 2D divergence matrix
+          ! *****************
+
+          ! Get the matrix data      
+          p_DlocalMatrixIntl => RmatrixData(iy,ix)%p_DentryIntl
+          p_DlocalMatrixIntl2 => RmatrixData(iy+1,ix)%p_DentryIntl
+
+          ! Loop over the elements in the current set.
+          do iel = 1,nelements
+
+            ! Loop over all cubature points on the current element
+            do icubp = 1,npointsPerElement
+
+              ! Outer loop over the DOF's i=1..ndof on our current element,
+              ! which corresponds to the (test) basis functions Phi_i:
+              do idofe=1,p_rmatrixData%ndofTest
+
+                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! into dbasI
+                dbasI = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
+
+                ! Inner loop over the DOF's j=1..ndof, which corresponds to
+                ! the basis function Phi_j:
+                do jdofe=1,p_rmatrixData%ndofTrial
+
+                  ! Fetch the contributions of the (trial) basis function Phi_j
+                  ! into dbasJ
+                  dbasJx = p_DbasTrial(jdofe,DER_DERIV2D_X,icubp,iel)
+                  dbasJy = p_DbasTrial(jdofe,DER_DERIV2D_Y,icubp,iel)
+
+                  do ivar = 1,nvar
+
+                    ! Multiply the values of the basis functions
+                    ! (1st derivatives) by the cubature weight and sum up
+                    ! into the local matrices.
+                    p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) = &
+                        p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) + &
+                            dscale * p_DcubWeight(icubp,iel) * dbasJx * dbasI
+
+                    p_DlocalMatrixIntl2(ivar,jdofe,idofe,iel) = &
+                        p_DlocalMatrixIntl2(ivar,jdofe,idofe,iel) + &
+                            dscale * p_DcubWeight(icubp,iel) * dbasJy * dbasI
+
+                  end do ! ivar
+
+                end do ! jdofe
+
+              end do ! idofe
+
+            end do ! icubp
+
+          end do ! iel
+
+        case (NDIM3D)
+
+          ! *****************
+          ! 3D divergence matrix
+          ! *****************
+
+          ! Get the matrix data      
+          p_DlocalMatrixIntl => RmatrixData(iy,ix)%p_DentryIntl
+          p_DlocalMatrixIntl2 => RmatrixData(iy+1,ix)%p_DentryIntl
+          p_DlocalMatrixIntl3 => RmatrixData(iy+2,ix)%p_DentryIntl
+
+          ! Loop over the elements in the current set.
+          do iel = 1,nelements
+
+            ! Loop over all cubature points on the current element
+            do icubp = 1,npointsPerElement
+
+              ! Outer loop over the DOF's i=1..ndof on our current element,
+              ! which corresponds to the (test) basis functions Phi_i:
+              do idofe=1,p_rmatrixData%ndofTest
+
+                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! into dbasI
+                dbasI = p_DbasTest(idofe,DER_FUNC3D,icubp,iel)
+
+                ! Inner loop over the DOF's j=1..ndof, which corresponds to
+                ! the basis function Phi_j:
+                do jdofe=1,p_rmatrixData%ndofTrial
+
+                  ! Fetch the contributions of the (trial) basis function Phi_j
+                  ! into dbasJ
+                  dbasJx = p_DbasTrial(jdofe,DER_DERIV3D_X,icubp,iel)
+                  dbasJy = p_DbasTrial(jdofe,DER_DERIV3D_Y,icubp,iel)
+                  dbasJz = p_DbasTrial(jdofe,DER_DERIV3D_Z,icubp,iel)
+
+                  do ivar = 1,nvar
+
+                    ! Multiply the values of the basis functions
+                    ! (1st derivatives) by the cubature weight and sum up
+                    ! into the local matrices.
+                    p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) = &
+                        p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) + &
+                            dscale * p_DcubWeight(icubp,iel) * dbasJx * dbasI
+
+                    p_DlocalMatrixIntl2(ivar,jdofe,idofe,iel) = &
+                        p_DlocalMatrixIntl2(ivar,jdofe,idofe,iel) + &
+                            dscale * p_DcubWeight(icubp,iel) * dbasJy * dbasI
+
+                    p_DlocalMatrixIntl3(ivar,jdofe,idofe,iel) = &
+                        p_DlocalMatrixIntl3(ivar,jdofe,idofe,iel) + &
+                            dscale * p_DcubWeight(icubp,iel) * dbasJz * dbasI
+                  end do ! ivar
+
+                end do ! jdofe
+
+              end do ! idofe
+
+            end do ! icubp
+
+          end do ! iel
+
+        end select
+
+      else
+      
+        ! -----------------------
+        ! Vector-valued FE space.
+        ! -----------------------
+        ! This implementation works for all types of finite elements, but it
+        ! is slightly slower for scalar FE spaces due to an additional inner loop.
+      
+        ! Get the matrix data      
+        p_DlocalMatrixIntl => RmatrixData(iy,ix)%p_DentryIntl
+
+        ! What's the dimension?
+        select case (rmatrixAssembly%p_rtriangulation%ndim)
+
+        case (NDIM1D)
+
+          ! *****************
+          ! 1D divergence matrix
+          ! *****************
+
+          ! Does not apply. A vector-valued FE-space in 1D is scalar-valued,
+          ! so this case will never be called.
+
+        case (NDIM2D)
+
+          ! *****************
+          ! 2D divergence matrix
+          ! *****************
+
+          ! Loop over the elements in the current set.
+          do iel = 1,nelements
+
+            ! Loop over all cubature points on the current element
+            do icubp = 1,npointsPerElement
+
+              ! Outer loop over the DOF's i=1..ndof on our current element,
+              ! which corresponds to the (test) basis functions Phi_i:
+              do idofe=1,p_rmatrixData%ndofTest
+
+                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! into dbasI
+                dbasI = p_DbasTest(&
+                    idofe,DER_FUNC2D,icubp,iel)
+
+                ! Inner loop over the DOF's j=1..ndof, which corresponds to
+                ! the basis function Phi_j:
+                do jdofe=1,p_rmatrixData%ndofTrial
+
+                  ! Fetch the contributions of the (trial) basis function Phi_j
+                  ! into dbasJ
+                  dbasJx = p_DbasTrial(&
+                      jdofe+0*p_rmatrixData%ndofTrial,DER_DERIV2D_X,icubp,iel)
+                  dbasJy = p_DbasTrial(&
+                      jdofe+1*p_rmatrixData%ndofTrial,DER_DERIV2D_Y,icubp,iel)
+
+                  do ivar = 1,nvar
+
+                    ! Multiply the values of the basis functions
+                    ! (1st derivatives) by the cubature weight and sum up
+                    ! into the local matrices.
+                    p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) = &
+                        p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) + &
+                            dscale * p_DcubWeight(icubp,iel) * ( dbasJx + dbasJy ) * dbasI
+
+                  end do ! ivar
+
+                end do ! jdofe
+
+              end do ! idofe
+
+            end do ! icubp
+
+          end do ! iel
+
+        case (NDIM3D)
+
+          ! *****************
+          ! 3D divergence matrix
+          ! *****************
+
+          ! Loop over the elements in the current set.
+          do iel = 1,nelements
+
+            ! Loop over all cubature points on the current element
+            do icubp = 1,npointsPerElement
+
+              ! Outer loop over the DOF's i=1..ndof on our current element,
+              ! which corresponds to the (test) basis functions Phi_i:
+              do idofe=1,p_rmatrixData%ndofTest
+
+                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! into dbasI
+                dbasI = p_DbasTest(idofe,DER_FUNC3D,icubp,iel)
+
+                ! Inner loop over the DOF's j=1..ndof, which corresponds to
+                ! the basis function Phi_j:
+                do jdofe=1,p_rmatrixData%ndofTrial
+
+                  ! Fetch the contributions of the (trial) basis function Phi_j
+                  ! into dbasJ
+                  dbasJx = p_DbasTrial(&
+                      jdofe+0*p_rmatrixData%ndofTrial,DER_DERIV3D_X,icubp,iel)
+                  dbasJy = p_DbasTrial(&
+                      jdofe+1*p_rmatrixData%ndofTrial,DER_DERIV3D_Y,icubp,iel)
+                  dbasJz = p_DbasTrial(&
+                      jdofe+2*p_rmatrixData%ndofTrial,DER_DERIV3D_Z,icubp,iel)
+
+                  do ivar = 1,nvar
+
+                    ! Multiply the values of the basis functions
+                    ! (1st derivatives) by the cubature weight and sum up
+                    ! into the local matrices.
+                    p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) = &
+                        p_DlocalMatrixIntl(ivar,jdofe,idofe,iel) + &
+                            dscale * p_DcubWeight(icubp,iel) * &
+                            ( dbasJx + dbasJy + dbasJz ) * dbasI
+
+                  end do ! ivar
+
+                end do ! jdofe
+
+              end do ! idofe
 
             end do ! icubp
 
