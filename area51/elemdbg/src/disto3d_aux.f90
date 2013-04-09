@@ -49,6 +49,7 @@ use cubature
 use basicgeometry
 use transformation
 use triangulation
+use random
 
 implicit none
 
@@ -541,42 +542,51 @@ contains
 
 !</subroutine>
 
-  real(DP), parameter :: dtol = 1e-8_DP
-
   ! local variables
+  type(t_random) :: rrng
   real(DP), dimension(:,:), pointer :: p_Dvtx
-  real(DP) :: dhdist,dh2
-  integer :: ivt,iX,iY,iZ
+  real(DP) :: dhdist,dhdist2,dh,dtol,dx,dy,dz
+  integer :: i,ivt,idx,invt
+  integer(i32) :: iv
 
-    ! Calculate number of vertices in each dimension
-    dh2 = real(rtria%NVT,DP)**(1.0_DP/3.0_DP)
+    ! Compute inverse mesh width
+    dh = real(rtria%NVT,DP)**(1.0_DP/3.0_DP) - 1.0_DP
     
-    ! Calculate distortion parameter
-    dhdist = ddist / (dh2 + 1.0_DP)
+    ! compute tolerance for boundary vertices
+    dtol = 0.5_DP / dh
+    
+    ! Compute number of vertices per dimension
+    invt = int(dh) + 1
+    
+    ! Compute distortion parameters
+    dhdist = ddist / dh
     if(dhdist .eq. 0.0_DP) return
     
     ! Get arrays from the triangulation
     call storage_getbase_double2d (rtria%h_DvertexCoords, p_Dvtx)
-    
+
+    ! seed the rng with the vertex count
+    call rng_init(rrng, rtria%NVT)
+
     ! Loop over the vertices
     do ivt = 1, rtria%NVT
-    
-      ! Calculate the X-, Y- and Z-position of this vertice
-      iX = int(p_Dvtx(1,ivt) * dh2) + 1
-      iY = int(p_Dvtx(2,ivt) * dh2) + 1
-      iZ = int(p_Dvtx(3,ivt) * dh2) + 1
+      
+      ! compute distortion
+      call rng_get_int32(rrng, iv)
+      dx = real(1 - iand(ishft(iv,-1), 2), DP)*dhdist
+      dy = real(1 - iand(ishft(iv,-2), 2), DP)*dhdist
+      dz = real(1 - iand(ishft(iv,-3), 2), DP)*dhdist
       
       ! Distort the vertice's coordiantes.
-      ! We also need to distort the
       if((p_Dvtx(1,ivt) .gt. dtol) .and. (p_Dvtx(1,ivt)+dtol .lt. 1.0_DP)) &
-        p_Dvtx(1,ivt) = p_Dvtx(1,ivt) + real((-1)**mod(3*iX,17),DP)*dhdist
+        p_Dvtx(1,ivt) = p_Dvtx(1,ivt) + dx
       if((p_Dvtx(2,ivt) .gt. dtol) .and. (p_Dvtx(2,ivt)+dtol .lt. 1.0_DP)) &
-        p_Dvtx(2,ivt) = p_Dvtx(2,ivt) + real((-1)**mod(5*iY,17),DP)*dhdist
+        p_Dvtx(2,ivt) = p_Dvtx(2,ivt) + dy
       if((p_Dvtx(3,ivt) .gt. dtol) .and. (p_Dvtx(3,ivt)+dtol .lt. 1.0_DP)) &
-        p_Dvtx(3,ivt) = p_Dvtx(3,ivt) + real((-1)**mod(7*iZ,17),DP)*dhdist
-        
-    end do
+        p_Dvtx(3,ivt) = p_Dvtx(3,ivt) + dz
 
+    end do
+    
   end subroutine
 
   ! ***************************************************************************
@@ -603,9 +613,11 @@ contains
 !</subroutine>
 
   ! local variables
+  type(t_random) :: rrng
   real(DP), dimension(:,:), pointer :: p_Dvtx
-  real(DP) :: dhdist,dhdist2,dh,dtol
-  integer :: ivt,idx,invt
+  real(DP) :: dhdist,dhdist2,dh,dtol,dx,dy,dz
+  integer :: i,ivt,idx,invt
+  integer(i32) :: iv
 
     ! Compute inverse mesh width
     dh = real(rtria%NVT,DP)**(1.0_DP/3.0_DP) - 1.0_DP
@@ -628,16 +640,27 @@ contains
     do ivt = 1, rtria%NVT
 
       ! Calculate plane index
-      idx = int(p_Dvtx(1,ivt) * dh)*invt + int(p_Dvtx(2,ivt) * dh)
+      idx = int(p_Dvtx(1,ivt) * dh)*invt + int(p_Dvtx(2,ivt) * dh) + 1
 
+      ! seed the rng with the plane index and advance it a few steps
+      call rng_init(rrng, idx)
+      do i = 1, mod(idx,7)
+        call rng_advance(rrng)
+      end do
+      
+      ! compute distortion
+      call rng_get_int32(rrng, iv)
+      dx = real(1 - iand(ishft(iv,-1), 2), DP)*dhdist
+      dy = real(1 - iand(ishft(iv,-2), 2), DP)*dhdist
+      dz = real(1 - iand(ishft(iv,-3), 2), DP)*dhdist2
+      
       ! Distort the vertice's coordiantes.
-      ! We also need to distort the
       if((p_Dvtx(1,ivt) .gt. dtol) .and. (p_Dvtx(1,ivt)+dtol .lt. 1.0_DP)) &
-        p_Dvtx(1,ivt) = p_Dvtx(1,ivt) + real((-1)**mod(idx,17),DP)*dhdist
+        p_Dvtx(1,ivt) = p_Dvtx(1,ivt) + dx
       if((p_Dvtx(2,ivt) .gt. dtol) .and. (p_Dvtx(2,ivt)+dtol .lt. 1.0_DP)) &
-        p_Dvtx(2,ivt) = p_Dvtx(2,ivt) + real((-1)**mod(idx+7,17),DP)*dhdist
+        p_Dvtx(2,ivt) = p_Dvtx(2,ivt) + dy
       if((p_Dvtx(3,ivt) .gt. dtol) .and. (p_Dvtx(3,ivt)+dtol .lt. 1.0_DP)) &
-        p_Dvtx(3,ivt) = p_Dvtx(3,ivt) + real((-1)**mod(ivt,17),DP)*dhdist2
+        p_Dvtx(3,ivt) = p_Dvtx(3,ivt) + dz
 
     end do
 
@@ -667,9 +690,11 @@ contains
 !</subroutine>
 
   ! local variables
+  type(t_random) :: rrng
   real(DP), dimension(:,:), pointer :: p_Dvtx
-  real(DP) :: dhdist,dhdist2,dh,dtol
-  integer :: ivt,idx,invt
+  real(DP) :: dhdist,dhdist2,dh,dtol,dx,dy,dz
+  integer :: i,ivt,idx,invt
+  integer(i32) :: iv
 
     ! Compute inverse mesh width
     dh = real(rtria%NVT,DP)**(1.0_DP/3.0_DP) - 1.0_DP
@@ -692,16 +717,27 @@ contains
     do ivt = 1, rtria%NVT
 
       ! Calculate plane index
-      idx = int(p_Dvtx(1,ivt) * dh)*invt + int(p_Dvtx(3,ivt) * dh)
+      idx = int(p_Dvtx(1,ivt) * dh)*invt + int(p_Dvtx(3,ivt) * dh) + 1
 
+      ! seed the rng with the plane index and advance it a few steps
+      call rng_init(rrng, idx)
+      do i = 1, mod(idx,7)
+        call rng_advance(rrng)
+      end do
+      
+      ! compute distortion
+      call rng_get_int32(rrng, iv)
+      dx = real(1 - iand(ishft(iv,-1), 2), DP)*dhdist
+      dy = real(1 - iand(ishft(iv,-2), 2), DP)*dhdist2
+      dz = real(1 - iand(ishft(iv,-3), 2), DP)*dhdist
+      
       ! Distort the vertice's coordiantes.
-      ! We also need to distort the
       if((p_Dvtx(1,ivt) .gt. dtol) .and. (p_Dvtx(1,ivt)+dtol .lt. 1.0_DP)) &
-        p_Dvtx(1,ivt) = p_Dvtx(1,ivt) + real((-1)**mod(idx,17),DP)*dhdist
+        p_Dvtx(1,ivt) = p_Dvtx(1,ivt) + dx
       if((p_Dvtx(2,ivt) .gt. dtol) .and. (p_Dvtx(2,ivt)+dtol .lt. 1.0_DP)) &
-        p_Dvtx(2,ivt) = p_Dvtx(2,ivt) + real((-1)**mod(ivt,17),DP)*dhdist2
+        p_Dvtx(2,ivt) = p_Dvtx(2,ivt) + dy
       if((p_Dvtx(3,ivt) .gt. dtol) .and. (p_Dvtx(3,ivt)+dtol .lt. 1.0_DP)) &
-        p_Dvtx(3,ivt) = p_Dvtx(3,ivt) + real((-1)**mod(idx+7,17),DP)*dhdist
+        p_Dvtx(3,ivt) = p_Dvtx(3,ivt) + dz
 
     end do
     
@@ -731,9 +767,11 @@ contains
 !</subroutine>
 
   ! local variables
+  type(t_random) :: rrng
   real(DP), dimension(:,:), pointer :: p_Dvtx
-  real(DP) :: dhdist,dhdist2,dh,dtol
-  integer :: ivt,idx,invt
+  real(DP) :: dhdist,dhdist2,dh,dtol,dx,dy,dz
+  integer :: i,ivt,idx,invt
+  integer(i32) :: iv
 
     ! Compute inverse mesh width
     dh = real(rtria%NVT,DP)**(1.0_DP/3.0_DP) - 1.0_DP
@@ -756,16 +794,27 @@ contains
     do ivt = 1, rtria%NVT
 
       ! Calculate plane index
-      idx = int(p_Dvtx(2,ivt) * dh)*invt + int(p_Dvtx(3,ivt) * dh)
+      idx = int(p_Dvtx(2,ivt) * dh)*invt + int(p_Dvtx(3,ivt) * dh) + 1
 
+      ! seed the rng with the plane index and advance it a few steps
+      call rng_init(rrng, idx)
+      do i = 1, mod(idx,7)
+        call rng_advance(rrng)
+      end do
+      
+      ! compute distortion
+      call rng_get_int32(rrng, iv)
+      dx = real(1 - iand(ishft(iv,-1), 2), DP)*dhdist2
+      dy = real(1 - iand(ishft(iv,-2), 2), DP)*dhdist
+      dz = real(1 - iand(ishft(iv,-3), 2), DP)*dhdist
+      
       ! Distort the vertice's coordiantes.
-      ! We also need to distort the
       if((p_Dvtx(1,ivt) .gt. dtol) .and. (p_Dvtx(1,ivt)+dtol .lt. 1.0_DP)) &
-        p_Dvtx(1,ivt) = p_Dvtx(1,ivt) + real((-1)**mod(ivt,17),DP)*dhdist2
+        p_Dvtx(1,ivt) = p_Dvtx(1,ivt) + dx
       if((p_Dvtx(2,ivt) .gt. dtol) .and. (p_Dvtx(2,ivt)+dtol .lt. 1.0_DP)) &
-        p_Dvtx(2,ivt) = p_Dvtx(2,ivt) + real((-1)**mod(idx,17),DP)*dhdist
+        p_Dvtx(2,ivt) = p_Dvtx(2,ivt) + dy
       if((p_Dvtx(3,ivt) .gt. dtol) .and. (p_Dvtx(3,ivt)+dtol .lt. 1.0_DP)) &
-        p_Dvtx(3,ivt) = p_Dvtx(3,ivt) + real((-1)**mod(idx+7,17),DP)*dhdist
+        p_Dvtx(3,ivt) = p_Dvtx(3,ivt) + dz
 
     end do
     

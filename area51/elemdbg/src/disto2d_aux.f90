@@ -28,6 +28,7 @@ use storage
 use cubature
 use transformation
 use triangulation
+use random
 
 implicit none
 
@@ -56,22 +57,25 @@ contains
 
 !</subroutine>
 
-  real(DP), parameter :: dtol = 1e-8_DP
-
   ! local variables
+  type(t_random) :: rrng
   real(DP), dimension(:,:), pointer :: p_Dvtx
-  real(DP) :: dhdist,dhdist2,dh2
-  integer :: ivt,iX,iY,invt
+  real(DP) :: dhdist,dhdist2,dh,dtol,dx,dy
+  integer :: i,ivt,idx,invt
+  integer(i32) :: iv
 
-    ! Calculate number of vertices in each dimension
-    dh2 = sqrt(real(rtria%NVT,DP))
+    ! Compute inverse mesh width
+    dh = sqrt(real(rtria%NVT,DP)) - 1.0_DP
     
-    ! Get number of vertices
-    invt = int(dh2) + 10
+    ! compute tolerance for boundary vertices
+    dtol = 0.5_DP / dh
     
-    ! Calculate distortion parameters
-    dhdist = ddist / (dh2 + 1.0_DP)
-    dhdist2 = dsecDist / (dh2 + 1.0_DP)
+    ! Compute number of vertices per dimension
+    invt = int(dh) + 1
+    
+    ! Compute distortion parameters
+    dhdist = ddist / dh
+    dhdist2 = dsecDist / dh
     if((dhdist .eq. 0.0_DP) .and. (dhdist2 .eq. 0.0_DP)) return
     
     ! Get arrays from the triangulation
@@ -79,19 +83,29 @@ contains
     
     ! Loop over the vertices
     do ivt = 1, rtria%NVT
-    
-      ! Calculate the X- and Y-position of this vertice
-      iX = int(p_Dvtx(1,ivt) * dh2) + 1
-      iY = int(p_Dvtx(2,ivt) * dh2) + 1
+
+      ! Calculate line index
+      idx = int(p_Dvtx(1,ivt) * dh) + 1
+
+      ! seed the rng with the line index and advance it a few steps
+      call rng_init(rrng, idx)
+      do i = 1, mod(idx,7)
+        call rng_advance(rrng)
+      end do
+      
+      ! compute distortion
+      call rng_get_int32(rrng, iv)
+      dx = real(1 - iand(ishft(iv,-1), 2), DP)*dhdist
+      dy = real(1 - iand(ishft(iv,-2), 2), DP)*dhdist2
       
       ! Distort the vertice's coordiantes.
       if((p_Dvtx(1,ivt) .gt. dtol) .and. (p_Dvtx(1,ivt)+dtol .lt. 1.0_DP)) &
-        p_Dvtx(1,ivt) = p_Dvtx(1,ivt) + real((-1)**mod(iX,17),DP)*dhdist
+        p_Dvtx(1,ivt) = p_Dvtx(1,ivt) + dx
       if((p_Dvtx(2,ivt) .gt. dtol) .and. (p_Dvtx(2,ivt)+dtol .lt. 1.0_DP)) &
-        p_Dvtx(2,ivt) = p_Dvtx(2,ivt) + real((-1)**mod(ivt+7,17),DP)*dhdist2
-        
-    end do
+        p_Dvtx(2,ivt) = p_Dvtx(2,ivt) + dy
 
+    end do
+    
   end subroutine
 
   ! ***************************************************************************
@@ -117,22 +131,26 @@ contains
 
 !</subroutine>
 
-  real(DP), parameter :: dtol = 1e-8_DP
 
   ! local variables
+  type(t_random) :: rrng
   real(DP), dimension(:,:), pointer :: p_Dvtx
-  real(DP) :: dhdist,dhdist2,dh2
-  integer :: ivt,iX,iY,invt
+  real(DP) :: dhdist,dhdist2,dh,dtol,dx,dy
+  integer :: i,ivt,idx,invt
+  integer(i32) :: iv
 
-    ! Calculate number of vertices in each dimension
-    dh2 = sqrt(real(rtria%NVT,DP))
+    ! Compute inverse mesh width
+    dh = sqrt(real(rtria%NVT,DP)) - 1.0_DP
     
-    ! Get number of vertices
-    invt = int(dh2) + 10
+    ! compute tolerance for boundary vertices
+    dtol = 0.5_DP / dh
     
-    ! Calculate distortion parameters
-    dhdist = ddist / (dh2 + 1.0_DP)
-    dhdist2 = dsecDist / (dh2 + 1.0_DP)
+    ! Compute number of vertices per dimension
+    invt = int(dh) + 1
+    
+    ! Compute distortion parameters
+    dhdist = ddist / dh
+    dhdist2 = dsecDist / dh
     if((dhdist .eq. 0.0_DP) .and. (dhdist2 .eq. 0.0_DP)) return
     
     ! Get arrays from the triangulation
@@ -140,17 +158,27 @@ contains
     
     ! Loop over the vertices
     do ivt = 1, rtria%NVT
-    
-      ! Calculate the X- and Y-position of this vertice
-      iX = int(p_Dvtx(1,ivt) * dh2) + 1
-      iY = int(p_Dvtx(2,ivt) * dh2) + 1
+
+      ! Calculate line index
+      idx = int(p_Dvtx(2,ivt) * dh) + 1
+
+      ! seed the rng with the line index and advance it a few steps
+      call rng_init(rrng, idx)
+      do i = 1, mod(idx,7)
+        call rng_advance(rrng)
+      end do
+      
+      ! compute distortion
+      call rng_get_int32(rrng, iv)
+      dx = real(1 - iand(ishft(iv,-1), 2), DP)*dhdist2
+      dy = real(1 - iand(ishft(iv,-2), 2), DP)*dhdist
       
       ! Distort the vertice's coordiantes.
       if((p_Dvtx(1,ivt) .gt. dtol) .and. (p_Dvtx(1,ivt)+dtol .lt. 1.0_DP)) &
-        p_Dvtx(1,ivt) = p_Dvtx(1,ivt) + real((-1)**mod(ivt+7,17),DP)*dhdist2
+        p_Dvtx(1,ivt) = p_Dvtx(1,ivt) + dx
       if((p_Dvtx(2,ivt) .gt. dtol) .and. (p_Dvtx(2,ivt)+dtol .lt. 1.0_DP)) &
-        p_Dvtx(2,ivt) = p_Dvtx(2,ivt) + real((-1)**mod(iX,17),DP)*dhdist
-        
+        p_Dvtx(2,ivt) = p_Dvtx(2,ivt) + dy
+
     end do
 
   end subroutine

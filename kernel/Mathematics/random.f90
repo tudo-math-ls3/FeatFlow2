@@ -39,6 +39,7 @@ private
 public :: t_random
 public :: rng_init
 public :: rng_initByClock
+public :: rng_advance
 public :: rng_get
 public :: rng_get_int32
 public :: rng_get_int32_range
