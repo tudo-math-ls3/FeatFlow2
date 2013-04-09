@@ -16340,6 +16340,7 @@ contains
   real(DP), dimension(ncubp) :: Dlambda
   
   real(DP) :: dtwist1,dtwist2,dtwist3
+  real(DP) :: ddet,a11,a12,a21,a22
   integer :: i,j
   logical :: bsuccess
 
@@ -16367,6 +16368,13 @@ contains
     Dy(2) = Dcoords(2,mod(ilocaltri,4)+1)
     Dx(3) = 0.25_DP*sum(Dcoords(1,1:4))
     Dy(3) = 0.25_DP*sum(Dcoords(2,1:4))
+
+    ! Transformation from the reference to the real element
+    a11 = Dx(2)-Dx(1)
+    a12 = Dx(3)-Dx(1)
+    a21 = Dy(2)-Dy(1)
+    a22 = Dy(3)-Dy(1)
+    ddet = 1.0_DP/(a11*a22-a12*a21)
 
     ! Edge lengths
     Dlen(1) = sqrt( (Dx(2)-Dx(1))**2 + (Dy(2)-Dy(1))**2 )
@@ -16510,9 +16518,12 @@ contains
     ! Evaluate P7, P8, P9 in the cubature points.
     do j=1,3
       do i=1,ncubp
-        call QPW4P1TVDF_P1(DcubpXref(i,j), DcubpYref(i,j), Dcurlx1(i,j),Dcurly1(i,j))
-        call QPW4P1TVDF_P2(DcubpXref(i,j), DcubpYref(i,j), Dcurlx2(i,j),Dcurly2(i,j))
-        call QPW4P1TVDF_P3(DcubpXref(i,j), DcubpYref(i,j), Dcurlx3(i,j),Dcurly3(i,j))
+        call QPW4P1TVDF_P1(DcubpXref(i,j), DcubpYref(i,j), &
+            a11,a12,a21,a22,ddet, Dcurlx1(i,j),Dcurly1(i,j))
+        call QPW4P1TVDF_P2(DcubpXref(i,j), DcubpYref(i,j), &
+            a11,a12,a21,a22,ddet, Dcurlx2(i,j),Dcurly2(i,j))
+        call QPW4P1TVDF_P3(DcubpXref(i,j), DcubpYref(i,j), &
+            a11,a12,a21,a22,ddet, Dcurlx3(i,j),Dcurly3(i,j))
       end do
     end do
 
@@ -16649,11 +16660,11 @@ contains
   !  - j=DOF of first moment of integral mean value in normal direction
   !  - k=DOF of integral mean value in tangential direction
   !
-  integer, dimension(9,4), parameter :: Ildofs = &
-    (/ (/ 1, 14, 13, 5, 18, 17,  9, 22, 21 /), &
-       (/ 2, 15, 14, 6, 19, 18, 10, 23, 22 /), &
-       (/ 3, 16, 15, 7, 20, 19, 11, 24, 23 /), &
-       (/ 4, 13, 16, 8, 17, 20, 12, 21, 24 /) /)
+  integer, dimension(9,4), parameter :: Ildofs = reshape (&
+    (/ 1, 14, 13, 5, 18, 17,  9, 22, 21, &
+       2, 15, 14, 6, 19, 18, 10, 23, 22, &
+       3, 16, 15, 7, 20, 19, 11, 24, 23, &
+       4, 13, 16, 8, 17, 20, 12, 21, 24 /), (/ 9, 4 /) )
 
     ! Clear the output array.
     Dbas(:,DER_FUNC2D) = 0.0_DP
@@ -16692,9 +16703,9 @@ contains
     DbasisY(5) = dpx
     DbasisY(6) = dpy
 
-    call QPW4P1TVDF_P1(dpx, dpy, DbasisX(7), DbasisY(7))
-    call QPW4P1TVDF_P2(dpx, dpy, DbasisX(8), DbasisY(8))
-    call QPW4P1TVDF_P3(dpx, dpy, DbasisX(9), DbasisY(9))
+    call QPW4P1TVDF_P1(dpx, dpy, a11,a12,a21,a22,ddet, DbasisX(7), DbasisY(7))
+    call QPW4P1TVDF_P2(dpx, dpy, a11,a12,a21,a22,ddet, DbasisX(8), DbasisY(8))
+    call QPW4P1TVDF_P3(dpx, dpy, a11,a12,a21,a22,ddet, DbasisX(9), DbasisY(9))
 
     ! Evaluate basis functions:
     !
@@ -16739,9 +16750,12 @@ contains
     DbasisY_Y(5) = 0.0_DP
     DbasisY_Y(6) = 1.0_DP
 
-    call QPW4P1TVDF_P1_XY(dpx, dpy, DbasisX_X(7), DbasisY_X(7), DbasisX_Y(7), DbasisY_Y(7))
-    call QPW4P1TVDF_P2_XY(dpx, dpy, DbasisX_X(8), DbasisY_X(8), DbasisX_Y(8), DbasisY_Y(8))
-    call QPW4P1TVDF_P3_XY(dpx, dpy, DbasisX_X(9), DbasisY_X(9), DbasisX_Y(9), DbasisY_Y(9))
+    call QPW4P1TVDF_P1_XY(dpx, dpy, &
+        a11,a12,a21,a22,ddet, DbasisX_X(7), DbasisY_X(7), DbasisX_Y(7), DbasisY_Y(7))
+    call QPW4P1TVDF_P2_XY(dpx, dpy, &
+        a11,a12,a21,a22,ddet, DbasisX_X(8), DbasisY_X(8), DbasisX_Y(8), DbasisY_Y(8))
+    call QPW4P1TVDF_P3_XY(dpx, dpy, &
+        a11,a12,a21,a22,ddet, DbasisX_X(9), DbasisY_X(9), DbasisX_Y(9), DbasisY_Y(9))
 
     ! Evaluate first derivative.
     !
@@ -16795,33 +16809,72 @@ contains
     
   end subroutine
   
-  subroutine QPW4P1TVDF_P1 (dx,dy,dcurlx,dcurly)
+  subroutine QPW4P1TVDF_P1 (dx,dy,a11,a12,a21,a22,ddet,&
+      dcurlx,dcurly)
   real(DP), intent(in) :: dx,dy
+  real(DP), intent(in) :: a11,a12,a21,a22,ddet
   real(DP), intent(out) :: dcurlx, dcurly
+  
+  real(DP) :: x1x,x1y,x2x,x2y
     ! P1 = curl (b_T)
-    dcurlx = dx-dx**2-2*dx*dy
-    dcurly = -dy+2*dx*dy+dy**2
+    !dcurlx = dx-dx**2-2*dx*dy
+    !dcurly = -dy+2*dx*dy+dy**2
+    x1x = a22*ddet
+    x1y = -a12*ddet
+    x2x = -a21*ddet
+    x2y = a11*ddet
+
+    dcurlx = x1y*dy-2*x1y*dy*dx-x1y*dy**2+dx*x2y-dx**2*x2y-2*dx*dy*x2y
+    dcurly = -x1x*dy+2*dx*dy*x1x+x1x*dy**2-dx*x2x+dx**2*x2x+2*dx*dy*x2x
+    
   end subroutine
   
-  subroutine QPW4P1TVDF_P2 (dx,dy,dcurlx,dcurly)
+  subroutine QPW4P1TVDF_P2 (dx,dy,a11,a12,a21,a22,ddet,&
+      dcurlx,dcurly)
   real(DP), intent(in) :: dx,dy
+  real(DP), intent(in) :: a11,a12,a21,a22,ddet
   real(DP), intent(out) :: dcurlx, dcurly
+  
+  real(DP) :: x1x,x1y,x2x,x2y
     ! P2 = curl (b_T x)
-    dcurlx = dx**2-dx**3-2*dx**2*dy
-    dcurly = -2*dx*dy+3*dx**2*dy+2*dx*dy**2
+    !dcurlx = dx**2-dx**3-2*dx**2*dy
+    !dcurly = -2*dx*dy+3*dx**2*dy+2*dx*dy**2
+
+    x1x = a22*ddet
+    x1y = -a12*ddet
+    x2x = -a21*ddet
+    x2y = a11*ddet
+
+    dcurlx = 2*x1y*dy*dx-3*x1y*dy*dx**2-2*x1y*dy**2*dx+dx**2*x2y-dx**3*x2y-2*dx**2*x2y*dy
+    dcurly = -2*dx*dy*x1x+3*x1x*dy*dx**2+2*x1x*dy**2*dx-dx**2*x2x+dx**3*x2x+2*dx**2*x2x*dy
+
   end subroutine
 
-  subroutine QPW4P1TVDF_P3 (dx,dy,dcurlx,dcurly)
+  subroutine QPW4P1TVDF_P3 (dx,dy,a11,a12,a21,a22,ddet,&
+      dcurlx,dcurly)
   real(DP), intent(in) :: dx,dy
+  real(DP), intent(in) :: a11,a12,a21,a22,ddet
   real(DP), intent(out) :: dcurlx, dcurly
+  
+  real(DP) :: x1x,x1y,x2x,x2y
     ! P3 = curl (b_T * y)
-    dcurlx = 2*dx*dy-2*dx**2*dy-3*dx*dy**2
-    dcurly = -dy**2+2*dx*dy**2+dy**3
+    !dcurlx = 2*dx*dy-2*dx**2*dy-3*dx*dy**2
+    !dcurly = -dy**2+2*dx*dy**2+dy**3
+
+    x1x = a22*ddet
+    x1y = -a12*ddet
+    x2x = -a21*ddet
+    x2y = a11*ddet
+
+    dcurlx = x1y*dy**2-2*x1y*dy**2*dx-x1y*dy**3+2*dx*dy*x2y-2*dx**2*x2y*dy-3*dx*x2y*dy**2
+    dcurly = -x1x*dy**2+2*x1x*dy**2*dx+x1x*dy**3-2*dx*dy*x2x+2*dx**2*x2x*dy+3*dx*dy**2*x2x
   end subroutine
 
   ! 1st derivative of the curl functions
-  subroutine QPW4P1TVDF_P1_XY (dx,dy,dcurlx_x,dcurly_x,dcurlx_y,dcurly_y)
+  subroutine QPW4P1TVDF_P1_XY (dx,dy,da11,da12,da21,da22,ddet,&
+      dcurlx_x,dcurly_x,dcurlx_y,dcurly_y)
   real(DP), intent(in) :: dx,dy
+  real(DP), intent(in) :: da11,da12,da21,da22,ddet
   real(DP), intent(out) :: dcurlx_x, dcurly_x, dcurlx_y, dcurly_y
     ! P1 = curl (b_T)
     dcurlx_x = 1-2*dx-2*dy
@@ -16830,8 +16883,10 @@ contains
     dcurly_y = -1+2*dx+2*dy
   end subroutine
   
-  subroutine QPW4P1TVDF_P2_XY (dx,dy,dcurlx_x,dcurly_x,dcurlx_y,dcurly_y)
+  subroutine QPW4P1TVDF_P2_XY (dx,dy,da11,da12,da21,da22,ddet,&
+      dcurlx_x,dcurly_x,dcurlx_y,dcurly_y)
   real(DP), intent(in) :: dx,dy
+  real(DP), intent(in) :: da11,da12,da21,da22,ddet
   real(DP), intent(out) :: dcurlx_x, dcurly_x, dcurlx_y, dcurly_y
     ! P2 = curl (b_T x)
     dcurlx_x = 2*dx-3*dx**2-4*dx*dy
@@ -16840,8 +16895,10 @@ contains
     dcurly_y = -2*dx+3*dx**2+4*dx*dy
   end subroutine
 
-  subroutine QPW4P1TVDF_P3_XY (dx,dy,dcurlx_x,dcurly_x,dcurlx_y,dcurly_y)
+  subroutine QPW4P1TVDF_P3_XY (dx,dy,da11,da12,da21,da22,ddet,&
+      dcurlx_x,dcurly_x,dcurlx_y,dcurly_y)
   real(DP), intent(in) :: dx,dy
+  real(DP), intent(in) :: da11,da12,da21,da22,ddet
   real(DP), intent(out) :: dcurlx_x, dcurly_x, dcurlx_y, dcurly_y
     ! P3 = curl (b_T * y)
     dcurlx_x = 2*dy-4*dx*dy-3*dy**2
