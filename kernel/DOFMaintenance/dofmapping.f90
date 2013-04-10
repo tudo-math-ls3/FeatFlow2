@@ -455,6 +455,9 @@ contains
     case (EL_Q1T_3D)
       ! DOF`s in the face midpoints
       NDFG_uniform3D = rtriangulation%NAT
+    case (EL_Q1TB_3D)
+      ! DOF`s in the face midpoints and elements
+      NDFG_uniform3D = rtriangulation%NAT + 4*rtriangulation%NEL
     case (EL_Q2T_3D)
       ! DOF`s in the face midpoints
       NDFG_uniform3D = 3*rtriangulation%NAT + rtriangulation%NEL
@@ -942,6 +945,11 @@ contains
           ! DOF`s in the face midpoints
           call storage_getbase_int2D(p_rtriangulation%h_IfacesAtElement,p_2darray)
           call dof_locGlobUniMult_Q1T_3D(p_2darray, IelIdx, IdofGlob)
+          return
+        case (EL_Q1TB_3D)
+          ! DOF`s in the face midpoints
+          call storage_getbase_int2D(p_rtriangulation%h_IfacesAtElement,p_2darray)
+          call dof_locGlobUniMult_Q1TB_3D(p_rtriangulation%NAT,p_2darray, IelIdx, IdofGlob)
           return
         case (EL_Q2T_3D)
           ! DOF`s in the face midpoints
@@ -2774,6 +2782,58 @@ contains
 
   end subroutine
 
+  ! ***************************************************************************
+
+!<subroutine>
+
+  pure subroutine dof_locGlobUniMult_Q1TB_3D(iNAT,IfacesAtElement, IelIdx, IdofGlob)
+
+!<description>
+  ! This subroutine calculates the global indices in the array IdofGlob
+  ! of the degrees of freedom of the elements in the list IelIdx.
+  ! all elements in the list are assumed to be Q1~bubble.
+  ! A uniform grid is assumed, i.e. a grid completely discretised the
+  ! same element.
+!</description>
+
+!<input>
+
+  ! Number of faces in the triangulation.
+  integer, intent(in) :: iNAT
+
+  ! An array with the number of vertices adjacent to each element of the
+  ! triangulation.
+  integer, dimension(:,:), intent(in) :: IfacesAtElement
+
+  ! Element indices, where the mapping should be computed.
+  integer, dimension(:), intent(in) :: IelIdx
+
+!</input>
+
+!<output>
+
+  ! Array of global DOF numbers; for every element in IelIdx there is
+  ! a subarray in this list receiving the corresponding global DOF`s.
+  integer, dimension(:,:), intent(out) :: IdofGlob
+
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  integer :: i
+
+    ! Loop through the elements to handle
+    do i=1,size(IelIdx)
+      IdofGlob(1:6,i) = IfacesAtElement(1:6,IelIdx(i))
+      IdofGlob( 7,i) = iNAT + 4*(IelIdx(i)-1) + 1
+      IdofGlob( 8,i) = iNAT + 4*(IelIdx(i)-1) + 2
+      IdofGlob( 9,i) = iNAT + 4*(IelIdx(i)-1) + 3
+      IdofGlob(10,i) = iNAT + 4*(IelIdx(i)-1) + 4
+    end do
+
+  end subroutine
+  
   ! ***************************************************************************
 
 !<subroutine>

@@ -592,6 +592,10 @@ module element
   integer(I32), parameter, public :: EL_EM30_NEW_3D = EL_Q1T_3D + EL_NONPARAMETRIC &
                                                       + 2**16 + 2**19
   integer(I32), parameter, public :: EL_EN30_3D = EL_EM30_NEW_3D
+  
+  ! ID of rotated trilinear non-conforming hexahedral FE, Q1~ + bubble
+  integer(I32), parameter, public :: EL_Q1TB_3D = EL_3D + 31
+  integer(I32), parameter, public :: EL_EB30_3D = EL_Q1TB_3D
 
   ! ID of nonconforming quadrilateral FE, Q2~.
   integer(I32), parameter, public :: EL_Q2T_3D  = EL_3D + 50
@@ -969,6 +973,8 @@ contains
       elem_igetID = EL_EM30_3D
     else if (selem .eq. "EL_EM30_NEW_3D" .or. selem .eq. "EL_EN30_3D") then
       elem_igetID = EL_EM30_NEW_3D
+    else if (selem .eq. "EL_Q1TB_3D" .or. selem .eq. "EL_EB30_3D") then
+      elem_igetID = EL_EB30_3D
     else if (selem .eq. "EL_Q2T_3D" .or. selem .eq. "EL_E050_3D") then
       elem_igetID = EL_E050_3D
     else if (selem .eq. "EL_EM50_3D" .or. selem .eq. "EL_EN50_3D") then
@@ -1182,6 +1188,8 @@ contains
       sname = 'EL_EN30_3D'
     case (EL_E031_3D)       ! alias: EL_Q1T_3D
       sname = 'EL_E031_3D'
+    case (EL_EB30_3D)       ! alias: EL_Q1TB_3D
+      sname = 'EL_EB30_3D'
     case (EL_E050_3D)       ! alias: EL_Q2T_3D
       sname = 'EL_E050_3D'
     case (EL_EN50_3D)       ! non-parametric variant of EL_E050_3D
@@ -1457,6 +1465,10 @@ contains
     case (EL_Q1T_3D)
       ! local DOFs for Ex30
       ndofAtFaces = 6
+    case (EL_Q1TB_3D)
+      ! local DOFs for EB30
+      ndofAtFaces = 6
+      ndofAtElement = 4
     case (EL_Q2T_3D)
       ! local DOFs for Ex50
       ndofAtFaces = 18
@@ -1903,7 +1915,7 @@ contains
     case (EL_R1_3D)
       ! Function + 1st derivative
       elem_getMaxDerivative = 4
-    case (EL_Q1T_3D)
+    case (EL_Q1T_3D, EL_Q1TB_3D)
       ! Function + 1st derivative
       elem_getMaxDerivative = 4
     case (EL_Q2T_3D)
@@ -2116,7 +2128,7 @@ contains
       ishp = BGEOM_SHAPE_TETRA
 
     case (EL_Q0_3D, EL_Q1_3D, EL_Q2_3D, EL_QP1_3D, &
-          EL_Q1T_3D, EL_Q2T_3D, EL_MSL2_3D)
+          EL_Q1T_3D, EL_Q1TB_3D, EL_Q2T_3D, EL_MSL2_3D)
       ! 3D Hexahedron
       ishp = BGEOM_SHAPE_HEXA
 
@@ -2359,6 +2371,8 @@ contains
         call elem_E030_3D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_E031_3D)
         call elem_E031_3D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+      case (EL_EB30_3D)
+        bwrapSim2 = .true.
       case (EL_EM50_3D)
         bwrapSim2 = .true.
       case (EL_E050_3D)
@@ -3241,6 +3255,9 @@ contains
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef, revalElementSet%p_rperfconfig)
+
+    case (EL_EB30_3D)
+      call elem_eval_EB30_3D(celement, revalElementSet, Bder, Dbas)
 
     case (EL_E050_3D)
       call elem_eval_E050_3D(celement, revalElementSet, Bder, Dbas)

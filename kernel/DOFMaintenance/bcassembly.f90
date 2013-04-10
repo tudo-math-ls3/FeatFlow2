@@ -4473,6 +4473,10 @@ contains
       case (EL_Q1T_3D)
         ndofs = iregionNAT
 
+      ! 3D Q1~bubble element
+      case (EL_Q1TB_3D)
+        ndofs = iregionNAT + iregionNEL
+
       ! 3D Q2~ element
       case (EL_Q2T_3D)
         ndofs = 2*iregionNAT + iregionNEL
@@ -4922,7 +4926,7 @@ contains
           end do
 
         ! 3D Q1~ element
-        case (EL_Q1T_3D)
+        case (EL_Q1T_3D, EL_Q1TB_3D)
           do j=1,6
             if ((p_IfacesAtElem(j,iel)) .eq. iat) then
               idof = IdofGlob(j)

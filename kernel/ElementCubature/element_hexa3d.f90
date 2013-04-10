@@ -47,6 +47,7 @@ module element_hexa3d
   public :: elem_eval_E030_3D
   public :: elem_eval_E031_3D
   public :: elem_eval_EN30_3D
+  public :: elem_eval_EB30_3D
   public :: elem_eval_E050_3D
   public :: elem_eval_EN50_3D
   public :: elem_eval_MSL2_3D
@@ -4576,9 +4577,9 @@ contains
           Dbas(1,DER_FUNC3D,i,j) = Q6 - Q4*dxy - Q2*(dz + dyz)
           Dbas(2,DER_FUNC3D,i,j) = Q6 - Q4*(dxy - dyz) - Q2*dy
           Dbas(3,DER_FUNC3D,i,j) = Q6 + Q4*dyz + Q2*(dx + dxy)
-          Dbas(4,DER_FUNC3D,i,j) = Q6 + Q4*(dxy - dyz) + Q2*dy
-          Dbas(5,DER_FUNC3D,i,j) = Q6 - Q4*dyz - Q2*(dx - dxy)
-          Dbas(6,DER_FUNC3D,i,j) = Q6 + Q4*dxy + Q2*(dz - dyz)
+          Dbas(4,DER_FUNC3D,i,j) = Q6 - Q4*(dxy - dyz) + Q2*dy
+          Dbas(5,DER_FUNC3D,i,j) = Q6 + Q4*dyz - Q2*(dx - dxy)
+          Dbas(6,DER_FUNC3D,i,j) = Q6 - Q4*dxy + Q2*(dz - dyz)
 
         end do ! i
 
@@ -4627,6 +4628,254 @@ contains
           DrefDer( 4,3) = -Q2*dz
           DrefDer( 5,3) = -Q2*dz
           DrefDer( 6,3) = dz + Q2
+
+          ! Remark: Please note that the following code is universal and does
+          ! not need to be modified for other parametric 3D hexahedron elements!
+
+          ! Get jacobian determinant
+          ddet = 1.0_DP / reval%p_Ddetj(i,j)
+
+          ! X-derivatives on real element
+          dx = (reval%p_Djac(5,i,j)*reval%p_Djac(9,i,j)&
+               -reval%p_Djac(6,i,j)*reval%p_Djac(8,i,j))*ddet
+          dy = (reval%p_Djac(8,i,j)*reval%p_Djac(3,i,j)&
+               -reval%p_Djac(2,i,j)*reval%p_Djac(9,i,j))*ddet
+          dz = (reval%p_Djac(2,i,j)*reval%p_Djac(6,i,j)&
+               -reval%p_Djac(5,i,j)*reval%p_Djac(3,i,j))*ddet
+          Dbas(1:NBAS,DER_DERIV3D_X,i,j) = dx*DrefDer(1:NBAS,1) &
+                  + dy*DrefDer(1:NBAS,2) + dz*DrefDer(1:NBAS,3)
+
+          ! Y-derivatives on real element
+          dx = (reval%p_Djac(7,i,j)*reval%p_Djac(6,i,j)&
+               -reval%p_Djac(4,i,j)*reval%p_Djac(9,i,j))*ddet
+          dy = (reval%p_Djac(1,i,j)*reval%p_Djac(9,i,j)&
+               -reval%p_Djac(7,i,j)*reval%p_Djac(3,i,j))*ddet
+          dz = (reval%p_Djac(4,i,j)*reval%p_Djac(3,i,j)&
+               -reval%p_Djac(1,i,j)*reval%p_Djac(6,i,j))*ddet
+          Dbas(1:NBAS,DER_DERIV3D_Y,i,j) = dx*DrefDer(1:NBAS,1) &
+                  + dy*DrefDer(1:NBAS,2) + dz*DrefDer(1:NBAS,3)
+
+          ! Z-derivatives on real element
+          dx = (reval%p_Djac(4,i,j)*reval%p_Djac(8,i,j)&
+               -reval%p_Djac(7,i,j)*reval%p_Djac(5,i,j))*ddet
+          dy = (reval%p_Djac(7,i,j)*reval%p_Djac(2,i,j)&
+               -reval%p_Djac(1,i,j)*reval%p_Djac(8,i,j))*ddet
+          dz = (reval%p_Djac(1,i,j)*reval%p_Djac(5,i,j)&
+               -reval%p_Djac(4,i,j)*reval%p_Djac(2,i,j))*ddet
+          Dbas(1:NBAS,DER_DERIV3D_Z,i,j) = dx*DrefDer(1:NBAS,1) &
+                  + dy*DrefDer(1:NBAS,2) + dz*DrefDer(1:NBAS,3)
+
+        end do ! i
+
+      end do ! j
+      !$omp end parallel do
+
+    end if
+
+  end subroutine
+
+  !************************************************************************
+
+!<subroutine>
+
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+  subroutine elem_eval_EB30_3D (celement, reval, Bder, Dbas)
+
+!<description>
+  ! This subroutine simultaneously calculates the values of the basic
+  ! functions of the finite element at multiple given points on the
+  ! reference element for multiple given elements.
+!</description>
+
+!<input>
+  ! The element specifier.
+  integer(I32), intent(in)                       :: celement
+
+  ! t_evalElementSet-structure that contains cell-specific information and
+  ! coordinates of the evaluation points. revalElementSet must be prepared
+  ! for the evaluation.
+  type(t_evalElementSet), intent(in)             :: reval
+
+  ! Derivative quantifier array. array [1..DER_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  logical, dimension(:), intent(in)              :: Bder
+!</input>
+
+!<output>
+  ! Value/derivatives of basis functions.
+  ! array [1..EL_MAXNBAS,1..DER_MAXNDER,1..npointsPerElement,nelements] of double
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th
+  !   basis function of the finite element in the point Dcoords(j) on the
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
+  real(DP), dimension(:,:,:,:), intent(out)      :: Dbas
+!</output>
+
+!</subroutine>
+
+  ! Element Description
+  ! -------------------
+  ! The EB30_3D element is specified by ten polynomials per element.
+  !
+  ! The basis polynomials are constructed from the following set of monomials:
+  ! { 1, x, y, z, x*y, x*z, y*z, x*y*z, x^2 - y^2, y^2 - z^2 }
+  !
+  !
+  ! The basis polynomials Pi are constructed such that they fulfill the
+  ! following conditions:
+  !
+  ! For all i = 1,...,10:
+  ! {
+  !   For all j = 1,...,6:
+  !   {
+  !     Int_[-1,1]^2 (|DFj(x,y)|*Pi(Fj(x,y))) d(x,y) = kronecker(i,j) * |fj|
+  !     <==>
+  !     Int_fj Pi(x,y) d(x,y) = kronecker(i,j) * |fj|
+  !   }
+  !   For all j = 1,...,4:
+  !   {
+  !     Int_T Pi(x,y,z)*Lj(x,y,z) = kronecker(i,6+j) * |T|
+  !   }
+  ! }
+  !
+  ! With:
+  ! fj being the j-th local face of the hexahedron
+  ! |fj| being the area of the face fj
+  ! Fj: [-1,1]^2 -> fj being the parametrisation of the face fj
+  ! |DFj(x,y)| being the determinant of the Jacobi-Matrix of Fj in the point (x,y)
+  ! T being the reference hexahedron
+  ! Lj being the following set of Legendre-Polynomials:
+  !   L1(x,y,z) = x*y
+  !   L2(x,y,z) = x*z
+  !   L3(x,y,z) = y*z
+  !   L4(x,y,z) = x*y*z
+  !
+  ! On the reference element, the above combination of monomial set and
+  ! basis polynomial conditions leads to the following basis polynomials:
+  !
+  !  P1(x,y,z) = 1/6 - 1/2*z - 1/4*(x^2 - y^2) - 1/2*(y^2 - z^2)
+  !  P2(x,y,z) = 1/6 - 1/2*y - 1/4*(x^2 - y^2) + 1/4*(y^2 - z^2)
+  !  P3(x,y,z) = 1/6 + 1/2*x + 1/2*(x^2 - y^2) + 1/4*(y^2 - z^2)
+  !  P4(x,y,z) = 1/6 + 1/2*y - 1/4*(x^2 - y^2) + 1/4*(y^2 - z^2)
+  !  P5(x,y,z) = 1/6 - 1/2*x + 1/2*(x^2 - y^2) + 1/4*(y^2 - z^2)
+  !  P6(x,y,z) = 1/6 + 1/2*z - 1/4*(x^2 - y^2) - 1/2*(y^2 - z^2)
+  !  P7(x,y,z) = 9*x*y
+  !  P8(x,y,z) = 9*x*z
+  !  P9(x,y,z) = 9*y*z
+  !  P10(x,y,z) = 27*x*y*z
+
+  ! Parameter: number of local basis functions
+  integer, parameter :: NBAS = 10
+
+  ! derivatives on reference element
+  real(DP), dimension(NBAS,NDIM3D) :: DrefDer
+
+  ! Local variables
+  real(DP) :: ddet,dx,dy,dz,dxy,dyz
+  integer :: i,j
+
+  real(DP), parameter :: Q2 = 0.5_DP
+  real(DP), parameter :: Q4 = 0.25_DP
+  real(DP), parameter :: Q6 = 1.0_DP / 6.0_DP
+
+    ! Calculate function values?
+    if(Bder(DER_FUNC3D)) then
+
+      ! Loop through all elements
+      !$omp parallel do default(shared) private(i,dx,dy,dz,dxy,dyz) &
+      !$omp if(reval%nelements > reval%p_rperfconfig%NELEMMIN_OMP)
+      do j = 1, reval%nelements
+
+        ! Loop through all points on the current element
+        do i = 1, reval%npointsPerElement
+
+          ! Get the point coordinates
+          dx = reval%p_DpointsRef(1,i,j)
+          dy = reval%p_DpointsRef(2,i,j)
+          dz = reval%p_DpointsRef(3,i,j)
+
+          ! Pre-calculate (x^2-y^2) and (y^2-z^2)
+          dxy = dx*dx - dy*dy
+          dyz = dy*dy - dz*dz
+
+          Dbas(1,DER_FUNC3D,i,j) = Q6 - Q4*dxy - Q2*(dz + dyz)
+          Dbas(2,DER_FUNC3D,i,j) = Q6 - Q4*(dxy - dyz) - Q2*dy
+          Dbas(3,DER_FUNC3D,i,j) = Q6 + Q4*dyz + Q2*(dx + dxy)
+          Dbas(4,DER_FUNC3D,i,j) = Q6 - Q4*(dxy - dyz) + Q2*dy
+          Dbas(5,DER_FUNC3D,i,j) = Q6 + Q4*dyz - Q2*(dx - dxy)
+          Dbas(6,DER_FUNC3D,i,j) = Q6 - Q4*dxy + Q2*(dz - dyz)
+          Dbas(7,DER_FUNC3D,i,j) = 9.0_DP*dx*dy
+          Dbas(8,DER_FUNC3D,i,j) = 9.0_DP*dx*dz
+          Dbas(9,DER_FUNC3D,i,j) = 9.0_DP*dy*dz
+          Dbas(10,DER_FUNC3D,i,j) = 27.0_DP*dx*dy*dz
+
+        end do ! i
+
+      end do ! j
+      !$omp end parallel do
+
+    end if
+
+    ! Calculate derivatives?
+    if(Bder(DER_DERIV3D_X) .or. Bder(DER_DERIV3D_Y) .or. Bder(DER_DERIV3D_Z)) then
+
+      ! Loop through all elements
+      !$omp parallel do default(shared) private(i,dx,dy,dz,ddet,DrefDer) &
+      !$omp if(reval%nelements > reval%p_rperfconfig%NELEMMIN_OMP)
+      do j = 1, reval%nelements
+
+        ! Loop through all points on the current element
+        do i = 1, reval%npointsPerElement
+
+          ! Get the point coordinates
+          dx = reval%p_DpointsRef(1,i,j)
+          dy = reval%p_DpointsRef(2,i,j)
+          dz = reval%p_DpointsRef(3,i,j)
+
+          ! Calculate derivatives on reference element
+          ! X-derivatives
+          DrefDer( 1,1) = -Q2*dx
+          DrefDer( 2,1) = -Q2*dx
+          DrefDer( 3,1) = dx + Q2
+          DrefDer( 4,1) = -Q2*dx
+          DrefDer( 5,1) = dx - Q2
+          DrefDer( 6,1) = -Q2*dx
+          DrefDer( 7,1) = 9.0_DP*dy
+          DrefDer( 8,1) = 9.0_DP*dz
+          DrefDer( 9,1) = 0.0_DP
+          DrefDer(10,1) = 27.0_DP*dy*dz
+
+          ! Y-derivatives
+          DrefDer( 1,2) = -Q2*dy
+          DrefDer( 2,2) = dy - Q2
+          DrefDer( 3,2) = -Q2*dy
+          DrefDer( 4,2) = dy + Q2
+          DrefDer( 5,2) = -Q2*dy
+          DrefDer( 6,2) = -Q2*dy
+          DrefDer( 7,2) = 9.0_DP*dx
+          DrefDer( 8,2) = 0.0_DP
+          DrefDer( 9,2) = 9.0_DP*dz
+          DrefDer(10,2) = 27.0_DP*dx*dz
+
+          ! Z-derivatives
+          DrefDer( 1,3) = dz - Q2
+          DrefDer( 2,3) = -Q2*dz
+          DrefDer( 3,3) = -Q2*dz
+          DrefDer( 4,3) = -Q2*dz
+          DrefDer( 5,3) = -Q2*dz
+          DrefDer( 6,3) = dz + Q2
+          DrefDer( 7,3) = 0.0_DP
+          DrefDer( 8,3) = 9.0_DP*dx
+          DrefDer( 9,3) = 9.0_DP*dy
+          DrefDer(10,3) = 27.0_DP*dx*dy
 
           ! Remark: Please note that the following code is universal and does
           ! not need to be modified for other parametric 3D hexahedron elements!
