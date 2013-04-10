@@ -16374,7 +16374,7 @@ contains
     a12 = Dx(3)-Dx(1)
     a21 = Dy(2)-Dy(1)
     a22 = Dy(3)-Dy(1)
-    ddet = 1.0_DP/(a11*a22-a12*a21)
+    ddet = 1.0_DP / (a11*a22-a12*a21)
 
     ! Edge lengths
     Dlen(1) = sqrt( (Dx(2)-Dx(1))**2 + (Dy(2)-Dy(1))**2 )
@@ -16422,22 +16422,42 @@ contains
     
     ! Calculate the cubature points for the evaluation of the coefficients.
     ! This is on the reference element.
-    do i=1,ncubp
-      ! Parameter value in [0,1]
-      Dlambda(i) = 0.5_DP * (Dg(i) + 1.0_DP)
+    !
+    ! Orientation of the first edge must possibly be inverted,
+    ! depending on the twist index.
+    if (dtwist1 .gt. 0.0_DP) then
+      do i=1,ncubp
+        ! Parameter value in [0,1]
+        Dlambda(i) = 0.5_DP * (Dg(i) + 1.0_DP)
 
-      ! Cubature points on the reference triangle
-      DcubpXref(i,1) = Dlambda(i) ! * 1.0 + (1.0_DP - Dlambda(i)) * 0.0_DP
-      DcubpYref(i,1) = 0.0_DP
-      
-      ! Orientation of the second edge must be inverted.
-      DcubpXref(i,2) = Dlambda(i) ! * 1.0_DP + (1.0_DP - Dlambda(i)) * 0.0_DP 
-      DcubpYref(i,2) = (1.0_DP - Dlambda(i)) ! * 1.0_DP + Dlambda(i) * 0.0_DP + 
-      
-      DcubpXref(i,3) = 0.0_DP
-      DcubpYref(i,3) = (1.0_DP - Dlambda(i)) ! * 1.0_DP + Dlambda(i) * 0.0
-    end do
-    
+        ! Cubature points on the reference triangle.
+        DcubpXref(i,1) = Dlambda(i) ! * 1.0 + (1.0_DP - Dlambda(i)) * 0.0_DP
+        DcubpYref(i,1) = 0.0_DP
+        
+        ! Orientation of the second edge must be inverted.
+        DcubpXref(i,2) = Dlambda(i) ! * 1.0_DP + (1.0_DP - Dlambda(i)) * 0.0_DP 
+        DcubpYref(i,2) = (1.0_DP - Dlambda(i)) ! * 1.0_DP + Dlambda(i) * 0.0_DP + 
+        
+        DcubpXref(i,3) = 0.0_DP
+        DcubpYref(i,3) = (1.0_DP - Dlambda(i)) ! * 1.0_DP + Dlambda(i) * 0.0
+      end do
+    else
+      do i=1,ncubp
+        ! Parameter value in [0,1]
+        Dlambda(i) = 0.5_DP * (Dg(i) + 1.0_DP)
+
+        ! Cubature points on the reference triangle.
+        DcubpXref(i,1) = 1.0_DP - Dlambda(i)
+        DcubpYref(i,1) = 0.0_DP
+        
+        ! Orientation of the second edge must be inverted.
+        DcubpXref(i,2) = Dlambda(i) ! * 1.0_DP + (1.0_DP - Dlambda(i)) * 0.0_DP 
+        DcubpYref(i,2) = (1.0_DP - Dlambda(i)) ! * 1.0_DP + Dlambda(i) * 0.0_DP + 
+        
+        DcubpXref(i,3) = 0.0_DP
+        DcubpYref(i,3) = (1.0_DP - Dlambda(i)) ! * 1.0_DP + Dlambda(i) * 0.0
+      end do
+    end if
 
     ! Calculate the matrix N=(n_ij) with
     !
@@ -16680,11 +16700,11 @@ contains
     Dy(3) = 0.25_DP*sum(Dcoords(2,1:4))
     
     ! Transform the point to the reference triangle.
-    ddet = 1.0_DP/(Dx(2)*Dy(3)-Dx(2)*Dy(1)-Dx(1)*Dy(3)-Dx(3)*Dy(2)+Dx(3)*Dy(1)+Dx(1)*Dy(2))
     a11 = Dx(2)-Dx(1)
     a12 = Dx(3)-Dx(1)
     a21 = Dy(2)-Dy(1)
     a22 = Dy(3)-Dy(1)
+    ddet = 1.0_DP / (a11*a22 - a12*a21)
     dpx = ddet * ( ( a22) * (Dpoint(1)-Dx(1)) +  (-a12) * (Dpoint(2) - Dy(1)) )
     dpy = ddet * ( (-a21) * (Dpoint(1)-Dx(1)) +  ( a11) * (Dpoint(2) - Dy(1)) )
 
@@ -16816,9 +16836,9 @@ contains
   real(DP), intent(out) :: dcurlx, dcurly
   
   real(DP) :: x1x,x1y,x2x,x2y
-    ! P1 = curl (b_T)
-    !dcurlx = dx-dx**2-2*dx*dy
-    !dcurly = -dy+2*dx*dy+dy**2
+    ! P1 = curl (b_T) ... plus chain rule, as this is realised on the real element
+    ! dcurlx = dx-dx**2-2*dx*dy
+    ! dcurly = -dy+2*dx*dy+dy**2
     x1x = a22*ddet
     x1y = -a12*ddet
     x2x = -a21*ddet
@@ -16836,9 +16856,9 @@ contains
   real(DP), intent(out) :: dcurlx, dcurly
   
   real(DP) :: x1x,x1y,x2x,x2y
-    ! P2 = curl (b_T x)
-    !dcurlx = dx**2-dx**3-2*dx**2*dy
-    !dcurly = -2*dx*dy+3*dx**2*dy+2*dx*dy**2
+    ! P2 = curl (b_T x) ... plus chain rule, as this is realised on the real element
+    ! dcurlx = dx**2-dx**3-2*dx**2*dy
+    ! dcurly = -2*dx*dy+3*dx**2*dy+2*dx*dy**2
 
     x1x = a22*ddet
     x1y = -a12*ddet
@@ -16857,9 +16877,9 @@ contains
   real(DP), intent(out) :: dcurlx, dcurly
   
   real(DP) :: x1x,x1y,x2x,x2y
-    ! P3 = curl (b_T * y)
-    !dcurlx = 2*dx*dy-2*dx**2*dy-3*dx*dy**2
-    !dcurly = -dy**2+2*dx*dy**2+dy**3
+    ! P3 = curl (b_T * y) ... plus chain rule, as this is realised on the real element
+    ! dcurlx = 2*dx*dy-2*dx**2*dy-3*dx*dy**2
+    ! dcurly = -dy**2+2*dx*dy**2+dy**3
 
     x1x = a22*ddet
     x1y = -a12*ddet
@@ -16871,40 +16891,64 @@ contains
   end subroutine
 
   ! 1st derivative of the curl functions
-  subroutine QPW4P1TVDF_P1_XY (dx,dy,da11,da12,da21,da22,ddet,&
+  subroutine QPW4P1TVDF_P1_XY (dx,dy,a11,a12,a21,a22,ddet,&
       dcurlx_x,dcurly_x,dcurlx_y,dcurly_y)
   real(DP), intent(in) :: dx,dy
-  real(DP), intent(in) :: da11,da12,da21,da22,ddet
+  real(DP), intent(in) :: a11,a12,a21,a22,ddet
   real(DP), intent(out) :: dcurlx_x, dcurly_x, dcurlx_y, dcurly_y
+  
+  real(DP) :: x1x,x1y,x2x,x2y
     ! P1 = curl (b_T)
-    dcurlx_x = 1-2*dx-2*dy
-    dcurlx_y = -2*dx
-    dcurly_x = 2*dy
-    dcurly_y = -1+2*dx+2*dy
+
+    x1x = a22*ddet
+    x1y = -a12*ddet
+    x2x = -a21*ddet
+    x2y = a11*ddet
+
+    dcurlx_x = -2*x1y*dy+x2y-2*dx*x2y-2*dy*x2y
+    dcurlx_y = x1y-2*x1y*dx-2*x1y*dy-2*dx*x2y
+    dcurly_x = 2*x1x*dy-x2x+2*dx*x2x+2*dy*x2x
+    dcurly_y = -x1x+2*dx*x1x+2*x1x*dy+2*dx*x2x
   end subroutine
   
-  subroutine QPW4P1TVDF_P2_XY (dx,dy,da11,da12,da21,da22,ddet,&
+  subroutine QPW4P1TVDF_P2_XY (dx,dy,a11,a12,a21,a22,ddet,&
       dcurlx_x,dcurly_x,dcurlx_y,dcurly_y)
   real(DP), intent(in) :: dx,dy
-  real(DP), intent(in) :: da11,da12,da21,da22,ddet
+  real(DP), intent(in) :: a11,a12,a21,a22,ddet
   real(DP), intent(out) :: dcurlx_x, dcurly_x, dcurlx_y, dcurly_y
+  
+  real(DP) :: x1x,x1y,x2x,x2y
     ! P2 = curl (b_T x)
-    dcurlx_x = 2*dx-3*dx**2-4*dx*dy
-    dcurlx_y = -2*dx**2
-    dcurly_x = -2*dy+6*dx*dy+2*dy**2
-    dcurly_y = -2*dx+3*dx**2+4*dx*dy
+
+    x1x = a22*ddet
+    x1y = -a12*ddet
+    x2x = -a21*ddet
+    x2y = a11*ddet
+    
+    dcurlx_x = 2*x1y*dy-6*x1y*dy*dx-2*x1y*dy**2+2*dx*x2y-3*dx**2*x2y-4*dx*dy*x2y
+    dcurlx_y = 2*x1y*dx-3*x1y*dx**2-4*x1y*dy*dx-2*dx**2*x2y
+    dcurly_x = -2*x1x*dy+6*dx*dy*x1x+2*x1x*dy**2-2*dx*x2x+3*dx**2*x2x+4*dx*dy*x2x
+    dcurly_y = -2*dx*x1x+3*x1x*dx**2+4*dx*dy*x1x+2*dx**2*x2x
   end subroutine
 
-  subroutine QPW4P1TVDF_P3_XY (dx,dy,da11,da12,da21,da22,ddet,&
+  subroutine QPW4P1TVDF_P3_XY (dx,dy,a11,a12,a21,a22,ddet,&
       dcurlx_x,dcurly_x,dcurlx_y,dcurly_y)
   real(DP), intent(in) :: dx,dy
-  real(DP), intent(in) :: da11,da12,da21,da22,ddet
+  real(DP), intent(in) :: a11,a12,a21,a22,ddet
   real(DP), intent(out) :: dcurlx_x, dcurly_x, dcurlx_y, dcurly_y
+  
+  real(DP) :: x1x,x1y,x2x,x2y
     ! P3 = curl (b_T * y)
-    dcurlx_x = 2*dy-4*dx*dy-3*dy**2
-    dcurlx_y = 2*dx-2*dx**2-6*dx*dy
-    dcurly_x = 2*dy**2
-    dcurly_y = -2*dy+4*dx*dy+3*dy**2
+
+    x1x = a22*ddet
+    x1y = -a12*ddet
+    x2x = -a21*ddet
+    x2y = a11*ddet
+    
+    dcurlx_x = -2*x1y*dy**2+2*dy*x2y-4*dx*dy*x2y-3*x2y*dy**2
+    dcurlx_y = 2*x1y*dy-4*x1y*dy*dx-3*x1y*dy**2+2*dx*x2y-2*dx**2*x2y-6*dx*dy*x2y
+    dcurly_x = 2*x1x*dy**2-2*dy*x2x+4*dx*dy*x2x+3*dy**2*x2x
+    dcurly_y = -2*x1x*dy+4*dx*dy*x1x+3*x1x*dy**2-2*dx*x2x+2*dx**2*x2x+6*dx*dy*x2x
   end subroutine
 
 end module
