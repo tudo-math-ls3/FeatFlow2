@@ -10860,8 +10860,6 @@ contains
     ! determinant of the submatrix is calculated.
 !</description>
 
-!</function>
-
 !<input>
     ! Scalar matrix
     type(t_matrixScalar), intent(in) :: rmatrix
@@ -10877,6 +10875,8 @@ contains
     ! Value of the determinant
     real(DP) :: ddeterminant
 !</result>
+
+!</function>
 
     ! local variables
     real(DP), dimension(:), pointer :: p_Da,p_DaSub

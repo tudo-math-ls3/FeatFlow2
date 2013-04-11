@@ -447,8 +447,6 @@ module blockmatassemblybase
 
   public :: t_bmaVectorAssembly
 
-!</types>
-
 !<typeblock>
 
   ! Encapsules all dynamic data which is calculated during the

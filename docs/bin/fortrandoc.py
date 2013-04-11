@@ -188,6 +188,9 @@ h2, h3 {
         for fn in module.functions:
             self.write_function(fn, f)
             self.write_navigation(f)
+
+        if module.remarks:
+            f.writelines(['<h2>Remarks</h2>\n<div class="description">\n%s\n</div>\n' % module.remarks])
         footer = [
             '</body>\n</html>'
         ]
@@ -264,6 +267,9 @@ h2, h3 {
         else:
             f.writelines(['<div class="error">No error codes defined.</div>\n'])
 
+        if sub.remarks:
+            f.writelines(['<h4>Remarks</h4>\n<div class="description">\n%s\n</div>\n' % sub.remarks])
+
         f.writelines(['</div>\n'])
 
     def write_function(self, fn, f):
@@ -318,6 +324,9 @@ h2, h3 {
             f.writelines(['</table>\n'])
         else:
             f.writelines(['<div class="error">No error codes defined.</div>\n'])
+
+        if fn.remarks:
+            f.writelines(['<h4>Remarks</h4>\n<div class="description">\n%s\n</div>\n' % fn.remarks])
 
         f.writelines(['</div>\n'])
 
@@ -387,6 +396,8 @@ class XMLExporter:
             self.write_subroutine(sub, f, 4)
         for fn in module.functions:
             self.write_function(fn, f, 4)
+        if module.remarks:
+            f.writelines(['    <remarks>%s</remarks>' % module.remarks])
         f.writelines(['</module>\n'])
 
     def write_variable(self, var, f, indent=0):
@@ -437,6 +448,8 @@ class XMLExporter:
 
         if sub.description:
             f.writelines([prefix + sub.description + "\n"])
+        if sub.remarks:
+            f.writelines(['    <remarks>%s</remarks>' % sub.remarks])
         f.writelines([prefix + '</subroutine>\n'])
 
     def write_function(self, fn, f, indent=0):
@@ -472,6 +485,8 @@ class XMLExporter:
                 f.writelines([prefix + '        <error code="%s">%s</error>\n' % (error, desc)])
         f.writelines([prefix + '    </errors>\n'])
         f.writelines([prefix + fn.description + '\n'])
+        if fn.remarks:
+            f.writelines(['    <remarks>%s</remarks>' % fn.remarks])
         f.writelines([prefix + '</function>\n'])
 
     def write_type(self, typedef, f, indent=0):
@@ -509,6 +524,7 @@ class LaTeXExporter:
 \newcommand{\sectionsubroutines}{\section{Subroutines}}
 \newcommand{\sectionfunctions}{\section{Functions}}
 \newcommand{\sectioninterfaces}{\section{Interfaces}}
+\newcommand{\sectionremarks}{\section{Remarks}}
 \newcommand{\result}[1]{\subsubsection*{Result}}
 \newcommand{\returnvalue}[1]{\texttt{#1}}
 \newenvironment{desc}{\list{}{\rightmargin0pt\leftmargin20pt}\item\relax}{\endlist}
@@ -583,6 +599,9 @@ class LaTeXExporter:
             for fn in module.functions:
                 self.write_function(fn, f)
 
+        if module.remarks:
+            f.writelines([self.cmd('sectionremarks'), '\n\n', self.begin('desc'), self.texify(module.remarks), '\n', self.end('desc'), '\n'])
+
         # f.writelines(self.FOOTER)
 
     def write_definitions(self, f):
@@ -638,6 +657,9 @@ class LaTeXExporter:
             f.writelines([self.end('description'), '\n\n'])
         #else:
         #    f.writelines([self.begin('desc'), 'Error codes missing.\n', self.end('desc')])
+
+        if sub.remarks:
+            f.writelines([self.cmd('sectionvariables', 'Remarks'), '\n\n', self.begin('desc'), self.texify(sub.remarks), '\n', self.end('desc'), '\n'])
             
         f.writelines([
             self.end('subroutinedef'), '\n\n',
@@ -687,6 +709,9 @@ class LaTeXExporter:
             f.writelines([self.end('description'), '\n\n'])
         #else:
         #    f.writelines([self.begin('desc'), 'Error codes missing.\n', self.end('desc')])
+
+        if fn.remarks:
+            f.writelines([self.cmd('sectionvariables', 'Remarks'), '\n\n', self.begin('desc'), self.texify(fn.remarks), '\n', self.end('desc'), '\n'])
 
         f.writelines([
             self.end('functiondef'), '\n\n',
@@ -743,6 +768,7 @@ class LaTeXExporter:
         (r'%', '\\%'),
         (r'\s->\s', ' $\\to$ '),
         (r' -> ', ' $\\to$ '),
+        (r' => ', ' $\\,\\Rightarrow\\,$ '),
         (re.escape(r'^'), '\\symbol{94}'),
         (re.escape(r'&'), '\\&'),
         ('.', lambda s, t: t)
@@ -796,6 +822,7 @@ class Function:
         self.description = None
         self.references = []
         self.errors = []
+        self.remarks = "";
 
     def is_function(self):
         return self.return_value is not None
@@ -952,6 +979,7 @@ class Module:
         self.publics = []
         self.types = []
         self.interfaces = []
+        self.remarks = "";
 
     def interpret(self, nodes):
         "Extract information from the nodes."
@@ -962,6 +990,12 @@ class Module:
                 self.name = node.get_text().strip()
             elif name == 'purpose':
                 self.purpose = self.clean_description(node.get_text())
+            elif name == 'remark':
+                text = self.clean_description(node.get_text())
+                self.remarks = text.strip()
+            elif name == 'remarks':
+                text = self.clean_description(node.get_text())
+                self.remarks = text.strip()
             elif name == 'subroutine':
                 sub = self.extract_subroutine(node, node.get_text())
             elif name == 'function':
@@ -1013,6 +1047,12 @@ class Module:
                 elif t == 'description':
                     text = self.clean_description(n.get_text())
                     fn.description = text.strip()
+                elif t == 'remark':
+                    text = self.clean_description(n.get_text())
+                    fn.remarks = text.strip()
+                elif t == 'remarks':
+                    text = self.clean_description(n.get_text())
+                    fn.remarks = text.strip()
                 elif t == 'errors':
                     text = self.clean_description(n.get_text())
                     # filter out error tags with 'none'
@@ -1093,6 +1133,12 @@ class Module:
                 elif t == 'description':
                     text = self.clean_description(n.get_text())
                     fn.description = text.strip()
+                elif t == 'remark':
+                    text = self.clean_description(n.get_text())
+                    fn.remarks = text.strip()
+                elif t == 'remarks':
+                    text = self.clean_description(n.get_text())
+                    fn.remarks = text.strip()
                 elif t == 'errors':
                     text = self.clean_description(n.get_text())
                     # filter out error tags with 'none'

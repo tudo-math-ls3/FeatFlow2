@@ -144,7 +144,7 @@ contains
   subroutine bma_fcalc_massDiag(RmatrixData,rassemblyData,rmatrixAssembly,&
       npointsPerElement,nelements,revalVectors,rcollection)
 
-!<description>  
+!<description>
     ! Calculates the Mass operator in all diagonal matrices.
     !
     ! Note: If rcollection is not specified, the matrix is calculated
@@ -185,7 +185,7 @@ contains
     type(t_collection), intent(inout), target, optional :: rcollection
 !</input>
 
-!<subroutine>
+!</subroutine>
 
     integer :: i,istart,iend
     type(t_collection) :: rlocalCollection
@@ -268,7 +268,7 @@ contains
     type(t_collection), intent(inout), target, optional :: rcollection
 !</input>
 
-!<subroutine>
+!</subroutine>
 
     ! Local variables
     real(DP) :: dbasI, dbasJ
@@ -588,7 +588,7 @@ contains
     type(t_collection), intent(inout), target, optional :: rcollection
 !</input>
 
-!<subroutine>
+!</subroutine>
 
     integer :: i,istart,iend
     type(t_collection) :: rlocalCollection
@@ -671,7 +671,7 @@ contains
     type(t_collection), intent(inout), target, optional :: rcollection
 !</input>
 
-!<subroutine>
+!</subroutine>
 
     real(DP) :: dbasIx, dbasJx, dbasIy, dbasJy, dbasIz, dbasJz
     integer :: iel, icubp, idofe, jdofe, ivar, nvar
@@ -1469,7 +1469,7 @@ contains
     type(t_collection), intent(inout), target, optional :: rcollection
 !</input>
 
-!<subroutine>
+!</subroutine>
 
     real(DP) :: dbasIx, dbasJ, dbasIy, dbasIz
     integer :: iel, icubp, idofe, jdofe, ivar, nvar
@@ -2182,7 +2182,7 @@ contains
     type(t_collection), intent(inout), target, optional :: rcollection
 !</input>
 
-!<subroutine>
+!</subroutine>
 
     real(DP) :: dbasI, dbasJx, dbasJy, dbasJz
     integer :: iel, icubp, idofe, jdofe, ivar, nvar
@@ -2995,7 +2995,7 @@ contains
     type(t_collection), intent(inout), target, optional :: rcollection
 !</input>
 
-!<subroutine>
+!</subroutine>
 
     ! Local variables
     real(DP) :: dbasI, dbasJx, dbasJy, dbasJz
@@ -3588,7 +3588,7 @@ contains
     type(t_collection), intent(inout), target, optional :: rcollection
 !</input>
 
-!<subroutine>
+!</subroutine>
 
     ! Local variables
     real(DP) :: dbasJ, dbasIx, dbasIy, dbasIz
@@ -4184,7 +4184,7 @@ contains
     type(t_collection), intent(inout), target, optional :: rcollection
 !</input>
 
-!<subroutine>
+!</subroutine>
 
     ! Local variables
     real(DP) :: dbasI, dbasJ
@@ -4888,7 +4888,7 @@ contains
     type(t_collection), intent(inout), target, optional :: rcollection
 !</input>
 
-!<subroutine>
+!</subroutine>
 
     ! Local variables
     real(DP) :: dbasI, dbasJ
@@ -5511,7 +5511,7 @@ contains
     type(t_collection), intent(inout), target, optional :: rcollection
 !</input>
     
-!<subroutine>
+!</subroutine>
 
     ! Local variables
     real(DP) :: dbasI, dval
@@ -5614,7 +5614,7 @@ contains
     type(t_collection), intent(inout), target, optional :: rcollection
 !</input>
     
-!<subroutine>
+!</subroutine>
 
     ! Local variables
     real(DP) :: dbasI, dval, dx, dy
@@ -5730,7 +5730,7 @@ contains
     type(t_collection), intent(inout), target, optional :: rcollection
 !</input>
     
-!<subroutine>
+!</subroutine>
 
     ! Local variables
     real(DP) :: dbasI, dval, dx, dy
@@ -5863,7 +5863,7 @@ contains
     type(t_collection), intent(inout), target, optional :: rcollection
 !</input>
     
-!<subroutine>
+!</subroutine>
 
     ! Local variables
     real(DP) :: dbasI, dval
@@ -6036,7 +6036,7 @@ contains
     real(DP), intent(out) :: dintvalue
 !</output>    
 
-!<subroutine>
+!</subroutine>
 
     ! Local variables
     real(DP) :: dval
@@ -6110,7 +6110,7 @@ contains
     real(DP), intent(out) :: dintvalue
 !</output>    
 
-!<subroutine>
+!</subroutine>
 
     ! Local variables
     real(DP) :: dval
@@ -6189,7 +6189,7 @@ contains
 
 !<description>  
     ! Calculates the squared L2-norm of an arbitrary finite element 
-    ! function: <tex> ||v||^2 </tex>.
+    ! function: <tex> $ |||v||^2 $ </tex>.
     ! If v has multiple components, the sum of the integrals of all
     ! components is returned.
     !
@@ -6224,7 +6224,7 @@ contains
     real(DP), intent(out) :: dintvalue
 !</output>    
 
-!<subroutine>
+!</subroutine>
 
     ! Local variables
     real(DP) :: dval
@@ -6320,7 +6320,7 @@ contains
 
 !<description>  
     ! Calculates the squared H1 (semi-)norm of an arbitrary finite element 
-    ! function <tex> ||v||^2_{H^1} </tex>.
+    ! function <tex> $ ||v||^2_{H^1} $ </tex>.
     ! If v has multiple components, the sum of the integrals of all
     ! components is returned.
     !
@@ -6355,7 +6355,7 @@ contains
     real(DP), intent(out) :: dintvalue
 !</output>    
 
-!<subroutine>
+!</subroutine>
 
     ! Local variables
     real(DP) :: dderivX,dderivY,dderivZ
@@ -6605,7 +6605,7 @@ contains
     ! Calculates the (squared) L2 error of an arbitrary FEM function v
     ! to the bubble function u=16x(1-x)y(1-y):
     !
-    !  <tex>  || v - u ||^2_{L2}  </tex>
+    !  <tex> $$ || v - u ||^2_{L2} $$ </tex>
     !
     ! The FEM function must be provided in revalVectors.
     ! The routine only supports non-interleaved vectors.
@@ -6638,7 +6638,7 @@ contains
     real(DP), intent(out) :: dintvalue
 !</output>    
 
-!<subroutine>
+!</subroutine>
 
     ! Local variables
     real(DP) :: dval1,dval2,dx,dy
@@ -6710,7 +6710,7 @@ contains
     ! to the bubble function u=16x(1-x)y(1-y)
     ! (based on the H1 semi-norm).
     !
-    !  <tex>  | v - u |^2_{H1}  </tex>
+    !  <tex> $$ | v - u |^2_{H1} $$ </tex>
     !
     ! The FEM function must be provided in revalVectors.
     ! The routine only supports non-interleaved vectors.
@@ -6743,7 +6743,7 @@ contains
     real(DP), intent(out) :: dintvalue
 !</output>    
 
-!<subroutine>
+!</subroutine>
 
     ! Local variables
     real(DP) :: dderivX1,dderivY1,dderivX2,dderivY2,dx,dy

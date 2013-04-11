@@ -164,6 +164,8 @@ clean:	$(TEX_MASTER_FILE).clean
 	-rm -f $(addsuffix .$(SUFFIX_MODULE), $(FEAST_KERNEL_MODULES) $(FEAST_APP_MODULES));
 	-rm -f $(TEX_MASTER_FILE_MODULE);
 	-rm -f definitions.tex
+	-rm -f modules_dynamic.aux
+	-rm -f modules_overview.aux
 
 .PHONY: purge
 purge:	$(TEX_MASTER_FILE).clean clean $(TEX_MASTER_FILE).purge

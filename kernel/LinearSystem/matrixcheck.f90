@@ -63,7 +63,7 @@ contains
 
   ! ***************************************************************************
 
-!<subroutin>
+!<subroutine>
 
   subroutine mchk_isDiagDominant(rmatrix, ccheckType, dtreshold, bresult)
 
@@ -332,7 +332,7 @@ contains
 
   ! ***************************************************************************
 
-!<subroutin>
+!<subroutine>
 
   subroutine mchk_isMMatrix(rmatrix, dtreshold, bresult)
 
@@ -867,7 +867,7 @@ contains
 
   ! ***************************************************************************
 
-!<subroutin>
+!<subroutine>
 
   subroutine mchk_isZMatrix(rmatrix, dtreshold, bresult)
 
@@ -1183,11 +1183,11 @@ contains
   subroutine mchk_calcStrongConnComp(rmatrix, bdata, nscc, dtreshold,&
                                      p_IsccIdx, p_Iscc)
 
-!<desciption>
+!<description>
     ! This subroutine calculates the strongly connected components of
     ! the graph that corresponds to to matrix rmatrix. This algorithm
     ! is known as Tarjan's arlgorithm.
-!</desciption>
+!</description>
 
 !<input>
     ! Scalar matrix

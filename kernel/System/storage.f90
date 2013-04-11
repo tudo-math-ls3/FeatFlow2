@@ -19429,6 +19429,8 @@ contains
     type(C_PTR), intent(inout) :: cmemPtr
 !</inputoutput>
 
+!</subroutine>
+
     cmemPtr = C_NULL_PTR
 
   end subroutine storage_nullify

@@ -9058,6 +9058,8 @@ contains
     real(DP) :: minmodDP
 !</result>
 
+!</function>
+
     ! local variables
     real(DP) :: dsa,dsb
 
@@ -9088,6 +9090,8 @@ contains
 !<result>
     real(SP) :: minmodSP
 !</result>
+
+!</function>
 
     ! local variables
     real(SP) :: fsa,fsb

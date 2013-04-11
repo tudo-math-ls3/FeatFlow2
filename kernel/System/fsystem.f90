@@ -2988,10 +2988,10 @@ contains
   ! This function checks if the given string represents a numeric value
 !</description>
     
-!<intput>
+!<input>
   ! String representation
   character(len=*), intent(in) :: sstring
-!</intput>
+!</input>
 
 !<result>
   ! True if sstring represents a numeric value
