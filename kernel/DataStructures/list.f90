@@ -96,22 +96,22 @@ module list
     private
 
     ! Pointer to integer-valued list implementations
-    type(t_listInt),       pointer :: p_listInt       => null()
-    type(t_listInt_Int),   pointer :: p_listInt_Int   => null()
+    type(t_listInt),     pointer :: p_listInt     => null()
+    type(t_listInt_Int), pointer :: p_listInt_Int => null()
     type(t_listInt_DP),  pointer :: p_listInt_DP  => null()
     type(t_listInt_SP),  pointer :: p_listInt_SP  => null()
 
     ! Pointer to double-valued list implementations
-    type(t_listDP),      pointer :: p_listDP      => null()
-    type(t_listDP_Int),  pointer :: p_listDP_Int  => null()
-    type(t_listDP_DP), pointer :: p_listDP_DP => null()
-    type(t_listDP_SP), pointer :: p_listDP_SP => null()
+    type(t_listDP),      pointer :: p_listDP     => null()
+    type(t_listDP_Int),  pointer :: p_listDP_Int => null()
+    type(t_listDP_DP),   pointer :: p_listDP_DP  => null()
+    type(t_listDP_SP),   pointer :: p_listDP_SP  => null()
 
     ! Pointer to single-valued list implementations
-    type(t_listSP),      pointer :: p_listSP      => null()
-    type(t_listSP_Int),  pointer :: p_listSP_Int  => null()
-    type(t_listSP_DP), pointer :: p_listSP_DP => null()
-    type(t_listSP_SP), pointer :: p_listSP_SP => null()
+    type(t_listSP),      pointer :: p_listSP     => null()
+    type(t_listSP_Int),  pointer :: p_listSP_Int => null()
+    type(t_listSP_DP),   pointer :: p_listSP_DP  => null()
+    type(t_listSP_SP),   pointer :: p_listSP_SP  => null()
 
   end type t_list
 

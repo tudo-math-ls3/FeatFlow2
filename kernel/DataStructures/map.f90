@@ -96,22 +96,22 @@ module map
     private
 
     ! Pointer to integer-valued map implementations
-    type(t_mapInt),       pointer :: p_mapInt       => null()
-    type(t_mapInt_Int),   pointer :: p_mapInt_Int   => null()
+    type(t_mapInt),     pointer :: p_mapInt     => null()
+    type(t_mapInt_Int), pointer :: p_mapInt_Int => null()
     type(t_mapInt_DP),  pointer :: p_mapInt_DP  => null()
     type(t_mapInt_SP),  pointer :: p_mapInt_SP  => null()
 
     ! Pointer to double-valued map implementations
-    type(t_mapDP),      pointer :: p_mapDP      => null()
-    type(t_mapDP_Int),  pointer :: p_mapDP_Int  => null()
-    type(t_mapDP_DP), pointer :: p_mapDP_DP => null()
-    type(t_mapDP_SP), pointer :: p_mapDP_SP => null()
+    type(t_mapDP),     pointer :: p_mapDP     => null()
+    type(t_mapDP_Int), pointer :: p_mapDP_Int => null()
+    type(t_mapDP_DP),  pointer :: p_mapDP_DP  => null()
+    type(t_mapDP_SP),  pointer :: p_mapDP_SP  => null()
 
     ! Pointer to single-valued map implementations
-    type(t_mapSP),      pointer :: p_mapSP      => null()
-    type(t_mapSP_Int),  pointer :: p_mapSP_Int  => null()
-    type(t_mapSP_DP), pointer :: p_mapSP_DP => null()
-    type(t_mapSP_SP), pointer :: p_mapSP_SP => null()
+    type(t_mapSP),     pointer :: p_mapSP     => null()
+    type(t_mapSP_Int), pointer :: p_mapSP_Int => null()
+    type(t_mapSP_DP),  pointer :: p_mapSP_DP  => null()
+    type(t_mapSP_SP),  pointer :: p_mapSP_SP  => null()
 
   end type t_map
 

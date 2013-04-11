@@ -96,22 +96,22 @@ module arraylist
     private
 
     ! Pointer to integer-valued arraylist implementations
-    type(t_arraylistInt),       pointer :: p_ArraylistInt       => null()
-    type(t_arraylistInt_Int),   pointer :: p_ArraylistInt_Int   => null()
+    type(t_arraylistInt),     pointer :: p_ArraylistInt     => null()
+    type(t_arraylistInt_Int), pointer :: p_ArraylistInt_Int => null()
     type(t_arraylistInt_DP),  pointer :: p_ArraylistInt_DP  => null()
     type(t_arraylistInt_SP),  pointer :: p_ArraylistInt_SP  => null()
 
     ! Pointer to double-valued arraylist implementations
-    type(t_arraylistDP),      pointer :: p_ArraylistDP      => null()
-    type(t_arraylistDP_Int),  pointer :: p_ArraylistDP_Int  => null()
-    type(t_arraylistDP_DP), pointer :: p_ArraylistDP_DP => null()
-    type(t_arraylistDP_SP), pointer :: p_ArraylistDP_SP => null()
+    type(t_arraylistDP),     pointer :: p_ArraylistDP     => null()
+    type(t_arraylistDP_Int), pointer :: p_ArraylistDP_Int => null()
+    type(t_arraylistDP_DP),  pointer :: p_ArraylistDP_DP  => null()
+    type(t_arraylistDP_SP),  pointer :: p_ArraylistDP_SP  => null()
 
     ! Pointer to single-valued arraylist implementations
-    type(t_arraylistSP),      pointer :: p_ArraylistSP      => null()
-    type(t_arraylistSP_Int),  pointer :: p_ArraylistSP_Int  => null()
-    type(t_arraylistSP_DP), pointer :: p_ArraylistSP_DP => null()
-    type(t_arraylistSP_SP), pointer :: p_ArraylistSP_SP => null()
+    type(t_arraylistSP),     pointer :: p_ArraylistSP     => null()
+    type(t_arraylistSP_Int), pointer :: p_ArraylistSP_Int => null()
+    type(t_arraylistSP_DP),  pointer :: p_ArraylistSP_DP  => null()
+    type(t_arraylistSP_SP),  pointer :: p_ArraylistSP_SP  => null()
 
   end type t_arraylist
 
