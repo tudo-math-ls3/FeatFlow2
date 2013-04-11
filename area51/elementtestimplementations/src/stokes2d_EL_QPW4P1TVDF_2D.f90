@@ -1174,11 +1174,11 @@ contains
         rcollection=rcollection,revalVectors=revalVectors,&
         rcubatureInfo=rcubatureInfo)
 
-    rcollection%IquickAccess(1) = 3  ! Pressure, L2-error
-    call bma_buildIntegral(derrorPL2(1),BMA_CALC_STANDARD,st2d3_fcalc_L2error,&
-        rcollection=rcollection,revalVectors=revalVectors,&
-        rcubatureInfo=rcubatureInfo)
-
+!    rcollection%IquickAccess(1) = 3  ! Pressure, L2-error
+!    call bma_buildIntegral(derrorPL2(1),BMA_CALC_STANDARD,st2d3_fcalc_L2error,&
+!        rcollection=rcollection,revalVectors=revalVectors,&
+!        rcubatureInfo=rcubatureInfo)
+!
 !    rcollection%IquickAccess(1) = 1  ! X-component, H1-error
 !    call bma_buildIntegral(DerrorUH1(1),BMA_CALC_STANDARD,st2d3_fcalc_H1error,&
 !        rcollection=rcollection,revalVectors=revalVectors,&
@@ -1195,7 +1195,7 @@ contains
                                 // " " // trim(sys_sdEL(sqrt(DerrorUL2(2)), 10)))
 !    call output_line("|u - u_h|_H1 = " // trim(sys_sdEL(sqrt(DerrorUH1(1)), 10)) &
 !                                // " " // trim(sys_sdEL(sqrt(DerrorUH1(2)), 10)))
-    call output_line("|p - p_h|_L2 = " // trim(sys_sdEL(sqrt(derrorPL2(1)), 10)))
+!    call output_line("|p - p_h|_L2 = " // trim(sys_sdEL(sqrt(derrorPL2(1)), 10)))
     
     ! Cleanup
     call fev2_releaseVectorList(revalVectors)
