@@ -386,7 +386,7 @@ contains
       ! input/output parameters
       type(t_array), dimension(:,:), intent(inout) :: rarray
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:,:), pointer :: DdataAtNode
       real(DP), dimension(:,:,:), pointer :: Dcoefficients
       integer, dimension(:,:), pointer :: IdofsAtNode
@@ -547,7 +547,7 @@ contains
       ! input/output parameters
       type(t_array), dimension(:,:), intent(inout) :: rarray
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:,:), pointer :: DdataAtNode
       real(DP), dimension(:,:,:), pointer :: Dcoefficients
       integer, dimension(:,:), pointer :: IdofsAtNode
@@ -760,7 +760,7 @@ contains
       ! input/output parameters
       type(t_array), dimension(:,:), intent(inout) :: rarray
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:,:), pointer :: DdataAtNode
       real(DP), dimension(:,:,:), pointer :: Dcoefficients
 
@@ -909,7 +909,7 @@ contains
       ! input/output parameters
       type(t_array), dimension(:,:), intent(inout) :: rarray
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:,:), pointer :: DdataAtNode
       real(DP), dimension(:,:,:), pointer :: Dcoefficients
 
@@ -1545,7 +1545,7 @@ contains
       ! input/output parameters
       real(DP), dimension(MVAR,NA), intent(inout) :: Ddata
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:,:), pointer :: DdataAtNode
       real(DP), dimension(:,:,:), pointer :: Dcoefficients
       integer, dimension(:,:), pointer :: IdofsAtNode
@@ -1653,7 +1653,7 @@ contains
       ! input/output parameters
       real(DP), dimension(MVAR,NA), intent(inout) :: Ddata
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:,:), pointer :: DdataAtNode
       real(DP), dimension(:,:,:), pointer :: Dcoefficients
       integer, dimension(:,:), pointer :: IdofsAtNode
@@ -1816,7 +1816,7 @@ contains
       ! input/output parameters
       real(DP), dimension(MVAR,NA), intent(inout) :: Ddata
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:,:), pointer :: DdataAtNode
       real(DP), dimension(:,:,:), pointer :: Dcoefficients
 
@@ -1913,7 +1913,7 @@ contains
       ! input/output parameters
       real(DP), dimension(MVAR,NA), intent(inout) :: Ddata
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:,:), pointer :: DdataAtNode
       real(DP), dimension(:,:,:), pointer :: Dcoefficients
 
@@ -2308,7 +2308,7 @@ contains
       ! input/output parameters
       type(t_array), dimension(:,:), intent(inout) :: rarray
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:,:), pointer :: DdataAtNode
       real(DP), dimension(:,:,:), pointer :: Dcoefficients
 
@@ -2459,7 +2459,7 @@ contains
       ! input/output parameters
       type(t_array), dimension(:,:), intent(inout) :: rarray
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:,:,:), pointer :: DdataAtEdge
       real(DP), dimension(:,:,:), pointer :: Dcoefficients
 
@@ -2697,7 +2697,7 @@ contains
       ! input/output parameters
       type(t_array), dimension(:,:), intent(inout) :: rarray
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:,:,:), pointer :: DdataAtEdge
       real(DP), dimension(:,:,:), pointer :: Dcoefficients
 
@@ -3476,7 +3476,7 @@ contains
       ! input/output parameters
       real(DP), dimension(MVAR,NA), intent(inout) :: Ddata
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:,:), pointer :: DdataAtNode
       real(DP), dimension(:,:,:), pointer :: Dcoefficients
 
@@ -3578,7 +3578,7 @@ contains
       ! input/output parameters
       real(DP), dimension(MVAR,NA), intent(inout) :: Ddata
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:,:,:), pointer :: DdataAtEdge
       real(DP), dimension(:,:,:), pointer :: Dcoefficients
 
@@ -3724,7 +3724,7 @@ contains
       ! input/output parameters
       real(DP), dimension(MVAR,NA), intent(inout) :: Ddata
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:,:,:), pointer :: DdataAtEdge
       real(DP), dimension(:,:,:), pointer :: Dcoefficients
 
@@ -4045,7 +4045,7 @@ contains
       ! input/output parameters
       real(DP), dimension(NEQ,NVAR), intent(inout) :: Ddata
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:,:), pointer :: DdataAtNode,Dcoefficients
       integer, dimension(:,:), pointer  :: IdofsAtNode
 
@@ -4196,7 +4196,7 @@ contains
       ! input/output parameters
       real(DP), dimension(NEQ,NVAR), intent(inout) :: Ddata
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:,:), pointer :: DdataAtNode,Dcoefficients
 
       ! local variables
@@ -4503,7 +4503,7 @@ contains
       ! input/output parameters
       real(DP), dimension(NVAR,NEQ), intent(inout) :: Ddata
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:,:), pointer :: DdataAtNode,Dcoefficients
       integer, dimension(:,:), pointer  :: IdofsAtNode
 
@@ -4654,7 +4654,7 @@ contains
       ! input/output parameters
       real(DP), dimension(NVAR,NEQ), intent(inout) :: Ddata
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:,:), pointer :: DdataAtNode,Dcoefficients
 
       ! local variables
