@@ -2,7 +2,7 @@
 !# Tutorial 001a: Hello world
 !##############################################################################
 
-module tutorial001a
+module tutorial002a
 
   ! Include basic Feat-2 modules
   use fsystem
@@ -12,13 +12,13 @@ module tutorial001a
   implicit none
   private
   
-  public :: start_tutorial001a
+  public :: start_tutorial002a
 
 contains
 
   ! ***************************************************************************
 
-  subroutine start_tutorial001a
+  subroutine start_tutorial002a
 
     ! Initialisation of the feat library, output system and memory management
     call system_init()
@@ -26,7 +26,7 @@ contains
     call storage_init(999, 100)
 
     ! Print a message
-    call output_line ("Hello world. This is FEAT-2. Tutorial 001a.")
+    call output_line ("Hello world. This is FEAT-2.")
 
     ! Clean up
     call storage_done()

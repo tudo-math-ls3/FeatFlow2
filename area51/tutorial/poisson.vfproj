@@ -88,5 +88,10 @@
 		<Filter Name="Data Files" Filter="dat"/>
 		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
 		<File RelativePath=".\src\tutorial.f90"/>
-		<File RelativePath=".\src\tutorial001a.f90"/></Filter></Files>
+		<File RelativePath=".\src\tutorial001a.f90"/>
+		<File RelativePath=".\src\tutorial001b.f90"/>
+		<File RelativePath=".\src\tutorial001c.f90"/>
+		<File RelativePath=".\src\tutorial001d.f90"/>
+		<File RelativePath=".\src\tutorial002a.f90"/>
+		</Filter></Files>
 	<Globals/></VisualStudioProject>
