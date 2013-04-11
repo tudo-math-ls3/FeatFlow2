@@ -1636,7 +1636,7 @@ contains
   pure &
 #endif
 
- subroutine elem_eval_RT1_2D (celement, reval, Bder, Dbas)
+ subroutine elem_eval_RT1_2D (celement, reval, Bder, Dbas, rperfconfig)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic
@@ -1659,6 +1659,9 @@ contains
   ! the element might skip the computation of that value type, i.e.
   ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
   logical, dimension(:), intent(in)              :: Bder
+
+  ! Local performance configuration.
+  type(t_perfconfig), intent(in)                 :: rperfconfig
 !</input>
 
 !<output>
@@ -2087,7 +2090,7 @@ contains
   pure &
 #endif
 
- subroutine elem_eval_DCP1_2D (celement, reval, Bder, Dbas)
+ subroutine elem_eval_DCP1_2D (celement, reval, Bder, Dbas, rperfconfig)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic
@@ -2110,6 +2113,9 @@ contains
   ! the element might skip the computation of that value type, i.e.
   ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
   logical, dimension(:), intent(in)              :: Bder
+
+  ! Local performance configuration.
+  type(t_perfconfig), intent(in)                 :: rperfconfig
 !</input>
 
 !<output>
@@ -2144,7 +2150,7 @@ contains
     if (Bder(DER_FUNC)) then
 
       !$omp parallel do default(shared) private(i) &
-      !$omp if(nelements > rperfconfig%NELEMMIN_OMP)
+      !$omp if(reval%nelements > rperfconfig%NELEMMIN_OMP)
       do j=1,reval%nelements
       
         ! There are three basis functions on the reference element:
@@ -2167,7 +2173,7 @@ contains
     if ((Bder(DER_DERIV_X)) .or. (Bder(DER_DERIV_Y))) then
 
       !$omp parallel do default(shared) private(i,dxj) &
-      !$omp if(nelements > rperfconfig%NELEMMIN_OMP)
+      !$omp if(reval%nelements > rperfconfig%NELEMMIN_OMP)
       do j=1,reval%nelements
         Dxj(:) = 1E0_DP / reval%p_Ddetj(1:reval%npointsPerElement,j)
 

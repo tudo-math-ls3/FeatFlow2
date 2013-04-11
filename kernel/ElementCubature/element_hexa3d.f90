@@ -6558,7 +6558,7 @@ contains
     if(Bder(DER_FUNC3D)) then
 
       ! Loop through all elements
-      !$omp parallel do defaulT(shared) private(i,dx,dy,dz,dxy,dyz) &
+      !$omp parallel do defaulT(shared) private(i,dx,dy,dz) &
       !$omp if(reval%nelements > reval%p_rperfconfig%NELEMMIN_OMP)
       do j = 1, reval%nelements
 

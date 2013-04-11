@@ -3033,10 +3033,12 @@ contains
         revalElementSet%p_DpointsRef, revalElementSet%p_rperfconfig)
 
     case (EL_RT0_2D)
-      call elem_eval_RT1_2D(celement, revalElementSet, Bder, Dbas)
+      call elem_eval_RT1_2D(celement, revalElementSet, Bder, Dbas,&
+          revalElementSet%p_rperfconfig)
 
     case (EL_DCP1_2D)
-      call elem_eval_DCP1_2D(celement, revalElementSet, Bder, Dbas)
+      call elem_eval_DCP1_2D(celement, revalElementSet, Bder, Dbas,&
+          revalElementSet%p_rperfconfig)
 
     ! *****************************************************
     ! 2D quadrilateral elements
