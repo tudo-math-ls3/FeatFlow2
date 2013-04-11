@@ -117,6 +117,27 @@ contains
 
   end subroutine
 
+  ! ***********************************************************************************************
+
+  elemental real(DP) function funcDelta(dx, dy, dsigma, dh)
+  real(DP), intent(in) :: dx, dy, dsigma, dh
+  real(DP), parameter :: dr0 = 0.25_DP
+  real(DP) :: dr, dn, dkappa, ddist, dw, ddelta
+  
+    dr = sqrt(dx*dx + dy*dy)
+    dkappa = -1._DP / dr
+    dn = dx / dr
+    ddist = dr - dr0
+    dw = ddist / dh
+    if(abs(dw) < 1._DP) then
+      ddelta = 35._DP/32._DP * (1._DP - 3._DP*dw**2 + 3._DP*dw**4 - dw**6) / dh
+      funcDelta = ddelta*dkappa*dn*dsigma
+    else
+      funcDelta = 0._DP
+    end if
+
+  end function
+
   !****************************************************************************
 
 !<subroutine>
@@ -166,6 +187,10 @@ contains
     real(DP), dimension(:,:), pointer :: p_DcubWeight
     type(t_bmaVectorData), pointer :: p_rvectorData1,p_rvectorData2
     real(DP), dimension(:,:,:), pointer :: p_Dpoints
+    real(DP) :: dsigma,dh
+    
+    dsigma = rcollection%DquickAccess(1)
+    dh = rcollection%DquickAccess(2)
   
     ! Get cubature weights data
     p_DcubWeight => rassemblyData%p_DcubWeight
@@ -195,8 +220,8 @@ contains
         dy = p_Dpoints(2,icubp,iel)
 
         ! Values of the velocity RHS for the X1 and X2 component
-        dval1 = 1000.0_DP
-        dval2 = 1000.0_DP
+        dval1 = funcDelta(dx, dy, dsigma, dh)
+        dval2 = funcDelta(dy, dx, dsigma, dh)
         
         ! Outer loop over the DOFs i=1..ndof on our current element,
         ! which corresponds to the (test) basis functions Phi_i:
@@ -772,6 +797,7 @@ contains
     real(DP), dimension(1) :: DerrorPL2
     real(DP) :: derror
     real(DP), dimension(:), pointer :: p_DdataX,p_DdataP
+    real(DP) :: dh, dsigma
     logical :: bpureDirichlet
 
     ! Ok, let us start.
@@ -783,6 +809,10 @@ contains
     ! Viscosity parameter:
     dnu = 1.0_DP
 
+    ! Parameters defining the pressure function
+    dsigma = 1E+0_DP
+    dh = 0.05_DP
+
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Read the domain, read the mesh, refine
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -793,10 +823,10 @@ contains
 
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
-    call boundary_read_prm(rboundary, trim(spredir)//"/QUAD.prm")
+    call boundary_read_prm(rboundary, trim(spredir)//"/unit_square.prm")
         
     ! Now read in the basic triangulation.
-    call tria_readTriFile2D (rtriangulation, trim(spredir)//"/QUAD.tri", rboundary)
+    call tria_readTriFile2D (rtriangulation, trim(spredir)//"/unit_square.tri", rboundary)
     
     ! Refine the mesh up to the minimum level
     call tria_quickRefine2LevelOrdering(NLMAX-1,rtriangulation,rboundary)
@@ -841,7 +871,7 @@ contains
     ! Create an assembly information structure which tells the code
     ! the cubature formula to use. Standard: Gauss 3x3.
     call spdiscr_createDefCubStructure(&  
-        rdiscretisation%RspatialDiscr(1),rcubatureInfo,CUB_QPW4QG3T_2D)
+        rdiscretisation%RspatialDiscr(1),rcubatureInfo,CUB_QPW4QG5T_2D)
 
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Create a block matrix structure for the operator
@@ -885,6 +915,7 @@ contains
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Create a block matrix entries
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    call output_line("Generating matrices...")
     
     ! Pass dnu via rcollection
     rcollection%DquickAccess(1) = dnu
@@ -902,6 +933,7 @@ contains
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Create RHS and solution vectors
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    call output_line("Generating vectors...")
 
     ! Create a RHS and a solution vector based on the discretisation.
     ! Fill with zero.
@@ -909,6 +941,8 @@ contains
     call lsysbl_createVectorBlock (rdiscretisation,rvector,.true.)
 
     ! Assemble the right hand side.
+    rcollection%DquickAccess(1) = dsigma
+    rcollection%DquickAccess(2) = dh
     call bma_buildVector (rrhs,BMA_CALC_STANDARD,&
           st2d3_fcalc_rhs,rcubatureInfo=rcubatureInfo,rcollection=rcollection)
                                 
@@ -921,6 +955,7 @@ contains
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Discretise the boundary conditions and apply them to the matrix/RHS/sol.
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    call output_line("Setting up BC...")
 
     ! Set to TRUE for a full Dirichlet problem!!!
     bpureDirichlet = .true.
@@ -1046,6 +1081,7 @@ contains
     ! Initialise structure/data of the solver. This allows the
     ! solver to allocate memory / perform some precalculation
     ! to the problem.
+    call output_line("Symbolic factorisation...")
     call linsol_initStructure (p_rsolverNode, ierror)
 
     if (ierror .ne. LINSOL_ERR_NOERROR) then
@@ -1053,6 +1089,7 @@ contains
       call sys_halt()
     end if
     
+    call output_line("Numeric factorisation...")
     call linsol_initData (p_rsolverNode, ierror)
 
     if (ierror .ne. LINSOL_ERR_NOERROR) then
@@ -1069,6 +1106,7 @@ contains
     ! we use linsol_solveAdaptively. If b is a defect
     ! RHS and x a defect update to be added to a solution vector,
     ! we would have to use linsol_precondDefect instead.
+    call output_line("Solving...")
     call linsol_solveAdaptively (p_rsolverNode,rvector,rrhs,rtempBlock)
     
     ! Debug
@@ -1078,6 +1116,7 @@ contains
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Postprocessing of the solution
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    call output_line("Postprocessing...")
     
     ! That is it, rvecSol now contains our solution. We can now
     ! start the postprocessing.
@@ -1179,6 +1218,7 @@ contains
     call lsysbl_releaseVector (rvector)
     call lsysbl_releaseVector (rrhs)
     call lsysbl_releaseMatrix (rmatrix)
+    call lsysbl_releaseMatrix (rmatrixPmass)
     
     ! Release our discrete version of the boundary conditions
     call bcasm_releaseDiscreteBC (rdiscreteBC)
