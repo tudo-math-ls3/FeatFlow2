@@ -16,6 +16,12 @@ program tutorial
   use tutorial001b
   use tutorial001c
   use tutorial001d
+  
+  use tutorial002a
+  use tutorial002b
+  
+  use tutorial003a
+  use tutorial003b
 
   implicit none
   
@@ -38,6 +44,12 @@ program tutorial
   call start_tutorial001b
   call start_tutorial001c
   call start_tutorial001d
+  
+  call start_tutorial002a
+  call start_tutorial002b
+  
+  call start_tutorial003a
+  call start_tutorial003b
   
   ! -----------------------------------------------------------------
   ! Clean up

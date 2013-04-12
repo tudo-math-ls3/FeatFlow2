@@ -1,0 +1,27 @@
+################################
+# Variables without a section
+################################
+
+value1 = 1
+value2 = 2.0
+
+################################
+# A section with some variables
+################################
+
+[PARAMETERSET1]
+
+value1 = 2
+value2 = 3.0
+value3 = "This is a string"
+
+################################
+# Another section
+################################
+
+[PARAMETERSET2]
+
+valuelist1(3) =
+  1.0
+  2.0
+  3.0
