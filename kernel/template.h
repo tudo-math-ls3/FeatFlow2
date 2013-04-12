@@ -90,4 +90,25 @@
 #define FEAT2_PP_DTYPE(d_type) type(d_type)
 #endif
 
+#if 0
+!###############################################################################
+!# Macro definition for templating with one or more template parameters
+!###############################################################################
+#endif
+
+#define FEAT2_PP_TEMPLATE1_(name,t1) name##t1
+#define FEAT2_PP_TEMPLATE1(name,t1) FEAT2_PP_TEMPLATE1_(name,t1)
+
+#define FEAT2_PP_TEMPLATE2_(name,t1,t2) name##t1##t2
+#define FEAT2_PP_TEMPLATE2(name,t1,t2) FEAT2_PP_TEMPLATE2_(name,t1,t2)
+
+#define FEAT2_PP_TEMPLATE3_(name,t1,t2,t3) name##t1##t2#tt3
+#define FEAT2_PP_TEMPLATE3(name,t1,t2,t3) FEAT2_PP_TEMPLATE3_(name,t1,t2,t3)
+
+#define FEAT2_PP_TEMPLATE4_(name,t1,t2,t3,t4) name##t1##t2#tt3##t4
+#define FEAT2_PP_TEMPLATE4(name,t1,t2,t3,t4) FEAT2_PP_TEMPLATE4_(name,t1,t2,t3,t4)
+
+#define FEAT2_PP_TEMPLATE5_(name,t1,t2,t3,t4,t5) name##t1##t2#tt3##t4##t5
+#define FEAT2_PP_TEMPLATE5(name,t1,t2,t3,t4,t5) FEAT2_PP_TEMPLATE5_(name,t1,t2,t3,t4,t5)
+
 #endif
