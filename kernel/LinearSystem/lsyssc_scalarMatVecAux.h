@@ -21,7 +21,7 @@
 #elif MatDT == QUAD_PREC
 #define __MatName__ QP
 #define __MatType__ QP
-#define __MatOne__  1.0_DP
+#define __MatOne__  1.0_QP
 #define __MatZero__ 0.0_QP
 #else
 #error "Unsupported matrix datatype!"
