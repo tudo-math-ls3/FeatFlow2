@@ -35,8 +35,8 @@ module zpinch_callback
 
 !$use omp_lib
   use afcstabbase
-  use afcstabscalar
-  use afcstabsystem
+  use afcstabscalarfct
+  use afcstabsystemfct
   use basicgeometry
   use boundarycondaux
   use boundaryfilter

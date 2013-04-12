@@ -42,6 +42,7 @@ module mhd_preprocessing
 !$use omp_lib
   use afcstabbase
   use afcstabsystem
+  use afcstabsystemfct
   use basicgeometry
   use bilinearformevaluation
   use boundary

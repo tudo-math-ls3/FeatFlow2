@@ -253,6 +253,9 @@ use constant SRCLIST_KERNEL =>
     "NonlinearSolver/nonlinearsolver.f90 " .
 
     "PDEOperators/afcstabbase.f90 PDEOperators/afcstabscalar.f90 PDEOperators/afcstabsystem.f90 ".
+    "PDEOperators/afcstabscalarfct.f90 PDEOperators/afcstabscalartvd.f90 PDEOperators/afcstabscalargp.f90 ".
+    "PDEOperators/afcstabscalarsymm.f90 PDEOperators/afcstabscalarlpt.f90 ".
+    "PDEOperators/afcstabsystemfct.f90 PDEOperators/afcstabsystemtvd.f90 ".
     "PDEOperators/groupfembase.f90 PDEOperators/groupfemscalar.f90 PDEOperators/groupfemsystem.f90 " .
     "PDEOperators/matrixrestriction.f90 PDEOperators/stdoperators.f90 PDEOperators/convection.f90 " .
     "PDEOperators/jumpstabilisation.f90 " .

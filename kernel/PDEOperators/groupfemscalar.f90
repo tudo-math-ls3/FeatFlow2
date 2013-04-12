@@ -49,7 +49,9 @@
 !#        group finite element formulation
 !#
 !# 5.) gfsc_buildJacobian = gfsc_buildJacobianScalar /
-!#                          gfsc_buildJacobianBlock
+!#                          gfsc_buildJacobianBlock1 /
+!#                          gfsc_buildJacobianBlock2 /
+!#                          gfsc_buildJacobianBlock3
 !#      -> Assembles the Jacobian matrix for the group finite element formulation
 !#
 !# 6.) gfsc_initPerfConfig
@@ -145,7 +147,9 @@ module groupfemscalar
 
   interface gfsc_buildJacobian
     module procedure gfsc_buildJacobianScalar
-    module procedure gfsc_buildJacobianBlock
+    module procedure gfsc_buildJacobianBlock1
+    module procedure gfsc_buildJacobianBlock2
+    module procedure gfsc_buildJacobianBlock3
   end interface
 
 contains
@@ -1966,7 +1970,7 @@ contains
     ! Group finite element set
     type(t_groupFEMSet), intent(in) :: rgroupFEMSet
 
-    ! Vector on which the matrix entries may depend.
+    ! Vector on which the matrix entries may depend
     type(t_vectorBlock), intent(in) :: rx
 
     ! Scaling factor
@@ -2055,7 +2059,7 @@ contains
     ! Group finite element set
     type(t_groupFEMSet), intent(in) :: rgroupFEMSet
 
-    ! Vector on which the matrix entries may depend.
+    ! Vector on which the matrix entries may depend
     type(t_vectorScalar), intent(in) :: rx
 
     ! Scaling factor
@@ -2152,7 +2156,7 @@ contains
     ! Group finite element set
     type(t_groupFEMSet), intent(in) :: rgroupFEMSet
 
-    ! Vector on which the matrix entries may depend.
+    ! Vector on which the matrix entries may depend
     type(t_vectorBlock), intent(in) :: rx
 
     ! Scaling factor
@@ -2244,7 +2248,7 @@ contains
     ! Group finite element set
     type(t_groupFEMSet), intent(in) :: rgroupFEMSet
 
-    ! Vector on which the matrix entries may depend.
+    ! Vector on which the matrix entries may depend
     type(t_vectorScalar), intent(in) :: rx
 
     ! Scaling factor
@@ -2423,7 +2427,7 @@ contains
       ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Ddata
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:), pointer :: DdataAtNode
       real(DP), dimension(:,:), pointer :: Dcoefficients
       integer, dimension(:,:), pointer :: IdofsAtNode
@@ -2531,7 +2535,7 @@ contains
       ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Ddata
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:), pointer :: DdataAtNode
       real(DP), dimension(:,:), pointer :: Dcoefficients
       integer, dimension(:,:), pointer :: IdofsAtNode
@@ -2693,7 +2697,7 @@ contains
       ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Ddata
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:), pointer :: DdataAtNode
       real(DP), dimension(:,:), pointer :: Dcoefficients
 
@@ -2790,7 +2794,7 @@ contains
       ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Ddata
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:), pointer :: DdataAtNode
       real(DP), dimension(:,:), pointer :: Dcoefficients
 
@@ -2967,7 +2971,7 @@ contains
     ! Group finite element set
     type(t_groupFEMSet), intent(in) :: rgroupFEMSet
 
-    ! Vector on which the matrix entries may depend.
+    ! Vector on which the matrix entries may depend
     type(t_vectorBlock), intent(in) :: rx
 
     ! Scaling factor
@@ -3070,7 +3074,7 @@ contains
     ! Group finite element set
     type(t_groupFEMSet), intent(in) :: rgroupFEMSet
 
-    ! Vector on which the matrix entries may depend.
+    ! Vector on which the matrix entries may depend
     type(t_vectorScalar), intent(in) :: rx
 
     ! Scaling factor
@@ -3181,7 +3185,7 @@ contains
     ! Group finite element set
     type(t_groupFEMSet), intent(in) :: rgroupFEMSet
 
-    ! Vector on which the matrix entries may depend.
+    ! Vector on which the matrix entries may depend
     type(t_vectorBlock), intent(in) :: rx
 
     ! Scaling factor
@@ -3287,7 +3291,7 @@ contains
     ! Group finite element set
     type(t_groupFEMSet), intent(in) :: rgroupFEMSet
 
-    ! Vector on which the matrix entries may depend.
+    ! Vector on which the matrix entries may depend
     type(t_vectorScalar), intent(in) :: rx
 
     ! Scaling factor
@@ -3527,7 +3531,7 @@ contains
       ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Ddata
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:), pointer :: DdataAtNode
       real(DP), dimension(:,:), pointer :: Dcoefficients
 
@@ -3629,7 +3633,7 @@ contains
       ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Ddata
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:,:), pointer :: DdataAtEdge
       real(DP), dimension(:,:), pointer :: Dcoefficients
 
@@ -3774,7 +3778,7 @@ contains
       ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Ddata
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:,:), pointer :: DdataAtEdge
       real(DP), dimension(:,:), pointer :: Dcoefficients
 
@@ -3938,7 +3942,7 @@ contains
       ! output parameters
       real(DP), dimension(:,:), intent(out) :: Dcoefficients
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:,:), pointer :: DdataAtEdge
 
       ! local variables
@@ -4117,7 +4121,7 @@ contains
     ! Group finite element set
     type(t_groupFEMSet), intent(in) :: rgroupFEMSet
 
-    ! Vector on which the vector entries may depend.
+    ! Vector on which the vector entries may depend
     type(t_vectorBlock), intent(in) :: rx
 
     ! Scaling factor
@@ -4194,7 +4198,7 @@ contains
     ! Group finite element set
     type(t_groupFEMSet), intent(in) :: rgroupFEMSet
 
-    ! Vector on which the vector entries may depend.
+    ! Vector on which the vector entries may depend
     type(t_vectorScalar), intent(in) :: rx
 
     ! Scaling factor
@@ -4345,7 +4349,7 @@ contains
       ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Ddata
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:), pointer :: DdataAtNode,Dcoefficients
       integer, dimension(:,:), pointer  :: IdofsAtNode
 
@@ -4503,7 +4507,7 @@ contains
       ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Ddata
 
-      ! auxiliary arras
+      ! auxiliary arrays
       real(DP), dimension(:), pointer :: DdataAtNode,Dcoefficients
 
       ! local variables
@@ -4678,7 +4682,7 @@ contains
     ! Group finite element set
     type(t_groupFEMSet), intent(in) :: rgroupFEMSet
 
-    ! Vector on which the vector entries may depend.
+    ! Vector on which the vector entries may depend
     type(t_vectorBlock), intent(in) :: rx
 
     ! Scaling factor
@@ -4763,7 +4767,7 @@ contains
     ! Group finite element set
     type(t_groupFEMSet), intent(in) :: rgroupFEMSet
 
-    ! Vector on which the vector entries may depend.
+    ! Vector on which the vector entries may depend
     type(t_vectorScalar), intent(in) :: rx
 
     ! Scaling factor
@@ -5069,8 +5073,9 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildJacobianBlock(RcoeffMatrices, rx, fcb_calcMatrixSc_sim,&
-      hstep, dscale, bbuildStabilisation, bclear, rjacobian, rcollection)
+  subroutine gfsc_buildJacobianBlock1(rgroupFEMSet, rx,&
+      fcb_calcMatrixSc_sim, hstep, dscale, bbuildStabilisation,&
+      bclear, rmatrix, cconstrType, rcollection, rperfconfig)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the convective
@@ -5081,10 +5086,167 @@ contains
 !</description>
 
 !<input>
-    ! array of coefficient matrices C = (phi_i,D phi_j)
-    type(t_matrixScalar), dimension(:), intent(in) :: RcoeffMatrices
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
 
-    ! solution vector
+    ! Vector on which the matrix entries may depend
+    type(t_vectorBlock), intent(in) :: rx
+
+    ! Perturbation parameter
+    real(DP), intent(in) :: hstep
+
+    ! Scaling factor
+    real(DP), intent(in) :: dscale
+
+    ! Switch for stabilisation
+    ! TRUE  : perform stabilisation
+    ! FALSE : perform no stabilisation
+    logical, intent(in) :: bbuildStabilisation
+
+    ! Switch for matrix assembly
+    ! TRUE  : clear matrix before assembly
+    ! FALSE : assemble matrix in an additive way
+    logical, intent(in) :: bclear
+
+    ! Callback functions to compute matrix entries
+    include 'intf_calcMatrixSc_sim.inc'
+
+    ! OPTIONAL: One of the GFEM_MATC_xxxx constants that allow to
+    ! specify the matrix construction method. If not specified,
+    ! GFEM_MATC_CONSISTENT is used.
+    integer, intent(in), optional :: cconstrType
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
+!</input>
+
+!<inputoutput>
+    ! Global operator
+    type(t_matrixBlock), intent(inout) :: rmatrix
+
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+!</subroutine>
+
+    ! Check if block vector contains exactly one block
+    if ((rx%nblocks            .eq. 1) .and.&
+        (rmatrix%nblocksPerCol .eq. 1) .and.&
+        (rmatrix%nblocksPerRow .eq. 1)) then
+      
+      ! Call scalar version of this routine
+      call gfsc_buildJacobianScalar(rgroupFEMSet, rx%RvectorBlock(1),&
+          fcb_calcMatrixSc_sim, hstep, dscale, bbuildStabilisation,&
+          bclear, rmatrix%RmatrixBlock(1,1), cconstrType,&
+          rcollection, rperfconfig)
+    else
+      call output_line('Solution vector must not contain more than one block!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianBlock1')
+      call sys_halt()
+    end if
+
+  end subroutine gfsc_buildJacobianBlock1
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine gfsc_buildJacobianBlock2(rgroupFEMSet, rx,&
+      fcb_calcMatrixSc_sim, hstep, dscale, bbuildStabilisation,&
+      bclear, rmatrix, cconstrType, rcollection, rperfconfig)
+
+!<description>
+    ! This subroutine assembles the Jacobian matrix for the convective
+    ! part of the discrete transport operator for a scalar convection
+    ! equation. Note that this routine serves as a wrapper for block
+    ! vectors. If there is only one block, then the corresponding
+    ! scalar routine is called. Otherwise, an error is thrown.
+!</description>
+
+!<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+
+    ! Vector on which the matrix entries may depend
+    type(t_vectorScalar), intent(in) :: rx
+
+    ! perturbation parameter
+    real(DP), intent(in) :: hstep
+
+    ! Scaling factor
+    real(DP), intent(in) :: dscale
+
+    ! Switch for stabilisation
+    ! TRUE  : perform stabilisation
+    ! FALSE : perform no stabilisation
+    logical, intent(in) :: bbuildStabilisation
+
+    ! Switch for matrix assembly
+    ! TRUE  : clear matrix before assembly
+    ! FALSE : assemble matrix in an additive way
+    logical, intent(in) :: bclear
+
+    ! Callback functions to compute matrix entries
+    include 'intf_calcMatrixSc_sim.inc'
+
+    ! OPTIONAL: One of the GFEM_MATC_xxxx constants that allow to
+    ! specify the matrix construction method. If not specified,
+    ! GFEM_MATC_CONSISTENT is used.
+    integer, intent(in), optional :: cconstrType
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
+!</input>
+
+!<inputoutput>
+    ! Global operator
+    type(t_matrixBlock), intent(inout) :: rmatrix
+
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+!</subroutine>
+
+    ! Check if block vector contains exactly one block
+    if ((rmatrix%nblocksPerCol .eq. 1) .and.&
+        (rmatrix%nblocksPerRow .eq. 1)) then
+      
+      ! Call scalar version of this routine
+      call gfsc_buildJacobianScalar(rgroupFEMSet, rx,&
+          fcb_calcMatrixSc_sim, hstep, dscale, bbuildStabilisation,&
+          bclear, rmatrix%RmatrixBlock(1,1), cconstrType,&
+          rcollection, rperfconfig)
+    else
+      call output_line('Solution vector must not contain more than one block!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianBlock2')
+      call sys_halt()
+    end if
+
+  end subroutine gfsc_buildJacobianBlock2
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine gfsc_buildJacobianBlock3(rgroupFEMSet, rx,&
+      fcb_calcMatrixSc_sim, hstep, dscale, bbuildStabilisation,&
+      bclear, rmatrix, cconstrType, rcollection, rperfconfig)
+
+!<description>
+    ! This subroutine assembles the Jacobian matrix for the convective
+    ! part of the discrete transport operator for a scalar convection
+    ! equation. Note that this routine serves as a wrapper for block
+    ! vectors. If there is only one block, then the corresponding
+    ! scalar routine is called. Otherwise, an error is thrown.
+!</description>
+
+!<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+
+    ! Vector on which the matrix entries may depend
     type(t_vectorBlock), intent(in) :: rx
 
     ! perturbation parameter
@@ -5103,13 +5265,22 @@ contains
     ! FALSE : assemble matrix in an additive way
     logical, intent(in) :: bclear
 
-    ! callback functions to compute matrix entries
+    ! Callback functions to compute matrix entries
     include 'intf_calcMatrixSc_sim.inc'
+
+    ! OPTIONAL: One of the GFEM_MATC_xxxx constants that allow to
+    ! specify the matrix construction method. If not specified,
+    ! GFEM_MATC_CONSISTENT is used.
+    integer, intent(in), optional :: cconstrType
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
-    ! Jacobian matrix
-    type(t_matrixScalar), intent(inout) :: rjacobian
+    ! Global operator
+    type(t_matrixScalar), intent(inout) :: rmatrix
 
     ! OPTIONAL: collection structure
     type(t_collection), intent(inout), optional :: rcollection
@@ -5117,28 +5288,27 @@ contains
 !</subroutine>
 
     ! Check if block vector contains exactly one block
-    if (rx%nblocks .ne. 1) then
-
-      call output_line('Solution vector must not contain more than one block!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianBlock')
-      call sys_halt()
-
+    if (rx%nblocks .eq. 1) then
+      
+      ! Call scalar version of this routine
+      call gfsc_buildJacobianScalar(rgroupFEMSet, rx%RvectorBlock(1),&
+          fcb_calcMatrixSc_sim, hstep, dscale, bbuildStabilisation,&
+          bclear, rmatrix, cconstrType, rcollection, rperfconfig)
     else
-
-      call gfsc_buildJacobianScalar(&
-          RcoeffMatrices, rx%RvectorBlock(1), fcb_calcMatrixSc_sim, hstep,&
-          dscale, bbuildStabilisation, bclear, rjacobian, rcollection)
-
+      call output_line('Solution vector must not contain more than one block!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianBlock3')
+      call sys_halt()
     end if
 
-  end subroutine gfsc_buildJacobianBlock
+  end subroutine gfsc_buildJacobianBlock3
 
-   !*****************************************************************************
+  !*****************************************************************************
 
 !<subroutine>
 
-  subroutine gfsc_buildJacobianScalar(RcoeffMatrices, rx, fcb_calcMatrixSc_sim,&
-      hstep, dscale, bbuildStabilisation, bclear, rjacobian, rcollection)
+  subroutine gfsc_buildJacobianScalar(rgroupFEMSet, rx,&
+      fcb_calcMatrixSc_sim, hstep, dscale, bbuildStabilisation,&
+      bclear, rmatrix, cconstrType, rcollection, rperfconfig)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the convective part
@@ -5146,8 +5316,8 @@ contains
 !</description>
 
 !<input>
-    ! array of coefficient matrices C = (phi_i,D phi_j)
-    type(t_matrixScalar), dimension(:), intent(in) :: RcoeffMatrices
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
 
     ! solution vector
     type(t_vectorScalar), intent(in) :: rx
@@ -5170,11 +5340,20 @@ contains
 
     ! callback functions to compute matrix entries
     include 'intf_calcMatrixSc_sim.inc'
+
+    ! OPTIONAL: One of the GFEM_MATC_xxxx constants that allow to
+    ! specify the matrix construction method. If not specified,
+    ! GFEM_MATC_CONSISTENT is used.
+    integer, intent(in), optional :: cconstrType
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
 !</input>
 
 !<inputoutput>
     ! Jacobian matrix
-    type(t_matrixScalar), intent(inout) :: rjacobian
+    type(t_matrixScalar), intent(inout) :: rmatrix
 
     ! OPTIONAL: collection structure
     type(t_collection), intent(inout), optional :: rcollection
@@ -5182,142 +5361,84 @@ contains
 !</subroutine>
 
     ! local variables
-    integer, dimension(:), pointer :: p_Kld,p_Kcol,p_Ksep,p_Kdiagonal
-    real(DP), dimension(:), pointer :: p_DcoeffX,p_DcoeffY,p_DcoeffZ,p_Jac,p_Dx
-    integer :: h_Ksep,ndim
+    real(DP), dimension(:,:,:), pointer :: p_DcoeffsAtEdge
+    real(SP), dimension(:,:,:), pointer :: p_FcoeffsAtEdge
+    real(DP), dimension(:), pointer :: p_Ddata,p_Dx
+    real(SP), dimension(:), pointer :: p_Fdata,p_Fx
+    integer, dimension(:,:), pointer :: p_IedgeList
+    integer, dimension(:), pointer :: p_IedgeListIdx
 
+    integer :: ccType
 
-    ! Clear matrix?
-    if (bclear) call lsyssc_clearMatrix(rjacobian)
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
 
-    ! Set pointers
-    call lsyssc_getbase_double(rjacobian, p_Jac)
-    call lsyssc_getbase_double(rx, p_Dx)
+    ! Set pointer to performance configuration
+    if (present(rperfconfig)) then
+      p_rperfconfig => rperfconfig
+    else
+      p_rperfconfig => gfsc_perfconfig
+    end if
 
-    ! How many dimensions do we have?
-    ndim = size(RcoeffMatrices,1)
-    select case(ndim)
-    case (NDIM1D)
-      call lsyssc_getbase_double(RcoeffMatrices(1), p_DcoeffX)
-
-    case (NDIM2D)
-      call lsyssc_getbase_double(RcoeffMatrices(1), p_DcoeffX)
-      call lsyssc_getbase_double(RcoeffMatrices(2), p_DcoeffY)
-
-    case (NDIM3D)
-      call lsyssc_getbase_double(RcoeffMatrices(1), p_DcoeffX)
-      call lsyssc_getbase_double(RcoeffMatrices(2), p_DcoeffY)
-      call lsyssc_getbase_double(RcoeffMatrices(3), p_DcoeffZ)
-
-    case default
-      call output_line('Unsupported spatial dimension!',&
+    ! Check if matrix and vector have the same data type
+    if ((rmatrix%cdataType .ne. rx%cdataType) .or.&
+        (rmatrix%cdataType .ne. rgroupFEMSet%cdataType)) then
+      call output_line('Data types mismatch!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianScalar')
       call sys_halt()
-    end select
+    end if
 
+    ! Set type of matrix construction method
+    ccType = GFEM_MATC_CONSISTENT
+    if (present(cconstrType)) ccType = cconstrType
 
-    ! What kind of matrix are we?
-    select case(rjacobian%cmatrixFormat)
-    case(LSYSSC_MATRIX7)
-      !-------------------------------------------------------------------------
-      ! Matrix format 7
-      !-------------------------------------------------------------------------
+    ! Clear matrix?
+    if (bclear) call lsyssc_clearMatrix(rmatrix)
 
+    ! Check if group finite element set is prepared
+    if ((iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGELIST) .eq. 0) .or.&
+        (iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGEDATA) .eq. 0)) then
+      call output_line('Group finite element set does not provide required data!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianScalar')
+      call sys_halt()
+    end if
+
+    ! Set pointers
+    call gfem_getbase_IedgeListIdx(rgroupFEMSet, p_IedgeListIdx)
+    call gfem_getbase_IedgeList(rgroupFEMSet, p_IedgeList)
+    
+    ! What data types are we?
+    select case(rgroupFEMSet%cdataType)
+    case (ST_DOUBLE)
       ! Set pointers
-      call lsyssc_getbase_Kld(rjacobian, p_Kld)
-      call lsyssc_getbase_Kcol(rjacobian, p_Kcol)
-
-      ! Create diagonal separator
-      h_Ksep = ST_NOHANDLE
-      call storage_copy(rjacobian%h_Kld, h_Ksep)
-      call storage_getbase_int(h_Ksep, p_Ksep, rjacobian%NEQ+1)
-
-      ! Do we have to build the upwind Jacobian?
+      call gfem_getbase_DcoeffsAtEdge(rgroupFEMSet, p_DcoeffsAtEdge)
+      call lsyssc_getbase_double(rmatrix, p_Ddata)
+      call lsyssc_getbase_double(rx, p_Dx)
+      
       if (bbuildStabilisation) then
+        ! Assemble operator with stabilisation
+      else
+        ! Assemble operator without stabilisation
+        call doJacobianDP(p_IedgeListIdx, p_IedgeList,&
+            p_DcoeffsAtEdge, p_Dx, dscale, ccType, p_Ddata)
+      end if
 
-        select case(ndim)
-        case (NDIM1D)
-          call doUpwindMat7_1D(p_Kld, p_Kcol, p_Ksep,&
-              rjacobian%NEQ, p_DcoeffX, p_Dx, p_Jac)
-        case (NDIM2D)
-          call doUpwindMat7_2D(p_Kld, p_Kcol, p_Ksep,&
-              rjacobian%NEQ, p_DcoeffX, p_DcoeffY, p_Dx, p_Jac)
-        case (NDIM3D)
-          call doUpwindMat7_3D(p_Kld, p_Kcol, p_Ksep,&
-              rjacobian%NEQ, p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx, p_Jac)
-        end select
-
-      else   ! bbuildStabilisation
-
-        select case(ndim)
-        case (NDIM1D)
-          call doGalerkinMat7_1D(p_Kld, p_Kcol, p_Ksep,&
-              rjacobian%NEQ, p_DcoeffX, p_Dx, p_Jac)
-        case (NDIM2D)
-          call doGalerkinMat7_2D(p_Kld, p_Kcol, p_Ksep,&
-              rjacobian%NEQ, p_DcoeffX, p_DcoeffY, p_Dx, p_Jac)
-        case (NDIM3D)
-          call doGalerkinMat7_3D(p_Kld, p_Kcol, p_Ksep,&
-              rjacobian%NEQ, p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx, p_Jac)
-        end select
-
-      end if   ! bbuildStabilisation
-
-      ! Release diagonal separator
-      call storage_free(h_Ksep)
-
-
-    case(LSYSSC_MATRIX9)
-      !-------------------------------------------------------------------------
-      ! Matrix format 9
-      !-------------------------------------------------------------------------
-
+    case (ST_SINGLE)
       ! Set pointers
-      call lsyssc_getbase_Kld(rjacobian, p_Kld)
-      call lsyssc_getbase_Kcol(rjacobian, p_Kcol)
-      call lsyssc_getbase_Kdiagonal(rjacobian, p_Kdiagonal)
-
-      ! Create diagonal separator
-      h_Ksep = ST_NOHANDLE
-      call storage_copy(rjacobian%h_Kld, h_Ksep)
-      call storage_getbase_int(h_Ksep, p_Ksep, rjacobian%NEQ+1)
-
-      ! Do we have to build the upwind Jacobian?
+      call gfem_getbase_FcoeffsAtEdge(rgroupFEMSet, p_FcoeffsAtEdge)
+      call lsyssc_getbase_single(rmatrix, p_Fdata)
+      call lsyssc_getbase_single(rx, p_Fx)
+      
       if (bbuildStabilisation) then
-
-        select case(ndim)
-        case (NDIM1D)
-          call doUpwindMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              rjacobian%NEQ, p_DcoeffX, p_Dx, p_Jac)
-        case (NDIM2D)
-          call doUpwindMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              rjacobian%NEQ, p_DcoeffX, p_DcoeffY, p_Dx, p_Jac)
-        case (NDIM3D)
-          call doUpwindMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              rjacobian%NEQ, p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx, p_Jac)
-        end select
-
-      else   ! bbuildStabilisation
-
-        select case(ndim)
-        case (NDIM1D)
-          call doGalerkinMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              rjacobian%NEQ, p_DcoeffX, p_Dx, p_Jac)
-        case (NDIM2D)
-          call doGalerkinMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              rjacobian%NEQ, p_DcoeffX, p_DcoeffY, p_Dx, p_Jac)
-        case (NDIM3D)
-          call doGalerkinMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              rjacobian%NEQ, p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx, p_Jac)
-        end select
-
-      end if   ! bbuildStabilisation
-
-      ! Release diagonal separator
-      call storage_free(h_Ksep)
+        ! Assemble operator with stabilisation
+      else
+        ! Assemble operator without stabilisation
+!        call doJacobianSP(p_IedgeListIdx, p_IedgeList,&
+!            p_FcoeffsAtEdge, p_Fx, real(dscale,SP), ccType, p_Fdata)
+      end if
 
     case default
-      call output_line('Unsupported matrix format!',&
+      call output_line('Unsupported data type!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianScalar')
       call sys_halt()
     end select
@@ -5325,6 +5446,229 @@ contains
   contains
 
     ! Here, the working routine follow
+
+    !**************************************************************
+    ! Assemble standard Jacobian matrix for convective operator
+    ! and assume zero row-sums.
+
+    subroutine doJacobianDP(IedgeListIdx, IedgeList,&
+        DcoeffsAtEdge, Dx, dscale, ccType, Ddata)
+
+      ! input parameters
+      real(DP), dimension(:), intent(in) :: Dx
+      real(DP), dimension(:,:,:), intent(in) :: DcoeffsAtEdge
+      real(DP), intent(in) :: dscale
+      integer, dimension(:,:), intent(in) :: IedgeList
+      integer, dimension(:), intent(in) :: IedgeListIdx
+      integer, intent(in) :: ccType
+
+      ! input/output parameters
+      real(DP), dimension(:), intent(inout) :: Ddata
+
+      ! auxiliary arrays
+      real(DP), dimension(:,:), pointer :: DdataAtEdge
+      real(DP), dimension(:,:), pointer :: DdataAtEdgeIM,DdataAtEdgeIP
+      real(DP), dimension(:,:), pointer :: DdataAtEdgeJM,DdataAtEdgeJP
+      real(DP), dimension(:,:), pointer :: Dcoefficients
+      real(DP), dimension(:,:), pointer :: DcoefficientsIM,DcoefficientsIP
+      real(DP), dimension(:,:), pointer :: DcoefficientsJM,DcoefficientsJP
+
+      ! local variables
+      real(DP) :: ai_ij,ai_ji,aj_ij,aj_ji,bi_ji,bj_ij,diff
+      integer :: idx,IEDGEset,IEDGEmax
+      integer :: iedge,igroup,ii,jj,ij,ji
+
+      !$omp parallel default(shared)&
+      !$omp private(DcoefficientsIM,DcoefficientsIP,DcoefficientsJM,DcoefficientsJP,&
+      !$omp         DdataAtEdgeIM,DdataAtEdgeIP,DdataAtEdgeJM,DdataAtEdgeJP,&
+      !$omp         DdataAtEdge,IEDGEmax,idx,iedge,ii,jj,ij,ji,&
+      !$omp         ai_ij,ai_ji,aj_ij,aj_ji,bi_ji,bj_ij,diff)&
+      !$omp if(size(IedgeList,2) > p_rperfconfig%NEDGEMIN_OMP)
+
+      ! Allocate temporal memory
+      allocate(DdataAtEdge(2,p_rperfconfig%NEDGESIM))
+      allocate(DdataAtEdgeIM(2,p_rperfconfig%NEDGESIM))
+      allocate(DdataAtEdgeIP(2,p_rperfconfig%NEDGESIM))
+      allocate(DdataAtEdgeJM(2,p_rperfconfig%NEDGESIM))
+      allocate(DdataAtEdgeJP(2,p_rperfconfig%NEDGESIM))
+      allocate(DcoefficientsIM(2,p_rperfconfig%NEDGESIM))
+      allocate(DcoefficientsIP(2,p_rperfconfig%NEDGESIM))
+      allocate(DcoefficientsJM(2,p_rperfconfig%NEDGESIM))
+      allocate(DcoefficientsJP(2,p_rperfconfig%NEDGESIM))
+
+      ! Loop over the edge groups and process all edges of one group
+      ! in parallel without the need to synchronise memory access
+      do igroup = 1, size(IedgeListIdx)-1
+
+        ! Do nothing for empty groups
+        if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
+
+        ! Loop over the edges
+        !$omp do schedule(static,1)
+        do IEDGEset = IedgeListIdx(igroup),&
+                      IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
+
+          ! We always handle NEDGESIM edges simultaneously.
+          ! How many edges have we actually here?
+          ! Get the maximum edge number, such that we handle
+          ! at most NEDGESIM edges simultaneously.
+
+          IEDGEmax = min(IedgeListIdx(igroup+1)-1,IEDGEset-1+p_rperfconfig%NEDGESIM)
+
+          ! Loop through all edges in the current set
+          ! and prepare the auxiliary arrays
+          do idx = 1, IEDGEmax-IEDGEset+1
+
+            ! Get actual edge number
+            iedge = idx+IEDGEset-1
+
+            ! Fill auxiliary arrays
+            DdataAtEdge(1,idx) = Dx(IedgeList(1,iedge))
+            DdataAtEdge(2,idx) = Dx(IedgeList(2,iedge))
+          end do
+
+          ! We have to loop over all columns K of the I-th and J-th
+          ! row of the Jacobian matrix and update th positions IK and
+          ! JK, respectively. The perturbation +/-h*e_k only
+          ! influences the coefficients a_ij^k which is defined as
+          !
+          ! $$ a_ij^k:=\frac{g_ij(u+h*e_k)-g_ij(u-h*e_k)}{2h} $$
+          !
+          ! if either I=K or J=K. In short the loop over the I-th and
+          ! J-th row only affects the matrix position II, IJ, JI, and
+          ! JJ which are known a priori(!!). Here, G is the standard
+          ! Galerkin operator without artificial diffusion.
+
+          ! 1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
+
+          do idx = 1, IEDGEmax-IEDGEset+1
+            DdataAtEdgeIP(1,idx)  = DdataAtEdge(1,idx)+hstep
+            DdataAtEdgeIP(2,idx)  = DdataAtEdge(2,idx)
+          end do
+
+          do idx = 1, IEDGEmax-IEDGEset+1
+            DdataAtEdgeIM(1,idx)  = DdataAtEdge(1,idx)-hstep
+            DdataAtEdgeIM(2,idx)  = DdataAtEdge(2,idx)
+          end do
+
+          ! Use callback function to compute off-diagonal entries
+          call fcb_calcMatrixSc_sim(&
+              DdataAtEdgeIP(:,1:IEDGEmax-IEDGEset+1),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              IedgeList(:,IEDGEset:IEDGEmax),&
+              dscale, IEDGEmax-IEDGEset+1,&
+              DcoefficientsIP(:,1:IEDGEmax-IEDGEset+1), rcollection)
+          call fcb_calcMatrixSc_sim(&
+              DdataAtEdgeIM(:,1:IEDGEmax-IEDGEset+1),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              IedgeList(:,IEDGEset:IEDGEmax),&
+              dscale, IEDGEmax-IEDGEset+1,&
+              DcoefficientsIM(:,1:IEDGEmax-IEDGEset+1), rcollection)
+
+          ! 2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
+
+          do idx = 1, IEDGEmax-IEDGEset+1
+            DdataAtEdgeJP(1,idx)  = DdataAtEdge(1,idx)
+            DdataAtEdgeJP(2,idx)  = DdataAtEdge(2,idx)+hstep
+          end do
+
+          do idx = 1, IEDGEmax-IEDGEset+1
+            DdataAtEdgeJM(1,idx)  = DdataAtEdge(1,idx)
+            DdataAtEdgeJM(2,idx)  = DdataAtEdge(2,idx)-hstep
+          end do
+
+          ! Use callback function to compute off-diagonal entries
+          call fcb_calcMatrixSc_sim(&
+              DdataAtEdgeJP(:,1:IEDGEmax-IEDGEset+1),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              IedgeList(:,IEDGEset:IEDGEmax),&
+              dscale, IEDGEmax-IEDGEset+1,&
+              DcoefficientsJP(:,1:IEDGEmax-IEDGEset+1), rcollection)
+          call fcb_calcMatrixSc_sim(&
+              DdataAtEdgeJM(:,1:IEDGEmax-IEDGEset+1),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              IedgeList(:,IEDGEset:IEDGEmax),&
+              dscale, IEDGEmax-IEDGEset+1,&
+              DcoefficientsJM(:,1:IEDGEmax-IEDGEset+1), rcollection)
+
+          ! What type of assembly are we?
+          if (ccType .eq. GFEM_MATC_LUMPED) then
+
+            ! Loop through all edges in the current set and scatter
+            ! the entries to the diagonal of the global matrix
+            do idx = 1, IEDGEmax-IEDGEset+1
+
+              ! Get actual edge number
+              iedge = idx+IEDGEset-1
+
+              ! Get position of diagonal entries
+              ii = IedgeList(5,iedge)
+              jj = IedgeList(6,iedge)
+
+              ! Compute the solution difference scaled by the perturbation parameter
+              diff = 0.5_DP * (DdataAtEdge(2,idx)-DdataAtEdge(1,idx)) / hstep
+
+              ! Compte the second-order divided differences of the
+              ! Galerkin coefficients
+              ai_ij = (DcoefficientsIP(1,idx)-DcoefficientsIM(1,idx)) * diff
+              ai_ji = (DcoefficientsIP(2,idx)-DcoefficientsIM(2,idx)) * diff
+              aj_ij = (DcoefficientsJP(1,idx)-DcoefficientsJM(1,idx)) * diff
+              aj_ji = (DcoefficientsJP(2,idx)-DcoefficientsJM(2,idx)) * diff
+
+              ! Update the global operator
+              Ddata(ii) = Ddata(ii) + ai_ij + aj_ji
+              Ddata(jj) = Ddata(jj) - aj_ji - ai_ji
+            end do
+
+          else
+            ! Loop through all edges in the current set
+            ! and scatter the entries to the global matrix
+            do idx = 1, IEDGEmax-IEDGEset+1
+              
+              ! Get actual edge number
+              iedge = idx+IEDGEset-1
+              
+              ! Get position of one off-diagonal entries
+              ij = IedgeList(3,iedge)
+              ji = IedgeList(4,iedge)
+
+              ! Get position of diagonal entries
+              ii = IedgeList(5,iedge)
+              jj = IedgeList(6,iedge)
+              
+              ! Compute the average of the perturbed coefficients
+              bj_ij = 0.5_DP * (DcoefficientsJP(1,idx)+DcoefficientsJM(1,idx))
+              bi_ji = 0.5_DP * (DcoefficientsIP(2,idx)+DcoefficientsIM(2,idx))
+
+              ! Compute the solution difference scaled by the perturbation parameter
+              diff = 0.5_DP * (DdataAtEdge(2,idx)-DdataAtEdge(1,idx)) / hstep
+
+              ! Compte the second-order divided differences of the
+              ! Galerkin coefficients
+              ai_ij = (DcoefficientsIP(1,idx)-DcoefficientsIM(1,idx)) * diff
+              ai_ji = (DcoefficientsIP(2,idx)-DcoefficientsIM(2,idx)) * diff
+              aj_ij = (DcoefficientsJP(1,idx)-DcoefficientsJM(1,idx)) * diff
+              aj_ji = (DcoefficientsJP(2,idx)-DcoefficientsJM(2,idx)) * diff
+
+              ! Update the global operator
+              Ddata(ii) = Ddata(ii) + ai_ij - bj_ij
+              Ddata(ij) = Ddata(ij) + aj_ij + bj_ij
+              Ddata(ji) = Ddata(ji) - ai_ji + bi_ji
+              Ddata(jj) = Ddata(jj) - aj_ji - bi_ji
+            end do
+
+          end if
+        end do
+        !$omp end do
+
+      end do ! igroup
+
+      ! Deallocate temporal memory
+      deallocate(DdataAtEdge,DdataAtEdgeIP,DdataAtEdgeIM,DdataAtEdgeJP,DdataAtEdgeJM)
+      deallocate(DcoefficientsIP,DcoefficientsIM,DcoefficientsJP,DcoefficientsJM)
+      !$omp end parallel
+
+    end subroutine doJacobianDP
 
     !**************************************************************
     ! Assemble standard Jacobian matrix for convective
@@ -5450,641 +5794,6 @@ contains
       end do
     end subroutine doGalerkinMat7_1D
 
-
-    !**************************************************************
-    ! Assemble standard Jacobian matrix for convective
-    ! operator in 2D and assume zero row-sums.
-    ! All matrices are stored in matrix format 7
-
-    subroutine doGalerkinMat7_2D(Kld, Kcol, Ksep, NEQ, DcoeffX, DcoeffY, Dx, Jac)
-
-      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,Dx
-      integer, dimension(:), intent(in) :: Kld,Kcol
-      integer, intent(in) :: NEQ
-
-      real(DP), dimension(:), intent(inout) :: Jac
-      integer, dimension(:), intent(inout) :: Ksep
-
-      ! local variables
-      real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP) :: k_ij,k_ji,a_ij,a_ji,b_ij,b_ji,d_ij,diff
-      integer :: ii,ij,ji,jj,i,j
-
-
-      ! Loop over all rows I of Jacobian matrix
-      do i = 1, NEQ
-
-        ! Get position of diagonal entry II
-        ii = Kld(i)
-
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        do ij = Ksep(i)+1, Kld(i+1)-1
-
-          ! Get row number J, the corresponding matrix position JI, and
-          ! let the separator point to the next entry
-          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-
-          ! Now, we have the global position of the matrix entries IJ
-          ! and JI (!!!) as well as the numbers I and J for which I < J.
-          ! Next, we need to consider all matrix entries of rows I and
-          ! J and perturb the matrix coefficients l_ij(u) and l_ji(u)
-          ! by +/-h*e_k, whebery K stands for the column number of the
-          ! current matrix entry. For the computation of the low-order
-          ! coefficient l_ij we have to consider k_ij and k_ji in order
-          ! to determine the artificial diffusion coefficient d_ij.
-          ! However, the coefficients a_ij and a_ji resulting from a
-          ! divided difference approximation of the derivatives of the
-          ! transport operator need to be handled separately.
-
-          ! Due to the fact, that we need the unperturbed quantities
-          ! quite frequently, we store them in local auxiliary variables
-
-          ! Compute solution difference Dx_j-Dx_i
-          diff = Dx(j)-Dx(i)
-
-          ! Compute coefficients
-          C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
-          C_ij(2) = DcoeffY(ij); C_ji(2) = DcoeffY(ji)
-
-          ! We have to loop over all columns K of the I-th and J-th row
-          ! of the Jacobian matrix and update th positions IK and JK,
-          ! respectively. The perturbation +/-h*e_k only influences the
-          ! coefficients a_ij^k which s defined as
-          !   a_ji^k:=\frac{l_ij(u+h*e_k)-l_ij(u-h*e_k)}{2h}
-          ! if either I=K or J=K. In short the loop over the I-th and
-          ! J-th row only affects the matrix position II, IJ, JI, and JJ
-          ! which are known a priori(!!)
-
-          ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
-
-!!$          ! Compute perturbed coefficients k_ij and k_ji
-!!$          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
-!!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-
-          ! Apply perturbed coefficient to a_ij and a_ji
-          a_ij = k_ij; a_ji = k_ji
-
-!!$          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-!!$          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
-!!$              C_ij, C_ji, i, j, k_ij ,k_ji, d_ij)
-
-          ! Apply the average of the perturbed coefficients
-          b_ji = (a_ji+k_ji)/2._DP
-          Jac(ji) = Jac(ji)+b_ji
-          Jac(jj) = Jac(jj)-b_ji
-
-          ! Compute final coefficients a_ij and a_ji as the second
-          ! order divided differences of the low-order coefficients
-          a_ij = 0.5_DP*(a_ij-k_ij)/hstep
-          a_ji = 0.5_DP*(a_ji-k_ji)/hstep
-
-          ! Update the I-th column of the I-th and J-th row
-          Jac(ii) = Jac(ii)+a_ij*diff
-          Jac(ji) = Jac(ji)-a_ji*diff
-
-
-          ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
-
-!!$          ! Compute perturbed coefficients l_ij and l_ji
-!!$          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
-!!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-
-          ! Apply perturbed coefficient to a_ij and a_ji
-          a_ij = k_ij; a_ji = k_ji
-
-!!$          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-!!$          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
-!!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-
-          ! Apply the average of the perturbed coefficients for J=K
-          b_ij = (a_ij+k_ij)/2._DP
-          Jac(ij) = Jac(ij)+b_ij
-          Jac(ii) = Jac(ii)-b_ij
-
-          ! Compute final coefficients a_ij and a_ji as the second
-          ! order divided differences of the low-order coefficients
-          a_ij = 0.5_DP*(a_ij-k_ij)/hstep
-          a_ji = 0.5_DP*(a_ji-k_ji)/hstep
-
-          ! Update the K-th column of the I-th row, that is, the
-          ! entriy IK of the Jacobian matrix
-          Jac(ij) = Jac(ij)+a_ij*diff
-          Jac(jj) = Jac(jj)-a_ji*diff
-        end do
-      end do
-    end subroutine doGalerkinMat7_2D
-
-
-    !**************************************************************
-    ! Assemble standard Jacobian matrix for convective
-    ! operator in 3D and assume zero row-sums.
-    ! All matrices are stored in matrix format 7
-
-    subroutine doGalerkinMat7_3D(Kld, Kcol, Ksep, NEQ, DcoeffX, DcoeffY, DcoeffZ, Dx, Jac)
-
-      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,DcoeffZ,Dx
-      integer, dimension(:), intent(in) :: Kld,Kcol
-      integer, intent(in) :: NEQ
-
-      real(DP), dimension(:), intent(inout) :: Jac
-      integer, dimension(:), intent(inout) :: Ksep
-
-      ! local variables
-      real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP) :: k_ij,k_ji,a_ij,a_ji,b_ij,b_ji,d_ij,diff
-      integer :: ii,ij,ji,jj,i,j
-
-
-      ! Loop over all rows I of Jacobian matrix
-      do i = 1, NEQ
-
-        ! Get position of diagonal entry II
-        ii = Kld(i)
-
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        do ij = Ksep(i)+1, Kld(i+1)-1
-
-          ! Get row number J, the corresponding matrix position JI, and
-          ! let the separator point to the next entry
-          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-
-          ! Now, we have the global position of the matrix entries IJ
-          ! and JI (!!!) as well as the numbers I and J for which I < J.
-          ! Next, we need to consider all matrix entries of rows I and
-          ! J and perturb the matrix coefficients l_ij(u) and l_ji(u)
-          ! by +/-h*e_k, whebery K stands for the column number of the
-          ! current matrix entry. For the computation of the low-order
-          ! coefficient l_ij we have to consider k_ij and k_ji in order
-          ! to determine the artificial diffusion coefficient d_ij.
-          ! However, the coefficients a_ij and a_ji resulting from a
-          ! divided difference approximation of the derivatives of the
-          ! transport operator need to be handled separately.
-
-          ! Due to the fact, that we need the unperturbed quantities
-          ! quite frequently, we store them in local auxiliary variables
-
-          ! Compute solution difference Dx_j-Dx_i
-          diff = Dx(j)-Dx(i)
-
-          ! Compute coefficients
-          C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
-          C_ij(2) = DcoeffY(ij); C_ji(2) = DcoeffY(ji)
-          C_ij(3) = DcoeffZ(ij); C_ji(3) = DcoeffZ(ji)
-
-          ! We have to loop over all columns K of the I-th and J-th row
-          ! of the Jacobian matrix and update th positions IK and JK,
-          ! respectively. The perturbation +/-h*e_k only influences the
-          ! coefficients a_ij^k which s defined as
-          !   a_ji^k:=\frac{l_ij(u+h*e_k)-l_ij(u-h*e_k)}{2h}
-          ! if either I=K or J=K. In short the loop over the I-th and
-          ! J-th row only affects the matrix position II, IJ, JI, and JJ
-          ! which are known a priori(!!)
-
-          ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
-
-!!$          ! Compute perturbed coefficients k_ij and k_ji
-!!$          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
-!!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-
-          ! Apply perturbed coefficient to a_ij and a_ji
-          a_ij = k_ij; a_ji = k_ji
-
-!!$          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-!!$          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
-!!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-
-          ! Apply the average of the perturbed coefficients
-          b_ji = (a_ji+k_ji)/2._DP
-          Jac(ji) = Jac(ji)+b_ji
-          Jac(jj) = Jac(jj)-b_ji
-
-          ! Compute final coefficients a_ij and a_ji as the second
-          ! order divided differences of the low-order coefficients
-          a_ij = 0.5_DP*(a_ij-k_ij)/hstep
-          a_ji = 0.5_DP*(a_ji-k_ji)/hstep
-
-          ! Update the I-th column of the I-th and J-th row
-          Jac(ii) = Jac(ii)+a_ij*diff
-          Jac(ji) = Jac(ji)-a_ji*diff
-
-
-          ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
-
-!!$          ! Compute perturbed coefficients l_ij and l_ji
-!!$          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
-!!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-
-          ! Apply perturbed coefficient to a_ij and a_ji
-          a_ij = k_ij; a_ji = k_ji
-
-!!$          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-!!$          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
-!!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-
-          ! Apply the average of the perturbed coefficients for J=K
-          b_ij = (a_ij+k_ij)/2._DP
-          Jac(ij) = Jac(ij)+b_ij
-          Jac(ii) = Jac(ii)-b_ij
-
-          ! Compute final coefficients a_ij and a_ji as the second
-          ! order divided differences of the low-order coefficients
-          a_ij = 0.5_DP*(a_ij-k_ij)/hstep
-          a_ji = 0.5_DP*(a_ji-k_ji)/hstep
-
-          ! Update the K-th column of the I-th row, that is, the
-          ! entriy IK of the Jacobian matrix
-          Jac(ij) = Jac(ij)+a_ij*diff
-          Jac(jj) = Jac(jj)-a_ji*diff
-        end do
-      end do
-    end subroutine doGalerkinMat7_3D
-
-
-    !**************************************************************
-    ! Assemble standard Jacobian matrix for convective
-    ! operator in 1D and assume zero row-sums.
-    ! All matrices are stored in matrix format 9
-
-    subroutine doGalerkinMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ,&
-        DcoeffX, Dx, Jac)
-
-      real(DP), dimension(:), intent(in) :: DcoeffX,Dx
-      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
-      integer, intent(in) :: NEQ
-
-      real(DP), dimension(:), intent(inout) :: Jac
-      integer, dimension(:), intent(inout) :: Ksep
-
-      ! local variables
-      real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP) :: k_ij,k_ji,a_ij,a_ji,b_ij,b_ji,d_ij,diff
-      integer :: ii,ij,ji,jj,i,j
-
-
-      ! Loop over all rows I of Jacobian matrix
-      do i = 1, NEQ
-
-        ! Get position of diagonal entry II
-        ii = Kdiagonal(i)
-
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        do ij = Kdiagonal(i)+1, Kld(i+1)-1
-
-          ! Get row number J, the corresponding matrix position JI, and
-          ! let the separator point to the next entry
-          j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-
-          ! Now, we have the global position of the matrix entries IJ
-          ! and JI (!!!) as well as the numbers I and J for which I < J.
-          ! Next, we need to consider all matrix entries of rows I and
-          ! J and perturb the matrix coefficients l_ij(u) and l_ji(u)
-          ! by +/-h*e_k, whebery K stands for the column number of the
-          ! current matrix entry. For the computation of the low-order
-          ! coefficient l_ij we have to consider k_ij and k_ji in order
-          ! to determine the artificial diffusion coefficient d_ij.
-          ! However, the coefficients a_ij and a_ji resulting from a
-          ! divided difference approximation of the derivatives of the
-          ! transport operator need to be handled separately.
-
-          ! Due to the fact, that we need the unperturbed quantities
-          ! quite frequently, we store them in local auxiliary variables
-
-          ! Compute solution difference Dx_j-Dx_i
-          diff = Dx(j)-Dx(i)
-
-          ! Compute coefficients
-          C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
-
-          ! We have to loop over all columns K of the I-th and J-th row
-          ! of the Jacobian matrix and update th positions IK and JK,
-          ! respectively. The perturbation +/-h*e_k only influences the
-          ! coefficients a_ij^k which s defined as
-          !   a_ji^k:=\frac{l_ij(u+h*e_k)-l_ij(u-h*e_k)}{2h}
-          ! if either I=K or J=K. In short the loop over the I-th and
-          ! J-th row only affects the matrix position II, IJ, JI, and JJ
-          ! which are known a priori(!!)
-
-          ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
-
-!!$          ! Compute perturbed coefficients l_ij and l_ji
-!!$          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
-!!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-
-          ! Apply perturbed coefficient to a_ij and a_ji
-          a_ij = k_ij; a_ji = k_ji
-
-!!$          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-!!$          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
-!!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-
-          ! Apply the average of the perturbed coefficients
-          b_ji = (a_ji+k_ji)/2._DP
-          Jac(ji) = Jac(ji)+b_ji
-          Jac(jj) = Jac(jj)-b_ji
-
-          ! Compute final coefficients a_ij and a_ji as the second
-          ! order divided differences of the low-order coefficients
-          a_ij = 0.5_DP*(a_ij-k_ij)/hstep
-          a_ji = 0.5_DP*(a_ji-k_ji)/hstep
-
-          ! Update the I-th column of the I-th and J-th row
-          Jac(ii) = Jac(ii)+a_ij*diff
-          Jac(ji) = Jac(ji)-a_ji*diff
-
-
-          ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
-
-!!$          ! Compute perturbed coefficients l_ij and l_ji
-!!$          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
-!!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-
-          ! Apply perturbed coefficient to a_ij and a_ji
-          a_ij = k_ij; a_ji = k_ji
-
-!!$          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-!!$          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
-!!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-
-          ! Apply the average of the perturbed coefficients for J=K
-          b_ij = (a_ij+k_ij)/2._DP
-          Jac(ij) = Jac(ij)+b_ij
-          Jac(ii) = Jac(ii)-b_ij
-
-          ! Compute final coefficients a_ij and a_ji as the second
-          ! order divided differences of the low-order coefficients
-          a_ij = 0.5_DP*(a_ij-k_ij)/hstep
-          a_ji = 0.5_DP*(a_ji-k_ji)/hstep
-
-          ! Update the K-th column of the I-th row, that is, the
-          ! entriy IK of the Jacobian matrix
-          Jac(ij) = Jac(ij)+a_ij*diff
-          Jac(jj) = Jac(jj)-a_ji*diff
-        end do
-      end do
-    end subroutine doGalerkinMat9_1D
-
-
-    !**************************************************************
-    ! Assemble standard Jacobian matrix for convective
-    ! operator in 2D and assume zero row-sums.
-    ! All matrices are stored in matrix format 9
-
-    subroutine doGalerkinMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ,&
-        DcoeffX, DcoeffY, Dx, Jac)
-
-      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,Dx
-      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
-      integer, intent(in) :: NEQ
-
-      real(DP), dimension(:), intent(inout) :: Jac
-      integer, dimension(:), intent(inout) :: Ksep
-
-      ! local variables
-      real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP) :: k_ij,k_ji,a_ij,a_ji,b_ij,b_ji,d_ij,diff
-      integer :: ii,ij,ji,jj,i,j
-
-
-      ! Loop over all rows I of Jacobian matrix
-      do i = 1, NEQ
-
-        ! Get position of diagonal entry II
-        ii = Kdiagonal(i)
-
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        do ij = Kdiagonal(i)+1, Kld(i+1)-1
-
-          ! Get row number J, the corresponding matrix position JI, and
-          ! let the separator point to the next entry
-          j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-
-          ! Now, we have the global position of the matrix entries IJ
-          ! and JI (!!!) as well as the numbers I and J for which I < J.
-          ! Next, we need to consider all matrix entries of rows I and
-          ! J and perturb the matrix coefficients l_ij(u) and l_ji(u)
-          ! by +/-h*e_k, whebery K stands for the column number of the
-          ! current matrix entry. For the computation of the low-order
-          ! coefficient l_ij we have to consider k_ij and k_ji in order
-          ! to determine the artificial diffusion coefficient d_ij.
-          ! However, the coefficients a_ij and a_ji resulting from a
-          ! divided difference approximation of the derivatives of the
-          ! transport operator need to be handled separately.
-
-          ! Due to the fact, that we need the unperturbed quantities
-          ! quite frequently, we store them in local auxiliary variables
-
-          ! Compute solution difference Dx_j-Dx_i
-          diff = Dx(j)-Dx(i)
-
-          ! Compute coefficients
-          C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
-          C_ij(2) = DcoeffY(ij); C_ji(2) = DcoeffY(ji)
-
-          ! We have to loop over all columns K of the I-th and J-th row
-          ! of the Jacobian matrix and update th positions IK and JK,
-          ! respectively. The perturbation +/-h*e_k only influences the
-          ! coefficients a_ij^k which s defined as
-          !   a_ji^k:=\frac{l_ij(u+h*e_k)-l_ij(u-h*e_k)}{2h}
-          ! if either I=K or J=K. In short the loop over the I-th and
-          ! J-th row only affects the matrix position II, IJ, JI, and JJ
-          ! which are known a priori(!!)
-
-          ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
-
-!!$          ! Compute perturbed coefficients l_ij and l_ji
-!!$          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
-!!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-
-          ! Apply perturbed coefficient to a_ij and a_ji
-          a_ij = k_ij; a_ji = k_ji
-
-!!$          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-!!$          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
-!!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-
-          ! Apply the average of the perturbed coefficients
-          b_ji = (a_ji+k_ji)/2._DP
-          Jac(ji) = Jac(ji)+b_ji
-          Jac(jj) = Jac(jj)-b_ji
-
-          ! Compute final coefficients a_ij and a_ji as the second
-          ! order divided differences of the low-order coefficients
-          a_ij = 0.5_DP*(a_ij-k_ij)/hstep
-          a_ji = 0.5_DP*(a_ji-k_ji)/hstep
-
-          ! Update the I-th column of the I-th and J-th row
-          Jac(ii) = Jac(ii)+a_ij*diff
-          Jac(ji) = Jac(ji)-a_ji*diff
-
-
-          ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
-
-!!$          ! Compute perturbed coefficients l_ij and l_ji
-!!$          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
-!!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-
-          ! Apply perturbed coefficient to a_ij and a_ji
-          a_ij = k_ij; a_ji = k_ji
-
-!!$          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-!!$          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
-!!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-
-          ! Apply the average of the perturbed coefficients for J=K
-          b_ij = (a_ij+k_ij)/2._DP
-          Jac(ij) = Jac(ij)+b_ij
-          Jac(ii) = Jac(ii)-b_ij
-
-          ! Compute final coefficients a_ij and a_ji as the second
-          ! order divided differences of the low-order coefficients
-          a_ij = 0.5_DP*(a_ij-k_ij)/hstep
-          a_ji = 0.5_DP*(a_ji-k_ji)/hstep
-
-          ! Update the K-th column of the I-th row, that is, the
-          ! entriy IK of the Jacobian matrix
-          Jac(ij) = Jac(ij)+a_ij*diff
-          Jac(jj) = Jac(jj)-a_ji*diff
-        end do
-      end do
-    end subroutine doGalerkinMat9_2D
-
-
-    !**************************************************************
-    ! Assemble standard Jacobian matrix for convective
-    ! operator in 3D and assume zero row-sums.
-    ! All matrices are stored in matrix format 9
-
-    subroutine doGalerkinMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ,&
-        DcoeffX, DcoeffY, DcoeffZ, Dx, Jac)
-
-      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,DcoeffZ,Dx
-      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
-      integer, intent(in) :: NEQ
-
-      real(DP), dimension(:), intent(inout) :: Jac
-      integer, dimension(:), intent(inout) :: Ksep
-
-      ! local variables
-      real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP) :: k_ij,k_ji,a_ij,a_ji,b_ij,b_ji,d_ij,diff
-      integer :: ii,ij,ji,jj,i,j
-
-
-      ! Loop over all rows I of Jacobian matrix
-      do i = 1, NEQ
-
-        ! Get position of diagonal entry II
-        ii = Kdiagonal(i)
-
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        do ij = Kdiagonal(i)+1, Kld(i+1)-1
-
-          ! Get row number J, the corresponding matrix position JI, and
-          ! let the separator point to the next entry
-          j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-
-          ! Now, we have the global position of the matrix entries IJ
-          ! and JI (!!!) as well as the numbers I and J for which I < J.
-          ! Next, we need to consider all matrix entries of rows I and
-          ! J and perturb the matrix coefficients l_ij(u) and l_ji(u)
-          ! by +/-h*e_k, whebery K stands for the column number of the
-          ! current matrix entry. For the computation of the low-order
-          ! coefficient l_ij we have to consider k_ij and k_ji in order
-          ! to determine the artificial diffusion coefficient d_ij.
-          ! However, the coefficients a_ij and a_ji resulting from a
-          ! divided difference approximation of the derivatives of the
-          ! transport operator need to be handled separately.
-
-          ! Due to the fact, that we need the unperturbed quantities
-          ! quite frequently, we store them in local auxiliary variables
-
-          ! Compute solution difference Dx_j-Dx_i
-          diff = Dx(j)-Dx(i)
-
-          ! Compute coefficients
-          C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
-          C_ij(2) = DcoeffY(ij); C_ji(2) = DcoeffY(ji)
-          C_ij(3) = DcoeffZ(ij); C_ji(3) = DcoeffZ(ji)
-
-          ! We have to loop over all columns K of the I-th and J-th row
-          ! of the Jacobian matrix and update th positions IK and JK,
-          ! respectively. The perturbation +/-h*e_k only influences the
-          ! coefficients a_ij^k which s defined as
-          !   a_ji^k:=\frac{l_ij(u+h*e_k)-l_ij(u-h*e_k)}{2h}
-          ! if either I=K or J=K. In short the loop over the I-th and
-          ! J-th row only affects the matrix position II, IJ, JI, and JJ
-          ! which are known a priori(!!)
-
-          ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
-
-!!$          ! Compute perturbed coefficients l_ij and l_ji
-!!$          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
-!!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-
-          ! Apply perturbed coefficient to a_ij and a_ji
-          a_ij = k_ij; a_ji = k_ji
-
-!!$          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-!!$          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
-!!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-
-          ! Apply the average of the perturbed coefficients
-          b_ji = (a_ji+k_ji)/2._DP
-          Jac(ji) = Jac(ji)+b_ji
-          Jac(jj) = Jac(jj)-b_ji
-
-          ! Compute final coefficients a_ij and a_ji as the second
-          ! order divided differences of the low-order coefficients
-          a_ij = 0.5_DP*(a_ij-k_ij)/hstep
-          a_ji = 0.5_DP*(a_ji-k_ji)/hstep
-
-          ! Update the I-th column of the I-th and J-th row
-          Jac(ii) = Jac(ii)+a_ij*diff
-          Jac(ji) = Jac(ji)-a_ji*diff
-
-
-          ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
-
-!!$          ! Compute perturbed coefficients l_ij and l_ji
-!!$          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
-!!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-
-          ! Apply perturbed coefficient to a_ij and a_ji
-          a_ij = k_ij; a_ji = k_ji
-
-!!$          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-!!$          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
-!!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-
-          ! Apply the average of the perturbed coefficients for J=K
-          b_ij = (a_ij+k_ij)/2._DP
-          Jac(ij) = Jac(ij)+b_ij
-          Jac(ii) = Jac(ii)-b_ij
-
-          ! Compute final coefficients a_ij and a_ji as the second
-          ! order divided differences of the low-order coefficients
-          a_ij = 0.5_DP*(a_ij-k_ij)/hstep
-          a_ji = 0.5_DP*(a_ji-k_ji)/hstep
-
-          ! Update the K-th column of the I-th row, that is, the
-          ! entriy IK of the Jacobian matrix
-          Jac(ij) = Jac(ij)+a_ij*diff
-          Jac(jj) = Jac(jj)-a_ji*diff
-        end do
-      end do
-    end subroutine doGalerkinMat9_3D
-
-
     !**************************************************************
     ! Assemble upwind Jacobian matrix for convective
     ! operator in 1D and assume zero row-sums.
@@ -6208,640 +5917,6 @@ contains
         end do
       end do
     end subroutine doUpwindMat7_1D
-
-
-    !**************************************************************
-    ! Assemble upwind Jacobian matrix for convective
-    ! operator in 2D and assume zero row-sums.
-    ! All matrices are stored in matrix format 7
-
-    subroutine doUpwindMat7_2D(Kld, Kcol, Ksep, NEQ, DcoeffX, DcoeffY, Dx, Jac)
-
-      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,Dx
-      integer, dimension(:), intent(in) :: Kld,Kcol
-      integer, intent(in) :: NEQ
-
-      real(DP), dimension(:), intent(inout) :: Jac
-      integer, dimension(:), intent(inout) :: Ksep
-
-      ! local variables
-      real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP) :: d_ij,l_ij,l_ji,a_ij,a_ji,b_ij,b_ji,diff
-      integer :: ii,ij,ji,jj,i,j
-
-
-      ! Loop over all rows I of Jacobian matrix
-      do i = 1, NEQ
-
-        ! Get position of diagonal entry II
-        ii = Kld(i)
-
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        do ij = Ksep(i)+1, Kld(i+1)-1
-
-          ! Get row number J, the corresponding matrix position JI, and
-          ! let the separator point to the next entry
-          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-
-          ! Now, we have the global position of the matrix entries IJ
-          ! and JI (!!!) as well as the numbers I and J for which I < J.
-          ! Next, we need to consider all matrix entries of rows I and
-          ! J and perturb the matrix coefficients l_ij(u) and l_ji(u)
-          ! by +/-h*e_k, whebery K stands for the column number of the
-          ! current matrix entry. For the computation of the low-order
-          ! coefficient l_ij we have to consider k_ij and k_ji in order
-          ! to determine the artificial diffusion coefficient d_ij.
-          ! However, the coefficients a_ij and a_ji resulting from a
-          ! divided difference approximation of the derivatives of the
-          ! transport operator need to be handled separately.
-
-          ! Due to the fact, that we need the unperturbed quantities
-          ! quite frequently, we store them in local auxiliary variables
-
-          ! Compute solution difference Dx_j-Dx_i
-          diff = Dx(j)-Dx(i)
-
-          ! Compute coefficients
-          C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
-          C_ij(2) = DcoeffY(ij); C_ji(2) = DcoeffY(ji)
-
-          ! We have to loop over all columns K of the I-th and J-th row
-          ! of the Jacobian matrix and update th positions IK and JK,
-          ! respectively. The perturbation +/-h*e_k only influences the
-          ! coefficients a_ij^k which s defined as
-          !   a_ji^k:=\frac{l_ij(u+h*e_k)-l_ij(u-h*e_k)}{2h}
-          ! if either I=K or J=K. In short the loop over the I-th and
-          ! J-th row only affects the matrix position II, IJ, JI, and JJ
-          ! which are known a priori(!!)
-
-          ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
-
-!!$          ! Compute perturbed coefficients l_ij and l_ji
-!!$          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
-!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
-
-          ! Apply perturbed coefficient to a_ij and a_ji
-          a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
-
-!!$          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-!!$          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
-!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
-
-          ! Apply the average of the perturbed coefficients
-          b_ji = (a_ji+l_ji+d_ij)/2._DP
-          Jac(ji) = Jac(ji)+b_ji
-          Jac(jj) = Jac(jj)-b_ji
-
-          ! Compute final coefficients a_ij and a_ji as the second
-          ! order divided differences of the low-order coefficients
-          a_ij = 0.5_DP*(a_ij-l_ij-d_ij)/hstep
-          a_ji = 0.5_DP*(a_ji-l_ji-d_ij)/hstep
-
-          ! Update the I-th column of the I-th and J-th row
-          Jac(ii) = Jac(ii)+a_ij*diff
-          Jac(ji) = Jac(ji)-a_ji*diff
-
-
-          ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
-
-!!$          ! Compute perturbed coefficients l_ij and l_ji
-!!$          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
-!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
-
-          ! Apply perturbed coefficient to a_ij and a_ji
-          a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
-
-!!$          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-!!$          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
-!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
-
-          ! Apply the average of the perturbed coefficients for J=K
-          b_ij = (a_ij+l_ij+d_ij)/2._DP
-          Jac(ij) = Jac(ij)+b_ij
-          Jac(ii) = Jac(ii)-b_ij
-
-          ! Compute final coefficients a_ij and a_ji as the second
-          ! order divided differences of the low-order coefficients
-          a_ij = 0.5_DP*(a_ij-l_ij-d_ij)/hstep
-          a_ji = 0.5_DP*(a_ji-l_ji-d_ij)/hstep
-
-          ! Update the K-th column of the I-th row, that is, the
-          ! entriy IK of the Jacobian matrix
-          Jac(ij) = Jac(ij)+a_ij*diff
-          Jac(jj) = Jac(jj)-a_ji*diff
-        end do
-      end do
-    end subroutine doUpwindMat7_2D
-
-
-    !**************************************************************
-    ! Assemble Jacobian matrix for convective
-    ! operator in 3D and assume zero row-sums.
-    ! All matrices are stored in matrix format 7
-
-    subroutine doUpwindMat7_3D(Kld, Kcol, Ksep, NEQ, DcoeffX, DcoeffY, DcoeffZ, Dx, Jac)
-
-      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,DcoeffZ,Dx
-      integer, dimension(:), intent(in) :: Kld,Kcol
-      integer, intent(in) :: NEQ
-
-      real(DP), dimension(:), intent(inout) :: Jac
-      integer, dimension(:), intent(inout) :: Ksep
-
-      ! local variables
-      real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP) :: d_ij,l_ij,l_ji,a_ij,a_ji,b_ij,b_ji,diff
-      integer :: ii,ij,ji,jj,i,j
-
-
-      ! Loop over all rows I of Jacobian matrix
-      do i = 1, NEQ
-
-        ! Get position of diagonal entry II
-        ii = Kld(i)
-
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        do ij = Ksep(i)+1, Kld(i+1)-1
-
-          ! Get row number J, the corresponding matrix position JI, and
-          ! let the separator point to the next entry
-          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-
-          ! Now, we have the global position of the matrix entries IJ
-          ! and JI (!!!) as well as the numbers I and J for which I < J.
-          ! Next, we need to consider all matrix entries of rows I and
-          ! J and perturb the matrix coefficients l_ij(u) and l_ji(u)
-          ! by +/-h*e_k, whebery K stands for the column number of the
-          ! current matrix entry. For the computation of the low-order
-          ! coefficient l_ij we have to consider k_ij and k_ji in order
-          ! to determine the artificial diffusion coefficient d_ij.
-          ! However, the coefficients a_ij and a_ji resulting from a
-          ! divided difference approximation of the derivatives of the
-          ! transport operator need to be handled separately.
-
-          ! Due to the fact, that we need the unperturbed quantities
-          ! quite frequently, we store them in local auxiliary variables
-
-          ! Compute solution difference Dx_j-Dx_i
-          diff = Dx(j)-Dx(i)
-
-          ! Compute coefficients
-          C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
-          C_ij(2) = DcoeffY(ij); C_ji(2) = DcoeffY(ji)
-          C_ij(3) = DcoeffZ(ij); C_ji(3) = DcoeffZ(ji)
-
-          ! We have to loop over all columns K of the I-th and J-th row
-          ! of the Jacobian matrix and update th positions IK and JK,
-          ! respectively. The perturbation +/-h*e_k only influences the
-          ! coefficients a_ij^k which s defined as
-          !   a_ji^k:=\frac{l_ij(u+h*e_k)-l_ij(u-h*e_k)}{2h}
-          ! if either I=K or J=K. In short the loop over the I-th and
-          ! J-th row only affects the matrix position II, IJ, JI, and JJ
-          ! which are known a priori(!!)
-
-          ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
-
-!!$          ! Compute perturbed coefficients l_ij and l_ji
-!!$          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
-!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
-
-          ! Apply perturbed coefficient to a_ij and a_ji
-          a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
-
-!!$          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-!!$          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
-!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
-
-          ! Apply the average of the perturbed coefficients
-          b_ji = (a_ji+l_ji+d_ij)/2._DP
-          Jac(ji) = Jac(ji)+b_ji
-          Jac(jj) = Jac(jj)-b_ji
-
-          ! Compute final coefficients a_ij and a_ji as the second
-          ! order divided differences of the low-order coefficients
-          a_ij = 0.5_DP*(a_ij-l_ij-d_ij)/hstep
-          a_ji = 0.5_DP*(a_ji-l_ji-d_ij)/hstep
-
-          ! Update the I-th column of the I-th and J-th row
-          Jac(ii) = Jac(ii)+a_ij*diff
-          Jac(ji) = Jac(ji)-a_ji*diff
-
-
-          ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
-
-!!$          ! Compute perturbed coefficients l_ij and l_ji
-!!$          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
-!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
-
-          ! Apply perturbed coefficient to a_ij and a_ji
-          a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
-
-!!$          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-!!$          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
-!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
-
-          ! Apply the average of the perturbed coefficients for J=K
-          b_ij = (a_ij+l_ij+d_ij)/2._DP
-          Jac(ij) = Jac(ij)+b_ij
-          Jac(ii) = Jac(ii)-b_ij
-
-          ! Compute final coefficients a_ij and a_ji as the second
-          ! order divided differences of the low-order coefficients
-          a_ij = 0.5_DP*(a_ij-l_ij-d_ij)/hstep
-          a_ji = 0.5_DP*(a_ji-l_ji-d_ij)/hstep
-
-          ! Update the K-th column of the I-th row, that is, the
-          ! entriy IK of the Jacobian matrix
-          Jac(ij) = Jac(ij)+a_ij*diff
-          Jac(jj) = Jac(jj)-a_ji*diff
-        end do
-      end do
-    end subroutine doUpwindMat7_3D
-
-
-    !**************************************************************
-    ! Assemble Jacobian matrix for convective
-    ! operator in 1D and assume zero row-sums.
-    ! All matrices are stored in matrix format 9
-
-    subroutine doUpwindMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ,&
-        DcoeffX, Dx, Jac)
-
-      real(DP), dimension(:), intent(in) :: DcoeffX,Dx
-      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
-      integer, intent(in) :: NEQ
-
-      real(DP), dimension(:), intent(inout) :: Jac
-      integer, dimension(:), intent(inout) :: Ksep
-
-      ! local variables
-      real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP) :: d_ij,l_ij,l_ji,a_ij,a_ji,b_ij,b_ji,diff
-      integer :: ii,ij,ji,jj,i,j
-
-
-      ! Loop over all rows I of Jacobian matrix
-      do i = 1, NEQ
-
-        ! Get position of diagonal entry II
-        ii = Kdiagonal(i)
-
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        do ij = Kdiagonal(i)+1, Kld(i+1)-1
-
-          ! Get row number J, the corresponding matrix position JI, and
-          ! let the separator point to the next entry
-          j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-
-          ! Now, we have the global position of the matrix entries IJ
-          ! and JI (!!!) as well as the numbers I and J for which I < J.
-          ! Next, we need to consider all matrix entries of rows I and
-          ! J and perturb the matrix coefficients l_ij(u) and l_ji(u)
-          ! by +/-h*e_k, whebery K stands for the column number of the
-          ! current matrix entry. For the computation of the low-order
-          ! coefficient l_ij we have to consider k_ij and k_ji in order
-          ! to determine the artificial diffusion coefficient d_ij.
-          ! However, the coefficients a_ij and a_ji resulting from a
-          ! divided difference approximation of the derivatives of the
-          ! transport operator need to be handled separately.
-
-          ! Due to the fact, that we need the unperturbed quantities
-          ! quite frequently, we store them in local auxiliary variables
-
-          ! Compute solution difference Dx_j-Dx_i
-          diff = Dx(j)-Dx(i)
-
-          ! Compute coefficients
-          C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
-
-          ! We have to loop over all columns K of the I-th and J-th row
-          ! of the Jacobian matrix and update th positions IK and JK,
-          ! respectively. The perturbation +/-h*e_k only influences the
-          ! coefficients a_ij^k which s defined as
-          !   a_ji^k:=\frac{l_ij(u+h*e_k)-l_ij(u-h*e_k)}{2h}
-          ! if either I=K or J=K. In short the loop over the I-th and
-          ! J-th row only affects the matrix position II, IJ, JI, and JJ
-          ! which are known a priori(!!)
-
-          ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
-
-!!$          ! Compute perturbed coefficients l_ij and l_ji
-!!$          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
-!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
-
-          ! Apply perturbed coefficient to a_ij and a_ji
-          a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
-
-!!$          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-!!$          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
-!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
-
-          ! Apply the average of the perturbed coefficients
-          b_ji = (a_ji+l_ji+d_ij)/2._DP
-          Jac(ji) = Jac(ji)+b_ji
-          Jac(jj) = Jac(jj)-b_ji
-
-          ! Compute final coefficients a_ij and a_ji as the second
-          ! order divided differences of the low-order coefficients
-          a_ij = 0.5_DP*(a_ij-l_ij-d_ij)/hstep
-          a_ji = 0.5_DP*(a_ji-l_ji-d_ij)/hstep
-
-          ! Update the I-th column of the I-th and J-th row
-          Jac(ii) = Jac(ii)+a_ij*diff
-          Jac(ji) = Jac(ji)-a_ji*diff
-
-
-          ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
-
-!!$          ! Compute perturbed coefficients l_ij and l_ji
-!!$          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
-!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
-
-          ! Apply perturbed coefficient to a_ij and a_ji
-          a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
-
-!!$          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-!!$          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
-!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
-
-          ! Apply the average of the perturbed coefficients for J=K
-          b_ij = (a_ij+l_ij+d_ij)/2._DP
-          Jac(ij) = Jac(ij)+b_ij
-          Jac(ii) = Jac(ii)-b_ij
-
-          ! Compute final coefficients a_ij and a_ji as the second
-          ! order divided differences of the low-order coefficients
-          a_ij = 0.5_DP*(a_ij-l_ij-d_ij)/hstep
-          a_ji = 0.5_DP*(a_ji-l_ji-d_ij)/hstep
-
-          ! Update the K-th column of the I-th row, that is, the
-          ! entriy IK of the Jacobian matrix
-          Jac(ij) = Jac(ij)+a_ij*diff
-          Jac(jj) = Jac(jj)-a_ji*diff
-        end do
-      end do
-    end subroutine doUpwindMat9_1D
-
-
-    !**************************************************************
-    ! Assemble Jacobian matrix for convective
-    ! operator in 2D and assume zero row-sums.
-    ! All matrices are stored in matrix format 9
-
-    subroutine doUpwindMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ,&
-        DcoeffX, DcoeffY, Dx, Jac)
-
-      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,Dx
-      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
-      integer, intent(in) :: NEQ
-
-      real(DP), dimension(:), intent(inout) :: Jac
-      integer, dimension(:), intent(inout) :: Ksep
-
-      ! local variables
-      real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP) :: d_ij,l_ij,l_ji,a_ij,a_ji,b_ij,b_ji,diff
-      integer :: ii,ij,ji,jj,i,j
-
-
-      ! Loop over all rows I of Jacobian matrix
-      do i = 1, NEQ
-
-        ! Get position of diagonal entry II
-        ii = Kdiagonal(i)
-
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        do ij = Kdiagonal(i)+1, Kld(i+1)-1
-
-          ! Get row number J, the corresponding matrix position JI, and
-          ! let the separator point to the next entry
-          j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-
-          ! Now, we have the global position of the matrix entries IJ
-          ! and JI (!!!) as well as the numbers I and J for which I < J.
-          ! Next, we need to consider all matrix entries of rows I and
-          ! J and perturb the matrix coefficients l_ij(u) and l_ji(u)
-          ! by +/-h*e_k, whebery K stands for the column number of the
-          ! current matrix entry. For the computation of the low-order
-          ! coefficient l_ij we have to consider k_ij and k_ji in order
-          ! to determine the artificial diffusion coefficient d_ij.
-          ! However, the coefficients a_ij and a_ji resulting from a
-          ! divided difference approximation of the derivatives of the
-          ! transport operator need to be handled separately.
-
-          ! Due to the fact, that we need the unperturbed quantities
-          ! quite frequently, we store them in local auxiliary variables
-
-          ! Compute solution difference Dx_j-Dx_i
-          diff = Dx(j)-Dx(i)
-
-          ! Compute coefficients
-          C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
-          C_ij(2) = DcoeffY(ij); C_ji(2) = DcoeffY(ji)
-
-          ! We have to loop over all columns K of the I-th and J-th row
-          ! of the Jacobian matrix and update th positions IK and JK,
-          ! respectively. The perturbation +/-h*e_k only influences the
-          ! coefficients a_ij^k which s defined as
-          !   a_ji^k:=\frac{l_ij(u+h*e_k)-l_ij(u-h*e_k)}{2h}
-          ! if either I=K or J=K. In short the loop over the I-th and
-          ! J-th row only affects the matrix position II, IJ, JI, and JJ
-          ! which are known a priori(!!)
-
-          ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
-
-!!$          ! Compute perturbed coefficients l_ij and l_ji
-!!$          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
-!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
-
-          ! Apply perturbed coefficient to a_ij and a_ji
-          a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
-
-!!$          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-!!$          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
-!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
-
-          ! Apply the average of the perturbed coefficients
-          b_ji = (a_ji+l_ji+d_ij)/2._DP
-          Jac(ji) = Jac(ji)+b_ji
-          Jac(jj) = Jac(jj)-b_ji
-
-          ! Compute final coefficients a_ij and a_ji as the second
-          ! order divided differences of the low-order coefficients
-          a_ij = 0.5_DP*(a_ij-l_ij-d_ij)/hstep
-          a_ji = 0.5_DP*(a_ji-l_ji-d_ij)/hstep
-
-          ! Update the I-th column of the I-th and J-th row
-          Jac(ii) = Jac(ii)+a_ij*diff
-          Jac(ji) = Jac(ji)-a_ji*diff
-
-
-          ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
-
-!!$          ! Compute perturbed coefficients l_ij and l_ji
-!!$          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
-!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
-
-          ! Apply perturbed coefficient to a_ij and a_ji
-          a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
-
-!!$          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-!!$          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
-!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
-
-          ! Apply the average of the perturbed coefficients for J=K
-          b_ij = (a_ij+l_ij+d_ij)/2._DP
-          Jac(ij) = Jac(ij)+b_ij
-          Jac(ii) = Jac(ii)-b_ij
-
-          ! Compute final coefficients a_ij and a_ji as the second
-          ! order divided differences of the low-order coefficients
-          a_ij = 0.5_DP*(a_ij-l_ij-d_ij)/hstep
-          a_ji = 0.5_DP*(a_ji-l_ji-d_ij)/hstep
-
-          ! Update the K-th column of the I-th row, that is, the
-          ! entriy IK of the Jacobian matrix
-          Jac(ij) = Jac(ij)+a_ij*diff
-          Jac(jj) = Jac(jj)-a_ji*diff
-        end do
-      end do
-    end subroutine doUpwindMat9_2D
-
-
-    !**************************************************************
-    ! Assemble Jacobian matrix for convective
-    ! operator in 3D and assume zero row-sums.
-    ! All matrices are stored in matrix format 9
-
-    subroutine doUpwindMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ,&
-        DcoeffX, DcoeffY, DcoeffZ, Dx, Jac)
-
-      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,DcoeffZ,Dx
-      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
-      integer, intent(in) :: NEQ
-
-      real(DP), dimension(:), intent(inout) :: Jac
-      integer, dimension(:), intent(inout) :: Ksep
-
-      ! local variables
-      real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP) :: d_ij,l_ij,l_ji,a_ij,a_ji,b_ij,b_ji,diff
-      integer :: ii,ij,ji,jj,i,j
-
-
-      ! Loop over all rows I of Jacobian matrix
-      do i = 1, NEQ
-
-        ! Get position of diagonal entry II
-        ii = Kdiagonal(i)
-
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        do ij = Kdiagonal(i)+1, Kld(i+1)-1
-
-          ! Get row number J, the corresponding matrix position JI, and
-          ! let the separator point to the next entry
-          j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
-
-          ! Now, we have the global position of the matrix entries IJ
-          ! and JI (!!!) as well as the numbers I and J for which I < J.
-          ! Next, we need to consider all matrix entries of rows I and
-          ! J and perturb the matrix coefficients l_ij(u) and l_ji(u)
-          ! by +/-h*e_k, whebery K stands for the column number of the
-          ! current matrix entry. For the computation of the low-order
-          ! coefficient l_ij we have to consider k_ij and k_ji in order
-          ! to determine the artificial diffusion coefficient d_ij.
-          ! However, the coefficients a_ij and a_ji resulting from a
-          ! divided difference approximation of the derivatives of the
-          ! transport operator need to be handled separately.
-
-          ! Due to the fact, that we need the unperturbed quantities
-          ! quite frequently, we store them in local auxiliary variables
-
-          ! Compute solution difference Dx_j-Dx_i
-          diff = Dx(j)-Dx(i)
-
-          ! Compute coefficients
-          C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
-          C_ij(2) = DcoeffY(ij); C_ji(2) = DcoeffY(ji)
-          C_ij(3) = DcoeffZ(ij); C_ji(3) = DcoeffZ(ji)
-
-          ! We have to loop over all columns K of the I-th and J-th row
-          ! of the Jacobian matrix and update th positions IK and JK,
-          ! respectively. The perturbation +/-h*e_k only influences the
-          ! coefficients a_ij^k which s defined as
-          !   a_ji^k:=\frac{l_ij(u+h*e_k)-l_ij(u-h*e_k)}{2h}
-          ! if either I=K or J=K. In short the loop over the I-th and
-          ! J-th row only affects the matrix position II, IJ, JI, and JJ
-          ! which are known a priori(!!)
-
-          ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
-
-!!$          ! Compute perturbed coefficients l_ij and l_ji
-!!$          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
-!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
-
-          ! Apply perturbed coefficient to a_ij and a_ji
-          a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
-
-!!$          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-!!$          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
-!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
-
-          ! Apply the average of the perturbed coefficients
-          b_ji = (a_ji+l_ji+d_ij)/2._DP
-          Jac(ji) = Jac(ji)+b_ji
-          Jac(jj) = Jac(jj)-b_ji
-
-          ! Compute final coefficients a_ij and a_ji as the second
-          ! order divided differences of the low-order coefficients
-          a_ij = 0.5_DP*(a_ij-l_ij-d_ij)/hstep
-          a_ji = 0.5_DP*(a_ji-l_ji-d_ij)/hstep
-
-          ! Update the I-th column of the I-th and J-th row
-          Jac(ii) = Jac(ii)+a_ij*diff
-          Jac(ji) = Jac(ji)-a_ji*diff
-
-
-          ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
-
-!!$          ! Compute perturbed coefficients l_ij and l_ji
-!!$          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
-!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
-
-          ! Apply perturbed coefficient to a_ij and a_ji
-          a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
-
-!!$          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-!!$          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
-!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
-
-          ! Apply the average of the perturbed coefficients for J=K
-          b_ij =(a_ij+l_ij+d_ij)/2._DP
-          Jac(ij) = Jac(ij)+b_ij
-          Jac(ii) = Jac(ii)-b_ij
-
-          ! Compute final coefficients a_ij and a_ji as the second
-          ! order divided differences of the low-order coefficients
-          a_ij = 0.5_DP*(a_ij-l_ij-d_ij)/hstep
-          a_ji = 0.5_DP*(a_ji-l_ji-d_ij)/hstep
-
-          ! Update the K-th column of the I-th row, that is, the
-          ! entriy IK of the Jacobian matrix
-          Jac(ij) = Jac(ij)+a_ij*diff
-          Jac(jj) = Jac(jj)-a_ji*diff
-        end do
-      end do
-    end subroutine doUpwindMat9_3D
 
   end subroutine gfsc_buildJacobianScalar
 

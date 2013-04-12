@@ -108,6 +108,8 @@ module mhd_callback
 !$use omp_lib
   use afcstabbase
   use afcstabsystem
+  use afcstabsystemfct
+  use afcstabsystemtvd
   use basicgeometry
   use boundary
   use boundarycondaux
