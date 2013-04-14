@@ -56,8 +56,8 @@ contains
     ! ----------------
     ! Evaluate
     ! ----------------
-    do ix = 0,4
-      do iy = 0,4
+    do iy = 0,4
+      do ix = 0,4
       
         ! Prepare the input variables
         Dparams = (/ real(ix,DP) / 4.0_DP, &
