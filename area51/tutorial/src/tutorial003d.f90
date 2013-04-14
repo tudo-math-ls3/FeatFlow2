@@ -24,7 +24,7 @@ contains
     type(t_timer) :: rtimer
     real(DP) :: delapsedTime
     
-    integer :: i,d
+    integer :: i
 
     ! Print a message
     call output_lbrk()
@@ -42,8 +42,11 @@ contains
     ! =================================
     ! Do some work
     ! =================================
-    do i = 1,100000000
-      d = sqrt ( real(i,DP) )
+    
+    ! Wait two seconds
+    do
+      call stat_sampleTimer(rtimer,delapsedTime)
+      if ( delapsedTime .ge. 2.0_DP) exit
     end do
     
     ! =================================
@@ -53,7 +56,7 @@ contains
     call stat_stopTimer (rtimer)
     
     call output_line ("Time for calculation in seconds: " // &
-        trim(sys_sdL(dnint(rtimer%delapsedReal),1)) )
+        trim(sys_sdL(dint(rtimer%delapsedReal),1)) )
     
   end subroutine
 
