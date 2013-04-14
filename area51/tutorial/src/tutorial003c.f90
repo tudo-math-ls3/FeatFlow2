@@ -7,7 +7,6 @@ module tutorial003c
   ! Include basic Feat-2 modules
   use fsystem
   use genoutput
-  use storage
   use fparser
 
   implicit none
@@ -42,12 +41,12 @@ contains
     call fparser_init()
 
     ! =================================
-    ! Evaluate the function in the
+    ! Evaluate the functions in the
     ! points of a 5x5 mesh.
     ! =================================
 
     ! ----------------
-    ! Parse a function
+    ! Parse functions
     ! ----------------
     call fparser_create (rparser, 2)
     call fparser_parseFunction (rparser, 1, "SIN(_PI*X) * SIN(_PI*Y)", Svariables)
@@ -59,7 +58,8 @@ contains
     do iy = 0,4
       do ix = 0,4
       
-        ! Prepare the input variables
+        ! Prepare the input variables. The variables are in the same
+        ! order and the same number as prescribed by Svariables above
         Dparams = (/ real(ix,DP) / 4.0_DP, &
                      real(iy,DP) / 4.0_DP /)
              
