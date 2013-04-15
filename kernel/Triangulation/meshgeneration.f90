@@ -9,7 +9,7 @@
 !#
 !# The following routines can be found here:
 !#
-!# 1.) meshcr_rectangular2DQuadMesh
+!# 1.) meshgen_rectangular2DQuadMesh
 !#     -> Creates a rectantgular 2D mesh
 !#
 !# </purpose>
@@ -26,7 +26,7 @@ module meshgeneration
 
   private
 
-  public :: meshcr_rectangular2DQuadMesh
+  public :: meshgen_rectangular2DQuadMesh
 
 contains
 
@@ -34,7 +34,7 @@ contains
 
 !<subroutine>
 
-  subroutine meshcr_rectangular2DQuadMesh (rtriangulation,dsizex,dsizey,ncellsx,ncellsy)
+  subroutine meshgen_rectangular2DQuadMesh (rtriangulation,dsizex,dsizey,ncellsx,ncellsy)
 
 !<description>
   ! Creates a rectangular, regular 2D mesh at (0,0) with size (dsizex,dsizey).
