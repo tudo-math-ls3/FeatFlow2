@@ -106,7 +106,7 @@ contains
         "data/tutorial006e_trz.txt", "(E15.5)")
 
     ! -------------------------------------------
-    ! Discretise the Laplace matrix. Gauss 1x1.
+    ! Gauss 1x1.
     call lsyssc_clearMatrix (rmatrix)
     call stdop_assembleLaplaceMatrix (rmatrix,rcubatureInfo=rcubatureInfo_G1)
     
@@ -115,7 +115,7 @@ contains
         "data/tutorial006e_g1.txt", "(E15.5)")
 
     ! -------------------------------------------
-    ! Discretise the Laplace matrix. Gauss 2x2
+    ! Gauss 2x2
     call lsyssc_clearMatrix (rmatrix)
     call stdop_assembleLaplaceMatrix (rmatrix,rcubatureInfo=rcubatureInfo_G2)
     
@@ -124,7 +124,7 @@ contains
         "data/tutorial006e_g2.txt", "(E15.5)")
 
     ! -------------------------------------------
-    ! Discretise the Laplace matrix. Gauss 3x3.
+    ! Gauss 3x3.
     call lsyssc_clearMatrix (rmatrix)
     call stdop_assembleLaplaceMatrix (rmatrix,rcubatureInfo=rcubatureInfo_G3)
     
@@ -133,7 +133,7 @@ contains
         "data/tutorial006e_g3.txt", "(E15.5)")
 
     ! -------------------------------------------
-    ! Discretise the Laplace matrix. Gauss 5x5.
+    ! Gauss 4x4.
     call lsyssc_clearMatrix (rmatrix)
     call stdop_assembleLaplaceMatrix (rmatrix,rcubatureInfo=rcubatureInfo_G4)
     
@@ -142,7 +142,7 @@ contains
         "data/tutorial006e_g4.txt", "(E15.5)")
 
     ! -------------------------------------------
-    ! Discretise the Laplace matrix. Gauss 5x5.
+    ! Gauss 5x5.
     call lsyssc_clearMatrix (rmatrix)
     call stdop_assembleLaplaceMatrix (rmatrix,rcubatureInfo=rcubatureInfo_G5)
     
