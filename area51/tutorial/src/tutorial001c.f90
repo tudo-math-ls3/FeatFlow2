@@ -20,7 +20,6 @@ contains
   subroutine start_tutorial001c
   
     character(LEN=SYS_STRLEN) :: sstring
-    integer :: ntokens
 
     ! Print a message
     call output_lbrk()
@@ -31,14 +30,20 @@ contains
     call output_line ("String mainipulation routines.")
     call output_line ("------------------------------")
     
+    ! =================================
     ! Conversion to upper case / lower case
+    ! =================================
     call output_line ("'This is a test' => " // sys_upcase ("'This is a test'") )
     call output_line ("'This is a test' => " // sys_lowcase("'This is a test'") )
     
+    ! =================================
     ! Character replacement
+    ! =================================
     call output_line ("'This is a test' => " // sys_charreplace("'This is a test'"," ","-") )
 
+    ! =================================
     ! Dequoting. Partial output without line break
+    ! =================================
     sstring = "'This is a test'"
     call output_line ( trim(sstring) // " =>", bnolinebreak=.true. )
     call sys_dequote ( sstring )

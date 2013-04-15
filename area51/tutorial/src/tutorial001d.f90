@@ -28,7 +28,10 @@ contains
     call output_line ("Hello world. This is FEAT-2. Tutorial 001d.")
     call output_separator (OU_SEP_MINUS)
 
-    ! Count the number of tokens and print them.
+    ! =================================
+    ! Count the number of tokens and
+    ! print them.
+    ! =================================
     sstring = "0.1 0.2 'This is a test' 0.3"
     call output_line ("We now tokenize the string: """ // trim(sstring) // """.")
     call output_lbrk()

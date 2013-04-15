@@ -16,6 +16,8 @@ program tutorial
   use tutorial001b
   use tutorial001c
   use tutorial001d
+  use tutorial001e
+  use tutorial001f
   
   use tutorial002a
   use tutorial002b
@@ -53,6 +55,8 @@ program tutorial
   call start_tutorial001b
   call start_tutorial001c
   call start_tutorial001d
+  call start_tutorial001e
+  call start_tutorial001f
   
   call start_tutorial002a
   call start_tutorial002b
