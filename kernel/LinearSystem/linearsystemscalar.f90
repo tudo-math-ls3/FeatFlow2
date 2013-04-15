@@ -18054,12 +18054,12 @@ contains
 !<input>
   ! Whether and how to fill the matrix with initial values.
   ! One of the LSYSSC_SETM_xxxx constants:
-  ! LSYSSC_SETM_UNDEFINED : Do not initialise the matrix,
+  ! LSYSSC_SETM_UNDEFINED : Do not initialise the matrix (default).
   ! LSYSSC_SETM_ZERO      : Clear the matrix / fill it with 0.0,
   ! LSYSSC_SETM_ONE       : Fill the matrix with 1.0. (Used e.g.
   !                         for UMFPACK who needs a non-zero
   !                         matrix for symbolic factorisation.)
-  integer, intent(in) :: iclear
+  integer, intent(in), optional :: iclear
 
   ! OPTIONAL: If set to TRUE, existing matrices are ignored.
   ! Standard value is FALSE which stops the application with an error.
@@ -18114,28 +18114,31 @@ contains
     if ((rmatrixScalar%h_Da .eq. ST_NOHANDLE) .or. &
         (iand(rmatrixScalar%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .ne. 0)) then
 
-      if (iclear .ge. LSYSSC_SETM_ZERO) then
-        call storage_new ('lsyssc_allocEmptyMatrix', 'Da', &
-                            NA, cdType, rmatrixScalar%h_Da, &
-                            ST_NEWBLOCK_ZERO)
-      else
-        call storage_new ('lsyssc_allocEmptyMatrix', 'Da', &
-                            NA, cdType, rmatrixScalar%h_Da, &
-                            ST_NEWBLOCK_NOINIT)
-      end if
+      call storage_new ('lsyssc_allocEmptyMatrix', 'Da', &
+                          NA,cdType, rmatrixScalar%h_Da, &
+                          ST_NEWBLOCK_NOINIT)
 
-      if (iclear .ge. LSYSSC_SETM_ONE) then
-        select case (cdType)
-        case (ST_DOUBLE)
-          call lsyssc_getbase_double (rmatrixScalar,p_Da)
-          call lalg_setVector (p_Da,1.0_DP)
-        case (ST_SINGLE)
-          call lsyssc_getbase_single (rmatrixScalar,p_Fa)
-          call lalg_setVector (p_Fa,1.0_SP)
-        case default
-          call output_line('Unknown data type!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_allocEmptyMatrix')
-          call sys_halt()
+      ! Initialise                          
+      if (present(iclear)) then
+        select case (iclear)
+        
+        case (LSYSSC_SETM_ZERO) 
+          call storage_clear (rmatrixScalar%h_Da)
+        
+        case (LSYSSC_SETM_ONE) 
+          select case (cdType)
+          case (ST_DOUBLE)
+            call lsyssc_getbase_double (rmatrixScalar,p_Da)
+            call lalg_setVector (p_Da,1.0_DP)
+          case (ST_SINGLE)
+            call lsyssc_getbase_single (rmatrixScalar,p_Fa)
+            call lalg_setVector (p_Fa,1.0_SP)
+          case default
+            call output_line('Unknown data type!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_allocEmptyMatrix')
+            call sys_halt()
+          end select
+
         end select
       end if
 
@@ -18147,49 +18150,42 @@ contains
     if ((rmatrixScalar%h_Da .eq. ST_NOHANDLE) .or. &
         (iand(rmatrixScalar%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .ne. 0)) then
 
-      if (iclear .ge. LSYSSC_SETM_ZERO) then
-        select case (rmatrixScalar%cinterleavematrixFormat)
-        case (LSYSSC_MATRIX1)
-          call storage_new ('lsyssc_allocEmptyMatrix', 'Da', &
-              NA*NVAR*NVAR, cdType, rmatrixScalar%h_Da, ST_NEWBLOCK_ZERO)
-        case (LSYSSC_MATRIXD)
-          call storage_new ('lsyssc_allocEmptyMatrix', 'Da', &
-              NA*NVAR, cdType, rmatrixScalar%h_Da, ST_NEWBLOCK_ZERO)
-        case default
-          call output_line('Unsupported interleave matrix format!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_allocEmptyMatrix')
-          call sys_halt()
+      select case (rmatrixScalar%cinterleavematrixFormat)
+      case (LSYSSC_MATRIX1)
+        call storage_new ('lsyssc_allocEmptyMatrix', 'Da', &
+            NA*NVAR*NVAR, cdType, rmatrixScalar%h_Da, ST_NEWBLOCK_NOINIT)
+      case (LSYSSC_MATRIXD)
+        call storage_new ('lsyssc_allocEmptyMatrix', 'Da', &
+            NA*NVAR, cdType, rmatrixScalar%h_Da, ST_NEWBLOCK_NOINIT)
+      case default
+        call output_line('Unsupported interleave matrix format!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_allocEmptyMatrix')
+        call sys_halt()
+      end select
+
+      ! Initialise
+      if (present(iclear)) then
+        select case (iclear)
+
+        case (LSYSSC_SETM_ZERO)
+          call storage_clear(rmatrixScalar%h_Da)
+
+        case (LSYSSC_SETM_ONE)
+          select case (cdType)
+          case (ST_DOUBLE)
+            call lsyssc_getbase_double (rmatrixScalar,p_Da)
+            call lalg_setVector (p_Da,1.0_DP)
+          case (ST_SINGLE)
+            call lsyssc_getbase_single (rmatrixScalar,p_Fa)
+            call lalg_setVector (p_Fa,1.0_SP)
+          case default
+            call output_line('Unknown data type!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_allocEmptyMatrix')
+            call sys_halt()
+          end select
+
         end select
 
-      else
-        select case (rmatrixScalar%cinterleavematrixFormat)
-        case (LSYSSC_MATRIX1)
-          call storage_new ('lsyssc_allocEmptyMatrix', 'Da', &
-              NA*NVAR*NVAR, cdType, rmatrixScalar%h_Da, ST_NEWBLOCK_NOINIT)
-        case (LSYSSC_MATRIXD)
-          call storage_new ('lsyssc_allocEmptyMatrix', 'Da', &
-              NA*NVAR, cdType, rmatrixScalar%h_Da, ST_NEWBLOCK_NOINIT)
-        case default
-          call output_line('Unsupported interleave matrix format!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_allocEmptyMatrix')
-          call sys_halt()
-        end select
-
-      end if
-
-      if (iclear .ge. LSYSSC_SETM_ONE) then
-        select case (cdType)
-        case (ST_DOUBLE)
-          call lsyssc_getbase_double (rmatrixScalar,p_Da)
-          call lalg_setVector (p_Da,1.0_DP)
-        case (ST_SINGLE)
-          call lsyssc_getbase_single (rmatrixScalar,p_Fa)
-          call lalg_setVector (p_Fa,1.0_SP)
-        case default
-          call output_line('Unknown data type!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_allocEmptyMatrix')
-          call sys_halt()
-        end select
       end if
 
     end if
