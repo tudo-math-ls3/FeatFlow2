@@ -63,7 +63,7 @@ contains
     call sys_parseCommandLineArg ("'This is a string.'",soption,svalue,iformat)
     
     call output_lbrk()
-    call output_line ("Parse-Test: 'This is a string.'")
+    call output_line ("Parse-Test: '""This is a string.""'")
     call output_line ("   Option = " // trim(soption) )
     call output_line ("   Value  = " // trim(svalue) )
     call output_line ("   Format = " // trim(sys_siL(iformat,10)) )
