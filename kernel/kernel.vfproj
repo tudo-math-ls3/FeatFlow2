@@ -369,6 +369,7 @@
 		<File RelativePath=".\Triangulation\griddeform.f90"/>
 		<File RelativePath=".\Triangulation\meshadjacency.f90"/>
 		<File RelativePath=".\Triangulation\meshmodification.f90"/>
+		<File RelativePath=".\Triangulation\meshgeneration.f90"/>
 		<File RelativePath=".\Triangulation\meshregion.f90"/>
 		<File RelativePath=".\Triangulation\triangulation.f90"/>
 		<File RelativePath=".\Triangulation\triasearch.f90"/></Filter></Files>

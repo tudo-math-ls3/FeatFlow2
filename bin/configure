@@ -280,6 +280,7 @@ use constant SRCLIST_KERNEL =>
     "TimeDependence/timestepping.f90 TimeDependence/timediscretisation.f90 " .
 
     "Triangulation/griddeform.f90 Triangulation/meshadjacency.f90 Triangulation/meshmodification.f90 " .
+    "Triangulation/griddeform.f90 Triangulation/meshadjacency.f90 Triangulation/meshgeneration.f90 " .
     "Triangulation/meshregion.f90 Triangulation/triangulation.f90 Triangulation/triasearch.f90";
 
 use constant SRCLIST_ARCH      => "";
