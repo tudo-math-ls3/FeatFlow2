@@ -43,8 +43,8 @@ contains
 
     call boundary_read_prm(rboundary, "pre/bench1.prm")
     
-    ! The mesh must always be in "standard" format. First read,
-    ! then convert to standard.
+    ! The mesh must always be in "standard" format to work with it.
+    ! First read, then convert to standard.
     call tria_readTriFile2D (rtriangulation, "pre/bench1.tri", rboundary)
     call tria_initStandardMeshFromRaw (rtriangulation)
 
