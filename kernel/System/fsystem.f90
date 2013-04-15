@@ -114,6 +114,15 @@
 !# 29.) sys_inumberic
 !#      -> Checks if a string represents a numeric value
 !#
+!# 30.) sys_ncommandLineArgs
+!#      -> Get number of command line arguments
+!#
+!# 31.) sys_getcommandLineArg = 
+!#      -> Get a command line argument
+!#
+!# 32.) sys_parseCommandLineArg
+!#      -> Parses a command line argument for an option
+!#
 !# </purpose>
 !##############################################################################
 
@@ -191,6 +200,7 @@ module fsystem
   public :: sys_getenv_string
   public :: sys_ncommandLineArgs
   public :: sys_getcommandLineArg
+  public :: sys_parseCommandLineArg
   public :: sys_silsb
   public :: sys_simsb
   public :: sys_dequote
@@ -406,10 +416,10 @@ module fsystem
   type t_sysconfig
 
     ! project id
-    character(LEN=SYS_STRLEN) :: sprojectID    = ''
+    character(LEN=SYS_STRLEN) :: sprojectID    = ""
 
     ! project directory
-    character(LEN=SYS_STRLEN) :: sprojectDir   = ''
+    character(LEN=SYS_STRLEN) :: sprojectDir   = ""
 
     ! starting time of this project
     integer                   :: iprojectStart = 0
@@ -467,7 +477,7 @@ module fsystem
     module procedure sys_tolower_replace
     module procedure sys_tolower_copy
   end interface
-
+  
 contains
 
 !************************************************************************
@@ -736,7 +746,7 @@ contains
     end if
 
     ! Initialise string
-    strUpper = ''
+    strUpper = ""
 
     do i=1,len(str)
       c = str(i:i)
@@ -821,7 +831,7 @@ contains
     end if
 
     ! Initialise string
-    strLower = ''
+    strLower = ""
 
     do i=1,len(str)
       c = str(i:i)
@@ -1014,7 +1024,7 @@ contains
     integer, intent(in) :: iunit
 
     !name of the file to look at
-    character (len=*), intent(in):: sname
+    character (len=*), intent(in) :: sname
 
 !</input>
 
@@ -1026,7 +1036,7 @@ contains
 
     integer :: iostat !status variable for opening procedure
 
-    open(iunit,FILE=sname,IOSTAT=iostat,STATUS='OLD',ACTION='READ')
+    open(iunit,FILE=sname,IOSTAT=iostat,STATUS="OLD",ACTION="READ")
     sys_fileExists=(iostat .eq. 0)
     close(iunit)
 
@@ -1047,8 +1057,8 @@ contains
 
 !<input>
 
-    !unit connected to the file to write to
-    integer :: iunit
+    ! Unit connected to the file to write to
+    integer, intent(in) :: iunit
 
 !</input>
 !</subroutine>
@@ -1091,24 +1101,24 @@ contains
     integer :: ipos
 
     ! Check if string contains a 'dot'
-    if (scan(svalue,'.') .ne. 0) then
+    if (scan(svalue,".") .ne. 0) then
 
       ! Read original string
       read(svalue,sformat) dvalue
     else
       ! Check if string is given in scientific notation
-      ipos = scan(svalue,'dDeE')
+      ipos = scan(svalue,"dDeE")
 
       if (ipos .eq. 0) then
         ! Append '.E0' to convert string into scientific notation
-        svalueTemp = trim(svalue)//'.E0'
+        svalueTemp = trim(svalue)//".E0"
 
       elseif (ipos .eq. 1) then
         ! Prepend '1.' to convert string into scientific notation
-        svalueTemp = '1.'//adjustl(svalue)
+        svalueTemp = "1."//adjustl(svalue)
       else
         ! Insert '.' to convert string into scientific notation
-        svalueTemp = svalue(1:ipos-1)//'.'//svalue(ipos:)
+        svalueTemp = svalue(1:ipos-1)//"."//svalue(ipos:)
       end if
 
       ! Read modified string
@@ -1149,24 +1159,24 @@ contains
     integer :: ipos
 
     ! Check if string contains a 'dot'
-    if (scan(svalue,'.') .ne. 0) then
+    if (scan(svalue,".") .ne. 0) then
 
       ! Read original string
       read(svalue,sformat) fvalue
     else
       ! Check if string is given in scientific notation
-      ipos = scan(svalue,'dDeE')
+      ipos = scan(svalue,"dDeE")
 
       if (ipos .eq. 0) then
         ! Append '.E0' to convert string into scientific notation
-        svalueTemp = trim(svalue)//'.E0'
+        svalueTemp = trim(svalue)//".E0"
 
       elseif (ipos .eq. 1) then
         ! Prepend '1.' to convert string into scientific notation
-        svalueTemp = '1.'//adjustl(svalue)
+        svalueTemp = "1."//adjustl(svalue)
       else
         ! Insert '.' to convert string into scientific notation
-        svalueTemp = svalue(1:ipos-1)//'.'//svalue(ipos:)
+        svalueTemp = svalue(1:ipos-1)//"."//svalue(ipos:)
       end if
 
       ! Read modified string
@@ -1230,19 +1240,19 @@ contains
     ! What do we have here?
     select case(k)
     case (0)
-      spost = ' Bytes'
+      spost = " Bytes"
     case (1)
-      spost = ' KB'   ! "Kilobytes"
+      spost = " KB"   ! "Kilobytes"
     case (2)
-      spost = ' MB'   ! "Megabytes"
+      spost = " MB"   ! "Megabytes"
     case (3)
-      spost = ' GB'   ! "Gigabytes"
+      spost = " GB"   ! "Gigabytes"
     case (4)
-      spost = ' TB'   ! "Terabytes"
+      spost = " TB"   ! "Terabytes"
     case (5)
-      spost = ' PB'   ! "Petabytes"
+      spost = " PB"   ! "Petabytes"
     case (6)
-      spost = ' EB'   ! "Exabytes"
+      spost = " EB"   ! "Exabytes"
     end select
 
     ! "Count" the number of leading digits
@@ -1264,21 +1274,21 @@ contains
     end if
 
     ! Prepare snld and sntd
-    write(snld,'(i1)') nld
-    write(sntd,'(i1)') ntd
+    write(snld,"(i1)") nld
+    write(sntd,"(i1)") ntd
 
     ! Now what format are we going to print?
     if((k .eq. 0) .or. (ntd .eq. 0)) then
 
       ! Print something like "xxx KB"
-      sformat = '(i' // trim(snld) // ',"' // trim(spost) // '")'
+      sformat = "(i" // trim(snld) // ",""" // trim(spost) // """)"
       write(sout, sformat) ii
 
     else
 
       ! Print something like "xxx.yy KB"
-      sformat = '(i' // trim(snld) // ',".",i' // trim(sntd) // '.' &
-                // trim(sntd) // ',"' // trim(spost) // '")'
+      sformat = "(i" // trim(snld) // ",""."",i" // trim(sntd) // "." &
+                // trim(sntd) // ",""" // trim(spost) // """)"
       write(sout, sformat) ii, jj
 
     end if
@@ -1353,9 +1363,9 @@ contains
 !</function>
 
     if (lvalue) then
-      soutput = 'true'
+      soutput = "true"
     else
-      soutput = 'false'
+      soutput = "false"
     end if
   end function sys_sl
 
@@ -1396,9 +1406,9 @@ contains
     ! would result in a crash
     if (idigits .gt. 16) then
       write(6, *) "*** WARNING! Too many decimal places requested in sys_sd! ***"
-      write(saux, '(i2)') 16
+      write(saux, "(i2)") 16
     else
-      write(saux, '(i2)') idigits
+      write(saux, "(i2)") idigits
     endif
 
     sformat = "(f32." // trim(saux) // ")"
@@ -1445,16 +1455,16 @@ contains
     ! would result in a crash
     if (idigits .gt. 16) then
       write(6, *) "*** WARNING! Too many decimal places requested in sys_sdP! ***"
-      write(saux, '(i2)') 16
+      write(saux, "(i2)") 16
     else
-      write(saux, '(i2)') idigits
+      write(saux, "(i2)") idigits
     endif
 
     if (ipositions .gt. 32) then
       write(6, *) "*** WARNING! Too long string requested in sys_sdP! ***"
-      write(saux2, '(i2)') 32
+      write(saux2, "(i2)") 32
     else
-      write(saux2, '(i2)') ipositions
+      write(saux2, "(i2)") ipositions
     endif
 
     sformat = "(f"//trim(saux2)//"." // trim(saux) // ")"
@@ -1498,9 +1508,9 @@ contains
     ! would result in a crash
     if (idigits .gt. 16) then
       write(6, *) "*** WARNING! Too many decimal places requested in sys_sdE! ***"
-      write(saux, '(i2)') 16
+      write(saux, "(i2)") 16
     else
-      write(saux, '(i2)') idigits
+      write(saux, "(i2)") idigits
     endif
 
     sformat = "(es24." // trim(saux) // ")"
@@ -1548,14 +1558,14 @@ contains
     ! would result in a crash
     if (idigits .gt. 16) then
       write(6, *) "*** WARNING! Too many decimal places requested in sys_sdEP! ***"
-      write(saux, '(i2)') 16
+      write(saux, "(i2)") 16
     else
-      write(saux, '(i2)') idigits
+      write(saux, "(i2)") idigits
     endif
 
     if (ipositions .gt. 24) then
       write(6, *) "*** WARNING! Too long string requested in sys_sdEP! ***"
-      write(saux2, '(i2)') 24
+      write(saux2, "(i2)") 24
     else
       write(saux2, '(i2)') ipositions
     endif
@@ -1599,11 +1609,11 @@ contains
     ! would result in a crash
     if (idigits .gt. 16) then
       write(6, *) "*** WARNING! Too many decimal places requested in sys_si! ***"
-      write(saux, '(i2)') 16
+      write(saux, "(i2)") 16
     else if (idigits .lt. 10) then
-      write(saux, '(i1)') idigits
+      write(saux, "(i1)") idigits
     else
-      write(saux, '(i2)') idigits
+      write(saux, "(i2)") idigits
     endif
 
     sformat = "(i" // trim(saux) // ")"
@@ -1647,9 +1657,9 @@ contains
     ! would result in a crash
     if (idigits .gt. 16) then
       write(6, *) "*** WARNING! Too many decimal places requested in sys_si0! ***"
-      write(saux, '(i2)') 16
+      write(saux, "(i2)") 16
     else
-      write(saux, '(i2)') idigits
+      write(saux, "(i2)") idigits
     endif
 
     sformat = "(i" // trim(saux) // "." // trim(saux) // ")"
@@ -1692,9 +1702,9 @@ contains
     ! would result in a crash
     if (idigits .gt. 16) then
       write(6, *) "*** WARNING! Too many decimal places requested in sys_sli! ***"
-      write(saux, '(i2)') 16
+      write(saux, "(i2)") 16
     else
-      write(saux, '(i2)') idigits
+      write(saux, "(i2)") idigits
     endif
 
     sformat = "(i" // trim(saux) // ")"
@@ -1737,9 +1747,9 @@ contains
     ! would result in a crash
     if (idigits .gt. 16) then
       write(6, *) "*** WARNING! Too many decimal places requested in sys_sli0! ***"
-      write(saux, '(i2)') 16
+      write(saux, "(i2)") 16
     else
-      write(saux, '(i2)') idigits
+      write(saux, "(i2)") idigits
     endif
 
     sformat = "(i" // trim(saux) // "." // trim(saux) // ")"
@@ -2163,13 +2173,13 @@ contains
   !</description>
 
   !<input>
-    ! name of the enviroment variable
+    ! Name of the enviroment variable
     character(len=*), intent(in) :: svar
   !</input>
 
   !<output>
-    ! value of the enviroment variable
-    character(len=SYS_STRLEN), intent(out) :: sresult
+    ! Value of the enviroment variable
+    character(len=*), intent(out) :: sresult
   !</output>
 
   !<result>
@@ -2181,7 +2191,7 @@ contains
   !</errors>
 !</function>
 
-    character(len=SYS_STRLEN) :: svalueInEnv
+    character(len=max(SYS_STRLEN,len(sresult))) :: svalueInEnv
 
     integer :: nstatus
 
@@ -2253,7 +2263,8 @@ contains
     ! Fetches command line argument iarg from the command line.
     !
     ! The return value of this function depends on the format of the command line
-    ! argument. There are three cases:
+    ! argument. If only "soption" is specified and nothing else, the parameter
+    ! is returned as it is. If "svalue" is specified, there are three cases:
     !
     ! a) Simple option: "option", or svalue not specified
     !  Here, soption = "option" and
@@ -2270,6 +2281,7 @@ contains
     !  Here, soption = "option" and
     !        svalue  = "value" or "" if no value is specified.
     !        iformat = 2.
+    !
   !</description>
 
   !<input>
@@ -2303,50 +2315,120 @@ contains
 
     ! local variables
     character(len=SYS_STRLEN) :: stmp
-    integer :: istmplen,idx
 
     if ((iarg .lt. 1) .or. (iarg .gt. sys_ncommandLineArgs())) then
       ! Return the default or an empty string.
       if (present(sdefault)) then
         stmp = sdefault
       else
-        soption = ''
+        soption = ""
         if (present(iformat)) iformat = -1
-        if (present(svalue)) svalue = ''
+        if (present(svalue)) svalue = ""
         return
       end if
     else
       ! Get the option -- at first to stmp.
       call getarg(iarg,stmp)
     end if
+    
+    ! Parse the argument
+    call sys_parseCommandLineArg(stmp,soption,svalue,iformat)
 
-    istmplen = len(stmp)
+  end subroutine
 
-    if (stmp(1:2).eq."--") then
+!************************************************************************
+
+!<subroutine>
+  subroutine sys_parseCommandLineArg(sarg,soption,svalue,iformat)
+
+  !<description>
+    ! Parses a command line option sarg.
+    !
+    ! The return value of this function depends on the format of the command line
+    ! argument. If only "soption" is specified and nothing else, the parameter
+    ! is returned as it is. If "svalue" is specified, there are three cases:
+    !
+    ! a) Simple option: "option", or svalue not specified
+    !  Here, soption = "option" and
+    !        svalue  = "".
+    !        iformat = 0.
+    !  Can be used to store e.g. paths like "./data".
+    !
+    ! b) Short options: "-option" or "-option=value".
+    !  Here, soption = "option" and
+    !        svalue  = "value" or "" if no value is specified.
+    !        iformat = 1.
+    !
+    ! c) long options: "--option" or "--option=value".
+    !  Here, soption = "option" and
+    !        svalue  = "value" or "" if no value is specified.
+    !        iformat = 2.
+  !</description>
+
+  !<input>
+    ! Command line option to parse.
+    character(len=*), intent(in) :: sarg
+  !</input>
+
+  !<output>
+    ! The command line argument.
+    character(len=*), intent(out) :: soption
+
+    ! OPTIONAL: Value of the option
+    character(len=*), intent(out), optional :: svalue
+
+    ! OPTIONAL: Type of the command line argument.
+    ! A value -1 indicates that the command line arguzment does not exist and no sdefault
+    ! is specified.
+    ! A value 0 indicates a direct option.
+    ! A value 1 indicates that the command line parameter
+    ! is of short form ("-key" or "-key=value").
+    ! A value 2 indicates that the command line parameter
+    ! is of long form ("--key" or "--key=value").
+    integer, intent(out), optional :: iformat
+  !</output>
+
+!</subroutine>
+
+    ! local variables
+    integer :: isarglen,idx
+
+    if (.not. present (svalue)) then
+
+      ! Do not parse, just return as it is.
+      soption = sarg
+      if (present(iformat)) iformat = 0
+      return
+      
+    end if
+
+    isarglen = len(sarg)
+
+    if (sarg(1:2).eq."--") then
 
       idx=3
-      do while ((stmp(idx:idx).ne.'=').and.(idx.lt.istmplen))
+      do while ((sarg(idx:idx).ne."=").and.(idx.lt.isarglen))
         idx=idx+1
       enddo
 
-      soption = stmp(3:idx-1)
-      if (present(svalue)) svalue = stmp(idx+1:)
+      soption = sarg(3:idx-1)
+      if (present(svalue)) svalue = sarg(idx+1:)
       if (present(iformat)) iformat = 2
 
-    else if (stmp(1:1).eq."-") then
+    else if (sarg(1:1).eq."-") then
 
       idx = 2
-      do while ((stmp(idx:idx).ne.'=').and.(idx .lt. istmplen))
+      do while ((sarg(idx:idx).ne."=").and.(idx .lt. isarglen))
         idx = idx+1
       enddo
 
-      soption = stmp(2:idx-1)
-      if (present(svalue)) svalue = stmp(idx+1:)
+      soption = sarg(2:idx-1)
+      if (present(svalue)) svalue = sarg(idx+1:)
       if (present(iformat)) iformat = 1
 
     else
 
-      soption = stmp
+      soption = sarg
       if (present(svalue)) svalue = ""
       if (present(iformat)) iformat = 0
 
@@ -2382,14 +2464,14 @@ contains
 
     do i = 1, min(32, bit_size(ivalue))
       if (btest(ivalue, i-1)) then
-        soutput(i:i) = '1'
+        soutput(i:i) = "1"
       else
-        soutput(i:i) = '0'
+        soutput(i:i) = "0"
       end if
     end do
 
     do i = min(32, bit_size(ivalue))+1, 32
-      soutput(i:i) = '0'
+      soutput(i:i) = "0"
     end do
 
   end function
@@ -2422,14 +2504,14 @@ contains
 
     do i = 1, min(32, bit_size(ivalue))
       if (btest(ivalue, i-1)) then
-        soutput(32-i+1:32-i+1) = '1'
+        soutput(32-i+1:32-i+1) = "1"
       else
-        soutput(32-i+1:32-i+1) = '0'
+        soutput(32-i+1:32-i+1) = "0"
       end if
     end do
 
     do i = min(32, bit_size(ivalue))+1, 32
-      soutput(32-i+1:32-i+1) = '0'
+      soutput(32-i+1:32-i+1) = "0"
     end do
 
   end function
@@ -2509,7 +2591,7 @@ contains
     end do
 
     ! Fill up the rest with spaces. This emulates a string copy.
-    schararray(j+1:) = ' '
+    schararray(j+1:) = " "
 
   end subroutine
 

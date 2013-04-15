@@ -87,6 +87,9 @@
 !#        
 !# 18.) bma_fcalc_H1norm
 !#     -> Calculates the squared H1 (semi-)norm of a FEM function
+!#
+!# 19.) bma_fcalc_divergenceL2norm
+!#     -> Calculates the squared L2-norm of the divergence of a vector field.
 !# </purpose>
 !##############################################################################
 
@@ -134,6 +137,8 @@ module blockmatassemblystdop
   public :: bma_fcalc_bubbleH1error
   public :: bma_fcalc_L2norm
   public :: bma_fcalc_H1norm
+  
+  public :: bma_fcalc_divergenceL2norm
 
 contains
 
@@ -1479,7 +1484,7 @@ contains
     real(DP), dimension(:,:), pointer :: p_DcubWeight
     type(t_bmaMatrixData), pointer :: p_rmatrixData
 
-    integer :: ix, iy, ndimfe, idimfe
+    integer :: ix, iy, ndimfe
     real(DP) :: dscale
 
     ! Get parameters
@@ -2192,7 +2197,7 @@ contains
     real(DP), dimension(:,:), pointer :: p_DcubWeight
     type(t_bmaMatrixData), pointer :: p_rmatrixData
 
-    integer :: ix, iy, ndimfe, idimfe
+    integer :: ix, iy, ndimfe
     real(DP) :: dscale
 
     ! Get parameters
@@ -6804,6 +6809,329 @@ contains
       end do ! icubp
     
     end do ! iel
+      
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine bma_fcalc_divergenceL2norm(dintvalue,rassemblyData,rvectorAssembly,&
+      npointsPerElement,nelements,revalVectors,rcollection)
+
+!<description>  
+    ! Calculates the (squared) L2-norm of the divergence of an arbitrary finite 
+    ! element vector field <tex> $ ||div v||^2_{L_2} $ </tex>.
+    !
+    ! The vector field including first derivatives must be provided in 
+    ! revalVectors. The routine only supports non-interleaved vectors.
+    !
+    ! If the FEM-space is scalar valued, exactly as many components must be
+    ! specified as there are dimensions.
+    !
+    ! If the FEM-space is vector valued, exactly one function must be
+    ! provided which must have exactly as many components as dimensions.
+!</description>
+
+!<input>
+    ! Data necessary for the assembly. Contains determinants and
+    ! cubature weights for the cubature,...
+    type(t_bmaIntegralAssemblyData), intent(in) :: rassemblyData
+
+    ! Structure with all data about the assembly
+    type(t_bmaIntegralAssembly), intent(in) :: rvectorAssembly
+
+    ! Number of points per element
+    integer, intent(in) :: npointsPerElement
+
+    ! Number of elements
+    integer, intent(in) :: nelements
+
+    ! Values of FEM functions automatically evaluated in the
+    ! cubature points.
+    type(t_fev2Vectors), intent(in) :: revalVectors
+
+    ! User defined collection structure
+    type(t_collection), intent(inout), target, optional :: rcollection
+!</input>
+
+!<output>
+    ! Returns the value of the integral
+    real(DP), intent(out) :: dintvalue
+!</output>    
+
+!</subroutine>
+
+    ! Local variables
+    real(DP) :: dderivX,dderivY,dderivZ
+    integer :: iel, icubp, ndim, idimfe, ndimfe
+    real(DP), dimension(:,:), pointer :: p_DcubWeight
+    real(DP), dimension(:,:), pointer :: p_DderivX,p_DderivY,p_DderivZ
+    real(DP), dimension(:,:,:), pointer :: p_DderivXVec,p_DderivYVec,p_DderivZVec
+  
+    ! Get cubature weights data
+    p_DcubWeight => rassemblyData%p_DcubWeight
+    
+    dintvalue = 0.0_DP
+    
+    ! If no function is provided, stop here.
+    if (revalVectors%ncount .eq. 0) return
+    
+    ! Check if the first function is vector valued.
+    ndimfe = revalVectors%p_RvectorData(1)%ndimfe
+    
+    ! Dimension of the spaces
+    ndim = revalVectors%p_RvectorData(1)%p_rvector%p_rspatialDiscr%p_rtriangulation%ndim
+
+    if (ndimfe .eq. 1) then
+    
+      ! -----------------------
+      ! Scalar-valued FE space. 
+      ! -----------------------
+    
+      ! Cancel if the number of vectors does not match the dimension.
+      ! Each vector corresponds to one dimension.
+      if (revalVectors%ncount .lt. ndim) then
+        call output_line ("Parameters wrong.",&
+            OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_divergenceL2norm")
+        call sys_halt()
+      end if
+
+      select case (ndim)
+      
+      ! ----------------
+      ! 1D
+      ! ----------------
+      case (NDIM1D)
+      
+        ! Skip interleaved vectors.
+        if (revalVectors%p_RvectorData(1)%bisInterleaved) then
+          call output_line ("Interleaved vectors currently not supported.",&
+              OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_divergenceL2norm")
+          call sys_halt()
+        end if
+
+        ! Get the data array with the values of the FEM function
+        ! in the cubature points
+        p_DderivX => revalVectors%p_RvectorData(1)%p_Ddata(:,:,DER_DERIV1D_X)
+
+        ! Loop over the elements in the current set.
+        do iel = 1,nelements
+
+          ! Loop over all cubature points on the current element
+          do icubp = 1,npointsPerElement
+
+            ! Get the value of the FEM function
+            dderivX = p_DderivX(icubp,iel)
+            
+            ! Multiply the values by the cubature weight and sum up
+            ! into the integral value
+            dintvalue = dintvalue + p_DcubWeight(icubp,iel) * dderivX**2
+              
+          end do ! icubp
+        
+        end do ! iel
+
+      ! ----------------
+      ! 2D
+      ! ----------------
+      case (NDIM2D)
+      
+        ! Skip interleaved vectors.
+        if (revalVectors%p_RvectorData(1)%bisInterleaved .or. &
+            revalVectors%p_RvectorData(2)%bisInterleaved) then
+          call output_line ("Interleaved vectors currently not supported.",&
+              OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_divergenceL2norm")
+          call sys_halt()
+        end if
+
+
+        ! Get the data array with the values of the FEM function
+        ! in the cubature points
+        p_DderivX => revalVectors%p_RvectorData(1)%p_Ddata(:,:,DER_DERIV2D_X)
+        p_DderivY => revalVectors%p_RvectorData(2)%p_Ddata(:,:,DER_DERIV2D_Y)
+
+        ! Loop over the elements in the current set.
+        do iel = 1,nelements
+
+          ! Loop over all cubature points on the current element
+          do icubp = 1,npointsPerElement
+
+            ! Get the value of the FEM function
+            dderivX = p_DderivX(icubp,iel)
+            dderivY = p_DderivY(icubp,iel)
+            
+            ! Multiply the values by the cubature weight and sum up
+            ! into the integral value
+            dintvalue = dintvalue + p_DcubWeight(icubp,iel) * &
+                ( dderivX**2 + dderivY**2 )
+              
+          end do ! icubp
+        
+        end do ! iel
+
+      ! ----------------
+      ! 3D
+      ! ----------------
+      case (NDIM3D)
+      
+        ! Skip interleaved vectors.
+        if (revalVectors%p_RvectorData(1)%bisInterleaved .or. &
+            revalVectors%p_RvectorData(2)%bisInterleaved .or. &
+            revalVectors%p_RvectorData(3)%bisInterleaved) then
+          call output_line ("Interleaved vectors currently not supported.",&
+              OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_divergenceL2norm")
+          call sys_halt()
+        end if
+
+        ! Get the data array with the values of the FEM function
+        ! in the cubature points
+        p_DderivX => revalVectors%p_RvectorData(1)%p_Ddata(:,:,DER_DERIV3D_X)
+        p_DderivY => revalVectors%p_RvectorData(2)%p_Ddata(:,:,DER_DERIV3D_Y)
+        p_DderivZ => revalVectors%p_RvectorData(3)%p_Ddata(:,:,DER_DERIV3D_Z)
+
+        ! Loop over the elements in the current set.
+        do iel = 1,nelements
+
+          ! Loop over all cubature points on the current element
+          do icubp = 1,npointsPerElement
+
+            ! Get the value of the FEM function
+            dderivX = p_DderivX(icubp,iel)
+            dderivY = p_DderivY(icubp,iel)
+            dderivZ = p_DderivZ(icubp,iel)
+            
+            ! Multiply the values by the cubature weight and sum up
+            ! into the integral value
+            dintvalue = dintvalue + p_DcubWeight(icubp,iel) * &
+                ( dderivX**2 + dderivY**2 + dderivZ**2 )
+              
+          end do ! icubp
+        
+        end do ! iel
+        
+      end select
+        
+    else
+      
+      ! -----------------------
+      ! Vector-valued FE space. 
+      ! -----------------------
+
+      ! Cancel if the number of vectors does not match the dimension.
+      ! Each vector corresponds to one dimension.
+      if (ndimfe .ne. ndim) then
+        call output_line ("Parameters wrong.",&
+            OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_divergenceL2norm")
+        call sys_halt()
+      end if
+
+      select case (ndim)
+      
+      ! ----------------
+      ! 1D
+      ! ----------------
+      case (NDIM1D)
+      
+        ! Get the data array with the values of the FEM function
+        ! in the cubature points
+        p_DderivXVec => revalVectors%p_RvectorData(1)%p_DdataVec(:,:,:,DER_DERIV1D_X)
+
+        ! Loop over the elements in the current set.
+        do iel = 1,nelements
+
+          ! Loop over all cubature points on the current element
+          do icubp = 1,npointsPerElement
+
+            ! Loop over the dimensions of the FE space
+            do idimfe = 1,ndimfe
+              
+              ! Get the value of the FEM function
+              dderivX = p_DderivXVec(idimfe,icubp,iel)
+              
+              ! Multiply the values by the cubature weight and sum up
+              ! into the integral value
+              dintvalue = dintvalue + p_DcubWeight(icubp,iel) * dderivX**2
+              
+            end do ! idimfe
+              
+          end do ! icubp
+        
+        end do ! iel
+
+      ! ----------------
+      ! 2D
+      ! ----------------
+      case (NDIM2D)
+      
+        ! Get the data array with the values of the FEM function
+        ! in the cubature points
+        p_DderivXVec => revalVectors%p_RvectorData(1)%p_DdataVec(:,:,:,DER_DERIV2D_X)
+        p_DderivYVec => revalVectors%p_RvectorData(1)%p_DdataVec(:,:,:,DER_DERIV2D_Y)
+
+        ! Loop over the elements in the current set.
+        do iel = 1,nelements
+
+          ! Loop over all cubature points on the current element
+          do icubp = 1,npointsPerElement
+
+            ! Loop over the dimensions of the FE space
+            do idimfe = 1,ndimfe
+              
+              ! Get the value of the FEM function
+              dderivX = p_DderivXVec(1,icubp,iel)
+              dderivY = p_DderivYVec(2,icubp,iel)
+              
+              ! Multiply the values by the cubature weight and sum up
+              ! into the integral value
+              dintvalue = dintvalue + p_DcubWeight(icubp,iel) * &
+                  ( dderivX**2 + dderivY**2 )
+                  
+            end do ! idimfe
+              
+          end do ! icubp
+        
+        end do ! iel
+
+      ! ----------------
+      ! 3D
+      ! ----------------
+      case (NDIM3D)
+      
+        ! Get the data array with the values of the FEM function
+        ! in the cubature points
+        p_DderivXVec => revalVectors%p_RvectorData(1)%p_DdataVec(:,:,:,DER_DERIV3D_X)
+        p_DderivYVec => revalVectors%p_RvectorData(1)%p_DdataVec(:,:,:,DER_DERIV3D_Y)
+        p_DderivZVec => revalVectors%p_RvectorData(1)%p_DdataVec(:,:,:,DER_DERIV3D_Z)
+
+        ! Loop over the elements in the current set.
+        do iel = 1,nelements
+
+          ! Loop over all cubature points on the current element
+          do icubp = 1,npointsPerElement
+
+            ! Loop over the dimensions of the FE space
+            do idimfe = 1,ndimfe
+            
+              ! Get the value of the FEM function
+              dderivX = p_DderivXVec(1,icubp,iel)
+              dderivY = p_DderivYVec(2,icubp,iel)
+              dderivZ = p_DderivZVec(3,icubp,iel)
+              
+              ! Multiply the values by the cubature weight and sum up
+              ! into the integral value
+              dintvalue = dintvalue + p_DcubWeight(icubp,iel) * &
+                  ( dderivX**2 + dderivY**2 + dderivZ**2 )
+            
+            end do
+              
+          end do ! icubp
+        
+        end do ! iel
+        
+      end select
+
+    end if ! ndimfe = 1
       
   end subroutine
 
