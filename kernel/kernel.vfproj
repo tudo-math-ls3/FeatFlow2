@@ -300,7 +300,14 @@
 		<File RelativePath=".\PDEOperators\intf_limitNodal.inc"/></Filter>
 		<File RelativePath=".\PDEOperators\afcstabbase.f90"/>
 		<File RelativePath=".\PDEOperators\afcstabscalar.f90"/>
+		<File RelativePath=".\PDEOperators\afcstabscalarfct.f90"/>
+		<File RelativePath=".\PDEOperators\afcstabscalargp.f90"/>
+		<File RelativePath=".\PDEOperators\afcstabscalarlpt.f90"/>
+		<File RelativePath=".\PDEOperators\afcstabscalarsymm.f90"/>
+		<File RelativePath=".\PDEOperators\afcstabscalartvd.f90"/>
 		<File RelativePath=".\PDEOperators\afcstabsystem.f90"/>
+		<File RelativePath=".\PDEOperators\afcstabsystemfct.f90"/>
+		<File RelativePath=".\PDEOperators\afcstabsystemtvd.f90"/>
 		<File RelativePath=".\PDEOperators\convection.f90"/>
 		<File RelativePath=".\PDEOperators\groupfembase.f90"/>
 		<File RelativePath=".\PDEOperators\groupfemscalar.f90"/>
