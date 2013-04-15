@@ -2402,37 +2402,58 @@ contains
       
     end if
 
-    isarglen = len(sarg)
+    isarglen = len_trim(sarg)
 
-    if (sarg(1:2).eq."--") then
+    if (isarglen .ge. 2) then
+      if (sarg(1:2).eq."--") then
 
-      idx=3
-      do while ((sarg(idx:idx).ne."=").and.(idx.lt.isarglen))
-        idx=idx+1
-      enddo
+        idx=2
+        do while (idx .lt. isarglen)
+          if (sarg(idx+1:idx+1) .eq. "=") exit
+          idx=idx+1
+        enddo
 
-      soption = sarg(3:idx-1)
-      if (present(svalue)) svalue = sarg(idx+1:)
-      if (present(iformat)) iformat = 2
+        soption = sarg(3:idx)
+        if (present(svalue)) then
+          if (idx+2 .le. isarglen) then
+            svalue = sarg(idx+2:)
+          else
+            svalue = ""
+          end if
+        end if
+       
+        if (present(iformat)) iformat = 2
+       
+        return
+      end if
+    end if
 
-    else if (sarg(1:1).eq."-") then
+    if (isarglen .ge. 1) then
+      if (sarg(1:1).eq."-") then
 
-      idx = 2
-      do while ((sarg(idx:idx).ne."=").and.(idx .lt. isarglen))
-        idx = idx+1
-      enddo
+        idx = 1
+        do while (idx .lt. isarglen)
+          if (sarg(idx+1:idx+1) .eq. "=") exit
+          idx=idx+1
+        enddo
 
-      soption = sarg(2:idx)
-      if (present(svalue)) svalue = sarg(idx+1:)
-      if (present(iformat)) iformat = 1
+        soption = sarg(2:idx)
+        if (present(svalue)) then
+          if (idx+2 .le. isarglen) then
+            svalue = sarg(idx+2:)
+          else
+            svalue = ""
+          end if
+        end if
+        if (present(iformat)) iformat = 1
 
-    else
+        return
+      end if
+    end if
 
-      soption = sarg
-      if (present(svalue)) svalue = ""
-      if (present(iformat)) iformat = 0
-
-    endif
+    soption = sarg
+    if (present(svalue)) svalue = ""
+    if (present(iformat)) iformat = 0
 
   end subroutine
 
