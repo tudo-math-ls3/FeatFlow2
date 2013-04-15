@@ -2422,7 +2422,7 @@ contains
         idx = idx+1
       enddo
 
-      soption = sarg(2:idx-1)
+      soption = sarg(2:idx)
       if (present(svalue)) svalue = sarg(idx+1:)
       if (present(iformat)) iformat = 1
 
