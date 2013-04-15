@@ -51,14 +51,22 @@ contains
     ! =================================
     
     ! -----------------------
+    ! Single option, svalue not given.
+    call sys_parseCommandLineArg ("--file=myfile.txt",soption)
+    
+    call output_lbrk()
+    call output_line ("Parse-Test: '--file=myfile.txt'")
+    call output_line ("   Option = " // trim(soption) )
+
+    ! -----------------------
     ! Single option
     call sys_parseCommandLineArg ("'This is a string.'",soption,svalue,iformat)
     
     call output_lbrk()
     call output_line ("Parse-Test: 'This is a string.'")
-    call output_line ("  Option: " // trim(soption) )
-    call output_line ("  Value:  " // trim(svalue) )
-    call output_line ("  Format: " // trim(sys_siL(iformat,10)) )
+    call output_line ("   Option = " // trim(soption) )
+    call output_line ("   Value  = " // trim(svalue) )
+    call output_line ("   Format = " // trim(sys_siL(iformat,10)) )
 
     ! -----------------------
     ! Single option
@@ -66,9 +74,9 @@ contains
     
     call output_lbrk()
     call output_line ("Parse-Test: '-flag1'")
-    call output_line ("  Option: " // trim(soption) )
-    call output_line ("  Value:  " // trim(svalue) )
-    call output_line ("  Format: " // trim(sys_siL(iformat,10)) )
+    call output_line ("   Option = " // trim(soption) )
+    call output_line ("   Value  = " // trim(svalue) )
+    call output_line ("   Format = " // trim(sys_siL(iformat,10)) )
 
     ! -----------------------
     ! Single option
@@ -76,9 +84,9 @@ contains
     
     call output_lbrk()
     call output_line ("Parse-Test: '--flag1'")
-    call output_line ("  Option: " // trim(soption) )
-    call output_line ("  Value:  " // trim(svalue) )
-    call output_line ("  Format: " // trim(sys_siL(iformat,10)) )
+    call output_line ("   Option = " // trim(soption) )
+    call output_line ("   Value  = " // trim(svalue) )
+    call output_line ("   Format = " // trim(sys_siL(iformat,10)) )
 
     ! -----------------------
     ! Option with value
@@ -86,9 +94,9 @@ contains
     
     call output_lbrk()
     call output_line ("Parse-Test: '-file=myfile.txt'")
-    call output_line ("  Option: " // trim(soption) )
-    call output_line ("  Value:  " // trim(svalue) )
-    call output_line ("  Format: " // trim(sys_siL(iformat,10)) )
+    call output_line ("   Option = " // trim(soption) )
+    call output_line ("   Value  = " // trim(svalue) )
+    call output_line ("   Format = " // trim(sys_siL(iformat,10)) )
 
     ! -----------------------
     ! Option with value
@@ -96,9 +104,9 @@ contains
     
     call output_lbrk()
     call output_line ("Parse-Test: '--file=myfile.txt'")
-    call output_line ("  Option: " // trim(soption) )
-    call output_line ("  Value:  " // trim(svalue) )
-    call output_line ("  Format: " // trim(sys_siL(iformat,10)) )
+    call output_line ("   Option = " // trim(soption) )
+    call output_line ("   Value  = " // trim(svalue) )
+    call output_line ("   Format = " // trim(sys_siL(iformat,10)) )
     
   end subroutine
 
