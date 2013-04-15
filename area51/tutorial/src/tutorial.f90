@@ -33,6 +33,8 @@ program tutorial
   use tutorial005a
   use tutorial005b
   use tutorial005c
+  
+  use tutorial006a
 
   implicit none
   
@@ -72,6 +74,8 @@ program tutorial
   call start_tutorial005a
   call start_tutorial005b
   call start_tutorial005c
+  
+  call start_tutorial006a
   
   ! -----------------------------------------------------------------
   ! Clean up
