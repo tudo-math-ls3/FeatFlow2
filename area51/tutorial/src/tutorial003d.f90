@@ -24,8 +24,6 @@ contains
     type(t_timer) :: rtimer
     real(DP) :: delapsedTime
     
-    integer :: i
-
     ! Print a message
     call output_lbrk()
     call output_separator (OU_SEP_STAR)
