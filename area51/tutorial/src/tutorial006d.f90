@@ -39,7 +39,7 @@ contains
     ! Print a message
     call output_lbrk()
     call output_separator (OU_SEP_STAR)
-    call output_line ("This is FEAT-2. Tutorial 006c")
+    call output_line ("This is FEAT-2. Tutorial 006d")
     call output_separator (OU_SEP_MINUS)
     
     ! =================================

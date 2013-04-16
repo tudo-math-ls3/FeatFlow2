@@ -1,8 +1,8 @@
 !##############################################################################
-!# Tutorial 006c: Discretise with Q1, create a finite element matrix
+!# Tutorial 006f: Discretise with Q1, create a vector
 !##############################################################################
 
-module tutorial006c
+module tutorial006f
 
   ! Include basic Feat-2 modules
   use fsystem
@@ -14,30 +14,29 @@ module tutorial006c
   use element
   use spatialdiscretisation
   use linearsystemscalar
-  use bilinearformevaluation
   
-  use matrixio
+  use vectorio
 
   implicit none
   private
   
-  public :: start_tutorial006c
+  public :: start_tutorial006f
 
 contains
 
   ! ***************************************************************************
 
-  subroutine start_tutorial006c
+  subroutine start_tutorial006f
 
     ! Declare some variables.
     type(t_triangulation) :: rtriangulation
     type(t_spatialdiscretisation) :: rdiscretisation
-    type(t_matrixScalar) :: rmatrix
+    type(t_vectorScalar) :: rx
 
     ! Print a message
     call output_lbrk()
     call output_separator (OU_SEP_STAR)
-    call output_line ("This is FEAT-2. Tutorial 006c")
+    call output_line ("This is FEAT-2. Tutorial 006f")
     call output_separator (OU_SEP_MINUS)
     
     ! =================================
@@ -59,40 +58,37 @@ contains
     call spdiscr_initDiscr_simple (rdiscretisation,EL_Q1,rtriangulation)
 
     ! =================================
-    ! Create a CSR-matrix for the above
-    ! discretisation.
+    ! Create a scalar vector
     ! =================================
 
-    ! Create the matrix structure
-    call bilf_createMatrixStructure (rdiscretisation,LSYSSC_MATRIX9,rmatrix)
+    call lsyssc_createVector (rdiscretisation,rx)
     
-    ! Allocate memory for the content, fill the matrix with ones.
-    call lsyssc_allocEmptyMatrix (rmatrix)
-    call lsyssc_clearMatrix (rmatrix,1.0_DP)
-
+    ! Fill the vector with "1.0".
+    call lsyssc_clearVector (rx,1.0_DP)
+    
     ! =================================
-    ! Output of the matrix structure
+    ! Output to files. 
     ! =================================
-    call output_line ("Writing matrix to text files...")
-    
-    ! Write the matrix to a text file, omit nonexisting entries in the matrix.
-    call matio_writeMatrixHR (rmatrix, "matrix", .true., 0, &
-        "data/tutorial006c_matrix.txt", "(E11.2)")
+    call output_line ("Writing vector to text files...")
 
-    ! Write the matrix to a MATLAB file.
-    call matio_spyMatrix(&
-        "data/tutorial006c_matrix","matrix",rmatrix,.true.)
+    ! Write the vector to a text file.
+    call vecio_writeVectorHR (rx, "vector", .true., 0, &
+        "data/tutorial006f_vector.txt", "(E11.2)")
+
+    ! Write the vector to a MATLAB file.
+    call vecio_spyVector(&
+        "data/tutorial006f_vector","vector",rx,.true.)
     
-    ! Write the matrix to a MAPLE file
-    call matio_writeMatrixMaple (rmatrix, "matrix", 0, &
-        "data/tutorial006c_matrix.maple", "(E11.2)")
+    ! Write the vector to a MAPLE file
+    call vecio_writeVectorMaple (rx, "vector", .true., 0, &
+        "data/tutorial006f_vector.maple", "(E11.2)")
 
     ! =================================
     ! Cleanup
     ! =================================
     
     ! Release the matrix
-    call lsyssc_releaseMatrix (rmatrix)
+    call lsyssc_releaseVector (rx)
     
     ! Remease the Q1-discretisation
     call spdiscr_releaseDiscr (rdiscretisation)

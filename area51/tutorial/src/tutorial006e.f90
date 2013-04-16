@@ -12,6 +12,7 @@ module tutorial006e
   use meshgeneration
   
   use element
+  use cubature
   use spatialdiscretisation
   use linearsystemscalar
   use bilinearformevaluation
@@ -36,16 +37,16 @@ contains
     type(t_spatialdiscretisation) :: rdiscretisation
     type(t_matrixScalar) :: rmatrix
     type(t_scalarCubatureInfo), target :: rcubatureInfo_TRZ
-    type(t_scalarCubatureInfo), target :: rcubatureInfo_G1X1
-    type(t_scalarCubatureInfo), target :: rcubatureInfo_G2X2
-    type(t_scalarCubatureInfo), target :: rcubatureInfo_G3X3
-    type(t_scalarCubatureInfo), target :: rcubatureInfo_G4X4
-    type(t_scalarCubatureInfo), target :: rcubatureInfo_G5X5
+    type(t_scalarCubatureInfo), target :: rcubatureInfo_G1
+    type(t_scalarCubatureInfo), target :: rcubatureInfo_G2
+    type(t_scalarCubatureInfo), target :: rcubatureInfo_G3
+    type(t_scalarCubatureInfo), target :: rcubatureInfo_G4
+    type(t_scalarCubatureInfo), target :: rcubatureInfo_G5
 
     ! Print a message
     call output_lbrk()
     call output_separator (OU_SEP_STAR)
-    call output_line ("This is FEAT-2. Tutorial 006c")
+    call output_line ("This is FEAT-2. Tutorial 006e")
     call output_separator (OU_SEP_MINUS)
     
     ! =================================
@@ -84,6 +85,7 @@ contains
     ! =================================
     
     ! Trapezoidal rule and Gauss formulas up to Gauss 5x5.
+    ! Using the trapezoidal rule will give a 5-point stencil as known from FD.
     call spdiscr_createDefCubStructure (rdiscretisation,rcubatureInfo_TRZ,CUB_GEN_AUTO_TRZ)
     call spdiscr_createDefCubStructure (rdiscretisation,rcubatureInfo_G1 ,CUB_GEN_AUTO_G1)
     call spdiscr_createDefCubStructure (rdiscretisation,rcubatureInfo_G2 ,CUB_GEN_AUTO_G2)
