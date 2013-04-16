@@ -18052,10 +18052,10 @@ contains
 !</description>
 
 !<input>
-  ! Whether and how to fill the matrix with initial values.
+  ! OPTIONAL: Whether and how to fill the matrix with initial values.
   ! One of the LSYSSC_SETM_xxxx constants:
   ! LSYSSC_SETM_UNDEFINED : Do not initialise the matrix (default).
-  ! LSYSSC_SETM_ZERO      : Clear the matrix / fill it with 0.0,
+  ! LSYSSC_SETM_ZERO      : Clear the matrix / fill it with 0.0.
   ! LSYSSC_SETM_ONE       : Fill the matrix with 1.0. (Used e.g.
   !                         for UMFPACK who needs a non-zero
   !                         matrix for symbolic factorisation.)
