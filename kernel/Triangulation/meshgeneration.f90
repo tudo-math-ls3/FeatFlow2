@@ -88,8 +88,8 @@ contains
       do j=0,ncellsx
         
         ivt = i * (ncellsx+1) + j + 1
-        p_Ddata2D(1,ivt) = real(j,DP) / dsizex
-        p_Ddata2D(2,ivt) = real(i,DP) / dsizey
+        p_Ddata2D(1,ivt) = real(j,DP) * dsizex / real(ncellsx,DP)
+        p_Ddata2D(2,ivt) = real(i,DP) * dsizey / real(ncellsy,DP)
         
       end do
     end do
