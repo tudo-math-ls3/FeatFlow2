@@ -37,7 +37,7 @@ contains
     type(t_matrixScalar) :: rmatrix
     
     integer :: i
-    real(DP), dimension(:), pointer :: p_Dpost
+    real(DP), dimension(:), pointer :: p_Ddata
     integer, dimension(:), pointer :: p_Kcol, p_Kld
 
     ! Print a message
@@ -80,40 +80,40 @@ contains
     call lsyssc_allocEmptyMatrix (rmatrix)
     
     ! =================================
-    ! Fill the vector with post.
+    ! Fill the vector with data.
     ! =================================
     
-    ! Get a pointer to the post
-    call lsyssc_getbase_double (rx,p_Dpost)
+    ! Get a pointer to the data
+    call lsyssc_getbase_double (rx,p_Ddata)
     
-    ! Initialise the post: 1,2,3,...
+    ! Initialise the data: 1,2,3,...
     do i=1,rx%NEQ
-      p_Dpost(i) = real(i,DP)
+      p_Ddata(i) = real(i,DP)
     end do
 
     ! =================================
-    ! Fill the matrix with post.
+    ! Fill the matrix with data.
     ! =================================
     
-    ! Get a pointer to the matrix post, the column numbers
+    ! Get a pointer to the matrix data, the column numbers
     ! and the row indices that are usesd in the CSR format.
-    call lsyssc_getbase_double (rmatrix,p_Dpost)
+    call lsyssc_getbase_double (rmatrix,p_Ddata)
     call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
     call lsyssc_getbase_Kld (rmatrix,p_Kld)
 
-    ! Initialise the post: Column number.
+    ! Initialise the data: Column number.
     do i=1,rmatrix%NA
-      p_Dpost(i) = real( p_Kcol(i) ,DP )
+      p_Ddata(i) = real( p_Kcol(i) ,DP )
     end do
     
     ! Fill the first row with 1.0.
     do i=p_Kld(1), p_Kld(2)-1
-      p_Dpost(i) = 1.0_DP
+      p_Ddata(i) = 1.0_DP
     end do
 
     ! Fill the last row with "NEQ".
     do i=p_Kld(rmatrix%NEQ), p_Kld(rmatrix%NEQ+1)-1
-      p_Dpost(i) = real( rmatrix%NEQ, DP )
+      p_Ddata(i) = real( rmatrix%NEQ, DP )
     end do
 
     ! =================================

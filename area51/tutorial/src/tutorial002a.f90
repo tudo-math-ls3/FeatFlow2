@@ -24,8 +24,8 @@ contains
     integer :: i
     integer :: ihandleInt, ihandleDouble
     
-    integer, dimension(:), pointer :: p_Ipost
-    real(DP), dimension(:), pointer :: p_Dpost
+    integer, dimension(:), pointer :: p_Idata
+    real(DP), dimension(:), pointer :: p_Ddata
 
     ! Print a message
     call output_lbrk()
@@ -48,30 +48,30 @@ contains
     ! =====================
     ! Get pointers
     ! =====================
-    call storage_getbase_int (ihandleInt,p_Ipost)
-    call storage_getbase_double (ihandleDouble,p_Dpost)
+    call storage_getbase_int (ihandleInt,p_Idata)
+    call storage_getbase_double (ihandleDouble,p_Ddata)
 
     ! =====================
-    ! Fill with post
+    ! Fill with data
     ! =====================
     do i=1,10
-      p_Ipost(i) = i**2
-      p_Dpost(i) = real(i,DP) ** 2
+      p_Idata(i) = i**2
+      p_Ddata(i) = real(i,DP) ** 2
     end do
 
     ! =====================
-    ! Print the post
+    ! Print the data
     ! =====================
     do i=1,10
-      call output_line (trim(sys_siL(p_Ipost(i),10)))
+      call output_line (trim(sys_siL(p_Idata(i),10)))
     end do
 
     do i=1,10
-      call output_line (trim(sys_sdEL(p_Dpost(i),10)))
+      call output_line (trim(sys_sdEL(p_Ddata(i),10)))
     end do
     
     ! =====================
-    ! Release the post.
+    ! Release the data.
     ! Pointers get invalid.
     ! =====================
     call storage_free (ihandleInt)

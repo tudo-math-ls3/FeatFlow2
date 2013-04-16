@@ -23,7 +23,7 @@ contains
 
     ! Declare some variables
     integer :: iunit,ios,ilength
-    character(LEN=SYS_STRLEN) :: spost
+    character(LEN=SYS_STRLEN) :: sdata
 
     ! Print a message
     call output_lbrk()
@@ -49,11 +49,11 @@ contains
     call io_openFileForReading("post/tutorial003a.txt", iunit, .true.)
     
     ! With io_readlinefromfile, we can read line by line
-    call io_readlinefromfile (iunit, spost, ilength, ios)
+    call io_readlinefromfile (iunit, sdata, ilength, ios)
     
     do while (ios .eq. 0)
-      call output_line (spost(1:ilength))
-      call io_readlinefromfile (iunit, spost, ilength, ios)
+      call output_line (sdata(1:ilength))
+      call io_readlinefromfile (iunit, sdata, ilength, ios)
     end do
     
     close (iunit)

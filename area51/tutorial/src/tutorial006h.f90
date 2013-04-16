@@ -41,7 +41,7 @@ contains
     integer :: ivt
     real(DP) :: dx,dy
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
-    real(DP), dimension(:), pointer :: p_Dpost
+    real(DP), dimension(:), pointer :: p_Ddata
 
     ! Print a message
     call output_lbrk()
@@ -75,11 +75,11 @@ contains
     call lsyssc_createVector (rdiscretisation,rx)
     
     ! =================================
-    ! Fill the vector with post.
+    ! Fill the vector with data.
     ! =================================
     
-    ! Get a pointer to the post.
-    call lsyssc_getbase_double (rx,p_Dpost)
+    ! Get a pointer to the data.
+    call lsyssc_getbase_double (rx,p_Ddata)
     
     ! Get a pointer to the point coordinates.
     call storage_getbase_double2d (rtriangulation%h_DvertexCoords,p_DvertexCoords)
@@ -89,7 +89,7 @@ contains
     do ivt=1,rx%NEQ
       dx = p_DvertexCoords(1,ivt)
       dy = p_DvertexCoords(2,ivt)
-      p_Dpost(ivt) = dx**2 * dy**2
+      p_Ddata(ivt) = dx**2 * dy**2
     end do
 
     ! =================================
