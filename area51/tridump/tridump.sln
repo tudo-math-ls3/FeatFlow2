@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
-Project("{6989167D-11E4-40FE-8C1A-2192A86A7E90}") = "tri2eps", "tri2eps.vfproj", "{6CB95B8D-1FFF-4D88-8BD2-96BCB5E33BF7}"
+Project("{6989167D-11E4-40FE-8C1A-2192A86A7E90}") = "tridump", "tridump.vfproj", "{6CB95B8D-1FFF-4D88-8BD2-96BCB5E33BF7}"
 	ProjectSection(ProjectDependencies) = postProject
 		{E2980B0E-C3EF-4D9A-A9FE-E25B40D57B5E} = {E2980B0E-C3EF-4D9A-A9FE-E25B40D57B5E}
 	EndProjectSection
