@@ -24,7 +24,7 @@ contains
     ! Declare some variables
     type(t_parlist) :: rparlist
     integer :: idata, i,n
-    real(DP) :: dpost
+    real(DP) :: ddata
     character(LEN=SYS_STRLEN) :: sdata
 
     ! Print a message
@@ -42,8 +42,8 @@ contains
     ! =================================
     ! Print the unnamed section
     ! =================================
-    call parlst_getvalue_int (rparlist,"","value1",ipost)
-    call parlst_getvalue_double (rparlist,"","value2",dpost)
+    call parlst_getvalue_int (rparlist,"","value1",idata)
+    call parlst_getvalue_double (rparlist,"","value2",ddata)
     
     call output_line (sys_siL(idata,5))
     call output_line (sys_sdEL(ddata,10))
@@ -51,8 +51,8 @@ contains
     ! =================================
     ! Print the section 1
     ! =================================
-    call parlst_getvalue_int (rparlist,"PARAMETERSET1","value1",ipost)
-    call parlst_getvalue_double (rparlist,"PARAMETERSET1","value2",dpost)
+    call parlst_getvalue_int (rparlist,"PARAMETERSET1","value1",idata)
+    call parlst_getvalue_double (rparlist,"PARAMETERSET1","value2",ddata)
     call parlst_getvalue_string (rparlist,"PARAMETERSET1","value3",sdata,bdequote=.true.)
     ! bdequote dequotes the string automatically...
     
