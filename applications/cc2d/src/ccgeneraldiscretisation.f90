@@ -428,6 +428,14 @@ contains
     case (15)
       ieltypeUV = EL_Q1TBNP_2D
       ieltypeP = EL_QP1NPD
+      
+    case (16)
+      ieltypeUV = EL_Q2_2D
+      ieltypeP = EL_DCQP1_2D
+      
+    case (17)
+      ieltypeUV = EL_Q3_2D
+      ieltypeP = EL_DCQP2_2D
 
     case (20)
       ieltypeUV = EL_Q1
