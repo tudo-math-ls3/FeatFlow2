@@ -1,5 +1,5 @@
 !##############################################################################
-!# Tutorial 003b: Reading of data files
+!# Tutorial 003b: Reading of post files
 !##############################################################################
 
 module tutorial003b
@@ -23,9 +23,9 @@ contains
 
     ! Declare some variables
     type(t_parlist) :: rparlist
-    integer :: idata, i,n
-    real(DP) :: ddata
-    character(LEN=SYS_STRLEN) :: sdata
+    integer :: ipost, i,n
+    real(DP) :: dpost
+    character(LEN=SYS_STRLEN) :: spost
 
     ! Print a message
     call output_lbrk()
@@ -34,7 +34,7 @@ contains
     call output_separator (OU_SEP_MINUS)
     
     ! =================================
-    ! Read the data file.
+    ! Read the post file.
     ! =================================
     call parlst_init(rparlist)
     call parlst_readfromfile (rparlist, "data/tutorial003b_data.dat")
@@ -42,23 +42,23 @@ contains
     ! =================================
     ! Print the unnamed section
     ! =================================
-    call parlst_getvalue_int (rparlist,"","value1",idata)
-    call parlst_getvalue_double (rparlist,"","value2",ddata)
+    call parlst_getvalue_int (rparlist,"","value1",ipost)
+    call parlst_getvalue_double (rparlist,"","value2",dpost)
     
-    call output_line (sys_siL(idata,5))
-    call output_line (sys_sdEL(ddata,10))
+    call output_line (sys_siL(ipost,5))
+    call output_line (sys_sdEL(dpost,10))
 
     ! =================================
     ! Print the section 1
     ! =================================
-    call parlst_getvalue_int (rparlist,"PARAMETERSET1","value1",idata)
-    call parlst_getvalue_double (rparlist,"PARAMETERSET1","value2",ddata)
-    call parlst_getvalue_string (rparlist,"PARAMETERSET1","value3",sdata,bdequote=.true.)
+    call parlst_getvalue_int (rparlist,"PARAMETERSET1","value1",ipost)
+    call parlst_getvalue_double (rparlist,"PARAMETERSET1","value2",dpost)
+    call parlst_getvalue_string (rparlist,"PARAMETERSET1","value3",spost,bdequote=.true.)
     ! bdequote dequotes the string automatically...
     
-    call output_line (sys_siL(idata,5))
-    call output_line (sys_sdEL(ddata,10))
-    call output_line (trim(sdata))
+    call output_line (sys_siL(ipost,5))
+    call output_line (sys_sdEL(dpost,10))
+    call output_line (trim(spost))
 
     ! =================================
     ! Print the section 2
@@ -67,8 +67,8 @@ contains
     
     do i=1,n
       call parlst_getvalue_double (&
-          rparlist,"PARAMETERSET2","valuelist1",ddata, iarrayindex = i)
-      call output_line (sys_sdEL(ddata,10))
+          rparlist,"PARAMETERSET2","valuelist1",dpost, iarrayindex = i)
+      call output_line (sys_sdEL(dpost,10))
     end do
 
     ! =================================

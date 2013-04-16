@@ -55,7 +55,7 @@ contains
     ! which describes the discretisation.
     ! =================================
 
-    call spdiscr_initDiscr_simple (rdiscretisation,EL_Q1,rtriangulation)
+    call spdiscr_initDiscr_simple (rdiscretisation,EL_Q1_2D,rtriangulation)
 
     ! =================================
     ! Create a scalar vector
@@ -73,15 +73,15 @@ contains
 
     ! Write the vector to a text file.
     call vecio_writeVectorHR (rx, "vector", .true., 0, &
-        "data/tutorial006f_vector.txt", "(E11.2)")
+        "post/tutorial006f_vector.txt", "(E11.2)")
 
     ! Write the vector to a MATLAB file.
     call vecio_spyVector(&
-        "data/tutorial006f_vector","vector",rx,.true.)
+        "post/tutorial006f_vector","vector",rx,.true.)
     
     ! Write the vector to a MAPLE file
     call vecio_writeVectorMaple (rx, "vector", .true., 0, &
-        "data/tutorial006f_vector.maple", "(E11.2)")
+        "post/tutorial006f_vector.maple", "(E11.2)")
 
     ! =================================
     ! Cleanup

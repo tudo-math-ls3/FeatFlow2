@@ -65,7 +65,7 @@ contains
     ! which describes the discretisation.
     ! =================================
 
-    call spdiscr_initDiscr_simple (rdiscretisation,EL_Q1,rtriangulation)
+    call spdiscr_initDiscr_simple (rdiscretisation,EL_Q1_2D,rtriangulation)
 
     ! =================================
     ! Create a CSR-matrix for the above
@@ -105,7 +105,7 @@ contains
     
     ! Write the matrix to a text file, omit nonexisting entries in the matrix.
     call matio_writeMatrixHR (rmatrix, "matrix", .true., 0, &
-        "data/tutorial006e_trz.txt", "(E15.5)")
+        "post/tutorial006e_trz.txt", "(E15.5)")
 
     ! -------------------------------------------
     ! Gauss 1x1.
@@ -114,7 +114,7 @@ contains
     
     ! Write the matrix to a text file, omit nonexisting entries in the matrix.
     call matio_writeMatrixHR (rmatrix, "matrix", .true., 0, &
-        "data/tutorial006e_g1.txt", "(E15.5)")
+        "post/tutorial006e_g1.txt", "(E15.5)")
 
     ! -------------------------------------------
     ! Gauss 2x2
@@ -123,7 +123,7 @@ contains
     
     ! Write the matrix to a text file, omit nonexisting entries in the matrix.
     call matio_writeMatrixHR (rmatrix, "matrix", .true., 0, &
-        "data/tutorial006e_g2.txt", "(E15.5)")
+        "post/tutorial006e_g2.txt", "(E15.5)")
 
     ! -------------------------------------------
     ! Gauss 3x3.
@@ -132,7 +132,7 @@ contains
     
     ! Write the matrix to a text file, omit nonexisting entries in the matrix.
     call matio_writeMatrixHR (rmatrix, "matrix", .true., 0, &
-        "data/tutorial006e_g3.txt", "(E15.5)")
+        "post/tutorial006e_g3.txt", "(E15.5)")
 
     ! -------------------------------------------
     ! Gauss 4x4.
@@ -141,7 +141,7 @@ contains
     
     ! Write the matrix to a text file, omit nonexisting entries in the matrix.
     call matio_writeMatrixHR (rmatrix, "matrix", .true., 0, &
-        "data/tutorial006e_g4.txt", "(E15.5)")
+        "post/tutorial006e_g4.txt", "(E15.5)")
 
     ! -------------------------------------------
     ! Gauss 5x5.
@@ -150,7 +150,7 @@ contains
     
     ! Write the matrix to a text file, omit nonexisting entries in the matrix.
     call matio_writeMatrixHR (rmatrix, "matrix", .true., 0, &
-        "data/tutorial006e_g5.txt", "(E15.5)")
+        "post/tutorial006e_g5.txt", "(E15.5)")
 
     ! =================================
     ! Cleanup

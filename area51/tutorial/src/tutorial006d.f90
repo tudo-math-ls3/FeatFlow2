@@ -58,7 +58,7 @@ contains
     ! which describes the discretisation.
     ! =================================
 
-    call spdiscr_initDiscr_simple (rdiscretisation,EL_Q1,rtriangulation)
+    call spdiscr_initDiscr_simple (rdiscretisation,EL_Q1_2D,rtriangulation)
 
     ! =================================
     ! Create a CSR-matrix for the above
@@ -85,7 +85,7 @@ contains
     
     ! Write the matrix to a text file, omit nonexisting entries in the matrix.
     call matio_writeMatrixHR (rmatrix, "matrix", .true., 0, &
-        "data/tutorial006d_laplace.txt", "(E15.5)")
+        "post/tutorial006d_laplace.txt", "(E15.5)")
 
     ! -------------------------------------------
     ! Discretise the Mass matrix.
@@ -95,7 +95,7 @@ contains
     
     ! Write the matrix to a text file, omit nonexisting entries in the matrix.
     call matio_writeMatrixHR (rmatrix, "matrix", .true., 0, &
-        "data/tutorial006d_mass.txt", "(E15.5)")
+        "post/tutorial006d_mass.txt", "(E15.5)")
 
     ! =================================
     ! Cleanup

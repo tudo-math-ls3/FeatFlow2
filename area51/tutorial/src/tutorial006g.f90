@@ -37,7 +37,7 @@ contains
     type(t_matrixScalar) :: rmatrix
     
     integer :: i
-    real(DP), dimension(:), pointer :: p_Ddata
+    real(DP), dimension(:), pointer :: p_Dpost
     integer, dimension(:), pointer :: p_Kcol, p_Kld
 
     ! Print a message
@@ -62,7 +62,7 @@ contains
     ! which describes the discretisation.
     ! =================================
 
-    call spdiscr_initDiscr_simple (rdiscretisation,EL_Q1,rtriangulation)
+    call spdiscr_initDiscr_simple (rdiscretisation,EL_Q1_2D,rtriangulation)
 
     ! =================================
     ! Create a scalar vector.
@@ -80,40 +80,40 @@ contains
     call lsyssc_allocEmptyMatrix (rmatrix)
     
     ! =================================
-    ! Fill the vector with data.
+    ! Fill the vector with post.
     ! =================================
     
-    ! Get a pointer to the data
-    call lsyssc_getbase_double (rx,p_Ddata)
+    ! Get a pointer to the post
+    call lsyssc_getbase_double (rx,p_Dpost)
     
-    ! Initialise the data: 1,2,3,...
+    ! Initialise the post: 1,2,3,...
     do i=1,rx%NEQ
-      p_Ddata(i) = real(i,DP)
+      p_Dpost(i) = real(i,DP)
     end do
 
     ! =================================
-    ! Fill the matrix with data.
+    ! Fill the matrix with post.
     ! =================================
     
-    ! Get a pointer to the matrix data, the column numbers
+    ! Get a pointer to the matrix post, the column numbers
     ! and the row indices that are usesd in the CSR format.
-    call lsyssc_getbase_double (rmatrix,p_Ddata)
+    call lsyssc_getbase_double (rmatrix,p_Dpost)
     call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
     call lsyssc_getbase_Kld (rmatrix,p_Kld)
 
-    ! Initialise the data: Column number.
+    ! Initialise the post: Column number.
     do i=1,rmatrix%NA
-      p_Ddata(i) = real( p_Kcol(i) ,DP )
+      p_Dpost(i) = real( p_Kcol(i) ,DP )
     end do
     
     ! Fill the first row with 1.0.
     do i=p_Kld(1), p_Kld(2)-1
-      p_Ddata(i) = 1.0_DP
+      p_Dpost(i) = 1.0_DP
     end do
 
     ! Fill the last row with "NEQ".
     do i=p_Kld(rmatrix%NEQ), p_Kld(rmatrix%NEQ+1)-1
-      p_Ddata(i) = real( rmatrix%NEQ, DP )
+      p_Dpost(i) = real( rmatrix%NEQ, DP )
     end do
 
     ! =================================
@@ -123,11 +123,11 @@ contains
 
     ! Write the vector to a text file.
     call vecio_writeVectorHR (rx, "vector", .true., 0, &
-        "data/tutorial006g_vector.txt", "(E11.2)")
+        "post/tutorial006g_vector.txt", "(E11.2)")
 
     ! Write the matrix to a text file, omit nonexisting entries in the matrix.
     call matio_writeMatrixHR (rmatrix, "matrix", .true., 0, &
-        "data/tutorial006g_matrix.txt", "(E11.2)")
+        "post/tutorial006g_matrix.txt", "(E11.2)")
 
     ! =================================
     ! Cleanup

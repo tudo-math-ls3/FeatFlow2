@@ -33,7 +33,7 @@ contains
     call output_line ("This is FEAT-2. Tutorial 006a")
     call output_separator (OU_SEP_MINUS)
     
-    call output_line ("Writing file 'gmv/tutorial006a.vtk'.")
+    call output_line ("Writing file 'post/tutorial006a.vtk'.")
 
     ! =================================
     ! Create a brick mesh
@@ -50,7 +50,7 @@ contains
 
     ! Open / write / close
     call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-                       "gmv/tutorial006a.vtk")
+                       "post/tutorial006a.vtk")
     call ucd_write (rexport)
     call ucd_release (rexport)
 

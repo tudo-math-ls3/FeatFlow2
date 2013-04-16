@@ -41,7 +41,7 @@ contains
     integer :: ivt
     real(DP) :: dx,dy
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
-    real(DP), dimension(:), pointer :: p_Ddata
+    real(DP), dimension(:), pointer :: p_Dpost
 
     ! Print a message
     call output_lbrk()
@@ -65,7 +65,7 @@ contains
     ! which describes the discretisation.
     ! =================================
 
-    call spdiscr_initDiscr_simple (rdiscretisation,EL_Q1,rtriangulation)
+    call spdiscr_initDiscr_simple (rdiscretisation,EL_Q1_2D,rtriangulation)
 
     ! =================================
     ! Create a scalar vector.
@@ -75,11 +75,11 @@ contains
     call lsyssc_createVector (rdiscretisation,rx)
     
     ! =================================
-    ! Fill the vector with data.
+    ! Fill the vector with post.
     ! =================================
     
-    ! Get a pointer to the data.
-    call lsyssc_getbase_double (rx,p_Ddata)
+    ! Get a pointer to the post.
+    call lsyssc_getbase_double (rx,p_Dpost)
     
     ! Get a pointer to the point coordinates.
     call storage_getbase_double2d (rtriangulation%h_DvertexCoords,p_DvertexCoords)
@@ -89,18 +89,18 @@ contains
     do ivt=1,rx%NEQ
       dx = p_DvertexCoords(1,ivt)
       dy = p_DvertexCoords(2,ivt)
-      p_Ddata(ivt) = dx**2 * dy**2
+      p_Dpost(ivt) = dx**2 * dy**2
     end do
 
     ! =================================
     ! Write a VTK file with the mesh
     ! and this solution vector.
     ! =================================
-    call output_line ("Writing file 'gmv/tutorial006h.vtk'.")
+    call output_line ("Writing file 'post/tutorial006h.vtk'.")
 
     ! Open
     call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-                       "gmv/tutorial006h.vtk")
+                       "post/tutorial006h.vtk")
                        
     ! Pass the vector as solution.
     call ucd_addVectorByVertex (rexport, "x", UCD_VAR_STANDARD, rx)

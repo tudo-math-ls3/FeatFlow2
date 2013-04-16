@@ -25,8 +25,8 @@ contains
     integer :: ihandleInt2d, ihandleDouble2d
     integer, dimension(2) :: Isize
     
-    integer, dimension(:,:), pointer :: p_Idata
-    real(DP), dimension(:,:), pointer :: p_Ddata
+    integer, dimension(:,:), pointer :: p_Ipost
+    real(DP), dimension(:,:), pointer :: p_Dpost
 
     ! Print a message
     call output_lbrk()
@@ -50,36 +50,36 @@ contains
     ! =====================
     ! Get pointers
     ! =====================
-    call storage_getbase_int2D (ihandleInt2D,p_Idata)
-    call storage_getbase_double2D (ihandleDouble2D,p_Ddata)
+    call storage_getbase_int2D (ihandleInt2D,p_Ipost)
+    call storage_getbase_double2D (ihandleDouble2D,p_Dpost)
 
     ! =====================
-    ! Fill with data
+    ! Fill with post
     ! =====================
     do j=1,4
       do i=1,4
-        p_Idata(i,j) = i**2 * j
-        p_Ddata(i,j) = real(i**2 * j,DP)
+        p_Ipost(i,j) = i**2 * j
+        p_Dpost(i,j) = real(i**2 * j,DP)
       end do
     end do
 
     ! =====================
-    ! Print the data
+    ! Print the post
     ! =====================
     do i=1,4
       do j=1,4
-        call output_line (sys_si(p_Idata(i,j),5), bnolinebreak=(j .ne. 4) )
+        call output_line (sys_si(p_Ipost(i,j),5), bnolinebreak=(j .ne. 4) )
       end do
     end do
 
     do i=1,4
       do j=1,4
-        call output_line (sys_adjustr(sys_sdE(p_Ddata(i,j),2),10), bnolinebreak=(j .ne. 4) )
+        call output_line (sys_adjustr(sys_sdE(p_Dpost(i,j),2),10), bnolinebreak=(j .ne. 4) )
       end do
     end do
     
     ! =====================
-    ! Release the data.
+    ! Release the post.
     ! Pointers get invalid.
     ! =====================
     call storage_free (ihandleInt2D)

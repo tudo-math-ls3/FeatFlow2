@@ -34,7 +34,7 @@ contains
     call output_line ("This is FEAT-2. Tutorial 006b")
     call output_separator (OU_SEP_MINUS)
     
-    call output_line ("Writing file 'gmv/tutorial006b.vtk'.")
+    call output_line ("Writing file 'post/tutorial006b.vtk'.")
 
     ! =================================
     ! Read the underlying domain
@@ -54,7 +54,7 @@ contains
 
     ! Open / write / close
     call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-                       "gmv/tutorial006b.vtk")
+                       "post/tutorial006b.vtk")
     call ucd_write (rexport)
     call ucd_release (rexport)
 

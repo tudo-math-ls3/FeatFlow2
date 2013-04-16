@@ -23,7 +23,7 @@ contains
 
     ! Declare some variables
     integer :: iunit,ios,ilength
-    character(LEN=SYS_STRLEN) :: sdata
+    character(LEN=SYS_STRLEN) :: spost
 
     ! Print a message
     call output_lbrk()
@@ -34,7 +34,7 @@ contains
     ! =================================
     ! Open a file, write, close.
     ! =================================
-    call io_openFileForWriting("data/tutorial003a.txt", &
+    call io_openFileForWriting("post/tutorial003a.txt", &
         iunit, SYS_REPLACE, bformatted=.true.)
     
     write (iunit,"(A)") "This is a"
@@ -46,14 +46,14 @@ contains
     ! =================================
     ! Open the file, print, close.
     ! =================================
-    call io_openFileForReading("data/tutorial003a.txt", iunit, .true.)
+    call io_openFileForReading("post/tutorial003a.txt", iunit, .true.)
     
     ! With io_readlinefromfile, we can read line by line
-    call io_readlinefromfile (iunit, sdata, ilength, ios)
+    call io_readlinefromfile (iunit, spost, ilength, ios)
     
     do while (ios .eq. 0)
-      call output_line (sdata(1:ilength))
-      call io_readlinefromfile (iunit, sdata, ilength, ios)
+      call output_line (spost(1:ilength))
+      call io_readlinefromfile (iunit, spost, ilength, ios)
     end do
     
     close (iunit)
