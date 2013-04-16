@@ -43,6 +43,7 @@ program tutorial
   use tutorial006g
   use tutorial006h
   use tutorial006i
+  use tutorial006j
 
   implicit none
   
@@ -92,6 +93,7 @@ program tutorial
   call start_tutorial006g
   call start_tutorial006h
   call start_tutorial006i
+  call start_tutorial006j
   
   ! -----------------------------------------------------------------
   ! Clean up
