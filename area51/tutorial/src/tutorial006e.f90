@@ -167,7 +167,7 @@ contains
     call spdiscr_releaseCubStructure (rcubatureInfo_G4)
     call spdiscr_releaseCubStructure (rcubatureInfo_G5)
     
-    ! Remease the Q1-discretisation
+    ! Release the Q1-discretisation
     call spdiscr_releaseDiscr (rdiscretisation)
 
     ! Release the triangulation

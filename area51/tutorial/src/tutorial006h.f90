@@ -6,6 +6,7 @@ module tutorial006h
 
   ! Include basic Feat-2 modules
   use fsystem
+  use storage
   use genoutput
   
   use triangulation
@@ -37,8 +38,9 @@ contains
     type(t_vectorScalar) :: rx
     type(t_ucdExport) :: rexport    
 
-    integer :: i,j
+    integer :: ivt
     real(DP) :: dx,dy
+    real(DP), dimension(:,:), pointer :: p_DvertexCoords
     real(DP), dimension(:), pointer :: p_Ddata
 
     ! Print a message
@@ -76,17 +78,18 @@ contains
     ! Fill the vector with data.
     ! =================================
     
-    ! Get a pointer to the data
+    ! Get a pointer to the data.
     call lsyssc_getbase_double (rx,p_Ddata)
+    
+    ! Get a pointer to the point coordinates.
+    call storage_getbase_double2d (rtriangulation%h_DvertexCoords,p_DvertexCoords)
     
     ! Set the entries of the vector according to the function
     !    f(x,y) = x^2 * y^2
-    do i=0,4
-      do j=0,4
-        dx = real(j,DP) / 4.0_DP
-        dy = real(i,DP) / 4.0_DP
-        p_Ddata(i*5+j+1) = dx**2 * dy**2
-      end do
+    do ivt=1,rx%NEQ
+      dx = p_DvertexCoords(1,ivt)
+      dy = p_DvertexCoords(2,ivt)
+      p_Ddata(ivt) = dx**2 * dy**2
     end do
 
     ! =================================
@@ -113,7 +116,7 @@ contains
     ! Release the vector
     call lsyssc_releaseVector (rx)
     
-    ! Remease the Q1-discretisation
+    ! Release the Q1-discretisation
     call spdiscr_releaseDiscr (rdiscretisation)
 
     ! Release the triangulation

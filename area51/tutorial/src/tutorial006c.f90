@@ -94,7 +94,7 @@ contains
     ! Release the matrix
     call lsyssc_releaseMatrix (rmatrix)
     
-    ! Remease the Q1-discretisation
+    ! Release the Q1-discretisation
     call spdiscr_releaseDiscr (rdiscretisation)
 
     ! Release the triangulation

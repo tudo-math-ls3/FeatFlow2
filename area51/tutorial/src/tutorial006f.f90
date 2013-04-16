@@ -90,7 +90,7 @@ contains
     ! Release the matrix
     call lsyssc_releaseVector (rx)
     
-    ! Remease the Q1-discretisation
+    ! Release the Q1-discretisation
     call spdiscr_releaseDiscr (rdiscretisation)
 
     ! Release the triangulation
