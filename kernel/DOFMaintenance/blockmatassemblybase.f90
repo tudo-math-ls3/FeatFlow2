@@ -79,6 +79,13 @@ module blockmatassemblybase
     ! =.TRUE.:  Matrix is interleaved. The local matrix entries
     !           must be saved to p_DentryIntl. p_Dentry is undefined.
     logical :: bisInterleaved = .false.
+    
+    ! Defines if the entries of the local matrices are modified.
+    ! If this is set to FALSE during the assembly of the entries, the
+    ! framework assumes that the data in p_Dentry / p_DentryIntl
+    ! is not modified. Incorporating the data into the global matrix
+    ! is then skipped which leads to a speedup in the computation.
+    logical :: bmodified = .true.
 
     ! Arrays saving the entries of the local matrices.
     !
@@ -292,6 +299,13 @@ module blockmatassemblybase
     ! =.TRUE.:  Vector is interleaved. The local vector entries
     !           must be saved to p_DentryIntl. p_Dentry is undefined.
     logical :: bisInterleaved = .false.
+
+    ! Defines if the entries of the local vectors are modified.
+    ! If this is set to FALSE during the assembly of the entries, the
+    ! framework assumes that the data in p_Dentry / p_DentryIntl
+    ! is not modified. Incorporating the data into the global vector
+    ! is then skipped which leads to a speedup in the computation.
+    logical :: bmodified = .true.
 
     ! Arrays saving the entries of the local vectors.
     !

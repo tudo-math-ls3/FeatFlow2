@@ -462,6 +462,7 @@ contains
 
       do i=1,ubound(RmatrixData,1)
 
+        ! Check if the submatrix is present
         RmatrixData(i,j)%bhasData = lsysbl_isSubmatrixPresent (rmatrix,i,j)
 
         if (RmatrixData(i,j)%bhasData) then
@@ -727,6 +728,9 @@ contains
       do i=1,ubound(rassemblyData%p_RmatrixData,1)
 
         p_rmatrixData => rassemblyData%p_RmatrixData(i,j)
+
+        ! bmodified is true by default.
+        p_rmatrixData%bmodified = .true.
 
         ! Unshared data in that block
         if (p_rmatrixData%bhasData) then 
@@ -1121,14 +1125,22 @@ contains
                 ubound(p_rmatrixData%p_IdofsTest,1),ubound(p_rmatrixData%p_IdofsTrial,1),&
                 size(IelementList))
 
-            ! Fill Dentry with zero; default values.
-            if (.not. p_rmatrixData%bisInterleaved) then
-              call lalg_clearVector(p_rmatrixData%p_Dentry)
-            else
-              do k=1,ubound(p_rmatrixData%p_DentryIntl,4)
-                call lalg_clearVector(p_rmatrixData%p_DentryIntl(:,:,:,k))
-              end do
+            ! If the matrix data is marked as "modified" (which it is by
+            ! default), fill Dentry with zero; default values.              
+            if (p_rmatrixData%bmodified) then
+            
+              if (.not. p_rmatrixData%bisInterleaved) then
+                call lalg_clearVector(p_rmatrixData%p_Dentry)
+              else
+                do k=1,ubound(p_rmatrixData%p_DentryIntl,4)
+                  call lalg_clearVector(p_rmatrixData%p_DentryIntl(:,:,:,k))
+                end do
+              end if
+              
             end if
+            
+            ! Reset bmodified to TRUE for the next turn.
+            p_rmatrixData%bmodified = .true.
 
           end if
 
@@ -1278,7 +1290,9 @@ contains
 
         p_rmatrixData => rassemblyData%p_RmatrixData(i,j)
 
-        if ((p_rmatrixData%bhasData) .and. (.not. p_rmatrixData%bsharedMatrixData)) then 
+        if ((p_rmatrixData%bhasData) .and. &
+            (.not. p_rmatrixData%bsharedMatrixData) .and. &
+            (p_rmatrixData%bmodified)) then 
 
           ! Unshared data in that block.
           ! Incorporate the local matrices into the global one.
@@ -1682,7 +1696,7 @@ contains
 
       ! Remember the vector
       RvectorData(i)%p_rvector => rvector%RvectorBlock(i)
-
+      
       ! Get a pointer to the vector data for faster access
       call lsyssc_getbase_double (rvector%RvectorBlock(i),RvectorData(i)%p_Ddata)
 
@@ -1865,6 +1879,9 @@ contains
     do i=1,ubound(rassemblyData%p_RvectorData,1)
 
       p_rvectorData => rassemblyData%p_RvectorData(i)
+
+      ! bmodified is set to true by default.
+      p_rvectorData%bmodified = .true.
 
       ! Allocate memory for the vector data and positions in the vector
       if (.not. p_rvectorData%bisInterleaved) then
@@ -2181,14 +2198,22 @@ contains
 
       p_rvectorData => rassemblyData%p_RvectorData(i)
 
-      ! Fill Dentry with zero; default values.
-      if (.not. p_rvectorData%bisInterleaved) then
-        ! Non-Interleaved
-        call lalg_clearVector(p_rvectorData%p_Dentry)
-      else
-        ! Interleaved
-        call lalg_clearVector(p_rvectorData%p_DentryIntl)
+      ! If the vector is marked as modified, clear it.
+      if (p_rvectorData%bmodified) then
+      
+        ! Fill Dentry with zero; default values.
+        if (.not. p_rvectorData%bisInterleaved) then
+          ! Non-Interleaved
+          call lalg_clearVector(p_rvectorData%p_Dentry)
+        else
+          ! Interleaved
+          call lalg_clearVector(p_rvectorData%p_DentryIntl)
+        end if
+        
       end if
+      
+      ! Reset the bmodified flag for the next turn.
+      p_rvectorData%bmodified = .true.
 
     end do
 
@@ -2331,42 +2356,46 @@ contains
     do i=1,ubound(rassemblyData%p_rvectorData,1)
 
       p_rvectorData => rassemblyData%p_rvectorData(i)
-      p_IdofsTest => p_rvectorData%p_IdofsTest
 
       ! Incorporate the local vectors into the global one.
+      if (p_rvectorData%bmodified) then
 
-      p_Ddata => p_rvectorData%p_Ddata
+        p_IdofsTest => p_rvectorData%p_IdofsTest
 
-      if (.not. p_rvectorData%bisInterleaved) then
+        p_Ddata => p_rvectorData%p_Ddata
 
-        ! Non-Interleaved
-        p_Dentry => p_rvectorData%p_Dentry
+        if (.not. p_rvectorData%bisInterleaved) then
 
-        ! The outer-most loop loops only up to the maximum element
-        ! number. The allocated memory may be larger.
-        do l=1,rassemblyData%nelements
-          do k=1,ubound(p_Dentry,1)
-            p_Ddata(p_IdofsTest(k,l)) = p_Ddata(p_IdofsTest(k,l)) + p_Dentry(k,l)
-          end do
-        end do
+          ! Non-Interleaved
+          p_Dentry => p_rvectorData%p_Dentry
 
-      else
-
-        ! Interleaved
-        p_DentryIntl => p_rvectorData%p_DentryIntl
-        nvar = p_rvectorData%nvar
-
-        ! The outer-most loop loops only up to the maximum element
-        ! number. The allocated memory may be larger.
-        do l=1,rassemblyData%nelements
-          do k=1,ubound(p_DentryIntl,2)
-            do ivar = 1,ubound(p_DentryIntl,1)
-              p_Ddata(nvar*(p_IdofsTest(k,l)-1)+ivar) = &
-                  p_Ddata(nvar*(p_IdofsTest(k,l)-1)+ivar) + p_DentryIntl(ivar,k,l)
+          ! The outer-most loop loops only up to the maximum element
+          ! number. The allocated memory may be larger.
+          do l=1,rassemblyData%nelements
+            do k=1,ubound(p_Dentry,1)
+              p_Ddata(p_IdofsTest(k,l)) = p_Ddata(p_IdofsTest(k,l)) + p_Dentry(k,l)
             end do
           end do
-        end do
 
+        else
+
+          ! Interleaved
+          p_DentryIntl => p_rvectorData%p_DentryIntl
+          nvar = p_rvectorData%nvar
+
+          ! The outer-most loop loops only up to the maximum element
+          ! number. The allocated memory may be larger.
+          do l=1,rassemblyData%nelements
+            do k=1,ubound(p_DentryIntl,2)
+              do ivar = 1,ubound(p_DentryIntl,1)
+                p_Ddata(nvar*(p_IdofsTest(k,l)-1)+ivar) = &
+                    p_Ddata(nvar*(p_IdofsTest(k,l)-1)+ivar) + p_DentryIntl(ivar,k,l)
+              end do
+            end do
+          end do
+
+        end if
+        
       end if
 
     end do
