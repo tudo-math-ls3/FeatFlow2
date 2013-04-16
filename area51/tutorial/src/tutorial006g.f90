@@ -52,7 +52,7 @@ contains
 
     ! The mesh must always be in "standard" format. 
     ! First create a 5x5-mesh on [0,1]x[0,1], then convert to standard.
-    call meshgen_rectangular2DQuadMesh (rtriangulation, 1.0_DP, 1.0_DP, 4, 4)
+    call meshgen_rectangular2DQuadMesh (rtriangulation, 0.0_DP, 1.0_DP, 0.0_DP, 1.0_DP, 4, 4)
     call tria_initStandardMeshFromRaw (rtriangulation)
 
     ! =================================

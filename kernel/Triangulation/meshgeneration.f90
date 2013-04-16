@@ -34,10 +34,10 @@ contains
 
 !<subroutine>
 
-  subroutine meshgen_rectangular2DQuadMesh (rtriangulation,dsizex,dsizey,ncellsx,ncellsy)
+  subroutine meshgen_rectangular2DQuadMesh (rtriangulation,dx0,dx1,dy0,dy1,ncellsx,ncellsy)
 
 !<description>
-  ! Creates a rectangular, regular 2D mesh at (0,0) with size (dsizex,dsizey).
+  ! Creates a rectangular, regular 2D mesh of the domain [x0,x1]x[y0,y1]
   ! The domain will have ncellsx cells in x-direction and ncellsy cells 
   ! in y-direction.
   !
@@ -45,8 +45,8 @@ contains
 !</description>
 
 !<input>
-  ! Size of the domain
-  real(DP), intent(in) :: dsizex,dsizey
+  ! Bounds of the domain
+  real(DP), intent(in) :: dx0, dx1, dy0, dy1
   
   ! Number of cells in x and y
   integer, intent(in) :: ncellsx, ncellsy
@@ -61,6 +61,58 @@ contains
 
     ! local variables
     real(DP), dimension(:,:), pointer :: p_Ddata2D
+    integer :: ivt
+    integer :: i,j
+    integer, dimension(2) :: Isize
+    
+    ! generate the mesh topology
+    call meshgen_struct2DQuadMeshTopology(rtriangulation, ncellsx, ncellsy)
+
+    ! Initialise DvertexCoords
+    Isize = (/NDIM2D,rtriangulation%NVT/)
+    call storage_new ("meshgen_rectangular2DQuadMesh", "DCORVG",&
+        Isize, ST_DOUBLE,rtriangulation%h_DvertexCoords, ST_NEWBLOCK_NOINIT)
+
+    call storage_getbase_double2D(rtriangulation%h_DvertexCoords, p_Ddata2D)
+    
+    do i=0,ncellsy
+      do j=0,ncellsx
+        
+        ivt = i * (ncellsx+1) + j + 1
+        p_Ddata2D(1,ivt) = dx0 + real(j,DP) * (dx1-dx0) / real(ncellsx,DP)
+        p_Ddata2D(2,ivt) = dy0 + real(i,DP) * (dy1-dy0) / real(ncellsy,DP)
+        
+      end do
+    end do
+
+    ! Create the basic boundary information
+    call tria_genRawBoundary2D (rtriangulation)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine meshgen_struct2DQuadMeshTopology (rtriangulation,ncellsx,ncellsy)
+
+!<description>
+  ! Creates the topology of a structured 2D Quad mesh.
+!</description>
+
+!<input>
+  ! Number of cells in x and y
+  integer, intent(in) :: ncellsx, ncellsy
+!</input>
+
+!<inputoutput>
+  ! Stucture that receives the mesh.
+  type(t_triangulation), intent(out) :: rtriangulation
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
     integer, dimension(:,:), pointer :: p_Idata2D
     integer, dimension(:), pointer :: p_Idata
     integer :: ivt, iel
@@ -74,29 +126,11 @@ contains
     rtriangulation%NMT = ncellsx * (ncellsy + 1)
     rtriangulation%NNVE = 4
     rtriangulation%NBCT = 1
-    
-    rtriangulation%NNEE = rtriangulation%NNVE   
-    
-    ! Initialise DvertexCoords
-    Isize = (/NDIM2D,rtriangulation%NVT/)
-    call storage_new ("tria_readRawTriangulation2D", "DCORVG",&
-        Isize, ST_DOUBLE,rtriangulation%h_DvertexCoords, ST_NEWBLOCK_NOINIT)
-
-    call storage_getbase_double2D(rtriangulation%h_DvertexCoords, p_Ddata2D)
-    
-    do i=0,ncellsy
-      do j=0,ncellsx
-        
-        ivt = i * (ncellsx+1) + j + 1
-        p_Ddata2D(1,ivt) = real(j,DP) * dsizex / real(ncellsx,DP)
-        p_Ddata2D(2,ivt) = real(i,DP) * dsizey / real(ncellsy,DP)
-        
-      end do
-    end do
+    rtriangulation%NNEE = rtriangulation%NNVE
     
     ! Initialise KverticesAtElement
     Isize = (/rtriangulation%NNVE,rtriangulation%NEL/)
-    call storage_new ("tria_readRawTriangulation2D", "KVERT", Isize,&
+    call storage_new ("meshgen_struct2DQuadMeshTopology", "KVERT", Isize,&
         ST_INT, rtriangulation%h_IverticesAtElement, ST_NEWBLOCK_NOINIT)
         
     call storage_getbase_int2d(rtriangulation%h_IverticesAtElement, p_Idata2D)
@@ -120,7 +154,7 @@ contains
     rtriangulation%InelOfType(4) = rtriangulation%NEL
 
     ! Create InodalProperty
-    call storage_new ("tria_readRawTriangulation2D", "KNPR", &
+    call storage_new ("meshgen_struct2DQuadMeshTopology", "KNPR", &
         rtriangulation%NVT, ST_INT, &
         rtriangulation%h_InodalProperty, ST_NEWBLOCK_ZERO)
 
@@ -138,9 +172,6 @@ contains
       p_Idata(1+((j+1)*(ncellsx+1)-1)) = 1
     end do
 
-    ! Create the basic boundary information
-    call tria_genRawBoundary2D (rtriangulation)
-
   end subroutine
-
+  
 end module
