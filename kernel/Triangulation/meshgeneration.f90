@@ -66,7 +66,7 @@ contains
     integer, dimension(2) :: Isize
     
     ! generate the mesh topology
-    call meshgen_struct2DQuadMeshTopology(rtriangulation, ncellsx, ncellsy)
+    call meshgen_struct2DQuadMeshTopo(rtriangulation, ncellsx, ncellsy)
 
     ! Initialise DvertexCoords
     Isize = (/NDIM2D,rtriangulation%NVT/)
@@ -94,7 +94,7 @@ contains
 
 !<subroutine>
 
-  subroutine meshgen_struct2DQuadMeshTopology (rtriangulation,ncellsx,ncellsy)
+  subroutine meshgen_struct2DQuadMeshTopo (rtriangulation,ncellsx,ncellsy)
 
 !<description>
   ! Creates the topology of a structured 2D Quad mesh.
@@ -130,7 +130,7 @@ contains
     
     ! Initialise KverticesAtElement
     Isize = (/rtriangulation%NNVE,rtriangulation%NEL/)
-    call storage_new ("meshgen_struct2DQuadMeshTopology", "KVERT", Isize,&
+    call storage_new ("meshgen_struct2DQuadMeshTopo", "KVERT", Isize,&
         ST_INT, rtriangulation%h_IverticesAtElement, ST_NEWBLOCK_NOINIT)
         
     call storage_getbase_int2d(rtriangulation%h_IverticesAtElement, p_Idata2D)
@@ -154,7 +154,7 @@ contains
     rtriangulation%InelOfType(4) = rtriangulation%NEL
 
     ! Create InodalProperty
-    call storage_new ("meshgen_struct2DQuadMeshTopology", "KNPR", &
+    call storage_new ("meshgen_struct2DQuadMeshTopo", "KNPR", &
         rtriangulation%NVT, ST_INT, &
         rtriangulation%h_InodalProperty, ST_NEWBLOCK_ZERO)
 

@@ -1143,7 +1143,7 @@ contains
           ccubType = CUB_G2X2
         end select
 
-      case (EL_QP1, EL_DCQP1_2D)
+      case (EL_QP1, EL_DCQP1_2D, EL_DG_T1_2D)
 
         select case (ioperation)
         case (SPDISC_OPTP_MASS)
@@ -1154,7 +1154,7 @@ contains
           ccubType = CUB_G2X2
         end select
 
-      case (EL_DCQP2_2D)
+      case (EL_DCQP2_2D,EL_DG_T2_2D)
 
         select case (ioperation)
         case (SPDISC_OPTP_MASS)
