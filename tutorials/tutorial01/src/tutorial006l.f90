@@ -131,7 +131,7 @@ contains
     
     type(t_vectorScalar) :: rrhs, rdefect, rcorrection, rx
     type(t_matrixScalar) :: rmatrix
-    type(t_scalarCubatureInfo), target :: rcubatureInfo_G5
+    type(t_scalarCubatureInfo), target :: rcubatureInfo_G3
     
     real(DP) :: dnorm
     integer :: ite
@@ -175,8 +175,8 @@ contains
     ! Create a RHS vector.
     ! =================================
     
-    ! Use a high Gauss Formula for the RHS
-    call spdiscr_createDefCubStructure (rdiscretisation,rcubatureInfo_G5,CUB_GEN_AUTO_G5)
+    ! Use a 3x3-Gauss Formula for the RHS
+    call spdiscr_createDefCubStructure (rdiscretisation,rcubatureInfo_G3,CUB_GEN_AUTO_G3)
 
     ! Create a vector.
     call lsyssc_createVector (rdiscretisation,rrhs)
@@ -191,10 +191,10 @@ contains
     rcollection%DquickAccess(1) = 4.0_DP
     
     call linf_buildVectorScalar (&
-        rlinform,.true.,rrhs,rcubatureInfo_G5,fcoeff_RHS,rcollection)
+        rlinform,.true.,rrhs,rcubatureInfo_G3,fcoeff_RHS,rcollection)
         
     ! Release the cubature formula
-    call spdiscr_releaseCubStructure (rcubatureInfo_G5)
+    call spdiscr_releaseCubStructure (rcubatureInfo_G3)
 
     ! =================================
     ! Create a solution, a defect vector and a correction vector.
