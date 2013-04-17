@@ -6285,6 +6285,12 @@ contains
 
   if (lsyssc_isExplicitMatrix1D(rmatrix)) then
 
+    if (.not. lsyssc_hasMatrixContent(rmatrix)) then
+      call output_line("Matrix is not allocated!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_clearMatrix")
+      call sys_halt()
+    end if
+
     ! Get the data array and clear it -- depending on the data type.
     select case (rmatrix%cdataType)
     case (ST_DOUBLE)
