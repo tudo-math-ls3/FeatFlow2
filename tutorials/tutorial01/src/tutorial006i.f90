@@ -19,10 +19,6 @@ module tutorial006i
   use bilinearformevaluation
   use stdoperators
   
-  use matrixio
-  use vectorio
-  use ucd
-
   implicit none
   private
   

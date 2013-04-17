@@ -20,7 +20,6 @@ module tutorial006j
   use stdoperators
   
   use matrixio
-  use vectorio
   use ucd
 
   implicit none
