@@ -36,7 +36,7 @@ contains
     type(t_triangulation) :: rtriangulation
     type(t_spatialdiscretisation) :: rdiscretisation
     type(t_vectorScalar) :: rx
-    type(t_ucdExport) :: rexport    
+    type(t_ucdExport) :: rexport
 
     integer :: ivt
     real(DP) :: dx,dy

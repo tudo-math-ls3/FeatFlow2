@@ -42,7 +42,6 @@ contains
     logical :: bsharedstruc1, bsharedstruc2, bsharedstruc3
     logical :: bsharedcont
 
-
     ! Print a message
     call output_lbrk()
     call output_separator (OU_SEP_STAR)
