@@ -49,6 +49,7 @@ program tutorial
   
   use tutorial007a
   use tutorial007b
+  use tutorial007c
 
   implicit none
   
@@ -104,6 +105,7 @@ program tutorial
   
   call start_tutorial007a
   call start_tutorial007b
+  call start_tutorial007c
   
   ! -----------------------------------------------------------------
   ! Clean up

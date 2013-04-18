@@ -61,7 +61,7 @@ contains
     scondition = "(X=1) | (Y=1)"
     
     call mshreg_createFromExpression(rmeshRegion, rtriangulation, &
-          MSHREG_IDX_ALL, .true., scondition)
+        MSHREG_IDX_ALL, .true., scondition)
 
     ! =================================
     ! Output
@@ -94,6 +94,9 @@ contains
     ! Cleanup
     ! =================================
     
+    ! Release the mesh region
+    call mshreg_done(rmeshRegion)
+
     ! Clean up the parser.
     call fparser_done()
     

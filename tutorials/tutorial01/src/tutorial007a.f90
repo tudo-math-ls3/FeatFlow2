@@ -82,6 +82,9 @@ contains
     ! Cleanup
     ! =================================
     
+    ! Release the mesh region
+    call mshreg_done(rmeshRegion)
+
     ! Release the triangulation
     call tria_done (rtriangulation)
     
