@@ -6964,7 +6964,7 @@ contains
             ! Multiply the values by the cubature weight and sum up
             ! into the integral value
             dintvalue = dintvalue + p_DcubWeight(icubp,iel) * &
-                ( dderivX**2 + dderivY**2 )
+                ( dderivX + dderivY )**2
               
           end do ! icubp
         
@@ -7004,7 +7004,7 @@ contains
             ! Multiply the values by the cubature weight and sum up
             ! into the integral value
             dintvalue = dintvalue + p_DcubWeight(icubp,iel) * &
-                ( dderivX**2 + dderivY**2 + dderivZ**2 )
+                ( dderivX + dderivY + dderivZ )**2
               
           end do ! icubp
         
@@ -7085,7 +7085,7 @@ contains
               ! Multiply the values by the cubature weight and sum up
               ! into the integral value
               dintvalue = dintvalue + p_DcubWeight(icubp,iel) * &
-                  ( dderivX**2 + dderivY**2 )
+                  ( dderivX + dderivY )**2
                   
             end do ! idimfe
               
@@ -7121,7 +7121,7 @@ contains
               ! Multiply the values by the cubature weight and sum up
               ! into the integral value
               dintvalue = dintvalue + p_DcubWeight(icubp,iel) * &
-                  ( dderivX**2 + dderivY**2 + dderivZ**2 )
+                  ( dderivX + dderivY + dderivZ )**2
             
             end do
               
