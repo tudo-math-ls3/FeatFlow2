@@ -17,26 +17,29 @@
 !#  2.) mshreg_createFromHitTest
 !#      -> Creates a mesh region based on a hit-test callback function.
 !#
-!#  3.) mshreg_done
+!#  3.) mshreg_createFromExpression
+!#      -> Creates a mesh region based on an expression using the parser
+!#
+!#  4.) mshreg_done
 !#      -> Releases a mesh region structure.
 !#
-!#  4.) mshreg_recalcVerticesFromEdges
+!#  5.) mshreg_recalcVerticesFromEdges
 !#      -> Recalculates the vertex index array of the mesh region from the
 !#         edge index array of the mesh region.
 !#
-!#  5.) mshreg_recalcVerticesFromFaces
+!#  6.) mshreg_recalcVerticesFromFaces
 !#      -> Recalculates the vertex index array of the mesh region from the
 !#         face index array of the mesh region.
 !#
-!#  6.) mshreg_recalcEdgesFromFaces
+!#  7.) mshreg_recalcEdgesFromFaces
 !#      -> Recalculates the edge index array of the mesh region from the
 !#         face index array of the mesh region.
 !#
-!#  7.) mshreg_calcBoundaryNormals2D
+!#  8.) mshreg_calcBoundaryNormals2D
 !#      -> Calculates the outer normal vectors for the boundary edges of a
 !#         2D mesh region.
 !#
-!#  8.) mshreg_calcBoundaryNormals3D
+!#  9.) mshreg_calcBoundaryNormals3D
 !#      -> Calculates the outer normal vectors for the boundary faces of a
 !#         3D mesh region.
 !#
@@ -49,8 +52,10 @@ module meshregion
   use fsystem
   use genoutput
   use geometryaux
+  use basicgeometry
   use storage
   use triangulation
+  use fparser
   use collection, only: t_collection
 
   implicit none
@@ -60,6 +65,7 @@ module meshregion
   public :: t_meshRegion
   public :: mshreg_createFromNodalProp
   public :: mshreg_createFromHitTest
+  public :: mshreg_createFromExpression
   public :: mshreg_done
   public :: mshreg_recalcVerticesFromEdges
   public :: mshreg_recalcVerticesFromFaces
@@ -571,26 +577,26 @@ module meshregion
 
         ! Allocate a map
         allocate(p_Ihit(rtriangulation%NVBD))
-
-        ! And call the hit-test routine
-        if (present(rcollection)) then
-          call fmshregHitTest(rtriangulation%NVBD, p_Dverts, p_Ihit, &
-                              rcollection)
-        else
-          call fmshregHitTest(rtriangulation%NVBD, p_Dverts, p_Ihit)
-        end if
-
+        
         ! Get the vertices-at-boundary array
         call storage_getbase_int(rtriangulation%h_IverticesAtBoundary, p_Iindex)
 
+        ! Create an array with all vertices on the boundary.
+        allocate(p_Dcoords(idim,rtriangulation%NVBD))
+
+        do i=1, rtriangulation%NVBD
+          p_Dcoords(:,i) = p_Dverts(:, p_Iindex(i))
+        end do
+
+        ! And call the hit-test routine
+        call fmshregHitTest(rtriangulation%NVBD, p_Dcoords, p_Ihit, rcollection)
+        
         ! Calculate the index array
-        if (present(IallowedHit)) then
-          call mshreg_aux_calcIdxArray2(p_Ihit, 0, rtriangulation%NVBD, &
-             rmeshRegion%h_IvertexIdx, rmeshRegion%NVT, p_Iindex, IallowedHit)
-        else
-          call mshreg_aux_calcIdxArray2(p_Ihit, 0, rtriangulation%NVBD, &
-             rmeshRegion%h_IvertexIdx, rmeshRegion%NVT, p_Iindex)
-        end if
+        call mshreg_aux_calcIdxArray2(p_Ihit, 0, rtriangulation%NVBD, &
+            rmeshRegion%h_IvertexIdx, rmeshRegion%NVT, p_Iindex, IallowedHit)
+
+        ! Deallocate vertex array
+        deallocate(p_Dcoords)
 
         ! Free the hit-map
         deallocate(p_Ihit)
@@ -601,21 +607,11 @@ module meshregion
         allocate(p_Ihit(rtriangulation%NVT))
 
         ! And call the hit-test routine
-        if (present(rcollection)) then
-          call fmshregHitTest(rtriangulation%NVT, p_Dverts, p_Ihit, &
-                              rcollection)
-        else
-          call fmshregHitTest(rtriangulation%NVT, p_Dverts, p_Ihit)
-        end if
+        call fmshregHitTest(rtriangulation%NVT, p_Dverts, p_Ihit, rcollection)
 
         ! Calculate the index array
-        if (present(IallowedHit)) then
-          call mshreg_aux_calcIdxArray1(p_Ihit, 0, rtriangulation%NVT, &
-             rmeshRegion%h_IvertexIdx, rmeshRegion%NVT, 0, IallowedHit)
-        else
-          call mshreg_aux_calcIdxArray1(p_Ihit, 0, rtriangulation%NVT, &
-             rmeshRegion%h_IvertexIdx, rmeshRegion%NVT, 0)
-        end if
+        call mshreg_aux_calcIdxArray1(p_Ihit, 0, rtriangulation%NVT, &
+            rmeshRegion%h_IvertexIdx, rmeshRegion%NVT, 0, IallowedHit)
 
         ! Free the hit-map
         deallocate(p_Ihit)
@@ -655,22 +651,11 @@ module meshregion
         end do
 
         ! And call the hit-test routine
-        if (present(rcollection)) then
-          call fmshregHitTest(rtriangulation%NMBD, p_Dcoords, p_Ihit, &
-                              rcollection)
-        else
-          call fmshregHitTest(rtriangulation%NMBD, p_Dcoords, p_Ihit)
-        end if
-
+        call fmshregHitTest(rtriangulation%NMBD, p_Dcoords, p_Ihit, rcollection)
 
         ! Calculate the index array
-        if (present(IallowedHit)) then
-          call mshreg_aux_calcIdxArray2(p_Ihit, 0, rtriangulation%NMBD, &
-             rmeshRegion%h_IedgeIdx, rmeshRegion%NMT, p_Iindex, IallowedHit)
-        else
-          call mshreg_aux_calcIdxArray2(p_Ihit, 0, rtriangulation%NMBD, &
-             rmeshRegion%h_IedgeIdx, rmeshRegion%NMT, p_Iindex)
-        end if
+        call mshreg_aux_calcIdxArray2(p_Ihit, 0, rtriangulation%NMBD, &
+            rmeshRegion%h_IedgeIdx, rmeshRegion%NMT, p_Iindex, IallowedHit)
 
         ! Deallocate midpoint array
         deallocate(p_Dcoords)
@@ -696,21 +681,11 @@ module meshregion
         end do
 
         ! And call the hit-test routine
-        if (present(rcollection)) then
-          call fmshregHitTest(rtriangulation%NMT, p_Dcoords, p_Ihit, &
-                              rcollection)
-        else
-          call fmshregHitTest(rtriangulation%NMT, p_Dcoords, p_Ihit)
-        end if
+        call fmshregHitTest(rtriangulation%NMT, p_Dcoords, p_Ihit, rcollection)
 
         ! Calculate the index array
-        if (present(IallowedHit)) then
-          call mshreg_aux_calcIdxArray1(p_Ihit, 0, rtriangulation%NMT, &
-             rmeshRegion%h_IedgeIdx, rmeshRegion%NMT, 0, IallowedHit)
-        else
-          call mshreg_aux_calcIdxArray1(p_Ihit, 0, rtriangulation%NMT, &
-             rmeshRegion%h_IedgeIdx, rmeshRegion%NMT, 0)
-        end if
+        call mshreg_aux_calcIdxArray1(p_Ihit, 0, rtriangulation%NMT, &
+            rmeshRegion%h_IedgeIdx, rmeshRegion%NMT, 0, IallowedHit)
 
         ! Deallocate midpoint array
         deallocate(p_Dcoords)
@@ -755,22 +730,11 @@ module meshregion
         end do
 
         ! And call the hit-test routine
-        if (present(rcollection)) then
-          call fmshregHitTest(rtriangulation%NABD, p_Dcoords, p_Ihit, &
-                              rcollection)
-        else
-          call fmshregHitTest(rtriangulation%NABD, p_Dcoords, p_Ihit)
-        end if
-
+        call fmshregHitTest(rtriangulation%NABD, p_Dcoords, p_Ihit, rcollection)
 
         ! Calculate the index array
-        if (present(IallowedHit)) then
-          call mshreg_aux_calcIdxArray2(p_Ihit, 0, rtriangulation%NABD, &
-             rmeshRegion%h_IfaceIdx, rmeshRegion%NAT, p_Iindex, IallowedHit)
-        else
-          call mshreg_aux_calcIdxArray2(p_Ihit, 0, rtriangulation%NABD, &
-             rmeshRegion%h_IfaceIdx, rmeshRegion%NAT, p_Iindex)
-        end if
+        call mshreg_aux_calcIdxArray2(p_Ihit, 0, rtriangulation%NABD, &
+            rmeshRegion%h_IfaceIdx, rmeshRegion%NAT, p_Iindex, IallowedHit)
 
         ! Deallocate midpoint array
         deallocate(p_Dcoords)
@@ -798,21 +762,11 @@ module meshregion
         end do
 
         ! And call the hit-test routine
-        if (present(rcollection)) then
-          call fmshregHitTest(rtriangulation%NAT, p_Dcoords, p_Ihit, &
-                              rcollection)
-        else
-          call fmshregHitTest(rtriangulation%NAT, p_Dcoords, p_Ihit)
-        end if
+        call fmshregHitTest(rtriangulation%NAT, p_Dcoords, p_Ihit, rcollection)
 
         ! Calculate the index array
-        if (present(IallowedHit)) then
-          call mshreg_aux_calcIdxArray1(p_Ihit, 0, rtriangulation%NAT, &
-             rmeshRegion%h_IfaceIdx, rmeshRegion%NAT, 0, IallowedHit)
-        else
-          call mshreg_aux_calcIdxArray1(p_Ihit, 0, rtriangulation%NAT, &
-             rmeshRegion%h_IfaceIdx, rmeshRegion%NAT, 0)
-        end if
+        call mshreg_aux_calcIdxArray1(p_Ihit, 0, rtriangulation%NAT, &
+            rmeshRegion%h_IfaceIdx, rmeshRegion%NAT, 0, IallowedHit)
 
         ! Deallocate midpoint array
         deallocate(p_Dcoords)
@@ -827,6 +781,190 @@ module meshregion
     ! That is it
 
   end subroutine mshreg_createFromHitTest
+
+!************************************************************************
+
+!<subroutine>
+
+  subroutine mshreg_createFromExpression(rmeshRegion, rtriangulation, &
+          cidxCalc, bonlyBndry, scondition, SadditionalVars, DadditionalVars,&
+          IallowedHit)
+
+!<description>
+  ! Creates a new mesh region by evaluating a condition by a parser
+  ! to decide whether a cell belongs to the mesh region or not.
+  !
+  ! The string scondition represents a parser condition which returns a value
+  ! >0 (integer based, =1, e.g.) if a point belongs to a mesh region
+  ! or =0, if not.
+  !
+  ! The routine provides the variables "X", "Y" and "Z" which represent
+  ! the X/Y/Z coordinate of the point to check. Via SadditionalVars (names) and
+  ! DadditionalVars (values), the user can pass additional variables to the 
+  ! condition. The variables have a limit of 10 characters. The number of
+  ! possible additional variables is limited to 125.
+  !
+  ! If IallowedHit is specified, the value returned by scondition also counts.
+  ! In this case, only those mesh entities are collected in the mesh
+  ! region where the value returned by scondition also appears in IallowedHit(.).
+  ! This allows to use one condition for the whole mesh
+  ! that returns identifiers for different parts of the mesh.
+  ! Using IallowedHit(.) then allows to filter for one or multiple parts.
+!</description>
+
+!<remarks>
+  ! fparser_init() must have been called prior to this routine!
+!</remarks>
+
+!<input>
+  ! The triangulation that is to be used.
+  type(t_triangulation), target, intent(in)      :: rtriangulation
+
+  ! A combination of MSHREG_IDX_XXXX constants defined above which
+  ! specifies which index arrays should be calculated from the nodal
+  ! property array. May also be MSHREG_IDX_NONE or MSHREG_IDX_ALL.
+  integer(I32), intent(in)                       :: cidxCalc
+
+  ! If .TRUE., then only the cells which belong to the triangulation`s
+  ! boundary are hit-tested, otherwise all cells are hit-tested.
+  logical, intent(in)                            :: bonlyBndry
+
+  ! Condition
+  character(len=*), intent(in) :: scondition
+  
+  ! OPTINAL: Additional variables passed to the condition.
+  character(len=*), dimension(:), intent(in), optional :: SadditionalVars
+  
+  ! OPTIONAL: Values of the variables. Must be present if SadditionalVars
+  ! is specified.
+  real(DP), dimension(:), intent(in), optional :: DadditionalVars
+
+  ! OPTIONAL: Hit-test filter.
+  ! If this is not specified, the routine generates a mesh region of
+  !   all mesh entities where the callback function fmshregHitTest
+  !   returns a value > 0 in Ihit(.).
+  ! If this is specified, the routine generates a mesh region of
+  !   all mesh entities where the callback function fmshregHitTest
+  !   returns a value which also appears in IallowedHit(*).
+  integer, dimension(:), optional, intent(in)    :: IallowedHit
+
+!</input>
+
+!<output>
+  ! The mesh region of the triangulation.
+  type(t_meshRegion), intent(out)                :: rmeshRegion
+!</output>
+
+!</subroutine>
+
+  ! Some local variables
+  character(len=10), dimension(:), allocatable :: Svars
+  type(t_collection) :: rcollection
+  integer :: i
+  type(t_fparser), target :: rparser
+  
+    ! Prepare a parser.
+    call fparser_create (rparser, 1)
+    
+    ! Collect the variables.
+    if (.not. present(SadditionalVars)) then
+      allocate (Svars(3))
+    else
+      allocate (Svars(3+ubound(SadditionalVars,1)))
+      do i=1,ubound(SadditionalVars,1)
+        Svars(3+i-1) = SadditionalVars(i)
+      end do
+    end if
+
+    ! X/Y/Z variables are the first
+    Svars(1) = "X"
+    Svars(2) = "Y"
+    Svars(3) = "Z"
+    
+    ! Parse the condition
+    call fparser_parseFunction (rparser, 1, scondition, Svars)
+    
+    ! Release variable names.
+    deallocate(Svars)
+    
+    ! Copy provided variables to the collection
+    rcollection%DquickAccess(:) = 0
+    if (present(DadditionalVars)) then
+      rcollection%DquickAccess(4:4+ubound(DadditionalVars,1)-1) = DadditionalVars(:)
+    end if
+    
+    ! Provide the parser in the collection.
+    rcollection%p_rfparserQuickAccess1 => rparser
+    
+    ! Call the previous hit-test routine, provide a specialised expression
+    ! evaluation function.
+    call mshreg_createFromHitTest(rmeshRegion, rtriangulation, &
+        cidxCalc, bonlyBndry, mshreg_fEvaluateExpression, IallowedHit, rcollection)
+        
+    ! Release the parser
+    call fparser_release(rparser)
+
+  end subroutine mshreg_createFromExpression
+  
+!************************************************************************
+
+!<subroutine>
+
+  subroutine mshreg_fEvaluateExpression(inumCells,Dcoords,Ihit,rcollection)
+
+  use collection
+  use fsystem
+
+!<description>
+  ! This subroutine is called for hit-testing cells to decide whether a
+  ! cell belongs to a specific mesh region or not.
+!</description>
+
+!<input>
+  ! Number of cells (i.e. vertices,edges,faces,etc.) for which the
+  ! hit-test is to be performed.
+  integer, intent(in)                          :: inumCells
+
+  ! Coordinates of the points for which the hit-test is to be performed.
+  ! The dimension of the array is at least (1:idim,1:inumCells), where:
+  ! -> idim is the dimension of the mesh, i.e. 1 for 1D, 2 for 2D, etc.
+  ! -> inumCells is the parameter passed to this routine.
+  real(DP), dimension(:,:), intent(in)         :: Dcoords
+!</input>
+
+!<output>
+  ! An array that recieves the result of the hit-test.
+  ! The dimension of the array is at least (1:inumCells).
+  integer, dimension(:), intent(out)           :: Ihit
+!</output>
+
+!</inputoutput>
+  ! OPTIONAL: A collection structure to provide additional information
+  ! to the hit-test routine.
+  type(t_collection), intent(inout), optional  :: rcollection
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    real(DP) :: dresult
+    integer :: i,n
+
+    n = min(NDIM3D,ubound(Dcoords,1))
+
+    do i=1,inumCells
+      ! Copy the coordinates to the beginning of DquickAccess
+      rcollection%DquickAccess(1:n) = Dcoords(1:n,i)
+    
+      ! For all points, evaluate the parser.
+      call fparser_evalFunction (&
+          rcollection%p_rfparserQuickAccess1, 1, rcollection%DquickAccess, dresult)
+          
+      ! Convert to integer, return as hit test ID.
+      Ihit(i) = nint(dresult)
+    end do
+
+  end subroutine
 
 !************************************************************************
 
