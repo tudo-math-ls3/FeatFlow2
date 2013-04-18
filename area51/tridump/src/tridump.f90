@@ -15,7 +15,7 @@ program tridump
   type(t_triangulation) :: rtria
   character(len=256) :: sarg, smesh, sname
   integer :: i, iarg, nref, ndim
-  real(DP) :: ddist, dline
+  real(DP) :: ddist, dline, dalpha
   real(DP), dimension(2) :: Dbox
   real(DP), dimension(4) :: Drect
   integer, dimension(2) :: Isize
@@ -32,7 +32,7 @@ program tridump
   call storage_init(999, 100)
 
   ! print help
-  if(nargs() .lt. 2) then
+  if(sys_ncommandLineArgs() .lt. 1) then
     call output_lbrk()
     call output_line("USAGE: tridump <options>")
     call output_lbrk()
@@ -43,10 +43,11 @@ program tridump
     call output_line("-dist <x>                   Disturb mesh by <x>")
     call output_line("-vtk                        Write VTK file")
     call output_line("-gmv                        Write GMV file")
-    call output_line("-eps <options>              Write EPS file")
+    call output_line("-eps                        Write EPS file")
     call output_line("-box <x> <y>                Set bounding box for EPS export")
     call output_line("-line <w>                   Set line width for EPS export")
-    call output_line("-gen <options>              Generate a mesh")
+    call output_line("-gen-rect                   Generate a rectangular mesh")
+    !call output_line("-gen-wave <alpha>           Geneate an wave mesh")
     call output_line("-rect <x0> <x1> <y0> <y1>   Set domain borders for mesh generation")
     call output_line("-size <nx> <ny>             Set sizes for mesh generation")
     call output_lbrk()
@@ -70,6 +71,7 @@ program tridump
   bvtk = .false.
   bgmv = .false.
   beps = .false.
+  dalpha = 0.0_DP
   ddist = 0.0_DP
   Dbox = (/ 100.0_DP, 100.0_DP /)
   Drect = (/ 0.0_DP, 1.0_DP, 0.0_DP, 1.0_DP /)
@@ -81,7 +83,7 @@ program tridump
   iarg = 1
   do while(iarg .lt. nargs())
     ! fetch argument string
-    call getarg(iarg, sarg)
+    call sys_getcommandLineArg(iarg, sarg)
     iarg = iarg + 1
 
     ! check argument
@@ -92,43 +94,48 @@ program tridump
     else if(sarg .eq. '-eps') then
       beps = .true.
     else if(sarg .eq. '-ref') then
-      call getarg(iarg, sarg)
+      call sys_getcommandLineArg(iarg, sarg)
       iarg = iarg + 1
       read (sarg, *) nref
     else if(sarg .eq. '-dist') then
-      call getarg(iarg, sarg)
+      call sys_getcommandLineArg(iarg, sarg)
       iarg = iarg + 1
       read (sarg, *) ddist
     else if(sarg .eq. '-box') then
-      call getarg(iarg, sarg)
+      call sys_getcommandLineArg(iarg, sarg)
       iarg = iarg + 1
       read (sarg, *) Dbox(1)
-      call getarg(iarg, sarg)
+      call sys_getcommandLineArg(iarg, sarg)
       iarg = iarg + 1
       read (sarg, *) Dbox(2)
     else if(sarg .eq. '-line') then
-      call getarg(iarg, sarg)
+      call sys_getcommandLineArg(iarg, sarg)
       iarg = iarg + 1
       read (sarg, *) dline
     else if(sarg .eq. '-read2d') then
-      call getarg(iarg, smesh)
+      call sys_getcommandLineArg(iarg, smesh)
       iarg = iarg + 1
       ndim = 2
     else if(sarg .eq. '-read3d') then
-      call getarg(iarg, smesh)
+      call sys_getcommandLineArg(iarg, smesh)
       iarg = iarg + 1
       ndim = 3
-    else if(sarg .eq. '-gen') then
+    else if(sarg .eq. '-gen-rect') then
       bgen = .true.
+    !else if(sarg .eq. '-gen-wave') then
+    !  bgen = .true.
+    !  call sys_getcommandLineArg(iarg, sarg)
+    !  iarg = iarg + 1
+    !  read (sarg, *) dalpha
     else if(sarg .eq. '-size') then
       do i=1,2
-        call getarg(iarg, sarg)
+        call sys_getcommandLineArg(iarg, sarg)
         iarg = iarg + 1
         read (sarg, *) Isize(i)
       end do
     else if(sarg .eq. '-rect') then
       do i = 1, 4
-        call getarg(iarg, sarg)
+        call sys_getcommandLineArg(iarg, sarg)
         iarg = iarg + 1
         read (sarg, *) Drect(i)
       end do
@@ -155,9 +162,15 @@ program tridump
       stop
     end if
   else
-    smesh = 'gen'
-    ! mesh generation
-    call meshgen_rectangular2DQuadMesh (rtria,Drect(1),Drect(2),Drect(3),Drect(4),Isize(1),Isize(2))
+    !if(dalpha .ne. 0.0_DP) then
+    !  ! mesh generation
+    !  smesh = 'gen-wave'
+    !  call meshgen_wave2DQuadMesh (rtria,Drect(1),Drect(2),Drect(3),Drect(4),Isize(1),Isize(2),dalpha)
+    !else
+      ! mesh generation
+      smesh = 'gen-rect'
+      call meshgen_rectangular2DQuadMesh (rtria,Drect(1),Drect(2),Drect(3),Drect(4),Isize(1),Isize(2))
+    !end if
   end if
 
   ! refine mesh
