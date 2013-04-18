@@ -66,8 +66,13 @@ contains
     ! Create the matrix structure
     call bilf_createMatrixStructure (rdiscretisation,LSYSSC_MATRIX9,rmatrix)
     
-    ! Allocate memory for the content, fill the matrix with ones.
+    ! Allocate memory for the content.
     call lsyssc_allocEmptyMatrix (rmatrix)
+    
+    ! =================================
+    ! Fill the matrix with 1.0.
+    ! =================================
+    
     call lsyssc_clearMatrix (rmatrix,1.0_DP)
 
     ! =================================

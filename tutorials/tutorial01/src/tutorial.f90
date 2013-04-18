@@ -50,6 +50,12 @@ program tutorial
   use tutorial007a
   use tutorial007b
   use tutorial007c
+  
+  use tutorial008a
+  use tutorial008b
+  use tutorial008c
+  use tutorial008d
+  use tutorial008e
 
   implicit none
   
@@ -106,6 +112,12 @@ program tutorial
   call start_tutorial007a
   call start_tutorial007b
   call start_tutorial007c
+  
+  call start_tutorial008a
+  call start_tutorial008b
+  call start_tutorial008c
+  call start_tutorial008d
+  call start_tutorial008e
   
   ! -----------------------------------------------------------------
   ! Clean up
