@@ -53,8 +53,8 @@ contains
     ! =================================
 
     ! The mesh must always be in "standard" format. 
-    ! First create a 16x16-mesh on [0,1]x[0,1], then convert to standard.
-    call meshgen_rectangular2DQuadMesh (rtriangulation, 0.0_DP, 1.0_DP, 0.0_DP, 1.0_DP, 16, 16)
+    ! First create a 64x64-mesh on [0,1]x[0,1], then convert to standard.
+    call meshgen_rectangular2DQuadMesh (rtriangulation, 0.0_DP, 1.0_DP, 0.0_DP, 1.0_DP, 64, 64)
     call tria_initStandardMeshFromRaw (rtriangulation)
 
     ! =================================
