@@ -1,0 +1,117 @@
+
+# Path of the log-file (optional)
+SLOGFILE = ./log/output.txt
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# General Parameters
+
+# The problem that is to be solved. (mandatory)
+# 2001 -> 2D Poisseuille-Flow:
+#         u1(x,y) = y*1-y
+#         u2(x,y) = 0
+#         p (x,y) = 2*nu*alpha*(1 - x)
+#
+# 2002 -> 2D Standing Vortex:
+#         Velocity field described by VORTEX_VELO
+#         Pressure function described by VORTEX_PRES
+DRIVER = 2001
+
+# Velocity field for standing vortex driver (mandatory for DRIVER=2100)
+# 0 -> No-Flow, No-Slip BCs
+#      u1(x,y) = u2(x,y) = 0
+#
+# 1 -> Sin-Cos field, Slip BCs
+#      u1(x,y) =  sin(pi*x) * cos(pi*y)
+#      u2(x,y) = -sin(pi*y) * cos(pi*x)
+#
+# 2 -> Sin-Cos field, No-Slip BCs
+#      u1(x,y) =  (1 - cos(2*pi*x)) * sin(2*pi*y)
+#      u2(x,y) = -(1 - cos(2*pi*y)) * sin(2*pi*x)
+#
+# 3 -> PSEPA field, No-Slip BCs
+#      u1(x,y) =  x^2 * (1-x)^2 * (2*y*(1-y)^2 - 2*y^2*(1-y))
+#      u2(x,y) = -y^2 * (1-y)^2 * (2*x*(1-x)^2 - 2*x^2*(1-x))
+VORTEX_VELO = 1
+
+# Pressure function for standing vortex driver (mandatory for DRIVER=2100)
+# 0 -> p(x,y) = 0
+# 1 -> p(x,y) = alpha * cos(pi*x) * cos(pi*y)
+# 2 -> p(x,y) = alpha * (4/pi - sin(pi*x) - sin(pi*y))
+# 3 -> p(x,y) = alpha * (1/2 - x^3 - y^3)
+VORTEX_PRES = 1
+
+# Coarse Mesh (mandatory)
+# 0 -> QUAD
+# 1 -> QUADX4R
+# 2 -> QUADIRR2
+MESH = 0
+
+# Mesh distortion type (default: 0)
+# 0 -> no distortion
+# 1 -> distort coarse level only
+# 2 -> distort all levels
+DIST_TYPE = 0
+
+# Mesh distortion factor (default: 0.1)
+DIST_FACTOR = 0.1
+
+# Minimum and Maximum levels (mandatory)
+LEVEL_MIN = 2
+LEVEL_MAX = 5
+
+# Coarse Mesh Level for multigrid (optional, default: 0)
+# - if > 0, then min(LEVEL_MIN,LEVEL_COARSE) is used
+# - if <= 0, then max(1,LEVEL_MIN+LEVEL_COARSE) is used
+LEVEL_COARSE = 0
+
+# Velocity Element identifier (mandatory)
+ELEMENT_VELOCITY = EL_Q2_2D
+
+# Pressure Element identifier (mandatory)
+ELEMENT_PRESSURE = EL_DCQP1_2D
+
+# Cubature Rule identifier (mandatory)
+CUBATURE = G5_2D
+
+# VTK file prefix (optional)
+# - if given, the output is written to './ucd/$(VTKFILE)_lvl$(LEVEL).vtk'
+# - if not given, no VTK file is written
+VTKFILE = sol
+
+# Viscosity parameter (optional, default: 1)
+NU = 1
+
+# Problem parameters (optional, default: 1)
+DALPHA = 1
+DBETA = 1
+DGAMMA = 1
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Solver Parameters
+
+# The solver to be used
+# 0 -> UMFPACK4 solver (currently not supported)
+# 1 -> Multigrid solver
+SOLVER = 1
+
+# The smoother to be used for multigrid (default: 0)
+# 0 -> General Vanka smoother
+SMOOTHER = 0
+
+# Number of pre-/post-smoothing steps (default: 4)
+SMOOTH_STEPS = 4
+
+# Smoother damping parameter (default: 1.0)
+SMOOTH_DAMP = 1.0
+
+# Output Level of solver (default: 0)
+IOUTPUT = 0
+
+# Maximum number of iterations for iterative solvers (default: 1000)
+MAX_ITER = 1000
+
+# Relative tolerance for iterative solvers (default: 1E-8)
+EPSREL = 1E-8
+
+# Absolute tolerance for iterative solvers (default: 1E-11)
+EPSABS = 1E-11
