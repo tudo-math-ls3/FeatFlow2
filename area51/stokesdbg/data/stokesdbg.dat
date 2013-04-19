@@ -38,6 +38,7 @@ VORTEX_VELO = 1
 # 1 -> p(x,y) = alpha * cos(pi*x) * cos(pi*y)
 # 2 -> p(x,y) = alpha * (4/pi - sin(pi*x) - sin(pi*y))
 # 3 -> p(x,y) = alpha * (1/2 - x^3 - y^3)
+# 4 -> p(x,y) -> static-bubble(alpha,beta)
 VORTEX_PRES = 1
 
 # Coarse Mesh (mandatory)
@@ -83,8 +84,8 @@ NU = 1
 
 # Problem parameters (optional, default: 1)
 DALPHA = 1
-DBETA = 1
-DGAMMA = 1
+DBETA = 0.05
+DGAMMA = 0.25
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Solver Parameters

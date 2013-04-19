@@ -70,11 +70,13 @@ contains
   real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
 
   integer :: idriver, icomp, ivelo, ipres
-  real(DP) :: dnu,dalpha
+  real(DP) :: dnu,dalpha,dbeta,dgamma
 
     ! fetch coefficients from collection
     dnu = rcollection%DquickAccess(1)
     dalpha = rcollection%DquickAccess(2)
+    dbeta = rcollection%DquickAccess(3)
+    dgamma = rcollection%DquickAccess(4)
     idriver = rcollection%IquickAccess(1)
     icomp = rcollection%IquickAccess(5)
     ivelo = rcollection%IquickAccess(6)
@@ -158,8 +160,41 @@ contains
           Dcoefficients(1,:,:) = Dcoefficients(1,:,:) &
             - dalpha*3.0_DP*Dpoints(2,:,:)**2
         end select
+      case (4)
+        select case(icomp)
+        case (1)
+          Dcoefficients(1,:,:) = Dcoefficients(1,:,:) &
+            + funcStaticBubble(Dpoints(1,:,:), Dpoints(2,:,:), dalpha, dbeta, dgamma)
+        case (2)
+          Dcoefficients(1,:,:) = Dcoefficients(1,:,:) &
+            + funcStaticBubble(Dpoints(2,:,:), Dpoints(1,:,:), dalpha, dbeta, dgamma)
+        end select
       end select
     end select
+    
+  contains
+
+    elemental real(DP) function funcStaticBubble(dx, dy, dsigma, dh, dr0)
+    real(DP), intent(in) :: dx, dy, dsigma, dh, dr0
+    
+    real(DP), parameter :: dx0 = 0.5_DP
+    real(DP), parameter :: dy0 = 0.5_DP
+    real(DP) :: dr, dn, dkappa, ddist, dw, ddelta
+  
+      dr = sqrt((dx-dx0)**2 + (dy-dy0)**2)
+      dkappa = -1.0_DP / dr
+      dn = (dx-dx0) / dr
+      ddist = dr - dr0
+      dw = ddist / dh
+      if(abs(dw) < 1.0_DP) then
+        ddelta = 35.0_DP/32.0_DP * (1.0_DP - 3.0_DP*dw**2 + 3_DP*dw**4 - dw**6) / dh
+        funcStaticBubble = ddelta*dkappa*dn*dsigma
+      else
+        funcStaticBubble = 0.0_DP
+      end if
+
+    end function
+
 
   end subroutine
 
