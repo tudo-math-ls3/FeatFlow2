@@ -56,6 +56,20 @@ contains
   end subroutine
 
   ! ***********************************************************************************************
+  
+  subroutine stdrv_postProcSol(rproblem, rsystem, rparam)
+  type(t_problem), intent(inout) :: rproblem
+  type(t_system), intent(inout) :: rsystem
+  type(t_parlist), intent(inout) :: rparam
+  
+    select case(rproblem%idriver)
+    case (2002)
+      ! filter pressure mean
+      call stdbg_filterPressureMean(rproblem, rsystem)
+    end select
+  end subroutine
+
+  ! ***********************************************************************************************
 
   subroutine stdrv_funcRhs (rdiscretisation,rform,nelements,npointsPerElement,Dpoints, &
                          IdofsTest,rdomainIntSubset,Dcoefficients,rcollection)

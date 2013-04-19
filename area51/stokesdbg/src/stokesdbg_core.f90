@@ -25,6 +25,7 @@ use spdiscprojection
 use filtersupport
 use scalarpde
 use linearformevaluation
+use linearalgebra
 use discretebc
 use ucd
 use collection, only: t_collection
@@ -32,6 +33,7 @@ use pprocerror
 use bilinearformevaluation
 use stdoperators
 use paramlist
+use quicksolver
 
 use stokesdbg_aux
   
@@ -763,6 +765,62 @@ contains
   
   end subroutine
 
+  ! ***********************************************************************************************
+
+  subroutine stdbg_filterPressureMean(rproblem, rsystem)
+  type(t_problem), target, intent(inout) :: rproblem
+  type(t_system), intent(inout) :: rsystem
+  
+  type(t_level), pointer :: p_rlvl
+  type(t_matrixScalar) :: rmatMass
+  type(t_vectorScalar) :: rvecPrim, rvecDual
+  real(DP), dimension(:), pointer :: p_Dwork
+  real(DP) :: dtol, dint, dvol
+  integer :: cinfo, ncomp, niter
+  
+    ! fetch the level
+    p_rlvl => rproblem%Rlevels(rsystem%ilevel)
+    
+    ! assemble a matrix structure
+    ncomp = p_rlvl%rdiscr%ncomponents
+    call bilf_createMatrixStructure (p_rlvl%rdiscr%RspatialDiscr(ncomp), &
+        LSYSSC_MATRIX9, rmatMass)
+    
+    ! assemble a mass matrix
+    call stdop_assembleSimpleMatrix (rmatMass,DER_FUNC,DER_FUNC,1.0_DP, .true.,p_rlvl%rcubInfo)
+    
+    ! assemble dual vector
+    call lsyssc_createVecIndMat(rmatMass, rvecDual, .true.)
+    call linf_buildSimpleVector(rvecDual, p_rlvl%rcubInfo, stdbg_aux_funcRhsOne, .true., DER_FUNC)
+    call lsyssc_duplicateVector(rvecDual, rvecPrim, LSYSSC_DUP_COPY, LSYSSC_DUP_COPY)
+    
+    ! compute initial euclid norm
+    dtol = lsyssc_vectorNorm(rvecPrim, LINALG_NORMEUCLID) * 1E-17_DP
+    niter = 1000
+    
+    ! apply CG-SSOR quick solver
+    allocate(p_Dwork(3*rvecPrim%NEQ))
+    call qsol_solveCG_SSOR(rmatMass, rvecPrim, p_Dwork, cinfo, niter, dtol, 1.2_DP)
+    deallocate(p_Dwork)
+    
+    ! okay, primal and dual vector computed, now project the pressure
+    
+    ! compute pressure integral and domain volume
+    dint = lsyssc_scalarProduct(rvecDual, rsystem%rvecSol%RvectorBlock(ncomp))
+    dvol = lsyssc_scalarProduct(rvecDual, rvecPrim)
+    
+    ! project pressure
+    call lsyssc_vectorLinearComb(rvecPrim, rsystem%rvecSol%RvectorBlock(ncomp), -dint/dvol, 1.0_DP)
+    
+    !dint = lsyssc_scalarProduct(rvecDual, rsystem%rvecSol%RvectorBlock(ncomp))
+
+    ! release all temporary data
+    call lsyssc_releaseVector(rvecPrim)
+    call lsyssc_releaseVector(rvecDual)
+    call lsyssc_releaseMatrix(rmatMass)
+  
+  end subroutine
+  
   ! ***********************************************************************************************
   
   subroutine stdbg_writeVTK(rproblem, rsystem, rparam)

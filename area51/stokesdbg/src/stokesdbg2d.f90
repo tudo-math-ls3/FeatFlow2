@@ -122,6 +122,9 @@ contains
       ! solve system
       call stdbg_solve(rproblem, rsystem)
       
+      ! post-process solution
+      call stdrv_postProcSol(rproblem, rsystem, rparam)
+      
       ! compute errors
       ! Set up the error structure for velocity
       rerrorU%p_RvecCoeff => rsystem%rvecSol%RvectorBlock(1:2)

@@ -11,6 +11,7 @@ use domainintegration
 use element
 use spatialdiscretisation
 use linearsystemscalar
+use scalarpde
 use collection, only: t_collection
 use dofmapping
 use transformation
@@ -67,7 +68,25 @@ contains
     end if
 
   end subroutine
+
+  ! ***********************************************************************************************
+
+  subroutine stdbg_aux_funcRhsOne (rdiscretisation,rform,nelements,npointsPerElement,Dpoints, &
+                         IdofsTest,rdomainIntSubset,Dcoefficients,rcollection)
+  type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
+  type(t_linearForm), intent(in)                              :: rform
+  integer, intent(in)                                         :: nelements
+  integer, intent(in)                                         :: npointsPerElement
+  real(DP), dimension(:,:,:), intent(in)  :: Dpoints
+  integer, dimension(:,:), intent(in) :: IdofsTest
+  type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
+  type(t_collection), intent(inout), optional      :: rcollection
+  real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
   
+    Dcoefficients = 1.0_DP
+  
+  end subroutine
+
   !****************************************************************************
 
   subroutine stdbg_aux_calcDiv2D (derror, rvector, rcubInfo)
