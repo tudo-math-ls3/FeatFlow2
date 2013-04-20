@@ -1,5 +1,5 @@
 !##############################################################################
-!# Tutorial 008d: Create a 2x2 block system with Mass and Laplace on the diag.
+!# Tutorial 008d: Create a 2x2 block system with Mass/Laplace, nonlinear coeff.
 !##############################################################################
 
 module tutorial008d
@@ -14,15 +14,15 @@ module tutorial008d
   
   use derivatives
   use element
+  use cubature
   use spatialdiscretisation
   use linearsystemscalar
   use linearsystemblock
-  use bilinearformevaluation
-  use stdoperators
-  
-  use blockmatassemblybase
-  use blockmatassembly
-  use blockmatassemblystdop
+
+  use scalarpde
+  use derivatives
+  use bilinearformevaluation  
+  use domainintegration
   use collection
   
   use matrixio
@@ -36,6 +36,139 @@ contains
 
   ! ***************************************************************************
 
+!<subroutine>
+
+  subroutine fcoeff_Matrix (rdiscretisationTrial,&
+                rdiscretisationTest, rform, nelements, npointsPerElement,&
+                Dpoints, IdofsTrial, IdofsTest, rdomainIntSubset,&
+                Dcoefficients, rcollection)
+
+  use basicgeometry
+  use collection
+  use domainintegration
+  use scalarpde
+  use spatialdiscretisation
+  use triangulation
+  use fsystem
+
+!<description>
+  ! This subroutine is called during the matrix assembly. It has to compute
+  ! the coefficients in front of the terms of the bilinear form.
+  !
+  ! The routine accepts a set of elements and a set of points on these
+  ! elements (cubature points) in real coordinates.
+  ! According to the terms in the bilinear form, the routine has to compute
+  ! simultaneously for all these points and all the terms in the bilinear form
+  ! the corresponding coefficients in front of the terms.
+!</description>
+
+!<input>
+  ! The discretisation structure that defines the basic shape of the
+  ! triangulation with references to the underlying triangulation,
+  ! analytic boundary boundary description etc.; trial space.
+  type(t_spatialDiscretisation), intent(in) :: rdiscretisationTrial
+
+  ! The discretisation structure that defines the basic shape of the
+  ! triangulation with references to the underlying triangulation,
+  ! analytic boundary boundary description etc.; test space.
+  type(t_spatialDiscretisation), intent(in) :: rdiscretisationTest
+
+  ! The bilinear form which is currently being evaluated:
+  type(t_bilinearForm), intent(in) :: rform
+
+  ! Number of elements, where the coefficients must be computed.
+  integer, intent(in) :: nelements
+
+  ! Number of points per element, where the coefficients must be computed
+  integer, intent(in) :: npointsPerElement
+
+  ! This is an array of all points on all the elements where coefficients
+  ! are needed.
+  ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+  ! DIMENSION(dimension,npointsPerElement,nelements)
+  real(DP), dimension(:,:,:), intent(in) :: Dpoints
+
+  ! An array accepting the DOF`s on all elements trial in the trial space.
+  ! DIMENSION(\#local DOF`s in trial space,Number of elements)
+  integer, dimension(:,:), intent(in) :: IdofsTrial
+
+  ! An array accepting the DOF`s on all elements trial in the trial space.
+  ! DIMENSION(\#local DOF`s in test space,Number of elements)
+  integer, dimension(:,:), intent(in) :: IdofsTest
+
+  ! This is a t_domainIntSubset structure specifying more detailed information
+  ! about the element set that is currently being integrated.
+  ! It is usually used in more complex situations (e.g. nonlinear matrices).
+  type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+!</input>
+
+!<inputoutput>
+  ! Optional: A collection structure to provide additional
+  ! information to the coefficient routine.
+  type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+  ! A list of all coefficients in front of all terms in the bilinear form -
+  ! for all given points on all given elements.
+  !   DIMENSION(itermCount,npointsPerElement,nelements)
+  ! with itermCount the number of terms in the bilinear form.
+  real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer :: imatrixType
+    real(DP) :: dx,dy
+    integer :: ivt,iel
+    
+    ! The collection tells us what to assemble.
+    imatrixType = rcollection%IquickAccess(1)
+
+    select case (imatrixType)
+    
+    ! Mass matrix
+    case (1)
+    
+      ! Loop over all points and elements. Return the function in each point
+      do iel=1,npointsPerElement
+        do ivt=1,npointsPerElement
+        
+          ! Point coordinates
+          dx = Dpoints(1,ivt,iel)
+          dy = Dpoints(2,ivt,iel)
+          
+          ! Initialise the coefficients
+          Dcoefficients(1,ivt,iel) = 1.0_DP + 16.0_DP * dx * (1.0_DP-dx) * dy * (1.0_DP-dy)
+        
+        end do
+      end do
+
+    ! Laplace matrix
+    case (2)
+    
+      ! Loop over all points and elements. Return the function in each point
+      do iel=1,npointsPerElement
+        do ivt=1,npointsPerElement
+        
+          ! Point coordinates
+          dx = Dpoints(1,ivt,iel)
+          dy = Dpoints(2,ivt,iel)
+        
+          ! Initialise the coefficients. Both the same.
+          Dcoefficients(1,ivt,iel) = 1.0_DP + SIN( SYS_PI * dx ) * SIN( SYS_PI * dy )
+          Dcoefficients(2,ivt,iel) = Dcoefficients(1,ivt,iel)
+
+        end do
+      end do
+      
+    end select
+
+  end subroutine
+
+  ! ***************************************************************************
+
   subroutine start_tutorial008d
 
     ! Declare some variables.
@@ -45,7 +178,9 @@ contains
     
     type(t_matrixScalar) :: rtemplateMatrix
     type(t_matrixBlock) :: rmatrix
-    
+
+    type(t_scalarCubatureInfo), target :: rcubatureInfo
+    type(t_bilinearForm) :: rform
     type(t_collection) :: rcollection
 
     ! Print a message
@@ -98,27 +233,70 @@ contains
         LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
 
     ! =================================
-    ! Create Mass and Laplace.
-    ! Use default block assembly routines.
-    ! =================================
-    
     ! Clear the matrix
+    ! =================================
+
     call lsysbl_clearMatrix (rmatrix)
-    
-    ! Put the mass matrix to (1,1).
-    rcollection%DquickAccess(1) = 1.0_DP    ! Multiplier
-    rcollection%IquickAccess(1) = 1         ! x-position
-    rcollection%IquickAccess(2) = 1         ! y-position
-    call bma_buildMatrix (rmatrix,BMA_CALC_STANDARD,bma_fcalc_mass,rcollection)
-    
-    ! Put the Laplace matrix to (2,2)
-    rcollection%DquickAccess(1) = 1.0_DP    ! Multiplier
-    rcollection%IquickAccess(1) = 2         ! x-position
-    rcollection%IquickAccess(2) = 2         ! y-position
-    call bma_buildMatrix (rmatrix,BMA_CALC_STANDARD,bma_fcalc_laplace,rcollection)
 
     ! =================================
-    ! Output of the matrix structure
+    ! Use a 3-point Gauss Formula for the assembly
+    ! =================================
+    
+    call spdiscr_createDefCubStructure (rspatialDiscr,rcubatureInfo,CUB_GEN_AUTO_G3)
+
+    ! =================================
+    ! Block (1,1): -f Mass(u)
+    ! =================================
+
+    ! Set up a bilinear for for Mass. There is 1 term...    
+    rform%itermCount = 1
+    
+    ! We have nonconstant coefficients
+    rform%ballCoeffConstant = .false.
+
+    ! Term 1/2: Mass  =>  (f phi psi )
+    rform%Dcoefficients(1)  = 1.0_DP
+    rform%BconstantCoeff(1) = .false.
+    rform%Idescriptors(1,1) = DER_FUNC2D
+    rform%Idescriptors(2,1) = DER_FUNC2D
+    
+    ! Via the collection tell the callback routine to use Mass.
+    rcollection%IquickAccess(1) = 1
+
+    ! Build the matrix block (1,1)
+    call bilf_buildMatrixScalar (rform,.false.,rmatrix%RmatrixBlock(1,1),rcubatureInfo,&
+        fcoeff_Matrix, rcollection)
+
+    ! =================================
+    ! Block (2,2): -g Laplace(u)
+    ! =================================
+
+    ! Set up a bilinear for for Laplace...    
+    rform%itermCount = 2
+    
+    ! We have constant coefficients:
+    rform%ballCoeffConstant = .false.
+
+    ! Term 1/2: -Laplace  =>  (g phi_x psi_x  +  g phi_y psi_y)
+    rform%Dcoefficients(1)  = 1.0_DP
+    rform%BconstantCoeff(1) = .false.
+    rform%Idescriptors(1,1) = DER_DERIV2D_X
+    rform%Idescriptors(2,1) = DER_DERIV2D_X
+    
+    rform%Dcoefficients(2)  = 1.0_DP
+    rform%BconstantCoeff(2) = .false.
+    rform%Idescriptors(1,2) = DER_DERIV2D_Y
+    rform%Idescriptors(2,2) = DER_DERIV2D_Y
+    
+    ! Via the collection tell the callback routine to use Laplace.
+    rcollection%IquickAccess(1) = 2
+    
+    ! Build the matrix block (2,2)
+    call bilf_buildMatrixScalar (rform,.false.,rmatrix%RmatrixBlock(2,2),rcubatureInfo,&
+        fcoeff_Matrix, rcollection)
+
+    ! =================================
+    ! Output of the matrix
     ! =================================
     call output_line ("Writing matrix to text files...")
     
@@ -138,6 +316,9 @@ contains
     ! Cleanup
     ! =================================
     
+    ! Release the cubature formula
+    call spdiscr_releaseCubStructure (rcubatureInfo)
+
     ! Release the matrix
     call lsysbl_releaseMatrix (rmatrix)
     

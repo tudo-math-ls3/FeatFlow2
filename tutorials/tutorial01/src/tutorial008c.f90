@@ -149,7 +149,7 @@ contains
     ! =================================
 
     ! Set up a bilinear for for Laplace + convection. There are 4 terms...    
-    rform%itermCount = 4
+    rform%itermCount = 3
     
     ! We have constant coefficients:
     rform%ballCoeffConstant = .true.

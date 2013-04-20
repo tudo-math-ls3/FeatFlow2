@@ -1,5 +1,5 @@
 !##############################################################################
-!# Tutorial 009a: Create a 2x2 block system / vector
+!# Tutorial 009a: Create a 2x2 block system with Mass and Laplace on the diag.
 !##############################################################################
 
 module tutorial009a
@@ -12,13 +12,20 @@ module tutorial009a
   use triangulation
   use meshgeneration
   
+  use derivatives
   use element
   use spatialdiscretisation
   use linearsystemscalar
   use linearsystemblock
   use bilinearformevaluation
+  use stdoperators
   
-  use vectorio
+  use blockmatassemblybase
+  use blockmatassembly
+  use blockmatassemblystdop
+  use collection
+  
+  use matrixio
 
   implicit none
   private
@@ -36,9 +43,10 @@ contains
     type(t_spatialDiscretisation) :: rspatialDiscr
     type(t_blockDiscretisation) :: rblockDiscr
     
-    type(t_vectorBlock) :: rx
-    real(DP), dimension(:), pointer :: p_Ddata
-    integer :: i
+    type(t_matrixScalar) :: rtemplateMatrix
+    type(t_matrixBlock) :: rmatrix
+    
+    type(t_collection) :: rcollection
 
     ! Print a message
     call output_lbrk()
@@ -71,55 +79,70 @@ contains
     call spdiscr_duplicateDiscrSc (rspatialDiscr,rblockDiscr%RspatialDiscr(2))
     
     ! =================================
-    ! Create a vector with 2 blocks
+    ! Create a 2x2 block matrix with
+    ! entries in (1,1) and (2,2)
     ! =================================
     
-    ! Use the block discretisation to create a block vector.
-    call lsysbl_createVector (rblockDiscr,rx)
+    ! Create a template matrix for the FEM space. CSR structure.
+    call bilf_createMatrixStructure (rspatialDiscr,LSYSSC_MATRIX9,rtemplateMatrix)
+
+    ! Use the block discretisation to create a basic system matrix.
+    call lsysbl_createMatBlockByDiscr (rblockDiscr,rmatrix)
+
+    ! Create (1,1) and (2,2) using the template matrix.
+    ! Structure is "shared" (no new memory is allocated), content is allocated.
+    call lsyssc_duplicateMatrix (rtemplateMatrix,rmatrix%RmatrixBlock(1,1),&
+        LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+
+    call lsyssc_duplicateMatrix (rtemplateMatrix,rmatrix%RmatrixBlock(2,2),&
+        LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
 
     ! =================================
-    ! Clear the vector
+    ! Create Mass and Laplace.
+    ! Use default block assembly routines.
     ! =================================
     
-    call lsysbl_clearVector (rx)
+    ! Clear the matrix
+    call lsysbl_clearMatrix (rmatrix)
+    
+    ! Put the mass matrix to (1,1).
+    rcollection%DquickAccess(1) = 1.0_DP    ! Multiplier
+    rcollection%IquickAccess(1) = 1         ! x-position
+    rcollection%IquickAccess(2) = 1         ! y-position
+    call bma_buildMatrix (rmatrix,BMA_CALC_STANDARD,bma_fcalc_mass,rcollection)
+    
+    ! Put the Laplace matrix to (2,2)
+    rcollection%DquickAccess(1) = 1.0_DP    ! Multiplier
+    rcollection%IquickAccess(1) = 2         ! x-position
+    rcollection%IquickAccess(2) = 2         ! y-position
+    call bma_buildMatrix (rmatrix,BMA_CALC_STANDARD,bma_fcalc_laplace,rcollection)
 
     ! =================================
-    ! Fill the vector with data.
-    ! 1st block: 1, 2, 3,...
-    ! 2nd block: NEQ, NEQ-1, NEQ-2,...
+    ! Output of the matrix structure
     ! =================================
+    call output_line ("Writing matrix to text files...")
     
-    ! Get a pointer to the data of the first block
-    call lsyssc_getbase_double (rx%RvectorBlock(1),p_Ddata)
-    
-    ! Initialise the data: 1,2,3,...
-    do i=1,rx%RvectorBlock(1)%NEQ
-      p_Ddata(i) = real(i,DP)
-    end do
+    ! Write the matrix to a text file, omit nonexisting entries in the matrix.
+    call matio_writeBlockMatrixHR (rmatrix, "matrix", .true., 0, &
+        "post/tutorial009a_matrix.txt", "(E11.2)")
 
-    ! Get a pointer to the data of the second block
-    call lsyssc_getbase_double (rx%RvectorBlock(2),p_Ddata)
+    ! Write the matrix to a MATLAB file.
+    call matio_spyBlockMatrix(&
+        "post/tutorial009a_matrix","matrix",rmatrix,.true.)
     
-    ! Initialise the data: NEQ, NEQ-1,....
-    do i=rx%RvectorBlock(1)%NEQ,1,-1
-      p_Ddata(i) = real(i,DP)
-    end do
-
-    ! =================================
-    ! Output of the vector
-    ! =================================
-    call output_line ("Writing vector to a text file...")
-    
-    ! Write the vector to a text file.
-    call vecio_writeBlockVectorHR (rx, "vector", .true., 0, &
-        "post/tutorial009a_vector.txt", "(E11.2)")
+    ! Write the matrix to a MAPLE file
+    call matio_writeBlockMatrixMaple (rmatrix, "matrix", 0, &
+        "post/tutorial009a_matrix.maple", "(E11.2)")
 
     ! =================================
     ! Cleanup
     ! =================================
     
-    ! Release the vector
-    call lsysbl_releaseVector (rx)
+    ! Release the matrix
+    call lsysbl_releaseMatrix (rmatrix)
+    
+    ! ... and the FEM template matrix
+    call lsyssc_releaseMatrix (rtemplateMatrix)
     
     ! Release the block discretisation
     call spdiscr_releaseBlockDiscr (rblockDiscr)

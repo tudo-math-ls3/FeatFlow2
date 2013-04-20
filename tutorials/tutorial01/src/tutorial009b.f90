@@ -1,5 +1,5 @@
 !##############################################################################
-!# Tutorial 009b: Assemble a block vector.
+!# Tutorial 009b: Create a 2x2 block system with Mass and Laplace on the diag.
 !##############################################################################
 
 module tutorial009b
@@ -14,17 +14,18 @@ module tutorial009b
   
   use derivatives
   use element
-  use cubature
   use spatialdiscretisation
   use linearsystemscalar
   use linearsystemblock
+  use bilinearformevaluation
+  use stdoperators
   
-  use scalarpde
-  use linearformevaluation
-  use domainintegration
-  
+  use blockmatassemblybase
+  use blockmatassembly
+  use blockmatassemblystdop
   use collection
-  use vectorio
+  
+  use matrixio
 
   implicit none
   private
@@ -33,111 +34,68 @@ module tutorial009b
 
 contains
 
-  ! ***************************************************************************
+  !****************************************************************************
 
 !<subroutine>
 
-  subroutine fcoeff_RHS (rdiscretisation, rform, &
-                nelements, npointsPerElement, Dpoints, &
-                IdofsTest, rdomainIntSubset, &
-                Dcoefficients, rcollection)
+  subroutine fassembleLocalMatrices(RmatrixData,rassemblyData,rmatrixAssembly,&
+      npointsPerElement,nelements,revalVectors,rcollection)
 
-  use basicgeometry
-  use collection
-  use domainintegration
-  use fsystem
-  use scalarpde
-  use spatialdiscretisation
-  use triangulation
-
-!<description>
-  ! This subroutine is called during the vector assembly. It returns
-  ! the values of a RHS function f in a set of (cubature) points
-  ! on a set of elements.
+!<description>  
+    ! Callback routine. Calculates the local matrices of an operator.
 !</description>
 
-!<input>
-  ! Underlying discretisation structure.
-  type(t_spatialDiscretisation), intent(in) :: rdiscretisation
-
-  ! The linear form which is currently to be evaluated:
-  type(t_linearForm), intent(in) :: rform
-
-  ! Number of elements, where the coefficients must be computed.
-  integer, intent(in) :: nelements
-
-  ! Number of points per element, where the coefficients must be computed
-  integer, intent(in) :: npointsPerElement
-
-  ! Array of all points (x/y coords) on all elements where the values are needed.
-  real(DP), dimension(:,:,:), intent(in) :: Dpoints
-
-  ! Array with degrees of freedom of the test function.
-  integer, dimension(:,:), intent(in) :: IdofsTest
-
-  ! A t_domainIntSubset structure specifying more detailed assembly information.
-  type(t_domainIntSubset), intent(in) :: rdomainIntSubset
-!</input>
-
 !<inputoutput>
-  ! Optional: A collection structure to provide additional information.
-  type(t_collection), intent(inout), optional :: rcollection
+    ! Matrix data of all matrices. The arrays p_Dentry of all submatrices
+    ! have to be filled with data.
+    type(t_bmaMatrixData), dimension(:,:), intent(inout), target :: RmatrixData
 !</inputoutput>
 
-!<output>
-  ! A list of all coefficients in front of all terms in the linear form -
-  ! for all given points on all given elements.
-  !   DIMENSION(itermCount,npointsPerElement,nelements)
-  ! with itermCount the number of terms in the linear form.
-  real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
-!</output>
+!<input>
+    ! Data necessary for the assembly. Contains determinants and
+    ! cubature weights for the cubature,...
+    type(t_bmaMatrixAssemblyData), intent(in) :: rassemblyData
+
+    ! Structure with all data about the assembly
+    type(t_bmaMatrixAssembly), intent(in) :: rmatrixAssembly
+
+    ! Number of points per element
+    integer, intent(in) :: npointsPerElement
+
+    ! Number of elements
+    integer, intent(in) :: nelements
+
+    ! Values of FEM functions automatically evaluated in the
+    ! cubature points.
+    type(t_fev2Vectors), intent(in) :: revalVectors
+
+    ! User defined collection structure
+    type(t_collection), intent(inout), target, optional :: rcollection
+!</input>
 
 !</subroutine>
 
-    integer :: ielement, ipoint, iblock
-    real(DP) :: dx, dy
-    
-    ! Get the ID of the RHS from the assembly.
-    iblock = rcollection%IquickAccess(1)
-    
-    select case (iblock)
-    
-    ! -----------------------------------------------------
-    ! First block. f(x,y) = 1
-    case (1)
-    
-      do ielement = 1,nelements
-        do ipoint = 1,npointsPerElement
-        
-          ! x/y coordinate
-          dx = Dpoints(1,ipoint,ielement)
-          dy = Dpoints(2,ipoint,ielement)
-          
-          ! Write f(x,y)=d*16*x*(1-x)*y*(1-y) into Dcoefficients(1,:,:)
-          Dcoefficients(1,ipoint,ielement) = 1.0_DP
-        
-        end do
-      end do
+    ! local variables
+    type(t_collection) :: rlocalCollect
 
-    ! -----------------------------------------------------
-    ! 2nd block. f(x,y) = 16x(1-x)y(1-y)
-    case (2)
+    ! Put the mass matrix to (1,1).
+    rlocalCollect%DquickAccess(1) = 1.0_DP    ! Multiplier
+    rlocalCollect%IquickAccess(1) = 1         ! x-position
+    rlocalCollect%IquickAccess(2) = 1         ! y-position
     
-      do ielement = 1,nelements
-        do ipoint = 1,npointsPerElement
-        
-          ! x/y coordinate
-          dx = Dpoints(1,ipoint,ielement)
-          dy = Dpoints(2,ipoint,ielement)
-          
-          ! Write f(x,y)=d*16*x*(1-x)*y*(1-y) into Dcoefficients(1,:,:)
-          Dcoefficients(1,ipoint,ielement) = 16.0_DP * dx * (1.0_DP - dx) * dy * (1.0_DP - dy)
-        
-        end do
-      end do
-      
-    end select
+    ! Call the assembly routine
+    call bma_fcalc_mass(RmatrixData,rassemblyData,rmatrixAssembly,&
+        npointsPerElement,nelements,revalVectors,rlocalCollect)
     
+    ! Put the Laplace matrix to (2,2)
+    rlocalCollect%DquickAccess(1) = 1.0_DP    ! Multiplier
+    rlocalCollect%IquickAccess(1) = 2         ! x-position
+    rlocalCollect%IquickAccess(2) = 2         ! y-position
+    
+    ! Call the assembly routine
+    call bma_fcalc_laplace(RmatrixData,rassemblyData,rmatrixAssembly,&
+        npointsPerElement,nelements,revalVectors,rlocalCollect)
+
   end subroutine
 
   ! ***************************************************************************
@@ -149,11 +107,9 @@ contains
     type(t_spatialDiscretisation) :: rspatialDiscr
     type(t_blockDiscretisation) :: rblockDiscr
     
-    type(t_linearForm) :: rlinform
-    type(t_collection) :: rcollection
-    type(t_scalarCubatureInfo), target :: rcubatureInfo_G3
-    type(t_vectorBlock) :: rrhs
-
+    type(t_matrixScalar) :: rtemplateMatrix
+    type(t_matrixBlock) :: rmatrix
+    
     ! Print a message
     call output_lbrk()
     call output_separator (OU_SEP_STAR)
@@ -185,64 +141,62 @@ contains
     call spdiscr_duplicateDiscrSc (rspatialDiscr,rblockDiscr%RspatialDiscr(2))
     
     ! =================================
-    ! Create a vector with 2 blocks
+    ! Create a 2x2 block matrix with
+    ! entries in (1,1) and (2,2)
     ! =================================
     
-    ! Use the block discretisation to create a block vector.
-    call lsysbl_createVector (rblockDiscr,rrhs)
+    ! Create a template matrix for the FEM space. CSR structure.
+    call bilf_createMatrixStructure (rspatialDiscr,LSYSSC_MATRIX9,rtemplateMatrix)
+
+    ! Use the block discretisation to create a basic system matrix.
+    call lsysbl_createMatBlockByDiscr (rblockDiscr,rmatrix)
+
+    ! Create (1,1) and (2,2) using the template matrix.
+    ! Structure is "shared" (no new memory is allocated), content is allocated.
+    call lsyssc_duplicateMatrix (rtemplateMatrix,rmatrix%RmatrixBlock(1,1),&
+        LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+
+    call lsyssc_duplicateMatrix (rtemplateMatrix,rmatrix%RmatrixBlock(2,2),&
+        LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
 
     ! =================================
-    ! Clear the vector
+    ! Create Mass and Laplace.
+    ! Use block assembly routines and a
+    ! callback routine.
     ! =================================
     
-    call lsysbl_clearVector (rrhs)
+    ! Clear the matrix
+    call lsysbl_clearMatrix (rmatrix)
+    
+    ! Assemble the matrix using our callback routine above.
+    call bma_buildMatrix (rmatrix,BMA_CALC_STANDARD,fassembleLocalMatrices)
 
     ! =================================
-    ! Use a 3-point Gauss Formula for the RHS
+    ! Output of the matrix structure
     ! =================================
+    call output_line ("Writing matrix to text files...")
     
-    call spdiscr_createDefCubStructure (rspatialDiscr,rcubatureInfo_G3,CUB_GEN_AUTO_G3)
+    ! Write the matrix to a text file, omit nonexisting entries in the matrix.
+    call matio_writeBlockMatrixHR (rmatrix, "matrix", .true., 0, &
+        "post/tutorial009b_matrix.txt", "(E11.2)")
 
-    ! =================================
-    ! Assemble a RHS vector.
-    ! =================================
+    ! Write the matrix to a MATLAB file.
+    call matio_spyBlockMatrix(&
+        "post/tutorial009b_matrix","matrix",rmatrix,.true.)
     
-    ! Prepare a linear form structure for one term in the RHS: (f, phi).
-    ! The test function is just phi without derivative.
-    rlinform%itermCount = 1
-    rlinform%Idescriptors(1) = DER_FUNC2D
-    
-    ! Build the RHS using fcoeff_RHS above. Pass the block to assemble in the collection.
-    ! rcollection%DquickAccess/IquickAccess/... can arbitrarily be used to pass values.
-    
-    ! First block
-    rcollection%IquickAccess(1) = 1
-    call linf_buildVectorScalar (rlinform,.true.,&
-        rrhs%RvectorBlock(1),rcubatureInfo_G3,fcoeff_RHS,rcollection)
-
-    ! 2nd block
-    rcollection%IquickAccess(1) = 2
-    call linf_buildVectorScalar (rlinform,.true.,&
-        rrhs%RvectorBlock(2),rcubatureInfo_G3,fcoeff_RHS,rcollection)
-
-    ! =================================
-    ! Output of the vector
-    ! =================================
-    call output_line ("Writing vector to a text file...")
-    
-    ! Write the vector to a text file.
-    call vecio_writeBlockVectorHR (rrhs, "vector", .true., 0, &
-        "post/tutorial009b_rhs.txt", "(E11.2)")
+    ! Write the matrix to a MAPLE file
+    call matio_writeBlockMatrixMaple (rmatrix, "matrix", 0, &
+        "post/tutorial009b_matrix.maple", "(E11.2)")
 
     ! =================================
     ! Cleanup
     ! =================================
     
-    ! Release the cubature formula
-    call spdiscr_releaseCubStructure (rcubatureInfo_G3)
-
-    ! Release the vector
-    call lsysbl_releaseVector (rrhs)
+    ! Release the matrix
+    call lsysbl_releaseMatrix (rmatrix)
+    
+    ! ... and the FEM template matrix
+    call lsyssc_releaseMatrix (rtemplateMatrix)
     
     ! Release the block discretisation
     call spdiscr_releaseBlockDiscr (rblockDiscr)
