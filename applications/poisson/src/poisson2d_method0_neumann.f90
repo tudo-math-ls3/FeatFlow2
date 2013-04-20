@@ -411,7 +411,7 @@ contains
     call lsyssc_clearMatrix (rmassMatrixLumped)
     
     call stdop_assembleSimpleMatrix (rmassMatrixLumped,DER_FUNC,DER_FUNC,1.0_DP)
-    call lsyssc_lumpMatrixScalar (rmassMatrixLumped,LSYSSC_LUMP_DIAG,.true.)
+    call lsyssc_lumpMatrix (rmassMatrixLumped,LSYSSC_LUMP_DIAG,.true.)
     
     ! Step 2: Filter the RHS to fulfil "int(f)=0".
     ! This means, subtract the integral mean value: f:=f-int(f)/|Omega|

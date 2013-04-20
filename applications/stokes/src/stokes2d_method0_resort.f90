@@ -314,7 +314,7 @@ contains
     ! matrix to the Y-discretisation structure.
     ! Ok, we use the same discretisation structure for both, X- and Y-velocity,
     ! so this is not really necessary - we do this for sure...
-    call lsyssc_assignDiscrDirectMat (rmatrix%RmatrixBlock(2,2),&
+    call lsyssc_assignDiscretisation (rmatrix%RmatrixBlock(2,2),&
         rdiscretisation%RspatialDiscr(2))
 
     ! Build the first pressure matrix B1.

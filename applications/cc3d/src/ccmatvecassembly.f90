@@ -559,9 +559,9 @@ contains
       ! matrix to the Y-discretisation structure.
       ! Ok, we use the same discretisation structure for both, X- and Y-velocity,
       ! so this is not really necessary - we do this for sure...
-      call lsyssc_assignDiscrDirectMat (rmatrix%RmatrixBlock(2,2),&
+      call lsyssc_assignDiscretisation (rmatrix%RmatrixBlock(2,2),&
           p_rdiscretisation%RspatialDiscr(2))
-      call lsyssc_assignDiscrDirectMat (rmatrix%RmatrixBlock(3,3),&
+      call lsyssc_assignDiscretisation (rmatrix%RmatrixBlock(3,3),&
           p_rdiscretisation%RspatialDiscr(3))
                                           
       ! A 'full tensor matrix' consists also of blocks A12 and A21.
@@ -1291,7 +1291,7 @@ contains
     ! Note that no time step or whatever is included here; everything
     ! is initialised with the multiplication factors in the submatrices
     ! from above!
-    call lsysbl_blockMatVec (rmatrix, rx, rd, dcx, 1.0_DP)
+    call lsysbl_matVec (rmatrix, rx, rd, dcx, 1.0_DP)
     
     ! Release the temporary matrix, we don't need it anymore.
     call lsysbl_releaseMatrix (rmatrix)
@@ -1352,15 +1352,15 @@ contains
       ! ---------------------------------------------------
       ! Subtract the mass matrix stuff?
       if (rnonlinearCCMatrix%dalpha .ne. 0.0_DP) then
-        call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rmatrixMass, &
+        call lsyssc_matVec (rnonlinearCCMatrix%p_rmatrixMass, &
             rvector%RvectorBlock(1), rdefect%RvectorBlock(1), &
             -rnonlinearCCMatrix%dalpha, 1.0_DP)
 
-        call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rmatrixMass, &
+        call lsyssc_matVec (rnonlinearCCMatrix%p_rmatrixMass, &
             rvector%RvectorBlock(2), rdefect%RvectorBlock(2), &
             -rnonlinearCCMatrix%dalpha, 1.0_DP)
 
-        call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rmatrixMass, &
+        call lsyssc_matVec (rnonlinearCCMatrix%p_rmatrixMass, &
             rvector%RvectorBlock(3), rdefect%RvectorBlock(3), &
             -rnonlinearCCMatrix%dalpha, 1.0_DP)
       end if
@@ -1368,15 +1368,15 @@ contains
       ! ---------------------------------------------------
       ! Subtract the Stokes matrix stuff?
       if (rnonlinearCCMatrix%dtheta .ne. 0.0_DP) then
-        call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rmatrixStokes, &
+        call lsyssc_matVec (rnonlinearCCMatrix%p_rmatrixStokes, &
             rvector%RvectorBlock(1), rdefect%RvectorBlock(1), &
             -rnonlinearCCMatrix%dtheta, 1.0_DP)
 
-        call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rmatrixStokes, &
+        call lsyssc_matVec (rnonlinearCCMatrix%p_rmatrixStokes, &
             rvector%RvectorBlock(2), rdefect%RvectorBlock(2), &
             -rnonlinearCCMatrix%dtheta, 1.0_DP)
 
-        call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rmatrixStokes, &
+        call lsyssc_matVec (rnonlinearCCMatrix%p_rmatrixStokes, &
             rvector%RvectorBlock(3), rdefect%RvectorBlock(3), &
             -rnonlinearCCMatrix%dtheta, 1.0_DP)
       end if

@@ -380,9 +380,9 @@ contains
       ! matrix to the Y-/Z-discretisation structure.
       ! Ok, we use the same discretisation structure for both, X- and Y-velocity,
       ! so this is not really necessary - we do this for sure...
-      call lsyssc_assignDiscrDirectMat (Rlevels(i)%rmatrix%RmatrixBlock(2,2),&
+      call lsyssc_assignDiscretisation (Rlevels(i)%rmatrix%RmatrixBlock(2,2),&
           Rlevels(i)%rdiscretisation%RspatialDiscr(2))
-      call lsyssc_assignDiscrDirectMat (Rlevels(i)%rmatrix%RmatrixBlock(3,3),&
+      call lsyssc_assignDiscretisation (Rlevels(i)%rmatrix%RmatrixBlock(3,3),&
           Rlevels(i)%rdiscretisation%RspatialDiscr(3))
                                   
       ! Build the first pressure matrix B1.

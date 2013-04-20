@@ -893,8 +893,8 @@ contains
       call stdop_assembleSimpleMatrix(rmatrix2, DER_FUNC, DER_FUNC, 1.0_DP, .true.)
       
       ! Compute the lumped mass matrices
-      call lsyssc_lumpMatrixScalar(rmatrix1, LSYSSC_LUMP_DIAG)
-      call lsyssc_lumpMatrixScalar(rmatrix2, LSYSSC_LUMP_DIAG)
+      call lsyssc_lumpMatrix(rmatrix1, LSYSSC_LUMP_DIAG)
+      call lsyssc_lumpMatrix(rmatrix2, LSYSSC_LUMP_DIAG)
 
       ! Set the number of the scalar subvector to the collection structure
       rcollection%IquickAccess(2) = iblock
@@ -912,7 +912,7 @@ contains
       ! Compute density-mass
       call lsyssc_duplicateVector(rsourceVector%RvectorBlock(iblock), rvector,&
           LSYSSC_DUP_TEMPLATE, LSYSSC_DUP_EMPTY)
-      call lsyssc_scalarMatVec(rmatrix1, rsourceVector%RvectorBlock(iblock),&
+      call lsyssc_matVec(rmatrix1, rsourceVector%RvectorBlock(iblock),&
           rvector, 1.0_DP, 0.0_DP)
       call lsyssc_getbase_double(rvector, p_Ddata)
       dmass1 = sum(p_Ddata)
@@ -921,7 +921,7 @@ contains
       ! Compute density-mass
       call lsyssc_duplicateVector(rdestVector%RvectorBlock(iblock), rvector,&
           LSYSSC_DUP_TEMPLATE, LSYSSC_DUP_EMPTY)
-      call lsyssc_scalarMatVec(rmatrix2, rdestVector%RvectorBlock(iblock),&
+      call lsyssc_matVec(rmatrix2, rdestVector%RvectorBlock(iblock),&
           rvector, 1.0_DP, 0.0_DP)
       call lsyssc_getbase_double(rvector, p_Ddata)
       dmass2 = sum(p_Ddata)

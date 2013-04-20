@@ -1132,7 +1132,7 @@ contains
 
         ! Apply mass matrix to solution vector
         do iblock = 1, rsolution%nblocks
-          call lsyssc_scalarMatVec(&
+          call lsyssc_matVec(&
               rproblemLevel%RmatrixScalar(massMatrix),&
               rsolution%RvectorBlock(iblock),&
               rrhs%RvectorBlock(iblock), 1.0_DP , 1.0_DP)
@@ -1193,7 +1193,7 @@ contains
 
         ! Apply mass matrix to solution vector
         do iblock = 1, rsolution%nblocks
-          call lsyssc_scalarMatVec(&
+          call lsyssc_matVec(&
               rproblemLevel%RmatrixScalar(massMatrix),&
               rsolution%RvectorBlock(iblock),&
               rrhs%RvectorBlock(iblock), 1.0_DP , 0.0_DP)
@@ -1379,7 +1379,7 @@ contains
 
       ! Apply mass matrix to solution vector
       do iblock = 1, rsolution%nblocks
-        call lsyssc_scalarMatVec(&
+        call lsyssc_matVec(&
             rproblemLevel%RmatrixScalar(massMatrix),&
             rsolution%RvectorBlock(iblock),&
             rres%RvectorBlock(iblock), -1._DP, 1.0_DP)
@@ -1663,7 +1663,7 @@ contains
       
       ! Apply mass matrix to solution vector
       do iblock = 1, rsolution%nblocks
-        call lsyssc_scalarMatVec(&
+        call lsyssc_matVec(&
             rproblemLevel%RmatrixScalar(massMatrix),&
             rsolution%RvectorBlock(iblock),&
             rrhs%RvectorBlock(iblock), 1.0_DP , 1.0_DP)
@@ -5582,7 +5582,7 @@ contains
         
         ! Compute the residual $rhs-M_C*u$ and store the result in rvector3
         do iblock = 1,rsolution%nblocks
-          call lsyssc_scalarMatVec(rproblemLevel%RmatrixScalar(consistentMassMatrix),&
+          call lsyssc_matVec(rproblemLevel%RmatrixScalar(consistentMassMatrix),&
               rvector%RvectorBlock(iblock), p_rvector2%RvectorBlock(iblock),&
               -1.0_DP, 1.0_DP)
         end do

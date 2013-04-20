@@ -467,7 +467,7 @@ contains
       !    RHS = f + 1/dt M u
 
       call lsysbl_copyVector (rrhsBlock, rtimeRhsBlock)
-      call lsysbl_blockMatVec (rmatrixMassBlock, rvectorBlock, rtimeRhsBlock, &
+      call lsysbl_matVec (rmatrixMassBlock, rvectorBlock, rtimeRhsBlock, &
           1.0_DP/dtstep, 1.0_DP)
           
       ! Implement the boundary conditions into the RHS and into the solution vector.

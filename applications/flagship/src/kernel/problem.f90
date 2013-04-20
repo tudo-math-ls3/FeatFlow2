@@ -5560,7 +5560,7 @@ contains
         !-----------------------------------------------------------------------
         ! Create matrix by standard lumping
         
-        call lsyssc_lumpMatrixScalar(rmatrix, LSYSSC_LUMP_STD)
+        call lsyssc_lumpMatrix(rmatrix, LSYSSC_LUMP_STD)
         
         ! Update internal data of the task item
         rtask%Cmethod(imethod) = PROBMETH_MATRIX_LUMP_STD
@@ -5570,7 +5570,7 @@ contains
         !-----------------------------------------------------------------------
         ! Create matrix by diagonal lumping
         
-        call lsyssc_lumpMatrixScalar(rmatrix, LSYSSC_LUMP_DIAG)
+        call lsyssc_lumpMatrix(rmatrix, LSYSSC_LUMP_DIAG)
         
         ! Update internal data of the task item
         rtask%Cmethod(imethod) = PROBMETH_MATRIX_LUMP_DIAG
@@ -6684,14 +6684,14 @@ contains
           !---------------------------------------------------------------------
           ! Create matrix by standard lumping
           
-          call lsyssc_lumpMatrixScalar(p_rtask%p_rmatrixScalarDest, LSYSSC_LUMP_STD)
+          call lsyssc_lumpMatrix(p_rtask%p_rmatrixScalarDest, LSYSSC_LUMP_STD)
           
         case(PROBMETH_MATRIX_LUMP_DIAG)
           
           !---------------------------------------------------------------------
           ! Create matrix by diagonal lumping
           
-          call lsyssc_lumpMatrixScalar(p_rtask%p_rmatrixScalarDest, LSYSSC_LUMP_DIAG)
+          call lsyssc_lumpMatrix(p_rtask%p_rmatrixScalarDest, LSYSSC_LUMP_DIAG)
           
         case default
           call output_line('Unsupported method: '//sys_siL(p_rtask%Cmethod(imethod),3),&

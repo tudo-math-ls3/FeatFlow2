@@ -606,7 +606,7 @@ contains
       
       ! Build the defect: d=b-Ax
       call lsysbl_copyVector (rb,rd)
-      call lsysbl_blockMatVec (p_rmatrix, rx, rd, -1.0_DP, 1.0_DP)
+      call lsysbl_matVec (p_rmatrix, rx, rd, -1.0_DP, 1.0_DP)
     
       ! Apply the defect-vector filter for discrete boundary conditions
       ! to modify the defect vector according to the (discrete) boundary

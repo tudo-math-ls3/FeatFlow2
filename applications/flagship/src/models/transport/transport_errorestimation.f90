@@ -246,7 +246,7 @@ contains
       call lsyssc_duplicateMatrix(rproblemLevel%RmatrixScalar(templateMatrix),&
           rmatrix, LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
       call stdop_assembleSimpleMatrix(rmatrix, DER_FUNC, DER_FUNC)
-      call lsyssc_lumpMatrixScalar(rmatrix, LSYSSC_LUMP_DIAG)
+      call lsyssc_lumpMatrix(rmatrix, LSYSSC_LUMP_DIAG)
       call lsyssc_getbase_double(rmatrix, p_DlumpedMassMatrix)
       NEQ = rmatrix%NEQ
 

@@ -835,7 +835,7 @@ contains
               rproblemLevel%RmatrixScalar(consistentMassMatrix),&
               rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
               LSYSSC_DUP_SHARE, LSYSSC_DUP_COPY)
-          call lsyssc_lumpMatrixScalar(&
+          call lsyssc_lumpMatrix(&
               rproblemLevel%RmatrixScalar(lumpedMassMatrix), LSYSSC_LUMP_DIAG)
         end if
       elseif (lumpedMassMatrix > 0) then
@@ -846,7 +846,7 @@ contains
             LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
         call stdop_assembleSimpleMatrix(&
             rproblemLevel%RmatrixScalar(lumpedMassMatrix), DER_FUNC, DER_FUNC)
-        call lsyssc_lumpMatrixScalar(&
+        call lsyssc_lumpMatrix(&
             rproblemLevel%RmatrixScalar(lumpedMassMatrix), LSYSSC_LUMP_DIAG)
       end if
       
@@ -1609,7 +1609,7 @@ contains
       else
         call lsyssc_duplicateMatrix(p_rconsistentMassMatrix,&
             rlumpedMassMatrix, LSYSSC_DUP_TEMPLATE, LSYSSC_DUP_TEMPLATE)
-        call lsyssc_lumpMatrixScalar(rlumpedMassMatrix, LSYSSC_LUMP_DIAG)
+        call lsyssc_lumpMatrix(rlumpedMassMatrix, LSYSSC_LUMP_DIAG)
         p_rlumpedMassMatrix => rlumpedMassMatrix
       end if
       
@@ -1738,7 +1738,7 @@ contains
         do iblock = 1, rvector%nblocks
           richardson: do iter = 1, nmaxIterationsSolution
             ! Compute the increment for each scalar subvector
-            call lsyssc_scalarMatVec(p_rconsistentMassMatrix,&
+            call lsyssc_matVec(p_rconsistentMassMatrix,&
                 rvectorHigh%RvectorBlock(iblock),&
                 rvectorAux%RvectorBlock(iblock), 1.0_DP, 0.0_DP)
             call lsyssc_invertedDiagMatVec(p_rlumpedMassMatrix,&

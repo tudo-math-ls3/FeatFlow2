@@ -400,7 +400,7 @@ contains
           ssectionName, 'jacobianMatrix', jacobianMatrix)
 
       ! Apply Jacobian matrix
-      call lsyssc_scalarMatVec(rproblemLevel%RmatrixScalar(jacobianMatrix),&
+      call lsyssc_matVec(rproblemLevel%RmatrixScalar(jacobianMatrix),&
           rsolution%RvectorBlock(1), rres%RvectorBlock(1), 1.0_DP, 1.0_DP)
     end if
 
@@ -2100,7 +2100,7 @@ contains
     ! Compute scaling parameter
     dscale = rtimestep%DmultistepWeights(istep)*rtimestep%dStep
     
-    call lsyssc_scalarMatVec(rproblemLevel%RmatrixScalar(transportMatrix),&
+    call lsyssc_matVec(rproblemLevel%RmatrixScalar(transportMatrix),&
         rsolution%rvectorBlock(1), rrhs%RvectorBlock(1), dscale, 0.0_DP)
 
     ! Evaluate linear form for the boundary integral (if any)
@@ -2448,7 +2448,7 @@ contains
 
         ! Build transport term $(1-theta)*dt*T(u^n)u^n$, where
         ! $T(u^n)$ denotes the discrete transport operator
-        call lsyssc_scalarMatVec(&
+        call lsyssc_matVec(&
             rproblemLevel%RmatrixScalar(transportMatrix),&
             rsolution%rvectorBlock(1),&
             rrhs%RvectorBlock(1), dscale, 0.0_DP)
@@ -2457,7 +2457,7 @@ contains
         massMatrix = merge(lumpedMassMatrix, consistentMassMatrix,&
                            imasstype .eq. MASS_LUMPED)
 
-        call lsyssc_scalarMatVec(rproblemLevel%RmatrixScalar(massMatrix),&
+        call lsyssc_matVec(rproblemLevel%RmatrixScalar(massMatrix),&
             rsolution%RvectorBlock(1), rrhs%RvectorBlock(1), 1.0_DP, 1.0_DP)
 
         ! Evaluate linear form for the boundary integral (if any)
@@ -2620,7 +2620,7 @@ contains
         massMatrix = merge(lumpedMassMatrix, consistentMassMatrix,&
                            imasstype .eq. MASS_LUMPED)
 
-        call lsyssc_scalarMatVec(rproblemLevel%RmatrixScalar(massMatrix),&
+        call lsyssc_matVec(rproblemLevel%RmatrixScalar(massMatrix),&
             rsolution%RvectorBlock(1), rrhs%RvectorBlock(1), 1.0_DP, 0.0_DP)
 
         !-----------------------------------------------------------------------
@@ -2846,7 +2846,7 @@ contains
         dscale = rtimestep%theta*rtimestep%dStep
         
         ! Apply transport operator to the solution vector
-        call lsyssc_scalarMatVec(rproblemLevel%RmatrixScalar(transportMatrix),&
+        call lsyssc_matVec(rproblemLevel%RmatrixScalar(transportMatrix),&
             rsolution%rvectorBlock(1), rres%RvectorBlock(1), dscale, 1.0_DP)
         
         ! Evaluate linear form for the boundary integral (if any)
@@ -2873,7 +2873,7 @@ contains
                          imasstype .eq. MASS_LUMPED)
 
       ! Apply mass matrix to the solution vector
-      call lsyssc_scalarMatVec(rproblemLevel%RmatrixScalar(massMatrix),&
+      call lsyssc_matVec(rproblemLevel%RmatrixScalar(massMatrix),&
           rsolution%RvectorBlock(1), rres%RvectorBlock(1), -1.0_DP, 1.0_DP)
       
 
@@ -2889,7 +2889,7 @@ contains
       dscale = 1.0_DP
 
       ! Apply transport operator to the solution vector
-      call lsyssc_scalarMatVec(rproblemLevel%RmatrixScalar(transportMatrix),&
+      call lsyssc_matVec(rproblemLevel%RmatrixScalar(transportMatrix),&
           rsolution%rvectorBlock(1), rres%RvectorBlock(1), dscale, 1.0_DP)
 
       ! Evaluate linear form for boundary integral (if any)
@@ -7043,7 +7043,7 @@ contains
       end if
       
       ! Compute $K(u^L)*u^L$ and store the result in rvector1
-      call lsyssc_scalarMatVec(p_rmatrix,&
+      call lsyssc_matVec(p_rmatrix,&
           rsolution%rvectorBlock(1),&
           p_rvector1%RvectorBlock(1), 1.0_DP, 0.0_DP)
       
@@ -7079,7 +7079,7 @@ contains
         call lsysbl_copyVector(p_rvector1, p_rvector2)
         
         ! Compute the residual $rhs-M_C*u$ and store the result in rvector2
-        call lsyssc_scalarMatVec(rproblemLevel%RmatrixScalar(consistentMassMatrix),&
+        call lsyssc_matVec(rproblemLevel%RmatrixScalar(consistentMassMatrix),&
             rvector%RvectorBlock(1), p_rvector2%RvectorBlock(1), -1.0_DP, 1.0_DP)
         
         ! Scale rvector2 by the inverse of the lumped mass matrix
@@ -7153,7 +7153,7 @@ contains
       end if
       
       ! Compute $L(u^L)*u^L$ and store the result in rvector
-      call lsyssc_scalarMatVec(p_rmatrix,&
+      call lsyssc_matVec(p_rmatrix,&
           rsolution%rvectorBlock(1),&
           rvector%RvectorBlock(1), 1.0_DP, 0.0_DP)
       

@@ -1024,10 +1024,10 @@ contains
             rtempVector,.true.)
 
         ! Calculate divergence = D1 u1 + D2 u2
-        call lsyssc_scalarMatVec (&
+        call lsyssc_matVec (&
             rproblem%RlevelInfo(rproblem%nlmax)%rasmTempl%rmatrixD1, rsolution%RvectorBlock(1), &
             rtempVector, 1.0_DP, 0.0_DP)
-        call lsyssc_scalarMatVec (&
+        call lsyssc_matVec (&
             rproblem%RlevelInfo(rproblem%nlmax)%rasmTempl%rmatrixD2, rsolution%RvectorBlock(2), &
             rtempVector, 1.0_DP, 1.0_DP)
         

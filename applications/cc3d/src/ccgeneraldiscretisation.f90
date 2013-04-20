@@ -332,7 +332,7 @@ contains
               'IMASSLUMPTYPE', j, 0)
                                           
           ! Set cubature formula for lumping. The constant from the DAT file corresponds
-          ! to one of the LSYSSC_LUMP_xxxx constants for lsyssc_lumpMatrixScalar.
+          ! to one of the LSYSSC_LUMP_xxxx constants for lsyssc_lumpMatrix.
           ! When to do simple mass lumping, replace the cubature formula by one
           ! that is compatible with the corresponding element to generate
           ! a diagonal mass matrix.
@@ -708,7 +708,7 @@ contains
       ! Change the discretisation structure of the mass matrix to the
       ! correct one; at the moment it points to the discretisation structure
       ! of the Stokes matrix...
-      call lsyssc_assignDiscrDirectMat (p_rmatrixMass,&
+      call lsyssc_assignDiscretisation (p_rmatrixMass,&
           rlevelInfo%rdiscretisationMass)
 
       ! Call the standard matrix setup routine to build the matrix.
@@ -725,8 +725,8 @@ contains
             'IMASSLUMPTYPE', j, 0)
                                         
         ! Lump the mass matrix. The constant from the DAT file corresponds
-        ! to one of the LSYSSC_LUMP_xxxx constants for lsyssc_lumpMatrixScalar.
-        call lsyssc_lumpMatrixScalar (p_rmatrixMass,j)
+        ! to one of the LSYSSC_LUMP_xxxx constants for lsyssc_lumpMatrix.
+        call lsyssc_lumpMatrix (p_rmatrixMass,j)
       
       end if
       

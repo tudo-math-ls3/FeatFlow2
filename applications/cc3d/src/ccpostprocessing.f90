@@ -434,17 +434,17 @@ contains
         ! Calculate divergence = B1^T u1 + B2^T u2 + B3^T u3
         call lsyssc_transposeMatrix (rproblem%RlevelInfo(rproblem%nlmax)%rmatrixB1,&
             rBmatrix,LSYSSC_TR_VIRTUAL)
-        call lsyssc_scalarMatVec (&
+        call lsyssc_matVec (&
             rBmatrix, rsolution%RvectorBlock(1), &
             rtempVector, 1.0_DP, 0.0_DP)
         call lsyssc_transposeMatrix (rproblem%RlevelInfo(rproblem%nlmax)%rmatrixB2,&
             rBmatrix,LSYSSC_TR_VIRTUAL)
-        call lsyssc_scalarMatVec (&
+        call lsyssc_matVec (&
             rBmatrix, rsolution%RvectorBlock(2), &
             rtempVector, 1.0_DP, 1.0_DP)
         call lsyssc_transposeMatrix (rproblem%RlevelInfo(rproblem%nlmax)%rmatrixB3,&
             rBmatrix,LSYSSC_TR_VIRTUAL)
-        call lsyssc_scalarMatVec (&
+        call lsyssc_matVec (&
             rBmatrix, rsolution%RvectorBlock(3), &
             rtempVector, 1.0_DP, 1.0_DP)
         

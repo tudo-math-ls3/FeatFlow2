@@ -277,7 +277,7 @@ contains
       
       ! Now form the actual RHS by matrix vector multiplication!
       ! dtimestep*f + M u_{old}
-      call lsysbl_blockMatVec(rmatrixBlock,rvectorBlock,rrhsBlock,1.0_DP,dtstep)
+      call lsysbl_matVec(rmatrixBlock,rvectorBlock,rrhsBlock,1.0_DP,dtstep)
       
       ! STEP 2: Assemble the system matrix (M + dtimestep*Laplace)
       !

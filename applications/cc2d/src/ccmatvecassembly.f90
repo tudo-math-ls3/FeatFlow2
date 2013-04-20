@@ -823,7 +823,7 @@ contains
       ! matrix to the Y-discretisation structure.
       ! Ok, we use the same discretisation structure for both, X- and Y-velocity,
       ! so this is not really necessary - we do this for sure...
-      call lsyssc_assignDiscrDirectMat (rmatrix%RmatrixBlock(2,2),&
+      call lsyssc_assignDiscretisation (rmatrix%RmatrixBlock(2,2),&
           p_rdiscretisation%RspatialDiscr(2))
 
       ! A "full tensor matrix" consists also of blocks A12 and A21.
@@ -1905,7 +1905,7 @@ contains
     ! Note that no time step or whatever is included here; everything
     ! is initialised with the multiplication factors in the submatrices
     ! from above!
-    call lsysbl_blockMatVec (rmatrix, rx, rd, dcx, 1.0_DP)
+    call lsysbl_matVec (rmatrix, rx, rd, dcx, 1.0_DP)
     
     ! Release the temporary matrix, we do not need it anymore.
     call lsysbl_releaseMatrix (rmatrix)
@@ -1981,11 +1981,11 @@ contains
       ! ---------------------------------------------------
       ! Subtract the mass matrix stuff?
       if (rnonlinearCCMatrix%dalpha .ne. 0.0_DP) then
-        call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
+        call lsyssc_matVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
             rvector%RvectorBlock(1), rdefect%RvectorBlock(1), &
             -rnonlinearCCMatrix%dalpha, 1.0_DP)
 
-        call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
+        call lsyssc_matVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
             rvector%RvectorBlock(2), rdefect%RvectorBlock(2), &
             -rnonlinearCCMatrix%dalpha, 1.0_DP)
       end if
@@ -1999,11 +1999,11 @@ contains
         if ((rnonlinearCCMatrix%p_rphysics%isubequation .eq. 0) .and. &
             (rnonlinearCCMatrix%p_rphysics%cviscoModel .eq. 0)) then
       
-          call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixStokes, &
+          call lsyssc_matVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixStokes, &
               rvector%RvectorBlock(1), rdefect%RvectorBlock(1), &
               -rnonlinearCCMatrix%dtheta, 1.0_DP)
 
-          call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixStokes, &
+          call lsyssc_matVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixStokes, &
               rvector%RvectorBlock(2), rdefect%RvectorBlock(2), &
               -rnonlinearCCMatrix%dtheta, 1.0_DP)
               
@@ -2456,11 +2456,11 @@ contains
           call spdiscr_releaseCubStructure (rcubatureInfo)
         
           ! Subtract the stabilisation matrix stuff.
-          call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil, &
+          call lsyssc_matVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil, &
               rvector%RvectorBlock(1), rdefect%RvectorBlock(1), &
               -rnonlinearCCMatrix%dtheta, 1.0_DP)
 
-          call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil, &
+          call lsyssc_matVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil, &
               rvector%RvectorBlock(2), rdefect%RvectorBlock(2), &
               -rnonlinearCCMatrix%dtheta, 1.0_DP)
 
@@ -2541,11 +2541,11 @@ contains
           ! Fast Jump stabilisation. Precomputed matrix.
           
           ! Subtract the stabilisation matrix stuff.
-          call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil, &
+          call lsyssc_matVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil, &
               rvector%RvectorBlock(1), rdefect%RvectorBlock(1), &
               -rnonlinearCCMatrix%dtheta, 1.0_DP)
 
-          call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil, &
+          call lsyssc_matVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil, &
               rvector%RvectorBlock(2), rdefect%RvectorBlock(2), &
               -rnonlinearCCMatrix%dtheta, 1.0_DP)
 

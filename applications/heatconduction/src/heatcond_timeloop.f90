@@ -154,7 +154,7 @@ contains
     call lsysbl_synchroniseSort (p_rmatrix,p_rrhs,rtempBlock%RvectorBlock(1))
     call lsysbl_synchroniseSort (p_rmatrix,rvector,rtempBlock%RvectorBlock(1))
     
-    call lsysbl_blockMatVec(rproblem%RlevelInfo(ilvmax)%rmatrixStatic,&
+    call lsysbl_matVec(rproblem%RlevelInfo(ilvmax)%rmatrixStatic,&
          rvector,p_rrhs,&
          rproblem%rtimedependence%rtimestepping%dweightMatrixRHS,&
          rproblem%rtimedependence%rtimestepping%dweightOldRHS)
@@ -162,7 +162,7 @@ contains
     ! Add u_n -- or, more precisely, M u_n (with M being the mass matrix),
     ! since the discretisation with finite elements requires that.
 
-    call lsysbl_blockMatVec(rproblem%RlevelInfo(ilvmax)%rmatrixMass,&
+    call lsysbl_matVec(rproblem%RlevelInfo(ilvmax)%rmatrixMass,&
          rvector,p_rrhs,1.0_DP,1.0_DP)
          
     ! Switch to the next point in time.

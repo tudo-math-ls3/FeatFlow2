@@ -638,7 +638,7 @@ contains
     call lsyssc_createVecByDiscr (rdiscrQ1, rvecRhsQ1, .false.)
     
     ! Calculate r := N*x
-    call lsyssc_scalarMatVec(rmatrixMassPrj, rvecSol%RvectorBlock(1),&
+    call lsyssc_matVec(rmatrixMassPrj, rvecSol%RvectorBlock(1),&
                              rvecRhsQ1, 1.0_DP, 0.0_DP)
     
     ! At this point we will not need the matrix N anymore, as we just needed
@@ -683,7 +683,7 @@ contains
                                 LSYSSC_DUP_SHARE, LSYSSC_DUP_COPY)
     
     ! And lump the copy to get L
-    call lsyssc_lumpMatrixScalar(rlumpedMassPrj, LSYSSC_LUMP_DIAG)
+    call lsyssc_lumpMatrix(rlumpedMassPrj, LSYSSC_LUMP_DIAG)
     
     ! Furthermore we need a defect vector
     call lsyssc_createVecIndMat(rmatrixMassPrj, rvecDefQ1)
@@ -693,7 +693,7 @@ contains
     
       ! Calculate current defect d_i := r - M * y_i
       call lsyssc_copyVector(rvecRhsQ1, rvecDefQ1)
-      call lsyssc_scalarMatVec(rmatrixMassPrj, rvecSolQ1, rvecDefQ1,&
+      call lsyssc_matVec(rmatrixMassPrj, rvecSolQ1, rvecDefQ1,&
                                -1.0_DP, 1.0_DP)
       
       ! Calculate the current residual = || d_i ||_2

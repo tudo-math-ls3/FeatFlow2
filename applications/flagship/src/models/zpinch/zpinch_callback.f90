@@ -570,7 +570,7 @@ contains
             ssectionNameTransport, 'jacobianMatrix', jacobianMatrix)
 
         ! Apply Jacobian matrix
-        call lsyssc_scalarMatVec(&
+        call lsyssc_matVec(&
             rproblemLevel%RmatrixScalar(jacobianMatrix),&
             rsolution%RvectorBlock(1), rres%RvectorBlock(1),&
             1.0_DP, 1.0_DP)
@@ -2037,7 +2037,7 @@ contains
           
           ! Compute the residual $rhs-M_C*u$ and store the result in rvector3
           do iblock = 1,Rsolution(1)%nblocks
-            call lsyssc_scalarMatVec(&
+            call lsyssc_matVec(&
                 rproblemLevel%RmatrixScalar(consistentMassMatrixHydro),&
                 p_Rvector1(1)%RvectorBlock(iblock),&
                 p_Rvector3(1)%RvectorBlock(iblock),&
@@ -2243,7 +2243,7 @@ contains
         rproblemLevel%Rafcstab(convectionAFC)%istabilisationSpec    = istabilisationSpecConvection
 
         ! Compute $K(u^L)*u^L$ and store the result in rvector2
-        call lsyssc_scalarMatVec(p_rmatrix, Rsolution(2)%rvectorBlock(1),&
+        call lsyssc_matVec(p_rmatrix, Rsolution(2)%rvectorBlock(1),&
             p_Rvector2(2)%RvectorBlock(1), 1.0_DP, 0.0_DP)
 
         ! Evaluate linear form for the boundary integral (if any)
@@ -2294,7 +2294,7 @@ contains
           call lsysbl_copyVector(p_rvector2(2), p_rvector3(2))
           
           ! Compute the residual $rhs-M_C*u$ and store the result in rvector3
-          call lsyssc_scalarMatVec(&
+          call lsyssc_matVec(&
               rproblemLevel%RmatrixScalar(consistentMassMatrixTransport),&
               p_Rvector1(2)%RvectorBlock(1), p_Rvector3(2)%RvectorBlock(1),&
               -1.0_DP, 1.0_DP)
@@ -2344,7 +2344,7 @@ contains
 
 
         ! Compute $L(u^L)*u^L$ and store the result in rvector1
-        call lsyssc_scalarMatVec(p_rmatrix, Rsolution(2)%rvectorBlock(1),&
+        call lsyssc_matVec(p_rmatrix, Rsolution(2)%rvectorBlock(1),&
             p_Rvector1(2)%RvectorBlock(1), 1.0_DP, 0.0_DP)
 
         ! Evaluate linear form for the boundary integral (if any)

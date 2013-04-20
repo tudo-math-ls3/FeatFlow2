@@ -296,7 +296,7 @@ contains
       rproblem%rmatrixAssembly%bmassLumpingVelocity = j .eq. 0
 
         ! Set cubature formula for lumping. The constant from the DAT file corresponds
-        ! to one of the LSYSSC_LUMP_xxxx constants for lsyssc_lumpMatrixScalar.
+        ! to one of the LSYSSC_LUMP_xxxx constants for lsyssc_lumpMatrix.
         ! When to do simple mass lumping, replace the cubature formula by one
         ! that is compatible with the corresponding element to generate
         ! a diagonal mass matrix.
@@ -436,6 +436,14 @@ contains
     case (17)
       ieltypeUV = EL_Q3_2D
       ieltypeP = EL_DCQP2_2D
+
+    case (18)
+      ieltypeUV = EL_Q3_2D
+      ieltypeP = EL_DCQP1_2D
+
+    case (19)
+      ieltypeUV = EL_Q3_2D
+      ieltypeP = EL_DG_T2_2D
 
     case (20)
       ieltypeUV = EL_Q1
@@ -1014,7 +1022,7 @@ contains
         
         call spdiscr_releaseCubStructure (rcubatureInfoMass)
 
-        call lsyssc_lumpMatrixScalar (rasmTempl%rmatrixMass,LSYSSC_LUMP_STD)
+        call lsyssc_lumpMatrix (rasmTempl%rmatrixMass,LSYSSC_LUMP_STD)
         
       case (LSYSSC_LUMP_DIAG)
         ! Diagonal lumping.
@@ -1029,7 +1037,7 @@ contains
         call spdiscr_releaseCubStructure (rcubatureInfoMass)
         
         ! The apply lumping by adding all offdiagonals to the diagonal.
-        call lsyssc_lumpMatrixScalar (rasmTempl%rmatrixMass,LSYSSC_LUMP_DIAG)
+        call lsyssc_lumpMatrix (rasmTempl%rmatrixMass,LSYSSC_LUMP_DIAG)
       end select
     
     else
@@ -1587,11 +1595,11 @@ contains
         ! it was read in at the beginning of the program.
         !
         ! Multiply with mass matrices to calculate the actual RHS from the nodal vector.
-        call lsyssc_scalarMatVec (rasmTemplates%rmatrixMass, &
+        call lsyssc_matVec (rasmTemplates%rmatrixMass, &
             rrhsAssembly%rrhsVector%RvectorBlock(1), &
             rrhs%RVectorBlock(1), rrhsAssembly%dmultiplyX, 0.0_DP, .false.)
 
-        call lsyssc_scalarMatVec (rasmTemplates%rmatrixMass, &
+        call lsyssc_matVec (rasmTemplates%rmatrixMass, &
             rrhsAssembly%rrhsVector%RvectorBlock(2), &
             rrhs%RVectorBlock(2), rrhsAssembly%dmultiplyY, 0.0_DP, .false.)
         
@@ -1654,21 +1662,21 @@ contains
         ! Get the RHS by linear interpolation.
         ! Multiply with mass matrices to calculate the actual RHS from the nodal vector.
         
-        call lsyssc_scalarMatVec (rasmTemplates%rmatrixMass, &
+        call lsyssc_matVec (rasmTemplates%rmatrixMass, &
             rrhsAssembly%rrhsVector%RvectorBlock(1), &
             rrhs%RVectorBlock(1), rrhsAssembly%dmultiplyX, 0.0_DP, .false.)
 
-        call lsyssc_scalarMatVec (rasmTemplates%rmatrixMass, &
+        call lsyssc_matVec (rasmTemplates%rmatrixMass, &
             rrhsAssembly%rrhsVector%RvectorBlock(2), &
             rrhs%RVectorBlock(2), rrhsAssembly%dmultiplyY, 0.0_DP, .false.)
 
         if (dtimeweight .gt. 0.0_DP) then
-          call lsyssc_scalarMatVec (rasmTemplates%rmatrixMass, &
+          call lsyssc_matVec (rasmTemplates%rmatrixMass, &
               rrhsAssembly%rrhsVector2%RvectorBlock(1), &
               rrhs%RVectorBlock(1), rrhsAssembly%dmultiplyX*dtimeweight, &
               (1.0_DP-dtimeweight), .false.)
 
-          call lsyssc_scalarMatVec (rasmTemplates%rmatrixMass, &
+          call lsyssc_matVec (rasmTemplates%rmatrixMass, &
               rrhsAssembly%rrhsVector2%RvectorBlock(2), &
               rrhs%RVectorBlock(2), rrhsAssembly%dmultiplyY*dtimeweight, &
               (1.0_DP-dtimeweight), .false.)

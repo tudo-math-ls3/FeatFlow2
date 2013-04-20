@@ -328,7 +328,7 @@ contains
 
         ! Compute the initial linear residual: res=f-A*u
         call lsysbl_copyVector(rf, p_rres)
-        call lsysbl_blockMatVec(p_rsolverMultigrid%rmatrix(rproblemLevel%ilev),&
+        call lsysbl_matVec(p_rsolverMultigrid%rmatrix(rproblemLevel%ilev),&
                                 ru, p_rres, -1.0_DP, 1.0_DP)
 
         ! Compute norm of initial defect
@@ -377,7 +377,7 @@ contains
 
           ! Compute the new linear defect: res=f-A*u
           call lsysbl_copyVector(rf, p_rres)
-          call lsysbl_blockMatVec(p_rsolverMultigrid%rmatrix(rproblemLevel%ilev),&
+          call lsysbl_matVec(p_rsolverMultigrid%rmatrix(rproblemLevel%ilev),&
                                   ru, p_rres, -1.0_DP, 1.0_DP)
 
           ! Compute norm of new linear defect
@@ -562,7 +562,7 @@ contains
 
       ! Compute the linear residual: r=f-A*u
       call lsysbl_copyVector(rff, p_rresf)
-      call lsysbl_blockMatVec(rsolver%p_rsolverMultigrid%rmatrix(rproblemLevel%ilev),&
+      call lsysbl_matVec(rsolver%p_rsolverMultigrid%rmatrix(rproblemLevel%ilev),&
                               ruf, p_rresf, -1.0_DP, 1.0_DP)
 
       ! Restrict the residual: resc=R(f-A*u)
@@ -760,7 +760,7 @@ contains
 
     ! Compute initial residual
     call lsysbl_copyVector(rf, p_rr)
-    call lsysbl_blockMatVec(p_rmatrix, ru, p_rr, -1.0_DP, 1.0_DP)
+    call lsysbl_matVec(p_rmatrix, ru, p_rr, -1.0_DP, 1.0_DP)
     rsolver%dinitialDefect = lsysbl_vectorNorm(p_rr, rsolver%iresNorm)
 
     ! Solve the system directly
@@ -797,7 +797,7 @@ contains
 
     ! Compute final residual
     call lsysbl_copyVector(rf, p_rr)
-    call lsysbl_blockMatVec(p_rmatrix, ru, p_rr, -1.0_DP, 1.0_DP)
+    call lsysbl_matVec(p_rmatrix, ru, p_rr, -1.0_DP, 1.0_DP)
     rsolver%dfinalDefect = lsysbl_vectorNorm(p_rr, rsolver%iresNorm)
 
     ! Compute solver statistics
@@ -886,7 +886,7 @@ contains
 
     ! Compute initial residual
     call lsysbl_copyVector(rf, p_rres)
-    call lsysbl_blockMatVec(p_rmatrix, ru, p_rres, -1.0_DP, 1.0_DP)
+    call lsysbl_matVec(p_rmatrix, ru, p_rres, -1.0_DP, 1.0_DP)
 
     ! Compute norm of initial defect
     rsolver%dinitialDefect   = lsysbl_vectorNorm(p_rres, rsolver%iresNorm)
@@ -936,7 +936,7 @@ contains
 
       ! Compute residual
       call lsysbl_copyVector(rf, p_rres)
-      call lsysbl_blockMatVec(p_rmatrix, ru, p_rres, -1.0_DP, 1.0_DP)
+      call lsysbl_matVec(p_rmatrix, ru, p_rres, -1.0_DP, 1.0_DP)
 
       ! Compute norm of residual
       rsolver%dfinalDefect = lsysbl_vectorNorm(p_rres, rsolver%iresNorm)
@@ -1082,7 +1082,7 @@ contains
 
     ! Compute initial residual
     call lsysbl_copyVector(rf, p_rres)
-    call lsysbl_blockMatVec(p_rmatrix, ru, p_rres, -1.0_DP, 1.0_DP)
+    call lsysbl_matVec(p_rmatrix, ru, p_rres, -1.0_DP, 1.0_DP)
 
     ! Compute norm of initial defect
     rsolver%dinitialDefect = lsysbl_vectorNorm(p_rres, rsolver%iresNorm)
@@ -1132,7 +1132,7 @@ contains
 
       ! Compute residual
       call lsysbl_copyVector(rf, p_rres)
-      call lsysbl_blockMatVec(p_rmatrix, ru, p_rres, -1.0_DP, 1.0_DP)
+      call lsysbl_matVec(p_rmatrix, ru, p_rres, -1.0_DP, 1.0_DP)
 
       ! Compute norm of residual
       rsolver%dfinalDefect = lsysbl_vectorNorm(p_rres, rsolver%iresNorm)
@@ -1307,7 +1307,7 @@ contains
 
     ! Compute initial residual r=C(-1)*(f-Au)
     call lsysbl_copyVector(rf, p_rr)
-    call lsysbl_blockMatVec(p_rmatrix, ru, p_rr, -1.0_DP, 1.0_DP)
+    call lsysbl_matVec(p_rmatrix, ru, p_rr, -1.0_DP, 1.0_DP)
 
     ! Compute norm of initial defect
     rsolver%dinitialDefect   = lsysbl_vectorNorm(p_rr, rsolver%iresNorm)
@@ -1380,7 +1380,7 @@ contains
       end if
 
       ! Compute pa:=C(-1)*A*p
-      call lsysbl_blockMatVec(p_rmatrix, p_rp, p_rpa, 1.0_DP, 0.0_DP)
+      call lsysbl_matVec(p_rmatrix, p_rp, p_rpa, 1.0_DP, 0.0_DP)
       if (bprec) then
         call lsysbl_copyVector(p_rpa, p_rpa1)
         call linsol_precond(p_rsolverPrecond, p_rpa)
@@ -1394,7 +1394,7 @@ contains
           (abs(alpha) .le. lsysbl_vectorNorm(p_rpa,&
                            rsolver%iresNorm)*nrm0*EPS_RESTART)) then
         call lsysbl_copyVector(rf, p_rr)
-        call lsysbl_blockMatVec(p_rmatrix, ru, p_rr, -1.0_DP, 1.0_DP)
+        call lsysbl_matVec(p_rmatrix, ru, p_rr, -1.0_DP, 1.0_DP)
         rsolver%dfinalDefect = lsysbl_vectorNorm(p_rr, rsolver%iresNorm)
         goto 100
       end if
@@ -1406,7 +1406,7 @@ contains
       if (bprec) call lsysbl_vectorLinearComb(p_rpa1, p_rr1, -alpha, 1.0_DP)
 
       ! Compute sa:=C(-1)*A*r
-      call lsysbl_blockMatVec(p_rmatrix, p_rr, p_rsa, 1.0_DP, 0.0_DP)
+      call lsysbl_matVec(p_rmatrix, p_rr, p_rsa, 1.0_DP, 0.0_DP)
       if (bprec) then
         call lsysbl_copyVector(p_rsa, p_rsa1)
         call linsol_precond(p_rsolverPrecond, p_rsa)
@@ -1591,7 +1591,7 @@ contains
 
     ! Compute initial residual v(1)=f-A*u
     call lsysbl_copyVector(rf, p_rv(1))
-    call lsysbl_blockMatVec(p_rmatrix, ru, p_rv(1), -1.0_DP, 1.0_DP)
+    call lsysbl_matVec(p_rmatrix, ru, p_rv(1), -1.0_DP, 1.0_DP)
 
     ! Compute norm of initial defect
     rsolver%dinitialDefect = lsysbl_vectorNorm(p_rv(1), rsolver%iresNorm)
@@ -1655,7 +1655,7 @@ contains
 
         ! Set v(i+1):=A*z(i)
         call lsysbl_copyVector(p_rv(i), p_rv(i+1))
-        call lsysbl_blockMatVec(p_rmatrix, p_rz(i), p_rv(i+1), 1.0_DP, 0.0_DP)
+        call lsysbl_matVec(p_rmatrix, p_rz(i), p_rv(i+1), 1.0_DP, 0.0_DP)
 
         ! Construct i-th column of orthonormal basis h using
         ! a modified Gram-Schmidt algorithm
@@ -1714,7 +1714,7 @@ contains
 
       ! Compute residual v(1)=f-A*u
       call lsysbl_copyVector(rf, p_rv(1))
-      call lsysbl_blockMatVec(p_rmatrix, ru, p_rv(1), -1.0_DP, 1.0_DP)
+      call lsysbl_matVec(p_rmatrix, ru, p_rv(1), -1.0_DP, 1.0_DP)
 
       ! The norm of the residual is implicitly given by p(i+1) but
       ! may be highly inaccurate. Therefore compute norm explicitly
@@ -1874,7 +1874,7 @@ contains
 
     ! Compute initial residual
     call lsysbl_copyVector(rf, p_rr)
-    call lsysbl_blockMatVec(p_rmatrix, ru, p_rr, -1.0_DP, 1.0_DP)
+    call lsysbl_matVec(p_rmatrix, ru, p_rr, -1.0_DP, 1.0_DP)
     rsolver%dinitialDefect = lsysbl_vectorNorm(p_rr, rsolver%iresNorm)
 
     ! Since the right-hand side is overwritten by the AGMG subroutine
@@ -1919,7 +1919,7 @@ contains
 
     ! Compute final residual
     call lsysbl_copyVector(rf, p_rr)
-    call lsysbl_blockMatVec(p_rmatrix, ru, p_rr, -1.0_DP, 1.0_DP)
+    call lsysbl_matVec(p_rmatrix, ru, p_rr, -1.0_DP, 1.0_DP)
     rsolver%dfinalDefect = lsysbl_vectorNorm(p_rr, rsolver%iresNorm)
 
     ! Compute solver statistics
@@ -3600,7 +3600,7 @@ contains
 
     ! Compute initial residual
     call lsysbl_copyVector(rf, rres)
-    call lsysbl_blockMatVec(rmatrix, ru, rres, -1.0_DP, 1.0_DP)
+    call lsysbl_matVec(rmatrix, ru, rres, -1.0_DP, 1.0_DP)
 
     ! Iterative correction
     do iiterations = 1, rsolver%nmaxIterations
@@ -3613,7 +3613,7 @@ contains
 
       ! Compute residual
       call lsysbl_copyVector(rf, rres)
-      call lsysbl_blockMatVec(rmatrix, ru, rres, -1.0_DP, 1.0_DP)
+      call lsysbl_matVec(rmatrix, ru, rres, -1.0_DP, 1.0_DP)
 
     end do
   end subroutine linsol_smoothJacobi
@@ -3655,7 +3655,7 @@ contains
 
     ! Compute initial residual
     call lsysbl_copyVector(rf, rres)
-    call lsysbl_blockMatVec(rmatrix, ru, rres, -1.0_DP, 1.0_DP)
+    call lsysbl_matVec(rmatrix, ru, rres, -1.0_DP, 1.0_DP)
 
     ! Iterative correction
     do iiterations = 1, rsolver%nmaxIterations
@@ -3668,7 +3668,7 @@ contains
 
       ! Compute residual
       call lsysbl_copyVector(rf,rres)
-      call lsysbl_blockMatVec(rmatrix, ru, rres, -1.0_DP, 1.0_DP)
+      call lsysbl_matVec(rmatrix, ru, rres, -1.0_DP, 1.0_DP)
 
     end do
   end subroutine linsol_smoothSSOR
@@ -3716,7 +3716,7 @@ contains
     do iiterations = 1, rsolver%nmaxIterations
 
       call lsysbl_copyVector (rf, raux)
-      call lsysbl_blockMatVec(rmatrix, ru, raux, -1.0_DP, 1.0_DP)
+      call lsysbl_matVec(rmatrix, ru, raux, -1.0_DP, 1.0_DP)
       call linsol_precondILU (rsolver, raux)
       call lsysbl_vectorLinearComb(raux, ru, rsolver%domega, 1.0_DP)
 

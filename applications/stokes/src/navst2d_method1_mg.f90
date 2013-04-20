@@ -433,7 +433,7 @@ contains
       ! matrix to the Y-discretisation structure.
       ! Ok, we use the same discretisation structure for both, X- and Y-velocity,
       ! so this is not really necessary - we do this for sure...
-      call lsyssc_assignDiscrDirectMat (Rlevels(i)%rmatrix%RmatrixBlock(2,2),&
+      call lsyssc_assignDiscretisation (Rlevels(i)%rmatrix%RmatrixBlock(2,2),&
           Rlevels(i)%rdiscretisation%RspatialDiscr(2))
                                   
       ! Build the first pressure matrix B1.
@@ -775,7 +775,7 @@ contains
       
     ! First, calculate the initial non-linear defect
     call lsysbl_copyVector(rrhs, rvecDef)
-    call lsysbl_blockMatVec(Rlevels(NLMAX)%rmatrix, &
+    call lsysbl_matVec(Rlevels(NLMAX)%rmatrix, &
              Rlevels(NLMAX)%rvecSol, rvecDef, -1.0_DP, 1.0_DP)
     call vecfil_discreteBCdef (rvecDef)
     dnlresInit = lsysbl_vectorNorm(rvecDef, LINALG_NORML2)
@@ -899,7 +899,7 @@ contains
 
       ! Calculate non-linear defect:
       call lsysbl_copyVector(rrhs, rvecDef)
-      call lsysbl_blockMatVec(Rlevels(NLMAX)%rmatrix, &
+      call lsysbl_matVec(Rlevels(NLMAX)%rmatrix, &
                Rlevels(NLMAX)%rvecSol, rvecDef, -1.0_DP, 1.0_DP)
       
       ! Filter the defect vector

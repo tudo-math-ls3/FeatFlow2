@@ -191,7 +191,7 @@ contains
       ! Now, in the first step, we build the linear part of the nonlinear defect:
       !     d_lin = rhs - (-nu * Laplace(.))*solution
       call lsysbl_copyVector (rb,rd)
-      call lsysbl_blockMatVec (rmatrixLaplaceBlock, rx, rd, -1.0_DP, 1.0_DP)
+      call lsysbl_matVec (rmatrixLaplaceBlock, rx, rd, -1.0_DP, 1.0_DP)
       
       ! Release the temporary matrix again.
       call lsysbl_releaseMatrix (rmatrixLaplaceBlock)
@@ -470,7 +470,7 @@ contains
       ! ==================================================================
 
       call lsysbl_copyVector (rb,rtemp2)
-      call lsysbl_blockMatVec (p_rmatrix, rx, rtemp2, -1.0_DP, 1.0_DP)
+      call lsysbl_matVec (p_rmatrix, rx, rtemp2, -1.0_DP, 1.0_DP)
       
       ! This is a defect vector - filter it! This e.g. implements boundary
       ! conditions.
@@ -481,7 +481,7 @@ contains
       ! Calculate the value  rtemp1 = T*Y
       ! ==================================================================
 
-      call lsysbl_blockMatVec (p_rmatrix, rd, rtemp1, 1.0_DP, 0.0_DP)
+      call lsysbl_matVec (p_rmatrix, rd, rtemp1, 1.0_DP, 0.0_DP)
       
       ! This is a defect vector against 0 - filter it! This e.g.
       ! implements boundary conditions.

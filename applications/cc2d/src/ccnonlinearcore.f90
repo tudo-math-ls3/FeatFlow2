@@ -874,7 +874,7 @@ contains
       ! ==================================================================
 
       call lsysbl_copyVector (rb,rtemp2)
-      call lsysbl_blockMatVec (rmatrix, rx, rtemp2, -1.0_DP, 1.0_DP)
+      call lsysbl_matVec (rmatrix, rx, rtemp2, -1.0_DP, 1.0_DP)
       
       ! This is a defect vector - filter it! This e.g. implements boundary
       ! conditions.
@@ -894,7 +894,7 @@ contains
       ! Calculate the value  rtemp1 = T*Y
       ! ==================================================================
 
-      call lsysbl_blockMatVec (rmatrix, rd, rtemp1, 1.0_DP, 0.0_DP)
+      call lsysbl_matVec (rmatrix, rd, rtemp1, 1.0_DP, 0.0_DP)
       
       ! This is a defect vector against 0 - filter it! This e.g.
       ! implements boundary conditions.
