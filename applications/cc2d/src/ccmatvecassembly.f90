@@ -844,12 +844,6 @@ contains
             rmatrix%RmatrixBlock(1,2), &
             LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
             
-          ! Allocate memory for the entries; do not initialise the memory.
-          ! Probably possible, but up to now, LSYSSC_DUP_EMPTY above initialises with
-          ! zero.
-          ! CALL lsyssc_allocEmptyMatrix (&
-          !     p_rmatrixPreconditioner%RmatrixBlock(1,2),LSYSSC_SETM_UNDEFINED)
-            
         end if
 
         if (rmatrix%RmatrixBlock(2,1)%cmatrixFormat &
@@ -860,12 +854,6 @@ contains
           call lsyssc_duplicateMatrix (p_rmatrixTemplateFEM, &
             rmatrix%RmatrixBlock(2,1), &
             LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-            
-          ! Allocate memory for the entries; do not initialise the memory.
-          ! Probably possible, but up to now, LSYSSC_DUP_EMPTY above initialises with
-          ! zero.
-          ! CALL lsyssc_allocEmptyMatrix (&
-          !     p_rmatrixPreconditioner%RmatrixBlock(2,1),LSYSSC_SETM_UNDEFINED)
             
         end if
         
