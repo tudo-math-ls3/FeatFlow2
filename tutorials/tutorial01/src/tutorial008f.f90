@@ -1,8 +1,8 @@
 !##############################################################################
-!# Tutorial 008e: Create a 2x2 block system with Mass and Laplace on the diag.
+!# Tutorial 008f: Create a 2x2 block system with Mass and Laplace on the diag.
 !##############################################################################
 
-module tutorial008e
+module tutorial008f
 
   ! Include basic Feat-2 modules
   use fsystem
@@ -30,7 +30,7 @@ module tutorial008e
   implicit none
   private
   
-  public :: start_tutorial008e
+  public :: start_tutorial008f
 
 contains
 
@@ -75,32 +75,83 @@ contains
 
 !</subroutine>
 
-    ! local variables
-    type(t_collection) :: rlocalCollect
+    ! Local variables
+    real(DP) :: dbasI, dbasJ
+    real(DP) :: dbasIx, dbasJx, dbasIy, dbasJy, dbasIz, dbasJz
+    integer :: iel, icubp, idofe, jdofe, ivar, nvar
+    real(DP), dimension(:,:,:), pointer :: p_DlocalMatrix11,p_DlocalMatrix22
+    real(DP), dimension(:,:,:,:), pointer :: p_DbasTrial,p_DbasTest
+    real(DP), dimension(:,:), pointer :: p_DcubWeight
+    type(t_bmaMatrixData), pointer :: p_rmatrixData11
 
-    ! Put the mass matrix to (1,1).
-    rlocalCollect%DquickAccess(1) = 1.0_DP    ! Multiplier
-    rlocalCollect%IquickAccess(1) = 1         ! x-position
-    rlocalCollect%IquickAccess(2) = 1         ! y-position
-    
-    ! Call the assembly routine
-    call bma_fcalc_mass(RmatrixData,rassemblyData,rmatrixAssembly,&
-        npointsPerElement,nelements,revalVectors,rlocalCollect)
-    
-    ! Put the Laplace matrix to (2,2)
-    rlocalCollect%DquickAccess(1) = 1.0_DP    ! Multiplier
-    rlocalCollect%IquickAccess(1) = 2         ! x-position
-    rlocalCollect%IquickAccess(2) = 2         ! y-position
-    
-    ! Call the assembly routine
-    call bma_fcalc_laplace(RmatrixData,rassemblyData,rmatrixAssembly,&
-        npointsPerElement,nelements,revalVectors,rlocalCollect)
+    integer :: ix, iy, ndimfe, idimfe
+    real(DP) :: dscale
 
+    ! Get cubature weights data
+    p_DcubWeight => rassemblyData%p_DcubWeight
+
+    ! Get local data
+    p_DbasTrial => RmatrixData(1,1)%p_DbasTrial
+    p_DbasTest => RmatrixData(1,1)%p_DbasTest
+    
+    ! Get the matrix data.
+    p_rmatrixData11 => RmatrixData(1,1)
+    
+    ! Get the matrix entries.
+    p_DlocalMatrix11 => RmatrixData(1,1)%p_Dentry
+    p_DlocalMatrix22 => RmatrixData(2,2)%p_Dentry
+
+    ! Loop over the elements in the current set.
+    do iel = 1,nelements
+
+      ! Loop over all cubature points on the current element
+      do icubp = 1,npointsPerElement
+
+        ! Outer loop over the DOF's i=1..ndof on our current element,
+        ! which corresponds to the (test) basis functions Phi_i:
+        do idofe=1,p_rmatrixData11%ndofTest
+
+          ! Fetch the contributions of the (test) basis functions Phi_i
+          ! into dbasI
+          dbasI  = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+          dbasIx = p_DbasTest(idofe,DER_DERIV2D_X,icubp,iel)
+          dbasIy = p_DbasTest(idofe,DER_DERIV2D_Y,icubp,iel)
+
+          ! Inner loop over the DOF's j=1..ndof, which corresponds to
+          ! the basis function Phi_j:
+          do jdofe=1,p_rmatrixData11%ndofTrial
+
+            ! Fetch the contributions of the (trial) basis function Phi_j
+            ! into dbasJ
+            dbasJ  = p_DbasTrial(jdofe,DER_FUNC,icubp,iel)
+            dbasJx = p_DbasTrial(jdofe,DER_DERIV2D_X,icubp,iel)
+            dbasJy = p_DbasTrial(jdofe,DER_DERIV2D_Y,icubp,iel)
+
+            ! Multiply the values of the basis functions
+            ! (1st derivatives) by the cubature weight and sum up
+            ! into the local matrices.
+
+            ! Mass to the block (1,1)
+            p_DlocalMatrix11(jdofe,idofe,iel) = p_DlocalMatrix11(jdofe,idofe,iel) + &
+                p_DcubWeight(icubp,iel) * dbasJ*dbasI
+
+            ! Laplace to the block (2,2)
+            p_DlocalMatrix22(jdofe,idofe,iel) = p_DlocalMatrix22(jdofe,idofe,iel) + &
+                p_DcubWeight(icubp,iel) * ( dbasJx*dbasIx + dbasJy*dbasIy )
+
+          end do ! jdofe
+
+        end do ! idofe
+
+      end do ! icubp
+
+    end do ! iel
+        
   end subroutine
 
   ! ***************************************************************************
 
-  subroutine start_tutorial008e
+  subroutine start_tutorial008f
 
     ! Declare some variables.
     type(t_triangulation) :: rtriangulation
@@ -113,7 +164,7 @@ contains
     ! Print a message
     call output_lbrk()
     call output_separator (OU_SEP_STAR)
-    call output_line ("This is FEAT-2. Tutorial 008e")
+    call output_line ("This is FEAT-2. Tutorial 008f")
     call output_separator (OU_SEP_MINUS)
     
     ! =================================
@@ -162,7 +213,8 @@ contains
     ! =================================
     ! Create Mass and Laplace.
     ! Use block assembly routines and a
-    ! callback routine.
+    ! callback routine which applies
+    ! the complete assembly in one step.
     ! =================================
     
     ! Clear the matrix
@@ -178,15 +230,15 @@ contains
     
     ! Write the matrix to a text file, omit nonexisting entries in the matrix.
     call matio_writeBlockMatrixHR (rmatrix, "matrix", .true., 0, &
-        "post/tutorial008e_matrix.txt", "(E11.2)")
+        "post/tutorial008f_matrix.txt", "(E11.2)")
 
     ! Write the matrix to a MATLAB file.
     call matio_spyBlockMatrix(&
-        "post/tutorial008e_matrix","matrix",rmatrix,.true.)
+        "post/tutorial008f_matrix","matrix",rmatrix,.true.)
     
     ! Write the matrix to a MAPLE file
     call matio_writeBlockMatrixMaple (rmatrix, "matrix", 0, &
-        "post/tutorial008e_matrix.maple", "(E11.2)")
+        "post/tutorial008f_matrix.maple", "(E11.2)")
 
     ! =================================
     ! Cleanup

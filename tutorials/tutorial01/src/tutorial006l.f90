@@ -223,7 +223,7 @@ contains
       
       ! Create the defect:   d := b - M x_n
       call lsyssc_copyVector (rrhs,rdefect)
-      call lsyssc_scalarMatVec (rmatrix, rx, rdefect, -1.0_DP, 1.0_DP)
+      call lsyssc_matVec (rmatrix, rx, rdefect, -1.0_DP, 1.0_DP)
       
       ! Check the norm ||d||_l2
       dnorm = lsyssc_vectorNorm (rdefect,LINALG_NORML2)

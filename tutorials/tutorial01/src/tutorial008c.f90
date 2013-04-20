@@ -1,5 +1,5 @@
 !##############################################################################
-!# Tutorial 008c: Create a 2x2 block system with Mass and Laplace on the diag.
+!# Tutorial 008c: Create a 2x2 block system with diffusion/convection/reaction
 !##############################################################################
 
 module tutorial008c
@@ -14,16 +14,14 @@ module tutorial008c
   
   use derivatives
   use element
+  use cubature
   use spatialdiscretisation
   use linearsystemscalar
   use linearsystemblock
-  use bilinearformevaluation
-  use stdoperators
-  
-  use blockmatassemblybase
-  use blockmatassembly
-  use blockmatassemblystdop
-  use collection
+
+  use scalarpde
+  use derivatives
+  use bilinearformevaluation  
   
   use matrixio
 
@@ -45,8 +43,9 @@ contains
     
     type(t_matrixScalar) :: rtemplateMatrix
     type(t_matrixBlock) :: rmatrix
-    
-    type(t_collection) :: rcollection
+
+    type(t_scalarCubatureInfo), target :: rcubatureInfo
+    type(t_bilinearForm) :: rform
 
     ! Print a message
     call output_lbrk()
@@ -98,27 +97,85 @@ contains
         LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
 
     ! =================================
-    ! Create Mass and Laplace.
-    ! Use default block assembly routines.
-    ! =================================
-    
     ! Clear the matrix
+    ! =================================
+
     call lsysbl_clearMatrix (rmatrix)
-    
-    ! Put the mass matrix to (1,1).
-    rcollection%DquickAccess(1) = 1.0_DP    ! Multiplier
-    rcollection%IquickAccess(1) = 1         ! x-position
-    rcollection%IquickAccess(2) = 1         ! y-position
-    call bma_buildMatrix (rmatrix,BMA_CALC_STANDARD,bma_fcalc_mass,rcollection)
-    
-    ! Put the Laplace matrix to (2,2)
-    rcollection%DquickAccess(1) = 1.0_DP    ! Multiplier
-    rcollection%IquickAccess(1) = 2         ! x-position
-    rcollection%IquickAccess(2) = 2         ! y-position
-    call bma_buildMatrix (rmatrix,BMA_CALC_STANDARD,bma_fcalc_laplace,rcollection)
 
     ! =================================
-    ! Output of the matrix structure
+    ! Use a 3-point Gauss Formula for the assembly
+    ! =================================
+    
+    call spdiscr_createDefCubStructure (rspatialDiscr,rcubatureInfo,CUB_GEN_AUTO_G3)
+
+    ! =================================
+    ! Block (1,1): -Laplace(u) + beta grad(u)
+    ! =================================
+
+    ! Set up a bilinear for for Laplace + convection. There are 4 terms...    
+    rform%itermCount = 4
+    
+    ! We have constant coefficients:
+    rform%ballCoeffConstant = .true.
+
+    ! Term 1/2: -Laplace  =>  (1 phi_x psi_x  +  1 phi_y psi_y)
+    rform%Dcoefficients(1)  = 1.0_DP
+    rform%BconstantCoeff(1) = .true.
+    rform%Idescriptors(1,1) = DER_DERIV2D_X
+    rform%Idescriptors(2,1) = DER_DERIV2D_X
+    
+    rform%Dcoefficients(2)  = 1.0_DP
+    rform%BconstantCoeff(2) = .true.
+    rform%Idescriptors(1,2) = DER_DERIV2D_Y
+    rform%Idescriptors(2,2) = DER_DERIV2D_Y
+    
+    ! Term 3/4: Convection  beta*grad  =>  beta_1 phi_x psi  +  beta_2 phi_y psi
+    ! We take beta=(2,0.5).
+    rform%Dcoefficients(3)  = 2.0_DP
+    rform%BconstantCoeff(3) = .true.
+    rform%Idescriptors(1,3) = DER_DERIV2D_X
+    rform%Idescriptors(2,3) = DER_FUNC2D
+    
+    rform%Dcoefficients(4)  = 0.5_DP
+    rform%BconstantCoeff(4) = .true.
+    rform%Idescriptors(1,4) = DER_DERIV2D_Y
+    rform%Idescriptors(2,4) = DER_FUNC2D
+
+    ! Build the matrix block (1,1)
+    call bilf_buildMatrixScalar (rform,.false.,rmatrix%RmatrixBlock(1,1),rcubatureInfo)
+
+    ! =================================
+    ! Block (2,2): -Laplace(u) + u
+    ! =================================
+
+    ! Set up a bilinear for for Laplace + convection. There are 4 terms...    
+    rform%itermCount = 4
+    
+    ! We have constant coefficients:
+    rform%ballCoeffConstant = .true.
+
+    ! Term 1/2: -Laplace  =>  (1 phi_x psi_x  +  1 phi_y psi_y)
+    rform%Dcoefficients(1)  = 1.0_DP
+    rform%BconstantCoeff(1) = .true.
+    rform%Idescriptors(1,1) = DER_DERIV2D_X
+    rform%Idescriptors(2,1) = DER_DERIV2D_X
+    
+    rform%Dcoefficients(2)  = 1.0_DP
+    rform%BconstantCoeff(2) = .true.
+    rform%Idescriptors(1,2) = DER_DERIV2D_Y
+    rform%Idescriptors(2,2) = DER_DERIV2D_Y
+    
+    ! Term 3/4: Reaction.  =>  (1 phi psi)
+    rform%Dcoefficients(3)  = 1.0_DP
+    rform%BconstantCoeff(3) = .true.
+    rform%Idescriptors(1,3) = DER_FUNC2D
+    rform%Idescriptors(2,3) = DER_FUNC2D
+    
+    ! Build the matrix block (2,2)
+    call bilf_buildMatrixScalar (rform,.false.,rmatrix%RmatrixBlock(2,2),rcubatureInfo)
+
+    ! =================================
+    ! Output of the matrix
     ! =================================
     call output_line ("Writing matrix to text files...")
     
@@ -138,6 +195,9 @@ contains
     ! Cleanup
     ! =================================
     
+    ! Release the cubature formula
+    call spdiscr_releaseCubStructure (rcubatureInfo)
+
     ! Release the matrix
     call lsysbl_releaseMatrix (rmatrix)
     

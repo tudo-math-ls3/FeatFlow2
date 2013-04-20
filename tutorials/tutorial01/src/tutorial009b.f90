@@ -1,8 +1,8 @@
 !##############################################################################
-!# Tutorial 006k: Create a RHS vector
+!# Tutorial 009b: Assemble a block vector.
 !##############################################################################
 
-module tutorial006k
+module tutorial009b
 
   ! Include basic Feat-2 modules
   use fsystem
@@ -12,23 +12,24 @@ module tutorial006k
   use triangulation
   use meshgeneration
   
-  use cubature
-  use element
   use derivatives
+  use element
+  use cubature
   use spatialdiscretisation
   use linearsystemscalar
-
+  use linearsystemblock
+  
   use scalarpde
   use linearformevaluation
   use domainintegration
   
-  use vectorio
   use collection
+  use vectorio
 
   implicit none
   private
   
-  public :: start_tutorial006k
+  public :: start_tutorial009b
 
 contains
 
@@ -93,45 +94,70 @@ contains
 
 !</subroutine>
 
-    integer :: ielement, ipoint
-    real(DP) :: dx, dy, dmult
+    integer :: ielement, ipoint, iblock
+    real(DP) :: dx, dy
     
-    ! Get the multiplier from the collection -- will be 4.0 by default (see below).
-    dmult = rcollection%DquickAccess(1)
+    ! Get the ID of the RHS from the assembly.
+    iblock = rcollection%IquickAccess(1)
     
-    do ielement = 1,nelements
-      do ipoint = 1,npointsPerElement
-      
-        ! x/y coordinate
-        dx = Dpoints(1,ipoint,ielement)
-        dy = Dpoints(2,ipoint,ielement)
+    select case (iblock)
+    
+    ! -----------------------------------------------------
+    ! First block. f(x,y) = 1
+    case (1)
+    
+      do ielement = 1,nelements
+        do ipoint = 1,npointsPerElement
         
-        ! Write f(x,y)=d*16*x*(1-x)*y*(1-y) into Dcoefficients(1,:,:)
-        Dcoefficients(1,ipoint,ielement) = &
-            dmult * 16.0_DP * dx * (1.0_DP - dx) * dy * (1.0_DP - dy)
-      
+          ! x/y coordinate
+          dx = Dpoints(1,ipoint,ielement)
+          dy = Dpoints(2,ipoint,ielement)
+          
+          ! Write f(x,y)=d*16*x*(1-x)*y*(1-y) into Dcoefficients(1,:,:)
+          Dcoefficients(1,ipoint,ielement) = 1.0_DP
+        
+        end do
       end do
-    end do
+
+    ! -----------------------------------------------------
+    ! 2nd block. f(x,y) = 16x(1-x)y(1-y)
+    case (2)
+    
+      do ielement = 1,nelements
+        do ipoint = 1,npointsPerElement
+        
+          ! x/y coordinate
+          dx = Dpoints(1,ipoint,ielement)
+          dy = Dpoints(2,ipoint,ielement)
+          
+          ! Write f(x,y)=d*16*x*(1-x)*y*(1-y) into Dcoefficients(1,:,:)
+          Dcoefficients(1,ipoint,ielement) = 16.0_DP * dx * (1.0_DP - dx) * dy * (1.0_DP - dy)
+        
+        end do
+      end do
+      
+    end select
     
   end subroutine
 
   ! ***************************************************************************
 
-  subroutine start_tutorial006k
+  subroutine start_tutorial009b
 
     ! Declare some variables.
     type(t_triangulation) :: rtriangulation
-    type(t_spatialdiscretisation) :: rdiscretisation
+    type(t_spatialDiscretisation) :: rspatialDiscr
+    type(t_blockDiscretisation) :: rblockDiscr
     
     type(t_linearForm) :: rlinform
     type(t_collection) :: rcollection
     type(t_scalarCubatureInfo), target :: rcubatureInfo_G3
-    type(t_vectorScalar) :: rrhs
-    
+    type(t_vectorBlock) :: rrhs
+
     ! Print a message
     call output_lbrk()
     call output_separator (OU_SEP_STAR)
-    call output_line ("This is FEAT-2. Tutorial 006k")
+    call output_line ("This is FEAT-2. Tutorial 009b")
     call output_separator (OU_SEP_MINUS)
     
     ! =================================
@@ -144,44 +170,69 @@ contains
     call tria_initStandardMeshFromRaw (rtriangulation)
 
     ! =================================
-    ! Discretise with Q1.
+    ! Create a block discretisation that encapsules
+    ! two equations, both discretised with Q1.
     ! =================================
 
-    call spdiscr_initDiscr_simple (rdiscretisation,EL_Q1_2D,rtriangulation)
+    ! Set up a Q1 discretisation
+    call spdiscr_initDiscr_simple (rspatialDiscr,EL_Q1_2D,rtriangulation)
+
+    ! Set up a block discretisation for two equations.
+    call spdiscr_initBlockDiscr (rblockDiscr,2,rtriangulation)
+
+    ! Both equations are Q1. Initialise with the Q1 discretisation.
+    call spdiscr_duplicateDiscrSc (rspatialDiscr,rblockDiscr%RspatialDiscr(1))
+    call spdiscr_duplicateDiscrSc (rspatialDiscr,rblockDiscr%RspatialDiscr(2))
+    
+    ! =================================
+    ! Create a vector with 2 blocks
+    ! =================================
+    
+    ! Use the block discretisation to create a block vector.
+    call lsysbl_createVector (rblockDiscr,rrhs)
+
+    ! =================================
+    ! Clear the vector
+    ! =================================
+    
+    call lsysbl_clearVector (rrhs)
 
     ! =================================
     ! Use a 3-point Gauss Formula for the RHS
     ! =================================
     
-    call spdiscr_createDefCubStructure (rdiscretisation,rcubatureInfo_G3,CUB_GEN_AUTO_G3)
+    call spdiscr_createDefCubStructure (rspatialDiscr,rcubatureInfo_G3,CUB_GEN_AUTO_G3)
 
     ! =================================
-    ! Create a RHS vector.
+    ! Assemble a RHS vector.
     ! =================================
-    
-    ! Create a vector.
-    call lsyssc_createVector (rdiscretisation,rrhs)
     
     ! Prepare a linear form structure for one term in the RHS: (f, phi).
     ! The test function is just phi without derivative.
     rlinform%itermCount = 1
     rlinform%Idescriptors(1) = DER_FUNC2D
     
-    ! Build the RHS using fcoeff_RHS above. Pass a multiplier via a collection structure.
+    ! Build the RHS using fcoeff_RHS above. Pass the block to assemble in the collection.
     ! rcollection%DquickAccess/IquickAccess/... can arbitrarily be used to pass values.
-    rcollection%DquickAccess(1) = 4.0_DP
     
-    call linf_buildVectorScalar (&
-        rlinform,.true.,rrhs,rcubatureInfo_G3,fcoeff_RHS,rcollection)
+    ! First block
+    rcollection%IquickAccess(1) = 1
+    call linf_buildVectorScalar (rlinform,.true.,&
+        rrhs%RvectorBlock(1),rcubatureInfo_G3,fcoeff_RHS,rcollection)
+
+    ! 2nd block
+    rcollection%IquickAccess(1) = 2
+    call linf_buildVectorScalar (rlinform,.true.,&
+        rrhs%RvectorBlock(2),rcubatureInfo_G3,fcoeff_RHS,rcollection)
 
     ! =================================
-    ! Output to files. 
+    ! Output of the vector
     ! =================================
-    call output_line ("Writing RHS vector to text file...")
-
+    call output_line ("Writing vector to a text file...")
+    
     ! Write the vector to a text file.
-    call vecio_writeVectorHR (rrhs, "vector", .true., 0, &
-        "post/tutorial006k_rhs.txt", "(E20.10)")
+    call vecio_writeBlockVectorHR (rrhs, "vector", .true., 0, &
+        "post/tutorial009b_rhs.txt", "(E11.2)")
 
     ! =================================
     ! Cleanup
@@ -190,8 +241,14 @@ contains
     ! Release the cubature formula
     call spdiscr_releaseCubStructure (rcubatureInfo_G3)
 
+    ! Release the vector
+    call lsysbl_releaseVector (rrhs)
+    
+    ! Release the block discretisation
+    call spdiscr_releaseBlockDiscr (rblockDiscr)
+    
     ! Release the Q1-discretisation
-    call spdiscr_releaseDiscr (rdiscretisation)
+    call spdiscr_releaseDiscr (rspatialDiscr)
 
     ! Release the triangulation
     call tria_done (rtriangulation)
