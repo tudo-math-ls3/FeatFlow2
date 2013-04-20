@@ -1396,7 +1396,7 @@ contains
             call sys_halt()
           end if
         else
-          call lsysbl_resizeVectorBlock(rafcstab%p_rvectorPredictor,&
+          call lsysbl_resizeVector(rafcstab%p_rvectorPredictor,&
               rafcstab%NEQ, .false., .false.)
 
           ! Reset specifier
@@ -3421,7 +3421,7 @@ contains
 
       if (present(rblockDiscretisation)) then
         ! Create block vector by block discretisation
-        call lsysbl_createVectorBlock(rblockDiscretisation,&
+        call lsysbl_createVector(rblockDiscretisation,&
             rafcstab%p_rvectorPredictor, .false., rafcstab%cdataType)
       elseif (present(rdiscretisation)) then
         ! Create scalar vector by spatial discretisation and convert
@@ -3432,7 +3432,7 @@ contains
         call lsyssc_releaseVector(rvector)
       else
         ! Create 1-block vector directly
-        call lsysbl_createVectorBlock(rafcstab%p_rvectorPredictor,&
+        call lsysbl_createVector(rafcstab%p_rvectorPredictor,&
             rafcstab%NEQ, 1, .false., rafcstab%cdataType)
       end if
 
@@ -3504,7 +3504,7 @@ contains
       ! We need the nodal vector for the predictor
       if (present(rblockDiscretisation)) then
         ! Create block vector by block discretisation
-        call lsysbl_createVectorBlock(rblockDiscretisation,&
+        call lsysbl_createVector(rblockDiscretisation,&
             rafcstab%p_rvectorPredictor, .false., rafcstab%cdataType)
       elseif (present(rdiscretisation)) then
         ! Create scalar vector by spatial discretisation and convert
@@ -3515,7 +3515,7 @@ contains
         call lsyssc_releaseVector(rvector)
       else
         ! Create 1-block vector directly
-        call lsysbl_createVectorBlock(rafcstab%p_rvectorPredictor,&
+        call lsysbl_createVector(rafcstab%p_rvectorPredictor,&
             rafcstab%NEQ, 1, .false., rafcstab%cdataType)
       end if
 

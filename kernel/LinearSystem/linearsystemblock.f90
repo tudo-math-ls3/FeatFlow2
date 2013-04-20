@@ -11,249 +11,263 @@
 !#
 !# The following routines can be found here:
 !#
-!#  1.) lsysbl_createVecBlockDirect
+!#  1.) lsysbl_createVector
+!#      -> This is an alias for various routines to create a block vector.
+!#
+!#      1a) lsysbl_createVecBlockDirect
 !#      -> Create a block vector by specifying the size of the subblocks
 !#
-!#  2.) lsysbl_createVecBlockIndirect
+!#      1b) lsysbl_createVecBlockIndirect
 !#      -> Create a block vector by copying the structure of another block
 !#         vector
 !#
-!#  3.) lsysbl_createVecBlockByDiscr
+!#      1c) lsysbl_createVecBlockByDiscr
 !#      -> Create a block vector using a block discretisation structure
 !#
-!#  4.) lsysbl_createVecBlockIndMat
+!#      1d) lsysbl_createVecBlockIndMat
 !#      -> Create a block vector according to a block matrix.
 !#
-!#  5.) lsysbl_createMatFromScalar
-!#      -> Create a 1x1 block matrix from a scalar matrix
-!#
-!#  6.) lsysbl_createVecFromScalar
+!#      1e) lsysbl_createVecFromScalar
 !#      -> Create a 1-block vector from a scalar vector
 !#
-!#  7.) lsysbl_createMatBlockByDiscr
+!#  2.) lsysbl_createMatrix
+!#      -> This is an alias for various routines to create a block matrix.
+!#
+!#      2a) lsysbl_createMatFromScalar
+!#      -> Create a 1x1 block matrix from a scalar matrix
+!#
+!#      2b) lsysbl_createMatBlockByDiscr
 !#      -> Create an empty block matrix using a block discretisation structure
 !#
-!#  8.) lsysbl_createEmptyMatrix
+!#      2c) lsysbl_createEmptyMatrix
 !#      -> Creates an empty block matrix
 !#
-!#  9.) lsysbl_duplicateMatrix
+!#  3.) lsysbl_duplicateMatrix
 !#      -> Duplicates a block matrix by duplicating all sub-matrices
 !#      -> Extendend version of lsysbl_copyMatrix
 !#
-!# 10.) lsysbl_duplicateVector
+!#  4.) lsysbl_duplicateVector
 !#      -> Duplicates a block vector by duplicating all sub-vectors
 !#      -> Extended version of lsysbl_copyVector
 !#
-!# 11.) lsysbl_enforceStructure
-!#      -> Enforces the structure of a given block vector in another
-!#         block vector
+!#  5.) lsysbl_enforceStructure
+!#      -> Enforces a structure to a block vector. This is an alias to
+!#         various other routines.
 !#
-!# 12.) lsysbl_enforceStructureDirect
+!#      5a) lsysbl_enforceStructureTempl
+!#      -> Enforces the structure of a given block vector in another
+!#         block vector.
+!#
+!#      5b) lsysbl_enforceStructureDirect
 !#      -> Enforces a subvector structure according to a length definition
 !#         to a block vector
 !#
-!# 13.) lsysbl_enforceStructureDiscr
+!#      5c) lsysbl_enforceStructureDiscr
 !#      -> Enforces a subvector structure according to a given discretisation
 !#
-!# 14.) lsysbl_assignDiscrIndirect
+!#  6.) lsysbl_assignDiscretisation
+!#      -> Assigns a discretisation to a vector. This is an alias to
+!#         various other routines.
+!#
+!#      6a) lsysbl_assignDiscrIndirect
 !#      -> Assign discretisation related information of one vector
 !#         to another
 !#
-!# 15.) lsysbl_assignDiscrIndirectMat
+!#      6b) lsysbl_assignDiscrIndirectMat
 !#      -> Assign discretisation related information of a matrix
 !#         to a vector to make it compatible.
 !#
-!# 16.) lsysbl_updateMatStrucInfo
+!#      6c) lsysbl_assignDiscrDirectMat
+!#      -> Assign a block discretisation to a matrix
+!#
+!#      6d) lsysbl_assignDiscrDirectVec
+!#      -> Assign a block discretisation to a vector
+!#
+!#  7.) lsysbl_updateMatStrucInfo
 !#      -> Recalculate structural data of a block matrix from
 !#         the submatrices
 !#
-!# 17.) lsysbl_releaseVector
+!#  8.) lsysbl_releaseVector
 !#      -> Release a block vector from memory
 !#
-!# 18.) lsysbl_releaseMatrix
+!#  9.) lsysbl_releaseMatrix
 !#      -> Releases a block matrix and all submatrices
 !#
-!# 19.) lsysbl_releaseMatrixRow
+!# 10.) lsysbl_releaseMatrixRow
 !#      -> Releases a row of submatrices from a block matrix
 !#
-!# 20.) lsysbl_releaseMatrixColumn
+!# 11.) lsysbl_releaseMatrixColumn
 !#      -> Releases a column of submatrices from a block matrix
 !#
-!# 21.) lsysbl_blockMatVec
+!# 12.) lsysbl_matVec
 !#      -> Multiply a block matrix with a block vector
 !#
-!# 22.) lsysbl_copyVector
+!# 13.) lsysbl_copyVector
 !#       -> Copy a block vector to another one
 !#
-!# 23.) lsysbl_copyMatrix
+!# 14.) lsysbl_copyMatrix
 !#       -> Copy a block matrix to another one
 !#
-!# 24.) lsysbl_scaleVector
+!# 15.) lsysbl_scaleVector
 !#      -> Scale a block vector by a constant
 !#
-!# 25.) lsysbl_clearVector
+!# 16.) lsysbl_clearVector
 !#      -> Clear a block vector, i.e. overwrites all entries with 0.0 or
 !#         with a defined value
 !#
-!# 26.) lsysbl_vectorLinearComb
+!# 17.) lsysbl_vectorLinearComb
 !#      -> Linear combination of two block vectors
 !#
-!# 27.) lsysbl_scalarProduct
+!# 18.) lsysbl_scalarProduct
 !#      -> Calculate a scalar product of two vectors
 !#
-!# 28.) lsysbl_setSortStrategy
+!# 19.) lsysbl_setSortStrategy
 !#      -> Assigns a sorting strategy/permutation to every subvector
 !#
-!# 29.) lsysbl_sortVector / lsysbl_sortMatrix
+!# 20.) lsysbl_sortVector / lsysbl_sortMatrix
 !#      -> Activates the sorting of a vector / a matrix
 !#
-!# 30.) lsysbl_isVectorCompatible
+!# 21.) lsysbl_isVectorCompatible
 !#      -> Checks whether two vectors are compatible to each other
 !#
-!# 31.) lsysbl_isMatrixCompatible
+!# 22.) lsysbl_isMatrixCompatible
 !#      -> Checks whether a matrix and a vector are compatible to each other
 !#
-!# 32.) lsysbl_isMatrixSorted
+!# 23.) lsysbl_isMatrixSorted
 !#      -> Checks if a block matrix is sorted
 !#
-!# 33.) lsysbl_isVectorSorted
+!# 24.) lsysbl_isVectorSorted
 !#      -> Checks if a block vector is sorted
 !#
-!# 34.) lsysbl_getbase_double
+!# 25.) lsysbl_getbase_double
 !#      -> Get a pointer to the double precision data array of the vector
 !#
-!# 35.) lsysbl_getbase_single
+!# 26.) lsysbl_getbase_single
 !#      -> Get a pointer to the single precision data array of the vector
 !#
-!# 36.) lsysbl_vectorNorm
+!# 27.) lsysbl_vectorNorm
 !#      -> Calculates the norm of a vector. the vector is treated as one
 !#         long data array.
 !#
-!# 37.) lsysbl_vectorNormBlock
+!# 28.) lsysbl_vectorNormBlock
 !#      -> Calculates the norm of all subvectors in a given block vector.
 !#
-!# 38.) lsysbl_invertedDiagMatVec = lsysbl_invertedDiagBlockMatVec /
+!# 29.) lsysbl_invertedDiagMatVec = lsysbl_invertedDiagBlockMatVec /
 !#                                  lsysbl_invertedDiagScalarMatVec
 !#      -> Multiply a vector with the inverse of the diagonal of a matrix
 !#
-!# 39.) lsysbl_swapVectors
+!# 30.) lsysbl_swapVectors
 !#      -> Swap two vectors
 !#
-!# 40.) lsysbl_deriveSubvector
+!# 31.) lsysbl_deriveSubvector
 !#      -> Derives a blockvector as a subset of another blockvector
 !#
-!# 41.) lsysbl_deriveSubmatrix / lsysbl_extractSubmatrix
+!# 32.) lsysbl_deriveSubmatrix / lsysbl_extractSubmatrix
 !#      -> Extracts a submatrix from a block matrix
 !#
-!# 42.) lsysbl_isSubmatrixPresent
+!# 33.) lsysbl_isSubmatrixPresent
 !#      -> Checks if a submatrix of a blockmatrix is present
 !#
-!# 43.) lsysbl_resizeVectorBlock
-!#      -> Resize a block vector
+!# 34.) lsysbl_resizeVector
+!#      -> Resize a block vector. This is an alias to various routines.
 !#
-!# 44.) lsysbl_resizeVecBlockIndMat
+!#      34a) lsysbl_resizeVecBlockIndMat
 !#      -> Resize a block vector according to a block matrix
 !#
-!# 45.) lsysbl_infoVector
+!# 35.) lsysbl_infoVector
 !#      -> Outputs information about the vector (mostly used for debugging)
 !#
-!# 46.) lsysbl_infoMatrix
+!# 36.) lsysbl_infoMatrix
 !#      -> Outputs information about the matrix (mostly used for debugging)
 !#
-!# 47.) lsysbl_clearMatrix
+!# 37.) lsysbl_clearMatrix
 !#      -> Clears a matrix, i.e. overwrites all entries with 0.0 or
 !#         with a defined value
 !#
-!# 48.) lsysbl_convertVecFromScalar
+!# 38.) lsysbl_convertVecFromScalar
 !#      -> Converts a scalar vector to a 1-block vector, whereby the
 !#         block vector takes over leadership of the data.
 !#
-!# 49.) lsysbl_convertMatFromScalar
+!# 39.) lsysbl_convertMatFromScalar
 !#      -> Converts a scalar matrix to a 1x1 block vector, whereby the
 !#         block matrix takes over leadership of the data.
 !#
-!# 50.) lsysbl_insertSubmatrix
+!# 40.) lsysbl_insertSubmatrix
 !#      -> Insert a block matrix into another block matrix
 !#
-!# 51.) lsysbl_assignDiscrDirectMat
-!#      -> Assign a block discretisation to a matrix
-!#
-!# 52.) lsysbl_assignDiscrDirectVec
-!#      -> Assign a block discretisation to a vector
-!#
-!# 53.) lsysbl_createFpdbObjectVec
+!# 41.) lsysbl_createFpdbObjectVec
 !#      -> Creates an ObjectItem representing a block vector
 !#
-!# 54.) lsysbl_createFpdbObjectMat
+!# 42.) lsysbl_createFpdbObjectMat
 !#      -> Creates an ObjectItem representing a block matrix
 !#
-!# 55.) lsysbl_restoreFpdbObjectVec
+!# 43.) lsysbl_restoreFpdbObjectVec
 !#      -> Restores a block vector from an ObjectItem
 !#
-!# 56.) lsysbl_restoreFpdbObjectMat
+!# 44.) lsysbl_restoreFpdbObjectMat
 !#      -> Restores a block matrix from an ObjectItem
 !#
-!# 57.) lsyssc_unshareMatrix
+!# 45.) lsyssc_unshareMatrix
 !#      -> Renders a matrix independent, resets the sharing state
 !#
-!# 58.) lsyssc_unshareVector
+!# 46.) lsyssc_unshareVector
 !#      -> Renders a vector independent, resets the sharing state
 !#
-!# 59.) lsysbl_moveToSubmatrix
+!# 47.) lsysbl_moveToSubmatrix
 !#      -> Moves a matrix to a submatrix of a larger matrix
 !#
-!# 60.) lsysbl_allocEmptyMatrix
+!# 48.) lsysbl_allocEmptyMatrix
 !#      -> Allocates memory for the entries of a matrix.
 !#
-!# 61.) lsysbl_getVectorMagnitude
+!# 49.) lsysbl_getVectorMagnitude
 !#      -> Compute the vector magnitude.
 !#
-!# 62.) lsysbl_synchroniseSort
+!# 50.) lsysbl_synchroniseSort
 !#      -> Synchronises the sorting between a vector and another vector
 !#      -> Synchrionises the sorting of a vector according to the sorting
 !#         of a matrix
 !#
-!# 64.) lsysbl_createScalarFromVec
+!# 51.) lsysbl_createScalarFromVec
 !#      -> Create a scalar vector from a block vector
 !#
-!# 65.) lsysbl_swapMatrices
+!# 52.) lsysbl_swapMatrices
 !#      -> Swap two matricess
 !#
-!# 66.) lsysbl_assignDiscreteBC
+!# 53.) lsysbl_assignDiscreteBC
 !#      -> Assigns discrete boundary conditions to a matrix/vector
 !#
-!# 67.) lsysbl_assignDiscreteFBC
+!# 54.) lsysbl_assignDiscreteFBC
 !#      -> Assigns discrete fictitious boundary conditions to a matrix/vector
 !#
-!# 68.) lsysbl_convertScalarBlockVector
+!# 55.) lsysbl_convertScalarBlockVector
 !#      -> Converts a scalar vector (in interleaved format) into block vector
 !#
-!# 69.) lsysbl_convertBlockScalarVector
+!# 56.) lsysbl_convertBlockScalarVector
 !#      -> Converts a block vector into scalar vector (in interleaved format)
 !#
-!# 70.) lsysbl_scaleMatrix
+!# 57.) lsysbl_scaleMatrix
 !#      -> Scale a matrix by a constant
 !#
-!# 71.) lsysbl_copyH2D_Vector
+!# 58.) lsysbl_copyH2D_Vector
 !#      -> Copies the data of a vector from the host memory
 !#         to the memory of the coprocessor device.
 !#
-!# 72.) lsysbl_copyD2H_Vector
+!# 59.) lsysbl_copyD2H_Vector
 !#      -> Copies the data of a matrix from the memory of the
 !#         coprocessor device to the host memory
 !#
-!# 73.) lsysbl_copyH2D_Matrix
+!# 60.) lsysbl_copyH2D_Matrix
 !#      -> Copies the data of a matrix from the host memory
 !#         to the memory of the coprocessor device.
 !#
-!# 74.) lsysbl_copyD2H_Matrix
+!# 61.) lsysbl_copyD2H_Matrix
 !#      -> Copies the data of a vector from the memory of the
 !#         coprocessor device to the host memory
 !#
-!# 75.) lsysbl_getScalarTempVector
+!# 62.) lsysbl_getScalarTempVector
 !#      -> Creates a scalar temp vector.
 !#
-!# 76.) lsysbl_getBlockVectorOverlay
+!# 63.) lsysbl_getBlockVectorOverlay
 !#      -> Creates an array of block vectors overlaying a dense scalar matrix
 !#
 !# </purpose>
@@ -461,7 +475,7 @@ module linearsystemblock
 
 !</types>
 
-  interface lsysbl_createVectorBlock
+  interface lsysbl_createVector
     module procedure lsysbl_createVecBlockDirect
     module procedure lsysbl_createVecBlockDirIntl
     module procedure lsysbl_createVecBlockDirIntl2
@@ -472,9 +486,10 @@ module linearsystemblock
     module procedure lsysbl_createVecBlockByDiscr
     module procedure lsysbl_createVecBlkByDiscrIntl
     module procedure lsysbl_createVecBlkByDiscrIntl2
+    module procedure lsysbl_createVecFromScalar
   end interface
 
-  public :: lsysbl_createVectorBlock
+  public :: lsysbl_createVector
   public :: lsysbl_createVecBlockDirect
   public :: lsysbl_createVecBlockDirIntl
   public :: lsysbl_createVecBlockDirIntl2
@@ -483,8 +498,19 @@ module linearsystemblock
   public :: lsysbl_createVecBlockIndMat
   public :: lsysbl_createVecBlockByDiscr
   public :: lsysbl_createVecBlkByDiscrIntl
+  public :: lsysbl_createVecFromScalar
+  
+  interface lsysbl_createMatrix
+    module procedure lsysbl_createMatFromScalar
+    module procedure lsysbl_createMatBlockByDiscr
+    module procedure lsysbl_createEmptyMatrix
+  end interface  
 
-  interface lsysbl_resizeVectorBlock
+  public :: lsysbl_createMatFromScalar
+  public :: lsysbl_createMatBlockByDiscr
+  public :: lsysbl_createEmptyMatrix
+
+  interface lsysbl_resizeVector
     module procedure lsysbl_resizeVecBlockDirect
     module procedure lsysbl_resizeVecBlockDirectDims
     module procedure lsysbl_resizeVecBlockIndMat
@@ -492,7 +518,7 @@ module linearsystemblock
     module procedure lsysbl_resizeVecBlockByDiscr
   end interface
 
-  public :: lsysbl_resizeVectorBlock
+  public :: lsysbl_resizeVector
   public :: lsysbl_resizeVecBlockDirect
   public :: lsysbl_resizeVecBlockDirectDims
   public :: lsysbl_resizeVecBlockIndMat
@@ -567,24 +593,41 @@ module linearsystemblock
 
   public :: lsysbl_vectorLinearComb
 
-  public :: lsysbl_invertedDiagMatVec
-  public :: lsysbl_createMatFromScalar
-  public :: lsysbl_createVecFromScalar
-  public :: lsysbl_createMatBlockByDiscr
-  public :: lsysbl_createEmptyMatrix
-  public :: lsysbl_duplicateMatrix
-  public :: lsysbl_duplicateVector
+  interface lsysbl_enforceStructure
+    module procedure lsysbl_enforceStructureTempl
+    module procedure lsysbl_enforceStructureDirect
+    module procedure lsysbl_enforceStructureDiscr
+  end interface
+
   public :: lsysbl_enforceStructure
+
+  public :: lsysbl_enforceStructureTempl
   public :: lsysbl_enforceStructureDirect
   public :: lsysbl_enforceStructureDiscr
+  
+  interface lsysbl_assignDiscretisation
+    module procedure lsysbl_assignDiscrIndirect
+    module procedure lsysbl_assignDiscrIndirectMat
+    module procedure lsysbl_assignDiscrDirectMat
+    module procedure lsysbl_assignDiscrDirectVec
+  end interface
+  
+  public :: lsysbl_assignDiscretisation
+
   public :: lsysbl_assignDiscrIndirect
   public :: lsysbl_assignDiscrIndirectMat
+  public :: lsysbl_assignDiscrDirectMat
+  public :: lsysbl_assignDiscrDirectVec
+
+  public :: lsysbl_invertedDiagMatVec
+  public :: lsysbl_duplicateMatrix
+  public :: lsysbl_duplicateVector
   public :: lsysbl_updateMatStrucInfo
   public :: lsysbl_releaseVector
   public :: lsysbl_releaseMatrix
   public :: lsysbl_releaseMatrixRow
   public :: lsysbl_releaseMatrixColumn
-  public :: lsysbl_blockMatVec
+  public :: lsysbl_matVec
   public :: lsysbl_copyVector
   public :: lsysbl_copyMatrix
   public :: lsysbl_scaleVector
@@ -611,8 +654,6 @@ module linearsystemblock
   public :: lsysbl_convertVecFromScalar
   public :: lsysbl_convertMatFromScalar
   public :: lsysbl_insertSubmatrix
-  public :: lsysbl_assignDiscrDirectMat
-  public :: lsysbl_assignDiscrDirectVec
   public :: lsysbl_createFpdbObjectVec
   public :: lsysbl_createFpdbObjectMat
   public :: lsysbl_restoreFpdbObjectVec
@@ -630,6 +671,38 @@ module linearsystemblock
   public :: lsysbl_copyH2D_Matrix
   public :: lsysbl_copyD2H_Matrix
   public :: lsysbl_getBlockVectorOverlay
+
+  ! Some deprecated interfaces
+  interface lsysbl_createVectorBlock
+    module procedure lsysbl_createVecBlockDirect
+    module procedure lsysbl_createVecBlockDirIntl
+    module procedure lsysbl_createVecBlockDirIntl2
+    module procedure lsysbl_createVecBlockDirDims
+    module procedure lsysbl_createVecBlockDirDims2
+    module procedure lsysbl_createVecBlockIndirect
+    module procedure lsysbl_createVecBlockIndMat
+    module procedure lsysbl_createVecBlockByDiscr
+    module procedure lsysbl_createVecBlkByDiscrIntl
+    module procedure lsysbl_createVecBlkByDiscrIntl2
+  end interface
+
+  public :: lsysbl_createVectorBlock
+  
+  interface lsysbl_blockMatVec
+    module procedure lsysbl_matVec
+  end interface
+  
+  public :: lsysbl_blockMatVec
+
+  interface lsysbl_resizeVectorBlock
+    module procedure lsysbl_resizeVecBlockDirect
+    module procedure lsysbl_resizeVecBlockDirectDims
+    module procedure lsysbl_resizeVecBlockIndMat
+    module procedure lsysbl_resizeVecBlockIndirect
+    module procedure lsysbl_resizeVecBlockByDiscr
+  end interface
+  
+  public :: lsysbl_resizeVectorBlock
 
 contains
 
@@ -3022,7 +3095,7 @@ contains
 
 !<subroutine>
 
-  subroutine lsysbl_blockMatVec (rmatrix, rx, ry, cx, cy, btransposed, rperfconfig)
+  subroutine lsysbl_matVec (rmatrix, rx, ry, cx, cy, btransposed, rperfconfig)
 
 !<description>
   ! Performs a matrix vector multiplicationwith a given scalar matrix:
@@ -3101,7 +3174,7 @@ contains
         ! Only call the MV when there is a scalar matrix that we can use!
         if(.not. btrans) then
           if (lsysbl_isSubmatrixPresent (rmatrix,i,j)) then
-            call lsyssc_scalarMatVec (rMatrix%RmatrixBlock(i,j), &
+            call lsyssc_matVec (rMatrix%RmatrixBlock(i,j), &
                                       rx%RvectorBlock(j), &
                                       ry%RvectorBlock(i), cx, cyact, &
                                       rperfconfig=rperfconfig)
@@ -3110,7 +3183,7 @@ contains
           end if
         else
           if (lsysbl_isSubmatrixPresent (rmatrix,j,i)) then
-            call lsyssc_scalarMatVec (rMatrix%RmatrixBlock(j,i), &
+            call lsyssc_matVec (rMatrix%RmatrixBlock(j,i), &
                                       rx%RvectorBlock(j), &
                                       ry%RvectorBlock(i), cx, cyact, &
                                       rperfconfig=rperfconfig)
@@ -4162,7 +4235,7 @@ contains
 
 !<subroutine>
 
-  subroutine lsysbl_enforceStructure (rtemplateVec,rvector)
+  subroutine lsysbl_enforceStructureTempl (rtemplateVec,rvector)
 
 !<description>
   ! This routine enforces the structure of the vector rtemplate
@@ -6767,7 +6840,7 @@ contains
 
     ! Check if vector is initialised
     if (rx%NEQ .eq. 0 .or. rx%h_Ddata .eq. ST_NOHANDLE) then
-      call lsysbl_createVectorBlock(rTemplate, rx, bclear, NEQMAX)
+      call lsysbl_createVector(rTemplate, rx, bclear, NEQMAX)
 
     else
 
@@ -8793,7 +8866,7 @@ contains
 
     ! Create block vector according to the structure of the scalar vector
     if (rvectorBlock%NEQ .eq. 0) then
-      call lsysbl_createVectorBlock(rvectorBlock, rvectorScalar%NEQ,&
+      call lsysbl_createVector(rvectorBlock, rvectorScalar%NEQ,&
           rvectorScalar%NVAR, .false., rvectorScalar%cdataType)
 
       ! Attach spatial discretisation structure of the source vector

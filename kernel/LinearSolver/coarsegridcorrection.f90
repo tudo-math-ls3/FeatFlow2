@@ -352,7 +352,7 @@ contains
     ! Calculate nominator of the fraction
 
     call lsysbl_copyVector(rrhs,rtempVecBlock)
-    call lsysbl_blockMatVec(rmatrix, rvector, rtempVecBlock, -1.0_DP,1.0_DP)
+    call lsysbl_matVec(rmatrix, rvector, rtempVecBlock, -1.0_DP,1.0_DP)
     ! This is a defect vector - apply the filter chain.
     if (associated(p_RfilterChain)) then
       call filter_applyFilterChainVec (rtempVecBlock,p_RfilterChain)
@@ -361,7 +361,7 @@ contains
     a = lsysbl_scalarProduct(rtempVecBlock,rcorrVector)
 
     ! Calculate the demoninator of the fraction
-    call lsysbl_blockMatVec(rmatrix, rcorrVector, rtempVecBlock, 1.0_DP,0.0_DP)
+    call lsysbl_matVec(rmatrix, rcorrVector, rtempVecBlock, 1.0_DP,0.0_DP)
     ! Apply the filter
     if (associated(p_RfilterChain)) then
       call filter_applyFilterChainVec (rtempVecBlock,p_RfilterChain)
@@ -450,7 +450,7 @@ contains
     ! Calculate nominator of the fraction
 
     call lsysbl_copyVector(rrhs,rtempVecBlock)
-    call lsysbl_blockMatVec(rmatrix, rvector, rtempVecBlock, -1.0_DP,1.0_DP)
+    call lsysbl_matVec(rmatrix, rvector, rtempVecBlock, -1.0_DP,1.0_DP)
     ! This is a defect vector - apply the filter chain.
     if (associated(p_RfilterChain)) then
       call filter_applyFilterChainVec (rtempVecBlock,p_RfilterChain)
@@ -465,7 +465,7 @@ contains
     end do
 
     ! Calculate the demoninator of the fraction
-    call lsysbl_blockMatVec(rmatrix, rcorrVector, rtempVecBlock, 1.0_DP,0.0_DP)
+    call lsysbl_matVec(rmatrix, rcorrVector, rtempVecBlock, 1.0_DP,0.0_DP)
     ! Apply the filter
     if (associated(p_RfilterChain)) then
       call filter_applyFilterChainVec (rtempVecBlock,p_RfilterChain)
@@ -553,7 +553,7 @@ contains
     ! Calculate nominator of the fraction
 
     call lsysbl_copyVector(rrhs,rtempVecBlock)
-    call lsysbl_blockMatVec(rmatrix, rvector, rtempVecBlock, -1.0_DP,1.0_DP)
+    call lsysbl_matVec(rmatrix, rvector, rtempVecBlock, -1.0_DP,1.0_DP)
     ! This is a defect vector - apply the filter chain.
     if (associated(p_RfilterChain)) then
       call filter_applyFilterChainVec (rtempVecBlock,p_RfilterChain)
@@ -564,7 +564,7 @@ contains
     ! to have double the size?)
     call lsysbl_createVecBlockIndirect (rtempVecBlock,rtempBlock2,.false.)
 
-    call lsysbl_blockMatVec(rmatrix, rcorrVector, rtempBlock2, 1.0_DP,0.0_DP)
+    call lsysbl_matVec(rmatrix, rcorrVector, rtempBlock2, 1.0_DP,0.0_DP)
     ! Apply the filter
     if (associated(p_RfilterChain)) then
       call filter_applyFilterChainVec (rtempVecBlock,p_RfilterChain)

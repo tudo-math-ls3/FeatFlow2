@@ -1272,7 +1272,7 @@ contains
 
       case (MLP_PROJ_TYPE_MATRIX)
         ! Matrix-based prolongation
-        call lsyssc_scalarMatVec(rprojection%RscalarProjection(1,i)%rmatrixProl,&
+        call lsyssc_matVec(rprojection%RscalarProjection(1,i)%rmatrixProl,&
           rcoarseVector%RvectorBlock(i), rfineVector%RvectorBlock(i), &
           1.0_DP, 0.0_DP, .false.)
 
@@ -1832,12 +1832,12 @@ contains
         ! Matrix-based restriction
         if (lsyssc_hasMatrixStructure(rprojection%RscalarProjection(1,i)%rmatrixRest)) then
           ! Uwse the restriction matrix specified in the structure.
-          call lsyssc_scalarMatVec(rprojection%RscalarProjection(1,i)%rmatrixRest,&
+          call lsyssc_matVec(rprojection%RscalarProjection(1,i)%rmatrixRest,&
             rfineVector%RvectorBlock(i), rcoarseVector%RvectorBlock(i), &
             1.0_DP, 0.0_DP)
         else
           ! The restriction is the transposed f the prolongation.
-          call lsyssc_scalarMatVec(rprojection%RscalarProjection(1,i)%rmatrixProl,&
+          call lsyssc_matVec(rprojection%RscalarProjection(1,i)%rmatrixProl,&
             rfineVector%RvectorBlock(i), rcoarseVector%RvectorBlock(i), &
             1.0_DP, 0.0_DP, .true.)
         end if
@@ -2401,7 +2401,7 @@ contains
 
         ! Matrix-based interpolation
         ! Remember that the interpolation matrix is stored transposed!
-        call lsyssc_scalarMatVec(rprojection%RscalarProjection(1,i)%rmatrixInterp,&
+        call lsyssc_matVec(rprojection%RscalarProjection(1,i)%rmatrixInterp,&
           rfineVector%RvectorBlock(i), rcoarseVector%RvectorBlock(i), &
           1.0_DP, 0.0_DP, .true.)
 
@@ -11664,7 +11664,7 @@ contains
 
     ! Calculate the product of the 2-Level-Mass matrix and the coarse
     ! mesh solution vector.
-    call lsyssc_scalarMatVec (rprojection%rmatrix2Lvl, rcoarseVector, &
+    call lsyssc_matVec (rprojection%rmatrix2Lvl, rcoarseVector, &
                               rfineVector, 1.0_DP, 0.0_DP, .false.)
 
     ! Now get the temporary and fine mesh vector`s data arrays

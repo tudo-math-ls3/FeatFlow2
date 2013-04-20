@@ -2003,7 +2003,7 @@ contains
             p_KldD,p_KcolD,p_DD1,p_DD2,dsfD1,dsfD2)
 
         ! Calculate p := p + omega * S * w
-        call lsyssc_scalarMatVec(rdata%rS, rdata%rw, &
+        call lsyssc_matVec(rdata%rS, rdata%rw, &
             rsol%rvectorBlock(3), domegaS, 1.0_DP)
 
       end if
@@ -2151,7 +2151,7 @@ contains
           p_KldD,p_KcolD,p_DD1,p_DD2,dsfD1,dsfD2)
 
       ! Calculate p := omega * S * w
-      call lsyssc_scalarMatVec(rdata%rS, rdata%rw, &
+      call lsyssc_matVec(rdata%rS, rdata%rw, &
           rdef%rvectorBlock(3), domegaS, 0.0_DP)
 
     end if
@@ -2309,7 +2309,7 @@ contains
           p_KldD,p_KcolD,p_DD1,p_DD2,dsfD1,dsfD2)
 
       ! Calculate p := omega * S * w
-      call lsyssc_scalarMatVec(rdata%rS, rdata%rw, &
+      call lsyssc_matVec(rdata%rS, rdata%rw, &
           rdef%rvectorBlock(3), domegaS, 0.0_DP)
 
     end if
@@ -3310,7 +3310,7 @@ contains
             p_KldD,p_KcolD,p_DD1,p_DD2,p_DD3,dsfD1,dsfD2,dsfD3)
 
         ! Calculate p := p + omega * S * w
-        call lsyssc_scalarMatVec(rdata%rS, rdata%rw, &
+        call lsyssc_matVec(rdata%rS, rdata%rw, &
             rsol%rvectorBlock(4), domegaS, 1.0_DP)
 
       end if
@@ -3471,7 +3471,7 @@ contains
           p_KldD,p_KcolD,p_DD1,p_DD2,p_DD3,dsfD1,dsfD2,dsfD3)
 
       ! Calculate p := omega * S * w
-      call lsyssc_scalarMatVec(rdata%rS, rdata%rw, &
+      call lsyssc_matVec(rdata%rS, rdata%rw, &
           rdef%rvectorBlock(4), domegaS, 0.0_DP)
 
     end if
@@ -3647,7 +3647,7 @@ contains
           p_KldD,p_KcolD,p_DD1,p_DD2,p_DD3,dsfD1,dsfD2,dsfD3)
 
       ! Calculate p := omega * S * w
-      call lsyssc_scalarMatVec(rdata%rS, rdata%rw, &
+      call lsyssc_matVec(rdata%rS, rdata%rw, &
           rdef%rvectorBlock(4), domegaS, 0.0_DP)
 
     end if

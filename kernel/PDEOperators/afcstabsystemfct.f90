@@ -5237,7 +5237,7 @@ contains
       p_rxBackup => rxBackup
     else
       allocate(p_rxBackup)
-      call lsysbl_createVectorBlock(rx, p_rxBackup, .false.)
+      call lsysbl_createVector(rx, p_rxBackup, .false.)
     end if
     call lsysbl_getbase_double(p_rxBackup, p_DxBackup)
     call lalg_copyVector(p_Dx, p_DxBackup)
@@ -5251,10 +5251,10 @@ contains
     else
       allocate(p_rvectorTmp)
       if (bextractVariables) then
-        call lsysbl_createVectorBlock(p_rvectorTmp, rafcstab%NEQ,&
+        call lsysbl_createVector(p_rvectorTmp, rafcstab%NEQ,&
             3*nvariables, .false.)
       else
-        call lsysbl_createVectorBlock(p_rvectorTmp, rafcstab%NEQ,&
+        call lsysbl_createVector(p_rvectorTmp, rafcstab%NEQ,&
             2*nvariables, .false.)
       end if
     end if
@@ -5837,7 +5837,7 @@ contains
       p_rvectorTmp => rvectorTmp
     else
       allocate(p_rvectorTmp)
-      call lsysbl_createVectorBlock(p_rvectorTmp, rafcstab%NEQ,&
+      call lsysbl_createVector(p_rvectorTmp, rafcstab%NEQ,&
           3*nvariables, .false.)
     end if
 

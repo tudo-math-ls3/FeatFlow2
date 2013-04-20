@@ -308,7 +308,7 @@ contains
     end do
 
     ! Create block vector
-    call lsysbl_createVectorBlock(rblockDiscrDest, Invar,&
+    call lsysbl_createVector(rblockDiscrDest, Invar,&
         rvectorDest, .false., rvectorSrc%cdataType)
 
     ! Deallocat temporal memory

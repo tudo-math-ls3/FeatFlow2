@@ -460,7 +460,7 @@
 !#      DISCRETISATION AND THE BOUNDARY CONDITIONS!
 !#
 !#      Therefore, temporary vectors can be created with
-!#      lsysbl_createVectorBlock using the system matrix as template.
+!#      lsysbl_createVector using the system matrix as template.
 !#      This also sets the boundary conditions etc. correctly, i.e.
 !#      produce a compatible vector.
 !#      Inside of the solver, you can also transfer properties of the
@@ -3778,7 +3778,7 @@ contains
     ! To build <tex>$ (b-Ax) $</tex>, copy the RHS to the temporary vector
     ! and make a matrix/vector multiplication.
     call lsysbl_copyVector (rb,rtemp)
-    call lsysbl_blockMatVec (rsolverNode%rsystemMatrix, rx, rtemp, -1.0_DP, 1.0_DP)
+    call lsysbl_matVec (rsolverNode%rsystemMatrix, rx, rtemp, -1.0_DP, 1.0_DP)
     
     ! Call linsol_precondDefect to solve the subproblem <tex>$ Ay = b-Ax $</tex>.
     ! This overwrites rtemp with the correction vector.
@@ -4154,11 +4154,11 @@ contains
     ! by using the associated matrix as template.
     ! That vectors are used in the defect correction so save the intermediate
     ! "solution" vector.
-    call lsysbl_createVectorBlock (rsolverNode%rsystemMatrix, &
+    call lsysbl_createVector (rsolverNode%rsystemMatrix, &
           rsolverNode%p_rsubnodeDefCorr%rtempVector,.false.,.false.,&
           rsolverNode%cdefaultDataType)
 
-    call lsysbl_createVectorBlock (rsolverNode%rsystemMatrix, &
+    call lsysbl_createVector (rsolverNode%rsystemMatrix, &
           rsolverNode%p_rsubnodeDefCorr%rtempVector2,.false.,.false.,&
           rsolverNode%cdefaultDataType)
   
@@ -4523,7 +4523,7 @@ contains
         
         ! Calculate the residuum for the next step : (b-Ax)
         call lsysbl_copyVector (rd,p_rdef)
-        call lsysbl_blockMatVec (p_rmatrix, p_rx,p_rdef, -1.0_DP,1.0_DP)
+        call lsysbl_matVec (p_rmatrix, p_rx,p_rdef, -1.0_DP,1.0_DP)
         if (bfilter) then
           ! Apply the filter chain to the vector
           call filter_applyFilterChainVec (p_rdef, p_RfilterChain)
@@ -5232,7 +5232,7 @@ contains
         if(p_rmatrix%NEQ .eq. 0) cycle
         
         ! Otherwise update the defect.
-        call lsyssc_scalarMatVec(p_rmatrix, rd%RvectorBlock(jblock), &
+        call lsyssc_matVec(p_rmatrix, rd%RvectorBlock(jblock), &
                     rd%RvectorBlock(iblock), drelax, 1.0_DP)
         
       end do
@@ -6125,7 +6125,7 @@ contains
     if (isubgroup .ne. rsolverNode%isolverSubgroup) return
 
     ! Allocate a temporary vector
-    call lsysbl_createVectorBlock (rsolverNode%rsystemMatrix, &
+    call lsysbl_createVector (rsolverNode%rsystemMatrix, &
           rsolverNode%p_rsubnodeVANKA%rtempVector,.false.,.false.,&
           rsolverNode%cdefaultDataType)
         
@@ -7182,7 +7182,7 @@ contains
     end if
     
     ! Allocate a temporary vector
-    call lsysbl_createVectorBlock (rsolverNode%rsystemMatrix, &
+    call lsysbl_createVector (rsolverNode%rsystemMatrix, &
           rsolverNode%p_rsubnodeUMFPACK4%rtempVector,.false.,.false.,&
           rsolverNode%cdefaultDataType)
     
@@ -8790,7 +8790,7 @@ contains
     ! structure for allocating the temp vectors.
     p_rsubnode => rsolverNode%p_rsubnodeCG
     do i=1,4
-      call lsysbl_createVectorBlock (rsolverNode%rsystemMatrix, &
+      call lsysbl_createVector (rsolverNode%rsystemMatrix, &
           p_rsubnode%RtempVectors(i),.false.,.false.,&
           rsolverNode%cdefaultDataType)
     end do
@@ -9212,7 +9212,7 @@ contains
         ! We will now abuse the p_DP vector to save the result of
         ! the matrix-vector-multiplication A * d_k.
         ! Using this trick, we can save one temporary vector.
-        call lsysbl_blockMatVec (p_rmatrix,p_DD,p_DP, 1.0_DP,0.0_DP)
+        call lsysbl_matVec (p_rmatrix,p_DD,p_DP, 1.0_DP,0.0_DP)
 
         ! Calculate alpha for the CG iteration
         dtemp = lsysbl_scalarProduct (p_DD, p_DP)
@@ -9694,7 +9694,7 @@ contains
     ! structure for allocating the temp vectors.
     p_rsubnode => rsolverNode%p_rsubnodeBiCGStab
     do i=1,6
-      call lsysbl_createVectorBlock (rsolverNode%rsystemMatrix, &
+      call lsysbl_createVector (rsolverNode%rsystemMatrix, &
           p_rsubnode%RtempVectors(i),.false.,.false.,rsolverNode%cdefaultDataType)
     end do
 
@@ -10125,7 +10125,7 @@ contains
         call lsysbl_vectorLinearComb (p_DR ,p_DP,1.0_DP,dbeta)
         call lsysbl_vectorLinearComb (p_DPA ,p_DP,-dbeta*domega0,1.0_DP)
 
-        call lsysbl_blockMatVec (p_rmatrix, p_DP,p_DPA, 1.0_DP,0.0_DP)
+        call lsysbl_matVec (p_rmatrix, p_DP,p_DPA, 1.0_DP,0.0_DP)
         
         if (bfilter) then
           ! Apply the filter chain to the vector
@@ -10153,7 +10153,7 @@ contains
 
         call lsysbl_vectorLinearComb (p_DPA,p_DR,-dalpha,1.0_DP)
 
-        call lsysbl_blockMatVec (p_rmatrix, p_DR,p_DSA, 1.0_DP,0.0_DP)
+        call lsysbl_matVec (p_rmatrix, p_DR,p_DSA, 1.0_DP,0.0_DP)
         
         if (bfilter) then
           ! Apply the filter chain to the vector
@@ -10666,16 +10666,16 @@ contains
     
     ! Create them
     do i=1, idim+1
-      call lsysbl_createVectorBlock (rsolverNode%rsystemMatrix, &
+      call lsysbl_createVector (rsolverNode%rsystemMatrix, &
           p_rsubnode%p_Rv(i),.false.,.false.,rsolverNode%cdefaultDataType)
     end do
     do i=1, idim
-      call lsysbl_createVectorBlock (rsolverNode%rsystemMatrix, &
+      call lsysbl_createVector (rsolverNode%rsystemMatrix, &
           p_rsubnode%p_Rz(i),.false.,.false.,rsolverNode%cdefaultDataType)
     end do
     
     ! Create an iteration vector x
-    call lsysbl_createVectorBlock (rsolverNode%rsystemMatrix, &
+    call lsysbl_createVector (rsolverNode%rsystemMatrix, &
         p_rsubnode%rx,.false.,.false.,rsolverNode%cdefaultDataType)
     
     ! Okay, that is all!
@@ -11159,7 +11159,7 @@ contains
           
           ! Step I.2:
           ! Calculate v(i+1) = A * z(i)
-          call lsysbl_blockMatVec (p_rmatrix, p_Rz(i), p_Rv(i+1), 1.0_DP, 0.0_DP)
+          call lsysbl_matVec (p_rmatrix, p_Rz(i), p_Rv(i+1), 1.0_DP, 0.0_DP)
           
           
           ! Step I.3:
@@ -11316,7 +11316,7 @@ contains
         ! Calculate "real" residual
         ! v(1) = b - (A * x)
         call lsysbl_copyVector (rd, p_Rv(1))
-        call lsysbl_blockMatVec(p_rmatrix, p_rx, p_Rv(1), -1.0_DP, 1.0_DP)
+        call lsysbl_matVec(p_rmatrix, p_rx, p_Rv(1), -1.0_DP, 1.0_DP)
 
         ! Step O.7:
         ! Call filter chain if given.
@@ -12062,7 +12062,7 @@ contains
       
       ! Update rhs for Schur-complement:
       ! g := g - D * u
-      call lsysbl_blockMatVec (p_rsubnode%rmatrixD, ru, rp, -1.0_DP, 1.0_DP)
+      call lsysbl_matVec (p_rsubnode%rmatrixD, ru, rp, -1.0_DP, 1.0_DP)
       
     end if
     
@@ -13153,7 +13153,7 @@ contains
         ! solution vector - as solution vector on the fine grid,
         ! the vector which comes as parameter
         ! to the multigrid  preconditioner is used.
-        call lsysbl_createVectorBlock (p_rmatrix, &
+        call lsysbl_createVector (p_rmatrix, &
               p_rcurrentLevel%rsolutionVector,.false.,.false.,&
               rsolverNode%cdefaultDataType)
               
@@ -13165,10 +13165,10 @@ contains
       ! by the solution vector.
       if (associated(p_rcurrentLevel%p_rprevLevel)) then
       
-        call lsysbl_createVectorBlock (p_rmatrix, &
+        call lsysbl_createVector (p_rmatrix, &
               p_rcurrentLevel%rrhsVector,.false.,.false.,&
               rsolverNode%cdefaultDataType)
-        call lsysbl_createVectorBlock (p_rmatrix, &
+        call lsysbl_createVector (p_rmatrix, &
               p_rcurrentLevel%rtempVector,.false.,.false.,&
               rsolverNode%cdefaultDataType)
               
@@ -13734,7 +13734,7 @@ contains
           ! Probably print the residuum
           if (rsolverNode%ioutputLevel .ge. 2) then
             call lsysbl_copyVector(rb,rtemp)
-            call lsysbl_blockMatVec (rmatrix, rx, rtemp, -1.0_DP, 1.0_DP)
+            call lsysbl_matVec (rmatrix, rx, rtemp, -1.0_DP, 1.0_DP)
             
             dres = lsysbl_vectorNorm (rtemp,rsolverNode%iresNorm)
             if (.not.((dres .ge. 1E-99_DP) .and. (dres .le. 1E99_DP))) dres = 0.0_DP
@@ -13753,7 +13753,7 @@ contains
         ! Probably print the residuum
         if (rsolverNode%ioutputLevel .ge. 2) then
           call lsysbl_copyVector(rb,rtemp)
-          call lsysbl_blockMatVec (rmatrix, rx, rtemp, -1.0_DP, 1.0_DP)
+          call lsysbl_matVec (rmatrix, rx, rtemp, -1.0_DP, 1.0_DP)
           
           dres = lsysbl_vectorNorm (rtemp,rsolverNode%iresNorm)
           if (.not.((dres .ge. 1E-99_DP) .and. (dres .le. 1E99_DP))) dres = 0.0_DP
@@ -13818,7 +13818,7 @@ contains
     do i=1,iiterations
     
       call lsysbl_copyVector(rb,rtemp)
-      call lsysbl_blockMatVec (rmatrix, rx, rtemp, -1.0_DP, 1.0_DP)
+      call lsysbl_matVec (rmatrix, rx, rtemp, -1.0_DP, 1.0_DP)
       
       if (rsolverNode%ioutputLevel .ge. 2) then
         dres = lsysbl_vectorNorm (rtemp,rsolverNode%iresNorm)
@@ -13853,7 +13853,7 @@ contains
     ! Probably print the final residuum
     if (rsolverNode%ioutputLevel .ge. 2) then
       call lsysbl_copyVector(rb,rtemp)
-      call lsysbl_blockMatVec (rmatrix, rx, rtemp, -1.0_DP, 1.0_DP)
+      call lsysbl_matVec (rmatrix, rx, rtemp, -1.0_DP, 1.0_DP)
       
       dres = lsysbl_vectorNorm (rtemp,rsolverNode%iresNorm)
       if (.not.((dres .ge. 1E-99_DP) .and. (dres .le. 1E99_DP))) dres = 0.0_DP
@@ -14093,7 +14093,7 @@ contains
           ! Build the defect...
           call lsysbl_copyVector (p_rcurrentLevel%rrhsVector,p_rcurrentLevel%rtempVector)
           if (ite .ne. 1) then   ! initial solution vector is zero!
-            call lsysbl_blockMatVec (&
+            call lsysbl_matVec (&
                  p_rcurrentLevel%rsystemMatrix, &
                  p_rcurrentLevel%rsolutionVector,&
                  p_rcurrentLevel%rtempVector, -1.0_DP,1.0_DP)
@@ -14125,7 +14125,7 @@ contains
               ! Build the defect vector
               call lsysbl_copyVector (p_rcurrentLevel%rrhsVector,&
                                       p_rcurrentLevel%rtempVector)
-              call lsysbl_blockMatVec (&
+              call lsysbl_matVec (&
                   p_rcurrentLevel%rsystemMatrix, &
                   p_rcurrentLevel%rsolutionVector,&
                   p_rcurrentLevel%rtempVector, -1.0_DP,1.0_DP)
@@ -14328,7 +14328,7 @@ contains
                   
                 call lsysbl_copyVector (p_rcurrentLevel%rrhsVector,&
                                         p_rcurrentLevel%rtempVector)
-                call lsysbl_blockMatVec (&
+                call lsysbl_matVec (&
                     p_rcurrentLevel%rsystemMatrix, &
                     p_rcurrentLevel%rsolutionVector,&
                     p_rcurrentLevel%rtempVector, -1.0_DP,1.0_DP)
@@ -14358,7 +14358,7 @@ contains
                     
                   call lsysbl_copyVector (p_rcurrentLevel%rrhsVector,&
                                           p_rcurrentLevel%rtempVector)
-                  call lsysbl_blockMatVec (&
+                  call lsysbl_matVec (&
                       p_rcurrentLevel%rsystemMatrix, &
                       p_rcurrentLevel%rsolutionVector,&
                       p_rcurrentLevel%rtempVector, -1.0_DP,1.0_DP)
@@ -14401,7 +14401,7 @@ contains
                     ! At first, calculate the residuum on that level.
                     call lsysbl_copyVector (p_rcurrentLevel%rrhsVector,&
                                             p_rcurrentLevel%rtempVector)
-                    call lsysbl_blockMatVec (&
+                    call lsysbl_matVec (&
                         p_rcurrentLevel%rsystemMatrix, &
                         p_rcurrentLevel%rsolutionVector,&
                         p_rcurrentLevel%rtempVector, -1.0_DP,1.0_DP)
@@ -14462,7 +14462,7 @@ contains
           !
           ! Calculate the residuum and its norm.
           call lsysbl_copyVector (p_rcurrentLevel%rrhsVector,p_rcurrentLevel%rtempVector)
-          call lsysbl_blockMatVec (&
+          call lsysbl_matVec (&
                 p_rcurrentLevel%rsystemMatrix, &
                 p_rcurrentLevel%rsolutionVector,&
                 p_rcurrentLevel%rtempVector, -1.0_DP,1.0_DP)
@@ -15447,7 +15447,7 @@ contains
         ! solution vector - as solution vector on the fine grid,
         ! the vector which comes as parameter
         ! to the multigrid  preconditioner is used.
-        call lsysbl_createVectorBlock (p_rmatrix, &
+        call lsysbl_createVector (p_rmatrix, &
               p_rcurrentLevel%rsolutionVector,.false.,.false.,&
               rsolverNode%cdefaultDataType)
         p_rtemplVect => p_rcurrentLevel%rsolutionVector
@@ -15456,10 +15456,10 @@ contains
       ! vectors. The RHS on the coarse grid is replaced in-situ
       ! by the solution vector.
       if (ilevel .gt. 1) then
-        call lsysbl_createVectorBlock (p_rmatrix, &
+        call lsysbl_createVector (p_rmatrix, &
               p_rcurrentLevel%rrhsVector,.false.,.false.,&
               rsolverNode%cdefaultDataType)
-        call lsysbl_createVectorBlock (p_rmatrix, &
+        call lsysbl_createVector (p_rmatrix, &
               p_rcurrentLevel%rtempVector,.false.,.false.,&
               rsolverNode%cdefaultDataType)
         p_rtemplVect => p_rcurrentLevel%rtempVector
@@ -16142,7 +16142,7 @@ contains
           ! Build the defect...
           call lsysbl_copyVector (p_rcurrentLevel%rrhsVector,p_rcurrentLevel%rtempVector)
           if (ite .ne. 1) then   ! initial solution vector is zero!
-            call lsysbl_blockMatVec (&
+            call lsysbl_matVec (&
                  p_rcurrentLevel%rsystemMatrix, &
                  p_rcurrentLevel%rsolutionVector,&
                  p_rcurrentLevel%rtempVector, -1.0_DP,1.0_DP)
@@ -16212,7 +16212,7 @@ contains
               ! Build the defect vector
               call lsysbl_copyVector (p_rcurrentLevel%rrhsVector,&
                                       p_rcurrentLevel%rtempVector)
-              call lsysbl_blockMatVec (&
+              call lsysbl_matVec (&
                   p_rcurrentLevel%rsystemMatrix, &
                   p_rcurrentLevel%rsolutionVector,&
                   p_rcurrentLevel%rtempVector, -1.0_DP,1.0_DP)
@@ -16564,7 +16564,7 @@ contains
                   
                 call lsysbl_copyVector (p_rcurrentLevel%rrhsVector,&
                                         p_rcurrentLevel%rtempVector)
-                call lsysbl_blockMatVec (&
+                call lsysbl_matVec (&
                     p_rcurrentLevel%rsystemMatrix, &
                     p_rcurrentLevel%rsolutionVector,&
                     p_rcurrentLevel%rtempVector, -1.0_DP,1.0_DP)
@@ -16605,7 +16605,7 @@ contains
                     
                   call lsysbl_copyVector (p_rcurrentLevel%rrhsVector,&
                                           p_rcurrentLevel%rtempVector)
-                  call lsysbl_blockMatVec (&
+                  call lsysbl_matVec (&
                       p_rcurrentLevel%rsystemMatrix, &
                       p_rcurrentLevel%rsolutionVector,&
                       p_rcurrentLevel%rtempVector, -1.0_DP,1.0_DP)
@@ -16648,7 +16648,7 @@ contains
                     ! At first, calculate the residuum on that level.
                     call lsysbl_copyVector (p_rcurrentLevel%rrhsVector,&
                                             p_rcurrentLevel%rtempVector)
-                    call lsysbl_blockMatVec (&
+                    call lsysbl_matVec (&
                         p_rcurrentLevel%rsystemMatrix, &
                         p_rcurrentLevel%rsolutionVector,&
                         p_rcurrentLevel%rtempVector, -1.0_DP,1.0_DP)
@@ -16713,7 +16713,7 @@ contains
 
           ! Calculate the residuum and its norm.
           call lsysbl_copyVector (p_rcurrentLevel%rrhsVector,p_rcurrentLevel%rtempVector)
-          call lsysbl_blockMatVec (&
+          call lsysbl_matVec (&
                 p_rcurrentLevel%rsystemMatrix, &
                 p_rcurrentLevel%rsolutionVector,&
                 p_rcurrentLevel%rtempVector, -1.0_DP,1.0_DP)
@@ -17041,7 +17041,7 @@ contains
     ! Allocate that here! Use the default data type prescribed in the solver
     ! structure for allocating the temp vectors.
     p_rsubnode => rsolverNode%p_rsubnodeAGMG
-    call lsysbl_createVectorBlock (rsolverNode%rsystemMatrix, &
+    call lsysbl_createVector (rsolverNode%rsystemMatrix, &
         p_rsubnode%rtempVector,.false.,.false.,rsolverNode%cdefaultDataType)
 
   end subroutine
@@ -17935,7 +17935,7 @@ contains
     if (isubgroup .ne. rsolverNode%isolverSubgroup) return
     
     ! Allocate memory for the temp vector
-    call lsysbl_createVectorBlock (rsolverNode%rsystemMatrix, &
+    call lsysbl_createVector (rsolverNode%rsystemMatrix, &
         rsolverNode%p_rsubnodeSpecDefl%rvectorTemp,.false.,.false.,&
         rsolverNode%cdefaultDataType)
     
@@ -18186,7 +18186,7 @@ contains
     ! Calculate (A d  -  drelax lambda_max d)
     ! in the temp vector
     call lsysbl_copyVector (rd,p_rtempVec)
-    call lsysbl_blockMatVec (rsolverNode%rsystemMatrix, rd, p_rtempVec, &
+    call lsysbl_matVec (rsolverNode%rsystemMatrix, rd, p_rtempVec, &
         1.0_DP, -p_rsubnode%drelax*p_rsubnode%dmaxEigenvalue)
 
     if (associated(p_rsubnode%p_Rfilter)) then
@@ -18917,24 +18917,24 @@ contains
       p_rmatrix => p_rcurrentLevel%rsystemMatrix
       nullify(p_rtemplVect)
 
-      call lsysbl_createVectorBlock (p_rmatrix, &
+      call lsysbl_createVector (p_rmatrix, &
             p_rcurrentLevel%rsolutionVector,.false.,.false.,&
             rsolverNode%cdefaultDataType)
       p_rtemplVect => p_rcurrentLevel%rsolutionVector
       
-      call lsysbl_createVectorBlock (p_rmatrix, &
+      call lsysbl_createVector (p_rmatrix, &
             p_rcurrentLevel%rrhsVector,.false.,.false.,&
             rsolverNode%cdefaultDataType)
             
-      call lsysbl_createVectorBlock (p_rmatrix, &
+      call lsysbl_createVector (p_rmatrix, &
             p_rcurrentLevel%rtempVector,.false.,.false.,&
             rsolverNode%cdefaultDataType)
 
-      call lsysbl_createVectorBlock (p_rmatrix, &
+      call lsysbl_createVector (p_rmatrix, &
             p_rcurrentLevel%rdefTempVector,.false.,.false.,&
             rsolverNode%cdefaultDataType)
 
-      call lsysbl_createVectorBlock (p_rmatrix, &
+      call lsysbl_createVector (p_rmatrix, &
             p_rcurrentLevel%ractualRHS,.false.,.false.,&
             rsolverNode%cdefaultDataType)
 
@@ -19009,16 +19009,16 @@ contains
       
       ! Create them
       do i=1, idim+1
-        call lsysbl_createVectorBlock (p_rmatrix, &
+        call lsysbl_createVector (p_rmatrix, &
             p_rcurrentLevel%p_Rv(i),.false.,.false.,rsolverNode%cdefaultDataType)
       end do
       do i=1, idim
-        call lsysbl_createVectorBlock (p_rmatrix, &
+        call lsysbl_createVector (p_rmatrix, &
             p_rcurrentLevel%p_Rz(i),.false.,.false.,rsolverNode%cdefaultDataType)
       end do
       
       ! Create an iteration vector x
-      call lsysbl_createVectorBlock (p_rmatrix, &
+      call lsysbl_createVector (p_rmatrix, &
           p_rcurrentLevel%rx,.false.,.false.,rsolverNode%cdefaultDataType)
       
       ! And the next level...
@@ -19637,7 +19637,7 @@ contains
                 p_rlevelInfo%p_rpreconditioner,p_rdefTempVector)
           end if
 
-          call lsysbl_blockMatVec (p_rlevelInfo%rsystemMatrix, p_rdefTempVector, p_rtempVector, &
+          call lsysbl_matVec (p_rlevelInfo%rsystemMatrix, p_rdefTempVector, p_rtempVector, &
               1.0_DP, -p_rsubnode%drelax*p_rlevelInfo%dmaxEigenvalue)
 
           ! Apply the filter chain
@@ -19689,7 +19689,7 @@ contains
               p_rlevelInfo%p_rpreconditioner,p_rdefTempVector)
         end if
         
-        call lsysbl_blockMatVec (p_rmatrix, p_rdefTempVector, p_Rv(i+1), 1.0_DP, 0.0_DP)
+        call lsysbl_matVec (p_rmatrix, p_rdefTempVector, p_Rv(i+1), 1.0_DP, 0.0_DP)
 
         if (associated(p_RfilterChain)) then
           call filter_applyFilterChainVec (p_Rv(i+1), p_RfilterChain)
@@ -19861,7 +19861,7 @@ contains
             p_rlevelInfo%p_rpreconditioner,p_rdefTempVector)
       end if
 
-      call lsysbl_blockMatVec(p_rmatrix, p_rdefTempVector, p_Rv(1), -1.0_DP, 1.0_DP)
+      call lsysbl_matVec(p_rmatrix, p_rdefTempVector, p_Rv(1), -1.0_DP, 1.0_DP)
 
       ! Call filter chain if given.
       if (associated(p_RfilterChain)) then
@@ -20314,7 +20314,7 @@ contains
           ! in the temp vector
           call lsysbl_copyVector (p_Rv(i),p_rtempVector)
           
-          call lsysbl_blockMatVec (p_rlevelInfo%rsystemMatrix, p_Rz(i),p_rdefTempVector, &
+          call lsysbl_matVec (p_rlevelInfo%rsystemMatrix, p_Rz(i),p_rdefTempVector, &
               1.0_DP, 0.0_DP)
           
           ! Preconditioning
@@ -20368,7 +20368,7 @@ contains
         
         ! Step I.2:
         ! Calculate v(i+1) = P * A * z(i)
-        call lsysbl_blockMatVec (p_rmatrix, p_Rz(i), p_Rv(i+1), 1.0_DP, 0.0_DP)
+        call lsysbl_matVec (p_rmatrix, p_Rz(i), p_Rv(i+1), 1.0_DP, 0.0_DP)
         
         ! Preconditioning + filtering
         if (bprec) then
@@ -20538,7 +20538,7 @@ contains
       ! v(1) = b - (A * x)
       call lsysbl_copyVector (p_ractualRHS, p_Rv(1))
       
-      call lsysbl_blockMatVec(p_rmatrix, rx, p_rdefTempVector, 1.0_DP, 0.0_DP)
+      call lsysbl_matVec(p_rmatrix, rx, p_rdefTempVector, 1.0_DP, 0.0_DP)
       
       ! Preconditioning
       if (bprec) then
@@ -21018,7 +21018,7 @@ contains
           if(p_rmatrix%NEQ .eq. 0) cycle
         
           ! Otherwise update the defect.
-          call lsyssc_scalarMatVec(p_rmatrix, rd%RvectorBlock(jblock), &
+          call lsyssc_matVec(p_rmatrix, rd%RvectorBlock(jblock), &
                                    rd%RvectorBlock(iblock), drelax, 1.0_DP)
         
         end do

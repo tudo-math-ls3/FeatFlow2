@@ -19,262 +19,269 @@
 !#
 !# The following routines can be found in this module:
 !#
-!#  1.) lsyssc_createVecDirect / lsyssc_createVecDirectIntl
+!#  1.) lsyssc_createVector
+!#      -> This is an alias for various routines to create a vector.
+!#
+!#      1a) lsyssc_createVecDirect / lsyssc_createVecDirectIntl
 !#      -> Create a simple scalar vector of length NEQ
 !#
-!#  2.) lsyssc_createVecByDiscr / lsyssc_createVecByDiscrIntl
+!#      1b) lsyssc_createVecByDiscr / lsyssc_createVecByDiscrIntl
 !#      -> Create a vector based on a scalar discretisation structure
 !#
-!#  3.) lsyssc_createVecIndMat
+!#      1c) lsyssc_createVecIndMat
 !#      -> Create a vector according to the matrix
 !#
-!#  4.) lsyssc_scalarProduct
+!#  2.) lsyssc_scalarProduct
 !#      -> Calculate the scalar product of two vectors
 !#
-!#  5.) lsyssc_scalarMatVec
+!#  3.) lsyssc_matVec
 !#      -> Multiply a scalar matrix (or its transpose) with a scalar vector
 !#
-!#  6.) lsyssc_releaseMatrix
+!#  4.) lsyssc_releaseMatrix
 !#      -> Release a scalar matrix from memory.
 !#
-!#  7.) lsyssc_releaseVector
+!#  5.) lsyssc_releaseVector
 !#      -> Release a scalar vector from memory.
 !#
-!#  8.) lsyssc_duplicateMatrix
+!#  6.) lsyssc_duplicateMatrix
 !#      -> Create a duplicate of a given matrix or matrix-structure
 !#
-!#  9.) lsyssc_duplicateVector
+!#  7.) lsyssc_duplicateVector
 !#      -> Create a duplicate of a given vector
 !#
-!# 10.) lsyssc_setSortStrategy
+!#  8.) lsyssc_setSortStrategy
 !#      -> Attaches a sorting strategy to a vector/matrix.
 !#         The sorting can be activated/deactivated at any time.
 !#
-!# 11.) lsyssc_sortVector
+!#  9.) lsyssc_sortVector
 !#      -> Resort the entries of a vector or unsort them according to a
 !#         previously attached sorting strategy
 !#
-!# 12.) lsyssc_sortMatrix
+!# 10.) lsyssc_sortMatrix
 !#      -> Resort the entries of a matrix or unsort them according to a
 !#         previously attached sorting strategy.
 !#
-!# 13.) lsyssc_synchroniseSort = lsyssc_synchroniseSortVecVec
+!# 11.) lsyssc_synchroniseSort = lsyssc_synchroniseSortVecVec
 !#      -> Synchronises the sorting strategy of a vector according to another
 !#         vector.
 !#
-!# 14.) lsyssc_synchroniseSort = lsyssc_synchroniseSortMatVec
+!# 12.) lsyssc_synchroniseSort = lsyssc_synchroniseSortMatVec
 !#      -> Synchronises the sorting strategy of a vector according to a matrix.
 !#
-!# 16.) lsyssc_isVectorCompatible
+!# 13.) lsyssc_isVectorCompatible
 !#      -> Checks whether two vectors are compatible to each other
 !#
-!# 17.) lsyssc_isMatrixCompatible = lsyssc_isMatrixVectorCompatible /
+!# 14.) lsyssc_isMatrixCompatible = lsyssc_isMatrixVectorCompatible /
 !#                                  lsyssc_isMatrixMatrixCompatible
 !#      -> Checks whether a matrix and a vector are compatible to each other
 !#
-!# 18.) lsyssc_getbase_double
+!# 15.) lsyssc_getbase_double
 !#      -> Get a pointer to the double precision data array of a vector or a matrix
 !#
-!# 19.) lsyssc_getbase_single
+!# 16.) lsyssc_getbase_single
 !#      -> Get a pointer to the single precision data array of a vector or a matrix
 !#
-!# 20.) lsyssc_getbase_int
+!# 17.) lsyssc_getbase_int
 !#      -> Get a pointer to the integer data array of a vector
 !#
-!# 21.) lsyssc_getbase_Kcol
+!# 18.) lsyssc_getbase_Kcol
 !#      -> Get a pointer to the integer data array Kcol of a matrix
 !#         (if the matrix has one)
 !#
-!# 22.) lsyssc_getbase_Kld
+!# 19.) lsyssc_getbase_Kld
 !#      -> Get a pointer to the integer data array Kld of a matrix
 !#         (if the matrix has one)
 !#
-!# 23.) lsyssc_getbase_Kdiagonal
+!# 20.) lsyssc_getbase_Kdiagonal
 !#      -> Get a pointer to the integer data array Kdiagonal of a matrix
 !#         (if the matrix has one)
 !#
-!# 24.) lsyssc_addIndex
+!# 21.) lsyssc_addIndex
 !#      -> Auxiliary routine. Adds an integer to each elememt of an integer
 !#         array.
 !#
-!# 25.) lsyssc_vectorNorm
+!# 22.) lsyssc_vectorNorm
 !#      -> Calculate the norm of a vector.
 !#
-!# 26.) lsyssc_invertedDiagMatVec
+!# 23.) lsyssc_invertedDiagMatVec
 !#      -> Multiply a vector with the inverse of the diagonal of a scalar
 !#         matrix
 !#
-!# 27.) lsyssc_clearMatrix
+!# 24.) lsyssc_clearMatrix
 !#      -> Clears a matrix, i.e. overwrites all entries with 0.0 or
 !#         with a defined value
 !#
-!# 28.) lsyssc_initialiseIdentityMatrix
+!# 25.) lsyssc_initialiseIdentityMatrix
 !#      -> Initialises the content of a matrix to an identity matrix
 !#
-!# 29.) lsyssc_convertMatrix
+!# 26.) lsyssc_convertMatrix
 !#      -> Allows to convert a matrix to another matrix structure.
 !#
-!# 30.) lsyssc_copyVector
+!# 27.) lsyssc_copyVector
 !#       -> Copy a vector over to another one
 !#
-!# 31.) lsyssc_scaleVector
+!# 28.) lsyssc_scaleVector
 !#      -> Scale a vector by a constant
 !#
-!# 32.) lsyssc_clearVector
+!# 29.) lsyssc_clearVector
 !#      -> Clear a vector, i.e. overwrites all entries with 0.0 or
 !#         with a defined value
 !#
-!# 33.) lsyssc_vectorLinearComb
+!# 30.) lsyssc_vectorLinearComb
 !#      -> Linear combination of two vectors
 !#
-!# 34.) lsyssc_copyMatrix
+!# 31.) lsyssc_copyMatrix
 !#      -> Copies a matrix to another one provided that they have the same
 !#         structure.
 !#
-!# 35.) lsyssc_transposeMatrix,
+!# 32.) lsyssc_transposeMatrix,
 !#      lsyssc_transposeMatrixInSitu,
 !#      lsyssc_transposeMatrixDirect
 !#      -> Transposes a scalar matrix.
 !#
-!# 36.) lsyssc_allocEmptyMatrix
+!# 33.) lsyssc_allocEmptyMatrix
 !#      -> Allocates memory for the entries of a matrix.
 !#
-!# 37.) lsyssc_lumpMatrixScalar
+!# 34.) lsyssc_lumpMatrix
 !#      -> Performs lumping of a given matrix
 !#
-!# 38.) lsyssc_scaleMatrix
+!# 35.) lsyssc_scaleMatrix
 !#      -> Scale a matrix by a constant
 !#
-!# 39.) lsyssc_multMatMat
+!# 36.) lsyssc_multMatMat
 !#      -> Multiplies two matrices
 !#
-!# 40.) lsyssc_matrixLinearComb / lsyssc_matrixLinearCombIndexed
+!# 37.) lsyssc_matrixLinearComb / lsyssc_matrixLinearCombIndexed
 !#      -> Adds two matrices
 !#
-!# 41.) lsyssc_swapVectors
+!# 38.) lsyssc_swapVectors
 !#      -> Swap two vectors
 !#
-!# 42.) lsyssc_isMatrixStructureShared
+!# 39.) lsyssc_isMatrixStructureShared
 !#      -> Tests if the structure of a matrix is shared with another matrix
 !#
-!# 43.) lsyssc_isMatrixContentShared
+!# 40.) lsyssc_isMatrixContentShared
 !#      -> Tests if the content of a matrix is shared with another matrix
 !#
-!# 44.) lsyssc_resizeVector
+!# 41.) lsyssc_resizeVector
 !#      -> Resize the vector and reallocate memory if necessary.
 !#
-!# 45.) lsyssc_resizeMatrix
+!# 42.) lsyssc_resizeMatrix
 !#      -> Resize the matrix and reallocate memory if necessary.
 !#
-!# 46.) lsyssc_createDiagMatrixStruc
+!# 43.) lsyssc_createDiagMatrixStruc
 !#      -> Creates a diagonal matrix, does not allocate memory for the entries.
 !#
-!# 47.) lsyssc_clearOffdiags
+!# 44.) lsyssc_clearOffdiags
 !#      -> Clear all offdiagonal entries in a matrix.
 !#
-!# 50.) lsyssc_hasMatrixStructure
+!# 45.) lsyssc_hasMatrixStructure
 !#      -> Check if a matrix has a structure in memory or not.
 !#
-!# 51.) lsyssc_hasMatrixContent
+!# 46.) lsyssc_hasMatrixContent
 !#      -> Check if a matrix has a content in memory or not.
 !#
-!# 52.) lsyssc_releaseMatrixContent
+!# 47.) lsyssc_releaseMatrixContent
 !#      -> Releases the content of the matrix, the structure will stay unchanged.
 !#
-!# 53.) lsyssc_spreadVector
+!# 48.) lsyssc_spreadVector
 !#      -> Spreads a scalar vector into another scalar vector
 !#
-!# 54.) lsyssc_spreadMatrix
+!# 49.) lsyssc_spreadMatrix
 !#      -> Spreads a scalar matrix into another scalar matrix
 !#
-!# 55.) lsyssc_packVector
+!# 50.) lsyssc_packVector
 !#      -> Packs a scalar vector into another scalar vector
 !#
-!# 56.) lsyssc_createFullMatrix
+!# 51.) lsyssc_createFullMatrix
 !#      -> Create a full square or rectangular matrix in matrix format 1
 !#
-!# 57.) lsyssc_assignDiscrDirectMat
+!# 52.) lsyssc_assignDiscretisation
+!#      -> This is an alias for various routines to assign discretisation
+!#         structures
+!#
+!#      52a) lsyssc_assignDiscrDirectMat
 !#      -> Assign a discretisation to a matrix
 !#
-!# 58.) lsyssc_createFpdbObjectVec
+!# 53.) lsyssc_createFpdbObjectVec
 !#      -> Creates an ObjectItem representing a scalar vector
 !#
-!# 59.) lsyssc_createFpdbObjectMat
+!# 54.) lsyssc_createFpdbObjectMat
 !#      -> Creates an ObjectItem representing a scalar matrix
 !#
-!# 60.) lsyssc_restoreFpdbObjectVec
+!# 55.) lsyssc_restoreFpdbObjectVec
 !#      -> Restores a scalar vector from an ObjectItem
 !#
-!# 61.) lsyssc_restoreFpdbObjectMat
+!# 56.) lsyssc_restoreFpdbObjectMat
 !#      -> Restores a scalar matrix from an ObjectItem
 !#
-!# 62.) lsyssc_unshareMatrix
+!# 57.) lsyssc_unshareMatrix
 !#      -> Renders a matrix independent, resets the sharing state
 !#
-!# 63.) lsyssc_unshareVector
+!# 58.) lsyssc_unshareVector
 !#      -> Renders a vector independent, resets the sharing state
 !#
-!# 64.) lsyssc_isExplicitMatrix1D
+!# 59.) lsyssc_isExplicitMatrix1D
 !#      -> Checks whether a given matrix explicitly exists in memory as
 !#         1D array
 !#
-!# 65.) lsyssc_checkDiscretisation
+!# 60.) lsyssc_checkDiscretisation
 !#      -> Checks whether a given discretisation structure rdiscretisation is
 !#         basically compatible to a given vector
 !#
-!# 66.) lsyssc_setDataTypeMatrix
+!# 61.) lsyssc_setDataTypeMatrix
 !#      -> Converts the data type of a scalar matrix
 !#
-!# 67.) lsyssc_setDataTypeVector
+!# 62.) lsyssc_setDataTypeVector
 !#      -> Converts the data type of a scalar vector
 !#
-!# 68.) lsyssc_moveMatrix
+!# 63.) lsyssc_moveMatrix
 !#      -> Moves a matrix to another matrix.
 !#
-!# 69.) lsyssc_addConstant
+!# 64.) lsyssc_addConstant
 !#      -> Adds a constant to a vector.
 !#
-!# 70.) lsyssc_swapMatrices
+!# 65.) lsyssc_swapMatrices
 !#      -> Swaps two matrices
 !#
-!# 71.) lsyssc_sortMatrixCols
+!# 66.) lsyssc_sortMatrixCols
 !#      -> Sorts the columns of a format 9 matrix to be in ascending order.
 !#
-!# 72.) lsyssc_createRowCMatrix
+!# 67.) lsyssc_createRowCMatrix
 !#      -> Creates a row-compressed matrix (containing only nonzero rows).
 !#
-!# 73.) lsyssc_getbase_KrowIdx
+!# 68.) lsyssc_getbase_KrowIdx
 !#      -> Returns the pointer of the KrowIdx-array
 !#
-!# 74.) lsyssc_copyH2D_Vector
+!# 69.) lsyssc_copyH2D_Vector
 !#      -> Copies the data of a vector from the host memory
 !#         to the memory of the coprocessor device.
 !#
-!# 75.) lsyssc_copyD2H_Vector
+!# 70.) lsyssc_copyD2H_Vector
 !#      -> Copies the data of a vector from the memory of the
 !#         coprocessor device to the host memory
 !#
-!# 76.) lsyssc_initPerfConfig
+!# 71.) lsyssc_initPerfConfig
 !#      -> Initialises the global performance configuration
 !#
-!# 77.) lsyssc_createMatrixSymmPart
+!# 72.) lsyssc_createMatrixSymmPart
 !#      -> Create the symmetric part of the matrix
 !#
-!# 78.) lsyssc_createMatrixAsymmPart
+!# 73.) lsyssc_createMatrixAsymmPart
 !#      -> Create the antisymmetric part of the matrix
 !#
-!# 79.) lsyssc_copyH2D_Matrix
+!# 74.) lsyssc_copyH2D_Matrix
 !#      -> Copies the data of a matrix from the host memory
 !#         to the memory of the coprocessor device.
 !#
-!# 80.) lsyssc_copyD2H_Matrix
+!# 75.) lsyssc_copyD2H_Matrix
 !#      -> Copies the data of a matrix from the memory of the
 !#         coprocessor device to the host memory
 !#
-!# 81.) lsyssc_calcDeterminant
+!# 76.) lsyssc_calcDeterminant
 !#      -> Calculates the determinant of a square matrix
 !#
-!# 82.) lsyssc_calcGerschgorin
+!# 77.) lsyssc_calcGerschgorin
 !#      -> Apply the theorem of Gerschgorin to get approximations
 !#         for the min/max eigenvalues of a matrix
 !#
@@ -907,7 +914,7 @@ module linearsystemscalar
   public :: lsyssc_matrixLinearCombIndexed
   public :: lsyssc_initPerfConfig
   public :: lsyssc_scalarProduct
-  public :: lsyssc_scalarMatVec
+  public :: lsyssc_matVec
   public :: lsyssc_releaseMatrix
   public :: lsyssc_releaseVector
   public :: lsyssc_duplicateMatrix
@@ -932,7 +939,7 @@ module linearsystemscalar
   public :: lsyssc_transposeMatrixInSitu
   public :: lsyssc_transposeMatrixDirect
   public :: lsyssc_allocEmptyMatrix
-  public :: lsyssc_lumpMatrixScalar
+  public :: lsyssc_lumpMatrix
   public :: lsyssc_scaleMatrix
   public :: lsyssc_multMatMat
   public :: lsyssc_swapVectors
@@ -948,7 +955,14 @@ module linearsystemscalar
   public :: lsyssc_spreadMatrix
   public :: lsyssc_packVector
   public :: lsyssc_createFullMatrix
+  
+  interface lsyssc_assignDiscretisation
+    module procedure lsyssc_assignDiscrDirectMat
+  end interface
+  
+  public :: lsyssc_assignDiscretisation
   public :: lsyssc_assignDiscrDirectMat
+  
   public :: lsyssc_createFpdbObjectVec
   public :: lsyssc_createFpdbObjectMat
   public :: lsyssc_restoreFpdbObjectVec
@@ -992,6 +1006,19 @@ module linearsystemscalar
   public :: lsyssc_createGraphFromMatrix
   public :: lsyssc_createMatrixFromGraph
   public :: lsyssc_genMatrixZeroPadding
+  
+  ! Some deprecated interfaces
+  interface lsyssc_scalarMatVec
+    module procedure lsyssc_matVec
+  end interface
+  
+  public :: lsyssc_scalarMatVec
+  
+  interface lsyssc_lumpMatrixScalar
+    module procedure lsyssc_lumpMatrix
+  end interface
+  
+  public :: lsyssc_lumpMatrixScalar
 
 contains
 
@@ -4023,7 +4050,7 @@ contains
 
 !<subroutine>
 
-  subroutine lsyssc_scalarMatVec (rmatrix, rx, ry, cx, cy, btranspose, rperfconfig)
+  subroutine lsyssc_matVec (rmatrix, rx, ry, cx, cy, btranspose, rperfconfig)
 
 !<description>
   ! Performs a matrix vector multiplication with a given scalar matrix:
@@ -4114,7 +4141,7 @@ contains
     ! rx and ry must have at least the same data type!
     if (rx%cdataType .ne. ry%cdataType) then
       call output_line('Different data types for rx and ry not supported!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matVec')
       call sys_halt()
     end if
 
@@ -4122,7 +4149,7 @@ contains
     ! there is for sure an error!
     if (rmatrix%h_Da .eq. ST_NOHANDLE) then
       call output_line('Matrix has no data!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matVec')
       call sys_halt()
     end if
 
@@ -4185,7 +4212,7 @@ contains
 
           case default
             call output_line('Invalid combination of matrix/vector precision!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matVec')
             call sys_halt()
           end select
 
@@ -4221,13 +4248,13 @@ contains
 
           case default
             call output_line('Invalid combination of matrix/vector precision!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matVec')
             call sys_halt()
           end select
 
         case default
           call output_line('Invalid matrix precision!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matVec')
           call sys_halt()
         end select
 
@@ -4265,7 +4292,7 @@ contains
 
           case default
             call output_line('Invalid combination of matrix/vector precision!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matVec')
             call sys_halt()
           end select
 
@@ -4296,7 +4323,7 @@ contains
 
           case default
             call output_line('Invalid combination of matrix/vector precision!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matVec')
             call sys_halt()
           end select
         end select
@@ -4336,7 +4363,7 @@ contains
 
             case default
               call output_line('Invalid interleave matrix format!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matVec')
               call sys_halt()
             end select
 
@@ -4357,13 +4384,13 @@ contains
 
             case default
               call output_line('Invalid interleave matrix format!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matVec')
               call sys_halt()
             end select
 
           case default
             call output_line('Invalid combination of matrix/vector precision!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matVec')
             call sys_halt()
           end select
 
@@ -4390,7 +4417,7 @@ contains
 
             case default
               call output_line('Invalid interleave matrix format!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matVec')
               call sys_halt()
             end select
 
@@ -4418,19 +4445,19 @@ contains
 
             case default
               call output_line('Invalid interleave matrix format!',&
-                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matVec')
               call sys_halt()
             end select
 
           case default
             call output_line('Invalid combination of matrix/vector precision!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matVec')
             call sys_halt()
           end select
 
         case default
           call output_line('Invalid matrix precision!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matVec')
           call sys_halt()
         end select
 
@@ -4464,7 +4491,7 @@ contains
 
           case default
             call output_line('Invalid combination of matrix/vector precision!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matVec')
             call sys_halt()
           end select
 
@@ -4495,19 +4522,19 @@ contains
 
           case default
             call output_line('Invalid combination of matrix/vector precision!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matVec')
             call sys_halt()
           end select
 
         case default
           call output_line('Invalid matrix precision!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matVec')
           call sys_halt()
         end select
 
       case default
         call output_line('Invalid matrix format!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matVec')
         call sys_halt()
       end select
 
@@ -4563,7 +4590,7 @@ contains
 
           case default
             call output_line('Invalid combination of matrix/vector precision!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matVec')
             call sys_halt()
           end select
 
@@ -4599,13 +4626,13 @@ contains
 
           case default
             call output_line('Invalid combination of matrix/vector precision!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matVec')
             call sys_halt()
           end select
 
         case default
           call output_line('Invalid matrix precision!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matVec')
           call sys_halt()
         end select
 
@@ -4639,7 +4666,7 @@ contains
 
           case default
             call output_line('Invalid combination of matrix/vector precision!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matVec')
             call sys_halt()
           end select
 
@@ -4670,19 +4697,19 @@ contains
 
           case default
             call output_line('Invalid combination of matrix/vector precision!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matVec')
             call sys_halt()
           end select
 
         case default
           call output_line('Invalid matrix precision!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matVec')
           call sys_halt()
         end select
 
       case default
         call output_line('Invalid matrix format!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_scalarMatVec')
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_matVec')
         call sys_halt()
       end select
 
@@ -18329,7 +18356,7 @@ contains
 
 !<subroutine>
 
-  subroutine lsyssc_lumpMatrixScalar (rmatrixScalar,clumpType,bconvertToDiag)
+  subroutine lsyssc_lumpMatrix (rmatrixScalar,clumpType,bconvertToDiag)
 
 !<description>
   ! This routine performs (mass) lumping with a scalar matrix. Lumping
@@ -18425,7 +18452,7 @@ contains
 
       case default
         call output_line('Unsupported matrix precision!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_lumpMatrixScalar')
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_lumpMatrix')
         call sys_halt()
       end select
 
@@ -18468,13 +18495,13 @@ contains
 
       case default
         call output_line('Unsupported matrix precision!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_lumpMatrixScalar')
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_lumpMatrix')
         call sys_halt()
       end select
 
     case default
       call output_line('Unsupported matrix format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_lumpMatrixScalar')
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_lumpMatrix')
       call sys_halt()
     end select
 

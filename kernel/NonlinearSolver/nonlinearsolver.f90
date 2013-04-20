@@ -1001,7 +1001,7 @@ contains
         case (NLSOL_PREC_MATRIX)
           ! Multiplication with a matrix.
           call lsysbl_copyVector (rd,rtemp)
-          call lsysbl_blockMatVec (rsolverNode%rmatrixPreconditioner, &
+          call lsysbl_matVec (rsolverNode%rmatrixPreconditioner, &
                                    rtemp, rd, 1.0_DP, 0.0_DP)
 
         case (NLSOL_PREC_LMASS)

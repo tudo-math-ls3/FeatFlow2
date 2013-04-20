@@ -321,7 +321,7 @@ contains
 
       ! Set up the defect: d := b-Mx
       call lsyssc_copyVector (p_rvectorTemp1,p_rvectorTemp2)
-      call lsyssc_scalarMatVec (rmatrixMass, rvector, p_rvectorTemp2, -1.0_DP, 1.0_DP)
+      call lsyssc_matVec (rmatrixMass, rvector, p_rvectorTemp2, -1.0_DP, 1.0_DP)
 
       ! Check norms?
       if ((rconfig%depsAbs .ne. 0.0_DP) .or. (rconfig%depsRel .ne. 0.0_DP)) then
@@ -1144,7 +1144,7 @@ contains
       allocate(p_rmatrixMassLumped)
       call lsyssc_duplicateMatrix(rmatrixMass, p_rmatrixMassLumped,&
           LSYSSC_DUP_SHARE, LSYSSC_DUP_COPY)
-      call lsyssc_lumpMatrixScalar(p_rmatrixMassLumped, LSYSSC_LUMP_DIAG)
+      call lsyssc_lumpMatrix(p_rmatrixMassLumped, LSYSSC_LUMP_DIAG)
     end if
 
     ! We need to perform s single defect correction step
