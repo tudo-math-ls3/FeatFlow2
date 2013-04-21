@@ -1,8 +1,8 @@
 !##############################################################################
-!# Tutorial 010e: Create a 2x2 block system, FE functions as coefficients.
+!# Tutorial 010g: Create a 2x2 block system, FE functions as coefficients.
 !##############################################################################
 
-module tutorial010e
+module tutorial010g
 
   ! Include basic Feat-2 modules
   use fsystem
@@ -31,7 +31,7 @@ module tutorial010e
   implicit none
   private
   
-  public :: start_tutorial010e
+  public :: start_tutorial010g
 
 contains
 
@@ -78,7 +78,6 @@ contains
 
     ! Local variables
     real(DP) :: dbasI, dbasJ
-    real(DP) :: dbasIx, dbasJx, dbasIy, dbasJy
     integer :: iel, icubp, idofe, jdofe
     real(DP), dimension(:,:,:), pointer :: p_DlocalMatrix11,p_DlocalMatrix22
     real(DP), dimension(:,:,:,:), pointer :: p_DbasTrial,p_DbasTest
@@ -86,7 +85,7 @@ contains
     type(t_bmaMatrixData), pointer :: p_rmatrixData11
     real(DP), dimension(:,:,:), pointer :: p_DpointCoords, p_Df, p_Dg
 
-    real(DP) :: df, dg, dx, dy
+    real(DP) :: df, dfx, dfy, dg, dx, dy
 
     ! Get cubature weights data
     p_DcubWeight => rassemblyData%p_DcubWeight
@@ -101,19 +100,42 @@ contains
     ! We set up two matrices:
     !
     !    A11 = f * Mass
-    !    A22 = g * (-Laplace)
+    !    A22 = g * Mass
     !
     ! with
     !
-    !    f = 1 + x^2
-    !    g = 1 + y^2
+    !    f = 1 + x*y         ( given in rcoeffVectors%p_RvectorData(1) )
+    !    g = 1 + f_x * f_y
     !
-    ! Get the nonconstant coefficients for f and g. They are
+    ! Get the nonconstant coefficients for f. They are
     ! automatically evaluated for us, the data can be found
     ! in rcoeffVectors%p_RvectorData(:)%p_Ddata.
+    !
+    ! Due to ideriv=1 below, we f_x and f_y is available here as well.
     p_Df => rcoeffVectors%p_RvectorData(1)%p_Ddata
+    
+    ! In rcoeffVectors%p_RvectorData(2), we have temporary memory available.
+    ! We precompute g(.) into this array.
     p_Dg => rcoeffVectors%p_RvectorData(2)%p_Ddata
     
+    ! Loop over the elements in the current set.
+    do iel = 1,nelements
+
+      ! Loop over all cubature points on the current element
+      do icubp = 1,npointsPerElement
+
+        ! Get the values of f_x, f_y in the cubature point.
+        dfx = p_Df(icubp,iel,DER_DERIV2D_X)
+        dfy = p_Df(icubp,iel,DER_DERIV2D_Y)
+
+        ! Calculate g() into p_Dg(:,:,1), the temp array provided by
+        ! fev2_addDummyVectorToEvalList.
+        p_Dg(icubp,iel,1) = 1.0_DP + dfx * dfy
+      
+      end do
+      
+    end do
+
     ! Get the matrix data.
     p_rmatrixData11 => RmatrixData(1,1)
     
@@ -133,7 +155,7 @@ contains
         
         ! Get the values of f and g in the cubature point.
         df = p_Df(icubp,iel,DER_FUNC2D)
-        dg = p_Dg(icubp,iel,DER_FUNC2D)
+        dg = p_Dg(icubp,iel,1)
 
         ! Outer loop over the DOF's i=1..ndof on our current element,
         ! which corresponds to the (test) basis functions Psi_i:
@@ -142,8 +164,6 @@ contains
           ! Fetch the contributions of the (test) basis functions Psi_i
           ! into dbasI
           dbasI  = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
-          dbasIx = p_DbasTest(idofe,DER_DERIV2D_X,icubp,iel)
-          dbasIy = p_DbasTest(idofe,DER_DERIV2D_Y,icubp,iel)
 
           ! Inner loop over the DOF's j=1..ndof, which corresponds to
           ! the (trial) basis function Phi_j:
@@ -152,8 +172,6 @@ contains
             ! Fetch the contributions of the (trial) basis function Phi_j
             ! into dbasJ
             dbasJ  = p_DbasTrial(jdofe,DER_FUNC2D,icubp,iel)
-            dbasJx = p_DbasTrial(jdofe,DER_DERIV2D_X,icubp,iel)
-            dbasJy = p_DbasTrial(jdofe,DER_DERIV2D_Y,icubp,iel)
 
             ! Multiply the values of the basis functions
             ! (1st derivatives) by the cubature weight and sum up
@@ -163,9 +181,9 @@ contains
             p_DlocalMatrix11(jdofe,idofe,iel) = p_DlocalMatrix11(jdofe,idofe,iel) + &
                 p_DcubWeight(icubp,iel) * df * dbasJ*dbasI
 
-            ! g*(-Laplace) to the block (2,2)
+            ! g*Mass to the block (2,2)
             p_DlocalMatrix22(jdofe,idofe,iel) = p_DlocalMatrix22(jdofe,idofe,iel) + &
-                p_DcubWeight(icubp,iel) * dg * ( dbasJx*dbasIx + dbasJy*dbasIy )
+                p_DcubWeight(icubp,iel) * dg * dbasJ*dbasI
 
           end do ! jdofe
 
@@ -179,7 +197,7 @@ contains
 
   ! ***************************************************************************
 
-  subroutine start_tutorial010e
+  subroutine start_tutorial010g
 
     ! Declare some variables.
     type(t_triangulation) :: rtriangulation
@@ -188,18 +206,18 @@ contains
     
     type(t_scalarCubatureInfo), target :: rcubatureInfo
     type(t_fev2Vectors) :: rcoeffVectors
-    type(t_vectorBlock) :: rcoeffVector
+    type(t_vectorScalar) :: rcoeffVector
     type(t_matrixScalar) :: rtemplateMatrix
     type(t_matrixBlock) :: rmatrix
     
     integer :: i,ideriv
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
-    real(DP), dimension(:), pointer :: p_Ddata1, p_Ddata2
+    real(DP), dimension(:), pointer :: p_DdataCoeff
 
     ! Print a message
     call output_lbrk()
     call output_separator (OU_SEP_STAR)
-    call output_line ("This is FEAT-2. Tutorial 010e")
+    call output_line ("This is FEAT-2. Tutorial 010g")
     call output_separator (OU_SEP_MINUS)
     
     ! =================================
@@ -246,23 +264,21 @@ contains
         LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
 
     ! =================================
-    ! Create a coefficient block vector rcoeffVector = ( 1+x^2, 1+y^2 )
+    ! Create a coefficient vector rcoeffVector = ( 1+x*y )
     ! =================================
     
-    ! Create a vector
-    call lsysbl_createVector (rblockDiscr,rcoeffVector)
+    ! Create a scalar coefficient vector.
+    call lsyssc_createVector (rspatialDiscr,rcoeffVector)
 
     ! Get vertex positions
     call storage_getbase_double2d (rtriangulation%h_DvertexCoords,p_DvertexCoords)
     
     ! Get pointers to the 1st and 2nd subvector
-    call lsyssc_getbase_double (rcoeffVector%RvectorBlock(1), p_Ddata1)
-    call lsyssc_getbase_double (rcoeffVector%RvectorBlock(2), p_Ddata2)
+    call lsyssc_getbase_double (rcoeffVector, p_DdataCoeff)
     
-    ! Initialise the vector
+    ! Initialise the vector 1+x*y
     do i=1,rtriangulation%NVT
-      p_Ddata1(i) = 1.0_DP + p_DvertexCoords(1,i)**2
-      p_Ddata2(i) = 1.0_DP + p_DvertexCoords(2,i)**2
+      p_DdataCoeff(i) = 1.0_DP + p_DvertexCoords(1,i)*p_DvertexCoords(2,i)
     end do
 
     ! =================================
@@ -282,11 +298,13 @@ contains
     call lsysbl_clearMatrix (rmatrix)
     
     ! Set up a vector evaluation structure that automatically evaluates rcoeffVector
-    ! in the cubature points during the assembly. Evaluate only function values.
+    ! in the cubature points during the assembly. 
+    ! Evaluate function values + 1st derivatives, as we need the latter.
+    ideriv = 1
+    call fev2_addVectorToEvalList(rcoeffVectors,rcoeffVector,ideriv)
     
-    ideriv = 0    ! =1 would evaluate also the functions` derivatives in the cubature pts.
-    call fev2_addVectorToEvalList(rcoeffVectors,rcoeffVector%RvectorBlock(1),ideriv)
-    call fev2_addVectorToEvalList(rcoeffVectors,rcoeffVector%RvectorBlock(2),ideriv)
+    ! Add a dummy vector which is used to calculate g() in the cubature points.
+    call fev2_addDummyVectorToEvalList(rcoeffVectors,1)
     
     ! Assemble the matrix using our callback routine above.
     ! Provide rcoeffVectors as nonconstant coefficients.
@@ -302,15 +320,15 @@ contains
     
     ! Write the matrix to a text file, omit nonexisting entries in the matrix.
     call matio_writeBlockMatrixHR (rmatrix, "matrix", .true., 0, &
-        "post/tutorial010e_matrix.txt", "(E11.2)")
+        "post/tutorial010g_matrix.txt", "(E11.2)")
 
     ! Write the matrix to a MATLAB file.
     call matio_spyBlockMatrix(&
-        "post/tutorial010e_matrix","matrix",rmatrix,.true.)
+        "post/tutorial010g_matrix","matrix",rmatrix,.true.)
     
     ! Write the matrix to a MAPLE file
     call matio_writeBlockMatrixMaple (rmatrix, "matrix", 0, &
-        "post/tutorial010e_matrix.maple", "(E11.2)")
+        "post/tutorial010g_matrix.maple", "(E11.2)")
 
     ! =================================
     ! Cleanup
