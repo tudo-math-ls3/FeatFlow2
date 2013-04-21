@@ -190,6 +190,9 @@
 !# 20.) gfem_infoNodeList
 !#      -> Outputs the node list (if available)
 !#
+!# 21.) gfem_setDataType
+!#      -> Converts the data type of the group finite element set
+!#
 !# </purpose>
 !##############################################################################
 
@@ -267,6 +270,7 @@ module groupfembase
   public :: gfem_copyD2H_CoeffsAtEdge
 
   public :: gfem_infoNodeList
+  public :: gfem_setDataType
 
 !<constants>
 !<constantblock description="Global format flag for group FEM assembly">
@@ -5965,5 +5969,43 @@ contains
     end if
 
   end subroutine gfem_infoNodeList
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine gfem_setDataType(rgroupFEMSet, cdataType)
+
+!<description>
+    ! This subroutine converts the data arrays of the group finite
+    ! element set to the given data type cdataType
+!</description>
+
+!<input>
+    ! Target datatype of the stabilisation structure
+    integer, intent(in) :: cdataType
+!</input>
+
+!<inputoutput>
+    ! Group finite element set that should be converts
+    type(t_groupFEMSet), intent(inout) :: rgroupFEMSet
+!</inputoutput>
+!</subroutine>
+
+    ! Check if group finite element set needs conversion
+    if (rgroupFEMSet%cdataType .eq. cdataType) return
+
+    ! Set data type
+    rgroupFEMSet%cdataType = cdataType
+    
+    ! Convert all available data
+    if (rgroupFEMSet%h_CoeffsAtDiag .ne. ST_NOHANDLE)&
+        call storage_setdatatype (rgroupFEMSet%h_CoeffsAtDiag, cdataType)
+    if (rgroupFEMSet%h_CoeffsAtNode .ne. ST_NOHANDLE)&
+        call storage_setdatatype (rgroupFEMSet%h_CoeffsAtNode, cdataType)
+    if (rgroupFEMSet%h_CoeffsAtEdge .ne. ST_NOHANDLE)&
+        call storage_setdatatype (rgroupFEMSet%h_CoeffsAtEdge, cdataType)
+
+  end subroutine gfem_setDataType
 
 end module groupfembase

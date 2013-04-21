@@ -145,6 +145,9 @@
 !#      -> Copies the edge structure from the device memory
 !#         to the host memory.
 !#
+!# 39.) afcstab_setDataType
+!#      -> Converts the data type of the stabilisation structure
+!#
 !# </purpose>
 !##############################################################################
 module afcstabbase
@@ -215,6 +218,8 @@ module afcstabbase
   public :: afcstab_copyH2D_IedgeList
   public :: afcstab_copyD2H_CoeffsAtEdge
   public :: afcstab_copyH2D_CoeffsAtEdge
+
+  public :: afcstab_setDataType
 
   ! *****************************************************************************
 
@@ -6589,5 +6594,67 @@ contains
         ST_SYNCBLOCK_COPY_D2H, btranspose, istream)
 
   end subroutine afcstab_copyD2H_CoeffsAtEdge
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine afcstab_setDataType(rafcstab, cdataType)
+
+!<description>
+    ! This subroutine converts the data arrays of the stabilisation
+    ! structure to the given data type cdataType
+!</description>
+
+!<input>
+    ! Target datatype of the stabilisation structure
+    integer, intent(in) :: cdataType
+!</input>
+
+!<inputoutput>
+    ! Stabilisation structure that should be converts
+    type(t_afcstab), intent(inout) :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+    ! Check if stabilisation structure needs conversion
+    if (rafcstab%cdataType .eq. cdataType) return
+
+    ! Set data type
+    rafcstab%cdataType = cdataType
+    
+    ! Convert all available data
+    if (rafcstab%h_CoeffsAtEdge .ne. ST_NOHANDLE)&
+        call storage_setdatatype (rafcstab%h_CoeffsAtEdge, cdataType)
+    if (rafcstab%h_BoundsAtEdge .ne. ST_NOHANDLE)&
+        call storage_setdatatype (rafcstab%h_BoundsAtEdge, cdataType)
+    if (associated(rafcstab%p_rvectorAlpha))&
+        call lsyssc_setDataTypeVector (rafcstab%p_rvectorAlpha, cdataType)
+    if (associated(rafcstab%p_rvectorFlux0))&
+        call lsyssc_setDataTypeVector (rafcstab%p_rvectorFlux0, cdataType)
+    if (associated(rafcstab%p_rvectorFlux))&
+        call lsyssc_setDataTypeVector (rafcstab%p_rvectorFlux, cdataType)
+    if (associated(rafcstab%p_rvectorFluxPrel))&
+        call lsyssc_setDataTypeVector (rafcstab%p_rvectorFluxPrel, cdataType)
+    if (associated(rafcstab%p_rvectorDx))&
+        call lsyssc_setDataTypeVector (rafcstab%p_rvectorDx, cdataType)
+    if (associated(rafcstab%p_rvectorPp))&
+        call lsyssc_setDataTypeVector (rafcstab%p_rvectorPp, cdataType)
+    if (associated(rafcstab%p_rvectorPm))&
+        call lsyssc_setDataTypeVector (rafcstab%p_rvectorPm, cdataType)
+    if (associated(rafcstab%p_rvectorQ))&
+        call lsyssc_setDataTypeVector (rafcstab%p_rvectorQ, cdataType)
+    if (associated(rafcstab%p_rvectorQp))&
+        call lsyssc_setDataTypeVector (rafcstab%p_rvectorQp, cdataType)
+    if (associated(rafcstab%p_rvectorQm))&
+        call lsyssc_setDataTypeVector (rafcstab%p_rvectorQm, cdataType)
+    if (associated(rafcstab%p_rvectorRp))&
+        call lsyssc_setDataTypeVector (rafcstab%p_rvectorRp, cdataType)
+    if (associated(rafcstab%p_rvectorRm))&
+        call lsyssc_setDataTypeVector (rafcstab%p_rvectorRm, cdataType)
+    if (associated(rafcstab%p_rvectorPredictor))&
+        call lsysbl_setDataTypeVector (rafcstab%p_rvectorPredictor, cdataType)
+
+  end subroutine afcstab_setDataType
 
 end module afcstabbase
