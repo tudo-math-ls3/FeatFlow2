@@ -245,7 +245,7 @@ contains
     call spdiscr_createDefCubStructure (rspatialDiscr,rcubatureInfo,CUB_GEN_AUTO_G3)
 
     ! =================================
-    ! Block (1,1): -f Mass(u)
+    ! Block (1,1): f Mass
     ! =================================
 
     ! Set up a bilinear for for Mass. There is 1 term...    
@@ -254,11 +254,11 @@ contains
     ! We have nonconstant coefficients
     rform%ballCoeffConstant = .false.
 
-    ! Term 1/2: Mass  =>  (f phi psi )
+    ! Term 1/2: Mass  =>  (f phi, psi)
     rform%Idescriptors(1,1) = DER_FUNC2D
     rform%Idescriptors(2,1) = DER_FUNC2D
     
-    ! Via the collection tell the callback routine to use Mass.
+    ! Via the collection tell the callback routine to assemble Mass.
     rcollection%IquickAccess(1) = 1
 
     ! Build the matrix block (1,1)
@@ -266,7 +266,7 @@ contains
         fcoeff_Matrix, rcollection)
 
     ! =================================
-    ! Block (2,2): -g Laplace(u)
+    ! Block (2,2): g (-Laplace)
     ! =================================
 
     ! Set up a bilinear for for Laplace...    
@@ -275,14 +275,14 @@ contains
     ! We have constant coefficients:
     rform%ballCoeffConstant = .false.
 
-    ! Term 1/2: -Laplace  =>  (g phi_x psi_x  +  g phi_y psi_y)
+    ! Term 1/2: -Laplace  =>  (g phi_x, psi_x)  +  (g phi_y, psi_y)
     rform%Idescriptors(1,1) = DER_DERIV2D_X
     rform%Idescriptors(2,1) = DER_DERIV2D_X
     
     rform%Idescriptors(1,2) = DER_DERIV2D_Y
     rform%Idescriptors(2,2) = DER_DERIV2D_Y
     
-    ! Via the collection tell the callback routine to use Laplace.
+    ! Via the collection tell the callback routine to assemble Laplace.
     rcollection%IquickAccess(1) = 2
     
     ! Build the matrix block (2,2)

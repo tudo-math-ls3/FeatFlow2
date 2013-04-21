@@ -1,8 +1,8 @@
 !##############################################################################
-!# Tutorial 010b: Assemble a block vector.
+!# Tutorial 010c: Assemble a block vector. RHS given as FEM function.
 !##############################################################################
 
-module tutorial010b
+module tutorial010c
 
   ! Include basic Feat-2 modules
   use fsystem
@@ -22,6 +22,7 @@ module tutorial010b
   use scalarpde
   use linearformevaluation
   use domainintegration
+  use feevaluation
   
   use collection
   use vectorio
@@ -29,7 +30,7 @@ module tutorial010b
   implicit none
   private
   
-  public :: start_tutorial010b
+  public :: start_tutorial010c
 
 contains
 
@@ -95,43 +96,51 @@ contains
 !</subroutine>
 
     integer :: ielement, ipoint, iblock
-    real(DP) :: dx, dy
+    type(t_vectorBlock), pointer :: p_rcoeffVector
+    real(DP), dimension(:,:,:), pointer :: p_Dcoeff
     
+    ! Get the coefficient vector (f_1, f_2) from the collection
+    p_rcoeffVector => rcollection%p_rvectorQuickAccess1
+
+    ! Get the temp memory provided by bilf_buildVectorScalar
+    ! for the coefficients. They were reserved due to ntemp=1.
+    p_Dcoeff => rdomainIntSubset%p_DtempArrays 
+
     ! Get the ID of the RHS from the assembly.
     iblock = rcollection%IquickAccess(1)
     
     select case (iblock)
     
     ! -----------------------------------------------------
-    ! First block. f(x,y) = 1
+    ! First block. f(x,y) = f_1
     case (1)
-    
+
+      ! Evaluafe f_1 into p_Dcoeff(:,:,1)
+      call fevl_evaluate_sim (p_rcoeffVector%RvectorBlock(1),rdomainIntSubset, &
+          DER_FUNC2D, p_Dcoeff(:,:,1))
+
       do ielement = 1,nelements
         do ipoint = 1,npointsPerElement
         
-          ! x/y coordinate
-          dx = Dpoints(1,ipoint,ielement)
-          dy = Dpoints(2,ipoint,ielement)
-          
-          ! Write f(x,y)=d*16*x*(1-x)*y*(1-y) into Dcoefficients(1,:,:)
-          Dcoefficients(1,ipoint,ielement) = 1.0_DP
+          ! Write f(x,y)=f_1 into Dcoefficients(1,:,:)
+          Dcoefficients(1,ipoint,ielement) = p_Dcoeff(ipoint,ielement,1)
         
         end do
       end do
 
     ! -----------------------------------------------------
-    ! 2nd block. f(x,y) = 16x(1-x)y(1-y)
+    ! 2nd block. f(x,y) = f_2
     case (2)
     
+      ! Evaluafe f_2 into p_Dcoeff(:,:,1)
+      call fevl_evaluate_sim (p_rcoeffVector%RvectorBlock(1),rdomainIntSubset, &
+          DER_FUNC2D, p_Dcoeff(:,:,1))
+
       do ielement = 1,nelements
         do ipoint = 1,npointsPerElement
         
-          ! x/y coordinate
-          dx = Dpoints(1,ipoint,ielement)
-          dy = Dpoints(2,ipoint,ielement)
-          
-          ! Write f(x,y)=d*16*x*(1-x)*y*(1-y) into Dcoefficients(1,:,:)
-          Dcoefficients(1,ipoint,ielement) = 16.0_DP * dx * (1.0_DP - dx) * dy * (1.0_DP - dy)
+          ! Write f(x,y)=f_2 into Dcoefficients(1,:,:)
+          Dcoefficients(1,ipoint,ielement) = p_Dcoeff(ipoint,ielement,1)
         
         end do
       end do
@@ -142,7 +151,7 @@ contains
 
   ! ***************************************************************************
 
-  subroutine start_tutorial010b
+  subroutine start_tutorial010c
 
     ! Declare some variables.
     type(t_triangulation) :: rtriangulation
@@ -153,11 +162,16 @@ contains
     type(t_collection) :: rcollection
     type(t_scalarCubatureInfo), target :: rcubatureInfo
     type(t_vectorBlock) :: rrhs
+    type(t_vectorBlock), target :: rcoeffVector
+
+    integer :: i, ntemp
+    real(DP), dimension(:,:), pointer :: p_DvertexCoords
+    real(DP), dimension(:), pointer :: p_Ddata1, p_Ddata2
 
     ! Print a message
     call output_lbrk()
     call output_separator (OU_SEP_STAR)
-    call output_line ("This is FEAT-2. Tutorial 010b")
+    call output_line ("This is FEAT-2. Tutorial 010c")
     call output_separator (OU_SEP_MINUS)
     
     ! =================================
@@ -198,6 +212,26 @@ contains
     call lsysbl_clearVector (rrhs)
 
     ! =================================
+    ! Create a coefficient block vector rcoeffVector = ( 1+x^2, 1+y^2 )
+    ! =================================
+    
+    ! Create a vector
+    call lsysbl_createVector (rblockDiscr,rcoeffVector)
+
+    ! Get vertex positions
+    call storage_getbase_double2d (rtriangulation%h_DvertexCoords,p_DvertexCoords)
+    
+    ! Get pointers to the 1st and 2nd subvector
+    call lsyssc_getbase_double (rcoeffVector%RvectorBlock(1), p_Ddata1)
+    call lsyssc_getbase_double (rcoeffVector%RvectorBlock(2), p_Ddata2)
+    
+    ! Initialise the vector
+    do i=1,rtriangulation%NVT
+      p_Ddata1(i) = 1.0_DP + p_DvertexCoords(1,i)**2
+      p_Ddata2(i) = 1.0_DP + p_DvertexCoords(2,i)**2
+    end do
+
+    ! =================================
     ! Use a 3-point Gauss Formula for the RHS
     ! =================================
     
@@ -212,18 +246,23 @@ contains
     rlinform%itermCount = 1
     rlinform%Idescriptors(1) = DER_FUNC2D
     
+    ! Pass rcoeffVector via the collection as nonconstant function f. 
+    rcollection%p_rvectorQuickAccess1 => rcoeffVector
+
     ! Build the RHS using fcoeff_RHS above. Pass the block to assemble in the collection.
     ! rcollection%DquickAccess/IquickAccess/... can arbitrarily be used to pass values.
     
-    ! First block
+    ! First block. Reserve one temporary array for the coefficients.
+    ntemp = 1
     rcollection%IquickAccess(1) = 1
     call linf_buildVectorScalar (rlinform,.false.,&
-        rrhs%RvectorBlock(1),rcubatureInfo,fcoeff_RHS,rcollection)
+        rrhs%RvectorBlock(1),rcubatureInfo,fcoeff_RHS,rcollection,ntemp)
 
-    ! 2nd block
+    ! 2nd block. Reserve one temporary array for the coefficients.
+    ntemp = 1
     rcollection%IquickAccess(1) = 2
     call linf_buildVectorScalar (rlinform,.false.,&
-        rrhs%RvectorBlock(2),rcubatureInfo,fcoeff_RHS,rcollection)
+        rrhs%RvectorBlock(2),rcubatureInfo,fcoeff_RHS,rcollection,ntemp)
 
     ! =================================
     ! Output of the vector
@@ -232,7 +271,7 @@ contains
     
     ! Write the vector to a text file.
     call vecio_writeBlockVectorHR (rrhs, "vector", .true., 0, &
-        "post/tutorial010b_rhs.txt", "(E11.2)")
+        "post/tutorial010c_rhs.txt", "(E11.2)")
 
     ! =================================
     ! Cleanup
@@ -244,6 +283,9 @@ contains
     ! Release the vector
     call lsysbl_releaseVector (rrhs)
     
+    ! Release the coefficient vector
+    call lsysbl_releaseVector (rcoeffVector)
+
     ! Release the block discretisation
     call spdiscr_releaseBlockDiscr (rblockDiscr)
     

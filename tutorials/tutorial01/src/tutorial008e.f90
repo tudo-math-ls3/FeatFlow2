@@ -277,7 +277,7 @@ contains
     end do
 
     ! =================================
-    ! Block (1,1): -f Mass(u)
+    ! Block (1,1): f Mass
     ! =================================
 
     ! Set up a bilinear for for Mass. There is 1 term...    
@@ -286,13 +286,13 @@ contains
     ! We have nonconstant coefficients
     rform%ballCoeffConstant = .false.
 
-    ! Term 1/2: Mass  =>  (f phi psi )
+    ! Term 1/2: Mass  =>  (f phi, psi)
     rform%Dcoefficients(1)  = 1.0_DP
     rform%Idescriptors(1,1) = DER_FUNC2D
     rform%Idescriptors(2,1) = DER_FUNC2D
     
     ! Via the collection tell the callback routine to assemble Mass.
-    ! Pass rvector via the collection as nonconstant coefficient. 
+    ! Pass rcoeffVector via the collection as nonconstant coefficient. 
     rcollection%IquickAccess(1) = 1
     rcollection%p_rvectorQuickAccess1 => rcoeffVector
 
@@ -302,7 +302,7 @@ contains
         fcoeff_Matrix, rcollection, ntemp)
 
     ! =================================
-    ! Block (2,2): -g Laplace(u)
+    ! Block (2,2): g (-Laplace)
     ! =================================
 
     ! Set up a bilinear for for Laplace...    
@@ -311,7 +311,7 @@ contains
     ! We have constant coefficients:
     rform%ballCoeffConstant = .false.
 
-    ! Term 1/2: -Laplace  =>  (g phi_x psi_x  +  g phi_y psi_y)
+    ! Term 1/2: -Laplace  =>  (g phi_x, psi_x)  +  (g phi_y, psi_y)
     rform%Dcoefficients(1)  = 1.0_DP
     rform%Idescriptors(1,1) = DER_DERIV2D_X
     rform%Idescriptors(2,1) = DER_DERIV2D_X
