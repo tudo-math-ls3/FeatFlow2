@@ -163,7 +163,7 @@ contains
 
           ! Fetch the contributions of the (test) basis functions Psi_i
           ! into dbasI
-          dbasI  = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
+          dbasI = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
 
           ! Inner loop over the DOF's j=1..ndof, which corresponds to
           ! the (trial) basis function Phi_j:
@@ -171,7 +171,7 @@ contains
 
             ! Fetch the contributions of the (trial) basis function Phi_j
             ! into dbasJ
-            dbasJ  = p_DbasTrial(jdofe,DER_FUNC2D,icubp,iel)
+            dbasJ = p_DbasTrial(jdofe,DER_FUNC2D,icubp,iel)
 
             ! Multiply the values of the basis functions
             ! (1st derivatives) by the cubature weight and sum up
@@ -303,7 +303,8 @@ contains
     ideriv = 1
     call fev2_addVectorToEvalList(rcoeffVectors,rcoeffVector,ideriv)
     
-    ! Add a dummy vector which is used to calculate g() in the cubature points.
+    ! Add one dummy vector which is used in the callback routine to calculate g()
+    ! in the cubature points.
     call fev2_addDummyVectorToEvalList(rcoeffVectors,1)
     
     ! Assemble the matrix using our callback routine above.
@@ -336,6 +337,9 @@ contains
     
     ! Release the cubature formula
     call spdiscr_releaseCubStructure (rcubatureInfo)
+    
+    ! Release the coefficient vector
+    call lsyssc_releaseVector (rcoeffVector)
 
     ! Release the matrix
     call lsysbl_releaseMatrix (rmatrix)
@@ -355,3 +359,4 @@ contains
   end subroutine
 
 end module
+

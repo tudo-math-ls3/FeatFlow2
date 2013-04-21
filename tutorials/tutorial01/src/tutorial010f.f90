@@ -315,6 +315,9 @@ contains
     ! Release the cubature formula
     call spdiscr_releaseCubStructure (rcubatureInfo)
 
+    ! Release the coefficient vector
+    call lsyssc_releaseVector (rcoeffVector)
+
     ! Release the matrix
     call lsysbl_releaseMatrix (rmatrix)
     
