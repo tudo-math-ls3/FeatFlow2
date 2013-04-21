@@ -496,7 +496,7 @@ fb_customise() {
 		    ;;
 
 		# PGI compiler suite 10.x
-		pc64-penryn-linux-pgi-*01*)
+		pc64-penryn-linux-pgi-*10*)
 		    modules=""
 		    modules="$modules pgi/10.9-0"
 		    LIDOJOBNAMEPREFIX=ff2-pgi10
@@ -522,17 +522,17 @@ fb_customise() {
 		# PGI compiler suite 13.x
 		pc64-penryn-linux-pgi-*13*)
 		    modules=""
-		    modules="$modules pgi/13.3-0"
+		    modules="$modules pgi/13.4-0"
 		    LIDOJOBNAMEPREFIX=ff2-pgi13
-		    COMPILERNAME="PGI 13.3"
+		    COMPILERNAME="PGI 13.4"
 		    ;;
 
 		# default PGI compiler suite
 		pc64-penryn-linux-pgi-*)
 		    modules=""
-		    modules="$modules pgi/13.3-0"
+		    modules="$modules pgi/13.4-0"
 		    LIDOJOBNAMEPREFIX=ff2-pgi
-		    COMPILERNAME="PGI 13.3"
+		    COMPILERNAME="PGI 13.4"
 		    ;;
 
 		# Sun Studio compiler suite 12.1
