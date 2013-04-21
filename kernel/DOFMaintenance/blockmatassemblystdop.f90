@@ -348,15 +348,15 @@ contains
           do icubp = 1,npointsPerElement
 
             ! Outer loop over the DOF's i=1..ndof on our current element,
-            ! which corresponds to the (test) basis functions Phi_i:
+            ! which corresponds to the (test) basis functions Psi_i:
             do idofe=1,p_rmatrixData%ndofTest
 
-              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! Fetch the contributions of the (test) basis functions Psi_i
               ! into dbasI
               dbasI = p_DbasTest(idofe,DER_FUNC,icubp,iel)
 
               ! Inner loop over the DOF's j=1..ndof, which corresponds to
-              ! the basis function Phi_j:
+              ! the (trial) basis function Phi_j:
               do jdofe=1,p_rmatrixData%ndofTrial
 
                 ! Fetch the contributions of the (trial) basis function Phi_j
@@ -395,15 +395,15 @@ contains
             do idimfe = 0,ndimfe-1
 
               ! Outer loop over the DOF's i=1..ndof on our current element,
-              ! which corresponds to the (test) basis functions Phi_i:
+              ! which corresponds to the (test) basis functions Psi_i:
               do idofe=1,p_rmatrixData%ndofTest
 
-                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! Fetch the contributions of the (test) basis functions Psi_i
                 ! into dbasI
                 dbasI = p_DbasTest(idofe+idimfe*p_rmatrixData%ndofTest,DER_FUNC,icubp,iel)
 
                 ! Inner loop over the DOF's j=1..ndof, which corresponds to
-                ! the basis function Phi_j:
+                ! the (trial) basis function Phi_j:
                 do jdofe=1,p_rmatrixData%ndofTrial
 
                   ! Fetch the contributions of the (trial) basis function Phi_j
@@ -451,15 +451,15 @@ contains
           do icubp = 1,npointsPerElement
 
             ! Outer loop over the DOF's i=1..ndof on our current element,
-            ! which corresponds to the (test) basis functions Phi_i:
+            ! which corresponds to the (test) basis functions Psi_i:
             do idofe=1,p_rmatrixData%ndofTest
 
-              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! Fetch the contributions of the (test) basis functions Psi_i
               ! into dbasI
               dbasI = p_DbasTest(idofe,DER_FUNC,icubp,iel)
 
               ! Inner loop over the DOF's j=1..ndof, which corresponds to
-              ! the basis function Phi_j:
+              ! the (trial) basis function Phi_j:
               do jdofe=1,p_rmatrixData%ndofTrial
 
                 ! Fetch the contributions of the (trial) basis function Phi_j
@@ -503,15 +503,15 @@ contains
             do idimfe = 0,ndimfe-1
 
               ! Outer loop over the DOF's i=1..ndof on our current element,
-              ! which corresponds to the (test) basis functions Phi_i:
+              ! which corresponds to the (test) basis functions Psi_i:
               do idofe=1,p_rmatrixData%ndofTest
 
-                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! Fetch the contributions of the (test) basis functions Psi_i
                 ! into dbasI
                 dbasI = p_DbasTest(idofe+idimfe*p_rmatrixData%ndofTest,DER_FUNC,icubp,iel)
 
                 ! Inner loop over the DOF's j=1..ndof, which corresponds to
-                ! the basis function Phi_j:
+                ! the (trial) basis function Phi_j:
                 do jdofe=1,p_rmatrixData%ndofTrial
 
                   ! Fetch the contributions of the (trial) basis function Phi_j
@@ -759,15 +759,15 @@ contains
             do icubp = 1,npointsPerElement
 
               ! Outer loop over the DOF's i=1..ndof on our current element,
-              ! which corresponds to the (test) basis functions Phi_i:
+              ! which corresponds to the (test) basis functions Psi_i:
               do idofe=1,p_rmatrixData%ndofTest
 
-                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! Fetch the contributions of the (test) basis functions Psi_i
                 ! into dbasI
                 dbasIx = p_DbasTest(idofe,DER_DERIV1D_X,icubp,iel)
 
                 ! Inner loop over the DOF's j=1..ndof, which corresponds to
-                ! the basis function Phi_j:
+                ! the (trial) basis function Phi_j:
                 do jdofe=1,p_rmatrixData%ndofTrial
 
                   ! Fetch the contributions of the (trial) basis function Phi_j
@@ -801,16 +801,16 @@ contains
             do icubp = 1,npointsPerElement
 
               ! Outer loop over the DOF's i=1..ndof on our current element,
-              ! which corresponds to the (test) basis functions Phi_i:
+              ! which corresponds to the (test) basis functions Psi_i:
               do idofe=1,p_rmatrixData%ndofTest
 
-                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! Fetch the contributions of the (test) basis functions Psi_i
                 ! into dbasI
                 dbasIx = p_DbasTest(idofe,DER_DERIV2D_X,icubp,iel)
                 dbasIy = p_DbasTest(idofe,DER_DERIV2D_Y,icubp,iel)
 
                 ! Inner loop over the DOF's j=1..ndof, which corresponds to
-                ! the basis function Phi_j:
+                ! the (trial) basis function Phi_j:
                 do jdofe=1,p_rmatrixData%ndofTrial
 
                   ! Fetch the contributions of the (trial) basis function Phi_j
@@ -845,17 +845,17 @@ contains
             do icubp = 1,npointsPerElement
 
               ! Outer loop over the DOF's i=1..ndof on our current element,
-              ! which corresponds to the (test) basis functions Phi_i:
+              ! which corresponds to the (test) basis functions Psi_i:
               do idofe=1,p_rmatrixData%ndofTest
 
-                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! Fetch the contributions of the (test) basis functions Psi_i
                 ! into dbasI
                 dbasIx = p_DbasTest(idofe,DER_DERIV3D_X,icubp,iel)
                 dbasIy = p_DbasTest(idofe,DER_DERIV3D_Y,icubp,iel)
                 dbasIz = p_DbasTest(idofe,DER_DERIV3D_Z,icubp,iel)
 
                 ! Inner loop over the DOF's j=1..ndof, which corresponds to
-                ! the basis function Phi_j:
+                ! the (trial) basis function Phi_j:
                 do jdofe=1,p_rmatrixData%ndofTrial
 
                   ! Fetch the contributions of the (trial) basis function Phi_j
@@ -908,16 +908,16 @@ contains
               do idimfe = 0,ndimfe-1
                 
                 ! Outer loop over the DOF's i=1..ndof on our current element,
-                ! which corresponds to the (test) basis functions Phi_i:
+                ! which corresponds to the (test) basis functions Psi_i:
                 do idofe=1,p_rmatrixData%ndofTest
 
-                  ! Fetch the contributions of the (test) basis functions Phi_i
+                  ! Fetch the contributions of the (test) basis functions Psi_i
                   ! into dbasI
                   dbasIx = p_DbasTest(&
                       idofe+idimfe*p_rmatrixData%ndofTest,DER_DERIV1D_X,icubp,iel)
 
                   ! Inner loop over the DOF's j=1..ndof, which corresponds to
-                  ! the basis function Phi_j:
+                  ! the (trial) basis function Phi_j:
                   do jdofe=1,p_rmatrixData%ndofTrial
 
                     ! Fetch the contributions of the (trial) basis function Phi_j
@@ -957,10 +957,10 @@ contains
               do idimfe = 0,ndimfe-1
               
                 ! Outer loop over the DOF's i=1..ndof on our current element,
-                ! which corresponds to the (test) basis functions Phi_i:
+                ! which corresponds to the (test) basis functions Psi_i:
                 do idofe=1,p_rmatrixData%ndofTest
 
-                  ! Fetch the contributions of the (test) basis functions Phi_i
+                  ! Fetch the contributions of the (test) basis functions Psi_i
                   ! into dbasI
                   dbasIx = p_DbasTest(&
                       idofe+idimfe*p_rmatrixData%ndofTest,DER_DERIV2D_X,icubp,iel)
@@ -968,7 +968,7 @@ contains
                       idofe+idimfe*p_rmatrixData%ndofTest,DER_DERIV2D_Y,icubp,iel)
 
                   ! Inner loop over the DOF's j=1..ndof, which corresponds to
-                  ! the basis function Phi_j:
+                  ! the (trial) basis function Phi_j:
                   do jdofe=1,p_rmatrixData%ndofTrial
 
                     ! Fetch the contributions of the (trial) basis function Phi_j
@@ -1010,10 +1010,10 @@ contains
               do idimfe = 0,ndimfe-1
               
                 ! Outer loop over the DOF's i=1..ndof on our current element,
-                ! which corresponds to the (test) basis functions Phi_i:
+                ! which corresponds to the (test) basis functions Psi_i:
                 do idofe=1,p_rmatrixData%ndofTest
 
-                  ! Fetch the contributions of the (test) basis functions Phi_i
+                  ! Fetch the contributions of the (test) basis functions Psi_i
                   ! into dbasI
                   dbasIx = p_DbasTest(&
                       idofe+idimfe*p_rmatrixData%ndofTest,DER_DERIV3D_X,icubp,iel)
@@ -1023,7 +1023,7 @@ contains
                       idofe+idimfe*p_rmatrixData%ndofTest,DER_DERIV3D_Z,icubp,iel)
 
                   ! Inner loop over the DOF's j=1..ndof, which corresponds to
-                  ! the basis function Phi_j:
+                  ! the (trial) basis function Phi_j:
                   do jdofe=1,p_rmatrixData%ndofTrial
 
                     ! Fetch the contributions of the (trial) basis function Phi_j
@@ -1088,15 +1088,15 @@ contains
             do icubp = 1,npointsPerElement
 
               ! Outer loop over the DOF's i=1..ndof on our current element,
-              ! which corresponds to the (test) basis functions Phi_i:
+              ! which corresponds to the (test) basis functions Psi_i:
               do idofe=1,p_rmatrixData%ndofTest
 
-                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! Fetch the contributions of the (test) basis functions Psi_i
                 ! into dbasI
                 dbasIx = p_DbasTest(idofe,DER_DERIV1D_X,icubp,iel)
 
                 ! Inner loop over the DOF's j=1..ndof, which corresponds to
-                ! the basis function Phi_j:
+                ! the (trial) basis function Phi_j:
                 do jdofe=1,p_rmatrixData%ndofTrial
 
                   ! Fetch the contributions of the (trial) basis function Phi_j
@@ -1135,16 +1135,16 @@ contains
             do icubp = 1,npointsPerElement
 
               ! Outer loop over the DOF's i=1..ndof on our current element,
-              ! which corresponds to the (test) basis functions Phi_i:
+              ! which corresponds to the (test) basis functions Psi_i:
               do idofe=1,p_rmatrixData%ndofTest
 
-                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! Fetch the contributions of the (test) basis functions Psi_i
                 ! into dbasI
                 dbasIx = p_DbasTest(idofe,DER_DERIV2D_X,icubp,iel)
                 dbasIy = p_DbasTest(idofe,DER_DERIV2D_Y,icubp,iel)
 
                 ! Inner loop over the DOF's j=1..ndof, which corresponds to
-                ! the basis function Phi_j:
+                ! the (trial) basis function Phi_j:
                 do jdofe=1,p_rmatrixData%ndofTrial
 
                   ! Fetch the contributions of the (trial) basis function Phi_j
@@ -1184,17 +1184,17 @@ contains
             do icubp = 1,npointsPerElement
 
               ! Outer loop over the DOF's i=1..ndof on our current element,
-              ! which corresponds to the (test) basis functions Phi_i:
+              ! which corresponds to the (test) basis functions Psi_i:
               do idofe=1,p_rmatrixData%ndofTest
 
-                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! Fetch the contributions of the (test) basis functions Psi_i
                 ! into dbasI
                 dbasIx = p_DbasTest(idofe,DER_DERIV3D_X,icubp,iel)
                 dbasIy = p_DbasTest(idofe,DER_DERIV3D_Y,icubp,iel)
                 dbasIz = p_DbasTest(idofe,DER_DERIV3D_Z,icubp,iel)
 
                 ! Inner loop over the DOF's j=1..ndof, which corresponds to
-                ! the basis function Phi_j:
+                ! the (trial) basis function Phi_j:
                 do jdofe=1,p_rmatrixData%ndofTrial
 
                   ! Fetch the contributions of the (trial) basis function Phi_j
@@ -1252,16 +1252,16 @@ contains
               do idimfe = 0,ndimfe-1
 
                 ! Outer loop over the DOF's i=1..ndof on our current element,
-                ! which corresponds to the (test) basis functions Phi_i:
+                ! which corresponds to the (test) basis functions Psi_i:
                 do idofe=1,p_rmatrixData%ndofTest
 
-                  ! Fetch the contributions of the (test) basis functions Phi_i
+                  ! Fetch the contributions of the (test) basis functions Psi_i
                   ! into dbasI
                   dbasIx = p_DbasTest(&
                       idofe+idimfe*p_rmatrixData%ndofTest,DER_DERIV1D_X,icubp,iel)
 
                   ! Inner loop over the DOF's j=1..ndof, which corresponds to
-                  ! the basis function Phi_j:
+                  ! the (trial) basis function Phi_j:
                   do jdofe=1,p_rmatrixData%ndofTrial
 
                     ! Fetch the contributions of the (trial) basis function Phi_j
@@ -1306,10 +1306,10 @@ contains
               do idimfe = 0,ndimfe-1
 
                 ! Outer loop over the DOF's i=1..ndof on our current element,
-                ! which corresponds to the (test) basis functions Phi_i:
+                ! which corresponds to the (test) basis functions Psi_i:
                 do idofe=1,p_rmatrixData%ndofTest
 
-                  ! Fetch the contributions of the (test) basis functions Phi_i
+                  ! Fetch the contributions of the (test) basis functions Psi_i
                   ! into dbasI
                   dbasIx = p_DbasTest(&
                       idofe+idimfe*p_rmatrixData%ndofTest,DER_DERIV2D_X,icubp,iel)
@@ -1317,7 +1317,7 @@ contains
                       idofe+idimfe*p_rmatrixData%ndofTest,DER_DERIV2D_Y,icubp,iel)
 
                   ! Inner loop over the DOF's j=1..ndof, which corresponds to
-                  ! the basis function Phi_j:
+                  ! the (trial) basis function Phi_j:
                   do jdofe=1,p_rmatrixData%ndofTrial
 
                     ! Fetch the contributions of the (trial) basis function Phi_j
@@ -1364,10 +1364,10 @@ contains
               do idimfe = 0,ndimfe-1
 
                 ! Outer loop over the DOF's i=1..ndof on our current element,
-                ! which corresponds to the (test) basis functions Phi_i:
+                ! which corresponds to the (test) basis functions Psi_i:
                 do idofe=1,p_rmatrixData%ndofTest
 
-                  ! Fetch the contributions of the (test) basis functions Phi_i
+                  ! Fetch the contributions of the (test) basis functions Psi_i
                   ! into dbasI
                   dbasIx = p_DbasTest(&
                       idofe+idimfe*p_rmatrixData%ndofTest,DER_DERIV3D_X,icubp,iel)
@@ -1377,7 +1377,7 @@ contains
                       idofe+idimfe*p_rmatrixData%ndofTest,DER_DERIV3D_Z,icubp,iel)
 
                   ! Inner loop over the DOF's j=1..ndof, which corresponds to
-                  ! the basis function Phi_j:
+                  ! the (trial) basis function Phi_j:
                   do jdofe=1,p_rmatrixData%ndofTrial
 
                     ! Fetch the contributions of the (trial) basis function Phi_j
@@ -1561,15 +1561,15 @@ contains
             do icubp = 1,npointsPerElement
 
               ! Outer loop over the DOF's i=1..ndof on our current element,
-              ! which corresponds to the (test) basis functions Phi_i:
+              ! which corresponds to the (test) basis functions Psi_i:
               do idofe=1,p_rmatrixData%ndofTest
 
-                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! Fetch the contributions of the (test) basis functions Psi_i
                 ! into dbasI
                 dbasIx = p_DbasTest(idofe,DER_DERIV1D_X,icubp,iel)
 
                 ! Inner loop over the DOF's j=1..ndof, which corresponds to
-                ! the basis function Phi_j:
+                ! the (trial) basis function Phi_j:
                 do jdofe=1,p_rmatrixData%ndofTrial
 
                   ! Fetch the contributions of the (trial) basis function Phi_j
@@ -1607,16 +1607,16 @@ contains
             do icubp = 1,npointsPerElement
 
               ! Outer loop over the DOF's i=1..ndof on our current element,
-              ! which corresponds to the (test) basis functions Phi_i:
+              ! which corresponds to the (test) basis functions Psi_i:
               do idofe=1,p_rmatrixData%ndofTest
 
-                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! Fetch the contributions of the (test) basis functions Psi_i
                 ! into dbasI
                 dbasIx = p_DbasTest(idofe,DER_DERIV2D_X,icubp,iel)
                 dbasIy = p_DbasTest(idofe,DER_DERIV2D_Y,icubp,iel)
 
                 ! Inner loop over the DOF's j=1..ndof, which corresponds to
-                ! the basis function Phi_j:
+                ! the (trial) basis function Phi_j:
                 do jdofe=1,p_rmatrixData%ndofTrial
 
                   ! Fetch the contributions of the (trial) basis function Phi_j
@@ -1658,17 +1658,17 @@ contains
             do icubp = 1,npointsPerElement
 
               ! Outer loop over the DOF's i=1..ndof on our current element,
-              ! which corresponds to the (test) basis functions Phi_i:
+              ! which corresponds to the (test) basis functions Psi_i:
               do idofe=1,p_rmatrixData%ndofTest
 
-                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! Fetch the contributions of the (test) basis functions Psi_i
                 ! into dbasI
                 dbasIx = p_DbasTest(idofe,DER_DERIV3D_X,icubp,iel)
                 dbasIy = p_DbasTest(idofe,DER_DERIV3D_Y,icubp,iel)
                 dbasIz = p_DbasTest(idofe,DER_DERIV3D_Z,icubp,iel)
 
                 ! Inner loop over the DOF's j=1..ndof, which corresponds to
-                ! the basis function Phi_j:
+                ! the (trial) basis function Phi_j:
                 do jdofe=1,p_rmatrixData%ndofTrial
 
                   ! Fetch the contributions of the (trial) basis function Phi_j
@@ -1733,10 +1733,10 @@ contains
             do icubp = 1,npointsPerElement
 
               ! Outer loop over the DOF's i=1..ndof on our current element,
-              ! which corresponds to the (test) basis functions Phi_i:
+              ! which corresponds to the (test) basis functions Psi_i:
               do idofe=1,p_rmatrixData%ndofTest
 
-                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! Fetch the contributions of the (test) basis functions Psi_i
                 ! into dbasI
                 dbasIx = p_DbasTest(&
                     idofe+0*p_rmatrixData%ndofTest,DER_DERIV2D_X,icubp,iel)
@@ -1744,7 +1744,7 @@ contains
                     idofe+1*p_rmatrixData%ndofTest,DER_DERIV2D_Y,icubp,iel)
 
                 ! Inner loop over the DOF's j=1..ndof, which corresponds to
-                ! the basis function Phi_j:
+                ! the (trial) basis function Phi_j:
                 do jdofe=1,p_rmatrixData%ndofTrial
 
                   ! Fetch the contributions of the (trial) basis function Phi_j
@@ -1778,10 +1778,10 @@ contains
             do icubp = 1,npointsPerElement
 
               ! Outer loop over the DOF's i=1..ndof on our current element,
-              ! which corresponds to the (test) basis functions Phi_i:
+              ! which corresponds to the (test) basis functions Psi_i:
               do idofe=1,p_rmatrixData%ndofTest
 
-                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! Fetch the contributions of the (test) basis functions Psi_i
                 ! into dbasI
                 dbasIx = p_DbasTest(&
                     idofe+0*p_rmatrixData%ndofTest,DER_DERIV3D_X,icubp,iel)
@@ -1791,7 +1791,7 @@ contains
                     idofe+2*p_rmatrixData%ndofTest,DER_DERIV3D_Z,icubp,iel)
 
                 ! Inner loop over the DOF's j=1..ndof, which corresponds to
-                ! the basis function Phi_j:
+                ! the (trial) basis function Phi_j:
                 do jdofe=1,p_rmatrixData%ndofTrial
 
                   ! Fetch the contributions of the (trial) basis function Phi_j
@@ -1848,15 +1848,15 @@ contains
             do icubp = 1,npointsPerElement
 
               ! Outer loop over the DOF's i=1..ndof on our current element,
-              ! which corresponds to the (test) basis functions Phi_i:
+              ! which corresponds to the (test) basis functions Psi_i:
               do idofe=1,p_rmatrixData%ndofTest
 
-                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! Fetch the contributions of the (test) basis functions Psi_i
                 ! into dbasI
                 dbasIx = p_DbasTest(idofe,DER_DERIV1D_X,icubp,iel)
 
                 ! Inner loop over the DOF's j=1..ndof, which corresponds to
-                ! the basis function Phi_j:
+                ! the (trial) basis function Phi_j:
                 do jdofe=1,p_rmatrixData%ndofTrial
 
                   ! Fetch the contributions of the (trial) basis function Phi_j
@@ -1899,16 +1899,16 @@ contains
             do icubp = 1,npointsPerElement
 
               ! Outer loop over the DOF's i=1..ndof on our current element,
-              ! which corresponds to the (test) basis functions Phi_i:
+              ! which corresponds to the (test) basis functions Psi_i:
               do idofe=1,p_rmatrixData%ndofTest
 
-                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! Fetch the contributions of the (test) basis functions Psi_i
                 ! into dbasI
                 dbasIx = p_DbasTest(idofe,DER_DERIV2D_X,icubp,iel)
                 dbasIy = p_DbasTest(idofe,DER_DERIV2D_Y,icubp,iel)
 
                 ! Inner loop over the DOF's j=1..ndof, which corresponds to
-                ! the basis function Phi_j:
+                ! the (trial) basis function Phi_j:
                 do jdofe=1,p_rmatrixData%ndofTrial
 
                   ! Fetch the contributions of the (trial) basis function Phi_j
@@ -1956,17 +1956,17 @@ contains
             do icubp = 1,npointsPerElement
 
               ! Outer loop over the DOF's i=1..ndof on our current element,
-              ! which corresponds to the (test) basis functions Phi_i:
+              ! which corresponds to the (test) basis functions Psi_i:
               do idofe=1,p_rmatrixData%ndofTest
 
-                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! Fetch the contributions of the (test) basis functions Psi_i
                 ! into dbasI
                 dbasIx = p_DbasTest(idofe,DER_DERIV3D_X,icubp,iel)
                 dbasIy = p_DbasTest(idofe,DER_DERIV3D_Y,icubp,iel)
                 dbasIz = p_DbasTest(idofe,DER_DERIV3D_Z,icubp,iel)
 
                 ! Inner loop over the DOF's j=1..ndof, which corresponds to
-                ! the basis function Phi_j:
+                ! the (trial) basis function Phi_j:
                 do jdofe=1,p_rmatrixData%ndofTrial
 
                   ! Fetch the contributions of the (trial) basis function Phi_j
@@ -2037,10 +2037,10 @@ contains
             do icubp = 1,npointsPerElement
 
               ! Outer loop over the DOF's i=1..ndof on our current element,
-              ! which corresponds to the (test) basis functions Phi_i:
+              ! which corresponds to the (test) basis functions Psi_i:
               do idofe=1,p_rmatrixData%ndofTest
 
-                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! Fetch the contributions of the (test) basis functions Psi_i
                 ! into dbasI
                 dbasIx = p_DbasTest(&
                     idofe+0*p_rmatrixData%ndofTest,DER_DERIV2D_X,icubp,iel)
@@ -2048,7 +2048,7 @@ contains
                     idofe+1*p_rmatrixData%ndofTest,DER_DERIV2D_Y,icubp,iel)
 
                 ! Inner loop over the DOF's j=1..ndof, which corresponds to
-                ! the basis function Phi_j:
+                ! the (trial) basis function Phi_j:
                 do jdofe=1,p_rmatrixData%ndofTrial
 
                   ! Fetch the contributions of the (trial) basis function Phi_j
@@ -2087,10 +2087,10 @@ contains
             do icubp = 1,npointsPerElement
 
               ! Outer loop over the DOF's i=1..ndof on our current element,
-              ! which corresponds to the (test) basis functions Phi_i:
+              ! which corresponds to the (test) basis functions Psi_i:
               do idofe=1,p_rmatrixData%ndofTest
 
-                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! Fetch the contributions of the (test) basis functions Psi_i
                 ! into dbasI
                 dbasIx = p_DbasTest(&
                     idofe+0*p_rmatrixData%ndofTest,DER_DERIV3D_X,icubp,iel)
@@ -2100,7 +2100,7 @@ contains
                     idofe+2*p_rmatrixData%ndofTest,DER_DERIV3D_Z,icubp,iel)
 
                 ! Inner loop over the DOF's j=1..ndof, which corresponds to
-                ! the basis function Phi_j:
+                ! the (trial) basis function Phi_j:
                 do jdofe=1,p_rmatrixData%ndofTrial
 
                   ! Fetch the contributions of the (trial) basis function Phi_j
@@ -2270,15 +2270,15 @@ contains
             do icubp = 1,npointsPerElement
 
               ! Outer loop over the DOF's i=1..ndof on our current element,
-              ! which corresponds to the (test) basis functions Phi_i:
+              ! which corresponds to the (test) basis functions Psi_i:
               do idofe=1,p_rmatrixData%ndofTest
 
-                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! Fetch the contributions of the (test) basis functions Psi_i
                 ! into dbasI
                 dbasI = p_DbasTest(idofe,DER_FUNC1D,icubp,iel)
 
                 ! Inner loop over the DOF's j=1..ndof, which corresponds to
-                ! the basis function Phi_j:
+                ! the (trial) basis function Phi_j:
                 do jdofe=1,p_rmatrixData%ndofTrial
 
                   ! Fetch the contributions of the (trial) basis function Phi_j
@@ -2316,15 +2316,15 @@ contains
             do icubp = 1,npointsPerElement
 
               ! Outer loop over the DOF's i=1..ndof on our current element,
-              ! which corresponds to the (test) basis functions Phi_i:
+              ! which corresponds to the (test) basis functions Psi_i:
               do idofe=1,p_rmatrixData%ndofTest
 
-                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! Fetch the contributions of the (test) basis functions Psi_i
                 ! into dbasI
                 dbasI = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
 
                 ! Inner loop over the DOF's j=1..ndof, which corresponds to
-                ! the basis function Phi_j:
+                ! the (trial) basis function Phi_j:
                 do jdofe=1,p_rmatrixData%ndofTrial
 
                   ! Fetch the contributions of the (trial) basis function Phi_j
@@ -2367,15 +2367,15 @@ contains
             do icubp = 1,npointsPerElement
 
               ! Outer loop over the DOF's i=1..ndof on our current element,
-              ! which corresponds to the (test) basis functions Phi_i:
+              ! which corresponds to the (test) basis functions Psi_i:
               do idofe=1,p_rmatrixData%ndofTest
 
-                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! Fetch the contributions of the (test) basis functions Psi_i
                 ! into dbasI
                 dbasI = p_DbasTest(idofe,DER_FUNC3D,icubp,iel)
 
                 ! Inner loop over the DOF's j=1..ndof, which corresponds to
-                ! the basis function Phi_j:
+                ! the (trial) basis function Phi_j:
                 do jdofe=1,p_rmatrixData%ndofTrial
 
                   ! Fetch the contributions of the (trial) basis function Phi_j
@@ -2441,15 +2441,15 @@ contains
             do icubp = 1,npointsPerElement
 
               ! Outer loop over the DOF's i=1..ndof on our current element,
-              ! which corresponds to the (test) basis functions Phi_i:
+              ! which corresponds to the (test) basis functions Psi_i:
               do idofe=1,p_rmatrixData%ndofTest
 
-                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! Fetch the contributions of the (test) basis functions Psi_i
                 ! into dbasI
                 dbasI = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
 
                 ! Inner loop over the DOF's j=1..ndof, which corresponds to
-                ! the basis function Phi_j:
+                ! the (trial) basis function Phi_j:
                 do jdofe=1,p_rmatrixData%ndofTrial
 
                   ! Fetch the contributions of the (trial) basis function Phi_j
@@ -2486,15 +2486,15 @@ contains
             do icubp = 1,npointsPerElement
 
               ! Outer loop over the DOF's i=1..ndof on our current element,
-              ! which corresponds to the (test) basis functions Phi_i:
+              ! which corresponds to the (test) basis functions Psi_i:
               do idofe=1,p_rmatrixData%ndofTest
 
-                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! Fetch the contributions of the (test) basis functions Psi_i
                 ! into dbasI
                 dbasI = p_DbasTest(idofe,DER_FUNC3D,icubp,iel)
 
                 ! Inner loop over the DOF's j=1..ndof, which corresponds to
-                ! the basis function Phi_j:
+                ! the (trial) basis function Phi_j:
                 do jdofe=1,p_rmatrixData%ndofTrial
 
                   ! Fetch the contributions of the (trial) basis function Phi_j
@@ -2557,15 +2557,15 @@ contains
             do icubp = 1,npointsPerElement
 
               ! Outer loop over the DOF's i=1..ndof on our current element,
-              ! which corresponds to the (test) basis functions Phi_i:
+              ! which corresponds to the (test) basis functions Psi_i:
               do idofe=1,p_rmatrixData%ndofTest
 
-                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! Fetch the contributions of the (test) basis functions Psi_i
                 ! into dbasI
                 dbasI = p_DbasTest(idofe,DER_FUNC1D,icubp,iel)
 
                 ! Inner loop over the DOF's j=1..ndof, which corresponds to
-                ! the basis function Phi_j:
+                ! the (trial) basis function Phi_j:
                 do jdofe=1,p_rmatrixData%ndofTrial
 
                   ! Fetch the contributions of the (trial) basis function Phi_j
@@ -2608,15 +2608,15 @@ contains
             do icubp = 1,npointsPerElement
 
               ! Outer loop over the DOF's i=1..ndof on our current element,
-              ! which corresponds to the (test) basis functions Phi_i:
+              ! which corresponds to the (test) basis functions Psi_i:
               do idofe=1,p_rmatrixData%ndofTest
 
-                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! Fetch the contributions of the (test) basis functions Psi_i
                 ! into dbasI
                 dbasI = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
 
                 ! Inner loop over the DOF's j=1..ndof, which corresponds to
-                ! the basis function Phi_j:
+                ! the (trial) basis function Phi_j:
                 do jdofe=1,p_rmatrixData%ndofTrial
 
                   ! Fetch the contributions of the (trial) basis function Phi_j
@@ -2665,15 +2665,15 @@ contains
             do icubp = 1,npointsPerElement
 
               ! Outer loop over the DOF's i=1..ndof on our current element,
-              ! which corresponds to the (test) basis functions Phi_i:
+              ! which corresponds to the (test) basis functions Psi_i:
               do idofe=1,p_rmatrixData%ndofTest
 
-                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! Fetch the contributions of the (test) basis functions Psi_i
                 ! into dbasI
                 dbasI = p_DbasTest(idofe,DER_FUNC3D,icubp,iel)
 
                 ! Inner loop over the DOF's j=1..ndof, which corresponds to
-                ! the basis function Phi_j:
+                ! the (trial) basis function Phi_j:
                 do jdofe=1,p_rmatrixData%ndofTrial
 
                   ! Fetch the contributions of the (trial) basis function Phi_j
@@ -2746,16 +2746,16 @@ contains
             do icubp = 1,npointsPerElement
 
               ! Outer loop over the DOF's i=1..ndof on our current element,
-              ! which corresponds to the (test) basis functions Phi_i:
+              ! which corresponds to the (test) basis functions Psi_i:
               do idofe=1,p_rmatrixData%ndofTest
 
-                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! Fetch the contributions of the (test) basis functions Psi_i
                 ! into dbasI
                 dbasI = p_DbasTest(&
                     idofe,DER_FUNC2D,icubp,iel)
 
                 ! Inner loop over the DOF's j=1..ndof, which corresponds to
-                ! the basis function Phi_j:
+                ! the (trial) basis function Phi_j:
                 do jdofe=1,p_rmatrixData%ndofTrial
 
                   ! Fetch the contributions of the (trial) basis function Phi_j
@@ -2797,15 +2797,15 @@ contains
             do icubp = 1,npointsPerElement
 
               ! Outer loop over the DOF's i=1..ndof on our current element,
-              ! which corresponds to the (test) basis functions Phi_i:
+              ! which corresponds to the (test) basis functions Psi_i:
               do idofe=1,p_rmatrixData%ndofTest
 
-                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! Fetch the contributions of the (test) basis functions Psi_i
                 ! into dbasI
                 dbasI = p_DbasTest(idofe,DER_FUNC3D,icubp,iel)
 
                 ! Inner loop over the DOF's j=1..ndof, which corresponds to
-                ! the basis function Phi_j:
+                ! the (trial) basis function Phi_j:
                 do jdofe=1,p_rmatrixData%ndofTrial
 
                   ! Fetch the contributions of the (trial) basis function Phi_j
@@ -3088,15 +3088,15 @@ contains
           do icubp = 1,npointsPerElement
 
             ! Outer loop over the DOF's i=1..ndof on our current element,
-            ! which corresponds to the (test) basis functions Phi_i:
+            ! which corresponds to the (test) basis functions Psi_i:
             do idofe=1,p_rmatrixData11%ndofTest
 
-              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! Fetch the contributions of the (test) basis functions Psi_i
               ! into dbasI
               dbasI = p_DbasTest(idofe,DER_FUNC,icubp,iel)
 
               ! Inner loop over the DOF's j=1..ndof, which corresponds to
-              ! the basis function Phi_j:
+              ! the (trial) basis function Phi_j:
               do jdofe=1,p_rmatrixData11%ndofTrial
 
                 ! Fetch the contributions of the (trial) basis function Phi_j
@@ -3141,15 +3141,15 @@ contains
             dvelX = p_Du1(icubp,iel,DER_FUNC)
             
             ! Outer loop over the DOF's i=1..ndof on our current element,
-            ! which corresponds to the (test) basis functions Phi_i:
+            ! which corresponds to the (test) basis functions Psi_i:
             do idofe=1,p_rmatrixData11%ndofTest
 
-              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! Fetch the contributions of the (test) basis functions Psi_i
               ! into dbasI
               dbasI = p_DbasTest(idofe,DER_FUNC,icubp,iel)
 
               ! Inner loop over the DOF's j=1..ndof, which corresponds to
-              ! the basis function Phi_j:
+              ! the (trial) basis function Phi_j:
               do jdofe=1,p_rmatrixData11%ndofTrial
 
                 ! Fetch the contributions of the (trial) basis function Phi_j
@@ -3208,15 +3208,15 @@ contains
           do icubp = 1,npointsPerElement
 
             ! Outer loop over the DOF's i=1..ndof on our current element,
-            ! which corresponds to the (test) basis functions Phi_i:
+            ! which corresponds to the (test) basis functions Psi_i:
             do idofe=1,p_rmatrixData11%ndofTest
 
-              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! Fetch the contributions of the (test) basis functions Psi_i
               ! into dbasI
               dbasI = p_DbasTest(idofe,DER_FUNC,icubp,iel)
 
               ! Inner loop over the DOF's j=1..ndof, which corresponds to
-              ! the basis function Phi_j:
+              ! the (trial) basis function Phi_j:
               do jdofe=1,p_rmatrixData11%ndofTrial
 
                 ! Fetch the contributions of the (trial) basis function Phi_j
@@ -3270,15 +3270,15 @@ contains
             dvelY = p_Du2(icubp,iel,DER_FUNC)
             
             ! Outer loop over the DOF's i=1..ndof on our current element,
-            ! which corresponds to the (test) basis functions Phi_i:
+            ! which corresponds to the (test) basis functions Psi_i:
             do idofe=1,p_rmatrixData11%ndofTest
 
-              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! Fetch the contributions of the (test) basis functions Psi_i
               ! into dbasI
               dbasI = p_DbasTest(idofe,DER_FUNC,icubp,iel)
 
               ! Inner loop over the DOF's j=1..ndof, which corresponds to
-              ! the basis function Phi_j:
+              ! the (trial) basis function Phi_j:
               do jdofe=1,p_rmatrixData11%ndofTrial
 
                 ! Fetch the contributions of the (trial) basis function Phi_j
@@ -3348,15 +3348,15 @@ contains
           do icubp = 1,npointsPerElement
 
             ! Outer loop over the DOF's i=1..ndof on our current element,
-            ! which corresponds to the (test) basis functions Phi_i:
+            ! which corresponds to the (test) basis functions Psi_i:
             do idofe=1,p_rmatrixData11%ndofTest
 
-              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! Fetch the contributions of the (test) basis functions Psi_i
               ! into dbasI
               dbasI = p_DbasTest(idofe,DER_FUNC,icubp,iel)
 
               ! Inner loop over the DOF's j=1..ndof, which corresponds to
-              ! the basis function Phi_j:
+              ! the (trial) basis function Phi_j:
               do jdofe=1,p_rmatrixData11%ndofTrial
 
                 ! Fetch the contributions of the (trial) basis function Phi_j
@@ -3421,15 +3421,15 @@ contains
             dvelZ = p_Du3(icubp,iel,DER_FUNC)
             
             ! Outer loop over the DOF's i=1..ndof on our current element,
-            ! which corresponds to the (test) basis functions Phi_i:
+            ! which corresponds to the (test) basis functions Psi_i:
             do idofe=1,p_rmatrixData11%ndofTest
 
-              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! Fetch the contributions of the (test) basis functions Psi_i
               ! into dbasI
               dbasI = p_DbasTest(idofe,DER_FUNC,icubp,iel)
 
               ! Inner loop over the DOF's j=1..ndof, which corresponds to
-              ! the basis function Phi_j:
+              ! the (trial) basis function Phi_j:
               do jdofe=1,p_rmatrixData11%ndofTrial
 
                 ! Fetch the contributions of the (trial) basis function Phi_j
@@ -3681,15 +3681,15 @@ contains
           do icubp = 1,npointsPerElement
 
             ! Outer loop over the DOF's i=1..ndof on our current element,
-            ! which corresponds to the (test) basis functions Phi_i:
+            ! which corresponds to the (test) basis functions Psi_i:
             do idofe=1,p_rmatrixData11%ndofTest
 
-              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! Fetch the contributions of the (test) basis functions Psi_i
               ! into dbasI
               dbasIx = p_DbasTest(idofe,DER_FUNC,icubp,iel)
 
               ! Inner loop over the DOF's j=1..ndof, which corresponds to
-              ! the basis function Phi_j:
+              ! the (trial) basis function Phi_j:
               do jdofe=1,p_rmatrixData11%ndofTrial
 
                 ! Fetch the contributions of the (trial) basis function Phi_j
@@ -3734,15 +3734,15 @@ contains
             dvelX = p_Du1(icubp,iel,DER_FUNC)
             
             ! Outer loop over the DOF's i=1..ndof on our current element,
-            ! which corresponds to the (test) basis functions Phi_i:
+            ! which corresponds to the (test) basis functions Psi_i:
             do idofe=1,p_rmatrixData11%ndofTest
 
-              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! Fetch the contributions of the (test) basis functions Psi_i
               ! into dbasI
               dbasIx = p_DbasTest(idofe,DER_DERIV1D_X,icubp,iel)
 
               ! Inner loop over the DOF's j=1..ndof, which corresponds to
-              ! the basis function Phi_j:
+              ! the (trial) basis function Phi_j:
               do jdofe=1,p_rmatrixData11%ndofTrial
 
                 ! Fetch the contributions of the (trial) basis function Phi_j
@@ -3801,16 +3801,16 @@ contains
           do icubp = 1,npointsPerElement
 
             ! Outer loop over the DOF's i=1..ndof on our current element,
-            ! which corresponds to the (test) basis functions Phi_i:
+            ! which corresponds to the (test) basis functions Psi_i:
             do idofe=1,p_rmatrixData11%ndofTest
 
-              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! Fetch the contributions of the (test) basis functions Psi_i
               ! into dbasI
               dbasIx = p_DbasTest(idofe,DER_DERIV2D_X,icubp,iel)
               dbasIy = p_DbasTest(idofe,DER_DERIV2D_Y,icubp,iel)
 
               ! Inner loop over the DOF's j=1..ndof, which corresponds to
-              ! the basis function Phi_j:
+              ! the (trial) basis function Phi_j:
               do jdofe=1,p_rmatrixData11%ndofTrial
 
                 ! Fetch the contributions of the (trial) basis function Phi_j
@@ -3863,16 +3863,16 @@ contains
             dvelY = p_Du2(icubp,iel,DER_FUNC)
             
             ! Outer loop over the DOF's i=1..ndof on our current element,
-            ! which corresponds to the (test) basis functions Phi_i:
+            ! which corresponds to the (test) basis functions Psi_i:
             do idofe=1,p_rmatrixData11%ndofTest
 
-              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! Fetch the contributions of the (test) basis functions Psi_i
               ! into dbasI
               dbasIx = p_DbasTest(idofe,DER_DERIV2D_X,icubp,iel)
               dbasIy = p_DbasTest(idofe,DER_DERIV2D_Y,icubp,iel)
 
               ! Inner loop over the DOF's j=1..ndof, which corresponds to
-              ! the basis function Phi_j:
+              ! the (trial) basis function Phi_j:
               do jdofe=1,p_rmatrixData11%ndofTrial
 
                 ! Fetch the contributions of the (trial) basis function Phi_j
@@ -3941,17 +3941,17 @@ contains
           do icubp = 1,npointsPerElement
 
             ! Outer loop over the DOF's i=1..ndof on our current element,
-            ! which corresponds to the (test) basis functions Phi_i:
+            ! which corresponds to the (test) basis functions Psi_i:
             do idofe=1,p_rmatrixData11%ndofTest
 
-              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! Fetch the contributions of the (test) basis functions Psi_i
               ! into dbasI
               dbasIx = p_DbasTest(idofe,DER_DERIV3D_X,icubp,iel)
               dbasIy = p_DbasTest(idofe,DER_DERIV3D_Y,icubp,iel)
               dbasIz = p_DbasTest(idofe,DER_DERIV3D_Z,icubp,iel)
 
               ! Inner loop over the DOF's j=1..ndof, which corresponds to
-              ! the basis function Phi_j:
+              ! the (trial) basis function Phi_j:
               do jdofe=1,p_rmatrixData11%ndofTrial
 
                 ! Fetch the contributions of the (trial) basis function Phi_j
@@ -4014,17 +4014,17 @@ contains
             dvelZ = p_Du3(icubp,iel,DER_FUNC)
             
             ! Outer loop over the DOF's i=1..ndof on our current element,
-            ! which corresponds to the (test) basis functions Phi_i:
+            ! which corresponds to the (test) basis functions Psi_i:
             do idofe=1,p_rmatrixData11%ndofTest
 
-              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! Fetch the contributions of the (test) basis functions Psi_i
               ! into dbasI
               dbasIx = p_DbasTest(idofe,DER_DERIV3D_X,icubp,iel)
               dbasIy = p_DbasTest(idofe,DER_DERIV3D_Y,icubp,iel)
               dbasIz = p_DbasTest(idofe,DER_DERIV3D_Z,icubp,iel)
 
               ! Inner loop over the DOF's j=1..ndof, which corresponds to
-              ! the basis function Phi_j:
+              ! the (trial) basis function Phi_j:
               do jdofe=1,p_rmatrixData11%ndofTrial
 
                 ! Fetch the contributions of the (trial) basis function Phi_j
@@ -4308,15 +4308,15 @@ contains
           do icubp = 1,npointsPerElement
 
             ! Outer loop over the DOF's i=1..ndof on our current element,
-            ! which corresponds to the (test) basis functions Phi_i:
+            ! which corresponds to the (test) basis functions Psi_i:
             do idofe=1,p_rmatrixData11%ndofTest
 
-              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! Fetch the contributions of the (test) basis functions Psi_i
               ! into dbasI
               dbasI = p_DbasTest(idofe,DER_FUNC,icubp,iel)
 
               ! Inner loop over the DOF's j=1..ndof, which corresponds to
-              ! the basis function Phi_j:
+              ! the (trial) basis function Phi_j:
               do jdofe=1,p_rmatrixData11%ndofTrial
 
                 ! Fetch the contributions of the (trial) basis function Phi_j
@@ -4361,15 +4361,15 @@ contains
             dvelX1 = p_Du1(icubp,iel,DER_DERIV1D_X)
             
             ! Outer loop over the DOF's i=1..ndof on our current element,
-            ! which corresponds to the (test) basis functions Phi_i:
+            ! which corresponds to the (test) basis functions Psi_i:
             do idofe=1,p_rmatrixData11%ndofTest
 
-              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! Fetch the contributions of the (test) basis functions Psi_i
               ! into dbasI
               dbasI = p_DbasTest(idofe,DER_FUNC,icubp,iel)
 
               ! Inner loop over the DOF's j=1..ndof, which corresponds to
-              ! the basis function Phi_j:
+              ! the (trial) basis function Phi_j:
               do jdofe=1,p_rmatrixData11%ndofTrial
 
                 ! Fetch the contributions of the (trial) basis function Phi_j
@@ -4435,15 +4435,15 @@ contains
           do icubp = 1,npointsPerElement
 
             ! Outer loop over the DOF's i=1..ndof on our current element,
-            ! which corresponds to the (test) basis functions Phi_i:
+            ! which corresponds to the (test) basis functions Psi_i:
             do idofe=1,p_rmatrixData11%ndofTest
 
-              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! Fetch the contributions of the (test) basis functions Psi_i
               ! into dbasI
               dbasI = p_DbasTest(idofe,DER_FUNC,icubp,iel)
 
               ! Inner loop over the DOF's j=1..ndof, which corresponds to
-              ! the basis function Phi_j:
+              ! the (trial) basis function Phi_j:
               do jdofe=1,p_rmatrixData11%ndofTrial
 
                 ! Fetch the contributions of the (trial) basis function Phi_j
@@ -4504,15 +4504,15 @@ contains
             dvelY2 = p_Du2(icubp,iel,DER_DERIV2D_Y)
             
             ! Outer loop over the DOF's i=1..ndof on our current element,
-            ! which corresponds to the (test) basis functions Phi_i:
+            ! which corresponds to the (test) basis functions Psi_i:
             do idofe=1,p_rmatrixData11%ndofTest
 
-              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! Fetch the contributions of the (test) basis functions Psi_i
               ! into dbasI
               dbasI = p_DbasTest(idofe,DER_FUNC,icubp,iel)
 
               ! Inner loop over the DOF's j=1..ndof, which corresponds to
-              ! the basis function Phi_j:
+              ! the (trial) basis function Phi_j:
               do jdofe=1,p_rmatrixData11%ndofTrial
 
                 ! Fetch the contributions of the (trial) basis function Phi_j
@@ -4605,15 +4605,15 @@ contains
           do icubp = 1,npointsPerElement
 
             ! Outer loop over the DOF's i=1..ndof on our current element,
-            ! which corresponds to the (test) basis functions Phi_i:
+            ! which corresponds to the (test) basis functions Psi_i:
             do idofe=1,p_rmatrixData11%ndofTest
 
-              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! Fetch the contributions of the (test) basis functions Psi_i
               ! into dbasI
               dbasI = p_DbasTest(idofe,DER_FUNC,icubp,iel)
 
               ! Inner loop over the DOF's j=1..ndof, which corresponds to
-              ! the basis function Phi_j:
+              ! the (trial) basis function Phi_j:
               do jdofe=1,p_rmatrixData11%ndofTrial
 
                 ! Fetch the contributions of the (trial) basis function Phi_j
@@ -4702,15 +4702,15 @@ contains
             dvelZ3 = p_Du3(icubp,iel,DER_DERIV3D_Z)
             
             ! Outer loop over the DOF's i=1..ndof on our current element,
-            ! which corresponds to the (test) basis functions Phi_i:
+            ! which corresponds to the (test) basis functions Psi_i:
             do idofe=1,p_rmatrixData11%ndofTest
 
-              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! Fetch the contributions of the (test) basis functions Psi_i
               ! into dbasI
               dbasI = p_DbasTest(idofe,DER_FUNC,icubp,iel)
 
               ! Inner loop over the DOF's j=1..ndof, which corresponds to
-              ! the basis function Phi_j:
+              ! the (trial) basis function Phi_j:
               do jdofe=1,p_rmatrixData11%ndofTrial
 
                 ! Fetch the contributions of the (trial) basis function Phi_j
@@ -5012,15 +5012,15 @@ contains
           do icubp = 1,npointsPerElement
 
             ! Outer loop over the DOF's i=1..ndof on our current element,
-            ! which corresponds to the (test) basis functions Phi_i:
+            ! which corresponds to the (test) basis functions Psi_i:
             do idofe=1,p_rmatrixData11%ndofTest
 
-              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! Fetch the contributions of the (test) basis functions Psi_i
               ! into dbasI
               dbasI = p_DbasTest(idofe,DER_FUNC,icubp,iel)
 
               ! Inner loop over the DOF's j=1..ndof, which corresponds to
-              ! the basis function Phi_j:
+              ! the (trial) basis function Phi_j:
               do jdofe=1,p_rmatrixData11%ndofTrial
 
                 ! Fetch the contributions of the (trial) basis function Phi_j
@@ -5065,15 +5065,15 @@ contains
             dvelX1 = p_Du1(icubp,iel,DER_DERIV1D_X)
             
             ! Outer loop over the DOF's i=1..ndof on our current element,
-            ! which corresponds to the (test) basis functions Phi_i:
+            ! which corresponds to the (test) basis functions Psi_i:
             do idofe=1,p_rmatrixData11%ndofTest
 
-              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! Fetch the contributions of the (test) basis functions Psi_i
               ! into dbasI
               dbasI = p_DbasTest(idofe,DER_FUNC,icubp,iel)
 
               ! Inner loop over the DOF's j=1..ndof, which corresponds to
-              ! the basis function Phi_j:
+              ! the (trial) basis function Phi_j:
               do jdofe=1,p_rmatrixData11%ndofTrial
 
                 ! Fetch the contributions of the (trial) basis function Phi_j
@@ -5139,15 +5139,15 @@ contains
           do icubp = 1,npointsPerElement
 
             ! Outer loop over the DOF's i=1..ndof on our current element,
-            ! which corresponds to the (test) basis functions Phi_i:
+            ! which corresponds to the (test) basis functions Psi_i:
             do idofe=1,p_rmatrixData11%ndofTest
 
-              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! Fetch the contributions of the (test) basis functions Psi_i
               ! into dbasI
               dbasI = p_DbasTest(idofe,DER_FUNC,icubp,iel)
 
               ! Inner loop over the DOF's j=1..ndof, which corresponds to
-              ! the basis function Phi_j:
+              ! the (trial) basis function Phi_j:
               do jdofe=1,p_rmatrixData11%ndofTrial
 
                 ! Fetch the contributions of the (trial) basis function Phi_j
@@ -5208,15 +5208,15 @@ contains
             dvelY2 = p_Du2(icubp,iel,DER_DERIV2D_Y)
             
             ! Outer loop over the DOF's i=1..ndof on our current element,
-            ! which corresponds to the (test) basis functions Phi_i:
+            ! which corresponds to the (test) basis functions Psi_i:
             do idofe=1,p_rmatrixData11%ndofTest
 
-              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! Fetch the contributions of the (test) basis functions Psi_i
               ! into dbasI
               dbasI = p_DbasTest(idofe,DER_FUNC,icubp,iel)
 
               ! Inner loop over the DOF's j=1..ndof, which corresponds to
-              ! the basis function Phi_j:
+              ! the (trial) basis function Phi_j:
               do jdofe=1,p_rmatrixData11%ndofTrial
 
                 ! Fetch the contributions of the (trial) basis function Phi_j
@@ -5309,15 +5309,15 @@ contains
           do icubp = 1,npointsPerElement
 
             ! Outer loop over the DOF's i=1..ndof on our current element,
-            ! which corresponds to the (test) basis functions Phi_i:
+            ! which corresponds to the (test) basis functions Psi_i:
             do idofe=1,p_rmatrixData11%ndofTest
 
-              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! Fetch the contributions of the (test) basis functions Psi_i
               ! into dbasI
               dbasI = p_DbasTest(idofe,DER_FUNC,icubp,iel)
 
               ! Inner loop over the DOF's j=1..ndof, which corresponds to
-              ! the basis function Phi_j:
+              ! the (trial) basis function Phi_j:
               do jdofe=1,p_rmatrixData11%ndofTrial
 
                 ! Fetch the contributions of the (trial) basis function Phi_j
@@ -5406,15 +5406,15 @@ contains
             dvelZ3 = p_Du3(icubp,iel,DER_DERIV3D_Z)
             
             ! Outer loop over the DOF's i=1..ndof on our current element,
-            ! which corresponds to the (test) basis functions Phi_i:
+            ! which corresponds to the (test) basis functions Psi_i:
             do idofe=1,p_rmatrixData11%ndofTest
 
-              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! Fetch the contributions of the (test) basis functions Psi_i
               ! into dbasI
               dbasI = p_DbasTest(idofe,DER_FUNC,icubp,iel)
 
               ! Inner loop over the DOF's j=1..ndof, which corresponds to
-              ! the basis function Phi_j:
+              ! the (trial) basis function Phi_j:
               do jdofe=1,p_rmatrixData11%ndofTrial
 
                 ! Fetch the contributions of the (trial) basis function Phi_j
@@ -5554,10 +5554,10 @@ contains
           do idimfe = 0,ndimfe-1
           
             ! Outer loop over the DOF's i=1..ndof on our current element,
-            ! which corresponds to the (test) basis functions Phi_i:
+            ! which corresponds to the (test) basis functions Psi_i:
             do idofe=1,p_rvectorData%ndofTest
             
-              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! Fetch the contributions of the (test) basis functions Psi_i
               ! into dbasI
               dbasI = p_DbasTest(idofe+idimfe*p_rvectorData%ndofTest,DER_FUNC,icubp,iel)
               
@@ -5666,10 +5666,10 @@ contains
           do idimfe = 0,ndimfe-1
 
             ! Outer loop over the DOF's i=1..ndof on our current element,
-            ! which corresponds to the (test) basis functions Phi_i:
+            ! which corresponds to the (test) basis functions Psi_i:
             do idofe=1,p_rvectorData%ndofTest
             
-              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! Fetch the contributions of the (test) basis functions Psi_i
               ! into dbasI
               dbasI = p_DbasTest(idofe+idimfe*p_rvectorData%ndofTest,DER_FUNC,icubp,iel)
               
@@ -5793,10 +5793,10 @@ contains
           do idimfe = 0,ndimfe-1
 
             ! Outer loop over the DOF's i=1..ndof on our current element,
-            ! which corresponds to the (test) basis functions Phi_i:
+            ! which corresponds to the (test) basis functions Psi_i:
             do idofe=1,p_rvectorData%ndofTest
             
-              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! Fetch the contributions of the (test) basis functions Psi_i
               ! into dbasI
               dbasI = p_DbasTest(idofe+idimfe*p_rvectorData%ndofTest,DER_FUNC,icubp,iel)
               
@@ -5929,10 +5929,10 @@ contains
             dval = p_Dfunc(icubp,iel)
             
             ! Outer loop over the DOF's i=1..ndof on our current element,
-            ! which corresponds to the (test) basis functions Phi_i:
+            ! which corresponds to the (test) basis functions Psi_i:
             do idofe=1,p_rvectorData%ndofTest
             
-              ! Fetch the contributions of the (test) basis functions Phi_i
+              ! Fetch the contributions of the (test) basis functions Psi_i
               ! into dbasI
               dbasI = p_DbasTest(idofe,DER_FUNC,icubp,iel)
               
@@ -5973,10 +5973,10 @@ contains
               dval = p_DfuncVec(1+idimfe,icubp,iel)
               
               ! Outer loop over the DOF's i=1..ndof on our current element,
-              ! which corresponds to the (test) basis functions Phi_i:
+              ! which corresponds to the (test) basis functions Psi_i:
               do idofe=1,p_rvectorData%ndofTest
               
-                ! Fetch the contributions of the (test) basis functions Phi_i
+                ! Fetch the contributions of the (test) basis functions Psi_i
                 ! into dbasI
                 dbasI = p_DbasTest(idofe+idimfe*p_rvectorData%ndofTest,DER_FUNC,icubp,iel)
                 
