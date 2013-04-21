@@ -75,213 +75,216 @@
 !#                                  lsyssc_isMatrixMatrixCompatible
 !#      -> Checks whether a matrix and a vector are compatible to each other
 !#
-!# 15.) lsyssc_getbase_double
+!# 15.) lsyssc_getbase_quad
 !#      -> Get a pointer to the double precision data array of a vector or a matrix
 !#
-!# 16.) lsyssc_getbase_single
+!# 16.) lsyssc_getbase_double
+!#      -> Get a pointer to the double precision data array of a vector or a matrix
+!#
+!# 17.) lsyssc_getbase_single
 !#      -> Get a pointer to the single precision data array of a vector or a matrix
 !#
-!# 17.) lsyssc_getbase_int
+!# 18.) lsyssc_getbase_int
 !#      -> Get a pointer to the integer data array of a vector
 !#
-!# 18.) lsyssc_getbase_Kcol
+!# 19.) lsyssc_getbase_Kcol
 !#      -> Get a pointer to the integer data array Kcol of a matrix
 !#         (if the matrix has one)
 !#
-!# 19.) lsyssc_getbase_Kld
+!# 20.) lsyssc_getbase_Kld
 !#      -> Get a pointer to the integer data array Kld of a matrix
 !#         (if the matrix has one)
 !#
-!# 20.) lsyssc_getbase_Kdiagonal
+!# 21.) lsyssc_getbase_Kdiagonal
 !#      -> Get a pointer to the integer data array Kdiagonal of a matrix
 !#         (if the matrix has one)
 !#
-!# 21.) lsyssc_addIndex
+!# 22.) lsyssc_addIndex
 !#      -> Auxiliary routine. Adds an integer to each elememt of an integer
 !#         array.
 !#
-!# 22.) lsyssc_vectorNorm
+!# 23.) lsyssc_vectorNorm
 !#      -> Calculate the norm of a vector.
 !#
-!# 23.) lsyssc_invertedDiagMatVec
+!# 24.) lsyssc_invertedDiagMatVec
 !#      -> Multiply a vector with the inverse of the diagonal of a scalar
 !#         matrix
 !#
-!# 24.) lsyssc_clearMatrix
+!# 25.) lsyssc_clearMatrix
 !#      -> Clears a matrix, i.e. overwrites all entries with 0.0 or
 !#         with a defined value
 !#
-!# 25.) lsyssc_initialiseIdentityMatrix
+!# 26.) lsyssc_initialiseIdentityMatrix
 !#      -> Initialises the content of a matrix to an identity matrix
 !#
-!# 26.) lsyssc_convertMatrix
+!# 27.) lsyssc_convertMatrix
 !#      -> Allows to convert a matrix to another matrix structure.
 !#
-!# 27.) lsyssc_copyVector
+!# 28.) lsyssc_copyVector
 !#       -> Copy a vector over to another one
 !#
-!# 28.) lsyssc_scaleVector
+!# 29.) lsyssc_scaleVector
 !#      -> Scale a vector by a constant
 !#
-!# 29.) lsyssc_clearVector
+!# 30.) lsyssc_clearVector
 !#      -> Clear a vector, i.e. overwrites all entries with 0.0 or
 !#         with a defined value
 !#
-!# 30.) lsyssc_vectorLinearComb
+!# 31.) lsyssc_vectorLinearComb
 !#      -> Linear combination of two vectors
 !#
-!# 31.) lsyssc_copyMatrix
+!# 32.) lsyssc_copyMatrix
 !#      -> Copies a matrix to another one provided that they have the same
 !#         structure.
 !#
-!# 32.) lsyssc_transposeMatrix,
+!# 33.) lsyssc_transposeMatrix,
 !#      lsyssc_transposeMatrixInSitu,
 !#      lsyssc_transposeMatrixDirect
 !#      -> Transposes a scalar matrix.
 !#
-!# 33.) lsyssc_allocEmptyMatrix
+!# 34.) lsyssc_allocEmptyMatrix
 !#      -> Allocates memory for the entries of a matrix.
 !#
-!# 34.) lsyssc_lumpMatrix
+!# 35.) lsyssc_lumpMatrix
 !#      -> Performs lumping of a given matrix
 !#
-!# 35.) lsyssc_scaleMatrix
+!# 36.) lsyssc_scaleMatrix
 !#      -> Scale a matrix by a constant
 !#
-!# 36.) lsyssc_multMatMat
+!# 37.) lsyssc_multMatMat
 !#      -> Multiplies two matrices
 !#
-!# 37.) lsyssc_matrixLinearComb / lsyssc_matrixLinearCombIndexed
+!# 38.) lsyssc_matrixLinearComb / lsyssc_matrixLinearCombIndexed
 !#      -> Adds two matrices
 !#
-!# 38.) lsyssc_swapVectors
+!# 39.) lsyssc_swapVectors
 !#      -> Swap two vectors
 !#
-!# 39.) lsyssc_isMatrixStructureShared
+!# 40.) lsyssc_isMatrixStructureShared
 !#      -> Tests if the structure of a matrix is shared with another matrix
 !#
-!# 40.) lsyssc_isMatrixContentShared
+!# 41.) lsyssc_isMatrixContentShared
 !#      -> Tests if the content of a matrix is shared with another matrix
 !#
-!# 41.) lsyssc_resizeVector
+!# 42.) lsyssc_resizeVector
 !#      -> Resize the vector and reallocate memory if necessary.
 !#
-!# 42.) lsyssc_resizeMatrix
+!# 43.) lsyssc_resizeMatrix
 !#      -> Resize the matrix and reallocate memory if necessary.
 !#
-!# 43.) lsyssc_createDiagMatrixStruc
+!# 44.) lsyssc_createDiagMatrixStruc
 !#      -> Creates a diagonal matrix, does not allocate memory for the entries.
 !#
-!# 44.) lsyssc_clearOffdiags
+!# 45.) lsyssc_clearOffdiags
 !#      -> Clear all offdiagonal entries in a matrix.
 !#
-!# 45.) lsyssc_hasMatrixStructure
+!# 46.) lsyssc_hasMatrixStructure
 !#      -> Check if a matrix has a structure in memory or not.
 !#
-!# 46.) lsyssc_hasMatrixContent
+!# 47.) lsyssc_hasMatrixContent
 !#      -> Check if a matrix has a content in memory or not.
 !#
-!# 47.) lsyssc_releaseMatrixContent
+!# 48.) lsyssc_releaseMatrixContent
 !#      -> Releases the content of the matrix, the structure will stay unchanged.
 !#
-!# 48.) lsyssc_spreadVector
+!# 49.) lsyssc_spreadVector
 !#      -> Spreads a scalar vector into another scalar vector
 !#
-!# 49.) lsyssc_spreadMatrix
+!# 50.) lsyssc_spreadMatrix
 !#      -> Spreads a scalar matrix into another scalar matrix
 !#
-!# 50.) lsyssc_packVector
+!# 51.) lsyssc_packVector
 !#      -> Packs a scalar vector into another scalar vector
 !#
-!# 51.) lsyssc_createFullMatrix
+!# 52.) lsyssc_createFullMatrix
 !#      -> Create a full square or rectangular matrix in matrix format 1
 !#
-!# 52.) lsyssc_assignDiscretisation
+!# 53.) lsyssc_assignDiscretisation
 !#      -> This is an alias for various routines to assign discretisation
 !#         structures
 !#
-!#      52a) lsyssc_assignDiscrDirectMat
+!#      53a) lsyssc_assignDiscrDirectMat
 !#      -> Assign a discretisation to a matrix
 !#
-!# 53.) lsyssc_createFpdbObjectVec
+!# 54.) lsyssc_createFpdbObjectVec
 !#      -> Creates an ObjectItem representing a scalar vector
 !#
-!# 54.) lsyssc_createFpdbObjectMat
+!# 55.) lsyssc_createFpdbObjectMat
 !#      -> Creates an ObjectItem representing a scalar matrix
 !#
-!# 55.) lsyssc_restoreFpdbObjectVec
+!# 56.) lsyssc_restoreFpdbObjectVec
 !#      -> Restores a scalar vector from an ObjectItem
 !#
-!# 56.) lsyssc_restoreFpdbObjectMat
+!# 57.) lsyssc_restoreFpdbObjectMat
 !#      -> Restores a scalar matrix from an ObjectItem
 !#
-!# 57.) lsyssc_unshareMatrix
+!# 58.) lsyssc_unshareMatrix
 !#      -> Renders a matrix independent, resets the sharing state
 !#
 !# 58.) lsyssc_unshareVector
 !#      -> Renders a vector independent, resets the sharing state
 !#
-!# 59.) lsyssc_isExplicitMatrix1D
+!# 60.) lsyssc_isExplicitMatrix1D
 !#      -> Checks whether a given matrix explicitly exists in memory as
 !#         1D array
 !#
-!# 60.) lsyssc_checkDiscretisation
+!# 61.) lsyssc_checkDiscretisation
 !#      -> Checks whether a given discretisation structure rdiscretisation is
 !#         basically compatible to a given vector
 !#
-!# 61.) lsyssc_setDataTypeMatrix
+!# 62.) lsyssc_setDataTypeMatrix
 !#      -> Converts the data type of a scalar matrix
 !#
-!# 62.) lsyssc_setDataTypeVector
+!# 63.) lsyssc_setDataTypeVector
 !#      -> Converts the data type of a scalar vector
 !#
-!# 63.) lsyssc_moveMatrix
+!# 64.) lsyssc_moveMatrix
 !#      -> Moves a matrix to another matrix.
 !#
-!# 64.) lsyssc_addConstant
+!# 65.) lsyssc_addConstant
 !#      -> Adds a constant to a vector.
 !#
-!# 65.) lsyssc_swapMatrices
+!# 66.) lsyssc_swapMatrices
 !#      -> Swaps two matrices
 !#
-!# 66.) lsyssc_sortMatrixCols
+!# 67.) lsyssc_sortMatrixCols
 !#      -> Sorts the columns of a format 9 matrix to be in ascending order.
 !#
-!# 67.) lsyssc_createRowCMatrix
+!# 68.) lsyssc_createRowCMatrix
 !#      -> Creates a row-compressed matrix (containing only nonzero rows).
 !#
-!# 68.) lsyssc_getbase_KrowIdx
+!# 69.) lsyssc_getbase_KrowIdx
 !#      -> Returns the pointer of the KrowIdx-array
 !#
-!# 69.) lsyssc_copyH2D_Vector
+!# 70.) lsyssc_copyH2D_Vector
 !#      -> Copies the data of a vector from the host memory
 !#         to the memory of the coprocessor device.
 !#
-!# 70.) lsyssc_copyD2H_Vector
+!# 71.) lsyssc_copyD2H_Vector
 !#      -> Copies the data of a vector from the memory of the
 !#         coprocessor device to the host memory
 !#
-!# 71.) lsyssc_initPerfConfig
+!# 72.) lsyssc_initPerfConfig
 !#      -> Initialises the global performance configuration
 !#
-!# 72.) lsyssc_createMatrixSymmPart
+!# 73.) lsyssc_createMatrixSymmPart
 !#      -> Create the symmetric part of the matrix
 !#
-!# 73.) lsyssc_createMatrixAsymmPart
+!# 74.) lsyssc_createMatrixAsymmPart
 !#      -> Create the antisymmetric part of the matrix
 !#
-!# 74.) lsyssc_copyH2D_Matrix
+!# 75.) lsyssc_copyH2D_Matrix
 !#      -> Copies the data of a matrix from the host memory
 !#         to the memory of the coprocessor device.
 !#
-!# 75.) lsyssc_copyD2H_Matrix
+!# 76.) lsyssc_copyD2H_Matrix
 !#      -> Copies the data of a matrix from the memory of the
 !#         coprocessor device to the host memory
 !#
-!# 76.) lsyssc_calcDeterminant
+!# 77.) lsyssc_calcDeterminant
 !#      -> Calculates the determinant of a square matrix
 !#
-!# 77.) lsyssc_calcGerschgorin
+!# 78.) lsyssc_calcGerschgorin
 !#      -> Apply the theorem of Gerschgorin to get approximations
 !#         for the min/max eigenvalues of a matrix
 !#
@@ -859,6 +862,13 @@ module linearsystemscalar
   public :: lsyssc_resizeMatrix
   public :: lsyssc_resizeMatrixDirect
   public :: lsyssc_resizeMatrixIndirect
+
+  interface lsyssc_getbase_quad
+    module procedure lsyssc_getbaseVector_quad
+    module procedure lsyssc_getbaseMatrixDa_quad
+  end interface
+
+  public :: lsyssc_getbase_quad
 
   interface lsyssc_getbase_double
     module procedure lsyssc_getbaseVector_double
@@ -1490,6 +1500,53 @@ contains
 
 !<subroutine>
 
+  subroutine lsyssc_getbaseVector_quad (rvector,p_Qdata)
+
+!<description>
+  ! Returns a pointer to the quad precision data array of the vector.
+  ! An error is thrown if the vector is not quad precision.
+!</description>
+
+!<input>
+  ! The vector
+  type(t_vectorScalar), intent(in) :: rvector
+!</input>
+
+!<output>
+  ! Pointer to the quad precision data array of the vector.
+  ! NULL() if the vector has no data array.
+  real(QP), dimension(:), pointer :: p_Qdata
+!</output>
+
+!</subroutine>
+
+  ! Do we have data at all?
+  if ((rvector%NEQ .eq. 0) .or. (rvector%h_Ddata .eq. ST_NOHANDLE)) then
+    call output_line('Trying to access empty vector!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_getbaseVector_quad')
+    call sys_halt()
+  end if
+
+  ! Check that the vector is really quad precision
+  if (rvector%cdataType .ne. ST_QUAD) then
+    call output_line('Vector is of wrong precision!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_getbaseVector_quad')
+    call sys_halt()
+  end if
+
+  ! Get the data array
+  call storage_getbase_quad (rvector%h_Ddata,p_Qdata)
+
+  ! Modify the starting address/length to get the real array.
+  p_Qdata => p_Qdata(rvector%iidxFirstEntry:&
+      rvector%iidxFirstEntry+rvector%NEQ*rvector%NVAR-1)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
   subroutine lsyssc_getbaseVector_double (rvector,p_Ddata)
 
 !<description>
@@ -1513,14 +1570,14 @@ contains
   ! Do we have data at all?
   if ((rvector%NEQ .eq. 0) .or. (rvector%h_Ddata .eq. ST_NOHANDLE)) then
     call output_line('Trying to access empty vector!', &
-        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_getbase_double')
+        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_getbaseVector_double')
     call sys_halt()
   end if
 
   ! Check that the vector is really double precision
   if (rvector%cdataType .ne. ST_DOUBLE) then
     call output_line('Vector is of wrong precision!', &
-        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_getbase_double')
+        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_getbaseVector_double')
     call sys_halt()
   end if
 
@@ -1666,6 +1723,62 @@ contains
     end select
 
   end function
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lsyssc_getbaseMatrixDa_quad (rmatrix, p_Ddata)
+
+!<description>
+    ! Returns a pointer to the quad precision data array of the matrix.
+    ! An error is thrown if the matrix is not quad precision.
+!</description>
+
+!<input>
+    ! The matrix
+    type(t_matrixScalar), intent(in) :: rmatrix
+!</input>
+
+!<output>
+    ! Pointer to the quad precision data array of the matrix.
+    ! NULL() if the matrix has no data array.
+    real(QP), dimension(:), pointer :: p_Ddata
+!</output>
+
+!</subroutine>
+
+    ! Check if the matrix format allows to access Da
+    if (.not. lsyssc_isExplicitMatrix1D(rmatrix)) then
+      call output_line('Matrix does not exist explicitely!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_getbaseMatrixDa_quad')
+      call sys_halt()
+    end if
+
+    ! Do we have data at all?
+    if ((rmatrix%NA .eq. 0) .or. (rmatrix%h_Da .eq. ST_NOHANDLE)) then
+      nullify(p_Ddata)
+      return
+    end if
+
+    ! Check that the matrix is really quad precision
+    if (rmatrix%cdataType .ne. ST_QUAD) then
+      call output_line('Matrix is of wrong precision!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_getbaseMatrixDa_quad')
+      call sys_halt()
+    end if
+
+    ! Get the data array
+    select case (rmatrix%cinterleavematrixFormat)
+    case (LSYSSC_MATRIX1)
+      call storage_getbase_quad (rmatrix%h_Da,p_Ddata,rmatrix%NA*rmatrix%NVAR*rmatrix%NVAR)
+    case (LSYSSC_MATRIXD)
+      call storage_getbase_quad (rmatrix%h_Da,p_Ddata,rmatrix%NA*rmatrix%NVAR)
+    case default
+      call storage_getbase_quad (rmatrix%h_Da,p_Ddata,rmatrix%NA)
+    end select
+
+  end subroutine
 
   ! ***************************************************************************
 
