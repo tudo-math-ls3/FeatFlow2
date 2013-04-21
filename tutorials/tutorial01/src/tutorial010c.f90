@@ -103,7 +103,7 @@ contains
     p_rcoeffVector => rcollection%p_rvectorQuickAccess1
 
     ! Get the temp memory provided by bilf_buildVectorScalar
-    ! for the coefficients. They were reserved due to ntemp=1.
+    ! for the coefficients. This is reserved due to ntemp=1.
     p_Dcoeff => rdomainIntSubset%p_DtempArrays 
 
     ! Get the ID of the RHS from the assembly.
