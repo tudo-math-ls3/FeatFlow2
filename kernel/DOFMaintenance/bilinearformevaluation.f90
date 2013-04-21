@@ -105,16 +105,13 @@
 !#    rform%Idescriptors(2,2) = DER_DERIV_Y
 !#
 !#    rform%ballCoeffConstant = .true.
-!#    rform%BconstantCoeff = .true.
 !#    rform%Dcoefficients(1)  = 1.0
 !#    rform%Dcoefficients(2)  = 1.0
 !#  </code>
 !#
 !#  This e.g. initialises a bilinear form for the Laplace operator with
 !#  constant coefficients. If you want to have nonconstant coefficients,
-!#  you have to set ballCoeffConstant and BconstantCoeff(.) to .false., where
-!#  BconstantCoeff(.) allows to define for every term in the bilinear form
-!#  whether the coefficient is constant or not.
+!#  you have to set ballCoeffConstant to .false. .
 !#
 !#  In the next step, use the bilinear form to create the matrix entries:
 !#
@@ -153,7 +150,6 @@
 !#    rform%Idescriptors(2,2) = DER_DERIV_Y
 !#
 !#    rform%ballCoeffConstant = .true.
-!#    rform%BconstantCoeff = .true.
 !#    rform%Dcoefficients(1)  = 1.0
 !#    rform%Dcoefficients(2)  = 1.0
 !#  </code>

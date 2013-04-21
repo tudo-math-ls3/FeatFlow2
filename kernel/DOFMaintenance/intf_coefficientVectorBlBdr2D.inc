@@ -14,7 +14,6 @@
     use domainintegration
     use fsystem
     use scalarpde
-    use spatialdiscretisation
     use triangulation
     use spatialdiscretisation, only: t_spatialDiscretisation
 

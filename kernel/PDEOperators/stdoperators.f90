@@ -133,7 +133,6 @@ contains
 
     ! In the standard case, we have constant coefficients:
     rform%ballCoeffConstant = .true.
-    rform%BconstantCoeff(1:rform%itermCount) = .true.
     rform%Dcoefficients(1:rform%itermCount)  = dalpha1
 
     ! If we do not have it, create a cubature info structure that
@@ -235,7 +234,6 @@ contains
 
     ! We have constant coefficients:
     rform%ballCoeffConstant = .true.
-    rform%BconstantCoeff = .true.
     rform%Dcoefficients(1)  = dalpha1
 
     ! If we do not have it, create a cubature info structure that

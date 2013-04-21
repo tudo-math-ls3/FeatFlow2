@@ -49,7 +49,7 @@ module scalarpde
   ! with the structure t_bilinearForm as follows:
   !
   ! 1.) itermCount = 2                     -> 2 additive terms
-  ! 2.) BconstantCoeff = true              -> constant coefficients
+  ! 2.) ballCoeffConstant = true           -> all coefficients constant
   ! 3.) Dcoefficients(1)  = 1.0            -> 1st coefficient
   ! 4.) Idescriptors(1,1) = DER_DERIV_X    -> u_x in the 1st term
   ! 5.) Idescriptors(2,1) = DER_DERIV_X    -> v_x in the 1st term
@@ -73,6 +73,7 @@ module scalarpde
     ! FALSE if there is at least one nonconstant coefficient.
     logical                          :: ballCoeffConstant = .true.
 
+    ! DEPRECATED: NOT USED ANYMORE.
     ! For every additive term in the integral:
     ! = true, if the coefficient in front of the term is constant,
     ! = false, if the coefficient is nonconstant.
@@ -113,7 +114,7 @@ module scalarpde
   ! The form itself is encoded with the structure t_trilinearForm as follows:
   !
   !  1.) itermCount = 2                     -> 2 additive terms
-  !  2.) BconstantCoeff = true              -> constant coefficients
+  !  2.) ballCoeffConstant = true           -> all coefficients constant
   !  3.) Dcoefficients(1)  = 1.0            -> 1st coefficient
   !  5.) Idescriptors(1,1) = DER_FUNC       -> w(x,y) in the 1st term
   !  6.) Idescriptors(2,1) = DER_DERIV_X    -> u_x in the 1st term
@@ -145,6 +146,7 @@ module scalarpde
     ! FALSE if there is at least one nonconstant coefficient.
     logical                          :: ballCoeffConstant = .true.
 
+    ! DEPRECATED: NOT USED ANYMORE.
     ! For every additive term in the integral:
     ! = true, if the coefficient in front of the term is constant,
     ! = false, if the coefficient is nonconstant.
@@ -179,10 +181,9 @@ module scalarpde
   ! t_linearForm as follows:
   !
   ! 1.) itermCount = 1                     -> 2 additive terms
-  ! 2.) BconstantCoeff = true              -> constant coefficients
-  ! 3.) Dcoefficients(1)  = 1.0            -> 1st coefficient (actually not used)
-  ! 4.) Idescriptors(1,1) = DER_FUNC       -> f in the 1st term
-  ! 5.) Idescriptors(2,1) = DER_FUNC       -> v in the 1st term
+  ! 2.) Dcoefficients(1)  = 1.0            -> 1st coefficient (actually not used)
+  ! 3.) Idescriptors(1,1) = DER_FUNC       -> f in the 1st term
+  ! 4.) Idescriptors(2,1) = DER_FUNC       -> v in the 1st term
 
   type t_linearForm
 
