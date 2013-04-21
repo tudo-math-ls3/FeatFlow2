@@ -378,7 +378,6 @@ contains
 
         ! We have no constant coefficients
         rform%ballCoeffConstant = .false.
-        rform%BconstantCoeff    = .false.
         
         ! Assemble the bilinear form
         if (iand(p_IbdrCondType(ibdc), BDRC_LUMPED) .eq. BDRC_LUMPED) then
@@ -402,7 +401,6 @@ contains
         
         ! We have no constant coefficients
         rform%ballCoeffConstant = .false.
-        rform%BconstantCoeff    = .false.
         
         ! Assemble the bilinear form
         if (iand(p_IbdrCondType(ibdc), BDRC_LUMPED) .eq. BDRC_LUMPED) then

@@ -574,17 +574,13 @@ contains
       rform%Idescriptors(1,4) = DER_DERIV_Y   ! -u_xx  -> u_x phi_x
       rform%Idescriptors(2,4) = DER_DERIV_Y
 
-      ! In the standard case, we have constant coefficients.
-      ! Theoretically, there are some coefficients constant - but for
-      ! simplicity, we define them all in the callback routine of the matrix
-      ! assembly.
+      ! We have nonconstant coefficients here.
       rform%ballCoeffConstant = .false.
-      rform%BconstantCoeff = .false.
 
       ! Now we can build the matrix entries.
       ! We specify the callback function coeff_burgers for the coefficients.
       ! As long as we use constant coefficients, this routine is not used.
-      ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
+      ! By specifying ballCoeffConstant = .FALSE. above,
       ! the framework will call the callback routine to get analytical data.
       !
       ! We pass our collection structure as well to this routine,

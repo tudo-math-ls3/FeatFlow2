@@ -896,7 +896,6 @@ contains
           
           ! We have no constant coefficients
           rform%ballCoeffConstant = .false.
-          rform%BconstantCoeff    = .false.
           
           ! Create boundary region
           call bdrc_createRegion(rboundaryCondition,&
@@ -925,7 +924,6 @@ contains
           
           ! We have no constant coefficients
           rform%ballCoeffConstant = .false.
-          rform%BconstantCoeff    = .false.
           
           ! Create boundary region
           call bdrc_createRegion(rboundaryCondition,&

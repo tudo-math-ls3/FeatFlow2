@@ -285,14 +285,13 @@ contains
 
     ! In the standard case, we have constant coefficients:
     rform%ballCoeffConstant = .true.
-    rform%BconstantCoeff = .true.
     rform%Dcoefficients(1)  = dnu
     rform%Dcoefficients(2)  = dnu
 
     ! Now we can build the matrix entries.
     ! We specify the callback function coeff_Laplace for the coefficients.
     ! As long as we use constant coefficients, this routine is not used.
-    ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
+    ! By specifying ballCoeffConstant = .FALSE. above,
     ! the framework will call the callback routine to get analytical data.
     !
     ! We pass our collection structure as well to this routine,
@@ -325,7 +324,6 @@ contains
 
     ! In the standard case, we have constant coefficients:
     rform%ballCoeffConstant = .true.
-    rform%BconstantCoeff = .true.
     rform%Dcoefficients(1)  = -1.0_DP
     
     call bilf_buildMatrixScalar (rform,.true.,rmatrixB1,&
@@ -339,7 +337,6 @@ contains
 
     ! In the standard case, we have constant coefficients:
     rform%ballCoeffConstant = .true.
-    rform%BconstantCoeff = .true.
     rform%Dcoefficients(1)  = -1.0_DP
     
     call bilf_buildMatrixScalar (rform,.true.,rmatrixB2,&

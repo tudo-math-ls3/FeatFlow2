@@ -348,7 +348,6 @@ contains
 
     ! In the standard case, we have constant coefficients:
     rform%ballCoeffConstant = .true.
-    rform%BconstantCoeff = .true.
     
     ! get the coefficients from the parameter list
     call parlst_getvalue_string (rparams, "EQUATION", "ALPHA11", Sstr, "1.0")
@@ -403,7 +402,7 @@ contains
       ! Now we can build the matrix entries.
       ! We specify the callback function coeff_CoDiRe for the coefficients.
       ! As long as we use constant coefficients, this routine is not used.
-      ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
+      ! By specifying ballCoeffConstant = .FALSE. above,
       ! the framework will call the callback routine to get analytical data.
       !
       ! We pass our collection structure as well to this routine,

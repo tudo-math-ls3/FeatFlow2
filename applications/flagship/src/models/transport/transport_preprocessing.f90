@@ -1265,7 +1265,6 @@ contains
 
         ! We have constant coefficients
         rform%ballCoeffConstant   = .true.
-        rform%BconstantCoeff(1:4) = .true.
         rform%Dcoefficients(1:4)  = -rform%Dcoefficients(1:4)
 
         ! Initialise the bilinear form
@@ -1339,7 +1338,6 @@ contains
 
         ! We have constant coefficients
         rform%ballCoeffConstant   = .true.
-        rform%BconstantCoeff(1:9) = .true.
         rform%Dcoefficients(1:9)  = -rform%Dcoefficients(1:9)
 
         ! Initialise the bilinear form

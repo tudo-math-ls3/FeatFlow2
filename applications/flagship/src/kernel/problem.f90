@@ -5784,7 +5784,6 @@ contains
             ! function parser object and perform bilinear form
             ! evaluation based on a generic callback function
             rtask%p_rform%ballCoeffConstant = .false.
-            rtask%p_rform%BconstantCoeff(1:itermCount) = .false.
             
             allocate (rtask%p_rfparser)
             call fparser_create(rtask%p_rfparser, itermCount)

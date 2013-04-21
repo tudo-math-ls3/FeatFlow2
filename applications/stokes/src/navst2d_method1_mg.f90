@@ -393,14 +393,13 @@ contains
 
       ! In the standard case, we have constant coefficients:
       rform%ballCoeffConstant = .true.
-      rform%BconstantCoeff = .true.
       rform%Dcoefficients(1)  = dnu
       rform%Dcoefficients(2)  = dnu
 
       ! Now we can build the matrix entries.
       ! We specify the callback function coeff_Laplace for the coefficients.
       ! As long as we use constant coefficients, this routine is not used.
-      ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
+      ! By specifying ballCoeffConstant = .FALSE. above,
       ! the framework will call the callback routine to get analytical data.
       !
       ! We pass our collection structure as well to this routine,
@@ -444,7 +443,6 @@ contains
 
       ! In the standard case, we have constant coefficients:
       rform%ballCoeffConstant = .true.
-      rform%BconstantCoeff = .true.
       rform%Dcoefficients(1)  = -1.0_DP
       
       call bilf_buildMatrixScalar (rform,.true.,Rlevels(i)%rmatrixB1,&
@@ -458,7 +456,6 @@ contains
 
       ! In the standard case, we have constant coefficients:
       rform%ballCoeffConstant = .true.
-      rform%BconstantCoeff = .true.
       rform%Dcoefficients(1)  = -1.0_DP
       
       call bilf_buildMatrixScalar (rform,.true.,Rlevels(i)%rmatrixB2,&
@@ -494,7 +491,6 @@ contains
     ! First convective term: u1 * d_x * u
     rtriform1%itermCount = 1
     rtriform1%ballCoeffConstant = .true.
-    rtriform1%BconstantCoeff = .true.
     rtriform1%Dcoefficients = 1.0_DP
     rtriform1%Idescriptors(1,1) = DER_FUNC
     rtriform1%Idescriptors(2,1) = DER_DERIV_X
@@ -502,7 +498,6 @@ contains
     ! Second convective term: u2 * d_y * u
     rtriform2%itermCount = 1
     rtriform2%ballCoeffConstant = .true.
-    rtriform2%BconstantCoeff = .true.
     rtriform2%Dcoefficients = 1.0_DP
     rtriform2%Idescriptors(1,1) = DER_FUNC
     rtriform2%Idescriptors(2,1) = DER_DERIV_Y

@@ -649,7 +649,6 @@ contains
 !
 !    ! In the standard case, we have constant coefficients:
 !    rform%ballCoeffConstant = .TRUE.
-!    rform%BconstantCoeff = .TRUE.
 !    rform%Dcoefficients(1)  = rproblem%dnu
 !    rform%Dcoefficients(2)  = rproblem%dnu
 !    rform%Dcoefficients(3)  = rproblem%dnu
@@ -657,7 +656,7 @@ contains
 !    ! Now we can build the matrix entries.
 !    ! We specify the callback function coeff_Stokes for the coefficients.
 !    ! As long as we use constant coefficients, this routine is not used.
-!    ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
+!    ! By specifying ballCoeffConstant = .FALSE. above,
 !    ! the framework will call the callback routine to get analytical data.
 !    !
 !    ! We pass our collection structure as well to this routine,

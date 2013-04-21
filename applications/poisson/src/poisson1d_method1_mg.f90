@@ -259,14 +259,13 @@ contains
 
       ! In the standard case, we have constant coefficients:
       rform%ballCoeffConstant = .true.
-      rform%BconstantCoeff = .true.
       rform%Dcoefficients(1)  = 1.0
       rform%Dcoefficients(2)  = 1.0
       
       ! Now we can build the matrix entries.
       ! We specify the callback function coeff_Laplace for the coefficients.
       ! As long as we use constant coefficients, this routine is not used.
-      ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
+      ! By specifying ballCoeffConstant = .FALSE. above,
       ! the framework will call the callback routine to get analytical
       ! data.
       call bilf_buildMatrixScalar (rform,.true.,&

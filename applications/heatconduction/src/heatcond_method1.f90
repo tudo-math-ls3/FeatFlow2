@@ -270,7 +270,6 @@ contains
       rform%Idescriptors(2,1) = DER_FUNC
       
       rform%ballCoeffConstant = .true.
-      rform%BconstantCoeff = .true.
       rform%Dcoefficients(1)  = 1.0
       call bilf_buildMatrixScalar (&
           rform,.true.,rmatrixBlock%RmatrixBlock(1,1), rcubatureInfo)
@@ -291,7 +290,6 @@ contains
 
       ! In the standard case, we have constant coefficients.
       rform%ballCoeffConstant = .true.
-      rform%BconstantCoeff = .true.
       rform%Dcoefficients(1)  = dtstep
       rform%Dcoefficients(2)  = dtstep
 
