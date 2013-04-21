@@ -105,8 +105,96 @@ endif
 PGIVERSION  := $(shell eval $(F90VERSION) )
 
 # Functions to detect minimal compiler version
+pgiminversion_13_10=\
+	$(if $(findstring 12.10-,$(PGIVERSION)),yes,no)
+pgiminversion_13_9=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_13_10) \
+	$(if $(findstring 13.9-,$(PGIVERSION)),yes,no)),yes,no)
+pgiminversion_13_8=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_13_9) \
+	$(if $(findstring 13.8-,$(PGIVERSION)),yes,no)),yes,no)
+pgiminversion_13_7=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_13_8) \
+	$(if $(findstring 13.7-,$(PGIVERSION)),yes,no)),yes,no)
+pgiminversion_13_6=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_13_7) \
+	$(if $(findstring 13.6-,$(PGIVERSION)),yes,no)),yes,no)
+pgiminversion_13_5=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_13_6) \
+	$(if $(findstring 13.5-,$(PGIVERSION)),yes,no)),yes,no)
+pgiminversion_13_4=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_13_5) \
+	$(if $(findstring 13.4-,$(PGIVERSION)),yes,no)),yes,no)
+pgiminversion_13_3=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_13_4) \
+	$(if $(findstring 13.3-,$(PGIVERSION)),yes,no)),yes,no)
+pgiminversion_13_2=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_13_3) \
+	$(if $(findstring 13.2-,$(PGIVERSION)),yes,no)),yes,no)
+pgiminversion_13_1=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_13_2) \
+	$(if $(findstring 13.1-,$(PGIVERSION)),yes,no)),yes,no)
+pgiminversion_13_0=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_13_1) \
+	$(if $(findstring 13.0-,$(PGIVERSION)),yes,no)),yes,no)
+pgiminversion_12_10=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_13_0) \
+	$(if $(findstring 12.10-,$(PGIVERSION)),yes,no)),yes,no)
+pgiminversion_12_9=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_12_10) \
+	$(if $(findstring 12.9-,$(PGIVERSION)),yes,no)),yes,no)
+pgiminversion_12_8=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_12_9) \
+	$(if $(findstring 12.8-,$(PGIVERSION)),yes,no)),yes,no)
+pgiminversion_12_7=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_12_8) \
+	$(if $(findstring 12.7-,$(PGIVERSION)),yes,no)),yes,no)
+pgiminversion_12_6=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_12_7) \
+	$(if $(findstring 12.6-,$(PGIVERSION)),yes,no)),yes,no)
+pgiminversion_12_5=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_12_6) \
+	$(if $(findstring 12.5-,$(PGIVERSION)),yes,no)),yes,no)
+pgiminversion_12_4=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_12_5) \
+	$(if $(findstring 12.4-,$(PGIVERSION)),yes,no)),yes,no)
+pgiminversion_12_3=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_12_4) \
+	$(if $(findstring 12.3-,$(PGIVERSION)),yes,no)),yes,no)
+pgiminversion_12_2=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_12_3) \
+	$(if $(findstring 12.2-,$(PGIVERSION)),yes,no)),yes,no)
+pgiminversion_12_1=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_12_2) \
+	$(if $(findstring 12.1-,$(PGIVERSION)),yes,no)),yes,no)
+pgiminversion_12_0=\
+	$(if $(findstring yes,\
+	$(call pgiminversion_12_1) \
+	$(if $(findstring 12.0-,$(PGIVERSION)),yes,no)),yes,no)
 pgiminversion_11_10=\
-	$(if $(findstring 11.10-,$(PGIVERSION)),yes,no)
+	$(if $(findstring yes,\
+	$(call pgiminversion_12_0) \
+	$(if $(findstring 11.10-,$(PGIVERSION)),yes,no)),yes,no)
 pgiminversion_11_9=\
 	$(if $(findstring yes,\
 	$(call pgiminversion_11_10) \
@@ -213,6 +301,94 @@ pgiminversion_6_1=\
 	$(if $(findstring 6.1-,$(PGIVERSION)),yes,no)),yes,no)
 
 # Functions to detect maximal compiler version
+pgimaxversion_13_10=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_13_9) \
+	$(if $(findstring 13.10-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_13_9=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_13_8) \
+	$(if $(findstring 13.9-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_13_8=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_13_7) \
+	$(if $(findstring 13.8-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_13_7=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_13_6) \
+	$(if $(findstring 13.7-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_13_6=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_13_5) \
+	$(if $(findstring 13.6-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_13_5=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_13_4) \
+	$(if $(findstring 13.5-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_13_4=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_13_3) \
+	$(if $(findstring 13.4-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_13_3=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_13_2) \
+	$(if $(findstring 13.3-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_13_2=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_13_1) \
+	$(if $(findstring 13.2-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_13_1=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_13_0) \
+	$(if $(findstring 13.1-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_13_0=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_12_10) \
+	$(if $(findstring 13.0-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_12_10=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_12_9) \
+	$(if $(findstring 12.10-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_12_9=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_12_8) \
+	$(if $(findstring 12.9-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_12_8=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_12_7) \
+	$(if $(findstring 12.8-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_12_7=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_12_6) \
+	$(if $(findstring 12.7-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_12_6=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_12_5) \
+	$(if $(findstring 12.6-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_12_5=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_12_4) \
+	$(if $(findstring 12.5-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_12_4=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_12_3) \
+	$(if $(findstring 12.4-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_12_3=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_12_2) \
+	$(if $(findstring 12.3-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_12_2=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_12_1) \
+	$(if $(findstring 12.2-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_12_1=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_12_0) \
+	$(if $(findstring 12.1-,$(PGIVERSION)),yes,no)),yes,no)
+pgimaxversion_12_0=\
+	$(if $(findstring yes,\
+	$(call pgimaxversion_11_10) \
+	$(if $(findstring 12.0-,$(PGIVERSION)),yes,no)),yes,no)
 pgimaxversion_11_10=\
 	$(if $(findstring yes,\
 	$(call pgimaxversion_11_9) \
