@@ -251,12 +251,6 @@ contains
     call lsysbl_clearMatrix (rmatrix)
 
     ! =================================
-    ! Use a 3-point Gauss Formula for the assembly
-    ! =================================
-    
-    call spdiscr_createDefCubStructure (rspatialDiscr,rcubatureInfo,CUB_GEN_AUTO_G3)
-
-    ! =================================
     ! Create a coefficient block vector rcoeffVector = ( 1+x^2, 1+y^2 )
     ! =================================
     
@@ -275,6 +269,12 @@ contains
       p_Ddata1(i) = 1.0_DP + p_DvertexCoords(1,i)**2
       p_Ddata2(i) = 1.0_DP + p_DvertexCoords(2,i)**2
     end do
+
+    ! =================================
+    ! Use a 3-point Gauss Formula for the assembly
+    ! =================================
+    
+    call spdiscr_createDefCubStructure (rspatialDiscr,rcubatureInfo,CUB_GEN_AUTO_G3)
 
     ! =================================
     ! Block (1,1): f Mass

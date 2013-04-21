@@ -64,6 +64,8 @@ program tutorial
   use tutorial010a
   use tutorial010b
   use tutorial010c
+  use tutorial010d
+  use tutorial010e
 
   implicit none
   
@@ -134,6 +136,8 @@ program tutorial
   call start_tutorial010a
   call start_tutorial010b
   call start_tutorial010c
+  call start_tutorial010d
+  call start_tutorial010e
 
   ! -----------------------------------------------------------------
   ! Clean up
