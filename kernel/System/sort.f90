@@ -462,7 +462,7 @@ contains
       integer, dimension(:), optional :: Imapping
       integer :: t
       integer :: t2
-      integer :: i,j,k
+      integer :: i,j
 
       if (present(Imapping)) then
         do i=2,ubound(Iarray,1)
@@ -1939,7 +1939,7 @@ contains
 
     subroutine heapsort()
 
-      integer :: i, t
+      integer :: i
 
       ! Heap creation phase (Maxheap)
       do i=ishft(nnode,-1), 1, -1
@@ -1999,7 +1999,7 @@ contains
     subroutine insertSort(ilower, iupper)
       integer, intent(in) :: ilower, iupper
 
-      integer :: i, j, k, idx, t, istop
+      integer :: i, j, t, istop
 
       istop = ilower-1
       do i=ilower+1, iupper
@@ -2026,7 +2026,7 @@ contains
 
       integer, intent(in) :: ilow, ihigh
 
-      integer :: imid, iend_lo, istart_hi, ilo, ihi
+      integer :: imid, istart_hi, ilo, ihi
       integer :: idx,idest
 
       ! Nothing to sort
@@ -2244,7 +2244,7 @@ contains
 
     subroutine heapsort()
 
-      integer :: i, t
+      integer :: i
 
       ! Heap creation phase (Maxheap)
       do i=ishft(nnode,-1), 1, -1
@@ -2305,7 +2305,7 @@ contains
     subroutine insertSort(ilower, iupper)
       integer, intent(in) :: ilower, iupper
 
-      integer :: i, j, k, idx, istop
+      integer :: i, j, istop
       real(DP) :: t
 
       istop = ilower-1
@@ -2333,7 +2333,7 @@ contains
 
       integer, intent(in) :: ilow, ihigh
 
-      integer :: imid, iend_lo, istart_hi, ilo, ihi
+      integer :: imid, istart_hi, ilo, ihi
       integer :: idx,idest
 
       ! Nothing to sort
@@ -2552,7 +2552,7 @@ contains
 
     subroutine heapsort()
 
-      integer :: i, t
+      integer :: i
 
       ! Heap creation phase (Maxheap)
       do i=ishft(nnode,-1), 1, -1
@@ -2613,7 +2613,7 @@ contains
     subroutine insertSort(ilower, iupper)
       integer, intent(in) :: ilower, iupper
 
-      integer :: i, j, k, idx, istop
+      integer :: i, j, istop
       real(SP) :: t
 
       istop = ilower-1
@@ -2641,7 +2641,7 @@ contains
 
       integer, intent(in) :: ilow, ihigh
 
-      integer :: imid, iend_lo, istart_hi, ilo, ihi
+      integer :: imid, istart_hi, ilo, ihi
       integer :: idx,idest
 
       ! Nothing to sort

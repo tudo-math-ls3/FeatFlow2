@@ -11605,7 +11605,7 @@ contains
   ! point is.
 
   ! Local variables
-  real(DP) :: ddet,dx,dy
+  real(DP) :: dx,dy
   integer :: i,j
 
     ! Calculate function values?
@@ -16643,7 +16643,6 @@ contains
   real(DP), dimension(9) :: DbasisX_Y, DbasisY_Y
   real(DP) :: dpx, dpy, ddet
   real(DP) :: dx_x,dx_y,dy_x,dy_y, a11,a12,a21,a22
-  integer :: itwistoffset
   integer :: i
   
   ! The following array defines the mapping of the DOFs from the

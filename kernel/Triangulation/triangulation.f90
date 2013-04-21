@@ -10894,7 +10894,7 @@ contains
     integer :: iel
     integer :: isize
     real(DP) :: dtotalVolume
-    integer :: ive,iv1,iv2
+    integer :: iv1,iv2
 
     ! Is everything here we need?
     if (rtriangulation%h_DvertexCoords .eq. ST_NOHANDLE) then
