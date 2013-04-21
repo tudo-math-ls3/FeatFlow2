@@ -128,4 +128,33 @@
 #endif
 #endif
 
+#if 0
+!-------------------------------------------------------------------------------
+! The following macro expands a given constant with the correct data type
+!
+! Example: FEAT2_PP_CONST(1.0, DP)  ->  1.0_DP
+!-------------------------------------------------------------------------------
+#endif
+
+#define FEAT2_PP_CONST_(const,type) (const##_##type)
+#define FEAT2_PP_CONST(const,type) FEAT2_PP_CONST_(const,type)
+
+#if 0
+!-------------------------------------------------------------------------------
+! The following macros decodes one or multiple integers into one identifier
+!
+! Example: FEAT2_PP_ID3(2,5,7,10)  ->  2 + 10*5 + 7*10*10 = 752
+!
+! Note that it is of course possible to use bases other than 10.
+!-------------------------------------------------------------------------------
+#endif
+
+#define FEAT2_PP_ID_(id,base) (id*base)
+
+#define FEAT2_PP_ID1(id1,base) (id1)
+#define FEAT2_PP_ID2(id1,id2,base) ((id1)+FEAT2_PP_ID_(id2,base))
+#define FEAT2_PP_ID3(id1,id2,id3,base) FEAT2_PP_ID2(id1,FEAT2_PP_ID2(id2,id3,base),base)
+#define FEAT2_PP_ID4(id1,id2,id3,id4,base) FEAT2_PP_ID2(id1,FEAT2_PP_ID3(id2,id3,id4,base),base)
+#define FEAT2_PP_ID5(id1,id2,id3,id4,id5,base) FEAT2_PP_ID2(id1,FEAT2_PP_ID4(id2,id3,id4,id5,base),base)
+
 #endif
