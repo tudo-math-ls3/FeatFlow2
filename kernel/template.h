@@ -47,14 +47,6 @@
 !##############################################################################
 #endif
 
-#ifndef T
-#error "Definition of T is missing!"
-#endif
-
-#ifndef T_TYPE
-#error "Definition of T_TYPE is missing!"
-#endif
-
 #if 0
 !###############################################################################
 !# Macro definition for templating without auxiliary data type
