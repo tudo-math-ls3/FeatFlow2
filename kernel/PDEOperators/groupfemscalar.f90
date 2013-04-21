@@ -5074,8 +5074,9 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildJacobianBlock1(rgroupFEMSet, rx,&
-      fcb_calcMatrixSc_sim, hstep, dscale, bbuildStabilisation,&
-      bclear, rmatrix, cconstrType, rcollection, rperfconfig)
+      fcb_calcMatrixSc_sim, dperturb, dscale, bbuildStabilisation,&
+      bclear, rmatrix, fcb_calcMatrixDiagSc_sim, cconstrType,&
+      rcollection, rperfconfig)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the convective
@@ -5093,7 +5094,7 @@ contains
     type(t_vectorBlock), intent(in) :: rx
 
     ! Perturbation parameter
-    real(DP), intent(in) :: hstep
+    real(DP), intent(in) :: dperturb
 
     ! Scaling factor
     real(DP), intent(in) :: dscale
@@ -5109,7 +5110,9 @@ contains
     logical, intent(in) :: bclear
 
     ! Callback functions to compute matrix entries
+    include 'intf_calcMatrixDiagSc_sim.inc'
     include 'intf_calcMatrixSc_sim.inc'
+    optional :: fcb_calcMatrixDiagSc_sim
 
     ! OPTIONAL: One of the GFEM_MATC_xxxx constants that allow to
     ! specify the matrix construction method. If not specified,
@@ -5137,9 +5140,9 @@ contains
       
       ! Call scalar version of this routine
       call gfsc_buildJacobianScalar(rgroupFEMSet, rx%RvectorBlock(1),&
-          fcb_calcMatrixSc_sim, hstep, dscale, bbuildStabilisation,&
-          bclear, rmatrix%RmatrixBlock(1,1), cconstrType,&
-          rcollection, rperfconfig)
+          fcb_calcMatrixSc_sim, dperturb, dscale, bbuildStabilisation,&
+          bclear, rmatrix%RmatrixBlock(1,1), fcb_calcMatrixDiagSc_sim,&
+          cconstrType, rcollection, rperfconfig)
     else
       call output_line('Solution vector must not contain more than one block!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianBlock1')
@@ -5153,8 +5156,9 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildJacobianBlock2(rgroupFEMSet, rx,&
-      fcb_calcMatrixSc_sim, hstep, dscale, bbuildStabilisation,&
-      bclear, rmatrix, cconstrType, rcollection, rperfconfig)
+      fcb_calcMatrixSc_sim, dperturb, dscale, bbuildStabilisation,&
+      bclear, rmatrix, fcb_calcMatrixDiagSc_sim, cconstrType,&
+      rcollection, rperfconfig)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the convective
@@ -5172,7 +5176,7 @@ contains
     type(t_vectorScalar), intent(in) :: rx
 
     ! perturbation parameter
-    real(DP), intent(in) :: hstep
+    real(DP), intent(in) :: dperturb
 
     ! Scaling factor
     real(DP), intent(in) :: dscale
@@ -5188,7 +5192,9 @@ contains
     logical, intent(in) :: bclear
 
     ! Callback functions to compute matrix entries
+    include 'intf_calcMatrixDiagSc_sim.inc'
     include 'intf_calcMatrixSc_sim.inc'
+    optional :: fcb_calcMatrixDiagSc_sim
 
     ! OPTIONAL: One of the GFEM_MATC_xxxx constants that allow to
     ! specify the matrix construction method. If not specified,
@@ -5215,9 +5221,9 @@ contains
       
       ! Call scalar version of this routine
       call gfsc_buildJacobianScalar(rgroupFEMSet, rx,&
-          fcb_calcMatrixSc_sim, hstep, dscale, bbuildStabilisation,&
-          bclear, rmatrix%RmatrixBlock(1,1), cconstrType,&
-          rcollection, rperfconfig)
+          fcb_calcMatrixSc_sim, dperturb, dscale, bbuildStabilisation,&
+          bclear, rmatrix%RmatrixBlock(1,1), fcb_calcMatrixDiagSc_sim,&
+          cconstrType, rcollection, rperfconfig)
     else
       call output_line('Solution vector must not contain more than one block!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianBlock2')
@@ -5231,8 +5237,9 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildJacobianBlock3(rgroupFEMSet, rx,&
-      fcb_calcMatrixSc_sim, hstep, dscale, bbuildStabilisation,&
-      bclear, rmatrix, cconstrType, rcollection, rperfconfig)
+      fcb_calcMatrixSc_sim, dperturb, dscale, bbuildStabilisation,&
+      bclear, rmatrix, fcb_calcMatrixDiagSc_sim, cconstrType,&
+      rcollection, rperfconfig)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the convective
@@ -5250,7 +5257,7 @@ contains
     type(t_vectorBlock), intent(in) :: rx
 
     ! perturbation parameter
-    real(DP), intent(in) :: hstep
+    real(DP), intent(in) :: dperturb
 
     ! Scaling factor
     real(DP), intent(in) :: dscale
@@ -5266,7 +5273,9 @@ contains
     logical, intent(in) :: bclear
 
     ! Callback functions to compute matrix entries
+    include 'intf_calcMatrixDiagSc_sim.inc'
     include 'intf_calcMatrixSc_sim.inc'
+    optional :: fcb_calcMatrixDiagSc_sim
 
     ! OPTIONAL: One of the GFEM_MATC_xxxx constants that allow to
     ! specify the matrix construction method. If not specified,
@@ -5292,8 +5301,9 @@ contains
       
       ! Call scalar version of this routine
       call gfsc_buildJacobianScalar(rgroupFEMSet, rx%RvectorBlock(1),&
-          fcb_calcMatrixSc_sim, hstep, dscale, bbuildStabilisation,&
-          bclear, rmatrix, cconstrType, rcollection, rperfconfig)
+          fcb_calcMatrixSc_sim, dperturb, dscale, bbuildStabilisation,&
+          bclear, rmatrix, fcb_calcMatrixDiagSc_sim, cconstrType,&
+          rcollection, rperfconfig)
     else
       call output_line('Solution vector must not contain more than one block!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianBlock3')
@@ -5307,8 +5317,9 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildJacobianScalar(rgroupFEMSet, rx,&
-      fcb_calcMatrixSc_sim, hstep, dscale, bbuildStabilisation,&
-      bclear, rmatrix, cconstrType, rcollection, rperfconfig)
+      fcb_calcMatrixSc_sim, dperturb, dscale, bbuildStabilisation,&
+      bclear, rmatrix, fcb_calcMatrixDiagSc_sim, cconstrType,&
+      rcollection, rperfconfig)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the convective part
@@ -5323,7 +5334,7 @@ contains
     type(t_vectorScalar), intent(in) :: rx
 
     ! perturbation parameter
-    real(DP), intent(in) :: hstep
+    real(DP), intent(in) :: dperturb
 
     ! Scaling factor
     real(DP), intent(in) :: dscale
@@ -5339,7 +5350,9 @@ contains
     logical, intent(in) :: bclear
 
     ! callback functions to compute matrix entries
+    include 'intf_calcMatrixDiagSc_sim.inc'
     include 'intf_calcMatrixSc_sim.inc'
+    optional :: fcb_calcMatrixDiagSc_sim
 
     ! OPTIONAL: One of the GFEM_MATC_xxxx constants that allow to
     ! specify the matrix construction method. If not specified,
@@ -5362,10 +5375,10 @@ contains
 
     ! local variables
     real(DP), dimension(:,:,:), pointer :: p_DcoeffsAtEdge
-    real(SP), dimension(:,:,:), pointer :: p_FcoeffsAtEdge
+    real(DP), dimension(:,:), pointer :: p_DcoeffsAtDiag
     real(DP), dimension(:), pointer :: p_Ddata,p_Dx
-    real(SP), dimension(:), pointer :: p_Fdata,p_Fx
     integer, dimension(:,:), pointer :: p_IedgeList
+    integer, dimension(:,:), pointer :: p_IdiagList
     integer, dimension(:), pointer :: p_IedgeListIdx
 
     integer :: ccType
@@ -5393,7 +5406,8 @@ contains
     if (present(cconstrType)) ccType = cconstrType
 
     ! Clear matrix?
-    if (bclear) call lsyssc_clearMatrix(rmatrix)
+    if ((ccType .eq. GFEM_MATC_LUMPED) .and. bclear)&
+        call lsyssc_clearMatrix(rmatrix)
 
     ! Check if group finite element set is prepared
     if ((iand(rgroupFEMSet%isetSpec, GFEM_HAS_EDGELIST) .eq. 0) .or.&
@@ -5415,26 +5429,32 @@ contains
       call lsyssc_getbase_double(rmatrix, p_Ddata)
       call lsyssc_getbase_double(rx, p_Dx)
       
+      ! Assemble matrix diagonal?
+      if (present(fcb_calcMatrixDiagSc_sim)) then
+        
+        ! Check if group finite element set is prepared
+        if ((iand(rgroupFEMSet%isetSpec, GFEM_HAS_DIAGLIST) .eq. 0) .or.&
+            (iand(rgroupFEMSet%isetSpec, GFEM_HAS_DIAGDATA) .eq. 0)) then
+          call output_line('Group finite element set does not provide diagonal data!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianScalar')
+          call sys_halt()
+        end if
+        
+        ! Assemble diagonal entries
+        call gfem_getbase_IdiagList(rgroupFEMSet, p_IdiagList)
+        call gfem_getbase_DcoeffsAtDiag(rgroupFEMSet, p_DcoeffsAtDiag)
+        call doJacobianDiagDP(p_IdiagList, p_DcoeffsAtDiag,&
+            p_Dx, dperturb, dscale, bclear, p_Ddata)
+      end if
+      
       if (bbuildStabilisation) then
         ! Assemble operator with stabilisation
+        call doJacobianStabDP(p_IedgeListIdx, p_IedgeList,&
+            p_DcoeffsAtEdge, p_Dx, dscale, ccType, p_Ddata)
       else
         ! Assemble operator without stabilisation
         call doJacobianDP(p_IedgeListIdx, p_IedgeList,&
             p_DcoeffsAtEdge, p_Dx, dscale, ccType, p_Ddata)
-      end if
-
-    case (ST_SINGLE)
-      ! Set pointers
-      call gfem_getbase_FcoeffsAtEdge(rgroupFEMSet, p_FcoeffsAtEdge)
-      call lsyssc_getbase_single(rmatrix, p_Fdata)
-      call lsyssc_getbase_single(rx, p_Fx)
-      
-      if (bbuildStabilisation) then
-        ! Assemble operator with stabilisation
-      else
-        ! Assemble operator without stabilisation
-!        call doJacobianSP(p_IedgeListIdx, p_IedgeList,&
-!            p_FcoeffsAtEdge, p_Fx, real(dscale,SP), ccType, p_Fdata)
       end if
 
     case default
@@ -5448,8 +5468,121 @@ contains
     ! Here, the working routine follow
 
     !**************************************************************
-    ! Assemble standard Jacobian matrix for convective operator
-    ! and assume zero row-sums.
+    ! Assemble diagonal part of the standard Jacobian matrix
+
+    subroutine doJacobianDiagDP(IdiagList, DcoeffsAtDiag, Dx,&
+        dperturb, dscale, bclear, Ddata)
+
+      ! input parameters
+      real(DP), dimension(:), intent(in) :: Dx
+      real(DP), dimension(:,:), intent(in) :: DcoeffsAtDiag
+      real(DP), intent(in) :: dperturb,dscale
+      logical, intent(in) :: bclear
+      integer, dimension(:,:), intent(in) :: IdiagList
+
+      ! input/output parameters
+      real(DP), dimension(:), intent(inout) :: Ddata
+
+      ! auxiliary arrays
+      real(DP), dimension(:), pointer :: DdataAtNodeP,DdataAtNodeM
+      real(DP), dimension(:,:), pointer :: DcoefficientsP,DcoefficientsM
+
+      ! local variables
+      integer :: IEQmax,IEQset,i,ia,idx
+
+      !-------------------------------------------------------------------------
+      ! Assemble diagonal entries
+      !-------------------------------------------------------------------------
+
+      !$omp parallel default(shared)&
+      !$omp private(DcoefficientsM,DcoefficientsP,&
+      !$omp         DdataAtNodeM,DdataAtNodeP,IEQmax,i,idx,ia)&
+      !$omp if (size(IdiagList,2) > p_rperfconfig%NEQMIN_OMP)
+
+      ! Allocate temporal memory
+      allocate(DdataAtNodeM(p_rperfconfig%NEQSIM))
+      allocate(DdataAtNodeP(p_rperfconfig%NEQSIM))
+      allocate(DcoefficientsM(1,p_rperfconfig%NEQSIM))
+      allocate(DcoefficientsP(1,p_rperfconfig%NEQSIM))
+
+      ! Loop over the equations
+      !$omp do schedule(static,1)
+      do IEQset = 1, size(IdiagList,2), p_rperfconfig%NEQSIM
+
+        ! We always handle NEQSIM equations simultaneously.
+        ! How many equations have we actually here?
+        ! Get the maximum equation number, such that we handle
+        ! at most NEQSIM equations simultaneously.
+
+        IEQmax = min(size(IdiagList,2), IEQset-1+p_rperfconfig%NEQSIM)
+
+        ! Loop through all equations in the current set
+        ! and prepare the auxiliary arrays
+        do idx = 1, IEQmax-IEQset+1
+
+          ! Get actual equation number
+          i = IdiagList(1,idx+IEQset-1)
+
+          ! Fill auxiliary arrays
+          DdataAtNodeP(idx) = Dx(i)+dperturb
+          DdataAtNodeM(idx) = Dx(i)-dperturb
+        end do
+
+        ! Use callback function to compute diagonal entries
+        call fcb_calcMatrixDiagSc_sim(&
+            DdataAtNodeP(1:IEQmax-IEQset+1),&
+            DcoeffsAtDiag(:,IEQset:IEQmax),&
+            IdiagList(:,IEQset:IEQmax),&
+            dscale, IEQmax-IEQset+1,&
+            DcoefficientsP(:,1:IEQmax-IEQset+1), rcollection)
+
+        call fcb_calcMatrixDiagSc_sim(&
+            DdataAtNodeM(1:IEQmax-IEQset+1),&
+            DcoeffsAtDiag(:,IEQset:IEQmax),&
+            IdiagList(:,IEQset:IEQmax),&
+            dscale, IEQmax-IEQset+1,&
+            DcoefficientsM(:,1:IEQmax-IEQset+1), rcollection)
+
+        ! Loop through all equations in the current set
+        ! and scatter the entries to the global matrix
+        if (bclear) then
+
+          do idx = 1, IEQmax-IEQset+1
+
+            ! Get position of diagonal entry
+            ia = IdiagList(2,idx+IEQset-1)
+
+            ! Update the diagonal coefficient
+            Ddata(ia) = 0.5_DP * ( DcoefficientsP(1,idx)*DdataAtNodeP(idx)&
+                                  -DcoefficientsM(1,idx)*DdataAtNodeM(idx)) / dperturb
+          end do
+
+        else   ! do not clear matrix
+
+          do idx = 1, IEQmax-IEQset+1
+
+            ! Get position of diagonal entry
+            ia = IdiagList(2,idx+IEQset-1)
+
+            ! Update the diagonal coefficient
+            Ddata(ia) = Ddata(ia)&
+                      + 0.5_DP * ( DcoefficientsP(1,idx)*DdataAtNodeP(idx)&
+                                  -DcoefficientsM(1,idx)*DdataAtNodeM(idx)) / dperturb
+          end do
+        end if
+
+      end do
+      !$omp end do
+
+      ! Deallocate temporal memory
+      deallocate(DdataAtNodeM,DdataAtNodeP)
+      deallocate(DcoefficientsM,DcoefficientsP)
+      !$omp end parallel
+
+    end subroutine doJacobianDiagDP
+    
+    !**************************************************************
+    ! Assemble off-diagonal entries of standard Jacobian matrix
 
     subroutine doJacobianDP(IedgeListIdx, IedgeList,&
         DcoeffsAtEdge, Dx, dscale, ccType, Ddata)
@@ -5466,35 +5599,23 @@ contains
       real(DP), dimension(:), intent(inout) :: Ddata
 
       ! auxiliary arrays
-      real(DP), dimension(:,:), pointer :: DdataAtEdge
-      real(DP), dimension(:,:), pointer :: DdataAtEdgeIM,DdataAtEdgeIP
-      real(DP), dimension(:,:), pointer :: DdataAtEdgeJM,DdataAtEdgeJP
-      real(DP), dimension(:,:), pointer :: Dcoefficients
-      real(DP), dimension(:,:), pointer :: DcoefficientsIM,DcoefficientsIP
-      real(DP), dimension(:,:), pointer :: DcoefficientsJM,DcoefficientsJP
+      real(DP), dimension(:,:), pointer :: DdataAtEdgeM,DdataAtEdgeP
+      real(DP), dimension(:,:), pointer :: DcoefficientsM,DcoefficientsP
 
       ! local variables
-      real(DP) :: ai_ij,ai_ji,aj_ij,aj_ji,bi_ji,bj_ij,diff
       integer :: idx,IEDGEset,IEDGEmax
       integer :: iedge,igroup,ii,jj,ij,ji
 
       !$omp parallel default(shared)&
-      !$omp private(DcoefficientsIM,DcoefficientsIP,DcoefficientsJM,DcoefficientsJP,&
-      !$omp         DdataAtEdgeIM,DdataAtEdgeIP,DdataAtEdgeJM,DdataAtEdgeJP,&
-      !$omp         DdataAtEdge,IEDGEmax,idx,iedge,ii,jj,ij,ji,&
-      !$omp         ai_ij,ai_ji,aj_ij,aj_ji,bi_ji,bj_ij,diff)&
+      !$omp private(DcoefficientsM,DcoefficientsP,DdataAtEdgeM,DdataAtEdgeP,&
+      !$omp         IEDGEmax,idx,iedge,ii,jj,ij,ji)&
       !$omp if(size(IedgeList,2) > p_rperfconfig%NEDGEMIN_OMP)
 
       ! Allocate temporal memory
-      allocate(DdataAtEdge(2,p_rperfconfig%NEDGESIM))
-      allocate(DdataAtEdgeIM(2,p_rperfconfig%NEDGESIM))
-      allocate(DdataAtEdgeIP(2,p_rperfconfig%NEDGESIM))
-      allocate(DdataAtEdgeJM(2,p_rperfconfig%NEDGESIM))
-      allocate(DdataAtEdgeJP(2,p_rperfconfig%NEDGESIM))
-      allocate(DcoefficientsIM(2,p_rperfconfig%NEDGESIM))
-      allocate(DcoefficientsIP(2,p_rperfconfig%NEDGESIM))
-      allocate(DcoefficientsJM(2,p_rperfconfig%NEDGESIM))
-      allocate(DcoefficientsJP(2,p_rperfconfig%NEDGESIM))
+      allocate(DdataAtEdgeM(2,p_rperfconfig%NEDGESIM))
+      allocate(DdataAtEdgeP(2,p_rperfconfig%NEDGESIM))
+      allocate(DcoefficientsM(2,p_rperfconfig%NEDGESIM))
+      allocate(DcoefficientsP(2,p_rperfconfig%NEDGESIM))
 
       ! Loop over the edge groups and process all edges of one group
       ! in parallel without the need to synchronise memory access
@@ -5523,8 +5644,8 @@ contains
             iedge = idx+IEDGEset-1
 
             ! Fill auxiliary arrays
-            DdataAtEdge(1,idx) = Dx(IedgeList(1,iedge))
-            DdataAtEdge(2,idx) = Dx(IedgeList(2,iedge))
+            DdataAtEdgeM(1,idx) = Dx(IedgeList(1,iedge))
+            DdataAtEdgeM(2,idx) = Dx(IedgeList(2,iedge))
           end do
 
           ! We have to loop over all columns K of the I-th and J-th
@@ -5539,57 +5660,32 @@ contains
           ! JJ which are known a priori(!!). Here, G is the standard
           ! Galerkin operator without artificial diffusion.
 
-          ! 1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
+          ! Part 1: Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
 
           do idx = 1, IEDGEmax-IEDGEset+1
-            DdataAtEdgeIP(1,idx)  = DdataAtEdge(1,idx)+hstep
-            DdataAtEdgeIP(2,idx)  = DdataAtEdge(2,idx)
-          end do
+            ! $ (u_i+h, u_j) $
+            DdataAtEdgeP(1,idx)  = DdataAtEdgeM(1,idx)+dperturb
+            DdataAtEdgeP(2,idx)  = DdataAtEdgeM(2,idx)
 
-          do idx = 1, IEDGEmax-IEDGEset+1
-            DdataAtEdgeIM(1,idx)  = DdataAtEdge(1,idx)-hstep
-            DdataAtEdgeIM(2,idx)  = DdataAtEdge(2,idx)
-          end do
-
-          ! Use callback function to compute off-diagonal entries
-          call fcb_calcMatrixSc_sim(&
-              DdataAtEdgeIP(:,1:IEDGEmax-IEDGEset+1),&
-              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
-              IedgeList(:,IEDGEset:IEDGEmax),&
-              dscale, IEDGEmax-IEDGEset+1,&
-              DcoefficientsIP(:,1:IEDGEmax-IEDGEset+1), rcollection)
-          call fcb_calcMatrixSc_sim(&
-              DdataAtEdgeIM(:,1:IEDGEmax-IEDGEset+1),&
-              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
-              IedgeList(:,IEDGEset:IEDGEmax),&
-              dscale, IEDGEmax-IEDGEset+1,&
-              DcoefficientsIM(:,1:IEDGEmax-IEDGEset+1), rcollection)
-
-          ! 2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
-
-          do idx = 1, IEDGEmax-IEDGEset+1
-            DdataAtEdgeJP(1,idx)  = DdataAtEdge(1,idx)
-            DdataAtEdgeJP(2,idx)  = DdataAtEdge(2,idx)+hstep
-          end do
-
-          do idx = 1, IEDGEmax-IEDGEset+1
-            DdataAtEdgeJM(1,idx)  = DdataAtEdge(1,idx)
-            DdataAtEdgeJM(2,idx)  = DdataAtEdge(2,idx)-hstep
+            ! $ (u_i-h, u_j) $
+            DdataAtEdgeM(1,idx)  = DdataAtEdgeM(1,idx)-dperturb
+            !DdataAtEdgeM(2,idx) = DdataAtEdgeM(2,idx) this is given
           end do
 
           ! Use callback function to compute off-diagonal entries
           call fcb_calcMatrixSc_sim(&
-              DdataAtEdgeJP(:,1:IEDGEmax-IEDGEset+1),&
+              DdataAtEdgeP(:,1:IEDGEmax-IEDGEset+1),&
               DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               IedgeList(:,IEDGEset:IEDGEmax),&
               dscale, IEDGEmax-IEDGEset+1,&
-              DcoefficientsJP(:,1:IEDGEmax-IEDGEset+1), rcollection)
+              DcoefficientsP(:,1:IEDGEmax-IEDGEset+1), rcollection)
+
           call fcb_calcMatrixSc_sim(&
-              DdataAtEdgeJM(:,1:IEDGEmax-IEDGEset+1),&
+              DdataAtEdgeM(:,1:IEDGEmax-IEDGEset+1),&
               DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
               IedgeList(:,IEDGEset:IEDGEmax),&
               dscale, IEDGEmax-IEDGEset+1,&
-              DcoefficientsJM(:,1:IEDGEmax-IEDGEset+1), rcollection)
+              DcoefficientsM(:,1:IEDGEmax-IEDGEset+1), rcollection)
 
           ! What type of assembly are we?
           if (ccType .eq. GFEM_MATC_LUMPED) then
@@ -5605,58 +5701,173 @@ contains
               ii = IedgeList(5,iedge)
               jj = IedgeList(6,iedge)
 
-              ! Compute the solution difference scaled by the perturbation parameter
-              diff = 0.5_DP * (DdataAtEdge(2,idx)-DdataAtEdge(1,idx)) / hstep
-
-              ! Compte the second-order divided differences of the
-              ! Galerkin coefficients
-              ai_ij = (DcoefficientsIP(1,idx)-DcoefficientsIM(1,idx)) * diff
-              ai_ji = (DcoefficientsIP(2,idx)-DcoefficientsIM(2,idx)) * diff
-              aj_ij = (DcoefficientsJP(1,idx)-DcoefficientsJM(1,idx)) * diff
-              aj_ji = (DcoefficientsJP(2,idx)-DcoefficientsJM(2,idx)) * diff
-
               ! Update the global operator
-              Ddata(ii) = Ddata(ii) + ai_ij + aj_ji
-              Ddata(jj) = Ddata(jj) - aj_ji - ai_ji
+              Ddata(ii) = Ddata(ii)&
+                        + 0.5_DP * ( DcoefficientsP(1,idx)&
+                                    -DcoefficientsM(1,idx))&
+                                   * DdataAtEdgeP(2,idx) / dperturb
+              Ddata(jj) = Ddata(jj)&
+                        + 0.5_DP * ( DcoefficientsP(2,idx)*DdataAtEdgeP(1,idx)&
+                                    -DcoefficientsM(2,idx)*DdataAtEdgeM(1,idx)&
+                                   ) / dperturb
             end do
 
           else
             ! Loop through all edges in the current set
             ! and scatter the entries to the global matrix
-            do idx = 1, IEDGEmax-IEDGEset+1
+            if (bclear) then
+
+              do idx = 1, IEDGEmax-IEDGEset+1
               
+                ! Get actual edge number
+                iedge = idx+IEDGEset-1
+                
+                ! Get position of one off-diagonal entries
+                ji = IedgeList(4,iedge)
+                
+                ! Get position of one diagonal entries
+                ii = IedgeList(5,iedge)
+                
+                ! Update the global operator
+                Ddata(ii) = Ddata(ii)&
+                          + 0.5_DP * ( DcoefficientsP(1,idx)&
+                                      -DcoefficientsM(1,idx)&
+                                     ) * DdataAtEdgeP(2,idx) / dperturb
+                Ddata(ji) = 0.5_DP * ( DcoefficientsP(2,idx)*DdataAtEdgeP(1,idx)&
+                                      -DcoefficientsM(2,idx)*DdataAtEdgeM(1,idx)&
+                                     ) / dperturb
+              end do
+
+            else   ! do not clear matrix
+
+              do idx = 1, IEDGEmax-IEDGEset+1
+              
+                ! Get actual edge number
+                iedge = idx+IEDGEset-1
+                
+                ! Get position of one off-diagonal entries
+                ji = IedgeList(4,iedge)
+                
+                ! Get position of one diagonal entries
+                ii = IedgeList(5,iedge)
+                
+                ! Update the global operator
+                Ddata(ii) = Ddata(ii)&
+                          + 0.5_DP * ( DcoefficientsP(1,idx)&
+                                      -DcoefficientsM(1,idx)&
+                                     ) * DdataAtEdgeP(2,idx) / dperturb
+                Ddata(ji) = Ddata(ji)&
+                          + 0.5_DP * ( DcoefficientsP(2,idx)*DdataAtEdgeP(1,idx)&
+                                      -DcoefficientsM(2,idx)*DdataAtEdgeM(1,idx)&
+                                     ) / dperturb
+              end do
+
+            end if
+          end if
+
+          ! Part 2: Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
+
+          do idx = 1, IEDGEmax-IEDGEset+1
+            ! $ (u_i, u_j+h) $
+            DdataAtEdgeP(1,idx) = DdataAtEdgeP(1,idx)-dperturb
+            DdataAtEdgeP(2,idx) = DdataAtEdgeP(2,idx)+dperturb
+
+            ! $ (u_i, u_j-h) $
+            DdataAtEdgeM(1,idx) = DdataAtEdgeM(1,idx)+dperturb
+            DdataAtEdgeM(2,idx) = DdataAtEdgeM(2,idx)-dperturb           
+          end do
+
+          ! Use callback function to compute off-diagonal entries
+          call fcb_calcMatrixSc_sim(&
+              DdataAtEdgeP(:,1:IEDGEmax-IEDGEset+1),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              IedgeList(:,IEDGEset:IEDGEmax),&
+              dscale, IEDGEmax-IEDGEset+1,&
+              DcoefficientsP(:,1:IEDGEmax-IEDGEset+1), rcollection)
+
+          call fcb_calcMatrixSc_sim(&
+              DdataAtEdgeM(:,1:IEDGEmax-IEDGEset+1),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              IedgeList(:,IEDGEset:IEDGEmax),&
+              dscale, IEDGEmax-IEDGEset+1,&
+              DcoefficientsM(:,1:IEDGEmax-IEDGEset+1), rcollection)
+
+          ! What type of assembly are we?
+          if (ccType .eq. GFEM_MATC_LUMPED) then
+
+            ! Loop through all edges in the current set and scatter
+            ! the entries to the diagonal of the global matrix
+            do idx = 1, IEDGEmax-IEDGEset+1
+
               ! Get actual edge number
               iedge = idx+IEDGEset-1
-              
-              ! Get position of one off-diagonal entries
-              ij = IedgeList(3,iedge)
-              ji = IedgeList(4,iedge)
 
               ! Get position of diagonal entries
               ii = IedgeList(5,iedge)
               jj = IedgeList(6,iedge)
-              
-              ! Compute the average of the perturbed coefficients
-              bj_ij = 0.5_DP * (DcoefficientsJP(1,idx)+DcoefficientsJM(1,idx))
-              bi_ji = 0.5_DP * (DcoefficientsIP(2,idx)+DcoefficientsIM(2,idx))
-
-              ! Compute the solution difference scaled by the perturbation parameter
-              diff = 0.5_DP * (DdataAtEdge(2,idx)-DdataAtEdge(1,idx)) / hstep
-
-              ! Compte the second-order divided differences of the
-              ! Galerkin coefficients
-              ai_ij = (DcoefficientsIP(1,idx)-DcoefficientsIM(1,idx)) * diff
-              ai_ji = (DcoefficientsIP(2,idx)-DcoefficientsIM(2,idx)) * diff
-              aj_ij = (DcoefficientsJP(1,idx)-DcoefficientsJM(1,idx)) * diff
-              aj_ji = (DcoefficientsJP(2,idx)-DcoefficientsJM(2,idx)) * diff
 
               ! Update the global operator
-              Ddata(ii) = Ddata(ii) + ai_ij - bj_ij
-              Ddata(ij) = Ddata(ij) + aj_ij + bj_ij
-              Ddata(ji) = Ddata(ji) - ai_ji + bi_ji
-              Ddata(jj) = Ddata(jj) - aj_ji - bi_ji
+              Ddata(jj) = Ddata(jj)&
+                        + 0.5_DP * ( DcoefficientsP(2,idx)&
+                                    -DcoefficientsM(2,idx)&
+                                   ) * DdataAtEdgeP(1,idx) / dperturb
+              Ddata(ii) = Ddata(ii)&
+                        + 0.5_DP * ( DcoefficientsP(1,idx)*DdataAtEdgeP(2,idx)&
+                                    -DcoefficientsM(1,idx)*DdataAtEdgeM(2,idx)&
+                                   ) / dperturb
             end do
 
+          else
+            ! Loop through all edges in the current set
+            ! and scatter the entries to the global matrix
+            if (bclear) then
+              
+              do idx = 1, IEDGEmax-IEDGEset+1
+                
+                ! Get actual edge number
+                iedge = idx+IEDGEset-1
+                
+                ! Get position of one off-diagonal entries
+                ij = IedgeList(3,iedge)
+                
+                ! Get position of one diagonal entries
+                jj = IedgeList(6,iedge)
+                
+                ! Update the global operator
+                Ddata(jj) = Ddata(jj)&
+                          + 0.5_DP * ( DcoefficientsP(2,idx)&
+                                      -DcoefficientsM(2,idx)&
+                                     ) * DdataAtEdgeP(1,idx) / dperturb
+                Ddata(ij) = 0.5_DP * ( DcoefficientsP(1,idx)*DdataAtEdgeP(2,idx)&
+                                      -DcoefficientsM(1,idx)*DdataAtEdgeM(2,idx)&
+                                     ) / dperturb
+              end do
+
+            else   ! do not clear matrix
+
+              do idx = 1, IEDGEmax-IEDGEset+1
+                
+                ! Get actual edge number
+                iedge = idx+IEDGEset-1
+                
+                ! Get position of one off-diagonal entries
+                ij = IedgeList(3,iedge)
+                
+                ! Get position of one diagonal entries
+                jj = IedgeList(6,iedge)
+                
+                ! Update the global operator
+                Ddata(jj) = Ddata(jj)&
+                          + 0.5_DP * ( DcoefficientsP(2,idx)&
+                                      -DcoefficientsM(2,idx)&
+                                     ) * DdataAtEdgeP(1,idx) / dperturb
+                Ddata(ij) = Ddata(ij)&
+                          + 0.5_DP * ( DcoefficientsP(1,idx)*DdataAtEdgeP(2,idx)&
+                                      -DcoefficientsM(1,idx)*DdataAtEdgeM(2,idx)&
+                                     ) / dperturb
+              end do
+
+            end if
           end if
         end do
         !$omp end do
@@ -5664,259 +5875,354 @@ contains
       end do ! igroup
 
       ! Deallocate temporal memory
-      deallocate(DdataAtEdge,DdataAtEdgeIP,DdataAtEdgeIM,DdataAtEdgeJP,DdataAtEdgeJM)
-      deallocate(DcoefficientsIP,DcoefficientsIM,DcoefficientsJP,DcoefficientsJM)
+      deallocate(DdataAtEdgeP,DdataAtEdgeM)
+      deallocate(DcoefficientsP,DcoefficientsM)
       !$omp end parallel
 
     end subroutine doJacobianDP
 
     !**************************************************************
-    ! Assemble standard Jacobian matrix for convective
-    ! operator in 1D and assume zero row-sums.
-    ! All matrices are stored in matrix format 7
+    ! Assemble off-diagonal entries of standard Jacobian matrix
+    ! augmented by stabilisation terms
 
-    subroutine doGalerkinMat7_1D(Kld, Kcol, Ksep, NEQ, DcoeffX, Dx, Jac)
+    subroutine doJacobianStabDP(IedgeListIdx, IedgeList,&
+        DcoeffsAtEdge, Dx, dscale, ccType, Ddata)
 
-      real(DP), dimension(:), intent(in) :: DcoeffX,Dx
-      integer, dimension(:), intent(in) :: Kld,Kcol
-      integer, intent(in) :: NEQ
+      ! input parameters
+      real(DP), dimension(:), intent(in) :: Dx
+      real(DP), dimension(:,:,:), intent(in) :: DcoeffsAtEdge
+      real(DP), intent(in) :: dscale
+      integer, dimension(:,:), intent(in) :: IedgeList
+      integer, dimension(:), intent(in) :: IedgeListIdx
+      integer, intent(in) :: ccType
 
-      real(DP), dimension(:), intent(inout) :: Jac
-      integer, dimension(:), intent(inout) :: Ksep
+      ! input/output parameters
+      real(DP), dimension(:), intent(inout) :: Ddata
 
-      ! local variables
-      real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP) :: k_ij,k_ji,a_ij,a_ji,b_ij,b_ji,d_ij,diff
-      integer :: ii,ij,ji,jj,i,j
-
-
-      ! Loop over all rows I of Jacobian matrix
-      do i = 1, NEQ
-
-        ! Get position of diagonal entry II
-        ii = Kld(i)
-
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        do ij = Ksep(i)+1, Kld(i+1)-1
-
-          ! Get row number J, the corresponding matrix position JI, and
-          ! let the separator point to the next entry
-          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
-
-          ! Now, we have the global position of the matrix entries IJ
-          ! and JI (!!!) as well as the numbers I and J for which I < J.
-          ! Next, we need to consider all matrix entries of rows I and
-          ! J and perturb the matrix coefficients l_ij(u) and l_ji(u)
-          ! by +/-h*e_k, whebery K stands for the column number of the
-          ! current matrix entry. For the computation of the low-order
-          ! coefficient l_ij we have to consider k_ij and k_ji in order
-          ! to determine the artificial diffusion coefficient d_ij.
-          ! However, the coefficients a_ij and a_ji resulting from a
-          ! divided difference approximation of the derivatives of the
-          ! transport operator need to be handled separately.
-
-          ! Due to the fact, that we need the unperturbed quantities
-          ! quite frequently, we store them in local auxiliary variables
-
-          ! Compute solution difference Dx_j-Dx_i
-          diff = Dx(j)-Dx(i)
-
-          ! Compute coefficients
-          C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
-
-          ! We have to loop over all columns K of the I-th and J-th row
-          ! of the Jacobian matrix and update th positions IK and JK,
-          ! respectively. The perturbation +/-h*e_k only influences the
-          ! coefficients a_ij^k which s defined as
-          !   a_ji^k:=\frac{l_ij(u+h*e_k)-l_ij(u-h*e_k)}{2h}
-          ! if either I=K or J=K. In short the loop over the I-th and
-          ! J-th row only affects the matrix position II, IJ, JI, and JJ
-          ! which are known a priori(!!)
-
-          ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
-
-!!$          ! Compute perturbed coefficients k_ij and k_ji
-!!$          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
-!!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-
-          ! Apply perturbed coefficient to a_ij and a_ji
-          a_ij = k_ij; a_ji = k_ji
-
-!!$          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-!!$          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
-!!$              C_ij, C_ji, i, j, k_ij ,k_ji, d_ij)
-
-          ! Apply the average of the perturbed coefficients
-          b_ji = (a_ji+k_ji)/2._DP
-          Jac(ji) = Jac(ji)+b_ji
-          Jac(jj) = Jac(jj)-b_ji
-
-          ! Compute final coefficients a_ij and a_ji as the second
-          ! order divided differences of the low-order coefficients
-          a_ij = 0.5_DP*(a_ij-k_ij)/hstep
-          a_ji = 0.5_DP*(a_ji-k_ji)/hstep
-
-          ! Update the I-th column of the I-th and J-th row
-          Jac(ii) = Jac(ii)+a_ij*diff
-          Jac(ji) = Jac(ji)-a_ji*diff
-
-
-          ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
-
-!!$          ! Compute perturbed coefficients l_ij and l_ji
-!!$          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
-!!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-
-          ! Apply perturbed coefficient to a_ij and a_ji
-          a_ij = k_ij; a_ji = k_ji
-
-!!$          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-!!$          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
-!!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-
-          ! Apply the average of the perturbed coefficients for J=K
-          b_ij = (a_ij+k_ij)/2._DP
-          Jac(ij) = Jac(ij)+b_ij
-          Jac(ii) = Jac(ii)-b_ij
-
-          ! Compute final coefficients a_ij and a_ji as the second
-          ! order divided differences of the low-order coefficients
-          a_ij = 0.5_DP*(a_ij-k_ij)/hstep
-          a_ji = 0.5_DP*(a_ji-k_ji)/hstep
-
-          ! Update the K-th column of the I-th row, that is, the
-          ! entriy IK of the Jacobian matrix
-          Jac(ij) = Jac(ij)+a_ij*diff
-          Jac(jj) = Jac(jj)-a_ji*diff
-        end do
-      end do
-    end subroutine doGalerkinMat7_1D
-
-    !**************************************************************
-    ! Assemble upwind Jacobian matrix for convective
-    ! operator in 1D and assume zero row-sums.
-    ! All matrices are stored in matrix format 7
-
-    subroutine doUpwindMat7_1D(Kld, Kcol, Ksep, NEQ, DcoeffX, Dx, Jac)
-
-      real(DP), dimension(:), intent(in) :: DcoeffX,Dx
-      integer, dimension(:), intent(in) :: Kld,Kcol
-      integer, intent(in) :: NEQ
-
-      real(DP), dimension(:), intent(inout) :: Jac
-      integer, dimension(:), intent(inout) :: Ksep
+      ! auxiliary arrays
+      real(DP), dimension(:,:), pointer :: DdataAtEdgeM,DdataAtEdgeP
+      real(DP), dimension(:,:), pointer :: DcoefficientsM,DcoefficientsP
 
       ! local variables
-      real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP) :: d_ij,l_ij,l_ji,a_ij,a_ji,b_ij,b_ji,diff
-      integer :: ii,ij,ji,jj,i,j
+      integer :: idx,IEDGEset,IEDGEmax
+      integer :: iedge,igroup,ii,jj,ij,ji
 
+      !$omp parallel default(shared)&
+      !$omp private(DcoefficientsM,DcoefficientsP,DdataAtEdgeM,DdataAtEdgeP,&
+      !$omp         IEDGEmax,idx,iedge,ii,jj,ij,ji)&
+      !$omp if(size(IedgeList,2) > p_rperfconfig%NEDGEMIN_OMP)
 
-      ! Loop over all rows I of Jacobian matrix
-      do i = 1, NEQ
+      ! Allocate temporal memory
+      allocate(DdataAtEdgeM(2,p_rperfconfig%NEDGESIM))
+      allocate(DdataAtEdgeP(2,p_rperfconfig%NEDGESIM))
+      allocate(DcoefficientsM(3,p_rperfconfig%NEDGESIM))
+      allocate(DcoefficientsP(3,p_rperfconfig%NEDGESIM))
 
-        ! Get position of diagonal entry II
-        ii = Kld(i)
+      ! Loop over the edge groups and process all edges of one group
+      ! in parallel without the need to synchronise memory access
+      do igroup = 1, size(IedgeListIdx)-1
 
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        do ij = Ksep(i)+1, Kld(i+1)-1
+        ! Do nothing for empty groups
+        if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
 
-          ! Get row number J, the corresponding matrix position JI, and
-          ! let the separator point to the next entry
-          j = Kcol(ij); jj = Kld(j); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
+        ! Loop over the edges
+        !$omp do schedule(static,1)
+        do IEDGEset = IedgeListIdx(igroup),&
+                      IedgeListIdx(igroup+1)-1, p_rperfconfig%NEDGESIM
 
-          ! Now, we have the global position of the matrix entries IJ
-          ! and JI (!!!) as well as the numbers I and J for which I < J.
-          ! Next, we need to consider all matrix entries of rows I and
-          ! J and perturb the matrix coefficients l_ij(u) and l_ji(u)
-          ! by +/-h*e_k, whebery K stands for the column number of the
-          ! current matrix entry. For the computation of the low-order
-          ! coefficient l_ij we have to consider k_ij and k_ji in order
-          ! to determine the artificial diffusion coefficient d_ij.
-          ! However, the coefficients a_ij and a_ji resulting from a
-          ! divided difference approximation of the derivatives of the
-          ! transport operator need to be handled separately.
+          ! We always handle NEDGESIM edges simultaneously.
+          ! How many edges have we actually here?
+          ! Get the maximum edge number, such that we handle
+          ! at most NEDGESIM edges simultaneously.
 
-          ! Due to the fact, that we need the unperturbed quantities
-          ! quite frequently, we store them in local auxiliary variables
+          IEDGEmax = min(IedgeListIdx(igroup+1)-1,IEDGEset-1+p_rperfconfig%NEDGESIM)
 
-          ! Compute solution difference Dx_j-Dx_i
-          diff = Dx(j)-Dx(i)
+          ! Loop through all edges in the current set
+          ! and prepare the auxiliary arrays
+          do idx = 1, IEDGEmax-IEDGEset+1
 
-          ! Compute coefficients
-          C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
+            ! Get actual edge number
+            iedge = idx+IEDGEset-1
 
-          ! We have to loop over all columns K of the I-th and J-th row
-          ! of the Jacobian matrix and update th positions IK and JK,
-          ! respectively. The perturbation +/-h*e_k only influences the
-          ! coefficients a_ij^k which s defined as
-          !   a_ji^k:=\frac{l_ij(u+h*e_k)-l_ij(u-h*e_k)}{2h}
+            ! Fill auxiliary arrays
+            DdataAtEdgeM(1,idx) = Dx(IedgeList(1,iedge))
+            DdataAtEdgeM(2,idx) = Dx(IedgeList(2,iedge))
+          end do
+
+          ! We have to loop over all columns K of the I-th and J-th
+          ! row of the Jacobian matrix and update th positions IK and
+          ! JK, respectively. The perturbation +/-h*e_k only
+          ! influences the coefficients a_ij^k which is defined as
+          !
+          ! $$ a_ij^k:=\frac{g_ij(u+h*e_k)-g_ij(u-h*e_k)}{2h} $$
+          !
           ! if either I=K or J=K. In short the loop over the I-th and
-          ! J-th row only affects the matrix position II, IJ, JI, and JJ
-          ! which are known a priori(!!)
+          ! J-th row only affects the matrix position II, IJ, JI, and
+          ! JJ which are known a priori(!!). Here, G is the standard
+          ! Galerkin operator without artificial diffusion.
 
-          ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
+          ! Part 1: Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
 
-!!$          ! Compute perturbed coefficients l_ij and l_ji
-!!$          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
-!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+          do idx = 1, IEDGEmax-IEDGEset+1
+            ! $ (u_i+h, u_j) $
+            DdataAtEdgeP(1,idx)  = DdataAtEdgeM(1,idx)+dperturb
+            DdataAtEdgeP(2,idx)  = DdataAtEdgeM(2,idx)
 
-          ! Apply perturbed coefficient to a_ij and a_ji
-          a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
+            ! $ (u_i-h, u_j) $
+            DdataAtEdgeM(1,idx)  = DdataAtEdgeM(1,idx)-dperturb
+            !DdataAtEdgeM(2,idx) = DdataAtEdgeM(2,idx) this is given
+          end do
 
-!!$          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-!!$          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
-!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+          ! Use callback function to compute off-diagonal entries
+          call fcb_calcMatrixSc_sim(&
+              DdataAtEdgeP(:,1:IEDGEmax-IEDGEset+1),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              IedgeList(:,IEDGEset:IEDGEmax),&
+              dscale, IEDGEmax-IEDGEset+1,&
+              DcoefficientsP(:,1:IEDGEmax-IEDGEset+1), rcollection)
 
-          ! Apply the average of the perturbed coefficients
-          b_ji = (a_ji+l_ji+d_ij)/2._DP
-          Jac(ji) = Jac(ji)+b_ji
-          Jac(jj) = Jac(jj)-b_ji
+          call fcb_calcMatrixSc_sim(&
+              DdataAtEdgeM(:,1:IEDGEmax-IEDGEset+1),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              IedgeList(:,IEDGEset:IEDGEmax),&
+              dscale, IEDGEmax-IEDGEset+1,&
+              DcoefficientsM(:,1:IEDGEmax-IEDGEset+1), rcollection)
 
-          ! Compute final coefficients a_ij and a_ji as the second
-          ! order divided differences of the low-order coefficients
-          a_ij = 0.5_DP*(a_ij-l_ij-d_ij)/hstep
-          a_ji = 0.5_DP*(a_ji-l_ji-d_ij)/hstep
+          ! What type of assembly are we?
+          if (ccType .eq. GFEM_MATC_LUMPED) then
 
-          ! Update the I-th column of the I-th and J-th row
-          Jac(ii) = Jac(ii)+a_ij*diff
-          Jac(ji) = Jac(ji)-a_ji*diff
+            ! Loop through all edges in the current set and scatter
+            ! the entries to the diagonal of the global matrix
+            do idx = 1, IEDGEmax-IEDGEset+1
 
+              ! Get actual edge number
+              iedge = idx+IEDGEset-1
 
-          ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
+              ! Get position of diagonal entries
+              ii = IedgeList(5,iedge)
+              jj = IedgeList(6,iedge)
 
-!!$          ! Compute perturbed coefficients l_ij and l_ji
-!!$          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
-!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+              ! Update the global operator
+              Ddata(ii) = Ddata(ii)&
+                          + 0.5_DP * (( DcoefficientsP(2,idx)+DcoefficientsP(1,idx)&
+                                       -DcoefficientsM(2,idx)-DcoefficientsM(1,idx)&
+                                      ) * DdataAtEdgeP(2,idx)&
+                                      - DcoefficientsP(1,idx)*DdataAtEdgeP(1,idx)&
+                                      + DcoefficientsM(1,idx)*DdataAtEdgeM(1,idx)&
+                                     ) / dperturb
+                Ddata(jj) = Ddata(jj)&
+                          + 0.5_DP * ( (DcoefficientsP(3,idx)+DcoefficientsP(1,idx)&
+                                       ) * DdataAtEdgeP(1,idx)&
+                                      -(DcoefficientsM(3,idx)+DcoefficientsM(1,idx)&
+                                       ) * DdataAtEdgeM(1,idx)&
+                                      -(DcoefficientsP(1,idx)-DcoefficientsM(1,idx)&
+                                       ) * DdataAtEdgeP(2,idx)&
+                                     ) / dperturb
+            end do
 
-          ! Apply perturbed coefficient to a_ij and a_ji
-          a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
+          else
+            ! Loop through all edges in the current set
+            ! and scatter the entries to the global matrix
+            if (bclear) then
 
-!!$          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-!!$          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
-!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+              do idx = 1, IEDGEmax-IEDGEset+1
+              
+                ! Get actual edge number
+                iedge = idx+IEDGEset-1
+                
+                ! Get position of one off-diagonal entries
+                ji = IedgeList(4,iedge)
+                
+                ! Get position of one diagonal entries
+                ii = IedgeList(5,iedge)
+                
+                ! Update the global operator
+                Ddata(ii) = Ddata(ii)&
+                          + 0.5_DP * (( DcoefficientsP(2,idx)+DcoefficientsP(1,idx)&
+                                       -DcoefficientsM(2,idx)-DcoefficientsM(1,idx)&
+                                      ) * DdataAtEdgeP(2,idx)&
+                                      - DcoefficientsP(1,idx)*DdataAtEdgeP(1,idx)&
+                                      + DcoefficientsM(1,idx)*DdataAtEdgeM(1,idx)&
+                                     ) / dperturb
+                Ddata(ji) = 0.5_DP * ( (DcoefficientsP(3,idx)+DcoefficientsP(1,idx)&
+                                       ) * DdataAtEdgeP(1,idx)&
+                                      -(DcoefficientsM(3,idx)+DcoefficientsM(1,idx)&
+                                       ) * DdataAtEdgeM(1,idx)&
+                                      -(DcoefficientsP(1,idx)-DcoefficientsM(1,idx)&
+                                       ) * DdataAtEdgeP(2,idx)&
+                                     ) / dperturb
+              end do
 
-          ! Apply the average of the perturbed coefficients for J=K
-          b_ij = (a_ij+l_ij+d_ij)/2._DP
-          Jac(ij) = Jac(ij)+b_ij
-          Jac(ii) = Jac(ii)-b_ij
+            else   ! do not clear matrix
 
-          ! Compute final coefficients a_ij and a_ji as the second
-          ! order divided differences of the low-order coefficients
-          a_ij = 0.5_DP*(a_ij-l_ij-d_ij)/hstep
-          a_ji = 0.5_DP*(a_ji-l_ji-d_ij)/hstep
+              do idx = 1, IEDGEmax-IEDGEset+1
+              
+                ! Get actual edge number
+                iedge = idx+IEDGEset-1
+                
+                ! Get position of one off-diagonal entries
+                ji = IedgeList(4,iedge)
+                
+                ! Get position of one diagonal entries
+                ii = IedgeList(5,iedge)
+                
+                ! Update the global operator
+                Ddata(ii) = Ddata(ii)&
+                          + 0.5_DP * (( DcoefficientsP(2,idx)+DcoefficientsP(1,idx)&
+                                       -DcoefficientsM(2,idx)-DcoefficientsM(1,idx)&
+                                      ) * DdataAtEdgeP(2,idx)&
+                                      - DcoefficientsP(1,idx)*DdataAtEdgeP(1,idx)&
+                                      + DcoefficientsM(1,idx)*DdataAtEdgeM(1,idx)&
+                                     ) / dperturb
+                Ddata(ji) = Ddata(ji)&
+                          + 0.5_DP * ( (DcoefficientsP(3,idx)+DcoefficientsP(1,idx)&
+                                       ) * DdataAtEdgeP(1,idx)&
+                                      -(DcoefficientsM(3,idx)+DcoefficientsM(1,idx)&
+                                       ) * DdataAtEdgeM(1,idx)&
+                                      -(DcoefficientsP(1,idx)-DcoefficientsM(1,idx)&
+                                       ) * DdataAtEdgeP(2,idx)&
+                                     ) / dperturb
+              end do
 
-          ! Update the K-th column of the I-th row, that is, the
-          ! entriy IK of the Jacobian matrix
-          Jac(ij) = Jac(ij)+a_ij*diff
-          Jac(jj) = Jac(jj)-a_ji*diff
+            end if
+          end if
+
+          ! Part 2: Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
+
+          do idx = 1, IEDGEmax-IEDGEset+1
+            ! $ (u_i, u_j+h) $
+            DdataAtEdgeP(1,idx) = DdataAtEdgeP(1,idx)-dperturb
+            DdataAtEdgeP(2,idx) = DdataAtEdgeP(2,idx)+dperturb
+
+            ! $ (u_i, u_j-h) $
+            DdataAtEdgeM(1,idx) = DdataAtEdgeM(1,idx)+dperturb
+            DdataAtEdgeM(2,idx) = DdataAtEdgeM(2,idx)-dperturb                
+          end do
+
+          ! Use callback function to compute off-diagonal entries
+          call fcb_calcMatrixSc_sim(&
+              DdataAtEdgeP(:,1:IEDGEmax-IEDGEset+1),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              IedgeList(:,IEDGEset:IEDGEmax),&
+              dscale, IEDGEmax-IEDGEset+1,&
+              DcoefficientsP(:,1:IEDGEmax-IEDGEset+1), rcollection)
+
+          call fcb_calcMatrixSc_sim(&
+              DdataAtEdgeM(:,1:IEDGEmax-IEDGEset+1),&
+              DcoeffsAtEdge(:,:,IEDGEset:IEDGEmax),&
+              IedgeList(:,IEDGEset:IEDGEmax),&
+              dscale, IEDGEmax-IEDGEset+1,&
+              DcoefficientsM(:,1:IEDGEmax-IEDGEset+1), rcollection)
+
+          ! What type of assembly are we?
+          if (ccType .eq. GFEM_MATC_LUMPED) then
+
+            ! Loop through all edges in the current set and scatter
+            ! the entries to the diagonal of the global matrix
+            do idx = 1, IEDGEmax-IEDGEset+1
+
+              ! Get actual edge number
+              iedge = idx+IEDGEset-1
+
+              ! Get position of diagonal entries
+              ii = IedgeList(5,iedge)
+              jj = IedgeList(6,iedge)
+
+              ! Update the global operator
+              Ddata(jj) = Ddata(jj)&
+                          + 0.5_DP * (( DcoefficientsP(3,idx)+DcoefficientsP(1,idx)&
+                                       -DcoefficientsM(3,idx)-DcoefficientsM(1,idx)&
+                                      ) * DdataAtEdgeP(1,idx)&
+                                      - DcoefficientsP(1,idx)*DdataAtEdgeP(2,idx)&
+                                      + DcoefficientsM(1,idx)*DdataAtEdgeM(2,idx)&
+                                     ) / dperturb
+                Ddata(ii) = Ddata(ii)&
+                          + 0.5_DP * ( (DcoefficientsP(2,idx)+DcoefficientsP(1,idx)&
+                                       ) * DdataAtEdgeP(2,idx)&
+                                      -(DcoefficientsM(2,idx)+DcoefficientsM(1,idx)&
+                                       ) * DdataAtEdgeM(2,idx)&
+                                      -(DcoefficientsP(1,idx)-DcoefficientsM(1,idx)&
+                                       ) * DdataAtEdgeP(1,idx)&
+                                     ) / dperturb
+            end do
+
+          else
+            ! Loop through all edges in the current set
+            ! and scatter the entries to the global matrix
+            if (bclear) then
+              
+              do idx = 1, IEDGEmax-IEDGEset+1
+                
+                ! Get actual edge number
+                iedge = idx+IEDGEset-1
+                
+                ! Get position of one off-diagonal entries
+                ij = IedgeList(3,iedge)
+                
+                ! Get position of one diagonal entries
+                jj = IedgeList(6,iedge)
+                
+                ! Update the global operator
+                Ddata(jj) = Ddata(jj)&
+                          + 0.5_DP * (( DcoefficientsP(3,idx)+DcoefficientsP(1,idx)&
+                                       -DcoefficientsM(3,idx)-DcoefficientsM(1,idx)&
+                                      ) * DdataAtEdgeP(1,idx)&
+                                      - DcoefficientsP(1,idx)*DdataAtEdgeP(2,idx)&
+                                      + DcoefficientsM(1,idx)*DdataAtEdgeM(2,idx)&
+                                     ) / dperturb
+                Ddata(ij) = 0.5_DP * ( (DcoefficientsP(2,idx)+DcoefficientsP(1,idx)&
+                                       ) * DdataAtEdgeP(2,idx)&
+                                      -(DcoefficientsM(2,idx)+DcoefficientsM(1,idx)&
+                                       ) * DdataAtEdgeM(2,idx)&
+                                      -(DcoefficientsP(1,idx)-DcoefficientsM(1,idx)&
+                                       ) * DdataAtEdgeP(1,idx)&
+                                     ) / dperturb
+              end do
+
+            else   ! do not clear matrix
+
+              do idx = 1, IEDGEmax-IEDGEset+1
+                
+                ! Get actual edge number
+                iedge = idx+IEDGEset-1
+                
+                ! Get position of one off-diagonal entries
+                ij = IedgeList(3,iedge)
+                
+                ! Get position of one diagonal entries
+                jj = IedgeList(6,iedge)
+                
+                ! Update the global operator
+                Ddata(jj) = Ddata(jj)&
+                          + 0.5_DP * (( DcoefficientsP(3,idx)+DcoefficientsP(1,idx)&
+                                       -DcoefficientsM(3,idx)-DcoefficientsM(1,idx)&
+                                      ) * DdataAtEdgeP(1,idx)&
+                                      - DcoefficientsP(1,idx)*DdataAtEdgeP(2,idx)&
+                                      + DcoefficientsM(1,idx)*DdataAtEdgeM(2,idx)&
+                                     ) / dperturb
+                Ddata(ij) = Ddata(ij)&
+                          + 0.5_DP * ( (DcoefficientsP(2,idx)+DcoefficientsP(1,idx)&
+                                       ) * DdataAtEdgeP(2,idx)&
+                                      -(DcoefficientsM(2,idx)+DcoefficientsM(1,idx)&
+                                       ) * DdataAtEdgeM(2,idx)&
+                                      -(DcoefficientsP(1,idx)-DcoefficientsM(1,idx)&
+                                       ) * DdataAtEdgeP(1,idx)&
+                                     ) / dperturb
+              end do
+
+            end if
+          end if
         end do
-      end do
-    end subroutine doUpwindMat7_1D
+        !$omp end do
+
+      end do ! igroup
+
+      ! Deallocate temporal memory
+      deallocate(DdataAtEdgeP,DdataAtEdgeM)
+      deallocate(DcoefficientsP,DcoefficientsM)
+      !$omp end parallel
+
+    end subroutine doJacobianStabDP
 
   end subroutine gfsc_buildJacobianScalar
 

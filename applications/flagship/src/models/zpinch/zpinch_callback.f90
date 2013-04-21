@@ -320,10 +320,8 @@ contains
           ! Compute the preconditioner in interleaved format
           call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
               rsolver, rsolution, ssectionNameTransport, rcollection,&
-              zpinch_calcMatDiagConvIntlP2d_sim,&
-              zpinch_calcMatRusConvIntlP2d_sim,&
-              zpinch_calcMatDiagConvIntlD2d_sim,&
-              zpinch_calcMatRusConvIntlD2d_sim,&
+              zpinch_calcMatDiagConvIntlP2d_sim, zpinch_calcMatRusConvIntlP2d_sim,&
+              zpinch_calcMatDiagConvIntlD2d_sim, zpinch_calcMatRusConvIntlD2d_sim,&
               fcb_coeffMatBdrPrimal2d_sim=transp_coeffMatBdrConvP2d_sim,&
               fcb_coeffMatBdrDual2d_sim=transp_coeffMatBdrConvD2d_sim)
 
@@ -332,10 +330,8 @@ contains
           ! Compute the preconditioner in block format
           call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
               rsolver, rsolution, ssectionNameTransport, rcollection,&
-              zpinch_calcMatDiagConvBlockP2d_sim,&
-              zpinch_calcMatRusConvBlockP2d_sim,&
-              zpinch_calcMatDiagConvBlockD2d_sim,&
-              zpinch_calcMatRusConvBlockD2d_sim,&
+              zpinch_calcMatDiagConvBlockP2d_sim, zpinch_calcMatRusConvBlockP2d_sim,&
+              zpinch_calcMatDiagConvBlockD2d_sim, zpinch_calcMatRusConvBlockD2d_sim,&
               fcb_coeffMatBdrPrimal2d_sim=transp_coeffMatBdrConvP2d_sim,&
               fcb_coeffMatBdrDual2d_sim=transp_coeffMatBdrConvD2d_sim)
 
@@ -381,10 +377,8 @@ contains
               ! Compute the preconditioner in interleaved format
               call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
                   rsolver, rsolution0, ssectionNameTransport, rcollection,&
-                  zpinch_calcMatDiagConvIntlP2d_sim,&
-                  zpinch_calcMatRusConvIntlP2d_sim,&
-                  zpinch_calcMatDiagConvIntlD2d_sim,&
-                  zpinch_calcMatRusConvIntlD2d_sim,&
+                  zpinch_calcMatDiagConvIntlP2d_sim, zpinch_calcMatRusConvIntlP2d_sim,&
+                  zpinch_calcMatDiagConvIntlD2d_sim, zpinch_calcMatRusConvIntlD2d_sim,&
                   fcb_coeffMatBdrPrimal2d_sim=transp_coeffMatBdrConvP2d_sim,&
                   fcb_coeffMatBdrDual2d_sim=transp_coeffMatBdrConvD2d_sim)
 
@@ -393,10 +387,8 @@ contains
               ! Compute the preconditioner in block format
               call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
                   rsolver, rsolution0, ssectionNameTransport, rcollection,&
-                  zpinch_calcMatDiagConvBlockP2d_sim,&
-                  zpinch_calcMatRusConvBlockP2d_sim,&
-                  zpinch_calcMatDiagConvBlockD2d_sim,&
-                  zpinch_calcMatRusConvBlockD2d_sim,&
+                  zpinch_calcMatDiagConvBlockP2d_sim, zpinch_calcMatRusConvBlockP2d_sim,&
+                  zpinch_calcMatDiagConvBlockD2d_sim, zpinch_calcMatRusConvBlockD2d_sim,&
                   fcb_coeffMatBdrPrimal2d_sim=transp_coeffMatBdrConvP2d_sim,&
                   fcb_coeffMatBdrDual2d_sim=transp_coeffMatBdrConvD2d_sim)
 
@@ -431,10 +423,8 @@ contains
             ! Compute the preconditioner in interleaved format
             call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
                 rsolver, rsolution, ssectionNameTransport, rcollection,&
-                zpinch_calcMatDiagConvIntlP2d_sim,&
-                zpinch_calcMatRusConvIntlP2d_sim,&
-                zpinch_calcMatDiagConvIntlD2d_sim,&
-                zpinch_calcMatRusConvIntlD2d_sim,&
+                zpinch_calcMatDiagConvIntlP2d_sim, zpinch_calcMatRusConvIntlP2d_sim,&
+                zpinch_calcMatDiagConvIntlD2d_sim, zpinch_calcMatRusConvIntlD2d_sim,&
                 fcb_coeffMatBdrPrimal2d_sim=transp_coeffMatBdrConvP2d_sim,&
                 fcb_coeffMatBdrDual2d_sim=transp_coeffMatBdrConvD2d_sim)
 
@@ -443,10 +433,8 @@ contains
             ! Compute the preconditioner in block format
             call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
                 rsolver, rsolution, ssectionNameTransport, rcollection,&
-                zpinch_calcMatDiagConvBlockP2d_sim,&
-                zpinch_calcMatRusConvBlockP2d_sim,&
-                zpinch_calcMatDiagConvBlockD2d_sim,&
-                zpinch_calcMatRusConvBlockD2d_sim,&
+                zpinch_calcMatDiagConvBlockP2d_sim, zpinch_calcMatRusConvBlockP2d_sim,&
+                zpinch_calcMatDiagConvBlockD2d_sim, zpinch_calcMatRusConvBlockD2d_sim,&
                 fcb_coeffMatBdrPrimal2d_sim=transp_coeffMatBdrConvP2d_sim,&
                 fcb_coeffMatBdrDual2d_sim=transp_coeffMatBdrConvD2d_sim)
 
@@ -485,10 +473,8 @@ contains
           ! Compute the preconditioner in interleaved format
           call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
               rsolver, rsolution, ssectionNameTransport, rcollection,&
-              zpinch_calcMatDiagConvIntlP2d_sim,&
-              zpinch_calcMatRusConvIntlP2d_sim,&
-              zpinch_calcMatDiagConvIntlD2d_sim,&
-              zpinch_calcMatRusConvIntlD2d_sim,&
+              zpinch_calcMatDiagConvIntlP2d_sim, zpinch_calcMatRusConvIntlP2d_sim,&
+              zpinch_calcMatDiagConvIntlD2d_sim, zpinch_calcMatRusConvIntlD2d_sim,&
               fcb_coeffMatBdrPrimal2d_sim=transp_coeffMatBdrConvP2d_sim,&
               fcb_coeffMatBdrDual2d_sim=transp_coeffMatBdrConvD2d_sim)
 
@@ -497,10 +483,8 @@ contains
           ! Compute the preconditioner in block format
           call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
               rsolver, rsolution, ssectionNameTransport, rcollection,&
-              zpinch_calcMatDiagConvBlockP2d_sim,&
-              zpinch_calcMatRusConvBlockP2d_sim,&
-              zpinch_calcMatDiagConvBlockD2d_sim,&
-              zpinch_calcMatRusConvBlockD2d_sim,&
+              zpinch_calcMatDiagConvBlockP2d_sim, zpinch_calcMatRusConvBlockP2d_sim,&
+              zpinch_calcMatDiagConvBlockD2d_sim, zpinch_calcMatRusConvBlockD2d_sim,&
               fcb_coeffMatBdrPrimal2d_sim=transp_coeffMatBdrConvP2d_sim,&
               fcb_coeffMatBdrDual2d_sim=transp_coeffMatBdrConvD2d_sim)
 
@@ -528,8 +512,8 @@ contains
           ! Compute the Jacobian matrix in interleaved format
           call transp_calcJacobianThetaScheme(rproblemLevel, rtimestep,&
               rsolver, rsolution, rsolution0, ssectionNameTransport, rcollection,&
-              zpinch_calcMatRusConvIntlP2d_sim,&
-              zpinch_calcMatRusConvIntlD2d_sim,&
+              zpinch_calcMatDiagConvIntlP2d_sim, zpinch_calcMatRusConvIntlP2d_sim,&
+              zpinch_calcMatDiagConvIntlD2d_sim, zpinch_calcMatRusConvIntlD2d_sim,&
               fcb_coeffMatBdrPrimal2d_sim=transp_coeffMatBdrConvP2d_sim,&
               fcb_coeffMatBdrDual2d_sim=transp_coeffMatBdrConvD2d_sim)
 
@@ -538,8 +522,8 @@ contains
           ! Compute the Jacobian matrix in block format
           call transp_calcJacobianThetaScheme(rproblemLevel, rtimestep,&
               rsolver, rsolution, rsolution0, ssectionNameTransport, rcollection,&
-              zpinch_calcMatRusConvBlockP2d_sim,&
-              zpinch_calcMatRusConvBlockD2d_sim,&
+              zpinch_calcMatDiagConvBlockP2d_sim, zpinch_calcMatRusConvBlockP2d_sim,&
+              zpinch_calcMatDiagConvBlockD2d_sim, zpinch_calcMatRusConvBlockD2d_sim,&
               fcb_coeffMatBdrPrimal2d_sim=transp_coeffMatBdrConvP2d_sim,&
               fcb_coeffMatBdrDual2d_sim=transp_coeffMatBdrConvD2d_sim)
 

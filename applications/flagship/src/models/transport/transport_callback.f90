@@ -645,8 +645,9 @@ contains
 !<subroutine>
 
   subroutine transp_calcJacobianThetaScheme(rproblemLevel,&
-      rtimestep, rsolver, rsolution, rsolution0, ssectionName,&
-      rcollection, fcb_calcMatrixPrimal_sim, fcb_calcMatrixDual_sim,&
+      rtimestep, rsolver, rsolution, rsolution0, ssectionName, rcollection,&
+      fcb_calcMatrixDiagPrimal_sim, fcb_calcMatrixPrimal_sim,&
+      fcb_calcMatrixDiagDual_sim, fcb_calcMatrixDual_sim,&
       fcb_coeffMatBdrPrimal1d_sim, fcb_coeffMatBdrDual1d_sim,&
       fcb_coeffMatBdrPrimal2d_sim, fcb_coeffMatBdrDual2d_sim,&
       fcb_coeffMatBdrPrimal3d_sim, fcb_coeffMatBdrDual3d_sim)
@@ -667,7 +668,9 @@ contains
 
     ! OPTIONAL: user-defined callback functions
     include 'intf_transpCalcMatrix.inc'
+    optional :: fcb_calcMatrixDiagPrimal_sim
     optional :: fcb_calcMatrixPrimal_sim
+    optional :: fcb_calcMatrixDiagDual_sim
     optional :: fcb_calcMatrixDual_sim
 
     ! OPTIONAL: user-defined callback functions
@@ -871,7 +874,7 @@ contains
                 rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
                 rsolution, fcb_calcMatrixPrimal_sim, hstep, 1.0_DP,&
                 .false., .false., rproblemLevel%RmatrixScalar(transportMatrix),&
-                rcollection=rcollectionTmp)
+                fcb_calcMatrixDiagPrimal_sim, rcollection=rcollectionTmp)
 
           case default
 
@@ -880,7 +883,7 @@ contains
                 rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
                 rsolution, fcb_calcMatrixPrimal_sim, hstep, 1.0_DP,&
                 .true., .false., rproblemLevel%RmatrixScalar(transportMatrix),&
-                rcollection=rcollectionTmp)
+                fcb_calcMatrixDiagPrimal_sim, rcollection=rcollectionTmp)
 
           end select
           
@@ -914,21 +917,21 @@ contains
                 rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
                 rsolution, transp_calcMatGalConvP1d_sim, hstep, 1.0_DP,&
                 .false., .false., rproblemLevel%RmatrixScalar(transportMatrix),&
-                rcollection=rcollectionTmp)
+                transp_calcMatDiagConvP1d_sim, rcollection=rcollectionTmp)
             
           case (NDIM2D)
             call gfsc_buildJacobian(&
                 rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
                 rsolution, transp_calcMatGalConvP2d_sim, hstep, 1.0_DP,&
                 .false., .false., rproblemLevel%RmatrixScalar(transportMatrix),&
-                rcollection=rcollectionTmp)
+                transp_calcMatDiagConvP2d_sim, rcollection=rcollectionTmp)
             
           case (NDIM3D)
             call gfsc_buildJacobian(&
                 rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
                 rsolution, transp_calcMatGalConvP3d_sim, hstep, 1.0_DP,&
                 .false., .false., rproblemLevel%RmatrixScalar(transportMatrix),&
-                rcollection=rcollectionTmp)
+                transp_calcMatDiagConvP3d_sim, rcollection=rcollectionTmp)
           end select
           
         case default
@@ -940,21 +943,21 @@ contains
                 rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
                 rsolution, transp_calcMatUpwConvP1d_sim, hstep, 1.0_DP,&
                 .true., .false., rproblemLevel%RmatrixScalar(transportMatrix),&
-                rcollection=rcollectionTmp)
+                transp_calcMatDiagConvP1d_sim, rcollection=rcollectionTmp)
             
           case (NDIM2D)
             call gfsc_buildJacobian(&
                 rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
                 rsolution, transp_calcMatUpwConvP2d_sim, hstep, 1.0_DP,&
                 .true., .false., rproblemLevel%RmatrixScalar(transportMatrix),&
-                rcollection=rcollectionTmp)
+                transp_calcMatDiagConvP2d_sim, rcollection=rcollectionTmp)
             
           case (NDIM3D)
             call gfsc_buildJacobian(&
                 rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
                 rsolution, transp_calcMatUpwConvP3d_sim, hstep, 1.0_DP,&
                 .true., .false., rproblemLevel%RmatrixScalar(transportMatrix),&
-                rcollection=rcollectionTmp)
+                transp_calcMatDiagConvP3d_sim, rcollection=rcollectionTmp)
           end select
 
         end select
@@ -973,7 +976,7 @@ contains
               rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
               rsolution, transp_calcMatGalSTBurgP2d_sim, hstep, 1.0_DP,&
               .false., .false., rproblemLevel%RmatrixScalar(transportMatrix),&
-              rcollection=rcollectionTmp)
+              transp_calcMatDiagSTBurgP2d_sim, rcollection=rcollectionTmp)
 
         case default
           
@@ -982,7 +985,7 @@ contains
               rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
               rsolution, transp_calcMatUpwSTBurgP2d_sim, hstep, 1.0_DP,&
               .true., .false., rproblemLevel%RmatrixScalar(transportMatrix),&
-              rcollection=rcollectionTmp)
+              transp_calcMatDiagSTBurgP2d_sim, rcollection=rcollectionTmp)
 
         end select
 
@@ -1000,7 +1003,7 @@ contains
               rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
               rsolution, transp_calcMatGalSTBLevP2d_sim, hstep, 1.0_DP,&
               .false., .false., rproblemLevel%RmatrixScalar(transportMatrix),&
-              rcollection=rcollectionTmp)
+              transp_calcMatDiagSTBLevP2d_sim, rcollection=rcollectionTmp)
 
         case default
           
@@ -1009,7 +1012,7 @@ contains
               rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
               rsolution, transp_calcMatUpwSTBLevP2d_sim, hstep, 1.0_DP,&
               .true., .false., rproblemLevel%RmatrixScalar(transportMatrix),&
-              rcollection=rcollectionTmp)
+              transp_calcMatDiagSTBLevP2d_sim, rcollection=rcollectionTmp)
           
         end select
         
@@ -1027,7 +1030,7 @@ contains
               rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
               rsolution, transp_calcMatGalBurgP1d_sim, hstep, 1.0_DP,&
               .false., .false., rproblemLevel%RmatrixScalar(transportMatrix),&
-              rcollection=rcollectionTmp)
+              transp_calcMatDiagBurgP1d_sim, rcollection=rcollectionTmp)
 
         case default
 
@@ -1036,7 +1039,7 @@ contains
               rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
               rsolution, transp_calcMatUpwBurgP1d_sim, hstep, 1.0_DP,&
               .true., .false., rproblemLevel%RmatrixScalar(transportMatrix),&
-              rcollection=rcollectionTmp)
+              transp_calcMatDiagBurgP1d_sim, rcollection=rcollectionTmp)
 
         end select
           
@@ -1054,7 +1057,7 @@ contains
               rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
               rsolution, transp_calcMatGalBurgP2d_sim, hstep, 1.0_DP,&
               .false., .false., rproblemLevel%RmatrixScalar(transportMatrix),&
-              rcollection=rcollectionTmp)
+              transp_calcMatDiagBurgP2d_sim, rcollection=rcollectionTmp)
 
         case default
 
@@ -1063,7 +1066,7 @@ contains
               rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
               rsolution, transp_calcMatUpwBurgP2d_sim, hstep, 1.0_DP,&
               .true., .false., rproblemLevel%RmatrixScalar(transportMatrix),&
-              rcollection=rcollectionTmp)
+              transp_calcMatDiagBurgP2d_sim, rcollection=rcollectionTmp)
 
         end select
 
@@ -1081,7 +1084,7 @@ contains
               rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
               rsolution, transp_calcMatGalBLevP1d_sim, hstep, 1.0_DP,&
               .false., .false., rproblemLevel%RmatrixScalar(transportMatrix),&
-              rcollection=rcollectionTmp)
+              transp_calcMatDiagBLevP1d_sim, rcollection=rcollectionTmp)
 
         case default
           
@@ -1090,7 +1093,7 @@ contains
               rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
               rsolution, transp_calcMatUpwBLevP1d_sim, hstep, 1.0_DP,&
               .true., .false., rproblemLevel%RmatrixScalar(transportMatrix),&
-              rcollection=rcollectionTmp)
+              transp_calcMatDiagBLevP1d_sim, rcollection=rcollectionTmp)
 
         end select
 
@@ -1110,6 +1113,14 @@ contains
 
     elseif (trim(smode) .eq. 'dual') then
 
+      !-------------------------------------------------------------------------
+      ! We are in dual mode which means that we have to build two
+      ! bilinear forms: one for the volume integral and one for the
+      ! surface integral which is used to weakly impose Dirichlet
+      ! boundary conditions. Note that lumping is performed for the
+      ! boundary term to prevent the generation of oscillations.
+      !-------------------------------------------------------------------------
+
       ! @FAQ2: What type of velocity are we?
       select case (abs(ivelocitytype))
       case default
@@ -1126,7 +1137,7 @@ contains
                 rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
                 rsolution, fcb_calcMatrixDual_sim, hstep, 1.0_DP,&
                 .false., .false., rproblemLevel%RmatrixScalar(transportMatrix),&
-                rcollection=rcollectionTmp)
+                fcb_calcMatrixDiagDual_sim, rcollection=rcollectionTmp)
 
           case default
             
@@ -1135,7 +1146,7 @@ contains
                 rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
                 rsolution, fcb_calcMatrixDual_sim, hstep, 1.0_DP,&
                 .true., .false., rproblemLevel%RmatrixScalar(transportMatrix),&
-                rcollection=rcollectionTmp)
+                fcb_calcMatrixDiagDual_sim, rcollection=rcollectionTmp)
             
           end select
           
@@ -1169,21 +1180,21 @@ contains
                 rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
                 rsolution, transp_calcMatGalConvD1d_sim, hstep, 1.0_DP,&
                 .false., .false., rproblemLevel%RmatrixScalar(transportMatrix),&
-                rcollection=rcollectionTmp)
+                transp_calcMatDiagConvD1d_sim, rcollection=rcollectionTmp)
             
           case (NDIM2D)
             call gfsc_buildJacobian(&
                 rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
                 rsolution, transp_calcMatGalConvD2d_sim, hstep, 1.0_DP,&
                 .false., .false., rproblemLevel%RmatrixScalar(transportMatrix),&
-                rcollection=rcollectionTmp)
+                transp_calcMatDiagConvD2d_sim, rcollection=rcollectionTmp)
             
           case (NDIM3D)
             call gfsc_buildJacobian(&
                 rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
                 rsolution, transp_calcMatGalConvD3d_sim, hstep, 1.0_DP,&
                 .false., .false., rproblemLevel%RmatrixScalar(transportMatrix),&
-                rcollection=rcollectionTmp)
+                transp_calcMatDiagConvD3d_sim, rcollection=rcollectionTmp)
           end select
 
         case default
@@ -1195,21 +1206,21 @@ contains
                 rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
                 rsolution, transp_calcMatUpwConvD1d_sim, hstep, 1.0_DP,&
                 .true., .false., rproblemLevel%RmatrixScalar(transportMatrix),&
-                rcollection=rcollectionTmp)
+                transp_calcMatDiagConvD1d_sim, rcollection=rcollectionTmp)
             
           case (NDIM2D)
             call gfsc_buildJacobian(&
                 rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
                 rsolution, transp_calcMatUpwConvD2d_sim, hstep, 1.0_DP,&
                 .true., .false., rproblemLevel%RmatrixScalar(transportMatrix),&
-                rcollection=rcollectionTmp)
+                transp_calcMatDiagConvD2d_sim, rcollection=rcollectionTmp)
             
           case (NDIM3D)
             call gfsc_buildJacobian(&
                 rproblemLevel%RgroupFEMBlock(convectionGFEM)%RgroupFEMBlock(1),&
                 rsolution, transp_calcMatUpwConvD3d_sim, hstep, 1.0_DP,&
                 .true., .false., rproblemLevel%RmatrixScalar(transportMatrix),&
-                rcollection=rcollectionTmp)
+                transp_calcMatDiagConvD3d_sim, rcollection=rcollectionTmp)
           end select
 
         end select
@@ -1267,6 +1278,11 @@ contains
       !   $ J = ML-theta*dt*L $
       !-------------------------------------------------------------------------
 
+      ! Get additional parameters from parameter list
+      call parlst_getvalue_int(p_rparlist,&
+          ssectionName, 'lumpedmassmatrix', lumpedMassMatrix)
+
+      ! Build global Jacobian matrix
       call lsyssc_MatrixLinearComb(&
           rproblemLevel%RmatrixScalar(lumpedMassMatrix),&
           rproblemLevel%RmatrixScalar(transportMatrix),&
@@ -1282,6 +1298,11 @@ contains
       !   $ J = MC-theta*dt*L $
       !-------------------------------------------------------------------------
 
+      ! Get additional parameters from parameter list
+      call parlst_getvalue_int(p_rparlist,&
+          ssectionName, 'consistentmassmatrix', consistentMassMatrix)
+
+      ! Build global Jacobian matrix
       call lsyssc_MatrixLinearComb(&
           rproblemLevel%RmatrixScalar(consistentMassMatrix),&
           rproblemLevel%RmatrixScalar(transportMatrix),&
