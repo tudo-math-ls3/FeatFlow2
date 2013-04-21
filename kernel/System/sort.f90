@@ -132,7 +132,7 @@ contains
 
     !</input>
 
-    !<inoutput>
+    !<inputoutput>
 
     ! integer array to be sorted
     integer, dimension(:) :: Iarray
@@ -140,7 +140,7 @@ contains
     !optional mapping vector (if more than 1 vector may be sorted)
     integer, dimension(:), optional :: Imapping
 
-    !</inoutput>
+    !</inputoutput>
 !</subroutine>
 
     integer, dimension(:), pointer :: p_Itemp,p_Itemp2
@@ -650,14 +650,14 @@ contains
 
     !</input>
 
-    !<inoutput>
+    !<inputoutput>
 
     ! integer array to be sorted
     integer, dimension(:) :: Iarray
 
     !optional mapping vector (if more than 1 vector may be sorted)
     integer, dimension(:), optional :: Imapping
-    !</inoutput>
+    !</inputoutput>
 !</subroutine>
 
     integer :: hhandle,hhandle2
@@ -1115,11 +1115,11 @@ contains
 
     !</input>
 
-    !<inoutput>
+    !<inputoutput>
 
     ! singe precision array to be sorted
     real(sp), dimension(:) :: Darray
-    !</inoutput>
+    !</inputoutput>
 !</subroutine>
 
     !if the optional argument csortMethod is present

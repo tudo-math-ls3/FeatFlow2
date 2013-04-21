@@ -9118,7 +9118,7 @@ contains
   !
   ! REMARK: This subroutine is a port of subroutine DSCAL from the BLAS
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
-!</descption>
+!</description>
 
 !<inputoutput>
 
@@ -9185,7 +9185,7 @@ contains
   !
   ! REMARK: This subroutine is a port of subroutine DCOPY from the BLAS
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
-!</descption>
+!</description>
 
 !<output>
 
@@ -9257,7 +9257,7 @@ contains
   !
   ! REMARK: This subroutine is a port of subroutine DAXPY from the BLAS
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
-!</descption>
+!</description>
 
 !<output>
 
@@ -9330,7 +9330,7 @@ contains
   !
   ! REMARK: This subroutine is a port of subroutine DASUM from the BLAS
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
-!</descption>
+!</description>
 
 !<input>
 
@@ -9395,7 +9395,7 @@ contains
   !
   ! REMARK: This subroutine is a port of subroutine DNRM2 from the BLAS
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
-!</descption>
+!</description>
 
 !<input>
 
@@ -9456,7 +9456,7 @@ contains
   !
   ! REMARK: This subroutine is a port of subroutine IDAMAX from the BLAS
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
-!</descption>
+!</description>
 
 !<input>
 
@@ -9522,7 +9522,7 @@ contains
   !
   ! REMARK: This subroutine is a port of subroutine DCOPY from the BLAS
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
-!</descption>
+!</description>
 
 !<output>
 
@@ -9594,7 +9594,7 @@ contains
   !
   ! REMARK: This subroutine is a port of subroutine DCOPY from the BLAS
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
-!</descption>
+!</description>
 
 !<output>
 
@@ -9666,7 +9666,7 @@ end subroutine dscopy
   !
   ! REMARK: This subroutine is a port of subroutine DCOPY from the BLAS
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
-!</descption>
+!</description>
 
 !<output>
 
@@ -9738,7 +9738,7 @@ end subroutine dscopy
   !
   ! REMARK: This subroutine is a port of subroutine DCOPY from the BLAS
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
-!</descption>
+!</description>
 
 !<output>
 
@@ -9810,7 +9810,7 @@ end subroutine qscopy
   !
   ! REMARK: This subroutine is a port of subroutine DCOPY from the BLAS
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
-!</descption>
+!</description>
 
 !<output>
 
@@ -9882,7 +9882,7 @@ end subroutine qscopy
   !
   ! REMARK: This subroutine is a port of subroutine DCOPY from the BLAS
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
-!</descption>
+!</description>
 
 !<output>
 
@@ -9954,7 +9954,7 @@ end subroutine qscopy
   !
   ! REMARK: This subroutine is a port of subroutine DAXPY from the BLAS
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
-!</descption>
+!</description>
 
 !<output>
 
@@ -10027,7 +10027,7 @@ end subroutine qscopy
   !
   ! REMARK: This subroutine is a port of subroutine DAXPY from the BLAS
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
-!</descption>
+!</description>
 
 !<output>
 
@@ -10100,7 +10100,7 @@ end subroutine qscopy
   !
   ! REMARK: This subroutine is a port of subroutine DAXPY from the BLAS
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
-!</descption>
+!</description>
 
 !<output>
 
@@ -10177,7 +10177,7 @@ end subroutine qscopy
   !
   ! REMARK: This subroutine is an adaptation of subroutine DSCAL from the BLAS
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
-!</descption>
+!</description>
 
 !<output>
 
@@ -10249,7 +10249,7 @@ end subroutine qscopy
   !
   ! REMARK: This subroutine is an adaptation of subroutine DSCAL from the BLAS
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
-!</descption>
+!</description>
 
 !<output>
 
@@ -10321,7 +10321,7 @@ end subroutine qscopy
   !
   ! REMARK: This subroutine is an adaptation of subroutine DSCAL from the BLAS
   !         reference implementation by Jack Dongarra, Linpack, 3/11/78.
-!</descption>
+!</description>
 
 !<output>
 

@@ -509,11 +509,11 @@ class LaTeXExporter:
     DEFINITIONS = r"""
 \newcommand{\module}[2]{\chapter{Module #1 (#2)}} % name, filename
 \newcommand{\modulepurpose}{\section{Purpose}}
-\newcommand{\function}[1]{\textbf{function} #1} % name
-\newcommand{\subroutine}[1]{\textbf{subroutine} #1 \index{#1}} % name
-\newcommand{\variable}[2]{\texttt{#1} \textbf{#2} \index{#2}} % type, name
-\newcommand{\constant}[1]{\texttt{#1} \index{#1}} % name
-\newcommand{\interface}[1]{\texttt{interface #1} \index{#1}}
+\newcommand{\function}[1]{\textbf{function} #1\index{#1}} % name
+\newcommand{\subroutine}[1]{\textbf{subroutine} #1\index{#1}} % name
+\newcommand{\variable}[2]{\texttt{#1} \textbf{#2}\index{#2}} % type, name
+\newcommand{\constant}[1]{\texttt{#1}\index{#1}} % name
+\newcommand{\interface}[1]{\texttt{interface #1}\index{#1}}
 \newcommand{\sectionvariables}[1]{\subsubsection{#1}} % name
 \newcommand{\sectionerrors}{\subsubsection{Error Codes}}
 \newcommand{\sectiontypes}{\section{Types}}
@@ -792,6 +792,8 @@ class LaTeXExporter:
                 return r'\%s{%s}' % (name, "}{".join(mapped))
             content = self.texify(content)
             return r'\%s{%s}' % (name, content)
+        elif content == '':
+            return r'\%s{}' % (name)
         return r'\%s' % name
 
     def begin(self, name, parameters=None):
@@ -1171,12 +1173,15 @@ class Module:
 
         # some sub functions for use with sre.scanner
         def begin_group(scanner, token):
-            m = re.search(DESCRIPTION, token, re.DOTALL)
+            m = re.search(DESCRIPTION, token)
             if self.active_group:
                 error(15, 'Found invalid <group>: %s' % token)
             if not m:
-                error(16, 'Group does not have a valid description: %s' % token)
-            self.active_group =  Group(m.group(1))
+                #error(16, 'Group does not have a valid description: %s' % token)
+                self.active_group =  Group('Miscellaneous')
+            else:
+                self.active_group =  Group(m.group(1))
+                print "Group", m.group(1)
             l.append(self.active_group)
 
         def end_group(scanner, token):
@@ -1222,6 +1227,8 @@ class Module:
             (r'(?m)^[ \t]*?\n', blank_lines),
             (r'(?m)^[ \t]*![^\n]*?\<[ \t]*\/group[^\>]*\>[^\n$]*', end_group),
             (r'(?m)^[ \t]*![^\<]*\<[ \t]*group[ \t]+[^\>]*\>[^\n]*\n', begin_group),
+            (r'(?m)[^\n]*\<\s*\/constantblock[^>]*\>', end_group),
+            (r'(?m)[^\n]*\<\s*constantblock[^>]*\>', begin_group),
             (r'(?m)([ \t]*![^\n]*\n)+', commentblock),
             (r'(?m)[^\n!]*::[^\n]*\n', variable_definition),
             #(r'(?m)^[^!\n]*?::.*?$', variable_definition),
@@ -1246,10 +1253,10 @@ class Module:
         "Extract information from <types>."
         for n in node:
             name = n.get_name()
-            if name == 'type':
+            if name == 'type' or name == 'typeblock':
                 self.extract_type(n.get_text())
 
-    TYPE = re.compile(r'((?:\A\s*!.*\n)*)\s+type(?:,[ \t]*private)?(?:\s*\:\:)?\s+(?P<type>\S*?)\s*?\n\s+?(.*)\s+end\s+type\s+(?P=type)?', re.DOTALL)
+    TYPE = re.compile(r'((?:\A\s*!.*\n)*)\s+type(?:block)?(?:,[ \t]*private)?(?:\s*\:\:)?\s+(?P<type>\S*?)\s*?\n\s+?(.*)\s+end\s+type\s+(?P=type)?', re.DOTALL)
 
     def extract_type(self, text):
         "Extract type information from source."

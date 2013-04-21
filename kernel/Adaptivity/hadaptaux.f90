@@ -223,6 +223,8 @@ module hadaptaux
 
   ! Operation identifier for refinment: 1-tria : 3-tria
   integer, parameter, public :: HADAPT_OPR_REF_TRIA3TRIA12  = 6
+
+  ! Operation identifier for refinment: 1-tria : 3-tria
   integer, parameter, public :: HADAPT_OPR_REF_TRIA3TRIA23  = 7
 
   ! Operation identifier for refinment: 1-tria : 4-tria
@@ -260,7 +262,11 @@ module hadaptaux
 
   ! Operation identifier for coarsening: 4-tria : 2-tria
   integer, parameter, public :: HADAPT_OPR_CRS_4TRIA2TRIA1  = 19
+
+  ! Operation identifier for coarsening: 4-tria : 2-tria
   integer, parameter, public :: HADAPT_OPR_CRS_4TRIA2TRIA2  = 20
+
+  ! Operation identifier for coarsening: 4-tria : 2-tria
   integer, parameter, public :: HADAPT_OPR_CRS_4TRIA2TRIA3  = 21
 
   ! Operation identifier for coarsening: 4-quad : 1-quad
@@ -289,6 +295,8 @@ module hadaptaux
 
   ! Operation identifier for coarsening: 4-tria : 3-tria
   integer, parameter, public :: HADAPT_OPR_CRS_4TRIA3TRIA2  = 30
+
+  ! Operation identifier for coarsening: 4-tria : 3-tria
   integer, parameter, public :: HADAPT_OPR_CRS_4TRIA3TRIA3  = 31
 
   ! Operation identifier for refinement: 1-line : 2-line

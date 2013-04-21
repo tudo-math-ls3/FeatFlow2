@@ -29714,7 +29714,7 @@ contains
     integer, dimension(:), intent(in), optional :: IdofList
     integer, dimension(:), intent(in), optional :: IdofsTest
     integer, dimension(:), intent(in), optional :: IdofsTrial
-!</intput>
+!</input>
 
 !<output>
     ! Number of non-zero matrix entries

@@ -1192,10 +1192,10 @@ contains
 
   !</input>
 
-  !<inoutput>
+  !<inputoutput>
     ! handle of vector with elementwise error contributions
     integer, intent(inout):: h_Dcontrib
-  !</inoutput>
+  !</inputoutput>
 
 !</subroutine>
 
@@ -5201,10 +5201,10 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
 
   !</input>
 
-  !<inoutput>
+  !<inputoutput>
     ! handle of vector with elementwise error contributions
     integer, intent(inout):: h_Dcontrib
-  !</inoutput>
+  !</inputoutput>
 
 !</subroutine>
 

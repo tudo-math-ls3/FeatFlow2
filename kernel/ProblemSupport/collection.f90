@@ -954,7 +954,7 @@ contains
 
 !</description>
 
-!<intputoutput>
+!<inputoutput>
 
     ! The section to initialise
     type(t_collctLevel), intent(inout) :: rcollctLevel
@@ -1217,7 +1217,7 @@ contains
     ! The name for the new section
     character(LEN=*), intent(in) :: ssectionName
 
-!</intput>
+!</input>
 
 !<inputoutput>
 

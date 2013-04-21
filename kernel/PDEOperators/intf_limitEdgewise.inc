@@ -50,7 +50,7 @@
 
     ! OPTIONAL: Antidiffusive flux for constraining
     real(DP), dimension(NVAR,NEDGE), intent(in), optional :: DfluxConstr
-!</intput>
+!</input>
 
 !<inputoutput>
     ! Edgewise correction factors

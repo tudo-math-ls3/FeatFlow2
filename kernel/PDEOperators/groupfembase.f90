@@ -1745,7 +1745,7 @@ contains
 !<inputoutput>
     ! Group finite element set
     type(t_groupFEMSet), intent(inout) :: rgroupFEMSet
-!</innputoutput>
+!</inputoutput>
 !</subroutine>
 
     ! local variable
