@@ -255,8 +255,6 @@ contains
     rform%ballCoeffConstant = .false.
 
     ! Term 1/2: Mass  =>  (f phi psi )
-    rform%Dcoefficients(1)  = 1.0_DP
-    rform%BconstantCoeff(1) = .false.
     rform%Idescriptors(1,1) = DER_FUNC2D
     rform%Idescriptors(2,1) = DER_FUNC2D
     
@@ -278,13 +276,9 @@ contains
     rform%ballCoeffConstant = .false.
 
     ! Term 1/2: -Laplace  =>  (g phi_x psi_x  +  g phi_y psi_y)
-    rform%Dcoefficients(1)  = 1.0_DP
-    rform%BconstantCoeff(1) = .false.
     rform%Idescriptors(1,1) = DER_DERIV2D_X
     rform%Idescriptors(2,1) = DER_DERIV2D_X
     
-    rform%Dcoefficients(2)  = 1.0_DP
-    rform%BconstantCoeff(2) = .false.
     rform%Idescriptors(1,2) = DER_DERIV2D_Y
     rform%Idescriptors(2,2) = DER_DERIV2D_Y
     

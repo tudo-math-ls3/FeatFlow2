@@ -115,29 +115,25 @@ contains
     ! Set up a bilinear for for Laplace + convection. There are 4 terms...    
     rform%itermCount = 4
     
-    ! We have constant coefficients:
+    ! We have constant coefficients, given in rform%Dcoefficients.
     rform%ballCoeffConstant = .true.
 
     ! Term 1/2: -Laplace  =>  (1 phi_x psi_x  +  1 phi_y psi_y)
     rform%Dcoefficients(1)  = 1.0_DP
-    rform%BconstantCoeff(1) = .true.
     rform%Idescriptors(1,1) = DER_DERIV2D_X
     rform%Idescriptors(2,1) = DER_DERIV2D_X
     
     rform%Dcoefficients(2)  = 1.0_DP
-    rform%BconstantCoeff(2) = .true.
     rform%Idescriptors(1,2) = DER_DERIV2D_Y
     rform%Idescriptors(2,2) = DER_DERIV2D_Y
     
     ! Term 3/4: Convection  beta*grad  =>  beta_1 phi_x psi  +  beta_2 phi_y psi
     ! We take beta=(2,0.5).
     rform%Dcoefficients(3)  = 2.0_DP
-    rform%BconstantCoeff(3) = .true.
     rform%Idescriptors(1,3) = DER_DERIV2D_X
     rform%Idescriptors(2,3) = DER_FUNC2D
     
     rform%Dcoefficients(4)  = 0.5_DP
-    rform%BconstantCoeff(4) = .true.
     rform%Idescriptors(1,4) = DER_DERIV2D_Y
     rform%Idescriptors(2,4) = DER_FUNC2D
 
@@ -156,18 +152,15 @@ contains
 
     ! Term 1/2: -Laplace  =>  (1 phi_x psi_x  +  1 phi_y psi_y)
     rform%Dcoefficients(1)  = 1.0_DP
-    rform%BconstantCoeff(1) = .true.
     rform%Idescriptors(1,1) = DER_DERIV2D_X
     rform%Idescriptors(2,1) = DER_DERIV2D_X
     
     rform%Dcoefficients(2)  = 1.0_DP
-    rform%BconstantCoeff(2) = .true.
     rform%Idescriptors(1,2) = DER_DERIV2D_Y
     rform%Idescriptors(2,2) = DER_DERIV2D_Y
     
     ! Term 3/4: Reaction.  =>  (1 phi psi)
     rform%Dcoefficients(3)  = 1.0_DP
-    rform%BconstantCoeff(3) = .true.
     rform%Idescriptors(1,3) = DER_FUNC2D
     rform%Idescriptors(2,3) = DER_FUNC2D
     
