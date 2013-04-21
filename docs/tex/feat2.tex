@@ -4,6 +4,9 @@
 %\usepackage{a4wide}
 \usepackage[top={25mm}, right={25mm}, bottom={25mm}, left={25mm}]{geometry}
 
+% Font encoding
+\usepackage[T1]{fontenc}
+
 % For math typesetting it's standard to use the following
 \usepackage{amsmath}
 \usepackage{amssymb}
@@ -17,17 +20,27 @@
 
 \usepackage{rotating}
 
+% For generating an index
+\usepackage{makeidx}
+
 % Have clickable items in table of contents, index, etc.
 % (Only in pdf version)
 \usepackage{url}
-%\usepackage{hyperref}
+\usepackage{hyperref}
 
-%\hypersetup{
-%  pdftitle={FEAST - Finite Element Analysis & Solution Tools. Technical Documentation},
-%  pdfauthor={Ch. Becker, S. Buijssen, M. Grajewski, S. Kilian, S. Turek, H. Wobker},
-%  pdfsubject={Technical Documentation},
-%  pdfkeywords={FEAST, finite elements}
-%}
+\hypersetup{
+  bookmarks=true,
+  pdftitle={FEAT - Finite Element Analysis Toolbox. Documentation of Kernel routines},
+  pdfauthor={S.~Buijssen, R.~M\"unster, M.~K\"oster, M.~M\"oller, S.~Turek, H.~Wobker, P.~Zajac},
+  pdfsubject={Technical Documentation},
+  pdfkeywords={FEAT, finite elements},
+  colorlinks=true,
+  linkcolor=black,
+  linktoc=all
+}
+
+% For generating an index
+\makeindex
 
 \newcommand{\scarc}{\textsc{ScaRC} }
 \newcommand{\devisor}{\textsc{DeViSoR} }
@@ -145,11 +158,14 @@ WWW: http://www.featflow.de/feast, Email:feast@mathematik.uni-dortmund.de
 
 %\include{modules_description_dynamic}
 
-
 % ---- Bibliography ----
 %
 
 \nocite{Turek1997c,Turek1998}
 \bibliography{fbmathlit}
+
+% ---- Index ----
+%
+\printindex
 
 \end{document}

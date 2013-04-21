@@ -510,10 +510,10 @@ class LaTeXExporter:
 \newcommand{\module}[2]{\chapter{Module #1 (#2)}} % name, filename
 \newcommand{\modulepurpose}{\section{Purpose}}
 \newcommand{\function}[1]{\textbf{function} #1} % name
-\newcommand{\subroutine}[1]{\textbf{subroutine} #1} % name
-\newcommand{\variable}[2]{\texttt{#1} \textbf{#2}} % type, name
-\newcommand{\constant}[1]{\texttt{#1}} % name
-\newcommand{\interface}[1]{\texttt{interface #1}}
+\newcommand{\subroutine}[1]{\textbf{subroutine} #1 \index{#1}} % name
+\newcommand{\variable}[2]{\texttt{#1} \textbf{#2} \index{#2}} % type, name
+\newcommand{\constant}[1]{\texttt{#1} \index{#1}} % name
+\newcommand{\interface}[1]{\texttt{interface #1} \index{#1}}
 \newcommand{\sectionvariables}[1]{\subsubsection{#1}} % name
 \newcommand{\sectionerrors}{\subsubsection{Error Codes}}
 \newcommand{\sectiontypes}{\section{Types}}
@@ -762,7 +762,7 @@ class LaTeXExporter:
         (r'<ul>.+?</ul>', lambda s, t: t.replace('<ul>','\\underline{').replace('</ul>', '}')),
         (r'<it>.+?</it>', lambda s, t: t.replace('<it>','\\textit{').replace('</it>', '}')),
         ('\\$', '\\$'),
-        ('_', '\\_'),
+        (r'_',  '\\textunderscore '),
         (r'\\', '\\\\'),
         (r'#', '\\#'),
         (r'%', '\\%'),
