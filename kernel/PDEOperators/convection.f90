@@ -196,12 +196,12 @@ module convection
     ! be used to assembly the not-weighted operator matrix.
     real(DP) :: dtheta = 1.0_DP
 
-    ! Weighting factor for the Newton matrix (Frechet derivative <tex>$ (\Nabla u \cdot,\cdot) $</tex> of
-    ! the convective operator <tex>$ u\Nabla u $</tex>, used for preconditioning).
+    ! Weighting factor for the Newton matrix (Frechet derivative <tex>$ (\nabla u \cdot,\cdot) $</tex> of
+    ! the convective operator <tex>$ u\nabla u $</tex>, used for preconditioning).
     ! A value of 0.0 deactivates the Newton matrix.
     real(DP) :: dnewton = 0.0_DP
 
-    ! Weighting factor for the transposed Newton matrix ((\Nabla u)^t\cdot)
+    ! Weighting factor for the transposed Newton matrix ((\nabla u)^t\cdot)
     ! A value of 0.0 deactivates the transposed Newton matrix.
     real(DP) :: dnewtonTransposed = 0.0_DP
 
@@ -301,20 +301,20 @@ module convection
     real(DP) :: ddeltaTadj = 0.0_DP
 
     ! Weighting factor for the Newton matrix ((grad(u))*(.),.)
-    ! (-> Frechet derivative <tex>$ \cdot\Nabla u $</tex> of
-    ! the convective operator <tex>$ u\Nabla u $</tex>, used for preconditioning).
+    ! (-> Frechet derivative <tex>$ \cdot\nabla u $</tex> of
+    ! the convective operator <tex>$ u\nabla u $</tex>, used for preconditioning).
     ! A value of 0.0 deactivates the Newton matrix.
     real(DP) :: dnewton = 0.0_DP
 
     ! Weighting factor for the adjoint Newton matrix 
-    ! (Frechet derivative <tex>$ (\Nabla u \cdot,\cdot) $</tex> of
-    ! the convective operator <tex>$ u\Nabla u $</tex> with test and trial
+    ! (Frechet derivative <tex>$ (\nabla u \cdot,\cdot) $</tex> of
+    ! the convective operator <tex>$ u\nabla u $</tex> with test and trial
     ! functions exchanged, used for preconditioning).
     ! A value of 0.0 deactivates the Newton matrix.
     real(DP) :: dnewtonAdj = 0.0_DP
 
     ! Weighting factor for the transposed Newton matrix ((grad(u)^T)*(.),.)
-    ! ((\Nabla u)^t\cdot)
+    ! ((\nabla u)^t\cdot)
     ! A value of 0.0 deactivates the transposed Newton matrix.
     real(DP) :: dnewtonT = 0.0_DP
 
