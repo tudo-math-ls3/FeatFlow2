@@ -1442,7 +1442,7 @@ contains
 !</subroutine>
 
     ! Check if matrix needs conversion
-  if (rmatrix%cdataType .eq. cdataType) return
+    if (rmatrix%cdataType .eq. cdataType) return
 
     ! Set data type
     rmatrix%cdataType = cdataType
