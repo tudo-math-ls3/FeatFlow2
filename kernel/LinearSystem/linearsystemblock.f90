@@ -270,6 +270,9 @@
 !# 63.) lsysbl_getBlockVectorOverlay
 !#      -> Creates an array of block vectors overlaying a dense scalar matrix
 !#
+!# 64.) lsysbl_setDataTypeVector
+!#      -> Converts the data type of a block vector
+!#
 !# </purpose>
 !##############################################################################
 
@@ -671,6 +674,7 @@ module linearsystemblock
   public :: lsysbl_copyH2D_Matrix
   public :: lsysbl_copyD2H_Matrix
   public :: lsysbl_getBlockVectorOverlay
+  public :: lsysbl_setDataTypeVector
 
   ! Some deprecated interfaces
   interface lsysbl_createVectorBlock
@@ -9364,5 +9368,38 @@ contains
     call lsysbl_releaseVector(rtempVector)    
 
   end subroutine lsysbl_getBlockVectorOverlay
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lsysbl_setDataTypeVector (rvector, cdataType)
+
+!<description>
+  ! Converts the vector to another data type.
+!</description>
+
+!<input>
+  ! Target datatype of the vector
+  integer, intent(in) :: cdataType
+!</input>
+
+!<inputoutput>
+  ! Vector that should be converted
+  type(t_vectorBlock), intent(inout) :: rvector
+!</inputoutput>
+!</subroutine>
+
+    ! Check if vector needs conversion
+    if (rvector%cdataType .eq. cdataType) return
+
+    ! Set data type
+    rvector%cdataType = cdataType
+
+    ! Check if matrix has data
+    if (rvector%h_Ddata .ne. ST_NOHANDLE)&
+        call storage_setdatatype (rvector%h_Ddata, cdataType)
+
+  end subroutine
 
 end module
