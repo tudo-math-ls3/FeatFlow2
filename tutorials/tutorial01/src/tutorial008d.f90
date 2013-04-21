@@ -132,7 +132,7 @@ contains
     case (1)
     
       ! Loop over all points and elements. Return the function in each point
-      do iel=1,npointsPerElement
+      do iel=1,nelements
         do ivt=1,npointsPerElement
         
           ! Point coordinates
@@ -149,7 +149,7 @@ contains
     case (2)
     
       ! Loop over all points and elements. Return the function in each point
-      do iel=1,npointsPerElement
+      do iel=1,nelements
         do ivt=1,npointsPerElement
         
           ! Point coordinates

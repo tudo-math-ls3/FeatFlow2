@@ -124,7 +124,7 @@ contains
     p_rcoeffVector => rcollection%p_rvectorQuickAccess1
     
     ! Get the temp memory provided by bilf_buildMatrixScalar
-    ! for the coefficients.
+    ! for the coefficients. They were reserved due to ntemp=2.
     p_Dcoeff => rdomainIntSubset%p_DtempArrays 
     
     ! --------------------------------------------------
@@ -146,7 +146,7 @@ contains
     case (1)
     
       ! Loop over all points and elements. Return the function in each point
-      do iel=1,npointsPerElement
+      do iel=1,nelements
         do ivt=1,npointsPerElement
         
           ! Initialise the coefficients by the 1st coordinate:
@@ -159,13 +159,13 @@ contains
     case (2)
     
       ! Loop over all points and elements. Return the function in each point
-      do iel=1,npointsPerElement
+      do iel=1,nelements
         do ivt=1,npointsPerElement
         
           ! Initialise the coefficients by the 2nd coordinate.
           ! Both the same.
-          Dcoefficients(1,ivt,iel) = p_Dcoeff(ivt,iel,2)
-          Dcoefficients(2,ivt,iel) = p_Dcoeff(ivt,iel,2)
+          Dcoefficients(1,ivt,iel) = p_Dcoeff(ivt,iel,2)   ! for (g phi_x,psi_x)
+          Dcoefficients(2,ivt,iel) = p_Dcoeff(ivt,iel,2)   ! for (g phi_y,psi_y)
 
         end do
       end do
@@ -191,7 +191,7 @@ contains
     type(t_bilinearForm) :: rform
     type(t_collection) :: rcollection
     
-    integer :: i
+    integer :: i,ntemp
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
     real(DP), dimension(:), pointer :: p_Ddata1, p_Ddata2
 
@@ -297,8 +297,9 @@ contains
     rcollection%p_rvectorQuickAccess1 => rcoeffVector
 
     ! Build the matrix block (1,1). Reserve two temporary arrays for the coefficients.
+    ntemp = 2
     call bilf_buildMatrixScalar (rform,.false.,rmatrix%RmatrixBlock(1,1),rcubatureInfo,&
-        fcoeff_Matrix, rcollection, 2)
+        fcoeff_Matrix, rcollection, ntemp)
 
     ! =================================
     ! Block (2,2): -g Laplace(u)
@@ -325,8 +326,9 @@ contains
     rcollection%p_rvectorQuickAccess1 => rcoeffVector
     
     ! Build the matrix block (2,2). Reserve two temporary arrays for the coefficients.
+    ntemp = 2
     call bilf_buildMatrixScalar (rform,.false.,rmatrix%RmatrixBlock(2,2),rcubatureInfo,&
-        fcoeff_Matrix, rcollection, 2)
+        fcoeff_Matrix, rcollection, ntemp)
 
     ! =================================
     ! Output of the matrix
