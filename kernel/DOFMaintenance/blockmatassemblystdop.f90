@@ -5485,7 +5485,13 @@ contains
 
 !<description>  
     ! Calculates a right-hand side vector according to the right-hand
-    ! side function f=1 in all components.
+    ! side function f=1.
+    !
+    ! If rcollection is not specified, the rhs is calculated
+    ! in all components.
+    ! If rcollection is specified, the following parameters are expected:
+    ! rcollection%IquickAccess(1) = Number of the component that should
+    !                               receive the RHS.
 !</description>
 
 !<inputoutput>
@@ -5520,7 +5526,7 @@ contains
 
     ! Local variables
     real(DP) :: dbasI, dval
-    integer :: icomp
+    integer :: icomp,istartcomp,iendcomp
     integer :: iel, icubp, idofe, idimfe, ndimfe
     real(DP), dimension(:,:), pointer :: p_DlocalVector
     real(DP), dimension(:,:,:,:), pointer :: p_DbasTest
@@ -5530,8 +5536,17 @@ contains
     ! Get cubature weights data
     p_DcubWeight => rassemblyData%p_DcubWeight
     
+    ! Either compute to all components or to a specified one.
+    if (present(rcollection)) then
+      istartcomp = rcollection%IquickAccess(1)
+      iendcomp = rcollection%IquickAccess(1)
+    else
+      istartcomp = 1
+      iendcomp = size(rvectorData)
+    end if
+    
     ! Loop over the components
-    do icomp = 1,size(rvectorData)
+    do icomp = istartcomp,iendcomp
 
       ! Get the data arrays of the subvector
       p_rvectorData => RvectorData(icomp)
@@ -5589,6 +5604,12 @@ contains
 !<description>  
     ! Calculates a right-hand side vector according to the right-hand
     ! side function f=32*y*(1-y)+32*x*(1-x).
+    !
+    ! If rcollection is not specified, the rhs is calculated
+    ! in all components.
+    ! If rcollection is specified, the following parameters are expected:
+    ! rcollection%IquickAccess(1) = Number of the component that should
+    !                               receive the RHS.
 !</description>
 
 !<inputoutput>
@@ -5623,7 +5644,7 @@ contains
 
     ! Local variables
     real(DP) :: dbasI, dval, dx, dy
-    integer :: icomp
+    integer :: icomp,istartcomp,iendcomp
     integer :: iel, icubp, idofe, idimfe, ndimfe
     real(DP), dimension(:,:), pointer :: p_DlocalVector
     real(DP), dimension(:,:,:,:), pointer :: p_DbasTest
@@ -5637,8 +5658,17 @@ contains
     ! Get the coordinates of the cubature points
     p_Dpoints => rassemblyData%revalElementSet%p_DpointsReal
     
+    ! Either compute to all components or to a specified one.
+    if (present(rcollection)) then
+      istartcomp = rcollection%IquickAccess(1)
+      iendcomp = rcollection%IquickAccess(1)
+    else
+      istartcomp = 1
+      iendcomp = size(rvectorData)
+    end if
+    
     ! Loop over the components
-    do icomp = 1,size(rvectorData)
+    do icomp = istartcomp,iendcomp
 
       ! Get the data arrays of the subvector
       p_rvectorData => RvectorData(icomp)
@@ -5705,6 +5735,12 @@ contains
     !
     ! The FEM function v(x,y) must be provided in revalVectors.
     ! The routine only supports non-interleaved vectors.
+    !
+    ! If rcollection is not specified, the rhs is calculated
+    ! in all components.
+    ! If rcollection is specified, the following parameters are expected:
+    ! rcollection%IquickAccess(1) = Number of the component that should
+    !                               receive the RHS.
 !</description>
 
 !<inputoutput>
@@ -5739,7 +5775,7 @@ contains
 
     ! Local variables
     real(DP) :: dbasI, dval, dx, dy
-    integer :: icomp
+    integer :: icomp,istartcomp,iendcomp
     integer :: iel, icubp, idofe, idimfe, ndimfe
     real(DP), dimension(:,:), pointer :: p_DlocalVector
     real(DP), dimension(:,:,:,:), pointer :: p_DbasTest
@@ -5764,8 +5800,17 @@ contains
     ! in the cubature points
     p_Dfunc => revalVectors%p_RvectorData(1)%p_Ddata(:,:,DER_FUNC2D)
     
+    ! Either compute to all components or to a specified one.
+    if (present(rcollection)) then
+      istartcomp = rcollection%IquickAccess(1)
+      iendcomp = rcollection%IquickAccess(1)
+    else
+      istartcomp = 1
+      iendcomp = size(rvectorData)
+    end if
+    
     ! Loop over the components
-    do icomp = 1,size(rvectorData)
+    do icomp = istartcomp,iendcomp
 
       ! Get the data arrays of the subvector
       p_rvectorData => RvectorData(icomp)
@@ -5838,6 +5883,12 @@ contains
     !
     ! This routine is typically used in L2 projections for setting up the
     ! RHS based on a FEM function.
+    !
+    ! If rcollection is not specified, the rhs is calculated
+    ! in all components.
+    ! If rcollection is specified, the following parameters are expected:
+    ! rcollection%IquickAccess(1) = Number of the component that should
+    !                               receive the RHS.
 !</description>
 
 !<inputoutput>
@@ -5872,7 +5923,7 @@ contains
 
     ! Local variables
     real(DP) :: dbasI, dval
-    integer :: icomp, ndimfe, idimfe
+    integer :: icomp,istartcomp,iendcomp, ndimfe, idimfe
     integer :: iel, icubp, idofe
     real(DP), dimension(:,:), pointer :: p_DlocalVector
     real(DP), dimension(:,:,:,:), pointer :: p_DbasTest
@@ -5890,8 +5941,17 @@ contains
       call sys_halt()
     end if
     
+    ! Either compute to all components or to a specified one.
+    if (present(rcollection)) then
+      istartcomp = rcollection%IquickAccess(1)
+      iendcomp = rcollection%IquickAccess(1)
+    else
+      istartcomp = 1
+      iendcomp = size(rvectorData)
+    end if
+    
     ! Loop over the components
-    do icomp = 1,size(rvectorData)
+    do icomp = istartcomp,iendcomp
 
       ! Get the data arrays of the subvector
       p_rvectorData => RvectorData(icomp)
