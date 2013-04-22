@@ -71,7 +71,7 @@ contains
 
   ! ***********************************************************************************************
 
-  subroutine stdrv_funcRhs (rdiscretisation,rform,nelements,npointsPerElement,Dpoints, &
+  subroutine stdrv_funcRhsVelo (rdiscretisation,rform,nelements,npointsPerElement,Dpoints, &
                          IdofsTest,rdomainIntSubset,Dcoefficients,rcollection)
   type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
   type(t_linearForm), intent(in)                              :: rform
@@ -83,7 +83,7 @@ contains
   type(t_collection), intent(inout), optional      :: rcollection
   real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
 
-  integer :: idriver, icomp, ivelo, ipres
+  integer :: idriver, icomp, ivelo
   real(DP) :: dnu,dalpha,dbeta,dgamma
 
     ! fetch coefficients from collection
@@ -94,16 +94,25 @@ contains
     idriver = rcollection%IquickAccess(1)
     icomp = rcollection%IquickAccess(5)
     ivelo = rcollection%IquickAccess(6)
-    ipres = rcollection%IquickAccess(7)
 
     Dcoefficients(1,:,:) = 0.0_DP
 
     select case(idriver)
+    case (2001)
+      ! Poiseulle-Flow
+      select case(icomp)
+      case (1)
+        Dcoefficients(1,:,:) = 2.0_DP*dnu
+      case (2)
+        Dcoefficients(1,:,:) = 0.0_DP
+      end select
+      
     case (2002)
       ! add velocity laplacian
       select case(ivelo)
       case (0)
         ! no-flow
+        Dcoefficients(1,:,:) = 0.0_DP
         
       case (1)
         select case(icomp)
@@ -141,47 +150,82 @@ contains
             - Dpoints(2,:,:)**2*(1.0_DP-Dpoints(2,:,:))**2*(-12.0_DP+24.0_DP*Dpoints(1,:,:))
         end select
       end select
+    end select
+    
+  end subroutine
+
+  ! ***********************************************************************************************
+
+  subroutine stdrv_funcRhsPres (rdiscretisation,rform,nelements,npointsPerElement,Dpoints, &
+                         IdofsTest,rdomainIntSubset,Dcoefficients,rcollection)
+  type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
+  type(t_linearForm), intent(in)                              :: rform
+  integer, intent(in)                                         :: nelements
+  integer, intent(in)                                         :: npointsPerElement
+  real(DP), dimension(:,:,:), intent(in)  :: Dpoints
+  integer, dimension(:,:), intent(in) :: IdofsTest
+  type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
+  type(t_collection), intent(inout), optional      :: rcollection
+  real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
+
+  integer :: idriver, icomp, ipres
+  real(DP) :: dnu,dalpha,dbeta,dgamma
+
+    ! fetch coefficients from collection
+    dnu = rcollection%DquickAccess(1)
+    dalpha = rcollection%DquickAccess(2)
+    dbeta = rcollection%DquickAccess(3)
+    dgamma = rcollection%DquickAccess(4)
+    idriver = rcollection%IquickAccess(1)
+    icomp = rcollection%IquickAccess(5)
+    ipres = rcollection%IquickAccess(7)
+
+    select case(idriver)
+    case (2001)
+      ! Poiseulle-Flow
+      select case(icomp)
+      case (1)
+        Dcoefficients(1,:,:) = -2.0_DP*dnu*dalpha
+      case (2)
+        Dcoefficients(1,:,:) = 0.0_DP
+      end select
       
+    case (2002)
       ! add pressure gradient
       select case(ipres)
       case (0)
-        ! zero pressure
-        
+        Dcoefficients(1,:,:) = 0.0_DP
+
       case (1)
         select case(icomp)
         case (1)
-          Dcoefficients(1,:,:) = Dcoefficients(1,:,:) &
-            - dalpha*SYS_PI*sin(SYS_PI*Dpoints(1,:,:))*cos(SYS_PI*Dpoints(2,:,:))
+          Dcoefficients(1,:,:) = -dalpha*SYS_PI*sin(SYS_PI*Dpoints(1,:,:))*cos(SYS_PI*Dpoints(2,:,:))
         case (2)
-          Dcoefficients(1,:,:) = Dcoefficients(1,:,:) &
-            - dalpha*SYS_PI*cos(SYS_PI*Dpoints(1,:,:))*sin(SYS_PI*Dpoints(2,:,:))
+          Dcoefficients(1,:,:) = -dalpha*SYS_PI*cos(SYS_PI*Dpoints(1,:,:))*sin(SYS_PI*Dpoints(2,:,:))
         end select
+        
       case (2)
         select case(icomp)
         case (1)
-          Dcoefficients(1,:,:) = Dcoefficients(1,:,:) &
-            - dalpha*SYS_PI*cos(SYS_PI*Dpoints(1,:,:))
+          Dcoefficients(1,:,:) = -dalpha*SYS_PI*cos(SYS_PI*Dpoints(1,:,:))
         case (2)
-          Dcoefficients(1,:,:) = Dcoefficients(1,:,:) &
-            - dalpha*SYS_PI*cos(SYS_PI*Dpoints(2,:,:))
+          Dcoefficients(1,:,:) = -dalpha*SYS_PI*cos(SYS_PI*Dpoints(2,:,:))
         end select
+        
       case (3)
         select case(icomp)
         case (1)
-          Dcoefficients(1,:,:) = Dcoefficients(1,:,:) &
-            - dalpha*3.0_DP*Dpoints(1,:,:)**2
+          Dcoefficients(1,:,:) = -dalpha*3.0_DP*Dpoints(1,:,:)**2
         case (2)
-          Dcoefficients(1,:,:) = Dcoefficients(1,:,:) &
-            - dalpha*3.0_DP*Dpoints(2,:,:)**2
+          Dcoefficients(1,:,:) = -dalpha*3.0_DP*Dpoints(2,:,:)**2
         end select
+        
       case (4)
         select case(icomp)
         case (1)
-          Dcoefficients(1,:,:) = Dcoefficients(1,:,:) &
-            + funcStaticBubble(Dpoints(1,:,:), Dpoints(2,:,:), dalpha, dbeta, dgamma)
+          Dcoefficients(1,:,:) = funcStaticBubble(Dpoints(1,:,:), Dpoints(2,:,:), dalpha, dbeta, dgamma)
         case (2)
-          Dcoefficients(1,:,:) = Dcoefficients(1,:,:) &
-            + funcStaticBubble(Dpoints(2,:,:), Dpoints(1,:,:), dalpha, dbeta, dgamma)
+          Dcoefficients(1,:,:) = funcStaticBubble(Dpoints(2,:,:), Dpoints(1,:,:), dalpha, dbeta, dgamma)
         end select
       end select
     end select
@@ -211,7 +255,6 @@ contains
 
 
   end subroutine
-
   ! ***********************************************************************************************
 
   subroutine stdrv_funcVelocity2D (icomponent, cderivative, rdiscretisation, &

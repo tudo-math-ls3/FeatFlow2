@@ -89,6 +89,7 @@ contains
     call stdrv_initBoundaryConditions(rproblem, rparam, idriver)
     
     ! loop over all levels
+    call output_lbrk()
     do ilvl = rproblem%ilevelMin, rproblem%ilevelMax
       
       call output_line("Processing Level " // trim(sys_sil(ilvl, 4)) // "...")
@@ -99,19 +100,27 @@ contains
       ! initialise system
       call stdbg_initSystem(rproblem, rsystem, ilvl)
 
-      ! Assemble the RHS vector
-      rform%itermCount = 1
-      rform%Idescriptors(1) = DER_FUNC
+      ! Assemble the RHS vectors
       rcollect%IquickAccess(5) = 1
-      call linf_buildVectorScalar (rform,.true., rsystem%rvecRhs%RvectorBlock(1), &
-          rproblem%Rlevels(ilvl)%rcubInfo, stdrv_funcRhs, rcollect)
+      call linf_buildSimpleVector(rsystem%rvecRhsVelo%RvectorBlock(1), &
+          rproblem%Rlevels(ilvl)%rcubInfo, stdrv_funcRhsVelo, .true., DER_FUNC, rcollect)
+      call linf_buildSimpleVector(rsystem%rvecRhsPres%RvectorBlock(1), &
+          rproblem%Rlevels(ilvl)%rcubInfo, stdrv_funcRhsPres, .true., DER_FUNC, rcollect)
       rcollect%IquickAccess(5) = 2
-      call linf_buildVectorScalar (rform,.true., rsystem%rvecRhs%RvectorBlock(2), &
-          rproblem%Rlevels(ilvl)%rcubInfo, stdrv_funcRhs, rcollect)
+      call linf_buildSimpleVector(rsystem%rvecRhsVelo%RvectorBlock(2), &
+          rproblem%Rlevels(ilvl)%rcubInfo, stdrv_funcRhsVelo, .true., DER_FUNC, rcollect)
+      call linf_buildSimpleVector(rsystem%rvecRhsPres%RvectorBlock(2), &
+          rproblem%Rlevels(ilvl)%rcubInfo, stdrv_funcRhsPres, .true., DER_FUNC, rcollect)
+
+      ! combine rhs vectors
+      call lsysbl_vectorLinearComb(rsystem%rvecRhsVelo, rsystem%rvecRhsPres, &
+          1.0_DP, 1.0_DP, rsystem%rvecRhs)
 
       ! Filter solution and rhs vectors
       call vecfil_discreteBCsol(rsystem%rvecSol)
       call vecfil_discreteBCrhs(rsystem%rvecRhs)
+      call vecfil_discreteBCrhs(rsystem%rvecRhsVelo)
+      call vecfil_discreteBCdef(rsystem%rvecRhsPres) !???
 
       ! initialise filter chain
       call stdrv_initFilterChain(rproblem, rsystem, rparam)
@@ -120,7 +129,7 @@ contains
       call stdbg_initMultigrid(rproblem, rsystem, rparam)
     
       ! solve system
-      call stdbg_solve(rproblem, rsystem)
+      call stdbg_solve(rproblem, rsystem, rparam)
       
       ! post-process solution
       call stdrv_postProcSol(rproblem, rsystem, rparam)

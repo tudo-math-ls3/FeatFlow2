@@ -34,6 +34,7 @@ use bilinearformevaluation
 use stdoperators
 use paramlist
 use quicksolver
+use iterationcontrol
 
 use stokesdbg_aux
   
@@ -124,13 +125,20 @@ implicit none
     ! the corresponding vectors
     type(t_vectorBlock) :: rvecSol
     type(t_vectorBlock) :: rvecRhs
-    type(t_vectorBlock) :: rvecTmp
+    type(t_vectorBlock) :: rvecDef
+    
+    ! intermediate vectors
+    type(t_vectorBlock) :: rvecRhsVelo, rvecRhsPres
+    type(t_vectorBlock) :: rvecDefVelo, rvecDefPres
     
     ! the filter chain to be used
     type(t_filterChain), dimension(:), pointer :: p_rfilterChain => null()
     
     ! the linear solver to be used
     type(t_linsolNode), pointer :: p_rsolver => null()
+    
+    ! the iteration control structrue
+    type(t_iterationControl) :: riter
   
   end type
 
@@ -611,8 +619,16 @@ contains
     if(associated(rsystem%p_RfilterChain)) &
       deallocate(rsystem%p_RfilterChain)
     
-    if(rsystem%rvecTmp%NEQ .gt. 0) &
-      call lsysbl_releaseVector(rsystem%rvecTmp)
+    if(rsystem%rvecDefPres%NEQ .gt. 0) &
+      call lsysbl_releaseVector(rsystem%rvecDefPres)
+    if(rsystem%rvecDefVelo%NEQ .gt. 0) &
+      call lsysbl_releaseVector(rsystem%rvecDefVelo)
+    if(rsystem%rvecRhsPres%NEQ .gt. 0) &
+      call lsysbl_releaseVector(rsystem%rvecRhsPres)
+    if(rsystem%rvecRhsVelo%NEQ .gt. 0) &
+      call lsysbl_releaseVector(rsystem%rvecRhsVelo)
+    if(rsystem%rvecDef%NEQ .gt. 0) &
+      call lsysbl_releaseVector(rsystem%rvecDef)
     if(rsystem%rvecRhs%NEQ .gt. 0) &
       call lsysbl_releaseVector(rsystem%rvecRhs)
     if(rsystem%rvecSol%NEQ .gt. 0) &
@@ -637,7 +653,11 @@ contains
     ! Create three vectors
     call lsysbl_createVecBlockIndMat (p_rlvl%rmatSys, rsystem%rvecSol, .true.)
     call lsysbl_createVecBlockIndMat (p_rlvl%rmatSys, rsystem%rvecRhs, .true.)
-    call lsysbl_createVecBlockIndMat (p_rlvl%rmatSys, rsystem%rvecTmp, .true.)
+    call lsysbl_createVecBlockIndMat (p_rlvl%rmatSys, rsystem%rvecDef, .true.)
+    call lsysbl_createVecBlockIndMat (p_rlvl%rmatSys, rsystem%rvecRhsVelo, .true.)
+    call lsysbl_createVecBlockIndMat (p_rlvl%rmatSys, rsystem%rvecRhsPres, .true.)
+    call lsysbl_createVecBlockIndMat (p_rlvl%rmatSys, rsystem%rvecDefVelo, .true.)
+    call lsysbl_createVecBlockIndMat (p_rlvl%rmatSys, rsystem%rvecDefPres, .true.)
 
     ! Assemble the RHS vector
     !rform%itermCount = 1
@@ -650,9 +670,13 @@ contains
     !    p_rlvl%rcubInfo, funcRhsY2D, rcollection)
 
     ! Assign BCs to vectors
-    call lsysbl_assignDiscreteBC(rsystem%rvecSol, p_rlvl%rdiscreteBC)
-    call lsysbl_assignDiscreteBC(rsystem%rvecRhs, p_rlvl%rdiscreteBC)
-    call lsysbl_assignDiscreteBC(rsystem%rvecTmp, p_rlvl%rdiscreteBC)
+    !call lsysbl_assignDiscreteBC(rsystem%rvecSol, p_rlvl%rdiscreteBC)
+    !call lsysbl_assignDiscreteBC(rsystem%rvecRhs, p_rlvl%rdiscreteBC)
+    !call lsysbl_assignDiscreteBC(rsystem%rvecDef, p_rlvl%rdiscreteBC)
+    !call lsysbl_assignDiscreteBC(rsystem%rvecRhsVelo, p_rlvl%rdiscreteBC)
+    !call lsysbl_assignDiscreteBC(rsystem%rvecRhsPres, p_rlvl%rdiscreteBC)
+    !call lsysbl_assignDiscreteBC(rsystem%rvecDefVelo, p_rlvl%rdiscreteBC)
+    !call lsysbl_assignDiscreteBC(rsystem%rvecDefPres, p_rlvl%rdiscreteBC)
 
     ! Filter solution and rhs vectors
     !call vecfil_discreteBCsol(rvecSol)
@@ -714,11 +738,22 @@ contains
     
     ! Set the output level of the solver to 2 for some output
     call parlst_getvalue_int(rparam, '', 'IOUTPUT', rsystem%p_rsolver%ioutputLevel, 0)
-    call parlst_getvalue_int(rparam, '', 'MIN_ITER', rsystem%p_rsolver%nminIterations, 0)
-    call parlst_getvalue_int(rparam, '', 'MAX_ITER', rsystem%p_rsolver%nmaxIterations, 1000)
-    call parlst_getvalue_double(rparam, '', 'EPSREL', rsystem%p_rsolver%depsRel, 1E-8_DP)
-    call parlst_getvalue_double(rparam, '', 'EPSABS', rsystem%p_rsolver%depsAbs, 1E-11_DP)
-
+    rsystem%p_rsolver%nminIterations = 1
+    rsystem%p_rsolver%nmaxIterations = 1
+    !call parlst_getvalue_int(rparam, '', 'MIN_ITER', rsystem%p_rsolver%nminIterations, 0)
+    !call parlst_getvalue_int(rparam, '', 'MAX_ITER', rsystem%p_rsolver%nmaxIterations, 1000)
+    !call parlst_getvalue_double(rparam, '', 'EPSREL', rsystem%p_rsolver%depsRel, 1E-8_DP)
+    !call parlst_getvalue_double(rparam, '', 'EPSABS', rsystem%p_rsolver%depsAbs, 1E-11_DP)
+    
+    ! initialise iteration control
+    !call itc_initIteration(rsystem%riter)
+    call parlst_getvalue_int(rparam, '', 'MIN_ITER', rsystem%riter%nminIterations, 0)
+    call parlst_getvalue_int(rparam, '', 'MAX_ITER', rsystem%riter%nmaxIterations, 1000)
+    call parlst_getvalue_double(rparam, '', 'EPSREL', rsystem%riter%dtolRel, 1E-8_DP)
+    call parlst_getvalue_double(rparam, '', 'EPSABS', rsystem%riter%dtolAbs, 1E-11_DP)
+    call parlst_getvalue_double(rparam, '', 'STAG_RATE', rsystem%riter%dstagRate, 0.95_DP)
+    call parlst_getvalue_int(rparam, '', 'STAG_ITER', rsystem%riter%nstagIter, 0)
+    
     ! Attach the system matrix to the solver.
     allocate(Rmatrices(ilcrs:ilvl))
     do i = ilcrs, ilvl
@@ -735,11 +770,17 @@ contains
 
   ! ***********************************************************************************************
   
-  subroutine stdbg_solve(rproblem, rsystem)
-  type(t_problem), intent(inout) :: rproblem
+  subroutine stdbg_solve(rproblem, rsystem, rparam)
+  type(t_problem), target, intent(inout) :: rproblem
   type(t_system), intent(inout) :: rsystem
+  type(t_parlist), intent(inout) :: rparam
     
-  integer :: ierror
+  type(t_level), pointer :: p_rlvl
+  type(t_matrixBlock), pointer :: p_rmatSys
+  integer :: ierror, ilogRes, i, n
+  real(DP) :: ddef, ddefVelo, ddefPres, ddefDiv
+  integer, dimension(4) :: Cnorms = LINALG_NORMEUCLID
+  real(DP), dimension(4) :: Dnorms
   
     ! Initialise solver
     !call output_line('Initialising solver...')
@@ -753,16 +794,139 @@ contains
       call output_line("Failed to initialise solver data!", OU_CLASS_ERROR)
       call sys_halt()
     end if
+    
+    ! get the problem level
+    p_rmatSys => rproblem%Rlevels(rsystem%ilevel)%rmatSys
 
+    call parlst_getvalue_int(rparam, '', 'ILOGRES', ilogRes, 0)
+    
+    n = p_rmatSys%nblocksPerRow-1
+    
     ! Solve...
-    !call output_lbrk()
-    !call output_line('Solving...')
-    call linsol_solveAdaptively (rsystem%p_rsolver, rsystem%rvecSol,rsystem%rvecRhs,rsystem%rvecTmp)
+    if(ilogRes .gt. 0) then
+      !call output_lbrk()
+      !call output_line('Solving...')
+      !                                           1------------------1------------------1------------------1
+      call output_line(" Iter  Defect             |f_u - A*u|_2      |D*u|_2            |f_p - B*p|_2")
+      call output_line("----------------------------------------------------------------------------------")
+    end if
+    
+    ! start iterating
+    call itc_initIteration(rsystem%riter)
+    do while(.true.)
+    
+      ! compute velocity/pressure defects
+      call calcDefVelo(p_rmatSys, rsystem%rvecRhsVelo, rsystem%rvecSol, rsystem%rvecDefVelo)
+      call calcDefPres(p_rmatSys, rsystem%rvecRhsPres, rsystem%rvecSol, rsystem%rvecDefPres)
+      !call calcDef    (p_rmatSys, rsystem%rvecRhs    , rsystem%rvecSol, rsystem%rvecDef)
+      call lsysbl_vectorLinearComb(rsystem%rvecDefVelo, rsystem%rvecDefPres, 1.0_DP, 1.0_DP, rsystem%rvecDef)
+    
+      ! apply filter chains
+      call filter_applyFilterChainVec(rsystem%rvecDefVelo, rsystem%p_RfilterChain)
+      call filter_applyFilterChainVec(rsystem%rvecDefPres, rsystem%p_RfilterChain)
+      call filter_applyFilterChainVec(rsystem%rvecDef    , rsystem%p_RfilterChain)
+    
+      ! compute defect norms
+      ddef     = lsysbl_vectorNorm(rsystem%rvecDef    , LINALG_NORMEUCLID)
+      if(iand(ilogRes,1) .ne. 0) then
+        call lsysbl_vectorNormBlock(rsystem%rvecDefVelo, Cnorms, Dnorms)
+        ddefVelo = 0.0_DP
+        do i = 1, n
+          ddefVelo = ddefVelo + Dnorms(i)**2
+        end do
+        ddefVelo = sqrt(ddefVelo)
+        ddefDiv  = Dnorms(n+1)
+        ddefPres = lsysbl_vectorNorm(rsystem%rvecDefPres, LINALG_NORMEUCLID)
+      end if
+
+      ! push new defect
+      if(rsystem%riter%cstatus .eq. ITC_STATUS_UNDEFINED) then
+        call itc_initResidual(rsystem%riter, ddef)
+      else
+        call itc_pushResidual(rsystem%riter, ddef)
+      end if
+
+      ! print current residuals
+      if(iand(ilogRes,1) .ne. 0) then
+        call output_line(&
+          trim(sys_si(rsystem%riter%niterations, 5)) // "  " // &
+          trim(sys_sdel(ddef, 12)) // " " // &
+          trim(sys_sdel(ddefVelo, 12)) // " " // &
+          trim(sys_sdel(ddefDiv, 12)) // " " // &
+          trim(sys_sdel(ddefPres, 12)))
+      end if
+      
+      if(rsystem%riter%cstatus .ne. ITC_STATUS_CONTINUE) exit
+      
+      ! apply preconditioner
+      call linsol_precondDefect(rsystem%p_rsolver, rsystem%rvecDef)
+      
+      ! update solution vector
+      call lsysbl_vectorLinearComb(rsystem%rvecDef, rsystem%rvecSol, 1.0_DP, 1.0_DP)
+    
+    end do
+
+    ! print summary if desired
+    if(iand(ilogRes,2) .ne. 0) then
+      call output_lbrk()
+      call itc_printStatistics(rsystem%riter)
+    end if
 
     ! Release solver data and structure
     call linsol_doneData (rsystem%p_rsolver)
     call linsol_doneStructure (rsystem%p_rsolver)
-  
+    
+    
+  contains
+    subroutine calcDefVelo(rmatSys, rvecRhs, rvecSol, rvecDef)
+    type(t_matrixBlock), intent(in) :: rmatSys
+    type(t_vectorBlock), intent(in) :: rvecRhs, rvecSol
+    type(t_vectorBlock), intent(inout) :: rvecDef
+    
+    integer :: i,n
+    
+      n = rmatSys%nblocksPerRow-1
+    
+      call lsysbl_copyVector(rvecRhs, rvecDef)
+      do i = 1, n
+        ! d_i := b_i - A_ii * u_i
+        call lsyssc_matVec(rmatSys%RmatrixBlock(i,i), rvecSol%RvectorBlock(i), &
+            rvecDef%RvectorBlock(i), -1.0_DP, 1.0_DP)
+        ! d_n := b_n - sum{D_i * u_i}
+        call lsyssc_matVec(rmatSys%RmatrixBlock(n+1,i), rvecSol%RvectorBlock(i), &
+            rvecDef%RvectorBlock(n+1), -1.0_DP, 1.0_DP)
+      end do
+
+    end subroutine
+
+    subroutine calcDefPres(rmatSys, rvecRhs, rvecSol, rvecDef)
+    type(t_matrixBlock), intent(in) :: rmatSys
+    type(t_vectorBlock), intent(in) :: rvecRhs, rvecSol
+    type(t_vectorBlock), intent(inout) :: rvecDef
+    
+    integer :: i,n
+    
+      n = rmatSys%nblocksPerRow-1
+    
+      call lsysbl_copyVector(rvecRhs, rvecDef)
+      do i = 1, n
+        ! d_i := b_i - B_i * p
+        call lsyssc_matVec(rmatSys%RmatrixBlock(i,n+1), rvecSol%RvectorBlock(n+1), &
+            rvecDef%RvectorBlock(i), -1.0_DP, 1.0_DP)
+      end do
+
+    end subroutine
+    
+    subroutine calcDef(rmatSys, rvecRhs, rvecSol, rvecDef)
+    type(t_matrixBlock), intent(in) :: rmatSys
+    type(t_vectorBlock), intent(in) :: rvecRhs, rvecSol
+    type(t_vectorBlock), intent(inout) :: rvecDef
+    
+      call lsysbl_copyVector(rvecRhs, rvecDef)
+      call lsysbl_matVec(rmatSys, rvecSol, rvecDef, -1.0_DP, 1.0_DP)
+
+    end subroutine
+    
   end subroutine
 
   ! ***********************************************************************************************

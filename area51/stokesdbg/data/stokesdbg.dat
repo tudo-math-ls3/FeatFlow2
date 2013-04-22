@@ -83,7 +83,7 @@ VTKFILE = sol
 NU = 1
 
 # Problem parameters (optional, default: 1)
-DALPHA = 1
+DALPHA = 1E+0
 DBETA = 0.05
 DGAMMA = 0.25
 
@@ -108,6 +108,13 @@ SMOOTH_DAMP = 1.0
 # Output Level of solver (default: 0)
 IOUTPUT = 0
 
+# Log residuals (default: 0)
+# 0 -> don't print anything
+# 1 -> print residuals only
+# 2 -> print summary only
+# 3 -> print borth residuals and summary
+ILOGRES = 0
+
 # Maximum number of iterations for iterative solvers (default: 1000)
 MAX_ITER = 1000
 
@@ -116,3 +123,10 @@ EPSREL = 1E-8
 
 # Absolute tolerance for iterative solvers (default: 1E-11)
 EPSABS = 1E-11
+
+# Stagnation rate (default 0.95)
+STAG_RATE = 0.95
+
+# Stagnation iteration (default: 3)
+# set to 0 to disable stagnation control
+STAG_ITER = 3
