@@ -7878,7 +7878,7 @@ contains
 
 !<subroutine>
 
-  subroutine bma_auxViscosity (cviscoModel, Dviscosity, &
+  subroutine bma_auxFluidViscosity (cviscoModel, Dviscosity, &
       dnu,dviscoYield,dviscoEps,dviscoExponent,DviscoTensorNorm)
 
 !<description>
