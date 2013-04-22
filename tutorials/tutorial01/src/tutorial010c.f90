@@ -155,6 +155,7 @@ contains
     type(t_spatialDiscretisation) :: rspatialDiscr
     type(t_blockDiscretisation) :: rblockDiscr
     
+    type(t_scalarCubatureInfo), target :: rcubatureInfo
     type(t_matrixScalar) :: rtemplateMatrix
     type(t_matrixBlock) :: rmatrix
     
@@ -208,6 +209,12 @@ contains
         LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
 
     ! =================================
+    ! Use a 3-point Gauss Formula for the assembly
+    ! =================================
+    
+    call spdiscr_createDefCubStructure (rspatialDiscr,rcubatureInfo,CUB_GEN_AUTO_G3)
+
+    ! =================================
     ! Create Mass and Laplace.
     ! Use block assembly routines and a
     ! callback routine which applies
@@ -218,7 +225,8 @@ contains
     call lsysbl_clearMatrix (rmatrix)
     
     ! Assemble the matrix using our callback routine above.
-    call bma_buildMatrix (rmatrix,BMA_CALC_STANDARD,fassembleLocalMatrices)
+    call bma_buildMatrix (rmatrix,BMA_CALC_STANDARD,fassembleLocalMatrices,&
+        rcubatureInfo=rcubatureInfo)
 
     ! =================================
     ! Output of the matrix structure
@@ -241,6 +249,9 @@ contains
     ! Cleanup
     ! =================================
     
+    ! Release the cubature formula
+    call spdiscr_releaseCubStructure (rcubatureInfo)
+
     ! Release the matrix
     call lsysbl_releaseMatrix (rmatrix)
     

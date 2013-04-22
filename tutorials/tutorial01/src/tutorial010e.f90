@@ -84,7 +84,7 @@ contains
     real(DP), dimension(:,:,:,:), pointer :: p_DbasTrial,p_DbasTest
     real(DP), dimension(:,:), pointer :: p_DcubWeight
     type(t_bmaMatrixData), pointer :: p_rmatrixData11
-    real(DP), dimension(:,:,:), pointer :: p_DpointCoords, p_Df, p_Dg
+    real(DP), dimension(:,:,:), pointer :: p_Df, p_Dg
 
     real(DP) :: df, dg, dx, dy
 
@@ -94,9 +94,6 @@ contains
     ! Get local data
     p_DbasTrial => RmatrixData(1,1)%p_DbasTrial
     p_DbasTest => RmatrixData(1,1)%p_DbasTest
-    
-    ! Get the coordinates of the cubature points
-    p_DpointCoords => rassemblyData%revalElementSet%p_DpointsReal
     
     ! We set up two matrices:
     !
@@ -108,6 +105,7 @@ contains
     !    f = 1 + x^2
     !    g = 1 + y^2
     !
+    ! given as FEM functions.
     ! Get the nonconstant coefficients for f and g. They are
     ! automatically evaluated for us, the data can be found
     ! in rcoeffVectors%p_RvectorData(:)%p_Ddata.
@@ -127,10 +125,6 @@ contains
       ! Loop over all cubature points on the current element
       do icubp = 1,npointsPerElement
       
-        ! Coordinates of the current cubature point
-        dx = p_DpointCoords(1,icubp,iel)
-        dy = p_DpointCoords(2,icubp,iel)
-        
         ! Get the values of f and g in the cubature point.
         df = p_Df(icubp,iel,DER_FUNC2D)
         dg = p_Dg(icubp,iel,DER_FUNC2D)
@@ -290,7 +284,8 @@ contains
     
     ! Assemble the matrix using our callback routine above.
     ! Provide rcoeffVectors as nonconstant coefficients.
-    call bma_buildMatrix (rmatrix,BMA_CALC_STANDARD,fassembleLocalMatrices,revalVectors=rcoeffVectors)
+    call bma_buildMatrix (rmatrix,BMA_CALC_STANDARD,fassembleLocalMatrices,&
+        revalVectors=rcoeffVectors,rcubatureInfo=rcubatureInfo)
     
     ! Release the evaluation structure.
     call fev2_releaseVectorList(rcoeffVectors)

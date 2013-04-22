@@ -1,8 +1,8 @@
 !##############################################################################
-!# Tutorial 010a: Create a 2x2 block system with Mass and Laplace on the diag.
+!# Tutorial 011a: Create a 2x2 block system, assemble a vector with block meth.
 !##############################################################################
 
-module tutorial010a
+module tutorial011a
 
   ! Include basic Feat-2 modules
   use fsystem
@@ -25,18 +25,18 @@ module tutorial010a
   use blockmatassemblystdop
   use collection
   
-  use matrixio
+  use vectorio
 
   implicit none
   private
   
-  public :: start_tutorial010a
+  public :: start_tutorial011a
 
 contains
 
   ! ***************************************************************************
 
-  subroutine start_tutorial010a
+  subroutine start_tutorial011a
 
     ! Declare some variables.
     type(t_triangulation) :: rtriangulation
@@ -44,15 +44,13 @@ contains
     type(t_blockDiscretisation) :: rblockDiscr
     
     type(t_scalarCubatureInfo), target :: rcubatureInfo
-    type(t_matrixScalar) :: rtemplateMatrix
-    type(t_matrixBlock) :: rmatrix
-    
+    type(t_vectorBlock) :: rrhs
     type(t_collection) :: rcollection
 
     ! Print a message
     call output_lbrk()
     call output_separator (OU_SEP_STAR)
-    call output_line ("This is FEAT-2. Tutorial 010a")
+    call output_line ("This is FEAT-2. Tutorial 011a")
     call output_separator (OU_SEP_MINUS)
     
     ! =================================
@@ -86,44 +84,29 @@ contains
     call spdiscr_createDefCubStructure (rspatialDiscr,rcubatureInfo,CUB_GEN_AUTO_G3)
 
     ! =================================
-    ! Create a 2x2 block matrix with
-    ! entries in (1,1) and (2,2)
+    ! Create a RHS vector.
     ! =================================
     
-    ! Create a template matrix for the FEM space. CSR structure.
-    call bilf_createMatrixStructure (rspatialDiscr,LSYSSC_MATRIX9,rtemplateMatrix)
-
-    ! Use the block discretisation to create a basic system matrix.
-    call lsysbl_createMatBlockByDiscr (rblockDiscr,rmatrix)
-
-    ! Create (1,1) and (2,2) using the template matrix.
-    ! Structure is "shared" (no new memory is allocated), content is allocated.
-    call lsyssc_duplicateMatrix (rtemplateMatrix,rmatrix%RmatrixBlock(1,1),&
-        LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-
-    call lsyssc_duplicateMatrix (rtemplateMatrix,rmatrix%RmatrixBlock(2,2),&
-        LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-
+    ! Use the block discretisation to create a vector.
+    call lsysbl_createVector (rblockDiscr,rrhs)
+    
     ! =================================
-    ! Create Mass and Laplace.
-    ! Use default block assembly routines.
+    ! Assemble rrhs=(f,g) with
+    !   f=1,
+    !   g=32*y*(1-y)+32*x*(1-x)
     ! =================================
     
-    ! Clear the matrix
-    call lsysbl_clearMatrix (rmatrix)
-    
-    ! Put the mass matrix to (1,1).
-    rcollection%DquickAccess(1) = 1.0_DP    ! Multiplier
-    rcollection%IquickAccess(1) = 1         ! x-position
-    rcollection%IquickAccess(2) = 1         ! y-position
-    call bma_buildMatrix (rmatrix,BMA_CALC_STANDARD,bma_fcalc_mass,rcollection,&
+    ! Clear the vector.
+    call lsysbl_clearVector (rrhs)
+
+    ! Calculate f=1 to the 1st component.
+    rcollection%IquickAccess(1) = 1
+    call bma_buildVector (rrhs,BMA_CALC_STANDARD,bma_fcalc_rhsOne,rcollection,&
         rcubatureInfo=rcubatureInfo)
-    
-    ! Put the Laplace matrix to (2,2)
-    rcollection%DquickAccess(1) = 1.0_DP    ! Multiplier
-    rcollection%IquickAccess(1) = 2         ! x-position
-    rcollection%IquickAccess(2) = 2         ! y-position
-    call bma_buildMatrix (rmatrix,BMA_CALC_STANDARD,bma_fcalc_laplace,rcollection,&
+        
+    ! Calculate g=32*y*(1-y)+32*x*(1-x) to the 2nd component.
+    rcollection%IquickAccess(1) = 2
+    call bma_buildVector (rrhs,BMA_CALC_STANDARD,bma_fcalc_rhsBubble,rcollection,&
         rcubatureInfo=rcubatureInfo)
 
     ! =================================
@@ -131,17 +114,17 @@ contains
     ! =================================
     call output_line ("Writing matrix to text files...")
     
-    ! Write the matrix to a text file, omit nonexisting entries in the matrix.
-    call matio_writeBlockMatrixHR (rmatrix, "matrix", .true., 0, &
-        "post/tutorial010a_matrix.txt", "(E11.2)")
+    ! Write the vector to a text file.
+    call vecio_writeBlockVectorHR (rrhs, "vector", .true., 0, &
+        "post/tutorial011a_vector.txt", "(E11.2)")
 
-    ! Write the matrix to a MATLAB file.
-    call matio_spyBlockMatrix(&
-        "post/tutorial010a_matrix","matrix",rmatrix,.true.)
+    ! Write the vector to a MATLAB file.
+    call vecio_spyBlockVector(&
+        "post/tutorial011a_vector","vector",rrhs,.true.)
     
-    ! Write the matrix to a MAPLE file
-    call matio_writeBlockMatrixMaple (rmatrix, "matrix", 0, &
-        "post/tutorial010a_matrix.maple", "(E11.2)")
+    ! Write the vector to a MAPLE file
+    call vecio_writeBlockVectorMaple (rrhs, "vector", .true., 0,&
+        "post/tutorial011a_vector.maple", "(E11.2)")
 
     ! =================================
     ! Cleanup
@@ -150,11 +133,8 @@ contains
     ! Release the cubature formula
     call spdiscr_releaseCubStructure (rcubatureInfo)
 
-    ! Release the matrix
-    call lsysbl_releaseMatrix (rmatrix)
-    
-    ! ... and the FEM template matrix
-    call lsyssc_releaseMatrix (rtemplateMatrix)
+    ! Release the vector
+    call lsysbl_releaseVector (rrhs)
     
     ! Release the block discretisation
     call spdiscr_releaseBlockDiscr (rblockDiscr)

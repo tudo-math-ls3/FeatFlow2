@@ -1,5 +1,5 @@
 !##############################################################################
-!# Tutorial 010g: Create a 2x2 block system, FE functions as coefficients.
+!# Tutorial 010g: Create a 2x2 block system, FE functions/deriv. as coefficients.
 !##############################################################################
 
 module tutorial010g
@@ -77,30 +77,27 @@ contains
 !</subroutine>
 
     ! Local variables
+    real(DP) :: df, dfx, dfy, dx, dy
     real(DP) :: dbasI, dbasJ
     integer :: iel, icubp, idofe, jdofe
     real(DP), dimension(:,:,:), pointer :: p_DlocalMatrix11,p_DlocalMatrix22
     real(DP), dimension(:,:,:,:), pointer :: p_DbasTrial,p_DbasTest
     real(DP), dimension(:,:), pointer :: p_DcubWeight
     type(t_bmaMatrixData), pointer :: p_rmatrixData11
-    real(DP), dimension(:,:,:), pointer :: p_DpointCoords, p_Df, p_Dg
-
-    real(DP) :: df, dfx, dfy, dg, dx, dy
-
+    real(DP), dimension(:,:,:), pointer :: p_DpointCoords
+    real(DP), dimension(:,:,:), pointer :: p_Df
+    real(DP), dimension(:,:), pointer :: p_Dcoeff1, p_Dcoeff2
+  
     ! Get cubature weights data
     p_DcubWeight => rassemblyData%p_DcubWeight
 
-    ! Get local data
-    p_DbasTrial => RmatrixData(1,1)%p_DbasTrial
-    p_DbasTest => RmatrixData(1,1)%p_DbasTest
-    
     ! Get the coordinates of the cubature points
     p_DpointCoords => rassemblyData%revalElementSet%p_DpointsReal
-    
+
     ! We set up two matrices:
     !
-    !    A11 = f * Mass
-    !    A22 = g * Mass
+    !    A11 = ( f + sin(x*y*PI) ) * Mass
+    !    A22 = ( g + sin(x*y*PI) ) * Mass
     !
     ! with
     !
@@ -111,12 +108,13 @@ contains
     ! automatically evaluated for us, the data can be found
     ! in rcoeffVectors%p_RvectorData(:)%p_Ddata.
     !
-    ! Due to ideriv=1 below, we f_x and f_y is available here as well.
+    ! Due to ideriv=1 below, f, f_x and f_y are available here as well.
     p_Df => rcoeffVectors%p_RvectorData(1)%p_Ddata
     
     ! In rcoeffVectors%p_RvectorData(2), we have temporary memory available.
-    ! We precompute g(.) into this array.
-    p_Dg => rcoeffVectors%p_RvectorData(2)%p_Ddata
+    ! Get it, we precompute the coefficients to this.
+    p_Dcoeff1 => rcoeffVectors%p_RvectorData(2)%p_Ddata(:,:,1)
+    p_Dcoeff2 => rcoeffVectors%p_RvectorData(2)%p_Ddata(:,:,2)
     
     ! Loop over the elements in the current set.
     do iel = 1,nelements
@@ -124,18 +122,27 @@ contains
       ! Loop over all cubature points on the current element
       do icubp = 1,npointsPerElement
 
-        ! Get the values of f_x, f_y in the cubature point.
+        ! Coordinates of the current cubature point
+        dx = p_DpointCoords(1,icubp,iel)
+        dy = p_DpointCoords(2,icubp,iel)
+
+        ! Get the values of f, f_x, f_y in the cubature point.
+        df  = p_Df(icubp,iel,DER_FUNC2D)
         dfx = p_Df(icubp,iel,DER_DERIV2D_X)
         dfy = p_Df(icubp,iel,DER_DERIV2D_Y)
+        
+        ! Precompute the coefficients.
+        p_Dcoeff1(icubp,iel) = df + sin(dx*dy*SYS_PI)
+        p_Dcoeff2(icubp,iel) = 1.0_DP + dfx * dfy + sin(dx*dy*SYS_PI)
 
-        ! Calculate g() into p_Dg(:,:,1), the temp array provided by
-        ! fev2_addDummyVectorToEvalList.
-        p_Dg(icubp,iel,1) = 1.0_DP + dfx * dfy
-      
       end do
       
     end do
 
+    ! Get local data
+    p_DbasTrial => RmatrixData(1,1)%p_DbasTrial
+    p_DbasTest => RmatrixData(1,1)%p_DbasTest
+    
     ! Get the matrix data.
     p_rmatrixData11 => RmatrixData(1,1)
     
@@ -149,14 +156,6 @@ contains
       ! Loop over all cubature points on the current element
       do icubp = 1,npointsPerElement
       
-        ! Coordinates of the current cubature point
-        dx = p_DpointCoords(1,icubp,iel)
-        dy = p_DpointCoords(2,icubp,iel)
-        
-        ! Get the values of f and g in the cubature point.
-        df = p_Df(icubp,iel,DER_FUNC2D)
-        dg = p_Dg(icubp,iel,1)
-
         ! Outer loop over the DOF's i=1..ndof on our current element,
         ! which corresponds to the (test) basis functions Psi_i:
         do idofe=1,p_rmatrixData11%ndofTest
@@ -179,11 +178,11 @@ contains
 
             ! f*Mass to the block (1,1)
             p_DlocalMatrix11(jdofe,idofe,iel) = p_DlocalMatrix11(jdofe,idofe,iel) + &
-                p_DcubWeight(icubp,iel) * df * dbasJ*dbasI
+                p_DcubWeight(icubp,iel) * p_Dcoeff1(icubp,iel) * dbasJ*dbasI
 
             ! g*Mass to the block (2,2)
             p_DlocalMatrix22(jdofe,idofe,iel) = p_DlocalMatrix22(jdofe,idofe,iel) + &
-                p_DcubWeight(icubp,iel) * dg * dbasJ*dbasI
+                p_DcubWeight(icubp,iel) * p_Dcoeff2(icubp,iel) * dbasJ*dbasI
 
           end do ! jdofe
 
@@ -303,13 +302,13 @@ contains
     ideriv = 1
     call fev2_addVectorToEvalList(rcoeffVectors,rcoeffVector,ideriv)
     
-    ! Add one dummy vector which is used in the callback routine to calculate g()
-    ! in the cubature points.
-    call fev2_addDummyVectorToEvalList(rcoeffVectors,1)
+    ! Add two dummy vectors for temporary calculations in fassembleLocalMatrices.
+    call fev2_addDummyVectorToEvalList(rcoeffVectors,2)
     
     ! Assemble the matrix using our callback routine above.
     ! Provide rcoeffVectors as nonconstant coefficients.
-    call bma_buildMatrix (rmatrix,BMA_CALC_STANDARD,fassembleLocalMatrices,revalVectors=rcoeffVectors)
+    call bma_buildMatrix (rmatrix,BMA_CALC_STANDARD,fassembleLocalMatrices,&
+        revalVectors=rcoeffVectors,rcubatureInfo=rcubatureInfo)
     
     ! Release the evaluation structure.
     call fev2_releaseVectorList(rcoeffVectors)

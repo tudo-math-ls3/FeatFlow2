@@ -1,8 +1,8 @@
 !##############################################################################
-!# Tutorial 010f: Create a 2x2 block system, FE functions as coefficients.
+!# Tutorial 011c: Assemble a vector with block meth., FE-function/deriv. as coeff.
 !##############################################################################
 
-module tutorial010f
+module tutorial011c
 
   ! Include basic Feat-2 modules
   use fsystem
@@ -23,15 +23,14 @@ module tutorial010f
   use blockmatassemblybase
   use blockmatassembly
   use blockmatassemblystdop
-  use feevaluation2
   use collection
   
-  use matrixio
+  use vectorio
 
   implicit none
   private
   
-  public :: start_tutorial010f
+  public :: start_tutorial011c
 
 contains
 
@@ -39,84 +38,79 @@ contains
 
 !<subroutine>
 
-  subroutine fassembleLocalMatrices(RmatrixData,rassemblyData,rmatrixAssembly,&
-      npointsPerElement,nelements,rcoeffVectors,rcollection)
+  subroutine fcoeff_rhs(rvectorData,rassemblyData,rvectorAssembly,&
+      npointsPerElement,nelements,revalVectors,rcollection)
 
 !<description>  
-    ! Callback routine. Calculates the local matrices of an operator.
+    ! Calculates the RHS.
 !</description>
 
 !<inputoutput>
-    ! Matrix data of all matrices. The arrays p_Dentry of all submatrices
+    ! Vector data of all subvectors. The arrays p_Dentry of all subvectors
     ! have to be filled with data.
-    type(t_bmaMatrixData), dimension(:,:), intent(inout), target :: RmatrixData
+    type(t_bmaVectorData), dimension(:), intent(inout), target :: RvectorData
 !</inputoutput>
 
 !<input>
     ! Data necessary for the assembly. Contains determinants and
     ! cubature weights for the cubature,...
-    type(t_bmaMatrixAssemblyData), intent(in) :: rassemblyData
+    type(t_bmaVectorAssemblyData), intent(in) :: rassemblyData
 
     ! Structure with all data about the assembly
-    type(t_bmaMatrixAssembly), intent(in) :: rmatrixAssembly
-
+    type(t_bmaVectorAssembly), intent(in) :: rvectorAssembly
+    
     ! Number of points per element
     integer, intent(in) :: npointsPerElement
-
+    
     ! Number of elements
     integer, intent(in) :: nelements
-
+    
     ! Values of FEM functions automatically evaluated in the
     ! cubature points.
-    type(t_fev2Vectors), intent(in) :: rcoeffVectors
+    type(t_fev2Vectors), intent(in) :: revalVectors
 
     ! User defined collection structure
     type(t_collection), intent(inout), target, optional :: rcollection
 !</input>
-
+    
 !</subroutine>
 
     ! Local variables
-    real(DP) :: dbasI, dbasJ
-    integer :: iel, icubp, idofe, jdofe
-    real(DP), dimension(:,:,:), pointer :: p_DlocalMatrix11,p_DlocalMatrix22
-    real(DP), dimension(:,:,:,:), pointer :: p_DbasTrial,p_DbasTest
+    real(DP) :: dbasI, df,dfx, dfy, dg
+    integer :: iel, icubp, idofe
+    real(DP), dimension(:,:), pointer :: p_DlocalVector1,p_DlocalVector2
+    real(DP), dimension(:,:,:,:), pointer :: p_DbasTest
     real(DP), dimension(:,:), pointer :: p_DcubWeight
-    type(t_bmaMatrixData), pointer :: p_rmatrixData11
-    real(DP), dimension(:,:,:), pointer :: p_DpointCoords, p_Df
-
-    real(DP) :: df, dfx, dfy, dg, dx, dy
-
+    type(t_bmaVectorData), pointer :: p_rvectorData
+    real(DP), dimension(:,:,:), pointer :: p_Df
+  
     ! Get cubature weights data
     p_DcubWeight => rassemblyData%p_DcubWeight
 
-    ! Get local data
-    p_DbasTrial => RmatrixData(1,1)%p_DbasTrial
-    p_DbasTest => RmatrixData(1,1)%p_DbasTest
-    
-    ! We set up two matrices:
+    ! We set up two vectors:
     !
-    !    A11 = f * Mass
-    !    A22 = g * Mass
+    !    rhs_1 = f
+    !    rhs_2 = g
     !
     ! with
     !
     !    f = 1 + x*y         ( given in rcoeffVectors%p_RvectorData(1) )
     !    g = 1 + f_x * f_y
     !
-    ! Get the nonconstant coefficients for f and g. They are
+    ! Get the nonconstant coefficients for f. They are
     ! automatically evaluated for us, the data can be found
     ! in rcoeffVectors%p_RvectorData(:)%p_Ddata.
     !
-    ! Due to ideriv=1 below, we f_x and f_y is available here as well.
-    p_Df => rcoeffVectors%p_RvectorData(1)%p_Ddata
+    ! Due to ideriv=1 below, f, f_x and f_y are available here as well.
+    p_Df => revalVectors%p_RvectorData(1)%p_Ddata
     
-    ! Get the matrix data.
-    p_rmatrixData11 => RmatrixData(1,1)
-    
-    ! Get the matrix entries.
-    p_DlocalMatrix11 => RmatrixData(1,1)%p_Dentry
-    p_DlocalMatrix22 => RmatrixData(2,2)%p_Dentry
+    ! Get the data arrays of the subvectors
+    p_rvectorData => RvectorData(1)
+    p_DbasTest => RvectorData(1)%p_DbasTest
+
+    ! Get pointers to the local vectors for block 1 + 2
+    p_DlocalVector1 => RvectorData(1)%p_Dentry
+    p_DlocalVector2 => RvectorData(2)%p_Dentry
 
     ! Loop over the elements in the current set.
     do iel = 1,nelements
@@ -124,54 +118,42 @@ contains
       ! Loop over all cubature points on the current element
       do icubp = 1,npointsPerElement
       
-        ! Get the values of f and g in the cubature point.
+        ! Fetch the values in the cubature point.
         df  = p_Df(icubp,iel,DER_FUNC2D)
         dfx = p_Df(icubp,iel,DER_DERIV2D_X)
         dfy = p_Df(icubp,iel,DER_DERIV2D_Y)
-
-        dg = 1.0_DP + dfx * dfy
-
+        
+        ! Calculate g on-demand.
+        dg = 1.0_DP + dfx*dfy
+        
         ! Outer loop over the DOF's i=1..ndof on our current element,
         ! which corresponds to the (test) basis functions Psi_i:
-        do idofe=1,p_rmatrixData11%ndofTest
-
+        do idofe=1,p_rvectorData%ndofTest
+        
           ! Fetch the contributions of the (test) basis functions Psi_i
           ! into dbasI
-          dbasI  = p_DbasTest(idofe,DER_FUNC2D,icubp,iel)
-
-          ! Inner loop over the DOF's j=1..ndof, which corresponds to
-          ! the (trial) basis function Phi_j:
-          do jdofe=1,p_rmatrixData11%ndofTrial
-
-            ! Fetch the contributions of the (trial) basis function Phi_j
-            ! into dbasJ
-            dbasJ  = p_DbasTrial(jdofe,DER_FUNC2D,icubp,iel)
-
-            ! Multiply the values of the basis functions
-            ! (1st derivatives) by the cubature weight and sum up
-            ! into the local matrices.
-
-            ! f*Mass to the block (1,1)
-            p_DlocalMatrix11(jdofe,idofe,iel) = p_DlocalMatrix11(jdofe,idofe,iel) + &
-                p_DcubWeight(icubp,iel) * df * dbasJ*dbasI
-
-            ! g*Mass to the block (2,2)
-            p_DlocalMatrix22(jdofe,idofe,iel) = p_DlocalMatrix22(jdofe,idofe,iel) + &
-                p_DcubWeight(icubp,iel) * dg * dbasJ*dbasI
-
-          end do ! jdofe
+          dbasI = p_DbasTest(idofe,DER_FUNC,icubp,iel)
+          
+          ! Multiply the values of the basis functions
+          ! (1st derivatives) by the cubature weight and sum up
+          ! into the local vectors.
+          p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
+              p_DcubWeight(icubp,iel) * df * dbasI
+          
+          p_DlocalVector2(idofe,iel) = p_DlocalVector2(idofe,iel) + &
+              p_DcubWeight(icubp,iel) * dg * dbasI
 
         end do ! idofe
-
+          
       end do ! icubp
-
+    
     end do ! iel
-        
+      
   end subroutine
 
   ! ***************************************************************************
 
-  subroutine start_tutorial010f
+  subroutine start_tutorial011c
 
     ! Declare some variables.
     type(t_triangulation) :: rtriangulation
@@ -181,17 +163,16 @@ contains
     type(t_scalarCubatureInfo), target :: rcubatureInfo
     type(t_fev2Vectors) :: rcoeffVectors
     type(t_vectorScalar) :: rcoeffVector
-    type(t_matrixScalar) :: rtemplateMatrix
-    type(t_matrixBlock) :: rmatrix
+    type(t_vectorBlock) :: rrhs
     
-    integer :: i,ideriv
+    integer :: i, ideriv
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
     real(DP), dimension(:), pointer :: p_DdataCoeff
 
     ! Print a message
     call output_lbrk()
     call output_separator (OU_SEP_STAR)
-    call output_line ("This is FEAT-2. Tutorial 010f")
+    call output_line ("This is FEAT-2. Tutorial 011c")
     call output_separator (OU_SEP_MINUS)
     
     ! =================================
@@ -219,23 +200,10 @@ contains
     call spdiscr_duplicateDiscrSc (rspatialDiscr,rblockDiscr%RspatialDiscr(2))
     
     ! =================================
-    ! Create a 2x2 block matrix with
-    ! entries in (1,1) and (2,2)
+    ! Use a 3-point Gauss Formula for the assembly
     ! =================================
     
-    ! Create a template matrix for the FEM space. CSR structure.
-    call bilf_createMatrixStructure (rspatialDiscr,LSYSSC_MATRIX9,rtemplateMatrix)
-
-    ! Use the block discretisation to create a basic system matrix.
-    call lsysbl_createMatBlockByDiscr (rblockDiscr,rmatrix)
-
-    ! Create (1,1) and (2,2) using the template matrix.
-    ! Structure is "shared" (no new memory is allocated), content is allocated.
-    call lsyssc_duplicateMatrix (rtemplateMatrix,rmatrix%RmatrixBlock(1,1),&
-        LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-
-    call lsyssc_duplicateMatrix (rtemplateMatrix,rmatrix%RmatrixBlock(2,2),&
-        LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+    call spdiscr_createDefCubStructure (rspatialDiscr,rcubatureInfo,CUB_GEN_AUTO_G3)
 
     ! =================================
     ! Create a coefficient vector rcoeffVector = ( 1+x*y )
@@ -256,32 +224,29 @@ contains
     end do
 
     ! =================================
-    ! Use a 3-point Gauss Formula for the assembly
+    ! Create a RHS vector.
     ! =================================
     
-    call spdiscr_createDefCubStructure (rspatialDiscr,rcubatureInfo,CUB_GEN_AUTO_G3)
+    ! Use the block discretisation to create a vector.
+    call lsysbl_createVector (rblockDiscr,rrhs)
+    
+    ! =================================
+    ! Assemble rrhs.
+    ! =================================
+    
+    ! Clear the vector.
+    call lsysbl_clearVector (rrhs)
 
-    ! =================================
-    ! Create Mass and Laplace.
-    ! Use block assembly routines and a
-    ! callback routine which applies
-    ! the complete assembly in one step.
-    ! =================================
-    
-    ! Clear the matrix
-    call lsysbl_clearMatrix (rmatrix)
-    
     ! Set up a vector evaluation structure that automatically evaluates rcoeffVector
     ! in the cubature points during the assembly. 
     ! Evaluate function values + 1st derivatives, as we need the latter.
     ideriv = 1
     call fev2_addVectorToEvalList(rcoeffVectors,rcoeffVector,ideriv)
-    
-    ! Assemble the matrix using our callback routine above.
-    ! Provide rcoeffVectors as nonconstant coefficients.
-    call bma_buildMatrix (rmatrix,BMA_CALC_STANDARD,fassembleLocalMatrices,&
+
+    ! Calculate the RHS.
+    call bma_buildVector (rrhs,BMA_CALC_STANDARD,fcoeff_rhs,&
         revalVectors=rcoeffVectors,rcubatureInfo=rcubatureInfo)
-    
+
     ! Release the evaluation structure.
     call fev2_releaseVectorList(rcoeffVectors)
 
@@ -290,17 +255,17 @@ contains
     ! =================================
     call output_line ("Writing matrix to text files...")
     
-    ! Write the matrix to a text file, omit nonexisting entries in the matrix.
-    call matio_writeBlockMatrixHR (rmatrix, "matrix", .true., 0, &
-        "post/tutorial010f_matrix.txt", "(E11.2)")
+    ! Write the vector to a text file.
+    call vecio_writeBlockVectorHR (rrhs, "vector", .true., 0, &
+        "post/tutorial011c_vector.txt", "(E11.2)")
 
-    ! Write the matrix to a MATLAB file.
-    call matio_spyBlockMatrix(&
-        "post/tutorial010f_matrix","matrix",rmatrix,.true.)
+    ! Write the vector to a MATLAB file.
+    call vecio_spyBlockVector(&
+        "post/tutorial011c_vector","vector",rrhs,.true.)
     
-    ! Write the matrix to a MAPLE file
-    call matio_writeBlockMatrixMaple (rmatrix, "matrix", 0, &
-        "post/tutorial010f_matrix.maple", "(E11.2)")
+    ! Write the vector to a MAPLE file
+    call vecio_writeBlockVectorMaple (rrhs, "vector", .true., 0,&
+        "post/tutorial011c_vector.maple", "(E11.2)")
 
     ! =================================
     ! Cleanup
@@ -312,11 +277,8 @@ contains
     ! Release the coefficient vector
     call lsyssc_releaseVector (rcoeffVector)
 
-    ! Release the matrix
-    call lsysbl_releaseMatrix (rmatrix)
-    
-    ! ... and the FEM template matrix
-    call lsyssc_releaseMatrix (rtemplateMatrix)
+    ! Release the vector
+    call lsysbl_releaseVector (rrhs)
     
     ! Release the block discretisation
     call spdiscr_releaseBlockDiscr (rblockDiscr)
