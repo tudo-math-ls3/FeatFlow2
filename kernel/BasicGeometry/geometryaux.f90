@@ -54,8 +54,14 @@
 !#
 !# 15.) gaux_intersect_edgecircle
 !#      -> calculates intersection of edge and circle
+!#
 !# 16.) gaux_intersect_quadcircle
 !#      -> calculates intersection of quad and circle
+!#
+!# 17.) gaux_getDirectedExtentQuad2D
+!#      -> Calculates the maximum length of a line in a given direction
+!#         when embedded in a 2D quadrilateral
+!# 
 !# </purpose>
 !##############################################################################
 
@@ -89,6 +95,8 @@ module geometryaux
   public :: gaux_isInElement_hexa_aligned
   public :: gaux_intersect_edgecircle
   public :: gaux_intersect_quadcircle
+  public :: gaux_getDirectedExtentQuad2D
+  
 contains
 
   ! ***************************************************************************
@@ -1542,6 +1550,136 @@ contains
       Dintersec(:,2)=Dp1(:)+ dt2*Ddir(:)
     end if
   end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  pure subroutine gaux_getDirectedExtentQuad2D (Dcorners,dbeta1,dbeta2,dlen)
+      
+  !<description>
+    ! Calculates the maximum length of a line in direction (dbeta1,dbeta2)
+    ! when embedded in a 2D quadrilateral with corners Dcoords.
+    !
+    ! Remarks: The cell is assumed to be convex. The routine "shoots" a
+    ! ray from each corner in direction (dbeta1,dbeta2) and detects
+    ! where it hits the opposite side of the cell.
+  !</description>
+
+  !<input>
+    ! Coordinates of the corners defining the cell.
+    real(DP), dimension(:,:), intent(in) :: Dcorners
+    
+    ! Direction of the line. It is assumed that the vector is normalised,
+    ! i.e., ||(dbeta1,dbeta2)||_2 = 1.
+    real(DP), intent(in) :: dbeta1, dbeta2
+    
+  !</input>
+
+  !<output>
+    ! Maximum length of the line.
+    real(DP), intent(out) :: dlen
+  !</output>
+
+!</subroutine>
+
+    ! local variables
+    real(DP) :: x1,y1,x2,y2,x3,y3,x4,y4, dx,dy, dalpha
+    integer :: iintersect
+
+    ! Fetch the coordinates of these corners
+
+    x1=Dcorners(1,1)
+    y1=Dcorners(2,1)
+    x2=Dcorners(1,2)
+    y2=Dcorners(2,2)
+    x3=Dcorners(1,3)
+    y3=Dcorners(2,3)
+    x4=Dcorners(1,4)
+    y4=Dcorners(2,4)
+
+    dlen=0.0_DP
+
+    ! Calculate the `maximum possible cell width in direction (dbeta1,dbeta2)`;
+    ! The picture in mind is the following:
+    !
+    !          G3
+    !   +-------------X-------+
+    !   |            /        |
+    !   |           /         |
+    !   |          /          |
+    !   |         /           |
+    !   |        /            |
+    ! G4|       /             | G2
+    !   |      ^ (beta1,beta2)|
+    !   |     /               |
+    !   |    /                |
+    !   |   /                 |
+    !   |  /                  |
+    !   | /                   |
+    !   |/                    |
+    !   O---------------------+
+    !            G1
+    !
+    ! The vector (beta1,beta2) indicates the direction of the flow.
+    ! A particle starting in point O moves at most up to point X.
+    ! The length of the line (O,X) is returned.
+    !
+    ! Loop through the four corners of cell and check for a line
+    ! with slope BETA=(xbeta1,xbeta2) starting in this corner whether it
+    ! really intersects with one of the edges of the element. Remark
+    ! that we only have to check the two opposite edges to the current
+    ! corner!
+
+    ! -----------------------------------------------------------------
+    ! Check the first corner.
+    ! We obtain dalpha, which may be negative if direction (dbeta1,dbeta2)
+    ! points outside of the element and we would have to use
+    ! (-dbeta1,-dbeta2) instead.
+
+    call gaux_getIntersection_ray2D(&
+        x1,y1, x1+dbeta1,y1+dbeta2, x2,y2, x3,y3, dx,dy, iintersect, dalpha)
+    dlen=max(abs(dalpha),dlen)
+
+    call gaux_getIntersection_ray2D(&
+        x1,y1, x1+dbeta1,y1+dbeta2, x3,y3, x4,y4, dx,dy, iintersect, dalpha)
+
+    dlen=max(abs(dalpha),dlen)
+
+    ! -----------------------------------------------------------------
+    ! The second one...
+
+    call gaux_getIntersection_ray2D(&
+        x2,y2, x2+dbeta1,y2+dbeta2, x4,y4, x1,y1, dx,dy, iintersect, dalpha)
+    dlen=max(abs(dalpha),dlen)
+
+    call gaux_getIntersection_ray2D(&
+        x2,y2, x2+dbeta1,y2+dbeta2, x4,y4, x3,y3, dx,dy, iintersect, dalpha)
+    dlen=max(abs(dalpha),dlen)
+
+    ! -----------------------------------------------------------------
+    ! The third one...
+
+    call gaux_getIntersection_ray2D(&
+        x3,y3, x3+dbeta1,y3+dbeta2, x1,y1, x2,y2, dx,dy, iintersect, dalpha)
+    dlen=max(abs(dalpha),dlen)
+
+    call gaux_getIntersection_ray2D(&
+        x3,y3, x3+dbeta1,y3+dbeta2, x1,y1, x4,y4, dx,dy, iintersect, dalpha)
+    dlen=max(abs(dalpha),dlen)
+
+    ! -----------------------------------------------------------------
+    ! And the fourth=last one...
+
+    call gaux_getIntersection_ray2D(&
+        x4,y4, x4+dbeta1,y4+dbeta2, x2,y2, x1,y1, dx,dy, iintersect, dalpha)
+    dlen=max(abs(dalpha),dlen)
+
+    call gaux_getIntersection_ray2D(&
+        x4,y4, x4+dbeta1,y4+dbeta2, x2,y2, x3,y3, dx,dy, iintersect, dalpha)
+    dlen=max(abs(dalpha),dlen)
 
   end subroutine
 
