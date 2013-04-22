@@ -7807,7 +7807,7 @@ contains
 
 !<subroutine>
 
-  subroutine bma_auxVelocity2DTensorNorm (cviscoTensorType, DviscoTensorNorm, &
+  subroutine bma_auxViscosityTensorNorm2D (cviscoTensorType, DviscoTensorNorm, &
       Du1x, Du1y, Du2x, Du2y)
 
 !<description>
