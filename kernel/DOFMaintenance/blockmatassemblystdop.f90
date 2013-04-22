@@ -7195,4 +7195,771 @@ contains
       
   end subroutine
 
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine bma_auxGetLocalMeshWidth_area (Ielements,rtriangulation,DmeshWidth)
+
+!<description>
+  ! For a set of elements Ielements, this routine calculates a local mesh width
+  ! using the area of the cells. Area/Volume-based approach.
+  !
+  ! Note: All elements must be of the same type (triangular, quad,...).
+!</description>
+
+!<input>
+  ! List of elements.
+  integer, dimension(:), intent(in) :: Ielements
+  
+  ! Underlying triangulation
+  type(t_triangulation), intent(in) :: rtriangulation
+!</input>
+
+!<output>
+  ! Mesh with of all elements Ielements.
+  real(DP), dimension(:), intent(out) :: DmeshWidth
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
+    real(DP), dimension(:), pointer :: p_DelementVolume
+    integer :: nve,iel
+    
+    if (size(Ielements) .eq. 0) return
+    
+    ! Get some information about the mesh.
+    call storage_getbase_int2d(rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
+    call storage_getbase_double(rtriangulation%h_DelementVolume,p_DelementVolume)
+    
+    ! Get the number of vertices on the element.
+    do nve = ubound(p_IverticesAtElement,1),1,-1
+      if (p_IverticesAtElement(nve,Ielements(1)) .ne. 0) exit
+    end do
+
+    ! What is the current dimension
+    select case (rtriangulation%ndim)
+    case (NDIM1D)
+      do iel = 1,size(Ielements)
+        ! Length of the interval
+        DmeshWidth(iel) = p_DelementVolume(iel)
+      end do
+      
+    case (NDIM2D)
+      
+      ! Type of the element
+      select case (nve)
+      
+      ! Triangular cell
+      case (3)
+        
+        do iel = 1,size(Ielements)
+          ! Calculate the local h from the area of the element.
+          ! As the element is a tri, multiply the volume by 2.
+          DmeshWidth(iel) = sqrt(2.0_DP*p_DelementVolume(iel))
+        end do
+      
+      ! Quadrilateral cell
+      case (4)
+      
+        do iel = 1,size(Ielements)
+          ! Calculate the local h from the area of the element.
+          DmeshWidth(iel) = sqrt(p_DelementVolume(iel))
+        end do
+
+      end select
+
+    case (NDIM3D)
+      
+      ! Type of the element
+      select case (nve)
+      
+      ! Tetrahedral cell
+      case (6)
+        
+        do iel = 1,size(Ielements)
+          ! Calculate the local h from the area of the element.
+          ! As the element is a tetra, multiply the volume by 3.
+          DmeshWidth(iel) = sqrt(3.0_DP*p_DelementVolume(iel))
+        end do
+      
+      ! Hexahedral cell
+      case (7)
+      
+        do iel = 1,size(Ielements)
+          ! Calculate the local h from the area of the element.
+          DmeshWidth(iel) = sqrt(p_DelementVolume(iel))
+        end do
+
+      end select
+
+    end select
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine bma_auxGetLocalMeshWidth_ray (&
+      Ielements,Ddirection,rtriangulation,DmeshWidth)
+
+!<description>
+  ! For a set of elements Ielements, this routine calculates a local mesh width
+  ! using the area of the cells. Ray-shooting approach.
+  !
+  ! Note: All elements must be of the same type (triangular, quad,...).
+!</description>
+
+!<input>
+  ! List of elements.
+  integer, dimension(:), intent(in) :: Ielements
+  
+  ! Underlying triangulation
+  type(t_triangulation), intent(in) :: rtriangulation
+
+  ! For every element the shooting direction by which the 
+  ! element size is calculated. The direction is assumed to be
+  ! normalised (i.e., the length is =1).
+  real(DP), dimension(:,:), intent(in) :: Ddirection
+!</input>
+
+!<output>
+  ! Mesh with of all elements Ielements.
+  real(DP), dimension(:), intent(out) :: DmeshWidth
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
+    real(DP), dimension(:,:), pointer :: p_DvertexCoords
+    integer :: nve,iel,i,ielement,ivt
+    real(DP), dimension(2,4) :: Dcorners2D
+    
+    if (size(Ielements) .eq. 0) return
+    
+    ! Get some information about the mesh.
+    call storage_getbase_int2d(rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
+    call storage_getbase_double2d(rtriangulation%h_DvertexCoords,p_DvertexCoords)
+    
+    ! Get the number of vertices on the element.
+    do nve = ubound(p_IverticesAtElement,1),1,-1
+      if (p_IverticesAtElement(nve,Ielements(1)) .ne. 0) exit
+    end do
+
+    ! What is the current dimension
+    select case (rtriangulation%ndim)
+      
+    case (NDIM2D)
+      
+      ! Type of the element
+      select case (nve)
+     
+      ! Quadrilateral cell
+      case (4)
+      
+        do iel = 1,size(Ielements)
+          ! Get the element corners.
+          ielement = Ielements(iel)
+          do i=1,4
+            ivt = p_IverticesAtElement(i,ielement)
+            Dcorners2D(1,i) = p_DvertexCoords(1,ivt)
+            Dcorners2D(2,i) = p_DvertexCoords(2,ivt)
+          end do
+        
+          ! Shoot the ray.
+          call gaux_getDirectedExtentQuad2D (Dcorners2D,&
+              Ddirection(1,iel),Ddirection(2,iel),DmeshWidth(iel))
+        end do
+        
+      ! Fallback.
+      case default
+        call bma_auxGetLocalMeshWidth_area (Ielements,rtriangulation,DmeshWidth)
+
+      end select
+
+    case (NDIM3D)
+      
+      ! Type of the element
+      select case (nve)
+      
+      ! Fallback.
+      case default
+        call bma_auxGetLocalMeshWidth_area (Ielements,rtriangulation,DmeshWidth)
+
+      end select
+
+    ! Fallback.
+    case default
+      call bma_auxGetLocalMeshWidth_area (Ielements,rtriangulation,DmeshWidth)
+
+    end select
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine bma_auxGetLDelta (&
+      cstabiltype,dupsam,Dvelocity,Dnu,duMaxR,DcubWeights,&
+      DelementVolume,DmeshWidth,npointsPerElement,nelements,Ddelta,duMin)
+
+!<description>
+  ! This routine calculates a local ddelta=DELTA_T for a set of finite
+  ! elements. This can be used by the streamline diffusion
+  ! stabilisation technique as a multiplier of the (local) bilinear form.
+  !
+  ! Element independent version which uses the volume of the elements
+  ! for the computation.
+!</description>
+
+!<input>
+  ! Array with the values of the velocity field in all cubature points
+  ! on all the elements.
+  ! dimension(#dim, #cubature points per element, #elements)
+  real(DP), dimension(:,:,:), intent(in) :: Dvelocity
+
+  ! Reciprocal of the maximum norm of velocity in the domain:
+  ! 1/duMaxR = 1/||u||_max(Omega)
+  real(DP), intent(in) :: duMaxR
+
+  ! Viscosity coefficient in all cubature points on all selement
+  real(DP), dimension(:,:), intent(in) :: Dnu
+
+  ! For every cubature point and every element, a cubature weight
+  ! to calculate integrals on the element.
+  real(DP), dimension(:,:), intent(in) :: DcubWeights
+  
+  ! Size of each element.
+  real(DP), dimension(:), intent(in) :: DelementVolume
+
+  ! Local h (mesh width) of each element
+  real(DP), dimension(:), intent(in) :: DmeshWidth
+
+  ! Type of SD method to apply.
+  ! = 0: Use simple SD stabilisation:
+  !      ddelta = dupsam * h_T.
+  ! = 1: Use Samarskji SD stabilisation; usually dupsam = 0.1 .. 2.
+  !      ddelta = dupsam * h_t/||u||_T * 2*Re_T/(1+Re_T)
+  integer :: cstabilType
+
+  ! User defined parameter for configuring the streamline diffusion.
+  real(DP), intent(in) :: dupsam
+
+  ! Number of points per element
+  integer, intent(in) :: npointsPerElement
+
+  ! Number of elements
+  integer, intent(in) :: nelements
+  
+  ! OPTINOAL: Minimum velocity from which stabilisation is applied.
+  ! For a velocity smaller than this, no stabilisation is applied
+  ! on the corresponding element. Default = 1E-8.
+  real(DP), intent(in), optional :: duMin
+!</input>
+
+!<output>
+  ! Out: local Ddelta on all elements
+  real(DP), dimension(:), intent(out) :: Ddelta
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  real(DP) :: dlocalH,du1,du2,du3,dunorm,dreLoc,dnuRec
+  integer :: iel,ielidx,icubp,ndim
+  real(DP) :: domega,dminVelo
+  
+    ! Underlying dimension
+    ndim = ubound(Dvelocity,1)
+    
+    ! Minimum velocity
+    dminVelo = 1E-8_DP
+    if (present(duMin)) dminVelo = duMin
+    
+    ! Calculate ddelta... (cf. p. 121 in Turek`s CFD book)
+    select case (cstabiltype)
+    
+    ! =====================================================
+    ! Simple calculation of ddelta
+    case (0)
+    
+      select case (ndim)
+      
+      case (NDIM1D)
+
+        ! Loop through all elements
+        do iel = 1,nelements
+
+          ! Loop through the cubature points on the current element
+          ! and calculate the mean velocity there.
+          du1 = 0.0_DP
+          dnuRec = 0.0_DP
+          do icubp = 1,npointsPerElement
+            domega = DcubWeights(icubp,ielidx)
+            du1 = du1 + domega*Dvelocity(1,icubp,ielidx)
+            dnuRec = dnuRec + domega*Dnu(icubp,ielidx)
+          end do
+
+          ! Calculate the norm of the mean local velocity
+          ! as well as the mean local velocity
+          du1 = du1 / DelementVolume(iel)
+          dunorm = du1
+
+          ! Calculate the mean viscosity coefficient -- or more precisely,
+          ! its reciprocal.
+          dnuRec = DelementVolume(iel) / dnuRec
+
+          ! Now we have:   dunorm = ||u||_T
+          ! and:           u_T = a1*u1_T + a2*u2_T
+
+          ! If the norm of the velocity is small, we choose ddelta = 0,
+          ! which results in central difference in the streamline diffusion
+          ! matrix assembling:
+
+          if (dunorm .le. dminVelo) then
+
+            Ddelta(ielidx) = 0.0_DP
+
+          else
+
+            ! Calculate ddelta... (cf. p. 121 in Turek`s CFD book)
+            Ddelta(ielidx) = dupsam*DmeshWidth(iel)
+
+          end if
+
+        end do
+
+      case (NDIM2D)
+
+        ! Loop through all elements
+        do iel = 1,nelements
+
+          ! Loop through the cubature points on the current element
+          ! and calculate the mean velocity there.
+          du1 = 0.0_DP
+          du2 = 0.0_DP
+          dnuRec = 0.0_DP
+          do icubp = 1,npointsPerElement
+            domega = DcubWeights(icubp,ielidx)
+            du1 = du1 + domega*Dvelocity(1,icubp,ielidx)
+            du2 = du2 + domega*Dvelocity(2,icubp,ielidx)
+            dnuRec = dnuRec + domega*Dnu(icubp,ielidx)
+          end do
+
+          ! Calculate the norm of the mean local velocity
+          ! as well as the mean local velocity
+          du1 = du1 / DelementVolume(iel)
+          du2 = du2 / DelementVolume(iel)
+          dunorm = sqrt(du1**2+du2**2)
+
+          ! Calculate the mean viscosity coefficient -- or more precisely,
+          ! its reciprocal.
+          dnuRec = DelementVolume(iel) / dnuRec
+
+          ! Now we have:   dunorm = ||u||_T
+          ! and:           u_T = a1*u1_T + a2*u2_T
+
+          ! If the norm of the velocity is small, we choose ddelta = 0,
+          ! which results in central difference in the streamline diffusion
+          ! matrix assembling:
+
+          if (dunorm .le. dminVelo) then
+
+            Ddelta(ielidx) = 0.0_DP
+
+          else
+
+            ! Calculate ddelta... (cf. p. 121 in Turek`s CFD book)
+            Ddelta(ielidx) = dupsam*DmeshWidth(iel)
+
+          end if
+
+        end do
+        
+      case (NDIM3D)
+
+        ! Loop through all elements
+        do iel = 1,nelements
+
+          ! Loop through the cubature points on the current element
+          ! and calculate the mean velocity there.
+          du1 = 0.0_DP
+          du2 = 0.0_DP
+          du3 = 0.0_DP
+          dnuRec = 0.0_DP
+          do icubp = 1,npointsPerElement
+            domega = DcubWeights(icubp,ielidx)
+            du1 = du1 + domega*Dvelocity(1,icubp,ielidx)
+            du2 = du2 + domega*Dvelocity(2,icubp,ielidx)
+            du3 = du3 + domega*Dvelocity(3,icubp,ielidx)
+            dnuRec = dnuRec + domega*Dnu(icubp,ielidx)
+          end do
+
+          ! Calculate the norm of the mean local velocity
+          ! as well as the mean local velocity
+          du1 = du1 / DelementVolume(iel)
+          du2 = du2 / DelementVolume(iel)
+          du3 = du3 / DelementVolume(iel)
+          dunorm = sqrt(du1**2+du2**2+du3**2)
+
+          ! Calculate the mean viscosity coefficient -- or more precisely,
+          ! its reciprocal.
+          dnuRec = DelementVolume(iel) / dnuRec
+
+          ! Now we have:   dunorm = ||u||_T
+          ! and:           u_T = a1*u1_T + a2*u2_T
+
+          ! If the norm of the velocity is small, we choose ddelta = 0,
+          ! which results in central difference in the streamline diffusion
+          ! matrix assembling:
+
+          if (dunorm .le. dminVelo) then
+
+            Ddelta(ielidx) = 0.0_DP
+
+          else
+
+            ! Calculate ddelta... (cf. p. 121 in Turek`s CFD book)
+            Ddelta(ielidx) = dupsam*dlocalH
+
+          end if
+
+        end do
+
+      end select
+
+    ! =====================================================
+    ! Standard Samarskji-like calculation
+    case (1)
+
+      select case (ndim)
+      case (NDIM1D)
+
+        ! Loop through all elements
+        do iel = 1,nelements
+
+          ! Loop through the cubature points on the current element
+          ! and calculate the mean velocity there.
+          du1 = 0.0_DP
+          dnuRec = 0.0_DP
+          do icubp = 1,npointsPerElement
+            domega = DcubWeights(icubp,ielidx)
+            du1 = du1 + domega*Dvelocity(1,icubp,ielidx)
+            dnuRec = dnuRec + domega*Dnu(icubp,ielidx)
+          end do
+
+          ! Calculate the norm of the mean local velocity
+          ! as well as the mean local velocity
+          du1 = du1 / DelementVolume(iel)
+          dunorm = du1
+
+          ! Calculate the mean viscosity coefficient -- or more precisely,
+          ! its reciprocal.
+          dnuRec = DelementVolume(iel) / dnuRec
+
+          ! Now we have:   dunorm = ||u||_T
+          ! and:           u_T = a1*u1_T + a2*u2_T
+
+          ! If the norm of the velocity is small, we choose ddelta = 0,
+          ! which results in central difference in the streamline diffusion
+          ! matrix assembling:
+
+          if (dunorm .le. dminVelo) then
+
+            Ddelta(ielidx) = 0.0_DP
+
+          else
+
+            ! At first calculate the local Reynolds number
+            ! RELOC = Re_T = ||u||_T * h_T / NU
+
+            dreLoc = dunorm*DmeshWidth(iel)*dnuRec
+
+            ! and then the ddelta = UPSAM * h_t/||u|| * 2*Re_T/(1+Re_T)
+
+            Ddelta(iel) = dupsam * dlocalH*duMaxR * 2.0_DP*(dreLoc/(1.0_DP+dreLoc))
+
+          end if
+
+        end do
+
+      case (NDIM2D)
+
+        ! Loop through all elements
+        do iel = 1,nelements
+
+          ! Loop through the cubature points on the current element
+          ! and calculate the mean velocity there.
+          du1 = 0.0_DP
+          du2 = 0.0_DP
+          dnuRec = 0.0_DP
+          do icubp = 1,npointsPerElement
+            domega = DcubWeights(icubp,ielidx)
+            du1 = du1 + domega*Dvelocity(1,icubp,ielidx)
+            du2 = du2 + domega*Dvelocity(2,icubp,ielidx)
+            dnuRec = dnuRec + domega*Dnu(icubp,ielidx)
+          end do
+
+          ! Calculate the norm of the mean local velocity
+          ! as well as the mean local velocity
+          du1 = du1 / DelementVolume(iel)
+          du2 = du2 / DelementVolume(iel)
+          dunorm = sqrt(du1**2+du2**2)
+
+          ! Calculate the mean viscosity coefficient -- or more precisely,
+          ! its reciprocal.
+          dnuRec = DelementVolume(iel) / dnuRec
+
+          ! Now we have:   dunorm = ||u||_T
+          ! and:           u_T = a1*u1_T + a2*u2_T
+
+          ! If the norm of the velocity is small, we choose ddelta = 0,
+          ! which results in central difference in the streamline diffusion
+          ! matrix assembling:
+
+          if (dunorm .le. dminVelo) then
+
+            Ddelta(ielidx) = 0.0_DP
+
+          else
+
+            ! At first calculate the local Reynolds number
+            ! RELOC = Re_T = ||u||_T * h_T / NU
+
+            dreLoc = dunorm*DmeshWidth(iel)*dnuRec
+
+            ! and then the ddelta = UPSAM * h_t/||u|| * 2*Re_T/(1+Re_T)
+
+            Ddelta(iel) = dupsam * dlocalH*duMaxR * 2.0_DP*(dreLoc/(1.0_DP+dreLoc))
+
+          end if
+
+        end do
+        
+      case (NDIM3D)
+
+        ! Loop through all elements
+        do iel = 1,nelements
+
+          ! Loop through the cubature points on the current element
+          ! and calculate the mean velocity there.
+          du1 = 0.0_DP
+          du2 = 0.0_DP
+          du3 = 0.0_DP
+          dnuRec = 0.0_DP
+          do icubp = 1,npointsPerElement
+            domega = DcubWeights(icubp,ielidx)
+            du1 = du1 + domega*Dvelocity(1,icubp,ielidx)
+            du2 = du2 + domega*Dvelocity(2,icubp,ielidx)
+            du3 = du3 + domega*Dvelocity(3,icubp,ielidx)
+            dnuRec = dnuRec + domega*Dnu(icubp,ielidx)
+          end do
+
+          ! Calculate the norm of the mean local velocity
+          ! as well as the mean local velocity
+          du1 = du1 / DelementVolume(iel)
+          du2 = du2 / DelementVolume(iel)
+          du3 = du3 / DelementVolume(iel)
+          dunorm = sqrt(du1**2+du2**2+du2**2)
+
+          ! Calculate the mean viscosity coefficient -- or more precisely,
+          ! its reciprocal.
+          dnuRec = DelementVolume(iel) / dnuRec
+
+          ! Now we have:   dunorm = ||u||_T
+          ! and:           u_T = a1*u1_T + a2*u2_T
+
+          ! If the norm of the velocity is small, we choose ddelta = 0,
+          ! which results in central difference in the streamline diffusion
+          ! matrix assembling:
+
+          if (dunorm .le. dminVelo) then
+
+            Ddelta(ielidx) = 0.0_DP
+
+          else
+
+            ! At first calculate the local Reynolds number
+            ! RELOC = Re_T = ||u||_T * h_T / NU
+
+            dreLoc = dunorm*DmeshWidth(iel)*dnuRec
+
+            ! and then the ddelta = UPSAM * h_t/||u|| * 2*Re_T/(1+Re_T)
+
+            Ddelta(iel) = dupsam * dlocalH*duMaxR * 2.0_DP*(dreLoc/(1.0_DP+dreLoc))
+
+          end if
+
+        end do
+        
+      end select
+
+    end select
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine bma_auxVelocity2DTensorNorm (cviscoTensorType, DviscoTensorNorm, &
+      Du1x, Du1y, Du2x, Du2y)
+
+!<description>
+  ! Calculates the norm of a viscosity tensor,
+  !    z := D(u):D(u) = ||D(u)||^2
+  ! The calculation takes place in every cubature point on every element.
+  ! ctensorType defines the type of the tensor.
+!</description>
+
+!<input>
+  ! Type of the viscosity tensor:
+  ! =0:  D(u)=grad(u)
+  ! =1:  D(u)=1/2 ( grad(u) + grad(u)^T )
+  integer, intent(in) :: cviscoTensorType
+  
+  ! The x/y derivative of the u1 and u2 in every cubature point on every
+  ! element.
+  real(DP), dimension(:,:), intent(in) :: Du1x
+  real(DP), dimension(:,:), intent(in) :: Du1y
+  real(DP), dimension(:,:), intent(in) :: Du2x
+  real(DP), dimension(:,:), intent(in) :: Du2y
+!</input>
+
+!<output>
+  ! Output array. Receives for every point on every element the norm of
+  ! the tensor.
+  real(DP), dimension(:,:), intent(out) :: DviscoTensorNorm
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer :: npointsPerElement, nelements, i, j
+    
+    npointsPerElement = ubound (DviscoTensorNorm,1)
+    nelements = ubound(DviscoTensorNorm,2)
+    
+    ! Calculate ||D(u)||^2 to p_Ddata(:,:)
+    select case (cviscoTensorType)
+    case (0)
+      ! D(u) = grad(u)
+      do i=1,nelements
+        do j=1,npointsPerElement
+          DviscoTensorNorm(j,i) = Du1x(j,i)**2 + Du1y(j,i)**2 + &
+              Du2x(j,i)**2 + Du2y(j,i)**2
+        end do
+      end do
+      
+    case (1)
+      ! D(u) = 1/2 ( grad(u) + grad(u)^T )
+      do i=1,nelements
+        do j=1,npointsPerElement
+          DviscoTensorNorm(j,i) = (Du1x(j,i)**2 + &
+              0.5_DP * (Du1y(j,i) + Du2x(j,i))**2 + &
+              Du2y(j,i)**2)
+        end do
+      end do
+      
+    case default
+    
+      DviscoTensorNorm(:,:) = 0.0_DP
+      
+    end select
+        
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine bma_auxViscosity (cviscoModel, Dviscosity, &
+      dnu,dviscoYield,dviscoEps,dviscoExponent,DviscoTensorNorm)
+
+!<description>
+  ! Calculates a nonlinear viscosity.
+!</description>
+
+!<input>
+  ! Type of the viscosity model:
+  ! =0:  Constant viscosity:
+  !        nu(x) = dnu 
+  ! =1:  Power law:
+  !         nu(x) = dnu * z^(dviscoexponent/2 - 1),
+  !         z = ||D(u)||^2+dviscoEps
+  ! =2:  Bingham fluid:
+  !         nu(x) = dnu + sqrt(2)/2 * dviscoyield / sqrt(|D(u)||^2+dviscoEps^2),
+  ! =3:  General viscoplastic fluid:
+  !         nu(x) = dnu + sqrt(2)/2 * dviscoyield * z^(dviscoexponent/2 - 1),
+  !         z = ||D(u)||^2 + dviscoEps^2
+  integer, intent(in) :: cviscoModel
+  
+  ! Viscosity constant
+  real(DP), intent(in) :: dnu
+  
+  ! Additional parameters for the viscosity.
+  real(DP), intent(in) :: dviscoYield
+  real(DP), intent(in) :: dviscoEps
+  real(DP), intent(in) :: dviscoExponent
+  
+  ! Norm of the viscosity tensor. Must be specified if cviscoModel<>0.
+  real(DP), dimension(:,:), intent(in) :: DviscoTensorNorm
+!</input>
+
+!<output>
+  ! Output array. Receives for every point on every element the viscosity.
+  real(DP), dimension(:,:), intent(out) :: Dviscosity
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer :: npointsPerElement, nelements, i, j
+    
+    npointsPerElement = ubound (Dviscosity,1)
+    nelements = ubound(Dviscosity,2)
+
+    ! Calculate the viscosity.
+    select case (cviscoModel)
+    case (1)
+      ! Power law:
+      !   nu = dnu * z^(dviscoexponent/2 - 1),
+      !   z = ||D(u)||^2+dviscoEps
+      do i=1,nelements
+        do j = 1,npointsPerElement
+          Dviscosity(j,i) = &
+            dnu * (DviscoTensorNorm(j,i)+dviscoEps)**(0.5_DP*dviscoExponent - 1.0_DP)
+        end do
+      end do
+
+    case (2)
+      ! Bingham fluid:
+      !   nu = dnu + sqrt(2)/2 * dviscoyield / sqrt(|D(u)||^2+dviscoEps^2),
+      do i=1,nelements
+        do j = 1,npointsPerElement
+          Dviscosity(j,i) = dnu + 0.5_DP * sqrt(2.0_DP) * &
+              dviscoyield / sqrt(DviscoTensorNorm(j,i) + dviscoEps**2)
+        end do
+      end do
+      
+    case (3)
+      ! General viscoplastic fluid:
+      !   nu = dnu + sqrt(2)/2 * dviscoyield * z^(dviscoexponent/2 - 1),
+      !   z = ||D(u)||^2 + dviscoEps^2
+      do i=1,nelements
+        do j = 1,npointsPerElement
+          Dviscosity(j,i) = dnu + 0.5_DP * sqrt(2.0_DP) * dviscoyield * &
+              ( DviscoTensorNorm(j,i) + dviscoEps**2 )**( 0.5_DP * dviscoExponent - 1.0_DP)
+        end do
+      end do
+
+    end select
+
+  end subroutine
+
 end module
