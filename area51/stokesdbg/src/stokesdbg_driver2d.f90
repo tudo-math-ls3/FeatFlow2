@@ -386,7 +386,7 @@ contains
     
     select case(idriver)
     case (2001)
-      ! p(x,y) = 2*nu*c*(1-x)
+      ! p(x,y) = 2*nu*alpha*(1-x)
       Dvalues(:,:) = 2.0_DP*dnu*dalpha*(1.0_DP - Dpoints(1,:,:))
       
     case (2002)
@@ -396,18 +396,18 @@ contains
         Dvalues(:,:) = 0.0_DP
         
       case (1)
-        ! p(x,y) = c * cos(pi*x) * cos(pi*y)
+        ! p(x,y) = alpha * cos(pi*x) * cos(pi*y)
         Dvalues(:,:) = dalpha * cos(SYS_PI * Dpoints(1,:,:)) * cos(SYS_PI * Dpoints(2,:,:))
         
       case (2)
-        ! p(x,y) = c*(4/pi - sin(pi*x) - sin(pi*y))
+        ! p(x,y) = alpha*(4/pi - sin(pi*x) - sin(pi*y))
         Dvalues(:,:) = dalpha*(4.0_DP / SYS_PI - sin(SYS_PI * Dpoints(1,:,:)) - sin(SYS_PI * Dpoints(2,:,:)))
       
       case (3)
-        ! p(x,y) = c*(1/2 - x^3 - y^3)
+        ! p(x,y) = alpha*(1/2 - x^3 - y^3)
         Dvalues(:,:) = dalpha*(0.5_DP - Dpoints(1,:,:)**3 - Dpoints(2,:,:)**3)
 
-        end select
+      end select
       
     end select
     

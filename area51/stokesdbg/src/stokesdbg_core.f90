@@ -482,7 +482,7 @@ contains
   type(t_boundaryRegion) :: rrgn
   integer :: i
   
-    do i = rproblem%ilevelMin, rproblem%ilevelMax
+    do i = rproblem%ilevelCoarse, rproblem%ilevelMax
 
       ! Initialise the discrete BC structure
       call bcasm_initDiscreteBC(rproblem%Rlevels(i)%rdiscreteBC)
@@ -512,7 +512,7 @@ contains
   type(t_boundaryRegion) :: rrgn
   integer :: i
   
-    do i = rproblem%ilevelMin, rproblem%ilevelMax
+    do i = rproblem%ilevelCoarse, rproblem%ilevelMax
 
       ! Initialise the discrete BC structure
       call bcasm_initDiscreteBC(rproblem%Rlevels(i)%rdiscreteBC)
@@ -559,7 +559,7 @@ contains
   type(t_boundaryRegion) :: rrgn
   integer :: i
   
-    do i = rproblem%ilevelMin, rproblem%ilevelMax
+    do i = rproblem%ilevelCoarse, rproblem%ilevelMax
 
       ! Initialise the discrete BC structure
       call bcasm_initDiscreteBC(rproblem%Rlevels(i)%rdiscreteBC)
