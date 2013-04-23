@@ -41,42 +41,56 @@
 !#      -> Add a vector to a list of vectors to be evaluated simultaneously
 !#         in a set of points on a set of elements
 !#
-!# 11.) fev2_addDummyVectorToEvalList
+!# 11.) fev2_addVectorFieldToEvalList
+!#      -> Add a vector field to a list of vectors to be evaluated simultaneously
+!#         in a set of points on a set of elements
+!#
+!# 12.) fev2_addDummyVectorToEvalList
 !#      -> Adds a scalar dummy entry to the list of vectors to be evaluated.
 !#         Can be used as temporary memory during the evaluation.
 !#
-!# 12.) fev2_addCellDummyToEvalList
+!# 13.) fev2_addDummyVecFieldToEvalList
+!#      -> Adds a dummy vector field entry to the list of vectors to be evaluated.
+!#         Can be used as temporary memory during the evaluation.
+!#
+!# 14.) fev2_addCellDummyToEvalList
 !#      -> Adds a scalar dummy entry to the list of vectors to be evaluated.
 !#         Can be used as temporary memory during the evaluation.
 !#         Allocates "cell based" data which is represented by the
 !#         "p_DcellData" variable. This data contains one information per cell.
 !#
-!# 13.) fev2_releaseVectorList
+!# 15.) fev2_addCellVecFieldDummy
+!#      -> Adds a scalar dummy entry to the list of vectors to be evaluated.
+!#         Can be used as temporary memory during the evaluation.
+!#         Allocates "cell based" data which is represented by the
+!#         "p_DcellData" variable. This data contains one information per cell.
+!#
+!# 16.) fev2_releaseVectorList
 !#      -> Release a vector evaluation list
 !#
-!# 14.) fev2_initVectorEval
+!# 17.) fev2_initVectorEval
 !#      -> Initialise a vector evaluation list for the evaluation
 !#         of vectors
 !#
-!# 15.) fev2_prepareVectorEval
+!# 18.) fev2_prepareVectorEval
 !#      -> (Re-)allocates temporary memory for the evaluation.
 !#         Must be called after fev2_initVectorEval.
 !#
-!# 16.) fev2_doneVectorEval
+!# 19.) fev2_doneVectorEval
 !#      -> Release a vector evaluation list
 !#
-!# 17.) fev2_evaluateVectors
+!# 20.) fev2_evaluateVectors
 !#      -> Evaluate all vectors in a vector evaluation list in a set of points
 !#         on a set of elements
 !#
-!# 18.) fev2_prepareFemDataVecEval
+!# 21.) fev2_prepareFemDataVecEval
 !#      -> Basic initialisation of a FEM data structure based on a
 !#         vector evaluation structure
 !#
-!# 19.) fev2_calcDofMapping
+!# 22.) fev2_calcDofMapping
 !#      -> Calculates the DOF mapping 
 !#
-!# 20.) fev2_copyFemData
+!# 23.) fev2_copyFemData
 !#      -> Creates a copy of a FEM data structure.
 !# </purpose>
 !##############################################################################
@@ -190,6 +204,17 @@ module feevaluation2
     ! =.TRUE.:  Vector is interleaved. The local vector entries
     !           can be found in p_DdataIntl. p_Ddata is undefined.
     logical :: bisInterleaved = .false.
+    
+    ! Specifies whether the corresponding vector data is a vector
+    ! field. This is always .true. for vector-valued finite elements.
+    ! Vector field data is assembled into p_DdataVec instead of
+    ! p_Ddata.
+    logical :: bisVectorField = .false.
+    
+    ! If the vector data is a vector field, this specifies the number
+    ! of components (and matches ubound(p_DdataVec,1)).
+    ! If the vector data is not a vector field, this is =1.
+    integer :: ndimVectorField = 1
   
     ! Specifies whether the corresponding vector is cell based.
     ! =.FALSE.: Vector is cubature-point based. (default)
@@ -207,7 +232,7 @@ module feevaluation2
     ! NOTE: Only for non-Interleaved vectors, there is p_Ddata=>null for
     ! interleaved vectors. In this case, p_DentryIntl defines the vector data.
     !
-    ! NOTE: For vector valued FE spaces, there is p_Ddata=>null(),
+    ! NOTE: For vector fields and vector valued FE spaces, there is p_Ddata=>null(),
     ! p_DdataIntl=>null() and p_DdataVec specifying the values.
     real(DP), dimension(:,:,:), pointer :: p_Ddata => null()
 
@@ -226,12 +251,13 @@ module feevaluation2
     real(DP), dimension(:,:,:,:), pointer :: p_DdataIntl => null()
     
     ! Pointer to an array with values in all cubature points.
-    !   DdataVec(ndimfe,npointsPerElement,nelements,nmaxDerivativeIdx).
+    !   DdataVec(ndimVectorField,npointsPerElement,nelements,nmaxDerivativeIdx).
     !
     ! The last index specifies the type of the derivative,
-    ! so Ddata(:,:,DER_DERIV2D_X) specifies the first X-derivative.
+    ! so DdataVec(:,:,:,DER_DERIV2D_X) specifies the first X-derivative.
     !
-    ! This only applies for vector valued FE spaces of dimension ndimfe.
+    ! This only applies for vector fields and vector valued FE spaces
+    ! of dimension ndimfe.
     real(DP), dimension(:,:,:,:), pointer :: p_DdataVec => null()
     
     ! Pointer to an array with values associated to all elements.
@@ -243,12 +269,31 @@ module feevaluation2
     ! provided in order to allocate memory of this type.
     real(DP), dimension(:,:), pointer :: p_DcellData => null()
     
+    ! Pointer to an array with a vector field associated to all elements.
+    !   DcellData(ndimVectorField,nelements,nmaxDerivativeIdx).
+    !
+    ! This only applies for temporary data associated to elements
+    ! (e.g., local cell widths) which is used for temporary calculations
+    ! in callback routines. A special "cell based" dummy vector must be
+    ! provided in order to allocate memory of this type.
+    real(DP), dimension(:,:,:), pointer :: p_DcellDataVec => null()
+    
     ! Reference to the vector or NULL, if there is no vector
     ! associated. The latter case appears for `dummy` vectors.
     ! Dummy vectors provide additional temporary memory which is
     ! preallocated and which can be arbitrarily used by the callback
     ! routines.
+    ! If the vector data corresponds to a scalar vector or a
+    ! vector-valued FE space, only p_rvector is set.
+    ! If the vector data corresponds to a vector field, p_rvector2,
+    ! and p_rvector3  may be assigned as well. There are as many
+    ! p_rvectorX components associated as indicated by
+    ! ndimVectorField, each corresponds to one scalar component.
+    !
+    ! Currently, vector fields up to dimension 3 are supported.
     type(t_vectorScalar), pointer :: p_rvector => null()
+    type(t_vectorScalar), pointer :: p_rvector2 => null()
+    type(t_vectorScalar), pointer :: p_rvector3 => null()
     
     ! Number of variables per vector entry. Only for interleaved
     ! vectors. =1 for non-interleaved vectors.
@@ -323,7 +368,9 @@ module feevaluation2
   
   public :: fev2_addVectorToEvalList
   public :: fev2_addDummyVectorToEvalList
+  public :: fev2_addDummyVecFieldToEvalList
   public :: fev2_addCellDummyToEvalList
+  public :: fev2_addCellVecFieldDummy
   public :: fev2_releaseVectorList
   public :: fev2_initVectorEval
   public :: fev2_prepareVectorEval
@@ -1167,6 +1214,94 @@ contains
       revalVectors%p_RvectorData(revalVectors%ncount)%nvar = rvector%nvar
     end if
     
+    ! This is not a vector field.
+    revalVectors%p_RvectorData(revalVectors%ncount)%bisVectorField = .false.
+    revalVectors%p_RvectorData(revalVectors%ncount)%ndimVectorField = 1
+
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine fev2_addVectorFieldToEvalList(revalVectors,nmaxDerivative,&
+      rvector1,rvector2,rvector3)
+
+!<description>
+  ! Adds a scalar vector to the list of vectors to be evaluated.
+  ! All components of the vector field are assumed to be discretised
+  ! in the same way (same FE space, etc).
+!</description>
+
+!<input>  
+  ! Maximum derivative to be calculated.
+  ! =0: calculate the function value only,
+  ! =1: Calculate the complete first derivative (X, Y and Z direction)
+  ! etc.
+  integer, intent(in) :: nmaxDerivative
+
+  ! Vector to be added to the list, 1st component
+  type(t_vectorScalar), intent(in), target :: rvector1
+
+  ! OPTIONAL: Vector to be added to the list, 2nd component
+  type(t_vectorScalar), intent(in), target, optional :: rvector2
+
+  ! OPTIONAL: Vector to be added to the list, 3rd component
+  type(t_vectorScalar), intent(in), target, optional :: rvector3
+!</input>
+
+!<inputoutput>
+  ! List of vectors to be automatically evaluated
+  type(t_fev2Vectors), intent(inout) :: revalVectors
+!</inputoutput>
+
+!</subroutine>
+  
+    ! local variables
+    type(t_fev2VectorData), dimension(:), pointer :: p_RvectorData 
+
+    ! Add the vector
+    if (revalVectors%ncount .eq. 0) then
+      allocate(revalVectors%p_RvectorData(16))
+    else
+      if (revalVectors%ncount .ge. size(revalVectors%p_RvectorData)) then
+        ! Reallocate
+        allocate(p_RvectorData(size(revalVectors%p_RvectorData)+16))
+        p_RvectorData(1:revalVectors%ncount) = &
+            revalVectors%p_RvectorData(1:revalVectors%ncount)
+        deallocate(revalVectors%p_RvectorData)
+        revalVectors%p_RvectorData => p_RvectorData
+      end if
+    end if
+    
+    ! Append
+    revalVectors%ncount = revalVectors%ncount + 1
+    
+    ! Maximum derivative to be calculated
+    revalVectors%p_RvectorData(revalVectors%ncount)%nmaxDerivative = nmaxDerivative
+    
+    ! Variables per vector entry (for interleaved vectors)
+    if (rvector1%nvar .ne. 1) then
+      revalVectors%p_RvectorData(revalVectors%ncount)%bisInterleaved = .true.
+      revalVectors%p_RvectorData(revalVectors%ncount)%nvar = rvector1%nvar
+    end if
+    
+    ! This is a vector field.
+    revalVectors%p_RvectorData(revalVectors%ncount)%bisVectorField = .true.
+
+    revalVectors%p_RvectorData(revalVectors%ncount)%ndimVectorField = 1
+    revalVectors%p_RvectorData(revalVectors%ncount)%p_rvector => rvector1
+    
+    if (present(rvector2)) then
+      revalVectors%p_RvectorData(revalVectors%ncount)%ndimVectorField = 2
+      revalVectors%p_RvectorData(revalVectors%ncount)%p_rvector2 => rvector2
+
+      if (present(rvector3)) then
+        revalVectors%p_RvectorData(revalVectors%ncount)%ndimVectorField = 3
+        revalVectors%p_RvectorData(revalVectors%ncount)%p_rvector3 => rvector3
+      end if
+    end if
+
   end subroutine
 
   !****************************************************************************
@@ -1244,6 +1379,84 @@ contains
       revalVectors%p_RvectorData(revalVectors%ncount)%nvar = nvar
     end if
     
+    ! This is not a vector field.
+    revalVectors%p_RvectorData(revalVectors%ncount)%bisVectorField = .false.
+    revalVectors%p_RvectorData(revalVectors%ncount)%ndimVectorField = 1
+
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine fev2_addDummyVecFieldToEvalList(revalVectors,ncomp,nsubarrays)
+
+!<description>
+  ! Adds a dummy vector field entry to the list of vectors to be evaluated.
+  ! During the evaluation, memory is allocated for this dummy entry, which
+  ! allows the assembly routines to compute intermediate data.
+  ! However, since no actual vector is associated, no FEM function is
+  ! evaluated in the cubature points, thus the `evaluation` does not need
+  ! computational time.
+  ! Note that the allocated memory stays uninitialised until given
+  ! free.
+!</description>
+
+!<input>
+  ! Number of components.
+  integer, intent(in) :: ncomp
+
+  ! OPTIONAL: Number of subarrays.
+  ! If not specified, there is exactly one subarray allocated.
+  ! If specified, there are nsubarray memory blocks allocated in memory
+  ! and associated to this dummy vector.
+  integer, intent(in), optional :: nsubarrays
+!</input>
+
+!<inputoutput>
+  ! List of vectors to be automatically evaluated
+  type(t_fev2Vectors), intent(inout) :: revalVectors
+!</inputoutput>
+
+!</subroutine>
+  
+    ! local variables
+    type(t_fev2VectorData), dimension(:), pointer :: p_RvectorData 
+
+    ! Add a dummy entry
+    if (revalVectors%ncount .eq. 0) then
+      allocate(revalVectors%p_RvectorData(16))
+    else
+      if (revalVectors%ncount .ge. size(revalVectors%p_RvectorData)) then
+        ! Reallocate
+        allocate(p_RvectorData(size(revalVectors%p_RvectorData)+16))
+        p_RvectorData(1:revalVectors%ncount) = &
+            revalVectors%p_RvectorData(1:revalVectors%ncount)
+        deallocate(revalVectors%p_RvectorData)
+        revalVectors%p_RvectorData => p_RvectorData
+      end if
+    end if
+    
+    ! Append
+    revalVectors%ncount = revalVectors%ncount + 1
+    
+    ! Nullify the pointer to mark it as dummy.
+    nullify(revalVectors%p_RvectorData(revalVectors%ncount)%p_rvector)
+    
+    ! Maximum derivative to be calculated. Set to -1 here.
+    revalVectors%p_RvectorData(revalVectors%ncount)%nmaxDerivative = -1
+    
+    ! Number of subarrays is saved to nmaxDerivativeIndex
+    revalVectors%p_RvectorData(revalVectors%ncount)%nmaxDerivativeIdx = 1
+    
+    if (present(nsubarrays)) then
+      revalVectors%p_RvectorData(revalVectors%ncount)%nmaxDerivativeIdx = nsubarrays
+    end if
+    
+    ! This is a vector field.
+    revalVectors%p_RvectorData(revalVectors%ncount)%bisVectorField = .true.
+    revalVectors%p_RvectorData(revalVectors%ncount)%ndimVectorField = ncomp
+
   end subroutine
 
   !****************************************************************************
@@ -1319,6 +1532,93 @@ contains
     ! Data is cell based.
     revalVectors%p_RvectorData(revalVectors%ncount)%bisCellBased = .true.
     
+    ! This is not a vector field.
+    revalVectors%p_RvectorData(revalVectors%ncount)%bisVectorField = .false.
+    revalVectors%p_RvectorData(revalVectors%ncount)%ndimVectorField = 1
+
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine fev2_addCellVecFieldDummy(revalVectors,ncomp,nsubarrays)
+
+!<description>
+  ! Adds a scalar "cell" vector field dummy entry to the list of vectors to 
+  ! be evaluated.
+  ! During the evaluation, memory is allocated for this dummy entry, which
+  ! allows the assembly routines to compute intermediate data.
+  ! However, since no actual vector is associated, no FEM function is
+  ! evaluated in the cubature points, thus the `evaluation` does not need
+  ! computational time.
+  ! Note that the allocated memory stays uninitialised until given
+  ! free.
+  !
+  ! Data allocated during the assembly is referenced to by the "p_DcellDataVec"
+  ! entry in the revalVectors structure. There is one entry per cell
+  ! reserved. So in contrast to "standard" vector fields, there is no separate
+  ! data for all cubature points on the cell.
+!</description>
+
+!<input>
+  ! Number of components of the vector field.
+  integer, intent(in) :: ncomp
+  
+  ! OPTIONAL: Number of subarrays.
+  ! If not specified, there is exactly one subarray allocated.
+  ! If specified, there are nsubarray memory blocks allocated in memory
+  ! and associated to this dummy vector.
+  integer, intent(in), optional :: nsubarrays
+!</input>
+
+!<inputoutput>
+  ! List of vectors to be automatically evaluated
+  type(t_fev2Vectors), intent(inout) :: revalVectors
+!</inputoutput>
+
+!</subroutine>
+  
+    ! local variables
+    type(t_fev2VectorData), dimension(:), pointer :: p_RvectorData 
+
+    ! Add a dummy entry
+    if (revalVectors%ncount .eq. 0) then
+      allocate(revalVectors%p_RvectorData(16))
+    else
+      if (revalVectors%ncount .ge. size(revalVectors%p_RvectorData)) then
+        ! Reallocate
+        allocate(p_RvectorData(size(revalVectors%p_RvectorData)+16))
+        p_RvectorData(1:revalVectors%ncount) = &
+            revalVectors%p_RvectorData(1:revalVectors%ncount)
+        deallocate(revalVectors%p_RvectorData)
+        revalVectors%p_RvectorData => p_RvectorData
+      end if
+    end if
+    
+    ! Append
+    revalVectors%ncount = revalVectors%ncount + 1
+    
+    ! Nullify the pointer to mark it as dummy.
+    nullify(revalVectors%p_RvectorData(revalVectors%ncount)%p_rvector)
+    
+    ! Maximum derivative to be calculated. Set to -1 here.
+    revalVectors%p_RvectorData(revalVectors%ncount)%nmaxDerivative = -1
+    
+    ! Number of subarrays is saved to nmaxDerivativeIndex
+    revalVectors%p_RvectorData(revalVectors%ncount)%nmaxDerivativeIdx = 1
+    
+    if (present(nsubarrays)) then
+      revalVectors%p_RvectorData(revalVectors%ncount)%nmaxDerivativeIdx = nsubarrays
+    end if
+    
+    ! Data is cell based.
+    revalVectors%p_RvectorData(revalVectors%ncount)%bisCellBased = .true.
+    
+    ! This is a vector field.
+    revalVectors%p_RvectorData(revalVectors%ncount)%bisVectorField = .true.
+    revalVectors%p_RvectorData(revalVectors%ncount)%ndimVectorField = ncomp
+
   end subroutine
 
   !****************************************************************************
@@ -1396,7 +1696,18 @@ contains
                            
         ! Get the dimension of the underlying FEM space
         p_rvectorData%ndimfe = rfemDataBlocks%p_RfemData(p_rvectorData%iidxFemData)%ndimfe
+        
+        ! If we have a vector-valued FEM space, we have a vector field
+        ! with ndimfe components.
+        if (p_rvectorData%ndimfe .gt. 1) then
+          p_rvectorData%ndimVectorField = p_rvectorData%ndimfe
+        end if
+        
+        ! Otherwise, this is a scalar vector or a vector field of
+        ! scalar vector -- leave ndimVectorField as it is.
+      
       else
+      
         ! Dummy vector, just allocate memory in advance.
         ! nmaxDerivativeIdx specifies the number of subarrays to allocate.
         nmaxDerivativeIdx = p_rvectorData%nmaxDerivativeIdx
@@ -1456,7 +1767,8 @@ contains
       
         ! Deallocate memory if memory is allocated.
         if (associated(p_rvectorData%p_Ddata)) deallocate (p_rvectorData%p_Ddata)
-        if (associated(p_rvectorData%p_Ddata)) deallocate (p_rvectorData%p_DcellData)
+        if (associated(p_rvectorData%p_DcellData)) deallocate (p_rvectorData%p_DcellData)
+        if (associated(p_rvectorData%p_DcellDataVec)) deallocate (p_rvectorData%p_DcellDataVec)
         if (associated(p_rvectorData%p_DdataIntl)) deallocate (p_rvectorData%p_DdataIntl)
         if (associated(p_rvectorData%p_DdataVec)) deallocate (p_rvectorData%p_DdataVec)
 
@@ -1468,23 +1780,47 @@ contains
             
             ! Cell based data?
             if (.not. p_rvectorData%bisCellBased) then
-              ! Get the dimension of the underlying FEM space.
-              if (p_rvectorData%ndimfe .eq. 1) then
-                ! Non-interleaved data
+              ! --------------------------
+              ! Allocate point-based data.
+            
+              ! Vector field or not?
+              if (.not. p_rvectorData%bisVectorField) then
+            
+                ! Non-interleaved data, not a vector field.
                 allocate (p_rvectorData%p_Ddata(npointsPerElement,nelements,nmaxDerivativeIdx))
+
               else
-                ! Non-interleaved data, vector valued basis functions.
-                allocate (p_rvectorData%p_DdataVec(p_rvectorData%ndimfe,&
+              
+                ! Non-interleaved data, vector field functions.
+                allocate (p_rvectorData%p_DdataVec(p_rvectorData%ndimVectorField,&
                     npointsPerElement,nelements,nmaxDerivativeIdx))
+
               end if
             else
+              ! -------------------------
               ! Allocate cell-based data.
-              allocate (p_rvectorData%p_DcellData(nelements,nmaxDerivativeIdx))
+              
+              ! Vector field or not?
+              if (.not. p_rvectorData%bisVectorField) then
+            
+                ! Non-interleaved data, not a vector field.
+                allocate (p_rvectorData%p_DcellData(nelements,nmaxDerivativeIdx))
+
+              else
+              
+                ! Non-interleaved data, vector field functions.
+                allocate (p_rvectorData%p_DcellDataVec(p_rvectorData%ndimVectorField,&
+                    nelements,nmaxDerivativeIdx))
+
+              end if
             end if
+            
           else
+          
             ! Interleaved data
             allocate (p_rvectorData%p_DdataIntl(&
                 p_rvectorData%nvar,npointsPerElement,nelements,nmaxDerivativeIdx))
+                
           end if
         end if
       
@@ -1524,8 +1860,16 @@ contains
         deallocate(revalVectors%p_RvectorData(i)%p_DdataIntl)
       end if
       
+      if (associated(revalVectors%p_RvectorData(i)%p_DdataVec)) then
+        deallocate(revalVectors%p_RvectorData(i)%p_DdataVec)
+      end if
+
       if (associated(revalVectors%p_RvectorData(i)%p_DcellData)) then
         deallocate(revalVectors%p_RvectorData(i)%p_DcellData)
+      end if
+
+      if (associated(revalVectors%p_RvectorData(i)%p_DcellDataVec)) then
+        deallocate(revalVectors%p_RvectorData(i)%p_DcellDataVec)
       end if
 
       revalVectors%p_RvectorData(i)%iidxFemData = 0
@@ -1563,11 +1907,11 @@ contains
     integer :: ibas, ivector, npoints, nelements, iel, ipt, idimfe
     integer :: ndof, ideriv, nderiv, nvar, ivar, ndimfe
     real(DP), dimension(:,:,:,:), pointer :: p_Dbas
-    real(DP) :: dval
+    real(DP) :: dval, dval2, dval3
     type(t_fev2FemData), pointer :: p_rfemData
     type(t_fev2VectorData), pointer :: p_rvectorData
     integer, dimension(:,:), pointer :: p_Idofs
-    real(DP), dimension(:), pointer :: p_DvecData
+    real(DP), dimension(:), pointer :: p_DvecData,p_DvecData2,p_DvecData3
     real(DP), dimension(:,:,:), pointer :: p_Ddata
     real(DP), dimension(:,:,:,:), pointer :: p_DdataIntl,p_DdataVec
     
@@ -1597,28 +1941,122 @@ contains
         
         if (.not. p_rvectorData%bisInterleaved) then
 
+          ! Vector valued FE space?
           if (ndimfe .eq. 1) then
           
-            p_Ddata => p_rvectorData%p_Ddata
-        
-            ! Loop over the derivatives, basis functions, sum up to the point value
-            ! in every cubature point.
-            do iel = 1,nelements
-              do ideriv = 1,nderiv
-                do ipt = 1,npoints
-                
-                  dval = 0.0_DP
-                  do ibas = 1,ndof
-                    dval = dval + &
-                        p_DvecData(p_Idofs(ibas,iel))*p_Dbas(ibas,ideriv,ipt,iel)
-                  end do
+            ! Vector field?
+            if (p_rvectorData%ndimVectorField .eq. 1) then
+          
+              ! Scalar vector
+              p_Ddata => p_rvectorData%p_Ddata
+          
+              ! Loop over the derivatives, basis functions, sum up to the point value
+              ! in every cubature point.
+              do iel = 1,nelements
+                do ideriv = 1,nderiv
+                  do ipt = 1,npoints
                   
-                  ! Save the value
-                  p_Ddata(ipt,iel,ideriv) = dval
-                
+                    dval = 0.0_DP
+                    do ibas = 1,ndof
+                      dval = dval + &
+                          p_DvecData(p_Idofs(ibas,iel))*p_Dbas(ibas,ideriv,ipt,iel)
+                    end do
+                    
+                    ! Save the value
+                    p_Ddata(ipt,iel,ideriv) = dval
+                  
+                  end do
                 end do
               end do
-            end do
+              
+            else
+
+              ! Vector field. 
+              p_DdataVec => p_rvectorData%p_DdataVec
+          
+              select case (p_rvectorData%ndimVectorField)
+              case (NDIM1D)
+                ! Loop over the derivatives, basis functions, sum up to the point value
+                ! in every cubature point.
+                do iel = 1,nelements
+                  do ideriv = 1,nderiv
+                    do ipt = 1,npoints
+                    
+                      dval = 0.0_DP
+                      do ibas = 1,ndof
+                        dval = dval + &
+                            p_DvecData(p_Idofs(ibas,iel))*p_Dbas(ibas,ideriv,ipt,iel)
+                      end do
+                      
+                      ! Save the value
+                      p_DdataVec(1,ipt,iel,ideriv) = dval
+                    
+                    end do
+                  end do
+                end do
+              
+              case (NDIM2D)
+              
+                call lsyssc_getbase_double (p_rvectorData%p_rvector2,p_DvecData2)
+              
+                ! Loop over the derivatives, basis functions, sum up to the point value
+                ! in every cubature point.
+                do iel = 1,nelements
+                  do ideriv = 1,nderiv
+                    do ipt = 1,npoints
+                    
+                      dval = 0.0_DP
+                      dval2 = 0.0_DP
+                      do ibas = 1,ndof
+                        dval = dval + &
+                            p_DvecData(p_Idofs(ibas,iel))*p_Dbas(ibas,ideriv,ipt,iel)
+                        dval2 = dval2 + &
+                            p_DvecData2(p_Idofs(ibas,iel))*p_Dbas(ibas,ideriv,ipt,iel)
+                      end do
+                      
+                      ! Save the values
+                      p_DdataVec(1,ipt,iel,ideriv) = dval
+                      p_DdataVec(2,ipt,iel,ideriv) = dval2
+                    
+                    end do
+                  end do
+                end do
+
+              case (NDIM3D)
+              
+                call lsyssc_getbase_double (p_rvectorData%p_rvector2,p_DvecData2)
+                call lsyssc_getbase_double (p_rvectorData%p_rvector3,p_DvecData3)
+              
+                ! Loop over the derivatives, basis functions, sum up to the point value
+                ! in every cubature point.
+                do iel = 1,nelements
+                  do ideriv = 1,nderiv
+                    do ipt = 1,npoints
+                    
+                      dval = 0.0_DP
+                      dval2 = 0.0_DP
+                      dval3 = 0.0_DP
+                      do ibas = 1,ndof
+                        dval = dval + &
+                            p_DvecData(p_Idofs(ibas,iel))*p_Dbas(ibas,ideriv,ipt,iel)
+                        dval2 = dval2 + &
+                            p_DvecData2(p_Idofs(ibas,iel))*p_Dbas(ibas,ideriv,ipt,iel)
+                        dval3 = dval3 + &
+                            p_DvecData3(p_Idofs(ibas,iel))*p_Dbas(ibas,ideriv,ipt,iel)
+                      end do
+                      
+                      ! Save the values
+                      p_DdataVec(1,ipt,iel,ideriv) = dval
+                      p_DdataVec(2,ipt,iel,ideriv) = dval2
+                      p_DdataVec(3,ipt,iel,ideriv) = dval3
+                    
+                    end do
+                  end do
+                end do
+
+              end select
+
+            end if
             
           else
           
@@ -1644,7 +2082,8 @@ contains
                 end do
               end do
             end do
-          end if            
+          end if
+          
         else
           
           ! Interleaved specification
