@@ -9464,7 +9464,7 @@ contains
     ! Local variables
     real(DP) :: dbasIx, dbasIy, dbasIz, dbasJx, dbasJy, dbasJz
     integer :: iel, icubp, idofe, jdofe, ndim
-    real(DP), dimension(:,:,:), pointer :: p_DlocalMatrix
+    real(DP), dimension(:,:,:), pointer :: p_DlocalMatrix11,p_DlocalMatrix22,p_DlocalMatrix33
     real(DP), dimension(:,:,:,:), pointer :: p_DbasTrial,p_DbasTest
     real(DP), dimension(:,:), pointer :: p_DcubWeight
     type(t_bmaMatrixData), pointer :: p_rmatrixData
@@ -9475,7 +9475,6 @@ contains
     real(DP), dimension(:,:,:), pointer :: p_Du
     real(DP), dimension(:,:), pointer :: p_DuMean
     real(DP) :: dnu,dvelX,dvelY,dvelZ, dsumI, dsumJ
-    integer :: i,iend
 
     integer :: ndimfe
     real(DP) :: dumaxR
@@ -9493,7 +9492,7 @@ contains
     bconstNu = present(rvectorNu)
     bconstVel = present(rvectorField)
     
-    if (bconstVel) then
+    if (bconstNu) then
       dnu = dviscosity
     else
       p_Dnu => rvectorNu%p_Ddata(:,:,DER_FUNC)
@@ -9507,7 +9506,7 @@ contains
     p_DbasTrial => RmatrixData(iy,ix)%p_DbasTrial
     p_DbasTest => RmatrixData(iy,ix)%p_DbasTest
     
-    ! FE space dimension
+    ! FE space dimension. We check only the first matrix.
     ndimfe = RmatrixData(iy,ix)%ndimfeTrial
     
     if (ndimfe .ne. RmatrixData(iy,ix)%ndimfeTest) then
@@ -9554,30 +9553,27 @@ contains
             rassemblyData%p_IelementList,rmatrixAssembly%p_rtriangulation,p_DmeshWidth)
             
       case (1)
-        if (.not. bconstVel) then
-          ! Ray shooting currently only supported for nonconstant velocity fields.
-          ! We use the mean velocity as shooting direction.
+        select case (ndim)
+        case (NDIM2D)
+          ! Only exists in 2D.
           call bma_auxGetLocalMeshWidth_ray (&
               rassemblyData%p_IelementList,p_DuMean,rmatrixAssembly%p_rtriangulation,p_DmeshWidth)
-              
-        else
+
+        case default
+          ! Fallback
           call bma_auxGetLocalMeshWidth_area (&
               rassemblyData%p_IelementList,rmatrixAssembly%p_rtriangulation,p_DmeshWidth)
-        end if
+        end select
       end select
 
       ! ---------------------------------------------------
       ! Compute the local delta
       if (bconstNu) then
-        call bma_auxGetLDelta (p_DlocalDelta,&
-              cstabiltype,dupsam,duMaxR,p_DcubWeight,&
-              p_DmeshWidth,npointsPerElement,nelements,&
-              p_DuMean,dnu)
+        call bma_auxGetLDelta (p_DlocalDelta,cstabiltype,dupsam,duMaxR,p_DcubWeight,&
+              p_DmeshWidth,npointsPerElement,nelements,p_DuMean,dnu)
       else
-        call bma_auxGetLDelta (p_DlocalDelta,&
-              cstabiltype,dupsam,duMaxR,p_DcubWeight,&
-              p_DmeshWidth,npointsPerElement,nelements,&
-              p_DuMean,Dnu=p_Dnu)
+        call bma_auxGetLDelta (p_DlocalDelta,cstabiltype,dupsam,duMaxR,p_DcubWeight,&
+              p_DmeshWidth,npointsPerElement,nelements,p_DuMean,Dnu=p_Dnu)
       end if
 
       if (ndimfe .eq. 1) then
@@ -9588,13 +9584,6 @@ contains
         ! This IF command prevents an inner IF command and speeds 
         ! up the computation for all scalar standard FE spaces.
         
-        ! Do we assemble the full tensor?
-        if (btensor) then
-          iend = ndim-1
-        else
-          iend = 0
-        end if
-
         ! Set up the operator
         !
         ! n~_h (u_h, phi_i, phi_j)
@@ -9613,121 +9602,144 @@ contains
         ! on the viscosity, velocity etc.
         
         select case (ndim)
+        ! ===========================================================
+        ! 1D, scalar valued FEM space
+        ! ===========================================================
         case (NDIM1D)
 
-          do i=0,iend
+          ! -------------------------------------------------------
+          ! Scalar target matrix and tensor target, no difference
+          ! -------------------------------------------------------
           
-            ! Get the matrix data      
-            p_DlocalMatrix => RmatrixData(iy+i,ix+i)%p_Dentry
+          ! Get the matrix data
+          p_DlocalMatrix11 => RmatrixData(iy,ix)%p_Dentry
 
-            if (bconstVel) then
+          if (bconstVel) then
+          
+            ! -------------------------------------------------------
+            ! Constant velocity
+            ! -------------------------------------------------------
+
+            ! Loop over the elements in the current set.
+            do iel = 1,nelements
+
+              ! Loop over all cubature points on the current element
+              do icubp = 1,npointsPerElement
+
+                ! Outer loop over the DOF's i=1..ndof on our current element,
+                ! which corresponds to the (test) basis functions Psi_i:
+                do idofe=1,p_rmatrixData%ndofTest
+
+                  ! Fetch the contributions of the (test) basis functions Psi_i
+                  ! into dbasIx/y
+                  dbasIx = p_DbasTest(idofe,DER_DERIV1D_X,icubp,iel)
+                  
+                  ! Calculate dsumI, multiply with dscale, the local delta
+                  ! and the cubature weight. Saves some multiplications.
+                  dsumI = dscale * p_DcubWeight(icubp,iel) * p_DlocalDelta(iel) * &
+                          (dvelX*dbasIx)
+
+                  ! Inner loop over the DOF's j=1..ndof, which corresponds to
+                  ! the (trial) basis function Phi_j:
+                  do jdofe=1,p_rmatrixData%ndofTrial
+
+                    ! Fetch the contributions of the (trial) basis function Phi_j
+                    ! into dbasJx/y
+                    dbasJx = p_DbasTrial(jdofe,DER_DERIV1D_X,icubp,iel)
+
+                    ! Calculate dsumJ
+                    dsumJ = dvelX*dbasJx
+
+                    ! Multiply the values of the basis functions
+                    ! (1st derivatives) by the cubature weight and sum up
+                    ! into the local matrices.
+                    p_DlocalMatrix11(jdofe,idofe,iel) = p_DlocalMatrix11(jdofe,idofe,iel) + &
+                        dsumJ*dsumI
+
+                  end do ! jdofe
+
+                end do ! idofe
+
+              end do ! icubp
+
+            end do ! iel
             
-              ! Loop over the elements in the current set.
-              do iel = 1,nelements
+          else
+          
+            ! -------------------------------------------------------
+            ! Nonconstant velocity
+            ! -------------------------------------------------------
 
-                ! Loop over all cubature points on the current element
-                do icubp = 1,npointsPerElement
+            ! Loop over the elements in the current set.
+            do iel = 1,nelements
 
-                  ! Outer loop over the DOF's i=1..ndof on our current element,
-                  ! which corresponds to the (test) basis functions Psi_i:
-                  do idofe=1,p_rmatrixData%ndofTest
-
-                    ! Fetch the contributions of the (test) basis functions Psi_i
-                    ! into dbasIx/y
-                    dbasIx = p_DbasTest(idofe,DER_DERIV1D_X,icubp,iel)
-                    
-                    ! Calculate dsumI, multiply with dscale, the local delta
-                    ! and the cubature weight. Saves some multiplications.
-                    dsumI = dscale * p_DcubWeight(icubp,iel) * p_DlocalDelta(iel) * &
-                            (dvelX*dbasIx)
-
-                    ! Inner loop over the DOF's j=1..ndof, which corresponds to
-                    ! the (trial) basis function Phi_j:
-                    do jdofe=1,p_rmatrixData%ndofTrial
-
-                      ! Fetch the contributions of the (trial) basis function Phi_j
-                      ! into dbasJx/y
-                      dbasJx = p_DbasTrial(jdofe,DER_DERIV2D_X,icubp,iel)
-
-                      ! Calculate dsumJ
-                      dsumJ = dvelX*dbasJx
-
-                      ! Multiply the values of the basis functions
-                      ! (1st derivatives) by the cubature weight and sum up
-                      ! into the local matrices.
-                      p_DlocalMatrix(jdofe,idofe,iel) = p_DlocalMatrix(jdofe,idofe,iel) + &
-                          dsumJ*dsumI
-
-                    end do ! jdofe
-
-                  end do ! idofe
-
-                end do ! icubp
-
-              end do ! iel
+              ! Loop over all cubature points on the current element
+              do icubp = 1,npointsPerElement
               
-            else
-            
-              ! Loop over the elements in the current set.
-              do iel = 1,nelements
+                ! Get the velocity in that point.
+                dvelX = p_Du(1,icubp,iel)
+                dvelY = p_Du(2,icubp,iel)
 
-                ! Loop over all cubature points on the current element
-                do icubp = 1,npointsPerElement
-                
-                  ! Get the velocity in that point.
-                  dvelX = p_Du(1,icubp,iel)
+                ! Outer loop over the DOF's i=1..ndof on our current element,
+                ! which corresponds to the (test) basis functions Psi_i:
+                do idofe=1,p_rmatrixData%ndofTest
 
-                  ! Outer loop over the DOF's i=1..ndof on our current element,
-                  ! which corresponds to the (test) basis functions Psi_i:
-                  do idofe=1,p_rmatrixData%ndofTest
+                  ! Fetch the contributions of the (test) basis functions Psi_i
+                  ! into dbasIx/y
+                  dbasIx = p_DbasTest(idofe,DER_DERIV1D_X,icubp,iel)
+                  
+                  ! Calculate dsumI, multiply with dscale, the local delta
+                  ! and the cubature weight. Saves some multiplications.
+                  dsumI = dscale * p_DcubWeight(icubp,iel) * p_DlocalDelta(iel) * &
+                          (dvelX*dbasIx)
 
-                    ! Fetch the contributions of the (test) basis functions Psi_i
-                    ! into dbasIx/y
-                    dbasIx = p_DbasTest(idofe,DER_DERIV1D_X,icubp,iel)
-                    
-                    ! Calculate dsumI, multiply with dscale, the local delta
-                    ! and the cubature weight. Saves some multiplications.
-                    dsumI = dscale * p_DcubWeight(icubp,iel) * p_DlocalDelta(iel) * &
-                            (dvelX*dbasIx)
+                  ! Inner loop over the DOF's j=1..ndof, which corresponds to
+                  ! the (trial) basis function Phi_j:
+                  do jdofe=1,p_rmatrixData%ndofTrial
 
-                    ! Inner loop over the DOF's j=1..ndof, which corresponds to
-                    ! the (trial) basis function Phi_j:
-                    do jdofe=1,p_rmatrixData%ndofTrial
+                    ! Fetch the contributions of the (trial) basis function Phi_j
+                    ! into dbasJx/y
+                    dbasJx = p_DbasTrial(jdofe,DER_DERIV1D_X,icubp,iel)
 
-                      ! Fetch the contributions of the (trial) basis function Phi_j
-                      ! into dbasJx/y
-                      dbasJx = p_DbasTrial(jdofe,DER_DERIV2D_X,icubp,iel)
+                    ! Calculate dsumJ
+                    dsumJ = dvelX*dbasJx
 
-                      ! Calculate dsumJ
-                      dsumJ = dvelX*dbasJx
+                    ! Multiply the values of the basis functions
+                    ! (1st derivatives) by the cubature weight and sum up
+                    ! into the local matrices.
+                    p_DlocalMatrix11(jdofe,idofe,iel) = p_DlocalMatrix11(jdofe,idofe,iel) + &
+                        dsumJ*dsumI
 
-                      ! Multiply the values of the basis functions
-                      ! (1st derivatives) by the cubature weight and sum up
-                      ! into the local matrices.
-                      p_DlocalMatrix(jdofe,idofe,iel) = p_DlocalMatrix(jdofe,idofe,iel) + &
-                          dsumJ*dsumI
+                  end do ! jdofe
 
-                    end do ! jdofe
+                end do ! idofe
 
-                  end do ! idofe
+              end do ! icubp
 
-                end do ! icubp
+            end do ! iel
 
-              end do ! iel
+          end if
 
-            end if
-
-          end do ! i
-
+        ! ===========================================================
+        ! 2D, scalar valued FEM space
+        ! ===========================================================
         case (NDIM2D)
 
-          do i=0,iend
-          
-            ! Get the matrix data      
-            p_DlocalMatrix => RmatrixData(iy+i,ix+i)%p_Dentry
+          if (.not. btensor) then
+
+            ! -------------------------------------------------------
+            ! Scalar target matrix
+            ! -------------------------------------------------------
+            
+            ! Get the matrix data
+            p_DlocalMatrix11 => RmatrixData(iy,ix)%p_Dentry
 
             if (bconstVel) then
             
+              ! -------------------------------------------------------
+              ! Constant velocity
+              ! -------------------------------------------------------
+
               ! Loop over the elements in the current set.
               do iel = 1,nelements
 
@@ -9763,7 +9775,7 @@ contains
                       ! Multiply the values of the basis functions
                       ! (1st derivatives) by the cubature weight and sum up
                       ! into the local matrices.
-                      p_DlocalMatrix(jdofe,idofe,iel) = p_DlocalMatrix(jdofe,idofe,iel) + &
+                      p_DlocalMatrix11(jdofe,idofe,iel) = p_DlocalMatrix11(jdofe,idofe,iel) + &
                           dsumJ*dsumI
 
                     end do ! jdofe
@@ -9776,6 +9788,10 @@ contains
               
             else
             
+              ! -------------------------------------------------------
+              ! Nonconstant velocity
+              ! -------------------------------------------------------
+
               ! Loop over the elements in the current set.
               do iel = 1,nelements
 
@@ -9815,7 +9831,7 @@ contains
                       ! Multiply the values of the basis functions
                       ! (1st derivatives) by the cubature weight and sum up
                       ! into the local matrices.
-                      p_DlocalMatrix(jdofe,idofe,iel) = p_DlocalMatrix(jdofe,idofe,iel) + &
+                      p_DlocalMatrix11(jdofe,idofe,iel) = p_DlocalMatrix11(jdofe,idofe,iel) + &
                           dsumJ*dsumI
 
                     end do ! jdofe
@@ -9827,18 +9843,23 @@ contains
               end do ! iel
 
             end if
+            
+          else ! btensor
 
-          end do ! i
-          
-        case (NDIM3D)
+            ! -------------------------------------------------------
+            ! Tensor target
+            ! -------------------------------------------------------
 
-          do i=0,iend
-          
-            ! Get the matrix data      
-            p_DlocalMatrix => RmatrixData(iy+i,ix+i)%p_Dentry
+            ! Get the matrix data
+            p_DlocalMatrix11 => RmatrixData(iy,ix)%p_Dentry
+            p_DlocalMatrix22 => RmatrixData(iy+1,ix+1)%p_Dentry
 
             if (bconstVel) then
             
+              ! -------------------------------------------------------
+              ! Constant velocity
+              ! -------------------------------------------------------
+              
               ! Loop over the elements in the current set.
               do iel = 1,nelements
 
@@ -9851,8 +9872,138 @@ contains
 
                     ! Fetch the contributions of the (test) basis functions Psi_i
                     ! into dbasIx/y
-                    dbasIx = p_DbasTest(idofe,DER_DERIV3D_X,icubp,iel)
-                    dbasIy = p_DbasTest(idofe,DER_DERIV3D_Y,icubp,iel)
+                    dbasIx = p_DbasTest(idofe,DER_DERIV2D_X,icubp,iel)
+                    dbasIy = p_DbasTest(idofe,DER_DERIV2D_Y,icubp,iel)
+                    
+                    ! Calculate dsumI, multiply with dscale, the local delta
+                    ! and the cubature weight. Saves some multiplications.
+                    dsumI = dscale * p_DcubWeight(icubp,iel) * p_DlocalDelta(iel) * &
+                            (dvelX*dbasIx + dvelY*dbasIy)
+
+                    ! Inner loop over the DOF's j=1..ndof, which corresponds to
+                    ! the (trial) basis function Phi_j:
+                    do jdofe=1,p_rmatrixData%ndofTrial
+
+                      ! Fetch the contributions of the (trial) basis function Phi_j
+                      ! into dbasJx/y
+                      dbasJx = p_DbasTrial(jdofe,DER_DERIV2D_X,icubp,iel)
+                      dbasJy = p_DbasTrial(jdofe,DER_DERIV2D_Y,icubp,iel)
+
+                      ! Calculate dsumJ
+                      dsumJ = dvelX*dbasJx + dvelY*dbasJy
+
+                      ! Multiply the values of the basis functions
+                      ! (1st derivatives) by the cubature weight and sum up
+                      ! into the local matrices.
+                      p_DlocalMatrix11(jdofe,idofe,iel) = p_DlocalMatrix11(jdofe,idofe,iel) + &
+                          dsumJ*dsumI
+                      p_DlocalMatrix22(jdofe,idofe,iel) = p_DlocalMatrix22(jdofe,idofe,iel) + &
+                          dsumJ*dsumI
+
+                    end do ! jdofe
+
+                  end do ! idofe
+
+                end do ! icubp
+
+              end do ! iel
+              
+            else
+            
+              ! -------------------------------------------------------
+              ! Nonconstant velocity
+              ! -------------------------------------------------------
+
+              ! Loop over the elements in the current set.
+              do iel = 1,nelements
+
+                ! Loop over all cubature points on the current element
+                do icubp = 1,npointsPerElement
+                
+                  ! Get the velocity in that point.
+                  dvelX = p_Du(1,icubp,iel)
+                  dvelY = p_Du(2,icubp,iel)
+
+                  ! Outer loop over the DOF's i=1..ndof on our current element,
+                  ! which corresponds to the (test) basis functions Psi_i:
+                  do idofe=1,p_rmatrixData%ndofTest
+
+                    ! Fetch the contributions of the (test) basis functions Psi_i
+                    ! into dbasIx/y
+                    dbasIx = p_DbasTest(idofe,DER_DERIV2D_X,icubp,iel)
+                    dbasIy = p_DbasTest(idofe,DER_DERIV2D_Y,icubp,iel)
+                    
+                    ! Calculate dsumI, multiply with dscale, the local delta
+                    ! and the cubature weight. Saves some multiplications.
+                    dsumI = dscale * p_DcubWeight(icubp,iel) * p_DlocalDelta(iel) * &
+                            (dvelX*dbasIx + dvelY*dbasIy)
+
+                    ! Inner loop over the DOF's j=1..ndof, which corresponds to
+                    ! the (trial) basis function Phi_j:
+                    do jdofe=1,p_rmatrixData%ndofTrial
+
+                      ! Fetch the contributions of the (trial) basis function Phi_j
+                      ! into dbasJx/y
+                      dbasJx = p_DbasTrial(jdofe,DER_DERIV2D_X,icubp,iel)
+                      dbasJy = p_DbasTrial(jdofe,DER_DERIV2D_Y,icubp,iel)
+
+                      ! Calculate dsumJ
+                      dsumJ = dvelX*dbasJx + dvelY*dbasJy
+
+                      ! Multiply the values of the basis functions
+                      ! (1st derivatives) by the cubature weight and sum up
+                      ! into the local matrices.
+                      p_DlocalMatrix11(jdofe,idofe,iel) = p_DlocalMatrix11(jdofe,idofe,iel) + &
+                          dsumJ*dsumI
+                      p_DlocalMatrix22(jdofe,idofe,iel) = p_DlocalMatrix22(jdofe,idofe,iel) + &
+                          dsumJ*dsumI
+
+                    end do ! jdofe
+
+                  end do ! idofe
+
+                end do ! icubp
+
+              end do ! iel
+
+            end if
+
+          end if ! btensor
+  
+        ! ===========================================================
+        ! 3D, scalar valued FEM space
+        ! ===========================================================
+        case (NDIM3D)
+
+          if (.not. btensor) then
+
+            ! -------------------------------------------------------
+            ! Scalar target matrix
+            ! -------------------------------------------------------
+            
+            ! Get the matrix data
+            p_DlocalMatrix11 => RmatrixData(iy,ix)%p_Dentry
+
+            if (bconstVel) then
+            
+              ! -------------------------------------------------------
+              ! Constant velocity
+              ! -------------------------------------------------------
+
+              ! Loop over the elements in the current set.
+              do iel = 1,nelements
+
+                ! Loop over all cubature points on the current element
+                do icubp = 1,npointsPerElement
+
+                  ! Outer loop over the DOF's i=1..ndof on our current element,
+                  ! which corresponds to the (test) basis functions Psi_i:
+                  do idofe=1,p_rmatrixData%ndofTest
+
+                    ! Fetch the contributions of the (test) basis functions Psi_i
+                    ! into dbasIx/y
+                    dbasIx = p_DbasTest(idofe,DER_DERIV3D_Z,icubp,iel)
+                    dbasIy = p_DbasTest(idofe,DER_DERIV3D_Z,icubp,iel)
                     dbasIz = p_DbasTest(idofe,DER_DERIV3D_Z,icubp,iel)
                     
                     ! Calculate dsumI, multiply with dscale, the local delta
@@ -9876,7 +10027,7 @@ contains
                       ! Multiply the values of the basis functions
                       ! (1st derivatives) by the cubature weight and sum up
                       ! into the local matrices.
-                      p_DlocalMatrix(jdofe,idofe,iel) = p_DlocalMatrix(jdofe,idofe,iel) + &
+                      p_DlocalMatrix11(jdofe,idofe,iel) = p_DlocalMatrix11(jdofe,idofe,iel) + &
                           dsumJ*dsumI
 
                     end do ! jdofe
@@ -9889,6 +10040,10 @@ contains
               
             else
             
+              ! -------------------------------------------------------
+              ! Nonconstant velocity
+              ! -------------------------------------------------------
+
               ! Loop over the elements in the current set.
               do iel = 1,nelements
 
@@ -9931,7 +10086,141 @@ contains
                       ! Multiply the values of the basis functions
                       ! (1st derivatives) by the cubature weight and sum up
                       ! into the local matrices.
-                      p_DlocalMatrix(jdofe,idofe,iel) = p_DlocalMatrix(jdofe,idofe,iel) + &
+                      p_DlocalMatrix11(jdofe,idofe,iel) = p_DlocalMatrix11(jdofe,idofe,iel) + &
+                          dsumJ*dsumI
+
+                    end do ! jdofe
+
+                  end do ! idofe
+
+                end do ! icubp
+
+              end do ! iel
+
+            end if
+            
+          else ! btensor
+
+            ! -------------------------------------------------------
+            ! Tensor target
+            ! -------------------------------------------------------
+
+            ! Get the matrix data
+            p_DlocalMatrix11 => RmatrixData(iy,ix)%p_Dentry
+            p_DlocalMatrix22 => RmatrixData(iy+1,ix+1)%p_Dentry
+            p_DlocalMatrix33 => RmatrixData(iy+2,ix+2)%p_Dentry
+
+            if (bconstVel) then
+            
+              ! -------------------------------------------------------
+              ! Constant velocity
+              ! -------------------------------------------------------
+              
+              ! Loop over the elements in the current set.
+              do iel = 1,nelements
+
+                ! Loop over all cubature points on the current element
+                do icubp = 1,npointsPerElement
+
+                  ! Outer loop over the DOF's i=1..ndof on our current element,
+                  ! which corresponds to the (test) basis functions Psi_i:
+                  do idofe=1,p_rmatrixData%ndofTest
+
+                    ! Fetch the contributions of the (test) basis functions Psi_i
+                    ! into dbasIx/y
+                    dbasIx = p_DbasTest(idofe,DER_DERIV3D_X,icubp,iel)
+                    dbasIy = p_DbasTest(idofe,DER_DERIV3D_Y,icubp,iel)
+                    dbasIz = p_DbasTest(idofe,DER_DERIV3D_Z,icubp,iel)
+                    
+                    ! Calculate dsumI, multiply with dscale, the local delta
+                    ! and the cubature weight. Saves some multiplications.
+                    dsumI = dscale * p_DcubWeight(icubp,iel) * p_DlocalDelta(iel) * &
+                            (dvelX*dbasIx + dvelY*dbasIy + dvelZ*dbasIz)
+
+                    ! Inner loop over the DOF's j=1..ndof, which corresponds to
+                    ! the (trial) basis function Phi_j:
+                    do jdofe=1,p_rmatrixData%ndofTrial
+
+                      ! Fetch the contributions of the (trial) basis function Phi_j
+                      ! into dbasJx/y
+                      dbasJx = p_DbasTrial(jdofe,DER_DERIV3D_X,icubp,iel)
+                      dbasJy = p_DbasTrial(jdofe,DER_DERIV3D_Y,icubp,iel)
+                      dbasJz = p_DbasTrial(jdofe,DER_DERIV3D_Z,icubp,iel)
+
+                      ! Calculate dsumJ
+                      dsumJ = dvelX*dbasJx + dvelY*dbasJy + dvelZ*dbasJz
+
+                      ! Multiply the values of the basis functions
+                      ! (1st derivatives) by the cubature weight and sum up
+                      ! into the local matrices.
+                      p_DlocalMatrix11(jdofe,idofe,iel) = p_DlocalMatrix11(jdofe,idofe,iel) + &
+                          dsumJ*dsumI
+                      p_DlocalMatrix22(jdofe,idofe,iel) = p_DlocalMatrix22(jdofe,idofe,iel) + &
+                          dsumJ*dsumI
+                      p_DlocalMatrix33(jdofe,idofe,iel) = p_DlocalMatrix33(jdofe,idofe,iel) + &
+                          dsumJ*dsumI
+
+                    end do ! jdofe
+
+                  end do ! idofe
+
+                end do ! icubp
+
+              end do ! iel
+              
+            else
+            
+              ! -------------------------------------------------------
+              ! Nonconstant velocity
+              ! -------------------------------------------------------
+
+              ! Loop over the elements in the current set.
+              do iel = 1,nelements
+
+                ! Loop over all cubature points on the current element
+                do icubp = 1,npointsPerElement
+                
+                  ! Get the velocity in that point.
+                  dvelX = p_Du(1,icubp,iel)
+                  dvelY = p_Du(2,icubp,iel)
+                  dvelZ = p_Du(3,icubp,iel)
+
+                  ! Outer loop over the DOF's i=1..ndof on our current element,
+                  ! which corresponds to the (test) basis functions Psi_i:
+                  do idofe=1,p_rmatrixData%ndofTest
+
+                    ! Fetch the contributions of the (test) basis functions Psi_i
+                    ! into dbasIx/y
+                    dbasIx = p_DbasTest(idofe,DER_DERIV3D_X,icubp,iel)
+                    dbasIy = p_DbasTest(idofe,DER_DERIV3D_Y,icubp,iel)
+                    dbasIz = p_DbasTest(idofe,DER_DERIV3D_Z,icubp,iel)
+                    
+                    ! Calculate dsumI, multiply with dscale, the local delta
+                    ! and the cubature weight. Saves some multiplications.
+                    dsumI = dscale * p_DcubWeight(icubp,iel) * p_DlocalDelta(iel) * &
+                            (dvelX*dbasIx + dvelY*dbasIy + dvelZ*dbasIz)
+
+                    ! Inner loop over the DOF's j=1..ndof, which corresponds to
+                    ! the (trial) basis function Phi_j:
+                    do jdofe=1,p_rmatrixData%ndofTrial
+
+                      ! Fetch the contributions of the (trial) basis function Phi_j
+                      ! into dbasJx/y
+                      dbasJx = p_DbasTrial(jdofe,DER_DERIV3D_X,icubp,iel)
+                      dbasJy = p_DbasTrial(jdofe,DER_DERIV3D_Y,icubp,iel)
+                      dbasJz = p_DbasTrial(jdofe,DER_DERIV3D_Z,icubp,iel)
+
+                      ! Calculate dsumJ
+                      dsumJ = dvelX*dbasJx + dvelY*dbasJy + dvelZ*dbasJz
+
+                      ! Multiply the values of the basis functions
+                      ! (1st derivatives) by the cubature weight and sum up
+                      ! into the local matrices.
+                      p_DlocalMatrix11(jdofe,idofe,iel) = p_DlocalMatrix11(jdofe,idofe,iel) + &
+                          dsumJ*dsumI
+                      p_DlocalMatrix22(jdofe,idofe,iel) = p_DlocalMatrix22(jdofe,idofe,iel) + &
+                          dsumJ*dsumI
+                      p_DlocalMatrix33(jdofe,idofe,iel) = p_DlocalMatrix33(jdofe,idofe,iel) + &
                           dsumJ*dsumI
 
                     end do ! jdofe
@@ -9944,7 +10233,7 @@ contains
 
             end if
 
-          end do ! i
+          end if ! btensor
 
         end select
         
@@ -9964,108 +10253,136 @@ contains
 
   end subroutine
 
-!  !****************************************************************************
-!
-!!<subroutine>
-!
-!  subroutine bma_fcalc_streamlinediff(RmatrixData,rassemblyData,rmatrixAssembly,&
-!      npointsPerElement,nelements,revalVectors,rcollection)
-!
-!!<description>  
-!    ! Calculates the Streamline diffusion stabilisation.
-!    !
-!    ! If rcollection must be specified, the following parameters are expected:
-!    !
-!    ! rcollection%DquickAccess(1) = stabilisation parameter dupsam
-!    ! rcollection%DquickAccess(2) = maximum norm of the velocity vector
-!    ! rcollection%IquickAccess(1) = x-position in the destination matrix
-!    ! rcollection%IquickAccess(2) = y-position in the destination matrix
-!    ! rcollection%IquickAccess(3) = Type of SD method to apply.
-!    !                               = 0: Use simple SD stabilisation:
-!    !                                    ddelta = dupsam * h_T.
-!    !                               = 1: Use Samarskji SD stabilisation; usually dupsam = 0.1 .. 2.
-!    !                                    ddelta = dupsam * h_t/||u||_T * 2*Re_T/(1+Re_T)
-!    ! rcollection%IquickAccess(4) = Method how to compute the local mesh width.
-!    !                               = 0: Element volume based.
-!    !                               = 1: Ray shooting method.
-!    !
-!    ! Furthermore, the following vectors must be provided in revalVectors:
-!    !
-!    !   revalVectors(1) = Element-based temporary vector
-!    !   revalVectors(2) = Element-based temporary vector
-!    !   revalVectors(1) = velocity field, n-dimensional, including 1st derivative
-!    !   revalVectors(n+1) = Viscosity coefficient in all cubature points on all element
-!!</description>
-!
-!!<inputoutput>
-!    ! Matrix data of all matrices. The arrays p_Dentry of all submatrices
-!    ! have to be filled with data.
-!    type(t_bmaMatrixData), dimension(:,:), intent(inout), target :: RmatrixData
-!!</inputoutput>
-!
-!!<input>
-!    ! Data necessary for the assembly. Contains determinants and
-!    ! cubature weights for the cubature,...
-!    type(t_bmaMatrixAssemblyData), intent(in) :: rassemblyData
-!
-!    ! Structure with all data about the assembly
-!    type(t_bmaMatrixAssembly), intent(in) :: rmatrixAssembly
-!
-!    ! Number of points per element
-!    integer, intent(in) :: npointsPerElement
-!
-!    ! Number of elements
-!    integer, intent(in) :: nelements
-!
-!    ! Values of FEM functions automatically evaluated in the
-!    ! cubature points.
-!    type(t_fev2Vectors), intent(in) :: revalVectors
-!
-!    ! User defined collection structure
-!    type(t_collection), intent(inout), target, optional :: rcollection
-!!</input>
-!
-!!</subroutine>
-!
-!    ! Local variables
-!    real(DP) :: dbasI, dbasJ
-!    integer :: iel, icubp, idofe, jdofe, ivar, nvar, ndim
-!    real(DP), dimension(:,:,:), pointer :: p_DlocalMatrix11,p_DlocalMatrix22
-!    real(DP), dimension(:,:,:,:), pointer :: p_DbasTrial,p_DbasTest
-!    real(DP), dimension(:,:), pointer :: p_DcubWeight
-!    type(t_bmaMatrixData), pointer :: p_rmatrixData
-!    real(DP), dimension(:,:,:), pointer :: p_Dnu
-!    real(DP), dimension(:), pointer :: p_DlocalDelta,p_DmeshWidth
-!    real(DP), dimension(:,:,:), pointer :: p_Du
-!
-!    integer :: ix, iy, ndimfe, idimfe, cstabiltype, imeshwidthmethod
-!    real(DP) :: dupsam, dumaxR
-!
-!    if (.not. present(rcollection)) then
-!      call output_line ("Parameters missing.",&
-!          OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_streamlinediff")
-!      call sys_halt()
-!    end if
-!
-!    ! Get parameters
-!    dupsam = rcollection%DquickAccess(1)
-!    dumaxR = 1.0_DP / rcollection%DquickAccess(2)
-!    
-!    ix = rcollection%IquickAccess(1)
-!    iy = rcollection%IquickAccess(2)
-!    cstabiltype = rcollection%IquickAccess(3)
-!    imeshwidthmethod = rcollection%IquickAccess(4)
-!
-!    ! Cancel if nothing to do or parameters wrong
-!    if (dupsam .eq. 0.0_DP) return
-!
-!    if ((ix .lt. 1) .or. (iy .lt. 1) .or. &
-!        (ix .gt. ubound(RmatrixData,2)) .or. (iy .gt. ubound(RmatrixData,1))) then
-!      call output_line ("Parameters wrong.",&
-!          OU_CLASS_ERROR,OU_MODE_STD,"bma_fcalc_streamlinediff")
-!      call sys_halt()
-!    end if
-!  
-!  end subroutine
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine bma_fcalc_streamlinediff(RmatrixData,rassemblyData,rmatrixAssembly,&
+      npointsPerElement,nelements,revalVectors,rcollection)
+
+!<description>  
+    ! Calculates the Streamline diffusion stabilisation.
+    !
+    ! If rcollection must be specified, the following parameters are expected:
+    !
+    ! rcollection%DquickAccess(1) = scaling factor
+    ! rcollection%DquickAccess(2) = stabilisation parameter dupsam
+    ! rcollection%DquickAccess(3) = maximum norm of the velocity vector
+    ! rcollection%DquickAccess(4) = constant viscosity (if constant)
+    ! rcollection%DquickAccess(5:7) = constant velocity (if constant)
+    !
+    ! rcollection%IquickAccess(1) = x-position in the destination matrix
+    ! rcollection%IquickAccess(2) = y-position in the destination matrix
+    ! rcollection%IquickAccess(3) = Specifies the target tensor/matrix
+    !                               =0: Only apply SD to the position (ix,iy)
+    !                               =1: Apply SD to the full tensor (ix,iy)..(ix+dim,iy+dim)
+    ! rcollection%IquickAccess(4) = Type of SD method to apply.
+    !                               = 0: Use simple SD stabilisation:
+    !                                    ddelta = dupsam * h_T.
+    !                               = 1: Use Samarskji SD stabilisation; usually dupsam = 0.1 .. 2.
+    !                                    ddelta = dupsam * h_t/||u||_T * 2*Re_T/(1+Re_T)
+    ! rcollection%IquickAccess(5) = Method how to compute the local mesh width.
+    !                               = 0: Element volume based.
+    !                               = 1: Ray shooting method.
+    ! rcollection%IquickAccess(6) = Specifies the velocity field.
+    !                               =0: Use a constant velocity field du1,du2,du3
+    !                                   given in DquickAccess
+    !                               =1: Use a nonconstant velocity field, given in
+    !                                   revalVectors
+    ! rcollection%IquickAccess(6) = Specifies the viscosity.
+    !                               =0: Use a constant velocity field dnu
+    !                                   given in DquickAccess
+    !                               =1: Use a nonconstant velocity field, given in
+    !                                   revalVectors
+    !
+    ! Furthermore, the following vectors must be provided in revalVectors:
+    !
+    !   revalVectors(1) = Element-based temporary vector
+    !   revalVectors(2) = Element-based temporary vector
+    !   revalVectors(3) = Vector-valued element based temporary vector, as many components
+    !                     as the velocity
+    !   revalVectors(4) = velocity field, n-dimensional, including 1st derivative if nonconstant.
+    !   revalVectors(5/4) = nonconstant viscosity coefficient if nonconstant.
+!</description>
+
+!<inputoutput>
+    ! Matrix data of all matrices. The arrays p_Dentry of all submatrices
+    ! have to be filled with data.
+    type(t_bmaMatrixData), dimension(:,:), intent(inout), target :: RmatrixData
+!</inputoutput>
+
+!<input>
+    ! Data necessary for the assembly. Contains determinants and
+    ! cubature weights for the cubature,...
+    type(t_bmaMatrixAssemblyData), intent(in) :: rassemblyData
+
+    ! Structure with all data about the assembly
+    type(t_bmaMatrixAssembly), intent(in) :: rmatrixAssembly
+
+    ! Number of points per element
+    integer, intent(in) :: npointsPerElement
+
+    ! Number of elements
+    integer, intent(in) :: nelements
+
+    ! Values of FEM functions automatically evaluated in the
+    ! cubature points.
+    type(t_fev2Vectors), intent(in) :: revalVectors
+
+    ! User defined collection structure
+    type(t_collection), intent(inout), target, optional :: rcollection
+!</input>
+
+!</subroutine>
+
+    ! Local variables
+    real(DP) :: dscale,dupsam,dumax,du1,du2,du3,dviscosity
+    integer :: ix,iy,cstabiltype,clocalh
+    logical :: btensor,bconstVel,bconstNu
+    
+    ! Fetch parameters from the collection
+    dscale                = rcollection%DquickAccess(1)
+    dupsam                = rcollection%DquickAccess(2)
+    dumax                 = rcollection%DquickAccess(3)
+    dviscosity            = rcollection%DquickAccess(4)
+    du1                   = rcollection%DquickAccess(5)
+    du2                   = rcollection%DquickAccess(6)
+    du3                   = rcollection%DquickAccess(7)
+
+    ix                    = rcollection%IquickAccess(1)
+    iy                    = rcollection%IquickAccess(2)
+    btensor               = rcollection%IquickAccess(3) .ne. 0
+    cstabiltype           = rcollection%IquickAccess(4)
+    clocalh               = rcollection%IquickAccess(5)
+    bconstVel             = rcollection%IquickAccess(6) .eq. 0
+    bconstNu              = rcollection%IquickAccess(6) .eq. 0
+
+    ! Invoke the SD operator.
+    if (bconstNu) then
+      if (bconstVel) then
+        call bma_docalc_streamlinediff(RmatrixData,rassemblyData,rmatrixAssembly,&
+            npointsPerElement,nelements,dscale,ix,iy,btensor,cstabiltype,clocalh,dupsam,dumax,&
+            revalVectors%p_RvectorData(1),revalVectors%p_RvectorData(2),du1,du2,du3,dviscosity)
+      else
+        call bma_docalc_streamlinediff(RmatrixData,rassemblyData,rmatrixAssembly,&
+            npointsPerElement,nelements,dscale,ix,iy,btensor,cstabiltype,clocalh,dupsam,dumax,&
+            revalVectors%p_RvectorData(1),revalVectors%p_RvectorData(2),du1,du2,du3,dviscosity,&
+            revalVectors%p_RvectorData(4))
+      end if
+    else
+      if (bconstVel) then
+        call bma_docalc_streamlinediff(RmatrixData,rassemblyData,rmatrixAssembly,&
+            npointsPerElement,nelements,dscale,ix,iy,btensor,cstabiltype,clocalh,dupsam,dumax,&
+            revalVectors%p_RvectorData(1),revalVectors%p_RvectorData(2),du1,du2,du3,dviscosity,&
+            rvectorNu=revalVectors%p_RvectorData(4))
+      else
+        call bma_docalc_streamlinediff(RmatrixData,rassemblyData,rmatrixAssembly,&
+            npointsPerElement,nelements,dscale,ix,iy,btensor,cstabiltype,clocalh,dupsam,dumax,&
+            revalVectors%p_RvectorData(1),revalVectors%p_RvectorData(2),du1,du2,du3,dviscosity,&
+            revalVectors%p_RvectorData(4),revalVectors%p_RvectorData(5))
+      end if
+    end if
+  
+  end subroutine
 
 end module
