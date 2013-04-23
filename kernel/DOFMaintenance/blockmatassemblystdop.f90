@@ -10289,7 +10289,7 @@ contains
     !                                   given in DquickAccess
     !                               =1: Use a nonconstant velocity field, given in
     !                                   revalVectors
-    ! rcollection%IquickAccess(6) = Specifies the viscosity.
+    ! rcollection%IquickAccess(7) = Specifies the viscosity.
     !                               =0: Use a constant velocity field dnu
     !                                   given in DquickAccess
     !                               =1: Use a nonconstant velocity field, given in
@@ -10355,7 +10355,7 @@ contains
     cstabiltype           = rcollection%IquickAccess(4)
     clocalh               = rcollection%IquickAccess(5)
     bconstVel             = rcollection%IquickAccess(6) .eq. 0
-    bconstNu              = rcollection%IquickAccess(6) .eq. 0
+    bconstNu              = rcollection%IquickAccess(7) .eq. 0
 
     ! Invoke the SD operator.
     if (bconstNu) then
