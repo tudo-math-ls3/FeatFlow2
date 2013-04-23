@@ -686,7 +686,7 @@ contains
     end if
 
     ! Constant viscosity?
-    if (present(rviscosity)) then
+    if (.not. present(rviscosity)) then
     
       ! ===================================================
       ! Constant viscosity - just the scaling factor.
