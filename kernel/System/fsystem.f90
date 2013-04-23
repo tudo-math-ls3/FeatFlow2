@@ -2934,7 +2934,7 @@ contains
 
     integer :: slen, istart
     logical :: bquot
-    character :: csep, ccurrentquote
+    character :: cchar, csep, ccurrentquote
     
     ! Get optional parameters
     csep = " "
@@ -2953,9 +2953,7 @@ contains
     ! Find all substrings  
     istart = 1
     
-    do
-      ! Cancel if nothing left.
-      if (istart .gt. slen) exit
+    do while(istart .le. slen)
 
       ! Skip whitespaces.
       do while (istart .le. slen)
@@ -2969,51 +2967,44 @@ contains
       ! Cancel if we reached the string end
       if (istart .gt. slen) exit
       
+      ! One more
+      ntokens = ntokens + 1
+      
       ! End of the string?
       do while (istart .le. slen)
       
+        ! fetch the current character
+        cchar = sstring(istart:istart)
+      
+        ! increase position
+        istart = istart + 1
+
         ! Process quotation marks.
         if (bquot) then
         
           ! Is this a quotation mark?
-          if ((sstring(istart:istart) .eq. """") .or. &
-              (sstring(istart:istart) .eq. "'")) then
+          if ((cchar .eq. """") .or. (cchar .eq. "'")) then
             ! If quoting is inactive, activate it.
             if (ccurrentquote .eq. " ") then
-              ccurrentquote = sstring(istart:istart)
-            else
+              ccurrentquote = cchar
+            else if (ccurrentquote .eq. cchar) then
               ! If the quotation character matches the currently
               ! found one, deactivate quoting. Otherwise ignore.
-              if (ccurrentquote .eq. sstring(istart:istart)) then
-                ccurrentquote = " "
-              end if
+              ccurrentquote = " "
             end if
           end if
 
+          
           ! Process until the next separator.
           ! Ignore separators in quotation marks.
-          if ((ccurrentquote .ne. " ") .or. (sstring(istart:istart) .ne. csep)) then
-            istart = istart + 1
-          else
-            exit
-          end if
+          if ((ccurrentquote .eq. " ") .and. (cchar .eq. csep)) exit
       
-        else
-
+        else if (cchar .eq. csep) then
           ! Process until the next separator
-          if (sstring(istart:istart) .ne. csep) then
-            istart = istart + 1
-          else
-            istart = istart + 1
-            exit
-          end if
-          
+           exit
         end if
       
       end do
-      
-      ! One more
-      ntokens = ntokens + 1
       
     end do
     

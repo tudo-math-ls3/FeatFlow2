@@ -554,14 +554,31 @@ contains
 
 !</function>
 
-  character(len=len(scubName)+1) :: scub
+  character(len=len(scubName)+1) :: scub, ssuf, stmp
+  integer :: ntokens, ipos, nstars, nrefs
   logical :: bchk
+  
+  ! First, check whether there is a colon in the cubature string.
+  ! If so, the colon acts as a separator betweenthe actual cubature ID
+  ! and a suffix string.
+  
+  ! see if we find a colon in the string
+  call sys_countTokens(scubName, ntokens, ':', .false.)
+  if(ntokens .le. 1) then
+    ! no colons found; interpret the whole string as a cubature id
+    scub = trim(sys_upcase(scubName))
+  else if(ntokens .ge. 2) then
+    ! found a colon - separate cubature and suffix strings
+    ipos = 1
+    call sys_getNextToken(scubName, scub, ipos, ':', .false.)
+    call sys_getNextToken(scubName, ssuf, ipos, ':', .false.)
+    scub = trim(sys_upcase(scub))
+    ssuf = trim(sys_upcase(ssuf))
+  end if
 
   ! SELECT CASE is not allowed for strings (although supported by a majority
   ! of compilers), therefore we have to use a couple of IF-commands :(
   ! select case(trim(sys_upcase(scubName)))
-
-  scub = trim(sys_upcase(scubName))
 
   ! Generic formulas
   if (scub .eq. "AUTO") then
@@ -733,6 +750,38 @@ contains
     else
       cub_igetID = CUB_UNDEFINED
     end if
+  end if
+  
+  ! Did we find a colon before?
+  if(ntokens .lt. 2) return
+  
+  ! try to find a '*' in the; if so, then extract the first substring
+  call sys_countTokens(ssuf, nstars, '*', .false.)
+  if(nstars .eq. 2) then
+    ipos = 1
+    call sys_getNextToken(ssuf, stmp, ipos, '*', .false.)
+    
+    ! check for refined cubature
+    if(stmp .eq. "SUM") then
+      ! read sum count
+      call sys_getNextToken(ssuf, stmp, ipos, '*', .false.)
+      read (stmp,*) nrefs
+      
+      ! generate summed ID
+      cub_igetID = cub_getSummedCubType(cub_igetID, nrefs)
+      return
+    end if
+  end if
+  
+  ! if we come out here, the suffix has not been recognised
+  bchk = .false.
+  if (present(bcheck)) bchk = bcheck
+  if (.not. bchk) then
+    call output_line('Unknown cubature formula: '//scubname,&
+                    OU_CLASS_ERROR,OU_MODE_STD,'cub_igetID')
+    call sys_halt()
+  else
+    cub_igetID = CUB_UNDEFINED
   end if
 
   end function cub_igetID
