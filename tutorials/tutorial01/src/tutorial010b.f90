@@ -75,26 +75,13 @@ contains
 
 !</subroutine>
 
-    ! local variables
-    type(t_collection) :: rlocalCollect
-
     ! Put the mass matrix to (1,1).
-    rlocalCollect%DquickAccess(1) = 1.0_DP    ! Multiplier
-    rlocalCollect%IquickAccess(1) = 1         ! x-position
-    rlocalCollect%IquickAccess(2) = 1         ! y-position
-    
-    ! Call the assembly routine
-    call bma_fcalc_mass(RmatrixData,rassemblyData,rmatrixAssembly,&
-        npointsPerElement,nelements,revalVectors,rlocalCollect)
+    call bma_docalc_mass(RmatrixData,rassemblyData,rmatrixAssembly,&
+        npointsPerElement,nelements,1.0_DP,1,1)
     
     ! Put the Laplace matrix to (2,2)
-    rlocalCollect%DquickAccess(1) = 1.0_DP    ! Multiplier
-    rlocalCollect%IquickAccess(1) = 2         ! x-position
-    rlocalCollect%IquickAccess(2) = 2         ! y-position
-    
-    ! Call the assembly routine
-    call bma_fcalc_laplace(RmatrixData,rassemblyData,rmatrixAssembly,&
-        npointsPerElement,nelements,revalVectors,rlocalCollect)
+    call bma_docalc_laplace(RmatrixData,rassemblyData,rmatrixAssembly,&
+        npointsPerElement,nelements,1.0_DP,2,2)
 
   end subroutine
 

@@ -86,7 +86,7 @@ contains
     type(t_bmaMatrixData), pointer :: p_rmatrixData11
     real(DP), dimension(:,:,:), pointer :: p_Df, p_Dg
 
-    real(DP) :: df, dg, dx, dy
+    real(DP) :: df, dg
 
     ! Get cubature weights data
     p_DcubWeight => rassemblyData%p_DcubWeight

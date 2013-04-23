@@ -83,7 +83,6 @@ contains
     real(DP), dimension(:,:), pointer :: p_DcubWeight
     type(t_bmaVectorData), pointer :: p_rvectorData
     real(DP), dimension(:,:,:), pointer :: p_Dpoints
-    real(DP), dimension(:,:), pointer :: p_Dfunc
   
     ! Get cubature weights data
     p_DcubWeight => rassemblyData%p_DcubWeight

@@ -100,12 +100,14 @@ contains
     call lsysbl_clearVector (rrhs)
 
     ! Calculate f=1 to the 1st component.
-    rcollection%IquickAccess(1) = 1
-    call bma_buildVector (rrhs,BMA_CALC_STANDARD,bma_fcalc_rhsOne,rcollection,&
+    rcollection%DquickAccess(1) = 1.0_DP  ! Multiplier
+    rcollection%IquickAccess(1) = 1       ! Component
+    call bma_buildVector (rrhs,BMA_CALC_STANDARD,bma_fcalc_rhsConst,rcollection,&
         rcubatureInfo=rcubatureInfo)
         
-    ! Calculate g=32*y*(1-y)+32*x*(1-x) to the 2nd component.
-    rcollection%IquickAccess(1) = 2
+    ! Calculate g = 1 * 32*y*(1-y)+32*x*(1-x) to the 2nd component.
+    rcollection%DquickAccess(1) = 1.0_DP  ! Multiplier
+    rcollection%IquickAccess(1) = 2       ! Component
     call bma_buildVector (rrhs,BMA_CALC_STANDARD,bma_fcalc_rhsBubble,rcollection,&
         rcubatureInfo=rcubatureInfo)
 
