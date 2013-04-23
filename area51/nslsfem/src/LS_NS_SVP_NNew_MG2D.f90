@@ -41,7 +41,7 @@
 !#
 !# Author:    Masoud Nickaeen
 !# First Version: Apr  22, 2013
-!# Last Update:   Apr  22, 2013
+!# Last Update:   Apr  23, 2013
 !# 
 !##############################################################################
 
@@ -4823,7 +4823,7 @@ contains
               (4.0_DP*dUx**2 + 2.0_DP*(dUy+dVx)**2 + 4.0_DP*dVy**2)
     call ls_viscosity_model(Dii,rcollection,nu)
     call ls_viscosity_model_der(Dii,rcollection,dnu)
-    ! And a frequently combination
+    ! And a frequently used combination
     F = dUy+dVx
     
     ! Outer loop over the DOF's i=1..ndof on our current element,
@@ -4919,7 +4919,7 @@ contains
               (4.0_DP*dUx**2 + 2.0_DP*(dUy+dVx)**2 + 4.0_DP*dVy**2)
     call ls_viscosity_model(Dii,rcollection,nu)
     call ls_viscosity_model_der(Dii,rcollection,dnu)
-    ! And a frequently combination
+    ! And a frequently used combination
     F = dUy+dVx
     
     ! Outer loop over the DOF's i=1..ndof on our current element,
@@ -4993,7 +4993,7 @@ contains
               (4.0_DP*dUx**2 + 2.0_DP*(dUy+dVx)**2 + 4.0_DP*dVy**2)
     call ls_viscosity_model(Dii,rcollection,nu)
     call ls_viscosity_model_der(Dii,rcollection,dnu)
-    ! And a frequently combination
+    ! And a frequently used combination
     F = dUy+dVx
     
     ! Outer loop over the DOF's i=1..ndof on our current element,
@@ -5354,7 +5354,7 @@ contains
               (4.0_DP*dUx**2 + 2.0_DP*(dUy+dVx)**2 + 4.0_DP*dVy**2)
     call ls_viscosity_model(Dii,rcollection,nu)
     call ls_viscosity_model_der(Dii,rcollection,dnu)
-    ! And a frequently combination
+    ! And a frequently used combination
     F = dUy+dVx    
     
     ! Outer loop over the DOF's i=1..ndof on our current element,
@@ -5372,14 +5372,14 @@ contains
           (dU*dUx + dV*dUy) * dV* dbasIy + &
           (dU*dUx + dV*dUy) * dUx * dbasI + &
           (dU*dVx + dV*dVy) * dVx * dbasI - nu**2*(4.0_DP*dUx*dbasIx + &
-          2.0_DP*F*dbasIy) - 8.0_DP*nu*dnu*(dUx*dbasIx + &
+          2.0_DP*F*dbasIy) - 8.0_DP*nu*dnu*Dii*(dUx*dbasIx + &
           0.5_DP*F*dbasIy)   )
           
       dval2 = 0.0_DP + beta*(   (dU*dVx + dV*dVy) * dU * dbasIx + &
           (dU*dVx + dV*dVy) * dV * dbasIy + &
           (dU*dUx + dV*dUy) * dUy * dbasI + &
           (dU*dVx + dV*dVy) * dVy * dbasI - nu**2*(4.0_DP*dVy*dbasIy + &
-          2.0_DP*F*dbasIx) - 8.0_DP*nu*dnu*(dVy*dbasIy + &
+          2.0_DP*F*dbasIx) - 8.0_DP*nu*dnu*Dii*(dVy*dbasIy + &
           0.5_DP*F*dbasIx)   )
           
       ! Multiply the values of the basis functions by
@@ -5420,8 +5420,8 @@ contains
     Dii = 1.0_DP/8.0_DP * &
               (4.0_DP*dUx**2 + 2.0_DP*(dUy+dVx)**2 + 4.0_DP*dVy**2)
     call ls_viscosity_model(Dii,rcollection,nu)
-    ! And a frequently combination
-    F = dUy+dVx    
+    ! And a frequently used combination
+    F = dUx+dVy    
     
     ! Outer loop over the DOF's i=1..ndof on our current element,
     ! which corresponds to the (test) basis functions Phi_i:
@@ -5468,7 +5468,7 @@ contains
     Dii = 1.0_DP/8.0_DP * &
               (4.0_DP*dUx**2 + 2.0_DP*(dUy+dVx)**2 + 4.0_DP*dVy**2)
     call ls_viscosity_model(Dii,rcollection,nu)
-    ! And a frequently combination
+    ! And a frequently used combination
     F = dUy+dVx     
     
     ! Outer loop over the DOF's i=1..ndof on our current element,
@@ -5477,6 +5477,7 @@ contains
     
       ! Fetch the contributions of the (test) basis functions Phi_i
       ! into dbasI
+      dbasI = p_DbasTest4(idofe,DER_FUNC,icubp,iel)
       dbasIx = p_DbasTest4(idofe,DER_DERIV2D_X,icubp,iel)
       dbasIy = p_DbasTest4(idofe,DER_DERIV2D_Y,icubp,iel)
                 
