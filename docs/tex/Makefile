@@ -159,13 +159,13 @@ create_local_copies:
 
 .PHONY: clean
 clean:	$(TEX_MASTER_FILE).clean
-	-rm -f $(DEPS:%.tex=%.aux)
-	-rm -f $(FEAST_APP_MODULES)
-	-rm -f $(addsuffix .$(SUFFIX_MODULE), $(FEAST_KERNEL_MODULES) $(FEAST_APP_MODULES));
-	-rm -f $(TEX_MASTER_FILE_MODULE);
-	-rm -f definitions.tex
-	-rm -f modules_dynamic.aux
-	-rm -f modules_overview.aux
+	-$(foreach file, \
+	    $(DEPS:%.tex=%.aux) \
+	    $(FEAST_APP_MODULES) \
+	    $(addsuffix .$(SUFFIX_MODULE), $(FEAST_KERNEL_MODULES) $(FEAST_APP_MODULES)) \
+	    $(TEX_MASTER_FILE_MODULE) \
+	    definitions.tex styleguide.aux modules_dynamic.aux modules_overview.aux, \
+	    $(remove_file))
 
 .PHONY: purge
 purge:	$(TEX_MASTER_FILE).clean clean $(TEX_MASTER_FILE).purge

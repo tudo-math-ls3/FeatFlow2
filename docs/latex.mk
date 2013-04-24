@@ -65,6 +65,23 @@ EGREP  = egrep
 PERL = perl
 
 
+##############################################################################
+# Functions
+#
+##############################################################################
+
+# Functions to delete a single file / directory at once
+# (The reason why we need this and the magic why this works lies within
+#  the blank line after the remove command. This way the remove commands
+#  in a foreach-loop are triggered one after another - in separate
+#  sub-shells. Not in a single sub-shell command. As this may result
+#  on some machines in error messages of type:
+#  execvp: rm: Arg list too long)
+define remove_file
+    rm -f $(file)
+
+endef
+
 
 ##############################################################################
 # List of dependencies
@@ -83,6 +100,7 @@ BIBTEX_DEPS = \
 	$(sort $(wildcard *.bib ../bibtex/*.bib ))
 EPS_DEPS = \
 	$(sort $(wildcard *.eps */*.eps))
+IDX_DEPS = constants functions interfaces modules subroutines types variables
 
 
 # Variant 2 - a bit more intelligent: parse the master file for \input
@@ -128,14 +146,16 @@ EPS_DEPS = \
 		$(LATEX) $(LATEXFLAGS) $< $(LATEXSTDOUT); \
 	    fi; \
 	fi
-	if [ -f $*.idx ]; then \
-	    echo "# $(MAKEFILE): Creating index using $(MAKEINDEX)"; \
-	    $(MAKEINDEX) $(MAKEINDEXFLAGS) -o $*.ind $*.idx || exit 1; \
-	    if [ -s $*.ind ]; then \
-		echo "# $(MAKEFILE): Running $(LATEX) again to include index"; \
-		$(LATEX) $(LATEXFLAGS) $< $(LATEXSTDOUT); \
-	    fi; \
-	fi
+	makeindex_run=""; \
+	$(foreach idxfile, $(IDX_DEPS), \
+	    if [ -f $(idxfile)".idx" ]; then \
+		echo "# $(MAKEFILE): Creating index using $(MAKEINDEX)"; \
+		$(MAKEINDEX) $(MAKEINDEXFLAGS) -o $(idxfile)".ind" $(idxfile)".idx" || exit 1; \
+		makeindex_run="1"; \
+	    fi;) \
+	$(if $$makeindex_run, \
+	    echo "# $(MAKEFILE): Running $(LATEX) again to include index"; \
+	    $(LATEX) $(LATEXFLAGS) $< $(LATEXSTDOUT);)
 	@-count=5; \
 	while $(EGREP) "Rerun to get .*(references|citations) (right|correct)" $*.log && [ $$count -gt 0 ]; do \
 	    echo "# $(MAKEFILE): Rerunning $(LATEX), max. $$count times left"; \
@@ -145,7 +165,7 @@ EPS_DEPS = \
 	@if [ -f $*.out ] ; then \
 	    if $(EGREP) '$*\.out\)' $*.log; then true ; else \
 		echo "# $(MAKEFILE): Rerunning $(LATEX) to include PDF outline"; \
-	    	$(LATEX) $(LATEXFLAGS) $< $(LATEXSTDOUT); \
+		$(LATEX) $(LATEXFLAGS) $< $(LATEXSTDOUT); \
 	    fi ; \
 	fi
 #       print out lists of undefined references/citations
@@ -182,10 +202,16 @@ EPS_DEPS = \
 	fi
 
 %.clean : %.tex
-	-rm -f $*.aux $*.log $*.toc $*.out
-	-rm -f $*.lof $*.lot $*.loa $*.lol $*.thm
-	-rm -f $*.nav $*.snm $*.vrb
-	-rm -f $*.idx $*.ind $*.ilg $*.glo $*.gls $*.bbl $*.blg
+	-$(foreach file, \
+	    $*.aux $*.log $*.toc $*.out \
+	    $*.lof $*.lot $*.loa $*.lol $*.thm \
+	    $*.nav $*.snm $*.vrb \
+	    $*.idx $*.ind $*.ilg $*.glo $*.gls $*.bbl $*.blg, \
+	    $(remove_file))
+	-$(foreach file, \
+	    $(patsubst %, %.idx, $(IDX_DEPS)) \
+	    $(patsubst %, %.ilg, $(IDX_DEPS)) \
+	    $(patsubst %, %.ind, $(IDX_DEPS)), $(remove_file))
 
 %.purge: %.tex %.clean
 	-rm -f $*.pdf $*.ps $*.dvi
