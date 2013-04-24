@@ -96,6 +96,12 @@
 !# 24.) map_hasSpec
 !#      -> Tests if the iterator has specification flags
 !#
+!# 25.) map_cast
+!#      -> Casts a map to a generic object
+!#
+!# 26.) map_uncast
+!#      -> Casts a generic object to a map
+!#
 !#
 !# The following operations in STL are not supported yet
 !#
@@ -149,7 +155,8 @@
   public :: map_restore
   public :: map_isNull
   public :: map_hasSpec
-
+  public :: map_cast
+  public :: map_uncast
 
   public assignment(=)
   public operator(==)
@@ -269,12 +276,18 @@
   interface map_hasSpec
     module procedure FEAT2_PP_TEMPLATE_TD(map_hasSpec,T,D)
   end interface
+  
+  interface map_cast
+    module procedure FEAT2_PP_TEMPLATE_TD(map_cast,T,D)
+  end interface
 
+  interface map_uncast
+    module procedure FEAT2_PP_TEMPLATE_TD(map_uncast,T,D)
+  end interface
 
   interface assignment(=)
     module procedure FEAT2_PP_TEMPLATE_TD(map_fassign,T,D)
   end interface
-
 
   interface operator(==)
     module procedure FEAT2_PP_TEMPLATE_TD(it_map_eq,T,D)
@@ -378,7 +391,7 @@
 
     ! Specification flag. This is a bitfield coming from an OR
     ! combination of different MAP_MSPEC_xxxx constants and specifies
-    ! various details of the list iterator.
+    ! various details of the map iterator.
     integer(I32) :: iSpec = 0_I32
 
     ! Pointer to the underlying map
@@ -2829,5 +2842,87 @@ contains
     end function height
 
   end function
+
+  !************************************************************************
+
+!<subroutine>
+
+  subroutine FEAT2_PP_TEMPLATE_TD(map_cast,T,D)(rmap, rgenericObject)
+
+!<description>
+    ! This subroutine casts the given map to a generic object.
+!</description>
+
+!<input>
+    ! The map
+    type(FEAT2_PP_TEMPLATE_TD(t_map,T,D)), intent(in), target :: rmap
+!</input>
+
+!<output>
+    ! The generic object
+    type(t_genericObject), intent(out) :: rgenericObject
+!</output>
+!</subroutine>
+
+    ! Internal data structure
+    type t_void_ptr
+      type(FEAT2_PP_TEMPLATE_TD(t_map,T,D)), pointer :: p_robj => null()
+    end type t_void_ptr
+    
+    ! Internal variables
+    type(t_void_ptr) :: rptr
+
+    ! Wrap map by void pointer structure
+    rptr%p_robj => rmap
+    
+    ! Determine the size of the void pointer structure
+    rgenericObject%isize = size(transfer(rptr, rgenericObject%p_cdata))
+    
+    ! Allocate memory and transfer map to generic object
+    allocate(rgenericObject%p_cdata(rgenericObject%isize))
+    rgenericObject%p_cdata = transfer(rptr, rgenericObject%p_cdata)
+    
+  end subroutine
+
+  !************************************************************************
+
+!<subroutine>
+
+  subroutine FEAT2_PP_TEMPLATE_TD(map_uncast,T,D)(rgenericObject, p_rmap)
+
+!<description>
+    ! This subroutine casts the given generic object into a map.
+!</description>
+
+!<input>
+    ! The generic object
+    type(t_genericObject), intent(in) :: rgenericObject
+!</input>
+
+!<output>
+    ! The map
+    type(FEAT2_PP_TEMPLATE_TD(t_map,T,D)), pointer :: p_rmap
+!</output>
+!</function>
+
+    ! Internal data structure
+    type t_void_ptr
+      type(FEAT2_PP_TEMPLATE_TD(t_map,T,D)), pointer :: p_robj => null()
+    end type
+
+    ! Internal variables
+    type(t_void_ptr) :: rptr
+
+    if ((rgenericObject%isize .eq. 0) .or.&
+        (.not.associated(rgenericObject%p_cdata))) then
+      call output_line('Generic object seems to be empty!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'map_uncast')
+      call sys_halt()
+    end if
+
+    rptr = transfer(rgenericObject%p_cdata, rptr)
+    p_rmap => rptr%p_robj
+
+  end subroutine
 
 #endif

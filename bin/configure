@@ -173,7 +173,7 @@ use constant SRCLIST_KERNEL =>
 
     "ContinuousFormulation/boundarycondition.f90 ContinuousFormulation/scalarpde.f90 " .
 
-    "DataStructures/arraylist.f90 DataStructures/arraylistbase.f90 " .
+    "DataStructures/arraylistbase.f90 " .
     "DataStructures/arraylistInt.f90 DataStructures/arraylistInt_Int.f90 " .
     "DataStructures/arraylistInt_DP.f90 DataStructures/arraylistInt_SP.f90 " .
     "DataStructures/arraylistDP.f90 DataStructures/arraylistDP_Int.f90 ".
@@ -181,7 +181,7 @@ use constant SRCLIST_KERNEL =>
     "DataStructures/arraylistSP.f90 DataStructures/arraylistSP_Int.f90 " .
     "DataStructures/arraylistSP_DP.f90 DataStructures/arraylistSP_SP.f90 " .
 
-    "DataStructures/list.f90 DataStructures/listbase.f90 " .
+    "DataStructures/listbase.f90 " .
     "DataStructures/listInt.f90 DataStructures/listInt_Int.f90 " .
     "DataStructures/listInt_DP.f90 DataStructures/listInt_SP.f90 " .
     "DataStructures/listDP.f90 DataStructures/listDP_Int.f90 ".
@@ -189,7 +189,7 @@ use constant SRCLIST_KERNEL =>
     "DataStructures/listSP.f90 DataStructures/listSP_Int.f90 " .
     "DataStructures/listSP_DP.f90 DataStructures/listSP_SP.f90 " .
 
-    "DataStructures/map.f90 DataStructures/mapbase.f90 " .
+    "DataStructures/mapbase.f90 " .
     "DataStructures/mapInt.f90 DataStructures/mapInt_Int.f90 " .
     "DataStructures/mapInt_DP.f90 DataStructures/mapInt_SP.f90 " .
     "DataStructures/mapDP.f90 DataStructures/mapDP_Int.f90 ".
@@ -203,7 +203,7 @@ use constant SRCLIST_KERNEL =>
     "DataStructures/octree.f90 DataStructures/octreebase.f90 " .
     "DataStructures/octreeDP.f90 DataStructures/octreeSP.f90 " .
 
-    "DataStructures/stack.f90 DataStructures/stackInt.f90 " .
+    "DataStructures/stackInt.f90 " .
     "DataStructures/stackDP.f90 DataStructures/stackSP.f90 " .
 
     "DataStructures/graph.f90  " .

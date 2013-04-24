@@ -50,6 +50,12 @@
 !# 9.) stack_contains (no equivalent in STL)
 !#     -> Checks if the stack contains a given item
 !#
+!# 10.) stack_cast
+!#      -> Casts a stack to a generic object
+!#
+!# 11.) stack_uncast
+!#      -> Casts a generic object to a stack
+!#
 !#
 !# The following operators are available:
 !#
@@ -89,6 +95,8 @@
   public :: stack_push
   public :: stack_pop
   public :: stack_contains
+  public :: stack_cast
+  public :: stack_uncast
 
   public assignment(=)
   public operator(==)
@@ -132,6 +140,14 @@
 
   interface stack_contains
     module procedure FEAT2_PP_TEMPLATE_T(stack_contains,T)
+  end interface
+
+  interface stack_cast
+    module procedure FEAT2_PP_TEMPLATE_T(stack_cast,T)
+  end interface
+
+  interface stack_uncast
+    module procedure FEAT2_PP_TEMPLATE_T(stack_uncast,T)
   end interface
 
   interface assignment(=)
@@ -740,5 +756,87 @@ contains
     end do
 
   end function
+  
+  !************************************************************************
+
+!<subroutine>
+
+  subroutine FEAT2_PP_TEMPLATE_TD(stack_cast,T,D)(rstack, rgenericObject)
+
+!<description>
+    ! This subroutine casts the given stack to a generic object.
+!</description>
+
+!<input>
+    ! The stack
+    type(FEAT2_PP_TEMPLATE_T(t_stack,T)), intent(in), target :: rstack
+!</input>
+
+!<output>
+    ! The generic object
+    type(t_genericObject), intent(out) :: rgenericObject
+!</output>
+!</subroutine>
+
+    ! Internal data structure
+    type t_void_ptr
+      type(FEAT2_PP_TEMPLATE_T(t_stack,T)), pointer :: p_robj => null()
+    end type t_void_ptr
+    
+    ! Internal variables
+    type(t_void_ptr) :: rptr
+
+    ! Wrap stack by void pointer structure
+    rptr%p_robj => rstack
+    
+    ! Determine the size of the void pointer structure
+    rgenericObject%isize = size(transfer(rptr, rgenericObject%p_cdata))
+    
+    ! Allocate memory and transfer stack to generic object
+    allocate(rgenericObject%p_cdata(rgenericObject%isize))
+    rgenericObject%p_cdata = transfer(rptr, rgenericObject%p_cdata)
+    
+  end subroutine
+
+  !************************************************************************
+
+!<subroutine>
+
+  subroutine FEAT2_PP_TEMPLATE_T(stack_uncast,T)(rgenericObject, p_rstack)
+
+!<description>
+    ! This subroutine casts the given generic object into a stack.
+!</description>
+
+!<input>
+    ! The generic object
+    type(t_genericObject), intent(in) :: rgenericObject
+!</input>
+
+!<output>
+    ! The stack
+    type(FEAT2_PP_TEMPLATE_T(t_stack,T)), pointer :: p_rstack
+!</output>
+!</function>
+
+    ! Internal data structure
+    type t_void_ptr
+      type(FEAT2_PP_TEMPLATE_TD(t_stack,T,D)), pointer :: p_robj => null()
+    end type
+
+    ! Internal variables
+    type(t_void_ptr) :: rptr
+
+    if ((rgenericObject%isize .eq. 0) .or.&
+        (.not.associated(rgenericObject%p_cdata))) then
+      call output_line('Generic object seems to be empty!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'stack_uncast')
+      call sys_halt()
+    end if
+
+    rptr = transfer(rgenericObject%p_cdata, rptr)
+    p_rstack => rptr%p_robj
+
+  end subroutine
 
 #endif

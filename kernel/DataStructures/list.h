@@ -153,6 +153,13 @@
 !# 33.) list_hasSpec
 !#      -> Tests if the iterator has specification flags
 !#
+!# 34.) list_cast
+!#      -> Casts a list to a generic object
+!#
+!# 35.) list_uncast
+!#      -> Casts a generic object to a list
+!#
+!#
 !#
 !# The following operations in STL are not supported yet
 !#
@@ -251,6 +258,8 @@
   public :: list_sort
   public :: list_isNull
   public :: list_hasSpec
+  public :: list_cast
+  public :: list_uncast
 
   public assignment(=)
   public operator(==)
@@ -422,11 +431,17 @@ interface list_getbase_key
     module procedure FEAT2_PP_TEMPLATE_TD(list_hasSpec,T,D)
   end interface
 
+  interface list_cast
+    module procedure FEAT2_PP_TEMPLATE_TD(list_cast,T,D)
+  end interface
+
+  interface list_uncast
+    module procedure FEAT2_PP_TEMPLATE_TD(list_uncast,T,D)
+  end interface
 
   interface assignment(=)
     module procedure FEAT2_PP_TEMPLATE_TD(list_fassign,T,D)
   end interface
-
 
   interface operator(==)
     module procedure FEAT2_PP_TEMPLATE_TD(it_list_eq,T,D)
@@ -3088,5 +3103,87 @@ contains
     bge = (riterator1%ipos >= riterator2%ipos)
 
   end function
+
+  !************************************************************************
+
+!<subroutine>
+
+  subroutine FEAT2_PP_TEMPLATE_TD(list_cast,T,D)(rlist, rgenericObject)
+
+!<description>
+    ! This subroutine casts the given list to a generic object.
+!</description>
+
+!<input>
+    ! The linked list
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(in), target :: rlist
+!</input>
+
+!<output>
+    ! The generic object
+    type(t_genericObject), intent(out) :: rgenericObject
+!</output>
+!</subroutine>
+
+    ! Internal data structure
+    type t_void_ptr
+      type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), pointer :: p_robj => null()
+    end type t_void_ptr
+    
+    ! Internal variables
+    type(t_void_ptr) :: rptr
+
+    ! Wrap list by void pointer structure
+    rptr%p_robj => rlist
+    
+    ! Determine the size of the void pointer structure
+    rgenericObject%isize = size(transfer(rptr, rgenericObject%p_cdata))
+    
+    ! Allocate memory and transfer list to generic object
+    allocate(rgenericObject%p_cdata(rgenericObject%isize))
+    rgenericObject%p_cdata = transfer(rptr, rgenericObject%p_cdata)
+    
+  end subroutine
+
+  !************************************************************************
+
+!<subroutine>
+
+  subroutine FEAT2_PP_TEMPLATE_TD(list_uncast,T,D)(rgenericObject, p_rlist)
+
+!<description>
+    ! This subroutine casts the given generic object into a list.
+!</description>
+
+!<input>
+    ! The generic object
+    type(t_genericObject), intent(in) :: rgenericObject
+!</input>
+
+!<output>
+    ! The linked list
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), pointer :: p_rlist
+!</output>
+!</function>
+
+    ! Internal data structure
+    type t_void_ptr
+      type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), pointer :: p_robj => null()
+    end type
+
+    ! Internal variables
+    type(t_void_ptr) :: rptr
+
+    if ((rgenericObject%isize .eq. 0) .or.&
+        (.not.associated(rgenericObject%p_cdata))) then
+      call output_line('Generic object seems to be empty!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'list_uncast')
+      call sys_halt()
+    end if
+
+    rptr = transfer(rgenericObject%p_cdata, rptr)
+    p_rlist => rptr%p_robj
+
+  end subroutine
 
 #endif
