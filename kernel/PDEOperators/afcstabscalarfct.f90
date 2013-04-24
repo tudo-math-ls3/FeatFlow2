@@ -46,6 +46,8 @@
 
 module afcstabscalarfct
 
+#include "../feat2macros.h"
+
 !$use omp_lib
   use afcstabbase
   use afcstabscalar
@@ -58,6 +60,7 @@ module afcstabscalarfct
   use linearsystemblock
   use linearsystemscalar
   use perfconfig
+  use storage
 
   implicit none
 
@@ -307,15 +310,21 @@ contains
 !</subroutine>
 
     ! local variables
-    real(DP), dimension(:), pointer :: p_ML,p_Dx,p_Dy
+    real(QP), dimension(:), pointer :: p_Qml,p_Qx,p_Qy
+    real(DP), dimension(:), pointer :: p_Dml,p_Dx,p_Dy
+    real(SP), dimension(:), pointer :: p_Fml,p_Fx,p_Fy
+    real(QP), dimension(:), pointer :: p_Qpp,p_Qpm,p_Qqp,p_Qqm,p_Qrp,p_Qrm
     real(DP), dimension(:), pointer :: p_Dpp,p_Dpm,p_Dqp,p_Dqm,p_Drp,p_Drm
+    real(SP), dimension(:), pointer :: p_Fpp,p_Fpm,p_Fqp,p_Fqm,p_Frp,p_Frm
+    real(QP), dimension(:), pointer :: p_Qalpha,p_Qflux,p_QfluxPrel
     real(DP), dimension(:), pointer :: p_Dalpha,p_Dflux,p_DfluxPrel
+    real(SP), dimension(:), pointer :: p_Falpha,p_Fflux,p_FfluxPrel
     integer, dimension(:,:), pointer :: p_IedgeList
     integer, dimension(:), pointer :: p_IedgeListIdx
 
     ! Pointer to the performance configuration
     type(t_perfconfig), pointer :: p_rperfconfig
-
+    
     if (present(rperfconfig)) then
       p_rperfconfig => rperfconfig
     else
@@ -332,19 +341,74 @@ contains
     ! Clear vector?
     if (bclear) call lsyssc_clearVector(ry)
 
-    ! Set pointers
+    ! Set integer pointers
     call afcstab_getbase_IedgeList(rafcstab, p_IedgeList)
     call afcstab_getbase_IedgeListIdx(rafcstab, p_IedgeListIdx)
-    call lsyssc_getbase_double(rafcstab%p_rvectorPp, p_Dpp)
-    call lsyssc_getbase_double(rafcstab%p_rvectorPm, p_Dpm)
-    call lsyssc_getbase_double(rafcstab%p_rvectorQp, p_Dqp)
-    call lsyssc_getbase_double(rafcstab%p_rvectorQm, p_Dqm)
-    call lsyssc_getbase_double(rafcstab%p_rvectorRp, p_Drp)
-    call lsyssc_getbase_double(rafcstab%p_rvectorRm, p_Drm)
-    call lsyssc_getbase_double(rafcstab%p_rvectorAlpha, p_Dalpha)
-    call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
-    call lsyssc_getbase_double(rx, p_Dx)
-    call lsyssc_getbase_double(ry, p_Dy)
+
+    ! Set data pointers according to precision
+    select case(rafcstab%cdataType)
+    case (ST_QUAD)
+       call lsyssc_getbase_quad(rafcstab%p_rvectorPp, p_Qpp)
+       call lsyssc_getbase_quad(rafcstab%p_rvectorPm, p_Qpm)
+       call lsyssc_getbase_quad(rafcstab%p_rvectorQp, p_Qqp)
+       call lsyssc_getbase_quad(rafcstab%p_rvectorQm, p_Qqm)
+       call lsyssc_getbase_quad(rafcstab%p_rvectorRp, p_Qrp)
+       call lsyssc_getbase_quad(rafcstab%p_rvectorRm, p_Qrm)
+       call lsyssc_getbase_quad(rafcstab%p_rvectorAlpha, p_Qalpha)
+       call lsyssc_getbase_quad(rafcstab%p_rvectorFlux, p_Qflux)
+
+    case (ST_DOUBLE)
+       call lsyssc_getbase_double(rafcstab%p_rvectorPp, p_Dpp)
+       call lsyssc_getbase_double(rafcstab%p_rvectorPm, p_Dpm)
+       call lsyssc_getbase_double(rafcstab%p_rvectorQp, p_Dqp)
+       call lsyssc_getbase_double(rafcstab%p_rvectorQm, p_Dqm)
+       call lsyssc_getbase_double(rafcstab%p_rvectorRp, p_Drp)
+       call lsyssc_getbase_double(rafcstab%p_rvectorRm, p_Drm)
+       call lsyssc_getbase_double(rafcstab%p_rvectorAlpha, p_Dalpha)
+       call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
+
+    case (ST_SINGLE)
+       call lsyssc_getbase_single(rafcstab%p_rvectorPp, p_Fpp)
+       call lsyssc_getbase_single(rafcstab%p_rvectorPm, p_Fpm)
+       call lsyssc_getbase_single(rafcstab%p_rvectorQp, p_Fqp)
+       call lsyssc_getbase_single(rafcstab%p_rvectorQm, p_Fqm)
+       call lsyssc_getbase_single(rafcstab%p_rvectorRp, p_Frp)
+       call lsyssc_getbase_single(rafcstab%p_rvectorRm, p_Frm)
+       call lsyssc_getbase_single(rafcstab%p_rvectorAlpha, p_Falpha)
+       call lsyssc_getbase_single(rafcstab%p_rvectorFlux, p_Fflux)
+       
+    case default
+       call output_line('Unsupported data type',&
+            OU_CLASS_ERROR,OU_MODE_STD,'afcsc_buildVectorFCTScalar')
+       call sys_halt()
+    end select
+
+    ! Set pointers according to precision
+    select case(rx%cdataType)
+    case (ST_QUAD)
+       call lsyssc_getbase_quad(rx, p_Qx)
+    case (ST_DOUBLE)
+       call lsyssc_getbase_double(rx, p_Dx)
+    case (ST_SINGLE)
+       call lsyssc_getbase_single(rx, p_Fx)
+    case default
+       call output_line('Unsupported data type',&
+            OU_CLASS_ERROR,OU_MODE_STD,'afcsc_buildVectorFCTScalar')
+       call sys_halt()
+    end select
+    
+    select case(ry%cdataType)
+    case (ST_QUAD)
+       call lsyssc_getbase_quad(ry, p_Qy)
+    case (ST_DOUBLE)
+       call lsyssc_getbase_double(ry, p_Dy)
+    case (ST_SINGLE)
+       call lsyssc_getbase_single(ry, p_Fy)
+    case default
+       call output_line('Unsupported data type',&
+            OU_CLASS_ERROR,OU_MODE_STD,'afcsc_buildVectorFCTScalar')
+       call sys_halt()
+    end select
 
     !---------------------------------------------------------------------------
     ! The FEM-FCT algorithm is split into the following steps which
@@ -371,7 +435,14 @@ contains
       !-------------------------------------------------------------------------
 
       ! Initialise alpha by unity
-      call lalg_setVector(p_Dalpha, 1.0_DP)
+      select case(rafcstab%cdataType)
+      case(ST_QUAD)
+         call lalg_setVector(p_Qalpha, 1.0_QP)
+      case(ST_DOUBLE)
+         call lalg_setVector(p_Dalpha, 1.0_DP)
+      case(ST_SINGLE)
+         call lalg_setVector(p_Falpha, 1.0_SP)
+      end select
     end if
 
 
@@ -396,17 +467,39 @@ contains
           call sys_halt()
         end if
 
-        ! Set additional pointer
-        call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_DfluxPrel)
 
         if (rafcstab%cprelimitingType .eq. AFCSTAB_PRELIMITING_STD) then
           ! Perform standard prelimiting
-          call doStdPrelimitDP(p_IedgeListIdx, p_IedgeList,&
-              rafcstab%NEDGE, p_Dflux, p_DfluxPrel, p_Dalpha)
+          select case(rafcstab%cdataType)
+          case (ST_QUAD)
+            call lsyssc_getbase_quad(rafcstab%p_rvectorFluxPrel, p_QfluxPrel)
+            call doStdPrelimitQP(p_IedgeListIdx, p_IedgeList,&
+                rafcstab%NEDGE, p_Qflux, p_QfluxPrel, p_Qalpha)
+          case (ST_DOUBLE)
+            call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_DfluxPrel)
+            call doStdPrelimitDP(p_IedgeListIdx, p_IedgeList,&
+                rafcstab%NEDGE, p_Dflux, p_DfluxPrel, p_Dalpha)
+          case (ST_SINGLE)
+            call lsyssc_getbase_single(rafcstab%p_rvectorFluxPrel, p_FfluxPrel)
+            call doStdPrelimitSP(p_IedgeListIdx, p_IedgeList,&
+                rafcstab%NEDGE, p_Fflux, p_FfluxPrel, p_Falpha)
+          end select
         elseif (rafcstab%cprelimitingType .eq. AFCSTAB_PRELIMITING_MINMOD) then
           ! Perform minmod prelimiting
-          call doMinModPrelimitDP(p_IedgeListIdx, p_IedgeList,&
-              rafcstab%NEDGE, p_Dflux, p_DfluxPrel, p_Dalpha)
+          select case(rafcstab%cdataType)
+          case (ST_QUAD)
+             call lsyssc_getbase_quad(rafcstab%p_rvectorFluxPrel, p_QfluxPrel)
+             call doMinModPrelimitQP(p_IedgeListIdx, p_IedgeList,&
+                  rafcstab%NEDGE, p_Qflux, p_QfluxPrel, p_Qalpha)
+          case (ST_DOUBLE)
+             call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_DfluxPrel)
+             call doMinModPrelimitDP(p_IedgeListIdx, p_IedgeList,&
+                  rafcstab%NEDGE, p_Dflux, p_DfluxPrel, p_Dalpha)
+          case (ST_SINGLE)
+             call lsyssc_getbase_single(rafcstab%p_rvectorFluxPrel, p_FfluxPrel)
+             call doMinModPrelimitSP(p_IedgeListIdx, p_IedgeList,&
+                  rafcstab%NEDGE, p_Fflux, p_FfluxPrel, p_Falpha)
+          end select
         else
           call output_line('Invalid type of prelimiting!',&
               OU_CLASS_ERROR,OU_MODE_STD,'afcsc_buildVectorFCTScalar')
@@ -440,7 +533,14 @@ contains
       if (rafcstab%cafcstabType .eq. AFCSTAB_NLINFCT_IMPLICIT) then
 
         ! Set additional pointer
-        call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_DfluxPrel)
+          select case(rafcstab%cdataType)
+          case (ST_QUAD)
+             call lsyssc_getbase_quad(rafcstab%p_rvectorFluxPrel, p_QfluxPrel)
+          case (ST_DOUBLE)
+             call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_DfluxPrel)
+          case (ST_SINGLE)
+             call lsyssc_getbase_single(rafcstab%p_rvectorFluxPrel, p_FfluxPrel)
+          end select
 
         ! Compute sums of antidiffusive increments
         ! based on the prelimiting fluxes
@@ -451,8 +551,17 @@ contains
               p_Dx, p_DfluxPrel, p_Dalpha, p_Dpp, p_Dpm, rcollection=rcollection)
         else
           ! Standard routine
-          call doADIncrementsDP(p_IedgeListIdx, p_IedgeList,&
-              rafcstab%NEDGE, p_DfluxPrel, p_Dalpha, p_Dpp, p_Dpm)
+          select case(rafcstab%cdataType)
+          case (ST_QUAD)
+             call doADIncrementsQP(p_IedgeListIdx, p_IedgeList,&
+                  rafcstab%NEDGE, p_QfluxPrel, p_Qalpha, p_Qpp, p_Qpm)
+          case (ST_DOUBLE)
+             call doADIncrementsDP(p_IedgeListIdx, p_IedgeList,&
+                  rafcstab%NEDGE, p_DfluxPrel, p_Dalpha, p_Dpp, p_Dpm)
+          case (ST_SINGLE)
+             call doADIncrementsSP(p_IedgeListIdx, p_IedgeList,&
+                  rafcstab%NEDGE, p_FfluxPrel, p_Falpha, p_Fpp, p_Fpm)
+          end select
         end if
 
       else
@@ -460,14 +569,23 @@ contains
         ! Compute sums of antidiffusive increments
         ! based on the raw-antidiffusive fluxes
         if (present(fcb_calcADIncrements)) then
-          ! User-defined callback routine
-          call fcb_calcADIncrements(p_IedgeListIdx, p_IedgeList,&
-              rafcstab%NEDGE, rafcstab%NEQ, 1, 1, 1, rafcstab%NEQ, &
-              p_Dx, p_Dflux, p_Dalpha, p_Dpp, p_Dpm, rcollection=rcollection)
+           ! User-defined callback routine
+           call fcb_calcADIncrements(p_IedgeListIdx, p_IedgeList,&
+                rafcstab%NEDGE, rafcstab%NEQ, 1, 1, 1, rafcstab%NEQ, &
+                p_Dx, p_Dflux, p_Dalpha, p_Dpp, p_Dpm, rcollection=rcollection)
         else
-          ! Standard routine
-          call doADIncrementsDP(p_IedgeListIdx, p_IedgeList,&
-              rafcstab%NEDGE, p_Dflux, p_Dalpha, p_Dpp, p_Dpm)
+           ! Standard routine
+           select case(rafcstab%cdataType)
+           case (ST_QUAD)
+              call doADIncrementsQP(p_IedgeListIdx, p_IedgeList,&
+              rafcstab%NEDGE, p_Qflux, p_Qalpha, p_Qpp, p_Qpm)
+           case (ST_DOUBLE)
+              call doADIncrementsDP(p_IedgeListIdx, p_IedgeList,&
+                   rafcstab%NEDGE, p_Dflux, p_Dalpha, p_Dpp, p_Dpm)
+           case (ST_SINGLE)
+              call doADIncrementsSP(p_IedgeListIdx, p_IedgeList,&
+              rafcstab%NEDGE, p_Fflux, p_Falpha, p_Fpp, p_Fpm)
+          end select
         end if
       end if
 
@@ -498,8 +616,37 @@ contains
             p_Dx, p_Dqp, p_Dqm, rcollection=rcollection)
       else
         ! Standard routine
-        call doBoundsDP(p_IedgeListIdx, p_IedgeList,&
-            rafcstab%NEDGE, p_Dx, p_Dqp, p_Dqm)
+        select case(FEAT2_PP_ID2(rx%cdataType,rafcstab%cdataType,10))
+        case(FEAT2_PP_ID2(ST_QUAD,ST_QUAD,10))
+           call doBoundsQPQP(p_IedgeListIdx, p_IedgeList,&
+                rafcstab%NEDGE, p_Qx, p_Qqp, p_Qqm)
+        case(FEAT2_PP_ID2(ST_DOUBLE,ST_QUAD,10))
+           call doBoundsDPQP(p_IedgeListIdx, p_IedgeList,&
+                rafcstab%NEDGE, p_Dx, p_Qqp, p_Qqm)
+        case(FEAT2_PP_ID2(ST_SINGLE,ST_QUAD,10))
+           call doBoundsSPQP(p_IedgeListIdx, p_IedgeList,&
+                rafcstab%NEDGE, p_Fx, p_Qqp, p_Qqm)
+
+        case(FEAT2_PP_ID2(ST_QUAD,ST_DOUBLE,10))
+           call doBoundsQPDP(p_IedgeListIdx, p_IedgeList,&
+                rafcstab%NEDGE, p_Qx, p_Dqp, p_Dqm)
+        case(FEAT2_PP_ID2(ST_DOUBLE,ST_DOUBLE,10))
+           call doBoundsDPDP(p_IedgeListIdx, p_IedgeList,&
+                rafcstab%NEDGE, p_Dx, p_Dqp, p_Dqm)
+        case(FEAT2_PP_ID2(ST_SINGLE,ST_DOUBLE,10))
+           call doBoundsSPDP(p_IedgeListIdx, p_IedgeList,&
+                rafcstab%NEDGE, p_Fx, p_Dqp, p_Dqm)
+
+        case(FEAT2_PP_ID2(ST_QUAD,ST_SINGLE,10))
+           call doBoundsQPSP(p_IedgeListIdx, p_IedgeList,&
+                rafcstab%NEDGE, p_Qx, p_Fqp, p_Fqm)
+        case(FEAT2_PP_ID2(ST_DOUBLE,ST_SINGLE,10))
+           call doBoundsDPSP(p_IedgeListIdx, p_IedgeList,&
+                rafcstab%NEDGE, p_Dx, p_Fqp, p_Fqm)
+        case(FEAT2_PP_ID2(ST_SINGLE,ST_SINGLE,10))
+           call doBoundsSPSP(p_IedgeListIdx, p_IedgeList,&
+                rafcstab%NEDGE, p_Fx, p_Fqp, p_Fqm)
+        end select
       end if
 
       ! Set specifiers
@@ -522,21 +669,87 @@ contains
       end if
 
       ! Set additional pointers
-      call lsyssc_getbase_double(rmatrix, p_ML)
+      select case(rx%cdataType)
+      case(ST_QUAD)
+         call lsyssc_getbase_quad(rmatrix, p_Qml)
+      case(ST_DOUBLE)
+         call lsyssc_getbase_double(rmatrix, p_Dml)
+      case(ST_SINGLE)
+         call lsyssc_getbase_single(rmatrix, p_Fml)
+      end select
 
       ! Compute nodal correction factors
       if (present(fcb_limitNodal)) then
         ! User-supplied callback routine
         call fcb_limitNodal(rafcstab%NEQ, 1, dscale,&
-            p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, p_ML, rcollection)
+            p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, p_Dml, rcollection)
       elseif (rafcstab%cafcstabType .eq. AFCSTAB_NLINFCT_IMPLICIT) then
-        ! Standard routine without constraints
-        call doLimitNodalDP(rafcstab%NEQ, dscale,&
-            p_ML, p_Dx, p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm)
+         ! Standard routine without constraints
+         select case(FEAT2_PP_ID2(rx%cdataType,rafcstab%cdataType,10))
+         case(FEAT2_PP_ID2(ST_QUAD,ST_QUAD,10))
+            call doLimitNodalQPQP(rafcstab%NEQ, dscale,&
+                 p_Qml, p_Qx, p_Qpp, p_Qpm, p_Qqp, p_Qqm, p_Qrp, p_Qrm)
+         case(FEAT2_PP_ID2(ST_DOUBLE,ST_QUAD,10))
+            call doLimitNodalDPQP(rafcstab%NEQ, dscale,&
+                 p_Dml, p_Dx, p_Qpp, p_Qpm, p_Qqp, p_Qqm, p_Qrp, p_Qrm)
+         case(FEAT2_PP_ID2(ST_SINGLE,ST_QUAD,10))
+            call doLimitNodalSPQP(rafcstab%NEQ, dscale,&
+                 p_Fml, p_Fx, p_Qpp, p_Qpm, p_Qqp, p_Qqm, p_Qrp, p_Qrm)
+            
+         case(FEAT2_PP_ID2(ST_QUAD,ST_DOUBLE,10))
+            call doLimitNodalQPDP(rafcstab%NEQ, dscale,&
+                 p_Qml, p_Qx, p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm)
+         case(FEAT2_PP_ID2(ST_DOUBLE,ST_DOUBLE,10))
+            call doLimitNodalDPDP(rafcstab%NEQ, dscale,&
+                 p_Dml, p_Dx, p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm)
+         case(FEAT2_PP_ID2(ST_SINGLE,ST_DOUBLE,10))
+            call doLimitNodalSPDP(rafcstab%NEQ, dscale,&
+                 p_Fml, p_Fx, p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm)
+            
+         case(FEAT2_PP_ID2(ST_QUAD,ST_SINGLE,10))
+            call doLimitNodalQPSP(rafcstab%NEQ, dscale,&
+                 p_Qml, p_Qx, p_Fpp, p_Fpm, p_Fqp, p_Fqm, p_Frp, p_Frm)
+         case(FEAT2_PP_ID2(ST_DOUBLE,ST_SINGLE,10))
+            call doLimitNodalDPSP(rafcstab%NEQ, dscale,&
+                 p_Dml, p_Dx, p_Fpp, p_Fpm, p_Fqp, p_Fqm, p_Frp, p_Frm)
+         case(FEAT2_PP_ID2(ST_SINGLE,ST_SINGLE,10))
+            call doLimitNodalSPSP(rafcstab%NEQ, dscale,&
+                 p_Fml, p_Fx, p_Fpp, p_Fpm, p_Fqp, p_Fqm, p_Frp, p_Frm)
+         end select
+
       else
-        ! Standard routine with constraints
-        call doLimitNodalConstrainedDP(rafcstab%NEQ, dscale,&
-            p_ML, p_Dx, p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm)
+         ! Standard routine with constraints
+         select case(FEAT2_PP_ID2(rx%cdataType,rafcstab%cdataType,10))
+         case(FEAT2_PP_ID2(ST_QUAD,ST_QUAD,10))
+            call doLimitNodalConstrainedQPQP(rafcstab%NEQ, dscale,&
+                 p_Qml, p_Qx, p_Qpp, p_Qpm, p_Qqp, p_Qqm, p_Qrp, p_Qrm)
+         case(FEAT2_PP_ID2(ST_DOUBLE,ST_QUAD,10))
+            call doLimitNodalConstrainedDPQP(rafcstab%NEQ, dscale,&
+                 p_Dml, p_Dx, p_Qpp, p_Qpm, p_Qqp, p_Qqm, p_Qrp, p_Qrm)
+         case(FEAT2_PP_ID2(ST_SINGLE,ST_QUAD,10))
+            call doLimitNodalConstrainedSPQP(rafcstab%NEQ, dscale,&
+                 p_Fml, p_Fx, p_Qpp, p_Qpm, p_Qqp, p_Qqm, p_Qrp, p_Qrm)
+            
+         case(FEAT2_PP_ID2(ST_QUAD,ST_DOUBLE,10))
+            call doLimitNodalConstrainedQPDP(rafcstab%NEQ, dscale,&
+                 p_Qml, p_Qx, p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm)
+         case(FEAT2_PP_ID2(ST_DOUBLE,ST_DOUBLE,10))
+            call doLimitNodalConstrainedDPDP(rafcstab%NEQ, dscale,&
+                 p_Dml, p_Dx, p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm)
+         case(FEAT2_PP_ID2(ST_SINGLE,ST_DOUBLE,10))
+            call doLimitNodalConstrainedSPDP(rafcstab%NEQ, dscale,&
+                 p_Fml, p_Fx, p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm)
+            
+         case(FEAT2_PP_ID2(ST_QUAD,ST_SINGLE,10))
+            call doLimitNodalConstrainedQPSP(rafcstab%NEQ, dscale,&
+                 p_Qml, p_Qx, p_Fpp, p_Fpm, p_Fqp, p_Fqm, p_Frp, p_Frm)
+         case(FEAT2_PP_ID2(ST_DOUBLE,ST_SINGLE,10))
+            call doLimitNodalConstrainedDPSP(rafcstab%NEQ, dscale,&
+                 p_Dml, p_Dx, p_Fpp, p_Fpm, p_Fqp, p_Fqm, p_Frp, p_Frm)
+         case(FEAT2_PP_ID2(ST_SINGLE,ST_SINGLE,10))
+            call doLimitNodalConstrainedSPSP(rafcstab%NEQ, dscale,&
+                 p_Fml, p_Fx, p_Fpp, p_Fpm, p_Fqp, p_Fqm, p_Frp, p_Frm)
+         end select
       end if
 
       ! Set specifier
@@ -572,7 +785,14 @@ contains
       if (rafcstab%cafcstabType .eq. AFCSTAB_NLINFCT_IMPLICIT) then
 
         ! Special treatment for semi-implicit FEM-FCT algorithm
-        call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_DfluxPrel)
+         select case(rafcstab%cdataType)
+         case(ST_QUAD)
+            call lsyssc_getbase_quad(rafcstab%p_rvectorFluxPrel, p_QfluxPrel)
+         case(ST_DOUBLE)
+            call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_DfluxPrel)
+         case(ST_SINGLE)
+            call lsyssc_getbase_single(rafcstab%p_rvectorFluxPrel, p_FfluxPrel)
+         end select
 
         if (present(fcb_limitEdgewise)) then
           ! User-supplied callback routine
@@ -582,8 +802,17 @@ contains
               rcollection=rcollection)
         else
           ! Standard routine
-          call doLimitEdgewiseConstrainedDP(p_IedgeList,&
-              rafcstab%NEDGE, p_DfluxPrel, p_Dflux, p_Drp, p_Drm, p_Dalpha)
+           select case(rafcstab%cdataType)
+           case(ST_QUAD)
+              call doLimitEdgewiseConstrainedQP(p_IedgeList,&
+                   rafcstab%NEDGE, p_QfluxPrel, p_Qflux, p_Qrp, p_Qrm, p_Qalpha)
+           case(ST_DOUBLE)
+              call doLimitEdgewiseConstrainedDP(p_IedgeList,&
+                   rafcstab%NEDGE, p_DfluxPrel, p_Dflux, p_Drp, p_Drm, p_Dalpha)
+           case(ST_SINGLE)
+              call doLimitEdgewiseConstrainedSP(p_IedgeList,&
+                   rafcstab%NEDGE, p_FfluxPrel, p_Fflux, p_Frp, p_Frm, p_Falpha)
+           end select
         end if
 
       else
@@ -595,8 +824,17 @@ contains
               p_Dx, p_Dflux, p_Dalpha, p_Drp, p_Drm, rcollection=rcollection)
         else
           ! Standard routine
-          call doLimitEdgewiseDP(p_IedgeList,&
-              rafcstab%NEDGE, p_Dflux, p_Drp, p_Drm, p_Dalpha)
+           select case(rafcstab%cdataType)
+           case(ST_QUAD)
+              call doLimitEdgewiseQP(p_IedgeList,&
+                   rafcstab%NEDGE, p_Qflux, p_Qrp, p_Qrm, p_Qalpha)
+           case(ST_DOUBLE)
+              call doLimitEdgewiseDP(p_IedgeList,&
+                   rafcstab%NEDGE, p_Dflux, p_Drp, p_Drm, p_Dalpha)
+           case(ST_SINGLE)
+              call doLimitEdgewiseSP(p_IedgeList,&
+                   rafcstab%NEDGE, p_Fflux, p_Frp, p_Frm, p_Falpha)
+           end select
         end if
       end if
 
@@ -637,17 +875,54 @@ contains
       if (iand(ioperationSpec, AFCSTAB_FCTALGO_SCALEBYMASS) .ne. 0) then
 
         ! Set pointer
-        call lsyssc_getbase_double(rmatrix, p_ML)
+         select case(rx%cdataType)
+         case(ST_QUAD)
+            call lsyssc_getbase_quad(rmatrix, p_Qml)
+         case(ST_DOUBLE)
+            call lsyssc_getbase_double(rmatrix, p_Dml)
+         case(ST_SINGLE)
+            call lsyssc_getbase_single(rmatrix, p_Fml)
+         end select
 
         if (present(fcb_calcCorrection)) then
           ! User-supplied callback routine
           call fcb_calcCorrection(p_IedgeListIdx, p_IedgeList,&
               rafcstab%NEDGE, rafcstab%NEQ, 1, 1, rafcstab%NEQ, dscale,&
-              p_Dx, p_Dalpha, p_Dflux, p_Dy, p_ML, rcollection)
+              p_Dx, p_Dalpha, p_Dflux, p_Dy, p_Dml, rcollection)
         else
           ! Standard routine
-          call doCorrectScaleByMassDP(p_IedgeListIdx, p_IedgeList,&
-              rafcstab%NEDGE, dscale, p_ML, p_Dalpha, p_Dflux, p_Dy)
+         select case(FEAT2_PP_ID2(rx%cdataType,rafcstab%cdataType,10))
+         case(FEAT2_PP_ID2(ST_QUAD,ST_QUAD,10))
+          call doCorrectScaleByMassQPQP(p_IedgeListIdx, p_IedgeList,&
+              rafcstab%NEDGE, dscale, p_Qml, p_Qalpha, p_Qflux, p_Qy)
+         case(FEAT2_PP_ID2(ST_DOUBLE,ST_QUAD,10))
+          call doCorrectScaleByMassDPQP(p_IedgeListIdx, p_IedgeList,&
+              rafcstab%NEDGE, dscale, p_Dml, p_Qalpha, p_Qflux, p_Dy)
+         case(FEAT2_PP_ID2(ST_SINGLE,ST_QUAD,10))
+          call doCorrectScaleByMassSPQP(p_IedgeListIdx, p_IedgeList,&
+              rafcstab%NEDGE, dscale, p_Fml, p_Qalpha, p_Qflux, p_Fy)
+            
+         case(FEAT2_PP_ID2(ST_QUAD,ST_DOUBLE,10))
+          call doCorrectScaleByMassQPDP(p_IedgeListIdx, p_IedgeList,&
+              rafcstab%NEDGE, dscale, p_Qml, p_Dalpha, p_Dflux, p_Qy)
+         case(FEAT2_PP_ID2(ST_DOUBLE,ST_DOUBLE,10))
+          call doCorrectScaleByMassDPDP(p_IedgeListIdx, p_IedgeList,&
+              rafcstab%NEDGE, dscale, p_Dml, p_Dalpha, p_Dflux, p_Dy)
+         case(FEAT2_PP_ID2(ST_SINGLE,ST_DOUBLE,10))
+          call doCorrectScaleByMassSPDP(p_IedgeListIdx, p_IedgeList,&
+              rafcstab%NEDGE, dscale, p_Fml, p_Dalpha, p_Dflux, p_Fy)
+            
+         case(FEAT2_PP_ID2(ST_QUAD,ST_SINGLE,10))
+          call doCorrectScaleByMassQPSP(p_IedgeListIdx, p_IedgeList,&
+              rafcstab%NEDGE, dscale, p_Qml, p_Falpha, p_Fflux, p_Qy)
+         case(FEAT2_PP_ID2(ST_DOUBLE,ST_SINGLE,10))
+          call doCorrectScaleByMassDPSP(p_IedgeListIdx, p_IedgeList,&
+              rafcstab%NEDGE, dscale, p_Dml, p_Falpha, p_Fflux, p_Dy)
+         case(FEAT2_PP_ID2(ST_SINGLE,ST_SINGLE,10))
+          call doCorrectScaleByMassSPSP(p_IedgeListIdx, p_IedgeList,&
+              rafcstab%NEDGE, dscale, p_Fml, p_Falpha, p_Fflux, p_Fy)
+         end select
+
         end if
 
       else
@@ -659,8 +934,37 @@ contains
               p_Dx, p_Dalpha, p_Dflux, p_Dy, rcollection=rcollection)
         else
           ! Standard routine
-          call doCorrectDP(p_IedgeListIdx, p_IedgeList,&
-              rafcstab%NEDGE, dscale, p_Dalpha, p_Dflux, p_Dy)
+           select case(FEAT2_PP_ID2(rx%cdataType,rafcstab%cdataType,10))
+           case(FEAT2_PP_ID2(ST_QUAD,ST_QUAD,10))
+              call doCorrectQPQP(p_IedgeListIdx, p_IedgeList,&
+                   rafcstab%NEDGE, dscale, p_Qalpha, p_Qflux, p_Qy)
+           case(FEAT2_PP_ID2(ST_DOUBLE,ST_QUAD,10))
+              call doCorrectDPQP(p_IedgeListIdx, p_IedgeList,&
+                   rafcstab%NEDGE, dscale, p_Qalpha, p_Qflux, p_Dy)
+           case(FEAT2_PP_ID2(ST_SINGLE,ST_QUAD,10))
+              call doCorrectSPQP(p_IedgeListIdx, p_IedgeList,&
+                   rafcstab%NEDGE, dscale, p_Qalpha, p_Qflux, p_Fy)
+
+           case(FEAT2_PP_ID2(ST_QUAD,ST_DOUBLE,10))
+              call doCorrectQPDP(p_IedgeListIdx, p_IedgeList,&
+                   rafcstab%NEDGE, dscale, p_Dalpha, p_Dflux, p_Qy)
+           case(FEAT2_PP_ID2(ST_DOUBLE,ST_DOUBLE,10))
+              call doCorrectDPDP(p_IedgeListIdx, p_IedgeList,&
+                   rafcstab%NEDGE, dscale, p_Dalpha, p_Dflux, p_Dy)
+           case(FEAT2_PP_ID2(ST_SINGLE,ST_DOUBLE,10))
+              call doCorrectSPDP(p_IedgeListIdx, p_IedgeList,&
+                   rafcstab%NEDGE, dscale, p_Dalpha, p_Dflux, p_Fy)
+
+           case(FEAT2_PP_ID2(ST_QUAD,ST_SINGLE,10))
+              call doCorrectQPSP(p_IedgeListIdx, p_IedgeList,&
+                   rafcstab%NEDGE, dscale, p_Falpha, p_Fflux, p_Qy)
+           case(FEAT2_PP_ID2(ST_DOUBLE,ST_SINGLE,10))
+              call doCorrectDPSP(p_IedgeListIdx, p_IedgeList,&
+                   rafcstab%NEDGE, dscale, p_Falpha, p_Fflux, p_Dy)
+           case(FEAT2_PP_ID2(ST_SINGLE,ST_SINGLE,10))
+              call doCorrectSPSP(p_IedgeListIdx, p_IedgeList,&
+                   rafcstab%NEDGE, dscale, p_Falpha, p_Fflux, p_Fy)
+           end select
         end if
       end if
     end if
@@ -669,510 +973,301 @@ contains
 
     ! Here, the working routines follow
 
+
     !**************************************************************
     ! Prelimit the raw antidiffusive fluxes the standard way, as
     ! suggested by Boris and Book in their first FCT algorithm
 
-    subroutine doStdPrelimitDP(IedgeListIdx, IedgeList,&
-        NEDGE, Dflux, DfluxPrel, Dalpha)
+#define TemplateType_AFC QUAD_PREC
+#include "afcsc_buildVectorFCTScalar_doStdPrelimit.h"
+#undef TemplateType_AFC
 
-      ! input parameters
-      real(DP), dimension(:), intent(in) :: Dflux,DfluxPrel
-      integer, dimension(:,:), intent(in) :: IedgeList
-      integer, dimension(:), intent(in) :: IedgeListIdx
-      integer, intent(in) :: NEDGE
+#define TemplateType_AFC DOUBLE_PREC
+#include "afcsc_buildVectorFCTScalar_doStdPrelimit.h"
+#undef TemplateType_AFC
 
-      ! On input: the edge-wise correction factor from previous
-      !           multiplicative correction steps
-      ! On exit:  the edge-wise correction factor with prelimiting
-      real(DP), dimension(:), intent(inout) :: Dalpha
+#define TemplateType_AFC SINGLE_PREC
+#include "afcsc_buildVectorFCTScalar_doStdPrelimit.h"
+#undef TemplateType_AFC
 
-      ! local variables
-      integer :: iedge
 
-      ! Loop over all edges
-      !$omp parallel do default(shared)&
-      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
-      do iedge = 1, NEDGE
-
-        ! Check if the antidiffusive flux is directed down the gradient
-        !   $f_ij*(u_i-u_j) < 0$
-        ! and if its magnitude is larger than an absolute tolerance
-        !  $ |f_ij| > tol$
-        ! In this case, cancel the flux completely.
-        if ((Dflux(iedge)*DfluxPrel(iedge) .lt. 0.0_DP) .and.&
-            abs(Dflux(iedge)) .gt. AFCSTAB_PRELIMABS)&
-            Dalpha(iedge) = 0.0_DP
-      end do
-      !$omp end parallel do
-
-    end subroutine doStdPrelimitDP
 
     !**************************************************************
     ! Prelimit the raw antidiffusive fluxes using minmod limiter
 
-    subroutine doMinModPrelimitDP(IedgeListIdx, IedgeList,&
-        NEDGE, Dflux, DfluxPrel, Dalpha)
+#define TemplateType_AFC QUAD_PREC
+#include "afcsc_buildVectorFCTScalar_doMinModPrelimit.h"
+#undef TemplateType_AFC
 
-      ! input parameters
-      real(DP), dimension(:), intent(in) :: Dflux,DfluxPrel
-      integer, dimension(:,:), intent(in) :: IedgeList
-      integer, dimension(:), intent(in) :: IedgeListIdx
-      integer, intent(in) :: NEDGE
+#define TemplateType_AFC DOUBLE_PREC
+#include "afcsc_buildVectorFCTScalar_doMinModPrelimit.h"
+#undef TemplateType_AFC
 
-      ! On input: the edge-wise correction factor from previous
-      !           multiplicative correction steps
-      ! On exit:  the edge-wise correction factor with prelimiting
-      real(DP), dimension(:), intent(inout) :: Dalpha
+#define TemplateType_AFC SINGLE_PREC
+#include "afcsc_buildVectorFCTScalar_doMinModPrelimit.h"
+#undef TemplateType_AFC
 
-      ! local variables
-      integer :: iedge
 
-      ! Loop over all edges
-      !$omp parallel do default(shared)&
-      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
-      do iedge = 1, NEDGE
-
-        ! Check if the magnitude of the antidiffusive flux is larger
-        ! than an absolute tolerance; otherwise no prelimiting is done
-        if (abs(Dflux(iedge)) .gt. AFCSTAB_PRELIMABS) then
-          ! Check if the antidiffusive flux is directed down the gradient
-          !   $f_ij*fp_ij < 0$
-          if (Dflux(iedge)*DfluxPrel(iedge) .lt. 0.0_DP) then
-            ! Then, cancel the antidiffusive flux completely
-            Dalpha(iedge) = 0.0_DP
-          elseif (abs(Dflux(iedge)) .gt. abs(DfluxPrel(iedge))) then
-            ! Check if the magnitude of the raw antidiffusive flux
-            ! exceeds the magnitude of the prelimiting flux
-            !   $|f_ij| > |fp_ij|$
-            ! then set the correction factor as follows
-            Dalpha(iedge) = min(Dalpha(iedge),DfluxPrel(iedge)/Dflux(iedge))
-          end if
-        end if
-      end do
-      !$omp end parallel do
-
-    end subroutine doMinModPrelimitDP
 
     !**************************************************************
     ! Assemble the sums of antidiffusive increments for the given
     ! antidiffusive fluxes without prelimiting
 
-    subroutine doADIncrementsDP(IedgeListIdx, IedgeList,&
-        NEDGE, Dflux, Dalpha, Dpp, Dpm)
+#define TemplateType_AFC QUAD_PREC
+#include "afcsc_buildVectorFCTScalar_doADIncrements.h"
+#undef TemplateType_AFC
 
-      ! input parameters
-      real(DP), dimension(:), intent(in) :: Dflux
-      integer, dimension(:,:), intent(in) :: IedgeList
-      integer, dimension(:), intent(in) :: IedgeListIdx
-      integer, intent(in) :: NEDGE
+#define TemplateType_AFC DOUBLE_PREC
+#include "afcsc_buildVectorFCTScalar_doADIncrements.h"
+#undef TemplateType_AFC
 
-      ! On input: the edge-wise correction factor from previous
-      !           multiplicative correction steps
-      ! On exit:  the edge-wise correction factor with prelimiting
-      real(DP), dimension(:), intent(inout) :: Dalpha
+#define TemplateType_AFC SINGLE_PREC
+#include "afcsc_buildVectorFCTScalar_doADIncrements.h"
+#undef TemplateType_AFC
 
-      ! The sums of positive/negative antidiffusive increments
-      real(DP), dimension(:), intent(out) :: Dpp,Dpm
 
-      ! local variables
-      real(DP) :: f_ij,fp_ij,fm_ij
-      integer :: i,iedge,igroup,j
-
-      !$omp parallel default(shared) private(i,j,f_ij,fp_ij,fm_ij)&
-      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
-
-      ! Clear P`s
-      !$omp sections
-      !$omp section
-      call lalg_clearVector(Dpp)
-      !$omp section
-      call lalg_clearVector(Dpm)
-      !$omp end sections
-
-      ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronise memory access
-      do igroup = 1, size(IedgeListIdx)-1
-
-        ! Do nothing for empty groups
-        if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
-
-        ! Loop over all edges
-        !$omp do
-        do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
-
-          ! Get node numbers
-          i = IedgeList(1,iedge)
-          j = IedgeList(2,iedge)
-
-          ! Apply multiplicative correction factor
-          f_ij = Dalpha(iedge) * Dflux(iedge)
-
-          ! Separate fluxes into positive/negative contributions
-          fp_ij = max(0.0_DP,f_ij)
-          fm_ij = min(0.0_DP,f_ij)
-
-          ! Compute the sums of antidiffusive increments
-          Dpp(i) = Dpp(i) + fp_ij   ! += max(0.0_DP, f_ij)
-          Dpp(j) = Dpp(j) - fm_ij   ! += max(0.0_DP,-f_ij)
-          Dpm(i) = Dpm(i) + fm_ij   ! += min(0.0_DP, f_ij)
-          Dpm(j) = Dpm(j) - fp_ij   ! += min(0.0_DP,-f_ij)
-        end do
-        !$omp end do
-
-      end do ! igroup
-      !$omp end parallel
-
-    end subroutine doADIncrementsDP
 
     !**************************************************************
     ! Assemble the local bounds from the predicted solution
 
-    subroutine doBoundsDP(IedgeListIdx, IedgeList, NEDGE, Dx, Dqp, Dqm)
+#define TemplateType_AFC    QUAD_PREC
+#define TemplateType_Vector QUAD_PREC
+#include "afcsc_buildVectorFCTScalar_doBounds.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector DOUBLE_PREC
+#include "afcsc_buildVectorFCTScalar_doBounds.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector SINGLE_PREC
+#include "afcsc_buildVectorFCTScalar_doBounds.h"
+#undef TemplateType_Vector
+#undef TemplateType_AFC
 
-      ! input parameters
-      real(DP), dimension(:), intent(in) :: Dx
-      integer, dimension(:,:), intent(in) :: IedgeList
-      integer, dimension(:), intent(in) :: IedgeListIdx
-      integer, intent(in) :: NEDGE
+#define TemplateType_AFC    DOUBLE_PREC
+#define TemplateType_Vector QUAD_PREC
+#include "afcsc_buildVectorFCTScalar_doBounds.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector DOUBLE_PREC
+#include "afcsc_buildVectorFCTScalar_doBounds.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector SINGLE_PREC
+#include "afcsc_buildVectorFCTScalar_doBounds.h"
+#undef TemplateType_Vector
+#undef TemplateType_AFC
 
-      ! The local upper/lower bounds computed from Dx
-      real(DP), dimension(:), intent(out) :: Dqp,Dqm
+#define TemplateType_AFC    SINGLE_PREC
+#define TemplateType_Vector QUAD_PREC
+#include "afcsc_buildVectorFCTScalar_doBounds.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector DOUBLE_PREC
+#include "afcsc_buildVectorFCTScalar_doBounds.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector SINGLE_PREC
+#include "afcsc_buildVectorFCTScalar_doBounds.h"
+#undef TemplateType_Vector
+#undef TemplateType_AFC
 
-      ! local variables
-      integer :: i,iedge,igroup,j
 
-      !$omp parallel default(shared) private(i,j)&
-      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
-
-      ! Initialise Q`s by solution
-      !$omp sections
-      !$omp section
-      call lalg_copyVector(Dx, Dqp)
-      !$omp section
-      call lalg_copyVector(Dx, Dqm)
-      !$omp end sections
-
-      ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronise memory access
-      do igroup = 1, size(IedgeListIdx)-1
-
-        ! Do nothing for empty groups
-        if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
-
-        ! Loop over all edges
-        !$omp do
-        do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
-
-          ! Get node numbers
-          i = IedgeList(1,iedge)
-          j = IedgeList(2,iedge)
-
-          ! Compute local upper and lower bounds
-          Dqp(i) = max(Dqp(i), Dx(j))
-          Dqm(i) = min(Dqm(i), Dx(j))
-          Dqp(j) = max(Dqp(j), Dx(i))
-          Dqm(j) = min(Dqm(j), Dx(i))
-        end do
-        !$omp end do
-
-      end do ! igroup
-      !$omp end parallel
-
-    end subroutine doBoundsDP
 
     !**************************************************************
     ! Compute the nodal correction factors without constraints
 
-    subroutine doLimitNodalDP(NEQ, dscale,&
-        ML, Dx, Dpp, Dpm, Dqp, Dqm, Drp, Drm)
+#define TemplateType_AFC    QUAD_PREC
+#define TemplateType_Vector QUAD_PREC
+#include "afcsc_buildVectorFCTScalar_doLimitNodal.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector DOUBLE_PREC
+#include "afcsc_buildVectorFCTScalar_doLimitNodal.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector SINGLE_PREC
+#include "afcsc_buildVectorFCTScalar_doLimitNodal.h"
+#undef TemplateType_Vector
+#undef TemplateType_AFC
 
-      ! input parameters
-      real(DP), dimension(:), intent(in) :: ML,Dx
-      real(DP), dimension(:), intent(in) :: Dpp,Dpm,Dqp,Dqm
-      real(DP), intent(in) :: dscale
-      integer, intent(in) :: NEQ
+#define TemplateType_AFC    DOUBLE_PREC
+#define TemplateType_Vector QUAD_PREC
+#include "afcsc_buildVectorFCTScalar_doLimitNodal.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector DOUBLE_PREC
+#include "afcsc_buildVectorFCTScalar_doLimitNodal.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector SINGLE_PREC
+#include "afcsc_buildVectorFCTScalar_doLimitNodal.h"
+#undef TemplateType_Vector
+#undef TemplateType_AFC
 
-      ! output parameters
-      real(DP), dimension(:), intent(out) :: Drp,Drm
+#define TemplateType_AFC    SINGLE_PREC
+#define TemplateType_Vector QUAD_PREC
+#include "afcsc_buildVectorFCTScalar_doLimitNodal.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector DOUBLE_PREC
+#include "afcsc_buildVectorFCTScalar_doLimitNodal.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector SINGLE_PREC
+#include "afcsc_buildVectorFCTScalar_doLimitNodal.h"
+#undef TemplateType_Vector
+#undef TemplateType_AFC
 
-      ! local variables
-      integer :: ieq
 
-      !$omp parallel sections default(shared) private(ieq)
-
-      !$omp section
-
-      !$omp parallel do default(shared) private(ieq)
-      do ieq = 1, NEQ
-        Drp(ieq) = (Dqp(ieq)-Dx(ieq)+AFCSTAB_EPSABS) /&
-                   (Dpp(ieq)+AFCSTAB_EPSABS) * (ML(ieq)/dscale)
-      end do
-      !$omp end parallel do
-
-      !$omp section
-
-      !$omp parallel do default(shared) private(ieq)
-      do ieq = 1, NEQ
-        Drm(ieq) = (Dqm(ieq)-Dx(ieq)-AFCSTAB_EPSABS) /&
-                   (Dpm(ieq)-AFCSTAB_EPSABS) * (ML(ieq)/dscale)
-      end do
-      !$omp end parallel do
-
-      !$omp end parallel sections
-
-    end subroutine doLimitNodalDP
 
     !**************************************************************
     ! Compute nodal correction factors with constraints
 
-    subroutine doLimitNodalConstrainedDP(NEQ, dscale,&
-        ML, Dx, Dpp, Dpm, Dqp, Dqm, Drp, Drm)
+#define TemplateType_AFC    QUAD_PREC
+#define TemplateType_Vector QUAD_PREC
+#include "afcsc_buildVectorFCTScalar_doLimitNodalConstrained.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector DOUBLE_PREC
+#include "afcsc_buildVectorFCTScalar_doLimitNodalConstrained.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector SINGLE_PREC
+#include "afcsc_buildVectorFCTScalar_doLimitNodalConstrained.h"
+#undef TemplateType_Vector
+#undef TemplateType_AFC
 
-      ! input parameters
-      real(DP), dimension(:), intent(in) :: ML,Dx
-      real(DP), dimension(:), intent(in) :: Dpp,Dpm,Dqp,Dqm
-      real(DP), intent(in) :: dscale
-      integer, intent(in) :: NEQ
+#define TemplateType_AFC    DOUBLE_PREC
+#define TemplateType_Vector QUAD_PREC
+#include "afcsc_buildVectorFCTScalar_doLimitNodalConstrained.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector DOUBLE_PREC
+#include "afcsc_buildVectorFCTScalar_doLimitNodalConstrained.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector SINGLE_PREC
+#include "afcsc_buildVectorFCTScalar_doLimitNodalConstrained.h"
+#undef TemplateType_Vector
+#undef TemplateType_AFC
 
-      ! output parameters
-      real(DP), dimension(:), intent(out) :: Drp,Drm
+#define TemplateType_AFC    SINGLE_PREC
+#define TemplateType_Vector QUAD_PREC
+#include "afcsc_buildVectorFCTScalar_doLimitNodalConstrained.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector DOUBLE_PREC
+#include "afcsc_buildVectorFCTScalar_doLimitNodalConstrained.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector SINGLE_PREC
+#include "afcsc_buildVectorFCTScalar_doLimitNodalConstrained.h"
+#undef TemplateType_Vector
+#undef TemplateType_AFC
 
-      ! local variables
-      integer :: ieq
 
-      !$omp parallel sections default(shared) private(ieq)
-
-      !$omp section
-
-      !$omp parallel do default(shared) private(ieq)
-      do ieq = 1, NEQ
-        Drp(ieq) = min(1.0_DP, (Dqp(ieq)-Dx(ieq)+AFCSTAB_EPSABS) /&
-                               (Dpp(ieq)+AFCSTAB_EPSABS) * (ML(ieq)/dscale))
-      end do
-      !$omp end parallel do
-
-      !$omp section
-
-      !$omp parallel do default(shared) private(ieq)
-      do ieq = 1, NEQ
-        Drm(ieq) = min(1.0_DP, (Dqm(ieq)-Dx(ieq)-AFCSTAB_EPSABS) /&
-                               (Dpm(ieq)-AFCSTAB_EPSABS) * (ML(ieq)/dscale))
-      end do
-      !$omp end parallel do
-
-      !$omp end parallel sections
-
-    end subroutine doLimitNodalConstrainedDP
 
     !**************************************************************
     ! Compute edgewise correction factors based on the precomputed
     ! nodal correction factors and the sign of antidiffusive fluxes
 
-    subroutine doLimitEdgewiseDP(IedgeList, NEDGE,&
-        Dflux, Drp, Drm, Dalpha)
+#define TemplateType_AFC    QUAD_PREC
+#include "afcsc_buildVectorFCTScalar_doLimitEdgewise.h"
+#undef TemplateType_AFC
 
-      ! input parameters
-      real(DP), dimension(:), intent(in) :: Dflux
-      real(DP), dimension(:), intent(in) :: Drp,Drm
-      integer, dimension(:,:), intent(in) :: IedgeList
-      integer, intent(in) :: NEDGE
+#define TemplateType_AFC    DOUBLE_PREC
+#include "afcsc_buildVectorFCTScalar_doLimitEdgewise.h"
+#undef TemplateType_AFC
 
-      ! On input: the edge-wise correction factors from previous
-      !           multiplicative correction steps
-      ! On exit: the edge-wise correction factors resulting from
-      !          the nodal correction factors Rp and Rm
-      real(DP), dimension(:), intent(inout) :: Dalpha
+#define TemplateType_AFC    SINGLE_PREC
+#include "afcsc_buildVectorFCTScalar_doLimitEdgewise.h"
+#undef TemplateType_AFC
 
-      ! local variables
-      real(DP) :: f_ij,r_ij
-      integer :: iedge,i,j
 
-      ! Loop over all edges
-      !$omp parallel do default(shared) private(i,j,f_ij,r_ij)&
-      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
-      do iedge = 1, NEDGE
-
-        ! Get node numbers and matrix positions
-        i = IedgeList(1,iedge)
-        j = IedgeList(2,iedge)
-
-        ! Get precomputed raw antidiffusive fluxes
-        f_ij = Dflux(iedge)
-
-        ! Compute nodal correction factors
-        if (f_ij .gt. AFCSTAB_EPSABS) then
-          r_ij = min(Drp(i),Drm(j))
-        elseif (f_ij .lt. -AFCSTAB_EPSABS) then
-          r_ij = min(Drp(j),Drm(i))
-        else
-          r_ij = 1.0_DP
-        end if
-
-        ! Compute multiplicative correction factor
-        Dalpha(iedge) = Dalpha(iedge) * r_ij
-      end do
-      !$omp end parallel do
-
-    end subroutine doLimitEdgewiseDP
 
     !**************************************************************
     ! Compute edgewise correction factors based on the precomputed
     ! nodal correction factors and the sign of a pair of explicit
     ! and implicit raw antidiffusive fluxes
 
-    subroutine doLimitEdgewiseConstrainedDP(IedgeList, NEDGE,&
-        Dflux1, Dflux2, Drp, Drm, Dalpha)
+#define TemplateType_AFC    QUAD_PREC
+#include "afcsc_buildVectorFCTScalar_doLimitEdgewiseConstrained.h"
+#undef TemplateType_AFC
 
-      ! input parameters
-      real(DP), dimension(:), intent(in) :: Dflux1,Dflux2
-      real(DP), dimension(:), intent(in) :: Drp,Drm
-      integer, dimension(:,:), intent(in) :: IedgeList
-      integer, intent(in) :: NEDGE
+#define TemplateType_AFC    DOUBLE_PREC
+#include "afcsc_buildVectorFCTScalar_doLimitEdgewiseConstrained.h"
+#undef TemplateType_AFC
 
-      ! input/output parameters
-      real(DP), dimension(:), intent(inout) :: Dalpha
+#define TemplateType_AFC    SINGLE_PREC
+#include "afcsc_buildVectorFCTScalar_doLimitEdgewiseConstrained.h"
+#undef TemplateType_AFC
 
-      ! local variables
-      real(DP) :: f1_ij,f2_ij,r_ij
-      integer :: iedge,i,j
 
-      ! Loop over all edges
-      !$omp parallel do default(shared) private(i,j,f1_ij,f2_ij,r_ij)&
-      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
-      do iedge = 1, NEDGE
-
-        ! Get node numbers and matrix positions
-        i = IedgeList(1,iedge)
-        j = IedgeList(2,iedge)
-
-        ! Get precomputed raw antidiffusive fluxes
-        f1_ij = Dflux1(iedge)
-        f2_ij = Dflux2(iedge)
-
-        ! Compute nodal correction factors
-        if (f1_ij*f2_ij .le. 0.0_DP) then
-          r_ij = 0.0_DP
-        else
-          if (f1_ij .ge. 0.0_DP) then
-            r_ij = min(1.0_DP, f1_ij/f2_ij*min(Drp(i),Drm(j)))
-          else
-            r_ij = min(1.0_DP, f1_ij/f2_ij*min(Drp(j),Drm(i)))
-          end if
-        end if
-
-        ! Compute multiplicative correction factor
-        Dalpha(iedge) = Dalpha(iedge) * r_ij
-      end do
-      !$omp end parallel do
-
-    end subroutine doLimitEdgewiseConstrainedDP
 
     !**************************************************************
     ! Correct the antidiffusive fluxes and apply them
 
-    subroutine doCorrectDP(IedgeListIdx, IedgeList,&
-        NEDGE, dscale, Dalpha, Dflux, Dy)
+#define TemplateType_AFC    QUAD_PREC
+#define TemplateType_Vector QUAD_PREC
+#include "afcsc_buildVectorFCTScalar_doCorrect.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector DOUBLE_PREC
+#include "afcsc_buildVectorFCTScalar_doCorrect.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector SINGLE_PREC
+#include "afcsc_buildVectorFCTScalar_doCorrect.h"
+#undef TemplateType_Vector
+#undef TemplateType_AFC
 
-      ! input parameters
-      real(DP), dimension(:), intent(in) :: Dalpha,Dflux
-      real(DP), intent(in) :: dscale
-      integer, dimension(:,:), intent(in) :: IedgeList
-      integer, dimension(:), intent(in) :: IedgeListIdx
-      integer, intent(in) :: NEDGE
+#define TemplateType_AFC    DOUBLE_PREC
+#define TemplateType_Vector QUAD_PREC
+#include "afcsc_buildVectorFCTScalar_doCorrect.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector DOUBLE_PREC
+#include "afcsc_buildVectorFCTScalar_doCorrect.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector SINGLE_PREC
+#include "afcsc_buildVectorFCTScalar_doCorrect.h"
+#undef TemplateType_Vector
+#undef TemplateType_AFC
 
-      ! input/output parameters
-      real(DP), dimension(:), intent(inout) :: Dy
+#define TemplateType_AFC    SINGLE_PREC
+#define TemplateType_Vector QUAD_PREC
+#include "afcsc_buildVectorFCTScalar_doCorrect.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector DOUBLE_PREC
+#include "afcsc_buildVectorFCTScalar_doCorrect.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector SINGLE_PREC
+#include "afcsc_buildVectorFCTScalar_doCorrect.h"
+#undef TemplateType_Vector
+#undef TemplateType_AFC
 
-      ! local variables
-      real(DP) :: f_ij
-      integer :: i,iedge,igroup,j
 
-      !$omp parallel default(shared) private(i,j,f_ij)&
-      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
-
-      ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronise memory access
-      do igroup = 1, size(IedgeListIdx)-1
-
-        ! Do nothing for empty groups
-        if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
-
-        ! Loop over all edges
-        !$omp do
-        do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
-
-          ! Get node numbers
-          i = IedgeList(1,iedge)
-          j = IedgeList(2,iedge)
-
-          ! Correct antidiffusive flux
-          f_ij = dscale * Dalpha(iedge) * Dflux(iedge)
-
-          ! Apply limited antidiffusive fluxes
-          Dy(i) = Dy(i) + f_ij
-          Dy(j) = Dy(j) - f_ij
-        end do
-        !$omp end do
-
-      end do ! igroup
-      !$omp end parallel
-
-    end subroutine doCorrectDP
 
     !**************************************************************
     ! Correct the antidiffusive fluxes and apply them
     ! scaled by the inverse of the lumped mass matrix
 
-    subroutine doCorrectScaleByMassDP(IedgeListIdx,&
-        IedgeList, NEDGE, dscale, ML, Dalpha, Dflux, Dy)
+#define TemplateType_AFC    QUAD_PREC
+#define TemplateType_Vector QUAD_PREC
+#include "afcsc_buildVectorFCTScalar_doCorrectScaleByMass.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector DOUBLE_PREC
+#include "afcsc_buildVectorFCTScalar_doCorrectScaleByMass.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector SINGLE_PREC
+#include "afcsc_buildVectorFCTScalar_doCorrectScaleByMass.h"
+#undef TemplateType_Vector
+#undef TemplateType_AFC
 
-      ! input parameters
-      real(DP), dimension(:), intent(in) :: ML,Dalpha,Dflux
-      real(DP), intent(in) :: dscale
-      integer, dimension(:,:), intent(in) :: IedgeList
-      integer, dimension(:), intent(in) :: IedgeListIdx
-      integer, intent(in) :: NEDGE
+#define TemplateType_AFC    DOUBLE_PREC
+#define TemplateType_Vector QUAD_PREC
+#include "afcsc_buildVectorFCTScalar_doCorrectScaleByMass.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector DOUBLE_PREC
+#include "afcsc_buildVectorFCTScalar_doCorrectScaleByMass.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector SINGLE_PREC
+#include "afcsc_buildVectorFCTScalar_doCorrectScaleByMass.h"
+#undef TemplateType_Vector
+#undef TemplateType_AFC
 
-      ! input/output parameters
-      real(DP), dimension(:), intent(inout) :: Dy
+#define TemplateType_AFC    SINGLE_PREC
+#define TemplateType_Vector QUAD_PREC
+#include "afcsc_buildVectorFCTScalar_doCorrectScaleByMass.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector DOUBLE_PREC
+#include "afcsc_buildVectorFCTScalar_doCorrectScaleByMass.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector SINGLE_PREC
+#include "afcsc_buildVectorFCTScalar_doCorrectScaleByMass.h"
+#undef TemplateType_Vector
+#undef TemplateType_AFC
 
-      ! local variables
-      real(DP) :: f_ij
-      integer :: i,iedge,igroup,j
-
-
-      !$omp parallel default(shared) private(i,j,f_ij)&
-      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
-
-      ! Loop over the edge groups and process all edges of one group
-      ! in parallel without the need to synchronise memory access
-      do igroup = 1, size(IedgeListIdx)-1
-
-        ! Do nothing for empty groups
-        if (IedgeListIdx(igroup+1)-IedgeListIdx(igroup) .le. 0) cycle
-
-        ! Loop over all edges
-        !$omp do
-        do iedge = IedgeListIdx(igroup), IedgeListIdx(igroup+1)-1
-
-          ! Get node numbers
-          i = IedgeList(1,iedge)
-          j = IedgeList(2,iedge)
-
-          ! Correct antidiffusive flux
-          f_ij = dscale * Dalpha(iedge) * Dflux(iedge)
-
-          ! Apply limited antidiffusive fluxes
-          Dy(i) = Dy(i) + f_ij/ML(i)
-          Dy(j) = Dy(j) - f_ij/ML(j)
-        end do
-        !$omp end do
-
-      end do ! igroup
-      !$omp end parallel
-
-    end subroutine doCorrectScaleByMassDP
 
   end subroutine afcsc_buildVectorFCTScalar
 

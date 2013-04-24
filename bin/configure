@@ -334,6 +334,17 @@ my $HEADER_FILES_TO_COPY =
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/LinearSystem/lsyssc_scalarMatVec_lax9rowc.h " .
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/LinearSystem/lsyssc_scalarMatVec_ltx79.h " .
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/LinearSystem/lsyssc_scalarMatVecAux.h " .
+    "$FEAT2BASEDIR/$SRCDIR_KERNEL/PDEOperators/afc.h " .
+    "$FEAT2BASEDIR/$SRCDIR_KERNEL/PDEOperators/afcsc_buildVectorFCTScalar_doADIncrements.h " .
+    "$FEAT2BASEDIR/$SRCDIR_KERNEL/PDEOperators/afcsc_buildVectorFCTScalar_doBounds.h " .
+    "$FEAT2BASEDIR/$SRCDIR_KERNEL/PDEOperators/afcsc_buildVectorFCTScalar_doCorrect.h " .
+    "$FEAT2BASEDIR/$SRCDIR_KERNEL/PDEOperators/afcsc_buildVectorFCTScalar_doCorrectScaleByMass.h " .
+    "$FEAT2BASEDIR/$SRCDIR_KERNEL/PDEOperators/afcsc_buildVectorFCTScalar_doLimitEdgewise.h " .
+    "$FEAT2BASEDIR/$SRCDIR_KERNEL/PDEOperators/afcsc_buildVectorFCTScalar_doLimitEdgewiseConstrained.h " .
+    "$FEAT2BASEDIR/$SRCDIR_KERNEL/PDEOperators/afcsc_buildVectorFCTScalar_doLimitNodal.h " .
+    "$FEAT2BASEDIR/$SRCDIR_KERNEL/PDEOperators/afcsc_buildVectorFCTScalar_doLimitNodalConstrained.h " .
+    "$FEAT2BASEDIR/$SRCDIR_KERNEL/PDEOperators/afcsc_buildVectorFCTScalar_doMinModPrelimit.h " .
+    "$FEAT2BASEDIR/$SRCDIR_KERNEL/PDEOperators/afcsc_buildVectorFCTScalar_doStdPrelimit.h " .
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/System/fmath.h " .
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/System/idxmanager.h";
 
