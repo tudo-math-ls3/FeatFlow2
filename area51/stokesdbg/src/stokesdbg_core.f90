@@ -79,6 +79,9 @@ implicit none
 
   type t_problem
   
+    ! A pointer to the parameter structure
+    type(t_parlist), pointer :: p_rparam => null()
+  
     ! the problem dirver
     integer :: idriver = 0
     
@@ -97,19 +100,23 @@ implicit none
     ! the boundary structure
     type(t_boundary) :: rbnd
     
+    ! the dimension of the space
+    integer :: ndim = 0
+    
+    ! number of velocity components
+    integer :: ncompVelo = 0
+    
     ! problem parameters
     real(DP) :: dnu = 1.0_DP
     real(DP) :: dalpha = 1.0_DP
     real(DP) :: dbeta = 1.0_DP
     real(DP) :: dgamma = 1.0_DP
     
-    ! statistics array; dimension(4,ilevelMin:ileveMax)
-    ! Entries:
-    ! (1,lvl) -> |u-u_h|_L2
-    ! (2,lvl) -> |u-u_h|_H1
-    ! (3,lvl) -> |div(u_h)|_L2
-    ! (4,lvl) -> |p-p_h|_L2
+    ! statistics array; dimension(DSTAT_LENGTH,ilevelMin:ilevelMax)
     real(DP), dimension(:,:), pointer :: p_Dstat
+    
+    ! statistics array, dimension(ISTAT_LENGTH,ilevelMin:ilevelMax)
+    integer, dimension(:,:), pointer :: p_Istat
   
   end type
   
@@ -118,6 +125,9 @@ implicit none
 !<typeblock>
   
   type t_system
+  
+    ! A pointer to the underlying problem structure
+    type(t_problem), pointer :: p_rproblem => null()
   
     ! the level this system structure is assigned to
     integer :: ilevel = 0
@@ -146,6 +156,31 @@ implicit none
   
 !</types>
 
+!<constants>
+  ! index of velocity L2-error
+  integer, parameter :: DSTAT_U_L2   = 1
+  ! index of velocity H1-error
+  integer, parameter :: DSTAT_U_H1   = 2
+  ! index of velocity divergence
+  integer, parameter :: DSTAT_U_DIV  = 3
+  ! index of pressure L2-error
+  integer, parameter :: DSTAT_P_L2   = 4
+  ! index of initial defect
+  integer, parameter :: DSTAT_DEF_I  = 5
+  ! index of final defect
+  integer, parameter :: DSTAT_DEF_F  = 6
+  ! index of convergence rate
+  integer, parameter :: DSTAT_CRATE  = 7
+  ! length of the p_Dstat array 
+  integer, parameter :: DSTAT_LENGTH = 7
+  
+  ! index of the solver iteration count
+  integer, parameter :: ISTAT_NITER  = 1
+  ! index of the solver status
+  integer, parameter :: ISTAT_STATUS = 2
+  ! length of the p_Istat array
+  integer, parameter :: ISTAT_LENGTH = 2
+!</constants>
 contains
   
   ! ***********************************************************************************************
@@ -155,6 +190,8 @@ contains
   
   integer :: i
   
+    if(associated(rproblem%p_Istat)) &
+      deallocate(rproblem%p_Istat)
     if(associated(rproblem%p_Dstat)) &
       deallocate(rproblem%p_Dstat)
   
@@ -190,9 +227,12 @@ contains
 
   subroutine stdbg_initProblem(rproblem, rparam)
   type(t_problem), intent(out) :: rproblem
-  type(t_parlist), intent(in) :: rparam
+  type(t_parlist), target, intent(in) :: rparam
 
   integer :: ilmin, ilmax, ilcrs
+  
+    ! store parameter pointer
+    rproblem%p_rparam => rparam
   
     ! fetch parameters
     call parlst_getvalue_int(rparam, '', 'LEVEL_MIN', ilmin, 1)
@@ -227,16 +267,16 @@ contains
     call parlst_getvalue_double(rparam, '', 'DBETA', rproblem%dbeta, 1.0_DP)
     call parlst_getvalue_double(rparam, '', 'DGAMMA', rproblem%dgamma, 1.0_DP)
     
-    ! allocate statistics array
-    allocate(rproblem%p_Dstat(4,ilmin:ilmax))
+    ! allocate statistics arrays
+    allocate(rproblem%p_Dstat(DSTAT_LENGTH,ilmin:ilmax))
+    allocate(rproblem%p_Istat(ISTAT_LENGTH,ilmin:ilmax))
     
   end subroutine
   
   ! ***********************************************************************************************
   
-  subroutine stdbg_initTriangulation2D(rproblem, rparam, sfile)
+  subroutine stdbg_initTriangulation2D(rproblem, sfile)
   type(t_problem), target, intent(inout) :: rproblem
-  type(t_parlist), intent(inout) :: rparam
   character(len=*), intent(in) :: sfile
   
   integer :: i, ilcrs, ilmin, ilmax, idistType
@@ -250,8 +290,8 @@ contains
     ilmax = rproblem%ilevelMax
     
     ! fetch distortion type
-    call parlst_getvalue_int(rparam, '', 'DIST_TYPE', idistType, 0)
-    call parlst_getvalue_double(rparam, '', 'DIST_FACTOR', ddistFactor, 0.1_DP)
+    call parlst_getvalue_int(rproblem%p_rparam, '', 'DIST_TYPE', idistType, 0)
+    call parlst_getvalue_double(rproblem%p_rparam, '', 'DIST_FACTOR', ddistFactor, 0.1_DP)
 
     call output_line("Generating mesh hierarchy...")
     
@@ -289,36 +329,49 @@ contains
   
   ! ***********************************************************************************************
   
-  subroutine stdbg_initDiscretisation(rproblem, rparam)
+  subroutine stdbg_initDiscretisation(rproblem)
   type(t_problem), target, intent(inout) :: rproblem
-  type(t_parlist), intent(in) :: rparam
   
   integer(I32):: celemVelo, celemPres, ccubature
-  integer :: i, j, ilcrs, ilmax, ndim
+  integer :: i, j, ilcrs, ilmax, ndim, ncomp
   type(t_level), pointer :: p_rlvl
   character(len=SYS_STRLEN) :: sname
   
     ilcrs = rproblem%ilevelCoarse
     ilmax = rproblem%ilevelMax
     ndim = rproblem%Rlevels(ilcrs)%rtria%ndim
+    rproblem%ndim = ndim
     
     ! read parameters
-    call parlst_getvalue_string(rparam, '', 'ELEMENT_VELOCITY', sname, '')
+    call parlst_getvalue_string(rproblem%p_rparam, '', 'ELEMENT_VELOCITY', sname, '')
     celemVelo = elem_igetID(sname)
-    call parlst_getvalue_string(rparam, '', 'ELEMENT_PRESSURE', sname, '')
+    call parlst_getvalue_string(rproblem%p_rparam, '', 'ELEMENT_PRESSURE', sname, '')
     celemPres = elem_igetID(sname)
-    call parlst_getvalue_string(rparam, '', 'CUBATURE', sname, '')
+    call parlst_getvalue_string(rproblem%p_rparam, '', 'CUBATURE', sname, '')
     ccubature = cub_igetID(sname)
     
+    ! fetch number of velocity FE components
+    rproblem%ncompVelo = elem_igetFeDimension(celemVelo)
+    
+    ! compute total number of components
+    if(rproblem%ncompVelo .eq. 1) then
+      ! ndim*Velocity + 1*Pressure
+      ncomp = ndim + 1
+    else
+      ! 1*Velocity + 1*Pressure
+      ncomp = 2
+    end if
+    
+    ! loop over all problem levels
     do i = ilcrs, ilmax
     
       p_rlvl => rproblem%Rlevels(i)
 
       ! Create the block discretisation
       if(ndim .eq. 2) then
-        call spdiscr_initBlockDiscr (p_rlvl%rdiscr, ndim+1, p_rlvl%rtria, rproblem%rbnd)
+        call spdiscr_initBlockDiscr (p_rlvl%rdiscr, ncomp, p_rlvl%rtria, rproblem%rbnd)
       else
-        call spdiscr_initBlockDiscr (p_rlvl%rdiscr, ndim+1, p_rlvl%rtria)
+        call spdiscr_initBlockDiscr (p_rlvl%rdiscr, ncomp, p_rlvl%rtria)
       end if
       
       ! Set up velocity spaces
@@ -330,13 +383,16 @@ contains
             celemVelo, ccubature, p_rlvl%rtria)
       end if
 
-      do j = 2, ndim
-        call spdiscr_duplicateDiscrSc(p_rlvl%rdiscr%RspatialDiscr(1), p_rlvl%rdiscr%RspatialDiscr(j))
-      end do
+      if(rproblem%ncompVelo .eq. 1) then
+        ! scalar velocity space: duplicate for all components
+        do j = 2, ndim
+          call spdiscr_duplicateDiscrSc(p_rlvl%rdiscr%RspatialDiscr(1), p_rlvl%rdiscr%RspatialDiscr(j))
+        end do
+      end if
 
       ! Set up pressure space
       call spdiscr_deriveSimpleDiscrSc (p_rlvl%rdiscr%RspatialDiscr(1), &
-          celemPres, ccubature, p_rlvl%rdiscr%RspatialDiscr(ndim+1))
+          celemPres, ccubature, p_rlvl%rdiscr%RspatialDiscr(ncomp))
     
       ! Set up cubature info structure
       call spdiscr_createDefCubStructure(p_rlvl%rdiscr%RspatialDiscr(1), &
@@ -351,12 +407,13 @@ contains
   subroutine stdbg_initProjections(rproblem)
   type(t_problem), target, intent(inout) :: rproblem
   
-  integer :: i, j, ilcrs, ilmax, ndim
+  integer :: i, j, ilcrs, ilmax, ndim, ncomp
   type(t_level), pointer :: p_rlvlf, p_rlvlc
   
     ilcrs = rproblem%ilevelCoarse
     ilmax = rproblem%ilevelMax
     ndim = rproblem%Rlevels(ilcrs)%rdiscr%ndimension
+    ncomp = rproblem%Rlevels(ilcrs)%rdiscr%ncomponents
 
     ! Initialise multi-level projection for coarse level
     call output_line('Assembling multilevel projections...')
@@ -370,23 +427,23 @@ contains
       ! Create prolongation matrix structures
       call mlop_create2LvlMatrixStruct(p_rlvlc%rdiscr%RspatialDiscr(1), &
           p_rlvlf%rdiscr%RspatialDiscr(1), LSYSSC_MATRIX9, p_rlvlf%rmatProlVelo)
-      call mlop_create2LvlMatrixStruct(p_rlvlc%rdiscr%RspatialDiscr(ndim+1), &
-          p_rlvlf%rdiscr%RspatialDiscr(ndim+1), LSYSSC_MATRIX9, p_rlvlf%rmatProlPres)
+      call mlop_create2LvlMatrixStruct(p_rlvlc%rdiscr%RspatialDiscr(ncomp), &
+          p_rlvlf%rdiscr%RspatialDiscr(ncomp), LSYSSC_MATRIX9, p_rlvlf%rmatProlPres)
 
       ! Assemble prolongation matrices
       call mlop_build2LvlProlMatrix (p_rlvlc%rdiscr%RspatialDiscr(1),&
           p_rlvlf%rdiscr%RspatialDiscr(1), .true., p_rlvlf%rmatProlVelo)
-      call mlop_build2LvlProlMatrix (p_rlvlc%rdiscr%RspatialDiscr(ndim+1),&
-          p_rlvlf%rdiscr%RspatialDiscr(ndim+1), .true., p_rlvlf%rmatProlPres)
+      call mlop_build2LvlProlMatrix (p_rlvlc%rdiscr%RspatialDiscr(ncomp),&
+          p_rlvlf%rdiscr%RspatialDiscr(ncomp), .true., p_rlvlf%rmatProlPres)
 
       ! Initialise multi-level projection
       call mlprj_initProjectionDiscr (p_rlvlf%rprojection, p_rlvlf%rdiscr)
-      do j = 1, ndim
+      do j = 1, ncomp-1
         call mlprj_initMatrixProjection(&
             p_rlvlf%rprojection%RscalarProjection(1,j), p_rlvlf%rmatProlVelo)
       end do
       call mlprj_initMatrixProjection(&
-          p_rlvlf%rprojection%RscalarProjection(1,ndim+1), p_rlvlf%rmatProlPres)
+          p_rlvlf%rprojection%RscalarProjection(1,ncomp), p_rlvlf%rmatProlPres)
 
     end do
     
@@ -488,7 +545,13 @@ contains
   type(t_problem), target, intent(inout) :: rproblem
   
   type(t_boundaryRegion) :: rrgn
-  integer :: i
+  integer :: i, j, ncomp
+  
+    if(rproblem%ncompVelo .gt. 1) then
+      ncomp = 1
+    else
+      ncomp = rproblem%ndim
+    end if
   
     do i = rproblem%ilevelCoarse, rproblem%ilevelMax
 
@@ -496,11 +559,11 @@ contains
       call bcasm_initDiscreteBC(rproblem%Rlevels(i)%rdiscreteBC)
 
       call boundary_createRegion(rproblem%rbnd,1,0,rrgn)
-      rrgn%iproperties = BDR_PROP_WITHSTART
-      call bcasm_newDirichletBConRealBD (rproblem%Rlevels(i)%rdiscr,1,rrgn,&
-          rproblem%Rlevels(i)%rdiscreteBC, stdbg_aux_funcZeroBC2D)
-      call bcasm_newDirichletBConRealBD (rproblem%Rlevels(i)%rdiscr,2,rrgn,&
-          rproblem%Rlevels(i)%rdiscreteBC, stdbg_aux_funcZeroBC2D)
+      rrgn%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
+      do j = 1, ncomp
+        call bcasm_newDirichletBConRealBD (rproblem%Rlevels(i)%rdiscr,j,rrgn,&
+            rproblem%Rlevels(i)%rdiscreteBC, stdbg_aux_funcZeroBC2D)
+      end do
       
       ! Assign BCs to system matrix
       rproblem%Rlevels(i)%rmatSys%p_rdiscreteBC => rproblem%Rlevels(i)%rdiscreteBC
@@ -520,6 +583,14 @@ contains
   type(t_boundaryRegion) :: rrgn
   integer :: i
   
+    ! ensure that we have a scalar velocity space
+    if(rproblem%ncompVelo .ne. 1) then
+      call output_line("ERROR: Slip boundary conditions not available "//&
+        "for vector-valued Velocity spaces!", OU_CLASS_ERROR, OU_MODE_STD, 'stdbg_initSlipBCs')
+      call sys_halt()
+    end if
+  
+    ! loop over all levels
     do i = rproblem%ilevelCoarse, rproblem%ilevelMax
 
       ! Initialise the discrete BC structure
@@ -565,7 +636,13 @@ contains
   type(t_problem), target, intent(inout) :: rproblem
   
   type(t_boundaryRegion) :: rrgn
-  integer :: i
+  integer :: i, j, ncomp
+  
+    if(rproblem%ncompVelo .gt. 1) then
+      ncomp = 1
+    else
+      ncomp = rproblem%ndim
+    end if
   
     do i = rproblem%ilevelCoarse, rproblem%ilevelMax
 
@@ -575,26 +652,28 @@ contains
       ! Bottom edge: u = 0
       call boundary_createRegion(rproblem%rbnd,1,1,rrgn)
       rrgn%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
-      call bcasm_newDirichletBConRealBD (rproblem%Rlevels(i)%rdiscr,1,rrgn,&
-          rproblem%Rlevels(i)%rdiscreteBC, stdbg_aux_funcZeroBC2D)
-      call bcasm_newDirichletBConRealBD (rproblem%Rlevels(i)%rdiscr,2,rrgn,&
-          rproblem%Rlevels(i)%rdiscreteBC, stdbg_aux_funcZeroBC2D)
+      do j = 1, ncomp
+        call bcasm_newDirichletBConRealBD (rproblem%Rlevels(i)%rdiscr,j,rrgn,&
+            rproblem%Rlevels(i)%rdiscreteBC, stdbg_aux_funcZeroBC2D)
+      end do
 
       ! Top edge: u = 0
       call boundary_createRegion(rproblem%rbnd,1,3,rrgn)
       rrgn%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
-      call bcasm_newDirichletBConRealBD (rproblem%Rlevels(i)%rdiscr,1,rrgn,&
-          rproblem%Rlevels(i)%rdiscreteBC, stdbg_aux_funcZeroBC2D)
-      call bcasm_newDirichletBConRealBD (rproblem%Rlevels(i)%rdiscr,2,rrgn,&
-          rproblem%Rlevels(i)%rdiscreteBC, stdbg_aux_funcZeroBC2D)
+      do j = 1, ncomp
+        call bcasm_newDirichletBConRealBD (rproblem%Rlevels(i)%rdiscr,j,rrgn,&
+            rproblem%Rlevels(i)%rdiscreteBC, stdbg_aux_funcZeroBC2D)
+      end do
 
-      ! Left edge: u1 = 0, u2 = par-profile
+      ! Left edge: u1 = par-profile, u2 = 0
       call boundary_createRegion(rproblem%rbnd,1,4,rrgn)
       rrgn%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
       call bcasm_newDirichletBConRealBD (rproblem%Rlevels(i)%rdiscr,1,rrgn,&
-          rproblem%Rlevels(i)%rdiscreteBC, stdbg_aux_funcZeroBC2D)
-      call bcasm_newDirichletBConRealBD (rproblem%Rlevels(i)%rdiscr,1,rrgn,&
           rproblem%Rlevels(i)%rdiscreteBC, stdbg_aux_funcParProfileBC2D)
+      if(ncomp .eq. 2) then
+        call bcasm_newDirichletBConRealBD (rproblem%Rlevels(i)%rdiscr,2,rrgn,&
+            rproblem%Rlevels(i)%rdiscreteBC, stdbg_aux_funcZeroBC2D)
+      end if
       
       ! Assign BCs to system matrix
       rproblem%Rlevels(i)%rmatSys%p_rdiscreteBC => rproblem%Rlevels(i)%rdiscreteBC
@@ -638,16 +717,20 @@ contains
   
   ! ***********************************************************************************************
 
-  subroutine stdbg_initSystem(rproblem, rsystem, ilevel)
-  type(t_problem), target, intent(in) :: rproblem
+  subroutine stdbg_initSystem(rsystem, rproblem, ilevel)
   type(t_system), intent(out) :: rsystem
+  type(t_problem), target, intent(in) :: rproblem
   integer, intent(in) :: ilevel
-!  type(t_collection), intent(inout) :: rcollection
   
   type(t_level), pointer :: p_rlvl
   
+    ! store problem pointer
+    rsystem%p_rproblem => rproblem
+
+    ! store system level
     rsystem%ilevel = ilevel
     
+    ! fetch problem level
     p_rlvl => rproblem%Rlevels(ilevel)
 
     ! Create three vectors
@@ -686,10 +769,8 @@ contains
 
   ! ***********************************************************************************************
   
-  subroutine stdbg_initMultigrid(rproblem, rsystem, rparam)
-  type(t_problem), target, intent(in) :: rproblem
+  subroutine stdbg_initMultigrid(rsystem)
   type(t_system), target, intent(inout) :: rsystem
-  type(t_parlist), intent(inout) :: rparam
 
   type(t_linsolNode), pointer :: p_rsmoother, p_rsolver
   type(t_linsolMG2LevelInfo), pointer :: p_rlevelInfo
@@ -699,11 +780,11 @@ contains
   real(DP) :: ddamping
   
     ilvl = rsystem%ilevel
-    ilcrs = rproblem%ilevelCoarse
+    ilcrs = rsystem%p_rproblem%ilevelCoarse
     
     ! fetch MG parameters
-    call parlst_getvalue_int(rparam, '', 'SMOOTH_STEPS', nsmoothSteps, 4)
-    call parlst_getvalue_double(rparam, '', 'SMOOTH_DAMP', ddamping, 1.0_DP)
+    call parlst_getvalue_int(rsystem%p_rproblem%p_rparam, '', 'SMOOTH_STEPS', nsmoothSteps, 4)
+    call parlst_getvalue_double(rsystem%p_rproblem%p_rparam, '', 'SMOOTH_DAMP', ddamping, 1.0_DP)
     
     ! Initialise multigrid
     call linsol_initMultigrid2 (rsystem%p_rsolver, ilvl-ilcrs+1, rsystem%p_RfilterChain)
@@ -732,32 +813,28 @@ contains
       p_rlevelInfo%p_rpostsmoother => p_rsmoother
 
       ! Attach our user-defined projection to the level.
-      call linsol_initProjMultigrid2Level(p_rlevelInfo, rproblem%Rlevels(i)%rprojection)
+      call linsol_initProjMultigrid2Level(p_rlevelInfo, rsystem%p_rproblem%Rlevels(i)%rprojection)
 
     end do
     
     ! Set the output level of the solver to 2 for some output
-    call parlst_getvalue_int(rparam, '', 'IOUTPUT', rsystem%p_rsolver%ioutputLevel, 0)
+    call parlst_getvalue_int(rsystem%p_rproblem%p_rparam, '', 'IOUTPUT', rsystem%p_rsolver%ioutputLevel, 0)
     rsystem%p_rsolver%nminIterations = 1
     rsystem%p_rsolver%nmaxIterations = 1
-    !call parlst_getvalue_int(rparam, '', 'MIN_ITER', rsystem%p_rsolver%nminIterations, 0)
-    !call parlst_getvalue_int(rparam, '', 'MAX_ITER', rsystem%p_rsolver%nmaxIterations, 1000)
-    !call parlst_getvalue_double(rparam, '', 'EPSREL', rsystem%p_rsolver%depsRel, 1E-8_DP)
-    !call parlst_getvalue_double(rparam, '', 'EPSABS', rsystem%p_rsolver%depsAbs, 1E-11_DP)
     
-    ! initialise iteration control
-    !call itc_initIteration(rsystem%riter)
-    call parlst_getvalue_int(rparam, '', 'MIN_ITER', rsystem%riter%nminIterations, 0)
-    call parlst_getvalue_int(rparam, '', 'MAX_ITER', rsystem%riter%nmaxIterations, 1000)
-    call parlst_getvalue_double(rparam, '', 'EPSREL', rsystem%riter%dtolRel, 1E-8_DP)
-    call parlst_getvalue_double(rparam, '', 'EPSABS', rsystem%riter%dtolAbs, 1E-11_DP)
-    call parlst_getvalue_double(rparam, '', 'STAG_RATE', rsystem%riter%dstagRate, 0.95_DP)
-    call parlst_getvalue_int(rparam, '', 'STAG_ITER', rsystem%riter%nstagIter, 0)
-    
+    ! parse iteration control parameters
+    rsystem%riter%nminIterations = 0
+    rsystem%riter%nmaxIterations = 1000
+    rsystem%riter%dtolRel = 1E-8_DP
+    rsystem%riter%dtolAbs = 1E-11_DP
+    rsystem%riter%dstagRate = 0.95_DP
+    rsystem%riter%nstagIter = 3
+    call itc_getParamsFromParlist(rsystem%riter, "ITERCTRL", rsystem%p_rproblem%p_rparam)
+
     ! Attach the system matrix to the solver.
     allocate(Rmatrices(ilcrs:ilvl))
     do i = ilcrs, ilvl
-      call lsysbl_duplicateMatrix (rproblem%Rlevels(i)%rmatSys,&
+      call lsysbl_duplicateMatrix (rsystem%p_rproblem%Rlevels(i)%rmatSys,&
           Rmatrices(i),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
     end do
     call linsol_setMatrices(rsystem%p_rsolver,Rmatrices(ilcrs:ilvl))
@@ -770,14 +847,12 @@ contains
 
   ! ***********************************************************************************************
   
-  subroutine stdbg_solve(rproblem, rsystem, rparam)
-  type(t_problem), target, intent(inout) :: rproblem
+  subroutine stdbg_solve(rsystem)
   type(t_system), intent(inout) :: rsystem
-  type(t_parlist), intent(inout) :: rparam
     
   type(t_level), pointer :: p_rlvl
   type(t_matrixBlock), pointer :: p_rmatSys
-  integer :: ierror, ilogRes, i, n
+  integer :: ierror, ilogRes, i, ncomp
   real(DP) :: ddef, ddefVelo, ddefPres, ddefDiv
   integer, dimension(4) :: Cnorms = LINALG_NORMEUCLID
   real(DP), dimension(4) :: Dnorms
@@ -796,16 +871,14 @@ contains
     end if
     
     ! get the problem level
-    p_rmatSys => rproblem%Rlevels(rsystem%ilevel)%rmatSys
+    p_rmatSys => rsystem%p_rproblem%Rlevels(rsystem%ilevel)%rmatSys
 
-    call parlst_getvalue_int(rparam, '', 'ILOGRES', ilogRes, 0)
+    call parlst_getvalue_int(rsystem%p_rproblem%p_rparam, '', 'ILOGRES', ilogRes, 0)
     
-    n = p_rmatSys%nblocksPerRow-1
+    ncomp = p_rmatSys%nblocksPerRow-1
     
     ! Solve...
     if(ilogRes .gt. 0) then
-      !call output_lbrk()
-      !call output_line('Solving...')
       !                                           1------------------1------------------1------------------1
       call output_line(" Iter  Defect             |f_u - A*u|_2      |D*u|_2            |f_p - B*p|_2")
       call output_line("----------------------------------------------------------------------------------")
@@ -831,17 +904,18 @@ contains
       if(iand(ilogRes,1) .ne. 0) then
         call lsysbl_vectorNormBlock(rsystem%rvecDefVelo, Cnorms, Dnorms)
         ddefVelo = 0.0_DP
-        do i = 1, n
+        do i = 1, ncomp
           ddefVelo = ddefVelo + Dnorms(i)**2
         end do
         ddefVelo = sqrt(ddefVelo)
-        ddefDiv  = Dnorms(n+1)
+        ddefDiv  = Dnorms(ncomp+1)
         ddefPres = lsysbl_vectorNorm(rsystem%rvecDefPres, LINALG_NORMEUCLID)
       end if
 
       ! push new defect
       if(rsystem%riter%cstatus .eq. ITC_STATUS_UNDEFINED) then
         call itc_initResidual(rsystem%riter, ddef)
+        rsystem%p_rproblem%p_Dstat(DSTAT_DEF_I, rsystem%ilevel) = ddef
       else
         call itc_pushResidual(rsystem%riter, ddef)
       end if
@@ -865,6 +939,12 @@ contains
       call lsysbl_vectorLinearComb(rsystem%rvecDef, rsystem%rvecSol, 1.0_DP, 1.0_DP)
     
     end do
+    
+    ! store solution statistics
+    rsystem%p_rproblem%p_Istat(ISTAT_NITER,rsystem%ilevel) = rsystem%riter%niterations
+    rsystem%p_rproblem%p_Istat(ISTAT_STATUS,rsystem%ilevel) = rsystem%riter%cstatus
+    rsystem%p_rproblem%p_Dstat(DSTAT_DEF_F, rsystem%ilevel) = ddef
+    rsystem%p_rproblem%p_Dstat(DSTAT_CRATE, rsystem%ilevel) = itc_calcConvRateReal(rsystem%riter)
 
     ! print summary if desired
     if(iand(ilogRes,2) .ne. 0) then
@@ -931,8 +1011,7 @@ contains
 
   ! ***********************************************************************************************
 
-  subroutine stdbg_filterPressureMean(rproblem, rsystem)
-  type(t_problem), target, intent(inout) :: rproblem
+  subroutine stdbg_filterPressureMean(rsystem)
   type(t_system), intent(inout) :: rsystem
   
   type(t_level), pointer :: p_rlvl
@@ -943,7 +1022,7 @@ contains
   integer :: cinfo, ncomp, niter
   
     ! fetch the level
-    p_rlvl => rproblem%Rlevels(rsystem%ilevel)
+    p_rlvl => rsystem%p_rproblem%Rlevels(rsystem%ilevel)
     
     ! assemble a matrix structure
     ncomp = p_rlvl%rdiscr%ncomponents
@@ -987,17 +1066,15 @@ contains
   
   ! ***********************************************************************************************
   
-  subroutine stdbg_writeVTK(rproblem, rsystem, rparam)
-  type(t_problem), intent(inout) :: rproblem
+  subroutine stdbg_writeVTK(rsystem)
   type(t_system), intent(inout) :: rsystem
-  type(t_parlist), intent(inout) :: rparam
   
   type(t_ucdExport) :: rexport
   character(len=SYS_STRLEN) :: sfilename, sucddir
   real(DP), dimension(:), pointer :: p_Du1, p_Du2, p_Du3, p_Dp
   
     ! fetch VTK filename from parameter list
-    call parlst_getvalue_string(rparam, '', 'VTKFILE', sfilename, '')
+    call parlst_getvalue_string(rsystem%p_rproblem%p_rparam, '', 'VTKFILE', sfilename, '')
     if(sfilename .eq. '') return
     
     !call output_lbrk()
@@ -1005,15 +1082,15 @@ contains
 
     ! Start UCD export to VTK file:
     if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = './ucd'
-    call ucd_startVTK (rexport, UCD_FLAG_STANDARD, rproblem%Rlevels(rsystem%ilevel)%rtria, &
-        trim(sucddir)//'/' // trim(sfilename) // '_' // trim(sys_sil(rproblem%idriver,4)) // &
+    call ucd_startVTK (rexport, UCD_FLAG_STANDARD, rsystem%p_rproblem%Rlevels(rsystem%ilevel)%rtria, &
+        trim(sucddir)//'/' // trim(sfilename) // '_' // trim(sys_sil(rsystem%p_rproblem%idriver,4)) // &
         '_lvl' // trim(sys_si0l(rsystem%ilevel,3)) //'.vtk')
     
     ! Allocate temporary memory for projection
-    allocate(p_Du1(rproblem%Rlevels(rsystem%ilevel)%rtria%NVT))
-    allocate(p_Du2(rproblem%Rlevels(rsystem%ilevel)%rtria%NVT))
-    allocate(p_Du3(rproblem%Rlevels(rsystem%ilevel)%rtria%NVT))
-    allocate(p_Dp(rproblem%Rlevels(rsystem%ilevel)%rtria%NEL))
+    allocate(p_Du1(rsystem%p_rproblem%Rlevels(rsystem%ilevel)%rtria%NVT))
+    allocate(p_Du2(rsystem%p_rproblem%Rlevels(rsystem%ilevel)%rtria%NVT))
+    allocate(p_Du3(rsystem%p_rproblem%Rlevels(rsystem%ilevel)%rtria%NVT))
+    allocate(p_Dp(rsystem%p_rproblem%Rlevels(rsystem%ilevel)%rtria%NEL))
     
     ! project and write pressure
     call spdp_projectToCells(rsystem%rvecSol%RvectorBlock(rsystem%rvecSol%nblocks), p_Dp)
@@ -1059,7 +1136,7 @@ contains
   
     call output_lbrk()
     call output_line("Mesh Statistics")
-    call output_line("---------------")
+    call output_line("===============")
     !                 12345-1234567890-1234567890-1234567890
     call output_line("Level        NVT        NMT        NEL")
     call output_line("--------------------------------------")
@@ -1083,7 +1160,7 @@ contains
   
     call output_lbrk()
     call output_line("Matrix Statistics")
-    call output_line("-----------------")
+    call output_line("=================")
     !                 12345-1234567890-1234567890-1234567890-1234567890-1234567890-1234567890
     call output_line("Level   #DOFs(V)   #DOFs(P)      #DOFs    NNZE(A)    NNZE(B)       NNZE")
     call output_line("-----------------------------------------------------------------------")
@@ -1103,6 +1180,55 @@ contains
     end do
   
   end subroutine
+  
+  ! ***********************************************************************************************
+  
+  subroutine stdbg_printSolverStatistics(rproblem)
+  type(t_problem), intent(in) :: rproblem
+  integer :: ilvl
+  
+    call output_lbrk()
+    call output_line("Solver Statistics")
+    call output_line("=================")
+    !                 12345-123456--123456789012345678-123456789012345678-1234567890123-123456789012
+    call output_line("Level  #ITER  Defect (initial)   Defect (final)     Conv-Rate     Status")
+    call output_line("---------------------------------------------------------------------------------")
+    do ilvl = rproblem%ilevelMin, rproblem%ilevelMax
+      call output_line(&
+        trim(sys_si(ilvl,3)) // "  " // &
+        trim(sys_si(rproblem%p_Istat(ISTAT_NITER,ilvl),7)) // "  " // &
+        trim(sys_sdel(rproblem%p_Dstat(DSTAT_DEF_I,ilvl),12)) // " " // &
+        trim(sys_sdel(rproblem%p_Dstat(DSTAT_DEF_F,ilvl),12)) // " " // &
+        trim(sys_sdel(rproblem%p_Dstat(DSTAT_CRATE,ilvl),7)) // " " // &
+        trim(fstatus(rproblem%p_Istat(ISTAT_STATUS,ilvl))))
+    end do
+  
+  contains
+    character(len=SYS_STRLEN) function fstatus(cstatus)
+    integer, intent(in) :: cstatus
+    
+      select case(cstatus)
+      case (ITC_STATUS_UNDEFINED)
+        fstatus = 'undefined'
+      case (ITC_STATUS_CONTINUE)
+        fstatus = 'continue' ! this should not happen...
+      case (ITC_STATUS_CONVERGED)
+        fstatus = 'converged'
+      case (ITC_STATUS_DIVERGED)
+        fstatus = 'diverged'
+      case (ITC_STATUS_MAX_ITER)
+        fstatus = 'max iter'
+      case (ITC_STATUS_STAGNATED)
+        fstatus = 'stagnated'
+      case (ITC_STATUS_ORBITING)
+        fstatus = 'orbiting'
+      case (ITC_STATUS_NAN_RES)
+        fstatus = 'NaN found'
+      case default
+        fstatus = 'unknown'
+      end select
+    end function
+  end subroutine
 
   ! ***********************************************************************************************
   
@@ -1115,17 +1241,17 @@ contains
     ! print statistics
     call output_lbrk()
     call output_line("Error Summary")
-    call output_line("-------------")
+    call output_line("=============")
     !                 12345-123456789012345678-123456789012345678-123456789012345678-123456789012345678
     call output_line("Level |u - u_h|_L2       |u - u_h|_H1       |div(u_h)|_L2      |p - p_h|_L2")
     call output_line("---------------------------------------------------------------------------------")
     do ilvl = rproblem%ilevelMin, rproblem%ilevelMax
       call output_line(&
         trim(sys_si(ilvl,3)) // "   " // &
-        trim(sys_sdel(rproblem%p_Dstat(1,ilvl),12)) // " " // &
-        trim(sys_sdel(rproblem%p_Dstat(2,ilvl),12)) // " " // &
-        trim(sys_sdel(rproblem%p_Dstat(3,ilvl),12)) // " " // &
-        trim(sys_sdel(rproblem%p_Dstat(4,ilvl),12)))
+        trim(sys_sdel(rproblem%p_Dstat(DSTAT_U_L2,ilvl),12)) // " " // &
+        trim(sys_sdel(rproblem%p_Dstat(DSTAT_U_H1,ilvl),12)) // " " // &
+        trim(sys_sdel(rproblem%p_Dstat(DSTAT_U_DIV,ilvl),12)) // " " // &
+        trim(sys_sdel(rproblem%p_Dstat(DSTAT_P_L2,ilvl),12)))
     end do
     call output_lbrk()
     

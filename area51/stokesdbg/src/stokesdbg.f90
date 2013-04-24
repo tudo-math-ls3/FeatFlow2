@@ -22,7 +22,6 @@ implicit none
 type(t_parlist) :: rparam
 character(LEN=256) :: sLogFile, sDatFile
 integer :: idriver
-
   
   ! The very first thing in every application:
   ! Initialise system-wide settings:

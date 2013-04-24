@@ -22,9 +22,9 @@ implicit none
 private
 
 public :: stokesdbg_run2d
-  
+
 contains
-  
+
   ! ***************************************************************************
 
 !<subroutine>
@@ -69,15 +69,15 @@ contains
     call parlst_getvalue_int(rparam, '', 'MESH', imesh, 0)
     select case(imesh)
     case (0)
-      call stdbg_initTriangulation2D(rproblem, rparam, 'QUAD')
+      call stdbg_initTriangulation2D(rproblem, 'QUAD')
     case (1)
-      call stdbg_initTriangulation2D(rproblem, rparam, 'QUADX4R')
+      call stdbg_initTriangulation2D(rproblem, 'QUADX4R')
     case (2)
-      call stdbg_initTriangulation2D(rproblem, rparam, 'QUADIRR2')
+      call stdbg_initTriangulation2D(rproblem, 'QUADIRR2')
     end select
 
     ! initialise discretisations
-    call stdbg_initDiscretisation(rproblem, rparam)
+    call stdbg_initDiscretisation(rproblem)
     
     ! initialise multilevel projections
     call stdbg_initProjections(rproblem)
@@ -86,7 +86,7 @@ contains
     call stdbg_initMatrices(rproblem)
     
     ! initialise BCs
-    call stdrv_initBoundaryConditions(rproblem, rparam, idriver)
+    call stdrv_initBoundaryConditions(rproblem)
     
     ! loop over all levels
     call output_lbrk()
@@ -98,7 +98,7 @@ contains
       rcollect%IquickAccess(2) = ilvl
 
       ! initialise system
-      call stdbg_initSystem(rproblem, rsystem, ilvl)
+      call stdbg_initSystem(rsystem, rproblem, ilvl)
 
       ! Assemble the RHS vectors
       rcollect%IquickAccess(5) = 1
@@ -123,16 +123,16 @@ contains
       call vecfil_discreteBCdef(rsystem%rvecRhsPres) !???
 
       ! initialise filter chain
-      call stdrv_initFilterChain(rproblem, rsystem, rparam)
+      call stdrv_initFilterChain(rsystem)
 
       ! initialise multigrid solver
-      call stdbg_initMultigrid(rproblem, rsystem, rparam)
+      call stdbg_initMultigrid(rsystem)
     
       ! solve system
-      call stdbg_solve(rproblem, rsystem, rparam)
+      call stdbg_solve(rsystem)
       
       ! post-process solution
-      call stdrv_postProcSol(rproblem, rsystem, rparam)
+      call stdrv_postProcSol(rsystem)
       
       ! compute errors
       ! Set up the error structure for velocity
@@ -149,18 +149,18 @@ contains
       call pperr_scalarVec(rerrorP, stdrv_funcPressure2D, rcollect);
     
       ! Calculate errors of velocity field
-      rproblem%p_Dstat(1,rsystem%ilevel) = sqrt(DerrorUL2(1)**2 + DerrorUL2(2)**2)
-      rproblem%p_Dstat(2,rsystem%ilevel) = sqrt(DerrorUH1(1)**2 + DerrorUH1(2)**2)
+      rproblem%p_Dstat(DSTAT_U_L2,rsystem%ilevel) = sqrt(DerrorUL2(1)**2 + DerrorUL2(2)**2)
+      rproblem%p_Dstat(DSTAT_U_H1,rsystem%ilevel) = sqrt(DerrorUH1(1)**2 + DerrorUH1(2)**2)
       
       ! Store error of pressure
-      rproblem%p_Dstat(4,rsystem%ilevel) = derrorPL2(1)
+      rproblem%p_Dstat(DSTAT_P_L2,rsystem%ilevel) = derrorPL2(1)
     
       ! Calculate divergence of velocity field
-      call stdbg_aux_calcDiv2D(rproblem%p_Dstat(3,rsystem%ilevel), &
+      call stdbg_aux_calcDiv2D(rproblem%p_Dstat(DSTAT_U_DIV,rsystem%ilevel), &
         rsystem%rvecSol%RvectorBlock(1:2), rproblem%Rlevels(ilvl)%rcubInfo)
 
       ! write VTK if desired
-      call stdbg_writeVTK(rproblem, rsystem, rparam)
+      call stdbg_writeVTK(rsystem)
 
       ! release system
       call stdbg_doneSystem(rsystem)
@@ -170,6 +170,7 @@ contains
     ! print statistics
     call stdbg_printMeshStatistics2D(rproblem)
     call stdbg_printMatrixStatistics(rproblem)
+    call stdbg_printSolverStatistics(rproblem)
     call stdbg_printErrorStatistics(rproblem)
   
     ! release problem

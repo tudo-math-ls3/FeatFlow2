@@ -40,7 +40,7 @@ contains
   type(t_collection), intent(inout), optional                 :: rcollection
   real(DP), dimension(:), intent(out)                         :: Dvalues
 
-    Dvalues(1) = 0.0_DP
+    Dvalues = 0.0_DP
 
   end subroutine
 
@@ -60,14 +60,14 @@ contains
 
   real(DP) :: y
   
+    ! clear the output array; for vector-valued problems, this will set the Y-velocity to zero
+    Dvalues = 0.0_DP
     if ((dwhere .ge. 3.0_DP) .and. (dwhere .le. 4.0_DP)) then
       y = 4.0_DP-dwhere
       Dvalues(1) = y*(1.0_DP-y)
-    else
-      Dvalues(1) = 0.0_DP
     end if
-
   end subroutine
+
 
   ! ***********************************************************************************************
 

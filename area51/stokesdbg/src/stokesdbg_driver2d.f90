@@ -8,16 +8,14 @@ contains
 
   ! ***********************************************************************************************
 
-  subroutine stdrv_initBoundaryConditions(rproblem, rparam, idriver)
+  subroutine stdrv_initBoundaryConditions(rproblem)
   type(t_problem), intent(inout) :: rproblem
-  type(t_parlist), intent(inout) :: rparam
-  integer, intent(in) :: idriver
   
   integer :: ivelo
   
-    call parlst_getvalue_int(rparam, '', 'VORTEX_VELO', ivelo, 0)
+    call parlst_getvalue_int(rproblem%p_rparam, '', 'VORTEX_VELO', ivelo, 0)
 
-    select case(idriver)
+    select case(rproblem%idriver)
     case(2001)
       call stdbg_initQuadPoiseulleBCs(rproblem)
       
@@ -35,12 +33,10 @@ contains
 
   ! ***********************************************************************************************
   
-  subroutine stdrv_initFilterChain(rproblem, rsystem, rparam)
-  type(t_problem), intent(inout) :: rproblem
+  subroutine stdrv_initFilterChain(rsystem)
   type(t_system), intent(inout) :: rsystem
-  type(t_parlist), intent(inout) :: rparam
   
-    select case(rproblem%idriver)
+    select case(rsystem%p_rproblem%idriver)
     case (2001)
       allocate(rsystem%p_RfilterChain(1))
       rsystem%p_RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
@@ -57,15 +53,13 @@ contains
 
   ! ***********************************************************************************************
   
-  subroutine stdrv_postProcSol(rproblem, rsystem, rparam)
-  type(t_problem), intent(inout) :: rproblem
+  subroutine stdrv_postProcSol(rsystem)
   type(t_system), intent(inout) :: rsystem
-  type(t_parlist), intent(inout) :: rparam
   
-    select case(rproblem%idriver)
+    select case(rsystem%p_rproblem%idriver)
     case (2002)
       ! filter pressure mean
-      call stdbg_filterPressureMean(rproblem, rsystem)
+      call stdbg_filterPressureMean(rsystem)
     end select
   end subroutine
 
