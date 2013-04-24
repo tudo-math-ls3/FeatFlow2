@@ -21,7 +21,8 @@
 \usepackage{rotating}
 
 % For generating an index
-\usepackage{makeidx}
+%\usepackage{makeidx}
+\usepackage{multind}
 
 % Have clickable items in table of contents, index, etc.
 % (Only in pdf version)
@@ -40,7 +41,13 @@
 }
 
 % For generating an index
-\makeindex
+\makeindex{modules}
+\makeindex{constants}
+\makeindex{types}
+\makeindex{variables}
+\makeindex{subroutines}
+\makeindex{functions}
+\makeindex{interfaces}
 
 \newcommand{\scarc}{\textsc{ScaRC} }
 \newcommand{\devisor}{\textsc{DeViSoR} }
@@ -140,7 +147,8 @@ WWW: http://www.featflow.de/feast, Email:feast@mathematik.uni-dortmund.de
 
 \end{titlepage}
 
-
+% ---- Table of Contents ----
+%
 \tableofcontents
 
 %######################################################################
@@ -160,12 +168,20 @@ WWW: http://www.featflow.de/feast, Email:feast@mathematik.uni-dortmund.de
 
 % ---- Bibliography ----
 %
-
+\addcontentsline{toc}{chapter}{Bibliography}
 \nocite{Turek1997c,Turek1998}
 \bibliography{fbmathlit}
 
 % ---- Index ----
 %
-\printindex
+\chapter*{Index}
+\addcontentsline{toc}{chapter}{Index}
+\printindex{modules}{Index of Modules}
+\printindex{constants}{Index of Constants}
+\printindex{types}{Index of Derived Types}
+\printindex{variables}{Index of Variables}
+\printindex{subroutines}{Index of Subroutines}
+\printindex{functions}{Index of Functions}
+\printindex{interfaces}{Index of Interfaces}
 
 \end{document}

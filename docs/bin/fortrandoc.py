@@ -507,13 +507,14 @@ class LaTeXExporter:
 \documentclass[a4paper,draft]{article}
 """
     DEFINITIONS = r"""
-\newcommand{\module}[2]{\chapter{Module #1 (#2)}} % name, filename
+\newcommand{\module}[2]{\chapter{Module #1 (#2)}\index{modules}{#1}} % name, filename
 \newcommand{\modulepurpose}{\section{Purpose}}
-\newcommand{\function}[1]{\textbf{function} #1\index{#1}} % name
-\newcommand{\subroutine}[1]{\textbf{subroutine} #1\index{#1}} % name
-\newcommand{\variable}[2]{\texttt{#1} \textbf{#2}\index{#2}} % type, name
-\newcommand{\constant}[1]{\texttt{#1}\index{#1}} % name
-\newcommand{\interface}[1]{\texttt{interface #1}\index{#1}}
+\newcommand{\function}[1]{\textbf{function} #1\index{functions}{#1}} % name
+\newcommand{\subroutine}[1]{\textbf{subroutine} #1\index{subroutines}{#1}} % name
+\newcommand{\variable}[2]{\texttt{#1} \textbf{#2}\index{variables}{#2}} % type, name
+\newcommand{\type}[2]{\texttt{#1} \textbf{#2}} % type, name
+\newcommand{\constant}[2]{\texttt{#1} \textbf{#2}\index{constants}{#2}} % type, name
+\newcommand{\interface}[1]{\texttt{interface #1}\index{interfaces}{#1}}
 \newcommand{\sectionvariables}[1]{\subsubsection{#1}} % name
 \newcommand{\sectionerrors}{\subsubsection{Error Codes}}
 \newcommand{\sectiontypes}{\section{Types}}
@@ -530,7 +531,7 @@ class LaTeXExporter:
 \newenvironment{desc}{\list{}{\rightmargin0pt\leftmargin20pt}\item\relax}{\endlist}
 \newenvironment{functiondef}[1]{\begin{description}\item[{}]\relax#1}{\end{description}}
 \newenvironment{subroutinedef}[1]{\begin{description}\item[{}]\relax#1}{\end{description}}
-\newenvironment{typedef}[1]{\begin{description}\item[{}]\relax Type #1}{\end{description}}
+\newenvironment{typedef}[1]{\begin{description}\item[{}]\relax Type #1\index{types}{#1}}{\end{description}}
 \newenvironment{variabledef}{}{}
 \newenvironment{vargroup}[1]{\begin{description}\item[{}]\relax\textbf{#1}\\}{\end{description}}
 \clubpenalty = 10000
@@ -562,7 +563,7 @@ class LaTeXExporter:
         if module.publics:
             f.writelines([self.cmd('sectionpublics'), '\n\n'])
             for var in module.publics:
-                self.write_variable_or_group(var, f)
+                self.write_item_or_group(var, f)
 
         if module.types:
             f.writelines(['\sectiontypes\n\n'])
@@ -572,17 +573,17 @@ class LaTeXExporter:
         if module.constants:
             f.writelines([self.cmd('sectionconstants'), '\n\n'])
             for var in module.constants:
-                self.write_variable_or_group(var, f)
+                self.write_item_or_group(var, f, 'constant')
 
         if module.global_variables:
             f.writelines([self.cmd('sectionglobals'), '\n\n'])
             for var in module.global_variables:
-                self.write_variable_or_group(var, f)
+                self.write_item_or_group(var, f)
 
         if module.private_variables:
             f.writelines([self.cmd('sectionprivates'), '\n\n'])
             for var in module.private_variables:
-                self.write_variable_or_group(var, f)
+                self.write_item_or_group(var, f)
 
         if module.interfaces:
             f.writelines([self.cmd('sectioninterfaces'), '\n\n'])
@@ -618,7 +619,7 @@ class LaTeXExporter:
                 self.end('desc')
             ])
         for var in typedef.variables:
-            self.write_variable_or_group(var, f)
+            self.write_item_or_group(var, f)
         f.writelines([ self.end('typedef'), '\n\n' ])
 
     def write_subroutine(self, sub, f):
@@ -637,23 +638,23 @@ class LaTeXExporter:
         if sub.inputvars:
             f.writelines([self.cmd('sectionvariables', 'Input variables'), '\n\n'])
             for var in sub.inputvars:
-                self.write_variable_or_group(var, f)
+                self.write_item_or_group(var, f)
 
         if sub.inoutputvars:
             f.writelines([self.cmd('sectionvariables', 'Input/Output variables'), '\n\n'])
             for var in sub.inoutputvars:
-                self.write_variable_or_group(var, f)
+                self.write_item_or_group(var, f)
 
         if sub.outputvars:
             f.writelines([self.cmd('sectionvariables', 'Output variables'), '\n\n'])
             for var in sub.outputvars:
-                self.write_variable_or_group(var, f)
+                self.write_item_or_group(var, f)
 
         if sub.errors:
             f.writelines([self.cmd('sectionerrors'), '\n\n'])
             f.writelines([self.begin('description'), '\n'])
             for error, desc in sub.errors:
-                f.writelines([r'\item[\constant{%s}] %s' % (self.texify(error), self.texify(desc)), '\n'])
+                f.writelines([r'\item[\constant{}{%s}] %s' % (self.texify(error), self.texify(desc)), '\n'])
             f.writelines([self.end('description'), '\n\n'])
         #else:
         #    f.writelines([self.begin('desc'), 'Error codes missing.\n', self.end('desc')])
@@ -689,23 +690,23 @@ class LaTeXExporter:
         if fn.inputvars:
             f.writelines([self.cmd('sectionvariables', 'Input variables'), '\n\n'])
             for var in fn.inputvars:
-                self.write_variable_or_group(var, f)
+                self.write_item_or_group(var, f)
 
         if fn.inoutputvars:
             f.writelines([self.cmd('sectionvariables', 'Input/Output variables'), '\n\n'])
             for var in fn.inoutputvars:
-                self.write_variable_or_group(var, f)
+                self.write_item_or_group(var, f)
 
         if fn.outputvars:
             f.writelines([self.cmd('sectionvariables', 'Output variables'), '\n\n'])
             for var in fn.outputvars:
-                self.write_variable_or_group(var, f)
+                self.write_item_or_group(var, f)
 
         if fn.errors:
             f.writelines([self.cmd('sectionerrors'), '\n\n'])
             f.writelines([self.begin('description'), '\n'])
             for error, desc in fn.errors:
-                f.writelines([r'\item[\constant{%s}] %s' % (self.texify(error), self.texify(desc)), '\n'])
+                f.writelines([r'\item[\constant{}{%s}] %s' % (self.texify(error), self.texify(desc)), '\n'])
             f.writelines([self.end('description'), '\n\n'])
         #else:
         #    f.writelines([self.begin('desc'), 'Error codes missing.\n', self.end('desc')])
@@ -721,25 +722,25 @@ class LaTeXExporter:
             r'\pagebreak[0]', '\n\n'
         ])
                 
-    def write_variable_or_group(self, vg, f):
+    def write_item_or_group(self, vg, f, texvarid='variable'):
         if isinstance(vg, Group):
             f.writelines([self.begin('vargroup', vg.description), '\n'])
             for var in vg.variables:
-                self.write_variable_in_list(var, f)
+                self.write_variable_in_list(var, f, texvarid)
             f.writelines([self.end('vargroup'), '\n'])
         else:
-            self.write_variable_in_list(vg, f)
+            self.write_variable_in_list(vg, f, texvarid)
 
-    def write_variable_in_list(self, var, f):
+    def write_variable_in_list(self, var, f, texvarid='variable'):
         f.writelines(self.begin('variabledef'))
         if var.dimension:
             f.writelines([
-                self.cmd('variable', [var.vartype, var.name]), ', ',
+                self.cmd(texvarid, [var.vartype, var.name]), ', ',
                 self.cmd('texttt', var.dimension), '\n'
             ])
         else:
             f.writelines([
-                self.cmd('variable', [var.vartype, var.name]), '\n'
+                self.cmd(texvarid, [var.vartype, var.name]), '\n'
             ])
 
         if var.optional:
