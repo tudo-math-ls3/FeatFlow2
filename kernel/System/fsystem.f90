@@ -123,6 +123,9 @@
 !# 32.) sys_parseCommandLineArg
 !#      -> Parses a command line argument for an option
 !#
+!# 33.) sys_releaseGenericObject
+!#      -> Releases a generic object
+!#
 !# </purpose>
 !##############################################################################
 
@@ -208,18 +211,15 @@ module fsystem
   public :: sys_charArrayToString
   public :: sys_stringToHash
   public :: sys_stringToHashI64
-  public :: t_realPointer
-  public :: t_real2DPointer
-  public :: t_singlePointer
-  public :: t_single2DPointer
-  public :: t_intPointer
-  public :: t_int2DPointer
-  public :: t_sysconfig
   public :: sys_getNextToken
   public :: sys_countTokens
   public :: sys_triml
   public :: sys_trimr
   public :: sys_isNumeric
+  public :: sys_releaseGenericObject
+
+  public :: t_genericObject
+  public :: t_sysconfig
 
 !<constants>
 
@@ -358,54 +358,15 @@ module fsystem
 
 !<typeblock>
 
-  ! Emulation of an array of pointers to double precision vectors
-  type t_realPointer
-    real(DP), dimension(:), pointer :: ptr
-  end type
+  ! Generic object type
+  type t_genericObject
 
-!</typeblock>
+    ! Size of the generic object
+    integer :: isize = 0
 
-!<typeblock>
+    ! Encode data as an array of characters (one byte each)
+    character(len=1), dimension(:), pointer :: p_cdata => null()
 
-  ! Emulation of an array of pointers to 2D double precision vectors
-  type t_real2DPointer
-    real(DP), dimension(:,:), pointer :: ptr
-  end type
-
-!</typeblock>
-
-!<typeblock>
-
-  ! Emulation of an array of pointers to single precision vectors
-  type t_singlePointer
-    real(SP), dimension(:), pointer :: ptr
-  end type
-
-!</typeblock>
-
-!<typeblock>
-
-  ! Emulation of an array of pointers to 2D single precision vectors
-  type t_single2DPointer
-    real(SP), dimension(:), pointer :: ptr
-  end type
-
-!</typeblock>
-
-!<typeblock>
-
-  ! Emulation of an array of pointers to integer vectors
-  type t_intPointer
-    integer(I32), dimension(:), pointer :: ptr
-  end type
-
-!</typeblock>
-
-!<typeblock>
-
-  ! Emulation of an array of pointers to 2D integer vectors
-  type t_int2DPointer
-    integer(I32), dimension(:,:), pointer :: ptr
   end type
 
 !</typeblock>
@@ -3101,5 +3062,31 @@ contains
     sys_isNumeric = (e .eq. 0)
     
   end function sys_isNumeric
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sys_releaseGenericObject(rgenericObject)
+
+!<description>
+  ! This subroutine releases the content of the generic object
+!</description>
+
+!<inputoutput>
+  ! Generic object from which t content should be released
+  type(t_genericObject), intent(inout) :: rgenericObject
+!</inputoutput>
+!</subroutine>
+
+    ! Check if generic object has content
+    if (associated(rgenericObject%p_cdata)) then
+      deallocate(rgenericObject%p_Cdata)
+    end if
+
+    ! Reset size
+    rgenericObject%isize = 0
+
+  end subroutine
 
 end module fsystem
