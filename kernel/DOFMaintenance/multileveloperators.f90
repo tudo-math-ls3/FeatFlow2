@@ -1656,8 +1656,8 @@ contains
       ctrafoFine = elem_igetTrafoType(celementFine)
 
       ! Get the number of local DOF`s for trial and test functions
-      indofCoarse = elem_igetNDofLoc(celementCoarse)
-      indofFine = elem_igetNDofLoc(celementFine)
+      indofCoarse = elem_igetNDofLoc(celementCoarse) * elem_igetFeDimension(celementCoarse)
+      indofFine = elem_igetNDofLoc(celementFine) * elem_igetFeDimension(celementCoarse)
 
       ! Get the number of elements
       nelementsCoarse = min(p_rperfconfig%NELEMSIM, NELC)
@@ -1739,8 +1739,8 @@ contains
       if (NELF .eq. 0) cycle
 
       ! Get the number of local DOF`s for trial and test functions
-      indofCoarse = elem_igetNDofLoc(celementCoarse)
-      indofFine = elem_igetNDofLoc(celementFine)
+      indofCoarse = elem_igetNDofLoc(celementCoarse) * elem_igetFeDimension(celementCoarse)
+      indofFine = elem_igetNDofLoc(celementFine) * elem_igetFeDimension(celementFine)
 
       ! Get from the trial element space the type of coordinate system
       ! that is used there:
@@ -2297,8 +2297,8 @@ contains
 
       ! Get from the trial element space the type of coordinate system
       ! that is used there:
-      ctrafoCoarse = elem_igetTrafoType(celementCoarse)
-      ctrafoFine = elem_igetTrafoType(celementFine)
+      ctrafoCoarse = elem_igetTrafoType(celementCoarse) * elem_igetFeDimension(celementCoarse)
+      ctrafoFine = elem_igetTrafoType(celementFine) * elem_igetFeDimension(celementFine)
 
       ! Get the number of local DOF`s for trial and test functions
       indofCoarse = elem_igetNDofLoc(celementCoarse)
@@ -2398,8 +2398,8 @@ contains
       if (NELC .eq. 0) cycle
 
       ! Get the number of local DOF`s for trial and test functions
-      indofCoarse = elem_igetNDofLoc(celementCoarse)
-      indofFine = elem_igetNDofLoc(celementFine)
+      indofCoarse = elem_igetNDofLoc(celementCoarse) * elem_igetFeDimension(celementCoarse)
+      indofFine = elem_igetNDofLoc(celementFine) * elem_igetFeDimension(celementFine)
 
       ! Get from the trial element space the type of coordinate system
       ! that is used there:
@@ -3020,8 +3020,8 @@ contains
       ctrafoFine = elem_igetTrafoType(celementFine)
 
       ! Get the number of local DOF`s for trial and test functions
-      indofCoarse = elem_igetNDofLoc(celementCoarse)
-      indofFine = elem_igetNDofLoc(celementFine)
+      indofCoarse = elem_igetNDofLoc(celementCoarse) * elem_igetFeDimension(celementCoarse)
+      indofFine = elem_igetNDofLoc(celementFine) * elem_igetFeDimension(celementFine)
 
       ! Get the number of elements
       nelementsCoarse = min(p_rperfconfig%NELEMSIM, NELC)
@@ -3114,8 +3114,8 @@ contains
       if (NELC .eq. 0) cycle
 
       ! Get the number of local DOF`s for trial and test functions
-      indofCoarse = elem_igetNDofLoc(celementCoarse)
-      indofFine = elem_igetNDofLoc(celementFine)
+      indofCoarse = elem_igetNDofLoc(celementCoarse) * elem_igetFeDimension(celementCoarse)
+      indofFine = elem_igetNDofLoc(celementFine) * elem_igetFeDimension(celementFine)
 
       ! Get from the trial element space the type of coordinate system
       ! that is used there:
