@@ -1,0 +1,168 @@
+#################################################
+# Input file for FE comparer.
+#################################################
+
+# Name of the underlying parametrisation
+sparametrisation = "pre/bench1.prm"
+
+# Name of the underlying coarse mesh
+striangulation = "pre/bench1.tri"
+
+# Type of the underlying mesh.
+# =1: 1D
+# =2: 2D, given in sparametrisation and striangulation
+# =3: 3D, given in sparametrisation
+cmeshtype = 2
+
+# Number of solutions to read.
+# Each solution has its own section [SOLUTIONx].
+nsolutions = 4
+
+# Algebraic computation to apply to the solutions.
+# Automatic FE space conversions are applied upon copying.
+# =2: SOLUTION1=SOLUTION3, SOLUTION2=SOLUTION4, SOLUTION0=SOLUTION1-SOLUTION2, in each component
+# =3: SOLUTION1=SOLUTION3, SOLUTION2=SOLUTION4, SOLUTION0=(SOLUTION1-SOLUTION2)/SOLUTION1, in each component
+ccomputation = 3
+
+# Type of analysis.
+# =0: Stationary analysis
+# =1: Nonstationary analysis
+canalysis = 0
+
+# Type of output.
+# =0: No output
+# =1: VTK file
+cpostprocfile = 1
+
+# Output filename
+spostprocfilename = "post/result.vtk"
+
+# Compute ||SOLUTION0||_L2 at level ilevel
+cerrorL2 = 0
+
+# Compute ||SOLUTION0||_LH1 at level ilevel
+cerrorH1 = 0
+
+# Cubature rule to use for error computation
+scubature = AUTO_G5
+
+
+###################
+[SOLUTION-TEMPLATE]
+###################
+
+# Allows to specify a parent section to read instead of this section. 
+sparent=
+
+# Whether or not the solution is nonstationary.
+# =0: Stationary solution
+
+cnonstationary = 0
+
+# Underlying FE space and solution type
+# =   0: 2D mesh, Scalar solution, P0
+# =   1: 2D mesh, Scalar solution, P1
+# =   2: 2D mesh, Scalar solution, P2
+# =   3: 2D mesh, Scalar solution, P3
+# =  10: 2D mesh, Scalar solution, Q1
+# =  11: 2D mesh, Scalar solution, Q1
+# =  13: 2D mesh, Scalar solution, Q2
+# =  14: 2D mesh, Scalar solution, Q3
+# =1010: 2D mesh, 2D Velocity/pressure, Q1/Q1/Q1
+# =1012: 2D mesh, 2D Velocity/pressure, Q2/Q2/QP1
+# =1013: 2D mesh, 2D Velocity/pressure, Q3/Q3/DCQP2 (nonparametric)
+# =1030: 2D mesh, 2D Velocity/pressure, E030/E030/Q0
+# =1031: 2D mesh, 2D Velocity/pressure, E031/E031/Q0
+# =1130: 2D mesh, 2D Velocity/pressure, EM30/EM30/Q0
+# =1131: 2D mesh, 2D Velocity/pressure, EM31/EM31/Q0
+# =1211: 2D mesh, 2D Velocity/pressure, Q1/Q1/Q1, all discontinuous
+
+cfespace = 0
+
+# Refinement level w.r.t. the global mesh.
+
+ireflevel = 2
+
+# Filename of the file containing the solution
+
+sfilename = ""
+
+# Component to analyse.
+# =0: Analyse all components.
+
+icomponent = 0
+
+
+###########
+[SOLUTION0]
+###########
+
+# Whether or not the solution is nonstationary.
+# =0: Stationary solution
+
+cnonstationary = 0
+
+# Underlying FE space and solution type
+
+cfespace = 1211
+
+# Refinement level w.r.t. the global mesh.
+
+ireflevel = 6
+
+# Filename of the file containing the solution
+
+sfilename = ""
+
+# Component to analyse.
+# =0: Analyse all components.
+
+icomponent = 0
+
+
+###########
+[SOLUTION1]
+###########
+
+sparent=SOLUTION0
+
+
+###########
+[SOLUTION2]
+###########
+
+sparent=SOLUTION0
+
+
+###########
+[SOLUTION3]
+###########
+
+# Underlying FE space and solution type
+
+cfespace = 1012
+
+# Refinement level w.r.t. the global mesh.
+
+ireflevel = 5
+
+# Filename of the file containing the solution
+
+sfilename = "pre/u_q2lv5ref.sol"
+
+
+###########
+[SOLUTION4]
+###########
+
+# Underlying FE space and solution type
+
+cfespace = 1013
+
+# Refinement level w.r.t. the global mesh.
+
+ireflevel = 3
+
+# Filename of the file containing the solution
+
+sfilename = "pre/u_q3l3.sol"
