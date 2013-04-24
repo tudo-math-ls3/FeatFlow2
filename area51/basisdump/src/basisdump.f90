@@ -28,9 +28,10 @@ implicit none
 type(t_parlist) :: rparam
 type(t_triangulation) :: rtria, rtriaDump
 type(t_evalElementSet) :: reval
-integer :: nref, nbasis, nverts, ibas, ivt, ndone, ntodo
+integer :: nref, nbasis, nverts, ibas, ivt, ndone, ntodo, nmaxDer, ider
 integer(I32) :: celement, cshape, cevalTag, ctrafoType
-real(DP), dimension(:,:), pointer :: p_Dvtx, p_Dphi
+real(DP), dimension(:,:), pointer :: p_Dvtx
+real(DP), dimension(:,:,:), pointer :: p_Dphi
 integer, dimension(1), parameter :: IelList = (/1/)
 real(DP), dimension(:,:,:,:), pointer :: p_Dbas
 logical, dimension(EL_MAXNDER) :: Bder
@@ -92,16 +93,19 @@ type(t_ucdExport) :: rexport
     
   ! fetch the trafo type
   ctrafoType = elem_igetTrafoType(celement)
+  
+  ! fetch the maximum derivative
+  nmaxDer = min(elem_getMaxDerivative(celement),1+rtria%ndim)
 
   ! set up bder
   Bder(:) = .false.
-  Bder(DER_FUNC) = .true.
+  Bder(1:nmaxDer) = .true.
     
   ! allocate a basis function array
-  allocate(p_Dphi(nverts, nbasis))
+  allocate(p_Dphi(nverts, nmaxDer, nbasis))
     
   ! allocate basis function evaluation array
-  allocate(p_Dbas(nbasis,elem_getMaxDerivative(celement), 100, 1))
+  allocate(p_Dbas(nbasis,nmaxDer, 100, 1))
 
     
   call output_line("Evaluating basis functions...")
@@ -131,8 +135,10 @@ type(t_ucdExport) :: rexport
       
     ! loop over all basis functions
     do ibas = 1, nbasis
-      do ivt = 1, ntodo
-        p_Dphi(ndone+ivt, ibas) = p_Dbas(ibas, DER_FUNC, ivt, 1)
+      do ider = 1, nmaxDer
+        do ivt = 1, ntodo
+          p_Dphi(ndone+ivt, ider, ibas) = p_Dbas(ibas, ider, ivt, 1)
+        end do
       end do
     end do
       
@@ -151,9 +157,11 @@ type(t_ucdExport) :: rexport
       trim(sucddir)//"/"//trim(selement)  // "_lvl" // trim(sys_sil(nref,4)) //".vtk")
     
   ! loop over all basis functions
-  do ibas = 1, nbasis
-    ! write UCD variable
-    call ucd_addVariableVertexBased (rexport, 'phi_' // trim(sys_si0l(ibas,2)), p_Dphi(:,ibas))
+  do ider = 1, nmaxDer
+    do ibas = 1, nbasis
+      ! write UCD variable
+      call ucd_addVariableVertexBased (rexport, trim(funcName(ibas,ider)), p_Dphi(:,ider,ibas))
+    end do
   end do
     
   ! write and close ucd
@@ -171,6 +179,21 @@ type(t_ucdExport) :: rexport
   call storage_done()
 
 contains
+
+  character(len=SYS_STRLEN) function funcName(ibas, ider)
+  integer, intent(in) :: ibas, ider
+  
+    select case(ider)
+    case (1)
+      funcName = "phi_" // trim(sys_si0l(ibas,2))
+    case (2)
+      funcName = "dx-phi_" // trim(sys_si0l(ibas,2))
+    case (3)
+      funcName = "dy-phi_" // trim(sys_si0l(ibas,2))
+    case (4)
+      funcName = "dz-phi_" // trim(sys_si0l(ibas,2))
+    end select
+  end function
 
   subroutine createRefMesh(rtria, cshape)
   type(t_triangulation), intent(out) :: rtria

@@ -88,6 +88,5 @@
 		<Filter Name="Data Files" Filter="dat">
 		<File RelativePath=".\data\basisdump.dat"/></Filter>
 		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
-		<File RelativePath=".\src\basisdump.f90"/>
-		<File RelativePath=".\src\basisdump_quad.f90"/></Filter></Files>
+		<File RelativePath=".\src\basisdump.f90"/></Filter></Files>
 	<Globals/></VisualStudioProject>
