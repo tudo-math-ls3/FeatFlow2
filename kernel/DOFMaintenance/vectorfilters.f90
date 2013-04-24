@@ -928,8 +928,8 @@ contains
           p_rtria, IelList, ctrafo, Dpoints)
 
       ! update domain volume
-      dvolume = dvolume + 0.25_DP * (reval%p_Ddetj(1,1) + reval%p_Ddetj(2,1) &
-                                   + reval%p_Ddetj(3,1) + reval%p_Ddetj(4,1))
+      dvolume = dvolume + reval%p_Ddetj(1,1) + reval%p_Ddetj(2,1) &
+                        + reval%p_Ddetj(3,1) + reval%p_Ddetj(4,1)
 
       ! Evaluate the element
       call elem_eval_DCQP1_2D(EL_DCQP1_2D, reval, Bder, Dbas)
@@ -941,7 +941,7 @@ contains
         do j = 1, 3
           dalpha = dalpha + p_Dx(idx+j)*Dbas(j,DER_FUNC,i,1)
         end do
-        dmean = dmean + 0.25_DP * reval%p_Ddetj(i,1) * dalpha
+        dmean = dmean + reval%p_Ddetj(i,1) * dalpha
       end do
 
     end do
@@ -1035,8 +1035,8 @@ contains
           p_rtria, IelList, ctrafo, Dpoints)
 
       ! update domain volume
-      dvolume = dvolume + 0.25_DP * (reval%p_Ddetj(1,1) + reval%p_Ddetj(2,1) &
-                                   + reval%p_Ddetj(3,1) + reval%p_Ddetj(4,1))
+      dvolume = dvolume + reval%p_Ddetj(1,1) + reval%p_Ddetj(2,1) &
+                        + reval%p_Ddetj(3,1) + reval%p_Ddetj(4,1)
 
       ! Evaluate the element
       call elem_eval_DCQP2_2D(EL_DCQP2_2D, reval, Bder, Dbas)
@@ -1048,7 +1048,7 @@ contains
         do j = 1, 6
           dalpha = dalpha + p_Dx(idx+j)*Dbas(j,DER_FUNC,i,1)
         end do
-        dmean = dmean + 0.25_DP * reval%p_Ddetj(i,1) * dalpha
+        dmean = dmean + reval%p_Ddetj(i,1) * dalpha
       end do
 
     end do
