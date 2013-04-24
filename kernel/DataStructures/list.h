@@ -159,11 +159,16 @@
 !# 35.) list_uncast
 !#      -> Casts a generic object to a list
 !#
+!# 36.) list_merge (merge in STL)
+!#      -> Merges one list into another list
+!#
+!# 37.) list_splice (splice in STL)
+!#      -> Transfers data from one list into another list
 !#
 !#
 !# The following operations in STL are not supported yet
 !#
-!# splice, remove, remove_if, unique, merge
+!# remove, remove_if, unique
 !#
 !#
 !# The following operators are available:
@@ -260,6 +265,8 @@
   public :: list_hasSpec
   public :: list_cast
   public :: list_uncast
+  public :: list_merge
+  public :: list_splice
 
   public assignment(=)
   public operator(==)
@@ -437,6 +444,16 @@ interface list_getbase_key
 
   interface list_uncast
     module procedure FEAT2_PP_TEMPLATE_TD(list_uncast,T,D)
+  end interface
+
+  interface list_merge
+    module procedure FEAT2_PP_TEMPLATE_TD(list_merge,T,D)
+  end interface
+
+  interface list_splice
+    module procedure FEAT2_PP_TEMPLATE_TD(list_splice1,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_splice2,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(list_splice3,T,D)
   end interface
 
   interface assignment(=)
@@ -2893,6 +2910,247 @@ contains
 #ifdef D
     if (rlist%isizeData > 0) deallocate(data)
 #endif
+
+  end subroutine
+
+  !************************************************************************
+
+!<subroutine>
+
+  subroutine FEAT2_PP_TEMPLATE_TD(list_merge,T,D)(rlistDest, rlistSrc)
+
+!<description>
+    ! This subroutine merges the content of list rlistSrc into list
+    ! rlistDest by transferring all of its elements at their
+    ! respective ordered positions into the list (both lists shall
+    ! already be ordered).
+!</description>
+
+!<inputoutput>
+    ! The destination linked list
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(inout) :: rlistDest
+
+    ! The source linked list
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(inout) :: rlistSrc
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)) :: rposition
+    FEAT2_PP_TTYPE(T_TYPE), pointer :: p_keySrc,p_keyDest
+#ifdef D
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:), pointer :: p_dataSrc
+#endif
+
+    ! Set iterator to the beginning of the destination list
+    rposition = list_begin(rlistDest)
+
+    ! Transfer each item from the ordered source list to the
+    ! respective ordered position in the destination list
+    do while (.not.list_empty(rlistSrc))
+
+      ! Set pointer to key of first item in source list
+      call list_getbase_key(rlistSrc, list_begin(rlistSrc), p_keySrc)
+      rposition = list_find(rlistDest, p_keySrc, .false., rposition)
+      call list_getbase_key(rlistDest, rposition, p_keyDest)
+
+      ! Find last item in destination list with the same key. This
+      ! step ensurs that the merging is stable, that is, equivalent
+      ! elements preserve the order they had before merging
+      do while (p_keySrc .eq. p_keyDest)
+        call list_next(rposition)
+        call list_getbase_key(rlistDest, rposition, p_keyDest)
+      end do
+#ifdef D
+      ! Set pointer to data
+      call list_getbase_data(rlistSrc, list_begin(rlistSrc), p_dataSrc)
+      
+      ! Insert key and data into destination list
+      rposition = list_insert(rlistDest, rposition, p_keySrc, p_dataSrc)
+#else
+      ! Insert key into destination list
+      rposition = list_insert(rlistDest, rposition, p_keySrc)
+#endif
+      
+      ! Remove first item from source list
+      call list_pop_front(rlistSrc)
+    end do
+
+  end subroutine
+
+  !************************************************************************
+
+!<subroutine>
+
+  subroutine FEAT2_PP_TEMPLATE_TD(list_splice1,T,D)(rlistDest, rpositionDest,&
+      rlistSrc)
+
+!<description>
+    ! This subroutine transfers the content from list rlistSrc into
+    ! list rlistDest at position rpositionDest.
+!</description>
+
+!<input>
+    ! Position in destination list where to insert items
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)), intent(in) :: rpositionDest
+!</input>
+
+!<inputoutput>
+    ! The destination linked list
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(inout) :: rlistDest
+
+    ! The source linked list
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(inout) :: rlistSrc
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)) :: rposition
+    FEAT2_PP_TTYPE(T_TYPE), pointer :: p_keySrc,p_keyDest
+#ifdef D
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:), pointer :: p_dataSrc
+#endif
+
+    ! Transfer each item from the source list before position
+    ! rpositionDest in the destination list
+    do while (.not.list_empty(rlistSrc))
+
+      ! Set pointer to key of first item in source list
+      call list_getbase_key(rlistSrc, list_begin(rlistSrc), p_keySrc)
+#ifdef D
+      ! Set pointer to data
+      call list_getbase_data(rlistSrc, list_begin(rlistSrc), p_dataSrc)
+      
+      ! Insert key and data into destination list
+      rposition = list_insert(rlistDest, rpositionDest, p_keySrc, p_dataSrc)
+#else
+      ! Insert key into destination list
+      rposition = list_insert(rlistDest, rpositionDest, p_keySrc)
+#endif
+      
+      ! Remove first item from source list
+      call list_pop_front(rlistSrc)
+    end do
+
+  end subroutine
+
+  !************************************************************************
+
+!<subroutine>
+
+  subroutine FEAT2_PP_TEMPLATE_TD(list_splice2,T,D)(rlistDest, rpositionDest,&
+      rlistSrc, rpositionSrc)
+
+!<description>
+    ! This subroutine transfers the content from list rlistSrc at
+    ! position rpositionSrc into list rlistDest at position
+    ! rpositionDest.
+!</description>
+
+!<input>
+    ! Position in destination list where to insert item
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)), intent(in) :: rpositionDest
+
+    ! Position in source list which should be inserted
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)), intent(in) :: rpositionSrc
+!</input>
+
+!<inputoutput>
+    ! The destination linked list
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(inout) :: rlistDest
+
+    ! The source linked list
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(inout) :: rlistSrc
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)) :: rposition
+    FEAT2_PP_TTYPE(T_TYPE), pointer :: p_keySrc,p_keyDest
+#ifdef D
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:), pointer :: p_dataSrc
+#endif
+
+    ! Set pointer to key of first item in source list
+    call list_getbase_key(rlistSrc, rpositionSrc, p_keySrc)
+#ifdef D
+    ! Set pointer to data
+    call list_getbase_data(rlistSrc, rpositionSrc, p_dataSrc)
+    
+    ! Insert key and data into destination list
+    rposition = list_insert(rlistDest, rpositionDest, p_keySrc, p_dataSrc)
+#else
+    ! Insert key into destination list
+    rposition = list_insert(rlistDest, rpositionDest, p_keySrc)
+#endif
+    
+    ! Remove item at position rpositionSrc from source list
+    rposition = list_erase(rlistSrc, rpositionSrc)
+
+  end subroutine
+
+  !************************************************************************
+
+!<subroutine>
+
+  subroutine FEAT2_PP_TEMPLATE_TD(list_splice3,T,D)(rlistDest, rpositionDest,&
+      rlistSrc, rbeginSrc, rendSrc)
+
+!<description>
+    ! This subroutine transfers the content from list rlistSrc between
+    ! positions rbeginSrc and rendSrc into list rlistDest at position
+    ! rpositionDest.
+!</description>
+
+!<input>
+    ! Position in destination list where to insert items
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)), intent(in) :: rpositionDest
+
+    ! First positions in source list which should be inserted
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)), intent(in) :: rbeginSrc
+
+    ! Last positions in source list which should be inserted
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)), intent(in) :: rendSrc
+!</input>
+
+!<inputoutput>
+    ! The destination linked list
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(inout) :: rlistDest
+
+    ! The source linked list
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(inout) :: rlistSrc
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)) :: rposition,riterator
+    FEAT2_PP_TTYPE(T_TYPE), pointer :: p_keySrc,p_keyDest
+#ifdef D
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:), pointer :: p_dataSrc
+#endif
+
+    ! Transfer each item between positions rbegin and rend from the
+    ! source list before position rpositionDest in the destination
+    ! list
+    riterator = rbeginSrc
+    do while (riterator .ne. rendSrc)
+
+      ! Set pointer to key of first item in source list
+      call list_getbase_key(rlistSrc, riterator, p_keySrc)
+#ifdef D
+      ! Set pointer to data
+      call list_getbase_data(rlistSrc, riterator, p_dataSrc)
+      
+      ! Insert key and data into destination list
+      rposition = list_insert(rlistDest, rpositionDest, p_keySrc, p_dataSrc)
+#else
+      ! Insert key into destination list
+      rposition = list_insert(rlistDest, rpositionDest, p_keySrc)
+#endif
+      
+      ! Remove item at position riterator from source list
+      riterator = list_erase(rlistSrc, riterator)
+    end do
 
   end subroutine
 

@@ -117,7 +117,7 @@
 !# 30.) alst_restore (no equivalence in STL)
 !#      -> Restores an arraylist from a previous backup
 !#
-!# 31.) alst_reverse alst_reverseTbl (reverse in STL)
+!# 31.) alst_reverse / alst_reverseTbl (reverse in STL)
 !#      -> Reverses the order of elements in a list
 !#
 !# 32.) alst_sort / alst_sortTbl (sort in STL)
@@ -135,10 +135,16 @@
 !# 36.) alst_uncast
 !#      -> Casts a generic object to an arraylist
 !#
+!# 37.) alst_merge / alst_mergeTbl (merge in STL)
+!#      -> Merges one arraylist into another list
+!#
+!# 38.) alst_splice / alst_spliceTbl (splice in STL)
+!#      -> Transfers data from one arraylist into another list
+!#
 !#
 !# The following operations in STL are not supported yet
 !#
-!# splice, remove, remove_if, unique, merge
+!# remove, remove_if, unique
 !#
 !#
 !# The following operators are available:
@@ -203,6 +209,8 @@
   public :: alst_hasSpec
   public :: alst_cast
   public :: alst_uncast
+  public :: alst_merge,alst_mergeTbl
+  public :: alst_splice,alst_spliceTbl
 
   public assignment(=)
   public operator(==)
@@ -437,6 +445,28 @@
     module procedure FEAT2_PP_TEMPLATE_TD(alst_uncast,T,D)
   end interface
 
+  interface alst_merge
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_merge,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_mergeTbl,T,D)
+  end interface
+
+  interface alst_mergeTbl
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_mergeTbl,T,D)
+  end interface
+
+  interface alst_splice
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_splice1,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_spliceTbl1,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_spliceTbl2,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_spliceTbl3,T,D)
+  end interface
+
+  interface alst_spliceTbl
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_spliceTbl1,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_spliceTbl2,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_spliceTbl3,T,D)
+  end interface
+
   interface assignment(=)
     module procedure FEAT2_PP_TEMPLATE_TD(alst_fassign,T,D)
   end interface
@@ -526,7 +556,7 @@
     ! Dimension of the auxiliary data values to be stored
     integer :: isizeData = 0
 #ifdef D_STORAGE
-    ! Handle to the list auxiliary data
+    ! Handle to the arraylist auxiliary data
     integer :: h_Data = ST_NOHANDLE
 #endif
 
@@ -553,7 +583,7 @@
 
     ! Specification flag. This is a bitfield coming from an OR
     ! combination of different ALST_LSPEC_xxxx constants and specifies
-    ! various details of the list iterator.
+    ! various details of the arraylist iterator.
     integer(I32) :: iSpec = 0_I32
 
     ! Pointer to the underlying arraylist
@@ -594,7 +624,7 @@ contains
     integer, intent(in) :: isizeData
 #endif
 
-    ! OPTIONAL: Factor by which the list should be enlarged if memory
+    ! OPTIONAL: Factor by which the arraylist should be enlarged if memory
     ! needs to be reallocated
     real(DP), intent(in), optional :: dfactor
 !</input>
@@ -651,7 +681,7 @@ contains
       Isize = (/rarraylist%isizeData, rarraylist%NNA/)
 
 #ifdef D_STORAGE
-      call storage_new('arraylist_create', 'Data', Isize, D_STORAGE,&
+      call storage_new('alst_create', 'Data', Isize, D_STORAGE,&
           rarraylist%h_Data, ST_NEWBLOCK_NOINIT)
       call storage_getbase(rarraylist%h_Data, rarraylist%p_Data)
 #else
@@ -862,7 +892,7 @@ contains
 
     ! Reallocate Key
 #ifdef T_STORAGE
-    call storage_realloc('arraylist_resize', rarraylist%NNA,&
+    call storage_realloc('alst_resize', rarraylist%NNA,&
         rarraylist%h_Key, ST_NEWBLOCK_NOINIT, .true.)
     call storage_getbase(rarraylist%h_Key, rarraylist%p_Key)
 #else
@@ -878,7 +908,7 @@ contains
     ! Reallocate auxiliary data
     if (rarraylist%isizeData > 0) then
 #ifdef D_STORAGE
-      call storage_realloc('arraylist_resize', rarraylist%NNA,&
+      call storage_realloc('alst_resize', rarraylist%NNA,&
           rarraylist%h_Data, ST_NEWBLOCK_NOINIT, .true.)
       call storage_getbase(rarraylist%h_Data, rarraylist%p_Data)
 #else
@@ -4167,6 +4197,338 @@ contains
 
     rptr = transfer(rgenericObject%p_cdata, rptr)
     p_rarraylist => rptr%p_robj
+
+  end subroutine
+
+  !************************************************************************
+
+!<subroutine>
+
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_merge,T,D)(rarraylistDest, rarraylistSrc)
+
+!<description>
+    ! This subroutine merges the content of all tables from arraylist
+    ! rarraylistSrc into arraylist rarraylistDest by transferring all
+    ! of its elements at their respective ordered positions into the
+    ! lists (both lists shall already be ordered).
+!</description>
+
+!<inputoutput>
+    ! The destination linked list
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylistDest
+
+    ! The source linked list
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylistSrc
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    integer itable
+
+    ! Loop over al tables from source arraylist
+    do itable = 1, alst_ntable(rarraylistSrc)
+      ! Merge lists from current table
+      call alst_merge(rarraylistDest, itable, rarraylistSrc, itable)
+
+      ! Release table from source arraylist
+      call alst_releaseTbl(rarraylistSrc, itable)
+    end do
+
+  end subroutine
+
+  !************************************************************************
+
+!<subroutine>
+
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_mergeTbl,T,D)(rarraylistDest, itableDest,&
+      rarraylistSrc, itableSrc)
+
+!<description>
+    ! This subroutine merges the content of table itableSrc from
+    ! arraylist rarraylistSrc into table itableDest from arraylist
+    ! rarraylistDest by transferring all of its elements at their
+    ! respective ordered positions into the list (both lists shall
+    ! already be ordered).
+!</description>
+
+!<input>
+    ! The destination table
+    integer, intent(in) :: itableDest
+
+    ! The source table
+    integer, intent(in) :: itableSrc
+!</input>
+
+!<inputoutput>
+    ! The destination linked list
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylistDest
+
+    ! The source linked list
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylistSrc
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)) :: rposition
+    FEAT2_PP_TTYPE(T_TYPE), pointer :: p_keySrc,p_keyDest
+#ifdef D
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:), pointer :: p_dataSrc
+#endif
+
+    ! Set iterator to the beginning of the destination list
+    rposition = alst_begin(rarraylistDest,itableDest)
+
+    ! Transfer each item from the ordered source list to the
+    ! respective ordered position in the destination list
+    do while (.not.alst_empty(rarraylistSrc,itableSrc))
+
+      ! Set pointer to key of first item in source list
+      call alst_getbase_key(rarraylistSrc, alst_begin(rarraylistSrc,itableSrc), p_keySrc)
+      rposition = alst_find(rarraylistDest, itableDest, p_keySrc, .false., rposition)
+      call alst_getbase_key(rarraylistDest, rposition, p_keyDest)
+
+      ! Find last item in destination list with the same key. This
+      ! step ensurs that the merging is stable, that is, equivalent
+      ! elements preserve the order they had before merging
+      do while (p_keySrc .eq. p_keyDest)
+        call alst_next(rposition)
+        call alst_getbase_key(rarraylistDest, rposition, p_keyDest)
+      end do
+#ifdef D
+      ! Set pointer to data
+      call alst_getbase_data(rarraylistSrc, alst_begin(rarraylistSrc,itableSrc), p_dataSrc)
+      
+      ! Insert key and data into destination list
+      rposition = alst_insert(rarraylistDest, rposition, p_keySrc, p_dataSrc)
+#else
+      ! Insert key into destination list
+      rposition = alst_insert(rarraylistDest, rposition, p_keySrc)
+#endif
+      
+      ! Remove first item from source list
+      call alst_pop_front(rarraylistSrc,itableSrc)
+    end do
+
+  end subroutine
+
+  !************************************************************************
+
+!<subroutine>
+
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_splice1,T,D)(rarraylistDest, rpositionDest,&
+      rarraylistSrc)
+
+!<description>
+    ! This subroutine transfers the content from all tables of
+    ! arraylist rarraylistSrc into arraylist rarraylistDest at
+    ! position rpositionDest.
+!</description>
+
+!<input>
+    ! Position in destination list where to insert items
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)), intent(in) :: rpositionDest
+!</input>
+
+!<inputoutput>
+    ! The destination linked list
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylistDest
+
+    ! The source linked list
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylistSrc
+!</inputoutput>
+!</subroutine>
+
+    ! local variable
+    integer :: itable
+
+     ! Loop over al tables from source arraylist
+    do itable = 1, alst_ntable(rarraylistSrc)
+      ! Merge lists from current table
+      call alst_spliceTbl(rarraylistDest, rpositionDest, rarraylistSrc, itable)
+
+      ! Release table from source arraylist
+      call alst_releaseTbl(rarraylistSrc, itable)
+    end do
+
+  end subroutine
+
+  !************************************************************************
+
+!<subroutine>
+
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_spliceTbl1,T,D)(rarraylistDest, rpositionDest,&
+      rarraylistSrc, itableSrc)
+
+!<description>
+    ! This subroutine transfers the content from table itableSrc of
+    ! arraylist rarraylistSrc into arraylist rarraylistDest at
+    ! position rpositionDest.
+!</description>
+
+!<input>
+    ! The source table
+    integer, intent(in) :: itableSrc
+
+    ! Position in destination list where to insert items
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)), intent(in) :: rpositionDest
+!</input>
+
+!<inputoutput>
+    ! The destination linked list
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylistDest
+
+    ! The source linked list
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylistSrc
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)) :: rposition
+    FEAT2_PP_TTYPE(T_TYPE), pointer :: p_keySrc,p_keyDest
+#ifdef D
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:), pointer :: p_dataSrc
+#endif
+
+    ! Transfer each item from the source list before position
+    ! rpositionDest in the destination list
+    do while (.not.alst_empty(rarraylistSrc,itableSrc))
+
+      ! Set pointer to key of first item in source list
+      call alst_getbase_key(rarraylistSrc, alst_begin(rarraylistSrc,itableSrc), p_keySrc)
+#ifdef D
+      ! Set pointer to data
+      call alst_getbase_data(rarraylistSrc, alst_begin(rarraylistSrc,itableSrc), p_dataSrc)
+      
+      ! Insert key and data into destination list
+      rposition = alst_insert(rarraylistDest, rpositionDest, p_keySrc, p_dataSrc)
+#else
+      ! Insert key into destination list
+      rposition = alst_insert(rarraylistDest, rpositionDest, p_keySrc)
+#endif
+      
+      ! Remove first item from source list
+      call alst_pop_front(rarraylistSrc,itableSrc)
+    end do
+
+  end subroutine
+
+  !************************************************************************
+
+!<subroutine>
+
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_spliceTbl2,T,D)(rarraylistDest, rpositionDest,&
+      rarraylistSrc, rpositionSrc)
+
+!<description>
+    ! This subroutine transfers the content from arraylist
+    ! rarraylistSrc at position rpositionSrc into arraylist
+    ! rarraylistDest at position rpositionDest.
+!</description>
+
+!<input>
+    ! Position in destination list where to insert item
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)), intent(in) :: rpositionDest
+
+    ! Position in source list which should be inserted
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)), intent(in) :: rpositionSrc
+!</input>
+
+!<inputoutput>
+    ! The destination linked list
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylistDest
+
+    ! The source linked list
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylistSrc
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)) :: rposition
+    FEAT2_PP_TTYPE(T_TYPE), pointer :: p_keySrc,p_keyDest
+#ifdef D
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:), pointer :: p_dataSrc
+#endif
+
+    ! Set pointer to key of first item in source list
+    call alst_getbase_key(rarraylistSrc, rpositionSrc, p_keySrc)
+#ifdef D
+    ! Set pointer to data
+    call alst_getbase_data(rarraylistSrc, rpositionSrc, p_dataSrc)
+    
+    ! Insert key and data into destination list
+    rposition = alst_insert(rarraylistDest, rpositionDest, p_keySrc, p_dataSrc)
+#else
+    ! Insert key into destination list
+    rposition = alst_insert(rarraylistDest, rpositionDest, p_keySrc)
+#endif
+    
+    ! Remove item at position rpositionSrc from source list
+    rposition = alst_erase(rarraylistSrc, rpositionSrc)
+
+  end subroutine
+
+  !************************************************************************
+
+!<subroutine>
+
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_spliceTbl3,T,D)(rarraylistDest, rpositionDest,&
+      rarraylistSrc, rbeginSrc, rendSrc)
+
+!<description>
+    ! This subroutine transfers the content from arraylist
+    ! rarraylistSrc between positions rbeginSrc and rendSrc into
+    ! arraylist rarraylistDest at position rpositionDest.
+!</description>
+
+!<input>
+    ! Position in destination list where to insert items
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)), intent(in) :: rpositionDest
+
+    ! First positions in source list which should be inserted
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)), intent(in) :: rbeginSrc
+
+    ! Last positions in source list which should be inserted
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)), intent(in) :: rendSrc
+!</input>
+
+!<inputoutput>
+    ! The destination linked list
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylistDest
+
+    ! The source linked list
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylistSrc
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)) :: rposition,riterator
+    FEAT2_PP_TTYPE(T_TYPE), pointer :: p_keySrc,p_keyDest
+#ifdef D
+    FEAT2_PP_DTYPE(D_TYPE), dimension(:), pointer :: p_dataSrc
+#endif
+
+    ! Transfer each item between positions rbegin and rend from the
+    ! source list before position rpositionDest in the destination
+    ! list
+    riterator = rbeginSrc
+    do while (riterator .ne. rendSrc)
+
+      ! Set pointer to key of first item in source list
+      call alst_getbase_key(rarraylistSrc, riterator, p_keySrc)
+#ifdef D
+      ! Set pointer to data
+      call alst_getbase_data(rarraylistSrc, riterator, p_dataSrc)
+      
+      ! Insert key and data into destination list
+      rposition = alst_insert(rarraylistDest, rpositionDest, p_keySrc, p_dataSrc)
+#else
+      ! Insert key into destination list
+      rposition = alst_insert(rarraylistDest, rpositionDest, p_keySrc)
+#endif
+      
+      ! Remove item at position riterator from source list
+      riterator = alst_erase(rarraylistSrc, riterator)
+    end do
 
   end subroutine
 
