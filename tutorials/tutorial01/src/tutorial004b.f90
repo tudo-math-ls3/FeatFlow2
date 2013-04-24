@@ -33,7 +33,7 @@ contains
     call output_separator (OU_SEP_MINUS)
 
     ! =================================
-    ! Create linked list
+    ! Create linked list with initial space for 10 items
     ! =================================
 
     call list_create(rlist, 10)
@@ -157,7 +157,7 @@ contains
     end if
 
     ! =================================
-    ! Insert item it position
+    ! Insert item at position
     ! =================================
     
     riterator = list_insert(rlist, riterator, 47)
@@ -179,8 +179,6 @@ contains
     ! =================================
 
     call list_release(rlist)
-
-    stop
 
   end subroutine
 

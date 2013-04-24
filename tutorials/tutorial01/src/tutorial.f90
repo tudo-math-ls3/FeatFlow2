@@ -30,6 +30,7 @@ program tutorial
   
   use tutorial004a
   use tutorial004b
+  use tutorial004c
   
   use tutorial005a
   use tutorial005b
@@ -110,6 +111,7 @@ program tutorial
   
   call start_tutorial004a
   call start_tutorial004b
+  call start_tutorial004c
   
   call start_tutorial005a
   call start_tutorial005b
