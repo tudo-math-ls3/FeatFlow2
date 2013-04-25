@@ -232,6 +232,16 @@ module ucd
   ! nodes.
   integer(I32), parameter, public :: UCD_FLAG_AUTOINTERPOLATE     = 2**5
 
+  ! If specified, solution vectors are assumed to be discontinuous.
+  ! For every element, the values in the corners are independent
+  ! (which corresponds to a discretisation with a DG-P1 / DG-Q1 element).
+  ! For 2D-QUAD meshes, e.g., vertices 1,2,3,4 correspond to element 1,
+  ! vertives 5,6,7,8 to element 2, etc.
+  ! Note that this flag does not apply to all output file formats.
+  ! Currently supporting file formats: VTK.
+  ! Cannot be used with UCD_FLAG_BULBQUADRATIC,UCD_FLAG_ONCEREFINED,...
+  integer(I32), parameter, public :: UCD_FLAG_DISCONTINUOUS       = 2**6
+
 !</constantblock>
 
 !<constantblock description="Specification flags for variables. Bitfield.">
@@ -1139,6 +1149,10 @@ contains
 !</output>
 
 !</subroutine>
+    
+    ! local variables
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
+    integer :: i,j
 
     ! Most of the things in rexport is initialised by INTENT(out) with standard
     ! values automatically. We only have to initialise minor things.
@@ -1163,11 +1177,35 @@ contains
     rexport%nvertices = rtriangulation%NVT
     rexport%ncells = rtriangulation%NEL
 
+    if (iand(cflags,UCD_FLAG_DISCONTINUOUS) .ne. 0) then
+    
+      ! All vertices independent. Count the number of vertices.
+      call storage_getbase_int2d(rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
+
+      rexport%nvertices = 0
+
+      do i=1,rtriangulation%NEL
+        
+        do j=ubound(p_IverticesAtElement,1),1,-1
+        
+          ! Count the number of vertices on this element and sum up.
+          if (p_IverticesAtElement(j,i) .ne. 0) then
+            rexport%nvertices = rexport%nvertices + j
+            exit
+          end if
+          
+        end do
+        
+      end do
+      
+    end if
+    
     if ((iand(cflags,UCD_FLAG_BULBQUADRATIC) .ne. 0) .or. &
         (iand(cflags,UCD_FLAG_USEEDGEMIDPOINTS) .ne. 0) .or. &
         (iand(cflags,UCD_FLAG_ONCEREFINED) .ne. 0)) then
       rexport%nvertices = rexport%nvertices + rtriangulation%NMT
     end if
+    
 
     if ((iand(cflags,UCD_FLAG_USEELEMENTMIDPOINTS) .ne. 0) .or. &
         (iand(cflags,UCD_FLAG_ONCEREFINED) .ne. 0)) then
@@ -4167,7 +4205,8 @@ contains
     integer, dimension(:,:), pointer :: p_IedgesAtElement
     integer, dimension(:), allocatable :: p_InumVertsPerCell
     character(LEN=SYS_STRLEN) :: sdl
-    logical :: bQuadratic, bVec2Sc
+    logical :: bQuadratic, bVec2Sc,bdiscontinuous
+    integer :: ivt,iel
 
       ! Get file unit and export format
       mfile = rexport%iunit
@@ -4224,6 +4263,8 @@ contains
       bQuadratic = (iand(rexport%cflags,UCD_FLAG_ONCEREFINED) .eq. 0) .and. &
                    (iand(rexport%cflags,UCD_FLAG_BULBQUADRATIC) .ne. 0) .and. &
                    (iand(rexport%cparam,UCD_PARAM_VTK_USE_QUADRATIC) .ne. 0)
+                   
+      bdiscontinuous = iand(rexport%cflags,UCD_FLAG_DISCONTINUOUS) .ne. 0
 
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       ! Write VTK header
@@ -4241,48 +4282,96 @@ contains
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       ! Write vertices
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-      write(mfile, '(A,I10,A)') "POINTS", nverts, " double"
+      if (.not. bdiscontinuous) then
+      
+        ! =================================================
+        ! Continuous cells
 
-      ! Do we have 2D or 3D points?
-      if (ubound(p_DvertexCoords,1) .eq. 3) then
-        ! 3D coordinates
+        write(mfile, '(A,I10,A)') "POINTS", nverts, " double"
 
-        ! Write corner vertices
-        do i=1, rexport%p_Rtriangulation%NVT
-          write(mfile, '(3E16.7)') p_DvertexCoords(1:3, i)
-        end do
+        ! Do we have 2D or 3D points?
+        if (ubound(p_DvertexCoords,1) .eq. 3) then
+          ! 3D coordinates
 
-        ! Write refined vertices
-        do i=1, rexport%p_rrefineData%nvertices
-          write(mfile, '(3E16.7)') p_DvertexRefined(1:3, i)
-        end do
+          ! Write corner vertices
+          do i=1, rexport%p_Rtriangulation%NVT
+            write(mfile, '(3E16.7)') p_DvertexCoords(1:3, i)
+          end do
 
-      else if (ubound(p_DvertexCoords,1) .eq. 2) then
-        ! 2D coordinates
+          ! Write refined vertices
+          do i=1, rexport%p_rrefineData%nvertices
+            write(mfile, '(3E16.7)') p_DvertexRefined(1:3, i)
+          end do
 
-        ! Write corner vertices
-        do i=1, rexport%p_Rtriangulation%NVT
-          write(mfile, '(3E16.7)') p_DvertexCoords(1:2, i), 0.0_DP
-        end do
+        else if (ubound(p_DvertexCoords,1) .eq. 2) then
+          ! 2D coordinates
 
-        ! Write refined vertices
-        do i=1, rexport%p_rrefineData%nvertices
-          write(mfile, '(3E16.7)') p_DvertexRefined(1:2, i), 0.0_DP
-        end do
+          ! Write corner vertices
+          do i=1, rexport%p_Rtriangulation%NVT
+            write(mfile, '(3E16.7)') p_DvertexCoords(1:2, i), 0.0_DP
+          end do
 
+          ! Write refined vertices
+          do i=1, rexport%p_rrefineData%nvertices
+            write(mfile, '(3E16.7)') p_DvertexRefined(1:2, i), 0.0_DP
+          end do
+
+        else
+          ! 1D coordinates
+
+          ! Write corner vertices
+          do i=1, rexport%p_Rtriangulation%NVT
+            write(mfile, '(3E16.7)') p_DvertexCoords(1, i), 0.0_DP, 0.0_DP
+          end do
+
+          ! Write refined vertices
+          do i=1, rexport%p_rrefineData%nvertices
+            write(mfile, '(3E16.7)') p_DvertexRefined(1, i), 0.0_DP, 0.0_DP
+          end do
+
+        end if
+      
       else
-        ! 1D coordinates
 
-        ! Write corner vertices
-        do i=1, rexport%p_Rtriangulation%NVT
-          write(mfile, '(3E16.7)') p_DvertexCoords(1, i), 0.0_DP, 0.0_DP
+        ! =================================================
+        ! Discontinuous cells
+      
+        ! The vertices are independent.
+        write(mfile, '(A,I10,A)') "POINTS", rexport%nvertices, " double"
+
+        ! Write corner vertices, all independent.
+        do iel = 1,rexport%ncells
+        
+          do j = 1,ubound(p_IverticesAtElement,1)
+          
+            ivt = p_IverticesAtElement(j,iel)
+            if (ivt .ne. 0) then
+              
+              ! Do we have 2D or 3D points?
+              if (ubound(p_DvertexCoords,1) .eq. 3) then
+                ! 3D coordinates
+                write(mfile, '(3E16.7)') p_DvertexCoords(1:3, ivt)
+
+              else if (ubound(p_DvertexCoords,1) .eq. 2) then
+                ! 2D coordinates
+
+                ! Write corner vertices
+                write(mfile, '(3E16.7)') p_DvertexCoords(1:2, ivt), 0.0_DP
+
+              else
+                ! 1D coordinates
+
+                ! Write corner vertices
+                write(mfile, '(3E16.7)') p_DvertexCoords(1, ivt), 0.0_DP, 0.0_DP
+
+              end if
+              
+            end if
+          
+          end do
+          
         end do
-
-        ! Write refined vertices
-        do i=1, rexport%p_rrefineData%nvertices
-          write(mfile, '(3E16.7)') p_DvertexRefined(1, i), 0.0_DP, 0.0_DP
-        end do
-
+      
       end if
 
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -4343,7 +4432,7 @@ contains
                 k + p_IedgesAtElement(2,j), k + p_IedgesAtElement(3,j), &
                 k + p_IedgesAtElement(4,j)
 
-          case DEFAULT
+          case default
             call output_line ('Invalid element!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'ucd_writeVTK')
           end select
@@ -4371,39 +4460,80 @@ contains
 
       else
 
-        do j=1, ncells
+        if (.not. bdiscontinuous) then
 
-          select case (p_InumVertsPerCell(j))
-          case (2)
-            ! edge
-            write(mfile, '(3I10)') 2, p_IverticesAtElement(1,j)-1, &
-                p_IverticesAtElement(2,j)-1
+          ! =================================================
+          ! Continuous cells
+        
+          do j=1, ncells
 
-          case (3)
-            ! triangle
-            write(mfile, '(4I10)') 3, p_IverticesAtElement(1,j)-1, &
-                p_IverticesAtElement(2,j)-1, p_IverticesAtElement(3,j)-1
+            select case (p_InumVertsPerCell(j))
+            case (2)
+              ! edge
+              write(mfile, '(3I10)') 2, p_IverticesAtElement(1,j)-1, &
+                  p_IverticesAtElement(2,j)-1
 
-          case (4)
-            ! quadrilateral
-            write(mfile, '(5I10)') 4, p_IverticesAtElement(1,j)-1, &
-                p_IverticesAtElement(2,j)-1, p_IverticesAtElement(3,j)-1, &
-                p_IverticesAtElement(4,j)-1
+            case (3)
+              ! triangle
+              write(mfile, '(4I10)') 3, p_IverticesAtElement(1,j)-1, &
+                  p_IverticesAtElement(2,j)-1, p_IverticesAtElement(3,j)-1
 
-          case (8)
-            ! hexahedron
-            write(mfile, '(9I10)') 8, p_IverticesAtElement(1,j)-1, &
-                p_IverticesAtElement(2,j)-1, p_IverticesAtElement(3,j)-1, &
-                p_IverticesAtElement(4,j)-1, p_IverticesAtElement(5,j)-1, &
-                p_IverticesAtElement(6,j)-1, p_IverticesAtElement(7,j)-1, &
-                p_IverticesAtElement(8,j)-1
+            case (4)
+              ! quadrilateral
+              write(mfile, '(5I10)') 4, p_IverticesAtElement(1,j)-1, &
+                  p_IverticesAtElement(2,j)-1, p_IverticesAtElement(3,j)-1, &
+                  p_IverticesAtElement(4,j)-1
 
-          case DEFAULT
-            call output_line ('Invalid element!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'ucd_writeVTK')
-          end select
+            case (8)
+              ! hexahedron
+              write(mfile, '(9I10)') 8, p_IverticesAtElement(1,j)-1, &
+                  p_IverticesAtElement(2,j)-1, p_IverticesAtElement(3,j)-1, &
+                  p_IverticesAtElement(4,j)-1, p_IverticesAtElement(5,j)-1, &
+                  p_IverticesAtElement(6,j)-1, p_IverticesAtElement(7,j)-1, &
+                  p_IverticesAtElement(8,j)-1
 
-        end do
+            case default
+              call output_line ('Invalid element!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'ucd_writeVTK')
+            end select
+
+          end do
+        
+        else
+        
+          ! =================================================
+          ! Discontinuous cells
+
+          ivt = 0
+          do j=1, ncells
+
+            select case (p_InumVertsPerCell(j))
+            case (2)
+              ! edge
+              write(mfile, '(3I10)') 2, ivt, ivt+1
+
+            case (3)
+              ! triangle
+              write(mfile, '(4I10)') 3, ivt, ivt+1, ivt+2
+
+            case (4)
+              ! quadrilateral
+              write(mfile, '(5I10)') 4, ivt, ivt+1, ivt+2, ivt+3
+
+            case (8)
+              ! hexahedron
+              write(mfile, '(9I10)') 8, ivt, ivt+1, ivt+2, ivt+3, ivt+4, ivt+5, ivt+6, ivt+7
+
+            case default
+              call output_line ('Invalid element!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'ucd_writeVTK')
+            end select
+            
+            ivt = ivt + p_InumVertsPerCell(j)
+
+          end do
+
+        end if
 
         ! Write cell types
         write(mfile, '(A, I10)') "CELL_TYPES", ncells
@@ -4439,7 +4569,11 @@ contains
       ! Go through all variables
       if (num_ndata .gt. 0) then
 
-        write(mfile, '(A,I10)') "POINT_DATA", nverts
+        if (.not. bdiscontinuous) then
+          write(mfile, '(A,I10)') "POINT_DATA", nverts
+        else
+          write(mfile, '(A,I10)') "POINT_DATA", rexport%nvertices
+        end if
 
         ! Loop through all variables
         do j=1, rexport%nvariables
@@ -4883,67 +5017,78 @@ contains
         rexport%p_Hvariables(rexport%nvariables),&
         ST_NEWBLOCK_ZERO)
 
-    ! Copy the vertex data into that vector
-    call storage_getbase_double (rexport%p_Hvariables(rexport%nvariables),p_Ddata)
-    call lalg_copyVector(DdataVert(1:rexport%p_rtriangulation%NVT), &
-        p_Ddata(1:rexport%p_rtriangulation%NVT))
+    if (iand(rexport%cflags,UCD_FLAG_DISCONTINUOUS) .eq. 0) then
+      ! Copy the vertex data into that vector
+      call storage_getbase_double (rexport%p_Hvariables(rexport%nvariables),p_Ddata)
+      call lalg_copyVector(DdataVert(1:rexport%p_rtriangulation%NVT), &
+          p_Ddata(1:rexport%p_rtriangulation%NVT))
 
-    ! Copy edge midpoint data if available
-    if ((iand(rexport%cflags,UCD_FLAG_BULBQUADRATIC) .ne. 0) .or. &
-        (iand(rexport%cflags,UCD_FLAG_USEEDGEMIDPOINTS) .ne. 0) .or. &
-        (iand(rexport%cflags,UCD_FLAG_ONCEREFINED) .ne. 0)) then
-      if (present(DdataMid)) then
-        call lalg_copyVector( &
-            DdataMid(1:rexport%p_rtriangulation%NMT), &
-            p_Ddata(rexport%p_rtriangulation%NVT+1:rexport%p_rtriangulation%NVT+ &
-                                                   rexport%p_rtriangulation%NMT))
-      else 
-        if (iand(rexport%cflags,UCD_FLAG_IGNOREDEADNODES) .eq. 0) then
-          call output_line ('Warning. No edge midpoint data available!',&
-              OU_CLASS_WARNING,OU_MODE_STD,'ucd_addVariableVertexBased2')
-        end if
-
-        if (iand(rexport%cflags,UCD_FLAG_AUTOINTERPOLATE) .ne. 0) then
-          ! Automatically interpolate the edge midpoints
-          call ucd_refineToEdgeMidpoints (&
-              rexport%p_rtriangulation,&
-              p_Ddata(1:rexport%p_rtriangulation%NVT),&
+      ! Copy edge midpoint data if available
+      if ((iand(rexport%cflags,UCD_FLAG_BULBQUADRATIC) .ne. 0) .or. &
+          (iand(rexport%cflags,UCD_FLAG_USEEDGEMIDPOINTS) .ne. 0) .or. &
+          (iand(rexport%cflags,UCD_FLAG_ONCEREFINED) .ne. 0)) then
+        if (present(DdataMid)) then
+          call lalg_copyVector( &
+              DdataMid(1:rexport%p_rtriangulation%NMT), &
               p_Ddata(rexport%p_rtriangulation%NVT+1:rexport%p_rtriangulation%NVT+ &
-                                                   rexport%p_rtriangulation%NMT))
-        end if
+                                                    rexport%p_rtriangulation%NMT))
+        else 
+          if (iand(rexport%cflags,UCD_FLAG_IGNOREDEADNODES) .eq. 0) then
+            call output_line ('Warning. No edge midpoint data available!',&
+                OU_CLASS_WARNING,OU_MODE_STD,'ucd_addVariableVertexBased2')
+          end if
 
+          if (iand(rexport%cflags,UCD_FLAG_AUTOINTERPOLATE) .ne. 0) then
+            ! Automatically interpolate the edge midpoints
+            call ucd_refineToEdgeMidpoints (&
+                rexport%p_rtriangulation,&
+                p_Ddata(1:rexport%p_rtriangulation%NVT),&
+                p_Ddata(rexport%p_rtriangulation%NVT+1:rexport%p_rtriangulation%NVT+ &
+                                                    rexport%p_rtriangulation%NMT))
+          end if
+
+        end if
       end if
-    end if
 
-    ! Copy element midpoint data if available
-    if ((iand(rexport%cflags,UCD_FLAG_USEELEMENTMIDPOINTS) .ne. 0) .or. &
-        (iand(rexport%cflags,UCD_FLAG_ONCEREFINED) .ne. 0)) then
-      if (present(DdataElem)) then
-        call lalg_copyVector( &
-            DdataElem(1:rexport%p_rtriangulation%NEL), &
-            p_Ddata(rexport%p_rtriangulation%NVT+rexport%p_rtriangulation%NMT+1: &
-                    rexport%p_rtriangulation%NVT+rexport%p_rtriangulation%NMT+ &
-                    rexport%p_rtriangulation%NEL))
-      else 
-
-        if (iand(rexport%cflags,UCD_FLAG_IGNOREDEADNODES) .eq. 0) then
-          call output_line ('Warning. No element midpoint data available!',&
-              OU_CLASS_WARNING,OU_MODE_STD,'ucd_addVariableVertexBased2')
-        end if
-
-        if (iand(rexport%cflags,UCD_FLAG_AUTOINTERPOLATE) .ne. 0) then
-          ! Automatically interpolate the element midpoints
-          call ucd_refineToElementMidpoints (&
-              rexport%p_rtriangulation,&
-              p_Ddata(1:rexport%p_rtriangulation%NVT),&
-              p_Ddata(rexport%p_rtriangulation%NVT+1:rexport%p_rtriangulation%NVT+ &
-                                                   rexport%p_rtriangulation%NMT),&
+      ! Copy element midpoint data if available
+      if ((iand(rexport%cflags,UCD_FLAG_USEELEMENTMIDPOINTS) .ne. 0) .or. &
+          (iand(rexport%cflags,UCD_FLAG_ONCEREFINED) .ne. 0)) then
+        if (present(DdataElem)) then
+          call lalg_copyVector( &
+              DdataElem(1:rexport%p_rtriangulation%NEL), &
               p_Ddata(rexport%p_rtriangulation%NVT+rexport%p_rtriangulation%NMT+1: &
-                    rexport%p_rtriangulation%NVT+rexport%p_rtriangulation%NMT+ &
-                    rexport%p_rtriangulation%NEL))
-        end if
+                      rexport%p_rtriangulation%NVT+rexport%p_rtriangulation%NMT+ &
+                      rexport%p_rtriangulation%NEL))
+        else 
 
+          if (iand(rexport%cflags,UCD_FLAG_IGNOREDEADNODES) .eq. 0) then
+            call output_line ('Warning. No element midpoint data available!',&
+                OU_CLASS_WARNING,OU_MODE_STD,'ucd_addVariableVertexBased2')
+          end if
+
+          if (iand(rexport%cflags,UCD_FLAG_AUTOINTERPOLATE) .ne. 0) then
+            ! Automatically interpolate the element midpoints
+            call ucd_refineToElementMidpoints (&
+                rexport%p_rtriangulation,&
+                p_Ddata(1:rexport%p_rtriangulation%NVT),&
+                p_Ddata(rexport%p_rtriangulation%NVT+1:rexport%p_rtriangulation%NVT+ &
+                                                    rexport%p_rtriangulation%NMT),&
+                p_Ddata(rexport%p_rtriangulation%NVT+rexport%p_rtriangulation%NMT+1: &
+                      rexport%p_rtriangulation%NVT+rexport%p_rtriangulation%NMT+ &
+                      rexport%p_rtriangulation%NEL))
+          end if
+
+        end if
       end if
+      
+    else
+    
+      ! Discontinuous case
+      ! Copy all data into that vector
+      call storage_getbase_double (rexport%p_Hvariables(rexport%nvariables),p_Ddata)
+      call lalg_copyVector(DdataVert(1:rexport%nvertices), &
+          p_Ddata(1:rexport%nvertices))
+    
     end if
 
   contains

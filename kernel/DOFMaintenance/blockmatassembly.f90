@@ -3434,8 +3434,8 @@ contains
     
     if (present(revalVectors)) then
       do i=1,revalVectors%ncount
-        if (associated(revalVectors%p_RvectorData(1)%p_rvector)) then
-          p_rdiscr => revalVectors%p_RvectorData(1)%p_rvector%p_rspatialDiscr
+        if (associated(revalVectors%p_RvectorData(i)%p_rvector)) then
+          p_rdiscr => revalVectors%p_RvectorData(i)%p_rvector%p_rspatialDiscr
           exit
         end if
       end do
@@ -3497,9 +3497,31 @@ contains
     do icubatureBlock = 1,p_rcubatureInfo%ninfoBlockCount
 
       ! Get information about that block as well as an appropriate cubature formula
-      call spdiscr_getStdDiscrInfo(icubatureBlock,p_rcubatureInfo,&
-          p_rdiscr,ielementDistr,celement,ccubType,NEL,p_IelementList,&
-          p_rtrafoInfo,ctrafoType=ctrafoType)
+      if (associated(p_rdiscr)) then
+        call spdiscr_getStdDiscrInfo(icubatureBlock,p_rcubatureInfo,&
+            p_rdiscr,ielementDistr,celement,ccubType,NEL,p_IelementList,&
+            p_rtrafoInfo,ctrafoType=ctrafoType)
+      else
+        ! Set the data manually.
+        NEL = p_rcubatureInfo%p_RinfoBlocks(icubatureBlock)%NEL
+        
+        if (p_rcubatureInfo%p_RinfoBlocks(icubatureBlock)%h_IelementList .eq. ST_NOHANDLE) then
+          ! All elements
+          allocate(p_IelementList(NEL))
+          do i=1,NEL
+            p_IelementList(i) = i
+          end do
+        else
+          ! Get the element list
+          call storage_getbase_int (&
+              p_rcubatureInfo%p_RinfoBlocks(icubatureBlock)%h_IelementList,p_IelementList)
+        end if
+        
+        nullify(p_rtrafoInfo)
+        ccubType = p_rcubatureInfo%p_RinfoBlocks(icubatureBlock)%ccubature
+        ctrafoType = trafo_getDefaultTrafo(cub_igetShape(ccubType))
+        
+      end if
 
       ! Check if element distribution is empty
       if (NEL .le. 0 ) cycle
@@ -3518,6 +3540,12 @@ contains
 
       ! Release the assembly structure.
       call bma_doneIntAssembly(rintegralAssembly)
+      
+      ! Release data
+      if (.not. associated(p_rdiscr) .and. &
+          (p_rcubatureInfo%p_RinfoBlocks(icubatureBlock)%h_IelementList .eq. ST_NOHANDLE)) then
+        deallocate (p_IelementList)
+      end if
     end do
 
     ! Release the assembly structure if necessary.
