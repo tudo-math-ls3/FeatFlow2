@@ -4,9 +4,11 @@ module q1projection
   use fsystem
   use genoutput
   use storage
+  use basicgeometry
   
   use cubature
   use triangulation
+  use triasearch
   use spatialdiscretisation
   
   use meshhierarchy
@@ -64,14 +66,26 @@ contains
     real(DP), dimension(:), pointer :: p_DdestDofs
     integer, dimension(:), pointer :: p_IdofIndex
     real(DP), dimension(:,:), pointer :: p_DsourceDofs
-    integer :: isourcecomp,idestcomp,i,j,iel
+    integer :: isourcecomp,idestcomp,i,j,iel,ielsearch,ielmid
     type(t_vectorScalar), pointer :: p_rvectorSource
     type(t_vectorScalar), pointer :: p_rvectorTarget
+    real(DP), dimension(:,:,:), pointer :: p_Dcoords
+    real(DP), dimension(2) :: Dcoords2D
+    real(DP), dimension(2) :: Dmid
+    real(DP), parameter :: dshift1 = 1E-6_DP
+    real(DP), parameter :: dshift2 = 1.0_DP-dshift1
+    integer, dimension(8) :: Ielements
+    type(t_triangulation), pointer :: p_rtriangulation, p_rtriaCoarse
     
     ! Get the DOF index array
     call storage_getbase_int (rcollection%IquickAccess(1),p_IdofIndex)
     
     call output_line (trim(sys_siL(rassemblyData%p_IelementList(1),10)))
+    
+    ! Get some information
+    p_Dcoords => rassemblyData%revalElementSet%p_DpointsReal
+    p_rtriangulation => rcollection%p_rvectorQuickAccess1%p_rblockDiscr%p_rtriangulation
+    p_rtriaCoarse => collct_getvalue_tria (rcollection, "TRIA")
     
     ! Loop over the vector components
     isourcecomp = 1
@@ -96,9 +110,61 @@ contains
       
       ! Loop over the elements
       do iel = 1,nelements
+
+        ! Calculate the midpoint., fetch the coordinates of the corners,
+        ! slightly shifted to the midpoint.
+        select case (ubound(rassemblyData%revalElementSet%p_DpointsReal,1))
+        case (NDIM2D)
+          Dmid(1) = 0.0_DP
+          Dmid(2) = 0.0_DP
+          do i=1,npointsPerElement
+            Dmid(1) = Dmid(1) + p_Dcoords(1,i,iel)
+            Dmid(2) = Dmid(2) + p_Dcoords(2,i,iel)
+          end do
+          Dmid(1) = Dmid(1) / real(npointsPerElement,DP)
+          Dmid(2) = Dmid(2) / real(npointsPerElement,DP)
+          
+          ! Find the element in the coarse mesh containing the midpoint.
+          ielmid = 0
+          call tsrch_getElem_raytrace2D (Dmid(1:2),p_rtriaCoarse,ielmid)
+
+          ! Ok, not found... Brute force search
+          if (ielmid .eq. 0) then
+            call tsrch_getElem_BruteForce (Dmid(1:2),p_rtriaCoarse,ielmid)
+          end if
+          
+          do i=1,ubound(p_Dcoords,2)
+            ! Calculate the search point
+            Dcoords2D(1) = dshift2*p_Dcoords(1,i,iel) + dshift1*Dmid(1)
+            Dcoords2D(2) = dshift2*p_Dcoords(2,i,iel) + dshift1*Dmid(2)
+
+            ! Use this element number as starting point for the fine mesh.
+            ! If ielmid is =0, there is a direct search on the fine mesh.
+            ielsearch = ielmid
+
+            ! Find the element containing the midpoint.
+            call tsrch_getElem_raytrace2D (&
+                Dcoords2D(:),p_rtriangulation,ielsearch)
+            
+            ! Ok, not found... Brute force search
+            if (ielsearch .eq. 0) then
+              call tsrch_getElem_BruteForce (Dcoords2D(:),p_rtriangulation,ielsearch)
+            end if
+            
+            if (ielsearch .eq. 0) then
+              ! Find the closest element!
+              call tsrch_getNearestElem_BruteForce (Dcoords2D(:),p_rtriangulation,ielsearch)
+            end if
+
+            ! Save the element number
+            Ielements(i) = ielsearch
+          end do
+          
+        end select
+    
         ! On each element, evaluate the FE function in the points
         call fevl_evaluate (DER_FUNC, p_DsourceDofs(:,iel), p_rvectorSource, &
-            rassemblyData%revalElementSet%p_DpointsReal(:,:,iel))
+            rassemblyData%revalElementSet%p_DpointsReal(:,:,iel),Ielements(1:npointsPerElement))
       end do
       
       ! Copy the corner values to the destination array.
@@ -125,7 +191,7 @@ contains
 
 !<subroutine>
 
-  subroutine sol_projectToDGQ1 (rsource,rtarget)
+  subroutine sol_projectToDGQ1 (rsource,rtarget,rtriaCoarse)
 
 !<description>
   ! Projects a solution into the DG Q1 space.
@@ -134,6 +200,9 @@ contains
 !<input>
   ! Source solution
   type(t_vectorBlock), intent(in), target :: rsource
+  
+  ! Coarse mesh, to speed up point searches.
+  type(t_triangulation), intent(in), target :: rtriaCoarse
 !</input>
 
 !<inputoutput>
@@ -177,7 +246,10 @@ contains
     ! We use the trapezoidal rule to get the corner values.
     call spdiscr_createDefCubStructure (rtarget%p_rblockDiscr%RspatialDiscr(1),&
         rcubatureInfo,CUB_GEN_AUTO_TRZ)
-        
+
+    call collct_init (rcollection)
+    call collct_setvalue_tria (rcollection, "TRIA", rtriaCoarse, .true.)
+
     rcollection%p_rvectorQuickAccess1 => rsource
     rcollection%p_rvectorQuickAccess2 => rtarget
     rcollection%IquickAccess(1) = h_IdofCounter
@@ -195,6 +267,8 @@ contains
     call storage_free (h_IdofCounter)
     call fev2_releaseVectorList(revalVectors)
     call spdiscr_releaseCubStructure (rcubatureInfo)
+    
+    call collct_done (rcollection)
 
   end subroutine
 

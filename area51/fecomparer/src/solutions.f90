@@ -207,6 +207,7 @@ contains
 
     ! If a filename is given, read the file.
     if (rsolution%sfilename .ne. "") then
+      call output_line ("Reading solution.")
       call vecio_readBlockVectorHR (rsolution%p_Rvectors(rsolution%ireflevel), &
           sarray, .true.,0, rsolution%sfilename, .true.)
     else

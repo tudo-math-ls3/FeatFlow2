@@ -50,6 +50,12 @@ program fecomparer
   
   select case (p_rproblem%ccomputation)
   
+  case (0)
+    ! Copy solutions 1 to 0.Postprocessing with 0.
+    !
+    ! 1.) Copy 1->0, Type cast.
+    call base_vectorcopy (p_rproblem,1,0)
+  
   case (2)
     ! Copy solutions 3/4 to 1/2. Calculate the difference 
     ! between 1 and 2 to 0. Postprocessing with 0.

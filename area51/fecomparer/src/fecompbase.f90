@@ -500,9 +500,6 @@ contains
     integer :: i,iindex
     
     do i=0,rproblem%nsolutions
-    
-      call output_line ("Reading solution.")
-    
       ! Read the solution
       if (i .eq. 0) then
         call sol_readSolutionData (rproblem%rrefSolution)
@@ -593,7 +590,8 @@ contains
         ! Apply a projection
         call sol_projectToDGQ1 (&
             p_rsource%p_Rvectors(p_rsource%ireflevel),&
-            p_rdest%p_Rvectors(p_rdest%ireflevel))
+            p_rdest%p_Rvectors(p_rdest%ireflevel),&
+            rproblem%rmeshHierarchy%p_Rtriangulations(1))
         
       end select
     else
