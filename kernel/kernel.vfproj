@@ -5,7 +5,7 @@
 		<Platform Name="x64"/></Platforms>
 	<Configurations>
 		<Configuration Name="Debug|Win32" OutputDirectory="$(ProjectDir)" IntermediateDirectory="$(ProjectDir)..\object\$(ProjectName)_$(ConfigurationName)_$(PlatformName)" ConfigurationType="typeStaticLibrary">
-				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(ProjectDir)DataStructures;$(ProjectDir)LinearSystem" PreprocessorDefinitions="HAS_INTRINSIC_IARGC;HAS_INTRINSIC_ISNAN" OpenMPConditionalCompilation="false" WarnInterfaces="true" FloatingPointExceptionHandling="fpe0" FloatingPointModel="source" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb" Traceback="true" NullPointerCheck="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtMultiThreadedDebug" Interfaces="true"/>
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(ProjectDir)DataStructures;$(ProjectDir)LinearSystem;$(ProjectDir)PDEOperators" PreprocessorDefinitions="HAS_INTRINSIC_IARGC;HAS_INTRINSIC_ISNAN" OpenMPConditionalCompilation="false" WarnInterfaces="true" FloatingPointExceptionHandling="fpe0" FloatingPointModel="source" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb" Traceback="true" NullPointerCheck="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtMultiThreadedDebug" Interfaces="true"/>
 				<Tool Name="VFLibrarianTool" OutputFile="$(OutDir)/$(ProjectName)_32d.lib" AdditionalLibraryDirectories="$(ProjectDir)..\librariesNEW" IgnoreAllDefaultLibraries="true" AdditionalDependencies="blas_32d.lib lapack_32d.lib suitesparse_config_32d.lib amd_32d.lib umfpack_32d.lib kernelc_32d.lib"/>
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true"/>
@@ -14,7 +14,7 @@
 				<Tool Name="VFPreBuildEventTool"/>
 				<Tool Name="VFPostBuildEventTool"/></Configuration>
 		<Configuration Name="Release|Win32" OutputDirectory="$(ProjectDir)" IntermediateDirectory="$(ProjectDir)..\object\$(ProjectName)_$(ConfigurationName)_$(PlatformName)" ConfigurationType="typeStaticLibrary">
-				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugLineInfoOnly" Parallelization="true" BufferedIO="true" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(ProjectDir)DataStructures;$(ProjectDir)LinearSystem" PreprocessorDefinitions="HAS_INTRINSIC_IARGC;HAS_INTRINSIC_ISNAN" OpenMPConditionalCompilation="false" FloatingPointExceptionHandling="fpe1" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb"/>
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugLineInfoOnly" Parallelization="true" BufferedIO="true" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(ProjectDir)DataStructures;$(ProjectDir)LinearSystem;$(ProjectDir)PDEOperators" PreprocessorDefinitions="HAS_INTRINSIC_IARGC;HAS_INTRINSIC_ISNAN" OpenMPConditionalCompilation="false" FloatingPointExceptionHandling="fpe1" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb"/>
 				<Tool Name="VFLibrarianTool" OutputFile="$(OutDir)/$(ProjectName)_32r.lib" AdditionalLibraryDirectories="$(ProjectDir)..\librariesNEW" IgnoreAllDefaultLibraries="true" AdditionalDependencies="blas_32.lib lapack_32.lib suitesparse_config_32.lib amd_32.lib umfpack_32.lib kernelc_32.lib"/>
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true"/>
@@ -23,7 +23,7 @@
 				<Tool Name="VFPreBuildEventTool"/>
 				<Tool Name="VFPostBuildEventTool"/></Configuration>
 		<Configuration Name="Debug|x64" OutputDirectory="$(ProjectDir)" IntermediateDirectory="$(ProjectDir)..\object\$(ProjectName)_$(ConfigurationName)_$(PlatformName)" ConfigurationType="typeStaticLibrary">
-				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(ProjectDir)DataStructures;$(ProjectDir)LinearSystem" PreprocessorDefinitions="HAS_INTRINSIC_IARGC;HAS_INTRINSIC_ISNAN" OpenMPConditionalCompilation="false" WarnInterfaces="true" FloatingPointExceptionHandling="fpe0" FloatingPointModel="source" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb" Traceback="true" NullPointerCheck="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtMultiThreadedDebug" Interfaces="true"/>
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(ProjectDir)DataStructures;$(ProjectDir)LinearSystem;$(ProjectDir)PDEOperators" PreprocessorDefinitions="HAS_INTRINSIC_IARGC;HAS_INTRINSIC_ISNAN" OpenMPConditionalCompilation="false" WarnInterfaces="true" FloatingPointExceptionHandling="fpe0" FloatingPointModel="source" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb" Traceback="true" NullPointerCheck="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtMultiThreadedDebug" Interfaces="true"/>
 				<Tool Name="VFLibrarianTool" OutputFile="$(OutDir)/$(ProjectName)_64d.lib" AdditionalLibraryDirectories="$(ProjectDir)..\librariesNEW" IgnoreAllDefaultLibraries="true" AdditionalDependencies="blas_64d.lib lapack_64d.lib suitesparse_config_64d.lib amd_64d.lib umfpack_64d.lib kernelc_64d.lib"/>
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64"/>
@@ -32,7 +32,7 @@
 				<Tool Name="VFPreBuildEventTool"/>
 				<Tool Name="VFPostBuildEventTool"/></Configuration>
 		<Configuration Name="Release|x64" OutputDirectory="$(ProjectDir)" IntermediateDirectory="$(ProjectDir)..\object\$(ProjectName)_$(ConfigurationName)_$(PlatformName)" ConfigurationType="typeStaticLibrary">
-				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugLineInfoOnly" Parallelization="true" BufferedIO="true" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(ProjectDir)DataStructures;$(ProjectDir)LinearSystem" PreprocessorDefinitions="HAS_INTRINSIC_IARGC;HAS_INTRINSIC_ISNAN" OpenMPConditionalCompilation="false" FloatingPointExceptionHandling="fpe1" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb"/>
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugLineInfoOnly" Parallelization="true" BufferedIO="true" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(ProjectDir)DataStructures;$(ProjectDir)LinearSystem;$(ProjectDir)PDEOperators" PreprocessorDefinitions="HAS_INTRINSIC_IARGC;HAS_INTRINSIC_ISNAN" OpenMPConditionalCompilation="false" FloatingPointExceptionHandling="fpe1" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb"/>
 				<Tool Name="VFLibrarianTool" OutputFile="$(OutDir)/$(ProjectName)_64r.lib" AdditionalLibraryDirectories="$(ProjectDir)..\librariesNEW" IgnoreAllDefaultLibraries="true" AdditionalDependencies="blas_64.lib lapack_64.lib suitesparse_config_64.lib amd_64.lib umfpack_64.lib kernelc_64.lib"/>
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64"/>
@@ -41,7 +41,7 @@
 				<Tool Name="VFPreBuildEventTool"/>
 				<Tool Name="VFPostBuildEventTool"/></Configuration>
 		<Configuration Name="Debug-OpenMP|Win32" OutputDirectory="$(ProjectDir)" IntermediateDirectory="$(ProjectDir)..\object\$(ProjectName)_$(ConfigurationName)_$(PlatformName)" ConfigurationType="typeStaticLibrary">
-				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(ProjectDir)DataStructures;$(ProjectDir)LinearSystem" PreprocessorDefinitions="USE_OPENMP;HAS_INTRINSIC_IARGC;HAS_INTRINSIC_ISNAN" OpenMP="OpenMPParallelCode" WarnInterfaces="true" FloatingPointExceptionHandling="fpe0" FloatingPointModel="source" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb" Traceback="true" NullPointerCheck="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtMultiThreadedDebug" Interfaces="true"/>
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(ProjectDir)DataStructures;$(ProjectDir)LinearSystem;$(ProjectDir)PDEOperators" PreprocessorDefinitions="USE_OPENMP;HAS_INTRINSIC_IARGC;HAS_INTRINSIC_ISNAN" OpenMP="OpenMPParallelCode" WarnInterfaces="true" FloatingPointExceptionHandling="fpe0" FloatingPointModel="source" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb" Traceback="true" NullPointerCheck="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtMultiThreadedDebug" Interfaces="true"/>
 				<Tool Name="VFLibrarianTool" OutputFile="$(OutDir)/$(ProjectName)_32d-omp.lib" AdditionalLibraryDirectories="$(ProjectDir)..\librariesNEW" IgnoreAllDefaultLibraries="true" AdditionalDependencies="blas_32d.lib lapack_32d.lib suitesparse_config_32d.lib amd_32d.lib umfpack_32d.lib kernelc_32d.lib"/>
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true"/>
@@ -50,7 +50,7 @@
 				<Tool Name="VFPreBuildEventTool"/>
 				<Tool Name="VFPostBuildEventTool"/></Configuration>
 		<Configuration Name="Debug-OpenMP|x64" OutputDirectory="$(ProjectDir)" IntermediateDirectory="$(ProjectDir)..\object\$(ProjectName)_$(ConfigurationName)_$(PlatformName)" ConfigurationType="typeStaticLibrary">
-				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(ProjectDir)DataStructures;$(ProjectDir)LinearSystem" PreprocessorDefinitions="USE_OPENMP;HAS_INTRINSIC_IARGC;HAS_INTRINSIC_ISNAN" OpenMP="OpenMPParallelCode" WarnInterfaces="true" FloatingPointExceptionHandling="fpe0" FloatingPointModel="source" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb" Traceback="true" NullPointerCheck="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtMultiThreadedDebug" Interfaces="true"/>
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(ProjectDir)DataStructures;$(ProjectDir)LinearSystem;$(ProjectDir)PDEOperators" PreprocessorDefinitions="USE_OPENMP;HAS_INTRINSIC_IARGC;HAS_INTRINSIC_ISNAN" OpenMP="OpenMPParallelCode" WarnInterfaces="true" FloatingPointExceptionHandling="fpe0" FloatingPointModel="source" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb" Traceback="true" NullPointerCheck="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtMultiThreadedDebug" Interfaces="true"/>
 				<Tool Name="VFLibrarianTool" OutputFile="$(OutDir)/$(ProjectName)_64d-omp.lib" AdditionalLibraryDirectories="$(ProjectDir)..\librariesNEW" IgnoreAllDefaultLibraries="true" AdditionalDependencies="blas_64d.lib lapack_64d.lib suitesparse_config_64d.lib amd_64d.lib umfpack_64d.lib kernelc_64d.lib"/>
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64"/>
@@ -59,7 +59,7 @@
 				<Tool Name="VFPreBuildEventTool"/>
 				<Tool Name="VFPostBuildEventTool"/></Configuration>
 		<Configuration Name="Release-OpenMP|Win32" OutputDirectory="$(ProjectDir)" IntermediateDirectory="$(ProjectDir)..\object\$(ProjectName)_$(ConfigurationName)_$(PlatformName)" ConfigurationType="typeStaticLibrary">
-				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugLineInfoOnly" Parallelization="true" BufferedIO="true" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(ProjectDir)DataStructures;$(ProjectDir)LinearSystem" PreprocessorDefinitions="USE_OPENMP;HAS_INTRINSIC_IARGC;HAS_INTRINSIC_ISNAN" OpenMP="OpenMPParallelCode" FloatingPointExceptionHandling="fpe1" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb"/>
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugLineInfoOnly" Parallelization="true" BufferedIO="true" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(ProjectDir)DataStructures;$(ProjectDir)LinearSystem;$(ProjectDir)PDEOperators" PreprocessorDefinitions="USE_OPENMP;HAS_INTRINSIC_IARGC;HAS_INTRINSIC_ISNAN" OpenMP="OpenMPParallelCode" FloatingPointExceptionHandling="fpe1" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb"/>
 				<Tool Name="VFLibrarianTool" OutputFile="$(OutDir)/$(ProjectName)_32r-omp.lib" AdditionalLibraryDirectories="$(ProjectDir)..\librariesNEW" IgnoreAllDefaultLibraries="true" AdditionalDependencies="blas_32.lib lapack_32.lib suitesparse_config_32.lib amd_32.lib umfpack_32.lib kernelc_32.lib"/>
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true"/>
@@ -68,7 +68,7 @@
 				<Tool Name="VFPreBuildEventTool"/>
 				<Tool Name="VFPostBuildEventTool"/></Configuration>
 		<Configuration Name="Release-OpenMP|x64" OutputDirectory="$(ProjectDir)" IntermediateDirectory="$(ProjectDir)..\object\$(ProjectName)_$(ConfigurationName)_$(PlatformName)" ConfigurationType="typeStaticLibrary">
-				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugLineInfoOnly" Parallelization="true" BufferedIO="true" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(ProjectDir)DataStructures;$(ProjectDir)LinearSystem" PreprocessorDefinitions="USE_OPENMP;HAS_INTRINSIC_IARGC;HAS_INTRINSIC_ISNAN" OpenMP="OpenMPParallelCode" FloatingPointExceptionHandling="fpe1" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb"/>
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugLineInfoOnly" Parallelization="true" BufferedIO="true" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(ProjectDir)DataStructures;$(ProjectDir)LinearSystem;$(ProjectDir)PDEOperators" PreprocessorDefinitions="USE_OPENMP;HAS_INTRINSIC_IARGC;HAS_INTRINSIC_ISNAN" OpenMP="OpenMPParallelCode" FloatingPointExceptionHandling="fpe1" CallingConvention="callConventionCRef" PdbFile="$(OutDir)\$(TargetName).pdb"/>
 				<Tool Name="VFLibrarianTool" OutputFile="$(OutDir)/$(ProjectName)_64r-omp.lib" AdditionalLibraryDirectories="$(ProjectDir)..\librariesNEW" IgnoreAllDefaultLibraries="true" AdditionalDependencies="blas_64.lib lapack_64.lib suitesparse_config_64.lib amd_64.lib umfpack_64.lib kernelc_64.lib"/>
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64"/>
@@ -97,7 +97,6 @@
 		<File RelativePath=".\ContinuousFormulation\scalarpde.f90"/></Filter>
 		<Filter Name="DataStructures">
 		<Filter Name="ArrayList">
-		<File RelativePath=".\DataStructures\arraylist.f90"/>
 		<File RelativePath=".\DataStructures\arraylist.h"/>
 		<File RelativePath=".\DataStructures\arraylistbase.f90"/>
 		<File RelativePath=".\DataStructures\arraylistDP.f90"/>
@@ -113,7 +112,6 @@
 		<File RelativePath=".\DataStructures\arraylistSP_Int.f90"/>
 		<File RelativePath=".\DataStructures\arraylistSP_SP.f90"/></Filter>
 		<Filter Name="List">
-		<File RelativePath=".\DataStructures\list.f90"/>
 		<File RelativePath=".\DataStructures\list.h"/>
 		<File RelativePath=".\DataStructures\listbase.f90"/>
 		<File RelativePath=".\DataStructures\listDP.f90"/>
@@ -129,7 +127,6 @@
 		<File RelativePath=".\DataStructures\listSP_Int.f90"/>
 		<File RelativePath=".\DataStructures\listSP_SP.f90"/></Filter>
 		<Filter Name="Map">
-		<File RelativePath=".\DataStructures\map.f90"/>
 		<File RelativePath=".\DataStructures\map.h"/>
 		<File RelativePath=".\DataStructures\mapbase.f90"/>
 		<File RelativePath=".\DataStructures\mapDP.f90"/>
@@ -157,7 +154,6 @@
 		<File RelativePath=".\DataStructures\quadtreeDP.f90"/>
 		<File RelativePath=".\DataStructures\quadtreeSP.f90"/></Filter>
 		<Filter Name="Stack">
-		<File RelativePath=".\DataStructures\stack.f90"/>
 		<File RelativePath=".\DataStructures\stack.h"/>
 		<File RelativePath=".\DataStructures\stackDP.f90"/>
 		<File RelativePath=".\DataStructures\stackInt.f90"/>
@@ -368,8 +364,8 @@
 		<File RelativePath=".\Triangulation\intf_mshreghittest.inc"/></Filter>
 		<File RelativePath=".\Triangulation\griddeform.f90"/>
 		<File RelativePath=".\Triangulation\meshadjacency.f90"/>
-		<File RelativePath=".\Triangulation\meshmodification.f90"/>
 		<File RelativePath=".\Triangulation\meshgeneration.f90"/>
+		<File RelativePath=".\Triangulation\meshmodification.f90"/>
 		<File RelativePath=".\Triangulation\meshregion.f90"/>
 		<File RelativePath=".\Triangulation\triangulation.f90"/>
 		<File RelativePath=".\Triangulation\triasearch.f90"/></Filter></Files>
