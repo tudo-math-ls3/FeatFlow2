@@ -4854,20 +4854,20 @@ contains
              2.0_DP*dbasJy*dbasIy) + 2.0_DP* &
              beta*nu*dnu*(4.0_DP*dUx**2*dbasJx*dbasIx+ &
              2.0_DP*dUx*F*dbasJx*dbasIy+2.0_DP*F*dUx*dbasJy*dbasIx+ &
-             F**2*dbasJy*dbasIy) + 8.0_DP*dnu**2*beta*(dUx**2*dbasJx*dbasIx+ &
+             F**2*dbasJy*dbasIy) + Dii*8.0_DP*dnu**2*beta*(dUx**2*dbasJx*dbasIx+ &
              0.5_DP*dUx*F*dbasJx*dbasIy+0.5_DP*F*dUx*dbasJy*dbasIx+ &
              0.25_DP*F**2*dbasJy*dbasIy) + alpha*(dbasJx*dbasIx)  )
       p_DlocalMatrixA11(jdofe,idofe,iel) = p_DlocalMatrixA11(jdofe,idofe,iel) + dval
       
       ! A22
       dval = p_DcubWeight(icubp,iel)*(   dU**2*dbasJx*dbasIx+dU*dV*dbasJy*dbasIx + &
-             dV*dU*dbasJy*dbasIy + dV**2*dbasJy*dbasIy + beta*(dU*dVy*dbasJx*dbasI+&
+             dV*dU*dbasJx*dbasIy + dV**2*dbasJy*dbasIy + beta*(dU*dVy*dbasJx*dbasI+&
              dV*dVy*dbasJy*dbasI+dVy*dU*dbasJ*dbasIx+dVy*dV*dbasJ*dbasIy) + & 
              beta*(dUy**2+dVy**2)*dbasJ*dbasI + nu**2*(4.0_DP*dbasJy*dbasIy + &
              2.0_DP*dbasJx*dbasIx) + 2.0_DP* &
              beta*nu*dnu*(4.0_DP*dVy**2*dbasJy*dbasIy+ &
              2.0_DP*dVy*F*dbasJy*dbasIx+2.0_DP*F*dVy*dbasJx*dbasIy+ &
-             F**2*dbasJx*dbasIx) + 8.0_DP*dnu**2*beta*(dVy**2*dbasJy*dbasIy+ &
+             F**2*dbasJx*dbasIx) + Dii*8.0_DP*dnu**2*beta*(dVy**2*dbasJy*dbasIy+ &
              0.5_DP*dVy*F*dbasJy*dbasIx+0.5_DP*F*dVy*dbasJx*dbasIy+ &
              0.25_DP*F**2*dbasJx*dbasIx) + alpha*(dbasJy*dbasIy)  )   
       p_DlocalMatrixA22(jdofe,idofe,iel) = p_DlocalMatrixA22(jdofe,idofe,iel) + dval
@@ -4878,7 +4878,7 @@ contains
              beta*(dUy*dUx+dVy*dVx)*dbasJ*dbasI + nu**2*(2.0_DP*dbasJx*dbasIy)+& 
              2.0_DP*beta*nu*dnu*(4.0_DP*dVy*dUx*dbasJy*dbasIx+ &
              2.0_DP*dVy*F*dbasJy*dbasIy+2.0_DP*F*dUx*dbasJx*dbasIx+ &
-             F**2*dbasJx*dbasIy) + 8.0_DP*dnu**2*beta*(dVy*dUx*dbasJy*dbasIx+ &
+             F**2*dbasJx*dbasIy) + Dii*8.0_DP*dnu**2*beta*(dVy*dUx*dbasJy*dbasIx+ &
              0.5_DP*dVy*F*dbasJy*dbasIy+0.5_DP*F*dUx*dbasJx*dbasIx+ &
              0.25_DP*F**2*dbasJx*dbasIy) + alpha*(dbasJy*dbasIx)  )      
       p_DlocalMatrixA12(jdofe,idofe,iel) = p_DlocalMatrixA12(jdofe,idofe,iel) + dval
@@ -5154,7 +5154,6 @@ contains
       p_DlocalMatrixA53(idofe,jdofe,iel) = 0.0_DP
 
       ! A36
-      dval = p_DcubWeight(icubp,iel) * dbasJ*dbasI
       p_DlocalMatrixA36(jdofe,idofe,iel) = p_DlocalMatrixA36(jdofe,idofe,iel) + dval
 
       ! A63
@@ -5226,7 +5225,6 @@ contains
       p_DlocalMatrixA64(idofe,jdofe,iel) = 0.0_DP  
 
       ! A56
-      dval = p_DcubWeight(icubp,iel) * (  dbasJy*dbasIx  )
       p_DlocalMatrixA56(jdofe,idofe,iel) = p_DlocalMatrixA56(jdofe,idofe,iel) + dval  
 
       ! A65
