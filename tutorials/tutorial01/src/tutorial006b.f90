@@ -44,9 +44,9 @@ contains
     call boundary_read_prm(rboundary, "pre/bench1.prm")
     
     ! The mesh must always be in "standard" format to work with it.
-    ! First read, then convert to standard.
+    ! First read, then convert to standard, based on rboundary.
     call tria_readTriFile2D (rtriangulation, "pre/bench1.tri", rboundary)
-    call tria_initStandardMeshFromRaw (rtriangulation)
+    call tria_initStandardMeshFromRaw (rtriangulation, rboundary)
 
     ! =================================
     ! Write a VTK file with the mesh

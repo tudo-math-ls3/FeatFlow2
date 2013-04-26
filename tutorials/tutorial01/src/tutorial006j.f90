@@ -41,12 +41,6 @@ contains
     type(t_matrixScalar) :: rmatrixMass, rmatrixLaplace
     type(t_matrixScalar) :: rmatrix
     
-    logical :: bhasstruc1, bhasstruc2, bhasstruc3
-    logical :: bhascont1, bhascont2, bhascont3
-    logical :: bsharedstruc1, bsharedstruc2, bsharedstruc3
-    logical :: bsharedcont
-
-
     ! Print a message
     call output_lbrk()
     call output_separator (OU_SEP_STAR)
