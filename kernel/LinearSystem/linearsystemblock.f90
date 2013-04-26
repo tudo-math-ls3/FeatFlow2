@@ -509,6 +509,7 @@ module linearsystemblock
     module procedure lsysbl_createEmptyMatrix
   end interface  
 
+  public :: lsysbl_createMatrix
   public :: lsysbl_createMatFromScalar
   public :: lsysbl_createMatBlockByDiscr
   public :: lsysbl_createEmptyMatrix
