@@ -15,6 +15,10 @@ module fecompbase
   use fespacehierarchybase
   use fespacehierarchy
   
+  use blockmatassemblybase
+  use blockmatassembly
+  use blockmatassemblystdop
+  
   use paramlist
   use collection
   
@@ -145,6 +149,7 @@ module fecompbase
   public :: base_vectorcopy
   public :: base_vectorLinearComb
   public :: base_writeOutput
+  public :: base_computeErrors
   public :: base_vectorDivide
   
 contains
@@ -710,6 +715,86 @@ contains
       end select
       
     end select
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine base_computeErrors (rproblem)
+
+!<description>
+  ! Creates an output file for the reference solution
+!</description>
+
+!<input>
+  ! Problem structure
+  type(t_problem), intent(in), target :: rproblem
+!</input>
+
+!</subroutine>
+
+    ! local variables
+    real(DP) :: dintvalue
+    integer :: icomp
+    type(t_fev2Vectors) :: revalVectors
+    type(t_scalarCubatureInfo) :: rcubatureInfo
+    type(t_vectorBlock), pointer :: p_rsol
+    
+    ! Get the solution
+    p_rsol => rproblem%rrefSolution%p_Rvectors(rproblem%rrefSolution%ireflevel)
+
+    if (rproblem%cerrorL2 .ne. 0) then
+      ! Compute the L2 norm
+      do icomp = 1,p_rsol%nblocks
+        
+        ! Cubature structure
+        call spdiscr_createDefCubStructure (p_rsol%RvectorBlock(icomp)%p_rspatialDiscr, &
+            rcubatureInfo, CUB_GEN_AUTO_G5)
+      
+        call fev2_addVectorToEvalList(revalVectors,p_rsol%RvectorBlock(icomp),0)
+        
+        ! Compute the error
+        call bma_buildIntegral (dintvalue,BMA_CALC_STANDARD,&
+            bma_fcalc_L2norm,revalVectors=revalVectors,rcubatureInfo=rcubatureInfo)
+        
+        ! Print the output
+        call output_line ("||solution0_"//trim(sys_siL(icomp,10))//"||_L2 = "//&
+            trim(sys_sdE(sqrt(dintvalue),10)))
+        
+        ! Cleanup
+        call fev2_releaseVectorList(revalVectors)
+        call spdiscr_releaseCubStructure (rcubatureInfo)
+        
+      end do
+    end if
+    
+    if (rproblem%cerrorH1 .ne. 0) then
+      ! Compute the L2 norm
+      do icomp = 1,p_rsol%nblocks
+        
+        ! Cubature structure
+        call spdiscr_createDefCubStructure (p_rsol%RvectorBlock(icomp)%p_rspatialDiscr, &
+            rcubatureInfo, CUB_GEN_AUTO_G5)
+      
+        call fev2_addVectorToEvalList(revalVectors,p_rsol%RvectorBlock(icomp),1)
+        
+        ! Compute the error
+        call bma_buildIntegral (dintvalue,BMA_CALC_STANDARD,&
+            bma_fcalc_H1norm,revalVectors=revalVectors,rcubatureInfo=rcubatureInfo)
+        
+        ! Print the output
+        call output_line ("||solution0_"//trim(sys_siL(icomp,10))//"||_H1 = "//&
+            trim(sys_sdE(sqrt(dintvalue),10)))
+        
+        ! Cleanup
+        call fev2_releaseVectorList(revalVectors)
+        call spdiscr_releaseCubStructure (rcubatureInfo)
+        
+      end do
+    end if
+    
 
   end subroutine
 
