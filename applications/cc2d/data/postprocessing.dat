@@ -141,15 +141,34 @@ istartSuffixFilm = 0
 
 # Calculate L2-error to reference solution.
 # =0: Don't calculate
-# =1: Calculate the error
+# =1: Calculate the error using the reference functions in callback.f90
+# =2: Calculate the error based on the expressions below
 
 ierrorAnalysisL2 = 0
 
+# Reference functions to use for the computation of the the L2-error
+# in case of ierrorAnalysisL2 = 2
+
+srefL2ExpressionU1 = "0"
+srefL2ExpressionU2 = "0"
+srefL2ExpressionP = "0"
+
 # Calculate H1-error to reference solution.
 # =0: Don't calculate
-# =1: Calculate the error
+# =1: Calculate the error using the reference functions in callback.f90
+# =2: Calculate the error based on the expressions below
 
 ierrorAnalysisH1 = 0
+
+# Reference functions to use for the computation of the the H1-error
+# in case of ierrorAnalysisH1 = 2
+
+srefH1ExpressionU1X = "0"
+srefH1ExpressionU1Y = "0"
+srefH1ExpressionU2X = "0"
+srefH1ExpressionU2Y = "0"
+srefH1ExpressionPX = "0"
+srefH1ExpressionPY = "0"
 
 # Calculate the kinetic energy.
 # =0: Don't calculate

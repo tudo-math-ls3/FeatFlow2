@@ -71,6 +71,7 @@ module ccpostprocessing
   use multilevelprojection
   use vectorio
   use io
+  use fparser
   
   use collection
   use convection
@@ -141,7 +142,19 @@ module ccpostprocessing
 
     ! A vector that describes the H1-error of the pressure in the cells
     type(t_vectorScalar) :: rvectorH1errCells
+    
+    ! Whether or not to compute L2 errors.
+    integer :: icalcL2
+    
+    ! Whether or not to compute H1 errors.
+    integer :: icalcH1
+
+    ! Parser object that encapsules error definitions for the L2 error.
+    type(t_fparser) :: rrefFunctionL2
   
+    ! Parser object that encapsules error definitions for the H1 error.
+    type(t_fparser) :: rrefFunctionH1
+
   end type
 
 !</typeblock>
@@ -195,7 +208,7 @@ contains
     call cc_calculateDivergence (rvector,rproblem)
     
     ! Error analysis, comparison to reference function.
-    call cc_errorAnalysis (rvector,0.0_DP,rproblem)
+    call cc_errorAnalysis (rvector,0.0_DP,rpostprocessing,rproblem)
     
     ! Write the UCD export file (GMV, AVS,...) as configured in the DAT file.
     call cc_writeUCD (rpostprocessing, rvector, rproblem)
@@ -316,7 +329,7 @@ contains
       call cc_calculateDivergence (rvectorInt,rproblem)
 
       ! Error analysis, comparison to reference function.
-      call cc_errorAnalysis (rvectorInt,dtimeInt,rproblem)
+      call cc_errorAnalysis (rvectorInt,dtimeInt,rpostprocessing,rproblem)
     else
       ! Calculate body forces.
       call cc_calculateBodyForces (rvector,dtime,rproblem)
@@ -331,7 +344,7 @@ contains
       call cc_calculateDivergence (rvector,rproblem)
 
       ! Error analysis, comparison to reference function.
-      call cc_errorAnalysis (rvector,dtime,rproblem)
+      call cc_errorAnalysis (rvector,dtime,rpostprocessing,rproblem)
     end if
     
     ! Write the UCD export file (GMV, AVS,...) as configured in the DAT file.
@@ -433,11 +446,151 @@ contains
 
   end subroutine
 
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine fcalc_error (cderivative,rdiscretisation, &
+                nelements,npointsPerElement,Dpoints, &
+                IdofsTest,rdomainIntSubset,&
+                Dvalues,rcollection)
+  
+  use basicgeometry
+  use triangulation
+  use collection
+  use scalarpde
+  use domainintegration
+  
+!<description>
+  ! This routine is called during the calculation if L2/H1 errors.
+  ! It evaluates errors being given as expressions.
+!</description>
+  
+!<input>
+  ! This is a DER_xxxx derivative identifier (from derivative.f90) that
+  ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
+  ! The result must be written to the Dvalue-array below.
+  integer, intent(in)                                         :: cderivative
+
+  ! The discretisation structure that defines the basic shape of the
+  ! triangulation with references to the underlying triangulation,
+  ! analytic boundary boundary description etc.
+  type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
+  
+  ! Number of elements, where the coefficients must be computed.
+  integer, intent(in)                                         :: nelements
+  
+  ! Number of points per element, where the coefficients must be computed
+  integer, intent(in)                                         :: npointsPerElement
+  
+  ! This is an array of all points on all the elements where coefficients
+  ! are needed.
+  ! DIMENSION(NDIM2D,npointsPerElement,nelements)
+  ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+  real(DP), dimension(:,:,:), intent(in)  :: Dpoints
+
+  ! An array accepting the DOF`s on all elements trial in the trial space.
+  ! DIMENSION(\#local DOF`s in trial space,Number of elements)
+  integer, dimension(:,:), intent(in) :: IdofsTest
+
+  ! This is a t_domainIntSubset structure specifying more detailed information
+  ! about the element set that is currently being integrated.
+  ! It is usually used in more complex situations (e.g. nonlinear matrices).
+  type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
+
+  ! A pointer to a collection structure to provide additional
+  ! information to the coefficient routine.
+  type(t_collection), intent(inout), optional      :: rcollection
+  
+!</input>
+
+!<output>
+  ! This array has to receive the values of the (analytical) function
+  ! in all the points specified in Dpoints, or the appropriate derivative
+  ! of the function, respectively, according to cderivative.
+  !   DIMENSION(npointsPerElement,nelements)
+  real(DP), dimension(:,:), intent(out)                      :: Dvalues
+!</output>
+  
+!</subroutine>
+
+    ! local variables
+    integer :: ctype,icomponent
+    integer :: ielement,ipoint, iparsercomp
+    real(DP), dimension(size(EXPRVARIABLES)) :: Rval
+
+    ! Type. 0=L2 error, 1=H1 error
+    ctype = rcollection%IquickAccess(1)
+  
+    ! Underlying component of the expression to evaluate
+    icomponent = rcollection%IquickAccess(2)
+    
+    ! Fill the evaluation structure
+    Rval(:) = 0.0_DP
+    Rval(7:11) = rcollection%DquickAccess(1:5)
+    
+    select case (ctype)
+    
+    ! ---------------------------------
+    ! L2 error
+    ! ---------------------------------
+    case (0)
+      do ielement = 1,nelements
+        do ipoint = 1,npointsPerElement
+        
+          ! Get the point coordinates.
+          Rval(1) = Dpoints(1,ipoint,ielement)
+          Rval(2) = Dpoints(2,ipoint,ielement)
+          
+          ! Evaluate
+          call fparser_evalFunction (rcollection%p_rfparserQuickAccess1, &
+              icomponent, Rval, Dvalues(ipoint,ielement))
+        
+        end do
+      end do
+
+    ! ---------------------------------
+    ! H1 error
+    ! ---------------------------------
+    case (1)
+    
+      ! ---------------------------------
+      ! X or Y derivative?
+      ! ---------------------------------
+      select case (cderivative)
+      
+      ! Component in the parser array.
+      ! 1,3,5 = X-derivative, 2,4,6 = Y-derivative
+      case (DER_DERIV2D_X)
+        iparsercomp = NDIM2D*icomponent-1
+    
+      case (DER_DERIV2D_Y)
+        iparsercomp = NDIM2D*icomponent
+
+      end select
+    
+      do ielement = 1,nelements
+        do ipoint = 1,npointsPerElement
+        
+          ! Get the point coordinates.
+          Rval(1) = Dpoints(1,ipoint,ielement)
+          Rval(2) = Dpoints(2,ipoint,ielement)
+          
+          ! Evaluate
+          call fparser_evalFunction (rcollection%p_rfparserQuickAccess1, &
+              iparsercomp, Rval, Dvalues(ipoint,ielement))
+        
+        end do
+      end do
+
+    end select
+  end subroutine
+
 !******************************************************************************
 
 !<subroutine>
 
-  subroutine cc_errorAnalysis (rsolution,dtime,rproblem)
+  subroutine cc_errorAnalysis (rsolution,dtime,rpostprocessing,rproblem)
 
 !<description>
   ! Performs error analysis on a given solution rsolution as specified
@@ -451,6 +604,9 @@ contains
   
   ! Solution time. =0 for stationary simulations.
   real(DP), intent(in) :: dtime
+
+  ! Postprocessing structure. Defines what to do with solution vectors.
+  type(t_c2d2postprocessing), intent(inout), target :: rpostprocessing
 !</input>
 
 !<inputoutput>
@@ -463,23 +619,18 @@ contains
     ! local variables
     real(DP),dimension(3) :: Derr
     real(DP) :: derrorVel, derrorP, denergy
-    integer :: icalcL2,icalcH1,icalcEnergy
+    integer :: icalcEnergy
     integer :: iwriteErrorAnalysisL2,iwriteErrorAnalysisH1,iwriteKineticEnergy
     character(len=SYS_STRLEN) :: sfilenameErrorAnalysisL2
     character(len=SYS_STRLEN) :: sfilenameErrorAnalysisH1
     character(len=SYS_STRLEN) :: sfilenameKineticEnergy
     character(len=SYS_STRLEN) :: stemp
-    integer :: iunit
-    integer :: cflag
-    integer :: icubError
+    integer :: iunit,cflag,icubError
     logical :: bfileExists
     real(DP) :: dtimebackup
     type(t_scalarCubatureInfo) :: rcubatureInfoUV,rcubatureInfoP
+    type(t_collection) :: rlocalCollection
     
-    call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
-        "IERRORANALYSISL2", icalcL2, 0)
-    call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
-        "IERRORANALYSISH1", icalcH1, 0)
     call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
         "ICALCKINETICENERGY", icalcEnergy, 1)
 
@@ -528,7 +679,9 @@ contains
     dtimebackup = rproblem%rtimedependence%dtime
     rproblem%rtimedependence%dtime = dtime
     
-    if ((icalcL2 .ne. 0) .or. (icalcH1 .ne. 0) .or. (icalcEnergy .ne. 0)) then
+    if ((rpostprocessing%icalcL2 .ne. 0) .or. &
+        (rpostprocessing%icalcH1 .ne. 0) .or. &
+        (icalcEnergy .ne. 0)) then
       call output_lbrk()
       call output_line ("Error Analysis")
       call output_line ("--------------")
@@ -538,32 +691,79 @@ contains
     cflag = SYS_APPEND
     if (rproblem%rtimedependence%itimeStep .eq. 0) cflag = SYS_REPLACE
     
-    if (icalcL2 .ne. 0) then
+    ! ===============================================================
+    ! Error computation. L2 error
+    ! ===============================================================
     
-      call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
+    if (rpostprocessing%icalcL2 .ne. 0) then
     
-      ! Perform error analysis to calculate and add 1/2||u-z||_{L^2}.
-      call pperr_scalar (PPERR_L2ERROR,Derr(1),rsolution%RvectorBlock(1),&
-                         ffunction_TargetX,rproblem%rcollection,&
-                         rcubatureInfo=rcubatureInfoUV)
+      select case (rpostprocessing%icalcL2)
+      
+      ! -------------------------------
+      ! Compute using callback functions
+      ! -------------------------------
+      case (1)
+        call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
+      
+        ! Perform error analysis to calculate and add 1/2||u-z||_{L^2}.
+        call pperr_scalar (PPERR_L2ERROR,Derr(1),rsolution%RvectorBlock(1),&
+                          ffunction_TargetX,rproblem%rcollection,&
+                          rcubatureInfo=rcubatureInfoUV)
 
-      call pperr_scalar (PPERR_L2ERROR,Derr(2),rsolution%RvectorBlock(2),&
-                         ffunction_TargetY,rproblem%rcollection,&
-                         rcubatureInfo=rcubatureInfoUV)
-                         
-      derrorVel = sqrt(Derr(1)**2+Derr(2)**2)
+        call pperr_scalar (PPERR_L2ERROR,Derr(2),rsolution%RvectorBlock(2),&
+                          ffunction_TargetY,rproblem%rcollection,&
+                          rcubatureInfo=rcubatureInfoUV)
+                           
+        derrorVel = sqrt(Derr(1)**2+Derr(2)**2)
 
-      call pperr_scalar (PPERR_L2ERROR,Derr(3),rsolution%RvectorBlock(3),&
-                         ffunction_TargetP,rproblem%rcollection,&
-                         rcubatureInfo=rcubatureInfoP)
+        call pperr_scalar (PPERR_L2ERROR,Derr(3),rsolution%RvectorBlock(3),&
+                          ffunction_TargetP,rproblem%rcollection,&
+                          rcubatureInfo=rcubatureInfoP)
 
-      derrorP = Derr(3)
+        derrorP = Derr(3)
+      
+        call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
+      
+      ! -------------------------------
+      ! Compute via expressions
+      ! -------------------------------
+      case (2)
+
+        ! Prepare a collection      
+        rlocalCollection%IquickAccess(1) = 0       ! L2-error
+        rlocalCollection%DquickAccess(:) = 0.0_DP
+        rlocalCollection%DquickAccess(1) = dtime   ! Time
+        rlocalCollection%p_rfparserQuickAccess1 => rpostprocessing%rrefFunctionL2
+
+        ! Perform error analysis to calculate and add 1/2||u-z||_{L^2}.
+        ! Use the callback function "fcalc_error".
+        rlocalCollection%IquickAccess(2) = 1  ! component
+        call pperr_scalar (PPERR_L2ERROR,Derr(1),rsolution%RvectorBlock(1),&
+                          fcalc_error,rlocalCollection,&
+                          rcubatureInfo=rcubatureInfoUV)
+
+        rlocalCollection%IquickAccess(2) = 2  ! component
+        call pperr_scalar (PPERR_L2ERROR,Derr(2),rsolution%RvectorBlock(2),&
+                          fcalc_error,rlocalCollection,&
+                          rcubatureInfo=rcubatureInfoUV)
+                           
+        derrorVel = sqrt(Derr(1)**2+Derr(2)**2)
+
+        rlocalCollection%IquickAccess(2) = 3  ! component
+        call pperr_scalar (PPERR_L2ERROR,Derr(3),rsolution%RvectorBlock(3),&
+                          fcalc_error,rlocalCollection,&
+                          rcubatureInfo=rcubatureInfoP)
+
+        derrorP = Derr(3)
+
+      end select
       
       call output_line ("||u-reference||_L2 = "//trim(sys_sdEP(derrorVel,15,6)) )
       call output_line ("||p-reference||_L2 = "//trim(sys_sdEP(derrorP,15,6)) )
       
-      call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
-      
+      ! -------------------------------
+      ! Write to file
+      ! -------------------------------
       if (iwriteErrorAnalysisL2 .ne. 0) then
         ! Write the result to a text file.
         ! Format: timestep current-time value
@@ -583,22 +783,87 @@ contains
       
     end if
 
-    if (icalcH1 .ne. 0) then
-    
-      call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
-    
-      ! Perform error analysis to calculate and add ||u-z||_{H^1}.
-      call pperr_scalar (PPERR_H1ERROR,Derr(1),rsolution%RvectorBlock(1),&
-                         ffunction_TargetX,rproblem%rcollection,&
-                         rcubatureInfo=rcubatureInfoUV)
+    ! ===============================================================
+    ! Error computation. H1 error
+    ! ===============================================================
 
-      call pperr_scalar (PPERR_H1ERROR,Derr(2),rsolution%RvectorBlock(2),&
-                         ffunction_TargetY,rproblem%rcollection,&
-                         rcubatureInfo=rcubatureInfoUV)
-                         
-      if ((Derr(1) .ne. -1.0_DP) .and. (Derr(2) .ne. -1.0_DP)) then
-        derrorVel = sqrt(Derr(1)**2+Derr(2)**2)
+    if (rpostprocessing%icalcH1 .ne. 0) then
+    
+      select case (rpostprocessing%icalcH1)
+      
+      ! -------------------------------
+      ! Compute using callback functions
+      ! -------------------------------
+      case (1)
+        call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
+      
+        ! Perform error analysis to calculate and add ||u-z||_{H^1}.
+        call pperr_scalar (PPERR_H1ERROR,Derr(1),rsolution%RvectorBlock(1),&
+                          ffunction_TargetX,rlocalCollection,&
+                          rcubatureInfo=rcubatureInfoUV)
 
+        call pperr_scalar (PPERR_H1ERROR,Derr(2),rsolution%RvectorBlock(2),&
+                          ffunction_TargetY,rlocalCollection,&
+                          rcubatureInfo=rcubatureInfoUV)
+                      
+        derrorVel = -1.0_DP     
+        if ((Derr(1) .ne. -1.0_DP) .and. (Derr(2) .ne. -1.0_DP)) then
+          derrorVel = sqrt(Derr(1)**2+Derr(2)**2)
+        end if
+        
+        call pperr_scalar (PPERR_H1ERROR,Derr(3),rsolution%RvectorBlock(3),&
+                          ffunction_TargetP,rlocalCollection,&
+                          rcubatureInfo=rcubatureInfoP)
+
+        derrorP = -1.0_DP
+        if (Derr(3) .ne. -1.0_DP) then
+          derrorP = Derr(3)
+        end if
+        
+        call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
+      
+      ! -------------------------------
+      ! Compute via expressions
+      ! -------------------------------
+      case (2)
+      
+        ! Prepare a collection      
+        rlocalCollection%IquickAccess(1) = 1       ! H1-error
+        rlocalCollection%DquickAccess(:) = 0.0_DP
+        rlocalCollection%DquickAccess(1) = dtime   ! Time
+        rlocalCollection%p_rfparserQuickAccess1 => rpostprocessing%rrefFunctionH1
+
+        ! Perform error analysis to calculate and add ||u-z||_{H^1}.
+        ! Use the callback function "fcalc_error".
+        rlocalCollection%IquickAccess(2) = 1  ! component
+        call pperr_scalar (PPERR_H1ERROR,Derr(1),rsolution%RvectorBlock(1),&
+                          fcalc_error,rproblem%rcollection,&
+                          rcubatureInfo=rcubatureInfoUV)
+
+        rlocalCollection%IquickAccess(2) = 2  ! component
+        call pperr_scalar (PPERR_H1ERROR,Derr(2),rsolution%RvectorBlock(2),&
+                          fcalc_error,rproblem%rcollection,&
+                          rcubatureInfo=rcubatureInfoUV)
+                      
+        derrorVel = -1.0_DP     
+        if ((Derr(1) .ne. -1.0_DP) .and. (Derr(2) .ne. -1.0_DP)) then
+          derrorVel = sqrt(Derr(1)**2+Derr(2)**2)
+        end if
+        
+        rlocalCollection%IquickAccess(2) = 3  ! component
+        call pperr_scalar (PPERR_H1ERROR,Derr(3),rsolution%RvectorBlock(3),&
+                          fcalc_error,rproblem%rcollection,&
+                          rcubatureInfo=rcubatureInfoP)
+
+        derrorP = -1.0_DP
+        if (Derr(3) .ne. -1.0_DP) then
+          derrorP = Derr(3)
+        end if
+
+      end select
+      
+      ! derrorVel/derrorP=-1 indicates that the error is not available.
+      if (derrorVel .ne. -1.0_DP) then
         call output_line ("||u-reference||_H1 = "//trim(sys_sdEP(derrorVel,15,6)),&
             coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
       else
@@ -606,13 +871,7 @@ contains
             coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
       end if
       
-      call pperr_scalar (PPERR_H1ERROR,Derr(3),rsolution%RvectorBlock(3),&
-                         ffunction_TargetP,rproblem%rcollection,&
-                         rcubatureInfo=rcubatureInfoP)
-
-      if (Derr(3) .ne. -1.0_DP) then
-        derrorP = Derr(3)
-
+      if (derrorP .ne. -1.0_DP) then
         call output_line ("||p-reference||_H1 = "//trim(sys_sdEP(derrorP,15,6)),&
             coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
       else
@@ -620,8 +879,9 @@ contains
             coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
       end if
       
-      call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
-      
+      ! -------------------------------
+      ! Write to file
+      ! -------------------------------
       if (iwriteErrorAnalysisH1 .ne. 0) then
         ! Write the result to a text file.
         ! Format: timestep current-time value
@@ -640,6 +900,10 @@ contains
       
     end if
     
+    ! ===============================================================
+    ! Kinetic energy
+    ! ===============================================================
+
     if (icalcEnergy .ne. 0) then
     
       call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
@@ -1205,7 +1469,7 @@ contains
 
     ! local variables
     integer :: nlines,i,iunit,iwriteFluxValues
-    integer :: iderType, cflag
+    integer :: cflag
     logical :: bfileExists
     real(dp), dimension(:), allocatable :: Dvalues
     real(dp), dimension(:,:,:), allocatable :: Dcoords
@@ -1347,10 +1611,6 @@ contains
     integer :: ioutputUCD,ilevelUCD
     integer(I32) :: ieltype
     type(t_collection) :: rcollection
-    
-    ! Parameters used for the moving frame formulation
-    integer :: imovingFrame
-    real(DP), dimension(NDIM2D) :: Dvelocity,Dacceleration
     
     character(SYS_STRLEN) :: sfile,sfilename
     
@@ -1536,6 +1796,15 @@ contains
             p_Ddata(1:p_rtriangulation%NVT))
       end if
     end if
+    
+    ! Write the solution in "raw" format. This does a kernal-internal projection
+    ! into the Q1 space and writes out the solution in the vertices.
+    ! Boundary conditions are not imposed.
+    call ucd_addVectorFieldByVertex (rexport, "velocity_raw", UCD_VAR_STANDARD, &
+        (/ rvector%RvectorBlock(1),rvector%RvectorBlock(2) /) )
+
+    call ucd_addVectorByVertex (rexport, "pressure_raw", UCD_VAR_STANDARD, &
+        rvector%RvectorBlock(3), DER_FUNC)
     
     ! If we have a simple Q1~ discretisation, calculate the streamfunction.
     if (rvector%p_rblockDiscr%RspatialDiscr(1)% &
@@ -1752,6 +2021,7 @@ contains
 
   ! local variables
   type(t_blockDiscretisation), pointer :: p_rdiscr
+  character(len=PARLST_LENLINEBUF) :: sexpression
 
     ! For postprocessing, we need discretisation structures in the Q0 and Q1 space,
     ! later perhaps in the Q2 space. For this purpose, derive the corresponding
@@ -1783,7 +2053,63 @@ contains
       call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
          "ISTARTSUFFIXFILM", rpostprocessing%inextFileSuffixFilm, 1)
     end if
-                                    
+    
+    ! Prepare computation of L2/H1 errors
+    call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
+        "IERRORANALYSISL2", rpostprocessing%icalcL2, 0)
+    call parlst_getvalue_int (rproblem%rparamList, "CC-POSTPROCESSING", &
+        "IERRORANALYSISH1", rpostprocessing%icalcH1, 0)
+
+    ! Initialise a parser for the expressions.
+    call fparser_create (rpostprocessing%rrefFunctionL2,NDIM2D+1)
+    call fparser_create (rpostprocessing%rrefFunctionH1,NDIM2D*(NDIM2D+1))
+    
+    ! Parse expressions specifying the reference functions for the L2/H1 error.
+    !
+    ! L2 error
+    if (rpostprocessing%icalcL2 .eq. 2) then
+      ! Read parameters
+      call parlst_getvalue_string (rproblem%rparamList,"CC-POSTPROCESSING",&
+          "srefL2ExpressionU1",sexpression,"0",bdequote=.true.)
+      call fparser_parseFunction (rpostprocessing%rrefFunctionL2, 1, sexpression, EXPRVARIABLES)
+
+      call parlst_getvalue_string (rproblem%rparamList,"CC-POSTPROCESSING",&
+          "srefL2ExpressionU2",sexpression,"0",bdequote=.true.)
+      call fparser_parseFunction (rpostprocessing%rrefFunctionL2, 2, sexpression, EXPRVARIABLES)
+
+      call parlst_getvalue_string (rproblem%rparamList,"CC-POSTPROCESSING",&
+          "srefL2ExpressionP",sexpression,"0",bdequote=.true.)
+      call fparser_parseFunction (rpostprocessing%rrefFunctionL2, 3, sexpression, EXPRVARIABLES)
+    end if
+    
+    ! H1 error
+    if (rpostprocessing%icalcH1 .eq. 2) then
+      ! Read parameters
+      call parlst_getvalue_string (rproblem%rparamList,"CC-POSTPROCESSING",&
+          "srefH1ExpressionU1X",sexpression,"0",bdequote=.true.)
+      call fparser_parseFunction (rpostprocessing%rrefFunctionH1, 1, sexpression, EXPRVARIABLES)
+
+      call parlst_getvalue_string (rproblem%rparamList,"CC-POSTPROCESSING",&
+          "srefH1ExpressionU1Y",sexpression,"0",bdequote=.true.)
+      call fparser_parseFunction (rpostprocessing%rrefFunctionH1, 2, sexpression, EXPRVARIABLES)
+
+      call parlst_getvalue_string (rproblem%rparamList,"CC-POSTPROCESSING",&
+          "srefH1ExpressionU2X",sexpression,"0",bdequote=.true.)
+      call fparser_parseFunction (rpostprocessing%rrefFunctionH1, 3, sexpression, EXPRVARIABLES)
+
+      call parlst_getvalue_string (rproblem%rparamList,"CC-POSTPROCESSING",&
+          "srefH1ExpressionU2Y",sexpression,"0",bdequote=.true.)
+      call fparser_parseFunction (rpostprocessing%rrefFunctionH1, 4, sexpression, EXPRVARIABLES)
+
+      call parlst_getvalue_string (rproblem%rparamList,"CC-POSTPROCESSING",&
+          "srefH1ExpressionPX",sexpression,"0",bdequote=.true.)
+      call fparser_parseFunction (rpostprocessing%rrefFunctionH1, 5, sexpression, EXPRVARIABLES)
+                                      
+      call parlst_getvalue_string (rproblem%rparamList,"CC-POSTPROCESSING",&
+          "srefH1ExpressionPY",sexpression,"0",bdequote=.true.)
+      call fparser_parseFunction (rpostprocessing%rrefFunctionH1, 6, sexpression, EXPRVARIABLES)
+    end if
+
   end subroutine
 
   !****************************************************************************
@@ -1885,6 +2211,9 @@ contains
     call spdiscr_releaseDiscr(rpostprocessing%rdiscrQuadratic)
     call spdiscr_releaseDiscr(rpostprocessing%rdiscrLinear)
     call spdiscr_releaseDiscr(rpostprocessing%rdiscrConstant)
+    
+    call fparser_release (rpostprocessing%rrefFunctionH1)
+    call fparser_release (rpostprocessing%rrefFunctionL2)
   
   end subroutine
 
