@@ -120,14 +120,12 @@ contains
       
       select case(elem_igetDimension(celement))
       case (NDIM1D)
-
         dof_igetNDofGlob = NDFG_uniform1D (rdiscretisation%p_rtriangulation, celement)
 
       case (NDIM2D)
         dof_igetNDofGlob = NDFG_uniform2D (rdiscretisation%p_rtriangulation, celement)
 
       case (NDIM3D)
-      
         dof_igetNDofGlob = NDFG_uniform3D (rdiscretisation%p_rtriangulation, celement)
 
       end select
@@ -142,10 +140,9 @@ contains
 
       select case(elem_igetDimension(celement))
       case (NDIM1D)
-
         dof_igetNDofGlob = NDFG_uniform1D (rdiscretisation%p_rtriangulation, celement)
 
-        if (rdiscretisation%inumFESpaces .eq. 2) then
+        if (rdiscretisation%inumFESpaces .ne. 1) then
           call output_line("Conformal discretisation not completely supported!",&
                           OU_CLASS_ERROR,OU_MODE_STD,"dof_igetNDofGlob")
         end if
@@ -167,7 +164,7 @@ contains
         ! Currently, only uniform discretisations are supported.
         dof_igetNDofGlob = NDFG_uniform3D (rdiscretisation%p_rtriangulation, celement)
 
-        if (rdiscretisation%inumFESpaces .eq. 2) then
+        if (rdiscretisation%inumFESpaces .ne. 1) then
           call output_line("Conformal discretisation not completely supported!",&
               OU_CLASS_ERROR,OU_MODE_STD,"dof_igetNDofGlob")
         end if
