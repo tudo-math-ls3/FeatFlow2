@@ -141,10 +141,14 @@
 !# 38.) alst_splice / alst_spliceTbl (splice in STL)
 !#      -> Transfers data from one arraylist into another list
 !#
+!# 39.) alst_unique / alst_uniqueTbl (merge in STL)
+!#      -> Removes all but the first element from every consecutive
+!#         group of equal elements
+!#
 !#
 !# The following operations in STL are not supported yet
 !#
-!# remove, remove_if, unique
+!# remove, remove_if
 !#
 !#
 !# The following operators are available:
@@ -211,6 +215,7 @@
   public :: alst_uncast
   public :: alst_merge,alst_mergeTbl
   public :: alst_splice,alst_spliceTbl
+  public :: alst_unique,alst_uniqueTbl
 
   public assignment(=)
   public operator(==)
@@ -465,6 +470,15 @@
     module procedure FEAT2_PP_TEMPLATE_TD(alst_spliceTbl1,T,D)
     module procedure FEAT2_PP_TEMPLATE_TD(alst_spliceTbl2,T,D)
     module procedure FEAT2_PP_TEMPLATE_TD(alst_spliceTbl3,T,D)
+  end interface
+
+  interface alst_unique
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_unique,T,D)
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_uniqueTbl,T,D)
+  end interface
+
+  interface alst_uniqueTbl
+    module procedure FEAT2_PP_TEMPLATE_TD(alst_uniqueTbl,T,D)
   end interface
 
   interface assignment(=)
@@ -4341,7 +4355,7 @@ contains
     ! local variable
     integer :: itable
 
-     ! Loop over al tables from source arraylist
+    ! Loop over al tables from source arraylist
     do itable = 1, alst_ntable(rarraylistSrc)
       ! Merge lists from current table
       call alst_spliceTbl(rarraylistDest, rpositionDest, rarraylistSrc, itable)
@@ -4528,6 +4542,83 @@ contains
       
       ! Remove item at position riterator from source list
       riterator = alst_erase(rarraylistSrc, riterator)
+    end do
+
+  end subroutine
+
+  !************************************************************************
+
+!<subroutine>
+
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_uniqueTbl,T,D)(rarraylist,itable)
+
+!<description>
+    ! This subroutine removes all but the first element from every
+    ! consecutive group of equal elements in table itable of the
+    !  array list. The array list must be sorted (which is not checked).
+!</description>
+
+!<input>
+    ! The source table
+    integer, intent(in) :: itable
+!</input>
+
+!<inputoutput>
+    ! The linked list
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(FEAT2_PP_TEMPLATE_TD(it_arraylist,T,D)) :: riterator,rposition
+    FEAT2_PP_TTYPE(T_TYPE), pointer :: p_key1,p_key2
+
+    ! Initialise iterator
+    riterator = alst_begin(rarraylist,itable)
+    rposition = riterator
+    call alst_next(riterator)
+
+    ! Loop through all items and check for duplicates
+    do while (riterator /= alst_end(rarraylist,itable))
+      
+      ! Check of two consecutive keys are the same
+      call alst_getbase_key(rarraylist, rposition, p_key1)
+      call alst_getbase_key(rarraylist, riterator, p_key2)
+
+      if (p_key1 .eq. p_key2) then
+        riterator = alst_erase(rarraylist, riterator)
+      else
+        call alst_next(riterator)
+        call alst_next(rposition)
+      end if
+    end do
+
+  end subroutine
+
+  !************************************************************************
+
+!<subroutine>
+
+  subroutine FEAT2_PP_TEMPLATE_TD(alst_unique,T,D)(rarraylist)
+
+!<description>
+    ! This subroutine removes all but the first element from every
+    ! consecutive group of equal elements in all tables of the
+    !  array list. The array list must be sorted (which is not checked).
+!</description>
+
+!<inputoutput>
+    ! The linked list
+    type(FEAT2_PP_TEMPLATE_TD(t_arraylist,T,D)), intent(inout) :: rarraylist
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    integer :: itable
+
+    ! Loop over al tables from arraylist
+    do itable = 1, alst_ntable(rarraylist)
+      call alst_uniqueTbl(rarraylist, itable)
     end do
 
   end subroutine

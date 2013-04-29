@@ -165,10 +165,14 @@
 !# 37.) list_splice (splice in STL)
 !#      -> Transfers data from one list into another list
 !#
+!# 38.) list_unique (merge in STL)
+!#      -> Removes all but the first element from every consecutive
+!#         group of equal elements
+!#
 !#
 !# The following operations in STL are not supported yet
 !#
-!# remove, remove_if, unique
+!# remove, remove_if
 !#
 !#
 !# The following operators are available:
@@ -267,6 +271,7 @@
   public :: list_uncast
   public :: list_merge
   public :: list_splice
+  public :: list_unique
 
   public assignment(=)
   public operator(==)
@@ -455,6 +460,10 @@ interface list_getbase_key
     module procedure FEAT2_PP_TEMPLATE_TD(list_splice2,T,D)
     module procedure FEAT2_PP_TEMPLATE_TD(list_splice3,T,D)
   end interface
+
+  interface list_unique
+    module procedure FEAT2_PP_TEMPLATE_TD(list_unique,T,D)
+  end interface list_unique
 
   interface assignment(=)
     module procedure FEAT2_PP_TEMPLATE_TD(list_fassign,T,D)
@@ -3150,6 +3159,50 @@ contains
       
       ! Remove item at position riterator from source list
       riterator = list_erase(rlistSrc, riterator)
+    end do
+
+  end subroutine
+
+  !************************************************************************
+
+!<subroutine>
+
+  subroutine FEAT2_PP_TEMPLATE_TD(list_unique,T,D)(rlist)
+
+!<description>
+    ! This subroutine removes all but the first element from every
+    ! consecutive group of equal elements in the linked list.
+    ! The linked list must be sorted (which is not checked).
+!</description>
+
+!<inputoutput>
+    ! The linked list
+    type(FEAT2_PP_TEMPLATE_TD(t_list,T,D)), intent(inout) :: rlist
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(FEAT2_PP_TEMPLATE_TD(it_list,T,D)) :: riterator,rposition
+    FEAT2_PP_TTYPE(T_TYPE), pointer :: p_key1,p_key2
+
+    ! Initialise iterator
+    riterator = list_begin(rlist)
+    rposition = riterator
+    call list_next(riterator)
+
+    ! Loop through all items and check for duplicates
+    do while (riterator /= list_end(rlist))
+      
+      ! Check of two consecutive keys are the same
+      call list_getbase_key(rlist, rposition, p_key1)
+      call list_getbase_key(rlist, riterator, p_key2)
+
+      if (p_key1 .eq. p_key2) then
+        riterator = list_erase(rlist, riterator)
+      else
+        call list_next(riterator)
+        call list_next(rposition)
+      end if
     end do
 
   end subroutine
