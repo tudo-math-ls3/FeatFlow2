@@ -27,8 +27,8 @@ contains
     call output_line ("This is FEAT-2. Tutorial 001c.")
     call output_separator (OU_SEP_MINUS)
 
-    call output_line ("String mainipulation routines.")
-    call output_line ("------------------------------")
+    call output_line ("String manipulation routines.")
+    call output_line ("-----------------------------")
     
     ! =================================
     ! Conversion to upper case / lower case
