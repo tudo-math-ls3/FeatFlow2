@@ -31,6 +31,10 @@ program tutorial
   use tutorial004a
   use tutorial004b
   use tutorial004c
+  use tutorial004d
+  use tutorial004e
+  use tutorial004f
+  use tutorial004g
   
   use tutorial005a
   use tutorial005b
@@ -125,6 +129,10 @@ program tutorial
   call start_tutorial004a
   call start_tutorial004b
   call start_tutorial004c
+  call start_tutorial004d
+  call start_tutorial004e
+  call start_tutorial004f
+  call start_tutorial004g
   
   call start_tutorial005a
   call start_tutorial005b
