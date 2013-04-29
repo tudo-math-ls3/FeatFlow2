@@ -464,7 +464,7 @@ contains
       ! Parse the expressions
       call fparser_parseFunction (rrhsAssembly%rrhsParser, 1, rrhsAssembly%srhsExpressionX, EXPRVARIABLES)
       call fparser_parseFunction (rrhsAssembly%rrhsParser, 2, rrhsAssembly%srhsExpressionY, EXPRVARIABLES)
-      call fparser_parseFunction (rrhsAssembly%rrhsParser, 3, rrhsAssembly%srhsExpressionX, EXPRVARIABLES)
+      call fparser_parseFunction (rrhsAssembly%rrhsParser, 3, rrhsAssembly%srhsExpressionP, EXPRVARIABLES)
 
     end select
 

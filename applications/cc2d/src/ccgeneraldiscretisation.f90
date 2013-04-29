@@ -1509,8 +1509,8 @@ contains
         do ipoint = 1,npointsPerElement
         
           ! Get the point coordinates.
-          rcollection%DquickAccess(1) = Dpoints(1,ipoint,ielement)
-          rcollection%DquickAccess(2) = Dpoints(2,ipoint,ielement)
+          Rval(1) = Dpoints(1,ipoint,ielement)
+          Rval(2) = Dpoints(2,ipoint,ielement)
           
           ! Evaluate
           call fparser_evalFunction (rcollection%p_rfparserQuickAccess1, &
