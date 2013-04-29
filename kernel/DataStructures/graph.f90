@@ -110,7 +110,7 @@ module graph
   ! Identifier for directed graph with ordered entries
   integer, parameter, public :: GRPH_GRAPHORDERED_DIRECTED = 2
 
-  ! Identifier for undirected graph wuth (un)ordered entries
+  ! Identifier for undirected graph with (un)ordered entries
   integer, parameter, public :: GRPH_UNDIRECTED = 3
 
 !</constantblock>
