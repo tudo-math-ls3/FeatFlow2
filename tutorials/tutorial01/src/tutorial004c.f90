@@ -8,7 +8,6 @@ module tutorial004c
   use fsystem
   use genoutput
   use arraylistInt
-  use sort
 
   implicit none
   private
