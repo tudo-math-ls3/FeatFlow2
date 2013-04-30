@@ -3070,6 +3070,11 @@ contains
 
     ! Type of formulation
     integer :: cform
+    
+    ! Cubature data
+    type(t_scalarCubatureInfo) :: rcubatureInfo
+    integer :: iinfoBlock
+    integer(I32) :: ccubature
 
     real(dp) :: dpf2
     real(dp), dimension(:,:), pointer :: Dpf1
@@ -3099,11 +3104,19 @@ contains
     ! Get the used formulation; gradient or deformation tensor.
     cform = PPNAVST_GRADIENTTENSOR_SIMPLE
     if (present(cformulation)) cform = cformulation
+    
+    ! Create a default cubature structure.
+    call spdiscr_createDefCubStructure (rvector%p_rblockDiscr%RspatialDiscr(1), rcubatureInfo)
 
-    ! Now loop over the different element distributions (=combinations
-    ! of trial and test functions) in the discretisation.
+    ! Loop over the cubature blocks
+    do iinfoBlock = 1,rcubatureInfo%ninfoBlockCount
+      
+      ! Get typical information: Number of elements, element list,...
+      call spdiscr_getStdDiscrInfo (iinfoBlock,rcubatureInfo,rvector%p_rblockDiscr%RspatialDiscr(1),&
+          icurrentElementDistr,ccubature=ccubature,NEL=NEL)
 
-    do icurrentElementDistr = 1,rvector%p_rblockDiscr%RspatialDiscr(1)%inumFESpaces
+      ! Cancel if this element list is empty.
+      if (NEL .le. 0) cycle
 
       ! Activate the current element distribution
       p_relementDistributionU => &
@@ -3114,9 +3127,6 @@ contains
 
       p_relementDistributionP => &
       rvector%p_rblockDiscr%RspatialDiscr(3)%RelementDistr(icurrentElementDistr)
-
-      ! Cancel if this element distribution is empty.
-      if (p_relementDistributionU%NEL .eq. 0) cycle
 
       ! Get the number of local DOFs for trial functions
       indofTrial = elem_igetNDofLoc(p_relementDistributionU%celement)
@@ -3139,7 +3149,7 @@ contains
       ! Initialise the cubature formula,
       ! Get cubature weights and point coordinates on the reference element
       ! Now Dxi stores the point coordinates of the cubature points on the reference element
-      call cub_getCubPoints(p_relementDistributionU%ccubTypeEval, ncubp, Dxi, Domega)
+      call cub_getCubPoints(ccubature, ncubp, Dxi, Domega)
 
       ! Allocate some memory to hold the cubature points on the reference element
       allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
@@ -3444,6 +3454,9 @@ contains
 
     Dforces = 0.0_DP
     Dforces(1:NDIM2D) = 2.0_DP/dpf2 * (DintU(:) + DintP(:))
+    
+    ! Releas ethe cubature structure.
+    call spdiscr_releaseCubStructure (rcubatureInfo)
 
   end subroutine
 
