@@ -2831,8 +2831,7 @@ contains
         if (checkGen(iflag, TR_GEN_IEDGESATBOUNDARY))&
             call tria_genEdgesAtBoundary2D (rtriangulation)
 
-        if (present(rboundary) .and. &
-            checkGen(iflag, TR_GEN_DEDGEPARAMETERVALUE))&
+        if (checkGen(iflag, TR_GEN_DEDGEPARAMETERVALUE))&
             call tria_genEdgeParameterValue2D (rtriangulation, rboundary)
 
         if (checkGen(iflag, TR_GEN_IBOUNDARYVERTEXPOS))&
@@ -3857,8 +3856,11 @@ contains
       end do
 
       ! Let us see if parameter values of boundary vertices are available.
+      ! If rboundary is not specified, drop all information about parameter
+      ! values of boundary vertices on the new mesh.
       if ((rsourceTriangulation%h_DvertexParameterValue .ne. ST_NOHANDLE) .and. &
-          (rsourceTriangulation%h_DedgeParameterValue .ne. ST_NOHANDLE)) then
+          (rsourceTriangulation%h_DedgeParameterValue .ne. ST_NOHANDLE) .and. &
+          present(rboundary)) then
 
         ! Also interleave the parameter values of the vertices and edge midpoints.
         call storage_getbase_double(&
@@ -3938,7 +3940,7 @@ contains
 
         ! If the analytic boundary is given, compute the coordinates of the
         ! boundary vertices from that.
-        if (present(rboundary) .and. brecalcBoundaryCoords) then
+        if (brecalcBoundaryCoords) then
 
           ! Get the array with the vertex coordinates.
           ! We want to correct the coordinates of the boundary points
@@ -5466,8 +5468,7 @@ contains
         if (rtriangulation%h_IedgesAtBoundary .eq. ST_NOHANDLE) &
             call tria_genEdgesAtBoundary2D (rtriangulation)
 
-        if (present(rboundary) .and. &
-            (rtriangulation%h_DedgeParameterValue .eq. ST_NOHANDLE)) then
+        if (rtriangulation%h_DedgeParameterValue .eq. ST_NOHANDLE) then
           call tria_genEdgeParameterValue2D (rtriangulation,rboundary)
         end if
 
@@ -13217,8 +13218,8 @@ contains
 !</description>
 
 !<input>
-  ! Boundary structure that defines the parametrisation of the boundary.
-  type(t_boundary), intent(in) :: rboundary
+  ! OPTIONAL: Boundary structure that defines the parametrisation of the boundary.
+  type(t_boundary), intent(in), optional :: rboundary
 !</input>
 
 !<inputoutput>
@@ -13241,21 +13242,39 @@ contains
     real(DP) :: dpar1,dpar2,dmaxPar
 
     ! Is everything here we need?
+
+    ! If there is no vertex parameter array available, cancel the calculation.
+    ! If rboundary is not specified, this is valid -- it means that we have
+    ! a triangulation without a boundary
     if (rtriangulation%h_DvertexParameterValue .eq. ST_NOHANDLE) then
+      
+      if (.not. present(rboundary)) return
+      
+      ! We need the vertex parameters if rboundary is specified.
       call output_line ("DvertexParameterValue not available!", &
-                        OU_CLASS_ERROR,OU_MODE_STD,"tria_genEdgesAtBoundary2D")
+                        OU_CLASS_ERROR,OU_MODE_STD,"tria_genEdgeParameterValue2D")
+      call sys_halt()
+      
+    else if (.not. present(rboundary)) then
+      ! This is an error. h_DvertexParameterValue is available, so the mesh
+      ! supports parameter values. At the same time, rboundary was not
+      ! specified, so we cannot determine any x/y positions from the parameter
+      ! values, and we cannot calculate length parametrisations from 0-1
+      ! parametrisations. Stop here.
+      call output_line ("Boundary definition rboundary not specified!", &
+                        OU_CLASS_ERROR,OU_MODE_STD,"tria_genEdgeParameterValue2D")
       call sys_halt()
     end if
 
     if (rtriangulation%h_IverticesAtBoundary .eq. ST_NOHANDLE) then
       call output_line ("IverticesAtBoundary not available!", &
-                        OU_CLASS_ERROR,OU_MODE_STD,"tria_genEdgesAtBoundary2D")
+                        OU_CLASS_ERROR,OU_MODE_STD,"tria_genEdgeParameterValue2D")
       call sys_halt()
     end if
 
     if (rtriangulation%h_IboundaryCpIdx .eq. ST_NOHANDLE) then
       call output_line ("IboundaryCpIdx not available!", &
-                        OU_CLASS_ERROR,OU_MODE_STD,"tria_genEdgesAtBoundary2D")
+                        OU_CLASS_ERROR,OU_MODE_STD,"tria_genEdgeParameterValue2D")
       call sys_halt()
     end if
 
