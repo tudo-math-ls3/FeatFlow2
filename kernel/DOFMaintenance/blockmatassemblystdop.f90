@@ -8075,7 +8075,7 @@ contains
 
 !<subroutine>
 
-  subroutine bma_docalc_integralOne(dintvalue,rassemblyData,rintAssembly,&
+  subroutine bma_docalc_integralOne(Dintvalues,rassemblyData,rintAssembly,&
       npointsPerElement,nelements)
 
 !<description>  
@@ -8099,8 +8099,8 @@ contains
 !</input>
 
 !<output>
-    ! Returns the value of the integral
-    real(DP), intent(out) :: dintvalue
+    ! Returns the value of the integral(s)
+    real(DP), dimension(:), intent(out) :: Dintvalues
 !</output>    
 
 !</subroutine>
@@ -8113,7 +8113,7 @@ contains
     ! Get cubature weights data
     p_DcubWeight => rassemblyData%p_DcubWeight
     
-    dintvalue = 0.0_DP
+    Dintvalues(1) = 0.0_DP
     
     ! Loop over the elements in the current set.
     do iel = 1,nelements
@@ -8126,7 +8126,7 @@ contains
         
         ! Multiply the values by the cubature weight and sum up
         ! into the integral value
-        dintvalue = dintvalue + p_DcubWeight(icubp,iel) * dval
+        Dintvalues(1) = Dintvalues(1) + p_DcubWeight(icubp,iel) * dval
           
       end do ! icubp
     
@@ -8138,7 +8138,7 @@ contains
 
 !<subroutine>
 
-  subroutine bma_fcalc_integralOne(dintvalue,rassemblyData,rintAssembly,&
+  subroutine bma_fcalc_integralOne(Dintvalues,rassemblyData,rintAssembly,&
       npointsPerElement,nelements,revalVectors,rcollection)
 
 !<description>  
@@ -8169,13 +8169,13 @@ contains
 !</input>
 
 !<output>
-    ! Returns the value of the integral
-    real(DP), intent(out) :: dintvalue
+    ! Returns the value of the integral(s)
+    real(DP), dimension(:), intent(out) :: Dintvalues
 !</output>    
 
 !</subroutine>
 
-    call bma_docalc_integralOne(dintvalue,rassemblyData,rintAssembly,&
+    call bma_docalc_integralOne(Dintvalues,rassemblyData,rintAssembly,&
         npointsPerElement,nelements)
     
   end subroutine
@@ -8184,7 +8184,7 @@ contains
 
 !<subroutine>
 
-  subroutine bma_docalc_integralFE(dintvalue,rassemblyData,rintAssembly,&
+  subroutine bma_docalc_integralFE(Dintvalues,rassemblyData,rintAssembly,&
       npointsPerElement,nelements,rfunction,icomp)
 
 !<description>  
@@ -8221,8 +8221,8 @@ contains
 !</input>
 
 !<output>
-    ! Returns the value of the integral
-    real(DP), intent(out) :: dintvalue
+    ! Returns the value of the integral(s)
+    real(DP), dimension(:), intent(out) :: Dintvalues
 !</output>    
 
 !</subroutine>
@@ -8238,7 +8238,7 @@ contains
     ! Get cubature weights data
     p_DcubWeight => rassemblyData%p_DcubWeight
     
-    dintvalue = 0.0_DP
+    Dintvalues(1) = 0.0_DP
 
     ! Skip interleaved vectors.
     if (rfunction%bisInterleaved) return
@@ -8261,7 +8261,7 @@ contains
           
           ! Multiply the values by the cubature weight and sum up
           ! into the integral value
-          dintvalue = dintvalue + p_DcubWeight(icubp,iel) * dval
+          Dintvalues(1) = Dintvalues(1) + p_DcubWeight(icubp,iel) * dval
             
         end do ! icubp
       
@@ -8294,7 +8294,7 @@ contains
             
             ! Multiply the values by the cubature weight and sum up
             ! into the integral value
-            dintvalue = dintvalue + p_DcubWeight(icubp,iel) * dval
+            Dintvalues(1) = Dintvalues(1) + p_DcubWeight(icubp,iel) * dval
             
           end do
             
@@ -8310,7 +8310,7 @@ contains
 
 !<subroutine>
 
-  subroutine bma_fcalc_integralFE(dintvalue,rassemblyData,rintAssembly,&
+  subroutine bma_fcalc_integralFE(Dintvalues,rassemblyData,rintAssembly,&
       npointsPerElement,nelements,revalVectors,rcollection)
 
 !<description>  
@@ -8345,26 +8345,26 @@ contains
 !</input>
 
 !<output>
-    ! Returns the value of the integral
-    real(DP), intent(out) :: dintvalue
+    ! Returns the value of the integral(s)
+    real(DP), dimension(:), intent(out) :: Dintvalues
 !</output>    
 
 !</subroutine>
 
     ! Local variables
     integer :: ivec
-    real(DP) :: dint
+    real(DP), dimension(1) :: Dint
   
-    dintvalue = 0.0_DP
+    Dintvalues(1) = 0.0_DP
 
     ! Loop through all provided FEM functions
     do ivec = 1,revalVectors%ncount
     
       ! Calculate the integral, sum up
-      call bma_docalc_integralFE(dint,rassemblyData,rintAssembly,&
+      call bma_docalc_integralFE(Dint,rassemblyData,rintAssembly,&
           npointsPerElement,nelements,revalVectors%p_RvectorData(ivec))
           
-      dintvalue = dintvalue + dint
+      Dintvalues(1) = Dintvalues(1) + Dint(1)
       
     end do ! ivec
     
@@ -8397,7 +8397,7 @@ contains
 
 !<subroutine>
 
-  subroutine bma_docalc_L2norm(dintvalue,rassemblyData,rintAssembly,&
+  subroutine bma_docalc_L2norm(Dintvalues,rassemblyData,rintAssembly,&
       npointsPerElement,nelements,rfunction)
 
 !<description>  
@@ -8429,8 +8429,8 @@ contains
 !</input>
 
 !<output>
-    ! Returns the value of the integral
-    real(DP), intent(out) :: dintvalue
+    ! Returns the value of the integral(s)
+    real(DP), dimension(:), intent(out) :: Dintvalues
 !</output>    
 
 !</subroutine>
@@ -8445,7 +8445,7 @@ contains
     ! Get cubature weights data
     p_DcubWeight => rassemblyData%p_DcubWeight
     
-    dintvalue = 0.0_DP
+    Dintvalues(1) = 0.0_DP
 
     ! Skip interleaved vectors.
     if (rfunction%bisInterleaved) return
@@ -8471,7 +8471,7 @@ contains
           
           ! Multiply the values by the cubature weight and sum up
           ! into the integral value
-          dintvalue = dintvalue + p_DcubWeight(icubp,iel) * dval**2
+          Dintvalues(1) = Dintvalues(1) + p_DcubWeight(icubp,iel) * dval**2
             
         end do ! icubp
       
@@ -8500,7 +8500,7 @@ contains
             
             ! Multiply the values by the cubature weight and sum up
             ! into the integral value
-            dintvalue = dintvalue + p_DcubWeight(icubp,iel) * dval**2
+            Dintvalues(1) = Dintvalues(1) + p_DcubWeight(icubp,iel) * dval**2
             
           end do
             
@@ -8516,7 +8516,7 @@ contains
 
 !<subroutine>
 
-  subroutine bma_fcalc_L2norm(dintvalue,rassemblyData,rintAssembly,&
+  subroutine bma_fcalc_L2norm(Dintvalues,rassemblyData,rintAssembly,&
       npointsPerElement,nelements,revalVectors,rcollection)
 
 !<description>  
@@ -8552,8 +8552,8 @@ contains
 !</input>
 
 !<output>
-    ! Returns the value of the integral
-    real(DP), intent(out) :: dintvalue
+    ! Returns the value of the integral(s)
+    real(DP), dimension(:), intent(out) :: Dintvalues
 !</output>    
 
 !</subroutine>
@@ -8562,16 +8562,16 @@ contains
     integer :: ivec
     real(DP) :: dint
   
-    dintvalue = 0.0_DP
+    Dintvalues(1) = 0.0_DP
 
     ! Loop through all provided FEM functions
     do ivec = 1,revalVectors%ncount
     
       ! Calculate the integral, sum up
-      call bma_docalc_L2norm(dintvalue,rassemblyData,rintAssembly,&
+      call bma_docalc_L2norm(Dintvalues,rassemblyData,rintAssembly,&
           npointsPerElement,nelements,revalVectors%p_RvectorData(ivec))
           
-      dintvalue = dintvalue + dint
+      Dintvalues(1) = Dintvalues(1) + dint
       
     end do ! ivec
 
@@ -8581,7 +8581,7 @@ contains
 
 !<subroutine>
 
-  subroutine bma_docalc_H1norm(dintvalue,rassemblyData,rintAssembly,&
+  subroutine bma_docalc_H1norm(Dintvalues,rassemblyData,rintAssembly,&
       npointsPerElement,nelements,rfunction)
 
 !<description>  
@@ -8613,8 +8613,8 @@ contains
 !</input>
 
 !<output>
-    ! Returns the value of the integral
-    real(DP), intent(out) :: dintvalue
+    ! Returns the value of the integral(s)
+    real(DP), dimension(:), intent(out) :: Dintvalues
 !</output>    
 
 !</subroutine>
@@ -8629,7 +8629,7 @@ contains
     ! Get cubature weights data
     p_DcubWeight => rassemblyData%p_DcubWeight
     
-    dintvalue = 0.0_DP
+    Dintvalues(1) = 0.0_DP
 
     ! Skip interleaved vectors.
     if (rfunction%bisInterleaved) return
@@ -8665,7 +8665,7 @@ contains
             
             ! Multiply the values by the cubature weight and sum up
             ! into the integral value
-            dintvalue = dintvalue + p_DcubWeight(icubp,iel) * dderivX**2
+            Dintvalues(1) = Dintvalues(1) + p_DcubWeight(icubp,iel) * dderivX**2
               
           end do ! icubp
         
@@ -8693,7 +8693,7 @@ contains
             
             ! Multiply the values by the cubature weight and sum up
             ! into the integral value
-            dintvalue = dintvalue + p_DcubWeight(icubp,iel) * &
+            Dintvalues(1) = Dintvalues(1) + p_DcubWeight(icubp,iel) * &
                 ( dderivX**2 + dderivY**2 )
               
           end do ! icubp
@@ -8724,7 +8724,7 @@ contains
             
             ! Multiply the values by the cubature weight and sum up
             ! into the integral value
-            dintvalue = dintvalue + p_DcubWeight(icubp,iel) * &
+            Dintvalues(1) = Dintvalues(1) + p_DcubWeight(icubp,iel) * &
                 ( dderivX**2 + dderivY**2 + dderivZ**2 )
               
           end do ! icubp
@@ -8764,7 +8764,7 @@ contains
               
               ! Multiply the values by the cubature weight and sum up
               ! into the integral value
-              dintvalue = dintvalue + p_DcubWeight(icubp,iel) * dderivX**2
+              Dintvalues(1) = Dintvalues(1) + p_DcubWeight(icubp,iel) * dderivX**2
               
             end do ! idimfe
               
@@ -8797,7 +8797,7 @@ contains
               
               ! Multiply the values by the cubature weight and sum up
               ! into the integral value
-              dintvalue = dintvalue + p_DcubWeight(icubp,iel) * &
+              Dintvalues(1) = Dintvalues(1) + p_DcubWeight(icubp,iel) * &
                   ( dderivX**2 + dderivY**2 )
                   
             end do ! idimfe
@@ -8833,7 +8833,7 @@ contains
               
               ! Multiply the values by the cubature weight and sum up
               ! into the integral value
-              dintvalue = dintvalue + p_DcubWeight(icubp,iel) * &
+              Dintvalues(1) = Dintvalues(1) + p_DcubWeight(icubp,iel) * &
                   ( dderivX**2 + dderivY**2 + dderivZ**2 )
             
             end do
@@ -8852,7 +8852,7 @@ contains
 
 !<subroutine>
 
-  subroutine bma_fcalc_H1norm(dintvalue,rassemblyData,rintAssembly,&
+  subroutine bma_fcalc_H1norm(Dintvalues,rassemblyData,rintAssembly,&
       npointsPerElement,nelements,revalVectors,rcollection)
 
 !<description>  
@@ -8888,8 +8888,8 @@ contains
 !</input>
 
 !<output>
-    ! Returns the value of the integral
-    real(DP), intent(out) :: dintvalue
+    ! Returns the value of the integral(s)
+    real(DP), dimension(:), intent(out) :: Dintvalues
 !</output>    
 
 !</subroutine>
@@ -8898,16 +8898,16 @@ contains
     integer :: ivec
     real(DP) :: dint
   
-    dintvalue = 0.0_DP
+    Dintvalues(1) = 0.0_DP
 
     ! Loop through all provided FEM functions
     do ivec = 1,revalVectors%ncount
     
       ! Calculate the integral, sum up
-      call bma_docalc_H1norm(dintvalue,rassemblyData,rintAssembly,&
+      call bma_docalc_H1norm(Dintvalues,rassemblyData,rintAssembly,&
           npointsPerElement,nelements,revalVectors%p_RvectorData(ivec))
           
-      dintvalue = dintvalue + dint
+      Dintvalues(1) = Dintvalues(1) + dint
       
     end do ! ivec
 
@@ -8917,7 +8917,7 @@ contains
 
 !<subroutine>
 
-  subroutine bma_docalc_bubbleL2error(dintvalue,rassemblyData,rintegralAssembly,&
+  subroutine bma_docalc_bubbleL2error(Dintvalues,rassemblyData,rintegralAssembly,&
       npointsPerElement,nelements,rfunction)
 
 !<description>  
@@ -8949,8 +8949,8 @@ contains
 !</input>
 
 !<output>
-    ! Returns the value of the integral
-    real(DP), intent(out) :: dintvalue
+    ! Returns the value of the integral(s)
+    real(DP), dimension(:), intent(out) :: Dintvalues
 !</output>    
 
 !</subroutine>
@@ -8978,7 +8978,7 @@ contains
     ! in the cubature points
     p_Dfunc => rfunction%p_Ddata(:,:,DER_FUNC2D)
 
-    dintvalue = 0.0_DP
+    Dintvalues(1) = 0.0_DP
     
     ! Loop over the elements in the current set.
     do iel = 1,nelements
@@ -8997,7 +8997,7 @@ contains
         
         ! Multiply the values by the cubature weight and sum up
         ! into the (squared) L2 error:
-        dintvalue = dintvalue + &
+        Dintvalues(1) = Dintvalues(1) + &
             p_DcubWeight(icubp,iel) * (dval1 - dval2)**2
           
       end do ! icubp
@@ -9010,7 +9010,7 @@ contains
 
 !<subroutine>
 
-  subroutine bma_fcalc_bubbleL2error(dintvalue,rassemblyData,rintegralAssembly,&
+  subroutine bma_fcalc_bubbleL2error(Dintvalues,rassemblyData,rintegralAssembly,&
       npointsPerElement,nelements,revalVectors,rcollection)
 
 !<description>  
@@ -9046,13 +9046,13 @@ contains
 !</input>
 
 !<output>
-    ! Returns the value of the integral
-    real(DP), intent(out) :: dintvalue
+    ! Returns the value of the integral(s)
+    real(DP), dimension(:), intent(out) :: Dintvalues
 !</output>    
 
 !</subroutine>
 
-    call bma_docalc_bubbleL2error(dintvalue,rassemblyData,rintegralAssembly,&
+    call bma_docalc_bubbleL2error(Dintvalues,rassemblyData,rintegralAssembly,&
         npointsPerElement,nelements,revalVectors%p_RvectorData(1))
       
   end subroutine
@@ -9061,7 +9061,7 @@ contains
 
 !<subroutine>
 
-  subroutine bma_docalc_bubbleH1error(dintvalue,rassemblyData,rintegralAssembly,&
+  subroutine bma_docalc_bubbleH1error(Dintvalues,rassemblyData,rintegralAssembly,&
       npointsPerElement,nelements,rfunction)
 
 !<description>  
@@ -9094,8 +9094,8 @@ contains
 !</input>
 
 !<output>
-    ! Returns the value of the integral
-    real(DP), intent(out) :: dintvalue
+    ! Returns the value of the integral(s)
+    real(DP), dimension(:), intent(out) :: Dintvalues
 !</output>    
 
 !</subroutine>
@@ -9124,7 +9124,7 @@ contains
     p_DderivX => rfunction%p_Ddata(:,:,DER_DERIV2D_X)
     p_DderivY => rfunction%p_Ddata(:,:,DER_DERIV2D_Y)
 
-    dintvalue = 0.0_DP
+    Dintvalues(1) = 0.0_DP
     
     ! Loop over the elements in the current set.
     do iel = 1,nelements
@@ -9146,7 +9146,7 @@ contains
         
         ! Multiply the values by the cubature weight and sum up
         ! into the (squared) H1 error:
-        dintvalue = dintvalue + p_DcubWeight(icubp,iel) * &
+        Dintvalues(1) = Dintvalues(1) + p_DcubWeight(icubp,iel) * &
             ( (dderivX1 - dderivX2)**2 + (dderivY1 - dderivY2)**2 )
           
       end do ! icubp
@@ -9159,7 +9159,7 @@ contains
 
 !<subroutine>
 
-  subroutine bma_fcalc_bubbleH1error(dintvalue,rassemblyData,rintegralAssembly,&
+  subroutine bma_fcalc_bubbleH1error(Dintvalues,rassemblyData,rintegralAssembly,&
       npointsPerElement,nelements,revalVectors,rcollection)
 
 !<description>  
@@ -9196,13 +9196,13 @@ contains
 !</input>
 
 !<output>
-    ! Returns the value of the integral
-    real(DP), intent(out) :: dintvalue
+    ! Returns the value of the integral(s)
+    real(DP), dimension(:), intent(out) :: Dintvalues
 !</output>    
 
 !</subroutine>
 
-    call bma_docalc_bubbleH1error(dintvalue,rassemblyData,rintegralAssembly,&
+    call bma_docalc_bubbleH1error(Dintvalues,rassemblyData,rintegralAssembly,&
         npointsPerElement,nelements,revalVectors%p_RvectorData(1))
       
   end subroutine
@@ -9211,7 +9211,7 @@ contains
 
 !<subroutine>
 
-  subroutine bma_docalc_divergenceL2norm(dintvalue,rassemblyData,rintAssembly,&
+  subroutine bma_docalc_divergenceL2norm(Dintvalues,rassemblyData,rintAssembly,&
       npointsPerElement,nelements,rfunction)
 
 !<description>  
@@ -9247,8 +9247,8 @@ contains
 !</input>
 
 !<output>
-    ! Returns the value of the integral
-    real(DP), intent(out) :: dintvalue
+    ! Returns the value of the integral(s)
+    real(DP), dimension(:), intent(out) :: Dintvalues
 !</output>    
 
 !</subroutine>
@@ -9262,7 +9262,7 @@ contains
     ! Get cubature weights data
     p_DcubWeight => rassemblyData%p_DcubWeight
     
-    dintvalue = 0.0_DP
+    Dintvalues(1) = 0.0_DP
     
     ! Dimension of the spaces
     ndim = rintAssembly%p_rtriangulation%ndim
@@ -9305,7 +9305,7 @@ contains
           
           ! Multiply the values by the cubature weight and sum up
           ! into the integral value
-          dintvalue = dintvalue + p_DcubWeight(icubp,iel) * dderivX**2
+          Dintvalues(1) = Dintvalues(1) + p_DcubWeight(icubp,iel) * dderivX**2
             
         end do ! icubp
       
@@ -9336,7 +9336,7 @@ contains
             
             ! Multiply the values by the cubature weight and sum up
             ! into the integral value
-            dintvalue = dintvalue + p_DcubWeight(icubp,iel) * &
+            Dintvalues(1) = Dintvalues(1) + p_DcubWeight(icubp,iel) * &
                 ( dderivX + dderivY )**2
                 
           end do ! idimfe
@@ -9372,7 +9372,7 @@ contains
             
             ! Multiply the values by the cubature weight and sum up
             ! into the integral value
-            dintvalue = dintvalue + p_DcubWeight(icubp,iel) * &
+            Dintvalues(1) = Dintvalues(1) + p_DcubWeight(icubp,iel) * &
                 ( dderivX + dderivY + dderivZ )**2
           
           end do
@@ -9389,7 +9389,7 @@ contains
 
 !<subroutine>
 
-  subroutine bma_fcalc_divergenceL2norm(dintvalue,rassemblyData,rintAssembly,&
+  subroutine bma_fcalc_divergenceL2norm(Dintvalues,rassemblyData,rintAssembly,&
       npointsPerElement,nelements,revalVectors,rcollection)
 
 !<description>  
@@ -9428,13 +9428,13 @@ contains
 !</input>
 
 !<output>
-    ! Returns the value of the integral
-    real(DP), intent(out) :: dintvalue
+    ! Returns the value of the integral(s)
+    real(DP), dimension(:), intent(out) :: Dintvalues
 !</output>    
 
 !</subroutine>
 
-    call bma_docalc_divergenceL2norm(dintvalue,rassemblyData,rintAssembly,&
+    call bma_docalc_divergenceL2norm(Dintvalues,rassemblyData,rintAssembly,&
       npointsPerElement,nelements,revalVectors%p_RvectorData(1))
       
   end subroutine
@@ -10580,6 +10580,14 @@ contains
 
     ! Calculate the viscosity.
     select case (cviscoModel)
+    case (0)
+      ! Constant:
+      !   nu = dnu
+      do i=1,nelements
+        do j = 1,npointsPerElement
+          Dviscosity(j,i) = dnu
+        end do
+      end do
     case (1)
       ! Power law:
       !   nu = dnu * z^(dviscoexponent/2 - 1),

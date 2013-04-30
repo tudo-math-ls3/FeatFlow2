@@ -24,8 +24,11 @@
 !# 2.) bma_buildVector
 !#     -> Assembles a block vector
 !#
-!# 2.) bma_buildIntegral
+!# 3.) bma_buildIntegral
 !#     -> Calculates the value of an integral
+!#
+!# 3.) bma_buildIntegrals
+!#     -> Calculates the value of multiple integrals
 !#
 !# Furthermore, there are a set of auxiliary routines which can be used
 !# to customize the matrix assembly:
@@ -115,6 +118,7 @@ module blockmatassembly
   public :: bma_doneIntAssembly
   public :: bma_assembleSubmeshIntegral
   public :: bma_buildIntegral
+  public :: bma_buildIntegrals
 
 contains
 
@@ -3193,7 +3197,7 @@ contains
 
 !<subroutine>
 
-  subroutine bma_assembleSubmeshIntegral(dintvalue,rintegralAssembly, IelementList,&
+  subroutine bma_assembleSubmeshIntegral(Dintvalues,rintegralAssembly, IelementList,&
       fcalcLocalIntegral, rcollection)
 
 !<description>
@@ -3208,7 +3212,7 @@ contains
 
   interface
 
-    subroutine fcalcLocalIntegral (dintvalue,rassemblyData,rintegralAssembly,&
+    subroutine fcalcLocalIntegral (Dintvalues,rassemblyData,rintegralAssembly,&
       npointsPerElement,nelements,revalVectors,rcollection)
 
       use collection
@@ -3217,7 +3221,7 @@ contains
       ! Calculates the value of the integral for a set of elements.
       
       ! Returns the value of the integral
-      real(DP), intent(out) :: dintvalue
+      real(DP), dimension(:), intent(out) :: Dintvalues
 
       ! Data necessary for the assembly. Contains determinants and
       ! cubature weights for the cubature,...
@@ -3259,14 +3263,14 @@ contains
 
 !<output>
   ! Value of the integral
-  real(DP), intent(out) :: dintvalue
+  real(DP), dimension(:), intent(out) :: Dintvalues
 !</output>
 
 !</subroutine>
 
     ! local variables
     integer :: ielStart,ielMax
-    real(DP) :: dinttemp
+    real(DP), dimension(size(Dintvalues)) :: Dinttemp
     type(t_bmaIntegralAssemblyData) :: rassemblyData
     type(t_fev2Vectors) :: revalVectors
 
@@ -3279,7 +3283,7 @@ contains
         revalVectors,rintegralAssembly%revalVectorsTemplate)
 
     ! Loop blockwise through the element list
-    dintvalue = 0.0_DP
+    Dintvalues(:) = 0.0_DP
     do ielStart = 1,size(IelementList),rintegralAssembly%nelementsPerBlock
 
       ! End of the current block
@@ -3299,12 +3303,12 @@ contains
       call fev2_evaluateVectors(revalVectors,rassemblyData%rfemDataBlocks)
 
       ! Use the callback routine to calculate the local vector entries.
-      dinttemp = 0.0_DP
-      call fcalcLocalIntegral(dinttemp,rassemblyData,rintegralAssembly,&
+      Dinttemp(:) = 0.0_DP
+      call fcalcLocalIntegral(Dinttemp,rassemblyData,rintegralAssembly,&
           rintegralAssembly%ncubp,ielMax-ielStart+1,revalVectors,rcollection)
           
       ! Sum up the integral
-      dintvalue = dintvalue + dinttemp
+      Dintvalues = Dintvalues + Dinttemp
 
     end do
 
@@ -3322,9 +3326,13 @@ contains
       revalVectors,rcubatureInfo,rtrafoInfo,rperfconfig)
 
 !<description>
-  ! This subroutine calculates the entries of a block vector and
-  ! adds them to rvector. The callback function fcalcLocalVectors
-  ! has to compute the local vector indices by cubature.
+  ! This subroutine build a domain integral. The integral value will be
+  ! returned in dintvalue.
+  !
+  ! Note: The routine is a wrapper for bma_buildIntegrals and returns 
+  ! Dintvalues(1) calculated there. bma_buildIntegral can be used as a
+  ! shorthand notation for all routines in blockmatassemblystdop.f90
+  ! that calculate only a scalar result.
 !</description>
 
 !<input>
@@ -3335,7 +3343,7 @@ contains
 
   interface
 
-    subroutine fcalcLocalIntegral (dintvalue,rassemblyData,rintegralAssembly,&
+    subroutine fcalcLocalIntegral (Dintvalues,rassemblyData,rintegralAssembly,&
       npointsPerElement,nelements,revalVectors,rcollection)
 
       use collection
@@ -3344,7 +3352,7 @@ contains
       ! Calculates the value of the integral for a set of elements.
       
       ! Returns the value of the integral
-      real(DP), intent(out) :: dintvalue
+      real(DP), dimension(:), intent(out) :: Dintvalues
 
       ! Data necessary for the assembly. Contains determinants and
       ! cubature weights for the cubature,...
@@ -3406,6 +3414,110 @@ contains
 
 !</subroutine>
 
+    real(DP), dimension(1) :: Dresults
+    
+    ! Wrapper.
+    call bma_buildIntegrals (Dresults,cflags,&
+        fcalcLocalIntegral,rtriangulation,rboundary,rcollection, &
+        revalVectors,rcubatureInfo,rtrafoInfo,rperfconfig)
+        
+    dintvalue = Dresults(1)
+
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine bma_buildIntegrals (Dintvalues,cflags,&
+      fcalcLocalIntegral,rtriangulation,rboundary,rcollection, &
+      revalVectors,rcubatureInfo,rtrafoInfo,rperfconfig)
+
+!<description>
+  ! This subroutine build multiple domain integrals at once. Dintvalues is an
+  ! array that receives the calculated integral values. It is passed to the
+  ! callback routine fcalcLocalIntegral that does the actual computation.
+!</description>
+
+!<input>
+
+  ! Option field. Combination of BMA_CALC_xxxx flags.
+  ! Use BMA_CALC_STANDARD for standard options.
+  integer(I32), intent(in) :: cflags
+
+  interface
+
+    subroutine fcalcLocalIntegral (Dintvalues,rassemblyData,rintegralAssembly,&
+      npointsPerElement,nelements,revalVectors,rcollection)
+
+      use collection
+      use blockmatassemblybase
+
+      ! Calculates the value of the integral for a set of elements.
+      
+      ! Returns the value of the integral(s)
+      real(DP), dimension(:), intent(out) :: Dintvalues
+
+      ! Data necessary for the assembly. Contains determinants and
+      ! cubature weights for the cubature,...
+      type(t_bmaIntegralAssemblyData), intent(in) :: rassemblyData
+
+      ! Structure with all data about the assembly
+      type(t_bmaIntegralAssembly), intent(in) :: rintegralAssembly
+
+      ! Number of points per element
+      integer, intent(in) :: npointsPerElement
+
+      ! Number of elements
+      integer, intent(in) :: nelements
+
+      ! Values of FEM functions automatically evaluated in the
+      ! cubature points.
+      type(t_fev2Vectors), intent(in) :: revalVectors
+
+      ! User defined collection structure
+      type(t_collection), intent(inout), target, optional :: rcollection
+
+    end subroutine
+
+  end interface  
+
+  ! OPTIONAL: Underlying triangulation.
+  ! Cal be omitted if a vector is passed via revalVectors.
+  type(t_triangulation), target, optional :: rtriangulation
+  
+  ! OPTIONAL: Underlying domain definition
+  type(t_boundary), target, optional :: rboundary
+
+  ! OPTIONAL: A collection structure. This structure is given to the
+  ! callback function for nonconstant coefficients to provide additional
+  ! information.
+  type(t_collection), intent(inout), target, optional :: rcollection
+
+  ! OPTIONAL: Set of vectors to be automatically evaluated
+  type(t_fev2Vectors), intent(in), optional :: revalVectors
+
+  ! OPTIONAL: A scalar cubature information structure that specifies the cubature
+  ! formula(s) to use. If not specified, default settings are used.
+  type(t_scalarCubatureInfo), intent(in), target, optional :: rcubatureInfo
+
+  ! OPTIONAL: A transformation structure that specifies the transformation
+  ! from the reference to the real element(s).
+  ! If not specified, default settings are used.
+  type(t_scalarTrafoInfo), intent(in), target, optional :: rtrafoInfo
+
+  ! OPTIONAL: local performance configuration. If not given, the
+  ! global performance configuration is used.
+  type(t_perfconfig), intent(in), target, optional :: rperfconfig
+!</input>
+
+!<output>
+  ! Calculated integral
+  real(DP), dimension(:), intent(out) :: Dintvalues
+!</output>
+
+!</subroutine>
+
     ! local variables
     type(t_scalarCubatureInfo), target :: rtempCubatureInfo
     type(t_scalarCubatureInfo), pointer :: p_rcubatureInfo
@@ -3417,7 +3529,7 @@ contains
     type(t_scalarTrafoInfo), pointer :: p_rtrafoInfo
     type(t_scalarTrafoInfo), target :: rtempTrafoInfo
     integer :: i
-    real(DP) :: dinttemp
+    real(DP), dimension(size(Dintvalues)) :: Dinttemp
     type(t_triangulation), pointer :: p_rtriangulation
 
     ! Pointer to the performance configuration
@@ -3493,7 +3605,7 @@ contains
     end if
 
     ! Loop over the cubature blocks to calculate
-    dintvalue = 0.0_DP
+    Dintvalues(1) = 0.0_DP
     do icubatureBlock = 1,p_rcubatureInfo%ninfoBlockCount
 
       ! Get information about that block as well as an appropriate cubature formula
@@ -3531,12 +3643,12 @@ contains
           p_rtriangulation,rboundary,revalVectors,ielementDistr,rperfconfig)
 
       ! Assemble the data for all elements in this element distribution
-      dinttemp = 0.0_DP
-      call bma_assembleSubmeshIntegral (dinttemp,rintegralAssembly, p_IelementList(1:NEL),&
+      Dinttemp(:) = 0.0_DP
+      call bma_assembleSubmeshIntegral (Dinttemp,rintegralAssembly, p_IelementList(1:NEL),&
           fcalcLocalIntegral, rcollection)
       
       ! Sum up
-      dintvalue = dintvalue + dinttemp
+      Dintvalues(:) = Dintvalues(:) + Dinttemp(:)
 
       ! Release the assembly structure.
       call bma_doneIntAssembly(rintegralAssembly)
