@@ -1125,7 +1125,7 @@ contains
       select case (icalcBodyForces)
       case (1)
         ! Old implementation:
-        call ppns2D_bdforces_uniform (rsolution,rregion,Dforces,CUB_G1_1D,&
+        call ppns2D_bdforces_uniform (rsolution,rregion,Dforces,CUB_G4_1D,&
             dbdForcesCoeff1,dbdForcesCoeff2)
         
       case (2)
@@ -1154,10 +1154,10 @@ contains
             rcollection,rsolution,rproblem%rcollection)
           
         if (rproblem%rphysics%cviscoModel .eq. 0) then
-          call ppns2D_bdforces_line (rsolution,rregion,Dforces,CUB_G1_1D,&
+          call ppns2D_bdforces_line (rsolution,rregion,Dforces,CUB_G4_1D,&
               dbdForcesCoeff1,dbdForcesCoeff2,cformulation)
         else
-          call ppns2D_bdforces_line (rsolution,rregion,Dforces,CUB_G1_1D,&
+          call ppns2D_bdforces_line (rsolution,rregion,Dforces,CUB_G4_1D,&
               dbdForcesCoeff1,dbdForcesCoeff2,cformulation,ffunctionBDForcesVisco,&
               rcollection,ntempArrays=5)
         end if
