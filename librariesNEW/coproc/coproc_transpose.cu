@@ -1,14 +1,14 @@
 /*#############################################################################
-******************************************************************************
-* <name> coproc_transpose </name>
-******************************************************************************
-*
-* <purpose>
-* This file provides routines for transposing multi-dimensional arrays.
-* </purpose>
-*
-*#############################################################################
-*/
+ ******************************************************************************
+ * <name> coproc_transpose </name>
+ ******************************************************************************
+ *
+ * <purpose>
+ * This file provides routines for transposing multi-dimensional arrays.
+ * </purpose>
+ *
+ *#############################################################################
+ */
 
 #include <stdint.h>
 #include <iostream>
@@ -30,8 +30,8 @@ using namespace std;
  ******************************************************************************/
 template<typename T>
 void coproc_transposeOnHost2d(const void *__restrict__ h_ptrSrc, 
-			      void *__restrict__ h_ptrDest,
-			      int nelmt1, int nelmt2)
+							  void *__restrict__ h_ptrDest,
+							  int nelmt1, int nelmt2)
 {
   T *src = (T*)(h_ptrSrc);
   T *dest = (T*)(h_ptrDest);
@@ -49,9 +49,9 @@ void coproc_transposeOnHost2d(const void *__restrict__ h_ptrSrc,
  ******************************************************************************/
 template<typename T>
 void coproc_transposeOnHost2d(int num_elmt,
-			      const void *__restrict__ h_ptrSrc, 
-			      void *__restrict__ h_ptrDest,
-			      int nelmt1, int nelmt2)
+							  const void *__restrict__ h_ptrSrc, 
+							  void *__restrict__ h_ptrDest,
+							  int nelmt1, int nelmt2)
 {
   T *src = (T*)(h_ptrSrc);
   T *dest = (T*)(h_ptrDest);
@@ -59,7 +59,7 @@ void coproc_transposeOnHost2d(int num_elmt,
   for (int i2=0; i2<nelmt2; ++i2) {
     for (int i1=0; i1<nelmt1; ++i1) {
       for (int ielmt=0; ielmt<num_elmt; ++ielmt) {
-	dest[num_elmt*(nelmt2*i1+i2)+ielmt] = src[num_elmt*(nelmt1*i2+i1)+ielmt];
+		dest[num_elmt*(nelmt2*i1+i2)+ielmt] = src[num_elmt*(nelmt1*i2+i1)+ielmt];
       }
     }
   }
@@ -71,8 +71,8 @@ void coproc_transposeOnHost2d(int num_elmt,
  ******************************************************************************/
 template<typename T, int num_elmt>
 void coproc_transposeOnHost2d(const void *__restrict__ h_ptrSrc,
-			      void *__restrict__ h_ptrDest,
-			      int nelmt1, int nelmt2)
+							  void *__restrict__ h_ptrDest,
+							  int nelmt1, int nelmt2)
 {
   T *src = (T*)(h_ptrSrc);
   T *dest = (T*)(h_ptrDest);
@@ -81,7 +81,7 @@ void coproc_transposeOnHost2d(const void *__restrict__ h_ptrSrc,
     for (int i1=0; i1<nelmt1; ++i1) {
 #pragma unroll
       for (int ielmt=0; ielmt<num_elmt; ++ielmt) {
-	dest[num_elmt*(nelmt2*i1+i2)+ielmt] = src[num_elmt*(nelmt1*i2+i1)+ielmt];
+		dest[num_elmt*(nelmt2*i1+i2)+ielmt] = src[num_elmt*(nelmt1*i2+i1)+ielmt];
       }
     }
   }
@@ -91,8 +91,8 @@ void coproc_transposeOnHost2d(const void *__restrict__ h_ptrSrc,
  * Wrapper routine in C++
  ******************************************************************************/
 void coproc_transposeOnHost2d(const void *__restrict__ h_ptrSrc,
-			      void *__restrict__ h_ptrDest,
-			      int bytes_per_elmt, int nelmt1, int nelmt2)
+							  void *__restrict__ h_ptrDest,
+							  int bytes_per_elmt, int nelmt1, int nelmt2)
 {
   switch (bytes_per_elmt) {
   
@@ -154,19 +154,19 @@ void coproc_transposeOnHost2d(const void *__restrict__ h_ptrSrc,
     //
     if ((bytes_per_elmt&7) == 0) {
       coproc_transposeOnHost2d<uint64_t>((bytes_per_elmt>>3),
-					 h_ptrSrc, h_ptrDest, nelmt1, nelmt2);
+										 h_ptrSrc, h_ptrDest, nelmt1, nelmt2);
     }
     else if ((bytes_per_elmt&3) == 0) {
       coproc_transposeOnHost2d<uint32_t>((bytes_per_elmt>>2),
-					 h_ptrSrc, h_ptrDest, nelmt1, nelmt2);
+										 h_ptrSrc, h_ptrDest, nelmt1, nelmt2);
     }
     else if ((bytes_per_elmt&1) == 0) {
       coproc_transposeOnHost2d<uint16_t>((bytes_per_elmt>>1),
-					 h_ptrSrc, h_ptrDest, nelmt1, nelmt2);
+										 h_ptrSrc, h_ptrDest, nelmt1, nelmt2);
     }
     else {
       coproc_transposeOnHost2d<uint8_t>(bytes_per_elmt,
-					h_ptrSrc, h_ptrDest, nelmt1, nelmt2);
+										h_ptrSrc, h_ptrDest, nelmt1, nelmt2);
     }
     break;
   }
@@ -178,12 +178,12 @@ void coproc_transposeOnHost2d(const void *__restrict__ h_ptrSrc,
  ******************************************************************************/
 extern "C" {
   void FNAME(coproc_transposeonhost2d)(const void *__restrict__ h_ptrSrc,
-				       void *__restrict__ h_ptrDest,
-				       __INT *bytes_per_elmt,
-				       __INT *nelmt1, __INT *nelmt2)
+									   void *__restrict__ h_ptrDest,
+									   __INT *bytes_per_elmt,
+									   __INT *nelmt1, __INT *nelmt2)
   {
     coproc_transposeOnHost2d(h_ptrSrc, h_ptrDest, *bytes_per_elmt,
-			     *nelmt1, *nelmt2);
+							 *nelmt1, *nelmt2);
   }
 };
 
@@ -201,8 +201,8 @@ extern "C" {
  ******************************************************************************/
 template<typename T>
 void coproc_transposeOnHost3d(const void *__restrict__ h_ptrSrc,
-			      void *__restrict__ h_ptrDest,
-			      int nelmt1, int nelmt2, int nelmt3)
+							  void *__restrict__ h_ptrDest,
+							  int nelmt1, int nelmt2, int nelmt3)
 {
   T *src = (T*)(h_ptrSrc);
   T *dest = (T*)(h_ptrDest);
@@ -210,7 +210,7 @@ void coproc_transposeOnHost3d(const void *__restrict__ h_ptrSrc,
   for (int i3=0; i3<nelmt3; ++i3) {
     for (int i2=0; i2<nelmt2; ++i2) {
       for (int i1=0; i1<nelmt1; ++i1) {
-	dest[nelmt2*nelmt3*i1+nelmt3*i2+i3] = src[nelmt1*nelmt2*i3+nelmt1*i2+i1];
+		dest[nelmt2*nelmt3*i1+nelmt3*i2+i3] = src[nelmt1*nelmt2*i3+nelmt1*i2+i1];
       }
     }
   }
@@ -221,9 +221,9 @@ void coproc_transposeOnHost3d(const void *__restrict__ h_ptrSrc,
  ******************************************************************************/
 template<typename T>
 void coproc_transposeOnHost3d(int num_elmt,
-			      const void *__restrict__ h_ptrSrc, 
-			      void *__restrict__ h_ptrDest,
-			      int nelmt1, int nelmt2, int nelmt3)
+							  const void *__restrict__ h_ptrSrc, 
+							  void *__restrict__ h_ptrDest,
+							  int nelmt1, int nelmt2, int nelmt3)
 {
   T *src = (T*)(h_ptrSrc);
   T *dest = (T*)(h_ptrDest);
@@ -231,10 +231,10 @@ void coproc_transposeOnHost3d(int num_elmt,
   for (int i3=0; i3<nelmt3; ++i3) {
     for (int i2=0; i2<nelmt2; ++i2) {
       for (int i1=0; i1<nelmt1; ++i1) {
-	for (int ielmt=0; ielmt<num_elmt; ++ielmt) {
-	  dest[num_elmt*(nelmt2*nelmt3*i1+nelmt3*i2+i3)+ielmt] =
-	    src[num_elmt*(nelmt1*nelmt2*i3+nelmt1*i2+i1)+ielmt];
-	}
+		for (int ielmt=0; ielmt<num_elmt; ++ielmt) {
+		  dest[num_elmt*(nelmt2*nelmt3*i1+nelmt3*i2+i3)+ielmt] =
+			src[num_elmt*(nelmt1*nelmt2*i3+nelmt1*i2+i1)+ielmt];
+		}
       }
     }
   }
@@ -245,8 +245,8 @@ void coproc_transposeOnHost3d(int num_elmt,
  ******************************************************************************/
 template<typename T, int num_elmt>
 void coproc_transposeOnHost3d(const void *__restrict__ h_ptrSrc,
-			      void *__restrict__ h_ptrDest,
-			      int nelmt1, int nelmt2, int nelmt3)
+							  void *__restrict__ h_ptrDest,
+							  int nelmt1, int nelmt2, int nelmt3)
 {
   T *src = (T*)(h_ptrSrc);
   T *dest = (T*)(h_ptrDest);
@@ -255,10 +255,10 @@ void coproc_transposeOnHost3d(const void *__restrict__ h_ptrSrc,
     for (int i2=0; i2<nelmt2; ++i2) {
       for (int i1=0; i1<nelmt1; ++i1) {
 #pragma unroll
-	for (int ielmt=0; ielmt<num_elmt; ++ielmt) {
-	  dest[num_elmt*(nelmt2*nelmt3*i1+nelmt3*i2+i3)+ielmt] =
-	    src[num_elmt*(nelmt1*nelmt2*i3+nelmt1*i2+i1)+ielmt];
-	}
+		for (int ielmt=0; ielmt<num_elmt; ++ielmt) {
+		  dest[num_elmt*(nelmt2*nelmt3*i1+nelmt3*i2+i3)+ielmt] =
+			src[num_elmt*(nelmt1*nelmt2*i3+nelmt1*i2+i1)+ielmt];
+		}
       }
     }
   }
@@ -268,8 +268,8 @@ void coproc_transposeOnHost3d(const void *__restrict__ h_ptrSrc,
  * Wrapper routine in C++
  ******************************************************************************/
 void coproc_transposeOnHost3d(const void *__restrict__ h_ptrSrc,
-			      void *__restrict__ h_ptrDest,
-			      int bytes_per_elmt, int nelmt1, int nelmt2, int nelmt3)
+							  void *__restrict__ h_ptrDest,
+							  int bytes_per_elmt, int nelmt1, int nelmt2, int nelmt3)
 {
   switch (bytes_per_elmt) {
   
@@ -331,19 +331,19 @@ void coproc_transposeOnHost3d(const void *__restrict__ h_ptrSrc,
     //
     if ((bytes_per_elmt&7) == 0) {
       coproc_transposeOnHost3d<uint64_t>((bytes_per_elmt>>3),
-					 h_ptrSrc, h_ptrDest, nelmt1, nelmt2, nelmt3);
+										 h_ptrSrc, h_ptrDest, nelmt1, nelmt2, nelmt3);
     }
     else if ((bytes_per_elmt&3) == 0) {
       coproc_transposeOnHost3d<uint32_t>((bytes_per_elmt>>2),
-					 h_ptrSrc, h_ptrDest, nelmt1, nelmt2, nelmt3);
+										 h_ptrSrc, h_ptrDest, nelmt1, nelmt2, nelmt3);
     }
     else if ((bytes_per_elmt&1) == 0) {
       coproc_transposeOnHost3d<uint16_t>((bytes_per_elmt>>1),
-					 h_ptrSrc, h_ptrDest, nelmt1, nelmt2, nelmt3);
+										 h_ptrSrc, h_ptrDest, nelmt1, nelmt2, nelmt3);
     }
     else {
       coproc_transposeOnHost3d<uint8_t>(bytes_per_elmt,
-					h_ptrSrc, h_ptrDest, nelmt1, nelmt2, nelmt3);
+										h_ptrSrc, h_ptrDest, nelmt1, nelmt2, nelmt3);
     }
     break;
   }
@@ -355,12 +355,12 @@ void coproc_transposeOnHost3d(const void *__restrict__ h_ptrSrc,
  ******************************************************************************/
 extern "C" {
   void FNAME(coproc_transposeonhost3d)(const void *__restrict__ h_ptrSrc,
-				       void *__restrict__ h_ptrDest,
-				       __INT *bytes_per_elmt,
-				       __INT *nelmt1, __INT *nelmt2, __INT *nelmt3)
+									   void *__restrict__ h_ptrDest,
+									   __INT *bytes_per_elmt,
+									   __INT *nelmt1, __INT *nelmt2, __INT *nelmt3)
   {
     coproc_transposeOnHost3d(h_ptrSrc, h_ptrDest, *bytes_per_elmt,
-			     *nelmt1, *nelmt2, *nelmt3);
+							 *nelmt1, *nelmt2, *nelmt3);
   }
 };
 
@@ -378,7 +378,7 @@ extern "C" {
 
 template<int TILE_DIM, int BLOCK_ROWS, class T>
 __global__ void transpose2d_naive_knl(T *Src, T *Dest,
-				      int nelmt1, int nelmt2) {
+									  int nelmt1, int nelmt2) {
 
   int xIndex = blockIdx.x * TILE_DIM + threadIdx.x;
   int yIndex = blockIdx.y * TILE_DIM + threadIdx.y;
@@ -400,8 +400,8 @@ __global__ void transpose2d_naive_knl(T *Src, T *Dest,
 
 template<int TILE_DIM, int BLOCK_ROWS, class T>
 __global__ void transpose2d_naive_mult_knl(T *Src, T *Dest,
-					   int nelmt1, int nelmt2,
-					   int nitem1, int nitem2) {
+										   int nelmt1, int nelmt2,
+										   int nitem1, int nitem2) {
 
   for (int k1=0; k1<nitem1; k1++) {
     for (int k2=0; k2<nitem2; k2++) {
@@ -413,8 +413,8 @@ __global__ void transpose2d_naive_mult_knl(T *Src, T *Dest,
       int index_out = yIndex + nelmt2 * xIndex;
       
       for (int i=0; i<TILE_DIM; i+=BLOCK_ROWS) {
-	if (index_out+i < nelmt1*nelmt2)
-	  Dest[index_out+i] = Src[index_in+i*nelmt1];
+		if (index_out+i < nelmt1*nelmt2)
+		  Dest[index_out+i] = Src[index_in+i*nelmt1];
       }
     }
   }
@@ -427,7 +427,7 @@ __global__ void transpose2d_naive_mult_knl(T *Src, T *Dest,
 
 template<int TILE_DIM, int BLOCK_ROWS, class T>
 __global__ void transpose2d_knl(T *Src, T *Dest,
-				int nelmt1, int nelmt2) {
+								int nelmt1, int nelmt2) {
   
   __shared__ T tile[TILE_DIM][TILE_DIM+1]; 
   
@@ -456,8 +456,8 @@ __global__ void transpose2d_knl(T *Src, T *Dest,
 
 template<int TILE_DIM, int BLOCK_ROWS, class T>
 __global__ void transpose2d_mult_knl(T *Src, T *Dest,
-				     int nelmt1, int nelmt2,
-				     int nitem1, int nitem2) {
+									 int nelmt1, int nelmt2,
+									 int nitem1, int nitem2) {
   
   __shared__ T tile[TILE_DIM][TILE_DIM+1]; 
   
@@ -469,7 +469,7 @@ __global__ void transpose2d_mult_knl(T *Src, T *Dest,
       int index  = xIndex + yIndex * nelmt1;
       
       for (int i=0; i<TILE_DIM; i+=BLOCK_ROWS) 
-	tile[threadIdx.y+i][threadIdx.x] = Src[index+i*nelmt1]; 
+		tile[threadIdx.y+i][threadIdx.x] = Src[index+i*nelmt1]; 
       
       xIndex = (k2*gridDim.y + blockIdx.y) * TILE_DIM + threadIdx.x;
       yIndex = (k1*gridDim.x + blockIdx.x) * TILE_DIM + threadIdx.y;
@@ -478,7 +478,7 @@ __global__ void transpose2d_mult_knl(T *Src, T *Dest,
       __syncthreads();
       
       for (int i=0; i<TILE_DIM; i+=BLOCK_ROWS) 
-	Dest[index+i*nelmt2] = tile[threadIdx.x][threadIdx.y+i];
+		Dest[index+i*nelmt2] = tile[threadIdx.x][threadIdx.y+i];
 
       __syncthreads();
     }
@@ -492,8 +492,8 @@ __global__ void transpose2d_mult_knl(T *Src, T *Dest,
 
 template<int TILE_DIM, int BLOCK_ROWS, class T>
 __global__ void transpose2d_offset_knl(T *Src, T *Dest,
-				       int nelmt1, int nelmt2,
-				       int offset1, int offset2) {
+									   int nelmt1, int nelmt2,
+									   int offset1, int offset2) {
   
   __shared__ T tile[TILE_DIM][TILE_DIM+1]; 
   
@@ -504,7 +504,7 @@ __global__ void transpose2d_offset_knl(T *Src, T *Dest,
   if (xIndex < nelmt1) {
     for (int i=0; i<TILE_DIM; i+=BLOCK_ROWS) {
       if (index+i*nelmt1 < nelmt1*nelmt2) {
-	tile[threadIdx.y+i][threadIdx.x] = Src[index+i*nelmt1];
+		tile[threadIdx.y+i][threadIdx.x] = Src[index+i*nelmt1];
       }
     }
   }
@@ -518,7 +518,7 @@ __global__ void transpose2d_offset_knl(T *Src, T *Dest,
   if (xIndex < nelmt2) {
     for (int i=0; i<TILE_DIM; i+=BLOCK_ROWS) {
       if (index+i*nelmt2 < nelmt1*nelmt2) {
-	Dest[index+i*nelmt2] = tile[threadIdx.x][threadIdx.y+i];
+		Dest[index+i*nelmt2] = tile[threadIdx.x][threadIdx.y+i];
       }
     }
   }
@@ -532,9 +532,9 @@ __global__ void transpose2d_offset_knl(T *Src, T *Dest,
 
 template<int TILE_DIM, int BLOCK_ROWS, class T>
 __global__ void transpose2d_mult_offset_knl(T *Src, T *Dest,
-					    int nelmt1, int nelmt2,
-					    int nitem1, int nitem2,
-					    int offset1, int offset2) {
+											int nelmt1, int nelmt2,
+											int nitem1, int nitem2,
+											int offset1, int offset2) {
   
   __shared__ T tile[TILE_DIM][TILE_DIM+1]; 
   
@@ -546,11 +546,11 @@ __global__ void transpose2d_mult_offset_knl(T *Src, T *Dest,
       int index  = xIndex + yIndex * nelmt1;
       
       if (xIndex < nelmt1) {
-	for (int i=0; i<TILE_DIM; i+=BLOCK_ROWS) {
-	  if (index+i*nelmt1 < nelmt1*nelmt2) {
-	    tile[threadIdx.y+i][threadIdx.x] = Src[index+i*nelmt1];
-	  }
-	}
+		for (int i=0; i<TILE_DIM; i+=BLOCK_ROWS) {
+		  if (index+i*nelmt1 < nelmt1*nelmt2) {
+			tile[threadIdx.y+i][threadIdx.x] = Src[index+i*nelmt1];
+		  }
+		}
       }
       
       xIndex = offset2 + (k2*gridDim.y + blockIdx.y) * TILE_DIM + threadIdx.x;
@@ -560,11 +560,11 @@ __global__ void transpose2d_mult_offset_knl(T *Src, T *Dest,
       __syncthreads();
       
       if (xIndex < nelmt2) {
-	for (int i=0; i<TILE_DIM; i+=BLOCK_ROWS) {
-	  if (index+i*nelmt2 < nelmt1*nelmt2) {
-	    Dest[index+i*nelmt2] = tile[threadIdx.x][threadIdx.y+i];
-	  }
-	}
+		for (int i=0; i<TILE_DIM; i+=BLOCK_ROWS) {
+		  if (index+i*nelmt2 < nelmt1*nelmt2) {
+			Dest[index+i*nelmt2] = tile[threadIdx.x][threadIdx.y+i];
+		  }
+		}
       }
 
       __syncthreads();
@@ -579,7 +579,7 @@ __global__ void transpose2d_mult_offset_knl(T *Src, T *Dest,
 
 template<int TILE_DIM, int FIXED_DIM, class T>
 __global__ void transpose2d_rect_knl(T *Src, T *Dest,
-				     int nelmt1, int nelmt2) {
+									 int nelmt1, int nelmt2) {
   
   if (FIXED_DIM == 1) {
     // First dimension is fixed, i.e. not larger than TILE_DIM
@@ -636,8 +636,8 @@ __global__ void transpose2d_rect_knl(T *Src, T *Dest,
  ******************************************************************************/
 template<typename T>
 void coproc_transposeOnDevice2d(const void *__restrict__ d_ptrSrc, 
-				void *__restrict__ d_ptrDest,
-				int nelmt1, int nelmt2, cudaStream_t stream)
+								void *__restrict__ d_ptrDest,
+								int nelmt1, int nelmt2, cudaStream_t stream)
 {
   T *ptrSrc = (T*)(d_ptrSrc);
   T *ptrDest = (T*)(d_ptrDest);
@@ -663,11 +663,11 @@ void coproc_transposeOnDevice2d(const void *__restrict__ d_ptrSrc,
     
     if (m1*m2 == 1) {
       transpose2d_knl<TILE_DIM,BLOCK_ROWS,T><<<grid, threads, 0, stream>>>
-	(ptrSrc, ptrDest, nelmt1, nelmt2);
+		(ptrSrc, ptrDest, nelmt1, nelmt2);
     }
     else {
       transpose2d_mult_knl<TILE_DIM,BLOCK_ROWS,T><<<grid, threads, 0, stream>>>
-	(ptrSrc, ptrDest, nelmt1, nelmt2, m1, m2);
+		(ptrSrc, ptrDest, nelmt1, nelmt2, m1, m2);
     }
 
     const int l1 = m1*grid.x*TILE_DIM;
@@ -683,12 +683,12 @@ void coproc_transposeOnDevice2d(const void *__restrict__ d_ptrSrc,
       grid = dim3((nn1+mm1-1)/mm1, (nn2+mm2-1)/mm2);
 
       if (mm1*mm2 == 1) {
-	transpose2d_offset_knl<TILE_DIM,BLOCK_ROWS,T><<<grid, threads, 0, stream>>>
-	  (ptrSrc, ptrDest, nelmt1, nelmt2, l1, 0);
+		transpose2d_offset_knl<TILE_DIM,BLOCK_ROWS,T><<<grid, threads, 0, stream>>>
+		  (ptrSrc, ptrDest, nelmt1, nelmt2, l1, 0);
       }
       else {
-	transpose2d_mult_offset_knl<TILE_DIM,BLOCK_ROWS,T><<<grid, threads, 0, stream>>>
-	  (ptrSrc, ptrDest, nelmt1, nelmt2, mm1, mm2, l1, 0);
+		transpose2d_mult_offset_knl<TILE_DIM,BLOCK_ROWS,T><<<grid, threads, 0, stream>>>
+		  (ptrSrc, ptrDest, nelmt1, nelmt2, mm1, mm2, l1, 0);
       }
     }
     
@@ -702,12 +702,12 @@ void coproc_transposeOnDevice2d(const void *__restrict__ d_ptrSrc,
       grid = dim3((nn1+mm1-1)/mm1, (nn2+mm2-1)/mm2);
       
       if (mm1*mm2 == 1) {
-	transpose2d_offset_knl<TILE_DIM,BLOCK_ROWS,T><<<grid, threads, 0, stream>>>
-	  (ptrSrc, ptrDest, nelmt1, nelmt2, 0, l2);
+		transpose2d_offset_knl<TILE_DIM,BLOCK_ROWS,T><<<grid, threads, 0, stream>>>
+		  (ptrSrc, ptrDest, nelmt1, nelmt2, 0, l2);
       }
       else {
-	transpose2d_mult_offset_knl<TILE_DIM,BLOCK_ROWS,T><<<grid, threads, 0, stream>>>
-	  (ptrSrc, ptrDest, nelmt1, nelmt2, mm1, mm2, 0, l2);
+		transpose2d_mult_offset_knl<TILE_DIM,BLOCK_ROWS,T><<<grid, threads, 0, stream>>>
+		  (ptrSrc, ptrDest, nelmt1, nelmt2, mm1, mm2, 0, l2);
       }
     }
   }
@@ -734,7 +734,7 @@ void coproc_transposeOnDevice2d(const void *__restrict__ d_ptrSrc,
       grid = dim3((nn1+mm1-1)/mm1,1);
       dim3 threads(TILE_DIM,BLOCK_ROWS);
       transpose2d_offset_knl<TILE_DIM,BLOCK_ROWS,T><<<grid, threads, 0, stream>>>
-	(ptrSrc, ptrDest, nelmt1, nelmt2, l1, 0);
+		(ptrSrc, ptrDest, nelmt1, nelmt2, l1, 0);
     }
   }
   else if (nelmt2 > TILE_DIM) {
@@ -780,8 +780,8 @@ void coproc_transposeOnDevice2d(const void *__restrict__ d_ptrSrc,
 
 template<int TILE_DIM, int BLOCK_ROWS, class T>
 __global__ void transpose2d_naive_knl(int num_elmt,
-				      T *Src, T *Dest,
-				      int nelmt1, int nelmt2) {
+									  T *Src, T *Dest,
+									  int nelmt1, int nelmt2) {
 
   int xIndex = blockIdx.x * TILE_DIM + threadIdx.x;
   int yIndex = blockIdx.y * TILE_DIM + threadIdx.y;
@@ -811,9 +811,9 @@ __global__ void transpose2d_naive_knl(int num_elmt,
 
 template<int TILE_DIM, int BLOCK_ROWS, class T>
 __global__ void transpose2d_naive_mult_knl(int num_elmt,
-					   T *Src, T *Dest,
-					   int nelmt1, int nelmt2,
-					   int nitem1, int nitem2) {
+										   T *Src, T *Dest,
+										   int nelmt1, int nelmt2,
+										   int nitem1, int nitem2) {
 
   for (int k1=0; k1<nitem1; k1++) {
     for (int k2=0; k2<nitem2; k2++) {
@@ -825,8 +825,8 @@ __global__ void transpose2d_naive_mult_knl(int num_elmt,
       int index_out = yIndex + nelmt2 * xIndex;
       
       for (int i=0; i<TILE_DIM; i+=BLOCK_ROWS) {
-	if (index_out+i < nelmt1*nelmt2)
-	  Dest[index_out+i] = Src[index_in+i*nelmt1];
+		if (index_out+i < nelmt1*nelmt2)
+		  Dest[index_out+i] = Src[index_in+i*nelmt1];
       }
     }
   }
@@ -838,9 +838,9 @@ __global__ void transpose2d_naive_mult_knl(int num_elmt,
  ******************************************************************************/
 template<typename T>
 void coproc_transposeOnDevice2d(int num_elmt,
-				const void *__restrict__ d_ptrSrc, 
-				void *__restrict__ d_ptrDest,
-				int nelmt1, int nelmt2, cudaStream_t stream)
+								const void *__restrict__ d_ptrSrc, 
+								void *__restrict__ d_ptrDest,
+								int nelmt1, int nelmt2, cudaStream_t stream)
 {
   T *ptrSrc = (T*)(d_ptrSrc);
   T *ptrDest = (T*)(d_ptrDest);
@@ -876,7 +876,7 @@ void coproc_transposeOnDevice2d(int num_elmt,
 
 template<int TILE_DIM, int BLOCK_ROWS, int num_elmt, class T>
 __global__ void transpose2d_naive_knl(T *Src, T *Dest,
-				      int nelmt1, int nelmt2) {
+									  int nelmt1, int nelmt2) {
 
   int xIndex = blockIdx.x * TILE_DIM + threadIdx.x;
   int yIndex = blockIdx.y * TILE_DIM + threadIdx.y;
@@ -907,8 +907,8 @@ __global__ void transpose2d_naive_knl(T *Src, T *Dest,
 
 template<int TILE_DIM, int BLOCK_ROWS, int num_elmt, class T>
 __global__ void transpose2d_naive_mult_knl(T *Src, T *Dest,
-					   int nelmt1, int nelmt2,
-					   int nitem1, int nitem2) {
+										   int nelmt1, int nelmt2,
+										   int nitem1, int nitem2) {
 
   for (int k1=0; k1<nitem1; k1++) {
     for (int k2=0; k2<nitem2; k2++) {
@@ -920,9 +920,9 @@ __global__ void transpose2d_naive_mult_knl(T *Src, T *Dest,
       int index_out = yIndex + nelmt2 * xIndex;
       
       for (int i=0; i<TILE_DIM; i+=BLOCK_ROWS) {
-	if ((index_out+i < nelmt1*nelmt2) &&
-	    (index_in+i*nelmt1 < nelmt1*nelmt2))
-	  Dest[index_out+i] = Src[index_in+i*nelmt1];
+		if ((index_out+i < nelmt1*nelmt2) &&
+			(index_in+i*nelmt1 < nelmt1*nelmt2))
+		  Dest[index_out+i] = Src[index_in+i*nelmt1];
       }
     }
   }
@@ -934,8 +934,8 @@ __global__ void transpose2d_naive_mult_knl(T *Src, T *Dest,
  ******************************************************************************/
 template<typename T, int num_elmt>
 void coproc_transposeOnDevice2d(const void *__restrict__ d_ptrSrc,
-				void *__restrict__ d_ptrDest,
-				int nelmt1, int nelmt2, cudaStream_t stream)
+								void *__restrict__ d_ptrDest,
+								int nelmt1, int nelmt2, cudaStream_t stream)
 {
   T *ptrSrc = (T*)(d_ptrSrc);
   T *ptrDest = (T*)(d_ptrDest);
@@ -970,9 +970,9 @@ void coproc_transposeOnDevice2d(const void *__restrict__ d_ptrSrc,
  * Wrapper routine in C++
  ******************************************************************************/
 void coproc_transposeOnDevice2d(const void *__restrict__ d_ptrSrc,
-				void *__restrict__ d_ptrDest,
-				int bytes_per_elmt, int nelmt1, int nelmt2,
-				cudaStream_t stream)
+								void *__restrict__ d_ptrDest,
+								int bytes_per_elmt, int nelmt1, int nelmt2,
+								cudaStream_t stream)
 {
   cudaEvent_t start,stop;
   float inTime;
@@ -1155,23 +1155,23 @@ void coproc_transposeOnDevice2d(const void *__restrict__ d_ptrSrc,
     //
     if ((bytes_per_elmt&15) == 0) {
       coproc_transposeOnDevice2d<float4>((bytes_per_elmt>>4), d_ptrSrc, d_ptrDest,
-					 nelmt1, nelmt2, stream);
+										 nelmt1, nelmt2, stream);
     }
     if ((bytes_per_elmt&7) == 0) {
       coproc_transposeOnDevice2d<float2>((bytes_per_elmt>>3), d_ptrSrc, d_ptrDest,
-					 nelmt1, nelmt2, stream);
+										 nelmt1, nelmt2, stream);
     }
     else if ((bytes_per_elmt&3) == 0) {
       coproc_transposeOnDevice2d<float1>((bytes_per_elmt>>2), d_ptrSrc, d_ptrDest,
-					 nelmt1, nelmt2, stream);
+										 nelmt1, nelmt2, stream);
     }
     else if ((bytes_per_elmt&1) == 0) {
       coproc_transposeOnDevice2d<char2>((bytes_per_elmt>>1), d_ptrSrc, d_ptrDest,
-					nelmt1, nelmt2, stream);
+										nelmt1, nelmt2, stream);
     }
     else {
       coproc_transposeOnDevice2d<char1>(bytes_per_elmt, d_ptrSrc, d_ptrDest,
-					nelmt1, nelmt2, stream);
+										nelmt1, nelmt2, stream);
     }
     break;
   }
@@ -1189,13 +1189,13 @@ void coproc_transposeOnDevice2d(const void *__restrict__ d_ptrSrc,
  ******************************************************************************/
 extern "C" {
   void FNAME(coproc_transposeondevice2d)(const void *__restrict__ d_ptrSrc,
-					 void *__restrict__ d_ptrDest,
-					 __INT *bytes_per_elmt,
-					 __INT *nelmt1, __INT *nelmt2,
-					 __I64 *stream)
+										 void *__restrict__ d_ptrDest,
+										 __INT *bytes_per_elmt,
+										 __INT *nelmt1, __INT *nelmt2,
+										 __I64 *stream)
   {
     coproc_transposeOnDevice2d(d_ptrSrc, d_ptrDest, *bytes_per_elmt,
-			       *nelmt1, *nelmt2, (cudaStream_t)(*stream));
+							   *nelmt1, *nelmt2, (cudaStream_t)(*stream));
   }
 };
 
@@ -1213,8 +1213,8 @@ extern "C" {
 
 template<class T>
 __global__ void transpose3d_knl(T *Src, T *Dest,
-				int nelmt1, int nelmt2, int nelmt3,
-				int offset1=0, int offset2=0, int offset3=0) {
+								int nelmt1, int nelmt2, int nelmt3,
+								int offset1=0, int offset2=0, int offset3=0) {
   
   int xIndex = offset1 + blockIdx.x + threadIdx.x;
   int yIndex = offset2 + blockIdx.y + threadIdx.y;
@@ -1233,9 +1233,9 @@ __global__ void transpose3d_knl(T *Src, T *Dest,
 
 template<class T>
 __global__ void transpose3d_knl(int num_elmt,
-				T *Src, T *Dest,
-				int nelmt1, int nelmt2, int nelmt3,
-				int offset1=0, int offset2=0, int offset3=0) {
+								T *Src, T *Dest,
+								int nelmt1, int nelmt2, int nelmt3,
+								int offset1=0, int offset2=0, int offset3=0) {
   
   int xIndex = offset1 + blockIdx.x + threadIdx.x;
   int yIndex = offset2 + blockIdx.y + threadIdx.y;
@@ -1255,8 +1255,8 @@ __global__ void transpose3d_knl(int num_elmt,
 
 template<class T, int num_elmt>
 __global__ void transpose3d_knl(T *Src, T *Dest,
-				int nelmt1, int nelmt2, int nelmt3,
-				int offset1=0, int offset2=0, int offset3=0) {
+								int nelmt1, int nelmt2, int nelmt3,
+								int offset1=0, int offset2=0, int offset3=0) {
   
   int xIndex = offset1 + blockIdx.x + threadIdx.x;
   int yIndex = offset2 + blockIdx.y + threadIdx.y;

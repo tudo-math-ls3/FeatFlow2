@@ -77,23 +77,23 @@ void coproc_init(int deviceNumber=0)
       cout << "   Shared memory per block: " << DeviceProp[i].sharedMemPerBlock << " bytes" << endl;
       cout << "   Multiprocessors:         " << DeviceProp[i].multiProcessorCount << endl;
       cout << "   Blocks per grid:         "
-	   << "(" << DeviceProp[i].maxGridSize[0]
-	   << "," << DeviceProp[i].maxGridSize[1]
-	   << "," << DeviceProp[i].maxGridSize[2] << ")" << endl;
+		   << "(" << DeviceProp[i].maxGridSize[0]
+		   << "," << DeviceProp[i].maxGridSize[1]
+		   << "," << DeviceProp[i].maxGridSize[2] << ")" << endl;
       cout << "   Registers per block:     " << DeviceProp[i].regsPerBlock << endl;
       cout << "   Threads per block:       "
-	   << DeviceProp[i].maxThreadsPerBlock
-	   << " (" << DeviceProp[i].maxThreadsDim[0]
-	   << "," << DeviceProp[i].maxThreadsDim[1]
-	   << "," << DeviceProp[i].maxThreadsDim[2] << ")" << endl;
+		   << DeviceProp[i].maxThreadsPerBlock
+		   << " (" << DeviceProp[i].maxThreadsDim[0]
+		   << "," << DeviceProp[i].maxThreadsDim[1]
+		   << "," << DeviceProp[i].maxThreadsDim[2] << ")" << endl;
       cout << "   Threads per warp:        " << DeviceProp[i].warpSize << endl;
       cout << "   Clock frequency:         " << DeviceProp[i].clockRate << " kHz" << endl;
       cout << "   Concurrent memory copy:  "
-	   << (DeviceProp[i].deviceOverlap == 1 ? "supported" : "not supported") << endl;
+		   << (DeviceProp[i].deviceOverlap == 1 ? "supported" : "not supported") << endl;
       cout << "   Mapping of host memory:  "
-	<< (DeviceProp[i].canMapHostMemory == 1 ? "supported" : "not supported") << endl;
+		   << (DeviceProp[i].canMapHostMemory == 1 ? "supported" : "not supported") << endl;
       cout << "   Concurrent kernels:      "
-	   << (DeviceProp[i].concurrentKernels == 1 ? "supported" : "not supported") << endl;
+		   << (DeviceProp[i].concurrentKernels == 1 ? "supported" : "not supported") << endl;
     }
   
   // Autoselect device?
