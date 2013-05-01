@@ -96,112 +96,69 @@ contains
 !</subroutine>
 
     ! local variables
-    character(LEN=80) :: cbuffer
+    character(LEN=SYS_STRLEN) :: sdata
     integer, dimension(:,:), pointer :: p_Idata
     integer, dimension(2) :: Isize
-    integer :: cf,ix,iy
+    integer :: iunit,ilinelen,istatus,ix,iy
 
     if (ifile .eq. 0) then
-      call io_openFileForReading(sfile, cf, .true.)
-      if (cf .eq. -1) then
+      call io_openFileForReading(sfile, iunit, .true.)
+      if (iunit .eq. -1) then
         call output_line('Could not open file '//trim(sfile)//'!',&
                          OU_CLASS_ERROR, OU_MODE_STD, 'ppsol_readPGM')
         call sys_halt()
       end if
     else
-      cf = ifile
+      iunit = ifile
     end if
+    
+    ! Read format identifier
+    call io_readlinefromfile(iunit, sdata, ilinelen, istatus)
+    call sys_tolower(sdata)
+    select case(trim(sdata))
+    case ('p2')
+      rpgm%id='p2'
+      
+      ! Skip comments (if required)
+      comment: do
+        call io_readlinefromfile(iunit, sdata, ilinelen, istatus)
+        if (sdata(1:1) .ne. '#') exit comment
+      end do comment
+      
+      ! Read width and height
+      read(sdata, *) rpgm%width, rpgm%height
 
-    ! Read image ID
-    read (cf,*) rpgm%id
-
-
-    select case(rpgm%id)
-    case ('P2','p2')
-      ! Read the header
-      call getNextEntryASCII(cbuffer); read(cbuffer,*) rpgm%width
-      call getNextEntryASCII(cbuffer); read(cbuffer,*) rpgm%height
-      call getNextEntryASCII(cbuffer); read(cbuffer,*) rpgm%maxgray
+      ! Read number of graylevels
+      call io_readlinefromfile(iunit, sdata, ilinelen, istatus)
+      read(sdata, *) rpgm%maxgray
 
       ! Allocate memory for image data
       Isize=(/rpgm%width, rpgm%height/)
       call storage_new('ppsol_readPGM', 'h_Idata',&
           Isize, ST_INT, rpgm%h_Idata, ST_NEWBLOCK_NOINIT)
       call storage_getbase_int2D(rpgm%h_Idata, p_Idata)
-
+      
       do iy = 1, rpgm%height
         do ix = 1, rpgm%width
-          call getNextEntryASCII(cbuffer); read(cbuffer,*) p_Idata(ix,iy)
+          call io_readlinefromfile(iunit, sdata, ilinelen, istatus)
+          read(sdata,*) p_Idata(ix,iy)
           if (p_Idata(ix,iy) .gt. rpgm%maxgray) then
             call output_line('Image data exceeds range!',&
-                             OU_CLASS_ERROR,OU_MODE_STD,'ppsol_readPGM')
+                OU_CLASS_ERROR,OU_MODE_STD,'ppsol_readPGM')
             call sys_halt()
           end if
         end do
       end do
-
-    case DEFAULT
+      
+    case default
       call output_line('Invalid PGM format!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'ppsol_readPGM')
+          OU_CLASS_ERROR,OU_MODE_STD,'ppsol_readPGM')
       call sys_halt()
     end select
-
+    
     ! Close the file if necessary
-    if (ifile .eq. 0) close(cf)
-
-  contains
-
-    ! Here, the real working routines follow
-
-    !**************************************************************
-    ! Reads an item from file into the buffer.
-    ! Items are separated by spaces, comma, (tabs ...??)
-    ! Anything from character '#' till the end of line is ignored
-    ! assuming Fortran`s eor=eol ... seems to work
-
-    subroutine getNextEntryASCII(cbuffer)
-
-      character(LEN=*), intent(inout) :: cbuffer
-
-      character(LEN=1) :: c
-      integer :: ipos
-
-      ipos = 1
-
-      ! Read until somthing not a space, comma or comment
-      do
-10      read(cf, FMT='(a)', ADVANCE='NO', end=99, EOR=10) c
-        if ((c .ne. ' ') .and.&
-            (c .ne. ',') .and.&
-            (c .ne.'\t') .and.&
-            (c .ne. '#')) exit
-        if (c .eq. '#') then
-          ! Skip the comment till the end of line
-          do
-            read(cf, FMT='(A)', ADVANCE='NO', end=99, EOR=10) c
-          end do
-        end if
-      end do
-
-      ! We have some significant character,
-      ! read until next space, comma or comment
-      do
-        cbuffer(ipos:ipos) = c
-        ipos = ipos+1
-        read(cf, FMT='(a)', ADVANCE='NO', end=99, EOR=99) c
-        if ((c .eq. ' ') .or.&
-            (c .eq. ',') .or.&
-            (c .eq.'\t')) exit
-        if (c .eq. '#') then
-          ! Skip the comment till the end of line
-          do
-            read(cf, FMT='(A)', ADVANCE='NO', end=99, EOR=99) c
-          end do
-        end if
-      end do
-      ! End the read characters by one space
-99    cbuffer(ipos:ipos) = ' '
-    end subroutine getNextEntryASCII
+    if (ifile .eq. 0) close(iunit)
+   
   end subroutine ppsol_readPGM
 
   ! ***************************************************************************
