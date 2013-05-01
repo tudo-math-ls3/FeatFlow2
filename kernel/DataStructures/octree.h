@@ -333,12 +333,12 @@ contains
 #ifdef T_STORAGE
     Isize = (/3, nnvt/)
     call storage_new('otree_create', 'p_Data',&
-                     Isize, ST_DOUBLE, roctree%h_Data, ST_NEWBLOCK_ZERO)
+                     Isize, T_STORAGE, roctree%h_Data, ST_NEWBLOCK_ZERO)
     call storage_getbase(roctree%h_Data, roctree%p_Data)
 
     Isize = (/6, nnnode/)
     call storage_new('otree_create', 'p_BdBox',&
-                     Isize, ST_DOUBLE, roctree%h_BdBox, ST_NEWBLOCK_ZERO)
+                     Isize, T_STORAGE, roctree%h_BdBox, ST_NEWBLOCK_ZERO)
     call storage_getbase(roctree%h_BdBox, roctree%p_BdBox)
 #else
     allocate(roctree%p_Data(2,nnvt))

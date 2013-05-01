@@ -324,12 +324,12 @@ contains
 #ifdef T_STORAGE
     Isize = (/2, nnvt/)
     call storage_new('qtree_create', 'p_Data',&
-                     Isize, ST_DOUBLE, rquadtree%h_Data, ST_NEWBLOCK_ZERO)
+                     Isize, T_STORAGE, rquadtree%h_Data, ST_NEWBLOCK_ZERO)
     call storage_getbase(rquadtree%h_Data, rquadtree%p_Data)
 
     Isize = (/4, nnnode/)
     call storage_new('qtree_create', 'p_BdBox',&
-                     Isize, ST_DOUBLE, rquadtree%h_BdBox, ST_NEWBLOCK_ZERO)
+                     Isize, T_STORAGE, rquadtree%h_BdBox, ST_NEWBLOCK_ZERO)
     call storage_getbase(rquadtree%h_BdBox, rquadtree%p_BdBox)
 #else
     allocate(rquadtree%p_Data(2,nnvt))
