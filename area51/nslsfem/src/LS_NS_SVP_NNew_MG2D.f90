@@ -291,36 +291,37 @@ contains
   call ls_RHS_Assembly(rrhs,rvector_old,rcollection,&
            Rlevels(NLMAX)%rcubatureInfo,inl) 
   
-  
-  ! ++++++++++++++++++++++++++++++++
-  ! 3- Implement Boundary Conditions
-  ! ++++++++++++++++++++++++++++++++   
+
+  ! ++++++++++++++++++++++
+  ! 3- Boundary Conditions
+  ! ++++++++++++++++++++++   
   ! 3-1 Dirichlet BCs.
-  call ls_BCs_Dirichlet(Rlevels,rrhs,rvector,rvector_old,&
-            NLMAX,NLMIN,rcollection)
-  
-  ! 3-2 Neuman, Outflow and Etc. BCs.
-  call ls_BCs_NOE(Rlevels,rrhs,rboundary,rparams,NLMAX,NLMIN)   
+  call ls_BCs_Dirichlet(Rlevels,rrhs,NLMAX,NLMIN,rvector,rvector_old)
+
+  ! 3-2 Zero Mean Pressure constraint
+  call ls_BCs_ZMP(Rlevels,rrhs,rboundary,inl,rparams,NLMAX,NLMIN)     
    
-   
+
   ! +++++++++++++++++++
   ! 4- Solve the System
   ! +++++++++++++++++++
   ! 4-1 Calculate the linearized system defect
   call ls_Defect(Rlevels(NLMAX)%rmatrix, rvector_old,rrhs,rdefect)
   
-  ! 4-2 Take care of the Newton scheme terms, if any! 
+  ! 4-2 Take care of the Newton scheme additional terms, if any! 
   call ls_MatAssembly(Rlevels,rvector_old,p_rtempVectorSc,&
         rcollection,rparams,NLMIN,NLMAX,inl,1)
 
-  ! 4-3 Take care of Dirichlet BCs.
-  call ls_BCs_Dirichlet(Rlevels,rrhs,rvector,rvector_old,&
-            NLMAX,NLMIN,rcollection)
+  ! 4-3 Neuman, Outflow and Etc. BCs.
+  call ls_BCs_NOE(Rlevels,rdefect,rboundary,rparams,NLMAX,NLMIN)  
+
+  ! 4-4 Dirichlet BCs.
+  call ls_BCs_Dirichlet(Rlevels,rdefect,NLMAX,NLMIN)
   
-  ! 4-4 Take care of Zero Mean Pressure constraint
-  call ls_BCs_ZMP(Rlevels,rrhs,rboundary,inl,rparams,NLMAX,NLMIN)
+  ! 4-5 Zero Mean Pressure constraint
+  call ls_BCs_ZMP(Rlevels,rdefect,rboundary,inl,rparams,NLMAX,NLMIN)
   
-  ! 4-5 Solve the system
+  ! 4-6 Solve the system
   call ls_Solver_linear(Rlevels,rvector,rdefect,rparams)
   
   
@@ -2376,8 +2377,7 @@ contains
   !****************************************************************************
 
 !<subroutine>
-  subroutine ls_BCs_Dirichlet(Rlevels,rrhs,rvector,rvector_old,&
-                             NLMAX,NLMIN,rcollection)
+  subroutine ls_BCs_Dirichlet(Rlevels,rrhs,NLMAX,NLMIN,rvector,rvector_old)
                 
  !<description>  
   ! Implementing BCs to the matrix and solution/RHS vectors.
@@ -2385,14 +2385,14 @@ contains
 
  !<input>
   integer, intent(in) :: NLMAX,NLMIN
-  
-  ! Collection structure for callback routines  
-  type(t_collection), intent(in) :: rcollection
  !</input>
  
  !<inputoutput>
-  ! Block vectors 
-  type(t_vectorBlock), intent(inout) :: rvector,rvector_old,rrhs
+  ! Block solution vectors 
+  type(t_vectorBlock), intent(inout), optional :: rvector,rvector_old
+
+  ! Block RHS or Defect vector
+  type(t_vectorBlock), intent(inout) :: rrhs
    
   ! An array of problem levels for the multigrid solver
   type(t_level), dimension(:), pointer :: Rlevels
@@ -2414,14 +2414,19 @@ contains
   end do
   
   ! Assign the boundary conditions to the vectors ONLY on the finest level.
+  ! The RHS or defect vector
   call lsysbl_assignDiscreteBC(rrhs,Rlevels(NLMAX)%rdiscreteBC)
-  call lsysbl_assignDiscreteBC(rvector,Rlevels(NLMAX)%rdiscreteBC)
-  call lsysbl_assignDiscreteBC(rvector_old,Rlevels(NLMAX)%rdiscreteBC)
-  
   ! Implement the filter  
   call vecfil_discreteBCrhs (rrhs)
-  call vecfil_discreteBCsol (rvector)
-  call vecfil_discreteBCsol (rvector_old)
+  
+  
+  ! The solution vectors if passed
+  if (present(rvector)) then
+    call lsysbl_assignDiscreteBC(rvector,Rlevels(NLMAX)%rdiscreteBC)
+    call lsysbl_assignDiscreteBC(rvector_old,Rlevels(NLMAX)%rdiscreteBC)
+    call vecfil_discreteBCsol (rvector)
+    call vecfil_discreteBCsol (rvector_old)
+  end if
 
   end subroutine
 
@@ -4788,12 +4793,10 @@ contains
   p_DlocalMatrixA13 => RmatrixData(1,3)%p_Dentry
   p_DlocalMatrixA14 => RmatrixData(1,4)%p_Dentry
   p_DlocalMatrixA15 => RmatrixData(1,5)%p_Dentry
-  p_DlocalMatrixA16 => RmatrixData(1,6)%p_Dentry
 
   p_DlocalMatrixA21 => RmatrixData(2,1)%p_Dentry
   p_DlocalMatrixA22 => RmatrixData(2,2)%p_Dentry
   p_DlocalMatrixA23 => RmatrixData(2,3)%p_Dentry
-  p_DlocalMatrixA24 => RmatrixData(2,4)%p_Dentry
   p_DlocalMatrixA25 => RmatrixData(2,5)%p_Dentry
   p_DlocalMatrixA26 => RmatrixData(2,6)%p_Dentry
   
@@ -4805,7 +4808,6 @@ contains
   p_DlocalMatrixA36 => RmatrixData(3,6)%p_Dentry  
 
   p_DlocalMatrixA41 => RmatrixData(4,1)%p_Dentry
-  p_DlocalMatrixA42 => RmatrixData(4,2)%p_Dentry
   p_DlocalMatrixA43 => RmatrixData(4,3)%p_Dentry
   p_DlocalMatrixA44 => RmatrixData(4,4)%p_Dentry
   p_DlocalMatrixA45 => RmatrixData(4,5)%p_Dentry
@@ -4818,7 +4820,6 @@ contains
   p_DlocalMatrixA55 => RmatrixData(5,5)%p_Dentry
   p_DlocalMatrixA56 => RmatrixData(5,6)%p_Dentry  
   
-  p_DlocalMatrixA61 => RmatrixData(6,1)%p_Dentry
   p_DlocalMatrixA62 => RmatrixData(6,2)%p_Dentry
   p_DlocalMatrixA63 => RmatrixData(6,3)%p_Dentry
   p_DlocalMatrixA64 => RmatrixData(6,4)%p_Dentry
@@ -5285,29 +5286,18 @@ contains
   real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA21,p_DlocalMatrixA22
   real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA23,p_DlocalMatrixA24
   real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA25,p_DlocalMatrixA26  
-  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA31,p_DlocalMatrixA32
-  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA33,p_DlocalMatrixA34  
-  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA35,p_DlocalMatrixA36  
+  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA31,p_DlocalMatrixA32 
   real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA41,p_DlocalMatrixA42
-  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA43,p_DlocalMatrixA44  
-  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA45,p_DlocalMatrixA46
   real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA51,p_DlocalMatrixA52
-  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA53,p_DlocalMatrixA54  
-  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA55,p_DlocalMatrixA56
   real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA61,p_DlocalMatrixA62
-  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA63,p_DlocalMatrixA64  
-  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA65,p_DlocalMatrixA66  
   
   real(DP), dimension(:,:,:,:), pointer :: p_DbasTrialA11,p_DbasTestA11
-  real(DP), dimension(:,:,:,:), pointer :: p_DbasTrialA33,p_DbasTestA33
-  real(DP), dimension(:,:,:,:), pointer :: p_DbasTrialA44,p_DbasTestA44
   real(DP), dimension(:,:,:,:), pointer :: p_DbasTrialA13,p_DbasTestA13
   real(DP), dimension(:,:,:,:), pointer :: p_DbasTrialA14,p_DbasTestA14
-  real(DP), dimension(:,:,:,:), pointer :: p_DbasTrialA34,p_DbasTestA34
 
   real(DP), dimension(:,:), pointer :: p_DcubWeight
-  type(t_bmaMatrixData), pointer :: p_rmatrixDataA11,p_rmatrixDataA33,p_rmatrixDataA44
-  type(t_bmaMatrixData), pointer :: p_rmatrixDataA13,p_rmatrixDataA14,p_rmatrixDataA34
+  type(t_bmaMatrixData), pointer :: p_rmatrixDataA11
+  type(t_bmaMatrixData), pointer :: p_rmatrixDataA13,p_rmatrixDataA14
   
   ! Known velocity data
   real(DP), dimension(:,:,:), pointer :: p_Du1,p_Du2
@@ -5329,24 +5319,15 @@ contains
   ! Get cubature weights data
   p_DcubWeight => rassemblyData%p_DcubWeight
   p_rmatrixDataA11 => RmatrixData(1,1)
-  p_rmatrixDataA33 => RmatrixData(3,3)
-  p_rmatrixDataA44 => RmatrixData(4,4)
   p_rmatrixDataA13 => RmatrixData(1,3)
   p_rmatrixDataA14 => RmatrixData(1,4)
-  p_rmatrixDataA34 => RmatrixData(3,4)
   
   p_DbasTrialA11 => RmatrixData(1,1)%p_DbasTrial
   p_DbasTestA11 => RmatrixData(1,1)%p_DbasTest
-  p_DbasTrialA33 => RmatrixData(3,3)%p_DbasTrial
-  p_DbasTestA33 => RmatrixData(3,3)%p_DbasTest
-  p_DbasTrialA44 => RmatrixData(4,4)%p_DbasTrial
-  p_DbasTestA44 => RmatrixData(4,4)%p_DbasTest 
   p_DbasTrialA13 => RmatrixData(1,3)%p_DbasTrial
   p_DbasTestA13 => RmatrixData(1,3)%p_DbasTest
   p_DbasTrialA14 => RmatrixData(1,4)%p_DbasTrial
   p_DbasTestA14 => RmatrixData(1,4)%p_DbasTest
-  p_DbasTrialA34 => RmatrixData(3,4)%p_DbasTrial
-  p_DbasTestA34 => RmatrixData(3,4)%p_DbasTest   
   
   
   p_DlocalMatrixA11 => RmatrixData(1,1)%p_Dentry
@@ -5365,31 +5346,15 @@ contains
   
   p_DlocalMatrixA31 => RmatrixData(3,1)%p_Dentry
   p_DlocalMatrixA32 => RmatrixData(3,2)%p_Dentry
-  p_DlocalMatrixA33 => RmatrixData(3,3)%p_Dentry
-  p_DlocalMatrixA34 => RmatrixData(3,4)%p_Dentry
-  p_DlocalMatrixA35 => RmatrixData(3,5)%p_Dentry
-  p_DlocalMatrixA36 => RmatrixData(3,6)%p_Dentry  
 
   p_DlocalMatrixA41 => RmatrixData(4,1)%p_Dentry
-  p_DlocalMatrixA42 => RmatrixData(4,2)%p_Dentry
-  p_DlocalMatrixA43 => RmatrixData(4,3)%p_Dentry
-  p_DlocalMatrixA44 => RmatrixData(4,4)%p_Dentry
-  p_DlocalMatrixA45 => RmatrixData(4,5)%p_Dentry
-  p_DlocalMatrixA46 => RmatrixData(4,6)%p_Dentry  
+  p_DlocalMatrixA42 => RmatrixData(4,2)%p_Dentry 
   
   p_DlocalMatrixA51 => RmatrixData(5,1)%p_Dentry
   p_DlocalMatrixA52 => RmatrixData(5,2)%p_Dentry
-  p_DlocalMatrixA53 => RmatrixData(5,3)%p_Dentry
-  p_DlocalMatrixA54 => RmatrixData(5,4)%p_Dentry
-  p_DlocalMatrixA55 => RmatrixData(5,5)%p_Dentry
-  p_DlocalMatrixA56 => RmatrixData(5,6)%p_Dentry  
   
   p_DlocalMatrixA61 => RmatrixData(6,1)%p_Dentry
   p_DlocalMatrixA62 => RmatrixData(6,2)%p_Dentry
-  p_DlocalMatrixA63 => RmatrixData(6,3)%p_Dentry
-  p_DlocalMatrixA64 => RmatrixData(6,4)%p_Dentry
-  p_DlocalMatrixA65 => RmatrixData(6,5)%p_Dentry
-  p_DlocalMatrixA66 => RmatrixData(6,6)%p_Dentry
   
   ! Get the velocity field from the parameters
   p_Du1 => revalVectors%p_RvectorData(1)%p_Ddata
@@ -5856,10 +5821,7 @@ contains
     ! Loop over all cubature points on the current element
     do icubp = 1,npointsPerElement
     
-    ! Velocity/derivatives field in this cubature point
-    dU = p_Du1(icubp,iel,DER_FUNC)
-    dV = p_Du2(icubp,iel,DER_FUNC)
-    
+    ! Velocity/derivatives field in this cubature point   
     dUx = p_Du1(icubp,iel,DER_DERIV2D_X)
     dVx = p_Du2(icubp,iel,DER_DERIV2D_X)
 
