@@ -571,7 +571,8 @@ contains
 
 !<function>
 
-  function FEAT2_PP_TEMPLATE_T(qtree_insert,T)(rquadtree, data, ivt, inode) result(iresult)
+  function FEAT2_PP_TEMPLATE_T(qtree_insert,T)(rquadtree, data, ivt, inode,&
+      fcb_isEqual) result(iresult)
 
 !<description>
     ! This function inserts a new coordinate item to the quadtree. The
@@ -590,6 +591,15 @@ contains
     ! OPTIONAL: Number of the node to which vertex should be inserted.
     ! If there is no space left, then the next free position will be used
     integer, intent(in), optional :: inode
+
+    ! OPTIONAL: callback function to overwrite the default isEqual function
+    interface
+      pure logical function fcb_isEqual(data1, data2)
+        use fsystem
+        FEAT2_PP_TTYPE(T_TYPE), dimension(2), intent(in) :: data1,data2
+      end function fcb_isEqual
+    end interface
+    optional :: fcb_isEqual
 !</input>
 
 !<inputoutput>
@@ -598,8 +608,8 @@ contains
 !</inputoutput>
 
 !<output>
-    ! Number of the inserted vertex
-    integer, intent(out) :: ivt
+    ! OPTIONAL: Number of the inserted vertex
+    integer, intent(out), optional :: ivt
 !</output>
 
 !<result>
@@ -618,9 +628,13 @@ contains
       jnode = inode
     else
       ! Search potential candidate for insertion
-      iresult = qtree_find(rquadtree, data, jnode, jpos, jvt)
+      if (present(fcb_isEqual)) then
+        iresult = qtree_find(rquadtree, data, jnode, jpos, jvt, fcb_isEqual)
+      else
+        iresult = qtree_find(rquadtree, data, jnode, jpos, jvt, isEqual)
+      end if
       if (iresult .eq. QTREE_FOUND) then
-        ivt = jvt
+        if (present(ivt)) ivt = jvt
         return
       end if
     end if
@@ -633,28 +647,41 @@ contains
 
     ! Update values
     rquadtree%NVT = rquadtree%NVT+1
-    ivt = rquadtree%NVT
-    rquadtree%p_Data(:,ivt) = data
+    jvt = rquadtree%NVT
+    rquadtree%p_Data(:,jvt) = data
 
     ! Insert entry recursively
-    iresult = insert(ivt, jnode)
+    if (present(fcb_isEqual)) then
+      iresult = insert(jvt, jnode, fcb_isEqual)
+    else
+      iresult = insert(jvt, jnode, isEqual)
+    end if
 
     ! Check success
     if (iresult .eq. QTREE_FAILED) then
       rquadtree%NVT = rquadtree%NVT-1
-      rquadtree%p_Data(:,ivt) = 0.0_DP
-      ivt = 0
+      rquadtree%p_Data(:,jvt) = 0
+      jvt = 0
     end if
+
+    if (present(ivt)) ivt = jvt
 
   contains
 
     !**************************************************************
     ! Here, the recursive insertion routine follows
 
-    recursive function insert(ivt, inode) result(iresult)
+    recursive function insert(ivt, inode, fcb_isEqual) result(iresult)
 
       integer, intent(in) :: ivt,inode
       integer :: iresult
+
+      interface
+        pure logical function fcb_isEqual(data1, data2)
+          use fsystem
+          FEAT2_PP_TTYPE(T_TYPE), dimension(2), intent(in) :: data1,data2
+        end function fcb_isEqual
+      end interface
 
       ! local variables
       FEAT2_PP_TTYPE(T_TYPE) :: xmin,ymin,xmax,ymax,xmid,ymid
@@ -735,7 +762,7 @@ contains
         do i = 1, rquadtree%ndata
           jvt = rquadtree%p_Knode(i, inode)
           jnode = nnode+qtree_getDirection(rquadtree, rquadtree%p_Data(:,jvt), inode)
-          jresult = insert(jvt, jnode)
+          jresult = insert(jvt, jnode, fcb_isEqual)
 
           if (jresult .eq. QTREE_FAILED) then
             call output_line('Internal error in insertion!',&
@@ -751,7 +778,7 @@ contains
 
         ! Add the new entry to the next position recursively
         jnode = nnode+qtree_getDirection(rquadtree, rquadtree%p_Data(:,ivt), inode)
-        iresult = insert(ivt, inode)
+        iresult = insert(ivt, jnode, fcb_isEqual)
 
       elseif (rquadtree%p_Knode(QTREE_STATUS, inode) .ge. QTREE_EMPTY) then
 
@@ -766,7 +793,7 @@ contains
 
         ! Proceed to correcponding sub-tree
         jnode = -rquadtree%p_Knode(qtree_getDirection(rquadtree, data, inode), inode)
-        iresult = insert(ivt, jnode)
+        iresult = insert(ivt, jnode, fcb_isEqual)
 
       else
 
@@ -783,7 +810,8 @@ contains
 
 !<function>
 
-  function FEAT2_PP_TEMPLATE_T(qtree_delete1,T)(rquadtree, data, ivt) result(iresult)
+  function FEAT2_PP_TEMPLATE_T(qtree_delete1,T)(rquadtree, data, ivt,&
+      fcb_isEqual) result(iresult)
 
 !<description>
     ! This function deletes an item from the quadtree.
@@ -795,6 +823,15 @@ contains
 !<input>
     ! Coordinates of the vertex that should be deleted
     FEAT2_PP_TTYPE(T_TYPE), dimension(2), intent(in) :: data
+
+    ! OPTIONAL: callback function to overwrite the default isEqual function
+    interface
+      pure logical function fcb_isEqual(data1, data2)
+        use fsystem
+        FEAT2_PP_TTYPE(T_TYPE), dimension(2), intent(in) :: data1,data2
+      end function fcb_isEqual
+    end interface
+    optional :: fcb_isEqual
 !</input>
 
 !<inputoutput>
@@ -803,8 +840,8 @@ contains
 !</inputoutput>
 
 !<output>
-    ! Number of the vertex that is deleted
-    integer, intent(out) :: ivt
+    ! OPTIONAL: Number of the vertex that is deleted
+    integer, intent(out), optional :: ivt
 !</output>
 
 !<result>
@@ -815,20 +852,35 @@ contains
 !</result>
 !</function>
 
+    ! local variable
+    integer :: jvt
 
     ! Delete item starting at root
-    iresult = delete(1, ivt)
+    if (present(fcb_isEqual)) then
+      iresult = delete(1, jvt, fcb_isEqual)
+    else
+      iresult = delete(1, jvt, isEqual)
+    end if
+
+    if (present(ivt)) ivt=jvt
 
   contains
 
     !**************************************************************
     ! Here, the recursive deletion routine follows
 
-    recursive function delete(inode, ivt) result(iresult)
+    recursive function delete(inode, ivt, fcb_isEqual) result(iresult)
 
       integer, intent(in) :: inode
       integer, intent(inout) :: ivt
       integer :: iresult
+
+      interface
+        pure logical function fcb_isEqual(data1, data2)
+          use fsystem
+          FEAT2_PP_TTYPE(T_TYPE), dimension(2), intent(in) :: data1,data2
+        end function fcb_isEqual
+      end interface
 
       ! local variables
       FEAT2_PP_TTYPE(T_TYPE), dimension(2) :: DataTmp
@@ -843,7 +895,7 @@ contains
 
         ! Compute child INODE which to look recursively.
         jnode = -rquadtree%p_Knode(qtree_getDirection(rquadtree, data, inode), inode)
-        iresult = delete(jnode, ivt)
+        iresult = delete(jnode, ivt, fcb_isEqual)
 
         ! Save values from current node
         Knode = rquadtree%p_Knode(1:QTREE_MAX, inode)
@@ -915,7 +967,7 @@ contains
           ! Get vertex number
           ivt = rquadtree%p_Knode(ipos, inode)
 
-          if (maxval(abs(rquadtree%p_Data(:, ivt)-data)) .le. SYS_EPSREAL_DP) then
+          if (fcb_isEqual(rquadtree%p_Data(:, ivt), data)) then
 
             ! Physically remove the item IVT from node INODE
             jpos = rquadtree%p_Knode(QTREE_STATUS, inode)
@@ -928,14 +980,14 @@ contains
             if (ivt .ne. rquadtree%NVT) then
               DataTmp(:) = rquadtree%p_Data(:,rquadtree%NVT)
               if (qtree_find(rquadtree, DataTmp(:),&
-                             jnode, jpos, jvt) .eq. QTREE_FOUND) then
+                             jnode, jpos, jvt, fcb_isEqual) .eq. QTREE_FOUND) then
 
                 ! Move last item JVT to position IVT
                 rquadtree%p_Data(:, ivt) = rquadtree%p_Data(:, jvt)
                 rquadtree%p_Knode(jpos, jnode) = ivt
               else
                 call output_line('Internal error in deletion!',&
-                                 OU_CLASS_ERROR,OU_MODE_STD,'qtree_deleteDefault')
+                                 OU_CLASS_ERROR,OU_MODE_STD,'qtree_delete')
                 call sys_halt()
               end if
 
@@ -968,7 +1020,8 @@ contains
 
 !<function>
 
-  function FEAT2_PP_TEMPLATE_T(qtree_delete2,T)(rquadtree, ivt, ivtReplace) result(iresult)
+  function FEAT2_PP_TEMPLATE_T(qtree_delete2,T)(rquadtree, ivt, ivtReplace,&
+      fcb_isEqual) result(iresult)
 
 !<description>
     ! This function deletes vertex with number IVT from the quadtree.
@@ -977,6 +1030,15 @@ contains
 !<input>
     ! Number of the vertex to be deleted
     integer, intent(in) :: ivt
+
+    ! OPTIONAL: callback function to overwrite the default isEqual function
+    interface
+      pure logical function fcb_isEqual(data1, data2)
+        use fsystem
+        FEAT2_PP_TTYPE(T_TYPE), dimension(2), intent(in) :: data1,data2
+      end function fcb_isEqual
+    end interface
+    optional :: fcb_isEqual
 !</input>
 
 !<inputoutput>
@@ -985,8 +1047,8 @@ contains
 !</inputoutput>
 
 !<output>
-    ! Number of the vertex that replaces the deleted vertex
-    integer, intent(out) :: ivtReplace
+    ! OPTIONAL: Number of the vertex that replaces the deleted vertex
+    integer, intent(out), optional :: ivtReplace
 !</output>
 
 !<result>
@@ -1003,7 +1065,7 @@ contains
     if (ivt .le. rquadtree%NVT) then
       ! Get coordinates and invoke deletion routine
       data    = rquadtree%p_Data(:,ivt)
-      iresult = qtree_delete(rquadtree, data, ivtReplace)
+      iresult = qtree_delete(rquadtree, data, ivtReplace, fcb_isEqual)
     else
       iresult = QTREE_FAILED
     end if
@@ -1014,7 +1076,8 @@ contains
 
 !<function>
 
-  function FEAT2_PP_TEMPLATE_T(qtree_find,T)(rquadtree, data, inode, ipos, ivt) result(iresult)
+  function FEAT2_PP_TEMPLATE_T(qtree_find,T)(rquadtree, data, inode, ipos, ivt,&
+      fcb_isEqual) result(iresult)
 
 !<description>
     ! This subroutine searches for given coordinates in the quadtree.
@@ -1031,17 +1094,26 @@ contains
 
     ! Coordinates that should be searched
     FEAT2_PP_TTYPE(T_TYPE), dimension(2), intent(in) :: data
+
+    ! OPTIONAL: callback function to overwrite the default isEqual function
+    interface
+      pure logical function fcb_isEqual(data1, data2)
+        use fsystem
+        FEAT2_PP_TTYPE(T_TYPE), dimension(2), intent(in) :: data1,data2
+      end function fcb_isEqual
+    end interface
+    optional :: fcb_isEqual
 !</input>
 
 !<output>
-    ! Number of the node in which the given coordinates are
-    integer, intent(out) :: inode
+    ! OPTIONAL: Number of the node in which the given coordinates are
+    integer, intent(out), optional  :: inode
 
-    ! Position of the coordinates in the node
-    integer, intent(out) :: ipos
+    ! OPTIONAL: Position of the coordinates in the node
+    integer, intent(out), optional :: ipos
 
-    ! Number of the vertex the coordinates correspond to
-    integer, intent(out) :: ivt
+    ! OPTIONAL: Number of the vertex the coordinates correspond to
+    integer, intent(out), optional :: ivt
 !</output>
 
 !<result>
@@ -1052,21 +1124,39 @@ contains
 !</result>
 !</function>
 
+    ! local variables
+    integer :: jnode,jpos,jvt
+
     ! Initialise
-    inode = 1; ipos = 1; ivt = 1
+    jnode = 1; jpos = 1; jvt = 1
 
     ! Search for item
-    iresult = search(inode, ipos, ivt)
+    if (present(fcb_isEqual)) then
+      iresult = search(jnode, jpos, jvt, fcb_isEqual)
+    else
+      iresult = search(jnode, jpos, jvt, isEqual)
+    end if
+
+    if (present(inode)) inode=jnode
+    if (present(ipos)) ipos=jpos
+    if (present(ivt)) ivt=jvt
 
   contains
 
     !**************************************************************
     ! Here, the recursive searching routine follows
 
-    recursive function search(inode, ipos, ivt) result(iresult)
+    recursive function search(inode, ipos, ivt, fcb_isEqual) result(iresult)
 
       integer, intent(inout) :: inode,ipos,ivt
       integer :: iresult
+
+      interface
+        pure logical function fcb_isEqual(data1, data2)
+          use fsystem
+          FEAT2_PP_TTYPE(T_TYPE), dimension(2), intent(in) :: data1,data2
+        end function fcb_isEqual
+      end interface
 
 
       ! Check status of current node
@@ -1076,7 +1166,7 @@ contains
 
         ! Compute child INODE which to look recursively.
         inode = -rquadtree%p_Knode(qtree_getDirection(rquadtree, data, inode), inode)
-        iresult = search(inode, ipos, ivt)
+        iresult = search(inode, ipos, ivt, fcb_isEqual)
 
 
       case (QTREE_EMPTY)   ! Node is empty so it cannot contain the item
@@ -1099,7 +1189,7 @@ contains
           ! Get vertex number
           ivt = rquadtree%p_Knode(ipos, inode)
 
-          if (maxval(abs(rquadtree%p_Data(:, ivt)-data)) .le. SYS_EPSREAL_DP) then
+          if (fcb_isEqual(rquadtree%p_Data(:, ivt), data)) then
 
             ! We have found the item IVT in node INODE
             iresult = QTREE_FOUND
@@ -1776,7 +1866,8 @@ contains
 
 !<function>
 
-  function FEAT2_PP_TEMPLATE_T(qtree_reposition,T)(rquadtree, DataOld, DataNew) result(iresult)
+  function FEAT2_PP_TEMPLATE_T(qtree_reposition,T)(rquadtree, DataOld, DataNew,&
+      fcb_isEqual) result(iresult)
 
 !<description>
     ! This function modifies the coordinates of an item in the quadtree.
@@ -1793,6 +1884,15 @@ contains
 
     ! New coordinates of the vertex
     FEAT2_PP_TTYPE(T_TYPE), dimension(2), intent(in) :: DataNew
+
+    ! OPTIONAL: callback function to overwrite the default isEqual function
+    interface
+      pure logical function fcb_isEqual(data1, data2)
+        use fsystem
+        FEAT2_PP_TTYPE(T_TYPE), dimension(2), intent(in) :: data1,data2
+      end function fcb_isEqual
+    end interface
+    optional :: fcb_isEqual
 !</input>
 
 !<inputoutput>
@@ -1812,11 +1912,19 @@ contains
     integer :: ivt,jvt,jnode,jpos
 
     ! Move item starting at root
-    iresult = move(1, ivt)
+    if (present(fcb_isEqual)) then
+      iresult = move(1, ivt, fcb_isEqual)
+    else
+      iresult = move(1, ivt, isEqual)
+    end if
 
     if (iresult .eq. QTREE_DELETED) then
       ! Search potential candidate for insertion
-      iresult = qtree_find(rquadtree, DataNew, jnode, jpos, jvt)
+      if (present(fcb_isEqual)) then
+        iresult = qtree_find(rquadtree, DataNew, jnode, jpos, jvt, fcb_isEqual)
+      else
+        iresult = qtree_find(rquadtree, DataNew, jnode, jpos, jvt, isEqual)
+      end if
       if (iresult .eq. QTREE_FOUND) then
         call output_line('Duplicate entry in quadtree!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'qtree_reposition')
@@ -1835,11 +1943,18 @@ contains
     !**************************************************************
     ! Here, the recursive move routine follows
 
-    recursive function move(inode, ivt) result(iresult)
+    recursive function move(inode, ivt, fcb_isEqual) result(iresult)
 
       integer, intent(in) :: inode
       integer, intent(inout) :: ivt
       integer :: iresult
+
+      interface
+        pure logical function fcb_isEqual(data1, data2)
+          use fsystem
+          FEAT2_PP_TTYPE(T_TYPE), dimension(2), intent(in) :: data1,data2
+        end function fcb_isEqual
+      end interface
 
       ! local variables
       integer, dimension(QTREE_MAX) :: Knode
@@ -1853,7 +1968,7 @@ contains
 
         ! Compute child INODE which to look recursively.
         jnode = -rquadtree%p_Knode(qtree_getDirection(rquadtree, DataOld, inode), inode)
-        iresult = move(jnode, ivt)
+        iresult = move(jnode, ivt, fcb_isEqual)
 
         ! Save values from current node
         Knode = rquadtree%p_Knode(1:QTREE_MAX, inode)
@@ -1925,7 +2040,7 @@ contains
           ! Get vertex number
           ivt = rquadtree%p_Knode(ipos, inode)
 
-          if (maxval(abs(rquadtree%p_Data(:, ivt)-DataOld)) .le. SYS_EPSREAL_DP) then
+          if (fcb_isEqual(rquadtree%p_Data(:, ivt), DataOld)) then
 
             ! Check if the new coordinates can be stored in the same node
             if ((rquadtree%p_BdBox(QTREE_XMIN,inode) .le. DataNew(1)) .and.&
@@ -2270,5 +2385,35 @@ contains
     rquadtree%NRESIZE = rquadtree%NRESIZE+1
 
   end subroutine
+
+  !************************************************************************
+
+!<function>
+
+  pure function isEqual(data1,data2) result(bisEqual)
+
+!<description>
+    ! This function checks if both data items are equal. This auxiliary
+    ! function will be used in all comparisons throughout this module
+    ! unless a user-defined isEqual function is provided.
+!</description>
+
+!<input>
+    ! Coordinates of two vertices to be compared for equality
+    FEAT2_PP_TTYPE(T_TYPE), dimension(2), intent(in) :: data1,data2
+!</input>
+
+!<result>
+    ! Logical switch indicating if both vertices are equal
+    logical :: bisEqual
+!</result>
+
+#ifdef T_STORAGE
+    bisEqual = (maxval(abs(data1-data2)) .lt. FEAT2_PP_TEMPLATE_T(SYS_EPSREAL_,T))
+#else
+    bisEqual = .false.
+#endif
+
+  end function
 
 #endif

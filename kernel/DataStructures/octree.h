@@ -304,7 +304,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer, dimension(2) :: Isize, Ilbound, Iubound
+    integer, dimension(2) :: Isize,Ilbound,Iubound
 
     ! Set factor
     if (present(dfactor)) then
@@ -582,14 +582,15 @@ contains
 
 !<function>
 
-  function FEAT2_PP_TEMPLATE_T(otree_insert,T)(roctree, data, ivt, inode) result(iresult)
+  function FEAT2_PP_TEMPLATE_T(otree_insert,T)(roctree, data, ivt, inode,&
+      fcb_isEqual) result(iresult)
 
 !<description>
     ! This function inserts a new coordinate item to the octree. The
     ! new position IVT is returned. The optional value INODE serves
     ! as starting node in the octree.  If there is no space left in
     ! this node, then it is subdivided into eight leaves and the
-    ! insertion procedure continues recursively. If this optional
+    ! insertion procedure continues recursively.  If this optional
     ! value is not present, then the starting node in the octree is
     ! searched for internally.
 !</description>
@@ -601,6 +602,15 @@ contains
     ! OPTIONAL: Number of the node to which vertex should be inserted.
     ! If there is no space left, then the next free position will be used
     integer, intent(in), optional :: inode
+
+    ! OPTIONAL: callback function to overwrite the default isEqual function
+    interface
+      pure logical function fcb_isEqual(data1, data2)
+        use fsystem
+        FEAT2_PP_TTYPE(T_TYPE), dimension(3), intent(in) :: data1,data2
+      end function fcb_isEqual
+    end interface
+    optional :: fcb_isEqual
 !</input>
 
 !<inputoutput>
@@ -609,8 +619,8 @@ contains
 !</inputoutput>
 
 !<output>
-    ! Number of the inserted vertex
-    integer, intent(out) :: ivt
+    ! OPTIONAL: Number of the inserted vertex
+    integer, intent(out), optional :: ivt
 !</output>
 
 !<result>
@@ -629,9 +639,13 @@ contains
       jnode = inode
     else
       ! Search potential candidate for insertion
-      iresult = otree_find(roctree, data, jnode, jpos, jvt)
+      if (present(fcb_isEqual)) then
+        iresult = otree_find(roctree, data, jnode, jpos, jvt, fcb_isEqual)
+      else
+        iresult = otree_find(roctree, data, jnode, jpos, jvt, isEqual)
+      end if
       if (iresult .eq. OTREE_FOUND) then
-        ivt = jvt
+        if (present(ivt)) ivt = jvt
         return
       end if
     end if
@@ -644,28 +658,41 @@ contains
 
     ! Update values
     roctree%NVT = roctree%NVT+1
-    ivt = roctree%NVT
-    roctree%p_Data(:,ivt) = data
+    jvt = roctree%NVT
+    roctree%p_Data(:,jvt) = data
 
     ! Insert entry recursively
-    iresult = insert(ivt, jnode)
+    if (present(fcb_isEqual)) then
+      iresult = insert(jvt, jnode, fcb_isEqual)
+    else
+      iresult = insert(jvt, jnode, isEqual)
+    end if
 
     ! Check success
     if (iresult .eq. OTREE_FAILED) then
       roctree%NVT = roctree%NVT-1
-      roctree%p_Data(:,ivt) = 0.0_DP
-      ivt = 0
+      roctree%p_Data(:,jvt) = 0
+      jvt = 0
     end if
+
+    if (present(ivt)) ivt = jvt
 
   contains
 
     !**************************************************************
     ! Here, the recursive insertion routine follows
 
-    recursive function insert(ivt, inode) result(iresult)
+    recursive function insert(ivt, inode, fcb_isEqual) result(iresult)
 
       integer, intent(in) :: ivt,inode
       integer :: iresult
+
+      interface
+        pure logical function fcb_isEqual(data1, data2)
+          use fsystem
+          FEAT2_PP_TTYPE(T_TYPE), dimension(3), intent(in) :: data1,data2
+        end function fcb_isEqual
+      end interface
 
       ! local variables
       FEAT2_PP_TTYPE(T_TYPE) :: xmin,ymin,zmin,xmax,ymax,zmax,xmid,ymid,zmid
@@ -769,7 +796,7 @@ contains
         do i = 1, roctree%ndata
           jvt = roctree%p_Knode(i, inode)
           jnode = nnode+otree_getDirection(roctree, roctree%p_Data(:,jvt), inode)
-          jresult = insert(jvt, jnode)
+          jresult = insert(jvt, jnode, fcb_isEqual)
 
           if (jresult .eq. OTREE_FAILED) then
             call output_line('Internal error in insertion!',&
@@ -787,7 +814,7 @@ contains
 
         ! Add the new entry to the next position recursively
         jnode = nnode+otree_getDirection(roctree, roctree%p_Data(:,ivt),inode)
-        iresult = insert(ivt, jnode)
+        iresult = insert(ivt, jnode, fcb_isEqual)
 
       elseif (roctree%p_Knode(OTREE_STATUS, inode) .ge. OTREE_EMPTY) then
 
@@ -802,7 +829,7 @@ contains
 
         ! Proceed to correcponding sub-tree
         jnode = -roctree%p_Knode(otree_getDirection(roctree, data, inode), inode)
-        iresult = insert(ivt, jnode)
+        iresult = insert(ivt, jnode, fcb_isEqual)
 
       else
 
@@ -819,7 +846,8 @@ contains
 
 !<function>
 
-  function FEAT2_PP_TEMPLATE_T(otree_delete1,T)(roctree, data, ivt) result(iresult)
+  function FEAT2_PP_TEMPLATE_T(otree_delete1,T)(roctree, data, ivt,&
+      fcb_isEqual) result(iresult)
 
 !<description>
     ! This function deletes an item from the octree.
@@ -831,6 +859,15 @@ contains
 !<input>
     ! Coordinates of the vertex that should be deleted
     FEAT2_PP_TTYPE(T_TYPE), dimension(3), intent(in) :: data
+
+    ! OPTIONAL: callback function to overwrite the default isEqual function
+    interface
+      pure logical function fcb_isEqual(data1, data2)
+        use fsystem
+        FEAT2_PP_TTYPE(T_TYPE), dimension(3), intent(in) :: data1,data2
+      end function fcb_isEqual
+    end interface
+    optional :: fcb_isEqual
 !</input>
 
 !<inputoutput>
@@ -839,8 +876,8 @@ contains
 !</inputoutput>
 
 !<output>
-    ! Number of the vertex that is deleted
-    integer, intent(out) :: ivt
+    ! OPTIONAL: Number of the vertex that is deleted
+    integer, intent(out), optional :: ivt
 !</output>
 
 !<result>
@@ -851,24 +888,40 @@ contains
 !</result>
 !</function>
 
-    ! Delete item startin at root
-    iresult = delete(1, ivt)
+    ! local variable
+    integer :: jvt
+
+    ! Delete item starting at root
+    if (present(fcb_isEqual)) then
+      iresult = delete(1, jvt, fcb_isEqual)
+    else
+      iresult = delete(1, jvt, isEqual)
+    end if
+
+    if (present(ivt)) ivt=jvt
 
   contains
 
     !**************************************************************
     ! Here, the recursive deletion routine follows
 
-    recursive function delete(inode, ivt) result(iresult)
+    recursive function delete(inode, ivt, fcb_isEqual) result(iresult)
 
       integer, intent(in) :: inode
-      integer, intent(out) :: ivt
+      integer, intent(inout) :: ivt
       integer :: iresult
+
+      interface
+        pure logical function fcb_isEqual(data1, data2)
+          use fsystem
+          FEAT2_PP_TTYPE(T_TYPE), dimension(3), intent(in) :: data1,data2
+        end function fcb_isEqual
+      end interface
 
       ! local variables
       FEAT2_PP_TTYPE(T_TYPE), dimension(3) :: DataTmp
       integer, dimension(OTREE_MAX) :: Knode
-      integer :: jvt,i,jnode,ipos,jpos,nemptyChildren
+      integer :: i,jvt,jnode,ipos,jpos,nemptyChildren
 
 
       ! Check status of current node
@@ -878,7 +931,7 @@ contains
 
         ! Compute child INODE which to look recursively.
         jnode = -roctree%p_Knode(otree_getDirection(roctree, data, inode), inode)
-        iresult = delete(jnode, ivt)
+        iresult = delete(jnode, ivt, fcb_isEqual)
 
         ! Save values from current node
         Knode = roctree%p_Knode(1:OTREE_MAX, inode)
@@ -950,7 +1003,7 @@ contains
           ! Get vertex number
           ivt = roctree%p_Knode(ipos, inode)
 
-          if (maxval(abs(roctree%p_Data(:, ivt)-data)) .le. SYS_EPSREAL_DP) then
+          if (fcb_isEqual(roctree%p_Data(:, ivt), data)) then
 
             ! Physically remove the item IVT from node INODE
             jpos = roctree%p_Knode(OTREE_STATUS, inode)
@@ -963,7 +1016,7 @@ contains
             if (ivt .ne. roctree%NVT) then
               DataTmp(:) = roctree%p_Data(:,roctree%NVT)
               if (otree_find(roctree, DataTmp(:),&
-                             jnode, jpos, jvt) .eq. OTREE_FOUND) then
+                             jnode, jpos, jvt, fcb_isEqual) .eq. OTREE_FOUND) then
 
                 ! Move last item JVT to position IVT
                 roctree%p_Data(:, ivt) = roctree%p_Data(:, jvt)
@@ -1003,7 +1056,8 @@ contains
 
 !<function>
 
-  function FEAT2_PP_TEMPLATE_T(otree_delete2,T)(roctree, ivt, ivtReplace) result(iresult)
+  function FEAT2_PP_TEMPLATE_T(otree_delete2,T)(roctree, ivt, ivtReplace,&
+      fcb_isEqual) result(iresult)
 
 !<description>
     ! This function deletes vertex with number IVT from the octree.
@@ -1012,6 +1066,15 @@ contains
 !<input>
     ! Number of the vertex to be deleted
     integer, intent(in) :: ivt
+
+    ! OPTIONAL: callback function to overwrite the default isEqual function
+    interface
+      pure logical function fcb_isEqual(data1, data2)
+        use fsystem
+        FEAT2_PP_TTYPE(T_TYPE), dimension(3), intent(in) :: data1,data2
+      end function fcb_isEqual
+    end interface
+    optional :: fcb_isEqual
 !</input>
 
 !<inputoutput>
@@ -1020,8 +1083,8 @@ contains
 !</inputoutput>
 
 !<output>
-    ! Number of the vertex that replaces the deleted vertex
-    integer, intent(out) :: ivtReplace
+    ! OPTIONAL: Number of the vertex that replaces the deleted vertex
+    integer, intent(out), optional :: ivtReplace
 !</output>
 
 !<result>
@@ -1037,8 +1100,8 @@ contains
 
     if (ivt .le. roctree%NVT) then
       ! Get coordinates and invoke deletion routine
-      data   = roctree%p_Data(:,ivt)
-      iresult = otree_delete(roctree, data, ivtReplace)
+      data    = roctree%p_Data(:,ivt)
+      iresult = otree_delete(roctree, data, ivtReplace, fcb_isEqual)
     else
       iresult = OTREE_FAILED
     end if
@@ -1049,7 +1112,8 @@ contains
 
 !<function>
 
-  function FEAT2_PP_TEMPLATE_T(otree_find,T)(roctree, data, inode, ipos, ivt) result(iresult)
+  function FEAT2_PP_TEMPLATE_T(otree_find,T)(roctree, data, inode, ipos, ivt,&
+      fcb_isEqual) result(iresult)
 
 !<description>
     ! This subroutine searches for given coordinates in the octree.
@@ -1064,19 +1128,28 @@ contains
     ! Octree
     type(FEAT2_PP_TEMPLATE_T(t_octree,T)), intent(in) :: roctree
 
-    ! Coordinates that should be searched for
+    ! Coordinates that should be searched
     FEAT2_PP_TTYPE(T_TYPE), dimension(3), intent(in) :: data
+
+    ! OPTIONAL: callback function to overwrite the default isEqual function
+    interface
+      pure logical function fcb_isEqual(data1, data2)
+        use fsystem
+        FEAT2_PP_TTYPE(T_TYPE), dimension(3), intent(in) :: data1,data2
+      end function fcb_isEqual
+    end interface
+    optional :: fcb_isEqual
 !</input>
 
 !<output>
-    ! Number of the node in which the given coordinates are
-    integer, intent(out) :: inode
+    ! OPTIONAL: Number of the node in which the given coordinates are
+    integer, intent(out), optional :: inode
 
-    ! Position of the coordinates in the node
-    integer, intent(out) :: ipos
+    ! OPTIONAL: Position of the coordinates in the node
+    integer, intent(out), optional :: ipos
 
-    ! Number of the vertex the coordinates correspond to
-    integer, intent(out) :: ivt
+    ! OPTIONAL: Number of the vertex the coordinates correspond to
+    integer, intent(out), optional :: ivt
 !</output>
 
 !<result>
@@ -1087,21 +1160,39 @@ contains
 !</result>
 !</function>
 
+    ! local variables
+    integer :: jnode,jpos,jvt
+
     ! Initialise
-    inode = 1; ipos = 1; ivt = 1
+    jnode = 1; jpos = 1; jvt = 1
 
     ! Search for item
-    iresult = search(inode, ipos, ivt)
+    if (present(fcb_isEqual)) then
+      iresult = search(jnode, jpos, jvt, fcb_isEqual)
+    else
+      iresult = search(jnode, jpos, jvt, isEqual)
+    end if
 
+    if (present(inode)) inode=jnode
+    if (present(ipos)) ipos=jpos
+    if (present(ivt)) ivt=jvt
+    
   contains
 
     !**************************************************************
     ! Here, the recursive searching routine follows
 
-    recursive function search(inode, ipos, ivt) result(iresult)
+    recursive function search(inode, ipos, ivt, fcb_isEqual) result(iresult)
 
       integer, intent(inout) :: inode,ipos,ivt
       integer :: iresult
+
+      interface
+        pure logical function fcb_isEqual(data1, data2)
+          use fsystem
+          FEAT2_PP_TTYPE(T_TYPE), dimension(3), intent(in) :: data1,data2
+        end function fcb_isEqual
+      end interface
 
 
       ! Check status of current node
@@ -1111,7 +1202,7 @@ contains
 
         ! Compute child INODE which to look recursively.
         inode = -roctree%p_Knode(otree_getDirection(roctree, data, inode), inode)
-        iresult =  search(inode, ipos, ivt)
+        iresult = search(inode, ipos, ivt, fcb_isEqual)
 
 
       case (OTREE_EMPTY)   ! Node is empty so it cannot contain the item
@@ -1134,7 +1225,7 @@ contains
           ! Get vertex number
           ivt = roctree%p_Knode(ipos, inode)
 
-          if (maxval(abs(roctree%p_Data(:, ivt)-data)) .le. SYS_EPSREAL_DP) then
+          if (fcb_isEqual(roctree%p_Data(:, ivt), data)) then
 
             ! We have found the item IVT in node INODE
             iresult = OTREE_FOUND
@@ -1659,7 +1750,7 @@ contains
 
     recursive subroutine rebuild(inode, istart, iend)
 
-      integer, intent(in) :: inode,istart, iend
+      integer, intent(in) :: inode, istart, iend
 
       ! local variables
       FEAT2_PP_TTYPE(T_TYPE) :: xmin,ymin,zmin,xmax,ymax,zmax,xmid,ymid,zmid
@@ -1936,7 +2027,8 @@ contains
 
 !<function>
 
-  function FEAT2_PP_TEMPLATE_T(otree_reposition,T)(roctree, DataOld, DataNew) result(iresult)
+  function FEAT2_PP_TEMPLATE_T(otree_reposition,T)(roctree, DataOld, DataNew,&
+      fcb_isEqual) result(iresult)
 
 !<description>
     ! This function modifies the coordinates of an item in the octree.
@@ -1953,6 +2045,15 @@ contains
 
     ! New coordinates of the vertex
     FEAT2_PP_TTYPE(T_TYPE), dimension(3), intent(in) :: DataNew
+
+    ! OPTIONAL: callback function to overwrite the default isEqual function
+    interface
+      pure logical function fcb_isEqual(data1, data2)
+        use fsystem
+        FEAT2_PP_TTYPE(T_TYPE), dimension(3), intent(in) :: data1,data2
+      end function fcb_isEqual
+    end interface
+    optional :: fcb_isEqual
 !</input>
 
 !<inputoutput>
@@ -1972,11 +2073,19 @@ contains
     integer :: ivt,jvt,jnode,jpos
 
     ! Move item starting at root
-    iresult = move(1, ivt)
+    if (present(fcb_isEqual)) then
+      iresult = move(1, ivt, fcb_isEqual)
+    else
+      iresult = move(1, ivt, isEqual)
+    end if
 
     if (iresult .eq. OTREE_DELETED) then
       ! Search potential candidate for insertion
-      iresult = otree_find(roctree, DataNew, jnode, jpos, jvt)
+      if (present(fcb_isEqual)) then
+      iresult = otree_find(roctree, DataNew, jnode, jpos, jvt, fcb_isEqual)
+      else
+        iresult = otree_find(roctree, DataNew, jnode, jpos, jvt, isEqual)
+      end if
       if (iresult .eq. OTREE_FOUND) then
         call output_line('Duplicate entry in octree!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'otree_reposition')
@@ -1995,11 +2104,18 @@ contains
     !**************************************************************
     ! Here, the recursive move routine follows
 
-    recursive function move(inode, ivt) result(iresult)
+    recursive function move(inode, ivt, fcb_isEqual) result(iresult)
 
       integer, intent(in) :: inode
       integer, intent(inout) :: ivt
       integer :: iresult
+
+      interface
+        pure logical function fcb_isEqual(data1, data2)
+          use fsystem
+          FEAT2_PP_TTYPE(T_TYPE), dimension(3), intent(in) :: data1,data2
+        end function fcb_isEqual
+      end interface
 
       ! local variables
       integer, dimension(OTREE_MAX) :: Knode
@@ -2013,7 +2129,7 @@ contains
 
         ! Compute child INODE which to look recursively.
         jnode = -roctree%p_Knode(otree_getDirection(roctree, DataOld, inode), inode)
-        iresult = move(jnode, ivt)
+        iresult = move(jnode, ivt, fcb_isEqual)
 
         ! Save values from current node
         Knode = roctree%p_Knode(1:OTREE_MAX, inode)
@@ -2085,7 +2201,7 @@ contains
           ! Get vertex number
           ivt = roctree%p_Knode(ipos, inode)
 
-          if (maxval(abs(roctree%p_Data(:, ivt)-DataOld)) .le. SYS_EPSREAL_DP) then
+          if (fcb_isEqual(roctree%p_Data(:, ivt), DataOld)) then
 
             ! Check if the new coordinates can be stored in the same node
             if ((roctree%p_BdBox(OTREE_XMIN,inode) .le. DataNew(1)) .and.&
@@ -2186,7 +2302,7 @@ contains
         ymid = 0.5*(ymin+ymax)
         zmid = 0.5*(zmin+zmax)
 
-                ! NWF-node
+        ! NWF-node
         roctree%p_Knode(OTREE_STATUS,nnode+OTREE_NWF) = OTREE_EMPTY
         roctree%p_Knode(OTREE_PARENT,nnode+OTREE_NWF) = inode
         roctree%p_Knode(OTREE_PARPOS,nnode+OTREE_NWF) = OTREE_NWF
@@ -2383,7 +2499,7 @@ contains
 
 !<inputoutput>
     ! Octree that should be resized
-    type(FEAT2_PP_TEMPLATE_T(t_octree,T)) :: roctree
+    type(FEAT2_PP_TEMPLATE_T(t_octree,T)), intent(inout) :: roctree
 !</inputoutput>
 !</subroutine>
 
@@ -2457,5 +2573,35 @@ contains
     roctree%NRESIZE = roctree%NRESIZE+1
 
   end subroutine
+
+  !************************************************************************
+
+!<function>
+
+  pure function isEqual(data1,data2) result(bisEqual)
+
+!<description>
+    ! This function checks if both data items are equal. This auxiliary
+    ! function will be used in all comparisons throughout this module
+    ! unless a user-defined isEqual function is provided.
+!</description>
+
+!<input>
+    ! Coordinates of two vertices to be compared for equality
+    FEAT2_PP_TTYPE(T_TYPE), dimension(3), intent(in) :: data1,data2
+!</input>
+
+!<result>
+    ! Logical switch indicating if both vertices are equal
+    logical :: bisEqual
+!</result>
+
+#ifdef T_STORAGE
+    bisEqual = (maxval(abs(data1-data2)) .lt. FEAT2_PP_TEMPLATE_T(SYS_EPSREAL_,T))
+#else
+    bisEqual = .false.
+#endif
+
+  end function
 
 #endif
