@@ -1,5 +1,5 @@
 !##############################################################################
-!# Tutorial 004d: Datastructures - linked lists
+!# Tutorial 004d: Datastructures - linked lists advanced features
 !##############################################################################
 
 module tutorial004d

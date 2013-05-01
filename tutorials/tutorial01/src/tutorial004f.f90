@@ -1,5 +1,5 @@
 !##############################################################################
-!# Tutorial 004f: Datastructures - linked lists vs. map
+!# Tutorial 004f: Datastructures - comparison of linked lists vs. maps
 !##############################################################################
 
 module tutorial004f
