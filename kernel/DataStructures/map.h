@@ -2791,7 +2791,7 @@ contains
 !</result>
 !</function>
 
-    log2 = log(real(i,DP))/log(2._DP)
+    log2 = log(real(i,DP))/log(2.0_DP)
 
   end function
 
