@@ -197,10 +197,10 @@ use constant SRCLIST_KERNEL =>
     "DataStructures/mapSP.f90 DataStructures/mapSP_Int.f90 " .
     "DataStructures/mapSP_DP.f90 DataStructures/mapSP_SP.f90 " .
     
-    "DataStructures/quadtree.f90 DataStructures/quadtreebase.f90 " .
+    "DataStructures/quadtreebase.f90 " .
     "DataStructures/quadtreeDP.f90 DataStructures/quadtreeSP.f90 " .
 
-    "DataStructures/octree.f90 DataStructures/octreebase.f90 " .
+    "DataStructures/octreebase.f90 " .
     "DataStructures/octreeDP.f90 DataStructures/octreeSP.f90 " .
 
     "DataStructures/stackInt.f90 " .

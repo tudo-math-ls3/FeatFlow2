@@ -70,6 +70,12 @@
 !# 18.) otree_reposition
 !#      -> Reposition item in octree
 !#
+!# 19.) otree_cast
+!#      -> Casts a octree to a generic object
+!#
+!# 20.) otree_uncast
+!#      -> Casts a generic object to a octree
+!#
 !# For the internal use the following routines are available:
 !#
 !# 1.) resizeNVT
@@ -104,6 +110,9 @@
   public :: otree_duplicate
   public :: otree_restore
   public :: otree_rebuild
+  public :: otree_reposition
+  public :: otree_cast
+  public :: otree_uncast
 
   interface otree_create
     module procedure FEAT2_PP_TEMPLATE_T(otree_create,T)
@@ -175,6 +184,18 @@
 
   interface otree_rebuild
     module procedure FEAT2_PP_TEMPLATE_T(otree_rebuild,T)
+  end interface
+
+  interface otree_reposition
+    module procedure FEAT2_PP_TEMPLATE_T(otree_reposition,T)
+  end interface
+
+  interface otree_cast
+    module procedure FEAT2_PP_TEMPLATE_T(otree_cast,T)
+  end interface
+
+  interface otree_uncast
+    module procedure FEAT2_PP_TEMPLATE_T(otree_uncast,T)
   end interface
 
 !<types>
@@ -1908,6 +1929,440 @@ contains
       isplit = i
 
     end function split
+
+  end subroutine
+
+!************************************************************************
+
+!<function>
+
+  function FEAT2_PP_TEMPLATE_T(otree_reposition,T)(roctree, DataOld, DataNew) result(iresult)
+
+!<description>
+    ! This function modifies the coordinates of an item in the octree.
+    ! First, the item with coordinates DDATA is searched. If the new
+    ! coordinates belong to the same node (e.g. they are comprised in the
+    ! Nodes bounding box), then the coordinates are simply updated.
+    ! Otherwise, the vertex is deleted from the octree and re-inserted
+    ! with the new coordinates, whereby the vertex number does not change.
+!</description>
+
+!<input>
+    ! Old coordinates of the vertex
+    FEAT2_PP_TTYPE(T_TYPE), dimension(3), intent(in) :: DataOld
+
+    ! New coordinates of the vertex
+    FEAT2_PP_TTYPE(T_TYPE), dimension(3), intent(in) :: DataNew
+!</input>
+
+!<inputoutput>
+    ! Octree
+    type(FEAT2_PP_TEMPLATE_T(t_octree,T)), intent(inout) :: roctree
+!</inputoutput>
+
+!<result>
+    ! Result of the insertion:
+    !   OTREE_FAILED
+    !   OTREE_REPOSITIONED
+    integer :: iresult
+!</result>
+!</function>
+
+    ! local variables
+    integer :: ivt,jvt,jnode,jpos
+
+    ! Move item starting at root
+    iresult = move(1, ivt)
+
+    if (iresult .eq. OTREE_DELETED) then
+      ! Search potential candidate for insertion
+      iresult = otree_find(roctree, DataNew, jnode, jpos, jvt)
+      if (iresult .eq. OTREE_FOUND) then
+        call output_line('Duplicate entry in octree!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'otree_reposition')
+        call sys_halt()
+      end if
+
+      ! Update values
+      roctree%p_Data(:,ivt) = DataNew
+
+      ! Insert entry recursively
+      iresult = insert(ivt, jnode)
+    end if
+
+  contains
+
+    !**************************************************************
+    ! Here, the recursive move routine follows
+
+    recursive function move(inode, ivt) result(iresult)
+
+      integer, intent(in) :: inode
+      integer, intent(inout) :: ivt
+      integer :: iresult
+
+      ! local variables
+      integer, dimension(OTREE_MAX) :: Knode
+      integer :: i,jnode,ipos,jpos,nemptyChildren
+
+
+      ! Check status of current node
+      select case(roctree%p_Knode(OTREE_STATUS, inode))
+
+      case (OTREE_SUBDIV)   ! Node is subdivided
+
+        ! Compute child INODE which to look recursively.
+        jnode = -roctree%p_Knode(otree_getDirection(roctree, DataOld, inode), inode)
+        iresult = move(jnode, ivt)
+
+        ! Save values from current node
+        Knode = roctree%p_Knode(1:OTREE_MAX, inode)
+
+        ! Check if three or more children are empty
+        nemptyChildren = 0
+
+        do i = 1, OTREE_MAX
+          jnode = -Knode(i)
+          if (roctree%p_Knode(OTREE_STATUS, jnode) .eq. OTREE_EMPTY) then
+            nemptyChildren = nemptyChildren+1
+          elseif (roctree%p_Knode(OTREE_STATUS, jnode) .eq. OTREE_SUBDIV) then
+            ! If the child is not a leaf, then do not compress this sub-tree
+            return
+          end if
+        end do
+
+        if (nemptyChildren .ge. OTREE_MAX-1) then
+
+          ! Mark node as empty
+          roctree%p_Knode(OTREE_STATUS, inode) = OTREE_EMPTY
+
+          ! Copy data from non-empty child (if any) and mark nodes as deleted
+          do i = 1, OTREE_MAX
+            jnode = -Knode(i)
+            if (roctree%p_Knode(OTREE_STATUS, jnode) .gt. OTREE_EMPTY) then
+              ! Copy status of node
+              roctree%p_Knode(OTREE_STATUS, inode) = roctree%p_Knode(OTREE_STATUS, jnode)
+
+              ! Copy data
+              roctree%p_Knode(1:roctree%NDATA, inode) = roctree%p_Knode(1:roctree%NDATA, jnode)
+            end if
+
+            ! Mark node as deleted
+            roctree%p_Knode(OTREE_STATUS, jnode) = OTREE_DEL
+
+            ! Set pointer to next free position
+            roctree%p_Knode(OTREE_PARENT, jnode) = -roctree%NFREE
+
+          end do
+
+          ! Update pointer to next free position
+          roctree%NFREE = -Knode(1)
+
+          ! Reduce number of nodes
+          roctree%NNODE = roctree%NNODE-OTREE_MAX
+
+        end if
+
+
+      case (OTREE_EMPTY)   ! Node is empty so it cannot contain the item
+
+        iresult = OTREE_FAILED
+        ivt = 0
+
+
+      case (OTREE_DEL)   ! Node is deleted -> serious error
+
+        call output_line('Internal error in deletion!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'otree_reposition')
+        call sys_halt()
+
+
+      case default   ! Node is a non-empty leaf
+
+        ! Search for (x,y,z) in current node
+        do ipos = 1, roctree%p_Knode(OTREE_STATUS, inode)
+
+          ! Get vertex number
+          ivt = roctree%p_Knode(ipos, inode)
+
+          if (maxval(abs(roctree%p_Data(:, ivt)-DataOld)) .le. SYS_EPSREAL_DP) then
+
+            ! Check if the new coordinates can be stored in the same node
+            if ((roctree%p_BdBox(OTREE_XMIN,inode) .le. DataNew(1)) .and.&
+                (roctree%p_BdBox(OTREE_XMAX,inode) .ge. DataNew(1)) .and.&
+                (roctree%p_BdBox(OTREE_YMIN,inode) .le. DataNew(2)) .and.&
+                (roctree%p_BdBox(OTREE_YMAX,inode) .ge. DataNew(2)) .and.&
+                (roctree%p_BdBox(OTREE_ZMIN,inode) .le. DataNew(3)) .and.&
+                (roctree%p_BdBox(OTREE_ZMAX,inode) .ge. DataNew(3))) then
+
+              ! Just update coordinates
+              roctree%p_Data(:,ivt) = DataNew
+
+              ! We have updated the item IVT in node INODE
+              iresult = OTREE_REPOSITIONED
+
+              ! That is it
+              return
+            end if
+
+            ! Physically remove the item IVT from node INODE
+            jpos = roctree%p_Knode(OTREE_STATUS, inode)
+
+            roctree%p_Knode(ipos, inode) = roctree%p_Knode(jpos, inode)
+            roctree%p_Knode(jpos, inode) = 0
+            roctree%p_Knode(OTREE_STATUS, inode) = roctree%p_Knode(OTREE_STATUS, inode)-1
+
+            ! We have found the item IVT in node INODE
+            iresult = OTREE_DELETED
+
+            ! That is it
+            return
+          end if
+        end do
+
+        ! We have not found the item
+        iresult = OTREE_FAILED
+        ivt = 0
+
+      end select
+
+    end function move
+
+    !**************************************************************
+    ! Here, the recursive insertion routine follows
+
+    recursive function insert(ivt, inode) result(iresult)
+
+      integer, intent(in) :: ivt,inode
+      integer :: iresult
+
+      ! local variables
+      FEAT2_PP_TTYPE(T_TYPE) :: xmin,ymin,zmin,xmax,ymax,zmax,xmid,ymid,zmid
+      integer :: i,jvt,jnode,nnode,isize,jresult
+
+
+      ! Check status of current node
+      if (roctree%p_Knode(OTREE_STATUS, inode) .eq. roctree%ndata) then
+
+        ! Node is full
+
+        ! Check if there are deleted nodes
+        if (roctree%NFREE .ne. OTREE_EMPTY) then
+
+          ! Reuse memory of the four nodes which have been deleted lately
+          nnode = roctree%NFREE
+
+          ! Update pointer to next free nodes
+          roctree%NFREE = -roctree%p_Knode(OTREE_PARENT, nnode)
+
+          ! Decrease starting position of first node by one
+          nnode = nnode-1
+
+        else
+
+          ! Otherwise, create new memory if required
+          if (roctree%nnode+OTREE_MAX > roctree%nnnode) then
+            isize = max(roctree%nnode+OTREE_MAX,&
+                        ceiling(roctree%dfactor*roctree%NNNODE))
+            call resizeNNODE(roctree, isize)
+          end if
+
+          ! New nodes are stored after all existing nodes
+          nnode = roctree%NNODE
+
+        end if
+
+        ! Increase number of nodes
+        roctree%NNODE = roctree%NNODE+OTREE_MAX
+
+        ! Compute spatial coordinates of bounding boxes
+        xmin = roctree%p_BdBox(OTREE_XMIN,inode)
+        ymin = roctree%p_BdBox(OTREE_YMIN,inode)
+        zmin = roctree%p_BdBox(OTREE_ZMIN,inode)
+        xmax = roctree%p_BdBox(OTREE_XMAX,inode)
+        ymax = roctree%p_BdBox(OTREE_YMAX,inode)
+        zmax = roctree%p_BdBox(OTREE_ZMAX,inode)
+        xmid = 0.5*(xmin+xmax)
+        ymid = 0.5*(ymin+ymax)
+        zmid = 0.5*(zmin+zmax)
+
+                ! NWF-node
+        roctree%p_Knode(OTREE_STATUS,nnode+OTREE_NWF) = OTREE_EMPTY
+        roctree%p_Knode(OTREE_PARENT,nnode+OTREE_NWF) = inode
+        roctree%p_Knode(OTREE_PARPOS,nnode+OTREE_NWF) = OTREE_NWF
+        roctree%p_BdBox(:,nnode+OTREE_NWF)            = (/xmin,ymid,zmin,xmid,ymax,zmid/)
+
+        ! SWF-node
+        roctree%p_Knode(OTREE_STATUS,nnode+OTREE_SWF) = OTREE_EMPTY
+        roctree%p_Knode(OTREE_PARENT,nnode+OTREE_SWF) = inode
+        roctree%p_Knode(OTREE_PARPOS,nnode+OTREE_SWF) = OTREE_SWF
+        roctree%p_BdBox(:,nnode+OTREE_SWF)            = (/xmin,ymin,zmin,xmid,ymid,zmid/)
+
+        ! SEF-node
+        roctree%p_Knode(OTREE_STATUS,nnode+OTREE_SEF) = OTREE_EMPTY
+        roctree%p_Knode(OTREE_PARENT,nnode+OTREE_SEF) = inode
+        roctree%p_Knode(OTREE_PARPOS,nnode+OTREE_SEF) = OTREE_SEF
+        roctree%p_BdBox(:,nnode+OTREE_SEF)            = (/xmid,ymin,zmin,xmax,ymid,zmid/)
+
+        ! NEF-node
+        roctree%p_Knode(OTREE_STATUS,nnode+OTREE_NEF) = OTREE_EMPTY
+        roctree%p_Knode(OTREE_PARENT,nnode+OTREE_NEF) = inode
+        roctree%p_Knode(OTREE_PARPOS,nnode+OTREE_NEF) = OTREE_NEF
+        roctree%p_BdBox(:,nnode+OTREE_NEF)            = (/xmid,ymid,zmin,xmax,ymax,zmid/)
+
+        ! NWB-node
+        roctree%p_Knode(OTREE_STATUS,nnode+OTREE_NWB) = OTREE_EMPTY
+        roctree%p_Knode(OTREE_PARENT,nnode+OTREE_NWB) = inode
+        roctree%p_Knode(OTREE_PARPOS,nnode+OTREE_NWB) = OTREE_NWB
+        roctree%p_BdBox(:,nnode+OTREE_NWB)            = (/xmin,ymid,zmid,xmid,ymax,zmax/)
+
+        ! SWB-node
+        roctree%p_Knode(OTREE_STATUS,nnode+OTREE_SWB) = OTREE_EMPTY
+        roctree%p_Knode(OTREE_PARENT,nnode+OTREE_SWB) = inode
+        roctree%p_Knode(OTREE_PARPOS,nnode+OTREE_SWB) = OTREE_SWB
+        roctree%p_BdBox(:,nnode+OTREE_SWB)            = (/xmin,ymin,zmid,xmid,ymid,zmax/)
+
+        ! SEB-node
+        roctree%p_Knode(OTREE_STATUS,nnode+OTREE_SEB) = OTREE_EMPTY
+        roctree%p_Knode(OTREE_PARENT,nnode+OTREE_SEB) = inode
+        roctree%p_Knode(OTREE_PARPOS,nnode+OTREE_SEB) = OTREE_SEB
+        roctree%p_BdBox(:,nnode+OTREE_SEB)            = (/xmid,ymin,zmid,xmax,ymid,zmax/)
+
+        ! NEB-node
+        roctree%p_Knode(OTREE_STATUS,nnode+OTREE_NEB) = OTREE_EMPTY
+        roctree%p_Knode(OTREE_PARENT,nnode+OTREE_NEB) = inode
+        roctree%p_Knode(OTREE_PARPOS,nnode+OTREE_NEB) = OTREE_NEB
+        roctree%p_BdBox(:,nnode+OTREE_NEB)            = (/xmid,ymid,zmid,xmax,ymax,zmax/)
+
+        ! Add the data values from INODE to the eight new nodes
+        do i = 1, roctree%ndata
+          jvt = roctree%p_Knode(i, inode)
+          jnode = nnode+otree_getDirection(roctree, roctree%p_Data(:,jvt), inode)
+          jresult = insert(jvt, jnode)
+
+          if (jresult .eq. OTREE_FAILED) then
+            call output_line('Internal error in insertion!',&
+                             OU_CLASS_ERROR,OU_MODE_STD,'otree_reposition')
+            call sys_halt()
+          end if
+        end do
+
+        ! Mark the current nodes as subdivided and set pointers to its eight children
+        roctree%p_Knode(OTREE_STATUS,inode) =     OTREE_SUBDIV
+        roctree%p_Knode(1:OTREE_MAX, inode) = - (/nnode+OTREE_NWF, nnode+OTREE_SWF,&
+                                                  nnode+OTREE_SEF, nnode+OTREE_NEF,&
+                                                  nnode+OTREE_NWB, nnode+OTREE_SWB,&
+                                                  nnode+OTREE_SEB, nnode+OTREE_NEB/)
+
+        ! Add the new entry to the next position recursively
+        jnode = nnode+otree_getDirection(roctree, roctree%p_Data(:,ivt), inode)
+        iresult = insert(ivt, inode)
+
+      elseif (roctree%p_Knode(OTREE_STATUS, inode) .ge. OTREE_EMPTY) then
+
+        ! There is still some space in the node
+        roctree%p_Knode(OTREE_STATUS, inode) = roctree%p_Knode(OTREE_STATUS, inode)+1
+        roctree%p_Knode(roctree%p_Knode(OTREE_STATUS, inode), inode) = ivt
+
+        ! Set success flag
+        iresult = OTREE_INSERTED
+
+      elseif (roctree%p_Knode(OTREE_STATUS, inode) .eq. OTREE_SUBDIV) then
+
+        ! Proceed to correcponding sub-tree
+        jnode = -roctree%p_Knode(otree_getDirection(roctree, DataNew, inode), inode)
+        iresult = insert(ivt, jnode)
+
+      else
+
+        ! Set failure flag
+        iresult = OTREE_FAILED
+
+      end if
+
+    end function insert
+
+  end function
+
+  !************************************************************************
+
+!<subroutine>
+
+  subroutine FEAT2_PP_TEMPLATE_T(otree_cast,T)(roctree, rgenericObject)
+
+!<description>
+    ! This subroutine casts the given octree to a generic object.
+!</description>
+
+!<input>
+    ! The octree
+    type(FEAT2_PP_TEMPLATE_T(t_octree,T)), intent(in), target :: roctree
+!</input>
+
+!<output>
+    ! The generic object
+    type(t_genericObject), intent(out) :: rgenericObject
+!</output>
+!</subroutine>
+
+    ! Internal data structure
+    type t_void_ptr
+      type(FEAT2_PP_TEMPLATE_T(t_octree,T)), pointer :: p_robj => null()
+    end type t_void_ptr
+    
+    ! Internal variables
+    type(t_void_ptr) :: rptr
+
+    ! Wrap octree by void pointer structure
+    rptr%p_robj => roctree
+    
+    ! Determine the size of the void pointer structure
+    rgenericObject%isize = size(transfer(rptr, rgenericObject%p_cdata))
+    
+    ! Allocate memory and transfer octree to generic object
+    allocate(rgenericObject%p_cdata(rgenericObject%isize))
+    rgenericObject%p_cdata = transfer(rptr, rgenericObject%p_cdata)
+    
+  end subroutine
+
+  !************************************************************************
+
+!<subroutine>
+
+  subroutine FEAT2_PP_TEMPLATE_T(otree_uncast,T)(rgenericObject, p_roctree)
+
+!<description>
+    ! This subroutine casts the given generic object into a octree.
+!</description>
+
+!<input>
+    ! The generic object
+    type(t_genericObject), intent(in) :: rgenericObject
+!</input>
+
+!<output>
+    ! The octree
+    type(FEAT2_PP_TEMPLATE_T(t_octree,T)), pointer :: p_roctree
+!</output>
+!</function>
+
+    ! Internal data structure
+    type t_void_ptr
+      type(FEAT2_PP_TEMPLATE_T(t_octree,T)), pointer :: p_robj => null()
+    end type
+
+    ! Internal variables
+    type(t_void_ptr) :: rptr
+
+    if ((rgenericObject%isize .eq. 0) .or.&
+        (.not.associated(rgenericObject%p_cdata))) then
+      call output_line('Generic object seems to be empty!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'otree_uncast')
+      call sys_halt()
+    end if
+
+    rptr = transfer(rgenericObject%p_cdata, rptr)
+    p_roctree => rptr%p_robj
 
   end subroutine
 

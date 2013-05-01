@@ -67,13 +67,19 @@
 !# 17.) qtree_reposition
 !#      -> Reposition item in quadtree
 !#
+!# 18.) qtree_cast
+!#      -> Casts a quadtree to a generic object
+!#
+!# 19.) qtree_uncast
+!#      -> Casts a generic object to a quadtree
+!#
 !# For the internal use the following routines are available:
 !#
 !# 1.) resizeNVT
 !#     -> Resize the number of stored values
 !#
 !# 2.) resizeNNODE
-!#     -> Resize the number of stored quads
+!#     -> Resize the number of stored nodes
 !#
 !# </purpose>
 !##############################################################################
@@ -101,6 +107,8 @@
   public :: qtree_restore
   public :: qtree_rebuild
   public :: qtree_reposition
+  public :: qtree_cast
+  public :: qtree_uncast
 
   interface qtree_create
     module procedure FEAT2_PP_TEMPLATE_T(qtree_create,T)
@@ -172,6 +180,14 @@
 
   interface qtree_reposition
     module procedure FEAT2_PP_TEMPLATE_T(qtree_reposition,T)
+  end interface
+
+  interface qtree_cast
+    module procedure FEAT2_PP_TEMPLATE_T(qtree_cast,T)
+  end interface
+
+  interface qtree_uncast
+    module procedure FEAT2_PP_TEMPLATE_T(qtree_uncast,T)
   end interface
 
 !<types>
@@ -268,7 +284,7 @@ contains
     ! new storage has to be allocated
     real(DP), intent(in), optional :: dfactor
 
-    ! OPTIONAL: Number of data items stored per quad
+    ! OPTIONAL: Number of data items stored per node
     integer, optional :: ndata
 !</input>
 
@@ -320,7 +336,7 @@ contains
     allocate(rquadtree%p_BdBox(4,nnnode))
 #endif
 
-    ! Initialise first quad
+    ! Initialise first node
     rquadtree%nnode = 1
     rquadtree%p_Knode(QTREE_STATUS,1) = QTREE_EMPTY
     rquadtree%p_Knode(QTREE_PARENT,1) = QTREE_EMPTY
@@ -555,7 +571,7 @@ contains
 
 !<function>
 
-  function FEAT2_PP_TEMPLATE_T(qtree_insert,T)(rquadtree, Data, ivt, inode) result(iresult)
+  function FEAT2_PP_TEMPLATE_T(qtree_insert,T)(rquadtree, data, ivt, inode) result(iresult)
 
 !<description>
     ! This function inserts a new coordinate item to the quadtree. The
@@ -571,7 +587,7 @@ contains
     ! Coordinates of the new vertex
     FEAT2_PP_TTYPE(T_TYPE), dimension(2), intent(in) :: data
 
-    ! OPTIONAL: Number of the quad to which vertex should be inserted.
+    ! OPTIONAL: Number of the node to which vertex should be inserted.
     ! If there is no space left, then the next free position will be used
     integer, intent(in), optional :: inode
 !</input>
@@ -602,7 +618,7 @@ contains
       jnode = inode
     else
       ! Search potential candidate for insertion
-      iresult = qtree_find(rquadtree, Data, jnode, jpos, jvt)
+      iresult = qtree_find(rquadtree, data, jnode, jpos, jvt)
       if (iresult .eq. QTREE_FOUND) then
         ivt = jvt
         return
@@ -645,7 +661,7 @@ contains
       integer :: i,jvt,jnode,nnode,isize,jresult
 
 
-      ! Check status of current quad
+      ! Check status of current node
       if (rquadtree%p_Knode(QTREE_STATUS, inode) .eq. rquadtree%ndata) then
 
         ! Node is full
@@ -687,28 +703,28 @@ contains
         xmid = 0.5*(xmin+xmax)
         ymid = 0.5*(ymin+ymax)
 
-        ! NW-quad
+        ! NW-node
         rquadtree%p_Knode(QTREE_STATUS,nnode+QTREE_NW) = QTREE_EMPTY
         rquadtree%p_Knode(QTREE_PARENT,nnode+QTREE_NW) = inode
         rquadtree%p_Knode(QTREE_PARPOS,nnode+QTREE_NW) = QTREE_NW
         rquadtree%p_BdBox(:,nnode+QTREE_NW)            = (/xmin,ymid,xmid,ymax/)
         rquadtree%p_Knode(1:rquadtree%NDATA, nnode+QTREE_NW) = 0
 
-        ! SW-quad
+        ! SW-node
         rquadtree%p_Knode(QTREE_STATUS,nnode+QTREE_SW) = QTREE_EMPTY
         rquadtree%p_Knode(QTREE_PARENT,nnode+QTREE_SW) = inode
         rquadtree%p_Knode(QTREE_PARPOS,nnode+QTREE_SW) = QTREE_SW
         rquadtree%p_BdBox(:,nnode+QTREE_SW)            = (/xmin,ymin,xmid,ymid/)
         rquadtree%p_Knode(1:rquadtree%NDATA, nnode+QTREE_SW) = 0
 
-        ! SE-quad
+        ! SE-node
         rquadtree%p_Knode(QTREE_STATUS,nnode+QTREE_SE) = QTREE_EMPTY
         rquadtree%p_Knode(QTREE_PARENT,nnode+QTREE_SE) = inode
         rquadtree%p_Knode(QTREE_PARPOS,nnode+QTREE_SE) = QTREE_SE
         rquadtree%p_BdBox(:,nnode+QTREE_SE)            = (/xmid,ymin,xmax,ymid/)
         rquadtree%p_Knode(1:rquadtree%NDATA, nnode+QTREE_SE) = 0
 
-        ! NE-quad
+        ! NE-node
         rquadtree%p_Knode(QTREE_STATUS,nnode+QTREE_NE) = QTREE_EMPTY
         rquadtree%p_Knode(QTREE_PARENT,nnode+QTREE_NE) = inode
         rquadtree%p_Knode(QTREE_PARPOS,nnode+QTREE_NE) = QTREE_NE
@@ -749,7 +765,7 @@ contains
       elseif (rquadtree%p_Knode(QTREE_STATUS, inode) .eq. QTREE_SUBDIV) then
 
         ! Proceed to correcponding sub-tree
-        jnode = -rquadtree%p_Knode(qtree_getDirection(rquadtree, Data, inode), inode)
+        jnode = -rquadtree%p_Knode(qtree_getDirection(rquadtree, data, inode), inode)
         iresult = insert(ivt, jnode)
 
       else
@@ -767,7 +783,7 @@ contains
 
 !<function>
 
-  function FEAT2_PP_TEMPLATE_T(qtree_delete1,T)(rquadtree, Data, ivt) result(iresult)
+  function FEAT2_PP_TEMPLATE_T(qtree_delete1,T)(rquadtree, data, ivt) result(iresult)
 
 !<description>
     ! This function deletes an item from the quadtree.
@@ -826,7 +842,7 @@ contains
       case (QTREE_SUBDIV)   ! Node is subdivided
 
         ! Compute child INODE which to look recursively.
-        jnode = -rquadtree%p_Knode(qtree_getDirection(rquadtree, Data, inode), inode)
+        jnode = -rquadtree%p_Knode(qtree_getDirection(rquadtree, data, inode), inode)
         iresult = delete(jnode, ivt)
 
         ! Save values from current node
@@ -854,7 +870,7 @@ contains
           do i = 1, QTREE_MAX
             jnode = -Knode(i)
             if (rquadtree%p_Knode(QTREE_STATUS, jnode) .gt. QTREE_EMPTY) then
-              ! Copy status of quad
+              ! Copy status of node
               rquadtree%p_Knode(QTREE_STATUS, inode) = rquadtree%p_Knode(QTREE_STATUS, jnode)
 
               ! Copy data
@@ -872,7 +888,7 @@ contains
           ! Update pointer to next free position
           rquadtree%NFREE = -Knode(1)
 
-          ! Reduce number of quads
+          ! Reduce number of nodes
           rquadtree%NNODE = rquadtree%NNODE-QTREE_MAX
 
         end if
@@ -891,9 +907,9 @@ contains
         call sys_halt()
 
 
-      case default   ! Quad is a non-empty leaf
+      case default   ! Node is a non-empty leaf
 
-        ! Search for (x,y) in current quad
+        ! Search for (x,y) in current node
         do ipos = 1, rquadtree%p_Knode(QTREE_STATUS, inode)
 
           ! Get vertex number
@@ -987,7 +1003,7 @@ contains
     if (ivt .le. rquadtree%NVT) then
       ! Get coordinates and invoke deletion routine
       data    = rquadtree%p_Data(:,ivt)
-      iresult = qtree_delete(rquadtree, Data, ivtReplace)
+      iresult = qtree_delete(rquadtree, data, ivtReplace)
     else
       iresult = QTREE_FAILED
     end if
@@ -998,7 +1014,7 @@ contains
 
 !<function>
 
-  function FEAT2_PP_TEMPLATE_T(qtree_find,T)(rquadtree, Data, inode, ipos, ivt) result(iresult)
+  function FEAT2_PP_TEMPLATE_T(qtree_find,T)(rquadtree, data, inode, ipos, ivt) result(iresult)
 
 !<description>
     ! This subroutine searches for given coordinates in the quadtree.
@@ -1059,7 +1075,7 @@ contains
       case (QTREE_SUBDIV)   ! Node is subdivided
 
         ! Compute child INODE which to look recursively.
-        inode = -rquadtree%p_Knode(qtree_getDirection(rquadtree, Data, inode), inode)
+        inode = -rquadtree%p_Knode(qtree_getDirection(rquadtree, data, inode), inode)
         iresult = search(inode, ipos, ivt)
 
 
@@ -1106,7 +1122,7 @@ contains
 
 !<function>
 
-  pure function FEAT2_PP_TEMPLATE_T(qtree_getDirection,T)(rquadtree, Data, inode) result(idirection)
+  pure function FEAT2_PP_TEMPLATE_T(qtree_getDirection,T)(rquadtree, data, inode) result(idirection)
 
 !<description>
     ! This subroutine determines the direction to preceed w.r.t. Data.
@@ -1589,28 +1605,28 @@ contains
         xmid = 0.5*(xmin+xmax)
         ymid = 0.5*(ymin+ymax)
 
-        ! NW-quad
+        ! NW-node
         rquadtree%p_Knode(QTREE_STATUS,nnode+QTREE_NW) = QTREE_EMPTY
         rquadtree%p_Knode(QTREE_PARENT,nnode+QTREE_NW) = inode
         rquadtree%p_Knode(QTREE_PARPOS,nnode+QTREE_NW) = QTREE_NW
         rquadtree%p_BdBox(:,nnode+QTREE_NW)            = (/xmin,ymid,xmid,ymax/)
         rquadtree%p_Knode(1:rquadtree%NDATA, nnode+QTREE_NW) = 0
 
-        ! SW-quad
+        ! SW-node
         rquadtree%p_Knode(QTREE_STATUS,nnode+QTREE_SW) = QTREE_EMPTY
         rquadtree%p_Knode(QTREE_PARENT,nnode+QTREE_SW) = inode
         rquadtree%p_Knode(QTREE_PARPOS,nnode+QTREE_SW) = QTREE_SW
         rquadtree%p_BdBox(:,nnode+QTREE_SW)            = (/xmin,ymin,xmid,ymid/)
         rquadtree%p_Knode(1:rquadtree%NDATA, nnode+QTREE_SW) = 0
 
-        ! SE-quad
+        ! SE-node
         rquadtree%p_Knode(QTREE_STATUS,nnode+QTREE_SE) = QTREE_EMPTY
         rquadtree%p_Knode(QTREE_PARENT,nnode+QTREE_SE) = inode
         rquadtree%p_Knode(QTREE_PARPOS,nnode+QTREE_SE) = QTREE_SE
         rquadtree%p_BdBox(:,nnode+QTREE_SE)            = (/xmid,ymin,xmax,ymid/)
         rquadtree%p_Knode(1:rquadtree%NDATA, nnode+QTREE_SE) = 0
 
-        ! NE-quad
+        ! NE-node
         rquadtree%p_Knode(QTREE_STATUS,nnode+QTREE_NE) = QTREE_EMPTY
         rquadtree%p_Knode(QTREE_PARENT,nnode+QTREE_NE) = inode
         rquadtree%p_Knode(QTREE_PARPOS,nnode+QTREE_NE) = QTREE_NE
@@ -1766,7 +1782,7 @@ contains
     ! This function modifies the coordinates of an item in the quadtree.
     ! First, the item with coordinates DDATA is searched. If the new
     ! coordinates belong to the same node (e.g. they are comprised in the
-    ! nodes bounding box), then the coordinates are simply updated.
+    ! Nodes bounding box), then the coordinates are simply updated.
     ! Otherwise, the vertex is deleted from the quadtree and re-inserted
     ! with the new coordinates, whereby the vertex number does not change.
 !</description>
@@ -1830,16 +1846,16 @@ contains
       integer :: i,jnode,ipos,jpos,nemptyChildren
 
 
-      ! Check status of current quad
+      ! Check status of current node
       select case(rquadtree%p_Knode(QTREE_STATUS, inode))
 
-      case (QTREE_SUBDIV)   ! Quad is subdivided
+      case (QTREE_SUBDIV)   ! Node is subdivided
 
         ! Compute child INODE which to look recursively.
         jnode = -rquadtree%p_Knode(qtree_getDirection(rquadtree, DataOld, inode), inode)
         iresult = move(jnode, ivt)
 
-        ! Save values from current quad
+        ! Save values from current node
         Knode = rquadtree%p_Knode(1:QTREE_MAX, inode)
 
         ! Check if three or more children are empty
@@ -1857,21 +1873,21 @@ contains
 
         if (nemptyChildren .ge. QTREE_MAX-1) then
 
-          ! Mark quad as empty
+          ! Mark node as empty
           rquadtree%p_Knode(QTREE_STATUS, inode) = QTREE_EMPTY
 
           ! Copy data from non-empty child (if any) and mark nodes as deleted
           do i = 1, QTREE_MAX
             jnode = -Knode(i)
             if (rquadtree%p_Knode(QTREE_STATUS, jnode) .gt. QTREE_EMPTY) then
-              ! Copy status of quad
+              ! Copy status of node
               rquadtree%p_Knode(QTREE_STATUS, inode) = rquadtree%p_Knode(QTREE_STATUS, jnode)
 
               ! Copy data
               rquadtree%p_Knode(1:rquadtree%NDATA, inode) = rquadtree%p_Knode(1:rquadtree%NDATA, jnode)
             end if
 
-            ! Mark quad as deleted
+            ! Mark node as deleted
             rquadtree%p_Knode(QTREE_STATUS, jnode) = QTREE_DEL
 
             ! Set pointer to next free position
@@ -1882,28 +1898,28 @@ contains
           ! Update pointer to next free position
           rquadtree%NFREE = -Knode(1)
 
-          ! Reduce number of quads
+          ! Reduce number of nodes
           rquadtree%NNODE = rquadtree%NNODE-QTREE_MAX
 
         end if
 
 
-      case (QTREE_EMPTY)   ! Quad is empty so it cannot contain the item
+      case (QTREE_EMPTY)   ! Node is empty so it cannot contain the item
 
         iresult = QTREE_FAILED
         ivt = 0
 
 
-      case (QTREE_DEL)   ! Quad is deleted -> serious error
+      case (QTREE_DEL)   ! Node is deleted -> serious error
 
         call output_line('Internal error in deletion!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'qtree_reposition')
         call sys_halt()
 
 
-      case default   ! Quad is a non-empty leaf
+      case default   ! Node is a non-empty leaf
 
-        ! Search for (x,y) in current quad
+        ! Search for (x,y) in current node
         do ipos = 1, rquadtree%p_Knode(QTREE_STATUS, inode)
 
           ! Get vertex number
@@ -1963,21 +1979,21 @@ contains
       integer :: i,jvt,jnode,nnode,isize,jresult
 
 
-      ! Check status of current quad
+      ! Check status of current node
       if (rquadtree%p_Knode(QTREE_STATUS, inode) .eq. rquadtree%ndata) then
 
-        ! Quad is full
+        ! Node is full
 
-        ! Check if there are deleted quads
+        ! Check if there are deleted nodes
         if (rquadtree%NFREE .ne. QTREE_EMPTY) then
 
-          ! Reuse memory of the four quads which have been deleted lately
+          ! Reuse memory of the four nodes which have been deleted lately
           nnode = rquadtree%NFREE
 
-          ! Update pointer to next free quads
+          ! Update pointer to next free nodes
           rquadtree%NFREE = -rquadtree%p_Knode(QTREE_PARENT, nnode)
 
-          ! Decrease starting position of first quad by one
+          ! Decrease starting position of first node by one
           nnode = nnode-1
 
         else
@@ -1989,12 +2005,12 @@ contains
             call resizeNNODE(rquadtree, isize)
           end if
 
-          ! New quads are stored after all existing quads
+          ! New nodes are stored after all existing nodes
           nnode = rquadtree%NNODE
 
         end if
 
-        ! Increase number of quads
+        ! Increase number of nodes
         rquadtree%NNODE = rquadtree%NNODE+QTREE_MAX
 
         ! Compute spatial coordinates of bounding boxes
@@ -2005,35 +2021,35 @@ contains
         xmid = 0.5*(xmin+xmax)
         ymid = 0.5*(ymin+ymax)
 
-        ! NW-quad
+        ! NW-node
         rquadtree%p_Knode(QTREE_STATUS,nnode+QTREE_NW) = QTREE_EMPTY
         rquadtree%p_Knode(QTREE_PARENT,nnode+QTREE_NW) = inode
         rquadtree%p_Knode(QTREE_PARPOS,nnode+QTREE_NW) = QTREE_NW
         rquadtree%p_BdBox(:,nnode+QTREE_NW)            = (/xmin,ymid,xmid,ymax/)
         rquadtree%p_Knode(1:rquadtree%NDATA, nnode+QTREE_NW) = 0
 
-        ! SW-quad
+        ! SW-node
         rquadtree%p_Knode(QTREE_STATUS,nnode+QTREE_SW) = QTREE_EMPTY
         rquadtree%p_Knode(QTREE_PARENT,nnode+QTREE_SW) = inode
         rquadtree%p_Knode(QTREE_PARPOS,nnode+QTREE_SW) = QTREE_SW
         rquadtree%p_BdBox(:,nnode+QTREE_SW)            = (/xmin,ymin,xmid,ymid/)
         rquadtree%p_Knode(1:rquadtree%NDATA, nnode+QTREE_SW) = 0
 
-        ! SE-quad
+        ! SE-node
         rquadtree%p_Knode(QTREE_STATUS,nnode+QTREE_SE) = QTREE_EMPTY
         rquadtree%p_Knode(QTREE_PARENT,nnode+QTREE_SE) = inode
         rquadtree%p_Knode(QTREE_PARPOS,nnode+QTREE_SE) = QTREE_SE
         rquadtree%p_BdBox(:,nnode+QTREE_SE)            = (/xmid,ymin,xmax,ymid/)
         rquadtree%p_Knode(1:rquadtree%NDATA, nnode+QTREE_SE) = 0
 
-        ! NE-quad
+        ! NE-node
         rquadtree%p_Knode(QTREE_STATUS,nnode+QTREE_NE) = QTREE_EMPTY
         rquadtree%p_Knode(QTREE_PARENT,nnode+QTREE_NE) = inode
         rquadtree%p_Knode(QTREE_PARPOS,nnode+QTREE_NE) = QTREE_NE
         rquadtree%p_BdBox(:,nnode+QTREE_NE)            = (/xmid,ymid,xmax,ymax/)
         rquadtree%p_Knode(1:rquadtree%NDATA, nnode+QTREE_NE) = 0
 
-        ! Add the data values from INODE to the four new quads
+        ! Add the data values from INODE to the four new nodes
         do i = 1, rquadtree%ndata
           jvt = rquadtree%p_Knode(i, inode)
           jnode = nnode+qtree_getDirection(rquadtree, rquadtree%p_Data(:,jvt), inode)
@@ -2046,7 +2062,7 @@ contains
           end if
         end do
 
-        ! Mark the current quad as subdivided and set pointers to its four children
+        ! Mark the current node as subdivided and set pointers to its four children
         rquadtree%p_Knode(QTREE_STATUS, inode) =     QTREE_SUBDIV
         rquadtree%p_Knode(1:QTREE_MAX, inode)  = - (/nnode+QTREE_NW, nnode+QTREE_SW,&
                                                     nnode+QTREE_SE, nnode+QTREE_NE/)
@@ -2057,7 +2073,7 @@ contains
 
       elseif (rquadtree%p_Knode(QTREE_STATUS, inode) .ge. QTREE_EMPTY) then
 
-        ! There is still some space in the quad
+        ! There is still some space in the node
         rquadtree%p_Knode(QTREE_STATUS, inode) = rquadtree%p_Knode(QTREE_STATUS, inode)+1
         rquadtree%p_Knode(rquadtree%p_Knode(QTREE_STATUS, inode), inode) = ivt
 
@@ -2080,6 +2096,88 @@ contains
     end function insert
 
   end function
+
+  !************************************************************************
+
+!<subroutine>
+
+  subroutine FEAT2_PP_TEMPLATE_T(qtree_cast,T)(rquadtree, rgenericObject)
+
+!<description>
+    ! This subroutine casts the given quadtree to a generic object.
+!</description>
+
+!<input>
+    ! The quadtree
+    type(FEAT2_PP_TEMPLATE_T(t_quadtree,T)), intent(in), target :: rquadtree
+!</input>
+
+!<output>
+    ! The generic object
+    type(t_genericObject), intent(out) :: rgenericObject
+!</output>
+!</subroutine>
+
+    ! Internal data structure
+    type t_void_ptr
+      type(FEAT2_PP_TEMPLATE_T(t_quadtree,T)), pointer :: p_robj => null()
+    end type t_void_ptr
+    
+    ! Internal variables
+    type(t_void_ptr) :: rptr
+
+    ! Wrap quadtree by void pointer structure
+    rptr%p_robj => rquadtree
+    
+    ! Determine the size of the void pointer structure
+    rgenericObject%isize = size(transfer(rptr, rgenericObject%p_cdata))
+    
+    ! Allocate memory and transfer quadtree to generic object
+    allocate(rgenericObject%p_cdata(rgenericObject%isize))
+    rgenericObject%p_cdata = transfer(rptr, rgenericObject%p_cdata)
+    
+  end subroutine
+
+  !************************************************************************
+
+!<subroutine>
+
+  subroutine FEAT2_PP_TEMPLATE_T(qtree_uncast,T)(rgenericObject, p_rquadtree)
+
+!<description>
+    ! This subroutine casts the given generic object into a quadtree.
+!</description>
+
+!<input>
+    ! The generic object
+    type(t_genericObject), intent(in) :: rgenericObject
+!</input>
+
+!<output>
+    ! The quadtree
+    type(FEAT2_PP_TEMPLATE_T(t_quadtree,T)), pointer :: p_rquadtree
+!</output>
+!</function>
+
+    ! Internal data structure
+    type t_void_ptr
+      type(FEAT2_PP_TEMPLATE_T(t_quadtree,T)), pointer :: p_robj => null()
+    end type
+
+    ! Internal variables
+    type(t_void_ptr) :: rptr
+
+    if ((rgenericObject%isize .eq. 0) .or.&
+        (.not.associated(rgenericObject%p_cdata))) then
+      call output_line('Generic object seems to be empty!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'qtree_uncast')
+      call sys_halt()
+    end if
+
+    rptr = transfer(rgenericObject%p_cdata, rptr)
+    p_rquadtree => rptr%p_robj
+
+  end subroutine
 
   !************************************************************************
 

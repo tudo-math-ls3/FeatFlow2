@@ -92,19 +92,22 @@ module octreebase
 !<constantblock description="Constants for octree operations">
 
   ! Operation on octree failed
-  integer, parameter, public :: OTREE_FAILED    = -2
+  integer, parameter, public :: OTREE_FAILED       = -2
 
   ! Item could not be found in the octree
-  integer, parameter, public :: OTREE_NOT_FOUND = -1
+  integer, parameter, public :: OTREE_NOT_FOUND    = -1
 
   ! Item could be found in the octree
-  integer, parameter, public :: OTREE_FOUND     =  0
+  integer, parameter, public :: OTREE_FOUND        =  0
 
   ! Item was inserted into the octree
-  integer, parameter, public :: OTREE_INSERTED  =  1
+  integer, parameter, public :: OTREE_INSERTED     =  1
 
   ! Item was deleted from the octree
-  integer, parameter, public :: OTREE_DELETED   =  2
+  integer, parameter, public :: OTREE_DELETED      =  2
+
+  ! Item was moved in the quadtree
+  integer, parameter, public :: OTREE_REPOSITIONED =  3
 
 !</constantblock>
 
