@@ -1,7 +1,7 @@
 module exp_sw_schemes
-! Schemata zum Lösen der Shallow Water Equations
+! Schemata zum Loesen der Shallow Water Equations
 	
-	! benutzte Module hinzufügen
+	! benutzte Module hinzufuegen
 	use vartypes
 
 	! Implizite Deklaration ausschalten
@@ -10,12 +10,12 @@ module exp_sw_schemes
 	contains
 	
 	subroutine onedswupwind(U, U0, x, dt, dx, funcF, funcA, funcR, funcRi)
-	! Löst die eindim Shallow Water Equation mit Upwind Scheme
+	! Loest die eindim Shallow Water Equation mit Upwind Scheme
 	
 	!Variablendeklaration
 	implicit none
-	type(t_vectorBlock), intent(inout)		:: U0				! Lösungsvektoren (Achtung, man kann nur die Daten verändern, nicht nblocks)
-	type(t_vectorBlock), intent(inout)		:: U				! Lösungsvektoren
+	type(t_vectorBlock), intent(inout)		:: U0				! Loesungsvektoren (Achtung, man kann nur die Daten veraendern, nicht nblocks)
+	type(t_vectorBlock), intent(inout)		:: U				! Loesungsvektoren
 	real(dp), intent(in)					:: dt, dx
 	real(dp), dimension(:), intent(in)		:: x
 	integer									:: i				! Laufvariable
@@ -58,7 +58,7 @@ module exp_sw_schemes
 	! Hilfsvariable
 	k1 = dt/(2.0d0*dx)
 	
-	! Randwerte übernehmen
+	! Randwerte uebernehmen
 	U%Dvectorblock(1)%datas(1) = U0%Dvectorblock(1)%datas(1)
 	U%Dvectorblock(2)%datas(1) = U0%Dvectorblock(2)%datas(1)
 	U%Dvectorblock(1)%datas(U0%Dvectorblock(1)%neq) = &
@@ -67,7 +67,7 @@ module exp_sw_schemes
 					U0%Dvectorblock(2)%datas(U0%Dvectorblock(2)%neq)
 	
 	
-	! Lösungsschleife um alle inneren Werte zu berechnen
+	! Loesungsschleife um alle inneren Werte zu berechnen
 	do i=2, U0%Dvectorblock(1)%neq-1
 		
 		! Berechne einige Hilfsvariablen
@@ -102,11 +102,11 @@ module exp_sw_schemes
 		tempU1(2) = U0%Dvectorblock(2)%datas(i)
 		
 		
-		! Lösung berechnen
+		! Loesung berechnen
 		tempU2 = tempU1 - k1*(Frechts-Flinks-matmul(Adachrechts,deltaUrechts)+ &
 				matmul(Adachlinks,deltaUlinks))
 		
-		! Lösung abspeichern
+		! Loesung abspeichern
 		U%Dvectorblock(1)%datas(i) = tempU2(1)
 		U%Dvectorblock(2)%datas(i) = tempU2(2)
 		
@@ -125,12 +125,12 @@ module exp_sw_schemes
 	
 	
 	subroutine onedswlaxwendroff(U, U0, x, dt, dx, funcF, funcA, funcR, funcRi)
-	! Löst die eindim Shallow Water Equation mit Lax Wendroff Scheme
+	! Loest die eindim Shallow Water Equation mit Lax Wendroff Scheme
 	
 	!Variablendeklaration
 	implicit none
-	type(t_vectorBlock), intent(inout)		:: U0				! Lösungsvektoren (Achtung, man kann nur die Daten verändern, nicht nblocks)
-	type(t_vectorBlock), intent(inout)		:: U				! Lösungsvektoren
+	type(t_vectorBlock), intent(inout)		:: U0				! Loesungsvektoren (Achtung, man kann nur die Daten veraendern, nicht nblocks)
+	type(t_vectorBlock), intent(inout)		:: U				! Loesungsvektoren
 	real(dp), intent(in)					:: dt, dx
 	real(dp), dimension(:), intent(in)		:: x
 	integer									:: i				! Laufvariable
@@ -175,7 +175,7 @@ module exp_sw_schemes
 	! Hilfsvariable
 	k1 = dt/(dx)
 	
-	! Randwerte übernehmen
+	! Randwerte uebernehmen
 	U%Dvectorblock(1)%datas(1) = U0%Dvectorblock(1)%datas(1)
 	U%Dvectorblock(2)%datas(1) = U0%Dvectorblock(2)%datas(1)
 	U%Dvectorblock(1)%datas(U0%Dvectorblock(1)%neq) = &
@@ -184,7 +184,7 @@ module exp_sw_schemes
 					U0%Dvectorblock(2)%datas(U0%Dvectorblock(2)%neq)
 	
 	
-	! Lösungsschleife um alle inneren Werte zu berechnen
+	! Loesungsschleife um alle inneren Werte zu berechnen
 	do i=2, U0%Dvectorblock(1)%neq-1
 		
 		! Berechne einige Hilfsvariablen
@@ -219,13 +219,13 @@ module exp_sw_schemes
 		tempU1(2) = U0%Dvectorblock(2)%datas(i)
 		
 		
-		! Lösung berechnen
+		! Loesung berechnen
 		tempU2 = tempU1 - k1/2.0d0*(Frechts-Flinks-matmul(Adachrechts,deltaUrechts)+ &		! Der Roe-Upwind Teil
 				matmul(Adachlinks,deltaUlinks)+&
-				( matmul(matmul(Rrechts,matmul((abs(Lambdarechts)-k1*matmul(Lambdarechts,Lambdarechts)),Rirechts)),deltaUrechts)& ! der zusätzliche LW-Teil
+				( matmul(matmul(Rrechts,matmul((abs(Lambdarechts)-k1*matmul(Lambdarechts,Lambdarechts)),Rirechts)),deltaUrechts)& ! der zusaetzliche LW-Teil
 				-matmul(matmul(Rlinks,matmul((abs(Lambdalinks)-k1*matmul(Lambdalinks,Lambdalinks)),Rilinks)),deltaUlinks) ) )
 		
-		! Lösung abspeichern
+		! Loesung abspeichern
 		U%Dvectorblock(1)%datas(i) = tempU2(1)
 		U%Dvectorblock(2)%datas(i) = tempU2(2)
 		
@@ -244,12 +244,12 @@ module exp_sw_schemes
 	
 	
 	subroutine onedswtvd(U, U0, x, dt, dx, funcF, funcA, funcR, funcRi)
-	! Löst die eindim Shallow Water Equation mit TVD Scheme
+	! Loest die eindim Shallow Water Equation mit TVD Scheme
 	
 	! Variablendeklaration
 	implicit none
-	type(t_vectorBlock), intent(inout)		:: U0				! Lösungsvektoren (Achtung, man kann nur die Daten verändern, nicht nblocks)
-	type(t_vectorBlock), intent(inout)		:: U				! Lösungsvektoren
+	type(t_vectorBlock), intent(inout)		:: U0				! Loesungsvektoren (Achtung, man kann nur die Daten veraendern, nicht nblocks)
+	type(t_vectorBlock), intent(inout)		:: U				! Loesungsvektoren
 	real(dp), intent(in)					:: dt, dx
 	real(dp), dimension(:), intent(in)		:: x
 	integer									:: i,j				! Laufvariable
@@ -299,7 +299,7 @@ module exp_sw_schemes
 	! Hilfsvariable
 	k1 = dt/(dx)
 	
-	! Randwerte übernehmen
+	! Randwerte uebernehmen
 	U%Dvectorblock(1)%datas(1) = U0%Dvectorblock(1)%datas(1)
 	U%Dvectorblock(2)%datas(1) = U0%Dvectorblock(2)%datas(1)
 	U%Dvectorblock(1)%datas(U0%Dvectorblock(1)%neq) = &
@@ -314,7 +314,7 @@ module exp_sw_schemes
 					U0%Dvectorblock(2)%datas(U0%Dvectorblock(2)%neq-1)
 	
 	
-	! Lösungsschleife um alle inneren Werte zu berechnen
+	! Loesungsschleife um alle inneren Werte zu berechnen
 	do i=3, U0%Dvectorblock(1)%neq-2
 		
 		! Berechne einige Hilfsvariablen
@@ -345,7 +345,7 @@ module exp_sw_schemes
 		call funcF(Frechts,U0%Dvectorblock(1)%datas(i+1),U0%Dvectorblock(2)%datas(i+1))
 		call funcF(Flinks,U0%Dvectorblock(1)%datas(i-1),U0%Dvectorblock(2)%datas(i-1))
 		
-		! für tvd
+		! fuer tvd
 		
 		deltaWrechts = matmul(Rirechts,deltaUrechts)
 		deltaWlinks  = matmul(Rilinks ,deltaUlinks )
@@ -406,13 +406,13 @@ module exp_sw_schemes
 		tempU1(2) = U0%Dvectorblock(2)%datas(i)
 		
 		
-		! Lösung berechnen
+		! Loesung berechnen
 		tempU2 = tempU1 - k1/2.0d0*(Frechts-Flinks-matmul(Adachrechts,deltaUrechts)+ &									! Der Roe-Upwind Teil
 				matmul(Adachlinks,deltaUlinks)+&
-				( matmul(matmul(Rrechts,(abs(Lambdarechts)-k1*matmul(Lambdarechts,Lambdarechts))),deltaWdachrechts)&	! der zusätzliche LW-Teil
+				( matmul(matmul(Rrechts,(abs(Lambdarechts)-k1*matmul(Lambdarechts,Lambdarechts))),deltaWdachrechts)&	! der zusaetzliche LW-Teil
 				 -matmul(matmul(Rlinks ,(abs(Lambdalinks )-k1*matmul(Lambdalinks ,Lambdalinks ))),deltaWdachlinks) ) )	! inklusive Limiter in deltaWdach
 		
-		! Lösung abspeichern
+		! Loesung abspeichern
 		U%Dvectorblock(1)%datas(i) = tempU2(1)
 		U%Dvectorblock(2)%datas(i) = tempU2(2)
 		
@@ -424,7 +424,7 @@ module exp_sw_schemes
 	! Limiter Funktion
 	real(dp) function limiterfunc(z,n)
 		implicit none
-		real(dp), intent(in)		:: z, n				! Zähler und Nenner des Slope Ratios
+		real(dp), intent(in)		:: z, n				! Zaehler und Nenner des Slope Ratios
 		integer, parameter			:: limiter = 4		! Wahl des Limiters (1 = Minmod, 4 = Superbee)
 		real(dp)					:: r				! Slope Ratio
 
@@ -449,7 +449,7 @@ module exp_sw_schemes
 	
     real(dp) function limiterfunc2(z,n)
     	implicit none
-		real(dp), intent(in)		:: z, n				! Zähler und Nenner des Slope Ratios
+		real(dp), intent(in)		:: z, n				! Zaehler und Nenner des Slope Ratios
 		integer, parameter			:: limiter = 4		! Wahl des Limiters (1 = Minmod, 4 = Superbee)
 		real(dp)					:: h1				! Hilfsvariable
 		

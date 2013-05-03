@@ -540,7 +540,7 @@ contains
     type(t_vectorBlock), pointer :: p_rrhs,p_rvector
     type(t_vectorBlock), target :: rtempBlock
     
-    ! Später wieder löschen
+    ! Spaeter wieder loeschen
     type(t_vectorBlock) :: rvectorCoarse, rrhsCoarse, rtempCoarse
     character(LEN=SYS_STRLEN) :: sofile
     type(t_linearForm) :: rlinformIC

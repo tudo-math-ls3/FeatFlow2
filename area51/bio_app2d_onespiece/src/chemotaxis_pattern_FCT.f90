@@ -1991,7 +1991,7 @@ module chemotaxis_pattern_FCT
     !!!!!   begin of chemo_fct_lim subroutine  !!!!!
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! Here we set up the antidiffusive fluxes as well as the diff.limiters
-    ! This routine should follow the ideas of D.Kuzmins and M.M�lers "Algebraic Flux Correction I. Scalar Conservation Laws", March 2004
+    ! This routine should follow the ideas of D.Kuzmin's and M.Moeller's "Algebraic Flux Correction I. Scalar Conservation Laws", March 2004
     subroutine chemo_fct_lim ( rdiscretisation, rvector, kedge, dedge, nedge, aedge_mass,&
                                 rlumpedmatrix, rlaplace, rK, dtstep, rtriangulation)
 

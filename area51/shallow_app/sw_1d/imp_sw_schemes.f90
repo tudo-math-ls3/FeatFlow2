@@ -7,15 +7,15 @@ use vartypes
 	contains
 	
 	subroutine imp_onedswupwind(U, U0, x, dt, dx, theta, scheme, funcF, funcA, funcR, funcRi)
-	! Löst die eindim Shallow Water Equation mit implizitem Upwind Scheme
+	! Loest die eindim Shallow Water Equation mit implizitem Upwind Scheme
 	
 	!Variablendeklaration
 	implicit none
 	type(t_vectorBlock), intent(in)			:: U0				! Startwerte
-	type(t_vectorBlock), intent(inout)		:: U				! Lösungsvektoren
+	type(t_vectorBlock), intent(inout)		:: U				! Loesungsvektoren
 	real(dp), intent(in)					:: dt, dx			! delta x und delta t
 	real(dp), dimension(:), intent(in)		:: x				! Ortsgitter
-	integer, intent(in)						:: scheme			! wählt das Schema: 0: Upwind, 1: TVD
+	integer, intent(in)						:: scheme			! waehlt das Schema: 0: Upwind, 1: TVD
 	integer									:: xdim				! Dimension des Problems
 	integer									:: i				! Laufvariable
 	real(dp), intent(in)					:: theta			! theta = 0:explizit, =1/2:crank nicolson, =1:implizit
@@ -31,13 +31,13 @@ use vartypes
 	type(t_blockMatrixTridiag)				:: koeff_A			! Koeffizientenmatrix
 	real(dp), dimension(2,2)				:: C, D, E			! Hilfsmatrizen zur Berechnung von koeff_A
 	real(dp), dimension(2,2)				:: Eye				! Einheitsmatrix
-	integer									:: iter				! Für die Defekt-Korrektur
+	integer									:: iter				! Fuer die Defekt-Korrektur
 	integer, parameter						:: itemin=10,itemax=100
 	real(dp), parameter						:: tol=1d-8, eps=1d-14
 	type(t_vectorBlock)						:: residuum, deltaU
 	type(t_vectorScalar)					:: tempvec1, tempvec2
 	real(dp)								:: dUnorm, Unorm, resnorm	! Norm des Residuums + Norm von (delta)U
-	real(dp), dimension(2)					:: tempdeltaW, tempdeltaU				! für TVD
+	real(dp), dimension(2)					:: tempdeltaW, tempdeltaU				! fuer TVD
 	real(dp), dimension(2)					:: deltaWdachrechts, deltaWdachlinks
 	real(dp), dimension(2)					:: deltaWrechts, deltaWlinks
 	real(dp), dimension(2,2)				:: Rrechts, Rlinks, Rirechts, Rilinks
@@ -76,9 +76,9 @@ use vartypes
 	
 	
 	! Hilfsvariablen
-	k1 = (1-theta)*dt/(2.0d0*dx)									! für den expliziten Teil (rechte Seite)
-	k2 = theta*dt/(2.0d0*dx)										! für den impliziten Teil (linke Seite)
-	k3 = dt/dx														! für TVD
+	k1 = (1-theta)*dt/(2.0d0*dx)									! fuer den expliziten Teil (rechte Seite)
+	k2 = theta*dt/(2.0d0*dx)										! fuer den impliziten Teil (linke Seite)
+	k3 = dt/dx														! fuer TVD
 	Eye = reshape( (/1.0d0, 0.0d0, 0.0d0, 1.0d0/), (/2, 2/) )		! Einheitsmatrix
 	xdim = U0%Dvectorblock(1)%neq									! Dimension des Problems
 	
@@ -110,7 +110,7 @@ use vartypes
 	
 	
 	
-	! Jetzt löse mit Defektkorrektur
+	! Jetzt loese mit Defektkorrektur
 	iter=0
 	defect_iter: do
 		! neue Koeffizientenmatrix berechnen
@@ -120,7 +120,7 @@ use vartypes
 		call create_Residuum
 		
 		
-		! Löse das Gleichungssystem für deltaU
+		! Loese das Gleichungssystem fuer deltaU
 		call linSolvThomas(koeff_A%trimat(1),residuum%DvectorBlock(1),deltaU%DvectorBlock(1))
 		call linSolvThomas(koeff_A%trimat(2),residuum%DvectorBlock(2),deltaU%DvectorBlock(2))
 		
@@ -167,7 +167,7 @@ use vartypes
 		
 		if (scheme==0) then		! Upwind
 		
-		! Einträge für die Randwerte
+		! Eintraege fuer die Randwerte
 		right_B%Dvectorblock(1)%datas(1) = U0%Dvectorblock(1)%datas(1)
 		right_B%Dvectorblock(2)%datas(1) = U0%Dvectorblock(2)%datas(1)
 		right_B%Dvectorblock(1)%datas(U0%Dvectorblock(1)%neq) = &
@@ -176,7 +176,7 @@ use vartypes
 						U0%Dvectorblock(2)%datas(U0%Dvectorblock(2)%neq)
 						
 	
-		! Die inneren Einträge der rechten Seite berechnen
+		! Die inneren Eintraege der rechten Seite berechnen
 		do i=2, U0%Dvectorblock(1)%neq-1
 		
 			! Berechne einige Hilfsvariablen
@@ -225,7 +225,7 @@ use vartypes
 		
 		else		! TVD
 			
-		! Einträge für die Randwerte
+		! Eintraege fuer die Randwerte
 		right_B%Dvectorblock(1)%datas(1) = U0%Dvectorblock(1)%datas(1)
 		right_B%Dvectorblock(1)%datas(2) = U0%Dvectorblock(1)%datas(2)
 		right_B%Dvectorblock(2)%datas(1) = U0%Dvectorblock(2)%datas(1)
@@ -241,7 +241,7 @@ use vartypes
 						U0%Dvectorblock(2)%datas(U0%Dvectorblock(2)%neq-1)
 	
 	
-		! Lösungsschleife um alle inneren Werte zu berechnen
+		! Loesungsschleife um alle inneren Werte zu berechnen
 		do i=3, U0%Dvectorblock(1)%neq-2
 		
 			! Berechne einige Hilfsvariablen
@@ -272,7 +272,7 @@ use vartypes
 			call funcF(Frechts,U0%Dvectorblock(1)%datas(i+1),U0%Dvectorblock(2)%datas(i+1))
 			call funcF(Flinks,U0%Dvectorblock(1)%datas(i-1),U0%Dvectorblock(2)%datas(i-1))
 		
-			! für tvd
+			! fuer tvd
 		
 			deltaWrechts = matmul(Rirechts,deltaUrechts)
 			deltaWlinks  = matmul(Rilinks ,deltaUlinks )
@@ -336,10 +336,10 @@ use vartypes
 			! rechte Seite berechnen
 			tempB = tempU1 - k1*(Frechts-Flinks-matmul(bAdachrechts,deltaUrechts)+ &									! Der Roe-Upwind Teil
 					matmul(bAdachlinks,deltaUlinks)+&
-					!										  -k3*matmul(Lambdarechts,Lambdarechts)   würde noch bei expl. TVD da stehen
-					( matmul(matmul(Rrechts,(abs(Lambdarechts)                                      )),deltaWdachrechts)&		! der zusätzliche LW-Teil
+					!										  -k3*matmul(Lambdarechts,Lambdarechts)   wuerde noch bei expl. TVD da stehen
+					( matmul(matmul(Rrechts,(abs(Lambdarechts)                                      )),deltaWdachrechts)&		! der zusaetzliche LW-Teil
 					 -matmul(matmul(Rlinks ,(abs(Lambdalinks )                                      )),deltaWdachlinks) ) )	! inklusive Limiter in deltaWdach
-					 !										  -k3*matmul(Lambdalinks ,Lambdalinks )   würde noch bei expl. TVD da stehen
+					 !										  -k3*matmul(Lambdalinks ,Lambdalinks )   wuerde noch bei expl. TVD da stehen
 		
 			! rechte Seite abspeichern
 			right_B%Dvectorblock(1)%datas(i) = tempB(1)
@@ -355,8 +355,8 @@ use vartypes
 	implicit none
 	integer					:: i	! Laufvariable
 	
-	! Zuerst schreibe die Einträge für die Randwerte
-	! für die Hauptdiagonalmatrizen
+	! Zuerst schreibe die Eintraege fuer die Randwerte
+	! fuer die Hauptdiagonalmatrizen
 	koeff_A%trimat(1)%main%datas(1)=1.0d0
 	koeff_A%trimat(2)%main%datas(1)=1.0d0
 	koeff_A%trimat(1)%main%datas(xdim)=1.0d0
@@ -365,7 +365,7 @@ use vartypes
 	koeff_A%trimat(2)%upper%datas(1)=0.0d0
 	koeff_A%trimat(1)%lower%datas(xdim-1)=0.0d0
 	koeff_A%trimat(2)%lower%datas(xdim-1)=0.0d0
-	! für die Nebendiagonalmatrizen
+	! fuer die Nebendiagonalmatrizen
 	koeff_A%trimat(3)%main%datas(1)=0.0d0
 	koeff_A%trimat(4)%main%datas(1)=0.0d0
 	koeff_A%trimat(3)%main%datas(xdim)=0.0d0
@@ -376,7 +376,7 @@ use vartypes
 	koeff_A%trimat(4)%lower%datas(xdim-1)=0.0d0
 		
 			
-	! Nun berechne die inneren Einträge
+	! Nun berechne die inneren Eintraege
 	do i=2, xdim-1
 		
 			! Berechne einige Hilfsvariablen
@@ -423,7 +423,7 @@ use vartypes
 			koeff_A%trimat(4)%upper%datas(i)   = E(2,1)
 			koeff_A%trimat(3)%lower%datas(i-1) = C(1,2)			! untere Diagonale
 			koeff_A%trimat(4)%lower%datas(i-1) = C(2,1)
-			! die Matrix-Blöcke sind jetzt wie folgt angeordnet:	koeff_A%trimat(1) koeff_A%trimat(3)
+			! die Matrix-Bloecke sind jetzt wie folgt angeordnet:	koeff_A%trimat(1) koeff_A%trimat(3)
 			!														koeff_A%trimat(4) koeff_A%trimat(2)
 	
 		end do
@@ -432,10 +432,10 @@ use vartypes
 	
 	
 	
-	! Limiter Funktion für TVD
+	! Limiter Funktion fuer TVD
 	real(dp) function limiterfunc2(z,n)
     	implicit none
-		real(dp), intent(in)		:: z, n				! Zähler und Nenner des Slope Ratios
+		real(dp), intent(in)		:: z, n				! Zaehler und Nenner des Slope Ratios
 		integer, parameter			:: limiter = 3		! Wahl des Limiters (1 = Minmod, 4 = Superbee)
 		real(dp)					:: h1				! Hilfsvariable
 		
@@ -473,7 +473,7 @@ use vartypes
 		residuum%DvectorBlock(2)%datas = right_B%DvectorBlock(2)%datas - tempvec1%datas - tempvec2%datas
 		
 	else							! TVD-Residuum
-		! Zuerst übernehme die Einträge für die Randwerte
+		! Zuerst uebernehme die Eintraege fuer die Randwerte
 		residuum%DvectorBlock(1)%datas(1) = 0
 		residuum%DvectorBlock(2)%datas(1) = 0
 		residuum%DvectorBlock(1)%datas(2) = 0
@@ -515,7 +515,7 @@ use vartypes
 			call funcF(Frechts,U%Dvectorblock(1)%datas(i+1),U%Dvectorblock(2)%datas(i+1))
 			call funcF(Flinks,U%Dvectorblock(1)%datas(i-1),U%Dvectorblock(2)%datas(i-1))
 		
-			! für tvd
+			! fuer tvd
 		
 			deltaWrechts = matmul(Rirechts,deltaUrechts)
 			deltaWlinks  = matmul(Rilinks ,deltaUlinks )
@@ -579,10 +579,10 @@ use vartypes
 			! berechne, was von der rechten Seite abgezogen werden muss
 			tempB = tempU1 + k2*(Frechts-Flinks-matmul(bAdachrechts,deltaUrechts)+ &									! Der Roe-Upwind Teil
 					matmul(bAdachlinks,deltaUlinks)+&
-					!										  -k3*matmul(Lambdarechts,Lambdarechts)   würde noch bei expl. TVD da stehen
-					( matmul(matmul(Rrechts,(abs(Lambdarechts)                                      )),deltaWdachrechts)&		! der zusätzliche LW-Teil
+					!										  -k3*matmul(Lambdarechts,Lambdarechts)   wuerde noch bei expl. TVD da stehen
+					( matmul(matmul(Rrechts,(abs(Lambdarechts)                                      )),deltaWdachrechts)&		! der zusaetzliche LW-Teil
 					 -matmul(matmul(Rlinks ,(abs(Lambdalinks )                                      )),deltaWdachlinks) ) )	! inklusive Limiter in deltaWdach
-					 !										  -k3*matmul(Lambdalinks ,Lambdalinks )   würde noch bei expl. TVD da stehen
+					 !										  -k3*matmul(Lambdalinks ,Lambdalinks )   wuerde noch bei expl. TVD da stehen
 		
 			! Residuum berechnen und abspeichern
 			residuum%DvectorBlock(1)%datas(i) = right_B%DvectorBlock(1)%datas(i)-tempB(1)

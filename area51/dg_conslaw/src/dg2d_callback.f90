@@ -2003,7 +2003,7 @@ contains
              !            ! Steady state
              !            Dcoefficients (1,ipoint,iel)=1.0_dp
 
-             ! Gauss-Hügel
+             ! Gauss-Huegel
              !Dcoefficients (1,ipoint,iel) = 0.1_dp*&
              !         exp(-5.0_dp*(Dpoints(1,ipoint,iel)**2+Dpoints(2,ipoint,iel)**2))
 

@@ -2521,8 +2521,8 @@ contains
 
 end module
 
-! Tests: Den L2-Fehler zur echten Lösung bei verschiedenen Konfigurationen.
+! Tests: Den L2-Fehler zur echten Loesung bei verschiedenen Konfigurationen.
 ! |u| berechnen, J() berechnen.
-! Konvergenzverlauf aufzeichnen für DefCorr/Newton bei versch. Konfigurationen.
-! -> Mit/Ohne Beschränkung der Kontrolle.
+! Konvergenzverlauf aufzeichnen fuer DefCorr/Newton bei versch. Konfigurationen.
+! -> Mit/Ohne Beschraenkung der Kontrolle.
 

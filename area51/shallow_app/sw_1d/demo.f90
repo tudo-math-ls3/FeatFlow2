@@ -36,7 +36,7 @@ program demo
   h_i = Q%Rvector(1)%data(i)
 
 
-  ! Aufräumen
+  ! Aufraeumen
   deallocate(Q%RvectorBlock(1)%data)
   deallocate(Q%RvectorBlock(2)%data)
   deallocate(Q%RvectorBlock)

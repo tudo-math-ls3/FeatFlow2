@@ -601,7 +601,7 @@ contains
     
     deallocate(Dnorms)
     
-    !vergleich mit dem optc-Code: Ab der 2. Defektkomponente stimmt der Defekt nicht mehr überein
+    !vergleich mit dem optc-Code: Ab der 2. Defektkomponente stimmt der Defekt nicht mehr ueberein
     
     call lsysbl_releaseVector (rspacetemp)
     

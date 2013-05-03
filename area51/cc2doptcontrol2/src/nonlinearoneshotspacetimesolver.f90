@@ -3052,7 +3052,7 @@ contains
 !
 !    subroutine calcresidual (rproblem,rspaceTimeDiscr,dalpha,rx,rb,rd,rF,rtemp)
 !
-!    ! With u=rx+alpha rd, this calculates the residuaö
+!    ! With u=rx+alpha rd, this calculates the residual
 !    !    res(alpha) := -Laplace(u) + ... - RHS
 !    ! of the Navier--Stokes equation.
 !

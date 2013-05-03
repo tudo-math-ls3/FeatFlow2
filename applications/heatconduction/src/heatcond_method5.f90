@@ -247,7 +247,7 @@ contains
     ! Call the timeloop to solve the problem
     call hc5_timeloop (rproblem,rvector,rrhs)
     
-    ! Release the solver, we donÄt need it anymore
+    ! Release the solver, we don't need it anymore
     call hc5_doneSolver (rproblem)
     
     ! Cleanup

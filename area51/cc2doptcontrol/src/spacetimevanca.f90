@@ -770,7 +770,7 @@ contains
         
         
         ! DEBUG!!!
-        ! globalen Defekt bilden, UMFPACK anwerfen und Lösung draufaddieren.
+        ! globalen Defekt bilden, UMFPACK anwerfen und Loesung draufaddieren.
         ! Sollte je nach Einstellung einem globalen UMFPACK oder einem
         ! UMFPACK in jd. Zeitschritt entsprechen.
         !...

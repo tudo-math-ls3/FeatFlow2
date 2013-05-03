@@ -2345,7 +2345,7 @@ contains
         call smva_disableSubmatrix (rnonlinearSpatialMatrix,1,2)
         call smva_disableSubmatrix (rnonlinearSpatialMatrix,2,1)
       end select
-      !<- letzte änderung!
+      !<- letzte aenderung!
     
       ! Assemble the matrix.
       ! If we are on a lower level, we can specify a 'fine-grid' matrix.

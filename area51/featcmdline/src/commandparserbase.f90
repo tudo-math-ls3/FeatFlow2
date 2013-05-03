@@ -333,7 +333,7 @@ contains
     ! =1: split on expression boundaries (expression characters
     !     like brackets are separate words).
     ! =2: split on parameter boundaries (command line version)
-    ! =3: spöit on parameter boundaries (sourcecode version)
+    ! =3: spoeit on parameter boundaries (sourcecode version)
     integer :: icharset
 
     ! Determins whether to de-quote substrings or not.

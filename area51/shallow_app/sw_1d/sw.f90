@@ -2,7 +2,7 @@
 
 program shallow_water_prog
 
-	! benutzte Module hinzufügen
+	! benutzte Module hinzufuegen
 	use vartypes
 	use exp_sw_schemes
 	use imp_sw_schemes
@@ -16,10 +16,10 @@ program shallow_water_prog
 	integer, parameter			:: nx = 10001			! Anzahl der x-Gitterpunkte
 	integer						:: animate			! =1: alle Zeitschritte schreiben, =0: nur den letzten
 	real(dp)					:: rightx			! rechtes x
-	integer, parameter			:: numsolv = 2		! Anzahl der Lösungsvariablen
+	integer, parameter			:: numsolv = 2		! Anzahl der Loesungsvariablen
 	real(dp)					:: tfinal			! Endzeit
-	real(dp)					:: time				! Für die Zeitschleife
-	type(t_vectorBlock)			:: U, U0			! Lösungsvektoren
+	real(dp)					:: time				! Fuer die Zeitschleife
+	type(t_vectorBlock)			:: U, U0			! Loesungsvektoren
 	real(dp), dimension(nx)		:: x				! Ortsvektor
 	real(dp)					:: dx, dt			! Schrittweiten
 	real(dp)					:: time0, time1		! Zur Zeitmessung
@@ -27,7 +27,7 @@ program shallow_water_prog
 	integer						:: i,j				! Laufvariablen
 	type(t_vectorBlock)			:: tmpU				! Zum Tauschen von U und U0
 	
-	! Speicher reservieren für U und U0
+	! Speicher reservieren fuer U und U0
 	call make_vectorBlock(U, numsolv,nx)
 	call make_vectorBlock(U0,numsolv,nx)
 	
@@ -46,8 +46,8 @@ program shallow_water_prog
 	end forall
 	
 	
-	! Lösungsvektor initialisieren
-	! Höhe h initialisieren
+	! Loesungsvektor initialisieren
+	! Hoehe h initialisieren
 	U0%DvectorBlock(1)%datas = 1.0d0
 	where (abs(x)<2.5)
 		!U0%DvectorBlock(1)%datas = 1.d0+0.4*exp(-5*(x-5.0d0)**2.0d0)
@@ -60,7 +60,7 @@ program shallow_water_prog
 	end where
 	
 	
-	! Dateien öffnen
+	! Dateien oeffnen
 	open(10,file='out.dat')
 	open(11,file='parameter.dat')
 	write(11,*) nx
@@ -81,7 +81,7 @@ program shallow_water_prog
 	call cpu_time(time0)
 	
 	
-	! Lösungsschleife
+	! Loesungsschleife
 	time = 0.0d0
  	timestepping: do
 		time = time + dt
@@ -89,12 +89,12 @@ program shallow_water_prog
 
         write(*,*) "Momentane Zeit:",time
 
-		! Löser aufrufen
+		! Loeser aufrufen
 		call onedswtvd(U, U0, x, dt, dx, swF, swA, swR, swRi)
 		!call imp_onedswupwind(U, U0, x, dt, dx, 0.5d0, 1, swF, swA, swR, swRi)
 		
 		
-		! Quellterm einfügen
+		! Quellterm einfuegen
 		do i=2,nx-1
 		rcoeff = x(i)
 		if (rcoeff < 1d-8) then
@@ -130,7 +130,7 @@ program shallow_water_prog
 	
 	
 	
-	! Ausgabe des Lösungsvektors
+	! Ausgabe des Loesungsvektors
     do i=1,nx
        write(10,FMT='(E15.6E3,1X,E15.6E3,1X,E15.6E3)') x(i),&
             U0%Dvectorblock(1)%datas(i),&
@@ -138,7 +138,7 @@ program shallow_water_prog
     end do
     
         
-	! Ausgabe der benötigten Zeit
+	! Ausgabe der benoetigten Zeit
 	call cpu_time(time1)
 	write(*,*) 'Benoetigte Zeit:', time1-time0,'Sekunden.'
 	

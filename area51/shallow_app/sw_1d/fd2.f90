@@ -25,12 +25,12 @@ contains
     ! Hilfsvariable
     k1 = a*dt/dx
 
-    ! Berechne den Lösungsvektor für alle außer dem linken x (parallel)
+    ! Berechne den Loesungsvektor fuer alle außer dem linken x (parallel)
     forall(i=lbound(u0,1)+1:ubound(u0,1))
        u(i) = u0(i)-k1*(u0(i)-u0(i-1))
     end forall
 
-    ! Berechne den Lösungswert für das linke x
+    ! Berechne den Loesungswert fuer das linke x
     u(lbound(u0,1)) = u0(lbound(u0,1))+k1*u0(lbound(u0,1))
 
   end subroutine forward
@@ -40,18 +40,18 @@ contains
 
   ! ***** generalisierter Upwind und Lax-Wendroff *****
   subroutine gul(u0, u, x, dt, dx, funcf, funcfstrich, alg)
-	! Löst:
+	! Loest:
 	! d/dt u + d/dx f(u) = 0
 	! u(x,0) = u0(x)
 
 	! Eingabeparameter:
 	! u0            Startwert-Vektor (Zeilenvektor)
 	! x		Ortsdiskretisierung (Zeilenvektor)
-	! dt            Länge des Zeitschritts
+	! dt            Laenge des Zeitschritts
 	! dx            Schrittweite des Ortsgitters
 	! funcf         Funktionhandle auf die Funktion f(u)
 	! funcfstrich   Funktionhandle auf die Funktion f'(u)
-	! alg           wählt den zu verwendenden Algorithmus
+	! alg           waehlt den zu verwendenden Algorithmus
 	!               0: generalisierter Upwind
 	!               1: generalisierter Lax Wendroff
 
@@ -72,7 +72,7 @@ contains
     	end function funcfstrich
 	end interface
 
-	! Lösungsvektor: Randbedingung
+	! Loesungsvektor: Randbedingung
 	u(lbound(u0,1)) = u0(lbound(u0,1))
 	u(ubound(u0,1)) = u0(ubound(u0,1))
 
@@ -88,8 +88,8 @@ contains
 
   contains
 
-  ! Hilfsfunktionen für gul
-  ! flux-function f_{i+1/2}  =f^L für alpha = 0, f^H für alpha = 1
+  ! Hilfsfunktionen fuer gul
+  ! flux-function f_{i+1/2}  =f^L fuer alpha = 0, f^H fuer alpha = 1
     double precision function fl(i)
 	double precision	:: k2, tempa
 	integer, intent(in) 	:: i
@@ -116,18 +116,18 @@ contains
 
   ! ***** generalisierter Upwind und Lax-Wendroff *****
   subroutine gtvd(u0, u, x, dt, dx, funcf, funcfstrich, limiter)
-	! Löst:
+	! Loest:
 	! d/dt u + d/dx f(u) = 0
 	! u(x,0) = u0(x)
 
 	! Eingabeparameter:
 	! u0            Startwert-Vektor (Zeilenvektor)
 	! x		Ortsdiskretisierung (Zeilenvektor)
-	! dt            Länge des Zeitschritts
+	! dt            Laenge des Zeitschritts
 	! dx            Schrittweite des Ortsgitters
 	! funcf         Funktionhandle auf die Funktion f(u)
 	! funcfstrich   Funktionhandle auf die Funktion f'(u)
-	! limiter	wählt den zu verwendenden Limiter (1=minmod, 2=mc, 3=vl, 4=superbee)
+	! limiter	waehlt den zu verwendenden Limiter (1=minmod, 2=mc, 3=vl, 4=superbee)
 
 	double precision, intent(in)				:: dx, dt
 	double precision, dimension(:), intent(out)		:: u
@@ -147,7 +147,7 @@ contains
     	end function funcfstrich
 	end interface
 
-	! Lösungsvektor: Randbedingungen
+	! Loesungsvektor: Randbedingungen
 	u(lbound(u0,1)) = u0(lbound(u0,1))
 	u(lbound(u0,1)+1) = u0(lbound(u0,1)+1)
 	u(ubound(u0,1)) = u0(ubound(u0,1))
@@ -163,8 +163,8 @@ contains
 
   contains
 
-  ! Hilfsfunktionen für gtvd
-  ! flux-function f_{i+1/2}  =f^L für alpha = 0, f^H für alpha = 1 (alpha = erg. des limiters)
+  ! Hilfsfunktionen fuer gtvd
+  ! flux-function f_{i+1/2}  =f^L fuer alpha = 0, f^H fuer alpha = 1 (alpha = erg. des limiters)
     double precision function fl(i)
 	double precision	:: k2, tempa
 	integer, intent(in) 	:: i
@@ -272,11 +272,11 @@ program finite_differences
   double precision, parameter			:: tfinal = 0.4		! Endzeit
   double precision				:: a, dx, dt, time
   double precision				:: time0, time1		! Zur Zeitmessung
-  double precision, dimension(1:n)		:: u0 ,u ,x		! Startvektor, Lösungsvektor, Gittervektor
+  double precision, dimension(1:n)		:: u0 ,u ,x		! Startvektor, Loesungsvektor, Gittervektor
   integer					:: i			! Laufvariable
 
   ! Parameter initialisieren
-  a = 1.0				! Welleneschwindigkeit (für die linear advection equation)
+  a = 1.0				! Welleneschwindigkeit (fuer die linear advection equation)
   dx = 1.0d0/(n-1)			! dx
   dt = 0.001d0				! dt
 
@@ -291,13 +291,13 @@ program finite_differences
      u0 = 1
   end where
 
-  ! Datei öffnen
+  ! Datei oeffnen
   open(10,file='ausgabe.dat')
 
   ! Startvektor in Datei schreiben
   write(10,*) u0
 
-  ! Zeitschritte ausführen und Ergebnis in Datei schreiben
+  ! Zeitschritte ausfuehren und Ergebnis in Datei schreiben
   ! mit Zeitmessung
   call cpu_time(time0)
   time = 0.0

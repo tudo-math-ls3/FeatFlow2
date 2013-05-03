@@ -34,9 +34,9 @@ module dg2d_routines
   use pprocerror
   use genoutput
   use mprimitives
-  
+
   use perfconfig
-  
+
   use linearsystemblock
   use linearsystemscalar
 
@@ -1546,20 +1546,20 @@ contains
     deallocate(dnodeValues)
 
   end subroutine dg2vtk
-  
+
     ! ***************************************************************************
 
 !<subroutine>
   subroutine dg_writeMatrix (rmatrix)!, sfile)
-  
-  
-    use globalsystem  
+
+
+    use globalsystem
   !<description>
     ! This routine writes a block matrix into three text file.
     ! It is wirtten in format 9 (sparse).
     ! Note that for this purpose, a new matrix is temporarily created in memory!
     ! Can be loaded in matlab by
-    
+
 !    load data.txt
 !    load kcol.txt
 !    load kld.txt
@@ -1576,15 +1576,15 @@ contains
 
 
   !</description>
-    
+
   !<input>
     ! The matrix to be written out
     type(t_matrixBlock), intent(in) :: rmatrix
-    
+
     ! Name of the file where to write to. Only relevant for ifile=0!
     !character(len=*), intent(in) :: sfile
   !</input>
-    
+
 !</subroutine>
 
 
@@ -1597,7 +1597,7 @@ contains
 
     ! We have to create a global matrix first!
     call glsys_assembleGlobal (rmatrix,rtempMatrix,.true.,.true.)
-                    
+
 
     ! Write Kld
     iunit = sys_getFreeUnit()
@@ -1607,7 +1607,7 @@ contains
       write(iunit,'(I10)') p_I(i)
     end do
     close(iunit)
-    
+
     ! Write Kcol
     iunit = sys_getFreeUnit()
     open(iunit, file='kcol.txt')
@@ -1616,8 +1616,8 @@ contains
       write(iunit,'(I10)') p_I(i)
     end do
     close(iunit)
-    
-    
+
+
     ! Write Data
     iunit = sys_getFreeUnit()
     open(iunit, file='data.txt')
@@ -2853,12 +2853,12 @@ contains
             maxval(p_DvertexCoords(2,p_IverticesAtElement(1:ncorners,iel))) - &
             minval(p_DvertexCoords(2,p_IverticesAtElement(1:ncorners,iel)))
     end do
-    
-    
-    
-    
+
+
+
+
     ! *** Calculate the upwind located neighbous to one element ***
-     
+
     ! Get pointer to element neighbours
     call storage_getbase_int2D(rtriangulation%h_IneighboursAtElement,&
                                   p_IneighboursAtElement)
@@ -2866,30 +2866,30 @@ contains
     ! Allocate space for upwind information
     allocate(raddTriaData%p_IupwindNeighbours(size(p_IneighboursAtElement,1),&
                                               size(p_IneighboursAtElement,2)))
-    
+
     ! Loop over all elements
     do iel = 1, size(p_IneighboursAtElement,2)
-    
+
       ! Loop over all neighbours
       do ineigh = 1, size(p_IneighboursAtElement,1)
-        
+
         ! Get edge
         iedge = p_IedgesAtElement(ineigh,iel)
-        
+
         ! Get midpoint of edge
         dxm=0.5_dp*(p_DvertexCoords(1,p_IverticesAtEdge(1,iedge))+&
                     p_DvertexCoords(1,p_IverticesAtEdge(2,iedge)))
         dym=0.5_dp*(p_DvertexCoords(2,p_IverticesAtEdge(1,iedge))+&
                     p_DvertexCoords(2,p_IverticesAtEdge(2,iedge)))
-        
+
         ! Calculate velocity
         dv(1) = 1.0_dp
         dv(2) = 1.0_dp
-        
+
         ! Calculate normal*velocity
         dvn = dv(1)*raddTriaData%p_Dnormals(1,iedge) &
             + dv(2)*raddTriaData%p_Dnormals(2,iedge)
-        
+
         ! Test if up-/downwind
         if (dvn<0.0_dp) then
           ! If neighbour is located upwind
@@ -2898,17 +2898,17 @@ contains
           ! If neighbour is located downwind
           raddTriaData%p_IupwindNeighbours(ineigh,iel)=0
         end if
-        
+
         ! Test if we are at a boundary
         if (iedge.eq.0) then
           ! We  are on the boundary and the neighbour element does not exist
           raddTriaData%p_IupwindNeighbours(ineigh,iel)=0
         end if
-      
+
       end do !ineigh
-    
+
     end do !iel
-     
+
   end subroutine addTriaData
 
 
@@ -2947,7 +2947,7 @@ contains
 
     ! Deallocate dx and dy
     deallocate(raddTriaData%p_Ddxdy)
-    
+
     ! Deallocate upwind neighbours
     deallocate(raddTriaData%p_IupwindNeighbours)
 
@@ -7964,10 +7964,10 @@ contains
                       if (DtIi(ivar) > 0.0_dp) then
                          dWstar = maxval(DtLin(ivar,1:iidx))
                          !Dalphaei(ivar,ivt) = min(  Dalphaei(ivar,ivt) ,min(1.0_dp,(dwstar-DWc(ivar))/(DtIi(ivar))))
-                         
+
                          ! This is the one I take
                          Dalphaei(ivar,ivt) = max(  Dalphaei(ivar,ivt) ,min(1.0_dp,(dwstar-DWc(ivar))/(DtIi(ivar)+SYS_EPSREAL_DP)))
-                      
+
                          !            ! Extremumfix
                          !            if (dwstar-DWc(ivar)<10.0*SYS_EPSREAL_DP) Dalphaei(ivar,ivt) = 1.0_dp
                          !            if ((ilim==3).and.(abs(dwstar-DWc(ivar))<abs(0.001*DWc(ivar)))) Dalphaei(ivar,ivt) = 1.0_dp
@@ -7987,7 +7987,7 @@ contains
                       elseif (DtIi(ivar) < 0.0_dp) then
                          dWstar = minval(DtLin(ivar,1:iidx))
                          !Dalphaei(ivar,ivt) = min(  Dalphaei(ivar,ivt) ,min(1.0_dp,(dwstar-DWc(ivar))/(DtIi(ivar))))
-                         
+
                          ! This is the one I take
                          Dalphaei(ivar,ivt) = max(  Dalphaei(ivar,ivt) ,min(1.0_dp,(dwstar-DWc(ivar))/(DtIi(ivar)-SYS_EPSREAL_DP)))
 
@@ -8008,7 +8008,7 @@ contains
 
                       else
                          !Dalphaei(ivar,ivt) = min(Dalphaei(ivar,ivt),1.0_dp)
-                         
+
                          ! This is the one I take
                          Dalphaei(ivar,ivt) = max(Dalphaei(ivar,ivt),1.0_dp)
                       end if
@@ -9153,7 +9153,7 @@ contains
     integer(I32) :: celement
 
     integer, dimension(:), pointer :: p_IelementList
-    
+
     logical :: bsuccess
 
 
@@ -9247,25 +9247,25 @@ contains
 !             do ii = 1, indof
 !                DilocMat(ii,ii) = 1.0_dp/DlocMat(ii,ii)
 !             end do
-             
+
              call mprim_invert6x6MatrixDirect(DlocMat,DilocMat,bsuccess)
-          
+
           elseif (indof.eq.1) then
 
             DilocMat(1,1) = 1.0_dp/DlocMat(1,1)
-          
+
           elseif (indof.eq.2) then
-             
+
              call mprim_invert2x2MatrixDirect(DlocMat,DilocMat,bsuccess)
-             
+
           elseif (indof.eq.4) then
-             
+
              call mprim_invert4x4MatrixDirect(DlocMat,DilocMat,bsuccess)
-             
+
           elseif (indof.eq.5) then
-             
+
              call mprim_invert5x5MatrixDirect(DlocMat,DilocMat,bsuccess)
-             
+
           end if
 
           !      ! Output local matrices
@@ -10573,16 +10573,16 @@ contains
 !<input>
   ! The bilinear form specifying the underlying PDE of the discretisation.
   type(t_bilinearForm), intent(in) :: rform
-  
+
   ! Type of element in the test space.
   integer(I32), intent(in) :: celementTest
-  
+
   ! Type of element in the trial space.
   integer(I32), intent(in) :: celementTrial
 
   ! Type of cubature formula to use.
   integer(I32), intent(in) :: ccubType
-  
+
   ! OPTIONAL: Maximum number of elements to process simultaneously.
   ! If not specified, NELEMSIM is assumed.
   integer, intent(in), optional :: nelementsPerBlock
@@ -10601,11 +10601,11 @@ contains
 
   call bilf_dg_initAssembly_revCubPts(rmatrixAssembly,rform,celementTest,&
        celementTrial,ccubType,nelementsPerBlock,rperfconfig)
-  
+
 !    ! local variables
 !    logical, dimension(EL_MAXNDER) :: BderTrialTempl, BderTestTempl
 !    integer :: i,i1
-!    
+!
 !    real(dp) :: dtemp
 !    real(dp), dimension(2) :: dtemp2
 !
@@ -10617,7 +10617,7 @@ contains
 !    else
 !      p_rperfconfig => bilf_perfconfig
 !    end if
-!  
+!
 !    ! Initialise the structure.
 !    rmatrixAssembly%rform = rform
 !    rmatrixAssembly%ccubType = ccubType
@@ -10626,17 +10626,17 @@ contains
 !        rmatrixAssembly%nelementsPerBlock = nelementsPerBlock
 !    rmatrixAssembly%celementTrial = celementTrial
 !    rmatrixAssembly%celementTest = celementTest
-!    
+!
 !    ! Get the number of local DOF`s for trial and test functions
 !    rmatrixAssembly%indofTrial = elem_igetNDofLoc(celementTrial)
 !    rmatrixAssembly%indofTest = elem_igetNDofLoc(celementTest)
-!    
+!
 !    ! Which derivatives of basis functions are needed?
 !    ! Check the descriptors of the bilinear form and set BDERxxxx
 !    ! according to these.
 !    BderTrialTempl = .false.
 !    BderTestTempl = .false.
-!    
+!
 !    ! Loop through the additive terms
 !    do i=1,rform%itermCount
 !      ! The desriptor Idescriptors gives directly the derivative
@@ -10646,30 +10646,30 @@ contains
 !      !
 !      ! At first build the descriptors for the trial functions
 !      I1=rform%Idescriptors(1,I)
-!      
+!
 !      if ((I1 .le.0) .or. (I1 .gt. DER_MAXNDER)) then
 !        call output_line ('Invalid descriptor!',&
 !            OU_CLASS_ERROR,OU_MODE_STD,'bilf_initAssembly')
 !        call sys_halt()
 !      endif
-!      
+!
 !      BderTrialTempl(I1)=.true.
 !
 !      ! Then those of the test functions
 !      I1=rform%Idescriptors(2,I)
-!      
+!
 !      if ((I1 .le.0) .or. (I1 .gt. DER_MAXNDER)) then
 !        call output_line ('Invalid descriptor!',&
 !            OU_CLASS_ERROR,OU_MODE_STD,'bilf_initAssembly')
 !        call sys_halt()
 !      endif
-!      
+!
 !      BderTestTempl(I1)=.true.
 !    end do
 !
 !    ! Determine if trial and test space is the same.
 !    rmatrixAssembly%bIdenticalTrialAndTest = (celementTest .eq. celementTrial)
-!    
+!
 !    if (rmatrixAssembly%bIdenticalTrialAndTest) then
 !      ! Build the actual combination of what the element should calculate.
 !      rmatrixAssembly%BderTrial(:) = BderTrialTempl(:) .or. BderTestTempl(:)
@@ -10688,11 +10688,11 @@ contains
 !          OU_CLASS_ERROR,OU_MODE_STD,"bilf_initAssembly")
 !      call sys_halt()
 !    end if
-!    
+!
 !    ! Get from the element space the type of coordinate system
 !    ! that is used there:
 !    rmatrixAssembly%ctrafoType = elem_igetTrafoType(celementTest)
-!    
+!
 !    ! Get the number of cubature points for the cubature formula
 !    rmatrixAssembly%ncubp = cub_igetNumPts(ccubType)
 !
@@ -10701,11 +10701,11 @@ contains
 !    allocate(rmatrixAssembly%p_DcubPtsRef(&
 !        trafo_igetReferenceDimension(rmatrixAssembly%ctrafoType),&
 !        rmatrixAssembly%ncubp))
-!    
+!
 !    ! Get the cubature formula
 !    call cub_getCubature(ccubType,rmatrixAssembly%p_DcubPtsRef,rmatrixAssembly%p_Domega)
-!    
-!    
+!
+!
 !    ! Revert the numbering of cubature points
 !    do i = 1, size(rmatrixAssembly%p_Domega)/2
 !       dtemp2(:) = rmatrixAssembly%p_DcubPtsRef(:,i)
@@ -10717,15 +10717,15 @@ contains
 !       rmatrixAssembly%p_Domega(size(rmatrixAssembly%p_Domega)+1-i) = dtemp
 !
 !    end do
-! 
-! 
+!
+!
 !    ! Get the element evaluation tag of all FE spaces. We need it to evaluate
 !    ! the elements later. All of them can be combined with OR, what will give
 !    ! a combined evaluation tag.
 !    rmatrixAssembly%cevaluationTag = elem_getEvaluationTag(rmatrixAssembly%celementTest)
 !    rmatrixAssembly%cevaluationTag = ior(rmatrixAssembly%cevaluationTag,&
 !        elem_getEvaluationTag(rmatrixAssembly%celementTrial))
-        
+
   end subroutine
 
 
@@ -11926,7 +11926,7 @@ contains
 
   subroutine bilf_buildMatrixBlock2 (rform, bclear, rmatrix,rcubatureInfo,&
        fcoeff_buildMatrixBl_sim,rcollection)
-    
+
     !<description>
     ! This routine calculates the entries of a finite element matrix.
     ! The matrix structure must be prepared with bilf_createMatrixStructure
@@ -13446,7 +13446,7 @@ contains
 
              ! Loop over the additive factors in the bilinear form.
              do ialbet = 1,rlocalMatrixAssembly(1)%rform%itermcount
-             
+
                 ! Test if we only need the trial functions on one side of the edge
                 if ((p_Dside(1,ialbet)==1.0_dp).and.(p_Dside(2,ialbet)==0.0_dp)) then
                 ! Trialfunction only needed on first side
@@ -13500,7 +13500,7 @@ contains
                           ! the coefficient of the local matrix. We save this
                           ! contribution in the local matrix of element iel.
 
-                          
+
                           do iblock = 1, nvar
                              do jblock = 1, nvar
                                 ! Testfunction on the 'first' (i) side
@@ -13517,11 +13517,11 @@ contains
                                      *daux2(iblock,jblock)*p_Dside(1,ialbet)
                              end do
                           end do
-                          
+
                        end do ! idofe
 
                     end do ! jdofe
-                
+
                 elseif ((p_Dside(1,ialbet)==0.0_dp).and.(p_Dside(2,ialbet)==1.0_dp)) then
                 ! Trialfunction only needed on the second side
 
@@ -13574,7 +13574,7 @@ contains
                           ! the coefficient of the local matrix. We save this
                           ! contribution in the local matrix of element iel.
 
-                          
+
                           do iblock = 1, nvar
                              do jblock = 1, nvar
                                 ! Testfunction on the 'first' (i) side
@@ -13591,13 +13591,13 @@ contains
                                      *daux2(iblock,jblock)*p_Dside(2,ialbet)
                              end do
                           end do
-                          
+
                        end do ! idofe
 
                     end do ! jdofe
-                
+
                 else ! Trialfunctions are needed on both sides
-                
+
                     ! Get from Idescriptors the type of the derivatives for the
                     ! test and trial functions. The summand we calculate
                     ! here will be added to the matrix entry:
@@ -13647,7 +13647,7 @@ contains
                           ! the coefficient of the local matrix. We save this
                           ! contribution in the local matrix of element iel.
 
-                          
+
                           do iblock = 1, nvar
                              do jblock = 1, nvar
                                 ! Testfunction on the 'first' (i) side
@@ -13672,13 +13672,13 @@ contains
                                      *daux2(iblock,jblock)*p_Dside(2,ialbet)
                              end do
                           end do
-                          
+
                        end do ! idofe
 
                     end do ! jdofe
-                
+
                 end if
-             
+
              end do ! ialbet
 
           end do ! icubp
@@ -13741,12 +13741,12 @@ contains
           do jblock = 1, nvar
              call lsyssc_getbase_double(rmatrix%RmatrixBlock(iblock,jblock),p_Da)
              do iel = 1,IELmax-IELset+1
-             
+
              if (IelementList(2,IELset+iel-1).ne.0) then
              ! Not at the boundary - write all DOFs
                 do idofe = 1,indofTest
                    do jdofe = 1,indofTrial
-                      
+
                       p_Da(p_Kentryii(jdofe,idofe,iel)) = &
                            p_Da(p_Kentryii(jdofe,idofe,iel)) + p_Dentryii(iblock,jblock,jdofe,idofe,iel)
 
@@ -13764,7 +13764,7 @@ contains
              ! At the boundary - write only inner DOFs
                 do idofe = 1,indofTest
                    do jdofe = 1,indofTrial
-                      
+
                       p_Da(p_Kentryii(jdofe,idofe,iel)) = &
                            p_Da(p_Kentryii(jdofe,idofe,iel)) + p_Dentryii(iblock,jblock,jdofe,idofe,iel)
 
@@ -13797,39 +13797,39 @@ contains
     !$omp end parallel
 
   end subroutine dg_bilf_assembleSubmeshMat9Bdr2D_Block_ss
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
    !****************************************************************************
 
   !<subroutine>
@@ -13850,9 +13850,9 @@ contains
     !</inputoutput>
 
     !</subroutine>
-    
-    
-    
+
+
+
     ! Local variables
     real(DP), dimension(:), pointer :: p_Ddata
     integer :: iel, nvar, ivar, nlDOF
@@ -13862,18 +13862,18 @@ contains
 
     ! Get pointer to the data of the (solution) vector
     call lsysbl_getbase_double (rvectorBlock, p_Ddata)
-    
+
     ! Get number of local DOFs
     nlDOF = elem_igetNDofLoc(rvectorBlock%p_rblockDiscr%RspatialDiscr(1)%RelementDistr(1)%celement)
-    
+
     ! Allocate space for DOFs
     allocate(IdofGlob(nlDOF,rvectorBlock%p_rblockDiscr%p_rtriangulation%NEL))
-    
+
     ! Allocate space for list of elements
     allocate(IelList(rvectorBlock%p_rblockDiscr%p_rtriangulation%NEL))
-    
+
     forall (iel=1:rvectorBlock%p_rblockDiscr%p_rtriangulation%NEL) IelList(iel) = iel
-    
+
     ! Get DOFs
     call dof_locGlobMapping_mult(rvectorBlock%p_rblockDiscr%RspatialDiscr(1), IelList, IdofGlob)
 
@@ -13887,78 +13887,78 @@ contains
           if (p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(1,iel)-1)<20.0_dp*SYS_EPSREAL_SP) then
              p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(1,iel)-1)=20.0_dp*SYS_EPSREAL_SP
           end if
-          
-          
+
+
           da = (abs(p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(2,iel)-1)) + &
                 abs(p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(3,iel)-1)))
           db = p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(1,iel)-1)
-          
+
           if ( (da/db).ge.0.99_dp ) then
              p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(2,iel)-1) = &
                 p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(2,iel)-1) *db/da*0.99_dp
              p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(3,iel)-1) = &
                 p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(3,iel)-1) *db/da*0.99_dp
           end if
-          
+
        end do
     end do
-      
+
     ! Deallocate space for DOFs and the elementlist
     deallocate(IdofGlob,IelList)
-    
+
   end subroutine
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   !****************************************************************************
 
   !<subroutine>
@@ -14262,7 +14262,7 @@ contains
     integer :: NEL
     integer :: iside
     logical :: bisLinearTrafo
-    
+
     real(dp) :: dh1, dh2, dh3
 
     !    ! Boundary component?
@@ -14905,10 +14905,10 @@ contains
                       p_Dentryii(jdofe,idofe,iel) = &
                            p_Dentryii(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)&
                            *daux1*p_Dside(1,ialbet)
-                           
-                           
+
+
                       if (IelementList(2,IELset+iel-1).ne.0) then
-                           
+
                       p_Dentryai(jdofe,idofe,iel) = &
                            p_Dentryai(jdofe,idofe,iel)+db1*rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)&
                            *daux1*p_Dside(2,ialbet)
@@ -14946,7 +14946,7 @@ contains
                       !                write(*,*) 'test1',rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)
                       !                write(*,*) 'test2',rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)
                       !                pause
-                      
+
                       end if
 
 
@@ -15039,17 +15039,17 @@ contains
     !$omp end parallel
 
   end subroutine dg_bilf_assembleSubmeshMat9Bdr2D_ss
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
+
+
+
+
+
+
+
+
+
+
+
 !  !****************************************************************************
 !
 !!<subroutine>
@@ -15874,9 +15874,9 @@ contains
 !    end if
 !
 !  end subroutine dg_pperr_scalar2d_conf
-  
-  
-  
+
+
+
 
 
 
@@ -15887,9 +15887,9 @@ contains
 
   subroutine dg_bilf_getLocalMatrixIndices (rmatrix,Irows,Icolumns,Kentry,&
       irowsPerElement,icolsPerElement,nelements)
-  
+
   !<description>
-  
+
   ! Calculates index positions of local matrices in a global matrix.
   ! For a set of elements, Icolumns and Irows define the row and column indices
   ! of local matrices which have to be accessed in a global matrix rmatrix.
@@ -15902,14 +15902,14 @@ contains
   ! That means that
   !    Kentry(j,i,:) = position of element (Irows(i,:),Icolumns(j,:))
   ! holds!
-  
+
   !</description>
-  
+
   !<input>
-  
+
   ! The global matrix which has to be accessed.
   type(t_matrixScalar), intent(in) :: rmatrix
-  
+
   ! Array identifying all rows in the global matrix which have to be
   ! accessed.
   ! DIMENSION(#rows per element, #elements).
@@ -15919,30 +15919,30 @@ contains
   ! accessed.
   ! DIMENSION(#columns per element, #elements).
   integer, dimension(:,:), intent(in) :: Icolumns
-  
+
   ! Number of rows per element / in the local matrix
   integer, intent(in) :: irowsPerElement
-  
+
   ! Number of columns per element / in the local matrix
   integer, intent(in) :: icolsPerElement
-  
+
   ! Number of elements.
   integer, intent(in) :: nelements
-  
+
   !</input>
-  
+
   !<output>
-  
+
   ! Array receiving the positions of the local matrices in the global matrix.
   ! DIMENSION(#columns per element,#rows per element,#elements).
   ! Saved in a transposed way:
   !    Kentry(j,i,:) = position of element (Irows(i,:),Icolumns(j,:))
   integer, dimension(:,:,:), intent(out) :: Kentry
-  
+
   !</output>
-  
+
   !</subroutine>
-  
+
     ! local variables
     integer, dimension(:), pointer :: p_Kcol, p_Kld, p_KrowIdx
     integer :: na,iel,idofe,jdofe,indofTest,indofTrial,jcol0,jcol1,jdfg,jcol,nnzrows
@@ -15952,7 +15952,7 @@ contains
 
     select case (rmatrix%cmatrixFormat)
     case (LSYSSC_MATRIX1)
-    
+
       ! That is easy, we can directly calculate the positions
       do iel = 1,nelements
         do idofe = 1,indofTest
@@ -15962,9 +15962,9 @@ contains
           end do
         end do
       end do
-      
+
     case (LSYSSC_MATRIX7,LSYSSC_MATRIX9)
-    
+
       ! Get pointers to the row/column structure of the matrix
       call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
       call lsyssc_getbase_Kld (rmatrix,p_Kld)
@@ -15977,12 +15977,12 @@ contains
       ! Loop through elements in the set and for each element,
       ! loop through the local matrices to initialise them:
       do iel = 1,nelements
-      
+
         ! For building the local matrices, we have first to
         ! loop through the test functions (the "O"`s), as these
         ! define the rows in the matrix.
         do idofe = 1,indofTest
-        
+
           ! Row IDOFE of the local matrix corresponds
           ! to row=global DOF KDFG(IDOFE) in the global matrix.
           ! This is one of the the "O"`s in the above picture.
@@ -15991,25 +15991,25 @@ contains
 
           jcol0=p_Kld(Irows(idofe,iel))
           jcol1=p_Kld(Irows(idofe,iel)+1)-1
-          
+
           ! Now we loop through the other DOF`s on the current element
           ! (the "O"`s).
           ! All these have common support with our current basis function
           ! and will therefore give an additive value to the global
           ! matrix.
-          
+
           do jdofe = 1,indofTrial
-            
+
             ! Get the global DOF of the "X" which interacts with
             ! our "O".
-            
+
             jdfg=Icolumns(jdofe,iel)
-            
+
             ! Starting in JCOL0 (which points to the beginning of
             ! the line initially), loop through the elements in
             ! the row to find the position of column IDFG.
             ! Jump out of the DO loop if we find the column.
-            
+
             do jcol = jcol0,jcol1
               if (p_Kcol(jcol) .eq. jdfg) exit
             end do
@@ -16017,26 +16017,26 @@ contains
             ! Because columns in the global matrix are sorted
             ! ascendingly (except for the diagonal element),
             ! the next search can start after the column we just found.
-            
+
             ! JCOL0=JCOL+1
-            
+
             ! Save the position of the matrix entry into the local
             ! matrix.
             ! Note that a column in Kentry corresponds to a row in
             ! the real matrix. We aligned Kentry this way to get
             ! higher speed of the assembly routine, since this leads
             ! to better data locality.
-            
+
             Kentry(jdofe,idofe,iel)=jcol
-            
+
           end do ! IDOFE
-          
+
         end do ! JDOFE
-        
+
       end do ! IEL
-      
+
     case (LSYSSC_MATRIX9ROWC)
-    
+
       ! Get pointers to the row/column structure of the matrix
       call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
       call lsyssc_getbase_Kld (rmatrix,p_Kld)
@@ -16051,12 +16051,12 @@ contains
       ! Loop through elements in the set and for each element,
       ! loop through the local matrices to initialise them:
       do iel = 1,nelements
-      
+
         ! For building the local matrices, we have first to
         ! loop through the test functions (the "O"`s), as these
         ! define the rows in the matrix.
         do idofe = 1,indofTest
-        
+
           ! Row IDOFE of the local matrix corresponds
           ! to row=global DOF KDFG(IDOFE) in the global matrix.
           ! This is one of the the "O"`s in the above picture.
@@ -16064,25 +16064,25 @@ contains
           ! to JCOL0:
 
           jcol0=p_Kld(p_KrowIdx(nnzrows+Irows(idofe,iel)))
-          
+
           ! Now we loop through the other DOF`s on the current element
           ! (the "O"`s).
           ! All these have common support with our current basis function
           ! and will therefore give an additive value to the global
           ! matrix.
-          
+
           do jdofe = 1,indofTrial
-            
+
             ! Get the global DOF of the "X" which interacts with
             ! our "O".
-            
+
             jdfg=Icolumns(jdofe,iel)
-            
+
             ! Starting in JCOL0 (which points to the beginning of
             ! the line initially), loop through the elements in
             ! the row to find the position of column IDFG.
             ! Jump out of the DO loop if we find the column.
-            
+
             do jcol = jcol0,na
               if (p_Kcol(jcol) .eq. jdfg) exit
             end do
@@ -16090,9 +16090,9 @@ contains
             ! Because columns in the global matrix are sorted
             ! ascendingly (except for the diagonal element),
             ! the next search can start after the column we just found.
-            
+
             ! JCOL0=JCOL+1
-            
+
             ! Save the position of the matrix entry into the local
             ! matrix.
             ! Note that a column in Kentry corresponds to a row in
@@ -16100,29 +16100,29 @@ contains
             ! higher speed of the assembly routine, since this leads
             ! to better data locality.
             ! Subtract the offset to get the offset in the compressed matrix.
-            
+
             Kentry(jdofe,idofe,iel)=jcol
-            
+
           end do ! IDOFE
-          
+
         end do ! JDOFE
-        
+
       end do ! IEL
-      
+
     end select
-      
+
   end subroutine
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -16434,7 +16434,7 @@ contains
     integer :: NEL
     integer :: iside
     logical :: bisLinearTrafo
-    
+
     real(dp) :: dh1, dh2, dh3
 
     !    ! Boundary component?
@@ -16839,14 +16839,14 @@ contains
             rlocalMatrixAssembly(1)%revalElementSet,&
             rlocalMatrixAssembly(1)%BderTest, &
             rlocalMatrixAssembly(1)%p_DbasTest)
-            
+
        do jdet = 1, size(rlocalMatrixAssembly(2)%revalElementSet%p_Ddetj,2)
          do idet = 1, size(rlocalMatrixAssembly(2)%revalElementSet%p_Ddetj,1)
             if (rlocalMatrixAssembly(2)%revalElementSet%p_Ddetj(idet,jdet)<10.0_DP*SYS_EPSREAL_DP)&
                 rlocalMatrixAssembly(2)%revalElementSet%p_Ddetj(idet,jdet) = 1.0_dp
          end do
        end do
-            
+
        call elem_generic_sim2 (rlocalMatrixAssembly(2)%celementTest, &
             rlocalMatrixAssembly(2)%revalElementSet,&
             rlocalMatrixAssembly(2)%BderTest, &
@@ -17034,7 +17034,7 @@ contains
                 ! Get the precalculated coefficient from the coefficient array.
                 !daux1 = domega1 * DCoefficients(ialbet,icubp,iel)
                 !daux2 = domega2 * DCoefficients(ialbet,icubp,iel) * (-1.0_dp)
-                
+
                 dauxii = domega * DCoefficients(1,1,ialbet,icubp,iel)
                 dauxai = domega * DCoefficients(2,1,ialbet,icubp,iel)
                 dauxia = domega * DCoefficients(1,2,ialbet,icubp,iel)
@@ -17096,15 +17096,15 @@ contains
 
                       ! If we are not on the boundary and there is an outer (a) element
                       if (IelementList(2,IELset+iel-1).ne.0) then
-                           
+
                         ! Trial (a), test (i)
                         p_Dentryai(jdofe,idofe,iel) = &
                              p_Dentryai(jdofe,idofe,iel)+dtriala*dtesti*dauxai
-                        
+
                         ! Trial (i), test (a)
                         p_Dentryia(jdofe,idofe,iel) = &
                              p_Dentryia(jdofe,idofe,iel)+dtriali*dtesta*dauxia
-                        
+
                         ! Trial (a), test (a)
                         p_Dentryaa(jdofe,idofe,iel) = &
                              p_Dentryaa(jdofe,idofe,iel)+dtriala*dtesta*dauxaa
@@ -17134,7 +17134,7 @@ contains
                       !                write(*,*) 'test1',rlocalMatrixAssembly(1)%p_DbasTest(jdofe,ia,icubp,iel)
                       !                write(*,*) 'test2',rlocalMatrixAssembly(2)%p_DbasTest(jdofe,ia,icubp,iel)
                       !                pause
-                      
+
                       end if
 
                    end do
@@ -17226,37 +17226,37 @@ contains
     !$omp end parallel
 
   end subroutine dg_bilf_assembleSubmeshMat9Bdr2D_de
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   !****************************************************************************
 
   !<subroutine>
@@ -17560,7 +17560,7 @@ contains
     ! 2 testfunctions (1 for each side of the edge),
     ! ialbet,ncubp,nedges
     real(DP), dimension(:,:,:,:), allocatable :: Dcoefficients
-    
+
     integer :: idet, jdet
 
 
@@ -17774,16 +17774,16 @@ contains
             rlocalVectorAssembly(1)%revalElementSet,&
             rlocalVectorAssembly(1)%Bder, &
             rlocalVectorAssembly(1)%p_Dbas)
-       
-       
+
+
        do jdet = 1, size(rlocalVectorAssembly(2)%revalElementSet%p_Ddetj,2)
          do idet = 1, size(rlocalVectorAssembly(2)%revalElementSet%p_Ddetj,1)
             if (rlocalVectorAssembly(2)%revalElementSet%p_Ddetj(idet,jdet)<10.0_DP*SYS_EPSREAL_DP)&
                 rlocalVectorAssembly(2)%revalElementSet%p_Ddetj(idet,jdet) = 1.0_dp
          end do
        end do
-       
-       
+
+
        call elem_generic_sim2 (rlocalVectorAssembly(2)%celement, &
             rlocalVectorAssembly(2)%revalElementSet,&
             rlocalVectorAssembly(2)%Bder, &
@@ -17953,7 +17953,7 @@ contains
              !domega1 = dlen * rlocalVectorAssembly(1)%p_Domega(icubp)
              !domega2 = dlen * rlocalVectorAssembly(2)%p_Domega(icubp)
              domega = dlen * rlocalVectorAssembly(1)%p_Domega(icubp)
-    
+
              ! Loop over the additive factors in the bilinear form.
              do ialbet = 1,rlocalVectorAssembly(1)%rform%itermcount
 
@@ -18040,7 +18040,7 @@ contains
     deallocate(Dxi2D,DpointsRef,IelementList)!,DsolVals,edgelength,normal,Djac,Ddetj,DpointsReal,Dcoords)
     deallocate(Dcoefficients)
 
-  end subroutine 
+  end subroutine
 
 
 
@@ -18065,7 +18065,7 @@ contains
 
     ! The triangulation
     type(t_triangulation), intent(inout) :: rtriangulation
-    
+
     !</inputoutput>
 
     ! local variables
@@ -18074,9 +18074,9 @@ contains
     integer, dimension(:), pointer :: p_InodalProperty
     integer :: ivt, idim
     real(dp) :: drnd
-    
-    
-    
+
+
+
     ! Get pointer to the vertex coordinates
     call storage_getbase_double2D(rtriangulation%h_DvertexCoords,&
                                   p_DvertexCoords)
@@ -18088,15 +18088,15 @@ contains
     do ivt = 1, size(p_DvertexCoords,2)
       ! Annd all dimensions
       do idim = 1, size(p_DvertexCoords,1)
-      
+
         ! Random number
         call random_number(drnd)
-        
+
         ! Disturb grid point
         if (p_InodalProperty(ivt)>0) then
           p_DvertexCoords(idim,ivt) = p_DvertexCoords(idim,ivt) * (1.0_dp-0.05_dp+drnd/10.0_dp)
         end if
-        
+
       end do ! idim
     end do ! ivt
 
@@ -18106,7 +18106,7 @@ contains
 
 !****************************************************************************
 
-  !<subroutine>  
+  !<subroutine>
 
   subroutine SortAndSweep(rtriangulation, raddTriaData, rmatrix, rrhs, rsol, rcollection)
 
@@ -18123,21 +18123,21 @@ contains
     type(t_triangulation), intent(in) :: rtriangulation
     ! The additional triangulation data
     type(t_additionalTriaData), intent(in):: raddTriaData
-    
+
     !The scalar matrix
     type(t_matrixScalar), intent(in) :: rmatrix
-   
+
     ! The right-hand-side vector of the system
     !type(t_vectorBlock), intent(in)         :: rrhs
     type(t_vectorScalar), intent(in) :: rrhs
-   
-   
+
+
     ! The right-hand-side vector of the system
     !type(t_vectorBlock), intent(in)         :: rsol
     type(t_vectorScalar), intent(in)        :: rsol
-   
+
     type(t_collection), intent(inout), target, optional :: rcollection
-    
+
     !</input>
 
     !</subroutine>
@@ -18145,24 +18145,24 @@ contains
     integer:: i,j
     integer :: Ifirst, Ilater, NEL, NELinqueue, Iv, Iv1, Iv2,Iv3
     real(dp) :: DX, DY, DNX,DNY
-    
-    integer, dimension(:,:), pointer :: p_IelementsAtEdge    
+
+    integer, dimension(:,:), pointer :: p_IelementsAtEdge
     integer, dimension(:,:), allocatable :: Adjazenz, Inzidenz
     integer, dimension(:), allocatable :: Ioutdeg, Iqueue
-    
-    
+
+
     !!! Local variables for sweep-routine
 
     ! The underlying spatial discretisation
     type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
-    
+
     integer :: indof, iel, ielREF, ig, jg, iloc, iBlock, iouter
 
     integer, dimension(9) :: IdofGlob, IdofGlobREF
     integer, dimension(9) :: Ipiv
-    integer :: iinfo    
+    integer :: iinfo
 
-    
+
     real(dp), dimension(:,:), allocatable :: DlocMat
     real(DP), dimension(:), allocatable  :: Dtemp
 
@@ -18170,32 +18170,32 @@ contains
     REAL(DP), DIMENSION(:), POINTER :: p_DA
 
     real(DP), dimension(:), pointer :: p_Drhs, p_Dsol
-    
+
     real(dp) :: DNV
-    
-    
-    
-    
-    
-    
+
+
+
+
+
+
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! FIRST PART: Sorting
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     !Ifirst=0
     !Ilater=0
-    
+
     NEL = rtriangulation%NEL
-    !write(*,*) '#############################################', NEL    
+    !write(*,*) '#############################################', NEL
     ! Allocate space for Inzidenz"matrix", Outdegree, and Resultqueue
     allocate(Inzidenz(3,NEL))
     allocate(Adjazenz(3,NEL))
     allocate(Ioutdeg(NEL))
     allocate(Iqueue(NEL))
-    
+
     call storage_getbase_int2D(rtriangulation%h_IelementsAtEdge,&
          p_IelementsAtEdge)
-    
+
     ! Nullen reinschreiben, muss sein offensichlich!!
     do i=1, NEL
       Ioutdeg(i)=0
@@ -18205,25 +18205,25 @@ contains
       Adjazenz(1,i)=0
       Adjazenz(2,i)=0
       Adjazenz(3,i)=0
-      
+
       Iqueue(i)=0
     end do
-    
+
     !AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    ! A. First Initialisation, go through all Edges and write Neighbouring-Information    
+    ! A. First Initialisation, go through all Edges and write Neighbouring-Information
     ! Transportrichtung:
     DX=rcollection%Dquickaccess(2*(rcollection%Iquickaccess(1))-1)
     DY=rcollection%Dquickaccess(2*rcollection%Iquickaccess(1))
-    
-    
+
+
     do j = 1, rtriangulation%NMT
-      
+
       DNX=raddTriaData%p_Dnormals(1,j)
       DNY=raddTriaData%p_Dnormals(2,j)
-      
+
       ! Normal * transport direction v
       DNV = DX*DNX+DY*DNY
-      
+
       ! Reihenfolge der Elemente abh. von Normalenvektor und Transportrichtung
       if ((DNV).lt.0.0_DP) then
         Ifirst=p_IelementsAtEdge(2,j)
@@ -18233,24 +18233,24 @@ contains
         Ilater=p_IelementsAtEdge(2,j)
        else !Elemente sind parallel in Transportrichtung, do nothing
       endif
-      
-      
+
+
       ! Dieser Wert ist kritisch, bei orthogonalem Normalenvektor Wert ist ca. 1d-9
       ! if (abs(DX*DNX+DY*DNY).lt.1E-4_DP) then
-      !   if (abs(DX*DNX+DY*DNY).gt.1E-10_DP) then         
+      !   if (abs(DX*DNX+DY*DNY).gt.1E-10_DP) then
       !     write(*,*) 'kritisch v*n=', DX*DNX+DY*DNY
       !   endif
       ! endif
-       
+
       if (abs(DNV).gt.1E-10_DP) then
-      
+
         !write(*,*) 'Kante', j
         !write(*,*) 'Elemente', Ifirst, Ilater
         !write(*,*) 'v*n=', DX*DNX+DY*DNY
         !write(*,*), Ioutdeg(Ilater)
         if((Ifirst*Ilater).gt.0) then
           Ioutdeg(Ilater)=Ioutdeg(Ilater)+1
-        
+
           ! Inzidenzinfo an erste freie Stelle schreiben
           if (Inzidenz(1,Ifirst).eq.0) then
             Inzidenz(1,Ifirst)=Ilater
@@ -18259,7 +18259,7 @@ contains
           else
             Inzidenz(3,Ifirst)=Ilater
           endif
-          
+
           ! Adjazenzinfo an erste freie Stelle schreiben
           if (Adjazenz(1,Ilater).eq.0) then
             Adjazenz(1,Ilater)=Ifirst
@@ -18268,13 +18268,13 @@ contains
           else
             Adjazenz(3,Ilater)=Ifirst
           endif
-          
+
         endif
-      
+
       endif
-      
+
     end do
-    
+
     !BBBBBBBBBBBBBBBBBBBBBBB
     !B. Second Initialisation, write all Boundaryelements (deg=0) into Resultqueue
     NELinqueue=0
@@ -18283,27 +18283,27 @@ contains
       if (Ioutdeg(i).eq.0) then
         NELinqueue=NELinqueue+1
         Iqueue(NELinqueue)=i
-        !write(*,*) 'Randelement', i         
+        !write(*,*) 'Randelement', i
       endif
     end do
-    
+
     !CCCCCCCCCCCCCCCCCCCCCCC
     !C. Now we do the Resorting, go through the Elements starting at the Boundary
     ! NELinqueue wird weiter benutzt
     !write(*,*) 'Randelemente zu Beginn', NELinqueue
     do i = 1, NEL
-      
+
       Iv=Iqueue(i)
-      
+
       if (Iv.eq.0) then
-        write(*,*) 'Fehler, Elemente können nicht zu ende sortiert werden, Position' , i, ' von', NEL
+        write(*,*) 'Fehler, Elemente koennen nicht zu ende sortiert werden, Position' , i, ' von', NEL
         call sys_halt()
       endif
-      
+
       Iv1=Inzidenz(1,Iv)
       Iv2=Inzidenz(2,Iv)
       Iv3=Inzidenz(3,Iv)
-      
+
       if (Iv1.gt.0) then
         Ioutdeg(Iv1)=Ioutdeg(Iv1)-1
         if(Ioutdeg(Iv1).eq.0) then
@@ -18312,7 +18312,7 @@ contains
           Iqueue(NELinqueue)=Iv1
         endif
       endif
-      
+
       if (Iv2.gt.0) then
         Ioutdeg(Iv2)=Ioutdeg(Iv2)-1
         if(Ioutdeg(Iv2).eq.0) then
@@ -18321,7 +18321,7 @@ contains
           Iqueue(NELinqueue)=Iv2
         endif
       endif
-      
+
       if (Iv3.gt.0) then
         Ioutdeg(Iv3)=Ioutdeg(Iv3)-1
         if(Ioutdeg(Iv3).eq.0) then
@@ -18330,55 +18330,55 @@ contains
           Iqueue(NELinqueue)=Iv3
         endif
       endif
-      
+
     end do
-    
-    
+
+
 
 
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! SECOND PART: Solving
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    
-    
+
+
     ! Get pointers of the matrix
     call lsyssc_getbase_Kcol (rmatrix,p_KCOL)
     call lsyssc_getbase_Kld (rmatrix,p_KLD)
     call lsyssc_getbase_double (rmatrix,p_DA)
-    
+
     ! Get pointers of the vectors
     call lsyssc_getbase_double (rrhs,p_Drhs)
     call lsyssc_getbase_double (rsol,p_Dsol)
-    
+
     ! Get pointers for quicker access
     p_rspatialDiscr => rmatrix%p_rspatialDiscrTest
-    
-    ! Get number of local unknowns    
+
+    ! Get number of local unknowns
     indof = elem_igetNDofLoc(rmatrix%p_rspatialDiscrTest%RelementDistr(1)%celement)
-        
+
 
     ! Allocate local matrix
     allocate(DlocMat(indof,indof))
     ! Allocate local vector
     allocate(Dtemp(indof))
-    
-          
-      
-      
-      
-     !write(*,*) 'Solving transportproblem directly, yippieeeeeeee'  
+
+
+
+
+
+     !write(*,*) 'Solving transportproblem directly, yippieeeeeeee'
 
     !Outer loop over all elements
     do iouter=1,NEL
       !Get number from sorting algorithm
       iel=Iqueue(iouter)
       call dof_locGlobMapping(p_rspatialDiscr, iel, IdofGlob)
-      
-      
+
+
       !write(*,*) iouter, iel
-      
-      
+
+
       !AAAAAAAAAAAAAAAAAAAAAAAAAA
       !A. Diagonalblock speichern
       ! Loop over all local lines
@@ -18396,79 +18396,79 @@ contains
                 end do
 
                 DlocMat(i,j) = p_DA(iloc)
-        
+
              end do
-          end do  
-      
-      
+          end do
+
+
       !XXXXXXXXXXXXXXXXXXXXXXXX
       !X: Dtemp auf Null setzen?
       do i=1,indof
         Dtemp(i)=0.0_DP
       end do
-      
+
       !BBBBBBBBBBBBBBBBBBBBBBBBBBBBB
-      !B. Nach Art von Gausseidel update mit berechneten Lösungsblöcken  
+      !B. Nach Art von Gausseidel update mit berechneten Loesungsbloecken
       ! Loop over all blocks left of the blockdiagonal
       do iblock=1,3
-        
+
         !get referenced Element from Adjazenz-Matrix (otherwise Matrixblock(i,j) has no entries)
         ielREF=Adjazenz(iblock,iel)
         if (ielREF.ne.0) then
-        
+
         !write(*,*) 'process Matrix Block', iel,ielREF
-         
+
         call dof_locGlobMapping(p_rspatialDiscr, ielREF, IdofGlobREF)
-        
+
         ! Loop over all local lines
         do i=1,indof
             ig = IdofGlob(i)
           ! Loop over all (referenced) columns
           do j= 1,indof
             jg=IdofGlobREF(j)
-            
+
         do iloc = p_KLD(ig), p_KLD(ig+1)-1
            if (jg.eq.p_KCOL(iloc)) then
              exit ! was passiert wenn ich ihn nicht finde?
-           endif  
+           endif
            if ((iloc.eq.p_KLD(ig+1)-1).and.(jg.ne.p_KCOL(iloc))) then
              write(*,*) 'nicht gefunden, iel, ielREF', iel, ielREF
            endif
         end do
 
                 Dtemp(i) = Dtemp(i)+p_DA(iloc)*p_Dsol(jg)
-        
+
           end do !i lines in Element
-             
+
         end do !j columns in REFelement
-         
+
         endif !check Adjazenz
-      
+
       end do !iblock
-      
+
       !CCCCCCCCCCCCCCCCCCCCCCCCCCCC
       !C. Auf die rechte Seite bringen
       do i=1,indof
         Dtemp(i) = p_Drhs(IdofGlob(i)) - Dtemp(i)
-      end do    
-      
+      end do
+
       !DDDDDDDDDDDDDDDDDDDDDDDDDDDD
-      !D. Inverse des Diagonalblocks anwenden für die Lösung, nutze LAPACK
+      !D. Inverse des Diagonalblocks anwenden fuer die Loesung, nutze LAPACK
       call DGETRF( indof, indof, DlocMat, indof, &
                    Ipiv, iinfo )
 
       call DGETRS('N', indof, 1, DlocMat, indof, &
                     Ipiv, Dtemp, indof, iinfo )
-      
-      
+
+
       !EEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
       !E. Write result into solution vector
       do i=1,indof
         p_Dsol(IdofGlob(i)) = Dtemp(i)
       end do
-    
+
     end do ! iouter
-    
+
   end subroutine SortAndSweep
 
 end module dg2d_routines

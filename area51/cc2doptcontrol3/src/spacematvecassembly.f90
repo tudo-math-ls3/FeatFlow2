@@ -757,7 +757,7 @@ contains
       rtempData,csolgeneration,rtimerhs)
   
 !<description>
-  ! Calculates the defect in timestep idofTime of the nonlinear primaö equation
+  ! Calculates the defect in timestep idofTime of the nonlinear primal equation
   ! in one DOF in time.
 !</description>
 
