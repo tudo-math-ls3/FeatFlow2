@@ -25,7 +25,7 @@ contains
     ! Hilfsvariable
     k1 = a*dt/dx
 
-    ! Berechne den Loesungsvektor fuer alle auﬂer dem linken x (parallel)
+    ! Berechne den Loesungsvektor fuer alle ausser dem linken x (parallel)
     forall(i=lbound(u0,1)+1:ubound(u0,1))
        u(i) = u0(i)-k1*(u0(i)-u0(i-1))
     end forall
@@ -310,7 +310,7 @@ program finite_differences
   end do timestepping
   call cpu_time(time1)
 
-  ! Datei schlieﬂen
+  ! Datei schliessen
   close(10)
 
   ! Zeitaufwand ausgeben

@@ -143,7 +143,7 @@ program shallow_water_prog
 	write(*,*) 'Benoetigte Zeit:', time1-time0,'Sekunden.'
 	
 	
-	! Dateien schlieﬂen
+	! Dateien schliessen
 	close(10)
 	
 	

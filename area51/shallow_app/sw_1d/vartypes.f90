@@ -176,7 +176,7 @@ contains
     	type(t_vectorScalar), intent(inout)			:: x		! Loesungsvektor
     	type(t_vectorScalar)						:: c, d		! Hilfsvektoren
     	integer										:: i		! Zaehlvariable
-    	integer										:: dimen	! Groeﬂe des LGS
+    	integer										:: dimen	! Groesse des LGS
     	real(dp)									:: hk		! Hilfsvar
 
     	dimen = x%neq
