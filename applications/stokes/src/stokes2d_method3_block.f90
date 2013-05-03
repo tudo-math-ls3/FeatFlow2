@@ -346,7 +346,7 @@ contains
 
 !<subroutine>
 
-  subroutine st2d3_fcalc_L2error(dintvalue,rassemblyData,rintegralAssembly,&
+  subroutine st2d3_fcalc_L2error(Dintvalue,rassemblyData,rintegralAssembly,&
       npointsPerElement,nelements,revalVectors,rcollection)
 
 !<description>  
@@ -380,7 +380,7 @@ contains
 
 !<output>
     ! Returns the value of the integral
-    real(DP), intent(out) :: dintvalue
+    real(DP), dimension(:), intent(out) :: Dintvalue
 !</output>    
 
 !<subroutine>
@@ -414,7 +414,7 @@ contains
     ! in the cubature points
     p_Dfunc => revalVectors%p_RvectorData(icomp)%p_Ddata(:,:,DER_FUNC2D)
 
-    dintvalue = 0.0_DP
+    Dintvalue = 0.0_DP
     
     ! Which component to calculate?
     select case (icomp)
@@ -441,7 +441,7 @@ contains
           
           ! Multiply the values by the cubature weight and sum up
           ! into the (squared) L2 error:
-          dintvalue = dintvalue + &
+          Dintvalue = Dintvalue + &
               p_DcubWeight(icubp,iel) * (dval1 - dval2)**2
             
         end do ! icubp
@@ -470,7 +470,7 @@ contains
           
           ! Multiply the values by the cubature weight and sum up
           ! into the (squared) L2 error:
-          dintvalue = dintvalue + &
+          Dintvalue = Dintvalue + &
               p_DcubWeight(icubp,iel) * (dval1 - dval2)**2
             
         end do ! icubp
@@ -498,7 +498,7 @@ contains
           
           ! Multiply the values by the cubature weight and sum up
           ! into the (squared) L2 error:
-          dintvalue = dintvalue + &
+          Dintvalue = Dintvalue + &
               p_DcubWeight(icubp,iel) * (dval1 - dval2)**2
             
         end do ! icubp
@@ -513,7 +513,7 @@ contains
 
 !<subroutine>
 
-  subroutine st2d3_fcalc_H1error(dintvalue,rassemblyData,rintegralAssembly,&
+  subroutine st2d3_fcalc_H1error(Dintvalue,rassemblyData,rintegralAssembly,&
       npointsPerElement,nelements,revalVectors,rcollection)
 
 !<description>  
@@ -547,7 +547,7 @@ contains
 
 !<output>
     ! Returns the value of the integral
-    real(DP), intent(out) :: dintvalue
+    real(DP), dimension(:), intent(out) :: Dintvalue
 !</output>    
 
 !<subroutine>
@@ -579,7 +579,7 @@ contains
     p_DderivX => revalVectors%p_RvectorData(icomp)%p_Ddata(:,:,DER_DERIV2D_X)
     p_DderivY => revalVectors%p_RvectorData(icomp)%p_Ddata(:,:,DER_DERIV2D_Y)
 
-    dintvalue = 0.0_DP
+    Dintvalue = 0.0_DP
 
     ! Which component to calculate?
     select case (icomp)
@@ -609,7 +609,7 @@ contains
           
           ! Multiply the values by the cubature weight and sum up
           ! into the (squared) H1 error:
-          dintvalue = dintvalue + p_DcubWeight(icubp,iel) * &
+          Dintvalue = Dintvalue + p_DcubWeight(icubp,iel) * &
               ( (dderivX1 - dderivX2)**2 + (dderivY1 - dderivY2)**2 )
             
         end do ! icubp
@@ -641,7 +641,7 @@ contains
           
           ! Multiply the values by the cubature weight and sum up
           ! into the (squared) H1 error:
-          dintvalue = dintvalue + p_DcubWeight(icubp,iel) * &
+          Dintvalue = Dintvalue + p_DcubWeight(icubp,iel) * &
               ( (dderivX1 - dderivX2)**2 + (dderivY1 - dderivY2)**2 )
             
         end do ! icubp

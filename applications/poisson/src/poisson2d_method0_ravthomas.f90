@@ -406,7 +406,7 @@ contains
 
 !<subroutine>
 
-  subroutine fcalc_midpValues(dintvalue,rassemblyData,rvectorAssembly,&
+  subroutine fcalc_midpValues(Dintvalue,rassemblyData,rvectorAssembly,&
       npointsPerElement,nelements,revalVectors,rcollection)
 
 !<description>  
@@ -443,7 +443,7 @@ contains
 
 !<output>
     ! Returns the value of the integral
-    real(DP), intent(out) :: dintvalue
+    real(DP), dimension(:), intent(out) :: Dintvalue
 !</output>    
 
 !<subroutine>
@@ -454,7 +454,7 @@ contains
     real(DP), dimension(:), pointer :: p_DdataX, p_DdataY
     integer, dimension(:), pointer :: p_Ielements
   
-    dintvalue = 0.0_DP
+    Dintvalue = 0.0_DP
   
     call storage_getbase_double (rcollection%IquickAccess(1),p_DdataX)
     call storage_getbase_double (rcollection%IquickAccess(2),p_DdataY)
