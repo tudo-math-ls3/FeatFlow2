@@ -429,7 +429,7 @@ contains
       
     end do
     
-    ! If there's a ´filename for the solution file given,
+    ! If there's a filename for the solution file given,
     ! write out the current solution.
     call parlst_getvalue_string (rproblem%rparamList, 'TIME-POSTPROCESSING', &
                                  'sfinalSolutionFileName', stemp, '')

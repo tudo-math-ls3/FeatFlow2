@@ -209,7 +209,7 @@ contains
 
 !<description>
   ! Creates a subdomain-FEM-structure for a set of elements. Ielements is a
-  !´list of elements in the triangulation connected to rdiscretisation.
+  ! list of elements in the triangulation connected to rdiscretisation.
   ! The routine extracts these elements, creates a new triangulation and
   ! discretisation and saves all this in rsdfemFeSpace.
 !</description>
@@ -1029,7 +1029,7 @@ contains
 
 !<description>
   ! Creates a block-subdomain-FEM-structure for a set of elements. Ielements is a
-  !´list of elements in the triangulation connected to rtriangulation.
+  ! list of elements in the triangulation connected to rtriangulation.
   ! The routine extracts these elements, creates a new triangulatio and 
   ! saves all this in rsdfemFeSpace.
   ! Specifying rblockDiscr additionally sets up all the sub-discretisations
