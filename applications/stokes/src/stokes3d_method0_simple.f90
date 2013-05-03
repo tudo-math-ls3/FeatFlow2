@@ -234,7 +234,7 @@ contains
     ! Therefore, we can simply make a copy of the matrix for the X-velocity.
     ! This we do later after the entries are created.
     !
-    ! In the global system, there are three coupling matrices B1, B2 and B§.
+    ! In the global system, there are three coupling matrices B1, B2 and B3.
     ! Both have the same structure.
     !
     !    / A              B1 \

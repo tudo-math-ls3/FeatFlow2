@@ -37,7 +37,7 @@
 !#
 !# 6.) hydro_hadaptCallbackBlock3d
 !#      -> Performs application specific tasks in the adaptation
-!#         algorithm in §D, whereby the vector is stored in block format
+!#         algorithm in 3D, whereby the vector is stored in block format
 !# </purpose>
 !##############################################################################
 
