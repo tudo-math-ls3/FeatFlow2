@@ -2709,7 +2709,7 @@ contains
               
               select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%ccontrolConstraintsType)
               case (0)
-                ! Cónstant bounds
+                ! Constant bounds
 
                 ! The weight contains -1/alpha, so we have to cancel it out here.
                 call nwder_minMaxProjByCubature (-rnonlinearSpatialMatrix%dalphaC*dweight,&
@@ -2836,7 +2836,7 @@ contains
               
               select case (rnonlinearSpatialMatrix%rdiscrData%rconstraints%ccontrolConstraintsType)
               case (0)
-                ! Cónstant bounds
+                ! Constant bounds
 
                 ! The weight contains -1/alpha, so we have to cancel it out here.
                 call nwder_minMaxProjByAdaptCub (-rnonlinearSpatialMatrix%dalphaC*dweight,&
