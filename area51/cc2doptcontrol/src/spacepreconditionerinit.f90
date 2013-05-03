@@ -1068,7 +1068,7 @@ contains
 !</input>
 
 !<inputoutput>
-  ! A spatial preconditioner structure to be úpdated. Must have been
+  ! A spatial preconditioner structure to be updated. Must have been
   ! created previously with initPreconditioner and configPreconditioner.
   type(t_ccspatialPreconditioner), intent(INOUT) :: rpreconditioner
 !</inputoutput>
