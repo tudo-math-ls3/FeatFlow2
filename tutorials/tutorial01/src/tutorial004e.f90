@@ -38,7 +38,7 @@ contains
     call map_create(rmap, 20)
 
     ! =================================
-    ! Insert new items into the mao
+    ! Insert new items into the map
     ! =================================
 
     riterator = map_insert(rmap, 5)

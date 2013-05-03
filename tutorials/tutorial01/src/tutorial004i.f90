@@ -40,7 +40,7 @@ contains
     call qtree_create(rquadtree, 20, 10, 0.0_DP, 0.0_DP, 1.0_DP, 2.0_DP)
 
     ! =================================
-    ! Insert new verteces into quadtree
+    ! Insert new vertices into quadtree
     ! =================================
 
     iresult = qtree_insert(rquadtree, (/0.2_DP, 0.6_DP/))
@@ -129,6 +129,8 @@ contains
     call qtree_release(rquadtree)
 
   end subroutine
+
+  ! ***************************************************************************
 
   pure logical function my_isEqual(data1,data2) result(bisEqual)
     real(DP), dimension(2), intent(in) :: data1,data2

@@ -40,7 +40,7 @@ contains
     call otree_create(roctree, 20, 10, 0.0_SP, 0.0_SP, 0.0_SP, 1.0_SP, 2.0_SP, 1.4_SP)
 
     ! =================================
-    ! Insert new verteces into octree
+    ! Insert new vertices into octree
     ! =================================
 
     iresult = otree_insert(roctree, (/0.2_SP, 0.6_SP, 1.1_SP/))
@@ -129,6 +129,8 @@ contains
     call otree_release(roctree)
 
   end subroutine
+
+  ! ***************************************************************************
 
   pure logical function my_isEqual(data1,data2) result(bisEqual)
     real(SP), dimension(3), intent(in) :: data1,data2
