@@ -3640,7 +3640,7 @@ contains
     select case (rlinsolParam%csolverType)
     
     ! -----------------------------------------------------
-    ! Multigrid inítialisation
+    ! Multigrid initialisation
     ! -----------------------------------------------------
     case (NLIN_SOLVER_MULTIGRID)
     
@@ -3653,7 +3653,7 @@ contains
       call newtonlin_initMG (rlinsolParam%p_rsubnodeMultigrid,rparlist,ssectionSpaceTimeMG)
 
     ! -----------------------------------------------------
-    ! Richardson inítialisation
+    ! Richardson initialisation
     ! -----------------------------------------------------
     case (NLIN_SOLVER_RICHARDSON)
     
@@ -3661,7 +3661,7 @@ contains
       allocate(rlinsolParam%p_rsubnodeRichardson)
 
     ! -----------------------------------------------------
-    ! CG inítialisation
+    ! CG initialisation
     ! -----------------------------------------------------
     case (NLIN_SOLVER_CG)
     
@@ -3669,7 +3669,7 @@ contains
       allocate(rlinsolParam%p_rsubnodeCG)
     
     ! -----------------------------------------------------
-    ! GMRES inítialisation
+    ! GMRES initialisation
     ! -----------------------------------------------------
     case (NLIN_SOLVER_GMRES)
     
@@ -3677,7 +3677,7 @@ contains
       allocate(rlinsolParam%p_rsubnodeGMRES)
     
     ! -----------------------------------------------------
-    ! BiCGStab inítialisation
+    ! BiCGStab initialisation
     ! -----------------------------------------------------
     case (NLIN_SOLVER_BICGSTAB)
     
@@ -3743,7 +3743,7 @@ contains
     select case (rlinsolParam%csolverType)
     
     ! -----------------------------------------------------
-    ! Multigrid inítialisation
+    ! Multigrid initialisation
     ! -----------------------------------------------------
     case (NLIN_SOLVER_MULTIGRID)
 
@@ -3751,7 +3751,7 @@ contains
           rlinsolParam,rlinsolParam%p_rsubnodeMultigrid,rkktsystemHierarchy)
       
     ! -----------------------------------------------------
-    ! Richardson inítialisation
+    ! Richardson initialisation
     ! -----------------------------------------------------
     case (NLIN_SOLVER_RICHARDSON)
     
@@ -3759,7 +3759,7 @@ contains
           rlinsolParam%p_rsubnodeRichardson%rtempVector,rkktsystemHierarchy,ilev)
 
     ! -----------------------------------------------------
-    ! CG inítialisation
+    ! CG initialisation
     ! -----------------------------------------------------
     case (NLIN_SOLVER_CG)
     
@@ -3769,7 +3769,7 @@ contains
           rlinsolParam%p_rsubnodeCG%rAp,rkktsystemHierarchy,ilev)
 
     ! -----------------------------------------------------
-    ! GMRES inítialisation
+    ! GMRES initialisation
     ! -----------------------------------------------------
     case (NLIN_SOLVER_GMRES)
     
@@ -3777,7 +3777,7 @@ contains
           rlinsolParam,rlinsolParam%p_rsubnodeGMRES,rkktsystemHierarchy,ilev)
 
     ! -----------------------------------------------------
-    ! BiCGStab inítialisation
+    ! BiCGStab initialisation
     ! -----------------------------------------------------
     case (NLIN_SOLVER_BICGSTAB)
     
@@ -3876,7 +3876,7 @@ contains
     select case (rlinsolParam%csolverType)
     
     ! -----------------------------------------------------
-    ! Multigrid inítialisation
+    ! Multigrid initialisation
     ! -----------------------------------------------------
     case (NLIN_SOLVER_MULTIGRID)
 
@@ -3897,7 +3897,7 @@ contains
           rlinsolParam%p_rsubnodeCG%rp,p_rkktsystem)
 
     ! -----------------------------------------------------
-    ! GMRES inítialisation
+    ! GMRES initialisation
     ! -----------------------------------------------------
     case (NLIN_SOLVER_GMRES)
     
@@ -4010,14 +4010,14 @@ contains
       call newtonlin_doneStrucMultigrid (rlinsolParam%p_rsubnodeMultigrid)
       
     ! -----------------------------------------------------
-    ! Richardson inítialisation
+    ! Richardson initialisation
     ! -----------------------------------------------------
     case (NLIN_SOLVER_RICHARDSON)
     
       call kktsp_doneControlVector (rlinsolParam%p_rsubnodeRichardson%rtempVector)
 
     ! -----------------------------------------------------
-    ! CG inítialisation
+    ! CG initialisation
     ! -----------------------------------------------------
     case (NLIN_SOLVER_CG)
     
@@ -4025,14 +4025,14 @@ contains
       call kktsp_doneControlVector (rlinsolParam%p_rsubnodeCG%rr)
 
     ! -----------------------------------------------------
-    ! GMRES inítialisation
+    ! GMRES initialisation
     ! -----------------------------------------------------
     case (NLIN_SOLVER_GMRES)
 
       call newtonlin_doneStrucGMRES (rlinsolParam%p_rsubnodeGMRES)
 
     ! -----------------------------------------------------
-    ! BiCGStab inítialisation
+    ! BiCGStab initialisation
     ! -----------------------------------------------------
     case (NLIN_SOLVER_BICGSTAB)
     
@@ -4065,14 +4065,14 @@ contains
     select case (rlinsolParam%csolverType)
     
     ! -----------------------------------------------------
-    ! Multigrid inítialisation
+    ! Multigrid initialisation
     ! -----------------------------------------------------
     case (NLIN_SOLVER_MULTIGRID)
 
       deallocate(rlinsolParam%p_rsubnodeMultigrid)
       
     ! -----------------------------------------------------
-    ! Richardson inítialisation
+    ! Richardson initialisation
     ! -----------------------------------------------------
     case (NLIN_SOLVER_RICHARDSON)
     
@@ -4080,7 +4080,7 @@ contains
       deallocate(rlinsolParam%p_rsubnodeRichardson)
 
     ! -----------------------------------------------------
-    ! CG inítialisation
+    ! CG initialisation
     ! -----------------------------------------------------
     case (NLIN_SOLVER_CG)
     
@@ -4088,7 +4088,7 @@ contains
       deallocate(rlinsolParam%p_rsubnodeCG)
 
     ! -----------------------------------------------------
-    ! GMRES inítialisation
+    ! GMRES initialisation
     ! -----------------------------------------------------
     case (NLIN_SOLVER_GMRES)
     
@@ -4096,7 +4096,7 @@ contains
       deallocate(rlinsolParam%p_rsubnodeGMRES)
 
     ! -----------------------------------------------------
-    ! BiCGSTab inítialisation
+    ! BiCGSTab initialisation
     ! -----------------------------------------------------
     case (NLIN_SOLVER_BICGSTAB)
     

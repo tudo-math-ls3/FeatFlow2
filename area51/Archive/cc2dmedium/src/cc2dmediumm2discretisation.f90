@@ -1283,7 +1283,7 @@ contains
       istart = 0
     end if
     
-    ! Inít with zero? Read from file?
+    ! Init with zero? Read from file?
     if (istart .eq. 0) then
       ! Init with zero
       call lsysbl_clearVector (rvector)

@@ -939,7 +939,7 @@ module spacetimelinearsolver
     ! INPUT PARAMETER: Level in p_rspaceTimeHier which is used as coarse grid.
     integer                       :: nlmin                    = 1
     
-    ! INPUT PARAMETER: Level in p_rspaceTimeHier which is used for solvíng
+    ! INPUT PARAMETER: Level in p_rspaceTimeHier which is used for solving
     ! the system.
     integer                       :: nlmax                    = 1
 

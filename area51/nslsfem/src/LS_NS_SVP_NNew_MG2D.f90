@@ -7401,7 +7401,7 @@ contains
   ! Derivative specifiers
   logical, dimension(EL_MAXNDER) :: Bder
 
-  ! Whther the viscosity ís constant or not
+  ! Whther the viscosity is constant or not
   logical :: bconstViscosity
 
     ! Currently we support only constant viscosity

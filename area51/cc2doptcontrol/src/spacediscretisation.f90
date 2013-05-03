@@ -1385,7 +1385,7 @@ contains
       isolutionStart = 0
     end if
     
-    ! Inít with zero? Read from file?
+    ! Init with zero? Read from file?
     if ((isolutionStart .eq. 1) .or. (isolutionStart .eq. 2)) then
       ! Remove possible ''-characters
       read(sfileString,*) sfile

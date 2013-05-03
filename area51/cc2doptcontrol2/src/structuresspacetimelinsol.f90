@@ -500,7 +500,7 @@ contains
     call sptils_setHierarchyMultigrid (p_rmgsolver,&
         rsettings%rspaceTimeHierPrimalDual,rsettings%rprjHierSpaceTimePrimalDual)
     
-    ! The solver ís MG.
+    ! The solver is MG.
     p_rsolver => p_rmgsolver
         
     ! Transfer all parameters

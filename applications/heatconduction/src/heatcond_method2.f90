@@ -346,7 +346,7 @@ contains
     !
     ! 3.) Vectors
     !
-    ! Now we come to the stuff with the vectors. Thís starts with the RHS vector.
+    ! Now we come to the stuff with the vectors. This starts with the RHS vector.
     !
     ! For setting up up a RHS vector during the time stepping, we have to
     ! set up the description of the corresponding linear form.

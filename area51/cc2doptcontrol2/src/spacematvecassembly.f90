@@ -48,7 +48,7 @@
 !#   $\iota_{ij}$  = 0/1     - switches the identity matrix on/off,
 !#   $\alpha_{ij}$ = 0/1     - switches the mass matrices on/off;
 !#                             =0 for stationary problem,
-!#   $\theta_{íj}$           - weight for the Laplace matrix,
+!#   $\theta_{ij}$           - weight for the Laplace matrix,
 !#   $\gamma_{ij}$ = 0/1     - Switches the nonlinearity on/off;
 !#                             =0 for Stokes system,
 !#   $dnewton_{ij} \in R$    - Switches the Newton matrix on/off.
