@@ -787,7 +787,7 @@ END IF
 !       else
     ! this represents the fct. f for 2c=u=2*(x-1)x(y-1)y
     ! returning the analytical computed RHS for the  solution (e.g. cell density )PDE
-    !-dtstep * { 4 ( y(y-1)+x(x-1) )  +  CHI [ (x²-x)² (6y²-6y+1)+(y²-y)² (6x²-6x+1 ) ] }
+    !-dtstep * { 4 ( y(y-1)+x(x-1) )  +  CHI [ (x^2-x)^2 (6y^2-6y+1)+(y^2-y)^2 (6x^2-6x+1 ) ] }
     Dcoefficients (1,:,:) = dtstep*( -2.0_DP * SCALE_U *D_1*( Dpoints(2,:,:)*( Dpoints(2,:,:)-1.0_DP)+Dpoints(1,:,:)*&
                                                 ( Dpoints(1,:,:)-1.0_DP) )&
                                         + CHI * SCALE_C * SCALE_U * ( ( ( Dpoints(1,:,:)**2 - Dpoints(1,:,:) )**2) *&
@@ -1898,7 +1898,7 @@ END IF
 
     ! this represents the fct. f for u=2c=2*(x-1)x(y-1)yexp(t)
     ! returning the analytical computed RHS for the  solution (e.g. cell density )PDE
-    !-dtstep * { 4 ( y(y-1)+x(x-1) )  +  CHI [ (x²-x)² (6y²-6y+1)+(y²-y)² (6x²-6x+1 ) ] }
+    !-dtstep * { 4 ( y(y-1)+x(x-1) )  +  CHI [ (x^2-x)^2 (6y^2-6y+1)+(y^2-y)^2 (6x^2-6x+1 ) ] }
     Dcoefficients (1,:,:) = dtstep *  (2*Dpoints(2,:,:)*( Dpoints(2,:,:)-1.0_DP) *&
                                                  Dpoints(1,:,:) * ( Dpoints(1,:,:) - 1.0_DP )*dexp(DTIME) &
                                     -4.0_DP * D_1 * dexp(DTIME)*&
@@ -6273,7 +6273,7 @@ END IF
 !       else
     ! this represents the fct. f for 2c=u=2*(x-1)x(y-1)y
     ! returning the analytical computed RHS for the  solution (e.g. cell density )PDE
-    !-dtstep * { 4 ( y(y-1)+x(x-1) )  +  CHI [ (x²-x)² (6y²-6y+1)+(y²-y)² (6x²-6x+1 ) ] }
+    !-dtstep * { 4 ( y(y-1)+x(x-1) )  +  CHI [ (x^2-x)^2 (6y^2-6y+1)+(y^2-y)^2 (6x^2-6x+1 ) ] }
     Dcoefficients (1,:,:) = dtstep*( -2.0_DP * SCALE_U *( Dpoints(2,:,:)*( Dpoints(2,:,:)-1.0_DP)+Dpoints(1,:,:)*&
                                                 ( Dpoints(1,:,:)-1.0_DP) )&
                                         + CHI * SCALE_C * SCALE_U * ( ( ( Dpoints(1,:,:)**2 - Dpoints(1,:,:) )**2) *&
