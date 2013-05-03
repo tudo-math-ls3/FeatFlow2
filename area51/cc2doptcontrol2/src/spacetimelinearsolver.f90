@@ -3335,7 +3335,7 @@ contains
       
       else
       
-        ! Using an altérnative linear solver for fallback in case of convergence problems.
+        ! Using an alternative linear solver for fallback in case of convergence problems.
         if (associated(rsolverNode%p_rmatrix%p_rsolution)) then
           call forwardBlockSOR (rsolverNode,rsolverNode%p_rmatrix,p_rx,rd,&
               p_rpreconditioner,p_rdiscrData,drelaxSOR,drelaxGS,rtempVectorX,rtempVectorD,&
