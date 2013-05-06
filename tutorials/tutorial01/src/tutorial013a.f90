@@ -121,7 +121,7 @@ contains
     ! Cleanup
     ! =================================
     
-    ! Release the boundary defintiion
+    ! Release the boundary definition
     call boundary_release(rboundary)
     
   end subroutine

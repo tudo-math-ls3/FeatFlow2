@@ -87,7 +87,7 @@ contains
     ! Release the triangulation    
     call tria_done (rtriangulation)
     
-    ! Release the boundary defintiion
+    ! Release the boundary definition
     call boundary_release(rboundary)
   end subroutine
 

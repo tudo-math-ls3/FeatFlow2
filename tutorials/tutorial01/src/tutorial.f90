@@ -93,6 +93,10 @@ program tutorial
   use tutorial013b
   use tutorial013c
   
+  use tutorial014a
+  use tutorial014b
+  use tutorial014c
+  
   use tutorial015a
   use tutorial015b
   use tutorial015c
@@ -194,6 +198,10 @@ program tutorial
   call start_tutorial013a
   call start_tutorial013b
   call start_tutorial013c
+
+  call start_tutorial014a
+  call start_tutorial014b
+  call start_tutorial014c
 
   call start_tutorial015a
   call start_tutorial015b
