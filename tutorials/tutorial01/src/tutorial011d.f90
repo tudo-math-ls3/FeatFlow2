@@ -217,12 +217,11 @@ contains
     ! Set up a Q1 discretisation
     call spdiscr_initDiscr_simple (rspatialDiscr,EL_Q1_2D,rtriangulation)
 
-    ! Set up a block discretisation for two equations.
-    call spdiscr_initBlockDiscr (rblockDiscr,2,rtriangulation)
-
-    ! Both equations are Q1. Initialise with the Q1 discretisation.
-    call spdiscr_duplicateDiscrSc (rspatialDiscr,rblockDiscr%RspatialDiscr(1))
-    call spdiscr_duplicateDiscrSc (rspatialDiscr,rblockDiscr%RspatialDiscr(2))
+    ! Set up a block discretisation for two equations. Both equations are Q1.
+    call spdiscr_initBlockDiscr (rblockDiscr,rtriangulation)
+    call spdiscr_appendBlockComponent (rblockDiscr,rspatialDiscr)
+    call spdiscr_appendBlockComponent (rblockDiscr,rspatialDiscr)
+    call spdiscr_commitBlockDiscr (rblockDiscr)
     
     ! =================================
     ! Use a 3-point Gauss Formula for the assembly

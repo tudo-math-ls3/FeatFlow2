@@ -164,6 +164,11 @@
 !#      -> Outputs information about the block of a trafo info structure
 !#         (mostly for debugging)
 !#
+!# 42.) spdiscr_appendBlockComponent
+!#      -> Add a new spatial discretisation as component to a block discretisation
+!#
+!# 43.) spdiscr_commitBlockDiscr
+!#      -> Commits a block discretisation
 !# 
 !#   The cubature information structure \\
 !# -------------------------------------- \\
@@ -702,6 +707,9 @@ module spatialdiscretisation
   public :: spdiscr_infoTrafoInfo
   public :: spdiscr_infoTrafoInfoBlock
   
+  public :: spdiscr_appendBlockComponent
+  public :: spdiscr_commitBlockDiscr
+  
   interface spdiscr_initDiscr_simple
     module procedure spdiscr_initDiscr_simple_old
     module procedure spdiscr_initDiscr_simple_new
@@ -720,6 +728,11 @@ module spatialdiscretisation
   interface spdiscr_deriveDiscr_triquad
     module procedure spdiscr_deriveDiscr_triquad_old
     module procedure spdiscr_deriveDiscr_triquad_new
+  end interface
+  
+  interface spdiscr_initBlockDiscr
+    module procedure spdiscr_initBlockDiscr_fix
+    module procedure spdiscr_initBlockDiscr_open
   end interface
 
 contains
@@ -1241,8 +1254,8 @@ contains
 
 !<subroutine>
 
-  subroutine spdiscr_initBlockDiscr (rblockDiscr,ncomponents,&
-                                     rtriangulation, rboundary)
+  subroutine spdiscr_initBlockDiscr_fix (rblockDiscr,ncomponents,&
+      rtriangulation, rboundary)
 
 !<description>
 
@@ -1259,8 +1272,8 @@ contains
 
 !<input>
 
-  ! OPTIONAL: Number of solution components maintained by the block structure
-  integer, intent(in), optional                :: ncomponents
+  ! Number of solution components maintained by the block structure
+  integer, intent(in)                          :: ncomponents
 
   ! OPTIONAL: The triangulation structure underlying to the discretisation.
   type(t_triangulation), intent(in), optional, target :: rtriangulation
@@ -1279,28 +1292,26 @@ contains
 
 !</subroutine>
 
-  ! Initialise the variables of the structure for the simple discretisation
-  rblockDiscr%ccomplexity      = SPDISC_UNIFORM
-  
-  if (present(rtriangulation)) then
-    rblockDiscr%ndimension       = rtriangulation%ndim
-    rblockDiscr%p_rtriangulation => rtriangulation
-  else
-    ! Unknown dimension
-    rblockDiscr%ndimension       = -1
-    nullify(rblockDiscr%p_rtriangulation)
-  end if
-  
-  if (present(rboundary)) then
-    rblockDiscr%p_rboundary    => rboundary
-  else
-    nullify(rblockDiscr%p_rboundary)
-  end if
+    ! Initialise the variables of the structure for the simple discretisation
+    rblockDiscr%ccomplexity      = SPDISC_UNIFORM
+    
+    if (present(rtriangulation)) then
+      rblockDiscr%ndimension       = rtriangulation%ndim
+      rblockDiscr%p_rtriangulation => rtriangulation
+    else
+      ! Unknown dimension
+      rblockDiscr%ndimension       = -1
+      nullify(rblockDiscr%p_rtriangulation)
+    end if
+    
+    if (present(rboundary)) then
+      rblockDiscr%p_rboundary    => rboundary
+    else
+      nullify(rblockDiscr%p_rboundary)
+    end if
 
-  rblockDiscr%ncomponents      = ncomponents
-  allocate(rblockDiscr%RspatialDiscr(ncomponents))
-
-  ! That is it.
+    rblockDiscr%ncomponents      = ncomponents
+    allocate(rblockDiscr%RspatialDiscr(ncomponents))
 
   end subroutine
 
@@ -1334,6 +1345,163 @@ contains
 
     call spdiscr_initBlockDiscr (rblockDiscr,1)
     call spdiscr_initDiscr_free (rblockDiscr%RspatialDiscr(1),ndof)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine spdiscr_initBlockDiscr_open (rblockDiscr, rtriangulation, rboundary)
+
+!<description>
+  ! This routine initialises an "open" block discretisation structure.
+  ! Pointers to the triangulation, domain and boundary conditions are 
+  ! saved in the structure. The caller can add spatial discretisation
+  ! structures using spdiscr_appendBlockComponent. After the discretisation
+  ! is finished, spdiscr_commitBlockDiscr shall be called.
+!</description>
+
+!<input>
+
+  ! OPTIONAL: The triangulation structure underlying to the discretisation.
+  type(t_triangulation), intent(in), optional, target :: rtriangulation
+
+  ! OPTIONAL: The underlying domain.
+  type(t_boundary), intent(in), target, optional :: rboundary
+
+!</input>
+
+!<output>
+
+  ! The block discretisation structure to be initialised.
+  type(t_blockDiscretisation), intent(out) :: rblockDiscr
+
+!</output>
+
+!</subroutine>
+
+    ! Initialise the variables of the structure for the simple discretisation
+    rblockDiscr%ccomplexity      = SPDISC_UNIFORM
+    
+    if (present(rtriangulation)) then
+      rblockDiscr%ndimension       = rtriangulation%ndim
+      rblockDiscr%p_rtriangulation => rtriangulation
+    else
+      ! Unknown dimension
+      rblockDiscr%ndimension       = -1
+      nullify(rblockDiscr%p_rtriangulation)
+    end if
+    
+    if (present(rboundary)) then
+      rblockDiscr%p_rboundary    => rboundary
+    else
+      nullify(rblockDiscr%p_rboundary)
+    end if
+
+    ! Allocate a minimum amount of discretisation structures.
+    ! Memory will be reduced later.
+    rblockDiscr%ncomponents      = 0
+    allocate(rblockDiscr%RspatialDiscr(16))
+
+    ! That is it.
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine spdiscr_appendBlockComponent (rblockDiscr, rspatialDiscr, ntensorDim, bshare)
+
+!<description>
+  ! Adds a new discretisation structure to the block discretisation.
+!</description>
+
+!<input>
+  ! Source discretisation structure to be added.
+  type(t_spatialDiscretisation), intent(in) :: rspatialDiscr
+  
+  ! OPTIONAL: Defines a tensor dimension. If specified, rspatialDiscr will
+  ! be added ntensorDim times. Default =1.
+  integer, intent(in), optional :: ntensorDim
+  
+  ! OPTIONAL: Defines whether or not the block discretisation should "share"
+  ! the data with rspatialDiscr. =TRUE by default.
+  logical, intent(in), optional :: bshare
+!</input>
+
+!<inputoutput>
+  ! The block discretisation structure where to add rspatialDiscr.
+  type(t_blockDiscretisation), intent(inout) :: rblockDiscr
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    type(t_spatialDiscretisation), dimension(:), pointer :: p_RspatialDiscr
+    integer :: isize,ntensor,i
+    
+    ntensor = 1
+    if (present(ntensorDim)) ntensor = ntensorDim
+    
+    do i=1,ntensor
+      
+      ! Check if there is enough space.
+      if (rblockDiscr%ncomponents .ge. ubound (rblockDiscr%RspatialDiscr,1)) then
+
+        ! Reallocate
+        isize = ubound (rblockDiscr%RspatialDiscr,1)
+        allocate (p_RspatialDiscr(isize+16))
+        p_RspatialDiscr (1:isize) = rblockDiscr%RspatialDiscr(1:isize)
+        deallocate (rblockDiscr%RspatialDiscr)
+        rblockDiscr%RspatialDiscr => p_RspatialDiscr
+
+      end if
+      
+      ! New block
+      rblockDiscr%ncomponents = rblockDiscr%ncomponents + 1
+      
+      ! Duplicate the spatial discretisation into this block
+      call spdiscr_duplicateDiscrSc (rspatialDiscr, &
+          rblockDiscr%RspatialDiscr(rblockDiscr%ncomponents), bshare)
+    end do
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine spdiscr_commitBlockDiscr (rblockDiscr)
+
+!<description>
+  ! "Finishes" a block discretisation after being set up with 
+  ! spdiscr_appendBlockComponent.
+!</description>
+
+!<inputoutput>
+  ! The block discretisation structure to be committed.
+  type(t_blockDiscretisation), intent(inout) :: rblockDiscr
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    type(t_spatialDiscretisation), dimension(:), pointer :: p_RspatialDiscr
+    integer :: isize
+    
+    ! Reallocate to the correct size
+    isize = ubound (rblockDiscr%RspatialDiscr,1)
+    if (rblockDiscr%ncomponents .eq. isize) return
+
+    ! Reallocate
+    isize = rblockDiscr%ncomponents
+
+    allocate (p_RspatialDiscr(isize))
+    p_RspatialDiscr (1:isize) = rblockDiscr%RspatialDiscr(1:isize)
+    deallocate (rblockDiscr%RspatialDiscr)
+    rblockDiscr%RspatialDiscr => p_RspatialDiscr
 
   end subroutine
 

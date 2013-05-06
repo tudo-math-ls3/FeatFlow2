@@ -177,8 +177,9 @@ contains
     call spdiscr_initDiscr_simple (rspatialDiscr,EL_Q1_2D,rtriangulation,rboundary)
     
     ! Create a block discretisation with 1 block Q1.
-    call spdiscr_initBlockDiscr (rblockDiscr,1,rtriangulation,rboundary)
-    call spdiscr_duplicateDiscrSc (rspatialDiscr, rblockDiscr%RspatialDiscr(1), .true.)
+    call spdiscr_initBlockDiscr (rblockDiscr,rtriangulation,rboundary)
+    call spdiscr_appendBlockComponent (rblockDiscr,rspatialDiscr)
+    call spdiscr_commitBlockDiscr (rblockDiscr)
 
     ! =================================
     ! Assemble a matrix, a RHS and create 

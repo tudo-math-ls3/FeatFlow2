@@ -100,6 +100,8 @@ program tutorial
   use tutorial015a
   use tutorial015b
   use tutorial015c
+  
+  use tutorial016a
 
   implicit none
   
@@ -206,6 +208,8 @@ program tutorial
   call start_tutorial015a
   call start_tutorial015b
   call start_tutorial015c
+
+  call start_tutorial016a
 
   ! -----------------------------------------------------------------
   ! Clean up
