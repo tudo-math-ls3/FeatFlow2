@@ -3220,7 +3220,7 @@ contains
 
       ! Calculates the value of the integral for a set of elements.
       
-      ! Returns the value of the integral
+      ! Returns the value of the integral(s)
       real(DP), dimension(:), intent(out) :: Dintvalues
 
       ! Data necessary for the assembly. Contains determinants and
@@ -3351,7 +3351,7 @@ contains
 
       ! Calculates the value of the integral for a set of elements.
       
-      ! Returns the value of the integral
+      ! Returns the value of the integral(s)
       real(DP), dimension(:), intent(out) :: Dintvalues
 
       ! Data necessary for the assembly. Contains determinants and
