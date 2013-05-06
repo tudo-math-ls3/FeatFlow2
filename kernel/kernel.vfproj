@@ -142,13 +142,11 @@
 		<File RelativePath=".\DataStructures\mapSP_Int.f90"/>
 		<File RelativePath=".\DataStructures\mapSP_SP.f90"/></Filter>
 		<Filter Name="Octree">
-		<File RelativePath=".\DataStructures\octree.f90"/>
 		<File RelativePath=".\DataStructures\octree.h"/>
 		<File RelativePath=".\DataStructures\octreebase.f90"/>
 		<File RelativePath=".\DataStructures\octreeDP.f90"/>
 		<File RelativePath=".\DataStructures\octreeSP.f90"/></Filter>
 		<Filter Name="Quadtree">
-		<File RelativePath=".\DataStructures\quadtree.f90"/>
 		<File RelativePath=".\DataStructures\quadtree.h"/>
 		<File RelativePath=".\DataStructures\quadtreebase.f90"/>
 		<File RelativePath=".\DataStructures\quadtreeDP.f90"/>
