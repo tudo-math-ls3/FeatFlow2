@@ -104,6 +104,14 @@
 		<File RelativePath=".\src\tutorial004a.f90"/>
 		<File RelativePath=".\src\tutorial004b.f90"/>
 		<File RelativePath=".\src\tutorial004c.f90"/>
+		<File RelativePath=".\src\tutorial004d.f90"/>
+		<File RelativePath=".\src\tutorial004e.f90"/>
+		<File RelativePath=".\src\tutorial004f.f90"/>
+		<File RelativePath=".\src\tutorial004g.f90"/>
+		<File RelativePath=".\src\tutorial004h.f90"/>
+		<File RelativePath=".\src\tutorial004i.f90"/>
+		<File RelativePath=".\src\tutorial004j.f90"/>
+		<File RelativePath=".\src\tutorial004k.f90"/>
 		<File RelativePath=".\src\tutorial005a.f90"/>
 		<File RelativePath=".\src\tutorial005b.f90"/>
 		<File RelativePath=".\src\tutorial005c.f90"/>
@@ -153,6 +161,5 @@
 		<File RelativePath=".\src\tutorial014c.f90"/>
 		<File RelativePath=".\src\tutorial015a.f90"/>
 		<File RelativePath=".\src\tutorial015b.f90"/>
-		<File RelativePath=".\src\tutorial015c.f90"/>
-		</Filter></Files>
+		<File RelativePath=".\src\tutorial015c.f90"/></Filter></Files>
 	<Globals/></VisualStudioProject>
