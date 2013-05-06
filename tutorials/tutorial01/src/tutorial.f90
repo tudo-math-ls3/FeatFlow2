@@ -106,6 +106,7 @@ program tutorial
   use tutorial016c
   use tutorial016d
   use tutorial016e
+  use tutorial016f
 
   implicit none
   
@@ -218,6 +219,7 @@ program tutorial
   call start_tutorial016c
   call start_tutorial016d
   call start_tutorial016e
+  call start_tutorial016f
 
   ! -----------------------------------------------------------------
   ! Clean up
