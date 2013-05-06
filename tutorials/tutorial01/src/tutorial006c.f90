@@ -62,6 +62,13 @@ contains
     ! Create a CSR-matrix for the above
     ! discretisation.
     ! =================================
+    
+    ! NOTE: Based on the above discretisation, we create a matrix
+    ! in CSR format (matrix format LSYSSC_MATRIX9). We only create the
+    ! "structure" at first, i.e., the index arrays that describe the
+    ! positions of the nonzero entries.
+    ! Later on, we allocate memory for the "content", i.e., the actual
+    ! entries of the matrix.
 
     ! Create the matrix structure
     call bilf_createMatrixStructure (rdiscretisation,LSYSSC_MATRIX9,rmatrix)

@@ -83,6 +83,14 @@ contains
 
     ! ------------------------------------
     ! ----- Mass matrix ------------------
+    
+    ! NOTE: "lsyssc_duplicateMatrix" allows to "derive" a matrix from another one
+    ! in various ways. In the following, we use the routine to derive a mass
+    ! matrix rmatrixMass from the template matrix rmatrixTemplate. The mass
+    ! matrix "shares" the (CSR-) structure of the template matrix (->LSYSSC_DUP_SHARE),
+    ! so no additional memory is allocated. For the "content" (the entries), 
+    ! a new and empty memory block is allocated (->LSYSSC_DUP_EMPTY) which we later
+    ! fill with data.
 
     ! Share structure, allocate memory for new content    
     call lsyssc_duplicateMatrix (rmatrixTemplate,rmatrixMass,&

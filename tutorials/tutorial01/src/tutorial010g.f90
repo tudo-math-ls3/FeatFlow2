@@ -139,11 +139,11 @@ contains
       
     end do
 
-    ! Get local data
+    ! Get pointers to local data
     p_DbasTrial => RmatrixData(1,1)%p_DbasTrial
     p_DbasTest => RmatrixData(1,1)%p_DbasTest
     
-    ! Get the matrix data.
+    ! Get a pointer to the matrix data.
     p_rmatrixData11 => RmatrixData(1,1)
     
     ! Get the matrix entries.

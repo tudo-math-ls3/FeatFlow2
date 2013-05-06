@@ -89,6 +89,14 @@ contains
 
     ! -------------------------------------------
     ! Discretise the Mass matrix.
+    
+    ! NOTE: A mass matrix is defined by the entries  m_ij = ( phi_j, psi_i ), i.e.,
+    ! in the corresponding bilinear form, we have to use function values of the
+    ! test and trial functions phi/psi. The constant DER_FUNC2D below tells the
+    ! code to use function values; see "derivatives.f90" for a list of possible
+    ! derivative quantifiers.
+    
+    ! Clear the matrix and discretise using a "bilinear form" approach.
     call lsyssc_clearMatrix (rmatrix)
     
     call stdop_assembleSimpleMatrix (rmatrix,DER_FUNC2D,DER_FUNC2D)

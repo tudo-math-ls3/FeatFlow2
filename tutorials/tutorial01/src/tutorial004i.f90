@@ -23,7 +23,7 @@ contains
 
     ! Declare some variables
     type(t_quadtreeDP) :: rquadtree
-    integer :: i,iresult
+    integer :: iresult
 
     ! Print a message
     call output_lbrk()

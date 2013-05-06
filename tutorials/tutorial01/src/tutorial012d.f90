@@ -71,7 +71,7 @@ contains
       call output_line ("Writing file 'post/tutorial012d_level"//trim(sys_siL(i,10))//".vtk'.")
 
       ! Open / write / close
-      call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+      call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rmeshHierarchy%p_Rtriangulations(i),&
           "post/tutorial012d_level"//trim(sys_siL(i,10))//".vtk")
       call ucd_write (rexport)
       call ucd_release (rexport)

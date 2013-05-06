@@ -87,10 +87,10 @@ contains
 
     real(DP) :: df, dfx, dfy, dg
 
-    ! Get cubature weights data
+    ! Get a pointer to cubature weights data
     p_DcubWeight => rassemblyData%p_DcubWeight
 
-    ! Get local data
+    ! Get pointers to local data
     p_DbasTrial => RmatrixData(1,1)%p_DbasTrial
     p_DbasTest => RmatrixData(1,1)%p_DbasTest
     
