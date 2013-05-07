@@ -302,7 +302,7 @@ contains
     call ls_BCs_Dirichlet(Rlevels,NLMAX,NLMIN,rrhs,rvector,rvector_old)
 
     ! 3-2 Zero Mean Pressure constraint
-    call ls_BCs_ZMP(Rlevels,rrhs,rboundary,inl,rparams,NLMAX,NLMIN)     
+    call ls_BCs_ZMP(Rlevels,rrhs,rboundary,inl,rparams,NLMAX,NLMIN,0)     
      
 
     ! +++++++++++++++++++
@@ -319,7 +319,7 @@ contains
     call ls_BCs_Dirichlet(Rlevels,NLMAX,NLMIN)
 
     ! 4-4 Zero Mean Pressure constraint
-    call ls_BCs_ZMP(Rlevels,rrhs,rboundary,inl,rparams,NLMAX,NLMIN)
+    call ls_BCs_ZMP(Rlevels,rdefect,rboundary,inl,rparams,NLMAX,NLMIN,1)
  
     ! 4-5 Solve the system
     call ls_Solver_linear(Rlevels,rvector,rdefect,rparams)
@@ -2418,7 +2418,7 @@ contains
   end do
   
   ! The RHS vector if passed
-  if (present(rvector)) then
+  if (present(rrhs)) then
     ! Assign the boundary conditions to the vectors ONLY on the finest level.
     ! The RHS vector
     call lsysbl_assignDiscreteBC(rrhs,Rlevels(NLMAX)%rdiscreteBC)
@@ -2440,7 +2440,7 @@ contains
   !****************************************************************************
 
 !<subroutine>
-  subroutine ls_BCs_ZMP(Rlevels,rrhs,rboundary,inl,rparams,NLMAX,NLMIN)
+  subroutine ls_BCs_ZMP(Rlevels,rrhs,rboundary,inl,rparams,NLMAX,NLMIN,irhsmode)
                 
  !<description>  
   ! Implementing the Zero Mean Pressure Constraint.
@@ -2458,13 +2458,18 @@ contains
 
   ! Min, Max levels
   integer, intent(in) :: NLMIN, NLMAX
+
+  ! A parameter that separates the two modes of using this routine
+  !  .eq. 0  the rhs vector is passed
+  !  .eq. 1  the defect vector is passed
+  integer, intent(in) :: irhsmode
  !</input>
  
  !<inputoutput>
   ! An array of problem levels for the multigrid solver
   type(t_level), dimension(:), pointer :: Rlevels
    
-  ! RHS block vector
+  ! RHS or defect block vector
   type(t_vectorBlock), intent(inout) :: rrhs
  !</inputoutput>
 
@@ -2491,7 +2496,7 @@ contains
     ! Lumped mass matrix technique 
     ! Check if this is the first nonlinear iteration,
     !  then make lumped mass matrix on all levels
-    if (inl .eq. 1) then
+    if ( (irhsmode .eq. 0) .and. (inl .eq. 1) ) then
     
      ! Read the finite element for the Pressure
      call parlst_getvalue_string (rparams, 'MESH', 'Pelm', sstring)
@@ -2656,7 +2661,6 @@ contains
   !<input>
   ! All parameters in LSFEM solver
   type(t_parlist), intent(in) :: rparams
-  
   !</input>
  
 !</subroutine>
@@ -3265,10 +3269,17 @@ contains
   ! Convergence parameter, either by error or by NLN_Max
   logical, intent(out) :: converged,diverged
  !</output>
- 
+
+
+  !<inputoutput>
+  ! Solution vectors in the current nonliner iteration and
+  ! the defect vector
+  type(t_vectorBlock), intent(inout) :: rvector,rdefect
+  !</inputoutput>
+  
   !<input>
-   ! Solution vectors in the current/previous nonliner iterations  
-  type(t_vectorBlock) :: rvector,rvector_old,rdefect
+  ! Solution vectors in the previous nonliner iteration
+  type(t_vectorBlock), intent(in) :: rvector_old
   
   ! Nonlinear loop's maximum/current number of iterations
   integer, intent(in) :: NLN_Max,inl
@@ -3303,7 +3314,7 @@ contains
   ! Euclidian vector norm: (vector,vector) 0
   ! $l_2$-norm: 1/sqrt(NEQ) * (vector,vector) 2
   ! max-norm 3
-  Cnorms(:) = 1
+  Cnorms(:) = 2
   
   ! Initialize the 'rdiff' structure and set the values to zero
   call lsysbl_createVecBlockIndirect (rvector,rdiff,.true.)
@@ -3352,8 +3363,8 @@ contains
              .and. Dres_rel(5) .lt. 1E8 .and. Dres_rel(6) .lt. 1E8  )
  
   
-  ! Calculate the Euclidian norm of the defect
-  Cdefnorm(1) = 1
+  ! Calculate the L^2 norm of the defect
+  Cdefnorm(1) = 2
   call lsysbl_vectorNormBlock (rdefect,Cdefnorm,defnorm)
 
 
@@ -3423,15 +3434,17 @@ contains
   ! Convergence divergence parameters
   logical, intent(inout) :: converged,diverged
   
-   ! Solution vectors in the current/previous nonliner iterations
-   ! and the RHS vector
-  type(t_vectorBlock), intent(inout) :: rvector,rvector_old,rrhs  
-  
+  ! Solution vectors in the previous nonliner iteration
+  ! and the RHS vector
+  type(t_vectorBlock), intent(inout) :: rvector_old,rrhs
  !<\inputoutput>
  
   !<input>
   ! Nonlinear loop's maximum/current number of iterations
   integer, intent(in) :: NLMAX,NLMIN
+  
+  ! Solution vectors in the current nonliner iteration
+  type(t_vectorBlock), intent(in) :: rvector
   !</input>
  
 !</subroutine>
@@ -6346,7 +6359,7 @@ contains
 
 !</subroutine>
 
-  !  The defect is calculated simply!
+  ! The defect is calculated simply!
   call lsysbl_copyVector (rrhs,rdefect)
   call lsysbl_blockMatVec (rmatrix, rvector, rdefect, 1.0_DP, -1.0_DP)    
     
