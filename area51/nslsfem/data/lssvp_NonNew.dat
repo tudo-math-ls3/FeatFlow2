@@ -31,7 +31,7 @@ Problem = 0
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Kinematic viscosity \nu(z) model
-#  z = Dii(u) = 1/2 ( D(u):D(u) )
+#  z = Dii(u) = 1/2 ( 2D(u):2D(u) )
 #  D(u) = 1/2 ( grad(u) + grad(u)^T )
 #   = 1 Power Law (PL)
 #   = 2 Carreau Law (CL)
@@ -42,7 +42,7 @@ viscosity_model = 1
 # Constants in viscosity models
 # Power Law = PL
 PL_nu0 = 1
-PL_r = 1.5
+PL_r = 2.0
 
 # Carreau Law = CL
 CL_nu0 = 1
@@ -67,7 +67,7 @@ alpha = 1.0
 sFilenamePathMesh = './pre/QUAD'
 
 # Final mesh level to solve the problem:
-NLMAX = 6
+NLMAX = 5
 
 # Coarse mesh level, used in multigrid:
 NLMIN = 5
@@ -131,7 +131,7 @@ detPDisc = 1
 #   =3 Mixed
 #     (start with fixed-point and after 'FPIter',
 #      continue with Newton's method)
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ~~~~~~~~~~~~~~~ ~~~~~~~~~~~~~~~~~~~
 LinTyp = 1
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -142,14 +142,18 @@ LinTyp = 1
 #    FPIter must be .le. NLN_MAX otherwise, it'll
 #    be replaced with NLN_MAX.
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-FPIter = 1
+FPIter = 5
 
 # Nonlinear loop Max number of iterations
-NLN_MAX = 25
+NLN_MAX = 100
 
 # Nonlinear loop stopping criteria
 #  Serves as a measure of relative residual
-dNLEpsi = 1E-6
+dNLEpsi = 1E-8
+
+# The damping parameter in nonlinear
+#  deferred correction loop
+omega = 1.0
 
 
 #-----------------------------------------------------
@@ -321,7 +325,7 @@ deojEdgeExpP = 2.0
 #    =1  Stand-alone Multigrid solver
 #    =2  Multigrid-preconditioned (CG\BiCGStab) solver
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-LINsolverType = 2
+LINsolverType = 1
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # If we have a Multigrid-preconditioned solver, then,
@@ -333,12 +337,12 @@ LINsolver = 1
 
 # If we have a Multigrid-preconditioned solver, then,
 #  what is the Krylov subspace linear solver relative error
-depsRelLS = 1e-5
+depsRelLS = 1e-3
 
 # If we have a Multigrid-preconditioned solver, then,
 #  what is the Krylov subspace linear solver Max. number of iterations
 #  "=10 for flow around cylinder"
-nmaxItsLS = 15
+nmaxItsLS = 100
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # If we have a Multigrid-preconditioned solver, then,
@@ -588,7 +592,7 @@ detKEnergy = 1
 #   =0  don't calculate
 #   =1  yes calculate
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Div = 1
+Div = 0
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Calculate Global Mass Conservation (GMC)
