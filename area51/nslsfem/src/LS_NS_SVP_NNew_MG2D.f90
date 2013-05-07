@@ -20,7 +20,7 @@
 !# of the deformation rate tensor, D(u), through power law for example.
 !# Here we have:
 !#  D(u) = 1/2 ( grad(u) + grad(u)^T )
-!#  Dii(u) = 1/2 ( D(u):D(u) ) = 1/2 tr(Dii(u)^2)
+!#  Dii(u) = 1/2 ( 2D(u):2D(u) ) = 1/2 tr(Dii(u)^2)
 !#  
 !#  Viscosity defines with the POWER LAW:
 !#                             r/2-1
@@ -185,6 +185,9 @@ contains
   ! Loop index
   integer :: i
   
+  ! Damping parameter in nonlinear deferred correction loop
+  real(DP) :: domega
+  
   ! Parameters used in nonliner loop
   integer :: inl,NLN_Max
   real(DP) :: dNLEpsi
@@ -204,7 +207,7 @@ contains
   ! Timer objects for stopping time
   type(t_timer) :: rtimerTotal
   type(t_timer) :: rtimerSolver
-  
+
   ! Ok, let's start.
   ! Initialise the timers by zero:
   call stat_clearTimer(rtimerTotal)
@@ -216,7 +219,7 @@ contains
   ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   ! 0)-Read all the parameters from data file and initialize the collection.
   ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-  
-  call ls_initParams(rparams,NLN_MAX,dNLEpsi,rcollection)
+  call ls_initParams(rparams,NLN_MAX,dNLEpsi,domega,rcollection)
   
 
   ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -270,7 +273,7 @@ contains
   !   4- Solver setup, solution of the final system, solver release
   !   5- Check for the non-linear loop convergence/divergence
   !   6- Update initial guess 'if (.not. converged) .and. (.not. diverged)'
-  !  (all matrix and RHS vectors must be cleaned, 
+  !   (all matrix and RHS vectors must be cleaned, 
   !   zero-valued, after this!!)
   ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   ! Start Nonlinear Solver Timer
@@ -278,67 +281,64 @@ contains
   
   do inl=1,NLN_Max
   
-  ! +++++++++++++++++++++++++
-  ! 1- System Matrix Assembly
-  ! +++++++++++++++++++++++++
-  call ls_MatAssembly(Rlevels,rvector_old,p_rtempVectorSc,&
-        rcollection,rparams,NLMIN,NLMAX,inl,0)
-  
-  
-  ! +++++++++++++++
-  ! 2- RHS Assembly
-  ! +++++++++++++++
-  call ls_RHS_Assembly(rrhs,rvector_old,rcollection,&
-           Rlevels(NLMAX)%rcubatureInfo,inl) 
-  
+    ! +++++++++++++++++++++++++
+    ! 1- System Matrix Assembly
+    ! +++++++++++++++++++++++++
+    call ls_MatAssembly(Rlevels,rvector_old,p_rtempVectorSc,&
+          rcollection,rparams,NLMIN,NLMAX,inl,0)
+    
+    
+    ! +++++++++++++++
+    ! 2- RHS Assembly
+    ! +++++++++++++++
+    call ls_RHS_Assembly(rrhs,rvector_old,rcollection,&
+             Rlevels(NLMAX)%rcubatureInfo,inl) 
+    
 
-  ! ++++++++++++++++++++++
-  ! 3- Boundary Conditions
-  ! ++++++++++++++++++++++   
-  ! 3-1 Dirichlet BCs.
-  call ls_BCs_Dirichlet(Rlevels,rrhs,NLMAX,NLMIN,rvector,rvector_old)
+    ! ++++++++++++++++++++++
+    ! 3- Boundary Conditions
+    ! ++++++++++++++++++++++   
+    ! 3-1 Dirichlet BCs.
+    call ls_BCs_Dirichlet(Rlevels,NLMAX,NLMIN,rrhs,rvector,rvector_old)
 
-  ! 3-2 Zero Mean Pressure constraint
-  call ls_BCs_ZMP(Rlevels,rrhs,rboundary,inl,rparams,NLMAX,NLMIN)     
-   
+    ! 3-2 Zero Mean Pressure constraint
+    call ls_BCs_ZMP(Rlevels,rrhs,rboundary,inl,rparams,NLMAX,NLMIN)     
+     
 
-  ! +++++++++++++++++++
-  ! 4- Solve the System
-  ! +++++++++++++++++++
-  ! 4-1 Calculate the linearized system defect
-  call ls_Defect(Rlevels(NLMAX)%rmatrix, rvector_old,rrhs,rdefect)
-  
-  ! 4-2 Take care of the Newton scheme additional terms, if any! 
-  call ls_MatAssembly(Rlevels,rvector_old,p_rtempVectorSc,&
-        rcollection,rparams,NLMIN,NLMAX,inl,1)
+    ! +++++++++++++++++++
+    ! 4- Solve the System
+    ! +++++++++++++++++++
+    ! 4-1 Calculate the linearized system defect
+    call ls_Defect(Rlevels(NLMAX)%rmatrix, rvector_old,rrhs,rdefect)
+    
+    ! 4-2 Take care of the Newton scheme additional terms, if any! 
+    call ls_MatAssembly(Rlevels,rvector_old,p_rtempVectorSc,&
+          rcollection,rparams,NLMIN,NLMAX,inl,1)
 
-  ! 4-3 Neuman, Outflow and Etc. BCs.
-  call ls_BCs_NOE(Rlevels,rdefect,rboundary,rparams,NLMAX,NLMIN)  
+    ! 4-3 Dirichlet BCs. preconditioner matrix ONLY
+    call ls_BCs_Dirichlet(Rlevels,NLMAX,NLMIN)
 
-  ! 4-4 Dirichlet BCs.
-  call ls_BCs_Dirichlet(Rlevels,rdefect,NLMAX,NLMIN)
-  
-  ! 4-5 Zero Mean Pressure constraint
-  call ls_BCs_ZMP(Rlevels,rdefect,rboundary,inl,rparams,NLMAX,NLMIN)
-  
-  ! 4-6 Solve the system
-  call ls_Solver_linear(Rlevels,rvector,rdefect,rparams)
-  
-  
-  ! ++++++++++++++++++++++++++++++++++++++
-  ! 5- Check for Convergence or Divergence
-  ! ++++++++++++++++++++++++++++++++++++++
-  call ls_con_di_verge(converged,diverged,rvector,&
-        rvector_old,NLN_Max,inl,dNLEpsi)
-  
-  
-  ! +++++++++++++++++++++++++++++++++++++++++++++++++++++
-  ! 6- Update the Initial Solution, clear matrix, vectors
-  !  or Terminate the Loop
-  ! +++++++++++++++++++++++++++++++++++++++++++++++++++++
-  call ls_update_solution(Rlevels,converged,diverged,&
-       rvector,rvector_old,rrhs,NLMAX,NLMIN,det)
-  if (det) EXIT
+    ! 4-4 Zero Mean Pressure constraint
+    call ls_BCs_ZMP(Rlevels,rrhs,rboundary,inl,rparams,NLMAX,NLMIN)
+ 
+    ! 4-5 Solve the system
+    call ls_Solver_linear(Rlevels,rvector,rdefect,rparams)
+    
+    
+    ! ++++++++++++++++++++++++++++++++++++++
+    ! 5- Check for Convergence or Divergence
+    ! ++++++++++++++++++++++++++++++++++++++
+    call ls_con_di_verge(converged,diverged,rvector,&
+          rvector_old,NLN_Max,inl,dNLEpsi,rdefect,domega)
+
+    
+    ! +++++++++++++++++++++++++++++++++++++++++++++++++++++
+    ! 6- Update the Initial Solution, clear matrix, vectors
+    !  or Terminate the Loop
+    ! +++++++++++++++++++++++++++++++++++++++++++++++++++++
+    call ls_update_solution(Rlevels,converged,diverged,&
+         rvector,rvector_old,rrhs,NLMAX,NLMIN,det)
+    if (det) EXIT
     
   end do  ! inl
   
@@ -376,7 +376,7 @@ contains
   !****************************************************************************
   
 !<subroutine>
-  subroutine ls_initParams(rparams,NLN_MAX,dNLEpsi,rcollection)
+  subroutine ls_initParams(rparams,NLN_MAX,dNLEpsi,domega,rcollection)
 
  !<description>  
   ! In this subroutine, the collection structrure is initialized.
@@ -386,8 +386,8 @@ contains
   ! All parameters in LSFEM solver
   type(t_parlist), intent(out) :: rparams 
 
-  ! Nonlinear loop stopping criteria
-  real(DP), intent(out) :: dNLEpsi
+  ! Nonlinear loop stopping criteria and damping parameter
+  real(DP), intent(out) :: dNLEpsi, domega
 
   ! Nonlinear loop Max. number of iterations
   integer, intent(out) :: NLN_MAX
@@ -497,6 +497,10 @@ contains
     call parlst_getvalue_double (rparams, 'RHS', 'dC', &
       rcollection%DquickAccess(9), 1.0_DP)
   end if
+
+  ! The damping parameter in nonlinear deferred correction loop
+  call parlst_getvalue_double (rparams, 'NLLOOP', 'omega', &
+                               domega, 1.0_DP)
   
   end subroutine
   
@@ -2377,7 +2381,7 @@ contains
   !****************************************************************************
 
 !<subroutine>
-  subroutine ls_BCs_Dirichlet(Rlevels,rrhs,NLMAX,NLMIN,rvector,rvector_old)
+  subroutine ls_BCs_Dirichlet(Rlevels,NLMAX,NLMIN,rrhs,rvector,rvector_old)
                 
  !<description>  
   ! Implementing BCs to the matrix and solution/RHS vectors.
@@ -2391,8 +2395,8 @@ contains
   ! Block solution vectors 
   type(t_vectorBlock), intent(inout), optional :: rvector,rvector_old
 
-  ! Block RHS or Defect vector
-  type(t_vectorBlock), intent(inout) :: rrhs
+  ! Block RHS vector
+  type(t_vectorBlock), intent(inout), optional :: rrhs
    
   ! An array of problem levels for the multigrid solver
   type(t_level), dimension(:), pointer :: Rlevels
@@ -2413,12 +2417,14 @@ contains
     
   end do
   
-  ! Assign the boundary conditions to the vectors ONLY on the finest level.
-  ! The RHS or defect vector
-  call lsysbl_assignDiscreteBC(rrhs,Rlevels(NLMAX)%rdiscreteBC)
-  ! Implement the filter  
-  call vecfil_discreteBCrhs (rrhs)
-  
+  ! The RHS vector if passed
+  if (present(rvector)) then
+    ! Assign the boundary conditions to the vectors ONLY on the finest level.
+    ! The RHS vector
+    call lsysbl_assignDiscreteBC(rrhs,Rlevels(NLMAX)%rdiscreteBC)
+    ! Implement the filter  
+    call vecfil_discreteBCrhs (rrhs)
+  end if  
   
   ! The solution vectors if passed
   if (present(rvector)) then
@@ -2628,207 +2634,6 @@ contains
 
 
   !****************************************************************************
-
-!<subroutine>
-  subroutine ls_BCs_NOE(Rlevels,rrhs,rboundary,rparams,NLMAX,NLMIN)
-                
- !<description>
-  ! Set up Neumann, Outflow and Etc. BCs.
- !</description>
-
- !<inputoutput>
-  ! An array of problem levels for the multigrid solver
-  type(t_level), dimension(:), pointer :: Rlevels
- !</inputoutput>
- 
-  !<input>
-  ! Level information
-  integer, intent(in) :: NLMAX, NLMIN
-  
-  ! All parameters in LSFEM solver
-  type(t_parlist), intent(in) :: rparams
-  
-  ! An object for saving the domain:
-  type(t_boundary), intent(in) :: rboundary
-  
-  ! RHS vector
-  ! May be required later, for instance to impose 
-  ! non-homogeneous Neumann BC, which requires the RHS 
-  ! modifications
-  type(t_vectorBlock), intent(inout) :: rrhs
-  !</input>
- 
-!</subroutine>
-
-  ! Local variables
-  ! Do we have outflow BC
-  integer :: detOFlow
-  
-  ! Which edge do we apply the outflow BC
-  integer :: edge
-
-  ! An object to save the desired edge
-  type(t_boundaryRegion) :: rboundaryRegion  
-  
-  ! Line integration rule
-  integer(I32) :: ccubType
-  
-  ! String variable
-  character(len=SYS_STRLEN) :: sstring
-
-  ! Kinematic Viscosity
-  real(DP) :: dnu
-  
-  ! Loop index
-  integer :: i
-  
-  ! Bilinear form
-  type(t_bilinearForm) :: rform
-  
-  ! Determine whether we have outflow BC
-  call parlst_getvalue_int (rparams,'BCS','detOFlow',detOFlow,0)
-
-  if (detOFlow .eq. 1) then
-
-    ! Get the line integration rule
-    call parlst_getvalue_string (rparams,'BCS','ccubType', sstring)
-    ccubType = cub_igetID(sstring)
-    
-    ! Which edge of the triangulation do we apply the outflow BC
-    call parlst_getvalue_int (rparams,'BCS','edge',edge,2)     
-    ! Create a boundary region
-    ! Warning: We assume that this edge is on the first boundary component!
-    call boundary_createRegion(rboundary,1,edge,rboundaryRegion) 
-    ! Exclude the start and end points from the outflow
-    rboundaryRegion%iproperties = 2**1-2**1
-    
-    ! Get the kinematic viscosity: noo = 1/Re
-    call parlst_getvalue_double (rparams, 'GFPROPER', 'dnu', dnu, 1.0_DP)    
-    
-    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    !  For the moment we ONLY support natural boundary condition on
-    !  the vertical outflow boundaries of a 2D problem. So,
-    !        1    du1               1     du2
-    !  -P + --- * ---- = 0   (1),  --- * ---- = 0   (2)
-    !       Re    dx                Re    dx
-    !  is implemented.  This condition is implemented in a
-    !  weak manner, using the L^2 norm of the equations over the outflow
-    !  boundary. Therefore, we have the following extra functionals 
-    !  added to our LSFEM:
-    ! 
-    !   ||-q + 1/Re dv1/dx ||^2_{\Gamma_o}  (1)
-    !   || 1/Re dv2/dx ||^2_{\Gamma_o}    (2)
-    !
-    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    ! First, functional (1) has 4 components in a variational 
-    ! setting which comes out of the Least-squares formulation:
-    !
-    ! (p,q) - 1/Re (p, dv1/dx) - 1/Re (du1/dx, q) + (1/Re)^2 (du1/dx, dv1/dx)
-    !  *1*           *2*                *3*                 *4*
-    !
-    ! Creating entries of the bilinear form for term *1*
-    rform%itermCount = 1
-    rform%Idescriptors(1,1) = DER_FUNC
-    rform%Idescriptors(2,1) = DER_FUNC
-    
-    ! Here we have constant coefficients:
-    rform%ballCoeffConstant = .true.
-    rform%BconstantCoeff = .true.
-    rform%Dcoefficients(1)  = 1.0_DP
-    
-    do i=NLMIN, NLMAX
-      ! Assemble the matrix, the new matrix entries are added 
-      ! to the existing entries  .false.  
-      call bilf_buildMatrixScalarBdr2D (rform, ccubType, .false., &
-                  Rlevels(i)%rmatrix%RmatrixBlock(3,3), &
-                      rboundaryRegion=rboundaryRegion)
-    end do
-
-    ! Creating entries of the bilinear form for term *2*
-    rform%itermCount = 1
-    rform%Idescriptors(1,1) = DER_FUNC
-    rform%Idescriptors(2,1) = DER_DERIV_X
-    
-    ! Here we have constant coefficients:
-    rform%ballCoeffConstant = .true.
-    rform%BconstantCoeff = .true.
-    rform%Dcoefficients(1)  = -dnu
-    
-    do i=NLMIN, NLMAX
-      ! Assemble the matrix, the new matrix entries are added 
-      ! to the existing entries  .false.  
-      call bilf_buildMatrixScalarBdr2D (rform, ccubType, .false., &
-                  Rlevels(i)%rmatrix%RmatrixBlock(1,3), &
-                      rboundaryRegion=rboundaryRegion)
-    end do
-    
-    ! Creating entries of the bilinear form for term *3*
-    rform%itermCount = 1
-    rform%Idescriptors(1,1) = DER_DERIV_X
-    rform%Idescriptors(2,1) = DER_FUNC
-    
-    ! Here we have constant coefficients:
-    rform%ballCoeffConstant = .true.
-    rform%BconstantCoeff = .true.
-    rform%Dcoefficients(1)  = -dnu
-    
-    do i=NLMIN, NLMAX
-      ! Assemble the matrix, the new matrix entries are added 
-      ! to the existing entries  .false.  
-      call bilf_buildMatrixScalarBdr2D (rform, ccubType, .false., &
-                  Rlevels(i)%rmatrix%RmatrixBlock(3,1), &
-                      rboundaryRegion=rboundaryRegion)
-    end do
-
-
-    ! Creating entries of the bilinear form for term *4*
-    rform%itermCount = 1
-    rform%Idescriptors(1,1) = DER_DERIV_X
-    rform%Idescriptors(2,1) = DER_DERIV_X
-    
-    ! Here we have constant coefficients:
-    rform%ballCoeffConstant = .true.
-    rform%BconstantCoeff = .true.
-    rform%Dcoefficients(1)  = dnu**2
-    
-    do i=NLMIN, NLMAX
-      ! Assemble the matrix, the new matrix entries are added 
-      ! to the existing entries  .false.  
-      call bilf_buildMatrixScalarBdr2D (rform, ccubType, .false., &
-                  Rlevels(i)%rmatrix%RmatrixBlock(1,1), &
-                      rboundaryRegion=rboundaryRegion)
-    end do
-
-    ! Now the 2nd functional (2), this has only 1 component in a variational 
-    ! setting which comes out of the Least-squares formulation:
-    !
-    !  (1/Re)^2 (du2/dx, dv2/dx)
-    !       *1*
-    !
-    ! Creating entries of the bilinear form for term *1*
-    rform%itermCount = 1
-    rform%Idescriptors(1,1) = DER_DERIV_X
-    rform%Idescriptors(2,1) = DER_DERIV_X
-    
-    ! Here we have constant coefficients:
-    rform%ballCoeffConstant = .true.
-    rform%BconstantCoeff = .true.
-    rform%Dcoefficients(1)  = dnu**2
-    
-    do i=NLMIN, NLMAX
-      ! Assemble the matrix, the new matrix entries are added 
-      ! to the existing entries  .false.  
-      call bilf_buildMatrixScalarBdr2D (rform, ccubType, .false., &
-                  Rlevels(i)%rmatrix%RmatrixBlock(2,2), &
-                      rboundaryRegion=rboundaryRegion)
-    end do
-
-  end if
-  
-  end subroutine
-
-
-  !****************************************************************************
  
 !<subroutine>
   subroutine ls_Solver_linear(Rlevels,rvector,rdefect,rparams)
@@ -2860,6 +2665,9 @@ contains
   ! An array for the system matrix(matrices) during the initialisation of
   ! the linear solver.
   type(t_matrixBlock), dimension(:), pointer :: Rmatrices
+  
+  ! A temporary vector for saving the defect
+  type(t_vectorBlock) :: rtempBlock  
   
   ! Error indicator during initialisation of the solver
   integer :: ierror  
@@ -3154,13 +2962,17 @@ contains
     p_rsolverNode%ioutputLevel = ioutputLevelMG
     
     ! Finally solve the system
-    ! Call linsol_precondDefect to solve the subproblem <tex>$ Ay = b-Ax $</tex>.
     ! This overwrites rdefect with the correction vector.
+    ! Therefore, copy the rdefect for later use, cosmetic stuff :)
+    call lsysbl_copyVector (rdefect,rtempBlock)
+    
+    ! Solve the preconditioned system for the correction vector
     call linsol_precondDefect (p_rsolverNode,rdefect)
 
-    ! Add the correction vector to the solution vector and release the memory.
-    ! Correct the solution vector: x = x + y
-    call lsysbl_vectorLinearComb (rdefect, rvector, 1.0_DP, 1.0_DP)
+    ! Copy the correction vector to the new solution vector
+    ! The solution vector will be finally updated with the addition of
+    ! the previous solution to it.
+     call lsysbl_copyVector (rdefect,rvector)
     
     ! Check for the linear solver divergence 
     if (p_rsolverNode%DFinalDefect .gt. 1E8) then
@@ -3179,8 +2991,10 @@ contains
     ! Release the solver node and all subnodes attached to it (if at all):
     call linsol_releaseSolver (p_rsolverNode)
     
-    ! Release defect vector
-    call lsysbl_releaseVector (rdefect)
+    ! Release temporary vector, BUT
+    ! first retrieve the rdefect vector
+    call lsysbl_copyVector (rtempBlock,rdefect)
+    call lsysbl_releaseVector (rtempBlock)
   
   else
     
@@ -3249,16 +3063,20 @@ contains
     p_rsolverNodeM%ioutputLevel = ioutputLevelLS
 
     ! Finally solve the system
-    ! Call linsol_precondDefect to solve the subproblem <tex>$ Ay = b-Ax $</tex>.
     ! This overwrites rdefect with the correction vector.
+    ! Therefore, copy the rdefect for later use, cosmetic stuff :)
+    call lsysbl_copyVector (rdefect,rtempBlock)
+    
+    ! Solve the preconditioned system for the correction vector
     call linsol_precondDefect (p_rsolverNodeM,rdefect)
 
-    ! Add the correction vector to the solution vector and release the memory.
-    ! Correct the solution vector: x = x + y
-    call lsysbl_vectorLinearComb (rdefect, rvector, 1.0_DP, 1.0_DP)
+    ! Copy the correction vector to the new solution vector
+    ! The solution vector will be finally updated with the addition of
+    ! the previous solution to it.
+     call lsysbl_copyVector (rdefect,rvector)
     
     ! Check for the linear solver divergence 
-    if (p_rsolverNodeM%DFinalDefect .gt. 1E8) then
+    if (p_rsolverNode%DFinalDefect .gt. 1E8) then
       call output_lbrk()
       call output_line ('Linear Loop is diverged :(')
       call output_line (&
@@ -3274,9 +3092,11 @@ contains
     ! Release the solver node and all subnodes attached to it (if at all):
     call linsol_releaseSolver (p_rsolverNodeM)
     
-    ! Release defect vector
-    call lsysbl_releaseVector (rdefect)
-         
+    ! Release temporary vector, BUT
+    ! first retrieve the rdefect vector
+    call lsysbl_copyVector (rtempBlock,rdefect)
+    call lsysbl_releaseVector (rtempBlock)
+           
   end if
      
   end subroutine
@@ -3434,7 +3254,7 @@ contains
 
 !<subroutine>
   subroutine ls_con_di_verge(converged,diverged,rvector,rvector_old,&
-               NLN_Max,inl,dNLEpsi)
+               NLN_Max,inl,dNLEpsi,rdefect,domega)
                 
  !<description>  
   ! Check the nonlinear loop convergence/divergence.
@@ -3448,34 +3268,42 @@ contains
  
   !<input>
    ! Solution vectors in the current/previous nonliner iterations  
-  type(t_vectorBlock) :: rvector,rvector_old
+  type(t_vectorBlock) :: rvector,rvector_old,rdefect
   
   ! Nonlinear loop's maximum/current number of iterations
   integer, intent(in) :: NLN_Max,inl
   
   ! Nonlinear loop's stopping criteria for the norms
-  real(DP), intent(in) :: dNLEpsi 
+  real(DP), intent(in) :: dNLEpsi
+  
+  ! The damping parameter in nonlinear deferred correction loop
+  real(DP), intent(in) :: domega
   !</input>
  
 !</subroutine>
  
-   ! Local variables
-  real(DP) :: Dres(6),Dresv(6),Dres_rel(6)
-  integer, dimension(6) :: Cnorms
+  ! Local variables
+  real(DP) :: Dres(6),Dresv(6),Dres_rel(6), defnorm(1)
+  integer, dimension(6) :: Cnorms, Cdefnorm(1)
   integer :: i,isum
   
   ! Scaling factors
   real(DP) :: cx,cy
   
-  ! Difference of the vectors in the current nonlinear iteration
+  ! Difference between the current and the previous
+  ! vectors in nonlinear loop
   type(t_vectorBlock) :: rdiff
-  
+
+  ! We update the solution vector in a 
+  ! deferred correction loop
+  !  x^n+1 = x^n - w A^-1 (Ax^n - b)
+  cx = -domega
+  call lsysbl_vectorLinearComb (rvector_old,rvector,1.0_DP,cx)
   
   ! Euclidian vector norm: (vector,vector) 0
   ! $l_2$-norm: 1/sqrt(NEQ) * (vector,vector) 2
-  ! max-norm 3   
-  ! Normal L^2 Norm
-  Cnorms(:) = 0
+  ! max-norm 3
+  Cnorms(:) = 1
   
   ! Initialize the 'rdiff' structure and set the values to zero
   call lsysbl_createVecBlockIndirect (rvector,rdiff,.true.)
@@ -3522,26 +3350,30 @@ contains
   diverged = .not.( Dres_rel(1) .lt. 1E8 .and. Dres_rel(2) .lt. 1E8 &
              .and. Dres_rel(3) .lt. 1E8 .and. Dres_rel(4) .lt. 1E8  &
              .and. Dres_rel(5) .lt. 1E8 .and. Dres_rel(6) .lt. 1E8  )
-
+ 
   
-  ! Release the block vector
-  call lsysbl_releaseVector (rdiff)
+  ! Calculate the Euclidian norm of the defect
+  Cdefnorm(1) = 1
+  call lsysbl_vectorNormBlock (rdefect,Cdefnorm,defnorm)
 
 
   ! Some output data
   if (inl .eq. 1) then
       call output_line ('Iter. ' &
       //' U1 Rel. Err. ' //' U2 Rel. Err. ' //' P  Rel. Err. ' &
-      //' S1 Rel. Err. ' //' S2 Rel. Err. ' //' S3 Rel. Err. ' )
+      //' S1 Rel. Err. ' //' S2 Rel. Err. ' //' S3 Rel. Err. ' &
+      //' Defect  Err. ')
       call output_line ('--------------------------------------&
-      ----------------------------------------------------')
+      ---------------------------------------------------------&
+      ---------')
     call output_line (sys_siL(inl, 5) //'  '&
     //trim(sys_sdEL(Dres_rel(1),6))//'  '&
     //trim(sys_sdEL(Dres_rel(2),6))//'  '&
     //trim(sys_sdEL(Dres_rel(3),6))//'  '&
     //trim(sys_sdEL(Dres_rel(4),6))//'  '&
     //trim(sys_sdEL(Dres_rel(5),6))//'  '&
-    //trim(sys_sdEL(Dres_rel(6),6)))   
+    //trim(sys_sdEL(Dres_rel(6),6))//'  '&
+    //trim(sys_sdEL(defnorm(1),6)))   
   else
     call output_line (sys_siL(inl, 5) //'  '&
     //trim(sys_sdEL(Dres_rel(1),6))//'  '&
@@ -3549,18 +3381,26 @@ contains
     //trim(sys_sdEL(Dres_rel(3),6))//'  '&
     //trim(sys_sdEL(Dres_rel(4),6))//'  '&
     //trim(sys_sdEL(Dres_rel(5),6))//'  '&
-    //trim(sys_sdEL(Dres_rel(6),6)))
+    //trim(sys_sdEL(Dres_rel(6),6))//'  '&
+    //trim(sys_sdEL(defnorm(1),6))) 
     if ( (mod(inl,10) .eq. 0) .and. (inl .ne. NLN_Max) &
       .and. (.not. converged) .and. (.not. diverged)) then
       call output_lbrk()
       call output_line ('Iter. ' &
       //' U1 Rel. Err. ' //' U2 Rel. Err. ' //' P  Rel. Err. ' &
-      //' S1 Rel. Err. ' //' S2 Rel. Err. ' //' S3 Rel. Err. ' )
+      //' S1 Rel. Err. ' //' S2 Rel. Err. ' //' S3 Rel. Err. ' &
+      //' Defect  Err. ')
       call output_line ('--------------------------------------&
-      ----------------------------------------------------')
+      ---------------------------------------------------------&
+      ---------')
     end if
   end if
 
+  ! Release the difference vector
+  call lsysbl_releaseVector (rdiff)     
+  ! Release the defect vector
+  call lsysbl_releaseVector (rdefect)
+  
   end subroutine
 
 
@@ -3608,6 +3448,7 @@ contains
     call lsysbl_copyVector (rvector,rvector_old)
     !*** Clear all data in matrix and RHS ***!
     call lsysbl_clearVector (rrhs)
+
     do i = NLMIN, NLMAX
     call lsysbl_clearMatrix (Rlevels(i)%rmatrix)
     end do
@@ -4726,15 +4567,15 @@ contains
   real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA25,p_DlocalMatrixA26  
   real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA31,p_DlocalMatrixA32
   real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA33,p_DlocalMatrixA34  
-  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA35,p_DlocalMatrixA36  
+  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA36  
   real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA41,p_DlocalMatrixA42
   real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA43,p_DlocalMatrixA44  
-  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA45,p_DlocalMatrixA46
+  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA45
   real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA51,p_DlocalMatrixA52
-  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA53,p_DlocalMatrixA54  
+  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA54  
   real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA55,p_DlocalMatrixA56
   real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA61,p_DlocalMatrixA62
-  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA63,p_DlocalMatrixA64  
+  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA63 
   real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA65,p_DlocalMatrixA66  
   
   real(DP), dimension(:,:,:,:), pointer :: p_DbasTrialA11,p_DbasTestA11
@@ -4804,25 +4645,21 @@ contains
   p_DlocalMatrixA32 => RmatrixData(3,2)%p_Dentry
   p_DlocalMatrixA33 => RmatrixData(3,3)%p_Dentry
   p_DlocalMatrixA34 => RmatrixData(3,4)%p_Dentry
-  p_DlocalMatrixA35 => RmatrixData(3,5)%p_Dentry
   p_DlocalMatrixA36 => RmatrixData(3,6)%p_Dentry  
 
   p_DlocalMatrixA41 => RmatrixData(4,1)%p_Dentry
   p_DlocalMatrixA43 => RmatrixData(4,3)%p_Dentry
   p_DlocalMatrixA44 => RmatrixData(4,4)%p_Dentry
-  p_DlocalMatrixA45 => RmatrixData(4,5)%p_Dentry
-  p_DlocalMatrixA46 => RmatrixData(4,6)%p_Dentry  
+  p_DlocalMatrixA45 => RmatrixData(4,5)%p_Dentry 
   
   p_DlocalMatrixA51 => RmatrixData(5,1)%p_Dentry
   p_DlocalMatrixA52 => RmatrixData(5,2)%p_Dentry
-  p_DlocalMatrixA53 => RmatrixData(5,3)%p_Dentry
   p_DlocalMatrixA54 => RmatrixData(5,4)%p_Dentry
   p_DlocalMatrixA55 => RmatrixData(5,5)%p_Dentry
   p_DlocalMatrixA56 => RmatrixData(5,6)%p_Dentry  
   
   p_DlocalMatrixA62 => RmatrixData(6,2)%p_Dentry
   p_DlocalMatrixA63 => RmatrixData(6,3)%p_Dentry
-  p_DlocalMatrixA64 => RmatrixData(6,4)%p_Dentry
   p_DlocalMatrixA65 => RmatrixData(6,5)%p_Dentry
   p_DlocalMatrixA66 => RmatrixData(6,6)%p_Dentry
   
@@ -4858,7 +4695,7 @@ contains
     ! Calculate viscosity and its 1st derivative
     ! we need to evaluate the 2nd invariant of the 
     ! deformation rate tensor Dii(u)
-    Dii = 1.0_DP/8.0_DP * &
+    Dii = 1.0_DP/2.0_DP * &
               (4.0_DP*dUx**2 + 2.0_DP*(dUy+dVx)**2 + 4.0_DP*dVy**2)
     call ls_viscosity_model(Dii,rcollection,nu)
     
@@ -4933,7 +4770,7 @@ contains
     ! Calculate viscosity and its 1st derivative
     ! we need to evaluate the 2nd invariant of the 
     ! deformation rate tensor Dii(u)
-    Dii = 1.0_DP/8.0_DP * &
+    Dii = 1.0_DP/2.0_DP * &
               (4.0_DP*dUx**2 + 2.0_DP*(dUy+dVx)**2 + 4.0_DP*dVy**2)
     call ls_viscosity_model(Dii,rcollection,nu)
     
@@ -5000,7 +4837,7 @@ contains
     ! Calculate viscosity and its 1st derivative
     ! we need to evaluate the 2nd invariant of the 
     ! deformation rate tensor Dii(u)
-    Dii = 1.0_DP/8.0_DP * &
+    Dii = 1.0_DP/2.0_DP * &
               (4.0_DP*dUx**2 + 2.0_DP*(dUy+dVx)**2 + 4.0_DP*dVy**2)
     call ls_viscosity_model(Dii,rcollection,nu)
     
@@ -5142,10 +4979,7 @@ contains
       p_DlocalMatrixA43(idofe,jdofe,iel) = p_DlocalMatrixA43(idofe,jdofe,iel) + dval
 
       ! A35
-      p_DlocalMatrixA35(jdofe,idofe,iel) = 0.0_DP
-
       ! A53
-      p_DlocalMatrixA53(idofe,jdofe,iel) = 0.0_DP
 
       ! A36
       p_DlocalMatrixA36(jdofe,idofe,iel) = p_DlocalMatrixA36(jdofe,idofe,iel) + dval
@@ -5213,10 +5047,7 @@ contains
       p_DlocalMatrixA54(idofe,jdofe,iel) = p_DlocalMatrixA54(idofe,jdofe,iel) + dval
 
       ! A46
-      p_DlocalMatrixA46(jdofe,idofe,iel) = 0.0_DP  
-
       ! A64
-      p_DlocalMatrixA64(idofe,jdofe,iel) = 0.0_DP  
 
       ! A56
       p_DlocalMatrixA56(jdofe,idofe,iel) = p_DlocalMatrixA56(jdofe,idofe,iel) + dval  
@@ -5388,7 +5219,7 @@ contains
     ! Calculate viscosity and its 1st derivative
     ! we need to evaluate the 2nd invariant of the 
     ! deformation rate tensor Dii(u)
-    Dii = 1.0_DP/8.0_DP * &
+    Dii = 1.0_DP/2.0_DP * &
               (4.0_DP*dUx**2 + 2.0_DP*(dUy+dVx)**2 + 4.0_DP*dVy**2)
     call ls_viscosity_model(Dii,rcollection,nu)
     call ls_viscosity_model_der(Dii,rcollection,dnu)
@@ -5418,10 +5249,10 @@ contains
       ! A11
       dval = p_DcubWeight(icubp,iel)*(   dU*dUx*dbasJx*dbasI+&
              dV*dUx*dbasJy*dbasI+dUx*dU*dbasJ*dbasIx+dUx*dV*dbasJ*dbasIy + & 
-             (dUx**2+dVx**2)*dbasJ*dbasI + 2.0_DP* &
+             (dUx**2+dVx**2)*dbasJ*dbasI + 8.0_DP* &
              nu*dnu*(4.0_DP*dUx**2*dbasJx*dbasIx+ &
              2.0_DP*dUx*F*dbasJx*dbasIy+2.0_DP*F*dUx*dbasJy*dbasIx+ &
-             F**2*dbasJy*dbasIy) + Dii*8.0_DP*dnu**2*(dUx**2*dbasJx*dbasIx+ &
+             F**2*dbasJy*dbasIy) + Dii*32.0_DP*dnu**2*(dUx**2*dbasJx*dbasIx+ &
              0.5_DP*dUx*F*dbasJx*dbasIy+0.5_DP*F*dUx*dbasJy*dbasIx+ &
              0.25_DP*F**2*dbasJy*dbasIy)   )
       p_DlocalMatrixA11(jdofe,idofe,iel) = p_DlocalMatrixA11(jdofe,idofe,iel) + dval
@@ -5429,10 +5260,10 @@ contains
       ! A22
       dval = p_DcubWeight(icubp,iel)*(   dU*dVy*dbasJx*dbasI+&
              dV*dVy*dbasJy*dbasI+dVy*dU*dbasJ*dbasIx+dVy*dV*dbasJ*dbasIy + & 
-             (dUy**2+dVy**2)*dbasJ*dbasI + 2.0_DP* &
+             (dUy**2+dVy**2)*dbasJ*dbasI + 8.0_DP* &
              nu*dnu*(4.0_DP*dVy**2*dbasJy*dbasIy+ &
              2.0_DP*dVy*F*dbasJy*dbasIx+2.0_DP*F*dVy*dbasJx*dbasIy+ &
-             F**2*dbasJx*dbasIx) + Dii*8.0_DP*dnu**2*(dVy**2*dbasJy*dbasIy+ &
+             F**2*dbasJx*dbasIx) + Dii*32.0_DP*dnu**2*(dVy**2*dbasJy*dbasIy+ &
              0.5_DP*dVy*F*dbasJy*dbasIx+0.5_DP*F*dVy*dbasJx*dbasIy+ &
              0.25_DP*F**2*dbasJx*dbasIx)  )   
       p_DlocalMatrixA22(jdofe,idofe,iel) = p_DlocalMatrixA22(jdofe,idofe,iel) + dval
@@ -5441,9 +5272,9 @@ contains
       dval = p_DcubWeight(icubp,iel)*(   dU*dVx*dbasJx*dbasI+&
              dV*dVx*dbasJy*dbasI+dUy*dU*dbasJ*dbasIx+dUy*dV*dbasJ*dbasIy + & 
              (dUy*dUx+dVy*dVx)*dbasJ*dbasI + & 
-             2.0_DP*nu*dnu*(4.0_DP*dVy*dUx*dbasJy*dbasIx+ &
+             8.0_DP*nu*dnu*(4.0_DP*dVy*dUx*dbasJy*dbasIx+ &
              2.0_DP*dVy*F*dbasJy*dbasIy+2.0_DP*F*dUx*dbasJx*dbasIx+ &
-             F**2*dbasJx*dbasIy) + Dii*8.0_DP*dnu**2*(dVy*dUx*dbasJy*dbasIx+ &
+             F**2*dbasJx*dbasIy) + Dii*32.0_DP*dnu**2*(dVy*dUx*dbasJy*dbasIx+ &
              0.5_DP*dVy*F*dbasJy*dbasIy+0.5_DP*F*dUx*dbasJx*dbasIx+ &
              0.25_DP*F**2*dbasJx*dbasIy)  )      
       p_DlocalMatrixA12(jdofe,idofe,iel) = p_DlocalMatrixA12(jdofe,idofe,iel) + dval
@@ -5480,9 +5311,8 @@ contains
     ! Calculate viscosity and its 1st derivative
     ! we need to evaluate the 2nd invariant of the 
     ! deformation rate tensor Dii(u)
-    Dii = 1.0_DP/8.0_DP * &
+    Dii = 1.0_DP/2.0_DP * &
               (4.0_DP*dUx**2 + 2.0_DP*(dUy+dVx)**2 + 4.0_DP*dVy**2)
-    call ls_viscosity_model(Dii,rcollection,nu)
     call ls_viscosity_model_der(Dii,rcollection,dnu)
     ! And a frequently used combination
     F = dUy+dVx
@@ -5505,7 +5335,7 @@ contains
       ! Multiply the values of the basis functions by
       ! the cubature weight and sum up into the local matrices.
       ! A13
-      dval = -p_DcubWeight(icubp,iel)*dnu* &
+      dval = -p_DcubWeight(icubp,iel)*4.0_DP*dnu* &
              (   (2.0_DP*dUx**2+2.0_DP*dVy*dUx)*dbasJ*dbasIx + &
              (dUx*F+dVy*F)*dbasJ*dbasIy    )
       p_DlocalMatrixA13(jdofe,idofe,iel) = p_DlocalMatrixA13(jdofe,idofe,iel) + dval
@@ -5514,7 +5344,7 @@ contains
       p_DlocalMatrixA31(idofe,jdofe,iel) = p_DlocalMatrixA31(idofe,jdofe,iel) + dval
            
       ! A23
-      dval = -p_DcubWeight(icubp,iel)*dnu* &
+      dval = -p_DcubWeight(icubp,iel)*4.0_DP*dnu* &
              (   (2.0_DP*dVy**2+2.0_DP*dVy*dUx)*dbasJ*dbasIy + &
              (dUx*F+dVy*F)*dbasJ*dbasIx   )
       p_DlocalMatrixA23(jdofe,idofe,iel) = p_DlocalMatrixA23(jdofe,idofe,iel) + dval
@@ -5554,9 +5384,8 @@ contains
     ! Calculate viscosity and its 1st derivative
     ! we need to evaluate the 2nd invariant of the 
     ! deformation rate tensor Dii(u)
-    Dii = 1.0_DP/8.0_DP * &
+    Dii = 1.0_DP/2.0_DP * &
               (4.0_DP*dUx**2 + 2.0_DP*(dUy+dVx)**2 + 4.0_DP*dVy**2)
-    call ls_viscosity_model(Dii,rcollection,nu)
     call ls_viscosity_model_der(Dii,rcollection,dnu)
     ! And a frequently used combination
     F = dUy+dVx
@@ -5583,14 +5412,14 @@ contains
       ! the cubature weight and sum up into the local matrices.
       ! A14
       dval = -p_DcubWeight(icubp,iel) * (   dUx*dbasJx*dbasI + &
-             dnu*(2.0_DP*dUx**2*dbasJ*dbasIx+dUx*F*dbasJ*dbasIy)  )
+             4.0_DP*dnu*(2.0_DP*dUx**2*dbasJ*dbasIx+dUx*F*dbasJ*dbasIy)  )
       p_DlocalMatrixA14(jdofe,idofe,iel) = p_DlocalMatrixA14(jdofe,idofe,iel) + dval
 
       ! A41
       p_DlocalMatrixA41(idofe,jdofe,iel) = p_DlocalMatrixA41(idofe,jdofe,iel) + dval
 
       ! A24
-      dval = -p_DcubWeight(icubp,iel) * (   dUy*dbasJx*dbasI + dnu* &
+      dval = -p_DcubWeight(icubp,iel) * (   dUy*dbasJx*dbasI + 4.0_DP*dnu* &
              (2.0_DP*dUx*dVy*dbasJ*dbasIy+dUx*F*dbasJ*dbasIx)   )
       p_DlocalMatrixA24(jdofe,idofe,iel) = p_DlocalMatrixA24(jdofe,idofe,iel) + dval
       
@@ -5599,7 +5428,7 @@ contains
 
       ! A15
       dval = -p_DcubWeight(icubp,iel)*(   dUx*dbasJy*dbasI+dVx*dbasJx*dbasI + &
-             dnu*(2.0_DP*dUx*F*dbasJ*dbasIx+F**2*dbasJ*dbasIy)   )
+             4.0_DP*dnu*(2.0_DP*dUx*F*dbasJ*dbasIx+F**2*dbasJ*dbasIy)   )
       p_DlocalMatrixA15(jdofe,idofe,iel) = p_DlocalMatrixA15(jdofe,idofe,iel) + dval
       
       ! A51
@@ -5607,14 +5436,14 @@ contains
                       
       ! A25
       dval = -p_DcubWeight(icubp,iel)*(   dUy*dbasJy*dbasI+dVy*dbasJx*dbasI + &
-             dnu*(2.0_DP*dVy*F*dbasJ*dbasIy+F**2*dbasJ*dbasIx)   )
+             4.0_DP*dnu*(2.0_DP*dVy*F*dbasJ*dbasIy+F**2*dbasJ*dbasIx)   )
       p_DlocalMatrixA25(jdofe,idofe,iel) = p_DlocalMatrixA25(jdofe,idofe,iel) + dval
       
       ! A52
       p_DlocalMatrixA52(idofe,jdofe,iel) = p_DlocalMatrixA52(idofe,jdofe,iel) + dval
       
       ! A16
-      dval = -p_DcubWeight(icubp,iel) * (   dVx*dbasJy*dbasI + dnu* &
+      dval = -p_DcubWeight(icubp,iel) * (   dVx*dbasJy*dbasI + 4.0_DP*dnu* &
              (2.0_DP*dVy*dUx*dbasJ*dbasIx+dVy*F*dbasJ*dbasIy)   )
       p_DlocalMatrixA16(jdofe,idofe,iel) = p_DlocalMatrixA16(jdofe,idofe,iel) + dval
       
@@ -5623,7 +5452,7 @@ contains
       
       ! A26
       dval = -p_DcubWeight(icubp,iel)*(   dVy*dbasJy*dbasI + &
-             dnu*(2.0_DP*dVy**2*dbasJ*dbasIy+dVy*F*dbasJ*dbasIx)   )
+             4.0_DP*dnu*(2.0_DP*dVy**2*dbasJ*dbasIy+dVy*F*dbasJ*dbasIx)   )
       p_DlocalMatrixA26(jdofe,idofe,iel) = p_DlocalMatrixA26(jdofe,idofe,iel) + dval
       
       ! A62
@@ -5751,37 +5580,37 @@ contains
     ! Loop over all cubature points on the current element
     do icubp = 1,npointsPerElement
 
-    ! Velocity/derivatives field in this cubature point
-    dU = p_Du1(icubp,iel,DER_FUNC)
-    dV = p_Du2(icubp,iel,DER_FUNC)
-    
-    dUx = p_Du1(icubp,iel,DER_DERIV2D_X)
-    dVx = p_Du2(icubp,iel,DER_DERIV2D_X)
-
-    dUy = p_Du1(icubp,iel,DER_DERIV2D_Y)
-    dVy = p_Du2(icubp,iel,DER_DERIV2D_Y)
-    
-    ! Calculate viscosity and its 1st derivative
-    ! we need to evaluate the 2nd invariant of the 
-    ! deformation rate tensor Dii(u)
-    Dii = 1.0_DP/8.0_DP * &
-              (4.0_DP*dUx**2 + 2.0_DP*(dUy+dVx)**2 + 4.0_DP*dVy**2)
-    call ls_viscosity_model(Dii,rcollection,nu)
-    call ls_viscosity_model_der(Dii,rcollection,dnu)
-    ! And a frequently used combination
-    F = dUy+dVx    
+!    ! Velocity/derivatives field in this cubature point
+!    dU = p_Du1(icubp,iel,DER_FUNC)
+!    dV = p_Du2(icubp,iel,DER_FUNC)
+!    
+!    dUx = p_Du1(icubp,iel,DER_DERIV2D_X)
+!    dVx = p_Du2(icubp,iel,DER_DERIV2D_X)
+!
+!    dUy = p_Du1(icubp,iel,DER_DERIV2D_Y)
+!    dVy = p_Du2(icubp,iel,DER_DERIV2D_Y)
+!    
+!    ! Calculate viscosity and its 1st derivative
+!    ! we need to evaluate the 2nd invariant of the 
+!    ! deformation rate tensor Dii(u)
+!    Dii = 1.0_DP/2.0_DP * &
+!              (4.0_DP*dUx**2 + 2.0_DP*(dUy+dVx)**2 + 4.0_DP*dVy**2)
+!    call ls_viscosity_model(Dii,rcollection,nu)
+!    call ls_viscosity_model_der(Dii,rcollection,dnu)
+!    ! And a frequently used combination
+!    F = dUy+dVx    
     
     ! Outer loop over the DOF's i=1..ndof on our current element,
     ! which corresponds to the (test) basis functions Phi_i:
     do idofe=1,p_rvectorData1%ndofTest
     
-      ! Fetch the contributions of the (test) basis functions Phi_i
-      ! into dbasI
-      dbasI = p_DbasTest1(idofe,DER_FUNC,icubp,iel)
-      dbasIx = p_DbasTest1(idofe,DER_DERIV2D_X,icubp,iel)
-      dbasIy = p_DbasTest1(idofe,DER_DERIV2D_Y,icubp,iel)
-                
-      ! Values of the velocity RHS for the X1 and X2 component
+!      ! Fetch the contributions of the (test) basis functions Phi_i
+!      ! into dbasI
+!      dbasI = p_DbasTest1(idofe,DER_FUNC,icubp,iel)
+!      dbasIx = p_DbasTest1(idofe,DER_DERIV2D_X,icubp,iel)
+!      dbasIy = p_DbasTest1(idofe,DER_DERIV2D_Y,icubp,iel)
+!                
+!      ! Values of the velocity RHS for the X1 and X2 component
 !      dval1 = 0.0_DP + beta*(   (dU*dUx + dV*dUy) * dU * dbasIx + &
 !          (dU*dUx + dV*dUy) * dV* dbasIy + &
 !          (dU*dUx + dV*dUy) * dUx * dbasI + &
@@ -5821,29 +5650,29 @@ contains
     ! Loop over all cubature points on the current element
     do icubp = 1,npointsPerElement
     
-    ! Velocity/derivatives field in this cubature point   
-    dUx = p_Du1(icubp,iel,DER_DERIV2D_X)
-    dVx = p_Du2(icubp,iel,DER_DERIV2D_X)
-
-    dUy = p_Du1(icubp,iel,DER_DERIV2D_Y)
-    dVy = p_Du2(icubp,iel,DER_DERIV2D_Y)
-    
-    ! Calculate viscosity and its 1st derivative
-    ! we need to evaluate the 2nd invariant of the 
-    ! deformation rate tensor Dii(u)
-    Dii = 1.0_DP/8.0_DP * &
-              (4.0_DP*dUx**2 + 2.0_DP*(dUy+dVx)**2 + 4.0_DP*dVy**2)
-    call ls_viscosity_model(Dii,rcollection,nu)
-    ! And a frequently used combination
-    F = dUx+dVy    
+!    ! Velocity/derivatives field in this cubature point   
+!    dUx = p_Du1(icubp,iel,DER_DERIV2D_X)
+!    dVx = p_Du2(icubp,iel,DER_DERIV2D_X)
+!
+!    dUy = p_Du1(icubp,iel,DER_DERIV2D_Y)
+!    dVy = p_Du2(icubp,iel,DER_DERIV2D_Y)
+!    
+!    ! Calculate viscosity and its 1st derivative
+!    ! we need to evaluate the 2nd invariant of the 
+!    ! deformation rate tensor Dii(u)
+!    Dii = 1.0_DP/2.0_DP * &
+!              (4.0_DP*dUx**2 + 2.0_DP*(dUy+dVx)**2 + 4.0_DP*dVy**2)
+!    call ls_viscosity_model(Dii,rcollection,nu)
+!    ! And a frequently used combination
+!    F = dUx+dVy    
     
     ! Outer loop over the DOF's i=1..ndof on our current element,
     ! which corresponds to the (test) basis functions Phi_i:
     do idofe=1,p_rvectorData3%ndofTest
     
-      ! Fetch the contributions of the (test) basis functions Phi_i
-      ! into dbasI
-      dbasI = p_DbasTest3(idofe,DER_FUNC,icubp,iel) 
+!      ! Fetch the contributions of the (test) basis functions Phi_i
+!      ! into dbasI
+!      dbasI = p_DbasTest3(idofe,DER_FUNC,icubp,iel) 
       
       ! Values of the pressure RHS
 !      dval1 = 2.0_DP*beta*nu*F*dbasI  
@@ -5867,34 +5696,34 @@ contains
     ! Loop over all cubature points on the current element
     do icubp = 1,npointsPerElement
 
-    ! Velocity/derivatives field in this cubature point
-    dU = p_Du1(icubp,iel,DER_FUNC)
-    dV = p_Du2(icubp,iel,DER_FUNC)
-    
-    dUx = p_Du1(icubp,iel,DER_DERIV2D_X)
-    dVx = p_Du2(icubp,iel,DER_DERIV2D_X)
-
-    dUy = p_Du1(icubp,iel,DER_DERIV2D_Y)
-    dVy = p_Du2(icubp,iel,DER_DERIV2D_Y)
-    
-    ! Calculate viscosity and its 1st derivative
-    ! we need to evaluate the 2nd invariant of the 
-    ! deformation rate tensor Dii(u)
-    Dii = 1.0_DP/8.0_DP * &
-              (4.0_DP*dUx**2 + 2.0_DP*(dUy+dVx)**2 + 4.0_DP*dVy**2)
-    call ls_viscosity_model(Dii,rcollection,nu)
-    ! And a frequently used combination
-    F = dUy+dVx     
+!    ! Velocity/derivatives field in this cubature point
+!    dU = p_Du1(icubp,iel,DER_FUNC)
+!    dV = p_Du2(icubp,iel,DER_FUNC)
+!    
+!    dUx = p_Du1(icubp,iel,DER_DERIV2D_X)
+!    dVx = p_Du2(icubp,iel,DER_DERIV2D_X)
+!
+!    dUy = p_Du1(icubp,iel,DER_DERIV2D_Y)
+!    dVy = p_Du2(icubp,iel,DER_DERIV2D_Y)
+!    
+!    ! Calculate viscosity and its 1st derivative
+!    ! we need to evaluate the 2nd invariant of the 
+!    ! deformation rate tensor Dii(u)
+!    Dii = 1.0_DP/2.0_DP * &
+!              (4.0_DP*dUx**2 + 2.0_DP*(dUy+dVx)**2 + 4.0_DP*dVy**2)
+!    call ls_viscosity_model(Dii,rcollection,nu)
+!    ! And a frequently used combination
+!    F = dUy+dVx     
     
     ! Outer loop over the DOF's i=1..ndof on our current element,
     ! which corresponds to the (test) basis functions Phi_i:
     do idofe=1,p_rvectorData4%ndofTest
     
-      ! Fetch the contributions of the (test) basis functions Phi_i
-      ! into dbasI
-      dbasI = p_DbasTest4(idofe,DER_FUNC,icubp,iel)
-      dbasIx = p_DbasTest4(idofe,DER_DERIV2D_X,icubp,iel)
-      dbasIy = p_DbasTest4(idofe,DER_DERIV2D_Y,icubp,iel)
+!      ! Fetch the contributions of the (test) basis functions Phi_i
+!      ! into dbasI
+!      dbasI = p_DbasTest4(idofe,DER_FUNC,icubp,iel)
+!      dbasIx = p_DbasTest4(idofe,DER_DERIV2D_X,icubp,iel)
+!      dbasIy = p_DbasTest4(idofe,DER_DERIV2D_Y,icubp,iel)
                 
       ! Values of the velocity RHS for Stress1
 !      dval4 = 0.0_DP - beta * (  (dU*dUx + dV*dUy) * dbasIx - &
@@ -6519,7 +6348,7 @@ contains
 
   !  The defect is calculated simply!
   call lsysbl_copyVector (rrhs,rdefect)
-  call lsysbl_blockMatVec (rmatrix, rvector, rdefect, -1.0_DP, 1.0_DP)    
+  call lsysbl_blockMatVec (rmatrix, rvector, rdefect, 1.0_DP, -1.0_DP)    
     
   end subroutine
 
@@ -7896,7 +7725,7 @@ contains
     !
     !  and
     !
-    !  Dii(u) = 1/2 ( D(u):D(u) )  
+    !  Dii(u) = 1/2 ( 2D(u):2D(u) )  
     !  D(u) = 1/2 ( grad(u) + grad(u)^T ) 
     !
     ! Viscosity model constants
@@ -7976,7 +7805,7 @@ contains
     !
     !  and
     !
-    !  Dii(u) = 1/2 ( D(u):D(u) )  
+    !  Dii(u) = 1/2 ( 2D(u):2D(u) )  
     !  D(u) = 1/2 ( grad(u) + grad(u)^T ) 
     !
     ! Viscosity model constants
