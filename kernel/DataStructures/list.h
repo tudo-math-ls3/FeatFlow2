@@ -3457,12 +3457,8 @@ contains
     ! Wrap list by void pointer structure
     rptr%p_robj => rlist
     
-    ! Determine the size of the void pointer structure
-    rgenericObject%isize = size(transfer(rptr, rgenericObject%p_cdata))
-    
-    ! Allocate memory and transfer list to generic object
-    allocate(rgenericObject%p_cdata(rgenericObject%isize))
-    rgenericObject%p_cdata = transfer(rptr, rgenericObject%p_cdata)
+    ! Transfer the void pointer structure to the generic object
+    rgenericObject = transfer(rptr, rgenericObject)
     
   end subroutine
 
@@ -3495,14 +3491,10 @@ contains
     ! Internal variables
     type(t_void_ptr) :: rptr
 
-    if ((rgenericObject%isize .eq. 0) .or.&
-        (.not.associated(rgenericObject%p_cdata))) then
-      call output_line('Generic object seems to be empty!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'list_uncast')
-      call sys_halt()
-    end if
+    ! Transfer the generic object to the void pointer structure
+    rptr = transfer(rgenericObject, rptr)
 
-    rptr = transfer(rgenericObject%p_cdata, rptr)
+    ! Unwrap list from void pointer structure
     p_rlist => rptr%p_robj
 
   end subroutine

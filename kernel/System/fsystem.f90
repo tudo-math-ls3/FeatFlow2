@@ -123,9 +123,6 @@
 !# 32.) sys_parseCommandLineArg
 !#      -> Parses a command line argument for an option
 !#
-!# 33.) sys_releaseGenericObject
-!#      -> Releases a generic object
-!#
 !# </purpose>
 !##############################################################################
 
@@ -216,7 +213,6 @@ module fsystem
   public :: sys_triml
   public :: sys_trimr
   public :: sys_isNumeric
-  public :: sys_releaseGenericObject
 
   public :: t_genericObject
   public :: t_sysconfig
@@ -361,11 +357,10 @@ module fsystem
   ! Generic object type
   type t_genericObject
 
-    ! Size of the generic object
-    integer :: isize = 0
-
-    ! Encode data as an array of characters (one byte each)
-    character(len=1), dimension(:), pointer :: p_cdata => null()
+    ! Since Fortran lacks a 'void pointer', an arbitrary pointer type
+    ! may be used as long as all pointers in Fortran habe the same
+    ! length. We tacidly assume this until some compiler complains.
+    integer, pointer :: p_ptr => null()
 
   end type
 
@@ -3062,31 +3057,5 @@ contains
     sys_isNumeric = (e .eq. 0)
     
   end function sys_isNumeric
-
-  ! ***************************************************************************
-
-!<subroutine>
-
-  subroutine sys_releaseGenericObject(rgenericObject)
-
-!<description>
-  ! This subroutine releases the content of the generic object
-!</description>
-
-!<inputoutput>
-  ! Generic object from which t content should be released
-  type(t_genericObject), intent(inout) :: rgenericObject
-!</inputoutput>
-!</subroutine>
-
-    ! Check if generic object has content
-    if (associated(rgenericObject%p_cdata)) then
-      deallocate(rgenericObject%p_Cdata)
-    end if
-
-    ! Reset size
-    rgenericObject%isize = 0
-
-  end subroutine
 
 end module fsystem
