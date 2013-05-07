@@ -513,10 +513,13 @@ contains
     ! Open / write / close; write the solution to a VTK file.
     call ucd_startVTK (rexport,UCD_FLAG_STANDARD,p_Rtriangulations(NLMAX),&
         "post/tutorial017e.vtk")
+    
     call ucd_addVectorByVertex (rexport, "solution1", &
         UCD_VAR_STANDARD, rsolution%RvectorBlock(1))
+    
     call ucd_addVectorByVertex (rexport, "solution2", &
         UCD_VAR_STANDARD, rsolution%RvectorBlock(2))
+    
     call ucd_write (rexport)
     call ucd_release (rexport)
 
@@ -529,14 +532,16 @@ contains
     call lsysbl_releaseVector (rrhs)
     call lsysbl_releaseVector (rsolution)
     
-    ! Release the matrices/discretisation structures/BC/projection structurees
-    do ilevel=1,NLMAX
+    ! Release projection data
+    do ilevel=2,NLMAX
       call mlprj_doneProjection(p_Rprojection(ilevel))
       call lsyssc_releaseMatrix (p_RrestMatrices(ilevel))
       call lsyssc_releaseMatrix (p_RprolMatrices(ilevel))
+    end do
 
+    ! Release the matrices/discretisation structures/BC
+    do ilevel=1,NLMAX
       call lsysbl_releaseMatrix (p_Rmatrices(ilevel))
-
       call bcasm_releaseDiscreteBC (p_RdiscreteBC(ilevel))
 
       call spdiscr_releaseCubStructure (p_RcubatureInfo(ilevel))
