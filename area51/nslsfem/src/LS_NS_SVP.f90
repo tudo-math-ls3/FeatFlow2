@@ -3037,7 +3037,6 @@ contains
     p_rsolverNodeM%ioutputLevel = ioutputLevelLS
 
     ! Finally solve the system
-    ! Finally solve the system
     ! Call linsol_precondDefect to solve the subproblem <tex>$ Ay = b-Ax $</tex>.
     ! This overwrites rdefect with the correction vector.
     call linsol_precondDefect (p_rsolverNodeM,rdefect)
@@ -6704,7 +6703,7 @@ contains
   ! Derivative specifiers
   logical, dimension(EL_MAXNDER) :: Bder
 
-  ! Whther the viscosity is constant or not
+  ! Whther the viscosity ís constant or not
   logical :: bconstViscosity
 
     ! Currently we support only constant viscosity
