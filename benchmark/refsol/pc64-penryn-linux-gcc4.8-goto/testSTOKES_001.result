@@ -245,20 +245,20 @@ Rate of convergence     : 9.888739579957556E-01
 Calculating 2D Stokes-Problem 1 - multigrid
 -------------------------------------------
 Multigrid: Iteration 0,  !!RES!! = 3.083687338939967E-02
-Multigrid: Iteration 1,  !!RES!! = 1.620875182717351E-03
-Multigrid: Iteration 2,  !!RES!! = 1.463635819399016E-04
-Multigrid: Iteration 3,  !!RES!! = 1.568083908693528E-05
-Multigrid: Iteration 4,  !!RES!! = 1.792863182973963E-06
-Multigrid: Iteration 5,  !!RES!! = 2.107387370115065E-07
+Multigrid: Iteration 1,  !!RES!! = 1.620875182717350E-03
+Multigrid: Iteration 2,  !!RES!! = 1.463635819398035E-04
+Multigrid: Iteration 3,  !!RES!! = 1.568083908693769E-05
+Multigrid: Iteration 4,  !!RES!! = 1.792863182976493E-06
+Multigrid: Iteration 5,  !!RES!! = 2.107387370114245E-07
 
 Multigrid statistics:
 
 Iterations              : 5
 !!INITIAL RES!!         : 3.083687338939967E-02
-!!RES!!                 : 2.107387370115065E-07
-!!RES!!/!!INITIAL RES!! : 6.833985221210816E-06
+!!RES!!                 : 2.107387370114245E-07
+!!RES!!/!!INITIAL RES!! : 6.833985221208158E-06
 
-Rate of convergence     : 9.266907052651692E-02
+Rate of convergence     : 9.266907052650972E-02
 
 |u - u_h|_L2 = 4.7249945646E-05 4.4499135992E-06
 |u - u_h|_H1 = 9.0180957284E-03 7.5608914320E-05
@@ -266,47 +266,47 @@ Rate of convergence     : 9.266907052651692E-02
 
 Calculating 2D Stokes-Problem 1 - Schur-Complement
 --------------------------------------------------
-BiCGStab: Iteration 0,  !!RES!! = 1.103509460296771E-01
-BiCGStab: Iteration 1,  !!RES!! = 4.210079932923620E-02
-BiCGStab: Iteration 2,  !!RES!! = 9.320783780160151E-03
-BiCGStab: Iteration 3,  !!RES!! = 3.314974868972756E-03
-BiCGStab: Iteration 4,  !!RES!! = 1.450189672399773E-03
-BiCGStab: Iteration 5,  !!RES!! = 3.953019535014337E-04
-BiCGStab: Iteration 6,  !!RES!! = 5.723788039164069E-05
-BiCGStab: Iteration 7,  !!RES!! = 1.283229531576274E-05
-BiCGStab: Iteration 8,  !!RES!! = 2.297224353978049E-06
-BiCGStab: Iteration 9,  !!RES!! = 6.933392585201058E-07
+BiCGStab: Iteration 0,  !!RES!! = 1.103509460296769E-01
+BiCGStab: Iteration 1,  !!RES!! = 4.210079932923624E-02
+BiCGStab: Iteration 2,  !!RES!! = 9.320783780159972E-03
+BiCGStab: Iteration 3,  !!RES!! = 3.314974868972781E-03
+BiCGStab: Iteration 4,  !!RES!! = 1.450189672399856E-03
+BiCGStab: Iteration 5,  !!RES!! = 3.953019535014937E-04
+BiCGStab: Iteration 6,  !!RES!! = 5.723788039170701E-05
+BiCGStab: Iteration 7,  !!RES!! = 1.283229531578259E-05
+BiCGStab: Iteration 8,  !!RES!! = 2.297224353989399E-06
+BiCGStab: Iteration 9,  !!RES!! = 6.933392585264276E-07
 
 BiCGStab statistics:
 
 Iterations              : 9
-!!INITIAL RES!!         : 1.103509460296771E-01
-!!RES!!                 : 6.933392585201058E-07
-!!RES!!/!!INITIAL RES!! : 6.283038645936423E-06
+!!INITIAL RES!!         : 1.103509460296769E-01
+!!RES!!                 : 6.933392585264276E-07
+!!RES!!/!!INITIAL RES!! : 6.283038645993725E-06
 
-Rate of convergence     : 2.642523504964974E-01
+Rate of convergence     : 2.642523504967652E-01
 
 |u - u_h|_L2 = 4.7310199588E-05 4.4172984651E-06
-|u - u_h|_H1 = 9.0184766908E-03 7.6882371026E-05
+|u - u_h|_H1 = 9.0184766908E-03 7.6882371025E-05
 |p - p_h|_L2 = 9.0303554488E-03
 
 Calculating 2D Stokes-Problem 2 - simple VANKA
 ----------------------------------------------
 Multigrid: Iteration 0,  !!RES!! = 3.083687338939967E-02
-Multigrid: Iteration 1,  !!RES!! = 1.620875182717351E-03
-Multigrid: Iteration 2,  !!RES!! = 1.463635819399016E-04
-Multigrid: Iteration 3,  !!RES!! = 1.568083908693528E-05
-Multigrid: Iteration 4,  !!RES!! = 1.792863182973963E-06
-Multigrid: Iteration 5,  !!RES!! = 2.107387370115065E-07
+Multigrid: Iteration 1,  !!RES!! = 1.620875182717350E-03
+Multigrid: Iteration 2,  !!RES!! = 1.463635819398035E-04
+Multigrid: Iteration 3,  !!RES!! = 1.568083908693769E-05
+Multigrid: Iteration 4,  !!RES!! = 1.792863182976493E-06
+Multigrid: Iteration 5,  !!RES!! = 2.107387370114245E-07
 
 Multigrid statistics:
 
 Iterations              : 5
 !!INITIAL RES!!         : 3.083687338939967E-02
-!!RES!!                 : 2.107387370115065E-07
-!!RES!!/!!INITIAL RES!! : 6.833985221210816E-06
+!!RES!!                 : 2.107387370114245E-07
+!!RES!!/!!INITIAL RES!! : 6.833985221208158E-06
 
-Rate of convergence     : 9.266907052651692E-02
+Rate of convergence     : 9.266907052650972E-02
 
 |u - u_h|_L2 = 4.7249945646E-05 4.4499135992E-06
 |u - u_h|_H1 = 9.0180957284E-03 7.5608914320E-05
@@ -316,19 +316,19 @@ Rate of convergence     : 9.266907052651692E-02
 Calculating 2D Stokes-Problem 2 - general VANKA
 -----------------------------------------------
 Multigrid: Iteration 0,  !!RES!! = 3.083687338939967E-02
-Multigrid: Iteration 1,  !!RES!! = 6.248299680865362E-04
-Multigrid: Iteration 2,  !!RES!! = 3.100052046015242E-05
-Multigrid: Iteration 3,  !!RES!! = 1.844662318745638E-06
-Multigrid: Iteration 4,  !!RES!! = 1.173308584164321E-07
+Multigrid: Iteration 1,  !!RES!! = 6.248299680865353E-04
+Multigrid: Iteration 2,  !!RES!! = 3.100052046014983E-05
+Multigrid: Iteration 3,  !!RES!! = 1.844662318746658E-06
+Multigrid: Iteration 4,  !!RES!! = 1.173308584158589E-07
 
 Multigrid statistics:
 
 Iterations              : 4
 !!INITIAL RES!!         : 3.083687338939967E-02
-!!RES!!                 : 1.173308584164321E-07
-!!RES!!/!!INITIAL RES!! : 3.804888288602085E-06
+!!RES!!                 : 1.173308584158589E-07
+!!RES!!/!!INITIAL RES!! : 3.804888288583495E-06
 
-Rate of convergence     : 4.416573655636544E-02
+Rate of convergence     : 4.416573655631149E-02
 
 |u - u_h|_L2 = 4.7322224019E-05 4.4602537648E-06
 |u - u_h|_H1 = 9.0187033808E-03 7.5737806659E-05
