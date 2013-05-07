@@ -17,7 +17,7 @@
 #                                                                      #
 ########################################################################
 #                                                                      #
-# Utility Makefile used to create FEAST documentation from LaTeX       #
+# Utility Makefile used to create FEAT2 documentation from LaTeX       #
 # sources. Dependencies and external programs are defined below.       #
 # To use this file, point the variable TEX_MASTER_FILE in your main    #
 # Makefile to the master document (the only one with \begin{document}  #

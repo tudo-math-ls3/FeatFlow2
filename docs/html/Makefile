@@ -8,7 +8,7 @@
 #          University of Dortmund                                      #
 #          D-44227 DORTMUND                                            #
 #                                                                      #
-# Makefile to create FEAST HTML Documentation from FEAST sources       #
+# Makefile to create FEAT2 HTML Documentation from FEAT2 sources       #
 #                                                                      #
 # Author: Sven H.M. Buijssen (sven.buijssen@math.uni-dortmund.de)      #
 ########################################################################

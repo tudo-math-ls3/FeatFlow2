@@ -40,25 +40,25 @@ FORTRANDOC = ../bin/fortrandoc.py
 
 
 ########################################################################
-# Paths and invocation of FEAST-specific scripts and settings
+# Paths and invocation of FEAT2-specific scripts and settings
 #
 ########################################################################
 
-# Location of FEAST configure script
+# Location of FEAT2 configure script
 CONFIGURE = ../../bin/configure
 CONFIGUREFLAGS = --make="$(MAKE) MAKEFLAGS= "
 
-# Location of FEAST's Makefile.inc
+# Location of FEAT2's Makefile.inc
 MAKEFILE_INC = ../../kernel/arch/Makefile.inc
 
 # List of kernel modules
-FEAST_KERNEL_MODULES_WITH_PATH = \
+FEAT2_KERNEL_MODULES_WITH_PATH = \
 	$(shell $(CONFIGURE) $(CONFIGUREFLAGS) --list-kernel-modules | grep "\.f90" || exit 1;) 
-FEAST_KERNEL_MODULES           = $(foreach file, $(FEAST_KERNEL_MODULES_WITH_PATH), $(notdir $(file)))
+FEAT2_KERNEL_MODULES           = $(sort $(foreach file, $(FEAT2_KERNEL_MODULES_WITH_PATH), $(notdir $(file))))
 
 # List of application modules
 # (remember to filter out any links to prevent duplicates)
-FEAST_APP_MODULES_WITH_PATH = \
+FEAT2_APP_MODULES_WITH_PATH = \
 	$(sort $(wildcard ../../applications/tutorial/*.f90)) 
 
 # Local copies of application modules (having unique names)
@@ -68,8 +68,8 @@ FEAST_APP_MODULES_WITH_PATH = \
 #  Hence we create local copies with unique names in order to be
 #  able to include application's documentation.)
 APPDIR_DELIMITER = ~
-FEAST_APP_MODULES = \
-	$(foreach file, $(FEAST_APP_MODULES_WITH_PATH), \
+FEAT2_APP_MODULES = \
+	$(foreach file, $(FEAT2_APP_MODULES_WITH_PATH), \
 		$(basename $(notdir $(file)))$(APPDIR_DELIMITER)$(word 4, $(subst /, ,$(dir $(file)))).f90)
 
 # CSS-file for LaTeX
@@ -130,26 +130,26 @@ DEPS     = $(INCLUDES:\input{%}=%.tex)
 
 
 # Create a LaTeX file that includes detailed documentation
-# for all FEAST kernel modules (via LaTeX \input{}).
+# for all FEAT2 kernel modules (via LaTeX \input{}).
 $(TEX_MASTER_FILE_MODULE): \
 		$(CONFIGURE) \
-		$(FEAST_KERNEL_MODULES:%=%.$(SUFFIX_MODULE)) \
-		$(FEAST_APP_MODULES:%=%.$(SUFFIX_MODULE)) \
+		$(FEAT2_KERNEL_MODULES:%=%.$(SUFFIX_MODULE)) \
+		$(FEAT2_APP_MODULES:%=%.$(SUFFIX_MODULE)) \
 		$(DEFINITIONS_FILE)
 	-rm -f $(TEX_MASTER_FILE_MODULE);
 	@echo "# Creating LaTeX file with references to module documentation...";
-	@$(foreach file, $(FEAST_KERNEL_MODULES) $(FEAST_APP_MODULES), \
+	@$(foreach file, $(FEAT2_KERNEL_MODULES) $(FEAT2_APP_MODULES), \
 		texfile=$(addsuffix .$(SUFFIX_MODULE), $(file)); \
 		(cat $${texfile}; \
 		 echo) >> $(TEX_MASTER_FILE_MODULE); )
 
 
 # Create local copies of application modules
-$(FEAST_APP_MODULES): create_local_copies
+$(FEAT2_APP_MODULES): create_local_copies
 .PHONY: create_local_copies
 create_local_copies:
 	@echo "# Creating local copies of application modules..."
-	$(foreach file, $(FEAST_APP_MODULES_WITH_PATH), \
+	$(foreach file, $(FEAT2_APP_MODULES_WITH_PATH), \
 		appdirname=$(word 4, $(subst /, ,$(dir $(file)))); \
 		filenameWOsuffix=$(basename $(notdir $(file))); \
 		copy=$${filenameWOsuffix}$(APPDIR_DELIMITER)$${appdirname}.f90; \
@@ -161,8 +161,8 @@ create_local_copies:
 clean:	$(TEX_MASTER_FILE).clean
 	-$(foreach file, \
 	    $(DEPS:%.tex=%.aux) \
-	    $(FEAST_APP_MODULES) \
-	    $(addsuffix .$(SUFFIX_MODULE), $(FEAST_KERNEL_MODULES) $(FEAST_APP_MODULES)) \
+	    $(FEAT2_APP_MODULES) \
+	    $(addsuffix .$(SUFFIX_MODULE), $(FEAT2_KERNEL_MODULES) $(FEAT2_APP_MODULES)) \
 	    $(TEX_MASTER_FILE_MODULE) \
 	    definitions.tex styleguide.aux modules_dynamic.aux modules_overview.aux, \
 	    $(remove_file))
@@ -178,11 +178,11 @@ purge:	$(TEX_MASTER_FILE).clean clean $(TEX_MASTER_FILE).purge
 
 
 # Extend search path for Fortran 90 source files to include
-# FEAST kernel paths
-vpath %.f90 $(sort $(dir $(FEAST_KERNEL_MODULES_WITH_PATH)))
+# FEAT2 kernel paths
+vpath %.f90 $(sort $(dir $(FEAT2_KERNEL_MODULES_WITH_PATH)))
 
 
-# Extract module documentation from wrapped FEAST kernel module
+# Extract module documentation from wrapped FEAT2 kernel module
 %.f90.$(SUFFIX_MODULE): %.f90 
 	$(FORTRANDOC) --tex --output-dir=. $<;
 

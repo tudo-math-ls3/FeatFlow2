@@ -4,14 +4,14 @@
 #
 # Fortrandoc
 #
-# Python-based parser for FEAST documentation.
+# Python-based parser for FEAT2 documentation.
 #
 # (c) 2006,2007 Thomas Rohkaemper <thomas.rohkaemper@uni-dortmund.de>
 #
 # Last change: November, 12th 2007
 #
 """
-Python-based parser for FEAST documentation.
+Python-based parser for FEAT2 documentation.
 
 usage: fortrandoc.py <output types> [options] <files>
 
@@ -1320,7 +1320,7 @@ def main():
     op.add_option('-s', '--strip-extension', action='store_true', dest='stripextension', default=False, help='strip extension from the filename')
     op.add_option('-f', '--force', action='store_true', dest='force', default=False, help='continue after errors')
     op.set_usage('%prog <output types> [options] <files>')
-    op.set_description('A parser for FEAST documentation.')
+    op.set_description('A parser for FEAT2 documentation.')
 
     # options are globally accessible
     global options

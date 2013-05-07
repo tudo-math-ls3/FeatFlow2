@@ -1,4 +1,4 @@
-To generate FEAST documentation in PS/PDF format type:
+To generate FEAT2 documentation in PS/PDF format type:
 
   % make ps
 
@@ -8,7 +8,7 @@ or
 
   
 
-To generate FEAST documentation in HTML format type:
+To generate FEAT2 documentation in HTML format type:
 
   % make html
 

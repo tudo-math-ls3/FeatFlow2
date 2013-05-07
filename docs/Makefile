@@ -8,7 +8,7 @@
 #          University of Dortmund                                      #
 #          D-44227 DORTMUND                                            #
 #                                                                      #
-# Makefile to create FEAST Documentation in several formats            #
+# Makefile to create FEAT2 Documentation in several formats            #
 #                                                                      #
 # Author: Sven H.M. Buijssen (sven.buijssen@math.uni-dortmund.de)      #
 ########################################################################
