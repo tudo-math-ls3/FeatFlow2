@@ -1,8 +1,8 @@
 !##############################################################################
-!# Tutorial 017b: Solve simple linear system with multigrid, with filtering
+!# Tutorial 017c: Solve simple linear system with multigrid, extended settings
 !##############################################################################
 
-module tutorial017b
+module tutorial017c
 
   ! Include basic Feat-2 modules
   use fsystem
@@ -31,6 +31,7 @@ module tutorial017b
   
   use filtersupport
   use linearsolver
+  use coarsegridcorrection
   use collection
   
   use ucd
@@ -38,7 +39,7 @@ module tutorial017b
   implicit none
   private
   
-  public :: start_tutorial017b
+  public :: start_tutorial017c
 
 contains
 
@@ -95,7 +96,7 @@ contains
 
   ! ***************************************************************************
 
-  subroutine start_tutorial017b
+  subroutine start_tutorial017c
 
     ! Declare some variables.
     integer, parameter :: NLMAX = 5
@@ -120,7 +121,7 @@ contains
     ! Print a message
     call output_lbrk()
     call output_separator (OU_SEP_STAR)
-    call output_line ("This is FEAT-2. Tutorial 017b")
+    call output_line ("This is FEAT-2. Tutorial 017c")
     call output_separator (OU_SEP_MINUS)
     
     ! =================================
@@ -153,16 +154,16 @@ contains
     end do
     
     ! =================================
-    ! Create a hierarchy of Q1 discretisations
+    ! Create a hierarchy of Q2 discretisations
     ! =================================
 
-    ! On all levels, create a scalar and a block discretisation for a Q1 block.    
+    ! On all levels, create a scalar and a block discretisation for a Q2 block.    
     do ilevel = 1,NLMAX
-      ! Create a spatial discretisation with Q1
+      ! Create a spatial discretisation with Q2
       call spdiscr_initDiscr_simple (&
-          p_RspatialDiscr(ilevel),EL_Q1_2D,p_Rtriangulations(ilevel))
+          p_RspatialDiscr(ilevel),EL_Q2_2D,p_Rtriangulations(ilevel))
       
-      ! Create a block discretisation with 1 block Q1.
+      ! Create a block discretisation with 1 block Q2.
       call spdiscr_initBlockDiscr (p_RblockDiscr(ilevel),p_Rtriangulations(ilevel))
       call spdiscr_appendBlockComponent (p_RblockDiscr(ilevel),p_RspatialDiscr(ilevel))
       call spdiscr_commitBlockDiscr (p_RblockDiscr(ilevel))
@@ -340,6 +341,20 @@ contains
     
     p_rsolverNode%p_rsubnodeMultigrid2%icycle = 0   ! 0=F-cycle, 1=V-cycle, 2=W-cycle
 
+    ! Use adaptive coarse grid correction, energy minimisation
+    p_rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection%ccorrectionType&
+        = CGCOR_SCALARENERGYMIN
+        
+    ! Use linear prolongation/restriction on a once refined mesh.
+    do ilevel = 2,NLMAX
+      
+      call linsol_getMultigrid2Level (p_rsolverNode,ilevel,p_rlevelInfo)
+      
+      p_rlevelInfo%p_rprojection%RscalarProjection(1,1)%iprolongationOrder = 1
+      p_rlevelInfo%p_rprojection%RscalarProjection(1,1)%irestrictionOrder = 1
+
+    end do
+
     ! ----------------
     ! Solve the system
     ! ----------------
@@ -371,7 +386,7 @@ contains
 
     ! Open / write / close; write the solution to a VTK file.
     call ucd_startVTK (rexport,UCD_FLAG_STANDARD,p_Rtriangulations(NLMAX),&
-        "post/tutorial017b.vtk")
+        "post/tutorial017c.vtk")
     call ucd_addVectorByVertex (rexport, "solution", &
         UCD_VAR_STANDARD, rsolution%RvectorBlock(1))
     call ucd_write (rexport)

@@ -324,6 +324,12 @@ contains
     p_rsolverNode%ioutputlevel   = 2              ! Print some output about the iteration
 
     ! ----------------
+    ! Set multigrid specific settings
+    ! ----------------
+    
+    p_rsolverNode%p_rsubnodeMultigrid2%icycle = 0   ! 0=F-cycle, 1=V-cycle, 2=W-cycle
+
+    ! ----------------
     ! Solve the system
     ! ----------------
     
