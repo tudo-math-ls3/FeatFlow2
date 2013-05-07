@@ -207,7 +207,7 @@ contains
     ! ----------------
     ! Solver preparation
     ! ----------------
-    
+
     ! Create a BiCGStab(DefCoor(4,Jac(0.7)))) solver, i.e.,
     ! - a BiCGStab solver
     ! - where the preconditioner is 4 steps defect correction and
@@ -218,7 +218,7 @@ contains
     call linsol_initDefCorr (p_rprec1,p_rprec2)
     p_rprec1%nminIterations = 4  ! Exactly 4 steps "x_n+1 = x_n + omega D^-1 (b-A x_n)"
     p_rprec1%nmaxIterations = 4
-    p_rprec1%domega = 0.7_DP     ! Damping parameter for the defect correction
+    p_rprec1%domega = 0.7_DP     ! Damping parameter omega for the defect correction
     
     call linsol_initBiCGStab (p_rsolverNode,p_rprec1)
     
