@@ -46,10 +46,17 @@
           j = IedgeList(2,iedge)
 
           ! Compute local upper and lower bounds
+#if TemplateType_Vector == TemplateType_AFC
           Dqp(i) = max(Dqp(i), Dx(j))
           Dqm(i) = min(Dqm(i), Dx(j))
           Dqp(j) = max(Dqp(j), Dx(i))
           Dqm(j) = min(Dqm(j), Dx(i))
+#else
+          Dqp(i) = max(Dqp(i), real(Dx(j),__AFCType__))
+          Dqm(i) = min(Dqm(i), real(Dx(j),__AFCType__))
+          Dqp(j) = max(Dqp(j), real(Dx(i),__AFCType__))
+          Dqm(j) = min(Dqm(j), real(Dx(i),__AFCType__))
+#endif
         end do
         !$omp end do
 

@@ -1,4 +1,4 @@
-!##############################################################################
+!#############################################################################
 !# ****************************************************************************
 !# <name> afcstabscalarfct </name>
 !# ****************************************************************************
@@ -1477,11 +1477,21 @@ contains
 !</subroutine>
 
     ! local variables
+    real(QP), dimension(:), pointer :: p_Qmatrix,p_Qx
     real(DP), dimension(:), pointer :: p_Dmatrix,p_Dx
+    real(SP), dimension(:), pointer :: p_Fmatrix,p_Fx
+    real(QP), dimension(:), pointer :: p_QxTimeDeriv, p_QxPredictor
     real(DP), dimension(:), pointer :: p_DxTimeDeriv, p_DxPredictor
+    real(SP), dimension(:), pointer :: p_FxTimeDeriv, p_FxPredictor
+    real(QP), dimension(:), pointer :: p_Qflux0,p_Qflux,p_QfluxPrel,p_Qalpha
     real(DP), dimension(:), pointer :: p_Dflux0,p_Dflux,p_DfluxPrel,p_Dalpha
+    real(SP), dimension(:), pointer :: p_Fflux0,p_Fflux,p_FfluxPrel,p_Falpha
+    real(QP), dimension(:,:), pointer :: p_Qcoefficients
     real(DP), dimension(:,:), pointer :: p_Dcoefficients
+    real(SP), dimension(:,:), pointer :: p_Fcoefficients
+    real(QP), dimension(:,:,:), pointer :: p_QcoeffsAtEdge
     real(DP), dimension(:,:,:), pointer :: p_DcoeffsAtEdge
+    real(SP), dimension(:,:,:), pointer :: p_FcoeffsAtEdge
     integer, dimension(:,:), pointer :: p_IedgeList
     logical :: buseCallback
 
@@ -1521,7 +1531,19 @@ contains
 
     ! Set pointers
     call afcstab_getbase_IedgeList(rafcstab, p_IedgeList)
-    call lsyssc_getbase_double(rx, p_Dx)
+
+    select case(rx%cdataType)
+    case (ST_QUAD)
+       call lsyssc_getbase_quad(rx, p_Qx)
+    case (ST_DOUBLE)
+       call lsyssc_getbase_double(rx, p_Dx)
+    case (ST_SINGLE)
+       call lsyssc_getbase_single(rx, p_Fx)
+    case default
+       call output_line('Unsupported data type',&
+            OU_CLASS_ERROR,OU_MODE_STD,'afcsc_buildFluxFCTScalar')
+       call sys_halt()
+    end select
 
     ! What kind of stabilisation are we?
     select case(rafcstab%cafcstabType)
@@ -1531,8 +1553,21 @@ contains
           AFCSTAB_NLINFCT_ITERATIVE)
 
       ! Set pointers
-      call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
-      call lsyssc_getbase_double(rafcstab%p_rvectorFlux0, p_Dflux0)
+      select case(rafcstab%cdataType)
+      case(ST_QUAD)
+         call lsyssc_getbase_quad(rafcstab%p_rvectorFlux, p_Qflux)
+         call lsyssc_getbase_quad(rafcstab%p_rvectorFlux0, p_Qflux0)
+      case(ST_DOUBLE)
+         call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
+         call lsyssc_getbase_double(rafcstab%p_rvectorFlux0, p_Dflux0)
+      case(ST_SINGLE)
+         call lsyssc_getbase_single(rafcstab%p_rvectorFlux, p_Fflux)
+         call lsyssc_getbase_single(rafcstab%p_rvectorFlux0, p_Fflux0)
+      case default
+         call output_line('Unsupported data type',&
+              OU_CLASS_ERROR,OU_MODE_STD,'afcsc_buildFluxFCTScalar')
+         call sys_halt()
+      end select
 
       ! Use callback routine?
       if (present(fcb_calcFluxFCTSc_sim) .and. present(rgroupFEMSet)) then
@@ -1544,7 +1579,19 @@ contains
               OU_CLASS_ERROR,OU_MODE_STD,'afcsc_buildFluxFCTScalar')
           call sys_halt()
         end if
-        call gfem_getbase_DcoeffsAtEdge(rgroupFEMSet, p_DcoeffsAtEdge)
+
+        select case(rgroupFEMSet%cdataType)
+        case(ST_QUAD)
+           call gfem_getbase_QcoeffsAtEdge(rgroupFEMSet, p_QcoeffsAtEdge)
+        case(ST_DOUBLE)
+           call gfem_getbase_DcoeffsAtEdge(rgroupFEMSet, p_DcoeffsAtEdge)
+        case(ST_SINGLE)
+           call gfem_getbase_FcoeffsAtEdge(rgroupFEMSet, p_FcoeffsAtEdge)
+        case default
+           call output_line('Unsupported data type',&
+                OU_CLASS_ERROR,OU_MODE_STD,'afcsc_buildFluxFCTScalar')
+           call sys_halt()
+        end select
         buseCallback = .true.
       else
 
@@ -1555,7 +1602,14 @@ contains
           call sys_halt()
         end if
 
-        call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_Dcoefficients)
+        select case(rafcstab%cdataType)
+        case(ST_QUAD)
+           call afcstab_getbase_QcoeffsAtEdge(rafcstab, p_Qcoefficients)
+        case(ST_DOUBLE)
+           call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_Dcoefficients)
+        case(ST_SINGLE)
+           call afcstab_getbase_FcoeffsAtEdge(rafcstab, p_Fcoefficients)
+        end select
         buseCallback = .false.
       end if
 
@@ -1589,14 +1643,59 @@ contains
                 p_DcoeffsAtEdge, p_Dx, dscale*(1.0_DP-theta),&
                 bclear, p_Dflux0)
           else
-            call doFluxesByCoeffsDP(p_IedgeList, rafcstab%NEDGE,&
-                p_Dcoefficients, p_Dx, dscale*(1.0_DP-theta),&
-                bclear, p_Dflux0)
+             
+             select case(FEAT2_PP_ID2(rx%cdataType,rafcstab%cdataType,10))
+             case(FEAT2_PP_ID2(ST_QUAD,ST_QUAD,10))
+                call doFluxesByCoeffsQPQP(p_IedgeList, rafcstab%NEDGE,&
+                     p_Qcoefficients, p_Qx, dscale*(1.0_DP-theta),&
+                     bclear, p_Qflux0)
+             case(FEAT2_PP_ID2(ST_DOUBLE,ST_QUAD,10))
+                call doFluxesByCoeffsDPQP(p_IedgeList, rafcstab%NEDGE,&
+                     p_Qcoefficients, p_Dx, dscale*(1.0_DP-theta),&
+                     bclear, p_Qflux0)
+             case(FEAT2_PP_ID2(ST_SINGLE,ST_QUAD,10))
+                call doFluxesByCoeffsSPQP(p_IedgeList, rafcstab%NEDGE,&
+                     p_Qcoefficients, p_Fx, dscale*(1.0_DP-theta),&
+                     bclear, p_Qflux0)
+
+             case(FEAT2_PP_ID2(ST_QUAD,ST_DOUBLE,10))
+                call doFluxesByCoeffsQPDP(p_IedgeList, rafcstab%NEDGE,&
+                     p_Dcoefficients, p_Qx, dscale*(1.0_DP-theta),&
+                     bclear, p_Dflux0)
+             case(FEAT2_PP_ID2(ST_DOUBLE,ST_DOUBLE,10))
+                call doFluxesByCoeffsDPDP(p_IedgeList, rafcstab%NEDGE,&
+                     p_Dcoefficients, p_Dx, dscale*(1.0_DP-theta),&
+                     bclear, p_Dflux0)
+             case(FEAT2_PP_ID2(ST_SINGLE,ST_DOUBLE,10))
+                call doFluxesByCoeffsSPDP(p_IedgeList, rafcstab%NEDGE,&
+                     p_Dcoefficients, p_Fx, dscale*(1.0_DP-theta),&
+                     bclear, p_Dflux0)
+
+             case(FEAT2_PP_ID2(ST_QUAD,ST_SINGLE,10))
+                call doFluxesByCoeffsQPSP(p_IedgeList, rafcstab%NEDGE,&
+                     p_Fcoefficients, p_Qx, dscale*(1.0_DP-theta),&
+                     bclear, p_Fflux0)
+             case(FEAT2_PP_ID2(ST_DOUBLE,ST_SINGLE,10))
+                call doFluxesByCoeffsDPSP(p_IedgeList, rafcstab%NEDGE,&
+                     p_Fcoefficients, p_Dx, dscale*(1.0_DP-theta),&
+                     bclear, p_Fflux0)
+             case(FEAT2_PP_ID2(ST_SINGLE,ST_SINGLE,10))
+                call doFluxesByCoeffsSPSP(p_IedgeList, rafcstab%NEDGE,&
+                     p_Fcoefficients, p_Fx, dscale*(1.0_DP-theta),&
+                     bclear, p_Fflux0)
+             end select
           end if
         elseif (.not.bquickAssembly .and. bclear) then
           ! Clear the explicit part of the raw-antidiffusive fluxes
           ! $$ f_{ij}^n = 0 $$
-          call lalg_clearVector(p_Dflux0, rafcstab%NEDGE)
+          select case(rafcstab%cdataType)
+          case(ST_QUAD)    
+             call lalg_clearVector(p_Qflux0, rafcstab%NEDGE)
+          case(ST_DOUBLE)    
+             call lalg_clearVector(p_Dflux0, rafcstab%NEDGE)
+          case(ST_SINGLE)    
+             call lalg_clearVector(p_Fflux0, rafcstab%NEDGE)
+          end select
           ! if bquickAssembly = TRUE then this step can be skipped
         end if
 
@@ -1606,7 +1705,14 @@ contains
         if (rafcstab%cafcstabType .eq. AFCSTAB_NLINFCT_IMPLICIT) then
 
           ! Set pointers
-          call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_DfluxPrel)
+          select case(rafcstab%cdataType)
+          case(ST_QUAD)
+             call lsyssc_getbase_quad(rafcstab%p_rvectorFluxPrel, p_QfluxPrel)
+          case(ST_DOUBLE)
+             call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_DfluxPrel)
+          case(ST_SINGLE)
+             call lsyssc_getbase_single(rafcstab%p_rvectorFluxPrel, p_FfluxPrel)
+          end select
 
           ! We have to store the raw-antidiffusive fluxes based on the
           ! initial solution without contribution of the consistent
@@ -1616,8 +1722,37 @@ contains
             call doFluxesByCallbackDP(p_IedgeList, rafcstab%NEDGE,&
                 p_DcoeffsAtEdge, p_Dx, dscale, .true., p_DfluxPrel)
           else
-            call doFluxesByCoeffsDP(p_IedgeList, rafcstab%NEDGE,&
-                p_Dcoefficients, p_Dx, dscale, .true., p_DfluxPrel)
+             select case(FEAT2_PP_ID2(rx%cdataType,rafcstab%cdataType,10))
+             case(FEAT2_PP_ID2(ST_QUAD,ST_QUAD,10))
+                call doFluxesByCoeffsQPQP(p_IedgeList, rafcstab%NEDGE,&
+                     p_Qcoefficients, p_Qx, dscale, .true., p_QfluxPrel)
+             case(FEAT2_PP_ID2(ST_DOUBLE,ST_QUAD,10))
+                call doFluxesByCoeffsDPQP(p_IedgeList, rafcstab%NEDGE,&
+                     p_Qcoefficients, p_Dx, dscale, .true., p_QfluxPrel)
+             case(FEAT2_PP_ID2(ST_SINGLE,ST_QUAD,10))
+                call doFluxesByCoeffsSPQP(p_IedgeList, rafcstab%NEDGE,&
+                     p_Qcoefficients, p_Fx, dscale, .true., p_QfluxPrel)
+                
+             case(FEAT2_PP_ID2(ST_QUAD,ST_DOUBLE,10))
+                call doFluxesByCoeffsQPDP(p_IedgeList, rafcstab%NEDGE,&
+                     p_Dcoefficients, p_Qx, dscale, .true., p_DfluxPrel)
+             case(FEAT2_PP_ID2(ST_DOUBLE,ST_DOUBLE,10))
+                call doFluxesByCoeffsDPDP(p_IedgeList, rafcstab%NEDGE,&
+                     p_Dcoefficients, p_Dx, dscale, .true., p_DfluxPrel)
+             case(FEAT2_PP_ID2(ST_SINGLE,ST_DOUBLE,10))
+                call doFluxesByCoeffsSPDP(p_IedgeList, rafcstab%NEDGE,&
+                     p_Dcoefficients, p_Fx, dscale, .true., p_DfluxPrel)
+                
+             case(FEAT2_PP_ID2(ST_QUAD,ST_SINGLE,10))
+                call doFluxesByCoeffsQPSP(p_IedgeList, rafcstab%NEDGE,&
+                     p_Fcoefficients, p_Qx, dscale, .true., p_FfluxPrel)
+             case(FEAT2_PP_ID2(ST_DOUBLE,ST_SINGLE,10))
+                call doFluxesByCoeffsDPSP(p_IedgeList, rafcstab%NEDGE,&
+                     p_Fcoefficients, p_Dx, dscale, .true., p_FfluxPrel)
+             case(FEAT2_PP_ID2(ST_SINGLE,ST_SINGLE,10))
+                call doFluxesByCoeffsSPSP(p_IedgeList, rafcstab%NEDGE,&
+                     p_Fcoefficients, p_Fx, dscale, .true., p_FfluxPrel)
+             end select
           end if
 
         elseif (rafcstab%cprelimitingType .ne. AFCSTAB_PRELIMITING_NONE) then
@@ -1627,21 +1762,97 @@ contains
           if (present(rxPredictor)) then
 
             ! Set pointers
-            call lsyssc_getbase_double(rxPredictor, p_DxPredictor)
-            call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_DfluxPrel)
+            select case(rxPredictor%cdataType)
+            case(ST_QUAD)
+               call lsyssc_getbase_quad(rxPredictor, p_QxPredictor)
+            case(ST_DOUBLE)
+               call lsyssc_getbase_double(rxPredictor, p_DxPredictor)
+            case(ST_SINGLE)
+               call lsyssc_getbase_single(rxPredictor, p_FxPredictor)
+            case default
+               call output_line('Unsupported data type',&
+                    OU_CLASS_ERROR,OU_MODE_STD,'afcsc_buildFluxFCTScalar')
+               call sys_halt()
+            end select
 
+            select case(rafcstab%cdataType)
+            case(ST_QUAD)
+               call lsyssc_getbase_quad(rafcstab%p_rvectorFluxPrel, p_QfluxPrel)
+            case(ST_DOUBLE)
+               call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_DfluxPrel)
+            case(ST_SINGLE)
+               call lsyssc_getbase_single(rafcstab%p_rvectorFluxPrel, p_FfluxPrel)
+            end select
+            
             if (rafcstab%cprelimitingType .eq. AFCSTAB_PRELIMITING_STD) then
-              ! Compute solution difference for standard prelimiting
-              call doDifferencesDP(p_IedgeList, rafcstab%NEDGE,&
-                  p_DxPredictor, p_DfluxPrel)
+               select case(FEAT2_PP_ID2(rx%cdataType,rafcstab%cdataType,10))
+               case(FEAT2_PP_ID2(ST_QUAD,ST_QUAD,10))
+                  call doDifferencesQPQP(p_IedgeList, rafcstab%NEDGE,&
+                       p_QxPredictor, p_QfluxPrel)
+               case(FEAT2_PP_ID2(ST_DOUBLE,ST_QUAD,10))
+                  call doDifferencesDPQP(p_IedgeList, rafcstab%NEDGE,&
+                       p_DxPredictor, p_QfluxPrel)
+               case(FEAT2_PP_ID2(ST_SINGLE,ST_QUAD,10))
+                  call doDifferencesSPQP(p_IedgeList, rafcstab%NEDGE,&
+                       p_FxPredictor, p_QfluxPrel)
+
+               case(FEAT2_PP_ID2(ST_QUAD,ST_DOUBLE,10))
+                  call doDifferencesQPDP(p_IedgeList, rafcstab%NEDGE,&
+                       p_QxPredictor, p_DfluxPrel)
+               case(FEAT2_PP_ID2(ST_DOUBLE,ST_DOUBLE,10))
+                  call doDifferencesDPDP(p_IedgeList, rafcstab%NEDGE,&
+                       p_DxPredictor, p_DfluxPrel)
+               case(FEAT2_PP_ID2(ST_SINGLE,ST_DOUBLE,10))
+                  call doDifferencesSPDP(p_IedgeList, rafcstab%NEDGE,&
+                       p_FxPredictor, p_DfluxPrel)
+
+               case(FEAT2_PP_ID2(ST_QUAD,ST_SINGLE,10))
+                  call doDifferencesQPSP(p_IedgeList, rafcstab%NEDGE,&
+                       p_QxPredictor, p_FfluxPrel)
+               case(FEAT2_PP_ID2(ST_DOUBLE,ST_SINGLE,10))
+                  call doDifferencesDPSP(p_IedgeList, rafcstab%NEDGE,&
+                       p_DxPredictor, p_FfluxPrel)
+               case(FEAT2_PP_ID2(ST_SINGLE,ST_SINGLE,10))
+                  call doDifferencesSPSP(p_IedgeList, rafcstab%NEDGE,&
+                       p_FxPredictor, p_FfluxPrel)
+               end select
             elseif (rafcstab%cprelimitingType .eq. AFCSTAB_PRELIMITING_MINMOD) then
               ! Compute fluxes for minmod prelimiting
               if (buseCallback) then
                 call doFluxesByCallbackDP(p_IedgeList, rafcstab%NEDGE,&
                     p_DcoeffsAtEdge, p_DxPredictor, dscale, .true., p_DfluxPrel)
               else
-                call doFluxesByCoeffsDP(p_IedgeList, rafcstab%NEDGE,&
-                    p_Dcoefficients, p_DxPredictor, dscale, .true., p_DfluxPrel)
+                 select case(FEAT2_PP_ID2(rx%cdataType,rafcstab%cdataType,10))
+                 case(FEAT2_PP_ID2(ST_QUAD,ST_QUAD,10))
+                    call doFluxesByCoeffsQPQP(p_IedgeList, rafcstab%NEDGE,&
+                         p_Qcoefficients, p_QxPredictor, dscale, .true., p_QfluxPrel)
+                 case(FEAT2_PP_ID2(ST_DOUBLE,ST_QUAD,10))
+                    call doFluxesByCoeffsDPQP(p_IedgeList, rafcstab%NEDGE,&
+                         p_Qcoefficients, p_DxPredictor, dscale, .true., p_QfluxPrel)
+                 case(FEAT2_PP_ID2(ST_SINGLE,ST_QUAD,10))
+                    call doFluxesByCoeffsSPQP(p_IedgeList, rafcstab%NEDGE,&
+                         p_Qcoefficients, p_FxPredictor, dscale, .true., p_QfluxPrel)
+
+                 case(FEAT2_PP_ID2(ST_QUAD,ST_DOUBLE,10))
+                    call doFluxesByCoeffsQPDP(p_IedgeList, rafcstab%NEDGE,&
+                         p_Dcoefficients, p_QxPredictor, dscale, .true., p_DfluxPrel)
+                 case(FEAT2_PP_ID2(ST_DOUBLE,ST_DOUBLE,10))
+                    call doFluxesByCoeffsDPDP(p_IedgeList, rafcstab%NEDGE,&
+                         p_Dcoefficients, p_DxPredictor, dscale, .true., p_DfluxPrel)
+                 case(FEAT2_PP_ID2(ST_SINGLE,ST_DOUBLE,10))
+                    call doFluxesByCoeffsSPDP(p_IedgeList, rafcstab%NEDGE,&
+                         p_Dcoefficients, p_FxPredictor, dscale, .true., p_DfluxPrel)
+
+                 case(FEAT2_PP_ID2(ST_QUAD,ST_SINGLE,10))
+                    call doFluxesByCoeffsQPSP(p_IedgeList, rafcstab%NEDGE,&
+                         p_Fcoefficients, p_QxPredictor, dscale, .true., p_FfluxPrel)
+                 case(FEAT2_PP_ID2(ST_DOUBLE,ST_SINGLE,10))
+                    call doFluxesByCoeffsDPSP(p_IedgeList, rafcstab%NEDGE,&
+                         p_Fcoefficients, p_DxPredictor, dscale, .true., p_FfluxPrel)
+                 case(FEAT2_PP_ID2(ST_SINGLE,ST_SINGLE,10))
+                    call doFluxesByCoeffsSPSP(p_IedgeList, rafcstab%NEDGE,&
+                         p_Fcoefficients, p_FxPredictor, dscale, .true., p_FfluxPrel)
+                 end select
               end if
             else
               call output_line('Invalid type of prelimiting!',&
@@ -1661,12 +1872,117 @@ contains
         if (present(rmatrix)) then
 
           ! Set pointers
-          call lsyssc_getbase_double(rmatrix, p_Dmatrix)
+          select case(rmatrix%cdataType)
+          case(ST_QUAD)
+             call lsyssc_getbase_quad(rmatrix, p_Qmatrix)
+          case(ST_DOUBLE)
+             call lsyssc_getbase_double(rmatrix, p_Dmatrix)
+          case(ST_SINGLE)
+             call lsyssc_getbase_single(rmatrix, p_Fmatrix)
+          case default
+             call output_line('Unsupported data type',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'afcsc_buildFluxFCTScalar')
+             call sys_halt()
+          end select
 
           ! Assemble the explicit part of the mass-antidiffusive fluxes
           ! $$ f_{ij}^n := f_{ij}^n - m_{ij}(u_i^n-u_j^n) $$
-          call doFluxesByMatrixDP(p_IedgeList, rafcstab%NEDGE,&
-              p_Dmatrix, p_Dx, -dscale/tstep, .false., p_Dflux0)
+          select case(FEAT2_PP_ID3(rmatrix%cdataType,rx%cdataType,rafcstab%cdataType,10))
+             ! AFC = QUAD
+          case(FEAT2_PP_ID3(ST_QUAD,ST_QUAD,ST_QUAD,10))
+             call doFluxesByMatrixQPQPQP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Qmatrix, p_Qx, -dscale/tstep, .false., p_Qflux0)
+          case(FEAT2_PP_ID3(ST_DOUBLE,ST_QUAD,ST_QUAD,10))
+             call doFluxesByMatrixDPQPQP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Dmatrix, p_Qx, -dscale/tstep, .false., p_Qflux0)
+          case(FEAT2_PP_ID3(ST_SINGLE,ST_QUAD,ST_QUAD,10))
+             call doFluxesByMatrixSPQPQP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Fmatrix, p_Qx, -dscale/tstep, .false., p_Qflux0)
+
+          case(FEAT2_PP_ID3(ST_QUAD,ST_DOUBLE,ST_QUAD,10))
+             call doFluxesByMatrixQPDPQP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Qmatrix, p_Dx, -dscale/tstep, .false., p_Qflux0)
+          case(FEAT2_PP_ID3(ST_DOUBLE,ST_DOUBLE,ST_QUAD,10))
+             call doFluxesByMatrixDPDPQP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Dmatrix, p_Dx, -dscale/tstep, .false., p_Qflux0)
+          case(FEAT2_PP_ID3(ST_SINGLE,ST_DOUBLE,ST_QUAD,10))
+             call doFluxesByMatrixSPDPQP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Fmatrix, p_Dx, -dscale/tstep, .false., p_Qflux0)
+
+          case(FEAT2_PP_ID3(ST_QUAD,ST_SINGLE,ST_QUAD,10))
+             call doFluxesByMatrixQPSPQP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Qmatrix, p_Fx, -dscale/tstep, .false., p_Qflux0)
+          case(FEAT2_PP_ID3(ST_DOUBLE,ST_SINGLE,ST_QUAD,10))
+             call doFluxesByMatrixDPSPQP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Dmatrix, p_Fx, -dscale/tstep, .false., p_Qflux0)
+          case(FEAT2_PP_ID3(ST_SINGLE,ST_SINGLE,ST_QUAD,10))
+             call doFluxesByMatrixSPSPQP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Fmatrix, p_Fx, -dscale/tstep, .false., p_Qflux0)
+
+
+             ! AFC = DOUBLE
+          case(FEAT2_PP_ID3(ST_QUAD,ST_QUAD,ST_DOUBLE,10))
+             call doFluxesByMatrixQPQPDP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Qmatrix, p_Qx, -dscale/tstep, .false., p_Dflux0)
+          case(FEAT2_PP_ID3(ST_DOUBLE,ST_QUAD,ST_DOUBLE,10))
+             call doFluxesByMatrixDPQPDP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Dmatrix, p_Qx, -dscale/tstep, .false., p_Dflux0)
+          case(FEAT2_PP_ID3(ST_SINGLE,ST_QUAD,ST_DOUBLE,10))
+             call doFluxesByMatrixSPQPDP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Fmatrix, p_Qx, -dscale/tstep, .false., p_Dflux0)
+
+          case(FEAT2_PP_ID3(ST_QUAD,ST_DOUBLE,ST_DOUBLE,10))
+             call doFluxesByMatrixQPDPDP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Qmatrix, p_Dx, -dscale/tstep, .false., p_Dflux0)
+          case(FEAT2_PP_ID3(ST_DOUBLE,ST_DOUBLE,ST_DOUBLE,10))
+             call doFluxesByMatrixDPDPDP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Dmatrix, p_Dx, -dscale/tstep, .false., p_Dflux0)
+          case(FEAT2_PP_ID3(ST_SINGLE,ST_DOUBLE,ST_DOUBLE,10))
+             call doFluxesByMatrixSPDPDP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Fmatrix, p_Dx, -dscale/tstep, .false., p_Dflux0)
+
+          case(FEAT2_PP_ID3(ST_QUAD,ST_SINGLE,ST_DOUBLE,10))
+             call doFluxesByMatrixQPSPDP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Qmatrix, p_Fx, -dscale/tstep, .false., p_Dflux0)
+          case(FEAT2_PP_ID3(ST_DOUBLE,ST_SINGLE,ST_DOUBLE,10))
+             call doFluxesByMatrixDPSPDP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Dmatrix, p_Fx, -dscale/tstep, .false., p_Dflux0)
+          case(FEAT2_PP_ID3(ST_SINGLE,ST_SINGLE,ST_DOUBLE,10))
+             call doFluxesByMatrixSPSPDP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Fmatrix, p_Fx, -dscale/tstep, .false., p_Dflux0)
+
+
+             ! AFC = SINGLE
+          case(FEAT2_PP_ID3(ST_QUAD,ST_QUAD,ST_SINGLE,10))
+             call doFluxesByMatrixQPQPSP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Qmatrix, p_Qx, -dscale/tstep, .false., p_Fflux0)
+          case(FEAT2_PP_ID3(ST_DOUBLE,ST_QUAD,ST_SINGLE,10))
+             call doFluxesByMatrixDPQPSP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Dmatrix, p_Qx, -dscale/tstep, .false., p_Fflux0)
+          case(FEAT2_PP_ID3(ST_SINGLE,ST_QUAD,ST_SINGLE,10))
+             call doFluxesByMatrixSPQPSP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Fmatrix, p_Qx, -dscale/tstep, .false., p_Fflux0)
+
+          case(FEAT2_PP_ID3(ST_QUAD,ST_DOUBLE,ST_SINGLE,10))
+             call doFluxesByMatrixQPDPSP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Qmatrix, p_Dx, -dscale/tstep, .false., p_Fflux0)
+          case(FEAT2_PP_ID3(ST_DOUBLE,ST_DOUBLE,ST_SINGLE,10))
+             call doFluxesByMatrixDPDPSP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Dmatrix, p_Dx, -dscale/tstep, .false., p_Fflux0)
+          case(FEAT2_PP_ID3(ST_SINGLE,ST_DOUBLE,ST_SINGLE,10))
+             call doFluxesByMatrixSPDPSP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Fmatrix, p_Dx, -dscale/tstep, .false., p_Fflux0)
+
+          case(FEAT2_PP_ID3(ST_QUAD,ST_SINGLE,ST_SINGLE,10))
+             call doFluxesByMatrixQPSPSP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Qmatrix, p_Fx, -dscale/tstep, .false., p_Fflux0)
+          case(FEAT2_PP_ID3(ST_DOUBLE,ST_SINGLE,ST_SINGLE,10))
+             call doFluxesByMatrixDPSPSP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Dmatrix, p_Fx, -dscale/tstep, .false., p_Fflux0)
+          case(FEAT2_PP_ID3(ST_SINGLE,ST_SINGLE,ST_SINGLE,10))
+             call doFluxesByMatrixSPSPSP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Fmatrix, p_Fx, -dscale/tstep, .false., p_Fflux0)
+          end select
         end if
 
       end if
@@ -1699,10 +2015,24 @@ contains
           end if
 
           ! Set pointer
-          call lsyssc_getbase_double(rafcstab%p_rvectorAlpha, p_Dalpha)
+          select case(rafcstab%cdataType)
+          case(ST_QUAD)
+             call lsyssc_getbase_quad(rafcstab%p_rvectorAlpha, p_Qalpha)
+          case(ST_DOUBLE)
+             call lsyssc_getbase_double(rafcstab%p_rvectorAlpha, p_Dalpha)
+          case(ST_SINGLE)
+             call lsyssc_getbase_single(rafcstab%p_rvectorAlpha, p_Falpha)
+          end select
 
           ! Subtract amount of rejected antidiffusion
-          call afcstab_combineFluxes(rafcstab%NEDGE, -1.0_DP, p_Dflux, p_Dflux0, p_Dalpha)
+          select case(rafcstab%cdataType)
+          case(ST_QUAD)
+             call afcstab_combineFluxes(rafcstab%NEDGE, -1.0_QP, p_Qflux, p_Qflux0, p_Qalpha)
+          case(ST_DOUBLE)
+             call afcstab_combineFluxes(rafcstab%NEDGE, -1.0_DP, p_Dflux, p_Dflux0, p_Dalpha)
+          case(ST_SINGLE)
+             call afcstab_combineFluxes(rafcstab%NEDGE, -1.0_SP, p_Fflux, p_Fflux0, p_Falpha)
+          end select
         end if
 
         !-----------------------------------------------------------------------
@@ -1710,13 +2040,42 @@ contains
         if (theta .ne. 0.0_DP) then
           ! Assemble implicit part of the raw-antidiffusive fluxes
           ! $$ f_{ij} = \theta\Delta t d_{ij}(u_i-u_j) $$
-          if (buseCallback) then
-            call doFluxesByCallbackDP(p_IedgeList, rafcstab%NEDGE,&
-                p_DcoeffsAtEdge, p_Dx, dscale*theta, bclear, p_Dflux)
-          else
-            call doFluxesByCoeffsDP(p_IedgeList, rafcstab%NEDGE,&
-                p_Dcoefficients, p_Dx, dscale*theta, bclear, p_Dflux)
-          end if
+           if (buseCallback) then
+              call doFluxesByCallbackDP(p_IedgeList, rafcstab%NEDGE,&
+                   p_DcoeffsAtEdge, p_Dx, dscale*theta, bclear, p_Dflux)
+           else
+              select case(FEAT2_PP_ID2(rx%cdataType,rafcstab%cdataType,10))
+              case(FEAT2_PP_ID2(ST_QUAD,ST_QUAD,10))
+                 call doFluxesByCoeffsQPQP(p_IedgeList, rafcstab%NEDGE,&
+                      p_Qcoefficients, p_Qx, dscale*theta, bclear, p_Qflux)
+              case(FEAT2_PP_ID2(ST_DOUBLE,ST_QUAD,10))
+                 call doFluxesByCoeffsDPQP(p_IedgeList, rafcstab%NEDGE,&
+                      p_Qcoefficients, p_Dx, dscale*theta, bclear, p_Qflux)
+              case(FEAT2_PP_ID2(ST_SINGLE,ST_QUAD,10))
+                 call doFluxesByCoeffsSPQP(p_IedgeList, rafcstab%NEDGE,&
+                      p_Qcoefficients, p_Fx, dscale*theta, bclear, p_Qflux)
+
+              case(FEAT2_PP_ID2(ST_QUAD,ST_DOUBLE,10))
+                 call doFluxesByCoeffsQPDP(p_IedgeList, rafcstab%NEDGE,&
+                      p_Dcoefficients, p_Qx, dscale*theta, bclear, p_Dflux)
+              case(FEAT2_PP_ID2(ST_DOUBLE,ST_DOUBLE,10))
+                 call doFluxesByCoeffsDPDP(p_IedgeList, rafcstab%NEDGE,&
+                      p_Dcoefficients, p_Dx, dscale*theta, bclear, p_Dflux)
+              case(FEAT2_PP_ID2(ST_SINGLE,ST_DOUBLE,10))
+                 call doFluxesByCoeffsSPDP(p_IedgeList, rafcstab%NEDGE,&
+                      p_Dcoefficients, p_Fx, dscale*theta, bclear, p_Dflux)
+
+              case(FEAT2_PP_ID2(ST_QUAD,ST_SINGLE,10))
+                 call doFluxesByCoeffsQPSP(p_IedgeList, rafcstab%NEDGE,&
+                      p_Fcoefficients, p_Qx, dscale*theta, bclear, p_Fflux)
+              case(FEAT2_PP_ID2(ST_DOUBLE,ST_SINGLE,10))
+                 call doFluxesByCoeffsDPSP(p_IedgeList, rafcstab%NEDGE,&
+                      p_Fcoefficients, p_Dx, dscale*theta, bclear, p_Fflux)
+              case(FEAT2_PP_ID2(ST_SINGLE,ST_SINGLE,10))
+                 call doFluxesByCoeffsSPSP(p_IedgeList, rafcstab%NEDGE,&
+                      p_Fcoefficients, p_Fx, dscale*theta, bclear, p_Fflux)
+              end select
+           end if
         end if
 
         if (bquickAssembly) then
@@ -1727,18 +2086,40 @@ contains
             if (theta .ne. 0.0_DP) then
               ! The implicit part of the raw-antidiffusive fluxes
               ! exists; so combine them both into common fluxes
-              call afcstab_combineFluxes(rafcstab%NEDGE, 1.0_DP, p_Dflux0, p_Dflux)
+               select case(rafcstab%cdataType)
+               case(ST_QUAD)
+                  call afcstab_combineFluxes(rafcstab%NEDGE, 1.0_QP, p_Qflux0, p_Qflux)
+               case(ST_DOUBLE)
+                  call afcstab_combineFluxes(rafcstab%NEDGE, 1.0_DP, p_Dflux0, p_Dflux)
+               case(ST_SINGLE)
+                  call afcstab_combineFluxes(rafcstab%NEDGE, 1.0_SP, p_Fflux0, p_Fflux)
+               end select
+
             else
               ! The implicit part of the raw-antidiffusive fluxes does
               ! not exists; the fluxes should be cleared so just
               ! overwrite them by the explicit part
-              call lalg_copyVector(p_Dflux0, p_Dflux)
+              select case(rafcstab%cdataType)
+              case(ST_QUAD)
+                 call lalg_copyVector(p_Qflux0, p_Qflux)
+              case(ST_DOUBLE)
+                 call lalg_copyVector(p_Dflux0, p_Dflux)
+              case(ST_SINGLE)
+                 call lalg_copyVector(p_Fflux0, p_Fflux)
+              end select
             end if
             ! if theta = 1 then the explicit part does not exist
           end if
         else
           ! Truely combine both parts of the raw-antidiffusive fluxes
-          call afcstab_combineFluxes(rafcstab%NEDGE, 1.0_DP, p_Dflux0, p_Dflux)
+           select case(rafcstab%cdataType)
+           case(ST_QUAD)
+              call afcstab_combineFluxes(rafcstab%NEDGE, 1.0_QP, p_Qflux0, p_Qflux)
+           case(ST_DOUBLE)
+              call afcstab_combineFluxes(rafcstab%NEDGE, 1.0_DP, p_Dflux0, p_Dflux)
+           case(ST_SINGLE)
+              call afcstab_combineFluxes(rafcstab%NEDGE, 1.0_SP, p_Fflux0, p_Fflux)
+           end select
         end if
 
         !-----------------------------------------------------------------------
@@ -1747,12 +2128,118 @@ contains
         if (present(rmatrix)) then
 
           ! Set pointers
-          call lsyssc_getbase_double(rmatrix, p_Dmatrix)
+           select case(rmatrix%cdataType)
+           case(ST_QUAD)
+              call lsyssc_getbase_quad(rmatrix, p_Qmatrix)
+           case(ST_DOUBLE)
+              call lsyssc_getbase_double(rmatrix, p_Dmatrix)
+           case(ST_SINGLE)
+              call lsyssc_getbase_single(rmatrix, p_Fmatrix)
+           case default
+              call output_line('Unsupported data type',&
+                   OU_CLASS_ERROR,OU_MODE_STD,'afcsc_buildFluxFCTScalar')
+              call sys_halt()
+           end select
 
           ! Assemble the implicit part of the mass-antidiffusive fluxes
           ! $$ f_{ij}^m := f_{ij}^m + m_{ij}(u_i^m-u_j^m) $$
-          call doFluxesByMatrixDP(p_IedgeList, rafcstab%NEDGE,&
-              p_Dmatrix, p_Dx, dscale/tstep, .false., p_Dflux)
+
+          select case(FEAT2_PP_ID3(rmatrix%cdataType,rx%cdataType,rafcstab%cdataType,10))
+             ! AFC = QUAD
+          case(FEAT2_PP_ID3(ST_QUAD,ST_QUAD,ST_QUAD,10))
+             call doFluxesByMatrixQPQPQP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Qmatrix, p_Qx, dscale/tstep, .false., p_Qflux)
+          case(FEAT2_PP_ID3(ST_DOUBLE,ST_QUAD,ST_QUAD,10))
+             call doFluxesByMatrixDPQPQP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Dmatrix, p_Qx, dscale/tstep, .false., p_Qflux)
+          case(FEAT2_PP_ID3(ST_SINGLE,ST_QUAD,ST_QUAD,10))
+             call doFluxesByMatrixSPQPQP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Fmatrix, p_Qx, dscale/tstep, .false., p_Qflux)
+
+          case(FEAT2_PP_ID3(ST_QUAD,ST_DOUBLE,ST_QUAD,10))
+             call doFluxesByMatrixQPDPQP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Qmatrix, p_Dx, dscale/tstep, .false., p_Qflux)
+          case(FEAT2_PP_ID3(ST_DOUBLE,ST_DOUBLE,ST_QUAD,10))
+             call doFluxesByMatrixDPDPQP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Dmatrix, p_Dx, dscale/tstep, .false., p_Qflux)
+          case(FEAT2_PP_ID3(ST_SINGLE,ST_DOUBLE,ST_QUAD,10))
+             call doFluxesByMatrixSPDPQP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Fmatrix, p_Dx, dscale/tstep, .false., p_Qflux)
+
+          case(FEAT2_PP_ID3(ST_QUAD,ST_SINGLE,ST_QUAD,10))
+             call doFluxesByMatrixQPSPQP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Qmatrix, p_Fx, dscale/tstep, .false., p_Qflux)
+          case(FEAT2_PP_ID3(ST_DOUBLE,ST_SINGLE,ST_QUAD,10))
+             call doFluxesByMatrixDPSPQP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Dmatrix, p_Fx, dscale/tstep, .false., p_Qflux)
+          case(FEAT2_PP_ID3(ST_SINGLE,ST_SINGLE,ST_QUAD,10))
+             call doFluxesByMatrixSPSPQP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Fmatrix, p_Fx, dscale/tstep, .false., p_Qflux)
+
+
+             ! AFC = DOUBLE
+          case(FEAT2_PP_ID3(ST_QUAD,ST_QUAD,ST_DOUBLE,10))
+             call doFluxesByMatrixQPQPDP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Qmatrix, p_Qx, dscale/tstep, .false., p_Dflux)
+          case(FEAT2_PP_ID3(ST_DOUBLE,ST_QUAD,ST_DOUBLE,10))
+             call doFluxesByMatrixDPQPDP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Dmatrix, p_Qx, dscale/tstep, .false., p_Dflux)
+          case(FEAT2_PP_ID3(ST_SINGLE,ST_QUAD,ST_DOUBLE,10))
+             call doFluxesByMatrixSPQPDP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Fmatrix, p_Qx, dscale/tstep, .false., p_Dflux)
+
+          case(FEAT2_PP_ID3(ST_QUAD,ST_DOUBLE,ST_DOUBLE,10))
+             call doFluxesByMatrixQPDPDP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Qmatrix, p_Dx, dscale/tstep, .false., p_Dflux)
+          case(FEAT2_PP_ID3(ST_DOUBLE,ST_DOUBLE,ST_DOUBLE,10))
+             call doFluxesByMatrixDPDPDP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Dmatrix, p_Dx, dscale/tstep, .false., p_Dflux)
+          case(FEAT2_PP_ID3(ST_SINGLE,ST_DOUBLE,ST_DOUBLE,10))
+             call doFluxesByMatrixSPDPDP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Fmatrix, p_Dx, dscale/tstep, .false., p_Dflux)
+
+          case(FEAT2_PP_ID3(ST_QUAD,ST_SINGLE,ST_DOUBLE,10))
+             call doFluxesByMatrixQPSPDP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Qmatrix, p_Fx, dscale/tstep, .false., p_Dflux)
+          case(FEAT2_PP_ID3(ST_DOUBLE,ST_SINGLE,ST_DOUBLE,10))
+             call doFluxesByMatrixDPSPDP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Dmatrix, p_Fx, dscale/tstep, .false., p_Dflux)
+          case(FEAT2_PP_ID3(ST_SINGLE,ST_SINGLE,ST_DOUBLE,10))
+             call doFluxesByMatrixSPSPDP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Fmatrix, p_Fx, dscale/tstep, .false., p_Dflux)
+
+
+             ! AFC = SINGLE
+          case(FEAT2_PP_ID3(ST_QUAD,ST_QUAD,ST_SINGLE,10))
+             call doFluxesByMatrixQPQPSP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Qmatrix, p_Qx, dscale/tstep, .false., p_Fflux)
+          case(FEAT2_PP_ID3(ST_DOUBLE,ST_QUAD,ST_SINGLE,10))
+             call doFluxesByMatrixDPQPSP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Dmatrix, p_Qx, dscale/tstep, .false., p_Fflux)
+          case(FEAT2_PP_ID3(ST_SINGLE,ST_QUAD,ST_SINGLE,10))
+             call doFluxesByMatrixSPQPSP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Fmatrix, p_Qx, dscale/tstep, .false., p_Fflux)
+
+          case(FEAT2_PP_ID3(ST_QUAD,ST_DOUBLE,ST_SINGLE,10))
+             call doFluxesByMatrixQPDPSP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Qmatrix, p_Dx, dscale/tstep, .false., p_Fflux)
+          case(FEAT2_PP_ID3(ST_DOUBLE,ST_DOUBLE,ST_SINGLE,10))
+             call doFluxesByMatrixDPDPSP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Dmatrix, p_Dx, dscale/tstep, .false., p_Fflux)
+          case(FEAT2_PP_ID3(ST_SINGLE,ST_DOUBLE,ST_SINGLE,10))
+             call doFluxesByMatrixSPDPSP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Fmatrix, p_Dx, dscale/tstep, .false., p_Fflux)
+
+          case(FEAT2_PP_ID3(ST_QUAD,ST_SINGLE,ST_SINGLE,10))
+             call doFluxesByMatrixQPSPSP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Qmatrix, p_Fx, dscale/tstep, .false., p_Fflux)
+          case(FEAT2_PP_ID3(ST_DOUBLE,ST_SINGLE,ST_SINGLE,10))
+             call doFluxesByMatrixDPSPSP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Dmatrix, p_Fx, dscale/tstep, .false., p_Fflux)
+          case(FEAT2_PP_ID3(ST_SINGLE,ST_SINGLE,ST_SINGLE,10))
+             call doFluxesByMatrixSPSPSP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Fmatrix, p_Fx, dscale/tstep, .false., p_Fflux)
+          end select
 
         end if
 
@@ -1770,7 +2257,14 @@ contains
       !-------------------------------------------------------------------------
 
       ! Set pointer
-      call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
+      select case(rafcstab%cdataType)
+      case(ST_QUAD)
+         call lsyssc_getbase_quad(rafcstab%p_rvectorFlux, p_Qflux)
+      case(ST_DOUBLE)
+         call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
+      case(ST_SINGLE)
+         call lsyssc_getbase_single(rafcstab%p_rvectorFlux, p_Fflux)
+      end select
 
       ! Use callback routine?
       if (present(fcb_calcFluxFCTSc_sim) .and. present(rgroupFEMSet)) then
@@ -1782,7 +2276,19 @@ contains
               OU_CLASS_ERROR,OU_MODE_STD,'afcsc_buildFluxFCTScalar')
           call sys_halt()
         end if
-        call gfem_getbase_DcoeffsAtEdge(rgroupFEMSet, p_DcoeffsAtEdge)
+
+        select case(rgroupFEMSet%cdataType)
+        case(ST_QUAD)
+           call gfem_getbase_QcoeffsAtEdge(rgroupFEMSet, p_QcoeffsAtEdge)
+        case(ST_DOUBLE)
+           call gfem_getbase_DcoeffsAtEdge(rgroupFEMSet, p_DcoeffsAtEdge)
+        case(ST_SINGLE)
+           call gfem_getbase_FcoeffsAtEdge(rgroupFEMSet, p_FcoeffsAtEdge)
+        case default
+           call output_line('Unsupported data type',&
+                OU_CLASS_ERROR,OU_MODE_STD,'afcsc_buildFluxFCTScalar')
+           call sys_halt()
+        end select
         buseCallback = .true.
       else
 
@@ -1793,7 +2299,14 @@ contains
           call sys_halt()
         end if
 
-        call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_Dcoefficients)
+        select case(rafcstab%cdataType)
+        case(ST_QUAD)
+           call afcstab_getbase_QcoeffsAtEdge(rafcstab, p_Qcoefficients)
+        case(ST_DOUBLE)
+           call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_Dcoefficients)
+        case(ST_SINGLE)
+           call afcstab_getbase_FcoeffsAtEdge(rafcstab, p_Fcoefficients)
+        end select
         buseCallback = .false.
       end if
 
@@ -1802,8 +2315,39 @@ contains
         call doFluxesByCallbackDP(p_IedgeList, rafcstab%NEDGE,&
             p_DcoeffsAtEdge, p_Dx, dscale, bclear, p_Dflux)
       else
-        call doFluxesByCoeffsDP(p_IedgeList, rafcstab%NEDGE,&
-            p_Dcoefficients, p_Dx, dscale, bclear, p_Dflux)
+         
+         select case(FEAT2_PP_ID2(rx%cdataType,rafcstab%cdataType,10))
+         case(FEAT2_PP_ID2(ST_QUAD,ST_QUAD,10))
+            call doFluxesByCoeffsQPQP(p_IedgeList, rafcstab%NEDGE,&
+                 p_Qcoefficients, p_Qx, dscale, bclear, p_Qflux)
+         case(FEAT2_PP_ID2(ST_DOUBLE,ST_QUAD,10))
+            call doFluxesByCoeffsDPQP(p_IedgeList, rafcstab%NEDGE,&
+                 p_Qcoefficients, p_Dx, dscale, bclear, p_Qflux)
+         case(FEAT2_PP_ID2(ST_SINGLE,ST_QUAD,10))
+            call doFluxesByCoeffsSPQP(p_IedgeList, rafcstab%NEDGE,&
+                 p_Qcoefficients, p_Fx, dscale, bclear, p_Qflux)
+
+         case(FEAT2_PP_ID2(ST_QUAD,ST_DOUBLE,10))
+            call doFluxesByCoeffsQPDP(p_IedgeList, rafcstab%NEDGE,&
+                 p_Dcoefficients, p_Qx, dscale, bclear, p_Dflux)
+         case(FEAT2_PP_ID2(ST_DOUBLE,ST_DOUBLE,10))
+            call doFluxesByCoeffsDPDP(p_IedgeList, rafcstab%NEDGE,&
+                 p_Dcoefficients, p_Dx, dscale, bclear, p_Dflux)
+         case(FEAT2_PP_ID2(ST_SINGLE,ST_DOUBLE,10))
+            call doFluxesByCoeffsSPDP(p_IedgeList, rafcstab%NEDGE,&
+                 p_Dcoefficients, p_Fx, dscale, bclear, p_Dflux)
+
+         case(FEAT2_PP_ID2(ST_QUAD,ST_SINGLE,10))
+            call doFluxesByCoeffsQPSP(p_IedgeList, rafcstab%NEDGE,&
+                 p_Fcoefficients, p_Qx, dscale, bclear, p_Fflux)
+         case(FEAT2_PP_ID2(ST_DOUBLE,ST_SINGLE,10))
+            call doFluxesByCoeffsDPSP(p_IedgeList, rafcstab%NEDGE,&
+                 p_Fcoefficients, p_Dx, dscale, bclear, p_Fflux)
+         case(FEAT2_PP_ID2(ST_SINGLE,ST_SINGLE,10))
+            call doFluxesByCoeffsSPSP(p_IedgeList, rafcstab%NEDGE,&
+                 p_Fcoefficients, p_Fx, dscale, bclear, p_Fflux)
+         end select
+
       end if
 
       !-------------------------------------------------------------------------
@@ -1811,9 +2355,48 @@ contains
       if (rafcstab%cprelimitingType .eq. AFCSTAB_PRELIMITING_STD) then
         ! Compute fluxes for standard prelimiting based on the
         ! low-order solution which serves as predictor
-        call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_DfluxPrel)
-        call doDifferencesDP(p_IedgeList, rafcstab%NEDGE,&
-            p_Dx, p_DfluxPrel)
+        select case(rafcstab%cdataType)
+        case(ST_QUAD)
+           call lsyssc_getbase_quad(rafcstab%p_rvectorFluxPrel, p_QfluxPrel)
+        case(ST_DOUBLE)
+           call lsyssc_getbase_double(rafcstab%p_rvectorFluxPrel, p_DfluxPrel)
+        case(ST_SINGLE)
+           call lsyssc_getbase_single(rafcstab%p_rvectorFluxPrel, p_FfluxPrel)
+        end select
+
+
+        select case(FEAT2_PP_ID2(rx%cdataType,rafcstab%cdataType,10))
+        case(FEAT2_PP_ID2(ST_QUAD,ST_QUAD,10))
+           call doDifferencesQPQP(p_IedgeList, rafcstab%NEDGE,&
+                p_Qx, p_QfluxPrel)
+        case(FEAT2_PP_ID2(ST_DOUBLE,ST_QUAD,10))
+           call doDifferencesDPQP(p_IedgeList, rafcstab%NEDGE,&
+                p_Dx, p_QfluxPrel)
+        case(FEAT2_PP_ID2(ST_SINGLE,ST_QUAD,10))
+           call doDifferencesSPQP(p_IedgeList, rafcstab%NEDGE,&
+                p_Fx, p_QfluxPrel)
+
+        case(FEAT2_PP_ID2(ST_QUAD,ST_DOUBLE,10))
+           call doDifferencesQPDP(p_IedgeList, rafcstab%NEDGE,&
+                p_Qx, p_DfluxPrel)
+        case(FEAT2_PP_ID2(ST_DOUBLE,ST_DOUBLE,10))
+           call doDifferencesDPDP(p_IedgeList, rafcstab%NEDGE,&
+                p_Dx, p_DfluxPrel)
+        case(FEAT2_PP_ID2(ST_SINGLE,ST_DOUBLE,10))
+           call doDifferencesSPDP(p_IedgeList, rafcstab%NEDGE,&
+                p_Fx, p_DfluxPrel)
+
+        case(FEAT2_PP_ID2(ST_QUAD,ST_SINGLE,10))
+           call doDifferencesQPSP(p_IedgeList, rafcstab%NEDGE,&
+                p_Qx, p_FfluxPrel)
+        case(FEAT2_PP_ID2(ST_DOUBLE,ST_SINGLE,10))
+           call doDifferencesDPSP(p_IedgeList, rafcstab%NEDGE,&
+                p_Dx, p_FfluxPrel)
+        case(FEAT2_PP_ID2(ST_SINGLE,ST_SINGLE,10))
+           call doDifferencesSPSP(p_IedgeList, rafcstab%NEDGE,&
+                p_Fx, p_FfluxPrel)
+        end select
+
 
       elseif (rafcstab%cprelimitingType .eq. AFCSTAB_PRELIMITING_MINMOD) then
         ! Make a backup of the spatial part of the raw-antidiffusive
@@ -1828,13 +2411,132 @@ contains
       if (present(rmatrix) .and. present(rxTimeDeriv)) then
 
         ! Set pointer
-        call lsyssc_getbase_double(rmatrix, p_Dmatrix)
-        call lsyssc_getbase_double(rxTimeDeriv, p_DxTimeDeriv)
+        select case(rmatrix%cdataType)
+        case(ST_QUAD)
+           call lsyssc_getbase_quad(rmatrix, p_Qmatrix)
+        case(ST_DOUBLE)
+           call lsyssc_getbase_double(rmatrix, p_Dmatrix)
+        case(ST_SINGLE)
+           call lsyssc_getbase_single(rmatrix, p_Fmatrix)
+        case default
+           call output_line('Unsupported data type',&
+                OU_CLASS_ERROR,OU_MODE_STD,'afcsc_buildFluxFCTScalar')
+           call sys_halt()
+        end select
+
+        select case(rxTimeDeriv%cdataType)
+        case(ST_QUAD)
+           call lsyssc_getbase_quad(rxTimeDeriv, p_QxTimeDeriv)
+        case(ST_DOUBLE)
+           call lsyssc_getbase_double(rxTimeDeriv, p_DxTimeDeriv)
+        case(ST_SINGLE)
+           call lsyssc_getbase_single(rxTimeDeriv, p_FxTimeDeriv)
+        case default
+           call output_line('Unsupported data type',&
+                OU_CLASS_ERROR,OU_MODE_STD,'afcsc_buildFluxFCTScalar')
+           call sys_halt()
+        end select
 
         ! Apply mass antidiffusion to antidiffusive fluxes based on
         ! the approximation to the time derivative
-        call doFluxesByMatrixDP(p_IedgeList, rafcstab%NEDGE,&
-            p_Dmatrix, p_DxTimeDeriv, dscale, .false., p_Dflux)
+
+          select case(FEAT2_PP_ID3(rmatrix%cdataType,rx%cdataType,rafcstab%cdataType,10))
+             ! AFC = QUAD
+          case(FEAT2_PP_ID3(ST_QUAD,ST_QUAD,ST_QUAD,10))
+             call doFluxesByMatrixQPQPQP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Qmatrix, p_QxTimeDeriv, dscale, .false., p_Qflux)
+          case(FEAT2_PP_ID3(ST_DOUBLE,ST_QUAD,ST_QUAD,10))
+             call doFluxesByMatrixDPQPQP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Dmatrix, p_QxTimeDeriv, dscale, .false., p_Qflux)
+          case(FEAT2_PP_ID3(ST_SINGLE,ST_QUAD,ST_QUAD,10))
+             call doFluxesByMatrixSPQPQP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Fmatrix, p_QxTimeDeriv, dscale, .false., p_Qflux)
+
+          case(FEAT2_PP_ID3(ST_QUAD,ST_DOUBLE,ST_QUAD,10))
+             call doFluxesByMatrixQPDPQP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Qmatrix, p_DxTimeDeriv, dscale, .false., p_Qflux)
+          case(FEAT2_PP_ID3(ST_DOUBLE,ST_DOUBLE,ST_QUAD,10))
+             call doFluxesByMatrixDPDPQP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Dmatrix, p_DxTimeDeriv, dscale, .false., p_Qflux)
+          case(FEAT2_PP_ID3(ST_SINGLE,ST_DOUBLE,ST_QUAD,10))
+             call doFluxesByMatrixSPDPQP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Fmatrix, p_DxTimeDeriv, dscale, .false., p_Qflux)
+
+          case(FEAT2_PP_ID3(ST_QUAD,ST_SINGLE,ST_QUAD,10))
+             call doFluxesByMatrixQPSPQP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Qmatrix, p_FxTimeDeriv, dscale, .false., p_Qflux)
+          case(FEAT2_PP_ID3(ST_DOUBLE,ST_SINGLE,ST_QUAD,10))
+             call doFluxesByMatrixDPSPQP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Dmatrix, p_FxTimeDeriv, dscale, .false., p_Qflux)
+          case(FEAT2_PP_ID3(ST_SINGLE,ST_SINGLE,ST_QUAD,10))
+             call doFluxesByMatrixSPSPQP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Fmatrix, p_FxTimeDeriv, dscale, .false., p_Qflux)
+
+
+             ! AFC = DOUBLE
+          case(FEAT2_PP_ID3(ST_QUAD,ST_QUAD,ST_DOUBLE,10))
+             call doFluxesByMatrixQPQPDP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Qmatrix, p_QxTimeDeriv, dscale, .false., p_Dflux)
+          case(FEAT2_PP_ID3(ST_DOUBLE,ST_QUAD,ST_DOUBLE,10))
+             call doFluxesByMatrixDPQPDP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Dmatrix, p_QxTimeDeriv, dscale, .false., p_Dflux)
+          case(FEAT2_PP_ID3(ST_SINGLE,ST_QUAD,ST_DOUBLE,10))
+             call doFluxesByMatrixSPQPDP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Fmatrix, p_QxTimeDeriv, dscale, .false., p_Dflux)
+
+          case(FEAT2_PP_ID3(ST_QUAD,ST_DOUBLE,ST_DOUBLE,10))
+             call doFluxesByMatrixQPDPDP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Qmatrix, p_DxTimeDeriv, dscale, .false., p_Dflux)
+          case(FEAT2_PP_ID3(ST_DOUBLE,ST_DOUBLE,ST_DOUBLE,10))
+             call doFluxesByMatrixDPDPDP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Dmatrix, p_DxTimeDeriv, dscale, .false., p_Dflux)
+          case(FEAT2_PP_ID3(ST_SINGLE,ST_DOUBLE,ST_DOUBLE,10))
+             call doFluxesByMatrixSPDPDP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Fmatrix, p_DxTimeDeriv, dscale, .false., p_Dflux)
+
+          case(FEAT2_PP_ID3(ST_QUAD,ST_SINGLE,ST_DOUBLE,10))
+             call doFluxesByMatrixQPSPDP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Qmatrix, p_FxTimeDeriv, dscale, .false., p_Dflux)
+          case(FEAT2_PP_ID3(ST_DOUBLE,ST_SINGLE,ST_DOUBLE,10))
+             call doFluxesByMatrixDPSPDP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Dmatrix, p_FxTimeDeriv, dscale, .false., p_Dflux)
+          case(FEAT2_PP_ID3(ST_SINGLE,ST_SINGLE,ST_DOUBLE,10))
+             call doFluxesByMatrixSPSPDP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Fmatrix, p_FxTimeDeriv, dscale, .false., p_Dflux)
+
+
+             ! AFC = SINGLE
+          case(FEAT2_PP_ID3(ST_QUAD,ST_QUAD,ST_SINGLE,10))
+             call doFluxesByMatrixQPQPSP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Qmatrix, p_QxTimeDeriv, dscale, .false., p_Fflux)
+          case(FEAT2_PP_ID3(ST_DOUBLE,ST_QUAD,ST_SINGLE,10))
+             call doFluxesByMatrixDPQPSP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Dmatrix, p_QxTimeDeriv, dscale, .false., p_Fflux)
+          case(FEAT2_PP_ID3(ST_SINGLE,ST_QUAD,ST_SINGLE,10))
+             call doFluxesByMatrixSPQPSP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Fmatrix, p_QxTimeDeriv, dscale, .false., p_Fflux)
+
+          case(FEAT2_PP_ID3(ST_QUAD,ST_DOUBLE,ST_SINGLE,10))
+             call doFluxesByMatrixQPDPSP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Qmatrix, p_DxTimeDeriv, dscale, .false., p_Fflux)
+          case(FEAT2_PP_ID3(ST_DOUBLE,ST_DOUBLE,ST_SINGLE,10))
+             call doFluxesByMatrixDPDPSP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Dmatrix, p_DxTimeDeriv, dscale, .false., p_Fflux)
+          case(FEAT2_PP_ID3(ST_SINGLE,ST_DOUBLE,ST_SINGLE,10))
+             call doFluxesByMatrixSPDPSP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Fmatrix, p_DxTimeDeriv, dscale, .false., p_Fflux)
+
+          case(FEAT2_PP_ID3(ST_QUAD,ST_SINGLE,ST_SINGLE,10))
+             call doFluxesByMatrixQPSPSP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Qmatrix, p_FxTimeDeriv, dscale, .false., p_Fflux)
+          case(FEAT2_PP_ID3(ST_DOUBLE,ST_SINGLE,ST_SINGLE,10))
+             call doFluxesByMatrixDPSPSP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Dmatrix, p_FxTimeDeriv, dscale, .false., p_Fflux)
+          case(FEAT2_PP_ID3(ST_SINGLE,ST_SINGLE,ST_SINGLE,10))
+             call doFluxesByMatrixSPSPSP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Fmatrix, p_FxTimeDeriv, dscale, .false., p_Fflux)
+          end select
+
       end if
 
       ! Set specifiers for raw antidiffusive fluxes
@@ -1851,12 +2553,127 @@ contains
       if (present(rmatrix)) then
 
         ! Set pointers
-        call lsyssc_getbase_double(rmatrix, p_Dmatrix)
-        call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
+        select case(rmatrix%cdataType)
+        case(ST_QUAD)
+           call lsyssc_getbase_quad(rmatrix, p_Qmatrix)
+        case(ST_DOUBLE)
+           call lsyssc_getbase_double(rmatrix, p_Dmatrix)
+        case(ST_SINGLE)
+           call lsyssc_getbase_single(rmatrix, p_Fmatrix)
+        case default
+           call output_line('Unsupported data type',&
+                OU_CLASS_ERROR,OU_MODE_STD,'afcsc_buildFluxFCTScalar')
+           call sys_halt()
+        end select
 
+        select case(rafcstab%cdataType)
+        case(ST_QUAD)
+           call lsyssc_getbase_quad(rafcstab%p_rvectorFlux, p_Qflux)
+        case(ST_DOUBLE)
+           call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
+        case(ST_SINGLE)
+           call lsyssc_getbase_single(rafcstab%p_rvectorFlux, p_Fflux)
+        end select
+        
         ! Clear vector and assemble antidiffusive fluxes
-        call doFluxesByMatrixDP(p_IedgeList, rafcstab%NEDGE,&
-            p_Dmatrix, p_Dx, dscale, .true., p_Dflux)
+
+        select case(FEAT2_PP_ID3(rmatrix%cdataType,rx%cdataType,rafcstab%cdataType,10))
+             ! AFC = QUAD
+          case(FEAT2_PP_ID3(ST_QUAD,ST_QUAD,ST_QUAD,10))
+             call doFluxesByMatrixQPQPQP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Qmatrix, p_Qx, dscale, .true., p_Qflux)
+          case(FEAT2_PP_ID3(ST_DOUBLE,ST_QUAD,ST_QUAD,10))
+             call doFluxesByMatrixDPQPQP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Dmatrix, p_Qx, dscale, .true., p_Qflux)
+          case(FEAT2_PP_ID3(ST_SINGLE,ST_QUAD,ST_QUAD,10))
+             call doFluxesByMatrixSPQPQP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Fmatrix, p_Qx, dscale, .true., p_Qflux)
+
+          case(FEAT2_PP_ID3(ST_QUAD,ST_DOUBLE,ST_QUAD,10))
+             call doFluxesByMatrixQPDPQP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Qmatrix, p_Dx, dscale, .true., p_Qflux)
+          case(FEAT2_PP_ID3(ST_DOUBLE,ST_DOUBLE,ST_QUAD,10))
+             call doFluxesByMatrixDPDPQP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Dmatrix, p_Dx, dscale, .true., p_Qflux)
+          case(FEAT2_PP_ID3(ST_SINGLE,ST_DOUBLE,ST_QUAD,10))
+             call doFluxesByMatrixSPDPQP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Fmatrix, p_Dx, dscale, .true., p_Qflux)
+
+          case(FEAT2_PP_ID3(ST_QUAD,ST_SINGLE,ST_QUAD,10))
+             call doFluxesByMatrixQPSPQP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Qmatrix, p_Fx, dscale, .true., p_Qflux)
+          case(FEAT2_PP_ID3(ST_DOUBLE,ST_SINGLE,ST_QUAD,10))
+             call doFluxesByMatrixDPSPQP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Dmatrix, p_Fx, dscale, .true., p_Qflux)
+          case(FEAT2_PP_ID3(ST_SINGLE,ST_SINGLE,ST_QUAD,10))
+             call doFluxesByMatrixSPSPQP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Fmatrix, p_Fx, dscale, .true., p_Qflux)
+
+
+             ! AFC = DOUBLE
+          case(FEAT2_PP_ID3(ST_QUAD,ST_QUAD,ST_DOUBLE,10))
+             call doFluxesByMatrixQPQPDP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Qmatrix, p_Qx, dscale, .true., p_Dflux)
+          case(FEAT2_PP_ID3(ST_DOUBLE,ST_QUAD,ST_DOUBLE,10))
+             call doFluxesByMatrixDPQPDP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Dmatrix, p_Qx, dscale, .true., p_Dflux)
+          case(FEAT2_PP_ID3(ST_SINGLE,ST_QUAD,ST_DOUBLE,10))
+             call doFluxesByMatrixSPQPDP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Fmatrix, p_Qx, dscale, .true., p_Dflux)
+
+          case(FEAT2_PP_ID3(ST_QUAD,ST_DOUBLE,ST_DOUBLE,10))
+             call doFluxesByMatrixQPDPDP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Qmatrix, p_Dx, dscale, .true., p_Dflux)
+          case(FEAT2_PP_ID3(ST_DOUBLE,ST_DOUBLE,ST_DOUBLE,10))
+             call doFluxesByMatrixDPDPDP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Dmatrix, p_Dx, dscale, .true., p_Dflux)
+          case(FEAT2_PP_ID3(ST_SINGLE,ST_DOUBLE,ST_DOUBLE,10))
+             call doFluxesByMatrixSPDPDP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Fmatrix, p_Dx, dscale, .true., p_Dflux)
+
+          case(FEAT2_PP_ID3(ST_QUAD,ST_SINGLE,ST_DOUBLE,10))
+             call doFluxesByMatrixQPSPDP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Qmatrix, p_Fx, dscale, .true., p_Dflux)
+          case(FEAT2_PP_ID3(ST_DOUBLE,ST_SINGLE,ST_DOUBLE,10))
+             call doFluxesByMatrixDPSPDP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Dmatrix, p_Fx, dscale, .true., p_Dflux)
+          case(FEAT2_PP_ID3(ST_SINGLE,ST_SINGLE,ST_DOUBLE,10))
+             call doFluxesByMatrixSPSPDP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Fmatrix, p_Fx, dscale, .true., p_Dflux)
+
+
+             ! AFC = SINGLE
+          case(FEAT2_PP_ID3(ST_QUAD,ST_QUAD,ST_SINGLE,10))
+             call doFluxesByMatrixQPQPSP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Qmatrix, p_Qx, dscale, .true., p_Fflux)
+          case(FEAT2_PP_ID3(ST_DOUBLE,ST_QUAD,ST_SINGLE,10))
+             call doFluxesByMatrixDPQPSP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Dmatrix, p_Qx, dscale, .true., p_Fflux)
+          case(FEAT2_PP_ID3(ST_SINGLE,ST_QUAD,ST_SINGLE,10))
+             call doFluxesByMatrixSPQPSP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Fmatrix, p_Qx, dscale, .true., p_Fflux)
+
+          case(FEAT2_PP_ID3(ST_QUAD,ST_DOUBLE,ST_SINGLE,10))
+             call doFluxesByMatrixQPDPSP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Qmatrix, p_Dx, dscale, .true., p_Fflux)
+          case(FEAT2_PP_ID3(ST_DOUBLE,ST_DOUBLE,ST_SINGLE,10))
+             call doFluxesByMatrixDPDPSP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Dmatrix, p_Dx, dscale, .true., p_Fflux)
+          case(FEAT2_PP_ID3(ST_SINGLE,ST_DOUBLE,ST_SINGLE,10))
+             call doFluxesByMatrixSPDPSP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Fmatrix, p_Dx, dscale, .true., p_Fflux)
+
+          case(FEAT2_PP_ID3(ST_QUAD,ST_SINGLE,ST_SINGLE,10))
+             call doFluxesByMatrixQPSPSP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Qmatrix, p_Fx, dscale, .true., p_Fflux)
+          case(FEAT2_PP_ID3(ST_DOUBLE,ST_SINGLE,ST_SINGLE,10))
+             call doFluxesByMatrixDPSPSP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Dmatrix, p_Fx, dscale, .true., p_Fflux)
+          case(FEAT2_PP_ID3(ST_SINGLE,ST_SINGLE,ST_SINGLE,10))
+             call doFluxesByMatrixSPSPSP(p_IedgeList, rafcstab%NEDGE,&
+                  p_Fmatrix, p_Fx, dscale, .true., p_Fflux)
+          end select
+
 
         ! Set specifiers for raw antidiffusive fluxes
         rafcstab%istabilisationSpec =&
@@ -1883,255 +2700,175 @@ contains
     ! Assemble raw antidiffusive fluxes using the coefficients
     ! supplied by the edge-by-edge array DcoefficientsAtEdge
 
-    subroutine doFluxesByCoeffsDP(IedgeList, NEDGE,&
-        DcoefficientsAtEdge, Dx, dscale, bclear, Dflux)
+#define TemplateType_AFC    QUAD_PREC
+#define TemplateType_Vector QUAD_PREC
+#include "afcsc_buildFluxFCTScalar_doFluxesByCoeffs.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector DOUBLE_PREC
+#include "afcsc_buildFluxFCTScalar_doFluxesByCoeffs.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector SINGLE_PREC
+#include "afcsc_buildFluxFCTScalar_doFluxesByCoeffs.h"
+#undef TemplateType_Vector
+#undef TemplateType_AFC
 
-      ! input parameters
-      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(in) :: Dx
-      real(DP), intent(in) :: dscale
-      integer, dimension(:,:), intent(in) :: IedgeList
-      integer, intent(in) :: NEDGE
-      logical, intent(in) :: bclear
+#define TemplateType_AFC    DOUBLE_PREC
+#define TemplateType_Vector QUAD_PREC
+#include "afcsc_buildFluxFCTScalar_doFluxesByCoeffs.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector DOUBLE_PREC
+#include "afcsc_buildFluxFCTScalar_doFluxesByCoeffs.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector SINGLE_PREC
+#include "afcsc_buildFluxFCTScalar_doFluxesByCoeffs.h"
+#undef TemplateType_Vector
+#undef TemplateType_AFC
 
-      ! input/output parameters
-      real(DP), dimension(:), intent(inout) :: Dflux
+#define TemplateType_AFC    SINGLE_PREC
+#define TemplateType_Vector QUAD_PREC
+#include "afcsc_buildFluxFCTScalar_doFluxesByCoeffs.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector DOUBLE_PREC
+#include "afcsc_buildFluxFCTScalar_doFluxesByCoeffs.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector SINGLE_PREC
+#include "afcsc_buildFluxFCTScalar_doFluxesByCoeffs.h"
+#undef TemplateType_Vector
+#undef TemplateType_AFC
 
-      ! local variables
-      integer :: iedge,i,j
 
-      if (dscale .eq. 0.0_DP) then
 
-        if (bclear) call lalg_clearVector(Dflux, NEDGE)
-
-      elseif (dscale .eq. 1.0_DP) then
-
-        if (bclear) then
-          !$omp parallel do default(shared) private(i,j)&
-          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
-          do iedge = 1, NEDGE
-
-            ! Determine indices
-            i = IedgeList(1,iedge)
-            j = IedgeList(2,iedge)
-
-            ! Compute raw antidiffusive flux
-            Dflux(iedge) = DcoefficientsAtEdge(1,iedge) * (Dx(i)-Dx(j))
-          end do
-          !$omp end parallel do
-        else
-          !$omp parallel do default(shared) private(i,j)&
-          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
-          do iedge = 1, NEDGE
-
-            ! Determine indices
-            i = IedgeList(1,iedge)
-            j = IedgeList(2,iedge)
-
-            ! Compute raw antidiffusive flux
-            Dflux(iedge) = Dflux(iedge)&
-                + DcoefficientsAtEdge(1,iedge) * (Dx(i)-Dx(j))
-          end do
-          !$omp end parallel do
-        end if
-
-      elseif (dscale .eq. -1.0_DP) then
-
-        if (bclear) then
-          !$omp parallel do default(shared) private(i,j)&
-          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
-          do iedge = 1, NEDGE
-
-            ! Determine indices
-            i = IedgeList(1,iedge)
-            j = IedgeList(2,iedge)
-
-            ! Compute raw antidiffusive flux
-            Dflux(iedge) = DcoefficientsAtEdge(1,iedge) * (Dx(j)-Dx(i))
-          end do
-          !$omp end parallel do
-        else
-          !$omp parallel do default(shared) private(i,j)&
-          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
-          do iedge = 1, NEDGE
-
-            ! Determine indices
-            i = IedgeList(1,iedge)
-            j = IedgeList(2,iedge)
-
-            ! Compute raw antidiffusive flux
-            Dflux(iedge) = Dflux(iedge)&
-                + DcoefficientsAtEdge(1,iedge) * (Dx(j)-Dx(i))
-          end do
-          !$omp end parallel do
-        end if
-
-      else
-
-        if (bclear) then
-          !$omp parallel do default(shared) private(i,j)&
-          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
-          do iedge = 1, NEDGE
-
-            ! Determine indices
-            i = IedgeList(1,iedge)
-            j = IedgeList(2,iedge)
-
-            ! Compute raw antidiffusive flux
-            Dflux(iedge) = dscale * DcoefficientsAtEdge(1,iedge) * (Dx(i)-Dx(j))
-          end do
-          !$omp end parallel do
-        else
-          !$omp parallel do default(shared) private(i,j)&
-          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
-          do iedge = 1, NEDGE
-
-            ! Determine indices
-            i = IedgeList(1,iedge)
-            j = IedgeList(2,iedge)
-
-            ! Compute raw antidiffusive flux
-            Dflux(iedge) = Dflux(iedge)&
-                + dscale * DcoefficientsAtEdge(1,iedge) * (Dx(i)-Dx(j))
-          end do
-          !$omp end parallel do
-        end if
-
-      end if
-
-    end subroutine doFluxesByCoeffsDP
 
     !**************************************************************
     ! Assemble raw antidiffusive fluxes using the coefficients
     ! supplied by the CSR-matrix stored in Dmatrix
 
-    subroutine doFluxesByMatrixDP(IedgeList, NEDGE,&
-        Dmatrix, Dx, dscale, bclear, Dflux)
 
-      ! input parameters
-      real(DP), dimension(:), intent(in) :: Dmatrix, Dx
-      real(DP), intent(in) :: dscale
-      integer, dimension(:,:), intent(in) :: IedgeList
-      integer, intent(in) :: NEDGE
-      logical, intent(in) :: bclear
+#define TemplateType_Matrix QUAD_PREC
+#define TemplateType_AFC    QUAD_PREC
+#define TemplateType_Vector QUAD_PREC
+#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector DOUBLE_PREC
+#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector SINGLE_PREC
+#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#undef TemplateType_Vector
+#undef TemplateType_AFC
 
-      ! input/output parameters
-      real(DP), dimension(:), intent(inout) :: Dflux
+#define TemplateType_AFC    DOUBLE_PREC
+#define TemplateType_Vector QUAD_PREC
+#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector DOUBLE_PREC
+#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector SINGLE_PREC
+#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#undef TemplateType_Vector
+#undef TemplateType_AFC
 
-      ! local variables
-      integer :: iedge,i,j,ij
+#define TemplateType_AFC    SINGLE_PREC
+#define TemplateType_Vector QUAD_PREC
+#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector DOUBLE_PREC
+#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector SINGLE_PREC
+#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#undef TemplateType_Vector
+#undef TemplateType_AFC
+#undef TemplateType_Matrix
 
-      if (dscale .eq. 0.0_DP) then
 
-        if (bclear) call lalg_clearVector(Dflux, NEDGE)
+#define TemplateType_Matrix DOUBLE_PREC
+#define TemplateType_AFC    QUAD_PREC
+#define TemplateType_Vector QUAD_PREC
+#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector DOUBLE_PREC
+#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector SINGLE_PREC
+#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#undef TemplateType_Vector
+#undef TemplateType_AFC
 
-      elseif (dscale .eq. 1.0_DP) then
+#define TemplateType_AFC    DOUBLE_PREC
+#define TemplateType_Vector QUAD_PREC
+#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector DOUBLE_PREC
+#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector SINGLE_PREC
+#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#undef TemplateType_Vector
+#undef TemplateType_AFC
 
-        if (bclear) then
-          !$omp parallel do default(shared) private(i,j,ij)&
-          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
-          do iedge = 1, NEDGE
+#define TemplateType_AFC    SINGLE_PREC
+#define TemplateType_Vector QUAD_PREC
+#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector DOUBLE_PREC
+#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector SINGLE_PREC
+#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#undef TemplateType_Vector
+#undef TemplateType_AFC
+#undef TemplateType_Matrix
 
-            ! Determine indices
-            i  = IedgeList(1,iedge)
-            j  = IedgeList(2,iedge)
-            ij = IedgeList(3,iedge)
 
-            ! Compute raw antidiffusive flux
-            Dflux(iedge) = Dmatrix(ij) * (Dx(i)-Dx(j))
-          end do
-          !$omp end parallel do
-        else
-          !$omp parallel do default(shared) private(i,j,ij)&
-          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
-          do iedge = 1, NEDGE
+#define TemplateType_Matrix SINGLE_PREC
+#define TemplateType_AFC    QUAD_PREC
+#define TemplateType_Vector QUAD_PREC
+#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector DOUBLE_PREC
+#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector SINGLE_PREC
+#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#undef TemplateType_Vector
+#undef TemplateType_AFC
 
-            ! Determine indices
-            i  = IedgeList(1,iedge)
-            j  = IedgeList(2,iedge)
-            ij = IedgeList(3,iedge)
+#define TemplateType_AFC    DOUBLE_PREC
+#define TemplateType_Vector QUAD_PREC
+#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector DOUBLE_PREC
+#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector SINGLE_PREC
+#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#undef TemplateType_Vector
+#undef TemplateType_AFC
 
-            ! Compute raw antidiffusive flux
-            Dflux(iedge) = Dflux(iedge) + Dmatrix(ij) * (Dx(i)-Dx(j))
-          end do
-          !$omp end parallel do
-        end if
+#define TemplateType_AFC    SINGLE_PREC
+#define TemplateType_Vector QUAD_PREC
+#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector DOUBLE_PREC
+#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector SINGLE_PREC
+#include "afcsc_buildFluxFCTScalar_doFluxesByMatrix.h"
+#undef TemplateType_Vector
+#undef TemplateType_AFC
+#undef TemplateType_Matrix
 
-      elseif (dscale .eq. -1.0_DP) then
 
-        if (bclear) then
-          !$omp parallel do default(shared) private(i,j,ij)&
-          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
-          do iedge = 1, NEDGE
 
-            ! Determine indices
-            i  = IedgeList(1,iedge)
-            j  = IedgeList(2,iedge)
-            ij = IedgeList(3,iedge)
-
-            ! Compute raw antidiffusive flux
-            Dflux(iedge) = Dmatrix(ij) * (Dx(j)-Dx(i))
-          end do
-          !$omp end parallel do
-        else
-          !$omp parallel do default(shared) private(i,j,ij)&
-          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
-          do iedge = 1, NEDGE
-
-            ! Determine indices
-            i  = IedgeList(1,iedge)
-            j  = IedgeList(2,iedge)
-            ij = IedgeList(3,iedge)
-
-            ! Compute raw antidiffusive flux
-            Dflux(iedge) = Dflux(iedge) + Dmatrix(ij) * (Dx(j)-Dx(i))
-          end do
-          !$omp end parallel do
-        end if
-
-      else
-
-        if (bclear) then
-          !$omp parallel do default(shared) private(i,j,ij)&
-          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
-          do iedge = 1, NEDGE
-
-            ! Determine indices
-            i  = IedgeList(1,iedge)
-            j  = IedgeList(2,iedge)
-            ij = IedgeList(3,iedge)
-
-            ! Compute raw antidiffusive flux
-            Dflux(iedge) = dscale * Dmatrix(ij) * (Dx(i)-Dx(j))
-          end do
-          !$omp end parallel do
-        else
-          !$omp parallel do default(shared) private(i,j,ij)&
-          !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
-          do iedge = 1, NEDGE
-
-            ! Determine indices
-            i  = IedgeList(1,iedge)
-            j  = IedgeList(2,iedge)
-            ij = IedgeList(3,iedge)
-
-            ! Compute raw antidiffusive flux
-            Dflux(iedge) = Dflux(iedge)&
-                + dscale * Dmatrix(ij) * (Dx(i)-Dx(j))
-          end do
-          !$omp end parallel do
-        end if
-
-      end if
-
-    end subroutine doFluxesByMatrixDP
 
     !**************************************************************
     ! Assemble raw antidiffusive fluxes with aid of callback function
 
     subroutine doFluxesByCallbackDP(IedgeList, NEDGE,&
-        DcoeffsAtEdge, Dx, dscale, bclear, Dflux)
-
+         DcoeffsAtEdge, Dx, dscale, bclear, Dflux)
+      
       ! input parameters
       real(DP), dimension(:), intent(in) :: Dx
       real(DP), dimension(:,:,:), intent(in) :: DcoeffsAtEdge
@@ -2260,38 +2997,50 @@ contains
 
     end subroutine doFluxesByCallbackDP
 
+
+
+    
+
     !**************************************************************
     ! Assemble solution difference used for classical prelimiting.
 
-    subroutine doDifferencesDP(IedgeList, NEDGE, Dx, Dflux)
+#define TemplateType_AFC    QUAD_PREC
+#define TemplateType_Vector QUAD_PREC
+#include "afcsc_buildFluxFCTScalar_doDifferences.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector DOUBLE_PREC
+#include "afcsc_buildFluxFCTScalar_doDifferences.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector SINGLE_PREC
+#include "afcsc_buildFluxFCTScalar_doDifferences.h"
+#undef TemplateType_Vector
+#undef TemplateType_AFC
 
-      ! input parameters
-      real(DP), dimension(:), intent(in) :: Dx
-      integer, dimension(:,:), intent(in) :: IedgeList
-      integer, intent(in) :: NEDGE
+#define TemplateType_AFC    DOUBLE_PREC
+#define TemplateType_Vector QUAD_PREC
+#include "afcsc_buildFluxFCTScalar_doDifferences.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector DOUBLE_PREC
+#include "afcsc_buildFluxFCTScalar_doDifferences.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector SINGLE_PREC
+#include "afcsc_buildFluxFCTScalar_doDifferences.h"
+#undef TemplateType_Vector
+#undef TemplateType_AFC
 
-      ! output parameters
-      real(DP), dimension(:), intent(out) :: Dflux
+#define TemplateType_AFC    SINGLE_PREC
+#define TemplateType_Vector QUAD_PREC
+#include "afcsc_buildFluxFCTScalar_doDifferences.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector DOUBLE_PREC
+#include "afcsc_buildFluxFCTScalar_doDifferences.h"
+#undef TemplateType_Vector
+#define TemplateType_Vector SINGLE_PREC
+#include "afcsc_buildFluxFCTScalar_doDifferences.h"
+#undef TemplateType_Vector
+#undef TemplateType_AFC
 
-      ! local variables
-      integer :: iedge,i,j
 
-      !$omp parallel do default(shared) private(i,j)&
-      !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
-      do iedge = 1, NEDGE
-
-        ! Determine indices
-        i = IedgeList(1,iedge)
-        j = IedgeList(2,iedge)
-
-        ! Compute solution difference; in contrast to the literature,
-        ! we compute the solution difference $u_i-u_j$ and check if
-        ! $f_{ij}(u_i-u_j)<0$ in the prelimiting step.
-        Dflux(iedge) = Dx(i)-Dx(j)
-      end do
-      !$omp end parallel do
-
-    end subroutine doDifferencesDP
 
   end subroutine afcsc_buildFluxFCTScalar
 

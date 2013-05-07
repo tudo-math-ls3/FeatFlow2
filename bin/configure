@@ -345,6 +345,9 @@ my $HEADER_FILES_TO_COPY =
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/PDEOperators/afcsc_buildVectorFCTScalar_doLimitNodalConstrained.h " .
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/PDEOperators/afcsc_buildVectorFCTScalar_doMinModPrelimit.h " .
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/PDEOperators/afcsc_buildVectorFCTScalar_doStdPrelimit.h " .
+    "$FEAT2BASEDIR/$SRCDIR_KERNEL/PDEOperators/afcsc_buildFluxFCTScalar_doFluxesByMatrix.h " .
+    "$FEAT2BASEDIR/$SRCDIR_KERNEL/PDEOperators/afcsc_buildFluxFCTScalar_doFluxesByCoeffs.h " .
+    "$FEAT2BASEDIR/$SRCDIR_KERNEL/PDEOperators/afcsc_buildFluxFCTScalar_doDifferences.h " .
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/System/fmath.h " .
     "$FEAT2BASEDIR/$SRCDIR_KERNEL/System/idxmanager.h";
 
