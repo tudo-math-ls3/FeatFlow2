@@ -1,8 +1,8 @@
 !##############################################################################
-!# Tutorial 017b: Solve simple linear system with multigrid, with filtering
+!# Tutorial 017d: Solve simple linear system with MG, prol/rest matrices
 !##############################################################################
 
-module tutorial017b
+module tutorial017d
 
   ! Include basic Feat-2 modules
   use fsystem
@@ -30,7 +30,10 @@ module tutorial017b
   use matrixfilters
   
   use filtersupport
+  use multilevelprojection
+  use multileveloperators
   use linearsolver
+  use coarsegridcorrection
   use collection
   
   use ucd
@@ -38,7 +41,7 @@ module tutorial017b
   implicit none
   private
   
-  public :: start_tutorial017b
+  public :: start_tutorial017d
 
 contains
 
@@ -95,7 +98,7 @@ contains
 
   ! ***************************************************************************
 
-  subroutine start_tutorial017b
+  subroutine start_tutorial017d
 
     ! Declare some variables.
     integer, parameter :: NLMAX = 5
@@ -105,11 +108,15 @@ contains
     type(t_blockDiscretisation), dimension(:), pointer :: p_RblockDiscr
     type(t_discreteBC), dimension(:), pointer :: p_RdiscreteBC
     type(t_filterChain), dimension(:,:), pointer :: p_RfilterChain
+    type(t_scalarCubatureInfo), dimension(:), pointer :: p_RcubatureInfo
     
     type(t_matrixBlock), dimension(:), pointer :: p_Rmatrices
     type(t_vectorBlock) :: rrhs, rsolution, rtemp
     
-    type(t_scalarCubatureInfo), target :: rcubatureInfo
+    type(t_matrixScalar), dimension(:), pointer :: p_RprolMatrices
+    type(t_matrixScalar), dimension(:), pointer :: p_RrestMatrices
+    type(t_interlevelProjectionBlock), dimension(:), pointer :: p_Rprojection
+    
     type(t_meshRegion) :: rmeshRegion
     type(t_ucdExport) :: rexport
     
@@ -120,7 +127,7 @@ contains
     ! Print a message
     call output_lbrk()
     call output_separator (OU_SEP_STAR)
-    call output_line ("This is FEAT-2. Tutorial 017b")
+    call output_line ("This is FEAT-2. Tutorial 017d")
     call output_separator (OU_SEP_MINUS)
     
     ! =================================
@@ -129,9 +136,14 @@ contains
     allocate (p_Rtriangulations(NLMAX))
     allocate (p_RspatialDiscr(NLMAX))
     allocate (p_RblockDiscr(NLMAX))
+    allocate (p_RcubatureInfo(NLMAX))
     allocate (p_RdiscreteBC(NLMAX))
     allocate (p_Rmatrices(NLMAX))
     allocate (p_RfilterChain(1,NLMAX))
+    
+    allocate (p_RprolMatrices(NLMAX))
+    allocate (p_RrestMatrices(NLMAX))
+    allocate (p_Rprojection(NLMAX))
     
     ! =================================
     ! Create a brick mesh
@@ -169,13 +181,24 @@ contains
     end do
 
     ! =================================
-    ! Assemble matrices on all levels
+    ! Create a hierarchy of cubature
+    ! structures. Use Gauss 3x3 on all
+    ! levels.
     ! =================================
+
     do ilevel = 1,NLMAX
 
       ! Use a Gauss 3x3 formula for the discretisation.
       call spdiscr_createDefCubStructure (&
-          p_RspatialDiscr(ilevel),rcubatureInfo,CUB_GEN_AUTO_G3)
+          p_RspatialDiscr(ilevel),p_RcubatureInfo(ilevel),CUB_GEN_AUTO_G3)
+
+    end do
+
+    ! =================================
+    ! Assemble matrices on all levels
+    ! =================================
+
+    do ilevel = 1,NLMAX
 
       ! Create a matrix on level ilevel
       call lsysbl_createMatrix (p_RblockDiscr(ilevel),p_Rmatrices(ilevel))
@@ -190,10 +213,7 @@ contains
       ! Discretise a simple Laplace matrix into (1,1)
       call lsysbl_clearMatrix (p_Rmatrices(ilevel))
       call bma_buildMatrix (p_Rmatrices(ilevel),BMA_CALC_STANDARD,&
-          bma_fcalc_laplace,rcubatureInfo=rcubatureInfo)
-
-      ! Cubature done.
-      call spdiscr_releaseCubStructure (rcubatureInfo)
+          bma_fcalc_laplace,rcubatureInfo=p_RcubatureInfo(ilevel))
 
     end do
 
@@ -208,18 +228,11 @@ contains
     call lsysbl_createVector (p_RblockDiscr(NLMAX),rsolution)
     call lsysbl_createVector (p_RblockDiscr(NLMAX),rtemp)
 
-    ! -----------------------------------------------------
-    ! Use a Gauss 3x3 formula for the discretisation.
-    call spdiscr_createDefCubStructure (p_RspatialDiscr(NLMAX),rcubatureInfo,CUB_GEN_AUTO_G3)
-
     ! Create a RHS vector into block (1)
     call lsysbl_clearVector (rrhs)
     call bma_buildVector (rrhs,BMA_CALC_STANDARD,&
-        bma_fcalc_rhsBubble,rcubatureInfo=rcubatureInfo)
+        bma_fcalc_rhsBubble,rcubatureInfo=p_RcubatureInfo(NLMAX))
 
-    ! Cubature done.
-    call spdiscr_releaseCubStructure (rcubatureInfo)
-    
     ! =================================
     ! Discretise boundary conditions
     ! =================================
@@ -255,6 +268,31 @@ contains
     call vecfil_discreteBCsol (rsolution,p_RdiscreteBC(NLMAX))
     
     ! =================================
+    ! Create prolongation/restriction
+    ! matrices for level change in MG.
+    ! =================================
+    
+    ! Start with ilevel=2 which describes the solution exchange
+    ! between level 1 and 2.
+    do ilevel = 2,NLMAX
+    
+      ! Create the prolongation matrix structure
+      call mlop_create2LvlMatrixStruct (p_RspatialDiscr(ilevel-1),&
+          p_RspatialDiscr(ilevel), LSYSSC_MATRIX9, p_RprolMatrices(ilevel))
+          
+      ! and assemble the entries of the prolongation matrix.
+      call mlop_build2LvlProlMatrix (&
+          p_RspatialDiscr(ilevel-1),p_RspatialDiscr(ilevel),&
+          .true., p_RprolMatrices(ilevel),&
+          rcubatureInfoCoarse=p_RcubatureInfo(ilevel-1),&
+          rcubatureInfoFine=p_RcubatureInfo(ilevel) )
+
+      ! Transpose the matrix, this gives the restriction matrix
+      call lsyssc_transposeMatrix (p_RprolMatrices(ilevel),p_RrestMatrices(ilevel))
+    
+    end do
+
+    ! =================================
     ! Solve the system with Multigrid elimination
     ! =================================
     
@@ -268,14 +306,19 @@ contains
     call linsol_initMultigrid2 (p_rsolverNode,NLMAX)
     
     ! On level 1, add a Gauss elimination solver as coarse grid solver.
+
     ! On level 2..NLMAX, add Jacobi as pre- and postsmoother, 4 smoothing steps.
-    do ilevel = 1,NLMAX
+    do ilevel = 1, NLMAX
     
       ! Get the mutigrid level data
       call linsol_getMultigrid2Level (p_rsolverNode,ilevel,p_rlevelInfo)
     
       if (ilevel .eq. 1) then
       
+        ! ---------------------------------------
+        ! Create a coarse grid solver
+        ! ---------------------------------------
+
         ! Create UMFPACK
         call linsol_initUMFPACK4 (p_rcoarsegridsolver)
         
@@ -283,6 +326,11 @@ contains
         p_rlevelInfo%p_rcoarseGridSolver => p_rcoarsegridsolver
       
       else
+      
+        ! ---------------------------------------
+        ! Create a smoother
+        ! ---------------------------------------
+
         ! Create Jacobi
         call linsol_initJacobi (p_rsmoother)
         
@@ -300,6 +348,23 @@ contains
         
         p_rlevelInfo%p_RfilterChain => p_RfilterChain(:,ilevel)
       
+        ! ---------------------------------------
+        ! Prepare a matrix-based prolongation/
+        ! restriction
+        ! ---------------------------------------
+
+        ! Create a projection structure that describes prolongation/restriction
+        ! for all blocks.
+        call mlprj_initProjectionDiscr (p_Rprojection(ilevel),p_RblockDiscr(ilevel))
+        
+        ! Initialise prolongation/restriction for the first block (our
+        ! Q1 solution) according to the prolongation/restriction matrices.
+        call mlprj_initMatrixProjection(p_Rprojection(ilevel)%RscalarProjection(1,1),&
+            p_RprolMatrices(ilevel),rmatrixRest=p_RrestMatrices(ilevel))
+            
+        ! Tell MG about the projection we want to use.
+        p_rlevelInfo%p_rprojection => p_Rprojection(ilevel)
+        
       end if
       
     end do
@@ -371,7 +436,7 @@ contains
 
     ! Open / write / close; write the solution to a VTK file.
     call ucd_startVTK (rexport,UCD_FLAG_STANDARD,p_Rtriangulations(NLMAX),&
-        "post/tutorial017b.vtk")
+        "post/tutorial017d.vtk")
     call ucd_addVectorByVertex (rexport, "solution", &
         UCD_VAR_STANDARD, rsolution%RvectorBlock(1))
     call ucd_write (rexport)
@@ -386,18 +451,30 @@ contains
     call lsysbl_releaseVector (rrhs)
     call lsysbl_releaseVector (rsolution)
     
-    ! Release the matrices/discretisation structures/BC
+    ! Release the matrices/discretisation structures/BC/projection structurees
     do ilevel=1,NLMAX
+      call mlprj_doneProjection(p_Rprojection(ilevel))
+      call lsyssc_releaseMatrix (p_RrestMatrices(ilevel))
+      call lsyssc_releaseMatrix (p_RprolMatrices(ilevel))
+
       call lsysbl_releaseMatrix (p_Rmatrices(ilevel))
+
       call bcasm_releaseDiscreteBC (p_RdiscreteBC(ilevel))
+
+      call spdiscr_releaseCubStructure (p_RcubatureInfo(ilevel))
       call spdiscr_releaseBlockDiscr (p_RblockDiscr(ilevel))
       call spdiscr_releaseDiscr (p_RspatialDiscr(ilevel))
       call tria_done (p_Rtriangulations(ilevel))
     end do
 
+    deallocate (p_Rprojection)
+    deallocate (p_RrestMatrices)
+    deallocate (p_RprolMatrices)
+
     deallocate (p_RfilterChain)
     deallocate (p_Rmatrices)
     deallocate (p_RdiscreteBC)
+    deallocate (p_RcubatureInfo)
     deallocate (p_RblockDiscr)
     deallocate (p_RspatialDiscr)
     deallocate (p_Rtriangulations)

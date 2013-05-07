@@ -252,7 +252,7 @@ contains
     call vecfil_discreteBCsol (rsolution,p_RdiscreteBC(NLMAX))
     
     ! =================================
-    ! Solve the system with Gauss elimination
+    ! Solve the system with Multigrid elimination
     ! =================================
     
     call output_line ("Solving linear system...")
