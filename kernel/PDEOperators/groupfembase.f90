@@ -76,13 +76,16 @@
 !# 18.) gfem_getbase_IdiagList
 !#      -> Returns pointer to the diagonal list
 !#
-!# 19.) gfem_getbase_DcoeffsAtNode / gfem_getbase_FcoeffsAtNode
+!# 19.) gfem_getbase_QcoeffsAtNode /
+!#      gfem_getbase_DcoeffsAtNode / gfem_getbase_FcoeffsAtNode
 !#      -> Returns pointer to the coefficients at nodes
 !#
-!# 20.) gfem_getbase_DcoeffsAtEdge / gfem_getbase_FcoeffsAtEdge
+!# 20.) gfem_getbase_QcoeffsAtEdge /
+!#      gfem_getbase_DcoeffsAtEdge / gfem_getbase_FcoeffsAtEdge
 !#      -> Returns pointer to the coefficients at edges
 !#
-!# 21.) gfem_getbase_DcoeffsAtDiag / gfem_getbase_FcoeffsAtDiag
+!# 21.) gfem_getbase_QcoeffsAtDiag /
+!#      gfem_getbase_DcoeffsAtDiag / gfem_getbase_FcoeffsAtDiag
 !#      -> Returns pointer to the coefficients at matrix diagonal
 !#
 !# 22.) gfem_getbase_IdofsTest / gfem_getbase_IdofsTrial
@@ -233,10 +236,13 @@ module groupfembase
   public :: gfem_getbase_InodeListIdx
   public :: gfem_getbase_InodeList
   public :: gfem_getbase_IdiagList
+  public :: gfem_getbase_QcoeffsAtNode
   public :: gfem_getbase_DcoeffsAtNode
   public :: gfem_getbase_FcoeffsAtNode
+  public :: gfem_getbase_QcoeffsAtEdge
   public :: gfem_getbase_DcoeffsAtEdge
   public :: gfem_getbase_FcoeffsAtEdge
+  public :: gfem_getbase_QcoeffsAtDiag
   public :: gfem_getbase_DcoeffsAtDiag
   public :: gfem_getbase_FcoeffsAtDiag
   public :: gfem_getbase_IdofsTest
@@ -3630,6 +3636,58 @@ contains
 
 !<subroutine>
 
+  subroutine gfem_getbase_QcoeffsAtNode(rgroupFEMSet, p_QcoeffsAtNode)
+
+!<description>
+    ! Returns a pointer to the quad-valued coefficients at nodes
+!</description>
+
+!<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+!</input>
+
+!<output>
+    ! Pointer to the precomputed coefficients at nodes
+    ! NULL() if the structure rgroupFEMSet does not provide it.
+    real(QP), dimension(:,:), pointer :: p_QcoeffsAtNode
+!</output>
+!</subroutine>
+
+    ! Do we have coefficients at nodes at all?
+    if (rgroupFEMSet%h_CoeffsAtNode .eq. ST_NOHANDLE) then
+      nullify(p_QcoeffsAtNode)
+      return
+    end if
+
+    ! Get the array
+    select case(rgroupFEMSet%cassemblyType)
+    case (GFEM_NODEBASED)
+      if (rgroupFEMSet%NA .eq. 0) then
+        nullify(p_QcoeffsAtNode)
+      else
+        call storage_getbase_quad2D(rgroupFEMSet%h_CoeffsAtNode,&
+            p_QcoeffsAtNode, rgroupFEMSet%NA)
+      end if
+
+    case (GFEM_EDGEBASED)
+      if (rgroupFEMSet%NEQ .eq. 0) then
+        nullify(p_QcoeffsAtNode)
+      else
+        call storage_getbase_quad2D(rgroupFEMSet%h_CoeffsAtNode,&
+            p_QcoeffsAtNode, rgroupFEMSet%NEQ)
+      end if
+
+    case default
+      nullify(p_QcoeffsAtNode)
+    end select
+
+  end subroutine gfem_getbase_QcoeffsAtNode
+
+  !*****************************************************************************
+
+!<subroutine>
+
   subroutine gfem_getbase_DcoeffsAtNode(rgroupFEMSet, p_DcoeffsAtNode)
 
 !<description>
@@ -3734,6 +3792,41 @@ contains
 
 !<subroutine>
 
+  subroutine gfem_getbase_QcoeffsAtEdge(rgroupFEMSet,p_QcoeffsAtEdge)
+
+!<description>
+    ! Returns a pointer to the quad-valued coefficients at edges
+!</description>
+
+!<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+!</input>
+
+!<output>
+    ! Pointer to the precomputed coefficients at edges
+    ! NULL() if the structure rgroupFEMSet does not provide it.
+    real(QP), dimension(:,:,:), pointer :: p_QcoeffsAtEdge
+!</output>
+!</subroutine>
+
+    ! Do we have edge data at all?
+    if ((rgroupFEMSet%h_CoeffsAtEdge .eq. ST_NOHANDLE) .or.&
+        (rgroupFEMSet%NEDGE          .eq. 0)) then
+      nullify(p_QcoeffsAtEdge)
+      return
+    end if
+
+    ! Get the array
+    call storage_getbase_quad3D(rgroupFEMSet%h_CoeffsAtEdge,&
+        p_QcoeffsAtEdge, rgroupFEMSet%NEDGE)
+
+  end subroutine gfem_getbase_QcoeffsAtEdge
+
+  !*****************************************************************************
+
+!<subroutine>
+
   subroutine gfem_getbase_DcoeffsAtEdge(rgroupFEMSet,p_DcoeffsAtEdge)
 
 !<description>
@@ -3799,6 +3892,41 @@ contains
         p_FcoeffsAtEdge, rgroupFEMSet%NEDGE)
 
   end subroutine gfem_getbase_FcoeffsAtEdge
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine gfem_getbase_QcoeffsAtDiag(rgroupFEMSet,p_QcoeffsAtDiag)
+
+!<description>
+    ! Returns a pointer to the quad-valued coefficients at matrix diagonals
+!</description>
+
+!<input>
+    ! Group finite element set
+    type(t_groupFEMSet), intent(in) :: rgroupFEMSet
+!</input>
+
+!<output>
+    ! Pointer to the precomputed coefficients at matrix diagonales
+    ! NULL() if the structure rgroupFEMSet does not provide it.
+    real(QP), dimension(:,:), pointer :: p_QcoeffsAtDiag
+!</output>
+!</subroutine>
+
+    ! Do we have diagonal data at all?
+    if ((rgroupFEMSet%h_CoeffsAtDiag .eq. ST_NOHANDLE) .or.&
+        (rgroupFEMSet%NEQ            .eq. 0)) then
+      nullify(p_QcoeffsAtDiag)
+      return
+    end if
+
+    ! Get the array
+    call storage_getbase_quad2D(rgroupFEMSet%h_CoeffsAtDiag,&
+        p_QcoeffsAtDiag, rgroupFEMSet%NEQ)
+
+  end subroutine gfem_getbase_QcoeffsAtDiag
 
   !*****************************************************************************
 

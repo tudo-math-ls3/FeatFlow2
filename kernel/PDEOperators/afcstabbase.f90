@@ -52,10 +52,12 @@
 !# 12.) afcstab_getbase_IsubdiagEdge
 !#      -> Returns pointer to the subdiagonal edge numbers
 !#
-!# 13.) afcstab_getbase_DcoeffsAtEdge / afcstab_getbase_FcoeffsAtEdge
+!# 13.) afcstab_getbase_QcoeffsAtEdge
+!#      afcstab_getbase_DcoeffsAtEdge / afcstab_getbase_FcoeffsAtEdge
 !#      -> Returns pointer to edge data
 !#
-!# 14.) afcstab_getbase_DboundsAtEdge / afcstab_getbase_FboundsAtEdge
+!# 14.) afcstab_getbase_QboundsAtEdge
+!#      afcstab_getbase_DboundsAtEdge / afcstab_getbase_FboundsAtEdge
 !#      -> Returns pointer to the bounds at edges
 !#
 !# 15.) afcstab_genEdgeList
@@ -98,54 +100,54 @@
 !#                               afcstab_buildBoundsLPT2D /
 !#                               afcstab_buildBoundsLPT3D
 !#
-!# 28.) afcstab_limit = afcstab_limitUnboundedDP /
+!# 28.) afcstab_limit = afcstab_limitUnboundedQP /
+!#                      afcstab_limitUnboundedDP /
 !#                      afcstab_limitUnboundedSP /
+!#                      afcstab_limitBoundedQP /
 !#                      afcstab_limitBoundedDP /
 !#                      afcstab_limitBoundedSP
 !#      -> Compute the nodal correction factors, i.e., the ratio of
 !#         admissible solution increments and raw antidiffusion
 !#
-!# 29.) afcstab_combineFluxes = afcstab_combFluxesDP /
+!# 29.) afcstab_combineFluxes = afcstab_combFluxesQP /
+!#                              afcstab_combFluxesDP /
 !#                              afcstab_combFluxesSP
 !#      -> Linear combination of the vectors of fluxes
 !#
-!# 30.) afcstab_combineFluxesDP / afcstab_combineFluxesSP
-!#      -> Linear combination of the vectors of fluxes
-!#
-!# 31.) afcstab_upwindOrientation = afcstab_upwindOrientationDP1 /
+!# 30.) afcstab_upwindOrientation = afcstab_upwindOrientationDP1 /
 !#                                  afcstab_upwindOrientationDP2 /
 !#                                  afcstab_upwindOrientationSP1 /
 !#                                  afcstab_upwindOrientationSP2
 !#      -> Swap edge orientation so that the starting edge is located upwind
 !#
-!# 32.) afcstab_infoStabilisation
+!# 31.) afcstab_infoStabilisation
 !#      -> Outputs information about the stabilisation structure
 !#
-!# 33.) afcstab_copyH2D_IedgeListIdx
+!# 32.) afcstab_copyH2D_IedgeListIdx
 !#      -> Copies the edge index structure from the host memory
 !#         to the device memory.
 !#
-!# 34.) afcstab_copyD2H_IedgeListIdx
+!# 33.) afcstab_copyD2H_IedgeListIdx
 !#      -> Copies the edge index structure from the device memory
 !#         to the host memory.
 !#
-!# 35.) afcstab_copyH2D_IedgeList
+!# 34.) afcstab_copyH2D_IedgeList
 !#      -> Copies the edge structure from the host memory
 !#         to the device memory.
 !#
-!# 36.) afcstab_copyD2H_IedgeList
+!# 35.) afcstab_copyD2H_IedgeList
 !#      -> Copies the edge structure from the device memory
 !#         to the host memory.
 !#
-!# 37.) afcstab_copyH2D_CoeffsAtEdge
+!# 36.) afcstab_copyH2D_CoeffsAtEdge
 !#      -> Copies the edge data from the host memory
 !#         to the device memory.
 !#
-!# 38.) afcstab_copyD2H_CoeffsAtEdge
+!# 37.) afcstab_copyD2H_CoeffsAtEdge
 !#      -> Copies the edge structure from the device memory
 !#         to the host memory.
 !#
-!# 39.) afcstab_setDataType
+!# 38.) afcstab_setDataType
 !#      -> Converts the data type of the stabilisation structure
 !#
 !# </purpose>
@@ -186,8 +188,10 @@ module afcstabbase
   public :: afcstab_getbase_IsupdiagEdgeIdx
   public :: afcstab_getbase_IsubdiagEdgeIdx
   public :: afcstab_getbase_IsubdiagEdge
+  public :: afcstab_getbase_QcoeffsAtEdge
   public :: afcstab_getbase_DcoeffsAtEdge
   public :: afcstab_getbase_FcoeffsAtEdge
+  public :: afcstab_getbase_QboundsAtEdge
   public :: afcstab_getbase_DboundsAtEdge
   public :: afcstab_getbase_FboundsAtEdge
 
@@ -208,6 +212,7 @@ module afcstabbase
 
   public :: afcstab_limit
   public :: afcstab_combineFluxes
+  public :: afcstab_combineFluxesQP
   public :: afcstab_combineFluxesDP
   public :: afcstab_combineFluxesSP
   public :: afcstab_upwindOrientation
@@ -825,13 +830,20 @@ module afcstabbase
   end interface
 
   interface afcstab_limit
+#ifdef ENABLE_QUADPREC
+    module procedure afcstab_limitUnboundedQP
+    module procedure afcstab_limitBoundedQP
+#endif
     module procedure afcstab_limitUnboundedDP
-    module procedure afcstab_limitUnboundedSP
     module procedure afcstab_limitBoundedDP
     module procedure afcstab_limitBoundedSP
+    module procedure afcstab_limitUnboundedSP
   end interface
 
   interface afcstab_combineFluxes
+#ifdef ENABLE_QUADPREC
+    module procedure afcstab_combFluxesQP
+#endif
     module procedure afcstab_combFluxesDP
     module procedure afcstab_combFluxesSP
   end interface
@@ -2924,6 +2936,41 @@ contains
 
 !<subroutine>
 
+  subroutine afcstab_getbase_QcoeffsAtEdge(rafcstab, p_QcoefficientsAtEdge)
+
+!<description>
+    ! Returns a pointer to the quad-valued edge data
+!</description>
+
+!<input>
+    ! Stabilisation structure
+    type(t_afcstab), intent(in) :: rafcstab
+!</input>
+
+!<output>
+    ! Pointer to the quad-valued edge data
+    ! NULL() if the stabilisation structure does not provide it.
+    real(QP), dimension(:,:), pointer :: p_QcoefficientsAtEdge
+!</output>
+!</subroutine>
+
+    ! Do we have double-valued edge data at all?
+    if ((rafcstab%h_CoeffsAtEdge .eq. ST_NOHANDLE) .or.&
+        (rafcstab%NEDGE                .eq. 0)) then
+      nullify(p_QcoefficientsAtEdge)
+      return
+    end if
+
+    ! Get the array
+    call storage_getbase_quad2D(rafcstab%h_CoeffsAtEdge,&
+        p_QcoefficientsAtEdge, rafcstab%NEDGE)
+
+  end subroutine afcstab_getbase_QcoeffsAtEdge
+
+  !*****************************************************************************
+
+!<subroutine>
+
   subroutine afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
 
 !<description>
@@ -2994,10 +3041,10 @@ contains
 
 !<subroutine>
 
-  subroutine afcstab_getbase_DboundsAtEdge(rafcstab,p_DboundsAtEdge)
+  subroutine afcstab_getbase_QboundsAtEdge(rafcstab,p_QboundsAtEdge)
 
 !<description>
-    ! Returns a pointer to the bounds at edges
+    ! Returns a pointer to the quad-valued bounds at edges
 !</description>
 
 !<input>
@@ -3006,7 +3053,42 @@ contains
 !</input>
 
 !<output>
-    ! Pointer to the bounds at edges
+    ! Pointer to the quad-valued bounds at edges
+    ! NULL() if the stabilisation structure does not provide it.
+    real(QP), dimension(:,:), pointer :: p_QboundsAtEdge
+!</output>
+!</subroutine>
+
+    ! Do we have bounds at edges data at all?
+    if ((rafcstab%h_BoundsAtEdge .eq. ST_NOHANDLE) .or.&
+        (rafcstab%NEDGE          .eq. 0)) then
+      nullify(p_QboundsAtEdge)
+      return
+    end if
+
+    ! Get the array
+    call storage_getbase_quad2D(rafcstab%h_BoundsAtEdge,&
+        p_QboundsAtEdge,rafcstab%NEDGE)
+
+  end subroutine afcstab_getbase_QboundsAtEdge
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine afcstab_getbase_DboundsAtEdge(rafcstab,p_DboundsAtEdge)
+
+!<description>
+    ! Returns a pointer to the double-valued bounds at edges
+!</description>
+
+!<input>
+    ! Stabilisation structure
+    type(t_afcstab), intent(in) :: rafcstab
+!</input>
+
+!<output>
+    ! Pointer to the double-valued bounds at edges
     ! NULL() if the stabilisation structure does not provide it.
     real(DP), dimension(:,:), pointer :: p_DboundsAtEdge
 !</output>
@@ -3032,7 +3114,7 @@ contains
   subroutine afcstab_getbase_FboundsAtEdge(rafcstab,p_FboundsAtEdge)
 
 !<description>
-    ! Returns a pointer to the bounds at edges
+    ! Returns a pointer to the single-valued bounds at edges
 !</description>
 
 !<input>
@@ -3041,7 +3123,7 @@ contains
 !</input>
 
 !<output>
-    ! Pointer to the bounds at edges
+    ! Pointer to the single-valued bounds at edges
     ! NULL() if the stabilisation structure does not provide it.
     real(SP), dimension(:,:), pointer :: p_FboundsAtEdge
 !</output>
@@ -5276,6 +5358,38 @@ contains
 
 !<function>
 
+  elemental function afcstab_limitUnboundedQP(p, q, qval) result(r)
+
+!<description>
+    ! This function computes the ratio q/p. If the denominator is
+    ! too small, then the default value dval is applied.
+!</description>
+
+!<input>
+    ! (de)nominator
+    real(QP), intent(in) :: p,q
+
+    ! default value
+    real(QP), intent(in) :: qval
+!</input>
+
+!<result>
+    ! limited ratio
+    real(QP) :: r
+!</result>
+!</function>
+
+    if (abs(p) .gt. AFCSTAB_EPSABS) then
+      r = q/p
+    else
+      r = qval
+    end if
+  end function afcstab_limitUnboundedQP
+
+  !*****************************************************************************
+
+!<function>
+
   elemental function afcstab_limitUnboundedDP(p, q, dval) result(r)
 
 !<description>
@@ -5335,6 +5449,42 @@ contains
       r = fval
     end if
   end function afcstab_limitUnboundedSP
+
+  !*****************************************************************************
+
+!<function>
+
+  elemental function afcstab_limitBoundedQP(p, q, qval, qbound) result(r)
+
+!<description>
+    ! This function computes the limited ratio q/p and bounds the
+    ! result by the size of dbound. If the denominator is too small
+    ! then the default value dval is applied.
+!</description>
+
+!<input>
+    ! (de)nominator
+    real(QP), intent(in) :: p,q
+
+    ! default value
+    real(QP), intent(in) :: qval
+
+    ! upper bound
+    real(QP), intent(in) :: qbound
+!</input>
+
+!<result>
+    ! limited ratio
+    real(DP) :: r
+!</result>
+!</function>
+
+    if (abs(p) .gt. AFCSTAB_EPSABS) then
+      r = min(q/p, qbound)
+    else
+      r = qval
+    end if
+  end function afcstab_limitBoundedQP
 
   !*****************************************************************************
 
@@ -5408,6 +5558,132 @@ contains
       r = fval
     end if
   end function afcstab_limitBoundedSP
+
+  !*****************************************************************************
+
+!<subroutine>
+
+#ifndef USE_OPENMP
+  pure&
+#endif
+  subroutine afcstab_combFluxesQP(NEDGE, qscale, Qflux1, Qflux2, Qalpha,&
+                                  rperfconfig)
+
+!<description>
+    ! This subroutine combines the two fluxes:
+    ! Qflux2 := Qflux2 + qscale * Qalpha * Qflux1
+!</description>
+
+!<input>
+    ! First flux
+    real(QP), dimension(:), intent(in) :: Qflux1
+
+    ! Individual scaling factor for each entry of flux1
+    real(QP), dimension(:), intent(in), optional :: Qalpha
+
+    ! Global scaling factor for all entries of flux1
+    real(QP), intent(in) :: qscale
+
+    ! Number of entries/edges
+    integer, intent(in) :: NEDGE
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
+!</input>
+
+!<inputoutput>
+    ! Second flux
+    real(QP), dimension(:), intent(inout) :: Qflux2
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    integer :: iedge
+
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+
+    !$ if (present(rperfconfig)) then
+    !$  p_rperfconfig => rperfconfig
+    !$ else
+    !$  p_rperfconfig => afcstab_perfconfig
+    !$ end if
+
+    if (present(Qalpha)) then
+
+      if (qscale .eq. 1.0_QP) then
+
+        ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
+        do iedge = 1, NEDGE
+          Qflux2(iedge) = Qflux2(iedge)&
+                        + Qalpha(iedge) * Qflux1(iedge)
+        end do
+        !$omp end parallel do
+
+      elseif (qscale .eq. -1.0_QP) then
+
+        ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
+        do iedge = 1, NEDGE
+          Qflux2(iedge) = Qflux2(iedge)&
+                        - Qalpha(iedge) * Qflux1(iedge)
+        end do
+        !$omp end parallel do
+
+      else
+
+        ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
+        do iedge = 1, NEDGE
+          Qflux2(iedge) = Qflux2(iedge)&
+                        + qscale * Qalpha(iedge) * Qflux1(iedge)
+        end do
+        !$omp end parallel do
+
+      end if
+
+    else   ! Qalpha not present
+
+      if (qscale .eq. 1.0_QP) then
+
+        ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
+        do iedge = 1, NEDGE
+          Qflux2(iedge) = Qflux2(iedge) + Qflux1(iedge)
+        end do
+        !$omp end parallel do
+
+      elseif (qscale .eq. -1.0_QP) then
+
+        ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
+        do iedge = 1, NEDGE
+          Qflux2(iedge) = Qflux2(iedge) - Qflux1(iedge)
+        end do
+        !$omp end parallel do
+
+      else
+
+        ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
+        do iedge = 1, NEDGE
+          Qflux2(iedge) = Qflux2(iedge) + qscale * Qflux1(iedge)
+        end do
+        !$omp end parallel do
+
+      end if
+
+    end if
+
+  end subroutine afcstab_combFluxesQP
 
   !*****************************************************************************
 
@@ -5660,6 +5936,138 @@ contains
     end if
 
   end subroutine afcstab_combFluxesSP
+
+  ! ****************************************************************************
+
+!<subroutine>
+
+#ifndef USE_OPENMP
+    pure&
+#endif
+    subroutine afcstab_combineFluxesQP(NVAR, NEDGE, qscale, Qflux1, Qflux2,&
+                                       Qalpha, rperfconfig)
+
+!<description>
+    ! This subroutine combines the two fluxes:
+    ! Qflux2 := Qflux2 + qscale * Qalpha * Qflux1
+!</description>
+
+!<input>
+    ! Number of entries/edges
+    integer, intent(in) :: NEDGE
+
+    ! Number of variables
+    integer, intent(in) :: NVAR
+
+    ! First flux
+    real(QP), dimension(NVAR,NEDGE), intent(in) :: Qflux1
+
+    ! Individual scaling factor for each entry of flux1
+    real(QP), dimension(:), intent(in), optional :: Qalpha
+
+    ! Global scaling factor for all entries of flux1
+    real(QP), intent(in) :: qscale
+
+    ! OPTIONAL: local performance configuration. If not given, the
+    ! global performance configuration is used.
+    type(t_perfconfig), intent(in), target, optional :: rperfconfig
+!</input>
+
+!<inputoutput>
+    ! Second flux
+    real(QP), dimension(NVAR,NEDGE), intent(inout) :: Qflux2
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    integer :: iedge
+
+    ! Pointer to the performance configuration
+    type(t_perfconfig), pointer :: p_rperfconfig
+
+    !$ if (present(rperfconfig)) then
+    !$  p_rperfconfig => rperfconfig
+    !$ else
+    !$  p_rperfconfig => afcstab_perfconfig
+    !$ end if
+
+    if (present(Qalpha)) then
+
+      if (qscale .eq. 1.0_QP) then
+
+        ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
+        do iedge = 1, NEDGE
+          Qflux2(:,iedge) = Qflux2(:,iedge)&
+                          + Qalpha(iedge) * Qflux1(:,iedge)
+        end do
+        !$omp end parallel do
+
+      elseif (qscale .eq. -1.0_QP) then
+
+        ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
+        do iedge = 1, NEDGE
+          Qflux2(:,iedge) = Qflux2(:,iedge)&
+                          - Qalpha(iedge) * Qflux1(:,iedge)
+        end do
+        !$omp end parallel do
+
+      else
+
+        ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
+        do iedge = 1, NEDGE
+          Qflux2(:,iedge) = Qflux2(:,iedge)&
+                          + qscale * Qalpha(iedge) * Qflux1(:,iedge)
+        end do
+        !$omp end parallel do
+
+      end if
+
+    else   ! Qalpha not present
+
+      if (qscale .eq. 1.0_QP) then
+
+        ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
+        do iedge = 1, NEDGE
+          Qflux2(:,iedge) = Qflux2(:,iedge)&
+                          + Qflux1(:,iedge)
+        end do
+        !$omp end parallel do
+
+      elseif (qscale .eq. -1.0_QP) then
+
+        ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
+        do iedge = 1, NEDGE
+          Qflux2(:,iedge) = Qflux2(:,iedge)&
+                          - Qflux1(:,iedge)
+        end do
+        !$omp end parallel do
+
+      else
+
+        ! Loop over all edges
+        !$omp parallel do default(shared)&
+        !$omp if (NEDGE > p_rperfconfig%NEDGEMIN_OMP)
+        do iedge = 1, NEDGE
+          Qflux2(:,iedge) = Qflux2(:,iedge)&
+                          + qscale * Qflux1(:,iedge)
+        end do
+        !$omp end parallel do
+
+      end if
+
+    end if
+
+  end subroutine afcstab_combineFluxesQP
 
   ! ****************************************************************************
 

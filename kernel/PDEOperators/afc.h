@@ -63,3 +63,34 @@
 #define __VectorData__ real(QP)
 #define __VectorType__ QP
 #endif
+
+
+#if 0
+! ------------------------------------------------------------------------------
+#endif
+
+#ifdef __MatrixName__ 
+#undef __MatrixName__
+#endif
+
+#ifdef __MatrixData__
+#undef __MatrixData__
+#endif
+
+#ifdef __MatrixType__
+#undef __MatrixType__
+#endif
+
+#if TemplateType_Matrix == SINGLE_PREC
+#define __MatrixName__ SP
+#define __MatrixData__ real(SP)
+#define __MatrixType__ SP
+#elif TemplateType_Matrix == DOUBLE_PREC
+#define __MatrixName__ DP
+#define __MatrixData__ real(DP)
+#define __MatrixType__ DP
+#elif TemplateType_Matrix == QUAD_PREC
+#define __MatrixName__ QP
+#define __MatrixData__ real(QP)
+#define __MatrixType__ QP
+#endif
