@@ -236,7 +236,7 @@ contains
       call spdiscr_initDiscr_simple (rdiscr%RspatialDiscr(1),EL_Q2_2D,&
           rtriangulation, rboundary)
       call spdiscr_duplicateDiscrSc (rdiscr%RspatialDiscr(1), rdiscr%RspatialDiscr(2), .true.)
-      call spdiscr_initDiscr_simple (rdiscr%RspatialDiscr(3),EL_QP1_2D,&
+      call spdiscr_initDiscr_simple (rdiscr%RspatialDiscr(3),EL_QP1NP_2D,&
           rtriangulation, rboundary)
     
     ! ----------------------------------------
