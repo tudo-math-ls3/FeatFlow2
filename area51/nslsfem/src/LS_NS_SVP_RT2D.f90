@@ -5907,7 +5907,7 @@ contains
 
 !<output>
   ! Returns the value of the integral
-  real(DP), intent(out) :: dintvalue
+  real(DP), dimension(:), intent(out) :: dintvalue
 !</output>  
 
 !<subroutine>
@@ -6235,7 +6235,7 @@ contains
 
 !<output>
   ! Returns the value of the integral
-  real(DP), intent(out) :: dintvalue
+  real(DP), dimension(:), intent(out) :: dintvalue
 !</output>  
 
 !<subroutine>
@@ -6449,7 +6449,7 @@ contains
 
   !<output>
   ! Returns the value of the integral
-  real(DP), intent(out) :: dintvalue
+  real(DP),dimension(:), intent(out) :: dintvalue
   !</output>  
 
   !<subroutine>
@@ -6569,7 +6569,7 @@ contains
 
 !<output>
   ! Returns the value of the integral
-  real(DP), intent(out) :: dintvalue
+  real(DP), dimension(:), intent(out) :: dintvalue
 !</output>  
 
 !<subroutine>

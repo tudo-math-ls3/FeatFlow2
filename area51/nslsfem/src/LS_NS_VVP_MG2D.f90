@@ -416,7 +416,7 @@ contains
   
   ! Physical scaling
   if (scPhysic .eq. 1) then
-    rcollection%DquickAccess(2) = 100.0_DP !1.0_DP/(dnu)
+    rcollection%DquickAccess(2) = 20.0_DP !1.0_DP/(dnu)
   else
     rcollection%DquickAccess(2) = 1.0_DP
   end if
@@ -4074,17 +4074,17 @@ contains
 
       ! Print out the calculated inflow flux
       call output_lbrk()
-      call output_line ('flux input: -0.1666667')
-      call output_line ('----------------------')      
-!      call output_line ('flux input: -0.082')
-!      call output_line ('------------------')
+!      call output_line ('flux input: -0.1666667')
+!      call output_line ('----------------------')      
+      call output_line ('flux input: -0.082')
+      call output_line ('------------------')
       call output_line (trim(sys_sdEP(Dfluxi,17,10)))
       
       ! Exact value of the inflow flux
       ! ***Flow Around Cylinder*** !
-      ! Dfluxi = -0.082_DP
+      Dfluxi = -0.082_DP
       ! ***Poiseuille Flow*** !
-      Dfluxi = -1.0_DP/6.0_DP
+      ! Dfluxi = -1.0_DP/6.0_DP
       
       ! Take the absolute flux values instead
       Dfluxi = abs(Dfluxi)
@@ -4103,8 +4103,8 @@ contains
 
       ! Modify the coordinates for a new cross-section
       ! Output line flux will be calculated on:
-      Dcoords(1,1) = Dcoords(1,1) + 0.5_DP
-      Dcoords(1,2) = Dcoords(1,2) + 0.5_DP
+      Dcoords(1,1) = Dcoords(1,1) + 2.15_DP
+      Dcoords(1,2) = Dcoords(1,2) + 2.15_DP
       call ppns2D_calcFluxThroughLine (rvector,Dcoords(1:2,1),&
                      Dcoords(1:2,2),Dfluxo5,nlevels=nlevels)
       
@@ -6031,7 +6031,7 @@ contains
 
 !<output>
   ! Returns the value of the integral
-  real(DP), intent(out) :: dintvalue
+  real(DP), dimension(:), intent(out) :: dintvalue
 !</output>  
 
 !<subroutine>
@@ -6376,7 +6376,7 @@ contains
 
 !<output>
   ! Returns the value of the integral
-  real(DP), intent(out) :: dintvalue
+  real(DP), dimension(:), intent(out) :: dintvalue
 !</output>  
 
 !<subroutine>
@@ -6591,7 +6591,7 @@ contains
 
 !<output>
   ! Returns the value of the integral
-  real(DP), intent(out) :: dintvalue
+  real(DP), dimension(:), intent(out) :: dintvalue
 !</output>  
 
 !<subroutine>

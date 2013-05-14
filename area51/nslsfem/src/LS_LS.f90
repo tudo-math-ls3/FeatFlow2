@@ -60,7 +60,7 @@ module LS_LS
   use meshmodification
   use jumpstabilisation
   use matrixio
-  use analyticprojection
+  !use analyticprojection
   
   implicit none
 
