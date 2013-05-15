@@ -1702,6 +1702,7 @@ contains
         ! with ndimfe components.
         if (p_rvectorData%ndimfe .gt. 1) then
           p_rvectorData%ndimVectorField = p_rvectorData%ndimfe
+          p_rvectorData%bisVectorField = .true.
         end if
         
         ! Otherwise, this is a scalar vector or a vector field of
