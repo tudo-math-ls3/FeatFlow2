@@ -367,6 +367,7 @@ module feevaluation2
   public :: fev2_copyFemData
   
   public :: fev2_addVectorToEvalList
+  public :: fev2_addVectorFieldToEvalList
   public :: fev2_addDummyVectorToEvalList
   public :: fev2_addDummyVecFieldToEvalList
   public :: fev2_addCellDummyToEvalList
