@@ -69,7 +69,6 @@ contains
     call output_line ("Number of elements       : " // trim(sys_siL( rtriangulation%NEL , 10)) )
     call output_line ("Number of vertices       : " // trim(sys_siL( rtriangulation%NVT , 10)) )
     call output_line ("Number of edges          : " // trim(sys_siL( rtriangulation%NMT , 10)) )
-    call output_line ("Number of boundary comp. : " // trim(sys_siL( rtriangulation%NMT , 10)) )
     call output_lbrk()
     call output_line ("Number of boundary comp. : " // trim(sys_siL( rtriangulation%NBCT, 10)) )
     call output_line ("Number of vert. on bd.   : " // trim(sys_siL( rtriangulation%NVBD, 10)) )
@@ -84,6 +83,7 @@ contains
     
     ! ---------------------------------
     ! Access the coordinates of vertex 5.
+    ! Get the pointer p_DvertexCoords associated to the handle h_DvertexCoords.
     call storage_getbase_double2d (rtriangulation%h_DvertexCoords,p_DvertexCoords)
     dx = p_DvertexCoords(1,5)
     dy = p_DvertexCoords(2,5)

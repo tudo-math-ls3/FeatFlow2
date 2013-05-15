@@ -66,7 +66,7 @@ contains
     call tria_initStandardMeshFromRaw (rtriangulation,rboundary)
 
     ! =================================
-    ! Write the refines mesh
+    ! Write the refined mesh
     ! =================================
     
     call output_line ("Writing file 'post/tutorial012c_level5.vtk'.")

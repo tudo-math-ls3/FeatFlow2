@@ -115,7 +115,7 @@ contains
     ! First block. f(x,y) = f_1
     case (1)
 
-      ! Evaluafe f_1 into p_Dcoeff(:,:,1)
+      ! Evaluate f_1 into p_Dcoeff(:,:,1)
       call fevl_evaluate_sim (p_rcoeffVector%RvectorBlock(1),rdomainIntSubset, &
           DER_FUNC2D, p_Dcoeff(:,:,1))
 

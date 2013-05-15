@@ -111,9 +111,9 @@ contains
         rcubatureInfo=rcubatureInfo)
 
     ! =================================
-    ! Output of the matrix structure
+    ! Output of the vector
     ! =================================
-    call output_line ("Writing matrix to text files...")
+    call output_line ("Writing vector to text files...")
     
     ! Write the vector to a text file.
     call vecio_writeBlockVectorHR (rrhs, "vector", .true., 0, &

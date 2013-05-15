@@ -91,17 +91,17 @@ contains
     ! =================================    
 
     call list_cast(rlist, robject)
-    call output_line('Print content of linked list')
+    call output_line("Print content of linked list")
     call print_genericObject(robject,1)
     call output_lbrk()
 
     call map_cast(rmap, robject)
-    call output_line('Print content of map')
+    call output_line("Print content of map")
     call print_genericObject(robject,2)
     call output_lbrk()
 
     call qtree_cast(rquadtree, robject)
-    call output_line('Print content of quadtree')
+    call output_line("Print content of quadtree")
     call print_genericObject(robject,3)
     call output_lbrk()
     
@@ -134,10 +134,10 @@ contains
       call map_print(p_rmap)
     case(3)
       call qtree_uncast(robject, p_rquadtree)
-      call qtree_print(p_rquadtree, 'quadtree.mat')
-      call output_line('The quadtree can be visualized by running the Matlab script')
-      call output_line('> plotquadtree("quadtree.mat")')
-      call output_line('Note that you need to have Featflow2/matlab in the path.')
+      call qtree_print(p_rquadtree, "quadtree.mat")
+      call output_line("The quadtree can be visualized by running the Matlab script")
+      call output_line("> plotquadtree(""quadtree.mat"")")
+      call output_line("Note that you need to have Featflow2/matlab in the path.")
       
     case default
       call output_line ("This given object type is not supported!")

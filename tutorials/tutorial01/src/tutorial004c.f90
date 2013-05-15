@@ -171,7 +171,7 @@ contains
     end do
 
     ! =================================
-    ! Clear second table and remove first item from third table
+    ! Clear second table and remove last item from third table
     ! =================================
     call alst_clear(rarraylist,2)
     call alst_pop_back(rarraylist,3)

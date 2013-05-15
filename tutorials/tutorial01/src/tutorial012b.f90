@@ -88,7 +88,7 @@ contains
     call tria_initStandardMeshFromRaw (rtria2,rboundary)
 
     ! =================================
-    ! Write the refines meshes
+    ! Write the refined meshes
     ! =================================
     
     ! ----- 1ST MESH -----
@@ -101,22 +101,11 @@ contains
     call ucd_release (rexport)
     
     ! ----- 2ND MESH -----
-    call output_line ("Writing file 'post/tutorial012b_level3v.vtk'.")
+    call output_line ("Writing file 'post/tutorial012b_level3b.vtk'.")
 
     ! Open / write / close
     call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtria2,&
                        "post/tutorial012b_level3b.vtk")
-    call ucd_write (rexport)
-    call ucd_release (rexport)
-
-    ! =================================
-    ! Write the refined meshes
-    ! =================================
-    call output_line ("Writing file 'post/tutorial012b_level1.vtk'.")
-
-    ! Open / write / close
-    call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-                       "post/tutorial012b_level2.vtk")
     call ucd_write (rexport)
     call ucd_release (rexport)
 

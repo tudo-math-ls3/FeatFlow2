@@ -72,7 +72,6 @@ contains
     call output_line ("Number of elements       : " // trim(sys_siL( rtriangulation%NEL , 10)) )
     call output_line ("Number of vertices       : " // trim(sys_siL( rtriangulation%NVT , 10)) )
     call output_line ("Number of edges          : " // trim(sys_siL( rtriangulation%NMT , 10)) )
-    call output_line ("Number of boundary comp. : " // trim(sys_siL( rtriangulation%NMT , 10)) )
     call output_lbrk()
     call output_line ("Number of boundary comp. : " // trim(sys_siL( rtriangulation%NBCT, 10)) )
     call output_line ("Number of vert. on bd.   : " // trim(sys_siL( rtriangulation%NVBD, 10)) )
@@ -101,11 +100,11 @@ contains
 
     dx = p_DvertexCoords(1,13)
     dy = p_DvertexCoords(2,13)
-    call output_line ("Coords of vertex 113     : " // trim(sys_sdL( dx,10 )) // " " &
+    call output_line ("Coords of vertex 13      : " // trim(sys_sdL( dx,10 )) // " " &
                                                     // trim(sys_sdL( dy,10 )) )
 
     ! ---------------------------------
-    ! Access boundary status of vertices 42, 1, 13
+    ! Access boundary status of the vertices 42, 1, 13
     call storage_getbase_int (rtriangulation%h_InodalProperty,p_InodalProperty)
     j1 = p_InodalProperty(42)
     j2 = p_InodalProperty(1)
@@ -170,7 +169,7 @@ contains
     end do
 
     ! ---------------------------------
-    ! Parameter values of the vertices on the circle
+    ! Parameter values of the edges (=edge midpoints) on the circle
     call storage_getbase_double (rtriangulation%h_DedgeParameterValue,p_DedgeParameterValue)
 
     call output_line ("Par. val. of circle edges:" , bnolinebreak=.true.)
@@ -189,6 +188,7 @@ contains
     call tria_searchBoundaryVertex(11, rtriangulation, i)
     call output_line ("Boundary-idx of vert. 11 : " // trim(sys_siL( i, 10 )) // " (0=inner vertex)")
 
+    ! With the index i, we can print the parameter value of vertex 11
     dlambda = p_DvertexParameterValue(i)
     call output_line ("Corresp. parameter value : " // trim(sys_sdL( dlambda, 10 )) )
 

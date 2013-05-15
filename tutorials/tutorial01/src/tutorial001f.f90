@@ -83,7 +83,7 @@ contains
     call sys_parseCommandLineArg ("--flag2",soption,svalue,iformat)
     
     call output_lbrk()
-    call output_line ("Parse-Test: '--flag1'")
+    call output_line ("Parse-Test: '--flag2'")
     call output_line ("   Option = " // trim(soption) )
     call output_line ("   Value  = " // trim(svalue) )
     call output_line ("   Format = " // trim(sys_siL(iformat,10)) )

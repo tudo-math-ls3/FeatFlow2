@@ -73,7 +73,7 @@ contains
     ! Get the list of points.
     call storage_getbase_int (rmeshRegion%h_IedgeIdx,p_Idata)
 
-    ! Print the points in the mesh region
+    ! Print the edges in the mesh region
     do i=1,rmeshRegion%NMT
       call output_line (trim(sys_siL(p_Idata(i),10)))
     end do

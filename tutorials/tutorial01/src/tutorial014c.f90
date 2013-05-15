@@ -64,7 +64,6 @@ contains
     call output_line ("Number of elements       : " // trim(sys_siL( rtriangulation%NEL , 10)) )
     call output_line ("Number of vertices       : " // trim(sys_siL( rtriangulation%NVT , 10)) )
     call output_line ("Number of edges          : " // trim(sys_siL( rtriangulation%NMT , 10)) )
-    call output_line ("Number of boundary comp. : " // trim(sys_siL( rtriangulation%NMT , 10)) )
     call output_lbrk()
     call output_line ("Number of boundary comp. : " // trim(sys_siL( rtriangulation%NBCT, 10)) )
     call output_line ("Number of vert. on bd.   : " // trim(sys_siL( rtriangulation%NVBD, 10)) )
@@ -83,7 +82,13 @@ contains
     ! For elements 1 and 5, print the number of vertices
     call storage_getbase_int2d (rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
 
-    ! Element 1 - a triangle
+    ! p_IverticesAtElement has always NNVE entries (NNVE=maximum number of 
+    ! vertices per element). For triangles in a quad mesh, there are 3 items
+    ! used in p_IverticesAtElement, the array is filled with zero to NNVE items.
+    ! Loop starting from NNVE and count down; reaching the first nonzero entry 
+    ! gives the number of vertices -- 3 for triangle, 4 for quad.
+
+    ! Element 1 - a triangle.
     do i=rtriangulation%NNVE, 1, -1
       if (p_IverticesAtElement(i, 1) .ne. 0) exit
     end do

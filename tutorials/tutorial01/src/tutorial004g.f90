@@ -34,7 +34,7 @@ contains
     call output_separator (OU_SEP_MINUS)
 
     ! =================================
-    ! Create undurected graph with space
+    ! Create undirected graph with space
     ! for 10 vertices and 100 edges 
     ! before new memory is allocated
     ! =================================

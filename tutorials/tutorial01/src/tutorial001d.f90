@@ -42,6 +42,7 @@ contains
     istart = 1
     itoken = 0
     
+    ! Extract tokens. There will be istart=0 after the last token is extraced.
     do while (istart .ne. 0)
       itoken = itoken + 1
       call sys_getNextToken (sstring,stoken,istart)
