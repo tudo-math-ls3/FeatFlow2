@@ -32,9 +32,9 @@ contains
     call output_separator (OU_SEP_MINUS)
 
     ! =================================
-    ! Create octree with bounding box (0,1)x(0,2)
-    ! which can store 20 vertices in 10 nodes before
-    ! new memory is allocated
+    ! Create octree with bounding box (0,1)x(0,2)x(0,1.4)
+    ! which can store 20 vertices (with 3 coordinates each)
+    ! in 10 nodes before new memory is allocated
     ! =================================
 
     call otree_create(roctree, 20, 10, 0.0_SP, 0.0_SP, 0.0_SP, 1.0_SP, 2.0_SP, 1.4_SP)
