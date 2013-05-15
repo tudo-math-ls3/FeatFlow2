@@ -63,6 +63,12 @@ contains
     call output_line (trim(sys_si(1,3)) // "|" // trim(sys_sdEL(2.0_DP ** 1,10)) // "|" )
     call output_line (trim(sys_si(4,3)) // "|" // trim(sys_sdEL(2.0_DP ** 4,10)) // "|" )
     call output_lbrk()
+    
+    ! Print a string without line breaks.
+    call output_line ( "This is", bnolinebreak=.true. )
+    call output_line ( "a piece", bnolinebreak=.true. )
+    call output_line ( "of code" )
+    call output_lbrk()
 
   end subroutine
 

@@ -534,7 +534,7 @@ contains
     
     ! Release projection data
     do ilevel=2,NLMAX
-      call mlprj_doneProjection(p_Rprojection(ilevel))
+      call mlprj_doneProjection (p_Rprojection(ilevel))
       call lsyssc_releaseMatrix (p_RrestMatrices(ilevel))
       call lsyssc_releaseMatrix (p_RprolMatrices(ilevel))
     end do
