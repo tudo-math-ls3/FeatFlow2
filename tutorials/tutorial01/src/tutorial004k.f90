@@ -134,7 +134,7 @@ contains
       call map_print(p_rmap)
     case(3)
       call qtree_uncast(robject, p_rquadtree)
-      call qtree_print(p_rquadtree, "quadtree.mat")
+      call qtree_print(p_rquadtree, "post/tutorial004k_quadtree.mat")
       call output_line("The quadtree can be visualized by running the Matlab script")
       call output_line("> plotquadtree(""quadtree.mat"")")
       call output_line("Note that you need to have Featflow2/matlab in the path.")
