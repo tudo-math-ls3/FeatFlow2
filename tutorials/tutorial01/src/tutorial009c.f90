@@ -132,7 +132,7 @@ contains
     ! 2nd block. f(x,y) = f_2
     case (2)
     
-      ! Evaluafe f_2 into p_Dcoeff(:,:,1)
+      ! Evaluate f_2 into p_Dcoeff(:,:,1)
       call fevl_evaluate_sim (p_rcoeffVector%RvectorBlock(2),rdomainIntSubset, &
           DER_FUNC2D, p_Dcoeff(:,:,1))
 
