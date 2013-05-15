@@ -93,7 +93,7 @@ contains
 
     ! Write the matrix to a MATLAB file.
     call matio_spyMatrix(&
-        "post/tutorial006c_matrix","matrix",rmatrix,.true.)
+        "post/tutorial006c_matrix.m","matrix",rmatrix,.true.)
     
     ! Write the matrix to a MAPLE file
     call matio_writeMatrixMaple (rmatrix, "matrix", 0, &

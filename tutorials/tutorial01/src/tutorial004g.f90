@@ -103,7 +103,7 @@ contains
     ! =================================
 
     call matio_spyMatrix(&
-        "post/tutorial004g_matrix","matrix",rmatrix,.false.)
+        "post/tutorial004g_matrix.m","matrix",rmatrix,.false.)
 
     ! =================================
     ! Release graph

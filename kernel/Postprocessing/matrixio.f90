@@ -956,7 +956,7 @@ contains
 !</description>
 
 !<input>
-    ! File name of the MATLAB file without fileextension. A ".m" is appended.
+    ! File name of the MATLAB file without fileextension.
     character(LEN=*), intent(in) :: sfileName
 
     ! Name of the matrix in MATLAB file. This will be the name of the
@@ -1009,7 +1009,7 @@ contains
     
     ! Open output file
     iunit=sys_getFreeUnit()
-    open (UNIT=iunit,STATUS="OLD",POSITION="APPEND",FILE=trim(adjustl(sfilename))//'.m')  
+    open (UNIT=iunit,STATUS="OLD",POSITION="APPEND",FILE=trim(adjustl(sfilename)))  
     write(UNIT=iunit,FMT=10) rmatrix%nblocksPerRow,rmatrix%nblocksPerRow
     write(UNIT=iunit,FMT=20,ADVANCE="NO")
 
@@ -1072,7 +1072,7 @@ contains
 !</description>
 
 !<input>
-    ! File name of the MATLAB file without fileextension. A ".m" is appended.
+    ! File name of the MATLAB file without fileextension.
     character(LEN=*), intent(in) :: sfileName
 
     ! Name of the matrix in MATLAB file. This will be the name of the
@@ -1130,7 +1130,7 @@ contains
 
     ! Open output file
     iunit=sys_getFreeUnit()
-    open (UNIT=iunit,STATUS=trim(cstat),POSITION=trim(cpos),FILE=trim(adjustl(sfilename))//'.m')
+    open (UNIT=iunit,STATUS=trim(cstat),POSITION=trim(cpos),FILE=trim(adjustl(sfilename)))
     
     ! Define the output format
     if (present(saccuracy)) then

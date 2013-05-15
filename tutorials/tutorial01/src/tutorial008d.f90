@@ -299,7 +299,7 @@ contains
 
     ! Write the matrix to a MATLAB file.
     call matio_spyBlockMatrix(&
-        "post/tutorial008d_matrix","matrix",rmatrix,.true.)
+        "post/tutorial008d_matrix.m","matrix",rmatrix,.true.)
     
     ! Write the matrix to a MAPLE file
     call matio_writeBlockMatrixMaple (rmatrix, "matrix", 0, &
