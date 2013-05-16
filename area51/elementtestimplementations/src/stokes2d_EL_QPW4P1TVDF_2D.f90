@@ -1157,6 +1157,12 @@ contains
           call output_line("Solving...")
           call linsol_solveAdaptively (p_rsolverNode,rvector,rrhs,rtempBlock)
           
+          call vecfil_discreteBCsol (rvector,rdiscreteBC)
+          call linsol_solveAdaptively (p_rsolverNode,rvector,rrhs,rtempBlock)
+
+          call vecfil_discreteBCsol (rvector,rdiscreteBC)
+          call linsol_solveAdaptively (p_rsolverNode,rvector,rrhs,rtempBlock)
+
           ! Debug
           call lsyssc_getbase_double (rvector%RvectorBlock(1),p_DdataX)
           call lsyssc_getbase_double (rvector%RvectorBlock(2),p_DdataP)
