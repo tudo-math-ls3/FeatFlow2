@@ -853,7 +853,7 @@ contains
           
           call output_lbrk()
           call output_line ("Level " // trim(sys_siL(NLMAX,10)) // ", sigma=" // &
-              trim(sys_sdEL(dsigma,2)) )
+              trim(sys_sdEL(dsigma,2)) // ", GridDist=" // trim(sys_sdEL(DgridDist(igridDist),2)))
           call output_lbrk()
 
           ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
