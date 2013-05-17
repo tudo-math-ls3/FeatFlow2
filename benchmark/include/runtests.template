@@ -752,6 +752,12 @@ fb_runAndEvalBenchmarkTest() {
 	    # Since the flagship application supports command line arguments
 	    # we prepend the contents of APPFLAGS to the variable DATFILE so
 	    # that additional FLAGS and the DAT file are passed to the executable
+	    #
+	    # Drawback: It breaks the possibility to run this script with anything
+	    #           else than DEBUGGER=0. DEBUGGER=PGI, e.g., will complain
+	    #           because pgdbg will interpret the command line options
+	    #           for the program to be debugged as command line options
+	    #           for the debugger itself.
 	    DATFILE="${APPFLAGS} ${DATFILE}"
 	    echo "DATFILE   = "${DATFILE}
 	    ;;
