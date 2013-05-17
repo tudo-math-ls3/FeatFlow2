@@ -148,7 +148,7 @@ EOF
     for i in 0 1 2 3 4; do
 	queue=${eth[$i]};
 	# Determine maximum wall clock time
-	eth_wallclockseconds[$i]=`fb_getSettingsForQueue $queue | awk '{print $NF}' | awk -F: '{print $1*3600+$2*60+$3}'`
+	eth_wallclockseconds[$i]=`fb_getSettingsForQueue $queue | sed 's/^.*resources_max.walltime = \([0-9:][0-9:]*\)[^0-9:]*.*$/\1/' | awk -F: '{print $1*3600+$2*60+$3}'`
 	# Determine maximum number of nodes available
 	eth_maxavailnodes[$i]=`fb_getSettingsForQueue $queue | sed -e 's/^.*acl_hosts = \([^ \t]*\).*/\1/; s/[+,]/ /g;' | wc -w`
 	if test "$FORCE_COMPLETE_NODES" -eq "0"; then
@@ -160,7 +160,7 @@ EOF
     for i in 0 1 2; do
 	queue=${ib[$i]};
 	# Determine maximum wall clock time
-	ib_wallclockseconds[$i]=`fb_getSettingsForQueue $queue | awk '{print $NF}' | awk -F: '{print $1*3600+$2*60+$3}'`
+	ib_wallclockseconds[$i]=`fb_getSettingsForQueue $queue | sed 's/^.*resources_max.walltime = \([0-9:][0-9:]*\)[^0-9:]*.*$/\1/' | awk -F: '{print $1*3600+$2*60+$3}'`
 	# Determine maximum number of nodes available
 	ib_maxavailnodes[$i]=`fb_getSettingsForQueue $queue | sed -e 's/^.*acl_hosts = \([^ \t]*\).*/\1/; s/[+,]/ /g;' | wc -w`
 	if test "$FORCE_COMPLETE_NODES" -eq "0"; then
@@ -172,7 +172,7 @@ EOF
     for i in 0 1 2; do
 	queue=${quad[$i]};
 	# Determine maximum wall clock time
-	quad_wallclockseconds[$i]=`fb_getSettingsForQueue $queue | awk '{print $NF}' | awk -F: '{print $1*3600+$2*60+$3}'`
+	quad_wallclockseconds[$i]=`fb_getSettingsForQueue $queue | sed 's/^.*resources_max.walltime = \([0-9:][0-9:]*\)[^0-9:]*.*$/\1/' | awk -F: '{print $1*3600+$2*60+$3}'`
 	# Determine maximum number of nodes available
 	quad_maxavailnodes[$i]=`fb_getSettingsForQueue $queue | sed -e 's/^.*acl_hosts = \([^ \t]*\).*/\1/; s/[+,]/ /g;' | wc -w`
 	if test "$FORCE_COMPLETE_NODES" -eq "0"; then
