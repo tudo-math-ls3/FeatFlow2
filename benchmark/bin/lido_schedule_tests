@@ -492,8 +492,21 @@ EOF
 	else
 	    # No complete nodes, just take the cores whereever we can get them.
 	    pbsOptionNodes="#PBS -l nodes=$nodes";
-	    # We have no strategy yet what limit to impose on vmem. Let PBS impose defaults
-	    pbsOptionVMem="#PBS";
+	    # We use only partial nodes. Given that determining and storing the memory
+	    # requirements per benchmark test is rather tedious (can be automated, though - see
+	    # FEAST1), but above all has proven a bit unreliable (they differ significantly
+	    # depending on compiler, compiler version, BLAS/LAPACK implementations), we just
+	    # ask for maxAvailPerNode/coresPerNode.
+	    if test "${pbsOptionQueue%_quad}" != "$pbsOptionQueue"; then
+		divisor="${CORESPERQUADNODE}";
+	    else
+		divisor="${CORESPERNODE}";
+	    fi
+	    vmem=`fb_getVMemLimitForQueue "$pbsOptionQueue"`
+	    number=`echo ${vmem} | sed -e 's/^\(.*\)[kmgt]b$/\1/'`
+	    unit=`echo ${vmem} | sed -e 's/^.*\([kmgt]b$\)/\1/'`
+	    number=`echo ${number}/${divisor} | bc`
+	    pbsOptionVMem="#PBS -l vmem=${number}${unit}";
 	fi
 
 
@@ -860,8 +873,21 @@ EOF
 	    else
 		# No complete nodes, just take the cores whereever we can get them.
 		pbsOptionNodes="#PBS -l nodes=$nodes";
-		# We have no strategy yet what limit to impose on vmem. Let PBS impose defaults
-		pbsOptionVMem="#PBS";
+		# We use only partial nodes. Given that determining and storing the memory
+		# requirements per benchmark test is rather tedious (can be automated, though -
+		# see FEAST1), but above all has proven a bit unreliable (they differ
+		# significantly depending on compiler, compiler version, BLAS/LAPACK
+		# implementations), we just ask for maxAvailPerNode/coresPerNode.
+		if test "${pbsOptionQueue%_quad}" != "$pbsOptionQueue"; then
+		    divisor="${CORESPERQUADNODE}";
+		else
+		    divisor="${CORESPERNODE}";
+		fi
+		vmem=`fb_getVMemLimitForQueue "$pbsOptionQueue"`
+		number=`echo ${vmem} | sed -e 's/^\(.*\)[kmgt]b$/\1/'`
+		unit=`echo ${vmem} | sed -e 's/^.*\([kmgt]b$\)/\1/'`
+		number=`echo ${number}/${divisor} | bc`
+		pbsOptionVMem="#PBS -l vmem=${number}${unit}";
 	    fi
 
 	    # Send mail on job begin, abort and end?
