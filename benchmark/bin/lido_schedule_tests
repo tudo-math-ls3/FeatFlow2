@@ -71,26 +71,28 @@ AFTERJOB=""
 # 0 = short_*  ,  1 = med_*  ,  2 = long_*
 #
 # Names of queues, maximum wallclock times (in seconds) and
+# maximum virtual memory use as well as
 # maximum number of nodes currently available (= online nodes)
 declare -a eth[4], ib[2], quad[2]
-declare -a eth_wallclockseconds[4], ib_wallclockseconds[2], quad_wallclockseconds[2]
+declare -a eth_wallclocksecondslimit[4], ib_wallclocksecondslimit[2], quad_wallclocksecondslimit[2]
+declare -a eth_vmemlimit[4], ib_vmemlimit[2], quad_vmemlimit[2]
 declare -a eth_maxnodes[4], ib_maxnodes[2], quad_maxnodes[2]
+
+eth[0]="short_eth"
+eth[1]="med_eth"
+eth[2]="long_eth"
+eth[3]=${ultralong_queue}
+eth[4]="med_eth_nhm"
+ib[0]="short_ib"
+ib[1]="med_ib"
+ib[2]="long_ib"
+quad[0]="short_quad"
+quad[1]="med_quad"
+quad[2]="long_quad"
 
 
 #  Function: Query PBS to find out about available nodes and maximum walltime per queue
 fb_queryPBSLiDO() {
-    eth[0]="short_eth"
-    eth[1]="med_eth"
-    eth[2]="long_eth"
-    eth[3]=${ultralong_queue}
-    eth[4]="med_eth_nhm"
-    ib[0]="short_ib"
-    ib[1]="med_ib"
-    ib[2]="long_ib"
-    quad[0]="short_quad"
-    quad[1]="med_quad"
-    quad[2]="long_quad"
-
     # Create temporary file (with unique file name)
     qmgr=`mktemp`
     if test $? -ne 0; then
@@ -130,14 +132,15 @@ EOF
     fi
 
     # Define a smaller helper routine for code repeatedly needed
+    # Query a given queue for its hosts, its vmem and walltime limits
     fb_getSettingsForQueue() {
 	queue="$1"  # IN
-	egrep "^(Queue |[[:space:]]+acl_hosts|[[:space:]]+[^=]+\.lidocluster\.hp|[[:space:]]+resources_max.walltime)" ${qmgr} | \
+	egrep "^(Queue |[[:space:]]+acl_hosts|[[:space:]]+[^=]+\.lidocluster\.hp|[[:space:]]+resources_max.vmem|[[:space:]]+resources_max.walltime)" ${qmgr} | \
 		# (Sed:) Unwrap acl_hosts list.
 		sed ':x; /,$/ { N; s/\n[ ]*//; tx}' | \
 		# Turn output into one line per queue
 		grep -v "^Queue default" | \
-		sed 'N; N; s/\n//g;' | \
+		sed 'N; N; N; s/\n//g;' | \
 		# Suppress offline nodes
 		sed -f ${sedFileSuppressOfflineNodes} | \
 		# Extract current queue
@@ -148,7 +151,9 @@ EOF
     for i in 0 1 2 3 4; do
 	queue=${eth[$i]};
 	# Determine maximum wall clock time
-	eth_wallclockseconds[$i]=`fb_getSettingsForQueue $queue | sed 's/^.*resources_max.walltime = \([0-9:][0-9:]*\)[^0-9:]*.*$/\1/' | awk -F: '{print $1*3600+$2*60+$3}'`
+	eth_wallclocksecondslimit[$i]=`fb_getSettingsForQueue $queue | sed 's/^.*resources_max.walltime = \([0-9:][0-9:]*\)[^0-9:]*.*$/\1/' | awk -F: '{print $1*3600+$2*60+$3}'`
+	# Determine maximum virtual memory use
+	eth_vmemlimit[$i]=`fb_getSettingsForQueue $queue | sed 's/^.*resources_max.vmem = \([0-9][0-9]*[kmgt]b\).*$/\1/'`
 	# Determine maximum number of nodes available
 	eth_maxavailnodes[$i]=`fb_getSettingsForQueue $queue | sed -e 's/^.*acl_hosts = \([^ \t]*\).*/\1/; s/[+,]/ /g;' | wc -w`
 	if test "$FORCE_COMPLETE_NODES" -eq "0"; then
@@ -160,7 +165,9 @@ EOF
     for i in 0 1 2; do
 	queue=${ib[$i]};
 	# Determine maximum wall clock time
-	ib_wallclockseconds[$i]=`fb_getSettingsForQueue $queue | sed 's/^.*resources_max.walltime = \([0-9:][0-9:]*\)[^0-9:]*.*$/\1/' | awk -F: '{print $1*3600+$2*60+$3}'`
+	ib_wallclocksecondslimit[$i]=`fb_getSettingsForQueue $queue | sed 's/^.*resources_max.walltime = \([0-9:][0-9:]*\)[^0-9:]*.*$/\1/' | awk -F: '{print $1*3600+$2*60+$3}'`
+	# Determine maximum virtual memory use
+	ib_vmemlimit[$i]=`fb_getSettingsForQueue $queue | sed 's/^.*resources_max.vmem = \([0-9][0-9]*[kmgt]b\).*$/\1/'`
 	# Determine maximum number of nodes available
 	ib_maxavailnodes[$i]=`fb_getSettingsForQueue $queue | sed -e 's/^.*acl_hosts = \([^ \t]*\).*/\1/; s/[+,]/ /g;' | wc -w`
 	if test "$FORCE_COMPLETE_NODES" -eq "0"; then
@@ -172,7 +179,9 @@ EOF
     for i in 0 1 2; do
 	queue=${quad[$i]};
 	# Determine maximum wall clock time
-	quad_wallclockseconds[$i]=`fb_getSettingsForQueue $queue | sed 's/^.*resources_max.walltime = \([0-9:][0-9:]*\)[^0-9:]*.*$/\1/' | awk -F: '{print $1*3600+$2*60+$3}'`
+	quad_wallclocksecondslimit[$i]=`fb_getSettingsForQueue $queue | sed 's/^.*resources_max.walltime = \([0-9:][0-9:]*\)[^0-9:]*.*$/\1/' | awk -F: '{print $1*3600+$2*60+$3}'`
+	# Determine maximum virtual memory use
+	quad_vmemlimit[$i]=`fb_getSettingsForQueue $queue | sed 's/^.*resources_max.vmem = \([0-9][0-9]*[kmgt]b\).*$/\1/'`
 	# Determine maximum number of nodes available
 	quad_maxavailnodes[$i]=`fb_getSettingsForQueue $queue | sed -e 's/^.*acl_hosts = \([^ \t]*\).*/\1/; s/[+,]/ /g;' | wc -w`
 	if test "$FORCE_COMPLETE_NODES" -eq "0"; then
@@ -181,6 +190,42 @@ EOF
     done
 
     rm -f ${qmgr} ${sedFileSuppressOfflineNodes} `echo ${sedFileSuppressOfflineNodes} | sed 's/\.sed$//'`
+}
+
+
+#  Function: Determine vmem limit for a given queue
+fb_getVMemLimitForQueue() {
+    queue="$1"  # IN
+
+    case "${queue}" in
+	*_eth|med_eth_nhm)
+	    for i in 0 1 2 3 4; do
+		if test "${queue}x" = "${eth[$i]}x"; then
+		    echo ${eth_vmemlimit[$i]};
+		    return;
+		fi
+	    done
+	    ;;
+	*_ib)
+	    for i in 0 1 2; do
+		if test "${queue}x" = "${ib[$i]}x"; then
+		    echo ${ib_vmemlimit[$i]};
+		    return;
+		fi
+	    done
+	    ;;
+	*_quad)
+	    for i in 0 1 2; do
+		if test "${queue}x" = "${quad[$i]}x"; then
+		    echo ${quad_vmemlimit[$i]};
+		    return;
+		fi
+	    done
+	    ;;
+    esac
+
+    echo "0kb";
+    return
 }
 
 
@@ -199,7 +244,7 @@ fb_determineQueue() {
 	    # Check whether enough nodes in queue available
 	    if test ${nodes} -le ${eth_maxavailnodes[$i]}; then
 		# Check whether wall time limits are not exceeded
-		if test ${walltimeseconds} -le ${eth_wallclockseconds[$i]}; then
+		if test ${walltimeseconds} -le ${eth_wallclocksecondslimit[$i]}; then
 		    echo ${queue};
 		    return;
 		fi
@@ -216,7 +261,7 @@ fb_determineQueue() {
 	    # Check whether enough nodes in queue available
 	    if test ${nodes} -le ${eth_maxavailnodes[$i]}; then
 		# Check whether wall time limits are not exceeded
-		if test ${walltimeseconds} -le ${eth_wallclockseconds[$i]}; then
+		if test ${walltimeseconds} -le ${eth_wallclocksecondslimit[$i]}; then
 		    echo ${queue};
 		    return;
 		fi
@@ -233,7 +278,7 @@ fb_determineQueue() {
 	    # Check whether enough nodes in queue available
 	    if test ${nodes} -le ${ib_maxavailnodes[$i]}; then
 		# Check whether wall time limits are not exceeded
-		if test ${walltimeseconds} -le ${ib_wallclockseconds[$i]}; then
+		if test ${walltimeseconds} -le ${ib_wallclocksecondslimit[$i]}; then
 		    echo ${queue};
 		    return;
 		fi
@@ -249,7 +294,7 @@ fb_determineQueue() {
 	    # Check whether enough nodes in queue available
 	    if test ${nodes} -le ${quad_maxavailnodes[$i]}; then
 		# Check whether wall time limits are not exceeded
-		if test ${walltimeseconds} -le ${quad_wallclockseconds[$i]}; then
+		if test ${walltimeseconds} -le ${quad_wallclocksecondslimit[$i]}; then
 		    echo ${queue};
 		    return;
 		fi
@@ -441,9 +486,14 @@ EOF
 	    else
 		pbsOptionNodes="#PBS -l nodes=$nodes:ppn=${CORESPERNODE}";
 	    fi
+	    # We use the complete nodes anyway. Require all available memory
+	    vmem=`fb_getVMemLimitForQueue "$pbsOptionQueue"`
+	    pbsOptionVMem="#PBS -l vmem=${vmem}";
 	else
 	    # No complete nodes, just take the cores whereever we can get them.
 	    pbsOptionNodes="#PBS -l nodes=$nodes";
+	    # We have no strategy yet what limit to impose on vmem. Let PBS impose defaults
+	    pbsOptionVMem="#PBS";
 	fi
 
 
@@ -476,6 +526,7 @@ EOF
 
 #PBS -l walltime=$WALLCLOCKLIMIT
 $pbsOptionNodes
+$pbsOptionVMem
 #PBS -q $pbsOptionQueue
 #PBS -o $PWD/$LOG_BASE_DIRECTORY/output.$benchmarktest
 # join standard output and error streams
@@ -803,9 +854,14 @@ EOF
 		else
 		    pbsOptionNodes="#PBS -l nodes=$nodes:ppn=${CORESPERNODE}";
 		fi
+		# We use the complete nodes anyway. Require all available memory
+		vmem=`fb_getVMemLimitForQueue "$pbsOptionQueue"`
+		pbsOptionVMem="#PBS -l vmem=${vmem}";
 	    else
-	    # No complete nodes, just take the cores whereever we can get them.
+		# No complete nodes, just take the cores whereever we can get them.
 		pbsOptionNodes="#PBS -l nodes=$nodes";
+		# We have no strategy yet what limit to impose on vmem. Let PBS impose defaults
+		pbsOptionVMem="#PBS";
 	    fi
 
 	    # Send mail on job begin, abort and end?
@@ -827,6 +883,7 @@ EOF
 
 #PBS -l walltime=$WALLCLOCKLIMIT
 $pbsOptionNodes
+$pbsOptionVMem
 #PBS -q $pbsOptionQueue
 #PBS -o $PWD/$LOG_BASE_DIRECTORY/output.$testid
 # join standard output and error streams
