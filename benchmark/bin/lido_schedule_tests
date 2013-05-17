@@ -15,6 +15,7 @@ FORCE_COMPLETE_NODES=1    # If FORCE_COMPLETE_NODES=0, then the term
                           # to cores (e.g. in CORESPERNODE,
                           # CORESPERQUADNODE, eth_maxavailnodes[]).
 FORCE_USE_QUAD_QUEUES=0
+FORCE_USE_NEHALEM_QUEUE=0
 GNUMAKE=
 JOBFILEPREFIX="feat2job"
 MODULESLOADED=
@@ -71,9 +72,9 @@ AFTERJOB=""
 #
 # Names of queues, maximum wallclock times (in seconds) and
 # maximum number of nodes currently available (= online nodes)
-declare -a eth[3], ib[2], quad[2]
-declare -a eth_wallclockseconds[3], ib_wallclockseconds[2], quad_wallclockseconds[2]
-declare -a eth_maxnodes[3], ib_maxnodes[2], quad_maxnodes[2]
+declare -a eth[4], ib[2], quad[2]
+declare -a eth_wallclockseconds[4], ib_wallclockseconds[2], quad_wallclockseconds[2]
+declare -a eth_maxnodes[4], ib_maxnodes[2], quad_maxnodes[2]
 
 
 #  Function: Query PBS to find out about available nodes and maximum walltime per queue
@@ -82,6 +83,7 @@ fb_queryPBSLiDO() {
     eth[1]="med_eth"
     eth[2]="long_eth"
     eth[3]=${ultralong_queue}
+    eth[4]="med_eth_nhm"
     ib[0]="short_ib"
     ib[1]="med_ib"
     ib[2]="long_ib"
@@ -143,7 +145,7 @@ EOF
     }
 
     # eth queue
-    for i in 0 1 2 3; do
+    for i in 0 1 2 3 4; do
 	queue=${eth[$i]};
 	# Determine maximum wall clock time
 	eth_wallclockseconds[$i]=`fb_getSettingsForQueue $queue | awk '{print $NF}' | awk -F: '{print $1*3600+$2*60+$3}'`
@@ -190,8 +192,24 @@ fb_determineQueue() {
     walltimeseconds="`echo $2 | awk -F: '{print $1*3600+$2*60+$3}'`"   # IN (format: hh:mm:ss)
 
 
+    # Check nehalem queue
+    if test "${queuetype}" = "_nehalem"; then
+	for i in 4; do
+	    queue=${eth[$i]};
+	    # Check whether enough nodes in queue available
+	    if test ${nodes} -le ${eth_maxavailnodes[$i]}; then
+		# Check whether wall time limits are not exceeded
+		if test ${walltimeseconds} -le ${eth_wallclockseconds[$i]}; then
+		    echo ${queue};
+		    return;
+		fi
+	    fi
+	done
+    fi
+
+
     # Check ethernet queues
-    # (Force use of ethernet queue for serial jobs)
+    # (Force use of ethernet queue for serial jobs - if nehalem queue is not requested)
     if test "${queuetype}" = "_eth" -o "${nodes}" = 1; then
 	for i in 0 1 2 3; do
 	    queue=${eth[$i]};
@@ -378,6 +396,10 @@ fb_createJobfileLiDO() {
 	if test "$FORCE_USE_QUAD_QUEUES" -eq "1"; then
 	    nodes=`fb_determineNodes "${NTASKS}" "_quad"`
 	    pbsOptionQueue=`fb_determineQueue "${nodes}" "${WALLCLOCKLIMIT}" "_quad"`
+
+	# Overwrite some settings in case use of nehalem queue is enforced.
+	elif test "$FORCE_USE_NEHALEM_QUEUE" -eq "1"; then
+	    pbsOptionQueue=`fb_determineQueue "${nodes}" "${WALLCLOCKLIMIT}" "_nehalem"`
 	fi
 
 	# Check whether we got a valid queue
@@ -734,6 +756,10 @@ EOF
 	    if test "$FORCE_USE_QUAD_QUEUES" -eq "1"; then
 		nodes=`fb_determineNodes "${NTASKS}" "_quad"`
 		pbsOptionQueue=`fb_determineQueue "${nodes}" "${WALLCLOCKLIMIT}" "_quad"`
+
+	    # Overwrite some settings in case use of nehalem queue is enforced.
+	    elif test "$FORCE_USE_NEHALEM_QUEUE" -eq "1"; then
+		pbsOptionQueue=`fb_determineQueue "${nodes}" "${WALLCLOCKLIMIT}" "_nehalem"`
 	    fi
 
 	    # Check whether we got a valid queue
