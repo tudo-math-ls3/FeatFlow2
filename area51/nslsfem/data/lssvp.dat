@@ -27,7 +27,7 @@
 #   = 7  Static Bubble
 #   = 8  Split Channel
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Problem = 3
+Problem = 0
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Kinematic viscosity noo = muu/rho = 1/Re
@@ -37,7 +37,7 @@ Problem = 3
 #  Step flow        0.000752419383795  --> Re = 800
 #  Proot 2006       0.00375            --> Re = 100
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-dnu = 0.0016666666666667
+dnu = 1E-2
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Scaling factors or whighting parameters
@@ -72,7 +72,7 @@ sFilenamePathMesh = './pre/QUAD'
 NLMAX = 5
 
 # Coarse mesh level, used in multigrid:
-NLMIN = 4
+NLMIN = 5
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Change Quadrilaterals to triangles
@@ -90,15 +90,15 @@ detTri = 0
 #  EL_RT0_2D, EL_DCTP0_2D, EL_QP1
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Type of Stress finite element:
-Selm = EL_Q1
+Selm = EL_Q2
 Stild = 0
 
 # Type of Velocity finite element:
-Velm = EL_Q1
+Velm = EL_Q2
 Vtild = 0
 
 # Type of Pressure finite element:
-Pelm = EL_Q1
+Pelm = EL_Q2
 Ptild = 0
 
 # Perturbed grid percentage
@@ -134,7 +134,7 @@ detPDisc = 1
 #     (start with fixed-point and after 'FPIter',
 #      continue with Newton's method)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-LinTyp = 2
+LinTyp = 1
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Number of Fixed-point irerations
@@ -144,14 +144,14 @@ LinTyp = 2
 #    FPIter must be .le. NLN_MAX otherwise, it'll
 #    be replaced with NLN_MAX.
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-FPIter = 100
+FPIter = 4
 
 # Nonlinear loop Max number of iterations
 NLN_MAX = 15
 
 # Nonlinear loop stopping criteria
 #  Serves as a measure of relative residual
-dNLEpsi = 1E-6
+dNLEpsi = 1E-8
 
 
 #-----------------------------------------------------
@@ -194,7 +194,7 @@ dC = 1
 #  is implemented. This condition is implemented in a
 #  weak manner, using the L^2 norm of the equations.
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-detOFlow = 1
+detOFlow = 0
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Which edge of the triangulation do we apply the
@@ -335,12 +335,12 @@ LINsolver = 1
 
 # If we have a Multigrid-preconditioned solver, then,
 #  what is the Krylov subspace linear solver relative error
-depsRelLS = 1e-5
+depsRelLS = 1e-3
 
 # If we have a Multigrid-preconditioned solver, then,
 #  what is the Krylov subspace linear solver Max. number of iterations
 #  "=10 for flow around cylinder"
-nmaxItsLS = 10
+nmaxItsLS = 15
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # If we have a Multigrid-preconditioned solver, then,
@@ -350,7 +350,7 @@ nmaxItsLS = 10
 # = 0:no output except for warning messages 
 # =-1:no output (standard)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-ioutputLevelLS = -1
+ioutputLevelLS = 1
 
 
 #-----------------------------------------------------
@@ -517,7 +517,7 @@ dintARboundEX3YVel       = 20.0
 #      on coarse grid (UMFPACK) and
 #      detZMV =2 on other levels  
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-detZMV = 0
+detZMV = 3
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Which row of the pressure matrix do you want to 
@@ -531,7 +531,7 @@ detZMV = 0
 #  Bolton step flow, outflow = 30
 #  Split channel, outflow = 7
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-irow = 1
+irow = 5
 
 
 #-----------------------------------------------------
@@ -574,7 +574,7 @@ LiftDragASO = 0
 #   =0  don't calculate
 #   =1  yes calculate
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-KEnergy = 0
+KEnergy = 1
 
 # How to calculate the Kinetic energy
 #   =0  use the FEM definition and the Matrix-vector
@@ -590,7 +590,7 @@ detKEnergy = 1
 #   =0  don't calculate
 #   =1  yes calculate
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Div = 1
+Div = 0
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Calculate Global Mass Conservation (GMC)
@@ -605,7 +605,7 @@ Div = 1
 #   =0 don't calculate
 #   =1 pls calculate :)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-detGMC = 1
+detGMC = 0
 
 # Input line coordinates
 #  the line defined by the two endpoints:
