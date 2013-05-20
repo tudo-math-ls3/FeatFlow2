@@ -26,7 +26,7 @@
 !#
 !# Author:    Masoud Nickaeen
 !# First Version: Jan  14, 2013
-!# Last Update:   Mar  25, 2013
+!# Last Update:   May  20, 2013
 !# 
 !##############################################################################
 
@@ -4820,7 +4820,7 @@ contains
       dval = p_DcubWeight(icubp,iel) * (   beta*( dbasJ*dbasI*(dUx*dUx+dVx*dVx) + & 
                 dUx*dU*dbasJ*dbasIx + dUx*dV*dbasJ*dbasIy + dU*dUx*dbasJx*dbasI + &
                 dV*dUx*dbasJy*dbasI ) + dU*dU*dbasJx*dbasIx+dU*dV*dbasJx*dbasIy + &
-                dV*dU*dbasJy*dbasIx+dV*dV*dbasJy*dbasIy + alpha**2*dbasJx*dbasIx+ &
+                dV*dU*dbasJy*dbasIx+dV*dV*dbasJy*dbasIy + alpha*dbasJx*dbasIx+ &
                 gama*dnu*dnu*(4.0_DP*dbasJx*dbasIx + 2.0_DP*dbasJy*dbasIy)  )
       p_DlocalMatrixA11(jdofe,idofe,iel) = p_DlocalMatrixA11(jdofe,idofe,iel) + dval
       
@@ -4828,7 +4828,7 @@ contains
       dval = p_DcubWeight(icubp,iel) * (   beta*( dbasJ*dbasI*(dUy*dUy+dVy*dVy) + & 
                 dVy*dU*dbasJ*dbasIx + dVy*dV*dbasJ*dbasIy + dU*dVy*dbasJx*dbasI + &
                 dV*dVy*dbasJy*dbasI ) + dU*dU*dbasJx*dbasIx+dU*dV*dbasJx*dbasIy + &
-                dV*dU*dbasJy*dbasIx+dV*dV*dbasJy*dbasIy + alpha**2*dbasJy*dbasIy+ &
+                dV*dU*dbasJy*dbasIx+dV*dV*dbasJy*dbasIy + alpha*dbasJy*dbasIy+ &
                 gama*dnu*dnu*(4.0_DP*dbasJy*dbasIy + 2.0_DP*dbasJx*dbasIx)  )      
       p_DlocalMatrixA22(jdofe,idofe,iel) = p_DlocalMatrixA22(jdofe,idofe,iel) + dval
       
@@ -4836,7 +4836,7 @@ contains
       dval = p_DcubWeight(icubp,iel) * (   beta*( dbasJ*dbasI*(dUy*dUx+dVy*dVx) + & 
                 dUy*dU*dbasJ*dbasIx + dUy*dV*dbasJ*dbasIy + dU*dVx*dbasJx*dbasI + &
                 dV*dVx*dbasJy*dbasI ) + gama*dnu*dnu*2.0_DP*dbasJx*dbasIy + &
-                alpha**2*(dbasJy*dbasIx)   )      
+                alpha*(dbasJy*dbasIx)   )      
       p_DlocalMatrixA12(jdofe,idofe,iel) = p_DlocalMatrixA12(jdofe,idofe,iel) + dval
       
       ! A21
@@ -4866,7 +4866,6 @@ contains
     do idofe=1,p_rmatrixDataA13%ndofTest
     
       ! Fetch the contributions of the (test) basis functions Phi_i
-      dbasI = p_DbasTestA13(idofe,DER_FUNC,icubp,iel)
       dbasIx = p_DbasTestA13(idofe,DER_DERIV2D_X,icubp,iel)
       dbasIy = p_DbasTestA13(idofe,DER_DERIV2D_Y,icubp,iel)
       
