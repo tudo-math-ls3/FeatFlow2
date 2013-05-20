@@ -41,8 +41,8 @@ viscosity_model = 1
 
 # Constants in viscosity models
 # Power Law = PL
-PL_nu0 = 1
-PL_r = 2.0
+PL_nu0 = 1.0
+PL_r = 1.5
 
 # Carreau Law = CL
 CL_nu0 = 1
@@ -132,7 +132,7 @@ detPDisc = 1
 #     (start with fixed-point and after 'FPIter',
 #      continue with Newton's method)
 # ~~~~~~~~~~~~~~~ ~~~~~~~~~~~~~~~~~~~
-LinTyp = 1
+LinTyp = 3
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Number of Fixed-point irerations
@@ -142,10 +142,10 @@ LinTyp = 1
 #    FPIter must be .le. NLN_MAX otherwise, it'll
 #    be replaced with NLN_MAX.
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-FPIter = 5
+FPIter = 1
 
 # Nonlinear loop Max number of iterations
-NLN_MAX = 100
+NLN_MAX = 65
 
 # Nonlinear loop stopping criteria
 #  Serves as a measure of relative residual
@@ -179,41 +179,6 @@ detRHS = 0
 # the coefficient of surface tension, sigma
 #  Applicable ONLY if detRHS = 1
 dC = 1
-
-
-#-----------------------------------------------------
-# Special Boundary Conditions Treatment
-#-----------------------------------------------------
-[BCS]
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# Do we have outflow boundary conditions?
-#  for the moment we ONLY support natural boundary
-#  condition on the vertical outflow boundaries. So,
-#        1     du1         1     du2
-#  -P + --- * ---- = 0  & --- * ---- = 0   
-#        Re    dx          Re    dx
-#  is implemented. This condition is implemented in a
-#  weak manner, using the L^2 norm of the equations.
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-detOFlow = 0
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# Which edge of the triangulation do we apply the
-#  outflow BC.
-#  Warning: We assume that this edge is on the 
-#    first boundary component!
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-edge = 2
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# Type of 1D cubature rule for line integration over
-#  the outflow boundary:
-#   G3_1D            3-point Gauss quadrature rule
-#   G2_1D            2-point Gauss quadrature rule
-#   Standard(exact): G3_1D
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-ccubType = G3_1D
 
 
 #-----------------------------------------------------
@@ -325,7 +290,7 @@ deojEdgeExpP = 2.0
 #    =1  Stand-alone Multigrid solver
 #    =2  Multigrid-preconditioned (CG\BiCGStab) solver
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-LINsolverType = 1
+LINsolverType = 2
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # If we have a Multigrid-preconditioned solver, then,
@@ -342,7 +307,7 @@ depsRelLS = 1e-3
 # If we have a Multigrid-preconditioned solver, then,
 #  what is the Krylov subspace linear solver Max. number of iterations
 #  "=10 for flow around cylinder"
-nmaxItsLS = 100
+nmaxItsLS = 15
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # If we have a Multigrid-preconditioned solver, then,
@@ -352,7 +317,7 @@ nmaxItsLS = 100
 # = 0:no output except for warning messages 
 # =-1:no output (standard)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-ioutputLevelLS = -1
+ioutputLevelLS = 1
 
 
 #-----------------------------------------------------
