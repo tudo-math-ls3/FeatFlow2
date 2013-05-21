@@ -82,9 +82,12 @@ contains
     ! An object for saving the triangulation on the domain
     type(t_triangulation) :: rtria
 
-    ! An object specifying the discretisation.
-    type(t_blockDiscretisation) :: rdiscr
+    ! An object specifying a Q1 discretisation.
+    type(t_spatialDiscretisation) :: rdiscrQ1
     
+    ! An object specifying the discretisation of the equation.
+    type(t_blockDiscretisation) :: rdiscr
+
     ! Cubature info structure which encapsules the cubature formula
     type(t_scalarCubatureInfo) :: rcubature
     
@@ -97,16 +100,8 @@ contains
     type(t_discreteBC), target :: rdiscreteBC
 
     ! A solver node that accepts parameters for the linear solver
-    type(t_linsolNode), pointer :: p_rsolver,p_rprecond
+    type(t_linsolNode), pointer :: p_rsolver
 
-    ! A filter chain that describes how to filter the matrix/vector
-    ! before/during the solution process. The filters usually implement
-    ! boundary conditions.
-    type(t_filterChain), dimension(1), target :: RfilterChain
-    
-    ! Number of filters in the filter chain
-    integer :: nfilters
-    
     ! NLMAX receives the level where we want to solve.
     integer :: NLMAX
     
@@ -149,12 +144,14 @@ contains
     ! finite element to use
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     
-    ! Initialise a block discretisation with 1 component on the mesh.
-    call spdiscr_initBlockDiscr (rdiscr,1, rtria, rboundary)
+    ! Initialise a simple Q1 space.
+    call spdiscr_initDiscr_simple (rdiscrQ1, EL_Q1_2D, rtria, rboundary)
+   
+    ! Create a block discretisation for the equation - one Q1 component.
+    call spdiscr_initBlockDiscr (rdiscr, rtria, rboundary)
+    call spdiscr_appendBlockComponent (rdiscr, rdiscrQ1)
+    call spdiscr_commitBlockDiscr (rdiscr)
     
-    ! Initialise a simple Q1 space for the one and only component.
-    call spdiscr_initDiscr_simple (rdiscr%RspatialDiscr(1), EL_Q1_2D, rtria, rboundary)
-
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Set up an cubature info structure to tell the code which cubature
     ! formula to use
@@ -217,16 +214,8 @@ contains
     ! Set up a linear solver
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-    ! Set up a filter chain that filters our previously created boundary conditions
-    call filter_clearFilterChain (RfilterChain,nfilters)
-    call filter_newFilterDiscBCDef (RfilterChain,nfilters,rdiscreteBC)
-
-    ! Create a BiCGStab-solver without any preconditioner.
-    nullify(p_rprecond)
-    call linsol_initBiCGStab (p_rsolver, p_rprecond, RfilterChain)
-    
-    ! Set the output level of the solver to 2 for some output
-    p_rsolver%ioutputLevel = 2
+    ! Create a Gauss elimination solver without any preconditioner.
+    call linsol_initUmfpack4 (p_rsolver)
     
     ! Attach the system matrix to the solver.
     call linsol_setMatrix(p_rsolver, rmatSystem)
@@ -302,8 +291,9 @@ contains
     ! Release the cubature info structure.
     call spdiscr_releaseCubStructure(rcubature)
 
-    ! Release the discretisation structure.
+    ! Release the discretisation structures.
     call spdiscr_releaseBlockDiscr(rdiscr)
+    call spdiscr_releaseDiscr(rdiscrQ1)
     
     ! Release the triangulation.
     call tria_done (rtria)
