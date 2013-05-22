@@ -2327,9 +2327,21 @@ contains
   ! Decide on the RHS force vectors in NS equation
   if (rcollection%IquickAccess(8) == 0) then
   
-    call bma_buildVector (rrhs,BMA_CALC_STANDARD,ls_svp2D_rhs,&
-       rcubatureInfo=rcubatureInfo,rcollection=rcollection, &
-       revalVectors=revalVectors)  
+    ! Check if we need to assemble the physically weighted
+    ! matrix
+    if (rcollection%IquickAccess(4) .eq. 1) then
+      ! The weighted case    
+      call bma_buildVector (rrhs,BMA_CALC_STANDARD,ls_svp2D_rhs,&
+         rcubatureInfo=rcubatureInfo,rcollection=rcollection, &
+         revalVectors=revalVectors)
+         
+    else
+      ! Unweighted case
+      call bma_buildVector (rrhs,BMA_CALC_STANDARD,ls_svp2D_rhs_un,&
+         rcubatureInfo=rcubatureInfo,rcollection=rcollection, &
+         revalVectors=revalVectors)          
+         
+    end if
        
   else
   
@@ -5993,8 +6005,8 @@ contains
     ! deformation rate tensor Dii(u)
     Dii = 1.0_DP/2.0_DP * &
               (4.0_DP*dUx**2 + 2.0_DP*(dUy+dVx)**2 + 4.0_DP*dVy**2)
-   call ls_viscosity_model_der(Dii,rcollection,dnu)
-   call ls_nonlinear_weight(Dii,rcollection,gama)
+    call ls_viscosity_model_der(Dii,rcollection,dnu)
+    call ls_nonlinear_weight(Dii,rcollection,gama)
     ! And a frequently used combination
     F = dUy+dVx     
     
@@ -6032,6 +6044,283 @@ contains
       ! Values of the velocity RHS for Stress3
       dval4 = 0.0_DP - beta * ( (dU*dVx + dV*dVy) * dbasIy + &
               4.0_DP*gama*dnu*Dii*dVy*dbasI  )
+               
+      ! Multiply the values of the basis functions by
+      ! the cubature weight and sum up into the local vectors.
+      p_DlocalVector6(idofe,iel) = p_DlocalVector6(idofe,iel) + &
+        p_DcubWeight(icubp,iel) * dval4
+      
+    end do ! jdofe
+
+    end do ! icubp
+  
+  end do ! iel
+  
+  end subroutine
+
+
+
+
+  !****************************************************************************
+
+
+!<subroutine>
+  subroutine ls_svp2D_rhs_un(rvectorData,rassemblyData,rvectorAssembly,&
+    npointsPerElement,nelements,revalVectors,rcollection)
+
+!<description>  
+  ! Assemble the RHS vector in a block-by-block procedures.
+  ! The rest of the (BIG-BANG)**2 happens to occure here :D
+!</description>
+
+!<inputoutput>
+  ! Vector data of all subvectors. The arrays p_Dentry of all subvectors
+  ! have to be filled with data.
+  type(t_bmaVectorData), dimension(:), intent(inout), target :: rvectorData
+!</inputoutput>
+
+!<input>
+  ! Data necessary for the assembly. Contains determinants and
+  ! cubature weights for the cubature,...
+  type(t_bmaVectorAssemblyData), intent(in) :: rassemblyData
+
+  ! Structure with all data about the assembly
+  type(t_bmaVectorAssembly), intent(in) :: rvectorAssembly
+  
+  ! Number of points per element
+  integer, intent(in) :: npointsPerElement
+  
+  ! Number of elements
+  integer, intent(in) :: nelements
+  
+  ! Values of FEM functions automatically evaluated in the
+  ! cubature points.
+  type(t_fev2Vectors), intent(in) :: revalVectors
+
+  ! User defined collection structure
+  type(t_collection), intent(inout), target, optional :: rcollection
+!</input>
+  
+!<subroutine>
+
+  ! Local variables
+  real(DP) :: dbasI,dbasIx,dbasIy, dval1, dval2, dval4
+  integer :: iel, icubp, idofe
+  real(DP), dimension(:,:), pointer :: p_DlocalVector1,p_DlocalVector2
+  real(DP), dimension(:,:), pointer :: p_DlocalVector3, p_DlocalVector4
+  real(DP), dimension(:,:), pointer :: p_DlocalVector5, p_DlocalVector6
+  real(DP), dimension(:,:,:,:), pointer :: p_DbasTest1,p_DbasTest3,p_DbasTest4
+  real(DP), dimension(:,:), pointer :: p_DcubWeight
+  type(t_bmaVectorData), pointer :: p_rvectorData1,p_rvectorData3
+  type(t_bmaVectorData), pointer :: p_rvectorData4
+
+
+  ! Known velocity data
+  real(DP), dimension(:,:,:), pointer :: p_Du1,p_Du2
+
+  ! Velocity values/derivatives in cubature points 
+  real(DP) :: dU, dV, dUx, dUy, dVx, dVy
+
+  real(DP) :: beta, F, nu, dnu, Dii
+  
+  ! Linearization Scheme ---> \beta
+  beta = rcollection%DquickAccess(4)
+  
+  ! Get cubature weights data
+  p_DcubWeight => rassemblyData%p_DcubWeight
+  p_rvectorData1 => RvectorData(1)
+  p_rvectorData3 => RvectorData(3)
+  p_rvectorData4 => RvectorData(4)
+
+  p_DlocalVector1 => RvectorData(1)%p_Dentry
+  p_DlocalVector2 => RvectorData(2)%p_Dentry
+  p_DlocalVector3 => RvectorData(3)%p_Dentry
+  p_DlocalVector4 => RvectorData(4)%p_Dentry
+  p_DlocalVector5 => RvectorData(5)%p_Dentry
+  p_DlocalVector6 => RvectorData(6)%p_Dentry
+
+  p_DbasTest1 => RvectorData(1)%p_DbasTest
+  p_DbasTest3 => RvectorData(3)%p_DbasTest
+  p_DbasTest4 => RvectorData(4)%p_DbasTest  
+  
+  
+  ! Get the velocity field from the parameters
+  p_Du1 => revalVectors%p_RvectorData(1)%p_Ddata
+  p_Du2 => revalVectors%p_RvectorData(2)%p_Ddata  
+    
+  ! Calculate the RHS of the velocities
+  
+  ! Loop over the elements in the current set.
+  do iel = 1,nelements
+
+    ! Loop over all cubature points on the current element
+    do icubp = 1,npointsPerElement
+
+    ! Velocity/derivatives field in this cubature point
+    dU = p_Du1(icubp,iel,DER_FUNC)
+    dV = p_Du2(icubp,iel,DER_FUNC)
+    
+    dUx = p_Du1(icubp,iel,DER_DERIV2D_X)
+    dVx = p_Du2(icubp,iel,DER_DERIV2D_X)
+
+    dUy = p_Du1(icubp,iel,DER_DERIV2D_Y)
+    dVy = p_Du2(icubp,iel,DER_DERIV2D_Y)
+    
+    ! Calculate viscosity and its 1st derivative
+    ! we need to evaluate the 2nd invariant of the 
+    ! deformation rate tensor Dii(u)
+    Dii = 1.0_DP/2.0_DP * &
+              (4.0_DP*dUx**2 + 2.0_DP*(dUy+dVx)**2 + 4.0_DP*dVy**2)
+    call ls_viscosity_model(Dii,rcollection,nu)
+    call ls_viscosity_model_der(Dii,rcollection,dnu)
+    ! And a frequently used combination
+    F = dUy+dVx    
+    
+    ! Outer loop over the DOF's i=1..ndof on our current element,
+    ! which corresponds to the (test) basis functions Phi_i:
+    do idofe=1,p_rvectorData1%ndofTest
+    
+      ! Fetch the contributions of the (test) basis functions Phi_i
+      ! into dbasI
+      dbasI = p_DbasTest1(idofe,DER_FUNC,icubp,iel)
+      dbasIx = p_DbasTest1(idofe,DER_DERIV2D_X,icubp,iel)
+      dbasIy = p_DbasTest1(idofe,DER_DERIV2D_Y,icubp,iel)
+                
+      ! Values of the velocity RHS for the X1 and X2 component
+      dval1 = 0.0_DP + beta*(   (dU*dUx + dV*dUy) * dU * dbasIx + &
+          (dU*dUx + dV*dUy) * dV* dbasIy + &
+          (dU*dUx + dV*dUy) * dUx * dbasI + &
+          (dU*dVx + dV*dVy) * dVx * dbasI + &
+          2.0_DP*nu*dnu*Dii*(4.0_DP*dUx*dbasIx + 2.0_DP*F*dbasIy) + &
+          16.0_DP*dnu*dnu*Dii*Dii*(dUx*dbasIx + 0.5_DP*F*dbasIy)   )
+          
+      dval2 = 0.0_DP + beta*(   (dU*dVx + dV*dVy) * dU * dbasIx + &
+          (dU*dVx + dV*dVy) * dV * dbasIy + &
+          (dU*dUx + dV*dUy) * dUy * dbasI + &
+          (dU*dVx + dV*dVy) * dVy * dbasI + &
+          2.0_DP*nu*dnu*Dii*(4.0_DP*dVy*dbasIy + 2.0_DP*F*dbasIx) + &
+          16.0_DP*dnu*dnu*Dii*Dii*(dVy*dbasIy + 0.5_DP*F*dbasIx)   )
+    
+      ! Multiply the values of the basis functions by
+      ! the cubature weight and sum up into the local vectors.
+      p_DlocalVector1(idofe,iel) = p_DlocalVector1(idofe,iel) + &
+        p_DcubWeight(icubp,iel) * dval1
+      p_DlocalVector2(idofe,iel) = p_DlocalVector2(idofe,iel) + &
+        p_DcubWeight(icubp,iel) * dval2
+      
+    end do ! jdofe
+
+    end do ! icubp
+  
+  end do ! iel
+  
+
+  ! Calculate the RHS of the pressure
+  
+  ! Loop over the elements in the current set.
+  do iel = 1,nelements
+
+    ! Loop over all cubature points on the current element
+    do icubp = 1,npointsPerElement
+    
+    ! Velocity/derivatives field in this cubature point   
+    dUx = p_Du1(icubp,iel,DER_DERIV2D_X)
+    dVx = p_Du2(icubp,iel,DER_DERIV2D_X)
+
+    dUy = p_Du1(icubp,iel,DER_DERIV2D_Y)
+    dVy = p_Du2(icubp,iel,DER_DERIV2D_Y)
+    
+    ! Calculate viscosity and its 1st derivative
+    ! we need to evaluate the 2nd invariant of the 
+    ! deformation rate tensor Dii(u)
+    Dii = 1.0_DP/2.0_DP * &
+              (4.0_DP*dUx**2 + 2.0_DP*(dUy+dVx)**2 + 4.0_DP*dVy**2)
+    call ls_viscosity_model_der(Dii,rcollection,dnu)
+    ! And a frequently used combination
+    F = dUx+dVy    
+    
+    ! Outer loop over the DOF's i=1..ndof on our current element,
+    ! which corresponds to the (test) basis functions Phi_i:
+    do idofe=1,p_rvectorData3%ndofTest
+    
+      ! Fetch the contributions of the (test) basis functions Phi_i
+      ! into dbasI
+      dbasI = p_DbasTest3(idofe,DER_FUNC,icubp,iel) 
+      
+      ! Values of the pressure RHS
+      dval1 = -4.0_DP*beta*dnu*Dii*F*dbasI
+           
+      p_DlocalVector3(idofe,iel) = p_DlocalVector3(idofe,iel) + &
+        p_DcubWeight(icubp,iel) * dval1
+      
+    end do ! jdofe
+
+    end do ! icubp
+  
+  end do ! iel
+
+
+   ! Calculate the RHS of the Stresses
+  
+  ! Loop over the elements in the current set.
+  do iel = 1,nelements
+
+    ! Loop over all cubature points on the current element
+    do icubp = 1,npointsPerElement
+
+    ! Velocity/derivatives field in this cubature point
+    dU = p_Du1(icubp,iel,DER_FUNC)
+    dV = p_Du2(icubp,iel,DER_FUNC)
+    
+    dUx = p_Du1(icubp,iel,DER_DERIV2D_X)
+    dVx = p_Du2(icubp,iel,DER_DERIV2D_X)
+
+    dUy = p_Du1(icubp,iel,DER_DERIV2D_Y)
+    dVy = p_Du2(icubp,iel,DER_DERIV2D_Y)
+    
+    ! Calculate viscosity and its 1st derivative
+    ! we need to evaluate the 2nd invariant of the 
+    ! deformation rate tensor Dii(u)
+    Dii = 1.0_DP/2.0_DP * &
+              (4.0_DP*dUx**2 + 2.0_DP*(dUy+dVx)**2 + 4.0_DP*dVy**2)
+   call ls_viscosity_model_der(Dii,rcollection,dnu)
+    ! And a frequently used combination
+    F = dUy+dVx     
+    
+    ! Outer loop over the DOF's i=1..ndof on our current element,
+    ! which corresponds to the (test) basis functions Phi_i:
+    do idofe=1,p_rvectorData4%ndofTest
+    
+      ! Fetch the contributions of the (test) basis functions Phi_i
+      ! into dbasI
+      dbasI = p_DbasTest4(idofe,DER_FUNC,icubp,iel)
+      dbasIx = p_DbasTest4(idofe,DER_DERIV2D_X,icubp,iel)
+      dbasIy = p_DbasTest4(idofe,DER_DERIV2D_Y,icubp,iel)
+                
+      ! Values of the velocity RHS for Stress1
+      dval4 = 0.0_DP - beta * (  (dU*dUx + dV*dUy) * dbasIx + &
+              4.0_DP*dnu*Dii*dUx*dbasI  )
+         
+      ! Multiply the values of the basis functions by
+      ! the cubature weight and sum up into the local vectors.
+      p_DlocalVector4(idofe,iel) = p_DlocalVector4(idofe,iel) + &
+        p_DcubWeight(icubp,iel) * dval4
+
+
+      ! Values of the velocity RHS for Stress2
+      dval4 = 0.0_DP - beta * (  (dU*dUx + dV*dUy) * dbasIy + &
+             (dU*dVx + dV*dVy) * dbasIx + &
+              4.0_DP*dnu*Dii*F*dbasI  )
+      
+      ! Multiply the values of the basis functions by
+      ! the cubature weight and sum up into the local vectors.
+      p_DlocalVector5(idofe,iel) = p_DlocalVector5(idofe,iel) + &
+        p_DcubWeight(icubp,iel) * dval4
+
+
+      ! Values of the velocity RHS for Stress3
+      dval4 = 0.0_DP - beta * ( (dU*dVx + dV*dVy) * dbasIy + &
+              4.0_DP*dnu*Dii*dVy*dbasI  )
                
       ! Multiply the values of the basis functions by
       ! the cubature weight and sum up into the local vectors.
@@ -8176,7 +8465,7 @@ contains
     r = rcollection%DquickAccess(18)
     
     ! Viscosity
-    gama = nu_0 * Dii**(r/2.0_DP-1.0_DP)
+    gama = 1.0_DP/(nu_0 * Dii**(r/2.0_DP-1.0_DP))
 
   case (2)
     ! Carreau Law model
@@ -8192,7 +8481,7 @@ contains
     landa = rcollection%DquickAccess(20)    
     
     ! Viscosity    
-    gama = nu_inf + (nu_0 - nu_inf) * (1 + landa*Dii)**(r/2.0_DP-1.0_DP)
+    gama = 1.0_DP/(nu_inf + (nu_0 - nu_inf) * (1 + landa*Dii)**(r/2.0_DP-1.0_DP))
   
   case default
     ! Not defined model!!
