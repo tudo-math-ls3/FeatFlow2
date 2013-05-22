@@ -279,11 +279,7 @@ contains
     ! 1- System Matrix Assembly
     ! +++++++++++++++++++++++++
     call ls_MatAssembly(Rlevels,rvector_old,p_rtempVectorSc,&
-          rcollection,rparams,NLMIN,NLMAX,inl,0)
-    
-    ! 4-2 Take care of the Newton scheme additional terms, if any! 
-    call ls_MatAssembly(Rlevels,rvector_old,p_rtempVectorSc,&
-          rcollection,rparams,NLMIN,NLMAX,inl,1)
+          rcollection,rparams,NLMIN,NLMAX,inl)
 
             
     ! +++++++++++++++
@@ -409,10 +405,40 @@ contains
   ! Initializing the collections
   ! Scale least-squares functionals or not.
   call parlst_getvalue_double (rparams, 'GFPROPER', 'alpha', alpha, 1.0_DP)
+  ! Continuity equation scaling
+  !  \alpha * || \nabla \cdot \bu ||_0
+  rcollection%DquickAccess(3) = alpha
+
+
+  ! Physical scaling
+  call parlst_getvalue_int (rparams, 'GFPROPER', 'scPhysic', &
+            rcollection%IquickAccess(4), 1) 
   
   ! Linearization method
   call parlst_getvalue_int (rparams, 'NLLOOP', 'LinTyp', LinTyp, 0)
   call parlst_getvalue_int (rparams, 'NLLOOP', 'FPIter', FPIter, 0)
+
+  ! Linearization Scheme
+  rcollection%IquickAccess(2) = LinTyp
+  select case (LinTyp)
+  
+  case (1)
+   ! Fixed-point
+   rcollection%DquickAccess(4) = 0.0_DP
+  case (2)
+   ! Newton's method
+   rcollection%DquickAccess(4) = 1.0_DP
+  case (3)
+   ! Mixed method
+   rcollection%DquickAccess(4) = 0.0_DP
+   if (FPIter .le. NLN_MAX) then
+    rcollection%IquickAccess(3) = FPIter
+   else
+    rcollection%IquickAccess(3) = NLN_MAX
+   end if 
+   
+  end select
+
   
   ! Viscosity model, Powe Law by default
   call parlst_getvalue_int (rparams, 'GFPROPER', 'viscosity_model', &
@@ -443,32 +469,7 @@ contains
                     rcollection%DquickAccess(20),1.0_DP) 
   
   end if
-  
-  ! Continuity equation scaling
-  !  \alpha * || \nabla \cdot \bu ||_0
-  rcollection%DquickAccess(3) = alpha
-  
-  ! Linearization Scheme
-  rcollection%IquickAccess(2) = LinTyp
-  select case (LinTyp)
-  
-  case (1)
-   ! Fixed-point
-   rcollection%DquickAccess(4) = 0.0_DP
-  case (2)
-   ! Newton's method
-   rcollection%DquickAccess(4) = 1.0_DP
-  case (3)
-   ! Mixed method
-   rcollection%DquickAccess(4) = 0.0_DP
-   if (FPIter .le. NLN_MAX) then
-    rcollection%IquickAccess(3) = FPIter
-   else
-    rcollection%IquickAccess(3) = NLN_MAX
-   end if 
-   
-  end select
-  
+     
   ! Determine the RHS function in NS
   ! By default, no body force
   call parlst_getvalue_int (rparams, 'RHS', 'detRHS', &
@@ -2135,7 +2136,7 @@ contains
 
 !<subroutine>
   subroutine ls_MatAssembly(Rlevels,rvector_old,p_rtempVectorSc,&
-                 rcollection,rparams,NLMIN,NLMAX,inl,imode)
+                 rcollection,rparams,NLMIN,NLMAX,inl)
                 
  !<description>  
   ! Initializing the solution vectors on all levels by calculating the 
@@ -2148,13 +2149,6 @@ contains
   
   ! Current nonlinear loop iteration
   integer, intent(in) :: inl
-
-  ! The calculation mode
-  !  = 0 The original matrix
-  !  = 1 The modified (Newton scheme) matrix ONLY, i.e. only the 
-  !      new bilinear forms of the Newton method, if any, will
-  !      be added to the matrix!
-  integer, intent(in) :: imode
     
   ! RHS block vector
   type(t_vectorBlock), intent(in), target :: rvector_old
@@ -2195,6 +2189,17 @@ contains
   
   ! A filter chain for the linear solver
   type(t_filterChain), dimension(1), target :: RfilterChain
+
+
+  ! Linearization Scheme
+  ! If it is a mixed type, check when to shift to
+  ! Newton's
+  if (rcollection%IquickAccess(2) .eq. 3) then
+    if (inl .gt. rcollection%IquickAccess(3)) then
+    ! It's time to shift to Newton's method 
+    rcollection%DquickAccess(4) = 1.0_DP
+    end if
+  end if
  
   ! Get the temporary vector from the collection.
   ! Our 'parent' prepared there how to interpolate the solution on the
@@ -2249,40 +2254,28 @@ contains
   
     ! Preparing a collection of vectors to evaluate nonlinear terms
     call ls_vec_collection(revalVectors,p_rvectorCoarse)
-    
-    select case (imode)
-    
-    case (0)
-    ! Calculate the original matrix
+
+    ! Check if we need to assemble the physically weighted
+    ! matrix
+    if (rcollection%IquickAccess(4) .eq. 1) then
+      ! The weighted case
       ! Assemble the whole system matrix on each level  
       call bma_buildMatrix (p_rmatrix,BMA_CALC_STANDARD,ls_svp2D_Matrix,&
          rcubatureInfo=Rlevels(ilev)%rcubatureInfo,rcollection=rcollection, &
          revalVectors=revalVectors)
+    
+    else
 
-      ! Set up jump stabilization if there is
-      call ls_jump(p_rmatrix,rparams,rcollection)
-      
-    case (1)
-      ! Add the extra Newton scheme terms, if any!
-      
-      ! Linearization Scheme
-      ! If it is a mixed type, check when to shift to
-      ! Newton's
-      if (rcollection%IquickAccess(2) .eq. 3) then
-        if (inl .gt. rcollection%IquickAccess(3)) then
-        ! It's time to shift to Newton's method 
-        rcollection%DquickAccess(4) = 1.0_DP
-        end if
-      end if
-      
-      ! Add the extra terms?
-      if (rcollection%DquickAccess(4) .eq. 1.0_DP) then
-        ! Assemble the extra Newton terms on each level  
-        call bma_buildMatrix (p_rmatrix,BMA_CALC_STANDARD,ls_svp2D_NewtonMatrix,&
-           rcubatureInfo=Rlevels(ilev)%rcubatureInfo,rcollection=rcollection, &
-           revalVectors=revalVectors)      
-      end if
-    end select
+      ! The un-weighted case
+      ! Assemble the whole system matrix on each level  
+      call bma_buildMatrix (p_rmatrix,BMA_CALC_STANDARD,ls_svp2D_Matrix_un,&
+         rcubatureInfo=Rlevels(ilev)%rcubatureInfo,rcollection=rcollection, &
+         revalVectors=revalVectors)
+    
+    end if
+    
+    ! Set up jump stabilization if there is
+    call ls_jump(p_rmatrix,rparams,rcollection)
     
     ! Release the vector structure used in linearization
     call fev2_releaseVectorList(revalVectors)
@@ -4467,6 +4460,684 @@ contains
 !<subroutine>
   subroutine ls_svp2D_Matrix(RmatrixData,rassemblyData,rmatrixAssembly,&
              npointsPerElement,nelements,revalVectors,rcollection)
+!<description>  
+  ! Assemble the solution matrix in a block-by-block procedures.
+  ! This is where the (BIG-BANG)**2 starts :D
+!</description>
+
+!<inputoutput>
+  ! Matrix data of all matrices. The arrays p_Dentry of all submatrices
+  ! have to be filled with data.
+  type(t_bmaMatrixData), dimension(:,:), intent(inout), target :: RmatrixData
+!</inputoutput>
+
+!<input>
+  ! Data necessary for the assembly. Contains determinants and
+  ! cubature weights for the cubature,...
+  type(t_bmaMatrixAssemblyData), intent(in) :: rassemblyData
+
+  ! Structure with all data about the assembly
+  type(t_bmaMatrixAssembly), intent(in) :: rmatrixAssembly
+  
+  ! Number of points per element
+  integer, intent(in) :: npointsPerElement
+  
+  ! Number of elements
+  integer, intent(in) :: nelements
+
+  ! Values of FEM functions automatically evaluated in the
+  ! cubature points.
+  type(t_fev2Vectors), intent(in) :: revalVectors
+
+  ! User defined collection structure
+  type(t_collection), intent(inout), target, optional :: rcollection
+!</input>
+  
+!</subroutine>
+
+  ! Local variables
+  real(DP) :: dbasI, dbasJ, dval, dbasIx, dbasIy, dbasJx, dbasJy
+  integer :: iel, icubp, idofe, jdofe
+  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA11,p_DlocalMatrixA12
+  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA13,p_DlocalMatrixA14
+  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA15,p_DlocalMatrixA16
+  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA21,p_DlocalMatrixA22
+  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA23,p_DlocalMatrixA24
+  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA25,p_DlocalMatrixA26  
+  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA31,p_DlocalMatrixA32
+  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA33,p_DlocalMatrixA34  
+  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA36   
+  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA41,p_DlocalMatrixA42
+  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA43,p_DlocalMatrixA44  
+  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA45  
+  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA51,p_DlocalMatrixA52
+  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA54  
+  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA55,p_DlocalMatrixA56  
+  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA61,p_DlocalMatrixA62
+  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA63 
+  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA65,p_DlocalMatrixA66  
+  
+  real(DP), dimension(:,:,:,:), pointer :: p_DbasTrialA11,p_DbasTestA11
+  real(DP), dimension(:,:,:,:), pointer :: p_DbasTrialA33,p_DbasTestA33
+  real(DP), dimension(:,:,:,:), pointer :: p_DbasTrialA44,p_DbasTestA44
+  real(DP), dimension(:,:,:,:), pointer :: p_DbasTrialA13,p_DbasTestA13
+  real(DP), dimension(:,:,:,:), pointer :: p_DbasTrialA14,p_DbasTestA14
+  real(DP), dimension(:,:,:,:), pointer :: p_DbasTrialA34,p_DbasTestA34
+
+  real(DP), dimension(:,:), pointer :: p_DcubWeight
+  type(t_bmaMatrixData), pointer :: p_rmatrixDataA11,p_rmatrixDataA33,p_rmatrixDataA44
+  type(t_bmaMatrixData), pointer :: p_rmatrixDataA13,p_rmatrixDataA14,p_rmatrixDataA34
+  
+  ! Known velocity data
+  real(DP), dimension(:,:,:), pointer :: p_Du1,p_Du2
+
+  ! Scaling factors
+  real(DP) :: beta, gama
+  
+  ! Continuity equation scaling
+  real(DP) :: alpha
+  
+  ! Velocity values/derivatives in cubature points 
+  real(DP) :: dU, dV, dUx, dUy, dVx, dVy
+  
+  ! Viscosity and its 1st derivative
+  ! 2nd invariant and a frequently used value
+  real(DP) :: nu, dnu, Dii, F
+  
+  ! Continuity equation scaling factor ---> \alpha
+  !  default = 1.0_DP  no scaling
+  alpha = rcollection%DquickAccess(3)
+
+  ! Linearization Scheme ---> \beta
+  beta = rcollection%DquickAccess(4)
+
+  ! Get cubature weights data
+  p_DcubWeight => rassemblyData%p_DcubWeight
+  p_rmatrixDataA11 => RmatrixData(1,1)
+  p_rmatrixDataA33 => RmatrixData(3,3)
+  p_rmatrixDataA44 => RmatrixData(4,4)
+  p_rmatrixDataA13 => RmatrixData(1,3)
+  p_rmatrixDataA14 => RmatrixData(1,4)
+  p_rmatrixDataA34 => RmatrixData(3,4)
+  
+  p_DbasTrialA11 => RmatrixData(1,1)%p_DbasTrial
+  p_DbasTestA11 => RmatrixData(1,1)%p_DbasTest
+  p_DbasTrialA33 => RmatrixData(3,3)%p_DbasTrial
+  p_DbasTestA33 => RmatrixData(3,3)%p_DbasTest
+  p_DbasTrialA44 => RmatrixData(4,4)%p_DbasTrial
+  p_DbasTestA44 => RmatrixData(4,4)%p_DbasTest 
+  p_DbasTrialA13 => RmatrixData(1,3)%p_DbasTrial
+  p_DbasTestA13 => RmatrixData(1,3)%p_DbasTest
+  p_DbasTrialA14 => RmatrixData(1,4)%p_DbasTrial
+  p_DbasTestA14 => RmatrixData(1,4)%p_DbasTest
+  p_DbasTrialA34 => RmatrixData(3,4)%p_DbasTrial
+  p_DbasTestA34 => RmatrixData(3,4)%p_DbasTest 
+  
+  
+  p_DlocalMatrixA11 => RmatrixData(1,1)%p_Dentry
+  p_DlocalMatrixA12 => RmatrixData(1,2)%p_Dentry
+  p_DlocalMatrixA13 => RmatrixData(1,3)%p_Dentry
+  p_DlocalMatrixA14 => RmatrixData(1,4)%p_Dentry
+  p_DlocalMatrixA15 => RmatrixData(1,5)%p_Dentry
+  p_DlocalMatrixA16 => RmatrixData(1,6)%p_Dentry
+
+  p_DlocalMatrixA21 => RmatrixData(2,1)%p_Dentry
+  p_DlocalMatrixA22 => RmatrixData(2,2)%p_Dentry
+  p_DlocalMatrixA23 => RmatrixData(2,3)%p_Dentry
+  p_DlocalMatrixA24 => RmatrixData(2,4)%p_Dentry
+  p_DlocalMatrixA25 => RmatrixData(2,5)%p_Dentry
+  p_DlocalMatrixA26 => RmatrixData(2,6)%p_Dentry
+  
+  p_DlocalMatrixA31 => RmatrixData(3,1)%p_Dentry
+  p_DlocalMatrixA32 => RmatrixData(3,2)%p_Dentry
+  p_DlocalMatrixA33 => RmatrixData(3,3)%p_Dentry
+  p_DlocalMatrixA34 => RmatrixData(3,4)%p_Dentry
+  p_DlocalMatrixA36 => RmatrixData(3,6)%p_Dentry   
+
+  p_DlocalMatrixA41 => RmatrixData(4,1)%p_Dentry
+  p_DlocalMatrixA42 => RmatrixData(4,2)%p_Dentry
+  p_DlocalMatrixA43 => RmatrixData(4,3)%p_Dentry
+  p_DlocalMatrixA44 => RmatrixData(4,4)%p_Dentry
+  p_DlocalMatrixA45 => RmatrixData(4,5)%p_Dentry   
+  
+  p_DlocalMatrixA51 => RmatrixData(5,1)%p_Dentry
+  p_DlocalMatrixA52 => RmatrixData(5,2)%p_Dentry
+  p_DlocalMatrixA54 => RmatrixData(5,4)%p_Dentry
+  p_DlocalMatrixA55 => RmatrixData(5,5)%p_Dentry
+  p_DlocalMatrixA56 => RmatrixData(5,6)%p_Dentry   
+  
+  p_DlocalMatrixA61 => RmatrixData(6,1)%p_Dentry
+  p_DlocalMatrixA62 => RmatrixData(6,2)%p_Dentry
+  p_DlocalMatrixA63 => RmatrixData(6,3)%p_Dentry
+  p_DlocalMatrixA65 => RmatrixData(6,5)%p_Dentry
+  p_DlocalMatrixA66 => RmatrixData(6,6)%p_Dentry  
+  
+  ! Get the velocity field from the parameters
+  p_Du1 => revalVectors%p_RvectorData(1)%p_Ddata
+  p_Du2 => revalVectors%p_RvectorData(2)%p_Ddata
+  
+  ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  ! We do the calculation in a block-by-block manner. All the
+  ! relevant blocks will be calculated in the same loop over the
+  ! elements.
+  ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  
+  ! +++++++++++++++++++++++++++++++++++
+  ! Calculate blocks A11, A22, A12, A21 
+  ! +++++++++++++++++++++++++++++++++++
+  ! Loop over the elements in the current set.
+  do iel = 1,nelements
+
+    ! Loop over all cubature points on the current element
+    do icubp = 1,npointsPerElement
+
+    ! Velocity/derivatives field in this cubature point
+    dU = p_Du1(icubp,iel,DER_FUNC)
+    dV = p_Du2(icubp,iel,DER_FUNC)
+    
+    dUx = p_Du1(icubp,iel,DER_DERIV2D_X)
+    dVx = p_Du2(icubp,iel,DER_DERIV2D_X)
+
+    dUy = p_Du1(icubp,iel,DER_DERIV2D_Y)
+    dVy = p_Du2(icubp,iel,DER_DERIV2D_Y)
+    
+    ! Calculate viscosity and its 1st derivative
+    ! we need to evaluate the 2nd invariant of the 
+    ! deformation rate tensor Dii(u)
+    Dii = 1.0_DP/2.0_DP * &
+              (4.0_DP*dUx**2 + 2.0_DP*(dUy+dVx)**2 + 4.0_DP*dVy**2)
+    call ls_viscosity_model(Dii,rcollection,nu)
+    call ls_viscosity_model_der(Dii,rcollection,dnu)
+    call ls_nonlinear_weight(Dii,rcollection,gama)
+    ! And a frequently used combination
+    F = dUy+dVx
+    
+    ! Outer loop over the DOF's i=1..ndof on our current element,
+    ! which corresponds to the (test) basis functions Phi_i:
+    do idofe=1,p_rmatrixDataA11%ndofTest
+    
+      ! Fetch the contributions of the (test) basis functions Phi_i
+      dbasI = p_DbasTestA11(idofe,DER_FUNC,icubp,iel)
+      dbasIx = p_DbasTestA11(idofe,DER_DERIV2D_X,icubp,iel)
+      dbasIy = p_DbasTestA11(idofe,DER_DERIV2D_Y,icubp,iel)
+      
+      ! Inner loop over the DOF's j=1..ndof, which corresponds to
+      ! the basis function Phi_j:
+      do jdofe=1,p_rmatrixDataA11%ndofTrial
+      
+      ! Fetch the contributions of the (trial) basis function Phi_j
+      dbasJ = p_DbasTrialA11(jdofe,DER_FUNC,icubp,iel)
+      dbasJx = p_DbasTrialA11(jdofe,DER_DERIV2D_X,icubp,iel)
+      dbasJy = p_DbasTrialA11(jdofe,DER_DERIV2D_Y,icubp,iel)
+
+      ! Multiply the values of the basis functions by
+      ! the cubature weight and sum up into the local matrices.
+      ! A11
+      dval = p_DcubWeight(icubp,iel)*beta*(   dU*dUx*dbasJx*dbasI+&
+             dV*dUx*dbasJy*dbasI+dUx*dU*dbasJ*dbasIx+dUx*dV*dbasJ*dbasIy + & 
+             (dUx**2+dVx**2)*dbasJ*dbasI + 8.0_DP*gama*&
+             nu*dnu*(4.0_DP*dUx**2*dbasJx*dbasIx+ &
+             2.0_DP*dUx*F*dbasJx*dbasIy+2.0_DP*F*dUx*dbasJy*dbasIx+ &
+             F**2*dbasJy*dbasIy) + Dii*32.0_DP*dnu**2*(dUx**2*dbasJx*dbasIx+ &
+             0.5_DP*dUx*F*dbasJx*dbasIy+0.5_DP*F*dUx*dbasJy*dbasIx+ &
+             0.25_DP*F**2*dbasJy*dbasIy)*gama   )
+
+      dval = dval + p_DcubWeight(icubp,iel)*(   dU**2*dbasJx*dbasIx+dU*dV*dbasJx*dbasIy + &
+             dV*dU*dbasJy*dbasIx + dV**2*dbasJy*dbasIy + &
+             gama*nu**2*(4.0_DP*dbasJx*dbasIx + 2.0_DP*dbasJy*dbasIy) + & 
+             alpha*(dbasJx*dbasIx)  )           
+             
+      p_DlocalMatrixA11(jdofe,idofe,iel) = p_DlocalMatrixA11(jdofe,idofe,iel) + dval
+      
+      ! A22
+      dval = p_DcubWeight(icubp,iel)*beta*(   dU*dVy*dbasJx*dbasI+&
+             dV*dVy*dbasJy*dbasI+dVy*dU*dbasJ*dbasIx+dVy*dV*dbasJ*dbasIy + & 
+             (dUy**2+dVy**2)*dbasJ*dbasI + 8.0_DP*gama* &
+             nu*dnu*(4.0_DP*dVy**2*dbasJy*dbasIy+ &
+             2.0_DP*dVy*F*dbasJy*dbasIx+2.0_DP*F*dVy*dbasJx*dbasIy+ &
+             F**2*dbasJx*dbasIx) + Dii*32.0_DP*dnu**2*(dVy**2*dbasJy*dbasIy+ &
+             0.5_DP*dVy*F*dbasJy*dbasIx+0.5_DP*F*dVy*dbasJx*dbasIy+ &
+             0.25_DP*F**2*dbasJx*dbasIx)*gama  )
+      
+      dval = dval + p_DcubWeight(icubp,iel)*(   dU**2*dbasJx*dbasIx+dU*dV*dbasJy*dbasIx + &
+             dV*dU*dbasJx*dbasIy + dV**2*dbasJy*dbasIy + &
+             gama*nu**2*(4.0_DP*dbasJy*dbasIy + 2.0_DP*dbasJx*dbasIx) + &
+             alpha*(dbasJy*dbasIy)  )         
+              
+      p_DlocalMatrixA22(jdofe,idofe,iel) = p_DlocalMatrixA22(jdofe,idofe,iel) + dval
+      
+      ! A12
+      dval = p_DcubWeight(icubp,iel)*beta*(   dU*dVx*dbasJx*dbasI+&
+             dV*dVx*dbasJy*dbasI+dUy*dU*dbasJ*dbasIx+dUy*dV*dbasJ*dbasIy + & 
+             (dUy*dUx+dVy*dVx)*dbasJ*dbasI + & 
+             8.0_DP*nu*dnu*gama*(4.0_DP*dVy*dUx*dbasJy*dbasIx+ &
+             2.0_DP*dVy*F*dbasJy*dbasIy+2.0_DP*F*dUx*dbasJx*dbasIx+ &
+             F**2*dbasJx*dbasIy) + Dii*32.0_DP*dnu**2*(dVy*dUx*dbasJy*dbasIx+ &
+             0.5_DP*dVy*F*dbasJy*dbasIy+0.5_DP*F*dUx*dbasJx*dbasIx+ &
+             0.25_DP*F**2*dbasJx*dbasIy)*gama  ) 
+             
+      dval = dval + p_DcubWeight(icubp,iel)*(   gama*nu**2*(2.0_DP*dbasJx*dbasIy)+& 
+             alpha*(dbasJy*dbasIx)  ) 
+            
+      p_DlocalMatrixA12(jdofe,idofe,iel) = p_DlocalMatrixA12(jdofe,idofe,iel) + dval
+      
+      ! A21
+      p_DlocalMatrixA21(idofe,jdofe,iel) = p_DlocalMatrixA21(idofe,jdofe,iel) + dval      
+      
+                      
+      end do ! idofe
+      
+    end do ! jdofe
+
+    end do ! icubp
+  
+  end do ! iel
+  
+
+  ! +++++++++++++++++++++++++++++++++++
+  ! Calculate blocks A13, A23, A31, A32
+  ! +++++++++++++++++++++++++++++++++++
+  ! Loop over the elements in the current set.
+  do iel = 1,nelements
+
+    ! Loop over all cubature points on the current element
+    do icubp = 1,npointsPerElement
+
+    ! Velocity/derivatives field in this cubature point
+    dUx = p_Du1(icubp,iel,DER_DERIV2D_X)
+    dVx = p_Du2(icubp,iel,DER_DERIV2D_X)
+
+    dUy = p_Du1(icubp,iel,DER_DERIV2D_Y)
+    dVy = p_Du2(icubp,iel,DER_DERIV2D_Y)
+    
+    ! Calculate viscosity and its 1st derivative
+    ! we need to evaluate the 2nd invariant of the 
+    ! deformation rate tensor Dii(u)
+    Dii = 1.0_DP/2.0_DP * &
+              (4.0_DP*dUx**2 + 2.0_DP*(dUy+dVx)**2 + 4.0_DP*dVy**2)
+    call ls_viscosity_model(Dii,rcollection,nu)              
+    call ls_viscosity_model_der(Dii,rcollection,dnu)
+    call ls_nonlinear_weight(Dii,rcollection,gama)    
+    ! And a frequently used combination
+    F = dUy+dVx
+    
+    ! Outer loop over the DOF's i=1..ndof on our current element,
+    ! which corresponds to the (test) basis functions Phi_i:
+    do idofe=1,p_rmatrixDataA13%ndofTest
+    
+      ! Fetch the contributions of the (test) basis functions Phi_i
+      dbasIx = p_DbasTestA13(idofe,DER_DERIV2D_X,icubp,iel)
+      dbasIy = p_DbasTestA13(idofe,DER_DERIV2D_Y,icubp,iel)
+      
+      ! Inner loop over the DOF's j=1..ndof, which corresponds to
+      ! the basis function Phi_j:
+      do jdofe=1,p_rmatrixDataA13%ndofTrial
+      
+      ! Fetch the contributions of the (trial) basis function Phi_j
+      dbasJ = p_DbasTrialA13(jdofe,DER_FUNC,icubp,iel)
+
+      ! Multiply the values of the basis functions by
+      ! the cubature weight and sum up into the local matrices.
+      ! A13
+      dval = -p_DcubWeight(icubp,iel)*gama*beta*4.0_DP*dnu* &
+             (   (2.0_DP*dUx**2+2.0_DP*dVy*dUx)*dbasJ*dbasIx + &
+             (dUx*F+dVy*F)*dbasJ*dbasIy    )
+             
+      dval = dval - p_DcubWeight(icubp,iel)*(   2.0_DP*gama*nu*dbasJ*dbasIx   )
+      
+      p_DlocalMatrixA13(jdofe,idofe,iel) = p_DlocalMatrixA13(jdofe,idofe,iel) + dval
+      
+      ! A31
+      p_DlocalMatrixA31(idofe,jdofe,iel) = p_DlocalMatrixA31(idofe,jdofe,iel) + dval
+           
+      ! A23
+      dval = -p_DcubWeight(icubp,iel)*gama*beta*4.0_DP*dnu* &
+             (   (2.0_DP*dVy**2+2.0_DP*dVy*dUx)*dbasJ*dbasIy + &
+             (dUx*F+dVy*F)*dbasJ*dbasIx   )
+
+      dval = dval - p_DcubWeight(icubp,iel)*(   2.0_DP*gama*nu*dbasJ*dbasIy   )           
+             
+      p_DlocalMatrixA23(jdofe,idofe,iel) = p_DlocalMatrixA23(jdofe,idofe,iel) + dval
+      
+      ! A32
+      p_DlocalMatrixA32(idofe,jdofe,iel) = p_DlocalMatrixA32(idofe,jdofe,iel) + dval
+                      
+      end do ! idofe
+      
+    end do ! jdofe
+
+    end do ! icubp
+  
+  end do ! iel
+  
+  
+  ! ++++++++++++++++++++++++++++++++++++++
+  ! Calculate blocks:   A14, A24, A41, A42
+  ! A15, A25, A51, A52, A16, A26, A61, A62
+  ! ++++++++++++++++++++++++++++++++++++++
+  ! Loop over the elements in the current set.
+  do iel = 1,nelements
+
+    ! Loop over all cubature points on the current element
+    do icubp = 1,npointsPerElement
+
+    ! Velocity/derivatives field in this cubature point
+    dU = p_Du1(icubp,iel,DER_FUNC)
+    dV = p_Du2(icubp,iel,DER_FUNC)
+    
+    dUx = p_Du1(icubp,iel,DER_DERIV2D_X)
+    dVx = p_Du2(icubp,iel,DER_DERIV2D_X)
+
+    dUy = p_Du1(icubp,iel,DER_DERIV2D_Y)
+    dVy = p_Du2(icubp,iel,DER_DERIV2D_Y)
+
+    ! Calculate viscosity and its 1st derivative
+    ! we need to evaluate the 2nd invariant of the 
+    ! deformation rate tensor Dii(u)
+    Dii = 1.0_DP/2.0_DP * &
+              (4.0_DP*dUx**2 + 2.0_DP*(dUy+dVx)**2 + 4.0_DP*dVy**2)
+    call ls_viscosity_model(Dii,rcollection,nu)              
+    call ls_viscosity_model_der(Dii,rcollection,dnu)
+    call ls_nonlinear_weight(Dii,rcollection,gama)    
+    ! And a frequently used combination
+    F = dUy+dVx
+    
+    ! Outer loop over the DOF's i=1..ndof on our current element,
+    ! which corresponds to the (test) basis functions Phi_i:
+    do idofe=1,p_rmatrixDataA14%ndofTest
+    
+      ! Fetch the contributions of the (test) basis functions Phi_i
+      dbasI = p_DbasTestA14(idofe,DER_FUNC,icubp,iel)
+      dbasIx = p_DbasTestA14(idofe,DER_DERIV2D_X,icubp,iel)
+      dbasIy = p_DbasTestA14(idofe,DER_DERIV2D_Y,icubp,iel)
+      
+      ! Inner loop over the DOF's j=1..ndof, which corresponds to
+      ! the basis function Phi_j:
+      do jdofe=1,p_rmatrixDataA14%ndofTrial
+      
+      ! Fetch the contributions of the (trial) basis function Phi_j
+      dbasJ = p_DbasTrialA14(jdofe,DER_FUNC,icubp,iel)
+      dbasJx = p_DbasTrialA14(jdofe,DER_DERIV2D_X,icubp,iel)
+      dbasJy = p_DbasTrialA14(jdofe,DER_DERIV2D_Y,icubp,iel)
+
+      ! Multiply the values of the basis functions by
+      ! the cubature weight and sum up into the local matrices.
+      ! A14
+      dval = -p_DcubWeight(icubp,iel) * beta* (   dUx*dbasJx*dbasI + &
+             4.0_DP*gama*dnu*(2.0_DP*dUx**2*dbasJ*dbasIx+dUx*F*dbasJ*dbasIy)  )
+             
+      dval = dval - p_DcubWeight(icubp,iel)*(   dU*dbasJx*dbasIx+dV*dbasJx*dbasIy + &
+             2.0_DP*gama*nu*dbasJ*dbasIx   )             
+             
+      p_DlocalMatrixA14(jdofe,idofe,iel) = p_DlocalMatrixA14(jdofe,idofe,iel) + dval
+      
+      ! A41
+      p_DlocalMatrixA41(idofe,jdofe,iel) = p_DlocalMatrixA41(idofe,jdofe,iel) + dval
+
+      ! A24
+      dval = -p_DcubWeight(icubp,iel) * beta*(   dUy*dbasJx*dbasI + 4.0_DP*dnu* &
+             (2.0_DP*dUx*dVy*dbasJ*dbasIy+dUx*F*dbasJ*dbasIx)*gama   )
+      p_DlocalMatrixA24(jdofe,idofe,iel) = p_DlocalMatrixA24(jdofe,idofe,iel) + dval
+      
+      ! A42
+      p_DlocalMatrixA42(idofe,jdofe,iel) = p_DlocalMatrixA42(idofe,jdofe,iel) + dval
+
+      ! A15
+      dval = -p_DcubWeight(icubp,iel)*beta*(   dUx*dbasJy*dbasI+dVx*dbasJx*dbasI + &
+             4.0_DP*gama*dnu*(2.0_DP*dUx*F*dbasJ*dbasIx+F**2*dbasJ*dbasIy)   )
+      
+      dval = dval - p_DcubWeight(icubp,iel)*(   dU*dbasJy*dbasIx+dV*dbasJy*dbasIy + &
+             2.0_DP*gama*nu*dbasJ*dbasIy   )
+             
+      p_DlocalMatrixA15(jdofe,idofe,iel) = p_DlocalMatrixA15(jdofe,idofe,iel) + dval
+      
+      ! A51
+      p_DlocalMatrixA51(idofe,jdofe,iel) = p_DlocalMatrixA51(idofe,jdofe,iel) + dval
+                      
+      ! A25
+      dval = -p_DcubWeight(icubp,iel)*beta*(   dUy*dbasJy*dbasI+dVy*dbasJx*dbasI + &
+             4.0_DP*gama*dnu*(2.0_DP*dVy*F*dbasJ*dbasIy+F**2*dbasJ*dbasIx)   )
+
+      dval = dval - p_DcubWeight(icubp,iel)*(   dU*dbasJx*dbasIx+dV*dbasJx*dbasIy + &
+             2.0_DP*gama*nu*dbasJ*dbasIx   )           
+             
+      p_DlocalMatrixA25(jdofe,idofe,iel) = p_DlocalMatrixA25(jdofe,idofe,iel) + dval
+      
+      ! A52
+      p_DlocalMatrixA52(idofe,jdofe,iel) = p_DlocalMatrixA52(idofe,jdofe,iel) + dval
+      
+      ! A16
+      dval = -p_DcubWeight(icubp,iel) * beta*(   dVx*dbasJy*dbasI + 4.0_DP*dnu* &
+             (2.0_DP*dVy*dUx*dbasJ*dbasIx+dVy*F*dbasJ*dbasIy)*gama   )
+      p_DlocalMatrixA16(jdofe,idofe,iel) = p_DlocalMatrixA16(jdofe,idofe,iel) + dval
+      
+      ! A61
+      p_DlocalMatrixA61(idofe,jdofe,iel) = p_DlocalMatrixA61(idofe,jdofe,iel) + dval      
+      
+      ! A26
+      dval = -p_DcubWeight(icubp,iel)*beta*(   dVy*dbasJy*dbasI + &
+             4.0_DP*gama*dnu*(2.0_DP*dVy**2*dbasJ*dbasIy+dVy*F*dbasJ*dbasIx)   )
+             
+      dval = dval - p_DcubWeight(icubp,iel)*(   dU*dbasJy*dbasIx+dV*dbasJy*dbasIy + &
+             2.0_DP*gama*nu*dbasJ*dbasIy   )            
+             
+      p_DlocalMatrixA26(jdofe,idofe,iel) = p_DlocalMatrixA26(jdofe,idofe,iel) + dval
+      
+      ! A62
+      p_DlocalMatrixA62(idofe,jdofe,iel) = p_DlocalMatrixA62(idofe,jdofe,iel) + dval      
+      end do ! idofe
+      
+    end do ! jdofe
+
+    end do ! icubp
+  
+  end do ! iel  
+
+ 
+  ! +++++++++++++++++++
+  ! Calculate block A33
+  ! +++++++++++++++++++
+  ! Loop over the elements in the current set.
+  do iel = 1,nelements
+
+    ! Loop over all cubature points on the current element
+    do icubp = 1,npointsPerElement
+
+    dUx = p_Du1(icubp,iel,DER_DERIV2D_X)
+    dVx = p_Du2(icubp,iel,DER_DERIV2D_X)
+
+    dUy = p_Du1(icubp,iel,DER_DERIV2D_Y)
+    dVy = p_Du2(icubp,iel,DER_DERIV2D_Y)
+
+    ! Calculate viscosity and its 1st derivative
+    ! we need to evaluate the 2nd invariant of the 
+    ! deformation rate tensor Dii(u)
+    Dii = 1.0_DP/2.0_DP * &
+              (4.0_DP*dUx**2 + 2.0_DP*(dUy+dVx)**2 + 4.0_DP*dVy**2)
+    call ls_nonlinear_weight(Dii,rcollection,gama) 
+
+    ! Outer loop over the DOF's i=1..ndof on our current element,
+    ! which corresponds to the (test) basis functions Phi_i:
+    do idofe=1,p_rmatrixDataA33%ndofTest
+    
+      ! Fetch the contributions of the (test) basis functions Phi_i
+      dbasI = p_DbasTestA33(idofe,DER_FUNC,icubp,iel)
+      
+      ! Inner loop over the DOF's j=1..ndof, which corresponds to
+      ! the basis function Phi_j:
+      do jdofe=1,p_rmatrixDataA33%ndofTrial
+      
+      ! Fetch the contributions of the (trial) basis function Phi_j
+      dbasJ = p_DbasTrialA33(jdofe,DER_FUNC,icubp,iel)
+
+      ! Multiply the values of the basis functions by
+      ! the cubature weight and sum up into the local matrices.
+      ! A33
+      dval = p_DcubWeight(icubp,iel) * 2.0_DP*gama*dbasJ*dbasI
+      p_DlocalMatrixA33(jdofe,idofe,iel) = p_DlocalMatrixA33(jdofe,idofe,iel) + dval
+      
+      end do ! idofe
+      
+    end do ! jdofe
+
+    end do ! icubp
+  
+  end do ! iel  
+  
+
+  ! +++++++++++++++++++++++++
+  ! Calculate blocks A34, A43
+  ! A35, A53, A36, A63 
+  ! +++++++++++++++++++++++++
+  ! Loop over the elements in the current set.
+  do iel = 1,nelements
+
+    ! Loop over all cubature points on the current element
+    do icubp = 1,npointsPerElement
+
+    dUx = p_Du1(icubp,iel,DER_DERIV2D_X)
+    dVx = p_Du2(icubp,iel,DER_DERIV2D_X)
+
+    dUy = p_Du1(icubp,iel,DER_DERIV2D_Y)
+    dVy = p_Du2(icubp,iel,DER_DERIV2D_Y)
+
+    ! Calculate viscosity and its 1st derivative
+    ! we need to evaluate the 2nd invariant of the 
+    ! deformation rate tensor Dii(u)
+    Dii = 1.0_DP/2.0_DP * &
+              (4.0_DP*dUx**2 + 2.0_DP*(dUy+dVx)**2 + 4.0_DP*dVy**2)
+    call ls_nonlinear_weight(Dii,rcollection,gama) 
+    
+    ! Outer loop over the DOF's i=1..ndof on our current element,
+    ! which corresponds to the (test) basis functions Phi_i:
+    do idofe=1,p_rmatrixDataA34%ndofTest
+    
+      ! Fetch the contributions of the (test) basis functions Phi_i
+      dbasI = p_DbasTestA34(idofe,DER_FUNC,icubp,iel)
+      
+      ! Inner loop over the DOF's j=1..ndof, which corresponds to
+      ! the basis function Phi_j:
+      do jdofe=1,p_rmatrixDataA34%ndofTrial
+      
+      ! Fetch the contributions of the (trial) basis function Phi_j
+      dbasJ = p_DbasTrialA34(jdofe,DER_FUNC,icubp,iel)
+
+      ! Multiply the values of the basis functions by
+      ! the cubature weight and sum up into the local matrices.
+      ! A34
+      dval = p_DcubWeight(icubp,iel) * gama*dbasJ*dbasI
+      p_DlocalMatrixA34(jdofe,idofe,iel) = p_DlocalMatrixA34(jdofe,idofe,iel) + dval
+
+      ! A43
+      p_DlocalMatrixA43(idofe,jdofe,iel) = p_DlocalMatrixA43(idofe,jdofe,iel) + dval
+
+      ! A35
+      ! A53
+
+      ! A36
+      p_DlocalMatrixA36(jdofe,idofe,iel) = p_DlocalMatrixA36(jdofe,idofe,iel) + dval
+
+      ! A63
+      p_DlocalMatrixA63(idofe,jdofe,iel) = p_DlocalMatrixA63(idofe,jdofe,iel) + dval
+      
+      end do ! idofe
+      
+    end do ! jdofe
+
+    end do ! icubp
+  
+  end do ! iel  
+  
+  
+  ! +++++++++++++++++++++++++++++
+  ! Calculate block A44, A55, A66
+  !  A45, A54, A46, A64, A56, A65
+  ! +++++++++++++++++++++++++++++
+  ! Loop over the elements in the current set.
+  do iel = 1,nelements
+
+    ! Loop over all cubature points on the current element
+    do icubp = 1,npointsPerElement
+
+    dUx = p_Du1(icubp,iel,DER_DERIV2D_X)
+    dVx = p_Du2(icubp,iel,DER_DERIV2D_X)
+
+    dUy = p_Du1(icubp,iel,DER_DERIV2D_Y)
+    dVy = p_Du2(icubp,iel,DER_DERIV2D_Y)
+
+    ! Calculate viscosity and its 1st derivative
+    ! we need to evaluate the 2nd invariant of the 
+    ! deformation rate tensor Dii(u)
+    Dii = 1.0_DP/2.0_DP * &
+              (4.0_DP*dUx**2 + 2.0_DP*(dUy+dVx)**2 + 4.0_DP*dVy**2)
+    call ls_nonlinear_weight(Dii,rcollection,gama) 
+
+    ! Outer loop over the DOF's i=1..ndof on our current element,
+    ! which corresponds to the (test) basis functions Phi_i:
+    do idofe=1,p_rmatrixDataA44%ndofTest
+    
+      ! Fetch the contributions of the (test) basis functions Phi_i
+      dbasI = p_DbasTestA44(idofe,DER_FUNC,icubp,iel)      
+      dbasIx = p_DbasTestA44(idofe,DER_DERIV2D_X,icubp,iel)
+      dbasIy = p_DbasTestA44(idofe,DER_DERIV2D_Y,icubp,iel)
+      
+      ! Inner loop over the DOF's j=1..ndof, which corresponds to
+      ! the basis function Phi_j:
+      do jdofe=1,p_rmatrixDataA44%ndofTrial
+      
+      ! Fetch the contributions of the (trial) basis function Phi_j
+      dbasJ = p_DbasTrialA44(jdofe,DER_FUNC,icubp,iel)      
+      dbasJx = p_DbasTrialA44(jdofe,DER_DERIV2D_X,icubp,iel)
+      dbasJy = p_DbasTrialA44(jdofe,DER_DERIV2D_Y,icubp,iel)
+
+      ! Multiply the values of the basis functions by
+      ! the cubature weight and sum up into the local matrices.
+      ! A44
+      dval = p_DcubWeight(icubp,iel) * (  dbasJx*dbasIx + gama*dbasJ*dbasI  )
+      p_DlocalMatrixA44(jdofe,idofe,iel) = p_DlocalMatrixA44(jdofe,idofe,iel) + dval
+
+      ! A55
+      dval = p_DcubWeight(icubp,iel) * (  dbasJy*dbasIy + dbasJx*dbasIx + &
+            2.0_DP*gama*dbasJ*dbasI  )
+      p_DlocalMatrixA55(jdofe,idofe,iel) = p_DlocalMatrixA55(jdofe,idofe,iel) + dval
+
+      ! A66
+      dval = p_DcubWeight(icubp,iel) * (  dbasJy*dbasIy + gama*dbasJ*dbasI  )
+      p_DlocalMatrixA66(jdofe,idofe,iel) = p_DlocalMatrixA66(jdofe,idofe,iel) + dval
+      
+      ! A45
+      dval = p_DcubWeight(icubp,iel) * (  dbasJy*dbasIx  )
+      p_DlocalMatrixA45(jdofe,idofe,iel) = p_DlocalMatrixA45(jdofe,idofe,iel) + dval  
+
+      ! A54
+      p_DlocalMatrixA54(idofe,jdofe,iel) = p_DlocalMatrixA54(idofe,jdofe,iel) + dval
+
+      ! A46
+      ! A64
+
+      ! A56
+      p_DlocalMatrixA56(jdofe,idofe,iel) = p_DlocalMatrixA56(jdofe,idofe,iel) + dval  
+
+      ! A65
+      p_DlocalMatrixA65(idofe,jdofe,iel) = p_DlocalMatrixA65(idofe,jdofe,iel) + dval
+
+      end do ! idofe
+      
+    end do ! jdofe
+
+    end do ! icubp
+  
+  end do ! iel
+  
+  end subroutine
+
+
+ 
+  ! ***************************************************************************
+
+!<subroutine>
+  subroutine ls_svp2D_Matrix_un(RmatrixData,rassemblyData,rmatrixAssembly,&
+             npointsPerElement,nelements,revalVectors,rcollection)
 
 !<description>  
   ! Assemble the solution matrix in a block-by-block procedures.
@@ -4514,13 +5185,13 @@ contains
   real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA25,p_DlocalMatrixA26  
   real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA31,p_DlocalMatrixA32
   real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA33,p_DlocalMatrixA34  
-  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA36  
+  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA36   
   real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA41,p_DlocalMatrixA42
-  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA43,p_DlocalMatrixA44  
-  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA45
+  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA43,p_DlocalMatrixA44
+  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA45    
   real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA51,p_DlocalMatrixA52
   real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA54  
-  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA55,p_DlocalMatrixA56
+  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA55,p_DlocalMatrixA56  
   real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA61,p_DlocalMatrixA62
   real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA63 
   real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA65,p_DlocalMatrixA66  
@@ -4538,7 +5209,10 @@ contains
   
   ! Known velocity data
   real(DP), dimension(:,:,:), pointer :: p_Du1,p_Du2
-    
+
+  ! Scaling factors
+  real(DP) :: beta
+  
   ! Continuity equation scaling
   real(DP) :: alpha
   
@@ -4552,7 +5226,10 @@ contains
   ! Continuity equation scaling factor ---> \alpha
   !  default = 1.0_DP  no scaling
   alpha = rcollection%DquickAccess(3)
-  
+
+  ! Linearization Scheme ---> \beta
+  beta = rcollection%DquickAccess(4)
+
   ! Get cubature weights data
   p_DcubWeight => rassemblyData%p_DcubWeight
   p_rmatrixDataA11 => RmatrixData(1,1)
@@ -4573,7 +5250,7 @@ contains
   p_DbasTrialA14 => RmatrixData(1,4)%p_DbasTrial
   p_DbasTestA14 => RmatrixData(1,4)%p_DbasTest
   p_DbasTrialA34 => RmatrixData(3,4)%p_DbasTrial
-  p_DbasTestA34 => RmatrixData(3,4)%p_DbasTest   
+  p_DbasTestA34 => RmatrixData(3,4)%p_DbasTest 
   
   
   p_DlocalMatrixA11 => RmatrixData(1,1)%p_Dentry
@@ -4581,10 +5258,12 @@ contains
   p_DlocalMatrixA13 => RmatrixData(1,3)%p_Dentry
   p_DlocalMatrixA14 => RmatrixData(1,4)%p_Dentry
   p_DlocalMatrixA15 => RmatrixData(1,5)%p_Dentry
+  p_DlocalMatrixA16 => RmatrixData(1,6)%p_Dentry
 
   p_DlocalMatrixA21 => RmatrixData(2,1)%p_Dentry
   p_DlocalMatrixA22 => RmatrixData(2,2)%p_Dentry
   p_DlocalMatrixA23 => RmatrixData(2,3)%p_Dentry
+  p_DlocalMatrixA24 => RmatrixData(2,4)%p_Dentry
   p_DlocalMatrixA25 => RmatrixData(2,5)%p_Dentry
   p_DlocalMatrixA26 => RmatrixData(2,6)%p_Dentry
   
@@ -4592,23 +5271,25 @@ contains
   p_DlocalMatrixA32 => RmatrixData(3,2)%p_Dentry
   p_DlocalMatrixA33 => RmatrixData(3,3)%p_Dentry
   p_DlocalMatrixA34 => RmatrixData(3,4)%p_Dentry
-  p_DlocalMatrixA36 => RmatrixData(3,6)%p_Dentry  
+  p_DlocalMatrixA36 => RmatrixData(3,6)%p_Dentry   
 
   p_DlocalMatrixA41 => RmatrixData(4,1)%p_Dentry
+  p_DlocalMatrixA42 => RmatrixData(4,2)%p_Dentry
   p_DlocalMatrixA43 => RmatrixData(4,3)%p_Dentry
   p_DlocalMatrixA44 => RmatrixData(4,4)%p_Dentry
-  p_DlocalMatrixA45 => RmatrixData(4,5)%p_Dentry 
+  p_DlocalMatrixA45 => RmatrixData(4,5)%p_Dentry   
   
   p_DlocalMatrixA51 => RmatrixData(5,1)%p_Dentry
   p_DlocalMatrixA52 => RmatrixData(5,2)%p_Dentry
   p_DlocalMatrixA54 => RmatrixData(5,4)%p_Dentry
   p_DlocalMatrixA55 => RmatrixData(5,5)%p_Dentry
-  p_DlocalMatrixA56 => RmatrixData(5,6)%p_Dentry  
+  p_DlocalMatrixA56 => RmatrixData(5,6)%p_Dentry   
   
+  p_DlocalMatrixA61 => RmatrixData(6,1)%p_Dentry
   p_DlocalMatrixA62 => RmatrixData(6,2)%p_Dentry
   p_DlocalMatrixA63 => RmatrixData(6,3)%p_Dentry
   p_DlocalMatrixA65 => RmatrixData(6,5)%p_Dentry
-  p_DlocalMatrixA66 => RmatrixData(6,6)%p_Dentry
+  p_DlocalMatrixA66 => RmatrixData(6,6)%p_Dentry  
   
   ! Get the velocity field from the parameters
   p_Du1 => revalVectors%p_RvectorData(1)%p_Ddata
@@ -4645,6 +5326,9 @@ contains
     Dii = 1.0_DP/2.0_DP * &
               (4.0_DP*dUx**2 + 2.0_DP*(dUy+dVx)**2 + 4.0_DP*dVy**2)
     call ls_viscosity_model(Dii,rcollection,nu)
+    call ls_viscosity_model_der(Dii,rcollection,dnu)
+    ! And a frequently used combination
+    F = dUy+dVx
     
     ! Outer loop over the DOF's i=1..ndof on our current element,
     ! which corresponds to the (test) basis functions Phi_i:
@@ -4667,22 +5351,52 @@ contains
       ! Multiply the values of the basis functions by
       ! the cubature weight and sum up into the local matrices.
       ! A11
-      dval = p_DcubWeight(icubp,iel)*(   dU**2*dbasJx*dbasIx+dU*dV*dbasJx*dbasIy + &
+      dval = p_DcubWeight(icubp,iel)*beta*(   dU*dUx*dbasJx*dbasI+&
+             dV*dUx*dbasJy*dbasI+dUx*dU*dbasJ*dbasIx+dUx*dV*dbasJ*dbasIy + & 
+             (dUx**2+dVx**2)*dbasJ*dbasI + 8.0_DP* &
+             nu*dnu*(4.0_DP*dUx**2*dbasJx*dbasIx+ &
+             2.0_DP*dUx*F*dbasJx*dbasIy+2.0_DP*F*dUx*dbasJy*dbasIx+ &
+             F**2*dbasJy*dbasIy) + Dii*32.0_DP*dnu**2*(dUx**2*dbasJx*dbasIx+ &
+             0.5_DP*dUx*F*dbasJx*dbasIy+0.5_DP*F*dUx*dbasJy*dbasIx+ &
+             0.25_DP*F**2*dbasJy*dbasIy)   )
+
+      dval = dval + p_DcubWeight(icubp,iel)*(   dU**2*dbasJx*dbasIx+dU*dV*dbasJx*dbasIy + &
              dV*dU*dbasJy*dbasIx + dV**2*dbasJy*dbasIy + &
              nu**2*(4.0_DP*dbasJx*dbasIx + 2.0_DP*dbasJy*dbasIy) + & 
-             alpha*(dbasJx*dbasIx)  )
+             alpha*(dbasJx*dbasIx)  )           
+             
       p_DlocalMatrixA11(jdofe,idofe,iel) = p_DlocalMatrixA11(jdofe,idofe,iel) + dval
       
       ! A22
-      dval = p_DcubWeight(icubp,iel)*(   dU**2*dbasJx*dbasIx+dU*dV*dbasJy*dbasIx + &
+      dval = p_DcubWeight(icubp,iel)*beta*(   dU*dVy*dbasJx*dbasI+&
+             dV*dVy*dbasJy*dbasI+dVy*dU*dbasJ*dbasIx+dVy*dV*dbasJ*dbasIy + & 
+             (dUy**2+dVy**2)*dbasJ*dbasI + 8.0_DP* &
+             nu*dnu*(4.0_DP*dVy**2*dbasJy*dbasIy+ &
+             2.0_DP*dVy*F*dbasJy*dbasIx+2.0_DP*F*dVy*dbasJx*dbasIy+ &
+             F**2*dbasJx*dbasIx) + Dii*32.0_DP*dnu**2*(dVy**2*dbasJy*dbasIy+ &
+             0.5_DP*dVy*F*dbasJy*dbasIx+0.5_DP*F*dVy*dbasJx*dbasIy+ &
+             0.25_DP*F**2*dbasJx*dbasIx)  )
+      
+      dval = dval + p_DcubWeight(icubp,iel)*(   dU**2*dbasJx*dbasIx+dU*dV*dbasJy*dbasIx + &
              dV*dU*dbasJx*dbasIy + dV**2*dbasJy*dbasIy + &
              nu**2*(4.0_DP*dbasJy*dbasIy + 2.0_DP*dbasJx*dbasIx) + &
-             alpha*(dbasJy*dbasIy)  )
+             alpha*(dbasJy*dbasIy)  )         
+              
       p_DlocalMatrixA22(jdofe,idofe,iel) = p_DlocalMatrixA22(jdofe,idofe,iel) + dval
       
       ! A12
-      dval = p_DcubWeight(icubp,iel)*(   nu**2*(2.0_DP*dbasJx*dbasIy)+& 
-             alpha*(dbasJy*dbasIx)  )      
+      dval = p_DcubWeight(icubp,iel)*beta*(   dU*dVx*dbasJx*dbasI+&
+             dV*dVx*dbasJy*dbasI+dUy*dU*dbasJ*dbasIx+dUy*dV*dbasJ*dbasIy + & 
+             (dUy*dUx+dVy*dVx)*dbasJ*dbasI + & 
+             8.0_DP*nu*dnu*(4.0_DP*dVy*dUx*dbasJy*dbasIx+ &
+             2.0_DP*dVy*F*dbasJy*dbasIy+2.0_DP*F*dUx*dbasJx*dbasIx+ &
+             F**2*dbasJx*dbasIy) + Dii*32.0_DP*dnu**2*(dVy*dUx*dbasJy*dbasIx+ &
+             0.5_DP*dVy*F*dbasJy*dbasIy+0.5_DP*F*dUx*dbasJx*dbasIx+ &
+             0.25_DP*F**2*dbasJx*dbasIy)  ) 
+             
+      dval = dval + p_DcubWeight(icubp,iel)*(   nu**2*(2.0_DP*dbasJx*dbasIy)+& 
+             alpha*(dbasJy*dbasIx)  ) 
+            
       p_DlocalMatrixA12(jdofe,idofe,iel) = p_DlocalMatrixA12(jdofe,idofe,iel) + dval
       
       ! A21
@@ -4719,7 +5433,10 @@ contains
     ! deformation rate tensor Dii(u)
     Dii = 1.0_DP/2.0_DP * &
               (4.0_DP*dUx**2 + 2.0_DP*(dUy+dVx)**2 + 4.0_DP*dVy**2)
-    call ls_viscosity_model(Dii,rcollection,nu)
+    call ls_viscosity_model(Dii,rcollection,nu)              
+    call ls_viscosity_model_der(Dii,rcollection,dnu)
+    ! And a frequently used combination
+    F = dUy+dVx
     
     ! Outer loop over the DOF's i=1..ndof on our current element,
     ! which corresponds to the (test) basis functions Phi_i:
@@ -4739,14 +5456,24 @@ contains
       ! Multiply the values of the basis functions by
       ! the cubature weight and sum up into the local matrices.
       ! A13
-      dval = -p_DcubWeight(icubp,iel)*(   2.0_DP*nu*dbasJ*dbasIx   )
+      dval = -p_DcubWeight(icubp,iel)*beta*4.0_DP*dnu* &
+             (   (2.0_DP*dUx**2+2.0_DP*dVy*dUx)*dbasJ*dbasIx + &
+             (dUx*F+dVy*F)*dbasJ*dbasIy    )
+             
+      dval = dval - p_DcubWeight(icubp,iel)*(   2.0_DP*nu*dbasJ*dbasIx   )
+      
       p_DlocalMatrixA13(jdofe,idofe,iel) = p_DlocalMatrixA13(jdofe,idofe,iel) + dval
       
       ! A31
       p_DlocalMatrixA31(idofe,jdofe,iel) = p_DlocalMatrixA31(idofe,jdofe,iel) + dval
            
       ! A23
-      dval = -p_DcubWeight(icubp,iel)*(   2.0_DP*nu*dbasJ*dbasIy   )
+      dval = -p_DcubWeight(icubp,iel)*beta*4.0_DP*dnu* &
+             (   (2.0_DP*dVy**2+2.0_DP*dVy*dUx)*dbasJ*dbasIy + &
+             (dUx*F+dVy*F)*dbasJ*dbasIx   )
+
+      dval = dval - p_DcubWeight(icubp,iel)*(   2.0_DP*nu*dbasJ*dbasIy   )           
+             
       p_DlocalMatrixA23(jdofe,idofe,iel) = p_DlocalMatrixA23(jdofe,idofe,iel) + dval
       
       ! A32
@@ -4786,7 +5513,10 @@ contains
     ! deformation rate tensor Dii(u)
     Dii = 1.0_DP/2.0_DP * &
               (4.0_DP*dUx**2 + 2.0_DP*(dUy+dVx)**2 + 4.0_DP*dVy**2)
-    call ls_viscosity_model(Dii,rcollection,nu)
+    call ls_viscosity_model(Dii,rcollection,nu)              
+    call ls_viscosity_model_der(Dii,rcollection,dnu)
+    ! And a frequently used combination
+    F = dUy+dVx
     
     ! Outer loop over the DOF's i=1..ndof on our current element,
     ! which corresponds to the (test) basis functions Phi_i:
@@ -4809,38 +5539,64 @@ contains
       ! Multiply the values of the basis functions by
       ! the cubature weight and sum up into the local matrices.
       ! A14
-      dval = -p_DcubWeight(icubp,iel) * (   dU*dbasJx*dbasIx+dV*dbasJx*dbasIy + &
-             2.0_DP*nu*dbasJ*dbasIx   )
+      dval = -p_DcubWeight(icubp,iel) * beta* (   dUx*dbasJx*dbasI + &
+             4.0_DP*dnu*(2.0_DP*dUx**2*dbasJ*dbasIx+dUx*F*dbasJ*dbasIy)  )
+             
+      dval = dval - p_DcubWeight(icubp,iel)*(   dU*dbasJx*dbasIx+dV*dbasJx*dbasIy + &
+             2.0_DP*nu*dbasJ*dbasIx   )             
+             
       p_DlocalMatrixA14(jdofe,idofe,iel) = p_DlocalMatrixA14(jdofe,idofe,iel) + dval
-
+      
       ! A41
       p_DlocalMatrixA41(idofe,jdofe,iel) = p_DlocalMatrixA41(idofe,jdofe,iel) + dval
 
       ! A24
+      dval = -p_DcubWeight(icubp,iel) * beta*(   dUy*dbasJx*dbasI + 4.0_DP*dnu* &
+             (2.0_DP*dUx*dVy*dbasJ*dbasIy+dUx*F*dbasJ*dbasIx)   )
+      p_DlocalMatrixA24(jdofe,idofe,iel) = p_DlocalMatrixA24(jdofe,idofe,iel) + dval
+      
       ! A42
+      p_DlocalMatrixA42(idofe,jdofe,iel) = p_DlocalMatrixA42(idofe,jdofe,iel) + dval
 
       ! A15
-      dval = -p_DcubWeight(icubp,iel)*(   dU*dbasJy*dbasIx+dV*dbasJy*dbasIy + &
+      dval = -p_DcubWeight(icubp,iel)*beta*(   dUx*dbasJy*dbasI+dVx*dbasJx*dbasI + &
+             4.0_DP*dnu*(2.0_DP*dUx*F*dbasJ*dbasIx+F**2*dbasJ*dbasIy)   )
+      
+      dval = dval - p_DcubWeight(icubp,iel)*(   dU*dbasJy*dbasIx+dV*dbasJy*dbasIy + &
              2.0_DP*nu*dbasJ*dbasIy   )
+             
       p_DlocalMatrixA15(jdofe,idofe,iel) = p_DlocalMatrixA15(jdofe,idofe,iel) + dval
       
       ! A51
       p_DlocalMatrixA51(idofe,jdofe,iel) = p_DlocalMatrixA51(idofe,jdofe,iel) + dval
                       
       ! A25
-      dval = -p_DcubWeight(icubp,iel)*(   dU*dbasJx*dbasIx+dV*dbasJx*dbasIy + &
-             2.0_DP*nu*dbasJ*dbasIx   )
+      dval = -p_DcubWeight(icubp,iel)*beta*(   dUy*dbasJy*dbasI+dVy*dbasJx*dbasI + &
+             4.0_DP*dnu*(2.0_DP*dVy*F*dbasJ*dbasIy+F**2*dbasJ*dbasIx)   )
+
+      dval = dval - p_DcubWeight(icubp,iel)*(   dU*dbasJx*dbasIx+dV*dbasJx*dbasIy + &
+             2.0_DP*nu*dbasJ*dbasIx   )           
+             
       p_DlocalMatrixA25(jdofe,idofe,iel) = p_DlocalMatrixA25(jdofe,idofe,iel) + dval
       
       ! A52
       p_DlocalMatrixA52(idofe,jdofe,iel) = p_DlocalMatrixA52(idofe,jdofe,iel) + dval
       
       ! A16
-      ! A61     
+      dval = -p_DcubWeight(icubp,iel) * beta*(   dVx*dbasJy*dbasI + 4.0_DP*dnu* &
+             (2.0_DP*dVy*dUx*dbasJ*dbasIx+dVy*F*dbasJ*dbasIy)   )
+      p_DlocalMatrixA16(jdofe,idofe,iel) = p_DlocalMatrixA16(jdofe,idofe,iel) + dval
+      
+      ! A61
+      p_DlocalMatrixA61(idofe,jdofe,iel) = p_DlocalMatrixA61(idofe,jdofe,iel) + dval      
       
       ! A26
-      dval = -p_DcubWeight(icubp,iel)*(   dU*dbasJy*dbasIx+dV*dbasJy*dbasIy + &
-             2.0_DP*nu*dbasJ*dbasIy   )
+      dval = -p_DcubWeight(icubp,iel)*beta*(   dVy*dbasJy*dbasI + &
+             4.0_DP*dnu*(2.0_DP*dVy**2*dbasJ*dbasIy+dVy*F*dbasJ*dbasIx)   )
+             
+      dval = dval - p_DcubWeight(icubp,iel)*(   dU*dbasJy*dbasIx+dV*dbasJy*dbasIy + &
+             2.0_DP*nu*dbasJ*dbasIy   )            
+             
       p_DlocalMatrixA26(jdofe,idofe,iel) = p_DlocalMatrixA26(jdofe,idofe,iel) + dval
       
       ! A62
@@ -4852,8 +5608,8 @@ contains
     end do ! icubp
   
   end do ! iel  
-  
-  
+
+ 
   ! +++++++++++++++++++
   ! Calculate block A33
   ! +++++++++++++++++++
@@ -5008,426 +5764,7 @@ contains
 
     end do ! icubp
   
-  end do ! iel  
-  
-  end subroutine
-
-
- 
-  ! ***************************************************************************
-
-!<subroutine>
-  subroutine ls_svp2D_NewtonMatrix(RmatrixData,rassemblyData,rmatrixAssembly,&
-             npointsPerElement,nelements,revalVectors,rcollection)
-
-!<description>  
-  ! Assemble the solution matrix in a block-by-block procedures.
-  ! This is where the (BIG-BANG)**2 starts :D
-!</description>
-
-!<inputoutput>
-  ! Matrix data of all matrices. The arrays p_Dentry of all submatrices
-  ! have to be filled with data.
-  type(t_bmaMatrixData), dimension(:,:), intent(inout), target :: RmatrixData
-!</inputoutput>
-
-!<input>
-  ! Data necessary for the assembly. Contains determinants and
-  ! cubature weights for the cubature,...
-  type(t_bmaMatrixAssemblyData), intent(in) :: rassemblyData
-
-  ! Structure with all data about the assembly
-  type(t_bmaMatrixAssembly), intent(in) :: rmatrixAssembly
-  
-  ! Number of points per element
-  integer, intent(in) :: npointsPerElement
-  
-  ! Number of elements
-  integer, intent(in) :: nelements
-
-  ! Values of FEM functions automatically evaluated in the
-  ! cubature points.
-  type(t_fev2Vectors), intent(in) :: revalVectors
-
-  ! User defined collection structure
-  type(t_collection), intent(inout), target, optional :: rcollection
-!</input>
-  
-!</subroutine>
-
-  ! Local variables
-  real(DP) :: dbasI, dbasJ, dval, dbasIx, dbasIy, dbasJx, dbasJy
-  integer :: iel, icubp, idofe, jdofe
-  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA11,p_DlocalMatrixA12
-  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA13,p_DlocalMatrixA14
-  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA15,p_DlocalMatrixA16
-  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA21,p_DlocalMatrixA22
-  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA23,p_DlocalMatrixA24
-  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA25,p_DlocalMatrixA26  
-  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA31,p_DlocalMatrixA32 
-  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA41,p_DlocalMatrixA42
-  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA51,p_DlocalMatrixA52
-  real(DP), dimension(:,:,:), pointer :: p_DlocalMatrixA61,p_DlocalMatrixA62
-  
-  real(DP), dimension(:,:,:,:), pointer :: p_DbasTrialA11,p_DbasTestA11
-  real(DP), dimension(:,:,:,:), pointer :: p_DbasTrialA13,p_DbasTestA13
-  real(DP), dimension(:,:,:,:), pointer :: p_DbasTrialA14,p_DbasTestA14
-
-  real(DP), dimension(:,:), pointer :: p_DcubWeight
-  type(t_bmaMatrixData), pointer :: p_rmatrixDataA11
-  type(t_bmaMatrixData), pointer :: p_rmatrixDataA13,p_rmatrixDataA14
-  
-  ! Known velocity data
-  real(DP), dimension(:,:,:), pointer :: p_Du1,p_Du2
-  
-  ! Continuity equation scaling
-  real(DP) :: alpha
-  
-  ! Velocity values/derivatives in cubature points 
-  real(DP) :: dU, dV, dUx, dUy, dVx, dVy
-  
-  ! Viscosity and its 1st derivative
-  ! 2nd invariant and a frequently used value
-  real(DP) :: nu, dnu, Dii, F
-  
-  ! Continuity equation scaling factor ---> \alpha
-  !  default = 1.0_DP  no scaling
-  alpha = rcollection%DquickAccess(3)
-
-  ! Get cubature weights data
-  p_DcubWeight => rassemblyData%p_DcubWeight
-  p_rmatrixDataA11 => RmatrixData(1,1)
-  p_rmatrixDataA13 => RmatrixData(1,3)
-  p_rmatrixDataA14 => RmatrixData(1,4)
-  
-  p_DbasTrialA11 => RmatrixData(1,1)%p_DbasTrial
-  p_DbasTestA11 => RmatrixData(1,1)%p_DbasTest
-  p_DbasTrialA13 => RmatrixData(1,3)%p_DbasTrial
-  p_DbasTestA13 => RmatrixData(1,3)%p_DbasTest
-  p_DbasTrialA14 => RmatrixData(1,4)%p_DbasTrial
-  p_DbasTestA14 => RmatrixData(1,4)%p_DbasTest
-  
-  
-  p_DlocalMatrixA11 => RmatrixData(1,1)%p_Dentry
-  p_DlocalMatrixA12 => RmatrixData(1,2)%p_Dentry
-  p_DlocalMatrixA13 => RmatrixData(1,3)%p_Dentry
-  p_DlocalMatrixA14 => RmatrixData(1,4)%p_Dentry
-  p_DlocalMatrixA15 => RmatrixData(1,5)%p_Dentry
-  p_DlocalMatrixA16 => RmatrixData(1,6)%p_Dentry
-
-  p_DlocalMatrixA21 => RmatrixData(2,1)%p_Dentry
-  p_DlocalMatrixA22 => RmatrixData(2,2)%p_Dentry
-  p_DlocalMatrixA23 => RmatrixData(2,3)%p_Dentry
-  p_DlocalMatrixA24 => RmatrixData(2,4)%p_Dentry
-  p_DlocalMatrixA25 => RmatrixData(2,5)%p_Dentry
-  p_DlocalMatrixA26 => RmatrixData(2,6)%p_Dentry
-  
-  p_DlocalMatrixA31 => RmatrixData(3,1)%p_Dentry
-  p_DlocalMatrixA32 => RmatrixData(3,2)%p_Dentry
-
-  p_DlocalMatrixA41 => RmatrixData(4,1)%p_Dentry
-  p_DlocalMatrixA42 => RmatrixData(4,2)%p_Dentry 
-  
-  p_DlocalMatrixA51 => RmatrixData(5,1)%p_Dentry
-  p_DlocalMatrixA52 => RmatrixData(5,2)%p_Dentry
-  
-  p_DlocalMatrixA61 => RmatrixData(6,1)%p_Dentry
-  p_DlocalMatrixA62 => RmatrixData(6,2)%p_Dentry
-  
-  ! Get the velocity field from the parameters
-  p_Du1 => revalVectors%p_RvectorData(1)%p_Ddata
-  p_Du2 => revalVectors%p_RvectorData(2)%p_Ddata
-  
-  ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-  ! We do the calculation in a block-by-block manner. All the
-  ! relevant blocks will be calculated in the same loop over the
-  ! elements.
-  ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-  
-  ! +++++++++++++++++++++++++++++++++++
-  ! Calculate blocks A11, A22, A12, A21 
-  ! +++++++++++++++++++++++++++++++++++
-  ! Loop over the elements in the current set.
-  do iel = 1,nelements
-
-    ! Loop over all cubature points on the current element
-    do icubp = 1,npointsPerElement
-
-    ! Velocity/derivatives field in this cubature point
-    dU = p_Du1(icubp,iel,DER_FUNC)
-    dV = p_Du2(icubp,iel,DER_FUNC)
-    
-    dUx = p_Du1(icubp,iel,DER_DERIV2D_X)
-    dVx = p_Du2(icubp,iel,DER_DERIV2D_X)
-
-    dUy = p_Du1(icubp,iel,DER_DERIV2D_Y)
-    dVy = p_Du2(icubp,iel,DER_DERIV2D_Y)
-    
-    ! Calculate viscosity and its 1st derivative
-    ! we need to evaluate the 2nd invariant of the 
-    ! deformation rate tensor Dii(u)
-    Dii = 1.0_DP/2.0_DP * &
-              (4.0_DP*dUx**2 + 2.0_DP*(dUy+dVx)**2 + 4.0_DP*dVy**2)
-    call ls_viscosity_model(Dii,rcollection,nu)
-    call ls_viscosity_model_der(Dii,rcollection,dnu)
-    ! And a frequently used combination
-    F = dUy+dVx
-    
-    ! Outer loop over the DOF's i=1..ndof on our current element,
-    ! which corresponds to the (test) basis functions Phi_i:
-    do idofe=1,p_rmatrixDataA11%ndofTest
-    
-      ! Fetch the contributions of the (test) basis functions Phi_i
-      dbasI = p_DbasTestA11(idofe,DER_FUNC,icubp,iel)
-      dbasIx = p_DbasTestA11(idofe,DER_DERIV2D_X,icubp,iel)
-      dbasIy = p_DbasTestA11(idofe,DER_DERIV2D_Y,icubp,iel)
-      
-      ! Inner loop over the DOF's j=1..ndof, which corresponds to
-      ! the basis function Phi_j:
-      do jdofe=1,p_rmatrixDataA11%ndofTrial
-      
-      ! Fetch the contributions of the (trial) basis function Phi_j
-      dbasJ = p_DbasTrialA11(jdofe,DER_FUNC,icubp,iel)
-      dbasJx = p_DbasTrialA11(jdofe,DER_DERIV2D_X,icubp,iel)
-      dbasJy = p_DbasTrialA11(jdofe,DER_DERIV2D_Y,icubp,iel)
-
-      ! Multiply the values of the basis functions by
-      ! the cubature weight and sum up into the local matrices.
-      ! A11
-      dval = p_DcubWeight(icubp,iel)*(   dU*dUx*dbasJx*dbasI+&
-             dV*dUx*dbasJy*dbasI+dUx*dU*dbasJ*dbasIx+dUx*dV*dbasJ*dbasIy + & 
-             (dUx**2+dVx**2)*dbasJ*dbasI + 8.0_DP* &
-             nu*dnu*(4.0_DP*dUx**2*dbasJx*dbasIx+ &
-             2.0_DP*dUx*F*dbasJx*dbasIy+2.0_DP*F*dUx*dbasJy*dbasIx+ &
-             F**2*dbasJy*dbasIy) + Dii*32.0_DP*dnu**2*(dUx**2*dbasJx*dbasIx+ &
-             0.5_DP*dUx*F*dbasJx*dbasIy+0.5_DP*F*dUx*dbasJy*dbasIx+ &
-             0.25_DP*F**2*dbasJy*dbasIy)   )
-      p_DlocalMatrixA11(jdofe,idofe,iel) = p_DlocalMatrixA11(jdofe,idofe,iel) + dval
-      
-      ! A22
-      dval = p_DcubWeight(icubp,iel)*(   dU*dVy*dbasJx*dbasI+&
-             dV*dVy*dbasJy*dbasI+dVy*dU*dbasJ*dbasIx+dVy*dV*dbasJ*dbasIy + & 
-             (dUy**2+dVy**2)*dbasJ*dbasI + 8.0_DP* &
-             nu*dnu*(4.0_DP*dVy**2*dbasJy*dbasIy+ &
-             2.0_DP*dVy*F*dbasJy*dbasIx+2.0_DP*F*dVy*dbasJx*dbasIy+ &
-             F**2*dbasJx*dbasIx) + Dii*32.0_DP*dnu**2*(dVy**2*dbasJy*dbasIy+ &
-             0.5_DP*dVy*F*dbasJy*dbasIx+0.5_DP*F*dVy*dbasJx*dbasIy+ &
-             0.25_DP*F**2*dbasJx*dbasIx)  )   
-      p_DlocalMatrixA22(jdofe,idofe,iel) = p_DlocalMatrixA22(jdofe,idofe,iel) + dval
-      
-      ! A12
-      dval = p_DcubWeight(icubp,iel)*(   dU*dVx*dbasJx*dbasI+&
-             dV*dVx*dbasJy*dbasI+dUy*dU*dbasJ*dbasIx+dUy*dV*dbasJ*dbasIy + & 
-             (dUy*dUx+dVy*dVx)*dbasJ*dbasI + & 
-             8.0_DP*nu*dnu*(4.0_DP*dVy*dUx*dbasJy*dbasIx+ &
-             2.0_DP*dVy*F*dbasJy*dbasIy+2.0_DP*F*dUx*dbasJx*dbasIx+ &
-             F**2*dbasJx*dbasIy) + Dii*32.0_DP*dnu**2*(dVy*dUx*dbasJy*dbasIx+ &
-             0.5_DP*dVy*F*dbasJy*dbasIy+0.5_DP*F*dUx*dbasJx*dbasIx+ &
-             0.25_DP*F**2*dbasJx*dbasIy)  )      
-      p_DlocalMatrixA12(jdofe,idofe,iel) = p_DlocalMatrixA12(jdofe,idofe,iel) + dval
-      
-      ! A21
-      p_DlocalMatrixA21(idofe,jdofe,iel) = p_DlocalMatrixA21(idofe,jdofe,iel) + dval      
-      
-                      
-      end do ! idofe
-      
-    end do ! jdofe
-
-    end do ! icubp
-  
   end do ! iel
-  
-
-  ! +++++++++++++++++++++++++++++++++++
-  ! Calculate blocks A13, A23, A31, A32
-  ! +++++++++++++++++++++++++++++++++++
-  ! Loop over the elements in the current set.
-  do iel = 1,nelements
-
-    ! Loop over all cubature points on the current element
-    do icubp = 1,npointsPerElement
-
-    ! Velocity/derivatives field in this cubature point
-    dUx = p_Du1(icubp,iel,DER_DERIV2D_X)
-    dVx = p_Du2(icubp,iel,DER_DERIV2D_X)
-
-    dUy = p_Du1(icubp,iel,DER_DERIV2D_Y)
-    dVy = p_Du2(icubp,iel,DER_DERIV2D_Y)
-    
-    ! Calculate viscosity and its 1st derivative
-    ! we need to evaluate the 2nd invariant of the 
-    ! deformation rate tensor Dii(u)
-    Dii = 1.0_DP/2.0_DP * &
-              (4.0_DP*dUx**2 + 2.0_DP*(dUy+dVx)**2 + 4.0_DP*dVy**2)
-    call ls_viscosity_model_der(Dii,rcollection,dnu)
-    ! And a frequently used combination
-    F = dUy+dVx
-    
-    ! Outer loop over the DOF's i=1..ndof on our current element,
-    ! which corresponds to the (test) basis functions Phi_i:
-    do idofe=1,p_rmatrixDataA13%ndofTest
-    
-      ! Fetch the contributions of the (test) basis functions Phi_i
-      dbasIx = p_DbasTestA13(idofe,DER_DERIV2D_X,icubp,iel)
-      dbasIy = p_DbasTestA13(idofe,DER_DERIV2D_Y,icubp,iel)
-      
-      ! Inner loop over the DOF's j=1..ndof, which corresponds to
-      ! the basis function Phi_j:
-      do jdofe=1,p_rmatrixDataA13%ndofTrial
-      
-      ! Fetch the contributions of the (trial) basis function Phi_j
-      dbasJ = p_DbasTrialA13(jdofe,DER_FUNC,icubp,iel)
-
-      ! Multiply the values of the basis functions by
-      ! the cubature weight and sum up into the local matrices.
-      ! A13
-      dval = -p_DcubWeight(icubp,iel)*4.0_DP*dnu* &
-             (   (2.0_DP*dUx**2+2.0_DP*dVy*dUx)*dbasJ*dbasIx + &
-             (dUx*F+dVy*F)*dbasJ*dbasIy    )
-      p_DlocalMatrixA13(jdofe,idofe,iel) = p_DlocalMatrixA13(jdofe,idofe,iel) + dval
-      
-      ! A31
-      p_DlocalMatrixA31(idofe,jdofe,iel) = p_DlocalMatrixA31(idofe,jdofe,iel) + dval
-           
-      ! A23
-      dval = -p_DcubWeight(icubp,iel)*4.0_DP*dnu* &
-             (   (2.0_DP*dVy**2+2.0_DP*dVy*dUx)*dbasJ*dbasIy + &
-             (dUx*F+dVy*F)*dbasJ*dbasIx   )
-      p_DlocalMatrixA23(jdofe,idofe,iel) = p_DlocalMatrixA23(jdofe,idofe,iel) + dval
-      
-      ! A32
-      p_DlocalMatrixA32(idofe,jdofe,iel) = p_DlocalMatrixA32(idofe,jdofe,iel) + dval
-                      
-      end do ! idofe
-      
-    end do ! jdofe
-
-    end do ! icubp
-  
-  end do ! iel
-  
-  
-  ! ++++++++++++++++++++++++++++++++++++++
-  ! Calculate blocks:   A14, A24, A41, A42
-  ! A15, A25, A51, A52, A16, A26, A61, A62
-  ! ++++++++++++++++++++++++++++++++++++++
-  ! Loop over the elements in the current set.
-  do iel = 1,nelements
-
-    ! Loop over all cubature points on the current element
-    do icubp = 1,npointsPerElement
-
-    ! Velocity/derivatives field in this cubature point
-    dU = p_Du1(icubp,iel,DER_FUNC)
-    dV = p_Du2(icubp,iel,DER_FUNC)
-    
-    dUx = p_Du1(icubp,iel,DER_DERIV2D_X)
-    dVx = p_Du2(icubp,iel,DER_DERIV2D_X)
-
-    dUy = p_Du1(icubp,iel,DER_DERIV2D_Y)
-    dVy = p_Du2(icubp,iel,DER_DERIV2D_Y)
-
-    ! Calculate viscosity and its 1st derivative
-    ! we need to evaluate the 2nd invariant of the 
-    ! deformation rate tensor Dii(u)
-    Dii = 1.0_DP/2.0_DP * &
-              (4.0_DP*dUx**2 + 2.0_DP*(dUy+dVx)**2 + 4.0_DP*dVy**2)
-    call ls_viscosity_model_der(Dii,rcollection,dnu)
-    ! And a frequently used combination
-    F = dUy+dVx
-    
-    ! Outer loop over the DOF's i=1..ndof on our current element,
-    ! which corresponds to the (test) basis functions Phi_i:
-    do idofe=1,p_rmatrixDataA14%ndofTest
-    
-      ! Fetch the contributions of the (test) basis functions Phi_i
-      dbasI = p_DbasTestA14(idofe,DER_FUNC,icubp,iel)
-      dbasIx = p_DbasTestA14(idofe,DER_DERIV2D_X,icubp,iel)
-      dbasIy = p_DbasTestA14(idofe,DER_DERIV2D_Y,icubp,iel)
-      
-      ! Inner loop over the DOF's j=1..ndof, which corresponds to
-      ! the basis function Phi_j:
-      do jdofe=1,p_rmatrixDataA14%ndofTrial
-      
-      ! Fetch the contributions of the (trial) basis function Phi_j
-      dbasJ = p_DbasTrialA14(jdofe,DER_FUNC,icubp,iel)
-      dbasJx = p_DbasTrialA14(jdofe,DER_DERIV2D_X,icubp,iel)
-      dbasJy = p_DbasTrialA14(jdofe,DER_DERIV2D_Y,icubp,iel)
-
-      ! Multiply the values of the basis functions by
-      ! the cubature weight and sum up into the local matrices.
-      ! A14
-      dval = -p_DcubWeight(icubp,iel) * (   dUx*dbasJx*dbasI + &
-             4.0_DP*dnu*(2.0_DP*dUx**2*dbasJ*dbasIx+dUx*F*dbasJ*dbasIy)  )
-      p_DlocalMatrixA14(jdofe,idofe,iel) = p_DlocalMatrixA14(jdofe,idofe,iel) + dval
-
-      ! A41
-      p_DlocalMatrixA41(idofe,jdofe,iel) = p_DlocalMatrixA41(idofe,jdofe,iel) + dval
-
-      ! A24
-      dval = -p_DcubWeight(icubp,iel) * (   dUy*dbasJx*dbasI + 4.0_DP*dnu* &
-             (2.0_DP*dUx*dVy*dbasJ*dbasIy+dUx*F*dbasJ*dbasIx)   )
-      p_DlocalMatrixA24(jdofe,idofe,iel) = p_DlocalMatrixA24(jdofe,idofe,iel) + dval
-      
-      ! A42
-      p_DlocalMatrixA42(idofe,jdofe,iel) = p_DlocalMatrixA42(idofe,jdofe,iel) + dval
-
-      ! A15
-      dval = -p_DcubWeight(icubp,iel)*(   dUx*dbasJy*dbasI+dVx*dbasJx*dbasI + &
-             4.0_DP*dnu*(2.0_DP*dUx*F*dbasJ*dbasIx+F**2*dbasJ*dbasIy)   )
-      p_DlocalMatrixA15(jdofe,idofe,iel) = p_DlocalMatrixA15(jdofe,idofe,iel) + dval
-      
-      ! A51
-      p_DlocalMatrixA51(idofe,jdofe,iel) = p_DlocalMatrixA51(idofe,jdofe,iel) + dval
-                      
-      ! A25
-      dval = -p_DcubWeight(icubp,iel)*(   dUy*dbasJy*dbasI+dVy*dbasJx*dbasI + &
-             4.0_DP*dnu*(2.0_DP*dVy*F*dbasJ*dbasIy+F**2*dbasJ*dbasIx)   )
-      p_DlocalMatrixA25(jdofe,idofe,iel) = p_DlocalMatrixA25(jdofe,idofe,iel) + dval
-      
-      ! A52
-      p_DlocalMatrixA52(idofe,jdofe,iel) = p_DlocalMatrixA52(idofe,jdofe,iel) + dval
-      
-      ! A16
-      dval = -p_DcubWeight(icubp,iel) * (   dVx*dbasJy*dbasI + 4.0_DP*dnu* &
-             (2.0_DP*dVy*dUx*dbasJ*dbasIx+dVy*F*dbasJ*dbasIy)   )
-      p_DlocalMatrixA16(jdofe,idofe,iel) = p_DlocalMatrixA16(jdofe,idofe,iel) + dval
-      
-      ! A61
-      p_DlocalMatrixA61(idofe,jdofe,iel) = p_DlocalMatrixA61(idofe,jdofe,iel) + dval      
-      
-      ! A26
-      dval = -p_DcubWeight(icubp,iel)*(   dVy*dbasJy*dbasI + &
-             4.0_DP*dnu*(2.0_DP*dVy**2*dbasJ*dbasIy+dVy*F*dbasJ*dbasIx)   )
-      p_DlocalMatrixA26(jdofe,idofe,iel) = p_DlocalMatrixA26(jdofe,idofe,iel) + dval
-      
-      ! A62
-      p_DlocalMatrixA62(idofe,jdofe,iel) = p_DlocalMatrixA62(idofe,jdofe,iel) + dval      
-      end do ! idofe
-      
-    end do ! jdofe
-
-    end do ! icubp
-  
-  end do ! iel  
-  
-  
-  ! +++++++++++++++++++
-  ! Calculate block A33
-  ! +++++++++++++++++++
-  
-
-  ! +++++++++++++++++++++++++
-  ! Calculate blocks A34, A43
-  ! A35, A53, A36, A63 
-  ! +++++++++++++++++++++++++
-  
-  
-  ! +++++++++++++++++++++++++++++
-  ! Calculate block A44, A55, A66
-  !  A45, A54, A46, A64, A56, A65
-  ! +++++++++++++++++++++++++++++
   
   end subroutine
 
@@ -5492,7 +5829,7 @@ contains
   ! Velocity values/derivatives in cubature points 
   real(DP) :: dU, dV, dUx, dUy, dVx, dVy
 
-  real(DP) :: beta, F, nu, dnu, Dii
+  real(DP) :: beta, F, nu, dnu, Dii, gama
   
   ! Linearization Scheme ---> \beta
   beta = rcollection%DquickAccess(4)
@@ -5544,6 +5881,7 @@ contains
               (4.0_DP*dUx**2 + 2.0_DP*(dUy+dVx)**2 + 4.0_DP*dVy**2)
     call ls_viscosity_model(Dii,rcollection,nu)
     call ls_viscosity_model_der(Dii,rcollection,dnu)
+    call ls_nonlinear_weight(Dii,rcollection,gama)
     ! And a frequently used combination
     F = dUy+dVx    
     
@@ -5562,15 +5900,15 @@ contains
           (dU*dUx + dV*dUy) * dV* dbasIy + &
           (dU*dUx + dV*dUy) * dUx * dbasI + &
           (dU*dVx + dV*dVy) * dVx * dbasI + &
-          2.0_DP*nu*dnu*Dii*(4.0_DP*dUx*dbasIx + 2.0_DP*F*dbasIy) + &
-          16.0_DP*dnu*dnu*Dii*Dii*(dUx*dbasIx + 0.5_DP*F*dbasIy)   )
+          2.0_DP*gama*nu*dnu*Dii*(4.0_DP*dUx*dbasIx + 2.0_DP*F*dbasIy) + &
+          16.0_DP*gama*dnu*dnu*Dii*Dii*(dUx*dbasIx + 0.5_DP*F*dbasIy)   )
           
       dval2 = 0.0_DP + beta*(   (dU*dVx + dV*dVy) * dU * dbasIx + &
           (dU*dVx + dV*dVy) * dV * dbasIy + &
           (dU*dUx + dV*dUy) * dUy * dbasI + &
           (dU*dVx + dV*dVy) * dVy * dbasI + &
-          2.0_DP*nu*dnu*Dii*(4.0_DP*dVy*dbasIy + 2.0_DP*F*dbasIx) + &
-          16.0_DP*dnu*dnu*Dii*Dii*(dVy*dbasIy + 0.5_DP*F*dbasIx)   )
+          2.0_DP*gama*nu*dnu*Dii*(4.0_DP*dVy*dbasIy + 2.0_DP*F*dbasIx) + &
+          16.0_DP*gama*dnu*dnu*Dii*Dii*(dVy*dbasIy + 0.5_DP*F*dbasIx)   )
     
       ! Multiply the values of the basis functions by
       ! the cubature weight and sum up into the local vectors.
@@ -5607,6 +5945,7 @@ contains
     Dii = 1.0_DP/2.0_DP * &
               (4.0_DP*dUx**2 + 2.0_DP*(dUy+dVx)**2 + 4.0_DP*dVy**2)
     call ls_viscosity_model_der(Dii,rcollection,dnu)
+    call ls_nonlinear_weight(Dii,rcollection,gama)
     ! And a frequently used combination
     F = dUx+dVy    
     
@@ -5619,7 +5958,7 @@ contains
       dbasI = p_DbasTest3(idofe,DER_FUNC,icubp,iel) 
       
       ! Values of the pressure RHS
-      dval1 = -4.0_DP*beta*dnu*Dii*F*dbasI
+      dval1 = -4.0_DP*gama*beta*dnu*Dii*F*dbasI
            
       p_DlocalVector3(idofe,iel) = p_DlocalVector3(idofe,iel) + &
         p_DcubWeight(icubp,iel) * dval1
@@ -5655,6 +5994,7 @@ contains
     Dii = 1.0_DP/2.0_DP * &
               (4.0_DP*dUx**2 + 2.0_DP*(dUy+dVx)**2 + 4.0_DP*dVy**2)
    call ls_viscosity_model_der(Dii,rcollection,dnu)
+   call ls_nonlinear_weight(Dii,rcollection,gama)
     ! And a frequently used combination
     F = dUy+dVx     
     
@@ -5670,7 +6010,7 @@ contains
                 
       ! Values of the velocity RHS for Stress1
       dval4 = 0.0_DP - beta * (  (dU*dUx + dV*dUy) * dbasIx + &
-              4.0_DP*dnu*Dii*dUx*dbasI  )
+              4.0_DP*gama*dnu*Dii*dUx*dbasI  )
          
       ! Multiply the values of the basis functions by
       ! the cubature weight and sum up into the local vectors.
@@ -5681,7 +6021,7 @@ contains
       ! Values of the velocity RHS for Stress2
       dval4 = 0.0_DP - beta * (  (dU*dUx + dV*dUy) * dbasIy + &
              (dU*dVx + dV*dVy) * dbasIx + &
-              4.0_DP*dnu*Dii*F*dbasI  )
+              4.0_DP*gama*dnu*Dii*F*dbasI  )
       
       ! Multiply the values of the basis functions by
       ! the cubature weight and sum up into the local vectors.
@@ -5691,7 +6031,7 @@ contains
 
       ! Values of the velocity RHS for Stress3
       dval4 = 0.0_DP - beta * ( (dU*dVx + dV*dVy) * dbasIy + &
-              4.0_DP*dnu*Dii*dVy*dbasI  )
+              4.0_DP*gama*dnu*Dii*dVy*dbasI  )
                
       ! Multiply the values of the basis functions by
       ! the cubature weight and sum up into the local vectors.
@@ -7778,5 +8118,88 @@ contains
   end select
     
   end subroutine
+
+
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine ls_nonlinear_weight(Dii,rcollection,gama)
+!<description>
+  ! This subroutine calculates the kinematic viscosity based on different
+  ! non-Newtonian fluid models, e.g. power law model.
+!</description>
+
+!<input>
+  ! The second invariant of the deformation rate tensor, Dii(u)
+  real(DP), intent(inout) :: Dii
+  
+  ! User defined collection structure
+  type(t_collection), intent(in) :: rcollection
+!</input>
+
+!<output>
+  ! Returns the value of the kinematic viscosity
+  real(DP), intent(out) :: gama
+!</output>  
+
+!</subroutine>
+
+  ! local variables
+  ! Viscosity model constants
+  real(DP) :: r, nu_0, nu_inf, landa
+  
+  ! Take care of the initial solutions
+  ! where Dii(u) = 0
+  if (Dii .eq. 0.0_DP) then
+    Dii = 1.0_DP
+  end if
+  
+  ! Switch on the viscosity model
+  select case (rcollection%IquickAccess(1))
+  
+  case (1)
+    ! Power Law model
+    !  Viscosity defines with the POWER LAW:
+    !                             r/2-1
+    !   { \nu(Dii(u)) = \nu_0 Dii(u)^     
+    !   { where  ( r>1 , \nu_0>0 ) 
+    !
+    !  and
+    !
+    !  Dii(u) = 1/2 ( 2D(u):2D(u) )  
+    !  D(u) = 1/2 ( grad(u) + grad(u)^T ) 
+    !
+    ! Viscosity model constants
+    nu_0 = rcollection%DquickAccess(17)
+    r = rcollection%DquickAccess(18)
+    
+    ! Viscosity
+    gama = nu_0 * Dii**(r/2.0_DP-1.0_DP)
+
+  case (2)
+    ! Carreau Law model
+    !  Viscosity defines with the Carreau LAW:
+    !                                                            r/2-1
+    !   { \nu(Dii(u)) = \nu_inf + (\nu_0-\nu_inf) (1+\landa Dii(u))^     
+    !   { where  ( \landa>0, r>1 , \nu_0>\nu_inf>=0 )
+    !
+    ! Viscosity model constants
+    nu_0 = rcollection%DquickAccess(17)
+    r = rcollection%DquickAccess(18)
+    nu_inf = rcollection%DquickAccess(19)
+    landa = rcollection%DquickAccess(20)    
+    
+    ! Viscosity    
+    gama = nu_inf + (nu_0 - nu_inf) * (1 + landa*Dii)**(r/2.0_DP-1.0_DP)
+  
+  case default
+    ! Not defined model!!
+           
+  end select
+  
+  end subroutine
+
     
 end
