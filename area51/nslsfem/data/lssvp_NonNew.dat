@@ -41,14 +41,26 @@ viscosity_model = 1
 
 # Constants in viscosity models
 # Power Law = PL
-PL_nu0 = 1.0
-PL_r = 1.5
+PL_nu0 = 1E-2
+PL_r = 2.0
 
 # Carreau Law = CL
 CL_nu0 = 1
 CL_nuinf = 1
 CL_r = 0.5
 CL_landa = 1
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Scaling factors or whighting parameters
+#  the least-squares functionals can be scaled
+#  with a physical parameter, here viscosity, to
+#  obtain more balanced terms.
+#   ~ 1/noo * ||R||^2_{L^2}
+#    scPhysic = 1 lets this happens :)
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+scPhysic = 1   #check "collection%DquickAccess(2)"
+
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Scaling the continuity eq.
@@ -132,7 +144,7 @@ detPDisc = 1
 #     (start with fixed-point and after 'FPIter',
 #      continue with Newton's method)
 # ~~~~~~~~~~~~~~~ ~~~~~~~~~~~~~~~~~~~
-LinTyp = 3
+LinTyp = 2
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Number of Fixed-point irerations
@@ -142,14 +154,14 @@ LinTyp = 3
 #    FPIter must be .le. NLN_MAX otherwise, it'll
 #    be replaced with NLN_MAX.
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-FPIter = 1
+FPIter = 10
 
 # Nonlinear loop Max number of iterations
 NLN_MAX = 65
 
 # Nonlinear loop stopping criteria
 #  Serves as a measure of relative residual
-dNLEpsi = 1E-8
+dNLEpsi = 1E-7
 
 # The damping parameter in nonlinear
 #  deferred correction loop
