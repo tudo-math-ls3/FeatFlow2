@@ -26,8 +26,9 @@
 #   = 6  Analytic polynomial function
 #   = 7  Static Bubble
 #   = 8  Split Channel
+#   = 9  Fully developed power law flow
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Problem = 0
+Problem = 9
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Kinematic viscosity \nu(z) model
@@ -41,8 +42,8 @@ viscosity_model = 1
 
 # Constants in viscosity models
 # Power Law = PL
-PL_nu0 = 1E-2
-PL_r = 2.0
+PL_nu0 = 1
+PL_r = 2.4
 
 # Carreau Law = CL
 CL_nu0 = 1
@@ -157,7 +158,7 @@ LinTyp = 2
 FPIter = 10
 
 # Nonlinear loop Max number of iterations
-NLN_MAX = 65
+NLN_MAX = 15
 
 # Nonlinear loop stopping criteria
 #  Serves as a measure of relative residual
@@ -329,7 +330,7 @@ nmaxItsLS = 15
 # = 0:no output except for warning messages 
 # =-1:no output (standard)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-ioutputLevelLS = 1
+ioutputLevelLS = -1
 
 
 #-----------------------------------------------------
@@ -510,7 +511,7 @@ detZMV = 3
 #  Bolton step flow, outflow = 30
 #  Split channel, outflow = 7
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-irow = 5
+irow = 6
 
 
 #-----------------------------------------------------
@@ -553,7 +554,7 @@ LiftDragASO = 0
 #   =0  don't calculate
 #   =1  yes calculate
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-KEnergy = 1
+KEnergy = 0
 
 # How to calculate the Kinetic energy
 #   =0  use the FEM definition and the Matrix-vector
@@ -569,7 +570,7 @@ detKEnergy = 1
 #   =0  don't calculate
 #   =1  yes calculate
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Div = 0
+Div = 1
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Calculate Global Mass Conservation (GMC)
