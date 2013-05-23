@@ -127,9 +127,10 @@ contains
   
 !</subroutine>
 
-    ! To get the X/Y-coordinates of the boundary point, use:
-    real(DP) :: dx,dy, dC, cu, pi
+    ! Some variables
+    real(DP) :: dx,dy, dC, cu, pi, n
     
+    ! Even more
     integer :: icomponent
     real(DP) :: y
     
@@ -294,6 +295,35 @@ contains
           ! nothing to do here.
        end select
 
+
+    case (9)
+      ! Fully developed power law flow
+      ! u/u_ave = 2n+1/n+1 * ( 1 - y^(n+1)/n )
+      ! y = [0,1]
+      ! n = r/2
+      
+      select case (icomponent)
+      case (1) ! X-velocity
+        if ((dwhere .ge. 3.0_DP) .and. (dwhere .le. 4.0_DP)) then
+          n = rcollection%DquickAccess(18)/2.0_DP
+          y = 4.0_DP-dwhere
+          Dvalues(1) = (2.0_DP*n+1.0_DP)/(n+1.0_DP)* &
+                       ( 1.0_DP - y**((n+1.0_DP)/n) )
+        end if
+
+        if ((dwhere .ge. 1.0_DP) .and. (dwhere .le. 2.0_DP)) then
+          n = rcollection%DquickAccess(18)/2.0_DP
+          y = dwhere - 1.0_DP
+          Dvalues(1) = (2.0_DP*n+1.0_DP)/(n+1.0_DP)* &
+                       ( 1.0_DP - y**((n+1.0_DP)/n) )
+        end if
+
+      case (2) ! Y-velocity
+        ! Nothing to do here.
+
+      case (3) ! Pressure
+        ! Nothing to do here.
+      end select
 
     
     case default
