@@ -41,7 +41,7 @@
 !#
 !# Author:    Masoud Nickaeen
 !# First Version: Apr  22, 2013
-!# Last Update:   May  21, 2013
+!# Last Update:   May  23, 2013
 !# 
 !##############################################################################
 
@@ -1904,10 +1904,10 @@ contains
               getBoundaryValues_2D,rcollection=rcollection)
                      
     ! edge 2 of boundary component 1.
-    ! outflow
+    ! outflow, zero normal stress
     call boundary_createregion(rboundary,1,2,rboundaryregion)
     rboundaryRegion%iproperties = 2**1-2**1
-    call bcasm_newdirichletbconrealbd (rdiscretisation,1,&
+    call bcasm_newdirichletbconrealbd (rdiscretisation,4,&
                      rboundaryregion,rdiscretebc,&
               getBoundaryValues_2D,rcollection=rcollection)
                  
@@ -1937,13 +1937,13 @@ contains
                      rboundaryRegion,rdiscreteBC,&
               getBoundaryValues_2D,rcollection=rcollection)
                  
-    ! Edge 2 of boundary component 1.
-    ! outflow
-    call boundary_createRegion(rboundary,1,2,rboundaryRegion)
-    rboundaryRegion%iproperties = 2**1-2**1
-    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
-                     rboundaryRegion,rdiscreteBC,&
-              getBoundaryValues_2D,rcollection=rcollection)
+!    ! Edge 2 of boundary component 1.
+!    ! outflow
+!    call boundary_createRegion(rboundary,1,2,rboundaryRegion)
+!    rboundaryRegion%iproperties = 2**1-2**1
+!    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+!                     rboundaryRegion,rdiscreteBC,&
+!              getBoundaryValues_2D,rcollection=rcollection)
                  
     ! Edge 3 of boundary component 1.
     ! no-slip on upper wall

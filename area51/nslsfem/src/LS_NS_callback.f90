@@ -300,19 +300,19 @@ contains
       ! Fully developed power law flow
       ! u/u_ave = 2n+1/n+1 * ( 1 - y^(n+1)/n )
       ! y = [0,1]
-      ! n = r/2
+      ! n = r-1
       
       select case (icomponent)
       case (1) ! X-velocity
         if ((dwhere .ge. 3.0_DP) .and. (dwhere .le. 4.0_DP)) then
-          n = rcollection%DquickAccess(18)/2.0_DP
+          n = rcollection%DquickAccess(18)-1.0_DP
           y = 4.0_DP-dwhere
           Dvalues(1) = (2.0_DP*n+1.0_DP)/(n+1.0_DP)* &
                        ( 1.0_DP - y**((n+1.0_DP)/n) )
         end if
 
         if ((dwhere .ge. 1.0_DP) .and. (dwhere .le. 2.0_DP)) then
-          n = rcollection%DquickAccess(18)/2.0_DP
+          n = rcollection%DquickAccess(18)-1.0_DP
           y = dwhere - 1.0_DP
           Dvalues(1) = (2.0_DP*n+1.0_DP)/(n+1.0_DP)* &
                        ( 1.0_DP - y**((n+1.0_DP)/n) )
