@@ -3557,7 +3557,7 @@ contains
     integer(I32) :: ccub
 
     ! Default settings
-    ccub = CUB_G3_1D
+    ccub = CUB_G4_1D
     if (present(ccubature)) ccub = ccubature
 
     ! Initialise the collection for the calculation
@@ -3585,7 +3585,7 @@ contains
 
       ! Divide the length of the line by this, that is the mean number of elements
       ! on the line.
-      nel = min(int(dnorm/dlocalh),1)
+      nel = max(int(dnorm/dlocalh),1)
 
       ! Every refinement gives 2 elements, so the log2 of nel is the cubature
       ! refinement. We add 2 levels as "safety" buffer.

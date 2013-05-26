@@ -377,7 +377,7 @@ contains
 
   subroutine tsrch_getElem_raytrace2D_dir (Dpoint,iel,DvertexCoords,&
       IverticesAtElement,IedgesAtElement,IneighboursAtElement,&
-      iresult,ilastElement,ilastEdge,imaxIterations)
+      iresult,ilastElement,ilastEdge,imaxIterations,niterations)
 
 !<description>
   ! Find an element in the triangulation containing the point Dpoint.
@@ -438,6 +438,9 @@ contains
   ! If iresult=-1: Number of the edge through which the domain was left.
   ! If iresult=-2: Number of the last edge
   integer, intent(out), optional :: ilastEdge
+
+  ! OPTIONAL: Returns the number of cells that were to pass to find the point.
+  integer, intent(out), optional :: niterations
 !</output>
 
 !</subroutine>
@@ -499,6 +502,7 @@ contains
         if (present(iresult)) iresult = 1
         if (present(ilastElement)) ilastElement = iel
         if (present(ilastEdge)) ilastEdge = 0
+        if (present(niterations)) niterations = ite
         return
       end if
 
@@ -572,6 +576,7 @@ contains
     if (present(iresult)) iresult = -2
     if (present(ilastElement)) ilastElement = ielold
     if (present(ilastEdge)) ilastEdge = 0
+    if (present(niterations)) niterations = ite
 
   end subroutine
 
