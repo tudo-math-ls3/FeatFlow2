@@ -16,7 +16,7 @@ SLOGFILE = ./log/output.txt
 #         Pressure function described by VORTEX_PRES
 DRIVER = 2001
 
-# Velocity field for standing vortex driver (mandatory for DRIVER=2100)
+# Velocity field for standing vortex driver (mandatory for DRIVER=2002)
 # 0 -> No-Flow, No-Slip BCs
 #      u1(x,y) = u2(x,y) = 0
 #
@@ -33,12 +33,13 @@ DRIVER = 2001
 #      u2(x,y) = -y^2 * (1-y)^2 * (2*x*(1-x)^2 - 2*x^2*(1-x))
 VORTEX_VELO = 1
 
-# Pressure function for standing vortex driver (mandatory for DRIVER=2100)
+# Pressure function for standing vortex driver (mandatory for DRIVER=2002)
 # 0 -> p(x,y) = 0
 # 1 -> p(x,y) = alpha * cos(pi*x) * cos(pi*y)
 # 2 -> p(x,y) = alpha * (4/pi - sin(pi*x) - sin(pi*y))
 # 3 -> p(x,y) = alpha * (1/2 - x^3 - y^3)
 # 4 -> p(x,y) -> static-bubble(alpha,beta)
+# 5 -> p(x,y) = alpha * (x-1/2) + beta * (y-1/2)
 VORTEX_PRES = 1
 
 # Coarse Mesh (mandatory)
@@ -112,7 +113,7 @@ IOUTPUT = 0
 # 0 -> don't print anything
 # 1 -> print residuals only
 # 2 -> print summary only
-# 3 -> print borth residuals and summary
+# 3 -> print both residuals and summary
 ILOGRES = 0
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

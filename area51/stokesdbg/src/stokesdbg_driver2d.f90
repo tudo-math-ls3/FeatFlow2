@@ -221,6 +221,15 @@ contains
         case (2)
           Dcoefficients(1,:,:) = funcStaticBubble(Dpoints(2,:,:), Dpoints(1,:,:), dalpha, dbeta, dgamma)
         end select
+        
+      case (5)
+        select case(icomp)
+        case (1)
+          Dcoefficients(1,:,:) = dalpha
+        case (2)
+          Dcoefficients(1,:,:) = dbeta
+        end select
+      
       end select
     end select
     
@@ -412,11 +421,12 @@ contains
   real(DP), dimension(:,:), intent(out)        :: Dvalues
 
   integer :: idriver, icomp, ipres
-  real(DP) :: dnu,dalpha,dpi2
+  real(DP) :: dnu,dalpha,dbeta,dpi2
 
     ! fetch coefficients from collection
     dnu = rcollection%DquickAccess(1)
     dalpha = rcollection%DquickAccess(2)
+    dbeta =  rcollection%DquickAccess(3)
     idriver = rcollection%IquickAccess(1)
     icomp = rcollection%IquickAccess(5)
     ipres = rcollection%IquickAccess(7)
@@ -444,6 +454,12 @@ contains
         ! p(x,y) = alpha*(1/2 - x^3 - y^3)
         Dvalues(:,:) = dalpha*(0.5_DP - Dpoints(1,:,:)**3 - Dpoints(2,:,:)**3)
 
+      case (4)
+        ! TODO: static bubble
+        
+      case (5)
+        ! p(x,y) = alpha*(x - 1/2)  + beta*(y - 1/2)
+        Dvalues(:,:) = dalpha*(Dpoints(1,:,:) - 0.5_DP) + dbeta*(Dpoints(2,:,:) - 0.5_DP)
       end select
       
     end select
