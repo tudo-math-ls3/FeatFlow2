@@ -1010,6 +1010,16 @@ sub check_options {
             "Try `$progname --help' for more information.\n";
     }
 
+    # Linking will fail (at least on Ubuntu 12.04) if the only reference to
+    # the object directory in the linker command is given by "-L~/<some
+    # path>". "~/" needs to be resolved.
+    if (defined($cl{'objdirprefix'}) && $cl{'objdirprefix'} =~ m/^~\//) {
+	$cl{'objdirprefix'} =~ s/^~\//$ENV{HOME}\//;
+    }
+    if (defined($cl{'objdirlibprefix'}) && $cl{'objdirlibprefix'} =~ m/^~\//) {
+	$cl{'objdirlibprefix'} =~ s/^~\//$ENV{HOME}\//;
+    }
+
     # Override default setting for Makefile name?
     $MAKEFILE = $cl{'makefile'} if (defined($cl{'makefile'}));
 
