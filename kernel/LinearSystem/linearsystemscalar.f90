@@ -957,6 +957,12 @@ module linearsystemscalar
   public :: lsyssc_isMatrixStructureShared
   public :: lsyssc_isMatrixContentShared
   public :: lsyssc_createDiagMatrixStruc
+  
+  interface lsyssc_createDiagMatrixStruc
+    module procedure lsyssc_createDiagMatrixDirect
+    module procedure lsyssc_createDiagMatrixDiscr
+  end interface
+  
   public :: lsyssc_clearOffdiags
   public :: lsyssc_hasMatrixStructure
   public :: lsyssc_hasMatrixContent
@@ -965,6 +971,12 @@ module linearsystemscalar
   public :: lsyssc_spreadMatrix
   public :: lsyssc_packVector
   public :: lsyssc_createFullMatrix
+  
+  interface lsyssc_createFullMatrix
+    module procedure lsyssc_createFullMatrixDirect1
+    module procedure lsyssc_createFullMatrixDirect2
+    module procedure lsyssc_createFullMatrixDiscr
+  end interface
   
   interface lsyssc_assignDiscretisation
     module procedure lsyssc_assignDiscrDirectMat
@@ -18352,7 +18364,7 @@ contains
 
 !<subroutine>
 
-  subroutine lsyssc_createDiagMatrixStruc (rmatrix,NEQ,cmatrixFormat)
+  subroutine lsyssc_createDiagMatrixDirect (rmatrix,NEQ,cmatrixFormat,bclear)
 
 !<description>
   ! Creates a diagonal matrix in matrix format cmatrixType. Initialises
@@ -18369,6 +18381,9 @@ contains
 
   ! Number of equations, the matrix should hold.
   integer, intent(in) :: NEQ
+
+  ! OPTIONAL: Whether to initialise the matrix with zero.
+  logical, intent(in), optional :: bclear
 !</input>
 
 !<inputoutput>
@@ -18412,15 +18427,132 @@ contains
 
     end select
 
+    ! Probably clear the matrix    
+    if (present(bclear)) then
+      if (bclear) then
+        call lsyssc_clearMatrix (rmatrix)
+      end if
+    end if
+
   end subroutine
 
   !****************************************************************************
 
 !<subroutine>
 
-  subroutine lsyssc_createFullMatrix (rmatrix,bclear,NEQ,ncols,cdataType)
+  subroutine lsyssc_createDiagMatrixDiscr (rdiscretisationTrial,rmatrix,&
+      cmatrixFormat,bclear,rdiscretisationTest)
 
 !<description>
+  ! Creates a diagonal matrix in matrix format cmatrixType. Initialises
+  ! the structure but does not allocate any memory for the entries (if the
+  ! matrix has any).
+  !
+  ! The matrix is created 'directly' without any discretisation structure
+  ! in the background. NEQ specifies the size of the matrix.
+!</description>
+
+!<input>
+  ! Matrix type, e.g. LSYSSC_MATRIXD or LSYSSC_MATRIX9,...
+  integer, intent(in) :: cmatrixFormat
+
+  ! The underlying discretisation structure which is to be used to
+  ! create the matrix. Specifies the discretisation of the trial functions.
+  ! If rdiscretisationTest is not specified, this also specifies
+  ! the discretisation of the test functions, this test and trial
+  ! functions coincide.
+  type(t_spatialDiscretisation), intent(in), target :: rdiscretisationTrial
+
+  ! OPTIONAL: Whether to initialise the matrix with zero.
+  logical, intent(in), optional :: bclear
+
+  ! OPTIONAL: The underlying discretisation structure for the test functions.
+  ! If not specified, the trial functions coincide with the test functions.
+  type(t_spatialDiscretisation), intent(in), target, optional :: rdiscretisationTest
+!</input>
+
+!<inputoutput>
+  ! The FE matrix to be initialised.
+  type(t_matrixScalar), intent(out) :: rmatrix
+!</inputoutput>
+
+!</subroutine>
+
+  ! At first, initialise the structure:
+
+    rmatrix%p_rspatialDiscrTrial => rdiscretisationTrial
+    if (present(rdiscretisationTest)) then
+      rmatrix%p_rspatialDiscrTest => rdiscretisationTest
+      rmatrix%bidenticalTrialAndTest = .false.
+    else
+      rmatrix%p_rspatialDiscrTest => rdiscretisationTrial
+      rmatrix%bidenticalTrialAndTest = .true.
+    end if
+
+    ! Get the #DOF`s of the test space - as #DOF`s of the test space is
+    ! the number of equations in our matrix. The #DOF`s in the trial space
+    ! gives the number of columns of our matrix.
+    rmatrix%NCOLS         = &
+        dof_igetNDofGlob(rmatrix%p_rspatialDiscrTrial)
+    rmatrix%NEQ           = &
+        dof_igetNDofGlob(rmatrix%p_rspatialDiscrTest)
+
+    ! Must be the same, otherwise, there is no diagonal!
+    if (rmatrix%NCOLS .ne. rmatrix%NEQ) then
+      call output_line("Matrix is not square!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_createDiagMatrixStruc")
+      call sys_halt()
+    end if
+
+    rmatrix%NA = rmatrix%NEQ
+    rmatrix%cmatrixFormat = cmatrixFormat
+
+    ! Depending on the format, choose the initialisation routine.
+    select case (cmatrixFormat)
+    case (LSYSSC_MATRIXD,LSYSSC_MATRIX1)
+      ! Nothing to do, there is no structure.
+
+    case (LSYSSC_MATRIX9)
+      ! Create KCOL, KLD, KDiagonal
+      call storage_new ("lsyssc_createDiagMatrixStuc", "KCOL", rmatrix%NEQ, &
+          ST_INT, rmatrix%h_Kcol, ST_NEWBLOCK_ORDERED)
+      call storage_new ("lsyssc_createDiagMatrixStruc", "KLD", rmatrix%NEQ+1, &
+          ST_INT, rmatrix%h_Kld, ST_NEWBLOCK_ORDERED)
+      call storage_new ("lsyssc_createDiagMatrixStruc", "KDiagonal", rmatrix%NEQ, &
+          ST_INT, rmatrix%h_Kdiagonal, ST_NEWBLOCK_ORDERED)
+
+    case (LSYSSC_MATRIX7)
+      ! Create KCOL, KLD.
+      call storage_new ("lsyssc_createDiagMatrixStruc", "KCOL", rmatrix%NEQ, &
+          ST_INT, rmatrix%h_Kcol, ST_NEWBLOCK_ORDERED)
+      call storage_new ("lsyssc_createDiagMatrixStruc", "KLD", rmatrix%NEQ+1, &
+          ST_INT, rmatrix%h_Kld, ST_NEWBLOCK_ORDERED)
+
+    case default
+
+      call output_line("Unsupported matrix format!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_createDiagMatrixStruc")
+      call sys_halt()
+
+    end select
+
+    ! Probably clear the matrix    
+    if (present(bclear)) then
+      if (bclear) then
+        call lsyssc_clearMatrix (rmatrix)
+      end if
+    end if
+
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine lsyssc_createFullMatrixDirect1 (rmatrix,bclear,NEQ,ncols,cdataType)
+
+!<description>
+  ! DEPRECATED INTERFACE:
   ! Creates a simple NEQ*ncols matrix in matrix structure 1.
   ! No discretisation structure or similar will be attached to that matrix.
 !</description>
@@ -18448,6 +18580,11 @@ contains
 
 !</subroutine>
 
+#if WARN_DEPREC
+    call output_line ("Using deprecated feature. Please update your code.", &
+        OU_CLASS_WARNING,OU_MODE_STD,"lsyssc_createFullMatrixDirect1")
+#endif
+
     rmatrix%NEQ = NEQ
     rmatrix%NCOLS = NEQ
     if (present(ncols)) rmatrix%NCOLS = ncols
@@ -18461,6 +18598,133 @@ contains
     else
       call storage_new ('lsyssc_createFullMatrix', 'h_Da', &
           rmatrix%NA , rmatrix%cdataType, rmatrix%h_Da,ST_NEWBLOCK_NOINIT)
+    end if
+
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine lsyssc_createFullMatrixDirect2 (rmatrix,NEQ,bclear,ncols,cdataType)
+
+!<description>
+  ! Creates a simple NEQ*ncols matrix in matrix structure 1.
+  ! No discretisation structure or similar will be attached to that matrix.
+!</description>
+
+!<input>
+  ! Number of rows in the matrix
+  integer, intent(in) :: NEQ
+
+  ! OPTIONAL: Number of columns in the matrix. If not specified, NEQ=nrows
+  ! is assumed.
+  integer, intent(in), optional :: ncols
+
+  ! Whether to initialise the matrix with zero or not.
+  logical, intent(in), optional :: bclear
+
+  ! OPTIONAL: Data type of the entries. A ST_xxxx constant.
+  ! Default is ST_DOUBLE.
+  integer, intent(in), optional :: cdataType
+!</input>
+
+!<inputoutput>
+  ! The matrix to be initialised.
+  type(t_matrixScalar), intent(out) :: rmatrix
+!</inputoutput>
+
+!</subroutine>
+
+    rmatrix%NEQ = NEQ
+    rmatrix%NCOLS = NEQ
+    if (present(ncols)) rmatrix%NCOLS = ncols
+    rmatrix%NA = rmatrix%NEQ * rmatrix%NCOLS
+    rmatrix%cmatrixFormat = LSYSSC_MATRIX1
+    if (present(cdataType)) rmatrix%cdataType = cdataType
+
+    call storage_new ('lsyssc_createFullMatrix', 'h_Da', &
+        rmatrix%NA , rmatrix%cdataType, rmatrix%h_Da,ST_NEWBLOCK_NOINIT)
+
+    ! Probably clear the matrix
+    if (present(bclear)) then
+      if (bclear) then
+        call lsyssc_clearMatrix (rmatrix)
+      end if
+    end if
+
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine lsyssc_createFullMatrixDiscr (rdiscretisationTrial,rmatrix,bclear,&
+      rdiscretisationTest,cdataType)
+
+!<description>
+  ! Creates a simple NEQ*ncols matrix in matrix structure 1.
+  ! The matrix is created based on a discretisation structure rspatialDiscr.
+!</description>
+
+!<input>
+  ! The underlying discretisation structure which is to be used to
+  ! create the matrix. Specifies the discretisation of the trial functions.
+  ! If rdiscretisationTest is not specified, this also specifies
+  ! the discretisation of the test functions, this test and trial
+  ! functions coincide.
+  type(t_spatialDiscretisation), intent(in), target :: rdiscretisationTrial
+
+  ! Whether to initialise the matrix with zero or not.
+  logical, intent(in), optional :: bclear
+  
+  ! OPTIONAL: The underlying discretisation structure for the test functions.
+  ! If not specified, the trial functions coincide with the test functions.
+  type(t_spatialDiscretisation), intent(in), target, optional :: rdiscretisationTest
+
+  ! OPTIONAL: Data type of the entries. A ST_xxxx constant.
+  ! Default is ST_DOUBLE.
+  integer, intent(in), optional :: cdataType
+!</input>
+
+!<inputoutput>
+  ! The matrix to be initialised.
+  type(t_matrixScalar), intent(out) :: rmatrix
+!</inputoutput>
+
+!</subroutine>
+
+    ! Initialise the discretisation structures
+    rmatrix%p_rspatialDiscrTrial => rdiscretisationTrial
+    if (present(rdiscretisationTest)) then
+      rmatrix%p_rspatialDiscrTest => rdiscretisationTest
+      rmatrix%bidenticalTrialAndTest = .false.
+    else
+      rmatrix%p_rspatialDiscrTest => rdiscretisationTrial
+      rmatrix%bidenticalTrialAndTest = .true.
+    end if
+
+    ! Get the #DOF`s of the test space - as #DOF`s of the test space is
+    ! the number of equations in our matrix. The #DOF`s in the trial space
+    ! gives the number of columns of our matrix.
+    rmatrix%NCOLS         = &
+        dof_igetNDofGlob(rmatrix%p_rspatialDiscrTrial)
+    rmatrix%NEQ           = &
+        dof_igetNDofGlob(rmatrix%p_rspatialDiscrTest)
+
+    ! Initialise the remaining data
+    rmatrix%NA = rmatrix%NEQ * rmatrix%NCOLS
+    rmatrix%cmatrixFormat = LSYSSC_MATRIX1
+    if (present(cdataType)) rmatrix%cdataType = cdataType
+
+    if (present(bclear)) then
+      if (bclear) then
+        call storage_new ('lsyssc_createFullMatrix', 'h_Da', &
+            rmatrix%NA , rmatrix%cdataType, rmatrix%h_Da,ST_NEWBLOCK_ZERO)
+      else
+        call storage_new ('lsyssc_createFullMatrix', 'h_Da', &
+            rmatrix%NA , rmatrix%cdataType, rmatrix%h_Da,ST_NEWBLOCK_NOINIT)
+      end if
     end if
 
   end subroutine
