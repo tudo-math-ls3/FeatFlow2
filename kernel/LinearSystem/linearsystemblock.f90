@@ -666,6 +666,12 @@ module linearsystemblock
   public :: lsyssc_unshareVector
   public :: lsysbl_moveToSubmatrix
   public :: lsysbl_allocEmptyMatrix
+  
+  interface lsysbl_allocEmptyMatrix
+    module procedure lsysbl_allocEmptyMatrix1
+    module procedure lsysbl_allocEmptyMatrix2
+  end interface
+  
   public :: lsysbl_getVectorMagnitude
   public :: lsysbl_createScalarFromVec
   public :: lsysbl_convertScalarBlockVector
@@ -8488,7 +8494,7 @@ contains
 
 !<subroutine>
 
-  subroutine lsysbl_allocEmptyMatrix (rmatrix,iclear,bignoreExisting,cdataType)
+  subroutine lsysbl_allocEmptyMatrix1 (rmatrix,bclear,bignoreExisting,cdataType)
 
 !<description>
   ! This routine allocates memory for the matrix entries of all existing
@@ -8499,14 +8505,63 @@ contains
 !</description>
 
 !<input>
-  ! OPTIONAL: Whether and how to fill the matrix with initial values.
+  ! OPTIONAL: Whether to clear the matrix upon creation
+  logical, intent(in), optional :: bclear
+
+  ! OPTIONAL: If set to TRUE, existing submatrices are ignored.
+  ! Standard value is FALSE which stops the application with an error.
+  logical, intent(in), optional :: bignoreExisting
+
+  ! OPTIONAL: Data type of the matrix (ST_SINGLE, ST_DOUBLE)
+  ! If not present, the standard data type cdataType-variable in the matrix
+  ! is used (usually ST_DOUBLE).
+  integer, intent(in), optional :: cdataType
+!</input>
+
+!<inputoutput>
+  ! The FE matrix. Calculated matrix entries are imposed to this matrix.
+  type(t_matrixBlock), intent(inout) :: rmatrix
+!</inputoutput>
+
+!</subroutine>
+
+    ! Call lsysbl_allocEmptyMatrix2 with the appropriate interface
+
+    if (present(bclear)) then
+      if (bclear) then
+        call lsysbl_allocEmptyMatrix2 (rmatrix,LSYSSC_SETM_ZERO,bignoreExisting,cdataType)
+      else
+        call lsysbl_allocEmptyMatrix2 (rmatrix,LSYSSC_SETM_UNDEFINED,bignoreExisting,cdataType)
+      end if
+    else
+      call lsysbl_allocEmptyMatrix2 (rmatrix,LSYSSC_SETM_UNDEFINED,bignoreExisting,cdataType)
+    end if
+
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine lsysbl_allocEmptyMatrix2 (rmatrix,iclear,bignoreExisting,cdataType)
+
+!<description>
+  ! This routine allocates memory for the matrix entries of all existing
+  ! submatrix without computing the entries.
+  ! This can be used to attach an 'empty' matrix to a matrix
+  ! structure. The number of entries NA as well as the type of the matrix
+  ! cmatrixFormat must be initialised in rmatrixScalar.
+!</description>
+
+!<input>
+  ! Whether and how to fill the matrix with initial values.
   ! One of the LSYSSC_SETM_xxxx constants:
   ! LSYSSC_SETM_UNDEFINED : Do not initialise the matrix (default).
   ! LSYSSC_SETM_ZERO : Clear the matrix / fill it with 0.0.
   ! LSYSSC_SETM_ONE : Fill the matrix with 1.0. (Used e.g.
   !                         for UMFPACK who needs a non-zero
   !                         matrix for symbolic factorisation.)
-  integer, intent(in), optional :: iclear
+  integer, intent(in) :: iclear
 
   ! OPTIONAL: If set to TRUE, existing submatrices are ignored.
   ! Standard value is FALSE which stops the application with an error.
