@@ -949,6 +949,12 @@ module linearsystemscalar
   public :: lsyssc_transposeMatrixInSitu
   public :: lsyssc_transposeMatrixDirect
   public :: lsyssc_allocEmptyMatrix
+  
+  interface lsyssc_allocEmptyMatrix
+    module procedure lsyssc_allocEmptyMatrix1
+    module procedure lsyssc_allocEmptyMatrix2
+  end interface
+  
   public :: lsyssc_lumpMatrix
   public :: lsyssc_scaleMatrix
   public :: lsyssc_multMatMat
@@ -18195,7 +18201,7 @@ contains
 
 !<subroutine>
 
-  subroutine lsyssc_allocEmptyMatrix (rmatrixScalar,iclear,bignoreExisting,cdataType)
+  subroutine lsyssc_allocEmptyMatrix1 (rmatrixScalar,bclear,bignoreExisting,cdataType)
 
 !<description>
   ! This routine allocates memory for the matrix entries without computing
@@ -18210,14 +18216,67 @@ contains
 !</description>
 
 !<input>
-  ! OPTIONAL: Whether and how to fill the matrix with initial values.
+  ! OPTIONAL: Whether to clear the matrix upon creation
+  logical, intent(in), optional :: bclear
+
+  ! OPTIONAL: If set to TRUE, existing matrices are ignored.
+  ! Standard value is FALSE which stops the application with an error.
+  logical, intent(in), optional :: bignoreExisting
+
+  ! OPTIONAL: Data type of the matrix (ST_SINGLE, ST_DOUBLE)
+  ! If not present, the standard data type cdataType-variable in the matrix
+  ! is used (usually ST_DOUBLE).
+  integer, intent(in), optional :: cdataType
+!</input>
+
+!<inputoutput>
+  ! The FE matrix. Calculated matrix entries are imposed to this matrix.
+  type(t_matrixScalar), intent(inout) :: rmatrixScalar
+!</inputoutput>
+
+!</subroutine>
+  
+    ! Call lsyssc_allocEmptyMatrix2 with the appropriate interface
+
+    if (present(bclear)) then
+      if (bclear) then
+        call lsyssc_allocEmptyMatrix2 (rmatrixScalar,LSYSSC_SETM_ZERO,bignoreExisting,cdataType)
+      else
+        call lsyssc_allocEmptyMatrix2 (rmatrixScalar,LSYSSC_SETM_UNDEFINED,bignoreExisting,cdataType)
+      end if
+    else
+      call lsyssc_allocEmptyMatrix2 (rmatrixScalar,LSYSSC_SETM_UNDEFINED,bignoreExisting,cdataType)
+    end if
+
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine lsyssc_allocEmptyMatrix2 (rmatrixScalar,iclear,bignoreExisting,cdataType)
+
+!<description>
+  ! This routine allocates memory for the matrix entries without computing
+  ! the entries. This can be used to attach an 'empty' matrix to a matrix
+  ! structure. The number of entries NA as well as the type of the matrix
+  ! cmatrixFormat must be initialised in rmatrixScalar.
+  !
+  ! Memory is allocated if either the matrix has no content attached or
+  ! if the content belongs to another matrix. In both case, a new matrix
+  ! content array is created and the matrix will be the owner of that
+  ! memory block.
+!</description>
+
+!<input>
+  ! Whether and how to fill the matrix with initial values.
   ! One of the LSYSSC_SETM_xxxx constants:
   ! LSYSSC_SETM_UNDEFINED : Do not initialise the matrix (default).
   ! LSYSSC_SETM_ZERO      : Clear the matrix / fill it with 0.0.
   ! LSYSSC_SETM_ONE       : Fill the matrix with 1.0. (Used e.g.
   !                         for UMFPACK who needs a non-zero
   !                         matrix for symbolic factorisation.)
-  integer, intent(in), optional :: iclear
+  integer, intent(in) :: iclear
 
   ! OPTIONAL: If set to TRUE, existing matrices are ignored.
   ! Standard value is FALSE which stops the application with an error.
@@ -18236,48 +18295,47 @@ contains
 
 !</subroutine>
 
-  ! local variables
-  integer :: NA
-  integer :: cdType,NVAR
-  real(SP), dimension(:), pointer :: p_Fa
-  real(DP), dimension(:), pointer :: p_Da
+    ! local variables
+    integer :: NA
+    integer :: cdType,NVAR
+    real(SP), dimension(:), pointer :: p_Fa
+    real(DP), dimension(:), pointer :: p_Da
 
-  if ((rmatrixScalar%h_Da .ne. ST_NOHANDLE) .and. &
-      (iand(rmatrixScalar%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .eq. 0)) then
-    if (present(bignoreExisting)) then
-      if (bignoreExisting) return
+    if ((rmatrixScalar%h_Da .ne. ST_NOHANDLE) .and. &
+        (iand(rmatrixScalar%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .eq. 0)) then
+      if (present(bignoreExisting)) then
+        if (bignoreExisting) return
+      end if
+      call output_line('Cannot create empty matrix; exists already!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_allocEmptyMatrix')
+      call sys_halt()
     end if
-    call output_line('Cannot create empty matrix; exists already!',&
-        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_allocEmptyMatrix')
-    call sys_halt()
-  end if
 
-  NA = rmatrixScalar%NA
-  NVAR = rmatrixScalar%NVAR
+    NA = rmatrixScalar%NA
+    NVAR = rmatrixScalar%NVAR
 
-  if (present(cdataType)) then
-    cdType = cdataType
-    ! Change the data type in the matrix according to the new we will use.
-    rmatrixScalar%cdataType = cdType
-  else
-    cdType = rmatrixScalar%cdataType
-  end if
+    if (present(cdataType)) then
+      cdType = cdataType
+      ! Change the data type in the matrix according to the new we will use.
+      rmatrixScalar%cdataType = cdType
+    else
+      cdType = rmatrixScalar%cdataType
+    end if
 
-  ! Which matrix structure do we have?
-  select case (rmatrixScalar%cmatrixFormat)
-  case (LSYSSC_MATRIX9,LSYSSC_MATRIX7,LSYSSC_MATRIXD,LSYSSC_MATRIX1,LSYSSC_MATRIX9ROWC)
+    ! Which matrix structure do we have?
+    select case (rmatrixScalar%cmatrixFormat)
+    case (LSYSSC_MATRIX9,LSYSSC_MATRIX7,LSYSSC_MATRIXD,LSYSSC_MATRIX1,LSYSSC_MATRIX9ROWC)
 
-    ! Check if the matrix entries exist and belongs to us.
-    ! If not, allocate the matrix.
-    if ((rmatrixScalar%h_Da .eq. ST_NOHANDLE) .or. &
-        (iand(rmatrixScalar%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .ne. 0)) then
+      ! Check if the matrix entries exist and belongs to us.
+      ! If not, allocate the matrix.
+      if ((rmatrixScalar%h_Da .eq. ST_NOHANDLE) .or. &
+          (iand(rmatrixScalar%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .ne. 0)) then
 
-      call storage_new ('lsyssc_allocEmptyMatrix', 'Da', &
-                          NA,cdType, rmatrixScalar%h_Da, &
-                          ST_NEWBLOCK_NOINIT)
+        call storage_new ('lsyssc_allocEmptyMatrix', 'Da', &
+                            NA,cdType, rmatrixScalar%h_Da, &
+                            ST_NEWBLOCK_NOINIT)
 
-      ! Initialise                          
-      if (present(iclear)) then
+        ! Initialise                          
         select case (iclear)
         
         case (LSYSSC_SETM_ZERO) 
@@ -18298,31 +18356,29 @@ contains
           end select
 
         end select
+
       end if
 
-    end if
+    case (LSYSSC_MATRIX9INTL,LSYSSC_MATRIX7INTL)
 
-  case (LSYSSC_MATRIX9INTL,LSYSSC_MATRIX7INTL)
+      ! Check if the matrix entries exist. If not, allocate the matrix.
+      if ((rmatrixScalar%h_Da .eq. ST_NOHANDLE) .or. &
+          (iand(rmatrixScalar%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .ne. 0)) then
 
-    ! Check if the matrix entries exist. If not, allocate the matrix.
-    if ((rmatrixScalar%h_Da .eq. ST_NOHANDLE) .or. &
-        (iand(rmatrixScalar%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .ne. 0)) then
+        select case (rmatrixScalar%cinterleavematrixFormat)
+        case (LSYSSC_MATRIX1)
+          call storage_new ('lsyssc_allocEmptyMatrix', 'Da', &
+              NA*NVAR*NVAR, cdType, rmatrixScalar%h_Da, ST_NEWBLOCK_NOINIT)
+        case (LSYSSC_MATRIXD)
+          call storage_new ('lsyssc_allocEmptyMatrix', 'Da', &
+              NA*NVAR, cdType, rmatrixScalar%h_Da, ST_NEWBLOCK_NOINIT)
+        case default
+          call output_line('Unsupported interleave matrix format!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_allocEmptyMatrix')
+          call sys_halt()
+        end select
 
-      select case (rmatrixScalar%cinterleavematrixFormat)
-      case (LSYSSC_MATRIX1)
-        call storage_new ('lsyssc_allocEmptyMatrix', 'Da', &
-            NA*NVAR*NVAR, cdType, rmatrixScalar%h_Da, ST_NEWBLOCK_NOINIT)
-      case (LSYSSC_MATRIXD)
-        call storage_new ('lsyssc_allocEmptyMatrix', 'Da', &
-            NA*NVAR, cdType, rmatrixScalar%h_Da, ST_NEWBLOCK_NOINIT)
-      case default
-        call output_line('Unsupported interleave matrix format!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_allocEmptyMatrix')
-        call sys_halt()
-      end select
-
-      ! Initialise
-      if (present(iclear)) then
+        ! Initialise
         select case (iclear)
 
         case (LSYSSC_SETM_ZERO)
@@ -18346,17 +18402,15 @@ contains
 
       end if
 
-    end if
+    case default
+      call output_line('Not supported matrix structure!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_allocEmptyMatrix')
+      call sys_halt()
+    end select
 
-  case default
-    call output_line('Not supported matrix structure!',&
-        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_allocEmptyMatrix')
-    call sys_halt()
-  end select
-
-  ! The matrix is now the owner of the memory.
-  rmatrixScalar%imatrixSpec = &
-      iand(rmatrixScalar%imatrixSpec,not(LSYSSC_MSPEC_CONTENTISCOPY))
+    ! The matrix is now the owner of the memory.
+    rmatrixScalar%imatrixSpec = &
+        iand(rmatrixScalar%imatrixSpec,not(LSYSSC_MSPEC_CONTENTISCOPY))
 
   end subroutine
 
