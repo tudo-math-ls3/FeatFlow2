@@ -1,3 +1,5 @@
+
+
 #!/usr/bin/env make
 ########################################################################
 #                                                                      #
@@ -653,6 +655,19 @@ CFLAGSF90     := -march=opteron $(CFLAGSF90)
 CFLAGSC       := -march=opteron $(CFLAGSC)
 CFLAGSCXX     := -march=opteron $(CFLAGSCXX)
 LDFLAGS       := -march=opteron $(LDFLAGS)
+endif
+endif
+
+ifeq ($(call match,$(ID),(pc|pc64)-i486-darwin-gcc-.*),yes)
+# invokes the GNU Fortran compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/gcc-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77     := $(CFLAGSF77)
+CFLAGSF90     := $(CFLAGSF90)
+CFLAGSC       := $(CFLAGSC)
+CFLAGSCXX     := $(CFLAGSCXX)
+LDFLAGS       := $(LDFLAGS)
 endif
 endif
 
