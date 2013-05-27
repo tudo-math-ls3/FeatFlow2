@@ -18440,8 +18440,8 @@ contains
 
 !<subroutine>
 
-  subroutine lsyssc_createDiagMatrixDiscr (rdiscretisationTrial,rmatrix,&
-      cmatrixFormat,bclear,rdiscretisationTest)
+  subroutine lsyssc_createDiagMatrixDiscr (rdiscretisationTrial,cmatrixFormat,&
+      rmatrix,bclear,rdiscretisationTest)
 
 !<description>
   ! Creates a diagonal matrix in matrix format cmatrixType. Initialises
@@ -18606,7 +18606,7 @@ contains
 
 !<subroutine>
 
-  subroutine lsyssc_createFullMatrixDirect2 (rmatrix,NEQ,bclear,ncols,cdataType)
+  subroutine lsyssc_createFullMatrixDirect2 (cmatrixFormat,rmatrix,NEQ,bclear,ncols,cdataType)
 
 !<description>
   ! Creates a simple NEQ*ncols matrix in matrix structure 1.
@@ -18616,6 +18616,9 @@ contains
 !<input>
   ! Number of rows in the matrix
   integer, intent(in) :: NEQ
+
+  ! Matrix type, e.g. LSYSSC_MATRIX1,...
+  integer, intent(in) :: cmatrixFormat
 
   ! OPTIONAL: Number of columns in the matrix. If not specified, NEQ=nrows
   ! is assumed.
@@ -18640,11 +18643,26 @@ contains
     rmatrix%NCOLS = NEQ
     if (present(ncols)) rmatrix%NCOLS = ncols
     rmatrix%NA = rmatrix%NEQ * rmatrix%NCOLS
-    rmatrix%cmatrixFormat = LSYSSC_MATRIX1
     if (present(cdataType)) rmatrix%cdataType = cdataType
 
-    call storage_new ('lsyssc_createFullMatrix', 'h_Da', &
-        rmatrix%NA , rmatrix%cdataType, rmatrix%h_Da,ST_NEWBLOCK_NOINIT)
+    rmatrix%cmatrixFormat = cmatrixFormat
+
+    select case (cmatrixFormat)
+    case (LSYSSC_MATRIX1)
+
+      ! Full matrix
+      call storage_new ("lsyssc_createFullMatrix", "h_Da", &
+          rmatrix%NA , rmatrix%cdataType, rmatrix%h_Da,ST_NEWBLOCK_NOINIT)
+          
+    ! case (LSYSSC_MATRIX9)
+    !    to be implemented...
+    
+    case default
+      call output_line("Unsupported matrix format!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_createFullMatrixDirect")
+      call sys_halt()
+
+    end select
 
     ! Probably clear the matrix
     if (present(bclear)) then
@@ -18659,8 +18677,8 @@ contains
 
 !<subroutine>
 
-  subroutine lsyssc_createFullMatrixDiscr (rdiscretisationTrial,rmatrix,bclear,&
-      rdiscretisationTest,cdataType)
+  subroutine lsyssc_createFullMatrixDiscr (rdiscretisationTrial,cmatrixFormat,&
+      rmatrix,bclear,rdiscretisationTest,cdataType)
 
 !<description>
   ! Creates a simple NEQ*ncols matrix in matrix structure 1.
@@ -18674,6 +18692,9 @@ contains
   ! the discretisation of the test functions, this test and trial
   ! functions coincide.
   type(t_spatialDiscretisation), intent(in), target :: rdiscretisationTrial
+
+  ! Matrix type, e.g. LSYSSC_MATRIX1,...
+  integer, intent(in) :: cmatrixFormat
 
   ! Whether to initialise the matrix with zero or not.
   logical, intent(in), optional :: bclear
@@ -18714,16 +18735,31 @@ contains
 
     ! Initialise the remaining data
     rmatrix%NA = rmatrix%NEQ * rmatrix%NCOLS
-    rmatrix%cmatrixFormat = LSYSSC_MATRIX1
     if (present(cdataType)) rmatrix%cdataType = cdataType
 
+    rmatrix%cmatrixFormat = cmatrixFormat
+
+    select case (cmatrixFormat)
+    case (LSYSSC_MATRIX1)
+
+      ! Full matrix
+      call storage_new ("lsyssc_createFullMatrix", "h_Da", &
+          rmatrix%NA , rmatrix%cdataType, rmatrix%h_Da,ST_NEWBLOCK_NOINIT)
+          
+    ! case (LSYSSC_MATRIX9)
+    !    to be implemented...
+    
+    case default
+      call output_line("Unsupported matrix format!",&
+          OU_CLASS_ERROR,OU_MODE_STD,"lsyssc_createFullMatrixDiscr")
+      call sys_halt()
+
+    end select
+
+    ! Probably clear the matrix
     if (present(bclear)) then
       if (bclear) then
-        call storage_new ('lsyssc_createFullMatrix', 'h_Da', &
-            rmatrix%NA , rmatrix%cdataType, rmatrix%h_Da,ST_NEWBLOCK_ZERO)
-      else
-        call storage_new ('lsyssc_createFullMatrix', 'h_Da', &
-            rmatrix%NA , rmatrix%cdataType, rmatrix%h_Da,ST_NEWBLOCK_NOINIT)
+        call lsyssc_clearMatrix (rmatrix)
       end if
     end if
 
