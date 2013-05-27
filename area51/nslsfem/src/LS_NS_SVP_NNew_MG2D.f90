@@ -1896,9 +1896,9 @@ contains
   case (9)
     ! Fully developed power law flow
     ! edge 1 of boundary component 1.
-    ! Symmetric line, the shear stress is zero here
+    ! Symmetry line, the shear stress is zero here
     call boundary_createRegion(rboundary,1,1,rboundaryRegion)
-    rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+    rboundaryRegion%iproperties = 2**1-2**1
     call bcasm_newDirichletBConRealBD (rdiscretisation,5,&
                      rboundaryRegion,rdiscreteBC,&
               getBoundaryValues_2D,rcollection=rcollection)
@@ -1906,7 +1906,7 @@ contains
     ! edge 2 of boundary component 1.
     ! outflow, zero normal stress
     call boundary_createregion(rboundary,1,2,rboundaryregion)
-    rboundaryRegion%iproperties = 2**1-2**1
+    rboundaryRegion%iproperties = BDR_PROP_WITHSTART
     call bcasm_newdirichletbconrealbd (rdiscretisation,4,&
                      rboundaryregion,rdiscretebc,&
               getBoundaryValues_2D,rcollection=rcollection)
@@ -1922,7 +1922,7 @@ contains
     ! Edge 4 of boundary component 1.
     ! inflow profile
     call boundary_createRegion(rboundary,1,4,rboundaryRegion)
-    rboundaryRegion%iproperties = 2**1-2**1
+    rboundaryRegion%iproperties = BDR_PROP_WITHEND
     call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                      rboundaryRegion,rdiscreteBC,&
               getBoundaryValues_2D,rcollection=rcollection)
@@ -1932,18 +1932,19 @@ contains
     ! Syymetric line, vertical velocity is zero
     call boundary_createRegion(rboundary,1,1,rboundaryRegion)
     ! As we define the Y-velocity, we now set icomponent=2 in the following call.
-    rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+    rboundaryRegion%iproperties = 2**1-2**1
     call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
                      rboundaryRegion,rdiscreteBC,&
               getBoundaryValues_2D,rcollection=rcollection)
                  
-!    ! Edge 2 of boundary component 1.
-!    ! outflow
-!    call boundary_createRegion(rboundary,1,2,rboundaryRegion)
-!    rboundaryRegion%iproperties = 2**1-2**1
-!    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
-!                     rboundaryRegion,rdiscreteBC,&
-!              getBoundaryValues_2D,rcollection=rcollection)
+    ! Edge 2 of boundary component 1.
+    ! This is not required, just for better convergence!
+    ! outflow
+    call boundary_createRegion(rboundary,1,2,rboundaryRegion)
+    rboundaryRegion%iproperties = BDR_PROP_WITHSTART
+    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+                     rboundaryRegion,rdiscreteBC,&
+              getBoundaryValues_2D,rcollection=rcollection)
                  
     ! Edge 3 of boundary component 1.
     ! no-slip on upper wall
@@ -1956,7 +1957,7 @@ contains
     ! Edge 4 of boundary component 1.
     ! inflow profile
     call boundary_createRegion(rboundary,1,4,rboundaryRegion)
-    rboundaryRegion%iproperties = 2**1-2**1
+    rboundaryRegion%iproperties = BDR_PROP_WITHEND
     call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
                      rboundaryRegion,rdiscreteBC,&
               getBoundaryValues_2D,rcollection=rcollection)
