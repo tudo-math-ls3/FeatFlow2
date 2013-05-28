@@ -56,6 +56,7 @@ program tutorial
   use tutorial006j
   use tutorial006k
   use tutorial006l
+  use tutorial006m
   
   use tutorial007a
   use tutorial007b
@@ -175,6 +176,7 @@ program tutorial
   call start_tutorial006j
   call start_tutorial006k
   call start_tutorial006l
+  call start_tutorial006m
   
   call start_tutorial007a
   call start_tutorial007b

@@ -87,7 +87,7 @@ contains
     ! Cleanup
     ! =================================
     
-    ! Release the matrix
+    ! Release the vector
     call lsyssc_releaseVector (rx)
     
     ! Release the Q1-discretisation
