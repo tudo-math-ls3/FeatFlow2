@@ -67,7 +67,7 @@ CDPATH=
 ##############################################################################
 
 ifeq ($(call match,$(REALID),pc-.*-cygwin_nt.*),yes)
-REALID:=$(strip $(REALID))-g95-blas
+REALID:=$(strip $(REALID))-gcc-blas
 endif
 
 ifeq ($(strip $(REALID)), alpha-ev6-osf1)

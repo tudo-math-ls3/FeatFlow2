@@ -2199,7 +2199,7 @@ ifeq ($(call match,$(ID),.*-.*-aix-.*-.*),yes)
 include $(TEMPLATESDIR)/aix-generic.mk
 endif
 
-ifeq ($(call match,$(ID),.*-.*-cygwin_nt-.*-.*),yes)
+ifeq ($(call match,$(ID),.*-.*-cygwin_nt.*-.*-.*),yes)
 # Use Cygwin NT as operating system
 include $(TEMPLATESDIR)/cygwin_nt-generic.mk
 endif
