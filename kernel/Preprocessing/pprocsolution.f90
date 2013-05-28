@@ -83,7 +83,7 @@ contains
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Write to channel ifile. Do not close the channel afterwards.
     !       'sfile' is ignored.
-    integer(I32), intent(in) :: ifile
+    integer, intent(in) :: ifile
 
     ! name of the file where to write to. Only relevant for ifile=0!
     character(len=*), intent(in) :: sfile
@@ -200,7 +200,7 @@ contains
     type(t_pgm), intent(in) :: rpgm
 
     ! coordinates of 2D array
-    real(DP), dimension(2,*), intent(in) :: Dpoints
+    real(DP), dimension(:,:), intent(in) :: Dpoints
 
     ! OPTIONAL: coordinates of the bounding box
     ! If not present, then the bounding box is calculated internally
@@ -232,8 +232,10 @@ contains
       ymax = Dbounds(2,2)
     else
       ! Determine minimum/maximum values of array
-      xmin = huge(DP); xmax = -huge(DP)
-      ymin = huge(DP); ymax = -huge(DP)
+      xmin = huge(1.0_DP)
+      xmax = -huge(1.0_DP)
+      ymin = huge(1.0_DP)
+      ymax = -huge(1.0_DP)
 
       do ipoint = 1, npoints
         xmin = min(xmin, Dpoints(1,ipoint))
@@ -276,7 +278,7 @@ contains
     type(t_pgm), intent(in) :: rpgm
 
     ! coordinates of 2D array
-    real(DP), dimension(2,*), intent(in) :: Dpoints
+    real(DP), dimension(:,:), intent(in) :: Dpoints
 
     ! OPTIONAL: coordinates of the bounding box
     ! If not present, then the bounding box is calculated internally
@@ -308,8 +310,10 @@ contains
       ymax = Dbounds(2,2)
     else
       ! Determine minimum/maximum values of array
-      xmin = huge(DP); xmax = -huge(DP)
-      ymin = huge(DP); ymax = -huge(DP)
+      xmin = huge(1.0_DP)
+      xmax = -huge(1.0_DP)
+      ymin = huge(1.0_DP)
+      ymax = -huge(1.0_DP)
 
       do ipoint = 1, npoints
         xmin = min(xmin, Dpoints(1,ipoint))
