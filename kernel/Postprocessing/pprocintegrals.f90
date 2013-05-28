@@ -133,14 +133,12 @@ contains
     ! of the domain). We replace the correspoding function value by zero
     ! in this case and throw a warning. This is done by deleting the points
     ! and elements from the list.
-    j = 1
+    j = 0
     do i=1,ncubp
       if (Ielements(i) .ne. 0) then
-        if (j .ne. i) then
-          DpointsReal2(:,1,j) = DpointsReal2(:,1,i)
-          Ielements(j) = Ielements(i)
-          j = j+1
-        end if
+        j = j+1
+        DpointsReal2(:,1,j) = DpointsReal2(:,1,i)
+        Ielements(j) = Ielements(i)
       else
         select case (ubound(DpointsReal2,1))
         case (NDIM1D)
@@ -163,13 +161,13 @@ contains
     ! Calculate the values in the points. One point per element.
     allocate(Dvalues(1,ncubp))
 
-    call ffunctionRefSimple (ncubp,1,Ielements,DpointsReal2,Dvalues,rcollection)
+    call ffunctionRefSimple (j,1,Ielements,DpointsReal2,Dvalues,rcollection)
 
     ! Sum up all values to an integral
     dvalue = 0.0_DP
 
     dcubweight = 0.5_DP*sqrt((Dend(1)-Dstart(1))**2+(Dend(2)-Dstart(2))**2)
-    do i=1,ncubp
+    do i=1,j
       dvalue = dvalue + Dvalues(1,i) * dcubweight * Domega(i)
     end do
 
