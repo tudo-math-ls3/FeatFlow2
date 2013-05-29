@@ -31,7 +31,7 @@ module q1projection
   
 contains
 
-  subroutine fcalcLocalIntegral (dintvalue,rassemblyData,rintegralAssembly,&
+  subroutine fcalcLocalIntegral (Dintvalue,rassemblyData,rintegralAssembly,&
     npointsPerElement,nelements,revalVectors,rcollection)
 
   use collection
@@ -39,8 +39,8 @@ contains
 
   ! Calculates the value of the integral for a set of elements.
   
-  ! Returns the value of the integral
-  real(DP), intent(out) :: dintvalue
+  ! Returns the values of the integral(s)
+  real(DP), dimension(:), intent(out) :: Dintvalue
 
   ! Data necessary for the assembly. Contains determinants and
   ! cubature weights for the cubature,...
@@ -183,7 +183,7 @@ contains
     end do
     
     ! Dummy return value
-    dintvalue = 0.0_DP
+    Dintvalue(1) = 0.0_DP
 
   end subroutine
 
