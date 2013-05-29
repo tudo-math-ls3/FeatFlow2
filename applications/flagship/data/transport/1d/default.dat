@@ -46,9 +46,6 @@ smatrixformat = MATRIX9
 # Version identifier
 version = %{version}
 
-# Position of the discretisation in the array of discretisations
-#Discretisation = 1
-
 #-------------------------------------------------------------------------------
 
 # Position of the DOF coordinates in the block vector structure
@@ -119,6 +116,8 @@ CoeffMatrix_CX(1) = 8
 #-------------------------------------------------------------------------------
 
 # Discretisation sections
+# Note that '1' stands for the position of the discretisation which is still
+# required by the application problem. This may be removed in a later version
 Discretisation(1) = 1
                     Discr_Transport
 
@@ -135,46 +134,48 @@ CubatureInfo(4) =
 
 # Scalar matrix sections
 matrixscalar(8) =
-                  TemplateMatrix_Transport
-                  SystemMatrix_Transport
-                  JacobianMatrix_Transport
-                  TransportMatrix_Transport
-                  ConsistentMatrix_Transport
-                  LumpedMatrix_Transport
-                  CoeffMatrix_S_Transport
-                  CoeffMatrix_CX_Transport
+                  Matrix_Transport_Template
+                  Matrix_Transport_System
+                  Matrix_Transport_Jacobian
+                  Matrix_Transport_TransportOperator
+                  Matrix_Transport_ConsistentMass
+                  Matrix_Transport_LumpedMass
+                  Matrix_Transport_Coeff_S
+                  Matrix_Transport_Coeff_CX
 
 #-------------------------------------------------------------------------------
 
-# Block matrix sections
+# Block matrix sections (can also be left empty)
+matrixblock =
 
 #-------------------------------------------------------------------------------
 
-# Scalar vector sections
+# Scalar vector sections (can also be left empty)
+vectorscalar =
 
 #-------------------------------------------------------------------------------
 
 # Block vector sections
 vectorblock(2) =
-                 DofCoordVector_Transport
-                 VelocityVector_Transport
+                 Vector_Transport_DofCoords
+                 Vector_Transport_VelocityField
 
 #-------------------------------------------------------------------------------
 
 # Group finite element sections
 groupfemblock(4) =
-                   TemplateGFEMBlock_Transport
-                   ConvectionGFEMBlock_Transport
-                   DiffusionGFEMBlock_Transport
-                   MassGFEMBlock_Transport
+                   GFEMBlock_Transport_Template
+                   GFEMBlock_Transport_Convection
+                   GFEMBlock_Transport_Diffusion
+                   GFEMBlock_Transport_Mass
 
 #-------------------------------------------------------------------------------
 
 # Stabilisation of AFC-type
 afcstab(3) =
-             ConvectionAFC_Transport
-             DiffusionAFC_Transport
-             MassAFC_Transport
+             AFCstab_Transport_Convection
+             AFCstab_Transport_Diffusion
+             AFCstab_Transport_Mass
 
 ################################################################################
 [Discr_Transport]
@@ -226,17 +227,17 @@ nlevels        = 0
 discretisation = problem:Transport,idiscr:1,iblock:1
 
 ################################################################################
-[TemplateMatrix_Transport]
+[Matrix_Transport_Template]
 ################################################################################
 saction        = create
 sperform       = init
 smethod        = virtual
 sdatatype      = %{sdatatype}
 smatrixformat  = %{smatrixformat}
-discretisation = problem:Transport,iblock:1
+discretisation = problem:Transport,idiscr:1,iblock:1
 
 ################################################################################
-[SystemMatrix_Transport]
+[Matrix_Transport_System]
 ################################################################################
 saction      = duplicate
 sperform     = always
@@ -244,7 +245,7 @@ smethod      = empty
 matrixscalar = problem:Transport,imatrix:1
 
 ################################################################################
-[JacobianMatrix_Transport]
+[Matrix_Transport_Jacobian]
 ################################################################################
 saction      = duplicate
 sperform     = always
@@ -253,7 +254,7 @@ smethod(1)   = empty
 matrixscalar = problem:Transport,imatrix:1
 
 ################################################################################
-[TransportMatrix_Transport]
+[Matrix_Transport_TransportOperator]
 ################################################################################
 saction      = duplicate
 sperform     = always
@@ -261,7 +262,7 @@ smethod      = empty
 matrixscalar = problem:Transport,imatrix:1
 
 ################################################################################
-[ConsistentMatrix_Transport]
+[Matrix_Transport_ConsistentMass]
 ################################################################################
 saction        = duplicate
 sperform       = always
@@ -273,7 +274,7 @@ stestfunction  = DER_FUNC1D
 scoefficient   = 1
 
 ################################################################################
-[LumpedMatrix_Transport]
+[Matrix_Transport_LumpedMass]
 ################################################################################
 saction      = duplicate
 sperform     = always
@@ -281,7 +282,7 @@ smethod      = lump_diag
 matrixscalar = problem:Transport,imatrix:5
 
 ################################################################################
-[CoeffMatrix_CX_Transport]
+[Matrix_Transport_Coeff_CX]
 ################################################################################
 saction        = duplicate
 sperform       = always
@@ -293,7 +294,7 @@ strialfunction = DER_DERIV1D_X
 scoefficient   = 1
 
 ################################################################################
-[CoeffMatrix_S_Transport]
+[Matrix_Transport_Coeff_S]
 ################################################################################
 saction        = duplicate
 sperform       = always
@@ -305,7 +306,7 @@ strialfunction = DER_DERIV1D_X
 scoefficient   = -1e-2
 
 ################################################################################
-[DofCoordVector_Transport]
+[Vector_Transport_DofCoords]
 ################################################################################
 saction        = create
 sperform       = always
@@ -313,7 +314,7 @@ smethod        = dof
 discretisation = problem:Transport
 
 ################################################################################
-[VelocityVector_Transport]
+[Vector_Transport_VelocityField]
 ################################################################################
 saction        = none
 sperform       = always
@@ -321,58 +322,58 @@ smethod        = virtual
 discretisation = problem:Transport
 
 ################################################################################
-[TemplateGFEMBlock_Transport]
+[GFEMBlock_Transport_Template]
 ################################################################################
 saction        = create
 sperform       = always
 smethod        = virtual
 groupfemset(1) =
-                 TemplateGFEMSet_Transport
+                 GFEMSet_Transport_Template
 
 ################################################################################
-[TemplateGFEMSet_Transport]
+[GFEMSet_Transport_Template]
 ################################################################################
 saction        = none
 sperform       = always
 smethod        = virtual
 
 ################################################################################
-[ConvectionGFEMBlock_Transport]
+[GFEMBlock_Transport_Convection]
 ################################################################################
 saction        = none
 sperform       = always
 smethod        = virtual
 
 ################################################################################
-[DiffusionGFEMBlock_Transport]
+[GFEMBlock_Transport_Diffusion]
 ################################################################################
 saction        = none
 sperform       = always
 smethod        = virtual
 
 ################################################################################
-[MassGFEMBlock_Transport]
+[GFEMBlock_Transport_Mass]
 ################################################################################
 saction        = none
 sperform       = always
 smethod        = virtual
 
 ################################################################################
-[ConvectionAFC_Transport]
+[AFCstab_Transport_Convection]
 ################################################################################
 saction        = none
 sperform       = always
 smethod        = virtual
 
 ################################################################################
-[DiffusionAFC_Transport]
+[AFCstab_Transport_Diffusion]
 ################################################################################
 saction        = none
 sperform       = always
 smethod        = virtual
 
 ################################################################################
-[MassAFC_Transport]
+[AFCstab_Transport_Mass]
 ################################################################################
 saction        = none
 sperform       = always
