@@ -237,11 +237,12 @@
 !# 2.) problem_updateDiscrAll
 !#     -> Updates all discretisation structures of the problem
 !#
-!# 3.) problem_initDiscr
-!#     -> Initialises a single discretisation structure
+!# 3.) problem_initSpatialDiscr / problem_initBlockDiscr
+!#     -> Initialises a single block/spatial discretisation structure
 !#
-!# 4.) problem_updateDiscr
-!#     -> Updates a single discretisation structures
+!# 4.) problem_updateDiscr/
+!#     problem_updateSpatialDiscr / problem_updateBlockDiscr
+!#     -> Updates a single block/spatial discretisation structures
 !#
 !# 5.) problem_initCubInfoAll
 !#     -> Initialises all cubature info structures of the problem
@@ -264,57 +265,66 @@
 !# 11.) problem_initMatrixScalar / problem_initMatrixBlock
 !#     -> Initialises a single scalar/block matrix
 !#
-!# 12.) problem_updateMatrixScalar / problem_updateMatrixBlock
+!# 12.) problem_updateMatrix /
+!#      problem_updateMatrixScalar / problem_updateMatrixBlock
 !#      -> Updates a single scalar/block matrix
 !#
-!# 13.) problem_updateMatrix
-!#      -> Updates a single scalar/block matrix
+!# 13.) problem_genContentMatrixTask
+!#      -> Updates the matrix task for generating matrix content
 !#
-!# 14.) problem_initVectorAll
+!# 14.) problem_genContentMatrix
+!#      -> Updates the matrix content
+!#
+!# 15.) problem_initVectorAll
 !#     -> Initialises all scalar/block vectors of the problem
 !#
-!# 15.) problem_updateVectorAll
+!# 16.) problem_updateVectorAll
 !#     -> Updates all scalar/block vectors of the problem
 !#
-!# 16.) problem_initVectorScalar / problem_initVectorBlock
+!# 17.) problem_initVectorScalar / problem_initVectorBlock
 !#     -> Initialises a single scalar/block vector
 !#
-!# 17.) problem_updateVectorScalar / problem_updateVecBl
+!# 18.) problem_updateVector /
+!#      problem_updateVectorScalar / problem_updateVectorBlock
 !#      -> Updates a single scalar/block vector
 !#
-!# 18.) problem_updateVector
-!#      -> Updates a single scalar/block vector
+!# 19.) problem_genContentVectorTask
+!#      -> Updates the vector task for generating vector content
 !#
-!# 19.) problem_initAFCstabAll
+!# 20.) problem_genContentVector
+!#      -> Updates the vector content
+!#
+!# 21.) problem_initAFCstabAll
 !#     -> Initialises all stabilisation structures of AFC-type of the problem
 !#
-!# 20.) problem_updateAFCstabAll
+!# 22.) problem_updateAFCstabAll
 !#     -> Updates all stabilisation structures of AFC-type of the problem
 !#
-!# 21.) problem_initAFCstab
+!# 23.) problem_initAFCstab
 !#     -> Initialises a single stabilisation structure of AFC-type
 !#
-!# 22.) problem_updateAFCstab
+!# 24.) problem_updateAFCstab
 !#      -> Updates a single stabilisation structure of AFC-type
 !#
-!# 23.) problem_initGroupFEMBlockAll
-!#     -> Initialises all blocks of group finite element structures of
-!#        the problem
+!# 25.) problem_initGroupFEMAll
+!#     -> Initialises all blocks of group finite element
+!#         structures of of the problem
 !#
-!# 24.) problem_updateGroupFEMBlockAll
-!#     -> Updates all blocks of group finite element structures of the
-!#        problem
+!# 26.) problem_updateGroupFEMAll
+!#     -> Updates all group blocks of finite element
+!#        structures of the problem
 !#
-!# 25.) problem_initGroupFEMBlock
+!# 27.) problem_initGroupFEMSet / problem_initGroupFEMBlock
 !#     -> Initialises a single block of group finite element structures
 !#
-!# 26.) problem_updateGroupFEMBlock
+!# 28.) problem_updateGroupFEM /
+!#      problem_updateGroupFEMSet / problem_updateGroupFEMBlock
 !#      -> Updates a single block of group finite element structures
 !#
-!# 27.) problem_clearTaskList
+!# 29.) problem_clearTaskList
 !#     -> Releases a task list
 !#
-!# 28.) problem_infoTaskList
+!# 30.) problem_infoTaskList
 !#      -> Outputs information about the task list
 !#
 !# </purpose>
@@ -382,7 +392,7 @@ module problem
     module procedure problem_infoMatrixTL
     module procedure problem_infoVectorTL
     module procedure problem_infoAFCstabTL
-    module procedure problem_infoGroupFEMBlockTL
+    module procedure problem_infoGroupFEMTL
   end interface problem_infoTaskList
 
   public :: problem_infoTaskList
@@ -393,15 +403,18 @@ module problem
     module procedure problem_clearMatrixTL
     module procedure problem_clearVectorTL
     module procedure problem_clearAFCstabTL
-    module procedure problem_clearGroupFEMBlockTL
+    module procedure problem_clearGroupFEMTL
   end interface problem_clearTaskList
 
   public :: problem_clearTaskList
-
+  
   public :: t_discrTask
   public :: problem_initDiscrAll
   public :: problem_updateDiscrAll
-  public :: problem_initDiscr
+  public :: problem_initSpatialDiscr
+  public :: problem_initBlockDiscr
+  public :: problem_updateSpatialDiscr
+  public :: problem_updateBlockDiscr
   public :: problem_updateDiscr
 
   interface problem_updateCubInfo
@@ -430,7 +443,7 @@ module problem
   public :: problem_initVectorScalar
   public :: problem_initVectorBlock
   public :: problem_updateVectorScalar
-  public :: problem_updateVecBl
+  public :: problem_updateVectorBlock
   public :: problem_updateVector
 
   interface problem_updateAFCstab
@@ -444,16 +457,14 @@ module problem
   public :: problem_initAFCstab
   public :: problem_updateAFCstab
 
-  interface problem_updateGroupFEMBlock
-    module procedure problem_updateGroupFEMBlock1
-    module procedure problem_updateGroupFEMBlock2
-  end interface problem_updateGroupFEMBlock
-
-  public :: t_groupFEMBlockTask
-  public :: problem_initGroupFEMBlockAll
-  public :: problem_updateGroupFEMBlockAll
+  public :: t_groupFEMTask
+  public :: problem_initGroupFEMAll
+  public :: problem_updateGroupFEMAll
+  public :: problem_initGroupFEMSet
   public :: problem_initGroupFEMBlock
+  public :: problem_updateGroupFEMSet
   public :: problem_updateGroupFEMBlock
+  public :: problem_updateGroupFEM
 
   !*****************************************************************************
 
@@ -511,7 +522,7 @@ module problem
 
   ! Action: duplicate
   integer, parameter, public :: PROBACTION_DUPLICATE                 = 2
-
+  
 !</constantblock>
 
 !<constantblock description="Flags for the action performance">
@@ -533,33 +544,36 @@ module problem
 
 !<constantblock description="Flags for the method to be used for matrix creation">
 
+  ! Leave matrix content 'as is'
+  integer, parameter,  public :: PROBMETH_MATRIX_ASIS                = 0
+
   ! Create virtual matrix without data
-  integer, parameter,  public :: PROBMETH_MATRIX_VIRTUAL             = 0
+  integer, parameter,  public :: PROBMETH_MATRIX_VIRTUAL             = 1
 
   ! Create empty matrix
-  integer, parameter,  public :: PROBMETH_MATRIX_EMPTY               = 1
+  integer, parameter,  public :: PROBMETH_MATRIX_EMPTY               = 2
 
   ! Create identify matrix
-  integer, parameter,  public :: PROBMETH_MATRIX_IDENTITY            = 2
+  integer, parameter,  public :: PROBMETH_MATRIX_IDENTITY            = 3
   
   ! Create matrix from bilinear form
-  integer, parameter,  public :: PROBMETH_MATRIX_BILF                = 3
+  integer, parameter,  public :: PROBMETH_MATRIX_BILF                = 4
 
   ! Create matrix by standard lumping of another matrix
-  integer, parameter,  public :: PROBMETH_MATRIX_LUMP_STD            = 4
+  integer, parameter,  public :: PROBMETH_MATRIX_LUMP_STD            = 5
 
   ! Create matrix by diagonal lumping of another matrix
-  integer, parameter,  public :: PROBMETH_MATRIX_LUMP_DIAG           = 5
+  integer, parameter,  public :: PROBMETH_MATRIX_LUMP_DIAG           = 6
 
   ! Create matrix with extended sparsity pattern
-  integer, parameter,  public :: PROBMETH_MATRIX_EXTENDSPARSITY      = 6
+  integer, parameter,  public :: PROBMETH_MATRIX_EXTENDSPARSITY      = 7
 
 !</constantblock>
 
 !<constantblock description="Flags for the method to be used for vector creation">
 
-  ! Create virtual vector without data
-  integer, parameter,  public :: PROBMETH_VECTOR_VIRTUAL             = 0
+  ! Leave vector content as is
+  integer, parameter,  public :: PROBMETH_VECTOR_ASIS                = 0
 
   ! Create empty vector
   integer, parameter,  public :: PROBMETH_VECTOR_EMPTY               = 1
@@ -628,14 +642,20 @@ module problem
     ! Maximum problem level
     integer :: nlmax = 0
 
-    ! Number of discretisation structures
-    integer :: ndiscretisation = 0
+    ! Number of spatial discretisation structures
+    integer :: nspatialDiscretisation = 0
+
+    ! Number of block discretisation structures
+    integer :: nblockDiscretisation = 0
 
     ! Number of cubature info structures
     integer :: ncubatureinfo = 0
 
     ! Number of AFC stabilisations
     integer :: nafcstab = 0
+
+    ! Number of group finite element sets
+    integer :: ngroupfemSet = 0
 
     ! Number of group finite element blocks
     integer :: ngroupfemBlock = 0
@@ -757,7 +777,7 @@ module problem
     ! INTERNAL DATA: so-called task lists can be attached to the
     ! problem structure which represent the dependency between tasks
     ! such as create, share, copy of the content
-    type(t_groupFEMBlockTask), pointer :: p_rgroupFEMBlockTasklist => null()
+    type(t_groupFEMTask), pointer :: p_rgroupFEMTasklist => null()
 
   end type t_problem
 
@@ -786,14 +806,20 @@ module problem
     ! Triangulation structure
     type(t_triangulation), pointer :: rtriangulation
 
-    ! Array of discretisation structure
-    type(t_blockDiscretisation), dimension(:), pointer :: Rdiscretisation => null()
+    ! Array of block discretisation structure
+    type(t_spatialDiscretisation), dimension(:), pointer :: RspatialDiscretisation => null()
+
+    ! Array of block discretisation structure
+    type(t_blockDiscretisation), dimension(:), pointer :: RblockDiscretisation => null()
 
     ! Array of scalar cubature info structures
     type(t_scalarCubatureInfo), dimension(:), pointer :: RcubatureInfo => null()
 
     ! Array of AFC stabilisations
     type(t_afcstab), dimension(:), pointer :: Rafcstab => null()
+
+    ! Array of group finite element sets
+    type(t_groupFEMSet), dimension(:), pointer :: RgroupFEMSet => null()
 
     ! Array of group finite element blocks
     type(t_groupFEMBlock), dimension(:), pointer :: RgroupFEMBlock => null()
@@ -829,6 +855,9 @@ module problem
 
   ! This data structure represents a single task item for block discretisations
   type t_discrTask
+
+    ! Flag to identify spatial and block discretisations
+    logical :: bisSpatialDiscr = .true.
 
     ! Task to be performed: CREATE, DUPLICATE
     integer :: ctask = PROBACTION_NONE
@@ -869,8 +898,24 @@ module problem
     ! Pointer to the source block discretisation structure (if any)
     type(t_blockDiscretisation), pointer :: p_rblockDiscrSrc  => null()
 
+    ! Pointer to the destination spatial discretisation structure
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrDest => null()
+
+    ! Pointer to the source spatial discretisation structure (if any)
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscrSrc  => null()
+
     ! Pointer to the next task to be performed after this task
     type(t_discrTask), pointer :: p_rnextTask => null()
+    
+    !---------- INTERNAL DATA FOR SPATIAL DISCRETISATIONS ----------------------
+
+    ! Array with element type IDs
+    integer, dimension(:), pointer :: Celement => null()
+
+    !---------- INTERNAL DATA FOR BLOCK DISCRETISATIONS ------------------------
+
+    ! Number of components
+    integer :: ncomponents = 0
 
   end type t_discrTask
   
@@ -1177,7 +1222,7 @@ module problem
 
   ! This data structure represents a single task item for
   ! blocks of group finite element structures
-  type t_groupFEMBlockTask
+  type t_groupFEMTask
 
     ! Task to be performed: CREATE, DUPLICATE
     integer :: ctask = PROBACTION_NONE
@@ -1203,18 +1248,24 @@ module problem
     ! Pointer to the source problem level
     type(t_problemLevel), pointer :: p_rproblemLevelSrc => null()
 
-    ! Pointer to the destination block of group finite element structures
+    ! Pointer to the destination group finite element set
+    type(t_groupFEMSet), pointer :: p_rgroupFEMSetDest => null()
+
+    ! Pointer to the source group finite element set (if any)
+    type(t_groupFEMSet), pointer :: p_rgroupFEMSetSrc  => null()
+
+    ! Pointer to the destination block of group finite element sets
     type(t_groupFEMBlock), pointer :: p_rgroupFEMBlockDest => null()
 
-    ! Pointer to the source block of group finite element structures (if any)
+    ! Pointer to the source block of group finite element sets (if any)
     type(t_groupFEMBlock), pointer :: p_rgroupFEMBlockSrc  => null()
 
     ! Pointer to the next task to be performed after this task
-    type(t_groupFEMBlockTask), pointer :: p_rnextTask => null()
+    type(t_groupFEMTask), pointer :: p_rnextTask => null()
 
     !---------- INTERNAL DATA --------------------------------------------------
 
-  end type t_groupFEMBlockTask
+  end type t_groupFEMTask
 
 !</typeblock>
 
@@ -1484,9 +1535,13 @@ contains
 #endif
 
       ! Allocate matrices, vectors, stabilisations, etc.
-      if (rproblemDescriptor%ndiscretisation .gt. 0)&
-          allocate(rproblemLevel%Rdiscretisation(&
-          rproblemDescriptor%ndiscretisation))
+      if (rproblemDescriptor%nspatialDiscretisation .gt. 0)&
+          allocate(rproblemLevel%RspatialDiscretisation(&
+          rproblemDescriptor%nspatialDiscretisation))
+
+      if (rproblemDescriptor%nblockDiscretisation .gt. 0)&
+          allocate(rproblemLevel%RblockDiscretisation(&
+          rproblemDescriptor%nblockDiscretisation))
 
       if (rproblemDescriptor%ncubatureInfo .gt. 0)&
           allocate(rproblemLevel%RcubatureInfo(&
@@ -1495,6 +1550,10 @@ contains
       if (rproblemDescriptor%nafcstab .gt. 0)&
           allocate(rproblemLevel%Rafcstab(&
           rproblemDescriptor%nafcstab))
+
+      if (rproblemDescriptor%ngroupfemSet .gt. 0)&
+          allocate(rproblemLevel%RgroupFEMSet(&
+          rproblemDescriptor%ngroupfemSet))
 
       if (rproblemDescriptor%ngroupfemBlock .gt. 0)&
           allocate(rproblemLevel%RgroupFEMBlock(&
@@ -1620,9 +1679,10 @@ contains
       do while(associated(p_rproblemLevel))
 
         ! Discretisations?
-        if (rproblemDescriptor%ndiscretisation .gt. 0) then
-          call problem_updateDiscrAll(p_rproblemLevel,&
-              rparlist, rproblem%cproblem, rproblemTopLevel%p_rdiscrTasklist,&
+        if ((rproblemDescriptor%nblockDiscretisation .gt. 0).or.&
+            (rproblemDescriptor%nspatialDiscretisation .gt. 0))then
+          call problem_updateDiscrAll(p_rproblemLevel, rparlist,&
+              rproblem%cproblem, rproblemTopLevel%p_rdiscrTasklist,&
               rproblemTopLevel)
         end if
     
@@ -1668,8 +1728,8 @@ contains
 
         ! Cubature info structures?
         if (rproblemDescriptor%ncubatureinfo .gt. 0) then
-          call problem_updateCubInfoAll(p_rproblemLevel,&
-              rparlist, rproblem%cproblem, rproblemTopLevel%p_rcubinfoTasklist,&
+          call problem_updateCubInfoAll(p_rproblemLevel, rparlist,&
+              rproblem%cproblem, rproblemTopLevel%p_rcubinfoTasklist,&
               rproblemTopLevel)
         end if
 
@@ -1716,8 +1776,8 @@ contains
         ! Scalar and/or block matrices?
         if ((rproblemDescriptor%nmatrixScalar .gt. 0) .or.&
             (rproblemDescriptor%nmatrixBlock  .gt. 0)) then
-          call problem_updateMatrixAll(p_rproblemLevel,&
-              rparlist, rproblem%cproblem, rproblemTopLevel%p_rmatrixTasklist,&
+          call problem_updateMatrixAll(p_rproblemLevel, rparlist,&
+              rproblem%cproblem, rproblemTopLevel%p_rmatrixTasklist,&
               rproblemTopLevel)
         end if
         
@@ -1764,8 +1824,8 @@ contains
         ! Scalar and/or block vector?
         if ((rproblemDescriptor%nvectorScalar .gt. 0) .or.&
             (rproblemDescriptor%nvectorBlock  .gt. 0)) then
-          call problem_updateVectorAll(p_rproblemLevel,&
-              rparlist, rproblem%cproblem, rproblemTopLevel%p_rvectorTasklist,&
+          call problem_updateVectorAll(p_rproblemLevel, rparlist,&
+              rproblem%cproblem, rproblemTopLevel%p_rvectorTasklist,&
               rproblemTopLevel)
         end if
         
@@ -1810,9 +1870,10 @@ contains
       do while(associated(p_rproblemLevel))
         
         ! Group finite element structures?
-        if (rproblemDescriptor%ngroupfemBlock .gt. 0) then
-          call problem_updateGroupFEMBlockAll(p_rproblemLevel,&
-              rparlist, rproblem%cproblem, rproblemTopLevel%p_rgroupFEMBlockTasklist,&
+        if ((rproblemDescriptor%ngroupfemSet .gt. 0) .or.&
+            (rproblemDescriptor%ngroupfemBlock .gt. 0)) then
+          call problem_updateGroupFEMAll(p_rproblemLevel, rparlist,&
+              rproblem%cproblem, rproblemTopLevel%p_rgroupFEMTasklist,&
               rproblemTopLevel)
         end if
         
@@ -1858,8 +1919,8 @@ contains
         
         ! Scalar and/or block matrices?
         if (rproblemDescriptor%nafcstab .gt. 0) then
-          call problem_updateAFCstabAll(p_rproblemLevel,&
-              rparlist, rproblem%cproblem, rproblemTopLevel%p_rafcstabTasklist,&
+          call problem_updateAFCstabAll(p_rproblemLevel, rparlist,&
+              rproblem%cproblem, rproblemTopLevel%p_rafcstabTasklist,&
               rproblemTopLevel)
         end if
         
@@ -2201,12 +2262,21 @@ contains
         call output_separator(OU_SEP_MINUS)
         call output_line('Problemlevel: '//trim(sys_siL(p_rproblemLevel%ilev,3)))
         
-        ! Discretisations
-        if (associated(p_rproblemLevel%Rdiscretisation)) then
-          do i=1,size(p_rproblemLevel%Rdiscretisation)
+        ! Spatial discretisations
+        if (associated(p_rproblemLevel%RspatialDiscretisation)) then
+          do i=1,size(p_rproblemLevel%RspatialDiscretisation)
             call output_separator(OU_SEP_TILDE)
-            call output_line('Blockdiscretisation: '//trim(sys_siL(i,3)))
-            call spdiscr_infoBlockDiscr(p_rproblemLevel%Rdiscretisation(i))
+            call output_line('Spatial discretisation: '//trim(sys_siL(i,3)))
+            call spdiscr_infoDiscr(p_rproblemLevel%RspatialDiscretisation(i))
+          end do
+        end if
+
+        ! Block discretisations
+        if (associated(p_rproblemLevel%RblockDiscretisation)) then
+          do i=1,size(p_rproblemLevel%RblockDiscretisation)
+            call output_separator(OU_SEP_TILDE)
+            call output_line('Block discretisation: '//trim(sys_siL(i,3)))
+            call spdiscr_infoBlockDiscr(p_rproblemLevel%RblockDiscretisation(i))
           end do
         end if
 
@@ -2252,6 +2322,15 @@ contains
             call output_separator(OU_SEP_TILDE)
             call output_line('Block vector: '//trim(sys_siL(i,3)))
             call lsysbl_infoVector(p_rproblemLevel%RvectorBlock(i))
+          end do
+        end if
+
+        ! Block of group finite element structures
+        if (associated(p_rproblemLevel%RgroupFEMSet)) then
+          do i=1,size(p_rproblemLevel%RgroupFEMSet)
+            call output_separator(OU_SEP_TILDE)
+            call output_line('Group finite element structures: '//trim(sys_siL(i,3)))
+            call gfem_infoGroupFEMSet(p_rproblemLevel%RgroupFEMSet(i))
           end do
         end if
 
@@ -2463,14 +2542,12 @@ contains
           trim(sys_siL(rproblemDescriptor%nlmin,15)))
       call output_line (cindent//'maximum level      : '//&
           trim(sys_siL(rproblemDescriptor%nlmax,15)))
-      call output_line (cindent//'ndiscretisation    : '//&
-          trim(sys_siL(rproblemDescriptor%ndiscretisation,15)))
+      call output_line (cindent//'nspatialDiscretisation    : '//&
+          trim(sys_siL(rproblemDescriptor%nspatialDiscretisation,15)))
+      call output_line (cindent//'nblockDiscretisation    : '//&
+          trim(sys_siL(rproblemDescriptor%nblockDiscretisation,15)))
       call output_line (cindent//'ncubatureinfo      : '//&
           trim(sys_siL(rproblemDescriptor%ncubatureInfo,15)))
-      call output_line (cindent//'nafcstab           : '//&
-          trim(sys_siL(rproblemDescriptor%nafcstab,15)))
-      call output_line (cindent//'ngroupfemblock     : '//&
-          trim(sys_siL(rproblemDescriptor%ngroupfemBlock,15)))
       call output_line (cindent//'nmatrixscalar      : '//&
           trim(sys_siL(rproblemDescriptor%nmatrixScalar,15)))
       call output_line (cindent//'nmatrixblock       : '//&
@@ -2479,6 +2556,12 @@ contains
           trim(sys_siL(rproblemDescriptor%nvectorScalar,15)))
       call output_line (cindent//'nvectorblock       : '//&
           trim(sys_siL(rproblemDescriptor%nvectorBlock,15)))
+      call output_line (cindent//'nafcstab           : '//&
+          trim(sys_siL(rproblemDescriptor%nafcstab,15)))
+      call output_line (cindent//'ngroupfemset       : '//&
+          trim(sys_siL(rproblemDescriptor%ngroupfemSet,15)))
+      call output_line (cindent//'ngroupfemblock     : '//&
+          trim(sys_siL(rproblemDescriptor%ngroupfemBlock,15)))
 #ifdef ENABLE_COPROCESSOR_SUPPORT
       call output_line (cindent//'nstream            : '//&
           trim(sys_siL(rproblemDescriptor%nstream,15)))
@@ -2626,13 +2709,22 @@ contains
       nullify(rproblemLevel%rtriangulation)
     end if
 
-    ! Release discretisation structures
-    if (associated(rproblemLevel%Rdiscretisation)) then
-      do i = lbound(rproblemLevel%Rdiscretisation,1),&
-             ubound(rproblemLevel%Rdiscretisation,1)
-        call spdiscr_releaseBlockDiscr(rproblemLevel%Rdiscretisation(i))
+    ! Release spatial discretisation structures
+    if (associated(rproblemLevel%RspatialDiscretisation)) then
+      do i = lbound(rproblemLevel%RspatialDiscretisation,1),&
+             ubound(rproblemLevel%RspatialDiscretisation,1)
+        call spdiscr_releaseDiscr(rproblemLevel%RspatialDiscretisation(i))
       end do
-      deallocate(rproblemLevel%Rdiscretisation)
+      deallocate(rproblemLevel%RspatialDiscretisation)
+    end if
+
+    ! Release block discretisation structures
+    if (associated(rproblemLevel%RblockDiscretisation)) then
+      do i = lbound(rproblemLevel%RblockDiscretisation,1),&
+             ubound(rproblemLevel%RblockDiscretisation,1)
+        call spdiscr_releaseBlockDiscr(rproblemLevel%RblockDiscretisation(i))
+      end do
+      deallocate(rproblemLevel%RblockDiscretisation)
     end if
 
     ! Release scalar cubature info structures
@@ -2689,7 +2781,16 @@ contains
       deallocate(rproblemLevel%Rafcstab)
     end if
 
-    ! Release group finite element block
+    ! Release group finite element sets
+    if (associated(rproblemLevel%RgroupFEMSet)) then
+      do i = lbound(rproblemLevel%RgroupFEMSet,1),&
+             ubound(rproblemLevel%RgroupFEMSet,1)
+        call gfem_releaseGroupFEMSet(rproblemLevel%RgroupFEMSet(i))
+      end do
+      deallocate(rproblemLevel%RgroupFEMBlock)
+    end if
+
+    ! Release group finite element blocks
     if (associated(rproblemLevel%RgroupFEMBlock)) then
       do i = lbound(rproblemLevel%RgroupFEMBlock,1),&
              ubound(rproblemLevel%RgroupFEMBlock,1)
@@ -2965,20 +3066,6 @@ contains
         call output_line (cindent//'finer level        : not associated')
       end if
       
-      if (associated(rproblemLevel%Rafcstab)) then
-        call output_line (cindent//'Rafcstab           : '//&
-                          trim(sys_siL(size(rproblemLevel%Rafcstab),15)))
-      else
-        call output_line (cindent//'Rafcstab           : not associated')
-      end if
-      
-      if (associated(rproblemLevel%RgroupFEMBlock)) then
-        call output_line (cindent//'RgroupFEMBlock     : '//&
-                          trim(sys_siL(size(rproblemLevel%RgroupFEMBlock),15)))
-      else
-        call output_line (cindent//'RgroupFEMBlock     : not associated')
-      end if
-
       if (associated(rproblemLevel%RmatrixScalar)) then
         call output_line (cindent//'RmatrixScalar      : '//&
                           trim(sys_siL(size(rproblemLevel%RmatrixScalar),15)))
@@ -3006,6 +3093,28 @@ contains
       else
         call output_line (cindent//'RvectorBlock       : not associated')
       end if
+
+      if (associated(rproblemLevel%Rafcstab)) then
+        call output_line (cindent//'Rafcstab           : '//&
+                          trim(sys_siL(size(rproblemLevel%Rafcstab),15)))
+      else
+        call output_line (cindent//'Rafcstab           : not associated')
+      end if
+      
+      if (associated(rproblemLevel%RgroupFEMSet)) then
+        call output_line (cindent//'RgroupFEMSet       : '//&
+                          trim(sys_siL(size(rproblemLevel%RgroupFEMSet),15)))
+      else
+        call output_line (cindent//'RgroupFEMSet       : not associated')
+      end if
+
+      if (associated(rproblemLevel%RgroupFEMBlock)) then
+        call output_line (cindent//'RgroupFEMBlock     : '//&
+                          trim(sys_siL(size(rproblemLevel%RgroupFEMBlock),15)))
+      else
+        call output_line (cindent//'RgroupFEMBlock     : not associated')
+      end if
+
       call output_lbrk()
 
     end subroutine doInfo
@@ -3289,15 +3398,13 @@ contains
         rproblemDescriptor%nlmax)
 
     ! Next, we collect a data from the parameter list
-    rproblemDescriptor%ndiscretisation = parlst_querysubstrings(rparlist,&
-        ssectionName, 'discretisation')
+    rproblemDescriptor%nblockDiscretisation = parlst_querysubstrings(rparlist,&
+        ssectionName, 'blockdiscretisation')
+    rproblemDescriptor%nspatialDiscretisation = parlst_querysubstrings(rparlist,&
+        ssectionName, 'spatialdiscretisation')
     rproblemDescriptor%ncubatureInfo   = parlst_querysubstrings(rparlist,&
         ssectionName, 'cubatureinfo')
-    rproblemDescriptor%nafcstab        = parlst_querysubstrings(rparlist,&
-        ssectionName, 'afcstab')
-    rproblemDescriptor%ngroupfemBlock  = parlst_querysubstrings(rparlist,&
-        ssectionName, 'groupfemblock')
-    rproblemDescriptor%nmatrixScalar   = parlst_querysubstrings(rparlist,&
+       rproblemDescriptor%nmatrixScalar   = parlst_querysubstrings(rparlist,&
         ssectionName, 'matrixscalar')
     rproblemDescriptor%nmatrixBlock    = parlst_querysubstrings(rparlist,&
         ssectionName, 'matrixblock')
@@ -3305,6 +3412,12 @@ contains
         ssectionName, 'vectorscalar')
     rproblemDescriptor%nvectorBlock    = parlst_querysubstrings(rparlist,&
         ssectionName, 'vectorblock')
+    rproblemDescriptor%nafcstab        = parlst_querysubstrings(rparlist,&
+        ssectionName, 'afcstab')
+    rproblemDescriptor%ngroupfemSet    = parlst_querysubstrings(rparlist,&
+        ssectionName, 'groupfemset')
+    rproblemDescriptor%ngroupfemBlock  = parlst_querysubstrings(rparlist,&
+        ssectionName, 'groupfemblock')
     
     ! Next, get triangulation data
     call parlst_getvalue_int(rparlist, ssectionName, 'ndimension',&
@@ -3376,23 +3489,36 @@ contains
                                    rproblemDescriptor2%nlmin)
 
     ! Discretisations, etc.
-    rproblemDescriptor%ndiscretisation = max(rproblemDescriptor1%ndiscretisation,&
-                                             rproblemDescriptor2%ndiscretisation)
-    rproblemDescriptor%ncubatureInfo   = max(rproblemDescriptor1%ncubatureInfo,&
-                                             rproblemDescriptor2%ncubatureInfo)
-    rproblemDescriptor%nafcstab        = max(rproblemDescriptor1%nafcstab,&
-                                             rproblemDescriptor2%nafcstab)
-    rproblemDescriptor%ngroupfemBlock  = max(rproblemDescriptor1%ngroupfemBlock,&
-                                             rproblemDescriptor2%ngroupfemBlock)
-    rproblemDescriptor%nmatrixScalar   = max(rproblemDescriptor1%nmatrixScalar,&
-                                             rproblemDescriptor2%nmatrixScalar)
-    rproblemDescriptor%nmatrixBlock    = max(rproblemDescriptor1%nmatrixBlock,&
-                                             rproblemDescriptor2%nmatrixBlock)
-    rproblemDescriptor%nvectorScalar   = max(rproblemDescriptor1%nvectorScalar,&
-                                             rproblemDescriptor2%nvectorScalar)
-    rproblemDescriptor%nvectorBlock    = max(rproblemDescriptor1%nvectorBlock,&
-                                             rproblemDescriptor2%nvectorBlock)
-
+    rproblemDescriptor%nblockDiscretisation =&
+        max(rproblemDescriptor1%nblockDiscretisation,&
+            rproblemDescriptor2%nblockDiscretisation)
+    rproblemDescriptor%nspatialDiscretisation =&
+        max(rproblemDescriptor1%nblockDiscretisation,&
+            rproblemDescriptor2%nblockDiscretisation)
+    rproblemDescriptor%ncubatureInfo =&
+        max(rproblemDescriptor1%ncubatureInfo,&
+            rproblemDescriptor2%ncubatureInfo)
+    rproblemDescriptor%nmatrixScalar =&
+        max(rproblemDescriptor1%nmatrixScalar,&
+            rproblemDescriptor2%nmatrixScalar)
+    rproblemDescriptor%nmatrixBlock =&
+        max(rproblemDescriptor1%nmatrixBlock,&
+            rproblemDescriptor2%nmatrixBlock)
+    rproblemDescriptor%nvectorScalar =&
+        max(rproblemDescriptor1%nvectorScalar,&
+            rproblemDescriptor2%nvectorScalar)
+    rproblemDescriptor%nvectorBlock =&
+        max(rproblemDescriptor1%nvectorBlock,&
+            rproblemDescriptor2%nvectorBlock)
+    rproblemDescriptor%nafcstab =&
+        max(rproblemDescriptor1%nafcstab,&
+            rproblemDescriptor2%nafcstab)
+    rproblemDescriptor%ngroupfemSet =&
+        max(rproblemDescriptor1%ngroupfemSet,&
+            rproblemDescriptor2%ngroupfemSet)
+    rproblemDescriptor%ngroupfemBlock =&
+        max(rproblemDescriptor1%ngroupfemBlock,&
+            rproblemDescriptor2%ngroupfemBlock)
 
   end function problem_combineDescriptors
 
@@ -3498,8 +3624,8 @@ contains
 
 !<subroutine>
 
-  subroutine problem_updateDiscrAll(rproblemLevel,&
-      rparlist, ssectionName, p_rtasklist, rproblemTopLevel, iperformSpec)
+  subroutine problem_updateDiscrAll(rproblemLevel, rparlist,&
+      ssectionName, p_rtasklist, rproblemTopLevel, iperformSpec)
 
 !<description>
     ! This subroutine generates the task list for all discretisation
@@ -3535,23 +3661,42 @@ contains
 
     ! local variables
     character(len=SYS_STRLEN) :: ssubsectionName
-    integer :: i,ndiscretisation
+    integer :: i,nblockDiscretisation,nspatialDiscretisation
 
     ! Consistency check
-    ndiscretisation = parlst_querysubstrings(rparlist, ssectionName,&
-                                             'discretisation')
-    if (ndiscretisation .ne. size(rproblemLevel%Rdiscretisation)) then
-      call output_line('Invalid number of discretisations',&
+    nspatialDiscretisation = parlst_querysubstrings(rparlist, ssectionName,&
+                                                    'spatialdiscretisation')
+    if ((nspatialDiscretisation .gt. 0) .and.&
+        (nspatialDiscretisation .ne. size(rproblemLevel%RspatialDiscretisation))) then
+      call output_line('Invalid number of spatial discretisations',&
           OU_CLASS_ERROR,OU_MODE_STD,'problem_updateDiscrAll')
       call sys_halt()
     end if
 
-    ! Update all discretisations
-    do i=1,ndiscretisation
+    nblockDiscretisation = parlst_querysubstrings(rparlist, ssectionName,&
+                                                  'blockdiscretisation')
+    if ((nblockDiscretisation .gt. 0) .and.&
+        (nblockDiscretisation .ne. size(rproblemLevel%RblockDiscretisation))) then
+      call output_line('Invalid number of block discretisations',&
+          OU_CLASS_ERROR,OU_MODE_STD,'problem_updateDiscrAll')
+      call sys_halt()
+    end if
+
+    ! Update all spatial discretisations
+    do i=1,nspatialDiscretisation
       call parlst_getvalue_string(rparlist, ssectionName,&
-          'discretisation', ssubsectionName, isubstring=i)
-      call problem_updateDiscr(rproblemLevel,&
-          rproblemLevel%Rdiscretisation(i), rparlist, ssubsectionName,&
+          'spatialdiscretisation', ssubsectionName, isubstring=i)
+      call problem_updateSpatialDiscr(rproblemLevel,&
+          rproblemLevel%RspatialDiscretisation(i), rparlist, ssubsectionName,&
+          p_rtasklist, rproblemTopLevel, iperformSpec)
+    end do
+
+    ! Update all block discretisations
+    do i=1,nblockDiscretisation
+      call parlst_getvalue_string(rparlist, ssectionName,&
+          'blockdiscretisation', ssubsectionName, isubstring=i)
+      call problem_updateBlockDiscr(rproblemLevel,&
+          rproblemLevel%RblockDiscretisation(i), rparlist, ssubsectionName,&
           p_rtasklist, rproblemTopLevel, iperformSpec)
     end do
 
@@ -3561,15 +3706,78 @@ contains
 
 !<subroutine>
 
-  subroutine problem_initDiscr(rproblemLevel, rdiscretisation,&
+  subroutine problem_initSpatialDiscr(rproblemLevel, rdiscretisation,&
       rparlist, ssectionName, p_rtasklist, rproblemTopLevel, iperformSpec)
 
 !<description>
-    ! This subroutine initialises the given discretisation structure
-    ! on the given problem level with the values provided by the
-    ! parameter list. If the optional parameter p_rtasklist is given,
-    ! then the task list which is created during the initialisation is
-    ! returned. Otherwise it is released on return.
+    ! This subroutine initialises the given spatial discretisation
+    ! structure on the given problem level with the values provided by
+    ! the parameter list. If the optional parameter p_rtasklist is
+    ! given, then the task list which is created during the
+    ! initialisation is returned. Otherwise it is released on return.
+!</description>
+
+!<input>
+    ! problem level structure
+    type(t_problemLevel), intent(in) :: rproblemLevel
+
+    ! parameter list
+    type(t_parlist), intent(in) :: rparlist
+
+    ! name of the section
+    character(LEN=*), intent(in) :: ssectionName
+
+    ! OPTIONAL: top-level problem structure
+    ! If not present, then the problem associated with the problem
+    ! level structure serves as top-level problem
+    type(t_problem), intent(in), optional :: rproblemTopLevel
+
+    ! OPTIONAL: specifier for the tasks to be performed
+    ! If not present PROBACTION_PERFORM_ALWAYS is assumed
+    integer(i32), intent(in), optional :: iperformspec
+!</input>
+
+!<inputoutput>
+    ! task list which represents the order in which block
+    ! discretisations need to be created and copied
+    type(t_discrTask), pointer, optional :: p_rtasklist
+!</inputoutput>
+
+!<output>
+    ! spatial discretisation structure
+    type(t_spatialDiscretisation), intent(out), target :: rdiscretisation
+!</output>
+!</subroutine>
+
+    ! local variables
+    type(t_discrTask), pointer :: p_rtasklistLocal => null()
+
+    if (present(p_rtasklist)) p_rtasklistLocal => p_rtasklist
+    
+    ! Update given spatial discretisation
+    call problem_updateSpatialDiscr(rproblemLevel, rdiscretisation,&
+        rparlist, ssectionName, p_rtasklistLocal, rproblemTopLevel, iperformSpec)
+
+    ! Release temporal task list if required
+    if (.not.present(p_rtasklist)) then
+      call problem_clearDiscrTL(p_rtasklistLocal)
+    end if
+
+  end subroutine problem_initSpatialDiscr
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine problem_initBlockDiscr(rproblemLevel, rdiscretisation,&
+      rparlist, ssectionName, p_rtasklist, rproblemTopLevel, iperformSpec)
+
+!<description>
+    ! This subroutine initialises the given block discretisation
+    ! structure on the given problem level with the values provided by
+    ! the parameter list. If the optional parameter p_rtasklist is
+    ! given, then the task list which is created during the
+    ! initialisation is returned. Otherwise it is released on return.
 !</description>
 
 !<input>
@@ -3609,8 +3817,8 @@ contains
 
     if (present(p_rtasklist)) p_rtasklistLocal => p_rtasklist
     
-    ! Update given discretisation
-    call problem_updateDiscr(rproblemLevel, rdiscretisation,&
+    ! Update given block discretisation
+    call problem_updateBlockDiscr(rproblemLevel, rdiscretisation,&
         rparlist, ssectionName, p_rtasklistLocal, rproblemTopLevel, iperformSpec)
 
     ! Release temporal task list if required
@@ -3618,20 +3826,458 @@ contains
       call problem_clearDiscrTL(p_rtasklistLocal)
     end if
 
-  end subroutine problem_initDiscr
+  end subroutine problem_initBlockDiscr
 
   !*****************************************************************************
 
 !<subroutine>
 
-  recursive subroutine problem_updateDiscr(rproblemLevel,&
-      rdiscretisation, rparlist, ssectionName, p_rtasklist, rproblemTopLevel,&
-      iperformSpec)
+  recursive subroutine problem_updateSpatialDiscr(rproblemLevel, rdiscretisation,&
+      rparlist, ssectionName, p_rtasklist, rproblemTopLevel, iperformSpec)
 
 !<description>
     ! This subroutine generates the task list to initialise/update the
-    ! given discretisation structures on the given problem level with the
-    ! values provided by the parameter list.
+    ! given spatial discretisation structures on the given problem
+    ! level with the values provided by the parameter list.
+!</description>
+
+!<input>
+    ! problem level structure
+    type(t_problemLevel), intent(in), target :: rproblemLevel
+
+    ! parameter list
+    type(t_parlist), intent(in) :: rparlist
+
+    ! name of the section
+    character(LEN=*), intent(in) :: ssectionName
+
+    ! OPTIONAL: top-level problem structure
+    ! If not present, then the problem associated with the problem
+    ! level structure serves as top-level problem
+    type(t_problem), intent(in), target, optional :: rproblemTopLevel
+
+    ! OPTIONAL: specifier for the tasks to be performed
+    ! If not present PROBACTION_PERFORM_ALWAYS is assumed
+    integer(i32), intent(in), optional :: iperformspec
+!</input>
+
+!<inputoutput>
+    ! task list which represents the order in which block
+    ! discretisations need to be created and copied
+    type(t_discrTask), pointer :: p_rtasklist
+
+    ! spatial discretisation structure
+    type(t_spatialDiscretisation), intent(inout), target :: rdiscretisation
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_blockDiscretisation), pointer :: p_rblockDiscr
+    type(t_discrTask), pointer :: rtask
+    type(t_problem), pointer :: p_rproblemTopLevel
+    type(t_problemLevel), pointer :: p_rproblemLevel
+    character(len=PARLST_MLDATA) :: skeyword,sparameter,sproblem,stoken,svalue
+    character(len=SYS_STRLEN) :: selemName,ssubsectionName
+    character(len=SYS_STRLEN) :: saction,sperform,sperf
+    integer :: iblock,idiscr,ielement,iistart,ilev,imethod,istart,itoken,nelements,nmethod,ntoken
+    integer(i32) :: iperform
+
+    ! Set pointer to problem structure
+    p_rproblemTopLevel => rproblemLevel%p_rproblem
+    if (present(rproblemTopLevel)) p_rproblemTopLevel => rproblemTopLevel
+
+    iperform = PROBACTION_PERFORM_ALWAYS
+    if (present(iperformSpec)) iperform = iperformSpec
+
+    ! Get type of action
+    call parlst_getvalue_string(rparlist, ssectionName, 'saction', saction)
+    call parlst_getvalue_string(rparlist, ssectionName, 'sperform', sperform)
+    call sys_toupper(saction)
+    call sys_toupper(sperform)
+
+    ! What action should be performed?
+    if (trim(saction) .eq. 'NONE') then
+      !-------------------------------------------------------------------------
+      ! Do nothing
+      return
+
+    elseif (trim(saction) .eq. 'CREATE') then
+
+      !-------------------------------------------------------------------------
+      ! Create spatial discretisation
+      !
+      ! SYNTAX: spatialdiscretisation(N) =
+      !           SpatialDiscr1
+      !                ...
+      !           SpatialDiscrN
+
+      ! Create new task
+      nullify(rtask)
+      allocate(rtask)
+      nullify(rtask%p_rnextTask)
+      rtask%bisSpatialDiscr     = .true.
+      rtask%ctask               =  PROBACTION_CREATE
+      rtask%ssectionName        =  ssectionName
+      rtask%p_rspatialDiscrDest => rdiscretisation
+      rtask%p_rproblemDest      => rproblemLevel%p_rproblem
+      rtask%p_rproblemLevelDest => rproblemLevel
+
+      ! Append task to task list (if not already present)
+      if (associated(p_rtasklist)) then
+        if (appendToTaskList(p_rtasklist, rtask)) then
+          deallocate(rtask)
+
+          ! That`s it we do not have to create this spatial discretisation
+          return
+        end if
+      else
+        p_rtasklist => rtask
+      end if
+      
+      ! When should we perform this task?
+      rtask%iperform = problem_getIperform(sperform)
+      
+      ! Get number of element types
+      nelements = max(1, parlst_querysubstrings(rparlist,&
+          ssectionName, 'celement'))
+      allocate(rtask%Celement(nelements))
+      
+      ! Get IDs of element types
+      do ielement = 1, nelements
+        call parlst_getvalue_string(rparlist,&
+            ssectionName, 'celement', selemName, isubstring=ielement)
+        rtask%Celement(ielement) = elem_igetID(selemName)
+      end do
+      
+      ! Should we perform this task now?
+      if (iand(rtask%iperform, iperform) .ne. 0) then
+        
+        ! Get spatial dimension
+        select case(rproblemLevel%rtriangulation%ndim)
+        case (NDIM1D)
+          select case(nelements)
+          case (1)
+            call spdiscr_initDiscr_simple(rdiscretisation, rtask%Celement(1),&
+                rproblemLevel%rtriangulation, rproblemLevel%p_rproblem%rboundary)
+          case default
+            call output_line('Only one element type is supported in 1D',&
+                OU_CLASS_ERROR,OU_MODE_STD,'problem_updateSpatialDiscr')
+            call sys_halt()
+          end select
+          
+        case (NDIM2D)
+          select case(nelements)
+          case (1)
+            call spdiscr_initDiscr_simple(rdiscretisation, rtask%Celement(1),&
+                rproblemLevel%rtriangulation, rproblemLevel%p_rproblem%rboundary)
+          case (2)
+            call spdiscr_initDiscr_triquad(rdiscretisation,&
+                rtask%Celement(1), rtask%Celement(2),&
+                rproblemLevel%rtriangulation, rproblemLevel%p_rproblem%rboundary)
+          case default
+            call output_line('Only one or two element types are supported in 2D',&
+                OU_CLASS_ERROR,OU_MODE_STD,'problem_updateSpatialDiscr')
+            call sys_halt()
+          end select
+          
+        case (NDIM3D)
+          select case(nelements)
+          case (1)
+            call spdiscr_initDiscr_simple(rdiscretisation, rtask%Celement(1),&
+                rproblemLevel%rtriangulation, rproblemLevel%p_rproblem%rboundary)
+          case default
+            call output_line('Only one element type is supported in 3D',&
+                OU_CLASS_ERROR,OU_MODE_STD,'problem_updateSpatialDiscr')
+            call sys_halt()
+          end select
+
+
+        case default
+          call output_line('Invalid number of spatial dimensions',&
+              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateSpatialDiscr')
+          call sys_halt()
+        end select
+        
+      end if
+
+    elseif (trim(saction) .eq. 'DUPLICATE') then
+
+      !-------------------------------------------------------------------------
+      ! Duplicate spatial discretisation or subblock of a block discretisation
+      !
+      ! SYNTAX: spatialdiscretisation = problem:[name],...
+      !                                 idiscr(etisation):#,...
+      !                                 ilev:#
+      !     OR  blockdiscretisation   = problem:[name],...
+      !                                 idiscr(etisation):#,...
+      !                                 ilev:#,...
+      !                                 iblock:#,...
+      !
+      ! If ilev is not given then the level of the current problem
+      ! level structure is adopted. If iblockis not given then
+      ! standard value 1 is used in both cases
+
+      ! Find problem name from which to duplicate spatial discretisation (if any)
+      call parlst_getvalue_string(rparlist, ssectionName, 'spatialdiscretisation', sparameter, '')
+      call sys_toupper(sparameter)
+      
+      if (trim(sparameter) .ne. '') then
+        
+        !--- Spatial discretisation case ------------------------------------------------
+
+        ! Create new task for this scalar matrix
+        nullify(rtask)
+        allocate(rtask)
+        nullify(rtask%p_rnextTask)
+        
+        ! Initialise optional parameters
+        sproblem = trim(rproblemLevel%p_rproblem%cproblem)
+        ilev     = rproblemLevel%ilev
+        idiscr   = 1
+        
+        ! Get optional parameters if available
+        call sys_countTokens(sparameter, ntoken, ',', .false.); istart=1
+        
+        do itoken = 1,ntoken
+          call sys_getNextToken (sparameter, stoken, istart, ',', .false.)
+          
+          iistart = 1
+          call sys_getNextToken (stoken, skeyword, iistart, ":", .false.)
+          call sys_getNextToken (stoken, svalue, iistart, ":", .false.)
+          
+          if (trim(skeyword) .eq. 'PROBLEM') then
+            sproblem = trim(svalue)
+          elseif (trim(skeyword) .eq. 'ILEV') then
+            read(svalue,'(I10)') ilev
+          elseif (trim(skeyword) .eq. 'IDISCR') then
+            read(svalue,'(I10)') idiscr
+          elseif (trim(skeyword) .eq. 'IDISCRETISATION') then
+            read(svalue,'(I10)') idiscr
+          elseif (trim(skeyword) .eq. 'SHARE') then
+            rtask%bshareStructure = (trim(svalue) .eq. 'YES')
+          elseif (trim(skeyword) .eq. 'COPY') then
+            rtask%bshareStructure = .not.(trim(svalue) .eq. 'YES')
+          else
+            call output_line('Unsupported keyword: '//trim(skeyword),&
+                OU_CLASS_ERROR,OU_MODE_STD,'problem_updateSpatialDiscr')
+            call sys_halt()
+          end if
+        end do
+        
+        ! Find problem level in global problem structure
+        p_rproblemLevel => problem_getLevel(p_rproblemTopLevel, trim(sproblem), ilev)
+        if (.not.associated(p_rproblemLevel)) then
+          call output_line('Unable to find problem level in problem '//trim(sproblem),&
+              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateSpatialDiscr')
+          call sys_halt()
+        end if
+        
+        ! Get section name of spatial discretisation
+        call parlst_getvalue_string(rparlist, trim(sproblem),&
+            'spatialdiscretisation', ssubsectionName, isubstring=idiscr)
+
+        ! Proceed with possibly prerequisite tasks
+        call problem_updateSpatialDiscr(p_rproblemLevel,&
+            p_rproblemLevel%RspatialDiscretisation(idiscr), rparlist,&
+            ssubsectionName, p_rtasklist, p_rproblemTopLevel, iperformSpec)
+        
+        ! Specify new task for this spatial discretisation
+        rtask%bisSpatialDiscr     = .true.
+        rtask%ctask               =  PROBACTION_DUPLICATE
+        rtask%ssectionName        =  ssectionName
+        rtask%p_rspatialDiscrSrc  => p_rproblemLevel%RspatialDiscretisation(idiscr)
+        rtask%p_rspatialDiscrDest => rdiscretisation
+        rtask%p_rproblemSrc       => p_rproblemLevel%p_rproblem
+        rtask%p_rproblemDest      => rproblemLevel%p_rproblem
+        rtask%p_rproblemLevelSrc  => p_rproblemLevel
+        rtask%p_rproblemLevelDest => rproblemLevel
+
+      else
+
+        !--- Block discretisation case -------------------------------------------------
+
+        ! Find problem name from which to duplicate entry of block discretisation (if any)
+        call parlst_getvalue_string(rparlist, ssectionName, 'blockdiscretisation', sparameter, '')
+        call sys_toupper(sparameter)
+        
+        if (trim(sparameter) .ne. '') then
+          
+          ! Create new task for this scalar matrix
+          nullify(rtask)
+          allocate(rtask)
+          nullify(rtask%p_rnextTask)
+          
+          ! Initialise optional parameters
+          sproblem = trim(rproblemLevel%p_rproblem%cproblem)
+          ilev     = rproblemLevel%ilev
+          idiscr   = 1
+          iblock   = 1
+          
+          ! Get optional parameters if available
+          call sys_countTokens(sparameter, ntoken, ',', .false.); istart=1
+          
+          do itoken = 1,ntoken
+            call sys_getNextToken (sparameter, stoken, istart, ',', .false.)
+            
+            iistart = 1
+            call sys_getNextToken (stoken, skeyword, iistart, ":", .false.)
+            call sys_getNextToken (stoken, svalue, iistart, ":", .false.)
+            
+            if (trim(skeyword) .eq. 'PROBLEM') then
+              sproblem = trim(svalue)
+            elseif (trim(skeyword) .eq. 'ILEV') then
+              read(svalue,'(I10)') ilev
+            elseif (trim(skeyword) .eq. 'IDISCR') then
+              read(svalue,'(I10)') idiscr
+            elseif (trim(skeyword) .eq. 'IDISCRETISATION') then
+              read(svalue,'(I10)') idiscr
+            elseif (trim(skeyword) .eq. 'IBLOCK') then
+              read(svalue,'(I10)') iblock
+            elseif (trim(skeyword) .eq. 'SHARE') then
+              rtask%bshareStructure = (trim(svalue) .eq. 'YES')
+            elseif (trim(skeyword) .eq. 'COPY') then
+              rtask%bshareStructure = .not.(trim(svalue) .eq. 'YES')
+            else
+              call output_line('Unsupported keyword: '//trim(skeyword),&
+                  OU_CLASS_ERROR,OU_MODE_STD,'problem_updateSpatialDiscr')
+              call sys_halt()
+            end if
+          end do
+          
+          ! Find problem level in global problem structure
+          p_rproblemLevel => problem_getLevel(p_rproblemTopLevel, trim(sproblem), ilev)
+          if (.not.associated(p_rproblemLevel)) then
+            call output_line('Unable to find problem level in problem '//trim(sproblem),&
+                OU_CLASS_ERROR,OU_MODE_STD,'problem_updateSpatialDiscr')
+            call sys_halt()
+          end if
+          
+          ! Get section name of block discretisation
+          call parlst_getvalue_string(rparlist, trim(sproblem),&
+              'blockdiscretisation', ssubsectionName, isubstring=idiscr)
+
+          ! Proceed with possibly prerequisite tasks
+          call problem_updateBlockDiscr(p_rproblemLevel,&
+              p_rproblemLevel%RblockDiscretisation(idiscr), rparlist,&
+              ssubsectionName, p_rtasklist, p_rproblemTopLevel, iperformSpec)
+
+          ! Check if subblock is available
+          p_rblockDiscr => p_rproblemLevel%RblockDiscretisation(idiscr)
+          if (size(p_rblockDiscr%RspatialDiscr) .lt. iblock) then
+            call output_line('Spatial subblock of block discretisation is not available',&
+                OU_CLASS_ERROR,OU_MODE_STD,'problem_updateSpatialDiscr')
+            call sys_halt()
+          end if
+
+          ! Specify new task for this spatial discretisation
+          rtask%bisSpatialDiscr     = .true.
+          rtask%ctask               =  PROBACTION_DUPLICATE
+          rtask%ssectionName        =  ssectionName
+          rtask%p_rspatialDiscrSrc  => p_rblockDiscr%RspatialDiscr(iblock)
+          rtask%p_rspatialDiscrDest => rdiscretisation
+          rtask%p_rproblemSrc       => p_rproblemLevel%p_rproblem
+          rtask%p_rproblemDest      => rproblemLevel%p_rproblem
+          rtask%p_rproblemLevelSrc  => p_rproblemLevel
+          rtask%p_rproblemLevelDest => rproblemLevel
+
+        else
+          call output_line('Either spatial or block discretisation must be present',&
+              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateSpatialDiscr')
+          call sys_halt()
+        end if
+      end if
+
+      ! Append task to task list (if not already present)
+      if (associated(p_rtasklist)) then
+        if (appendToTaskList(p_rtasklist, rtask)) then
+          deallocate(rtask)
+
+          ! That`s it we do not have to create this spatial discretisation
+          return
+        end if
+      else
+        p_rtasklist => rtask
+      end if
+
+      ! When should we perform this task?
+      rtask%iperform = problem_getIperform(sperform)
+      
+      ! Duplicate spatial discretisation
+      if (iand(rtask%iperform, iperform) .ne. 0) then
+        call spdiscr_duplicateDiscrSc(rtask%p_rspatialDiscrSrc,&
+            rdiscretisation, rtask%bshareStructure)
+      end if
+      
+    else
+      call output_line('Unsupported action: '//trim(saction),&
+          OU_CLASS_ERROR,OU_MODE_STD,'problem_updateSpatialDiscr')
+
+      call output_multiline('\nNAME: MatrixScalar')
+      call output_separator(OU_SEP_MINUS)
+      call output_multiline('\nMandatory parameters'//&
+          '\n\nSPERFORM   indicates when to perform the action'//&
+          '\n\n  NEVER       never'//&
+          '\n  INIT        on init only'//&
+          '\n  UPDATE      on update only'//&
+          '\n  ALWAYS      on init and update'//&
+          '\n\nSACTION    action to be performed'//&
+          '\n\n  NONE        do nothing'//&
+          '\n  CREATE      create spatial discretisation'//&
+          '\n  DUPLICATE   duplicate spatial discretisation')
+      call output_multiline('\nExamples: SACTION=CREATE')
+      call output_separator(OU_SEP_MINUS)
+      call output_multiline('[SpatialDiscr]'//&
+          '\nsaction                 = create'//&
+          '\nsperform                = always')
+      call output_separator(OU_SEP_MINUS)
+      call sys_halt()
+    end if
+
+  contains
+
+    !***************************************************************************
+    ! Search for given task in the list of tasks. If the task is not
+    ! present in the list, then it is appended.
+    function appendToTaskList(rtasklist, rtask) result(bexists)
+
+      type(t_discrTask), intent(inout), target :: rtasklist
+      type(t_discrTask), intent(in), target :: rtask
+      
+      ! local variable
+      type(t_discrTask), pointer :: p_rtask
+      logical :: bexists      
+
+      p_rtask => rtasklist
+      do while(associated(p_rtask))
+        if (associated(p_rtask%p_rspatialDiscrDest,&
+            rtask%p_rspatialDiscrDest)) then
+          bexists = .true.
+          return
+        end if
+        if (.not.associated(p_rtask%p_rnextTask)) then
+          p_rtask%p_rnextTask => rtask
+          bexists = .false.
+          return
+        else
+          p_rtask => p_rtask%p_rnextTask
+        end if
+      end do
+      
+    end function appendToTaskList
+
+  end subroutine problem_updateSpatialDiscr
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  recursive subroutine problem_updateBlockDiscr(rproblemLevel, rdiscretisation,&
+      rparlist, ssectionName, p_rtasklist, rproblemTopLevel, iperformSpec)
+
+!<description>
+    ! This subroutine generates the task list to initialise/update the
+    ! given block discretisation structures on the given problem level
+    ! with the values provided by the parameter list.
 !</description>
 
 !<input>
@@ -3671,7 +4317,7 @@ contains
     character(len=PARLST_MLDATA) :: skeyword,sparameter,sproblem,stoken,svalue
     character(len=SYS_STRLEN) :: ssubsectionName
     character(len=SYS_STRLEN) :: saction,sperform,sperf
-    integer :: idiscr,iistart,ilev,istart,itoken,ntoken,nblocks
+    integer :: idiscr,iistart,ilev,istart,itoken,ntoken,ncomponents
     integer(i32) :: iperform
 
     ! Set pointer to problem structure
@@ -3691,32 +4337,192 @@ contains
     if (trim(saction) .eq. 'NONE') then
       !-------------------------------------------------------------------------
       ! Do nothing
+      return
       
     elseif (trim(saction) .eq. 'CREATE') then
 
       !-------------------------------------------------------------------------
       ! Create block discretisation structure
       !
-      ! SYNTAX: discretisation(n) =
-      !           spatialdiscretisation = SpDiscr1
-      !                                ...
-      !           blockdiscretisation   = BlDiscr1
-      !
-      ! A block discretisation structure as the name suggests consists
-      ! of multiple blocks of discretisation structures. Each block
-      ! can be a spatial discretisation structure or a block
-      ! discretisation structure. This hierarchic composition is
-      ! traced down to spatial discretisation structures only.
+      ! SYNTAX: blockdiscretisation(N) =
+      !           BlockDiscr1
+      !               ...
+      !           BlockDiscrN
       
       ! Create new task
       nullify(rtask)
       allocate(rtask)
       nullify(rtask%p_rnextTask)
+      rtask%bisSpatialDiscr     = .false.
       rtask%ctask               =  PROBACTION_CREATE
       rtask%ssectionName        =  ssectionName
       rtask%p_rblockDiscrDest   => rdiscretisation
       rtask%p_rproblemDest      => rproblemLevel%p_rproblem
       rtask%p_rproblemLevelDest => rproblemLevel
+      
+      ! Append task to task list (if not already present)
+      if (associated(p_rtasklist)) then
+        if (appendToTaskList(p_rtasklist, rtask)) then
+          deallocate(rtask)
+
+          ! That`s it we do not have to create this discretisation
+          return
+        end if
+      else
+        p_rtasklist => rtask
+      end if
+
+      ! When should we perform this task?
+      rtask%iperform = problem_getIperform(sperform)
+
+      ! Create block discretisation structure
+      if (iand(rtask%iperform, iperform) .ne. 0) then
+
+        ! Clear preexisting block discretisation
+        call spdiscr_releaseBlockDiscr(rdiscretisation)
+
+        ! Count the total number of discretisation blocks
+        rtask%ncomponents=0
+        call countBlocks(rparlist, ssectionName, rtask%ncomponents)
+        
+        ! Create block discretisation
+        call spdiscr_initBlockDiscr(rdiscretisation, rtask%ncomponents,&
+            rproblemLevel%rtriangulation, rproblemLevel%p_rproblem%rboundary)
+      end if
+      
+      !-------------------------------------------------------------------------
+      ! Update subdiscretisations
+      !
+      ! SYNTAX: subdiscretisation(N) =
+      !           spatialdiscretisation: SpatialDiscr1
+      !           spatialdiscretisation: SpatialDiscr2
+      !           ...
+      !           blockdiscretisation: BlockDiscrN
+      
+      ncomponents = 0
+      call updateSubdiscretisation(rproblemLevel, rdiscretisation, rparlist,&
+          ssectionName, ncomponents, iperform, p_rtaskList, rproblemTopLevel)
+
+      ! Consistency check
+      if (ncomponents .ne. rtask%ncomponents) then
+        call output_line('Inconsistent number of spatial discretisation components',&
+            OU_CLASS_ERROR,OU_MODE_STD,'problem_updateBlockDiscr')
+        call sys_halt()
+      end if
+                  
+    elseif (trim(saction) .eq. 'DUPLICATE') then
+
+      !-------------------------------------------------------------------------
+      ! Duplicate block discretisation structure
+      !
+      ! SYNTAX: spatialdiscretisation = problem:[name],...
+      !                                 idiscr(etisation):#,...
+      !                                 ilev:#,...
+      !       OR  blockdiscretisation = problem:[name],...
+      !                                 idiscr(etisation):#,...
+      !                                 ilev:#,...
+      !                                 ifirstblock:#,...
+      !                                 ilastblock:#
+      !
+      ! If ilev is not given then the level of the current problem
+      ! level structure is adopted. If ifirstblock and/or ilastblock
+      ! is not given then first and last block of the source block
+      ! discretisation is used
+ 
+      ! Find problem name from which to duplicate spatial discretisation (if any)
+      call parlst_getvalue_string(rparlist, ssectionName, 'spatialdiscretisation', sparameter, '')
+      call sys_toupper(sparameter)
+
+      if (trim(sparameter) .ne. '') then
+        
+        !--- Spatial discretisation case ---------------------------------------
+
+      else
+
+        !--- Block discretisation case -----------------------------------------
+        
+        ! Find problem name from which to duplicate block discretisation
+        call parlst_getvalue_string(rparlist, ssectionName, 'blockdiscretisation', sparameter, '')
+        call sys_toupper(sparameter)
+
+        if (trim(sparameter) .ne. '') then
+
+          ! Create new task for this discretisation structure
+          nullify(rtask)
+          allocate(rtask)
+          nullify(rtask%p_rnextTask)
+          rtask%bisSpatialDiscr = .false.
+          rtask%ctask           = PROBACTION_DUPLICATE
+          rtask%ssectionName    = ssectionName
+
+          ! Initialise optional parameters
+          sproblem = trim(rproblemLevel%p_rproblem%cproblem)
+          ilev     = rproblemLevel%ilev
+          idiscr   = 1
+
+          ! Get optional parameters if available
+          call sys_countTokens(sparameter, ntoken, ',', .false.); istart=1
+
+          do itoken = 1,ntoken
+            call sys_getNextToken (sparameter, stoken, istart, ',', .false.)
+
+            iistart = 1
+            call sys_getNextToken (stoken, skeyword, iistart, ":", .false.)
+            call sys_getNextToken (stoken, svalue, iistart, ":", .false.)
+
+            if (trim(skeyword) .eq. 'PROBLEM') then
+              sproblem = trim(svalue)
+            elseif (trim(skeyword) .eq. 'ILEV') then
+              read(svalue,'(I10)') ilev
+            elseif (trim(skeyword) .eq. 'IFIRSTBLOCK') then
+              read(svalue,'(I10)') rtask%ifirstBlock
+            elseif (trim(skeyword) .eq. 'ILASTBLOCK') then
+              read(svalue,'(I10)') rtask%ilastBlock
+            elseif (trim(skeyword) .eq. 'IDISCR' .or.&
+                    trim(skeyword) .eq. 'IDISCRETISATION') then
+              read(svalue,'(I10)') idiscr
+            elseif (trim(skeyword) .eq. 'SHARE') then
+              rtask%bshareStructure = (trim(svalue) .eq. 'YES')
+            elseif (trim(skeyword) .eq. 'COPY') then
+              rtask%bshareStructure = .not.(trim(svalue) .eq. 'YES')
+            else
+              call output_line('Unsupported keyword: '//trim(skeyword),&
+                  OU_CLASS_ERROR,OU_MODE_STD,'problem_updateBlockDiscr')
+              call sys_halt()
+            end if
+          end do
+
+          ! Find problem level in global problem structure
+          p_rproblemLevel => problem_getLevel(p_rproblemTopLevel, trim(sproblem), ilev)
+          if (.not.associated(p_rproblemLevel)) then
+            call output_line('Unable to find problem level in problem '//trim(sproblem),&
+                OU_CLASS_ERROR,OU_MODE_STD,'problem_updateBlockDiscr')
+            call sys_halt()
+          end if
+          
+          ! Get section name of discretisation
+          call parlst_getvalue_string(rparlist, trim(sproblem),&
+              'blockdiscretisation', ssubsectionName, isubstring=idiscr)
+          
+          ! Proceed with possibly prerequisite tasks
+          call problem_updateBlockDiscr(p_rproblemLevel,&
+              p_rproblemLevel%RblockDiscretisation(idiscr), rparlist,&
+              ssubsectionName, p_rtasklist, p_rproblemTopLevel, iperformSpec)
+          
+          ! Specify task for this discretisation structure
+          rtask%p_rblockDiscrSrc    => p_rproblemLevel%RblockDiscretisation(idiscr)
+          rtask%p_rblockDiscrDest   => rdiscretisation
+          rtask%p_rproblemSrc       => p_rproblemLevel%p_rproblem
+          rtask%p_rproblemDest      => rproblemLevel%p_rproblem
+          rtask%p_rproblemLevelSrc  => p_rproblemLevel
+          rtask%p_rproblemLevelDest => rproblemLevel
+          
+        else
+          call output_line('Either spatial or block discretisation must be present',&
+              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateBlockDiscr')
+          call sys_halt()
+        end if
+      end if
       
       ! Append task to task list (if not already present)
       if (associated(p_rtasklist)) then
@@ -3731,172 +4537,33 @@ contains
       end if
 
       ! When should we perform this task?
-      call sys_countTokens(sperform, ntoken, ',', .false.)
-      istart = 1
-      do itoken=1,max(ntoken,1)
-        call sys_getNextToken (sperform, sperf, istart, ',', .false.)
-        if (trim(adjustl(sperf)) .eq. 'INIT') then
-          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_INIT)
-        elseif (trim(adjustl(sperf)) .eq. 'UPDATE') then
-          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_UPDATE)
-        elseif (trim(adjustl(sperf)) .eq. 'ALWAYS') then
-          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_ALWAYS)
-        else
-          call output_line('Unsupported perform type: '//trim(sperf),&
-              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateDiscr')
-          call sys_halt()
-        end if
-      end do
+      rtask%iperform = problem_getIperform(sperform)
 
-      ! Create block discretisation structure
+      ! Should we perform this task now?
       if (iand(rtask%iperform, iperform) .ne. 0) then
-        nblocks=0
-        call countBlocks(rparlist, ssectionName, nblocks)
-        call spdiscr_initBlockDiscr(rdiscretisation, nblocks,&
-            rproblemLevel%rtriangulation, rproblemLevel%p_rproblem%rboundary)
-        
-        nblocks=0
-        call initBlockDiscr(rparlist, ssectionName, rdiscretisation, nblocks,&
-            rproblemLevel%rtriangulation, rproblemLevel%p_rproblem%rboundary)
-      end if
-      
-    elseif (trim(saction) .eq. 'DUPLICATE') then
-
-      !-------------------------------------------------------------------------
-      ! Duplicate block discretisation structure
-      !
-      ! SYNTAX: discretisation = problem:[name],...
-      !                          idiscr(etisation):#,...
-      !                          ilev:#,...
-      !                          ifirstblock:#,...
-      !                          ilastblock:#
-      !
-      ! If ilev is not given then the level of the current problem
-      ! level structure is adopted. If ifirstblock and/or ilastblock
-      ! is not given then first and last block of the source block
-      ! discretisation is used
- 
-      ! Find problem name from which to duplicate block discretisation
-      call parlst_getvalue_string(rparlist, ssectionName, 'discretisation', sparameter)
-      call sys_toupper(sparameter)
-
-      ! Create new task for this discretisation structure
-      nullify(rtask)
-      allocate(rtask)
-      nullify(rtask%p_rnextTask)
-      rtask%ctask = PROBACTION_DUPLICATE
-      rtask%ssectionName = ssectionName
-
-      ! Initialise optional parameters
-      sproblem = trim(rproblemLevel%p_rproblem%cproblem)
-      ilev     = rproblemLevel%ilev
-      idiscr   = 1
-
-      ! Get optional parameters if available
-      call sys_countTokens(sparameter, ntoken, ',', .false.); istart=1
-      
-      do itoken = 1,ntoken
-        call sys_getNextToken (sparameter, stoken, istart, ',', .false.)
-
-        iistart = 1
-        call sys_getNextToken (stoken, skeyword, iistart, ":", .false.)
-        call sys_getNextToken (stoken, svalue, iistart, ":", .false.)
-
-        if (trim(skeyword) .eq. 'PROBLEM') then
-          sproblem = trim(svalue)
-        elseif (trim(skeyword) .eq. 'ILEV') then
-          read(svalue,'(I10)') ilev
-        elseif (trim(skeyword) .eq. 'IFIRSTBLOCK') then
-          read(svalue,'(I10)') rtask%ifirstBlock
-        elseif (trim(skeyword) .eq. 'ILASTBLOCK') then
-          read(svalue,'(I10)') rtask%ilastBlock
-        elseif (trim(skeyword) .eq. 'IDISCR' .or.&
-                trim(skeyword) .eq. 'IDISCRETISATION') then
-          read(svalue,'(I10)') idiscr
-        elseif (trim(skeyword) .eq. 'SHARE') then
-          rtask%bshareStructure = (trim(svalue) .eq. 'YES')
-        elseif (trim(skeyword) .eq. 'COPY') then
-          rtask%bshareStructure = .not.(trim(svalue) .eq. 'YES')
+        if (associated(rtask%p_rspatialDiscrSrc)) then
+          ! Duplicate scalar discretisation as 1-block discretisation
+          call spdiscr_createBlockDiscrInd (rtask%p_rspatialDiscrSrc,&
+              rtask%p_rblockDiscrDest)
+        elseif (associated(rtask%p_rblockDiscrSrc)) then
+          if ((rtask%ifirstBlock .eq. 0) .and. (rtask%ilastBlock  .eq. 0)) then
+            call spdiscr_duplicateBlockDiscr(rtask%p_rblockDiscrSrc,&
+                rtask%p_rblockDiscrDest, rtask%bshareStructure)
+          else
+            call spdiscr_deriveBlockDiscr(rtask%p_rblockDiscrSrc,&
+                rtask%p_rblockDiscrDest, rtask%ifirstBlock,&
+                rtask%ilastBlock, bshare=rtask%bshareStructure)
+          end if
         else
-          call output_line('Unsupported keyword: '//trim(skeyword),&
-              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateDiscr')
+          call output_line('Neither spatial nor block discretisation can be duplicated',&
+              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateBlockDiscr')
           call sys_halt()
         end if
-      end do
-
-      ! Find problem level in global problem structure
-      p_rproblemLevel => problem_getLevel(p_rproblemTopLevel, trim(sproblem), ilev)
-      if (.not.associated(p_rproblemLevel)) then
-        call output_line('Unable to find problem level in problem '//trim(sproblem),&
-            OU_CLASS_ERROR,OU_MODE_STD,'problem_updateDiscr')
-        call sys_halt()
-      end if
-      
-      ! Get section name of discretisation
-      call parlst_getvalue_string(rparlist, trim(sproblem),&
-          'discretisation', ssubsectionName, isubstring=idiscr)
-      
-      ! Proceed with possibly prerequisite tasks
-      call problem_updateDiscr(p_rproblemLevel,&
-          p_rproblemLevel%Rdiscretisation(idiscr), rparlist,&
-          ssubsectionName, p_rtasklist, p_rproblemTopLevel, iperformSpec)
-      
-      ! Specify task for this discretisation structure
-      rtask%p_rblockDiscrSrc    => p_rproblemLevel%Rdiscretisation(idiscr)
-      rtask%p_rblockDiscrDest   => rdiscretisation
-      rtask%p_rproblemSrc       => p_rproblemLevel%p_rproblem
-      rtask%p_rproblemDest      => rproblemLevel%p_rproblem
-      rtask%p_rproblemLevelSrc  => p_rproblemLevel
-      rtask%p_rproblemLevelDest => rproblemLevel
-
-      ! Append task to task list (if not already present)
-      if (associated(p_rtasklist)) then
-        if (appendToTaskList(p_rtasklist, rtask)) then
-          deallocate(rtask)
-
-          ! That`s it we do not have to create this discretisation
-          return
-        end if
-      else
-        p_rtasklist => rtask
-      end if
-
-      ! When should we perform this task?
-      call sys_countTokens(sperform, ntoken, ',', .false.)
-      istart = 1
-      do itoken=1,max(ntoken,1)
-        call sys_getNextToken (sperform, sperf, istart, ',', .false.)
-        if (trim(adjustl(sperf)) .eq. 'INIT') then
-          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_INIT)
-        elseif (trim(adjustl(sperf)) .eq. 'UPDATE') then
-          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_UPDATE)
-        elseif (trim(adjustl(sperf)) .eq. 'ALWAYS') then
-          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_ALWAYS)
-        else
-          call output_line('Unsupported perform type: '//trim(sperf),&
-              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateDiscr')
-          call sys_halt()
-        end if
-      end do
-
-      ! Duplicate block discretisation structure
-      if ((iand(rtask%iperform, iperform) .ne. 0) .and.&
-          (rtask%ifirstBlock .eq. 0) .and.&
-          (rtask%ilastBlock .eq. 0)) then
-        call spdiscr_duplicateBlockDiscr(rtask%p_rblockDiscrSrc,&
-            rtask%p_rblockDiscrDest, rtask%bshareStructure)
-      elseif (rtask%bshareStructure) then
-        call spdiscr_deriveBlockDiscr(rtask%p_rblockDiscrSrc,&
-            rtask%p_rblockDiscrDest, rtask%ifirstBlock, rtask%ilastBlock)
-      else
-        call output_line('Copying of a derived block discretisation is not supported',&
-            OU_CLASS_ERROR,OU_MODE_STD,'problem_updateDiscr')
-        call sys_halt()
       end if
       
     else
       call output_line('Unsupported action: '//trim(saction),&
-          OU_CLASS_ERROR,OU_MODE_STD,'problem_updateDiscr')
+          OU_CLASS_ERROR,OU_MODE_STD,'problem_updateBlockDiscr')
       
       call output_multiline('\nNAME: BlockDiscretisation')
       call output_separator(OU_SEP_MINUS)
@@ -3944,9 +4611,9 @@ contains
       call output_multiline('[BlockDiscr3]'//&
           '\nsaction        = duplicate'//&
           '\nsperform       = always'//&
-          '\ndiscretisation = problem:Transport,idiscr:1,ifirstblock:1,ilastblock:2,copy:yes')
+          '\nblockdiscretisation = problem:Transport,idiscr:1,ifirstblock:1,ilastblock:2,copy:yes')
       call output_separator(OU_SEP_MINUS)
-      call output_multiline('\ndiscretisation ='//&
+      call output_multiline('\nblockdiscretisation ='//&
           '\n     PROBLEM,'//&
           '\n          name of the problem'//&
           '\n          (if not given the name of the current problem is used)'//&
@@ -3965,6 +4632,19 @@ contains
           '\n          share/copy content of the discretisation'//&
           '\n          (if neither of the above is given content is shared)')
       call output_multiline('\n     Duplicates blocks of an existing block discretisation structure')
+      call output_multiline('\nspatialdiscretisation ='//&
+          '\n     PROBLEM,'//&
+          '\n          name of the problem'//&
+          '\n          (if not given the name of the current problem is used)'//&
+          '\n     ILEV,'//&
+          '\n          level from which to duplicate'//&
+          '\n          (if not given the current problem level is used)'//&
+          '\n     IDISCR(ETISATION),'//&
+          '\n          number of the spatial discretisation'//&
+          '\n     SHARE/COPY,'//&
+          '\n          share/copy content of the discretisation'//&
+          '\n          (if neither of the above is given content is shared)')
+      call output_multiline('\n     Duplicates the single block of an existing spatial discretisation structure')
       call sys_halt()
     end if
     
@@ -4004,19 +4684,19 @@ contains
     
     !***************************************************************************
     ! Count total number of blocks in spatial discretisation
-    recursive subroutine countBlocks(rparlist, ssectionName, nblocks)
+    recursive subroutine countBlocks(rparlist, ssectionName, ncomponents)
       
       type(t_parlist), intent(in) :: rparlist
       character(len=*), intent(in) :: ssectionName
-      integer, intent(inout) :: nblocks
+      integer, intent(inout) :: ncomponents
       
       ! local variables
       character(len=PARLST_MLDATA) :: sparameter,stoken
       integer :: i,istart
       
       ! Loop over all substrings in "discretisation"
-      do i = 0, parlst_querysubstrings(rparlist, ssectionName, "discretisation")
-        call parlst_getvalue_string(rparlist, ssectionName, "discretisation",&
+      do i = 0, parlst_querysubstrings(rparlist, ssectionName, "subdiscretisation")
+        call parlst_getvalue_string(rparlist, ssectionName, "subdiscretisation",&
             sparameter, isubstring=i)
         
         istart = 1
@@ -4025,14 +4705,14 @@ contains
         
         ! Do we have a spatial- or blockdiscretisation structure?
         if (trim(adjustl(stoken)) .eq. "SPATIALDISCRETISATION") then
-          nblocks = nblocks+1
+          ncomponents = ncomponents+1
           
         elseif (trim(adjustl(stoken)) .eq. "BLOCKDISCRETISATION") then
-          call countBlocks(rparlist, trim(adjustl(sparameter(istart:))), nblocks)
+          call countBlocks(rparlist, trim(adjustl(sparameter(istart:))), ncomponents)
           
         elseif(trim(adjustl(stoken)) .ne. "") then 
           call output_line('Unsupported parameter1: '//trim(adjustl(stoken)),&
-              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateDiscr')
+              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateBlockDiscr')
           call sys_halt()
         end if
       end do
@@ -4040,26 +4720,30 @@ contains
     end subroutine countBlocks
 
     !**************************************************************
-    ! Initialise global block discretisation structure
-    recursive subroutine initBlockDiscr(rparlist, ssectionName,&
-        rdiscretisation, iblock, rtriangulation, rboundary)
-      
+    ! Update global discretisation structure
+    recursive subroutine updateSubdiscretisation(rproblemLevel, rdiscretisation,&
+        rparlist, ssectionName, iblock, iperform, p_rtaskList, rproblemTopLevel)
+
+      ! input parameters
+      type(t_problemLevel), intent(in), target :: rproblemLevel
+      type(t_problem), intent(in), target, optional :: rproblemTopLevel
       type(t_parlist), intent(in) :: rparlist
       character(len=*), intent(in) :: ssectionName
-      type(t_triangulation), intent(in), target :: rtriangulation
-      type(t_boundary), intent(in), target :: rboundary
-      type(t_blockDiscretisation), intent(inout) :: rdiscretisation
-      integer, dimension(:), allocatable :: Celement
-      integer, intent(inout) :: iblock
+      integer(i32), intent(in) :: iperform
       
+      ! inputoutput parameters
+      type(t_blockDiscretisation), intent(inout) :: rdiscretisation
+      type(t_discrTask), pointer :: p_rtaskList
+      integer, intent(inout) :: iblock
+
       ! local variables
       character(len=PARLST_MLDATA) :: sparameter,stoken
-      character(len=SYS_STRLEN) :: sspatialDiscrName,selemName
+      character(len=SYS_STRLEN) :: selemName,sspatialDiscrName
       integer :: i,ielement,istart,nelements
       
-      ! Loop over all substrings in "discretisation"
-      do i = 0, parlst_querysubstrings(rparlist, ssectionName, "discretisation")
-        call parlst_getvalue_string(rparlist, ssectionName, "discretisation",&
+      ! Loop over all substrings in "subdiscretisation"
+      do i = 0, parlst_querysubstrings(rparlist, ssectionName, "subdiscretisation")
+        call parlst_getvalue_string(rparlist, ssectionName, "subdiscretisation",&
             sparameter, isubstring=i)
         
         istart = 1
@@ -4069,64 +4753,177 @@ contains
         ! Do we have a spatial- or blockdiscretisation structure?
         if (trim(adjustl(stoken)) .eq. "SPATIALDISCRETISATION") then
           
-          ! Increase block number
+          ! Increase block number and check of spatial
+          ! subdiscretisation is available
           iblock = iblock+1
+          if (rdiscretisation%ncomponents .lt. iblock) then
+            call output_line('Position of subdiscretisation is not available',&
+                OU_CLASS_ERROR,OU_MODE_STD,'problem_updateBlockDiscretisation')
+            call sys_halt()
+          end if
+    
+          ! Set section name of subdiscretisation
           sspatialDiscrName = trim(adjustl(sparameter(istart:)))
+
+          ! Update spatial subdiscretisation
+          call problem_updateSpatialDiscr(rproblemLevel,&
+              rdiscretisation%RspatialDiscr(iblock), rparlist,&
+              sspatialDiscrName, p_rtasklist, rproblemTopLevel, iperform)
           
-          ! Allocate temporal memory
-          nelements = max(1, parlst_querysubstrings(rparlist, sspatialDiscrName, 'celement'))
-          allocate(Celement(nelements))
-          
-          ! Get IDs of element types
-          do ielement = 1, nelements
-            call parlst_getvalue_string(rparlist,&
-                sspatialDiscrName, 'celement', selemName, isubstring=ielement)
-            Celement(ielement) = elem_igetID(selemName)
-          end do
-          
+        elseif (trim(adjustl(stoken)) .eq. "BLOCKDISCRETISATION") then
+
+          ! Proceed recursively for blockdiscretisation
+          call updateSubdiscretisation(rproblemLevel, rdiscretisation,&
+              rparlist, trim(adjustl(sparameter(istart:))), iblock,&
+              iperform, p_rtaskList, rproblemTopLevel)
+
+        elseif(trim(adjustl(stoken)) .ne. "") then 
+          call output_line('Unsupported parameter: '//trim(adjustl(stoken)),&
+              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateBlockDiscr')
+          call sys_halt()
+        end if
+      end do
+
+    end subroutine updateSubdiscretisation
+    
+  end subroutine problem_updateBlockDiscr
+
+  !*****************************************************************************
+  
+!<subroutine>
+
+  subroutine problem_updateDiscr(rtasklist, iperformSpec)
+
+!<description>
+    ! This subroutine updates the discretisation structures with the
+    ! internal values assigned to the items of the task list.
+!</description>
+
+!<input>
+    ! task list
+    type(t_discrTask), intent(in), target :: rtasklist
+
+    ! If not present PROBACTION_PERFORM_ALWAYS is assumed
+    integer(i32), intent(in), optional :: iperformspec
+!</input>
+!</subroutine>
+
+    ! local variables
+    type(t_discrTask), pointer :: p_rtask
+    integer :: iperform
+
+        iperform = PROBACTION_PERFORM_ALWAYS
+    if (present(iperformSpec)) iperform = iperformSpec
+    
+    ! Iterate over all tasks
+    p_rtask => rtasklist
+    taskloop: do while (associated(p_rtask))
+
+      ! Do we have to perform this task?
+      if (iand(p_rtask%iperform, iperform) .eq. 0) then
+        p_rtask => p_rtask%p_rnextTask
+        cycle taskloop
+      end if
+
+      select case(p_rtask%ctask)
+      case(PROBACTION_NONE)
+        
+        !-----------------------------------------------------------------------
+        ! Do nothing
+
+      case(PROBACTION_CREATE)
+        
+        ! Do we have to assemble a spatial discretisation?
+        if (p_rtask%bisSpatialDiscr) then
+
+          !---------------------------------------------------------------------
+          ! Create spatial discretisation
+
+          ! Clear preexisting discretisation
+          call spdiscr_releaseDiscr(p_rtask%p_rspatialDiscrDest)
+
           ! Get spatial dimension
-          select case(rdiscretisation%ndimension)
+          select case(p_rtask%p_rproblemLevelSrc%rtriangulation%ndim)
           case (NDIM1D)
-            call spdiscr_initDiscr_simple(rdiscretisation%RspatialDiscr(iblock),&
-                Celement(1), rtriangulation, rboundary)
+            call spdiscr_initDiscr_simple(p_rtask%p_rspatialDiscrDest,&
+                p_rtask%Celement(1),&
+                p_rtask%p_rproblemLevelDest%rtriangulation,&
+                p_rtask%p_rproblemLevelDest%p_rproblem%rboundary)
             
           case (NDIM2D)
-            if (size(Celement) .eq. 1) then
-              call spdiscr_initDiscr_simple(rdiscretisation%RspatialDiscr(iblock),&
-                  Celement(1), rtriangulation, rboundary)
+            if (size(p_rtask%Celement) .eq. 1) then
+              call spdiscr_initDiscr_simple(p_rtask%p_rspatialDiscrDest,&
+                  p_rtask%Celement(1),&
+                  p_rtask%p_rproblemLevelDest%rtriangulation,&
+                  p_rtask%p_rproblemLevelDest%p_rproblem%rboundary)
             else
-              call spdiscr_initDiscr_triquad(&
-                  rdiscretisation%RspatialDiscr(iblock), Celement(1), Celement(2),&
-                  rtriangulation, rboundary)
+              call spdiscr_initDiscr_triquad(p_rtask%p_rspatialDiscrDest,&
+                  p_rtask%Celement(1), p_rtask%Celement(2),&
+                  p_rtask%p_rproblemLevelDest%rtriangulation,&
+                  p_rtask%p_rproblemLevelDest%p_rproblem%rboundary)
             end if
             
           case (NDIM3D)
-            call spdiscr_initDiscr_simple(rdiscretisation%RspatialDiscr(iblock),&
-                Celement(1), rtriangulation, rboundary)
+            call spdiscr_initDiscr_simple(p_rtask%p_rspatialDiscrDest,&
+                p_rtask%Celement(1),&
+                p_rtask%p_rproblemLevelDest%rtriangulation,&
+                p_rtask%p_rproblemLevelDest%p_rproblem%rboundary)
             
           case default
             call output_line('Invalid number of spatial dimensions',&
                 OU_CLASS_ERROR,OU_MODE_STD,'problem_updateDiscr')
             call sys_halt()
           end select
+
+        else
+
+          !---------------------------------------------------------------------
+          ! Create block discretisation
           
-          ! Deallocate temporal memory
-          deallocate(Celement)
-
-        elseif (trim(adjustl(stoken)) .eq. "BLOCKDISCRETISATION") then
-          ! Proceed recursively for blockdiscretisation
-          call initBlockDiscr(rparlist, trim(adjustl(sparameter(istart:))),&
-              rdiscretisation, iblock, rtriangulation, rboundary)
-
-        elseif(trim(adjustl(stoken)) .ne. "") then 
-          call output_line('Unsupported parameter: '//trim(adjustl(stoken)),&
-              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateDiscr')
-          call sys_halt()
+          ! Clear preexisting discretisation including substructures
+          call spdiscr_releaseBlockDiscr(p_rtask%p_rblockDiscrDest, .true.)
+          
+          ! Create block discretisation structure
+          call spdiscr_initBlockDiscr(p_rtask%p_rblockDiscrDest, p_rtask%ncomponents,&
+              p_rtask%p_rproblemLevelDest%rtriangulation,&
+              p_rtask%p_rproblemLevelDest%p_rproblem%rboundary)
         end if
-      end do
+        
+      case(PROBACTION_DUPLICATE)
+        
+        !-----------------------------------------------------------------------
+        ! Duplicate spatial/block discretisation
 
-    end subroutine initBlockDiscr
-    
+        if (p_rtask%bisSpatialDiscr) then
+          ! Duplicate spatial discretisation
+          call spdiscr_duplicateDiscrSc(p_rtask%p_rspatialDiscrSrc,&
+              p_rtask%p_rspatialDiscrDest, p_rtask%bshareStructure)
+        else
+          if (associated(p_rtask%p_rspatialDiscrSrc)) then
+            ! Duplicate spatial discretisation as 1-block discretisation
+            call spdiscr_createBlockDiscrInd(p_rtask%p_rspatialDiscrSrc,&
+                p_rtask%p_rblockDiscrDest)
+          elseif (associated(p_rtask%p_rblockDiscrSrc)) then
+            ! Duplicate block discretisation
+            call spdiscr_duplicateBlockDiscr(p_rtask%p_rblockDiscrSrc,&
+                p_rtask%p_rblockDiscrDest)
+          else
+            call output_line('Neither spatial nor block discretisation can be duplicated',&
+                OU_CLASS_ERROR,OU_MODE_STD,'problem_updateDiscr')
+            call sys_halt()
+          end if
+        end if
+        
+      case default
+        call output_line('Unsupported action: '//sys_siL(p_rtask%ctask,3),&
+            OU_CLASS_ERROR,OU_MODE_STD,'problem_updateDiscr')
+        call sys_halt()
+      end select
+
+      ! Proceed with next task
+      p_rtask => p_rtask%p_rnextTask
+    end do taskloop
+
   end subroutine problem_updateDiscr
  
   !*****************************************************************************
@@ -4150,6 +4947,7 @@ contains
 
     p_rtask => p_rtasklist
     do while(associated(p_rtask))
+      if (associated(p_rtask%Celement)) deallocate(p_rtask%Celement)
       p_rtaskSave => p_rtask
       p_rtask     => p_rtask%p_rnextTask
       deallocate(p_rtaskSave)
@@ -4198,16 +4996,21 @@ contains
       end select
 
       call output_line ('----------------------')
+      call output_line ('discretisation type       : '//merge('SPATIAL', 'BLOCK  ', p_rtask%bisSpatialDiscr))
       call output_line ('section name              : '//trim(p_rtask%ssectionName))
       call output_line ('destination problem       : '//trim(p_rtask%p_rproblemDest%cproblem))
       call output_line ('destination problem level : '//trim(sys_siL(p_rtask%p_rproblemLevelDest%ilev,15)))
-      call output_line ('destination discretisation: '//merge('ASSOCIATED    ','NOT ASSOCIATED',&
+      call output_line ('destination spatial discr.: '//merge('ASSOCIATED    ','NOT ASSOCIATED',&
+                                                              associated(p_rtask%p_rspatialDiscrDest)))
+      call output_line ('destination block discr.  : '//merge('ASSOCIATED    ','NOT ASSOCIATED',&
                                                               associated(p_rtask%p_rblockDiscrDest)))
       if (associated(p_rtask%p_rproblemSrc))&
       call output_line ('source problem            : '//trim(p_rtask%p_rproblemSrc%cproblem))
       if (associated(p_rtask%p_rproblemLevelSrc))&
       call output_line ('source problem level      : '//trim(sys_siL(p_rtask%p_rproblemLevelSrc%ilev,15)))
-      call output_line ('source discretisation     : '//merge('ASSOCIATED    ','NOT ASSOCIATED',&
+      call output_line ('source spatial discr.     : '//merge('ASSOCIATED    ','NOT ASSOCIATED',&
+                                                              associated(p_rtask%p_rspatialDiscrSrc)))
+      call output_line ('source block discr.       : '//merge('ASSOCIATED    ','NOT ASSOCIATED',&
                                                               associated(p_rtask%p_rblockDiscrSrc)))
       call output_line ('iperform                  : '//trim(sys_siL(int(p_rtask%iperform),15)))
       call output_line ('shareStructure            : '//merge('TRUE ','FALSE',p_rtask%bshareStructure))
@@ -4223,8 +5026,8 @@ contains
 
 !<subroutine>
 
-  subroutine problem_initCubInfoAll(rproblemLevel,&
-      rparlist, ssectionName, p_rtasklist, rproblemTopLevel, iperformSpec)
+  subroutine problem_initCubInfoAll(rproblemLevel, rparlist,&
+      ssectionName, p_rtasklist, rproblemTopLevel, iperformSpec)
 
 !<description>
     ! This subroutine initialises all cubature info structures of the
@@ -4265,8 +5068,8 @@ contains
     if (present(p_rtasklist)) p_rtasklistLocal => p_rtasklist
     
     ! Update all cubature info
-    call problem_updateCubInfoAll(rproblemLevel,&
-        rparlist, ssectionName, p_rtasklistLocal, rproblemTopLevel, iperformSpec)
+    call problem_updateCubInfoAll(rproblemLevel, rparlist,&
+        ssectionName, p_rtasklistLocal, rproblemTopLevel, iperformSpec)
 
     ! Release temporal task list if required
     if (.not.present(p_rtasklist)) then
@@ -4279,8 +5082,8 @@ contains
 
 !<subroutine>
 
-  subroutine problem_updateCubInfoAll(rproblemLevel,&
-      rparlist, ssectionName, p_rtasklist, rproblemTopLevel, iperformSpec)
+  subroutine problem_updateCubInfoAll(rproblemLevel, rparlist,&
+      ssectionName, p_rtasklist, rproblemTopLevel, iperformSpec)
 
 !<description>
     ! This subroutine the task list for all cubature info structures of the
@@ -4320,7 +5123,8 @@ contains
     ! Consistency check
     ncubinfo = parlst_querysubstrings(rparlist, ssectionName,&
                                       'cubatureinfo')
-    if (ncubinfo .ne. size(rproblemLevel%RcubatureInfo)) then
+    if ((ncubinfo .gt. 0) .and.&
+        (ncubinfo .ne. size(rproblemLevel%RcubatureInfo))) then
       call output_line('Invalid number of cubature info structures',&
           OU_CLASS_ERROR,OU_MODE_STD,'problem_updateCubInfoAll')
       call sys_halt()
@@ -4403,9 +5207,8 @@ contains
 
 !<subroutine>
 
-  recursive subroutine problem_updateCubInfo1(rproblemLevel,&
-      rcubatureinfo, rparlist, ssectionName, p_rtasklist, rproblemTopLevel,&
-      iperformSpec)
+  recursive subroutine problem_updateCubInfo1(rproblemLevel, rcubatureinfo,&
+      rparlist, ssectionName, p_rtasklist, rproblemTopLevel, iperformSpec)
 
 !<description>
     ! This subroutine generates the task list to initialise/update the
@@ -4471,16 +5274,17 @@ contains
     if (trim(saction) .eq. 'NONE') then
       !-------------------------------------------------------------------------
       ! Do nothing
+      return
 
     elseif (trim(saction) .eq. 'CREATE') then
 
       !-------------------------------------------------------------------------
       ! Create cubature info structure
       !
-      ! SYNTAX: cubatureinfo(n) =
+      ! SYNTAX: cubatureinfo(N) =
       !           CubInfo1
       !             ...
-      !           CubInfo2
+      !           CubInfoN
 
       ! Create new task
       nullify(rtask)
@@ -4505,44 +5309,41 @@ contains
       end if
 
       ! When should we perform this task?
-      call sys_countTokens(sperform, ntoken, ',', .false.)
-      istart = 1
-      do itoken=1,max(ntoken,1)
-        call sys_getNextToken (sperform, sperf, istart, ',', .false.)
-        if (trim(adjustl(sperf)) .eq. 'INIT') then
-          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_INIT)
-        elseif (trim(adjustl(sperf)) .eq. 'UPDATE') then
-          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_UPDATE)
-        elseif (trim(adjustl(sperf)) .eq. 'ALWAYS') then
-          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_ALWAYS)
-        else
-          call output_line('Unsupported perform type: '//trim(sperf),&
-              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateCubInfo1')
-          call sys_halt()
-        end if
-      end do
+      rtask%iperform = problem_getIperform(sperform)
 
-      ! Create cubature info structure
-      if (iand(rtask%iperform, iperform) .ne. 0) then
-        ! Get optional parameters
-        call parlst_getvalue_int(rparlist, ssectionName,&
-            'ccubType',  rtask%ccubType, CUB_UNDEFINED)
-        if (rtask%ccubType .eq. CUB_UNDEFINED) then
-          call parlst_getvalue_string(rparlist, ssectionName,&
-              'scubType', scubType, 'AUTO')
-          call sys_toupper(sparameter)
-          rtask%ccubType = cub_igetID(scubtype)
-        end if
-        call parlst_getvalue_int(rparlist, ssectionName,&
-            'nlevels', rtask%nlevels, 0)
-        
-        ! Get spatial discretisation
+      ! Get optional parameters
+      call parlst_getvalue_int(rparlist, ssectionName,&
+          'ccubType',  rtask%ccubType, CUB_UNDEFINED)
+      if (rtask%ccubType .eq. CUB_UNDEFINED) then
         call parlst_getvalue_string(rparlist, ssectionName,&
-            'discretisation', sparameter)
+            'scubType', scubType, 'AUTO')
+        call sys_toupper(sparameter)
+        rtask%ccubType = cub_igetID(scubtype)
+      end if
+      call parlst_getvalue_int(rparlist, ssectionName,&
+          'nlevels', rtask%nlevels, 0)
+      
+      ! Get spatial discretisation
+      call parlst_getvalue_string(rparlist, ssectionName,&
+          'spatialdiscretisation', sparameter, '')
+      if (trim(sparameter) .ne. '') then
         call sys_toupper(sparameter)
         rtask%p_rspatialDiscr => problem_getSpatialDiscr(&
             rtask%p_rproblemDest, rtask%p_rproblemLevelDest, sparameter)
-        
+      else
+        ! Otherwise, try to get a spatial discretisation as subblock
+        ! of a block discretisation
+        call parlst_getvalue_string(rparlist, ssectionName,&
+            'blockdiscretisation', sparameter, '')
+        if (trim(sparameter) .ne. '') then
+          call sys_toupper(sparameter)
+          rtask%p_rspatialDiscr => problem_getSpatialSubDiscr(&
+              rtask%p_rproblemDest, rtask%p_rproblemLevelDest, sparameter)
+        end if
+      end if
+      
+      ! Create cubature info structure
+      if (iand(rtask%iperform, iperform) .ne. 0) then
         ! Do we have a spatial discretisation?
         if (.not.associated(rtask%p_rspatialDiscr)) then
           call output_line('Unable to find spatial discretisation',&
@@ -4645,22 +5446,7 @@ contains
       end if
 
       ! When should we perform this task?
-      call sys_countTokens(sperform, ntoken, ',', .false.)
-      istart = 1
-      do itoken=1,max(ntoken,1)
-        call sys_getNextToken (sperform, sperf, istart, ',', .false.)
-        if (trim(adjustl(sperf)) .eq. 'INIT') then
-          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_INIT)
-        elseif (trim(adjustl(sperf)) .eq. 'UPDATE') then
-          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_UPDATE)
-        elseif (trim(adjustl(sperf)) .eq. 'ALWAYS') then
-          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_ALWAYS)
-        else
-          call output_line('Unsupported perform type: '//trim(sperf),&
-              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateCubInfo1')
-          call sys_halt()
-        end if
-      end do
+      rtask%iperform = problem_getIperform(sperform)
 
       ! Duplicate cubature info structure
       if (iand(rtask%iperform, iperform) .ne. 0) then
@@ -4804,7 +5590,7 @@ contains
     
     ! Iterate over all tasks
     p_rtask => rtasklist
-    do while (associated(p_rtask))
+    taskloop: do while (associated(p_rtask))
 
       ! Do we have to perform this task?
       if (iand(p_rtask%iperform, iperform) .eq. 0) then
@@ -4813,6 +5599,11 @@ contains
       end if
       
       select case(p_rtask%ctask)
+      case(PROBACTION_NONE)
+
+        !-----------------------------------------------------------------------
+        ! Do nothing
+
       case(PROBACTION_CREATE)
         
         !-----------------------------------------------------------------------
@@ -4826,7 +5617,7 @@ contains
         !-----------------------------------------------------------------------
         ! Duplicate cubature info structure
 
-        call output_line('Duplication of a cubature info structure is not supported ye',&
+        call output_line('Duplication of a cubature info structure is not supported yet',&
             OU_CLASS_ERROR,OU_MODE_STD,'problem_updateCubInfo2')
         call sys_halt()
         
@@ -4838,7 +5629,7 @@ contains
       
       ! Proceed with next task
       p_rtask => p_rtask%p_rnextTask
-    end do
+    end do taskloop
  
   end subroutine problem_updateCubInfo2
 
@@ -4937,8 +5728,8 @@ contains
 
 !<subroutine>
 
-  subroutine problem_initMatrixAll(rproblemLevel,&
-      rparlist, ssectionName, p_rtasklist, rproblemTopLevel, iperformSpec)
+  subroutine problem_initMatrixAll(rproblemLevel, rparlist,&
+      ssectionName, p_rtasklist, rproblemTopLevel, iperformSpec)
 
 !<description>
     ! This subroutine initialises all scalar/block matrices of the
@@ -4979,8 +5770,8 @@ contains
     if (present(p_rtasklist)) p_rtasklistLocal => p_rtasklist
     
     ! Update all scalar/block matrices
-    call problem_updateMatrixAll(rproblemLevel,&
-        rparlist, ssectionName, p_rtasklistLocal, rproblemTopLevel, iperformSpec)
+    call problem_updateMatrixAll(rproblemLevel, rparlist,&
+        ssectionName, p_rtasklistLocal, rproblemTopLevel, iperformSpec)
 
     ! Release temporal task list if required
     if (.not.present(p_rtasklist)) then
@@ -4993,8 +5784,8 @@ contains
 
 !<subroutine>
 
-  subroutine problem_updateMatrixAll(rproblemLevel,&
-      rparlist, ssectionName, p_rtasklist, rproblemTopLevel, iperformSpec)
+  subroutine problem_updateMatrixAll(rproblemLevel, rparlist,&
+      ssectionName, p_rtasklist, rproblemTopLevel, iperformSpec)
 
 !<description>
     ! This subroutine the task list for all scalar/block matrices of the
@@ -5198,8 +5989,8 @@ contains
 
 !<subroutine>
 
-  recursive subroutine problem_updateMatrixScalar(rproblemLevel,&
-      rmatrix, rparlist, ssectionName, p_rtasklist, rproblemTopLevel, iperformSpec)
+  recursive subroutine problem_updateMatrixScalar(rproblemLevel, rmatrix,&
+      rparlist, ssectionName, p_rtasklist, rproblemTopLevel, iperformSpec)
 
 !<description>
     ! This subroutine generates the task list to initialise/update the
@@ -5246,7 +6037,7 @@ contains
     character(len=PARLST_MLDATA) :: skeyword,sparameter,sproblem,stoken,svalue
     character(len=SYS_STRLEN) :: ssubsectionName
     character(len=SYS_STRLEN) :: saction,sperform,sperf
-    integer :: iblockcol,iblockrow,iistart,ilev,imatrix,istart,itoken,ntoken,imethod,nmethod
+    integer :: iblockcol,iblockrow,iistart,ilev,imatrix,imethod,istart,itoken,nmethod,ntoken
     integer(i32) :: iperform
 
     ! Set pointer to problem structure
@@ -5270,16 +6061,17 @@ contains
     if (trim(saction) .eq. 'NONE') then
       !-------------------------------------------------------------------------
       ! Do nothing
+      return
 
     elseif (trim(saction) .eq. 'CREATE') then
 
       !-------------------------------------------------------------------------
       ! Create scalar matrix
       !
-      ! SYNTAX: matrixscalar(n) =
+      ! SYNTAX: matrixscalar(N) =
       !           MatrixScalar1
       !                ...
-      !           MatrixScalar2
+      !           MatrixScalarN
 
       ! Create new task
       nullify(rtask)
@@ -5305,22 +6097,7 @@ contains
       end if
 
       ! When should we perform this task?
-      call sys_countTokens(sperform, ntoken, ',', .false.)
-      istart = 1
-      do itoken=1,max(ntoken,1)
-        call sys_getNextToken (sperform, sperf, istart, ',', .false.)
-        if (trim(adjustl(sperf)) .eq. 'INIT') then
-          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_INIT)
-        elseif (trim(adjustl(sperf)) .eq. 'UPDATE') then
-          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_UPDATE)
-        elseif (trim(adjustl(sperf)) .eq. 'ALWAYS') then
-          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_ALWAYS)
-        else
-          call output_line('Unsupported perform type: '//trim(sperf),&
-              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateMatrixScalar')
-          call sys_halt()
-        end if
-      end do
+      rtask%iperform = problem_getIperform(sperform)
       
       ! Get optional parameters
       call  parlst_getvalue_int(rparlist, ssectionName,&
@@ -5356,26 +6133,33 @@ contains
           'dscalefactor', rtask%dscaleFactor, 1.0_DP)
 
       if ((rtask%cmatrixFormat .ne. LSYSSC_MATRIX7INTL) .and.&
-          (rtask%cmatrixFormat .ne. LSYSSC_MATRIX9INTL)) then
-        rtask%nvar = 1
+          (rtask%cmatrixFormat .ne. LSYSSC_MATRIX9INTL) .and.&
+          (rtask%nvar .ne. 1)) then
+        call output_line('Interleaved matrix format must be specified for NVAR>1',&
+            OU_CLASS_ERROR,OU_MODE_STD,'problem_updateMatrixScalar')
+        call sys_halt()
       end if
       
       ! Get spatial discretisation for test and trial space
       call parlst_getvalue_string(rparlist, ssectionName,&
-          'discretisation', sparameter, '')
+          'spatialdiscretisation', sparameter, '')
       if (trim(sparameter) .eq. '') then
         ! Get spatial discretisation for test space
         call parlst_getvalue_string(rparlist, ssectionName,&
-            'discretisationtest', sparameter)
-        call sys_toupper(sparameter)
-        rtask%p_rspatialDiscrTest => problem_getSpatialDiscr(&
-            rproblemLevel%p_rproblem, rproblemLevel, sparameter)
+            'spatialdiscretisationtest', sparameter, '')
+        if (trim(sparameter) .ne. '') then
+          call sys_toupper(sparameter)
+          rtask%p_rspatialDiscrTest => problem_getSpatialDiscr(&
+              rproblemLevel%p_rproblem, rproblemLevel, sparameter)
+        end if
         ! Get spatial discretisation for trial space
         call parlst_getvalue_string(rparlist, ssectionName,&
-            'discretisationtrial', sparameter)
-        call sys_toupper(sparameter)
-        rtask%p_rspatialDiscrTrial => problem_getSpatialDiscr(&
-            rproblemLevel%p_rproblem, rproblemLevel, sparameter)
+            'spatialdiscretisationtrial', sparameter, '')
+        if (trim(sparameter) .ne. '') then
+          call sys_toupper(sparameter)
+          rtask%p_rspatialDiscrTrial => problem_getSpatialDiscr(&
+              rproblemLevel%p_rproblem, rproblemLevel, sparameter)
+        end if
       else
         call sys_toupper(sparameter)
         p_rspatialDiscr => problem_getSpatialDiscr(&
@@ -5384,8 +6168,53 @@ contains
         rtask%p_rspatialDiscrTrial => p_rspatialDiscr
       end if
 
+      ! Check if we have spatial discretisations for test space
+      if (.not.associated(rtask%p_rspatialDiscrTest)) then
+        ! Otherwise, try to get the spatial discretisation as subblock
+        ! of a block discretisation
+        call parlst_getvalue_string(rparlist, ssectionName,&
+            'blockdiscretisation', sparameter, '')
+        if (trim(sparameter) .eq. '') then
+          call parlst_getvalue_string(rparlist, ssectionName,&
+              'blockdiscretisationtest', sparameter, '')
+          if (trim(sparameter) .ne. '') then
+            call sys_toupper(sparameter)
+            rtask%p_rspatialDiscrTest => problem_getSpatialSubDiscr(&
+                rproblemLevel%p_rproblem, rproblemLevel, sparameter)
+          end if
+        else
+          call sys_toupper(sparameter)
+          p_rspatialDiscr => problem_getSpatialSubDiscr(&
+              rproblemLevel%p_rproblem, rproblemLevel, sparameter)
+          rtask%p_rspatialDiscrTest => p_rspatialDiscr
+        end if
+      end if
+      
+      ! Check if we have spatial discretisations for trial space
+      if (.not.associated(rtask%p_rspatialDiscrTrial)) then
+        ! Otherwise, try to get the spatial discretisation as subblock
+        ! of a block discretisation
+        call parlst_getvalue_string(rparlist, ssectionName,&
+            'blockdiscretisation', sparameter, '')
+        if (trim(sparameter) .eq. '') then
+          call parlst_getvalue_string(rparlist, ssectionName,&
+              'blockdiscretisationtrial', sparameter, '')
+          if (trim(sparameter) .ne. '') then
+            call sys_toupper(sparameter)
+            rtask%p_rspatialDiscrTrial => problem_getSpatialSubDiscr(&
+                rproblemLevel%p_rproblem, rproblemLevel, sparameter)
+          end if
+        else
+          call sys_toupper(sparameter)
+          p_rspatialDiscr => problem_getSpatialSubDiscr(&
+              rproblemLevel%p_rproblem, rproblemLevel, sparameter)
+          rtask%p_rspatialDiscrTrial => p_rspatialDiscr
+        end if
+      end if
+
       ! Should we perform this task now?
       if (iand(rtask%iperform, iperform) .ne. 0) then
+
         ! Do we have spatial discretisations?
         if (.not.associated(rtask%p_rspatialDiscrTest) .or.&
             .not.associated(rtask%p_rspatialDiscrTrial)) then
@@ -5587,7 +6416,7 @@ contains
           rtask%p_rproblemLevelDest => rproblemLevel
 
         else
-          call output_line('Either matrixscalar of matrixblock must be present',&
+          call output_line('Either scalar or block matrix must be present',&
               OU_CLASS_ERROR,OU_MODE_STD,'problem_updateMatrixScalar')
           call sys_halt()
         end if
@@ -5606,22 +6435,7 @@ contains
       end if
 
       ! When should we perform this task?
-      call sys_countTokens(sperform, ntoken, ',', .false.)
-      istart = 1
-      do itoken=1,max(ntoken,1)
-        call sys_getNextToken (sperform, sperf, istart, ',', .false.)
-        if (trim(adjustl(sperf)) .eq. 'INIT') then
-          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_INIT)
-        elseif (trim(adjustl(sperf)) .eq. 'UPDATE') then
-          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_UPDATE)
-        elseif (trim(adjustl(sperf)) .eq. 'ALWAYS') then
-          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_ALWAYS)
-        else
-          call output_line('Unsupported perform type: '//trim(sperf),&
-              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateMatrixScalar')
-          call sys_halt()
-        end if
-      end do
+      rtask%iperform = problem_getIperform(sperform)
           
       ! Get optional parameters
       call parlst_getvalue_string(rparlist, ssectionName,&
@@ -5653,8 +6467,8 @@ contains
           '\n  ALWAYS      on init and update'//&
           '\n\nSACTION    action to be performed'//&
           '\n\n  NONE        do nothing'//&
-          '\n  CREATE      create block discretisation'//&
-          '\n  DUPLICATE   duplicate block discretisation')
+          '\n  CREATE      create scalar matrix'//&
+          '\n  DUPLICATE   duplicate scalar matrix')
       call output_multiline('\nExamples: SACTION=CREATE')
       call output_separator(OU_SEP_MINUS)
       call output_multiline('[ScalarMatrix]'//&
@@ -5760,157 +6574,13 @@ contains
     ! Second part: generate content
     !---------------------------------------------------------------------------
 
-    nmethod = parlst_querysubstrings(rparlist, ssectionName, 'smethod')
-    allocate(rtask%Cmethod(0:nmethod))
-    
-    ! What creation methods are adopted?
-    do imethod = 0,nmethod
-      
-      call parlst_getvalue_string(rparlist, ssectionName,&
-          'smethod', sparameter, '', isubstring=imethod)
-      call sys_toupper(sparameter)
+    ! Update the task for content generation
+    call problem_genContentMatrixTask(rtask, rparlist, ssectionName)
 
-      if (trim(sparameter) .eq. 'VIRTUAL') then
-        
-        !-----------------------------------------------------------------------
-        ! Create virtual matrix, aka, do nothing
-        
-        ! Update internal data of the task item
-        rtask%Cmethod(imethod) = PROBMETH_MATRIX_VIRTUAL
-        
-      elseif (trim(sparameter) .eq. 'EMPTY') then
-        
-        !-----------------------------------------------------------------------
-        ! Create empty matrix
-        
-        call lsyssc_allocEmptyMatrix(rmatrix, LSYSSC_SETM_ZERO)
-        
-        ! Update internal data of the task item
-        rtask%Cmethod(imethod) = PROBMETH_MATRIX_EMPTY
-        
-      elseif (trim(sparameter) .eq. 'IDENTITY') then
-        
-        !-----------------------------------------------------------------------
-        ! Create identity matrix
-        
-        call lsyssc_initialiseIdentityMatrix(rmatrix)
-        
-        ! Update internal data of the task item
-        rtask%Cmethod(imethod) = PROBMETH_MATRIX_IDENTITY
-        
-      elseif (trim(sparameter) .eq. 'BILF') then
-        
-        !-----------------------------------------------------------------------
-        ! Create matrix by bilinearform evaluation
-        
-        call assembleScalarMatrixBilf(rparlist, rtask)
-        
-        ! Update internal data of the task item
-        rtask%Cmethod(imethod) = PROBMETH_MATRIX_BILF
-        
-      elseif (trim(sparameter) .eq. 'LUMP_STD') then
-        
-        !-----------------------------------------------------------------------
-        ! Create matrix by standard lumping
-        
-        call lsyssc_lumpMatrix(rmatrix, LSYSSC_LUMP_STD)
-        
-        ! Update internal data of the task item
-        rtask%Cmethod(imethod) = PROBMETH_MATRIX_LUMP_STD
-        
-      elseif (trim(sparameter) .eq. 'LUMP_DIAG') then
-        
-        !-----------------------------------------------------------------------
-        ! Create matrix by diagonal lumping
-        
-        call lsyssc_infoMatrix(rmatrix)
-
-        call lsyssc_lumpMatrix(rmatrix, LSYSSC_LUMP_DIAG)
-        
-        ! Update internal data of the task item
-        rtask%Cmethod(imethod) = PROBMETH_MATRIX_LUMP_DIAG
-        
-      elseif (trim(sparameter) .eq. 'EXTENDSPARSITY') then
-        
-        !-----------------------------------------------------------------------
-        ! Create matrix with extended sparsity pattern
-        
-        call afcstab_genExtSparsity(rmatrix)
-
-      else
-        call output_line('Unsupported method: '//trim(sparameter),&
-            OU_CLASS_ERROR,OU_MODE_STD,'problem_updateMatrixScalar')
-
-        call output_multiline('\nNAME: MatrixScalar')
-        call output_separator(OU_SEP_MINUS)
-        call output_multiline('\nMandatory parameters'//&
-            '\n\nSMETHOD   indicates method(s) to assemble the content of the matrix'//&
-            '\n  VIRTUAL          virtual matrix without data array'//&
-            '\n  EMPTY            empty matrix with nullified data array'//&
-            '\n  IDENTITY         identity matrix'//&
-            '\n  BILF             assemble matrix from bilinear form'//&
-            '\n  LUMP_STD         matrix with cleared off-diagonal entries'//&
-            '\n  LUMP_DIAG        matrix with row-sum mass lumping'//&
-            '\n  EXTENDSPARSITY   matrix with extended sparsity pattern by one connectivity layer')
-        call output_separator(OU_SEP_MINUS)
-        call output_multiline('[ScalarMatrix]'//&
-            '\nsaction           = duplicate'//&
-            '\nsperform          = always'//&
-            '\nsmethod           = bilf'//&
-            '\nmatrixscalar      = problem:Transport,imatrix:1'//&
-            '\ncubatureinfo      = problem:Transport,icubinfo:1'//&
-            '\nstrialfunction(1) = DER_DERIVX2D'//&
-            '\n                    DER_DERIVY2D'//&
-            '\nstestfunction(1)  = DER_DERIVX2D'//&
-            '\n                    DER_DERIVY2D'//&
-            '\n\n     Duplicates the first scalar matrix from the '//&
-            '\n     problem specified further in section [Transport]'//&
-            '\n     and assembles the standard Laplace matrix using'//&
-            '\n     the first cubature info structure from the problem.')
-        call output_separator(OU_SEP_MINUS)
-        call output_multiline('[ScalarMatrix]'//&
-            '\nsaction        = duplicate'//&
-            '\nsperform       = always'//&
-            '\nsmethod(1)     = bilf'//&
-            '\n                 lump_diag'//&
-            '\nmatrixscalar   = problem:Transport,imatrix:1'//&
-            '\ncubatureinfo   = problem:Transport,icubinfo:1'//&
-            '\nstrialfunction = DER_FUNC2D'//&
-            '\nstestfunction  = DER_FUNC2D'//&
-            '\n\n     Duplicates the first scalar matrix from the '//&
-            '\n     problem specified further in section [Transport]'//&
-            '\n     and assembles the rwo-sum lumped mass matrix using'//&
-            '\n     the first cubature info structure from the problem.')
-        call output_separator(OU_SEP_MINUS)
-        call output_multiline('matrixscalar ='//&
-            '\n     PROBLEM,'//&
-            '\n          name of the problem'//&
-            '\n          (if not given the name of the current problem is used)'//&
-            '\n     ILEV,'//&
-            '\n          level from which the scalar matrix array is used'//&
-            '\n          (if not given the current problem level is used)'//&
-            '\n     IMATRIX,'//&
-            '\n          number of the scalar matrix'//&
-            '\n          (if not given the first scalar matrix is used')
-        call output_multiline('cubatureinfo ='//&
-          '\n     PROBLEM,'//&
-          '\n          name of the problem'//&
-          '\n          (if not given the name of the current problem is used)'//&
-          '\n     ILEV,'//&
-          '\n          level from which the cubature infor structure is used'//&
-          '\n          (if not given the current problem level is used)'//&
-          '\n     ICUB(ATURE)INFO,'//&
-          '\n          number of the cubature info structure'//&
-          '\n          (if not given the first cubature infor structure is used)')
-        call output_multiline('\nstrialfunction(N)'//&
-            '\n     list of DER_xxx constants defining the trial functions')
-        call output_multiline('\nstestfunction(N)'//&
-            '\n     list of DER_xxx constants defining the test functions')
-        call output_multiline('\nscoefficient(N)'//&
-            '\n     list of functions used in the bilinear form')
-        call sys_halt()
-      end if
-    end do
+    ! Generate content (if required)
+    if (iand(rtask%iperform, iperform) .ne. 0) then
+      call problem_genContentMatrix(rtask)
+    end if
 
   contains
 
@@ -6038,128 +6708,15 @@ contains
       end if
 
     end function get_dupType
-    
-    !**************************************************************
-    ! Assemble the scalar matrix from bilinear form evaluation
-    subroutine assembleScalarMatrixBilf(rparlist, rtask)
-
-      type(t_parlist), intent(in) :: rparlist
-      type(t_matrixTask), intent(inout) :: rtask
-
-      ! local variables
-      type(t_collection) :: rcollection
-      type(t_scalarCubatureInfo), pointer :: p_rcubInfo
-      character(len=PARLST_MLDATA) :: sparameter,stoken
-      integer :: i,j,itermCount,istart
-
-      ! Get cubature info structure
-      call parlst_getvalue_string(rparlist, rtask%ssectionName,&
-          'cubatureinfo', sparameter)
-      call sys_toupper(sparameter)
-
-      p_rcubInfo => problem_getCubInfo(rtask%p_rproblemDest,&
-          rtask%p_rproblemLevelDest, sparameter)
-      
-      ! Update internal data of the task item
-      rtask%p_rcubatureInfo => p_rcubInfo
-      allocate(rtask%p_rform)
-
-      ! Setup trial functions
-      call parlst_getvalue_string(rparlist, rtask%ssectionName,&
-          'strialfunction', sparameter)
-      call sys_countTokens(sparameter, itermCount, ',', .false.)
-      rtask%p_rform%itermCount = itermCount
-      
-      istart = 1
-      do i = 1,itermCount
-        call sys_getNextToken(sparameter, stoken, istart, ',', .false.)
-        rtask%p_rform%Idescriptors(1,i) = der_igetID(stoken)
-      end do
-      
-      ! Setup test functions
-      call parlst_getvalue_string(rparlist, rtask%ssectionName,&
-          'stestfunction', sparameter)
-      call sys_countTokens(sparameter, itermCount, ',', .false.)
-      rtask%p_rform%itermCount = min(rtask%p_rform%itermCount,itermCount)
-      
-      istart = 1
-      do i = 1,itermCount
-        call sys_getNextToken(sparameter, stoken, istart, ',', .false.)
-        rtask%p_rform%Idescriptors(2,i) = der_igetID(stoken)
-      end do
-
-      ! Setup coefficients
-      call parlst_getvalue_string(rparlist, rtask%ssectionName,&
-          'scoefficient', sparameter, '')
-      call sys_countTokens(sparameter, itermCount, ',', .false.)
-      
-      if (itermCount .gt. 0) then
-        ! Use individual coefficients for each component
-        rtask%p_rform%itermCount = min(rtask%p_rform%itermCount,itermCount)
-
-        istart = 1
-        do i=1,itermCount
-          call sys_getNextToken(sparameter, stoken, istart, ',', .false.)
-          if (sys_isNumeric(stoken)) then
-            read(stoken,*) rtask%p_rform%Dcoefficients(i)
-          else
-            ! Not all coefficients are constant. Thus, we create a
-            ! function parser object and perform bilinear form
-            ! evaluation based on a generic callback function
-            rtask%p_rform%ballCoeffConstant = .false.
-            
-            allocate (rtask%p_rfparser)
-            call fparser_create(rtask%p_rfparser, itermCount)
-            
-            ! Fill function parser with data
-            istart = 1
-            do j = 1,itermCount
-              call sys_getNextToken(sparameter, stoken, istart, ',', .false.)
-              call fparser_parseFunction(rtask%p_rfparser, j, trim(stoken), (/'x','y','z'/))
-            end do
-            
-            ! That`s it
-            exit
-          end if
-        end do
-        
-      else
-        ! Use unity as constand coefficient
-        rtask%p_rform%Dcoefficients(1:rtask%p_rform%itermCount) = 1.0_DP
-      end if
-          
-      ! Assemble matrix data from bilinear form
-      if (rtask%p_rform%ballCoeffConstant) then
-        if (associated(p_rcubInfo)) then
-          call bilf_buildMatrixScalar(rtask%p_rform, .true.,&
-              rtask%p_rmatrixScalarDest, p_rcubInfo)
-        else
-          call bilf_buildMatrixScalar(rtask%p_rform, .true.,&
-              rtask%p_rmatrixScalarDest)
-        end if
-      else
-        rcollection%p_rfparserQuickAccess1 => rtask%p_rfparser
-        if (associated(p_rcubInfo)) then
-          call bilf_buildMatrixScalar(rtask%p_rform, .true.,&
-              rtask%p_rmatrixScalarDest, p_rcubInfo,&
-              problem_buildMatrixSc_fparser_sim, rcollection)
-        else
-          call bilf_buildMatrixScalar(rtask%p_rform, .true.,&
-              rtask%p_rmatrixScalarDest,&
-              problem_buildMatrixSc_fparser_sim, rcollection)
-        end if
-      end if
-    
-    end subroutine assembleScalarMatrixBilf
-
+   
   end subroutine problem_updateMatrixScalar
 
   !*****************************************************************************
 
 !<subroutine>
 
-  recursive subroutine problem_updateMatrixBlock(rproblemLevel,&
-      rmatrix, rparlist, ssectionName, p_rtasklist, rproblemTopLevel, iperformSpec)
+  recursive subroutine problem_updateMatrixBlock(rproblemLevel, rmatrix,&
+      rparlist, ssectionName, p_rtasklist, rproblemTopLevel, iperformSpec)
 
 !<description>
     ! This subroutine generates the task list to initialise/update the
@@ -6206,7 +6763,7 @@ contains
     character(len=PARLST_MLDATA) :: skeyword,sparameter,sproblem,stoken,svalue
     character(len=SYS_STRLEN) :: ssubsectionName
     character(len=SYS_STRLEN) :: saction,sperform,sperf
-    integer :: iistart,ilev,imatrix,istart,itoken,ntoken,i,j,imethod,nmethod
+    integer :: i,iistart,ilev,imatrix,imethod,istart,itoken,j,nmethod,ntoken
     integer(i32) :: iperform
 
     ! Set pointer to problem structure
@@ -6226,16 +6783,17 @@ contains
     if (trim(saction) .eq. 'NONE') then
       !-------------------------------------------------------------------------
       ! Do nothing
+      return
       
     elseif (trim(saction) .eq. 'CREATE') then
 
       !-------------------------------------------------------------------------
       ! Create block matrix
       !
-      ! SYNTAX: matrixblock(n) =
+      ! SYNTAX: matrixblock(N) =
       !           MatrixBlock1
       !                ...
-      !           MatrixBlock2
+      !           MatrixBlockN
 
       ! Create new task
       nullify(rtask)
@@ -6261,36 +6819,21 @@ contains
       end if
 
       ! When should we perform this task?
-      call sys_countTokens(sperform, ntoken, ',', .false.)
-      istart = 1
-      do itoken=1,max(ntoken,1)
-        call sys_getNextToken (sperform, sperf, istart, ',', .false.)
-        if (trim(adjustl(sperf)) .eq. 'INIT') then
-          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_INIT)
-        elseif (trim(adjustl(sperf)) .eq. 'UPDATE') then
-          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_UPDATE)
-        elseif (trim(adjustl(sperf)) .eq. 'ALWAYS') then
-          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_ALWAYS)
-        else
-          call output_line('Unsupported perform type: '//trim(sperf),&
-              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateMatrixBlock')
-          call sys_halt()
-        end if
-      end do
+      rtask%iperform = problem_getIperform(sperform)
 
       ! Get block discretisation for test and trial space
       call parlst_getvalue_string(rparlist, ssectionName,&
-          'discretisation', sparameter, '')
+          'blockdiscretisation', sparameter, '')
       if (trim(sparameter) .eq. '') then
         ! Get block discretisation for test space
         call parlst_getvalue_string(rparlist, ssectionName,&
-            'discretisationtest', sparameter)
+            'blockdiscretisationtest', sparameter)
         call sys_toupper(sparameter)
         rtask%p_rblockDiscrTest => problem_getBlockDiscr(rproblemLevel%p_rproblem,&
             rproblemLevel, sparameter)
         ! Get block discretisation for trial space
         call parlst_getvalue_string(rparlist, ssectionName,&
-            'discretisationtrial', sparameter)
+            'blockdiscretisationtrial', sparameter)
         call sys_toupper(sparameter)
         rtask%p_rblockDiscrTrial => problem_getBlockDiscr(rproblemLevel%p_rproblem,&
             rproblemLevel, sparameter)
@@ -6307,7 +6850,7 @@ contains
         ! Do we have block discretisations?
         if (.not.associated(rtask%p_rblockDiscrTest) .or.&
             .not.associated(rtask%p_rblockDiscrTrial)) then
-          call output_line('Unable to find block discretisation',&
+          call output_line('Unable to find block discretisation structure',&
               OU_CLASS_ERROR,OU_MODE_STD,'problem_updateMatrixBlock')
           call sys_halt()
         end if
@@ -6342,7 +6885,7 @@ contains
 
       call updateSubmatrix(rproblemLevel, rmatrix, rparlist,&
           ssectionName, 0, 0, iperform, p_rtaskList, rproblemTopLevel)
-            
+
     elseif (trim(saction) .eq. 'DUPLICATE') then
 
       !-------------------------------------------------------------------------
@@ -6499,7 +7042,7 @@ contains
           rtask%p_rproblemLevelDest => rproblemLevel
 
         else
-          call output_line('Either matrixscalar of matrixblock must be present',&
+          call output_line('Either scalar or block matrix must be present',&
               OU_CLASS_ERROR,OU_MODE_STD,'problem_updateMatrixBlock')
           call sys_halt()
         end if
@@ -6518,22 +7061,7 @@ contains
       end if      
 
       ! When should we perform this task?
-      call sys_countTokens(sperform, ntoken, ',', .false.)
-      istart = 1
-      do itoken=1,max(ntoken,1)
-        call sys_getNextToken (sperform, sperf, istart, ',', .false.)
-        if (trim(adjustl(sperf)) .eq. 'INIT') then
-          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_INIT)
-        elseif (trim(adjustl(sperf)) .eq. 'UPDATE') then
-          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_UPDATE)
-        elseif (trim(adjustl(sperf)) .eq. 'ALWAYS') then
-          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_ALWAYS)
-        else
-          call output_line('Unsupported perform type: '//trim(sperf),&
-              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateMatrixBlock')
-          call sys_halt()
-        end if
-      end do
+      rtask%iperform = problem_getIperform(sperform)
 
       ! Get optional parameters
       call parlst_getvalue_string(rparlist, ssectionName,&
@@ -6589,17 +7117,17 @@ contains
           '\n  ALWAYS      on init and update'//&
           '\n\nSACTION    action to be performed'//&
           '\n\n  NONE        do nothing'//&
-          '\n  CREATE      create block discretisation'//&
-          '\n  DUPLICATE   duplicate block discretisation')
+          '\n  CREATE      create block matrix'//&
+          '\n  DUPLICATE   duplicate block matrix')
       call output_multiline('\nExamples: SACTION=CREATE')
       call output_separator(OU_SEP_MINUS)
       call output_multiline('[BlockMatrix]'//&
-          '\nsaction             = create'//&
-          '\nsperform            = always'//&
-          '\ndiscretisationtest  = problem:Transport,idiscr:1'//&
-          '\ndiscretisationtrial = problem:Transport,idiscr:2'//&
-          '\nnsubmatrix(1)       ='//&
-          '\n                      matrixscalar@(1,1):ScalarMatrix'//&
+          '\nsaction                  = create'//&
+          '\nsperform                 = always'//&
+          '\nblockdiscretisationtest  = problem:Transport,idiscr:1'//&
+          '\nblockdiscretisationtrial = problem:Transport,idiscr:2'//&
+          '\nnsubmatrix(1)            ='//&
+          '\n                           matrixscalar@(1,1):ScalarMatrix'//&
           '\n\n     Creates a block matrix based on the first and second block'//&
           '\n     discretisation of the given problem for test and trial spaces.'//&
           '\n     The scalar submatrix at position (1,1) is created by using the'//&
@@ -6608,12 +7136,12 @@ contains
           '\n     is compatible with the discretisation at position (1,1).')
       call output_separator(OU_SEP_MINUS)
       call output_multiline('[BlockMatrix]'//&
-          '\nsaction        = create'//&
-          '\nsperform       = always'//&
-          '\ndiscretisation = problem:Transport,idiscr:1'//&
-          '\nsubmatrix(2)   ='//&
-          '\n                 matrixblock@(1,1):BlockMatrix1'//&
-          '\n                 matrixscalar@(3,3):ScalarMatrix'//&
+          '\nsaction             = create'//&
+          '\nsperform            = always'//&
+          '\nblockdiscretisation = problem:Transport,idiscr:1'//&
+          '\nsubmatrix(2)        ='//&
+          '\n                      matrixblock@(1,1):BlockMatrix1'//&
+          '\n                      matrixscalar@(3,3):ScalarMatrix'//&
           '\n\n     Creates a block matrix based on the first block discretisation'//&
           '\n     of the given problem both for test and trial spaces.'//&
           '\n     The submatrix starting at position (1,1) is created by using the'//&
@@ -6625,7 +7153,7 @@ contains
           '\n     take care that the scalar submatrix specified in [ScalarMatrix]'//&
           '\n     is compatible with the discretisation at position (3,3).')
       call output_separator(OU_SEP_MINUS)
-      call output_multiline('\ndiscretisation ='//&
+      call output_multiline('\nblockdiscretisation ='//&
           '\n     PROBLEM,'//&
           '\n          name of the problem'//&
           '\n          (if not given the name of the current problem is used)'//&
@@ -6635,7 +7163,7 @@ contains
           '\n     IDISCR(ETISATION),'//&
           '\n          number of the block discretisation'//&
           '\n          (if not given the first block discretisation is used)')
-      call output_multiline('\ndiscretisationtest/discretisationtrial'//&
+      call output_multiline('\nblockdiscretisationtest/blockdiscretisationtrial'//&
           '\n     specify discretisations for test and trial spaces separately'//&
           '\n     (see discretisation for details)')
       call output_multiline('\nsubmatrix(N) ='//&
@@ -6646,14 +7174,14 @@ contains
       call output_multiline('\nExamples: SACTION=DUPLICATE')
       call output_separator(OU_SEP_MINUS)
       call output_multiline('[BlockMatrix]'//&
-          '\nsaction      = create'//&
+          '\nsaction      = duplicate'//&
           '\nsperform     = always'//&
           '\nmatrixscalar = problem:Transport,imatrix:1'//&
           '\n\n     Duplicates the first scalar matrix from the given'//&
           '\n     problem specified further in section [Transport].')
       call output_separator(OU_SEP_MINUS)
       call output_multiline('[BlockMatrix]'//&
-          '\nsaction     = create'//&
+          '\nsaction     = duplicate'//&
           '\nsperform    = always'//&
           '\nmatrixblock = problem:Transport,imatrix:1'//&
           '\n\n     Duplicates the first block matrix from the given'//&
@@ -6686,67 +7214,13 @@ contains
     ! Second part: generate content
     !---------------------------------------------------------------------------
 
-    nmethod = parlst_querysubstrings(rparlist, ssectionName, 'smethod')
-    allocate(rtask%Cmethod(0:nmethod))
+    ! Update the task for content generation
+    call problem_genContentMatrixTask(rtask, rparlist, ssectionName)
 
-    ! What creation methods are adopted?
-    do imethod = 0,nmethod
-
-      call parlst_getvalue_string(rparlist, ssectionName,&
-          'smethod', sparameter, '', isubstring=imethod)
-      call sys_toupper(sparameter)
-      
-      if (trim(sparameter) .eq. 'VIRTUAL') then
-        
-        !-----------------------------------------------------------------------
-        ! Create virtual matrix, aka, do nothing
-        
-        ! Update internal data of the task item
-        rtask%Cmethod(imethod) = PROBMETH_MATRIX_VIRTUAL
-        
-      elseif (trim(sparameter) .eq. 'EMPTY') then
-        
-        !-----------------------------------------------------------------------
-        ! Create empty matrix
-        
-        call lsysbl_allocEmptyMatrix(rmatrix, LSYSSC_SETM_ZERO)
-        
-        ! Update internal data of the task item
-        rtask%Cmethod(imethod) = PROBMETH_MATRIX_EMPTY
-        
-      elseif (trim(sparameter) .eq. 'IDENTITY') then
-        
-        !-----------------------------------------------------------------------
-        ! Create identity matrix
-        
-        do j = 1,rmatrix%nblocksPerRow
-          do i = 1,rmatrix%nblocksPerCol
-            if (i.eq.j) then
-              call lsyssc_initialiseIdentityMatrix(rmatrix%RmatrixBlock(i,j))
-            else
-              call lsyssc_allocEmptyMatrix(rmatrix%RmatrixBlock(i,j), LSYSSC_SETM_ZERO)
-            end if
-          end do
-        end do
-        
-        ! Update internal data of the task item
-        rtask%Cmethod(imethod) = PROBMETH_MATRIX_IDENTITY
-        
-      else
-        call output_line('Unsupported method: '//trim(sparameter),&
-            OU_CLASS_ERROR,OU_MODE_STD,'problem_updateMatrixBlock')
-
-        call output_multiline('\nNAME: MatrixBlock')
-        call output_separator(OU_SEP_MINUS)
-        call output_multiline('\nMandatory parameters'//&
-            '\n\nSMETHOD   indicates method(s) to assemble content of matrix'//&
-            '\n  VIRTUAL          virtual matrix without data array'//&
-            '\n  EMPTY            empty matrix with nullified data array'//&
-            '\n  IDENTITY         identity matrix')
-        call output_separator(OU_SEP_MINUS)
-        call sys_halt()
-      end if
-    end do
+    ! Generate content (if required)
+    if (iand(rtask%iperform, iperform) .ne. 0) then
+      call problem_genContentMatrix(rtask)
+    end if
 
   contains
 
@@ -6815,21 +7289,23 @@ contains
     
     !**************************************************************
     ! Update the submatrix
-    subroutine updateSubmatrix(rproblemLevel, rmatrix,&
+    recursive subroutine updateSubmatrix(rproblemLevel, rmatrix,&
         rparlist, ssectionName, iblockrowOffset, iblockcolOffset,&
         iperform, p_rtaskList, rproblemTopLevel)
 
+      ! input parameters
       type(t_problemLevel), intent(in), target :: rproblemLevel
       type(t_problem), intent(in), target, optional :: rproblemTopLevel
-      type(t_matrixBlock), intent(inout) :: rmatrix
       type(t_parlist), intent(in) :: rparlist
       character(len=*), intent(in) :: ssectionName
       integer, intent(in) :: iblockrowOffset,iblockcolOffset
       integer(i32), intent(in) :: iperform
+
+      ! inputoutput parameters
+      type(t_matrixBlock), intent(inout) :: rmatrix
       type(t_matrixTask), pointer :: p_rtaskList
 
       ! local variables
-      type(t_matrixBlock) :: rmatrixTemp
       character(len=PARLST_MLDATA) :: sparameter,stoken,ssubtoken,ssubmatrix
       integer :: i,iblockcol,iblockrow,iiistart,iistart,istart,isubmatrix,&
                  j,nsubmatrix
@@ -6839,7 +7315,7 @@ contains
 
       ! Loop over all submatrices
       do isubmatrix=1,nsubmatrix
-        
+      
         call parlst_getvalue_string(rparlist, ssectionName, 'submatrix',&
             sparameter, isubstring=isubmatrix)
         call sys_toupper(sparameter)
@@ -6858,9 +7334,9 @@ contains
         call sys_getNextToken (sparameter, stoken, istart, ":", .false.)
 
         ! Apply given block offsets
-        iblockcol = iblockcol+iblockcolOffset
         iblockrow = iblockrow+iblockrowOffset
-
+        iblockcol = iblockcol+iblockcolOffset
+        
         ! Check of this is a scalar matrix or a block matrix
         if (trim(ssubmatrix) .eq. "MATRIXSCALAR") then
           
@@ -6868,39 +7344,27 @@ contains
           if ((rmatrix%nblocksPerCol .lt. iblockrow) .or.&
               (rmatrix%nblocksPerRow .lt. iblockcol)) then
             call output_line('Position of submatrix is not available',&
-                OU_CLASS_ERROR,OU_MODE_STD,'problem_updateMatrixBlock')
+                OU_CLASS_ERROR,OU_MODE_STD,'updateSubmatrix')
             call sys_halt()
           end if
-
+          
           ! Update single scalar submatrix
           call problem_updateMatrixScalar(rproblemLevel,&
               rmatrix%RmatrixBlock(iblockrow,iblockcol), rparlist,&
               trim(stoken), p_rtasklist, rproblemTopLevel, iperform)
           
         elseif(trim(ssubmatrix) .eq. "MATRIXBLOCK") then
-          
+                    
           ! Update single block submatrix
-          call problem_updateMatrixBlock(rproblemLevel,&
-              rmatrixTemp, rparlist, trim(stoken), p_rtasklist,&
-              rproblemTopLevel, iperform)
+          call updateSubmatrix(rproblemLevel, rmatrix,&
+              rparlist, trim(stoken), iblockrow-1, iblockcol-1,&
+              iperform, p_rtasklist, rproblemTopLevel)
 
-          ! Transfer content of scalar submatrices
-          do j=1,rmatrixTemp%nblocksPerRow
-            do i=1,rmatrixTemp%nblocksPerCol
-              rmatrix%RmatrixBlock(iblockrow+i-1,iblockcol+j-1)=&
-                  rmatrixTemp%RmatrixBlock(i,j)
-            end do
-          end do
-
-          ! Release temporal matrix
-          call lsysbl_releaseMatrix(rmatrixTemp)
-          
         else
-          call output_line('Either matrixscalar of matrixblock must be present',&
-              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateMatrixBlock')
+          call output_line('Either scalar or block matrix must be present',&
+              OU_CLASS_ERROR,OU_MODE_STD,'updateSubmatrix')
           call sys_halt()
         end if
-        
       end do
 
     end subroutine updateSubmatrix
@@ -6950,6 +7414,11 @@ contains
       ! First part: create or duplicate matrix
       !-------------------------------------------------------------------------
       select case(p_rtask%ctask)
+      case(PROBACTION_NONE)
+        
+        !-----------------------------------------------------------------------
+        ! Do nothing
+        
       case(PROBACTION_CREATE)
 
         ! Do we have to assemble a scalar matrix?
@@ -7058,7 +7527,7 @@ contains
 
       case default
         call output_line('Unsupported action: '//sys_siL(p_rtask%ctask,3),&
-            OU_CLASS_ERROR,OU_MODE_STD,'problem_updateMamtrix')
+            OU_CLASS_ERROR,OU_MODE_STD,'problem_updateMatrix')
         call sys_halt()
       end select
 
@@ -7066,51 +7535,401 @@ contains
       ! Second part: generate content (only for scalar matrices)
       !-------------------------------------------------------------------------
 
-      ! What creation methods are adopted?
-      do imethod = lbound(p_rtask%Cmethod,1), ubound(p_rtask%Cmethod,1)
+      call problem_genContentMatrix(p_rtask)
 
-        select case (p_rtask%Cmethod(imethod))
+      ! Proceed with next task
+      p_rtask => p_rtask%p_rnextTask
+    end do taskloop
+    
+  end subroutine problem_updateMatrix
+
+!*****************************************************************************
+
+!<subroutine>
+
+  subroutine problem_genContentMatrixTask(rtask, rparlist, ssectionName)
+
+!<description>
+    ! This subroutine updates the task to generate the content of the
+    ! given scalar/block matrix based on the values of the parameter list.
+    ! Note that this method does not generate the content itself.
+!</description>
+
+!<input>
+    ! parameter list
+    type(t_parlist), intent(in) :: rparlist
+    
+    ! name of the section
+    character(LEN=*), intent(in) :: ssectionName
+!</input>
+
+!<inputoutput>
+    ! matrix task
+    type(t_matrixTask), intent(inout) :: rtask
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_collection) :: rcollection
+    type(t_scalarCubatureInfo), pointer :: p_rcubInfo
+    character(len=PARLST_MLDATA) :: sparameter,stoken
+    integer :: i,imethod,istart,itermCount,j,nmethod
+
+    nmethod = parlst_querysubstrings(rparlist, ssectionName, 'smethod')
+    allocate(rtask%Cmethod(0:nmethod))
+
+    ! Do we have a scalar matrix
+    if (rtask%bisMatrixScalar) then
+
+      ! What creation methods are adopted?
+      do imethod = 0,nmethod
+
+        call parlst_getvalue_string(rparlist, ssectionName,&
+            'smethod', sparameter, '', isubstring=imethod)
+        call sys_toupper(sparameter)
+
+        if (trim(sparameter) .eq. 'ASIS') then
+
+          !-----------------------------------------------------------------------
+          ! Leave matrix content as is, aka, do nothing
+
+          rtask%Cmethod(imethod) = PROBMETH_MATRIX_ASIS
+
+
+        elseif (trim(sparameter) .eq. 'VIRTUAL') then
+
+          !-----------------------------------------------------------------------
+          ! Create virtual matrix, aka, remove existing content
+
+          rtask%Cmethod(imethod) = PROBMETH_MATRIX_VIRTUAL
+
+        elseif (trim(sparameter) .eq. 'EMPTY') then
+
+          !-----------------------------------------------------------------------
+          ! Create empty matrix
+
+          rtask%Cmethod(imethod) = PROBMETH_MATRIX_EMPTY
+
+        elseif (trim(sparameter) .eq. 'IDENTITY') then
+
+          !-----------------------------------------------------------------------
+          ! Create identity matrix
+
+          rtask%Cmethod(imethod) = PROBMETH_MATRIX_IDENTITY
+
+        elseif (trim(sparameter) .eq. 'BILF') then
+
+          !-----------------------------------------------------------------------
+          ! Create matrix by bilinearform evaluation
+
+          rtask%Cmethod(imethod) = PROBMETH_MATRIX_BILF
+
+          ! Get cubature info structure
+          call parlst_getvalue_string(rparlist, rtask%ssectionName,&
+              'cubatureinfo', sparameter)
+          call sys_toupper(sparameter)
+
+          p_rcubInfo => problem_getCubInfo(rtask%p_rproblemDest,&
+              rtask%p_rproblemLevelDest, sparameter)
+
+          ! Update internal data of the task item
+          rtask%p_rcubatureInfo => p_rcubInfo
+          allocate(rtask%p_rform)
+
+          ! Setup trial functions
+          call parlst_getvalue_string(rparlist, rtask%ssectionName,&
+              'strialfunction', sparameter)
+          call sys_countTokens(sparameter, itermCount, ',', .false.)
+          rtask%p_rform%itermCount = itermCount
+
+          istart = 1
+          do i = 1,itermCount
+            call sys_getNextToken(sparameter, stoken, istart, ',', .false.)
+            rtask%p_rform%Idescriptors(1,i) = der_igetID(stoken)
+          end do
+
+          ! Setup test functions
+          call parlst_getvalue_string(rparlist, rtask%ssectionName,&
+              'stestfunction', sparameter)
+          call sys_countTokens(sparameter, itermCount, ',', .false.)
+          rtask%p_rform%itermCount = min(rtask%p_rform%itermCount,itermCount)
+
+          istart = 1
+          do i = 1,itermCount
+            call sys_getNextToken(sparameter, stoken, istart, ',', .false.)
+            rtask%p_rform%Idescriptors(2,i) = der_igetID(stoken)
+          end do
+
+          ! Setup coefficients
+          call parlst_getvalue_string(rparlist, rtask%ssectionName,&
+              'scoefficient', sparameter, '')
+          call sys_countTokens(sparameter, itermCount, ',', .false.)
+
+          if (itermCount .gt. 0) then
+            ! Use individual coefficients for each component
+            rtask%p_rform%itermCount = min(rtask%p_rform%itermCount,itermCount)
+
+            istart = 1
+            do i=1,itermCount
+              call sys_getNextToken(sparameter, stoken, istart, ',', .false.)
+              if (sys_isNumeric(stoken)) then
+                read(stoken,*) rtask%p_rform%Dcoefficients(i)
+              else
+                ! Not all coefficients are constant. Thus, we create a
+                ! function parser object and perform bilinear form
+                ! evaluation based on a generic callback function
+                rtask%p_rform%ballCoeffConstant = .false.
+
+                allocate (rtask%p_rfparser)
+                call fparser_create(rtask%p_rfparser, itermCount)
+
+                ! Fill function parser with data
+                istart = 1
+                do j = 1,itermCount
+                  call sys_getNextToken(sparameter, stoken, istart, ',', .false.)
+                  call fparser_parseFunction(rtask%p_rfparser, j, trim(stoken), (/'x','y','z'/))
+                end do
+
+                ! That`s it
+                exit
+              end if
+            end do
+
+          else
+            ! Use unity as constand coefficient
+            rtask%p_rform%Dcoefficients(1:rtask%p_rform%itermCount) = 1.0_DP
+          end if
+
+        elseif (trim(sparameter) .eq. 'LUMP_STD') then
+
+          !-----------------------------------------------------------------------
+          ! Create matrix by standard lumping
+
+          rtask%Cmethod(imethod) = PROBMETH_MATRIX_LUMP_STD
+
+        elseif (trim(sparameter) .eq. 'LUMP_DIAG') then
+
+          !-----------------------------------------------------------------------
+          ! Create matrix by diagonal lumping
+
+          rtask%Cmethod(imethod) = PROBMETH_MATRIX_LUMP_DIAG
+
+        elseif (trim(sparameter) .eq. 'EXTENDSPARSITY') then
+
+          !-----------------------------------------------------------------------
+          ! Create matrix with extended sparsity pattern
+
+          rtask%Cmethod(imethod) = PROBMETH_MATRIX_EXTENDSPARSITY
+
+        else
+          call output_line('Unsupported method: '//trim(sparameter),&
+              OU_CLASS_ERROR,OU_MODE_STD,'problem_genContentMatrixTask')
+
+          call output_multiline('\nNAME: MatrixScalar')
+          call output_separator(OU_SEP_MINUS)
+          call output_multiline('\nMandatory parameters'//&
+              '\n\nSMETHOD   indicates method(s) to assemble the content of the matrix'//&
+              '\n  ASIS             leave matrix content as is'//&
+              '\n  VIRTUAL          virtual matrix without data array'//&
+              '\n  EMPTY            empty matrix with nullified data array'//&
+              '\n  IDENTITY         identity matrix'//&
+              '\n  BILF             assemble matrix from bilinear form'//&
+              '\n  LUMP_STD         matrix with cleared off-diagonal entries'//&
+              '\n  LUMP_DIAG        matrix with row-sum mass lumping'//&
+              '\n  EXTENDSPARSITY   matrix with extended sparsity pattern by one connectivity layer')
+          call output_separator(OU_SEP_MINUS)
+          call output_multiline('[ScalarMatrix]'//&
+              '\nsaction           = duplicate'//&
+              '\nsperform          = always'//&
+              '\nsmethod           = bilf'//&
+              '\nmatrixscalar      = problem:Transport,imatrix:1'//&
+              '\ncubatureinfo      = problem:Transport,icubinfo:1'//&
+              '\nstrialfunction(1) = DER_DERIVX2D'//&
+              '\n                    DER_DERIVY2D'//&
+              '\nstestfunction(1)  = DER_DERIVX2D'//&
+              '\n                    DER_DERIVY2D'//&
+              '\n\n     Duplicates the first scalar matrix from the '//&
+              '\n     problem specified further in section [Transport]'//&
+              '\n     and assembles the standard Laplace matrix using'//&
+              '\n     the first cubature info structure from the problem.')
+          call output_separator(OU_SEP_MINUS)
+          call output_multiline('[ScalarMatrix]'//&
+              '\nsaction        = duplicate'//&
+              '\nsperform       = always'//&
+              '\nsmethod(1)     = bilf'//&
+              '\n                 lump_diag'//&
+              '\nmatrixscalar   = problem:Transport,imatrix:1'//&
+              '\ncubatureinfo   = problem:Transport,icubinfo:1'//&
+              '\nstrialfunction = DER_FUNC2D'//&
+              '\nstestfunction  = DER_FUNC2D'//&
+              '\n\n     Duplicates the first scalar matrix from the '//&
+              '\n     problem specified further in section [Transport]'//&
+              '\n     and assembles the rwo-sum lumped mass matrix using'//&
+              '\n     the first cubature info structure from the problem.')
+          call output_separator(OU_SEP_MINUS)
+          call output_multiline('matrixscalar ='//&
+              '\n     PROBLEM,'//&
+              '\n          name of the problem'//&
+              '\n          (if not given the name of the current problem is used)'//&
+              '\n     ILEV,'//&
+              '\n          level from which the scalar matrix array is used'//&
+              '\n          (if not given the current problem level is used)'//&
+              '\n     IMATRIX,'//&
+              '\n          number of the scalar matrix'//&
+              '\n          (if not given the first scalar matrix is used')
+          call output_multiline('cubatureinfo ='//&
+              '\n     PROBLEM,'//&
+              '\n          name of the problem'//&
+              '\n          (if not given the name of the current problem is used)'//&
+              '\n     ILEV,'//&
+              '\n          level from which the cubature infor structure is used'//&
+              '\n          (if not given the current problem level is used)'//&
+              '\n     ICUB(ATURE)INFO,'//&
+              '\n          number of the cubature info structure'//&
+              '\n          (if not given the first cubature infor structure is used)')
+          call output_multiline('\nstrialfunction(N)'//&
+              '\n     list of DER_xxx constants defining the trial functions')
+          call output_multiline('\nstestfunction(N)'//&
+              '\n     list of DER_xxx constants defining the test functions')
+          call output_multiline('\nscoefficient(N)'//&
+              '\n     list of functions used in the bilinear form')
+          call sys_halt()
+        end if
+      end do
+
+    else
+
+      ! What creation methods are adopted?
+      do imethod = 0,nmethod
+
+        call parlst_getvalue_string(rparlist, ssectionName,&
+            'smethod', sparameter, '', isubstring=imethod)
+        call sys_toupper(sparameter)
+
+        if (trim(sparameter) .eq. 'ASIS') then
+
+          !-----------------------------------------------------------------------
+          ! Leave matrix content as is, aka, do nothing
+
+          rtask%Cmethod(imethod) = PROBMETH_MATRIX_ASIS
+
+        elseif (trim(sparameter) .eq. 'VIRTUAL') then
+
+          !-----------------------------------------------------------------------
+          ! Create virtual matrix, aka, remove existing content
+
+          rtask%Cmethod(imethod) = PROBMETH_MATRIX_VIRTUAL
+
+        elseif (trim(sparameter) .eq. 'EMPTY') then
+
+          !-----------------------------------------------------------------------
+          ! Create empty matrix
+
+          rtask%Cmethod(imethod) = PROBMETH_MATRIX_EMPTY
+
+        elseif (trim(sparameter) .eq. 'IDENTITY') then
+
+          !-----------------------------------------------------------------------
+          ! Create identity matrix
+
+          rtask%Cmethod(imethod) = PROBMETH_MATRIX_IDENTITY
+
+        else
+          call output_line('Unsupported method: '//trim(sparameter),&
+              OU_CLASS_ERROR,OU_MODE_STD,'problem_genContentMatrixTask')
+
+          call output_multiline('\nNAME: MatrixBlock')
+          call output_separator(OU_SEP_MINUS)
+          call output_multiline('\nMandatory parameters'//&
+              '\n\nSMETHOD   indicates method(s) to assemble content of matrix'//&
+              '\n  ASIS             leave matrix content as is'//&
+              '\n  VIRTUAL          virtual matrix without data array'//&
+              '\n  EMPTY            empty matrix with nullified data array'//&
+              '\n  IDENTITY         identity matrix')
+          call output_separator(OU_SEP_MINUS)
+          call sys_halt()
+        end if
+      end do
+
+    end if
+
+  end subroutine problem_genContentMatrixTask
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine problem_genContentMatrix(rtask)
+
+!<description>
+    ! This subroutine generates the content of the given scalar/block
+    ! matrix based on the matrix task
+!</description>
+
+!<inputoutput>
+    ! matrix task
+    type(t_matrixTask), intent(inout) :: rtask
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_collection) :: rcollection
+    integer :: i,imethod,j
+
+    ! Do we have a scalar matrix
+    if (rtask%bisMatrixScalar) then
+
+      ! What creation methods are adopted?
+      do imethod = lbound(rtask%Cmethod,1), ubound(rtask%Cmethod,1)
+
+        select case (rtask%Cmethod(imethod))
+        case(PROBMETH_MATRIX_ASIS)
+
+          !---------------------------------------------------------------------
+          ! Leave matrix content as is, aka, do nothing
+
         case(PROBMETH_MATRIX_VIRTUAL)
           
           !---------------------------------------------------------------------
-          ! Create virtual matrix, aka, do nothing
+          ! Create virtual matrix, aka, remove existing content
+          call lsyssc_releaseMatrixContent(rtask%p_rmatrixScalarDest)
           
         case(PROBMETH_MATRIX_EMPTY)
           
           !---------------------------------------------------------------------
           ! Create empty matrix
           
-          call lsyssc_allocEmptyMatrix(p_rtask%p_rmatrixScalarDest, LSYSSC_SETM_ZERO)
+          call lsyssc_allocEmptyMatrix(rtask%p_rmatrixScalarDest, LSYSSC_SETM_ZERO)
           
         case(PROBMETH_MATRIX_IDENTITY)
           
           !---------------------------------------------------------------------
           ! Create identity matrix
           
-          call lsyssc_initialiseIdentityMatrix(p_rtask%p_rmatrixScalarDest)
+          call lsyssc_initialiseIdentityMatrix(rtask%p_rmatrixScalarDest)
           
         case(PROBMETH_MATRIX_BILF)
           
           !---------------------------------------------------------------------
           ! Create matrix by bilinearform evaluation         
           
-          if (p_rtask%p_rform%ballCoeffConstant) then
-            if (associated(p_rtask%p_rcubatureInfo)) then
-              call bilf_buildMatrixScalar(p_rtask%p_rform, .true.,&
-                  p_rtask%p_rmatrixScalarDest, p_rtask%p_rcubatureInfo)
+          if (rtask%p_rform%ballCoeffConstant) then
+            if (associated(rtask%p_rcubatureInfo)) then
+              call bilf_buildMatrixScalar(rtask%p_rform, .true.,&
+                  rtask%p_rmatrixScalarDest, rtask%p_rcubatureInfo)
             else
-              call bilf_buildMatrixScalar(p_rtask%p_rform, .true.,&
-                  p_rtask%p_rmatrixScalarDest)
+              call bilf_buildMatrixScalar(rtask%p_rform, .true.,&
+                  rtask%p_rmatrixScalarDest)
             end if
           else
-            rcollection%p_rfparserQuickAccess1 => p_rtask%p_rfparser
-            if (associated(p_rtask%p_rcubatureInfo)) then
-              call bilf_buildMatrixScalar(p_rtask%p_rform, .true.,&
-                  p_rtask%p_rmatrixScalarDest, p_rtask%p_rcubatureInfo,&
+            rcollection%p_rfparserQuickAccess1 => rtask%p_rfparser
+            if (associated(rtask%p_rcubatureInfo)) then
+              call bilf_buildMatrixScalar(rtask%p_rform, .true.,&
+                  rtask%p_rmatrixScalarDest, rtask%p_rcubatureInfo,&
                   problem_buildMatrixSc_fparser_sim, rcollection)
             else
-              call bilf_buildMatrixScalar(p_rtask%p_rform, .true.,&
-                  p_rtask%p_rmatrixScalarDest,&
+              call bilf_buildMatrixScalar(rtask%p_rform, .true.,&
+                  rtask%p_rmatrixScalarDest,&
                   problem_buildMatrixSc_fparser_sim, rcollection)
             end if
           end if
@@ -7120,27 +7939,87 @@ contains
           !---------------------------------------------------------------------
           ! Create matrix by standard lumping
           
-          call lsyssc_lumpMatrix(p_rtask%p_rmatrixScalarDest, LSYSSC_LUMP_STD)
+          call lsyssc_lumpMatrix(rtask%p_rmatrixScalarDest, LSYSSC_LUMP_STD)
           
         case(PROBMETH_MATRIX_LUMP_DIAG)
           
           !---------------------------------------------------------------------
           ! Create matrix by diagonal lumping
           
-          call lsyssc_lumpMatrix(p_rtask%p_rmatrixScalarDest, LSYSSC_LUMP_DIAG)
+          call lsyssc_lumpMatrix(rtask%p_rmatrixScalarDest, LSYSSC_LUMP_DIAG)
+
+        case (PROBMETH_MATRIX_EXTENDSPARSITY)
+
+          !---------------------------------------------------------------------
+          ! Create matrix with extended sparsity pattern
+          
+          call afcstab_genExtSparsity(rtask%p_rmatrixScalarDest)
           
         case default
-          call output_line('Unsupported method: '//sys_siL(p_rtask%Cmethod(imethod),3),&
-              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateMatrix')
+          call output_line('Unsupported method: '//sys_siL(rtask%Cmethod(imethod),3),&
+              OU_CLASS_ERROR,OU_MODE_STD,'problem_genContentMatrix')
           call sys_halt()
         end select
       end do
 
-      ! Proceed with next task
-      p_rtask => p_rtask%p_rnextTask
-    end do taskloop
-    
-  end subroutine problem_updateMatrix
+    else
+
+      ! What creation methods are adopted?
+      do imethod = lbound(rtask%Cmethod,1), ubound(rtask%Cmethod,1)
+
+        select case (rtask%Cmethod(imethod))
+        case(PROBMETH_MATRIX_ASIS)
+
+          !---------------------------------------------------------------------
+          ! Leave matrix content as is, aka, do nothing
+
+        case(PROBMETH_MATRIX_VIRTUAL)
+        
+          !---------------------------------------------------------------------
+          ! Create virtual matrix, aka, remove existing content
+          
+          do j = 1,rtask%p_rmatrixBlockDest%nblocksPerRow
+            do i = 1,rtask%p_rmatrixBlockDest%nblocksPerCol
+              call lsyssc_releaseMatrixContent(rtask%p_rmatrixBlockDest%RmatrixBlock(i,j))
+            end do
+          end do
+
+        case(PROBMETH_MATRIX_EMPTY)
+          
+          !---------------------------------------------------------------------
+          ! Create empty matrix
+        
+          call lsysbl_allocEmptyMatrix(rtask%p_rmatrixBlockDest, LSYSSC_SETM_ZERO)
+          
+        case(PROBMETH_MATRIX_IDENTITY)
+          
+          !---------------------------------------------------------------------
+          ! Create identity matrix
+          
+          do j = 1,rtask%p_rmatrixBlockDest%nblocksPerRow
+            do i = 1,rtask%p_rmatrixBlockDest%nblocksPerCol
+              if (i.eq.j) then
+                call lsyssc_allocEmptyMatrix(&
+                    rtask%p_rmatrixBlockDest%RmatrixBlock(i,j), LSYSSC_SETM_UNDEFINED)
+                call lsyssc_initialiseIdentityMatrix(&
+                    rtask%p_rmatrixBlockDest%RmatrixBlock(i,j))
+              else
+                call lsyssc_allocEmptyMatrix(&
+                    rtask%p_rmatrixBlockDest%RmatrixBlock(i,j), LSYSSC_SETM_ZERO)
+              end if
+            end do
+          end do
+          
+        case default
+          call output_line('Unsupported method: '//sys_siL(rtask%Cmethod(imethod),3),&
+              OU_CLASS_ERROR,OU_MODE_STD,'problem_genContentMatrix')
+          call sys_halt()
+        end select
+      end do
+
+    end if
+
+  end subroutine problem_genContentMatrix
 
   !*****************************************************************************
   
@@ -7268,8 +8147,8 @@ contains
 
 !<subroutine>
 
-  subroutine problem_initVectorAll(rproblemLevel,&
-      rparlist, ssectionName, p_rtasklist, rproblemTopLevel, iperformSpec)
+  subroutine problem_initVectorAll(rproblemLevel, rparlist,&
+      ssectionName, p_rtasklist, rproblemTopLevel, iperformSpec)
 
 !<description>
     ! This subroutine initialises all scalar/block vectors of the
@@ -7310,8 +8189,8 @@ contains
     if (present(p_rtasklist)) p_rtasklistLocal => p_rtasklist
     
     ! Update all scalar/block vectors
-    call problem_updateVectorAll(rproblemLevel,&
-        rparlist, ssectionName, p_rtasklistLocal, rproblemTopLevel, iperformSpec)
+    call problem_updateVectorAll(rproblemLevel, rparlist,&
+        ssectionName, p_rtasklistLocal, rproblemTopLevel, iperformSpec)
 
     ! Release temporal task list if required
     if (.not.present(p_rtasklist)) then
@@ -7324,8 +8203,8 @@ contains
 
 !<subroutine>
 
-  subroutine problem_updateVectorAll(rproblemLevel,&
-      rparlist, ssectionName, p_rtasklist, rproblemTopLevel, iperformSpec)
+  subroutine problem_updateVectorAll(rproblemLevel, rparlist,&
+      ssectionName, p_rtasklist, rproblemTopLevel, iperformSpec)
 
 !<description>
     ! This subroutine the task list for all scalar/block vectors of the
@@ -7394,7 +8273,7 @@ contains
     do i=1,nvectorBlock
       call parlst_getvalue_string(rparlist, ssectionName,&
           'vectorblock', ssubsectionName, isubstring=i)
-      call problem_updateVecBl(rproblemLevel,&
+      call problem_updateVectorBlock(rproblemLevel,&
           rproblemLevel%RvectorBlock(i), rparlist, ssubsectionName,&
           p_rtasklist, rproblemTopLevel, iperformSpec)
     end do
@@ -7515,7 +8394,7 @@ contains
     if (present(p_rtasklist)) p_rtasklistLocal => p_rtasklist
     
     ! Update given block vector
-    call problem_updateVecBl(rproblemLevel, rvector,&
+    call problem_updateVectorBlock(rproblemLevel, rvector,&
         rparlist, ssectionName, p_rtasklistLocal, rproblemTopLevel, iperformSpec)
 
     ! Release temporal task list if required
@@ -7529,8 +8408,8 @@ contains
 
 !<subroutine>
 
-  recursive subroutine problem_updateVectorScalar(rproblemLevel,&
-      rvector, rparlist, ssectionName, p_rtasklist, rproblemTopLevel, iperformSpec)
+  recursive subroutine problem_updateVectorScalar(rproblemLevel, rvector,&
+      rparlist, ssectionName, p_rtasklist, rproblemTopLevel, iperformSpec)
 
 !<description>
     ! This subroutine generates the task list to initialise/update the
@@ -7576,7 +8455,7 @@ contains
     character(len=PARLST_MLDATA) :: skeyword,sparameter,sproblem,stoken,svalue
     character(len=SYS_STRLEN) :: ssubsectionName
     character(len=SYS_STRLEN) :: saction,sperform,sperf
-    integer :: iblock,iistart,ilev,ivector,istart,itoken,ntoken,imethod,nmethod
+    integer :: iblock,iistart,ilev,imethod,istart,itoken,ivector,nmethod,ntoken
     integer(i32) :: iperform
 
     ! Set pointer to problem structure
@@ -7600,16 +8479,17 @@ contains
     if (trim(saction) .eq. 'NONE') then
       !-------------------------------------------------------------------------
       ! Do nothing
+      return
       
     elseif (trim(saction) .eq. 'CREATE') then
       
       !-------------------------------------------------------------------------
       ! Create scalar vector
       !
-      ! SYNTAX: vectorscalar(n) =
+      ! SYNTAX: vectorscalar(N) =
       !           VectorScalar1
       !                ...
-      !           VectorScalar2
+      !           VectorScalarN
 
       ! Create new task
       nullify(rtask)
@@ -7635,22 +8515,7 @@ contains
       end if
 
       ! When should we perform this task?
-      call sys_countTokens(sperform, ntoken, ',', .false.)
-      istart = 1
-      do itoken=1,max(ntoken,1)
-        call sys_getNextToken (sperform, sperf, istart, ',', .false.)
-        if (trim(adjustl(sperf)) .eq. 'INIT') then
-          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_INIT)
-        elseif (trim(adjustl(sperf)) .eq. 'UPDATE') then
-          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_UPDATE)
-        elseif (trim(adjustl(sperf)) .eq. 'ALWAYS') then
-          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_ALWAYS)
-        else
-          call output_line('Unsupported perform type: '//trim(sperf),&
-              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVectorScalar')
-          call sys_halt()
-        end if
-      end do
+      rtask%iperform = problem_getIperform(sperform)
       
       ! Get optional parameters
       call parlst_getvalue_int(rparlist, ssectionName,&
@@ -7665,15 +8530,28 @@ contains
       call parlst_getvalue_int(rparlist, ssectionName,&
           'nvar', rtask%nvar, 1)
       
-      ! Get spatial discretisation for test and trial space
+      ! Get spatial discretisation
       call parlst_getvalue_string(rparlist, ssectionName,&
-          'discretisation', sparameter)
-      call sys_toupper(sparameter)
-      rtask%p_rspatialDiscr => problem_getSpatialDiscr(&
-          rproblemLevel%p_rproblem, rproblemLevel, sparameter)
-      
+          'spatialdiscretisation', sparameter, '')
+      if (trim(sparameter) .ne. '') then
+        call sys_toupper(sparameter)
+        rtask%p_rspatialDiscr => problem_getSpatialDiscr(&
+            rtask%p_rproblemDest, rtask%p_rproblemLevelDest, sparameter)
+      else
+        ! Otherwise, try to get a spatial discretisation as subblock
+        ! of a block discretisation
+        call parlst_getvalue_string(rparlist, ssectionName,&
+            'blockdiscretisation', sparameter, '')
+        if (trim(sparameter) .ne. '') then
+          call sys_toupper(sparameter)
+          rtask%p_rspatialDiscr => problem_getSpatialSubDiscr(&
+              rtask%p_rproblemDest, rtask%p_rproblemLevelDest, sparameter)
+        end if
+      end if
+        
       ! Should we perform this task now?
       if (iand(rtask%iperform, iperform) .ne. 0) then
+
         ! Do we have spatial discretisations?
         if (.not.associated(rtask%p_rspatialDiscr)) then
           call output_line('Unable to find spatial discretisation',&
@@ -7834,7 +8712,7 @@ contains
               'vectorblock', ssubsectionName, isubstring=ivector)
 
           ! Proceed with possibly prerequisite tasks
-          call problem_updateVecBl(p_rproblemLevel,&
+          call problem_updateVectorBlock(p_rproblemLevel,&
               p_rproblemLevel%RvectorBlock(ivector), rparlist,&
               ssubsectionName, p_rtasklist, p_rproblemTopLevel, iperformSpec)
 
@@ -7858,7 +8736,7 @@ contains
           rtask%p_rproblemLevelDest => rproblemLevel
 
         else
-          call output_line('Either vectorscalar of vectorblock must be present',&
+          call output_line('Either scalar or block vector must be present',&
               OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVectorScalar')
           call sys_halt()
         end if
@@ -7877,22 +8755,7 @@ contains
       end if
 
       ! When should we perform this task?
-      call sys_countTokens(sperform, ntoken, ',', .false.)
-      istart = 1
-      do itoken=1,max(ntoken,1)
-        call sys_getNextToken (sperform, sperf, istart, ',', .false.)
-        if (trim(adjustl(sperf)) .eq. 'INIT') then
-          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_INIT)
-        elseif (trim(adjustl(sperf)) .eq. 'UPDATE') then
-          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_UPDATE)
-        elseif (trim(adjustl(sperf)) .eq. 'ALWAYS') then
-          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_ALWAYS)
-        else
-          call output_line('Unsupported perform type: '//trim(sperf),&
-              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVectorScalar')
-          call sys_halt()
-        end if
-      end do
+      rtask%iperform = problem_getIperform(sperform)
           
       ! Get optional parameters
       call parlst_getvalue_string(rparlist, ssectionName,&
@@ -7924,8 +8787,8 @@ contains
           '\n  ALWAYS      on init and update'//&
           '\n\nSACTION    action to be performed'//&
           '\n\n  NONE        do nothing'//&
-          '\n  CREATE      create block discretisation'//&
-          '\n  DUPLICATE   duplicate block discretisation')
+          '\n  CREATE      create scalar vector'//&
+          '\n  DUPLICATE   duplicate scalar vector')
       call output_multiline('\nExamples: SACTION=CREATE')
       call output_separator(OU_SEP_MINUS)
       call output_multiline('[ScalarVector]'//&
@@ -8011,121 +8874,15 @@ contains
     !---------------------------------------------------------------------------
     ! Second part: generate content
     !---------------------------------------------------------------------------
+    
+    ! Update the task for content generation
+    call problem_genContentVectorTask(rtask, rparlist, ssectionName)
 
-    nmethod = parlst_querysubstrings(rparlist, ssectionName, 'smethod')
-    allocate(rtask%Cmethod(0:nmethod))
-
-    ! What creation methods are adopted?
-    do imethod = 0,nmethod
-      
-      call parlst_getvalue_string(rparlist, ssectionName,&
-          'smethod', sparameter, '', isubstring=imethod)
-      call sys_toupper(sparameter)
-
-      
-      if (trim(sparameter) .eq. 'VIRTUAL') then
-        
-        !-----------------------------------------------------------------------
-        ! Create virtual vector, aka, do nothing
-        
-        ! Update internal data of the task item
-        rtask%Cmethod(imethod) = PROBMETH_VECTOR_VIRTUAL
-
-      elseif (trim(sparameter) .eq. 'EMPTY') then
-        
-        !-----------------------------------------------------------------------
-        ! Create empty vector
-        
-        call lsyssc_clearVector(rvector, 0.0_DP)
-        
-        ! Update internal data of the task item
-        rtask%Cmethod(imethod) = PROBMETH_VECTOR_EMPTY
-      
-      elseif (trim(sparameter) .eq. 'UNITY') then
-        
-        !-----------------------------------------------------------------------
-        ! Create unit vector
-        
-        call lsyssc_clearVector(rvector, 1.0_DP)
-        
-        ! Update internal data of the task item
-        rtask%Cmethod(imethod) = PROBMETH_VECTOR_UNITY
-      
-      elseif (trim(sparameter) .eq. 'LINF') then
-        
-        !-----------------------------------------------------------------------
-        ! Create vector by linearform evaluation         
-        
-        call assembleScalarVectorLinf(rparlist, rtask)
-        
-        ! Update internal data of the task item
-        rtask%Cmethod(imethod) = PROBMETH_VECTOR_LINF
-      
-      elseif (trim(sparameter) .eq. 'DOF') then
-        
-        !-----------------------------------------------------------------------
-        ! Create coordinate vector for degrees of freedom
-        
-        call lin_calcDofCoords(rtask%p_rspatialDiscr, rvector)
-        
-        ! Update internal data of the task item
-        rtask%Cmethod(imethod) = PROBMETH_VECTOR_DOF
-        
-      else
-        call output_line('Unsupported method: '//trim(sparameter),&
-            OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVectorScalar')
-
-        call output_multiline('\nNAME: VectorScalar')
-        call output_separator(OU_SEP_MINUS)
-        call output_multiline('\nMandatory parameters'//&
-            '\n\nSMETHOD   indicates method(s) to assemble the content of the vector'//&
-            '\n  VIRTUAL   virtual vector without data array'//&
-            '\n  EMPTY     empty vector with nullified data array'//&
-            '\n  UNITY     vector with unit data array'//&
-            '\n  LINF      assemble vector from linear form'//&
-            '\n  DOF       vector with coordinates of degrees of freedom')
-        call output_separator(OU_SEP_MINUS)
-        call output_multiline('[ScalarVector]'//&
-            '\nsaction      = duplicate'//&
-            '\nsperform     = always'//&
-            '\nsmethod      = linf'//&
-            '\nvectorscalar = problem:Transport,ivector:1'//&
-            '\ncubatureinfo = problem:Transport,icubinfo:1'//&
-            '\nsfunction    = DER_FUNC2D'//&
-            '\nscoefficient = sin(x)*cos(x)'//&
-            '\n\n     Duplicates the first scalar vector from the '//&
-            '\n     problem specified further in section [Transport]'//&
-            '\n     and assembles the given linear form using the'//&
-            '\n     first cubature info structure from the problem.')
-        call output_separator(OU_SEP_MINUS)
-        call output_multiline('vectorscalar ='//&
-            '\n     PROBLEM,'//&
-            '\n          name of the problem'//&
-            '\n          (if not given the name of the current problem is used)'//&
-            '\n     ILEV,'//&
-            '\n          level from which the scalar vector array is used'//&
-            '\n          (if not given the current problem level is used)'//&
-            '\n     IVECTOR,'//&
-            '\n          number of the scalar vector'//&
-            '\n          (if not given the first scalar vector is used')
-        call output_multiline('cubatureinfo ='//&
-          '\n     PROBLEM,'//&
-          '\n          name of the problem'//&
-          '\n          (if not given the name of the current problem is used)'//&
-          '\n     ILEV,'//&
-          '\n          level from which the cubature infor structure is used'//&
-          '\n          (if not given the current problem level is used)'//&
-          '\n     ICUB(ATURE)INFO,'//&
-          '\n          number of the cubature info structure'//&
-          '\n          (if not given the first cubature infor structure is used)')
-        call output_multiline('\nsfunction(N)'//&
-            '\n     list of DER_xxx constants defining the functions')
-        call output_multiline('\nscoefficient(N)'//&
-            '\n     list of functions used in the linear form')
-        call sys_halt()
-      end if
-    end do
-
+    ! Generate content (if required)
+    if (iand(rtask%iperform, iperform) .ne. 0) then
+      call problem_genContentVector(rtask)
+    end if
+    
   contains
 
     ! Here, some auxiliary routines follow
@@ -8210,106 +8967,14 @@ contains
 
     end function get_dupType
     
-    !**************************************************************
-    ! Assemble the scalar vector from linear form evaluation
-    subroutine assembleScalarVectorLinf(rparlist, rtask)
-
-      type(t_parlist), intent(in) :: rparlist
-      type(t_vectorTask), intent(inout) :: rtask
-
-      ! local variables
-      type(t_collection) :: rcollection
-      type(t_scalarCubatureInfo), pointer :: p_rcubInfo
-      character(len=PARLST_MLDATA) :: sparameter,stoken
-      integer :: i,j,itermCount,istart
-
-      ! Get cubature info structure
-      call parlst_getvalue_string(rparlist, rtask%ssectionName,&
-          'cubatureinfo', sparameter)
-      call sys_toupper(sparameter)
-      p_rcubInfo => problem_getCubInfo(rtask%p_rproblemDest,&
-          rtask%p_rproblemLevelDest, sparameter)
-      
-      ! Update internal data of the task item
-      rtask%p_rcubatureInfo => p_rcubInfo
-      allocate(rtask%p_rform)
-      
-      ! Setup trial functions
-      call parlst_getvalue_string(rparlist, rtask%ssectionName,&
-          'sfunction', sparameter)
-      call sys_countTokens(sparameter, itermCount, ',', .false.)
-      rtask%p_rform%itermCount = itermCount
-      
-      istart = 1
-      do i = 1,itermCount
-        call sys_getNextToken(sparameter, stoken, istart, ',', .false.)
-        rtask%p_rform%Idescriptors(i) = der_igetID(stoken)
-      end do
-
-      ! Setup coefficients
-      call parlst_getvalue_string(rparlist, rtask%ssectionName,&
-          'scoefficient', sparameter, '')
-      call sys_countTokens(sparameter, itermCount, ',', .false.)
-      
-      if (itermCount .gt. 0) then
-        ! Use individual coefficients for each component
-        rtask%p_rform%itermCount = min(rtask%p_rform%itermCount,itermCount)
-        
-        istart = 1
-        do i=1,itermCount
-          call sys_getNextToken(sparameter, stoken, istart, ',', .false.)
-          if (sys_isNumeric(stoken)) then
-            read(stoken,*) rtask%p_rform%Dcoefficients(i)
-          else
-            ! Not all coefficients are constant. Thus, we create a
-            ! function parser object and perform bilinear form
-            ! evaluation based on a generic callback function
-            allocate (rtask%p_rfparser)
-            call fparser_create(rtask%p_rfparser, itermCount)
-            
-            ! Fill function parser with data
-            istart = 1
-            do j = 1,itermCount
-              call sys_getNextToken(sparameter, stoken, istart, ',', .false.)
-              call fparser_parseFunction(rtask%p_rfparser, j, trim(stoken), (/'x','y','z'/))
-            end do
-            
-            ! That`s it
-            exit
-          end if
-        end do
-        
-      else
-        ! Use unity as constand coefficient
-        rtask%p_rform%Dcoefficients(1:rtask%p_rform%itermCount) = 1.0_DP
-      end if
-
-      ! Assemble vector data from linear form
-      rcollection%p_rfparserQuickAccess1 => rtask%p_rfparser
-      if (associated(p_rcubInfo)) then
-        call linf_buildVectorScalar(rtask%p_rform, .true.,&
-            rtask%p_rvectorScalarDest, p_rcubInfo,&
-            problem_buildVectorSc_fparser_sim, rcollection)
-      elseif (associated(rtask%p_rspatialDiscr)) then
-        call linf_buildVectorScalar(rtask%p_rspatialDiscr,&
-            rtask%p_rform, .true., rtask%p_rvectorScalarDest,&
-            problem_buildVectorSc_fparser_sim, rcollection)
-      else
-        call output_line('Neither cubature info structure nor discretisation available',&
-            OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVectorScalar')
-        call sys_halt()
-      end if
-      
-    end subroutine assembleScalarVectorLinf
-
   end subroutine problem_updateVectorScalar
 
   !*****************************************************************************
 
 !<subroutine>
 
-  recursive subroutine problem_updateVecBl(rproblemLevel,&
-      rvector, rparlist, ssectionName, p_rtasklist, rproblemTopLevel, iperformSpec)
+  recursive subroutine problem_updateVectorBlock(rproblemLevel, rvector,&
+      rparlist, ssectionName, p_rtasklist, rproblemTopLevel, iperformSpec)
 
 !<description>
     ! This subroutine generates the task list to initialise/update the
@@ -8355,7 +9020,7 @@ contains
     character(len=PARLST_MLDATA) :: skeyword,sparameter,sproblem,stoken,svalue
     character(len=SYS_STRLEN) :: ssubsectionName
     character(len=SYS_STRLEN) :: saction,sperform,sperf
-    integer :: iistart,ilev,ivector,istart,itoken,ntoken,imethod,nmethod
+    integer :: iistart,ilev,imethod,istart,itoken,ivector,nmethod,ntoken
     integer(i32) :: iperform
 
     ! Set pointer to problem structure
@@ -8375,16 +9040,17 @@ contains
     if (trim(saction) .eq. 'NONE') then
       !-------------------------------------------------------------------------
       ! Do nothing
+      return
       
     elseif (trim(saction) .eq. 'CREATE') then
 
       !-------------------------------------------------------------------------
       ! Create block vector
       !
-      ! SYNTAX: vectorblock(n) =
+      ! SYNTAX: vectorblock(N) =
       !           VectorBlock1
       !                ...
-      !           VectorBlock2
+      !           VectorBlockN
 
       ! Create new task
       nullify(rtask)
@@ -8410,36 +9076,23 @@ contains
       end if
 
       ! When should we perform this task?
-      call sys_countTokens(sperform, ntoken, ',', .false.)
-      istart = 1
-      do itoken=1,max(ntoken,1)
-        call sys_getNextToken (sperform, sperf, istart, ',', .false.)
-        if (trim(adjustl(sperf)) .eq. 'INIT') then
-          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_INIT)
-        elseif (trim(adjustl(sperf)) .eq. 'UPDATE') then
-          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_UPDATE)
-        elseif (trim(adjustl(sperf)) .eq. 'ALWAYS') then
-          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_ALWAYS)
-        else
-          call output_line('Unsupported perform type: '//trim(sperf),&
-              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVecBl')
-          call sys_halt()
-        end if
-      end do
+      rtask%iperform = problem_getIperform(sperform)
 
       ! Get block discretisation for test and trial space
       call parlst_getvalue_string(rparlist, ssectionName,&
-          'discretisation', sparameter)
-      call sys_toupper(sparameter)
-      rtask%p_rblockDiscr => problem_getBlockDiscr(rproblemLevel%p_rproblem,&
-          rproblemLevel, sparameter)
+          'blockdiscretisation', sparameter, '')
+      if (trim(sparameter) .ne. '') then
+        call sys_toupper(sparameter)
+        rtask%p_rblockDiscr => problem_getBlockDiscr(rproblemLevel%p_rproblem,&
+            rproblemLevel, sparameter)
+      end if
       
       ! Should we perform this task now?
       if (iand(rtask%iperform, iperform) .ne. 0) then
         ! Do we have block discretisations?
         if (.not.associated(rtask%p_rblockDiscr)) then
           call output_line('Unable to find block discretisation',&
-              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVecBl')
+              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVectorBlock')
           call sys_halt()
         end if
         
@@ -8453,11 +9106,11 @@ contains
       !-------------------------------------------------------------------------
       ! Update subvectors
       !
-      ! SYNTAX: subvector(n) =
+      ! SYNTAX: subvector(N) =
       !           vectorscalar@(i): VectorSc1
       !           vectorscalar@(j): VectorSc2
       !           ...
-      !           vectorblock@(a):  VectorBl1
+      !           vectorblock@(a):  VectorBlN
       !
       ! For scalar vectors, the vector objects VectorSc1 and
       ! VectorSc2 are generated at position (i) and (j) of the
@@ -8520,7 +9173,7 @@ contains
             read(svalue,'(I10)') ivector
           else
             call output_line('Unsupported keyword: '//trim(skeyword),&
-                OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVecBl')
+                OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVectorBlock')
             call sys_halt()
           end if
         end do
@@ -8529,7 +9182,7 @@ contains
         p_rproblemLevel => problem_getLevel(p_rproblemTopLevel, trim(sproblem), ilev)
         if (.not.associated(p_rproblemLevel)) then
           call output_line('Unable to find problem level in problem '//trim(sproblem),&
-              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVecBl')
+              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVectorBlock')
           call sys_halt()
         end if
         
@@ -8591,7 +9244,7 @@ contains
               read(svalue,'(I10)') ivector
             else
               call output_line('Unsupported keyword: '//trim(skeyword),&
-                  OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVecBl')
+                  OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVectorBlock')
               call sys_halt()
             end if
           end do
@@ -8600,7 +9253,7 @@ contains
           p_rproblemLevel => problem_getLevel(p_rproblemTopLevel, trim(sproblem), ilev)
           if (.not.associated(p_rproblemLevel)) then
             call output_line('Unable to find problem level in problem '//trim(sproblem),&
-                OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVecBl')
+                OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVectorBlock')
             call sys_halt()
           end if
           
@@ -8609,7 +9262,7 @@ contains
               'vectorblock', ssubsectionName, isubstring=ivector)
           
           ! Proceed with possibly prerequisite tasks
-          call problem_updateVecBl(p_rproblemLevel,&
+          call problem_updateVectorBlock(p_rproblemLevel,&
               p_rproblemLevel%RvectorBlock(ivector), rparlist,&
               ssubsectionName, p_rtasklist, p_rproblemTopLevel, iperformSpec)
 
@@ -8625,8 +9278,8 @@ contains
           rtask%p_rproblemLevelDest => rproblemLevel
 
         else
-          call output_line('Either vectorscalar of vectorblock must be present',&
-              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVecBl')
+          call output_line('Either scalar or block vector must be present',&
+              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVectorBlock')
           call sys_halt()
         end if
       end if
@@ -8644,22 +9297,7 @@ contains
       end if      
 
       ! When should we perform this task?
-      call sys_countTokens(sperform, ntoken, ',', .false.)
-      istart = 1
-      do itoken=1,max(ntoken,1)
-        call sys_getNextToken (sperform, sperf, istart, ',', .false.)
-        if (trim(adjustl(sperf)) .eq. 'INIT') then
-          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_INIT)
-        elseif (trim(adjustl(sperf)) .eq. 'UPDATE') then
-          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_UPDATE)
-        elseif (trim(adjustl(sperf)) .eq. 'ALWAYS') then
-          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_ALWAYS)
-        else
-          call output_line('Unsupported perform type: '//trim(sperf),&
-              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVecBl')
-          call sys_halt()
-        end if
-      end do
+      rtask%iperform = problem_getIperform(sperform)
 
       ! Get optional parameters
       call parlst_getvalue_string(rparlist, ssectionName,&
@@ -8693,14 +9331,14 @@ contains
               rvector, rtask%cdupStructure, rtask%cdupContent)
         else
           call output_line('Neither scalar nor block vector can be duplicated',&
-              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVecBl')
+              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVectorBlock')
           call sys_halt()
         end if
       end if
        
     else
       call output_line('Unsupported action: '//trim(saction),&
-          OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVecBl')
+          OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVectorBlock')
 
       call output_multiline('\nNAME: VectorBlock')
       call output_separator(OU_SEP_MINUS)
@@ -8712,8 +9350,8 @@ contains
           '\n  ALWAYS      on init and update'//&
           '\n\nSACTION    action to be performed'//&
           '\n\n  NONE        do nothing'//&
-          '\n  CREATE      create block discretisation'//&
-          '\n  DUPLICATE   duplicate block discretisation')
+          '\n  CREATE      create block vector'//&
+          '\n  DUPLICATE   duplicate block vector')
       call output_multiline('\nExamples: SACTION=CREATE')
       call output_separator(OU_SEP_MINUS)
       call output_multiline('[BlockVector]'//&
@@ -8764,14 +9402,14 @@ contains
       call output_multiline('\nExamples: SACTION=DUPLICATE')
       call output_separator(OU_SEP_MINUS)
       call output_multiline('[BlockVector]'//&
-          '\nsaction      = create'//&
+          '\nsaction      = duplicate'//&
           '\nsperform     = always'//&
           '\nvectorscalar = problem:Transport,ivector:1'//&
           '\n\n     Duplicates the first scalar vector from the given'//&
           '\n     problem specified further in section [Transport].')
       call output_separator(OU_SEP_MINUS)
       call output_multiline('[BlockVector]'//&
-          '\nsaction     = create'//&
+          '\nsaction     = duplicate'//&
           '\nsperform    = always'//&
           '\nvectorblock = problem:Transport,ivector:1'//&
           '\n\n     Duplicates the first block vector from the given'//&
@@ -8804,61 +9442,14 @@ contains
     ! Second part: generate content
     !---------------------------------------------------------------------------
     
-    nmethod = parlst_querysubstrings(rparlist, ssectionName, 'smethod')
-    allocate(rtask%Cmethod(0:nmethod))
+    ! Update the task for content generation
+    call problem_genContentVectorTask(rtask, rparlist, ssectionName)
 
-    ! What creation methods are adopted?
-    do imethod = 0,nmethod
-      
-      call parlst_getvalue_string(rparlist, ssectionName,&
-          'smethod', sparameter, '', isubstring=imethod)
-      call sys_toupper(sparameter)
-
-      if (trim(sparameter) .eq. 'VIRTUAL') then
-        
-        !-----------------------------------------------------------------------
-        ! Create virtual vector, aka, do nothing
-        
-        ! Update internal data of the task item
-        rtask%Cmethod(imethod) = PROBMETH_VECTOR_VIRTUAL
-
-      elseif (trim(sparameter) .eq. 'EMPTY') then
-        
-        !-----------------------------------------------------------------------
-        ! Create empty vector
-        
-        call lsysbl_clearVector(rvector, 0.0_DP)
-        
-        ! Update internal data of the task item
-        rtask%Cmethod(imethod) = PROBMETH_VECTOR_EMPTY
-        
-      elseif (trim(sparameter) .eq. 'UNITY') then
-        
-        !-----------------------------------------------------------------------
-        ! Create unit vector
-        
-        call lsysbl_clearVector(rvector, 1.0_DP)
-        
-        ! Update internal data of the task item
-        rtask%Cmethod(imethod) = PROBMETH_VECTOR_UNITY
-        
-      elseif (trim(sparameter) .eq. 'DOF') then
-        
-        !-----------------------------------------------------------------------
-        ! Create coordinate vector for degrees of freedom
-        
-        call lin_calcDofCoordsBlock(rtask%p_rblockDiscr, rvector)
-        
-        ! Update internal data of the task item
-        rtask%Cmethod(imethod) = PROBMETH_VECTOR_DOF
-        
-      else
-        call output_line('Unsupported method: '//trim(sparameter),&
-            OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVecBl')
-        call sys_halt()
-      end if
-    end do
-
+    ! Generate content (if required)
+    if (iand(rtask%iperform, iperform) .ne. 0) then
+      call problem_genContentVector(rtask)
+    end if
+    
   contains
 
     ! Here, some auxiliary routines follow
@@ -8929,28 +9520,31 @@ contains
     recursive subroutine updateSubvector(rproblemLevel, rvector,&
         rparlist, ssectionName, iblockOffset, iperform,&
         p_rtaskList, rproblemTopLevel)
-
+      
+      ! input parameters
       type(t_problemLevel), intent(in), target :: rproblemLevel
       type(t_problem), intent(in), target, optional :: rproblemTopLevel
-      type(t_vectorBlock), intent(inout) :: rvector
       type(t_parlist), intent(in) :: rparlist
       character(len=*), intent(in) :: ssectionName
       integer, intent(in) :: iblockOffset
       integer(i32), intent(in) :: iperform
+
+      ! inputoutput parameters
+      type(t_vectorBlock), intent(inout) :: rvector
       type(t_vectorTask), pointer :: p_rtaskList
 
       ! local variables
       character(len=PARLST_MLDATA) :: sparameter,stoken,ssubtoken,ssubvector
-      integer :: i,iblock,nsubvector,istart,iistart,iiistart
+      integer :: i,iblock,iiistart,iistart,istart,isubvector,nsubvector
 
       ! Get number of subvectors
       nsubvector = parlst_querysubstrings(rparlist, ssectionName, 'subvector')
 
       ! Loop over all subvectors
-      do i=1,nsubvector
+      do isubvector=1,nsubvector
         
         call parlst_getvalue_string(rparlist, ssectionName, 'subvector',&
-            sparameter, isubstring=i)
+            sparameter, isubstring=isubvector)
         call sys_toupper(sparameter)
 
         ! Extract content from parameter file line by line
@@ -8975,7 +9569,7 @@ contains
           ! Check if scalar subvector is available
           if ((rvector%nblocks .lt. iblock)) then
             call output_line('Position of subvector is not available',&
-                OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVecBl')
+                OU_CLASS_ERROR,OU_MODE_STD,'updateSubvector')
             call sys_halt()
           end if
 
@@ -8990,16 +9584,15 @@ contains
           call updateSubvector(rproblemLevel, rvector, rparlist,&
               trim(stoken), iblock-1, iperform, p_rtasklist, rproblemTopLevel)
         else
-          call output_line('Either vectorscalar of vectorblock must be present',&
-              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVecBl')
+          call output_line('Either scalar or block vector must be present',&
+              OU_CLASS_ERROR,OU_MODE_STD,'updateSubvector')
           call sys_halt()
         end if
-        
       end do
 
     end subroutine updateSubvector
 
-  end subroutine problem_updateVecBl
+  end subroutine problem_updateVectorBlock
 
   !*****************************************************************************
   
@@ -9022,10 +9615,9 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_collection) :: rcollection
     type(t_vectorBlock) :: rvectorTemp
     type(t_vectorTask), pointer :: p_rtask
-    integer :: iperform,imethod
+    integer :: iperform
 
     iperform = PROBACTION_PERFORM_ALWAYS
     if (present(iperformSpec)) iperform = iperformSpec
@@ -9044,6 +9636,11 @@ contains
       ! First part: create or duplicate vector
       !-------------------------------------------------------------------------
       select case(p_rtask%ctask)
+      case(PROBACTION_NONE)
+        
+        !-----------------------------------------------------------------------
+        ! Do nothing
+
       case(PROBACTION_CREATE)
 
         ! Do we have to assemble a scalar vector?
@@ -9107,8 +9704,8 @@ contains
             call lsysbl_createVecFromScalar(p_rtask%p_rvectorScalarSrc, rvectorTemp)
 
             ! Copy content of temporal vector by hand
-            p_rtask%p_rvectorBlockDest%NEQ         = rvectorTemp%NEQ
-            p_rtask%p_rvectorBlockDest%nblocks     = 1
+            p_rtask%p_rvectorBlockDest%NEQ     = rvectorTemp%NEQ
+            p_rtask%p_rvectorBlockDest%nblocks = 1
 
             allocate(p_rtask%p_rvectorBlockDest%RvectorBlock(1))
             p_rtask%p_rvectorBlockDest%RvectorBlock(1) = rvectorTemp%RvectorBlock(1)
@@ -9129,69 +9726,390 @@ contains
 
       case default
         call output_line('Unsupported action: '//sys_siL(p_rtask%ctask,3),&
-            OU_CLASS_ERROR,OU_MODE_STD,'problem_updateMamtrix')
+            OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVector')
         call sys_halt()
       end select
 
       !-------------------------------------------------------------------------
-      ! Second part: generate content (only for scalar vectors)
+      ! Second part: generate content
       !-------------------------------------------------------------------------
-
-       ! What creation methods are adopted?
-      do imethod = lbound(p_rtask%Cmethod,1), ubound(p_rtask%Cmethod,1)
-        
-        select case (p_rtask%Cmethod(imethod))
-        case(PROBMETH_VECTOR_EMPTY)
-          
-          !-------------------------------------------------------------------
-          ! Create empty vector
-          
-          call lsyssc_clearVector(p_rtask%p_rvectorScalarDest, 0.0_DP)
-          
-        case(PROBMETH_VECTOR_UNITY)
-          
-          !-------------------------------------------------------------------
-          ! Create unit vector
-          
-          call lsyssc_clearVector(p_rtask%p_rvectorScalarDest, 1.0_DP)
-          
-        case(PROBMETH_VECTOR_LINF)
-          
-          !-------------------------------------------------------------------
-          ! Create vector by bilinearform evaluation         
-          
-          rcollection%p_rfparserQuickAccess1 => p_rtask%p_rfparser
-          if (associated(p_rtask%p_rcubatureInfo)) then
-            call linf_buildVectorScalar(p_rtask%p_rform, .true.,&
-                p_rtask%p_rvectorScalarDest, p_rtask%p_rcubatureInfo,&
-                problem_buildVectorSc_fparser_sim, rcollection)
-          elseif (associated(p_rtask%p_rspatialDiscr)) then
-            call linf_buildVectorScalar(p_rtask%p_rspatialDiscr,&
-                p_rtask%p_rform, .true., p_rtask%p_rvectorScalarDest,&
-                problem_buildVectorSc_fparser_sim, rcollection)
-          else
-            call output_line('Neither cubature info structure nor discretisation available',&
-                OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVector')
-            call sys_halt()
-          end if
-          
-        case(PROBMETH_VECTOR_VIRTUAL)
-          
-          !-------------------------------------------------------------------
-          ! Create virtual vector, aka, do nothing
-          
-        case default
-          call output_line('Unsupported method: '//sys_siL(p_rtask%Cmethod(imethod),3),&
-              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVector')
-          call sys_halt()
-        end select
-      end do
-
+      
+      call problem_genContentVector(p_rtask)
+      
       ! Proceed with next task
       p_rtask => p_rtask%p_rnextTask
     end do taskloop
     
   end subroutine problem_updateVector
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine problem_genContentVectorTask(rtask, rparlist, ssectionName)
+
+!<description>
+    ! This subroutine updates the task to generate the content of the
+    ! given scalar/block vector based on the values of the parameter list.
+    ! Note that this method does not generate the content itself.
+!</description>
+
+!<input>
+    ! parameter list
+    type(t_parlist), intent(in) :: rparlist
+    
+    ! name of the section
+    character(LEN=*), intent(in) :: ssectionName
+!</input>
+
+!<inputoutput>
+    ! vector task
+    type(t_vectorTask), intent(inout) :: rtask
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_collection) :: rcollection
+    type(t_scalarCubatureInfo), pointer :: p_rcubInfo
+    character(len=PARLST_MLDATA) :: sparameter,stoken
+    integer :: i,imethod,istart,itermCount,j,nmethod
+    
+    ! How many generation methods to we need?
+    nmethod = parlst_querysubstrings(rparlist, ssectionName, 'smethod')
+    allocate(rtask%Cmethod(0:nmethod))
+    
+    ! Do we have a scalar vector
+    if (rtask%bisVectorScalar) then
+
+      ! What creation methods are adopted?
+      do imethod = 0,nmethod
+
+        call parlst_getvalue_string(rparlist, ssectionName,&
+            'smethod', sparameter, '', isubstring=imethod)
+        call sys_toupper(sparameter)
+
+        if (trim(sparameter) .eq. 'ASIS') then
+
+          !-----------------------------------------------------------------------
+          ! Leave vector content as is, aka, do nothing
+
+          rtask%Cmethod(imethod) = PROBMETH_VECTOR_ASIS
+
+        elseif (trim(sparameter) .eq. 'EMPTY') then
+
+          !-----------------------------------------------------------------------
+          ! Create empty vector
+
+          rtask%Cmethod(imethod) = PROBMETH_VECTOR_EMPTY
+
+        elseif (trim(sparameter) .eq. 'UNITY') then
+
+          !-----------------------------------------------------------------------
+          ! Create unit vector
+
+          rtask%Cmethod(imethod) = PROBMETH_VECTOR_UNITY
+
+        elseif (trim(sparameter) .eq. 'LINF') then
+
+          !-----------------------------------------------------------------------
+          ! Create vector by linearform evaluation         
+
+          rtask%Cmethod(imethod) = PROBMETH_VECTOR_LINF
+
+          ! Get cubature info structure
+          call parlst_getvalue_string(rparlist, rtask%ssectionName,&
+              'cubatureinfo', sparameter)
+          call sys_toupper(sparameter)
+          p_rcubInfo => problem_getCubInfo(rtask%p_rproblemDest,&
+              rtask%p_rproblemLevelDest, sparameter)
+
+          ! Update internal data of the task item
+          rtask%p_rcubatureInfo => p_rcubInfo
+          allocate(rtask%p_rform)
+
+          ! Setup trial functions
+          call parlst_getvalue_string(rparlist, rtask%ssectionName,&
+              'sfunction', sparameter)
+          call sys_countTokens(sparameter, itermCount, ',', .false.)
+          rtask%p_rform%itermCount = itermCount
+
+          istart = 1
+          do i = 1,itermCount
+            call sys_getNextToken(sparameter, stoken, istart, ',', .false.)
+            rtask%p_rform%Idescriptors(i) = der_igetID(stoken)
+          end do
+
+          ! Setup coefficients
+          call parlst_getvalue_string(rparlist, rtask%ssectionName,&
+              'scoefficient', sparameter, '')
+          call sys_countTokens(sparameter, itermCount, ',', .false.)
+
+          if (itermCount .gt. 0) then
+            ! Use individual coefficients for each component
+            rtask%p_rform%itermCount = min(rtask%p_rform%itermCount,itermCount)
+
+            istart = 1
+            do i=1,itermCount
+              call sys_getNextToken(sparameter, stoken, istart, ',', .false.)
+              if (sys_isNumeric(stoken)) then
+                read(stoken,*) rtask%p_rform%Dcoefficients(i)
+              else
+                ! Not all coefficients are constant. Thus, we create a
+                ! function parser object and perform bilinear form
+                ! evaluation based on a generic callback function
+                allocate (rtask%p_rfparser)
+                call fparser_create(rtask%p_rfparser, itermCount)
+
+                ! Fill function parser with data
+                istart = 1
+                do j = 1,itermCount
+                  call sys_getNextToken(sparameter, stoken, istart, ',', .false.)
+                  call fparser_parseFunction(rtask%p_rfparser, j, trim(stoken), (/'x','y','z'/))
+                end do
+
+                ! That`s it
+                exit
+              end if
+            end do
+
+          else
+            ! Use unity as constand coefficient
+            rtask%p_rform%Dcoefficients(1:rtask%p_rform%itermCount) = 1.0_DP
+          end if
+          
+        elseif (trim(sparameter) .eq. 'DOF') then
+
+          !-----------------------------------------------------------------------
+          ! Create coordinate vector for degrees of freedom
+
+          rtask%Cmethod(imethod) = PROBMETH_VECTOR_DOF
+
+        else
+          call output_line('Unsupported method: '//trim(sparameter),&
+              OU_CLASS_ERROR,OU_MODE_STD,'problem_genContentVectorTask')
+
+          call output_multiline('\nNAME: VectorScalar')
+          call output_separator(OU_SEP_MINUS)
+          call output_multiline('\nMandatory parameters'//&
+              '\n\nSMETHOD   indicates method(s) to assemble the content of the vector'//&
+              '\n  ASIS      leave vector content as is'//&
+              '\n  EMPTY     empty vector with nullified data array'//&
+              '\n  UNITY     vector with unit data array'//&
+              '\n  LINF      assemble vector from linear form'//&
+              '\n  DOF       vector with coordinates of degrees of freedom')
+          call output_separator(OU_SEP_MINUS)
+          call output_multiline('[ScalarVector]'//&
+              '\nsaction      = duplicate'//&
+              '\nsperform     = always'//&
+              '\nsmethod      = linf'//&
+              '\nvectorscalar = problem:Transport,ivector:1'//&
+              '\ncubatureinfo = problem:Transport,icubinfo:1'//&
+              '\nsfunction    = DER_FUNC2D'//&
+              '\nscoefficient = sin(x)*cos(x)'//&
+              '\n\n     Duplicates the first scalar vector from the '//&
+              '\n     problem specified further in section [Transport]'//&
+              '\n     and assembles the given linear form using the'//&
+              '\n     first cubature info structure from the problem.')
+          call output_separator(OU_SEP_MINUS)
+          call output_multiline('vectorscalar ='//&
+              '\n     PROBLEM,'//&
+              '\n          name of the problem'//&
+              '\n          (if not given the name of the current problem is used)'//&
+              '\n     ILEV,'//&
+              '\n          level from which the scalar vector array is used'//&
+              '\n          (if not given the current problem level is used)'//&
+              '\n     IVECTOR,'//&
+              '\n          number of the scalar vector'//&
+              '\n          (if not given the first scalar vector is used')
+          call output_multiline('cubatureinfo ='//&
+              '\n     PROBLEM,'//&
+              '\n          name of the problem'//&
+              '\n          (if not given the name of the current problem is used)'//&
+              '\n     ILEV,'//&
+              '\n          level from which the cubature infor structure is used'//&
+              '\n          (if not given the current problem level is used)'//&
+              '\n     ICUB(ATURE)INFO,'//&
+              '\n          number of the cubature info structure'//&
+              '\n          (if not given the first cubature infor structure is used)')
+          call output_multiline('\nsfunction(N)'//&
+              '\n     list of DER_xxx constants defining the functions')
+          call output_multiline('\nscoefficient(N)'//&
+              '\n     list of functions used in the linear form')
+          call sys_halt()
+        end if
+      end do
+
+    else
+
+      ! What creation methods are adopted?
+      do imethod = 0,nmethod
+
+        call parlst_getvalue_string(rparlist, ssectionName,&
+            'smethod', sparameter, '', isubstring=imethod)
+        call sys_toupper(sparameter)
+
+        if (trim(sparameter) .eq. 'ASIS') then
+
+          !-----------------------------------------------------------------------
+          ! Leave vector content as is, aka, do nothing
+
+          rtask%Cmethod(imethod) = PROBMETH_VECTOR_ASIS
+
+        elseif (trim(sparameter) .eq. 'EMPTY') then
+
+          !-----------------------------------------------------------------------
+          ! Create empty vector
+
+          rtask%Cmethod(imethod) = PROBMETH_VECTOR_EMPTY
+
+        elseif (trim(sparameter) .eq. 'UNITY') then
+
+          !-----------------------------------------------------------------------
+          ! Create unit vector
+
+          rtask%Cmethod(imethod) = PROBMETH_VECTOR_UNITY
+
+        elseif (trim(sparameter) .eq. 'DOF') then
+
+          !-----------------------------------------------------------------------
+          ! Create coordinate vector for degrees of freedom
+
+          rtask%Cmethod(imethod) = PROBMETH_VECTOR_DOF
+
+        else
+          call output_line('Unsupported method: '//trim(sparameter),&
+              OU_CLASS_ERROR,OU_MODE_STD,'problem_genContentVectorTask')
+          call sys_halt()
+        end if
+      end do
+
+    end if
+
+  end subroutine problem_genContentVectorTask
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine problem_genContentVector(rtask)
+
+!<description>
+    ! This subroutine generates the content of the given scalar/block
+    ! vector based on the vector task
+!</description>
+
+!<inputoutput>
+    ! vector task
+    type(t_vectorTask), intent(inout) :: rtask
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_collection) :: rcollection
+    integer :: imethod
+
+    ! Do we have a scalar vector
+    if (rtask%bisVectorScalar) then
+
+      ! What creation methods are adopted?
+      do imethod = lbound(rtask%Cmethod,1), ubound(rtask%Cmethod,1)
+
+        select case (rtask%Cmethod(imethod))
+        case(PROBMETH_VECTOR_ASIS)
+
+          !-------------------------------------------------------------------
+          ! Leave vector content as is, aka, do nothing
+
+        case(PROBMETH_VECTOR_EMPTY)
+
+          !-------------------------------------------------------------------
+          ! Create empty vector
+
+          call lsyssc_clearVector(rtask%p_rvectorScalarDest, 0.0_DP)
+
+        case(PROBMETH_VECTOR_UNITY)
+
+          !-------------------------------------------------------------------
+          ! Create unit vector
+
+          call lsyssc_clearVector(rtask%p_rvectorScalarDest, 1.0_DP)
+
+        case(PROBMETH_VECTOR_LINF)
+
+          !-------------------------------------------------------------------
+          ! Create vector by linearform evaluation         
+
+          rcollection%p_rfparserQuickAccess1 => rtask%p_rfparser
+          if (associated(rtask%p_rcubatureInfo)) then
+            call linf_buildVectorScalar(rtask%p_rform, .true.,&
+                rtask%p_rvectorScalarDest, rtask%p_rcubatureInfo,&
+                problem_buildVectorSc_fparser_sim, rcollection)
+          elseif (associated(rtask%p_rspatialDiscr)) then
+            call linf_buildVectorScalar(rtask%p_rspatialDiscr,&
+                rtask%p_rform, .true., rtask%p_rvectorScalarDest,&
+                problem_buildVectorSc_fparser_sim, rcollection)
+          else
+            call output_line('Neither cubature info structure nor discretisation available',&
+                OU_CLASS_ERROR,OU_MODE_STD,'problem_genContentVector')
+            call sys_halt()
+          end if
+
+        case(PROBMETH_VECTOR_DOF)
+
+          !-----------------------------------------------------------------------
+          ! Create coordinate vector for degrees of freedom
+
+          call lin_calcDofCoords(rtask%p_rspatialDiscr, rtask%p_rvectorScalarDest)
+
+        case default
+          call output_line('Unsupported method: '//sys_siL(rtask%Cmethod(imethod),3),&
+              OU_CLASS_ERROR,OU_MODE_STD,'problem_genContentVector')
+          call sys_halt()
+        end select
+      end do
+
+    else
+
+      ! What creation methods are adopted?
+      do imethod = lbound(rtask%Cmethod,1), ubound(rtask%Cmethod,1)
+
+        select case (rtask%Cmethod(imethod))
+        case(PROBMETH_VECTOR_ASIS)
+
+          !-------------------------------------------------------------------
+          ! Leave vector content as is, aka, do nothing
+
+        case(PROBMETH_VECTOR_EMPTY)
+
+          !-------------------------------------------------------------------
+          ! Create empty vector
+
+          call lsysbl_clearVector(rtask%p_rvectorBlockDest, 0.0_DP)
+          
+        case(PROBMETH_VECTOR_UNITY)
+
+          !-------------------------------------------------------------------
+          ! Create unit vector
+
+          call lsysbl_clearVector(rtask%p_rvectorBlockDest, 1.0_DP)
+
+        case(PROBMETH_VECTOR_DOF)
+
+          !-----------------------------------------------------------------------
+          ! Create coordinate vector for degrees of freedom
+
+          call lin_calcDofCoordsBlock(rtask%p_rblockDiscr, rtask%p_rvectorBlockDest)
+
+        case default
+          call output_line('Unsupported method: '//sys_siL(rtask%Cmethod(imethod),3),&
+              OU_CLASS_ERROR,OU_MODE_STD,'problem_genContentVector')
+          call sys_halt()
+        end select
+      end do
+
+    end if
+
+  end subroutine problem_genContentVector
 
   !*****************************************************************************
   
@@ -9313,6 +10231,7 @@ contains
   !*****************************************************************************
 
 !<function>
+    
   function problem_getSpatialDiscr(rproblem, rproblemLevel, sspatialDiscr,& 
       rspatialDiscrDefault) result(p_rspatialDiscr)
 
@@ -9345,77 +10264,175 @@ contains
 
 !</function>
 
-      ! local variables
-      type(t_problemLevel), pointer :: p_rproblemLevel
-      type(t_blockDiscretisation), pointer :: p_rblockDiscr
-      character(len=PARLST_MLDATA) :: skeyword,sproblem,stoken,svalue
-      integer :: iblock,idiscr,iistart,ilev,istart,itoken,ntoken
-
+    ! local variables
+    type(t_problemLevel), pointer :: p_rproblemLevel
+    character(len=PARLST_MLDATA) :: skeyword,sproblem,stoken,svalue
+    integer :: idiscr,iistart,ilev,istart,itoken,ntoken
+    
       ! Do we have a valid string?
-      if (trim(sspatialDiscr) .eq. '') then
-        if (present(rspatialDiscrDefault)) then
-          p_rspatialDiscr => rspatialDiscrDefault
-        else
-          nullify(p_rspatialDiscr)
-        end if
-        ! That`s it
+    if (trim(sspatialDiscr) .eq. '') then
+      if (present(rspatialDiscrDefault)) then
+        p_rspatialDiscr => rspatialDiscrDefault
+      else
+        nullify(p_rspatialDiscr)
       end if
-
-      ! Initialise parameters
-      sproblem = trim(rproblemLevel%p_rproblem%cproblem)
-      ilev     = rproblemLevel%ilev
-      idiscr   = 1
-      iblock   = 1
+      ! That`s it
+    end if
+    
+    ! Initialise parameters
+    sproblem = trim(rproblemLevel%p_rproblem%cproblem)
+    ilev     = rproblemLevel%ilev
+    idiscr   = 1
+    
+    call sys_countTokens(sspatialDiscr, ntoken, ',', .false.); istart=1
+    
+    do itoken = 1,ntoken
+      call sys_getNextToken (sspatialDiscr, stoken, istart, ',', .false.)
       
-      call sys_countTokens(sspatialDiscr, ntoken, ',', .false.); istart=1
+      iistart = 1
+      call sys_getNextToken (stoken, skeyword, iistart, ":", .false.)
+      call sys_getNextToken (stoken, svalue, iistart, ":", .false.)
       
-      do itoken = 1,ntoken
-        call sys_getNextToken (sspatialDiscr, stoken, istart, ',', .false.)
-        
-        iistart = 1
-        call sys_getNextToken (stoken, skeyword, iistart, ":", .false.)
-        call sys_getNextToken (stoken, svalue, iistart, ":", .false.)
-        
-        if (trim(skeyword) .eq. 'PROBLEM') then
-          sproblem = trim(svalue)
-        elseif (trim(skeyword) .eq. 'ILEV') then
-          read(svalue,'(I10)') ilev
-        elseif (trim(skeyword) .eq. 'IBLOCK') then
-          read(svalue,'(I10)') iblock
-        elseif (trim(skeyword) .eq. 'IDISCR' .or.&
-            trim(skeyword) .eq. 'IDISCRETISATION') then
-          read(svalue,'(I10)') idiscr
-        else
-          call output_line('Unsupported keyword: '//trim(skeyword),&
-              OU_CLASS_ERROR,OU_MODE_STD,'poblem_getSpatialDiscr')
-          call sys_halt()
-        end if
-      end do
-      
-      ! Find problem level in global problem structure
-      p_rproblemLevel => problem_getLevel(rproblem, trim(sproblem), ilev)       
-      if (.not.associated(p_rproblemLevel)) then
-        call output_line('Unable to find problem level in problem '//trim(sproblem),&
+      if (trim(skeyword) .eq. 'PROBLEM') then
+        sproblem = trim(svalue)
+      elseif (trim(skeyword) .eq. 'ILEV') then
+        read(svalue,'(I10)') ilev
+      elseif (trim(skeyword) .eq. 'IDISCR' .or.&
+          trim(skeyword) .eq. 'IDISCRETISATION') then
+        read(svalue,'(I10)') idiscr
+      else
+        call output_line('Unsupported keyword: '//trim(skeyword),&
             OU_CLASS_ERROR,OU_MODE_STD,'poblem_getSpatialDiscr')
         call sys_halt()
       end if
-      
-      ! Set pointer to discretisation structure
-      nullify(p_rspatialDiscr)
-      if ((idiscr .ge. lbound(p_rproblemLevel%Rdiscretisation,1)) .and.&
-          (idiscr .le. ubound(p_rproblemLevel%Rdiscretisation,1))) then
-        p_rblockDiscr => p_rproblemLevel%Rdiscretisation(idiscr)
-        if ((iblock .ge. lbound(p_rblockDiscr%RspatialDiscr,1)) .and.&
-            (iblock .le. ubound(p_rblockDiscr%RspatialDiscr,1))) then
-          p_rspatialDiscr => p_rblockDiscr%RspatialDiscr(iblock)
-        end if
+    end do
+    
+    ! Find problem level in global problem structure
+    p_rproblemLevel => problem_getLevel(rproblem, trim(sproblem), ilev)       
+    if (.not.associated(p_rproblemLevel)) then
+      call output_line('Unable to find problem level in problem '//trim(sproblem),&
+          OU_CLASS_ERROR,OU_MODE_STD,'poblem_getSpatialDiscr')
+      call sys_halt()
+    end if
+    
+    ! Set pointer to discretisation structure
+    nullify(p_rspatialDiscr)
+    if ((idiscr .ge. lbound(p_rproblemLevel%RspatialDiscretisation,1)) .and.&
+        (idiscr .le. ubound(p_rproblemLevel%RspatialDiscretisation,1))) then
+      p_rspatialDiscr => p_rproblemLevel%RspatialDiscretisation(idiscr)        
+    end if
+    
+  end function problem_getSpatialDiscr
+  
+  !*****************************************************************************
+
+!<function>
+
+  function problem_getSpatialSubdiscr(rproblem, rproblemLevel, sspatialDiscr,& 
+      rspatialDiscrDefault) result(p_rspatialDiscr)
+
+!<descrition>
+    ! This subroutines sets the pointer to a spatial discretisation
+    ! structure as a sublock of a block discretisation structure based
+    ! on the string representation sspatialDiscr and the data present
+    ! in the problem structure
+!</descrition>
+   
+!<input>
+    ! problem structure
+    type(t_problem), intent(in) :: rproblem
+
+    ! problem level structure
+    type(t_problemLevel), intent(in) :: rproblemLevel
+
+    ! string representation
+    character(len=*), intent(in) :: sspatialDiscr
+
+    ! OPTIONAL: default spatial discretisation structure to be used if
+    ! the specified structure cannot be found
+    type(t_spatialDiscretisation), intent(in), target, optional :: rspatialDiscrDefault
+!</input>
+
+!<result>
+    ! pointer to the specified spatial discretisation structure
+    ! or null of it is not available
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
+!</result>
+
+!</function>
+
+    ! local variables
+    type(t_problemLevel), pointer :: p_rproblemLevel
+    type(t_blockDiscretisation), pointer :: p_rblockDiscr
+    character(len=PARLST_MLDATA) :: skeyword,sproblem,stoken,svalue
+    integer :: iblock,idiscr,iistart,ilev,istart,itoken,ntoken
+
+    ! Do we have a valid string?
+    if (trim(sspatialDiscr) .eq. '') then
+      if (present(rspatialDiscrDefault)) then
+        p_rspatialDiscr => rspatialDiscrDefault
+      else
+        nullify(p_rspatialDiscr)
       end if
+      ! That`s it
+    end if
+
+    ! Initialise parameters
+    sproblem = trim(rproblemLevel%p_rproblem%cproblem)
+    ilev     = rproblemLevel%ilev
+    idiscr   = 1
+    iblock   = 1
+
+    call sys_countTokens(sspatialDiscr, ntoken, ',', .false.); istart=1
+
+    do itoken = 1,ntoken
+      call sys_getNextToken (sspatialDiscr, stoken, istart, ',', .false.)
+
+      iistart = 1
+      call sys_getNextToken (stoken, skeyword, iistart, ":", .false.)
+      call sys_getNextToken (stoken, svalue, iistart, ":", .false.)
+
+      if (trim(skeyword) .eq. 'PROBLEM') then
+        sproblem = trim(svalue)
+      elseif (trim(skeyword) .eq. 'ILEV') then
+        read(svalue,'(I10)') ilev
+      elseif (trim(skeyword) .eq. 'IBLOCK') then
+        read(svalue,'(I10)') iblock
+      elseif (trim(skeyword) .eq. 'IDISCR' .or.&
+          trim(skeyword) .eq. 'IDISCRETISATION') then
+        read(svalue,'(I10)') idiscr
+      else
+        call output_line('Unsupported keyword: '//trim(skeyword),&
+            OU_CLASS_ERROR,OU_MODE_STD,'poblem_getSpatialSubdiscr')
+        call sys_halt()
+      end if
+    end do
+
+    ! Find problem level in global problem structure
+    p_rproblemLevel => problem_getLevel(rproblem, trim(sproblem), ilev)       
+    if (.not.associated(p_rproblemLevel)) then
+      call output_line('Unable to find problem level in problem '//trim(sproblem),&
+          OU_CLASS_ERROR,OU_MODE_STD,'poblem_getSpatialSubdiscr')
+      call sys_halt()
+    end if
+
+    ! Set pointer to discretisation structure
+    nullify(p_rspatialDiscr)
+    if ((idiscr .ge. lbound(p_rproblemLevel%RblockDiscretisation,1)) .and.&
+        (idiscr .le. ubound(p_rproblemLevel%RblockDiscretisation,1))) then
+      p_rblockDiscr => p_rproblemLevel%RblockDiscretisation(idiscr)
+      if ((iblock .ge. lbound(p_rblockDiscr%RspatialDiscr,1)) .and.&
+          (iblock .le. ubound(p_rblockDiscr%RspatialDiscr,1))) then
+        p_rspatialDiscr => p_rblockDiscr%RspatialDiscr(iblock)
+      end if
+    end if
       
-    end function problem_getSpatialDiscr
+  end function problem_getSpatialSubdiscr
 
     !*****************************************************************************
 
 !<function>
+    
   function problem_getBlockDiscr(rproblem, rproblemLevel, sblockDiscr,& 
       rblockDiscrDefault) result(p_rblockDiscr)
 
@@ -9448,69 +10465,70 @@ contains
 
 !</function>
 
-      ! local variables
-      type(t_problemLevel), pointer :: p_rproblemLevel
-      character(len=PARLST_MLDATA) :: skeyword,sproblem,stoken,svalue
-      integer :: idiscr,iistart,ilev,istart,itoken,ntoken
+    ! local variables
+    type(t_problemLevel), pointer :: p_rproblemLevel
+    character(len=PARLST_MLDATA) :: skeyword,sproblem,stoken,svalue
+    integer :: idiscr,iistart,ilev,istart,itoken,ntoken
 
-      ! Do we have a valid string?
-      if (trim(sblockDiscr) .eq. '') then
-        if (present(rblockDiscrDefault)) then
-          p_rblockDiscr => rblockDiscrDefault
-        else
-          nullify(p_rblockDiscr)
-        end if
-        ! That`s it
+    ! Do we have a valid string?
+    if (trim(sblockDiscr) .eq. '') then
+      if (present(rblockDiscrDefault)) then
+        p_rblockDiscr => rblockDiscrDefault
+      else
+        nullify(p_rblockDiscr)
       end if
+      ! That`s it
+    end if
 
-      ! Initialise parameters
-      sproblem = trim(rproblemLevel%p_rproblem%cproblem)
-      ilev     = rproblemLevel%ilev
-      idiscr   = 1
-      
-      call sys_countTokens(sblockDiscr, ntoken, ',', .false.); istart=1
-      
-      do itoken = 1,ntoken
-        call sys_getNextToken (sblockDiscr, stoken, istart, ',', .false.)
-        
-        iistart = 1
-        call sys_getNextToken (stoken, skeyword, iistart, ":", .false.)
-        call sys_getNextToken (stoken, svalue, iistart, ":", .false.)
-        
-        if (trim(skeyword) .eq. 'PROBLEM') then
-          sproblem = trim(svalue)
-        elseif (trim(skeyword) .eq. 'ILEV') then
-          read(svalue,'(I10)') ilev
-        elseif (trim(skeyword) .eq. 'IDISCR' .or.&
-            trim(skeyword) .eq. 'IDISCRETISATION') then
-          read(svalue,'(I10)') idiscr
-        else
-          call output_line('Unsupported keyword: '//trim(skeyword),&
-              OU_CLASS_ERROR,OU_MODE_STD,'poblem_getBlockDiscr')
-          call sys_halt()
-        end if
-      end do
-      
-      ! Find problem level in global problem structure
-      p_rproblemLevel => problem_getLevel(rproblem, trim(sproblem), ilev)       
-      if (.not.associated(p_rproblemLevel)) then
-        call output_line('Unable to find problem level in problem '//trim(sproblem),&
+    ! Initialise parameters
+    sproblem = trim(rproblemLevel%p_rproblem%cproblem)
+    ilev     = rproblemLevel%ilev
+    idiscr   = 1
+
+    call sys_countTokens(sblockDiscr, ntoken, ',', .false.); istart=1
+
+    do itoken = 1,ntoken
+      call sys_getNextToken (sblockDiscr, stoken, istart, ',', .false.)
+
+      iistart = 1
+      call sys_getNextToken (stoken, skeyword, iistart, ":", .false.)
+      call sys_getNextToken (stoken, svalue, iistart, ":", .false.)
+
+      if (trim(skeyword) .eq. 'PROBLEM') then
+        sproblem = trim(svalue)
+      elseif (trim(skeyword) .eq. 'ILEV') then
+        read(svalue,'(I10)') ilev
+      elseif (trim(skeyword) .eq. 'IDISCR' .or.&
+          trim(skeyword) .eq. 'IDISCRETISATION') then
+        read(svalue,'(I10)') idiscr
+      else
+        call output_line('Unsupported keyword: '//trim(skeyword),&
             OU_CLASS_ERROR,OU_MODE_STD,'poblem_getBlockDiscr')
         call sys_halt()
       end if
+    end do
+
+    ! Find problem level in global problem structure
+    p_rproblemLevel => problem_getLevel(rproblem, trim(sproblem), ilev)       
+    if (.not.associated(p_rproblemLevel)) then
+      call output_line('Unable to find problem level in problem '//trim(sproblem),&
+          OU_CLASS_ERROR,OU_MODE_STD,'poblem_getBlockDiscr')
+      call sys_halt()
+    end if
+
+    ! Set pointer to discretisation structure
+    nullify(p_rblockDiscr)
+    if ((idiscr .ge. lbound(p_rproblemLevel%RblockDiscretisation,1)) .and.&
+        (idiscr .le. ubound(p_rproblemLevel%RblockDiscretisation,1))) then
+      p_rblockDiscr => p_rproblemLevel%RblockDiscretisation(idiscr)        
+    end if
       
-      ! Set pointer to discretisation structure
-      nullify(p_rblockDiscr)
-      if ((idiscr .ge. lbound(p_rproblemLevel%Rdiscretisation,1)) .and.&
-          (idiscr .le. ubound(p_rproblemLevel%Rdiscretisation,1))) then
-        p_rblockDiscr => p_rproblemLevel%Rdiscretisation(idiscr)        
-      end if
-      
-    end function problem_getBlockDiscr
+  end function problem_getBlockDiscr
 
     !*****************************************************************************
 
 !<function>
+
   function problem_getCubInfo(rproblem, rproblemLevel, scubInfo,& 
       rcubInfoDefault) result(p_rcubInfo)
 
@@ -9828,11 +10846,11 @@ contains
 
 !<subroutine>
 
-  subroutine problem_initGroupFEMBlockAll(rproblemLevel,&
-      rparlist, ssectionName, p_rtasklist, rproblemTopLevel, iperformSpec)
+  subroutine problem_initGroupFEMAll(rproblemLevel, rparlist,&
+      ssectionName, p_rtasklist, rproblemTopLevel, iperformSpec)
 
 !<description>
-    ! This subroutine initialises all blocks of group finite element
+    ! This subroutine initialises all (blocks of) group finite element
     ! sets of the given problem level with the values provided by the
     ! parameter list.  If the optional parameter p_rtasklist is given,
     ! then the task list which is created during the initialisation is
@@ -9861,35 +10879,35 @@ contains
     type(t_problemLevel), intent(inout) :: rproblemLevel
 
     ! OPTIONAL: task list
-    type(t_groupFEMBlockTask), intent(inout), pointer, optional :: p_rtasklist
+    type(t_groupFEMTask), intent(inout), pointer, optional :: p_rtasklist
 !</intputoutput>
 !</subroutine>
 
     ! local variables
-    type(t_groupFEMBlockTask), pointer :: p_rtasklistLocal => null()
+    type(t_groupFEMTask), pointer :: p_rtasklistLocal => null()
 
     if (present(p_rtasklist)) p_rtasklistLocal => p_rtasklist
     
     ! Update all blocks of group finite element structures
-    call problem_updateGroupFEMBlockAll(rproblemLevel,&
-        rparlist, ssectionName, p_rtasklistLocal, rproblemTopLevel, iperformSpec)
+    call problem_updateGroupFEMAll(rproblemLevel, rparlist,&
+        ssectionName, p_rtasklistLocal, rproblemTopLevel, iperformSpec)
 
     ! Release temporal task list if required
     if (.not.present(p_rtasklist)) then
-      call problem_clearGroupFEMBlockTL(p_rtasklistLocal)
+      call problem_clearGroupFEMTL(p_rtasklistLocal)
     end if
 
-  end subroutine problem_initGroupFEMBlockAll
+  end subroutine problem_initGroupFEMAll
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine problem_updateGroupFEMBlockAll(rproblemLevel,&
-      rparlist, ssectionName, p_rtasklist, rproblemTopLevel, iperformSpec)
+  subroutine problem_updateGroupFEMAll(rproblemLevel, rparlist,&
+      ssectionName, p_rtasklist, rproblemTopLevel, iperformSpec)
 
 !<description>
-    ! This subroutine the task list for all blocks of group finite
+    ! This subroutine the task list for all (blocks of) group finite
     ! element sets of the given problem level with the values provided
     ! by the parameter list.
 !</description>
@@ -9916,36 +10934,117 @@ contains
     type(t_problemLevel), intent(inout) :: rproblemLevel
 
     ! pointer to the task list
-    type(t_groupFEMBlockTask), pointer :: p_rtasklist
+    type(t_groupFEMTask), pointer :: p_rtasklist
 !</intputoutput>
 !</subroutine>
 
     ! local variables
     character(len=SYS_STRLEN) :: ssubsectionName
-    integer :: i,ngroupfemBlock
+    integer :: i,ngroupfemSet,ngroupfemBlock
 
     ! Consistency check
+    ngroupfemSet = parlst_querysubstrings(rparlist, ssectionName,&
+                                          'groupfemset')
+    if ((ngroupfemSet .gt. 0) .and.&
+        (ngroupfemSet .ne. size(rproblemLevel%RgroupFEMSet))) then
+      call output_line('Invalid number of group finite element sets',&
+          OU_CLASS_ERROR,OU_MODE_STD,'problem_updateGroupFEMAll')
+      call sys_halt()
+    end if
+
     ngroupfemBlock = parlst_querysubstrings(rparlist, ssectionName,&
                                             'groupfemblock')
     if ((ngroupfemBlock .gt. 0) .and.&
         (ngroupfemBlock .ne. size(rproblemLevel%RgroupFEMBlock))) then
       call output_line('Invalid number of blocks of group finite element sets',&
-          OU_CLASS_ERROR,OU_MODE_STD,'problem_updateGroupFEMBlockAll')
+          OU_CLASS_ERROR,OU_MODE_STD,'problem_updateGroupFEMAll')
       call sys_halt()
     end if
    
+    ! Update all group finite element sets
+    do i=1,ngroupfemset
+      call parlst_getvalue_string(rparlist, ssectionName,&
+          'groupfemset', ssubsectionName, isubstring=i)
+      call problem_updateGroupFEMSet(rproblemLevel,&
+          rproblemLevel%RgroupFEMSet(i), rparlist, ssubsectionName,&
+          p_rtasklist, rproblemTopLevel, iperformSpec)
+    end do
+
     ! Update all blocks of group finite element sets
     do i=1,ngroupfemblock
       call parlst_getvalue_string(rparlist, ssectionName,&
           'groupfemblock', ssubsectionName, isubstring=i)
-      call problem_updateGroupFEMBlock1(rproblemLevel,&
+      call problem_updateGroupFEMBlock(rproblemLevel,&
           rproblemLevel%RgroupFEMBlock(i), rparlist, ssubsectionName,&
           p_rtasklist, rproblemTopLevel, iperformSpec)
     end do
     
-  end subroutine problem_updateGroupFEMBlockAll
+  end subroutine problem_updateGroupFEMAll
 
   !*****************************************************************************
+
+!<subroutine>
+
+  subroutine problem_initGroupFEMSet(rproblemLevel, rgroupFEMSet,&
+      rparlist, ssectionName, p_rtasklist, rproblemTopLevel, iperformSpec)
+
+!<description>
+    ! This subroutine initialises the given group finite element set
+    ! on the given problem level with the values provided by the
+    ! parameter list. If the optional parameter p_rtasklist is given,
+    ! then the task list which is created during the initialisation is
+    ! returned.
+!</description>
+
+!<input>
+    ! problem level structure
+    type(t_problemLevel), intent(in) :: rproblemLevel
+
+    ! parameter list
+    type(t_parlist), intent(in) :: rparlist
+
+    ! name of the section
+    character(LEN=*), intent(in) :: ssectionName
+
+    ! OPTIONAL: top-level problem structure
+    ! If not present, then the problem associated with the problem
+    ! level structure serves as top-level problem
+    type(t_problem), intent(in), optional :: rproblemTopLevel
+
+    ! OPTIONAL: specifier for the tasks to be performed
+    ! If not present PROBACTION_PERFORM_ALWAYS is assumed
+    integer(i32), intent(in), optional :: iperformspec
+!</input>
+
+!<inputoutput>
+    ! task list which represents the order in which block of group
+    ! finite element sets to be created and copied
+    type(t_groupFEMTask), pointer, optional :: p_rtasklist
+!</inputoutput>
+
+!<output>
+    ! group finite element set
+    type(t_groupFEMSet), intent(out), target :: rgroupFEMSet
+!</output>
+!</subroutine>
+
+    ! local variables
+    type(t_groupFEMTask), pointer :: p_rtasklistLocal => null()
+
+    if (present(p_rtasklist)) p_rtasklistLocal => p_rtasklist
+    
+    ! Update given block of group finite element sets
+    call problem_updateGroupFEMSet(rproblemLevel, rgroupFEMSet,&
+        rparlist, ssectionName, p_rtasklistLocal, rproblemTopLevel, iperformSpec)
+
+    ! Release temporal task list if required
+    if (.not.present(p_rtasklist)) then
+      call problem_clearGroupFEMTL(p_rtasklistLocal)
+    end if
+
+  end subroutine problem_initGroupFEMSet
+
+!*****************************************************************************
 
 !<subroutine>
 
@@ -9983,7 +11082,7 @@ contains
 !<inputoutput>
     ! task list which represents the order in which block of group
     ! finite element sets to be created and copied
-    type(t_groupFEMBlockTask), pointer, optional :: p_rtasklist
+    type(t_groupFEMTask), pointer, optional :: p_rtasklist
 !</inputoutput>
 
 !<output>
@@ -9993,17 +11092,17 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_groupFEMBlockTask), pointer :: p_rtasklistLocal => null()
+    type(t_groupFEMTask), pointer :: p_rtasklistLocal => null()
 
     if (present(p_rtasklist)) p_rtasklistLocal => p_rtasklist
     
     ! Update given block of group finite element sets
-    call problem_updateGroupFEMBlock1(rproblemLevel, rgroupFEMBlock,&
+    call problem_updateGroupFEMBlock(rproblemLevel, rgroupFEMBlock,&
         rparlist, ssectionName, p_rtasklistLocal, rproblemTopLevel, iperformSpec)
 
     ! Release temporal task list if required
     if (.not.present(p_rtasklist)) then
-      call problem_clearGroupFEMBlockTL(p_rtasklistLocal)
+      call problem_clearGroupFEMTL(p_rtasklistLocal)
     end if
 
   end subroutine problem_initGroupFEMBlock
@@ -10012,13 +11111,13 @@ contains
 
 !<subroutine>
 
-  recursive subroutine problem_updateGroupFEMBlock1(rproblemLevel,&
-      rgroupFEMBlock, rparlist, ssectionName, p_rtasklist, rproblemTopLevel, iperformSpec)
+  recursive subroutine problem_updateGroupFEMSet(rproblemLevel, rgroupFEMSet,&
+      rparlist, ssectionName, p_rtasklist, rproblemTopLevel, iperformSpec)
 
 !<description>
     ! This subroutine generates the task list to initialise/update the
-    ! given block of group finite element sets on the given problem
-    ! level with the values provided by the parameter list.
+    ! given group finite element set on the given problem level with
+    ! the values provided by the parameter list.
 !</description>
 
 !<input>
@@ -10042,18 +11141,18 @@ contains
 !</input>
 
 !<inputoutput>
-    ! task list which represents the order in which block of group
-    ! finite element sets need to be created and copied
-    type(t_groupFEMBlockTask), pointer :: p_rtasklist
+    ! task list which represents the order in which group finite
+    ! element sets need to be created and copied
+    type(t_groupFEMTask), pointer :: p_rtasklist
 
-    ! @block of group finite element sets
-    type(t_groupFEMBlock), intent(inout), target :: rgroupFEMBlock
+    ! group finite element set
+    type(t_groupFEMSet), intent(inout), target :: rgroupFEMSet
 !</inputoutput>
 !</subroutine>
 
     ! local variables
     type(t_vectorBlock), pointer :: p_rvectorBlock
-    type(t_groupFEMBlockTask), pointer :: rtask
+    type(t_groupFEMTask), pointer :: rtask
     type(t_problem), pointer :: p_rproblemTopLevel
     type(t_problemLevel), pointer :: p_rproblemLevel
     character(len=PARLST_MLDATA) :: skeyword,sparameter,sproblem,stoken,svalue
@@ -10083,26 +11182,27 @@ contains
     if (trim(saction) .eq. 'NONE') then
       !-------------------------------------------------------------------------
       ! Do nothing
+      return
       
     elseif (trim(saction) .eq. 'CREATE') then
 
       !-------------------------------------------------------------------------
-      ! Create block of group finite element sets
+      ! Create group finite element sets
       !
-      ! SYNTAX: groupfemblock(n) =
+      ! SYNTAX: groupfemset(N) =
       !           GroupFEMSet1
       !                ...
-      !           GroupFEMSet2
+      !           GroupFEMSetN
 
       ! Create new task
       nullify(rtask)
       allocate(rtask)
       nullify(rtask%p_rnextTask)
-      rtask%ctask                =  PROBACTION_CREATE
-      rtask%ssectionName         =  ssectionName
-      rtask%p_rgroupFEMBlockDest => rgroupFEMBlock
-      rtask%p_rproblemDest       => rproblemLevel%p_rproblem
-      rtask%p_rproblemLevelDest  => rproblemLevel
+      rtask%ctask               =  PROBACTION_CREATE
+      rtask%ssectionName        =  ssectionName
+      rtask%p_rgroupFEMSetDest  => rgroupFEMSet
+      rtask%p_rproblemDest      => rproblemLevel%p_rproblem
+      rtask%p_rproblemLevelDest => rproblemLevel
 
       ! Append task to task list (if not already present)
       if (associated(p_rtasklist)) then
@@ -10117,22 +11217,7 @@ contains
       end if
 
       ! When should we perform this task?
-      call sys_countTokens(sperform, ntoken, ',', .false.)
-      istart = 1
-      do itoken=1,max(ntoken,1)
-        call sys_getNextToken (sperform, sperf, istart, ',', .false.)
-        if (trim(adjustl(sperf)) .eq. 'INIT') then
-          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_INIT)
-        elseif (trim(adjustl(sperf)) .eq. 'UPDATE') then
-          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_UPDATE)
-        elseif (trim(adjustl(sperf)) .eq. 'ALWAYS') then
-          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_ALWAYS)
-        else
-          call output_line('Unsupported perform type: '//trim(sperf),&
-              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateGroupFEMBlock')
-          call sys_halt()
-        end if
-      end do
+      rtask%iperform = problem_getIperform(sperform)
 !!$      
 !!$      ! Get optional parameters
 !!$    call parlst_getvalue_int(rparlist, ssectionName,&
@@ -10334,7 +11419,7 @@ contains
 !!$          rtask%p_rproblemLevelDest => rproblemLevel
 !!$
 !!$        else
-!!$          call output_line('Either vectorscalar of vectorblock must be present',&
+!!$          call output_line('Either scalar or block vector must be present',&
 !!$              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateGroupFEMBlock')
 !!$          call sys_halt()
 !!$        end if
@@ -10353,22 +11438,7 @@ contains
 !!$      end if
 !!$
 !!$      ! When should we perform this task?
-!!$      call sys_countTokens(sperform, ntoken, ',', .false.)
-!!$      istart = 1
-!!$      do itoken=1,max(ntoken,1)
-!!$        call sys_getNextToken (sperform, sperf, istart, ',', .false.)
-!!$        if (trim(adjustl(sperf)) .eq. 'INIT') then
-!!$          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_INIT)
-!!$        elseif (trim(adjustl(sperf)) .eq. 'UPDATE') then
-!!$          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_UPDATE)
-!!$        elseif (trim(adjustl(sperf)) .eq. 'ALWAYS') then
-!!$          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_ALWAYS)
-!!$        else
-!!$          call output_line('Unsupported perform type: '//trim(sperf),&
-!!$              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVectorScalar')
-!!$          call sys_halt()
-!!$        end if
-!!$      end do
+!!$      rtask%iperform = problem_getIperform(sperform)
 !!$          
 !!$      ! Get optional parameters
 !!$      call parlst_getvalue_string(rparlist, ssectionName,&
@@ -10388,7 +11458,7 @@ contains
 !!$      
     else
       call output_line('Unsupported action: '//trim(saction),&
-          OU_CLASS_ERROR,OU_MODE_STD,'problem_updateGroupFEMBlock')
+          OU_CLASS_ERROR,OU_MODE_STD,'problem_updateGroupFEMSet')
       call sys_halt()
     end if
 !!$    
@@ -10464,11 +11534,11 @@ contains
     ! present in the list, then it is appended.
     function appendToTaskList(rtasklist, rtask) result(bexists)
 
-      type(t_groupFEMBlockTask), intent(inout), target :: rtasklist
-      type(t_groupFEMBlockTask), intent(in), target :: rtask
+      type(t_groupFEMTask), intent(inout), target :: rtasklist
+      type(t_groupFEMTask), intent(in), target :: rtask
       
       ! local variable
-      type(t_groupFEMBlockTask), pointer :: p_rtask
+      type(t_groupFEMTask), pointer :: p_rtask
       logical :: bexists      
 
       p_rtask => rtasklist
@@ -10629,22 +11699,616 @@ contains
 !!$      
 !!$    end subroutine assembleScalarVector
 
-  end subroutine problem_updateGroupFEMBlock1
+  end subroutine problem_updateGroupFEMSet
+
+!*****************************************************************************
+
+!<subroutine>
+
+  recursive subroutine problem_updateGroupFEMBlock(rproblemLevel, rgroupFEMBlock,&
+      rparlist, ssectionName, p_rtasklist, rproblemTopLevel, iperformSpec)
+
+!<description>
+    ! This subroutine generates the task list to initialise/update the
+    ! given block of group finite element sets on the given problem
+    ! level with the values provided by the parameter list.
+!</description>
+
+!<input>
+    ! problem level structure
+    type(t_problemLevel), intent(in), target :: rproblemLevel
+
+    ! parameter list
+    type(t_parlist), intent(in) :: rparlist
+
+    ! name of the section
+    character(LEN=*), intent(in) :: ssectionName
+
+    ! OPTIONAL: top-level problem structure
+    ! If not present, then the problem associated with the problem
+    ! level structure serves as top-level problem
+    type(t_problem), intent(in), target, optional :: rproblemTopLevel
+
+    ! OPTIONAL: specifier for the tasks to be performed
+    ! If not present PROBACTION_PERFORM_ALWAYS is assumed
+    integer(i32), intent(in), optional :: iperformspec
+!</input>
+
+!<inputoutput>
+    ! task list which represents the order in which block of group
+    ! finite element sets need to be created and copied
+    type(t_groupFEMTask), pointer :: p_rtasklist
+
+    ! block of group finite element sets
+    type(t_groupFEMBlock), intent(inout), target :: rgroupFEMBlock
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_vectorBlock), pointer :: p_rvectorBlock
+    type(t_groupFEMTask), pointer :: rtask
+    type(t_problem), pointer :: p_rproblemTopLevel
+    type(t_problemLevel), pointer :: p_rproblemLevel
+    character(len=PARLST_MLDATA) :: skeyword,sparameter,sproblem,stoken,svalue
+    character(len=SYS_STRLEN) :: ssubsectionName
+    character(len=SYS_STRLEN) :: saction,sperform,sperf
+    integer :: iblock,iistart,ilev,ivector,istart,itoken,ntoken,nblocks
+    integer(i32) :: iperform
+
+    ! Set pointer to problem structure
+    p_rproblemTopLevel => rproblemLevel%p_rproblem
+    if (present(rproblemTopLevel)) p_rproblemTopLevel => rproblemTopLevel
+
+    iperform = PROBACTION_PERFORM_ALWAYS
+    if (present(iperformSpec)) iperform = iperformSpec
+
+    ! Get type of action
+    call parlst_getvalue_string(rparlist, ssectionName, 'saction', saction)
+    call parlst_getvalue_string(rparlist, ssectionName, 'sperform', sperform)
+    call sys_toupper(saction)
+    call sys_toupper(sperform)
+
+    !---------------------------------------------------------------------------
+    ! First part: generate structure
+    !---------------------------------------------------------------------------
+
+    ! What action should be performed?
+    if (trim(saction) .eq. 'NONE') then
+      !-------------------------------------------------------------------------
+      ! Do nothing
+      return
+      
+    elseif (trim(saction) .eq. 'CREATE') then
+
+      !-------------------------------------------------------------------------
+      ! Create block of group finite element sets
+      !
+      ! SYNTAX: groupfemblock(N) =
+      !           GroupFEMBlock1
+      !                ...
+      !           GroupFEMBlockN
+
+      ! Create new task
+      nullify(rtask)
+      allocate(rtask)
+      nullify(rtask%p_rnextTask)
+      rtask%ctask                =  PROBACTION_CREATE
+      rtask%ssectionName         =  ssectionName
+      rtask%p_rgroupFEMBlockDest => rgroupFEMBlock
+      rtask%p_rproblemDest       => rproblemLevel%p_rproblem
+      rtask%p_rproblemLevelDest  => rproblemLevel
+
+      ! Append task to task list (if not already present)
+      if (associated(p_rtasklist)) then
+        if (appendToTaskList(p_rtasklist, rtask)) then
+          deallocate(rtask)
+          
+          ! That`s it we do not have to create this scalar vector
+          return
+        end if
+      else
+        p_rtasklist => rtask
+      end if
+
+      ! When should we perform this task?
+      rtask%iperform = problem_getIperform(sperform)
+!!$      
+!!$      ! Get optional parameters
+!!$    call parlst_getvalue_int(rparlist, ssectionName,&
+!!$        'cdatatype', rtask%cdataType, ST_NOHANDLE)
+!!$    if (rtask%cdataType .eq. ST_NOHANDLE) then
+!!$      call parlst_getvalue_string(rparlist, ssectionName,&
+!!$          'sdatatype', sparameter, 'DOUBLE')
+!!$      call sys_toupper(sparameter)
+!!$      rtask%cdataType = get_dataType(trim(sparameter))
+!!$    end if
+!!$      call parlst_getvalue_int(rparlist, ssectionName,&
+!!$          'nvar', rtask%nvar, 1)
+!!$      
+!!$      ! Get spatial discretisation for test and trial space
+!!$      call parlst_getvalue_string(rparlist, ssectionName,&
+!!$          'discretisation', sparameter)
+!!$      call sys_toupper(sparameter)
+!!$      rtask%p_rspatialDiscr => problem_getSpatialDiscr(&
+!!$          rproblemLevel%p_rproblem, rproblemLevel, sparameter)
+!!$      
+!!$      ! Should we perform this task now?
+!!$      if (iand(rtask%iperform, iperform) .ne. 0) then
+!!$        ! Do we have spatial discretisations?
+!!$        if (.not.associated(rtask%p_rspatialDiscr)) then
+!!$          call output_line('Unable to find spatial discretisation',&
+!!$              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVectorScalar')
+!!$          call sys_halt()
+!!$        end if
+!!$        
+!!$        ! Clear preexisting scalar vector
+!!$        call lsyssc_releaseVector(rvector)
+!!$        
+!!$        ! Create vector structure and set data type
+!!$        call lsyssc_createVector(rtask%p_rspatialDiscr, rvector,&
+!!$            rtask%nvar, .false., rtask%cdataType)
+!!$      end if
+!!$
+!!$    elseif (trim(saction) .eq. 'DUPLICATE') then
+!!$
+!!$      !-------------------------------------------------------------------------
+!!$      ! Duplicate scalar vector or subvector of a block vector
+!!$      !
+!!$      ! SYNTAX: vectorscalar = name,ivector:#,ilev:#,...
+!!$      !     OR  vectorblock  = name,ivector:#,ilev:#,iblock:#
+!!$      !
+!!$      ! If ilev is not given then the level of the current problem
+!!$      ! level structure is adopted. If iblock are not given then
+!!$      ! standard value 1 is used in both cases
+!!$
+!!$      ! Find problem name from which to duplicate scalar vector (if any)
+!!$      call parlst_getvalue_string(rparlist, ssectionName, 'vectorscalar', sparameter, '')
+!!$      call sys_toupper(sparameter)
+!!$
+!!$      if (trim(sparameter) .ne. '') then
+!!$        
+!!$        !--- Scalar vector case ------------------------------------------------
+!!$
+!!$        ! Create new task for this scalar vector
+!!$        nullify(rtask)
+!!$        allocate(rtask)
+!!$        nullify(rtask%p_rnextTask)
+!!$        
+!!$        ! Initialise optional parameters
+!!$        sproblem = trim(rproblemLevel%p_rproblem%cproblem)
+!!$        ilev     = rproblemLevel%ilev
+!!$        ivector  = 1
+!!$        
+!!$        ! Get optional parameters if available
+!!$        call sys_countTokens(sparameter, ntoken, ',', .false.); istart=1
+!!$        
+!!$        do itoken = 1,ntoken
+!!$          call sys_getNextToken (sparameter, stoken, istart, ',', .false.)
+!!$          
+!!$          iistart = 1
+!!$          call sys_getNextToken (stoken, skeyword, iistart, ":", .false.)
+!!$          call sys_getNextToken (stoken, svalue, iistart, ":", .false.)
+!!$          
+!!$          if (trim(skeyword) .eq. 'PROBLEM') then
+!!$            sproblem = trim(svalue)
+!!$          elseif (trim(skeyword) .eq. 'ILEV') then
+!!$            read(svalue,'(I10)') ilev
+!!$          elseif (trim(skeyword) .eq. 'IVECTOR') then
+!!$            read(svalue,'(I10)') ivector
+!!$          else
+!!$            call output_line('Unsupported keyword: '//trim(skeyword),&
+!!$                OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVectorScalar')
+!!$            call sys_halt()
+!!$          end if
+!!$        end do
+!!$        
+!!$        ! Find problem level in global problem structure
+!!$        p_rproblemLevel => problem_getLevel(p_rproblemTopLevel, trim(sproblem), ilev)
+!!$        if (.not.associated(p_rproblemLevel)) then
+!!$          call output_line('Unable to find problem level in problem '//trim(sproblem),&
+!!$              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVectorScalar')
+!!$          call sys_halt()
+!!$        end if
+!!$        
+!!$        ! Get section name of scalar vector
+!!$        call parlst_getvalue_string(rparlist, trim(sproblem),&
+!!$            'vectorscalar', ssubsectionName, isubstring=ivector)
+!!$
+!!$        ! Proceed with possibly prerequisite tasks
+!!$        call problem_updateVectorScalar(p_rproblemLevel,&
+!!$            p_rproblemLevel%RvectorScalar(ivector), rparlist,&
+!!$            ssubsectionName, p_rtasklist, p_rproblemTopLevel, iperformSpec)
+!!$        
+!!$        ! Specify new task for this cubature info structure
+!!$        rtask%bisVectorScalar     = .true.
+!!$        rtask%ctask               =  PROBACTION_DUPLICATE
+!!$        rtask%ssectionName        =  ssectionName
+!!$        rtask%p_rvectorScalarSrc  => p_rproblemLevel%RvectorScalar(ivector)
+!!$        rtask%p_rvectorScalarDest => rvector
+!!$        rtask%p_rproblemSrc       => p_rproblemLevel%p_rproblem
+!!$        rtask%p_rproblemDest      => rproblemLevel%p_rproblem
+!!$        rtask%p_rproblemLevelSrc  => p_rproblemLevel
+!!$        rtask%p_rproblemLevelDest => rproblemLevel
+!!$
+!!$      else
+!!$
+!!$        !--- Block vector case -------------------------------------------------
+!!$
+!!$        ! Find problem name from which to duplicate entry of block vector (if any)
+!!$        call parlst_getvalue_string(rparlist, ssectionName, 'vectorblock', sparameter, '')
+!!$        call sys_toupper(sparameter)
+!!$      
+!!$        if (trim(sparameter) .ne. '') then
+!!$          
+!!$          ! Create new task for this scalar vector
+!!$          nullify(rtask)
+!!$          allocate(rtask)
+!!$          nullify(rtask%p_rnextTask)
+!!$          
+!!$          ! Initialise optional parameters
+!!$          sproblem = trim(rproblemLevel%p_rproblem%cproblem)
+!!$          ilev     = rproblemLevel%ilev
+!!$          ivector  = 1
+!!$          iblock   = 1
+!!$          
+!!$          ! Get optional parameters if available
+!!$          call sys_countTokens(sparameter, ntoken, ',', .false.); istart=1
+!!$          
+!!$          do itoken = 1,ntoken
+!!$            call sys_getNextToken (sparameter, stoken, istart, ',', .false.)
+!!$            
+!!$            iistart = 1
+!!$            call sys_getNextToken (stoken, skeyword, iistart, ":", .false.)
+!!$            call sys_getNextToken (stoken, svalue, iistart, ":", .false.)
+!!$            
+!!$            if (trim(skeyword) .eq. 'PROBLEM') then
+!!$              sproblem = trim(svalue)
+!!$            elseif (trim(skeyword) .eq. 'ILEV') then
+!!$              read(svalue,'(I10)') ilev
+!!$            elseif (trim(skeyword) .eq. 'IVECTOR') then
+!!$              read(svalue,'(I10)') ivector
+!!$            elseif (trim(skeyword) .eq. 'IBLOCK') then
+!!$              read(svalue,'(I10)') iblock
+!!$            else
+!!$              call output_line('Unsupported keyword: '//trim(skeyword),&
+!!$                  OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVectorScalar')
+!!$              call sys_halt()
+!!$            end if
+!!$          end do
+!!$          
+!!$          ! Find problem level in global problem structure
+!!$          p_rproblemLevel => problem_getLevel(p_rproblemTopLevel, trim(sproblem), ilev)
+!!$          if (.not.associated(p_rproblemLevel)) then
+!!$            call output_line('Unable to find problem level in problem '//trim(sproblem),&
+!!$                OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVectorScalar')
+!!$            call sys_halt()
+!!$          end if
+!!$          
+!!$          ! Get section name of block vector
+!!$          call parlst_getvalue_string(rparlist, trim(sproblem),&
+!!$              'vectorblock', ssubsectionName, isubstring=ivector)
+!!$
+!!$          ! Proceed with possibly prerequisite tasks
+!!$          call problem_updateVecBl(p_rproblemLevel,&
+!!$              p_rproblemLevel%RvectorBlock(ivector), rparlist,&
+!!$              ssubsectionName, p_rtasklist, p_rproblemTopLevel, iperformSpec)
+!!$
+!!$          ! Check if scalar subvector is available
+!!$          p_rvectorBlock => p_rproblemLevel%RvectorBlock(ivector)
+!!$          if ((size(p_rvectorBlock%RvectorBlock,1) .lt. iblock)) then
+!!$            call output_line('Scalar subvector of block vector is not available',&
+!!$                OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVectorScalar')
+!!$            call sys_halt()
+!!$          end if
+!!$
+!!$          ! Specify new task for this cubature info structure
+!!$          rtask%bisVectorScalar     = .true.
+!!$          rtask%ctask               =  PROBACTION_DUPLICATE
+!!$          rtask%ssectionName        =  ssectionName
+!!$          rtask%p_rvectorScalarSrc  => p_rvectorBlock%RvectorBlock(iblock)
+!!$          rtask%p_rvectorScalarDest => rvector
+!!$          rtask%p_rproblemSrc       => p_rproblemLevel%p_rproblem
+!!$          rtask%p_rproblemDest      => rproblemLevel%p_rproblem
+!!$          rtask%p_rproblemLevelSrc  => p_rproblemLevel
+!!$          rtask%p_rproblemLevelDest => rproblemLevel
+!!$
+!!$        else
+!!$          call output_line('Either scalar or block vector must be present',&
+!!$              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateGroupFEMBlock')
+!!$          call sys_halt()
+!!$        end if
+!!$      end if
+!!$
+!!$      ! Append task to task list (if not already present)
+!!$      if (associated(p_rtasklist)) then
+!!$        if (appendToTaskList(p_rtasklist, rtask)) then
+!!$          deallocate(rtask)
+!!$
+!!$          ! That`s it we do not have to create this scalar vector
+!!$          return
+!!$        end if
+!!$      else
+!!$        p_rtasklist => rtask
+!!$      end if
+!!$
+!!$      ! When should we perform this task?
+!!$      rtask%iperform = problem_getIperform(sperform)
+!!$          
+!!$      ! Get optional parameters
+!!$      call parlst_getvalue_string(rparlist, ssectionName,&
+!!$          'sdupstructure', sparameter, 'SHARE')
+!!$      call sys_toupper(sparameter)
+!!$      rtask%cdupStructure = get_dupType(sparameter)
+!!$      call parlst_getvalue_string(rparlist, ssectionName,&
+!!$          'sdupcontent', sparameter, 'SHARE')
+!!$      call sys_toupper(sparameter)
+!!$      rtask%cdupContent = get_dupType(sparameter)
+!!$
+!!$      ! Duplicate scalar vector
+!!$      if (iand(rtask%iperform, iperform) .ne. 0) then
+!!$        call lsyssc_duplicateVector(rtask%p_rvectorScalarSrc,&
+!!$            rvector, rtask%cdupStructure, rtask%cdupContent)
+!!$      end if
+!!$      
+    else
+      call output_line('Unsupported action: '//trim(saction),&
+          OU_CLASS_ERROR,OU_MODE_STD,'problem_updateGroupFEMBlock')
+      call sys_halt()
+    end if
+!!$    
+!!$    !---------------------------------------------------------------------------
+!!$    ! Second part: generate content
+!!$    !---------------------------------------------------------------------------
+!!$
+!!$    ! What creation method is adopted?
+!!$    call parlst_getvalue_string(rparlist, ssectionName,&
+!!$        'smethod', sparameter, '')
+!!$    call sys_toupper(sparameter)
+!!$    
+!!$    if (trim(sparameter) .eq. 'EMPTY') then
+!!$      
+!!$      !-------------------------------------------------------------------------
+!!$      ! Create empty vector
+!!$      
+!!$      call lsyssc_clearVector(rvector, 0.0_DP)
+!!$      
+!!$      ! Update internal data of the task item
+!!$      rtask%cmethod = PROBMETH_VECTOR_EMPTY
+!!$      
+!!$    elseif (trim(sparameter) .eq. 'UNITY') then
+!!$      
+!!$      !-------------------------------------------------------------------------
+!!$      ! Create unit vector
+!!$      
+!!$      call lsyssc_clearVector(rvector, 1.0_DP)
+!!$      
+!!$      ! Update internal data of the task item
+!!$      rtask%cmethod = PROBMETH_VECTOR_UNITY
+!!$      
+!!$    elseif (trim(sparameter) .eq. 'LINF') then
+!!$      
+!!$      !-------------------------------------------------------------------------
+!!$      ! Create vector by linearform evaluation         
+!!$      
+!!$      call assembleScalarVector(rparlist, rtask)
+!!$      
+!!$      ! Update internal data of the task item
+!!$      rtask%cmethod = PROBMETH_VECTOR_LINF
+!!$      
+!!$    elseif (trim(sparameter) .eq. 'DOF') then
+!!$
+!!$      !-------------------------------------------------------------------------
+!!$      ! Create coordinate vector for degrees of freedom
+!!$      
+!!$      call lin_calcDofCoords(rtask%p_rspatialDiscr, rvector)
+!!$      
+!!$      ! Update internal data of the task item
+!!$      rtask%cmethod = PROBMETH_VECTOR_DOF
+!!$
+!!$    elseif (trim(sparameter) .eq. '') then
+!!$      
+!!$      !-------------------------------------------------------------------------
+!!$      ! Create virtual vector, aka, do nothing
+!!$      
+!!$      ! Update internal data of the task item
+!!$      rtask%cmethod = PROBMETH_VECTOR_VIRTUAL
+!!$      
+!!$    else
+!!$      call output_line('Unsupported method: '//trim(sparameter),&
+!!$          OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVectorScalar')
+!!$      call sys_halt()
+!!$    end if
+!!$    
+  contains
+
+    ! Here, some auxiliary routines follow
+
+    !***************************************************************************
+    ! Search for given task in the list of tasks. If the task is not
+    ! present in the list, then it is appended.
+    function appendToTaskList(rtasklist, rtask) result(bexists)
+
+      type(t_groupFEMTask), intent(inout), target :: rtasklist
+      type(t_groupFEMTask), intent(in), target :: rtask
+      
+      ! local variable
+      type(t_groupFEMTask), pointer :: p_rtask
+      logical :: bexists      
+
+      p_rtask => rtasklist
+      do while(associated(p_rtask))
+        if (associated(p_rtask%p_rgroupFEMBlockDest,&
+            rtask%p_rgroupFEMBlockDest)) then
+          bexists = .true.
+          return
+        end if
+        if (.not.associated(p_rtask%p_rnextTask)) then
+          p_rtask%p_rnextTask => rtask
+          bexists = .false.
+          return
+        else
+          p_rtask => p_rtask%p_rnextTask
+        end if
+      end do
+      
+    end function appendToTaskList
+
+    !**************************************************************
+    ! Return the numeric value of the data type
+    function get_dataType(sdataType) result(cdataType)
+
+      character(len=*), intent(in) :: sdataType
+      integer :: cdataType
+
+      if (sdataType .eq. 'QUAD') then
+        cdataType = ST_QUAD
+      elseif (sdataType .eq. 'DOUBLE') then
+        cdataType = ST_DOUBLE
+      elseif (sdataType .eq. 'SINGLE') then
+        cdataType = ST_SINGLE
+      else
+        cdataType = ST_NOHANDLE
+      end if
+
+    end function get_dataType
+!!$
+!!$    !**************************************************************
+!!$    ! Return the numeric value of the duplication flad
+!!$    function get_dupType(sdupType) result(cdupType)
+!!$
+!!$      character(len=*), intent(in) :: sdupType
+!!$      integer :: cdupType
+!!$
+!!$      if (sdupType .eq. 'IGNORE') then
+!!$        cdupType = LSYSSC_DUP_IGNORE
+!!$      elseif (sdupType .eq. 'REMOVE') then
+!!$        cdupType = LSYSSC_DUP_REMOVE
+!!$      elseif (sdupType .eq. 'DISMISS') then
+!!$        cdupType = LSYSSC_DUP_DISMISS
+!!$      elseif (sdupType .eq. 'SHARE') then
+!!$        cdupType = LSYSSC_DUP_SHARE
+!!$      elseif (sdupType .eq. 'COPY') then
+!!$        cdupType = LSYSSC_DUP_COPY
+!!$      elseif (sdupType .eq. 'COPYOVERWRITE') then
+!!$        cdupType = LSYSSC_DUP_COPYOVERWRITE
+!!$      elseif (sdupType .eq. 'ASIS') then
+!!$        cdupType = LSYSSC_DUP_ASIS
+!!$      elseif (sdupType .eq. 'EMPTY') then
+!!$        cdupType = LSYSSC_DUP_EMPTY
+!!$      elseif (sdupType .eq. 'TEMPLATE') then
+!!$        cdupType = LSYSSC_DUP_TEMPLATE
+!!$      else
+!!$        cdupType = 0
+!!$      end if
+!!$
+!!$    end function get_dupType
+!!$    
+!!$    !**************************************************************
+!!$    ! Assemble the scalar vector from bilinear form evaluation
+!!$    subroutine assembleScalarVector(rparlist, rtask)
+!!$
+!!$      type(t_parlist), intent(in) :: rparlist
+!!$      type(t_vectorTask), intent(inout) :: rtask
+!!$
+!!$      ! local variables
+!!$      type(t_collection) :: rcollection
+!!$      type(t_scalarCubatureInfo), pointer :: p_rcubInfo
+!!$      character(len=PARLST_MLDATA) :: sparameter
+!!$      integer :: i,j,itermCount
+!!$
+!!$      ! Get cubature info structure
+!!$      call parlst_getvalue_string(rparlist, rtask%ssectionName,&
+!!$          'cubatureinfo', sparameter)
+!!$      call sys_toupper(sparameter)
+!!$      p_rcubInfo => problem_getCubInfo(rtask%p_rproblemDest,&
+!!$          rtask%p_rproblemLevelDest, sparameter)
+!!$      
+!!$      ! Update internal data of the task item
+!!$      rtask%p_rcubatureInfo => p_rcubInfo
+!!$      allocate(rtask%p_rform)
+!!$      
+!!$      ! Get number of terms in bilinear form
+!!$      rtask%p_rform%itermCount = parlst_querysubstrings(&
+!!$          rparlist, rtask%ssectionName, 'function')
+!!$      
+!!$      ! Get test and trial functions in bilinear form
+!!$      do i = 1,rtask%p_rform%itermCount
+!!$        call parlst_getvalue_string(rparlist, rtask%ssectionName,&
+!!$            'function', sparameter, isubString=i)
+!!$        call sys_toupper(sparameter)
+!!$        rtask%p_rform%Idescriptors(i) = der_igetID(sparameter)
+!!$      end do
+!!$      
+!!$      ! Get constant(?) coefficients
+!!$      itermCount = parlst_querysubstrings(rparlist,&
+!!$          rtask%ssectionName, 'scoefficient')
+!!$      
+!!$      if (itermCount .gt. 0) then
+!!$        itermCount = min(itermCount,rtask%p_rform%itermCount)
+!!$        
+!!$        ! Check if all coefficients are constant
+!!$        do i=1,itermCount
+!!$          call parlst_getvalue_string(rparlist, rtask%ssectionName,&
+!!$              'scoefficient', sparameter, isubString=i)
+!!$          if (sys_isNumeric(sparameter)) then
+!!$            call parlst_getvalue_double(rparlist, rtask%ssectionName,&
+!!$                'scoefficient', rtask%p_rform%Dcoefficients(i), iarrayindex=i)
+!!$          else
+!!$            ! Not all coefficients are constant. Thus, we create a
+!!$            ! function parser object and perform bilinear form
+!!$            ! evaluation based on a generic callback function
+!!$            allocate (rtask%p_rfparser)
+!!$            call fparser_create(rtask%p_rfparser, itermCount)
+!!$            
+!!$            ! Fill function parser with data
+!!$            do j=1,itermCount
+!!$              call parlst_getvalue_string(rparlist, rtask%ssectionName,&
+!!$                  'scoefficient', sparameter, isubString=j)
+!!$              call fparser_parseFunction(rtask%p_rfparser, j, trim(sparameter), (/'x','y','z'/))
+!!$            end do
+!!$            
+!!$            ! That`s it
+!!$            exit
+!!$          end if
+!!$        end do
+!!$      else
+!!$        rtask%p_rform%Dcoefficients(1:rtask%p_rform%itermCount) = 1.0_DP
+!!$      end if
+!!$
+!!$      ! Assemble vector data from linear form
+!!$      rcollection%p_rfparserQuickAccess1 => rtask%p_rfparser
+!!$      if (associated(p_rcubInfo)) then
+!!$        call linf_buildVectorScalar(rtask%p_rform, .true.,&
+!!$            rtask%p_rvectorScalarDest, p_rcubInfo,&
+!!$            problem_buildVectorSc_fparser_sim, rcollection)
+!!$      elseif (associated(rtask%p_rspatialDiscr)) then
+!!$        call linf_buildVectorScalar(rtask%p_rspatialDiscr,&
+!!$            rtask%p_rform, .true., rtask%p_rvectorScalarDest,&
+!!$            problem_buildVectorSc_fparser_sim, rcollection)
+!!$      else
+!!$        call output_line('Neither cubature info structure nor discretisation available',&
+!!$            OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVectorScalar')
+!!$        call sys_halt()
+!!$      end if
+!!$      
+!!$    end subroutine assembleScalarVector
+
+  end subroutine problem_updateGroupFEMBlock
 
   !*****************************************************************************
   
 !<subroutine>
 
-  subroutine problem_updateGroupFEMBlock2(rtasklist, iperformSpec)
+  subroutine problem_updateGroupFEM(rtasklist, iperformSpec)
 
 !<description>
-    ! This subroutine updates the block of group finite element sets
+    ! This subroutine updates the (block of group) finite element sets
     ! with the internal values assigned to the items of the task list.
 !</description>
 
 !<input>
     ! task list
-    type(t_groupFEMBlockTask), intent(in), target :: rtasklist
+    type(t_groupFEMTask), intent(in), target :: rtasklist
 
     ! If not present PROBACTION_PERFORM_ALWAYS is assumed
     integer(i32), intent(in), optional :: iperformspec
@@ -10818,13 +12482,13 @@ contains
 !!$      p_rtask => p_rtask%p_rnextTask
 !!$    end do taskloop
     
-  end subroutine problem_updateGroupFEMBlock2
+  end subroutine problem_updateGroupFEM
 
   !*****************************************************************************
   
 !<subroutine>
 
-  subroutine problem_clearGroupFEMBlockTL(p_rtasklist)
+  subroutine problem_clearGroupFEMTL(p_rtasklist)
 
 !<description>
     ! This subroutine clears the block of group finite element sets
@@ -10833,12 +12497,12 @@ contains
 
 !<input>
     ! task list
-    type(t_groupFEMBlockTask), pointer :: p_rtasklist
+    type(t_groupFEMTask), pointer :: p_rtasklist
 !</input>
 !</subroutine>
 
     ! local variables
-    type(t_groupFEMBlockTask), pointer :: p_rtask,p_rtaskSave
+    type(t_groupFEMTask), pointer :: p_rtask,p_rtaskSave
 
     p_rtask => p_rtasklist
     do while(associated(p_rtask))
@@ -10847,13 +12511,13 @@ contains
       deallocate(p_rtaskSave)
     end do
     
-  end subroutine problem_clearGroupFEMBlockTL
+  end subroutine problem_clearGroupFEMTL
 
   !*****************************************************************************
   
 !<subroutine>
 
-  subroutine problem_infoGroupFEMBlockTL(rtasklist)
+  subroutine problem_infoGroupFEMTL(rtasklist)
 
 !<description>
     ! This subroutine outputs information about the task list of
@@ -10862,12 +12526,12 @@ contains
 
 !<input>
     ! task list
-    type(t_groupFEMBlockTask), intent(in), target :: rtasklist
+    type(t_groupFEMTask), intent(in), target :: rtasklist
 !</input>
 !</subroutine>
 
     ! local variables
-    type(t_groupFEMBlockTask), pointer :: p_rtask
+    type(t_groupFEMTask), pointer :: p_rtask
 
     p_rtask => rtasklist
     do while(associated(p_rtask))
@@ -10875,18 +12539,18 @@ contains
       select case(p_rtask%ctask)
       case (PROBACTION_NONE)
         call output_lbrk()
-        call output_line ('GroupFEMBlockTask: DO NOTHING')
+        call output_line ('GroupFEMTask: DO NOTHING')
 
       case (PROBACTION_CREATE)
         call output_lbrk()
-        call output_line ('GroupFEMBlockTask: CREATE')
+        call output_line ('GroupFEMTask: CREATE')
 
       case (PROBACTION_DUPLICATE)
         call output_lbrk()
-        call output_line ('GroupFEMBlockTask: DUPLICATE')
+        call output_line ('GroupFEMTask: DUPLICATE')
 
       case default
-        call output_line ('GroupFEMBockTask: UNSUPPORTED')
+        call output_line ('GroupFEMTask: UNSUPPORTED')
       end select
 
 !!$      call output_line ('-----------------------')
@@ -10924,14 +12588,14 @@ contains
       p_rtask => p_rtask%p_rnextTask
     end do
     
-  end subroutine problem_infoGroupFEMBlockTL
+  end subroutine problem_infoGroupFEMTL
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine problem_initAFCstabAll(rproblemLevel,&
-      rparlist, ssectionName, p_rtasklist, rproblemTopLevel, iperformSpec)
+  subroutine problem_initAFCstabAll(rproblemLevel, rparlist,&
+      ssectionName, p_rtasklist, rproblemTopLevel, iperformSpec)
 
 !<description>
     ! This subroutine initialises all stabilisation structures of
@@ -10987,8 +12651,8 @@ contains
 
 !<subroutine>
 
-  subroutine problem_updateAFCstabAll(rproblemLevel,&
-      rparlist, ssectionName, p_rtasklist, rproblemTopLevel, iperformSpec)
+  subroutine problem_updateAFCstabAll(rproblemLevel, rparlist,&
+      ssectionName, p_rtasklist, rproblemTopLevel, iperformSpec)
 
 !<description>
     ! This subroutine the task list for all stabilisation structures
@@ -11114,8 +12778,8 @@ contains
 
 !<subroutine>
 
-  recursive subroutine problem_updateAFCstab1(rproblemLevel,&
-      rafcstab, rparlist, ssectionName, p_rtasklist, rproblemTopLevel, iperformSpec)
+  recursive subroutine problem_updateAFCstab1(rproblemLevel, rafcstab,&
+      rparlist, ssectionName, p_rtasklist, rproblemTopLevel, iperformSpec)
 
 !<description>
     ! This subroutine generates the task list to initialise/update the
@@ -11185,16 +12849,17 @@ contains
 !!$    if (trim(saction) .eq. 'NONE') then
 !!$      !-------------------------------------------------------------------------
 !!$      ! Do nothing
+!!$      return
 !!$
 !!$    elseif (trim(saction) .eq. 'CREATE') then
 !!$
 !!$      !-------------------------------------------------------------------------
 !!$      ! Create scalar vector
 !!$      !
-!!$      ! SYNTAX: vectorscalar(n) =
+!!$      ! SYNTAX: vectorscalar(N) =
 !!$      !           VectorScalar1
 !!$      !                ...
-!!$      !           VectorScalar2
+!!$      !           VectorScalarN
 !!$
 !!$      ! Create new task
 !!$      nullify(rtask)
@@ -11220,22 +12885,7 @@ contains
 !!$      end if
 !!$
 !!$      ! When should we perform this task?
-!!$      call sys_countTokens(sperform, ntoken, ',', .false.)
-!!$      istart = 1
-!!$      do itoken=1,max(ntoken,1)
-!!$        call sys_getNextToken (sperform, sperf, istart, ',', .false.)
-!!$        if (trim(adjustl(sperf)) .eq. 'INIT') then
-!!$          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_INIT)
-!!$        elseif (trim(adjustl(sperf)) .eq. 'UPDATE') then
-!!$          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_UPDATE)
-!!$        elseif (trim(adjustl(sperf)) .eq. 'ALWAYS') then
-!!$          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_ALWAYS)
-!!$        else
-!!$          call output_line('Unsupported perform type: '//trim(sperf),&
-!!$              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVectorScalar')
-!!$          call sys_halt()
-!!$        end if
-!!$      end do
+!!$      rtask%iperform = problem_getIperform(sperform)
 !!$      
 !!$      ! Get optional parameters
 !!$    call parlst_getvalue_int(rparlist, ssectionName,&
@@ -11437,7 +13087,7 @@ contains
 !!$          rtask%p_rproblemLevelDest => rproblemLevel
 !!$
 !!$        else
-!!$          call output_line('Either vectorscalar of vectorblock must be present',&
+!!$          call output_line('Either scalar or block vector must be present',&
 !!$              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVectorScalar')
 !!$          call sys_halt()
 !!$        end if
@@ -11456,22 +13106,7 @@ contains
 !!$      end if
 !!$
 !!$      ! When should we perform this task?
-!!$      call sys_countTokens(sperform, ntoken, ',', .false.)
-!!$      istart = 1
-!!$      do itoken=1,max(ntoken,1)
-!!$        call sys_getNextToken (sperform, sperf, istart, ',', .false.)
-!!$        if (trim(adjustl(sperf)) .eq. 'INIT') then
-!!$          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_INIT)
-!!$        elseif (trim(adjustl(sperf)) .eq. 'UPDATE') then
-!!$          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_UPDATE)
-!!$        elseif (trim(adjustl(sperf)) .eq. 'ALWAYS') then
-!!$          rtask%iperform = ior(rtask%iperform, PROBACTION_PERFORM_ALWAYS)
-!!$        else
-!!$          call output_line('Unsupported perform type: '//trim(sperf),&
-!!$              OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVectorScalar')
-!!$          call sys_halt()
-!!$        end if
-!!$      end do
+!!$      rtask%iperform = problem_getIperform(sperform)
 !!$          
 !!$      ! Get optional parameters
 !!$      call parlst_getvalue_string(rparlist, ssectionName,&
@@ -12026,8 +13661,55 @@ contains
       p_rtask => p_rtask%p_rnextTask
     end do
     
-  end subroutine problem_infoAFCstabTL
+  end subroutine problem_infoAFCstabTL 
 
-  
+  !*****************************************************************************
+  ! AUXILIARY SUBROUTINES AND FUNCTIONS
+  !*****************************************************************************
+
+!<function>
+
+  function problem_getIperform(sstring) result(iperform)
+
+!<description>
+    ! This functions parses the given string for keywords like 'INIT',
+    ! 'UPDATE', 'ALWAYS' to determine when to perform a particular action
+!</description>
+
+!<input>
+    ! Character string from parameter file
+    character(len=*), intent(in) :: sstring
+!</input>
+
+!<result>
+    ! One of the PROBACTION_PERFORM_xxx constants
+    integer :: iperform
+!</result>
+!</function>
+
+    ! local variables
+    character(len=SYS_STRLEN) :: sperform
+    integer :: istart,itoken,ntoken
+
+    iperform = PROBACTION_PERFORM_NEVER
+
+    call sys_countTokens(sstring, ntoken, ',', .false.)
+    istart = 1
+    do itoken=1,max(ntoken,1)
+      call sys_getNextToken (sstring, sperform, istart, ',', .false.)
+      if (trim(adjustl(sperform)) .eq. 'INIT') then
+        iperform = ior(iperform, PROBACTION_PERFORM_INIT)
+      elseif (trim(adjustl(sperform)) .eq. 'UPDATE') then
+        iperform = ior(iperform, PROBACTION_PERFORM_UPDATE)
+      elseif (trim(adjustl(sperform)) .eq. 'ALWAYS') then
+        iperform = ior(iperform, PROBACTION_PERFORM_ALWAYS)
+      else
+        call output_line('Unsupported perform type: '//trim(sperform),&
+            OU_CLASS_ERROR,OU_MODE_STD,'problem_getIperform')
+        call sys_halt()
+      end if
+    end do
+    
+  end function problem_getIperform
 
 end module problem
