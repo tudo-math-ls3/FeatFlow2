@@ -35,7 +35,10 @@
 !#        whether to write only to the log file or to both, log file
 !#        and terminal.
 !#
-!# 7.) output_done
+!# 7.) output_multiline
+!#     -> Writes a formatted message to the terminal and/or the log file.
+!#
+!# 8.) output_done
 !#     -> Closes the log file, releases all ressources in use.
 !#
 !# HOW TO USE:
@@ -414,6 +417,7 @@ module genoutput
   public :: output_lbrk
   public :: output_simple
   public :: output_simple_sep
+  public :: output_multiline
   public :: output_done
 
 contains
@@ -606,6 +610,252 @@ contains
       ! No benchmark output
       OU_BENCHLOG = 0
 
+    end if
+
+  end subroutine
+
+!************************************************************************************
+
+!<subroutine>
+
+  subroutine output_multiline (smessage, &
+                               coutputClass, coutputMode, ssubroutine, &
+                               bnolinebreak, bnotrim, cdateTimeLogPolicy)
+
+!<description>
+  ! Writes a formatted output message to the terminal, log file or error log
+  ! file, depending on the input parameters.
+  ! smessage is the message to be written out.
+  ! coutputMode decides (if given) about whether the output if written to file,
+  ! terminal or both.
+  ! coutputClass classifies (if given) the message as standard message, trace
+  ! or error message.
+!</description>
+
+!<input>
+  ! The message to be written out.
+  character(LEN=*), intent(in) :: smessage
+
+  ! OPTIONAL: Output mode. One of the OU_MODE_xxxx constants. If not specified,
+  ! OU_MODE_STD is assumed.
+  integer(I32), intent(in), optional :: coutputMode
+
+  ! OPTIONAL: Output classification. One of the OU_CLASS_xxxx constants.
+  ! If not specified, OU_CLASS_MSG is assumed.
+  integer, intent(in), optional :: coutputClass
+
+  ! OPTIONAL: Name of the subroutine that calls this function
+  character(LEN=*), intent(in), optional :: ssubroutine
+
+  ! OPTIONAL: When specifying bnolinebreak=TRUE, the output routine will
+  ! not perform a line break after printing.
+  logical, intent(in), optional :: bnolinebreak
+
+  ! OPTIONAL: When specifying bnotrim=TRUE, the output routine will
+  ! not trim the string when printing. This does only work for
+  ! coutputClass=OU_CLASS_MSG and coutputClass=OU_CLASS_ERROR
+  ! (or if coutputClass is not specified)!
+  logical, intent(in), optional :: bnotrim
+
+  ! OPTIONAL: Date/time appending flag. Allows to configure the
+  ! output submodule to automatically add the current date/time to the output.
+  ! =OU_DTP_NONE:    do not add date/time (standard).
+  ! =OU_DTP_ADDDATE: add time to the output.
+  ! =OU_DTP_ADDTIME:    add date to the output.
+  ! =OU_DTP_ADDDATETIME:    add both, date and time to the output.
+  ! If the parameter is not present, cdefaultDateTimeLogPolicy will be used
+  ! as default parameter.
+  integer, intent(in), optional :: cdateTimeLogPolicy
+
+!</input>
+
+!</subroutine>
+
+  ! local variables
+  integer(I32) :: coMode
+  integer :: coClass, iofChannel, iotChannel
+  integer :: iindent,istart,ilinelen
+  logical :: bntrim, bnnewline
+  character(LEN=len(smessage)+20+SYS_NAMELEN+10+8+3) :: smsg
+
+    ! Get the actual parameters.
+
+    coMode = OU_MODE_STD
+    coClass = OU_CLASS_MSG
+    bntrim = .false.
+    bnnewline = .false.
+    iindent = min(255,output_iautoOutputIndent)
+
+    if (present(coutputMode))  coMode = coutputMode
+    if (present(coutputClass)) coClass = coutputClass
+    if (present(bnotrim))      bntrim = bnotrim
+    if (present(bnolinebreak)) bnnewline = bnolinebreak
+
+    ! Get the file and terminal output channel
+    iotChannel = OU_TERMINAL
+    if ((coClass .eq. OU_CLASS_ERROR) .or. &
+        (coClass .eq. OU_CLASS_WARNING)) iotChannel = OU_ERROR
+
+    iofChannel = OU_LOG
+    if ((coClass .eq. OU_CLASS_ERROR) .or. &
+        (coClass .eq. OU_CLASS_WARNING)) iofChannel = OU_ERRORLOG
+
+    if (bntrim .and. &
+        ((coClass .eq. OU_CLASS_MSG) .or. &
+         (coClass .eq. OU_CLASS_WARNING) .or. &
+         (coClass .eq. OU_CLASS_ERROR)) ) then
+
+      ! Where to write the message to?
+      if ((iand(coMode,OU_MODE_TERM) .ne. 0) .and. (iotChannel .gt. 0)) then
+        istart=1; ilinelen=index(smessage,"\n")
+        do while(ilinelen.ne.0)
+          if (ilinelen.eq.1) then
+            write (iotChannel,'(A)') ''
+            istart=istart+ilinelen+1
+          else
+            write (iotChannel,'(A)',ADVANCE='NO') semptystring(1:iindent)//smessage(istart:istart+ilinelen-2)
+            istart=istart+ilinelen-1
+          end if
+          ilinelen=index(smessage(istart:),"\n")
+        end do
+        if (bnnewline) then
+          write (iotChannel,'(A)',ADVANCE='NO') semptystring(1:iindent)//smessage(istart:)
+        else
+          write (iotChannel,'(A)') semptystring(1:iindent)//smessage(istart:)
+        end if
+      end if
+
+      ! Output to log file?
+      if ((iand(coMode,OU_MODE_LOG) .ne. 0) .and. (iofChannel .gt. 0)) then
+        istart=1; ilinelen=index(smessage,"\n")
+        do while(ilinelen.ne.0)
+          if (ilinelen.eq.1) then
+            write (iofChannel,'(A)') ''
+            istart=istart+ilinelen+1
+          else
+            write (iofChannel,'(A)',ADVANCE='NO') semptystring(1:iindent)//smessage(istart:istart+ilinelen-2)
+            istart=istart+ilinelen-1
+          end if
+          ilinelen=index(smessage(istart:),"\n")
+        end do
+        if (bnnewline) then
+          write (iofChannel,'(A)',ADVANCE='NO') semptystring(1:iindent)//smessage(istart:)
+        else
+          write (iofChannel,'(A)') semptystring(1:iindent)//smessage(istart:)
+        end if
+      end if
+
+      ! Output to the benchmark log file?
+      if (OU_BENCHLOG .gt. 0) then
+        if ((cbenchLogPolicy .eq. 2) .or. &
+            (cbenchLogPolicy .eq. 1) .and. (iand(coMode,OU_MODE_BENCHLOG) .ne. 0)) then
+          istart=1; ilinelen=index(smessage,"\n")
+          do while(ilinelen.ne.0)
+            if (ilinelen.eq.1) then
+              write (OU_BENCHLOG,'(A)') ''
+              istart=istart+ilinelen+1
+            else
+              write (OU_BENCHLOG,'(A)',ADVANCE='NO') semptystring(1:iindent)//smessage(istart:istart+ilinelen-2)
+              istart=istart+ilinelen-1
+            end if
+            ilinelen=index(smessage(istart:),"\n")
+          end do
+          if (bnnewline) then
+            write (OU_BENCHLOG,'(A)',ADVANCE='NO') semptystring(1:iindent)//smessage(istart:)
+          else
+            write (OU_BENCHLOG,'(A)') semptystring(1:iindent)//smessage(istart:)
+          end if
+        end if
+      end if
+
+    else
+
+      istart=1; ilinelen=index(smessage,"\n")
+      do while(ilinelen.ne.0)
+        if (ilinelen.eq.1) then
+          ! Build the actual error message
+          smsg = output_reformatMsg (semptystring(1:iindent), &
+              coutputClass, ssubroutine, cdateTimeLogPolicy)
+
+          ! Where to write the new line to?
+          if ((iand(coMode,OU_MODE_TERM) .ne. 0) .and. (iotChannel .gt. 0)) then
+            write (iotChannel,'(A)') trim(smsg)
+          end if
+          
+          ! Output to log file?
+          if ((iand(coMode,OU_MODE_LOG) .ne. 0) .and. (iofChannel .gt. 0)) then
+            write (iofChannel,'(A)') trim(smsg)
+          end if
+          
+          ! Output to benchmark log file?
+          if (OU_BENCHLOG .gt. 0) then
+            if ((cbenchLogPolicy .eq. 2) .or. &
+                (cbenchLogPolicy .eq. 1) .and. (iand(coMode,OU_MODE_BENCHLOG) .ne. 0)) then
+              write (OU_BENCHLOG,'(A)') trim(smsg)
+            end if
+          end if
+          istart=istart+ilinelen+1
+        else
+          ! Build the actual error message
+          smsg = output_reformatMsg (semptystring(1:iindent)//smessage(istart:istart+ilinelen-2), &
+              coutputClass, ssubroutine, cdateTimeLogPolicy)
+          
+          ! Where to write the message to?
+          if ((iand(coMode,OU_MODE_TERM) .ne. 0) .and. (iotChannel .gt. 0)) then
+            write (iotChannel,'(A)',ADVANCE='NO') trim(smsg)
+          end if
+          
+          ! Output to log file?
+          if ((iand(coMode,OU_MODE_LOG) .ne. 0) .and. (iofChannel .gt. 0)) then
+            write (iofChannel,'(A)',ADVANCE='NO') trim(smsg)
+          end if
+          
+          ! Output to benchmark log file?
+          if (OU_BENCHLOG .gt. 0) then
+            if ((cbenchLogPolicy .eq. 2) .or. &
+                (cbenchLogPolicy .eq. 1) .and. (iand(coMode,OU_MODE_BENCHLOG) .ne. 0)) then
+              write (OU_BENCHLOG,'(A)',ADVANCE='NO') trim(smsg)
+            end if
+          end if
+          istart=istart+ilinelen-1
+        end if
+        ilinelen=index(smessage(istart:),"\n")
+      end do
+      
+      ! Build the actual error message
+      smsg = output_reformatMsg (semptystring(1:iindent)//smessage(istart:), &
+          coutputClass, ssubroutine, cdateTimeLogPolicy)
+      
+      ! Where to write the message to?
+      if ((iand(coMode,OU_MODE_TERM) .ne. 0) .and. (iotChannel .gt. 0)) then
+        if (bnnewline) then
+          write (iotChannel,'(A)',ADVANCE='NO') trim(smsg)
+        else
+          write (iotChannel,'(A)') trim(smsg)
+        end if
+      end if
+      
+      ! Output to log file?
+      if ((iand(coMode,OU_MODE_LOG) .ne. 0) .and. (iofChannel .gt. 0)) then
+        if (bnnewline) then
+          write (iofChannel,'(A)',ADVANCE='NO') trim(smsg)
+        else
+          write (iofChannel,'(A)') trim(smsg)
+        end if
+      end if
+      
+      ! Output to benchmark log file?
+      if (OU_BENCHLOG .gt. 0) then
+        if ((cbenchLogPolicy .eq. 2) .or. &
+            (cbenchLogPolicy .eq. 1) .and. (iand(coMode,OU_MODE_BENCHLOG) .ne. 0)) then
+          if (bnnewline) then
+            write (OU_BENCHLOG,'(A)',ADVANCE='NO') trim(smsg)
+          else
+            write (OU_BENCHLOG,'(A)') trim(smsg)
+          end if
+        end if
+      end if
+      
     end if
 
   end subroutine
