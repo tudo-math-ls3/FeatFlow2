@@ -1,6 +1,32 @@
 #################################################
 # Input file for FE comparer.
 #################################################
+# The FE-comparer reads in one or more solutions as defined in
+# the sections SOLUTION1, SOLUTION2, SOLUTION3,...
+# The solutions can be based on an arbitrary FE space,
+# only the underlying mesh (and domain) have to be the same.
+#
+# With these solutions, algebraic operations according
+# to "ccomputation" are performed. These algebraic
+# operations allow to switch the finite element space
+# and the level.
+#
+# The result of the computation is always computed to
+# the solution configured by the section SOLUTION0.
+# Usually, this section configures a piecewise discontinuous
+# finite element space, i.e., a DG space.
+#
+# At the end, the solution SOLUTION0 is postprocessed.
+# This can include, e.g., the output in a VTK file
+# or the computation of the norm of this vector.
+#
+# FEcomparer is designed to write discontinuous (DG) Q1
+# elements in their original form. Therefore, if
+# SOLUTION0 is configured as a DG-Q1 element at a high
+# level, the output in a VTK file will be the original
+# FE solution (approximated with small linear patches).
+#################################################
+
 
 # Name of the underlying parametrisation
 sparametrisation = "pre/sq_bench.prm"
@@ -65,10 +91,11 @@ cnonstationary = 0
 # =   1: 2D mesh, Scalar solution, P1
 # =   2: 2D mesh, Scalar solution, P2
 # =   3: 2D mesh, Scalar solution, P3
-# =  10: 2D mesh, Scalar solution, Q1
+# =  10: 2D mesh, Scalar solution, Q0
 # =  11: 2D mesh, Scalar solution, Q1
 # =  13: 2D mesh, Scalar solution, Q2
 # =  14: 2D mesh, Scalar solution, Q3
+# = 111: 2D mesh, Scalar solution, Q1, discontinuous
 # =1010: 2D mesh, 2D Velocity/pressure, Q1/Q1/Q1
 # =1012: 2D mesh, 2D Velocity/pressure, Q2/Q2/QP1
 # =1013: 2D mesh, 2D Velocity/pressure, Q3/Q3/DCQP2 (nonparametric)

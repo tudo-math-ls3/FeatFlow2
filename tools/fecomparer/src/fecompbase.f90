@@ -221,6 +221,13 @@ contains
           rtriangulation, rboundary)
 
     ! ----------------------------------------
+    ! 2D mesh, Scalar solution, Q1
+    case (111)
+      call spdiscr_initBlockDiscr (rdiscr,1,rtriangulation, rboundary)
+      call spdiscr_initDiscr_simple (rdiscr%RspatialDiscr(1),EL_DG_Q1_2D,&
+          rtriangulation, rboundary)
+
+    ! ----------------------------------------
     ! 2D mesh, 2D Velocity/pressure, Q1/Q1/Q1
     case (1011)
       call spdiscr_initBlockDiscr (rdiscr,3,rtriangulation, rboundary)
