@@ -591,7 +591,11 @@ contains
 
     ! Get the source and destination vector.
     p_rsource => rproblem%Rsolutions(isource)
-    p_rdest => rproblem%Rsolutions(idest)
+    if (idest .gt. 0) then
+      p_rdest => rproblem%Rsolutions(idest)
+    else
+      p_rdest => rproblem%rrefSolution
+    end if
     
     ! Is the destination vector discontinuous Q1?
     if (p_rsource%cfespace .ne. p_rdest%cfespace) then
