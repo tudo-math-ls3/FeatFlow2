@@ -8560,18 +8560,18 @@ contains
 
     ! Local variables
     integer :: ivec
-    real(DP) :: dint
+    real(DP), dimension(size(Dintvalues)) :: DintVals
   
-    Dintvalues(1) = 0.0_DP
+    Dintvalues(:) = 0.0_DP
 
     ! Loop through all provided FEM functions
     do ivec = 1,revalVectors%ncount
     
       ! Calculate the integral, sum up
-      call bma_docalc_L2norm(Dintvalues,rassemblyData,rintAssembly,&
+      call bma_docalc_L2norm(DintVals,rassemblyData,rintAssembly,&
           npointsPerElement,nelements,revalVectors%p_RvectorData(ivec))
           
-      Dintvalues(1) = Dintvalues(1) + dint
+      Dintvalues(:) = Dintvalues(:) + DintVals(:)
       
     end do ! ivec
 
@@ -8896,18 +8896,18 @@ contains
 
     ! Local variables
     integer :: ivec
-    real(DP) :: dint
+    real(DP), dimension(size(Dintvalues)) :: DintVals
   
-    Dintvalues(1) = 0.0_DP
+    Dintvalues(:) = 0.0_DP
 
     ! Loop through all provided FEM functions
     do ivec = 1,revalVectors%ncount
     
       ! Calculate the integral, sum up
-      call bma_docalc_H1norm(Dintvalues,rassemblyData,rintAssembly,&
+      call bma_docalc_H1norm(DintVals,rassemblyData,rintAssembly,&
           npointsPerElement,nelements,revalVectors%p_RvectorData(ivec))
           
-      Dintvalues(1) = Dintvalues(1) + dint
+      Dintvalues(:) = Dintvalues(:) + DintVals(:)
       
     end do ! ivec
 
