@@ -1575,22 +1575,22 @@ contains
     ! they need to be updated. Thus, we set bupdateInternals=.true.
 
     ! 1) Block and spatial Discretisation structures
-    call recursiveInitDiscr(rproblem, rproblem, rproblemDescriptor, rparlist)    
+    call recursiveInitDiscr(rproblem, rproblem, rproblemDescriptor, rparlist)
 
     ! 2) Cubature info structures
-    call recursiveInitCubInfo(rproblem, rproblem, rproblemDescriptor, rparlist)    
+    call recursiveInitCubInfo(rproblem, rproblem, rproblemDescriptor, rparlist)
 
     ! 3) Scalar and block matrices
-    call recursiveInitMatrix(rproblem, rproblem, rproblemDescriptor, rparlist)    
+    call recursiveInitMatrix(rproblem, rproblem, rproblemDescriptor, rparlist)
 
     ! 4) Scalar and block vectors
-    call recursiveInitVector(rproblem, rproblem, rproblemDescriptor, rparlist)    
+    call recursiveInitVector(rproblem, rproblem, rproblemDescriptor, rparlist)
 
     ! 5) Blocks of group finite element structures
-    call recursiveInitGroupFEMBlock(rproblem, rproblem, rproblemDescriptor, rparlist)    
+    call recursiveInitGroupFEM(rproblem, rproblem, rproblemDescriptor, rparlist)
 
     ! 6) Stabilisation structures of AFC-type
-    call recursiveInitAFCstab(rproblem, rproblem, rproblemDescriptor, rparlist)    
+    call recursiveInitAFCstab(rproblem, rproblem, rproblemDescriptor, rparlist)
 
     ! That`s it
     call problem_releaseDescriptor(rproblemDescriptor)
@@ -1761,7 +1761,7 @@ contains
       p_rproblemLevel => rproblem%p_rproblemLevelMax
       do while(associated(p_rproblemLevel))
         
-        ! Scalar and/or block matrices?
+        ! Scalar and/or block vector?
         if ((rproblemDescriptor%nvectorScalar .gt. 0) .or.&
             (rproblemDescriptor%nvectorBlock  .gt. 0)) then
           call problem_updateVectorAll(p_rproblemLevel,&
@@ -1792,7 +1792,7 @@ contains
     !**************************************************************
     ! Internal routine which initialises the blocks of group finite
     ! element structures for the entire problem structure
-    recursive subroutine recursiveInitGroupFEMBlock(rproblemTopLevel,&
+    recursive subroutine recursiveInitGroupFEM(rproblemTopLevel,&
         rproblem, rproblemDescriptor, rparlist)
 
       type(t_problem), intent(inout) :: rproblemTopLevel,rproblem
@@ -1809,8 +1809,8 @@ contains
       p_rproblemLevel => rproblem%p_rproblemLevelMax
       do while(associated(p_rproblemLevel))
         
-        ! Scalar and/or block matrices?
-        if (rproblemDescriptor%nafcstab .gt. 0) then
+        ! Group finite element structures?
+        if (rproblemDescriptor%ngroupfemBlock .gt. 0) then
           call problem_updateGroupFEMBlockAll(p_rproblemLevel,&
               rparlist, rproblem%cproblem, rproblemTopLevel%p_rgroupFEMBlockTasklist,&
               rproblemTopLevel)
@@ -1826,7 +1826,7 @@ contains
         p_rproblem => rproblem%p_rproblemFirst
         do i = 1, size(rproblemDescriptor%Rsubproblem)
           
-          call recursiveInitVector(rproblemTopLevel, p_rproblem,&
+          call recursiveInitGroupFEM(rproblemTopLevel, p_rproblem,&
               rproblemDescriptor%Rsubproblem(i), rparlist)
           
           ! Proceed to next subproblem
@@ -1834,7 +1834,7 @@ contains
         end do
       end if
 
-    end subroutine recursiveInitGroupFEMBlock
+    end subroutine recursiveInitGroupFEM
 
     !**************************************************************
     ! Internal routine which initialises the stabilisation structures
@@ -1873,7 +1873,7 @@ contains
         p_rproblem => rproblem%p_rproblemFirst
         do i = 1, size(rproblemDescriptor%Rsubproblem)
           
-          call recursiveInitVector(rproblemTopLevel, p_rproblem,&
+          call recursiveInitAFCstab(rproblemTopLevel, p_rproblem,&
               rproblemDescriptor%Rsubproblem(i), rparlist)
           
           ! Proceed to next subproblem
@@ -3765,8 +3765,11 @@ contains
       !-------------------------------------------------------------------------
       ! Duplicate block discretisation structure
       !
-      ! SYNTAX: discretisation = name,idiscretisation:#,ilev:#,...
-      !                               ifirstblock:#,ilastblock:#
+      ! SYNTAX: discretisation = problem:[name],...
+      !                          idiscr(etisation):#,...
+      !                          ilev:#,...
+      !                          ifirstblock:#,...
+      !                          ilastblock:#
       !
       ! If ilev is not given then the level of the current problem
       ! level structure is adopted. If ifirstblock and/or ilastblock
@@ -3894,6 +3897,74 @@ contains
     else
       call output_line('Unsupported action: '//trim(saction),&
           OU_CLASS_ERROR,OU_MODE_STD,'problem_updateDiscr')
+      
+      call output_multiline('\nNAME: BlockDiscretisation')
+      call output_separator(OU_SEP_MINUS)
+      call output_multiline('\nMandatory parameters'//&
+          '\n\nSPERFORM   indicates when to perform the action'//&
+          '\n\n  NEVER       never'//&
+          '\n  INIT        on init only'//&
+          '\n  UPDATE      on update only'//&
+          '\n  ALWAYS      on init and update'//&
+          '\n\nSACTION    action to be performed'//&
+          '\n\n  NONE        do nothing'//&
+          '\n  CREATE      create block discretisation'//&
+          '\n  DUPLICATE   duplicate block discretisation')
+      call output_multiline('\nExamples: SACTION=CREATE')
+      call output_separator(OU_SEP_MINUS)
+      call output_multiline('[BlockDiscr1]'//&
+          '\nsaction        = create'//&
+          '\nsperform       = always'//&
+          '\ndiscretisation = spatialdiscretisation:SpatialDiscr1'//&
+          '\n\n[SpatialDiscr1]'//&
+          '\ncelement = EL_P1_2D'//&
+          '\n\n     Creates a 1-block discretisation from the spatial discretisation'//&
+          '\n     structure described further in section [SpatialDisc].')
+      call output_separator(OU_SEP_MINUS)
+      call output_multiline('[BlockDiscr2]'//&
+          '\nsaction           = create'//&
+          '\nsperform          = always'//&
+          '\ndiscretisation(2) ='//&
+          '\n     spatialdiscretisation:SpatialDiscr1'//&
+          '\n     spatialdiscretisation:SpatialDiscr2'//&
+          '\n\n     Creates a 2-block discretisation from the spatial discretisation'//&
+          '\n     structures described further in sections [SpatialDiscr1] and [SpatialDiscr2].')
+      call output_separator(OU_SEP_MINUS)
+      call output_multiline('[BlockDiscr2]'//&
+          '\nsaction           = create'//&
+          '\nsperform          = always'//&
+          '\ndiscretisation(2) ='//&
+          '\n     blockdiscretisation:BlockDiscr1'//&
+          '\n     spatialdiscretisation:SpatialDiscr1'//&
+          '\n\n     Creates an n-block discretisation from the block discretisation'//&
+          '\n     structures described further in section [BlockDiscr1] and the spatial'//&
+          '\n     discretisation structure described further in section [SpatialDiscr1].')
+      call output_multiline('\nExamples: SACTION=DUPLICATE')
+      call output_separator(OU_SEP_MINUS)
+      call output_multiline('[BlockDiscr3]'//&
+          '\nsaction        = duplicate'//&
+          '\nsperform       = always'//&
+          '\ndiscretisation = problem:Transport,idiscr:1,ifirstblock:1,ilastblock:2,copy:yes')
+      call output_separator(OU_SEP_MINUS)
+      call output_multiline('\ndiscretisation ='//&
+          '\n     PROBLEM,'//&
+          '\n          name of the problem'//&
+          '\n          (if not given the name of the current problem is used)'//&
+          '\n     ILEV,'//&
+          '\n          level from which to duplicate'//&
+          '\n          (if not given the current problem level is used)'//&
+          '\n     IDISCR(ETISATION),'//&
+          '\n          number of the block discretisation'//&
+          '\n     IFIRSTBLOCK,'//&
+          '\n          first block that will be duplicated'//&
+          '\n          (if not given we start with the first block)'//&
+          '\n     ILASTBLOCK,'//&
+          '\n          last block that will be duplicated'//&
+          '\n          (if not given we end with the last block)'//&
+          '\n     SHARE/COPY,'//&
+          '\n          share/copy content of the discretisation'//&
+          '\n          (if neither of the above is given content is shared)')
+      call output_multiline('\n     Duplicates blocks of an existing block discretisation structure')
       call sys_halt()
     end if
     
@@ -4489,7 +4560,9 @@ contains
       !-------------------------------------------------------------------------
       ! Duplicate cubature info structure
       !
-      ! SYNTAX: cubatureinfo = name,icubatureinfo:#,ilev:#,...
+      ! SYNTAX: cubatureinfo = problem:[name],...
+      !                        icub(ature)info:#,...
+      !                        ilev:#
       !
       ! If ilev is not given then the level of the current problem
       ! level structure is adopted.
@@ -4599,6 +4672,69 @@ contains
     else
       call output_line('Unsupported action: '//trim(saction),&
           OU_CLASS_ERROR,OU_MODE_STD,'problem_updateCubInfo1')
+
+      call output_multiline('\nNAME: CubatureInfo')
+      call output_separator(OU_SEP_MINUS)
+      call output_multiline('\nMandatory parameters'//&
+          '\n\nSPERFORM   indicates when to perform the action'//&
+          '\n\n  NEVER       never'//&
+          '\n  INIT        on init only'//&
+          '\n  UPDATE      on update only'//&
+          '\n  ALWAYS      on init and update'//&
+          '\n\nSACTION    action to be performed'//&
+          '\n\n  NONE        do nothing'//&
+          '\n  CREATE      create cubature info structure'//&
+          '\n  DUPLICATE   duplicate cubature info structure')
+      call output_multiline('\nExamples: SACTION=CREATE')
+      call output_separator(OU_SEP_MINUS)
+      call output_multiline('[CubInfo]'//&
+          '\nsaction        = create'//&
+          '\nsperform       = always'//&
+          '\nscubType       = AUTO_G3'//&
+          '\nnlevels        = 0'//&
+          '\ndiscretisation = problem:Transport,idiscr:2,iblock:1'//&
+          '\n\n     Creates a cubature info structure using automatic 3-point'//&
+          '\n     Gauss cubature formula without summation. The first spatial'//&
+          '\n     discretisation of the second block discretisation of the'//&
+          '\n     problem specified further in section [Transport] is used.')
+      call output_separator(OU_SEP_MINUS)
+      call output_multiline('ccubtype/scubtype'//&
+          '\n     number/name of the cubature formula (if not given then CUB_AUTO is used)')
+      call output_multiline('\nnlevels'//&
+          '\n     number of levels of summed cubature'//&
+          '\n     (if not given or zero than no summed cubature is used)')
+      call output_multiline('\ndiscretisation ='//&
+          '\n     PROBLEM,'//&
+          '\n          name of the problem'//&
+          '\n          (if not given the name of the current problem is used)'//&
+          '\n     ILEV,'//&
+          '\n          level from which the block discretisation is used'//&
+          '\n          (if not given the current problem level is used)'//&
+          '\n     IDISCR(ETISATION),'//&
+          '\n          number of the block discretisation'//&
+          '\n          (if not given the first block discretisation is used)'//&
+          '\n     IBLOCK,'//&
+          '\n          spatial discretisation block of the discretisation'//&
+          '\n          (if not given the first block is used)')
+      call output_multiline('\nExamples: SACTION=DUPLICATE')
+      call output_separator(OU_SEP_MINUS)
+      call output_multiline('[CubInfo]'//&
+          '\nsaction      = duplicate'//&
+          '\nsperform     = always'//&
+          '\ncubatureinfo = problem:Transport,icubatureinfo:1'//&
+          '\n\n     Duplicates the first cubature info structure from the given'//&
+          '\n     problem specified further in section [Transport].')
+      call output_separator(OU_SEP_MINUS)
+      call output_multiline('cubatureinfo ='//&
+          '\n     PROBLEM,'//&
+          '\n          name of the problem'//&
+          '\n          (if not given the name of the current problem is used)'//&
+          '\n     ILEV,'//&
+          '\n          level from which the cubature infor structure is used'//&
+          '\n          (if not given the current problem level is used)'//&
+          '\n     ICUB(ATURE)INFO,'//&
+          '\n          number of the cubature info structure'//&
+          '\n          (if not given the first cubature infor structure is used)')
       call sys_halt()
     end if
     
@@ -5282,8 +5418,14 @@ contains
       !-------------------------------------------------------------------------
       ! Duplicate scalar matrix or submatrix of a block matrix
       !
-      ! SYNTAX: matrixscalar = name,imatrix:#,ilev:#,...
-      !     OR  matrixblock  = name,imatrix:#,ilev:#,iblockrow:#,iblockcol:#
+      ! SYNTAX: matrixscalar = problem:[name],...
+      !                        imatrix:#,...
+      !                        ilev:#
+      !     OR  matrixblock  = problem:[name],...
+      !                        imatrix:#,...
+      !                        ilev:#,...
+      !                        iblockrow:#,...
+      !                        iblockcol:#
       !
       ! If ilev is not given then the level of the current problem
       ! level structure is adopted. If iblockrow and/or iblockcol are
@@ -5500,6 +5642,117 @@ contains
     else
       call output_line('Unsupported action: '//trim(saction),&
           OU_CLASS_ERROR,OU_MODE_STD,'problem_updateMatrixScalar')
+
+      call output_multiline('\nNAME: MatrixScalar')
+      call output_separator(OU_SEP_MINUS)
+      call output_multiline('\nMandatory parameters'//&
+          '\n\nSPERFORM   indicates when to perform the action'//&
+          '\n\n  NEVER       never'//&
+          '\n  INIT        on init only'//&
+          '\n  UPDATE      on update only'//&
+          '\n  ALWAYS      on init and update'//&
+          '\n\nSACTION    action to be performed'//&
+          '\n\n  NONE        do nothing'//&
+          '\n  CREATE      create block discretisation'//&
+          '\n  DUPLICATE   duplicate block discretisation')
+      call output_multiline('\nExamples: SACTION=CREATE')
+      call output_separator(OU_SEP_MINUS)
+      call output_multiline('[ScalarMatrix]'//&
+          '\nsaction                 = create'//&
+          '\nsperform                = always'//&
+          '\nsmatrixformat           = MATRIX9INTL'//&
+          '\nsinterleavematrixformat = MATRIXD'//&
+          '\nsdatatype               = DOUBLE'//&
+          '\nnvar                    = 4'//&
+          '\ndscalefactor            = -1.0'//&
+          '\ndiscretisationtest      = problem:Transport,idiscr:2,iblock:1'//&
+          '\ndiscretisationtrial     = problem:Transport,idiscr:1,iblock:1'//&
+          '\n\n     Creates a scalar interleaved matrix stored in format 9.'//&
+          '\n     Each matrix position stores a double-valued 4x4 diagonal matrix.'//&
+          '\n     The discretisations used for trial and test spaces are different'//&
+          '\n     so this matrix may not be a square matrix. Whenever the matrix'//&
+          '\n     is applied, it is scaled by -1.0.')
+      call output_separator(OU_SEP_MINUS)
+      call output_multiline('cmatrixformat/smatrixformat'//&
+          '\n     number/name of the matrix format'//&
+          '\n     (if not given then MATRIX9 is used)')
+      call output_multiline('\ncinterleavematrixformat/sinterleavematrixformat'//&
+          '\n     number/name of the matrix format for interleaved matrices'//&
+          '\n     (if not given then MATRIXUNDEFINED is used)')
+      call output_multiline('\ncdatatype/sdatatype'//&
+          '\n     number/name of the data type (if not given then DOUBLE is used)')
+      call output_multiline('\nnvar'//&
+          '\n     number of interleaved variables (if not given then 1 is used)')
+      call output_multiline('\ndscalefactor'//&
+          '\n     factor by which matrix is scaled implicitly (if not given then 1.0 is used)')
+      call output_multiline('\ndiscretisation ='//&
+          '\n     PROBLEM,'//&
+          '\n          name of the problem'//&
+          '\n          (if not given the name of the current problem is used)'//&
+          '\n     ILEV,'//&
+          '\n          level from which the block discretisation is used'//&
+          '\n          (if not given the current problem level is used)'//&
+          '\n     IDISCR(ETISATION),'//&
+          '\n          number of the block discretisation'//&
+          '\n          (if not given the first block discretisation is used)'//&
+          '\n     IBLOCK,'//&
+          '\n          spatial discretisation block of the discretisation'//&
+          '\n          (if not given the first block is used)')
+      call output_multiline('\ndiscretisationtest/discretisationtrial'//&
+          '\n     specify discretisations for test and trial spaces separately'//&
+          '\n     (see discretisation for details)')
+      call output_multiline('\nExamples: SACTION=DUPLICATE')
+      call output_separator(OU_SEP_MINUS)
+      call output_multiline('[ScalarMatrix]'//&
+          '\nsaction       = duplicate'//&
+          '\nsperform      = always'//&
+          '\nmatrixscalar  = problem:Transport,imatrix:1'//&
+          '\nsdupstructure = SHARE'//&
+          '\nsdupcontent   = SHARE'//&
+          '\n\n     Duplicates the first scalar matrix from the '//&
+          '\n     problem specified further in section [Transport]'//&
+          '\n     sharing both its structure and its content')
+      call output_separator(OU_SEP_MINUS)
+      call output_multiline('[ScalarMatrix]'//&
+          '\nsaction     = duplicate'//&
+          '\nsperform    = always'//&
+          '\nmatrixblock = problem:Transport,imatrix:1,iblockrow:2,iblockcol:3'//&
+          '\n\n     Duplicates the scalar matrix in the second row'//&
+          '\n     and third column of the first block matrix from the'//&
+          '\n     problem specified further in section [Transport].')
+      call output_separator(OU_SEP_MINUS)
+      call output_multiline('matrixscalar ='//&
+          '\n     PROBLEM,'//&
+          '\n          name of the problem'//&
+          '\n          (if not given the name of the current problem is used)'//&
+          '\n     ILEV,'//&
+          '\n          level from which the scalar matrix array is used'//&
+          '\n          (if not given the current problem level is used)'//&
+          '\n     IMATRIX,'//&
+          '\n          number of the scalar matrix'//&
+          '\n          (if not given the first scalar matrix is used')
+      call output_multiline('\nblockmatrix ='//&
+          '\n     PROBLEM,'//&
+          '\n          name of the problem'//&
+          '\n          (if not given the name of the current problem is used)'//&
+          '\n     ILEV,'//&
+          '\n          level from which the block matrix array is used'//&
+          '\n          (if not given the current problem level is used)'//&
+          '\n     IMATRIX,'//&
+          '\n          number of the block matrix'//&
+          '\n          (if not given the first block matrix is used'//&
+          '\n     IBLOCKROW,'//&
+          '\n          row-number of the scalar submatrix'//&
+          '\n          (if not given the first row is used)'//&
+          '\n     IBLOCKCOL,'//&
+          '\n          columne-number of the scalar submatrix'//&
+          '\n          (if not given the first column is used)')
+      call output_multiline('\nsdupstructure'//&
+          '\n          one of the LSYSSC_DUP_xxx constants indicating how to'//&
+          '\n          duplicate the matrix structure (by default LSYSSC_DUP_SHARE)')
+      call output_multiline('\nsdupcontent'//&
+          '\n          one of the LSYSSC_DUP_xxx constants indicating how to'//&
+          '\n          duplicate the matrix content (by default LSYSSC_DUP_SHARE)')
       call sys_halt()
     end if
     
@@ -5509,14 +5762,14 @@ contains
 
     nmethod = parlst_querysubstrings(rparlist, ssectionName, 'smethod')
     allocate(rtask%Cmethod(0:nmethod))
-
+    
     ! What creation methods are adopted?
     do imethod = 0,nmethod
       
       call parlst_getvalue_string(rparlist, ssectionName,&
           'smethod', sparameter, '', isubstring=imethod)
       call sys_toupper(sparameter)
-      
+
       if (trim(sparameter) .eq. 'VIRTUAL') then
         
         !-----------------------------------------------------------------------
@@ -5570,6 +5823,8 @@ contains
         !-----------------------------------------------------------------------
         ! Create matrix by diagonal lumping
         
+        call lsyssc_infoMatrix(rmatrix)
+
         call lsyssc_lumpMatrix(rmatrix, LSYSSC_LUMP_DIAG)
         
         ! Update internal data of the task item
@@ -5585,6 +5840,74 @@ contains
       else
         call output_line('Unsupported method: '//trim(sparameter),&
             OU_CLASS_ERROR,OU_MODE_STD,'problem_updateMatrixScalar')
+
+        call output_multiline('\nNAME: MatrixScalar')
+        call output_separator(OU_SEP_MINUS)
+        call output_multiline('\nMandatory parameters'//&
+            '\n\nSMETHOD   indicates method(s) to assemble the content of the matrix'//&
+            '\n  VIRTUAL          virtual matrix without data array'//&
+            '\n  EMPTY            empty matrix with nullified data array'//&
+            '\n  IDENTITY         identity matrix'//&
+            '\n  BILF             assemble matrix from bilinear form'//&
+            '\n  LUMP_STD         matrix with cleared off-diagonal entries'//&
+            '\n  LUMP_DIAG        matrix with row-sum mass lumping'//&
+            '\n  EXTENDSPARSITY   matrix with extended sparsity pattern by one connectivity layer')
+        call output_separator(OU_SEP_MINUS)
+        call output_multiline('[ScalarMatrix]'//&
+            '\nsaction           = duplicate'//&
+            '\nsperform          = always'//&
+            '\nsmethod           = bilf'//&
+            '\nmatrixscalar      = problem:Transport,imatrix:1'//&
+            '\ncubatureinfo      = problem:Transport,icubinfo:1'//&
+            '\nstrialfunction(1) = DER_DERIVX2D'//&
+            '\n                    DER_DERIVY2D'//&
+            '\nstestfunction(1)  = DER_DERIVX2D'//&
+            '\n                    DER_DERIVY2D'//&
+            '\n\n     Duplicates the first scalar matrix from the '//&
+            '\n     problem specified further in section [Transport]'//&
+            '\n     and assembles the standard Laplace matrix using'//&
+            '\n     the first cubature info structure from the problem.')
+        call output_separator(OU_SEP_MINUS)
+        call output_multiline('[ScalarMatrix]'//&
+            '\nsaction        = duplicate'//&
+            '\nsperform       = always'//&
+            '\nsmethod(1)     = bilf'//&
+            '\n                 lump_diag'//&
+            '\nmatrixscalar   = problem:Transport,imatrix:1'//&
+            '\ncubatureinfo   = problem:Transport,icubinfo:1'//&
+            '\nstrialfunction = DER_FUNC2D'//&
+            '\nstestfunction  = DER_FUNC2D'//&
+            '\n\n     Duplicates the first scalar matrix from the '//&
+            '\n     problem specified further in section [Transport]'//&
+            '\n     and assembles the rwo-sum lumped mass matrix using'//&
+            '\n     the first cubature info structure from the problem.')
+        call output_separator(OU_SEP_MINUS)
+        call output_multiline('matrixscalar ='//&
+            '\n     PROBLEM,'//&
+            '\n          name of the problem'//&
+            '\n          (if not given the name of the current problem is used)'//&
+            '\n     ILEV,'//&
+            '\n          level from which the scalar matrix array is used'//&
+            '\n          (if not given the current problem level is used)'//&
+            '\n     IMATRIX,'//&
+            '\n          number of the scalar matrix'//&
+            '\n          (if not given the first scalar matrix is used')
+        call output_multiline('cubatureinfo ='//&
+          '\n     PROBLEM,'//&
+          '\n          name of the problem'//&
+          '\n          (if not given the name of the current problem is used)'//&
+          '\n     ILEV,'//&
+          '\n          level from which the cubature infor structure is used'//&
+          '\n          (if not given the current problem level is used)'//&
+          '\n     ICUB(ATURE)INFO,'//&
+          '\n          number of the cubature info structure'//&
+          '\n          (if not given the first cubature infor structure is used)')
+        call output_multiline('\nstrialfunction(N)'//&
+            '\n     list of DER_xxx constants defining the trial functions')
+        call output_multiline('\nstestfunction(N)'//&
+            '\n     list of DER_xxx constants defining the test functions')
+        call output_multiline('\nscoefficient(N)'//&
+            '\n     list of functions used in the bilinear form')
         call sys_halt()
       end if
     end do
@@ -6025,8 +6348,12 @@ contains
       !-------------------------------------------------------------------------
       ! Duplicate block matrix or create 1-block wrapper for a scalar matrix
       !
-      ! SYNTAX: matrixscalar = name,imatrix:#,ilev:#,...
-      !     OR  matrixblock  = name,imatrix:#,ilev:#,...
+      ! SYNTAX: matrixscalar = problem:[name],...
+      !                        imatrix:#,...
+      !                        ilev:#
+      !     OR  matrixblock  = problem:[name],...
+      !                        imatrix:#,...
+      !                        ilev:#
       !
       ! If ilev is not given then the level of the current problem
       ! level structure is adopted.
@@ -6251,6 +6578,107 @@ contains
     else
       call output_line('Unsupported action: '//trim(saction),&
           OU_CLASS_ERROR,OU_MODE_STD,'problem_updateMatrixBlock')
+
+      call output_multiline('\nNAME: MatrixBlock')
+      call output_separator(OU_SEP_MINUS)
+      call output_multiline('\nMandatory parameters'//&
+          '\n\nSPERFORM   indicates when to perform the action'//&
+          '\n\n  NEVER       never'//&
+          '\n  INIT        on init only'//&
+          '\n  UPDATE      on update only'//&
+          '\n  ALWAYS      on init and update'//&
+          '\n\nSACTION    action to be performed'//&
+          '\n\n  NONE        do nothing'//&
+          '\n  CREATE      create block discretisation'//&
+          '\n  DUPLICATE   duplicate block discretisation')
+      call output_multiline('\nExamples: SACTION=CREATE')
+      call output_separator(OU_SEP_MINUS)
+      call output_multiline('[BlockMatrix]'//&
+          '\nsaction             = create'//&
+          '\nsperform            = always'//&
+          '\ndiscretisationtest  = problem:Transport,idiscr:1'//&
+          '\ndiscretisationtrial = problem:Transport,idiscr:2'//&
+          '\nnsubmatrix(1)       ='//&
+          '\n                      matrixscalar@(1,1):ScalarMatrix'//&
+          '\n\n     Creates a block matrix based on the first and second block'//&
+          '\n     discretisation of the given problem for test and trial spaces.'//&
+          '\n     The scalar submatrix at position (1,1) is created by using the'//&
+          '\n     details given in section [ScalarMatrix]. Note that the user must'//&
+          '\n     take care that the scalar submatrix specified in [ScalarMatrix]'//&
+          '\n     is compatible with the discretisation at position (1,1).')
+      call output_separator(OU_SEP_MINUS)
+      call output_multiline('[BlockMatrix]'//&
+          '\nsaction        = create'//&
+          '\nsperform       = always'//&
+          '\ndiscretisation = problem:Transport,idiscr:1'//&
+          '\nsubmatrix(2)   ='//&
+          '\n                 matrixblock@(1,1):BlockMatrix1'//&
+          '\n                 matrixscalar@(3,3):ScalarMatrix'//&
+          '\n\n     Creates a block matrix based on the first block discretisation'//&
+          '\n     of the given problem both for test and trial spaces.'//&
+          '\n     The submatrix starting at position (1,1) is created by using the'//&
+          '\n     details given in section [BlockMatrix1]. Note that the user must'//&
+          '\n     take care that the submatrix specified in [BlockMatrix1] is'//&
+          '\n     compatible with the discretisation starting at position (1,1).'//&
+          '\n     The scalar submatrix at position (3,3) is created by using the'//&
+          '\n     details given in section [ScalarMatrix]. Note that the user must'//&
+          '\n     take care that the scalar submatrix specified in [ScalarMatrix]'//&
+          '\n     is compatible with the discretisation at position (3,3).')
+      call output_separator(OU_SEP_MINUS)
+      call output_multiline('\ndiscretisation ='//&
+          '\n     PROBLEM,'//&
+          '\n          name of the problem'//&
+          '\n          (if not given the name of the current problem is used)'//&
+          '\n     ILEV,'//&
+          '\n          level from which the block discretisation is used'//&
+          '\n          (if not given the current problem level is used)'//&
+          '\n     IDISCR(ETISATION),'//&
+          '\n          number of the block discretisation'//&
+          '\n          (if not given the first block discretisation is used)')
+      call output_multiline('\ndiscretisationtest/discretisationtrial'//&
+          '\n     specify discretisations for test and trial spaces separately'//&
+          '\n     (see discretisation for details)')
+      call output_multiline('\nsubmatrix(N) ='//&
+          '\n     MATRIXSCALAR@(i,j),'//&
+          '\n          name of the scalar submatrix to be created at position (i,j)'//&
+          '\n     MATRIXBLOCK@(i,j),'//&
+          '\n          name of the submatrix to be created starting at position (i,j)')
+      call output_multiline('\nExamples: SACTION=DUPLICATE')
+      call output_separator(OU_SEP_MINUS)
+      call output_multiline('[BlockMatrix]'//&
+          '\nsaction      = create'//&
+          '\nsperform     = always'//&
+          '\nmatrixscalar = problem:Transport,imatrix:1'//&
+          '\n\n     Duplicates the first scalar matrix from the given'//&
+          '\n     problem specified further in section [Transport].')
+      call output_separator(OU_SEP_MINUS)
+      call output_multiline('[BlockMatrix]'//&
+          '\nsaction     = create'//&
+          '\nsperform    = always'//&
+          '\nmatrixblock = problem:Transport,imatrix:1'//&
+          '\n\n     Duplicates the first block matrix from the given'//&
+          '\n     problem specified further in section [Transport].')
+      call output_separator(OU_SEP_MINUS)
+      call output_multiline('\nmatrixscalar ='//&
+          '\n     PROBLEM,'//&
+          '\n          name of the problem'//&
+          '\n          (if not given the name of the current problem is used)'//&
+          '\n     ILEV,'//&
+          '\n          level from which the scalar matrix is used'//&
+          '\n          (if not given the current problem level is used)'//&
+          '\n     IMATRIX,'//&
+          '\n          number of the scalar matrix'//&
+          '\n          (if not given the first scalar matrix is used)')
+      call output_multiline('\nmatrixblock ='//&
+          '\n     PROBLEM,'//&
+          '\n          name of the problem'//&
+          '\n          (if not given the name of the current problem is used)'//&
+          '\n     ILEV,'//&
+          '\n          level from which the block matrix is used'//&
+          '\n          (if not given the current problem level is used)'//&
+          '\n     IMATRIX,'//&
+          '\n          number of the block matrix'//&
+          '\n          (if not given the first block matrix is used)')
       call sys_halt()
     end if
     
@@ -6307,6 +6735,15 @@ contains
       else
         call output_line('Unsupported method: '//trim(sparameter),&
             OU_CLASS_ERROR,OU_MODE_STD,'problem_updateMatrixBlock')
+
+        call output_multiline('\nNAME: MatrixBlock')
+        call output_separator(OU_SEP_MINUS)
+        call output_multiline('\nMandatory parameters'//&
+            '\n\nSMETHOD   indicates method(s) to assemble content of matrix'//&
+            '\n  VIRTUAL          virtual matrix without data array'//&
+            '\n  EMPTY            empty matrix with nullified data array'//&
+            '\n  IDENTITY         identity matrix')
+        call output_separator(OU_SEP_MINUS)
         call sys_halt()
       end if
     end do
@@ -6414,7 +6851,7 @@ contains
         call sys_getNextToken (sparameter, stoken, istart, ":", .false.)
         call sys_getNextToken (stoken, ssubmatrix, iistart, "@", .false.)
         call sys_getNextToken (stoken, ssubtoken, iiistart, ",", .false.)
-        read(ssubtoken(iistart:iiistart),*) iblockrow
+        read(ssubtoken(iistart+1:iiistart),*) iblockrow
         iistart = iiistart
         call sys_getNextToken (stoken, ssubtoken, iiistart, ")", .false.)
         read(ssubtoken,*) iblockcol
@@ -7257,8 +7694,13 @@ contains
       !-------------------------------------------------------------------------
       ! Duplicate scalar vector or subvector of a block vector
       !
-      ! SYNTAX: vectorscalar = name,ivector:#,ilev:#,...
-      !     OR  vectorblock  = name,ivector:#,ilev:#,iblock:#
+      ! SYNTAX: vectorscalar = problem:[name],...
+      !                        ivector:#,...
+      !                        ilev:#
+      !     OR  vectorblock  = problem:[name],...
+      !                        ivector:#,...
+      !                        ilev:#,...
+      !                        iblock:#
       !
       ! If ilev is not given then the level of the current problem
       ! level structure is adopted. If iblock are not given then
@@ -7471,6 +7913,98 @@ contains
     else
       call output_line('Unsupported action: '//trim(saction),&
           OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVectorScalar')
+
+      call output_multiline('\nNAME: VectorScalar')
+      call output_separator(OU_SEP_MINUS)
+      call output_multiline('\nMandatory parameters'//&
+          '\n\nSPERFORM   indicates when to perform the action'//&
+          '\n\n  NEVER       never'//&
+          '\n  INIT        on init only'//&
+          '\n  UPDATE      on update only'//&
+          '\n  ALWAYS      on init and update'//&
+          '\n\nSACTION    action to be performed'//&
+          '\n\n  NONE        do nothing'//&
+          '\n  CREATE      create block discretisation'//&
+          '\n  DUPLICATE   duplicate block discretisation')
+      call output_multiline('\nExamples: SACTION=CREATE')
+      call output_separator(OU_SEP_MINUS)
+      call output_multiline('[ScalarVector]'//&
+          '\nsaction        = create'//&
+          '\nsperform       = always'//&
+          '\nsdatatype      = DOUBLE'//&
+          '\nnvar           = 4'//&
+          '\ndiscretisation = problem:Transport,idiscr:2,iblock:1'//&
+          '\n\n     Creates a scalar vector with double-valued data based on the'//&
+          '\n     second spatial discretisation of the first block discretisation'//&
+          '\n     of the problem specified further in section [Transport]'//&
+          '\n     The vector has 4 data items stored at each position.')
+      call output_separator(OU_SEP_MINUS)
+      call output_multiline('\ncdatatype/sdatatype'//&
+          '\n     number/name of the data type (if not given then DOUBLE is used)')
+      call output_multiline('\nnvar'//&
+          '\n     number of interleaved variables (if not given then 1 is used)')
+      call output_multiline('\ndiscretisation ='//&
+          '\n     PROBLEM,'//&
+          '\n          name of the problem'//&
+          '\n          (if not given the name of the current problem is used)'//&
+          '\n     ILEV,'//&
+          '\n          level from which the block discretisation is used'//&
+          '\n          (if not given the current problem level is used)'//&
+          '\n     IDISCR(ETISATION),'//&
+          '\n          number of the block discretisation'//&
+          '\n          (if not given the first block discretisation is used)'//&
+          '\n     IBLOCK,'//&
+          '\n          spatial discretisation block of the discretisation'//&
+          '\n          (if not given the first block is used)')
+      call output_multiline('\nExamples: SACTION=DUPLICATE')
+      call output_separator(OU_SEP_MINUS)
+      call output_multiline('[ScalarVector]'//&
+          '\nsaction       = duplicate'//&
+          '\nsperform      = always'//&
+          '\nvectorscalar  = problem:Transport,ivector:1'//&
+          '\nsdupstructure = SHARE'//&
+          '\nsdupcontent   = SHARE'//&
+          '\n\n     Duplicates the first scalar vector from the '//&
+          '\n     problem specified further in section [Transport]'//&
+          '\n     sharing both its structure and its content')
+      call output_separator(OU_SEP_MINUS)
+      call output_multiline('[ScalarVector]'//&
+          '\nsaction     = duplicate'//&
+          '\nsperform    = always'//&
+          '\nvectorblock = problem:Transport,ivector:1,iblock:2'//&
+          '\n\n     Duplicates the scalar vector in the second block'//&
+          '\n     of the first block vector from the problem specified'//&
+          '\n     further in section [Transport].')
+      call output_separator(OU_SEP_MINUS)
+      call output_multiline('vectorscalar ='//&
+          '\n     PROBLEM,'//&
+          '\n          name of the problem'//&
+          '\n          (if not given the name of the current problem is used)'//&
+          '\n     ILEV,'//&
+          '\n          level from which the scalar vector array is used'//&
+          '\n          (if not given the current problem level is used)'//&
+          '\n     IVECTOR,'//&
+          '\n          number of the scalar vector'//&
+          '\n          (if not given the first scalar vector is used')
+      call output_multiline('\nblockvector ='//&
+          '\n     PROBLEM,'//&
+          '\n          name of the problem'//&
+          '\n          (if not given the name of the current problem is used)'//&
+          '\n     ILEV,'//&
+          '\n          level from which the block vector array is used'//&
+          '\n          (if not given the current problem level is used)'//&
+          '\n     IVECTOR,'//&
+          '\n          number of the block vector'//&
+          '\n          (if not given the first block vector is used'//&
+          '\n     IBLOCK,'//&
+          '\n          number of the scalar subvector'//&
+          '\n          (if not given the first block is used)')
+      call output_multiline('\nsdupstructure'//&
+          '\n          one of the LSYSSC_DUP_xxx constants indicating how to'//&
+          '\n          duplicate the vector structure (by default LSYSSC_DUP_SHARE)')
+      call output_multiline('\nsdupcontent'//&
+          '\n          one of the LSYSSC_DUP_xxx constants indicating how to'//&
+          '\n          duplicate the vector content (by default LSYSSC_DUP_SHARE)')
       call sys_halt()
     end if
     
@@ -7540,6 +8074,54 @@ contains
       else
         call output_line('Unsupported method: '//trim(sparameter),&
             OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVectorScalar')
+
+        call output_multiline('\nNAME: VectorScalar')
+        call output_separator(OU_SEP_MINUS)
+        call output_multiline('\nMandatory parameters'//&
+            '\n\nSMETHOD   indicates method(s) to assemble the content of the vector'//&
+            '\n  VIRTUAL   virtual vector without data array'//&
+            '\n  EMPTY     empty vector with nullified data array'//&
+            '\n  UNITY     vector with unit data array'//&
+            '\n  LINF      assemble vector from linear form'//&
+            '\n  DOF       vector with coordinates of degrees of freedom')
+        call output_separator(OU_SEP_MINUS)
+        call output_multiline('[ScalarVector]'//&
+            '\nsaction      = duplicate'//&
+            '\nsperform     = always'//&
+            '\nsmethod      = linf'//&
+            '\nvectorscalar = problem:Transport,ivector:1'//&
+            '\ncubatureinfo = problem:Transport,icubinfo:1'//&
+            '\nsfunction    = DER_FUNC2D'//&
+            '\nscoefficient = sin(x)*cos(x)'//&
+            '\n\n     Duplicates the first scalar vector from the '//&
+            '\n     problem specified further in section [Transport]'//&
+            '\n     and assembles the given linear form using the'//&
+            '\n     first cubature info structure from the problem.')
+        call output_separator(OU_SEP_MINUS)
+        call output_multiline('vectorscalar ='//&
+            '\n     PROBLEM,'//&
+            '\n          name of the problem'//&
+            '\n          (if not given the name of the current problem is used)'//&
+            '\n     ILEV,'//&
+            '\n          level from which the scalar vector array is used'//&
+            '\n          (if not given the current problem level is used)'//&
+            '\n     IVECTOR,'//&
+            '\n          number of the scalar vector'//&
+            '\n          (if not given the first scalar vector is used')
+        call output_multiline('cubatureinfo ='//&
+          '\n     PROBLEM,'//&
+          '\n          name of the problem'//&
+          '\n          (if not given the name of the current problem is used)'//&
+          '\n     ILEV,'//&
+          '\n          level from which the cubature infor structure is used'//&
+          '\n          (if not given the current problem level is used)'//&
+          '\n     ICUB(ATURE)INFO,'//&
+          '\n          number of the cubature info structure'//&
+          '\n          (if not given the first cubature infor structure is used)')
+        call output_multiline('\nsfunction(N)'//&
+            '\n     list of DER_xxx constants defining the functions')
+        call output_multiline('\nscoefficient(N)'//&
+            '\n     list of functions used in the linear form')
         call sys_halt()
       end if
     end do
@@ -7892,8 +8474,12 @@ contains
       !-------------------------------------------------------------------------
       ! Duplicate block vector are create 1-block wrapper for a scalar vector
       !
-      ! SYNTAX: vectorscalar = name,ivector:#,ilev:#,...
-      !     OR  vectorblock  = name,ivector:#,ilev:#,...
+      ! SYNTAX: vectorscalar = problem:[name],...
+      !                        ivector:#,...
+      !                        ilev:#
+      !     OR  vectorblock  = problem:[name],...
+      !                        ivector:#,...
+      !                        ilev:#
       !
       ! If ilev is not given then the level of the current problem
       ! level structure is adopted.
@@ -8115,9 +8701,105 @@ contains
     else
       call output_line('Unsupported action: '//trim(saction),&
           OU_CLASS_ERROR,OU_MODE_STD,'problem_updateVecBl')
+
+      call output_multiline('\nNAME: VectorBlock')
+      call output_separator(OU_SEP_MINUS)
+      call output_multiline('\nMandatory parameters'//&
+          '\n\nSPERFORM   indicates when to perform the action'//&
+          '\n\n  NEVER       never'//&
+          '\n  INIT        on init only'//&
+          '\n  UPDATE      on update only'//&
+          '\n  ALWAYS      on init and update'//&
+          '\n\nSACTION    action to be performed'//&
+          '\n\n  NONE        do nothing'//&
+          '\n  CREATE      create block discretisation'//&
+          '\n  DUPLICATE   duplicate block discretisation')
+      call output_multiline('\nExamples: SACTION=CREATE')
+      call output_separator(OU_SEP_MINUS)
+      call output_multiline('[BlockVector]'//&
+          '\nsaction         = create'//&
+          '\nsperform        = always'//&
+          '\ndiscretisation  = problem:Transport,idiscr:1'//&
+          '\nnsubvector(1)   ='//&
+          '\n                  vectorscalar@(1):ScalarVector'//&
+          '\n\n     Creates a block vector based on the first block discretisation'//&
+          '\n     discretisation of the given problem. The scalar subvector at'//&
+          '\n     position (1) is created by using the details given in section'//&
+          '\n     [ScalarVector]. Note that the user must take care that the scalar'//&
+          '\n     subvector specified in [ScalarVector] is compatible with the'//&
+          '\n     discretisation at position (1).')
+      call output_separator(OU_SEP_MINUS)
+      call output_multiline('[BlockVector]'//&
+          '\nsaction        = create'//&
+          '\nsperform       = always'//&
+          '\ndiscretisation = problem:Transport,idiscr:1'//&
+          '\nsubvector(2)   ='//&
+          '\n                 vectorblock@(1):BlockVector1'//&
+          '\n                 vectorscalar@(3):ScalarVector'//&
+          '\n\n     Creates a block vector based on the first block discretisation'//&
+          '\n     of the given problem. The submatrix starting at position (1) is'//&
+          '\n     created by using the details given in section [BlockMatrix1].'//&
+          '\n     Note that the user must take care that the subvector specified'//&
+          '\n     in [BlockVector1] is compatible with the discretisation starting'//&
+          '\n     at position (1). The scalar subvector at position (3) is created'//&
+          '\n     by using the details given in section [ScalarVector]. Note that'//&
+          '\n     the user must take care that the scalar subvector specified in'//&
+          '\n     [ScalarVector] is compatible with the discretisation at position (3).')
+      call output_separator(OU_SEP_MINUS)
+      call output_multiline('\ndiscretisation ='//&
+          '\n     PROBLEM,'//&
+          '\n          name of the problem'//&
+          '\n          (if not given the name of the current problem is used)'//&
+          '\n     ILEV,'//&
+          '\n          level from which the block discretisation is used'//&
+          '\n          (if not given the current problem level is used)'//&
+          '\n     IDISCR(ETISATION),'//&
+          '\n          number of the block discretisation'//&
+          '\n          (if not given the first block discretisation is used)')
+      call output_multiline('\nsubvector(N) ='//&
+          '\n     VECTORSCALAR@(i),'//&
+          '\n          name of the scalar subvector to be created at position (i)'//&
+          '\n     VECTORBLOCK@(i),'//&
+          '\n          name of the subvector to be created starting at position (i)')
+      call output_multiline('\nExamples: SACTION=DUPLICATE')
+      call output_separator(OU_SEP_MINUS)
+      call output_multiline('[BlockVector]'//&
+          '\nsaction      = create'//&
+          '\nsperform     = always'//&
+          '\nvectorscalar = problem:Transport,ivector:1'//&
+          '\n\n     Duplicates the first scalar vector from the given'//&
+          '\n     problem specified further in section [Transport].')
+      call output_separator(OU_SEP_MINUS)
+      call output_multiline('[BlockVector]'//&
+          '\nsaction     = create'//&
+          '\nsperform    = always'//&
+          '\nvectorblock = problem:Transport,ivector:1'//&
+          '\n\n     Duplicates the first block vector from the given'//&
+          '\n     problem specified further in section [Transport].')
+      call output_separator(OU_SEP_MINUS)
+      call output_multiline('\nvectorscalar ='//&
+          '\n     PROBLEM,'//&
+          '\n          name of the problem'//&
+          '\n          (if not given the name of the current problem is used)'//&
+          '\n     ILEV,'//&
+          '\n          level from which the scalar vector is used'//&
+          '\n          (if not given the current problem level is used)'//&
+          '\n     IVECTOR,'//&
+          '\n          number of the scalar vector'//&
+          '\n          (if not given the first scalar vector is used)')
+      call output_multiline('\nvectorblock ='//&
+          '\n     PROBLEM,'//&
+          '\n          name of the problem'//&
+          '\n          (if not given the name of the current problem is used)'//&
+          '\n     ILEV,'//&
+          '\n          level from which the block vector is used'//&
+          '\n          (if not given the current problem level is used)'//&
+          '\n     IVECTOR,'//&
+          '\n          number of the block vector'//&
+          '\n          (if not given the first block vector is used)')
       call sys_halt()
     end if
-
+    
     !---------------------------------------------------------------------------
     ! Second part: generate content
     !---------------------------------------------------------------------------
@@ -10596,7 +11278,7 @@ contains
 !!$      !-------------------------------------------------------------------------
 !!$      ! Duplicate scalar vector or subvector of a block vector
 !!$      !
-!!$      ! SYNTAX: vectorscalar = name,ivector:#,ilev:#,...
+!!$      ! SYNTAX: vectorscalar = name,ivector:#,ilev:#
 !!$      !     OR  vectorblock  = name,ivector:#,ilev:#,iblock:#
 !!$      !
 !!$      ! If ilev is not given then the level of the current problem
