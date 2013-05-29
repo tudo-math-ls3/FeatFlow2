@@ -210,7 +210,7 @@ contains
 
 !<subroutine>
 
-  subroutine ppsol_initArrayPGMDP1D(rpgm, Dpoints, Ddata, Dbounds)
+  subroutine ppsol_initArrayPGM1DDP(rpgm, Dpoints, Ddata, Dbounds)
 
 !<description>
     ! Initialises a 1D double array by a Portable Graymap image
@@ -282,13 +282,13 @@ contains
 
       Ddata(ipoint) = real(p_Idata(ix,iy),DP)/real(rpgm%maxgray,DP)
     end do
-  end subroutine ppsol_initArrayPGMDP1D
+  end subroutine ppsol_initArrayPGM1DDP
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine ppsol_initArrayPGMDP2D(rpgm, Dpoints, Ddata, Dbounds)
+  subroutine ppsol_initArrayPGM2DDP(rpgm, Dpoints, Ddata, Dbounds)
 
 !<description>
     ! Initialises a 2D double array by a Portable Graymap image
@@ -360,13 +360,13 @@ contains
 
       Ddata(ipoint) = real(p_Idata(ix,iy),DP)/real(rpgm%maxgray,DP)
     end do
-  end subroutine ppsol_initArrayPGMDP2D
+  end subroutine ppsol_initArrayPGM2DDP
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine ppsol_initArrayPGMSP1D(rpgm, Dpoints, Fdata, Dbounds)
+  subroutine ppsol_initArrayPGM1DSP(rpgm, Dpoints, Fdata, Dbounds)
 
 !<description>
     ! Initialises a single array by a Portable Graymap image
@@ -438,13 +438,13 @@ contains
 
       Fdata(ipoint) = real(p_Idata(ix,iy),SP)/real(rpgm%maxgray,SP)
     end do
-  end subroutine ppsol_initArrayPGMSP1D
+  end subroutine ppsol_initArrayPGM1DSP
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine ppsol_initArrayPGMSP2D(rpgm, Dpoints, Fdata, Dbounds)
+  subroutine ppsol_initArrayPGM2DSP(rpgm, Dpoints, Fdata, Dbounds)
 
 !<description>
     ! Initialises a 2D single array by a Portable Graymap image
@@ -516,6 +516,6 @@ contains
 
       Fdata(ipoint) = real(p_Idata(ix,iy),SP)/real(rpgm%maxgray,SP)
     end do
-  end subroutine ppsol_initArrayPGMSP2D
+  end subroutine ppsol_initArrayPGM2DSP
 
 end module pprocsolution
