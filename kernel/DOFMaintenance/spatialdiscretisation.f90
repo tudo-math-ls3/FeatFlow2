@@ -1264,7 +1264,7 @@ contains
   ! conditions are saved in the structure.
   !
   ! The routine performs only basic initialisation. The caller must
-  ! separately initialise the the specific scalar discretisation structures
+  ! separately initialise the specific scalar discretisation structures
   ! of each solution component (as collected in the RspatialDiscr
   ! array of the rblockDiscr structure).
 
@@ -2980,6 +2980,7 @@ contains
 !</subroutine>
 
     logical :: bshr
+    integer :: i
 
     bshr = .true.
     if (present(bshare)) bshr = bshare
@@ -2987,26 +2988,58 @@ contains
     ! Release old information if present
     call spdiscr_releaseDiscr(rdestDiscr)
 
-    ! Currently, this routine supports only bshare=TRUE!
+    ! Copy all information
+    rdestDiscr = rsourceDiscr
+
+    ! Duplicate the element distribution structure
+    allocate(rdestDiscr%RelementDistr(rdestDiscr%inumFESpaces))
+    rdestDiscr%RelementDistr = rsourceDiscr%RelementDistr
+    
+    ! Do we have to copy data explicitly?
     if (bshr) then
-
-      ! Copy all information
-      rdestDiscr = rsourceDiscr
-
-      ! Duplicate the element distribution structure
-      allocate(rdestDiscr%RelementDistr(rdestDiscr%inumFESpaces))
-      rdestDiscr%RelementDistr = rsourceDiscr%RelementDistr
 
       ! Mark the new discretisation structure as 'copy', to prevent
       ! the dynamic information to be released.
       ! The dynamic information 'belongs' to rdiscrSource and not to the
       ! newly created rdiscrDest!
       rdestDiscr%bisCopy = .true.
-
+      
     else
-      call output_line ('bshare=FALSE currently not supported!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'spdiscr_duplicateDiscrSc')
-      call sys_halt()
+
+      rdestDiscr%bisCopy = .false.
+
+      ! Element distributions?
+      if (rsourceDiscr%h_IelementDistr .ne. ST_NOHANDLE) then
+        rdestDiscr%h_IelementDistr = ST_NOHANDLE
+        call storage_copy(rsourceDiscr%h_IelementDistr, rdestDiscr%h_IelementDistr)
+      end if
+
+      ! Element counters?
+      if (rsourceDiscr%h_IelementCounter .ne. ST_NOHANDLE) then
+        rdestDiscr%h_IelementCounter = ST_NOHANDLE
+        call storage_copy(rsourceDiscr%h_IelementCounter, rdestDiscr%h_IelementCounter)
+      end if
+
+      ! Element DOFs?
+      if (rsourceDiscr%h_IelementDofs .ne. ST_NOHANDLE) then
+        rdestDiscr%h_IelementDofs = ST_NOHANDLE
+        call storage_copy(rsourceDiscr%h_IelementDofs, rdestDiscr%h_IelementDofs)
+      end if
+
+      ! Element DOFs indices?
+      if (rsourceDiscr%h_IelementDofIdx .ne. ST_NOHANDLE) then
+        rdestDiscr%h_IelementDofIdx = ST_NOHANDLE
+        call storage_copy(rsourceDiscr%h_IelementDofIdx, rdestDiscr%h_IelementDofIdx)
+      end if
+
+      do i=1,rsourceDiscr%inumFESpaces
+        if (rsourceDiscr%RelementDistr(i)%h_IelementList .ne. ST_NOHANDLE) then
+          rdestDiscr%RelementDistr(i)%h_IelementList = ST_NOHANDLE
+          call storage_copy(rsourceDiscr%RelementDistr(i)%h_IelementList,&
+                            rdestDiscr%RelementDistr(i)%h_IelementList)
+        end if
+      end do
+
     end if
 
   end subroutine
