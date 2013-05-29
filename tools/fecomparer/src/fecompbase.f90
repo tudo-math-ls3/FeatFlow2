@@ -222,6 +222,13 @@ contains
 
     ! ----------------------------------------
     ! 2D mesh, Scalar solution, Q1
+    case (30)
+      call spdiscr_initBlockDiscr (rdiscr,1,rtriangulation, rboundary)
+      call spdiscr_initDiscr_simple (rdiscr%RspatialDiscr(1),EL_EM30_2D,&
+          rtriangulation, rboundary)
+
+    ! ----------------------------------------
+    ! 2D mesh, Scalar solution, Q1, discontinuous
     case (111)
       call spdiscr_initBlockDiscr (rdiscr,1,rtriangulation, rboundary)
       call spdiscr_initDiscr_simple (rdiscr%RspatialDiscr(1),EL_DG_Q1_2D,&
@@ -509,9 +516,10 @@ contains
 
 !</subroutine>
 
-    integer :: i,iindex
+    integer :: i
     
     do i=0,rproblem%nsolutions
+    
       ! Read the solution
       if (i .eq. 0) then
         call sol_readSolutionData (rproblem%rrefSolution)
@@ -602,12 +610,16 @@ contains
       call output_line ("Projecting solution.")
     
       select case (p_rdest%cfespace)
-      case (1211)
+      case (111, 1211)
         ! Apply a projection
         call sol_projectToDGQ1 (&
             p_rsource%p_Rvectors(p_rsource%ireflevel),&
             p_rdest%p_Rvectors(p_rdest%ireflevel),&
             rproblem%rmeshHierarchy%p_Rtriangulations(1))
+
+      case default
+        call output_line ("ERROR: Target space not supported!")
+        call sys_halt()
         
       end select
     else
@@ -702,7 +714,7 @@ contains
     
     ! Is the destination vector discontinuous Q1?
     select case (p_rsolution%cfespace)
-    case (1211)
+    case (111,1211)
     
       select case (rproblem%cpostprocfile)
       case (1)
@@ -724,6 +736,11 @@ contains
         call ucd_write (rexport)
         call ucd_release (rexport)
       end select
+      
+    case default
+    
+      call output_line ("ERROR: Element not supported for VTK output.")
+      call sys_halt()
       
     end select
 
