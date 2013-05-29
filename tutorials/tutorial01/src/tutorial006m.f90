@@ -94,7 +94,7 @@ contains
     call lsyssc_getbase_double (rx,p_Dx)
     
     ! Translate the picture into our Q_1 DOF array.   
-    call ppsol_initArrayPGMDP(rpgm, p_DvertexCoords, p_Dx)
+    call ppsol_initArrayPGM2D (rpgm, p_DvertexCoords, p_Dx)
 
     ! =================================
     ! Release the greymap image

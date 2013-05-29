@@ -14,7 +14,10 @@
 !# 2.) ppsol_releasePGM
 !#     -> Releases a Portable Graymap.
 !#
-!# 3.) ppsol_initArrayPGMDP / ppsol_initArrayPGMSP
+!# 3.) ppsol_initArrayPGM1D
+!#     -> Initialises a 1D double array from a Portable Graymap image
+!#
+!# 4.) ppsol_initArrayPGM2D
 !#     -> Initialises a 2D double array from a Portable Graymap image
 !# </purpose>
 !#########################################################################
@@ -61,10 +64,28 @@ module pprocsolution
 !</typeblock>
 !</types>
 
+  interface ppsol_initArrayPGM
+    module procedure ppsol_initArrayPGM1DDP
+    module procedure ppsol_initArrayPGM1DSP
+    module procedure ppsol_initArrayPGM2DDP
+    module procedure ppsol_initArrayPGM2DSP
+  end interface ppsol_initArrayPGM
+
+  interface ppsol_initArrayPGM1D
+    module procedure ppsol_initArrayPGM1DDP
+    module procedure ppsol_initArrayPGM1DSP
+  end interface ppsol_initArrayPGM1D
+
+  interface ppsol_initArrayPGM2D
+    module procedure ppsol_initArrayPGM2DDP
+    module procedure ppsol_initArrayPGM2DSP
+  end interface ppsol_initArrayPGM2D
+
   public :: ppsol_readPGM
   public :: ppsol_releasePGM
-  public :: ppsol_initArrayPGMDP
-  public :: ppsol_initArrayPGMSP
+  public :: ppsol_initArrayPGM
+  public :: ppsol_initArrayPGM1D
+  public :: ppsol_initArrayPGM2D
 
 contains
 
@@ -189,7 +210,85 @@ contains
 
 !<subroutine>
 
-  subroutine ppsol_initArrayPGMDP(rpgm, Dpoints, Ddata, Dbounds)
+  subroutine ppsol_initArrayPGMDP1D(rpgm, Dpoints, Ddata, Dbounds)
+
+!<description>
+    ! Initialises a 1D double array by a Portable Graymap image
+!</description>
+
+!<input>
+    ! portable graymap image
+    type(t_pgm), intent(in) :: rpgm
+
+    ! coordinates as 1D array
+    real(DP), dimension(:), intent(in) :: Dpoints
+
+    ! OPTIONAL: coordinates of the bounding box
+    ! If not present, then the bounding box is calculated internally
+    ! DIMENSION(2,2) Dpoints(X:Y,MIN:MAX)
+    real(DP), dimension(:,:), intent(in), optional :: Dbounds
+!</input>
+
+!<output>
+    ! double data array
+    real(DP), dimension(:), intent(out) :: Ddata
+!</output>
+!</subroutine>
+
+    ! local variables
+    integer, dimension(:,:), pointer :: p_Idata
+    real(DP) :: x,y,xmin,ymin,xmax,ymax
+    integer :: ipoint,npoints,ix,iy
+
+    ! Set pointer for image data
+    call storage_getbase_int2D(rpgm%h_Idata, p_Idata)
+
+    ! Set number of points
+    npoints = size(Ddata)
+
+    if (present(Dbounds)) then
+      xmin = Dbounds(1,1)
+      ymin = Dbounds(2,1)
+      xmax = Dbounds(1,2)
+      ymax = Dbounds(2,2)
+    else
+      ! Determine minimum/maximum values of array
+      xmin = huge(1.0_DP)
+      xmax = -huge(1.0_DP)
+      ymin = huge(1.0_DP)
+      ymax = -huge(1.0_DP)
+
+      do ipoint = 1, npoints
+        xmin = min(xmin, Dpoints(2*(ipoint-1)+1))
+        xmax = max(xmax, Dpoints(2*(ipoint-1)+1))
+        ymin = min(ymin, Dpoints(2*(ipoint-1)+2))
+        ymax = max(ymax, Dpoints(2*(ipoint-1)+2))
+      end do
+    end if
+
+    ! Clear array
+    call lalg_clearVector(Ddata)
+
+    ! Fill array with scaled image data
+    do ipoint = 1, npoints
+      x = Dpoints(2*(ipoint-1)+1)
+      y = Dpoints(2*(ipoint-1)+2)
+
+      ix = 1+(rpgm%width-1)*(x-xmin)/(xmax-xmin)
+      if (ix .lt. 1 .or. ix .gt. rpgm%width) cycle
+
+      iy = rpgm%height-(rpgm%height-1)*(y-ymin)/(ymax-ymin)
+      if (iy .lt. 1 .or. iy .gt. rpgm%height) cycle
+
+      Ddata(ipoint) = real(p_Idata(ix,iy),DP)/real(rpgm%maxgray,DP)
+    end do
+  end subroutine ppsol_initArrayPGMDP1D
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine ppsol_initArrayPGMDP2D(rpgm, Dpoints, Ddata, Dbounds)
 
 !<description>
     ! Initialises a 2D double array by a Portable Graymap image
@@ -199,7 +298,7 @@ contains
     ! portable graymap image
     type(t_pgm), intent(in) :: rpgm
 
-    ! coordinates of 2D array
+    ! coordinates as 2D array
     real(DP), dimension(:,:), intent(in) :: Dpoints
 
     ! OPTIONAL: coordinates of the bounding box
@@ -261,13 +360,91 @@ contains
 
       Ddata(ipoint) = real(p_Idata(ix,iy),DP)/real(rpgm%maxgray,DP)
     end do
-  end subroutine ppsol_initArrayPGMDP
+  end subroutine ppsol_initArrayPGMDP2D
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine ppsol_initArrayPGMSP(rpgm, Dpoints, Fdata, Dbounds)
+  subroutine ppsol_initArrayPGMSP1D(rpgm, Dpoints, Fdata, Dbounds)
+
+!<description>
+    ! Initialises a single array by a Portable Graymap image
+!</description>
+
+!<input>
+    ! portable graymap image
+    type(t_pgm), intent(in) :: rpgm
+
+    ! coordinates as 1D array
+    real(DP), dimension(:), intent(in) :: Dpoints
+
+    ! OPTIONAL: coordinates of the bounding box
+    ! If not present, then the bounding box is calculated internally
+    ! DIMENSION(2,2) Dpoints(X:Y,MIN:MAX)
+    real(DP), dimension(:,:), intent(in), optional :: Dbounds
+!</input>
+
+!<output>
+    ! single data array
+    real(SP), dimension(:), intent(out) :: Fdata
+!</output>
+!</subroutine>
+
+    ! local variables
+    integer, dimension(:,:), pointer :: p_Idata
+    real(DP) :: x,y,xmin,ymin,xmax,ymax
+    integer :: ipoint,npoints,ix,iy
+
+    ! Set pointer for image data
+    call storage_getbase_int2D(rpgm%h_Idata, p_Idata)
+
+    ! Set number of points
+    npoints = size(Fdata)
+
+    if (present(Dbounds)) then
+      xmin = Dbounds(1,1)
+      ymin = Dbounds(2,1)
+      xmax = Dbounds(1,2)
+      ymax = Dbounds(2,2)
+    else
+      ! Determine minimum/maximum values of array
+      xmin = huge(1.0_DP)
+      xmax = -huge(1.0_DP)
+      ymin = huge(1.0_DP)
+      ymax = -huge(1.0_DP)
+
+      do ipoint = 1, npoints
+        xmin = min(xmin, Dpoints(2*(ipoint-1)+1))
+        xmax = max(xmax, Dpoints(2*(ipoint-1)+1))
+        ymin = min(ymin, Dpoints(2*(ipoint-1)+2))
+        ymax = max(ymax, Dpoints(2*(ipoint-1)+2))
+      end do
+    end if
+
+    ! Clear array
+    call lalg_clearVector(Fdata)
+
+    ! Fill array with scaled image data
+    do ipoint = 1, npoints
+      x = Dpoints(2*(ipoint-1)+1)
+      y = Dpoints(2*(ipoint-1)+2)
+
+      ix = 1+(rpgm%width-1)*(x-xmin)/(xmax-xmin)
+      if (ix .lt. 1 .or. ix .gt. rpgm%width) cycle
+
+      iy = rpgm%height-(rpgm%height-1)*(y-ymin)/(ymax-ymin)
+      if (iy .lt. 1 .or. iy .gt. rpgm%height) cycle
+
+      Fdata(ipoint) = real(p_Idata(ix,iy),SP)/real(rpgm%maxgray,SP)
+    end do
+  end subroutine ppsol_initArrayPGMSP1D
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine ppsol_initArrayPGMSP2D(rpgm, Dpoints, Fdata, Dbounds)
 
 !<description>
     ! Initialises a 2D single array by a Portable Graymap image
@@ -277,7 +454,7 @@ contains
     ! portable graymap image
     type(t_pgm), intent(in) :: rpgm
 
-    ! coordinates of 2D array
+    ! coordinates as 2D array
     real(DP), dimension(:,:), intent(in) :: Dpoints
 
     ! OPTIONAL: coordinates of the bounding box
@@ -339,6 +516,6 @@ contains
 
       Fdata(ipoint) = real(p_Idata(ix,iy),SP)/real(rpgm%maxgray,SP)
     end do
-  end subroutine ppsol_initArrayPGMSP
+  end subroutine ppsol_initArrayPGMSP2D
 
 end module pprocsolution
