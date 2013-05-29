@@ -281,7 +281,7 @@ contains
     end if
 
     ! Set additional problem descriptor
-    rproblemDescriptor%ndiscretisation = max(0, discretisation)
+    rproblemDescriptor%nblockDiscretisation = max(0, discretisation)
     rproblemDescriptor%nafcstab        = max(0, massAFC,&
                                                 inviscidAFC,&
                                                 viscousAFC)
@@ -477,8 +477,8 @@ contains
     !---------------------------------------------------------------------------
     if (discretisation > 0) then
       
-      ! Initialise the discretisation structure
-      p_rdiscretisation => rproblemLevel%Rdiscretisation(discretisation)
+      ! Initialise the block discretisation structure
+      p_rdiscretisation => rproblemLevel%RblockDiscretisation(discretisation)
       if (p_rdiscretisation%ndimension .eq. 0) then
         select case(isystemFormat)
         case (SYSTEM_INTERLEAVEFORMAT)

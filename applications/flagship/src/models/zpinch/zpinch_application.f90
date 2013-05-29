@@ -682,9 +682,9 @@ contains
     call parlst_getvalue_int(rparlist,&
         ssectionNameHydro, 'discretisation', discretisationHydro)
 
-    ! Set pointer to discretisation structure
+    ! Set pointer to block discretisation structure
     p_rdiscretisation =>&
-        p_rproblemLevel%Rdiscretisation(discretisationHydro)
+        p_rproblemLevel%RblockDiscretisation(discretisationHydro)
 
     ! Create the solution vector
     if (p_rdiscretisation%ncomponents .eq. hydro_getNVAR(p_rproblemLevel)) then
@@ -727,9 +727,9 @@ contains
     call parlst_getvalue_int(rparlist, ssectionNameTransport,&
         'discretisation', discretisationTransport)
 
-    ! Set pointer to discretisation structure
+    ! Set pointer to block discretisation structure
     p_rdiscretisation =>&
-        p_rproblemLevel%Rdiscretisation(discretisationTransport)
+        p_rproblemLevel%RblockDiscretisation(discretisationTransport)
 
     ! Create the solution vector
     call lsysbl_createVectorBlock(p_rdiscretisation,&

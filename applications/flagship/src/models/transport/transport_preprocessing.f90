@@ -281,7 +281,7 @@ contains
     end if
 
     ! Set additional problem descriptor
-    rproblemDescriptor%ndiscretisation = max(0, discretisation)
+    rproblemDescriptor%nblockdiscretisation = max(0, discretisation)
     rproblemDescriptor%ncubatureInfo   = max(0, ncubatureInfo)
     rproblemDescriptor%nafcstab        = max(0, massAFC,&
                                                 convectionAFC,&
@@ -452,8 +452,8 @@ contains
     !---------------------------------------------------------------------------
     if (discretisation > 0) then
 
-      ! Initialise the discretisation structure
-      p_rdiscretisation => rproblemLevel%Rdiscretisation(discretisation)
+      ! Initialise the block discretisation structure
+      p_rdiscretisation => rproblemLevel%RblockDiscretisation(discretisation)
       if (p_rdiscretisation%ndimension .eq. 0) then
         call spdiscr_initBlockDiscr(p_rdiscretisation, 1, p_rtriangulation,&
             rproblemLevel%p_rproblem%rboundary)

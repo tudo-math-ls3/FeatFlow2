@@ -4485,7 +4485,7 @@ contains
           
           ! Get number of degrees of freedom and spatial dimension
           p_rspatialDiscr =>&
-              p_rproblemLevel%Rdiscretisation(discretisation)%RspatialDiscr(1)
+              p_rproblemLevel%RblockDiscretisation(discretisation)%RspatialDiscr(1)
           neq  = dof_igetNDofGlob(p_rspatialDiscr)
           ndim = p_rspatialDiscr%ndimension
           

@@ -4291,15 +4291,25 @@ contains
       ! Set pointer to key of first item in source list
       call alst_getbase_key(rarraylistSrc, alst_begin(rarraylistSrc,itableSrc), p_keySrc)
       rposition = alst_find(rarraylistDest, itableDest, p_keySrc, .false., rposition)
-      call alst_getbase_key(rarraylistDest, rposition, p_keyDest)
-
-      ! Find last item in destination list with the same key. This
-      ! step ensurs that the merging is stable, that is, equivalent
-      ! elements preserve the order they had before merging
-      do while (p_keySrc .eq. p_keyDest)
-        call alst_next(rposition)
+      if (.not. alst_isNull(rposition)) then
         call alst_getbase_key(rarraylistDest, rposition, p_keyDest)
-      end do
+
+        ! Find last item in destination list with the same key. This
+        ! step ensurs that the merging is stable, that is, equivalent
+        ! elements preserve the order they had before merging
+        do while (p_keySrc .eq. p_keyDest)
+          call alst_next(rposition)
+          if (alst_isNull(rposition)) then
+            ! Insert at the end of the list. rposition points to that.
+            exit
+          else
+            ! Continue with the search.
+            call alst_getbase_key(rarraylistDest, rposition, p_keyDest)
+          end if
+        end do
+      ! else
+      !   Insert to the end of the list. rposition points to that.
+      end if
 #ifdef D
       ! Set pointer to data
       call alst_getbase_data(rarraylistSrc, alst_begin(rarraylistSrc,itableSrc), p_dataSrc)

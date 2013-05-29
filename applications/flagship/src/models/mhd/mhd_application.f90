@@ -535,9 +535,9 @@ contains
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'discretisation', discretisation)
 
-    ! Set pointer to maximum problem level and discretisation
+    ! Set pointer to maximum problem level and block discretisation
     p_rproblemLevel   => rproblem%p_rproblemLevelMax
-    p_rdiscretisation => p_rproblemLevel%Rdiscretisation(discretisation)
+    p_rdiscretisation => p_rproblemLevel%RblockDiscretisation(discretisation)
 
     ! Create the solution vector
     if (p_rdiscretisation%ncomponents .eq. mhd_getNVAR(p_rproblemLevel)) then
