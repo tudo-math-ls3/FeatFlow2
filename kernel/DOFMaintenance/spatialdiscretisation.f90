@@ -1553,7 +1553,7 @@ contains
 !<subroutine>
 
   subroutine spdiscr_deriveBlockDiscr (rsourceDiscr, rdestDiscr, &
-      ifirstBlock, ilastBlock, rtriangulation, rboundary)
+      ifirstBlock, ilastBlock, rtriangulation, rboundary, bshare)
 
 !<description>
   ! This routine derives a block discretisation structure from another one.
@@ -1590,18 +1590,29 @@ contains
   ! OPTIONAL: Reference to a new domain, the new discretisation should use.
   ! If not specified, the domain in rsourceDiscr is used.
   type(t_boundary), intent(in), target, optional :: rboundary
+
+  ! OPTIONAL: Whether the new discretisation structure should share its information
+  ! with rsourceDiscr.
+  ! =FALSE: Create a complete copy of a subdiscretisation of rsourceDiscr
+  !  which is independent of rsourceDiscr.
+  ! =TRUE: The new discretisation will not be a complete new structure, but a
+  !  'derived' structure, i.e. it uses the same dynamic information
+  !  (handles and therefore element lists) as rsourceDiscr.
+  ! If not specified, TRUE is assumed.
+  logical, intent(in), optional :: bshare
 !</input>
 
-!<output>
+!<intputoutput>
   ! The discretisation structure to be initialised.
   ! Any old existing information in rdestDiscr is released if necessary.
   type(t_blockDiscretisation), intent(inout), target :: rdestDiscr
-!</output>
+!</intputoutput>
 
 !</subroutine>
 
     ! local variables
     integer :: ifirst, ilast, ncount, i
+    logical :: bshr
 
     ! Check that the source discretisation structure is valid.
     if (rsourceDiscr%ndimension .le. 0) then
@@ -1610,7 +1621,7 @@ contains
       call sys_halt()
     end if
 
-   ! Release old information if present
+    ! Release old information if present
     call spdiscr_releaseBlockDiscr(rdestDiscr,.true.)
 
     ! Evaluate the optional parameters
@@ -1626,6 +1637,9 @@ contains
     end if
 
     ncount = ilast-ifirst+1
+
+    bshr = .true.
+    if (present(bshare)) bshr = bshare
 
     ! Copy all information from the source discretisation structure
 
@@ -1645,7 +1659,7 @@ contains
     allocate(rdestDiscr%RspatialDiscr(ncount))
     do i = 1, ncount
       call spdiscr_duplicateDiscrSc (rsourceDiscr%RspatialDiscr(ifirst+i-1), &
-                                     rdestDiscr%RspatialDiscr(i), .true.)
+                                     rdestDiscr%RspatialDiscr(i), bshr)
     end do
 
     end subroutine
@@ -1737,10 +1751,10 @@ contains
   type(t_boundary), intent(in), target, optional :: rboundary
 !</input>
 
-!<output>
+!<intputoutput>
   ! The discretisation structure to be initialised.
   type(t_spatialDiscretisation), intent(inout), target :: rspatialDiscr
-!</output>
+!</inputoutput>
 
 !</subroutine>
 
@@ -1850,10 +1864,10 @@ contains
   type(t_boundary), intent(in), target, optional :: rboundary
 !</input>
 
-!<output>
+!<inputoutput>
   ! The discretisation structure to be initialised.
   type(t_spatialDiscretisation), intent(inout), target :: rspatialDiscr
-!</output>
+!</inputoutput>
 
 !</subroutine>
 
@@ -1937,10 +1951,10 @@ contains
   integer(I32), intent(in) :: ndof
 !</input>
 
-!<output>
+!<inputoutput>
   ! The discretisation structure to be initialised.
   type(t_spatialDiscretisation), intent(inout), target :: rspatialDiscr
-!</output>
+!</inputoutput>
 
 !</subroutine>
 
@@ -2004,10 +2018,10 @@ contains
   type(t_boundary), intent(in), target, optional :: rboundary
 !</input>
 
-!<output>
+!<inputoutput>
   ! The discretisation structure to be initialised.
   type(t_spatialDiscretisation), intent(inout), target :: rspatialDiscr
-!</output>
+!</inputoutput>
 
 !</subroutine>
 
@@ -2220,10 +2234,10 @@ contains
   type(t_boundary), intent(in), target, optional :: rboundary
 !</input>
 
-!<output>
+!<inpuoutput>
   ! The discretisation structure to be initialised.
   type(t_spatialDiscretisation), intent(inout), target :: rspatialDiscr
-!</output>
+!</inputoutput>
 
 !</subroutine>
 
@@ -2412,12 +2426,12 @@ contains
   integer(I32), intent(in) :: ccubType
 !</input>
 
-!<output>
+!<inputoutput>
   ! The discretisation structure to be initialised.
   ! Any old existing discretisation information in rdestDiscr
   ! is released if necessary.
   type(t_spatialDiscretisation), intent(inout), target :: rdestDiscr
-!</output>
+!</inputoutput>
 
 !</subroutine>
 
@@ -2532,12 +2546,12 @@ contains
   integer(I32), intent(in) :: celement
 !</input>
 
-!<output>
+!<inputoutput>
   ! The discretisation structure to be initialised.
   ! Any old existing discretisation information in rdestDiscr
   ! is released if necessary.
   type(t_spatialDiscretisation), intent(inout), target :: rdestDiscr
-!</output>
+!</inputoutput>
 
 !</subroutine>
 
@@ -2638,12 +2652,12 @@ contains
   integer(I32), intent(in) :: ccubTypeQuad
 !</input>
 
-!<output>
+!<inputoutput>
   ! The discretisation structure to be initialised.
   ! Any old existing discretisation information in rdestDiscr
   ! is released if necessary.
   type(t_spatialDiscretisation), intent(inout), target :: rdestDiscr
-!</output>
+!</inputoutput>
 
 !</subroutine>
 
@@ -2781,12 +2795,12 @@ contains
   integer(I32), intent(in) :: ieltypQuad
 !</input>
 
-!<output>
+!<inputoutput>
   ! The discretisation structure to be initialised.
   ! Any old existing discretisation information in rdestDiscr
   ! is released if necessary.
   type(t_spatialDiscretisation), intent(inout), target :: rdestDiscr
-!</output>
+!</inputoutput>
 
 !</subroutine>
 
@@ -2971,11 +2985,11 @@ contains
   logical, intent(in), optional :: bshare
 !</input>
 
-!<output>
+!<inputoutput>
   ! The new discretisation structure. Any old existing information in rdestDiscr
   ! is released if necessary.
   type(t_spatialDiscretisation), intent(inout), target :: rdestDiscr
-!</output>
+!</inputoutput>
 
 !</subroutine>
 
@@ -3077,11 +3091,11 @@ contains
   logical, intent(in), optional :: bshare
 !</input>
 
-!<output>
+!<inputoutput>
   ! The new discretisation structure. Any old existing information in rdestDiscr
   ! is released if necessary.
   type(t_blockDiscretisation), intent(inout), target :: rdestDiscr
-!</output>
+!</inputoutput>
 
 !</subroutine>
 
@@ -3541,14 +3555,14 @@ contains
   type(t_boundary), intent(in), target, optional :: rboundary
 !</input>
 
-!<output>
+!<inputoutput>
   ! The discretisation structure to be initialised.
   ! Receives the concatenated block discretisation "rsourceDiscr1 + rsourceDiscr2".
   ! Any old existing information in rdestDiscr is released if necessary.
   ! The new discretisation shares its information with rsourceDiscr1 and
   ! rsourceDiscr2.
   type(t_blockDiscretisation), intent(inout), target, optional :: rdestDiscr
-!</output>
+!</inputoutput>
 
 !</subroutine>
 
