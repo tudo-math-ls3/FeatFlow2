@@ -3640,36 +3640,6 @@ contains
     call boundary_createRegion (rboundary,2,0, rboundaryRegion)
     rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
     
-    ! Kinematic viscosity, noo = 1/Re
-    call parlst_getvalue_double (rparams, 'GFPROPER', 'dnu', dnu, 1.0_DP)  
-         
-    call ppns2D_bdforces_uniform (rvector,rboundaryRegion,Dforces,CUB_G3_1D,&
-        dnu,2.0_DP,PPNAVST_DEFORMATIONTENSOR)
-
-    call output_lbrk()
-    call output_line ('Body forces')
-    call output_line ('-----------')
-    call output_line ('Drag/Lift')
-    call output_line (trim(sys_sdEP(Dforces(1),15,6)) // ' / '&
-              //trim(sys_sdEP(Dforces(2),15,6)))
-
-    call output_lbrk()
-    call output_line ('Coefficients (Line Integration)')
-    call output_line ('------------------------------')
-    call output_line ('Drag/Lift')
-    call output_line (trim(sys_sdEP(Dforces(1)*500.0_DP,15,6)) // ' / '&
-              //trim(sys_sdEP(Dforces(2)*500.0_DP,15,6)))
-
-    call ppns2D_bdforces_uniform (rvector,rboundaryRegion,Dforces,CUB_G3X3,&
-        dnu,2.0_DP,PPNAVST_DEFORMATIONTENSOR)
-
-    call output_lbrk()
-    call output_line ('Coefficients (Volume Integration)')
-    call output_line ('--------------------------------')
-    call output_line ('Drag/Lift')
-    call output_line (trim(sys_sdEP(Dforces(1)*500.0_DP,15,6)) // ' / '&
-      //trim(sys_sdEP(Dforces(2)*500.0_DP,15,6)))
-
     ! Calculate the pressure drop accross the cylinder
     Dpoints(1,1) = 0.15_DP
     Dpoints(2,1) = 0.2_DP
@@ -3683,9 +3653,8 @@ contains
     call output_line (trim(sys_sdEP(Dvalues(1)-Dvalues(2),15,6)))
 
     
-    !!!!!!!!!!!!!!!!
-    ! Test new idea
-    !!!!!!!!!!!!!!!!
+    ! Calculate the Lift and Drag coefficients using the
+    !  stress tensor calculated.
     ! Print out the negatives of the values computed in the
     ! following routines as the routines work with the normal
     ! vector pointing into the opposite direction as needed.
