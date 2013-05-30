@@ -5711,8 +5711,7 @@ contains
     ! local variables
     type(t_parlist), pointer :: p_rparlist
     real(DP), dimension(:), pointer :: p_Dx,p_Ddata
-    real(DP) :: dlambda
-    integer :: isystemFormat,lumpedMassMatrix,ieq
+    integer :: isystemFormat,lumpedMassMatrix
 
     ! Get parameters from parameter list
     p_rparlist => collct_getvalue_parlst(rcollection,&
@@ -5729,18 +5728,15 @@ contains
     ! Set pointer to solution vector
     call lsysbl_getbase_double(rsolution, p_Ddata)
 
-    ! Initialise CFD-number
-    dCFLnumber = 0.0_DP
-
     select case(rproblemLevel%rtriangulation%ndim)
     case (NDIM1D)
       select case(isystemFormat)
       case (SYSTEM_INTERLEAVEFORMAT)
-        do ieq=1,rsolution%NEQ
-          dCFLnumber = max(dCFLnumber, rtimestep%dStep*dlambda/sqrt(p_Dx(ieq)))
-        end do
-
+        call calcCFDnumber1DIntl(rsolution%NEQ, rtimestep%dStep,&
+            p_Ddata, p_Dx, dCFLnumber)
       case (SYSTEM_BLOCKFORMAT)
+        call calcCFDnumber1DBlock(rsolution%NEQ, rtimestep%dStep,&
+            p_Ddata, p_Dx, dCFLnumber)
       case default
         call output_line('Invalid system format!',&
             OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcCFLnumber')
@@ -5750,7 +5746,11 @@ contains
     case (NDIM2D)
       select case(isystemFormat)
       case (SYSTEM_INTERLEAVEFORMAT)
+        call calcCFDnumber2DIntl(rsolution%NEQ, rtimestep%dStep,&
+            p_Ddata, p_Dx, dCFLnumber)
       case (SYSTEM_BLOCKFORMAT)
+        call calcCFDnumber2DBlock(rsolution%NEQ, rtimestep%dStep,&
+            p_Ddata, p_Dx, dCFLnumber)
       case default
         call output_line('Invalid system format!',&
             OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcCFLnumber')
@@ -5760,7 +5760,11 @@ contains
     case (NDIM3D)
       select case(isystemFormat)
       case (SYSTEM_INTERLEAVEFORMAT)
+        call calcCFDnumber3DIntl(rsolution%NEQ, rtimestep%dStep,&
+            p_Ddata, p_Dx, dCFLnumber)
       case (SYSTEM_BLOCKFORMAT)
+        call calcCFDnumber3DBlock(rsolution%NEQ, rtimestep%dStep,&
+            p_Ddata, p_Dx, dCFLnumber)
       case default
         call output_line('Invalid system format!',&
             OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcCFLnumber')
@@ -5772,6 +5776,214 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'hydro_calcCFLnumber')
       call sys_halt()
     end select
+
+  contains
+
+    ! Here, the real working routines follow
+
+    !**************************************************************
+    ! Calculates the CFL-number for the one-dimensional solution
+    ! vector stored in interleaved format
+
+    subroutine calcCFDnumber1DIntl(neq, dStep, Ddata, Dx, dCFLnumber)
+
+      ! Number of equation (nodal degrees of freedom)
+      integer, intent(in) :: neq
+
+      ! Global time step
+      real(DP), intent(in) :: dStep
+
+      ! Solution data
+      real(DP), dimension(NVAR1D,neq), intent(in) :: Ddata
+
+      ! Lumped mass matrix
+      real(DP), dimension(neq), intent(in) :: Dx
+
+      ! Local CFD number
+      real(DP), intent(out) :: dCFLnumber
+
+      ! local variables
+      real(DP) :: dlambda
+      integer :: ieq
+
+      dCFLnumber = 0.0_DP
+      do ieq=1,neq
+        dlambda = VELMAGNITUDE2_1D(Ddata,IDX2_FORWARD,ieq,_,_)+&
+                    SOUNDSPEED2_1D(Ddata,IDX2_FORWARD,ieq,_,_)
+        dCFLnumber = max(dCFLnumber, dStep*dlambda/sqrt(Dx(ieq)))
+      end do
+      
+    end subroutine calcCFDnumber1DIntl
+
+    !**************************************************************
+    ! Calculates the CFL-number for the one-dimensional solution
+    ! vector stored in block format
+
+    subroutine calcCFDnumber1DBlock(neq, dStep, Ddata, Dx, dCFLnumber)
+
+      ! Number of equation (nodal degrees of freedom)
+      integer, intent(in) :: neq
+
+      ! Global time step
+      real(DP), intent(in) :: dStep
+
+      ! Solution data
+      real(DP), dimension(neq,NVAR1D), intent(in) :: Ddata
+
+      ! Lumped mass matrix
+      real(DP), dimension(neq), intent(in) :: Dx
+
+      ! Local CFD number
+      real(DP), intent(out) :: dCFLnumber
+
+      ! local variables
+      real(DP) :: dlambda
+      integer :: ieq
+
+      dCFLnumber = 0.0_DP
+      do ieq=1,neq
+        dlambda = VELMAGNITUDE2_1D(Ddata,IDX2_REVERSE,ieq,_,_)+&
+                    SOUNDSPEED2_1D(Ddata,IDX2_REVERSE,ieq,_,_)
+        dCFLnumber = max(dCFLnumber, dStep*dlambda/sqrt(Dx(ieq)))
+      end do
+      
+    end subroutine calcCFDnumber1DBlock
+
+    !**************************************************************
+    ! Calculates the CFL-number for the two-dimensional solution
+    ! vector stored in interleaved format
+
+    subroutine calcCFDnumber2DIntl(neq, dStep, Ddata, Dx, dCFLnumber)
+
+      ! Number of equation (nodal degrees of freedom)
+      integer, intent(in) :: neq
+
+      ! Global time step
+      real(DP), intent(in) :: dStep
+
+      ! Solution data
+      real(DP), dimension(NVAR2D,neq), intent(in) :: Ddata
+
+      ! Lumped mass matrix
+      real(DP), dimension(neq), intent(in) :: Dx
+
+      ! Local CFD number
+      real(DP), intent(out) :: dCFLnumber
+
+      ! local variables
+      real(DP) :: dlambda
+      integer :: ieq
+
+      dCFLnumber = 0.0_DP
+      do ieq=1,neq
+        dlambda = VELMAGNITUDE2_2D(Ddata,IDX2_FORWARD,ieq,_,_)+&
+                    SOUNDSPEED2_2D(Ddata,IDX2_FORWARD,ieq,_,_)
+        dCFLnumber = max(dCFLnumber, dStep*dlambda/sqrt(Dx(ieq)))
+      end do
+      
+    end subroutine calcCFDnumber2DIntl
+
+    !**************************************************************
+    ! Calculates the CFL-number for the two-dimensional solution
+    ! vector stored in block format
+
+    subroutine calcCFDnumber2DBlock(neq, dStep, Ddata, Dx, dCFLnumber)
+
+      ! Number of equation (nodal degrees of freedom)
+      integer, intent(in) :: neq
+
+      ! Global time step
+      real(DP), intent(in) :: dStep
+
+      ! Solution data
+      real(DP), dimension(neq,NVAR2D), intent(in) :: Ddata
+
+      ! Lumped mass matrix
+      real(DP), dimension(neq), intent(in) :: Dx
+
+      ! Local CFD number
+      real(DP), intent(out) :: dCFLnumber
+
+      ! local variables
+      real(DP) :: dlambda
+      integer :: ieq
+
+      dCFLnumber = 0.0_DP
+      do ieq=1,neq
+        dlambda = VELMAGNITUDE2_2D(Ddata,IDX2_REVERSE,ieq,_,_)+&
+                    SOUNDSPEED2_2D(Ddata,IDX2_REVERSE,ieq,_,_)
+        dCFLnumber = max(dCFLnumber, dStep*dlambda/sqrt(Dx(ieq)))
+      end do
+      
+    end subroutine calcCFDnumber2DBlock
+
+    !**************************************************************
+    ! Calculates the CFL-number for the three-dimensional solution
+    ! vector stored in interleaved format
+
+    subroutine calcCFDnumber3DIntl(neq, dStep, Ddata, Dx, dCFLnumber)
+
+      ! Number of equation (nodal degrees of freedom)
+      integer, intent(in) :: neq
+
+      ! Global time step
+      real(DP), intent(in) :: dStep
+
+      ! Solution data
+      real(DP), dimension(NVAR3D,neq), intent(in) :: Ddata
+
+      ! Lumped mass matrix
+      real(DP), dimension(neq), intent(in) :: Dx
+
+      ! Local CFD number
+      real(DP), intent(out) :: dCFLnumber
+
+      ! local variables
+      real(DP) :: dlambda
+      integer :: ieq
+
+      dCFLnumber = 0.0_DP
+      do ieq=1,neq
+        dlambda = VELMAGNITUDE2_3D(Ddata,IDX2_FORWARD,ieq,_,_)+&
+                    SOUNDSPEED2_3D(Ddata,IDX2_FORWARD,ieq,_,_)
+        dCFLnumber = max(dCFLnumber, dStep*dlambda/sqrt(Dx(ieq)))
+      end do
+      
+    end subroutine calcCFDnumber3DIntl
+
+    !**************************************************************
+    ! Calculates the CFL-number for the three-dimensional solution
+    ! vector stored in block format
+
+    subroutine calcCFDnumber3DBlock(neq, dStep, Ddata, Dx, dCFLnumber)
+
+      ! Number of equation (nodal degrees of freedom)
+      integer, intent(in) :: neq
+
+      ! Global time step
+      real(DP), intent(in) :: dStep
+
+      ! Solution data
+      real(DP), dimension(neq,NVAR3D), intent(in) :: Ddata
+
+      ! Lumped mass matrix
+      real(DP), dimension(neq), intent(in) :: Dx
+
+      ! Local CFD number
+      real(DP), intent(out) :: dCFLnumber
+
+      ! local variables
+      real(DP) :: dlambda
+      integer :: ieq
+
+      dCFLnumber = 0.0_DP
+      do ieq=1,neq
+        dlambda = VELMAGNITUDE2_3D(Ddata,IDX2_REVERSE,ieq,_,_)+&
+                    SOUNDSPEED2_3D(Ddata,IDX2_REVERSE,ieq,_,_)
+        dCFLnumber = max(dCFLnumber, dStep*dlambda/sqrt(Dx(ieq)))
+      end do
+      
+    end subroutine calcCFDnumber3DBlock
 
   end subroutine hydro_calcCFLnumber
 
